@@ -4,17 +4,17 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>tpbconv</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>tpbconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-tpbconv can edit run input files in two ways.<p><b>1st.</b> by creating a run input file
+tpbconv can edit run input files in three ways.<p><b>1st.</b> by creating a run input file
 for a continuation run when your simulation has crashed due to e.g.
 a full disk, or by making a continuation run input file.
 Note that a frame with coordinates and velocities is needed,
@@ -24,6 +24,9 @@ tpbconv and you have to start the run again from the beginning.<p>
 tpx file, which is useful when you want to remove the solvent from
 your tpx file, or when you want to make e.g. a pure Ca tpx file.
 <b>WARNING: this tpx file is not fully functional</b>.
+<b>3rd.</b> by setting the charges of a specified group
+to zero. This is useful when doing free energy estimates
+using the LIE (Linear Interactio Energy) method.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -43,6 +46,7 @@ your tpx file, or when you want to make e.g. a pure Ca tpx file.
 <TR><TD ALIGN=RIGHT> <b><tt>-time</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Continue from frame at this time (ps) instead of the last frame </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-extend</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Extend runtime by this amount (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-until</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Extend runtime until this ending time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroq</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Set the charges of a group (from the index) to zero </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]unconstrained</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> For a continuous trajectory, the constraints should not be solved before the first step (default) </TD></TD>
 </TABLE>
 <P>

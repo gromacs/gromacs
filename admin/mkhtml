@@ -51,13 +51,13 @@ cat > $HTMLIDX << EOD
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280>
 <br><br>
 <h2>
-GROMACS 3.0<br>
+GROMACS 3.1<br>
 Online Reference</h2>
 </td>
 </TABLE></TD>
 <td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
-<B>VERSION 3.0<br>
-Tue 15 May 2001</B></td>
+<B>VERSION 3.1<br>
+Wed 27 Feb 2002</B></td>
 </tr>
 </table>
 
@@ -126,7 +126,6 @@ cat >> $HTMLIDX <<EOD
 <hr>
 <div ALIGN=RIGHT>
 <font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
-<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
 </body>
 </html>
 EOD

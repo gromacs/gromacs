@@ -1,7 +1,7 @@
-.TH x2top 1 "Mon 23 Jul 2001"
+.TH x2top 1 "Wed 27 Feb 2002"
 .SH NAME
 x2top
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3x2top\fP
 .BI "-f" " conf.gro "
@@ -10,21 +10,33 @@ x2top
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
-.BI "-kb" " real "
-.BI "-kt" " real "
-.BI "-kp" " real "
+.BI "-scale" " real "
 .BI "-nexcl" " int "
 .BI "-[no]H14" ""
 .BI "-[no]alldih" ""
-.BI "-[no]round" ""
 .BI "-[no]pairs" ""
 .BI "-name" " string "
+.BI "-[no]pbc" ""
+.BI "-[no]param" ""
+.BI "-[no]round" ""
+.BI "-kb" " real "
+.BI "-kt" " real "
+.BI "-kp" " real "
 .SH DESCRIPTION
 x2top generates a primitive topology from a coordinate file.
 The program assumes all hydrogens are present when defining
 the hybridization from the atom name and the number of bonds.
 The program can also make an rtp entry, which you can then add
 to the rtp database.
+
+
+When 
+.B -param
+is set, equilibrium distances and angles
+and force constants will be printed in the topology for all
+interactions. The equilibrium distances and angles are taken
+from the input coordinates, the force constant are set with
+command line options.
 .SH FILES
 .BI "-f" " conf.gro" 
 .B Input
@@ -48,14 +60,8 @@ to the rtp database.
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-kb"  " real" " 400000" 
- Bonded force constant (kJ/mol/nm2)
-
-.BI "-kt"  " real" "    400" 
- Angle force constant (kJ/mol/rad2)
-
-.BI "-kp"  " real" "      5" 
- Dihedral angle force constant (kJ/mol/rad2)
+.BI "-scale"  " real" "    1.1" 
+ Scaling factor for bonds with unknown atom types relative to atom type O
 
 .BI "-nexcl"  " int" " 3" 
  Number of exclusions
@@ -66,14 +72,29 @@ to the rtp database.
 .BI "-[no]alldih"  "    no"
  Generate all proper dihedrals
 
-.BI "-[no]round"  "   yes"
- Round off measured values
-
 .BI "-[no]pairs"  "   yes"
  Output 1-4 interactions (pairs) in topology file
 
 .BI "-name"  " string" " ICE" 
  Name of your molecule
+
+.BI "-[no]pbc"  "   yes"
+ Use periodic boundary conditions. Please set the GMXFULLPBC environment variable as well.
+
+.BI "-[no]param"  "    no"
+ Print parameters in the output
+
+.BI "-[no]round"  "   yes"
+ Round off measured values
+
+.BI "-kb"  " real" " 400000" 
+ Bonded force constant (kJ/mol/nm2)
+
+.BI "-kt"  " real" "    400" 
+ Angle force constant (kJ/mol/rad2)
+
+.BI "-kp"  " real" "      5" 
+ Dihedral angle force constant (kJ/mol/rad2)
 
 \- The atom type selection is primitive. Virtually no chemical knowledge is used
 

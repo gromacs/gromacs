@@ -4,13 +4,13 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dielectric</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dielectric</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -68,7 +68,7 @@ plot should be one half of a circle
 <TR><TD ALIGN=RIGHT> <b><tt>-eps0</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    80</tt> </TD><TD> Epsilon 0 of your liquid </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-epsRF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  78.5</tt> </TD><TD> Epsilon of the reaction field used in your simulation. A value of 0 means infinity. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fix</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Fix parameters at their start values, A (2), tau1 (1), or tau2 (4) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ffn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt> or <tt>vac</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ffn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt> or <tt>exp7</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nsmooth</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of points for smoothing </TD></TD>
 </TABLE>
 <P>

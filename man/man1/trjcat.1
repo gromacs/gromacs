@@ -1,7 +1,7 @@
-.TH trjcat 1 "Mon 23 Jul 2001"
+.TH trjcat 1 "Wed 27 Feb 2002"
 .SH NAME
 trjcat
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3trjcat\fP
 .BI "-o" " trajout.xtc "
@@ -9,13 +9,15 @@ trjcat
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
-.BI "-b" " real "
-.BI "-e" " real "
-.BI "-dt" " real "
+.BI "-tu" " enum "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
 .BI "-prec" " int "
 .BI "-[no]vel" ""
 .BI "-[no]settime" ""
 .BI "-[no]sort" ""
+.BI "-[no]cat" ""
 .SH DESCRIPTION
 trjcat concatenates several input trajectory files in sorted order. 
 In case of double time frames the one in the later file is used. 
@@ -26,7 +28,10 @@ of each file. The input files are taken from the command line,
 such that a command like 
 .B trjcat -o fixed.trr *.trr
 should do 
-the trick.
+the trick. Using 
+.B -cat
+you can simply paste several files 
+together without removal of frames with identical time stamps.
 .SH FILES
 .BI "-o" " trajout.xtc" 
 .B Output
@@ -46,14 +51,33 @@ the trick.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " real" "     -1" 
- First time to use
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
 
-.BI "-e"  " real" "     -1" 
- Last time to use
 
-.BI "-dt"  " real" "      0" 
- Only write frame when t MOD dt = first time
+.BI "-b"  " time" "     -1" 
+ First time to use (ps)
+
+.BI "-e"  " time" "     -1" 
+ Last time to use (ps)
+
+.BI "-dt"  " time" "      0" 
+ Only write frame when t MOD dt = first time (ps)
 
 .BI "-prec"  " int" " 3" 
  Precision for .xtc and .gro writing in number of decimal places
@@ -66,4 +90,7 @@ the trick.
 
 .BI "-[no]sort"  "   yes"
  Sort trajectory files (not frames)
+
+.BI "-[no]cat"  "    no"
+ do not discard double time frames
 

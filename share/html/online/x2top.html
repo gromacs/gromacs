@@ -4,13 +4,13 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>x2top</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>x2top</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -18,7 +18,12 @@ x2top generates a primitive topology from a coordinate file.
 The program assumes all hydrogens are present when defining
 the hybridization from the atom name and the number of bonds.
 The program can also make an <a href="rtp.html">rtp</a> entry, which you can then add
-to the <a href="rtp.html">rtp</a> database.
+to the <a href="rtp.html">rtp</a> database.<p>
+When <tt>-param</tt> is set, equilibrium distances and angles
+and force constants will be printed in the topology for all
+interactions. The equilibrium distances and angles are taken
+from the input coordinates, the force constant are set with
+command line options.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -34,15 +39,18 @@ to the <a href="rtp.html">rtp</a> database.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-kb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>400000</tt> </TD><TD> Bonded force constant (kJ/mol/nm^2) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-kt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   400</tt> </TD><TD> Angle force constant (kJ/mol/rad^2) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-kp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     5</tt> </TD><TD> Dihedral angle force constant (kJ/mol/rad^2) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   1.1</tt> </TD><TD> Scaling factor for bonds with unknown atom types relative to atom type O </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nexcl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of exclusions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]H14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use 3rd neighbour interactions for hydrogen atoms </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]alldih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Generate all proper dihedrals </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]round</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Round off measured values </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Output 1-4 interactions (pairs) in topology file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-name</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>ICE</tt> </TD><TD> Name of your molecule </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use periodic boundary conditions. Please set the GMXFULLPBC environment variable as well. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]param</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print parameters in the output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]round</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Round off measured values </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-kb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>400000</tt> </TD><TD> Bonded force constant (kJ/mol/nm^2) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-kt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   400</tt> </TD><TD> Angle force constant (kJ/mol/rad^2) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-kp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     5</tt> </TD><TD> Dihedral angle force constant (kJ/mol/rad^2) </TD></TD>
 </TABLE>
 <P>
 <UL>

@@ -1,7 +1,7 @@
-.TH g_energy 1 "Mon 23 Jul 2001"
+.TH g_energy 1 "Wed 27 Feb 2002"
 .SH NAME
 g_energy
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3g_energy\fP
 .BI "-f" " ener.edr "
@@ -10,6 +10,11 @@ g_energy
 .BI "-o" " energy.xvg "
 .BI "-viol" " violaver.xvg "
 .BI "-pairs" " pairs.xvg "
+.BI "-ora" " orienta.xvg "
+.BI "-ort" " orientt.xvg "
+.BI "-oda" " orideva.xvg "
+.BI "-odr" " oridevr.xvg "
+.BI "-odt" " oridevt.xvg "
 .BI "-corr" " enecorr.xvg "
 .BI "-vis" " visco.xvg "
 .BI "-ravg" " runavgdf.xvg "
@@ -30,6 +35,7 @@ g_energy
 .BI "-nmol" " int "
 .BI "-ndf" " int "
 .BI "-[no]fluc" ""
+.BI "-[no]orinst" ""
 .BI "-acflen" " int "
 .BI "-[no]normalize" ""
 .BI "-P" " enum "
@@ -43,6 +49,12 @@ data from an energy file. The user is prompted to interactively
 select the energy terms she wants.
 
 
+Average and RMSD are calculated with full precision from the
+simulation (see printed manual). Drift is calculated by performing
+a LSQ fit of the data to a straight line. Total drift is drift
+multiplied by total time.
+
+
 When the 
 .B -viol
 option is set, the time averaged
@@ -54,10 +66,33 @@ selected pairs can be plotted with the
 option.
 
 
-Average and RMSD are calculated with full precision from the
-simulation (see printed manual). Drift is calculated by performing
-a LSQ fit of the data to a straight line. Total drift is drift
-multiplied by total time.
+Options 
+.B -ora
+, 
+.B -ort
+, 
+.B -oda
+, 
+.B -odr
+and
+
+.B -odt
+are used for analyzing orientation restraint data.
+The first two options plot the orientation, the last three the
+deviations of the orientations from the experimental values.
+The options that end on an 'a' plot the average over time
+as a function of restraint. The options that end on a 't'
+prompt the user for restraint label numbers and plot the data
+as a function of time. Option 
+.B -odr
+plots the RMS
+deviation as a function of restraint.
+When the run used time or ensemble averaged orientation restraints,
+option 
+.B -orinst
+can be used to analyse the instantaneous,
+not ensemble-averaged orientations and deviations instead of
+the time and ensemble averages.
 
 
 With 
@@ -105,6 +140,26 @@ the energies must both be calculated from the same trajectory.
  xvgr/xmgr file 
 
 .BI "-pairs" " pairs.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ora" " orienta.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ort" " orientt.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-oda" " orideva.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-odr" " oridevr.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-odt" " oridevt.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
@@ -172,6 +227,9 @@ the energies must both be calculated from the same trajectory.
 .BI "-[no]fluc"  "    no"
  Calculate autocorrelation of energy fluctuations rather than energy itself
 
+.BI "-[no]orinst"  "    no"
+ Analyse instantaneous orientation data
+
 .BI "-acflen"  " int" " -1" 
  Length of the ACF, default is half the number of frames
 
@@ -198,8 +256,12 @@ or
 .B aexp
 , 
 .B exp_exp
-or 
+, 
 .B vac
+, 
+.B exp5
+or 
+.B exp7
 
 
 .BI "-ncskip"  " int" " 0" 

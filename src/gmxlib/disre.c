@@ -172,7 +172,7 @@ void calc_disres_R_6(t_commrec *mcr,
     res++;
   }
   
-  if (mcr)
+  if ((mcr) && PAR(mcr))
     gmx_sum(2*dd->nr,Rt_6,mcr);
 }
 

@@ -4,23 +4,25 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sas</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sas</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_sas computes hydrophobic and total solvent accessible surface area.
+g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.
 As a side effect the Connolly surface can be generated as well in
 a <a href="pdb.html">pdb</a> file where the nodes are represented as atoms and the vertices
 connecting the nearest nodes as CONECT records. The area can be plotted
 per atom and per residue as well (option -ao). In combination with
 the latter option an <tt><a href="itp.html">itp</a></tt> file can be generated (option -i)
-which can be used to restrain surface atoms.
+which can be used to restrain surface atoms.<p>
+By default, periodic boundary conditions are taken into account,
+this can be turned off using the -pbc option.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -48,9 +50,11 @@ which can be used to restrain surface atoms.
 <TR><TD ALIGN=RIGHT> <b><tt>-solsize</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.14</tt> </TD><TD> Radius of the solvent probe (nm) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ndots</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>24</tt> </TD><TD> Number of dots per sphere, more dots means more accuracy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-qmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.2</tt> </TD><TD> The maximum charge (e, absolute value) of a hydrophobic atom </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-minarea</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.5</tt> </TD><TD> The maximum charge (e, absolute value) of a hydrophobic atom </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-minarea</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.5</tt> </TD><TD> The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Do only every nth frame </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Take periodicity into account </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]prot</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Output the protein to the connelly <a href="pdb.html">pdb</a> file too </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dgs</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> default value for solvation free energy per area (kJ/mol/nm^2) </TD></TD>
 </TABLE>
 <P>
 <hr>

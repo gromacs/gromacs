@@ -4,13 +4,13 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>grompp</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>grompp</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -31,6 +31,11 @@ NEMD parameters, which are corrected so that the net acceleration
 is zero.
 Eventually a binary file is produced that can serve as the sole input
 file for the MD program.<p>
+grompp uses the atom names from the topology file. The atom names
+in the coordinate file (option <tt>-c</tt>) are only read to generate
+warnings when they do not match the atom names in the topology.
+Note that the atom names are irrelevant for the simulation as
+only the atom types are used for generating interaction parameters.<p>
 grompp calls the c-preprocessor to resolve includes, macros 
 etcetera. To specify a macro-preprocessor other than /lib/cpp 
 (such as m4)
@@ -85,7 +90,7 @@ program.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">  grompp.mdp</a></tt> </TD><TD> Input </TD><TD> grompp input file with MD parameters </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">  grompp.mdp</a></tt> </TD><TD> Input, Opt. </TD><TD> grompp input file with MD parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-po</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">   mdout.mdp</a></tt> </TD><TD> Output </TD><TD> grompp input file with MD parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>

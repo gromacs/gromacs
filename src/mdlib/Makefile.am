@@ -23,7 +23,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	psspread.c	shakef.c	sim_util.c	\
 	splittop.c	tables.c	tgroup.c	\
 	update.c	vcm.c		wnblist.c	\
-	poisson.h	splittop.h	wnblist.h
+	poisson.h	splittop.h	wnblist.h	\
+	pull-internal.h
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	csettle.c	clincs.c	\

@@ -1,13 +1,15 @@
-.TH g_bond 1 "Mon 23 Jul 2001"
+.TH g_bond 1 "Wed 27 Feb 2002"
 .SH NAME
 g_bond
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3g_bond\fP
 .BI "-f" " traj.xtc "
 .BI "-n" " index.ndx "
+.BI "-s" " topol.tpr "
 .BI "-o" " bonds.xvg "
 .BI "-l" " bonds.log "
+.BI "-d" " distance.xvg "
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
@@ -31,7 +33,14 @@ gives the half-width of the distribution as a fraction
 of the bondlength (
 .B -blen
 ). That means, for a bond of 0.2
-a tol of 0.1 gives a distribution from 0.18 to 0.22
+a tol of 0.1 gives a distribution from 0.18 to 0.22.
+
+
+Option 
+.B -d
+plots all the distances as a function of time.
+This requires a structure file for the atom and residue names in
+the output.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -41,6 +50,10 @@ a tol of 0.1 gives a distribution from 0.18 to 0.22
 .B Input
  Index file 
 
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
 .BI "-o" " bonds.xvg" 
 .B Output
  xvgr/xmgr file 
@@ -48,6 +61,10 @@ a tol of 0.1 gives a distribution from 0.18 to 0.22
 .BI "-l" " bonds.log" 
 .B Output, Opt.
  Log file 
+
+.BI "-d" " distance.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"

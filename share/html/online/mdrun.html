@@ -4,18 +4,25 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdrun</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdrun</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-The mdrun program performs Molecular Dynamics simulations.
-It reads the run input file (<tt>-s</tt>) and distributes the
+The mdrun program is the main computational chemistry engine
+within GROMACS. Obviously, it performs Molecular Dynamics simulations,
+but it can also perform Brownian Dynamics and Langevin Dynamics
+as well as Conjugate Gradient or Steepest Descents energy minimization.
+Normal mode analysis is another option. In this case mdrun
+builds a Hessian matrix from single conformation.
+For usual Normal Modes-like calculations, make sure that
+the structure provided is properly energy-minimised.
+The generated matrix can be diagonalized by <a href="g_nmeig.html">g_nmeig</a>.<p>The mdrun program reads the run input file (<tt>-s</tt>) and distributes the
 topology over nodes if needed. The coordinates are passed
 around, so that computations can begin.
 First a neighborlist is made, then the forces are computed.
@@ -65,6 +72,11 @@ In both cases all the usual output will be written to file.
 When running with MPI, a signal to one of the mdrun processes
 is sufficient, this signal should not be sent to mpirun or
 the mdrun process that is the parent of the others.
+Finally some experimental algorithms can be tested when the
+appropriate options have been given. Currently under
+investigation are: polarizibility, glass simulations, 
+Free energy perturbation, X-Ray bombardments
+and parallel independent simulations.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -80,10 +92,16 @@ the mdrun process that is the parent of the others.
 <TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-devout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">deviatie.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-pi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ppa.html">    pull.ppa</a></tt> </TD><TD> Input, Opt. </TD><TD> Pull parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-po</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ppa.html"> pullout.ppa</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-pd</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdo.html">    pull.pdo</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull data output </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-pn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">    pull.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">      nm.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
@@ -96,6 +114,9 @@ the mdrun process that is the parent of the others.
 <TR><TD ALIGN=RIGHT> <b><tt>-np</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of nodes, must be the same as used for <a href="grompp.html">grompp</a> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Be loud and noisy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Write a compact log file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]multi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do multiple simulations in parallel (only with -np &gt; 1) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]glas</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do glass simulation with special long range corrections </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
 </TABLE>
 <P>
 <hr>

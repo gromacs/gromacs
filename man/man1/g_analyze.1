@@ -1,7 +1,7 @@
-.TH g_analyze 1 "Mon 23 Jul 2001"
+.TH g_analyze 1 "Wed 27 Feb 2002"
 .SH NAME
 g_analyze
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3g_analyze\fP
 .BI "-f" " graph.xvg "
@@ -11,6 +11,7 @@ g_analyze
 .BI "-dist" " distr.xvg "
 .BI "-av" " average.xvg "
 .BI "-ee" " errest.xvg "
+.BI "-g" " fitlog.log "
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
@@ -158,6 +159,10 @@ zero or negative value are ignored.
 .B Output, Opt.
  xvgr/xmgr file 
 
+.BI "-g" " fitlog.log" 
+.B Output, Opt.
+ Log file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
@@ -235,8 +240,12 @@ or
 .B aexp
 , 
 .B exp_exp
-or 
+, 
 .B vac
+, 
+.B exp5
+or 
+.B exp7
 
 
 .BI "-ncskip"  " int" " 0" 

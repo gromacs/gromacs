@@ -1,7 +1,7 @@
-.TH g_traj 1 "Mon 23 Jul 2001"
+.TH g_traj 1 "Wed 27 Feb 2002"
 .SH NAME
 g_traj
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3g_traj\fP
 .BI "-f" " traj.xtc "
@@ -12,7 +12,10 @@ g_traj
 .BI "-of" " force.xvg "
 .BI "-ob" " box.xvg "
 .BI "-ot" " temp.xvg "
+.BI "-ekt" " ektrans.xvg "
 .BI "-ekr" " ekrot.xvg "
+.BI "-cv" " veloc.pdb "
+.BI "-cf" " force.pdb "
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
@@ -46,18 +49,42 @@ is used for each molecule.
 Option 
 .B -ot
 plots the temperature of each group,
-provided velocities are present in the trajectory file.This implies 
+provided velocities are present in the trajectory file.
+No corrections are made for constrained degrees of freedom!
+This implies 
 .B -com
 .
 
 
-Option 
+Options 
+.B -ekt
+and 
 .B -ekr
-plots the rotational kinetic energy of each group,
+plot the translational and
+rotational kinetic energy of each group,
 provided velocities are present in the trajectory file.
 This implies 
 .B -com
 .
+
+
+Options 
+.B -cv
+and 
+.B -cf
+write the average velocities
+and average forces as temperature factors to a pdb file with
+the average coordinates. The temperature factors are scaled such
+that the maximum is 10. To get the velocities or forces of one
+frame set both 
+.B -b
+and 
+.B -e
+to the time of
+desired frame. When averaging over frames you might need to use
+the 
+.B -nojump
+option to obtain the correct average coordinates.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -91,9 +118,21 @@ This implies
 .B Output, Opt.
  xvgr/xmgr file 
 
+.BI "-ekt" " ektrans.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
 .BI "-ekr" " ekrot.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
+
+.BI "-cv" " veloc.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
+.BI "-cf" " force.pdb" 
+.B Output, Opt.
+ Protein data bank file 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"

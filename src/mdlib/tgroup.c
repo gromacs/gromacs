@@ -168,8 +168,9 @@ static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps)
 {
   int g;
 
-  for(g=0; (g<opts->ngtc); g++) 
-    gmx_sum(DIM*DIM,grps->tcstat[g].ekin[0],cr);
+  if(PAR(cr))
+    for(g=0; (g<opts->ngtc); g++) 
+      gmx_sum(DIM*DIM,grps->tcstat[g].ekin[0],cr);
 }       
 
 void update_grps(int start,int homenr,t_groups *grps,

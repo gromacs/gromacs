@@ -1,7 +1,7 @@
-.TH do_dssp 1 "Mon 23 Jul 2001"
+.TH do_dssp 1 "Wed 27 Feb 2002"
 .SH NAME
 do_dssp
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3do_dssp\fP
 .BI "-f" " traj.xtc "
@@ -28,16 +28,16 @@ do_dssp
 reads a trajectory file and computes the secondary structure for
 each time frame 
 calling the dssp program. If you do not have the dssp program,
-get it. do_dssp assumes that the dssp executable is in
-/home/mdgroup/dssp/dssp. If that is not the case, then you should
+get it. do_dssp assumes that the dssp executable is
+/usr/local/bin/dssp. If this is not the case, then you should
 set an environment variable 
 .B DSSP
 pointing to the dssp
-executable as in: 
+executable, e.g.: 
 
 
 
-.B setenv DSSP /usr/local/bin/dssp
+.B setenv DSSP /opt/dssp/bin/dssp
 
 
 
@@ -63,7 +63,9 @@ Solvent accessible surface (SAS) per residue can be calculated, both in
 absolute values (A2) and in fractions of the maximal accessible
 surface of a residue. The maximal accessible surface is defined as
 the accessible surface of a residue in a chain of glycines.
-[B]Note[b] that the program 
+
+.B Note
+that the program 
 .B g_sas
 can also compute SAS
 and that is more efficient.

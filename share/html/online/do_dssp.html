@@ -4,13 +4,13 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>do_dssp</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>do_dssp</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -18,11 +18,11 @@ do_dssp
 reads a trajectory file and computes the secondary structure for
 each time frame 
 calling the dssp program. If you do not have the dssp program,
-get it. do_dssp assumes that the dssp executable is in
-/home/mdgroup/dssp/dssp. If that is not the case, then you should
+get it. do_dssp assumes that the dssp executable is
+/usr/local/bin/dssp. If this is not the case, then you should
 set an environment variable <b>DSSP</b> pointing to the dssp
-executable as in: <p>
-<tt>setenv DSSP /usr/local/bin/dssp</tt><p>
+executable, e.g.: <p>
+<tt>setenv DSSP /opt/dssp/bin/dssp</tt><p>
 The structure assignment for each residue and time is written to an
 <tt>.<a href="xpm.html">xpm</a></tt> matrix file. This file can be visualized with for instance
 <tt>xv</tt> and can be converted to postscript with <tt><a href="xpm2ps.html">xpm2ps</a></tt>.
@@ -33,7 +33,7 @@ Solvent accessible surface (SAS) per residue can be calculated, both in
 absolute values (A^2) and in fractions of the maximal accessible
 surface of a residue. The maximal accessible surface is defined as
 the accessible surface of a residue in a chain of glycines.
-[B]Note[b] that the program <tt><a href="g_sas.html">g_sas</a></tt> can also compute SAS
+<b>Note</b> that the program <tt><a href="g_sas.html">g_sas</a></tt> can also compute SAS
 and that is more efficient.<p>
 Finally, this program can dump the secondary structure in a special file
 <tt>ssdump.<a href="dat.html">dat</a></tt> for usage in the program <tt><a href="g_chi.html">g_chi</a></tt>. Together

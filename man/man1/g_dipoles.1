@@ -1,7 +1,7 @@
-.TH g_dipoles 1 "Mon 23 Jul 2001"
+.TH g_dipoles 1 "Wed 27 Feb 2002"
 .SH NAME
 g_dipoles
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3g_dipoles\fP
 .BI "-enx" " ener.edr "
@@ -66,7 +66,9 @@ Option
 produces a plot of the distance dependent Kirkwood
 G-factor, as well as the average cosine of the angle between the dipoles
 as a function of the distance. The plot also includes gOO and hOO
-according to Nymand & Linse, JCP 112 (2000) pp 6386-6395.
+according to Nymand & Linse, JCP 112 (2000) pp 6386-6395. In the same plot
+we also include the energy per scale computed by taking the inner product of
+the dipoles divided by the distance to the third power.
 
 
 
@@ -200,8 +202,12 @@ or
 .B aexp
 , 
 .B exp_exp
-or 
+, 
 .B vac
+, 
+.B exp5
+or 
+.B exp7
 
 
 .BI "-ncskip"  " int" " 0" 

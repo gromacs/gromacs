@@ -1,7 +1,7 @@
-.TH trjconv 1 "Mon 23 Jul 2001"
+.TH trjconv 1 "Wed 27 Feb 2002"
 .SH NAME
 trjconv
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3trjconv\fP
 .BI "-f" " traj.xtc "
@@ -145,6 +145,12 @@ can be used to
 append output to an existing trajectory file.
 No checks are performed to ensure integrity
 of the resulting combined trajectory file.
+
+
+Option 
+.B -sep
+can be used to write every frame to a seperate
+.gro, .g96 or .pdb file, default all frames all written to one file.
 
 .B .pdb
 files with all frames concatenated can be viewed with
@@ -404,5 +410,5 @@ or
  Start writing new file when t MOD split = first time (ps)
 
 .BI "-[no]sep"  "    no"
- Write each frame to a separate .gro or .pdb file
+ Write each frame to a separate .gro, .g96 or .pdb file
 

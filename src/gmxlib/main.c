@@ -146,7 +146,8 @@ void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
   
   snew(ibuf,mcr->nnodes);
   ibuf[mcr->nodeid] = val;
-  gmx_sumi(mcr->nnodes,ibuf,mcr);
+  if((mcr) && PAR(mcr))
+    gmx_sumi(mcr->nnodes,ibuf,mcr);
   
   bCompatible = TRUE;
   for(p=1; p<mcr->nnodes; p++)
@@ -223,7 +224,9 @@ static void comm_args(t_commrec *cr,int *argc,char ***argv)
   
   if (!MASTER(cr))
     *argc=0;
-  gmx_sumi(1,argc,cr);
+
+  if((cr) && PAR(cr))
+    gmx_sumi(1,argc,cr);
   
   if (!MASTER(cr))
     snew(argv_tmp,*argc+1);

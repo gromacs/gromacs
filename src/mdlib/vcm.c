@@ -79,7 +79,8 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
     snew(mass,vcm->nr);
     for(g=0; (g<vcm->nr); g++)
       mass[g] = vcm->group_mass[g];
-    gmx_sum(vcm->nr,mass,cr);
+    if(PAR(cr))
+      gmx_sum(vcm->nr,mass,cr);
 
     /* Copy pointer to group names and print it. */
     fprintf(fp,"Center of mass motion removal mode is %s\n",ECOM(vcm->mode));

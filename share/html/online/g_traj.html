@@ -4,13 +4,13 @@
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
-<TR><TD WIDTH=300>
-<TABLE WIDTH=300 NOBORDER>
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_traj</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Tue 24 Jul 2001</B></td></tr></TABLE>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_traj</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1.beta_20020215<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -21,10 +21,20 @@ When <tt>-mol</tt> is set, the numbers in the index file are
 interpreted as molecule numbers and the same procedure as with
 <tt>-com</tt> is used for each molecule.<p>
 Option <tt>-ot</tt> plots the temperature of each group,
-provided velocities are present in the trajectory file.This implies <tt>-com</tt>.<p>
-Option <tt>-ekr</tt> plots the rotational kinetic energy of each group,
 provided velocities are present in the trajectory file.
-This implies <tt>-com</tt>.
+No corrections are made for constrained degrees of freedom!
+This implies <tt>-com</tt>.<p>
+Options <tt>-ekt</tt> and <tt>-ekr</tt> plot the translational and
+rotational kinetic energy of each group,
+provided velocities are present in the trajectory file.
+This implies <tt>-com</tt>.<p>
+Options <tt>-cv</tt> and <tt>-cf</tt> write the average velocities
+and average forces as temperature factors to a <a href="pdb.html">pdb</a> file with
+the average coordinates. The temperature factors are scaled such
+that the maximum is 10. To get the velocities or forces of one
+frame set both <tt>-b</tt> and <tt>-e</tt> to the time of
+desired frame. When averaging over frames you might need to use
+the <tt>-nojump</tt> option to obtain the correct average coordinates.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -37,7 +47,10 @@ This implies <tt>-com</tt>.
 <TR><TD ALIGN=RIGHT> <b><tt>-of</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   force.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ob</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     box.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ot</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    temp.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ekt</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> ektrans.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ekr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   ekrot.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cv</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">   veloc.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Protein data bank file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">   force.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Protein data bank file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>

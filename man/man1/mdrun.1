@@ -1,7 +1,7 @@
-.TH mdrun 1 "Mon 23 Jul 2001"
+.TH mdrun 1 "Wed 27 Feb 2002"
 .SH NAME
 mdrun
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3mdrun\fP
 .BI "-s" " topol.tpr "
@@ -15,10 +15,16 @@ mdrun
 .BI "-rerun" " rerun.xtc "
 .BI "-ei" " sam.edi "
 .BI "-eo" " sam.edo "
+.BI "-j" " wham.gct "
+.BI "-jo" " bam.gct "
+.BI "-ffout" " gct.xvg "
+.BI "-devout" " deviatie.xvg "
+.BI "-runav" " runaver.xvg "
 .BI "-pi" " pull.ppa "
 .BI "-po" " pullout.ppa "
 .BI "-pd" " pull.pdo "
 .BI "-pn" " pull.ndx "
+.BI "-mtx" " nm.mtx "
 .BI "-[no]h" ""
 .BI "-[no]X" ""
 .BI "-nice" " int "
@@ -26,9 +32,21 @@ mdrun
 .BI "-np" " int "
 .BI "-[no]v" ""
 .BI "-[no]compact" ""
+.BI "-[no]multi" ""
+.BI "-[no]glas" ""
+.BI "-[no]ionize" ""
 .SH DESCRIPTION
-The mdrun program performs Molecular Dynamics simulations.
-It reads the run input file (
+The mdrun program is the main computational chemistry engine
+within GROMACS. Obviously, it performs Molecular Dynamics simulations,
+but it can also perform Brownian Dynamics and Langevin Dynamics
+as well as Conjugate Gradient or Steepest Descents energy minimization.
+Normal mode analysis is another option. In this case mdrun
+builds a Hessian matrix from single conformation.
+For usual Normal Modes-like calculations, make sure that
+the structure provided is properly energy-minimised.
+The generated matrix can be diagonalized by g_nmeig.
+
+The mdrun program reads the run input file (
 .B -s
 ) and distributes the
 topology over nodes if needed. The coordinates are passed
@@ -132,6 +150,11 @@ In both cases all the usual output will be written to file.
 When running with MPI, a signal to one of the mdrun processes
 is sufficient, this signal should not be sent to mpirun or
 the mdrun process that is the parent of the others.
+Finally some experimental algorithms can be tested when the
+appropriate options have been given. Currently under
+investigation are: polarizibility, glass simulations, 
+Free energy perturbation, X-Ray bombardments
+and parallel independent simulations.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
@@ -177,6 +200,26 @@ the mdrun process that is the parent of the others.
 .B Output, Opt.
  ED sampling output 
 
+.BI "-j" " wham.gct" 
+.B Input, Opt.
+ General coupling stuff 
+
+.BI "-jo" " bam.gct" 
+.B Input, Opt.
+ General coupling stuff 
+
+.BI "-ffout" " gct.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-devout" " deviatie.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-runav" " runaver.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
 .BI "-pi" " pull.ppa" 
 .B Input, Opt.
  Pull parameters 
@@ -192,6 +235,10 @@ the mdrun process that is the parent of the others.
 .BI "-pn" " pull.ndx" 
 .B Input, Opt.
  Index file 
+
+.BI "-mtx" " nm.mtx" 
+.B Output, Opt.
+ Hessian matrix 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
@@ -214,4 +261,13 @@ the mdrun process that is the parent of the others.
 
 .BI "-[no]compact"  "   yes"
  Write a compact log file
+
+.BI "-[no]multi"  "    no"
+ Do multiple simulations in parallel (only with -np  1)
+
+.BI "-[no]glas"  "    no"
+ Do glass simulation with special long range corrections
+
+.BI "-[no]ionize"  "    no"
+ Do a simulation including the effect of an X-Ray bombardment on your system
 

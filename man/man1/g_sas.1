@@ -1,7 +1,7 @@
-.TH g_sas 1 "Mon 23 Jul 2001"
+.TH g_sas 1 "Wed 27 Feb 2002"
 .SH NAME
 g_sas
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3g_sas\fP
 .BI "-f" " traj.xtc "
@@ -24,9 +24,11 @@ g_sas
 .BI "-qmax" " real "
 .BI "-minarea" " real "
 .BI "-skip" " int "
+.BI "-[no]pbc" ""
 .BI "-[no]prot" ""
+.BI "-dgs" " real "
 .SH DESCRIPTION
-g_sas computes hydrophobic and total solvent accessible surface area.
+g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.
 As a side effect the Connolly surface can be generated as well in
 a pdb file where the nodes are represented as atoms and the vertices
 connecting the nearest nodes as CONECT records. The area can be plotted
@@ -35,6 +37,10 @@ the latter option an
 .B itp
 file can be generated (option -i)
 which can be used to restrain surface atoms.
+
+
+By default, periodic boundary conditions are taken into account,
+this can be turned off using the -pbc option.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -100,11 +106,17 @@ which can be used to restrain surface atoms.
  The maximum charge (e, absolute value) of a hydrophobic atom
 
 .BI "-minarea"  " real" "    0.5" 
- The maximum charge (e, absolute value) of a hydrophobic atom
+ The minimum area (nm2) to count an atom as a surface atom when writing a position restraint file  (see help)
 
 .BI "-skip"  " int" " 1" 
  Do only every nth frame
 
+.BI "-[no]pbc"  "   yes"
+ Take periodicity into account
+
 .BI "-[no]prot"  "   yes"
  Output the protein to the connelly pdb file too
+
+.BI "-dgs"  " real" "      0" 
+ default value for solvation free energy per area (kJ/mol/nm2)
 

@@ -1,7 +1,7 @@
-.TH grompp 1 "Mon 23 Jul 2001"
+.TH grompp 1 "Wed 27 Feb 2002"
 .SH NAME
 grompp
-.B VERSION 3.0
+.B VERSION 3.1.beta_20020215
 .SH SYNOPSIS
 \f3grompp\fP
 .BI "-f" " grompp.mdp "
@@ -44,6 +44,15 @@ NEMD parameters, which are corrected so that the net acceleration
 is zero.
 Eventually a binary file is produced that can serve as the sole input
 file for the MD program.
+
+
+grompp uses the atom names from the topology file. The atom names
+in the coordinate file (option 
+.B -c
+) are only read to generate
+warnings when they do not match the atom names in the topology.
+Note that the atom names are irrelevant for the simulation as
+only the atom types are used for generating interaction parameters.
 
 
 grompp calls the c-preprocessor to resolve includes, macros 
@@ -150,7 +159,7 @@ can see the contents of the run input file with the
 program.
 .SH FILES
 .BI "-f" " grompp.mdp" 
-.B Input
+.B Input, Opt.
  grompp input file with MD parameters 
 
 .BI "-po" " mdout.mdp" 
