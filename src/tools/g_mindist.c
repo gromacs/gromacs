@@ -42,6 +42,85 @@ static char *SRCID_g_mindist_c = "$Id$";
 #include "futil.h"
 #include "statutil.h"
 #include "rdgroup.h"
+#include "tpxio.h"
+
+static real periodic_mindist(matrix box,rvec x[],int n,atom_id index[])
+{
+#define NSHIFT 26
+  int  sx,sy,sz,i,j,s;
+  real sqr_box,r2min,r2;
+  rvec shift[NSHIFT],d0,d;
+
+
+  sqr_box = sqr(min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])));
+
+  s = 0;
+  for(sz=-1; sz<=1; sz++)
+    for(sy=-1; sy<=1; sy++)
+      for(sx=-1; sx<=1; sx++)
+	if (sx!=0 || sy!=0 || sz!=0) {
+	  clear_rvec(shift[s]);
+	  if (sz)
+	    rvec_inc(shift[s],box[ZZ]);
+	  if (sy)
+	    rvec_inc(shift[s],box[YY]);
+	  if (sx)
+	    rvec_inc(shift[s],box[XX]);
+	  s++;
+	}
+  
+  r2min = sqr_box;
+  
+  for(i=0; i<n; i++)
+    for(j=i+1; j<n; j++) {
+      rvec_sub(x[index[i]],x[index[j]],d0);
+      for(s=0; s<NSHIFT; s++) {
+	rvec_add(d0,shift[s],d);
+	r2 = norm2(d);
+	if (r2 < r2min)
+	  r2min = r2;
+      }
+    }
+  
+  return sqrt(r2min);
+}
+
+static void periodic_mindist_plot(char *trxfn,char *outfn,
+				  int n,atom_id index[])
+{
+  FILE   *out;
+  int    status;
+  real   t;
+  rvec   *x;
+  matrix box;
+  int    natoms;
+  real   r,rmin,tmin;
+
+  natoms=read_first_x(&status,trxfn,&t,&x,box);
+  
+  check_index(NULL,n,index,NULL,natoms);
+
+  out = xvgropen(outfn,"Minimum distance to periodic image",
+		 "Time (ps)","Distance (nm)");
+  
+  rmin = box[XX][XX];
+  tmin = 0;
+
+  do {
+    r = periodic_mindist(box,x,n,index);
+    if (r < rmin) {
+      rmin = r;
+      tmin = t;
+    }
+    fprintf(out,"\t%g\t%g\n",t,r);
+  } while(read_next_x(status,&t,natoms,x,box));
+
+  fclose(out);
+
+  fprintf(stdout,
+	  "\nThe shortest periodic distance is %g (nm) at time %g (ps)\n",
+	  rmin,tmin);
+}
 
 static void calc_mindist(real MinDist,
 			 matrix box, rvec x[], 
@@ -186,26 +265,40 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_mindist computes the distance between one group and a number of",
     "other groups.",
-    "Both the smallest distance and the number of contacts within a given",
-    "distance are plotted to two separate output files"
+    "Both the minimum distance and the number of contacts within a given",
+    "distance are written to two separate output files.[PAR]",
+    "With option [TT]-pi[tt] the minimum distance of a group to its",
+    "periodic image is plotted. This is useful for checking if a protein",
+    "has seen its periodic image during a simulation. Only one shift in",
+    "each direction is considered, giving a total of 26 shifts.",
+    "This option is very slow."
   };
   
-  static bool bMat=FALSE;
+  static bool bMat=FALSE,bPer=FALSE;
   static real mindist=0.6;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
     { "-d",      FALSE, etREAL, {&mindist},
-      "Distance for contacts" }
+      "Distance for contacts" },
+    { "-pi",      FALSE, etBOOL, {&bPer},
+      "Calculate minimum distance with periodic images" }
   };
+  t_topology top;
+  char       title[256];
+  real       t;
+  rvec       *x;
+  matrix     box;
+  
   FILE      *atm;
   int       ng;
-  char      **grpname;
+  char      *tps,*ndx,**grpname;
   int       *gnx;
   atom_id   **index;
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL,  ffREAD },
-    { efNDX, NULL, NULL,  ffREAD },
+    { efTPS, NULL, NULL,  ffOPTRD },
+    { efNDX, NULL, NULL,  ffOPTRD },
     { efXVG, "-od","mindist",ffWRITE },
     { efXVG, "-on","numcont", ffWRITE },
     { efOUT, "-o","atm-pair", ffWRITE }
@@ -215,34 +308,51 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-		    
-  if (bMat)
-    fprintf(stderr,"You can compute all distances between a number of groups\n"
-	    "How many groups do you want (>= 2) ?\n");
-  else
-    fprintf(stderr,"You can compute the distances between a first group\n"
-	    "and a number of other groups.\n"
-	    "How many other groups do you want (>= 1) ?\n");
-  ng=0;
-  do {
-    scanf("%d",&ng);
-    if (!bMat)
-      ng++;
-  } while (ng < 2);
+
+  tps = ftp2fn_null(efTPS,NFILE,fnm);
+  ndx = ftp2fn_null(efNDX,NFILE,fnm);
+  
+  if (bPer) {
+    ng = 1;
+    fprintf(stderr,"Choose a group for distance calculation\n");
+  } else {
+    if (bMat)
+      fprintf(stderr,"You can compute all distances between a number of groups\n"
+	      "How many groups do you want (>= 2) ?\n");
+    else
+      fprintf(stderr,"You can compute the distances between a first group\n"
+	      "and a number of other groups.\n"
+	      "How many other groups do you want (>= 1) ?\n");
+    ng = 0;
+    do {
+      scanf("%d",&ng);
+      if (!bMat)
+	ng++;
+    } while (ng < 2);
+  }
   snew(gnx,ng);
   snew(index,ng);
   snew(grpname,ng);
-  
-  rd_index(ftp2fn(efNDX,NFILE,fnm),ng,gnx,index,grpname);
 
-  atm=ftp2FILE(efOUT,NFILE,fnm,"w");
-  mindist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
-	       opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
-	       bMat,ng,index,gnx,grpname);
-  fclose(atm);
+  if (tps || ndx==NULL)
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+  
+  get_index(&top.atoms,ndx,ng,gnx,index,grpname);
+  
+  if (bPer) {
+    periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
+			  gnx[0],index[0]);
+  } else {
+    atm=ftp2FILE(efOUT,NFILE,fnm,"w");
+    mindist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
+		 opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
+		 bMat,ng,index,gnx,grpname);
+    fclose(atm);
+  }
 
   xvgr_file(opt2fn("-od",NFILE,fnm),"-nxy");
-  xvgr_file(opt2fn("-on",NFILE,fnm),"-nxy");
+  if (!bPer)
+    xvgr_file(opt2fn("-on",NFILE,fnm),"-nxy");
   
   thanx(stdout);
   
