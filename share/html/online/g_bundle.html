@@ -3,26 +3,36 @@
 <TITLE>g_bundle</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
-<table WIDTH="800" NOBORDER >
-<TR>
-<td WIDTH="120" HEIGHT="133">
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>GROMACS Online Reference:<br>g_bundle</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
-Thu 5 Jul 2001</B></td></tr></TABLE>
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=300>
+<TABLE WIDTH=300 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_bundle</h2><br><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
+Tue 24 Jul 2001</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 g_bundle analyzes bundles of axes. The axes can be for instance
 helix axes. The program reads two index groups and divides both
-of them in <tt>-na</tt> parts. The groups define the tops and
-bottoms of the axes. Several quantities are written to file:
-the axis length, the distance from the axis centers to the average
-center of all axes, the total tilt, the radial tilt and the lateral
-tilt with respect to the average axis.
+of them in <tt>-na</tt> parts. The centers of mass of these parts
+define the tops and bottoms of the axes.
+Several quantities are written to file:
+the axis length, the distance and the z-shift of the axis mid-points
+with respect to the average center of all axes, the total tilt,
+the radial tilt and the lateral tilt with respect to the average axis.
 <p>
-With option <tt>-oa</tt> the <a href="top.html">top</a>, mid and bottom points of each axis
+With options <tt>-ok</tt>, <tt>-okr</tt> and <tt>-okl</tt> the total,
+radial and lateral kinks of the axes are plotted. An extra index
+group of kink atoms is required, which is also divided into <tt>-na</tt>
+parts. The kink angle is defined as the angle between the kink-<a href="top.html">top</a> and
+the bottom-kink vectors.
+<p>
+With option <tt>-oa</tt> the <a href="top.html">top</a>, mid (or kink when <tt>-ok</tt> is set)
+and bottom points of each axis
 are written to a <a href="pdb.html">pdb</a> file each frame. The residue numbers correspond
-to the axis numbers. When viewing this file with <tt>rasmol</tt> use the
+to the axis numbers. When viewing this file with <tt>rasmol</tt>, use the
 command line option <tt>-nmrpdb</tt>, and type <tt>set axis true</tt> to
 display the reference axis.
 <P>
@@ -34,9 +44,13 @@ display the reference axis.
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ol</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> bun_len.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-od</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_dist.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-oz</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   bun_z.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ot</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_tilt.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-otr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_tiltr.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-otl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_tiltl.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ok</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_kink.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-okr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_kinkr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-okl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">bun_kinkl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-oa</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">    axes.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Protein data bank file </TD></TR>
 </TABLE>
 <P>
@@ -49,6 +63,7 @@ display the reference axis.
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-na</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of axes </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]z</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use the Z-axis as reference iso the average axis </TD></TD>
 </TABLE>

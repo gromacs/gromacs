@@ -1,22 +1,22 @@
+<HTML>
 <HEAD>
-<TITLE>
-GROMACS Flow Chart
-</TITLE>
-</HEAD>
+<TITLE>Flow Chart</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<H2>GROMACS Flow chart</H2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
-<TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
-This is a flow chart of a typical GROMACS MD run of a protein
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>GROMACS<br>Flow chart</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
+Mon 23 Jul 2001</B></td></tr></TABLE>
+<HR>
+<p>This is a flow chart of a typical GROMACS MD run of a protein
 in a box of water.
 A more detailed example is available in the
 <A HREF="getting_started.html">Getting Started</A>
-section. Several steps of energy minimization may be nescessary,
+section. Several steps of energy minimization may be necessary,
 these consist of cycles: grompp -> mdrun.
 <p>
 
@@ -25,7 +25,7 @@ these consist of cycles: grompp -> mdrun.
 
 <TR>
 <TD COLSPAN=2 ALIGN=RIGHT> <A HREF=pdb.html onMouseOver="window.status='Protein Databank file'; return true">eiwit.pdb</A></TD>
-<TD ALIGN=RIGHT>&nbsp;<IMG SRC=../gif/flow_leftrightdown.gif></TD>
+<TD ALIGN=RIGHT>&nbsp;<IMG SRC=../images/flow_leftrightdown.gif></TD>
 <TD></TD>
 <TD></TD>
 <TD></TD>
@@ -35,7 +35,7 @@ these consist of cycles: grompp -> mdrun.
 <TD COLSPAN=2 ALIGN=LEFT>Generate a GROMACS topology </TD>
 <TD></TD>
 <TD BGCOLOR=#777777 COLSPAN=3 ALIGN=CENTER>&nbsp;<A HREF=pdb2gmx.html onMouseOver="window.status='Convert PDB file to GROMAX coordinate file and topology'; return true"><B>pdb2gmx</B></A>&nbsp;</TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
 </TR>
 
 
@@ -43,9 +43,9 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif BORDER=0></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif BORDER=0></TD>
 <TD WIDTH=20></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
 </TR>
 
 <TR>
@@ -61,9 +61,9 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif BORDER=0></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif BORDER=0></TD>
 <TD></TD>
-<TD ROWSPAN=5 COLSPAN=1 ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_down.gif></TD>
+<TD ROWSPAN=5 COLSPAN=1 ALIGN=CENTER><IMG SRC=../images/flow_vline.gif><BR><IMG SRC=../images/flow_vline.gif><BR><IMG SRC=../images/flow_vline.gif><BR><IMG SRC=../images/flow_vline.gif><BR><IMG SRC=../images/flow_down.gif></TD>
 </TR>
 
 <TR>
@@ -71,14 +71,14 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD ALIGN=CENTER BGCOLOR=#777777>&nbsp;&nbsp;<A HREF=editconf.html onMouseOver="window.status='Adjust boxsize and placement of molecule'; return true"><B>editconf</B></A>&nbsp;&nbsp;</TD>
 <TD></TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
 </TR>
 
 <TR>
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
 <TD></TD>
 </TR>
 
@@ -95,7 +95,7 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
 <TD></TD>
 </TR>
 
@@ -103,16 +103,16 @@ these consist of cycles: grompp -> mdrun.
 <TD COLSPAN=2 ALIGN=LEFT>Solvate protein</TD>
 <TD></TD>
 <TD COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=genbox.html onMouseOver="window.status='Fill box with water (solvate molecule)'; return true"><B>genbox</B></A>&nbsp;</TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
 </TR>
 
 <TR>
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
 </TR>
 
 <TR>
@@ -126,10 +126,10 @@ these consist of cycles: grompp -> mdrun.
 
 <TR>
 <TD COLSPAN=2 ALIGN=RIGHT><A HREF=mdp.html onMouseOver="window.status='Parameter file for grompp (controls all MD parameters)'; return true">grompp.mdp</A></TD>
-<TD ALIGN=RIGHT>&nbsp;<IMG SRC=../gif/flow_leftrightdown.gif></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ALIGN=RIGHT>&nbsp;<IMG SRC=../images/flow_leftrightdown.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
 <TD COLSPAN=3 ALIGN=CENTER VALIGN=BOTTOM><SMALL>(continuation)</SMALL></TD>
 </TR>
 
@@ -138,9 +138,9 @@ these consist of cycles: grompp -> mdrun.
 <TD COLSPAN=2 ALIGN=LEFT>Generate mdrun input file</TD>
 <TD></TD>
 <TD COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp; <A HREF=grompp.html onMouseOver="window.status='Process parameters, coordinates and topology and write binary topology'; return true"><B>grompp</B></A> &nbsp;</TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
-<TD COLSPAN=2 ALIGN=CENTER><IMG SRC=../gif/flow_left.gif><IMG SRC=../gif/flow_hline.gif></TD>
-<TD ROWSPAN=2><IMG SRC=../gif/flow_downleft.gif><BR><IMG SRC=../gif/flow_vline.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
+<TD COLSPAN=2 ALIGN=CENTER><IMG SRC=../images/flow_left.gif><IMG SRC=../images/flow_hline.gif></TD>
+<TD ROWSPAN=2><IMG SRC=../images/flow_downleft.gif><BR><IMG SRC=../images/flow_vline.gif></TD>
 </TR>
 
 <TR>
@@ -148,8 +148,8 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
-<TD ROWSPAN=3 ALIGN=CENTER><IMG SRC=../gif/flow_right+left.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
+<TD ROWSPAN=3 ALIGN=CENTER><IMG SRC=../images/flow_right+left.gif></TD>
 <TD COLSPAN=3 ALIGN=CENTER VALIGN=BOTTOM><SMALL>(after crash)</SMALL></TD>
 </TR>
 
@@ -157,9 +157,9 @@ these consist of cycles: grompp -> mdrun.
 <TD COLSPAN=2 ALIGN=LEFT></TD>
 <TD></TD>
 <TD COLSPAN=3 ALIGN=CENTER> <A HREF=tpr.html onMouseOver="window.status='Portable GROMACS binary run input file (contains all information to start MD run)'; return true">topol.tpr</A></TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
 <TD ALIGN=CENTER BGCOLOR=#777777>&nbsp;&nbsp;<A HREF=tpbconv.html onMouseOver="window.status='Rewrite binary topology with new coordinates and number of steps for restart after crash'; return true"><B>tpbconv</B></A>&nbsp;&nbsp;</TD>
-<TD>&nbsp;<IMG SRC=../gif/flow_left.gif>&nbsp;</TD>
+<TD>&nbsp;<IMG SRC=../images/flow_left.gif>&nbsp;</TD>
 <TD ALIGN=CENTER><A HREF=trr.html onMouseOver="window.status='Full precision portable trajectory'; return true">traj.trr</A></TD>
 </TR>
 
@@ -168,28 +168,28 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ROWSPAN=2><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_leftup.gif></TD>
+<TD ROWSPAN=2><IMG SRC=../images/flow_vline.gif><BR><IMG SRC=../images/flow_leftup.gif></TD>
 </TR>
 
 <TR>
 <TD COLSPAN=2>Run the simulation (EM, MD or LD)</TD>
 <TD></TD>
 <TD  COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=mdrun.html onMouseOver="window.status='The moment you have all been waiting for! START YOUR MD RUN'; return true"><B>mdrun</B></A>&nbsp;</TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
-<TD COLSPAN=2 ALIGN=CENTER><IMG SRC=../gif/flow_hline.gif><IMG SRC=../gif/flow_right.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
+<TD COLSPAN=2 ALIGN=CENTER><IMG SRC=../images/flow_hline.gif><IMG SRC=../images/flow_right.gif></TD>
 </TR>
 
 <TR>
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
 </TR>
 
 <TR>
@@ -205,9 +205,9 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
 <TD></TD>
-<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
 </TR>
 
 <TR>
@@ -216,7 +216,7 @@ these consist of cycles: grompp -> mdrun.
 <TD ALIGN=CENTER BGCOLOR=#777777>&nbsp;&nbsp;<A HREF=../online.html onMouseOver="window.status='Your favourite GROMACS analysis tool'; return true"><B>g_...</B></A>&nbsp;&nbsp;<BR>&nbsp;&nbsp;<A HREF=ngmx.html onMouseOver="window.status='ngmx, the GROMACS trajectory viewer'; return true"><B>ngmx</B></A>&nbsp;&nbsp;</TD>
 <TD></TD>
 <TD ALIGN=CENTER BGCOLOR=#777777>&nbsp;&nbsp;<A HREF=g_energy.html onMouseOver="window.status='Energy plots, averages and  fluctuations'; return true"><B>g_energy</B></A>&nbsp;&nbsp;</TD>
-<TD><IMG SRC=../gif/flow_vrule.gif></TD>
+<TD><IMG SRC=../images/flow_vrule.gif></TD>
 </TR>
 
 

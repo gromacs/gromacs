@@ -3,6 +3,7 @@ P          { text-indent: 0em; font-family: arial,helvetica,verdana,sans-serif }
 H1         { text-indent: 0em; font-size: 24pt; font-family: serif }
 H2         { text-indent: 0em; font-size: 24pt; font-weight: bold; font-family: arial,helvetica,verdana,sans-serif }
 H3         { text-indent: 0em; font-size: 18pt; font-weight: bold; font-family: arial,helvetica,verdana,sans-serif }
+H4         { font-family: arial,helvetica,verdana,sans-serif }
 A:link     { text-decoration: none; font-family: arial,helvetica,verdana,sans-serif  }
 A:active   { text-decoration: none; font-family: arial,helvetica,verdana,sans-serif  }
 A:visited  { text-decoration: none; font-family: arial,helvetica,verdana,sans-serif  } 
