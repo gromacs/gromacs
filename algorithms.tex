@@ -627,8 +627,8 @@ after an unconstrained update~\cite{Hess97}.
 The method is non-iterative, as it always uses two steps.
 Altough LINCS is based on matrices, no matrix-matrix multiplications are 
 needed. The method is more stable and faster than SHAKE, 
-but it can only be used with bond \myindex{constraints}, 
-not with angle constraints. 
+but it can only be used with bond \myindex{constraints} and 
+isolated angle constraints, such as the proton angle in OH. 
 Because of its stability LINCS is especially useful for Langevin Dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
  
