@@ -2,10 +2,10 @@
 
 [ COO- ]
 [ replace ]
-C	C	C	12.011	0.27
+C	C	C	12.011	0.72
 [ add ]
 2	8	C	CA	N
-	O	OM	15.9994	-0.635
+	O	OM	15.9994	-0.36
 [ delete ]
 O
 [ bonds ]
