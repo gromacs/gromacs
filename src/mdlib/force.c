@@ -444,8 +444,10 @@ void init_forcerec(FILE *log,
        * just create the nonshifted version 
        */
       fr->bTab=FALSE;
+      fr->rtab=MAX_14_DIST;
       make_tables(fr,MASTER(cr));
       fr->bTab=TRUE;
+      fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
       fr->VFtab14=fr->VFtab;
       fr->VFtab=NULL;
   }
