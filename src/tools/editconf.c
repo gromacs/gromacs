@@ -85,46 +85,40 @@ real calc_mass(t_atoms *atoms,bool bGetMass)
   return tmass;
 }
 
-real calc_geom(char *indexfn, t_atoms *atoms,
+real calc_geom(int isize,atom_id *index,
 	       rvec *x, rvec geom_center, rvec min, rvec max,bool bDiam)
 {
   real    diam2,d;
-  int     isize;
-  atom_id *index;
   char    *grpnames;
   int     ii,i,j;
-
-  if (indexfn) {
-    /* Make an index for principal component analysis */
-    fprintf(stderr,"\nSelect a group for determining the system size:\n");
-    get_index(atoms,indexfn,1,&isize,&index,&grpnames);
-  }
-  else {
-    isize = atoms->nr;
-    snew(index,isize);
-    for(i=0; i<isize; i++) {
-      index[i]=i;
-    }
-  }
+  
   clear_rvec(geom_center);
   for (j=0; j<DIM; j++)
     min[j]=max[j]=x[0][j];
   diam2 = 0;
   for (i=0; i<isize; i++) {
-    ii = index[i];
+    if (index)
+      ii = index[i];
+    else
+      ii = i;
     rvec_inc(geom_center,x[ii]);
     for (j=0; j<DIM; j++) {
       if (x[ii][j] < min[j]) min[j]=x[ii][j];
       if (x[ii][j] > max[j]) max[j]=x[ii][j];
     }
     if (bDiam) 
-      for (j=0; j<isize; j++) {
-	d = distance2(x[ii],x[index[j]]);
-	diam2 = max(d,diam2);
-      }
+      if (index) 
+	for (j=i+1; j<isize; j++) {
+	  d = distance2(x[ii],x[index[j]]);
+	  diam2 = max(d,diam2);
+	}
+      else
+	for (j=i+1; j<isize; j++) {
+	  d = distance2(x[i],x[j]);
+	  diam2 = max(d,diam2);
+	}
   }
   svmul(1.0/isize,geom_center,geom_center);
-  sfree(index);
   
   return sqrt(diam2);
 }
@@ -194,9 +188,9 @@ void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
   
 }
 
-void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,rvec x[],
-		       matrix box,int n_bfac,double *bfac,int *bfac_nr,
-		       bool peratom, bool bLegend)
+void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,
+		       int n_bfac,double *bfac,int *bfac_nr,
+		       bool peratom)
 {
   FILE *out;
   real bfac_min,bfac_max;
@@ -288,6 +282,93 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
 }
+void visualize_images(char *fn,matrix box)
+{
+  t_atoms atoms;
+  rvec    *img;
+  char    *c,*ala;
+  int     nat,i;
+
+  nat = NTRICIMG+1;
+  init_t_atoms(&atoms,nat,FALSE);
+  atoms.nr = nat;
+  snew(img,nat);
+  c = "C";
+  ala = "ALA";
+  for(i=0; i<nat; i++) {
+    atoms.atomname[i] = &c;
+    atoms.atom[i].resnr = i;
+    atoms.resname[i] = &ala;
+    atoms.atom[i].chain = 'A'+i/NCUCVERT;
+  }
+  calc_triclinic_images(box,img+1);
+
+  write_sto_conf(fn,"Images",&atoms,img,NULL,box); 
+
+  free_t_atoms(&atoms);
+  sfree(img);
+}
+
+
+void visualize_box(char *fn,matrix box,rvec gridsize)
+{
+  FILE    *out;
+  int     *edge;
+  t_atoms atoms;
+  rvec    *vert,shift;
+  char    *c,*ala;
+  int     nx,ny,nz,nbox,nat;
+  int     i,j,x,y,z;
+  
+  nx = (int)(gridsize[XX]+0.5);
+  ny = (int)(gridsize[YY]+0.5);
+  nz = (int)(gridsize[ZZ]+0.5);
+  nbox=nx*ny*nz;
+  nat = NCUCVERT*nbox;
+  init_t_atoms(&atoms,nat,FALSE);
+  atoms.nr = nat;
+  snew(vert,nat);
+  c = "C";
+  ala = "ALA";
+  for(i=0; i<nat; i++) {
+    atoms.atomname[i] = &c;
+    atoms.atom[i].resnr = i;
+    atoms.resname[i] = &ala;
+    atoms.atom[i].chain = 'A'+i/NCUCVERT;
+  }
+  /*
+    calc_box_images(box,x);
+    atoms.nr = NBOXIMG;
+    write_sto_conf("img.pdb",title,&atoms,x,NULL,box);
+    */
+  calc_compact_unitcell_vertices(box,vert);
+  j = 0;
+  for(z=0; z<nz; z++)
+    for(y=0; y<ny; y++)
+      for(x=0; x<nx; x++) {
+	for(i=0; i<DIM; i++)
+	  shift[i] = x*box[0][i]+y*box[1][i]+z*box[2][i];
+	for(i=0; i<NCUCVERT; i++) {
+	  rvec_add(vert[i],shift,vert[j]);
+	  j++;
+	}
+      }
+	
+  out=ffopen(fn,"w");
+  write_pdbfile(out,"Box",&atoms,vert,box,0,FALSE);
+  
+  edge = compact_unitcell_edges();
+  for(j=0; j<nbox; j++)
+    for(i=0; i<NCUCEDGE; i++)
+      fprintf(out,"CONECT%5d%5d\n",
+	      j*NCUCVERT + edge[2*i]+1,
+	      j*NCUCVERT + edge[2*i+1]+1);
+  
+  fclose(out);
+  
+  free_t_atoms(&atoms);
+  sfree(vert);
+}
 
 int main(int argc, char *argv[])
 {
@@ -351,9 +432,12 @@ int main(int argc, char *argv[])
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
   static char *btype[]={ NULL, "rect", "cubic", "truncoct", NULL },*label="A";
+  static rvec visbox={0,0,0};
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
-      "Choose output from default index groups" },    
+      "Choose output from default index groups" },
+    { "-visbox",    FALSE, etRVEC, {visbox}, 
+      "Visualize a grid of boxes" },
     { "-bt",   FALSE, etENUM, {btype}, 
       "Box type for -box and -d" },
     { "-box",    FALSE, etRVEC, {&newbox}, "Size of the box" },
@@ -382,13 +466,13 @@ int main(int argc, char *argv[])
   double    *bfac=NULL;
   int       *bfac_nr=NULL;
   t_atoms   atoms;
-  char      *groupnames;
-  int       isize;
-  atom_id   *index;
+  char      *grpname,*sgrpname;
+  int       isize,ssize;
+  atom_id   *index,*sindex;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
   bool      bSetSize,bCubic,bDist,bSetCenter;
-  bool      bHaveV,bScale,bRho,bRotate,bCalcGeom;
+  bool      bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
   real      xs,ys,zs,xcent,ycent,zcent,diam,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -413,6 +497,7 @@ int main(int argc, char *argv[])
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale    = bScale || bRho;
   bCalcGeom = bCenter || bRotate || bOrient || bScale;
+  bCalcDiam = btype[0][0]=='c' || btype[0][0]=='t';
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
@@ -430,17 +515,31 @@ int main(int argc, char *argv[])
     for (j=0; (j<DIM) && !bHaveV; j++)
       bHaveV=bHaveV || (v[i][j]!=0);
   printf("%selocities found\n",bHaveV?"V":"No v");
-  
+
+  if (visbox[0] > 0)
+    visualize_box("visbox.pdb",box,visbox);
+  else if (visbox[0] == -1)
+    visualize_images("images.pdb",box);
+
   /* remove pbc */
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
 
   if (bCalcGeom) {
-    diam=calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x,gc,min,max,TRUE);
+    if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
+      fprintf(stderr,"\nSelect a group for determining the system size:\n");
+      get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
+		1,&ssize,&sindex,&sgrpname);
+    } else {
+      ssize = atoms.nr;
+      sindex = NULL;
+    }
+    diam=calc_geom(ssize,sindex,x,gc,min,max,bCalcDiam);
     rvec_sub(max, min, size);
     printf("    system size :%7.3f%7.3f%7.3f (nm)\n",
 	   size[XX], size[YY], size[ZZ]);
-    printf("    diameter    :%7.3f               (nm)\n",diam);
+    if (bCalcDiam)
+      printf("    diameter    :%7.3f               (nm)\n",diam);
     printf("    center      :%7.3f%7.3f%7.3f (nm)\n", gc[XX], gc[YY], gc[ZZ]);
     printf("    box vectors :%7.3f%7.3f%7.3f (nm)\n", 
 	   norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
@@ -488,7 +587,7 @@ int main(int argc, char *argv[])
   
   if (bCalcGeom) {
     /* recalc geometrical center and max and min coordinates and size */
-    calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x,gc,min,max,FALSE);
+    calc_geom(ssize,sindex,x,gc,min,max,FALSE);
     rvec_sub(max, min, size);
     if (bScale || bOrient || bRotate)
       printf("new system size : %6.3f %6.3f %6.3f\n",
@@ -538,7 +637,7 @@ int main(int argc, char *argv[])
     
   /* print some */
   if (bCalcGeom) {
-    calc_geom(NULL,&atoms,x, gc, min, max, FALSE);
+    calc_geom(ssize,sindex,x, gc, min, max, FALSE);
     printf("new center      :%7.3f%7.3f%7.3f (nm)\n",gc[XX],gc[YY],gc[ZZ]);
   }
   if (bOrient || bScale || bDist || bSetSize) {
@@ -554,7 +653,7 @@ int main(int argc, char *argv[])
   if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
     fprintf(stderr,"\nSelect a group for output:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
-	      1,&isize,&index,&groupnames);
+	      1,&isize,&index,&grpname);
     if (opt2bSet("-bf",NFILE,fnm))
       fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
     else
@@ -568,8 +667,8 @@ int main(int argc, char *argv[])
       out=ffopen(outfile,"w");
       if (opt2bSet("-bf",NFILE,fnm)) {
 	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
-	set_pdb_conf_bfac(atoms.nr,atoms.nres,&atoms,x,box,
-			  n_bfac,bfac,bfac_nr,peratom,bLegend);
+	set_pdb_conf_bfac(atoms.nr,atoms.nres,&atoms,
+			  n_bfac,bfac,bfac_nr,peratom);
       }
       if (opt2parg_bSet("-label",NPA,pa)) {
 	for(i=0; (i<atoms.nr); i++) 
