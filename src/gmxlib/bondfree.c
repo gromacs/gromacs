@@ -191,7 +191,7 @@ real bonds(FILE *log,int nbonds,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
   int  i,m,ki,kj,ai,aj,type;
-  real dr,dr2,delta_r,temp,fbond,vbond,fij,vtot;
+  real dr,dr2,fbond,vbond,fij,vtot;
   rvec dx;
 
   vtot = 0.0;
@@ -254,7 +254,7 @@ real angles(FILE *log,int nbonds,
 {
   int  i,ai,aj,ak,t,type;
   rvec r_ij,r_kj;
-  real cos_theta,theta,dtheta,dVdt,va,vtot;
+  real cos_theta,theta,dVdt,va,vtot;
   
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -385,7 +385,7 @@ void do_dih_fup(FILE *log,int i,int j,int k,int l,real ddphi,
 real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 	     real phi,real lambda,real *V,real *F)
 {
-  real v,f,dvdl,mdphi,v1,sdphi,ddphi;
+  real v,dvdl,mdphi,v1,sdphi,ddphi;
   real L1   = 1.0-lambda;
   real ph0  = DEG2RAD*(L1*phiA+lambda*phiB);
   real cp   = L1*cpA + lambda*cpB;
@@ -414,7 +414,7 @@ real pdihs(FILE *log,int nbonds,
 {
   int  i,type,ai,aj,ak,al;
   rvec r_ij,r_kj,r_kl,m,n;
-  real phi,mdphi,cos_phi,sign,ddphi,vpd,vtot;
+  real phi,cos_phi,sign,ddphi,vpd,vtot;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -454,7 +454,7 @@ real idihs(FILE *log,int nbonds,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
   int  i,type,ai,aj,ak,al;
-  real phi,cos_phi,ddphi,dphi,sign,vid,vtot;
+  real phi,cos_phi,ddphi,sign,vid,vtot;
   rvec r_ij,r_kj,r_kl,m,n;
   
   vtot = 0.0;
@@ -548,7 +548,7 @@ real rbdihs(FILE *log,int nbonds,
   int  type,ai,aj,ak,al,i,j;
   rvec r_ij,r_kj,r_kl,m,n;
   real parm[NR_RBDIHS];
-  real phi,cos_phi,t1,t2,rbp;
+  real phi,cos_phi,rbp;
   real v,sign,ddphi,sin_phi;
   real cosfac,vtot;
 
@@ -622,11 +622,9 @@ static void do_one14(rvec x[],int ai,int aj,rvec f[],int gid,
 		     real eps,matrix box,
 		     int ntab,real tabscale,real VFtab[])
 {
-  const     real six=6.0;
-  const     real twelve=12.0;
   real      nbfpA[100],nbfpB[100];
-  rvec      f_ip,r_ij,r_i;
-  real      qq,vnb,vnb6,vnb12,vijcoul,fff,fijscal,rinv1,rinv2,rinv6;
+  rvec      f_ip,r_i;
+  real      vnb,vijcoul;
   int       tA,tB;
   int       m,si,sj;
   
@@ -689,14 +687,11 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
   int       m,gid;
   t_ishift  shift;
   real      c6A,c12A,c6B,c12B;
-  real      k_rf,c_rf,rffac2;
+  real      k_rf;
 
   shift = CENTRAL;
   
   /* Reaction field stuff */  
-  k_rf   = fr->k_rf;
-  c_rf   = fr->c_rf;
-  rffac2 = 2*k_rf;
   eps    = fr->epsfac*fr->fudgeQQ;
   
   for(m=0; (m<DIM); m++) {
