@@ -156,7 +156,7 @@ static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
   i0=0;
   snew(*cgnr,at->nr);
   qt=0;
-  prevcg=-NOTSET;
+  prevcg=NOTSET;
   curcg=0;
   cg=-1;
   j=NOTSET;
