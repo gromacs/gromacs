@@ -298,10 +298,14 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   /* We've got the quadrupole tensor, now diagonalize the sucker */
   jacobi(inten,3,dd,ev,&niter);
 
-  if (debug)
+  if (debug) {
+    for(i=0; (i<DIM); i++) 
+      fprintf(debug,"ev[%d] = %8.3f  %8.3f  %8.3f\n",
+	      i,ev[i][XX],ev[i][YY],ev[i][ZZ]);
     for(i=0; (i<DIM); i++) 
       fprintf(debug,"Q'[%d] = %8.3f  %8.3f  %8.3f\n",
-	      i,ev[i][XX],ev[i][YY],ev[i][ZZ]);
+	      i,inten[i][XX],inten[i][YY],inten[i][ZZ]);
+  }
   /* Sort the eigenvalues, for water we know that the order is as follows:
    *
    * Q_yy, Q_zz, Q_xx
