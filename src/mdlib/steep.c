@@ -400,18 +400,18 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   } /* End of the loop  */
     
   /* Print some shit...  */
-  if (MASTER(cr)) { 
+  if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
-    xx=pos[Min]; 
-    ff=force[Min]; 
-    write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
- 	       nsb,count,(real) count, 
- 	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box); 
+  xx=pos[Min]; 
+  ff=force[Min]; 
+  write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
+	     nsb,count,(real) count, 
+	     lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box); 
+  if (MASTER(cr)) {
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
     
-    fmax=f_max(cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
-    fprintf(stderr,"Maximum force: %12.5e\n",fmax); 
+    fprintf(stderr,"Maximum force: %12.5e\n",Fmax[Min]); 
     if (bDone) { 
       sprintf(sbuf,"\n%s converged to %g\n",SD,ftol); 
       fprintf(stderr,sbuf);
