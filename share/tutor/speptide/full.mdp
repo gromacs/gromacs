@@ -4,9 +4,8 @@
 ;	Input file
 ;
 title               =  Yo
-warnings            =  10
 cpp                 =  /lib/cpp
-constraints         =  -1
+constraints         =  all-bonds
 integrator          =  md
 tinit               =  0.0
 dt                  =  0.002	; ps !
@@ -14,17 +13,15 @@ nsteps              =  5000	; total 10 ps.
 nstcomm             =  1
 nstxout             =  250
 nstvout             =  1000
-nstgrp              =  0
 nstfout             =  0
-nstprint            =  100
-nsthf               =  0
+nstlog              =  100
+nstenergy           =  100
 nstlist             =  10
 ns_type             =  grid
 deltagrid           =  2
-shift               =  no
-rshort              =  1.0
-rlong               =  1.0
-box                 =  cubic
+rlist               =  1.0
+rcoulomb            =  1.0
+rvdw                =  1.0
 ; Temperature coupling is on in two groups
 Tcoupl              =  yes
 tc-grps		    =  Protein	SOL
@@ -33,9 +30,9 @@ ref_t               =  300	300
 ; Energy monitoring
 energygrps          =  Protein  SOL
 ; Pressure coupling is now on
-Pcoupl              =  yes
+Pcoupl              =  isotropic
 tau_p               =  0.5
-compress            =  1e-3
+compressibility     =  4.5e-5
 ref_p               =  1.0
 ; Generate velocites is off at 300 K.
 gen_vel             =  no
