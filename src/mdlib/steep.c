@@ -154,7 +154,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
   t_inputrec *ir;
-  bool   bDone,bAbort,bLR,bLJLR,bBHAM,b14,do_log; 
+  bool   bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
   rvec   mu_tot;
@@ -294,8 +294,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(ir->opts),grps,ener); 
 
-    do_log = do_per_step(count,parm->ir.nstlog);
-    if (MASTER(cr) && do_log)
+    if (MASTER(cr))
       print_ebin_header(log,count,count,lambda,0.0);
 
     if (bConstrain) {
@@ -331,12 +330,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       
     /* Print it if necessary  */
     if (MASTER(cr)) { 
-      bool do_ene;
-      do_ene = do_per_step(count,parm->ir.nstenergy);
-      print_ebin(fp_ene,do_ene,FALSE,do_log?log:NULL,count,count,
-		 eprNORMAL,TRUE,mdebin,&(top->atoms));
-      fflush(log);
-
       if (bVerbose) {
 	fprintf(stderr,"Step = %5d, Dmax = %7.2e nm, Epot = %12.5e Fmax = %11.5e%c",
 		count,ustep,Epot[TRY],Fmax[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
@@ -347,6 +340,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		   ener,parm->box,shake_vir, 
 		   force_vir,parm->vir,parm->pres,grps,mu_tot); 
+	print_ebin(fp_ene,TRUE,FALSE,log,count,count,
+		   eprNORMAL,TRUE,mdebin,&(top->atoms));
+	fflush(log);
       }
     } 
     
@@ -420,16 +416,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
     
     fprintf(stderr,"Maximum force: %12.5e\n",Fmax[Min]); 
-    if (bDone) { 
+    if (bDone)
       sprintf(sbuf,"\n%s converged to %g\n",SD,ftol); 
-      fprintf(stderr,sbuf);
-      fprintf(log,sbuf);
-    } 
-    else { 
-      sprintf(sbuf,"\n%s did not converge in %d steps\n",SD,nsteps); 
-      fprintf(stderr,sbuf);
-      fprintf(log,sbuf);
-    } 
+    else 
+      sprintf(sbuf,"\n%s did not converge in %d steps\n",SD,min(count,nsteps));
+    fprintf(stderr,sbuf);
+    fprintf(log,sbuf);
     sprintf(sbuf,"  Potential Energy  = %12.5e\n",Epot[Min]); 
     fprintf(stderr,sbuf);
     fprintf(log,sbuf);
