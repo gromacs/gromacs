@@ -54,10 +54,10 @@ dvi:		gromacs.dvi
 # and fold in the middle. 
 #
 booklet.ps:	gromacs.ps
-		psbook $^ | psnup -2 | pstops "2:0,1U(1w,1h)" > $@
+		psbook $^ | psnup -pa4 -2 | pstops -pa4 "2:0,1U(1w,1h)" > $@
 
 letterbooklet.ps: letter.ps
-		psbook $^ | psnup -2 | pstops "2:0,1U(1w,1h)" > $@
+		psbook $^ | psnup -pletter -2 | pstops -pletter "2:0,1U(1w,1h)" > $@
 
 # Texexec 2.1 (comes with debian) works to create pdf booklets,
 # but not the 1.2 version that comes with redhat. In the latter
