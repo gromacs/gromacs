@@ -29,7 +29,7 @@ CYS2	1
 	1	1	N	-C	CA
 CYSH 	2
 	1	1	N	-C	CA
-	1 	1	SG 	CB	CA
+	1 	2	SG 	CB	CA
 GLN 	2
 	1	1	N	-C	CA
 	2 	3	NE2	CD	CG
