@@ -898,8 +898,14 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   
   cgsnr    = cgs->nr;
   rs2      = sqr(fr->rlist);
-  rvdw2    = sqr(fr->rvdw);
-  rcoul2   = sqr(fr->rcoulomb);
+  if (fr->bTwinRange) {
+    rvdw2  = sqr(fr->rvdw);
+    rcoul2 = sqr(fr->rcoulomb);
+  } else {
+    /* Workaround for a gcc -O3 or -ffast-math problem */
+    rvdw2  = rs2;
+    rcoul2 = rs2;
+  }
   
   if (nl_sr == NULL) {
     /* Short range buffers */
