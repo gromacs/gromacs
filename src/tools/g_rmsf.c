@@ -193,7 +193,7 @@ int main (int argc,char *argv[])
   char         *devfn,*dirfn;
   int          resnr;
 
-  bool         bReadPDB;  
+  bool         bReadPDB,bTop;  
   atom_id      *index;
   int          isize;
   char         *grpnames;
@@ -229,7 +229,10 @@ int main (int argc,char *argv[])
   devfn    = opt2fn_null("-od",NFILE,fnm);
   dirfn    = opt2fn_null("-dir",NFILE,fnm);
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,NULL,box,TRUE);
+  bTop     = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,
+			   NULL,box,TRUE);
+  if (!bTop)
+    fprintf(stderr,"Warning: not a topology file, can not remove periodicity\n");
   snew(w_rls,top.atoms.nr);
 
   /* Set box type*/
@@ -275,8 +278,9 @@ int main (int argc,char *argv[])
   /* Now read the trj again to compute fluctuations */
   teller = 0;
   do {
-    /* Remove periodic boundary */
-    rm_pbc(&(top.idef),natom,box,x,x);
+    if (bTop)
+      /* Remove periodic boundary */
+      rm_pbc(&(top.idef),natom,box,x,x);
     
     /* Set center of mass to zero */
     sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
