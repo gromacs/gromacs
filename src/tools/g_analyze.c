@@ -64,6 +64,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 
   val = NULL;
   *t0 = 0;
+  *dt = 0;
   fp  = ffopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
     if (nsets_in == 1)
@@ -129,9 +130,10 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
     if (sin==0) {
       *nval = n;
       if (!bHaveT)
-	*dt = 1.0;
-      else
-	*dt = (real)(tend-*t0)/(n-1.0);
+	*dt = 1;
+      else 
+	if (n > 1)
+	  *dt = (real)(tend-*t0)/(n-1.0);
     } else {
       if (n < *nval) {
 	fprintf(stderr,"Set %d is shorter (%d) than the previous set (%d)\n",
