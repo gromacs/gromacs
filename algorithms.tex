@@ -107,21 +107,21 @@ Gromacs supports triclinic boxes of any shape.
 The box is defined by the 3 box vectors ${\bf a}$,${\bf b}$ and ${\bf c}$.
 The box vectors must satisfy the following conditions:
 \beq
-\label{box_rot}
+\label{eqn:box_rot}
 a_y = a_z = b_z = 0
 \eeq
 \beq
-\label{box_shift1}
+\label{eqn:box_shift1}
 a_x>0,~~~~b_y>0,~~~~c_z>0
 \eeq
 \beq
-\label{box_shift2}
+\label{eqn:box_shift2}
 |b_x| \leq \frac{1}{2} \, a_x,~~~~
 |c_x| \leq \frac{1}{2} \, a_x,~~~~
 |c_y| \leq \frac{1}{2} \, b_y
 \eeq
-Equations (\ref{box_rot}) can always be statisfied by rotating the box.
-Equations (\ref{box_shift1}) and (\ref{box_shift2}) can always be
+Equations \ref{eqn:box_rot} can always be statisfied by rotating the box.
+Inequalities (\ref{eqn:box_shift1}) and (\ref{eqn:box_shift2}) can always be
 statisfied by adding and subtracting box vectors.
 
 Even when simulating using a triclinic box, {\gromacs} always puts the
@@ -159,17 +159,17 @@ box type & image & box & \multicolumn{3}{c|}{box vectors} & \multicolumn{3}{c|}{
 cubic        & $d$ & $d^3$ & 0   & $d$            & 0              & $90^\circ$ & $90^\circ$ & $90^\circ$ \\
              &     &       & 0   & 0              & $d$            & & & \\
 \hline
-rhombic      &     &       & $d$ & 0              & $\frac{1}{2}d$ & & & \\
-dodecahedron & $d$ & $\frac{1}{2}\sqrt{2}d^3$ & 0   & $d$            & $\frac{1}{2}d$ & $60^\circ$ & $60^\circ$ & $90^\circ$ \\
-(xy-square)  &     & $\approx 0.71 d^3$ & 0   & 0              & $\frac{1}{2}\sqrt{2}d$ & & & \\
+rhombic      &     &       & $d$ & 0              & $\frac{1}{2}\,d$ & & & \\
+dodecahedron & $d$ & $\frac{1}{2}\sqrt{2}\,d^3$ & 0   & $d$            & $\frac{1}{2}\,d$ & $60^\circ$ & $60^\circ$ & $90^\circ$ \\
+(xy-square)  &     & $0.707\,d^3$ & 0   & 0              & $\frac{1}{2}\sqrt{2}\,d$ & & & \\
 \hline
-rhombic      &     &       & $d$ & $\frac{1}{2}d$ & $\frac{1}{2}d$ & & & \\
-dodecahedron & $d$ & $\frac{1}{2}\sqrt{2}d^3$ & 0 & $\frac{1}{2}\sqrt{3}d$ & $\frac{1}{6}\sqrt{3}d$ & $60^\circ$ & $60^\circ$ & $60^\circ$ \\
-(xy-hexagon) &     & $\approx 0.71 d^3$ & 0   & 0              & $\frac{1}{3}\sqrt{6}d$ & & & \\
+rhombic      &     &       & $d$ & $\frac{1}{2}\,d$ & $\frac{1}{2}\,d$ & & & \\
+dodecahedron & $d$ & $\frac{1}{2}\sqrt{2}\,d^3$ & 0 & $\frac{1}{2}\sqrt{3}\,d$ & $\frac{1}{6}\sqrt{3}\,d$ & $60^\circ$ & $60^\circ$ & $60^\circ$ \\
+(xy-hexagon) &     & $0.707\,d^3$ & 0   & 0              & $\frac{1}{3}\sqrt{6}\,d$ & & & \\
 \hline
-truncated    &     &       & $d$ & $\frac{1}{3}d$ & -$\frac{1}{3}d$ & & & \\
-octahedron   & $d$ & $\frac{4}{9}\sqrt{3}d^3$ & 0   & $\frac{2}{3}\sqrt{2}d$ & $\frac{1}{3}\sqrt{2}d$ & $\approx71^\circ$ & $\approx71^\circ$ & $\approx71^\circ$ \\
-             &     & $\approx 0.77 d^3$ & 0   & 0              & $\frac{1}{3}\sqrt{6}d$ & & & \\
+truncated    &     &       & $d$ & $\frac{1}{3}\,d$ & $-\frac{1}{3}\,d$ & & &\\
+octahedron   & $d$ & $\frac{4}{9}\sqrt{3}\,d^3$ & 0   & $\frac{2}{3}\sqrt{2}\,d$ & $\frac{1}{3}\sqrt{2}\,d$ & $71.53^\circ$ & $109.47^\circ$ & $71.53^\circ$ \\
+             &     & $0.770\,d^3$ & 0   & 0              & $\frac{1}{3}\sqrt{6}\,d$ & & & \\
 \dline
 \end{tabular}
 }
@@ -185,7 +185,8 @@ volume is 71\% of the volume of a cube having the same image
 distance. This saves about 29\% of CPU-time when simulating a
 spherical or flexible molecule in solvent. There are two different
 orientations of a rhombic dodecahedron that satisfy equations
-(\ref{box_rot}).  The program {\tt editconf} produces the orientation
+\ref{eqn:box_rot}, \ref{eqn:box_shift1} and \ref{eqn:box_shift2}.
+The program {\tt editconf} produces the orientation
 which has a square intersection with the xy-plane.  This orientation
 was chosen because the first two box vectors coincide with the x and
 y-axis, which is easier to comprehend. The other orientation can be
@@ -199,9 +200,9 @@ also results in a more uniform arrangement of the proteins.
 \subsection{Cutoff restrictions}
 The minimum image convention implies that the cutoff radius used to
 truncate non-bonded interactions must not exceed half the shortest box
-vector for grid search:
+vector:
 \beq
-\label{gridrc}
+\label{eqn:physicalrc}
   R_c < \half \min(\|{\bf a}\|,\|{\bf b}\|,\|{\bf c}\|),
 \eeq
 otherwise more than one image would be within the cutoff distance of
@@ -213,10 +214,15 @@ each box vector must exceed the length of the macromolecule in the
 direction of that edge {\em plus} two times the cutoff radius $R_c$.
 It is common to compromise in this respect, and make the solvent layer
 somewhat smaller in order to reduce the computational cost.
-For efficiency reasons the cutoff with simple search in triclinic boxes
-(grid search always uses eq. (\ref{gridrc})) is more restricted:
+For efficiency reasons the cutoff with triclinic boxes is more restricted.
+For grid search the extra restriction is weak:
 \beq
-\label{simplerc}
+\label{eqn:gridrc}
+R_c < \min(a_x,b_y,c_z)
+\eeq
+For simple search the extra restriction is stronger:
+\beq
+\label{eqn:simplerc}
 R_c < \half \min(a_x,b_y,c_z)
 \eeq
 
@@ -225,7 +231,8 @@ is surrounded by 26 translated images. Thus a
 particular image can always be identified by an index pointing to one
 of 27 {\em translation vectors} and constructed by applying a
 translation with the indexed vector (see \ssecref{forces}).
-
+Restriction (\ref{eqn:gridrc}) ensures that only 26 images need to be
+considered.
 
 \section{The group concept}
 \label{sec:group}
@@ -416,12 +423,12 @@ As shown in \figref{pbc}, it is possible to transform a
 triclinic box into a rectangular box.
 The output coordinates are always in a rectangular box, even when a
 dodecahedron or triclinic box was used for the simulation.
-Equations (\ref{box_rot}) ensure
-that we can reset particles in a rectangular box by first shifting them with
+Equation \ref{eqn:box_rot} ensures that we can reset particles
+in a rectangular box by first shifting them with
 box vector ${\bf c}$, then with ${\bf b}$ and finally with ${\bf a}$.
-Equations (\ref{box_shift2}) ensure that we can find the 14 nearest 
-triclinic images within a linear combination which does not involve
-multiples of box vectors.
+Equations \ref{eqn:box_shift2}, \ref{eqn:physicalrc} and \ref{eqn:gridrc}
+ensure that we can find the 14 nearest triclinic images within
+a linear combination which does not involve multiples of box vectors.
 
 \subsubsection{Pair lists generation}
 The non-bonded pair forces need to be calculated only for those pairs
@@ -451,15 +458,16 @@ $O(N^2)$ algorithm must be used. With periodic boundary conditions
 a grid search can be used, which is $O(N)$.
 
 \subsubsection{\swapindex{Simple}{search}}
-Due to equations (\ref{box_rot}) and (\ref{simplerc}), the vector $\rvij$
+Due to \eqnsref{box_rot}{simplerc}, the vector $\rvij$
 connecting images within the cutoff $R_c$ can be found by constructing:
 \begin{eqnarray}
 \ve{r}'''   & = & \ve{r}_j-\ve{r}_i \\
-\ve{r}''    & = & \ve{r}''' - {\bf a}*\verb'round'(r'''_z/c_z)) \\
+\ve{r}''    & = & \ve{r}''' - {\bf c}*\verb'round'(r'''_z/c_z)) \\
 \ve{r}'     & = & \ve{r}'' - {\bf b}*\verb'round'(r''_y/b_y) \\
-\ve{r}_{ij} & = & \ve{r}' - {\bf c}*\verb'round'(r'_x/a_x)
+\ve{r}_{ij} & = & \ve{r}' - {\bf a}*\verb'round'(r'_x/a_x)
 \end{eqnarray}
-When distances between any two particles in a triclinic box are needed,
+When distances between two particles in a triclinic box are needed
+that do not obey \eqnref{box_rot},
 many shifts of combinations of box vectors need to be considered to find
 the nearest image.
 
@@ -489,7 +497,7 @@ behavior makes the algorithm far superior over the standard $O(N^2)$
 algorithm when there are more than a few hundred particles.  The
 grid search is equally fast for rectangular and triclinic boxes.  Thus
 for most protein and peptide simulations the rhombic dodecahedron will
-be the preferable box shape.
+be the preferred box shape.
 
 \subsubsection{Charge groups}
 Where applicable, neighbor searching is carried out on the basis of
@@ -515,6 +523,9 @@ charge groups are needed. Such shift functions are implemented in
 they should be combined with a lattice sum for long-range
 electrostatics.
 
+Charge groups also provide a speed up of the neighbor search.
+The neighbor searching for a water system, for instance,
+is $3^2=9$ times faster when each molecule is treated as a charge group.
 
 \subsection{Compute forces}
 \label{subsec:forces}
@@ -812,7 +823,7 @@ $\beta = 4.6 \times 10^{-10}$ Pa$^{-1} = 4.6 \times 10^{-5}$ Bar$^{-1}$,
 which is $7.6 \times 10^{-4}$ MD units (see \chref{defunits}).
 Most other liquids have similar values.
 When scaling completely anisotropically, the system has to be rotated in
-order to  obey the box restriction (\ref{box_rot}).
+order to obey \eqnref{box_rot}.
 This rotation is approximated in first order in the scaling, which is usually
 less than $10^{-4}$. The actual scaling matrix {\boldmath $\mu'$} is:
 \beq
@@ -875,7 +886,7 @@ modification here:
 \eea
 The (inverse) mass parameter matrix $\ve{W}^{-1}$ determines the
 strength of the coupling, and how the box can be deformed.
-The box restriction (\ref{box_rot}) will be fulfilled automatically
+The box restriction (\ref{eqn:box_rot}) will be fulfilled automatically
 if the corresponding elements of $\ve{W}^{-1}$ are zero. Since the
 coupling strength also depends on the size of your box, we prefer
 to calculate it automatically in {\gromacs}. 
