@@ -395,7 +395,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   bool bCOMPND;
   char line[STRLEN+1];
   char sa[12],sb[12],sc[12];
-  double fa,fb,fc,alpha,beta,gamma;
+  double fa,fb,fc,alpha,beta,gamma,cosa,cosb,cosg,sing;
   int  line_type;
   char *c,*d;
   int  natom;
@@ -435,13 +435,27 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 	clear_mat(box);
 	box[XX][XX] = fa;
 	if ((alpha!=90.0) || (beta!=90.0) || (gamma!=90.0)) {
-	  alpha *= DEG2RAD;
-	  beta  *= DEG2RAD;
-	  gamma *= DEG2RAD;
-	  box[YY][XX] = fb*cos(gamma);
-	  box[YY][YY] = fb*sin(gamma);
-	  box[ZZ][XX] = fc*cos(beta);
-	  box[ZZ][YY] = fc*(cos(alpha)-cos(beta)*cos(gamma))/sin(gamma);
+	  if (alpha != 90.0) {
+	    cosa = cos(alpha*DEG2RAD);
+	  } else {
+	    cosa = 0;
+	  }
+	  if (beta != 90.0) {
+	    cosb = cos(beta*DEG2RAD);
+	  } else {
+	    cosb = 0;
+	  }
+	  if (gamma != 90.0) {
+	    cosg = cos(gamma*DEG2RAD);
+	    sing = sin(gamma*DEG2RAD);
+	  } else {
+	    cosg = 0;
+	    sing = 1;
+	  }
+	  box[YY][XX] = fb*cosg;
+	  box[YY][YY] = fb*sing;
+	  box[ZZ][XX] = fc*cosb;
+	  box[ZZ][YY] = fc*(cosa - cosb*cosg)/sing;
 	  box[ZZ][ZZ] = sqrt(fc*fc
 			     -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
 	} else {
