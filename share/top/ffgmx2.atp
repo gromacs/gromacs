@@ -46,3 +46,5 @@
    OD  15.99940 ;     DMSO Oxygen                        
    CD  15.03500 ;     DMSO Carbon                        
    HC   1.00800 ;     H attached to aliphatic carbon
+ MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
+ MCH3   0       ;     Dummy mass in rigid tetraedrical CH3 group
