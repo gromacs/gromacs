@@ -183,12 +183,13 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     clear_rvecs(nsb->natoms,fr->f_twin);
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
-  if (parm->ir.epc != epcNO)
+  if (parm->ir.ePBC != epbcNONE)
     calc_shifts(box,box_size,fr->shift_vec);
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
 			   box,box_size,&(top->blocks[ebCGS]),x,
 			   fr->cg_cm);
-  mk_mshift(stdlog,graph,box,x);
+  if (graph)
+    mk_mshift(stdlog,graph,box,x);
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
