@@ -149,18 +149,5 @@ extern void force(FILE         *fplog,
 		  bool         bGatherOnly);
 /* Call all the force routines */
 
-/* Routines from fnbf.c */
-extern void do_fnbf(FILE *fplog,t_commrec *cr,t_forcerec *fr,
-		    rvec x[],rvec f[],t_mdatoms *md,
-		    real egnb[],real egcoul[],rvec box_size,
-		    t_nrnb *nrnb,real lambda,real *dvdlambda,
-		    bool bLR,int eNL);
-
-extern real do_14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
-		  const rvec x[],rvec f[],rvec fshift[],
-		  const t_pbc *pbc,const t_graph *g,
-		  real lambda,real *dvdlambda,
-		  const t_mdatoms *md,
-		  const t_forcerec *fr,int ngrp,real egnb[],real egcoul[]);
 
 #endif	/* _force_h */
