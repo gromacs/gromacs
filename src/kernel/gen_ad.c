@@ -220,15 +220,14 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
   
   /* Keep old stuff */
   pr_alloc(np,ps);
-  ps->nr -= np;
-  for(i=0,k=ps->nr; (i<np); i++,k++) {
+  for(i=0; (i<np); i++) {
     for(j=0; (j<nral); j++)
-      ps->param[k].a[j] = p[i].a[j];
+      ps->param[ps->nr].a[j] = p[i].a[j];
     for(j=0; (j<nrfp); j++)
-      ps->param[k].c[j] = p[i].c[j];
-    ps->param[k].s=strdup(p[i].s);
+      ps->param[ps->nr].c[j] = p[i].c[j];
+    ps->param[ps->nr].s=strdup(p[i].s);
+    ps->nr++;
   }
-  ps->nr+=np;
 }
 
 static void cpparam(t_param *dest,t_param *src)

@@ -238,11 +238,11 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype)
     pr_alloc (2,bt);
     
     /* fill the arrays up and down */
-    memcpy((char *) bt->param[nr].c,	 (char *) b->c,(size_t)sizeof(b->c));
-    memcpy((char *) bt->param[nr].a,	 (char *) b->a,(size_t)sizeof(b->a));
-    memcpy((char *) bt->param[nr+1].c,	 (char *) b->c,(size_t)sizeof(b->c));
+    memcpy((char *) bt->param[bt->nr].c,  (char *) b->c,(size_t)sizeof(b->c));
+    memcpy((char *) bt->param[bt->nr].a,  (char *) b->a,(size_t)sizeof(b->a));
+    memcpy((char *) bt->param[bt->nr+1].c,(char *) b->c,(size_t)sizeof(b->c));
     for (j=0; (j < nral); j++) 
-      bt->param[nr+1].a[j] = b->a[nral-1-j];
+      bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
     
     bt->nr += 2;
   }

@@ -44,7 +44,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 /* append all the bonds from src to dest */
 {
   int  i,j,l,m,n0,nrfp,nral;
-  int  src_natoms,dest_natoms;
+  int  src_natoms,dest_natoms,nextra;
   real fac;
   
   nrfp        = NRFP(ftype);
@@ -52,10 +52,12 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   src_natoms  = dstart;
   dest_natoms = nrstart;
   
-  n0=nrstart;
+  n0     = nrstart;
+  
+  /* Add this many entries to array ... */
   pr_alloc(src->nr*copies,dest);
   
-  /* First new entry */    
+  /* First new entry. */
   l=dest->nr;
   
   /* If we have to do ensemble averaging we interchange the loops! */
@@ -87,9 +89,12 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	l++;
       }
       n0 += dstart;
-      }
+    }
   }
-  dest->nr += src->nr*copies;
+  if (l != dest->nr+src->nr*copies)
+    fatal_error(0,"In %s line %d: l = %d, should be %d\n",
+		__FILE__,__LINE__,l,dest->nr+src->nr*copies);
+  dest->nr = l;
 }
 
 static void blockcat(t_block *dest,t_block *src,int copies, 

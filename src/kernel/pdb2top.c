@@ -553,9 +553,10 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
     
     /* add newbonds to plist */
     pr_alloc(newbonds.nr,&plist[F_BONDS]);
-    for (i=0; i < newbonds.nr; i++)
-      plist[F_BONDS].param[plist[F_BONDS].nr+i] = newbonds.param[i];
-    plist[F_BONDS].nr += newbonds.nr;
+    for (i=0; (i < newbonds.nr); i++) {
+      plist[F_BONDS].param[plist[F_BONDS].nr] = newbonds.param[i];
+      plist[F_BONDS].nr++;
+    }
     sfree(newbonds.param);
     
     /* remove things with dummy atoms */

@@ -58,108 +58,115 @@ void add_param(t_params *ps,int ai,int aj, real *c, char *s)
   if ((ai < 0) || (aj < 0)) 
     fatal_error(0,"Trying to add impossible atoms: ai=%d, aj=%d",ai,aj);
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  clear_atom_list(2, ps->param[ps->nr-1].a);
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  clear_atom_list(2, ps->param[ps->nr].a);
   if (c==NULL) 
-    clear_force_param(0, ps->param[ps->nr-1].c);
+    clear_force_param(0, ps->param[ps->nr].c);
   else
     for(i=0; (i < MAXFORCEPARAM); i++)
-      ps->param[ps->nr-1].c[i]=c[i];
+      ps->param[ps->nr].c[i]=c[i];
   if (s)
-    ps->param[ps->nr-1].s = strdup(s);
+    ps->param[ps->nr].s = strdup(s);
   else
-    ps->param[ps->nr-1].s = strdup("");
+    ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
 		   char *s)
 {
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  clear_atom_list  (4, ps->param[ps->nr-1].a);
-  ps->param[ps->nr-1].C0=c0;
-  ps->param[ps->nr-1].C1=c1;
-  clear_force_param(2, ps->param[ps->nr-1].c);
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  ps->param[ps->nr].AK=ak;
+  ps->param[ps->nr].AL=al;
+  clear_atom_list  (4, ps->param[ps->nr].a);
+  ps->param[ps->nr].C0=c0;
+  ps->param[ps->nr].C1=c1;
+  clear_force_param(2, ps->param[ps->nr].c);
   if (s)
-    ps->param[ps->nr-1].s = strdup(s);
+    ps->param[ps->nr].s = strdup(s);
   else
-    ps->param[ps->nr-1].s = strdup("");
+    ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
 		   real c2,char *s)
 {
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  clear_atom_list  (4, ps->param[ps->nr-1].a);
-  ps->param[ps->nr-1].C0=c0;
-  ps->param[ps->nr-1].C1=c1;
-  ps->param[ps->nr-1].C2=c2;
-  clear_force_param(3, ps->param[ps->nr-1].c);
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  ps->param[ps->nr].AK=ak;
+  ps->param[ps->nr].AL=al;
+  clear_atom_list  (4, ps->param[ps->nr].a);
+  ps->param[ps->nr].C0=c0;
+  ps->param[ps->nr].C1=c1;
+  ps->param[ps->nr].C2=c2;
+  clear_force_param(3, ps->param[ps->nr].c);
   if (s)
-    ps->param[ps->nr-1].s = strdup(s);
+    ps->param[ps->nr].s = strdup(s);
   else
-    ps->param[ps->nr-1].s = strdup("");
+    ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 void add_dum2_atoms(t_params *ps,int ai,int aj,int ak)
 {
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  clear_atom_list  (3, ps->param[ps->nr-1].a);
-  clear_force_param(0, ps->param[ps->nr-1].c);
-  ps->param[ps->nr-1].s = strdup("");
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  ps->param[ps->nr].AK=ak;
+  clear_atom_list  (3, ps->param[ps->nr].a);
+  clear_force_param(0, ps->param[ps->nr].c);
+  ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, 
 		    real c0, real c1)
 {
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  clear_atom_list  (4, ps->param[ps->nr-1].a);
-  ps->param[ps->nr-1].C0=c0;
-  ps->param[ps->nr-1].C1=c1;
-  clear_force_param(2, ps->param[ps->nr-1].c);
-  ps->param[ps->nr-1].s = strdup("");
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  ps->param[ps->nr].AK=ak;
+  ps->param[ps->nr].AL=al;
+  clear_atom_list  (4, ps->param[ps->nr].a);
+  ps->param[ps->nr].C0=c0;
+  ps->param[ps->nr].C1=c1;
+  clear_force_param(2, ps->param[ps->nr].c);
+  ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 void add_dum3_atoms(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
 {
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  clear_atom_list  (4, ps->param[ps->nr-1].a);
-  clear_force_param(0, ps->param[ps->nr-1].c);
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  ps->param[ps->nr].AK=ak;
+  ps->param[ps->nr].AL=al;
+  clear_atom_list  (4, ps->param[ps->nr].a);
+  clear_force_param(0, ps->param[ps->nr].c);
   if (bSwapParity)
-    ps->param[ps->nr-1].C1=-1;
-  ps->param[ps->nr-1].s = strdup("");
+    ps->param[ps->nr].C1=-1;
+  ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 void add_dum4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
 {
   pr_alloc(1,ps);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  ps->param[ps->nr-1].AM=am;
-  clear_atom_list  (5, ps->param[ps->nr-1].a);
-  clear_force_param(0, ps->param[ps->nr-1].c);
-  ps->param[ps->nr-1].s = strdup("");
+  ps->param[ps->nr].AI=ai;
+  ps->param[ps->nr].AJ=aj;
+  ps->param[ps->nr].AK=ak;
+  ps->param[ps->nr].AL=al;
+  ps->param[ps->nr].AM=am;
+  clear_atom_list  (5, ps->param[ps->nr].a);
+  clear_force_param(0, ps->param[ps->nr].c);
+  ps->param[ps->nr].s = strdup("");
+  ps->nr++;
 }
 
 int search_jtype(t_restp *rtp,char *name,bool bNterm)
