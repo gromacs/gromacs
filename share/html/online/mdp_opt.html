@@ -229,9 +229,8 @@ NOTE: Pressure scaling is not possible with PPPM.
 <dt><b>Ewald</b>
 <dd>Classical Ewald sum electrostatics. Use e.g. <b>rlist</b>=0.9,
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
-wavevectors used in reciprocal space is controlled by
-<b>fourier_nx</b>, <b>fourier_ny</b>, <b>fourier_nz</b>. Reasonable
-values are about 2 for each nm of box size. The relative accuracy of direct/reciprocal space
+wavevectors used in reciprocal space is controlled by <b>fourierspacing</b>.
+The relative accuracy of direct/reciprocal space
 is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N^(3/2)) and
 is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.
@@ -337,8 +336,10 @@ corresponds to the cut-off in the user-defined function.
 
 <dt><h4>fourierspacing: </b>(0.12) [nm]</h4>
 <dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
-Each direction can be overriden by entering a non-zero value for
-<b>fourier_n*</b>.
+For ordinary Ewald the spacing times the box dimensions determines the
+highest magnitude to use in each direction. In all cases
+each direction can be overriden by entering a non-zero value for
+<b>fourier_n*</b>. 
 
 <dt><h4>fourier_nx </b>(0)<b> ;  
 fourier_ny </b>(0)<b> ;  
