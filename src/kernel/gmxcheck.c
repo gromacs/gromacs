@@ -107,6 +107,7 @@ void chk_trj(char *fn)
       else {
 	j++;
 	t=sh.t;
+	natoms=sh.natoms;
 #define INC(s,n,item) if (s.item  != 0) n.item++
 	INC(sh,count,box_size);
 	INC(sh,count,vir_size);
