@@ -755,7 +755,7 @@ int gmx_rms (int argc,char *argv[])
 	/* NB: File must be binary if we use fwrite */
 	fp=ftp2FILE(efDAT,NFILE,fnm,"wb");
 	for(i=0;i<tel_mat;i++) 
-	  fwrite(rmsd_mat[i],sizeof(**rmsd_mat),tel_mat,fp);
+	  fwrite(rmsd_mat[i],sizeof(**rmsd_mat),tel_mat2,fp);
 	fclose(fp);
       }
     }
