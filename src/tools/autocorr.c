@@ -620,16 +620,19 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     jmax = 3;
   else
     jmax = 1;
-  if (sum>0 && fitfn!=effnEXP3)
-    /* Good initial guess, this increases the probability of convergence */
-    fitparm[0] = sum;
-  else
-    fitparm[0] = 1.0;
-  if (fitfn == effnEXP3)
+  if (fitfn == effnEXP3) {
+    fitparm[0] = 0.1;
     fitparm[1] = 0.9;
-  else
+    fitparm[2] = 100*fitparm[0];
+  } else {
+    if (sum > 0)
+    /* Good initial guess, this increases the probability of convergence */
+      fitparm[0] = sum;
+    else
+      fitparm[0] = 1.0;
     fitparm[1] = 1.0;
-  fitparm[2] = 10*fitparm[0];
+    fitparm[2] = 1.0;
+  }
   for(j=0; ((j<jmax) && (tStart < tendfit)); j++) {
     /* Use the previous fitparm as starting values for the next fit */
     snew(sig,ncorr);
