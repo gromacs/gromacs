@@ -37,6 +37,7 @@ make_ndx|makes index files
 mk_angndx|generates index files for g_angle
 gmxcheck|checks and compares files
 gmxdump|makes binary files human readable
+g_analyze|analyzes data sets
 END
 
 HEAD|Distances between structures

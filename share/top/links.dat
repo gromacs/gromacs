@@ -11,6 +11,7 @@ eps
 g87
 g96
 g_anaeig
+g_analyze
 g_angle
 g_bond
 g_chi

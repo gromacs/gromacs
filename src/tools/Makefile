@@ -17,9 +17,9 @@ include		$(GMXHOME)/src/makef/Makefile.def
 LIB		=
 ifneq ($(PARALLEL_ONLY),yes)
 PROGRAMS	= average	do_dssp		editconf	\
-		eneconv		g_anaeig	g_angle		\
-		g_bond		g_chi		g_cluster	\
-		g_com		\
+		eneconv		g_analyze	g_anaeig	\
+		g_angle		g_bond		g_chi		\
+		g_cluster	g_com		\
 		g_confrms	g_covar		g_density	\
 		g_dielectric	g_dih		g_dipoles	\
 		g_disre		g_dist		g_enemat	\
@@ -234,6 +234,9 @@ g_cluster:	g_cluster.o ql77.o cmat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_multipoles:	g_multipoles.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+g_analyze:	g_analyze.o $(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 include	Make.dep
