@@ -258,7 +258,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     cr->nthreads = 1;
     
     ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
-    init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE);
+    init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL);
     fr->cg0 = 0;
     fr->hcg = top->blocks[ebCGS].nr;
     fr->nWatMol = 0;
@@ -276,7 +276,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 
   /* Init things dependent on parameters */  
   ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
-  init_forcerec(debug,fr,ir,top,cr,md,nsb,box,FALSE);
+  init_forcerec(debug,fr,ir,top,cr,md,nsb,box,FALSE,NULL);
 		
   /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)
