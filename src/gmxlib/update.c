@@ -975,11 +975,11 @@ void update(int          natoms, 	/* number of atoms in simulation */
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
-	  sprintf(buf,"Step %d  WARNING\n"
+	  sprintf(buf,"Step %d, time %g (ps)  WARNING\n"
 		  "bond between atoms %d and %d rotated more than %.1f degrees\n"
 		  "relative constraint deviation after LINCS:\n"
 		  "max %.6f (between atoms %d and %d) rms %.6f\n\n",
-		  step,
+		  step,ir->init_t+step*dt,
 		  bla1[warn-1]+1,bla2[warn-1]+1,wang,
 		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	  fprintf(stdlog,"%s",buf);
