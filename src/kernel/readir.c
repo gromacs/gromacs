@@ -617,11 +617,11 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
     }
     groups->nr++;
   }
-  /*  if (forward != NULL) {
-      for(j=0; (j<atoms->nr); j++) 
+  if (forward != NULL) {
+    for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[forward[j]];
-      }
-      else*/ {
+  }
+  else {
     for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[j];
   }
@@ -720,10 +720,6 @@ void do_index(char *ndx,
 	      t_atoms    *atoms,bool bVerbose,
 	      t_inputrec *ir,t_idef *idef,int *forward)
 {
-  static char *gtypes[egcNR] = {
-    "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-    "User1", "User2", "User3", "XTC"
-  };
   t_block *grps;
   char    **gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfrdim,nenergy,nuser;
