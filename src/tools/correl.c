@@ -161,6 +161,7 @@ void complex_mult(int n,real buf1[],real buf2[],real ans[])
   ans[0] = buf1[0]*buf2[0]*no2_1;
 }
 
+#ifndef WITHOUT_FFTW
 void correl_fftw(correl_t *c,real data1[],real data2[],real ans[])
 {
   bool bACF;
@@ -199,3 +200,4 @@ void done_correl(correl_t *c)
   rfftwnd_destroy_plan(&c->p_bw);
   c->n=0;
 }
+#endif
