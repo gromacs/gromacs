@@ -30,6 +30,10 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 static char *SRCID_string2_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -156,7 +160,6 @@ void nice_header (FILE *out,char *fn)
 #else
   uid = 0;
   gh  = -1;
-  pw  = NULL;
 #endif
   
   fprintf (out,"%c\tBy user: %s (%d)\n",COMMENTSIGN,
@@ -196,6 +199,24 @@ int gmx_strcasecmp(const char *str1, const char *str2)
       if (ch1!=ch2) return (ch1-ch2);
     }
   while (ch1);
+  return 0; 
+}
+
+int gmx_strncasecmp(const char *str1, const char *str2, int n)
+{
+  char ch1,ch2;
+ 
+  if(n==0) 
+    return 0;
+
+  do
+    {
+      ch1=toupper(*(str1++));
+      ch2=toupper(*(str2++));
+      if (ch1!=ch2) return (ch1-ch2);
+      n--;
+    }
+  while (ch1 && n);
   return 0; 
 }
 

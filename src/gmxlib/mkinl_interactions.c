@@ -516,15 +516,18 @@ int do_table(int i,int j)
 
       if(loop.free) {
 	assign("vnbexpa","cexp1a*VV");
-	assign("fijRa","cexp1a*cexp2a*FF");	
+        if(DO_FORCE)
+	  assign("fijRa","cexp1a*cexp2a*FF");	
 	sprintf(buf,"cexp2b*r%d*exptabscale",ij);
 	nflop += table_index(buf);
 	assign("n1","%d*n0%s",table_element_size, bC ? "" : "+1");
 	nflop += extract_table( DO_COULTAB ? "n1+8" : "n1+4");
 	
 	assign("vnbexpb","cexp1b*VV");
-	assign("fijRb","cexp1b*cexp2b*FF");
-	assign("fijR","L1*fijRa + lambda*fijRb");
+	if(DO_FORCE) {
+	  assign("fijRb","cexp1b*cexp2b*FF");
+	  assign("fijR","L1*fijRa + lambda*fijRb");
+	}
 	increment("vnbtot","vnb6 + L1*vnbexpa + lambda*vnbexpb");
 	increment("dvdl","vnbexpb - vnbexpa");
 	nflop += 18;

@@ -32,7 +32,6 @@
 static char *SRCID_g_covar_c = "$Id$";
 #include <math.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
 #include "statutil.h"
 #include "sysstuff.h"

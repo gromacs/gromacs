@@ -30,6 +30,10 @@
  * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_confio_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"

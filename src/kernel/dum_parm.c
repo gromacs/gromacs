@@ -30,6 +30,10 @@
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
 static char *SRCID_dum_parm_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -44,6 +48,7 @@ static char *SRCID_dum_parm_c = "$Id$";
 #include "index.h"
 #include "names.h"
 #include "fatal.h"
+#include "string2.h"
 #include "physics.h"
 
 typedef struct {

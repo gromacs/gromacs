@@ -34,6 +34,7 @@ static char *SRCID_md_c = "$Id$";
 #include <stdlib.h>
 #include "typedefs.h"
 #include "smalloc.h"
+#include "sysstuff.h"
 #include "vec.h"
 #include "statutil.h"
 #include "vcm.h"

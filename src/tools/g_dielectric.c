@@ -41,6 +41,7 @@ static char *SRCID_g_dielectric_c = "$Id$";
 #include "smalloc.h"
 #include "futil.h"
 #include "macros.h"
+#include "maths.h"
 #include "xvgr.h"
 #include "gmxcomplex.h"
 #include "nr.h"

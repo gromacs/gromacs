@@ -52,7 +52,9 @@ extern "C" {
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
-#include <unistd.h>
+#if ((!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64) || defined __CYGWIN__ || defined __CYGWIN32__)
+#  include <unistd.h>
+#endif
 #include <limits.h>
 #include <time.h>
 

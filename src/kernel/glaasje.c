@@ -34,6 +34,7 @@ static char *SRCID_glaasje_c = "$Id$";
 #include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
+#include "maths.h"
 #include "glaasje.h"
 #include "macros.h"
 	

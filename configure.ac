@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.1.99_20020308, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.1.99-20020401, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.1.99_20020308)
+AM_INIT_AUTOMAKE(gromacs, 3.1.99-20020401)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -233,7 +233,6 @@ if test -z "$CC_FOR_BUILD"; then
   CC_FOR_BUILD=$CC
 fi
 AC_SUBST(CC_FOR_BUILD) 
-
 
 if test "$enable_fortran" = "yes"; then
   AC_PROG_F77( $f77_names )
@@ -494,23 +493,22 @@ fi # end of fftw check
 
 ######
 # check for xtc headers
-AC_CHECK_HEADERS(rpc/rpc.h rpc/xdr.h,
-[# check for xtc libs if we found headers - on solaris the xdr stuff is in libnsl
-AC_CHECK_LIB(nsl,xdr_float)
-AC_TRY_LINK([#include<rpc/rpc.h> 
-#include<rpc/xdr.h>],[ XDR *xd; float f; xdr_float(xd,&f);],
-[have_xdr=yes],AC_MSG_WARN([RPC/XDR libraries not found - disabling xtc]))
-],AC_MSG_WARN([RPC/XDR include headers not found - disabling xtc]))
+case "${host_os}" in
+cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
+  GMXLIB_LIBOBJS="$GMXLIB_LIBOBJS gmx_system_xdr.lo"
+  ;;
+*)
+  AC_CHECK_HEADERS(rpc/rpc.h rpc/xdr.h,
+  [# check for xtc libs if we found headers - on solaris the xdr stuff is in libnsl
+  AC_CHECK_LIB(nsl,xdr_float)
+  AC_TRY_LINK([#include<rpc/rpc.h> 
+  #include<rpc/xdr.h>],[ XDR *xd; float f; xdr_float(xd,&f);],[have_xdr="yes"])])
 
-if test "$have_xdr" = "yes"; then
-  AC_DEFINE(USE_XDR,,[Use portable trajectory routines])
-else
-  echo "*****************************************************************************"
-  echo "*WARNING - XDR not found. This cripples GROMACS significantly - you cannot  *"
-  echo "*read/write portable trajectories. No choice on windows, but locate the RPC *"
-  echo "*header files and libraries if you run UNIX - they do exist!                *"
-  echo "*****************************************************************************"
-fi
+  if test "$have_xdr" != "yes"; then
+    AC_MSG_ERROR([Couldn't find XDR headers and/or libraries])
+  fi
+  ;;
+esac
 
 #####
 # Checks for additional and/or optional functions or libraries.
@@ -775,18 +773,16 @@ fi
 RPM=rpm
 AC_SUBST(RPM)
 
-AC_CONFIG_FILES([Makefile src/Makefile src/gmxlib/Makefile 
-include/Makefile include/types/Makefile
-src/mdlib/Makefile src/kernel/Makefile src/tools/Makefile 
-src/ngmx/Makefile src/contrib/Makefile scripts/Makefile admin/Makefile 
-share/Makefile share/tutor/Makefile share/tutor/gmxdemo/Makefile 
-share/tutor/nmr1/Makefile share/tutor/nmr2/Makefile 
-share/tutor/water/Makefile share/tutor/speptide/Makefile 
-share/template/Makefile share/top/Makefile share/html/Makefile 
-share/html/images/Makefile share/html/online/Makefile man/Makefile 
-man/man1/Makefile])
+# we have asm source, so this is necessary for automake 1.6
+CCAS=$CC
+CCASFLAGS=$CFLAGS
 
-AC_OUTPUT 
+AC_SUBST(CCAS)
+AC_SUBST(CCASFLAGS)
+
+AC_CONFIG_FILES([ Makefile src/Makefile src/gmxlib/Makefile include/Makefile include/types/Makefile src/mdlib/Makefile src/kernel/Makefile src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile share/tutor/nmr2/Makefile share/tutor/water/Makefile share/tutor/speptide/Makefile share/template/Makefile share/top/Makefile share/html/Makefile share/html/images/Makefile share/html/online/Makefile man/Makefile man/man1/Makefile ])
+
+AC_OUTPUT
 
 
 

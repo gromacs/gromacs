@@ -1035,7 +1035,7 @@ static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
 static void ns_inner_tric(rvec x[],int icg,bool *i_eg_excl,
 			  int njcg,atom_id jcg[],
 			  matrix box,rvec b_inv,real rcut2,
-			  t_block *cgs,t_ns_buf **ns_buf,ushort gid[],
+			  t_block *cgs,t_ns_buf **ns_buf,unsigned short gid[],
 			  bool bHaveLJ[],int ngid,t_mdatoms *md,
 			  t_excl bexcl[],t_forcerec *fr)
 {

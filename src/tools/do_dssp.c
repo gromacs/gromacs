@@ -430,9 +430,9 @@ int main(int argc,char *argv[])
   
 #ifdef MY_DSSP
   /* Open all files read-write */
-  tapein=ffopen(pdbfile,"w+");
+  tapein=ffopen(pdbfile,"wb+");
   setvbuf(tapein,inbuf,_IOFBF,MAXBUF);
-  tapeout=ffopen(tmpfile,"w+");
+  tapeout=ffopen(tmpfile,"wb+");
   setvbuf(tapeout,outbuf,_IOFBF,MAXBUF);
 #else
   if ((dptr=getenv("DSSP")) == NULL)

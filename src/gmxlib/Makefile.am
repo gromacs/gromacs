@@ -18,7 +18,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	enxio.c		ewald_util.c	fatal.c		ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	fnbf.c		\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
-	crecipdata.c    invblock.c	macros.c	\
+	crecipdata.c    invblock.c	macros.c	gmx_system_xdr.c \
 	main.c		maths.c		matio.c		memdump.c	\
 	mshift.c	mvdata.c	mvxvf.c		names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\

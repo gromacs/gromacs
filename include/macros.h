@@ -68,9 +68,15 @@ extern "C" {
 #define C4 	c[4]
 #define C5 	c[5]
 
+#ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b) )
+#endif
+#ifndef max
 #define max(a,b) (((a) > (b)) ? (a) : (b) )
+#endif
+#ifndef even
 #define even(a) ( ( (a+1) / 2) == (a / 2) )
+#endif
 
 /* This macro calculates the size of a array */
 #define asize(a) (sizeof(a)/sizeof((a)[0]))

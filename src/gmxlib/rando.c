@@ -31,7 +31,7 @@
  */
 static char *SRCID_rando_c = "$Id$";
 #include <time.h>
-#include <unistd.h>
+#include "sysstuff.h"
 #include "typedefs.h"
 
 int make_seed(void)

@@ -30,6 +30,10 @@
  * S  C  A  M  O  R  G
  */
 static char *SRCID_filenm_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -39,7 +43,13 @@ static char *SRCID_filenm_c = "$Id$";
 #include "filenm.h"
 #include "futil.h"
 #include "wman.h"
+#include "xdrf.h"
 #include "macros.h"
+
+/* XDR should be available on all platforms now, 
+ * but we keep the possibility of turning it off...
+ */
+#define USE_XDR
 
 /* Use bitflag ... */
 #define IS_SET(fn) ((fn.flag & ffSET) != 0)

@@ -36,7 +36,6 @@ static char *SRCID_memtab_c = "$Id$";
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include "sysstuff.h"
 #include "fatal.h"
 #include "smalloc.h"
