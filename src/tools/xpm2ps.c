@@ -40,6 +40,7 @@ static char *SRCID_xpm2ps_c = "$Id$";
 #include "smalloc.h"
 #include "string2.h"
 #include "matio.h"
+#include "viewit.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -939,7 +940,7 @@ int main(int argc,char *argv[])
 	 skip);
   
   if (bDoView())
-    viewps(ftp2fn(efEPS,NFILE,fnm));
+    do_view(ftp2fn(efEPS,NFILE,fnm),NULL);
     
   thanx(stderr);
   
