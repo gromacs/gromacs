@@ -212,15 +212,9 @@ static real *_buf2=NULL;
   }
 #endif
 
-#if (defined USE_X86_ASM || defined USE_PPC_ALTIVEC)
+#if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2 || defined USE_PPC_ALTIVEC)
   if (cpu_capabilities == UNKNOWN_CPU) {
     cpu_capabilities = detect_cpu(log);
-    if (getenv("NOASSEMBLYLOOPS") != NULL) {
-      if ((cpu_capabilities & X86_CPU) == X86_CPU)
-	cpu_capabilities = X86_CPU;
-      else if ((cpu_capabilities & PPC_CPU) == PPC_CPU)
-	cpu_capabilities = PPC_CPU;
-    }
   }
 #endif
   
@@ -269,21 +263,25 @@ static real *_buf2=NULL;
 
       switch (nrnb_ind) { 
 	case eNR_INL0100:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl0100_sse(ASM_COMMON_ARGS ASM_LJ_ARGS);	
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl0100_3dnow(ASM_COMMON_ARGS ASM_LJ_ARGS);
 	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl0100_sse2(ASM_COMMON_ARGS ASM_LJ_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl0100_altivec(ASM_COMMON_ARGS ASM_LJ_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl0100_altivec(ASM_COMMON_ARGS ASM_LJ_ARGS);	
+	  else
 #endif
-	      FUNC(inl0100,INL0100)(COMMON_ARGS REC_BUF LJ_ARGS);
+	    FUNC(inl0100,INL0100)(COMMON_ARGS REC_BUF LJ_ARGS);
 	break;
         case eNR_INL0110:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl0110_sse(ASM_COMMON_ARGS ASM_LJ_ARGS SOLMN_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -299,21 +297,25 @@ static real *_buf2=NULL;
           FUNC(inl0210,INL0210)(COMMON_ARGS INVSQRT_S_BUF1 INVSQRT_S_BUF2 LJ_ARGS SOLMN_ARGS);
         break;
 	case eNR_INL0300:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl0300_sse(ASM_COMMON_ARGS ASM_LJ_ARGS ASM_LJTAB_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl0300_3dnow(ASM_COMMON_ARGS ASM_LJ_ARGS ASM_LJTAB_ARGS);	
 	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl0300_sse2(ASM_COMMON_ARGS ASM_LJ_ARGS ASM_LJTAB_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl0300_altivec(ASM_COMMON_ARGS ASM_LJ_ARGS ASM_LJTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl0300_altivec(ASM_COMMON_ARGS ASM_LJ_ARGS ASM_LJTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl0300,INL0300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS);
+	    FUNC(inl0300,INL0300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 LJ_ARGS LJTAB_ARGS);
 	break;
 	case eNR_INL0310:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
             inl0310_sse(ASM_COMMON_ARGS ASM_LJ_ARGS ASM_LJTAB_ARGS SOLMN_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -341,21 +343,25 @@ static real *_buf2=NULL;
 	  FUNC(inl0402,INL0402)(COMMON_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS FREE_ARGS FREE_TYPEB SOFTCORE_ARGS);
 	break;
 	case eNR_INL1000:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1000_sse(ASM_COMMON_ARGS ASM_COUL_ARGS);	
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl1000_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS);	
 	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl1000_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl1000_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl1000_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS);	
+	  else
 #endif
-	      FUNC(inl1000,INL1000)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS);
+	    FUNC(inl1000,INL1000)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1010:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1010_sse(ASM_COMMON_ARGS ASM_COUL_ARGS SOLMN_ARGS);	
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -365,49 +371,61 @@ static real *_buf2=NULL;
 	    FUNC(inl1010,INL1010)(COMMON_ARGS INVSQRT_S_BUF1 COUL_ARGS SOLMN_ARGS);
  	break;
 	case eNR_INL1020:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1020_sse(ASM_COMMON_ARGS ASM_COUL_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl1020_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS);
 	  else 
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl1020_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl1020_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl1020_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS);	
+	  else
 #endif
-	      FUNC(inl1020,INL1020)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS);
+	    FUNC(inl1020,INL1020)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1030:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1030_sse(ASM_COMMON_ARGS ASM_COUL_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl1030_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS);
 	  else 
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl1030_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl1030_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl1030_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS);	
+	  else
 #endif
 	    FUNC(inl1030,INL1030)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1100:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1100_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl1100_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
 	  else 
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl1100_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl1100_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl1100_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
+	  else
 #endif
-	      FUNC(inl1100,INL1100)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
+	    FUNC(inl1100,INL1100)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1110:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1110_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS SOLMN_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -417,32 +435,40 @@ static real *_buf2=NULL;
     	    FUNC(inl1110,INL1110)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL1120:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1120_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl1120_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl1120_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl1120_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl1120_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
+	  else
 #endif
-	      FUNC(inl1120,INL1120)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS LJ_ARGS);
+	    FUNC(inl1120,INL1120)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1130:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl1130_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl1130_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);		
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl1130_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);		
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl1130_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl1130_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS);
+	  else
 #endif
-	      FUNC(inl1130,INL1130)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS LJ_ARGS);
+	    FUNC(inl1130,INL1130)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1200:
 	  FUNC(inl1200,INL1200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS);
@@ -481,82 +507,106 @@ static real *_buf2=NULL;
 	  FUNC(inl1430,INL1430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL2000:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)	
 	    inl2000_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
-	  else	
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl2000_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl2000_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl2000_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
+	  else
 #endif
-	      FUNC(inl2000,INL2000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
+	    FUNC(inl2000,INL2000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2010:
 	  FUNC(inl2010,INL2010)(COMMON_ARGS INVSQRT_S_BUF1 INVSQRT_S_BUF2 COUL_ARGS RF_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2020:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)	
 	    inl2020_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
 	  else	
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl2020_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl2020_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl2020_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
+	  else
 #endif
 	    FUNC(inl2020,INL2020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2030:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)	
 	    inl2030_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
-	  else	
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl2030_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl2030_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl2030_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS);	
+	  else
 #endif
 	    FUNC(inl2030,INL2030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2100:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)	
 	    inl2100_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
-	  else	
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl2100_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl2100_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl2100_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
+	  else
 #endif
-	      FUNC(inl2100,INL2100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	    FUNC(inl2100,INL2100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2110:
 	  FUNC(inl2110,INL2110)(COMMON_ARGS INVSQRT_S_BUF1 INVSQRT_S_BUF2 COUL_ARGS RF_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2120:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)	
 	    inl2120_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
-	  else	
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl2120_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl2120_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl2120_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
+	  else
 #endif
-	      FUNC(inl2120,INL2120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	    FUNC(inl2120,INL2120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2130:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
           if(cpu_capabilities & X86_SSE_SUPPORT)	
 	    inl2130_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
 	  else	
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl2130_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
+	  else	
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl2130_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl2130_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_RF_ARGS ASM_LJ_ARGS);	
+	  else
 #endif
-	      FUNC(inl2130,INL2130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	    FUNC(inl2130,INL2130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2200:
 	  FUNC(inl2200,INL2200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
@@ -595,18 +645,22 @@ static real *_buf2=NULL;
 	  FUNC(inl2430,INL2430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL3000:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3000_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3000_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3000_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
+	  else
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3000_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3000_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3000,INL3000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
+	    FUNC(inl3000,INL3000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3001:
 	  FUNC(inl3001,INL3001)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS FREE_ARGS FREE_CHARGEB);
@@ -615,7 +669,7 @@ static real *_buf2=NULL;
 	  FUNC(inl3002,INL3002)(COMMON_ARGS COUL_ARGS SOFTCORE_LJARGS COULTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB SOFTCORE_ARGS);
 	break;
 	case eNR_INL3010:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3010_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS SOLMN_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -625,49 +679,61 @@ static real *_buf2=NULL;
     	    FUNC(inl3010,INL3010)(COMMON_ARGS INVSQRT_S_BUF1 INVSQRT_S_BUF2 COUL_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3020:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3020_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3020_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);		
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3020_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);		
+	  else 	    
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3020_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3020_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3020,INL3020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS COULTAB_ARGS);
+	    FUNC(inl3020,INL3020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3030:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3030_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3030_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);		
 	  else 
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3030_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);		
+	  else 
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3030_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3030_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_COULTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3030,INL3030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS COULTAB_ARGS);
+	    FUNC(inl3030,INL3030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3100:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT) 
 	    inl3100_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3100_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3100_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
 	  else 
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3100_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3100_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3100,INL3100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	    FUNC(inl3100,INL3100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3110:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3110_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS SOLMN_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -677,32 +743,40 @@ static real *_buf2=NULL;
     	    FUNC(inl3110,INL3110)(COMMON_ARGS INVSQRT_S_BUF1 INVSQRT_S_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3120:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3120_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3120_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);		
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3120_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);		
+	  else  
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3120_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
-	    else
+          if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3120_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3120,INL3120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	    FUNC(inl3120,INL3120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3130:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3130_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);	
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3130_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);	
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3130_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);	
+	  else 	    
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3130_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3130_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_COULTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3130,INL3130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	    FUNC(inl3130,INL3130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3200:
 	  FUNC(inl3200,INL3200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
@@ -717,18 +791,22 @@ static real *_buf2=NULL;
 	  FUNC(inl3230,INL3230)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3300:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3300_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3300_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3300_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
+	  else 	    
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3300_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3300_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3300,INL3300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+	    FUNC(inl3300,INL3300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3301:
 	  FUNC(inl3301,INL3301)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB);
@@ -737,7 +815,7 @@ static real *_buf2=NULL;
 	  FUNC(inl3302,INL3302)(COMMON_ARGS COUL_ARGS LJ_ARGS LJCTAB_ARGS FREE_ARGS FREE_CHARGEB FREE_TYPEB SOFTCORE_ARGS);
 	break;
 	case eNR_INL3310:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3310_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS SOLMN_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
@@ -747,32 +825,40 @@ static real *_buf2=NULL;
     	    FUNC(inl3310,INL3310)(COMMON_ARGS INVSQRT_S_BUF1 INVSQRT_S_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3320:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3320_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3320_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3320_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
+	  else 	    
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3320_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
-	    else
+          if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3320_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3320,INL3320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+	    FUNC(inl3320,INL3320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3330:
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	  if(cpu_capabilities & X86_SSE_SUPPORT)
 	    inl3330_sse(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);		
 	  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	    inl3330_3dnow(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);		
-	  else 
+	  else
+#elif (defined USE_X86_SSE2 && defined DOUBLE)
+	  if(cpu_capabilities & X86_SSE2_SUPPORT)
+	    inl3330_sse2(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);		
+	  else 	    
 #elif defined USE_PPC_ALTIVEC
-	    if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
-	      inl3330_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
-	    else
+	  if(cpu_capabilities & PPC_ALTIVEC_SUPPORT)
+	    inl3330_altivec(ASM_COMMON_ARGS ASM_COUL_ARGS ASM_LJ_ARGS ASM_LJCTAB_ARGS);
+	  else
 #endif
-	      FUNC(inl3330,INL3330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+	    FUNC(inl3330,INL3330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3400:
 	  FUNC(inl3400,INL3400)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
@@ -921,7 +1007,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 #endif  
 
 /* We don't do SSE or altivec here, due to large overhead for 4-fold unrolling on short lists */
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
  if(cpu_capabilities==UNKNOWN_CPU) 
 	cpu_capabilities=detect_cpu(NULL);
 #endif
@@ -1028,7 +1114,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
 	FUNC(inl3300n,INL3300N)(COMMON_ARGS FBUF_ARG /* special version without some optimizations */
 #else	
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 				if(cpu_capabilities & X86_3DNOW_SUPPORT)
 	inl3300_3dnow(i1,&ai,j_index,&aj,&shift14,fr->shift_vec[0],fr->fshift[0],
 		      &gid ,x[0],f[0] FBUF_ARG

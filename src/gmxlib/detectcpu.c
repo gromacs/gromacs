@@ -43,7 +43,7 @@ static char *SRCID_detectcpu_c = "$Id$";
 #include <detectcpu.h>
 
 
-#if (defined USE_X86_ASM || defined USE_PPC_ALTIVEC)
+#if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2 || defined USE_PPC_ALTIVEC)
 /* We use some special posix-style long jumps in
  * this routine to catch exceptions, but for portability
  * we only include them when actually needed.
@@ -56,7 +56,7 @@ static char *SRCID_detectcpu_c = "$Id$";
  * be clobbered by the longjmp. We get rid of this
  * warning by making them global...
  */
-static int cpuSSE,cpu3DNow,doSSE,do3DNow,cpuflags;
+static int cpuSSE,cpuSSE2,cpu3DNow,doSSE,doSSE2,do3DNow,cpuflags;
 static int cpuAltivec;
   
 static jmp_buf mainloop;
@@ -86,13 +86,13 @@ static int check_altivec(void)
   vsr2=(vector unsigned short)vec_sl(vec_splat_u32(1),vec_splat_u32(16));
   vsr1=vec_or(vsr1,vsr2);
   vec_mtvscr(vsr1);
-
+  
   return 1;
 #else
   return 0;
 #endif
 }
-  
+
 static int detect_altivec(FILE *log)
 {
   /* dont know how to detect ppc, but this
@@ -125,16 +125,99 @@ static int detect_altivec(FILE *log)
   }
   return cpuflags;
 }
-#endif
+#endif /* PPC_ALTIVEC */
 
 
-#ifdef USE_X86_ASM
-static int detect_sse3dnow(FILE *log)
+
+#ifdef USE_X86_SSE2
+static int detect_sse2(FILE *log)
 {
   unsigned long eax,ebx,ecx,edx;
   
-  cpuSSE=cpu3DNow=doSSE=do3DNow=cpuflags=0;
+  cpuSSE2=doSSE2=cpuflags=0;
+  
+  if(log)    
+    fprintf(log,"\nTesting x86 processor CPUID...\n");
+  /* start by trying to issue the cpuid instruction */
+  success=1;
+  signal(SIGILL,sigill_handler);
+  setjmp(mainloop); /* return to this point if we get SIGILL */
+  
+  if(success) 
+    x86_cpuid(0,&eax,&ebx,&ecx,&edx);
+  else if(log)
+    fprintf(log,"This CPU doesn't support CPUID.\n");
 
+  if(eax>0) {
+    cpuflags |= X86_CPU;
+    if(log)
+      fprintf(log,"\nTesting x86 SSE2 capabilities...\n");
+    /* for SSE support, bit 25 of edx should be set */
+    x86_cpuid(1,&eax,&ebx,&ecx,&edx);
+    if(edx & FLAGS_SUPPORT_SSE2) {
+      cpuSSE2=1;
+      cpuflags |= CPU_SSE2_SUPPORT;/* CPU ok, but OS might not be */
+      /* try it */
+      success=1;
+      setjmp(mainloop); /* return to this point if we get SIGILL */
+      if(success) {
+	checksse2();
+	doSSE2=1;
+	cpuflags |= X86_SSE2_SUPPORT;
+      }
+    }
+  }
+  return cpuflags;
+}
+#endif /* sse2 */
+
+#ifdef USE_X86_SSE_AND_3DNOW
+static int detect_sse(FILE *log)
+{
+  unsigned long eax,ebx,ecx,edx;
+  
+  cpuSSE=doSSE=cpuflags=0;
+  
+  if(log)    
+    fprintf(log,"\nTesting x86 processor CPUID...\n");
+  /* start by trying to issue the cpuid instruction */
+  success=1;
+  signal(SIGILL,sigill_handler);
+  setjmp(mainloop); /* return to this point if we get SIGILL */
+  
+  if(success) 
+    x86_cpuid(0,&eax,&ebx,&ecx,&edx);
+  else if(log)
+    fprintf(log,"This CPU doesn't support CPUID.\n");
+  
+  if(eax>0) {
+    cpuflags |= X86_CPU;
+    if(log)
+      fprintf(log,"\nTesting x86 SSE capabilities...\n");
+    /* for SSE support, bit 25 of edx should be set */
+    x86_cpuid(1,&eax,&ebx,&ecx,&edx);
+    if(edx & FLAGS_SUPPORT_SSE) {
+      cpuSSE=1;
+      cpuflags |= CPU_SSE_SUPPORT;/* CPU ok, but OS might not be */
+      /* try it */
+      success=1;
+      setjmp(mainloop); /* return to this point if we get SIGILL */
+      if(success) {
+	checksse();
+	doSSE=1;
+	cpuflags |= X86_SSE_SUPPORT;
+      }
+    }
+  }
+  return cpuflags;
+}
+
+static int detect_3dnow(FILE *log)
+{
+  unsigned long eax,ebx,ecx,edx;
+  
+  cpu3DNow=do3DNow=cpuflags=0;
+  
   if(log)    
     fprintf(log,"\nTesting x86 processor CPUID...\n");
   /* start by trying to issue the cpuid instruction */
@@ -149,23 +232,6 @@ static int detect_sse3dnow(FILE *log)
 
   if(eax>0) {
     cpuflags |= X86_CPU;
-    if(log)
-      fprintf(log,"\nTesting x86 SSE capabilities...\n");
-    if(ebx==VENDOR_INTEL) {
-      /* intel - we need SSE support, bit 25 of edx should be set */
-      x86_cpuid(1,&eax,&ebx,&ecx,&edx);
-      if(edx & FLAGS_SUPPORT_SSE) {
-	cpuSSE=1;
-	/* try it */
-	success=1;
-	setjmp(mainloop); /* return to this point if we get SIGILL */
-	if(success) {
-	  checksse();
-	  doSSE=1;
-	  cpuflags |= X86_SSE_SUPPORT;
-	}
-      }
-    }
     if(log)
       fprintf(log,"\nTesting x86 3DNow capabilities...\n");
     if(ebx==VENDOR_AMD) {
@@ -192,47 +258,88 @@ static int detect_sse3dnow(FILE *log)
       }
     }
   }
-  if(doSSE) {
-    if(log)
-      fprintf(log,"CPU and OS support SSE.\n"
-	      "Using Gromacs SSE assembly innerloops.\n\n");
-  } else if(do3DNow) {
-    if(log)
-      fprintf(log,"CPU and OS support extended 3DNow.\n"
-	      "Using Gromacs 3DNow assembly innerloops.\n\n");
-  } else if(log) {
-    if(cpuSSE && log) {
-      fprintf(log,"CPU supports SSE, but your OS doesn't.\n");
-      fprintf(stderr,"NOTE: This version of gromacs is compiled with assembly innerloops\n" 
-	      "      using Intel SSE instructions. Your processor supports this,\n"
-	      "      but not your OS. Fixing this (e.g., upgrade to linux kernel 2.4)\n"
-	      "      will boost your gromacs performance SIGNIFICANTLY.\n");
-    } else if(cpu3DNow && log) {      
-      fprintf(log,"CPU supports extended 3DNow, but your OS doesn't.\n");
-    } else if(!cpuSSE && !cpu3DNow && log) {
-      fprintf(log,"No SSE/3DNow support found.\n");
-    }
-    if(log)
-      fprintf(log,"Using normal Gromacs innerloops.\n\n");
-  }
-  return cpuflags; 
-} 
-#endif
+  return cpuflags;
+}
+#endif /* sse and 3dnow */
 
+#if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2)
+static int detect_x86(FILE *log)
+{
+  cpuflags=0;
+#ifdef USE_X86_SSE2
+  /* For double precision we need SSE2 */
+  cpuflags=detect_sse2(log);
+  if(cpuflags & CPU_SSE2_SUPPORT) {
+    if (cpuflags & X86_SSE2_SUPPORT)
+      fprintf(log,"CPU and OS support SSE2.\n"
+	      "Using Gromacs SSE2 double precision assembly innerloops.\n\n");
+    else {
+      fprintf(log,"CPU supports SSE2, but your OS doesn't.\n");
+      fprintf(stderr,"NOTE: This version of gromacs is compiled with assembly innerloops\n" 
+	      "      using Intel SSE2 instructions. Your processor supports this,\n"
+	      "      but not your OS. Fixing this (e.g., upgrade your linux kernel)\n"
+	      "      will boost your gromacs performance SIGNIFICANTLY.\n");
+    }
+  } else 
+    fprintf(log,"No SSE2 support found for this CPU.\n");
+  
+#endif   
+#ifdef USE_X86_SSE_AND_3DNOW
+  /* Either SSE or 3DNow will do for single precision.
+   * We first check for SSE since it is IEEE-compliant
+   */
+  cpuflags=detect_sse(log);
+  if(cpuflags & X86_SSE_SUPPORT) {
+    fprintf(log,"CPU and OS support SSE.\n"
+	    "Using Gromacs SSE single precision assembly innerloops.\n\n");
+    return cpuflags;
+  } else {
+    if(cpuflags & CPU_SSE_SUPPORT)
+      fprintf(log,"Your processor supports SSE, but not your OS.\n"
+	      "Checking for Extended 3DNow support instead...\n");
+    else /* No sse support at all */
+      fprintf(log,"No SSE support in CPU. Trying Extended 3DNow...\n");
+    cpuflags=detect_3dnow(log);
+    if(cpuflags & X86_3DNOW_SUPPORT) {
+      fprintf(log,"CPU and OS support extended 3DNow.\n"
+	      "Using Gromacs 3DNow single precision assembly innerloops.\n\n");
+      return cpuflags;
+    }
+  }
+  fprintf(log,"SSE or Extended 3DNow not supported.\n");
+  fprintf(log,"Using normal Gromacs innerloops.\n\n");
+  /* Tell the user if he has SSE support but cannot use it ... */
+  if(cpuflags & CPU_SSE_SUPPORT)
+    fprintf(stderr,"NOTE: This version of gromacs is compiled with assembly innerloops\n" 
+	    "      using Intel SSE instructions. Your processor supports this,\n"
+	    "      but not your OS. Fixing this (e.g., upgrade your linux kernel)\n"
+	    "      will boost your gromacs performance SIGNIFICANTLY.\n");
+#endif
+  return cpuflags;
+}
+#endif
 
 int detect_cpu(FILE *log)
 {
+  int cpuflags=0;
+  
 #ifdef USE_PPC_ALTIVEC
-  return detect_altivec(log);
-#elif defined USE_X86_ASM
-  return detect_sse3dnow(log);
-#endif
+  cpuflags=detect_altivec(log);
+#elif (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2)
+  cpuflags=detect_x86(log);
+#else  
   if(log)
-    fprintf(log,"Not checking cpu support for SSE/3DNow/Altivec\n");
-  return UNKNOWN_CPU;
+    fprintf(log,"Not checking cpu support for SSE/SSE2/3DNow/Altivec\n");
+  cpuflags=UNKNOWN_CPU;
+#endif
+  if (getenv("NOASSEMBLYLOOPS") != NULL) {
+    cpuflags &= (~X86_SSE_SUPPORT) & (~X86_SSE2_SUPPORT) & (~X86_3DNOW_SUPPORT) & (~PPC_ALTIVEC_SUPPORT);
+    
+    if(log)
+      fprintf(log,
+	      "Found environment variable NOASSEMBLYLOOPS.\n"
+	      "Disabling all SSE/SSE2/3DNow/Altivec support.\n");
+  }
 }
-
-
-
-#endif /* detectcpu.h */
+#endif /* detectcpu */
 

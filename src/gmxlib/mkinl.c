@@ -71,14 +71,6 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     routine to speed up truncation. This will
  *                     increase table routine performance significantly.
  *
- * -DUSE_X86_ASM       Include assembly loops which can utilize fast 
- *                     single precision optimizations in newer Intel and
- *                     Amd processors. The code will still run on any
- *                     x86 machine, but to make use of the special loops you
- *                     will need e.g. redhat>=6.2 and a pentium III/amd k6 
- *                     or later running a kernel with support for
- *                     these instructions. It only affects single precision.
- *
  * -DTHREADS_MUTEX     Make code suitable for shared-memory multithreading
  * -DTHREADS_STRIDE    parallelization and determines the way to 
  * (NOT SUPPORTED YET) synchronize threads. Striding loops over N processors 

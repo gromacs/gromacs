@@ -613,7 +613,7 @@ static void write_bashcompl(FILE *out,
   fprintf(out,"case \"$p\" in\n");
   pr_enums(out,npargs,pa,eshellBASH);
   pr_fopts(out,nfile,fnm,eshellBASH);
-  fprintf(out,"esac }\ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
+  fprintf(out,"esac; }; \ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
 }
 
 void write_man(FILE *out,char *mantp,

@@ -33,7 +33,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	detectcpu.c	libxdrf.c	vec.c		
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
-	x86_sse.s	x86_3dnow.s  	inner_altivec.c \
+	x86_sse.s	x86_sse2.s	x86_3dnow.s  	inner_altivec.c \
 	mgmx.c		widget.c	widget.h	x86_cpuid.s	\
 	axp_asm.s	f77_wrappers.c	
 

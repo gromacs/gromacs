@@ -88,7 +88,7 @@ void vecinvsqrt(real in[],real out[],int n)
 #endif /* VARIABLES FOR SOFTWARE_INVSQRT */
   int i;
  
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE) 
   static bool bFirst=TRUE;
   static int cpu_capabilities;
   
@@ -103,6 +103,19 @@ void vecinvsqrt(real in[],real out[],int n)
     vecinvsqrt_3dnow(in,out,n);
   else
 #endif /* no x86 optimizations */
+#if (defined USE_X86_SSE2 && defined DOUBLE) 
+  static bool bFirst=TRUE;
+  static int cpu_capabilities;
+  
+  if(bFirst) {
+    cpu_capabilities=detect_cpu(NULL);
+    bFirst=FALSE;
+  }
+
+  if((cpu_capabilities & X86_SSE2_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE2 data must be cache aligned */
+    vecinvsqrt_sse2(in,out,n);
+  else
+#endif /* no sse2 optimizations */
 #ifdef SOFTWARE_INVSQRT
     for(i=0;i<n;i++) {
       x=in[i];
@@ -153,7 +166,7 @@ void vecrecip(real in[],real out[],int n)
 #endif /* SOFTWARE_RECIP */
   int i;
 
-#if (defined USE_X86_ASM && !defined DOUBLE)
+#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
   static bool bFirst=TRUE;
   static int cpu_capabilities;
 
@@ -167,6 +180,18 @@ void vecrecip(real in[],real out[],int n)
     vecrecip_3dnow(in,out,n);
   else
 #endif /* no x86 optimizations */
+#if (defined USE_X86_SSE2 && defined DOUBLE)
+  static bool bFirst=TRUE;
+  static int cpu_capabilities;
+
+  if(bFirst) {
+    cpu_capabilities=detect_cpu(NULL);
+    bFirst=FALSE;
+  }
+  if((cpu_capabilities & X86_SSE2_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE2 data must be cache aligned */
+    vecrecip_sse2(in,out,n);
+  else
+#endif /* no sse2 optimizations */
 #ifdef SOFTWARE_RECIP
     for(i=0;i<n;i++) {
       x=in[i];
