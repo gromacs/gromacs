@@ -1126,7 +1126,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    bitsize = sizeofints(3, sizeint);
 	}
 	
-	xdr_int(xdrs, &smallidx);
+	if (xdr_int(xdrs, &smallidx) == 0)	
+	    return 0;
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
 	smaller = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
