@@ -60,13 +60,13 @@ char *longs_ffn[effnNR] = {
   "y = sqrt(a2*ee(a1,x) + (1-a2)*ee(a2,x))"
 };
 
-extern void mrqmin(real x[],real y[],real sig[],int ndata,real a[],
+extern bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
 		   int ma,int lista[],int mfit,real **covar,real **alpha,
 		   real *chisq,
 		   void (*funcs)(real x,real a[],real *y,real dyda[]),
 		   real *alamda);
 
-extern void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
+extern bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		       int ia[],int ma,real **covar,real **alpha,real *chisq, 
 		       void (*funcs)(real, real [], real *, real []), 
 		       real *alamda);
@@ -214,7 +214,7 @@ real fit_function(int eFitFn,real *parm,real x)
 }
 
 /* lmfit_exp supports up to 3 parameter fitting of exponential functions */
-static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
+static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
 		      real parm[],real dparm[],bool bVerbose,
 		      int eFitFn,int fix)
 {
@@ -267,10 +267,11 @@ static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   do {
     ochisq = chisq;
     /* mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
-     *   &chisq,expfn[mfit-1],&alamda);
+     *   &chisq,expfn[mfit-1],&alamda)
      */
-    mrqmin_new(x-1,y-1,dy-1,nfit,a,ia,ma,covar,alpha,&chisq,
-	       mfitfn[eFitFn],&alamda);
+    if (!mrqmin_new(x-1,y-1,dy-1,nfit,a,ia,ma,covar,alpha,&chisq,
+		    mfitfn[eFitFn],&alamda))
+      return FALSE;
      
     if (bVerbose) {
       fprintf(stderr,"%4d  %10.5e  %10.5e  %10.5e",
@@ -292,10 +293,11 @@ static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   alamda = 0;
 
   /*  mrqmin(x-1,y-1,dy-1,nfit,a,ma,lista,mfit,covar,alpha,
-   * &chisq,expfn[mfit-1],&alamda);
+   * &chisq,expfn[mfit-1],&alamda)
    */
-  mrqmin_new(x-1,y-1,dy-1,nfit,a,ia,ma,covar,alpha,&chisq,
-	     mfitfn[eFitFn],&alamda);
+  if ( !mrqmin_new(x-1,y-1,dy-1,nfit,a,ia,ma,covar,alpha,&chisq,
+		   mfitfn[eFitFn],&alamda))
+    return FALSE;
 
   for(j=0; (j<mfit); j++) {
     parm[j]  = a[j+1];
@@ -311,6 +313,8 @@ static void lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   sfree(alpha);
   sfree(lista);
   sfree(dum);
+  
+  return TRUE;
 }
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
@@ -367,33 +371,37 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       for(i=0; i<nfp_ffn[eFitFn]; i++)
 	parm[i]=fitparms[i];
     
-    lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix);
-    
-    /* Compute the integral from begintimefit */
-    integral=(parm[0]*myexp(begintimefit,parm[1],  parm[0]) +
-	      parm[2]*myexp(begintimefit,1-parm[1],parm[2]));
-    
-    /* Generate THE output */
-    if (bVerbose) {
-      fprintf(stderr,"FIT: # points used in fit is: %d\n",nfitpnts);
-      fprintf(stderr,"FIT: %21s%21s%21s\n",
-	      "parm0     ","parm1 (ps)   ","parm2 (ps)    ");
-      fprintf(stderr,"FIT: ------------------------------------------------------------\n");
-      fprintf(stderr,"FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
-	      parm[0],dparm[0],parm[1],dparm[1],parm[2],dparm[2]);
-      fprintf(stderr,"FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
-	      begintimefit,integral);
+    if (!lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix)) {
+      fprintf(stderr,"Fit failed!\n");
+      integral=0;
+      parm[0] = parm[1] = parm[2] = 0;
+    } else {
+      /* Compute the integral from begintimefit */
+      integral=(parm[0]*myexp(begintimefit,parm[1],  parm[0]) +
+		parm[2]*myexp(begintimefit,1-parm[1],parm[2]));
       
-      sprintf(buf,"test%d.xvg",nfitpnts);
-      fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
-      fprintf(fp,"# parm0 = %g, parm1 = %g, parm2 = %g\n",
-	      parm[0],parm[1],parm[2]);
-      for(j=0; j<nfitpnts; j++) {
-	ttt = x0 ? x0[j] : dt*j;
-	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
-		ttt,c1[j],fit_function(eFitFn,parm,ttt));
+      /* Generate THE output */
+      if (bVerbose) {
+	fprintf(stderr,"FIT: # points used in fit is: %d\n",nfitpnts);
+	fprintf(stderr,"FIT: %21s%21s%21s\n",
+		"parm0     ","parm1 (ps)   ","parm2 (ps)    ");
+	fprintf(stderr,"FIT: ------------------------------------------------------------\n");
+	fprintf(stderr,"FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
+		parm[0],dparm[0],parm[1],dparm[1],parm[2],dparm[2]);
+	fprintf(stderr,"FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
+		begintimefit,integral);
+	
+	sprintf(buf,"test%d.xvg",nfitpnts);
+	fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
+	fprintf(fp,"# parm0 = %g, parm1 = %g, parm2 = %g\n",
+		parm[0],parm[1],parm[2]);
+	for(j=0; j<nfitpnts; j++) {
+	  ttt = x0 ? x0[j] : dt*j;
+	  fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
+		  ttt,c1[j],fit_function(eFitFn,parm,ttt));
+	}
+	fclose(fp);
       }
-      fclose(fp);
     }
   }
   

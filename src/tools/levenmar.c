@@ -39,19 +39,23 @@ static char *SRCID_levenmar_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #ifdef DOUBLE
 typedef double real;
 #else
 typedef float real;
 #endif
+typedef int bool;
+#define TRUE 1
+#define FALSE 0
 
-void nrerror(char error_text[])
+void nrerror(char error_text[], bool bExit)
 {
   fprintf(stderr,"Numerical Recipes run-time error...\n");
   fprintf(stderr,"%s\n",error_text);
-  fprintf(stderr,"...now exiting to system...\n");
-  exit(1);
+  if (bExit) {
+    fprintf(stderr,"...now exiting to system...\n");
+    exit(1);
+  }
 }
 
 
@@ -61,7 +65,7 @@ real *vector(int nl,int nh)
   real *v;
   
   v=(real *)malloc((unsigned) (nh-nl+1)*sizeof(real));
-  if (!v) nrerror("allocation failure in vector()");
+  if (!v) nrerror("allocation failure in vector()", TRUE);
   return v-nl;
 }
 
@@ -70,7 +74,7 @@ int *ivector(int nl, int nh)
   int *v;
   
   v=(int *)malloc((unsigned) (nh-nl+1)*sizeof(int));
-  if (!v) nrerror("allocation failure in ivector()");
+  if (!v) nrerror("allocation failure in ivector()", TRUE);
   return v-nl;
 }
 
@@ -79,7 +83,7 @@ double *dvector(int nl, int nh)
   double *v;
 	
   v=(double *)malloc((unsigned) (nh-nl+1)*sizeof(double));
-  if (!v) nrerror("allocation failure in dvector()");
+  if (!v) nrerror("allocation failure in dvector()", TRUE);
   return v-nl;
 }
 
@@ -91,12 +95,12 @@ real **matrix(int nrl, int nrh, int ncl, int nch)
 	real **m;
 
 	m=(real **) malloc((unsigned) (nrh-nrl+1)*sizeof(real*));
-	if (!m) nrerror("allocation failure 1 in matrix()");
+	if (!m) nrerror("allocation failure 1 in matrix()", TRUE);
 	m -= nrl;
 
 	for(i=nrl;i<=nrh;i++) {
 		m[i]=(real *) malloc((unsigned) (nch-ncl+1)*sizeof(real));
-		if (!m[i]) nrerror("allocation failure 2 in matrix()");
+		if (!m[i]) nrerror("allocation failure 2 in matrix()", TRUE);
 		m[i] -= ncl;
 	}
 	return m;
@@ -108,12 +112,12 @@ double **dmatrix(int nrl, int nrh, int ncl, int nch)
 	double **m;
 
 	m=(double **) malloc((unsigned) (nrh-nrl+1)*sizeof(double*));
-	if (!m) nrerror("allocation failure 1 in dmatrix()");
+	if (!m) nrerror("allocation failure 1 in dmatrix()", TRUE);
 	m -= nrl;
 
 	for(i=nrl;i<=nrh;i++) {
 		m[i]=(double *) malloc((unsigned) (nch-ncl+1)*sizeof(double));
-		if (!m[i]) nrerror("allocation failure 2 in dmatrix()");
+		if (!m[i]) nrerror("allocation failure 2 in dmatrix()", TRUE);
 		m[i] -= ncl;
 	}
 	return m;
@@ -124,12 +128,12 @@ int **imatrix(int nrl, int nrh, int ncl, int nch)
 	int i,**m;
 
 	m=(int **)malloc((unsigned) (nrh-nrl+1)*sizeof(int*));
-	if (!m) nrerror("allocation failure 1 in imatrix()");
+	if (!m) nrerror("allocation failure 1 in imatrix()", TRUE);
 	m -= nrl;
 
 	for(i=nrl;i<=nrh;i++) {
 		m[i]=(int *)malloc((unsigned) (nch-ncl+1)*sizeof(int));
-		if (!m[i]) nrerror("allocation failure 2 in imatrix()");
+		if (!m[i]) nrerror("allocation failure 2 in imatrix()", TRUE);
 		m[i] -= ncl;
 	}
 	return m;
@@ -144,7 +148,7 @@ real **submatrix(real **a, int oldrl, int oldrh, int oldcl,
 	real **m;
 
 	m=(real **) malloc((unsigned) (oldrh-oldrl+1)*sizeof(real*));
-	if (!m) nrerror("allocation failure in submatrix()");
+	if (!m) nrerror("allocation failure in submatrix()", TRUE);
 	m -= newrl;
 
 	for(i=oldrl,j=newrl;i<=oldrh;i++,j++) m[j]=a[i]+oldcl-newcl;
@@ -212,7 +216,7 @@ real **convert_matrix(real *a, int nrl, int nrh, int ncl, int nch)
 	nrow=nrh-nrl+1;
 	ncol=nch-ncl+1;
 	m = (real **) malloc((unsigned) (nrow)*sizeof(real*));
-	if (!m) nrerror("allocation failure in convert_matrix()");
+	if (!m) nrerror("allocation failure in convert_matrix()", TRUE);
 	m -= nrl;
 	for(i=0,j=nrl;i<=nrow-1;i++,j++) m[j]=a+ncol*i-ncl;
 	return m;
@@ -227,7 +231,7 @@ void free_convert_matrix(real **b, int nrl)
 
 #define SWAP(a,b) {real temp=(a);(a)=(b);(b)=temp;}
 
-void gaussj(real **a, int n, real **b, int m)
+bool gaussj(real **a, int n, real **b, int m)
 {
   int *indxc,*indxr,*ipiv;
   int i,icol=0,irow=0,j,k,l,ll;
@@ -248,7 +252,10 @@ void gaussj(real **a, int n, real **b, int m)
 	      irow=j;
 	      icol=k;
 	    }
-	  } else if (ipiv[k] > 1) nrerror("GAUSSJ: Singular Matrix-1");
+	  } else if (ipiv[k] > 1) {
+	    nrerror("GAUSSJ: Singular Matrix-1", FALSE);
+	    return FALSE;
+	  }
 	}
     ++(ipiv[icol]);
     if (irow != icol) {
@@ -257,7 +264,10 @@ void gaussj(real **a, int n, real **b, int m)
     }
     indxr[i]=irow;
     indxc[i]=icol;
-    if (a[icol][icol] == 0.0) nrerror("GAUSSJ: Singular Matrix-2");
+    if (a[icol][icol] == 0.0) {
+      nrerror("GAUSSJ: Singular Matrix-2", FALSE);
+      return FALSE;
+    }
     pivinv=1.0/a[icol][icol];
     a[icol][icol]=1.0;
     for (l=1;l<=n;l++) a[icol][l] *= pivinv;
@@ -278,6 +288,8 @@ void gaussj(real **a, int n, real **b, int m)
   free_ivector(ipiv,1);
   free_ivector(indxr,1);
   free_ivector(indxc,1);
+  
+  return TRUE;
 }
 
 #undef SWAP
@@ -363,7 +375,7 @@ void mrqcof(real x[], real y[], real sig[], int ndata, real a[],
 }
 
 	
-void mrqmin(real x[], real y[], real sig[], int ndata, real a[], 
+bool mrqmin(real x[], real y[], real sig[], int ndata, real a[], 
 	    int ma, int lista[], int mfit, 
 	    real **covar, real **alpha, real *chisq,
 	    void (*funcs)(real,real *,real *,real *),
@@ -384,9 +396,15 @@ void mrqmin(real x[], real y[], real sig[], int ndata, real a[],
 	if (lista[k] == j) ihit++;
       if (ihit == 0)
 	lista[kk++]=j;
-      else if (ihit > 1) nrerror("Bad LISTA permutation in MRQMIN-1");
+      else if (ihit > 1) {
+	nrerror("Bad LISTA permutation in MRQMIN-1", FALSE);
+	return FALSE;
+      }
     }
-    if (kk != ma+1) nrerror("Bad LISTA permutation in MRQMIN-2");
+    if (kk != ma+1) {
+      nrerror("Bad LISTA permutation in MRQMIN-2", FALSE);
+      return FALSE;
+    }
     *alamda=0.001;
     mrqcof(x,y,sig,ndata,a,ma,lista,mfit,alpha,beta,chisq,funcs);
     ochisq=(*chisq);
@@ -396,7 +414,8 @@ void mrqmin(real x[], real y[], real sig[], int ndata, real a[],
     covar[j][j]=alpha[j][j]*(1.0+(*alamda));
     oneda[j][1]=beta[j];
   }
-  gaussj(covar,mfit,oneda,1);
+  if (!gaussj(covar,mfit,oneda,1))
+    return FALSE;
   for (j=1;j<=mfit;j++)
     da[j]=oneda[j][1];
   if (*alamda == 0.0) {
@@ -405,7 +424,7 @@ void mrqmin(real x[], real y[], real sig[], int ndata, real a[],
     free_vector(da,1);
     free_vector(atry,1);
     free_matrix(oneda,1,mfit,1);
-    return;
+    return TRUE;
   }
   for (j=1;j<=ma;j++) atry[j]=a[j];
   for (j=1;j<=mfit;j++)
@@ -423,11 +442,11 @@ void mrqmin(real x[], real y[], real sig[], int ndata, real a[],
     *alamda *= 10.0;
     *chisq=ochisq;
   }
-  return;
+  return TRUE;
 }
 
 
-void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
+bool mrqmin_new(real x[],real y[],real sig[],int ndata,real a[], 
 		int ia[],int ma,real **covar,real **alpha,real *chisq, 
 		void (*funcs)(real, real [], real *, real []), 
 		real *alamda)
@@ -455,7 +474,7 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
       */
 {
   void covsrt(real **covar, int ma, int ia[], int mfit);
-  void gaussj(real **a, int n, real **b,int m);
+  bool gaussj(real **a, int n, real **b,int m);
   void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[],
 	      int ia[], int ma, real **alpha, real beta[], real *chisq,
 	      void (*funcs)(real, real [], real *, real []));
@@ -481,7 +500,8 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
     covar[j][j]=alpha[j][j]*(1.0+(*alamda));
     oneda[j][1]=beta[j];
   }
-  gaussj(covar,mfit,oneda,1);      /* Matrix solution. */
+  if (!gaussj(covar,mfit,oneda,1))      /* Matrix solution. */
+    return FALSE;
   for (j=1;j<=mfit;j++) 
     da[j]=oneda[j][1];
   if (*alamda == 0.0) { /* Once converged, evaluate covariance matrix. */
@@ -490,7 +510,7 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
     free_vector(da,1);
     free_vector(beta,1);
     free_vector(atry,1);
-    return;
+    return TRUE;
   }
   for (j=0,l=1;l<=ma;l++) /* Did the trial succeed? */
     if (ia[l]) atry[l]=a[l]+da[++j];
@@ -508,6 +528,7 @@ void mrqmin_new(real x[],real y[],real sig[],int ndata,real a[],
     *alamda *= 10.0;
     *chisq=ochisq;
   }
+  return TRUE;
 }
 
 void mrqcof_new(real x[], real y[], real sig[], int ndata, real a[], 
