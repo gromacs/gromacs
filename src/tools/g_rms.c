@@ -139,8 +139,6 @@ int main (int argc,char *argv[])
     { NULL, "rot+trans", "translation", "none" };
   static char *fitgraphlabel[efNR] = 
     { NULL, "lsq fit", "translational fit", "no fit" };
-  static char *fitmatrixlabel[efNR] = 
-    { NULL, "lsq fit", "translational fit", "no fit" };
 
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
@@ -171,13 +169,13 @@ int main (int argc,char *argv[])
     { "-aver",  FALSE, etINT,  {&avl},
       "HIDDENAverage over this distance in the RMSD matrix" }
   };
-  int        step,nre,natoms,natoms2;
+  int        natoms,natoms2;
   int        i,j,k,m,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int        maxframe=NFRAME,maxframe2=NFRAME;
-  real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
-  bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
-  bool       bFit=FALSE,bReset=FALSE;
+  real       t,*w_rls,*w_rms,*w_rls_m=NULL,*w_rms_m=NULL;
+  bool       bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
+  bool       bFit,bReset;
   t_topology top;
   t_iatom    *iatom=NULL;
 
@@ -223,15 +221,11 @@ int main (int argc,char *argv[])
   if (ewhat==ewRho || ewhat==ewRhoSc)
     please_cite(stdout,"Maiorov95");
   efit=nenum(fit);
-  switch(efit) {
-  case efFit:    bFit=TRUE;  bReset=TRUE;  break;
-  case efReset:  bFit=FALSE; bReset=TRUE;  break;
-  case efNone:   bFit=FALSE; bReset=FALSE; break;
-  default:
-    fatal_error(0,"Death horror: no such enum efit (%d)", efit);
-    break;
-  }
+  bFit      = efit==efFit;
+  bReset    = efit==efReset;
+  if (bFit) bReset = TRUE; /* for fit, reset *must* be set */
   
+  /* mark active cmdline options */
   bMirror= opt2bSet("-mir",NFILE,fnm); /* calc RMSD vs mirror of ref. */
   bFile2 = opt2bSet("-f2",NFILE,fnm);
   bMat   = opt2bSet("-m" ,NFILE,fnm);
@@ -240,6 +234,20 @@ int main (int argc,char *argv[])
 			      *	your RMSD matrix (hidden option       */
   bNorm=opt2bSet("-a",NFILE,fnm);
   bFreq2=opt2parg_bSet("-skip2", asize(pa), pa);
+  if (freq<=0) {
+    fprintf(stderr,"The number of frames to skip is <= 0. "
+	    "Writing out all frames.\n\n");
+    freq = 1;
+  }
+  if (!bFreq2) freq2=freq;
+  else
+    if (bFile2 && freq2<=0) {
+    fprintf(stderr,
+	    "The number of frames to skip in second trajectory is <= 0.\n"
+	    "  Writing out all frames.\n\n");
+    freq2 = 1;
+    }
+  
   bPrev = (prev > 0);
   if (bPrev) {
     prev=abs(prev);
@@ -280,18 +288,16 @@ int main (int argc,char *argv[])
   /*set box type*/
   init_pbc(box);
 
-  if (bFit)
-    fprintf(stderr,"Select group for least squares fit\n");
-  else if (bReset)
-    fprintf(stderr,"Select group for determining center of mass\n");
-  if (bFit || bReset)
+  if (bReset) {
+    fprintf(stderr,"Select group for %s fit\n", 
+	    bFit?"least squares":"translational");
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	      1,&ifit,&ind_fit,&gn_fit);
-  else
+  } else
     ifit=0;
   
-  if (bFit) {
-    if (ifit < 3) 
+  if (bReset) {
+    if (bFit && ifit<3) 
       fatal_error(0,"Need >= 3 points to fit!\n");
     
     bMass = FALSE;
@@ -310,7 +316,7 @@ int main (int argc,char *argv[])
     fprintf(stderr,"How many groups do you want to compare ? ");
     scanf("%d",&nrms);
 
-    fprintf(stderr,"OK. I will compare %d groups\n",nrms);
+    fprintf(stderr,"OK. I will compare %d group%s\n",nrms,(nrms>1)?"s":"");
   }
   else
     nrms=1;
@@ -319,7 +325,7 @@ int main (int argc,char *argv[])
   snew(ind_rms,nrms);
   snew(irms,nrms);
   
-  fprintf(stderr,"Select group%s for %s\n",
+  fprintf(stderr,"Select group%s for %s calculation\n",
 	  (nrms>1) ? "s" : "",whatname[ewhat]);
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    nrms,irms,ind_rms,gn_rms);
@@ -351,7 +357,7 @@ int main (int argc,char *argv[])
   /* Prepare reference frame */
   if (bPBC)
     rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
-  if (bFit || bReset)
+  if (bReset)
     reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
   if (bMirror) {
     /* generate reference structure mirror image: */
@@ -447,7 +453,7 @@ int main (int argc,char *argv[])
     if (bPBC) 
       rm_pbc(&(top.idef),natoms,box,x,x);
     
-    if (bFit || bReset)
+    if (bReset)
       reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
     if (ewhat==ewRhoSc)
       norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
@@ -475,7 +481,7 @@ int main (int argc,char *argv[])
 	j=0;
       for (i=0;i<n_ind_m;i++)
 	copy_rvec(mat_x[j][i],xp[ind_m[i]]);
-      if (bFit || bReset)
+      if (bReset)
 	reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
       if (bFit)
 	do_fit(natoms,w_rls,x,xp);
@@ -522,14 +528,13 @@ int main (int argc,char *argv[])
     if ( natoms2 != natoms )
       fatal_error(0,"Second trajectory (%d atoms) does not match the first one"
 		  " (%d atoms)", natoms2, natoms);
-    if (!bFreq2) freq2=freq;
     tel_mat2 = 0;
     teller2 = 0;
     do {
       if (bPBC) 
 	rm_pbc(&(top.idef),natoms,box,x,x);
 
-      if (bFit || bReset)
+      if (bReset)
 	reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
       if (ewhat==ewRhoSc)
 	norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
