@@ -302,7 +302,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Ionize the atoms if necessary */    
     if (bIonize)
-      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,v);
+      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,v,parm->box);
 
     /* Now is the time to relax the shells */
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,

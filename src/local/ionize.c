@@ -308,14 +308,14 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
 }
 
 void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
-	    rvec v[])
+	    rvec v[],matrix box)
 {
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE,bImpulse = TRUE,bExtraKinetic=FALSE;
   static real  t0,imax,width,inv_nratoms,rho,nphot,nkdecay,nkd_tot,
     ztot,protein_radius;
-  static int   seed,dq_tot,ephot;
+  static int   seed,dq_tot,ephot,mode;
   static t_cross_atom *ca;
   static int   Eindex=-1;
   real r,factor,ndv,E_lost=0,cross_atom,dvz,rrc;
@@ -335,6 +335,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     rho   = ir->userreal4;  /* Diameter of the focal spot            */
     seed  = ir->userint1;   /* Random seed for stochastic ionization */
     ephot = ir->userint2;   /* Energy of the photons                 */
+    mode  = ir->userint3;   /* Mode of ionizing                      */
     
     if ((width <= 0) || (nphot <= 0))
       fatal_error(0,"Your parameters for ionization are not set properly\n"
