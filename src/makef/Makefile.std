@@ -65,7 +65,6 @@ endif
 GMXINS	= \$$\(GMXHOME\)
 dep:
 	$(MKDEP) -I. -I$(GMXHOME)/src/include  *.c  |  sed  s~$(GMXHOME)~$(GMXINS)~ > Make.dep
-	$(MKDEP) -I. -I$(GMXHOME)/src/include  *.c *cc |  sed  s~$(GMXHOME)~$(GMXINS)~ >> Make.dep
 	
 clean:
 		$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\# 
