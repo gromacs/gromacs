@@ -59,6 +59,9 @@ prog:		mdp_opt.tex proglist.tex
 
 man:		./mkman
 
+progman.tex:	
+		$(TOUCH) progman.tex
+
 mdp_opt.tex:	./mkmdp $(HTML)/progman.html
 		./mkmdp $(GMXHOME)
 
@@ -72,4 +75,3 @@ clean:
 		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind 
 		$(RM) progman.tex
 		$(RMDIR) progman
-		$(TOUCH) progman.tex
