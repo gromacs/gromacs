@@ -238,13 +238,13 @@ static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
   FILE *fp0,*fp1;
   real av[4],avold[4];
   real fac,dt,di;
-  int  i,j,m,nf2;
+  int  i,j,m,nf4;
   
   if (nframes < 1)
     return;
     
   dt  = (time[1]-time[0]);
-  nf2 = nframes/2;
+  nf4 = nframes/4+1;
   
   for(i=0; i<=nsets; i++)
     avold[i] = 0;
@@ -252,7 +252,7 @@ static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
 	       "Time (ps)","(kg m\\S-1\\N s\\S-1\\N ps)");
   fp1=xvgropen(fn,"Shear viscosity using Einstein relation",
 	       "Time (ps)","(kg m\\S-1\\N s\\S-1\\N)");
-  for(i=1; i<nf2; i++) {
+  for(i=1; i<nf4; i++) {
     fac = dt*nframes/nsteps;
     for(m=0; m<=nsets; m++)
 	av[m] = 0;
