@@ -3,7 +3,18 @@
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
 
-SUBDIRS = nonbonded
+if !GMX_SYSTEM_BLAS
+  BLAS_DIR       = gmx_blas
+  BLAS_LIBOBJS   = gmx_blas/libblas.la       
+endif
+
+if !GMX_SYSTEM_LAPACK
+  LAPACK_DIR     = gmx_lapack
+  LAPACK_LIBOBJS = gmx_lapack/liblapack.la
+endif
+
+
+SUBDIRS = nonbonded $(BLAS_DIR) $(LAPACK_DIR)
 
 AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
@@ -12,9 +23,15 @@ lib_LTLIBRARIES = libgmx@LIBSUFFIX@.la
 #
 # Use a utility library for all the nonbonded kernels and wrapper routines.
 #
-libgmx@LIBSUFFIX@_la_LIBADD = @GMXLIB_LIBOBJS@ nonbonded/libnonbonded.la
-libgmx@LIBSUFFIX@_la_DEPENDENCIES = @GMXLIB_LIBOBJS@ nonbonded/libnonbonded.la
-#
+libgmx@LIBSUFFIX@_la_LIBADD =       @GMXLIB_LIBOBJS@                  \
+			            nonbonded/libnonbonded.la         \
+	                            $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
+
+libgmx@LIBSUFFIX@_la_DEPENDENCIES = @GMXLIB_LIBOBJS@                  \
+			            nonbonded/libnonbonded.la         \
+				    $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
+
+#	
 #
 libgmx@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
@@ -25,8 +42,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	enxio.c		ewald_util.c	fatal.c		ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
-	invblock.c	macros.c	orires.c	\
-	main.c		maths.c		matio.c			\
+	invblock.c	macros.c	orires.c	sparsematrix.c  \
+	main.c		maths.c		matio.c		mtxio.c		\
 	mshift.c	mvdata.c	mvxvf.c		names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
 	pargs.c		pbc.c		pdbio.c		princ.c		\
@@ -37,7 +54,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	libxdrf.c	xmlio.h		\
+	libxdrf.c	xmlio.h		gmx_arpack.c			\
 	dihres.c	xmlio.c		gmx_random_gausstable.h
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
