@@ -426,7 +426,7 @@ static char **read_topol(char        *infile,
 	  break;
 	case d_pairtypes:
 	  if (bGenPairs)
-	    push_nbt(d,pair,atype,pline,nb_funct);
+	    push_nbt(d,pair,atype,pline,F_LJ14);
 	  else
 	    push_bt(d,plist,2,atype->atomname,atype->nr,pline);
 	  break;

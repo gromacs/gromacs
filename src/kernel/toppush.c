@@ -530,10 +530,11 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   /* swap the atoms */
   const char *form2="%*s%*s%*s%lf%lf";
   const char *form3="%*s%*s%*s%lf%lf%lf";
+  const char *form4="%*s%*s%*s%lf%lf%lf%lf";
   char    a0[80],a1[80];
-  int     i,f,k,ftype,atnr,nrfp;
-  double  c[3];
-  real    cr[3];
+  int     i,f,k,n,ftype,atnr,nrfp;
+  double  c[4];
+  real    cr[4];
   atom_id ai,aj;
   t_nbparam *nbp;
   bool    bId;
@@ -556,7 +557,19 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   
   /* Get the force parameters */
   nrfp = NRFP(ftype);
-  if (nrfp == 2) {
+  if (ftype == F_LJ14) {
+    n = sscanf(pline,form4,&c[0],&c[1],&c[2],&c[3]);
+    if (n < 2) {
+      too_few();
+      return;
+    }
+    /* When the B topology parameters are not set,
+     * copy them from topology A
+     */ 
+    for(i=n; i<nrfp; i++)
+      c[i] = c[i-2];
+  }
+  else if (nrfp == 2) {
     if (sscanf(pline,form2,&c[0],&c[1]) != 2) {
       too_few();
       return;

@@ -49,7 +49,7 @@
 
 typedef struct {
   bool bSet;                    /* Has this combination been set        */
-  real c[3];                    /* The non-bonded parameters            */
+  real c[4];                    /* The non-bonded parameters            */
 } t_nbparam;
 /* The t_nbparam struct is used to temporary store the explicit
  * non-bonded parameter combinations, which will be copied to t_params.
