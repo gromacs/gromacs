@@ -108,7 +108,7 @@ typedef struct {
 /* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
-  { eftASC, ".gct", "gct",    "-f", "general coupling stuff"                 },
+  { eftASC, ".gct", "gct",    "-f", "General coupling stuff"                 },
   { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb", NTRXS, trxs },
   { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj",          NTRNS, trns },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
@@ -133,7 +133,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
   { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa",              NTPXS, tpxs },
   { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb", NTPSS, tpss },
-  { eftXDR, ".tpr", "topol",  "-s", "portable xdr run input file"            },
+  { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
   { eftASC, ".tex", "doc",    "-o", "LaTeX file"                             },
@@ -149,8 +149,8 @@ static t_deffile deffile[efNR] = {
   { eftBIN, ".mtx", "hessian","-m", "Hessian matrix"                         },
   { eftASC, ".edi", "sam",    NULL, "ED sampling input"                      },
   { eftASC, ".edo", "sam",    NULL, "ED sampling output"                     },
-  { eftASC, ".ppa", "pull",   NULL, "pull parameters"                        },
-  { eftASC, ".pdo", "pull",   NULL, "pull data output"                       },
+  { eftASC, ".ppa", "pull",   NULL, "Pull parameters"                        },
+  { eftASC, ".pdo", "pull",   NULL, "Pull data output"                       },
   { eftASC, ".hat", "gk",     NULL, "Fourier transform of spread function"   },
   { eftASC, ".xpm", "root",   NULL, "X PixMap compatible matrix file"        }
 };
