@@ -30,11 +30,12 @@ void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
     for(m=0; (m<DIM); m++)
       pres[n][m]=(ekin[n][m]-vir[n][m])*fac;
       
-#ifdef DEBUG
-  pr_rvecs(stdlog,0,"pres",pres,DIM);
-  pr_rvecs(stdlog,0,"ekin",ekin,DIM);
-  pr_rvecs(stdlog,0,"vir ",vir, DIM);
-#endif
+  if (debug) {
+    pr_rvecs(debug,0,"PC: pres",pres,DIM);
+    pr_rvecs(debug,0,"PC: ekin",ekin,DIM);
+    pr_rvecs(debug,0,"PC: vir ",vir, DIM);
+    pr_rvecs(debug,0,"PC: box ",box, DIM);
+  }
 }
 
 real calc_temp(real ekin,int nrdf)
@@ -80,10 +81,13 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     PPP[m]           = run_aver(PPP[m],pres[m][m],step,ir->npcmemory);
     scalar_pressure += PPP[m]/3.0;
   }
-
+  
+  /* Pressure is now in bar, everywhere. To use it for pressure coupling we 
+   * must first convert it back to internal units (in the factor rvec).
+   */
   if ((ir->epc != epcNO) && (scalar_pressure != 0.0)) {
     for(m=0; (m<DIM); m++)
-      factor[m] = ir->compress[m]*ir->delta_t/ir->tau_p;
+      factor[m] = ir->compress[m]*ir->delta_t/(PRESFAC*ir->tau_p);
     clear_mat(mu);
     switch (ir->epc) {
     case epcISOTROPIC:
@@ -101,9 +105,11 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 	      EPCOUPLTYPE(ir->epc));
       exit(1);
     }
-#ifdef DEBUG
-    pr_rvecs(stdlog,0,"mu  ",mu,DIM);
-#endif
+    if (debug) {
+      pr_rvecs(debug,0,"PC: PPP ",PPP,1);
+      pr_rvecs(debug,0,"PC: fac ",factor,1);
+      pr_rvecs(debug,0,"PC: mu  ",mu,DIM);
+    }
     /* Scale the positions using matrix operation */
     nr_atoms+=start;
     muxx=mu[XX][XX],muxy=mu[XX][YY],muxz=mu[XX][ZZ];
