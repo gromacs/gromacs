@@ -146,7 +146,7 @@ real ** sf_table;
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,real cutoff,real binwidth,real fade)
+		   bool bCM,bool bXY,real cutoff,real binwidth,real fade)
 {
   FILE       *fp;
   int        status;
@@ -163,7 +163,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   rvec       *x,xcom,dx,*x_i1,xi;
   real       *inv_segvol,vol,vol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
-  matrix     box;
+  matrix     box,box_check;
   int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology top;
@@ -223,7 +223,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   }
   
   /* initialize some handy things */
-  rmax2   = 0.99*0.99*max_cutoff2(box);
+  copy_mat(box,box_check);
+  if (bXY && (box[ZZ][XX] == 0) && (box[ZZ][YY] == 0)) {
+    /* Make sure the z-height does not influence the cut-off */
+    box_check[ZZ][ZZ] = box[XX][XX];
+  }
+  rmax2   = 0.99*0.99*max_cutoff2(box_check);
   nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
   invbinw = 1.0 / binwidth;
   cut2   = sqr(cutoff);
@@ -310,7 +315,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	  for(j=0; j<npairs[g][i]; j++) {
 	    jx=pairs[g][i][j];
 	    pbc_dx(&pbc,xi,x[jx],dx);
-	    r2=iprod(dx,dx);
+	    if (bXY)
+	      r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	    else 
+	      r2=iprod(dx,dx);
 	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invbinw)]++;
 	  }
@@ -318,7 +326,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	  /* Cheaper loop, no exclusions */
 	  for(j=0; j<isize[g+1]; j++) {
 	    pbc_dx(&pbc,xi,x_i1[j],dx);
-	    r2=iprod(dx,dx);
+	    if (bXY)
+	      r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
+	    else 
+	      r2=iprod(dx,dx);
 	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invbinw)]++;
 	  }
@@ -334,13 +345,17 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   /* Average volume */
   vol = vol_sum/nframes;
-  
-  /* Calculate volume of sphere segments */
+
+  /* Calculate volume of sphere segments or length of circle segments */
   snew(inv_segvol,nbin);
   prev_spherevol=0;
   for(i=0; (i<nbin); i++) {
     r = (i+1)*binwidth;
-    spherevol=(4.0/3.0)*M_PI*r*r*r;
+    if (bXY) {
+      spherevol=2.0*M_PI*r*r;
+    } else {
+      spherevol=(4.0/3.0)*M_PI*r*r*r;
+    }
     segvol=spherevol-prev_spherevol;
     inv_segvol[i]=1.0/segvol;
     prev_spherevol=spherevol;
@@ -1101,7 +1116,9 @@ int gmx_rdf(int argc,char *argv[])
     "a scattering experiment.[PAR]",
     "g_rdf calculates radial distribution functions in different ways.",
     "The normal method is around a (set of) particle(s), the other method",
-    "is around the center of mass of a set of particles.[PAR]",
+    "is around the center of mass of a set of particles.",
+    "With both methods rdf's can also be calculated around axes parallel",
+    "to the z-axis with option [TT]-xy[tt].[PAR]",
     "If a run input file is supplied ([TT]-s[tt]), exclusions defined",
     "in that file are taken into account when calculating the rdf.",
     "The option [TT]-cut[tt] is meant as an alternative way to avoid",
@@ -1116,7 +1133,7 @@ int gmx_rdf(int argc,char *argv[])
     "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
     "spacing of which is determined by option [TT]-grid[tt]."
   };
-  static bool bCM=FALSE;
+  static bool bCM=FALSE,bXY=FALSE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20;
   static real start_q=0.0, end_q=60.0, energy=12.0;
@@ -1125,6 +1142,8 @@ int gmx_rdf(int argc,char *argv[])
       "Binwidth (nm)" },
     { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
+    { "-xy",       FALSE, etBOOL, {&bXY},
+      "Use only the x and y components of the distance" },
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Shortest distance (nm) to be considered"},
     { "-fade",     FALSE, etREAL, {&fade},
@@ -1194,7 +1213,7 @@ int gmx_rdf(int argc,char *argv[])
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
 	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,cutoff,binwidth,fade);
+	   bCM,bXY,cutoff,binwidth,fade);
 
   thanx(stderr);
   
