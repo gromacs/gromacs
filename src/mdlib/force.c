@@ -154,7 +154,7 @@ static void check_solvent(FILE *fp,t_topology *top,t_forcerec *fr,
     for(j=j0+1; (j<j1); j++) {
       bOneCG = bOneCG && (cgid[mols->a[j]] == cgid[mols->a[j-1]]);
     }
-    if (fr->bSolvOpt && bOneCG) {
+    if (fr->bSolvOpt && bOneCG && nj>1) {
       /* Check whether everything is excluded */
       snew(bAllExcl,nj);
       bAE = TRUE;
