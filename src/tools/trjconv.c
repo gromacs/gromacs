@@ -234,66 +234,65 @@ int main(int argc,char *argv[])
   static bool  bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
-  static rvec  newbox = {0,0,0};
-  static real  xshift=0.0;
+  static rvec  newbox = {0,0,0}, shift = {0,0,0};
   static char  *exec_command=NULL;
   
   t_pargs pa[] = {
     { "-inbox", FALSE,  etBOOL, &bInBox,
-      "make sure all atoms are inside box" },
+      "Make sure all atoms are inside box" },
     { "-pbc", FALSE,  etBOOL, &bPBC,
-      "make sure molecules are not broken into parts" },
+      "Make sure molecules are not broken into parts" },
     { "-removejump",FALSE,  etBOOL, &bNoJump,
-      "make sure atoms don't jump across the box" },
+      "Make sure atoms don't jump across the box" },
     { "-center", FALSE,  etBOOL, &bCenter,
-      "center atoms in box" },
-    { "-xshift", FALSE, etREAL, &xshift,
-      "all coordinates will be shifted by framenr*xshift" },
+      "Center atoms in box" },
     { "-box", FALSE, etRVEC, &newbox,
-      "size for new cubic box (default: read from input)" },
+      "Size for new cubic box (default: read from input)" },
+    { "-shift", FALSE, etRVEC, &shift,
+      "All coordinates will be shifted by framenr*shift" },
     { "-z", FALSE,  etBOOL, &bCompress,
-      "compress output (for .pdb and .gro files)" },
+      "Compress output (for .pdb and .gro files)" },
     { "-fit", FALSE,  etBOOL, &bFit,
-      "fit molecule to ref structure in .tpx file" },
+      "Fit molecule to ref structure in .tpx file" },
     { "-pfit", FALSE,  etBOOL, &bIFit,
-      "progressive fit, to the previous fitted structure" },
+      "Progressive fit, to the previous fitted structure" },
     { "-prec", FALSE,  etINT,  &prec,
-      "precision for .xtc and .gro writing in number of decimal places" },
+      "Precision for .xtc and .gro writing in number of decimal places" },
     { "-vel", FALSE, etBOOL, &bVels,
-      "read and write velocities if possible" },
+      "Read and write velocities if possible" },
     { "-skip", FALSE,  etINT, &skip_nr,
-      "only write out every nr-th frame" },
+      "Only write out every nr-th frame" },
     { "-dt", FALSE,  etREAL, &delta_t,
-      "only write out frame when (t MOD delta_t) == offset" },
+      "Only write out frame when (t MOD delta_t) == offset" },
     { "-offset", FALSE, etREAL, &toffset,
-      "time offset for -dt option" },
+      "Time offset for -dt option" },
     { "-t0", FALSE,  etREAL, &tzero,
-      "starting time for trajectory"
+      "Starting time for trajectory"
       "(default: don't change)"},
 #ifndef _win_
     { "-trunc", FALSE, etREAL, &ttrunc,
-      "truncate input trj file after this amount of ps" },
+      "Truncate input trj file after this amount of ps" },
 #endif
     { "-dump", FALSE, etREAL, &tdump,
-      "dump frame nearest specified time" },
+      "Dump frame nearest specified time" },
     { "-g87box", FALSE,  etBOOL, &bBox,
-      "write a box for .g87" },
+      "Write a box for .g87" },
     { "-exec", FALSE,  etSTR, &exec_command,
-      "execute command for every output frame with the frame number "
+      "Execute command for every output frame with the frame number "
       "as argument" },
     { "-timestep", FALSE,  etREAL, &timestep,
-      "change time step between frames" },
+      "Change time step between frames" },
     { "-app", FALSE,  etBOOL, &bAppend,
-      "append output"},
+      "Append output"},
     { "-checkdouble", FALSE, etBOOL, &bCheckDouble,
-      "only write frames with time larger than previous frame" }
+      "Only write frames with time larger than previous frame" }
   };
       
   FILE         *out=NULL;
   int          trjout;
   int          status,ftp,ftpin,file_nr;
   rvec         *x,*xn,*xout,*v,*vn,*vout;
-  rvec         *xp,shift;
+  rvec         *xp,x_shift;
   real         xtcpr, lambda,*w_rls;
   matrix       box;
   int          m,i,d,frame,outframe,natoms,nout,nre,step;
@@ -454,9 +453,9 @@ int main(int argc,char *argv[])
          store original location (to put structure back) */
       if (bPBC)
 	rm_pbc(&(top.idef),atoms->nr,box,xp,xp);
-      copy_rvec(xp[index[0]],shift);
+      copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,isize,index,xp,w_rls);
-      rvec_dec(shift,xp[index[0]]);
+      rvec_dec(x_shift,xp[index[0]]);
     }
     
     /* Make atoms struct for output in GRO or PDB files */
@@ -559,7 +558,7 @@ int main(int argc,char *argv[])
       if (bIFit || bNoJump) {
 	for(i=0; (i<natoms); i++) {
 	  copy_rvec(x[i],xp[i]);
-	  rvec_inc(x[i],shift);
+	  rvec_inc(x[i],x_shift);
 	}
       }
       
@@ -610,7 +609,7 @@ int main(int argc,char *argv[])
 	      reset_x(ifit,ind_fit,isize,index,x,w_rls);
 	      do_fit(natoms,w_rls,xp,x);
 	      for(i=0; (i<natoms); i++)
-		rvec_inc(x[i],shift);
+		rvec_inc(x[i],x_shift);
 	    }
 	  }
 	  
@@ -632,9 +631,10 @@ int main(int argc,char *argv[])
 	  if (bInBox)
 	    put_all_atoms_in_box(isize,box,xout);
 	  
-	  if (xshift != 0.0)
+	  if (opt2parg_bSet("-shift",asize(pa),pa))
 	    for(i=0; (i<isize); i++)
-	      xout[i][XX]+=(outframe*xshift);
+	      for (d=0; (d<DIM); d++)
+		xout[i][d] += outframe*shift[d];
 	  
 	  if (bVels) {
 	  /* check if we have velocities and/or coordinates,
