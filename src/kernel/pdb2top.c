@@ -452,7 +452,7 @@ void print_sums(t_atoms *atoms, bool bSystem)
   fprintf(stderr,"Total charge%s %.3f e\n",where,qtot);
 }
 
-void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
+void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
 	     int nincl, char **incls, int nmol, t_mols *mols,
 	     t_atoms *atoms,rvec **x,
 	     t_atomtype *atype,t_symtab *tab,
@@ -462,10 +462,10 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
 	     int nra, t_resang  ra[],
 	     int nrd, t_resdih  rd[],
 	     int nid, t_idihres idi[],
-	     t_hackblock *ntdb,t_hackblock *ctdb,
-	     bool bH14, int rn,int rc,bool bAlldih,
-	     bool bDummies, real mHmult,
-	     int nssbonds,t_ssbond *ssbonds, int nrexcl)
+	     t_hackblock *ntdb, t_hackblock *ctdb,
+	     bool bH14, int rn, int rc, bool bAlldih,
+	     bool bDummies, bool bDummyAromatics, real mHmult,
+	     int nssbonds, t_ssbond *ssbonds, int nrexcl)
 {
   t_params plist[F_NRE], newbonds;
   t_nextnb nnb;
@@ -504,6 +504,9 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
   snew(dummy_type,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     dummy_type[i]=NOTSET;
+  if (bDummyAromatics) 
+    do_dum_aromatics(nrtp, rtp, atype, atoms, tab, x, 
+		     plist, &newbonds, &dummy_type, &cgnr);
   if (bDummies)
     do_dummies(nrtp, rtp, atype, mHmult, atoms, tab, x, 
 	       plist, &newbonds, &dummy_type, &cgnr,
@@ -536,7 +539,7 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
    */
   init_block(&excl);
   
-  if (bDummies) {
+  if (bDummies || bDummyAromatics) {
     t_nextnb tmpnnb;
     /* generate exclusions for dummy masses and atoms */ 
     init_nnb(&tmpnnb,atoms->nr,nrexcl);

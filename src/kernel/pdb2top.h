@@ -64,26 +64,26 @@ extern void print_top_header(FILE *out, char *title, bool bITP,
 extern void print_top_mols(FILE *out, char *title, int nincl, char **incls,
 			   int nmol, t_mols *mols);
 
-extern void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
+extern void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
 		    int nincl, char **incls, int nmol, t_mols *mols,
 		    t_atoms *atoms,rvec **x,
 		    t_atomtype *atype,t_symtab *tab,
 		    int bts[],
 		    int nrb, t_resbond rb[],
-		    int nrtp,t_restp rtp[],
-		    int nra, t_resang ra[],
-		    int nrd, t_resdih rd[],
+		    int nrtp,t_restp   rtp[],
+		    int nra, t_resang  ra[],
+		    int nrd, t_resdih  rd[],
 		    int nid, t_idihres idi[],
-		    t_hackblock *ntdb,t_hackblock *ctdb,
-		    bool bH14,int rn,int rc,bool bAlldih,
-		    bool bDummies,real mHmult,
-		    int nssbonds,t_ssbond ssbonds[], int nrexcl);
+		    t_hackblock *ntdb, t_hackblock *ctdb,
+		    bool bH14, int rn, int rc, bool bAlldih,
+		    bool bDummies, bool bDummyAromatics, real mHmult,
+		    int nssbonds, t_ssbond ssbonds[], int nrexcl);
 /* Create a topology ! */
 
-extern void write_top(char *ff,FILE *out,char *pr,char *molname,
+extern void write_top(char *ff, FILE *out, char *pr, char *molname,
 		      int nincl, char **incls, int nmol, t_mols *mols,
-		      t_atoms *at,int bts[],t_params plist[],t_block *excl,
-		      t_atomtype *atype,int *cgnr, int nrexcl, real mHmult);
+		      t_atoms *at, int bts[], t_params plist[], t_block *excl,
+		      t_atomtype *atype, int *cgnr, int nrexcl, real mHmult);
 /* write a topology 
  * NOTE: nrexcl is not the size of *excl! */
 
