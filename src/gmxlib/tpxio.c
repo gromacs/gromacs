@@ -42,7 +42,7 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version  = 1;
+static int tpx_version  = 2;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -502,17 +502,9 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   precision = sizeof(real);
   if (bRead) {
     do_string(buf);
-    if (strncmp(buf,"VERSION",7) != 0)
-      fatal_error(0,"Unsupported version,\n%s was generated "
-		  "with a GROMACS version before 2.0\n", fio_getname(fp));
     do_int(precision);
     bDouble = (precision == sizeof(double));
     fio_setprecision(fp,bDouble);
-    /*
-    if (strcmp(buf,GromacsVersion()) != 0)
-      fprintf(stderr,"Version mismatch: expected %s, found %s\n",
-	      GromacsVersion(),buf);
-	      */
     fprintf(stderr,"Reading file %s, %s (%s precision)\n",
 	    fio_getname(fp),buf,bDouble ? "double" : "single");
   }
@@ -524,10 +516,15 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
     file_version = tpx_version;
   }
   
+  /* Check versions! */
   do_int (file_version);
-  if (file_version != tpx_version)
-    fprintf(stderr,"Reading tpx file version %d with version %d code. "
-	    "Some options may not work\n",file_version,tpx_version);
+  if (file_version == 1) 
+    fatal_error(0,"Reading tpx file version %d with version %d program.\n",
+		file_version,tpx_version);
+  else if (file_version != tpx_version) 
+    fprintf(stderr,"WARNING: reading tpx file version %d with version %d program."
+	    "Some options may not work.\n",
+	    file_version,tpx_version);
     
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);

@@ -443,43 +443,56 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   ushort *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
   int i,j,gid,aj,ognr,ntot=0;
-  
+
+  if (debug)
+    fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
+    
   snew(cbuf,atoms->nr);
   for(i=0; (i<atoms->nr); i++)
     cbuf[i]=NOGID;
   
   snew(groups->nm_ind,ng+1); /* +1 for possible rest group */
   for(i=0; (i<ng); i++) {
-    gid=search_string(ptrs[i],block->nr,gnames);
+    /* Lookup the group name in the block structure */
+    gid = search_string(ptrs[i],block->nr,gnames);
     groups->nm_ind[groups->nr++]=gid;
+    if (debug) 
+      fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
     
+    /* Now go over the atoms in the group */
     for(j=block->index[gid]; (j<block->index[gid+1]); j++) {
       aj=block->a[j];
+      
+      /* Range checking */
       if ((aj < 0) || (aj >= atoms->nr)) 
 	fatal_error(0,"Invalid atom number %d in indexfile",aj);
-      ognr=cbuf[aj];/*atoms->atom[aj].grpnr[gtype];*/
+	
+      /* Lookup up the old group number */
+      ognr = cbuf[aj];
       if (ognr != NOGID) 
 	fatal_error(0,"Atom %d in multiple %s groups (%d and %d)",
 		    aj,title,gid,ognr);
       else {
-	cbuf[aj]=i;
-	/*atoms->atom[aj].grpnr[gtype] = i;*/
+	/* Store the group number in buffer */
+	cbuf[aj] = i;
 	ntot++;
       }
     }
   }
+  
+  /* Now check whether we have done all atoms */
   if (ntot != atoms->nr) {
     if (bVerbose)
       fprintf(stderr,"Making dummy/rest group for %s containing %d elements\n",
 	      title,atoms->nr-ntot);
-    i=groups->nr;
+    /* Add group name "rest" */
+    i = groups->nr;
     groups->nm_ind[groups->nr++] = restnm;
     
+    /* Assign the rest name to all atoms not currently assigned to a group */
     for(j=0; (j<atoms->nr); j++) {
-      /*if (atoms->atom[j].grpnr[gtype] == NOGID)
-	atoms->atom[j].grpnr[gtype]=i;*/
       if (cbuf[j] == NOGID)
-	cbuf[j]=i;
+	cbuf[j] = i;
     }
   }
   if (forward != NULL) {
@@ -619,9 +632,9 @@ void do_index(char *ndx,
       fatal_error(0,"Cannot anneal to zero temp at t=0");
   }
   
-  ntau_t=str_nelem(tau_t,MAXPTR,ptr1);
-  nref_t=str_nelem(ref_t,MAXPTR,ptr2);
-  ntcg=str_nelem(tcgrps,MAXPTR,ptr3);
+  ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
+  nref_t = str_nelem(ref_t,MAXPTR,ptr2);
+  ntcg   = str_nelem(tcgrps,MAXPTR,ptr3);
   if ((ntau_t != ntcg) || (nref_t != ntcg)) 
     fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and"
 		"%d tau_t values",ntcg,nref_t,ntau_t);
@@ -649,8 +662,8 @@ void do_index(char *ndx,
   }
   calc_nrdf(atoms,idef,&(ir->opts));
   
-  nacc=str_nelem(acc,MAXPTR,ptr1);
-  nacg=str_nelem(accgrps,MAXPTR,ptr2);
+  nacc = str_nelem(acc,MAXPTR,ptr1);
+  nacg = str_nelem(accgrps,MAXPTR,ptr2);
   if (nacg*DIM != nacc)
     fatal_error(0,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
@@ -667,8 +680,8 @@ void do_index(char *ndx,
     for(j=0; (j<DIM); j++)
       ir->opts.acc[i][j]=0;
   
-  nfdim=str_nelem(fdim,MAXPTR,ptr1);
-  nfreeze=str_nelem(freeze,MAXPTR,ptr2);
+  nfdim   = str_nelem(fdim,MAXPTR,ptr1);
+  nfreeze = str_nelem(freeze,MAXPTR,ptr2);
   if (nfdim != DIM*nfreeze)
     fatal_error(0,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfdim);
@@ -679,10 +692,12 @@ void do_index(char *ndx,
   snew(ir->opts.nFreeze,nr);
   for(i=k=0; (i<nfreeze); i++)
     for(j=0; (j<DIM); j++,k++) {
-      ir->opts.nFreeze[i][j]=(strcasecmp(ptr1[k],"YES")==0);
+      ir->opts.nFreeze[i][j] = ((strcasecmp(ptr1[k],"Y")==0) ||
+				(strcasecmp(ptr1[k],"YES")==0));
       if (!ir->opts.nFreeze[i][j]) {
-	if (strcasecmp(ptr1[k],"NO") != 0)
-	  fprintf(stderr,"Please use YES or NO for freezedim only (not %s)\n",
+	if ((strcasecmp(ptr1[k],"N") != 0) &&
+	    (strcasecmp(ptr1[k],"NO") != 0))
+	  fprintf(stderr,"Please use Y(ES) or N(O) for freezedim only (not %s)\n",
 		  ptr1[k]);
       }
     }

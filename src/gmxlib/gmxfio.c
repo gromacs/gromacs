@@ -416,8 +416,7 @@ static bool do_binread(void *item,int nitem,int eio,
 static bool do_xdr(void *item,int nitem,int eio,
 		   char *desc,char *srcfile,int line)
 {
-  static char *ucptr=NULL;
-  static int  nuc = 0;
+  unsigned char *ucptr;
   bool_t res;
   float  fvec[DIM];
   double dvec[DIM];
@@ -447,14 +446,11 @@ static bool do_xdr(void *item,int nitem,int eio,
     if (item) *(int *)item = idum;
     break;
   case eioNUCHAR:
-    if (item) {
-      ucptr = (char *)item;
+    ucptr = (unsigned char *)item;
+    res   = 1;
+    for(j=0; (j<nitem) && res; j++) {
+      res = xdr_u_char(curfio->xdr,&(ucptr[j]));
     }
-    else if (nitem > nuc) {
-      srenew(ucptr,nitem);
-      nuc = nitem;
-    }
-    res = xdr_string(curfio->xdr,&ucptr,nitem);
     
     break;
   case eioUSHORT:
