@@ -59,12 +59,13 @@ extern void calc_ener(FILE *fp,char *title,bool bHeader,
 		      int nmol,int natoms,
 		      real phi[],real charge[],t_block *excl);
 
-extern real calc_selfenergy(FILE *fp,int natoms,real charge[],t_block *excl);
-/* Calculate the self energy when using long range electrostatics methods.
- * Since this is a constant, it is computed only once and stored in
- * a local variable. On the next call this variable is returned straight 
- * away. No forces are computed so r1 must be > the distance between
- * excluded pairs.
+extern real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
+			       real charge[],t_block *excl,rvec x[],rvec f[]);
+/* Calculate the self energy and forces
+ * when using long range electrostatics methods.
+ * Part of this is a constant, it is computed only once and stored in
+ * a local variable. The remainder is computed every step.
+ * No PBC is taken into account!
  */
 
 static void calc_lll(rvec box,rvec lll)
