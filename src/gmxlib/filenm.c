@@ -116,7 +116,7 @@ static t_deffile deffile[efNR] = {
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
   { eftASC, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"      },
   { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene",                     NENXS, enxs },
-  { eftXDR, ".edr", "ener",   NULL, "Energy file in portable XDR format"     },
+  { eftXDR, ".edr", "ener",   NULL, "Energy file in portable xdr format"     },
   { eftBIN, ".ene", "ener",   NULL, "Energy file"                            },
   { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa",  NSTXS, stxs },
   { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb",              NSTOS, stos },
@@ -216,24 +216,47 @@ char *ftp2defnm(int ftp)
 void pr_def(FILE *fp,int ftp)
 {
   t_deffile *df;
-  char *s;
+  char *s,*ext,*desc,*flst;
   
   df=&(deffile[ftp]);
+  /* find default file extension and \tt-ify description */
+  flst="";
+  if (df->ntps) {
+    ext = deffile[df->tps[0]].ext;
+    desc= strdup(df->descr);
+    s = strstr(desc,": ")+1;
+    if (s) {
+      s[0] = '\0';
+      s++;
+      snew(flst,strlen(s)+6);
+      strcpy(flst, " \\tt ");
+      strcat(flst, s);
+    }
+  } else {
+    ext = df->ext;
+    desc= df->descr;
+  }
+  /* now skip dot */
+  if (ext[0])
+    ext++;
+  else
+    ext="";
+  /* set file contents type */
   switch (df->ftype) {
   case eftASC: s="Asc";
     break;
   case eftBIN: s="Bin";
     break;
-  case eftXDR: s="XDR";
+  case eftXDR: s="xdr";
     break;
   case eftGEN: s="";
     break;
   default: 
     fatal_error(0,"Unimplemented filetype %d %d",ftp,df->ftype);
   }
-  fprintf(fp,"\\tt %8s & \\tt %4s & %3s & \\tt %2s & %s \\\\\n",
-	  df->defnm,df->ext,s,df->defopt ? df->defopt : "",
-	  check_tex(df->descr));
+  fprintf(fp,"\\tt %8s & \\tt %3s & %3s & \\tt %2s & %s%s \\\\[-0.1ex]\n",
+	  df->defnm, ext, s, df->defopt ? df->defopt : "", 
+	  check_tex(desc),check_tex(flst));
 }
 
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])

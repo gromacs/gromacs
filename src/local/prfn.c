@@ -36,21 +36,22 @@ void pr_texdefs(FILE *fp)
 {
   int i;
 
-  fprintf(fp,"\\begin{table}[p]\n");
-  fprintf(fp,"\\begin{tabularx}{\\linewidth}{rlccX}\n");
-  fprintf(fp,"\\hline\n");
-  fprintf(fp,"%8s & %9s & %4s & %7s & %s \\\\\n",
-	  "Def.","","","Default","");
-  fprintf(fp,"%8s & %9s & %4s & %7s & %s \\\\\n",
-	  "Name","Extension","Type","Option","Description");
+  fprintf(fp,"\\begin{table}\n");
+  fprintf(fp,"\\begin{tabularx}{\\linewidth}{|r@{\\tt.}lccX|}\n");
+  fprintf(fp,"\\dline\n");
+  fprintf(fp,"\\mc{2}{|c}{%s} & %4s & %7s & %s \\\\[-0.1ex]\n",
+	  "Default","","Default","");
+  fprintf(fp,"\\mc{1}{|c}{%s} & \\mc{1}{c}{%s} & %4s & %7s & %s "
+	  "\\\\[-0.1ex]\n",
+	  "Name","Ext.","Type","Option","Description");
   fprintf(fp,"\\hline\n");
   for(i=0; (i<efNR); i++)
     if ( (i!=efGCT) && (i!=efHAT) )
       pr_def(fp,i);
-  fprintf(fp,"\\hline\n");
+  fprintf(fp,"\\dline\n");
   fprintf(fp,"\\end{tabularx}\n");
-  fprintf(fp,"\\caption{File types: A = ascii, B = binary, P = XDR portable.}\n");
-  fprintf(fp,"\\label{Tab:form}\n");
+  fprintf(fp,"\\caption{The {\\gromacs} file types.}\n");
+  fprintf(fp,"\\label{tab:form}\n");
   fprintf(fp,"\\end{table}\n");
 }
 
