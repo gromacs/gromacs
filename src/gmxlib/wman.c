@@ -302,10 +302,6 @@ static void write_nroffman(FILE *out,
       fprintf(out,".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
 	      fnm[i].opt,fnm[i].fn,fileopt(fnm[i].flag),
 	      check_nroff(ftp2desc(fnm[i].ftp)));
-    /*
-    fprintf(out,"Remember that filenames are not fixed, but \n");
-    fprintf(out,"file extensions are.\n");
-    */
   }
   
   /* other options */
@@ -387,14 +383,8 @@ static void write_ttyman(FILE *out,
   if (nfile > 0) {
     fprintf(out,"\n");
     pr_fns(out,nfile,fnm);
-    /*
-    fprintf(out,"Remember that filenames are not fixed, but file extensions are.\n");
-    */
   }
   if (npargs > 0) {
-    /*
-    fprintf(out,"\n");
-    */
     print_pargs(out,npargs,pa);
   }
 }
@@ -493,6 +483,41 @@ static void write_htmlman(FILE *out,
   fprintf(out,"</BODY>\n");
 }
 
+static void pr_opts(FILE *fp, 
+		    int nfile,  t_filenm *fnm, 
+		    int npargs, t_pargs pa[])
+{
+  int i,j;
+  
+  fprintf(fp," \"c/-/(");
+  for (i=0; i<nfile; i++)
+    fprintf(fp," %s",fnm[i].opt+1);
+  for (i=0; i<npargs; i++)
+    if ( (pa[i].type==etBOOL) && *(pa[i].u.b) )
+      fprintf(fp," no%s",pa[i].option+1);
+    else
+      fprintf(fp," %s",pa[i].option+1);
+  fprintf(fp,")/\"");
+    
+}
+
+static void write_compl(FILE *out,
+			char *program,
+			int nldesc, char **desc,
+			int nfile,  t_filenm *fnm,
+			int npargs, t_pargs *pa,
+			int nbug,   char **bugs)
+{
+  int i;
+  char *tmp;
+  
+  fprintf(out,"complete %s",ShortProgram());
+  pr_enums(out,npargs,pa);
+  pr_fopts(out,nfile,fnm);
+  pr_opts(out,nfile,fnm,npargs,pa);
+  fprintf(out,"\n");
+}
+
 void write_man(FILE *out,char *mantp,
 	       char *program,
 	       int nldesc,char **desc,
@@ -503,8 +528,9 @@ void write_man(FILE *out,char *mantp,
   char *pr;
   int     i,npar;
   t_pargs *par;
-
-  if (bHidden) {
+  bool bShowHidden;
+  
+  if (bHidden || (strcmp(mantp,"completion")==0) ) {
     npar=npargs;
     par=pa;
   }    
@@ -534,9 +560,9 @@ void write_man(FILE *out,char *mantp,
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"java")==0)
     write_java(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
+  if (strcmp(mantp,"completion")==0)
+    write_compl(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
 
   if (!bHidden)
     sfree(par);
 }
-
-

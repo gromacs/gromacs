@@ -278,7 +278,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	fprintf(stderr,"\r%5d",i+1);
       for (j=i+1; (j<natom); j++) {
 	if (bB)
-	  pbc_dx(box,x[i],x[j],dx);
+	  pbc_dx(x[i],x[j],dx);
 	else
 	  rvec_sub(x[i],x[j],dx);
 	r2=iprod(dx,dx);

@@ -101,23 +101,25 @@ typedef struct {
   char *defnm;
   char *defopt;
   char *descr;
+  int  ntps;
+  int  *tps;
 } t_deffile;
 
 /* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
   { eftASC, ".gct", "gct",    "-f", "general coupling stuff"                 },
-  { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb"},
-  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj" },
+  { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb", NTRXS, trxs },
+  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj",          NTRNS, trns },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
   { eftBIN, ".trj", "traj",   NULL, "Trajectory file (cpu specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
   { eftASC, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"      },
-  { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene"                },
+  { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene",                     NENXS, enxs },
   { eftXDR, ".edr", "ener",   NULL, "Energy file in portable XDR format"     },
   { eftBIN, ".ene", "ener",   NULL, "Energy file"                            },
-  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa" },
-  { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb"             },
+  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa",  NSTXS, stxs },
+  { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb",              NSTOS, stos },
   { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
   { eftASC, ".g96", "conf",   "-c", "Coordinate file in Gromos-96 format"    },
   { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
@@ -129,8 +131,8 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".ndx", "index",  "-n", "Index file",                            },
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
-  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"         },
-  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb" },
+  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa",              NTPXS, tpxs },
+  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb", NTPSS, tpss },
   { eftXDR, ".tpr", "topol",  "-s", "portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
@@ -251,6 +253,27 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   fflush(fp);
 }
 
+void pr_fopts(FILE *fp,int nf,t_filenm tfn[])
+{
+  int i,j;
+  char *fext;
+  
+  for(i=0; (i<nf); i++) {
+    fprintf(fp," \"n/%s/f:*.",tfn[i].opt);
+    if (deffile[tfn[i].ftp].ntps) {
+      fprintf(fp,"{");
+      for(j=0; j<deffile[tfn[i].ftp].ntps; j++) {
+	if (j>0)
+	  fprintf(fp,",");
+	fprintf(fp,"%s",deffile[deffile[tfn[i].ftp].tps[j]].ext+1);
+      }
+      fprintf(fp,"}");
+    } else
+      fprintf(fp,"%s",deffile[tfn[i].ftp].ext+1);
+    fprintf(fp,"{,.gz,.Z}/\"");
+  }
+}
+
 static void check_opts(int nf,t_filenm fnm[])
 {
   int       i;
@@ -318,11 +341,18 @@ static void set_extension(char *buf,int ftp)
   strcat(buf,df->ext);
 }
 
-void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
+void set_grpfnm(t_filenm *fnm,char *name)
 {
   char      buf[256];
   int       i,ti;
   bool      bSet;
+  int  nopts;
+  int  *ftps;
+  
+  nopts=deffile[fnm->ftp].ntps;
+  ftps=deffile[fnm->ftp].tps;
+  if ( (nopts==0) || (ftps==NULL) )
+    fatal_error(0,"DEATH HORROR ERROR in %s:%d",__FILE__,__LINE__);
   
   /* First check whether we have a valid filename already */
   /* ti is the extension type */
@@ -367,41 +397,6 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
   fnm->fn=strdup(buf);
 }
 
-static void set_trxnm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NTRXS,trxs);
-}
-
-static void set_trnnm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NTRNS,trns);
-}
-
-static void set_stonm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NSTOS,stos);
-}
-
-static void set_stxnm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NSTXS,stxs);
-}
-
-static void set_enxnm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NENXS,enxs);
-}
-
-static void set_tpxnm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NTPXS,tpxs);
-}
-
-static void set_tpsnm(t_filenm *fnm,char *name)
-{
-  set_grpfnm(fnm,name,NTPSS,tpss);
-}
-
 static void set_filenm(t_filenm *fnm,char *name)
 {
   /* Set the default filename, extension and option for those fields that 
@@ -413,27 +408,8 @@ static void set_filenm(t_filenm *fnm,char *name)
   if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
     fatal_error(0,"file type out of range (%d)",fnm->ftp);
 
-  if (fnm->ftp == efTRX) {
-    set_trxnm(fnm,name);
-  }
-  else if (fnm->ftp == efTRN) {
-    set_trnnm(fnm,name);
-  } 
-  else if (fnm->ftp == efSTX) {
-    set_stxnm(fnm,name);
-  }
-  else if (fnm->ftp == efSTO) {
-    set_stonm(fnm,name);
-  }
-  else if (fnm->ftp == efTPX) {
-    set_tpxnm(fnm,name);
-  }
-  else if (fnm->ftp == efTPS) {
-    set_tpsnm(fnm,name);
-  }
-  else if (fnm->ftp == efENX) {
-    set_enxnm(fnm,name);
-  }
+  if (deffile[fnm->ftp].ntps)
+    set_grpfnm(fnm,name);
   else {
     if (name != NULL) {
       strcpy(buf,name);

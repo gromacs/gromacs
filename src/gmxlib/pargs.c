@@ -290,3 +290,17 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
     fprintf(fp,"\n");
   }
 }
+
+void pr_enums(FILE *fp, int npargs,t_pargs pa[])
+{
+  int i,j;
+  
+  for (i=0; i<npargs; i++) 
+    if (pa[i].type==etENUM) {
+      fprintf(fp," \"n/%s/(",pa[i].option);
+      for(j=1; pa[i].u.c[j]; j++)
+	fprintf(fp," %s",pa[i].u.c[j]);
+      fprintf(fp,")/\"");
+    }
+}
+

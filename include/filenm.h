@@ -66,6 +66,9 @@ extern void pr_fn(FILE *fp,t_filenm *tfn);
 extern void pr_fns(FILE *fp,int nf,t_filenm tfn[]);
 /* Print nf file names and types */
 
+extern void pr_fopts(FILE *fp,int nf,t_filenm tfn[]);
+/* prints file options in tcsh 'complete' format */
+
 extern void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 			    bool bKeep);
 /* Parse command line for file names. When bKeep is set args are 
