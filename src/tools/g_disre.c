@@ -208,11 +208,8 @@ int main (int argc,char *argv[])
     "An index file may be used to select specific restraints for",
     "printing."
   };
-  static bool bProt=FALSE;
   static int  ntop = 6;
   t_pargs pa[] = {
-    { "-prot", FALSE, etBOOL, {&bProt},
-      "Protonate protein every step. This currently does not add terminal hydrogens, and therefore works only when the termini are capped." },
     { "-ntop", FALSE, etINT,  {&ntop},
       "Number of large violations that are stored in the log file every step" }
   };
@@ -318,10 +315,6 @@ int main (int argc,char *argv[])
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
 
-    if (bProt) {
-      protonate(&atoms,&x);
-    }
-    
     check_viol(stdlog,
 	       &(top.idef.il[F_DISRES]),
 	       top.idef.iparams,top.idef.functype,
