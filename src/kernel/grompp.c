@@ -605,7 +605,7 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
+  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bCleanDum=TRUE;
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
   t_pargs pa[] = {
@@ -619,6 +619,8 @@ int main (int argc, char *argv[])
       "HIDDENRenumber atomtypes and minimize number of atomtypes" },
     { "-shuffle", FALSE, etBOOL, &bShuffle,
       "Shuffle molecules over processors (only with N > 1)" },
+    { "-cleandum",FALSE, etBOOL, &bCleanDum,
+      "Remove bonds to dummies" },
     { "-maxwarn", FALSE, etINT,  &maxwarn,
       "Number of warnings after which input processing stops" }
   };
@@ -720,7 +722,7 @@ int main (int argc, char *argv[])
   /* set parameters for Dummy construction */
   ndum=set_dummies(bVerbose, &sys->atoms, atype, msys.plist);
   /* now throw away all obsolete bonds, angles and dihedrals: */
-  if (ndum)
+  if (ndum && bCleanDum)
     clean_dum_bad(msys.plist,sys->atoms.nr);
   
   if (bRenum) 
