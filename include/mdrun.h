@@ -119,6 +119,9 @@ extern void init_md(t_commrec *cr,
 extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 		     
+extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
+/* Initiate center of mass removal parameters */		     
+		     
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
