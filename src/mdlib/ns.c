@@ -1185,7 +1185,7 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
 static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 		    matrix box,rvec box_size,int ngid,
 		    t_topology *top,t_groups *grps,
-		    t_grid *grid,rvec x[],t_excl bexcl[],
+		    t_grid *grid,rvec x[],t_excl bexcl[],bool *bExcludeAlleg,
 		    t_nrnb *nrnb,t_mdatoms *md,
 		    real lambda,real *dvdlambda,
 		    bool bHaveLJ[])
@@ -1300,11 +1300,16 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
     if (icg != iicg)
       fatal_error(0,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
 		  __LINE__);
+
+    /* Skip this charge group if all energy groups are excluded! */
+    if(bExcludeAlleg[icg])
+      continue;
+    
     i0        = cgsindex[icg];
     nri       = cgsindex[icg+1]-i0;
     i_atoms   = &(cgsatoms[i0]);
     i_eg_excl = fr->eg_excl + ngid*gid[*i_atoms];
-    
+ 
     /* Set the exclusions for the atoms in charge group icg using
      * a bitmask
      */    
@@ -1387,16 +1392,14 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 		    /* Loop over cgs */
 		    for (j=0; (j<nrj); j++) {
 		      jjcg = grida[cgj0+j];
-		      
-		      /* check whether this guy is in range! */
-		      if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
-			  ((jjcg < min_icg))) {
-			r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
-			if (r2 < rl2) {
-			  /* jgid = gid[cgsatoms[cgsindex[jjcg]]]; */
-			  jgid = gid[cgsindex[jjcg]];
-			  /* check energy group exclusions */
-			  if (!i_eg_excl[jgid]) {
+		      jgid = gid[cgsindex[jjcg]];
+		      /* check energy group exclusions */
+		      if (!i_eg_excl[jgid]) {		      
+			/* check whether this guy is in range! */
+			if (((jjcg >= icg) && (jjcg < icg_naaj)) ||
+			    ((jjcg < min_icg))) {
+			  r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
+			  if (r2 < rl2) {
 			    if (r2 < rs2) {
 			      if (nsr[jgid] >= MAX_CG) {
 				put_in_list(bHaveLJ,ngid,md,icg,jgid,
@@ -1432,9 +1435,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 			      nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
 			    }
 			  }
+			  nns++;
 			}
-			nns++;
-		      }
+		      } 
 		    }
 		  }
 		}
@@ -1534,15 +1537,17 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   static   bool        *bHaveLJ;
   static   t_ns_buf    **ns_buf=NULL;
   static   int         *cg_index=NULL,*slab_index=NULL;
+  static   bool        *bExcludeAlleg;
   
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
   int      i,j,m,ngid;
   real     min_size;
-
+  bool     allexcl;
   int      nsearch;
   bool     bGrid;
   char     *ptr;
+  bool     *i_eg_excl;
   
   /* Set some local variables */
   bGrid=fr->bGrid;
@@ -1583,6 +1588,23 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 		  nr_in_cg,maxcg);
       
     snew(bexcl,cgs->nra);
+
+    /* Check for charge groups with all energy groups excluded */
+    snew(bExcludeAlleg,cgs->nr);
+    for(i=0;i<cgs->nr;i++) {
+      allexcl=TRUE;
+      /* Make ptr to the excl list for the 1st atoms energy group */
+      i_eg_excl = fr->eg_excl + ngid*md->cENER[cgs->a[cgs->index[i]]];      
+      
+      for(j=0; j<ngid && allexcl;j++) {
+	if(!i_eg_excl[j]) {
+	  /* Not excluded, i.e. we should search neighbors */ 
+	  allexcl=FALSE;
+	}
+      }
+      bExcludeAlleg[i]=allexcl;
+    }
+    
     debug_gmx();
 
     if ((ptr=getenv("NLIST")) != NULL) {
@@ -1679,7 +1701,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   /* Do the core! */
   if (bGrid)
     nsearch = ns5_core(log,cr,fr,cg_index,box,box_size,ngid,top,grps,
-		       grid,x,bexcl,nrnb,md,lambda,dvdlambda,bHaveLJ);
+		       grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,bHaveLJ);
   else {
     /* Only allocate this when necessary, saves 100 kb */
     if (ns_buf == NULL) {

@@ -991,7 +991,7 @@ void do_index(char *ndx,
 		  ptr1[2*i]);
     k=0;
     while ((k < nr) &&
-	   strcasecmp(ptr1[i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
+	   strcasecmp(ptr1[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
       k++;
     if (k==nr)
       fatal_error(0,"%s in energygrp_excl is not an energy group\n",

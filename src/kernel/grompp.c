@@ -245,6 +245,30 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
   return nmismatch;
 }
 
+static void check_eg_vs_cg(t_atoms *atoms,t_block *cgblock)
+{
+  int i,j,firstj;
+  unsigned char firsteg,eg;
+  
+  /* Go through all the charge groups and make sure all their
+   * atoms are in the same energy group.
+   */
+  
+  for(i=0;i<cgblock->nr;i++) {
+    /* Get the energy group of the first atom in this charge group */
+    firstj=cgblock->index[i];
+    firsteg=atoms->atom[firstj].grpnr[egcENER];
+    for(j=cgblock->index[i]+1;j<cgblock->index[i+1];j++) {
+      eg=atoms->atom[j].grpnr[egcENER];
+      if(eg!=firsteg) {
+	fatal_error(0,"atoms %d and %d in charge group %d are in different energy groups",
+		    firstj+1,j+1,i+1);
+      }
+    }
+  }  
+}
+
+
 static void check_pairs(int nrmols,t_molinfo mi[],int ntype,t_param *nb)
 {
   int      i,j,jj,k,taiA,tajA,taiB,tajB,indA,indB,bLJ;
@@ -899,6 +923,11 @@ int main (int argc, char *argv[])
   do_index(ftp2fn_null(efNDX,NFILE,fnm),
 	   &sys->symtab,&(sys->atoms),bVerbose,ir,&sys->idef,
 	   forward);
+
+  if (bVerbose)
+    fprintf(stderr,"Checking consistency between energy and charge groups...\n");
+  check_eg_vs_cg(&(sys->atoms),&(sys->blocks[ebCGS]));
+  
   if (debug)
     pr_symtab(debug,0,"After index",&sys->symtab);
   triple_check(mdparin,ir,sys,&nerror);

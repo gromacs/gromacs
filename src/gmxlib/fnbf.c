@@ -27,11 +27,6 @@
  * GROningen MAchine for Chemical Simulation
  */
  
-/********************************************************
- *	fnbf.c IS A GENERATED FILE DO NOT EDIT     	*
- *     		edit fnbf.m4 instead			*
- ********************************************************/
- 
 static char *SRCID_fnbf_c = "$Id$";
 #ifdef USE_THREADS  
 #include <pthread.h>  /* must come first! */
