@@ -1,6 +1,8 @@
 #
 # Gromacs Makefile
 #
+include		$(GMXHOME)/src/makef/Makefile.def
+#
 DIRS	=	gmxlib 	kernel	tools	ngmx
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
@@ -17,7 +19,7 @@ TDIR	=	$(GMXHOME)
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
-all:	
+all:	dirs
 	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
 
 it:	
@@ -41,6 +43,11 @@ tdist:
 
 dist:	cdist	bdist	tdist
 
+
+# rule to make dirs where binaries and libary go:
+dirs:
+	\mkdir -p $(GMXBIN) $(LIBDIR); 
+
 man:
 	./mknroff
 
@@ -54,3 +61,8 @@ clean:
 copyrgt:
 	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); sccs edit SCCS; $(COPYRGT) *.c; $(COPYRGT) *.h; $(COPYRGT) *.cc; sccs delget -y'Edited by copyrgt' SCCS ; cd $(GMXHOME)/src;)
 
+oclean: 
+	$(foreach dir,$(DIRS),cd $(dir); mkdir $(CPU).o ; mv *.o $(CPU).o ; cd ..;)
+
+oget:   
+	$(foreach dir,$(DIRS),cd $(dir); mv $(CPU).o/*.o . ; cd ..;)
