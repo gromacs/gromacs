@@ -112,7 +112,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   /* NEIGHBOURSEARCHING */
 
   if (ir->ePBC == epbcNONE && ir->ns_type != ensSIMPLE) {
-    sprintf(warn_buf,"Can only use nstype=%s with box=%s, setting nstype "
+    sprintf(warn_buf,"Can only use nstype=%s with pbc=%s, setting nstype "
 	    "to %s\n",
 	    ens_names[ensSIMPLE],epbc_names[epbcNONE],ens_names[ensSIMPLE]);
     warning(NULL);
@@ -122,7 +122,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
 	    "with coulombtype = %s and simple neighborsearch\n"
-	    "without periodic boundary conditions (box = %s) and\n"
+	    "without periodic boundary conditions (pbc = %s) and\n"
 	    "rcoulomb and rvdw set to zero",
 	    eel_names[eelCUT],epbc_names[epbcNONE]);
     CHECK((ir->coulombtype  != eelCUT)  || (ir->ns_type != ensSIMPLE) || 
@@ -651,38 +651,60 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
 		      int nstcomm)
 {
-  int     ai,aj,i,g,gi,gj;
+  int     ai,aj,i,n,d,g,gi,gj,imin,jmin;
   t_iatom *ia;
+  int     *nrdf;
   real    nrdf_tot,fac;
 
   /* Calculate nrdf. 
    * First calc 3xnr-atoms for each group
    * then subtract half a degree of freedom for each constraint
-   * This is done in integer by calcing 6xnr-atoms and subtracting
-   * one degree of freedom and finally division by two.
    *
    * Only atoms and nuclei contribute to the degrees of freedom...
    */
+
   for(i=0; (i<atoms->grps[egcTC].nr); i++)
     opts->nrdf[i] = 0;
 
-  for(i=0; (i<atoms->nr); i++) {
+  snew(nrdf,atoms->nr);
+  for(i=0; i<atoms->nr; i++) {
+    nrdf[i] = 0;
     if ((atoms->atom[i].ptype == eptAtom) ||
 	(atoms->atom[i].ptype == eptNucleus)) {
-      g=atoms->atom[i].grpnr[egcTC];
-      opts->nrdf[g]+=3;
+      g = atoms->atom[i].grpnr[egcFREEZE];
+      /* Double count nrdf for particle i */
+      for(d=0; d<DIM; d++)
+	if (opts->nFreeze[g][d] == 0)
+	  nrdf[i] += 2; 
+      g = atoms->atom[i].grpnr[egcTC];
+      opts->nrdf[g] += 0.5*nrdf[i];
     }
   }
   ia=idef->il[F_SHAKE].iatoms;
   for(i=0; (i<idef->il[F_SHAKE].nr); ) {
+    /* Subtract degrees of freedom for the constraints,
+     * if the particles still have degrees of freedom left.
+     */
     ai=ia[1];
     aj=ia[2];
     gi=atoms->atom[ai].grpnr[egcTC];
     gj=atoms->atom[aj].grpnr[egcTC];
-    opts->nrdf[gi]-=0.5;
-    opts->nrdf[gj]-=0.5;
-    ia+=3;
-    i+=3;
+    if (nrdf[ai] > 0)
+      jmin = 1;
+    else
+      jmin = 2;
+    if (nrdf[aj] > 0)
+      imin = 1;
+    else
+      imin = 2;
+    imin = min(imin,nrdf[ai]);
+    jmin = min(jmin,nrdf[aj]);
+    nrdf[ai] -= imin;
+    nrdf[aj] -= jmin;
+    opts->nrdf[gi] -= 0.5*imin;
+    opts->nrdf[gj] -= 0.5*jmin;
+    ia += 3;
+    i += 3;
   }
   ia=idef->il[F_SETTLE].iatoms;
   for(i=0; (i<idef->il[F_SETTLE].nr); ) {
@@ -708,6 +730,11 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     for(i=0; (i<atoms->grps[egcTC].nr); i++)
       opts->nrdf[i] *= fac;
   }
+  for(i=0; (i<atoms->grps[egcTC].nr); i++)
+    if (opts->nrdf[i] < 0)
+      opts->nrdf[i] = 0;
+
+  sfree(nrdf);
 }
 
 static void decode_cos(char *s,t_cosines *cosine)
@@ -817,7 +844,6 @@ void do_index(char *ndx,
 	fatal_error(0,"ref_t for group %d negative",i);
     }
   }
-  calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm);
   
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);
@@ -867,6 +893,9 @@ void do_index(char *ndx,
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcENER].nr;
   ir->opts.ngener=nr;
+
+  /* Now we have filled the freeze struct, so we can calculate NRDF */ 
+  calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm);
   
   negexcl=str_nelem(egexcl,MAXPTR,ptr1);
   if (negexcl % 2 != 0)
