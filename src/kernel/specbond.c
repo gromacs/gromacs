@@ -175,11 +175,10 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
   t_specbond *sb=NULL;
   t_ssbond   *bonds=NULL;
   int  nsb,natoms;
-  int  ncys,nbonds;
-  int  *cysp,*sgp;
-  int  *nBonded;
+  int  nspec,nbonds;
+  int  *specp,*sgp;
   bool bDoit,bSwap;
-  int  i,j,b,e,e2,nres;
+  int  i,j,b,e,e2;
   int  ai,aj,index_sb;
   real **d;
   char buf[10];
@@ -190,48 +189,49 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
   sb=get_specbonds(&nsb);
   
   if (nsb > 0) {
-    nres=pdba->nres;
-    snew(cysp,nres);
-    snew(sgp,nres);
-    snew(nBonded,nres);
+    snew(specp,natoms);
+    snew(sgp,natoms);
     
-    ncys = 0;
+    nspec = 0;
     for(i=0;(i<natoms);i++) {
       if (is_special(nsb,sb,*pdba->resname[pdba->atom[i].resnr],
 		     *pdba->atomname[i])) {
-	cysp[ncys]=pdba->atom[i].resnr;
-	sgp[ncys] =i;
-	ncys++;
+	specp[nspec] = pdba->atom[i].resnr;
+	sgp[nspec] = i;
+	nspec++;
       }
     }
+    srenew(specp,nspec);
+    srenew(sgp,nspec);
     
-    /* distance matrix d[ncys][ncys] */
-    snew(d,ncys);
-    for(i=0; (i<ncys); i++)
-      snew(d[i],ncys);
+    /* distance matrix d[nspec][nspec] */
+    snew(d,nspec);
+    for(i=0; (i<nspec); i++)
+      snew(d[i],nspec);
     
-    for(i=0; (i<ncys); i++) 
-      for(j=0; (j<ncys); j++) {
-	ai=sgp[i];
+    for(i=0; (i<nspec); i++) {
+      ai=sgp[i];
+      for(j=0; (j<nspec); j++) {
 	aj=sgp[j];
 	d[i][j]=sqrt(distance2(x[ai],x[aj]));
       }
-    if (ncys > 1) {
+    }
+    if (nspec > 1) {
 #define MAXCOL 8
       fprintf(stderr,"Special Atom Distance matrix:\n");
-      for(b=0; (b<ncys); b+=MAXCOL) {
+      for(b=0; (b<nspec); b+=MAXCOL) {
 	fprintf(stderr,"%8s","");
-	e=min(b+MAXCOL, ncys-1);
+	e=min(b+MAXCOL, nspec-1);
 	for(i=b; (i<e); i++) {
 	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
-		  cysp[i]+1);
+		  specp[i]+1);
 	  fprintf(stderr,"%8s",buf);
 	}
 	fprintf(stderr,"\n");
-	e=min(b+MAXCOL, ncys);
-	for(i=b+1; (i<ncys); i++) {
+	e=min(b+MAXCOL, nspec);
+	for(i=b+1; (i<nspec); i++) {
 	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
-		  cysp[i]+1);
+		  specp[i]+1);
 	  fprintf(stderr,"%8s",buf);
 	  e2=min(i,e);
 	  for(j=b; (j<e2); j++)
@@ -242,52 +242,47 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     }
     i=j=0;
     
-    snew(bonds,ncys/2);
+    snew(bonds,nspec/2);
   
-    for(i=0; (i<ncys); i++) {
+    for(i=0; (i<nspec); i++) {
       ai = sgp[i];
-      for(j=i+1; (j<ncys); j++) {
+      for(j=i+1; (j<nspec); j++) {
 	aj = sgp[j];
-	
 	if (is_bond(nsb,sb,pdba,ai,aj,d[i][j],
 		    &index_sb,&bSwap)) {
 	  if (bInteractive) {
-	    fprintf(stderr,"Link Res%4d and Res%4d (y/n) ?",cysp[i]+1,cysp[j]+1);
+	    fprintf(stderr,"Link Res%4d and Res%4d (y/n) ?",specp[i]+1,specp[j]+1);
 	    bDoit=yesno();
 	  }
 	  else {
-	    fprintf(stderr,"Linking Res%4d and Res%4d...\n",cysp[i]+1,cysp[j]+1);
+	    fprintf(stderr,"Linking Res%4d and Res%4d...\n",specp[i]+1,specp[j]+1);
 	    bDoit=TRUE;
 	  }
 	  if (bDoit) {
 	    /* Store the residue numbers in the bonds array */
-	    bonds[nbonds].res1 = cysp[i];
-	    bonds[nbonds].res2 = cysp[j];
+	    bonds[nbonds].res1 = specp[i];
+	    bonds[nbonds].res2 = specp[j];
 	    bonds[nbonds].a1   = strdup(*pdba->atomname[ai]);
 	    bonds[nbonds].a2   = strdup(*pdba->atomname[aj]);
 	    if (bSwap) {
-	      rename_1res(pdba,cysp[i],sb[index_sb].nres2);
-	      rename_1res(pdba,cysp[j],sb[index_sb].nres1);
+	      rename_1res(pdba,specp[i],sb[index_sb].nres2);
+	      rename_1res(pdba,specp[j],sb[index_sb].nres1);
 	    }
 	    else {
-	      rename_1res(pdba,cysp[i],sb[index_sb].nres1);
-	      rename_1res(pdba,cysp[j],sb[index_sb].nres2);
+	      rename_1res(pdba,specp[i],sb[index_sb].nres1);
+	      rename_1res(pdba,specp[j],sb[index_sb].nres2);
 	    }
-	    nBonded[i]++;
-	    nBonded[j]++;
-	    
 	    nbonds++;
 	  }
 	}
       }
     }
     
-    for(i=0; (i<ncys); i++)
+    for(i=0; (i<nspec); i++)
       sfree(d[i]);
     sfree(d);
-    sfree(nBonded);
     sfree(sgp);
-    sfree(cysp);
+    sfree(specp);
  
     done_specbonds(nsb,sb);
     sfree(sb);
