@@ -342,18 +342,23 @@ The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
 <b>rcoulomb</b> to accommodate for the size of charge groups and diffusion
 between neighbor list updates.</dd>
 
-<dt><b>User</b></dt>
-<dd>Specify <b>rshort</b> and <b>rlong</b> to the same value,
-<tt>mdrun</tt> will now expect to find a file <tt>ctab.xvg</tt> with
-user-defined functions. This file should contain 5 columns: the
-<tt>x</tt> value, <tt>f(x)</tt>, <tt>-f<sup>(1)</sup>(x)</tt>,
-<tt>f<sup>(2)</sup>(x)</tt> and <tt>-f<sup>(3)</sup>(x)</tt>, where
-<tt>f<sup>(n)</sup>(x)</tt> denotes the <tt>n<sup>th</sup></tt>
-derivative of function <tt>f(x)</tt> with respect to <tt>x</tt>. The
-<tt>x</tt> should run from 0 [nm] to <b>rlist</b><tt>+0.5</tt> [nm],
-with a spacing of <tt>0.002</tt> [nm] when you run in single
+<dt><b>User</b></dt> 
+<dd><a name="user"></a>Specify <b>rlist</b> and <b>rcoulomb</b> to the
+same value, <tt>mdrun</tt> will now expect to find a file
+<tt>table.xvg</tt> with user-defined potential functions for
+repulsion, dispersion and Coulomb.  This file should contain 7
+columns: the <tt>x</tt> value, <tt>f(x)</tt>,
+<tt>-f<sup>(2)</sup>(x)</tt>, <tt>g(x)</tt>,
+<tt>-g<sup>(2)</sup>(x)</tt>, <tt>h(x)</tt>,
+<tt>-h<sup>(2)</sup>(x)</tt>, where <tt>f<sup>(2)</sup>(x)</tt>
+denotes the <tt>2<sup>nd</sup></tt> derivative of function
+<tt>f(x)</tt> with respect to <tt>x</tt>.  f(x) is the repulsion
+function, g(x) the dispersion function and h(x) the Coulomb function.
+The <tt>x</tt> should run from 0 [nm] to <b>rlist</b><tt>+0.5</tt>
+[nm], with a spacing of <tt>0.002</tt> [nm] when you run in single
 precision, or <tt>0.0005</tt> [nm] when you run in double precision.
-The function value at <tt>x=0</tt> is not important.</dd>
+The function value at <tt>x=0</tt> is not important. More information is
+in the printed manual.</dd>
 
 </dl></dd>
 
@@ -383,16 +388,7 @@ charge groups and diffusion between neighbor list
 updates.</dd>
 
 <dt><b>User</b></dt>
-<dd><tt>mdrun</tt> will now expect to find two files with user-defined
-functions: <tt>rtab.xvg</tt> for Repulsion, <tt>dtab.xvg</tt> for 
-Dispersion. These files should contain 5 columns: the <tt>x</tt>
-value, <tt>f(x)</tt>, <tt>-f<sup>(1)</sup>(x)</tt>,
-<tt>f<sup>(2)</sup>(x)</tt> and <tt>-f<sup>(3)</sup>(x)</tt>, where
-<tt>f<sup>(n)</sup>(x)</tt> denotes the <tt>n<sup>th</sup></tt>
-derivative of function <tt>f(x)</tt> with respect to <tt>x</tt>. The
-<tt>x</tt> should run from 0 [nm] to <b>rlist</b><tt>+0.5</tt> [nm],
-with a spacing of <tt>0.002</tt> [nm] when you run in single
-precision, or <tt>0.0005</tt> [nm] when you run in double precision.
+<dd><a href="#user">See above</a>
 The function value at <tt>x=0</tt> is not important. When you want to
 use LJ correction, make sure that <b>rvdw</b> corresponds to the
 cut-off in the user-defined function.</dd>
