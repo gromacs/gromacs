@@ -71,12 +71,14 @@ static void init_table(t_lutab *lookup_table)
 void init_lookup_table(FILE *log)
 {
 #ifdef CINVSQRT
-  fprintf(log,"Generating lookup table for invsqrt calculation in C\n");
+ if(log!=NULL)
+     fprintf(log,"Generating lookup table for invsqrt calculation in C\n");
   init_table(&lookup_table);
 #endif
 #ifdef USEF77
 #ifdef FINVSQRT
-  fprintf(log,"Generating lookup table for invsqrt calculation in Fortran\n");
+  if(log!=NULL)
+      fprintf(log,"Generating lookup table for invsqrt calculation in Fortran\n");
   fillbuf();
 #endif
 #endif
