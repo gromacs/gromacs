@@ -51,13 +51,24 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "gstat.h"
 #include "txtdump.h"
 
+real tick_spacing(real range,int minticks)
+{
+  real sp;
+
+  sp = 0.2*exp(log(10)*ceil(log(range)/log(10)));
+  while (range/sp < minticks-1)
+    sp = sp/2;
+
+  return sp;
+}
+
 void write_xvgr_graphs(char *file,int ngraphs,
 		       char *title,char *xlabel,char **ylabel,
 		       int n,real *x, real **y,bool bZero)
 {
   FILE *out;
   int g,i;
-  real min,max;
+  real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
   for(g=0; g<ngraphs; g++) {
@@ -72,6 +83,8 @@ void write_xvgr_graphs(char *file,int ngraphs,
     else
       min=min-0.1*(max-min);
     max=max+0.1*(max-min);
+    xsp=tick_spacing(x[n-1]-x[0],4);
+    ysp=tick_spacing(max-min,3);
     fprintf(out,"@ with g%d\n@ g%d on\n",ngraphs-1-g,ngraphs-1-g);
     fprintf(out,"@ g%d autoscale type AUTO\n",ngraphs-1-g);
     if (g==0) 
@@ -85,22 +98,22 @@ void write_xvgr_graphs(char *file,int ngraphs,
     fprintf(out,"@ world ymin %g\n",min);
     fprintf(out,"@ world ymax %g\n",max);
     fprintf(out,"@ view xmin 0.15\n");
-    fprintf(out,"@ view xmax 0.90\n");
+    fprintf(out,"@ view xmax 0.85\n");
     fprintf(out,"@ view ymin %g\n",0.15+(ngraphs-1-g)*0.7/ngraphs);
     fprintf(out,"@ view ymax %g\n",0.15+(ngraphs-g)*0.7/ngraphs);
     fprintf(out,"@ yaxis  label \"%s\"\n",ylabel[g]);
-    fprintf(out,"@ xaxis tick major 20\n");
-    fprintf(out,"@ xaxis tick minor 10\n");
+    fprintf(out,"@ xaxis tick major %g\n",xsp);
+    fprintf(out,"@ xaxis tick minor %g\n",xsp/2);
     fprintf(out,"@ xaxis ticklabel start type spec\n");
-    fprintf(out,"@ xaxis ticklabel start %g\n",(x[0]>0) ?
-	    (int)(x[0]/20+0.99)*20.0 : (int)(min/20)*20.0);
-    fprintf(out,"@ yaxis tick major 0.2\n");
-    fprintf(out,"@ yaxis tick minor 0.1\n");
+    fprintf(out,"@ xaxis ticklabel start %g\n",ceil(min/xsp)*xsp);
+    fprintf(out,"@ yaxis tick major %g\n",ysp);
+    fprintf(out,"@ yaxis tick minor %g\n",ysp/2);
     fprintf(out,"@ yaxis ticklabel start type spec\n");
-    fprintf(out,"@ yaxis ticklabel start %g\n",(min>0) ? 
-	    (int)(min/0.2+0.99)*0.2 : (int)(min/0.2)*0.2);
-    if ((min<0) && (max>0))
+    fprintf(out,"@ yaxis ticklabel start %g\n",ceil(min/ysp)*ysp);
+    if ((min<0) && (max>0)) {
       fprintf(out,"@ zeroxaxis bar on\n");
+      fprintf(out,"@ zeroxaxis bar linestyle 3\n");
+    }
     for(i=0; i<n; i++) 
       fprintf(out,"%10.4f %10.5f\n",x[i],y[g][i]);
     fprintf(out,"&\n");
