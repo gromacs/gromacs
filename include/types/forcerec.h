@@ -73,6 +73,7 @@ typedef struct {
   /* Free energy ? */
   int  efep;
   real sc_alpha;
+  real sc_sigma6;
 
   /* NS Stuff */
   int  eeltype;
