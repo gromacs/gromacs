@@ -57,7 +57,7 @@ void chk_trj(char *fn)
 {
   t_trnheader  sh,count;
   int          idum,j,natoms,step;
-  real         rdum,t,t0,old_t1,old_t2,prec;
+  real         rdum,t,tt,t0,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK;
   rvec         *x;
   matrix       box;
@@ -104,30 +104,34 @@ void chk_trj(char *fn)
 	fprintf(stderr,"\n");
       if (!fread_htrn(status,&sh,NULL,NULL,NULL,NULL))
 	fprintf(stderr,"\nframe %d at t=%g is incomplete\n",j,sh.t);
-      
-      j++;
+      else {
+	j++;
+	t=sh.t;
 #define INC(s,n,item) if (s.item  != 0) n.item++
-      INC(sh,count,box_size);
-      INC(sh,count,vir_size);
-      INC(sh,count,pres_size);
-      INC(sh,count,x_size);
-      INC(sh,count,v_size);
-      INC(sh,count,f_size);
+	INC(sh,count,box_size);
+	INC(sh,count,vir_size);
+	INC(sh,count,pres_size);
+	INC(sh,count,x_size);
+	INC(sh,count,v_size);
+	INC(sh,count,f_size);
+      }
       fpos   = fio_ftell(status);
     }
+   fprintf(stderr,"\n"); 
     if (!bOK)
-      fprintf(stderr,"\nheader of frame %d at t=%g is incomplete\n",j,sh.t);
+      fprintf(stderr,"header of frame %d at t=%g is incomplete\n",j,sh.t);
     close_trn(status);
-    t=sh.t;
     break;
   case efXTC:
     xd = open_xtc(fn,"r");
-    if (read_first_xtc(xd,&natoms,&step,&t,box,&x,&prec)) {
+    t=-1;
+    if (read_first_xtc(xd,&natoms,&step,&tt,box,&x,&prec,&bOK)) {
       fprintf(stderr,"\nXTC precision %g\n\n",prec);
       j=0;
       old_t2=-2.0;
       old_t1=-1.0;
       do {
+	t=tt;
 	if (j>=2) {
 	  if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
 	       0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {
@@ -145,17 +149,20 @@ void chk_trj(char *fn)
 	count.x_size++;
 	count.box_size++;
 	j++;
-      } while (read_next_xtc(xd,&natoms,&step,&t,box,x,&prec));
+      } while (read_next_xtc(xd,&natoms,&step,&tt,box,x,&prec,&bOK));
       close_xtc(xd);
     }
     else
       fprintf(stderr,"Empty file %s\n",fn);
+    fprintf(stderr,"\n");
+    if (!bOK)
+	fprintf(stderr,"frame %d at t=%g is incomplete\n",j,tt);
     break;
   default:
     fprintf(stderr,"Sorry %s not supported yet\n",fn);
   }
 
-  fprintf(stderr,"\n\n\n# Atoms     %d\n",natoms);
+  fprintf(stderr,"\n\n# Atoms     %d\n",natoms);
   
   fprintf(stderr,"\nItem        #frames");
   if (bShowTimestep)

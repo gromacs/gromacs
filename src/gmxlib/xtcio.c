@@ -60,8 +60,9 @@ static void check_xtc_magic(int magic)
 int xtc_check(char *str,bool bResult,char *file,int line)
 {
   if (!bResult) {
-    fprintf(stderr,"XTC error: read/write of %s failed, "
-	    "source file %s, line %d\n",str,file,line);
+    if (debug)
+      fprintf(debug,"\nXTC error: read/write of %s failed, "
+	      "source file %s, line %d\n",str,file,line);
     return 0;
   }
   return 1;
@@ -75,7 +76,8 @@ void xtc_check_fat_err(char *str,bool bResult,char *file,int line)
   }
 }
 
-static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time)
+static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time,
+		      bool *bOK)
 {
   int result;
 
@@ -86,13 +88,12 @@ static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time)
     result=XTC_CHECK("step",   xdr_int(xd,step));    /* frame number    */
   if (result)
     result=XTC_CHECK("time",   xdr_real(xd,time));   /* time            */
-    
+  *bOK=(result!=0);
+
   return result;
 }
 
-static int xtc_coord(XDR *xd,
-		     int *natoms,
-		     matrix box,rvec *x,real *prec)
+static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec)
 {
   int i,j,result;
   
@@ -111,9 +112,9 @@ static int xtc_coord(XDR *xd,
 
 static int xtc_io(XDR *xd,int *magic,
 		  int *natoms,int *step,real *time,
-		  matrix box,rvec *x,real *prec)
+		  matrix box,rvec *x,real *prec,bool *bOK)
 {
-  if (!xtc_header(xd,magic,natoms,step,time))
+  if (!xtc_header(xd,magic,natoms,step,time,bOK))
     return 0;
   return xtc_coord(xd,natoms,box,x,prec);
 }
@@ -124,10 +125,11 @@ int write_xtc(int fp,
 {
   int magic_number = XTC_MAGIC;
   XDR *xd;
-  
+  bool bDum;
+
   xd = fio_getxdr(fp);
   /* write magic number and xtc identidier */
-  if (!xtc_header(xd,&magic_number,&natoms,&step,&time))
+  if (!xtc_header(xd,&magic_number,&natoms,&step,&time,&bDum))
     return 0;
     
   /* write data */
@@ -135,41 +137,47 @@ int write_xtc(int fp,
 }
 
 int read_first_xtc(int fp,int *natoms,int *step,real *time,
-		   matrix box,rvec **x,real *prec)
+		   matrix box,rvec **x,real *prec,bool *bOK)
 {
   int magic;
   XDR *xd;
   
+  *bOK=TRUE;
   xd = fio_getxdr(fp);
   
   /* read header and malloc x */
-  if ( !xtc_header(xd,&magic,natoms,step,time))
+  if ( !xtc_header(xd,&magic,natoms,step,time,bOK))
     return 0;
     
   /* Check magic number */
   check_xtc_magic(magic);
   
   snew(*x,*natoms);
+
+  *bOK=xtc_coord(xd,natoms,box,*x,prec);
   
-  return xtc_coord(xd,natoms,box,*x,prec);
+  return *bOK;
 }
 
 int read_next_xtc(int fp,
 		  int *natoms,int *step,real *time,
-		  matrix box,rvec *x,real *prec)
+		  matrix box,rvec *x,real *prec,bool *bOK)
 {
   int magic;
   XDR *xd;
-  
+
+  *bOK=TRUE;
   xd = fio_getxdr(fp);
   
   /* read header */
-  if ( !xtc_header(xd,&magic,natoms,step,time))
+  if (!xtc_header(xd,&magic,natoms,step,time,bOK))
     return 0;
     
   /* Check magic number */
   check_xtc_magic(magic);
-  
-  return xtc_coord(xd,natoms,box,x,prec);
+
+  *bOK=xtc_coord(xd,natoms,box,x,prec);
+
+  return *bOK;
 }
 

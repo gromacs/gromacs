@@ -39,7 +39,9 @@ extern "C" {
 #include "typedefs.h"
 #include "xdrf.h"
 
-/* All functions return 1 if succesfull, 0 otherwise */  
+/* All functions return 1 if succesfull, 0 otherwise 
+ * bOK tells if a frame is not corrupted 
+ */  
 
 extern int open_xtc(char *filename,char *mode);
 /* Open a file for xdr I/O */
@@ -49,12 +51,12 @@ extern void close_xtc(int fp);
   
 extern int read_first_xtc(int fp,
 			  int *natoms,int *step,real *time,
-			  matrix box,rvec **x,real *prec);
+			  matrix box,rvec **x,real *prec,bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
 extern int read_next_xtc(int fp,
 			 int *natoms,int *step,real *time,
-			 matrix box,rvec *x,real *prec);
+			 matrix box,rvec *x,real *prec,bool *bOK);
 /* Read subsequent frames */
 
 extern int write_xtc(int fp,

@@ -279,9 +279,11 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
       PRINTSKIP(*t)
     }
   }
-  PRINTLAST(pt)
-  if (!bOK) PRINTINCOMPH(sh.t)
-
+  if (bOK)
+    PRINTLAST(pt)
+  else
+    PRINTINCOMPH(sh.t)
+      
   return FALSE;    
 }
   
@@ -589,6 +591,7 @@ int read_first_x(int *status,char *fn,
   int  fp;
   int  natoms,step;
   real prec;
+  bool bOK;
 
   INITCOUNT;
   
@@ -604,7 +607,7 @@ int read_first_x(int *status,char *fn,
     natoms=xyz_first_x(fio_getfp(fp),t,x,box);
     break;
   case efXTC:
-    if (read_first_xtc(fp,&natoms,&step,t,box,x,&prec) == 0)
+    if (read_first_xtc(fp,&natoms,&step,t,box,x,&prec,&bOK) == 0)
       fatal_error(0,"No XTC!\n");
     if (check_times(*t) < 0)
       if (!read_next_x(*status,t,natoms,*x,box))
@@ -628,6 +631,7 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
 {
   int step,ct;
   real prec,pt;
+  bool bOK;
   
   switch (fio_getftp(status)) {
   case efTRJ:
@@ -638,7 +642,7 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
     return xyz_next_x(fio_getfp(status),t,natoms,x,box);
   case efXTC:
     pt=*t;
-    while (read_next_xtc(status,&natoms,&step,t,box,x,&prec)) {
+    while (read_next_xtc(status,&natoms,&step,t,box,x,&prec,&bOK)) {
       if ((ct=check_times(*t)) == 0) {
 	PRINTREAD(*t)
 	init_pbc(box,FALSE);  
@@ -652,6 +656,8 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
       }
     }
     PRINTLAST(pt)
+    if (!bOK)
+      PRINTINCOMP(*t,pt)
     return FALSE;
   case efPDB:
     pt=*t;

@@ -159,19 +159,21 @@ void list_xtc(char *fn)
   matrix box;
   int    natoms,step;
   real   prec,time;
+  bool   bOK;
   
   printf("gmxdump: %s\n",fn);
   
   xd = open_xtc(fn,"r");
-  read_first_xtc(xd,&natoms,&step,&time,box,&x,&prec);
+  read_first_xtc(xd,&natoms,&step,&time,box,&x,&prec,&bOK);
 		 
   do {
     printf("natoms=%10d  step=%10d  time=%10g  prec=%10g\n",
 	   natoms,step,time,prec);
     pr_rvecs(stdout,0,"box",box,DIM);
     pr_rvecs(stdout,0,"x",x,natoms);
-  } while (read_next_xtc(xd,&natoms,&step,&time,box,x,&prec));
-  
+  } while (read_next_xtc(xd,&natoms,&step,&time,box,x,&prec,&bOK));
+  if (!bOK)
+    fprintf(stderr,"\nWARNING: Incomplete frame header at time %g\n",time);
   close_xtc(xd);
 }
 
