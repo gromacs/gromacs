@@ -62,6 +62,13 @@ void pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
     rvec_sub(xi,xj,dx);
 }
 
+void set_gmx_full_pbc(FILE *fp)
+{
+  bPBC   = (getenv("GMXFULLPBC") != NULL);
+  if (bPBC && fp)
+    fprintf(fp,"Full PBC calculation = %s\n",bool_names[bPBC]);
+}
+
 void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
 		rvec x_s[],rvec f[],
 		t_forcerec *fr,t_graph *g,
@@ -78,9 +85,7 @@ void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
     fprintf(log,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
 
   if (bFirst) {
-    bPBC   = (getenv("GMXFULLPBC") != NULL);
-    if (bPBC)
-      fprintf(log,"Full PBC calculation = %s\n",bool_names[bPBC]);
+    set_gmx_full_pbc(log);
     bFirst = FALSE;
 #ifdef DEBUG
     p_graph(debug,"Bondage is fun",g);
