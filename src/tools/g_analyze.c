@@ -308,6 +308,10 @@ int main(int argc,char *argv[])
     "All lines starting with # and @ are skipped.",
     "All analyses can also be done for the derivative of a set",
     "(option [TT]-d[tt]).[PAR]",
+    "g_analyze always shows the average and standard deviation of each",
+    "set. For each set it also shows the relative deviation of the third",
+    "and forth cumulant from those of a Gaussian distribution with the same",
+    "standard deviation.[PAR]",
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
     "Option [TT]-msd[tt] produces the mean square displacement(s).[PAR]",
     "Option [TT]-dist[tt] produces distribution plot(s).[PAR]",
@@ -364,7 +368,7 @@ int main(int argc,char *argv[])
   FILE     *out;
   int      n,nlast,s,nset,i,t=0;
   real     **val,t0,dt,tot;
-  double   *av,*av2;
+  double   *av,*sig,cum1,cum2,cum3,cum4,db;
   char     *acfile,*msdfile,*distfile,*avfile,*eefile;
   
   t_filenm fnm[] = { 
@@ -392,10 +396,6 @@ int main(int argc,char *argv[])
   distfile = opt2fn_null("-dist",NFILE,fnm);
   avfile   = opt2fn_null("-av",NFILE,fnm);
   eefile   = opt2fn_null("-ee",NFILE,fnm);
-  if (!acfile && !msdfile && !distfile && !avfile && !eefile) {
-    fprintf(stderr,"Please use one of the output file options\n");
-    exit(0);
-  }
 
   val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
 	       opt2parg_bSet("-b",npargs,ppa),tb,
@@ -409,19 +409,39 @@ int main(int argc,char *argv[])
     for(s=0; s<nset; s++)
       for(i=0; i<n; i++)
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
-  }	
+  }
 
+  fprintf(stdout,"                                         relative deviation of\n");
+  fprintf(stdout,"                           standard     cumulants from those of\n");
+  fprintf(stdout,"             average       deviation    a Gaussian distribition\n");
+  fprintf(stdout,"                                            cum. 3   cum. 4\n");
   snew(av,nset);
-  snew(av2,nset);
+  snew(sig,nset);
   for(s=0; s<nset; s++) {
+    cum1 = 0;
+    cum2 = 0;
+    cum3 = 0;
+    cum4 = 0;
+    for(i=0; i<n; i++)
+      cum1 += val[s][i];
+    cum1 /= n;
     for(i=0; i<n; i++) {
-      av[s]  += val[s][i];
-      av2[s] += sqr(val[s][i]);
+      db = val[s][i]-cum1;
+      cum2 += db*db;
+      cum3 += db*db*db;
+      cum4 += db*db*db*db;
     }
-    av[s]  /= n;
-    av2[s] /= n;
-    fprintf(stdout,"Average of set %2d: %13.6e  stddev: %12.6e\n",
-	    s+1,av[s],sqrt(av2[s]-sqr(av[s]))); 
+    cum2 /= n;
+    cum3 /= n;
+    cum4 /= n;
+    av[s]  = cum1;
+    sig[s] = sqrt(cum2);
+    /* fprintf(stdout,"Average of set %2d: %13.6e  stddev: %12.6e\n",
+	    s+1,av[s],sig); */
+    fprintf(stdout,"Set %3d:  %13.6e   %12.6e      %6.3f   %6.3f\n",
+	    s+1,av[s],sig[s],
+	    sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
+	    sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
   }
   fprintf(stdout,"\n");
 
