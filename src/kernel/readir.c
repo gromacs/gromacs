@@ -370,7 +370,7 @@ void get_ir(char *mdparin,char *mdparout,
     ir->ref_p[i]    = dumdub[1][i];
     ir->compress[i] = dumdub[0][i];
   }
-  fprintf(stderr,"Warning: as of GMX v 1.7 unit of compressibility is truly 1/bar\n");
+  fprintf(stderr,"Warning: as of GMX v 2.0 unit of compressibility is truly 1/bar\n");
   sfree(dumstr[0]);
   sfree(dumstr[1]);
 }
