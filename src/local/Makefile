@@ -6,7 +6,7 @@
 #	GROMACS - Groningen Machine for Chemical Simulation
 #	Copyright (c) 1990-1997, Groningen University
 #
-# 	Makefile for Gromacs kernel
+# 	Makefile for Gromacs local stuff
 #
 ifeq ($(GMXHOME),)
 all:
@@ -52,6 +52,9 @@ anaf:		anaf.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
 mkyaw:		mkyaw.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
+mkice:		mkice.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 
 include	Make.dep
 endif

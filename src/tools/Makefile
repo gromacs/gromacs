@@ -212,9 +212,6 @@ proptim:	proptim.o	hxprops.o	readev.o	\
 wheel:		wheel.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-mkice:		mkice.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
 g_rdf:		g_rdf.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
