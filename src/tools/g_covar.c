@@ -59,7 +59,7 @@ int main(int argc,char *argv[])
     "covariance analysis will be non mass weighted and pbc will not be",
     "taken into account. When the fit and analysis groups are identical",
     "and the analysis is non mass weighted, the fit will also be non mass",
-    "weighted, unless -nomwa is used.[PAR]",
+    "weighted, unless [TT]-nomwa[tt] is used.[PAR]",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "When the same atoms are used for the fit and the covariance analysis,",
     "the reference structure is written first with t=-1.",
