@@ -462,7 +462,7 @@ int main(int argc,char *argv[])
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
   if (!nfile)
-    fatal_error(0,"No input files!");
+    gmx_fatal(FARGS,"No input files!");
   
   snew(settime,nfile+1);
   snew(readtime,nfile+1);
