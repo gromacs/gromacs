@@ -60,7 +60,7 @@ int main(int argc,char *argv[])
     "[PAR]",
     "EXAMPLES[PAR]",
     "g_rotacf -P 1 -nparm 2 -fft -n index -o rotacf-x-P1",
-    "-nframes 1001 -fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[PAR]",
+    "-fa expfit-x-P1 -beginfit 2.5 -endfit 20.0[PAR]",
     "This will calculate the rotational correlation function using a first",
     "order Legendre polynomial of the angle of a vector defined by the index",
     "file. The correlation function will be fitted from 2.5 ps till 20.0 ps",
@@ -70,13 +70,10 @@ int main(int argc,char *argv[])
     ""
   };
   static bool bVec    = FALSE;
-  static int  nframes = 10;
 
   t_pargs pa[] = {
     { "-d",   FALSE, etBOOL, &bVec,
-      "Use index doublets (vectors) for correlation function instead of triplets (planes)" },
-    { "-nframes", FALSE, etINT, &nframes,
-      "Number of frames in trajectory (overestimating is OK)" }
+      "Use index doublets (vectors) for correlation function instead of triplets (planes)" }
   };
 
   int        status,isize;
@@ -86,7 +83,7 @@ int main(int argc,char *argv[])
   matrix     box;
   real       **c1;
   rvec       xij,xjk,n;
-  int        i,j,m,teller,natoms,nvec,ai,aj,ak;
+  int        i,j,m,teller,n_alloc,natoms,nvec,ai,aj,ak;
   unsigned long mode;
   real       t,t0,t1,dt;
   t_topology *top;
@@ -124,12 +121,11 @@ int main(int argc,char *argv[])
   
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
-  fprintf(stderr,"Allocating %d bytes for data\n",nvec*DIM*nframes);
-  
   snew(c1,nvec);
   for (i=0; (i<nvec); i++)
-    snew(c1[i],DIM*nframes);
-  
+    c1[i]=NULL;
+  n_alloc=0;
+
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(x_s,natoms);
   
@@ -137,10 +133,10 @@ int main(int argc,char *argv[])
   t1 = t0 = t;
   teller  = 0;
   do {
-    if (teller == nframes) {
-      fprintf(stderr,"Read %d frames. That's more than the %d you told me.\n"
-	      "Stopping analysis here.\n",teller+1,nframes);
-      break;
+    if (teller >= n_alloc) {
+      n_alloc+=100;
+      for (i=0; (i<nvec); i++)
+	srenew(c1[i],DIM*n_alloc);
     }
     t1 = t;
     
