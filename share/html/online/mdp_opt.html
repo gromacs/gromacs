@@ -152,15 +152,19 @@ conjugate gradient energy minimization.
 <h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#em"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_down.gif"></A> Output control</h3>
 <dl>
 <dt><h4>nstxout: </b>(100) [steps]</h4>
-<dd>frequency to write coordinates to output trajectory
+<dd>frequency to write coordinates to output trajectory,
+the last coordinates are always written
 <dt><h4>nstvout: </b>(100) [steps]</h4>
-<dd>frequency  to write velocities to output trajectory
+<dd>frequency  to write velocities to output trajectory,
+the last velocities are always written
 <dt><h4>nstfout: </b>(0) [steps]</h4>
-<dd>frequency to write forces to output trajectory
+<dd>frequency to write forces to output trajectory.
 <dt><h4>nstlog: </b>(100) [steps]</h4>
-<dd>frequency to write energies to log file
+<dd>frequency to write energies to log file,
+the last energies are always written
 <dt><h4>nstenergy: </b>(100) [steps]</h4>
-<dd>frequency to write energies to energy file
+<dd>frequency to write energies to energy file,
+the last energies are always written
 <dt><h4>nstxtcout: </b>(0) [steps]</h4>
 <dd>frequency to write coordinates to xtc trajectory
 <dt><h4>xtc_precision: </b>(1000) [real]</h4>
