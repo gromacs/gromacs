@@ -168,7 +168,7 @@ void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
   
 }
 
-void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
+void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,rvec x[],
 		       matrix box,int n_bfac,double *bfac,int *bfac_nr,
 		       bool peratom, bool perres, bool bLegend)
 {
@@ -204,7 +204,7 @@ void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
   }
   
   for(i=0; (i<natoms); i++)
-    pdba[i].bfac=0;
+    atoms->atom[i].bfac=0;
   
   if ( (n_bfac == nres) || (perres) ) {
     fprintf(stderr,"Will attach %d B-factors to %d residues\n",
@@ -212,8 +212,8 @@ void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
     for(i=0; (i<n_bfac); i++) {
       found=FALSE;
       for(n=0; (n<natoms); n++)
-	if ( bfac_nr[i] == (pdba[n].resnr+1) ) {
-	  pdba[n].bfac=bfac[i];
+	if ( bfac_nr[i] == (atoms->atom[n].resnr+1) ) {
+	  atoms->atom[n].bfac=bfac[i];
 	  found=TRUE;
 	}
       if (!found) {
@@ -226,8 +226,8 @@ void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
     for(i=0; (i<n_bfac); i++) {
       found=FALSE;
       for(n=0; (n<natoms); n++)
-	if ( bfac_nr[i] == pdba[n].atomnr ) {
-	  pdba[n].bfac=bfac[i];
+	if ( bfac_nr[i] == n+1 ) {
+	  atoms->atom[n].bfac=bfac[i];
 	  found=TRUE;
 	}
       if (!found) {
@@ -241,7 +241,7 @@ void set_pdb_conf_bfac(int natoms,int nres,t_pdbatom pdba[],rvec x[],
 		"residue) specified.",n_bfac,natoms,nres);
 }
 
-void pdb_legend(FILE *out,int natoms,int nres,t_pdbatom pdba[])
+void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 {
   real bfac_min,bfac_max,xmin,ymin,zmin;
   int  i;
@@ -253,11 +253,11 @@ void pdb_legend(FILE *out,int natoms,int nres,t_pdbatom pdba[])
   ymin = 1e10;
   zmin = 1e10;
   for (i=0; (i<natoms); i++) {
-    xmin     = min(xmin,pdba[i].x[XX]);
-    ymin     = min(ymin,pdba[i].x[YY]);
-    zmin     = min(zmin,pdba[i].x[ZZ]);
-    bfac_min = min(bfac_min,pdba[i].bfac);
-    bfac_max = max(bfac_max,pdba[i].bfac);
+    xmin     = min(xmin,x[i][XX]);
+    ymin     = min(ymin,x[i][YY]);
+    zmin     = min(zmin,x[i][ZZ]);
+    bfac_min = min(bfac_min,atoms->atom[i].bfac);
+    bfac_max = max(bfac_max,atoms->atom[i].bfac);
   }
   fprintf(stderr,"B-factors range from %g to %g\n",bfac_min,bfac_max);
   sprintf(buf,"%s","LEG");
@@ -265,7 +265,7 @@ void pdb_legend(FILE *out,int natoms,int nres,t_pdbatom pdba[])
   for (i=1; (i<12); i++) {
     fprintf(out,pdbformat,
 	    "ATOM  ",natoms+1+i,"CA",buf,' ',nres+1,
-	    xmin+(i*1.2),ymin,zmin,1.0,
+	    (xmin+(i*0.12))*10,ymin*10,zmin*10,1.0,
 	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
 }
@@ -348,8 +348,8 @@ int main(int argc, char *argv[])
 #define NPA asize(pa)
 
   FILE      *out;
-  char      title[STRLEN];
-  int       natom,i,j,n_bfac;
+  char      *infile,title[STRLEN];
+  int       ftp,natom,i,j,n_bfac;
   double    *bfac=NULL;
   int       *bfac_nr=NULL;
   t_atoms   atoms;
@@ -402,22 +402,29 @@ int main(int argc, char *argv[])
 	bSetSize[i]=TRUE;
       }
   }
+
+  infile=opt2fn("-f",NFILE,fnm);
+  ftp=fn2ftp(infile);
   
-  atoms.nr=0;
   atoms.nres=0;
-  get_stx_coordnum(fnm[0].fn,&natom);
+  get_stx_coordnum(infile,&natom);
+  atoms.nr=natom;
   snew(atoms.atomname,natom);
+  snew(atoms.resname,natom);
+  if ((ftp==efPDB) || (ftp==efBRK) || (ftp==efENT))
+    snew(atoms.pdbinfo,natom);
   snew(atoms.resname,natom);
   snew(atoms.atom,natom);
   snew(x,natom);
   snew(v,natom);
-  read_stx_conf(fnm[0].fn,title,&atoms,x,v,box);
+  read_stx_conf(infile,title,&atoms,x,v,box);
+  printf("Read %d atoms\n",atoms.nr); 
 
   bHaveV=FALSE;
   for (i=0; (i<natom) && !bHaveV; i++)
     for (j=0; (j<DIM) && !bHaveV; j++)
       bHaveV=bHaveV || (v[i][j]!=0);
-  printf("%svelocities found\n",bHaveV?"":"No ");
+  printf("%selocities found\n",bHaveV?"V":"No v");
   
   /* remove pbc */
   if (bRMPBC) 
@@ -502,8 +509,9 @@ int main(int argc, char *argv[])
       if (opt2bSet("-bf",NFILE,fnm)) {
 	fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
       } else {
-	write_pdb_conf_indexed(opt2fn("-op",NFILE,fnm),title,
-			       &atoms,x,box,isize,index); 
+	out=opt2FILE("-op",NFILE,fnm,"w");
+	hwrite_pdb_conf_indexed(out,title,&atoms,x,box,isize,index); 
+	fclose(out);
       }
     }
   }
@@ -515,24 +523,22 @@ int main(int argc, char *argv[])
     }
     if (opt2bSet("-op",NFILE,fnm)) {
       FILE *out;
-      t_pdbatom *pdba = atoms2pdba(&atoms,x);
       
       if (opt2bSet("-bf",NFILE,fnm)) {
 	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
-	set_pdb_conf_bfac(atoms.nr,atoms.nres,pdba,x,box,
+	set_pdb_conf_bfac(atoms.nr,atoms.nres,&atoms,x,box,
 			  n_bfac,bfac,bfac_nr,peratom,perres,bLegend);
       }
       if (opt2parg_bSet("-label",NPA,pa)) {
 	for(i=0; (i<atoms.nr); i++) 
-	  pdba[i].chain=label[0];
+	  atoms.atom[i].chain=label[0];
       }
       
       out=opt2FILE("-op",NFILE,fnm,"w");
-      print_pdbatoms(out,title,atoms.nr,pdba,box);
+      write_pdbfile(out,title,&atoms,x,box,0,!bLegend);
       if (bLegend)
-	pdb_legend(out,atoms.nr,atoms.nres,pdba);
+	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
       fclose(out);
-      sfree(pdba);
     }  
   }
   
