@@ -127,15 +127,11 @@ static void Callback(t_x11 *x11,int dlg_mess,int item_id,
 static void read_opts(t_data *data)
 {
   FILE *in;
-  char *lib,fn[STRLEN],buf[STRLEN];
+  char fn[STRLEN],buf[STRLEN];
   int  i,n;
 
-  if ((lib=getenv("GMXLIB"))==NULL) {
-    fprintf(stderr,"No variable GMXLIB !\n");
-    exit(1);
-  }
-  sprintf(fn,"%s/xstat.dat",lib);
-  in=ffopen(fn,"r");
+  sprintf(fn,"xstat.dat");
+  in=libopen(fn);
   fscanf(in,"%d",&n);
   data->nopt=n;
   snew(data->name,data->nopt);

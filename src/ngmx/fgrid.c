@@ -31,10 +31,11 @@ static char *SRCID_fgrid_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <string2.h>
 #include <ctype.h>
-#include <smalloc.h>
-#include <fgrid.h>
+#include "string2.h"
+#include "smalloc.h"
+#include "fgrid.h"
+#include "futil.h"
 
 static char *type[] = { 
   "button", "radiobuttons", "groupbox", "checkbox",
@@ -338,19 +339,7 @@ t_fgrid *FGridFromFile(char *infile)
   t_fsimple *fsimple;
   int       gridx,gridy;  
   
-  if ((in=fopen(infile,"r"))==NULL) {
-    /* Try in the GMXLIB directory */
-    if ((gmxlib=getenv("GMXLIB"))==NULL) {
-      fprintf(stderr,"No GMXLIB environment variable and no %s dlg-script"
-	      "in current directory\n",infile);
-      exit(1);
-    }
-    sprintf(newinfile,"%s/%s",gmxlib,infile);
-    if ((in=fopen(newinfile,"r"))==NULL) {
-      perror(infile);
-      exit(1);
-    }
-  }
+  in = libopen(infile);
   GetBuf(in,buf);
   if (strcmp(buf,"grid")!=0)
     ReadDlgErr(infile,eGRIDEXP,buf);
