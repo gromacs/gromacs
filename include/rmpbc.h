@@ -38,6 +38,9 @@ static char *SRCID_rmpbc_h = "$Id$";
 #include "typedefs.h"
 	
 extern void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[]);
-/* Remove periodic boundary conditions */
+/* Remove periodic boundary conditions.
+ * natoms is the size of x and x_s and can be smaller than the number 
+ * of atoms in idef, but should only contain whole molecules
+ */
 
 #endif	/* _rmpbc_h */
