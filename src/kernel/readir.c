@@ -86,7 +86,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   BS(((ir->eBox == ebtNONE) && (ir->ns_type == ensGRID)),
-     "Can only use box type None with simple neighboursearching","");
+     "Can only use box type None with simple neighboursearching%s\n","");
   BS(((ir->shake_tol<=0.0) && (opts->nshake>0) && (ir->eConstrAlg==estSHAKE)),
      "shake_tol must be > 0 instead of %g while using shake\n",
      ir->shake_tol);
@@ -99,19 +99,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->epc != epcNO) {
     BS((ir->epc && (ir->tau_p <= 0)),
        "tau_p must be > 0 instead of %g\n",ir->tau_p);
-    if (ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0)) {
-      fprintf(stderr,"ERROR: system is incompressible while using pressure coupling\n",ir->tau_p);
-      (*nerror)++;
-    }
+    BS((ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0)),
+      "compressibility must be > 0 when using pressure coupling%s\n","");
   }
-  if ((ir->rshort == 0.0) && (ir->rlong == 0.0)) {
-    if (ir->eBox != ebtNONE) {
-      fprintf(stderr,"ERROR: can not have cut-off to zero (=infinite) with periodic\n"
-	      "boundary conditions. Either set the box type to %s, or "
-	      "increase the cut-off radii\n",eboxtype_names[ebtNONE]);
-      (*nerror)++;
-    }
-  }
+  if ((ir->rshort == 0.0) && (ir->rlong == 0.0))
+    BS((ir->eBox != ebtNONE),
+       "ERROR: can not have cut-off to zero (=infinite) with periodic\n"
+       "boundary conditions. Either set the box type to %s, or "
+       "increase the cut-off radii\n",eboxtype_names[ebtNONE]);
   if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
     sprintf(warn_buf,
 	    "%s pressure coupling does not make sense without %s box\n"
