@@ -312,7 +312,7 @@ int vec_shakef(FILE *log,
   else if (error != 0) {
     fprintf(log,"Inner product between old and new vector <= 0.0!\n"
 	    "constraint #%d atoms %u and %u\n",
-	    error-1,iatom[3*(error-1)+1],iatom[3*(error-1)+2]);
+	    error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
     nit=0;
   }
   
