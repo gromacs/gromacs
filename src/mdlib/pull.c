@@ -149,9 +149,7 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
 
 
     /* Find vector between current and desired positions */
-    dvec_sub(pull->grp[i].x_ref, pull->grp[i].x_unc, dr);
-
-    put_dvec_in_box(box,dr);
+    d_pbc_dx(box, pull->grp[i].x_ref, pull->grp[i].x_unc, dr);
 
     /* Select the components we want */
     for(m=DIM-1;m>=0;m--) {
