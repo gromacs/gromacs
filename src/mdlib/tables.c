@@ -36,6 +36,7 @@ static char *SRCID_tables_c = "$Id$";
 #include "xvgr.h"
 #include "vec.h"
 #include "main.h"
+#include "network.h"
  
 /* All the possible (implemented) table functions */
 enum { etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
@@ -486,9 +487,8 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel[k],fr);
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
     
-    if (bDebugMode()) {
+    if (bDebugMode() && (gmx_cpu_id() == 0)) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 
-      fp=fopen("tabell.xvg","w");
       for(i=n0; (i<n); i++) {
 	for(j=0; (j<4); j++) {
 	  x0=x[i]+0.25*j*(x[i+1]-x[i]);
@@ -507,9 +507,4 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   if (fr->bBHAM)
     sfree(xexp);
 }
-
-
-
-
-
 
