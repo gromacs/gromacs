@@ -88,16 +88,16 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
   }
  
   BS(((ir->shake_tol<=0.0) && (opts->nshake>0) && (ir->eConstrAlg==estSHAKE)),
-     "shake_tol must be > 0 instead of %10.5e while using shake\n",
+     "shake_tol must be > 0 instead of %g while using shake\n",
      ir->shake_tol);
   BS(((ir->ndelta < 1) && (ir->ns_type==ensGRID)),
      "when you use ndelta=%d the neighbour search will be done\n"
      "on one grid cell, and take much longer than the simple method\n",
      ir->ndelta);
-  BS((ir->epsilon_r <= 0),"Epsilon-R must be > 0 instead of %e\n",
+  BS((ir->epsilon_r <= 0),"Epsilon-R must be > 0 instead of %g\n",
      ir->epsilon_r);
   BS((ir->epc && (ir->tau_p <= 0)),
-     "tau_p must be > 0 instead of %10.5e\n",ir->tau_p);
+     "tau_p must be > 0 instead of %g\n",ir->tau_p);
   if ((ir->rshort == 0.0) && (ir->rlong == 0.0)) {
     if (ir->eBox != ebtNONE) {
       fprintf(stderr,"Can not have cut-off to zero (=infinite) with periodic\n"
@@ -116,20 +116,22 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     ir->epc = epcISOTROPIC;
   }
   if ((ir->eeltype == eelPPPM) && (ir->epc != epcNO)) {
-    sprintf(warn_buf,"Can not (yet) use pressure coupling with PPPM: pressure"
-	    " coupling turned off");
-    warning(NULL);
-    ir->epc = epcNO;
+    fprintf(stderr,"pressure coupling with PPPM not implemented\n");
+    bStop=TRUE;
   }
-
+  if ((ir->eeltype == eelTWIN) && (ir->rlong != ir->rshort) && 
+      (ir->ns_type == ensSIMPLE)) {
+    fprintf(stderr,"Twin-range cut-off with simple neighbour searching "
+	    "not implemented\n");
+    bStop=TRUE;
+  }
   if ((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)) {
     if (ir->rshort >= ir->rlong) {
       fprintf(stderr,"rlong (%g) must be longer than rshort (%g) "
 	      "when using %s\n",ir->rlong,ir->rshort,eel_names[ir->eeltype]);
       bStop=TRUE;
     }
-  } 
-  else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+  } else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
     if (ir->rlong != ir->rshort) {
       sprintf(warn_buf,
 	      "specifying different rlong (%g) and rshort (%g) "
@@ -140,18 +142,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
     }
     if (ir->epsilon_r == 1.0) {
       sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
-	      eel_names[eelRF]);
+	      eel_names[ir->eeltype]);
       warning(NULL);
       ir->eeltype = eelTWIN; 
     }
   } else
-    BS((ir->rshort > ir->rlong),
-       "rshort (%g) must be <= rlong\n",ir->rshort);
+    BS((ir->rshort > ir->rlong),"rshort (%g) must be <= rlong\n",ir->rshort);
        
-  if (ir->delta_t > 0.005) {
-    sprintf(warn_buf,"time step > 0.005! (%10.5e)\n",ir->delta_t);
-    warning(NULL);
-  }
   if (bStop) {
     fprintf(stderr,"program terminated\n");
     exit(1);
