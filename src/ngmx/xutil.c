@@ -31,11 +31,12 @@ static char *SRCID_xutil_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <smalloc.h>
-#include <typedefs.h>
 #include <Xstuff.h>
 #include <xutil.h>
+#include "assert.h"
+#include "smalloc.h"
+#include "typedefs.h"
+#include "string2.h"
 
 int CheckWin(Window win,char *file, int line)
 {

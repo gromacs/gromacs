@@ -28,13 +28,14 @@
  */
 static char *SRCID_x11_c = "$Id$";
 
+#include <Xstuff.h>
+#include <x11.h>
 #include "sysstuff.h"
 #include "string.h"
 #include "assert.h"
 #include "smalloc.h"
-#include "Xstuff.h"
 #include "typedefs.h"
-#include "x11.h"
+#include "string2.h"
 
 /* These colours will be mapped to black on a monochrome screen */
 unsigned long BLACK,BLUE,GREEN,CYAN,RED,BROWN,GREY,DARKGREY;
