@@ -38,6 +38,13 @@ static char *SRCID_random_h = "$Id$";
 
 #include <typedefs.h>
 
+extern real gauss(real am, real sd, int *ig);
+/* Generate a gaussian number with:
+ * am = center of the distribution
+ * sd = standard deviation
+ * ig = the random number seed.
+ */
+
 extern real rando(int *ig);
 /* Generate a random number 0 <= r < 1. ig is the (address of) the
  * seed variable.

@@ -59,7 +59,7 @@ real gauss (real am, real sd, int *ig)
   a = 0;
   for (i=0; (i<12); i++)
     a = a + rando (ig);
-  gval = (a-6.0)*sd+am;
+  gval = (a-6.0)*sd/6.0+am;
 #else
   if (!gliset) {
     do {
