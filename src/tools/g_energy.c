@@ -232,48 +232,55 @@ static void analyse_disre(char *voutfn,    int nframes,
   xvgr_file(voutfn,"-graphtype bar");
 }
 
-static void einstein_visco(char *fn,int nsets,int nframes,real **set,
-			   real V,real T,real time[])
+static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
+			   real V,real T,int nsteps,real time[])
 {
-  FILE *fp;
-  real fac,**integral,dt,di;
+  FILE *fp0,*fp1;
+  real av[4],avold[4];
+  real fac,dt,di;
   int  i,j,m,nf2;
   
   if (nframes < 1)
     return;
     
   dt  = (time[1]-time[0]);
-  
-  /* Store the average in integral[nsets] */
   nf2 = nframes/2;
-  snew(integral,nsets+1);
-  for(m=0; (m<nsets+1); m++)
-    snew(integral[m],nf2);
-    
-  /* Use trapezium rule for integration and average over time origins */  
-  for(j=0; (j<nf2); j++) {
-    for(i=1; (i<nf2); i++) {
-      for(m=0; (m<nsets); m++) {
-	di   = 0.5*dt*(set[m][i+j]+set[m][i-1+j]);
+  
+  for(i=0; i<=nsets; i++)
+    avold[i] = 0;
+  fp0=xvgropen(fni,"Shear viscosity integral",
+	       "Time (ps)","(kg m\\S-1\\N s\\S-1\\N ps)");
+  fp1=xvgropen(fn,"Shear viscosity using Einstein relation",
+	       "Time (ps)","(kg m\\S-1\\N s\\S-1\\N)");
+  for(i=1; i<nf2; i++) {
+    fac = dt*nframes/nsteps;
+    for(m=0; m<=nsets; m++)
+	av[m] = 0;
+    for(j=0; j<nframes-i; j++) {
+      for(m=0; m<nsets; m++) {
+	di   = sqr(fac*(sum[m][j+i]-sum[m][j]));
 	
-	integral[m][i]     += di;
-	integral[nsets][i] += di/nsets;
+	av[m]     += di;
+	av[nsets] += di/nsets;
       }
     }
+      /* Convert to SI for the viscosity */
+    fac = (V*NANO*NANO*NANO*PICO*1e10)/(2*BOLTZMANN*T)/(nframes-i);
+    fprintf(fp0,"%10g",time[i]-time[0]);
+    for(m=0; (m<=nsets); m++) {
+      av[m] = fac*av[m];
+      fprintf(fp0,"  %10g",av[m]);
+    }
+    fprintf(fp0,"\n");
+    fprintf(fp1,"%10g",0.5*(time[i]+time[i-1])-time[0]);
+    for(m=0; (m<=nsets); m++) {
+      fprintf(fp1,"  %10g",av[m]-avold[m]/dt);
+      avold[m] = av[m];
+    }
+    fprintf(fp1,"\n");
   }
-
-  fp=xvgropen(fn,"Shear viscosity using Einstein relation","Time (ps)","cp");
-  fac   = (V*1e-26)/(2*BOLTZMANN*T)/(nf2*dt);
-  for(i=0; (i<nf2); i++) {
-    fprintf(fp,"%10g",time[i]);
-    for(m=0; (m<=nsets); m++) 
-      fprintf(fp,"  %10g",fac*sqr(integral[m][i]));
-    fprintf(fp,"\n");
-  }
-  fclose(fp);
-  for(m=0; (m<nsets+1); m++)
-    sfree(integral[m]);
-  sfree(integral);
+  fclose(fp0);
+  fclose(fp1);
 }
 
 static void analyse_ener(bool bCorr,char *corrfn,
@@ -283,6 +290,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 			 real time[], real reftemp,
 			 t_energy oldee[],t_energy ee[],
 			 int nset,int set[],int nenergy,real **eneset,
+			 real **enesum,
 			 char *leg[],real Vaver)
 {
   FILE *fp;
@@ -430,9 +438,13 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	eneset[1][i] = 0.5*(eneset[2][i]+eneset[6][i]);
 	eneset[2][i] = 0.5*(eneset[5][i]+eneset[7][i]);
 	eneset[11][i] -= Pres;
+	enesum[0][i] = 0.5*(enesum[1][i]+enesum[3][i]);
+	enesum[1][i] = 0.5*(enesum[2][i]+enesum[6][i]);
+	enesum[2][i] = 0.5*(enesum[5][i]+enesum[7][i]);
       }
       
-      einstein_visco("evisje.xvg",3,nenergy,eneset,Vaver,Temp,time);
+      einstein_visco("evisco.xvg","eviscoi.xvg",
+		     3,nenergy,enesum,Vaver,Temp,nsteps,time);
       
       /*do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,eacNormal,TRUE);*/
       /* Do it for shear viscosity */
@@ -563,7 +575,7 @@ int main(int argc,char *argv[])
   int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,dbl;
-  real       **eneset=NULL,*time=NULL,Vaver;
+  real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
   char       **enm=NULL,**leg=NULL,**pairleg;
   char       **nms;
@@ -642,6 +654,8 @@ int main(int argc,char *argv[])
       xvgr_legend(out,nset,leg);
     
     snew(eneset,nset+1);
+    if (bVisco)
+      snew(enesum,nset+1);
     time = NULL;
   }
   else {
@@ -749,14 +763,19 @@ int main(int argc,char *argv[])
       if (!bDisRe && (nre > 0)) {
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
-	  for(i=0; (i<=nset); i++)
+	  for(i=0; (i<=nset); i++) {
 	    srenew(eneset[i],nenergy+1000);
+	    if (bVisco)
+	      srenew(enesum[i],nenergy+1000);
+	  }
 	}
 	time[nenergy] = t[cur];
 	sum=0;
 	  for(i=0; (i<nset); i++) {
 	    eneset[i][nenergy] = ee[cur][set[i]].e;
 	    sum += ee[cur][set[i]].e;
+	    if (bVisco)
+	      enesum[i][nenergy] = ee[cur][set[i]].esum;
 	  }
 	if (bSum) 
 	  eneset[nset][nenergy] = sum;
@@ -830,7 +849,7 @@ int main(int argc,char *argv[])
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bGibbs,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
-		 oldee,ee[cur],nset,set,nenergy,eneset,leg,Vaver);
+		 oldee,ee[cur],nset,set,nenergy,eneset,enesum,leg,Vaver);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
     
