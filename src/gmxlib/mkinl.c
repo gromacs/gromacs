@@ -435,10 +435,10 @@ int main(int argc,char *argv[])
 #endif
 
 #ifdef USE_VECTOR
-  arch.vector = TRUE;
+  arch.vectorcpu = TRUE;
   fprintf(stderr,">>> Will generate better vectorizable code (hopefully)\n");
 #else
-  arch.vector = FALSE;
+  arch.vectorcpu = FALSE;
 #endif 
   
 #ifdef CRAY_PRAGMA
@@ -448,11 +448,11 @@ int main(int argc,char *argv[])
   arch.cray_pragma = FALSE;
 #endif
  
-  if(arch.vector && arch.threads) {
+  if(arch.vectorcpu && arch.threads) {
     fprintf(stderr,"Error: Can't use threads on a vector architecture\n");
     exit(-1);
   }
-  if(arch.vector && (opt.prefetch_x || opt.prefetch_f)) {
+  if(arch.vectorcpu && (opt.prefetch_x || opt.prefetch_f)) {
     fprintf(stderr,"Error: Prefetching on a vector architecture is bad\n");
     exit(-1);
   }

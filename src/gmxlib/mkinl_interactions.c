@@ -102,7 +102,7 @@ int update_inner_forces(int i,int j)
     
     /* determine source array or variable */
     if(!DO_PREFETCH_F && i==1) /* source is faction or fbuf */      
-      sprintf(src, arch.vector ? _array("fbuf","kk+%d",offset) : _array("faction","j3+%d",offset));
+      sprintf(src, arch.vectorcpu ? _array("fbuf","kk+%d",offset) : _array("faction","j3+%d",offset));
     else  /* source is fj */
       sprintf(src,"fj%c%d",m+'x',j);
     

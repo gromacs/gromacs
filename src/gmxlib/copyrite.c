@@ -218,7 +218,11 @@ void CopyRight(FILE *out,char *szProgram)
 
   ster_print(out,GromacsVersion());
   fprintf(out,"\n");
-  
+
+  fprintf(out,"\n");
+  sp_print(out,"PLEASE NOTE: THIS IS A DEVELOPMENT VERSION\n");
+  fprintf(out,"\n");
+
   for(i=0; (i<NCR); i++) 
     sp_print(out,CopyrightText[i]);
   for(i=0; (i<NGPL); i++)

@@ -36,7 +36,7 @@
 
 #include <typedefs.h>
 #include <vec.h>
-#include <x86_cpu.h>
+#include <detectcpu.h>
 
 /* Fast vectorized versions of 1/sqrt(x) and 1/x.
  * Assembly routines are used for Alpha processors, AMD processors

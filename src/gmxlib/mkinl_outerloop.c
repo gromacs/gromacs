@@ -482,7 +482,7 @@ void outer_loop()
     nflop ++;
   }
   /* Only print vanilla loop count */
-  if(!DO_VECTORIZE && !arch.vector) {
+  if(!DO_VECTORIZE && !arch.vectorcpu) {
     sprintf(buf,"Outerloop of %s costs %d flops",loopname,nflop);
     comment(buf);    
   }

@@ -55,7 +55,7 @@ void unpack_inner_data(bool calcdist,bool calcforce)
       assign("j3",bC ? "3*jnr" : "3*jnr-2");
     }
 
-    if(arch.vector && calcforce)    /* prefetch x is turned off in this case */
+    if(arch.vectorcpu && calcforce)    /* prefetch x is turned off in this case */
       assign("kk","%d*(k-nj0)%s",(loop.sol==SOL_WATERWATER) ? 9 : 3 ,bC ? "" : "+1");
     
 }
@@ -216,7 +216,7 @@ void inner_loop(bool calcdist, bool calcforce)
   int nflop=0;
   char buf[50],buf2[50];
   
-  if(arch.vector && calcforce)
+  if(arch.vectorcpu && calcforce)
     unpack_vector_machine_forces(calcdist,calcforce);
   
   comment("Inner loop (over j-particles) starts right here");
@@ -254,7 +254,7 @@ void inner_loop(bool calcdist, bool calcforce)
     nflop += calc_interactions(calcdist && DO_PREFETCH_X);
     
     /* Only print vanilla loop count */
-    if(!DO_VECTORIZE && !DO_PREFETCH_X && !arch.vector) {
+    if(!DO_VECTORIZE && !DO_PREFETCH_X && !arch.vectorcpu) {
       sprintf(buf,"Innerloop of %s costs %d flops",loopname,nflop);
       comment(buf);
     }

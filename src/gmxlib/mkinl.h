@@ -85,7 +85,7 @@ static char *SRCID_mkinl_h = "$Id$";
  */
 #define DO_INLINE_INVSQRT   (loop.invsqrt && !loop.vectorize_invsqrt && opt.inline_gmxcode)
 #define DO_INLINE_RECIP     (loop.recip && !loop.vectorize_recip && opt.inline_gmxcode)
-#define OVERWRITE_RSQ  (!arch.vector && !loop.vdw_needs_r && !loop.vdw_needs_rsq && \
+#define OVERWRITE_RSQ  (!arch.vectorcpu && !loop.vdw_needs_r && !loop.vdw_needs_rsq && \
                         !loop.coul_needs_r && !loop.coul_needs_rsq)
 			/* Can we overwrite the vectorization array
 			 * holding rsq with the resulting rinv or rinvsq,
@@ -164,7 +164,7 @@ typedef struct {
   bool     gmx_recip;    
   thread_t threads;
   bool     simplewater;
-  bool     vector;          
+  bool     vectorcpu;          
   bool     cray_pragma;
 } arch_t;
 
