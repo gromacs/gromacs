@@ -265,7 +265,7 @@ void do_dummies(int nrtp, t_restp rtp[],
   int  ftype,i,j,k,i0,nrbonds,nrHatoms,Heavy,nrheavies,add_shift;
   int  nral,ndum,nadd,tpM,tpHeavy;
   int  Hatoms[4],heavies[4];
-  bool bFATAL,bAddDumParam;
+  bool bWARNING,bAddDumParam,bFirstWater;
   real mHtot,mtot,fact,fact2;
   rvec rpar,rperp,temp;
   char name[10],tpname[10];
@@ -280,6 +280,7 @@ void do_dummies(int nrtp, t_restp rtp[],
     fprintf(debug,"# # # DUMMIES # # #\n");
   }
   
+  bFirstWater=TRUE;
   ndum=0;
   nadd=0;
   /* we need a marker for which atoms whould *not* be renumbered afterwards */
@@ -305,7 +306,7 @@ void do_dummies(int nrtp, t_restp rtp[],
       /* get Heavy atom type */
       tpHeavy=get_atype(Heavy,at,nrtp,rtp);
       strcpy(tpname,type2nm(tpHeavy,atype));
-      bFATAL=FALSE;
+      bWARNING=FALSE;
       bAddDumParam=TRUE;
       /* nested if's which check nrHatoms, nrbonds and tpname */
       if (nrHatoms == 1) {
@@ -320,9 +321,17 @@ void do_dummies(int nrtp, t_restp rtp[],
 	  (*dummy_type)[i]=F_DUMMY4FD;
 	break;
 	default: /* nrbonds != 2, 3 or 4 */
-	  bFATAL=TRUE;
+	  bWARNING=TRUE;
 	}
-	
+      } else if ( (nrHatoms == 2) && (nrbonds == 2) && 
+		  (strcasecmp(tpname,"OW")==0) ) {
+	bAddDumParam=FALSE; /* this is water: skip these hydrogens */
+	if (bFirstWater) {
+	  bFirstWater=FALSE;
+	  if (debug)
+	    fprintf(debug,
+		    "Not converting hydrogens in water to dummy atoms\n");
+	}
       } else if ( (nrHatoms == 2) && (nrbonds == 3) && 
 		  (strcasecmp(tpname,"NL")!=0) ) {
 	/* =CH2 or =NH2 */
@@ -426,10 +435,14 @@ void do_dummies(int nrtp, t_restp rtp[],
 			 Hatoms[j], heavies[0], add_shift+i0, add_shift+i0+1, 
 			 Hat_swap_par[j]);
       } else
-	bFATAL=TRUE;
-      if (bFATAL)
-	fatal_error(0,"Cannot have %d bonds to a heavy atom type %s "
-		    "with %d bound hydrogens atoms",nrbonds,tpname,nrHatoms);
+	bWARNING=TRUE;
+      if (bWARNING)
+	fprintf(stderr,
+		"Warning: cannot convert atom %d %s (bound to a heavy atom "
+		"type %s with \n"
+		"         %d bonds and %d bound hydrogens atoms) to dummy "
+		"atom\n",
+		i+1,*(at->atomname[i]),tpname,nrbonds,nrHatoms);
       if (bAddDumParam) {
 	/* add dummy parameters to topology, 
 	   also get rid of negative dummy_types */
