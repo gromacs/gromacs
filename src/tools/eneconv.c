@@ -378,7 +378,7 @@ static void update_last_ee(t_energy *lastee, int laststep,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "When [TT]-f[tt] is [IT]not[it] specified:[BR]",
+    "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[BR]",
     "Concatenates several energy files in sorted order.",
     "In case of double time frames the one",
     "in the later file is used. By specifying [TT]-settime[tt] you will be",
@@ -386,7 +386,7 @@ int main(int argc,char *argv[])
     "from the command line,",
     "such that the command [TT]eneconv -o fixed.edr *.edr[tt] should do",
     "the trick. [PAR]",
-    "With [TT]-f[tt] specified:[BR]",
+    "With [IT]one file[it] specified for [TT]-f[tt]:[BR]",
     "Reads one energy file and writes another, applying the [TT]-dt[tt],",
     "[TT]-offset[tt], [TT]-t0[tt] and [TT]-settime[tt] options and",
     "converting to a different format if necessary (indicated by file",
@@ -412,8 +412,8 @@ int main(int argc,char *argv[])
   bool       bNewFile,bFirst,bNewOutput;
   
   t_filenm fnm[] = {
-    { efENX, "-f", NULL,    ffREAD  },
-    { efENX, "-o", "fixed", ffOPTWR },
+    { efENX, "-f", NULL,    ffRDMULT },
+    { efENX, "-o", "fixed", ffWRITE  },
   };
 
 #define NFILE asize(fnm)  
@@ -444,30 +444,23 @@ int main(int argc,char *argv[])
   };
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS | PCA_BE_NICE ,
+  parse_common_args(&argc,argv,PCA_BE_NICE ,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   tadjust=0;
   snew(fnms,argc);
   nfile=0;
   laststep=startstep=0;
+  dr.ndr = 0;
   
-  for(i=1; (i<argc); i++)
-    fnms[nfile++]=argv[i];
-  if(nfile==0)
-    nfile=1;
+  nfile = opt2fns(&fnms,"-f",NFILE,fnm);
+  
+  if(!nfile)
+    fatal_error(0,"No input files!");
+  
   snew(settime,nfile+1);
   snew(readtime,nfile+1);
   snew(cont_type,nfile+1);
   
-  if (!opt2bSet("-f",NFILE,fnm)) {
-    if(!nfile)
-      fatal_error(0,"No input files!");
- }
-  else {
-    /* get the single filename */
-    fnms[0]=opt2fn("-f",NFILE,fnm);
-  }
-
   nre=scan_ene_files(fnms,nfile,readtime,&timestep,&nremax);   
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);     
 
