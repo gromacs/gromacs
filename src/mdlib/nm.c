@@ -105,12 +105,6 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
 		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr);
 
-  /* Compute initial EKin for all.. */
-  calc_ke_part(TRUE,FALSE,0,top->atoms.nr,
-               vold,v,vt,&(parm->ir.opts),
-               mdatoms,grps,&mynrnb,
-	       lambda,&ener[F_DVDL]);
-  
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   if(parm->ir.etc==etcBERENDSEN)
