@@ -191,12 +191,11 @@ static void compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
     samsb2 = 0;
 
   fprintf(stdout,"The overlap of the covariance matrices:\n");
-  fprintf(stdout,"  unnormalized:  %g\n",sqrt(sum1+sum2)-sqrt(samsb2));
-  fprintf(stdout,"  normalized:    %.3f\n",1-sqrt(samsb2/(sum1+sum2)));
+  fprintf(stdout,"  normalized:  %.3f\n",1-sqrt(samsb2/(sum1+sum2)));
   tmp = 1-sab/sqrt(sum1*sum2);
   if (tmp < 0)
     tmp = 0;
-  fprintf(stdout,"        shape:   %.3f\n",1-sqrt(tmp));
+  fprintf(stdout,"       shape:  %.3f\n",1-sqrt(tmp));
 }
 
 static void inprod_matrix(char *matfile,int natoms,
@@ -621,7 +620,6 @@ int main(int argc,char *argv[])
     "a single number for the overlap between the covariance matrices is",
     "generated. The formulas are:[BR]",
     "        difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))[BR]",
-    "           overlap = sqrt(tr(M1) + tr(M2)) - difference[BR]",
     "normalized overlap = 1 - difference/sqrt(tr(M1) + tr(M2))[BR]",
     "     shape overlap = 1 - sqrt(tr((sqrt(M1/tr(M1)) - sqrt(M2/tr(M2)))^2))[BR]",
     "where M1 and M2 are the two covariance matrices and tr is the trace",
