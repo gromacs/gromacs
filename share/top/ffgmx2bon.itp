@@ -101,6 +101,43 @@
     C  CP2    1   0.15300     334720.
    OS    C    1   0.14350     251040.
    C1   OS    1   0.14350     251040.
+; now the bonds for the rigid NH3 groups
+#ifdef HEAVY_H
+ MNH3    C    1   0.175695    500000.
+ MNH3   C1    1   0.188288    500000.
+ MNH3   C2    1   0.188288    500000.
+ MNH3 MNH3    1   0.158884    500000.
+#else
+ MNH3    C    1   0.144494    500000.
+ MNH3   C1    1   0.158002    500000.
+ MNH3   C2    1   0.158002    500000.
+ MNH3 MNH3    1   0.079442    500000.
+#endif
+; now the bonds for the rigid CH3 groups
+#ifdef HEAVY_H
+ MCH3    N    1   0.198911    500000.
+ MCH3    S    1   0.226838    500000.
+ MCH3    C    1   0.204247    500000.
+ MCH3   CB    1   0.204247    500000.
+ MCH3   C1    1   0.204247    500000.
+ MCH3   C2    1   0.204247    500000.
+ MCH3 NR6*    1   0.199798    500000.
+ MCH3 MCH3    1   0.184320    500000.
+#else
+ MCH3    N    1   0.161051    500000.
+ MCH3    S    1   0.190961    500000.
+ MCH3    C    1   0.166809    500000.
+ MCH3   CB    1   0.166809    500000.
+ MCH3   C1    1   0.166809    500000.
+ MCH3   C2    1   0.166809    500000.
+ MCH3 NR6*    1   0.162009    500000.
+ MCH3 MCH3    1   0.092160    500000.
+#endif
+; and the angle-constraining bonds for OH and SH groups in proteins:
+   C2   HS    1   0.23721     500000.
+   C2   HO    1   0.19849     500000.
+   C1   HO    1   0.19849     500000.
+   CB   HO    1   0.19849     500000.
 ; Added by RMS & EAB, Oct 95
   CR5   HC    1   0.10900     292880.
    C1   HC    1   0.10900     292880.
@@ -599,3 +636,4 @@
 [ dihedraltypes ]
 CP2 CP2  3   9.2789   12.156  -13.120 -3.0597 26.240 -31.495
  C2  C2  3   9.2789   12.156  -13.120 -3.0597 26.240 -31.495
+
