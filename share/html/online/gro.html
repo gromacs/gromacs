@@ -26,7 +26,11 @@ Lines contain the following information (top to bottom):
 <li>title string (free format string, optional time in ps after '<TT>t=</TT>')
 <li>number of atoms (free format integer)
 <li>one line for each atom (fixed format, see below)
-<li>box (free format, space separated reals)
+<li>box vectors (free format, space separated reals), values: v1(x) v2(y) v3(z) v1(y) v1(z) v2(x) v2(z) v3(x) v3(y),
+the last 6 values may be ommitted (they will be set to zero).
+Gromacs only supports boxes with v1(y)=v1(z)=v2(z)=0.
+
+ 
 </ul>
 
 This format is fixed, ie. all columns are in a fixed
