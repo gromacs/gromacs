@@ -63,6 +63,7 @@ extern "C" {
 
 #define min(a,b) (((a) < (b)) ? (a) : (b) )
 #define max(a,b) (((a) > (b)) ? (a) : (b) )
+#define even(a) ( ( (a+1) / 2) == (a / 2) )
 
 /* This macro calculates the size of a array */
 #define asize(a) (sizeof(a)/sizeof((a)[0]))
