@@ -182,10 +182,10 @@ void check_solvent(bool bVerbose,int nmol,t_molinfo msys[],
 	if (ir->solvent_opt == -1) 
 	  ir->solvent_opt=nwt;
 	else if (ir->solvent_opt == nwt) {
-	  sprintf(warn_buf,"Multiple topology entries for %s",SolventOpt);
-	  warning(NULL);
-	}
-	else
+	  if (debug)
+	    fprintf(debug,"Remark: Multiple topology entries for %s\n",
+		    SolventOpt);
+	} else
 	  fatal_error(0,"Multiple non-matching topology entries for %s",
 		      SolventOpt);
       }
