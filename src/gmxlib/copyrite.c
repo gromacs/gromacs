@@ -393,11 +393,21 @@ void please_cite(FILE *fp,char *key)
       "The Double Cube Lattice Method: Efficient Approaches to Numerical Integration of Surface Area and Volume and to Dot Surface Contouring of Molecular Assemblies",
       "J. Comp. Chem.",
       16, 1995, 273, 284 },
+    { "Hess2002",
+      "B. Hess, H. Saint-Martin and H.J.C. Berendsen",
+      "Flexible constraints: an adiabatic treatment of quantum degrees of freedom, with application to the flexible and polarizable MCDHO model for water",
+      "J. Chem. Phys.",
+      116, 2002, 9602, 9610 },
     { "Hetenyi2002b",
       "Csaba Hetenyi and David van der Spoel",
       "Efficient docking of peptides to proteins without prior knowledge of the binding site.",
       "Prot. Sci.",
-      11, 2002, 1729, 1737 }
+      11, 2002, 1729, 1737 },
+    { "Hess2003",
+      "B. Hess and R.M. Scheek",
+      "Orientation restraints in molecular dynamics simulations using time and ensemble averaging",
+      "J. Magn. Res.",
+      164, 2003, 19, 27 }
   };
 #define NSTR (int)asize(citedb)
   
