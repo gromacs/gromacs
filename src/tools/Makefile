@@ -22,7 +22,7 @@ PROGRAMS	= g_rdf		g_msd		\
 		  g_angle	g_dih		\
 		  g_run_rms	g_bond		g_dipoles	\
 		  g_mdmat	g_energy	g_sas		\
-		  do_dssp	sas2mat         \
+		  do_dssp	sas2mat         g_rmsdist	\
 		  g_density     g_potential     g_order         \
                   g_saltbr	g_rmsf		g_coord         \
                   g_h2order     g_com		g_rdens		\
