@@ -171,8 +171,8 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
   }
   /* Reset long range forces if necessary */
   if (fr->bTwinRange) {
-    clear_rvecs(nsb->natoms,fr->flr);
-    clear_rvecs(SHIFTS,fr->fshift_lr);
+    clear_rvecs(nsb->natoms,fr->f_twin);
+    clear_rvecs(SHIFTS,fr->fshift_twin);
   }
   if (parm->ir.epc != epcNO)
       calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
