@@ -86,7 +86,6 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fp = xvgropen(ncl,"Number of clusters","Time (ps)","N");
   gp = xvgropen(acl,"Average cluster size","Time (ps)","#molecules");
   hp = xvgropen(mcl,"Max cluster size","Time (ps)","#molecules");
-  rd_index(ndx,1,&nindex,&index,&gname);
   natoms = read_first_x(&status,trx,&t,&x,box);
   if (bMol) {
     read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
@@ -95,7 +94,17 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     
     read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
     mols = &(top.blocks[ebMOLS]);
+
+    /* Make dummy index */
+    nindex = mols->nr;
+    snew(index,nindex);
+    for(i=0; (i<nindex); i++)
+      index[i] = i;
+    gname = strdup("mols");
+    
   }
+  else
+    rd_index(ndx,1,&nindex,&index,&gname);
   
   snew(clust_index,nindex);
   snew(clust_size,nindex);
@@ -154,8 +163,8 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	      /* Merge clusters: check for all atoms whether they are in 
 	       * cluster cj and if so, put them in ci
 	       */
-	      for(k=j; (k<nindex); k++) {
-		if (clust_index[k] == cj) {
+	      for(k=0; (k<nindex); k++) {
+		if ((clust_index[k] == cj)) {
 		  assert(clust_size[cj] > 0);
 		  clust_size[cj]--;
 		  clust_index[k] = ci;
@@ -211,22 +220,24 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	cmid = cs_dist[i][j];
       cmax = max(cs_dist[i][j],cmax);
     }
+  fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   cmid = 1;
   fp = ffopen(xpm,"w");
   write_xpm3(fp,"Cluster size distribution","# clusters","Time (ps)","Size",
-	     n_x,max_size-1,t_x,t_y,cs_dist,0,cmid,cmax,
+	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
   cmax = 0.0;
   for(i=0; (i<n_x); i++)
     for(j=0; (j<max_size); j++) {
-      cs_dist[i][j] *= j;
+      cs_dist[i][j] *= (j+1);
       cmax = max(cs_dist[i][j],cmax);
     }
+  fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   fp = ffopen(xpmw,"w");
   write_xpm3(fp,"Weighted cluster size distribution","Fraction",
 	     "Time (ps)","Size",
-	     n_x,max_size-1,t_x,t_y,cs_dist,0,cmid,cmax,
+	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
 
@@ -243,7 +254,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fprintf(fp,"%5d  %8.3f\n",j+1,0.0);
   fclose(fp);
 
-  fprintf(stderr,"Total number of atoms in clusters = %d\n",nhisto);
+  fprintf(stderr,"Total number of atoms in clusters =  %d\n",nhisto);
   
   sfree(clust_index);
   sfree(clust_size);
