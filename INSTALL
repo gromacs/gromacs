@@ -85,6 +85,11 @@ export LDFLAGS=-L/home/erik/fftw/lib
 don't like the compilers configure selects, just set them with 
 the variables CC and/or F77 (MPICC for an MPI compiler).
 
+Don't use LDFLAGS to add extra libraries! Put them in LIBS instead, e.g.
+
+setenv LIBS "-lstuff"     to add libstuff at the linking stage.
+
+
 Once installed, you can link the Gromacs executables to e.g.
 /usr/local/bin if you want all users to have them in their path.
 
