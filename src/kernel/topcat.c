@@ -62,7 +62,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   /* First new entry. */
   l=dest->nr;
  
-  bDisres = ftype == F_DISRES;
+  bDisres = (ftype == F_DISRES);
   if (bDisres) {
     if (src->nr)
       max_index = src->param[0].c[0];
@@ -70,8 +70,8 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
       max_index = max(src->param[i].c[0],max_index);
   }
 
-  /* If we have to do ensemble averaging we interchange the loops! */
-  if (bEnsemble) {
+  if (bDisres && bEnsemble) {
+    /* If we have to do ensemble averaging we interchange the loops! */
     if (src->nr > 0) {
       fac=pow((real)copies,-1.0/6.0);
       fprintf(stderr,"multiplying every type 1 distance bound by %.3f for %d copies of %s\n",fac,copies,name);
@@ -217,8 +217,7 @@ static void top1_cat(t_molinfo *dest,t_molinfo *src,
   
   for (i=0; (i<F_NRE); i++) 
     bondcat(&dest->plist[i],&src->plist[i],
-	    nrcopies,destnr,srcnr,(i==F_DISRES) ? bEnsemble : FALSE,
-	    *src->name,i);
+	    nrcopies,destnr,srcnr,bEnsemble,*src->name,i);
 }
 	     
 void topcat (t_molinfo *dest,int nsrc,t_molinfo src[],int ntab,
