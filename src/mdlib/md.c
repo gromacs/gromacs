@@ -370,7 +370,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     print_ebin(fp_ene,FALSE,FALSE,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
     close_enx(fp_ene);
-    if (parm->ir.nstxtcout)
+    if (!bRerunMD && parm->ir.nstxtcout)
       close_xtc_traj();
     close_trn(fp_trn);
     if (fp_dgdl)
