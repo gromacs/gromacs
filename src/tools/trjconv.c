@@ -313,7 +313,7 @@ int main(int argc,char *argv[])
   rvec         *xmem=NULL,*vmem=NULL;
   rvec         *xp=NULL,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
-  int          m,i,d,frame,outframe,natoms,nout,ncent,nre,newstep=0;
+  int          m,i,d,frame,outframe,natoms,nout,ncent,nre,newstep=0,model_nr;
 #define SKIP 10
   t_topology   top;
   t_atoms      *atoms=NULL,useatoms;
@@ -567,6 +567,7 @@ int main(int argc,char *argv[])
       file_nr  =  0;  
       frame    =  0;
       outframe =  0;
+      model_nr = -1;
       bDTset   = FALSE;
     
       do {
@@ -743,8 +744,12 @@ int main(int argc,char *argv[])
 		/* if reading from pdb, we want to keep the original 
 		   model numbering else we write the output frame
 		   number plus one, because model 0 is not allowed in pdb */
+		if (ftpin==efPDB && fr.bStep && fr.step > model_nr)
+		  model_nr = fr.step;
+		else
+		  model_nr++;
 		write_pdbfile(out,title,&useatoms,frout.x,frout.box,0,
-			      (ftpin==efPDB) ? fr.step : (outframe+1) );
+			      model_nr);
 		break;
 	      case efG96:
 		frout.title = title;

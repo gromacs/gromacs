@@ -816,7 +816,7 @@ int main(int argc, char *argv[])
 		  "The occupancy in this file hold atomic radii\n");
 	}
       }
-      write_pdbfile(out,title,&atoms,x,box,0,(!bLegend && visbox[0]<=0)?0:-1);
+      write_pdbfile(out,title,&atoms,x,box,0,-1);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
       if (visbox[0] > 0)
