@@ -192,7 +192,7 @@ int main(int argc,char *argv[])
     "optionally with error bars ([TT]-errbar[tt]).",
   };
   static real frac=0.5,binwidth=0.1;
-  static bool bHaveT=TRUE,bDer=FALSE,bAver=FALSE;
+  static bool bHaveT=TRUE,bDer=FALSE,bAverCorr=FALSE;
   static int  nsets_in=1,d=1;
 
   static char *avbar_opt[] = { NULL, "none", "stddev", "error", NULL };
@@ -204,14 +204,14 @@ int main(int argc,char *argv[])
       "Read # sets seperated by &" },
     { "-d", FALSE, etBOOL, {&bDer},
 	"Use the derivative" },
-   { "-dp",  FALSE, etINT, {&d}, 
+    { "-dp",  FALSE, etINT, {&d}, 
       "HIDDENThe derivative is the difference over # points" },
-    { "-aver", FALSE, etBOOL, {&bAver},
-      "Average all autocorrelation functions" },
     { "-bw", FALSE, etREAL, {&binwidth},
-      "binwidth for the distribution" },
+      "Binwidth for the distribution" },
     { "-errbar", FALSE, etENUM, {&avbar_opt},
-      "Error bars for the average" }
+      "Error bars for the average" },
+    { "-oneacf", FALSE, etBOOL, {&bAverCorr},
+      "Calculate one ACF over all sets" }
   };
 #define NPA asize(pa)
 
@@ -288,7 +288,7 @@ int main(int argc,char *argv[])
   
   if (acfile)
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
-		eacNormal,bAver,NULL,NULL);
+		eacNormal,bAverCorr,NULL,NULL);
 
   return 0;
 }
