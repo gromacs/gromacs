@@ -90,10 +90,13 @@ typedef struct {
   real init_lambda;	/* initial value for perturbation variable	*/
   real delta_lambda;	/* change of lambda per time step (1/dt)	*/
   real dr_fc;		/* force constant for ta_disre			*/
+  int  eDisre;          /* distance restraining type                    */
   real dihr_fc;		/* force constant for dihedral restraints	*/
   real dr_tau;		/* time constant for memory function in disres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/
+  int  nstcgsteep;      /* number of steps after which a steepest       */
+                        /* descents step is done while doing cg         */
   int  eShakeType;      /* Type of SHAKE algorithm                      */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
