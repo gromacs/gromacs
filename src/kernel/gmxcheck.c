@@ -213,9 +213,14 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	    "relative to sum of Van der Waals distance:\n",
 	    vdw_fac,bon_lo,bon_hi);
     snew(atom_vdw,natom);
-    for (i=0; (i<natom); i++)
+    for (i=0; (i<natom); i++) {
       atom_vdw[i]=get_vdw(*(atoms->resname[atoms->atom[i].resnr]),
-			  *(atoms->atomname[i]),0.1)==0.0;
+			  *(atoms->atomname[i]),0.1);
+      if (debug) fprintf(debug,"%5d %4s %4s %7g\n",i+1,
+			 *(atoms->resname[atoms->atom[i].resnr]),
+			 *(atoms->atomname[i]),
+			 atom_vdw[i]);
+    }
     
     if (bB) 
       init_pbc(box,FALSE);
