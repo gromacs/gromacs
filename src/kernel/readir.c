@@ -89,7 +89,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
    */
 #define CHECK(b) _low_check(b,err_buf,nerror)
   char err_buf[256];
-  bool bLR;
 
   /* SHAKE / LINCS */
   if ( (opts->nshake > 0) && (ir->eI != eiMD) && (ir->eI != eiLD) ) {

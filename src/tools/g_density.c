@@ -118,9 +118,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   matrix box;            /* box (3x3) */
   int natoms,            /* nr. atoms in trj */
       status,  
-      **slCount,         /* nr. of atoms in one slice for a group */
-      i,j,n,               /* loop indices */
-      teller = 0,      
+      i,n,               /* loop indices */
       ax1, ax2,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
@@ -379,14 +377,14 @@ void main(int argc,char *argv[])
   };
 
   static char *bugs[] = {
-    "When calculating electron densities, atomnames are used instead of types. This is bad. When calculating number densities, atoms with names that start with H are not counted. This may be suprising if you use hydrogens with names like OP3."
+    "When calculating electron densities, atomnames are used instead of types. This is bad.",
+    "When calculating number densities, atoms with names that start with H are not counted. This may be surprising if you use hydrogens with names like OP3."
   };
   
   real     **density,                       /* density per slice          */
     slWidth;                        /* width of one slice         */
   char      **grpname;            	    /* groupnames                 */
   int       ngrps = 0,                      /* nr. of groups              */
-    i,
     nr_electrons,                   /* nr. electrons              */
     *ngx;                           /* sizes of groups            */
   t_topology *top;                	    /* topology 		  */ 
@@ -405,7 +403,7 @@ void main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 
   /* Calculate axis */
   axis = toupper(axtitle[0]) - 'X';

@@ -218,7 +218,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,
   char buf[32];
 
   int  i,j,nfitpnts;
-  real fac,integral,fittedfunc;
+  real integral,fittedfunc;
   real *parm,*dparm;
   real AA,tau1,tau2,srAA,srtau1,srtau2;  
   real *x,*y,*dy;

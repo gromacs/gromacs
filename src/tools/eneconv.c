@@ -107,9 +107,7 @@ bool bRgt(double a,double b)
 
 void analyse_energies(int nre,int nrf,t_fixe f[])
 {
-  real     t;
-  t_energy *e0,*elast;
-  int      i,i0,j,nrkill;
+  int      i,i0,nrkill;
   
   if (!nrf)
     return;
@@ -131,23 +129,6 @@ void analyse_energies(int nre,int nrf,t_fixe f[])
   fprintf(stderr,"There are %d double energy entries out of %d\n",
 	  nrkill,nrf);
   fprintf(stderr,"Not setting averages (not implemented)\n");
-  /* Now set the averages etc. 
-  snew(e0,nre);
-  snew(elast,nre);
-  sim_start = -1;
-  for(i=0; (i<nrf); i++) {
-    t = f[i].t;
-    if (t != -1) {
-      memcpy(elast,f[i].e,nre*sizeof(elast[0]));
-      if ((sim_start == -1) || (f[i].sim_nr != sim_start)) {
-	sim_start = f[i].sim_nr;
-	memcpy(e0,f[i].e,nre*sizeof(e0[0]));
-      }
-      
-    }    
-  }
-  sfree(e0);
-  sfree(elast);*/
 }
 
 int main(int argc,char *argv[])

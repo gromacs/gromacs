@@ -197,7 +197,7 @@ int main (int argc,char *argv[])
     if (strcmp(name1,name2)) {
       if (warn<20)
 	fprintf(stderr,
-		"Warning: atomnames at index %d don't match: %d %s, %d %s\n",
+		"Warning: atomnames at index %d don't match: %u %s, %u %s\n",
 		i+1,index_1[i]+1,name1,index_2[i]+1,name2);
       warn++;
     }

@@ -858,7 +858,7 @@ static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[],
 			t_params *newbonds, int nrfound, int *ats)
 {
   int ndum,i;
-  real a,b,c[MAXFORCEPARAM],alpha,dGE,dCENE,mtot,tmp1;
+  real a,b,c[MAXFORCEPARAM],alpha,dGE,dCENE,mtot;
   real xCG, yE, mE, mG;
   real xG, xD, yD, xE, xHD, yHD, xHE, yHE;
   

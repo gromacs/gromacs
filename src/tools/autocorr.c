@@ -200,8 +200,8 @@ void correl(fftreal data1[],fftreal data2[],int n,fftreal ans[])
 static void low_do_four_core(int nfour,int nframes,real c1[],fftreal cfour[],
 			     int nCos,bool bPadding)
 {
-  int  i,no2;
-  fftreal aver,dum,*ans;
+  int  i;
+  fftreal aver,*ans;
 
   aver = 0.0;
   switch (nCos) {
@@ -258,7 +258,8 @@ static void do_ac_core(int nframes,int nout,
     nrestart = 1;
   }
   if (debug)
-    fprintf(debug,"Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%d\n",
+    fprintf(debug,
+	    "Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%u\n",
 	    nframes,nout,nrestart,mode);
   
   for(j=0; (j<nout); j++)
@@ -578,7 +579,7 @@ void fit_acf(int ncorr,int nfitparm,
 	     char *fitfn,char *fittitle,bool bVerbose,
 	     real tbeginfit,real tendfit,real dt,real c1[])
 {
-  real    fitparm[3],fit[3];
+  real    fitparm[3];
   real    tStart,tail_corr,sum,sumtot,*sig;
   int     j,nf_int;
   
@@ -627,12 +628,10 @@ void low_do_autocorr(char *fn,char *title,
 		     int nfitparm)
 {
   FILE    *fp;
-  const   real sqrtsqrt15=sqrt(sqrt(1.5));
-  int     i,j,j3,m,m1,k,nfour;
+  int     i,k,nfour;
   fftreal *csum;
-  char    buf[256];
-  real    *ctmp,*rij,*sig;
-  real    dc,c0,sum,rnorm,fac;
+  real    *ctmp;
+  real    c0,sum;
  
   /* Check flags and parameters */ 
   /*  nout = get_acfnout();*/
@@ -645,7 +644,7 @@ void low_do_autocorr(char *fn,char *title,
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
   if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
-    fprintf(stderr,"Cant combine mode %d with FFT, turning off FFT\n",mode);
+    fprintf(stderr,"Can't combine mode %u with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
   if (MODE(eacNormal) && MODE(eacVector)) 
@@ -656,7 +655,7 @@ void low_do_autocorr(char *fn,char *title,
 	  title,nitem,nframes);
   fprintf(stderr,"bAver = %s, bFour = %s bNormalize= %s\n",
 	  bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
-  fprintf(stderr,"mode = %d, dt = %g, nrestart = %d\n",mode,dt,nrestart);
+  fprintf(stderr,"mode = %u, dt = %g, nrestart = %d\n",mode,dt,nrestart);
   
   if (bFour) {  
     c0 = log((double)nframes)/log(2.0);

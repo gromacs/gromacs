@@ -151,9 +151,9 @@ static void get_bondeds(int nrat, t_iatom atoms[],
   t_param param;
   
   if (debug) {
-    fprintf(debug,"getting bondeds for %d (nr=%d):",atoms[0]+1,nrat);
+    fprintf(debug,"getting bondeds for %u (nr=%d):",atoms[0]+1,nrat);
     for(k=1; k<nrat; k++)
-      fprintf(debug," %d",atoms[k]+1);
+      fprintf(debug," %u",atoms[k]+1);
     fprintf(debug,"\n");
   }
   for(ftype=0; (ftype<F_NRE); ftype++) {
@@ -371,7 +371,7 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
    */
   
   bool bXH3,bError;
-  real bij,bjk,bjl,aijk,aijl,akjl,pijk,pijl,a=-1,b=-1,c;
+  real bjk,bjl,a=-1,b=-1;
   /* check if this is part of a NH3 or CH3 group,
    * i.e. if atom k and l are dummy masses (MNH3 or MCH3) */
   if (debug) {
@@ -394,8 +394,7 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
     /* now we get some XH3 group specific construction */
     /* note: we call the heavy atom 'C' and the X atom 'N' */
     real bMM,bCM,bCN,bNH,aCNH,dH,rH,dM,rM;
-    t_param xparam;
-    int aN, xatoms[3];
+    int aN;
     
     /* check if bonds from heavy atom (j) to dummy masses (k,l) are equal: */
     bError = bError || (bjk!=bjl);
@@ -548,8 +547,7 @@ static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
     /* now we get some XH3 group specific construction */
     /* note: we call the heavy atom 'C' and the X atom 'N' */
     real bMM,bCM,bCN,bNH,aCNH,dH,rH,rHx,rHy,dM,rM;
-    t_param xparam;
-    int aN, xatoms[3];
+    int aN;
     
     /* check if bonds from heavy atom (j) to dummy masses (k,l) are equal: */
     bError = bError || (bjk!=bjl);

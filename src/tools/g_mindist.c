@@ -204,8 +204,8 @@ int main(int argc,char *argv[])
     { "-d",      FALSE, etREAL, &mindist,
       "Distance for contacts" }
   };
-  FILE      *status, *atm;
-  int       i,ng;
+  FILE      *atm;
+  int       ng;
   char      **grpname;
   int       *gnx;
   atom_id   **index;

@@ -229,9 +229,7 @@ int main (int argc,char *argv[])
   };
 
   FILE        *in,*out;
-  char        title[256];  
   t_topology  *top;
-  int         i;
   
   t_filenm fnm[] = {
     { efTPX, "-s", NULL, ffREAD  },

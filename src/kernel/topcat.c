@@ -44,7 +44,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 /* append all the bonds from src to dest */
 {
   int  i,j,l,m,n0,nrfp,nral;
-  int  src_natoms,dest_natoms,nextra;
+  int  src_natoms,dest_natoms;
   real fac;
   
   nrfp        = NRFP(ftype);

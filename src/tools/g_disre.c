@@ -210,10 +210,9 @@ int main (int argc,char *argv[])
   t_nrnb      nrnb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,idum,natoms,i,j,nv;
-  real        rdum,t,sumv,averv,maxv;
+  int         status,natoms,i,j,nv;
+  real        t,sumv,averv,maxv;
   rvec        *x,*f;
-  real        epot[F_NRE];
   matrix      box;
   int         isize;
   atom_id     *index=NULL;
@@ -253,7 +252,7 @@ int main (int argc,char *argv[])
     snew(leg,isize);
     for(i=0; (i<isize); i++) {
       snew(leg[i],12);
-      sprintf(leg[i],"index %d",index[i]);
+      sprintf(leg[i],"index %u",index[i]);
     }
     xvgr_legend(xvg,isize,leg);
   }

@@ -74,13 +74,12 @@ void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   const real fontwidth = fontsize*fontasp;
   
   FILE *out;
-  int  i,ai,ri,sl,slen;
+  int  i,sl,slen;
   real ring,inner,outer;
-  real rad,r2,xy2,x0,y0,x1,y1,x2,y2,xyfac;
-  real xc,yc,alpha,ca,sa,box;
+  real xc,yc,box;
   bool *bPh;
   char **rnms;
-  char buf[256],sign;
+  char sign;
   
   inner=75.0;
   slen=0;
@@ -146,11 +145,9 @@ void wheel2(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   const real fontwidth = fontsize*fontasp;
   
   FILE *out;
-  int  i,ai,ri,sl,slen;
+  int  i,slen;
   real ring,inner,outer;
-  real rad,r2,xy2,x0,y0,x1,y1,x2,y2,xyfac;
-  real xc,yc,alpha,ca,sa,box;
-  char buf[256],sign;
+  real xc,yc,box;
   
   inner=60.0;
   slen=0;

@@ -362,8 +362,7 @@ static void at2bonds(t_params *ps,
 		     rvec x[])
 {
   t_resbond *rb0;
-  t_add_block *ab0;
-  int        i,j,k,l;
+  int        i,j,k;
   int        ai,aj;
   real       dist2;
 #define LONG_BOND_DIST 0.25
@@ -475,7 +474,6 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
 {
   t_params plist[F_NRE], terps[F_NRE], newbonds;
   t_nextnb nnb;
-  bool     bG96;
   int      *cgnr;
   t_block  excl;
   int      *dummy_type;

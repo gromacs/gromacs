@@ -150,7 +150,7 @@ static void init_restart(t_corr *this)
   else
     this->delta_t = 0.0;
   
-  printf("\nThe number of starting points you requested takes %d"
+  printf("\nThe number of starting points you requested takes %u"
 	 " bytes memory\n\n",this->natoms*this->nrestart*sizeof(rvec));
 
   snew(this->x0,this->nrestart);
@@ -618,7 +618,7 @@ int main(int argc,char *argv[])
 
   t_topology  top;
   matrix      box;
-  char        cc,title[256];
+  char        title[256];
   rvec        *xdum;
   bool        bMol,bTop;
   int         axis,type;

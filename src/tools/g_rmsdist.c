@@ -173,15 +173,14 @@ void main (int argc,char *argv[])
     "NMR averaged distances (1/r^3 and 1/r^6 averaging)."
   };
   
-  int          step,nre,natom,i,j,teller=0;
-  real         t,lambda;
+  int          natom,i,teller;
+  real         t;
 
   t_tpxheader header;
-  t_inputrec   ir;
   t_topology   top;
   matrix       box;
   rvec         *x;
-  FILE         *fp, *fm;
+  FILE         *fp;
 
   int      status,isize;
   atom_id  *index;

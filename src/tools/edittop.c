@@ -8,7 +8,6 @@
 void replace_atom(t_topology *top,int inr,char *anm,char *resnm,
 		  real q,real m,int type)
 {
-  char **rptr,**aptr;
   t_atoms *atoms;
 
   atoms = &(top->atoms);

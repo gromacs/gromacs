@@ -153,7 +153,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   else {
     fprintf(log,"%5s  %5s  %8s  %8s\n","i","j","b_aver","sigma");
     for(i=0; (i<gnx/2); i++) {
-      fprintf(log,"%5d  %5d  %8.5f  %8.5f\n",1+index[2*i],1+index[2*i+1],
+      fprintf(log,"%5u  %5u  %8.5f  %8.5f\n",1+index[2*i],1+index[2*i+1],
 	      aver_lsq(&b_all[i]),sigma_lsq(&b_all[i]));
     }
   }
@@ -183,7 +183,7 @@ int main(int argc,char *argv[])
     { "-aver", FALSE, etBOOL, &bAver,
       "Sum up distributions" }
   };
-  FILE      *status,*fp;
+  FILE      *fp;
   char      *grpname;
   int       gnx;
   atom_id   *index;

@@ -63,8 +63,7 @@ static int ce=0, cb=0;
 /* routine uses simple trapezoid rule                                     */
 void p_integrate(real *result, real data[], int ndata, real slWidth)
 {
-  int i,j,  
-      slice;
+  int i, slice;
   real sum;
   
   if (ndata <= 2) 
@@ -343,7 +342,6 @@ void main(int argc,char *argv[])
             slWidth;                        /* width of one slice         */
   char      **grpname;            	    /* groupnames                 */
   int       ngrps = 0,                      /* nr. of groups              */
-            i,
             *ngx;                           /* sizes of groups            */
   t_topology *top;                	    /* topology 		  */ 
   atom_id   **index;             	    /* indices for all groups     */

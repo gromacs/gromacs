@@ -376,7 +376,7 @@ int read_pdbfile(FILE *in,char *title,
 
     case epdbCRYST1:      
       if (box) {
-	sscanf(line,"%*s%s%s%s%f%f%f",xc,yc,zc,xa,ya,za);
+	sscanf(line,"%*s%s%s%s%lf%lf%lf",xc,yc,zc,&xa,&ya,&za);
 	if (xa==90 || ya==90 || za==90) {
 	  box[XX][XX] = atof(xc)*0.1;
 	  box[YY][YY] = atof(yc)*0.1;

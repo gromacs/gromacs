@@ -83,7 +83,7 @@ int main(int argc,char *argv[])
   matrix     box;
   real       **c1;
   rvec       xij,xjk,n;
-  int        i,j,m,teller,n_alloc,natoms,nvec,ai,aj,ak;
+  int        i,m,teller,n_alloc,natoms,nvec,ai,aj,ak;
   unsigned long mode;
   real       t,t0,t1,dt;
   t_topology *top;

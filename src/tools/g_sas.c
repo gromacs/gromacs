@@ -120,7 +120,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
   FILE         *fp;
   real         t;
   int          nvdw,status;
-  int          i,j,k,natoms,flag,nsurfacedots;
+  int          i,j,natoms,flag,nsurfacedots;
   rvec         *x;
   matrix       box;
   t_vdw        *vdw;

@@ -1023,20 +1023,14 @@ int main(int argc,char *argv[])
       "bfactor value for pdb file for atoms with no calculated dihedral order parameter"}
   };
 
-  FILE       *fp,*log;
-  char       title[256];
-  int        status,natoms,i,j,k,l;
-  bool       bChi;
+  FILE       *log;
+  int        natoms,nlist,naa,idum;
   t_topology top;
-  rvec       *x,*xref,*xav;
-  real       t,t0,t1,lambda;
-  matrix     box;
+  rvec       *x;
   t_dlist    *dlist;
-  int        nlist,teller,naa,idum;
   char       **aa;
-  int        th,th1,th2;
-  bool       bCorr;
-  real       dt,rh1,rh2,rj,invth,tdc,tds;
+  bool       bChi,bCorr;
+  real       dt;
 
   atom_id    isize,*index;
   int        ndih,nf;

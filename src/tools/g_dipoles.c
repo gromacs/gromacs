@@ -426,7 +426,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   /* Correlation stuff */ 
   if (bCorr) {
     if (bAverCorr) {
-      fprintf(stderr,"Going to malloc %d bytes!\n",
+      fprintf(stderr,"Going to malloc %u bytes!\n",
 	      DIM*nframes*sizeof(muall[0][0]));
       snew(muall,1);
       snew(muall[0],nframes*DIM);
@@ -436,7 +436,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
       }
     }
     else {
-      fprintf(stderr,"Going to malloc %d bytes!\n",
+      fprintf(stderr,"Going to malloc %u bytes!\n",
 	      gnx*DIM*nframes*sizeof(muall[0][0]));
       snew(muall,gnx);
       for(i=0; (i<gnx); i++)
@@ -779,7 +779,6 @@ int main(int argc,char *argv[])
   atom_id      *grpindex;
   char         *grpname;
   bool         bCorr,bQuad,bGkr,bFitACF,bMU;  
-  int          i,status;
   t_filenm fnm[] = {
     { efENX, "-enx", NULL,    ffOPTRD },
     { efTRX, "-f", NULL,      ffREAD },

@@ -56,13 +56,12 @@ int main(int argc,char *argv[])
     "g_velacc computes the velocity autocorrelation function"
   };
 
-  FILE       *fp;
   rvec       *v;
   int        gnx;
   atom_id    *index;
   char       *grpname;
   char       title[256];
-  real       t,t0,t1,lambda;
+  real       t,t0,t1;
   matrix     box;
   int        status,natoms,teller,n_alloc,i,tel3;
   real       **c1;

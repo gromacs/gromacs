@@ -199,7 +199,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   int  i,j,nx,ny,nxtail;
-  real **y,*dy,dt,integral,fitintegral,*fitparms,fac;
+  real **y,dt,integral,fitintegral,*fitparms,fac;
 
   static char *fix=NULL;
   static int bFour = 0,bX = 1,nfitparm=2,nsmooth=3;

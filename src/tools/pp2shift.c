@@ -149,7 +149,7 @@ static void done_shifts(t_shiftdata *sd)
 void do_pp2shifts(FILE *fp,int nf,int nlist,t_dlist dlist[],real **dih)
 {
   t_shiftdata *ca_sd,*co_sd,*ha_sd,*cb_sd;
-  int         i,j,Xi1,Xi2,Phi,Psi;
+  int         i,j,Phi,Psi;
   real        phi,psi;
   real        ca,co,ha,cb;
     

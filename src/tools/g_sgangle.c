@@ -244,9 +244,6 @@ void main(int argc,char *argv[])
     "-od1: If one plane and one vector is given, the distances for each of the atoms from the center of the plane is given seperately.[BR]",
     "-od2: For two planes this option has no meaning."
   };
-  static char *bugs[] = {
-    "The order of the atoms in the index file determines the direction of the vectors used."
-  };
 
   char      *grpname[2];          		/* name of the two groups */
   int       gnx[2];               		/* size of the two groups */

@@ -573,8 +573,6 @@ static bool g96_next_x(FILE *status,char *infile,
 {
   t_g96info info;
   int       na;
-  char      title[STRLEN],*time;
-  double    dbl;
 
   na = read_g96_conf(status, infile ? infile : "g96 file",
 		     natoms, &info, NULL, NULL, x, NULL, box);

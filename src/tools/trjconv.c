@@ -94,8 +94,8 @@ void do_trunc(char *fn, real t0)
   t_trnheader  sh;
   long         fpos;
   char         yesno[256];
-  int          j,nre,step;
-  real         t,lambda;
+  int          j;
+  real         t;
   
   if (t0 == -1)
     fatal_error(0,"You forgot to set the truncation time");
@@ -123,7 +123,7 @@ void do_trunc(char *fn, real t0)
     }
     if (bStop) {
       fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
-	      "frame %d, time %g, bytes %d ??? (type YES if so)\n",
+	      "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
 	      fn,j,t,fpos);
       scanf("%s",yesno);
       if (strcmp(yesno,"YES") == 0) {

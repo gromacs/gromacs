@@ -70,7 +70,7 @@ static char *pdbformat=
 real calc_mass(t_atoms *atoms)
 {
   real tmass;
-  int i,j,k;
+  int i;
 
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {

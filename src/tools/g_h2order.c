@@ -259,12 +259,10 @@ int main(int argc,char *argv[])
   real      *slOrder,                       /* av. cosine, per slice      */
             slWidth = 0.0;                  /* width of a slice           */
   rvec      *slDipole;                      
-  FILE      *status;              	    /* trajectory file  	  */
   char      *grpname,            	    /* groupnames                 */
             *micname;
   int       ngx,                            /* nr. of atomsin sol group   */
-            nmic,                           /* nr. of atoms in micelle    */
-            i;
+            nmic;                           /* nr. of atoms in micelle    */
   t_topology *top;                	    /* topology 		  */ 
   atom_id    *index,             	    /* indices for solvent group  */
              *micelle;

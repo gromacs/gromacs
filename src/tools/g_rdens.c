@@ -54,8 +54,8 @@ real sphere_vol(real r)
 void rdf_add(int bin[], real mbin[],real width,real hb2,rvec x[],rvec xcm,
 	     int nx2,atom_id index2[], t_atom atom[])
 {
-  int     i,j,ind,nout;
-  int     ix,jx;
+  int     j,ind,nout;
+  int     jx;
   rvec    dx;
   real    r2;
 
@@ -82,7 +82,7 @@ void rdf_calc(char *fn,char *pdens, char *rdens, char *ndens,
   int          **bin;
   real         **mbin; /* keeps mass per bin */
   char         buf[256];
-  real         t,hb2,dens,vol,nf_1;
+  real         t,hb2,nf_1;
   int          i,j,natoms,status,maxbin;
   rvec         *x0,xcm;
   matrix       box;
@@ -166,7 +166,7 @@ int main(int argc,char *argv[])
   char      *grp1,**grpname;                /* groupnames                 */
   int       gnx1,*gnx;                      /* sizes of groups            */
   atom_id   *ind1,**index;             	    /* indices for all groups     */
-  int       i,ngrps;
+  int       ngrps;
   t_topology *top;                	    /* topology 		  */ 
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */

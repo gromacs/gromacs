@@ -230,7 +230,7 @@ static void calc_angles(FILE *log,matrix box,
     ang[i]=bond_angle(log,box,x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
 		      r_ij,r_kj,&costh);
   if (debug) {
-    fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
+    fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %u, %u, %u\n",
 	    ang[0],costh,index[0],index[1],index[2]);
     pr_rvec(debug,0,"rij",r_ij,DIM);
     pr_rvec(debug,0,"rkj",r_kj,DIM);

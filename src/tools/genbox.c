@@ -367,8 +367,7 @@ char *read_prot(char *confin,
 		matrix box,t_vdw **vdw,int *max_vdw,real r_distance)
 {
   char *title;
-  rvec xmin,xmax;
-  int  i,m,natoms;
+  int  natoms;
   
   snew(title,STRLEN);
   get_stx_coordnum(confin,&natoms);

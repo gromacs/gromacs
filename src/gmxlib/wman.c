@@ -487,7 +487,7 @@ static void pr_opts(FILE *fp,
 		    int nfile,  t_filenm *fnm, 
 		    int npargs, t_pargs pa[])
 {
-  int i,j;
+  int i;
   
   fprintf(fp," \"c/-/(");
   for (i=0; i<nfile; i++)
@@ -508,9 +508,6 @@ static void write_compl(FILE *out,
 			int npargs, t_pargs *pa,
 			int nbug,   char **bugs)
 {
-  int i;
-  char *tmp;
-  
   fprintf(out,"complete %s",ShortProgram());
   pr_enums(out,npargs,pa);
   pr_fopts(out,nfile,fnm);
@@ -528,7 +525,6 @@ void write_man(FILE *out,char *mantp,
   char *pr;
   int     i,npar;
   t_pargs *par;
-  bool bShowHidden;
   
   if (bHidden || (strcmp(mantp,"completion")==0) ) {
     npar=npargs;

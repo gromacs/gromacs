@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
   int         *index;
   int         *nSubs;
   bool        *bSet,bPDB;
-  int         i,nion;
+  int         i;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,     ffREAD  },
     { efSTO, "-o",  NULL,     ffWRITE },
@@ -212,8 +212,6 @@ int main(int argc, char *argv[])
     fprintf(stderr,"First water atom: %d  Number of water molecules: %d\n",
 	    w1+1,nw);
   
-  nion   = p_num+n_num;
-
   index  = mk_windex(w1,nw);
   snew(bSet,nw);
   snew(top,1);

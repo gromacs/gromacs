@@ -63,7 +63,7 @@ static void print_types(atom_id index[], atom_id a[], int ngrps,
 
   fprintf(stderr,"Using following groups: \n");
   for(i = 0; i < ngrps; i++)
-    fprintf(stderr,"Groupname: %s First atomname: %s First atomnr %d\n", 
+    fprintf(stderr,"Groupname: %s First atomname: %s First atomnr %u\n", 
 	    groups[i], *(top->atoms.atomname[a[index[i]]]), a[index[i]]);
   fprintf(stderr,"\n");
 }
@@ -354,18 +354,12 @@ void main(int argc,char *argv[])
       "Calculate order parameters for unsaturated carbons. Note that this can"
       "not be mixed with normal order parameters." }
   };
-  static char *bugs[] = {
-    "The index file can be made use make_ndx, but only for one type of"
-    "tail at a time."
-  };
 
   rvec      *order;                         /* order par. for each atom   */
   real      **slOrder;                      /* same, per slice            */
   real      slWidth = 0.0;                  /* width of a slice           */
-  FILE      *status;              	    /* trajectory file  	  */
   char      **grpname;            	    /* groupnames                 */
   int       ngrps,                          /* nr. of groups              */
-            dummy,                          /* dummy for fscanf           */
             i;
   t_topology *top;                	    /* topology 		  */ 
   atom_id   *index,             	    /* indices for a              */
