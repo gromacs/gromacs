@@ -204,8 +204,6 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
-  CTYPE ("Output frequency for distance restraint data");
-  ITYPE ("nstdisreout", ir->nstdisreout,0);
   CTYPE ("Output frequency and precision for xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
   RTYPE ("xtc_precision",ir->xtcprec,   1000.0);
