@@ -46,6 +46,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "time.h"
 #include "edsam.h"
 #include "mdebin.h"
+#include "vcm.h"
 
 #define MD_MULTISIM  1
 #define MD_GLAS      2
@@ -113,14 +114,14 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		     t_edsamyn *edyn,unsigned long Flags);
 		    
 /* Initialization routines to make maintainance easier */ 
-extern void init_md(t_commrec *cr,
-		    t_inputrec *ir,tensor box,real *t,real *t0,real *lambda,real *lam0,
+extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,
+		    real *t,real *t0,real *lambda,real *lam0,
 		    real *SAfactor,t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,char **xtc_traj,
 		    int *fp_ene,FILE **fp_dgdl,
-		    t_mdebin **mdebin,t_groups *grps,rvec vcm,tensor force_vir,
-		    tensor shake_vir,t_mdatoms *mdatoms,
-		    rvec mu_tot,bool *bNEMD);
+		    t_mdebin **mdebin,t_groups *grps,
+		    tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,
+		    rvec mu_tot,bool *bNEMD,t_vcm **vcm);
 		    
 extern void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
@@ -138,7 +139,7 @@ extern void global_stat(FILE *log,
 			tensor fvir,tensor svir,
 			t_grpopts *opts,t_groups *grps,
 			t_nrnb *mynrnb,t_nrnb nrnb[],
-			rvec vcm,real *terminate);
+			t_vcm *vcm,real *terminate);
 /* Communicate statistics around the ring */
 
 extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,

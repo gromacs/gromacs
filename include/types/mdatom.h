@@ -40,8 +40,8 @@ typedef struct {
   int           *resnr;
   int           *typeA,*typeB;
   unsigned short        *ptype;
-  unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cXTC;
-  unsigned short        *cU1,*cU2,*cU3;
+  unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cXTC,*cVCM;
+  unsigned short        *cU1,*cU2;
 } t_mdatoms;
 
 #endif

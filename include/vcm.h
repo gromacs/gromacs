@@ -37,7 +37,17 @@ static char *SRCID_vcm_h = "$Id$";
 #endif /* HAVE_IDENT */
 #include "sysstuff.h"
 #include "typedefs.h"
-	
+
+typedef struct {
+  int  nr;
+  rvec *group_mvcm;
+  real *group_mass;
+  char **group_name;         /* These two are copies to pointers in */
+  unsigned short *group_id;  /* other structures.                   */
+} t_vcm;
+
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md);
+
 extern void calc_vcm(FILE *log,int homenr,int start,
 		     real mass[],rvec v[],rvec vcm);
 
@@ -51,4 +61,13 @@ extern void check_cm(FILE *log,rvec mvcm,real tm);
 extern void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], 
 		       real mass[]);
 
+/* Do a per group center of mass things */
+extern void calc_vcm_grp(FILE *log,int homenr,int start,real mass[],rvec v[],
+			 t_vcm *vcm);
+
+extern void do_stopcm_grp(FILE *log,int homenr,int start,rvec v[],
+			  t_vcm *vcm,real invmass[]);
+
+extern void check_cm_grp(FILE *log,t_vcm *vcm);
+			 
 #endif /* _vcm_h */

@@ -34,7 +34,7 @@ enum {
  
 enum {
   egcTC,    egcENER,   egcACC,   egcFREEZE, 
-  egcUser1, egcUser2,  egcUser3, egcXTC,
+  egcUser1, egcUser2,  egcVCM, egcXTC,
   egcNR 
 };
 
