@@ -112,13 +112,11 @@ static void add_bonds(t_manager *man,t_functype func[],
 
 static void add_bpl(t_manager *man,t_idef *idef,bool bB[])
 {
-  add_bonds(man,idef->functype,&idef->il[F_BONDS],bB);
-  add_bonds(man,idef->functype,&idef->il[F_G96BONDS],bB);
-  add_bonds(man,idef->functype,&idef->il[F_MORSE],bB);
-  add_bonds(man,idef->functype,&idef->il[F_CUBICBONDS],bB);
-  add_bonds(man,idef->functype,&idef->il[F_CONNBONDS],bB);
-  add_bonds(man,idef->functype,&idef->il[F_SHAKE],bB);
-  add_bonds(man,idef->functype,&idef->il[F_SETTLE],bB);
+  int ftype;
+
+  for(ftype=0; ftype<F_NRE; ftype++)
+    if (IS_CHEMBOND(ftype) || ftype==F_SETTLE)
+      add_bonds(man,idef->functype,&idef->il[ftype],bB);
 }
  
 static atom_id which_atom(t_manager *man,int x, int y)
