@@ -591,7 +591,15 @@ int main (int argc, char *argv[])
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
     "in your [TT].mdp[tt] file. If you want to continue a crashed run, it is",
     "easier to use [TT]tpbconv[tt].[PAR]",
-    
+
+    "When preparing an input file for parallel [TT]mdrun[tt] it may",
+    "be advantageous to partition the simulation system over the",
+    "processors in a way in which each processor ahs a similar amount of",
+    "work. The -shuffle option does just that. For a single protein",
+    "in water this does not make a difference, however for a system where",
+    "you have many copies of different molecules  (e.g. liquid mixture",
+    "or membrane/water system) the option is definitely a must.[PAR]",
+        
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
     "bonds. For this option to work you need an extra file in your $GMXLIB",
