@@ -19,7 +19,7 @@ OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -
 # All warnings except unused vars: -fullwarn -woff 1174
 CFLAGS		= $(ABI) $(OPT) -woff 1174
 CCFLAGS		= $(ABI) $(OPT) -woff 1174 -DHAVE_BOOL 
-FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4
+FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 
 LDFLAGS		= -L$(LIBDIR) $(ABI) 
