@@ -139,6 +139,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   
   if ((ir->eBox != ebtNONE) && (ir->nstcomm < 0))
     warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
+    
+  if ((ir->eI == eiMD) && (ir->eBox == ebtNone)) {
+    if (ir->nstcomm > 0)
+      warning("Tumbling ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should set nstcomm = -1.");
+    if (ir->nstcomm == 0)
+      warning("Flying ice-cubes: We are not removing center of mass motion in a non-periodic system. You should set nstcomm = -1 (will also stop rotation).");
+  }
   
   if ((EEL_LR(ir->coulombtype)) && (ir->efep!=efepNO)) {
     warning("You are using long-range electrostatics with free energy integration. "
