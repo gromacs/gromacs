@@ -207,7 +207,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 {
   FILE    *xvgrout;
   int     status,out,nat,i,j,d,v,vec,nfr,nframes,snew_size,frame;
-  int     *imin,*imax;
+  int     noutvec_extr,*imin,*imax;
   atom_id *all_at;
   matrix  box;
   rvec    *xread,*x;
@@ -216,8 +216,12 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
   
   snew(x,natoms);
   
-  if (!bExtrAll)
-    noutvec=1;
+  if (bExtrAll)
+    noutvec_extr=noutvec;
+  else
+    noutvec_extr=1;
+  
+
   if (trajfile) {
     snew(inprod,noutvec+1);
     
@@ -233,6 +237,8 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     nfr=0;
     nframes=0;
     nat=read_first_x(&status,trajfile,&t,&xread,box);
+    if (nat>atoms->nr)
+      fatal_error(0,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
     snew(all_at,nat);
     for(i=0; (i<nat); i++)
       all_at[i]=i;
@@ -257,7 +263,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	  reset_x(natoms,all_at,natoms,all_at,x,w_rls);
 	  do_fit(natoms,w_rls,xref,x);
 	}
-	
+
 	for(v=0; v<noutvec; v++) {
 	  vec=outvec[v];
 	  /* calculate (mass-weighted) projection */
@@ -314,9 +320,9 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       fprintf(stderr,"%11s %17s %17s\n","eigenvector","Minimum","Maximum");
       fprintf(stderr,
 	      "%11s %10s %10s %10s %10s\n","","value","time","value","time");
-      snew(imin,noutvec);
-      snew(imax,noutvec);
-      for(v=0; v<noutvec; v++) {
+      snew(imin,noutvec_extr);
+      snew(imax,noutvec_extr);
+      for(v=0; v<noutvec_extr; v++) {
 	for(i=0; i<nframes; i++) {
 	  if (inprod[v][i]<inprod[v][imin[v]])
 	    imin[v]=i;
@@ -339,9 +345,9 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     c=strrchr(str,'.'); /* find where extention begins */
     strcpy(str2,c); /* get extention */
     sprintf(c,"%%d%s",str2); /* append '%s' and extention to filename */
-    for(v=0; v<noutvec; v++) {
+    for(v=0; v<noutvec_extr; v++) {
       /* make filename using format string */
-      if (noutvec==1)
+      if (noutvec_extr==1)
 	strcpy(str2,extremefile);
       else
 	sprintf(str2,str,eignr[outvec[v]]+1);
