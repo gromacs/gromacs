@@ -215,9 +215,16 @@ static double calc_avcsix(FILE *log,real **nbfp,int ntypes,
     }
   }
   csix /= (natoms*natoms);
-  fprintf(log,"Average C6 parameter is: %10g\n",csix);
+  if (debug)
+    fprintf(debug,"Average C6 parameter is: %10g\n",csix);
   
   return csix;
+}
+
+void set_avcsix(FILE *log,t_forcerec *fr,t_idef *idef,t_mdatoms *mdatoms)
+{
+  fr->avcsix=calc_avcsix(log,fr->nbfp,idef->atnr,mdatoms->nr,
+			 mdatoms->typeA,fr->bBHAM);
 }
 
 void init_forcerec(FILE *log,
@@ -334,8 +341,8 @@ void init_forcerec(FILE *log,
     fr->nbfp=mk_nbfp(idef,fr->bBHAM);
   }
 
-  fr->avcsix=calc_avcsix(log,fr->nbfp,idef->atnr,natoms,mdatoms->typeA,fr->bBHAM);
-  
+  set_avcsix(log,fr,idef,mdatoms);
+
   /* Now update the rest of the vars */
   update_forcerec(log,fr,box);
   make_tables(fr,MASTER(cr));

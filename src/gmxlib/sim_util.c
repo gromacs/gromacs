@@ -254,6 +254,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
 		 matrix box,tensor pres,real ener[])
 {
+  static bool bFirst=TRUE;
   real vol,rc3,spres;
   
   if (bLJcorr) {
@@ -265,6 +266,11 @@ void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
     pres[XX][XX] += spres;
     pres[YY][YY] += spres;
     pres[ZZ][ZZ] += spres;
+    if (bFirst) {
+      fprintf(log,"Long Range LJ corrections: Epot=%10g, Pres=%10g\n",
+	      ener[F_LJLR],spres);
+      bFirst = FALSE;
+    }
   }
   else {
     ener[F_LJLR]  = 0.0;

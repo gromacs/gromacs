@@ -612,7 +612,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bStopRot=do_per_step(step,-parm->ir.nstcomm);
     }
     
-    ionize(log,md,top->atoms.atomname,t,&parm->ir,v);
+    /*ionize(log,md,top->atoms.atomname,t,&parm->ir,v);*/
 
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
@@ -743,6 +743,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     calc_pres(parm->box,parm->ekin,parm->vir,parm->pres);
 
     /* Calculate long range corrections to pressure and energy */
+    if (bTCR)
+      set_avcsix(log,fr,&top->idef,md);
     calc_ljcorr(log,parm->ir.bLJcorr,
 		fr,md->nr,parm->box,parm->pres,ener);
     

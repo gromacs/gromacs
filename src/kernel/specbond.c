@@ -68,7 +68,8 @@ static t_specbond *get_specbonds(int *nspecbond)
   int    nlines,i,n;
   
   nlines = get_lines(sbfile,&lines);
-  snew(sb,nlines);
+  if (nlines > 0)
+    snew(sb,nlines);
   
   n = 0;
   for(i=0; (i<nlines); i++) {
@@ -89,7 +90,8 @@ static t_specbond *get_specbonds(int *nspecbond)
     }
     sfree(lines[i]);
   }
-  sfree(lines);
+  if (nlines > 0)
+    sfree(lines);
   fprintf(stderr,"%d out of %d lines of %s converted succesfully\n",
 	  n,nlines,sbfile);
 	  
@@ -167,8 +169,8 @@ static void rename_1res(int natom,t_pdbatom pdba[],int resnr,char *nres)
 int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
 		 t_ssbond **specbonds)
 {
-  t_specbond *sb;
-  t_ssbond   *bonds;
+  t_specbond *sb=NULL;
+  t_ssbond   *bonds=NULL;
   int  nsb;
   int  ncys,nbonds;
   int  *cysp,*sgp;
@@ -178,120 +180,123 @@ int mk_specbonds(int natoms,t_pdbatom pdba[],bool bInteractive,
   int  ai,aj,index_sb;
   real **d;
   char buf[10];
-  
+
+  /* Initiate variables that will be exported */  
+  nbonds = 0;
   sb=get_specbonds(&nsb);
   
-  nres=pdba[natoms-1].resnr+1;
-  snew(cysp,nres);
-  snew(sgp,nres);
-  snew(nBonded,nres);
-
-  ncys = 0;
-  for(i=0;(i<natoms);i++) {
-    if (is_special(nsb,sb,pdba[i].resnm,pdba[i].atomnm)) {
-      cysp[ncys]=pdba[i].resnr;
-      sgp[ncys] =i;
-      ncys++;
+  if (nsb > 0) {
+    nres=pdba[natoms-1].resnr+1;
+    snew(cysp,nres);
+    snew(sgp,nres);
+    snew(nBonded,nres);
+    
+    ncys = 0;
+    for(i=0;(i<natoms);i++) {
+      if (is_special(nsb,sb,pdba[i].resnm,pdba[i].atomnm)) {
+	cysp[ncys]=pdba[i].resnr;
+	sgp[ncys] =i;
+	ncys++;
+      }
     }
-  }
-  
-  /* distance matrix d[ncys][ncys] */
-  snew(d,ncys);
-  for(i=0; (i<ncys); i++)
-    snew(d[i],ncys);
-
-  for(i=0; (i<ncys); i++) 
-    for(j=0; (j<ncys); j++) {
-      ai=sgp[i];
-      aj=sgp[j];
-      d[i][j]=distance(pdba[ai].x,pdba[aj].x);
-    }
-  if (ncys > 1) {
+    
+    /* distance matrix d[ncys][ncys] */
+    snew(d,ncys);
+    for(i=0; (i<ncys); i++)
+      snew(d[i],ncys);
+    
+    for(i=0; (i<ncys); i++) 
+      for(j=0; (j<ncys); j++) {
+	ai=sgp[i];
+	aj=sgp[j];
+	d[i][j]=distance(pdba[ai].x,pdba[aj].x);
+      }
+    if (ncys > 1) {
 #define MAXCOL 8
-    fprintf(stderr,"Special Atom Distance matrix:\n");
-    for(b=0; (b<ncys); b+=MAXCOL) {
-      fprintf(stderr,"%8s","");
-      e=min(b+MAXCOL, ncys-1);
-      for(i=b; (i<e); i++) {
-	sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
-	fprintf(stderr,"%8s",buf);
-      }
-      fprintf(stderr,"\n");
-      e=min(b+MAXCOL, ncys);
-      for(i=b+1; (i<ncys); i++) {
-	sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
-	fprintf(stderr,"%8s",buf);
-	e2=min(i,e);
-	for(j=b; (j<e2); j++)
-	  fprintf(stderr," %7.3f",d[i][j]);
+      fprintf(stderr,"Special Atom Distance matrix:\n");
+      for(b=0; (b<ncys); b+=MAXCOL) {
+	fprintf(stderr,"%8s","");
+	e=min(b+MAXCOL, ncys-1);
+	for(i=b; (i<e); i++) {
+	  sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
+	  fprintf(stderr,"%8s",buf);
+	}
 	fprintf(stderr,"\n");
+	e=min(b+MAXCOL, ncys);
+	for(i=b+1; (i<ncys); i++) {
+	  sprintf(buf,"%s%d",pdba[sgp[i]].resnm,cysp[i]+1);
+	  fprintf(stderr,"%8s",buf);
+	  e2=min(i,e);
+	  for(j=b; (j<e2); j++)
+	  fprintf(stderr," %7.3f",d[i][j]);
+	  fprintf(stderr,"\n");
+	}
       }
+      /*     for(i=1; (i<ncys); i++)  */
+      /*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
+      /*     fprintf(stderr,"\n"); */
+      /*     for(i=0; (i<ncys-1); i++) { */
+      /*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
+      /*       for(j=1; (j<i+1); j++) */
+      /* 	fprintf(stderr,"%8s",""); */
+      /*       for( ; (j<ncys); j++) */
+      /* 	fprintf(stderr,"%6.3f  ",d[i][j]); */
+      /*       fprintf(stderr,"\n"); */
+      /*     } */
     }
-/*     for(i=1; (i<ncys); i++)  */
-/*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
-/*     fprintf(stderr,"\n"); */
-/*     for(i=0; (i<ncys-1); i++) { */
-/*       fprintf(stderr," %3s%4d",pdba[sgp[i]].resnm,cysp[i]+1); */
-/*       for(j=1; (j<i+1); j++) */
-/* 	fprintf(stderr,"%8s",""); */
-/*       for( ; (j<ncys); j++) */
-/* 	fprintf(stderr,"%6.3f  ",d[i][j]); */
-/*       fprintf(stderr,"\n"); */
-/*     } */
-  }
-  i=j=0;
+    i=j=0;
+    
+    snew(bonds,ncys/2);
   
-  nbonds = 0;
-  snew(bonds,ncys/2);
-  
-  for(i=0; (i<ncys); i++) {
-    ai = sgp[i];
-    for(j=i+1; (j<ncys); j++) {
-      aj = sgp[j];
-      
-      if (is_bond(nsb,sb,pdba[ai].resnm,pdba[ai].atomnm,
-		  pdba[aj].resnm,pdba[aj].atomnm,d[i][j],
-		  &index_sb,&bSwap)) {
-	if (bInteractive) {
-	  fprintf(stderr,"Link Res%4d and Res%4d (y/n) ?",cysp[i]+1,cysp[j]+1);
-	  bDoit=yesno();
-	}
-	else {
-	  fprintf(stderr,"Linking Res%4d and Res%4d...\n",cysp[i]+1,cysp[j]+1);
-	  bDoit=TRUE;
-	}
-	if (bDoit) {
-	  /* Store the residue numbers in the bonds array */
-	  bonds[nbonds].res1 = cysp[i];
-	  bonds[nbonds].res2 = cysp[j];
-	  bonds[nbonds].a1   = strdup(pdba[ai].atomnm);
-	  bonds[nbonds].a2   = strdup(pdba[aj].atomnm);
-	  if (bSwap) {
-	    rename_1res(natoms,pdba,cysp[i],sb[index_sb].nres2);
-	    rename_1res(natoms,pdba,cysp[j],sb[index_sb].nres1);
+    for(i=0; (i<ncys); i++) {
+      ai = sgp[i];
+      for(j=i+1; (j<ncys); j++) {
+	aj = sgp[j];
+	
+	if (is_bond(nsb,sb,pdba[ai].resnm,pdba[ai].atomnm,
+		    pdba[aj].resnm,pdba[aj].atomnm,d[i][j],
+		    &index_sb,&bSwap)) {
+	  if (bInteractive) {
+	    fprintf(stderr,"Link Res%4d and Res%4d (y/n) ?",cysp[i]+1,cysp[j]+1);
+	    bDoit=yesno();
 	  }
 	  else {
-	    rename_1res(natoms,pdba,cysp[i],sb[index_sb].nres1);
-	    rename_1res(natoms,pdba,cysp[j],sb[index_sb].nres2);
+	    fprintf(stderr,"Linking Res%4d and Res%4d...\n",cysp[i]+1,cysp[j]+1);
+	    bDoit=TRUE;
 	  }
-	  nBonded[i]++;
-	  nBonded[j]++;
-	  
-	  nbonds++;
+	  if (bDoit) {
+	    /* Store the residue numbers in the bonds array */
+	    bonds[nbonds].res1 = cysp[i];
+	    bonds[nbonds].res2 = cysp[j];
+	    bonds[nbonds].a1   = strdup(pdba[ai].atomnm);
+	    bonds[nbonds].a2   = strdup(pdba[aj].atomnm);
+	    if (bSwap) {
+	      rename_1res(natoms,pdba,cysp[i],sb[index_sb].nres2);
+	      rename_1res(natoms,pdba,cysp[j],sb[index_sb].nres1);
+	    }
+	    else {
+	      rename_1res(natoms,pdba,cysp[i],sb[index_sb].nres1);
+	      rename_1res(natoms,pdba,cysp[j],sb[index_sb].nres2);
+	    }
+	    nBonded[i]++;
+	    nBonded[j]++;
+	    
+	    nbonds++;
+	  }
 	}
       }
     }
-  }
-  
-  for(i=0; (i<ncys); i++)
-    sfree(d[i]);
-  sfree(d);
-  sfree(nBonded);
-  sfree(sgp);
-  sfree(cysp);
+    
+    for(i=0; (i<ncys); i++)
+      sfree(d[i]);
+    sfree(d);
+    sfree(nBonded);
+    sfree(sgp);
+    sfree(cysp);
  
-  done_specbonds(nsb,sb);
-  sfree(sb);
+    done_specbonds(nsb,sb);
+    sfree(sb);
+  }
   
   *specbonds=bonds;
   

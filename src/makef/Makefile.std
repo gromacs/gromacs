@@ -27,7 +27,7 @@ CFLAGS		+= -I$(PVM_ROOT)/include
 CCFLAGS		+= -I$(PVM_ROOT)/include
 endif
 
-FFTLIBS		= -lfftw
+FFTLIBS		= -lfftw.$(CPU)
 
 ifeq ($(USE_XDR),yes)
 SYSDEFS		+= -DUSE_XDR

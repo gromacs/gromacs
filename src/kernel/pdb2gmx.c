@@ -343,11 +343,11 @@ static int remove_double_atoms(int natoms,t_pdbatom **pdbaptr)
   int     i,j,nres,oldnatoms;
   t_pdbatom *pdba;
   
-  pdba=*pdbaptr;
-  
-  oldnatoms=natoms;
-  nres=pdba[natoms-1].resnr;
   printf("Checking for double atoms....\n");
+  pdba      = *pdbaptr;
+  oldnatoms = natoms;
+  nres      = pdba[natoms-1].resnr;
+  
   /* NOTE: natoms is modified inside the loop */
   for(i=1; (i<natoms); i++) {
     if ( (pdba[i-1].resnr     == pdba[i].resnr) &&
@@ -362,7 +362,7 @@ static int remove_double_atoms(int natoms,t_pdbatom **pdbaptr)
 	pdba[j]=pdba[j+1];
     }
   }
-  if (natoms!=oldnatoms)
+  if (natoms != oldnatoms)
     printf("Now there are %d atoms\n",natoms);
   *pdbaptr=pdba;
   
@@ -765,35 +765,37 @@ int main(int argc, char *argv[])
 
     find_nc_ter(natom,pdba,&rN,&rC);
 
-    if ( (rN<0) || (rC<0) )
+    if ( (rN<0) || (rC<0) ) {
       printf("No N- or C-terminus found: "
 	     "assuming this chain contains no protein\n");
-    
-    /* set termini */
-    if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
-      sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
-    else {
-      if (strncmp(pdba[rN].resnm,"PRO",3))
-	sel_ntdb=&(ntdb[1]);
-      else
-	sel_ntdb=&(ntdb[3]);
-      printf("N-terminus: %s\n",sel_ntdb->bname);
     }
-    
-    if ( (rC>=0) && (bTerMan || (nCtdb<2)) )
-      sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
     else {
-      sel_ctdb=&(ctdb[1]);
-      printf("C-terminus: %s\n",ctdb[1].bname);
-    }
+      /* set termini */
+      if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
+	sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
+      else {
+	if (strncmp(pdba[rN].resnm,"PRO",3))
+	  sel_ntdb=&(ntdb[1]);
+	else
+	  sel_ntdb=&(ntdb[3]);
+	printf("N-terminus: %s\n",sel_ntdb->bname);
+      }
     
+      if ( (rC>=0) && (bTerMan || (nCtdb<2)) )
+	sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
+      else {
+	sel_ctdb=&(ctdb[1]);
+	printf("C-terminus: %s\n",ctdb[1].bname);
+      }
+    }
     /* Generate Hydrogen atoms (and termini) in the sequence */
     natom=add_h(natom,&pdba,nah,ah,&x,sel_ntdb,sel_ctdb,rN,rC);
     printf("Now there are %d residues with %d atoms\n",
 	    pdba[natom-1].resnr+1,natom);
     if (debug)
       print_pdbatoms(debug,title,natom,pdba,box);
-    
+
+    printf("Converting pdba2atoms\n");
     snew(atoms,1);
     pdb2atoms(natom,pdba,atoms,&dummy,&tab);
     sfree(dummy);
@@ -805,6 +807,7 @@ int main(int argc, char *argv[])
     
     strcpy(top_fn,ftp2fn(efTOP,NFILE,fnm));
     strcpy(itp_fn,ftp2fn(efITP,NFILE,fnm));
+    
     /* make up molecule name(s) */
     if (chains[chain].bAllWat) 
       sprintf(molname,"Water");
@@ -812,9 +815,11 @@ int main(int argc, char *argv[])
       sprintf(molname,"Protein");
     else
       sprintf(molname,"Protein_%c",chains[chain].chain);
+      
     /* make filenames for topol.top/.itp and for posre.itp */
     if ( ! ( (nchain==1) || 
 	     ( (chain==nchain-1) && chains[chain].bAllWat ) ) ) {
+      printf("Chain time...\n");
       c=strrchr(top_fn,'.');
       if ( chains[chain].chain != ' ' )
 	sprintf(c,"_%c.itp",chains[chain].chain);

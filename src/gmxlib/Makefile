@@ -11,6 +11,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
 M4FILE		= $(CPU).m4
+LIBRARY		= libgmx
 OBJ		= 	\
 		3dview.o	block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\
@@ -138,6 +139,9 @@ repfirst:	repfirst.o
 testlr:		testlr.o	ewald.o		pppm.o	\
 		ghat.o		lrutil.o	fftgrid.o	poisson.o
 		$(LD) -o $@ $^  $(SYSLIBS) $(FFTLIBS)
+
+testwc:		testwc.o	coupling.o
+		$(LD) -o $@ $^  $(SYSLIBS)
 
 gentab:		gentab.o
 		$(LD) -o $@ $^  $(SYSLIBS) 

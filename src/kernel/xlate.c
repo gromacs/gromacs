@@ -29,6 +29,7 @@
 static char *SRCID_xlate_c = "$Id$";
 
 #include <ctype.h>
+#include <string.h>
 #include "typedefs.h"
 #include "pdbio.h"
 #include "strdb.h"
@@ -52,8 +53,9 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
   int  nlines,i,n;
   
   nlines = get_lines(xlfile,&lines);
-  snew(xl,nlines);
-  
+  if (nlines > 0) 
+    snew(xl,nlines);
+    
   n = 0;
   for(i=0; (i<nlines); i++) {
     if (sscanf(lines[i],"%s%s%s",rbuf,abuf,repbuf) != 3) 
@@ -64,21 +66,22 @@ static t_xlate_atom *get_xlatoms(int *nxlatom)
 	xl[n].res = strdup(rbuf);
       else
 	xl[n].res = NULL;
-	
+      
       /* Replace underscores in the string by spaces */
       while ((_ptr = strchr(abuf,'_')) != 0)
 	*_ptr = ' ';
-	
+      
       xl[n].atom = strdup(abuf);
       xl[n].replace = strdup(repbuf);
       n++;
     }
     sfree(lines[i]);
   }
-  sfree(lines);
+  if (nlines > 0)
+    sfree(lines);
   fprintf(stderr,"%d out of %d lines of %s converted succesfully\n",
 	  n,nlines,xlfile);
-	  
+  
   *nxlatom = n;
   
   return xl;

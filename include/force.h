@@ -77,6 +77,9 @@ extern void init_forcerec(FILE       *log,
 extern void update_forcerec(FILE *log,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
+extern void set_avcsix(FILE *log,t_forcerec *fr,t_idef *idef,t_mdatoms *mdatoms);
+/* Compute the average C6 param for LJ corrections */
+
 extern void ns(FILE *log,
 	       t_forcerec *fr,
 	       rvec       x[],
