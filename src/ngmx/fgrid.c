@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "config.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "fgrid.h"

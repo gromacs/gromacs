@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "config.h"
 #include "fatal.h"
 #include "string2.h"
 #include "sysstuff.h"

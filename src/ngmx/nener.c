@@ -38,6 +38,7 @@
 #include <macros.h>
 #include <names.h>
 #include "nener.h"
+#include "config.h"
 #include "buttons.h"
 
 static void DrawEGraph(t_x11 *x11,t_enerwin *ew)

@@ -40,6 +40,7 @@
 #include <macros.h>
 #include <futil.h>
 #include <string2.h>
+#include "config.h"
 
 #define YSPACE 2
 

@@ -37,6 +37,7 @@
 #include <math.h>
 #include <string.h>
 #include "Xstuff.h"
+#include "config.h"
 #include "copyrite.h"
 #include "macros.h"
 #include "xutil.h"

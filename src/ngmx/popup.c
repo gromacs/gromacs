@@ -39,6 +39,7 @@
 #include <smalloc.h>
 #include <x11.h>
 #include <xutil.h>
+#include "config.h"
 #include "popup.h"
 
 bool ChildCallBack(t_x11 *x11,XEvent *event, Window w, void *data)

@@ -37,6 +37,7 @@
 #include <smalloc.h>
 #include <x11.h>
 #include <macros.h>
+#include "config.h"
 #include "popup.h"
 #include "pulldown.h"
 

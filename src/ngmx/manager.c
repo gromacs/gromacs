@@ -44,6 +44,7 @@
 #include <maths.h>
 #include <atomprop.h>
 #include <names.h>
+#include "config.h"
 #include "manager.h"
 #include "futil.h"
 #include "pbc.h"

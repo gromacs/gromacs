@@ -37,6 +37,7 @@
 #include <string.h>
 #include <smalloc.h>
 #include <macros.h>
+#include "config.h"
 #include "buttons.h"
 #include "nleg.h"
 #include "writeps.h"

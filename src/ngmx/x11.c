@@ -35,6 +35,7 @@
  */
 #include <Xstuff.h>
 #include <x11.h>
+#include "config.h"
 #include "sysstuff.h"
 #include "string.h"
 #include "assert.h"

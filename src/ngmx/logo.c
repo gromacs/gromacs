@@ -34,6 +34,7 @@
  * Gyas ROwers Mature At Cryogenic Speed
  */
 #include "sysstuff.h"
+#include "config.h"
 #include "Xstuff.h"
 #include "xutil.h"
 #include "smalloc.h"

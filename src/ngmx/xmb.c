@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "Xstuff.h"

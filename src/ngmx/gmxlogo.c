@@ -34,6 +34,7 @@
  * Gyas ROwers Mature At Cryogenic Speed
  */
 #include "logo.h"
+#include "config.h"
 
 void main(int argc, char *argv[])
 {

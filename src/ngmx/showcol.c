@@ -37,6 +37,7 @@
 #include <smalloc.h>
 #include <sysstuff.h>
 #include <string2.h>
+#include "config.h"
 #include <Xstuff.h>
 #include "xutil.h"
 

@@ -33,6 +33,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#include "config.h"
 #include "x11.h"
 #include "nmol.h"
 

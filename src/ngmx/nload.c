@@ -38,6 +38,7 @@
 #include <macros.h>
 #include <smalloc.h>
 #include <string.h>
+#include "config.h"
 #include "nload.h"
 #include "buttons.h"
 

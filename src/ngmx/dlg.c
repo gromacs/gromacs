@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <xdlghi.h>
+#include "config.h"
 
 int main(int argc, char *argv[])
 {
