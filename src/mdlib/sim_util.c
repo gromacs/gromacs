@@ -329,7 +329,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 		   rvec x[],rvec vold[],rvec buf[],rvec f[],
 		   rvec v[],t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
-		   t_edsamyn *edyn)
+		   t_edsamyn *edyn,t_pull *pulldata)
 {
   int    i,m;
   tensor shake_vir;
@@ -344,7 +344,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 	   -1,lambda,&ener[F_DVDL],
 	   &(parm->ir),FALSE,md,x,graph,
 	   fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
-	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
+	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
     
     /* Compute coordinates at t=-dt, store them in buf */
     for(i=0; (i<nsb->natoms); i++) {
@@ -361,7 +361,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     update(nsb->natoms,START(nsb),HOMENR(nsb),
 	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,md,f,graph,
 	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
-	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
+	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0
@@ -380,7 +380,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
 	   md,f,graph,
 	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
-	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn);
+	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0

@@ -32,7 +32,9 @@ OBJ		= \
 		pssolve.o	psspread.o	runner.o	\
 		shakef.o	sim_util.o	splittop.o	\
 		steep.o		tables.o	tgroup.o	\
-		update.o	vcm.o		wnblist.o
+		update.o	vcm.o		wnblist.o       \
+                pull.o 		pullinit.o	pullutil.o      \
+                pullio.o
 
 ifeq ($(USEF77),yes)
 OBJ		+= fshake.o	fsettle.o	\

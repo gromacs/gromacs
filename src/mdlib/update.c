@@ -55,6 +55,7 @@ static char *SRCID_update_c = "$Id$";
 #include "copyrite.h"
 #include "constr.h"
 #include "edsam.h"
+#include "pull.h"
 
 static void calc_g(rvec x_unc,rvec x_cons,rvec g,double mdt_2)
 {
@@ -301,7 +302,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    t_nrnb       *nrnb,
 	    bool         bTYZ,
 	    bool         bDoUpdate,
-	    t_edsamyn    *edyn)
+	    t_edsamyn    *edyn,
+	    t_pull       *pulldata)
 {
   static char      buf[256];
   static bool      bFirst=TRUE;
@@ -321,7 +323,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
   if (bFirst) {
     bConstraints = init_constraints(stdlog,top,ir,md,
 				    start,homenr);
-    
+    bConstraints = bConstraints || pulldata->bPull;
+
     if (edyn->bEdsam) 
       init_edsam(stdlog,top,md,start,homenr,x,box,
 		 edyn,&edpar);
@@ -436,6 +439,12 @@ void update(int          natoms, 	/* number of atoms in simulation */
     if (edyn->bEdsam)
       do_edsam(stdlog,top,ir,step,md,start,homenr,xprime,x,
 	       x_unc,force,box,edyn,&edpar,bDoUpdate);
+
+    /* apply pull constraints when required. Act on xprime, the SHAKED
+       coordinates.  Don't do anything to f */
+    if (pulldata->bPull && pulldata->runtype != eAfm && 
+	pulldata->runtype != eUmbrella) 
+      pull(stdlog,pulldata,xprime,force,box,top,dt,step,homenr); 
     
     where();
 

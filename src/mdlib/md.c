@@ -42,6 +42,7 @@ static char *SRCID_md_c = "$Id$";
 #include "confio.h"
 #include "network.h"
 #include "sim_util.h"
+#include "pull.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
@@ -62,7 +63,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
   int        natoms=0,status;
-  
+    /* for pull code */
+  t_pull     pulldata;
+
   /* check if "-rerun" is used. */
   bRerunMD = optRerunMDset(nfile,fnm);
   
@@ -79,7 +82,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
-		  graph,cr,&mynrnb,grps,fr,top,edyn);
+		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
+
+  /* Initialize pull code */
+  init_pull(log,nfile,fnm,&pulldata,x,top,box_size); 
     
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
@@ -207,10 +213,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       debug_gmx();
       
       clear_mat(shake_vir);
+
+      /* Afm and Umbrella type pulling happens before the update, 
+	 other types in update */
+      if (pulldata.bPull && 
+	  (pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
+	pull(log,&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,natoms); 
+
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),FALSE,mdatoms,x,graph,
 	     fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
-	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
+	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
 #ifdef DEBUG
       pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
 #endif
