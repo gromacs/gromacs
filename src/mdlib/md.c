@@ -255,7 +255,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #ifdef XMDRUN
     /* Ionize the atoms if necessary */    
     if (bIonize)
-      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,x,v,parm->box);
+      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,x,v,
+	     START(nsb),START(nsb)+HOMENR(nsb),parm->box,cr);
     
     /* Now is the time to relax the shells */
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
@@ -405,7 +406,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (bStopCM)
 	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     }
-    
+
+    /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
       if (bGotTermSignal)
 	terminate = 1;

@@ -34,8 +34,9 @@ static char *SRCID_ionize_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
-	
+
 extern void ionize(FILE *log,t_mdatoms *md,char **atomname[],
-		   real t,t_inputrec *ir,rvec x[],rvec v[],matrix box);
+		   real t,t_inputrec *ir,rvec x[],rvec v[],
+		   int start,int end,matrix box,t_commrec *cr);
 
 #endif
