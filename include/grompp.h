@@ -48,6 +48,15 @@ static char *SRCID_grompp_h = "$Id$";
 #include "macros.h"
 
 #define MAXSLEN 32
+
+typedef struct {
+  bool bSet;                    /* Has this combination been set        */
+  real c[3];                    /* The non-bonded parameters            */
+} t_nbparam;
+/* The t_nbparam struct is used to temporary store the explicit
+ * non-bonded parameter combinations, which will be copied to t_params.
+ */
+
 typedef struct {
   atom_id a[MAXATOMLIST];	/* The atom list (eg. bonds: particle	*/
 				/* i = a[0] (AI), j = a[1] (AJ))	*/

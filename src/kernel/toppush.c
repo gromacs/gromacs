@@ -131,7 +131,8 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
   }
 }
 
-void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct)
+void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct,
+	      t_nbparam ***nbparam,t_nbparam ***pair)
 {
   typedef struct {
     char *entry;
@@ -195,6 +196,13 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct)
     srenew(at->atomname,nr+1);
     srenew(at->nb,nr+1);
     at->nr++;
+    /* Add space in the non-bonded parameters matrix */
+    srenew(*nbparam,at->nr);
+    snew((*nbparam)[at->nr-1],at->nr);
+    if (pair) {
+      srenew(*pair,at->nr);
+      snew((*pair)[at->nr-1],at->nr);
+    }
   }
   else {
     sprintf(errbuf,"Overriding atomtype %s",type);
@@ -211,10 +219,11 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct)
     at->nb[nr].c[i] = c[i];
 }
 
-static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype)
+static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
+			  char *line)
 {
   int  i,j;
-  bool bTest,bFound;  
+  bool bTest,bFound,bId;
   int  nr   = bt->nr;
   int  nrfp = NRFP(ftype);
   
@@ -230,6 +239,20 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype)
 	bTest=(bTest && (b->a[nral-1-j] == bt->param[i].a[j]));
     }
     if (bTest) {
+      if (!bFound) {
+	bId = TRUE;
+	for (j=0; (j < nrfp); j++)
+	  bId = bId && (bt->param[i].c[j] == b->c[j]);
+	if (!bId) {
+	  sprintf(errbuf,"Overriding %s parameters,",
+		  interaction_function[ftype].longname);
+	  warning(errbuf);
+	  fprintf(stderr,"  old:");
+	  for (j=0; (j < nrfp); j++)
+	    fprintf(stderr," %g",bt->param[i].c[j]);
+	  fprintf(stderr," \n  new: %s\n\n",line);
+	}
+      }
       /* Overwrite it! */
       for (j=0; (j < nrfp); j++)
 	bt->param[i].c[j] = b->c[j];
@@ -305,10 +328,10 @@ void push_bt(directive d,t_params bt[],int nral,t_atomtype *at,char *line)
     p.a[i]=at2type(alc[i],at);
   for(i=0; (i<nrfp); i++)
     p.c[i]=c[i];
-  push_bondtype (&(bt[ftype]),&p,nral,ftype);
+  push_bondtype (&(bt[ftype]),&p,nral,ftype,line);
 }
 
-void push_nbt(directive d,t_params nbt[],t_atomtype *atype,
+void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
 	      char *pline,int nb_funct)
 {
   /* swap the atoms */
@@ -317,7 +340,10 @@ void push_nbt(directive d,t_params nbt[],t_atomtype *atype,
   char    a0[80],a1[80];
   int     i,f,k,ftype,atnr,nrfp;
   double  c[3];
+  real    cr[3];
   atom_id ai,aj;
+  t_nbparam *nbp;
+  bool    bId;
   
   if (sscanf (pline,"%s%s%d",a0,a1,&f) != 3) {
     too_few();
@@ -335,7 +361,8 @@ void push_nbt(directive d,t_params nbt[],t_atomtype *atype,
   }
   
   /* Get the force parameters */
-  if (NRFP(ftype) == 2) {
+  nrfp = NRFP(ftype);
+  if (nrfp) {
     if (sscanf(pline,form2,&c[0],&c[1]) != 2) {
       too_few();
       return;
@@ -347,18 +374,30 @@ void push_nbt(directive d,t_params nbt[],t_atomtype *atype,
       return;
     }
   }
+  for(i=0; i<nrfp; i++)
+    cr[i] = c[i];
+
   /* Put the parameters in the matrix */
   ai = at2type (a0,atype);
   aj = at2type (a1,atype);
-
-  atnr = atype->nr;
-  nrfp = NRFP(ftype);
-  for (i=0; (i < nrfp); i++) {
-    k = atnr*ai+aj;
-    nbt[ftype].param[k].c[i] = c[i];
-    k = atnr*aj+ai;
-    nbt[ftype].param[k].c[i] = c[i];
+  nbp = &(nbt[max(ai,aj)][min(ai,aj)]);
+  
+  if (nbp->bSet) {
+    bId = TRUE;
+    for (i=0; i<nrfp; i++)
+      bId = bId && (nbp->c[i] == cr[i]);
+    if (!bId) {
+      sprintf(errbuf,"Overriding non-bonded parameters,");
+      warning(errbuf);
+      fprintf(stderr,"  old:");
+      for (i=0; i<nrfp; i++)
+	fprintf(stderr," %g",nbp->c[i]);
+      fprintf(stderr," new\n%s\n",pline);
+    }
   }
+  nbp->bSet = TRUE;
+  for (i=0; i<nrfp; i++)
+    nbp->c[i] = cr[i];
 }
 
 static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
