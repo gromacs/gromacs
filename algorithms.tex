@@ -1188,13 +1188,6 @@ the same using action$~=~-$reaction (right).}
 \end {figure}
 
 \begin{table}[p]
-\caption[The number of interactions between particles.]{The number of
-interactions between particles. The number of $j$ particles per $i$
-particle is a function of the total number of particles $N$ and
-particle number $i$. Note that here the $/$ operator is used for
-integer division, {\ie} truncating the reminder.}
-\captspace
-\label{tab:decomp}
 \centerline{
 \newcolumntype{s}[1]{D{/}{/}{#1}}
 \begin{tabular}{|l|s4|s4|s4|s4|}
@@ -1214,6 +1207,12 @@ N mod 4 = 0	& N/2	& N/2 - 1	& N/2 - 1	& N/2		\\
 \dline
 \end{tabular}
 }
+\caption[The number of interactions between particles.]{The number of
+interactions between particles. The number of $j$ particles per $i$
+particle is a function of the total number of particles $N$ and
+particle number $i$. Note that here the $/$ operator is used for
+integer division, {\ie} truncating the reminder.}
+\label{tab:decomp}
 \end{table}
 
 \begin{figure}[p]
@@ -1245,7 +1244,7 @@ particles. The number of interactions per particle is dependent on the
 
 A flow chart of the algorithm is given in \figref{mdpar}.
 \begin{figure}
-\centerline{\psfig {figure=plots/mdpar.eps,width=6cm}}
+\centerline{\psfig {figure=plots/mdpar.eps,height=19cm}}
 \caption[The Parallel MD algorithm.]{The Parallel MD algorithm. If
 the steps marked * are left out we have the sequential algorithm
 again.}
