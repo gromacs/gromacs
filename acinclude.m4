@@ -582,31 +582,41 @@ case "${host_cpu}-${host_os}" in
     fi
     LDFLAGS="$LDFLAGS -woff 84"
 
+    # Normally we want -n32 for performance, but in some
+    # rare cases it should be possible to override it in the flags.
+    # So, if it is set in the user-provided stuff we shouldn't
+    # add -n32 here!
+    if echo "$CFLAGS $FFLAGS $LDFLAGS" | grep "\-o32" > /dev/null 2>&1; then
+      IRIXOBJFLAG="";
+    else
+      IRIXOBJFLAG="-n32";
+    fi
+
     case "${gmxcpu}" in
       r12000*)
-	xCFLAGS="-n32 -r12000 -mips4 $xCFLAGS"
-	xFFLAGS="-n32 -r12000 -mips4 $xFFLAGS"
-	xLDFLAGS="-n32 -r12000 -mips4"
+	xCFLAGS="$IRIXOBJFLAG -r12000 -mips4 $xCFLAGS"
+	xFFLAGS="$IRIXOBJFLAG -r12000 -mips4 $xFFLAGS"
+	xLDFLAGS="$IRIXOBJFLAG -r12000 -mips4"
 	;;
       r10000*)
-	xCFLAGS="-n32 -r10000 -mips4 $xCFLAGS"
-	xFFLAGS="-n32 -r10000 -mips4 $xFFLAGS"
-	xLDFLAGS="-n32 -r10000 -mips4"
+	xCFLAGS="$IRIXOBJFLAG -r10000 -mips4 $xCFLAGS"
+	xFFLAGS="$IRIXOBJFLAG -r10000 -mips4 $xFFLAGS"
+	xLDFLAGS="$IRIXOBJFLAG -r10000 -mips4"
 	;;
       r8000*)
-	xCFLAGS="-n32 -r8000 -mips4 $xCFLAGS"
-	xFFLAGS="-n32 -r8000 -mips4 $xFFLAGS"
-	xLDFLAGS="-n32 -r8000 -mips4"
+	xCFLAGS="$IRIXOBJFLAG -r8000 -mips4 $xCFLAGS"
+	xFFLAGS="$IRIXOBJFLAG -r8000 -mips4 $xFFLAGS"
+	xLDFLAGS="$IRIXOBJFLAG -r8000 -mips4"
 	;;
       r5000*)
-	xCFLAGS="-n32 -r5000 -mips4 $xCFLAGS"
-	xFFLAGS="-n32 -r5000 -mips4 $xFFLAGS"
-	xLDFLAGS="-n32 -r5000 -mips4"
+	xCFLAGS="$IRIXOBJFLAG -r5000 -mips4 $xCFLAGS"
+	xFFLAGS="$IRIXOBJFLAG -r5000 -mips4 $xFFLAGS"
+	xLDFLAGS="$IRIXOBJFLAG -r5000 -mips4"
 	;;
       *)		
-	xCFLAGS="-n32 $xCFLAGS"
-	xFFLAGS="-n32 $xFFLAGS"
-	xLDFLAGS="-n32"
+	xCFLAGS="$IRIXOBJFLAG $xCFLAGS"
+	xFFLAGS="$IRIXOBJFLAG $xFFLAGS"
+	xLDFLAGS="$IRIXOBJFLAG"
 	;;
     esac
     ;;
