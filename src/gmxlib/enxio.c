@@ -295,15 +295,15 @@ bool do_enx(int fp,t_enxframe *fr)
     bOK = bOK && do_real(fr->ener[i].e);
     
     tmp1 = fr->ener[i].eav;
-    if((tmp1/(fr->step+1))<GMX_REAL_EPS)
-      tmp1=0;
     bOK = bOK && do_real(tmp1);
-    fr->ener[i].eav = tmp1;
+    if (bRead)
+      fr->ener[i].eav = tmp1;
     
     /* This is to save only in single precision (unless compiled in DP) */
     tmp2 = fr->ener[i].esum;
     bOK = bOK && do_real(tmp2);
-    fr->ener[i].esum = tmp2;
+    if (bRead)
+      fr->ener[i].esum = tmp2;
     
     bOK = bOK && do_real(fr->ener[i].e2sum);
   }
