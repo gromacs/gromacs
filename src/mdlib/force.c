@@ -494,6 +494,7 @@ void init_forcerec(FILE *fp,
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->eeltype    = ir->coulombtype;
   fr->vdwtype    = ir->vdwtype;
+
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
   fr->bvdwtab    = fr->vdwtype != evdwCUT;
@@ -505,6 +506,7 @@ void init_forcerec(FILE *fp,
     fr->bvdwtab  = TRUE;
     fr->bcoultab = TRUE;
   }
+
   if (fp) {
     fprintf(fp,"Table routines are used for coulomb: %s\n",bool_names[fr->bcoultab]);
     fprintf(fp,"Table routines are used for vdw:     %s\n",bool_names[fr->bvdwtab ]);
@@ -824,7 +826,7 @@ void force(FILE       *fp,     int        step,
 	   real       lambda,   t_graph    *graph,
 	   t_block    *excl,    bool       bNBFonly,
 	   matrix lr_vir,       rvec       mu_tot,
-	   real       qsum)
+	   real       qsum,     bool       bGatherOnly)
 {
   int     i,nit;
   bool    bDoEpot;
@@ -890,7 +892,7 @@ void force(FILE       *fp,     int        step,
       break;
     case eelPME:
       Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
-		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,bGatherOnly);
       break;
     case eelEWALD:
       Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeA,

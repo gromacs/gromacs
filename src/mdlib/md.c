@@ -205,7 +205,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Set the node time counter to 0 after initialisation */
   start_time();
   debug_gmx();
- 
   /***********************************************************
    *
    *             Loop over MD steps 
@@ -313,12 +312,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	     lambda,graph,bNS,FALSE,fr,mu_tot);
+	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     
     debug_gmx();
-#ifdef DEBUG
-    pr_rvecs(log,0,"force_vir",force_vir,DIM);
-#endif     
 
 #endif
    
@@ -412,10 +408,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,
 	   bNEMD);
     /* The coordinates (x) were unshifted in update */
-    
-#ifdef DEBUG
-    pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
-#endif
+
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.
      */
@@ -431,7 +424,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),
 			parm->box,x,vold,v,vt,&(parm->ir.opts),
 			mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-    
+
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)

@@ -174,7 +174,8 @@ void do_force(FILE *log,t_commrec *cr,
 	      rvec x[],rvec v[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],bool bVerbose,
 	      real lambda,t_graph *graph,
-	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot)
+	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
+	      bool bGatherOnly)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
@@ -271,7 +272,7 @@ void do_force(FILE *log,t_commrec *cr,
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,pme_vir,mu_tot,qsum);
+	bNBFonly,pme_vir,mu_tot,qsum,bGatherOnly);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
