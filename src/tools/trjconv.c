@@ -201,16 +201,16 @@ int main(int argc,char *argv[])
     "trajectory is generated, which might not be the case when using the",
     "regular fit method, e.g. when your protein undergoes large",
     "conformational transitions.[PAR]",
-    "The option [TT]-removejump[tt] checks if atoms jump across"
-    "the box and then puts them back. This has the effect that all molecules"
+    "The option [TT]-removejump[tt] checks if atoms jump across",
+    "the box and then puts them back. This has the effect that all molecules",
     "will remain whole (providing they were whole in the initial",
     "conformation), note that this ensures a continuous trajectory but",
-    "molecules may (probably will) diffuse out of the box. Use"
+    "molecules may (probably will) diffuse out of the box. Use",
     "[TT]-center[tt] to put the system in the center of the box.",
     "This is especially useful for multimeric proteins, since this",
     "procedure will ensure the subunits stay together in the trajectory",
-    "(due to PBC, they might be separated), providing they were together"
-    "in the initial conformation.[PAR]"
+    "(due to PBC, they might be separated), providing they were together",
+    "in the initial conformation.[PAR]",
     "With the option [TT]-dt[tt] it is possible to reduce the number of ",
     "frames in the output. This option relies on the accuracy of the times",
     "in your input trajectory, so if these are inaccurate use the",
@@ -234,22 +234,23 @@ int main(int argc,char *argv[])
   static bool  bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
-  static real  newbox = -1, xshift=0.0;
+  static rvec  newbox = {0,0,0};
+  static real  xshift=0.0;
   static char  *exec_command;
   
   t_pargs pa[] = {
     { "-inbox", FALSE,  etBOOL, &bInBox,
       "make sure all atoms are inside box" },
     { "-pbc", FALSE,  etBOOL, &bPBC,
-      "make sure molecules are not broken into parts in output" },
+      "make sure molecules are not broken into parts" },
     { "-removejump",FALSE,  etBOOL, &bNoJump,
       "make sure atoms don't jump across the box" },
     { "-center", FALSE,  etBOOL, &bCenter,
       "center atoms in box" },
     { "-xshift", FALSE, etREAL, &xshift,
       "all coordinates will be shifted by framenr*xshift" },
-    { "-box", FALSE, etREAL, &newbox,
-      "size for new cubic box (default: read box from input)" },
+    { "-box", FALSE, etRVEC, &newbox,
+      "size for new cubic box (default: read from input)" },
     { "-z", FALSE,  etBOOL, &bCompress,
       "compress output (for .pdb and .gro files)" },
     { "-fit", FALSE,  etBOOL, &bFit,
@@ -278,9 +279,10 @@ int main(int argc,char *argv[])
     { "-g87box", FALSE,  etBOOL, &bBox,
       "write a box for .g87" },
     { "-exec", FALSE,  etSTR, &exec_command,
-      "execute command every time frame with the frame number as argument" },
+      "execute command for every output frame with the frame number "
+      "as argument" },
     { "-timestep", FALSE,  etREAL, &timestep,
-      "change time step between frames (default: don't change)" },
+      "change time step between frames" },
     { "-app", FALSE,  etBOOL, &bAppend,
       "append output"},
     { "-checkdouble", FALSE, etBOOL, &bCheckDouble,
@@ -308,7 +310,7 @@ int main(int argc,char *argv[])
   real         t,pt,tshift,t0=-1,dt=0.001;
   bool         bSelect,bDoIt,bIndex,bTDump,bSetTime,bTop=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
-  bool         bHaveNextFrame,bHaveX,bHaveV;
+  bool         bHaveNextFrame,bHaveX,bHaveV,bSetBox;
   char         *grpnm;
   char         title[256],in_file[256],out_file[256],out_file2[256];
   char         command[256],filemode[5];
@@ -338,6 +340,7 @@ int main(int argc,char *argv[])
     if (bIFit) {
       bFit=TRUE;
     }
+    bSetBox   = opt2parg_bSet("-box", asize(pa), pa);
     bSetTime  = opt2parg_bSet("-t0", asize(pa), pa);
     bExec     = opt2parg_bSet("-exec", asize(pa), pa);
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
@@ -505,10 +508,10 @@ int main(int argc,char *argv[])
     bDTset=FALSE;
     do {
       /* generate new box */
-      if (newbox >= 0) {
+      if (bSetBox) {
 	clear_mat(box);
 	for (m=0; m<DIM; m++)
-	  box[m][m] = newbox;
+	  box[m][m] = newbox[m];
       }
       
       if (bTDump) {

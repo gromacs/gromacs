@@ -501,7 +501,7 @@ int main(int argc,char *argv[])
   };
   
   /* parameter data */
-  bool bSol=TRUE,bProt=TRUE;
+  bool bSol,bProt;
   char *confin_1,*confin_2,*confin_3,*confout,*topinout;
   int  bInsert;
   real *r_1;
@@ -537,15 +537,14 @@ int main(int argc,char *argv[])
   static real r_distance=0.105;
   static rvec new_box={0.0,0.0,0.0};
   t_pargs pa[] = {
-    { "-bx",    FALSE,etREAL,&new_box[XX], "box size x" },
-    { "-by",    FALSE,etREAL,&new_box[YY], "box size y" },
-    { "-bz",    FALSE,etREAL,&new_box[ZZ], "box size z" },
+    { "-b",     FALSE,etRVEC,&new_box,   "box size" },
     { "-nmol",  FALSE,etINT ,&nmol_3,    "no of extra molecules to insert" },
     { "-maxsol",FALSE,etINT ,&maxsol,    "max no of solvent molecules to add"},
     { "-rot",   FALSE,etBOOL,&bRotate,   "rotate solute to fit box best"},
     { "-seed",  FALSE,etINT ,&seed,      "random generator seed"},
     { "-vdwd",  FALSE,etREAL,&r_distance,"default vdwaals distance"},
-    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; 1=truncated octahedron (only rectangular boxes are fully implemented)"}
+    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; "
+      "1=truncated octahedron (only rectangular boxes are fully implemented)"}
   };
 
   CopyRight(stderr,argv[0]);
@@ -560,20 +559,18 @@ int main(int argc,char *argv[])
   topinout=ftp2fn(efTOP,NFILE,fnm);
   
   bInsert = opt2bSet("-ci",NFILE,fnm);
-  bSol = (bSol && opt2bSet("-cs",NFILE,fnm));
+  bSol = opt2bSet("-cs",NFILE,fnm);
   bProt= opt2bSet("-cp",NFILE,fnm);
   if (!bProt && ((new_box[XX]==0) || (new_box[YY]==0) || (new_box[YY]==0)) )
     fatal_error(0,"No solute coordinates (-cp) "
-		"and no box size (-bx -by -bz) supplied\n");
+		"and no box size (-b) supplied\n");
   /* read van der waals distances for all the existing atoms*/
   vdw=NULL;
   max_vdw=read_vdw(ftp2fn(efVDW,NFILE,fnm),&vdw);
 
   if (bProt) {
     /*generate a solute configuration*/
-    title=read_prot(confin_1,ntb,bRotate,
-		    &atoms_1,&x_1,&v_1,&r_1,
-		    box_1,angle,
+    title=read_prot(confin_1,ntb,bRotate,&atoms_1,&x_1,&v_1,&r_1,box_1,angle,
 		    &vdw,&max_vdw,r_distance);
     if (atoms_1.nr == 0) {
       fprintf(stderr,"No protein in %s, check your input\n",confin_1);

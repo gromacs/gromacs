@@ -99,13 +99,17 @@ int main(int argc, char *argv[])
     "genconf multiplies a given coordinate file by simply stacking them",
     "on top of each other, like a small child playing with wooden blocks.",
     "The program makes a grid of [IT]user defined[it]",
-    "proportions (nx, ny, nz in the input file), ",
-    "and interspaces the grid point with an extra space dx,dy and dz."
+    "proportions ([TT]-nbox[tt]), ",
+    "and interspaces the grid point with an extra space [TT]-dist[tt].[PAR]",
+    "When option [TT]-rot[tt] is used the program does not check for overlap",
+    "between molecules on grid points. It is recommended to make the box in",
+    "the input file at least as big as the coordinates + Vander Waals radius."
   };
-  static char *bugs[] = {
-    "When option -r is used (randomize) the program does not check for overlap between molecules on grid points. It is recommended to make the box in the input file at least as big as the coordinates + Vander Waals radius. ",
-    "The program should be more flexible, to allow for random displacement off lattice points (for each cartesian coordinate), and specify the (maximum) random rotation per coordinate to be useful for building membranes."
-  };
+  /* The program should be more flexible, to allow for random displacement 
+     off lattice points (for each cartesian coordinate), and specify the 
+     (maximum) random rotation per coordinate to be useful for building 
+     membranes.
+     */
 
   int     vol;          
   t_atoms *atoms;       /* list with all atoms */
@@ -116,46 +120,41 @@ int main(int argc, char *argv[])
   rvec    shift;         
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
-  int     i,j,k,l,m,ndx,nrdx;
+  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
     { efSTO, "-o", "out",  ffWRITE }
   };
 #define NFILE asize(fnm)
-  static int  nx=1,ny=1,nz=1;
+  static rvec nrbox={1,1,1};
   static int  seed;               /* seed for random number generator */
   static bool bRandom = FALSE;    /* False: no random rotations */
-  static real dx=0,dy=0,dz=0;     /* space added between molecules ? */
-  static rvec max_rot={90,90,90};    /* maximum rotation */
+  static rvec dist={0,0,0};       /* space added between molecules ? */
+  static rvec max_rot={90,90,90}; /* maximum rotation */
 /*  static rvec max_tr={0,0,0}; */    /* maximum translation */
-  t_pargs pa[] = { 
-    { "-nx", FALSE, etINT,  &nx,      "Number of boxes in X direction" },
-    { "-ny", FALSE, etINT,  &ny,      "Number of boxes in Y direction" },
-    { "-nz", FALSE, etINT,  &nz,      "Number of boxes in Z direction" },
-    { "-dx", FALSE, etREAL, &dx,      "Space between boxes in X direction" },
-    { "-dy", FALSE, etREAL, &dy,      "Space between boxes in Y direction" },
-    { "-dz", FALSE, etREAL, &dz,      "Space between boxes in Z direction" },
-    { "-s",  FALSE, etINT,  &seed,    "Random generator seed" },
-    { "-r",  FALSE, etBOOL, &bRandom, "Add random rotation to conformations" },
-    { "-mrx",FALSE, etREAL, &(max_rot[XX]), "Max rotation in X direction" },
-    { "-mry",FALSE, etREAL, &(max_rot[YY]), "Max rotation in Y direction" },
-    { "-mrz",FALSE, etREAL, &(max_rot[ZZ]), "Max rotation in Z direction" },
+  t_pargs pa[] = {
+    { "-nbox",  FALSE, etRVEC, &nrbox,  "Number of boxes" },
+    { "-dist",  FALSE, etRVEC, &dist,   "Distance between boxes" },
+    { "-seed",  FALSE, etINT,  &seed,   "Random generator seed" },
+    { "-rot",   FALSE, etBOOL, &bRandom,"Randomly rotate conformations" },
+    { "-maxrot",FALSE, etRVEC, &max_rot,"Maximum random rotation" },
     /*
-    { "-mtx",FALSE, etREAL, &(max_tr[XX]),  "Max translation in X direction" },
-    { "-mty",FALSE, etREAL, &(max_tr[YY]),  "Max translation in Y direction" },
-    { "-mtz",FALSE, etREAL, &(max_tr[ZZ]),  "Max translation in Z direction" }
+    { "-maxtrans",FALSE, etRVEC, &max_tr),  "Max translation" },
     */
   };
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,0,NULL);
 
-  if ((nx <= 0) || (ny <= 0) || (nz <= 0)) {
-    fprintf(stderr,"(nx <= 0) || (ny <= 0) || (nz <= 0)\n");
-    exit(1);
-  }
+  nx=(int)(nrbox[XX]+0.5);
+  ny=(int)(nrbox[YY]+0.5);
+  nz=(int)(nrbox[ZZ]+0.5);
+  
+  if ((nx <= 0) || (ny <= 0) || (nz <= 0))
+    fatal_error(0,"Number of boxes (-nbox) should be positive");
+  
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
 
   get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms); 
@@ -172,13 +171,13 @@ int main(int argc, char *argv[])
   nres=atoms->nres;                /* nr of residues in one element? */
 
   for(i=0; (i<nx); i++) {          /* loop over all gridpositions    */
-    shift[XX]=i*(dx+box[XX][XX]);
+    shift[XX]=i*(dist[XX]+box[XX][XX]);
     
     for(j=0; (j<ny); j++) {
-      shift[YY]=j*(dy+box[YY][YY]);
+      shift[YY]=j*(dist[YY]+box[YY][YY]);
       
       for(k=0; (k<nz); k++)  {
-	shift[ZZ]=k*(dz+box[ZZ][ZZ]);
+	shift[ZZ]=k*(dist[ZZ]+box[ZZ][ZZ]);
 	
 	ndx=(i*ny*nz+j*nz+k)*natoms;
 	nrdx=(i*ny*nz+j*nz+k)*nres;
@@ -211,9 +210,9 @@ int main(int argc, char *argv[])
     }
   }
 
-  box[XX][XX] = nx*(box[XX][XX]+dx); /* make box bigger */
-  box[YY][YY] = ny*(box[YY][YY]+dy);
-  box[ZZ][ZZ] = nz*(box[ZZ][ZZ]+dz);
+  box[XX][XX] = nx*(box[XX][XX]+dist[XX]); /* make box bigger */
+  box[YY][YY] = ny*(box[YY][YY]+dist[YY]);
+  box[ZZ][ZZ] = nz*(box[ZZ][ZZ]+dist[ZZ]);
 
   move_x(natoms*vol,x,box);          /* put atoms in box? */
     

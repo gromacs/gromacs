@@ -269,17 +269,13 @@ int main(int argc, char *argv[])
     "editconf converts generic structure format to [TT].gro[tt] or",
     "[TT].pdb[tt].[PAR]",
     "A number of options is present to modify the coordinates",
-    "and box. [TT]-d[tt], [TT]-dc[tt] and [TT]-b[tt] modify the box and",
+    "and box. [TT]-d[tt], [TT]-dc[tt] and [TT]-box[tt] modify the box and",
     "center the coordinates relative to the new box.",
-    "[TT]-dc[tt] takes precedent over [TT]-d[tt]. [TT]-b[tt]",
-    "takes precedent over [TT]-dc[tt] and [TT]-d[tt].",
-    "[TT]-bx[tt], [TT]-by[tt], [TT]-bz[tt], each override [TT]-b[tt]",
-    "for one coordinate.",
-    "[TT]-cx[tt], [TT]-cy[tt], [TT]-cz[tt] override the center for",
-    "one coordinate.[PAR]",
+    "[TT]-dc[tt] takes precedent over [TT]-d[tt]. [TT]-box[tt]",
+    "takes precedent over [TT]-dc[tt] and [TT]-d[tt].[PAR]",
     "Scaling is applied before any of the other operations are",
     "performed. Boxes can be scaled to give a certain density (option",
-    "[TT]-rho[tt]).[PAR]",
+    "[TT]-density[tt]).[PAR]",
     "Groups are selected after all operations have been applied.[PAR]",
     "Periodicity can be removed in a crude manner.",
     "It is important that the box sizes at the bottom of your input file",
@@ -313,25 +309,15 @@ int main(int argc, char *argv[])
     { "-ndef", FALSE, etBOOL, &bNDEF, 
       "Choose output from default index groups" },    
     { "-d", FALSE, etREAL, &dist, 
-      "Distance between the solute and the rectangular box "
-      "(default don't change box)" }, 
+      "Distance between the solute and the rectangular box" }, 
     { "-dc", FALSE, etREAL, &dist,
-      "Distance between the solute and the cubic box "
-      "(default don't change box)" },
-    { "-b", FALSE, etREAL,  &rbox,
-      "size of the cubic box (default don't change box)" },
-    { "-center", FALSE, etBOOL, &bCenter,
-      "Center molecule in box (implied by -d -dc -b)" },
-    { "-cx", FALSE, etREAL, &center[XX], "x coordinate of geometrical center"},
-    { "-cy", FALSE, etREAL, &center[YY], "y coordinate of geometrical center"},
-    { "-cz", FALSE, etREAL, &center[ZZ], "z coordinate of geometrical center"},
-    { "-bx", FALSE, etREAL, &newbox[XX], "x size of box" },
-    { "-by", FALSE, etREAL, &newbox[YY], "y size of box" },
-    { "-bz", FALSE, etREAL, &newbox[ZZ], "z size of box" },
-    { "-sx", FALSE, etREAL, &scale[XX], "Scale factor for x coordinate" },
-    { "-sy", FALSE, etREAL, &scale[YY], "Scale factor for y coordinate" },
-    { "-sz", FALSE, etREAL, &scale[ZZ], "Scale factor for z coordinate" },
-    { "-rho",FALSE, etREAL, &rho, 
+      "Distance between the solute and the cubic box" },
+    { "-box", FALSE, etRVEC, &newbox, "Size of box" },
+    { "-c", FALSE, etBOOL, &bCenter,
+      "Center molecule in box (implied by -d -dc -box)" },
+    { "-center", FALSE, etRVEC, &center, "Coordinates of geometrical center"},
+    { "-scale", FALSE, etRVEC, &scale, "Scaling factor" },
+    { "-density",FALSE, etREAL, &rho, 
       "Density (g/l) of the output box achieved by scaling" },
     { "-pbc",  FALSE, etBOOL, &bRMPBC, 
       "Remove the periodicity (make molecule whole again)" },
@@ -352,7 +338,7 @@ int main(int argc, char *argv[])
   atom_id   *index;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSizeAll,bSetSize[DIM],bCubic,bDist,bSetCenter[DIM];
+  bool      bSetSize,bCubic,bDist,bSetCenter;
   bool      bHaveV,bScale,bRho;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
@@ -367,35 +353,17 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,NPA,pa,
 		    asize(desc),desc,asize(bugs),bugs);
 
-#define ANY(s) (s[XX] || s[YY] || s[ZZ])
-#define ALL(s) (s[XX] && s[YY] && s[ZZ])
-  bSetSizeAll =opt2parg_bSet("-b", NPA,pa);
-  bSetSize[XX]=opt2parg_bSet("-bx",NPA,pa);
-  bSetSize[YY]=opt2parg_bSet("-by",NPA,pa);
-  bSetSize[ZZ]=opt2parg_bSet("-bz",NPA,pa);
-  bSetCenter[XX]=opt2parg_bSet("-cx",NPA,pa);
-  bSetCenter[YY]=opt2parg_bSet("-cy",NPA,pa);
-  bSetCenter[ZZ]=opt2parg_bSet("-cz",NPA,pa);
-  bCubic  = opt2parg_bSet("-dc",NPA,pa);
-  bDist   = ( bCubic || opt2parg_bSet("-d",NPA,pa) );
-  bCenter = ( bCenter || bDist || bSetSizeAll || ANY(bSetCenter) );
-  bScale  = ( opt2parg_bSet("-sx",NPA,pa) || 
-	     opt2parg_bSet("-sy",NPA,pa) || 
-	     opt2parg_bSet("-sz",NPA,pa) );
-  bRho    =  opt2parg_bSet("-rho",NPA,pa);
+  bSetSize  = opt2parg_bSet("-box" ,NPA,pa);
+  bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
+  bCubic    = opt2parg_bSet("-dc",NPA,pa);
+  bDist     = opt2parg_bSet("-d" ,NPA,pa) || bCubic;
+  bCenter   = bCenter || bDist || bSetCenter;
+  bScale    = opt2parg_bSet("-scale" ,NPA,pa);
+  bRho      = opt2parg_bSet("-density",NPA,pa);
   if (bScale && bRho)
-    fprintf(stderr,"WARNING: setting -rho overrides -sx, -sy and -sz");
+    fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale  = bScale || bRho;
   
-  /* set newbox size */
-  if (bSetSizeAll) {
-    for (i=0; (i<DIM); i++)
-      if (!bSetSize[i]) {
-	newbox[i]=rbox;
-	bSetSize[i]=TRUE;
-      }
-  }
-
   infile=ftp2fn(efSTX,NFILE,fnm);
   outfile=ftp2fn(efSTO,NFILE,fnm);
   outftp=fn2ftp(outfile);
@@ -457,8 +425,8 @@ int main(int argc, char *argv[])
   if (bDist) 
     for (i=0; (i<DIM); i++)
       box[i][i]=size[i]+2*dist;
-  for (i=0; (i<DIM); i++)
-    if (bSetSize[i])
+  if (bSetSize)
+    for (i=0; (i<DIM); i++)
       box[i][i]=newbox[i];
   if (bCubic) {
     d=box[XX][XX];
@@ -468,10 +436,9 @@ int main(int argc, char *argv[])
       box[i][i]=d;
   }
   /* calculate new coords for geometrical center */
-  for (i=0; (i<DIM); i++)
-    if (!bSetCenter[i]) 
+  if (!bSetCenter) 
+    for (i=0; (i<DIM); i++)
       center[i]=box[i][i]/2;
-  
 
   /* center molecule on 'center' */
   if (bCenter)
@@ -480,7 +447,7 @@ int main(int argc, char *argv[])
   if (bCenter || bScale)
     printf("new center: %6.3f %6.3f %6.3f\n", 
 	   center[XX],center[YY],center[ZZ]);
-  if ( bScale || bDist || ANY(bSetSize) )
+  if ( bScale || bDist || bSetSize )
     printf("new box   : %6.3f %6.3f %6.3f\n", 
 	   box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
   

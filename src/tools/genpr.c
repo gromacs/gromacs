@@ -49,16 +49,10 @@ int main(int argc,char *argv[])
     "This list is used as the position restraint list"
   };
   static int     a1=-1,a2=-1;
-  static real    fc=1000,fx=1000,fy=1000,fz=1000;
+  static rvec    fc={1000.0,1000.0,1000.0};
   t_pargs pa[] = {
-    { "-fc", FALSE, etREAL, &fc, 
-      "force constant for isotropic restraining (kJ/mol nm^2)" },
-    { "-fx", FALSE, etREAL, &fx, 
-      "id. for X direction (id)" },
-    { "-fy", FALSE, etREAL, &fy, 
-      "id. for Y direction (id)" },
-    { "-fz", FALSE, etREAL, &fz, 
-      "id. for Z direction (id)" },
+    { "-fc", FALSE, etRVEC, &fc, 
+      "force constant (kJ/mol nm^2)" },
     { "-a1", FALSE, etINT,  &a1, "first atom (numbering from 1)" },
     { "-a2", FALSE, etINT,  &a2, "last atom" }
   };
@@ -75,15 +69,13 @@ int main(int argc,char *argv[])
 
   if ((a1 == -1) || (a2 == -1)) 
     fatal_error(0,"a1 (%d) or a2 (%d) not set",a1,a2);
-  if (opt2parg_bSet("-fc",asize(pa),pa))
-    fx=fy=fz=fc;
       
   out=ftp2FILE(efITP,NFILE,fnm,"w");
   fprintf(out,"[ position_restraints ]\n");
   fprintf(out,";%7s%8s%8s\n","i","funct","fc");
   for(i=a1; (i<=a2); i++) 
     fprintf(out,"%8d%8d  %8.0f  %8.0f  %8.0f\n",
-	    i,1,fx,fy,fz);
+	    i,1,fc[XX],fc[YY],fc[ZZ]);
   fclose(out);
   
   thanx(stdout);
