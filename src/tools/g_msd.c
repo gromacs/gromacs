@@ -195,11 +195,12 @@ static void subtitle(FILE *out,t_corr *this)
   }
 }
 
-static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,bool bXvgr)
+static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
+		       bool bXvgr,bool bDiff)
 {
   FILE *out;
-  int  i,j;
-  real aa,bb,da,db;
+  int  i,j,imin;
+  real t,aa,bb,da,db;
   
   /*  real err_fac; */
   
@@ -212,10 +213,16 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,bool bXvgr)
     subtitle(out,this);
     
   lsq_y_ax_b2(this->nframes,this->time,this->data[0],&aa,&bb,&da,&db);
-  for(i=0; (i<this->nframes); i++) {
-    fprintf(out,"%10g",this->time[i]-this->time[0]);
+  if (bDiff) 
+    imin = 1;
+  else
+    imin = 0;
+  for(i=imin; (i<this->nframes); i++) {
+    t = this->time[i]-this->time[0];
+    fprintf(out,"%10g",t);
     for(j=0; (j<this->ngrp); j++)
-      fprintf(out,"  %10g",this->data[j][i]);
+      fprintf(out,"  %10g",
+	      bDiff ? 1000*this->data[j][i]/(6*t) : this->data[j][i]);
     fprintf(out,"\n");
   }
   fclose(out);
@@ -542,7 +549,6 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   int          *gnx;
   atom_id      **index;
   char         **grpname;
-  char         title[256];
   
   fx=read_first_x;
   nx=read_next_x;
@@ -552,7 +558,6 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   grpname = (char **)calloc(nrgrp,sizeof(char *));
     
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),nrgrp,gnx,index,grpname);
-  sprintf(title,"Mean Square Displacement");
 
   msd = init_corr(nrgrp,type,axis,dim_factor,bMW,bMol,top);
   
@@ -561,9 +566,13 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	    bMol ? prep_data_mol : prep_data_norm,
 	    fx,nx);
   
-  corr_print(msd,opt2fn("-o",NFILE,fnm),title,
-	     "MSD (nm\\S2\\N)",TRUE);
-
+  if (opt2bSet("-d",NFILE,fnm))
+    corr_print(msd,opt2fn("-d",NFILE,fnm),"Diffusion constant",
+	       "D (10\\S5\\Ncm\\S2\\Ns\\S-1\\N)",TRUE,TRUE);
+  corr_print(msd,opt2fn("-o",NFILE,fnm),
+	     "Mean Square Displacement",
+	     "MSD (nm\\S2\\N)",TRUE,FALSE);
+  
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
   if (bMol) 
     printdist(msd,opt2fn("-m",NFILE,fnm),opt2fn("-d",NFILE,fnm));
@@ -572,9 +581,11 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_msd computes the mean square displacement of atoms from",
+    "g_msd computes the mean square displacement (MSD) of atoms from",
     "their initial positions. This provides an easy way to compute",
-    "the diffusion constant using the Einstein relation."
+    "the diffusion constant using the Einstein relation.[PAR]",
+    "If the -d option is given, the diffusion constant will be printed in",
+    "addition to the MSD"
   };
   static char *normtype[]= { NULL,"no","x","y","z",NULL };
   static char *axtitle[] = { NULL,"no","x","y","z",NULL };
@@ -636,7 +647,10 @@ int main(int argc,char *argv[])
     dim_factor = 4.0;
     axis = (axtitle[0][0] - 'x'); /* See defines above */
   }
-
+  else
+    axis = 0;
+  fprintf(stderr,"type = %d, axis = %d, dim_factor = %g\n",
+	  type,axis,dim_factor);
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xdum,NULL,box,bMW); 
   if (bMol && !bTop)
     fatal_error(0,"Could not read a topology form %s. Try a tpr file instead.",
