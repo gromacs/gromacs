@@ -33776,18 +33776,18 @@ _inl3310_sse:
 	lea   edx, [edx + edx*2] 
 
 	;# dispersion 
-	movlps xmm5, [esi + eax*4 + 0]
-	movlps xmm7, [esi + ecx*4 + 0]
-	movhps xmm5, [esi + ebx*4 + 0]
-	movhps xmm7, [esi + edx*4 + 0] ;# got half dispersion table 
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] ;# got half dispersion table 
 	movaps xmm4, xmm5
 	shufps xmm4, xmm7, 136  ;# 10001000
 	shufps xmm5, xmm7, 221  ;# 11011101
 	
-	movlps xmm7, [esi + eax*4 + 8]
-	movlps xmm3, [esi + ecx*4 + 8]
-	movhps xmm7, [esi + ebx*4 + 8]
-	movhps xmm3, [esi + edx*4 + 8] ;# other half of dispersion table 
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] ;# other half of dispersion table 
 	movaps xmm6, xmm7
 	shufps xmm6, xmm3, 136  ;# 10001000
 	shufps xmm7, xmm3, 221  ;# 11011101
@@ -33812,18 +33812,18 @@ _inl3310_sse:
 	movaps [esp + i3310_vnbtot], xmm5
 
 	;# repulsion 
-	movlps xmm5, [esi + eax*4 + 16]
-	movlps xmm7, [esi + ecx*4 + 16]
-	movhps xmm5, [esi + ebx*4 + 16]
-	movhps xmm7, [esi + edx*4 + 16] ;# got half repulsion table 
+	movlps xmm5, [esi + eax*4 + 32]
+	movlps xmm7, [esi + ecx*4 + 32]
+	movhps xmm5, [esi + ebx*4 + 32]
+	movhps xmm7, [esi + edx*4 + 32] ;# got half repulsion table 
 	movaps xmm4, xmm5
 	shufps xmm4, xmm7, 136  ;# 10001000
 	shufps xmm5, xmm7, 221  ;# 11011101
 
-	movlps xmm7, [esi + eax*4 + 24]
-	movlps xmm3, [esi + ecx*4 + 24]
-	movhps xmm7, [esi + ebx*4 + 24]
-	movhps xmm3, [esi + edx*4 + 24] ;# other half of repulsion table 
+	movlps xmm7, [esi + eax*4 + 40]
+	movlps xmm3, [esi + ecx*4 + 40]
+	movhps xmm7, [esi + ebx*4 + 40]
+	movhps xmm3, [esi + edx*4 + 40] ;# other half of repulsion table 
 	movaps xmm6, xmm7
 	shufps xmm6, xmm3, 136  ;# 10001000
 	shufps xmm7, xmm3, 221  ;# 11011101
@@ -34037,14 +34037,14 @@ _inl3310_sse:
 	lea   edx, [edx + edx*2] 
 
 	;# dispersion 
-	movlps xmm5, [esi + ecx*4 + 0]
-	movhps xmm5, [esi + edx*4 + 0];# got half dispersion table 
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16];# got half dispersion table 
 	movaps xmm4, xmm5
 	shufps xmm4, xmm4, 136  ;# 10001000
 	shufps xmm5, xmm5, 221  ;# 11011101
 	
-	movlps xmm7, [esi + ecx*4 + 8]
-	movhps xmm7, [esi + edx*4 + 8] ;# other half of dispersion table 
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] ;# other half of dispersion table 
 	movaps xmm6, xmm7
 	shufps xmm6, xmm6, 136  ;# 10001000
 	shufps xmm7, xmm7, 221  ;# 11011101
@@ -34069,14 +34069,14 @@ _inl3310_sse:
 	movaps [esp + i3310_vnbtot], xmm5
 
 	;# repulsion 
-	movlps xmm5, [esi + ecx*4 + 16]
-	movhps xmm5, [esi + edx*4 + 16] ;# got half repulsion table 
+	movlps xmm5, [esi + ecx*4 + 32]
+	movhps xmm5, [esi + edx*4 + 32] ;# got half repulsion table 
 	movaps xmm4, xmm5
 	shufps xmm4, xmm7, 136  ;# 10001000
 	shufps xmm5, xmm7, 221  ;# 11011101
 
-	movlps xmm7, [esi + ecx*4 + 24]
-	movhps xmm7, [esi + edx*4 + 24] ;# other half of repulsion table 
+	movlps xmm7, [esi + ecx*4 + 40]
+	movhps xmm7, [esi + edx*4 + 40] ;# other half of repulsion table 
 	movaps xmm6, xmm7
 	shufps xmm6, xmm3, 136  ;# 10001000
 	shufps xmm7, xmm3, 221  ;# 11011101
@@ -34229,8 +34229,8 @@ _inl3310_sse:
 	lea   ebx, [ebx + ebx*2] 	
 
 	;# dispersion 
-	movlps xmm4, [esi + ebx*4 + 0]
-	movlps xmm6, [esi + ebx*4 + 8]
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
 	movaps xmm5, xmm4
 	movaps xmm7, xmm6
 	shufps xmm5, xmm5, 1
@@ -34257,8 +34257,8 @@ _inl3310_sse:
 	movss [esp + i3310_vnbtot], xmm5
 
 	;# repulsion 
-	movlps xmm4, [esi + ebx*4 + 16]
-	movlps xmm6, [esi + ebx*4 + 24]
+	movlps xmm4, [esi + ebx*4 + 32]
+	movlps xmm6, [esi + ebx*4 + 40]
 	movaps xmm5, xmm4
 	movaps xmm7, xmm6
 	shufps xmm5, xmm5, 1
