@@ -1,47 +1,47 @@
 \begin{table}[p]
 \begin{tabularx}{\linewidth}{rlccX}
 \hline
-    Def. &       &      &  Def. & \\
-    Name &  Ext. & Type &  Opt. & Description \\
+   Def. &       &      &  Def. & \\
+   Name &  Ext. & Type &  Opt. & Description \\
 \hline
-  grompp &  .mdp & Asc &    -f & grompp input file with MD parameters \\
-  genion &  .gip & Asc &    -f & genion input file with parameters etc. \\
-   group &  .gpp & Asc &    -g & group related input for grompp \\
-    traj &  .trr & XDR &       & Trajectory in portable xdr format \\
-    traj &  .trj & Bin &       & Trajectory file (cpu specific) \\
-    traj &  .xtc & XDR &       & Compressed trajectory (portable xdr format) \\
-   gtraj &  .g87 & Asc &       & Gromos-87 ASCII trajectory format \\
-    ener &  .edr & XDR &       & Energy file in portable XDR format \\
-    ener &  .ene & Bin &       & Energy file \\
-    conf &  .gro & Asc &    -c & Coordinate file in Gromos-87 format \\
-   eiwit &  .pdb & Asc &    -f & Protein data bank file \\
-   eiwit &  .brk & Asc &    -f & Brookhaven data bank file \\
-   eiwit &  .ent & Asc &    -f & Entry in the protein date bank \\
-     run &  .log & Asc &    -l & Log file from MD/LD/EM/NM run \\
-   graph &  .xvg & Asc &    -o & xvgr file as produced by analysis tools \\
-   hello &  .out & Asc &    -o & Generic output file \\
-   index &  .ndx & Asc &    -n & Index file \\
-   topol &  .top & Asc &    -p & Topology file \\
-  topinc &  .itp & Asc &       & Include file for topology \\
-   topol &  .tpr & XDR &    -s & portable xdr run input file \\
-   topol &  .tpa & Asc &    -s & Ascii run input file \\
-   topol &  .tpb & Bin &    -s & Binary run input file \\
-     doc &  .tex & Asc &    -o & LaTeX file \\
- residue &  .rtp & Asc &       & Residue Type file used by pdb2gmx \\
-  atomtp &  .atp & Asc &       & Atomtype file used by pdb2gmx \\
-   polar &  .hdb & Asc &       & Hydrogen data base \\
-  nnnice &  .dat & Asc &       & Generic data file \\
-    user &  .dlg & Asc &       & Dialog Box data for ngmx \\
-      ss &  .map & Asc &       & File that maps matrix data to colors \\
-    plot &  .eps & Asc &       & Encapsulated PostScript (tm) file \\
-      ss &  .mat & Asc &       & Matrix Data file \\
-      ps &  .m2p & Asc &       & Input file for mat2ps \\
-   radii &  .vdw & Asc &       & Database containing Van der Waals radii \\
- hessian &  .mtx & Bin &    -m & Hessian matrix \\
-     sam &  .edi & Asc &       & ED sampling input \\
-     sam &  .edo & Asc &       & ED sampling output \\
-      gk &  .hat & Asc &       & Fourier transform of spread function \\
-    root &  .xpm & Asc &       & X PixMap compatible matrix file \\
+ atomtp & {\tt .atp} & Asc &    & Atomtype file used by pdb2gmx \\
+  eiwit & {\tt .brk} & Asc & -f & Brookhaven data bank file \\
+ nnnice & {\tt .dat} & Asc &    & Generic data file \\
+   user & {\tt .dlg} & Asc &    & Dialog Box data for ngmx \\
+    sam & {\tt .edi} & Asc &    & ED sampling input \\
+    sam & {\tt .edo} & Asc &    & ED sampling output \\
+   ener & {\tt .edr} & XDR &    & Energy file in portable XDR format \\
+   ener & {\tt .ene} & Bin &    & Energy file \\
+  eiwit & {\tt .ent} & Asc & -f & Entry in the protein date bank \\
+   plot & {\tt .eps} & Asc &    & Encapsulated PostScript (tm) file \\
+  gtraj & {\tt .g87} & Asc &    & Gromos-87 ASCII trajectory format \\
+ genion & {\tt .gip} & Asc & -f & genion input file with parameters etc. \\
+  group & {\tt .gpp} & Asc & -g & group related input for grompp \\
+   conf & {\tt .gro} & Asc & -c & Coordinate file in Gromos-87 format \\
+     gk & {\tt .hat} & Asc &    & Fourier transform of spread function \\
+  polar & {\tt .hdb} & Asc &    & Hydrogen data base \\
+ topinc & {\tt .itp} & Asc &    & Include file for topology \\
+    run & {\tt .log} & Asc & -l & Log file from MD/LD/EM/NM run \\
+     ps & {\tt .m2p} & Asc &    & Input file for mat2ps \\
+     ss & {\tt .map} & Asc &    & File that maps matrix data to colors \\
+     ss & {\tt .mat} & Asc &    & Matrix Data file \\
+ grompp & {\tt .mdp} & Asc & -f & grompp input file with MD parameters \\
+hessian & {\tt .mtx} & Bin & -m & Hessian matrix \\
+  index & {\tt .ndx} & Asc & -n & Index file \\
+  hello & {\tt .out} & Asc & -o & Generic output file \\
+  eiwit & {\tt .pdb} & Asc & -f & Protein data bank file \\
+residue & {\tt .rtp} & Asc &    & Residue Type file used by pdb2gmx \\
+    doc & {\tt .tex} & Asc & -o & LaTeX file \\
+  topol & {\tt .top} & Asc & -p & Topology file \\
+  topol & {\tt .tpa} & Asc & -s & Ascii run input file \\
+  topol & {\tt .tpb} & Bin & -s & Binary run input file \\
+  topol & {\tt .tpr} & XDR & -s & portable xdr run input file \\
+   traj & {\tt .trj} & Bin &    & Trajectory file (cpu specific) \\
+   traj & {\tt .trr} & XDR &    & Trajectory in portable xdr format \\
+  radii & {\tt .vdw} & Asc &    & Database containing Van der Waals radii \\
+   root & {\tt .xpm} & Asc &    & X PixMap compatible matrix file \\
+   traj & {\tt .xtc} & XDR &    & Compressed trajectory (portable xdr format)\\
+  graph & {\tt .xvg} & Asc & -o & xvgr file as produced by analysis tools \\
 \hline
 \end{tabularx}
 \caption{File types: {\em Asc\/}ii, {\em Bin\/}ary or {\em XDR\/} portable.}
