@@ -297,8 +297,10 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 		      ylabel,nframes,inprod[noutvec],inprod,FALSE);
   }
   if (twodplotfile) {
-    sprintf(str,"projection on eigenvector %d",eignr[outvec[0]]+1);
-    sprintf(str2,"projection on eigenvector %d",eignr[outvec[noutvec-1]]+1); 
+    sprintf(str,"projection on eigenvector %d (nm)",
+	    eignr[outvec[0]]+1);
+    sprintf(str2,"projection on eigenvector %d (nm)",
+	    eignr[outvec[noutvec-1]]+1); 
     xvgrout=xvgropen(twodplotfile,"2D projection of trajectory",str,str2);
     for(i=0; i<nframes; i++)
       fprintf(xvgrout,"%10.5f %10.5f\n",inprod[0][i],inprod[noutvec-1][i]);
@@ -469,15 +471,15 @@ int main(int argc,char *argv[])
   static real max=0.0;
   t_pargs pa[] = {
     { "-first", FALSE, etINT, &first,     
-      "first eigenvector for analysis (-1 is select)" },
+      "First eigenvector for analysis (-1 is select)" },
     { "-last",  FALSE, etINT, &last, 
-      "last eigenvector for analysis (-1 is till the last)" },
+      "Last eigenvector for analysis (-1 is till the last)" },
      { "-skip",  FALSE, etINT, &skip,
-      "only analyse every nr-th frame" },
+      "Only analyse every nr-th frame" },
     { "-max",  FALSE, etREAL, &max, 
-      "maximum for projection of the eigenvector on the average structure, max=0 gives the extremes" },
+      "Maximum for projection of the eigenvector on the average structure, max=0 gives the extremes" },
     { "-nframes",  FALSE, etINT, &nextr, 
-      "number of frames for the extremes output" }
+      "Number of frames for the extremes output" }
   };
   FILE       *out;
   int        status,trjout;
