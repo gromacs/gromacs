@@ -335,7 +335,7 @@ static int *new_status(char *topfile,char *confin,
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
-  t_atoms     dumat;
+  t_atoms     *dumat;
   int         *forward=NULL;
   int         i,nrmols,Nsim;
   int         ntab,*tab;
@@ -383,12 +383,17 @@ static int *new_status(char *topfile,char *confin,
     nerror++;
   } else {
     /* make space for coordinates and velocities */
-    init_t_atoms(&dumat,*natoms,FALSE);
+    snew(dumat,1);
+    init_t_atoms(dumat,*natoms,FALSE);
     snew(*x,*natoms);
     snew(*v,*natoms);
-    read_stx_conf(confin,opts->title,&dumat,*x,*v,box);
-    free_t_atoms(&dumat);
-    
+    read_stx_conf(confin,opts->title,dumat,*x,*v,box);
+    /* We can not dispose of atoms, as that might fuck up the stack,
+     * at least in gcc/linux it does.
+     *
+     * free_t_atoms(dumat);
+     * sfree(dumat);
+     */
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
@@ -736,6 +741,7 @@ int main (int argc, char *argv[])
 		     &x,&v,box,&atype,&sys,&msys,plist,
 		     bShuffle ? nprocs : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,nerror);
+		     
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));
   else
@@ -765,7 +771,7 @@ int main (int argc, char *argv[])
   
   /* Now build the shakeblocks from the shakes */
   gen_sblocks(bVerbose,sys.atoms.nr,&(sys.idef),&(sys.blocks[ebSBLOCKS]));
-  
+   
   if (bVerbose) 
     fprintf(stderr,"initialising group options...\n");
   do_index(ftp2fn_null(efNDX,NFILE,fnm),

@@ -72,7 +72,7 @@ static void get_coordnum (char *infile,int *natoms)
 static void get_w_conf(FILE *in, char *infile, char *title,
 		       t_atoms *atoms, rvec x[],rvec *v, matrix box)
 {
-  static t_symtab symtab;
+  static t_symtab *symtab=NULL;
   char   name[6];
   char   line[STRLEN+1];
   char   buf[256];
@@ -83,12 +83,14 @@ static void get_w_conf(FILE *in, char *infile, char *title,
   bool   bFirst;
   char   *p1,*p2;
   
-  newres=0;
-  oldres=0;
-  prec=0;
-  open_symtab(&symtab);
-  name[5]=0;
-
+  newres  = 0;
+  oldres  = -666; /* Unlikely number for the first residue! */
+  prec    = 0;
+  
+  if (!symtab) {
+    snew(symtab,1);
+    open_symtab(symtab);
+  }
   fgets2(title,STRLEN,in);
 
   /* read the number of atoms */
@@ -98,14 +100,13 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     fatal_error(0,"gro file contains more atoms (%d) than expected (%d)",
 		natoms,atoms->nr);
   else if (natoms <  atoms->nr)
-    fprintf(stderr,"Warning: gro file contains less atoms (%d) than expected (%d)\n",natoms,atoms->nr);
+    fprintf(stderr,"Warning: gro file contains less atoms (%d) than expected"
+	    " (%d)\n",natoms,atoms->nr);
   
-  atoms->nr=natoms;
-  atoms->nres=0;
-
   bFirst=TRUE;
+  
   /* just pray the arrays are big enough */
-  for (i=0; (i < atoms->nr) ; i++) {
+  for (i=0; (i < natoms) ; i++) {
     if ((fgets2 (line,STRLEN,in)) == NULL) {
       unexpected_eof(infile,i+2);
     }
@@ -130,21 +131,24 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     
     /* residue number*/
     memcpy(name,line,5);
+    name[5]='\0';
     sscanf(name,"%d",&resnr);
     memcpy(name,line+5,5);
     name[5]='\0';
     if (resnr != oldres) {
-      oldres=resnr;
+      oldres = resnr;
+      if (newres >= natoms)
+	fatal_error(0,"More residues than atoms in %s (natoms = %d)",
+		    infile,natoms);
+      atoms->resname[newres] = put_symtab(symtab,name);
       newres++;
-      atoms->nres=newres;
-      atoms->resname[newres-1]=put_symtab(&symtab,name);
     }
-    resnr=newres;
+    resnr = newres;
     atoms->atom[i].resnr = resnr-1;
 
     /* atomname */
     memcpy(name,line+10,5);
-    atoms->atomname[i]=put_symtab(&symtab,name);
+    atoms->atomname[i]=put_symtab(symtab,name);
    
     /* eventueel controle atomnumber met i+1 */
 
@@ -174,6 +178,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
       }
     }
   }
+  atoms->nres=newres;
 
   /* box */
   fgets2 (line,STRLEN,in);
@@ -210,7 +215,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     box[ZZ][XX] = y2;
     box[ZZ][YY] = z2;
   }
-  close_symtab(&symtab);
+  close_symtab(symtab);
 }
 
 static void read_whole_conf(char *infile, char *title,
@@ -432,7 +437,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
     
     resnr=atoms->atom[ai].resnr;
     strcpy(resnm," ??? ");
-    if (resnr<atoms->nres)
+    if (resnr < atoms->nres)
       strcpy(resnm,*atoms->resname[resnr]);
     
     if (atoms->atom)
@@ -710,7 +715,7 @@ void get_stx_coordnum(char *infile,int *natoms)
     break;
   }
   default:
-    fatal_error(0,"Not supported in read_stx_conf: %s",infile);
+    fatal_error(0,"Not supported in get_stx_coordnum: %s",infile);
   }
 }
 
