@@ -554,9 +554,20 @@ int fio_open(char *fn,char *mode)
 {
   t_fileio *fio;
   int      i,nfio;
-  char     *bf;
+  char     *bf,*m;
   bool     bRead;
-  
+
+  if (fn2ftp(fn)==efTPA)
+    m=mode;
+  else {
+    if (mode[0]=='r')
+      m="rb";
+    else if (mode[0]=='w')
+      m="wb";
+    else
+      m="ab";
+  }
+
   /* Determine whether we have to make a new one */
   for(i=0; (i<nFIO); i++)
     if (!FIO[i].bOpen) {
@@ -570,7 +581,7 @@ int fio_open(char *fn,char *mode)
     nfio = nFIO-1;
   }
 
-  bRead = (mode[0]=='r');
+  bRead = (m[0]=='r');
   fio->fp  = NULL;
   fio->xdr = NULL;
   if (fn) {
@@ -583,7 +594,7 @@ int fio_open(char *fn,char *mode)
       /* First check whether we have to make a backup,
        * only for writing, not for read or append.
        */
-      if (mode[0]=='w') {
+      if (m[0]=='w') {
 	if (fexist(fn)) {
 	  bf=(char *)backup_fn(fn);
 	  if (rename(fn,bf) == 0) {
@@ -599,11 +610,11 @@ int fio_open(char *fn,char *mode)
 	  fatal_error(0,"File %s not found",fn);
       }
       snew(fio->xdr,1);
-      xdropen(fio->xdr,fn,mode);
+      xdropen(fio->xdr,fn,m);
     }
     else {
       /* If it is not, open it as a regular file */
-      fio->fp = ffopen(fn,mode);
+      fio->fp = ffopen(fn,m);
     }
   }
   else {

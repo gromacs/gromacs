@@ -618,19 +618,6 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
 
 int open_tpx(char *fn,char *mode)
 {
-  char *m;
-
-  if (fn2ftp(fn)==efTPA)
-    m=mode;
-  else {
-    if (mode[0]=='r')
-      m="rb";
-    else if (mode[0]=='w')
-      m="wb";
-    else
-      m="ab";
-  }
-
   return fio_open(fn,m);
 }    
  

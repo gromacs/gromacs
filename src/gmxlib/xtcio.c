@@ -42,15 +42,6 @@ static char *SRCID_xtcio_c = "$Id$";
 
 int open_xtc(char *fn,char *mode)
 {
-  char *m;
-
-  if (mode[0]=='r')
-    m="rb";
-  else if (mode[0]=='w')
-    m="wb";
-  else
-    m="ab";
-
   return fio_open(fn,m);
 }
 

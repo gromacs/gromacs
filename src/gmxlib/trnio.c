@@ -244,15 +244,6 @@ bool fread_htrn(int fp,t_trnheader *trn,rvec *box,rvec *x,rvec *v,rvec *f)
 
 int open_trn(char *fn,char *mode)
 {
-  char *m;
-
-  if (mode[0]=='r')
-    m="rb";
-  else if (mode[0]=='w')
-    m="wb";
-  else
-    m="ab";
-
   return fio_open(fn,m);
 }
 
