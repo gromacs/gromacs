@@ -592,6 +592,10 @@ int main(int argc,char *argv[])
     bMW  = TRUE;
     fprintf(stderr,"Calculating diffusion coefficients for molecules.\n");
   }
+  else {
+    bMol = FALSE;
+    bMW  = FALSE;
+  }
 
   if (normtype[0][0]!='n') {
     type = normtype[0][0] - 'x'+1; /* See defines above */
