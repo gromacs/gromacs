@@ -480,7 +480,7 @@ int main(int argc,char *argv[])
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
   static real bon_hi=0.7;
-  static real ftol=0.01;
+  static real ftol=0.001;
   static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},
