@@ -161,11 +161,8 @@ int main(int argc,char *argv[])
     else {
       fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",
 	      t,gyro,gvec[XX],gvec[YY],gvec[ZZ]); }
-    if ((j % 10) == 0)
-      fprintf(stderr,"\rt = %6.1f",t);
     j++;
   } while(read_next_x(status,&t,natoms,x,box));
-  fprintf(stderr,"\n");
   close_trj(status);
   
   fclose(out);
