@@ -59,7 +59,7 @@ bool yesno(void)
 typedef struct {
   char *res1, *res2;
   char *atom1,*atom2;
-  char *nres1,*nres2;
+  char *newres1,*newres2;
   int  nbond1,nbond2;
   real length;
 } t_specbond;
@@ -87,8 +87,8 @@ static t_specbond *get_specbonds(int *nspecbond)
     else {
       sb[n].res1   = strdup(r1buf);
       sb[n].res2   = strdup(r2buf);
-      sb[n].nres1  = strdup(nr1buf);
-      sb[n].nres2  = strdup(nr2buf);
+      sb[n].newres1= strdup(nr1buf);
+      sb[n].newres2= strdup(nr2buf);
       sb[n].atom1  = strdup(a1buf);
       sb[n].atom2  = strdup(a2buf);
       sb[n].nbond1 = nb1;
@@ -117,8 +117,8 @@ static void done_specbonds(int nsb,t_specbond sb[])
     sfree(sb[i].res2);
     sfree(sb[i].atom1);
     sfree(sb[i].atom2);
-    sfree(sb[i].nres1);
-    sfree(sb[i].nres2);
+    sfree(sb[i].newres1);
+    sfree(sb[i].newres2);
   }
 }
 
@@ -137,7 +137,7 @@ static bool is_special(int nsb,t_specbond sb[],char *res,char *atom)
 }
 
 static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
-		    real d,int *nb,bool *bSwap)
+		    real d,int *index_sb,bool *bSwap)
 {
   int i;
   char *at1,*at2,*res1,*res2;
@@ -147,32 +147,45 @@ static bool is_bond(int nsb,t_specbond sb[],t_atoms *pdba,int a1,int a2,
   res1=*pdba->resname[pdba->atom[a1].resnr];
   res2=*pdba->resname[pdba->atom[a2].resnr];
   
+  if (debug) 
+    fprintf(stderr,"Checking %s-%d %s-%d and %s-%d %s-%d: %g ",
+	    res1, pdba->atom[a1].resnr+1, at1, a1+1,
+	    res2, pdba->atom[a2].resnr+1, at2, a2+1, d);
+		    
   for(i=0; (i<nsb); i++) {
-    *nb = i;
+    *index_sb = i;
     if (((strcasecmp(sb[i].res1,res1) == 0)  && 
 	 (strcasecmp(sb[i].atom1,at1) == 0) &&
 	 (strcasecmp(sb[i].res2,res2) == 0)  && 
 	 (strcasecmp(sb[i].atom2,at2) == 0))) {
       *bSwap = FALSE;
-      if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
+      if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d)) {
+	if (debug) fprintf(stderr,"%g\n", sb[i].length);
 	return TRUE;
+      }
     }
     if (((strcasecmp(sb[i].res1,res2) == 0)  && 
 	 (strcasecmp(sb[i].atom1,at2) == 0) &&
 	 (strcasecmp(sb[i].res2,res1) == 0)  && 
 	 (strcasecmp(sb[i].atom2,at1) == 0))) {
       *bSwap = TRUE;
-      if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d))
+      if ((0.9*sb[i].length < d) && (1.1*sb[i].length > d)) {
+	if (debug) fprintf(stderr,"%g\n", sb[i].length);
 	return TRUE;
+      }
     }
   }
+  if (debug) fprintf(stderr,"\n");
   return FALSE;
 }
 
-static void rename_1res(t_atoms *pdba,int resnr,char *nres)
+static void rename_1res(t_atoms *pdba,int resnr,char *newres)
 {
-  sfree(*pdba->resname[resnr]);
-  *pdba->resname[resnr]=strdup(nres);
+  if(debug) fprintf(stderr,"Renaming %s-%d to %s\n", 
+		    *pdba->resname[resnr], resnr+1, newres);
+  /* this used to free *resname, which fucks up the symtab! */
+  snew(pdba->resname[resnr],1);
+  *pdba->resname[resnr]=strdup(newres);
 }
 
 int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
@@ -180,7 +193,7 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 {
   t_specbond *sb=NULL;
   t_ssbond   *bonds=NULL;
-  int  nsb,natoms;
+  int  nsb;
   int  nspec,nbonds;
   int  *specp,*sgp;
   bool bDoit,bSwap;
@@ -189,17 +202,14 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
   real **d;
   char buf[10];
 
-  natoms=pdba->nr;
-  /* Initiate variables that will be exported */  
-  nbonds = 0;
   sb=get_specbonds(&nsb);
   
   if (nsb > 0) {
-    snew(specp,natoms);
-    snew(sgp,natoms);
+    snew(specp,pdba->nr);
+    snew(sgp,pdba->nr);
     
     nspec = 0;
-    for(i=0;(i<natoms);i++) {
+    for(i=0;(i<pdba->nr);i++) {
       if (is_special(nsb,sb,*pdba->resname[pdba->atom[i].resnr],
 		     *pdba->atomname[i])) {
 	specp[nspec] = pdba->atom[i].resnr;
@@ -220,10 +230,11 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
       }
     }
     if (nspec > 1) {
-#define MAXCOL 8
+#define MAXCOL 7
       fprintf(stderr,"Special Atom Distance matrix:\n");
       for(b=0; (b<nspec); b+=MAXCOL) {
-	fprintf(stderr,"%8s","");
+	/* print resname/number column headings */
+	fprintf(stderr,"%8s%8s","","");
 	e=min(b+MAXCOL, nspec-1);
 	for(i=b; (i<e); i++) {
 	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
@@ -231,49 +242,61 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	  fprintf(stderr,"%8s",buf);
 	}
 	fprintf(stderr,"\n");
+	/* print atomname/number column headings */
+	fprintf(stderr,"%8s%8s","","");
+	e=min(b+MAXCOL, nspec-1);
+	for(i=b; (i<e); i++) {
+	  sprintf(buf,"%s%d",*pdba->atomname[sgp[i]], sgp[i]+1);
+	  fprintf(stderr,"%8s",buf);
+	}
+	fprintf(stderr,"\n");
+	/* print matrix */
 	e=min(b+MAXCOL, nspec);
 	for(i=b+1; (i<nspec); i++) {
 	  sprintf(buf,"%s%d",*pdba->resname[pdba->atom[sgp[i]].resnr],
 		  specp[i]+1);
 	  fprintf(stderr,"%8s",buf);
+	  sprintf(buf,"%s%d", *pdba->atomname[sgp[i]], sgp[i]+1);
+	  fprintf(stderr,"%8s",buf);
 	  e2=min(i,e);
 	  for(j=b; (j<e2); j++)
-	  fprintf(stderr," %7.3f",d[i][j]);
+	    fprintf(stderr," %7.3f",d[i][j]);
 	  fprintf(stderr,"\n");
 	}
       }
     }
-    i=j=0;
     
     snew(bonds,nspec);
-  
+    nbonds = 0;
+
     for(i=0; (i<nspec); i++) {
       ai = sgp[i];
       for(j=i+1; (j<nspec); j++) {
 	aj = sgp[j];
-	if (is_bond(nsb,sb,pdba,ai,aj,d[i][j],
-		    &index_sb,&bSwap)) {
-	  if (bInteractive) {
-	    fprintf(stderr,"Link Res%4d and Res%4d (y/n) ?",specp[i]+1,specp[j]+1);
-	    bDoit=yesno();
-	  }
-	  else {
-	    fprintf(stderr,"Linking Res%4d and Res%4d...\n",specp[i]+1,specp[j]+1);
-	    bDoit=TRUE;
-	  }
+	if (is_bond(nsb,sb,pdba,ai,aj,d[i][j],&index_sb,&bSwap)) {
+	  fprintf(stderr,"%s %s-%d %s-%d and %s-%d %s-%d%s",
+		  bInteractive ? "Link" : "Linking",
+		  *pdba->resname[pdba->atom[ai].resnr], specp[i]+1, 
+		  *pdba->atomname[ai], ai+1,
+		  *pdba->resname[pdba->atom[aj].resnr], specp[j]+1, 
+		  *pdba->atomname[aj], aj+1,
+		  bInteractive ? " (y/n) ?" : "...\n");
+	  bDoit=bInteractive ? yesno() : TRUE;
+	  
 	  if (bDoit) {
 	    /* Store the residue numbers in the bonds array */
 	    bonds[nbonds].res1 = specp[i];
 	    bonds[nbonds].res2 = specp[j];
 	    bonds[nbonds].a1   = strdup(*pdba->atomname[ai]);
 	    bonds[nbonds].a2   = strdup(*pdba->atomname[aj]);
+	    /* rename residues */
 	    if (bSwap) {
-	      rename_1res(pdba,specp[i],sb[index_sb].nres2);
-	      rename_1res(pdba,specp[j],sb[index_sb].nres1);
+	      rename_1res(pdba,specp[i],sb[index_sb].newres2);
+	      rename_1res(pdba,specp[j],sb[index_sb].newres1);
 	    }
 	    else {
-	      rename_1res(pdba,specp[i],sb[index_sb].nres1);
-	      rename_1res(pdba,specp[j],sb[index_sb].nres2);
+	      rename_1res(pdba,specp[i],sb[index_sb].newres1);
+	      rename_1res(pdba,specp[j],sb[index_sb].newres2);
 	    }
 	    nbonds++;
 	  }
