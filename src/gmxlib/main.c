@@ -262,7 +262,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   gmx_parallel = 1;
 #ifdef CHECK_MPI_ENV
   /* Do not use MPI calls when env.var. CHECK_MPI_ENV is not set */
-  if (getenv("CHECK_MPI_ENV") == NULL)
+  if (getenv(CHECK_MPI_ENV) == NULL)
     gmx_parallel = 0;
 #endif
   if (gmx_parallel)
