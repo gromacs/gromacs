@@ -56,8 +56,8 @@ own analysis programs.
 # Since 'gromacs' isnt present in the prefix it will be added to datadir
 # and includedir.
 # (This way the package won't interfere with a manual gromacs installation)
-
-./configure --enable-shared --prefix=%{prefix} --exec-prefix=%{prefix}
+# dont use motif since it is not standard on linux.
+./configure --enable-shared --prefix=%{prefix} --exec-prefix=%{prefix} --without-motif-libraries
 make 
 
 %install
