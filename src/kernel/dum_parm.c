@@ -861,7 +861,7 @@ static void clean_dum_dihs(t_params *plist, t_pindex pindex[],
 
 void clean_dum_bad(t_params *plist, int natoms)
 {
-  int i,k,ftype,parnr;
+  int i,k,ndum,ftype,parnr;
   int *dummy_type;
   t_pindex *pindex;
   
@@ -869,35 +869,44 @@ void clean_dum_bad(t_params *plist, int natoms)
   snew(dummy_type,natoms);
   for(i=0; i<natoms; i++)
     dummy_type[i]=NOTSET;
+  ndum=0;
   for(ftype=0; ftype<F_NRE; ftype++)
-    if (interaction_function[ftype].flags & IF_DUMMY)
+    if (interaction_function[ftype].flags & IF_DUMMY) {
+      ndum+=plist[ftype].nr;
       for(i=0; i<plist[ftype].nr; i++)
-	dummy_type[plist[ftype].param[i].AI]=ftype;
+	if ( dummy_type[plist[ftype].param[i].AI] == NOTSET)
+	  dummy_type[plist[ftype].param[i].AI]=ftype;
+	else
+	  fatal_error(0,"multiple dummy constructions for atom %d",
+		      plist[ftype].param[i].AI+1);
+    }
   
-  /* make index into dummy entries of plist: */
-  snew(pindex,natoms);
-  for(ftype=0; ftype<F_NRE; ftype++)
-    if (interaction_function[ftype].flags & IF_DUMMY)
-      for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
-	k=plist[ftype].param[parnr].AI;
-	pindex[k].ftype=ftype;
-	pindex[k].parnr=parnr;
-      }
-  
-  if (debug)
-    for(i=0; i<natoms; i++)
-      fprintf(debug,"atom %d dummy_type %s\n",i, 
-	      dummy_type[i]==NOTSET ? "NOTSET" : 
-	      interaction_function[dummy_type[i]].name);
-  
-  /* remove things with dummy atoms */
-  for(ftype=0; ftype<F_NRE; ftype++)
-    if (interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
-      clean_dum_bonds(plist, ftype, dummy_type);
-    else if (interaction_function[ftype].flags & IF_ATYPE)
-      clean_dum_angles(plist, pindex, ftype, dummy_type);
-    else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
-      clean_dum_dihs(plist, pindex, ftype, dummy_type);
-  
+  /* the rest only if we have dummies: */
+  if (ndum) {
+    /* make index into dummy entries of plist: */
+    snew(pindex,natoms);
+    for(ftype=0; ftype<F_NRE; ftype++)
+      if (interaction_function[ftype].flags & IF_DUMMY)
+	for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
+	  k=plist[ftype].param[parnr].AI;
+	  pindex[k].ftype=ftype;
+	  pindex[k].parnr=parnr;
+	}
+    
+    if (debug)
+      for(i=0; i<natoms; i++)
+	fprintf(debug,"atom %d dummy_type %s\n",i, 
+		dummy_type[i]==NOTSET ? "NOTSET" : 
+		interaction_function[dummy_type[i]].name);
+    
+    /* remove things with dummy atoms */
+    for(ftype=0; ftype<F_NRE; ftype++)
+      if (interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+	clean_dum_bonds(plist, ftype, dummy_type);
+      else if (interaction_function[ftype].flags & IF_ATYPE)
+	clean_dum_angles(plist, pindex, ftype, dummy_type);
+      else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
+	clean_dum_dihs(plist, pindex, ftype, dummy_type);
+  }
   sfree(dummy_type);
 }
