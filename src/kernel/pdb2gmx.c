@@ -388,8 +388,6 @@ static int remove_double_atoms(t_atoms *pdba,rvec x[])
 	copy_rvec(x[j+1],x[j]);
       }
       srenew(pdba->atom,     pdba->nr);
-      sfree(*(pdba->atomname[pdba->nr]));
-      sfree(pdba->atomname[pdba->nr]);
       srenew(pdba->atomname, pdba->nr);
       srenew(pdba->pdbinfo,  pdba->nr);
     }
@@ -995,7 +993,7 @@ int main(int argc, char *argv[])
     write_top(ff,ftp2fn(efTOP,NFILE,fnm),NULL,title,NULL,
 	      nincl,incls,nmol,mols,NULL,NULL,NULL,NULL,NULL,NREXCL,mHmult);
 	      */
-  print_top_mols(top_file,nincl,incls,nmol,mols);
+  print_top_mols(top_file,title,nincl,incls,nmol,mols);
   fclose(top_file);
   
   /* now merge all chains back together */
