@@ -43,30 +43,6 @@ static char *SRCID_ewald_c = "$Id$";
 #define TOL 2e-5
 
 
-real calc_ewaldcoeff(real rc,real dtol)
-{
-  real x=5,low,high;
-  int n,i=0;
-  
-  
-  do {
-    i++;
-    x*=2;
-  } while((erfc(x*rc)/rc)>dtol);
-
-  n=i+60; /* search tolerance is 2^-60 */
-  low=0;
-  high=x;
-  for(i=0;i<n;i++) {
-    x=(low+high)/2;
-    if((erfc(x*rc)/rc)>dtol)
-      low=x;
-    else 
-      high=x;
-  }
-
-  return x;
-}
 
   
 
