@@ -379,26 +379,35 @@ int main(int argc, char *argv[])
 {
   static char *desc[] = {
     "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
-    "or [TT].pdb[tt].[PAR]",
-    "The box can be modified with options [TT]-box[tt] and [TT]-d[tt], both",
+    "or [TT].pdb[tt].",
+    "[PAR]",
+    "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
+    "[TT]-angles[tt]. Both [TT]-box[tt] and [TT]-d[tt]",
     "will center the system in the box.",
-    "Option [TT]-bt[tt] determines the box type: [TT]rect[tt] is a",
-    "rectangular box, [TT]cubic[tt] is a cubic box, [TT]dodecahedron[tt] is",
-    "a rhombic dodecahedron and [TT]truncoct[tt] is a truncated octahedron.",
+    "[PAR]",
+    "Option [TT]-bt[tt] determines the box type: [TT]tric[tt] is a",
+    "triclinic box, [TT]cubic[tt] is a cubic box, [TT]dodecahedron[tt] is",
+    "a rhombic dodecahedron and [TT]octahedron[tt] is a truncated octahedron.",
     "The last two are special cases of a triclinic box.",
     "The length of the three box vectors of the truncated octahedron is the",
     "shortest distance between two opposite hexagons.",
     "The volume of a dodecahedron is 0.71 and that of a truncated octahedron",
     "is 0.77 of that of a cubic box with the same periodic image distance.",
+    "[PAR]",
     "Option [TT]-box[tt] requires only",
     "one value for a cubic box, dodecahedron and a truncated octahedron.",
-    "With [TT]-d[tt] and [TT]rect[tt] the size of the system in the x, y",
+    "With [TT]-d[tt] and [TT]tric[tt] the size of the system in the x, y",
     "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
-    "[TT]dodecahedron[tt] or [TT]truncoct[tt] the diameter of the system",
-    "is used, which is the largest distance between two atoms.[PAR]",
+    "[TT]dodecahedron[tt] or [TT]octahedron[tt] the diameter of the system",
+    "is used, which is the largest distance between two atoms.",
+    "[PAR]",
+    "Option [TT]-angles[tt] is only meaningful with option [TT]-box[tt] and",
+    "a triclinic box and can not be used with option [TT]-d[tt].",
+    "[PAR]",
     "When [TT]-n[tt] or [TT]-ndef[tt] is set, a group",
     "can be selected for calculating the size and the geometric center,",
-    "otherwise the whole system is used.[PAR]",
+    "otherwise the whole system is used.",
+    "[PAR]",
     "[TT]-rotate[tt] rotates the coordinates and velocities.",
     "[TT]-princ[tt] aligns the principal axes of the system along the",
     "coordinate axes, this may allow you to decrease the box volume,",
@@ -412,9 +421,11 @@ int main(int argc, char *argv[])
     "Groups are selected after all operations have been applied.[PAR]",
     "Periodicity can be removed in a crude manner.",
     "It is important that the box sizes at the bottom of your input file",
-    "are correct when the periodicity is to be removed.[PAR]",
+    "are correct when the periodicity is to be removed.",
+    "[PAR]",
     "The program can optionally rotate the solute molecule to align the",
-    "molecule along its principal axes ([TT]-rotate[tt])[PAR]",
+    "molecule along its principal axes ([TT]-rotate[tt])",
+    "[PAR]",
     "When writing [TT].pdb[tt] files, B-factors can be",
     "added with the [TT]-bf[tt] option. B-factors are read",
     "from a file with with following format: first line states number of",
@@ -424,14 +435,17 @@ int main(int argc, char *argv[])
     "[TT]-atom[tt] option is set. Obviously, any type of numeric data can",
     "be added instead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
-    "maximum value found, effectively making a legend for viewing.[PAR]",
+    "maximum value found, effectively making a legend for viewing.",
+    "[PAR]",
     "With the option -mead a special pdb file for the MEAD electrostatics",
     "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
     "is that the input file is a run input file.",
     "The B-factor field is then filled with the Van der Waals radius",
-    "of the atoms while the occupancy field will hold the charge.[PAR]",
+    "of the atoms while the occupancy field will hold the charge.",
+    "[PAR]",
     "The option -grasp is similar, but it puts the charges in the B-factor",
-    "and the radius in the occupancy.[PAR]",
+    "and the radius in the occupancy.",
+    "[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
     "to a pdb file, which can be useful for analysis with e.g. rasmol."
   };
@@ -442,10 +456,10 @@ int main(int argc, char *argv[])
   static real dist=0.0,rbox=0.0,to_diam=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
   static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE;
-  static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
+  static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
-  static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
-  static char *btype[]={ NULL, "rect", "cubic", "dodecahedron", "truncoct", NULL },*label="A";
+  static rvec center={0,0,0},rotangles={0,0,0};
+  static char *btype[]={ NULL, "tric", "cubic", "dodecahedron", "octahedron", NULL },*label="A";
   static rvec visbox={0,0,0};
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
@@ -454,7 +468,9 @@ int main(int argc, char *argv[])
       "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
     { "-bt",   FALSE, etENUM, {btype}, 
       "Box type for -box and -d" },
-    { "-box",    FALSE, etRVEC, {&newbox}, "Box vector lengths" },
+    { "-box",    FALSE, etRVEC, {&newbox}, "Box vector lengths (a,b,c)" },
+    { "-angles", FALSE, etRVEC, {&newang},
+	"Angles between the box vectors (bc,ac,ab)" },
     { "-d",      FALSE, etREAL, {&dist}, 
       "Distance between the solute and the box" },
     { "-c",      FALSE, etBOOL, {&bCenter},
@@ -492,7 +508,7 @@ int main(int argc, char *argv[])
   atom_id    *index,*sindex;
   rvec       *x,*v,gc,min,max,size;
   matrix     box;
-  bool       bIndex,bSetSize,bCubic,bDist,bSetCenter;
+  bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
   bool       bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,d;
   t_filenm fnm[] = {
@@ -509,6 +525,7 @@ int main(int argc, char *argv[])
 
   bIndex    = opt2bSet("-n",NFILE,fnm) || bNDEF;
   bSetSize  = opt2parg_bSet("-box" ,NPA,pa);
+  bSetAng   = opt2parg_bSet("-angles" ,NPA,pa);
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
   bDist     = opt2parg_bSet("-d" ,NPA,pa);
   bCenter   = bCenter || bDist || bSetCenter || bSetSize;
@@ -661,17 +678,29 @@ int main(int argc, char *argv[])
     clear_mat(box);
     /* calculate new boxsize */
     switch(btype[0][0]){
-    case 'r':
-      if (bSetSize)
-	for (i=0; (i<DIM); i++)
-	  box[i][i]=newbox[i];
-      else 
-	for (i=0; (i<DIM); i++)
+    case 't':
+      if (bSetSize) {
+	if (!bSetAng)
+	  for (i=0; i<DIM; i++)
+	    box[i][i]=newbox[i];
+	else {
+	  svmul(DEG2RAD,newang,newang);
+	  box[XX][XX] = newbox[XX];
+	  box[YY][XX] = newbox[XX]*cos(newang[ZZ]);
+	  box[YY][YY] = newbox[YY]*sin(newang[ZZ]);
+	  box[ZZ][XX] = newbox[ZZ]*cos(newang[YY]);
+	  box[ZZ][YY] = newbox[ZZ]
+	    *(cos(newang[XX])-cos(newang[YY])*cos(newang[ZZ]))/sin(newang[ZZ]);
+	  box[ZZ][ZZ] = sqrt(sqr(newbox[ZZ])
+			     -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
+	}
+      } else
+	for (i=0; i<DIM; i++)
 	  box[i][i]=size[i]+2*dist;
       break;
     case 'c':
     case 'd':
-    case 't':
+    case 'o':
       if (bSetSize)
 	d = newbox[0];
       else
@@ -722,6 +751,9 @@ int main(int argc, char *argv[])
 	   RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY])));
     printf("new box volume  :%7.2f               (nm^3)\n",det(box));
   }  
+
+  if (check_box(box))
+    printf("\nWARNING: %s\n",check_box(box));
 
   if (bIndex) {
     fprintf(stderr,"\nSelect a group for output:\n");
