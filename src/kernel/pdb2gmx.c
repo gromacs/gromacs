@@ -627,6 +627,7 @@ int main(int argc, char *argv[])
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bH14=FALSE, bSort=TRUE, bRemoveH=FALSE;
   static bool bAlldih=FALSE;
+  static bool bDeuterate=FALSE;
   static real angle=135.0, distance=0.3;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
@@ -671,7 +672,9 @@ int main(int argc, char *argv[])
     { "-dummy",  FALSE, etENUM, {dumstr}, 
       "Convert atoms to dummy atoms" },
     { "-heavyh", FALSE, etBOOL, {&bHeavyH},
-      "Make hydrogen atoms heavy" }
+      "Make hydrogen atoms heavy" },
+    { "-deuterate", FALSE, etBOOL, {&bDeuterate},
+      "Change the mass of hydrogens to 2 amu" }
   };
 #define NPARGS asize(pa)
   
@@ -690,6 +693,8 @@ int main(int argc, char *argv[])
   
   if (bHeavyH)
     mHmult=4.0;
+  else if (bDeuterate)
+    mHmult=2.0;
   else
     mHmult=1.0;
   
@@ -730,8 +735,9 @@ int main(int argc, char *argv[])
       if (bMerge && i>0 && !bWat) {
 	printf("Merge chain '%c' and '%c'? (n/y) ",
 	       pchain,pdba_all.atom[i].chain);
-	gets(select);
-      } else
+	fgets(select,STRLEN-1,stdin);
+      } 
+      else
 	select[0] = 'n';
       pchain=pdba_all.atom[i].chain;
       if (select[0] == 'y') {
@@ -763,7 +769,8 @@ int main(int argc, char *argv[])
 	else
 	  pdb_ch[nch].nterpairs=1;
 	snew(pdb_ch[nch].chainstart,pdb_ch[nch].nterpairs+1);
-	pdb_ch[nch].chainstart[nch]=0;
+	/* modified [nch] to [0] below */
+	pdb_ch[nch].chainstart[0]=0;
 	nch++;
       }
     }

@@ -209,14 +209,13 @@ static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
 
 static void print_top_heavy_H(FILE *out, real mHmult)
 {
-  if (mHmult!=1.0) {
-    fprintf(out,"; heavy hydrogens:\n");
-    if (mHmult==4.0)
-      fprintf(out,"#define HEAVY_H\n\n");
-    else
-      fprintf(stderr,"WARNING: unsupported proton mass multiplier (%g) "
-	      "in pdb2top\n",mHmult);
-  }
+  if (mHmult == 2.0) 
+    fprintf(out,"; Using deuterium instead of hydrogen\n\n");
+  else if (mHmult == 4.0)
+    fprintf(out,"#define HEAVY_H\n\n");
+  else if (mHmult != 1.0)
+    fprintf(stderr,"WARNING: unsupported proton mass multiplier (%g) "
+	    "in pdb2top\n",mHmult);
 }
 
 void print_top_comment(FILE *out,char *filename,char *title,bool bITP)
