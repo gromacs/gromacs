@@ -481,7 +481,7 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
       k++;
     }
   }
-  for (i=(*nalldih); i<k; i++)
+  for (i=k; i < *nalldih; i++)
     sfree(alldih[i].s);
   *nalldih = k;
 
@@ -720,9 +720,21 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
   cppar(idih,nidih,plist,F_IDIHS);
   cppar(pai, npai, plist,F_LJ14);
 
+  
+  for(i=0; i<nang; i++)
+    sfree(ang[i].s);
   sfree(ang);
+  
+  for(i=0; i<ndih; i++)
+    sfree(dih[i].s);
   sfree(dih);
+  
+  for(i=0; i<nidih; i++)
+    sfree(idih[i].s);
   sfree(idih);
+  
+  for(i=0; i<npai; i++)
+    sfree(pai[i].s);
   sfree(pai);
 }
 
