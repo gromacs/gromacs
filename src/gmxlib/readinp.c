@@ -153,7 +153,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
       else
 	fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
      } else {
-      sprintf(warn_buf,"Unknown left-hand %s in parameter file\n",
+      sprintf(warn_buf,"Unknown left-hand '%s' in parameter file\n",
 	      inp[i].name);
       warning(NULL);
     }

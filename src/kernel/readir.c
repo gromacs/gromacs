@@ -1386,8 +1386,8 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
       min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
       if (sqr(2*rlong) >= min_size) {
 	fprintf(stderr,"ERROR: One of the box vectors is shorter than twice the cut-off length. Increase the box size or decrease %s.\n",
-		bTWIN ? "rcoulomb":"rlist");
-      (*nerror)++;
+		bTWIN ? (ir->rcoulomb==rlong ? "rcoulomb" : "rvdw"):"rlist");
+	(*nerror)++;
       }
     } else {
       min_size = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
