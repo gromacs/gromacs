@@ -174,10 +174,19 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	 (ir->eeltype == eelPME))  &&
 	 (ir->rcoulomb_switch >= ir->rcoulomb));
   
-  sprintf(err_buf,"rvdw (%g) may not be > rcoulomb (%g)",
+  sprintf(err_buf,"rvdw (%g) may not be > rcoulomb (%g) when using twin range",
 	  ir->rvdw,ir->rcoulomb);
-  CHECK(ir->rvdw > ir->rcoulomb);
-  
+  CHECK((ir->rvdw > ir->rcoulomb) && (ir->rcoulomb > ir->rlist));
+
+  if (((ir->eeltype == eelCUT) || (ir->eeltype == eelRF) ||
+       (ir->eeltype == eelGRF)) && 
+      (ir->rvdw > ir->rcoulomb)) {
+    sprintf(warn_buf,"With eel_type = %s it seems strange to have "
+	    "rvdw (%g) > rcoulomb (%g)",eel_names[ir->eeltype],
+	    ir->rvdw,ir->rcoulomb);
+    warning(NULL);
+  }
+    
   sprintf(err_buf,"With vdw_type = %s rvdw_switch must be < rvdw",
 	  evdw_names[ir->vdwtype]);
   CHECK(((ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwSWITCH)) &&
