@@ -679,35 +679,69 @@ int main(int argc,char *argv[])
     
     /* open topology file and append sol molecules */
     if ( ftp2bSet(efTOP,NFILE,fnm) ) {
+#define TEMP_FILE_NM "temp.top"
       FILE *fpin,*fpout;
-      char buf[STRLEN],*temp;
+      char buf[STRLEN],buf2[STRLEN],*temp;
       int  line;
+      bool bSystem,bMolecules,bSkip;
       
       fprintf(stderr,"Processing topology\n");
       fpin = ffopen(topinout,"r");
-      fpout= ffopen("temp.top","w");
+      fpout= ffopen(TEMP_FILE_NM,"w");
       line=0;
+      bSystem = bMolecules = FALSE;
       while (fgets(buf, STRLEN, fpin)) {
+	bSkip=FALSE;
 	line++;
-	if (strncmp("SOL       ",buf,10)!=0)
-	  fprintf(fpout,"%s",buf);
-	else {
+	strcpy(buf2,buf);
+	if (temp=strchr(buf2,'\n'))
+	  temp[0]='\0';
+	ltrim(buf2);
+	if (buf2[0]=='[') {
+	  buf2[0]=' ';
+	  if (temp=strchr(buf2,'\n'))
+	    temp[0]='\0';
+	  rtrim(buf2);
+	  if (buf2[strlen(buf2)-1]==']') {
+	    buf2[strlen(buf2)-1]='\0';
+	    ltrim(buf2);
+	    rtrim(buf2);
+	    bSystem=(strcasecmp(buf2,"system")==0);
+	    bMolecules=(strcasecmp(buf2,"molecules")==0);
+	  }
+	} else if (bSystem && nsol && (buf[0]!=';') ) {
+	  /* if sol present, append "in water" to system name */
+	  rtrim(buf2);
+	  if (buf2[0] && (!strstr(buf2," water")) ) {
+	    sprintf(buf,"%s in water\n",buf2);
+	    bSystem = FALSE;
+	  }
+	} else if (bMolecules) {
+	  /* check if this is a line with solvent molecules */
+	  sscanf(buf,"%s",buf2);
+	  bSkip = (strcmp(buf2,"SOL")==0);
+	}
+	if (bSkip) {
 	  if (temp=strchr(buf,'\n'))
 	    temp[0]='\0';
 	  fprintf(stdout,"Removing line #%d '%s' from topology file (%s)\n",
 		  line,buf,topinout);
-	}  
+	} else
+	  fprintf(fpout,"%s",buf);
       }
-      if ( nsol > 0 ) {
+      fclose(fpin);
+      if ( nsol ) {
 	fprintf(stdout,"Adding line for %d solute molecules to "
 		"topology file (%s)\n",nsol,topinout);
-	fprintf(fpout,"SOL       %5d\n",nsol);
+	fprintf(fpout,"%-15s %5d\n","SOL",nsol);
       } else
 	fprintf(stdout,"No SOL molecules, not adding anything to "
 		"topology file (%s)\n",topinout);
       fclose(fpout);
-      fclose(fpin);
-      rename("temp.top",topinout);
+      /* use ffopen to generate backup of topinout */
+      fpout=ffopen(topinout,"w");
+      fclose(fpout);
+      rename(TEMP_FILE_NM,topinout);
     }
   }
   thanx(stdout);
