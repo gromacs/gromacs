@@ -39,7 +39,7 @@ static char *SRCID_pdb2top_h = "$Id$";
 #include "pdb2gmx.h"
 #include "h_db.h"
 #include "toputil.h"
-#include "resall.h"
+#include "gen_dum.h"
 #include "ter_db.h"
 #include "topexcl.h"
 
@@ -53,22 +53,23 @@ typedef struct {
 
 extern void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 		    int nincl, char **incls, int nmol, char **mols,
-		    t_atoms *atoms,int nah,t_addh ah[],rvec x[],
+		    t_atoms *atoms,int nah,t_addh ah[],rvec **x,
 		    t_atomtype *atype,t_symtab *tab,
 		    int nrb, t_resbond rb[],
 		    int nrtp,t_restp rtp[],
 		    int nra, t_resang ra[],
 		    int nid, t_idihres idi[],
-		    t_terblock *ntdb,t_terblock *ctdb,
-		    bool bH14,
-		    int rn,int rc,bool bAlldih,
-		    int nssbonds,t_ssbond ssbonds[]);
+		    t_hackblock *ntdb,t_hackblock *ctdb,
+		    bool bH14,int rn,int rc,bool bAlldih,
+		    int nddb, t_dumblock *ddb,bool bDummies,real mHmult,
+		    int nssbonds,t_ssbond ssbonds[], int nrexcl);
 /* Create a topology ! */
 
 extern void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 		      int nincl, char **incls, int nmol, char **mols,
-		      t_atoms *at,t_params plist[],int nrtp,t_restp rtp[],
-		      t_atomtype *atype,t_block *cgs);
-/* write a topology */
+		      t_atoms *at,t_params plist[],t_block *excl,
+		      t_atomtype *atype,t_block *cgs, int nrexcl, real mHmult);
+/* write a topology 
+ * NOTE: nrexcl is not the size of *excl! */
 
 #endif	/* _pdb2top_h */
