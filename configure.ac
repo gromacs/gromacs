@@ -13,7 +13,7 @@ AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="2:0:0"
+SHARED_VERSION_INFO="3:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 
@@ -220,15 +220,6 @@ if test "$enable_fortran" = "yes"; then
   if test -z "$F77"; then
     AC_MSG_ERROR([No fortran compiler found])
   fi
-fi
-
-# This is a libtool hack. We never use c++, but libtool supports it and
-# thus there are macros that require it. For some reason, these macros are
-# always expanded by the libtool scripts, unless the are already present 
-# in the file. Thus, we include them here but never run them...
-if test 1 = 0; then
-  AC_PROG_CXX
-  AC_PROG_CXXCPP
 fi
 
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
@@ -481,14 +472,30 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
   GMXLIB_LIBOBJS="$GMXLIB_LIBOBJS gmx_system_xdr.lo"
   ;;
 *)
-  AC_CHECK_HEADERS(rpc/rpc.h rpc/xdr.h,
-  [# check for xtc libs if we found headers - on solaris the xdr stuff is in libnsl
+  AC_CHECK_HEADERS([rpc/rpc.h])
+  AC_CHECK_HEADERS([rpc/xdr.h],,,
+[#if HAVE_RPC_RPC_H
+# include <rpc/rpc.h>
+#endif
+])
   AC_CHECK_LIB(nsl,xdr_float)
-  AC_TRY_LINK([#include<rpc/rpc.h> 
-  #include<rpc/xdr.h>],[ XDR *xd; float f; xdr_float(xd,&f);],[have_xdr="yes"])])
+  AC_TRY_LINK([
+#if HAVE_RPC_RPC_H
+#include<rpc/rpc.h> 
+#else
+#error NO rpc.h header
+#endif
+#if HAVE_RPC_XDR_H
+#include<rpc/xdr.h>
+#else
+#error No xdr.h header
+#endif
+],[ XDR *xd; float f; xdr_float(xd,&f);],[have_xdr="yes"])
 
   if test "$have_xdr" != "yes"; then
-    AC_MSG_ERROR([Couldn't find XDR headers and/or libraries])
+    AC_DEFINE(USE_GMX_XDR,,[Use our own instead of system XDR libraries])	
+      GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} gmx_system_xdr.lo"
+    AC_MSG_WARN([Couldn't find XDR headers and/or libraries - using our own])
   fi
   ;;
 esac
