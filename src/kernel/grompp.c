@@ -790,8 +790,8 @@ int main (int argc, char *argv[])
     "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
     
     "When using position restraints a file with restraint coordinates",
-    "can be supplied with [TT]-r[tt], otherwise constraining will be done",
-    "relative to the conformation from the [TT]-c[tt] option.",
+    "can be supplied with [TT]-r[tt], otherwise restraining will be done",
+    "with respect to the conformation from the [TT]-c[tt] option.",
     "For free energy calculation the the coordinates for the B topology",
     "can be supplied with [TT]-rb[tt], otherwise they will be equal to",
     "those of the A topology.[PAR]",
