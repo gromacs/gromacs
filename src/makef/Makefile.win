@@ -30,7 +30,7 @@ XLIBS		= -lX11 -L/usr/lib/X11 -L/usr/X11R6/lib
 AR		= ar ruv
 SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(CPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(CPU).so -o $(LIBDIR)/$(LIBRARY).$(CPU).so *.o; $(RM) *.o)
 RANLIB		= ranlib
-X11INC		= -I/usr/include/X11
+#X11INC		= -I/usr/include/X11
 
 #
 #	USER MODIFIABLE SECTION
@@ -56,7 +56,7 @@ USE_XWIN	= no
 # This uses the xdr libraries of your UNIX system, which is virtually
 # Allways present, because it is necessary for NFS (network file system)
 #
-USE_XDR		= yes
+USE_XDR		= no
 #
 # Graphics Library
 # Set this on if you have Open GL and the Viewkit library
