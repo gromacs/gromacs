@@ -39,6 +39,7 @@ OBJ		= 	\
 		rando.o		random.o	rbin.o		\
 		rdgroup.o	readinp.o	replace.o	\
 		rmpbc.o		runner.o	shakef.o	\
+		sheader.o					\
 		sim_util.o	smalloc.o	splittop.o	\
 		stat.o		statutil.o	steep.o		\
 		strdb.o		string2.o	symtab.o	\
