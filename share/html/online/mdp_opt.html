@@ -15,7 +15,7 @@
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstprint, nstxtcout, xtc_precision, xtc_grps, energygrps)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box)
 <li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rshort, rlong, epsilon_r, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
@@ -135,14 +135,15 @@ conjugate gradients energy minimization.
 
 <A NAME="out"><br><h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#em"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_down.gif"></A> Output control</h3>
 <dl>
-<dt><h4>nstxout: </b>(1) [steps]</h4>
+<dt><h4>nstxout: </b>(100) [steps]</h4>
 <dd>frequency to write coordinates to output trajectory
-<dt><h4>nstvout: </b>(1) [steps]</h4>
+<dt><h4>nstvout: </b>(100) [steps]</h4>
 <dd>frequency  to write velocities to output trajectory
-<dt><h4>nstfout: </b>(1) [steps]</h4>
+<dt><h4>nstfout: </b>(0) [steps]</h4>
 <dd>frequency to write forces to output trajectory
-<dt><h4>nstprint: </b>(1) [steps]</h4>
-<dd>frequency to write energies to energy file
+<dt><h4>nstlog: </b>(100) [steps]</h4>
+<dt><h4>nstenergy: </b>(100) [steps]</h4>
+<dd>frequency to write energies to log file and energy file
 <dt><h4>nstxtcout: </b>(0) [steps]</h4>
 <dd>frequency to write coordinates to xtc trajectory
 <dt><h4>xtc_precision: </b>(1000) [real]</h4>
@@ -426,7 +427,7 @@ for "normal" MD.
 <dd>Highest order in the expansion of the constraint coupling matrix
 <dt><h4>lincs_warnangle: </b>(30) [degrees]</h4>
 <dd>maximum angle that a bond can rotate before Lincs will complain
-<dt><h4>nstlincsout: </b>(100) [steps]</h4>
+<dt><h4>nstlincsout: </b>(1000) [steps]</h4>
 <dd>frequency to output constraint accuracy in log file
 
 <dt><h4>morse:</h4>
@@ -591,11 +592,12 @@ desired parameter.
 <A HREF="#pc">npcmemory</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>
+<A HREF="#out">nstenergy</A><br>
 <A HREF="#run">nsteps</A><br>
 <A HREF="#out">nstfout</A><br>
 <A HREF="#bond2">nstlincsout</A><br>
 <A HREF="#nl">nstlist</A><br>
-<A HREF="#out">nstprint</A><br>
+<A HREF="#out">nstlog</A><br>
 <A HREF="#out">nstvout</A><br>
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
