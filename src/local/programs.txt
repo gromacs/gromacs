@@ -39,7 +39,7 @@ make_ndx|makes index files
 mk_angndx|generates index files for g_angle
 gmxcheck|checks and compares files
 gmxdump|makes binary files human readable
-g_traj|plots x, v and f of selected atoms/groups from a trajectory
+g_traj|plots x, v and f of selected atoms/groups (and more) from a trajectory
 g_analyze|analyzes data sets
 trjorder|orders molecules according to their distance to a group
 END
@@ -59,7 +59,7 @@ g_rmsdist|calculates atom pair distances averaged with power 2, -3 or -6
 END
 
 HEAD|Mass distribution properties over time
-g_traj|plots x, v, f and rotational energy
+g_traj|plots x, v, f, box, temperature and rotational energy
 g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
 g_rotacf|calculates the rotational correlation function for molecules
@@ -84,7 +84,7 @@ g_disre|analyzes distance restraints
 END
 
 HEAD|Kinetic properties
-g_traj|plots x, v, f and rotational energy
+g_traj|plots x, v, f, box, temperature and rotational energy
 g_velacc|calculates velocity autocorrelation functions
 END
 

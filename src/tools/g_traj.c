@@ -45,8 +45,9 @@ static char *SRCID_g_coord_c = "$Id$";
 #include "xvgr.h"
 #include "tpxio.h"
 #include "rmpbc.h"
+#include "physics.h"
 
-void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
+static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
 		    bool bDim[])
 {
   int i,d;
@@ -69,8 +70,8 @@ void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
   fprintf(fp,"\n");
 }
 
-void average_data(rvec x[],rvec xav[],real *mass,
-		  int ngrps,int isize[],atom_id **index)
+static void average_data(rvec x[],rvec xav[],real *mass,
+			 int ngrps,int isize[],atom_id **index)
 {
   int  g,i;
   real m,mtot;
@@ -92,8 +93,8 @@ void average_data(rvec x[],rvec xav[],real *mass,
   }
 }
   
-void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
-		int ngrps,int isize[],atom_id **index,bool bDim[])
+static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
+		       int ngrps,int isize[],atom_id **index,bool bDim[])
 {
   static rvec *xav=NULL;
   
@@ -106,8 +107,8 @@ void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
     low_print_data(fp,time,x,isize[0],index[0],bDim);
 }
 
-void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],char **name,
-		 bool bCom,bool bMol,bool bDim[])
+static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
+			char **name,bool bCom,bool bMol,bool bDim[])
 {
   char **leg;
   char *dimtxt[] = { " X", " Y", " Z", "" };
@@ -138,7 +139,7 @@ void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],char **name,
   sfree(leg);
 }
 
-real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
+static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
 {
   matrix TCM,L;
   real   tm,m0,lxx,lxy,lxz,lyy,lyz,lzz,ekrot;
@@ -206,7 +207,21 @@ real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
   return ekrot;
 }
 
-void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
+static real temp(rvec v[],real mass[],int isize,atom_id index[])
+{
+  matrix TCM,L;
+  real   m,ekin;
+  int    i,j;
+
+  for(i=0; i<isize; i++) {
+    j = index[i];
+    ekin += mass[j]*norm2(v[j]);
+  }
+
+  return ekin/(2*isize*BOLTZ);
+}
+
+static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
 {
   rvec hbox;
   int d,i,m;
@@ -233,8 +248,10 @@ int main(int argc,char *argv[])
     "When [TT]-mol[tt] is set, the numbers in the index file are",
     "interpreted as molecule numbers and the same procedure as with",
     "[TT]-com[tt] is used for each molecule.[PAR]",
-    "Option [TT]-ekr[tt] plots the rotational kinetic energy of each",
-    "group. This implies [TT]-com[tt]."
+    "Option [TT]-ot[tt] plots the temperature of each group.",
+    "This implies [TT]-com[tt].[PAR]",
+    "Option [TT]-ekr[tt] plots the rotational kinetic energy of each group.",
+    "This implies [TT]-com[tt]."
   };
   static bool bMol=FALSE,bCom=FALSE,bNoJump=FALSE;
   static bool bX=TRUE,bY=TRUE,bZ=TRUE,bNorm=FALSE;
@@ -255,7 +272,7 @@ int main(int argc,char *argv[])
       "Plot vector length" }
     
   };
-  FILE       *outx,*outv,*outf,*outb,*outekr;
+  FILE       *outx,*outv,*outf,*outb,*outt,*outekr;
   t_topology top;
   real       *mass;
   char       title[STRLEN],*indexfn;
@@ -271,7 +288,7 @@ int main(int argc,char *argv[])
   atom_id    **index0,**index;
   atom_id    *a,*atndx;
   t_block    *mols;
-  bool       bTop,bOX,bOV,bOF,bOB,bEKR,bDim[4],bDum[4];
+  bool       bTop,bOX,bOV,bOF,bOB,bOT,bEKR,bDim[4],bDum[4];
   char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
@@ -282,7 +299,8 @@ int main(int argc,char *argv[])
     { efXVG, "-ov", "veloc.xvg", ffOPTWR },
     { efXVG, "-of", "force.xvg", ffOPTWR },
     { efXVG, "-ob", "box.xvg",   ffOPTWR },
-    { efXVG, "-ekr", "ekrot.xvg", ffOPTWR }
+    { efXVG, "-ot", "temp.xvg",  ffOPTWR },
+    { efXVG, "-ekr","ekrot.xvg", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -294,12 +312,13 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Interpreting indexfile entries as molecules.\n"
 	    "Using center of mass.\n");
   
-  bOX = opt2bSet("-ox",NFILE,fnm);
-  bOV = opt2bSet("-ov",NFILE,fnm);
-  bOF = opt2bSet("-of",NFILE,fnm);
-  bOB = opt2bSet("-ob",NFILE,fnm);
+  bOX  = opt2bSet("-ox",NFILE,fnm);
+  bOV  = opt2bSet("-ov",NFILE,fnm);
+  bOF  = opt2bSet("-of",NFILE,fnm);
+  bOB  = opt2bSet("-ob",NFILE,fnm);
+  bOT  = opt2bSet("-ot",NFILE,fnm);
   bEKR = opt2bSet("-ekr",NFILE,fnm);
-  if (bMol || bEKR)
+  if (bMol || bOT || bEKR)
     bCom = TRUE;
 
   bDim[XX] = bX;
@@ -308,7 +327,7 @@ int main(int argc,char *argv[])
   bDim[DIM] = bNorm;
 
   bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,topbox,
-		       bCom && (bOX || bOV || bEKR));
+		       bCom && (bOX || bOV || bOT || bEKR));
   sfree(xtop);
   if (bMol && !bTop)
     fatal_error(0,"Need a run input file for option -mol");
@@ -376,7 +395,17 @@ int main(int argc,char *argv[])
   if (bOB) {
     outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
 		    "Time (ps)","(nm)");
+   
     xvgr_legend(outb,6,box_leg);
+  }
+  if (bOT) {
+    bDum[XX] = FALSE;
+    bDum[YY] = FALSE;
+    bDum[ZZ] = FALSE;
+    bDum[DIM] = TRUE;
+    flags = flags | TRX_READ_V;
+    outt = xvgropen(opt2fn("-ot",NFILE,fnm),"Temperature","Time (ps)","(K)");
+    make_legend(outt,ngrps,isize[0],index[0],grpname,bCom,bMol,bDum);
   }
   if (bEKR) {
     bDum[XX] = FALSE;
@@ -418,6 +447,12 @@ int main(int argc,char *argv[])
       fprintf(outb,"\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",fr.time,
 	      fr.box[XX][XX],fr.box[YY][YY],fr.box[ZZ][ZZ],
 	      fr.box[YY][XX],fr.box[ZZ][XX],fr.box[ZZ][YY]);
+    if (bOT && fr.bV) {
+      fprintf(outt," %g",fr.time);
+      for(i=0; i<ngrps; i++)
+	fprintf(outt,"\t%g",temp(fr.v,mass,isize[i],index[i]));
+      fprintf(outt,"\n");
+    }
     if (bEKR && fr.bX && fr.bV) {
       fprintf(outekr," %g",fr.time);
       for(i=0; i<ngrps; i++)
@@ -444,6 +479,10 @@ int main(int argc,char *argv[])
   if (bOB) {
     fclose(outb);
     xvgr_file(opt2fn("-ob",NFILE,fnm), NULL);
+  }
+  if (bOT) {
+    fclose(outt);
+    xvgr_file(opt2fn("-ot",NFILE,fnm), NULL);
   }
   if (bEKR) {
     fclose(outekr);
