@@ -386,6 +386,18 @@ int main(int argc, char *argv[])
     "interactions. The equilibrium distances and angles are taken",
     "from the input coordinates, the force constant are set with",
     "command line options."
+    "The force fields supported currently are:[PAR]",
+    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[PAR]",
+    "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
+    "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[PAR]",
+    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[PAR]",
+    "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[PAR]",
+    "The corresponding data files can be found in the library directory",
+    "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
+    "information about file formats. By default the forcefield selection",
+    "is interactive, but you can use the [TT]-ff[tt] option to specify",
+    "one of the short names above on the command line instead. In that",
+    "case pdb2gmx just looks for the corresponding file.[PAR]",
   };
   static char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
@@ -425,12 +437,12 @@ int main(int argc, char *argv[])
   static bool bParam = FALSE,bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
   static bool bPairs = TRUE, bPBC = TRUE;
   static char *molnm = "ICE";
-  static char *ff[] = { NULL, "G43a1", "oplsaa", "gmx", "G43a2", "G43b1", NULL };
+  static char *ff = "select";
   t_pargs pa[] = {
     { "-scale", FALSE, etREAL, {&scale},
       "Scaling factor for bonds with unknown atom types relative to atom type O" },
-    { "-ff",     FALSE, etENUM, {ff},
-      "Select the force field for your simulation" },
+    { "-ff",     FALSE, etSTR, {&ff},
+      "Select the force field for your simulation." },
     { "-nexcl", FALSE, etINT,  {&nexcl},
       "Number of exclusions" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
@@ -463,11 +475,25 @@ int main(int argc, char *argv[])
 		    asize(desc),desc,asize(bugs),bugs);
   bRTP = opt2bSet("-r",NFILE,fnm);
   bTOP = opt2bSet("-o",NFILE,fnm);
-  sprintf(forcefield,"ff%s",ff[0]);
+
   if (!bRTP && !bTOP)
     fatal_error(0,"Specify at least one output file");
 
   cutoff = set_x_blen(scale);
+
+  if(!strncmp(ff,"select",6)) {
+    /* Interactive forcefield selection */
+    choose_ff(forcefield,sizeof(forcefield));
+  } else {
+    sprintf(forcefield,"ff%s",ff);
+  }
+  {
+    char rtp[STRLEN];
+
+    sprintf(rtp,"%s.rtp",forcefield);
+    printf("Looking whether force field file %s exists\n",rtp);
+    fclose(libopen(rtp));
+  }
 
   if (bPBC)
     set_gmx_full_pbc();
