@@ -481,6 +481,7 @@ int main(int argc, char *argv[])
     char chain;
     int  start;
     int  natom;
+    int  nres;
     bool bAllWat;
     t_pdbatom *pdba;
     rvec *x;
@@ -634,7 +635,8 @@ int main(int argc, char *argv[])
       }
       nchain--;
       srenew(chains,nchain);
-      /* this is dirty but necessary: */
+      /* this is dirty but necessary 
+	 because we just merged the current chain with the previous one: */
       i--;
     }
   }
@@ -658,9 +660,12 @@ int main(int argc, char *argv[])
   chains[nchain].start=natom;
   
   j=nchain;
-  for (i=0; (i<nchain); i++)
-    if (chains[i].chain==' ')
+  for (i=0; (i<nchain); i++) {
+    chains[i].nres = (pdba_all[chains[i+1].start-1].resnr+1 -
+		      pdba_all[chains[i  ].start  ].resnr);
+    if (chains[i].chain==' ') 
       j--;
+  }
   if (j==0) j=1;
   
   printf("There are %d chains and %d residues with %d atoms\n",
@@ -669,9 +674,9 @@ int main(int argc, char *argv[])
   printf("%5s %5s %4s %6s\n","chain","start","#res","#atoms");
   for (i=0; (i<nchain); i++)
     printf("%d '%c' %5d %4d %6d %s\n",
-	   i+1,chains[i].chain,chains[i].start+1,
-	   pdba_all[chains[i+1].start-1].resnr+1 -
-	   pdba_all[chains[i  ].start  ].resnr,
+	   i+1,chains[i].chain,chains[i].start+1,chains[i].nres,
+/* 	   pdba_all[chains[i+1].start-1].resnr+1 - */
+/* 	   pdba_all[chains[i  ].start  ].resnr, */
 	   chains[i+1].start-chains[i].start,
 	   chains[i].bAllWat ? "(only water)":"");
   
@@ -721,10 +726,10 @@ int main(int argc, char *argv[])
   mols=NULL;
   nres=0;
   for(chain=0; (chain<nchain); chain++) {
-    /* set pdba and natom to the current chain */
+    /* set pdba, natom and nres to the current chain */
     pdba =chains[chain].pdba;
     natom=chains[chain].natom;
-    nres =pdba[natom-1].resnr + 1 - nres;
+    nres =chains[chain].nres;
     
     if (chains[chain].chain && ( chains[chain].chain != ' ' ) )
       printf("Processing chain %d '%c' (%d atoms, %d residues)\n",
@@ -768,8 +773,7 @@ int main(int argc, char *argv[])
     if ( (rN<0) || (rC<0) ) {
       printf("No N- or C-terminus found: "
 	     "assuming this chain contains no protein\n");
-    }
-    else {
+    } else {
       /* set termini */
       if ( (rN>=0) && (bTerMan || (nNtdb<4)) )
 	sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
