@@ -9,12 +9,14 @@ ene
 eneconv
 eps
 g87
+g_anaeig
 g_angle
 g_bond
 g_chi
 g_com
 g_confrms
 g_coord
+g_covar
 g_density
 g_dielectric
 g_dih
@@ -45,7 +47,6 @@ g_saltbr
 g_sas
 g_sgangle
 g_velacc
-gcp
 genbox
 genconf
 gendr
