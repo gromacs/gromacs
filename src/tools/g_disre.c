@@ -288,7 +288,8 @@ static bool is_core(int i,int isize,atom_id index[])
 
 static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
 		       t_iparams ip[],real aver1[],real aver2[],
-		       real aver_3[],int isize,atom_id index[])
+		       real aver_3[],int isize,atom_id index[],
+		       t_atoms *atoms)
 {
   int  i,j,nra;
   t_dr_stats *drs;
@@ -311,6 +312,12 @@ static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
     drs[i].rT    = pow(aver_3[i]/nsteps,-1.0/3.0);
     drs[i].viol  = max(0,drs[i].r-drs[i].up1);
     drs[i].violT = max(0,drs[i].rT-drs[i].up1);
+    if (atoms) {
+      int j1 = disres->iatoms[j+1];
+      int j2 = disres->iatoms[j+2];
+      atoms->pdbinfo[j1].bfac += drs[i].violT*5;
+      atoms->pdbinfo[j2].bfac += drs[i].violT*5;
+    }
   }
   dump_viol(log,ndr,drs,FALSE);
   
@@ -335,7 +342,9 @@ int gmx_disre(int argc,char *argv[])
     "it does not make sense to use time averaging. However,",
     "the time averaged values per restraint are given in the log file.[PAR]",
     "An index file may be used to select specific restraints for",
-    "printing."
+    "printing.[PAR]",
+    "When the optional[TT]-q[tt] flag is given a pdb file coloured by the",
+    "amount of average violations."
   };
   static int  ntop      = 0;
   t_pargs pa[] = {
@@ -355,16 +364,17 @@ int gmx_disre(int argc,char *argv[])
   t_nsborder  *nsb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,ntopatoms,natoms,i,j,nv,step;
+  int         status,ntopatoms,natoms,i,j,nv,step,kkk,m;
   real        t,sumv,averv,maxv,lambda;
   real        *aver1,*aver2,*aver_3;
-  rvec        *x,*f;
+  rvec        *x,*f,*xav;
   matrix      box;
+  bool        bPDB;
   int         isize;
-  atom_id     *index=NULL;
+  atom_id     *index=NULL,*ind_fit=NULL;
   char        *grpname;
   char        **leg;
-  real        *vvindex=NULL;
+  real        *vvindex=NULL,*w_rls=NULL;
   t_mdatoms   *mdatoms;
   
   t_filenm fnm[] = {
@@ -375,8 +385,9 @@ int gmx_disre(int argc,char *argv[])
     { efXVG, "-dn", "drnum",  ffWRITE },
     { efXVG, "-dm", "drmax",  ffWRITE },
     { efXVG, "-dr", "restr",  ffWRITE },
-    { efLOG, "-l", "disres", ffWRITE },
-    { efNDX, NULL, "viol",   ffOPTRD }
+    { efLOG, "-l",  "disres", ffWRITE },
+    { efNDX, NULL,  "viol",   ffOPTRD },
+    { efPDB, "-q",  "viol",   ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -385,7 +396,6 @@ int gmx_disre(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 		    
-  
   if (ntop)
     init5(ntop);
   
@@ -393,7 +403,18 @@ int gmx_disre(int argc,char *argv[])
   snew(xtop,header.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&ntopatoms,xtop,NULL,NULL,&top);
-
+  bPDB = opt2bSet("-q",NFILE,fnm);
+  if (bPDB) {
+    snew(xav,ntopatoms);
+    snew(ind_fit,ntopatoms);
+    snew(w_rls,ntopatoms);
+    for(kkk=0; (kkk<ntopatoms); kkk++) {
+      w_rls[kkk] = 1;
+      ind_fit[kkk] = kkk;
+    }   
+    if (top.atoms.pdbinfo == NULL)
+      snew(top.atoms.pdbinfo,ntopatoms);
+  } 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
   check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
@@ -461,6 +482,12 @@ int gmx_disre(int argc,char *argv[])
 	       top.idef.iparams,top.idef.functype,
 	       x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
 	       isize,index,vvindex,fcd,aver1,aver2,aver_3);
+    if (bPDB) {
+      reset_x(top.atoms.nr,ind_fit,top.atoms.nr,NULL,x,w_rls);
+      do_fit(top.atoms.nr,w_rls,x,x);
+      for(kkk=0; (kkk<top.atoms.nr); kkk++)
+	rvec_inc(xav[kkk],x[kkk]);
+    }
     if (isize > 0) {
       fprintf(xvg,"%10g",t);
       for(i=0; (i<isize); i++)
@@ -477,7 +504,16 @@ int gmx_disre(int argc,char *argv[])
   
   close_trj(status);
   dump_stats(stdlog,j,fcd->disres.nr,&(top.idef.il[F_DISRES]),
-	     top.idef.iparams,aver1,aver2,aver_3,isize,index);
+	     top.idef.iparams,aver1,aver2,aver_3,isize,index,
+	     bPDB ? (&top.atoms) : NULL);
+  if (bPDB) {
+    for(kkk=0; (kkk<top.atoms.nr); kkk++)
+      for(m=0; (m<DIM); m++)
+	xav[kkk][m] /= (double)j;
+    write_sto_conf(opt2fn("-q",NFILE,fnm),
+		   "Coloured by average violation in Angstrom",
+		   &(top.atoms),xtop,NULL,box);
+  }
   fclose(out);
   fclose(aver);
   fclose(numv);
