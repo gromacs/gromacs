@@ -170,7 +170,7 @@ int main(int argc,char *argv[])
 
   /* call diagonalization routine. Tested only fortran double precision */
 
-  fprintf(stderr,"Diagonalizing...\n");
+  fprintf(stderr,"\nDiagonalizing...\n");
   fflush(stderr);
 
   ql77 (ndim,hess,eigv);
