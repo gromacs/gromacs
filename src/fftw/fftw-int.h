@@ -22,8 +22,7 @@
 
 #ifndef FFTW_INT_H
 #define FFTW_INT_H
-#include <config.h>
-#include <fftw.h>
+#include "fftw.h"
 
 #ifdef __cplusplus
 extern "C" {
