@@ -82,7 +82,7 @@ int main(int argc,char *argv[])
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
   real       t,*mat,dev,trace,sum,*eigval,*rdum2,rdum,inv_nframes;
-  real       xj,*sqrtm,normfac,*w_rls,lambda;
+  real       xj,*sqrtm,*w_rls,lambda;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
   char       *grpname,*infile,str[STRLEN];
@@ -205,13 +205,10 @@ int main(int argc,char *argv[])
 
   /* calculate the mass-weighted covariance matrix */
   inv_nframes=1.0/nframes;
-  normfac=0;
   for (i=0; i<natoms; i++) {
     svmul(inv_nframes,xav[i],xav[i]);
-    normfac+=sqrtm[i];
     copy_rvec(xav[i],xread[index[i]]);
   }
-  normfac=sqr(natoms/normfac);
 
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
 			 atoms,xread,NULL,NULL,natoms,index);
@@ -222,7 +219,7 @@ int main(int argc,char *argv[])
 	k=ndim*(DIM*j+dj)+DIM*i;
 	for (d=0; d<DIM; d++) {
 	  mat[k+d]=(mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
-	    *sqrtm[i]*sqrtm[j]*normfac;
+	    *sqrtm[i]*sqrtm[j];
 	}
       }
   for (j=0; j<ndim; j++) 
@@ -232,7 +229,8 @@ int main(int argc,char *argv[])
   trace=0;
   for(i=0; i<ndim; i++)
     trace+=mat[i*ndim+i];
-  fprintf(stderr,"\nTrace of the covariance matrix: %g (nm^2)\n",trace);
+  fprintf(stderr,"\nTrace of the covariance matrix: %g (%snm^2)\n",
+	  trace,bM ? "amu " : "");
 
   /* call diagonalization routine. Tested only fortran double precision */
 
@@ -255,15 +253,17 @@ int main(int argc,char *argv[])
   sum=0;
   for(i=0; i<ndim; i++)
     sum+=eigval[i];
-  fprintf(stderr,"\nSum of the eigenvalues: %g (nm^2)\n",sum);
+  fprintf(stderr,"\nSum of the eigenvalues: %g (%snm^2)\n",
+	  sum,bM ? "amu " : "");
   if (fabs(trace-sum)>0.01*trace)
     fprintf(stderr,"\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
   
   fprintf (stderr,"\nWriting eigenvalues to %s\n",ftp2fn(efXVG,NFILE,fnm));
 
+  sprintf(str,"(%snm\\S2\\N)",bM ? "amu " : "");
   out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
 	       "Eigenvalues of the covariance matrix",
-	       "Eigenvector index","(nm\\S2\\N)");  
+	       "Eigenvector index",str);  
 
   for (i=0; (i<ndim); i++) {
     fprintf (out,"%10d %g\n",i+1,eigval[ndim-1-i]);
@@ -292,7 +292,7 @@ int main(int argc,char *argv[])
       fwrite_trn(trjout,-1,-1,-1,zerobox,natoms,xav,NULL,NULL);
 
   /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
-  fwrite_trn(trjout,0,0,bDiffMass2 ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
+  fwrite_trn(trjout,0,0,bM ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
   for(i=1; i<=end; i++) {
     for (j=0; j<natoms; j++)
       for(d=0; d<DIM; d++)

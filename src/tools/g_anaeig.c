@@ -51,6 +51,8 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "gstat.h"
 #include "txtdump.h"
 
+char *proj_unit;
+
 real tick_spacing(real range,int minticks)
 {
   real sp;
@@ -305,15 +307,16 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       sprintf(str,"vec %d",eignr[outvec[v]]+1);
       ylabel[v]=strdup(str);
     }
+    sprintf(str,"projection on eigenvectors (%s)",proj_unit);
     write_xvgr_graphs(projfile,noutvec,
-		      "Projection on eigenvectors (nm)","Time (ps)",
+		      str,"Time (ps)",
 		      ylabel,nframes,inprod[noutvec],inprod,FALSE);
   }
   if (twodplotfile) {
-    sprintf(str,"projection on eigenvector %d (nm)",
-	    eignr[outvec[0]]+1);
-    sprintf(str2,"projection on eigenvector %d (nm)",
-	    eignr[outvec[noutvec-1]]+1); 
+    sprintf(str,"projection on eigenvector %d (%s)",
+	    eignr[outvec[0]]+1,proj_unit);
+    sprintf(str2,"projection on eigenvector %d (%s)",
+	    eignr[outvec[noutvec-1]]+1,proj_unit); 
     xvgrout=xvgropen(twodplotfile,"2D projection of trajectory",str,str2);
     for(i=0; i<nframes; i++)
       fprintf(xvgrout,"%10.5f %10.5f\n",inprod[0][i],inprod[noutvec-1][i]);
@@ -383,7 +386,7 @@ void components(char *outfile,int natoms,real *sqrtm,
   real *x,**y;
   char str[STRLEN],**ylabel;
 
-  fprintf(stderr,"Writing eigenvector components to %s\n",outfile);
+  fprintf(stderr,"Writing atom displacements to %s\n",outfile);
 
   snew(ylabel,noutvec);
   snew(y,noutvec);
@@ -398,7 +401,7 @@ void components(char *outfile,int natoms,real *sqrtm,
     for(i=0; i<natoms; i++)
       y[g][i] = norm(eigvec[v][i])/sqrtm[i];
   }
-  write_xvgr_graphs(outfile,noutvec,"Eigenvector components","Atom number",
+  write_xvgr_graphs(outfile,noutvec,"Atom displacements","Atom number",
 		    ylabel,natoms,x,y,TRUE);
   fprintf(stderr,"\n");
 }
@@ -489,7 +492,7 @@ int main(int argc,char *argv[])
     "Most analyses are done on eigenvectors [TT]-first[tt] to [TT]-last[tt],",
     "but when [TT]-first[tt] is set to -1 you will be prompted for a",
     "selection.[PAR]",
-    "[TT]-comp[tt]: plot eigenvector components per atom of eigenvectors",
+    "[TT]-disp[tt]: plot all atom displacements of eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
     "[TT]-proj[tt]: calculate projections of a trajectory on eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
@@ -537,7 +540,7 @@ int main(int argc,char *argv[])
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;
   rvec       *x,*xread,*xav1,*xav2,**eigvec1=NULL,**eigvec2=NULL;
   matrix     topbox;
-  real       xid,totmass,*sqrtm,avsqrtm,*w_rls,t,lambda;
+  real       xid,totmass,*sqrtm,*w_rls,t,lambda;
   int        natoms,step;
   char       *grpname,*indexfile,title[STRLEN];
   int        i,j,d;
@@ -555,7 +558,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f",    NULL,          ffOPTRD }, 
     { efTPS, NULL,    NULL,          ffOPTRD },
     { efNDX, NULL,    NULL,          ffOPTRD },
-    { efXVG, "-comp", "eigcomp",     ffOPTWR },
+    { efXVG, "-disp", "eigdisp",     ffOPTWR },
     { efXVG, "-proj", "proj",        ffOPTWR },
     { efXVG, "-2d",   "2dproj",      ffOPTWR },
     { efTRX, "-filt", "filtered",    ffOPTWR },
@@ -573,7 +576,7 @@ int main(int argc,char *argv[])
 
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
   topfile         = ftp2fn(efTPS,NFILE,fnm); 
-  CompFile        = opt2fn_null("-comp",NFILE,fnm);
+  CompFile        = opt2fn_null("-disp",NFILE,fnm);
   ProjOnVecFile   = opt2fn_null("-proj",NFILE,fnm);
   TwoDPlotFile    = opt2fn_null("-2d",NFILE,fnm);
   FilterFile      = opt2fn_null("-filt",NFILE,fnm);
@@ -621,26 +624,22 @@ int main(int argc,char *argv[])
     rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
     /* Fitting is only needed when we need to read a trajectory */ 
     if (bTraj) {
-      if (xref1==NULL || (bM && bDMR1)) {
+      if ((xref1==NULL) || (bM && bDMR1)) {
 	if (bFit1) {
 	  printf("\nNote: the structure in %s should be the same\n"
 		 "      as the one used for the fit in g_covar\n",topfile);
 	  printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
 	  get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
-	  if (xref1==NULL) {
-	    snew(w_rls,atoms->nr);
-	    for(i=0; (i<nfit); i++)
-	      if (bM)
-		w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
-	      else
-		w_rls[ifit[i]]=1.0;
-	  } else {
-	    nfit=0;
-	    ifit=NULL;
-	  }
+	  snew(w_rls,atoms->nr);
+	  for(i=0; (i<nfit); i++)
+	    if (bM && bDMR1)
+	      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
+	    else
+	      w_rls[ifit[i]]=1.0;
 	}
 	else {
 	  /* make the fit index in xref instead of xtop */
+	  nfit=natoms;
 	  snew(w_rls,nfit);
 	  for(i=0; (i<nfit); i++) {
 	    w_rls[i]=atoms->atom[ifit[i]].m;
@@ -672,17 +671,14 @@ int main(int argc,char *argv[])
 
   snew(sqrtm,natoms);
   if (bM && bDMA1) {
-    avsqrtm=0;
-    for(i=0; (i<natoms); i++) {
+    proj_unit="amu\\S1/2\\Nnm";
+    for(i=0; (i<natoms); i++)
       sqrtm[i]=sqrt(atoms->atom[index[i]].m);
-      avsqrtm+=sqrtm[i];
-    }
-    avsqrtm=natoms/avsqrtm;
-    for(i=0; (i<natoms); i++) 
-      sqrtm[i]=sqrtm[i]*avsqrtm;
-  } else
+  } else {
+    proj_unit="nm";
     for(i=0; (i<natoms); i++)
       sqrtm[i]=1.0;
+  }
   
   if (bVec2) {
     t=0;
