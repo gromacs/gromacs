@@ -50,7 +50,7 @@ movebin:
 disco:		disco.o dlist.o dtools.o correct.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-cdist:		cdist.o bondlist.o smooth.o residues.o virtual.o
+cdist:		cdist.o bondlist.o smooth.o residues.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 genbox:		genbox.o	addconf.o	
