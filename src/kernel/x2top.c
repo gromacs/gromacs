@@ -49,6 +49,7 @@ static char *SRCID_x2top_c = "$Id$";
 #include "pdb2top.h"
 #include "gen_ad.h"
 #include "topexcl.h"
+#include "vec.h"
 #include "x2top.h"
 
 int get_atype(char *nm)
@@ -370,10 +371,10 @@ int main(int argc, char *argv[])
 
   mymol.name = strdup(molnm);
   mymol.nr   = 1;
-		    
+	
   /* Init lookup table for invsqrt */	    
   init_lookup_table(stdout);
-  
+
   /* Init parameter lists */
   init_plist(plist);
   

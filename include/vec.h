@@ -41,6 +41,7 @@ static char *SRCID_vec_h = "$Id$";
 #include "sysstuff.h"
 #include "macros.h"
 #include "fatal.h"
+#include "lutab.h"
 
 #ifdef _lnx_
 #define gmx_inline inline
@@ -49,7 +50,6 @@ static char *SRCID_vec_h = "$Id$";
 #endif
 
 #ifdef CINVSQRT
-#include "lutab.h"
 static gmx_inline real invsqrt(float x)
 {
   const real  half=0.5;
