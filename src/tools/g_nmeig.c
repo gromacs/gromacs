@@ -89,7 +89,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,0,TRUE,
+  parse_common_args(&argc,argv,PCA_SET_NPRI,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&top_x,NULL,box,bM);
