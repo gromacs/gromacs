@@ -307,7 +307,7 @@ void fortran_invsqrt()
   nargs=ndecl;
   
   declare_int("i");  
-#ifdef SOFTWARE_SQRT
+#ifdef SOFTWARE_INVSQRT
   declare_int4("finvsqrtexptab"); 
   declare_int4("finvsqrtfracttab"); 
 
@@ -355,7 +355,7 @@ void fortran_invsqrt()
 #endif
   end_loop();
 
-#else /* no SOFTWARE_SQRT */
+#else /* no SOFTWARE_INVSQRT */
   start_loop("i","1","n");
   assign("utdata(i)","1.0/sqrt(indata(i))");
   end_loop();
