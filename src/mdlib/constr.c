@@ -94,6 +94,11 @@ static void dump_confs(int step,t_atoms *atoms,
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
 
+static int int_comp(const void *a,const void *b)
+{
+  return (*(int *)a) - (*(int *)b);
+}
+
 static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 		       t_mdatoms *md,int start,int homenr,
 		       int *nrtot,
@@ -189,6 +194,9 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       for(k=0; k<at_cn[a2-start]; k++)
 	if (at_c[a2-start][k] != i)
 	  (*blbnb)[((*blnr)[i+1])++]=at_c[a2-start][k];
+      /* Order the blbnb matrix to optimize memory access */
+      qsort(&((*blbnb)[(*blnr)[i]]),(*blnr)[i+1]-(*blnr)[i],
+            sizeof((*blbnb)[0]),int_comp);
     }
 
     sfree(at_cn);
