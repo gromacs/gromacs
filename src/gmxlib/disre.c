@@ -55,7 +55,7 @@ static real ETerm,ETerm1; /* Exponential constants			*/
 
 static t_drblock   drblock;
 
-void init_disres(FILE *log,int nrestraints,t_inputrec *ir)
+void init_disres(FILE *log,int nfa,t_inputrec *ir)
 {
   dr_weighting = ir->eDisreWeighting;
   dr_fc        = ir->dr_fc;
@@ -69,7 +69,7 @@ void init_disres(FILE *log,int nrestraints,t_inputrec *ir)
   }
   ETerm1 = 1.0 - ETerm;
   
-  drblock.ndr    = nrestraints/(interaction_function[F_DISRES].nratoms+1);
+  drblock.ndr = nfa/(interaction_function[F_DISRES].nratoms+1);
   snew(drblock.rav, drblock.ndr);
   snew(drblock.rt,  drblock.ndr);
   
@@ -116,8 +116,8 @@ real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   violtot = 0;
   pair_nr = 0;
   
-  /* 'loop' over all atom pairs (pair_nr) involved in restraint, *
-   * the total number of atoms pairs is nfa/3          */  
+  /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraint, *
+   * the total number of atoms pairs is nfa/3                         */  
   fa=0;
   while (fa < nfa) {
     restraint = forceatoms[fa];
