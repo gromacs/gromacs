@@ -1,4 +1,4 @@
-\chapter{The Gromacs force field}
+\chapter{Force field}
 \label{ch:ff}
 A \normindex{force field} is built up from two distinct components:
 \begin{itemize}
@@ -14,7 +14,7 @@ parameters form a consistent set. It is in general dangerous to make
 contributions to the total force are usually interdependent.
 
 In {\gromacs} {\gmxver} the force field is based on
-\normindex{GROMOS}-87~\cite{biomos},
+\gromosv{87}~\cite{biomos}\index{gromos-87},
 with a small modification concerning the interaction between
 water-oxygens and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10
 extra atomtypes~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
@@ -25,7 +25,6 @@ in some popular force fields, {\gromacs} offers a choice of functions,
 both for non-bonded interaction and for dihedral interactions. They
 are described in the appropriate subsections.
 
-\section{Potentials}
 The potential functions can be subdivided into three parts
 \begin{enumerate}
 \item   {\em Non-bonded}: Lennard-Jones or Buckingham, and Coulomb or
@@ -39,7 +38,7 @@ basis of fixed lists.
 based on fixed lists. 
 \end{enumerate}
 
-\subsection{Non-bonded interactions}
+\section{Non-bonded interactions}
 Non-bonded interactions in {\gromacs} are pair-additive and centro-symmetric:
 \beq
 V(\ve{r}_1,\ldots \ve{r}_N) = \sum_{i<j}V_{ij}(\rvij);
@@ -323,7 +322,7 @@ the complementary error function. For further
 details on long-range electrostatics, see section \ref{sec:lr_elstat}.
 
 
-\subsection{Bonded interactions}
+\section{Bonded interactions}
 Bonded interactions are based on a fixed list of atoms. They are not
 exclusively pair interactions, but include 3- and 4-body interactions
 as well. There are {\em bond stretching} (2-body), {\em bond angle}
@@ -333,7 +332,8 @@ to force atoms to remain in a plane or to prevent transition to a
 configuration of opposite chirality (a mirror image).  
 
 \subsection{Bond stretching}
-\label{sec:harmbond}
+\label{sec:bondpot}
+\subsubsection{Harmonic potential}
 The \normindex{bond stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential
 
@@ -352,8 +352,8 @@ see also fig~\ref{fig:bstretch1}, with the force
 \ve{F}_i(\rvij) = k^b_{ij}(\rij-b_{ij}) \rnorm
 \eeq
 
-\subsection{Fourth power bond stretching}
-In the GROMOS96 force field~\cite{gromos96} the covalent bond potential
+\subsubsection{Fourth power potential}
+In the \gromosv{96} force field~\cite{gromos96} the covalent bond potential
 is written for reasons of computational efficiency as:
 \beq
 V_b~(\rij) = \frac{1}{4}k^b_{ij}\left(\rij^2-b_{ij}^2\right)^2
@@ -363,12 +363,12 @@ the corresponding  force is:
 \ve{F}_i(\rvij) = k^b_{ij}(\rij^2-b_{ij}^2)~\rvij
 \eeq
 The force constants for this form of the potential is related to the usual
-harmonic force constant $k^{b,harm}$ (\secref{harmbond}) as
+harmonic force constant $k^{b,harm}$ (\secref{bondpot}) as
 \beq
 2 k^b b_{ij}^2 = k^{b,harm}
 \eeq
 The force constants are mostly derived from the harmonic ones used in 
-GROMOS87~\cite{biomos}. Although this form is computationally more efficient
+\gromosv{87}~\cite{biomos}. Although this form is computationally more efficient
 (because no square root has to be evaluated), it is conceptually more
 complex. One particular disadvantage is that since the form is not harmonic,
 the average energy of a single bond is not equal to $\half kT$ as it is for 
@@ -380,7 +380,7 @@ the normal harmonic potential.
 For some systems that require an anharmonic bond stretching potential,
 the Morse potential~\cite{Morse29} 
 between two atoms {\it i} and {\it j} is available
-in GROMACS. This potential differs from the harmonic potential in
+in {\gromacs}. This potential differs from the harmonic potential in
 having an asymmetric potential well and a zero force at infinite
 distance The functional form is:
 \beq
@@ -428,7 +428,8 @@ one recovers the harmonic bond stretching potential.
 \end{figure}
 
 \subsection{Bond angle vibration}
-\label{sec:harmangle}
+\label{sec:anglepot}
+\subsubsection{Harmonic potential}
 \newcommand{\tijk}{\theta_{ijk}}
 The bond \normindex{angle vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\tijk$
@@ -457,8 +458,9 @@ The force equations are given by the chain rule:
 \eeq
 The numbering $i,j,k$ is in sequence of covalently bonded atoms, with $j$ denoting the middle atom (see figure~\ref{fig:angle}).
 
-\subsection{Cos angle vibration}
-In the GROMOS96 force field a simplified function is used to represent angle
+\subsubsection{Cosine based potential}
+\label{sec:cosangle}
+In the \gromosv{96} force field a simplified function is used to represent angle
 vibrations:
 \beq
 V_a(\tijk) = \half k^{\theta}_{ijk}\left(\cos(\tijk) - \cos(\tijk^0)\right)^2
@@ -470,7 +472,7 @@ where
 The corresponding force can be derived by partial differentation with respect
 to the atomic positions. The force constants in this function are related
 to the force constants in the harmonic form $k^{\theta,harm}$
-(\secref{harmangle}) by:
+(\secref{anglepot}) by:
 \beq
 k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
 \eeq
@@ -508,11 +510,11 @@ to have a $\xi_0$ as far away from $\pm 180^\circ$ as you can manage.
 
 \subsection{Proper dihedrals}
 For the normal \normindex{dihedral} interaction there is a choice of either the
-GROMOS periodic function or a function based on expansion in powers of
+{\gromos} periodic function or a function based on expansion in powers of
 $\cos \phi$ (the so-called Ryckaert-Bellemans potential). This choice
 has consequences for the inclusion of special interactions between the
 first and the fourth atom of the dihedral quadruple. With the periodic
-GROMOS potential a special 1-4 LJ-interaction must be included; with
+{\gromos} potential a special 1-4 LJ-interaction must be included; with
 the Ryckaert-Bellemans potential the \normindex{1-4 interactions} 
 must be excluded from the non-bonded list.  
 
@@ -597,7 +599,7 @@ Ryckaert-Bellemans parameters as follows:
 with OPLS parameters in protein convention and RB parameters in 
 polymer convention.\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
-OPLS and RB parameters in literature to {\em kJ mol$^{-1}$} in GROMACS.
+OPLS and RB parameters in literature to {\em kJ mol$^{-1}$} in {\gromacs}.
 
 \subsection{Special interactions}
 Special potentials are used for imposing restraints on the motion of
@@ -1028,7 +1030,7 @@ molecule would deform or break due to the internal strain. This is
 especially the case for Carbon-Carbon interactions in a {\em
 cis}-conformation (eg. {\em cis}-butane).  Therefore for some of these
 interactions the Lennard-Jones repulsion has been reduced in the
-Gromos force field, which is implemented by keeping a separate list of
+{\gromos} force field, which is implemented by keeping a separate list of
 1-4 and normal Lennard-Jones parameters. In other force fields, such
 as OPLS~\cite{Jorgensen88}, the standard Lennard-Jones parameters are reduced
 by a factor of two, but in that case also the dispersion (r$^{-6}$)
@@ -1106,7 +1108,7 @@ force and the total torque are conserved~\cite{Berendsen84b}.
 \begin{figure}
 \centerline{\psfig{figure=plots/dummies.eps,width=15cm}}
 \caption{The six different types of dummy atom construction in
-\protect\gromacs, the constructing atoms are shown as black circles,
+\protect{\gromacs}, the constructing atoms are shown as black circles,
 the dummy atoms in grey.}
 \label{fig:dummies}
 \end{figure}
@@ -1286,13 +1288,62 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 
 \end{itemize}
 
+\input{lr_elstat}
 
-\section{Future Improvements.}
-{\undercons}
-In future versions of the force field there will be
+\section{\gromosv{96} notes}
+
+\subsection{The \gromosv{96} force field\index{gromos-96 force field}}
+{\gromacs} supports the \gromosv{96} force fields~\cite{gromos96}.
+All parameters for the 43a1, 43a2 (development, improved alkane dihedrals) and
+43b1 (vacuum) force fields are included.
+All standard building blocks are included and topologies
+can be build automatically by {\tt pdb2gmx}. 
+The \gromosv{96} force field is a further development of the \gromosv{87} force
+field
+on which the {\gromacs} forcefield is based. The \gromosv{96} force field is an
+improvement over the {\gromacs} force field for proteins and all small molecules.
+It should, however, not be used for long alkanes and lipids.
+The \gromosv{96} force field differs from the {\gromacs} force field in a few aspects:
 \begin{itemize}
-\item   A choice of force fields, including either Gromos, OPLS or
-        MM2/MM3 parameters. 
-\item   The ultimate force field including polarisability. If done
-        well, this may simplify many other terms in the force field. 
+\item the force field parameters
+\item the parameters for the bonded interactions are not linked to atom types
+\item a fourth power bond stretching potential (\secref{bondpot})
+\item an angle potential based on the cosine of the angle (\secref{anglepot})
 \end{itemize}
+The are two differences in implementation between {\gromacs} and \gromosv{96}
+which can lead to slightly different results when simulating the same system
+with both packages: 
+\begin{itemize}
+\item in \gromosv{96} neighbor searching for solvents is performed on the
+first atom of the solvent molecule, this is not implemented in {\gromacs},
+but the difference with searching with centers of charge groups is very small
+\item the virial in \gromosv{96} is molecule based, this is not implemented in
+{\gromacs}, which uses atomic virials
+\end{itemize}
+The \gromosv{96} force field was parameterized with a Lennard-Jones cut-off
+of 1.4 nm, so be sure to use a Lennard-Jones cut-off of at least 1.4.
+A larger cut-off is possible, because the Lennard-Jones potential and forces
+are almost zero beyond 1.4 nm.
+
+\subsection{\gromosv{96} files\index{gromos-96 files}}
+{\gromacs} can read and write \gromosv{96} coordinate and trajectory files.
+These files should have the extension {\tt .g96}.
+Such a file can be a \gromosv{96} initial/final
+configuration file or a coordinate trajectory file or a combination of both.
+The file is fixed format, all floats are written as 15.9 (files can get huge).
+{\gromacs} supports the following data blocks in the given order:
+\begin{itemize}
+\item Header block:
+\begin{verbatim}
+TITLE (mandatory)
+\end{verbatim}
+\item Frame blocks:
+\begin{verbatim}
+TIMESTEP (optional)
+POSITION/POSITIONRED (mandatory)
+VELOCITY/VELOCITYRED (optional)
+BOX (optional)
+\end{verbatim}
+\end{itemize}
+See the \gromosv{96} manual~\cite{gromos96} for a complete description of the
+blocks. Note that all {\gromacs} programs can read compressed or g-zipped files.
