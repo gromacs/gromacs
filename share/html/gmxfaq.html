@@ -232,11 +232,10 @@ run multiple runs on one or a few processors. Check out or <A
 HREF="gmxbench.html">benchmark page</A> for some real-life examples on
 both single- and multi-processor systems.
 
-<LI>Preliminary tests show that PPPM (new in GROMACS 2.0) is also
+<LI>Preliminary tests show that PPPM or PME (new in GROMACS 2.0) are
 somewhat faster than simulating with a twin range cut-off of 1.0/1.7
-nm. Although this still has to be verified, it seems that irrespective
-of improvement of the treatment of electrostatics in your simulation,
-PPPM should be the method of choice.
+nm on some systems. Unfortunately PPPM or PME do not scale as well as
+cut-off electrostatics when running in parallel.
 
 <LI>We have a new option <TT>-dummies</TT> for 
 <A HREF="online2.0/pdb2gmx.html"><TT>pdb2gmx</TT></A> in GROMACS 2.0
@@ -503,23 +502,18 @@ restart your simulation.
 
 After the continuation run is finished, you will have your simulation
 split up in separate files, which you will probably want to combine.
-This can be done as follows: First throw away all frames from the
-first trajectory that are also in the second (using 
-<TT><a href="online2.0/trjconv.html">trjconv</a> -e</TT>).  Second
-simply concatenate the two files as in:
+This can be done as follows (the same command works for xtc-files):
 <PRE>
-cat first.xtc &gt;&gt; second.xtc
+<TT><a href="online2.0/trjcat.html">trjcat</a> -o whole.trr part1.trr part2.trr part3.trr</TT>
 </PRE>
-
-If you have more than two files (because your system kept on crashing,
-or disks kept filling up), you should of course repeat this procedure
-for all <TT><a href="online2.0/xtc.html">.xtc</a></TT> files. This
-procedure can be applied to all GROMACS trajectory file formats, but
-<EM>not to energy files</EM>
-(<TT><a href="online2.0/ene.html">.ene</a></TT> and 
-<TT><a href="online2.0/edr.html">.edr</a></TT>). For energy files you
-<em>must</em> use <TT><a href="online2.0/eneconv.html">eneconv</a></TT>.
-
+The energy files can be concatenated in a similar manner:
+<PRE>
+<TT><a href="online2.0/eneconv.html">eneconv</a> -o whole.edr part1.edr part2.edr part3.edr</TT>
+</PRE>
+Since tpbconv sets the time in the continuation runs the files are
+automatically sorted and overlapping frames removed. If you have a mix of
+runs continued with tpbconv and grompp you might have to set the times yourself
+(see the manual pages for details).
 <P>
 
 It is ofcourse possible to start a simulation from the coordinates in
