@@ -59,9 +59,11 @@ void do_view(char *fn, char *opts)
     default:
       fatal_error(0,"unsupported file type %s(%d) in ftp_view",fn,fn2ftp(fn));
     }
-    sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
-    fprintf(stderr,"executing '%s'\n",buf);
-    system(buf);
+    if ( strlen(cmd) ) {
+      sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
+      fprintf(stderr,"executing '%s'\n",buf);
+      system(buf);
+    }
   }
 }
 
