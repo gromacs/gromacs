@@ -153,7 +153,7 @@ enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
   RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
   STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
   if (mpout)
-    write_inpfile(mpout,ninp,inp);
+    write_inpfile(mpout,ninp,inp,TRUE);
 }
 
 t_rgb black = { 0, 0, 0 };
