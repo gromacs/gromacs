@@ -9,8 +9,7 @@
 #
 #	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -D__INLINE_INTRINSICS -DHAVE_STRDUP -D_SGI_ -DHAVE_STRCASECMP
-# -DSIMPLEWATER 
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -D__INLINE_INTRINSICS -DHAVE_STRDUP -D_SGI_ -DHAVE_STRCASECMP -DSIMPLEWATER 
 
 #
 #	USER MODIFIABLE SECTION
@@ -47,6 +46,8 @@ CCC		= CC
 F77		= f77
 
 OPT		= -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn
+# Some options for the 7.30 compilers
+#OPT		+= -SWP:heur=fdms,nhms,fdnms
 # All warnings except unused vars: -fullwarn -woff 1174
 CFLAGS		= $(ABI) $(OPT) -woff 1174 -woff 1233
 CCFLAGS		= $(ABI) $(OPT) -woff 1174 -DHAVE_BOOL 
