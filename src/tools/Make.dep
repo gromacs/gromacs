@@ -59,8 +59,6 @@ g_rms.o:	g_rms.c
 g_rmsdist.o:	g_rmsdist.c
 g_rmsf.o:	g_rmsf.c
 g_rotacf.o:	g_rotacf.c
-g_run_ene.o:	g_run_ene.c
-g_run_rms.o:	g_run_rms.c
 g_saltbr.o:	g_saltbr.c
 g_sas.o:	g_sas.c
 g_sas.o:	nsc.h

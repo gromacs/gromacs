@@ -28,6 +28,7 @@
  */
 #include "sysstuff.h"
 #include "smalloc.h"
+#include "macros.h"
 #include "statusio.h"
 #include "statutil.h"
 #include "random.h"
@@ -131,95 +132,11 @@ real calc_cm_group(real mass[],rvec x[],rvec cm,
   return tm;
 }
 	
-void do_com(char *trj,char *topf,char *outfX,char *outekrot,
-	    int ngrps,int *isize,atom_id **index,char **grpnames)
-{
-  static char  *axisX[]={ "Xx", "Xy", "Xz", "Xtot" };
-  FILE         **outX,*outek;
-  t_statheader sh;
-  t_topology   *top;
-  int          status;
-  int          i,j,idum,step,natoms;
-  real         t,rdum;
-  rvec         *x,*v;
-  real         *mass;
-  rvec         xcm,acm;
-  matrix       L;
-  int          g,d,m,n;
-  matrix       box;
-  atom_id *sysindex;
-  
-  /* malloc the output files */
-  snew(outX,1+ngrps);
-
-  top=read_top(topf);
-  natoms=top->atoms.nr;
-  snew(mass,natoms);
-  snew(x,natoms);
-  snew(v,natoms);
-  snew(sysindex,natoms);
-  for(i=0; (i<top->atoms.nr); i++) {
-    mass[i]=top->atoms.atom[i].m;
-    sysindex[i]=i;
-  }
-
-  outX[0]=xvgropen(outfX,"COM : ","Time(ps)","x (nm)");
-  xvgr_legend(outX[0],asize(axisX),axisX);
-  for(g=0;(g<ngrps);g++) {
-    char filename[STRLEN];
-
-    /* coordinates */
-    sprintf(filename,"xcm_%s.xvg",grpnames[g]);
-    outX[g+1]=xvgropen(filename,"COM : ","Time(ps)","x (nm)");    
-    xvgr_legend(outX[g+1],asize(axisX),axisX);
-  }
-
-  outek=xvgropen(outekrot,"EK Rot","Time (ps)","E (kJ/mole)");
-  if ((natoms=read_first_x(&status,trj,&t,&x,box))!=top->atoms.nr) 
-    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
-		top->atoms.nr,natoms);
-  
-  j=0;
-  do {
-    if (j>0) {
-      for(i=0; (i<natoms); i++)
-	for(m=0; (m<DIM); m++) {
-	  v[i][m]=(x[i][m]+v[i][m])*2.0;
-	}
-      fprintf(outek,"%10g  %10g\n",t,calc_ekrot(natoms,mass,x,v));
-    }
-    fprintf(stderr,"\rFrame: %d",j++);
- 
-    /* IF COORDINATES ARE PRESENT */
-    calc_cm_group(mass,x,xcm,natoms,sysindex);
-    fprintf(outX[0],"%10g  %10g  %10g  %10g  %10g\n",
-	    t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
-    fflush(outX[0]);
-    for(g=0;(g<ngrps);g++) {
-      calc_cm_group(mass,x,xcm,isize[g],index[g]);
-      fprintf(outX[g+1],"%10g  %10g  %10g  %10g  %10g\n",
-	      t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
-      fflush(outX[g+1]);
-    }
-    for(i=0; (i<natoms); i++)
-      for(m=0; (m<DIM); m++)
-	v[i][m]=-x[i][m];
-  }  while (read_next_x(status,&t,natoms,x,box));
-  close_trj(status);
-  fclose(outek);
-  
-  sfree(x);
-  sfree(mass);
-  for(g=0;(g<=ngrps);g++) {
-    fclose(outX[g]);
-  }
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_com computes the translational and rotational motion of the center",
-    "of mass of a molecule as a function of time."
+    "g_com computes the translational and rotational motion ",
+    "of a group of atoms (i.e. a protein) as a function of time."
   };
   t_filenm fnm[] = {
     { efTRX,  "-f",  NULL, ffREAD },
@@ -230,40 +147,131 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  static char  *axisX[]={ "Xx", "Xy", "Xz", "Xtot" };
+  
   /* index stuff */
   int      ngrps;       /* the number of groups */
   int      *isize;      /* the size of each group */
   char     **grpnames;  /* the name of each group */
   atom_id  **index;     /* the index array of each group */
   t_block   *block;     /* the total index file */
-
-  int g; /* group counter */
+  t_topology *top;
+  int      g;           /* group counter */
+  char     format[STRLEN],filename[STRLEN];
+  FILE     **outX,*outek;
+  int      status,ftpout;
+  int      i,j,idum,step,natoms;
+  real     t,t0,dt,rdum;
+  rvec     *x,*v;
+  real     *mass;
+  rvec     xcm,acm;
+  matrix   L;
+  int      d,m,n;
+  matrix   box;
+  atom_id  *sysindex;
+  bool     bHaveV,bReadV;
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,
 		    0,NULL,asize(desc),desc,0,NULL);
+  ftpout=fn2ftp(ftp2fn(efTRX,NFILE,fnm));
+  bReadV=((ftpout==efTRJ) || (ftpout==efXTC));
+  
+  if (!bReadV)
+    fprintf(stderr,"WARNING: no velocities in input file:\nwill not calculate rotational energy (-oe)\n");
 
-  /* check if ndx file is given */
-  if (ftp2bSet(efNDX,NFILE,fnm)) {
-    block = (t_block *)init_index(ftp2fn(efNDX,NFILE,fnm),&grpnames);
-    ngrps = block->nr;          
-    snew(isize,ngrps);
-    snew(index,ngrps);
-    for(g=0;(g<ngrps);g++) {
-      int i;
-      isize[g]=block->index[g+1]-block->index[g];
-      index[g]=&(block->a[block->index[g]]);
-    }
-  } else {
-    /* no groups means all atoms for vcm and xcm */
-    ngrps=0;
+  /* open input files, read topology and index */
+  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  
+  fprintf(stderr,"How many groups do you want to calc com of ? ");
+  scanf("%d",&ngrps);
+  fprintf(stderr,"OK. I will calc com of %d groups\n",ngrps);
+  
+  snew(grpnames,ngrps);
+  snew(index,ngrps);
+  snew(isize,ngrps);
+  
+  get_index(&(top->atoms),ftp2fn_null(efNDX,NFILE,fnm),
+	    ngrps,isize,index,grpnames);
+
+  natoms=top->atoms.nr;
+  snew(mass,natoms);
+  for(i=0; (i<top->atoms.nr); i++)
+    mass[i]=top->atoms.atom[i].m;
+  
+  if ((bReadV && 
+       ((natoms=read_first_x_or_v(&status,ftp2fn(efTRX,NFILE,fnm),
+				  &t,&x,&v,box)) != top->atoms.nr)) ||
+      (!bReadV &&
+       ((natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),
+			     &t,&x,box)) != top->atoms.nr)))
+    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
+		top->atoms.nr,natoms);
+
+  /* open output files */
+  snew(outX,1+ngrps);
+  outX[0]=xvgropen(opt2fn("-ox",NFILE,fnm),"COM : ","Time(ps)","x (nm)");
+  xvgr_legend(outX[0],asize(axisX),axisX);
+  strcpy(format,opt2fn("-ox",NFILE,fnm));
+  fprintf(stderr,"%s\n",format);
+  format[strlen(format)-4]='\0';
+  fprintf(stderr,"format %s\n",format);
+  strcat(format,"_%s.xvg");
+  fprintf(stderr,"format %s\n",format);
+  for(g=0;(g<ngrps);g++) {
+    /* coordinates */
+    sprintf(filename,format,grpnames[g]);
+    outX[g+1]=xvgropen(filename,"COM : ","Time(ps)","x (nm)");
+    xvgr_legend(outX[g+1],asize(axisX),axisX);
   }
+  if (bReadV)
+    outek=xvgropen(opt2fn("-oe",NFILE,fnm),"EK Rot","Time (ps)","E (kJ/mole)");
 
-  do_com(ftp2fn(efTRX,NFILE,fnm),
-	 ftp2fn(efTPB,NFILE,fnm),
-	 opt2fn("-ox",NFILE,fnm),
-	 opt2fn("-oe",NFILE,fnm),
-	 ngrps,isize,index,grpnames);
+  snew(sysindex,natoms);
+  for(i=0; (i<natoms); i++)
+    sysindex[i]=i;
+  t0=t;
+  dt=-1;
+  do {
+    if (bReadV) {
+      bHaveV=FALSE;
+      for (i=0; ((i<natoms) && !bHaveV); i++)
+	for (d=0; ((d<DIM) && !bHaveV); d++)
+	  bHaveV=(v[i][d]!=0);
+      if (bHaveV)
+	fprintf(outek,"%10g  %10g\n",t,calc_ekrot(natoms,mass,x,v));
+    }
+ 
+    /* IF COORDINATES ARE PRESENT */
+    calc_cm_group(mass,x,xcm,natoms,sysindex);
+    fprintf(outX[0],"%10g  %10g  %10g  %10g  %10g\n",
+	    t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
+    fflush(outX[0]);
+    for(g=0;(g<ngrps);g++) {
+      calc_cm_group(mass,x,xcm,isize[g],index[g]);
+      for (j = 0; j < DIM; j++) {
+	if (xcm[j] < 0) xcm[j]+= box[j][j];
+	if (xcm[j] > box[j][j]) xcm[j]-=box[j][j];
+      }
+      fprintf(outX[g+1],"%10g  %10g  %10g  %10g  %10g\n",
+	      t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
+      fflush(outX[g+1]);
+    }
+    for(i=0; (i<natoms); i++)
+      for(m=0; (m<DIM); m++)
+	v[i][m]=-x[i][m];
+  }  while ((bReadV && read_next_x_or_v(status,&t,natoms,x,v,box)) ||
+	    (!bReadV && read_next_x(status,&t,natoms,x,box)));
+  sfree(x);
+  sfree(v);
+  sfree(mass);
+  
+  close_trj(status);
+  if (bReadV)
+    fclose(outek);
+  for(g=0;(g<=ngrps);g++) {
+    fclose(outX[g]);
+  }
 
   thanx(stdout);
   

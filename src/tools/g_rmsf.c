@@ -28,6 +28,7 @@
  */
 #include "smalloc.h"
 #include "math.h"
+#include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"
 #include "copyrite.h"
@@ -64,17 +65,13 @@ int find_pdb(int npdb,t_pdbatom pdba[],char *resnm,int resnr,char *atomnm)
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_rmsf computes the root mean square fluctuations (RMSF)",
+    "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",
+    "deviation) of atomic positions ",
     "after first fitting to a reference frame.[PAR]",
-    "When the (optional) pdb file is given, the RMSF are be converted",
-    "to B-factors and plotted with the experimental data."
+    "When the (optional) pdb file is given, the RMSF values are converted",
+    "to B-factor values and plotted with the experimental data."
   };
   static int r0=1;
-  t_pargs pa[] = {
-    { "-r0", FALSE,etINT,&r0, 
-      "starting residue of trajectory (to match the pdb file)" }
-  };
-#define MAXFRAME 10000
   int          step,nre,natom,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms,tmas;
   
@@ -117,7 +114,7 @@ int main (int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
 
   read_status_header(ftp2fn(efTPB,NFILE,fnm),&header);
   snew(x,header.natoms);
@@ -135,7 +132,7 @@ int main (int argc,char *argv[])
   init_pbc(box,FALSE);
   
   /* allocate memory for time */
-  snew(time,MAXFRAME);
+  snew(time,10000);
   
   fprintf(stderr,"Select group(s) for root mean square calculation\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
@@ -229,6 +226,7 @@ int main (int argc,char *argv[])
   if (ftp2bSet(efPDB,NFILE,fnm)) {
     fp    = ftp2FILE(efPDB,NFILE,fnm,"r");
     npdba = read_pdbatoms(fp,&pdba,box,FALSE);
+    renumber_pdb(npdba,pdba);
     fclose(fp);
     pdba_trimnames(npdba,pdba);
   }
@@ -238,17 +236,17 @@ int main (int argc,char *argv[])
 
   /* write output */
   if (npdba == 0) {
-    fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation","Residue","nm");
+    fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"RMS fluctuation","Atom","nm");
     for(i=0;(i<isize);i++) 
       fprintf(fp,"%5d %8.4f\n",i,sqrt(rmsf[i]));
   }
   else {
     bfac=8.0*M_PI*M_PI/3.0*100;
     fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"B-Factors",
-		"Residue","A\\b\\S\\So\\N\\S 2");
+		"Atom","A\\b\\S\\So\\N\\S 2");
     for(i=0;(i<isize);i++) {
       resnr=top.atoms.atom[index[i]].resnr;
-      pdb_i=find_pdb(npdba,pdba,*(top.atoms.resname[resnr]),resnr+r0,
+      pdb_i=find_pdb(npdba,pdba,*(top.atoms.resname[resnr]),resnr,
 		     *(top.atoms.atomname[index[i]]));
       
       fprintf(fp,"%5d  %10.5f  %10.5f\n",i,rmsf[i]*bfac,

@@ -28,6 +28,7 @@
  */
 #include <string.h>
 #include <math.h>
+#include "macros.h"
 #include "statutil.h"
 #include "sysstuff.h"
 #include "smalloc.h"

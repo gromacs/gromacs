@@ -27,6 +27,7 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 #include "vec.h"
+#include "macros.h"
 #include "smalloc.h"
 #include "addconf.h"
 #include "gstat.h"

@@ -26,72 +26,6 @@
  * And Hey:
  * Great Red Oystrich Makes All Chemists Sane
  */
-/*
- *genbox.c 
- *generates a starting configuration
- *features of genbox.c are:
- *        -generating solvated protein configurations
- *        -generating mixed configurations
- *        -generating configurations with random placed molecules 
- *genbox.c needs -parameter 
- *               -gromos file (*.gro)
- *               -van der waals distances file (*.vdw)
- output of genbox -gbout        = copy of parameter file
- *                 -out.vdw      = used van der waals radia
- *                 -output conf. = generated configuration
- * Parameter file:
- * protein  conf.  = name of configuration file of the central solute molecule
- *                   when no protein conf. is given the box size is set to
- *                   box_space[XX...ZZ]
- * molecule conf.  = name of configuration file of a single molecule 
- *                   (just one residue)
- * solvent  conf.  = name of configuration file of the solvent (cubic box only)
- * number of mol.  = number of times the molecule (from molecule conf.) wil be
- *                   randomly distributed in a rondom orientation in the 
- *                   selected box
- * output   conf.  = the file the generated configuration wil be written to
- * v.d. Waals data = file containing all the v.d. waals radia of the excisting
- *                   atomnames
- * replace radius  = when a v.d. waals distance is not found the program will
- *                   not be terminated. The v.d. waals distance is replaced by
- *                   the replace distance
- * Box type        = the generated configuration will be of box type:
- *                   0 cubic box
- *                   1 truncated octahedron
- *                   2 monoclinic box (not yet implemented)
- * Box space[XX]   = minimum distance of the central solute molecule (protein
- * Box space[YY]     configuration) to the x,y and z wall.
- * Box space[ZZ]     when no protein conf. is given the box size is set to
- *                   box_1[XX...ZZ]
- * Rotation        = YES rotation of central solute molecule is enabled
- *                   NO  rotation of central solute molecule is disabled
- *                   The central solute molecule will be orientated with the 
- *                   longest atom-atom distance parrallel to the z-axis and 
- *                   the largest perpendicular distance from the z-axis 
- *                   parrallel to the y-axis
- * seed            = random number (default = 123456)
- *
- * Description of the program:
- * genbox.c does the following:
- * -read parameterfile
- * -read van der waals distances file
- * -read protein
- * -orientate the protein (rotation == YES)
- * -calculate box sizes and put the protein in the center
- * -check wether the protein fits in the generated box else terminate program
- * -when the number of mol. > 0 then read the molecule conf. and place number 
- *  of mol. molecules around the central molecule
- * -read solvent configuration
- * -calculate cubic box size of solvent configuration
- * -generate the smallest configuration greater then the calculated protein box
- * -sort the generated configuration (mixtures are accepted by the program) 
- * -add the solvent molecules by evaluating the following
- *     -in the box?
- *     -enough distance to protein or molecules?
- * -write the generated configuration to file output conf. 
- * -write the used van der waals distances to file vdw.out
- * -exit program
- */
 
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -272,7 +206,7 @@ void m_sort(t_atoms *atoms,rvec *x,rvec *v,real *r,int left, int right)
   }
 }/*m_sort()*/
 
-char *add_mol3(char *mol3,int nmol_3,int seed,int NTB,
+char *add_mol3(char *mol3,int nmol_3,int seed,int ntb,
 	       t_atoms *atoms_1,rvec **x_1,rvec **v_1,real **r_1,matrix box_1,
 	       t_vdw **vdw,int *max_vdw,real r_distance)
 {
@@ -343,12 +277,12 @@ char *add_mol3(char *mol3,int nmol_3,int seed,int NTB,
     offset_x[YY]=box_1[YY][YY]*rando(&seed);
     offset_x[ZZ]=box_1[ZZ][ZZ]*rando(&seed);
     gen_box(0,atoms_3.nr,x_n,box_3,offset_x,TRUE);
-    if ((in_box(NTB,box_1,x_n[0]) != 0) || 
-	(in_box(NTB,box_1,x_n[atoms_3.nr-1])!=0))
+    if ((in_box(ntb,box_1,x_n[0]) != 0) || 
+	(in_box(ntb,box_1,x_n[atoms_3.nr-1])!=0))
       continue;
     onr_1=atoms_1->nr;
      
-    add_conf(atoms_1,*x_1,*v_1,*r_1,NTB,box_1,
+    add_conf(atoms_1,*x_1,*v_1,*r_1,ntb,box_1,
 	     &atoms_3,x_n,v_n,r_3,FALSE,1);
     if (atoms_1->nr==(atoms_3.nr+onr_1)) {
       mol++;
@@ -362,7 +296,7 @@ char *add_mol3(char *mol3,int nmol_3,int seed,int NTB,
   return title_3;
 }
 
-void add_solv(char *solv,int NTB,
+void add_solv(char *solv,int ntb,
 	      t_atoms *atoms_1,rvec **x_1,rvec **v_1,real **r_1,matrix box_1,
 	      t_vdw **vdw,int *max_vdw,real r_distance,
 	      int *atoms_added,int *residues_added,int maxmol)
@@ -375,7 +309,7 @@ void add_solv(char *solv,int NTB,
   rvec    *x_2,*v_2;
   real    *r_2;
   matrix  box_2;
-  int     onr_1,onres_1,onres_2;
+  int     onr_1,onres_1;
   rvec    xmin;
 
   strncpy(filename,libfn(solv),STRLEN);
@@ -394,7 +328,7 @@ void add_solv(char *solv,int NTB,
   read_whole_conf(filename,title_2,&atoms_2,x_2,v_2,box_2);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title_2,atoms_2.nr,atoms_2.nres);
-  srenew(atoms_2.resname,atoms_2.nres);
+/*   srenew(atoms_2.resname,atoms_2.nres); */
   
   /*initialise van der waals arrays of configuration 2*/
   mk_vdw(&atoms_2,r_2,vdw,max_vdw,r_distance);
@@ -416,7 +350,6 @@ void add_solv(char *solv,int NTB,
   srenew(r_2,atoms_2.nr*nmol*3);
   
   /*generate a new configuration 2*/
-  onres_2=atoms_2.nres;
   genconf(&atoms_2,x_2,v_2,r_2,box_2,n_box);
 
 #ifdef DEBUG
@@ -450,7 +383,7 @@ void add_solv(char *solv,int NTB,
   srenew(*v_1,(atoms_1->nr+atoms_2.nr));
   srenew(*r_1,(atoms_1->nr+atoms_2.nr));
   
-  add_conf(atoms_1,*x_1,*v_1,*r_1,NTB,box_1,
+  add_conf(atoms_1,*x_1,*v_1,*r_1,ntb,box_1,
 	   &atoms_2,x_2,v_2,r_2,TRUE,maxmol);
   *atoms_added=atoms_1->nr-onr_1;
   *residues_added=atoms_1->nres-onres_1;
@@ -459,7 +392,7 @@ void add_solv(char *solv,int NTB,
 	  *atoms_added,*residues_added);
 }
 
-char *read_prot(char *confin_1,int NTB,bool bRotate,
+char *read_prot(char *confin_1,int ntb,bool bRotate,
 		t_atoms *atoms_1,
 		rvec **x_1,rvec **v_1,real **r_1,
 		matrix box_1,rvec angle,
@@ -495,32 +428,39 @@ char *read_prot(char *confin_1,int NTB,bool bRotate,
   return title;
 }
 
-real amass(char *name)
-{
-  switch (name[0]) {
-  case 'C':
-    return 13;
-  case 'N':
-    return 14;
-  case 'O':
-    return 16;
-  case 'H':
-    return 1;
-  case 'S':
-    return 32;
-  default:
-    return 12;
-  }
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "The genbox program takes a solute configuration, eg. a protein",
-    "solvates it in a bath of solvent molecules, eg. water. ",
-    "By default the file [TT]spc216.gro[tt] will be read from ",
-    "[TT]$GMXLIB[tt], this will solvate the solute in a box of Simple Point",
-    "Charge water molecules. Other",
+    "Genbox can do one of ___ things:[PAR]",
+    
+    "1) Generate a box of solvent. Specify -cs and -bx, -by and -bz.[PAR]",
+    
+    "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
+    "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
+    "The box specified in the solute coordinate file ([TT]-cp[tt]) is used.",
+    "Solvent molecules are removed from the box where the ",
+    "distance between any atom of the solute molecule(s) and any atom of ",
+    "the solvent molecule is less than the sum of the VanderWaals radii of ",
+    "both atoms. A database of VanderWaals radii is read by the program ",
+    "(usually this is [TT]vdw.gmx[tt]), atoms not in the database are ",
+    "assigned a default distance [TT]-vdw[tt], default 0.105 nm.[PAR]",
+    
+    "3) Insert a number ([TT]-nmol[tt]) of extra molecules ([TT]-ci[tt]) ",
+    "can be inserted at random positions.",
+    "The program  iterates until [TT]nmol[tt]  molecules",
+    "have been inserted in the box. To test whether an insertion is ",
+    "successful the same VanderWaals criterium is used as for removal of ",
+    "solvent molecules. When no appropriately ",
+    "sized holes (holes that can hold an extra molecule) are available the ",
+    "program does not terminate, but searches forever. To avoid this problem ",
+    "the genbox program may be used several times in a row with a smaller ",
+    "number of molecules to be inserted. Alternatively, you can add the ",
+    "extra molecules to the solute first, and then in a second run of ",
+    "genbox solvate it all.",
+    
+    "The default solvent is Simple Point Charge water (SPC). The coordinates ",
+    "for this are read from [TT]$GMXLIB/spc216.gro[tt]. Optionally a maximum ",
+    "number of solvent molecules ([TT]-maxsol[tt]) can be specified. Other",
     "solvents are also supported, as well as mixed solvents. The",
     "only restriction to solvent types is that a solvent molecule consists",
     "of exactly one residue. The residue information in the coordinate",
@@ -532,14 +472,6 @@ int main(int argc,char *argv[])
     "equlibrated in periodic boundary conditions to ensure a good",
     "alignment of molecules on the stacking interfaces.[PAR]",
     
-    "Solvent molecules are removed from the box in positions where",
-    "solute atoms are nearby, the criterium used here is that the distance",
-    "between any atom of the solute molecule(s) and any atom of the solvent",
-    "molecule is less than the sum of the VanderWaals radii of both atoms.",
-    "A database of VanderWaals radii is read by the program (usually this",
-    "is [TT]vdw.gmx[tt]), atoms not in the database are assigned a default ",
-    "distance which can also be set in the [TT]genbox[tt] input file.[PAR]",
-    
     "The program can optionally rotate the solute molecule to align the",
     "longest molecule axis along a box edge. This way the amount of solvent",
     "molecules necessary is reduced.",
@@ -548,28 +480,12 @@ int main(int argc,char *argv[])
     "rotate over 90 degrees, within 500 ps. In general it is therefore ",
     "better to make a more or less cubic box.[PAR]",
     
-    "If a third coordinate file is given, with option [TT]-ci[tt]",
-    "[TT]nmol[tt] (read from [TT].gbp[tt] file) extra molecules will ",
-    "be added at random positions in",
-    "the box. If the extra file is not given [TT]nmol[tt] is used",
-    "to denote the [BB]maximum[bb] number of solvent molecules to be added",
-    "from the normal solvent box (if present).",
-    "The program  iterates until [TT]nmol[tt]  molecules",
-    "have been inserted in the box. To test whether an insertion is ",
-    "successful the same VanderWaals criterium is used.[PAR]",
-    
-    "Finally, genbox will optionally remove lines from your topology in ",
+    "Finally, genbox will optionally remove lines from your topology file in ",
     "which a number of solvent molecules is already added, and adds a ",
-    "line to your topology file with the total number of solvent molecules ",
-    "in your coordinate file"
+    "line with the total number of solvent molecules in your coordinate file."
   };
 
   static char *bugs[] = {
-    "When using random insertion of extra molecules and when no appropriately "
-    "sized holes (holes that can hold a solvent molecule) are available the "
-    "program does not terminate, but searches forever. To avoid this problem "
-    "the genbox program may be used several times in a row with a smaller "
-    "number of molecules to be inserted.",
     
     "The program does not take periodic boundary conditions in the initial "
     "configuration into account, therefore the solute configuration should "
@@ -584,7 +500,7 @@ int main(int argc,char *argv[])
   
   /* parameter data */
   bool bSol=TRUE,bProt=TRUE;
-  char *confin_1,*confin_2,*confin_3,*confout;
+  char *confin_1,*confin_2,*confin_3,*confout,*topinout;
   int  bInsert;
   real *r_1;
   char *title_3;
@@ -594,7 +510,6 @@ int main(int argc,char *argv[])
   t_atoms atoms_1;
   rvec    *x_1,*v_1;
   matrix  box_1;
-  real    rho;
   
   /* other data types */
   int  atoms_added,residues_added;
@@ -604,20 +519,18 @@ int main(int argc,char *argv[])
   t_vdw  *vdw;
   
   /*angle variables*/
-  real beta;
   rvec angle;
   t_filenm fnm[] = {
     { efGRO, "-cp", "protein", ffOPTRD },
     { efGRO, "-cs", "spc216",  ffLIBOPTRD},
     { efGRO, "-ci", "insert",  ffOPTRD},
+    { efVDW, "-w",  NULL,      ffLIBRD},
     { efGRO, "-o",  "out",     ffWRITE},
-    { efVDW, "-wi", NULL,      ffLIBRD},
-    { efVDW, "-wo", "outradii",ffOPTWR},
     { efTOP, NULL,  NULL,      ffOPTRW},
   };
 #define NFILE asize(fnm)
   
-  static int nmol_3=0,maxsol=0,seed=1993,ntb=0;
+  static int nmol_3=0,maxsol=0,seed=1997,ntb=0;
   static bool bRotate=FALSE;
   static real r_distance=0.105;
   static rvec new_box={0.0,0.0,0.0};
@@ -630,8 +543,7 @@ int main(int argc,char *argv[])
     { "-rot",   FALSE,etBOOL,&bRotate,   "rotate solute to fit box best"},
     { "-seed",  FALSE,etINT ,&seed,      "random generator seed"},
     { "-vdwd",  FALSE,etREAL,&r_distance,"default vdwaals distance"},
-    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rect; 1=trunc oct.h. "
-      "only rect. boxes fully implemented"}
+    { "-boxtype",FALSE,etINT,&ntb, "HIDDENbox type 0=rectangular; 1=truncated octahedron (only rectangular boxes are fully implemented)"}
   };
 
   CopyRight(stderr,argv[0]);
@@ -643,6 +555,7 @@ int main(int argc,char *argv[])
   confin_2=opt2fn("-cs",NFILE,fnm);
   confin_3=opt2fn("-ci",NFILE,fnm);
   confout =opt2fn("-o", NFILE,fnm);
+  topinout=ftp2fn(efTOP,NFILE,fnm);
   
   bInsert = opt2bSet("-ci",NFILE,fnm);
   bSol = (bSol && opt2bSet("-cs",NFILE,fnm));
@@ -652,7 +565,7 @@ int main(int argc,char *argv[])
 		"and no box size (-bx -by -bz) supplied\n");
   /* read van der waals distances for all the existing atoms*/
   vdw=NULL;
-  max_vdw=read_vdw(opt2fn("-wi",NFILE,fnm),&vdw);
+  max_vdw=read_vdw(ftp2fn(efVDW,NFILE,fnm),&vdw);
 
   if (bProt) {
     /*generate a solute configuration*/
@@ -669,6 +582,7 @@ int main(int argc,char *argv[])
     /* in case there is no a solute,
      * the box size is set to new_box
      */
+    clear_mat(box_1);
     box_1[XX][XX]=new_box[XX];
     box_1[YY][YY]=new_box[YY];
     box_1[ZZ][ZZ]=new_box[ZZ];
@@ -689,13 +603,15 @@ int main(int argc,char *argv[])
     title_3=add_mol3(confin_3,nmol_3,seed,ntb,
 		     &atoms_1,&x_1,&v_1,&r_1,box_1,
 		     &vdw,&max_vdw,r_distance);
+  else
+    title_3=strdup("Generated by genbox");
   
   if (bSol) 
     add_solv(confin_2,ntb,&atoms_1,&x_1,&v_1,&r_1,box_1,
 	     &vdw,&max_vdw,r_distance,&atoms_added,&residues_added,maxsol);
   
-  if (opt2bSet("-wo",NFILE,fnm))
-    write_vdw(opt2fn("-wo",NFILE,fnm),vdw,max_vdw);
+  if (debug)
+    write_vdw("outradii.vdw",vdw,max_vdw);
 
   /*write new configuration 1 to file confout*/
   fprintf(stderr,"Writing generated configuration to disk\n");
@@ -710,7 +626,8 @@ int main(int argc,char *argv[])
   else 
     write_conf(confout,title_3,&atoms_1,x_1,v_1,box_1);
 
-  write_vdw("out.vdw",vdw,max_vdw);
+  if (debug)
+    write_vdw("out.vdw",vdw,max_vdw);
   
   /*print rotation data*/
   if (bRotate)
@@ -722,7 +639,7 @@ int main(int argc,char *argv[])
 	  atoms_1.nr,atoms_1.nres);
   {
     int  i,nsol=0;
-    real vol,tm=0;
+    real vol;
   
     for(i=0; (i<atoms_1.nres); i++) {
       /* calculate number of SOLvent molecules */
@@ -730,14 +647,9 @@ int main(int argc,char *argv[])
 	nsol++;
     }
     
-    for(i=0; (i<atoms_1.nr); i++)
-      tm+=amass(*atoms_1.atomname[i]);
     vol=det(box_1);
     
-    rho=(tm*AMU*1e27)/vol;
-    fprintf(stderr,"T-Mass                 :  %10g (AMU)\n",tm);
     fprintf(stderr,"Volume                 :  %10g (nm^3)\n",vol);
-    fprintf(stderr,"Density                :  %10g (g/l)\n",rho);
     fprintf(stderr,"Number of SOL molecules:  %5d   \n\n",nsol);
     
     /* open topology file and append sol molecules */
@@ -747,7 +659,7 @@ int main(int argc,char *argv[])
       int  line;
       
       fprintf(stderr,"Processing topology\n");
-      fpin = ffopen(ftp2fn(efTOP,NFILE,fnm),"r");
+      fpin = ffopen(topinout,"r");
       fpout= ffopen("temp.top","w");
       line=0;
       while (fgets(buf, STRLEN, fpin)) {
@@ -758,19 +670,19 @@ int main(int argc,char *argv[])
 	  if (temp=strchr(buf,'\n'))
 	    temp[0]='\0';
 	  fprintf(stdout,"Removing line #%d '%s' from topology file (%s)\n",
-		  line,buf,ftp2fn(efTOP,NFILE,fnm));
+		  line,buf,topinout);
 	}  
       }
       if ( nsol > 0 ) {
 	fprintf(stdout,"Adding line for %d solute molecules to "
-		"topology file (%s)\n",nsol,ftp2fn(efTOP,NFILE,fnm));
+		"topology file (%s)\n",nsol,topinout);
 	fprintf(fpout,"SOL       %5d\n",nsol);
       } else
 	fprintf(stdout,"No SOL molecules, not adding anything to "
-		"topology file (%s)\n",ftp2fn(efTOP,NFILE,fnm));
+		"topology file (%s)\n",topinout);
       fclose(fpout);
       fclose(fpin);
-      rename("temp.top",ftp2fn(efTOP,NFILE,fnm));
+      rename("temp.top",topinout);
     }
   }
   thanx(stdout);

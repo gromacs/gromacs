@@ -28,6 +28,7 @@
  */
 #include <typedefs.h>
 #include "smalloc.h"
+#include "macros.h"
 #include "math.h"
 #include "xvgr.h"
 #include "copyrite.h"
@@ -47,7 +48,6 @@ void main(int argc,char *argv[])
     "g_dist calculates the distances between the center of masses of two",
     " groups defined by the index file"
   };
-  t_manual man = { asize(desc),desc,0,NULL,NULL,0,NULL};
   
   t_topology *top=NULL;
   real t;
@@ -79,7 +79,8 @@ void main(int argc,char *argv[])
 
   CopyRight(stdout,argv[0]);
 
-  parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,TRUE,&man);
+  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
+		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
   
 
   top=read_top(ftp2fn(efTPB,NFILE,fnm));

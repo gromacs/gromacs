@@ -26,11 +26,12 @@
  * And Hey:
  * Good gRace! Old Maple Actually Chews Slate
  */
+#include <maths.h>
 #include "dah.h"
-#include <typedefs.h>
-#include <sysstuff.h>
+#include "typedefs.h"
+#include "sysstuff.h"
 #include "parse.h"
-#include <rdgroup.h>
+#include "rdgroup.h"
 #include "hbond.h"
 #include "fatal.h"
 #include "vec.h"

@@ -28,6 +28,7 @@
  */
 #include <math.h>
 #include <string.h>
+#include "macros.h"
 #include "physics.h"
 #include "vec.h"
 #include "rdgroup.h"

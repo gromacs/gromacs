@@ -106,7 +106,7 @@ static int or_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
       }
     }
     
-    printf("Merged two groups with OR: %d %d -> %d\n",nr1,nr2,*nr);
+    printf("Merged two groups with OR: %u %u -> %u\n",nr1,nr2,*nr);
   }
 
   return *nr;
@@ -443,7 +443,7 @@ static int split_chain(t_atoms *atoms,rvec *x,
   }
   printf("Found %d chains\n",nchain);
   for (j=0; j<nchain; j++)
-    printf("%d:%6d atoms (%u to %u)\n",
+    printf("%d:%6u atoms (%u to %u)\n",
 	   j+1,end[j]-start[j]+1,start[j]+1,end[j]+1);
 
   if (nchain>1) {
@@ -567,7 +567,7 @@ static bool parse_entry(char **string,t_atoms *atoms,
     for (i=strlen(gname); i>0; i--)
       gname[i]=gname[i-1];
     gname[0]='!';
-    printf("Complemented group: %d atoms\n",*nr);
+    printf("Complemented group: %u atoms\n",*nr);
   }
   
   return bRet;

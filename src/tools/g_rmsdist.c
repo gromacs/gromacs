@@ -27,6 +27,7 @@
  * Great Red Owns Many ACres of Sand 
  */
 #include <math.h>
+#include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "copyrite.h"

@@ -31,6 +31,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "do_rdf.h"
+#include "maths.h"
 #include "vec.h"
 	
 class c_rdfn: public c_rdf {

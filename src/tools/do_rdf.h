@@ -27,6 +27,7 @@
  * GRoups of Organic Molecules in ACtion for Science
  */
 #include "typedefs.h"
+#include "vec.h"
 		
 class c_rdf {
  public:

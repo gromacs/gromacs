@@ -28,6 +28,7 @@
  */
 #include <stdio.h>
 #include <math.h>
+#include "macros.h"
 #include "typedefs.h"
 #include "physics.h"
 #include "smalloc.h"

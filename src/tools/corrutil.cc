@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include "sysstuff.h"
 #include "smalloc.h"
+#include "macros.h"
 #include "vec.h"
 #include "statutil.h"
 #include "futil.h"

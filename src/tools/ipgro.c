@@ -43,13 +43,12 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "ipgro interpolates two gromos coordinate files and writes a trajectory."
   };
-  t_manual man = { asize(desc),desc,0,NULL,NULL,0,NULL};
   
   FILE         *out;
   char         title1[256],title2[256];
   rvec         *x1,*x2,*v1,*v2,*xm;
   matrix       box1,box2;
-  int          i,j,np,n1,n2,nat;
+  int          i,j,np,n1,n2,nat,m;
   real         frac,frac1;
   t_filenm fnm[] = {
     { efTRJ, "-o", NULL,  ffWRITE },
@@ -59,7 +58,8 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,NFILE,fnm,FALSE,&man);
+  parse_common_args(&argc,argv,0,TRUE,
+		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
   if (argc < 2)
     fatal_error(0,"Usage: %s npoints",argv[0]);
   np=atoi(argv[1]);

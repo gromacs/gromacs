@@ -26,6 +26,8 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
+#include "maths.h"
+#include "macros.h"
 #include "copyrite.h"
 #include "string2.h"
 #include "smalloc.h"

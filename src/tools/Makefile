@@ -11,7 +11,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 LIB		=
 POBJ		= g_hbond.o dah.o hbond.o list.o parse.o
-PROGRAMS	= g_rdf		g_msd		\
+PROGRAMS	= g_rdf		g_msd		g_dist	\
 		  g_hbond	g_lifetime	merge_freq	\
 		  genbox 	genconf 	genion		\
 		  make_ndx	average		genpr 		\
@@ -19,8 +19,8 @@ PROGRAMS	= g_rdf		g_msd		\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
-		  g_angle	g_dih		\
-		  g_run_rms	g_bond		g_dipoles	\
+		  g_angle	g_dih		ipgro		\
+		  g_bond		g_dipoles	\
 		  g_mdmat	g_energy	g_sas		\
 		  do_dssp	sas2mat         g_rmsdist	\
 		  g_density     g_potential     g_order         \
@@ -114,40 +114,7 @@ trjconv:	trjconv.o
 g_rmsdist:	g_rmsdist.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-#
-#	OLD STUFF
-#
-getconf:	getconf.o
-		$(LD) -o $@ $^  $(SYSLIBS)
-
-trj2xtc:	trj2xtc.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-xtc2trj:	xtc2trj.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-ministat:	ministat.o $(OBJ)
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-rms_stat:	rms_stat.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-mk_polndx:	mk_polndx.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-copystat:	copystat.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-trj2pdb:	trj2pdb.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-gmxserver:	gmxserver.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
 g_energy:	g_energy.o	$(ACOBJ)
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-g_run_ene:	g_run_ene.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_mdmat:	g_mdmat.o
@@ -183,16 +150,10 @@ g_bond:		g_bond.o
 g_com:		g_com.o  
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_pvd:		g_pvd.o  
-		$(LD) -o $@ $^ $(SYSLIBS)
-
 g_rms:	 	g_rms.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rmsf:	 	g_rmsf.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-g_run_rms:	g_run_rms.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_mindist:	g_mindist.o
@@ -202,9 +163,6 @@ g_dih:		g_dih.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 do_dssp:	do_dssp.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-mat2ps:		mat2ps.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 xpm2ps:		xpm2ps.o
@@ -237,9 +195,6 @@ g_coord:	g_coord.o
 g_saltbr:	g_saltbr.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-g_bldist:       g_bldist.o
-	        $(LD) -o  $@ $^ $(SYSLIBS)
-
 g_diff:         g_diff.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
@@ -257,36 +212,21 @@ g_nmeig:        g_nmeig.o ql77.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 endif
 
+g_dist:         g_dist.o
+	        $(LD) -o  $@ $^ $(SYSLIBS)
+
+ipgro:          ipgro.o
+	        $(LD) -o  $@ $^ $(SYSLIBS)
+
+
+#
+#	OLD STUFF
+#
 my_rdf:         my_rdf.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
 g_confrms:      g_confrms.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
-
-#
-#	PIETER
-#
-g_probesurface:	g_probesurface.o
-	        $(LD) -o $@ $^ $(SYSLIBS)
-
-g_close:	g_close.o
-	        $(LD) -o $@ $^ $(SYSLIBS)
-
-g_pieter:	g_pieter.o
-	        $(LD) -o $@ $^ $(SYSLIBS)
-#
-#	Testing stuff
-#
-
-ptest:		ptest.o	
-		$(LD) -o $@ $^ $(SYSLIBS)
-pstest:		pstest.o	writeps.o
-		$(LD) -o $@ $^ $(SYSLIBS)
-
-pstest.o:	pstest.c
-
-testefit:	testefit.o	expfit.o
-		$(LD) -o $@ $^ $(SYSLIBS)
 
 #
 # Helix stuff
