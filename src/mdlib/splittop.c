@@ -47,6 +47,11 @@ static void split_ilist(FILE *log,t_ilist *il,t_commrec *cr)
   end=il->multinr[cr->pid];
   
   nr=end-start;
+  if (nr < 0)
+    fatal_error(0,"Negative number of atoms (%d) on processor %d\n"
+		"You have probably not used the same value for -np with grompp"
+		" and mdrun",
+		nr,cr->pid);
   snew(ia,nr);
 
   for(i=0; (i<nr); i++)
