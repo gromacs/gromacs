@@ -375,7 +375,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   n2max = calc_n2max(box,max_vdw);
   
   /* check solvent with solute */
-  nlist = &(fr->nlist_sr[eNL_VDWQQ]);
+  nlist = &(fr->nlist_sr[eNL_VDW]);
   fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
   for(bSolSol=0; (bSolSol<=1); bSolSol++) {
     ntest = nremove = 0;
