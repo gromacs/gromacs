@@ -237,8 +237,8 @@ int main(int argc,char *argv[])
     { efNDX, NULL,  NULL,   ffREAD  },
     { efTRX, "-f",  NULL,   ffREAD  },
     { efG87, "-to", NULL,   ffOPTWR },
-    { efGRO, "-cz", "zconf",ffWRITE },
-    { efGRO, "-co", "waver",ffWRITE }
+    { efSTO, "-cz", "zconf",ffWRITE },
+    { efSTO, "-co", "waver",ffWRITE }
   };
 #define NFILE asize(fnm)
 
@@ -317,8 +317,8 @@ int main(int argc,char *argv[])
       rms=fit_ahx(nres,bb,natoms,nall,allindex,x,nca,caindex,box,bFit);
       
       if (teller == 1) {
-	write_conf(opt2fn("-cz",NFILE,fnm),"Helix fitted to Z-Axis",
-		   &(top->atoms),x,x,box);
+	write_sto_conf(opt2fn("-cz",NFILE,fnm),"Helix fitted to Z-Axis",
+		       &(top->atoms),x,NULL,box);
       }
             
 #ifdef DEBUG
@@ -362,10 +362,9 @@ int main(int argc,char *argv[])
       for(m=0; (m<DIM); m++)
 	xav[ai][m]*=fac;
     }
-    otrj=opt2FILE("-co",NFILE,fnm,"w");
-    write_hconf_indexed(otrj,"Weighted and Averaged conformation",
-			&(top->atoms),nall,allindex,xav,xav,box);
-    fclose(otrj);
+    write_sto_conf_indexed(opt2fn("-co",NFILE,fnm),
+			   "Weighted and Averaged conformation",
+			   &(top->atoms),xav,NULL,box,nall,allindex);
   }
   
   for(i=0; (i<nres); i++) {

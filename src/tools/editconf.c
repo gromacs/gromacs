@@ -483,24 +483,15 @@ int main(int argc, char *argv[])
   if ( bScale || bDist || ANY(bSetSize) )
     printf("new box   : %6.3f %6.3f %6.3f\n", 
 	   box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
-
+  
   if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
-	    1,&isize,&index,&groupnames);
-    if (outftp == efGRO) {
-      out=ffopen(outfile,"w");
-      write_hconf_indexed(out,title,&atoms,isize,index,x,bHaveV?v:NULL,box); 
-      fclose(out);
-    }
-    else {
-      if (opt2bSet("-bf",NFILE,fnm)) {
-	fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
-      } else {
-	out=ffopen(outfile,"w");
-	hwrite_pdb_conf_indexed(out,title,&atoms,x,box,isize,index); 
-	fclose(out);
-      }
-    }
+	      1,&isize,&index,&groupnames);
+    if (opt2bSet("-bf",NFILE,fnm))
+      fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
+    else
+      write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,box,
+			     isize,index); 
   }
   else {
     if (outftp == efGRO) {
