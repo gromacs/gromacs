@@ -1126,23 +1126,23 @@ int gmx_rdf(int argc,char *argv[])
       "Shortest distance (nm) to be considered"},
     { "-fade",     FALSE, etREAL, {&fade},
       "From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)^2 to make it go to 1 smoothly. If fade is 0.0 nothing is done." },
-/*    { "-grid",     FALSE, etREAL, {&grid},
-      "Grid spacing (in nm) for FFTs when computing structure factors" },*/
+    { "-grid",     FALSE, etREAL, {&grid},
+      "[HIDDEN]Grid spacing (in nm) for FFTs when computing structure factors" },
     { "-npixel",   FALSE, etINT,  {&npixel},
       "[HIDDEN]# pixels per edge of the square detector plate" },
     { "-nlevel",   FALSE, etINT,  {&nlevel},
       "Number of different colors in the diffraction image" },
     { "-distance", FALSE, etREAL, {&distance},
       "[HIDDEN]Distance (in cm) from the sample to the detector" },
-/*    { "-wave",     FALSE, etREAL, {&lambda},
-      "Wavelength for X-rays/Neutrons for scattering. 0.1 nm corresponds to roughly 12 keV" },
-*/
+    { "-wave",     FALSE, etREAL, {&lambda},
+      "[HIDDEN]Wavelength for X-rays/Neutrons for scattering. 0.1 nm corresponds to roughly 12 keV" },
+    
     {"-startq", FALSE, etREAL, {&start_q},
-	 "Starting q (1/nm) "},
+     "Starting q (1/nm) "},
     {"-endq", FALSE, etREAL, {&end_q},
-	 "Ending q (1/nm)"},
+     "Ending q (1/nm)"},
     {"-energy", FALSE, etREAL, {&energy},
-	 "Energy of the incoming X-ray (keV) "}
+     "Energy of the incoming X-ray (keV) "}
   };
 #define NPA asize(pa)
   char       *fnTPS,*fnNDX;
