@@ -259,9 +259,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 static int str_nelem(char *str,int maxptr,char *ptr[])
 {
   int  np=0;
-  char *copy;
+  char *copy0,*copy;
   
-  copy=strdup(str);
+  copy0=strdup(str);
+  copy=copy0;
   ltrim(copy);
   while (*copy != '\0') {
     if (np >= maxptr)
@@ -279,7 +280,7 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
     ltrim(copy);
   }
   if (ptr == NULL)
-    sfree(copy);
+    sfree(copy0);
 
   return np;
 }
