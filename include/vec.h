@@ -218,11 +218,11 @@ static real cos_angle(rvec a,rvec b)
   }
   cos=ip*invsqrt(ipa*ipb);		/*  7		*/
 					/* 25 TOTAL	*/
-  if (cos >1.0) 
+  if (cos > 1.0) 
     return  1.0; 
-  else if (cos < -1.0) 
+  if (cos <-1.0) 
     return -1.0;
-
+  
   return cos;
 }
 
