@@ -2,6 +2,8 @@ dat
 dlg
 do_dssp
 editconf
+edi
+edo
 edr
 ene
 eneconv
@@ -56,11 +58,8 @@ gro
 grompp
 highway
 itp
-log
 m2p
-ipgro
 make_ndx
-map
 mdp
 mdrun
 merge_freq
@@ -84,7 +83,7 @@ tpr
 trj
 trjconv
 trr
-waterins
+vec
 wheel
 xpm
 xpm2ps
