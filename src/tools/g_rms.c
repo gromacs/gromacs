@@ -49,6 +49,25 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "cmat.h"
 #include "viewit.h"
 
+static void norm_princ(t_atoms *atoms, int isize, atom_id *index, 
+		       int natoms, rvec *x)
+{
+  int i,m;
+  rvec princ,vec;
+  
+  /* equalize principal components: */
+  /* orient principal axes, get principal components */
+  orient_princ(atoms, isize, index, natoms, x, NULL, &princ);
+  /* calculate scaling constants */
+  unitv(princ,vec);
+  for(m=0; m<DIM; m++)
+    vec[m] = 1/vec[m];
+  /* scale coordinates */
+  for(i=0; i<natoms; i++)
+    for(m=0; m<DIM; m++)
+      x[i][m] *= vec[m];
+}
+
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
@@ -75,48 +94,44 @@ int main (int argc,char *argv[])
     "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
     "comparison group are considered."
   };
-  static bool bPBC=TRUE,bFit=TRUE,bFitAll=TRUE,bRho=FALSE;
+  static bool bPBC=TRUE,bFit=TRUE,bFitAll=TRUE,bRho=FALSE,bSplit=FALSE;
   static bool bNano=FALSE,bDeltaLog=FALSE;
   static int  prev=0,freq=1,freq2=1,nlevels=80,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
               bond_user_max=-1,bond_user_min=-1,
               delta_maxy=0.0;
   t_pargs pa[] = {
-    { "-rho", FALSE, etBOOL, {&bRho},
-      "Calculate Rho in stead of RMSD" },
-    { "-pbc", FALSE, etBOOL, {&bPBC},
-      "PBC check" },
-    { "-fit",FALSE, etBOOL, {&bFit},
-      "Fit to reference structure" },
-    { "-ns", FALSE, etBOOL, {&bNano}  ,
-      "ns on axis instead of ps"},
-    { "-prev", FALSE, etINT, {&prev},
-      "Compare with previous frame" },
-    { "-fitall",FALSE,etBOOL,{&bFitAll},
+    { "-rho",   FALSE, etBOOL, {&bRho}, "Calculate Rho in stead of RMSD" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
+    { "-fit",   FALSE, etBOOL, {&bFit}, "Fit to reference structure" },
+    { "-ns",    FALSE, etBOOL, {&bNano},"ns on axis instead of ps"},
+    { "-prev",  FALSE, etINT,  {&prev}, "Compare with previous frame" },
+    { "-split", FALSE, etBOOL, {&bSplit},"Split graph where time is zero" },
+    { "-fitall",FALSE, etBOOL, {&bFitAll},
       "HIDDENFit all pairs of structures in matrix" },
-    { "-skip", FALSE, etINT, {&freq},
+    { "-skip",  FALSE, etINT,  {&freq}, 
       "Only write every nr-th frame to matrix" },
-    { "-skip2", FALSE, etINT, {&freq2},
+    { "-skip2", FALSE, etINT,  {&freq2},
       "Only write every nr-th frame to matrix" },
-    { "-max", FALSE, etREAL, {&rmsd_user_max},
+    { "-max",   FALSE, etREAL, {&rmsd_user_max},
       "Maximum level in comparison matrix" },
-    { "-min", FALSE, etREAL, {&rmsd_user_min},
+    { "-min",   FALSE, etREAL, {&rmsd_user_min},
       "Minimum level in comparison matrix" },
-    { "-bmax", FALSE, etREAL, {&bond_user_max},
+    { "-bmax",  FALSE, etREAL, {&bond_user_max},
       "Maximum level in bond angle matrix" },
-    { "-bmin", FALSE, etREAL, {&bond_user_min},
+    { "-bmin",  FALSE, etREAL, {&bond_user_min},
       "Minimum level in bond angle matrix" },
-    { "-nlevels", FALSE, etINT, {&nlevels},
+    { "-nlevels",FALSE,etINT,  {&nlevels}, 
       "Number of levels in the matrices" },
-    { "-dlog", FALSE, etBOOL, {&bDeltaLog},
+    { "-dlog",  FALSE, etBOOL, {&bDeltaLog},
       "HIDDENUse a log x-axis in the delta t matrix"},
-    { "-dmax", FALSE, etREAL, {&delta_maxy},
+    { "-dmax",  FALSE, etREAL, {&delta_maxy},
       "HIDDENMaximum level in delta matrix" },
-    { "-aver", FALSE, etINT, {&avl},
+    { "-aver",  FALSE, etINT,  {&avl},
       "HIDDENAverage over this distance in the RMSD matrix" }
   };
   int        step,nre,natoms,natoms2;
-  int        i,j,k,m,teller,teller2,tel_mat,tel_mat2;
+  int        i,j,k,m,n,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int        maxframe=NFRAME,maxframe2=NFRAME;
   real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m,*w_rms_m;
@@ -129,14 +144,14 @@ int main (int argc,char *argv[])
   rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,**mat_b=NULL,
              **mat_b2=NULL,vec;
   int        status;
-  char       buf[256],tstr[12];
+  char       buf[256],*timelabel;
   
   int        nrms,ncons=0;
   FILE       *fp;
   real       rlstot=0,**rls,**rlsm,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
              **bond_mat=NULL,
              *axis,*axis2,*del_xaxis,*del_yaxis,
-             rmsd_max,rmsd_min,bond_max,bond_min,ang,ipr;
+             rmsd_max,rmsd_min,rmsd_avg,bond_max,bond_min,ang,ipr;
   real       **rmsdav_mat=NULL,av_tot,weight,weight_tot;
   real       **delta=NULL,delta_max,delta_scalex=0,delta_scaley=0,*delta_tot;
   int        delta_xsize=0,del_lev=100,mx,my,abs_my;
@@ -212,11 +227,8 @@ int main (int argc,char *argv[])
   /*set box type*/
   init_pbc(box,FALSE);
 
-  if (bNano) 
-    strcpy(tstr,"Time (ns)");
-  else
-    strcpy(tstr,"Time (ps)");
-
+  timelabel = bNano ? "Time (ns)" : "Time (ps)";
+  
   if (bFit)
     fprintf(stderr,"Select group for least squares fit\n");
   else
@@ -259,8 +271,6 @@ int main (int argc,char *argv[])
       snew(rlsm[j],maxframe);
   }
   snew(time,maxframe);
-  snew(time2,maxframe2);
-  snew(fp,nrms);
   for(j=0; (j<nrms); j++)
     for(i=0; (i<irms[j]); i++)
       w_rms[ind_rms[j][i]]=top.atoms.atom[ind_rms[j][i]].m;
@@ -277,27 +287,29 @@ int main (int argc,char *argv[])
       xm[i][XX] = -xm[i][XX];
     }
   }
+  if (bRho)
+    /* equalize principal components */
+    norm_princ(&top.atoms, ifit, ind_fit, top.atoms.nr, xp);
   
   /* read first frame */
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
   if (bMat || bPrev) {
     snew(mat_x,NFRAME);
-
+    
     if (bPrev)
       /* With -prev we use all atoms for simplicity */
       n_ind_m = natoms;
     else {
       /* Check which atoms we need (fit/rms) */
       snew(bInMat,natoms);
-      for(i=0; i<ifit; i++) {
-      bInMat[ind_fit[i]] = TRUE;
-      n_ind_m++;
-      }
+      for(i=0; i<ifit; i++)
+	bInMat[ind_fit[i]] = TRUE;
+      n_ind_m=ifit;
       for(i=0; i<irms[0]; i++)
-      if (!bInMat[ind_rms[0][i]]) {
-        bInMat[ind_rms[0][i]] = TRUE;
-        n_ind_m++;
-      }
+	if (!bInMat[ind_rms[0][i]]) {
+	  bInMat[ind_rms[0][i]] = TRUE;
+	  n_ind_m++;
+	}
     }
     /* Make an index of needed atoms */
     snew(ind_m,n_ind_m);
@@ -305,9 +317,9 @@ int main (int argc,char *argv[])
     j = 0;
     for(i=0; i<natoms; i++)
       if (bPrev || bInMat[i]) {
-      ind_m[j] = i;
-      rev_ind_m[i] = j;
-      j++;
+	ind_m[j] = i;
+	rev_ind_m[i] = j;
+	j++;
       }
     snew(w_rls_m,n_ind_m);
     snew(ind_rms_m,irms[0]);
@@ -321,7 +333,7 @@ int main (int argc,char *argv[])
     sfree(rev_ind_m);
     sfree(bInMat);
   }
-
+  
   if (bBond) {
     iatom=top.idef.il[F_SHAKE].iatoms;
     ncons=top.idef.il[F_SHAKE].nr/3;
@@ -346,6 +358,8 @@ int main (int argc,char *argv[])
     snew(mat_b,NFRAME);
     snew(mat_b2,NFRAME);
   }
+  
+  /* start looping over frames: */
   tel_mat = 0;
   teller = 0;
   do {
@@ -353,11 +367,16 @@ int main (int argc,char *argv[])
       rm_pbc(&(top.idef),natoms,box,x,x);
     
     reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
+    if (bRho)
+      /* equalize principal components */
+      norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
+    
     if (bFit)
       /*do the least squares fit to original structure*/
       do_fit(natoms,w_rls,xp,x);
-
+    
     if (teller % freq == 0) {
+      /* keep frame for matrix calculation */
       if (bMat || bPrev) {
 	if (tel_mat >= NFRAME) 
 	  srenew(mat_x,tel_mat+1);
@@ -388,7 +407,6 @@ int main (int argc,char *argv[])
       if (bFit)
 	do_fit(natoms,w_rls,x,xp);
     }    
-
     for(j=0; (j<nrms); j++) 
       rls[j][teller] = calc_similar_ind(bRho,irms[j],ind_rms[j],w_rms,x,xp);
     if (bNorm) {
@@ -421,12 +439,14 @@ int main (int argc,char *argv[])
   close_trj(status);
 
   if (bFile2) {
+    snew(time2,maxframe2);
+    
     fprintf(stderr,"\nWill read second trajectory file\n");
     snew(mat_x2,NFRAME);
-    if ((natoms2=read_first_x(&status,opt2fn("-f2",NFILE,fnm),&t,&x,box)) 
-	!= natoms) 
+    natoms2=read_first_x(&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
+    if ( natoms2 != natoms )
       fatal_error(0,"Second trajectory (%d atoms) does not match the first one"
-		  " (%d atoms)",natoms2,natoms);
+		  " (%d atoms)", natoms2, natoms);
     if (!bFreq2) freq2=freq;
     tel_mat2 = 0;
     teller2 = 0;
@@ -435,11 +455,16 @@ int main (int argc,char *argv[])
 	rm_pbc(&(top.idef),natoms,box,x,x);
 
       reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
+      if (bRho)
+	/* equalize principal components */
+	norm_princ(&top.atoms, ifit, ind_fit, natoms, x);
+      
       if (bFit)
 	/*do the least squares fit to original structure*/
 	do_fit(natoms,w_rls,xp,x);
 
       if (teller2 % freq2 == 0) {
+	/* keep frame for matrix calculation */
 	if (bMat) {
 	  if (tel_mat2 >= NFRAME) 
 	    srenew(mat_x2,tel_mat2+1);
@@ -494,6 +519,8 @@ int main (int argc,char *argv[])
     snew(axis2,tel_mat2);
     rmsd_max=0.0;
     rmsd_min=1e10;
+    rmsd_avg=0.0;
+    n=0;
     bond_max=0.0;
     bond_min=1e10;
     for(j=0; j<tel_mat2; j++)
@@ -516,7 +543,7 @@ int main (int argc,char *argv[])
 	  snew(rmsdav_mat[j],tel_mat);
       }
     }
-
+    
     if (bFitAll)
       snew(mat_x2_j,natoms);
     for(i=0; i<tel_mat; i++) {
@@ -538,6 +565,8 @@ int main (int argc,char *argv[])
 			       w_rms_m,mat_x[i],mat_x2_j);
 	    if (rmsd_mat[i][j] > rmsd_max) rmsd_max=rmsd_mat[i][j];
 	    if (rmsd_mat[i][j] < rmsd_min) rmsd_min=rmsd_mat[i][j];
+	    rmsd_avg += rmsd_mat[i][j];
+	    n++;
 	  }
 	  else
 	    rmsd_mat[i][j]=rmsd_mat[j][i];
@@ -559,9 +588,11 @@ int main (int argc,char *argv[])
 	}
       }
     }
+    rmsd_avg/=n;
     if (bMat && (avl > 0)) {
       rmsd_max=0.0;
       rmsd_min=0.0;
+      rmsd_avg=0.0;
       for(j=0; j<tel_mat-1; j++) {
 	for(i=j+1; i<tel_mat; i++) {
 	  av_tot=0;
@@ -587,7 +618,8 @@ int main (int argc,char *argv[])
     }
 
     if (bMat) {
-      fprintf(stderr,"\nMin. value: %f, Max. value: %f\n",rmsd_min,rmsd_max);  
+      fprintf(stderr,"\nMin. value: %f, Max. value: %f, Avg. value: %f\n",
+	      rmsd_min,rmsd_max,rmsd_avg);
       rlo.r = 1; rlo.g = 1; rlo.b = 1;
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       if (rmsd_user_max != -1) rmsd_max=rmsd_user_max;
@@ -597,7 +629,7 @@ int main (int argc,char *argv[])
 		rmsd_min,rmsd_max);
       sprintf(buf,"%s %s matrix",gn_rms[0],bRho ? "Rho" : "RMSD");
       write_xpm(opt2FILE("-m",NFILE,fnm,"w"),buf,bRho ? "Rho" : "RMSD (nm)",
-		tstr,tstr,tel_mat,tel_mat2,axis,axis2,
+		timelabel,timelabel,tel_mat,tel_mat2,axis,axis2,
 		rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
       if (opt2bSet("-dist",NFILE,fnm)) 
@@ -638,7 +670,7 @@ int main (int argc,char *argv[])
 	  del_yaxis[i]=delta_maxy*i/del_lev;
 	sprintf(buf,"%s %s vs. delta t",gn_rms[0],bRho ? "Rho" : "RMSD");
 	fp = ffopen("delta.xpm","w");
-	write_xpm(fp,buf,"density",tstr,bRho ? "Rho" : "RMSD (nm)",
+	write_xpm(fp,buf,"density",timelabel,bRho ? "Rho" : "RMSD (nm)",
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
 	fclose(fp);
@@ -660,8 +692,8 @@ int main (int argc,char *argv[])
       rlo.r = 1; rlo.g = 1; rlo.b = 1;
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       sprintf(buf,"%s av. bond angle deviation",gn_rms[0]);
-      write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),buf,"degrees",tstr,tstr,
-		tel_mat,tel_mat2,axis,axis2,
+      write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),buf,"degrees",
+		timelabel,timelabel,tel_mat,tel_mat2,axis,axis2,
 		bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
     }
   }
@@ -671,13 +703,13 @@ int main (int argc,char *argv[])
   /* Write the RMSD's to file */
   if (!bPrev)
     if (bRho)
-      sprintf(buf,"Rho Deviation");
+      sprintf(buf,"Rho Difference");
     else
-      sprintf(buf,"RMS Difference");
+      sprintf(buf,"RMS Deviation");
   else
     sprintf(buf,"%s with frame %g %s ago",bRho ? "Rho" : "RMSD",
 	    time[prev*freq]-time[0], bNano ? "ns" : "ps");
-  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,tstr,bRho ? "Rho" : "RMS (nm)");
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,timelabel,bRho ? "Rho" : "RMS (nm)");
   if (nrms == 1)
     fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
   else {
@@ -685,6 +717,8 @@ int main (int argc,char *argv[])
     xvgr_legend(fp,nrms,gn_rms);
   }
   for(i=0; (i<teller); i++) {
+    if ( bSplit && i>0 && abs(time[bPrev ? freq*i : i])<1e-5 ) 
+      fprintf(fp,"&\n");
     fprintf(fp,"%8.4f",time[bPrev ? freq*i : i]);
     for(j=0; (j<nrms); j++) {
       fprintf(fp," %8.4f",rls[j][i]);
@@ -697,7 +731,8 @@ int main (int argc,char *argv[])
   if (bMirror) {
     /* Write the mirror RMSD's to file */
     fp=xvgropen(opt2fn("-mir",NFILE,fnm),
-		bRho ? "Mirror Rho Difference" : "Mirror RMS Deviation",tstr,
+		bRho ? "Mirror Rho Difference" : "Mirror RMS Deviation",
+		timelabel,
 		bRho ? "Mirror Rho" : "Mirror RMS (nm)");
     if (nrms == 1)
       fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
@@ -707,6 +742,8 @@ int main (int argc,char *argv[])
       xvgr_legend(fp,nrms,gn_rms);
     }
     for(i=0; (i<teller); i++) {
+      if ( bSplit && i>0 && abs(time[i])<1e-5 ) 
+	fprintf(fp,"&\n");
       fprintf(fp,"%8.4f",time[i]);
       for(j=0; (j<nrms); j++)
 	fprintf(fp," %8.4f",rlsm[j][i]);
