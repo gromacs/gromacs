@@ -244,14 +244,15 @@ int main (int argc, char *argv[])
   char         *fn;
   int          fp;
   t_tpxheader  tpx;
-  int          i,nstep,natoms;
-  real         t,newt,lambda;
-  bool         bCont;
+  t_trnheader head;
+  int          i,natoms,frame,step,trn_step;
+  real         t,lambda;
+  bool         bMDP,bOK,bFrame;
   t_topology   top;
   t_inputrec   *ir,*irnew;
   t_gromppopts *gopts;
   rvec         *x=NULL,*v=NULL,*newx,*newv,*tmpx,*tmpv;
-  matrix       box,newbox,tmpbox;
+  matrix       box,newbox;
   int          gnx;
   char         *grpname;
   atom_id      *index=NULL;
@@ -282,17 +283,17 @@ int main (int argc, char *argv[])
   bSel = (bSel || ftp2bSet(efNDX,NFILE,fnm));
   
   fn = ftp2fn(efTPX,NFILE,fnm);
-  printf("Reading toplogy and shit from %s\n",fn);
+  fprintf(stderr,"Reading toplogy and shit from %s\n",fn);
   
   read_tpxheader(fn,&tpx);
   snew(x,tpx.natoms);
   snew(v,tpx.natoms);
   snew(ir,1);
-  read_tpx(fn,&nstep,&t,&lambda,ir,box,&natoms,x,v,NULL,&top);
+  read_tpx(fn,&step,&t,&lambda,ir,box,&natoms,x,v,NULL,&top);
   
-  bCont=(ftp2bSet(efMDP,NFILE,fnm));
-  if (bCont) {
-    printf("Reading new inputrec from %s\n",ftp2fn(efMDP,NFILE,fnm));
+  bMDP=(ftp2bSet(efMDP,NFILE,fnm));
+  if (bMDP) {
+    fprintf(stderr,"Reading new inputrec from %s\n",ftp2fn(efMDP,NFILE,fnm));
     
     /* Initiate some variables */
     snew(irnew,1);
@@ -305,55 +306,72 @@ int main (int argc, char *argv[])
   
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     fn = ftp2fn(efTRN,NFILE,fnm);
-    printf("\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",fn);
+    fprintf(stderr,
+	    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",fn);
     
-    sfree(x);
-    sfree(v);
-    natoms = read_first_x_v(&fp,ftp2fn(efTRN,NFILE,fnm),&t,&x,&v,box);
-    snew(newx,tpx.natoms);
-    snew(newv,tpx.natoms);
-
-    if (top.atoms.nr != natoms) 
+    fp=open_trn(fn,"r");
+    fread_trnheader(fp,&head,&bOK);
+    if (top.atoms.nr != head.natoms) 
       fatal_error(0,"Number of atoms in Topology (%d) "
 		  "is not the same as in Trajectory (%d)\n",
-		  top.atoms.nr,natoms);
-    
+		  top.atoms.nr,head.natoms);
+    snew(newx,head.natoms);
+    snew(newv,head.natoms);
+    t=head.t;
+    trn_step=head.step;
+    bOK=fread_htrn(fp,&head,box,x,v,NULL);
+
     /* Now scan until the last set of x and v (step == 0)
      * or the ones at step step.
      */
-    while (read_next_x_v(fp,&newt,natoms,newx,newv,newbox)) {
-      tmpx=newx;
-      newx=x;
-      x=tmpx;
-      tmpv=newv;
-      newv=v;
-      v=tmpv;
-      t=newt;
-      copy_mat(newbox,tmpbox);
-      copy_mat(box,newbox);
-      copy_mat(tmpbox,box);
-
-      if ((max_t != -1.0) && (t >= max_t))
-	break;
+    bFrame=bOK;
+    frame=0;
+    while (bFrame) {
+      fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",frame,trn_step,t);
+      bFrame=fread_trnheader(fp,&head,&bOK);
+      if (bFrame || !bOK)
+	frame++;
+      bFrame=bFrame && bOK;
+      if (bFrame)
+	bOK=fread_htrn(fp,&head,newbox,newx,newv,NULL);
+      bFrame=bFrame && bOK;
+      if (bFrame && (head.x_size) && (head.v_size)) {
+	tmpx=newx;
+	newx=x;
+	x=tmpx;
+	tmpv=newv;
+	newv=v;
+	v=tmpv;
+	t=head.t;
+	trn_step=head.step;
+	copy_mat(newbox,box);
+      }
+      if ((max_t != -1.0) && (head.t >= max_t))
+	bFrame=FALSE;
     }
-    close_trj(fp);
+    close_trn(fp);
     fprintf(stderr,"\n");
-  } else 
-    printf("\nUSING COORDS, VELS AND BOX FROM TPX FILE %s...\n\n",
+    if (!bOK)
+      fprintf(stderr,"Frame %d (step %d, time %g) is incomplete\n",
+	      frame,head.step,head.t);
+    fprintf(stderr,"\nUsing frame of step %d time %g\n",trn_step,t);
+  } 
+  else 
+    fprintf(stderr,"\nUSING COORDS, VELS AND BOX FROM TPX FILE %s...\n\n",
 	   ftp2fn(efTPX,NFILE,fnm));
-  
+
   /* change the input record to the actual data */
-  if (bCont) {
+  if (bMDP) {
     ir=irnew;
     if (ir->init_t != t)
-      printf("WARNING: I'm using t_init in mdp-file (%g)"
-	     " while in trajectory it is (%g)\n",ir->init_t,t);
+      fprintf(stderr,"WARNING: I'm using t_init in mdp-file (%g)"
+	      " while in trajectory it is (%g)\n",ir->init_t,t);
     if (ir->init_lambda != lambda)
-      printf("WARNING: I'm using lambda_init in mdp-file (%g)"
-	     " while in trajectory it is (%g)\n",ir->init_lambda,lambda);
+      fprintf(stderr,"WARNING: I'm using lambda_init in mdp-file (%g)"
+	      " while in trajectory it is (%g)\n",ir->init_lambda,lambda);
   }
   else {
-    ir->nsteps     -= nstep;
+    ir->nsteps     -= trn_step;
     ir->init_t      = t;
     ir->init_lambda = lambda;
   }
@@ -373,7 +391,8 @@ int main (int argc, char *argv[])
       fprintf(stderr,"Will write full tpx file (no selection)\n");
   }    
   
-  printf("writing statusfile with starting time %g...\n",ir->init_t);
+  fprintf(stderr,"Writing statusfile with starting time %g and %d steps...\n",
+	  ir->init_t,ir->nsteps);
   write_tpx(opt2fn("-o",NFILE,fnm),
 	    0,ir->init_t,ir->init_lambda,ir,box,
 	    natoms,x,v,NULL,&top);
