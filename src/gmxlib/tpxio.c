@@ -268,6 +268,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       do_real(ir->orires_fc);
       do_real(ir->orires_tau);
       do_int(ir->nstorireout);
+    } else {
+      ir->orires_fc = 0;
+      ir->orires_tau = 0;
+      ir->nstorireout = 0;
     }
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
