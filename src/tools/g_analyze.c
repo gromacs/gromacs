@@ -168,6 +168,39 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   return val;
 }
 
+static void power_fit(int n,int nset,real **val,real t0,real dt)
+{
+  real *x,*y,quality,a,b;
+  int  s,i;
+
+  snew(x,n);
+  snew(y,n);
+  
+  if (t0>0) {
+    for(i=0; i<n; i++)
+      if (t0>0)
+	x[i] = log(t0+dt*i);
+  } else {
+    fprintf(stdout,"First time is not larger than 0, using index number as time for power fit\n");
+    for(i=0; i<n; i++)
+      x[i] = log(i+1);
+  }
+  
+  for(s=0; s<nset; s++) {
+    i=0;
+    for(i=0; i<n && val[s][i]>=0; i++)
+      y[i] = log(val[s][i]);
+    if (i < n)
+      fprintf(stdout,"Will power fit up to point %d, since it is not larger than 0\n",i);
+    quality = lsq_y_ax_b(i,x,y,&a,&b);
+    fprintf(stdout,"Power fit set %3d:  error %.3f  a %g  b %g\n",
+	    s+1,quality,a,exp(b));
+  }
+  
+  sfree(y); 
+  sfree(x);
+}
+
 static real cosine_content(int nhp,int n,real *y)
      /* Assumes n equidistant points */
 {
@@ -476,7 +509,7 @@ int main(int argc,char *argv[])
     "read when they are seperated by & (option [TT]-n[tt]),",
     "in this case only one y value is read from each line.",
     "All lines starting with # and @ are skipped.",
-    "All analysis can also be done for the derivative of a set",
+    "All analyses can also be done for the derivative of a set",
     "(option [TT]-d[tt]).[PAR]",
     "g_analyze always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",
@@ -512,11 +545,14 @@ int main(int argc,char *argv[])
     "a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block",
     "average.",
     "When the actual block average is very close to the analytical curve,",
-    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).",
+    "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).[PAR]",
+    "Option [TT]-power[tt] fits the data to b t^a, which is accomplished",
+    "by fitting to a t + b on log-log scale. All points after the first",
+    "zero or negative value are ignored."
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE;
-  static bool bEeFitAc=FALSE;
+  static bool bEeFitAc=FALSE,bPower=FALSE; 
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
   /* must correspond to enum avbar* declared at beginning of file */
@@ -550,6 +586,8 @@ int main(int argc,char *argv[])
     " a factor 2^(1/#)" },
     { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
       "HIDDENAlso plot analytical block average using a autocorrelation fit" },
+    { "-power", FALSE, etBOOL, {&bPower},
+      "Fit data to: b t^a" },
     { "-subav", FALSE, etBOOL, {&bSubAv},
       "Subtract the average before autocorrelating" },
     { "-oneacf", FALSE, etBOOL, {&bAverCorr},
@@ -678,6 +716,9 @@ int main(int argc,char *argv[])
   if (eefile) {
     estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc);
     do_view(eefile, NULL);
+  }
+  if (bPower) {
+    power_fit(n,nset,val,t0,dt);
   }
   if (acfile) {
     if (bSubAv) 
