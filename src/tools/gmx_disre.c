@@ -168,7 +168,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
     } while (((i+n) < disres->nr) && 
 	     (forceparams[forceatoms[i+n]].disres.label == label));
     
-    calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,x,fcd);
+    calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,x,fr->ePBC==epbcFULL,fcd);
 
     rt = pow(fcd->disres.Rt_6[0],-1.0/6.0);
     aver1[ndr]  += rt;
