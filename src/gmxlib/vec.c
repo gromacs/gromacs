@@ -93,7 +93,7 @@ void vecinvsqrt(real in[],real out[],int n)
   static int cpu_capabilities;
   
   if(bFirst) {
-    cpu_capabilities=check_x86cpu(NULL);
+    cpu_capabilities=detect_cpu(NULL);
     bFirst=FALSE;
   }
 
@@ -158,7 +158,7 @@ void vecrecip(real in[],real out[],int n)
   static int cpu_capabilities;
 
   if(bFirst) {
-    cpu_capabilities=check_x86cpu(NULL);
+    cpu_capabilities=detect_cpu(NULL);
     bFirst=FALSE;
   }
 
