@@ -218,6 +218,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int    Min=0; 
   int    steps_accepted=0; 
   bool   bConstrain;
+  /* not used */
+  real   terminate=0;
 #define  TRY (1-Min)
   
   /* Initiate some variables  */
@@ -367,7 +369,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir, 
- 		  &(ir->opts),grps,&mynrnb,nrnb,vcm,mu_tot); 
+ 		  &(ir->opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate); 
     
     /* This is the new energy  */
 #ifdef FORCE_CRIT 

@@ -58,11 +58,11 @@ void global_stat(FILE *log,
 		 tensor fvir,tensor svir,
 		 t_grpopts *opts,t_groups *grps,
 		 t_nrnb *mynrnb,t_nrnb nrnb[],
-		 rvec vcm,rvec mu_tot)
+		 rvec vcm,rvec mu_tot, real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    imu,ie,ifv,isv,icm,in[MAXPROC],inn[egNR];
+  int    iterminate,imu,ie,ifv,isv,icm,in[MAXPROC],inn[egNR];
   int    j;
   
   if (rb==NULL) {
@@ -99,6 +99,8 @@ void global_stat(FILE *log,
   icm = add_binr(log,rb,DIM,vcm);
   where();
   imu = add_binr(log,rb,DIM,mu_tot);
+  where();
+  iterminate = add_binr(log,rb,1,terminate);
   
   /* Global sum it all */
   sum_bin(rb,cr);
@@ -118,7 +120,9 @@ void global_stat(FILE *log,
   where();
   extract_binr(rb,imu,DIM,mu_tot);
   where();
-  
+  extract_binr(rb,iterminate,1,terminate);
+  where();
+
   /* Small hack for temp only */
   ener[F_TEMP]/=cr->nprocs;
 }

@@ -28,6 +28,7 @@
  */
 static char *SRCID_md_c = "$Id$";
 
+#include <signal.h>
 #include "typedefs.h"
 #include "vec.h"
 #include "statutil.h"
@@ -43,6 +44,13 @@ static char *SRCID_md_c = "$Id$";
 #include "network.h"
 #include "sim_util.h"
 #include "pull.h"
+
+volatile bool bGotTermSignal = FALSE;
+
+static void signal_handler()
+{
+  bGotTermSignal = TRUE;
+}
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
@@ -63,8 +71,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
   int        natoms=0,status;
-    /* for pull code */
+  /* for pull code */
   t_pull     pulldata;
+  /* A boolean (disguised as a real) to terminate mdrun */  
+  real       terminate=0;
+
+  /* Turn on signal handling */
+  signal(SIGTERM,signal_handler);
 
   /* check if "-rerun" is used. */
   bRerunMD = optRerunMDset(nfile,fnm);
@@ -90,10 +103,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
 	       mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-	       
+	
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
   clear_rvec(vcm);
   debug_gmx();
   
@@ -243,10 +256,18 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     }
     
+    if (bGotTermSignal) {
+      terminate = 1;
+      fprintf(log,"\n\nReceived the TERM signal\n\n");
+      if (MASTER(cr))
+	fprintf(stderr,"\n\nReceived the TERM signal\n\n");
+      bGotTermSignal = FALSE;
+    }
+
     if (PAR(cr)) {
       /* Globally (over all CPUs) sum energy, virial etc. */
       global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
       if (fr->bTwinRange && !bNS) 
 	for(i=0; (i<grps->estat.nn); i++) {
 	  grps->estat.ee[egLR][i]   /= cr->nprocs;
@@ -255,7 +276,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     else
       cp_nrnb(&(nrnb[0]),&mynrnb);
-    
+
+    if ((terminate > 0) && (step < parm->ir.nsteps)) {
+      parm->ir.nsteps = step+1;
+      fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
+      if (MASTER(cr))
+	fprintf(stderr,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
+    }
+
     if (!bRerunMD) {
       /* Do center of mass motion removal */
       if (bStopCM) {

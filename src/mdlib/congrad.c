@@ -86,6 +86,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
   int    i,m,start,end,niti;
+  /* not used */
+  real   terminate=0;
 
   /* Initiate some variables */
   if (parm->ir.bPert)
@@ -166,7 +168,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
   where();
   
   /* Copy stuff to the energy bin for easy printing etc. */
@@ -269,7 +271,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /* Communicate stuff when parallel */
       if (PAR(cr)) 
 	global_stat(log,cr,ener,force_vir,shake_vir,
-		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
 
       EpotB=ener[F_EPOT];
       
@@ -336,7 +338,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* Communicate stuff when parallel */
     if (PAR(cr)) 
       global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
+		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
 
     EpotA=ener[F_EPOT];
 

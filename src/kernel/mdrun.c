@@ -46,7 +46,7 @@ int main(int argc,char *argv[])
     "It reads the run input file ([TT]-s[tt]) and distributes the",
     "topology over processors if needed. The coordinates are passed",
     "around, so that computations can begin.",
-    "First a neighbourlist is made, then the forces are computed.",
+    "First a neighborlist is made, then the forces are computed.",
     "The forces are globally summed, and the velocities and",
     "positions are updated. If necessary shake is performed to constrain",
     "bond lengths and/or bond angles.",
@@ -74,6 +74,12 @@ int main(int argc,char *argv[])
     "eigenvectors.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated.[PAR]",
+    "When mdrun receives a TERM signal it will set nsteps to the current",
+    "step plus one, which causes the run to end after one step and write",
+    "all the usual output.",
+    "When running with MPI, a TERM signal to one of the mdrun processes",
+    "is sufficient, this signal should not be sent to mpirun or",
+    "the mdrun process that is the parent of the others." 
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
