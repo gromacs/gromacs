@@ -86,9 +86,6 @@ void calc_h_pos(int nht,int nh[],int a[],rvec x[])
   real s6,rij,ra,rb,xh;
   int  d;
   
-  if ((nht < 1) || (nht > 9))
-    fatal_error(0,"Invalid argument (%d) for nht in routine genh\n",nht);
-  
   /* from macros.h:  
      #define AI a[0]
      #define AJ a[1]
@@ -101,32 +98,13 @@ void calc_h_pos(int nht,int nh[],int a[],rvec x[])
 
   s6=0.5*sqrt(3.e0);
 
-  /* construct one planar hydrogen (peptide,rings) */
-  if (nht == 1) {
-    rij = 0.e0;
-    rb  = 0.e0;
-    for(d=0; (d<DIM); d++) {
-      sij[d] = x[AI][d]-x[AJ][d];
-      sb[d]  = x[AI][d]-x[AK][d];
-      rij   += sqr(sij[d]);
-      rb    += sqr(sb[d]);
-    }
-    rij = sqrt(rij);
-    rb  = sqrt(rb);
-    ra  = 0.e0;
-    for(d=0; (d<DIM); d++) {
-      sa[d] = sij[d]/rij+sb[d]/rb;
-      ra   += sqr(sa[d]);
-    }
-    ra = sqrt(ra);
-    for(d=0; (d<DIM); d++)
-      x[H1][d] = x[AI][d]+distH*sa[d]/ra;
-
-    return;
-  }
-  
-  /* construct one, two or three dihedral hydrogens */
-  if ((nht != 5) && (nht !=6) && (nht != 7)) {
+  /* common work for constructing one, two or three dihedral hydrogens */
+  switch (nht) {
+  case 2:
+  case 3:
+  case 4:
+  case 8:
+  case 9: {
     rij = 0.e0;
     for(d=0; (d<DIM); d++) {
       xh     = x[AJ][d];
@@ -151,8 +129,32 @@ void calc_h_pos(int nht,int nh[],int a[],rvec x[])
     sb[YY] = sa[ZZ]*sij[XX]-sa[XX]*sij[ZZ];
     sb[ZZ] = sa[XX]*sij[YY]-sa[YY]*sij[XX];
   }
+  break;
+  }/* end switch */
 
   switch (nht) {
+  case 1: { /* construct one planar hydrogen (peptide,rings) */
+    rij = 0.e0;
+    rb  = 0.e0;
+    for(d=0; (d<DIM); d++) {
+      sij[d] = x[AI][d]-x[AJ][d];
+      sb[d]  = x[AI][d]-x[AK][d];
+      rij   += sqr(sij[d]);
+      rb    += sqr(sb[d]);
+    }
+    rij = sqrt(rij);
+    rb  = sqrt(rb);
+    ra  = 0.e0;
+    for(d=0; (d<DIM); d++) {
+      sa[d] = sij[d]/rij+sb[d]/rb;
+      ra   += sqr(sa[d]);
+    }
+    ra = sqrt(ra);
+    for(d=0; (d<DIM); d++)
+      x[H1][d] = x[AI][d]+distH*sa[d]/ra;
+    
+    break;
+  }
   case 2: /* one single hydrogen, e.g. hydroxyl */
     for(d=0; (d<DIM); d++) {
       x[H1][d] = x[AI][d]+distH*sin(alfaH)*sb[d]-distH*cos(alfaH)*sij[d];
@@ -242,5 +244,7 @@ void calc_h_pos(int nht,int nh[],int a[],rvec x[])
     
     break;
   }
+  default:
+    fatal_error(0,"Invalid argument (%d) for nht in routine genh\n",nht);
   } /* end switch */
 }
