@@ -528,8 +528,9 @@ static void cont_status(char *slog,char *ener,
   }
 }
 
-static void read_posres(t_params *pr, char *fn, int offset)
+static void read_posres(t_params *pr, char *fn, int offset,int *forward)
 {
+  bool   bFirst = TRUE;
   rvec   *x,*v;
   t_atoms dumat;
   matrix box;
@@ -550,6 +551,14 @@ static void read_posres(t_params *pr, char *fn, int offset)
 		  ai+1,natoms);
     for(j=0; (j<DIM); j++)
       pr->param[i].c[offset + j] = x[ai][j];
+    /* Fix for shuffling! */
+    if (ai != forward[ai]) {
+      pr->param[i].AI = forward[ai];
+      if (bFirst) {
+	fprintf(stderr,"WARNING shuffling position restraints. Please scheck your results.\n");
+	bFirst = FALSE;
+      }
+    }
   }
   /*pr->nrfp+=DIM;*/
   
@@ -558,17 +567,17 @@ static void read_posres(t_params *pr, char *fn, int offset)
   sfree(v);
 }
 
-static void gen_posres(t_params *pr, char *fnA,char *fnB)
+static void gen_posres(t_params *pr, char *fnA,char *fnB,int *forward)
 {
   int i,j;
 
-  read_posres(pr,fnA,2*DIM);
+  read_posres(pr,fnA,2*DIM,forward);
   if (strcmp(fnA,fnB) == 0) {
     for(i=0; (i<pr->nr); i++)
       for(j=0; (j<DIM); j++)
 	pr->param[i].c[3*DIM + j] = pr->param[i].c[2*DIM + j];
   } else {
-    read_posres(pr,fnB,3*DIM);
+    read_posres(pr,fnB,3*DIM,forward);
   }
 }
 
@@ -1036,7 +1045,7 @@ int main (int argc, char *argv[])
 	fprintf(stderr," and %s\n",fnB);
       }
     }
-    gen_posres(&(msys.plist[F_POSRES]),fn,fnB);
+    gen_posres(&(msys.plist[F_POSRES]),fn,fnB,forward);
   }
   
   /* set parameters for Dummy construction */
