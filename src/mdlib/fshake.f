@@ -77,9 +77,7 @@
                         xp(jy) = xp(jy) - yh*im
                         xp(jz) = xp(jz) - zh*im
                      else
-                        print *,'Constraint between two massless ',
-     &                       'particles ',i,' and ',j
-                        stop
+                        error = ll
                      endif
                   endif
                end if
