@@ -218,24 +218,24 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   int totalgrps;    /* total number of groups in the index file */
   char buf[256];
   
+  read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
+  ngrps = pull->pull.n;
+
   /* do we have to do any pulling at all? If not return */
   pull->bPull = opt2bSet("-pi",nfile,fnm);
   if (!pull->bPull) return;
   
-  /* Modified 08/11/01 JM
-  pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
-  */
+  /* Do we need to compress the output? */
+  if(pull->bCompress) {
+    /* Set pdo file to be gzipped */
+    sprintf(buf,"/bin/gzip -f -c > %s",opt2fn("-pd",nfile,fnm));
+    if((pull->out = popen(buf,"w"))==NULL)
+      fatal_error(0,"Could not execute %s.",buf);
+  }
+  else {
+    pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
+  }
 
-  /* Set pdo file to be gzipped */
-  sprintf(buf,"/bin/gzip -f -c > %s",opt2fn("-pd",nfile,fnm));
-  if((pull->out = popen(buf,"w"))==NULL)
-    fatal_error(0,"Could not execute %s.",buf);
-
-
-  /* done modification */
-
-  read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
-  ngrps = pull->pull.n;
 
   if (pull->reftype == eDyn || pull->reftype == eDynT0) 
     pull->bCyl = TRUE;

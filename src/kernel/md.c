@@ -312,8 +312,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bShell = nshell_tot > 0;
   
   /* Check whether we have to do dipole stuff */
-  if (ftp2bSet(efNDX,nfile,fnm))
-    rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
+  if (opt2bSet("-dn",nfile,fnm))
+    rd_index(opt2fn("-dn",nfile,fnm),1,&gnx,&grpindex,&grpname);
   else {
     gnx = top->blocks[ebMOLS].nr;
     snew(grpindex,gnx);

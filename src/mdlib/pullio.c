@@ -210,6 +210,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   /* general options */
   CTYPE("GENERAL");
   EETYPE("verbose",         pull->bVerbose, verbosetypes, &nerror, TRUE);
+  EETYPE("compress",        pull->bCompress,verbosetypes, &nerror, TRUE);
   ITYPE("Skip steps",       pull->nSkip,1);
   CTYPE("Runtype: start, afm, constraint, umbrella, test");
   EETYPE("runtype",         tmprun, runtypes, &nerror, TRUE);
