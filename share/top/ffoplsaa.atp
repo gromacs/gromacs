@@ -2,6 +2,128 @@
 ; Atom types are named opls_X, where X is the OPLS number.
 ; The opls_ prefix is to avoid users confusing atom types
 ; (always prefixed) with atom numbers in molecules (never prefixed).
+;
+; Types 1-134 are from the united-atom OPLS, which can be
+; useful for solvents and/or CH2 optimizations (e.g. in lipids).
+; Explicit all-atom parameters start with opls_135.
+; Note: For UA amide parameters -
+; NMA - types 1,2,3,4,7,39
+; Formamide 131,2,12,13
+; DMF       131,2,3,132
+; Acetamide 1,2,7,12,13
+;
+; Types 1-65 are united-atom parameters for proteins, 
+; see JACS 110, 1657 (1988).
+;
+ opls_001   12.01100  ;
+ opls_002   15.99940  ; 
+ opls_003   14.00670  ;  
+ opls_004    1.00800  ; 
+ opls_005   14.02700  ;
+ opls_006   13.01900  ;
+ opls_007   15.03500  ;
+ opls_008   13.01900  ;
+ opls_009   14.02700  ;
+ opls_010   15.03500  ;
+ opls_011   12.01100  ;
+ opls_012   14.00670  ; 
+ opls_013    1.00800  ; 
+ opls_014   13.01900  ;
+ opls_015   14.02700  ;
+ opls_016   14.02700  ;
+ opls_017   12.01100  ;
+ opls_018   15.99940  ;
+ opls_019   14.02700  ;
+ opls_020   14.00670  ; 
+ opls_021    1.00800  ; 
+ opls_022   14.02700  ;
+ opls_023   15.99940  ;
+ opls_024    1.00800  ; 
+ opls_025   13.01900  ;
+ opls_026   12.01100  ;
+ opls_027   14.02700  ;
+ opls_028   14.02700  ;
+ opls_029   13.01900  ;
+ opls_030   13.01900  ;
+ opls_031   14.02700  ;
+ opls_032   32.06000  ;
+ opls_033    1.00800  ; 
+ opls_034   14.02700  ;
+ opls_035   32.06000  ;
+ opls_036   15.03500  ;
+ opls_037   14.02700  ;
+ opls_038   32.06000  ;
+ opls_039   15.03500  ;
+ opls_040   14.00670  ; 
+ opls_041    1.00800  ; 
+ opls_042   14.00670  ; 
+ opls_043   12.01100  ;
+ opls_044   12.01100  ;
+ opls_045   12.01100  ;
+ opls_046   14.00670  ; 
+ opls_047    1.00800  ; 
+ opls_048   12.01100  ;
+ opls_049   12.01100  ;
+ opls_050   12.01100  ;
+ opls_051   14.00670  ; 
+ opls_052    1.00800  ; 
+ opls_053   12.01100  ;  
+ opls_054   14.00670  ; 
+ opls_055    1.00800  ; 
+ opls_056   14.02700  ;
+ opls_057   14.02700  ;
+ opls_058   12.01100  ; C  in COOR ester JPC3315(91)
+ opls_059   15.99940  ; O= in COOR ester 
+ opls_060   13.01900  ;
+ opls_061   14.02700  ;
+ opls_062   15.99940  ; O- in COOR ester
+ opls_063   15.03500  ; CH3 in COOCH3
+ opls_064   12.01100  ;
+ opls_065   15.03500  ;
+ opls_066   16.04300  ; CH4       JACS,106,6638 (1984)
+ opls_067   15.03500  ; CH3 (C1) ETHANE
+ opls_068   15.03500  ; CH3 (C2) N-ALKANES
+ opls_069   15.03500  ; CH3 (C3) ISOBUTANE
+ opls_070   15.03500  ; CH3 (C4) NEOPENTANE
+ opls_071   14.02700  ; CH2 (SP3) ALKANES
+ opls_072   14.02700  ; CH2 (SP2) 1-ALKENES
+ opls_073   13.01900  ; CH  (SP3) ISOBUTANE
+ opls_074   13.01900  ; CH  (SP2) 2-ALKENES
+ opls_075   13.01900  ; CH (AROM) BENZENOID united atom
+ opls_076   12.01100  ; C   (SP3) NEOPENTANE
+ opls_077   12.01100  ; C   (SP2) ISOBUTENE
+ opls_078   15.99940  ; O   ALCOHOLS      JPC,90,1276 (1986)
+ opls_079    1.00800  ; H(O) ALCOHOLS     JPC,90,1276 (1986)
+ opls_080   15.03500  ; CH3 IN METHANOL   JPC,90,1276 (1986)
+ opls_081   14.02700  ; CH2 IN ETHANOL    JPC,90,1276 (1986)
+ opls_082   32.06000  ; S   IN H2S        JPC,90,6379 (1986)
+ opls_083   32.06000  ; S   IN RSH        JPC,90,6379 (1986)
+ opls_084   32.06000  ; S   IN RSR        JPC,90,6379 (1986)
+ opls_085   32.06000  ; S   IN RSSR       JPC,90,6379 (1986)  
+ opls_086    1.00800  ; H   IN H2S        JPC,90,6379 (1986)
+ opls_087    1.00800  ; H(S) IN RSH       JPC,90,6379 (1986)
+ opls_088   15.03500  ; CH3 IN CH3SH      JPC,90,6379 (1986)
+ opls_089   14.02700  ; CH2 IN CH3CH2SH   JPC,90,6379 (1986)
+ opls_090   15.03500  ; CH3 IN CH3SR      JPC,90,6379 (1986)
+ opls_091   14.02700  ; CH2 IN RCH2SR     JPC,90,6379 (1986)
+ opls_092   15.03500  ; CH3 IN CH3SSR     JPC,90,6379 (1986)
+ opls_093   14.02700  ; CH2 IN RCH2SSR    JPC,90,6379 (1986)
+ opls_094   14.00670  ; N IN CH3CN                   Mol.Phys.,63,547 (1988)
+ opls_095   12.01100  ; C IN CH3CN                   Mol.Phys.,63,547 (1988)
+ opls_096   15.03500  ; CH3 IN CH3CN                 Mol.Phys.,63,547 (1988)
+ opls_097   39.94800  ; Argon from Verlet & Weis     Mol.Phys.,24,1013 (1972) For Ne and He, 
+ opls_098   83.79800  ; Krypton from Verlet & Weis   Mol.Phys.,24,1013 (1972) see types 129,130.
+ opls_099  131.29300  ; Xenon from Verlet & Weis     Mol.Phys.,24,1013 (1972)
+ opls_101   14.00670  ; N (NH4+)                     JPC,90,2174 (1986)
+ opls_102   14.00670  ; N (RNH3+)                    JPC,90,2174 (1986)
+ opls_103   14.00670  ; N (R4N+)                     JPC,90,2174 (1986)   
+ opls_104    1.00800  ; H (NH4+)                     JPC,90,2174 (1986)
+ opls_105    1.00800  ; H (RNH3+)                    JPC,90,2174 (1986)
+ opls_106   15.03500  ; United-atom CH3 (CH3NH3+)    JPC 90,2174 (1986)
+ opls_107   15.03500  ; United-atom CH3 ((CH3)4N+)   JPC 90,2174 (1986)
+ opls_108   15.99940  ; United-atom Ether O          JCC,11,958 (1990) 
+ opls_109   15.03500  ; United-atom Ether CH3 (-O)   JCC,11,958 (1990) 
+ opls_110   14.02700  ; United-atom Ether CH2 (-O)   JCC,11,958 (1990)
  opls_111   15.99940  ; O TIP3P Water
  opls_112    1.00800  ; H TIP3P Water
  opls_113   15.99940  ; O TIP4P Water
@@ -14,8 +136,15 @@
  opls_120    0.00000  ; L TIP5P Water
  opls_122   12.01100  ; C CCl4
  opls_123   35.45300  ; Cl CCl4
+ opls_124   32.06000  ; S in UA DMSO
+ opls_125   15.99940  ; O in UA DMSO
+ opls_126   15.03500  ; CH3 in UA DMSO
  opls_127   14.00670  ; Updated ammonia parameters - JPC B 2001, 105, 6474
  opls_128    1.00800  ; Updated ammonia parameters - JPC B 2001, 105, 6474
+ opls_129   20.17970  ; Neon                          Hirschfelder (Wiley,1954)
+ opls_130    4.00260  ; Helium                        Hirschfelder (Wiley,1954)
+ opls_131   12.01100  ; C in C=O for UA formamide, DMF.
+ opls_132   15.03500  ; CH3 in HCON(CH3)2 DMF
  opls_135   12.01100  ; alkane CH3 
  opls_136   12.01100  ; alkane CH2 
  opls_137   12.01100  ; alkane CH 
