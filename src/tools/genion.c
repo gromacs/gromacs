@@ -161,7 +161,7 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
   /* Put all the water in front and count the added ions */
   np=0;
   nn=0;
-  j=0;
+  j=index[0];
   for(i=0; i<nw; i++) {
     r = repl[i];
     if (r == 0)
@@ -177,6 +177,7 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
     /* Put the positive and negative ions at the end */
     starta = index[nw - np - nn];
     startr = atoms->atom[starta].resnr;
+
     if (np) {
       snew(pptr,1);
       pptr[0] = p_name;
