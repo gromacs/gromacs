@@ -85,6 +85,8 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
+  if (!use_xmgr())
+    fprintf(out,"@ autoscale onread none\n");
   for(g=0; g<ngraphs; g++) {
     if (y) {
       min=y[g][0];
@@ -110,7 +112,6 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
     xsp=tick_spacing((x[n-1]-x[0])*scale_x,4);
     ysp=tick_spacing(max-min,3);
     fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
-    fprintf(out,"@ g%d autoscale type AUTO\n",g);
     if (g==0) {
       fprintf(out,"@ title \"%s\"\n",title);
       if (subtitle)

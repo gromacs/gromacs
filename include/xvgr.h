@@ -80,6 +80,9 @@ enum {
  *            XVGR   ROUTINES
  ***************************************************/
 
+extern bool use_xmgr(void);
+/* Returns if we use xmgr instead of xmgrace */
+
 extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *yaxis);
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 

@@ -49,7 +49,7 @@
 #include "viewit.h"
 #include "vec.h"
 
-static bool use_xmgr()
+bool use_xmgr()
 {
   char *env;
   bool bXMGR;
