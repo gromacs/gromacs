@@ -57,6 +57,9 @@ typedef struct {
   bool bRF;
   real kappa,k_rf,c_rf;
   
+  /* The shift of the shift or user potentials */
+  real enershiftsix;
+  real enershifttwelve;
   /* Integrated differces for energy and virial with cut-off functions */
   real enerdiffsix;
   real enerdifftwelve;

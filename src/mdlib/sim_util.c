@@ -498,10 +498,11 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
   double eners[2],virs[2],enersum,virsum,y0,f,g,h;
   double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
   double scale,scale2,scale3;
-  real   pot,vir;
   int    ri0,ri1,ri,i,offstart,offset;
   real   *vdwtab; 
 
+  fr->enershiftsix = 0;
+  fr->enershifttwelve = 0;
   fr->enerdiffsix = 0;
   fr->enerdifftwelve = 0;
   fr->virdiffsix = 0;
@@ -523,35 +524,29 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       ri1 = ceil(fr->rvdw*fr->tabscale);
       r0  = ri0/fr->tabscale;
       r1  = ri1/fr->tabscale;
+      rc3 = r0*r0*r0;
+      rc9  = rc3*rc3*rc3;
 
       vdwtab = fr->vdwtab;
-
       if (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwUSER) {
-	/* Add the constant part from 0 to rvdw_switch */
-	rc3  = r0*r0*r0;
-	rc9  = rc3*rc3*rc3;
-	for(i=0; i<2; i++) {
-	  offset = 8*ri0 + (i==0 ? 0 : 4);
-          y0 = vdwtab[offset];
-          f  = vdwtab[offset+1];
-	  if (i == 0) {
-	    pot = -1.0/(rc3*rc3);
-	    vir =  6.0/(rc3*rc3);
-	    if (fr->vdwtype == evdwUSER)
-	      fprintf(log,
-		      "WARNING: using dispersion correction with user tables\n"
-		      "         assuming that the missing dispersion from 0\n"
-		      "         to rvdw-switch = %f is constant at %f nm^-6\n",
-		      fr->rvdw_switch,pot-y0);
-	  } else {
-	    pot =   1.0/(rc9*rc3);
-	    vir = -12.0/(rc9*rc3);
-	  }
-	  eners[i] += 4.0*M_PI*(pot - y0)*rc3/3.0;
-	  virs[i]  += 4.0*M_PI*(vir - f )*rc3/3.0;
-	}
+	/* Determine the constant energy shift below rvdw_switch */
+	fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - vdwtab[8*ri0];
+	fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - vdwtab[8*ri0 + 4];
+	if (fr->vdwtype == evdwUSER)
+	  fprintf(log,
+		  "WARNING: using dispersion correction with user tables\n"
+		  "         assuming that the missing dispersion from 0\n"
+		  "         to rvdw-switch = %f is constant at %f nm^-6\n",
+		  fr->rvdw_switch,fr->enershiftsix);
       }
-
+      /* Add the constant part from 0 to rvdw_switch.
+       * This integration from 0 to rvdw_switch overcounts the number
+       * of interactions by 1, as it also counts the self interaction.
+       * We will correct for this later.
+       */
+      eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
+      eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
+      
       scale = 1.0/(fr->tabscale);  
       scale2 = scale*scale;
       scale3 = scale*scale2;
@@ -604,8 +599,6 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       }
 
       /* now add the correction for rvdw_switch to infinity */
-      rc3  = r0*r0*r0;
-      rc9  = rc3*rc3*rc3;
       eners[0] += -4.0*M_PI/(3.0*rc3);
       eners[1] +=  4.0*M_PI/(9.0*rc9);
       virs[0]  +=  8.0*M_PI/rc3;
@@ -648,10 +641,11 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
     invvol = 1/det(box);
     dens = natoms*invvol;
     
-    ener[F_DISPCORR] = 0.5*natoms*dens*fr->avcsix*fr->enerdiffsix;
+    ener[F_DISPCORR] = 0.5*natoms*fr->avcsix*(dens*fr->enerdiffsix
+					      - fr->enershiftsix);
     if (eDispCorr == edispcAllEner || eDispCorr == edispcAllEnerPres)
-      ener[F_DISPCORR] += 0.5*natoms*dens*fr->avctwelve*fr->enerdifftwelve;
-    
+      ener[F_DISPCORR] += 0.5*natoms*fr->avctwelve*(dens*fr->enerdifftwelve
+						    - fr->enershifttwelve);
     svir = 0;
     if (eDispCorr == edispcEnerPres || eDispCorr == edispcAllEnerPres) {
       svir += 0.5*natoms*dens*fr->avcsix*fr->virdiffsix/3.0;
