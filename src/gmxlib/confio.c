@@ -555,7 +555,7 @@ void write_pdb_conf(char *outfile,t_atoms *atoms,rvec x[],matrix box,
   fprintf(out,"HEADER    %s\n",bromacs());
   if (box != NULL) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-    fprintf(out,"CRYST1%9.3f%9.3f%9.3f %6.2f%6.2f%6.2f P 1            1\n",
+    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
   }
   for (i=0; (i<atoms->nr); i++) {
@@ -564,10 +564,13 @@ void write_pdb_conf(char *outfile,t_atoms *atoms,rvec x[],matrix box,
     strcpy(nm,*atoms->atomname[i]);
     if (bChange)
       change_name(nm);
+    resnr++;
+    if (resnr>=10000)
+      resnr = resnr % 10000;
     if (strlen(nm)==4)
-      fprintf(out,"ATOM  %5d %-4.4s %3.3s  %4d    ",i+1,nm,resnm,resnr+1);
+      fprintf(out,"ATOM  %5d %-4.4s %3.3s  %4d    ",i+1,nm,resnm,resnr);
     else
-      fprintf(out,"ATOM  %5d  %-4.4s%3.3s  %4d    ",i+1,nm,resnm,resnr+1);
+      fprintf(out,"ATOM  %5d  %-4.4s%3.3s  %4d    ",i+1,nm,resnm,resnr);
     fprintf(out,"%8.3f%8.3f%8.3f  1.00  0.00\n",10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
   }
   fprintf(out,"TER\n");
