@@ -223,7 +223,7 @@ int main(int argc,char *argv[])
     for(g=0;(g<ngrps);g++) {
       /* coordinates */
       sprintf(filename,format,grpnames[g]);
-      outX[g+1]=xvgropen(filename,"COM : ","Time(ps)","x (nm)");
+      outX[g]=xvgropen(filename,"COM : ","Time(ps)","x (nm)");
       xvgr_legend(outX[g],asize(axisX),axisX);
     }
   }
