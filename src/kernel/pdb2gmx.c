@@ -645,7 +645,7 @@ int main(int argc, char *argv[])
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", NULL };
-  static char *ff[] = { NULL, "G43a1", "oplsaa", "gmx", "G43a2", "G43b1", NULL };
+  static char *ff = "G43a1";
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
@@ -655,8 +655,8 @@ int main(int argc, char *argv[])
       "HIDDENShort bond warning distance" },
     { "-merge",  FALSE, etBOOL, {&bMerge},
       "Merge multiple chains into one molecule"},
-    { "-ff",     FALSE, etENUM, {ff},
-      "Select the force field for your simulation" },
+    { "-ff",     FALSE, etSTR,  {&ff},
+      "Select the force field, supported are: G43a1, oplsaa, gmx, G43a2, G43b1. Run pdb2gmx -h for more information." },
     { "-water",  FALSE, etENUM, {watstr},
       "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-inter",  FALSE, etBOOL, {&bInter},
@@ -700,8 +700,15 @@ int main(int argc, char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
-  sprintf(forcefield,"ff%s",ff[0]);
-
+  sprintf(forcefield,"ff%s",ff);
+  { 
+    char rtp[STRLEN];
+   
+    sprintf(rtp,"%s.rtp",forcefield);
+    printf("Looking whether force field file %s exists\n",rtp);
+    fclose(libopen(rtp));
+  }
+  
   if (bInter) {
     /* if anything changes here, also change description of -inter */
     bCysMan = TRUE;
@@ -1176,10 +1183,9 @@ int main(int argc, char *argv[])
   printf("You have succesfully generated a topology from: %s.\n",
 	 opt2fn("-f",NFILE,fnm));
   printf("The %s force field and the %s water model are used.\n",
-	 ff[0],watstr[0]);
+	 ff,watstr[0]);
   printf("Note that the default mechanism for selecting a force fields has\n"
 	 "changed, starting from GROMACS version 3.2.0\n");
-  sprintf(forcefield,"ff%s",ff[0]);
   printf("\t\t--------- ETON ESAELP ------------\n");
   
 
