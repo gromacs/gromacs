@@ -126,7 +126,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"              },
   { eftASC, ".ent", "eiwit",  "-f", "Entry in the protein date bank"         },
   { eftASC, ".log", "run",    "-l", "Log file"                               },
-  { eftASC, ".xvg", "graph",  "-o", "xvgr file as produced by analysis tools"},
+  { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"                         },
   { eftASC, ".out", "hello",  "-o", "Generic output file"                    },
   { eftASC, ".ndx", "index",  "-n", "Index file",                            },
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
