@@ -470,16 +470,26 @@ static void clean_bonds(t_params *ps)
     fprintf(stderr,"No bonds\n");
 }
 
-static void print_mass(t_atoms *atoms)
+void print_sums(t_atoms *atoms, bool bSystem)
 {
-  double m;
+  double m,qtot;
   int    i;
+  char   *where;
   
-  m=0.0;
-  for(i=0; (i<atoms->nr); i++)
+  if (bSystem)
+    where=" in system";
+  else
+    where="";
+  
+  m=0;
+  qtot=0;
+  for(i=0; (i<atoms->nr); i++) {
     m+=atoms->atom[i].m;
-    
-  fprintf(stderr,"Total mass in system %g a.m.u.\n",m);
+    qtot+=atoms->atom[i].q;
+  }
+  
+  fprintf(stderr,"Total mass%s %.3f a.m.u.\n",where,m);
+  fprintf(stderr,"Total charge%s %.3f e\n",where,qtot);
 }
 
 void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
@@ -584,7 +594,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	  plist[F_DUMMY1].nr+plist[F_DUMMY2].nr+plist[F_DUMMY2FD].nr+
 	  plist[F_DUMMY2FAD].nr+plist[F_DUMMY3].nr);
   
-  print_mass(atoms);
+  print_sums(atoms, FALSE);
   
   fprintf(stderr,"Writing topology file\n");
   write_top(ff,fn,pr,title,molname,nincl,incls,nmol,mols,

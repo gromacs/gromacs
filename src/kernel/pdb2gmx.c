@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
   bool       bTopWritten,bDummies;
-  real       mHmult,qtot;
+  real       mHmult;
   
   t_filenm   fnm[] = { 
     { efSTX, "-f", "eiwit.pdb", ffREAD  },
@@ -940,11 +940,10 @@ int main(int argc, char *argv[])
   k=0;
   l=0;
   for (i=0; (i<nchain); i++) {
-    printf("Including chain %d in system: %d atoms %d residues\n",
-	   i+1,chains[i].natom,chains[i].pdba->nres);
-    qtot=0;
+    if (nchain>1)
+      printf("Including chain %d in system: %d atoms %d residues\n",
+	     i+1,chains[i].natom,chains[i].pdba->nres);
     for (j=0; (j<chains[i].natom); j++) {
-      qtot+=chains[i].pdba->atom[j].q;
       atoms->atom[k]=chains[i].pdba->atom[j];
       atoms->atom[k].resnr+=l; /* l is processed nr of residues */
       atoms->atomname[k]=chains[i].pdba->atomname[j];
@@ -952,20 +951,18 @@ int main(int argc, char *argv[])
       copy_rvec(chains[i].x[j],x[k]);
       k++;
     }
-    fprintf(stderr,"Total charge in chain %d: %g\n",i+1,qtot);
     for (j=0; (j<chains[i].pdba->nres); j++) {
       atoms->resname[l]=chains[i].pdba->resname[j];
       l++;
     }
   }
-  qtot=0;
-  for (i=0; (i<atoms->nr); i++)
-    qtot+=atoms->atom[i].q;
-  fprintf(stderr,"Total charge on system: %g\n",qtot);
-    
-  fprintf(stderr,"Now there are %d atoms and %d residues\n",k,l);
   
-  fprintf(stderr,"Writing coordinate file...\n");
+  if (nchain>1) {
+    fprintf(stderr,"Now there are %d atoms and %d residues\n",k,l);
+    print_sums(atoms, TRUE);
+  }
+  
+  fprintf(stderr,"\nWriting coordinate file...\n");
   clear_rvec(box_space);
   if (box[0][0] == 0) 
     gen_box(0,atoms->nr,x,box,box_space,FALSE);

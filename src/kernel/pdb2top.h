@@ -73,4 +73,6 @@ extern void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 /* write a topology 
  * NOTE: nrexcl is not the size of *excl! */
 
+extern void print_sums(t_atoms *atoms, bool bSystem);
+
 #endif	/* _pdb2top_h */
