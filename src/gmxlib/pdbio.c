@@ -84,7 +84,8 @@ void write_pdbfile_indexed(FILE *out,char *title,
   int  resnr,type;
   real occup,bfac;
   real alpha,beta,gamma;
-
+  bool bOccup;
+  
   fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs());
   if (box) {
     if (norm2(box[YY])*norm2(box[ZZ])!=0)
@@ -104,6 +105,14 @@ void write_pdbfile_indexed(FILE *out,char *title,
 	    10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
 	    alpha,beta,gamma);
   }
+  /* Check whether any occupancies are set, in that case leave it as is,
+   * otherwise set them all to one
+   */
+  bOccup = TRUE;
+  for (ii=0; (ii<nindex) && bOccup; ii++) {
+    i      = index[ii];
+    bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
+  }
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
     resnr=atoms->atom[i].resnr;
@@ -120,16 +129,14 @@ void write_pdbfile_indexed(FILE *out,char *title,
       else
 	  ch=' ';
     if (atoms->pdbinfo) {
-      type=atoms->pdbinfo[i].type;
-      occup=atoms->pdbinfo[i].occup;
-      bfac=atoms->pdbinfo[i].bfac;
-      if (occup==0.0)
-	occup=1.0;
+      type  = atoms->pdbinfo[i].type;
+      occup = bOccup ? 1.0 : atoms->pdbinfo[i].occup;
+      bfac  = atoms->pdbinfo[i].bfac;
     }
     else {
-      type=0;
-      occup=1.0;
-      bfac=0.0;
+      type  = 0;
+      occup = 1.0;
+      bfac  = 0.0;
     }
     if (strlen(nm)==4)
       strcpy(pdbform,pdbformat4);
