@@ -332,7 +332,7 @@ int main(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,0,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL); 
 
   acfile   = opt2fn_null("-ac",NFILE,fnm);
@@ -383,17 +383,21 @@ int main(int argc,char *argv[])
     }
     fclose(out);
     fprintf(stderr,"\r%d, time=%g\n",t-1,(t-1)*dt);
+    xvgr_file(msdfile, NULL);
   }
   
-  if (distfile)
+  if (distfile) {
     histogram(distfile,binwidth,n,nset,val);
-  
-  if (avfile)
+    xvgr_file(distfile, NULL);
+  }
+  if (avfile) {
     average(avfile,avbar_opt,n,nset,val,t0,dt);
-
-  if (eefile)
+    xvgr_file(avfile, NULL);
+  }
+  if (eefile) {
     estimate_error(eefile,resol,n,nset,av,val,dt);
-
+    xvgr_file(eefile, NULL);
+  }
   if (acfile) {
     if (bSubAv) 
       for(s=0; s<nset; s++)
@@ -401,6 +405,7 @@ int main(int argc,char *argv[])
 	  val[s][i] -= av[s];
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
 		eacNormal,bAverCorr);
+    xvgr_file(acfile, NULL);
   }
 
   return 0;
