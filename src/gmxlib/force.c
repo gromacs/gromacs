@@ -295,7 +295,7 @@ void init_forcerec(FILE *log,
      * for neighboursearching. This allows diffusion 
      * into the cut-off range, and gives more accurate forces.
      */
-    dr = 0.0;
+    dr = 0.1;
     fr->rshort = fr->rlong = fr->rc+dr;
     for(m=0; (m<DIM); m++)
       box_size[m]=box[m][m];
