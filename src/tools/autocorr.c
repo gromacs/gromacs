@@ -625,9 +625,9 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
   
   tStart = 0;
   if (bPrint) printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
-		       "Fit from","Integral","Tail Value","Sum (ps)","a1 (ps)",
-		     (nfp_ffn[fitfn]>=2) ? "a2 ()" : "",
-		     (nfp_ffn[fitfn]>=3) ? "a3 (ps)" : "");
+		       "Fit from","Integral","Tail Value","Sum (ps)"," a1 (ps)",
+		     (nfp_ffn[fitfn]>=2) ? " a2 ()" : "",
+		     (nfp_ffn[fitfn]>=3) ? " a3 (ps)" : "");
   if (tbeginfit > 0)
     jmax = 3;
   else
@@ -660,7 +660,7 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
     if (bPrint) {
       printf("COR:%11.4e%11.4e%11.4e%11.4e",tStart,sum,tail_corr,sumtot);
       for(i=0; i<nfp_ffn[fitfn]; i++)
-	printf("%11.4e",fitparm[i]);
+	printf(" %11.4e",fitparm[i]);
       printf("\n");
     }
     tStart += tbeginfit;
