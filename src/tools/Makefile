@@ -19,7 +19,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
-		  g_angle	g_dih		eneconv		\
+		  g_angle	g_dih		\
 		  g_bond	g_dipoles			\
 		  g_mdmat	g_energy	g_sas		\
 		  do_dssp	sas2mat         g_rmsdist	\
@@ -30,6 +30,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  g_nmeig	g_chi		g_dielectric	\
 		  g_helix	wheel	        		\
                   g_confrms     xpm2ps 
+#?eneconv		\
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
@@ -62,21 +63,6 @@ centerx:	centerx.o
 
 patchmagic:	patchmagic.o 
 		$(LD) -o $@ $^ $(SYSLIBS)
-
-pdb2gro:        pdb2gro.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-gro2pdb:        gro2pdb.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-xdr2gro:        xdr2gro.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-gro2xdr:        gro2xdr.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-gro2top:        gro2top.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
 
 genpr:		genpr.o $(OBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
