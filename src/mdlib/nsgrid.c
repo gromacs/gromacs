@@ -57,8 +57,15 @@
 static void _range_check(char *s,int i,int nr,char *file,int line)
 {
   if ((i<0) || (i>=nr))
-    fatal_error(0,"%s = %d should be in 0 .. %d [FILE %s, LINE %d]",
-		s,i,nr-1,file,line);
+    fatal_error(0,"Index out-of-range for neighborsearching grid.\n"
+		"%s = %d should be in 0 .. %d [FILE %s, LINE %d]\n\n"
+		"Explanation: During neighborsearching, we assign each particle to a grid\n"
+		"based on its coordinates. If your system contains collisions or parameter\n"
+		"errors that give particles very high velocities you might end up with some\n"
+		"coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
+		"put these on a grid, so this is usually where we detect those errors.\n"
+		"Make sure your system is properly energy-minimized and that the potential\n"
+		"energy seems reasonable before trying again.\n",s,i,nr-1,file,line);
 }
 #define range_check(i,nr) _range_check(#i,i,nr,__FILE__,__LINE__)
 
@@ -211,6 +218,10 @@ void calc_elemnr(FILE *log,bool bDD,int cg_index[],
   int    ci;
 
   ncells=grid->ncells;
+  if(ncells<=0) 
+    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+		"is either due to an internal Gromacs bug or a compiler error.\n");
+		
   calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
@@ -229,6 +240,10 @@ void calc_ptrs(t_grid *grid)
   int gmax     = 0;
 
   ncells=grid->ncells;
+  if(ncells<=0) 
+    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+		"is either due to an internal Gromacs bug or a compiler error.\n");
+  
   ci=nr=0;
   for(ix=0; (ix < grid->nrx); ix++)
     for(iy=0; (iy < grid->nry); iy++) 
@@ -255,6 +270,10 @@ void grid_last(FILE *log,bool bDD,int cg_index[],
   int    *a          = grid->a;
 
   ncells=grid->ncells;
+  if(ncells<=0 || grid->nr<=0) 
+    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+		"is either due to an internal Gromacs bug or a compiler error.\n");
+
   calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
@@ -326,6 +345,10 @@ void check_grid(FILE *log,t_grid *grid)
 {
   int ix,iy,iz,ci,cci,nra;
 
+  if(grid->ncells<=0) 
+    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+		"is either due to an internal Gromacs bug or a compiler error.\n");  
+  
   ci=0;
   cci=0;
   for(ix=0; (ix<grid->nrx); ix++)
