@@ -614,8 +614,7 @@ int main(int argc,char *argv[])
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
 		       title,&top,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
-    if (bTop)
-      rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
+    rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
     if (xref1==NULL || (bM && bDMR1)) {
       if (bFit1) {
 	printf("\nNote: the structure in %s should be the same\n"

@@ -47,25 +47,33 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
   static int ngraph;
   static multi_graph *mgraph=NULL;
   static t_graph *graph;
+  static bool bFirst=TRUE;
   rvec   sv[SHIFTS],box_size;
   int n,i;
  
   if (box[0][0]) {
-    n=-1;
-    for(i=0; i<ngraph; i++)
-      if (mgraph[i].natoms==natoms)
-	n=i;
-    if (n==-1) {
-      /* make a new graph if there isn't one with this number of atoms */
-      n=ngraph;
-      ngraph++;
-      srenew(mgraph,ngraph);
-      mgraph[n].natoms=natoms;
-      mgraph[n].gr=mk_graph(idef,natoms,FALSE);
-    }
-    mk_mshift(stdout,mgraph[n].gr,box,x);
-    calc_shifts(box,box_size,sv,FALSE);
-    shift_x(mgraph[n].gr,sv,x,x_s);
+    if (idef->ntypes!=-1) {
+      n=-1;
+      for(i=0; i<ngraph; i++)
+	if (mgraph[i].natoms==natoms)
+	  n=i;
+      if (n==-1) {
+	/* make a new graph if there isn't one with this number of atoms */
+	n=ngraph;
+	ngraph++;
+	srenew(mgraph,ngraph);
+	mgraph[n].natoms=natoms;
+	mgraph[n].gr=mk_graph(idef,natoms,FALSE);
+      }
+      mk_mshift(stdout,mgraph[n].gr,box,x);
+      calc_shifts(box,box_size,sv,FALSE);
+      shift_x(mgraph[n].gr,sv,x,x_s);
+    } else
+      if (bFirst) {
+	fprintf(stderr,
+		"\nWarning: can not check PBC without a run input file\n");
+	bFirst=FALSE;
+      }
   }
 }
 

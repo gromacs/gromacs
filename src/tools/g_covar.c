@@ -88,7 +88,7 @@ int main(int argc,char *argv[])
   char       *grpname,*infile,str[STRLEN];
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*all_at,*ifit;
-  bool       bTop,bDiffMass1,bDiffMass2;
+  bool       bDiffMass1,bDiffMass2;
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
     { efTPS, NULL, NULL, ffREAD },
@@ -105,7 +105,7 @@ int main(int argc,char *argv[])
 
   clear_mat(zerobox);
 
-  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),str,&top,&xref,NULL,box,TRUE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),str,&top,&xref,NULL,box,TRUE);
   atoms=&top.atoms;
 
   if (bFit) {
@@ -160,8 +160,7 @@ int main(int argc,char *argv[])
     all_at[i]=i;
 
   /* Prepare reference frame */
-  if (bTop)
-    rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
+  rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
   if (bFit)
     reset_x(nfit,ifit,atoms->nr,all_at,xref,w_rls);
 
@@ -179,8 +178,7 @@ int main(int argc,char *argv[])
   do {
     nframes++;
     /* calculate x: a fitted struture of the selected atoms */
-    if (bTop)
-      rm_pbc(&(top.idef),nat,box,xread,xread);
+    rm_pbc(&(top.idef),nat,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,all_at,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);

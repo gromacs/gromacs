@@ -734,6 +734,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
 	top->atoms.atom[i].m = 
 	  get_mass(*top->atoms.resname[top->atoms.atom[i].resnr],
 		   *top->atoms.atomname[i]);
+    top->idef.ntypes=-1;
   }
 
   return bTop;
