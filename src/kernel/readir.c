@@ -520,6 +520,10 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts)
    * one degree of freedom and finally division by two.
    *
    * Only atoms and nuclei contribute to the degrees of freedom...
+   *
+   * Subtract 3 for each group, since nrdf is only used for temperature
+   * calculation and the center of mass motion of each group is
+   * subtracted from the kinetic energy and is not temperature coupled.
    */
   snew(ndf,atoms->grps[egcTC].nr);
   for(i=0; (i<atoms->nr); i++) {
@@ -549,7 +553,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts)
     i+=2;
   }
   for(i=0; (i<atoms->grps[egcTC].nr); i++)
-    opts->nrdf[i]=ndf[i];
+    opts->nrdf[i]=ndf[i]-3;
     
   sfree(ndf);
 }
