@@ -150,19 +150,25 @@ void preprocess(char *infile,char *outfile,
 		char *cpp,char *define,
 		char *include)
 {
-  char *gmxlib;
+  char *lib;
   char command[2048];
   int  error;
+  static char libdir[1024];
+  static int  bFirst=1;
 
-  gmxlib = getenv("GMXLIB");
+  if(bFirst) {
+    if((lib=getenv("GMXLIB")) != NULL)
+      strcpy(libdir,lib);
+    else
+      strcpy(libdir,GMXLIBDIR);
+    bFirst=0;
+  }
+  
 
   /* build the command line */
-  if (gmxlib)
-    sprintf(command,"%s %s -I%s %s %s %s",
-	    cpp,include,gmxlib,define,infile,outfile);
-  else
-    sprintf(command,"%s %s %s %s %s",
-	    cpp,include,define,infile,outfile);
+  sprintf(command,"%s %s -I%s %s %s %s",
+	    cpp,include,libdir,define,infile,outfile);
+
   if (debug)
     fprintf(debug,"Command line for cpp:\n\t%s\n",command);
 
