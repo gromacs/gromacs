@@ -1,11 +1,11 @@
 10
 ILE 	 CD1 	CD
 HOH 	 O   	OW
-protein	 O1	O
-protein	 O2	O
-protein	 OXT	O
-protein	 OT	O
 HEME	 N_A	NA
 HEME	 N_B	NB
 HEME	 N_C	NC
 HEME	 N_D	ND
+protein	 O1	O
+protein	 O2	O
+protein	 OT	O
+protein	 OXT	O
