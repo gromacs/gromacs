@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
     "one coordinate.[PAR]",
     "Scaling is applied before any of the other operations are",
     "performed. Boxes can be scaled to give a certain density (option",
-    "[TT]-rho[tt][PAR]",
+    "[TT]-rho[tt]).[PAR]",
     "Groups are selected after all operations have been applied.[PAR]",
     "Periodicity can be removed in a crude manner.",
     "It is important that the box sizes at the bottom of your input file",
@@ -290,12 +290,12 @@ int main(int argc, char *argv[])
     "entries in the file, next lines state an index",
     "followed by a B-factor. The B-factors will be attached per residue",
     "unless an index is larger than the number of residues or unless the",
-    "[TT]-atom option is set. Obviously, any type of numeric data can",
-    "be added in stead of B-factors. [TT]-legend[tt] will produce",
+    "[TT]-atom[tt] option is set. Obviously, any type of numeric data can",
+    "be added instead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
     "maximum value found, effectively making a legend for viewing.[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
-    "to a pdb file, which can be useful for analysis using e.g. rasmol."
+    "to a pdb file, which can be useful for analysis with e.g. rasmol."
   };
   static char *bugs[] = {
     "For complex molecules, the periodicity removal routine may break down,",
