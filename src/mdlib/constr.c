@@ -368,11 +368,11 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-static int low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
-			 int step,t_mdatoms *md,int start,int homenr,
-			 rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			 real lambda,real *dvdlambda,t_nrnb *nrnb,
-			 bool bCoordinates,bool bInit)
+static void low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
+			  int step,t_mdatoms *md,int start,int homenr,
+			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+			  real lambda,real *dvdlambda,t_nrnb *nrnb,
+			  bool bCoordinates,bool bInit)
 {
   static int       nblocks=0;
   static int       *sblock=NULL;
@@ -547,8 +547,6 @@ static int low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       }
     }
   }
-  
-  return idef->il[F_SETTLE].nr/2 + idef->il[F_SHAKE].nr/3;
 }
 
 void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
@@ -564,7 +562,7 @@ int count_constraints(t_topology *top,t_commrec *cr)
 {
   int nc;
   
-  nc = top->idef.il[F_SETTLE].nr/2 + top->idef.il[F_SHAKE].nr/3;
+  nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_SHAKE].nr/3;
   gmx_sumi(1,&nc,cr);
   
   return nc;
