@@ -64,6 +64,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "dum_parm.h"
 #include "txtdump.h"
 #include "calcgrid.h"
+#include "add_par.h"
 
 static int *shuffle_xv(char *ndx,bool bSort,bool bVerbose,
 		       int ntab,int *tab,int nmol,t_molinfo *mol,
@@ -244,6 +245,37 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
   return nmismatch;
 }
 
+static void check_pairs(int nrmols,t_molinfo mi[],int ntype,t_param *nb)
+{
+  int      i,j,jj,k,taiA,tajA,taiB,tajB,indA,indB,bLJ;
+  t_params *p;
+  
+  for(i=0; (i<nrmols); i++) {
+    p = &(mi[i].plist[F_LJ14]);
+    for(j=jj=0; (j<p->nr); j++) {
+      /* Extract atom types and hence the index in the nbf matrix */
+      taiA = mi[i].atoms.atom[p->param[j].a[0]].type;
+      tajA = mi[i].atoms.atom[p->param[j].a[1]].type;
+      indA = ntype*taiA+tajA;
+      taiB = mi[i].atoms.atom[p->param[j].a[0]].typeB;
+      tajB = mi[i].atoms.atom[p->param[j].a[1]].typeB;
+      indB = ntype*taiB+tajB;
+      
+      bLJ  = FALSE;
+      for(k=0; (k<MAXFORCEPARAM); k++)
+	bLJ = bLJ || ((nb[indA].c[k] != 0) || 
+		      (nb[indB].c[k] != 0));
+      if (bLJ) {
+	cp_param(&(p->param[jj]),&(p->param[j]));
+	jj++;
+      }
+    }
+    fprintf(stderr,"Removed %d 1-4 interactions for molecule %s\n",
+	    p->nr-jj,*(mi[i].name));
+    p->nr = jj;
+  }
+}
+
 static int *new_status(char *topfile,char *topppfile,char *confin,
 		       char *ndxout,
 		       t_gromppopts *opts,t_inputrec *ir,
@@ -252,7 +284,8 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 		       rvec **x,rvec **v,matrix box,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],
-		       int nnodes,bool bEnsemble,bool bMorse,int *nerror)
+		       int nnodes,bool bEnsemble,bool bMorse,
+		       bool bCheckPairs,int *nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -268,6 +301,9 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   /* TOPOLOGY processing */
   msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
+  
+  if (bCheckPairs)
+    check_pairs(nrmols,molinfo,atype->nr,atype->nb);
   
   ntab = 0;
   tab  = NULL;
@@ -672,7 +708,7 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
-  static bool bRmDumBds=TRUE,bSort=FALSE;
+  static bool bRmDumBds=TRUE,bSort=FALSE,bCheckPairs=FALSE;
   static int  nnodes=1,maxwarn=10;
   static real fr_time=-1;
   static char *cap=NULL;
@@ -693,6 +729,8 @@ int main (int argc, char *argv[])
       "Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of warnings after which input processing stops" },
+    { "-check14", FALSE, etBOOL, {&bCheckPairs},
+      "Remove 1-4 interactions without Van der Waals" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
       "HIDDENRenumber atomtypes and minimize number of atomtypes" },
   };
@@ -770,7 +808,8 @@ int main (int argc, char *argv[])
 		     opt2fn("-deshuf",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&natoms,&x,&v,box,
 		     &atype,sys,&msys,plist,bShuffle ? nnodes : 1,
-		     (opts->eDisre==edrEnsemble),opts->bMorse,&nerror);
+		     (opts->eDisre==edrEnsemble),opts->bMorse,
+		     bCheckPairs,&nerror);
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
