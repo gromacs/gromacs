@@ -310,7 +310,7 @@ int main(int argc,char *argv[])
   t_app     *app;
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
-    { efTPB, NULL, NULL, ffREAD }
+    { efTPX, NULL, NULL, ffREAD }
   };
 #define NFILE asize(fnm)
 
@@ -325,7 +325,7 @@ int main(int argc,char *argv[])
   XSetForeground(x11->disp,x11->gc,x11->fg);
   app=init_app(x11,argc,argv);
 
-  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPB,NFILE,fnm),app->xr);
+  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),app->xr);
   mk_gly(app);
   
   XMapWindow(x11->disp,app->wd.self);

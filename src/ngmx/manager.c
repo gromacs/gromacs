@@ -34,7 +34,7 @@ static char *SRCID_manager_c = "$Id$";
 #include <ctype.h>
 #include <typedefs.h>
 #include <smalloc.h>
-#include <statusio.h>
+#include <tpxio.h>
 #include <macros.h>
 #include <maths.h>
 #include <vdw.h>
@@ -164,17 +164,15 @@ static void hide_label(t_x11 *x11,t_manager *man,int x,int y)
 void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status,
 	      char *fnvdw)
 {
-  FILE         *topin;
   char         buf[256];
-  t_statheader sh;
+  t_tpxheader  sh;
   t_vdw        *vdw;
   t_atoms      *at;
   bool         *bB;
   int          i,idum,nvdw;
   real         rdum;
 
-  topin=ffopen(status,"r");
-  (void) rd_header(topin,&sh);
+  read_tpxheader(status,&sh);
   snew(man->ix,sh.natoms);
   snew(man->zz,sh.natoms);
   snew(man->col,sh.natoms);
@@ -190,10 +188,8 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status,
   snew(man->szLab,sh.natoms);
   snew(man->bHydro,sh.natoms);
   snew(bB,sh.natoms);
-  (void) rd_hstatus(topin,&sh,&(man->step),&(man->time),&rdum,NULL,man->box,
-		    NULL,NULL,&man->natom,NULL,NULL,NULL,&idum,
-		    NULL,&man->top);
-  fclose(topin);
+  read_tpx(status,&(man->step),&(man->time),&rdum,NULL,man->box,
+	   &man->natom,NULL,NULL,NULL,&man->top);
   
   man->natom=
     read_first_x(&man->status,trajectory,&(man->time),&(man->x),man->box);

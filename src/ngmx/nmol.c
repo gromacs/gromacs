@@ -33,7 +33,6 @@ static char *SRCID_nmol_c = "$Id$";
 #include "string.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "statusio.h"
 #include "xutil.h"
 #include "3dview.h"
 #include "fatal.h"
@@ -467,7 +466,7 @@ void draw_mol(t_x11 *x11,t_manager *man)
   XClearWindow(x11->disp,win->self);
 
   /* Draw Time */
-  sprintf(tstr[ntime],"Time: %.2f ps",man->time);
+  sprintf(tstr[ntime],"Time: %.3f ps",man->time);
   if (strcmp(tstr[ntime],tstr[1-ntime]) != 0) {
     set_vbtime(x11,man->vbox,tstr[ntime]);
     ntime=1-ntime;

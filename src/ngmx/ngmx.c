@@ -46,6 +46,7 @@ static char *SRCID_ngmx_c = "$Id$";
 #include "writeps.h"
 #include "molps.h"
 #include "nmol.h"
+#include "tpxio.h"
 
 /* Forward declarations: I Don't want all that init shit here */
 t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[]);
@@ -277,7 +278,7 @@ int main(int argc, char *argv[])
   t_gmx *gmx;
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
-    { efTPB, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
     { efNDX, NULL, NULL, ffOPTRD },
     { efVDW, "-r", NULL, ffLIBRD }
   };
@@ -387,15 +388,15 @@ t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 		  MSIZE,gmx_pd_size,gmx_pd,MenuTitle);
 
   /* Dialogs & Filters */
-   read_status(ftp2fn(efTPB,nfile,fnm),&step,&t,&lambda,NULL,NULL,NULL,NULL,
-              &natom,NULL,NULL,NULL,&nre,NULL,&top);
+  read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,NULL,
+	   &natom,NULL,NULL,NULL,&top);
 
   gmx->filter=init_filter(&(top.atoms),ftp2fn_null(efNDX,nfile,fnm));
   
   init_dlgs(x11,gmx);
 
   /* Now do file shit */
-  set_file(x11,gmx->man,ftp2fn(efTRX,nfile,fnm),ftp2fn(efTPB,nfile,fnm),
+  set_file(x11,gmx->man,ftp2fn(efTRX,nfile,fnm),ftp2fn(efTPX,nfile,fnm),
 	   ftp2fn(efVDW,nfile,fnm));
 
   /*show_logo(x11,gmx->logo);*/
