@@ -14222,17 +14222,18 @@ _inl3310_3dnow:
 	lea ecx, [ecx + ecx*2]	
 	shl ecx, 2
 	;# load all the table values we need 
-	movd mm4, [edx + ecx*4]
-	movd mm5, [edx + ecx*4 + 4]
-	movd mm6, [edx + ecx*4 + 8]
-	movd mm7, [edx + ecx*4 + 12]
+	movd mm4, [edx + ecx*4 + 16]
+	movd mm5, [edx + ecx*4 + 20]
+	movd mm6, [edx + ecx*4 + 24]
+	movd mm7, [edx + ecx*4 + 28]
+
 	mov ecx, [esp + i3310_n1 + 4]
 	lea ecx, [ecx + ecx*2]
 	shl ecx, 2
-	punpckldq mm4, [edx + ecx*4]
-	punpckldq mm5, [edx + ecx*4 + 4]
-	punpckldq mm6, [edx + ecx*4 + 8]
-	punpckldq mm7, [edx + ecx*4 + 12]
+	punpckldq mm4, [edx + ecx*4 + 16]
+	punpckldq mm5, [edx + ecx*4 + 20]
+	punpckldq mm6, [edx + ecx*4 + 24]
+	punpckldq mm7, [edx + ecx*4 + 28]
 	pfmul mm6, mm1  ;# mm6 = Geps 		
 	pfmul mm7, mm2	;# mm7 = Heps2 
 	pfadd mm5, mm6
@@ -14257,17 +14258,17 @@ _inl3310_3dnow:
 	lea ecx, [ecx + ecx*2]
 	shl ecx, 2
 	;# load all the table values we need 
-	movd mm4, [edx + ecx*4 + 16]
-	movd mm5, [edx + ecx*4 + 20]
-	movd mm6, [edx + ecx*4 + 24]
-	movd mm7, [edx + ecx*4 + 28]
+	movd mm4, [edx + ecx*4 + 32]
+	movd mm5, [edx + ecx*4 + 36]
+	movd mm6, [edx + ecx*4 + 40]
+	movd mm7, [edx + ecx*4 + 44]
 	mov ecx, [esp + i3310_n1 + 4]
 	lea ecx, [ecx + ecx*2]
 	shl ecx, 2
-	punpckldq mm4, [edx + ecx*4 + 16]
-	punpckldq mm5, [edx + ecx*4 + 20]
-	punpckldq mm6, [edx + ecx*4 + 24]
-	punpckldq mm7, [edx + ecx*4 + 28]
+	punpckldq mm4, [edx + ecx*4 + 32]
+	punpckldq mm5, [edx + ecx*4 + 36]
+	punpckldq mm6, [edx + ecx*4 + 40]
+	punpckldq mm7, [edx + ecx*4 + 44]
 
 	pfmul mm6, mm1  ;# mm6 = Geps 		
 	pfmul mm7, mm2	;# mm7 = Heps2 
@@ -14407,10 +14408,10 @@ _inl3310_3dnow:
 	;# dispersion table
 	 ;# load all the table values we need
 	 
-	movd mm4, [edx + ecx*4]
-	movd mm5, [edx + ecx*4 + 4]
-	movd mm6, [edx + ecx*4 + 8]
-	movd mm7, [edx + ecx*4 + 12]
+	movd mm4, [edx + ecx*4 + 16]
+	movd mm5, [edx + ecx*4 + 20]
+	movd mm6, [edx + ecx*4 + 24]
+	movd mm7, [edx + ecx*4 + 28]
 	pfmul mm6, mm1  ;# mm6 = Geps 		
 	pfmul mm7, mm2	;# mm7 = Heps2 
 	pfadd mm5, mm6
@@ -14433,10 +14434,10 @@ _inl3310_3dnow:
 	;# repulsion table
 	 ;# load all the table values we need
 	 
-	movd mm4, [edx + ecx*4 + 16]
-	movd mm5, [edx + ecx*4 + 20]
-	movd mm6, [edx + ecx*4 + 24]
-	movd mm7, [edx + ecx*4 + 28]
+	movd mm4, [edx + ecx*4 + 32]
+	movd mm5, [edx + ecx*4 + 36]
+	movd mm6, [edx + ecx*4 + 40]
+	movd mm7, [edx + ecx*4 + 44]
 
 	pfmul mm6, mm1  ;# mm6 = Geps 		
 	pfmul mm7, mm2	;# mm7 = Heps2 
