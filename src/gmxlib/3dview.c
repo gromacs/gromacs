@@ -34,6 +34,7 @@ static char *SRCID_3dview_c = "$Id$";
 #include "macros.h"
 #include "physics.h"
 #include "3dview.h"
+#include "vec.h"
 
 #define N 4
 
@@ -209,7 +210,7 @@ bool zoom_3d(t_3dview *view,real fac)
   }
   dr1=sqrt(dr2);
   if (fac < 1) {
-    bm=max(view->box[XX][XX],max(view->box[YY][YY],view->box[ZZ][ZZ]));
+    bm=max(norm(view->box[XX]),max(norm(view->box[YY]),norm(view->box[ZZ])));
     if (dr1*fac < 1.1*bm) /* Don't come to close */
       return FALSE;
   }
@@ -282,9 +283,10 @@ void reset_view(t_3dview *view)
   set_scale(view,4.0,4.0);
   for(i=0; (i<DIM); i++) {
     view->eye[i]=0.0;
-    view->origin[i]=0.5*view->box[i][i];
+    /* view->origin[i]=0.5*view->box[i][i];*/
+    view->origin[i] = 0.5*(view->box[XX][i]+view->box[YY][i]+view->box[ZZ][i]);
   }
-  view->eye[ZZ]=4.0*view->box[ZZ][ZZ];
+  view->eye[ZZ]=4.0*norm(view->box[ZZ]);
   zoom_3d(view,1.0);
   view->eye[WW]=view->origin[WW]=0.0;
 

@@ -39,6 +39,8 @@ static char *SRCID_nmol_c = "$Id$";
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"
+#include "vec.h"
+#include "txtdump.h"
 
 #define MSIZE 4
 
@@ -394,16 +396,23 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
     { 4,5 }, { 5,6 }, { 6,7 }, { 7,4 },
     { 0,4 }, { 1,5 }, { 2,6 }, { 3,7 }
   };
-  int  i,j;
+  int  i,j,k;
   rvec corner[8];
   vec4 x4;
   iv2  vec2[12];
 
   for (i=0; (i<8); i++) {
-    for (j=0; (j<DIM); j++)
-      corner[i][j] = ivec[i][j]*box[j][j];
+    clear_rvec(corner[i]);
+    for (j=0; (j<DIM); j++) {
+      for (k=0; (k<DIM); k++)
+	corner[i][k] += ivec[i][j]*box[j][k];
+    }
     m4_op(view->proj,corner[i],x4);
     v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);
+  }
+  if (debug) {
+    pr_rvecs(debug,0,"box",box,DIM);
+    pr_rvecs(debug,0,"corner",corner,8);
   }
   XSetForeground(x11->disp,x11->gc,YELLOW);
   for (i=0; (i<12); i++)
