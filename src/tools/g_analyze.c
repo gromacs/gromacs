@@ -289,7 +289,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
   fprintf(fp,
 	  "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
-	  n*dt,n);
+	  (n-1)*dt,n);
   snew(leg,2*nset);
   xvgr_legend(fp,2*nset,leg);
   sfree(leg);
@@ -337,14 +337,26 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
     fitparm[1] = 0.95;
     fitparm[2] = 0.2*n*dt;
     do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
-    if (fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0 || fitparm[1]>1) {
+    fitparm[3] = 1-fitparm[1];
+    if (fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0 || fitparm[1]>1 
+	|| fitparm[2]>(n-1)*dt) {
+      if (fitparm[2]>(n-1)*dt)
+	fprintf(stdout,
+		"Warning: tau2 is longer than the length of the data (%g)\n"
+		"         the statistics might be bad\n",
+		(n-1)*dt);
+      else
+	fprintf(stdout,"a fitted parameter is negative\n");
+      fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+	      sig[s]*anal_ee_inf(fitparm,n*dt),
+	      fitparm[1],fitparm[0],fitparm[2]);
       fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
       fitparm[0] = n*dt*0.002;
       fitparm[1] = 1;
       fitparm[2] = 0;
       do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
+      fitparm[3] = 1-fitparm[1];
     }
-    fitparm[3] = 1-fitparm[1];
     fprintf(stdout,"Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
 	    s+1,sig[s]*anal_ee_inf(fitparm,n*dt),
 	    fitparm[1],fitparm[0],fitparm[2]);
@@ -374,7 +386,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       ac_fit[0] = 0.002*n*dt;
       ac_fit[1] = 0.95;
       ac_fit[2] = 0.2*n*dt;
-      do_lmfit((n+1)/nb_min,ac,fitsig,dt,0,0,dt*(n+1)*0.25,
+      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,dt*n/nbmin,
               bDebugMode(),effnEXP3,ac_fit,0);
       ac_fit[3] = 1 - ac_fit[1];
 
