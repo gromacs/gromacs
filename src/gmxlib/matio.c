@@ -51,14 +51,20 @@ static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123
 
 #define MAX_XPM_LINELENGTH 4096
 
-real **mk_matrix(int nx, int ny)
+real **mk_matrix(int nx, int ny, bool b1D)
 {
   int  i;
   real **m;
   
   snew(m,nx);
+  if (b1D)
+    snew(m[0], nx*ny);
+  
   for(i=0; (i<nx); i++)
-    snew(m[i],ny);
+    if (b1D)
+      m[i] = &(m[0][i*ny]);
+    else
+      snew(m[i],ny);
   
   return m;
 }

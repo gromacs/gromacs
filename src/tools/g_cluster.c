@@ -240,7 +240,6 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   t_dist    *d;
   int       i,j,k,nn,cid,n1,diff;
   bool      bChange;
-  real      **mcpy=NULL;
   
   /* First we sort the entries in the RMSD matrix */
   n1 = m->nn;
@@ -296,18 +295,6 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
   for(k=0; k<n1; k++)
     clust->cl[c[k].conf] = c[k].clust;
 
-/* I don't see the point in this... (AF) */
-/*   mcpy = mk_matrix(n1,FALSE); */
-/*   for(i=0; (i<n1); i++) { */
-/*     for(j=0; (j<n1); j++) */
-/*       mcpy[c[i].conf][c[j].conf] = m->mat[i][j]; */
-/*   } */
-/*   for(i=0; (i<n1); i++) { */
-/*     for(j=0; (j<n1); j++) */
-/*       m->mat[i][j] = mcpy[i][j]; */
-/*   } */
-/*   done_matrix(n1,&mcpy); */
-  
   sfree(c);
   sfree(d);
 }
@@ -403,7 +390,7 @@ static void jarvis_patrick(int n1,real **mat,int M,int P,
   c = new_clustid(n1);
   fprintf(stderr,"Linking structures ");
   /* Use mcpy for temporary storage of booleans */
-  mcpy = mk_matrix(n1,FALSE);
+  mcpy = mk_matrix(n1,n1,FALSE);
   for(i=0; i<n1; i++)
     for(j=i+1; j<n1; j++)
       mcpy[i][j] = jp_same(nnb,i,j,P);
@@ -480,10 +467,9 @@ static void dump_nnb (FILE *fp, char *title, int n1, t_nnb *nnb)
   
 static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
 {
-  char buf[STRLEN];
   t_dist *row;
   t_nnb  *nnb;
-  int    i,j,k,i1,j1,max;
+  int    i,j,k,j1,max;
 
   /* Put all neighbors nearer than rmsdcut in the list */
   fprintf(stderr,"Making list of neighbors within cutoff ");
@@ -719,7 +705,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;
   int  trxout=0,trxsout=0;
-  int  i,i1,i2,j,cl,nstr,*structure,first=0,midstr;
+  int  i,i1,cl,nstr,*structure,first=0,midstr;
   bool *bWrite=NULL;
   real r,clrmsd,midrmsd;
   rvec *xav=NULL;
@@ -980,20 +966,18 @@ int main(int argc,char *argv[])
   
   FILE         *fp,*log;
   int          i,i1,i2,j,nf,nrms;
-  real         t,t1,t2;
 
   matrix       box;
-  rvec         *xtps,*usextps,*x1,*x2,**xx=NULL;
+  rvec         *xtps,*usextps,*x1,**xx=NULL;
   char         *fn,*trx_out_fn;
   t_clusters   clust;
   t_mat        *rms;
-  real         *resnr,*eigval;
+  real         *eigval;
   t_topology   top;
   t_atoms      useatoms;
-  bool         bSameF;
   t_matrix     *readmat;
   
-  int      status1,status2,isize=0,ifsize=0,iosize=0;
+  int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass=NULL;

@@ -53,7 +53,7 @@ t_mat *init_mat(int n1,bool b1D)
   m->minrms = 1e20;
   m->sumrms = 0;
   m->nn   = 0;
-  m->mat  = mk_matrix(n1,b1D);
+  m->mat  = mk_matrix(n1,n1,b1D);
   
   snew(m->erow,n1);
   snew(m->m_ind,n1);
