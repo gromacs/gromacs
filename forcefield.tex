@@ -860,19 +860,24 @@ The forces with time averaging are:
 \beq
 \ve{F}_i~=~ \left\{
 \begin{array}{lcllllll}
--k_{dr}(\bar{r}_{ij}-r_0)\frac{\rvij}{r_{ij}}   
+-k^a_{dr}(\bar{r}_{ij}-r_0)\frac{\rvij}{r_{ij}}   
                 &\mbox{for}&     &     & \bar{r}_{ij} & < & r_0 \\[1.5ex]
 0               &\mbox{for}& r_0 & \le & \bar{r}_{ij} & < & r_1 \\[1.5ex]
--k_{dr}(\bar{r}_{ij}-r_1)\frac{\rvij}{r_{ij}}   
+-k^a_{dr}(\bar{r}_{ij}-r_1)\frac{\rvij}{r_{ij}}   
                 &\mbox{for}& r_1 & \le & \bar{r}_{ij} & < & r_2 \\[1.5ex]
--k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    
+-k^a_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    
                 &\mbox{for}& r_2 & \le & \bar{r}_{ij} &   &
 \end{array} \right.
 \eeq
-where $\bar{r}_{ij}$ is given by:
+where $\bar{r}_{ij}$ is given by an exponential running average with decay time $\tau$:
 \beq
 \bar{r}_{ij} ~=~ < r_{ij}^{-3} >^{-1/3}
 \label{eqn:rav}
+\eeq
+and the force constant $k^a_{dr}$ is switched on slowly to compensate for
+the lack of history at the beginning of the simulation:
+\beq
+k^a_{dr} = k_{dr} \left(1-\exp\left(-\frac{t}{\tau}\right)\right)
 \eeq
 Because of the time averaging we can no longer speak of a distance restraint
 potential.
@@ -900,7 +905,19 @@ To prevent the protons from being pulled too close together a mixed
 approach can be used. In this approach the penalty is zero when the
 instantaneous distance is within the bounds, otherwise the violation is
 the square root of the product of the instantaneous violation and the 
-time averaged violation.
+time averaged violation:
+\beq
+\ve{F}_i~=~ \left\{
+\begin{array}{lclll}
+k^a_{dr}\sqrt{(r_{ij}-r_0)(\bar{r}_{ij}-r_0)}\frac{\rvij}{r_{ij}}   
+    & \mbox{for} & r_{ij} < r_0 & \mbox{and} & \bar{r}_{ij} < r_0 \\[1.5ex]
+-k^a _{dr} \,
+  \mbox{min}\left(\sqrt{(r_{ij}-r_1)(\bar{r}_{ij}-r_1)},r_2-r_1\right)
+  \frac{\rvij}{r_{ij}}   
+    & \mbox{for} & r_{ij} > r_1 & \mbox{and} & \bar{r}_{ij} > r_1 \\[1.5ex]
+0               &\mbox{else}
+\end{array} \right.
+\eeq
 
 \subsubsection{Averaging over multiple pairs} 
 
@@ -1043,6 +1060,12 @@ Some parameters for NMR refinement can be specified in the
 
 \subsection{\swapindex{Orientation}{restraint}s}
 \label{sec:orire}
+This section describes how orientations between vectors,
+as measured in certain NMR experiments, can be calculated
+and restrained in MD simulations.
+The presented refinement methodology and a comparision of results
+with and without time and ensemble averaging have been
+published~\cite{Hess2003}.
 \subsubsection{Theory}
 In an NMR experiment orientations of vectors can be measured when a 
 molecule does not tumble completely isotropically in the solvent.
@@ -1125,6 +1148,11 @@ and the observed orientations:
 \label{S_msd}
 MSD(t) = \left(\sum_{i=1}^N w_i\right)^{-1} \sum_{i=1}^N w_i (\delta_i^c (t) -\delta_i^{exp})^2
 \end{equation}
+To properly combine different types of measurements the unit of $w_i$ should
+be such that all terms are dimensionless. This means the unit of $w_i$
+is the unit of $\delta_i$ to the power $-2$.
+Note that scaling all $w_i$ with a constant factor does not influence
+the order tensor.
 
 \subsubsection{Time averaging}
 Since the tensors $\DD_i$ fluctuate rapidly in time, much faster than can
@@ -1160,10 +1188,12 @@ When no time averaging is applied a proper potential can be defined as:
 \beq
 V = \frac{1}{2} k \sum_{i=1}^N w_i (\delta_i^c (t) -\delta_i^{exp})^2
 \eeq
+where the unit of $k$ is the unit of energy.
+Thus the effective force constant for restraint $i$ is $k w_i$.
 The forces are given by minus the gradient of $V$.
-The force $\ve{f}\!_i$ working on vector $\ve{r}_i$ is:
+The force $\ve{F}\!_i$ working on vector $\ve{r}_i$ is:
 \begin{eqnarray*}
-\ve{f}\!_i(t) 
+\ve{F}\!_i(t) 
 & = & - \frac{\mbox{d} V}{\mbox{d}\ve{r}_i} \\
 & = & -k w_i (\delta_i^c (t) -\delta_i^{exp}) \frac{\mbox{d} \delta_i (t)}{\mbox{d}\ve{r}_i} \\
 & = & -k w_i (\delta_i^c (t) -\delta_i^{exp})
@@ -1180,7 +1210,7 @@ V = M \frac{1}{2} k \sum_{i=1}^N w_i
 \eeq
 The force on vector $\ve{r}_{i,m}$ in subsystem $m$ is given by:
 \beq
-\ve{f}\!_{i,m}(t) = - \frac{\mbox{d} V}{\mbox{d}\ve{r}_{i,m}} =
+\ve{F}\!_{i,m}(t) = - \frac{\mbox{d} V}{\mbox{d}\ve{r}_{i,m}} =
 -k w_i \langle \delta_i^c (t) -\delta_i^{exp} \rangle \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\ve{r}_{i,m}} \\
 \eeq 
 
@@ -1205,7 +1235,7 @@ and the instantaneous deviation.
 Using only the time averaged deviation induces large oscillations.
 The force is given by:
 \beq
-\ve{f}\!_{i,m}(t) =
+\ve{F}\!_{i,m}(t) =
 %\left\{ \begin{array}{ll}
 %0 & \mbox{for} \quad \langle \delta_i^a (t) -\delta_i^{exp} \rangle \langle \delta_i (t) -\delta_i^{exp} \rangle \leq 0 \\
 %... & \mbox{for} \quad \langle \delta_i^a (t) -\delta_i^{exp} \rangle \langle \delta_i (t) -\delta_i^{exp} \rangle > 0 
@@ -1232,7 +1262,7 @@ coupling restraints:
 \begin{verbatim}
 [ orientation_restraints ]
 ; ai   aj type exp. label alpha   const.    obs.  weight 
-;                                Hz nm^3      Hz    1/Hz
+;                                Hz nm^3      Hz  1/Hz^2
   31   32    1    1     3     3    6.083   -6.73     1.0
   43   44    1    1     4     3    6.083   -7.87     1.0
   55   56    1    1     5     3    6.083   -7.13     1.0
@@ -1251,10 +1281,11 @@ The {\tt const.} column contains the constant $c_i$ used in the same
 equation. The constant should have the unit of the observable times
 nm$^\alpha$. The column {\tt obs.} contains the observable, in any
 unit you like. The last column contains the weights $w_i$, the unit
-should be the inverse unit of the observable.
+should be the inverse of the square of the unit of the observable.
 
- Some parameters for orientation restraints can be specified in the
-{\tt grompp.mdp} file:
+Some parameters for orientation restraints can be specified in the
+{\tt grompp.mdp} file, for a study of the effect of different
+force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 \begin{description}
 \item[{\tt orire}: use orientation restraining.]
         {\tt no/yes} turns the distance restraints off/on.
@@ -1263,6 +1294,9 @@ should be the inverse unit of the observable.
 	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
 	coordiates and/or velocities.
 \item[{\tt orire\_fc}: force constant $k$ for orientation restraints.] 
+	The unit of $k$ is kJ mol$^{-1}$.
+	Note that the force constant for a restraint is this force constant
+	times the weight of the restraint.
 	When set to zero one obtain the calculated orientation without
 	affecting the simulation.
 \item[{\tt orire\_tau}: time constant $\tau$ for restraints.] 
