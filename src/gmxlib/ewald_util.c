@@ -80,12 +80,12 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 
   int     i,i1,i2,j,k,m,iv,jv;
   atom_id *AA;
-  double  qq; /* Necessary for precision */
+  double  q2sum; /* Necessary for precision */
   real    vc,qi,dr,ddd,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx;
   rvec    *flr=fr->flr;
   real    vol = box_size[XX]*box_size[YY]*box_size[ZZ];
-  real    dipole_coeff;
+  real    dipole_coeff,qq;
   /*#define TABLES*/
 #ifdef TABLES
   real    tabscale=fr->tabscale;
@@ -100,7 +100,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   
   AA    = excl->a;
   Vexcl = 0;
-  qq =0; 
+  q2sum =0; 
   Vdipole=0;
   Vcharge=0;
   
@@ -111,7 +111,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       qi  = charge[i]*ONE_4PI_EPS0;
       i1  = excl->index[i];
       i2  = excl->index[i+1];
-      qq  += charge[i]*charge[i];
+      q2sum += charge[i]*charge[i];
       
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {
@@ -218,12 +218,12 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       Vdipole=dipole_coeff*(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
   }
   
-  Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
+  Vself=ewc*ONE_4PI_EPS0*q2sum/sqrt(M_PI);
   
   if (debug) {
     fprintf(debug,"Long Range corrections for Ewald interactions:\n");
     fprintf(debug,"start=%d,natoms=%d\n",start,end-start);
-    fprintf(debug,"qq = %g, Vself=%g\n",qq,Vself);
+    fprintf(debug,"q2sum = %g, Vself=%g\n",q2sum, Vself);
     fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
     if(MASTER(cr)) {
       fprintf(debug,"Total charge correction: Vcharge=%g\n",Vcharge);
