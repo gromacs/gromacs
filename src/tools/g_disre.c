@@ -203,7 +203,7 @@ int main (int argc,char *argv[])
   };
   
   FILE        *out,*aver,*numv,*maxxv,*xvg;
-  t_inputrec  ir;
+  t_inputrec  *ir;
   t_topology  *top;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
@@ -259,8 +259,9 @@ int main (int argc,char *argv[])
   else 
     isize=0;
   
-  ir.dr_tau=0.0;
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,&ir);
+  snew(ir,1);
+  ir->dr_tau=0.0;
+  init_disres(stdlog,top->idef.il[F_DISRES].nr,ir);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
@@ -283,7 +284,7 @@ int main (int argc,char *argv[])
   mdatoms=atoms2md(&top->atoms,FALSE,FALSE);  
   fr=mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
-  init_forcerec(stdlog,fr,&(ir),&(top->blocks[ebMOLS]),cr,
+  init_forcerec(stdlog,fr,ir,&(top->blocks[ebMOLS]),cr,
 		&(top->blocks[ebCGS]),&(top->idef),mdatoms,box,FALSE);
   init_nrnb(&nrnb);
   j=0;
