@@ -111,18 +111,20 @@ static int calc_xav(bool bAverX,
 
 static real find_pdb_bfac(t_atoms *atoms,char *resnm,int resnr,char *atomnm)
 {
+  char rresnm[8];
   int i;
   
-  resnm[3]='\0';
+  strcpy(rresnm,resnm);
+  rresnm[3]='\0';
   for(i=0; (i<atoms->nr); i++) {
     if ((resnr == atoms->atom[i].resnr) &&
-	(strcmp(*atoms->resname[i],resnm) == 0) &&
+	(strcmp(*atoms->resname[resnr],rresnm) == 0) &&
 	(strstr(*atoms->atomname[i],atomnm) != NULL))
       break;
   }
   if (i == atoms->nr) {
     fprintf(stderr,"\rCan not find %s%d-%s in pdbfile\n",
-	    resnm,resnr,atomnm);
+	    rresnm,resnr,atomnm);
     return 0.0;
   }
     
@@ -183,7 +185,7 @@ int main (int argc,char *argv[])
 
   matrix       box,pdbbox;
   rvec         *x,*pdbx,*xref;
-  int          status,npdbatoms;
+  int          status,npdbatoms,res0;
   char         buf[256];
   char         title[STRLEN];
   
