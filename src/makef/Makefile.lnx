@@ -1,4 +1,4 @@
-# Linux/x86
+#       Linux/x86
 #	@(#) Makefile.lnx 1.8 27 Jun 1996
 #
 #	GROMACS - Groningen Machine for Chemical Simulation
@@ -8,8 +8,9 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_STRDUP -DUSE_SSE_AND_3DNOW -DGMX_INVSQRT -DINLINE_GMXCODE
-# 
+SYSDEFS		= -DHAVE_IDENT -DHAVE_STRDUP -DGMX_INVSQRT -DINLINE_GMXCODE  -DFAST_X86TRUNC -DUSE_SSE_AND_3DNOW
+#
+#
 #	USER MODIFIABLE SECTION 
 #
 # If you want to use fortran innerloops set this to yes
@@ -17,7 +18,7 @@ SYSDEFS		= -DHAVE_IDENT -DHAVE_STRDUP -DUSE_SSE_AND_3DNOW -DGMX_INVSQRT -DINLINE
 # because C-compilers are not as good as Fortran compilers
 # 
 # Note for linux users: g77 performs much worse than gcc
-# since we cant use inline assembly fast truncation - dont use it!
+# since we cant use inlmore ine assembly fast truncation - dont use it!
 #
 USEF77		= no
 #
@@ -51,7 +52,6 @@ HAVE_MOTIF	= no
 # If something does not work, please check out the link command line
 # in that file (e.g. for PVM)
 #
-
 # GNU C compiler
 MKDEP		= $(CC) -MM
 ifeq ($(LAMHOME),)
