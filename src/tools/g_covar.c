@@ -84,8 +84,8 @@ int main(int argc,char *argv[])
   t_topology   top;
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
-  real       t,*mat,dev,trace,sum,*rdum1,*rdum2,rdum,avmass,inv_nframes;
-  real       xj,*mass,*w_rls,lambda;
+  real       t,*mat,dev,trace,sum,*eigval,*rdum2,rdum,inv_nframes;
+  real       xj,*sqrtm,normfac,*w_rls,lambda;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
   char       *grpname,*stxfile,*infile,str[STRLEN];
@@ -151,15 +151,15 @@ int main(int argc,char *argv[])
       w_rls[ifit[i]]=1.0;
   
   bDiffMass2=FALSE;
-  snew(mass,natoms);
+  snew(sqrtm,natoms);
   for(i=0; (i<natoms); i++)
     if (bM) {
-      mass[i]=top.atoms.atom[index[i]].m;
+      sqrtm[i]=sqrt(top.atoms.atom[index[i]].m);
       if (i)
-	bDiffMass2 = bDiffMass2 || (mass[i]!=mass[i-1]);
+	bDiffMass2 = bDiffMass2 || (sqrtm[i]!=sqrtm[i-1]);
     }
     else
-      mass[i]=1.0;
+      sqrtm[i]=1.0;
   
   if (bDiffMass1 && !bDiffMass2 && !opt2parg_bSet("-mwa",asize(pa),pa)) {
     bDiffMass1 = natoms != nfit;
@@ -224,24 +224,24 @@ int main(int argc,char *argv[])
 
   /* calculate the mass-weighted covariance matrix */
   inv_nframes=1.0/nframes;
-  avmass=0;
+  normfac=0;
   for (i=0; i<natoms; i++) {
     svmul(inv_nframes,xav[i],xav[i]);
-    mass[i]=sqrt(mass[i]);
-    avmass+=mass[i];
+    normfac+=sqrtm[i];
     copy_rvec(xav[i],xread[index[i]]);
   }
-  avmass=sqr(natoms/avmass);
+  normfac=sqr(natoms/normfac);
 
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
 			   &(top.atoms),xread,NULL,NULL,natoms,index);
+  
   for (j=0; j<natoms; j++) 
     for (dj=0; dj<DIM; dj++) 
       for (i=j; i<natoms; i++) { 
 	k=ndim*(DIM*j+dj)+DIM*i;
 	for (d=0; d<DIM; d++) {
 	  mat[k+d]=(mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
-	    *mass[i]*mass[j]*avmass;
+	    *sqrtm[i]*sqrtm[j]*normfac;
 	}
       }
   for (j=0; j<ndim; j++) 
@@ -258,14 +258,14 @@ int main(int argc,char *argv[])
   fprintf(stderr,"\nDiagonalizing...\n");
   fflush(stderr);
 
-  snew(rdum1,ndim);
+  snew(eigval,ndim);
   snew(rdum2,ndim);
 #ifdef USEF77
-  fql77(&ndim,mat,rdum1,rdum2,&ndim);
+  fql77(&ndim,mat,eigval,rdum2,&ndim);
 #else
   /*ql77(int n,real **x,real *d,real *e,int nmax)*/
   /*fprintf(stderr,"Calling ql77...\n");
-    ql77 (ndim,mat,rdum1,rdum2,ndim);*/
+    ql77 (ndim,mat,eigval,rdum2,ndim);*/
   fatal_error(0,"C version of ql77 buggy. Use f77. Sorry.");
 #endif
   
@@ -273,7 +273,7 @@ int main(int argc,char *argv[])
 
   sum=0;
   for(i=0; i<ndim; i++)
-    sum+=rdum1[i];
+    sum+=eigval[i];
   fprintf(stderr,"\nSum of the eigenvalues: %g (nm^2)\n",sum);
   if (fabs(trace-sum)>0.01*trace)
     fprintf(stderr,"\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
@@ -285,7 +285,7 @@ int main(int argc,char *argv[])
 	       "Eigenvector index","(nm\\S2\\N)");  
 
   for (i=0; (i<ndim); i++) {
-    fprintf (out,"%10d %g\n",i+1,rdum1[ndim-1-i]);
+    fprintf (out,"%10d %g\n",i+1,eigval[ndim-1-i]);
   }
   fclose(out);  
 
@@ -300,8 +300,10 @@ int main(int argc,char *argv[])
   if (nfit==natoms) {
     for(i=0; i<nfit; i++)
       copy_rvec(xref[ifit[i]],x[i]);
+    /* misuse lambda: 0/1 mass weighted fit no/yes */  
     fwrite_trn(trjout,-1,-1,bDiffMass1 ? 1 : 0,zerobox,natoms,x,NULL,NULL);
   }
+  /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
   fwrite_trn(trjout,0,0,bDiffMass2 ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
   for(i=begin; i<=end; i++) {
     for (j=0; j<natoms; j++)
