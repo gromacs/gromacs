@@ -447,8 +447,8 @@ int main(int argc,char *argv[])
     "assigned a default distance [TT]-vdw[tt], default 0.105 nm.[PAR]",
     
     "3) Insert a number ([TT]-nmol[tt]) of extra molecules ([TT]-ci[tt]) ",
-    "can be inserted at random positions.",
-    "The program  iterates until [TT]nmol[tt]  molecules",
+    "at random positions.",
+    "The program iterates until [TT]nmol[tt] molecules",
     "have been inserted in the box. To test whether an insertion is ",
     "successful the same VanderWaals criterium is used as for removal of ",
     "solvent molecules. When no appropriately ",
