@@ -34,7 +34,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_velacc	genbox		genconf		\
 		gendr		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
-		trjconv		wheel		xpm2ps
+		trjconv		trjcat          wheel		xpm2ps
 endif
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
@@ -82,6 +82,9 @@ g_relax:	g_relax.o	$(ACOBJ)
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 trjconv:	trjconv.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+trjcat:		trjcat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rmsdist:	g_rmsdist.o
