@@ -56,8 +56,10 @@
 #include "gstat.h"
 #include "matio.h"
 
-static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl, 
+static void clust_size(char *ndx,char *trx,char *xpm,
+		       char *xpmw,char *ncl,char *acl, 
 		       char *mcl,char *histo,
+		       bool bMol,char *tpr,
 		       real cut,int nskip,int nlevels,
 		       t_rgb rmid,t_rgb rhi)
 {
@@ -67,9 +69,16 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   rvec    *x=NULL,dx;
   matrix  box;
   char    *gname;
+  bool    bSame;
+  /* Topology stuff */
+  t_tpxheader tpxh;
+  t_topology  top;
+  t_block *mols=NULL;
+  int     version,generation,sss,ii,jj,aii,ajj,nsame;
+  real    ttt,lll;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
-  real    t,dx2,cut2,*t_x=NULL,*t_y,mid,cav;
+  real    t,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
   int     *clust_index,*clust_size,max_clust_size,nav,nhisto;
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
@@ -79,6 +88,15 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   hp = xvgropen(mcl,"Max cluster size","Time (ps)","#molecules");
   rd_index(ndx,1,&nindex,&index,&gname);
   natoms = read_first_x(&status,trx,&t,&x,box);
+  if (bMol) {
+    read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
+    if (tpxh.natoms != natoms) 
+      fatal_error(0,"tpr and xtc do not match!");
+    
+    read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
+    mols = &(top.blocks[ebMOLS]);
+  }
+  
   snew(clust_index,nindex);
   snew(clust_size,nindex);
   cut2   = cut*cut;
@@ -92,7 +110,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
       init_pbc(box);
       max_clust_size = 1;
       
-      /* Put all atoms in their own cluster, with size 1 */
+      /* Put all atoms/molecules in their own cluster, with size 1 */
       for(i=0; (i<nindex); i++) {
 	/* Cluster index is indexed with atom index number */
 	clust_index[i] = i;
@@ -114,11 +132,25 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
 	    aj = index[j];
 	    
 	    /* Compute distance */
-	    pbc_dx(x[ai],x[aj],dx);
-	    dx2 = iprod(dx,dx);
-	    
+	    if (bMol) {
+	      bSame = FALSE;
+	      for(ii=mols->index[ai]; !bSame && (ii<mols->index[ai+1]); ii++) {
+		aii = mols->a[ii];
+		for(jj=mols->index[aj]; !bSame && (jj<mols->index[aj+1]); jj++) {
+		  ajj   = mols->a[jj];
+		  pbc_dx(x[aii],x[ajj],dx);
+		  dx2   = iprod(dx,dx);
+		  bSame = (dx2 < cut2);
+		}
+	      }
+	    }
+	    else {
+	      pbc_dx(x[ai],x[aj],dx);
+	      dx2 = iprod(dx,dx);
+	      bSame = (dx2 < cut2);
+	    }
 	    /* If distance less than cut-off */
-	    if (dx2 < cut2) {
+	    if (bSame) {
 	      /* Merge clusters: check for all atoms whether they are in 
 	       * cluster cj and if so, put them in ci
 	       */
@@ -168,16 +200,33 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
   fclose(gp);
   fclose(hp);
 
-  /* Look for the smallest entry that is not zero */
-  mid = 100.0;
+  /* Look for the smallest entry that is not zero 
+   * This will make that zero is white, and not zero is coloured.
+   */
+  cmid = 100.0;
+  cmax = 0.0;
   for(i=0; (i<n_x); i++)
-    for(j=0; (j<max_size); j++) 
-      if ((cs_dist[i][j] > 0) && (cs_dist[i][j] < mid))
-	mid = cs_dist[i][j];
-      
+    for(j=0; (j<max_size); j++) {
+      if ((cs_dist[i][j] > 0) && (cs_dist[i][j] < cmid))
+	cmid = cs_dist[i][j];
+      cmax = max(cs_dist[i][j],cmax);
+    }
+  cmid = 1;
   fp = ffopen(xpm,"w");
-  write_xpm3(fp,"Cluster size distribution","Fraction","Time (ps)","Size",
-	     n_x,max_size-1,t_x,t_y,cs_dist,0,mid,100.0,
+  write_xpm3(fp,"Cluster size distribution","# clusters","Time (ps)","Size",
+	     n_x,max_size-1,t_x,t_y,cs_dist,0,cmid,cmax,
+	     rlo,rmid,rhi,&nlevels);
+  fclose(fp);
+  cmax = 0.0;
+  for(i=0; (i<n_x); i++)
+    for(j=0; (j<max_size); j++) {
+      cs_dist[i][j] *= j;
+      cmax = max(cs_dist[i][j],cmax);
+    }
+  fp = ffopen(xpmw,"w");
+  write_xpm3(fp,"Weighted cluster size distribution","Fraction",
+	     "Time (ps)","Size",
+	     n_x,max_size-1,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
 
@@ -206,16 +255,23 @@ int gmx_clustsize(int argc,char *argv[])
   static char *desc[] = {
     "This program computes the size distributions of molecular/atomic clusters in",
     "the gas phase. The output is given in the form of a XPM file.",
-    "The total number of clusters is written to a XVG file."
+    "The total number of clusters is written to a XVG file.[PAR]",
+    "When the [TT]-mol[tt] option is given clusters will be made out of",
+    "molecules rather than atoms, which allows clustering of large molecules.",
+    "In this case an index file would still contain atom numbers",
+    "or your calculcation will die with a SEGV."
   };
   static real cutoff   = 0.35;
   static int  nskip    = 0;
   static int  nlevels  = 20;
+  static bool bMol     = FALSE;
   static rvec rlo      = { 1.0, 1.0, 0.0 };
   static rvec rhi      = { 0.0, 0.0, 1.0 };
   t_pargs pa[] = {
     { "-cut",      FALSE, etREAL, {&cutoff},
       "Largest distance (nm) to be considered in a cluster" },
+    { "-mol",      FALSE, etBOOL, {&bMol},
+      "Cluster molecules rather than atoms (needs tpr file)" },
     { "-nskip",    FALSE, etINT,  {&nskip},
       "Number of frames to skip between writing" },
     { "-nlevels",  FALSE, etINT,  {&nlevels},
@@ -232,8 +288,10 @@ int gmx_clustsize(int argc,char *argv[])
   
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL,         ffREAD  },
+    { efTPR, NULL,  NULL,         ffOPTRD },
     { efNDX, NULL,  NULL,         ffOPTRD },
     { efXPM, "-o", "csize",       ffWRITE },
+    { efXPM, "-ow","csizew",      ffWRITE },
     { efXVG, "-nc","nclust",      ffWRITE },
     { efXVG, "-mc","maxclust",    ffWRITE },
     { efXVG, "-ac","avclust",     ffWRITE },
@@ -249,9 +307,11 @@ int gmx_clustsize(int argc,char *argv[])
   rgblo.r = rlo[XX],rgblo.g = rlo[YY],rgblo.b = rlo[ZZ];
   rgbhi.r = rhi[XX],rgbhi.g = rhi[YY],rgbhi.b = rhi[ZZ];
     
-  clust_size(fnNDX,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efXPM,NFILE,fnm),
+  clust_size(fnNDX,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),
+	     opt2fn("-ow",NFILE,fnm),
 	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
 	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
+	     bMol,ftp2fn(efTPR,NFILE,fnm),
 	     cutoff,nskip,nlevels,rgblo,rgbhi);
 
   thanx(stderr);
