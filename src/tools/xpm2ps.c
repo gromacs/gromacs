@@ -264,7 +264,10 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
   real   xxx;
   char   **xtick,**ytick;
   real   xx,yy,dy,xx00,yy00;
-  int    i,j,x,y,strlength=0;
+  int    i,j,x,y,strlength;
+  
+  /* Only necessary when there will be no y-labels */ 
+  strlength = 0;
   
   /* Draw the box */
   ps_rgb(out,BLACK);
@@ -324,12 +327,12 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
       sprintf(buf,"%g",mat[i].axis_y[j]);
       ytick[j]=strdup(buf);
     }
-    
-    strlength=max(strlength,(int)strlen(ytick[mat[i].ny-1]));
+
     for(y=0; (y<mat[i].ny); y++) {
       yy=yy00+(y+0.7)*psr->yboxsize;
       if ( (y % psr->Y.major == psr->Y.offset) || (psr->Y.first && (y==0))) {
 	/* Major ticks */
+	strlength=max(strlength,(int)strlen(ytick[y]));
 	ps_line (out,xx00,yy,xx00-psr->Y.majorticklen,yy);
 	ps_ctext(out,xx00-psr->Y.majorticklen-DDD,
 		 yy-psr->Y.tickfontsize/3.0,ytick[y],eXRight);
