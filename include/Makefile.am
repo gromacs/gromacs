@@ -24,7 +24,7 @@ include_HEADERS = \
 	fftgrid.h       mdrun.h     	pppm.h      	statutil.h    	\
 	callf77.h   	fftw_wrapper.h  \
 	princ.h     	wgms.h		gmx_system_xdr.h	     	\
-	filenm.h        pull.h      	strdb.h 	\
+	filenm.h        pull.h      	rdgroup.h	strdb.h 	\
 	wman.h		force.h      \
 	string2.h     	writeps.h	gmxcomplex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\

@@ -29,20 +29,20 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	g_sorient.c 	g_tcaf.c	g_traj.c	g_velacc.c	\
 	g_clustsize.c	g_mdmat.c	g_wham.c
 
-xxx     = \
-	g_wham		\
-	g_analyze	g_anaeig	g_angle	      	g_bond	 	\
-	g_bundle	g_chi	     	g_cluster	g_confrms	\
-	g_covar	     	g_density	g_dielectric	g_dih	  	\
-	g_dipoles	g_disre	   	g_dist	       	g_dyndom	\
-	g_enemat	g_energy	g_lie	        g_filter	\
-	g_gyrate	g_h2order	g_hbond	      	g_helix		\
-	g_mindist	g_msd	     	g_morph	      	g_nmeig	 	\
-	g_nmens	     	g_order	   	g_potential	g_rama	 	\
-	g_rdf	       	g_rms	     	g_rmsdist	g_rmsf	 	\
-	g_rotacf	g_saltbr	g_sas	        g_sgangle	\
-	g_sorient	g_tcaf	    	g_traj	       	g_velacc	\
-	g_clustsize	g_mdmat
+#xxx     = \
+#	g_wham		\
+#	g_analyze	g_anaeig	g_angle	      	g_bond	 	\
+#	g_bundle	g_chi	     	g_cluster	g_confrms	\
+#	g_covar	     	g_density	g_dielectric	g_dih	  	\
+#	g_dipoles	g_disre	   	g_dist	       	g_dyndom	\
+#	g_enemat	g_energy	g_lie	        g_filter	\
+#	g_gyrate	g_h2order	g_hbond	      	g_helix		\
+#	g_mindist	g_msd	     	g_morph	      	g_nmeig	 	\
+#	g_nmens	     	g_order	   	g_potential	g_rama	 	\
+#	g_rdf	       	g_rms	     	g_rmsdist	g_rmsf	 	\
+#	g_rotacf	g_saltbr	g_sas	        g_sgangle	\
+#	g_sorient	g_tcaf	    	g_traj	       	g_velacc	\
+#	g_clustsize	g_mdmat
 
 bin_PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
@@ -54,16 +54,21 @@ bin_PROGRAMS = \
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
-cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c # in library: dlist.c
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c # in library: dlist.c
-anadock_SOURCES	     =  anadock.c   # lsq.c included in the library
+cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c 
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c 
+anadock_SOURCES	     =  anadock.c  
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
-gmx-ana.c:	$(srcdir)/gmx-ana.pl
-		chmod +x $(srcdir)/gmx-ana.pl
-		$(srcdir)/gmx-ana.pl $(xxx)
+# Two problems with this:
+# 1. We are not allowed to change things in the srcdir - that will
+#    potentially ruin VPATH builds, so make distcheck will fail.
+# 2. We should not assume every system has a full perl distribution...
+#
+#gmx-ana.c:	$(srcdir)/gmx-ana.pl
+#		chmod +x $(srcdir)/gmx-ana.pl
+#		$(srcdir)/gmx-ana.pl $(xxx)
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:

@@ -17,7 +17,7 @@ grompp_SOURCES = \
 	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
 	convparm.c 	tomorse.c	sorting.c 	splitter.c	\
 	dum_parm.c	readir.c  	add_par.c	topexcl.c	\
-	Toputil.c	topdirs.c	grompp.c	add_par.h	\
+	toputil.c	topdirs.c	grompp.c	add_par.h	\
 	splitter.h	topio.h		toputil.h	convparm.h	\
 	sorting.h	topdirs.h	toppush.h	dum_parm.h	\
 	readir.h	topcat.h	topexcl.h	topshake.h
