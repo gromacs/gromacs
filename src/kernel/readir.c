@@ -61,7 +61,8 @@ static char *SRCID_readir_c = "$Id$";
 
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
-  energy[STRLEN],user1[STRLEN],user2[STRLEN],user3[STRLEN],xtc_grps[STRLEN];
+  energy[STRLEN],user1[STRLEN],user2[STRLEN],user3[STRLEN],xtc_grps[STRLEN],
+  egexcl[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
@@ -424,6 +425,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("accelerate",  acc,            NULL);
   STYPE ("freezegrps",  freeze,         NULL);
   STYPE ("freezedim",   frdim,          NULL);
+  STYPE ("energygrp_excl", egexcl,      NULL);
   
   /* Electric fields */
   CCTYPE("Electric fields");
@@ -720,10 +722,11 @@ void do_index(char *ndx,
 	      t_inputrec *ir,t_idef *idef,int *forward)
 {
   t_block *grps;
-  char    **gnames;
-  int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfrdim,nenergy,nuser;
+  char    warnbuf[STRLEN],**gnames;
+  int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfrdim,nenergy,nuser,negexcl;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
+  bool    bExcl;
   
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -737,15 +740,15 @@ void do_index(char *ndx,
     forward = NULL;
   } else
     grps = init_index(ndx,&gnames);
-
+  
   snew(atoms->grpname,grps->nr+1);
-
+  
   for(i=0; (i<grps->nr); i++)
     atoms->grpname[i]=put_symtab(symtab,gnames[i]);
   atoms->grpname[i]=put_symtab(symtab,"rest");
   restnm=i;
   atoms->ngrpname=grps->nr+1;
-
+  
   for(i=0; (i<atoms->nr); i++)
     for(j=0; (j<egcNR); j++)
       atoms->atom[i].grpnr[j]=NOGID;
@@ -818,9 +821,11 @@ void do_index(char *ndx,
     for(j=0; (j<DIM); j++,k++) {
       ir->opts.nFreeze[i][j]=(strncasecmp(ptr1[k],"Y",1)==0);
       if (!ir->opts.nFreeze[i][j]) {
-	if (strncasecmp(ptr1[k],"N",1) != 0)
-	  fprintf(stderr,"Please use Y(ES) or N(O) for freezedim only "
-		  "(not %s)\n", ptr1[k]);
+	if (strncasecmp(ptr1[k],"N",1) != 0) {
+	  sprintf(warnbuf,"Please use Y(ES) or N(O) for freezedim only "
+		  "(not %s)", ptr1[k]);
+	  warning(NULL);
+	}
       }
     }
   for( ; (i<nr); i++)
@@ -833,6 +838,35 @@ void do_index(char *ndx,
   nr=atoms->grps[egcENER].nr;
   ir->opts.ngener=nr;
   
+  negexcl=str_nelem(egexcl,MAXPTR,ptr1);
+  if (negexcl % 2 != 0)
+    fatal_error(0,"The Nnmber of groups for energygrp_excl is odd");
+  snew(ir->opts.eg_excl,nr*nr);
+  bExcl=FALSE;
+  for(i=0; i<negexcl/2; i++) {
+    j=0;
+    while ((j < nr) &&
+	   strcasecmp(ptr1[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
+      j++;
+    if (j==nr)
+      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
+		  ptr1[2*i]);
+    k=0;
+    while ((k < nr) &&
+	   strcasecmp(ptr1[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
+      k++;
+    if (k==nr)
+      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
+	      ptr1[2*i+1]);
+    if ((j < nr) && (k < nr)) {
+      ir->opts.eg_excl[nr*j+k] = TRUE;
+      ir->opts.eg_excl[nr*k+j] = TRUE;
+      bExcl = TRUE;
+    }
+  }
+  if (bExcl && EEL_LR(ir->coulombtype))
+    warning("Can not exclude the lattice Coulomb energy between energy groups");
+
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",
 	       restnm,forward,FALSE,bVerbose);

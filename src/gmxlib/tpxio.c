@@ -47,7 +47,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 11;
+static int tpx_version = 12;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -198,6 +198,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       snew(ir->opts.tau_t,  ir->opts.ngtc); 
       snew(ir->opts.nFreeze,ir->opts.ngfrz); 
       snew(ir->opts.acc,    ir->opts.ngacc); 
+      snew(ir->opts.eg_excl,ir->opts.ngener*ir->opts.ngener);
     } 
     if (ir->opts.ngtc > 0) {
       ndo_int (ir->opts.nrdf, ir->opts.ngtc,bDum); 
@@ -208,7 +209,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       ndo_ivec(ir->opts.nFreeze,ir->opts.ngfrz,bDum);
     if (ir->opts.ngacc > 0) 
       ndo_rvec(ir->opts.acc,ir->opts.ngacc); 
-    
+    if (file_version >= 12)
+      ndo_int(ir->opts.eg_excl,ir->opts.ngener*ir->opts.ngener,bDum);
+
     /* Cosine stuff for electric fields */
     for(j=0; (j<DIM); j++) {
       do_int  (ir->ex[j].n);

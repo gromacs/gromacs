@@ -121,6 +121,9 @@ typedef struct {
   int  ntype; /* Number of atom types */
   bool bBHAM;
   real *nbfp;
+
+  /* Energy group exclusions */
+  bool *eg_excl;
 } t_forcerec;
 
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]

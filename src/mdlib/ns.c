@@ -551,9 +551,6 @@ int calc_naaj(int icg,int cgtot)
 static real calc_image_tric(rvec xi,rvec xj,matrix box,
 			    rvec b_inv,int *shift)
 {
-  /* This code assumes that the cut-off is smaller than
-   * a half times the smallest diagonal element of the box.
-   */
   const real h15=1.5;
   real dx,dy,dz;
   real r2;
@@ -627,7 +624,8 @@ static real calc_image_rect(rvec xi,rvec xj,rvec box_size,
   return r2;
 }
 
-static void ns_inner_tric(rvec x[],int icg,int njcg,atom_id jcg[],
+static void ns_inner_tric(rvec x[],int icg,bool *i_eg_excl,
+			  int njcg,atom_id jcg[],
 			  matrix box,rvec b_inv,real rcut2,
 			  t_block *cgs,t_ns_buf **ns_buf,ushort gid[])
 {
@@ -644,16 +642,19 @@ static void ns_inner_tric(rvec x[],int icg,int njcg,atom_id jcg[],
     nrj    = cgindex[cg_j+1]-cgindex[cg_j];
     if (calc_image_tric(x[icg],x[cg_j],box,b_inv,&shift) < rcut2) {
       jgid  = gid[cga[cgindex[cg_j]]];
-      nsbuf = &ns_buf[jgid][shift];
-      if (nsbuf->ncg >= MAX_CG) 
-	fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
-      nsbuf->jcg[nsbuf->ncg++]=cg_j;
-      nsbuf->nj += nrj;
+      if (!i_eg_excl[jgid]) {
+	nsbuf = &ns_buf[jgid][shift];
+	if (nsbuf->ncg >= MAX_CG) 
+	  fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
+	nsbuf->jcg[nsbuf->ncg++]=cg_j;
+	nsbuf->nj += nrj;
+      }
     }
   }
 }
 
-static void ns_inner_rect(rvec x[],int icg,int njcg,atom_id jcg[],
+static void ns_inner_rect(rvec x[],int icg,bool *i_eg_excl,
+			  int njcg,atom_id jcg[],
 			  bool bBox,rvec box_size,rvec b_inv,real rcut2,
 			  t_block *cgs,t_ns_buf **ns_buf,unsigned short gid[])
 {
@@ -671,11 +672,13 @@ static void ns_inner_rect(rvec x[],int icg,int njcg,atom_id jcg[],
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if (calc_image_rect(x[icg],x[cg_j],box_size,b_inv,&shift) < rcut2) {
 	jgid  = gid[cga[cgindex[cg_j]]];
-	nsbuf = &ns_buf[jgid][shift];
-	if (nsbuf->ncg >= MAX_CG) 
-	  fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
-	nsbuf->jcg[nsbuf->ncg++]=cg_j;
-	nsbuf->nj += nrj;
+	if (!i_eg_excl[jgid]) {
+	  nsbuf = &ns_buf[jgid][shift];
+	  if (nsbuf->ncg >= MAX_CG) 
+	    fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
+	  nsbuf->jcg[nsbuf->ncg++]=cg_j;
+	  nsbuf->nj += nrj;
+	}
       }
     }
   } else {
@@ -684,11 +687,13 @@ static void ns_inner_rect(rvec x[],int icg,int njcg,atom_id jcg[],
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if ((rcut2 == 0) || (distance2(x[icg],x[cg_j]) < rcut2)) {
 	jgid  = gid[cga[cgindex[cg_j]]];
-	nsbuf = &ns_buf[jgid][CENTRAL];
-	if (nsbuf->ncg >= MAX_CG) 
-	  fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
-	nsbuf->jcg[nsbuf->ncg++]=cg_j;
-	nsbuf->nj += nrj;
+	if (!i_eg_excl[jgid]) {
+	  nsbuf = &ns_buf[jgid][CENTRAL];
+	  if (nsbuf->ncg >= MAX_CG) 
+	    fatal_error(0,"Too many charge groups (%d) in buffer",nsbuf->ncg);
+	  nsbuf->jcg[nsbuf->ncg++]=cg_j;
+	  nsbuf->nj += nrj;
+	}
       }
     }
   }
@@ -712,7 +717,7 @@ static int ns_simple_core(t_forcerec *fr,
   t_block  *excl=&(top->atoms.excl);
   rvec     b_inv;
   int      m;
-  bool     bBox,bTriclinic;
+  bool     bBox,bTriclinic,*i_eg_excl;
   
   if (aaj==NULL) {
     snew(aaj,2*cgs->nr);
@@ -731,17 +736,18 @@ static int ns_simple_core(t_forcerec *fr,
 
   nsearch=0;
   for (icg=fr->cg0; (icg<fr->hcg); icg++) {
-    i0      = cgs->index[icg];
-    nri     = cgs->index[icg+1]-i0;
-    i_atoms = &(cgs->a[i0]);
+    i0        = cgs->index[icg];
+    nri       = cgs->index[icg+1]-i0;
+    i_atoms   = &(cgs->a[i0]);
+    i_eg_excl = fr->eg_excl + ngid*md->cENER[*i_atoms];
     setexcl(nri,i_atoms,excl,TRUE,bexcl);
     
     naaj=calc_naaj(icg,cgs->nr);
     if (bTriclinic)
-      ns_inner_tric(fr->cg_cm,icg,naaj,&(aaj[icg]),
+      ns_inner_tric(fr->cg_cm,icg,i_eg_excl,naaj,&(aaj[icg]),
 		    box,b_inv,rlist2,cgs,ns_buf,md->cENER);
     else
-      ns_inner_rect(fr->cg_cm,icg,naaj,&(aaj[icg]),
+      ns_inner_rect(fr->cg_cm,icg,i_eg_excl,naaj,&(aaj[icg]),
 		    bBox,box_size,b_inv,rlist2,cgs,ns_buf,md->cENER);
     nsearch += naaj;
     
@@ -865,7 +871,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   int     *grida,*gridnra,*gridind;
   rvec    xi,*cgcm,*svec;
   real    r2,rs2,rvdw2,rcoul2,XI,YI,ZI;
-  bool    bTriclinic;
+  bool    bTriclinic,*i_eg_excl;
   
   cgsnr    = cgs->nr;
   rs2      = sqr(fr->rlist);
@@ -926,10 +932,11 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     if (icg != iicg)
       fatal_error(0,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
 		  __LINE__);
-    i0       = cgsindex[icg];
-    nri      = cgsindex[icg+1]-i0;
-    i_atoms  = &(cgsatoms[i0]);
-
+    i0        = cgsindex[icg];
+    nri       = cgsindex[icg+1]-i0;
+    i_atoms   = &(cgsatoms[i0]);
+    i_eg_excl = fr->eg_excl + ngid*gid[*i_atoms];
+    
     /* Set the exclusions for the atoms in charge group icg using
      * a bitmask
      */    
@@ -1023,39 +1030,41 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 		    r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
 		    if (r2 < rcoul2) {
 		      jgid = gid[cgsatoms[cgsindex[jjcg]]];
-		      if (r2 < rs2) {
-			if (nsr[jgid] >= MAX_CG) {
-			  put_in_list(bHaveLJ,fr->nWater,
-				      ngid,md,icg,jgid,nsr[jgid],nl_sr[jgid],
-				      cgsindex,cgsatoms,bexcl,
-				      shift,fr,FALSE,FALSE);
-			  nsr[jgid]=0;
+		      if (!i_eg_excl[jgid]) {
+			if (r2 < rs2) {
+			  if (nsr[jgid] >= MAX_CG) {
+			    put_in_list(bHaveLJ,fr->nWater,
+					ngid,md,icg,jgid,nsr[jgid],nl_sr[jgid],
+					cgsindex,cgsatoms,bexcl,
+					shift,fr,FALSE,FALSE);
+			    nsr[jgid]=0;
+			  }
+			  nl_sr[jgid][nsr[jgid]++]=jjcg;
+			} 
+			else if (r2 < rvdw2) {
+			  if (nlr_ljc[jgid] >= MAX_CG) {
+			    do_longrange(log,top,fr,ngid,md,icg,jgid,
+					 nlr_ljc[jgid],
+					 nl_lr_ljc[jgid],bexcl,shift,x,
+					 box_size,nrnb,
+					 lambda,dvdlambda,grps,FALSE,FALSE,
+					 bHaveLJ);
+			    nlr_ljc[jgid]=0;
+			  }
+			  nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
+			} 
+			else {
+			  if (nlr_coul[jgid] >= MAX_CG) {
+			    do_longrange(log,top,fr,ngid,md,icg,jgid,
+					 nlr_coul[jgid],
+					 nl_lr_coul[jgid],bexcl,shift,x,
+					 box_size,nrnb,
+					 lambda,dvdlambda,grps,TRUE,FALSE,
+					 bHaveLJ);
+			    nlr_coul[jgid]=0;
+			  }
+			  nl_lr_coul[jgid][nlr_coul[jgid]++]=jjcg;
 			}
-			nl_sr[jgid][nsr[jgid]++]=jjcg;
-		      } 
-		      else if (r2 < rvdw2) {
-			if (nlr_ljc[jgid] >= MAX_CG) {
-			  do_longrange(log,top,fr,ngid,md,icg,jgid,
-				       nlr_ljc[jgid],
-				       nl_lr_ljc[jgid],bexcl,shift,x,
-				       box_size,nrnb,
-				       lambda,dvdlambda,grps,FALSE,FALSE,
-				       bHaveLJ);
-			  nlr_ljc[jgid]=0;
-			}
-			nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
-		      } 
-		      else {
-			if (nlr_coul[jgid] >= MAX_CG) {
-			  do_longrange(log,top,fr,ngid,md,icg,jgid,
-				       nlr_coul[jgid],
-				       nl_lr_coul[jgid],bexcl,shift,x,
-				       box_size,nrnb,
-				       lambda,dvdlambda,grps,TRUE,FALSE,
-				       bHaveLJ);
-			  nlr_coul[jgid]=0;
-			}
-			nl_lr_coul[jgid][nlr_coul[jgid]++]=jjcg;
 		      }
 		    }
 		    nns++;
@@ -1157,11 +1166,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   static   bool        *bHaveLJ;
   static   t_ns_buf    **ns_buf=NULL;
   static   int         *cg_index=NULL,*slab_index=NULL;
+  static   bool        bSwitched=FALSE;
   
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
   int      i,j,m,ngid;
-  real     min_size;
 
   int      nsearch;
   bool     bGrid;
@@ -1173,18 +1182,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   for(m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
-  
-  if (fr->eBox != ebtNONE) {
-    if (bGrid) {
-      min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
-      if (sqr(2*fr->rlistlong) >= min_size)
-	fatal_error(0,"One of the box vectors has become shorter than twice the cut-off length.");
-    } else {
-      min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
-      if (2*fr->rlistlong >= min_size)
-	fatal_error(0,"One of the box lengths has become smaller than twice the cut-off length.");
-    }
-  }
 
   /* First time initiation of arrays etc. */  
   if (bFirst) {
@@ -1262,8 +1259,27 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   /* Reset the neighbourlists */
   reset_neighbor_list(fr,FALSE,-1);
   
-  if (bGrid)
+  if (bGrid) {
     grid_first(log,grid,box,fr->rlistlong);
+    /* Check if box is big enough to do grid searching... */
+    if ( !( (grid->nrx >= 2*grid->delta+1) && 
+	    (grid->nry >= 2*grid->delta+1) && 
+	    (grid->nrz >= 2*grid->delta+1) ) ) {
+      if (!bSwitched)
+	fprintf(log,"WARNING: Box too small for grid-search, "
+		"switching to simple neighboursearch.\n");
+      if (fr->bTwinRange)
+	fatal_error(0,"TWIN-RANGE cut-off with Simple "
+		    "neighboursearching not implemented.\n"
+		    "Use grid neighboursearching, and make (rlong < 0.4 box)");
+      bGrid=FALSE;
+      bSwitched=TRUE;
+    } else {
+      if (bSwitched)
+	fprintf(log,"WARNING: Box large enough again for grid-search\n");
+      bSwitched=FALSE;
+    }
+  }
   debug_gmx();
   
   if (bGrid) {

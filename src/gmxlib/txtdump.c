@@ -223,6 +223,14 @@ void pr_grp_opts(FILE *out,int indent,char *title,t_grpopts *opts)
       fprintf(out,"  %10s",opts->nFreeze[i][m] ? "Y" : "N");
   fprintf(out,"\n");
 
+  for(i=0; (i<opts->ngener); i++) {
+    pr_indent(out,indent);
+    fprintf(out,"energygrp_excl[%3d]:",i);
+    for(m=0; (m<opts->ngener); m++)
+      fprintf(out," %d",opts->eg_excl[opts->ngener*i+m]);
+    fprintf(out,"\n");
+  }
+
   fflush(out);
 }
 

@@ -43,6 +43,7 @@ typedef struct {
   real    *tau_t;	/* Tau coupling time 				*/
   rvec    *acc;		/* Acceleration per group			*/
   ivec    *nFreeze;	/* Freeze the group in each direction ?	        */
+  bool    *eg_excl;     /* Exclusions of energy group pairs             */
 } t_grpopts;
 
 typedef struct {

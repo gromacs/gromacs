@@ -408,6 +408,8 @@ void init_forcerec(FILE *log,
     fr->bBHAM = (idef->functype[0] == F_BHAM);
     fr->nbfp  = mk_nbfp(idef,fr->bBHAM);
   }
+  /* Copy the energy group exclusions */
+  fr->eg_excl = ir->opts.eg_excl;
 
   /* Van der Waals stuff */
   fr->rvdw        = ir->rvdw;
