@@ -48,7 +48,7 @@ t_dlist *mk_dlist(FILE *log,
   t_dlist *dl;
   
   snew(dl,atoms->nres+1);
-  prev.C = -1;
+  prev.C = prev.O = -1;
   for(i=0; (i<edMax); i++)
     nc[i]=0;
   ires = -1;
