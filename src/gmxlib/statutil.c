@@ -294,8 +294,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   
   FILE *fp;  
-  bool bPrint,bNo_get_pargs;
+  bool bPrint;
   int  i,j,k,npall;
+  char *ptr,*newdesc;
   
   t_pargs *all_pa=NULL;
   
@@ -344,7 +345,6 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
    */
   uFlags        = Flags;
   bPrint        = !FF(PCA_SILENT);
-  bNo_get_pargs = !FF(PCA_NOGET_PARGS);
   
   /* Check whether we should have GUI or not */
 #ifdef HAVE_MOTIF
@@ -436,13 +436,39 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
   }
 #endif
+
+  /* Now copy the results back... */
+  for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
+    memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   
-  if (bNo_get_pargs) {  
-    /* Now copy the results back... */
-    for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
-      memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
+  newdesc=NULL;
+  for(i=0; (i<npall); i++) {
+    sfree(newdesc);
+    if (is_hidden(&all_pa[i])) {
+      ptr = strstr(all_pa[i].desc,"HIDDEN");
+      snew(newdesc,strlen(ptr)+4);
+      sprintf(newdesc,"[hidden] %s",ptr+6);
+    } else
+      newdesc=strdup(all_pa[i].desc);
+    
+    /* Add extra comment for enumerateds */
+    if (all_pa[i].type == etENUM) {
+      srenew(newdesc,strlen(newdesc)+10);
+      strcat(newdesc,": ");
+      for(k=0; (all_pa[i].u.c[k] != NULL); k++) {
+	srenew(newdesc,strlen(newdesc)+strlen(all_pa[i].u.c[k])+4);
+	strcat(newdesc,all_pa[i].u.c[k]);
+	/* Print a comma everywhere but at the last one */
+	if (all_pa[i].u.c[k+1] != NULL)
+	  if (all_pa[i].u.c[k+2] == NULL)
+	    strcat(newdesc," or ");
+	  else
+	    strcat(newdesc,", ");
+      }
+    }
+    all_pa[i].desc=strdup(newdesc);
   }
-  
+    
 #ifdef _SGI_
 #ifdef USE_SGI_FPE
   /* Install exception handler if necessary */

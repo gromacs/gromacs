@@ -506,7 +506,7 @@ void write_man(FILE *out,char *mantp,
     snew(par,npargs);
     npar=0;
     for(i=0;i<npargs;i++)
-      if (strstr(pa[i].desc,"HIDDEN") == NULL) {
+      if (!is_hidden(&pa[i])) {
 	par[npar]=pa[i];
 	npar++;
       }

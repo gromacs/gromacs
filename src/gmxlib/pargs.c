@@ -41,7 +41,8 @@ static char *SRCID_pargs_c = "$Id$";
 
 bool is_hidden(t_pargs *pa)
 {
-  return (strstr(pa->desc,"HIDDEN") != NULL);
+  return ((strstr(pa->desc,"HIDDEN") != NULL) || 
+	  (strstr(pa->desc,"[hidden]") != NULL));
 }
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
@@ -243,9 +244,9 @@ char *pa_val(t_pargs *pa)
 
 void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 {
-  bool bShowHidden,bIsHidden;
+  bool bShowHidden;
   char buf[32],buf2[256];
-  char *desc,*wdesc,*ptr;
+  char *wdesc;
   int  i,j,k;
   
   /* Cannot call opt2parg_bSet here, because it crashes when the option
@@ -262,37 +263,13 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
     fprintf(fp,"%12s %6s %6s  %s\n","Option","Type","Value","Description");
     fprintf(fp,"------------------------------------------------------\n");
     for(i=0; (i<npargs); i++) {
-      bIsHidden = is_hidden(&(pa[i]));
-      if (bShowHidden && bIsHidden) {
-	ptr = strstr(pa[i].desc,"HIDDEN");
-	snew(desc,strlen(ptr)+4);
-	sprintf(desc,"[hidden] %s",ptr+6);
-      } else
-	desc=strdup(pa[i].desc);
-	
-      /* Add extra comment for enumerateds */
-      if (pa[i].type == etENUM) {
-	srenew(desc,strlen(desc)+10);
-	strcat(desc,": ");
-	for(k=0; (pa[i].u.c[k] != NULL); k++) {
-	  srenew(desc,strlen(desc)+strlen(pa[i].u.c[k])+4);
-	  strcat(desc,pa[i].u.c[k]);
-	  /* Print a comma everywhere but at the last one */
-	  if (pa[i].u.c[k+1] != NULL)
-	    if (pa[i].u.c[k+2] == NULL)
-	      strcat(desc," or ");
-	    else
-	      strcat(desc,", ");
-	}
-      }
-	
-      if (bShowHidden || !bIsHidden) {
+      if (bShowHidden || !is_hidden(&pa[i])) {
 	if (pa[i].type == etBOOL)
 	  sprintf(buf,"-[no]%s",pa[i].option+1);
 	else
 	  strcpy(buf,pa[i].option);
 	sprintf(buf2,"%12s %6s %6s  %s\n",
-		buf,argtp[pa[i].type],pa_val(&(pa[i])),desc);
+		buf,argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
 	if (strlen(buf)>((OPTLEN+TYPELEN)-strlen(argtp[pa[i].type]))) {
 	  buf2[strlen(buf)]='\n';  
 	  for(j=strlen(buf2); j>strlen(buf); j--)
@@ -307,7 +284,6 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	fprintf(fp,wdesc);
 	sfree(wdesc);
       }
-      sfree(desc);
     }
     fprintf(fp,"\n");
   }
