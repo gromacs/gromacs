@@ -463,10 +463,10 @@ static char **read_topol(char        *infile,
 	  Sims[Nsim].whichmol=whichmol;
 	  Sims[Nsim].nrcopies=nrcopies;
 	  Nsim++;
+	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
+		    mi0->nrexcl,pline);
 	  if (!mi0->bProcessed) {
 	    qt+=nrcopies*sum_q(&mi0->atoms);
-	    fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
-		    mi0->nrexcl,pline);
 	    generate_excl(mi0->nrexcl,
 			  mi0->atoms.nr,
 			  mi0->plist,
