@@ -31,7 +31,9 @@ PROGRAMS =	(cd bin/s10; ls; cd ../..)
 all:	dirs oclean
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE); cd ..;)
 ifneq ($(PARALLEL),yes)
+ifneq ($(GMXCPU),win)
 	./mkcompl
+endif
 endif
 
 etags:
