@@ -6207,10 +6207,17 @@ EOF
 
 fi
 
-cat >> confdefs.h <<EOF
+if test "${prefix}" = "NONE"; then
+  cat >> confdefs.h <<EOF
+#define GMXLIBDIR "${ac_default_prefix}/top"
+EOF
+
+else
+  cat >> confdefs.h <<EOF
 #define GMXLIBDIR "${prefix}/top"
 EOF
 
+fi
 
 
 
@@ -6440,7 +6447,7 @@ if test "$ac_test_CFLAGS" != "set" -o "$ac_test_FFLAGS" != "set"; then
     
 
 echo $ac_n "checking whether $CC accepts -malign-double""... $ac_c" 1>&6
-echo "configure:6444: checking whether $CC accepts -malign-double" >&5
+echo "configure:6451: checking whether $CC accepts -malign-double" >&5
 if eval "test \"`echo '$''{'ac_align_double'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6485,7 +6492,7 @@ fi
 			
 
 echo $ac_n "checking whether $CC accepts -mcpu=$cputype""... $ac_c" 1>&6
-echo "configure:6489: checking whether $CC accepts -mcpu=$cputype" >&5
+echo "configure:6496: checking whether $CC accepts -mcpu=$cputype" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_60x'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6512,7 +6519,7 @@ fi
                         
 
 echo $ac_n "checking whether $CC accepts -mcpu=750""... $ac_c" 1>&6
-echo "configure:6516: checking whether $CC accepts -mcpu=750" >&5
+echo "configure:6523: checking whether $CC accepts -mcpu=750" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_750'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6540,7 +6547,7 @@ fi
 		        
 
 echo $ac_n "checking whether $CC accepts -mcpu=powerpc""... $ac_c" 1>&6
-echo "configure:6544: checking whether $CC accepts -mcpu=powerpc" >&5
+echo "configure:6551: checking whether $CC accepts -mcpu=powerpc" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6568,7 +6575,7 @@ fi
 			
 
 echo $ac_n "checking whether $CC accepts -mpowerpc""... $ac_c" 1>&6
-echo "configure:6572: checking whether $CC accepts -mpowerpc" >&5
+echo "configure:6579: checking whether $CC accepts -mpowerpc" >&5
 if eval "test \"`echo '$''{'ac_m_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6611,7 +6618,7 @@ fi
   
 
 echo $ac_n "checking whether $CC accepts ${CFLAGS}""... $ac_c" 1>&6
-echo "configure:6615: checking whether $CC accepts ${CFLAGS}" >&5
+echo "configure:6622: checking whether $CC accepts ${CFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_cflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6653,7 +6660,7 @@ fi
     
 
 echo $ac_n "checking whether $F77 accepts ${FFLAGS}""... $ac_c" 1>&6
-echo "configure:6657: checking whether $F77 accepts ${FFLAGS}" >&5
+echo "configure:6664: checking whether $F77 accepts ${FFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_fflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else

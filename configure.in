@@ -654,7 +654,11 @@ if test "$enable_vectorized_recip" = "yes"; then
   AC_DEFINE(VECTORIZE_RECIP,,[Vectorize the reciprocal calculation])
 fi
 
-AC_DEFINE_UNQUOTED(GMXLIBDIR,"${prefix}/top",[Default topology file location])
+if test "${prefix}" = "NONE"; then
+  AC_DEFINE_UNQUOTED(GMXLIBDIR,"${ac_default_prefix}/top",[Default topology file location])
+else
+  AC_DEFINE_UNQUOTED(GMXLIBDIR,"${prefix}/top",[Default topology file location])
+fi
 
 AC_SUBST(PAR_OBJ)
 AC_SUBST(INNER_F77_OBJ)

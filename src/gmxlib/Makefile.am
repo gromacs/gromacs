@@ -39,7 +39,7 @@ EXTRA_libgmxXXX_SUFFIX_XXX_a_SOURCES = \
 	mpiio.c		libnet.c	x86_3dnow.asm	f77_wrappers.c  \
 	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
 	widget.c	widget.h	x86_cpuid.asm	axp_asm.S	\
-	x86_sse.asm	
+	x86_sse.asm	innerf.f	innerc.c
 
 if USE_F77
 BUILT_SOURCES = innerf.f
@@ -50,7 +50,7 @@ endif
 mpi_obj 	= mpiio.o
 libnet_obj 	= libnet.o
 inner_f77_obj	= innerf.o	f77_wrappers.o
-inner_c_obj	= innerc.o 
+inner_c_obj	= innerc.o  
 xdr_obj		= libxdrf.o ftocstr.o
 noxdr_obj	= dumxdrf.o
 motif_obj       = mgmx.o widget.o
