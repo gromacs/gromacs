@@ -80,6 +80,8 @@ CA	CA	CH2	14.0270	0.127
 [ add ]
 3	4	N	CA	C
 	H	H	1.008	0.248
+[ delete ]
+H
 [ bonds ]
 N	H1	gb_2
 N	H2	gb_2
