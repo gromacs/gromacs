@@ -230,6 +230,9 @@ void get_pdb_coordnum(char *infile,int *natoms)
   in=ffopen(infile,"r");
   *natoms=0;
   while (fgets2(line,STRLEN,in)) {
+    if ( ( bTER && (strncmp(line,"TER",3) == 0)) ||
+	 (!bTER && (strncmp(line,"ENDMDL",6) == 0)) ) 
+      break;
     for(j=0; (j<epdbNR); j++)
       if (strncmp(line,pdbtp[j],6) == 0) {
 	(*natoms)++;
@@ -263,7 +266,7 @@ void print_pdbatoms(FILE *out,char *title,
 	    10*pdba[i].x[XX],10*pdba[i].x[YY],10*pdba[i].x[ZZ],
 	    pdba[i].dummy,pdba[i].bfac);
   }
-  fprintf(out,"TER\n");
+  fprintf(out,"%s\n",bTER?"TER":"ENDMDL");
 }
 
 void renumber_pdb(int natom,t_pdbatom pdba[])
