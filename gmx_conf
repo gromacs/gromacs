@@ -73,7 +73,7 @@ cat	> $RC << EOD
 # users have a c-shell allways
 #
 
-# This were the sources are
+# This is were the sources are
 setenv GMXHOME	$PATHPREFIX
 
 #
