@@ -287,12 +287,24 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
   FILE    *fp;
   real    max,len2,scale;
   atom_id maxi; 
-  int     i,m;
+  int     i,m,onedim;
+  bool    bOne;
 
   if (nfr == 0) {
     fprintf(stderr,"No frames found for %s, will not write %s\n",title,fname);
   } else {
     fprintf(stderr,"Used %d frames for %s\n",nfr,title);
+    onedim = -1;
+    if (!bDim[DIM]) {
+      m = 0;
+      for(i=0; i<DIM; i++)
+	if (bDim[i]) {
+	  onedim = i;
+	  m++;
+	}
+      if (m != 1)
+	onedim = -1;
+    }
     scale = 1.0/nfr;
     for(i=0; i<isize; i++)
       svmul(scale,x[index[i]],x[index[i]]);
@@ -320,12 +332,17 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
     
     if (atoms->pdbinfo == NULL)
       snew(atoms->pdbinfo,atoms->nr);
-    for(i=0; i<isize; i++) {
-      len2 = 0;
-      for(m=0; m<DIM; m++) 
-	if (bDim[m] || bDim[DIM])
-	  len2 += sqr(sum[index[i]][m]);
-      atoms->pdbinfo[index[i]].bfac = sqrt(len2)*scale;
+    if (onedim == -1) {
+      for(i=0; i<isize; i++) {
+	len2 = 0;
+	for(m=0; m<DIM; m++) 
+	  if (bDim[m] || bDim[DIM])
+	    len2 += sqr(sum[index[i]][m]);
+	atoms->pdbinfo[index[i]].bfac = sqrt(len2)*scale;
+      }
+    } else {
+      for(i=0; i<isize; i++)
+	atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim]*scale;
     }
     write_sto_conf_indexed(fname,title,atoms,x,NULL,box,isize,index);
   }
