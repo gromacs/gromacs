@@ -495,12 +495,17 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
   int       na;
   char      title[STRLEN],*time;
   double    dbl;
-
-  init_t_atoms(&atoms,fr->natoms,FALSE);
+  
+  atoms.nr = fr->natoms;
+  atoms.atom=NULL;
+  atoms.pdbinfo=NULL;
+  /* the other pointers in atoms should not be accessed if these are NULL */
   na=read_pdbfile(status, title, &atoms, fr->x, fr->box, TRUE);
+  if (frame==0)
+    fprintf(stderr," '%s', %d atoms\n",title, fr->natoms);
   fr->bX = TRUE;
   fr->bBox = fr->box[XX][XX] == 0;
-
+  
   time=strstr(title," t= ");
   if (time) {
     fr->bTime = TRUE;
@@ -508,11 +513,10 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
     fr->time=(real)dbl;
   } else {
     fr->bTime = FALSE;
-    /* fris is a bit dirty, but it will work: if no time is read from 
+    /* this is a bit dirty, but it will work: if no time is read from 
        comment line in pdb file, set time to current frame number */
     fr->time=(real)frame;
   }
-  /* free_t_atoms(&atoms); */
   if (na==0) {
     return FALSE;
   } else { 
@@ -529,12 +533,11 @@ static int pdb_first_x(FILE *status, t_trxframe *fr)
   
   INITCOUNT;
   
-  fprintf(stderr,"Reading frames from pdb file.\n");
+  fprintf(stderr,"Reading frames from pdb file");
   frewind(status);
   get_pdb_coordnum(status, &fr->natoms);
-  fprintf(stderr,"Number of atoms: %d\n", fr->natoms);
   if (fr->natoms==0)
-    fatal_error(0,"No coordinates in pdb file\n");
+    fatal_error(0,"\nNo coordinates in pdb file\n");
   frewind(status);
   snew(fr->x,fr->natoms);
   pdb_next_x(status, fr);
