@@ -290,7 +290,7 @@ void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
 	for(d=0; d<ZZ; d++)
 	  mu[d][d] = 1.0 - factor(d,d)*(ir->ref_p[d][d]-xy_pressure)/DIM;
 	mu[ZZ][ZZ] = 
-	  1.0 - factor(d,d)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
+	  1.0 - factor(ZZ,ZZ)*(ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ])/DIM;
 	break;
       case epctANISOTROPIC:
 	for(d=0; d<DIM; d++)
