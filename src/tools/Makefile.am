@@ -20,7 +20,7 @@ bin_PROGRAMS = \
 	g_rdf		g_rms		g_rmsdist	g_rmsf		\
 	g_rotacf	g_saltbr	g_sas		g_sgangle	\
 	g_sorient 	g_tcaf		g_traj		g_velacc	\
-	genbox		genconf				genpr		\
+	g_clustsize	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps
 
@@ -35,6 +35,7 @@ g_angle_SOURCES      = 	g_angle.c anadih.c $(AUTOCORR_SRC)
 g_bond_SOURCES       = 	g_bond.c lsq.c
 g_chi_SOURCES        = 	g_chi.c anadih.c pp2shift.c pp2shift.h dlist.c $(AUTOCORR_SRC)
 g_cluster_SOURCES    = 	g_cluster.c cmat.c ql77.c ql77.h	
+g_clustsize_SOURCES  = 	g_clustsize.c cmat.c 
 g_covar_SOURCES      = 	g_covar.c eigio.c ql77.c ql77.h
 g_dielectric_SOURCES = 	g_dielectric.c $(AUTOCORR_SRC)
 g_dipoles_SOURCES    = 	g_dipoles.c lsq.c $(AUTOCORR_SRC)
