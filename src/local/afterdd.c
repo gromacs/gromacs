@@ -10,19 +10,21 @@
 #include "physics.h"
 #include "random.h"
 
-static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],rvec trans,real angle,
+static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
 		     rvec head,rvec tail,matrix box,int isize,atom_id index[])
 {
   rvec     arrow,center,xcm;
   real     theta,phi,arrow_len;
-  mat4     Rx,Ry,Rz,Rinvy,Rinvz,Mtot,temp1,temp2,temp3;
+  mat4     Rx,Ry,Rz,Rinvy,Rinvz,Mtot,Tcm,Tinvcm,Tx;
+  mat4     temp1,temp2,temp3,temp4,temp21,temp43;
   vec4     xv;
   int      i,j,ai;
   
-  rvec_sub(head,tail,arrow);
+  rvec_sub(tail,head,arrow);
   arrow_len = norm(arrow);
   printf("Arrow vector:   %10.4f  %10.4f  %10.4f\n",
 	 arrow[XX],arrow[YY],arrow[ZZ]);
+  printf("Effective translation %g nm\n",trans);
   if (arrow_len == 0.0)
     fatal_error(0,"Arrow vector not given");
 
@@ -46,6 +48,7 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],rvec trans,real angle,
   rotate(ZZ,-phi,Rz);
   rotate(YY,M_PI/2-theta,Ry);
   rotate(XX,angle*DEG2RAD,Rx);
+  Rx[WW][XX] = trans;
   rotate(YY,theta-M_PI/2,Rinvy);
   rotate(ZZ,phi,Rinvz);
   
@@ -92,27 +95,31 @@ int main(int argc,char *argv[])
     "inspection, and energy minimization may be necessary to",
     "validate the structure."
   };
-  static rvec trans = { 0,0,0 };
+  static real trans = 0;
   static rvec head  = { 0,0,0 };
   static rvec tail  = { 0,0,0 };
-  static real angle = 0;
+  static real angle = 0,maxangle = 0;
+  static int  label = 0;
   t_pargs pa[] = {
-    { "-angle", FALSE, etREAL, {&angle},
+    { "-angle",    FALSE, etREAL, {&angle},
       "Angle of rotation about rotation vector" },
-    { "-trans", FALSE, etRVEC, {trans},
-      "Translation vector (see DynDom info file)" },
-    { "-head",  FALSE, etRVEC, {head},
+    { "-maxangle", FALSE, etREAL, {&maxangle},
+      "DymDom dtermined angle of rotation about rotation vector" },
+    { "-trans",    FALSE, etREAL, {&trans},
+      "Translation along rotation vector (see DynDom info file)" },
+    { "-head",     FALSE, etRVEC, {head},
       "First atom of the arrow vector" },
-    { "-tail",  FALSE, etRVEC, {tail},
-      "Last atom of the arrow vector" }
+    { "-tail",     FALSE, etRVEC, {tail},
+      "Last atom of the arrow vector" },
+    { "-label",    FALSE, etINT,  {&label},
+      "Label in the outgoing pdb file is made by adding this value to 'A'" }
   };
-  int     natoms,isize;
+  int     i,natoms,isize;
   atom_id *index=NULL;
   char    title[256],*grpname;
   t_atoms atoms;
   rvec    *x,*v;
   matrix  box;
-  
   
   t_filenm fnm[] = {
     { efPDB, "-f", "dyndom",  ffREAD },
@@ -135,9 +142,20 @@ int main(int argc,char *argv[])
   printf("Select group to rotate:\n"); 
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   printf("Going to rotate %s containg %d atoms\n",grpname,isize);
-  
+
+  trans = -trans*0.1*angle/maxangle;
   rot_conf(&atoms,x,v,trans,angle,head,tail,box,isize,index);
-  
+
+  if (label < 0)
+    label = 'A';
+  else {
+    if (label+'A' >= 'Z')
+      label = label % 26;
+    label += 'A';
+  }
+  for(i=0; (i<atoms.nr); i++)
+    atoms.atom[i].chain = label;
+    
   write_sto_conf(opt2fn("-o",NFILE,fnm),title,&atoms,x,v,box);
   
   thanx(stdout);
