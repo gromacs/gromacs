@@ -1095,7 +1095,11 @@ int main(int argc,char *argv[])
 		    0,NULL);
   
   stxfile = ftp2fn_null(efSTX,NFILE,fnm);
-  nndxin  = opt2fns(&ndxinfiles,"-n",NFILE,fnm);
+  if (opt2bSet("-n",NFILE,fnm)) {
+    nndxin = opt2fns(&ndxinfiles,"-n",NFILE,fnm);
+  } else {
+    nndxin = 0;
+  }
   ndxoutfile = opt2fn("-o",NFILE,fnm);
   bNatoms = opt2parg_bSet("-natoms",NPA,pa);
   
