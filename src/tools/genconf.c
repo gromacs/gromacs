@@ -202,14 +202,14 @@ int main(int argc, char *argv[])
   }
   
   
-  for(i=0; (i<nx); i++) {          /* loop over all gridpositions    */
-    shift[XX]=i*(dist[XX]+box[XX][XX]);
+  for(k=0; (k<nz); k++) {          /* loop over all gridpositions    */
+    shift[ZZ]=k*(dist[ZZ]+box[ZZ][ZZ]);
     
     for(j=0; (j<ny); j++) {
-      shift[YY]=j*(dist[YY]+box[YY][YY]);
+      shift[YY]=j*(dist[YY]+box[YY][YY])+k*box[ZZ][YY];
       
-      for(k=0; (k<nz); k++)  {
-	shift[ZZ]=k*(dist[ZZ]+box[ZZ][ZZ]);
+      for(i=0; (i<nx); i++)  {
+	 shift[XX]=i*(dist[XX]+box[XX][XX])+j*box[YY][XX]+k*box[ZZ][XX];
 	
 	ndx=(i*ny*nz+j*nz+k)*natoms;
 	nrdx=(i*ny*nz+j*nz+k)*nres;
@@ -248,9 +248,10 @@ int main(int argc, char *argv[])
   if (bTRX)
     close_trj(status);
 
-  box[XX][XX] = nx*(box[XX][XX]+dist[XX]); /* make box bigger */
-  box[YY][YY] = ny*(box[YY][YY]+dist[YY]);
-  box[ZZ][ZZ] = nz*(box[ZZ][ZZ]+dist[ZZ]);
+  /* make box bigger */
+  svmul(nx,box[XX],box[XX]);
+  svmul(ny,box[YY],box[YY]);
+  svmul(nz,box[ZZ],box[ZZ]);
 
   move_x(natoms*vol,x,box);          /* put atoms in box? */
 
