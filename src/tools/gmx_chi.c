@@ -761,7 +761,7 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
 	lo += 180;
 	hi += 180;
 	nlevels = 20;
-	write_xpm3(fp,"Omega/Ramachandran Plot","Deg","Phi","Psi",
+	write_xpm3(fp,0,"Omega/Ramachandran Plot","Deg","Phi","Psi",
 		   NMAT,NMAT,axis,axis,mat,lo,180.0,hi,rlo,rmid,rhi,&nlevels);
 	fclose(fp);
 	for(j=0; (j<NMAT); j++)

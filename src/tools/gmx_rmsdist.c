@@ -689,26 +689,26 @@ int gmx_rmsdist (int argc,char *argv[])
   rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
 
   if ( bRMS )
-    write_xpm(opt2FILE("-rms",NFILE,fnm,"w"),
+    write_xpm(opt2FILE("-rms",NFILE,fnm,"w"),0,
 	      "RMS of distance","RMS (nm)","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,rms,0.0,rmsmax,rlo,rhi,&nlevels);
   
   if ( bScale )
-    write_xpm(opt2FILE("-scl",NFILE,fnm,"w"),
+    write_xpm(opt2FILE("-scl",NFILE,fnm,"w"),0,
 	      "Relative RMS","RMS","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,rmsc,0.0,rmscmax,rlo,rhi,&nlevels);
   
   if ( bMean )
-    write_xpm(opt2FILE("-mean",NFILE,fnm,"w"),
+    write_xpm(opt2FILE("-mean",NFILE,fnm,"w"),0,
 	      "Mean Distance","Distance (nm)","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,mean,0.0,meanmax,rlo,rhi,&nlevels);
   
   if (bNMR3)
-    write_xpm(opt2FILE("-nmr3",NFILE,fnm,"w"),"1/r^3 averaged distances",
+    write_xpm(opt2FILE("-nmr3",NFILE,fnm,"w"),0,"1/r^3 averaged distances",
 	      "Distance (nm)","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,dtot1_3,0.0,max1_3,rlo,rhi,&nlevels);
   if (bNMR6)
-    write_xpm(opt2FILE("-nmr6",NFILE,fnm,"w"),"1/r^6 averaged distances",
+    write_xpm(opt2FILE("-nmr6",NFILE,fnm,"w"),0,"1/r^6 averaged distances",
 	      "Distance (nm)","Atom Index","Atom Index",
 	      isize,isize,resnr,resnr,dtot1_6,0.0,max1_6,rlo,rhi,&nlevels);
 		

@@ -339,7 +339,7 @@ int gmx_covar(int argc,char *argv[])
     rhi.r = 1; rhi.g = 0; rhi.b = 0;
     out = ffopen(xpmfile,"w");
     nlevels = 80;
-    write_xpm3(out,"Covariance",bM ? "u nm^2" : "nm^2",
+    write_xpm3(out,0,"Covariance",bM ? "u nm^2" : "nm^2",
 	       "dim","dim",ndim,ndim,axis,axis,
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
     fclose(out);
@@ -373,7 +373,7 @@ int gmx_covar(int argc,char *argv[])
     rhi.r = 1; rhi.g = 0; rhi.b = 0;
     out = ffopen(xpmafile,"w");
     nlevels = 80;
-    write_xpm3(out,"Covariance",bM ? "u nm^2" : "nm^2",
+    write_xpm3(out,0,"Covariance",bM ? "u nm^2" : "nm^2",
 	       "atom","atom",ndim/DIM,ndim/DIM,axis,axis,
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
     fclose(out);

@@ -129,7 +129,7 @@ static void dump_sd(char *fn,t_shiftdata *sd)
   }
   sprintf(buf,"%s.xpm",fn);
   fp=ffopen(buf,"w");
-  write_xpm(fp,fn,fn,"Phi","Psi",nnx,nny,
+  write_xpm(fp,0,fn,fn,"Phi","Psi",nnx,nny,
 	    x_phi,y_psi,newdata,lo,hi,rlo,rhi,&nlevels);
   for(i=0; (i<nnx); i++)
     sfree(newdata[i]);

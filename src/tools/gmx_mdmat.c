@@ -277,7 +277,7 @@ int gmx_mdmat(int argc,char *argv[])
 	totmdmat[i][j] += mdmat[i][j];
     if (bFrames) {
       sprintf(label,"t=%.0f ps",t);
-      write_xpm(out,label,"Distance (nm)","Residue Index","Residue Index",
+      write_xpm(out,0,label,"Distance (nm)","Residue Index","Residue Index",
 		nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
     }
   } while (read_next_x(status,&t,trxnat,x,box));
@@ -291,7 +291,7 @@ int gmx_mdmat(int argc,char *argv[])
   for (i=0; (i<nres); i++)
     for (j=0; (j<nres); j++)
       totmdmat[i][j] /= nframes;
-  write_xpm(opt2FILE("-mean",NFILE,fnm,"w"),"Mean smallest distance",
+  write_xpm(opt2FILE("-mean",NFILE,fnm,"w"),0,"Mean smallest distance",
 	    "Distance (nm)","Residue Index","Residue Index",
 	    nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
   

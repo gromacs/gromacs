@@ -249,7 +249,7 @@ void write_sas_mat(char *fn,real **accr,int nframe,int nres,t_matrix *mat)
       }
     fp=ffopen(fn,"w");
     nlev=hi-lo+1;
-    write_xpm(fp,"Solvent Accessible Surface","Surface (A^2)",
+    write_xpm(fp,0,"Solvent Accessible Surface","Surface (A^2)",
 	      "Time","Residue Index",nframe,nres,
 	      mat->axis_x,mat->axis_y,accr,lo,hi,rlo,rhi,&nlev);
     ffclose(fp);

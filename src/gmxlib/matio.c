@@ -254,7 +254,8 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   double u;
   bool bGetOnWithIt;
   t_xpmelmt c;
-  
+
+  mm->flags=0;
   mm->title[0]=0;
   mm->legend[0]=0;
   mm->label_x[0]=0;
@@ -364,10 +365,13 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       line=strstr(line,"x-axis");
       skipstr(&line);
       if (mm->axis_x==NULL)
-	snew(mm->axis_x,mm->nx);
+	snew(mm->axis_x,mm->nx + 1);
       while (sscanf(line,"%lf",&u)==1) {
-	if (n_axis_x >= mm->nx)
+	if (n_axis_x > mm->nx) {
 	  gmx_file("Too many x-axis labels in xpm");
+	} else if (n_axis_x == mm->nx) {
+	  mm->flags |= MAT_SPATIAL_X;
+	}
 	mm->axis_x[n_axis_x] = u;
 	n_axis_x++;
 	skipstr(&line);
@@ -377,10 +381,13 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       line=strstr(line,"y-axis");
       skipstr(&line);
       if (mm->axis_y==NULL)
-	snew(mm->axis_y,mm->ny);
+	snew(mm->axis_y,mm->ny + 1);
       while (sscanf(line,"%lf",&u)==1) {
-	if (n_axis_y >= mm->ny)
+	if (n_axis_y > mm->ny) {
 	  gmx_file("Too many y-axis labels in xpm");
+	} else if (n_axis_y == mm->ny) {
+	  mm->flags |= MAT_SPATIAL_Y;
+	}
 	mm->axis_y[n_axis_y] = u;
 	n_axis_y++;
 	skipstr(&line);
@@ -677,12 +684,12 @@ void write_xpm_map(FILE *out,int n_x, int n_y,int *nlevels,real lo,real hi,
   }
 }
 
-void write_xpm_axis(FILE *out, char *axis, int n, real *label)
+void write_xpm_axis(FILE *out, char *axis, bool bSpatial, int n, real *label)
 {
   int i;
 
   if (label) {
-    for(i=0;i<n;i++) {
+    for(i=0;i<(bSpatial ? n+1 : n);i++) {
       if (i % 80 == 0) {
 	if (i) 
 	  fprintf(out,"*/\n");
@@ -814,8 +821,8 @@ void write_xpm_m(FILE *out, t_matrix m)
 	    (unsigned int)round(m.map[i].rgb.r*255),
 	    (unsigned int)round(m.map[i].rgb.g*255),
 	    (unsigned int)round(m.map[i].rgb.b*255),m.map[i].desc);
-  write_xpm_axis(out,"x",m.nx,m.axis_x);
-  write_xpm_axis(out,"y",m.ny,m.axis_y);
+  write_xpm_axis(out,"x",m.flags & MAT_SPATIAL_X,m.nx,m.axis_x);
+  write_xpm_axis(out,"y",m.flags & MAT_SPATIAL_Y,m.ny,m.axis_y);
   for(j=m.ny-1; (j>=0); j--) {
     if(j%(1+m.ny/100)==0) 
       fprintf(stderr,"%3d%%\b\b\b\b",(100*(m.ny-j))/m.ny);
@@ -835,7 +842,7 @@ void write_xpm_m(FILE *out, t_matrix m)
   }
 }
 
-void write_xpm3(FILE *out,
+void write_xpm3(FILE *out,unsigned int flags,
 		char *title,char *legend,char *label_x,char *label_y,
 		int n_x,int n_y,real axis_x[],real axis_y[],
 		real *matrix[],real lo,real mid,real hi,
@@ -850,12 +857,12 @@ void write_xpm3(FILE *out,
 
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map3(out,n_x,n_y,nlevels,lo,mid,hi,rlo,rmid,rhi);
-  write_xpm_axis(out,"x",n_x,axis_x);
-  write_xpm_axis(out,"y",n_y,axis_y);
+  write_xpm_axis(out,"x",flags & MAT_SPATIAL_X,n_x,axis_x);
+  write_xpm_axis(out,"y",flags & MAT_SPATIAL_Y,n_y,axis_y);
   write_xpm_data3(out,n_x,n_y,matrix,lo,mid,hi,*nlevels);
 }
 
-void write_xpm_split(FILE *out,
+void write_xpm_split(FILE *out,unsigned int flags,
 		     char *title,char *legend,char *label_x,char *label_y,
 		     int n_x,int n_y,real axis_x[],real axis_y[],
 		     real *matrix[],
@@ -879,13 +886,13 @@ void write_xpm_split(FILE *out,
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map_split(out,n_x,n_y,nlevel_top,lo_top,hi_top,rlo_top,rhi_top,
 		      bDiscreteColor,nlevel_bot,lo_bot,hi_bot,rlo_bot,rhi_bot);
-  write_xpm_axis(out,"x",n_x,axis_x);
-  write_xpm_axis(out,"y",n_y,axis_y);
+  write_xpm_axis(out,"x",flags & MAT_SPATIAL_X,n_x,axis_x);
+  write_xpm_axis(out,"y",flags & MAT_SPATIAL_Y,n_y,axis_y);
   write_xpm_data_split(out,n_x,n_y,matrix,lo_top,hi_top,*nlevel_top,
 		       lo_bot,hi_bot,*nlevel_bot);
 }
 
-void write_xpm(FILE *out,
+void write_xpm(FILE *out,unsigned int flags,
 	       char *title,char *legend,char *label_x,char *label_y,
 	       int n_x,int n_y,real axis_x[],real axis_y[],
 	       real *matrix[],real lo,real hi,
@@ -912,8 +919,8 @@ void write_xpm(FILE *out,
 
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map(out,n_x,n_y,nlevels,lo,hi,rlo,rhi);
-  write_xpm_axis(out,"x",n_x,axis_x);
-  write_xpm_axis(out,"y",n_y,axis_y);
+  write_xpm_axis(out,"x",flags & MAT_SPATIAL_X,n_x,axis_x);
+  write_xpm_axis(out,"y",flags & MAT_SPATIAL_Y,n_y,axis_y);
   write_xpm_data(out,n_x,n_y,matrix,lo,hi,*nlevels);
 }
 

@@ -705,7 +705,7 @@ static void ana_trans(t_clusters *clust, int nf,
   if (transfn) {
     fp=ffopen(transfn,"w");
     i = min(maxtrans+1, 80);
-    write_xpm(fp,"Cluster Transitions","# transitions",
+    write_xpm(fp,0,"Cluster Transitions","# transitions",
 	      "from cluster","to cluster", 
 	      clust->ncl, clust->ncl, axis, axis, trans, 
 	      0, maxtrans, rlo, rhi, &i);
@@ -1396,7 +1396,7 @@ int gmx_cluster(int argc,char *argv[])
   fp = opt2FILE("-o",NFILE,fnm,"w");
   fprintf(stderr,"Writing rms distance/clustering matrix ");
   if (bReadMat) {
-    write_xpm(fp,readmat[0].title,readmat[0].legend,readmat[0].label_x,
+    write_xpm(fp,0,readmat[0].title,readmat[0].legend,readmat[0].label_x,
 	      readmat[0].label_y,nf,nf,readmat[0].axis_x,readmat[0].axis_y,
 	      rms->mat,0.0,rms->maxrms,rlo_top,rhi_top,&nlevels);
   } 
@@ -1405,12 +1405,12 @@ int gmx_cluster(int argc,char *argv[])
     sprintf(title,"RMS%sDeviation / Cluster Index",
  	    bRMSdist ? " Distance " : " ");
     if (minstruct > 1) {
-      write_xpm_split(fp,title,"RMSD (nm)",buf,buf,
+      write_xpm_split(fp,0,title,"RMSD (nm)",buf,buf,
 		      nf,nf,time,time,rms->mat,0.0,rms->maxrms,&nlevels,
 		      rlo_top,rhi_top,0.0,(real) ncluster,
 		      &ncluster,TRUE,rlo_bot,rhi_bot);
     } else {
-      write_xpm(fp,title,"RMSD (nm)",buf,buf,
+      write_xpm(fp,0,title,"RMSD (nm)",buf,buf,
 		nf,nf,time,time,rms->mat,0.0,rms->maxrms,
 		rlo_top,rhi_top,&nlevels);
     }

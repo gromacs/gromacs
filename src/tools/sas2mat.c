@@ -175,7 +175,7 @@ int main(int argc,char *argv[])
   /*
   write_matrix(out,nres,nframes,resnr,t,ss,NULL,title,0,hi,nlevels);
   */
-  write_xpm(out,"????","????","Time (ps)","Residue",
+  write_xpm(out,0,"????","????","Time (ps)","Residue",
 	    nres,nframes,resnr,t,ss,ssmin,ssmax,rlo,rhi,&nlevels);
 
   thanx(stderr);

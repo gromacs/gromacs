@@ -268,7 +268,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   cmid = 1;
   fp = ffopen(xpm,"w");
-  write_xpm3(fp,"Cluster size distribution","# clusters",timebuf,"Size",
+  write_xpm3(fp,0,"Cluster size distribution","# clusters",timebuf,"Size",
 	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
@@ -280,7 +280,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     }
   fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   fp = ffopen(xpmw,"w");
-  write_xpm3(fp,"Weighted cluster size distribution","Fraction",timebuf,"Size",
+  write_xpm3(fp,0,"Weighted cluster size distribution","Fraction",timebuf,"Size",
 	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);

@@ -286,7 +286,7 @@ static void inprod_matrix(char *matfile,int natoms,
   rhi.r = 0; rhi.g = 0; rhi.b = 0;
   nlevels = 41;
   out = ffopen(matfile,"w");
-  write_xpm(out,"Eigenvector inner-products","in.prod.","run 1","run 2",
+  write_xpm(out,0,"Eigenvector inner-products","in.prod.","run 1","run 2",
 	    nx,ny,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
   fclose(out);
 }

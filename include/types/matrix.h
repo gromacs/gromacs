@@ -57,7 +57,15 @@ typedef struct {
   t_rgb rgb;
 } t_mapping;
 
+#define MAT_SPATIAL_X (1<<0)			    
+#define MAT_SPATIAL_Y (1<<1)
+/* Defines if x and y are spatial dimensions,
+ * when not, there are n axis ticks at the middle of the elements,
+ * when set, there are n+1 axis ticks at the edges of the elements.
+ */
+
 typedef struct {
+  unsigned int flags; /* The possible flags are defined above */
   int  nx,ny;
   int  y0;
   char title[256];

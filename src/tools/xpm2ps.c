@@ -306,8 +306,8 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
   char   *mylab;
   real   xxx;
   char   **xtick,**ytick;
-  real   xx,yy,dy,xx00,yy00;
-  int    i,j,x,y,strlength;
+  real   xx,yy,dy,xx00,yy00,offset_x,offset_y;
+  int    i,j,x,y,ntx,nty,strlength;
   
   /* Only necessary when there will be no y-labels */ 
   strlength = 0;
@@ -327,14 +327,28 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
   xx00=x0-1;
   yy00=y0-1;
   for (i=0; (i<nmat); i++) {
-    snew(xtick,mat[i].nx);
-    for(j=0; (j<mat[i].nx); j++) {
+    if (mat[i].flags & MAT_SPATIAL_X) {
+      ntx = mat[i].nx + 1;
+      offset_x = 0.1;
+    } else {
+      ntx = mat[i].nx;
+      offset_x = 0.6;
+    }
+    if (mat[i].flags & MAT_SPATIAL_Y) {
+      nty = mat[i].ny + 1;
+      offset_y = 0.1;
+    } else {
+      nty = mat[i].ny;
+      offset_y = 0.6;
+    }
+    snew(xtick,ntx);
+    for(j=0; (j<ntx); j++) {
       sprintf(buf,"%g",mat[i].axis_x[j]);
       xtick[j]=strdup(buf);
     }
     ps_strfont(ps,psr->X.tickfont,psr->X.tickfontsize);
-    for(x=0; (x<mat[i].nx); x++) {
-      xx=xx00+(x+0.7)*psr->xboxsize;
+    for(x=0; (x<ntx); x++) {
+      xx = xx00 + (x + offset_x)*psr->xboxsize;
       if ( ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) || 
 	     (psr->X.first && (x==0))) &&
 	   ( (i == 0) || box_do_all_x_maj_ticks(psr) ) ) {
@@ -355,14 +369,14 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
       }
     }
     ps_strfont(ps,psr->Y.tickfont,psr->Y.tickfontsize);
-    snew(ytick,mat[i].ny);
-    for(j=0; (j<mat[i].ny); j++) {
+    snew(ytick,nty);
+    for(j=0; (j<nty); j++) {
       sprintf(buf,"%g",mat[i].axis_y[j]);
       ytick[j]=strdup(buf);
     }
 
-    for(y=0; (y<mat[i].ny); y++) {
-      yy=yy00+(y+0.7)*psr->yboxsize;
+    for(y=0; (y<nty); y++) {
+      yy = yy00 + (y + offset_y)*psr->yboxsize;
       if ( bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.major) || 
 	   (psr->Y.first && (y==0))) {
 	/* Major ticks */
@@ -640,12 +654,14 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   psr=&psrec;
 
   if (psr->X.major <= 0 )
-    tick_spacing(mat[0].nx, mat[0].axis_x, psr->X.offset, 'X', 
+    tick_spacing((mat[0].flags & MAT_SPATIAL_X) ? mat[0].nx + 1 : mat[0].nx,
+		 mat[0].axis_x, psr->X.offset, 'X', 
 		 &(psr->X.major), &(psr->X.minor) );
   if (psr->X.minor <= 0 )
     psr->X.minor = psr->X.major / 2;
   if (psr->Y.major <= 0)
-    tick_spacing(mat[0].ny, mat[0].axis_y, psr->Y.offset, 'Y',
+    tick_spacing((mat[0].flags & MAT_SPATIAL_Y) ? mat[0].ny + 1 : mat[0].ny,
+		 mat[0].axis_y, psr->Y.offset, 'Y',
 		 &(psr->Y.major), &(psr->Y.minor) );
   if (psr->Y.minor <= 0)
     psr->Y.minor = psr->Y.major / 2;
@@ -923,13 +939,13 @@ void write_combined_matrix(int ecombine, char *fn,
       fprintf(stderr,
 	      "combination results in uniform matrix (%g), no output\n",rhi);
     else if (rlo>=0 || rhi<=0)
-      write_xpm(out, mat1[k].title, mat1[k].legend, 
+      write_xpm(out, mat1[k].flags, mat1[k].title, mat1[k].legend, 
 		mat1[k].label_x, mat1[k].label_y,
 		mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
 		rmat1, rlo, rhi, rhi<=0?red:white, rhi<=0?white:blue, 
 		&nlevels);
     else 
-      write_xpm3(out, mat1[k].title, mat1[k].legend, 
+      write_xpm3(out, mat2[k].flags, mat1[k].title, mat1[k].legend, 
 		 mat1[k].label_x, mat1[k].label_y,
 		 mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
 		 rmat1, rlo, 0, rhi, red, white, blue, &nlevels);

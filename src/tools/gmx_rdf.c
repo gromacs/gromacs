@@ -722,7 +722,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
     }
       
     fp = ffopen(fnXPM,"w");
-    write_xpm(fp,"Diffraction Image","Intensity","kx","ky",
+    write_xpm(fp,0,"Diffraction Image","Intensity","kx","ky",
 	      nbin,nbin,tx,ty,map,0,hi,rlo,rhi,&nlevel);
     fclose(fp);
     sfree(tx);

@@ -74,7 +74,7 @@ extern real **matrix2real(t_matrix *matrix,real **mat);
 extern void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */ 
 
-extern void write_xpm3(FILE *out,
+extern void write_xpm3(FILE *out,unsigned int flags,
 		       char *title,char *legend,char *label_x,char *label_y,
 		       int n_x,int n_y,real axis_x[],real axis_y[],
 		       real *matrix[],real lo,real mid,real hi,
@@ -82,8 +82,9 @@ extern void write_xpm3(FILE *out,
 /* See write_xpm.
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
-extern void write_xpm_split(FILE *out,
-			    char *title,char *legend,char *label_x,char *label_y,
+extern void write_xpm_split(FILE *out,unsigned int flags,
+			    char *title,char *legend,
+			    char *label_x,char *label_y,
 			    int n_x,int n_y,real axis_x[],real axis_y[],
 			    real *matrix[],
 			    real lo_top,real hi_top,int *nlevel_top,
@@ -96,21 +97,26 @@ extern void write_xpm_split(FILE *out,
  * If bDiscrete then a colormap with 16 fixed colors is used, first  of
  * which is white.
  */
-			    
 
-extern void write_xpm(FILE *out,
+extern void write_xpm(FILE *out,unsigned int flags,
 		      char *title,char *legend,char *label_x,char *label_y,
 		      int n_x,int n_y,real t_x[],real t_y[],
 		      real *matrix[],real lo,real hi,
 		      t_rgb rlo,t_rgb rhi,int *nlevels);
 /* out        xpm file
+ * flags      flags, defined types/matrix.h
+ *            MAT_SPATIAL_X
+ *            MAT_SPATIAL_Y
+ *            Defines if x and y are spatial dimensions,
+ *            when not, there are n axis ticks at the middle of the elements,
+ *            when set, there are n+1 axis ticks at the edges of the elements.
  * title      matrix title
  * legend     label for the continuous legend
  * label_x    label for the x-axis
  * label_y    label for the y-axis
  * n_x, n_y   size of the matrix
- * axis_x[]   the x-ticklabels
- * axis_y[]   the y-ticklables
+ * axis_x[]   the x-ticklabels (n_x or n_x+1)
+ * axis_y[]   the y-ticklables (n_y or n_y+1)
  * *matrix[]  element x,y is matrix[x][y]
  * lo         output lower than lo is set to lo
  * hi         output higher than hi is set to hi

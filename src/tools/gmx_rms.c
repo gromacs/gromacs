@@ -708,7 +708,7 @@ int gmx_rms (int argc,char *argv[])
 	fprintf(stderr,"Min and Max value set to resp. %f and %f\n",
 		rmsd_min,rmsd_max);
       sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
-      write_xpm(opt2FILE("-m",NFILE,fnm,"w"),buf,whatlabel[ewhat],
+      write_xpm(opt2FILE("-m",NFILE,fnm,"w"),0,buf,whatlabel[ewhat],
 		time_label(),time_label(),tel_mat,tel_mat2,axis,axis2,
 		rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
@@ -750,7 +750,7 @@ int gmx_rms (int argc,char *argv[])
 	  del_yaxis[i]=delta_maxy*i/del_lev;
 	sprintf(buf,"%s %s vs. delta t",gn_rms[0],whatname[ewhat]);
 	fp = ffopen("delta.xpm","w");
-	write_xpm(fp,buf,"density",time_label(),whatlabel[ewhat],
+	write_xpm(fp,0,buf,"density",time_label(),whatlabel[ewhat],
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
 	fclose(fp);
@@ -773,7 +773,7 @@ int gmx_rms (int argc,char *argv[])
       rlo.r = 1; rlo.g = 1; rlo.b = 1;
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       sprintf(buf,"%s av. bond angle deviation",gn_rms[0]);
-      write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),buf,"degrees",
+      write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),0,buf,"degrees",
 		time_label(),time_label(),tel_mat,tel_mat2,axis,axis2,
 		bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
     }

@@ -379,17 +379,17 @@ int gmx_enemat(int argc,char *argv[])
 	  sprintf(label,"%s Interaction Energies",egrp_nm[m]);
 	  out=ffopen(fn,"w");
 	  if (emin>=emid)
-	    write_xpm(out,label,"Energy (kJ/mol)",
+	    write_xpm(out,0,label,"Energy (kJ/mol)",
 		      "Residue Index","Residue Index",
 		      ngroups,ngroups,groupnr,groupnr,emat[m],
 		      emid,emax,rmid,rhi,&nlevels);
 	  else if (emax<=emid)
-	    write_xpm(out,label,"Energy (kJ/mol)",
+	    write_xpm(out,0,label,"Energy (kJ/mol)",
 		      "Residue Index","Residue Index",
 		      ngroups,ngroups,groupnr,groupnr,emat[m],
 		      emin,emid,rlo,rmid,&nlevels);
 	  else
-	    write_xpm3(out,label,"Energy (kJ/mol)",
+	    write_xpm3(out,0,label,"Energy (kJ/mol)",
 		       "Residue Index","Residue Index",
 		       ngroups,ngroups,groupnr,groupnr,emat[m],
 		       emin,emid,emax,rlo,rmid,rhi,&nlevels);

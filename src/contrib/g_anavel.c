@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
   close_trx(status);
 
   fp = ftp2FILE(efXPM,NFILE,fnm,"w");
-  write_xpm(fp,"Temp. profile","T (a.u.)",
+  write_xpm(fp,0,"Temp. profile","T (a.u.)",
 	    "t (fs)","R (nm)",
 	    nframe,nmax+1,t_x,t_y,profile,0,tmax,
 	    rgblo,rgbhi,&nlevels);
