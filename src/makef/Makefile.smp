@@ -16,7 +16,7 @@
 # you want for all utility programs, etc.
 # To get the parallel mdrun, set use_mpi and recompile.
 #
-SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DCINVSQRT -DFINVSQRT
+SYSDEFS		= -DNO_NICE -DCINVSQRT -DFINVSQRT
 # at single prec. the gromacs sqrt might be slightly faster than ibm,
 # on ppc604 processors.
 

@@ -16,7 +16,7 @@
 # Depending on your machine you might have to change the machine
 # type from pwr2 to something else. 
 #
-SYSDEFS		= -DHAVE_ULONG -DNO_NICE -DDOUBLE 
+SYSDEFS		= -DNO_NICE -DDOUBLE 
 # The power2 chip have hardware sqrt faster than the gromacs one
 
 # IBM C compilers

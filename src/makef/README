@@ -5,7 +5,7 @@ In the table below you'll find some info about the variables
 these are just example values that might be useful on your machine
 
 Variable=	Value			Meaning
-SYSDEFS	=	-DHAVE_ULONG		System dependent defines, which
+SYSDEFS	=				System dependent defines, which
 					usually must not be changed
 CC	= 	cc			This is the Ansi-C compiler
 CFLAGS	=	-O2			C Compiler Flags (optimize)
