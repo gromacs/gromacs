@@ -1,3 +1,6 @@
+progman
+progman.tex
+mdp_opt.tex
 algorithms.aux
 analyse.aux
 averages.aux
@@ -8,9 +11,8 @@ implement.aux
 install.aux
 intro.aux
 lr-corr.aux
-lr_elstat.aux
-online.aux
 par-md.aux
+progman.aux
 programs.aux
 special.aux
 tables.aux
