@@ -151,8 +151,8 @@ otherwise more than one image would be within the cut-off distance of
 the force. When a macromolecule, such as a protein, is studied in
 solution,  this restriction does not suffice. In principle a single
 solvent  molecule should not be able
-to `see' both sides of the macromolecule. This means that an edge $a$
-of the box must exceed the length of the macromolecule in the
+to `see' both sides of the macromolecule. This means that the length of
+each box vector must exceed the length of the macromolecule in the
 direction of that edge {\em plus} two times the cut-off radius $R_c$.
 It is common to compromise in this respect, and make the solvent layer
 somewhat smaller in order to reduce the computational cost.
@@ -386,7 +386,7 @@ the nearest image.
 The grid search is schematically depicted in \figref{grid}.
 All particles are put on the {\nsgrid}, with the smallest spacing
 $\ge$ $R_c/2$ in each of the directions.
-In each spatial dimension, a particle $i$ has three images. For each
+In the direction of each box vector, a particle $i$ has three images. For each
 direction the image may be -1,0 or 1, corresponding to a translation
 over -1, 0 or +1 box vector. We do not search the surrounding
 {\nsgrid} cells for neighbors of $i$ and then calculate the image, but
