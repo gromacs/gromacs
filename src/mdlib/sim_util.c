@@ -122,7 +122,8 @@ static void reset_forces(bool bNS,rvec f[],t_forcerec *fr,int natoms)
       copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
   }
   else {
-    if (fr->eeltype == eelPPPM) 
+      if (fr->eeltype == eelPPPM || fr->eeltype == eelPME
+	  || fr->eeltype==eelEWALD) 
       clear_rvecs(natoms,fr->flr);
     clear_rvecs(natoms,f);
     clear_rvecs(SHIFTS,fr->fshift);
@@ -191,8 +192,9 @@ void do_force(FILE *log,t_commrec *cr,
 {
   static rvec box_size;
   static real dvdl_lr = 0;
-  int    pid,cg0,cg1;
+  int    pid,cg0,cg1,i,j;
   int    start,homenr;
+  matrix lr_vir; /* used for PME long range virial */
   
   pid    = cr->pid;
   start  = START(nsb);
@@ -253,7 +255,7 @@ void do_force(FILE *log,t_commrec *cr,
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
-	bNBFonly);
+	bNBFonly,lr_vir);
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
   
@@ -268,6 +270,7 @@ void do_force(FILE *log,t_commrec *cr,
   /* The virial from surrounding boxes */
   clear_mat(vir_part);
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
+	  
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
 #ifdef DEBUG
   if (debug) {
@@ -277,7 +280,7 @@ void do_force(FILE *log,t_commrec *cr,
 #endif
 
   /* Accumulate forces and compute virial */
-  if (fr->eeltype != eelPPPM) {
+  if (fr->eeltype != eelPPPM && fr->eeltype != eelPME && fr->eeltype != eelEWALD) {
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   
@@ -290,12 +293,21 @@ void do_force(FILE *log,t_commrec *cr,
      * for computation of the virial. Rather a special formula
      * due to Neumann is used (implemented in calc_pres, coupling.c)
      */
-    f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
-    inc_nrnb(nrnb,eNR_VIRIAL,nsb->natoms);
-    sum_forces(0,nsb->natoms,f,fr->flr);
+    /* This also applies to PME/Ewald, but in this case the virial is 
+     * calculated directly in the routine and added to the total vir 
+     */    
+    f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
+    inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+    sum_forces(start,start+homenr,f,fr->flr);
+    if ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD)) {
+	for(i=0;i<DIM;i++) 
+	  for(j=0;j<DIM;j++) 
+ 	      vir_part[i][j]+=lr_vir[i][j];
+    }
     if (PAR(cr)) 
       move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   }
+  
 }
 
 #ifdef NO_CLOCK 
@@ -345,7 +357,6 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 	   &(parm->ir),FALSE,md,x,graph,
 	   fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata);
-    
     /* Compute coordinates at t=-dt, store them in buf */
     for(i=0; (i<nsb->natoms); i++) {
       for(m=0; (m<DIM); m++) {
