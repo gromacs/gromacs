@@ -56,23 +56,16 @@ real mydist2(rvec x,rvec y,matrix box)
 #define MARGE 0.2
 bool in_the_box(rvec x,matrix box)
 {
-  if (((x[0]>=-1 * MARGE)&&(x[0]<=box[0][0]+MARGE))&&
-      ((x[1]>=-1 * MARGE)&&(x[1]<=box[1][1]+MARGE))&&
-      ((x[2]>=-1 * MARGE)&&(x[2]<=box[2][2]+MARGE)))
-    return TRUE;
-  else
-    return FALSE;
-  
+  return (( (x[0]>=-MARGE) && (x[0]<=box[0][0]+MARGE) ) &&
+	  ( (x[1]>=-MARGE) && (x[1]<=box[1][1]+MARGE) ) &&
+	  ( (x[2]>=-MARGE) && (x[2]<=box[2][2]+MARGE) ));
 }
 
 bool out_the_box(rvec x,matrix box)
 {
-  if (((x[0]>=MARGE)&&(x[0]<=box[0][0]-MARGE))&&
-      ((x[1]>=MARGE)&&(x[1]<=box[1][1]-MARGE))&&
-      ((x[2]>=MARGE)&&(x[2]<=box[2][2]-MARGE)))
-    return FALSE;
-  else
-    return TRUE;  
+  return !(( (x[0]>=MARGE) && (x[0]<=box[0][0]-MARGE) )&&
+	   ( (x[1]>=MARGE) && (x[1]<=box[1][1]-MARGE) )&&
+	   ( (x[2]>=MARGE) && (x[2]<=box[2][2]-MARGE) ));
 }
 
 void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
@@ -80,9 +73,11 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
 	      t_atoms *atoms_2,rvec *x_2,rvec *v_2,real *r_2,
 	      bool bVerbose,int maxmol)
 {
+  enum{Remove,Add,NewRes};
   int  i,j,m,resnr,nresadd,d,k;
-  int  *add;
+  int  *atom_flag;
   real d2,vdw2;
+  bool bAdd;
   
   if (atoms_2->nr <= 0) {
     fatal_error(0,"Nothing to add");
@@ -90,105 +85,94 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
   
   if (bVerbose)
     fprintf(stderr,"Calculating Overlap...\n");
-    
-  /* The add array is filled with:
-   * 0 for atoms that should NOT be added,
-   * 1 for atoms that should be added
-   * 2 for atoms that should be added and that are the start of a residue
+  
+  /* The atom_flag array is filled with:
+   * Remove for atoms that should NOT be added,
+   * Add    for atoms that should be added
+   * NewRes for atoms that should be added and that are the start of a residue
    */
-  snew(add,atoms_2->nr);
+  snew(atom_flag,atoms_2->nr);
   
   /* First set the beginning of residues */
-  add[0]  = 2;
+  atom_flag[0]  = NewRes;
   nresadd = 1;
-  for (i=1;i<atoms_2->nr;i++) {
-    add[i]=1;
+  for (i=1;i<atoms_2->nr;i++)
     if (atoms_2->atom[i].resnr != atoms_2->atom[i-1].resnr) {
-      add[i]  = 2;
+      atom_flag[i] = NewRes;
       nresadd ++;
-    }
-  }
-  
+    } else
+      atom_flag[i] = Add;
   
   /* check solvent with solute */
   for(i=0;(i<atoms_1->nr);i++) {
+    if ( (i<10) || !((i+1)%10) || (i>atoms_1->nr-10)) 
+      fprintf(stderr,"\r%d out of %d atoms checked",i+1,atoms_1->nr);
     for(j=0;(j<atoms_2->nr);j++) {
       d2=dist2((x_1)[i],(x_2)[j],box_1);
       vdw2=sqr((r_1)[i] + (r_2)[j]);
       if (d2 < vdw2) {
-	if (add[j] == 2)
+	if (atom_flag[j] == NewRes)
 	  nresadd--;
-	add[j] = 0;
+	atom_flag[j] = Remove;
       }
-      if (add[j]==0) {	
+      if (atom_flag[j] == Remove) {	
 	resnr=atoms_2->atom[j].resnr;
 	while((resnr==atoms_2->atom[j-1].resnr) && (j>0))
 	  j--;
 	if (j<0)
 	  warning("j < 0 in addconf");
 	while((resnr==atoms_2->atom[j].resnr) && (j<atoms_2->nr)) {
-	  if (add[j] == 2)
+	  if (atom_flag[j] == NewRes)
 	    nresadd--;
-	  add[j]=0;
+	  atom_flag[j]=Remove;
 	  j++;
 	}
       }
     }
   }
-  
-  /* check solvent with itself */
-  for(i=0;(i<atoms_2->nr);i++) {
-    bool bAdd = TRUE;
+  fprintf(stderr,"\n");
 
+  /* check solvent with itself */
+#define EPS 0.00001
+  for(i=0;(i<atoms_2->nr);i++) {
+    if ( (i<10) || !((i+1)%10) || (i>atoms_2->nr-10)) 
+      fprintf(stderr,"\r%d out of %d atoms checked",i+1,atoms_2->nr);
     
     /* remove atoms that are too far away */
-    if ((out_the_box(x_2[i],box_1)==TRUE)&&
-	(in_the_box(x_2[i],box_1)==FALSE))
-      bAdd = FALSE;
+    bAdd = in_the_box(x_2[i],box_1);
     
     /* check only the atoms that are in the border */
-    if ( bAdd == TRUE ) {
-      if ((out_the_box(x_2[i],box_1)==TRUE)&&
-	  (in_the_box(x_2[i],box_1)==TRUE)) {
-	
-#define EPS 0.00001
-	/* check with other border atoms */
-	for(j=0;(j<atoms_2->nr);j++) {
-	  if (add[j]!=0) {
-	    if ( atoms_2->atom[i].resnr!=atoms_2->atom[j].resnr) {
-	      if ((in_the_box(x_2[j],box_1)==TRUE)&&
-		  (out_the_box(x_2[j],box_1)==TRUE)) {
-		d2=mydist2((x_2)[i],(x_2)[j],box_1);
-		vdw2=sqr((r_2)[i] + (r_2)[j]);
-		if ((d2 < vdw2)||(d2<EPS)) {
-		  bAdd = FALSE;
-		}
-	      }
-	    }    
-	  }
+    if ( bAdd && out_the_box(x_2[i],box_1) )
+      /* check with other border atoms */
+      for(j=0;(j<atoms_2->nr);j++)
+	if ( (atom_flag[j] != Remove) && 
+	     (atoms_2->atom[i].resnr!=atoms_2->atom[j].resnr) &&
+	     in_the_box(x_2[j],box_1) && out_the_box(x_2[j],box_1) ) {
+	  d2=mydist2((x_2)[i],(x_2)[j],box_1);
+	  vdw2=sqr((r_2)[i] + (r_2)[j]);
+	  if ((d2 < vdw2)||(d2<EPS))
+	    bAdd = FALSE;
 	}
-      }
-    }
     
-    
-    if ( bAdd == FALSE ) {
+    if ( !bAdd ) {
       for(k=i;((k<atoms_2->nr)&&
 	       (atoms_2->atom[k].resnr==atoms_2->atom[i].resnr));k++) {
-	if (add[k] == 2)
+	if (atom_flag[k] == NewRes)
 	  nresadd--;
-	add[k] = 0;
+	atom_flag[k] = Remove;
       }
       for(k=i;((k>=0)&&
 	       (atoms_2->atom[k].resnr==atoms_2->atom[i].resnr));k--) {
-	if (add[k] == 2)
+	if (atom_flag[k] == NewRes)
 	  nresadd--;
-	add[k] = 0;
+	atom_flag[k] = Remove;
       }
     }
   }
+  fprintf(stderr,"\n");
   
-  /* add[j]=0 of all the atoms of a molecule containing one or more atoms 
-   * add[i]=0
+  /* atom_flag[j]=Remove of all the atoms of a molecule containing 
+   * one or more atoms atom_flag[i]=0
    */
   if (maxmol == 0)
     maxmol = nresadd;
@@ -196,10 +180,10 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
     maxmol = min(maxmol,nresadd);
   fprintf(stderr,"There are %d molecules to add\n",maxmol);
   
-  /*add the selected atoms_2 to atoms_1*/  
+  /* add the selected atoms_2 to atoms_1 */
   for (i=0; (i<atoms_2->nr); i++)
-    if (add[i] != 0) {
-      if (add[i] == 2) {
+    if (atom_flag[i] != Remove) {
+      if (atom_flag[i] == NewRes) {
 	if (maxmol == 0)
 	  break;
 	atoms_1->nres++;
@@ -214,8 +198,8 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
       atoms_1->resname[atoms_1->nres-1]=
 	atoms_2->resname[atoms_2->atom[i].resnr];
     }
-  sfree(add);
-}/*add_conf()*/
+  sfree(atom_flag);
+}
 
 
 
