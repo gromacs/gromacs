@@ -138,7 +138,7 @@ typedef struct {
   real orires_fc;	/* force constant for orientational restraints  */
   real orires_tau;	/* time constant for memory function in orires 	*/
   int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
-  int  dihre_fc;        /* force constant for dihedral restraints	*/
+  real dihre_fc;        /* force constant for dihedral restraints	*/
   int  nstdihreout;     /* frequency of writing dihedrals to enx        */ 
   real dihre_tau;       /* time constant for memory function in dihres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
