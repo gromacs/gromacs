@@ -159,28 +159,30 @@ $(LIB)(callf77A.o):	callf77A.m4 $(M4FILE)
 # Innerloop related stuff
 $(LIB)(lutab.o):	$(CPUMAKEF)
 $(LIB)(shakef.o):	$(CPUMAKEF)
-fnbf.c:			fnbf.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
-			m4 $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > $@
-fnbf.o:			fnbf.c inner.h $(CPUMAKEF)
-			$(CC) $(C-FLAGS) -c fnbf.c
-			$(RM) fnbf.c
-
-mkinl:			$(CPUMAKEF)
-			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
-			$(CC) -o $@ mkinl.o 
-
-inner.h:		inner.m4 $(M4MAC) $(CPUMAKEF)
+$(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
-innerc.c:		mkinl inner.h Makefile $(CPUMAKEF)
-			./mkinl 1 1
-innerf.f:		mkinl inner.h Makefile $(CPUMAKEF)
+			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > fnbf.c
+			$(CC) $(C-FLAGS) -c fnbf.c
+			$(AR) $(ARFLAGS) $(LIB) fnbf.o
+			$(RM) fnbf.c inner.h fnbf.o
+
+$(LIB)(innerf.o):	mkinl.c Makefile $(CPUMAKEF)
+			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
+			$(CC) -o mkinl mkinl.o
 			./mkinl 0 1
-innerf.o:		innerf.f
 			$(F77) $(FFLAGS) -c innerf.f
-			$(RM) innerf.f inner.h mkinl
-innerc.o:		innerc.c inner.h
+			$(AR) $(ARFLAGS) $(LIB) innerf.o
+			$(RM) innerf.f innerf.o mkinl.o mkinl
+
+$(LIB)(innerc.o):	mkinl.c inner.m4 Makefile $(CPUMAKEF)
+			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
+			$(CC) $(C-FLAGS) -g -c $(SYSDEFS) mkinl.c 
+			$(CC) -o mkinl mkinl.o
+			./mkinl 1 1
+			$(RM) mkinl
 			$(CC) $(C-FLAGS) -c innerc.c
-			$(RM) innerc.c inner.h mkinl
+			$(AR) $(ARFLAGS) $(LIB) innerc.o
+			$(RM) innerc.c inner.h innerc.o mkinl.o mkinl
 
 include	Make.dep
 endif
