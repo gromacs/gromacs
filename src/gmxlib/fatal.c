@@ -43,6 +43,7 @@ static char *SRCID_fatal_c = "$Id$";
 #include "smalloc.h"
 
 static bool bDebug = FALSE;
+static char *fatal_tmp_file = NULL;
 
 bool bDebugMode(void)
 {
@@ -176,6 +177,25 @@ void quit_gmx(int fatal_errno,char *msg)
   exit(-1);
 }
 
+void _set_fatal_tmp_file(char *fn, char *file, int line)
+{
+  if (fatal_tmp_file == NULL)
+    fatal_tmp_file = strdup(fn);
+  else
+    fprintf(stderr,"BUGWARNING: fatal_tmp_file already set at %s:%d",
+	    file,line);
+}
+
+void _unset_fatal_tmp_file(char *fn, char *file, int line)
+{
+  if (strcmp(fn,fatal_tmp_file) == 0) {
+    sfree(fatal_tmp_file);
+    fatal_tmp_file = NULL;
+  } else
+    fprintf(stderr,"BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
+	    fn,file,line);
+}
+
 void fatal_error(int fatal_errno,char *fmt,...)
 {
   va_list ap;
@@ -186,13 +206,21 @@ void fatal_error(int fatal_errno,char *fmt,...)
 #ifdef _SPECIAL_VAR_ARG
   int     fatal_errno;
   char    *fmt;
-
+  
   va_start(ap,);
   fatal_errno=va_arg(ap,int);
   fmt=va_arg(ap,char *);
 #else
   va_start(ap,fmt);
 #endif
+
+  if (fatal_tmp_file) {
+    fprintf(stderr,"Cleaning up temporary file %s\n",fatal_tmp_file);
+    remove(fatal_tmp_file);
+    sfree(fatal_tmp_file);
+    fatal_tmp_file = NULL;
+  }
+  
   len=0;
   bputs(msg,&len,"Fatal error: ",0);
   for (p=fmt; *p; p++) {

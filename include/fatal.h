@@ -51,7 +51,15 @@ extern void _where(char *file,int line);
 extern void _halt(char *file,int line,char *reason);
 #define HALT(reason) _halt(__FILE__,__LINE__,reason)
 /* Halts the program with an error message */
-  
+
+extern void _set_fatal_tmp_file(char *fn, char *file, int line);
+#define set_fatal_tmp_file(fn) _set_fatal_tmp_file(fn,__FILE__,__LINE__)
+/* set filename to be removed when fatal_error is called */
+
+extern void _unset_fatal_tmp_file(char *fn, char *file, int line);
+#define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn,__FILE__,__LINE__)
+/* unsets filename to be removed */
+
 extern void fatal_error(int fatal_errno,char *fmt,...);
 /*
  * Routine fatal_error prints 

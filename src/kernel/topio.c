@@ -538,16 +538,20 @@ char **do_top(bool         bVerbose,
   if (bVerbose) printf("calling %s...\n",opts->cpp);
   if(topppfile)
     strcpy(tmpfile,topppfile);
-  else
+  else {
     tmpnam(tmpfile);
+    set_fatal_tmp_file(tmpfile);
+  }
   preprocess(topfile,tmpfile,opts->cpp,opts->define,opts->include);
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
 		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose);
-  if (!topppfile)
+  if (!topppfile) {
     if (unlink(tmpfile) != 0)
       perror ("Unable to remove temporary file");
+    unset_fatal_tmp_file(tmpfile);
+  }
     
   return title;
 }
