@@ -187,31 +187,40 @@ char *gmx_strdup(const char *src)
 char *wrap_lines(char *buf,int line_width, int indent)
 {
   char *b2;
-  int i,i0,j,lspace;
+  int i,i0,i2,j,b2len,lspace,l2space;
+  bool bFirst;
 
   b2=NULL;
-  snew(b2,strlen(buf)+1);
-  i0 = 0;
+  b2len=strlen(buf)+1;
+  snew(b2,b2len);
+  i0=0;
+  i2=0;
+  bFirst=TRUE;
   do {
-    i=i0;
-    for( ; (i<i0+line_width) && (buf[i]); i++) {
-      b2[i] = buf[i];
-      if (buf[i] == ' ')
+    for(i=i0; (i<i0+line_width) && (buf[i]); i++) {
+      b2[i2++] = buf[i];
+      if (buf[i] == ' ') {
         lspace = i;
+	l2space = i2-1;
+      }
     }
     if (buf[i]) {
-      b2[lspace] = '\n';
+      b2[l2space] = '\n';
       i0 = lspace+1;
+      i2 = l2space+1;
       if (indent) {
-	srenew(b2, strlen(b2)+indent+1);
-	for (j=strlen(b2); (j>lspace); j--)
-	  b2[j+indent]=b2[j];
-	for (j=0; (j<indent); j++)
-	  b2[lspace+indent]=' ';
+	if (bFirst) {
+	  line_width-=indent;
+	  bFirst=FALSE;
+	}
+	b2len+=indent+1;
+	srenew(b2, b2len);
+	for(j=0; (j<indent); j++)
+	  b2[i2++]=' ';
       }
     }
   } while (buf[i]);
-  b2[i] = '\0';
+  b2[i2] = '\0';
   
   return b2;
 }
