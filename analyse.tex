@@ -68,7 +68,7 @@ Groups can therefore consist of a series of {\em atom numbers}, but in
 some cases also of {\em molecule numbers}.  It is also possible to
 specify a series of angles by {\em triples} of {\em atom numbers},
 dihedrals by {\em quadruples} of {\em atom numbers} and bonds or
-vectors (in a molecule) by {\em couples} of {\em atom numbers}. When
+vectors (in a molecule) by {\em pairs} of {\em atom numbers}. When
 appropriate the type of index file will be specified for the following
 analysis programs.  To help creating such \normindex{index file}s ({\tt
 index.ndx}), there are a couple of programs to generate them, using
@@ -86,9 +86,55 @@ make them by hand. The general format is presented here:
    8       9
 \end{verbatim}}
 
-First the group name is written between square brackets.
-The following atom numbers may be spread out over as many lines as you like.
-The atom numbering starts at 1. 
+First the group name is written between square brackets. The following
+atom numbers may be spread out over as many lines as you like. The
+atom numbering starts at 1.
+
+\subsection{Default Groups}
+When no index file is supplied to analysis tools, a number of default
+groups can be generated to choose from:
+\begin{description}
+\item[{\tt System}]\mbox{}\\
+	all atoms in the system
+\item[{\tt Protein}]\mbox{}\\
+	all protein atoms
+\item[{\tt Protein-H}]\mbox{}\\
+	protein atoms excluding hydrogens
+\item[{\tt C-alpha}]\mbox{}\\
+	C$_{\alpha}$ atoms
+\item[{\tt Backbone}]\mbox{}\\
+	protein backbone atoms; N, C$_{\alpha}$ and C
+\item[{\tt MainChain}]\mbox{}\\
+	protein main chain atoms: N, C$_{\alpha}$, C and O, including
+	oxygens in C-terminus
+\item[{\tt MainChain+Cb}]\mbox{}\\
+	protein main chain atoms including C$_{\beta}$
+\item[{\tt MainChain+H}]\mbox{}\\
+	protein main chain atoms including backbone amide hydrogen and
+	hydrogens on the N-terminus
+\item[{\tt SideChain}]\mbox{}\\
+	protein side chain atoms; that is all atoms except N,
+	C$_{\alpha}$, C, O, backbone amide hydrogen, oxygens in
+	C-terminus and hydrogens on the N-terminus
+\item[{\tt SideChain-H}]\mbox{}\\
+	protein side chain atoms excluding all hydrogens
+\item[{\tt Prot-Masses}]\mbox{}\\
+	protein atoms excluding dummy masses (as used in dummy atom
+	constructions of NH$_3$ groups and Tryptophane sidechains),
+	see also \secref{dummytop}; this group is only included when
+	it differs from the '{\tt Protein}' group
+\item[{\tt Non-Protein}]\mbox{}\\
+	all non-protein atoms
+\item[{\tt DNA}]\mbox{}\\
+	all DNA atoms
+\item[{\tt molecule\_name}]\mbox{}\\
+	for all residues/molecules which are not recognized as protein
+	or DNA, one group per residue/molecule name is generated
+\item[{\tt Other}]\mbox{}\\
+	all atoms which are neither protein nor DNA.
+\end{description}
+Empty groups will not be generated.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Looking at your trajectory
 
 \section{Looking at your trajectory}
