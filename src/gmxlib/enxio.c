@@ -73,11 +73,15 @@ static void rd_ener_nms(FILE *in,int *nre,char ***nm)
   }
 }
 
-static void edr_nms(XDR *xdr,int *nre,char ***nms)
+static void edr_nms(int fp,int *nre,char ***nms)
 {
-  int i;
+  XDR  *xdr;
+  bool bRead = fio_getread(fp);
+  int  i;
   char **NM;
-  
+
+  xdr = fio_getxdr(fp);
+
   NM=*nms;
   
   if (!xdr_int(xdr,nre)) {
@@ -88,7 +92,7 @@ static void edr_nms(XDR *xdr,int *nre,char ***nms)
     snew(NM,*nre);
   }
   for(i=0; i<*nre; i++) {
-    if (NM[i]) {
+    if (bRead && NM[i]) {
       sfree(NM[i]);
       NM[i] = NULL;
     }
@@ -121,7 +125,7 @@ void do_enxnms(int fp,int *nre,char ***nms)
   bRead = fio_getread(fp);
   if (fio_getftp(fp) == efEDR) {
     fio_select(fp);
-    edr_nms(fio_getxdr(fp),nre,nms);
+    edr_nms(fp,nre,nms);
   }
   else if (bRead)
     rd_ener_nms(fio_getfp(fp),nre,nms);
