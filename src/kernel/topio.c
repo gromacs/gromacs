@@ -522,8 +522,8 @@ static char **read_topol(char        *infile,
 	    fatal_error(0,"Moleculetype %s contains no atoms",*mi0->name);
 	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
 		    mi0->nrexcl,pline);
+	  sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
 	  if (!mi0->bProcessed) {
-	    sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
 	    generate_excl(mi0->nrexcl,
 			  mi0->atoms.nr,
 			  mi0->plist,
