@@ -47,11 +47,15 @@ static char *pdbtp[epdbNR]={
   "COMPND", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
 };
 
-static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f";
-static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f";
-static bool bTER=FALSE;
+static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f";
+static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f";
+static bool bTER=FALSE,bWideFormat=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
 
+void set_pdb_wide_format(bool bSet)
+{
+  bWideFormat = bSet;
+}
 
 void pdb_use_ter(bool bSet)
 {
@@ -87,6 +91,10 @@ void write_pdbfile_indexed(FILE *out,char *title,
   bool bOccup;
   
   fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs());
+  if (bWideFormat) {
+    fprintf(out,"REMARK    This file does not adhear to the PDB standard\n");
+    fprintf(out,"REMARK    As a result of, some programs may not like it\n");
+  }
   if (box) {
     if (norm2(box[YY])*norm2(box[ZZ])!=0)
       alpha = RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ]));
@@ -114,8 +122,10 @@ void write_pdbfile_indexed(FILE *out,char *title,
       i      = index[ii];
       bOccup = bOccup && (atoms->pdbinfo[i].occup == 0.0);
     }
-  } else
+  } 
+  else
     bOccup = FALSE;
+
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
     resnr=atoms->atom[i].resnr;
@@ -145,11 +155,11 @@ void write_pdbfile_indexed(FILE *out,char *title,
       strcpy(pdbform,pdbformat4);
     else
       strcpy(pdbform,pdbformat);
-      
-    if (fabs(100*bfac - gmx_nint(100*bfac)) > 1e-2)
-      strcat(pdbform,"%7.3f\n");
+
+    if (bWideFormat)
+      strcat(pdbform,"%8.4f%8.4f\n");
     else
-      strcat(pdbform,"%6.2f\n");
+      strcat(pdbform,"%6.2f%6.2f\n");
       
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
