@@ -38,6 +38,7 @@ static char *SRCID_xvgr_c = "$Id$";
 #include "smalloc.h"
 #include "xvgr.h"
 #include "viewit.h"
+#include "vec.h"
 
 bool bXmGrace(void)
 {
@@ -137,20 +138,20 @@ void lsq_y_ax(int n, real x[], real y[], real *a)
   double xx,yx;
 
   yx=xx=0.0;
-  for (i=0; (i < n); i++) {
+  for (i=0; i<n; i++) {
     yx+=y[i]*x[i];
     xx+=x[i]*x[i];
   }
   *a=yx/xx;
 }
 
-void lsq_y_ax_b(int n, real x[], real y[], real *a, real *b)
+real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b)
 {
   int    i;
-  double yx,xx,sx,sy;
+  double yx,xx,sx,sy,chi2;
 
   yx=xx=sx=sy=0.0;
-  for (i=0; (i < n); i++) {
+  for (i=0; i<n; i++) {
     yx+=y[i]*x[i];
     xx+=x[i]*x[i];
     sx+=x[i];
@@ -158,6 +159,15 @@ void lsq_y_ax_b(int n, real x[], real y[], real *a, real *b)
   }
   *a=(n*yx-sy*sx)/(n*xx-sx*sx);
   *b=(sy-(*a)*sx)/n;
+
+  chi2=0;
+  for(i=0; i<n; i++)
+    chi2+=sqr(y[i]-((*a)*x[i]+(*b)));
+  
+  if (n > 2)
+    return sqrt(chi2/(n-2));
+  else
+    return 0;
 }
 
 static char *fgets3(FILE *fp)

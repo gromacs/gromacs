@@ -121,10 +121,12 @@ extern void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg);
  *           Some statistics utilities 
  ****************************************************/
 extern void lsq_y_ax(int n, real x[], real y[], real *a);
-/* Fit a straight line y=ax thru the n data points x,y */
+/* Fit a straight line y=ax thru the n data points x,y. */
 
-extern void lsq_y_ax_b(int n, real x[], real y[], real *a, real *b);
-/* Fit a straight line y=ax+b thru the n data points x,y */
+extern real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b);
+/* Fit a straight line y=ax+b thru the n data points x,y.
+ * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
+ */
 
 #ifdef CPLUSPLUS
 }
