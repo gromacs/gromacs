@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT -DFINVSQRT
+SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT
 
 # Dec C compilers
 ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline
@@ -17,7 +17,7 @@ ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unrol
 CC		= cc#.alt
 CCC		= cxx
 F77		= f77
-CFLAGS		= -std1 $(ALLOPT)
+CFLAGS		= -std1 $(ALLOPT) -w0 -trapuv
 CCFLAGS		= -O
 FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 
@@ -31,10 +31,10 @@ FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 #CCFLAGS		= $(OPT)
 
 # Generic linking stuff
-LDFLAGS		= -L$(LIBDIR) -om -O3 -non_shared
+LDFLAGS		= -L$(LIBDIR) -non_shared #-om -O3
 LD		= $(CC)  $(LDFLAGS) 
 FLD		= $(F77) $(LDFLAGS)
-CCLD		= $(CCC) $(LDFLAGS)
+CCLD		= -$(CCC) $(LDFLAGS)
 
 SYSLIBS		= -lgmx.$(CPU) -ldnet_stub -lm
 XLIBS		= $(SYSLIBS) -lX11
@@ -48,8 +48,7 @@ X11INC		= -I/usr/local/include
 # If you want to use fortran innerloops set this to yes
 # For most machines this will improve the performance quite a bit
 # because C-compilers are not as good as Fortran compilers
-USEF77		= yes
-SYSDEFS		+= -DF77UNDERSCORE
+USEF77		=no#yes
 #
 # If you want to run in *** P A R A L L E L ***
 # please select either PVM or MPI, check with your local hacker
