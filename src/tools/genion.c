@@ -107,7 +107,7 @@ static void insert_ion(real q,int *nwater,bool bSet[],real repl_q[],
     }
   }
   if (ei == -1)
-    fatal_error(0,"No More replacable waters!");
+    fatal_error(0,"No More replaceable waters!");
   fprintf(stderr,"Replacing water %d (atom %d) with %s\n",
 	  ei,index[ei],resnm);
   
@@ -226,9 +226,8 @@ int main(int argc, char *argv[])
     "normal GROMACS particle based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
     "The potential is recalculated after every ion insertion.",
-    "If specified in the  run input file, a reaction field or",
-    "generalized reaction field can be used, check out the manual of",
-    "grompp for more information. The potential can be written as B-factors",
+    "If specified in the run input file, a reaction field or shift function",
+    "can be used. The potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol)[PAR]"
     "For larger ions, e.g. sulfate we recommended to use genbox."
   };
