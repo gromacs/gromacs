@@ -234,9 +234,6 @@ int main (int argc, char *argv[])
     "Note that this is a fast way to make a continuation tpb",
     "as the topology does not have to be processed again."
   };
-  static char *bugs[] = {
-    "When -t is not given the program may crash when the trajectory file is corrupt, i.e. when the last frame is not complete.",
-  };
 
   FILE         *fp;
   t_statheader sh;
@@ -265,7 +262,7 @@ int main (int argc, char *argv[])
   static real max_t = -1.0;
   static bool bSel=FALSE;
   static t_pargs pa[] = {
-    { "-t", FALSE, etREAL, &max_t, 
+    { "-time", FALSE, etREAL, &max_t, 
       "time in the trajectory from which you want to continue." },
   };
   
@@ -273,7 +270,7 @@ int main (int argc, char *argv[])
   
   /* Parse the command line */
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,asize(bugs),bugs);
+		    asize(desc),desc,0,NULL);
 
   bSel = (bSel || ftp2bSet(efNDX,NFILE,fnm));
 		      
