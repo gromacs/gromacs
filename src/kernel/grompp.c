@@ -629,6 +629,11 @@ int main (int argc, char *argv[])
     "in water this does not make a difference, however for a system where",
     "you have many copies of different molecules  (e.g. liquid mixture",
     "or membrane/water system) the option is definitely a must.[PAR]",
+    
+    "A further optimization for parallel systems is the [TT]-sort[tt]",
+    "option which sorts coordinates according to coordinates. This must",
+    "always be used in conjunction with [TT]-shuffle[tt], however",
+    "sorting also works when you have only one molecule type.[PAR]", 
         
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
