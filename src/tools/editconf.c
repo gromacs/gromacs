@@ -133,55 +133,6 @@ real calc_geom(int isize,atom_id *index,
   return sqrt(diam2);
 }
 
-void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
-{
-  int     isize;
-  atom_id *index,*simp;
-  char    *grpnames;
-  real    totmass;
-  int     i,m;
-  rvec    xcm,prcomp;
-  matrix  trans;
-  
-  /* Make an index for principal component analysis */
-  fprintf(stderr,"\nSelect group for orientation of molecule:\n");
-  get_index(atoms,indexnm,1,&isize,&index,&grpnames);
-  snew(simp,atoms->nr);
-  for(i=0; (i<atoms->nr); i++) {
-    simp[i]=i;
-    atoms->atom[i].m=1;
-  }
-  totmass = sub_xcm(x,atoms->nr,simp,atoms->atom,xcm,FALSE);
-  principal_comp(isize,index,atoms->atom,x,trans,prcomp);
-  
-  /* Check whether this trans matrix mirrors the molecule */
-  if (det(trans) < 0) {
-    if (debug)
-      fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
-    for(m=0; (m<DIM); m++)
-      trans[ZZ][m] = -trans[ZZ][m];
-  }  
-  rotate_atoms(atoms->nr,simp,x,trans);
-  
-  if (debug) {
-    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
-    fprintf(stderr,"Det(trans) = %g\n",det(trans));
-    
-    /* print principal component data */
-    fprintf(stderr,"Norm of principal axes before rotation: "
-	    "(%.3f, %.3f, %.3f)\n",prcomp[XX],prcomp[YY],prcomp[ZZ]);
-    fprintf(stderr,"Totmass = %g\n",totmass);
-    principal_comp(isize,index,atoms->atom,x,trans,prcomp);
-    rotate_atoms(atoms->nr,simp,x,trans);
-    if (v) 
-      rotate_atoms(atoms->nr,simp,v,trans);
-    pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
-  }
-  sfree(simp);
-  sfree(index);
-  sfree(grpnames);
-}
-
 void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
 {
   int       i;
@@ -560,7 +511,7 @@ int main(int argc, char *argv[])
   matrix     box;
   bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
   bool       bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
-  real       xs,ys,zs,xcent,ycent,zcent,diam=0,d;
+  real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
     { efNDX, "-n", NULL, ffOPTRD },
@@ -680,18 +631,30 @@ int main(int argc, char *argv[])
     printf("    box volume  :%7.2f               (nm^3)\n",det(box));
   }
   
-  if (bOrient)
+  if (bRho || bOrient)
+    mass = calc_mass(&atoms,!fn2bTPX(infile));
+  
+  if (bOrient) {
+    atom_id *index;
+    char    *grpnames;
+    
+    /* Get a group for principal component analysis */
+    fprintf(stderr,"\nSelect group for orientation of molecule:\n");
+    get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
+    
     /* Orient the principal axes along the coordinate axes */
-    orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x,bHaveV ? v : NULL);
+    orient_princ(&atoms,isize,index,x,bHaveV ? v : NULL);
+    sfree(index);
+    sfree(grpnames);
+  }
   
   if ( bScale ) {
     /* scale coordinates and box */
     if (bRho) {
       /* Compute scaling constant */
-      real vol,mass,dens;
+      real vol,dens;
       
       vol = det(box);
-      mass = calc_mass(&atoms,!fn2bTPX(infile));
       dens = (mass*AMU)/(vol*NANO*NANO*NANO);
       fprintf(stderr,"Volume  of input %g (nm^3)\n",vol);
       fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);

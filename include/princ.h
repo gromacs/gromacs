@@ -43,6 +43,10 @@ extern void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
  * mass weighted. It is assumed that the center of mass is in the origin!
  */
 			   
+extern void orient_princ(t_atoms *atoms, int isize, atom_id *index,
+		       rvec x[], rvec *v);
+/* rotates molecule to align principal axes with coordinate axes */
+
 extern real calc_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
 		     bool bQ);
 /* Calculate the center of mass of the atoms in index. if bQ then the atoms

@@ -33,6 +33,7 @@ static char *SRCID_princ_c = "$Id$";
 #include "smalloc.h"
 #include "gstat.h"
 #include "nrjac.h"
+#include "txtdump.h"
 
 static void m_op(matrix mat,rvec x)
 {
@@ -167,13 +168,13 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
   sfree(ev);
 }
 
-void rotate_atoms(int gnx,atom_id index[],rvec x[],matrix trans)
+void rotate_atoms(int gnx,atom_id *index,rvec x[],matrix trans)
 {
   real   xt,yt,zt;
   int    i,ii;
   
   for(i=0; (i<gnx); i++) {
-    ii=index[i];
+    ii=index ? index[i] : i;
     xt=x[ii][XX];
     yt=x[ii][YY];
     zt=x[ii][ZZ];
@@ -225,13 +226,50 @@ real sub_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
   return tm;
 }
 
-void add_xcm(rvec x[],int gnx,atom_id index[],rvec xcm)
+void add_xcm(rvec x[],int gnx,atom_id *index,rvec xcm)
 {
   int  i,ii;
   
   for(i=0; (i<gnx); i++) {
-    ii=index[i];
+    ii=index ? index[i] : i;
     rvec_inc(x[ii],xcm);
   }
+}
+
+static void dump_shit(FILE *out,matrix trans,rvec prcomp,real totmass)
+{
+  /* print principal component data */
+  pr_rvecs(out,0,"Rot Matrix",trans,DIM);
+  fprintf(out,"Det(trans) = %g\n",det(trans));
+  
+  fprintf(out,"Norm of principal axes: %.3f, %.3f, %.3f\n",
+	  prcomp[XX],prcomp[YY],prcomp[ZZ]);
+  fprintf(out,"Totmass = %g\n",totmass);
+}
+
+
+void orient_princ(t_atoms *atoms,int isize,atom_id *index,rvec x[], rvec *v)
+{
+  real    totmass;
+  int     i,m;
+  rvec    xcm,prcomp;
+  matrix  trans;
+  
+  totmass = sub_xcm(x,atoms->nr,NULL,atoms->atom,xcm,FALSE);
+  principal_comp(isize,index,atoms->atom,x,trans,prcomp);
+  
+  /* Check whether this trans matrix mirrors the molecule */
+  if (det(trans) < 0) {
+    if (debug)
+      fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
+    for(m=0; (m<DIM); m++)
+      trans[ZZ][m] = -trans[ZZ][m];
+  }  
+  rotate_atoms(atoms->nr,NULL,x,trans);
+  if (v) rotate_atoms(atoms->nr,NULL,v,trans);
+  
+  add_xcm(x,atoms->nr,NULL,xcm);
+
+  if (debug) dump_shit(stderr,trans,prcomp,totmass);
 }
 
