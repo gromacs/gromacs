@@ -53,6 +53,12 @@ int
 gmx_dyndom(int argc,char *argv[]);
 
 int 
+gmx_editconf(int argc, char *argv[]);
+
+int 
+gmx_eneconv(int argc,char *argv[]);
+
+int 
 gmx_enemat(int argc,char *argv[]);
 
 int 
@@ -63,6 +69,18 @@ gmx_lie(int argc,char *argv[]);
 
 int 
 gmx_filter(int argc,char *argv[]);
+
+int 
+gmx_genbox(int argc,char *argv[]);
+
+int 
+gmx_genconf(int argc,char *argv[]);
+
+int 
+gmx_genion(int argc,char *argv[]);
+
+int 
+gmx_genpr(int argc,char *argv[]);
 
 int 
 gmx_gyrate(int argc,char *argv[]);
@@ -139,6 +157,15 @@ gmx_tcaf(int argc,char *argv[]);
 int 
 gmx_traj(int argc,char *argv[]);
 
+int
+gmx_trjcat(int argc,char *argv[]);
+
+int 
+gmx_trjconv(int argc,char *argv[]);
+
+int 
+gmx_trjorder(int argc,char *argv[]);
+
 int 
 gmx_velacc(int argc,char *argv[]);
 
@@ -150,6 +177,12 @@ gmx_mdmat(int argc,char *argv[]);
 
 int 
 gmx_wham(int argc,char *argv[]);
+
+int 
+gmx_xpm2ps(int argc,char *argv[]);
+
+
+
 
 #endif
 /* _gmx_ana_h */
