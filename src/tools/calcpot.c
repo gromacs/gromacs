@@ -144,7 +144,7 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
   if (ftype == F_SR) 
     nlist = &fr->nlist_sr[eNL_QQ];
   else
-    nlist = &fr->nlist_sr[eNL_VDW];
+    nlist = &fr->nlist_sr[eNL_VDWQQ];
   
   c_tabpot(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,
 	   nlist->shift,nlist->jindex,nlist->jjnr,

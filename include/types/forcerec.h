@@ -27,7 +27,8 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-enum { eNL_VDW, eNL_QQ, eNL_FREE, eNL_VDW_WAT, eNL_QQ_WAT, eNL_NR };
+enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, eNL_FREE, 
+       eNL_VDWQQ_WAT, eNL_QQ_WAT, eNL_NR };
  
 typedef struct {
   /* Cut-Off stuff */

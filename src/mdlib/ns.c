@@ -119,7 +119,7 @@ static void init_nblist(t_nblist *nl,int homenr,int il_code)
     nl->iinr[0] = -1;
 }
 
-static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
+static unsigned int nbf_index(bool bVDWOnly,bool bCoulOnly,bool bRF,bool bBham,
 			      bool bTab,bool bWater,bool bEwald)
 {
   /* lot of redundancy here,
@@ -147,7 +147,7 @@ static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
 
   unsigned int ni;
   
-  ni = bCoul | (bBham << 1) | (bRF << 2) | (bTab << 3) | (bWater << 4)
+  ni = bCoulOnly | (bBham << 1) | (bRF << 2) | (bTab << 3) | (bWater << 4)
       | (bEwald << 5);
   
   return inloop[ni];
@@ -170,34 +170,48 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
   maxlr     = max(maxsr/10,50);
   maxlr_wat = max(maxsr_wat/10,50);
 
+  init_nblist(&fr->nlist_sr[eNL_VDWQQ],maxsr,
+	   nbf_index(FALSE,FALSE,fr->bRF,fr->bBHAM,fr->bTab,
+		     FALSE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_VDW],maxsr,
-	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
+	   nbf_index(TRUE,FALSE,fr->bRF,fr->bBHAM,fr->bTab,
+		     FALSE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_QQ],maxsr,
-	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
+	   nbf_index(FALSE,TRUE,fr->bRF,fr->bBHAM,fr->bTab,
+		     FALSE,fr->bEwald));
   if (fr->efep != efepNO)
     init_nblist(&fr->nlist_sr[eNL_FREE],maxsr,
-		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
+	     fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
   if (fr->bWaterOpt) {
-    init_nblist(&fr->nlist_sr[eNL_VDW_WAT],maxsr_wat,
-		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+    init_nblist(&fr->nlist_sr[eNL_VDWQQ_WAT],maxsr_wat,
+	     nbf_index(FALSE,FALSE,fr->bRF,fr->bBHAM,fr->bTab,
+		       TRUE,fr->bEwald));
     init_nblist(&fr->nlist_sr[eNL_QQ_WAT],maxsr_wat,
-		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+	     nbf_index(FALSE,TRUE,fr->bRF,fr->bBHAM,fr->bTab,
+		       TRUE,fr->bEwald));
   }
   if (fr->bTwinRange) {
     fprintf(log,"Allocating space for long range neighbour list of %d atoms\n",
 	    maxlr);
+    init_nblist(&fr->nlist_lr[eNL_VDWQQ],maxlr,
+	     nbf_index(FALSE,FALSE,fr->bRF,fr->bBHAM,fr->bTab,
+		       FALSE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_VDW],maxlr,
-		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
+	     nbf_index(TRUE,FALSE,fr->bRF,fr->bBHAM,fr->bTab,
+		       FALSE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_QQ],maxlr,
-		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
+	     nbf_index(FALSE,TRUE,fr->bRF,fr->bBHAM,fr->bTab,
+		       FALSE,fr->bEwald));
     if (fr->efep != efepNO)
       init_nblist(&fr->nlist_lr[eNL_FREE],maxlr,
-		  fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
+	       fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
     if (fr->bWaterOpt) {
-      init_nblist(&fr->nlist_lr[eNL_VDW_WAT],maxlr_wat,
-		  nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+      init_nblist(&fr->nlist_lr[eNL_VDWQQ_WAT],maxlr_wat,
+	       nbf_index(FALSE,FALSE,fr->bRF,fr->bBHAM,fr->bTab,
+			 TRUE,fr->bEwald));
       init_nblist(&fr->nlist_lr[eNL_QQ_WAT],maxlr_wat,
-		  nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+	       nbf_index(FALSE,TRUE,fr->bRF,fr->bBHAM,fr->bTab,
+			 TRUE,fr->bEwald));
     }
   }
 }
@@ -342,12 +356,13 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 				   int icg,int jgid,int nj,atom_id jjcg[],
 				   atom_id index[],atom_id a[],
 				   t_excl bExcl[],int shift,
-				   t_forcerec *fr,bool bLR,bool bCoulOnly)
+				   t_forcerec *fr,bool bLR,
+				   bool bVDWOnly,bool bCoulOnly)
 {
   /* The a[] index has been removed,
      to put it back in i_atom should be a[i0] and jj should be a[jj].
      */
-  t_nblist  *vdw,*coul,*free=NULL;
+  t_nblist  *vdwc,*vdw,*coul,*free=NULL;
   
   int 	    i,j,jcg,igid,gid,ind_ij;
   atom_id   jj,jj0,jj1,i_atom;
@@ -385,10 +400,12 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   if (bLR) {
     /* Long range */
     if (bWater) {
-      vdw  = &fr->nlist_lr[eNL_VDW_WAT];
+      vdwc = &fr->nlist_lr[eNL_VDWQQ_WAT];
+      vdw  = &fr->nlist_lr[eNL_VDW];
       coul = &fr->nlist_lr[eNL_QQ_WAT];
     }
     else {
+      vdwc = &fr->nlist_lr[eNL_VDWQQ];
       vdw  = &fr->nlist_lr[eNL_VDW];
       coul = &fr->nlist_lr[eNL_QQ];
     }
@@ -398,10 +415,12 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   else {
     /* Short range */
     if (bWater) {
-      vdw  = &fr->nlist_sr[eNL_VDW_WAT];
+      vdwc = &fr->nlist_sr[eNL_VDWQQ_WAT];
+      vdw  = &fr->nlist_sr[eNL_VDW];
       coul = &fr->nlist_sr[eNL_QQ_WAT];
     }
     else {
+      vdwc = &fr->nlist_sr[eNL_VDWQQ];
       vdw  = &fr->nlist_sr[eNL_VDW];
       coul = &fr->nlist_sr[eNL_QQ];
     }
@@ -417,9 +436,12 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       gid     = GID(igid,jgid,ngid);
       
       /* Create new i_atom for each energy group */
+      if (!bCoulOnly && !bVDWOnly)
+	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
       if (!bCoulOnly)
 	new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
-      new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
+      if (!bVDWOnly)
+	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
       
       /* Loop over the j charge groups */
       for(j=0; (j<nj); j++) {
@@ -430,12 +452,16 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	
 	jj0 = index[jcg];
 	if (type[jj0] == fr->nWater) {
-	  if (bCoulOnly)
-	    add_j_to_nblist(coul,jj0);
-	  else
+	  if (bVDWOnly)
 	    add_j_to_nblist(vdw,jj0);
-	  add_j_to_nblist(coul,jj0+1);
-	  add_j_to_nblist(coul,jj0+2);
+	  else {
+	    if (bCoulOnly)
+	      add_j_to_nblist(coul,jj0);
+	    else
+	      add_j_to_nblist(vdwc,jj0);
+	    add_j_to_nblist(coul,jj0+1);
+	    add_j_to_nblist(coul,jj0+2);
+	  }
 	} else {
 	  jj1 = index[jcg+1];
 	  
@@ -444,18 +470,25 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	      if (charge[jj] != 0)
 		add_j_to_nblist(coul,jj);
 	    }
+	  } else if (bVDWOnly) {
+	    if (bHaveLJ[type[jj]])
+	      add_j_to_nblist(vdw,jj);
 	  } else {
 	    for(jj=jj0; (jj<jj1); jj++) {
-	      if (bHaveLJ[type[jj]])
-		add_j_to_nblist(vdw,jj);
-	    else if (charge[jj] != 0)
-	      add_j_to_nblist(coul,jj);
+	      if (bHaveLJ[type[jj]]) {
+		if (charge[jj] != 0)
+		  add_j_to_nblist(vdwc,jj);
+		else
+		  add_j_to_nblist(vdw,jj);
+	      } else if (charge[jj] != 0)
+		add_j_to_nblist(coul,jj);
 	    }
 	  }
 	}
       }
-      close_i_nblist(coul);
       close_i_nblist(vdw);
+      close_i_nblist(coul);
+      close_i_nblist(vdwc);
     }
   } else {
     /* Loop over the atoms in the i charge group */    
@@ -466,9 +499,12 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       qi      = charge[i_atom];
       
       /* Create new i_atom for each energy group */
+      if (!bCoulOnly && !bVDWOnly)
+	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
       if (!bCoulOnly)
-	new_i_nblist(vdw,bLR ? F_LJLR : F_LJ,i_atom,shift,gid);
-      new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
+	new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid);
+      if (!bVDWOnly)
+	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid);
       if (fr->efep != efepNO)
 	new_i_nblist(free,F_DVDL,i_atom,shift,gid);
       
@@ -502,10 +538,16 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 		  /* This is done whether or  not bWater is set */
 		  if (charge[jj] != 0)
 		    add_j_to_nblist(coul,jj);
-		} else {
+		} else if (bVDWOnly) { 
 		  if (bHaveLJ[type[jj]])
 		    add_j_to_nblist(vdw,jj);
-		  else if (qi*charge[jj] != 0)
+		} else {
+		  if (bHaveLJ[type[jj]]) {
+		    if (qi != 0 && charge[jj] != 0)
+		      add_j_to_nblist(vdwc,jj);
+		    else
+		      add_j_to_nblist(vdw,jj);
+		  } else if (qi != 0 && charge[jj] != 0)
 		    add_j_to_nblist(coul,jj);
 		}
 	      }
@@ -513,8 +555,9 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	  }
 	}
       }
-      close_i_nblist(coul);
       close_i_nblist(vdw);
+      close_i_nblist(coul);
+      close_i_nblist(vdwc);
       if (fr->efep != efepNO)
 	close_i_nblist(free);
     }
@@ -673,7 +716,7 @@ static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
 {
   if (nsbuf->ncg >= MAX_CG) {
     put_in_list(bHaveLJ,ngid,md,icg,jgid,nsbuf->ncg,nsbuf->jcg,
-		cgs->index,cgs->a,bexcl,shift,fr,FALSE,FALSE);
+		cgs->index,cgs->a,bexcl,shift,fr,FALSE,FALSE,FALSE);
     /* Reset buffer contents */
     nsbuf->ncg = nsbuf->nj = 0;
   }
@@ -814,7 +857,7 @@ static int ns_simple_core(t_forcerec *fr,
 	nsbuf = &(ns_buf[nn][k]);
 	if (nsbuf->ncg > 0) {
 	  put_in_list(bHaveLJ,ngid,md,icg,nn,nsbuf->ncg,nsbuf->jcg,
-		      cgs->index,cgs->a,bexcl,k,fr,FALSE,FALSE);
+		      cgs->index,cgs->a,bexcl,k,fr,FALSE,FALSE,FALSE);
 	  nsbuf->ncg=nsbuf->nj=0;
 	}
       }
@@ -893,7 +936,7 @@ static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
 			 atom_id lr[],t_excl bexcl[],int shift,
 			 rvec x[],rvec box_size,t_nrnb *nrnb,
 			 real lambda,real *dvdlambda,
-			 t_groups *grps,bool bCoulOnly,
+			 t_groups *grps,int bVDWOnly,bool bCoulOnly,
 			 bool bDoForces,bool bHaveLJ[])
 {
   int i;
@@ -914,7 +957,8 @@ static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
   if (!bDoForces) {  
     /* Put the long range particles in a list */
     put_in_list(bHaveLJ,ngid,md,icg,jgid,nlr,lr,top->blocks[ebCGS].index,
-		top->blocks[ebCGS].a,bexcl,shift,fr,TRUE,bCoulOnly);
+		top->blocks[ebCGS].a,bexcl,shift,fr,
+		TRUE,bVDWOnly,bCoulOnly);
   }
 }
 
@@ -926,8 +970,8 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 		    real lambda,real *dvdlambda,
 		    bool bHaveLJ[])
 {
-  static atom_id **nl_lr_ljc,**nl_lr_coul,**nl_sr=NULL;
-  static int     *nlr_ljc,*nlr_coul,*nsr;
+  static atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr=NULL;
+  static int     *nlr_ljc,*nlr_one,*nsr;
   static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
   
   t_block *cgs=&(top->blocks[ebCGS]);
@@ -940,8 +984,9 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   real    margin_x,margin_y,sh_zx,sh_zy,sh_x;
   int     icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
+  bool    bVDWOnly,bCoulOnly;
   rvec    xi,*cgcm;
-  real    r2,rs2,rvdw2,rcoul2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
+  real    r2,rs2,rvdw2,rcoul2,rm2,rl2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
   bool    *i_eg_excl;
   
   cgsnr    = cgs->nr;
@@ -954,34 +999,42 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     rvdw2  = rs2;
     rcoul2 = rs2;
   }
-  
+  rm2 = min(rvdw2,rcoul2);
+  rl2 = max(rvdw2,rcoul2);
+  if (rvdw2 > rcoul2) {
+    bVDWOnly  = TRUE;
+    bCoulOnly = FALSE;
+  } else {
+    bVDWOnly  = FALSE;
+    bCoulOnly = TRUE;
+  }
+
   if (nl_sr == NULL) {
     /* Short range buffers */
     snew(nl_sr,ngid);
     /* Counters */
     snew(nsr,ngid);
     snew(nlr_ljc,ngid);
-    snew(nlr_coul,ngid);
-    
-    if (rvdw2 > rs2) 
-      /* Long range LJC buffers */
+    snew(nlr_one,ngid);
+
+    if (rm2 > rs2) 
+      /* Long range VdW and Coul buffers */
       snew(nl_lr_ljc,ngid);
     
-    if (rcoul2 > rvdw2) 
-      /* Long range Coul buffers */
-      snew(nl_lr_coul,ngid);
-      
+    if (rl2 > rm2)
+      /* Long range VdW or Coul only buffers */
+      snew(nl_lr_one,ngid);
+    
     for(j=0; (j<ngid); j++) {
       snew(nl_sr[j],MAX_CG);
-      if (rvdw2 > rs2)
+      if (rm2 > rs2)
 	snew(nl_lr_ljc[j],MAX_CG);
-      if (rcoul2 > rvdw2)
-	snew(nl_lr_coul[j],MAX_CG);
+      if (rl2 > rm2)
+	snew(nl_lr_one[j],MAX_CG);
     }
     if (debug)
       fprintf(debug,"ns5_core: rs2 = %g, rvdw2 = %g, rcoul2 = %g (nm^2)\n",
 	      rs2,rvdw2,rcoul2);
-    
   }
 
   /* Unpack arrays */
@@ -1068,7 +1121,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  for(nn=0; (nn<ngid); nn++) {
 	    nsr[nn]      = 0;
 	    nlr_ljc[nn]  = 0;
-	    nlr_coul[nn] = 0;
+	    nlr_one[nn] = 0;
 	  }
 #ifdef NS5DB
 	  fprintf(log,"shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
@@ -1111,34 +1164,34 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 				put_in_list(bHaveLJ,ngid,md,icg,jgid,
 					    nsr[jgid],nl_sr[jgid],
 					    cgsindex,cgsatoms,bexcl,
-					    shift,fr,FALSE,FALSE);
+					    shift,fr,FALSE,FALSE,FALSE);
 				nsr[jgid]=0;
 			      }
 			      nl_sr[jgid][nsr[jgid]++]=jjcg;
-			    } 
-			    else if (r2 < rvdw2) {
+			    } else if (r2 < rm2) {
 			      if (nlr_ljc[jgid] >= MAX_CG) {
 				do_longrange(log,top,fr,ngid,md,icg,jgid,
 					     nlr_ljc[jgid],
 					     nl_lr_ljc[jgid],bexcl,shift,x,
 					     box_size,nrnb,
-					     lambda,dvdlambda,grps,FALSE,FALSE,
+					     lambda,dvdlambda,grps,
+					     FALSE,FALSE,FALSE,
 					     bHaveLJ);
 				nlr_ljc[jgid]=0;
 			      }
 			      nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
-			    } 
-			    else {
-			      if (nlr_coul[jgid] >= MAX_CG) {
+			    } else {
+			      if (nlr_one[jgid] >= MAX_CG) {
 				do_longrange(log,top,fr,ngid,md,icg,jgid,
-					     nlr_coul[jgid],
-					     nl_lr_coul[jgid],bexcl,shift,x,
+					     nlr_one[jgid],
+					     nl_lr_one[jgid],bexcl,shift,x,
 					     box_size,nrnb,
-					     lambda,dvdlambda,grps,TRUE,FALSE,
+					     lambda,dvdlambda,grps,
+					     bVDWOnly,bCoulOnly,FALSE,
 					     bHaveLJ);
-				nlr_coul[jgid]=0;
+				nlr_one[jgid]=0;
 			      }
-			      nl_lr_coul[jgid][nlr_coul[jgid]++]=jjcg;
+			      nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
 			    }
 			  }
 			}
@@ -1153,17 +1206,18 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 	  for(nn=0; (nn<ngid); nn++) {
 	    if (nsr[nn] > 0)
 	      put_in_list(bHaveLJ,ngid,md,icg,nn,nsr[nn],nl_sr[nn],
-			  cgsindex,cgsatoms,bexcl,shift,fr,FALSE,FALSE);
+			  cgsindex,cgsatoms,bexcl,shift,fr,FALSE,FALSE,FALSE);
 	    
 	    if (nlr_ljc[nn] > 0) 
 	      do_longrange(log,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
 			   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-			   lambda,dvdlambda,grps,FALSE,FALSE,bHaveLJ);
+			   lambda,dvdlambda,grps,FALSE,FALSE,FALSE,bHaveLJ);
 	    
-	    if (nlr_coul[nn] > 0) 
-	      do_longrange(log,top,fr,ngid,md,icg,nn,nlr_coul[nn],
-			   nl_lr_coul[nn],bexcl,shift,x,box_size,nrnb,
-			   lambda,dvdlambda,grps,TRUE,FALSE,bHaveLJ);
+	    if (nlr_one[nn] > 0) 
+	      do_longrange(log,top,fr,ngid,md,icg,nn,nlr_one[nn],
+			   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
+			   lambda,dvdlambda,grps,
+			   bVDWOnly,bCoulOnly,FALSE,bHaveLJ);
 	  }
 	}
       }
@@ -1172,14 +1226,14 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   }
   /* Perform any left over force calculations */
   for (nn=0; (nn<ngid); nn++) {
-    if (rvdw2 > rs2)
+    if (rm2 > rs2)
       do_longrange(log,top,fr,0,md,icg,nn,nlr_ljc[nn],
 		   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-		   lambda,dvdlambda,grps,FALSE,TRUE,bHaveLJ);
-    if (rcoul2 > rvdw2)
-      do_longrange(log,top,fr,0,md,icg,nn,nlr_coul[nn],
-		   nl_lr_coul[nn],bexcl,shift,x,box_size,nrnb,
-		   lambda,dvdlambda,grps,TRUE,TRUE,bHaveLJ);
+		   lambda,dvdlambda,grps,FALSE,FALSE,TRUE,bHaveLJ);
+    if (rl2 > rm2)
+      do_longrange(log,top,fr,0,md,icg,nn,nlr_one[nn],
+		   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
+		   lambda,dvdlambda,grps,bVDWOnly,bCoulOnly,TRUE,bHaveLJ);
   }
   debug_gmx();
   
