@@ -69,11 +69,11 @@ endif
 
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
-XLIBS		= $(ALLLIBS) -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
+XLIBS		= -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
 SYSLIBS		= $(XLIBS)
 else
-SYSLIBS		= $(ALLLIBS) -lm
-XLIBS		= $(ALLLIBS) -L/usr/X11R6/lib -lX11 -lm
+XLIBS		= -L/usr/X11R6/lib -lX11 -lm
+SYSLIBS		= -lm
 endif
 SHAREIT		= #(cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
 RANLIB		= ranlib

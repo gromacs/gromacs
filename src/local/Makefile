@@ -20,10 +20,10 @@ include		$(STDTARGET)
 all:		bin
 
 xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
-		$(LD) -o $@ $^ -lmd.$(GMXCPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
+		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 shell_md:	shell_md.o $(XOBJ)
-		$(LD) -o $@ $^ -lmd.$(GMXCPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
+		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 copyrgt:	copyrgt.o1;
 

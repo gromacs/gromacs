@@ -73,10 +73,10 @@ CCLD		= -$(CCC) $(LDFLAGS)
 # Generic linking stuff
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
-SYSLIBS		= $(ALLLIBS) -lm -lXm -lXt -lSM -lICE -lX11 -ldnet_stub #-lefence
+SYSLIBS		= -lm -lXm -lXt -lSM -lICE -lX11 -ldnet_stub #-lefence
 XLIBS		= $(SYSLIBS)
 else
-SYSLIBS		= $(ALLLIBS) -ldnet_stub -lm
+SYSLIBS		= -ldnet_stub -lm
 XLIBS		= $(SYSLIBS) -lX11 
 endif
 

@@ -13,9 +13,8 @@ include		$(GMXHOME)/src/makef/Makefile.def
 LIB		= $(LIBDIR)/libmd.$(GMXCPU).a
 SONAME		= $(LIBDIR)/libmd.$(GMXCPU).so
 # Objects for mdrun and nmrun
-RUNOBJ		= runner.o 	md.o		steep.o 	\
+OBJ		= runner.o 	md.o		steep.o 	\
 		  congrad.o	nm.o	
-OBJ		= $(RUNOBJ)
 # Common object files
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o	
 # Objects for grompp
@@ -53,13 +52,13 @@ pdb2gmx:	$(POBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 mdrun:		mdrun.o $(RUNOBJ)
-		$(LD) $(RUNLDOPT) -o $@ $^ $(LINKLIB) $(FFTLIBS) $(SYSLIBS)
+		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
 nmrun:		nmrun.o $(RUNOBJ)
-		$(LD) $(RUNLDOPT) -o $@ $^ $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
+		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 
 luck:		luck.o
 		$(LD) $^ -o $@ $(SYSLIBS)  

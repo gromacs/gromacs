@@ -18,15 +18,15 @@ INCDIR		:=include
 #LIB		:=$(LIBDIR)/libgmx.$(GMXCPU).a
 #SONAME		:=libgmx.$(GMXCPU).so
 #SOLIB		:=$(LIBDIR)/$(SONAME)
-LINKLIB		:=-lgmx.$(GMXCPU)
 STDTARGET	:=$(MKDIR)/Makefile.std
 SHAREIT		:=echo
 MKDEP		:= $(CC) -M
-ALLLIBS		:= -lmd.$(GMXCPU) -lgmx.$(GMXCPU) -lfftw.$(GMXCPU) 
 #
 # Machine dependent stuff
 #
 include		$(MKDIR)/Makefile.$(GMXCPU)
+RUNSYSLIBS      := -lmd.$(GMXCPU) -lgmx.$(GMXCPU) -lfftw.$(GMXCPU) $(SYSLIBS)
+SYSLIBS		:= -lgmx.$(GMXCPU) $(SYSLIBS)
 #
 # System independent definitions
 #
