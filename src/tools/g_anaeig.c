@@ -284,13 +284,13 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	inprod[noutvec][nframes]=t;
 	/* calculate x: a fitted struture of the selected atoms */
 	if (bFit && (xref==NULL)) {
-	  reset_x(nfit,ifit,nat,all_at,xread,w_rls);
+	  reset_x(nfit,ifit,nat,NULL,xread,w_rls);
 	  do_fit(atoms->nr,w_rls,xtop,xread);
 	}
 	for (i=0; i<natoms; i++)
 	  copy_rvec(xread[index[i]],x[i]);
 	if (bFit && xref) {
-	  reset_x(natoms,all_at,natoms,all_at,x,w_rls);
+	  reset_x(natoms,all_at,natoms,NULL,x,w_rls);
 	  do_fit(natoms,w_rls,xref,x);
 	}
 

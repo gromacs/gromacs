@@ -136,7 +136,7 @@ int main (int argc,char *argv[])
   int          delta_xsize=0,del_lev=100,mx,my,abs_my;
   bool         bA1,bA2,bPrev,bTop;
   int          ifit,*irms,ibond=0,*ind_bond=NULL;
-  atom_id      *ind_fit,**ind_rms,*all_at;
+  atom_id      *ind_fit,**ind_rms;
   char         *gn_fit,**gn_rms;
   t_rgb        rlo,rhi;
   t_filenm fnm[] = {
@@ -247,14 +247,10 @@ int main (int argc,char *argv[])
     for(i=0; (i<irms[j]); i++)
       w_rms[ind_rms[j][i]]=top.atoms.atom[ind_rms[j][i]].m;
       
-  snew(all_at,top.atoms.nr);
-  for(j=0; (j<top.atoms.nr); j++)
-    all_at[j]=j;
-      
   /* Prepare reference frame */
   if (bPBC)
     rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
-  reset_x(ifit,ind_fit,top.atoms.nr,all_at,xp,w_rls);
+  reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
   
   /* read first frame */
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
@@ -289,7 +285,7 @@ int main (int argc,char *argv[])
     if (bPBC) 
       rm_pbc(&(top.idef),natoms,box,x,x);
     
-    reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
+    reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
     if (bFit)
       /*do the least squares fit to original structure*/
       do_fit(natoms,w_rls,xp,x);
@@ -322,7 +318,7 @@ int main (int argc,char *argv[])
 	j=0;
       for (i=0;i<natoms;i++)
 	copy_rvec(mat_x[j][i],xp[i]);
-      reset_x(ifit,ind_fit,natoms,all_at,xp,w_rls);
+      reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
       if (bFit)
 	do_fit(natoms,w_rls,x,xp);
     }    
@@ -360,7 +356,7 @@ int main (int argc,char *argv[])
       if (bPBC) 
 	rm_pbc(&(top.idef),natoms,box,x,x);
 
-      reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
+      reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
       if (bFit)
 	/*do the least squares fit to original structure*/
 	do_fit(natoms,w_rls,xp,x);

@@ -101,7 +101,7 @@ int main(int argc,char *argv[])
   char       *eigvalfile,*eigvecfile,*averfile,*logfile;
   char       str[STRLEN],*fitname,*ananame;
   int        i,j,k,l,d,dj,nfit;
-  atom_id    *index,*all_at,*ifit;
+  atom_id    *index,*ifit;
   bool       bDiffMass1,bDiffMass2;
   time_t     now;
   t_filenm fnm[] = { 
@@ -177,14 +177,10 @@ int main(int argc,char *argv[])
     }
   }
 
-  snew(all_at,atoms->nr);
-  for(i=0; (i<atoms->nr); i++)
-    all_at[i]=i;
-
   /* Prepare reference frame */
   rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
   if (bFit)
-    reset_x(nfit,ifit,atoms->nr,all_at,xref,w_rls);
+    reset_x(nfit,ifit,atoms->nr,NULL,xref,w_rls);
 
   snew(x,natoms);
   snew(xav,natoms);
@@ -208,7 +204,7 @@ int main(int argc,char *argv[])
     /* calculate x: a fitted struture of the selected atoms */
     rm_pbc(&(top.idef),nat,box,xread,xread);
     if (bFit) {
-      reset_x(nfit,ifit,nat,all_at,xread,w_rls);
+      reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
     }
     if (bRef)

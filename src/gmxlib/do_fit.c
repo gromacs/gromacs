@@ -184,8 +184,7 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
 }
 
 void reset_x(int ncm,atom_id ind_cm[],
-	     int nrms,atom_id ind_rms[],
-	     rvec x[],real mass[])
+	     int nreset,atom_id *ind_reset,rvec x[],real mass[])
 {
   int  i,m,ai;
   rvec xcm;
@@ -193,17 +192,21 @@ void reset_x(int ncm,atom_id ind_cm[],
   
   tm=0.0;
   clear_rvec(xcm);
-  for(i=0; (i<ncm); i++) {
+  for(i=0; i<ncm; i++) {
     ai=ind_cm[i];
     mm=mass[ai];
-    for(m=0; (m<DIM); m++)
+    for(m=0; m<DIM; m++)
       xcm[m]+=mm*x[ai][m];
     tm+=mm;
   }
-  for(m=0; (m<DIM); m++)
+  for(m=0; m<DIM; m++)
     xcm[m]/=tm;
     
-  for(i=0; (i<nrms); i++)
-    rvec_dec(x[ind_rms[i]],xcm);
+  if (ind_reset)
+    for(i=0; i<nreset; i++)
+      rvec_dec(x[ind_reset[i]],xcm);
+  else
+    for(i=0; i<nreset; i++)
+      rvec_dec(x[i],xcm);
 }
 
