@@ -9,14 +9,14 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DC_INVSQRT -DFINVSQRT# -DDOUBLE 
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DC_INVSQRT -DFINVSQRT # -DDOUBLE 
 
 # Dec C compilers
 ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline
 #ALLOPT		= -g
-CC		= cc.alt
+CC		= cc#.alt
 CCC		= cxx
-F77		= f90
+F77		= f77
 CFLAGS		= -std1 $(ALLOPT)
 CCFLAGS		= -O
 FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
@@ -33,6 +33,7 @@ FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR) -om -O3 -non_shared
 LD		= $(CC)  $(LDFLAGS) 
+FLD		= $(F77) $(LDFLAGS)
 CCLD		= $(CCC) $(LDFLAGS)
 
 SYSLIBS		= -lgmx.$(CPU) -ldnet_stub -lm
@@ -55,7 +56,7 @@ SYSDEFS		+= -DF77UNDERSCORE
 # to see what's installed at your site. If you have neither,
 # set both to no. If you select both, something will break!!!
 #
-USE_PVM3	= no
+USE_PVM3	= yes
 USE_MPI		= no
 #
 # If you want to use compressed data files set this to yes
