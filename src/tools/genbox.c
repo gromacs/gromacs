@@ -350,10 +350,10 @@ void add_solv(char *solv,int ntb,
 	  title_2,atoms_2.nr,atoms_2.nres);
 /*   srenew(atoms_2.resname,atoms_2.nres); */
   
-  /*initialise van der waals arrays of configuration 2*/
+  /* initialise van der waals arrays of configuration 2 */
   mk_vdw(&atoms_2,r_2,vdw,max_vdw,r_distance);
   
-  /*calculate the box scaling factors n_box[0...DIM]*/
+  /* calculate the box scaling factors n_box[0...DIM] */
   nmol=1;
   for (i=0; (i < DIM);i++) {
     n_box[i]=(int)(box_1[i][i]/box_2[i][i])+1;
