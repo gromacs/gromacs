@@ -387,7 +387,7 @@ static void split_blocks(bool bVerbose,int nnodes,
       maxatom[i]-=maxatom[i-1];
     fprintf(stderr,"Division over nodes in atoms:\n");
     for(i=0; (i<nnodes); i++)
-      fprintf(stderr,"%6d",maxatom[i]);
+      fprintf(stderr," %7d",maxatom[i]);
     fprintf(stderr,"\n");
   }
   sfree(shknum);
