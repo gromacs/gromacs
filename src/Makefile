@@ -9,9 +9,9 @@ else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 ifneq ($(USE_XWIN),no)
-SRCDIRS	=	include	gmxlib fftw	kernel	tools	ngmx
+SRCDIRS	=	include	gmxlib mdlib	fftw	kernel	tools	ngmx
 else
-SRCDIRS	=	include	gmxlib fftw	kernel	tools
+SRCDIRS	=	include	gmxlib mdlib	fftw	kernel	tools
 endif
 LOCALDIRS =	local
 ALLDIRS	=	$(SRCDIRS)	$(LOCALDIRS)
