@@ -55,14 +55,14 @@ typedef struct {
   ulong flag;		/* Flag for all kinds of info (see defs)*/
 } t_filenm;
 
-#define ffSET    1
-#define ffREAD   2
-#define ffWRITE  4
+#define ffSET    1<<0
+#define ffREAD   1<<1
+#define ffWRITE  1<<2
+#define ffOPT    1<<3
+#define ffLIB    1<<4
 #define ffRW     (ffREAD  | ffWRITE)
-#define ffOPT    8
 #define ffOPTRD  (ffREAD  | ffOPT)
 #define ffOPTWR  (ffWRITE | ffOPT)
 #define ffOPTRW  (ffRW    | ffOPT)
-#define ffLIB    16
 #define ffLIBRD  (ffREAD  | ffLIB)
 #define ffLIBOPTRD (ffOPTRD | ffLIB)
