@@ -297,7 +297,7 @@ static void spread_dum2(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
 			  rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
-  real fx,fy,fz,c,invl,fproj,ci,cj,ck;
+  real fx,fy,fz,c,invl,fproj,a1;
   rvec xij,xjk,xix,temp;
   
   rvec_sub(xj,xi,xij);
@@ -315,34 +315,32 @@ static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
   /* 4 + ?10? flops */
   
   fproj=iprod(xix,f)*invl*invl; /* = (xix . f)/(xix . xix) */
-  temp[XX]=-fproj*xix[XX];
-  temp[YY]=-fproj*xix[YY];
-  temp[ZZ]=-fproj*xix[ZZ];
-  /* 10 */
-  
-  /* c is already calculated in constr_dum2FD
-     storing c somewhere will save 26 flops!     */
-  
-  ci=1.0-c;
-  ck=a*c;
-  cj=c-ck; /* (1-a)c */
-  /* 3 flops */
   
   fx=f[XX];
   fy=f[YY];
   fz=f[ZZ];
-  fi[XX]+=ci*fx-c*temp[XX];
-  fi[YY]+=ci*fy-c*temp[YY];
-  fi[ZZ]+=ci*fz-c*temp[ZZ];
-  fj[XX]+=cj*(fx+temp[XX]);
-  fj[YY]+=cj*(fy+temp[YY]);
-  fj[ZZ]+=cj*(fz+temp[ZZ]);
-  fk[XX]+=ck*(fx+temp[XX]);
-  fk[YY]+=ck*(fy+temp[YY]);
-  fk[ZZ]+=ck*(fz+temp[ZZ]);
-  /* 21 Flops */
   
-  /* TOTAL: 60 flops */
+  temp[XX]=c*(fx-fproj*xix[XX]);
+  temp[YY]=c*(fy-fproj*xix[YY]);
+  temp[ZZ]=c*(fz-fproj*xix[ZZ]);
+  /* 16 */
+  
+  /* c is already calculated in constr_dum2FD
+     storing c somewhere will save 26 flops!     */
+  
+  a1=1-a;
+  fi[XX]+=fx-temp[XX];
+  fi[YY]+=fy-temp[YY];
+  fi[ZZ]+=fz-temp[ZZ];
+  fj[XX]+=a1*temp[XX];
+  fj[YY]+=a1*temp[YY];
+  fj[ZZ]+=a1*temp[ZZ];
+  fk[XX]+= a*temp[XX];
+  fk[YY]+= a*temp[YY];
+  fk[ZZ]+= a*temp[ZZ];
+  /* 10 Flops */
+  
+  /* TOTAL: 52 flops */
 }
 
 static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
