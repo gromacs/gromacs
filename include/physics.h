@@ -71,7 +71,9 @@ static char *SRCID_physics_h = "$Id$";
 #define FARADAY          (E_CHARGE*AVOGADRO)    /* (C/mol)      */
 #define ELECTRONVOLT     (E_CHARGE*AVOGADRO/KILO) /* (kJ/mol)   */     
 
-#define EPSILON0 	 (5.72765E-4)		/* (e^2 Na/(kJ nm))     */
+#define EPSILON0 	 (5.72765E-4)		/* (e^2 Na/(kJ nm))     
+						   == (e^2/(kJ mol nm)) */
+                                                
 #define SPEEDOFLIGHT     (3.0e5)                /* nm/ps                */
 #define ATOMICMASS_keV   (940000.0)             /* Atomic mass in keV   */
 #define ELECTRONMASS_keV (512.0)                /* Electron mas in keV  */
