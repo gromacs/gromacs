@@ -260,11 +260,9 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	map[m].code.c2 = line[1];
       line += nch;
       str = strchr(line,'#')+1;
-      printf("line %s\n",line);
       col_len = 0;
       while (isxdigit(str[col_len]))
 	col_len++;
-      printf("collen %d\n",col_len);
       if (col_len==6) {
 	sscanf(line,"%*s #%2x%2x%2x",&r,&g,&b);
 	map[m].rgb.r=r/255.0;
