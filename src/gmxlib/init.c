@@ -88,12 +88,16 @@ void init_single(FILE *log,t_parm *parm,
 {
   int         step,natoms;
   real        t,lambda;
-  t_tpxheader tpx;
+  t_tpxheader *tpx;
 
-  read_tpxheader(tpxfile,&tpx);
-
-  snew(*x,tpx.natoms);
-  snew(*v,tpx.natoms);
+  snew(tpx,1);
+  
+  read_tpxheader(tpxfile,tpx);
+  snew(*x,tpx->natoms);
+  snew(*v,tpx->natoms);
+  
+  sfree(tpx);
+  
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,
 	   parm->box,&natoms,*x,*v,NULL,top);
   
