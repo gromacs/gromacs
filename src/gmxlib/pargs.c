@@ -246,7 +246,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
   bool bShowHidden,bIsHidden;
   char buf[32],buf2[256];
   char *desc,*wdesc,*ptr;
-  int  i,j;
+  int  i,j,k;
   
   /* Cannot call opt2parg_bSet here, because it crashes when the option
    * is not in the list (mdrun)
@@ -269,6 +269,23 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	sprintf(desc,"[hidden] %s",ptr+6);
       } else
 	desc=strdup(pa[i].desc);
+	
+      /* Add extra comment for enumerateds */
+      if (pa[i].type == etENUM) {
+	srenew(desc,strlen(desc)+16);
+	strcat(desc," Choices are: ");
+	for(k=0; (pa[i].u.c[k] != NULL); k++) {
+	  srenew(desc,strlen(desc)+strlen(pa[i].u.c[k])+4);
+	  strcat(desc,pa[i].u.c[k]);
+	  if (k == 0) {
+	    srenew(desc,strlen(desc)+12);
+	    strcat(desc," (default)");
+	  }
+	  /* Print a comma everywhere but at the last one */
+	  if (pa[i].u.c[k+1] != NULL)
+	    strcat(desc,", ");
+	}
+      }
 	
       if (bShowHidden || !bIsHidden) {
 	if (pa[i].type == etBOOL)

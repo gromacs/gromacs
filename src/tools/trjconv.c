@@ -233,7 +233,7 @@ int main(int argc,char *argv[])
   static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
   static bool  bCheckDouble=FALSE;
   static int   skip_nr=1;
-  static char  *prec_str[] = { "3", "1", "2", "4", "5", NULL };
+  static char  *prec_str[] = { "3", "1", "2", "4", "5", "6", "7", "8", "9", "10", NULL };
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
   static rvec  newbox = {0,0,0};
   static real  xshift=0.0;
@@ -259,7 +259,7 @@ int main(int argc,char *argv[])
     { "-pfit", FALSE,  etBOOL, &bIFit,
       "progressive fit, to the previous fitted structure" },
     { "-prec", FALSE,  etENUM, prec_str,
-      "precision for .gro and .xtc writing in number of decimal places" },
+      "precision for .gro and .xtc writing in number of decimal places. More than 6 is useless in single precision." },
     { "-vel", FALSE, etBOOL, &bVels,
       "read and write velocities if possible" },
     { "-skip", FALSE,  etINT, &skip_nr,
