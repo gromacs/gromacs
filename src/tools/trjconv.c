@@ -36,7 +36,6 @@ static char *SRCID_trjconv_c = "$Id$";
 
 #include <string.h>
 #include <math.h>
-#include <unistd.h>
 #include "macros.h"
 #include "sysstuff.h"
 #include "smalloc.h"

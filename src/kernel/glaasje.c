@@ -36,7 +36,8 @@ static char *SRCID_glaasje_c = "$Id$";
 #include "smalloc.h"
 #include "glaasje.h"
 #include "macros.h"
-	
+#include "maths.h"
+
 void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 	     t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
 	     real ener[])

@@ -5,6 +5,16 @@
 
 AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
+# Assembly files that should be preprocessed.
+# We have to do this manually since the various compilers cant agree
+# on a common lower/upper case .s for preprocessing.
+
+SUFFIXES = .asm
+
+.asm.s:
+	$(CPP) $< > $@
+
+
 lib_LTLIBRARIES = libgmx@LIBSUFFIX@.la
 
 libgmx@LIBSUFFIX@_la_LIBADD = @GMXLIB_LIBOBJS@
@@ -36,10 +46,10 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	x86_sse.s	x86_sse2.s	x86_3dnow.s  	inner_altivec.c \
 	mgmx.c		widget.c	widget.h	x86_cpuid.s	\
-	axp_asm.s	f77_wrappers.c	
+	axp_asm.s	f77_wrappers.c	gmx_system_xdr.c
+
 
 nodist_EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = innerf.f innerc.c
-
 
 # Compaq are fscking around with their compiler... some versions require
 # .s and some .S. It's checked by configure. COMPAQ: FIX YOUR COMPILER!

@@ -86,11 +86,13 @@ extern int strcasecmp_min(const char *str1, const char *str2);
  */
 
 extern int gmx_strcasecmp(const char *str1, const char *str2);
+extern int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
 extern char *gmx_strdup(const char *src);
 
 #ifndef HAVE_STRCASECMP
 #define strcasecmp gmx_strcasecmp
+#define strncasecmp gmx_strncasecmp
 #endif
 
 #ifndef HAVE_STRDUP

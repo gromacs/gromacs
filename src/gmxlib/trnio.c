@@ -34,12 +34,13 @@ static char *SRCID_trnio_c = "$Id$";
 #include <string.h>
 #include "sysstuff.h"
 #include "smalloc.h"
+#include "gmxfio.h"
 #include "fatal.h"
 #include "txtdump.h"
 #include "names.h"
 #include "futil.h"
 #include "trnio.h"
-#include "gmxfio.h"
+
 
 #define BUFSIZE		128
 #define GROMACS_MAGIC   1993

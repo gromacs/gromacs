@@ -38,28 +38,18 @@ static char *SRCID_xdrf_h = "$Id$";
 #include <config.h>
 #endif
 
-#ifdef USE_XDR
-#ifdef __GNUC__  
-#ifdef FALSE
-#undef FALSE
-#endif
-#ifdef TRUE
-#undef TRUE
-#endif
-#endif
+#include "typedefs.h"
 
 #ifdef __PGI    /*Portland group compiler*/
 #define int64_t long long
 #endif
 
+#if (defined WIN32 || defined _WIN32 || defined WIN64  || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
+#include "gmx_system_xdr.h"
+#else
 #include <rpc/rpc.h>
 #include <rpc/xdr.h>
-#else
-typedef int XDR;
-typedef int bool_t;
 #endif
-
-#include "typedefs.h"
 
 extern int xdropen(XDR *xdrs, const char *filename, const char *type);
 
@@ -73,17 +63,6 @@ extern int xdr_real(XDR *xdrs,real *r);
 
 extern int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 /* Read or write reduced precision *real* coordinates */
-
-#ifndef USE_XDR
-/* Gromacs stubs, to avoid compile-time warnings when we dont use xdr */
-int xdropen(XDR *xdrs, const char *filename, const char *type);
-int xdrclose(XDR *xdrs);
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
-bool_t xdr_int(XDR *xdr, int *i);
-bool_t xdr_float(XDR *xdr, float *f);
-bool_t xdr_double(XDR *xdr, double *d);
-bool_t xdr_string(XDR *xdr,char **s,int size);
-#endif
 
 #endif
 

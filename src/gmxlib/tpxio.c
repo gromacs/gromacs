@@ -33,6 +33,7 @@ static char *SRCID_tpxio_c = "$Id$";
  
 #include <ctype.h>
 #include "sysstuff.h"
+#include "gmxfio.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "fatal.h"
@@ -42,7 +43,6 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "symtab.h"
 #include "futil.h"
 #include "filenm.h"
-#include "gmxfio.h"
 #include "tpxio.h"
 #include "confio.h"
 #include "atomprop.h"

@@ -51,7 +51,6 @@ extern "C" {
    *
    **************************************************************/
 #include "typedefs.h"
-#include "xdrf.h"
 
 typedef struct
 {

@@ -47,58 +47,6 @@ static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
 
-#ifndef USE_XDR
-int xdropen(XDR *xdrs, const char *filename, const char *type)
-{
-  fatal_error(0,"xdropen called, but GROMACS compiled without XDR support");
-  
-  return 0;
-}
-
-int xdrclose(XDR *xdrs) 
-{
-  fatal_error(0,"xdrclose called, but GROMACS compiled without XDR support");
-  
-  return 0;
-}
-
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) 
-{
-  fatal_error(0,"xdr3dfcoord called, but GROMACS compiled without XDR support");
-  
-  return 0;
-}
-
-bool_t	xdr_int(XDR *xdr, int *i)
-{
-  fatal_error(0,"xdr_int called, but GROMACS compiled without XDR support");
-  
-  return (bool_t) 0;
-}
-
-bool_t	xdr_float(XDR *xdr, float *f)
-{
-  fatal_error(0,"xdr_float called, but GROMACS compiled without XDR support");
-  
-  return (bool_t) 0;
-}
-   
-bool_t	xdr_double(XDR *xdr, double *d)
-{
-  fatal_error(0,"xdr_double called, but GROMACS compiled without XDR support");
-  
-  return (bool_t) 0;
-}
-
-bool_t xdr_string(XDR *xdr,char **s,int size)
-{
-  fatal_error(0,"xdr_string called, but GROMACS compiled without XDR support");
-  
-  return (bool_t) 0;
-}
-
-#else /* we have xdr support */
-
 #ifdef USE_FORTRAN
 
 typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
@@ -141,7 +89,7 @@ int ctofstr(char *ds, int dl, char *ss)
 void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
 {
-	*ret = xdr_bool(xdridptr[*xdrid], (bool_t *) pb);
+	*ret = xdr_bool(xdridptr[*xdrid], pb);
 	cnt += sizeof(int);
 }
 
@@ -230,7 +178,7 @@ F77_FUNC(xdrfstring,XDRFSTRING)(int *xdrid, char * sp_ptr,
 	    free(tsp);
 	    return;
 	}
-	*ret = xdr_string(xdridptr[*xdrid], (char **) &tsp, (u_int) *maxsize);
+        *ret = xdr_string(xdridptr[*xdrid], (char **) &tsp, (unsigned int) *maxsize);
 	ctofstr( sp_ptr, sp_len , tsp);
 	cnt += *maxsize;
 	free(tsp);
@@ -368,7 +316,8 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     static int init_done = 0;
     enum xdr_op lmode;
     int xdrid;
-    
+    char newtype[5];
+
     if (init_done == 0) {
 	for (xdrid = 1; xdrid < MAXID; xdrid++) {
 	    xdridptr[xdrid] = NULL;
@@ -383,16 +332,16 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	return 0;
     }
     if (*type == 'w' || *type == 'W') {
-	    type = "w+";
+            strcpy(newtype,"wb+");
 	    lmode = XDR_ENCODE;
     } else if (*type == 'a' || *type == 'A') {
-            type = "a+";
+            strcpy(newtype,"ab+");
             lmode = XDR_ENCODE;
     } else {
-	    type = "r";
+            strcpy(newtype,"rb+");
 	    lmode = XDR_DECODE;
     }
-    xdrfiles[xdrid] = fopen(filename, type);
+    xdrfiles[xdrid] = fopen(filename, newtype);
     if (xdrfiles[xdrid] == NULL) {
 	xdrs = NULL;
 	return 0;
@@ -728,7 +677,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     int minidx, maxidx;
     unsigned sizeint[3], sizesmall[3], bitsizeint[3], size3, *luip;
     int flag, k;
-    int small, smaller, larger, i, is_small, is_smaller, run, prevrun;
+    int smallnum, smaller, larger, i, is_small, is_smaller, run, prevrun;
     float *lfp, lf;
     int tmp, *thiscoord,  prevcoord[3];
     unsigned int tmpcoord[30];
@@ -758,8 +707,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	 * write them as floats using xdr_vector
 	 */
 	if (*size <= 9 ) {
-	    return (xdr_vector(xdrs, (char *) fp, (u_int)size3, 
-	            (u_int)sizeof(*fp), (xdrproc_t)xdr_float));
+            return (xdr_vector(xdrs, (char *) fp, (unsigned int)size3, 
+                    (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
 	
 	xdr_float(xdrs, precision);
@@ -886,7 +835,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
 	smaller = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
-	small = magicints[smallidx] / 2;
+	smallnum = magicints[smallidx] / 2;
 	sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 	larger = magicints[maxidx] / 2;
 	i = 0;
@@ -904,9 +853,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		is_smaller = 0;
 	    }
 	    if (i + 1 < *size) {
-		if (abs(thiscoord[0] - thiscoord[3]) < small &&
-			abs(thiscoord[1] - thiscoord[4]) < small &&
-			abs(thiscoord[2] - thiscoord[5]) < small) {
+		if (abs(thiscoord[0] - thiscoord[3]) < smallnum &&
+			abs(thiscoord[1] - thiscoord[4]) < smallnum &&
+			abs(thiscoord[2] - thiscoord[5]) < smallnum) {
 		    /* interchange first with second atom for better
 		     * compression of water molecules
 		     */
@@ -947,9 +896,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		    is_smaller = 0;
 		}
 
-		tmpcoord[run++] = thiscoord[0] - prevcoord[0] + small;
-		tmpcoord[run++] = thiscoord[1] - prevcoord[1] + small;
-		tmpcoord[run++] = thiscoord[2] - prevcoord[2] + small;
+		tmpcoord[run++] = thiscoord[0] - prevcoord[0] + smallnum;
+		tmpcoord[run++] = thiscoord[1] - prevcoord[1] + smallnum;
+		tmpcoord[run++] = thiscoord[2] - prevcoord[2] + smallnum;
 		
 		prevcoord[0] = thiscoord[0];
 		prevcoord[1] = thiscoord[1];
@@ -959,9 +908,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		thiscoord = thiscoord + 3;
 		is_small = 0;
 		if (i < *size &&
-			abs(thiscoord[0] - prevcoord[0]) < small &&
-			abs(thiscoord[1] - prevcoord[1]) < small &&
-			abs(thiscoord[2] - prevcoord[2]) < small) {
+			abs(thiscoord[0] - prevcoord[0]) < smallnum &&
+			abs(thiscoord[1] - prevcoord[1]) < smallnum &&
+			abs(thiscoord[2] - prevcoord[2]) < smallnum) {
 		    is_small = 1;
 		}
 	    }
@@ -978,18 +927,18 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    if (is_smaller != 0) {
 		smallidx += is_smaller;
 		if (is_smaller < 0) {
-		    small = smaller;
+		    smallnum = smaller;
 		    smaller = magicints[smallidx-1] / 2;
 		} else {
-		    smaller = small;
-		    small = magicints[smallidx] / 2;
+		    smaller = smallnum;
+		    smallnum = magicints[smallidx] / 2;
 		}
 		sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 	    }
 	}
 	if (buf[1] != 0) buf[0]++;
 	xdr_int(xdrs, &(buf[0])); /* buf[0] holds the length in bytes */
-	return errval * (xdr_opaque(xdrs, (caddr_t)&(buf[3]), (u_int)buf[0]));
+        return errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
     } else {
 	
 	/* xdrs is open for reading */
@@ -997,14 +946,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	if (xdr_int(xdrs, &lsize) == 0) 
 	    return 0;
 	if (*size != 0 && lsize != *size) {
-	    fprintf(stderr, "wrong number of coordinates in xdr3dfcoor; "
+	    fprintf(stderr, "wrong number of coordinates in xdr3dfcoord; "
 		    "%d arg vs %d in file", *size, lsize);
 	}
 	*size = lsize;
 	size3 = *size * 3;
 	if (*size <= 9) {
-	    return (xdr_vector(xdrs, (char *) fp, (u_int)size3, 
-	            (u_int)sizeof(*fp), (xdrproc_t)xdr_float));
+            return (xdr_vector(xdrs, (char *) fp, (unsigned int)size3, 
+                    (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
 	xdr_float(xdrs, precision);
 	if (ip == NULL) {
@@ -1063,7 +1012,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
 	smaller = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
-	small = magicints[smallidx] / 2;
+	smallnum = magicints[smallidx] / 2;
 	sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx] ;
 	larger = magicints[maxidx];
 
@@ -1071,7 +1020,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 
 	if (xdr_int(xdrs, &(buf[0])) == 0)
 	    return 0;
-	if (xdr_opaque(xdrs, (caddr_t)&(buf[3]), (u_int)buf[0]) == 0)
+        if (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]) == 0)
 	    return 0;
 	buf[0] = buf[1] = buf[2] = 0;
 	
@@ -1114,9 +1063,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 		for (k = 0; k < run; k+=3) {
 		    receiveints(buf, 3, smallidx, sizesmall, thiscoord);
 		    i++;
-		    thiscoord[0] += prevcoord[0] - small;
-		    thiscoord[1] += prevcoord[1] - small;
-		    thiscoord[2] += prevcoord[2] - small;
+		    thiscoord[0] += prevcoord[0] - smallnum;
+		    thiscoord[1] += prevcoord[1] - smallnum;
+		    thiscoord[2] += prevcoord[2] - smallnum;
 		    if (k == 0) {
 			/* interchange first with second atom for better
 			 * compression of water molecules
@@ -1146,15 +1095,15 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    }
 	    smallidx += is_smaller;
 	    if (is_smaller < 0) {
-		small = smaller;
+		smallnum = smaller;
 		if (smallidx > FIRSTIDX) {
 		    smaller = magicints[smallidx - 1] /2;
 		} else {
 		    smaller = 0;
 		}
 	    } else if (is_smaller > 0) {
-		smaller = small;
-		small = magicints[smallidx] / 2;
+		smaller = smallnum;
+		smallnum = magicints[smallidx] / 2;
 	    }
 	    sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx] ;
 	}
@@ -1162,5 +1111,3 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     return 1;
 }
 
-#endif 
-   

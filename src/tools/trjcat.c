@@ -32,7 +32,6 @@
 static char *SRCID_trjcat_c = "$Id$";
 #include <string.h>
 #include <math.h>
-#include <unistd.h>
 #include "macros.h"
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -293,7 +292,7 @@ int main(int argc,char *argv[])
       "do not discard double time frames" }
   };
       
-  int         status,ftp,ftpin,i,frame,frame_out,step,trjout=0;
+  int         status,ftp,ftpin,i,frame,frame_out,step=0,trjout=0;
   rvec        *x,*v;
   real        xtcpr,t_corr;
   t_trxframe  fr,frout;

@@ -57,7 +57,6 @@ external "C" {
 
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "xdrf.h"
   
   /* 
    * Index for the additional blocks in the energy file.

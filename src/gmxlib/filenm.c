@@ -41,6 +41,11 @@ static char *SRCID_filenm_c = "$Id$";
 #include "wman.h"
 #include "macros.h"
 
+/* XDR should be available on all platforms now, 
+ * but we keep the possibility of turning it off...
+ */
+#define USE_XDR
+
 /* Use bitflag ... */
 #define IS_SET(fn) ((fn.flag & ffSET) != 0)
 #define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
@@ -203,6 +208,7 @@ char *ftp2ftype(int ftp)
   }
   return "unknown";
 }
+
 
 char *ftp2defnm(int ftp)
 {

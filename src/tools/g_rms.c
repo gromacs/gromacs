@@ -697,6 +697,7 @@ int main (int argc,char *argv[])
 	fclose(fp);
       }
       if (opt2bSet("-bin",NFILE,fnm)) {
+	/* NB: File must be binary if we use fwrite */
 	fp=ftp2FILE(efDAT,NFILE,fnm,"wb");
 	for(i=0;i<tel_mat;i++) 
 	  fwrite(rmsd_mat[i],sizeof(**rmsd_mat),tel_mat,fp);

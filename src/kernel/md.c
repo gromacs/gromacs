@@ -48,6 +48,7 @@ static char *SRCID_md_c = "$Id$";
 #include "mdrun.h"
 #include "confio.h"
 #include "network.h"
+#include "sysstuff.h"
 #include "sim_util.h"
 #include "pull.h"
 #include "xvgr.h"
@@ -62,6 +63,7 @@ static char *SRCID_md_c = "$Id$";
 #include "sim_util.h"
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
+
 
 static RETSIGTYPE signal_handler(int n)
 {

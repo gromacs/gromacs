@@ -43,7 +43,6 @@ static char *SRCID_confio_c = "$Id$";
 #include "symtab.h"
 #include "assert.h"
 #include "futil.h"
-#include "xdrf.h"
 #include "filenm.h"
 #include "pdbio.h"
 #include "tpxio.h"
@@ -857,7 +856,6 @@ void get_stx_coordnum(char *infile,int *natoms)
   case efTPB:
   case efTPR: {
     t_tpxheader tpx;
-    
     read_tpxheader(infile,&tpx);
     *natoms = tpx.natoms;
     break;
@@ -922,16 +920,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
       snew(atoms->atom,atoms->nr);
     if (!atoms->atomname)
       snew(atoms->atomname,atoms->nr);
-    if (!atoms->atomtype)
-      snew(atoms->atomtype,atoms->nr);
-    if (!atoms->atomtypeB)
-      snew(atoms->atomtypeB,atoms->nr);
     for(i=0; (i<atoms->nr); i++) {
-      atoms->atom[i]      = top->atoms.atom[i];
-      atoms->atomname[i]  = top->atoms.atomname[i];
-      atoms->atomtype[i]  = top->atoms.atomtype[i];
-      atoms->atomtypeB[i] = top->atoms.atomtypeB[i];
-
+      atoms->atom[i]     = top->atoms.atom[i];
+      atoms->atomname[i] = top->atoms.atomname[i];
     }
     
     if (!atoms->resname)

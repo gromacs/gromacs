@@ -34,6 +34,7 @@ static char *SRCID_stat_c = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 #include "sysstuff.h"
+#include "gmxfio.h"
 #include "fatal.h"
 #include "network.h"
 #include "txtdump.h"
@@ -52,7 +53,6 @@ static char *SRCID_stat_c = "$Id$";
 #include "rbin.h"
 #include "tgroup.h"
 #include "xtcio.h"
-#include "gmxfio.h"
 #include "trnio.h"
 #include "statutil.h"
 

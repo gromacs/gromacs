@@ -30,6 +30,9 @@
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
 static char *SRCID_dum_parm_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -37,6 +40,7 @@ static char *SRCID_dum_parm_c = "$Id$";
 #include "dum_parm.h"
 #include "smalloc.h"
 #include "resall.h"
+#include "string2.h"
 #include "add_par.h"
 #include "vec.h"
 #include "toputil.h"

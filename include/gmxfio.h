@@ -40,7 +40,7 @@ static char *SRCID_gmxfio_h = "$Id$";
 #endif
 
 #include <stdio.h>
-#include <unistd.h>
+#include "sysstuff.h"
 #include "typedefs.h"
 #include "xdrf.h"
 
@@ -70,7 +70,10 @@ extern int fio_open(char *fn,char *mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
- * mode may be "r", "w", "a"
+ * mode may be "r", "w", or "a". You should append a "b" to the mode
+ * if you are writing a binary file, but the routine will also 
+ * doublecheck it and try to do it if you forgot. This has no effect on
+ * unix, but is important on windows.
  */
  
 extern void fio_close(int fp);

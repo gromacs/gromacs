@@ -36,7 +36,8 @@ static char *SRCID_gmxfio_c = "$Id$";
 
 #include <ctype.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <string.h>
+#include "sysstuff.h"
 #include "fatal.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -44,6 +45,11 @@ static char *SRCID_gmxfio_c = "$Id$";
 #include "filenm.h"
 #include "string2.h"
 #include "gmxfio.h"
+
+/* XDR should be available on all platforms now, 
+ * but we keep the possibility of turning it off...
+ */
+#define USE_XDR
 
 typedef struct {
   int  iFTP;
@@ -430,7 +436,7 @@ static bool do_binwrite(void *item,int nitem,int eio,
     fprintf(stderr,"Error writing %s %s to file %s (source %s, line %d)\n",
 	    eioNames[eio],desc,curfio->fn,srcfile,line);
     fprintf(stderr,"written size %u bytes, source size %u bytes\n",
-	    (uint)wsize,(uint)size);
+	    (unsigned int)wsize,(unsigned int)size);
   }
   return (wsize == nitem);
 }
@@ -498,7 +504,7 @@ static bool do_xdr(void *item,int nitem,int eio,
 		   char *desc,char *srcfile,int line)
 {
   unsigned char *ucptr;
-  bool_t res=0;
+  int    res=0;
   float  fvec[DIM];
   double dvec[DIM];
   int    j,m,*iptr,idum;
@@ -536,7 +542,7 @@ static bool do_xdr(void *item,int nitem,int eio,
     break;
   case eioUSHORT:
     if (item && !curfio->bRead) us = *(unsigned short *)item;
-    res = xdr_u_short(curfio->xdr,(u_short *)&us);
+    res = xdr_u_short(curfio->xdr,(unsigned short *)&us);
     if (item) *(unsigned short *)item = us;
     break;
   case eioRVEC:
@@ -544,7 +550,7 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item && !curfio->bRead)
 	for(m=0; (m<DIM); m++) 
 	  dvec[m] = ((real *)item)[m];
-      res=xdr_vector(curfio->xdr,(char *)dvec,DIM,(u_int)sizeof(double),
+      res=xdr_vector(curfio->xdr,(char *)dvec,DIM,(unsigned int)sizeof(double),
 		     (xdrproc_t)xdr_double);
       if (item)
 	for(m=0; (m<DIM); m++) 
@@ -554,7 +560,7 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item && !curfio->bRead)
 	for(m=0; (m<DIM); m++) 
 	  fvec[m] = ((real *)item)[m];
-      res=xdr_vector(curfio->xdr,(char *)fvec,DIM,(u_int)sizeof(float),
+      res=xdr_vector(curfio->xdr,(char *)fvec,DIM,(unsigned int)sizeof(float),
 		     (xdrproc_t)xdr_float);
       if (item)
 	for(m=0; (m<DIM); m++) 
@@ -634,20 +640,28 @@ int fio_open(char *fn,char *mode)
 {
   t_fileio *fio=NULL;
   int      i,nfio=0;
-  char     *bf,*m=NULL;
+  char     *bf,newmode[5];
   bool     bRead;
 
+  
   if (fn2ftp(fn)==efTPA)
-    m=mode;
+    strcpy(newmode,mode);
   else {
     if (mode[0]=='r')
-      m="rb";
+      strcpy(newmode,"r");
     else if (mode[0]=='w')
-      m="wb";
+      strcpy(newmode,"w");
     else if (mode[0]=='a')
-      m="ab";
+      strcpy(newmode,"a");
     else
-      fatal_error(0,"DEATH HORROR in fio_open, mode is '%s'",m);
+      fatal_error(0,"DEATH HORROR in fio_open, mode is '%s'",mode);
+  }
+
+  /* Check if it should be opened as a binary file */
+  if(strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) {
+    /* Not ascii, add b to file mode */
+    if(strchr(newmode,'b')==NULL && strchr(newmode,'B')==NULL)
+      strcat(newmode,"b");
   }
 
   /* Determine whether we have to make a new one */
@@ -664,7 +678,7 @@ int fio_open(char *fn,char *mode)
     nfio = nFIO-1;
   }
 
-  bRead = (m[0]=='r');
+  bRead = (newmode[0]=='r');
   fio->fp  = NULL;
   fio->xdr = NULL;
   if (fn) {
@@ -677,7 +691,7 @@ int fio_open(char *fn,char *mode)
       /* First check whether we have to make a backup,
        * only for writing, not for read or append.
        */
-      if (m[0]=='w') {
+      if (newmode[0]=='w') {
 	if (fexist(fn)) {
 	  bf=(char *)backup_fn(fn);
 	  if (rename(fn,bf) == 0) {
@@ -693,12 +707,12 @@ int fio_open(char *fn,char *mode)
 	  fatal_error(0,"File %s not found",fn);
       }
       snew(fio->xdr,1);
-      if (!xdropen(fio->xdr,fn,m))
+      if (!xdropen(fio->xdr,fn,newmode))
 	fatal_error(-1,"Could not open %s",fn);
     }
     else {
       /* If it is not, open it as a regular file */
-      fio->fp = ffopen(fn,m);
+      fio->fp = ffopen(fn,newmode);
     }
   }
   else {
@@ -808,6 +822,7 @@ void fio_rewind(int fio)
   fio_check(fio);
   if (FIO[fio].xdr) {
     xdrclose(FIO[fio].xdr);
+    /* File is always opened as binary by xdropen */
     xdropen(FIO[fio].xdr,FIO[fio].fn,FIO[fio].bRead ? "r" : "w");
   }
   else

@@ -808,8 +808,6 @@ if test "$GCC" = "yes"; then
         ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
       ;;
    esac
-else
-  AM_CONDITIONAL(GNU_CC,false)
 fi
 
 if test -n "$CPU_FLAGS"; then

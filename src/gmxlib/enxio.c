@@ -193,6 +193,10 @@ int open_enx(char *fn,char *mode)
   char       **nm=NULL;
   t_enxframe *fr;
   bool       bDum=TRUE;
+  
+  /* Energy files should always be opened as binary files,
+   * but that is checked in fio_open.
+   */
 
   if (mode[0]=='r') {
     fp=fio_open(fn,mode);

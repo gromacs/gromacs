@@ -33,7 +33,9 @@ static char *SRCID_futil_c = "$Id$";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"
@@ -41,6 +43,19 @@ static char *SRCID_futil_c = "$Id$";
 #include "fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+ 
+/* Native windows uses backslash path separators.
+ * Cygwin and everybody else in the world use slash.
+ * When reading the PATH environment variable, Unix separates entries
+ * with colon, while windows uses semicolon.
+ */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#define DIR_SEPARATOR '\\'
+#define PATH_SEPARATOR ";"
+#else
+#define DIR_SEPARATOR '/'
+#define PATH_SEPARATOR ":"
+#endif
 
 typedef struct t_pstack {
   FILE   *fp;
@@ -211,11 +226,11 @@ char *backup_fn(char *file)
   char        *ptr;
   static char buf[256];
   
-  for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--);
+  for(i=strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--);
   if (i > 0) {
     ptr=strdup(file);
     ptr[i]='\0';
-    sprintf(buf,"%s/#%s#",ptr,ptr+i+1);
+    sprintf(buf,"%s%c#%s#",ptr,DIR_SEPARATOR,ptr+i+1);
     sfree(ptr);
   }
   else
@@ -241,7 +256,7 @@ FILE *ffopen(char *file,char *mode)
   }
   where();
   
-  bRead= mode[0]=='r';
+  bRead= (mode[0]=='r');
   strcpy(buf,file);
   if (fexist(buf) || !bRead) {
     if ((ff=fopen(buf,mode))==NULL)
@@ -289,30 +304,51 @@ bool search_subdirs(char *parent, char *libdir)
 {
   char *ptr;
   bool found;
-
+  
   /* Search a few common subdirectory names for the gromacs library dir */
-  sprintf(libdir,"%s/share/top/FF.dat",parent);
+  sprintf(libdir,"%s%cshare%ctop%cgurgle.dat",parent,
+	  DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR);
   found=fexist(libdir);
   if(!found) {
-    sprintf(libdir,"%s/share/gromacs/top/FF.dat",parent);
+    sprintf(libdir,"%s%cshare%cgromacs%ctop%cgurgle.dat",parent,
+	    DIR_SEPARATOR,DIR_SEPARATOR,
+	    DIR_SEPARATOR,DIR_SEPARATOR);
     found=fexist(libdir);
   }    
   if(!found) {
-    sprintf(libdir,"%s/share/gromacs-%s/top/FF.dat",parent,VERSION);
+    sprintf(libdir,"%s%cshare%cgromacs-%s%ctop%cgurgle.dat",parent,
+	    DIR_SEPARATOR,DIR_SEPARATOR,VERSION,
+	    DIR_SEPARATOR,DIR_SEPARATOR);
     found=fexist(libdir);
   }    
   if(!found) {
-    sprintf(libdir,"%s/share/gromacs/gromacs-%s/top/FF.dat",parent,VERSION);
-    found=fexist(libdir);
+    sprintf(libdir,"%s%cshare%cgromacs%cgromacs-%s%ctop%cgurgle.dat",parent,
+	    DIR_SEPARATOR,DIR_SEPARATOR,DIR_SEPARATOR,
+	    VERSION,DIR_SEPARATOR,DIR_SEPARATOR);
+      found=fexist(libdir);
   }    
   
-  /* Remove the FF.dat part from libdir if we found something */
+  /* Remove the gurgle.dat part from libdir if we found something */
   if(found) {
-    ptr=strrchr(libdir,'/'); /* slash always present, no check necessary */
+    ptr=strrchr(libdir,DIR_SEPARATOR); /* slash or backslash always present, no check necessary */
     *ptr='\0';
   }
   return found;
 }
+
+/* Check if the program name begins with "/" on unix/cygwin, or
+ * with "\" or "X:\" on windows. If not, the program name
+ * is relative to the current directory.
+ */
+bool filename_is_absolute(char *name)
+{
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
+#else
+  return (name[0] == DIR_SEPARATOR);
+#endif
+}
+
 
 bool get_libdir(char *libdir)
 {
@@ -320,7 +356,7 @@ bool get_libdir(char *libdir)
   char buf[512];
   char full_path[512];
   char test_file[512];
-  char system_path[512];
+  char system_path[4096];
   char *dir,*ptr,*s;
   bool found=FALSE;
   int i;
@@ -328,53 +364,72 @@ bool get_libdir(char *libdir)
   /* First - detect binary name */
   strcpy(bin_name,Program());
   
+  /* On windows & cygwin we need to add the .exe extension
+   * too, or we wont be able to detect that the file exists
+   */
+#if (defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64 || defined __CYGWIN__ || defined __CYGWIN32__)
+  if(strlen(bin_name)<3 || strncasecmp(bin_name+strlen(bin_name)-4,".exe",4))
+    strcat(bin_name,".exe");
+#endif
+
   /* Only do the smart search part if we got a real name */
   if (bin_name && strcmp(bin_name,"GROMACS")) {
-  
-    if (!strchr(bin_name,'/')) {
-      /* No "/" in name means it must be in the path - search it! */
+    
+    if (!strchr(bin_name,DIR_SEPARATOR)) {
+ 
+      /* No slash (or backslash on windows) in name means it must be in the path - search it! */
       s=getenv("PATH");
-      if (s != NULL)
-	strcpy(system_path,s);
-      else
-	system_path[0]='\0';
+   
+      /* Add the local dir since it is not in the path on windows */
+      getcwd(system_path,sizeof(system_path)-1);
+      strcat(system_path,PATH_SEPARATOR);
+      strcat(system_path,s);
       s=system_path;
       found=FALSE;
-      while (!found && (dir=strtok(s,":"))!=NULL) {
-	sprintf(full_path,"%s/%s",dir,bin_name);
+      while (!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
+	sprintf(full_path,"%s%c%s",dir,DIR_SEPARATOR,bin_name);
 	found=fexist(full_path);
 	s=NULL; /* pointer should be null for subseq. calls to strtok */
       }
       if (!found)
 	return FALSE;
-    } else if (bin_name[0] != '/') {
-      /* name is relative the current dir */
+    } else if(!filename_is_absolute(bin_name)) {
+      /* name contains directory separators, but 
+       * it does not start at the root, i.e.
+       * name is relative to the current dir 
+       */
       getcwd(buf,sizeof(buf)-1);
       strcpy(full_path,buf);
       strcat(full_path,bin_name+1);
     } else {
       strcpy(full_path,bin_name);
     }
-
+    
     /* Now we should have a full path and name in full_path,
-     * but it might be a link, or a link to a link to a link...
+     * but on unix it might be a link, or a link to a link to a link..
      */
+#if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
     while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
       buf[i]='\0';
       /* If it doesn't start with "/" it is relative */
-      if (buf[0]!='/') {
-	strcpy(strrchr(full_path,'/')+1,buf);
+      if (buf[0]!=DIR_SEPARATOR) {
+	strcpy(strrchr(full_path,DIR_SEPARATOR)+1,buf);
       } else
 	strcpy(full_path,buf);
     }
+#endif
     
-    /* Remove the executable name - it always contains at least one slash */
-    *(strrchr(full_path,'/')+1)='\0';
+    /* Remove the executable name from the full path name - 
+     * it always contains at least one slash now 
+     */
+    
+    *(strrchr(full_path,DIR_SEPARATOR)+1)='\0';
+
     /* Now we have the full path to the gromacs executable.
      * Use it to find the library dir. 
      */
     found=FALSE;
-    while(!found && ( (ptr=strrchr(full_path,'/')) != NULL ) ) {
+    while(!found && ( (ptr=strrchr(full_path,DIR_SEPARATOR)) != NULL ) ) {
       *ptr='\0';
       found=search_subdirs(full_path,libdir);
     }
@@ -382,14 +437,16 @@ bool get_libdir(char *libdir)
   /* End of smart searching. If we didn't find it in our parent tree,
    * or if the program name wasn't set, at least try some standard 
    * locations before giving up, in case we are running from e.g. 
-   * a users home directory:
+   * a users home directory. This only works on unix or cygwin...
    */
+#if ((!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64) || defined __CYGWIN__ || defined __CYGWIN32__)
   if(!found) 
     found=search_subdirs("/usr/local",libdir);
   if(!found) 
     found=search_subdirs("/usr",libdir);
   if(!found) 
     found=search_subdirs("/opt",libdir);
+#endif
   return found;
 }
 
@@ -424,8 +481,8 @@ char *low_libfn(char *file, bool bFatal)
     found=FALSE;
     strcpy(tmppath,libpath);
     s=tmppath;
-    while(!found && (dir=strtok(s,":"))!=NULL) {
-      sprintf(buf,"%s/%s",dir,file);
+    while(!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
+      sprintf(buf,"%s%c%s",dir,DIR_SEPARATOR,file);
       found=fexist(buf);
       s = NULL;
     }
@@ -441,9 +498,6 @@ char *low_libfn(char *file, bool bFatal)
     
   return ret;
 }
-
-
-
 
 FILE *low_libopen(char *file,bool bFatal)
 {
@@ -482,7 +536,15 @@ void gmx_tmpnam(char *buf)
   for(i=len-6; (i<len); i++) {
     buf[i] = 'X';
   }
+  /* mktemp is dangerous and we should use mkstemp instead, but 
+   * since windows doesnt support it we have to separate the the cases:
+   */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+  fd = open(mktemp(buf),O_RDWR | O_EXCL | O_CREAT, S_IREAD | S_IWRITE );
+#else
   fd = mkstemp(buf);
+#endif
+
   if (fd == EINVAL)
     fatal_error(0,"Invalid template %s for mkstemp (source %s, line %d)",buf,__FILE__,__LINE__);
   else if (fd == EEXIST)
