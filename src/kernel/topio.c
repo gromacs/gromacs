@@ -101,20 +101,6 @@ void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
   }
 }
 
-void stupid_fill(t_block *grp, int maxf)
-{
-  int i;
-
-  srenew(grp->index,2);
-  snew(grp->a,maxf);
-  for(i=0; (i<maxf); i++)
-    grp->a[i]=i;
-  grp->index[0]=0;
-  grp->index[1]=maxf;
-  grp->nr=1;
-  grp->nra=maxf;
-}
-
 real check_mol(t_atoms *atoms)
 {
   char    buf[256];
@@ -486,7 +472,7 @@ static char **read_topol(char        *infile,
 	    merge_excl(&(mi0->atoms.excl),&(block2[whichmol]));
 	    done_block2(&(block2[whichmol]));
 	    make_shake(mi0->plist,&mi0->atoms,atype,nshake); 
-	    stupid_fill(&mi0->mols,mi0->atoms.nr);
+	    stupid_fill(&mi0->mols,mi0->atoms.nr,TRUE);
 	    mi0->bProcessed=TRUE;
 	  }
 	  break;

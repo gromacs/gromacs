@@ -59,11 +59,6 @@ static char *SRCID_runner_c = "$Id$";
 #include "pme.h"
 #include "xvgr.h"
 
-bool optRerunMDset (int nfile, t_filenm fnm[])
-{
-  return opt2bSet("-rerun",nfile,fnm);
-}
-
 void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
 {
   if (ir->nstcomm == 0) {
@@ -123,7 +118,8 @@ void finish_run(FILE *log,t_commrec *cr,
 }
 
 void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
-	      bool bCompact,int nDlb,bool bNM,int nstepout,t_edsamyn *edyn)
+	      bool bCompact,int nDlb,bool bNM,int nstepout,t_edsamyn *edyn,
+	      unsigned long Flags)
 {
   double     cputime=0,realtime;
   t_parm     *parm;
@@ -233,7 +229,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,bDummies,nstepout,parm,grps,
 		    top,ener,x,vold,v,vt,f,buf,
-		    mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
+		    mdatoms,nsb,nrnb,graph,edyn,fr,box_size,Flags);
       break;
     case eiCG:
       start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,

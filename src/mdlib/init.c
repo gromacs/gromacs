@@ -117,11 +117,11 @@ void init_single(FILE *log,t_parm *parm,
 	   parm->box,&natoms,*x,*v,NULL,top);
   check_nprocs_top(tpxfile,top,1);
 
-  *mdatoms=atoms2md(&top->atoms,parm->ir.opts.nFreeze,
+  *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
 		    parm->ir.eI==eiLD,parm->ir.efep!=efepNO,FALSE);
   
   pr_inputrec(log,0,"Input Parameters",&parm->ir);
-  calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
@@ -142,7 +142,7 @@ void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
 	   &natoms,x,v,NULL,&top);
   check_nprocs_top(tpxfile,&top,nprocs);
   
-  calc_nsb(&(top.blocks[ebCGS]),nprocs,&nsb,nstDlb);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),nprocs,&nsb,nstDlb);
   mv_data(left,right,parm,&nsb,&top,x,v);
   done_top(&top);
   sfree(x);
@@ -199,7 +199,7 @@ void init_parts(FILE *log,t_commrec *cr,
       pr_top(log,0,int_title("topology",cr->pid),top);
     fflush(log);
   }
-  *mdatoms=atoms2md(&(top->atoms),parm->ir.opts.nFreeze,
+  *mdatoms=atoms2md(log,&(top->atoms),parm->ir.opts.nFreeze,
 		    parm->ir.eI==eiLD,parm->ir.efep!=efepNO,FALSE);
 }
 

@@ -54,7 +54,7 @@ cdist:		cdist.o bondlist.o smooth.o residues.o virtual.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 genbox:		genbox.o	addconf.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
+		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 
 genconf:	genconf.o	sortwater.o
 		$(LD) -o  $@ $^ $(SYSLIBS)

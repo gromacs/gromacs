@@ -256,7 +256,7 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 	  bmin,fr->bham_b_max);
 }
 
-void init_forcerec(FILE *log,
+void init_forcerec(FILE *fp,
 		   t_forcerec *fr,
 		   t_inputrec *ir,
 		   t_block    *mols,
@@ -294,7 +294,8 @@ void init_forcerec(FILE *log,
 		    (fr->vdwtype == evdwCUT));
   if ((fr->bRF) && (fr->vdwtype == evdwCUT))
     fr->bTab = FALSE;
-  fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
+  if (fp)
+    fprintf(fp,"Table routines are used: %s\n",bool_names[fr->bTab]);
   
   if(fr->bEwald)
     fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
@@ -319,8 +320,9 @@ void init_forcerec(FILE *log,
     for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++)
       if (fr->nWater == mdatoms->typeA[i])
 	fr->nWatMol++;
-    fprintf(log,"There are %d water molecules on cpu %d\n",
-	    fr->nWatMol,nsb->pid);
+    if (fp)
+      fprintf(fp,"There are %d water molecules on cpu %d\n",
+	      fr->nWatMol,nsb->pid);
   }
   
   /* Parameters for generalized RF */
@@ -372,7 +374,7 @@ void init_forcerec(FILE *log,
     
     if ((fr->eeltype==eelPPPM) || (fr->eeltype==eelPOISSON) || 
 	(fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
-	set_shift_consts(log,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
+	set_shift_consts(fp,fr->rcoulomb_switch,fr->rcoulomb,box_size,fr);
   }
 
   /* Initiate arrays */
@@ -419,21 +421,23 @@ void init_forcerec(FILE *log,
     if (fr->rvdw_switch >= fr->rvdw)
       fatal_error(0,"rvdw_switch (%g) must be < rvdw (%g)",
 		  fr->rvdw_switch,fr->rvdw);
-    fprintf(log,"Using %s Lennard-Jones, switch between %g and %g nm\n",
-	    (fr->eeltype==eelSWITCH) ? "switched":"shifted",
-	    fr->rvdw_switch,fr->rvdw);
+    if (fp)
+      fprintf(fp,"Using %s Lennard-Jones, switch between %g and %g nm\n",
+	      (fr->eeltype==eelSWITCH) ? "switched":"shifted",
+	      fr->rvdw_switch,fr->rvdw);
   } 
 
-  fprintf(log,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
-	  fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
+  if (fp)
+    fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
+	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->bDispCorr)
-    set_avcsix(log,fr,mdatoms);
+    set_avcsix(fp,fr,mdatoms);
   if (fr->bBHAM)
-    set_bham_b_max(log,fr,mdatoms);
+    set_bham_b_max(fp,fr,mdatoms);
   
   /* Now update the rest of the vars */
-  update_forcerec(log,fr,box);
+  update_forcerec(fp,fr,box);
   /* if we are using LR electrostatics, and they are tabulated,
    * the tables will contain shifted coulomb interactions.
    * Since we want to use the non-shifted ones for 1-4
@@ -455,7 +459,7 @@ void init_forcerec(FILE *log,
        */
       fr->bTab=FALSE;
       fr->rtab=MAX_14_DIST;
-      make_tables(fr,MASTER(cr));
+      make_tables(fp,fr,MASTER(cr));
       fr->bTab=TRUE;
       fr->VFtab14=fr->VFtab;
       fr->VFtab=NULL;
@@ -471,9 +475,10 @@ void init_forcerec(FILE *log,
 	sscanf(ptr,"%lf",&rtab);
 	fr->rtab = rtab;
       }
-      fprintf(log,"\nNote: Setting the free energy table length to %g nm\n"
-	      "      You can set this value with the environment variable %s"
-	      "\n\n",fr->rtab,envvar);
+      if (fp)
+	fprintf(fp,"\nNote: Setting the free energy table length to %g nm\n"
+		"      You can set this value with the environment variable %s"
+		"\n\n",fr->rtab,envvar);
     } 
     else
       fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
@@ -482,7 +487,7 @@ void init_forcerec(FILE *log,
     fr->rtab = MAX_14_DIST;
   
   /* make tables for ordinary interactions */
-  make_tables(fr,MASTER(cr));
+  make_tables(fp,fr,MASTER(cr));
   if(!(EEL_LR(fr->eeltype) && fr->bTab))
     fr->VFtab14=fr->VFtab;
 }
@@ -491,29 +496,29 @@ void init_forcerec(FILE *log,
 #define pr_int(fp,i)  fprintf((fp),"%s: %d\n",#i,i)
 #define pr_bool(fp,b) fprintf((fp),"%s: %s\n",#b,bool_names[b])
 
-void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
+void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
 {
-  pr_real(log,fr->rlist);
-  pr_real(log,fr->rcoulomb);
-  pr_real(log,fr->fudgeQQ);
-  pr_int(log,fr->ndelta);
-  pr_bool(log,fr->bGrid);
-  pr_bool(log,fr->bTwinRange);
-  /*pr_int(log,fr->cg0);
-    pr_int(log,fr->hcg);*/
-  pr_int(log,fr->ntab);
+  pr_real(fp,fr->rlist);
+  pr_real(fp,fr->rcoulomb);
+  pr_real(fp,fr->fudgeQQ);
+  pr_int(fp,fr->ndelta);
+  pr_bool(fp,fr->bGrid);
+  pr_bool(fp,fr->bTwinRange);
+  /*pr_int(fp,fr->cg0);
+    pr_int(fp,fr->hcg);*/
+  pr_int(fp,fr->ntab);
   if (fr->ntab > 0) {
-    pr_real(log,fr->rcoulomb_switch);
-    pr_real(log,fr->rcoulomb);
+    pr_real(fp,fr->rcoulomb_switch);
+    pr_real(fp,fr->rcoulomb);
   }
   
-  pr_int(log,fr->nmol);
-  pr_int(log,fr->nstcalc);
+  pr_int(fp,fr->nmol);
+  pr_int(fp,fr->nstcalc);
   
-  fflush(log);
+  fflush(fp);
 }
 
-void ns(FILE *log,
+void ns(FILE *fp,
 	t_forcerec *fr,
 	rvec       x[],
 	rvec       f[],
@@ -538,11 +543,11 @@ void ns(FILE *log,
     ptr=getenv("DUMPNL");
     if (ptr) {
       nDNL=atoi(ptr);
-      fprintf(log,"nDNL = %d\n",nDNL);  
+      fprintf(fp,"nDNL = %d\n",nDNL);  
     } else
       nDNL=0;
     /* Allocate memory for the neighbor lists */
-    init_neighbor_list(log,fr,HOMENR(nsb));
+    init_neighbor_list(fp,fr,HOMENR(nsb));
       
     bFirst=FALSE;
   }
@@ -560,7 +565,7 @@ void ns(FILE *log,
     fr->cg0=nsb->workload[cr->pid-1];
   fr->hcg=nsb->workload[cr->pid];
 
-  nsearch = search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md,
+  nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nsb,nrnb,md,
 			      lambda,dvdlambda);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
@@ -571,10 +576,10 @@ void ns(FILE *log,
     &(top->idef),opts->ngener);
   */
   if (nDNL > 0)
-    dump_nblist(log,fr,nDNL);
+    dump_nblist(fp,fr,nDNL);
 }
 
-void force(FILE       *log,     int        step,
+void force(FILE       *fp,     int        step,
 	   t_forcerec *fr,      t_inputrec *ir,
 	   t_idef     *idef,    t_nsborder *nsb,
 	   t_commrec  *cr,      t_nrnb     *nrnb,
@@ -605,7 +610,7 @@ void force(FILE       *log,     int        step,
   debug_gmx();
   
   /* Call the short range functions all in one go. */
-  do_fnbf(log,fr,x,f,md,
+  do_fnbf(fp,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAM] : grps->estat.ee[egLJ],
 	  grps->estat.ee[egCOUL],box_size,nrnb,
 	  lambda,&epot[F_DVDL],FALSE,-1);
@@ -640,19 +645,19 @@ void force(FILE       *log,     int        step,
   if (EEL_LR(fr->eeltype)) {
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(log,FALSE,x,fr->flr,md->chargeA,
+      Vlr = do_pppm(fp,FALSE,x,fr->flr,md->chargeA,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPOISSON:
-      Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,
+      Vlr = do_poisson(fp,FALSE,ir,md->nr,x,fr->flr,md->chargeA,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     case eelPME:
-      Vlr = do_pme(log,FALSE,ir,x,fr->flr,md->chargeA,
+      Vlr = do_pme(fp,FALSE,ir,x,fr->flr,md->chargeA,
 		   box_size,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
       break;
     case eelEWALD:
-      Vlr = do_ewald(log,FALSE,ir,x,fr->flr,md->chargeA,
+      Vlr = do_ewald(fp,FALSE,ir,x,fr->flr,md->chargeA,
 		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
       break;
     default:
@@ -661,10 +666,10 @@ void force(FILE       *log,     int        step,
 		  eel_names[fr->eeltype]);
     }
     if(fr->bEwald)
-	Vself = ewald_LRcorrection(log,nsb,cr,fr,
+	Vself = ewald_LRcorrection(fp,nsb,cr,fr,
 				   md->chargeA,excl,x,box_size,lr_vir);
     else
-	Vself = shift_LRcorrection(log,nsb,cr,fr,
+	Vself = shift_LRcorrection(fp,nsb,cr,fr,
 			       md->chargeA,excl,x,TRUE,box_size,lr_vir);
     epot[F_LR] = Vlr - Vself;
     if (debug)
@@ -682,7 +687,7 @@ void force(FILE       *log,     int        step,
   debug_gmx();
 
   if (!bNBFonly) {
-    calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
+    calc_bonds(fp,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);
     debug_gmx();
   }

@@ -51,7 +51,7 @@ extern void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
 
 extern t_forcerec *mk_forcerec(void);
 
-extern void make_tables(t_forcerec *fr,bool bVerbose);
+extern void make_tables(FILE *fp,t_forcerec *fr,bool bVerbose);
 /* Make tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */

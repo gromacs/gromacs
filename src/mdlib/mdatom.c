@@ -35,7 +35,7 @@ static char *SRCID_mdatom_c = "$Id$";
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *atoms2md(t_atoms *atoms,ivec nFreeze[],
+t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 		    bool bLD,bool bPert,bool bFree)
 {
   int       i,np,g;
@@ -117,7 +117,8 @@ t_mdatoms *atoms2md(t_atoms *atoms,ivec nFreeze[],
     atoms->atom=NULL;
   }
   
-  fprintf(stdlog,"There are %d atoms for free energy perturbation\n",np);
+  if (fp)
+    fprintf(fp,"There are %d atoms for free energy perturbation\n",np);
   
   return md;
 }    

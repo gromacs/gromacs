@@ -38,7 +38,7 @@ static char *SRCID_nsb_c = "$Id$";
 #include "nsb.h"
 #include "ns.h"
 
-void calc_nsbshift(t_nsborder *nsb)
+void calc_nsbshift(FILE *fp,t_nsborder *nsb)
 {
   int i;
   int lastcg,targetcg,nshift,naaj;
@@ -64,17 +64,19 @@ void calc_nsbshift(t_nsborder *nsb)
     /* Now compute the shift, that is the difference in processor index */
     nshift=((nshift-i+nsb->nprocs) % nsb->nprocs);
     
-    fprintf(stdlog,"CPU=%3d, lastcg=%5d, targetcg=%5d, myshift=%5d\n",
-	    i,lastcg,targetcg,nshift);
+    if (fp)
+      fprintf(fp,"CPU=%3d, lastcg=%5d, targetcg=%5d, myshift=%5d\n",
+	      i,lastcg,targetcg,nshift);
 	    
     /* It's the largest shift that matters */
     nsb->shift=max(nshift,nsb->shift);
   }
-  fprintf(stdlog,"nsb->shift = %3d, nsb->bshift=%3d\n",
-	  nsb->shift,nsb->bshift);
+  if (fp)
+    fprintf(fp,"nsb->shift = %3d, nsb->bshift=%3d\n",
+	    nsb->shift,nsb->bshift);
 }
 
-void calc_nsb(t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
+void calc_nsb(FILE *fp,t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
 {
   int  i,cg0;
   
@@ -93,7 +95,7 @@ void calc_nsb(t_block *cgs,int nprocs,t_nsborder *nsb,int nstDlb)
     nsb->index[i]    = cgs->index[cg0];
     nsb->homenr[i]   = cgs->index[cgs->multinr[i]]-nsb->index[i];
   }
-  calc_nsbshift(nsb);
+  calc_nsbshift(fp,nsb);
 }
 
 void print_nsb(FILE *fp,char *title,t_nsborder *nsb)

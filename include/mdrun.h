@@ -47,6 +47,12 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "edsam.h"
 #include "mdebin.h"
 
+#define MD_MULTISIM  1
+#define MD_GLAS      2
+#define MD_POLARISE  4
+#define MD_IONIZE    8
+#define MD_RERUN    16
+
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,bool bDummies,int stepout,
@@ -56,7 +62,8 @@ extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
 		    t_graph *graph,t_edsamyn *edyn,
-		    t_forcerec *fr,rvec box_size);
+		    t_forcerec *fr,rvec box_size,
+		    unsigned long Flags);
 
 /* ROUTINES from nm.c */
 extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -103,7 +110,7 @@ extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 
 extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 		     bool bCompact,int nDlb,bool bNM,int nstepout,
-		     t_edsamyn *edyn);
+		     t_edsamyn *edyn,unsigned long Flags);
 		    
 /* Initialization routines to make maintainance easier */ 
 extern void init_md(t_commrec *cr,

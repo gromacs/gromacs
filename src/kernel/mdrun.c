@@ -42,7 +42,15 @@ static char *SRCID_mdrun_c = "$Id$";
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
+#ifdef XMDRUN
+    "xmdrun is the experimental MD program. New features are tested in this",
+    "program before being implemented in the default mdrun. Currently under",
+    "investigation are: polarizibility, glass simulations, ",
+    "Free energy perturbation, X-Ray bombardments",
+    "and parallel independent simulations."
+#else
     "The mdrun program performs Molecular Dynamics simulations.",
+#endif
     "It reads the run input file ([TT]-s[tt]) and distributes the",
     "topology over processors if needed. The coordinates are passed",
     "around, so that computations can begin.",
@@ -94,27 +102,38 @@ int main(int argc,char *argv[])
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
-    { efTPX, NULL, NULL,      ffREAD },
-    { efTRN, "-o", NULL,      ffWRITE },
-    { efXTC, "-x", NULL,      ffOPTWR },
-    { efSTO, "-c", "confout", ffWRITE },
-    { efENX, "-e", "ener",    ffWRITE },
-    { efLOG, "-g", "md",      ffWRITE },
-    { efXVG, "-dgdl", "dgdl", ffOPTWR },
-    { efTRX, "-rerun", "rerun", ffOPTRD },
-    /* function "optRerunMDset" (in runner.c) checks if -rerun is specified */
-    /* { efHAT, "-hat","ghat",   ffOPTRD }, currently useless */
-    { efEDI, "-ei", "sam",    ffOPTRD },
-    { efEDO, "-eo", "sam",    ffOPTWR },
-    { efPPA, "-pi", "pull",    ffOPTRD },
-    { efPPA, "-po", "pullout", ffOPTWR },
-    { efPDO, "-pd", "pull",    ffOPTWR },
-    { efNDX, "-pn",  "pull",    ffOPTRD },
+    { efTPX, NULL,      NULL,       ffREAD },
+    { efTRN, "-o",      NULL,       ffWRITE },
+    { efXTC, "-x",      NULL,       ffOPTWR },
+    { efSTO, "-c",      "confout",  ffWRITE },
+    { efENX, "-e",      "ener",     ffWRITE },
+    { efLOG, "-g",      "md",       ffWRITE },
+    { efXVG, "-dgdl",   "dgdl",     ffOPTWR },
+    { efTRX, "-rerun",  "rerun",    ffOPTRD },
+    { efEDI, "-ei",     "sam",      ffOPTRD },
+    { efEDO, "-eo",     "sam",      ffOPTWR },
+#ifdef XMDRUN
+    { efGCT, "-j",      "wham",     ffOPTRD },
+    { efGCT, "-jo",     "bam",      ffOPTRD },
+    { efXVG, "-ffout",  "gct",      ffOPTWR },
+    { efXVG, "-devout", "deviatie", ffOPTWR },
+    { efXVG, "-runav",  "runaver",  ffOPTWR },
+#endif
+    { efPPA, "-pi",     "pull",     ffOPTRD },
+    { efPPA, "-po",     "pullout",  ffOPTWR },
+    { efPDO, "-pd",     "pull",     ffOPTWR },
+    { efNDX, "-pn",     "pull",     ffOPTRD },
   };
 #define NFILE asize(fnm)
 
   /* Command line options ! */
-  static bool bVerbose=FALSE,bCompact=TRUE;
+  static bool bVerbose     = FALSE;
+  static bool bCompact     = TRUE;
+#ifdef XMDRUN
+  static bool bMultiSim    = FALSE;
+  static bool bGlas        = FALSE;
+  static bool bIonize      = FALSE;
+#endif
 #ifdef PARALLEL
   static int  nprocs=1;
 #endif
@@ -126,12 +145,20 @@ int main(int argc,char *argv[])
 #endif
     { "-v",       FALSE, etBOOL,{&bVerbose}, "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact}, "Write a compact log file" },
+#ifdef XMDRUN
+    { "-multi",   FALSE, etBOOL,{&bMultiSim}, "Do multiple simulations in parallel (only with -np > 1)" },
+    { "-glas",    FALSE, etBOOL,{&bGlas},
+      "Do glass simulation with special long range corrections" },
+    { "-ionize",  FALSE, etBOOL,{&bIonize},
+      "Do a simulation including the effect of an X-Ray bombardment on your system" },
+#endif
     { "-dlb",     FALSE, etINT, {&nDLB},
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
   t_edsamyn edyn;
+  unsigned long Flags;
   
   cr = init_par(&argc,&argv);
   bVerbose = bVerbose && MASTER(cr);
@@ -146,7 +173,12 @@ int main(int argc,char *argv[])
 		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
     
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
-  
+
+#ifdef XMDRUN
+  if (bMultiSim && PAR(cr))
+    cr = init_msim(cr,NFILE,fnm);
+#endif
+
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
     please_cite(stdlog,"Berendsen95a");
@@ -155,7 +187,15 @@ int main(int argc,char *argv[])
   if (opt2bSet("-ei",NFILE,fnm)) 
     ed_open(NFILE,fnm,&edyn);
     
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
+  Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
+#ifdef XMDRUN
+  Flags = (Flags | 
+	   (bIonize   ? MD_IONIZE   : 0) |
+	   (bMultiSim ? MD_MULTISIM : 0) |
+	   (bGlas     ? MD_GLAS     : 0));
+#endif
+
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn,Flags);
 
 #ifdef USE_MPI
   if (gmx_parallel)

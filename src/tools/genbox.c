@@ -651,6 +651,9 @@ int main(int argc,char *argv[])
     box[YY][YY]=new_box[YY];
     box[ZZ][ZZ]=new_box[ZZ];
   }
+  if (det(box) == 0) 
+    fatal_error(0,"Undefined solute box.\nCreate one with editconf or give explicit -box command line option");
+  
   init_pbc(box,FALSE);
   
   /* add nmol_ins molecules of atoms_ins 

@@ -377,7 +377,7 @@ void fill_table(int n0,int n,real x[],
 #endif
 }
 
-void make_tables(t_forcerec *fr,bool bVerbose)
+void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
 {
   static   char *fns[etiNR] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE     *fp;
@@ -392,10 +392,11 @@ void make_tables(t_forcerec *fr,bool bVerbose)
 #endif
   n = fr->ntab = fr->rtab*fr->tabscale;
   
-  fprintf(stdlog,"Making 3 tables%s of %g(nm)*%g = %d points (%u bytes)\n",
-	  fr->bTab ? "" : 
-	  fr->efep!=efepNO ? " for 1-4 and FEP int.":" for 1-4 int.",
-	  fr->rtab,fr->tabscale,fr->ntab,12*sizeof(real)*fr->ntab);
+  if (out)
+    fprintf(out,"Making 3 tables%s of %g(nm)*%g = %d points (%u bytes)\n",
+	    fr->bTab ? "" : 
+	    fr->efep!=efepNO ? " for 1-4 and FEP int.":" for 1-4 int.",
+	    fr->rtab,fr->tabscale,fr->ntab,12*sizeof(real)*fr->ntab);
   
   snew(fr->VFtab,12*n+1);
   snew(xnormal,n+1);

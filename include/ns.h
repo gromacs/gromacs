@@ -60,6 +60,10 @@ extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
 extern int calc_naaj(int icg,int cgtot);
 /* Calculate the number of charge groups to interact with for icg */
 
+extern void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
+		   int *dx0,int *dx1,real *dcx2);
+/* Determine how many cells to search */
+
 /****************************************************
  *
  *    N E I G H B O R  S E A R C H I N G

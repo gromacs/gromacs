@@ -496,7 +496,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   muabs     = norm(mu_tot);
   Eintern   = Ecouple(tcr,ener)/nmols;
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
-  calc_force(md->nr,f,fmol);
+  /* calc_force(md->nr,f,fmol);*/
   
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help

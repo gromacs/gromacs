@@ -81,6 +81,30 @@ void init_inputrec(t_inputrec *ir)
   memset(ir,0,(size_t)sizeof(*ir));
 }
 
+void stupid_fill(t_block *grp,int natom,bool bOneIndexGroup)
+{
+  int i;
+
+  snew(grp->a,natom);
+  for(i=0; (i<natom); i++)
+    grp->a[i]=i;
+  grp->nra=natom;
+  
+  if (bOneIndexGroup) {
+    srenew(grp->index,2);
+    grp->index[0]=0;
+    grp->index[1]=natom;
+    grp->nr=1;
+  }
+  else {
+    srenew(grp->index,natom+1);
+    for(i=0; (i<=natom); i++)
+      grp->index[i]=i;
+    grp->nr=natom;
+  }
+  grp->multinr[0] = natom-1;
+}
+
 void done_block(t_block *block)
 {
   block->nr    = 0;

@@ -81,6 +81,13 @@ extern void done_atom (t_atoms *at);
 extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
 
+extern void stupid_fill(t_block *grp, int natom,bool bOneIndexGroup);
+/* Fill a block structure with numbers identical to the index
+ * (0, 1, 2, .. natom-1)
+ * If bOneIndexGroup, then all atoms are  lumped in one index group,
+ * otherwise there is one atom per index entry
+ */
+
 extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  

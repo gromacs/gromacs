@@ -92,7 +92,7 @@ int main(int argc,char *argv[])
     please_cite(stdlog,"Berendsen95a");
   }
   
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,TRUE,nstepout,&edyn);
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,TRUE,nstepout,&edyn,0);
 
 #ifdef USE_MPI
   if (gmx_parallel)
