@@ -60,6 +60,7 @@ mkice:		mkice.o
 
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
-
+g_anavel:	g_anavel.o
+		$(LD) -o $@ $^ $(SYSLIBS)
 include	Make.dep
 endif

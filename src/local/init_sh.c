@@ -83,10 +83,10 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   
     /* Initiate the shell structures */    
     for(i=0; (i<ns); i++) {
-      shell[i].shell=-1;
-      shell[i].nucl1=-1;
-      shell[i].nucl2=-1;
-      shell[i].nucl3=-1;
+      shell[i].shell=NO_ATID;
+      shell[i].nucl1=NO_ATID;
+      shell[i].nucl2=NO_ATID;
+      shell[i].nucl3=NO_ATID;
       shell[i].nnucl=0;
       shell[i].k_1=0;
       shell[i].k=0;
@@ -120,18 +120,18 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       if ((nsi < 0) || (nsi >= *nshell))
 	fatal_error(0,"nsi is %d should be within 0 - %d. a1 = %d",
 		    nsi,*nshell,a1);
-      if (shell[nsi].shell == -1) {
+      if (shell[nsi].shell == NO_ATID) {
 	shell[nsi].shell = a1;
 	ns ++;
       }
       else if (shell[nsi].shell != a1)
 	fatal_error(0,"What is this?");
       
-      if      (shell[nsi].nucl1 == -1)
+      if      (shell[nsi].nucl1 == NO_ATID)
 	shell[nsi].nucl1 = a2;
-      else if (shell[nsi].nucl2 == -1)
+      else if (shell[nsi].nucl2 == NO_ATID)
 	shell[nsi].nucl2 = a2;
-      else if (shell[nsi].nucl3 == -1)
+      else if (shell[nsi].nucl3 == NO_ATID)
 	shell[nsi].nucl3 = a2;
       else {
 	pr_shell(log,ns,shell);
@@ -157,7 +157,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       if ((nsi < 0) || (nsi >= *nshell))
 	fatal_error(0,"nsi is %d should be within 0 - %d. a1 = %d",
 		    nsi,*nshell,a1);
-      if (shell[nsi].shell == -1) {
+      if (shell[nsi].shell == NO_ATID) {
 	shell[nsi].shell = a1;
 	ns ++;
       }

@@ -196,13 +196,15 @@ real ptheta_incoh(int Eindex,real theta)
    * We use symmetry in the gaussian (see 180-angle) therefore there
    * are fewer parameters (only 8 per energylevel).
    */
-  static double ppp[5][8] = {
+  static double ppp[NENER][8] = {
     { -0.00295169, 10.4847, 0.0341099, /*-*/43.1963, 
       -0.0164054,  30.2452, 71.0311,    2.50282 },
     { -0.00370852, 9.02037, 0.100559,  /*-*/42.9962,
       -0.0537891,  35.5077, 71.4305,    1.05515 },
     { -0.00427039, 7.86831, 0.118042,  /*-*/45.9846,
       -0.0634505,  38.6134, 70.3857,    0.240082 },
+    { -0.004514,   7.0728,  0.13464,  /*-*/48.213,
+      -0.0723,     41.06,   69.38,     -0.02 },
     { -0.00488796, 5.87988, 0.159574,  /*-*/51.5556,
       -0.0855767,  44.7307, 69.0251,   -0.414604 },
     { -0.00504604, 4.56299, 0.201064,  /*-*/54.8599,
@@ -296,7 +298,7 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
     ca->n++;
     ca->k--;
     /* Generate random vector */
-    rand_vector(v,seed);
+    rand_vector(dv,seed);
 
     factor = ca->vAuger;
     fprintf(log,"DECAY: factor=%10g, dv = (%8.3f, %8.3f, %8.3f)\n",
@@ -394,10 +396,11 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(log,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    "Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEEDOFLIGHT);
-    fprintf(log,"Total charge on system: %g e. Total mass: %g u\n",
+    fprintf(log,PREFIX"Eindex = %d\n",Eindex);
+    fprintf(log,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
 	    ztot,mtot);
-    fprintf(log,"Estimated system radius to be %g nm\n",protein_radius);
-    fprintf(log,
+    fprintf(log,PREFIX"Estimated system radius to be %g nm\n",protein_radius);
+    fprintf(log,PREFIX
 	    "Adding extra kinetic energy because of leaving electrons: %s\n",
 	    bool_names[bExtraKinetic]);
     fflush(log);
