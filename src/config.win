@@ -17,11 +17,20 @@
  * (Dont rename it since config.h can be overwritten
  * by the configure script if you later use e.g. cygwin).
  *
- * If you can't use the build workspace, here's the short
- * version of how to do it:
+ * You will also need the FFTW libraries for windows. Grab
+ * the precompiled version from ftp.gromacs.org/pub/developer,
+ * or use the build environment from the same place and compile
+ * it yourself. Place the libraries and include files somewhere
+ * where they are included automatically, e.g.
+ * \program files\Microsoft Visual Studio\VC98\Include,Lib
+ *
+ * I don't plan on updating the build environment, so you might
+ * find that filenames, etc, have changed. In that case, here's
+ * a short description of how to do it:
  * 
  * Always define -DHAVE_CONFIG_H when you build, and include
- * the current, src and the include directories.
+ * the current, src (..) and the include directories. Use optimization
+ * flags :-)
  * 
  * 1. Build the innerloop generating program in the gmxlib
  *    directory. Use all the mkinl*.c sources and metacode.c
@@ -36,13 +45,16 @@
  *    (*xml*, it will have to wait for gmx4), powerpc specific
  *    stuff (*altivec*), motif stuff (*mgmx*, widget*), 
  *    fortran files (f77*), and of course the innerloop files 
- *    (mkinl*, metacode*).
+ *    (mkinl*, metacode*). Don't use the fortran sources.
+ *
  *    Include the assembly file x86_cpuid.s. If you use
  *    single precision you should also use x86_sse.s and
- *    x86_3dnow.s, and for double prec. x86_sse2.s. To build 
- *    these files you need the free 'nasm' assembler. You can
- *    find a version that supports extended 3dnow and sse at
- *    the gromacs ftp site.
+ *    x86_3dnow.s, and for double prec. x86_sse2.s instead.
+ *    To build these files you need the free 'nasm' assembler.
+ *    You can find a version that supports extended 3dnow and sse
+ *    at the gromacs ftp site. Use it like:
+ *
+ *    nasm -f win32 x86_cpuid.s
  *
  * 4. Build the mdlib library from all the files in
  *    src/mdlib. Skip the fortran files (*.f).
@@ -51,7 +63,10 @@
  *    tools. They should all be linked with the two
  *    libraries above. Look at the Makefile.am in each
  *    directory for descriptions of which files are
- *    included in each binary.
+ *    included in each binary. For instance, mdrun consists of the files:
+ *
+ *    glaasje.c gctio.c init_sh.c ionize.c do_gct.c relax_sh.c 
+ *    xutils.c md.c mdrun.c genalg.c
  */
 
 /* You might have to update the version number in this file.
@@ -66,7 +81,8 @@
 
 /* This is just the *default* library directory. Before looking here
  * the program will try to find it relative to the location of the
- * binary you are running. 
+ * binary you are running. This is only used by grompp and other programs
+ * that create/edit topologies.
  */
 #define GMXLIBDIR "C:\\program\\gromacs\\share\\top"
 

@@ -131,7 +131,7 @@ xdr_int (XDR *xdrs, int *ip)
     {
     case XDR_ENCODE:
       l = (long) *ip;
-      return xdr_putlog (xdrs, &l);
+      return xdr_putlong (xdrs, &l);
 
     case XDR_DECODE:
       if (!xdr_getlong (xdrs, &l))
@@ -166,10 +166,10 @@ xdr_u_int (XDR *xdrs, unsigned int *up)
     {
     case XDR_ENCODE:
       l = (unsigned long) * up;
-      return xdr_putlong (xdrs, &l);
+      return xdr_putlong (xdrs, (long *)&l);
 
     case XDR_DECODE:
-      if (!xdr_getlong (xdrs, &l))
+      if (!xdr_getlong (xdrs, (long *)&l))
 	{
 	  return FALSE;
 	}
@@ -715,7 +715,7 @@ xdrstdio_destroy (XDR *xdrs)
 {
   (void) fflush ((FILE *) xdrs->x_private);
   /* xx should we close the file ?? */
-};
+}
 
 static bool_t
 xdrstdio_getlong (XDR *xdrs, long *lp)
