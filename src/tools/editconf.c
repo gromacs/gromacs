@@ -510,7 +510,7 @@ int main(int argc, char *argv[])
     printf("new center: %6.3f %6.3f %6.3f\n", 
 	   gc[XX],gc[YY],gc[ZZ]);
   }
-  if ( bOrient || bScale || bDist || bSetSize )
+  if ( bOrient || bScale || bDist || bSetSize || bTruncOct )
     printf("new box   : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
 	   box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
   
