@@ -22,8 +22,7 @@ typedef struct {
 } t_mat;
 
 /* The matrix is indexed using the matrix index */
-#define MAT(m,i,j) m->mat[m->m_ind[i]][m->m_ind[j]]
-#define EROW(m,i)  m->erow[m->m_ind[i]]
+#define EROW(m,i)  m->erow[i]
 
 extern real **mk_matrix(int n1,bool b1D);
 

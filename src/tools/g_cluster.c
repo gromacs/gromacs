@@ -54,16 +54,26 @@ void pr_energy(FILE *fp,real e)
   fprintf(fp,"Energy: %8.4f\n",e);  
 }
 
-void mc_optimize(FILE *log,t_mat *m,int maxiter,int *seed)
+void cp_index(int nn,int from[],int to[])
 {
-  real e[2],ei,ej;
-  real kT = 2.5;
+  int i;
+  
+  for(i=0; (i<nn); i++)
+    to[i]=from[i];
+}
+
+void mc_optimize(FILE *log,t_mat *m,int maxiter,int *seed,real kT)
+{
+  real e[2],ei,ej,efac;
+  int  *low_index;
   int  cur=0;
 #define next 1-cur
   int  i,isw,jsw,iisw,jjsw,nn;
   
   fprintf(stderr,"Doing Monte Carlo clustering\n");
   nn = m->nn;
+  snew(low_index,nn);
+  cp_index(nn,m->m_ind,low_index);
   if (getenv("TESTMC")) {
     e[cur] = mat_energy(m);
     pr_energy(log,e[cur]);
@@ -89,25 +99,32 @@ void mc_optimize(FILE *log,t_mat *m,int maxiter,int *seed)
     
     iisw = m->m_ind[isw];
     jjsw = m->m_ind[jsw];
-    ei   = row_energy(nn,isw,m->mat[jjsw],m->m_ind);
-    ej   = row_energy(nn,jsw,m->mat[iisw],m->m_ind);
+    ei   = row_energy(nn,iisw,m->mat[jsw],m->m_ind);
+    ej   = row_energy(nn,jjsw,m->mat[isw],m->m_ind);
     
     e[next] = e[cur] + (ei+ej-EROW(m,isw)-EROW(m,jsw))/nn;
-    
-    if ((e[next] > e[cur])) {
-      /* || (exp(-(e[next]-e[cur])/kT) > rando(seed))) */
+
+    efac = kT ? exp((e[next]-e[cur])/kT) : -1;
+    if ((e[next] > e[cur]) || (efac > rando(seed))) {
       
+      if (e[next] > e[cur])
+	cp_index(nn,m->m_ind,low_index);
+      else
+	fprintf(log,"Taking uphill step\n");
+	
       /* Now swapping rows */
       m->m_ind[isw] = jjsw;
       m->m_ind[jsw] = iisw;
       EROW(m,isw)   = ei;
       EROW(m,jsw)   = ej;
       cur           = next;
-      fprintf(log,"Iter: %d Swapped %4d and %4d (now %g) ",
+      fprintf(log,"Iter: %d Swapped %4d and %4d (now %g)",
 	      i,isw,jsw,mat_energy(m));
       pr_energy(log,e[cur]);
     }
   }
+  /* Now restore the highest energy index */
+  cp_index(nn,low_index,m->m_ind);
 }
 
 static void calc_dist_ind(int nind,atom_id index[],
@@ -475,6 +492,7 @@ int main(int argc,char *argv[])
   static real scalemax=-1.0,rmscut=0.1;
   static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE,bMC=TRUE;
   static int  niter=10000,seed=1993;
+  static real kT=1e-3;
   static int  M=10,P=3;
   t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  &nlevels,
@@ -502,7 +520,9 @@ int main(int argc,char *argv[])
     { "-seed",  FALSE, etINT,  &seed,
       "Random number seed for Monte Carlo clustering algorithm" },
     { "-niter", FALSE, etINT,  &niter,
-      "Number of iterations for MC" }
+      "Number of iterations for MC" },
+    { "-kT",    FALSE, etREAL, &kT,
+      "Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps)" }
   };
   t_filenm fnm[] = {
     { efLOG, "-g",    "cluster",  ffWRITE },
@@ -644,7 +664,7 @@ int main(int argc,char *argv[])
   
   /* Write out plot file with RMS matrix */
   fp = opt2FILE("-o",NFILE,fnm,"w");
-  write_xpm(fp,"RMS","RMS (n)","Confs 1","Confs 2",
+  write_xpm(fp,"RMS","RMS (nm)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-o",NFILE,fnm),NULL);
@@ -666,7 +686,7 @@ int main(int argc,char *argv[])
     xvgr_file(opt2fn("-ev",NFILE,fnm),NULL);
   }
   else if (bMC) {
-    mc_optimize(log,rms,niter,&seed);
+    mc_optimize(log,rms,niter,&seed,kT);
   }
   else {
     jarvis_patrick(log,rms->nn,rms->mat,M,P);
@@ -679,7 +699,7 @@ int main(int argc,char *argv[])
   reset_index(rms);
   
   fp = opt2FILE("-os",NFILE,fnm,"w");
-  write_xpm(fp,"RMS Sorted","RMS (n)","Confs 1","Confs 2",
+  write_xpm(fp,"RMS Sorted","RMS (nm)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-os",NFILE,fnm),NULL);	

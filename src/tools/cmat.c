@@ -81,18 +81,15 @@ void done_mat(t_mat **m)
   *m = NULL;
 }
 
-real row_energy(int n1,int row,real *mat,int m_ind[])
+real row_energy(int nn,int row,real *mat,int m_ind[])
 {
   real re = 0;
-  real n_1;
-  int  i,ii;
+  int  i;
   
-  n_1 = 1.0/n1;
-  for(i=0; (i<n1); i++) {
-    ii  = m_ind[i];
-    re += (abs(ii-row)*n_1)*mat[ii];
+  for(i=0; (i<nn); i++) {
+    re += abs(i-row)*mat[i];
   }
-  return re;
+  return re/nn;
 }
 
 real mat_energy(t_mat *m)
@@ -103,7 +100,7 @@ real mat_energy(t_mat *m)
   retot = 0;
   for(j=0; (j<m->nn); j++) {
     jj = m->m_ind[j];
-    re = row_energy(m->nn,j,m->mat[jj],m->m_ind);
+    re = row_energy(m->nn,jj,m->mat[j],m->m_ind);
     m->erow[j] = re;
     retot += re;
   }
@@ -127,7 +124,6 @@ void swap_rows(t_mat *m,int isw,int jsw)
     m->mat[jsw][i] = ttt;
   }
 }
-
 
 void swap_mat(t_mat *m)
 {
