@@ -295,10 +295,8 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
     
     /* Compute the integral from begintimefit to endtimefit
      */
-    integral=(tau1*(myexp(begintimefit,AA,  tau1)   - 
-		    myexp(endtimefit,  AA,  tau1)) +
-	      tau2*(myexp(begintimefit,1-AA,tau2) - 
-		    myexp(endtimefit,  1-AA,tau2)));
+    integral=(tau1*myexp(begintimefit,AA,  tau1) +
+	      tau2*myexp(begintimefit,1-AA,tau2));
     
     /* Generate THE output */
     if (bVerbose) {
@@ -308,8 +306,8 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       fprintf(stderr,"FIT: ------------------------------------------------------------\n");
       fprintf(stderr,"FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
 	      AA,srAA,tau1,srtau1,tau2,srtau2);
-      fprintf(stderr,"FIT: Integral (calc with fitted function) from %g to %g ps is: %g\n",
-	      begintimefit,endtimefit,integral);
+      fprintf(stderr,"FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
+	      begintimefit,integral);
       
       sprintf(buf,"test%d.xvg",nfitpnts);
       fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
