@@ -223,7 +223,8 @@ int gmx_dielectric(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   int  i,j,nx,ny,nxtail,eFitFn,nfitparm;
-  real **y,dt,integral,fitintegral,*fitparms,fac,rffac;
+  real dt,integral,fitintegral,*fitparms,fac,rffac;
+  double **y;
   char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
   static int fix=0,bFour = 0,bX = 1,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;

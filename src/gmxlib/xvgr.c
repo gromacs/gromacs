@@ -225,7 +225,7 @@ static int wordcount(char *ptr)
   return n;
 }
 
-int read_xvg(const char *fn,real ***y,int *ny)
+int read_xvg(const char *fn,double ***y,int *ny)
 {
   FILE   *fp;
   char   *ptr;
@@ -233,7 +233,7 @@ int read_xvg(const char *fn,real ***y,int *ny)
   char   *fmt=NULL;
   int    k,line=0,nny,nx,maxx,rval;
   double lf;
-  real   **yy=NULL;
+  double **yy=NULL;
   char  *tmpbuf;
   int    len=STRLEN;
   *ny  = 0;
@@ -244,7 +244,7 @@ int read_xvg(const char *fn,real ***y,int *ny)
 
   snew(tmpbuf,len);
 
-  while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL) {
+  while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL && ptr[0]!='&') {
     line++;
     trim(ptr);
     if ((ptr[0] != '@') && (ptr[0] != '#')) {

@@ -778,7 +778,7 @@ int gmx_anaeig(int argc,char *argv[])
   bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
   real       *eigval1,*eigval2;
   int        neig1,neig2;
-  real       **xvgdata;
+  double     **xvgdata;
   
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },

@@ -105,7 +105,7 @@ extern void xvgr_box(FILE *out,
 		     int BoxFill,int BoxColor,int BoxPattern);
 /* Make a box */
 
-extern int read_xvg(const char *fn,real ***y,int *ny);
+extern int read_xvg(const char *fn,double ***y,int *ny);
 /* Read an xvg file for post processing. The number of rows is returned
  * fn is the filename, y is a pointer to a 2D array (to be allocated by
  * the routine) ny is the number of columns (including X if appropriate)

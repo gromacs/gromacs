@@ -51,14 +51,16 @@
 /* All the possible (implemented) table functions */
 enum { 
   etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
-  etabRF,    etabCOUL, etabEwald, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
+  etabRF,    etabCOUL, etabEwald, etabEwaldUser,
+  etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
   etabLJ6Encad, etabLJ12Encad, etabCOULEncad,  
-  etabEXPMIN,etabUSER, etabNR 
+  etabEXPMIN, etabUSER, etabNR 
 };
 
 static const char *tabnm[etabNR] = { 
   "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
-  "RF",    "COUL", "Ewald", "LJ6Switch", "LJ12Switch","COULSwitch", 
+  "RF",    "COUL", "Ewald", "Ewald-User",
+  "LJ6Switch", "LJ12Switch","COULSwitch", 
   "LJ6-Encad shift", "LJ12-Encad shift", "COUL-Encad shift",  
   "EXPMIN","USER" 
 };
@@ -185,7 +187,7 @@ static void copy2table(int n,int offset,int stride,
   }
 }
 
-static void init_table(FILE *fp,int n,int nx0,int tabsel,
+static void init_table(FILE *fp,int n,int nx0,
 		       real tabscale,t_tabledata *td,bool bAlloc)
 {
   int i;
@@ -205,7 +207,7 @@ static void init_table(FILE *fp,int n,int nx0,int tabsel,
 static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
 {
   const char *libfn;
-  real **yy=NULL;
+  double **yy=NULL;
   int  k,i,nx,nx0,ny,nny;
   bool bCont;
   real tabscale;
@@ -229,7 +231,7 @@ static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
     
   tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
   for(k=0; (k<etiNR); k++) {
-    init_table(fp,nx,nx0,etabUSER,tabscale,&(td[k]),TRUE);
+    init_table(fp,nx,nx0,tabscale,&(td[k]),TRUE);
     for(i=0; (i<nx); i++) {
       td[k].x[i]  = yy[0][i];
       td[k].v[i]  = yy[2*k+1][i];
@@ -456,6 +458,17 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 	  8*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp/r+
 	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
       break;
+    case etabEwaldUser:
+      /* Only calculate minus the reciprocal space contribution */
+      Vtab  = -erf(ewc*r)/r;
+      Ftab  = -erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Vtab2 = -2*erf(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
+	  4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
+      Ftab2 = -6*erf(ewc*r)/(r2*r2)+
+	  12*exp(-(ewc*ewc*r2))*ewc*isp/(r*r2)+
+	  8*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp/r+
+	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
+      break;
     case etabRF:
       Vtab  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
       Ftab  = 1.0/r2     - 2*fr->k_rf*r;
@@ -511,8 +524,13 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     }  
     
     /* Convert to single precision when we store to mem */
-    td->v[i]  = Vtab;
-    td->v2[i] = Vtab2;
+    if (tp == etabEwaldUser) {
+      td->v[i]  += Vtab;
+      td->v2[i] += Vtab2;
+    } else {
+      td->v[i]  = Vtab;
+      td->v2[i] = Vtab2;
+    }
   }
 
 #ifdef DEBUG_SWITCH
@@ -526,7 +544,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
    * Coulomb first.
    */
 
-  if (b14only && fr->eeltype != eelRF_OLD) {
+  if (b14only && fr->eeltype != eelRF_NEC) {
     tabsel[etiCOUL] = etabCOUL;
   } else {
     switch (fr->eeltype) {
@@ -547,15 +565,17 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
     case eelPME:
       tabsel[etiCOUL] = etabEwald;
       break;
+    case eelPMEUSER:
+      tabsel[etiCOUL] = etabEwaldUser;
+      break;
     case eelRF:
     case eelGRF:
-    case eelRF_OLD:
+    case eelRF_NEC:
       tabsel[etiCOUL] = etabRF;
       break;
     case eelSWITCH:
       tabsel[etiCOUL] = etabCOULSwitch;
       break;
-    case eelPMEUSER:
     case eelUSER:
       tabsel[etiCOUL] = etabUSER;
       break;
@@ -625,9 +645,9 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   bReadTab = FALSE;
   bGenTab  = FALSE;
   for(i=0; (i<etiNR); i++) {
-    if (tabsel[i] == etabUSER) 
+    if (tabsel[i] == etabUSER || tabsel[i] == etabEwaldUser) 
       bReadTab = TRUE;
-    else
+    if (tabsel[i] != etabUSER)
       bGenTab  = TRUE;
   }
   if (bReadTab) {
@@ -663,7 +683,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   snew(table.tab,12*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
-      init_table(out,nx,nx0,tabsel[k],
+      init_table(out,nx,nx0,
 		 (tabsel[k] == etabEXPMIN) ? table.scale_exp : table.scale,
 		 &(td[k]),!bReadTab);
       fill_table(&(td[k]),tabsel[k],fr);
