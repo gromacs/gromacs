@@ -671,7 +671,7 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=TRUE;
+  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
   static bool bRmDumBds=TRUE,bSort=FALSE;
   static int  nnodes=1,maxwarn=10;
   static real fr_time=-1;
