@@ -53,6 +53,8 @@ static char *SRCID_g_covar_c = "$Id$";
 #include "eigio.h"
 #include "ql77.h"
 
+typedef double drvec[DIM];
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -86,8 +88,10 @@ int main(int argc,char *argv[])
   int        status,trjout;
   t_topology top;
   t_atoms    *atoms;  
-  rvec       *x,*xread,*xref,*xav;
+  drvec      *xav;
+  rvec       *x,*xread,*xref;
   matrix     box,zerobox;
+  double     *matd;
   real       t,tstart,tend,*mat,dev,trace,sum,*eigval,inv_nframes;
   real       xj,*sqrtm,*w_rls=NULL;
   int        ntopatoms,step;
@@ -185,7 +189,12 @@ int main(int argc,char *argv[])
   snew(x,natoms);
   snew(xav,natoms);
   ndim=natoms*DIM;
+  snew(matd,ndim*ndim);
+#ifndef DOUBLE
   snew(mat,ndim*ndim);
+#else
+  mat = matd;
+#endif
 
   fprintf(stderr,"Constructing covariance matrix (%dx%d)...\n",ndim,ndim);
 
@@ -210,7 +219,8 @@ int main(int argc,char *argv[])
     
     for (j=0; j<natoms; j++) {
       /* calculate average structure */
-      rvec_inc(xav[j],x[j]);
+      for(d=0; d<DIM; d++)
+	xav[j][d] += x[j][d];
       /* calculate cross product matrix */
       for (dj=0; dj<DIM; dj++) {
 	k=ndim*(DIM*j+dj);
@@ -218,7 +228,7 @@ int main(int argc,char *argv[])
 	for (i=j; i<natoms; i++) {
 	  l=k+DIM*i;
 	  for(d=0; d<DIM; d++)
-	    mat[l+d] += x[i][d]*xj;
+	    matd[l+d] += x[i][d]*xj;
 	}
       }
     }
@@ -227,36 +237,46 @@ int main(int argc,char *argv[])
 
   /* calculate and write the average structure */
   inv_nframes=1.0/nframes;
-  for (i=0; i<natoms; i++) {
-    svmul(inv_nframes,xav[i],xav[i]);
-    copy_rvec(xav[i],xread[index[i]]);
-  }
+  for (i=0; i<natoms; i++)
+    for(d=0; d<DIM; d++) {
+      xav[i][d] *= inv_nframes;
+      xread[index[i]][d] = xav[i][d];
+    }
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
 			 atoms,xread,NULL,zerobox,natoms,index);
   
   if (bRef) {
-    /* copy the reference structure to the average array */
+    /* copy the reference structure to the ouput array x */
     for (i=0; i<natoms; i++)
-      copy_rvec(xref[index[i]],xav[i]);
+      copy_rvec(xref[index[i]],x[i]);
     /* correct the covariance matrix for the mass */
     for (j=0; j<natoms; j++) 
       for (dj=0; dj<DIM; dj++) 
 	for (i=j; i<natoms; i++) { 
 	  k = ndim*(DIM*j+dj)+DIM*i;
 	  for (d=0; d<DIM; d++)
-	    mat[k+d] = mat[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
+	    matd[k+d] = matd[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
 	}
   } else {
+    /* copy the average structure to the ouput array x */
+    for (i=0; i<natoms; i++)
+      for(d=0; d<DIM; d++)
+	x[i][d] = xav[i][d];
     /* correct the covariance matrix for the mass and the average */
     for (j=0; j<natoms; j++) 
       for (dj=0; dj<DIM; dj++) 
 	for (i=j; i<natoms; i++) { 
 	  k = ndim*(DIM*j+dj)+DIM*i;
 	  for (d=0; d<DIM; d++)
-	    mat[k+d] = (mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
+	    mat[k+d] = (matd[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
 	      *sqrtm[i]*sqrtm[j];
 	}
   }
+
+#ifndef DOUBLE
+  sfree(matd);
+#endif
+
   /* symmetrize the matrix */
   for (j=0; j<ndim; j++) 
     for (i=j; i<ndim; i++)
@@ -326,7 +346,7 @@ int main(int argc,char *argv[])
   }
 
   write_eigenvectors(eigvecfile,natoms,mat,TRUE,1,end,
-		     WriteXref,x,bDiffMass1,xav,bM);
+		     WriteXref,x,bDiffMass1,x,bM);
 
   out = ffopen(logfile,"w");
 
