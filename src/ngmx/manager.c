@@ -197,6 +197,10 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   man->natom=
     read_first_x(&man->status,trajectory,&(man->time),&(man->x),man->box);
   man->trajfile=strdup(trajectory);
+  if (man->natom != man->top.atoms.nr)
+    fatal_error(0,"Topology %s (%d atoms) and trajectory %s (%d atoms) "
+		"do not match",status,man->top.atoms.nr,
+		trajectory,man->natom);
   
   sprintf(buf,"%s: %s",*man->top.name,cool_quote());
   man->title.text = strdup(buf);
@@ -385,8 +389,10 @@ static void HandleClient(t_x11 *x11,t_manager *man,long data[])
       man->bStop=TRUE;
     }
     else {
-      if (nat > 0)
+      if (nat > 0) {
 	draw_mol(x11,man);
+	usleep(200000);
+      }
     }
     break;
   }
