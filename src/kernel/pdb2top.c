@@ -443,9 +443,8 @@ static void ter2idihs(t_params *ps,
   char *atomnm;
   
   /* Skip to right residue */
-  for(i=0; ((i<natoms) && (atom[i].resnr != resnr)); i++)
-    ;
-  start=i;
+  start=0;
+  while ((start<natoms) && (atom[start].resnr != resnr)) start++;
   /* Now only for this residue */
   for(j=0; (j<tdb->nidih); j++) {
     for(k=0; (k<4); k++) {
@@ -456,8 +455,15 @@ static void ter2idihs(t_params *ps,
 		    tdb->idih[j].ai[0],tdb->idih[j].ai[1],tdb->idih[j].ai[2],
 		    tdb->idih[j].ai[3],resnr,
 		    tdb->idih[j].ai[k]);
-      else 
+      else {
+	if (atom[aa0].resnr > (resnr+1)) {
+	  fprintf(stderr,"WARNING: improper spans more than 2 residues:\n");
+	  for (i=0; (i<k); i++)
+	    fprintf(stderr,"atom %d %s, res %d\n",
+		    a0[i],*aname[a0[i]],atom[a0[i]].resnr);
+	}
 	a0[k] = aa0;
+      }
     }
     add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET);
   }

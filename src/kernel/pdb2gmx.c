@@ -116,7 +116,6 @@ static void rename_pdbres(int natom,t_pdbatom pdba[],char *oldnm,char *newnm,
 			  bool bFullCompare)
 {
   int i;
-  char *ptr;
   
   for(i=0; (i<natom); i++) {
     if ((bFullCompare && (strcasecmp(pdba[i].resnm,oldnm) == 0)) ||
@@ -128,13 +127,12 @@ static void rename_pdbres(int natom,t_pdbatom pdba[],char *oldnm,char *newnm,
 static void rename_pdbresint(int natom,t_pdbatom pdba[],char *oldnm,
 			     char *gettp(int),bool bFullCompare)
 {
-  int  i,i0,rnr;
+  int  i,rnr;
   char *ptr;
   
   for(i=0; (i<natom); ) {
     if ((bFullCompare && (strcmp(pdba[i].resnm,oldnm) == 0)) ||
 	(!bFullCompare && strstr(pdba[i].resnm,oldnm) != NULL)) {
-      i0=i;
       rnr=pdba[i].resnr;
       ptr=gettp(rnr);
       while((pdba[i].resnr == rnr) && (i < natom)) {
@@ -199,7 +197,7 @@ int read_pdball(char *inf,char *outf,
 {
   FILE      *in,*out;
   t_pdbatom *pdba;
-  int       natom,nbonds;
+  int       natom;
   
   /* READ IT */
   fprintf(stderr,"Reading pdb file...\n");
@@ -306,9 +304,10 @@ static void renumber_res(int nrtp,t_restp restp[],
       if (strcasecmp(pdba[i].atomnm,*(rptr->atomname[j])) == 0)
 	break;
     if (j==rptr->natom)
-      if ( (pdba[i].resnr == 0) && (pdba[i].atomnm[0] == 'H') &&
-	   ( (pdba[i].atomnm[1] == '1') || (pdba[i].atomnm[1] == '2') || 
-	     (pdba[i].atomnm[1] == '3') ) )
+      if ( ( ( pdba[i].resnr == 0) && (pdba[i].atomnm[0] == 'H') &&
+	     ( (pdba[i].atomnm[1] == '1') || (pdba[i].atomnm[1] == '2') || 
+	       (pdba[i].atomnm[1] == '3') ) ) ||
+	   (strcasecmp(pdba[i].atomnm,"OXT")==0) )
 	j=1;
       else 
 	fatal_error(0,"Atom %s not found in residue %s (looking for '%s %d')"
@@ -395,7 +394,6 @@ bool is_prot(char *key)
 void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
 {
   int i,rnr;
-  int nchain=0;
   
   *rn=-1;
   *rc=-1;
@@ -418,9 +416,7 @@ void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
 
 static void analyse_pdba(int natom,t_pdbatom pdba[])
 {
-  int  i,nchain,nres;
-  char chain;
-  rvec dx;
+  int  i,nres;
   
   if (natom == 0) {
     fprintf(stderr,"No atoms in pdb file");
@@ -454,9 +450,7 @@ int main(int argc, char *argv[])
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work",
-    "The program should be able to handle not only pdbfiles but gromos coordinate files also.",
     "Deuterium (D) is not recognized as a hydrogen and will  crash the program.",
-    "There should be 3 different databases, one with no hydrogens, one with polar hydrogens only (the current database) and one with all hydrogens.",
     "The HETATM format in pdbfiles is not yet supported (this is used for ions, solvent etc.).",
     "It is assumed that atomic coordinates pdb files are allways in Angstrom.",
     "The program should be able to select the protonation on pH, and also should allow for selection of ASPH instead of ASP.",
@@ -470,7 +464,7 @@ int main(int argc, char *argv[])
   char       **gnames;
   matrix     box;
   rvec       box_space;
-  char       *ff,buf[20];
+  char       *ff;
   int        i,nrtp,rN,rC;
   int        *molnr;
   t_restp    *restp;
@@ -636,6 +630,11 @@ int main(int argc, char *argv[])
   snew(atoms,1);
   pdb2atoms(natom,pdba,atoms,&dummy,&tab);
   sfree(dummy);
+  
+  if (debug)
+    for(i=0; (i<natom); i++)
+      fprintf(debug,"Res %d atom %d %s\n",
+	      atoms->atom[i].resnr,i,*atoms->atomname[i]);
 
   /* Computing molecule numbers */
   snew(molnr,natom);

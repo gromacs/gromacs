@@ -138,7 +138,7 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
   bool        *bDel;
   int         tadd=0;
   int         rnr=-83;
-  int         i,j,j0,k,m,ncntl;
+  int         i,j,j0,k,l,m,ncntl;
   int         na[4],nh[3];
   t_addh      *ahptr=NULL;
   rvec        *x;
@@ -165,14 +165,15 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
     }
   }
   
-  /* Modify for termini HERE, deletion is not yet implemented... */
+  /* Modify for termini HERE */
   tadd+=hack_residue(rN,natom,pdba,ab,ntdb,1,nTH,bDel);
   tadd+=hack_residue(rC,natom,pdba,ab,ctdb,-1,nTH,bDel);
 
   /* Copy old atoms, making space for new ones */
   snew(newpdba,natom+tadd);
   snew(x,natom+tadd);
-  for(i=j=0; (i<natom); i++) {
+  j=0;
+  for(i=0; (i<natom); i++) {
     if (!bDel[i]) {
       memcpy(&(newpdba[j]),&(pdba[i]),sizeof(pdba[i]));
       j++;
@@ -184,13 +185,43 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
 	  if (ab[i]->nh > 1)
 	    strcat(newpdba[j].atomnm,Hnum[k]);
 	}
-	if (nTH[i] > 0)
-	  hack_atoms(ntdb,nTH[i]-1,j0,ab[i]->nh,natom+tadd,newpdba);
-	else if (nTH[i] < 0)
-	  hack_atoms(ctdb,-1-nTH[i],j0,ab[i]->nh,natom+tadd,newpdba);
+	if (nTH[i]!=0) {
+	  if (nTH[i] > 0)
+	    hack_atoms(ntdb,nTH[i]-1,j0,ab[i]->nh,natom+tadd,newpdba);
+	  else if (nTH[i] < 0)
+	    hack_atoms(ctdb,-nTH[i]-1,j0,ab[i]->nh,natom+tadd,newpdba);
+	  /* check if atoms should be added to added atoms */
+	  for(k=j0; (k<j0+ab[i]->nh); k++) {
+	    for(l=0; (l<ntdb->nadd); l++) {
+	      if (strcmp(newpdba[k].atomnm,ntdb->ab[l].na[0]) == 0) {
+		tadd+=ntdb->ab[l].nh;
+		srenew(newpdba,natom+tadd);
+		srenew(x,natom+tadd);
+		for(m=0; (m<ntdb->ab[l].nh); m++)
+		  memcpy(&(newpdba[j+m]),&(pdba[i]),sizeof(pdba[i]));
+		hack_atoms(ntdb,l,j,ntdb->ab[l].nh,natom+tadd,newpdba);
+		j+=ab[i]->nh;
+		break;
+	      }
+	    }
+	    for(l=0; (l<ctdb->nadd); l++) {
+	      if (strcmp(newpdba[k].atomnm,ctdb->ab[l].na[0]) == 0) {
+		tadd+=ctdb->ab[l].nh;
+		srenew(newpdba,natom+tadd);
+		srenew(x,natom+tadd);
+		for(m=0; (m<ctdb->ab[l].nh); m++)
+		  memcpy(&(newpdba[j+m]),&(pdba[i]),sizeof(pdba[i]));
+		hack_atoms(ctdb,l,j,ctdb->ab[l].nh,natom+tadd,newpdba);
+		j+=ab[i]->nh;
+		break;
+	      }
+	    }
+	  }
+	}
       }
     }
   }
+  
   /* Now let me do this... */
   replace_atoms(ntdb,natom+tadd,newpdba,rN);
   replace_atoms(ctdb,natom+tadd,newpdba,rC);
@@ -200,7 +231,8 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
     copy_rvec(newpdba[i].x,x[i]);
   
   /* Now calc the positions */
-  for(i=j=0; (i<natom); i++,j++) {
+  j=0;
+  for(i=0; (i<natom); i++,j++) {
     if (ab[i] != NULL) {
       rnr=newpdba[j].resnr;
       ncntl = ncontrol[ab[i]->tp];
