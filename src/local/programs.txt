@@ -28,6 +28,7 @@ END
 HEAD|Converting files
 editconf|converts and manipulates structure files
 trjconv|converts and manipulates trajectory files
+trjcat|concatenates trajectory files
 eneconv|converts energy files
 xmp2ps|converts XPM matrices to encapsulated postscript (or XPM)
 END
