@@ -242,9 +242,9 @@ void print_top_mols(FILE *out, char *title,
   }
 }
 
-static void write_top(FILE *out, char *pr,char *molname,
-		      t_atoms *at,int bts[],t_params plist[],t_block *excl,
-		      t_atomtype *atype,int *cgnr, int nrexcl)
+void write_top(FILE *out, char *pr,char *molname,
+	       t_atoms *at,int bts[],t_params plist[],t_block *excl,
+	       t_atomtype *atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
 {
   if (at && atype && cgnr) {

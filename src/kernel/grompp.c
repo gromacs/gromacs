@@ -438,19 +438,25 @@ static void gen_posres(t_params *pr,char *fn)
   sfree(v);
 }
 
-static int search_array(int *n,int map[],int key)
+static int search_array(int atnr,int *n,int map[],int key)
 {
-  int i;
+  int i,nn;
   
-  for(i=0; (i<*n); i++)
+  nn = *n;
+  for(i=0; (i<nn); i++)
     if (map[i] == key)
       break;
   
-  if (i == *n) {
+  if (i == nn) {
     if (debug)
-      fprintf(debug,"Renumbering atomtype %d to %d",key,*n);
-    map[(*n)++]=key;
+      fprintf(debug,"Renumbering atomtype %d to %d\n",key,nn);
+    if (nn == atnr)
+      fatal_error(0,"Atomtype horror n = %d, %s, %d",nn,__FILE__,__LINE__);
+    map[nn]=key;
+    nn++;
   }
+  *n = nn;
+  
   return i;
 }
 
@@ -468,9 +474,9 @@ static int renum_atype(t_params plist[],t_topology *top,
   nat=0;
   for(i=0; (i<top->atoms.nr); i++) {
     top->atoms.atom[i].type=
-      search_array(&nat,map,top->atoms.atom[i].type);
+      search_array(atnr,&nat,map,top->atoms.atom[i].type);
     top->atoms.atom[i].typeB=
-      search_array(&nat,map,top->atoms.atom[i].typeB);
+      search_array(atnr,&nat,map,top->atoms.atom[i].typeB);
   }
   
   if (ir->solvent_opt != -1) {
@@ -488,6 +494,7 @@ static int renum_atype(t_params plist[],t_topology *top,
   else
     ftype=F_BHAM;
     
+  nbsnew = NULL;
   snew(nbsnew,plist[ftype].nr);
   nrfp  = NRFP(ftype);
   

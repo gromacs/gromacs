@@ -138,7 +138,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    " turned off.");
     ir->bDispCorr = FALSE;
   }
-  
+  sprintf(err_buf,"Domain decomposition can only be used with grid NS");
+  CHECK(ir->bDomDecomp && (ir->ns_type == ensSIMPLE));
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
@@ -250,9 +251,9 @@ void get_ir(char *mdparin,char *mdparout,
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
   CTYPE ("Temperature, friction coefficient (amu/ps) and random seed");
-  RTYPE ("ld_temp",     ir->ld_temp,    300.0);
-  RTYPE ("ld_fric",     ir->ld_fric,    0.0);
-  ITYPE ("ld_seed",     ir->ld_seed,    1993);
+  RTYPE ("ld-temp",     ir->ld_temp,    300.0);
+  RTYPE ("ld-fric",     ir->ld_fric,    0.0);
+  ITYPE ("ld-seed",     ir->ld_seed,    1993);
   
   /* Em stuff */
   CCTYPE ("ENERGY MINIMIZATION OPTIONS");
@@ -275,10 +276,10 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstenergy",   ir->nstenergy,  100);
   CTYPE ("Output frequency and precision for xtc file");
   ITYPE ("nstxtcout",   ir->nstxtcout,  0);
-  RTYPE ("xtc_precision",ir->xtcprec,   1000.0);
+  RTYPE ("xtc-precision",ir->xtcprec,   1000.0);
   CTYPE ("This selects the subset of atoms for the xtc file. You can");
   CTYPE ("select multiple groups. By default all atoms will be written.");
-  STYPE ("xtc_grps",    xtc_grps,       NULL);
+  STYPE ("xtc-grps",    xtc_grps,       NULL);
   CTYPE ("Selection of energy groups");
   STYPE ("energygrps",  energy,         NULL);
 
@@ -287,26 +288,27 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("nblist update frequency");
   ITYPE ("nstlist",	ir->nstlist,	10);
   CTYPE ("ns algorithm (simple or grid)");
-  EETYPE("ns_type",     ir->ns_type,    ens_names, nerror, TRUE);
+  EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
   ITYPE ("deltagrid",	ir->ndelta,	2);
   CTYPE ("Box type, rectangular, triclinic, none");
   EETYPE("box",         ir->eBox,       eboxtype_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
-
+  EETYPE("domain-decomposition",ir->bDomDecomp, yesno_names, nerror, TRUE);
+  
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
   EETYPE("coulombtype",	ir->coulombtype,    eel_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
-  RTYPE ("rcoulomb_switch",	ir->rcoulomb_switch,	0.0);
+  RTYPE ("rcoulomb-switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
   CTYPE ("Dielectric constant (DC) for cut-off or DC of reaction field");
-  STYPE ("epsilon_r",   epsbuf,         "1");
+  STYPE ("epsilon-r",   epsbuf,         "1");
   CTYPE ("Method for doing Van der Waals");
-  EETYPE("vdw_type",	ir->vdwtype,    evdw_names, nerror, TRUE);
+  EETYPE("vdw-type",	ir->vdwtype,    evdw_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
-  RTYPE ("rvdw_switch",	ir->rvdw_switch,	0.0);
+  RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
   RTYPE ("rvdw",	ir->rvdw,	1.0);
     
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
@@ -329,35 +331,35 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Memory for running average (steps)");
   ITYPE ("ntcmemory",   ir->ntcmemory,  1);
   CTYPE ("Groups to couple separately");
-  STYPE ("tc_grps",     tcgrps,         NULL);
+  STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
-  STYPE ("tau_t",	tau_t,		NULL);
-  STYPE ("ref_t",	ref_t,		NULL);
+  STYPE ("tau-t",	tau_t,		NULL);
+  STYPE ("ref-t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
   EETYPE("Pcoupl",	ir->epc,        epcoupl_names, nerror, TRUE);
   CTYPE ("Memory for running average (steps)");
   ITYPE ("npcmemory",   ir->npcmemory,  1);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
-  RTYPE ("tau_p",	ir->tau_p,	1.0);
+  RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
-  STYPE ("ref_p",       dumstr[1],      NULL);
+  STYPE ("ref-p",       dumstr[1],      NULL);
   
   /* Simulated annealing */
   CCTYPE ("SIMULATED ANNEALING CONTROL");
   EETYPE("annealing",	ir->bSimAnn,    yesno_names, nerror, TRUE);
   CTYPE ("Time at which temperature should be zero (ps)");
-  RTYPE ("zero_temp_time",ir->zero_temp_time,0.0);
+  RTYPE ("zero-temp_time",ir->zero_temp_time,0.0);
   
   /* Startup run */
   CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
-  EETYPE("gen_vel",     opts->bGenVel,  yesno_names, nerror, TRUE);
-  RTYPE ("gen_temp",    opts->tempi,    300.0);
-  ITYPE ("gen_seed",    opts->seed,     173529);
+  EETYPE("gen-vel",     opts->bGenVel,  yesno_names, nerror, TRUE);
+  RTYPE ("gen-temp",    opts->tempi,    300.0);
+  ITYPE ("gen-seed",    opts->seed,     173529);
   
   /* Optimization */
   CCTYPE ("OPTIMIZATIONS FOR SOLVENT MODELS");
   CTYPE ("Solvent molecule name (blank: no optimization)");
-  STYPE ("solvent_optimization",   opts->SolventOpt,NULL);
+  STYPE ("solvent-optimization",   opts->SolventOpt,NULL);
   CTYPE ("Number of atoms in solvent model.");
   CTYPE ("(Not implemented for non-three atom models)");
   ITYPE ("nsatoms",     ir->nsatoms,    3);
@@ -366,16 +368,16 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("OPTIONS FOR BONDS");
   EETYPE("constraints",	opts->nshake,	constraints, nerror, TRUE);
   CTYPE ("Type of constraint algorithm");
-  EETYPE("constraint_algorithm",  ir->eConstrAlg, eshake_names, nerror, TRUE);
+  EETYPE("constraint-algorithm",  ir->eConstrAlg, eshake_names, nerror, TRUE);
   CTYPE ("Do not constrain the start configuration");
-  EETYPE("unconstrained_start", ir->bUncStart, yesno_names, nerror, TRUE);
+  EETYPE("unconstrained-start", ir->bUncStart, yesno_names, nerror, TRUE);
   CTYPE ("Relative tolerance of shake");
-  RTYPE ("shake_tol", ir->shake_tol, 0.0001);
+  RTYPE ("shake-tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
-  ITYPE ("lincs_order", ir->nProjOrder, 4);
+  ITYPE ("lincs-order", ir->nProjOrder, 4);
   CTYPE ("Lincs will write a warning to the stderr if in one step a bond"); 
   CTYPE ("rotates over more degrees than");
-  RTYPE ("lincs_warnangle", ir->LincsWarnAngle, 30.0);
+  RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
   CTYPE ("Output frequency of the Lincs accuracy");
   ITYPE ("nstLincsout",	ir->nstLincsout,1000);
   CTYPE ("Convert harmonic bonds to morse potentials");
@@ -386,23 +388,23 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Distance restraints type: No, Simple or Ensemble");
   EETYPE("disre",       opts->eDisre,   edisre_names, nerror, TRUE);
   CTYPE ("Force weighting of pairs in one distance restraint: Equal or Conservative");
-  EETYPE("disre_weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);
+  EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);
   CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
-  EETYPE("disre_mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
-  RTYPE ("disre_fc",	ir->dr_fc,	1000.0);
-  RTYPE ("disre_tau",	ir->dr_tau,	10.0);
+  EETYPE("disre-mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
+  RTYPE ("disre-fc",	ir->dr_fc,	1000.0);
+  RTYPE ("disre-tau",	ir->dr_tau,	10.0);
   CTYPE ("Output frequency for pair distances to energy file");
   ITYPE ("nstdisreout", ir->nstdisreout, 100);
   
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
-  EETYPE("free_energy", ir->bPert,      yesno_names, nerror, TRUE);
-  RTYPE ("init_lambda",	ir->init_lambda,0.0);
-  RTYPE ("delta_lambda",ir->delta_lambda,0.0);
+  EETYPE("free-energy", ir->bPert,      yesno_names, nerror, TRUE);
+  RTYPE ("init-lambda",	ir->init_lambda,0.0);
+  RTYPE ("delta-lambda",ir->delta_lambda,0.0);
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");
-  STYPE ("acc_grps",    accgrps,        NULL);
+  STYPE ("acc-grps",    accgrps,        NULL);
   STYPE ("accelerate",  acc,            NULL);
   STYPE ("freezegrps",  freeze,         NULL);
   STYPE ("freezedim",   frdim,          NULL);
@@ -411,18 +413,18 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE("Electric fields");
   CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
   CTYPE ("and a phase angle (real)");
-  STYPE ("E_x",   	efield_x,	NULL);
-  STYPE ("E_xt",	efield_xt,	NULL);
-  STYPE ("E_y",   	efield_y,	NULL);
-  STYPE ("E_yt",	efield_yt,	NULL);
-  STYPE ("E_z",   	efield_z,	NULL);
-  STYPE ("E_zt",	efield_zt,	NULL);
+  STYPE ("E-x",   	efield_x,	NULL);
+  STYPE ("E-xt",	efield_xt,	NULL);
+  STYPE ("E-y",   	efield_y,	NULL);
+  STYPE ("E-yt",	efield_yt,	NULL);
+  STYPE ("E-z",   	efield_z,	NULL);
+  STYPE ("E-zt",	efield_zt,	NULL);
   
   /* User defined thingies */
   CCTYPE ("User defined thingies");
-  STYPE ("user1_grps",  user1,          NULL);
-  STYPE ("user2_grps",  user2,          NULL);
-  STYPE ("user3_grps",  user3,          NULL);
+  STYPE ("user1-grps",  user1,          NULL);
+  STYPE ("user2-grps",  user2,          NULL);
+  STYPE ("user3-grps",  user3,          NULL);
   ITYPE ("userint1",    ir->userint1,   0);
   ITYPE ("userint2",    ir->userint2,   0);
   ITYPE ("userint3",    ir->userint3,   0);

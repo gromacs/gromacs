@@ -313,6 +313,8 @@ static t_rbonded *is_imp(t_param *p,t_atoms *atoms,t_hackblock hb[])
   char      *atom;
   t_rbondeds *idihs;
 
+  if (!hb)
+    return NULL;
   /* Find the max residue number in this dihedral */
   maxresnr=0;
   for(j=0; j<4; j++)
@@ -381,30 +383,31 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
    * to the list.
    */
   start=0;
-  for(i=0; (i<atoms->nres); i++) {
-    idihs=&hb[i].rb[ebtsIDIHS];
-    for(j=0; (j<idihs->nb); j++) {
-      bStop=FALSE;
-      for(k=0; (k<4) && !bStop; k++) {
-	ai[k]=search_atom(idihs->b[j].a[k],start,
-			  atoms->nr,atoms->atom,atoms->atomname);
-	if (ai[k] == -1) {
-	  if (debug) 
-	    fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
-		    idihs->b[j].a[k], k, atoms->atom[start].resnr);
-	  bStop=TRUE;
+  if (hb) {
+    for(i=0; (i<atoms->nres); i++) {
+      idihs=&hb[i].rb[ebtsIDIHS];
+      for(j=0; (j<idihs->nb); j++) {
+	bStop=FALSE;
+	for(k=0; (k<4) && !bStop; k++) {
+	  ai[k]=search_atom(idihs->b[j].a[k],start,
+			    atoms->nr,atoms->atom,atoms->atomname);
+	  if (ai[k] == -1) {
+	    if (debug) 
+	      fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
+		      idihs->b[j].a[k], k, atoms->atom[start].resnr);
+	    bStop=TRUE;
+	  }
+	}
+	if (!bStop) {
+	  /* Not broken out */
+	  set_p(&idih[*nidih],ai,NULL,idihs->b[j].s);
+	(*nidih)++;
 	}
       }
-      if (!bStop) {
-	/* Not broken out */
-	set_p(&idih[*nidih],ai,NULL,idihs->b[j].s);
-	(*nidih)++;
-      }
+      while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
+	start++;
     }
-    while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
-      start++;
   }
-  
   if (*nalldih == 0)
     return;
   
@@ -585,34 +588,36 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	  ang[nang].C0=NOTSET;
 	  ang[nang].C1=NOTSET;
 	  ang[nang].s=strdup("");
-	  minres = atoms->atom[ang[nang].a[0]].resnr;
-	  maxres = minres;
-	  for(m=1; m<3; m++) {
-	    minres = min(minres,atoms->atom[ang[nang].a[m]].resnr);
-	    maxres = max(maxres,atoms->atom[ang[nang].a[m]].resnr);
-	  }
-	  res = 2*minres-maxres;
-	  do {
-	    res += maxres-minres;
-	    hbang=&hb[res].rb[ebtsANGLES];
-	    for(l=0; (l<hbang->nb); l++) {
-	      get_atomnames_min(3,anm,res,atoms,ang[nang].a); 
-	      if (strcmp(anm[1],hbang->b[l].AJ)==0) {
-		bFound=FALSE;
-		for (m=0; m<3; m+=2)
-		  bFound=(bFound ||
-			  ((strcmp(anm[m],hbang->b[l].AI)==0) &&
-			   (strcmp(anm[2-m],hbang->b[l].AK)==0)));
-		if (bFound) { 
-		  sfree(ang[nang].s);
-		  if (hbang->b[l].s)
-		    ang[nang].s = strdup(hbang->b[l].s);
-		  else
-		    ang[nang].s = strdup("");
+	  if (hb) {
+	    minres = atoms->atom[ang[nang].a[0]].resnr;
+	    maxres = minres;
+	    for(m=1; m<3; m++) {
+	      minres = min(minres,atoms->atom[ang[nang].a[m]].resnr);
+	      maxres = max(maxres,atoms->atom[ang[nang].a[m]].resnr);
+	    }
+	    res = 2*minres-maxres;
+	    do {
+	      res += maxres-minres;
+	      hbang=&hb[res].rb[ebtsANGLES];
+	      for(l=0; (l<hbang->nb); l++) {
+		get_atomnames_min(3,anm,res,atoms,ang[nang].a); 
+		if (strcmp(anm[1],hbang->b[l].AJ)==0) {
+		  bFound=FALSE;
+		  for (m=0; m<3; m+=2)
+		    bFound=(bFound ||
+			    ((strcmp(anm[m],hbang->b[l].AI)==0) &&
+			     (strcmp(anm[2-m],hbang->b[l].AK)==0)));
+		  if (bFound) { 
+		    sfree(ang[nang].s);
+		    if (hbang->b[l].s)
+		      ang[nang].s = strdup(hbang->b[l].s);
+		    else
+		      ang[nang].s = strdup("");
+		  }
 		}
 	      }
-	    }
-	  } while (res < maxres);
+	    } while (res < maxres);
+	  }
 	  nang++;
 	  for(l=0; (l<nnb->nrexcl[k1][1]); l++) {
 	    /* For all first neighbours of k1 */
@@ -635,37 +640,39 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
 	      for (m=0; m<MAXFORCEPARAM; m++)
 		dih[ndih].c[m]=NOTSET;
 	      dih[ndih].s=strdup("");
-	      minres = atoms->atom[dih[ndih].a[0]].resnr;
-	      maxres = minres;
-	      for(m=1; m<4; m++) {
-		minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
-		maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
-	      }
-	      res = 2*minres-maxres;
-	      do {
-		res += maxres-minres;
-		hbdih=&hb[res].rb[ebtsPDIHS];
-		for(n=0; (n<hbdih->nb); n++) {
-		  get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
-		  bFound=FALSE;
-		  for (m=0; m<2; m++)
-		    bFound=(bFound ||
-			    ((strcmp(anm[3*m],  hbdih->b[n].AI)==0) &&
-			     (strcmp(anm[1+m],  hbdih->b[n].AJ)==0) &&
-			     (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
-			     (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
-		  if (bFound) {
-		    sfree(dih[ndih].s);
-		    if (hbdih->b[n].s)
-		      dih[ndih].s = strdup(hbdih->b[n].s);
-		    else
-		      dih[ndih].s = strdup("");
-		    /* Set the last parameter to be able to see
-		       if the dihedral was in the rtp list */
-		    dih[ndih].c[MAXFORCEPARAM-1] = 0;
-		  }
+	      if (hb) {
+		minres = atoms->atom[dih[ndih].a[0]].resnr;
+		maxres = minres;
+		for(m=1; m<4; m++) {
+		  minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
+		  maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
 		}
-	      } while (res < maxres);
+		res = 2*minres-maxres;
+		do {
+		  res += maxres-minres;
+		  hbdih=&hb[res].rb[ebtsPDIHS];
+		  for(n=0; (n<hbdih->nb); n++) {
+		    get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
+		    bFound=FALSE;
+		    for (m=0; m<2; m++)
+		      bFound=(bFound ||
+			      ((strcmp(anm[3*m],  hbdih->b[n].AI)==0) &&
+			       (strcmp(anm[1+m],  hbdih->b[n].AJ)==0) &&
+			       (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
+			       (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
+		    if (bFound) {
+		      sfree(dih[ndih].s);
+		      if (hbdih->b[n].s)
+		      dih[ndih].s = strdup(hbdih->b[n].s);
+		      else
+			dih[ndih].s = strdup("");
+		      /* Set the last parameter to be able to see
+			 if the dihedral was in the rtp list */
+		      dih[ndih].c[MAXFORCEPARAM-1] = 0;
+		    }
+		  }
+		} while (res < maxres);
+	      }
 	      nbd=nb_dist(nnb,i,l1);
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);

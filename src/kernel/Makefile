@@ -16,16 +16,19 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Common object files
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o
+MDLIBS		= $(GMXHOME)/lib/$(GMXCPU)/libgmx.$(GMXCPU).a	\
+		  $(GMXHOME)/lib/$(GMXCPU)/libmd.$(GMXCPU).a	\
+		  $(GMXHOME)/lib/$(GMXCPU)/libfftw.$(GMXCPU).a
 # Objects for grompp
 GOBJ		= \
-		grompp.o	topio.o 	toppush.o 	\
+		topio.o 	toppush.o 	\
 		topcat.o 	topshake.o 	convparm.o 	\
 		tomorse.o	sorting.o 	splitter.o	\
 		readir.o	dum_parm.o	calcgrid.o	\
 		$(PGOBJ)
 # Objects for pdb2gmx
 POBJ		= \
-		pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
+		pdb2top.o 	gen_ad.o 	\
 		pgutil.o	resall.o	ter_db.o	\
 		hizzie.o	xlate.o		specbond.o	\
 		add_par.o	gen_dum.o	$(PGOBJ)	
@@ -42,16 +45,16 @@ include		$(STDTARGET)
 
 all:		bin
 
-grompp:		$(GOBJ)
+grompp:		grompp.o $(GOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-pdb2gmx:	$(POBJ) 
+pdb2gmx:	pdb2gmx.o $(POBJ) 
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
-mdrun:		mdrun.o
+mdrun:		mdrun.o $(MDLIBS)
 		$(LD) $(RUNLDOPT) -o $@ mdrun.o $(RUNSYSLIBS)
 
 mk_ghat:	mk_ghat.o
@@ -70,6 +73,9 @@ gmxcheck:	gmxcheck.o	tpbcmp.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 tpbcmp.o:	tpbcmp.h
 gmxcheck.o:	tpbcmp.h
+
+x2top:		x2top.o	$(POBJ) $(PGOBJ) toppush.o nm2type.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 
 #
 #	Testing stuff
