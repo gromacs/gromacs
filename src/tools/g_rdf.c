@@ -1166,7 +1166,7 @@ int gmx_rdf(int argc,char *argv[])
 
   fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
   fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
-  //  bSQ   = opt2bSet("-sq",NFILE,fnm) || opt2parg_bSet("-grid",NPA,pa);
+  /*  bSQ   = opt2bSet("-sq",NFILE,fnm) || opt2parg_bSet("-grid",NPA,pa); */
   bSQ   = opt2bSet("-sq",NFILE,fnm);
   bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
   

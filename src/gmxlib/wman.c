@@ -633,7 +633,7 @@ static void write_xmlman(FILE *out,
 #define FLAG(w,f) (((w) & (f))==(f)) 
 
   fprintf(out,"<gromacs-manual version=\"%s\" date=\"%s\" www=\"http://www.gromacs.org\">\n",GromacsVersion(),mydate(buf,255));
-  //fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
+  /* fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n"); */
 
   fprintf(out,"<program name=\"%s\">",program);  
   if (nldesc > 0) {
@@ -658,7 +658,7 @@ static void write_xmlman(FILE *out,
 	      "\t<default-name link=\"%s.html\">%s</default-name>\n"
 	      "\t<description>%s</description>\n"
 	      "</file>\n",
-	      ftp2defnm(fnm[i].ftp),	// from gmxlib/filenm.c
+	      ftp2defnm(fnm[i].ftp),	/* from gmxlib/filenm.c */
 	      fnm[i].ftp,
 	      FLAG(fnm[i].flag,ffREAD), FLAG(fnm[i].flag,ffWRITE), FLAG(fnm[i].flag,ffOPT), 
 	      opt,link,fnm[i].fn,/*fileopt(fnm[i].flag),*/

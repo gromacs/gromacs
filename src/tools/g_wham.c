@@ -96,7 +96,8 @@ void read_umbrella_header(FILE * file,t_UmbrellaHeader * header)
     fscanf(file,"%s",header->PullName[i]);
     for(j=0;j<header->nDim;++j) {
       fscanf(file,"%lf%lf",&(header->UmbPos[i][j]),&(header->UmbCons[i][j]));
-      if(FlipProf) {   //We want to combine both halves of a profile into one
+      if (FlipProf) {   
+	/* We want to combine both halves of a profile into one */
 	if(header->UmbPos[i][j]<0) {
 	  header->UmbPos[i][j]= -header->UmbPos[i][j];
 	  header->Flipped[i]=TRUE;
@@ -108,7 +109,7 @@ void read_umbrella_header(FILE * file,t_UmbrellaHeader * header)
   }
 	
   fscanf(file,"%s",Buffer3);
-  //printf("%s\n",Buffer3);
+  /* printf("%s\n",Buffer3); */
 }
 
 void read_umbrella_data(FILE * file, t_UmbrellaHeader * header,
@@ -152,7 +153,7 @@ void read_umbrella_data(FILE * file, t_UmbrellaHeader * header,
 	temp/=(max-min);
 	temp*=bins;
 	temp=floor(temp);
-				//printf("%f\n",temp);
+	/* printf("%f\n",temp); */
 	if((int)temp>=0 && (int)temp<bins) {
 	  window->Histo[i][(int)temp]+=1;
 	  window->N[i]++;
@@ -188,12 +189,13 @@ void calc_profile(double *profile,t_UmbrellaWindow * window, int nWindows, doubl
     }
     profile[i]=num/denom;
     TOTAL+=profile[i];
-    //printf("PROFILE %e\n",profile[i]);
+    /* printf("PROFILE %e\n",profile[i]); */
   }
   
-  //for(i=0;i<window[0].nBin;++i) {
-  //  profile[i]/=TOTAL;
-  //}
+  /* for(i=0;i<window[0].nBin;++i) {
+   *  profile[i]/=TOTAL;
+   * }
+   */
 }
 
 double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, double min, double max)
@@ -214,13 +216,13 @@ double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, double m
 	U=window[i].k[j]*0.5*(window[i].pos[j]-dist)*(window[i].pos[j]-dist);
 	total+=profile[k]*exp(-U/(8.314e-3*Temperature));
       }
-      //printf("tot %e\n",total);
-      //log_total=-log(total);
-      //crap=-8.314e-3*Temperature*log(total);
-      //temp=fabs(log_total+log(window[i].z[j]));
-      //if(temp>MAX) MAX=temp;
-      //printf("%e\n",temp);
-      //window[i].z[j]=total;
+      /* printf("tot %e\n",total); */
+      /* log_total=-log(total); */
+      /* crap=-8.314e-3*Temperature*log(total); */
+      /* temp=fabs(log_total+log(window[i].z[j])); */
+      /* if(temp>MAX) MAX=temp; */
+      /* printf("%e\n",temp); */
+      /* window[i].z[j]=total; */
       total = -log(total);
       temp = fabs(total - window[i].z[j]);
       if(temp > MAX) MAX=temp;
@@ -342,7 +344,7 @@ int gmx_wham(int argc,char *argv[])
 	  int result=0;
 	  result=fscanf(file,"%lf",&temp);
 	  if(result==1) {
-	    			//printf("%f\n",temp);
+	    /* printf("%f\n",temp); */
 	    temp+=header.UmbPos[j][0];
 	    if(temp<min)
 	      min=temp;
@@ -371,7 +373,7 @@ int gmx_wham(int argc,char *argv[])
     int counter=0;
     char buffer[255];
 
-    //profout=ffopen(opt2fn("-o",NFILE,fnm),"w");
+    /* profout=ffopen(opt2fn("-o",NFILE,fnm),"w"); */
     histout=ffopen(opt2fn("-hist",NFILE,fnm),"w");
  		
     /* Do output here */

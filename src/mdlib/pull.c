@@ -360,10 +360,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     for(i=0;i<pull->ngrp;i++) {
       if(pull->bCyl) {
         d_pbc_dx(box,rinew[i],rjnew[i],unc_ij);
-        //d_pbc_dx(box,pull->dyna[i].x_ref,pull->grp[i].x_ref,ref_ij);
+        /* d_pbc_dx(box,pull->dyna[i].x_ref,pull->grp[i].x_ref,ref_ij); */
       } else {
         d_pbc_dx(box,rinew[i],rjnew[0],unc_ij);
-        //d_pbc_dx(box,pull->ref.x_ref,pull->grp[i].x_ref,ref_ij);
+        /* d_pbc_dx(box,pull->ref.x_ref,pull->grp[i].x_ref,ref_ij); */
       }
 
       for(m=DIM-1; m>=0; m--) {
