@@ -121,7 +121,7 @@ g_mdmat:	g_mdmat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_disre:	g_disre.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 g_gyrate:	g_gyrate.o  
 		$(LD) -o $@ $^ $(SYSLIBS)
