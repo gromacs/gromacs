@@ -33,7 +33,10 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "vec.h"
 #include "calcpot.h"
 #include "nrnb.h"

@@ -33,13 +33,16 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdarg.h>
 /* Modified DvdS */
-#include "config.h"
 #include "pbc.h"
 #include "macros.h"
 #include "vec.h"

@@ -33,8 +33,10 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-#include "config.h"
-#include "confio.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "statutil.h"
 #include "smalloc.h"
 #include "macros.h"

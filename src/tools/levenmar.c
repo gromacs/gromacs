@@ -33,10 +33,14 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "config.h"
+
 #include "types/simple.h"
 
 static void nrerror(char error_text[], bool bExit)
