@@ -372,8 +372,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 
   /* The order of creating windows is important here! */
   /* Manager */
-  gmx->man=init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,box);
-  gmx->logo=init_logo(x11,gmx->wd->self);
+  gmx->man  = init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,box);
+  gmx->logo = init_logo(x11,gmx->wd->self);
 
   /* Now put all windows in the proper place */
   move_gmx(x11,gmx,w0,h0,FALSE);

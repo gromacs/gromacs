@@ -423,10 +423,11 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
 #define NDRAW 12
   int  i,j,k,i0,i1,i4;
   real fac,vol,third;
-  rvec corner[24];
+  rvec corner[24],tmp,box_center;
   vec4 x4;
-  iv2  vec2[24];
+  iv2  vec2[24],tv2;
 
+  calc_box_center(box,box_center);
   if (boxtype == esbTrunc) {
     /* Knot index */
     k     = 0;
@@ -465,11 +466,23 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
       corner[k][YY] += fac;
     }
     assert ( k == 24 );
+    for(j=0; (j<DIM); j++)
+      box_center[j] -= fac*0.5;
     for(i=0; (i<24); i++) {
+      rvec_inc(corner[i],box_center);
       m4_op(view->proj,corner[i],x4);
       v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);
     }
     if (debug) {
+      tmp[XX] = tmp[YY] = tmp[ZZ] = A0*fac;
+      m4_op(view->proj,tmp,x4);
+      v4_to_iv2(x4,tv2,x0,y0,sx,sy);
+      fprintf(debug,"tv2 : %d, %d, x0: %d, y0: %d, sx: %g, sy: %g fac: %g\n",
+	      tv2[0],tv2[1],x0,y0,sx,sy,fac);
+      fprintf(debug,"x4: %g %g %g %g, tmp: %g %g %g\n",
+	      x4[XX],x4[YY],x4[ZZ],x4[ZZ+1],tmp[XX],tmp[YY],tmp[ZZ]);
+      fprintf(debug,"view->origin: %g %g %g\n",
+	      view->origin[XX],view->origin[YY],view->origin[ZZ]);
       pr_rvecs(debug,0,"box",box,DIM);
       pr_rvecs(debug,0,"corner",corner,8);
     }
@@ -479,24 +492,26 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
       i0 = i - i4 + to_bonds[i4][0];
       i1 = i - i4 + to_bonds[i4][1];
       XDrawLine(x11->disp,w,x11->gc,
-		vec2[i0][XX],vec2[i0][YY],
-		vec2[i1][XX],vec2[i1][YY]);
+		vec2[i0][XX],vec2[i0][YY],vec2[i1][XX],vec2[i1][YY]);
     }
     for (i=0; (i<NDRAW); i++) {
       i0 = to_bonds2[i][0];
       i1 = to_bonds2[i][1];
       XDrawLine(x11->disp,w,x11->gc,
-		vec2[i0][XX],vec2[i0][YY],
-		vec2[i1][XX],vec2[i1][YY]);
+		vec2[i0][XX],vec2[i0][YY],vec2[i1][XX],vec2[i1][YY]);
     }
   }
   else {
+    for(i=0; (i<DIM); i++)
+      for(j=0; (j<DIM); j++)
+	box_center[j] -= 0.5*box[i][j];
     for (i=0; (i<8); i++) {
       clear_rvec(corner[i]);
       for (j=0; (j<DIM); j++) {
 	for (k=0; (k<DIM); k++)
 	  corner[i][k] += rect_tri[i][j]*box[j][k];
       }
+      rvec_inc(corner[i],box_center);
       m4_op(view->proj,corner[i],x4);
       v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);
     }
@@ -505,10 +520,12 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
       pr_rvecs(debug,0,"corner",corner,8);
     }
     XSetForeground(x11->disp,x11->gc,YELLOW);
-    for (i=0; (i<12); i++)
+    for (i=0; (i<12); i++) {
+      i0 = tr_bonds[i][0];
+      i1 = tr_bonds[i][1];
       XDrawLine(x11->disp,w,x11->gc,
-		vec2[tr_bonds[i][0]][XX],vec2[tr_bonds[i][0]][YY],
-		vec2[tr_bonds[i][1]][XX],vec2[tr_bonds[i][1]][YY]);
+		vec2[i0][XX],vec2[i0][YY],vec2[i1][XX],vec2[i1][YY]);
+    }
   }
 }
 

@@ -195,8 +195,8 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   man->trajfile=strdup(trajectory);
   
   sprintf(buf,"%s: %s",*man->top.name,cool_quote());
-  man->title.text=strdup(buf);
-  man->view=init_view(man->box);
+  man->title.text = strdup(buf);
+  man->view       = init_view(man->box);
   at=&(man->top.atoms);
   for(i=0; (i<man->natom); i++) {
     char *aname=*(at->atomname[i]);
