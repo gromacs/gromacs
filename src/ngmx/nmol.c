@@ -40,6 +40,7 @@ static char *SRCID_nmol_c = "$Id$";
 #include "manager.h"
 #include "nmol.h"
 #include "vec.h"
+#include "assert.h"
 #include "txtdump.h"
 #include "pbc.h"
 
@@ -390,9 +391,9 @@ static void v4_to_iv2(vec4 x4,iv2 v2,int x0,int y0,real sx,real sy)
 static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
 		     int x0,int y0,real sx,real sy,int boxtype)
 {
-  int  rect_tri[8][4] =  { 
-    { 0,0,0,1 }, { 1,0,0,1 }, { 1,1,0,1 }, { 0,1,0,1 },
-    { 0,0,1,1 }, { 1,0,1,1 }, { 1,1,1,1 }, { 0,1,1,1 }
+  rvec  rect_tri[8] =  { 
+    { 0,0,0 }, { 1,0,0 }, { 1,1,0 }, { 0,1,0 },
+    { 0,0,1 }, { 1,0,1 }, { 1,1,1 }, { 0,1,1 }
   };
   int  tr_bonds[12][2] = {
     { 0,1 }, { 1,2 }, { 2,3 }, { 3,0 }, 
@@ -401,14 +402,14 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
   };
 #define A  0.25
 #define A0 0.5
-  real to_floor[4][4] = {
-    { A0-A, A0, 0, 1 }, { A0, A0+A, 0, 1 }, { A0+A, A0, 0, 1}, { A0, A0-A, 0, 1}
+  rvec to_floor[4] = {
+    { A0-A, A0, 0 }, { A0, A0+A, 0 }, { A0+A, A0, 0}, { A0, A0-A, 0}
   };
-  real to_left[4][4] = {
-    { 0, A0, A0-A, 1 }, { 0, A0+A, A0, 1 }, { 0, A0, A0+A, 1}, { 0, A0-A, A0, 1}
+  rvec to_left[4] = {
+    { 0, A0, A0-A }, { 0, A0+A, A0 }, { 0, A0, A0+A}, { 0, A0-A, A0}
   };
-  real to_front[4][4] = {
-    { A0, 0, A0-A, 1}, { A0+A, 0, A0, 1 }, { A0, 0, A0+A, 1},{ A0-A,0,A0,1}
+  rvec to_front[4] = {
+    { A0, 0, A0-A}, { A0+A, 0, A0 }, { A0, 0, A0+A},{ A0-A,0,A0}
   };
   /* This can be used six times in the respective arrays (twice each) */
   int  to_bonds[4][2] = {
@@ -421,16 +422,18 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
   };
 #define NDRAW 12
   int  i,j,k,i0,i1,i4;
-  real fac;
+  real fac,vol,third;
   rvec corner[24];
   vec4 x4;
   iv2  vec2[24];
 
   if (boxtype == esbTrunc) {
     /* Knot index */
-    k   = 0;
+    k     = 0;
     /* Edge of the box */
-    fac = pow(2*det(box),1.0/3.0);
+    vol   = det(box);
+    third = 1.0/3.0;
+    fac   = pow(2.0*vol,third);
     /* Reset */
     for (i=0; (i<24); i++)
       clear_rvec(corner[i]);
@@ -461,7 +464,7 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
 	corner[k][j] = to_front[i][j]*fac;
       corner[k][YY] += fac;
     }
-    
+    assert ( k == 24 );
     for(i=0; (i<24); i++) {
       m4_op(view->proj,corner[i],x4);
       v4_to_iv2(x4,vec2[i],x0,y0,sx,sy);

@@ -301,7 +301,7 @@ static bool step_man(t_manager *man,int *nat)
   if (ncount == man->nSkip) {
     if (man->bPbc) {
       rm_pbc(&(man->top.idef),man->natom,man->box,man->x,man->x);
-      /*reset_mols(&(man->top.blocks[ebMOLS]),man->box,man->x);*/
+      reset_mols(&(man->top.blocks[ebMOLS]),man->box,man->x);
     }
     ncount=0;
   }
