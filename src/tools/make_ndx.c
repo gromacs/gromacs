@@ -256,43 +256,77 @@ static bool comp_name(char *name,char *search)
   return (((search[n]!='*') && strcmp(name,search)) ||
 	  ((search[n]=='*') && strncmp(name,search,n)));
 }
+static void select_chainnames(t_atoms *atoms,int n_names,char **names,
+			      atom_id *nr,atom_id *index)
+{
+  char name[2];
+  int j;
+  atom_id i;
+  
+  name[1]=0;
+  *nr=0;
+  for(i=0; i<atoms->nr; i++) {
+    name[0]=atoms->chain[i];
+    for(j=0; (j<n_names && comp_name(name,names[j])); j++);
+    if (j<n_names) {
+      index[*nr]=i;
+      (*nr)++;
+    }
+  }
+  if (n_names==1)
+    printf("Found %u atoms with chain identifier",*nr);
+  else
+    printf("Found %u atoms with chain identifiers",*nr);
+  for(j=0; (j<n_names); j++)
+    printf(" %s",names[j]);
+  printf("\n");
+}
 
-static void select_names(t_atoms *atoms,int n_names,char **names,
-			 atom_id *nr,atom_id *index,bool bRes)
+static void select_atomnames(t_atoms *atoms,int n_names,char **names,
+			     atom_id *nr,atom_id *index)
+{
+  char *name;
+  int j;
+  atom_id i;
+  
+  *nr=0;
+  for(i=0; i<atoms->nr; i++) {
+    name=*(atoms->atomname[i]);
+    for(j=0; (j<n_names && comp_name(name,names[j])); j++);
+    if (j<n_names) {
+      index[*nr]=i;
+      (*nr)++;
+    }
+  }
+  if (n_names==1)
+    printf("Found %u atoms with name",*nr);
+  else
+    printf("Found %u atoms with names",*nr);
+  for(j=0; (j<n_names); j++)
+    printf(" %s",names[j]);
+  printf("\n");
+}
+
+static void select_residuenames(t_atoms *atoms,int n_names,char **names,
+				atom_id *nr,atom_id *index)
 {
   char *name;
   int j;
   atom_id i;
 
   *nr=0;
-  if (!bRes) {
-    for(i=0; i<atoms->nr; i++) {
-      name=*(atoms->atomname[i]);
-      for(j=0; (j<n_names && comp_name(name,names[j])); j++);
-      if (j<n_names) {
-	index[*nr]=i;
-	(*nr)++;
-      }
+  for(i=0; i<atoms->nr; i++) {
+    name=*(atoms->resname[atoms->atom[i].resnr]);
+    for(j=0; (j<n_names && comp_name(name,names[j])); j++);
+    if (j<n_names) {
+      index[*nr]=i;
+      (*nr)++;
     }
-    if (n_names==1)
-      printf("Found %u atoms with name",*nr);
-    else
-      printf("Found %u atoms with names",*nr);
   }
-  else {
-    for(i=0; i<atoms->nr; i++) {
-      name=*(atoms->resname[atoms->atom[i].resnr]);
-      for(j=0; (j<n_names && comp_name(name,names[j])); j++);
-      if (j<n_names) {
-	index[*nr]=i;
-	(*nr)++;
-      }
-    }
-    if (n_names==1)
-      printf("Found %u atoms with residue name",*nr);
-    else
-      printf("Found %u atoms with residue names",*nr);
-  }
+  if (n_names==1)
+    printf("Found %u atoms with residue name",*nr);
+  else
+    printf("Found %u atoms with residue names",*nr);
   for(j=0; (j<n_names); j++)
     printf(" %s",names[j]);
   printf("\n");
@@ -401,6 +435,7 @@ static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
   block->index[block->nr]=block->nra;
 }
 
+/*
 static int split_chain(t_atoms *atoms,rvec *x,
 			int sel_nr,t_block *block,char ***gn)
 {
@@ -476,6 +511,7 @@ static int split_chain(t_atoms *atoms,rvec *x,
 
   return nchain;
 }
+*/
 
 static bool parse_entry(char **string,t_atoms *atoms,
 			t_block *block,char ***gn,
@@ -524,7 +560,7 @@ static bool parse_entry(char **string,t_atoms *atoms,
       bRet=TRUE;
     } 
     else if (parse_names(string,&n_names,names)) {
-      select_names(atoms,n_names,names,nr,index,FALSE);
+      select_atomnames(atoms,n_names,names,nr,index);
       make_gname(n_names,names,gname);
       bRet=TRUE;
       }
@@ -537,12 +573,21 @@ static bool parse_entry(char **string,t_atoms *atoms,
       bRet=TRUE;
     } 
     else if (parse_names(string,&n_names,names)) {
-      select_names(atoms,n_names,names,nr,index,TRUE);
+      select_residuenames(atoms,n_names,names,nr,index);
       make_gname(n_names,names,gname);
       bRet=TRUE;
     }
   }
-  
+  else if (!strncmp(*string,"chain",5)) {
+    (*string)+=5;
+    if (parse_names(string,&n_names,names)) {
+      select_chainnames(atoms,n_names,names,nr,index);
+      sprintf(gname,"ch%s",names[0]);
+      for (i=1; i<n_names; i++)
+	strcat(gname,names[i]);
+      bRet=TRUE;
+    }
+  }
   if (bRet && bCompl) {
     snew(index1,atoms->nr-*nr);
     nr1=0;
@@ -606,7 +651,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 	     block->index[i+1]-block->index[i]);
 
     printf("\n");
-    printf(" nr : group     !   'name' nr name    'splitch' nr    'l': list\n");
+    printf(" nr : group     !   'name' nr name    'chain' char    'l': list\n");
     printf(" 'a': atom      &   'del' nr1 [nr2]   'splitres' nr   'h': help\n");
     printf(" 'r': residue   |   'keep' nr         'splitat' nr    'q': save and quit\n");
     printf("\n> ");
@@ -620,7 +665,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     if (string[0] == 'h') {
       printf(" nr              : selects an index group.\n");
       printf(" 'a' nr1 [nr2]   : selects one atom or atoms in the range from nr1 to nr2,\n");
-      printf("                  atom numbering starts at 1.\n"); 
+      printf("                   atom numbering starts at 1.\n"); 
       printf(" 'a' name1[*] [name2[*] ...] : selects atoms by name(s), wildcard allowed\n"); 
       printf("                               at the end of a name.\n");
       printf(" 'r'             : analogous to 'a', but for residues.\n");
@@ -631,7 +676,8 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
       printf(" 'name' nr name  : rename group nr to name.\n");
       printf(" 'del' nr1 [nr2] : deletes one group or groups in the range from nr1 to nr2.\n");
       printf(" 'keep' nr       : deletes all groups except nr.\n");
-      printf(" 'splitch' nr    : split group into chains using CA distances.\n");
+      printf(" 'chain' ch1 [ch2] : selects atoms by chain identifier(s),\n");
+      printf("                     not available with a .gro file as input.\n");
       printf(" 'splitres' nr   : split group into residues.\n");
       printf(" 'splitat' nr    : split group into atoms.\n");
       printf(" 'l'             : list the residues.\n");
@@ -675,11 +721,6 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
 	  printf("%4d %-5s",atoms->atom[i].resnr+1,
 		 *(atoms->resname[atoms->atom[i].resnr]));
       printf("\n");
-    } else if (!strncmp(string,"splitch",7)) {
-      string+=7;
-      if (parse_int(&string,&sel_nr))
-	if ((sel_nr>=0) && (sel_nr<block->nr)) 
-	  split_chain(atoms,x,sel_nr,block,gn);
     } else if (!strncmp(string,"splitres",8)) {
       string+=8;
       if (parse_int(&string,&sel_nr))
@@ -755,9 +796,9 @@ int main(int argc,char *argv[])
     "is generated for every other residue name.[PAR]"
     "When no index file is supplied, also make_ndx will generate the",
     "default groups.",
-    "With the index editor you can select on atom and residue names",
+    "With the index editor you can select on atom, residue and chain names",
     "and numbers, you can use NOT, AND and OR, you can split groups",
-    "into chains, residues or atoms. You can delete and rename groups.[PAR]",
+    "into residues or atoms. You can delete and rename groups.[PAR]",
     "The atom numbering in the index files starts from 0. The atom",
     "and residue numbering in the editor start from 1."
   };
