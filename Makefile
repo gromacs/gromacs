@@ -33,7 +33,9 @@ AUXFS = algorithms	analyse		averages	defunits	\
 AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
 
-all:		gromacs.ps
+all:		ps
+
+ps:		gromacs.ps
 
 full:		man all
 
