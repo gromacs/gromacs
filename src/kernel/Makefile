@@ -32,7 +32,7 @@ POBJ		= pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
 ifneq ($(GMXCPU),amb)
 ifneq ($(GMXCPU),860)
 PROGRAMS	= pdb2gmx 	grompp		tpbconv		\
-		  nmrun		gmxcheck	luck	mk_ghat
+		  nmrun		gmxcheck	luck
 endif
 endif
 PROGRAMS	+= mdrun	gmxdump
