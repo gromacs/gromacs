@@ -16,15 +16,15 @@
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box)
-<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rshort, rlong, epsilon_r, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
+<li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box, ns_dr)
+<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rshort, rlong, epsilon_r, bLJshift, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization, nsatoms)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
-<li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau)
+<li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
 <li><A HREF="#free"><b>Free energy</b></A> (free_energy, init_lambda, delta_lambda)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim )
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
@@ -159,6 +159,7 @@ conjugate gradients energy minimization.
 <dl>
 <dt><h4>nstlist: </b>(10) [steps]</h4>
 <dd>frequency to update neighborlist
+
 <dt><h4>ns_type:</h4>
 <dd><dl compact>
 <dt><b>grid</b>
@@ -174,6 +175,7 @@ every <b>nstlist</b> steps.
 </dl>
 <dt><h4>deltagrid: </b>(2)</h4>
 <dd>number of grid cells per Coulomb cut-off length
+
 <dt><h4>box:</h4>
 <dd><dl compact>
 <dt><b>rectangular</b>
@@ -184,39 +186,46 @@ every <b>nstlist</b> steps.
 <dd>Selects no box, for use in vacuum simulations.
 </dl>
 
+<dt><h4>ns_dr: </b>(0.2) [nm]</h4>
+<dd>Extra shell for neighborsearching to accommodate for diffusion between
+nblist updates and for the size of charge groups.
+Used when <b>eel_type</b> is <tt>PPPM</tt>, <tt>Shift</tt> or <tt>User</tt>.
 </dl>
 
 <A NAME="el"><br><h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#tc"><IMG SRC="../gif/charts_down.gif"></A> Electrostatics</h3>
 <dl>
 <dt><h4>eel_type:</h4>
 <dd><dl compact>
-<dt><b>twin-range</b>
+<dt><b>Twin-Range</b>
 <dd>Twin range electrostatics with LJ cut-off <b>rshort</b> [nm] and 
 Coulomb cut-off <b>rlong</b> [nm]. 
 The dielectric constant is set with <b>epsilon_r</b>.
 <dt><b>PPPM</b>
 <dd>Particle-Particle Particle-Mesh algorithm for long range
-electrostatic interactions. See <b>shift</b> for the details of the 
-particle-particle potentials. 
+electrostatic interactions.
 Use for example <b>rshort</b><tt>=0.0</TT> and <b>rlong</b><tt>=0.85</TT>.
-<dt><b>reaction-field</b>
-<dd>Reaction field with LJ and Coulomb cut-off <b>rshort</b> [nm].
+The LJ can be shifted with <b>bLJshift</b>.
+See <tt>Shift</tt> for the details of the particle-particle potentials.
+<dt><b>Reaction-Field</b>
+<dd>Reaction field with LJ and Coulomb cut-off <b>rlong</b> [nm].
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
-(Not thoroughly tested yet)
-<dt><b>generalized-reaction-field</b>
-<dd>Generalized reaction field with LJ and Coulomb cut-off <b>rshort</b> [nm].
+The LJ can be shifted with <b>bLJshift</b>.
+<dt><b>Generalized-Reaction-Field</b>
+<dd>Generalized reaction field with LJ and Coulomb cut-off <b>rlong</b> [nm].
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
 The ionic strength is computed from the number of charged 
 (i.e. with non zero charge) charge groups.
 The temperature for the GRF potential is set with 
-<b><A HREF="#tc">ref_t</A></b> [K]. (Not thoroughly tested yet)
-<dt><b>shift</b>
-<dd>The Coulomb and Lennard-Jones potentials are decreased over the whole
-range. The potential and the forces decay smoothly to zero between 
+<b><A HREF="#tc">ref_t</A></b> [K].
+The LJ can be shifted with <b>bLJshift</b>.
+<dt><b>Shift</b>
+<dd>The Coulomb potential is decreased over the whole range.
+The potential and the forces decay smoothly to zero between 
 <b>rshort</b> [nm] and <b>rlong</b> [nm].
-The neighborsearch cut-off is slightly larger than <b>rlong</b> to
-accommodate for the size of charge groups and diffusion between
-neighbor list updates.   
+The neighborsearch cut-off is <b><A HREF="#nl">ns_dr</A></b> larger than
+<b>rlong</b> to accommodate for the size of charge groups and diffusion
+between neighborlist updates. When <b>bLJshift</b><tt>=yes</tt>, the LJ
+potential is shifted analogously. 
 The dielectric constant is set with <b>epsilon_r</b>.
 <dt><b>User</b>
 
@@ -228,19 +237,34 @@ the <tt>x</tt> value, and the function value with its 1<sup>st</sup>
 to 3<sup>rd</sup> derivative. The <tt>x</tt> should run from 0 [nm] to
 <b>rlong</b><tt>+0.5</tt> [nm], with a spacing of <tt>0.002</tt>
 [nm] when you run in single precision, or <tt>0.0005</tt> [nm] when
-you run in double precision (note that <b>rshort</b> and <b>rlong</b>
-should be the same). The function value at <tt>x=0</tt> is not
-important.
-
+you run in double precision. The function value at <tt>x=0</tt> is not
+important. The Coulomb cut-off is assumed to be <b>rlong</b>,
+the neighborsearch cut-off is <b>rlong</b>+<b><A HREF="#nl">ns_dr</A></b>.
+The LJ cut-off is assumed to be <b>rlong</b> when <b>bLJshift</b><tt>=no</tt> 
+or <b>rlong</b>+<b><A HREF="#nl">ns_dr</A></b>
+when <b>bLJshift</b><tt>=yes</tt>.
 
 </dl>
 <A NAME="el2">
 <dt><h4>rshort: </b>(1) [nm]</h4>
 <dd>distance for LJ cut-off
+
 <dt><h4>rlong: </b>(1) [nm]</h4>
 <dd>distance for Coulomb cut-off
 <dt><h4>epsilon_r: </b>(1)</h4>
 <dd>dielectric constant
+
+<dt><h4>bLJshift:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>Use normal LJ potential.
+<dt><b>yes</b>
+<dd>Shift the LJ potential over the whole range.
+The potential and the forces decay smoothly to zero between 
+<b>rshort</b> [nm] and <b>rlong</b>.
+Not used when <b>eel_type</b><tt>=Twin-Range</tt>.
+</dl>
+
 <dt><h4>bLJcorr:</h4>
 <dd><dl compact>
 <dt><b>no</b>
@@ -474,6 +498,11 @@ square root of the time averaged violation times the instantaneous violation
 (possibly) different factor for each restraint
 <dt><h4>disre_tau: </b>(10) [ps]</h4>
 <dd>time constant for distance restraints running average
+
+<dt><h4>nstdisreout: </b>(100) [steps]</h4>
+<dd>frequency to write the running time averaged and instantaneous distances
+of all atom pairs involved in restraints to the energy file
+(can make the energy file very large)
 </dl>
 
 <A NAME="free"><br><h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nmr"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#neq"><IMG SRC="../gif/charts_down.gif"></A> Free energy</h3>
@@ -562,6 +591,7 @@ desired parameter.
 <A HREF="#neq">accelerate</A><br>
 <A HREF="#sa">annealing</A><br>
 <A HREF="#el2">bLJcorr</A><br>
+<A HREF="#el2">bLJshift</A><br>
 <A HREF="#nl">box</A><br>
 <A HREF="#pc">compressibility</A><br>
 <A HREF="#bond">constraint_algorithm</A><br>
@@ -608,8 +638,10 @@ desired parameter.
 <A HREF="#bond2">morse</A><br>
 <A HREF="#el2">niter</A><br>
 <A HREF="#pc">npcmemory</A><br>
+<A HREF="#nl">ns_dr</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>
+<A HREF="#nmr">nstdisreout</A><br>
 <A HREF="#out">nstenergy</A><br>
 <A HREF="#run">nsteps</A><br>
 <A HREF="#out">nstfout</A><br>
