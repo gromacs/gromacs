@@ -71,10 +71,10 @@ extern void init_corr2(t_correct *c,int natom);
  * initiate a number of other arrays.
  */
 
-extern bool shake_coords(FILE *log,bool bVerbose,int nstruct,
-			 int natom,rvec xref[],rvec x[],int *seed,
-			 matrix box,t_correct *c,int *niter);
-/* Do the actual shaking. Return TRUE when converged */
+extern int shake_coords(FILE *log,bool bVerbose,int nstruct,
+			int natom,rvec xref[],rvec x[],int *seed,
+			matrix box,t_correct *c,int *niter);
+/* Do the actual shaking. Returns the final number of violations */
 
 extern int quick_check(FILE *log,int natom,rvec x[],matrix box,t_correct *c);
 /* Check a structure once for the number of violations (return value) */

@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "typedefs.h"
 #include "network.h"
 #include "smalloc.h"
@@ -9,8 +10,16 @@
 #include "xvgr.h"
 #include "pdbio.h"
 #include "disco.h"
+
+#ifdef debug_gmx
+#undef debug_gmx
+#endif
+
+#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
+fprintf(fp,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
 	
-static t_correct *recv_init(t_commrec *cr,int *seed,int *natom,int *nres,
+static t_correct *recv_init(FILE *fp,
+			    t_commrec *cr,int *seed,int *natom,int *nres,
 			    rvec **xref,rvec **xcenter,bool *bKeep)
 {
   t_correct *c;
@@ -20,11 +29,6 @@ static t_correct *recv_init(t_commrec *cr,int *seed,int *natom,int *nres,
   gmx_rxs(0,nres,sizeof(*nres));
   gmx_rxs(0,bKeep,sizeof(*bKeep));
   
-  snew(*xref,*natom);
-  snew(*xcenter,*natom);
-  gmx_rxs(0,*xref,*natom*sizeof(**xref));
-  gmx_rxs(0,*xcenter,*natom*sizeof(**xcenter));
-
   snew(c,1);
 #define cget(nn) gmx_rxs(0,record(c->nn))
   cget(maxnit);
@@ -46,6 +50,13 @@ static t_correct *recv_init(t_commrec *cr,int *seed,int *natom,int *nres,
   cget(npep);
   cget(nimp);
 #undef cget
+  snew(*xref,*natom);
+  gmx_rxs(0,*xref,*natom*sizeof(**xref));
+  if (c->bCenter) {
+    snew(*xcenter,*natom);
+    gmx_rxs(0,*xcenter,*natom*sizeof(**xcenter));
+  }
+  
   /* Get the important input data */
   snew(c->d,c->ndist);
   gmx_rxs(0,array(c->d,c->ndist));
@@ -55,13 +66,19 @@ static t_correct *recv_init(t_commrec *cr,int *seed,int *natom,int *nres,
   
   snew(c->imp,c->nimp+1);
   gmx_rxs(0,array(c->imp,c->nimp+1));
+
+  snew(c->weight,*natom);
+  gmx_rxs(0,array(c->weight,*natom));
   
   /* Other arrays can be deduced from these */
+  fprintf(fp,"Succesfully got input data\n");
+  fflush(fp);
   
   return c;
 }
 
-static void send_init(t_commrec *cr,t_correct *c,int *seed,int natom,int nres,
+static void send_init(FILE *fp,
+		      t_commrec *cr,t_correct *c,int *seed,int natom,int nres,
 		      rvec *xref,rvec *xcenter,bool bKeep)
 {
   int pid;
@@ -73,9 +90,6 @@ static void send_init(t_commrec *cr,t_correct *c,int *seed,int natom,int nres,
     gmx_txs(pid,record(natom));
     gmx_txs(pid,record(nres));
     gmx_txs(pid,record(bKeep));
-    
-    gmx_txs(pid,array(xref,natom));
-    gmx_txs(pid,array(xcenter,natom));
     
 #define cput(nn) gmx_txs(pid,record(c->nn))
     cput(maxnit);
@@ -97,22 +111,34 @@ static void send_init(t_commrec *cr,t_correct *c,int *seed,int natom,int nres,
     cput(npep);
     cput(nimp);
 #undef cput
+    gmx_txs(pid,array(xref,natom));
+    
+    if (c->bCenter)
+      gmx_txs(pid,array(xcenter,natom));
+    
     /* Send the important input data */
     gmx_txs(pid,array(c->d,c->ndist));
   
     gmx_txs(pid,array(c->pepbond,c->npep));
   
     gmx_txs(pid,array(c->imp,c->nimp+1));
-  
+
+    gmx_txs(pid,array(c->weight,natom));
+    
     /* Other arrays can be deduced from these */
+    fprintf(fp,"Succesfully sent input data to pid %d\n",pid);
+    fflush(fp);
   }
 }
 
-static void send_coords(t_commrec *cr,bool bConverged,int nit,int k,
+static void send_coords(t_commrec *cr,int nviol,int nit,int k,
 			int natom,rvec x[],matrix box)
 {
-  gmx_txs(0,record(cr->pid));
-  gmx_txs(0,record(bConverged));
+  debug_gmx();
+  gmx_tx(0,record(cr->pid));
+  gmx_tx_wait(0);
+  
+  gmx_txs(0,record(nviol));
   gmx_txs(0,record(nit));
   gmx_txs(0,record(k));
   gmx_txs(0,record(natom));
@@ -120,25 +146,25 @@ static void send_coords(t_commrec *cr,bool bConverged,int nit,int k,
   gmx_txs(0,array(box,DIM));
 }
 
-static int recv_coords(t_commrec *cr,bool *bConverged,int *nit,int *k,
+static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
 		       rvec x[],matrix box)
 {
-  MPI_Status status;
   int        pid,natom;
   
   /* Check whether there is something from anyone */
-  MPI_Recv(&pid,           /* message buffer */
-	   1,              /* one data item */
-	   MPI_INT,        /* of type double real */
-	   MPI_ANY_SOURCE, /* receive from any sender */
-	   MPI_ANY_TAG,    /* any type of message */
-	   MPI_COMM_WORLD, /* always use this */
-	   &status);       /* received message info */
-
-gmx_rxs(pid,record(cr->pid));
-  gmx_rxs(pid,record(bConverged));
-  gmx_rxs(pid,record(nit));
-  gmx_rxs(pid,record(k));
+  debug_gmx();
+  gmx_rx(MPI_ANY_SOURCE,record(pid));
+  do {
+    usleep(1000);
+  } while (!mpiio_rx_probe(MPI_ANY_SOURCE));
+  
+  debug_gmx();
+  if ((pid >= cr->nprocs) || (pid <= 0))
+    fatal_error(0,"Reading data from pid %d",pid);
+      
+  gmx_rxs(pid,record(*nviol));
+  gmx_rxs(pid,record(*nit));
+  gmx_rxs(pid,record(*k));
   gmx_rxs(pid,record(natom));
   gmx_rxs(pid,array(x,natom));
   gmx_rxs(pid,array(box,DIM));
@@ -146,33 +172,44 @@ gmx_rxs(pid,record(cr->pid));
   return pid;
 }
 
-void disco_slave(t_commrec *cr,FILE *log)
+void disco_slave(t_commrec *cr,FILE *fp)
 {
   t_correct *c;
-  int       seed,nit,natom,nres,k;
-  bool      bConverged,bKeep;
+  int       seed,nit,natom,nres,k,nviol;
+  bool      bKeep;
   matrix    box;
   rvec      boxsize;
   rvec      *x,*xref,*xcenter;
   
-  c = recv_init(cr,&seed,&natom,&nres,&xref,&xcenter,&bKeep);
+  debug_gmx();
+  c = recv_init(fp,cr,&seed,&natom,&nres,&xref,&xcenter,&bKeep);
+  c->nstprint = 0;
   
   /* Make tags etc. */
+  debug_gmx();
   init_corr2(c,natom);
+  
+  debug_gmx();
+  pr_corr(fp,c);
+  fprintf(fp,"Random seed   = %d\n",seed);
   
   snew(x,natom);
   for(k=0; (TRUE); k++) {
     /* Generate random box*/
+    debug_gmx();
     rand_box(c->bBox,box,boxsize,nres,c->bCubic,&seed);
     
     /* Generate random coords */
+    debug_gmx();
     rand_coords(natom,x,xref,c->weight,c->bCenter,xcenter,boxsize,&seed);
     
     /* Now correct the random coords */
-    bConverged = shake_coords(log,FALSE,k,natom,xref,x,&seed,box,c,&nit);
+    debug_gmx();
+    nviol = shake_coords(fp,FALSE,k,natom,xref,x,&seed,box,c,&nit);
     
-    if (bConverged || bKeep)
-      send_coords(cr,bConverged,nit,k,natom,x,box);
+    debug_gmx();
+    if ((nviol == 0) || bKeep)
+      send_coords(cr,nviol,nit,k,natom,x,box);
   }
 }
 
@@ -185,21 +222,24 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
 {
   FILE    *gp;
   int     *nconvdist;
-  int     i,k,kk,nconv,ntry,status,kstatus,natom,nres,nit,nvtest,pid,kpid;
+  int     i,k,kk,nconv,ntry,status,kstatus,natom,nres,nit;
+  int     nvtest,pid,kpid,nviol;
   double  tnit;
   rvec    *x,xcm;
   matrix  box,wrbox;
   atom_id *wr_ind;
   real    *w_rls;
   bool    bConverged;
-
+  
   natom = atoms->nr;
   nres  = atoms->nres;
   
   /* Send out the word to my disciples */
-  send_init(cr,c,seed,natom,nres,xref,xcenter,(keepfn != NULL));
+  debug_gmx();
+  send_init(fp,cr,c,seed,natom,nres,xref,xcenter,(keepfn != NULL));
   
   /* Make tags etc. */
+  debug_gmx();
   init_corr2(c,natom);
   
   clear_mat(wrbox);
@@ -221,15 +261,19 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
   nconv = 0;
   ntry  = 0;
   tnit  = 0;
+  debug_gmx();
   for(k=0; (k<nstruct); k++) {
-    pid = recv_coords(cr,&bConverged,&nit,&kpid,x,box);
+    pid        = recv_coords(cr,&nviol,&nit,&kpid,x,box);
+    bConverged = (nviol == 0);
+    tnit      += nit;
     
     if (bConverged)
       nconvdist[nit]++;
     
-    nvtest = quick_check(bVerbose ? fp : NULL,natom,x,box,c);
-    fprintf(stderr,"Double checking: %d violations\n",nvtest);
-
+    /*nvtest = quick_check(bVerbose ? fp : NULL,natom,x,box,c);*/
+    fprintf(stderr,"Structure %3d from CPU %3d had %8d violations"
+	    " after %5d iterations \n",kpid,pid,nviol,nit);
+    
     if (bConverged || keepfn) {
       center_in_box(natom,x,wrbox,x);
       if (bFit)

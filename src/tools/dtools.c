@@ -44,6 +44,30 @@ bool newres(int i,t_atom atom[])
   return ((i == 0) || (atom[i].resnr != atom[i-1].resnr));
 }
 
+void pr_corr(FILE *log,t_correct *c)
+{
+  fprintf(log,"Parameters for this disco run\n");
+  fprintf(log,"maxnit        = %d\n",c->maxnit);
+  fprintf(log,"nbcheck       = %d\n",c->nbcheck);
+  fprintf(log,"nstprint      = %d\n",c->nstprint);
+  fprintf(log,"nstranlist    = %d\n",c->nstranlist);
+  fprintf(log,"ngrow         = %d\n",c->ngrow);
+  fprintf(log,"bExplicit     = %s\n",BOOL(c->bExplicit));
+  fprintf(log,"bChiral       = %s\n",BOOL(c->bChiral));
+  fprintf(log,"bPep          = %s\n",BOOL(c->bPep));
+  fprintf(log,"bDump         = %s\n",BOOL(c->bDump));
+  fprintf(log,"bLowerOnly    = %s\n",BOOL(c->bLowerOnly));
+  fprintf(log,"bRanlistFirst = %s\n",BOOL(c->bRanlistFirst));
+  fprintf(log,"bCubic        = %s\n",BOOL(c->bCubic));
+  fprintf(log,"bBox          = %s\n",BOOL(c->bBox));
+  fprintf(log,"bCenter       = %s\n",BOOL(c->bCenter));
+  fprintf(log,"ndist         = %d\n",c->ndist);
+  fprintf(log,"npep          = %d\n",c->npep);
+  fprintf(log,"nimp          = %d\n",c->nimp);
+  fprintf(log,"lowdev        = %g\n",c->lodev);
+  fflush(log);
+}
+
 t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
 		     int ngrow,bool bExplicit,bool bChiral,bool bPep,
 		     bool bDump,real lowdev,bool bLowerOnly,
@@ -125,7 +149,8 @@ void init_corr2(t_correct *c,int natom)
   }
   else
     fatal_error(0,"Too many atoms, or distances not sorted");
-  fprintf(stderr,"There are %d tags for %d atoms\n",n,natom);
+  if (debug)
+    fprintf(debug,"There are %d tags for %d atoms\n",n,natom);
   
   if (debug) 
     for(i=0; (i<=natom); i++)
@@ -366,25 +391,6 @@ real *read_weights(char *fn,int natom)
   sfree(x);
   
   return w;
-}
-
-void pr_corr(FILE *log,t_correct *c)
-{
-  fprintf(log,"Parameters for this disco run\n");
-  fprintf(log,"maxnit     = %d\n",c->maxnit);
-  fprintf(log,"nbcheck    = %d\n",c->nbcheck);
-  fprintf(log,"nstprint   = %d\n",c->nstprint);
-  fprintf(log,"nstranlist = %d\n",c->nstranlist);
-  fprintf(log,"ngrow      = %d\n",c->ngrow);
-  fprintf(log,"bExplicit  = %s\n",BOOL(c->bExplicit));
-  fprintf(log,"bChiral    = %s\n",BOOL(c->bChiral));
-  fprintf(log,"bPep       = %s\n",BOOL(c->bPep));
-  fprintf(log,"bDump      = %s\n",BOOL(c->bDump));
-  fprintf(log,"ndist      = %d\n",c->ndist);
-  fprintf(log,"npep       = %d\n",c->npep);
-  fprintf(log,"nimp       = %d\n",c->nimp);
-  fprintf(log,"lowdev     = %g\n",c->lodev);
-  fflush(log);
 }
 
 void check_dist(FILE *log,t_correct *c)

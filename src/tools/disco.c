@@ -118,7 +118,7 @@ static void do_disco(FILE *log,char *outfn,char *keepfn,t_correct *c,
 {
   FILE    *fp,*gp;
   int     *nconvdist;
-  int     i,k,kk,nconv,ntry,status,kstatus,natom,nres,nit,nvtest;
+  int     i,k,kk,nconv,ntry,status,kstatus,natom,nres,nit,nvtest,nviol;
   double  tnit;
   rvec    *x,xcm;
   matrix  box,wrbox;
@@ -161,7 +161,8 @@ static void do_disco(FILE *log,char *outfn,char *keepfn,t_correct *c,
     rand_coords(natom,x,xref,c->weight,c->bCenter,xcenter,boxsize,seed);
     
     /* Now correct the random coords */
-    bConverged = shake_coords(log,bVerbose,k,natom,xref,x,seed,box,c,&nit);
+    nviol = shake_coords(log,bVerbose,k,natom,xref,x,seed,box,c,&nit);
+    bConverged = (nviol == 0);
     tnit += nit;
 
     if (bConverged)

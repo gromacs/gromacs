@@ -36,10 +36,18 @@ static char *SRCID_correct_c = "$Id$";
 #include "smalloc.h"
 #include "disco.h"
 #include "xtcio.h"
+#include "main.h"
 #include "random.h"
 #include "bondf.h"
 #include "names.h"
 #include "physics.h"
+
+#ifdef debug_gmx
+#undef debug_gmx
+#endif
+
+#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
+fprintf(fp,"PID=%d, %s  %d\n",gmx_cpu_id(),__FILE__,__LINE__); fflush(fp); } while (0)
 
 #define NOT32
 #ifdef NOT32
@@ -368,9 +376,9 @@ bool do_1shake(int  cons_type,
     return FALSE;
 }
 
-bool shake_coords(FILE *log,bool bVerbose,
-		  int nstruct,int natom,rvec xref[],
-		  rvec x[],int *seed,matrix box,t_correct *c,int *niter)
+int shake_coords(FILE *log,bool bVerbose,
+		 int nstruct,int natom,rvec xref[],
+		 rvec x[],int *seed,matrix box,t_correct *c,int *niter)
 {
   static bool bFirst=TRUE;
   static rvec *force[2],*xtry[2],*xwr;
@@ -407,6 +415,7 @@ bool shake_coords(FILE *log,bool bVerbose,
   ener[cur]  = 1e30;
   status     = 0;
   
+  debug_gmx();  
   if (bFirst) {
     snew(force[0],natom);
     snew(force[1],natom);
@@ -429,7 +438,8 @@ bool shake_coords(FILE *log,bool bVerbose,
     copy_rvec(x[i],xtry[next][i]);
   }
   xptr = xtry[next];
-
+  debug_gmx();
+  
   if (c->bRanlistFirst)
     randomize_list(nchk,ip,seed);
   
@@ -588,7 +598,7 @@ bool shake_coords(FILE *log,bool bVerbose,
 
   *niter = nit;
 	    
-  return bConverged;
+  return nvtot;
 }
     
 int quick_check(FILE *log,int natom,rvec x[],matrix box,t_correct *c)
