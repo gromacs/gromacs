@@ -114,7 +114,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   
   low_do_autocorr(fn_tca,"Transverse Current Autocorrelation Functions",
 		  nframes,ntc,ncorr,tc,dt,eacNormal,
-		  1,FALSE,TRUE,FALSE,FALSE,0,0,0,0);
+		  1,FALSE,FALSE,FALSE,0,0,0,0);
   do_view(fn_tca,"-nxy");
   
   fp = xvgropen(fn_tc,"Transverse Current Autocorrelation Functions",
@@ -287,11 +287,14 @@ int gmx_tcaf(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   int     npargs;
+  t_pargs *ppa;
 
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
+  ppa    = add_acf_pargs(&npargs,pa);
+    
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);

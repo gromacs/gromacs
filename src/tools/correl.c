@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "fftw_wrapper.h"
 #include "smalloc.h"
 #include "correl.h"
@@ -160,7 +161,7 @@ void complex_mult(int n,real buf1[],real buf2[],real ans[])
     ans[n/2] = (buf1[n/2]*buf2[n/2])*no2_1;
   ans[0] = buf1[0]*buf2[0]*no2_1;
 }
-
+#define GMX_WITHOUT_FFTW
 #ifndef GMX_WITHOUT_FFTW
 void correl_fftw(correl_t *c,real data1[],real data2[],real ans[])
 {

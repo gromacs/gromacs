@@ -578,15 +578,16 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
 void low_do_autocorr(char *fn,char *title,
 		     int nframes,int nitem,int nout,real **c1,
 		     real dt,unsigned long mode,int nrestart,
-		     bool bAver,bool bFour,bool bNormalize,
+		     bool bAver,bool bNormalize,
 		     bool bVerbose,real tbeginfit,real tendfit,
 		     int eFitFn,int nskip)
 {
   FILE    *fp,*gp=NULL;
   int     i,k,nfour;
-  real *csum;
+  real    *csum;
   real    *ctmp,*fit;
   real    c0,sum,Ct2av,Ctav;
+  bool    bFour = acf.bFour;
  
   /* Check flags and parameters */ 
   /*  nout = get_acfnout();*/
@@ -791,7 +792,7 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
   }
   
   low_do_autocorr(fn,title,nframes,nitem,acf.nout,c1,dt,mode,
-		  acf.nrestart,bAver,acf.bFour,acf.bNormalize,
+		  acf.nrestart,bAver,acf.bNormalize,
 		  bDebugMode(),acf.tbeginfit,acf.tendfit,
 		  acf.fitfn,acf.nskip);
 }

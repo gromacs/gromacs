@@ -386,9 +386,8 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 	  fitsig[i] = 1;
       }
       low_do_autocorr(NULL,NULL,n,1,-1,&ac,
-		      dt,eacNormal,1,FALSE,TRUE,TRUE,
-		      FALSE,0,0,
-		      effnNONE,0);
+		      dt,eacNormal,1,FALSE,TRUE,
+		      FALSE,0,0,effnNONE,0);
       
       fitlen = n/nb_min;
 
