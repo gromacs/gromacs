@@ -87,7 +87,8 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
   rvec *ptr;
   
   /* We introduce a fudge factor for performance reasons: with this choice
-   * the initial force on the shells is about a factor of two lower than without
+   * the initial force on the shells is about a factor of two lower than 
+   * without
    */
   fudge = 1.0;
     
@@ -208,7 +209,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 char *traj,real t,real lambda,
 		 int natoms,matrix box,bool *bConverged)
 {
-  static bool bFirst=TRUE;
+  static bool bFirst=TRUE,bInit;
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2],Estore[F_NRE];
   tensor my_vir[2],vir_last;
@@ -230,6 +231,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	snew(pos[i],nsb->natoms);
       snew(force[i],nsb->natoms);
     }
+    bInit  = (getenv("FORCEINIT") != NULL);
     bFirst = FALSE;
   }
   
@@ -239,7 +241,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
   /* Do a prediction of the shell positions */
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,
-		 md->massT,(mdstep == 0));
+		 md->massT,bInit || (mdstep == 0));
    
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
@@ -330,7 +332,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],FALSE);
       
     *bConverged = (df[Try] < ftol);
-    bDone       = *bConverged || (step < 0.5);
+    bDone       = *bConverged || (step < 0.01);
     
     /* if ((Epot[Try] < Epot[Min])) { */
     if ((df[Try] < df[Min])) {
