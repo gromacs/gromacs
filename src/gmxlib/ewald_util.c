@@ -84,7 +84,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   atom_id *AA;
   double  q2sum; /* Necessary for precision */
   real    vc,qi,dr,dr2,rinv,fscal,Vexcl,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
-  rvec    df,dx;
+  rvec    df,dx,mutot,dipcorr;
   rvec    *f_pme=fr->f_pme;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real    dipole_coeff,qq;
@@ -100,42 +100,55 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   int     start = START(nsb);
   int     end   = start+HOMENR(nsb);
   
-  AA    = excl->a;
-  Vexcl = 0;
-  q2sum =0; 
-  Vdipole=0;
-  Vcharge=0;
+  AA      = excl->a;
+  Vexcl   = 0;
+  q2sum   = 0; 
+  Vdipole = 0;
+  Vcharge = 0;
 
-  if(epsilon_surface==0)
+  if (epsilon_surface == 0)
     dipole_coeff=0;
-  else 
-    switch(ewald_geometry) {
+  else { 
+    switch (ewald_geometry) {
     case eewg3D:
-      dipole_coeff=2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
+      dipole_coeff = 2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
       break;
     case eewg3DC:
-      dipole_coeff=2*M_PI*ONE_4PI_EPS0/vol;
+      dipole_coeff = 2*M_PI*ONE_4PI_EPS0/vol;
       break;
     default:
       fatal_error(0,"Unsupported Ewald geometry");
       dipole_coeff=0;
       break;
     }
-  
+  }
+  /* Note that we have to transform back to gromacs units, since
+   * mu_tot contains the dipole in debye units (for output).
+   */
+  for(i=0; (i<DIM); i++) {
+    mutot[i]   = mu_tot[i]*DEBYE2ENM;
+    dipcorr[i] = 2.0*dipole_coeff*mutot[i];
+  }
+  if (debug) {
+    fprintf(debug,"dipcorr = %8.3f  %8.3f  %8.3f\n",
+	    dipcorr[XX],dipcorr[YY],dipcorr[ZZ]);
+    fprintf(debug,"mutot   = %8.3f  %8.3f  %8.3f\n",
+	    mutot[XX],mutot[YY],mutot[ZZ]);
+  }
   for(i=start; (i<end); i++) {
-      /* Initiate local variables (for this i-particle) to 0 */
-      qi  = charge[i]*ONE_4PI_EPS0;
-      i1  = excl->index[i];
-      i2  = excl->index[i+1];
-      q2sum += charge[i]*charge[i];
-      
-      /* Loop over excluded neighbours */
-      for(j=i1; (j<i2); j++) {
-	k = AA[j];
-	  /* 
-	   * First we must test whether k <> i, and then, because the
-	   * exclusions are all listed twice i->k and k->i we must select
-	   * just one of the two.
+    /* Initiate local variables (for this i-particle) to 0 */
+    qi  = charge[i]*ONE_4PI_EPS0;
+    i1  = excl->index[i];
+    i2  = excl->index[i+1];
+    q2sum += charge[i]*charge[i];
+    
+    /* Loop over excluded neighbours */
+    for(j=i1; (j<i2); j++) {
+      k = AA[j];
+      /* 
+       * First we must test whether k <> i, and then, because the
+       * exclusions are all listed twice i->k and k->i we must select
+       * just one of the two.
        * As a minor optimization we only compute forces when the charges
        * are non-zero.
        */
@@ -144,12 +157,12 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	if (qq != 0.0) {
 	  dr2 = 0;
 	  rvec_sub(x[i],x[k],dx);
-	  for(m=DIM-1; m>=0; m--) {
+	  for(m=DIM-1; (m>=0); m--) {
 	    if (dx[m] > 0.5*box[m][m])
 	      rvec_dec(dx,box[m]);
 	    else if (dx[m] < -0.5*box[m][m])
 	      rvec_inc(dx,box[m]);
-	      
+	    
 	    dr2  += dx[m]*dx[m];
 	  }
 
@@ -211,41 +224,36 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	      lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
 	}
       }
+    }
+    /* Dipole correction on force */
+    if (dipole_coeff != 0) {
+      if (ewald_geometry == eewg3D) {
+	for(j=0; (j<DIM); j++)
+	  f_pme[i][j] -= dipcorr[j]*charge[i];
+      } 
+      else if (ewald_geometry == eewg3DC) {
+	f_pme[i][ZZ] -= dipcorr[ZZ]*charge[i];
       }
-      /* Dipole correction on force
-       * Note that we have to transform back to gromacs units, since
-       * mu_tot contains the dipole in debye units (for output).
-       */
-      if(dipole_coeff!=0) {
-	if(ewald_geometry==eewg3D) {
-	  for(j=0;j<DIM;j++)
-	    f_pme[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
-	} else if(ewald_geometry==eewg3DC) {
-	    f_pme[i][DIM-1]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[ZZ]*charge[i];
-	}
-      }
+    }
   }
-
+  
   /* Global corrections only on master process */
-  if(MASTER(cr)) {
+  if (MASTER(cr)) {
     /* Apply charge correction */
     /* use vc as a dummy variable */
-    vc=qsum*qsum*M_PI*ONE_4PI_EPS0/(2.0*vol*vol*ewc*ewc);
-    for(iv=0;iv<DIM;iv++)
-      lr_vir[iv][iv]+=vc;
-    Vcharge=-vol*vc;
+    vc = qsum*qsum*M_PI*ONE_4PI_EPS0/(2.0*vol*vol*ewc*ewc);
+    for(iv=0; (iv<DIM); iv++)
+      lr_vir[iv][iv] += vc;
+    Vcharge = -vol*vc;
     
     /* Apply surface dipole correction:
      * correction = dipole_coeff * (dipole)^2
-     * Note that we have to transform back to gromacs units, since
-     * mu_tot contains the dipole in debye units (for output).
      */
-    if(dipole_coeff!=0) {
-      if(ewald_geometry==eewg3D) 
-	Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*
-	  (mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
-      else if(ewald_geometry==eewg3DC) 
-	Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*mu_tot[ZZ]*mu_tot[ZZ];
+    if (dipole_coeff != 0) {
+      if (ewald_geometry == eewg3D) 
+	Vdipole = dipole_coeff*iprod(mutot,mutot);
+      else if (ewald_geometry == eewg3DC) 
+	Vdipole = dipole_coeff*mutot[ZZ]*mutot[ZZ];
     }
   }
   
@@ -256,9 +264,9 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     fprintf(debug,"start=%d,natoms=%d\n",start,end-start);
     fprintf(debug,"q2sum = %g, Vself=%g\n",q2sum, Vself);
     fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
-    if(MASTER(cr)) {
+    if (MASTER(cr)) {
       fprintf(debug,"Total charge correction: Vcharge=%g\n",Vcharge);
-      if(epsilon_surface>0)
+      if (epsilon_surface>0)
 	fprintf(debug,"Total dipole correction: Vdipole=%g\n",Vdipole);
     }
   }
@@ -266,3 +274,4 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   return (Vdipole+Vcharge-Vself-Vexcl);
 }
   
+
