@@ -100,19 +100,19 @@ specific needs and desires.
 Preprocessing:</h3>
 
 <dl>
-<h4>
+<dt><h4>
 title:</h4>
 
 <dd>
 this is reduntant, so you can type anything you want</dd>
 
-<h4>
+<dt><h4>
 cpp: (/lib/cpp)</h4>
 
 <dd>
 your preprocessor</dd>
 
-<h4>
+<dt><h4>
 include:</h4>
 
 <dd>
@@ -120,7 +120,7 @@ directories to include in your topology. format:</dd>
 
 <pre>-I/home/john/my_lib -I../more_lib</pre>
 
-<h4>
+<dt><h4>
 define: ()</h4>
 
 <dd>
@@ -151,7 +151,7 @@ restraints.</dd>
 Run control:</h3>
 
 <dl>
-<h4>
+<dt><h4>
 integrator:</h4>
 
 <dl compact>
@@ -188,27 +188,27 @@ force divided by a friction coefficient (<b><a href="#ld">ld_fric</a></b>
 The random generator is initialized with <b><a href="#ld">ld_seed</a></b></dd>
 </dl>
 
-<h4>
+<dt><h4>
 tinit: (0) [ps]</h4>
 
 <dd>
 starting time for your run (only makes sense for integrators <b>md</b>
 and <b>ld</b>)</dd>
 
-<h4>
+<dt><h4>
 dt: (0.001) [ps]</h4>
 
 <dd>
 time step for integration (only makes sense for integrators <b>md</b> and
 <b>ld</b>)</dd>
 
-<h4>
+<dt><h4>
 nsteps: (1)</h4>
 
 <dd>
 maximum number of steps to integrate</dd>
 
-<h4>
+<dt><h4>
 nstcomm: (1) [steps]</h4>
 
 <dd>
@@ -224,19 +224,19 @@ removal (should only be used for vacuum simulations)</dd>
 Langevin dynamics</h3>
 
 <dl>
-<h4>
+<dt><h4>
 ld_temp: (300) [K]</h4>
 
 <dd>
 temperature in ld run (controls thermal noise level)</dd>
 
-<h4>
+<dt><h4>
 ld_fric: (0) [amu/ps]</h4>
 
 <dd>
 ld friction coefficient</dd>
 
-<h4>
+<dt><h4>
 ld_seed: (1993) [integer]</h4>
 
 <dd>
@@ -253,20 +253,20 @@ when <b>ld_seed</b> is set to -1, the seed is calculated as
 Energy minimization</h3>
 
 <dl>
-<h4>
+<dt><h4>
 emtol: (1.0) [<sup>kJ</sup>/<sub>mol nm</sub>]</h4>
 
 <dd>
 the minimization is converged when the maximum force 
 is smaller than this value</dd>
 
-<h4>
+<dt><h4>
 emstep: (0.1) [nm]</h4>
 
 <dd>
 initial step-size
 
-<h4>
+<dt><h4>
 nstcgsteep: (1000) [steps]</h4>
 
 <dd>
@@ -279,53 +279,53 @@ gradients energy minimization.</dd>
 Output control</h3>
 
 <dl>
-<h4>
+<dt><h4>
 nstxout: (100) [steps]</h4>
 
 <dd>
 frequency to write coordinates to output trajectory</dd>
 
-<h4>
+<dt><h4>
 nstvout: (100) [steps]</h4>
 
 <dd>
 frequency to write velocities to output trajectory</dd>
 
-<h4>
+<dt><h4>
 nstfout: (0) [steps]</h4>
 
 <dd>
 frequency to write forces to output trajectory</dd>
 
-<h4>
+<dt><h4>
 nstlog: (100) [steps]</h4>
 
-<h4>
+<dt><h4>
 nstenergy: (100) [steps]</h4>
 
 <dd>
 frequency to write energies to log file and energy file</dd>
 
-<h4>
+<dt><h4>
 nstxtcout: (0) [steps]</h4>
 
 <dd>
 frequency to write coordinates to xtc trajectory</dd>
 
-<h4>
+<dt><h4>
 xtc_precision: (1000) [real]</h4>
 
 <dd>
 precision to write to xtc trajectory</dd>
 
-<h4>
+<dt><h4>
 xtc_grps:</h4>
 
 <dd>
 group(s) to write to xtc trajectory, default the whole system is written
 (if <b>nstxtcout</b> is larger than zero)</dd>
 
-<h4>
+<dt><h4>
 energygrps:</h4>
 
 <dd>
@@ -337,13 +337,13 @@ group(s) to write to energy file</dd>
 Neighborsearching</h3>
 
 <dl>
-<h4>
+<dt><h4>
 nstlist: (10) [steps]</h4>
 
 <dd>
 frequency to update neighborlist</dd>
 
-<h4>
+<dt><h4>
 ns_type:</h4>
 
 <dl compact>
@@ -365,13 +365,13 @@ Check every atom in the box when constructing a new neighborlist every
 <b>nstlist</b> steps.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 deltagrid: (2)</h4>
 
 <dd>
 number of grid cells per Coulomb cut-off length</dd>
 
-<h4>
+<dt><h4>
 box:</h4>
 
 <dl compact>
@@ -394,7 +394,7 @@ Selects a rectangular box shape.</dd>
 Selects no box, for use in vacuum simulations.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 rlist: (1) [nm]</h4>
 
 <dd>
@@ -406,7 +406,7 @@ cut-off distance for making the neighbor list</dd>
 Electrostatics and VdW</h3>
 
 <dl>
-<h4>
+<dt><h4>
 coulombtype:</h4>
 
 <dl compact>
@@ -509,25 +509,25 @@ of <tt>0.002</tt> [nm] when you run in single precision, or <tt>0.0005</tt>
 is not important.</dd>
 </dl>
 <a NAME="el2"></a>
-<h4>
+<dt><h4>
 rcoulomb_switch: (0) [nm]</h4>
 
 <dd>
 where to start switching the Coulomb potential</dd>
 
-<h4>
+<dt><h4>
 rcoulomb: (1) [nm]</h4>
 
 <dd>
 distance for the Coulomb cut-off</dd>
 
-<h4>
+<dt><h4>
 epsilon_r: (1)</h4>
 
 <dd>
 dielectric constant</dd>
 
-<h4>
+<dt><h4>
 vdwtype:</h4>
 
 <dl compact>
@@ -565,19 +565,19 @@ is not important. When you want to use LJ correction, make sure that <b>rvdw</b>
 corresponds to the cut-off in the user-defined function.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 rvdw_switch: (0) [nm]</h4>
 
 <dd>
 where to start switching the LJ potential</dd>
 
-<h4>
+<dt><h4>
 rvdw: (1) [nm]</h4>
 
 <dd>
 distance for the LJ or Buckingham cut-off</dd>
 
-<h4>
+<dt><h4>
 bDispCorr:</h4>
 
 <dl compact>
@@ -594,11 +594,11 @@ don't apply any correction</dd>
 apply long range dispersion corrections for Energy and Pressure</dd>
 </dl>
 
-<h4>
+<dt><h4>
 gauss_width (0.1) ;</b></h4>
 <b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </b>for future
 use
-<h4>
+<dt><h4>
 fourier_nx </b>(10)<b>; fourier_ny </b>(10)<b> ; fourier_nz: </b>(10)</h4>
 
 <dd>
@@ -608,14 +608,14 @@ Highest magnitude of wavevectors in reciprocal space when using Ewald.</dd>
 Grid size when using PPPM&nbsp;or PME. The best choice is powers of 2,
 or at least products of 2,3,5. Avoid large primes.</dd>
 
-<h4>
+<dt><h4>
 pme_order (4)</h4>
 
 <dd>
 Interpolation order for PME. 4 equals cubic interpolation. You might try
 6/8/10 when running in parallel and simultaneously decrease grid dimension.</dd>
 
-<h4>
+<dt><h4>
 ewald_rtol (1e-5)</h4>
 
 <dd>
@@ -623,7 +623,7 @@ The relative strength of the Ewald-shifted direct potential at the cutoff
 is given by <b>ewald_rtol.</b> Decreasing this will give a more accurate
 direct sum, but then you need more wavevectors for the reciprocal sum.</dd>
 
-<h4>
+<dt><h4>
 optimize_fft (no)</h4>
 
 <dd>
@@ -637,7 +637,7 @@ at start.</dd>
 Temperature coupling</h3>
 
 <dl>
-<h4>
+<dt><h4>
 tcoupl:</h4>
 
 <dl compact>
@@ -658,25 +658,25 @@ can be coupled seperately, these are specified in the
 seperated by spaces.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 ntcmemory: (1) [steps]</h4>
 
 <dd>
 memory for running average to couple to bath</dd>
 
-<h4>
+<dt><h4>
 tc_grps:</h4>
 
 <dd>
 groups to couple separately to temperature bath</dd>
 
-<h4>
+<dt><h4>
 tau_t: [ps]</h4>
 
 <dd>
 time constant for coupling (one for each group in tc_grps)</dd>
 
-<h4>
+<dt><h4>
 ref_t: [K]</h4>
 
 <dd>
@@ -688,7 +688,7 @@ reference temperature for coupling (one for each group in tc_grps)</dd>
 Pressure coupling</h3>
 
 <dl>
-<h4>
+<dt><h4>
 pcoupl:</h4>
 
 <dl compact>
@@ -744,25 +744,25 @@ zero to have a box with constant height.</dd>
 Not supported yet.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 npcmemory: (1) [steps]</h4>
 
 <dd>
 memory for running average to couple</dd>
 
-<h4>
+<dt><h4>
 tau_p: (1) [ps]</h4>
 
 <dd>
 time constant for coupling</dd>
 
-<h4>
+<dt><h4>
 compressibility: [1/bar]</h4>
 
 <dd>
 compressibility (NOTE: this is now really in 1/bar)</dd>
 
-<h4>
+<dt><h4>
 ref_p: [bar]</h4>
 
 <dd>
@@ -774,7 +774,7 @@ reference pressure for coupling</dd>
 Simulated annealing</h3>
 
 <dl>
-<h4>
+<dt><h4>
 annealing:</h4>
 
 <dl compact>
@@ -798,7 +798,7 @@ be 0 [K]. Negative <b>zero_temp_time</b> results in heating, which will
 go on indefenitely.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 zero_temp_time: (0) [ps]</h4>
 
 <dd>
@@ -814,7 +814,7 @@ vs. time.</dd>
 Velocity generation</h3>
 
 <dl>
-<h4>
+<dt><h4>
 gen_vel:</h4>
 
 <dl compact>
@@ -834,13 +834,13 @@ Generate velocities according to a Maxwell distribution at temperature
 with integrator <b><a href="#run">md</a></b>.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 gen_temp: (300) [K]</h4>
 
 <dd>
 temperature for Maxwell distribution</dd>
 
-<h4>
+<dt><h4>
 gen_seed: (173529) [integer]</h4>
 
 <dd>
@@ -852,7 +852,7 @@ used to initialize random generator for random velocities</dd>
 Solvent optimization</h3>
 
 <dl>
-<h4>
+<dt><h4>
 solvent_optimization:</h4>
 
 <dl compact>
@@ -871,7 +871,7 @@ solvent molecule name in your topology. Check your run time to see if it
 is faster.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 nsatoms: (3)</h4>
 
 <dd>
@@ -883,7 +883,7 @@ Number of atoms in solvent model. (Not implemented for non-three atom models)</d
 Bonds</h3>
 
 <dl>
-<h4>
+<dt><h4>
 constraints:</h4>
 
 <dl compact>
@@ -920,7 +920,7 @@ bond-constraints.</dd>
 Constrain all bonds and constrain all angles by adding bond-constraints.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 constraint_alg:</h4>
 
 <dl compact>
@@ -946,7 +946,7 @@ The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
 for "normal" MD.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 unconstrained_start:</h4>
 
 <dl compact>
@@ -963,13 +963,13 @@ apply constraints to the start configuration</dd>
 do not apply constraints to the start configuration</dd>
 </dl>
 <a NAME="bond2"></a>
-<h4>
+<dt><h4>
 shake_tol: (0.0001)</h4>
 
 <dd>
 relative tolerance for shake</dd>
 
-<h4>
+<dt><h4>
 lincs_order: (4)</h4>
 
 <dd>
@@ -977,19 +977,19 @@ Highest order in the expansion of the constraint coupling matrix.
 <b>lincs_order</b> is also used for the number of Lincs iterations
 during energy minimization, only one iteration is used in MD.</dd>
 
-<h4>
+<dt><h4>
 lincs_warnangle: (30) [degrees]</h4>
 
 <dd>
 maximum angle that a bond can rotate before Lincs will complain</dd>
 
-<h4>
+<dt><h4>
 nstlincsout: (1000) [steps]</h4>
 
 <dd>
 frequency to output constraint accuracy in log file</dd>
 
-<h4>
+<dt><h4>
 morse:</h4>
 
 <dl compact>
@@ -1012,7 +1012,7 @@ bonds are represented by a morse potential</dd>
 NMR refinement</h3>
 
 <dl>
-<h4>
+<dt><h4>
 disre:</h4>
 
 <dl compact>
@@ -1036,7 +1036,7 @@ simple (per-molecule) distance restraints</dd>
 distance restraints over an ensemble of molecules</dd>
 </dl>
 
-<h4>
+<dt><h4>
 disre_weighting:</h4>
 
 <dl compact>
@@ -1054,7 +1054,7 @@ the forces are the derivative of the restraint potential, this results
 in an r<sup>-7</sup> weighting of the atom pairs</dd>
 </dl>
 
-<h4>
+<dt><h4>
 disre_mixed:</h4>
 
 <dl compact>
@@ -1073,20 +1073,20 @@ the violation used in the calculation of the restraint force is the square
 root of the time averaged violation times the instantaneous violation</dd>
 </dl>
 
-<h4>
+<dt><h4>
 disre_fc: (1000) [<sup>kJ</sup>/<sub>mol nm<sup>2</sup></sub>]</h4>
 
 <dd>
 force constant for distance restraints, which is multiplied by a (possibly)
 different factor for each restraint</dd>
 
-<h4>
+<dt><h4>
 disre_tau: (10) [ps]</h4>
 
 <dd>
 time constant for distance restraints running average</dd>
 
-<h4>
+<dt><h4>
 nstdisreout: (100) [steps]</h4>
 
 <dd>
@@ -1100,7 +1100,7 @@ energy file very large)</dd>
 Free energy</h3>
 
 <dl>
-<h4>
+<dt><h4>
 free_energy:</h4>
 
 <dl compact>
@@ -1119,13 +1119,13 @@ calculate the free energy difference. The starting value of lambda is <b>init_la
 the increase per time step is <b>delta_lambda</b>.</dd>
 </dl>
 
-<h4>
+<dt><h4>
 init_lambda: (0)</h4>
 
 <dd>
 starting value for lambda</dd>
 
-<h4>
+<dt><h4>
 delta_lambda: (0)</h4>
 
 <dd>
@@ -1137,7 +1137,7 @@ increase per timestep for lambda</dd>
 Non-equilibrium MD</h3>
 
 <dl>
-<h4>
+<dt><h4>
 acc_grps:</h4>
 
 <dd>
@@ -1145,7 +1145,7 @@ groups for constant acceleration (e.g.: <tt>Protein Sol</tt>) all atoms
 in groups Protein and Sol will experience constant acceleration as specified
 in the <b>accelerate</b> line</dd>
 
-<h4>
+<dt><h4>
 accelerate: (0) [nm/ps<sup>2</sup>]</h4>
 
 <dd>
@@ -1153,7 +1153,7 @@ acceleration for <b>acc_grps</b>; x, y and z for each group (e.g. <tt>0.1
 0.0 0.0 -0.1 0.0 0.0</tt> means that first group has constant acceleration
 of 0.1 nm/ps<sup>2</sup> in X direction, second group the opposite).</dd>
 
-<h4>
+<dt><h4>
 freezegrps:</h4>
 
 <dd>
@@ -1161,7 +1161,7 @@ Groups that are to be frozen (i.e. their X, Y, and/or Z position will not
 be updated; e.g. <tt>Lipid SOL</tt>). <b>freezedim</b> specifies for which
 dimension the freezing applies.</dd>
 
-<h4>
+<dt><h4>
 freezedim:</h4>
 
 <dd>
@@ -1176,13 +1176,13 @@ Z direction. The particles in the second group can move in any direction).</dd>
 Electric fields</h3>
 
 <dl>
-<h4>
+<dt><h4>
 E_x (0) [V/nm]<b> ; E_y </b>(0) [V/nm]<b> ; E_z: </b>(0) [V/nm]</h4>
 
 <dd>
 strength of constant electric field in resp. X, Y and Z direction</dd>
 
-<h4>
+<dt><h4>
 E_xt <b>; E_yt ; E_zt:</b></h4>
 
 <dd>
@@ -1194,14 +1194,14 @@ not implemented yet</dd>
 User defined thingies</h3>
 
 <dl>
-<h4>
+<dt><h4>
 user1_grps <b>; user2_grps ; user3_grps:</b></h4>
 
-<h4>
+<dt><h4>
 userint1 (0)<b> ; userint2 </b>(0)<b> ; userint3 </b>(0)<b> ; userint4:
 </b>(0)</h4>
 
-<h4>
+<dt><h4>
 userreal1 (0)<b> ; userreal2 </b>(0)<b> ; userreal3 </b>(0)<b> ; userreal4:
 </b>(0)</h4>
 
