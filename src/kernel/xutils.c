@@ -94,7 +94,7 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
 /* Lots of global variables! Yummy... */
 static real tol     = 0.1;
 static real epot    = 0.0;
-static real fmax    = 100;
+static real f_max   = 100;
 static real npow    = 12.0;
 static bool bComb   = TRUE;
 static bool bLogEps = FALSE;
@@ -107,7 +107,7 @@ void set_ffvars(real ff_tol,real ff_epot,real ff_npow,bool ff_bComb,
   epot    = ff_epot;
   npow    = ff_npow;
   bComb   = ff_bComb;
-  fmax    = ff_fmax;
+  f_max   = ff_fmax;
   ratio   = ff_ratio;
   bLogEps = ff_bLogEps;
 }
@@ -401,7 +401,7 @@ static void print_grid(FILE *fp,real energy,int natoms,rvec f[],rvec fshake[],
     for(i=0; (i<natoms); i++)
       msf += iprod(f[i],f[i]);
     rmsf = sqrt(msf/natoms);
-    if ((fmax == 0) || (rmsf < fmax)) 
+    if ((f_max == 0) || (rmsf < f_max)) 
       print_range(fp,rmsf,energy);
   }
 }
