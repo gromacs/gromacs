@@ -399,7 +399,6 @@ char *low_libfn(char *file, bool bFatal)
   char *ret=NULL;
   char *lib,*dir;
   static char buf[1024];
-  static char libdir[1024];
   static char libpath[4096],tmppath[4096];
   static int  bFirst=1;
   static bool env_is_set;
@@ -412,8 +411,8 @@ char *low_libfn(char *file, bool bFatal)
       env_is_set=TRUE;
       strcpy(libpath,lib);
     } else {
-      if(!get_libdir(libdir))
-	strcpy(libdir,GMXLIBDIR);
+      if(!get_libdir(libpath))
+	strcpy(libpath,GMXLIBDIR);
     }
     bFirst=0;
   }
