@@ -643,17 +643,19 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 	      nbugs,bugs,bHidden);
     fclose(fp);
   }
+  
+  /* convert time options, must be done after printing! */
+#define pca_convert_time(t) if (t>=0.0) t=(double)inv_convert_time((real)(t))
+  for(i=0; i<npall; i++)
+    if (all_pa[i].type == etTIME)
+      pca_convert_time(*all_pa[i].u.r);
+#undef pca_convert_time
+  
+  /* clear memory */
   for(i=0; i<npall; i++)
     sfree(all_pa[i].desc);
   sfree(all_pa);
   
-  /* convert time options, must be done after printing! */
-#define pca_convert_time(t) if (t>=0.0) t=inv_convert_time(t)
-  pca_convert_time(tbegin);
-  pca_convert_time(tend);
-  pca_convert_time(tdelta);
-#undef pca_convert_time
-
   if (!FF(PCA_NOEXIT_ON_ARGS)) {
     if (*argc > 1) {
       for(i=1; (i<*argc); i++) 
