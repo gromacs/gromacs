@@ -24,7 +24,7 @@ echo "generating latex page $TEXIDX"
 if ( -f $TEXIDX ) \rm $TEXIDX
 touch $TEXIDX
 
-echo "\begin{description}" >> $TEXIDX
+echo "\\begin{description}" >> $TEXIDX
 awk -F '|' -v longest="mk\\_angndx" '{\
   gsub("_","\\_",$0);\
   gsub("%","\\%",$0);\
@@ -42,6 +42,6 @@ awk -F '|' -v longest="mk\\_angndx" '{\
     }\
   }\
 }' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
-echo "\end{description}" >> $TEXIDX
+echo "\\end{description}" >> $TEXIDX
 
 #last line
