@@ -51,7 +51,7 @@ static char *SRCID_gmxdump_c = "$Id$";
 #include "trnio.h"
 #include "txtdump.h"
 
-static void list_tpx(char *fn, bool bAltLayout)
+static void list_tpx(char *fn)
 {
   int         step,natoms,fp,indent,i,j,**gcount,atot;
   real        t,lambda;
@@ -74,34 +74,18 @@ static void list_tpx(char *fn, bool bAltLayout)
 	   tpx.bF   ? f : NULL,
 	   tpx.bTop ? &top: NULL);
   
-  if (bAltLayout) {
-    printf("----------- begin of %s ------------\n",fn);
-    fp = open_tpx(NULL,"w");
-    fio_setdebug(fp,TRUE);
-    fwrite_tpx(fp,step,t,lambda,
-	       tpx.bIr  ? &ir : NULL,
-	       tpx.bBox ? box : NULL,
-	       natoms,
-	       tpx.bX   ? x : NULL,
-	       tpx.bV   ? v : NULL,
-	       tpx.bF   ? f : NULL,
-	       tpx.bTop ? &top : NULL);
-    close_tpx(fp);
-    printf("----------- end of %s ------------\n",fn);
-  } else {
-    if (available(stdout,&tpx,fn))
-      {
-	indent=0;
-	indent=pr_title(stdout,indent,fn);
-	pr_header(stdout,indent,"header",&(tpx));
-	pr_inputrec(stdout,indent,"ir",&(ir));
-	pr_rvecs(stdout,indent,"box",box,DIM);
-	pr_rvecs(stdout,indent,"x",x,natoms);
-	pr_rvecs(stdout,indent,"v",v,natoms);
-	pr_rvecs(stdout,indent,"f",f,natoms);
-	pr_top(stdout,indent,"topology",&(top));
-      }
+  if (available(stdout,&tpx,fn)) {
+    indent=0;
+    indent=pr_title(stdout,indent,fn);
+    pr_header(stdout,indent,"header",&(tpx));
+    pr_inputrec(stdout,indent,"ir",&(ir));
+    pr_rvecs(stdout,indent,"box",box,DIM);
+    pr_rvecs(stdout,indent,"x",x,natoms);
+    pr_rvecs(stdout,indent,"v",v,natoms);
+    pr_rvecs(stdout,indent,"f",f,natoms);
+    pr_top(stdout,indent,"topology",&(top));
   }
+
   snew(gcount,egcNR);
   for(i=0; (i<egcNR); i++) 
     snew(gcount[i],top.atoms.grps[i].nr);
@@ -128,7 +112,7 @@ static void list_tpx(char *fn, bool bAltLayout)
   sfree(f);
 }
 
-static void list_trn(char *fn,bool bAltLayout)
+static void list_trn(char *fn)
 {
   int         fpread,fpwrite,nframe,indent;
   char        buf[256];
@@ -151,33 +135,22 @@ static void list_trn(char *fn,bool bAltLayout)
 		   trn.x_size   ? x : NULL,
 		   trn.v_size   ? v : NULL,
 		   trn.f_size   ? f : NULL)) {
-      if (bAltLayout) {
-	printf("----------- begin of %s frame %d ------------\n",fn,nframe);
-	fwrite_tpx(fpwrite,trn.step,trn.t,trn.lambda,NULL,
-		   trn.box_size ? box : NULL,
-		   trn.natoms,
-		   trn.x_size   ? x : NULL,
-		   trn.v_size   ? v : NULL,
-		   trn.f_size   ? f : NULL,
-		   NULL);
-	printf("----------- end of %s frame %d ------------\n",fn,nframe);
-      } else {
-	sprintf(buf,"%s frame %d",fn,nframe);
-	indent=0;
-	indent=pr_title(stdout,indent,buf);
-	pr_indent(stdout,indent);
-	fprintf(stdout,"natoms=%10d  step=%10d  time=%10g  lambda=%10g\n",
-		trn.natoms,trn.step,trn.t,trn.lambda);
-	if (trn.box_size)
-	  pr_rvecs(stdout,indent,"box",box,DIM);
-	if (trn.x_size)
-	  pr_rvecs(stdout,indent,"x",x,trn.natoms);
-	if (trn.v_size)
-	  pr_rvecs(stdout,indent,"v",v,trn.natoms);
-	if (trn.f_size)
-	  pr_rvecs(stdout,indent,"f",f,trn.natoms);
-      } 
-    } else
+      sprintf(buf,"%s frame %d",fn,nframe);
+      indent=0;
+      indent=pr_title(stdout,indent,buf);
+      pr_indent(stdout,indent);
+      fprintf(stdout,"natoms=%10d  step=%10d  time=%10g  lambda=%10g\n",
+	      trn.natoms,trn.step,trn.t,trn.lambda);
+      if (trn.box_size)
+	pr_rvecs(stdout,indent,"box",box,DIM);
+      if (trn.x_size)
+	pr_rvecs(stdout,indent,"x",x,trn.natoms);
+      if (trn.v_size)
+	pr_rvecs(stdout,indent,"v",v,trn.natoms);
+      if (trn.f_size)
+	pr_rvecs(stdout,indent,"f",f,trn.natoms);
+    } 
+    else
       fprintf(stderr,"\nWARNING: Incomplete frame: nr %d, t=%g\n",
 	      nframe,trn.t);
     
@@ -233,7 +206,7 @@ void list_xtc(char *fn, bool bXVG)
   close_xtc(xd);
 }
 
-void list_trx(char *fn,bool bAltLayout,bool bXVG)
+void list_trx(char *fn,bool bXVG)
 {
   int ftp;
   
@@ -241,7 +214,7 @@ void list_trx(char *fn,bool bAltLayout,bool bXVG)
   if (ftp == efXTC)
     list_xtc(fn,bXVG);
   else if ((ftp == efTRR) || (ftp == efTRJ))
-    list_trn(fn,bAltLayout);
+    list_trn(fn);
   else
     fprintf(stderr,"File %s not supported. Try using more %s\n",
 	    fn,fn);
@@ -318,10 +291,9 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bAltLayout=FALSE,bXVG=FALSE;
+  static bool bXVG=FALSE;
   static bool bShowNumbers=TRUE;
   t_pargs pa[] = {
-    { "-a", FALSE, etBOOL, {&bAltLayout}, "HIDDENAlternative layout for run startup files" },
     { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
     { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" }
   };
@@ -332,10 +304,10 @@ int main(int argc,char *argv[])
   
   pr_shownumbers(bShowNumbers);
   if (ftp2bSet(efTPX,NFILE,fnm)) 
-    list_tpx(ftp2fn(efTPX,NFILE,fnm), bAltLayout);
+    list_tpx(ftp2fn(efTPX,NFILE,fnm));
     
   if (ftp2bSet(efTRX,NFILE,fnm)) 
-    list_trx(ftp2fn(efTRX,NFILE,fnm), bAltLayout, bXVG);
+    list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
   
   if (ftp2bSet(efENX,NFILE,fnm))
     list_ene(ftp2fn(efENX,NFILE,fnm));

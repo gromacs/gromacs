@@ -52,15 +52,7 @@ bool yesno(void)
   return (c == 'Y');
 }
 
-typedef struct {
-  char *res1, *res2;
-  char *atom1,*atom2;
-  char *newres1,*newres2;
-  int  nbond1,nbond2;
-  real length;
-} t_specbond;
-
-static t_specbond *get_specbonds(int *nspecbond)
+t_specbond *get_specbonds(int *nspecbond)
 {
   static char  *sbfile="specbond.dat";
   
@@ -104,7 +96,7 @@ static t_specbond *get_specbonds(int *nspecbond)
   return sb;
 }
 
-static void done_specbonds(int nsb,t_specbond sb[])
+void done_specbonds(int nsb,t_specbond sb[])
 {
   int i;
   

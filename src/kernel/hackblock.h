@@ -121,6 +121,17 @@ typedef struct {
   
 } t_protonate;
 
+typedef struct {
+  char *res1, *res2;
+  char *atom1,*atom2;
+  char *newres1,*newres2;
+  int  nbond1,nbond2;
+  real length;
+} t_specbond;
+
+extern t_specbond *get_specbonds(int *nspecbond);
+extern void done_specbonds(int nsb,t_specbond sb[]);
+
 extern void free_t_restp(int nrtp, t_restp **rtp);
 extern void free_t_hack(int nh, t_hack **h);
 extern void free_t_hackblock(int nhb, t_hackblock **hb);

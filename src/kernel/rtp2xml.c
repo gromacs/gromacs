@@ -108,7 +108,73 @@ static void dump_res(FILE *fp,int indent,t_restp *restp,int nah,
   }
   indent -= 2;
   pr_indent(fp,indent);
-  fprintf(fp,"</residue>\n");
+  fprintf(fp,"</residue>\n\n");
+}
+
+static void dump_hack_add(FILE *fp,int indent,t_hack *hack)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"<modadd addname=\"%s\" addgeom=\"%d\" addto=\"%s %s %s\"/>\n",
+	  hack->nname,hack->tp,hack->a[0],hack->a[1],hack->a[2]);
+}
+
+static void dump_hack_del(FILE *fp,int indent,t_hack *hack)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"<moddelete delname=\"%s\"/>\n",hack->oname);
+}
+
+static void dump_hack_rep(FILE *fp,int indent,t_hack *hack)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"<modreplace oldname=\"%s\" newname=\"%s\"/>\n",hack->oname,hack->nname);
+}
+
+static void dump_mod(FILE *fp,int indent,t_hackblock *tdb,t_atomtype *atype)
+{
+  int i,j,k;
+
+  pr_indent(fp,indent);
+  fprintf(fp,"<moddef modtype=\"%s\"\n",tdb->name);
+  indent += 2;
+  for(j=0; (j<tdb->nhack); j++) {
+    if (tdb->hack[j].oname == NULL)
+      dump_hack_add(fp,indent,&(tdb->hack[j]));
+    else if (tdb->hack[j].nname == NULL)
+      dump_hack_del(fp,indent,&(tdb->hack[j]));
+    else 
+      dump_hack_rep(fp,indent,&(tdb->hack[j]));
+  }
+  indent -= 2;
+  pr_indent(fp,indent);
+  fprintf(fp,"</moddef>\n\n");
+}
+
+static void dump_mods(FILE *fp,int indent,
+ 		      int n,t_hackblock tdb[],t_atomtype *atype)
+{
+  int i,j;
+  
+  for(i=0; (i<n); i++)
+    dump_mod(fp,indent,&(tdb[i]),atype);
+}
+
+static void do_specbonds(FILE *fp,int indent)
+{
+  t_specbond *sb;
+  int i,nsb;
+  
+  pr_indent(fp,indent);
+  fprintf(fp,"<linkdef linktype=\"peptide\" restype=\"* *\" atomprev=\"C\" atomnext=\"N\" refdist=\"0.133\"/>\n");
+  sb = get_specbonds(&nsb);
+  for(i=0; (i<nsb); i++) {
+    pr_indent(fp,indent);
+    fprintf(fp,"<linkdef linktype=\"unknown\" restype=\"%s %s\" atomprev=\"%s\" atomnext=\"%s\" refdist=\"%g\"/>\n",
+	    sb[i].res1,sb[i].res2,sb[i].atom1,sb[i].atom2,sb[i].length);
+  }
+  done_specbonds(nsb,sb);
+  sfree(sb);
+  fprintf(fp,"\n");
 }
 
 int main(int argc, char *argv[])
@@ -198,6 +264,9 @@ int main(int argc, char *argv[])
   for(i=0; (i<nrtp); i++) {
     dump_res(fp,2,&(restp[i]),nah,ah);
   }
+  do_specbonds(fp,2);
+  dump_mods(fp,2,nNtdb,ntdb,atype);
+  dump_mods(fp,2,nCtdb,ctdb,atype);
   fprintf(fp,"</residues>\n");
   fclose(fp);  
 
