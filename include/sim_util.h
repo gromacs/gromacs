@@ -54,20 +54,13 @@ static char *SRCID_sim_util_h = "$Id$";
 #include "tgroup.h"
 #include "time.h"
 
-extern void finish_run(FILE *log,t_commrec *cr,
-		       char *confout,char *traj,
-		       char *xtc_traj,
-		       t_nsborder *nsb,
-		       t_topology *top,
-		       t_parm *parm,
-		       real t,real lambda,
-		       rvec x[],rvec v[],rvec f[],
-		       t_nrnb nrnb[],
-		       double dt,int step,
-		       bool bWriteStat);
+void finish_run(FILE *log,t_commrec *cr,char *confout, t_nsborder *nsb,
+		t_topology *top, t_parm *parm,t_nrnb nrnb[],double nodetime,
+		double realtime,int step,bool bWriteStat);
 
-extern void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
-			  matrix box,tensor pres,tensor virial,real ener[]);
+
+void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
+		   matrix box,tensor pres,tensor virial,real ener[]);
      
 #endif	/* _sim_util_h */
 

@@ -8,11 +8,12 @@
 #
 Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
-Version: 3.0.99
-Release: 20020215
+Version: 3.1.beta_20020215
+Release: 1
 Copyright: GPL
 Group: Applications/Science
 Prefix: /usr/local
+Buildroot: %{_topdir}/buildroot
 Requires: fftw >= 2.1.3 
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
 URL: http://www.gromacs.org
@@ -89,10 +90,10 @@ PATH="/sbin:$PATH" ldconfig
 %docdir %{prefix}/share/gromacs/html
 %{prefix}/share/gromacs/html/
 %{prefix}/man/*
-%{prefix}/lib/libgmx.so.1.0.0
-%{prefix}/lib/libgmx.so.1
-%{prefix}/lib/libmd.so.1.0.0
-%{prefix}/lib/libmd.so.1
+%{prefix}/lib/libgmx.so.2.0.0
+%{prefix}/lib/libgmx.so.2
+%{prefix}/lib/libmd.so.2.0.0
+%{prefix}/lib/libmd.so.2
 %files devel
 %defattr(-,root,root)
 %{prefix}/share/gromacs/template/*
