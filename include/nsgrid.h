@@ -27,13 +27,13 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-#ifndef _grid_h
-#define _grid_h
+#ifndef _nsgrid_h
+#define _nsgrid_h
 
-static char *SRCID_grid_h = "$Id$";
+static char *SRCID_nsgrid_h = "$Id$";
 
 #ifdef HAVE_IDENT
-#ident	"@(#) grid.h 1.7 11/23/92"
+#ident	"@(#) nsgrid.h 1.7 11/23/92"
 #endif /* HAVE_IDENT */
 
 #include "typedefs.h"
@@ -62,6 +62,6 @@ extern void check_grid(FILE *log,t_grid *grid);
 
 extern void print_grid(FILE *log,t_grid *grid);
 
-#endif	/* _grid_h */
+#endif	/* ns_grid_h */
 
 
