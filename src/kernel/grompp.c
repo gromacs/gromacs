@@ -867,7 +867,7 @@ int main (int argc, char *argv[])
   t_molinfo    msys;
   t_atomtype   atype;
   t_inputrec   *ir;
-  int          natoms,ndum;
+  int          natoms,ndum,nc;
   int          *forward=NULL;
   t_params     *plist;
   t_state      state;
@@ -991,16 +991,16 @@ int main (int argc, char *argv[])
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
   
-  if (ir->eI == eiCG) {
-    int nc;
-    nc = count_constraints(msys.plist);
-    if (nc) {
-      fprintf(stderr,
-	      "ERROR: can not do Conjugate Gradients with constraints (%d)\n",
-	      nc);
-      nerror++;
-    }
+  nc = count_constraints(msys.plist);
+  if ((ir->eI == eiCG) && nc) {
+    fprintf(stderr,
+	    "ERROR: can not do Conjugate Gradients with constraints (%d)\n",
+	    nc);
+    nerror++;
   }
+  if ((ir->ePBC == epbcFULL) && nc)
+    warning("combination of constraints and full periodicity may fail when\n"
+	    "molecules are split due to periodic boundaty conditions.\n");
 
   /* If we are doing GBSA, check that we got the parameters we need */
   have_radius=have_vol=have_surftens=TRUE;
