@@ -41,10 +41,7 @@ static char *SRCID_nrjac_c = "$Id$";
 	
 static void nrerror(char *error_text)
 {
-  fprintf(stderr,"Numerical Recipes run_time error...\n");
-  fprintf(stderr,"%s\n",error_text);
-  fprintf(stderr,"...now exiting to the system...\n");
-  exit(1);
+  fatal_error(0,"Numerical Recipes: %s\n",error_text);
 }
 
 void jacobi(double **a,int n,double d[],double **v,int *nrot)
