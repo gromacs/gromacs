@@ -2,89 +2,88 @@
 
 [ GLY-NH3+ ]
 [ replace ]
-N	N      opls_287	  14.0027    -0.3000	
-CA	CA     opls_292B  12.0110     0.1900
+N		opls_287	14.0027	-0.3
+CA		opls_292B	12.011	0.19
 [ add ]
-3	4	N	CA	C
-	H      opls_290    1.0080     0.3300
+3	4	H	N	CA	C
+	opls_290	1.008	0.33
 [ delete ]
 H
 
 [ GLY-ZWITTERION_NH3+ ]
 [ replace ]
-N	N      opls_287	  14.0027    -0.3000	
-CA	CA     opls_298   12.0110     0.0900
+N		opls_287	14.0027	-0.3
+CA		opls_298	12.011	0.09
 [ add ]
-3	4	N	CA	C
-	H      opls_290    1.0080     0.3300
+3	4	H	N	CA	C
+	opls_290	1.008	0.33
 [ delete ]
 H
 
 [ PRO-NH2+ ]
 [ replace ]
-N	N      opls_309   14.0027    -0.2000
-CA	CA     opls_246   12.0110     0.2300 
-CD      CD     opls_296   12.0110     0.1700
+N		opls_309	14.0027	-0.2
+CA		opls_246	12.011	0.23
+CD		opls_296	12.011	0.17
 [ add ]
-2	4	N	CA	C
-	H      opls_310    1.0080     0.3100 
+2	4	H	N	CA	C
+	opls_310	1.008	0.31
 
 [ PRO-ZWITTERION_NH2+ ]
 [ replace ]
-N	N      opls_309   14.0027    -0.2000
-CA	CA     opls_246   12.0110     0.1300 
-CD      CD     opls_296   12.0110     0.1700
+N		opls_309	14.0027	-0.2
+CA		opls_246	12.011	0.13
+CD		opls_296	12.011	0.17
 [ add ]
-2	4	N	CA	C
-	H      opls_310    1.0080     0.3100 
+2	4	H	N	CA	C
+	opls_310	1.008	0.31
 
 [ NH3+ ]
 [ replace ]
-N	N      opls_287	  14.0027    -0.3000		
-CA	CA     opls_293B  12.0110     0.2500
+N		opls_287	14.0027	-0.3
+CA		opls_293B	12.011	0.25
 [ add ]
-3	4	N	CA	C 
-	H      opls_290    1.0080     0.3300
+3	4	H	N	CA	C
+	opls_290	1.008	0.33
 [ delete ]
 H
 
 [ ZWITTERION_NH3+ ]
 [ replace ]
-N	N      opls_287	  14.0027    -0.3000		
-CA	CA     opls_299   12.0110     0.1500
+N		opls_287	14.0027	-0.3
+CA		opls_299	12.011	0.15
 [ add ]
-3	4	N	CA	C 
-	H      opls_290    1.0080     0.3300
+3	4	H	N	CA	C
+	opls_290	1.008	0.33
 [ delete ]
 H
 
-
 [ GLY-NH2 ]
 [ replace ]
-N	N	opls_900    14.0027   -0.900
-CA      CA      opls_906B   12.0110    0.060	
+N		opls_900	14.0027	-0.9
+CA		opls_906B	12.011	0.06
 [ add ]
-2	4	N	CA	C
-	H	opls_909     1.0080    0.360
+2	4	H	N	CA	C
+	opls_909	1.008	0.36
 [ delete ]
 H
 
 [ PRO-NH ]
 [ replace ]
-N	N      opls_901   14.0027  -0.78
-CA	CA     opls_246   12.0110   0.14 
-CD      CD     opls_245   12.0110   0.08 
+N		opls_901	14.0027	-0.78
+CA		opls_246	12.011	0.14
+CD		opls_245	12.011	0.08
 [ add ]
-1	4	N	CA	C
-	H      opls_910    1.0080   0.380
+1	4	H	N	CA	C
+	opls_910	1.008	0.38
 
 [ NH2 ]
 [ replace ]
-N	N      opls_900	   14.0027   -0.900 
-CA      CA     opls_912B   12.0110    0.120	
+N		opls_900	14.0027	-0.9
+CA		opls_912B	12.011	0.12
 [ add ]
-2	4	N	CA	C
-	H      opls_909	    1.0080    0.360
+2	4	H	N	CA	C
+	opls_909	1.008	0.36
 [ delete ]
 H
 

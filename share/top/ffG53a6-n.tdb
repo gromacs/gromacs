@@ -2,11 +2,11 @@
 
 [ NH3+ ]
 [ replace ]
-N	N	NL	14.0067	0.129
-CA	CA	CH1	13.0190	0.127	0
+N		NL	14.0067	0.129
+CA		CH1	13.019	0.127
 [ add ]
-3	4	N	CA	C
-	H	H	1.008	0.248
+3	4	H	N	CA	C
+	H	1.008	0.248
 [ delete ]
 H
 [ bonds ]
@@ -25,11 +25,11 @@ H1	N	CA	C	gd_29
 
 [ NH2 ]
 [ replace ]
-N	N	NL	14.0067	-0.66
-CA      CA      CH1	13.0190 -0.22 
+N		NL	14.0067	-0.66
+CA		CH1	13.019	-0.22
 [ add ]
-2	4	N	CA	C
-	H	H	1.008	0.44
+2	4	H	N	CA	C
+	H	1.008	0.44
 [ delete ]
 H
 [ bonds ]
@@ -44,32 +44,30 @@ H1	N	CA	C	gd_29
 
 [ PRO-NH2+ ]
 [ replace ]
-N	N	NT	14.0067	  0.12800
-CA      CA      CH1     13.01900  0.18800
-CD      CD      CH2R    14.02700  0.18800
+N		NT	14.0067	0.128
+CA		CH1	13.019	0.188
+CD		CH2R	14.027	0.188
 [ add ]
-2	4	N	CA	C
-	H	H	1.008	0.24800 
+2	4	H	N	CA	C
+	H	1.008	0.248
 [ bonds ]
 N	H1	gb_2
 N	H2	gb_2
-
 [ angles ]
 H1	N	H2	ga_10
 CA	N	H1	ga_11
 CA	N	H2	ga_11
 CD	N	H1	ga_11
 CD	N	H2	ga_11
-
 [ dihedrals ]
 H1	N	CA	C	gd_29
 
 [ PRO-NH ]
 [ replace ]
-N	N	N	14.0067	-0.31
+N		N	14.0067	-0.31
 [ add ]
-1	4	N	CA	C
-	H	H	1.008	0.31
+1	4	H	N	CA	C
+	H	1.008	0.31
 [ bonds ]
 N	H	gb_2
 [ angles ]
@@ -78,11 +76,11 @@ CD	N	H	ga_11
 
 [ GLY-NH3+ ]
 [ replace ]
-N	N	NL	14.0067	0.129
-CA	CA	CH2	14.0270	0.127
+N		NL	14.0067	0.129
+CA		CH2	14.027	0.127
 [ add ]
-3	4	N	CA	C
-	H	H	1.008	0.248
+3	4	H	N	CA	C
+	H	1.008	0.248
 [ delete ]
 H
 [ bonds ]
@@ -98,8 +96,4 @@ CA	N	H2	ga_11
 CA	N	H3	ga_11
 [ dihedrals ]
 H1	N	CA	C	gd_29
-
-
-
-
 

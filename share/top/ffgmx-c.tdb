@@ -2,23 +2,22 @@
 
 [ COO- ]
 [ replace ]
-C	C	C	12.011	0.27
+C		C	12.011	0.27
 [ add ]
-2	8	C	CA	N
-	O	OM	15.9994	-0.635
-[ impropers ]
-C	O1	O2	CA
+2	8	O	C	CA	N
+	OM	15.9994	-0.635
 [ delete ]
 O
+[ impropers ]
+C	O1	O2	CA	
 
 [ COOH ]
 [ replace ]
-C	C	C	12.011	0.53
-O	O	OA	15.9994	-0.548
+C		C	12.011	0.53
+O		OA	15.9994	-0.548
 [ add ]
-1	2	C	CA	N
-	OT	O	15.9994	-0.38
-1	2	O	C	CA
-	HO	HO	1.008	0.398
-
+1	2	OT	C	CA	N
+	O	15.9994	-0.38
+1	2	HO	O	C	CA
+	HO	1.008	0.398
 

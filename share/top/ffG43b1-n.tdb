@@ -1,13 +1,12 @@
 [ None ]
 
 [ NH3+ ]
-; charges inferred from LYSH charges in ffG43b1.rtp
 [ replace ]
-N	N	NL	14.0067	-0.744
-CA	CA	CH1	13.0190	0.000	0
+N		NL	14.0067	-0.744
+CA		CH1	13.019	0
 [ add ]
-3	4	N	CA	C
-	H	H	1.008	0.248
+3	4	H	N	CA	C
+	H	1.008	0.248
 [ delete ]
 H
 [ bonds ]
@@ -25,12 +24,11 @@ CA	N	H3	ga_10
 H1	N	CA	C	gd_14
 
 [ NH2 ]
-; charges identical to G43a1, because chargegroups are neutral
 [ replace ]
-N	N	NL	14.0067	-0.830
+N		NL	14.0067	-0.83
 [ add ]
-2	4	N	CA	C
-	H	H	1.008	0.415
+2	4	H	N	CA	C
+	H	1.008	0.415
 [ delete ]
 H
 [ bonds ]
@@ -44,18 +42,15 @@ CA	N	H2	ga_10
 H1	N	CA	C	gd_14
 
 [ PRO-NH2+ ]
-; charges guessed, in similarity with other differences with G43a1
 [ replace ]
-N	N	NT	14.0067	-0.200
+N		NT	14.0067	-0.2
 [ add ]
-2	4	N	CA	C
-	H	H	1.008	0.100
+2	4	H	N	CA	C
+	H	1.008	0.1
 [ bonds ]
 N	H1	gb_2
 N	H2	gb_2
 [ angles ]
-; we're not sure about these parameters, 
-; they were inferred from the comments in the ffG43a1bon.itp
 H1	N	H2	ga_9
 CA	N	H1	ga_10
 CA	N	H2	ga_10
@@ -65,12 +60,11 @@ CD	N	H2	ga_10
 H1	N	CA	C	gd_14
 
 [ PRO-NH ]
-; charges identical to G43a1, because chargegroups are neutral
 [ replace ]
-N	N	N	14.0067	-0.28
+N		N	14.0067	-0.28
 [ add ]
-1	4	N	CA	C
-	H	H	1.008	0.28
+1	4	H	N	CA	C
+	H	1.008	0.28
 [ bonds ]
 N	H	gb_2
 [ angles ]
@@ -78,12 +72,11 @@ CA	N	H	ga_10
 CD	N	H	ga_10
 
 [ GLY-NH3+ ]
-; charges inferred from LYSH charges in ffG43b1.rtp
 [ replace ]
-N	N	NL	14.0067	-0.744
+N		NL	14.0067	-0.744
 [ add ]
-3	4	N	CA	C
-	H	H	1.008	0.248
+3	4	H	N	CA	C
+	H	1.008	0.248
 [ delete ]
 H
 [ bonds ]

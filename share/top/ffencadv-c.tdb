@@ -2,31 +2,29 @@
 
 [ COO- ]
 [ replace ]
-C	C	Abis	12.011	  0.640
+C		Abis	12.011	0.64
 [ add ]
-2    8    C	  CA   N
-	 O   Obis	  15.9994	 -0.420
+2	8	O	C	CA	N
+	Obis	15.9994	-0.42
 [ delete ]
 O
 [ dihedrals ]
-N  CA   C   O2	       
+N	CA	C	O2	
 [ impropers ]
-CA  O2   C   O1        improper_X_X_A_X  	
-N   C   CA   CB        improper_X_X_C_X
- 
+CA	O2	C	O1	improper_X_X_A_X
+N	C	CA	CB	improper_X_X_C_X
 
 [ COOH ]
 [ replace ]
-C	C	Aprime	12.011	 0.380
-O	O	OH	15.9994	-0.380
+C		Aprime	12.011	0.38
+O		OH	15.9994	-0.38
 [ add ]
-1	2	C	CA	N
-	OT	O	15.9994	-0.433
-1	2	O	C	CA
-	HO	HO	1.008	0.433
+1	2	OT	C	CA	N
+	O	15.9994	-0.433
+1	2	HO	O	C	CA
+	HO	1.008	0.433
 [ dihedrals ]
-N  CA   C   O1
+N	CA	C	O1	
 [ impropers ]
-O2  CA  C   O1        improper_X_X_A_X  	
-
+O2	CA	C	O1	improper_X_X_A_X
 
