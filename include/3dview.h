@@ -48,6 +48,10 @@ typedef struct {
   real   sc_x,sc_y;	/* Scaling for aspect ratio		*/
 } t_3dview;
 
+extern void print_m4(FILE *fp,char *s,mat4 A);
+
+extern void print_v4(FILE *fp,char *s,int dim,real *a);
+
 extern void m4_op(mat4 m,rvec x,vec4 v);
 
 extern void unity_m4(mat4 m);

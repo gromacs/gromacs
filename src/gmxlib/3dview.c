@@ -59,30 +59,32 @@ void unity_m4(mat4 m)
 	m[i][j]=0.0;
 }
 
-#ifdef DEBUG
-static void print_matrix(char *s,mat4 A)
+void print_m4(FILE *fp,char *s,mat4 A)
 {
   int i,j;
   
-  printf("%s: ",s);
-  for (i=0; i<N; i++) {
-    printf("\t");
-    for (j=0; j<N; j++) 
-      printf("%10.5f",A[i][j]);
-    printf("\n");
+  if (fp) {
+    fprintf(fp,"%s: ",s);
+    for (i=0; i<N; i++) {
+      fprintf(fp,"\t");
+      for (j=0; j<N; j++) 
+	fprintf(fp,"%10.5f",A[i][j]);
+      fprintf(fp,"\n");
+    }
   }
 }
 
-static void print_v(char *s,int dim,real *a)
+void print_v4(FILE *fp,char *s,int dim,real *a)
 {
   int j;
-  
-  printf("%s: ",s);
-  for (j=0; j<dim; j++) 
-    printf("%10.5f",a[j]);
-  printf("\n");
+
+  if (fp) {  
+    fprintf(fp,"%s: ",s);
+    for (j=0; j<dim; j++) 
+      fprintf(fp,"%10.5f",a[j]);
+    fprintf(fp,"\n");
+  }
 }
-#endif
 
 void mult_matrix(mat4 A, mat4 B, mat4 C)
 {
@@ -151,7 +153,7 @@ void calculate_view(t_3dview *view)
   l = sqrt(dx*dx+dy*dy+dz*dz);
   r = sqrt(dx*dx+dy*dy);
 #ifdef DEBUG
-  print_v("eye",N,view->eye);
+  print_v4(debug,"eye",N,view->eye);
   printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n",dx,dy,dz,l,r);
 #endif
   if (l < SMALL)
@@ -187,14 +189,14 @@ void calculate_view(t_3dview *view)
   mult_matrix(view->proj,D4,D5);
 
 #ifdef DEBUG
-  print_matrix("T1",T1);
-  print_matrix("T2",T2);
-  print_matrix("T3",T3);
-  print_matrix("T4",T4);
-  print_matrix("T5",T5);
-  print_matrix("N1",N1);
-  print_matrix("Rot",view->Rot);
-  print_matrix("Proj",view->proj);
+  print_m4(debug,"T1",T1);
+  print_m4(debug,"T2",T2);
+  print_m4(debug,"T3",T3);
+  print_m4(debug,"T4",T4);
+  print_m4(debug,"T5",T5);
+  print_m4(debug,"N1",N1);
+  print_m4(debug,"Rot",view->Rot);
+  print_m4(debug,"Proj",view->proj);
 #endif
 }
 
@@ -237,8 +239,8 @@ void rotate_3d(t_3dview *view,int axis,bool bPositive)
       rotate(i,        rot ,RotP[i]);
       rotate(i,(real)(-rot),RotM[i]);
 #ifdef DEBUG
-      print_matrix("RotP",RotP[i]);
-      print_matrix("RotM",RotM[i]);
+      print_m4(debug,"RotP",RotP[i]);
+      print_m4(debug,"RotM",RotM[i]);
 #endif
     }
   }

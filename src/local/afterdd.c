@@ -7,36 +7,65 @@
 #include "confio.h"
 #include "fatal.h"
 #include "vec.h"
+#include "physics.h"
+#include "random.h"
 
 static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],rvec trans,real angle,
 		     rvec head,rvec tail,matrix box,int isize,atom_id index[])
 {
-  rvec     dx,center;
+  rvec     arrow,center,xcm;
+  real     theta,phi,arrow_len;
+  mat4     Rx,Ry,Rz,Rinvy,Rinvz,Mtot,temp1,temp2,temp3;
   vec4     xv;
-  t_3dview *view;
   int      i,j,ai;
   
-  rvec_sub(head,tail,dx);
-  printf("Arrow vector: %10.4f  %10.4f  %10.4f\n",dx[XX],dx[YY],dx[ZZ]);
-  if (norm(dx) == 0.0)
+  rvec_sub(head,tail,arrow);
+  arrow_len = norm(arrow);
+  printf("Arrow vector:   %10.4f  %10.4f  %10.4f\n",
+	 arrow[XX],arrow[YY],arrow[ZZ]);
+  if (arrow_len == 0.0)
     fatal_error(0,"Arrow vector not given");
-    
-  /* Fill the projection matrix */
-  view = init_view(box);
-  for(i=0; (i<DIM); i++) {
-    view->eye[i]    = dx[i];
-    view->origin[i] = (head[i]+tail[i])/2;
-  }
-  view->eye[WW] = view->origin[WW] = 0;
-  view->sc_x    = view->sc_y       = 1;
+
+  /* Compute center of mass and move atoms there */
+  clear_rvec(xcm);
+  for(i=0; (i<isize); i++)
+    rvec_inc(xcm,x[index[i]]);
+  for(i=0; (i<DIM); i++)
+    xcm[i] /= isize;
+  printf("Center of mass: %10.4f  %10.4f  %10.4f\n",xcm[XX],xcm[YY],xcm[ZZ]);
+  for(i=0; (i<isize); i++)
+    rvec_dec(x[index[i]],xcm);
   
-  calculate_view(view);
+  /* Compute theta and phi that describe the arrow */
+  theta = acos(arrow[ZZ]/arrow_len);
+  phi   = atan2(arrow[YY]/arrow_len,arrow[XX]/arrow_len);
+  printf("Phi = %.1f, Theta = %.1f\n",RAD2DEG*phi,RAD2DEG*theta);
+
+  /* Now the total rotation matrix: */
+  /* Rotate a couple of times */
+  rotate(ZZ,-phi,Rz);
+  rotate(YY,M_PI/2-theta,Ry);
+  rotate(XX,angle*DEG2RAD,Rx);
+  rotate(YY,theta-M_PI/2,Rinvy);
+  rotate(ZZ,phi,Rinvz);
   
+  mult_matrix(temp1,Ry,Rz);
+  mult_matrix(temp2,Rinvy,Rx);
+  mult_matrix(temp3,temp2,temp1);
+  mult_matrix(Mtot,Rinvz,temp3);
+
+  print_m4(debug,"Rz",Rz);
+  print_m4(debug,"Ry",Ry);
+  print_m4(debug,"Rx",Rx);
+  print_m4(debug,"Rinvy",Rinvy);
+  print_m4(debug,"Rinvz",Rinvz);
+  print_m4(debug,"Mtot",Mtot);
+
   for(i=0; (i<isize); i++) {
     ai = index[i];
-    m4_op(view->Rot,x[ai],xv);
-    copy_rvec(xv,x[ai]);
-    m4_op(view->Rot,v[ai],xv);
+    m4_op(Mtot,x[ai],xv);
+    rvec_add(xv,xcm,x[ai]);
+    m4_op(Mtot,v[ai],xv);
     copy_rvec(xv,v[ai]);
   }
 }
