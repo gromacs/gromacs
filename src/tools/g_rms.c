@@ -138,11 +138,11 @@ int gmx_rms (int argc,char *argv[])
   enum 
     { efSel, efFit,      efReset,       efNone , efNR };
   int efit;
-  static char *fit[efNR] = 
-    { NULL, "rot+trans", "translation", "none" };
-  static char *fitgraphlabel[efNR] = 
+  static char *fit[efNR+1] = 
+    { NULL, "rot+trans", "translation", "none", NULL };
+  char *fitgraphlabel[efNR+1] = 
     { NULL, "lsq fit", "translational fit", "no fit" };
-
+  
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
