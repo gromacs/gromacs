@@ -171,23 +171,29 @@ file.
 variables. First of all, the variables set in the \normindex{GMXRC} file
 are essential for running and compiling {\gromacs}. Other variables are:
 \begin{enumerate}
-\item	DUMP\_NL, dump neighbor list. 
+\item	{\tt DUMP\_NL}, dump neighbor list. 
 	If set to a positive number the {\em entire}
 	neighbor list is printed in the log file (may be many megabytes).
 	Mainly for debugging purposes, but may also be handy for
 	porting to other platforms.
-\item	IAMCOOL, when set prints cool quotes, otherwise
+\item	{\tt IAMCOOL}, when set prints cool quotes, otherwise
 	your {\gromacs} life will be dull and boring.
-\item	WHERE, when set print debugging info on line numbers.
-\item	LOG\_BUFS, the size of the buffer for file I/O. When set
+\item	{\tt WHERE}, when set print debugging info on line numbers.
+\item	{\tt LOG\_BUFS}, the size of the buffer for file I/O. When set
 	to 0, all file I/O will be unbuffered and therefore very slow.
 	This can be handy for debugging purposes, because it ensures
 	that all files are always totally up-to-date.
-\item   GMXNPRI, for SGI systems only. When set, gives the
+\item   {\tt GMXNPRI}, for SGI systems only. When set, gives the
 	default non-degrading priority (npri) for {\tt
 	mdrun}, {\tt nmrun}, {\tt g\_covar} and {\tt g\_nmeig},
 	{\eg}\@ setting \verb'setenv GMXNPRI 250' causes all
 	runs to be performed at near-lowest priority by default.
+\item	{\tt GMX\_VIEW\_XPM}, {\tt GMX\_VIEW\_XVG}, {\tt
+	GMX\_VIEW\_EPS} and {\tt GMX\_VIEW\_PDB}, commands used to
+	automatically view resp.\@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
+	and {\tt .pdb} file types. Default to {\tt xv}, {\tt xmgr},
+	{\tt ghostview} and {\tt rasmol}. Set to empty to disable
+	automatic viewing of a particular file type.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
