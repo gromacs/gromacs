@@ -144,7 +144,7 @@ int main(int argc,char *argv[])
     { efTPX,  NULL,  NULL, ffREAD },
     { efNDX,  NULL,  NULL, ffOPTRD },
     { efXVG, "-ox", "xcm", ffWRITE },
-    { efXVG, "-oe", "ekrot",ffWRITE }
+    { efXVG, "-oe", "ekrot",ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -176,11 +176,14 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,
 		    0,NULL,asize(desc),desc,0,NULL);
   ftpout=fn2ftp(ftp2fn(efTRX,NFILE,fnm));
-  bReadV=((ftpout==efTRJ) || (ftpout==efXTC));
+  bHaveV=((ftpout==efTRJ) || (ftpout==efTRR));
+  bReadV=opt2bSet("-oe",NFILE,fnm);
+  if ( bReadV && !bHaveV ) {
+    fprintf(stderr,"No velocities in input file, "
+	    "will not calculate rotational energy\n");
+    bReadV=FALSE;
+  }
   
-  if (!bReadV)
-    fprintf(stderr,"WARNING: no velocities in input file:\nwill not calculate rotational energy (-oe)\n");
-
   /* open input files, read topology and index */
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
@@ -194,43 +197,38 @@ int main(int argc,char *argv[])
   
   get_index(&(top->atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    ngrps,isize,index,grpnames);
-
-  natoms=top->atoms.nr;
-  snew(mass,natoms);
-  for(i=0; (i<top->atoms.nr); i++)
-    mass[i]=top->atoms.atom[i].m;
   
-  if ((bReadV && 
-       ((natoms=read_first_x_or_v(&status,ftp2fn(efTRX,NFILE,fnm),
-				  &t,&x,&v,box)) != top->atoms.nr)) ||
-      (!bReadV &&
-       ((natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),
-			     &t,&x,box)) != top->atoms.nr)))
+  if ( bReadV )
+    natoms=read_first_x_or_v(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
+  else
+    natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  if ( natoms > top->atoms.nr )
     fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top->atoms.nr,natoms);
-
+  
+  snew(mass,natoms);
+  for(i=0; (i<natoms); i++)
+    mass[i]=top->atoms.atom[i].m;
+  
   /* open output files */
-  snew(outX,1+ngrps);
-  outX[0]=xvgropen(opt2fn("-ox",NFILE,fnm),"COM : ","Time(ps)","x (nm)");
-  xvgr_legend(outX[0],asize(axisX),axisX);
-  strcpy(format,opt2fn("-ox",NFILE,fnm));
-  fprintf(stderr,"%s\n",format);
-  format[strlen(format)-4]='\0';
-  fprintf(stderr,"format %s\n",format);
-  strcat(format,"_%s.xvg");
-  fprintf(stderr,"format %s\n",format);
-  for(g=0;(g<ngrps);g++) {
-    /* coordinates */
-    sprintf(filename,format,grpnames[g]);
-    outX[g+1]=xvgropen(filename,"COM : ","Time(ps)","x (nm)");
-    xvgr_legend(outX[g+1],asize(axisX),axisX);
+  snew(outX,ngrps);
+  if (ngrps==1) {
+    outX[0]=xvgropen(opt2fn("-ox",NFILE,fnm),"COM : ","Time(ps)","x (nm)");
+    xvgr_legend(outX[0],asize(axisX),axisX);
+  } else {
+    strcpy(format,opt2fn("-ox",NFILE,fnm));
+    format[strlen(format)-4]='\0';
+    strcat(format,"_%s.xvg");
+    for(g=0;(g<ngrps);g++) {
+      /* coordinates */
+      sprintf(filename,format,grpnames[g]);
+      outX[g+1]=xvgropen(filename,"COM : ","Time(ps)","x (nm)");
+      xvgr_legend(outX[g],asize(axisX),axisX);
+    }
   }
   if (bReadV)
     outek=xvgropen(opt2fn("-oe",NFILE,fnm),"EK Rot","Time (ps)","E (kJ/mole)");
 
-  snew(sysindex,natoms);
-  for(i=0; (i<natoms); i++)
-    sysindex[i]=i;
   do {
     if (bReadV) {
       bHaveV=FALSE;
@@ -242,23 +240,19 @@ int main(int argc,char *argv[])
     }
  
     /* IF COORDINATES ARE PRESENT */
-    calc_cm_group(mass,x,xcm,natoms,sysindex);
-    fprintf(outX[0],"%10g  %10g  %10g  %10g  %10g\n",
-	    t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
-    fflush(outX[0]);
     for(g=0;(g<ngrps);g++) {
       calc_cm_group(mass,x,xcm,isize[g],index[g]);
       for (j = 0; j < DIM; j++) {
-	if (xcm[j] < 0) xcm[j]+= box[j][j];
-	if (xcm[j] > box[j][j]) xcm[j]-=box[j][j];
+	while (xcm[j] < 0) xcm[j]+= box[j][j];
+	while (xcm[j] > box[j][j]) xcm[j]-=box[j][j];
       }
-      fprintf(outX[g+1],"%10g  %10g  %10g  %10g  %10g\n",
+      fprintf(outX[g],"%10g  %10g  %10g  %10g  %10g\n",
 	      t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
-      fflush(outX[g+1]);
     }
-    for(i=0; (i<natoms); i++)
-      for(m=0; (m<DIM); m++)
-	v[i][m]=-x[i][m];
+    if (bReadV)
+      for(i=0; (i<natoms); i++)
+	for(m=0; (m<DIM); m++)
+	  v[i][m]=-x[i][m];
   }  while ((bReadV && read_next_x_or_v(status,&t,natoms,x,v,box)) ||
 	    (!bReadV && read_next_x(status,&t,natoms,x,box)));
   sfree(x);
@@ -268,9 +262,11 @@ int main(int argc,char *argv[])
   close_trj(status);
   if (bReadV)
     fclose(outek);
-  for(g=0;(g<=ngrps);g++) {
+  for(g=0;(g<ngrps);g++) {
     fclose(outX[g]);
   }
+  
+  thanx(stdout);
   
   return 0;
 }
