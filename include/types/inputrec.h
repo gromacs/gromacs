@@ -99,7 +99,6 @@ typedef struct {
   real init_lambda;	/* initial value for perturbation variable	*/
   real delta_lambda;	/* change of lambda per time step (1/dt)	*/
   real dr_fc;		/* force constant for ta_disre			*/
-  int  eDisre;          /* distance restraining type                    */
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   int  nstdisreout;     /* frequency of writing pair distances to enx   */ 

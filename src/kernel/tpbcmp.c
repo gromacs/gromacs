@@ -306,7 +306,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(init_lambda);
   CIR(delta_lambda);
   CIR(dr_fc);
-  CII(eDisre);
   CII(eDisreWeighting);
   CIB(bDisreMixed);
   CII(nstdisreout);
