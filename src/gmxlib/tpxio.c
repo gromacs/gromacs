@@ -480,7 +480,8 @@ static void do_idef(t_idef *idef,bool bRead)
     if (bRead && (file_version <= 19)
 	&& (j==F_CUBICBONDS || j==F_CONNBONDS || j==F_HARMONIC || j==F_EQM)) {
       idef->il[j].nr         = 0;
-      idef->il[j].multinr[0] = 0;
+      for(i=0; i<MAXNODES; i++)
+	idef->il[j].multinr[i] = 0;
       idef->il[j].iatoms     = NULL;
     }
     else
