@@ -22,7 +22,7 @@ include_HEADERS = \
 	vec.h		calch.h     	ffscanf.h       mdebin.h    	\
 	pme.h       	statusio.h    	viewit.h	calcmu.h    	\
 	fftgrid.h       mdrun.h     	pppm.h      	statutil.h    	\
-	callf77.h   	fftw_wrapper.h  \
+	callf77.h   	fftw_wrapper.h  gmx_ana.h	\
 	princ.h     	wgms.h		gmx_system_xdr.h	     	\
 	filenm.h        pull.h      	rdgroup.h	strdb.h 	\
 	wman.h		force.h      \
