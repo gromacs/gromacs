@@ -231,7 +231,8 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     mm->bDiscrete=TRUE;
    
   if (debug)
-    printf("%s %s %s %s\n",mm->title,mm->legend,mm->label_x,mm->label_y);
+    fprintf(debug,"%s %s %s %s\n",
+	    mm->title,mm->legend,mm->label_x,mm->label_y);
 
   if  (strncmp(line,"static",6) != 0)
     fatal_error(0,"Invalid XPixMap\n");
@@ -251,7 +252,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     }
   }
   if (debug)
-    printf("mm->nx %d mm->ny %d mm->nmap %d nch %d\n",
+    fprintf(debug,"mm->nx %d mm->ny %d mm->nmap %d nch %d\n",
 	   mm->nx,mm->ny,mm->nmap,nch);
   
   /* Read color map */
@@ -307,10 +308,6 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   if  ( m != mm->nmap ) 
     fatal_error(0,"Number of read colors map entries (%d) does not match the number in the header (%d)",m,mm->nmap);
   mm->map = map;
-  if (debug)
-    for(m=0;m<mm->nmap;m++) 
-      printf("%c %f %f %f '%s'\n",map[m].code.c1,map[m].rgb.r,map[m].rgb.g,
-	     map[m].rgb.b,map[m].desc);
 
   /* Read axes, if there are any */ 
   n_axis_x=0;
@@ -320,8 +317,6 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     if (strstr(line,"x-axis")) {
       line=strstr(line,"x-axis");
       skipstr(&line);
-      if (debug)
-	printf("%s\n",line);
       if (mm->axis_x==NULL)
 	snew(mm->axis_x,mm->nx);
       while (sscanf(line,"%lf",&u)==1) {
@@ -335,8 +330,6 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     else if (strstr(line,"y-axis")) {
       line=strstr(line,"y-axis");
       skipstr(&line);
-      if (debug)
-	printf("%s\n",line);
       if (mm->axis_y==NULL)
 	snew(mm->axis_y,mm->ny);
       while (sscanf(line,"%lf",&u)==1) {
@@ -348,10 +341,6 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       }
     }
   } while ((line[0] != '\"') && fgetline(&line,llmax,in));
-
-  if (debug)
-    for(i=0;i<mm->nx;i++)
-      printf("%f %f\n",mm->axis_x[i],mm->axis_y[i]);
 
   /* Read matrix */
   snew(mm->matrix,mm->nx);
@@ -437,7 +426,8 @@ real **matrix2real(t_matrix *matrix,real **mat)
 
   sfree(rmap);
 
-  fprintf(stderr,"Converted a matrix with %d levels to reals\n",nmap);
+  fprintf(stderr,"Converted a %dx%d matrix with %d levels to reals\n",
+	  matrix->nx,matrix->ny,nmap);
 
   return mat;
 }
