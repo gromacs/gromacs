@@ -38,9 +38,11 @@ static int  mpi_num_procs=0;
 static int  mpi_my_rank=-1;
 static char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
-static MPI_Request mpi_req_tx,mpi_req_rx;
+static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 
 /*#define DEBUG*/
+
+#define MPI_TEST
 
 void mpiio_tx(int pid,void *buf,int bufsize)
 {
@@ -48,6 +50,17 @@ void mpiio_tx(int pid,void *buf,int bufsize)
   
 #ifdef DEBUG
   fprintf(stderr,"mpiio_tx: pid=%d, buf=%x, bufsize=%d\n",pid,buf,bufsize);
+#endif
+#ifdef MPI_TEST
+  /* workaround for crashes encountered with MPI on IRIX 6.5 */
+  if (mpi_req_tx != MPI_REQUEST_NULL) {
+    MPI_Test(&mpi_req_tx,&flag,&status);
+    if (flag==FALSE) {
+      fprintf(stdlog,"mpiio_tx called before previous send was complete: pid=%d, buf=%x, bufsize=%d\n",
+	      pid,buf,bufsize);
+      mpiio_tx_wait(pid);
+    }
+  }
 #endif
   tag = 0;
   if (MPI_Isend(buf,bufsize,MPI_BYTE,pid,tag,MPI_COMM_WORLD,&mpi_req_tx) != 0)
