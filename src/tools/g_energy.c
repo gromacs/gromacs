@@ -44,6 +44,7 @@ static char *SRCID_g_energy_c = "$Id$";
 #include "gstat.h"
 #include "physics.h"
 #include "tpxio.h"
+#include "viewit.h"
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -487,10 +488,100 @@ static void analyse_ener(bool bCorr,char *corrfn,
 void print_one(FILE *fp,bool bDp,real e)
 {
   if (bDp)
-    fprintf(fp,"  %16g",e);
+    fprintf(fp,"  %16f",e);
   else
-    fprintf(fp,"  %10g",e);
+    fprintf(fp,"  %10f",e);
 
+}
+
+void fec(char *ene2fn, char *runavgfn, 
+	 real reftemp, int nset, int set[], char *leg[], 
+	 int nenergy, real **eneset, real time[])
+{
+  char *ravgleg[] = { "\\8D\\4E", "<e\\S\\8D\\4E/kT\\N>\\s0-t\\N" };
+  FILE *fp;
+  int  enx;
+  int  nre,ndr,timecheck,step,nenergy2,maxenergy;
+  int  i,j;
+  char **enm;
+  bool bCont;
+  real t, aver, beta;
+  real **eneset2;
+  double dE, sum;
+  t_drblock dr;
+  t_energy *ee;
+  
+  /* read second energy file */
+  enm=NULL;
+  enx = open_enx(ene2fn,"r");
+  do_enxnms(enx,&nre,&enm);
+  
+  snew(eneset2,nset+1);
+  snew(ee,nre);
+  nenergy2=0;
+  maxenergy=0;
+  timecheck=0;
+  do {
+    /* This loop searches for the first frame (when -b option is given), 
+     * or when this has been found it reads just one energy frame
+     */
+    do {
+      bCont = do_enx(enx,&t,&step,&nre,ee,&ndr,&dr);
+      
+      if (bCont)
+	timecheck = check_times(t,t);
+      
+    } while (bCont && (timecheck < 0));
+    
+    /* Store energies for analysis afterwards... */
+    if ((timecheck == 0) && bCont) {
+      if ( nre > 0 ) {
+	if ( nenergy2 >= maxenergy ) {
+	  maxenergy+=1000;
+	  for(i=0; (i<=nset); i++)
+	    srenew(eneset2[i],maxenergy);
+	}
+	if ( t != time[nenergy2] )
+	  fprintf(stderr,"\nWARNING time mismatch %g!=%g at frame %d\n",
+		  t, time[nenergy2], step);
+	for(i=0; (i<nset); i++)
+	  eneset2[i][nenergy2] = ee[set[i]].e;
+	nenergy2++;
+      }
+    }
+  } while (bCont && (timecheck == 0));
+  
+  /* check */
+  if(nenergy!=nenergy2)
+    fprintf(stderr,"\nWARNING file length mismatch %d!=%d\n",nenergy,nenergy2);
+  nenergy=min(nenergy,nenergy2);
+  
+  /* calculate fe difference dF = -kT ln < exp(-(E_B-E_A)/kT) >_A */
+  fp=NULL;
+  if (runavgfn) {
+    fp=xvgropen(runavgfn,"Running average free energy difference",
+		"Time (ps)","\\8D\\4G (kJ/mol)");
+    xvgr_legend(fp,asize(ravgleg),ravgleg);
+  }
+  fprintf(stdout,"\n%-24s %10s\n",
+	  "Energy","dF = -kT ln < exp(-(EB-EA)/kT) >A");
+  sum=0;
+  beta = 1.0/(BOLTZ*reftemp);
+  for(i=0; i<nset; i++) {
+    if (strcmp(leg[i],enm[set[i]])!=0)
+      fprintf(stderr,"\nWARNING energy set name mismatch %s!=%s\n",
+	      leg[i],enm[set[i]]);
+    for(j=0; j<nenergy; j++) {
+      dE = eneset2[i][j]-eneset[i][j];
+      sum += exp(-dE*beta);
+      if (fp)
+	fprintf(fp,"%10g %10g %10g\n", 
+		time[j], dE, -BOLTZ*reftemp*log(sum/(j+1)) );
+    }
+    aver = -BOLTZ*reftemp*log(sum/nenergy);
+    fprintf(stdout,"%-24s %10g\n",leg[i],aver);
+  }
+  if(fp) ffclose(fp);
 }
 
 int main(int argc,char *argv[])
@@ -519,7 +610,12 @@ int main(int argc,char *argv[])
     "only correct when averaging over the whole (Boltzmann) ensemble",
     "and using the potential energy. This also allows for an entropy",
     "estimate using G = H - T S, where H is the enthalpy (H = U + p V)",
-    "and S entropy."
+    "and S entropy.[PAR]",
+    
+    "When a second energy file is specified ([TT]-e2[tt]), a free energy",
+    "difference is calculated dG = -kT ln < e ^ -(EB-EA)/kT >A ,",
+    "or with EA and EB the energies from the first and second energy",
+    "files, and the average over the ensemble A."
   };
   static bool bSum=FALSE,bGibbs=FALSE,bAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE;
@@ -568,7 +664,7 @@ int main(int argc,char *argv[])
   t_inputrec ir;
   t_energy   *oldee,**ee;
   t_drblock  dr;
-  int        teller,teller_disre,nre,step[2],oldstep;
+  int        teller,teller_disre,nre,nre2,step[2],oldstep;
   real       t[2],oldt;
   int        cur=0;
 #define NEXT (1-cur)
@@ -579,16 +675,18 @@ int main(int argc,char *argv[])
   double     sum,sumaver,sumt,dbl;
   real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
-  char       **enm=NULL,**leg=NULL,**pairleg;
+  char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg;
   char       **nms;
   t_filenm   fnm[] = {
     { efENX, "-f",    NULL,      ffOPTRD },
+    { efENX, "-f2",   NULL,      ffOPTRD },
     { efTPX, "-s",    NULL,      ffOPTRD },
     { efXVG, "-o",    "energy",  ffWRITE },
     { efXVG, "-viol", "violaver",ffOPTWR },
     { efXVG, "-pairs","pairs",   ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
-    { efXVG, "-vis",  "visco",   ffOPTWR }
+    { efXVG, "-vis",  "visco",   ffOPTWR },
+    { efXVG, "-ravg", "runavgdg",ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -616,7 +714,7 @@ int main(int argc,char *argv[])
   Vaver = -1;
   
   bVisco = opt2bSet("-vis",NFILE,fnm);
-
+  
   if (!bDisRe) {
     if (bVisco) {
       nset=asize(setnm);
@@ -852,8 +950,12 @@ int main(int argc,char *argv[])
 		 bGibbs,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
 		 oldee,ee[cur],nset,set,nenergy,eneset,enesum,leg,Vaver);
+  if (opt2bSet("-f2",NFILE,fnm))
+    fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
+	reftemp, nset, set, leg, nenergy, eneset, time );
   
-  xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-ravg",NFILE,fnm),NULL);
     
   thanx(stderr);
   
