@@ -126,12 +126,8 @@ void write_pdbfile_indexed(FILE *out,char *title,
   else
     bOccup = FALSE;
 
-  if (!bTER) {
-    if (model_nr>0)
-      fprintf(out,"MODEL %8d\n",model_nr);
-    else if (model_nr==0)
-      fprintf(out,"MODEL\n");
-  }
+  if (!bTER)
+    fprintf(out,"MODEL %8d\n",model_nr>=0 ? model_nr : 1);
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
     resnr=atoms->atom[i].resnr;
@@ -175,7 +171,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
   }
   
   fprintf(out,"TER\n");
-  if (model_nr>=0 && !bTER)
+  if (!bTER)
     fprintf(out,"ENDMDL\n");
 }
 

@@ -817,7 +817,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=ffopen(outfile,"w");
-    write_pdbfile(out, title, atoms, x, box, 0, 0);
+    write_pdbfile(out, title, atoms, x, box, 0, -1);
     fclose(out);
     break;
   case efTPR:
