@@ -102,14 +102,16 @@ t_sandr sandrNROFF[] = {
 #define NSRNROFF asize(sandrNROFF)
 
 t_sandr sandrHTML[] = {
+  { "<",    "&lt;" },
+  { ">",    "&gt;" },
   { "[TT]", "<tt>" },
   { "[tt]", "</tt>" },
   { "[BB]", "<b>" },
   { "[bb]", "</b>" },
   { "[IT]", "<it>" },
   { "[it]", "</it>" },
-  { "[PAR]", "<p>" },
-  { "[BR]",  "<br>" }
+  { "[PAR]","<p>" },
+  { "[BR]", "<br>" }
 };
 #define NSRHTML asize(sandrHTML)
 
@@ -401,8 +403,8 @@ char *check_html(char *s,char *program)
 {
   char *buf;
   
-  buf=html_xref(s,program);
-  buf=repall(buf,NSRHTML,sandrHTML);
+  buf=repall(s,NSRHTML,sandrHTML);
+  buf=html_xref(buf,program);
   
   return buf;
 }
