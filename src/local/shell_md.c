@@ -65,6 +65,9 @@
 #include "edsam.h"
 #include "calcmu.h"
 
+static bool      bMultiSim = FALSE;
+static t_commrec *cr_msim;
+
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
   real xo,yo,zo;
@@ -83,42 +86,45 @@ static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
   xnew[ZZ]=zo+dz*step;
 }
 
-static void shell_pos_sd(FILE *log,real step,
-			 rvec xold[],rvec xnew[],rvec f[],
-			 int nas,t_atomshell as[],
-			 int nbs,t_bondshell bs[])
+static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
+			 int ns,t_shell s[])
 {
   int  i,shell;
   real k_1;
   
-  for(i=0; (i<nas); i++) {
-    shell = as[i].shell;
-    k_1   = as[i].k_1;
-    do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-  }
-  for(i=0; (i<nbs); i++) {
-    shell = bs[i].shell;
-    k_1   = bs[i].k_1;
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
+    k_1   = s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
   }
 }
 
-
-static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
-			   int nas,t_atomshell as[],
-			   int nbs,t_bondshell bs[])
+static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[])
 {
   int  i,m;
-  real hdt;
+  real hdt,tdt;
   
-  for(i=0; (i<nas); i++)
-    for(m=0; (m<DIM); m++)
-      x[as[i].shell][m]+=v[as[i].nucl1][m]*dt;
+  hdt = 0.5*dt;
+  tdt = dt/3.0;
   
-  hdt=0.5*dt;
-  for(i=0; (i<nbs); i++) 
-    for(m=0; (m<DIM); m++)
-      x[bs[i].shell][m]+=(v[bs[i].nucl1][m]+v[bs[i].nucl2][m])*hdt;
+  for(i=0; (i<ns); i++) {
+    switch (s[i].nnucl) {
+    case 1:
+      for(m=0; (m<DIM); m++)
+	x[s[i].shell][m]+=v[s[i].nucl1][m]*dt;
+      break;
+    case 2:
+      for(m=0; (m<DIM); m++)
+	x[s[i].shell][m]+=(v[s[i].nucl1][m]+v[s[i].nucl2][m])*hdt;
+      break;
+    case 3:
+      for(m=0; (m<DIM); m++)
+	x[s[i].shell][m]+=(v[s[i].nucl1][m]+v[s[i].nucl2][m]+v[s[i].nucl3][m])*tdt;
+      break;
+    default:
+      fatal_error(0,"Shell %d has %d nuclei!",i,s[i].nnucl);
+    }
+  }
 }
 
 static void print_epot(char *which,
@@ -134,40 +140,45 @@ static void print_epot(char *which,
 }
 
 
-static real rms_force(rvec f[],
-		      int nas,t_atomshell as[],
-		      int nbs,t_bondshell bs[])
+static real rms_force(rvec f[],int ns,t_shell s[])
 {
   int  i,shell;
   real df2;
   
   df2=0.0;
-  for(i=0; (i<nas); i++) {
-    shell = as[i].shell;
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
     df2  += iprod(f[shell],f[shell]);
   }
-  for(i=0; (i<nbs); i++) {
-    shell = bs[i].shell;
-    df2  += iprod(f[shell],f[shell]);
-  }
-  return sqrt(df2/(nas+nbs));
+  return sqrt(df2/ns);
 }
 
-static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
-			bool bVerbose,
-			int mdstep,
-			t_parm *parm,bool bDoNS,bool bStopCM,
+static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
+{
+  int  i,shell;
+  real ft2,ff2;
+  
+  ft2 = sqr(ftol);
+  
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
+    ff2   = iprod(f[shell],f[shell]);
+    if (ff2 > ft2)
+      fprintf(fp,"SHELL %5d, force %10.5f  %10.5f  %10.5f\n",
+	      shell,f[shell][XX],f[shell][YY],f[shell][ZZ]);
+    if (ff2 > 100*ft2)
+      pr_rvecs(fp,0,"SHELL-X",x+(5*(shell / 5)),5);
+  }
+}
+
+static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
+			int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],
 			rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
-			rvec buf[],t_mdatoms *md,
-			t_nsborder *nsb,t_nrnb *nrnb,
-			t_graph *graph,
-			t_groups *grps,tensor vir_part,
-			int nas,t_atomshell as[],
-			int nbs,t_bondshell bs[],
-			t_forcerec *fr,
-			char *traj,
-			real t,real lambda,
+			rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
+			t_graph *graph,t_groups *grps,tensor vir_part,
+			int nshell,t_shell shells[],t_forcerec *fr,
+			char *traj,real t,real lambda,
 			int natoms,matrix box,t_mdebin *mdebin)
 {
   static bool bFirst=TRUE;
@@ -193,18 +204,18 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
     bFirst=FALSE;
   }
   
-  ftol=parm->ir.em_tol;
-  number_steps=25;
-  step0=1.0;
+  ftol         = parm->ir.em_tol;
+  number_steps = parm->ir.niter;
+  step0        = 1.0;
 
   /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nas,as,nbs,bs);
+  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells);
     
   /* Calculate the forces first time around */
   do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
-  df[Min]=rms_force(force[Min],nas,as,nbs,bs);
+  df[Min]=rms_force(force[Min],nshell,shells);
   
   /* Copy x to pos[Min] & pos[Try]: during minimization only the
    * shell positions are updated, therefore the other particles must
@@ -222,35 +233,45 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
   step=step0;
   if (bVerbose && MASTER(cr))
     print_epot("",mdstep,0,step,Epot[Min],df[Min]);
+
+  if (debug) {
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_EKIN].longname, ener[F_EKIN]);
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_EPOT].longname, ener[F_EPOT]);
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_ETOT].longname, ener[F_ETOT]);
+  }
+
+  if (debug)
+    fprintf(debug,"SHELLSTEP %d\n",mdstep);
     
-  /*  fprintf(stderr,"%17s: %14.10e\n",
-      interaction_function[F_EKIN].longname, ener[F_EKIN]);
-      fprintf(stderr,"%17s: %14.10e\n",
-      interaction_function[F_EPOT].longname, ener[F_EPOT]);
-      fprintf(stderr,"%17s: %14.10e\n",
-      interaction_function[F_ETOT].longname, ener[F_ETOT]);
-      */
-      
-  bDone=((nas == 0) && (nbs == 0) || (df[Min] < ftol));
+  bDone=((nshell == 0) || (df[Min] < ftol));
   bMinSet=FALSE;
   for(count=1; 
       !(bDone || ((number_steps > 0) && (count>=number_steps))); count++) {
     
     /* New positions, Steepest descent */
-    shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nas,as,nbs,bs); 
+    shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
 
-    /*pr_rvecs(log,0,"pos[Try] b4 do_force",&(pos[Try][start]),homenr);
-    pr_rvecs(log,0,"pos[Min] b4 do_force",&(pos[Min][start]),homenr);
-    */
+#ifdef DEBUG
+    if (debug) {
+      pr_rvecs(debug,0,"pos[Try] b4 do_force",&(pos[Try][start]),homenr);
+      pr_rvecs(debug,0,"pos[Min] b4 do_force",&(pos[Min][start]),homenr);
+    }
+#endif
     /* Try the new positions */
     do_force(log,cr,parm,nsb,vir_part,1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr);
-    df[Try]=rms_force(force[Try],nas,as,nbs,bs);
-    /*
-    pr_rvecs(log,0,"F na do_force",&(force[Try][start]),homenr);
-    */
-
+    df[Try]=rms_force(force[Try],nshell,shells);
+#ifdef DEBUG
+    if (debug) 
+      pr_rvecs(debug,0,"F na do_force",&(force[Try][start]),homenr);
+#endif
+    if (debug)
+      dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
+      
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
     Epot[Try]=ener[F_EPOT];
@@ -263,11 +284,11 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
     bDone=(df[Try] < ftol);
     
     if ((Epot[Try] < Epot[Min])) {
-      Min=Try;
-      step=step0;
+      Min  = Try;
+      step = step0;
     }
     else
-      step*=0.5;
+      step *= 0.2;
   }
   if (MASTER(cr) && !bDone) 
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
@@ -284,15 +305,14 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
 }
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,int stepout,
+	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
 	     t_parm *parm,t_groups *grps,
 	     t_topology *top,real ener[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *md,
 	     t_nsborder *nsb,t_nrnb nrnb[],
-	     t_graph *graph,t_edsamyn *edyn)
+	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size)
 {
-  t_forcerec *fr;
   t_mdebin   *mdebin;
   FILE       *ene;
   int        fp_ene,step,nre,k,n,count;
@@ -303,20 +323,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   real       etmp[F_NRE];
+  real       mu_aver,mu_aver2;
   char       *traj;
   char       *xtc_traj; /* compressed trajectory filename */
   int        nDLB;
   int        i,m;
-  rvec       box_size,vcm,mu_tot;
+  rvec       vcm,mu_tot;
   t_coupl_rec *tcr;
   rvec       *xx,*vv,*ff;  
   bool       bTCR;
 
   /* Shell stuff */
-  int         nas;
-  int         nbs;
-  t_atomshell *as;
-  t_bondshell *bs;
+  int         nshell;
+  t_shell     *shells;
     
   where();
 
@@ -365,11 +384,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   init_nrnb(&mynrnb);
   
-  fr       = mk_forcerec();
-  init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),md,parm->box,FALSE);
-  for(m=0; (m<DIM); m++)
-    box_size[m]=parm->box[m][m];
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
   fprintf(log,"Removing pbc first time\n");
@@ -377,7 +391,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   shift_self(graph,fr->shift_vec,x);
   fprintf(log,"Done rmpbc\n");
   
-  traj     = ftp2fn(efTRJ,nfile,fnm);
+  traj     = ftp2fn(efTRR,nfile,fnm);
   xtc_traj = ftp2fn(efXTC,nfile,fnm);
   
   bLR    = (parm->ir.rlong > parm->ir.rshort);
@@ -397,7 +411,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   clear_rvec(vcm);
   
-  if (parm->ir.bShakeFirst) 
+  if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,md,x,vold,buf,f,v,
 		  graph,cr,nrnb,grps,fr,top,edyn);
   
@@ -412,7 +426,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	 0,parm->ir.ntcmemory);
   where();
   
-  init_shells(log,START(nsb),HOMENR(nsb),&top->idef,md,&nas,&as,&nbs,&bs);
+  shells = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,md,&nshell);
   where();
   
   /* Write start time and temperature */
@@ -444,10 +458,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Now is the time to relax the shells */
     count=relax_shells(ene,log,cr,bVerbose,step,parm,
 		       bNS,bStopCM,top,ener,
-		       x,vold,v,vt,f,
-		       buf,md,nsb,&mynrnb,
-		       graph,grps,force_vir,
-		       nas,as,nbs,bs,fr,
+		       x,vold,v,vt,f,buf,md,nsb,&mynrnb,
+		       graph,grps,force_vir,nshell,shells,fr,
 		       traj,0,0,nsb->natoms,parm->box,mdebin);
     tcount+=count;
 
@@ -538,16 +550,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   step,parm->ir.ntcmemory);
     
     /* Calculate pressure ! */
-    calc_pres(parm->box,parm->ekin,parm->vir,parm->pres);
+    calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
+	      EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
 
     /* Calculate long range corrections to pressure and energy */
-    calc_ljcorr(log,parm->ir.userint1,
-		fr,md->nr,parm->box,parm->pres,ener);
+    if (bTCR)
+      set_avcsix(log,fr,&top->idef,md);
+    calc_ljcorr(log,parm->ir.bLJcorr,
+		fr,md->nr,parm->box,parm->pres,parm->vir,ener);
     
     if (bTCR)
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr),md,&(top->idef),2.3,
-		  top->blocks[ebMOLS].nr,cr);
+		  &(parm->ir),MASTER(cr) || bMultiSim,md,&(top->idef),mu_aver,
+		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
+		  parm->box,parm->vir);
 
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);
@@ -608,9 +624,9 @@ int main(int argc,char *argv[])
   t_commrec    *cr;
   t_filenm fnm[] = {
     { efTPX, NULL, NULL,      ffREAD },
-    { efTRJ, "-o", NULL,      ffWRITE },
+    { efTRR, "-o", NULL,      ffWRITE },
     { efXTC, "-x", NULL,      ffOPTWR },
-    { efGRO, "-c", "confout", ffWRITE },
+    { efSTO, "-c", "confout", ffWRITE },
     { efGCT, "-j", "wham",    ffOPTRD },
     { efGCT, "-jo", "bam",    ffOPTRD },
     { efHAT, "-hat","ghat",    ffOPTRD },
@@ -622,7 +638,7 @@ int main(int argc,char *argv[])
 
   stdlog = stderr;
   
-  cr = init_par(argv);
+  cr = init_par(&argc,argv);
   bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
 

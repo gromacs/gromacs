@@ -462,15 +462,15 @@ static int relax_shells(FILE *ene,FILE *log,t_commrec *cr,
 }
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,int stepout,
+	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
 	     t_parm *parm,t_groups *grps,
 	     t_topology *top,real ener[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *md,
 	     t_nsborder *nsb,t_nrnb nrnb[],
-	     t_graph *graph,t_edsamyn *edyn)
+	     t_graph *graph,t_edsamyn *edyn,
+	     t_forcerec *fr,rvec box_size)
 {
-  t_forcerec *fr;
   t_mdebin   *mdebin;
   FILE       *ene;
   int        fp_ene,step,k,n,count;
@@ -485,7 +485,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *xtc_traj; /* compressed trajectory filename */
   int        nDLB;
   int        i,m;
-  rvec       box_size,vcm,mu_tot;
+  rvec       vcm,mu_tot;
   t_coupl_rec *tcr;
   rvec       *xx,*vv,*ff;  
   bool       bTCR;
@@ -541,11 +541,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   init_nrnb(&mynrnb);
   
-  fr=mk_forcerec();
-  init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),md,parm->box,FALSE);
-  for(m=0; (m<DIM); m++)
-    box_size[m]=parm->box[m][m];
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
   fprintf(log,"Removing pbc first time\n");
@@ -632,9 +627,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
   
-  /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM)
-    init_pppm(log,cr,FALSE,TRUE,box_size,ftp2fn(efHAT,nfile,fnm),&parm->ir);
     
 
   /***********************************************************
@@ -890,7 +882,7 @@ int main(int argc,char *argv[])
 
   t_edsamyn edyn;
   
-  cr          = init_par(argv);
+  cr          = init_par(&argc,argv);
   bVerbose    = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
   
