@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
     "be added instead of B-factors. [TT]-legend[tt] will produce",
     "a row of CA atoms with B-factors ranging from the minimum to the",
     "maximum value found, effectively making a legend for viewing.[PAR]",
-    "If the input file is a [TT].tpx[tt] file and the output a pdb file",
+    "If the input file is a run input file and the output a pdb file",
     "the B-factor field can be filled with the charges of the atoms",
     "if the option -charge is given as well. This can be used as input",
     "for programs like Grasp or MEAD which solve the Poisson-Boltzmann",
