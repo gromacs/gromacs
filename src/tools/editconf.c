@@ -82,21 +82,39 @@ real calc_mass(t_atoms *atoms)
   return tmass;
 }
 
-void calc_geom(int natom, rvec *x, rvec geom_center, rvec min, rvec max)
+void calc_geom(char *indexfn, t_atoms *atoms,
+	       rvec *x, rvec geom_center, rvec min, rvec max)
 {
-  int i,j;
-  
+  int     isize;
+  atom_id *index;
+  char    *grpnames;
+  int     ii,i,j;
+
+  if (indexfn) {
+    /* Make an index for principal component analysis */
+    fprintf(stderr,"\nSelect group for selecting system size:\n");
+    get_index(atoms,indexfn,1,&isize,&index,&grpnames);
+  }
+  else {
+    isize = atoms->nr;
+    snew(index,isize);
+    for(i=0; (i<isize); i++) {
+      index[i]=i;
+    }
+  }
   clear_rvec(geom_center);
   for (j=0; (j<DIM); j++)
     min[j]=max[j]=x[0][j];
-  for (i=0; (i<natom); i++) {
-    rvec_inc(geom_center,x[i]);
+  for (i=0; (i<isize); i++) {
+    ii = index[i];
+    rvec_inc(geom_center,x[ii]);
     for (j=0; (j<DIM); j++) {
-      if (x[i][j] < min[j]) min[j]=x[i][j];
-      if (x[i][j] > max[j]) max[j]=x[i][j];
+      if (x[ii][j] < min[j]) min[j]=x[ii][j];
+      if (x[ii][j] > max[j]) max[j]=x[ii][j];
     }
   }
-  svmul(1./natom,geom_center,geom_center);
+  svmul(1.0/isize,geom_center,geom_center);
+  sfree(index);
 }
 
 void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
@@ -277,6 +295,8 @@ int main(int argc, char *argv[])
     "Periodicity can be removed in a crude manner.",
     "It is important that the box sizes at the bottom of your input file",
     "are correct when the periodicity is to be removed.[PAR]",
+    "The program can optionally rotate the solute molecule to align the",
+    "molecule along its principal axes (-bRotate)[PAR]",
     "When writing [TT].pdb[tt] files, B-factors can be",
     "added with the [TT]-bf[tt] option. B-factors are read",
     "from a file with with following format: first line states number of",
@@ -385,13 +405,10 @@ int main(int argc, char *argv[])
   if (bRMPBC) 
     rm_gropbc(&atoms,x,box);
     
-  /* calc geometrical center and max and min coordinates and size */
-  calc_geom(natom, x, gc, min, max);
-  rvec_sub(max, min, size);
-  printf("size      : %6.3f %6.3f %6.3f\n", size[XX], size[YY], size[ZZ]);
-  printf("center    : %6.3f %6.3f %6.3f\n", gc[XX], gc[YY], gc[ZZ]);
-  printf("box       : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
-	 box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
+  if (bOrient)
+    /* Orient the principal axes along the coordinate axes */
+    orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x,bHaveV ? v : NULL);
+  
     
   if ( bScale ) {
     /* scale coordinates and box */
@@ -416,10 +433,6 @@ int main(int argc, char *argv[])
     scale_conf(atoms.nr,x,box,scale);
   }
   
-  if (bOrient)
-    /* Orient the principal axes along the coordinate axes */
-    orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x,bHaveV ? v : NULL);
-  
   if (bRotate) {
     /* Rotate */
     printf("Rotating %g, %g, %g degrees around the X, Y and Z axis respectively\n",rotangles[XX],rotangles[YY],rotangles[ZZ]);
@@ -428,11 +441,12 @@ int main(int argc, char *argv[])
     rotate_conf(natom,x,v,rotangles[XX],rotangles[YY],rotangles[ZZ]);
   }
   
-  if (bScale || bOrient || bRotate) {
+  clear_rvec(size);
+  if (bScale || bOrient || bRotate || bDist) {
     /* recalc geometrical center and max and min coordinates and size */
-    calc_geom(natom, x, gc, min, max);
+    calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
     rvec_sub(max, min, size);
-    printf("new size  : %6.3f %6.3f %6.3f\n", size[XX], size[YY], size[ZZ]);
+    printf("new size  : %6.3f %6.3f %6.3f\n",size[XX],size[YY],size[ZZ]);
   }
   
   /* calculate new boxsize */
@@ -460,7 +474,7 @@ int main(int argc, char *argv[])
     
   /* print some */
   if (bCenter || bScale || bOrient || bRotate) {
-    calc_geom(natom, x, gc, min, max);
+    calc_geom(NULL,&atoms,x, gc, min, max);
     printf("new center: %6.3f %6.3f %6.3f\n", 
 	   gc[XX],gc[YY],gc[ZZ]);
   }
@@ -469,6 +483,7 @@ int main(int argc, char *argv[])
 	   box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
   
   if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
+    fprintf(stderr,"\nSelect a group for output:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
 	      1,&isize,&index,&groupnames);
     if (opt2bSet("-bf",NFILE,fnm))
