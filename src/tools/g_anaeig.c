@@ -55,7 +55,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 
 char *proj_unit;
 
-real tick_spacing(real range,int minticks)
+static real tick_spacing(real range,int minticks)
 {
   real sp;
 
@@ -66,9 +66,9 @@ real tick_spacing(real range,int minticks)
   return sp;
 }
 
-void write_xvgr_graphs(char *file,int ngraphs,
-		       char *title,char *xlabel,char **ylabel,
-		       int n,real *x, real **y,bool bZero)
+static void write_xvgr_graphs(char *file,int ngraphs,
+			      char *title,char *xlabel,char **ylabel,
+			      int n,real *x, real **y,bool bZero)
 {
   FILE *out;
   int g,i;
@@ -125,52 +125,65 @@ void write_xvgr_graphs(char *file,int ngraphs,
   fclose(out);
 }
 
-void inprod_matrix(char *matfile,int natoms,
-		   int nvec1,int *eignr1,rvec **eigvec1,
-		   int nvec2,int *eignr2,rvec **eigvec2)
+static void inprod_matrix(char *matfile,int natoms,
+			  int nvec1,int *eignr1,rvec **eigvec1,
+			  int nvec2,int *eignr2,rvec **eigvec2,
+			  bool bSelect,int noutvec,int *outvec)
 {
   FILE *out;
   real **mat;
-  int i,x,y,nlevels;
+  int i,x1,x,y,nlevels;
+  int n1;
   real inp,*t_x,*t_y,max;
   t_rgb rlo,rhi;
 
-  fprintf(stderr,"Calculating inner-product matrix of %dx%d eigenvectors...\n",
-	  nvec1,nvec2);
+  if (bSelect)
+    n1 = noutvec;
+  else
+    n1 = nvec1;
+
+  fprintf(stderr,"Calculating inner-product matrix of %dx%d eigenvectors\n",
+	  n1,nvec2);
   
-  snew(mat,nvec1);
-  for(x=0; x<nvec1; x++)
+  snew(mat,n1);
+  for(x=0; x<n1; x++)
     snew(mat[x],nvec2);
 
-  max=0;
-  for(x=0; x<nvec1; x++)
+  snew(t_x,n1);
+  max = 0;
+  for(x1=0; x1<n1; x1++) {
+    if (bSelect)
+      x = outvec[x1];
+    else
+      x = x1;
+    t_x[x1] = eignr1[x]+1;
+    fprintf(stderr," %d",eignr1[x]+1);
     for(y=0; y<nvec2; y++) {
-      inp=0;
+      inp = 0;
       for(i=0; i<natoms; i++)
-	inp+=iprod(eigvec1[x][i],eigvec2[y][i]);
-      mat[x][y]=fabs(inp);
-      if (mat[x][y]>max)
-	max=mat[x][y];
+	inp += iprod(eigvec1[x][i],eigvec2[y][i]);
+      mat[x1][y] = fabs(inp);
+      if (mat[x1][y]>max)
+	max = mat[x1][y];
     }
-  snew(t_x,nvec1);
-  for(i=0; i<nvec1; i++)
-    t_x[i]=eignr1[i]+1;
+  }
+  fprintf(stderr,"\n");
   snew(t_y,nvec2);
   for(i=0; i<nvec2; i++)
-    t_y[i]=eignr2[i]+1;
+    t_y[i] = eignr2[i]+1;
   rlo.r = 1; rlo.g = 1; rlo.b = 1;
   rhi.r = 0; rhi.g = 0; rhi.b = 0;
-  nlevels=41;
-  out=ffopen(matfile,"w");
+  nlevels = 41;
+  out = ffopen(matfile,"w");
   write_xpm(out,"Eigenvector inner-products","in.prod.","run 1","run 2",
-	    nvec1,nvec2,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
+	    n1,nvec2,t_x,t_y,mat,0.0,max,rlo,rhi,&nlevels);
   fclose(out);
 }
 
-void overlap(char *outfile,int natoms,
-	     rvec **eigvec1,
-	     int nvec2,int *eignr2,rvec **eigvec2,
-	     int noutvec,int *outvec)
+static void overlap(char *outfile,int natoms,
+		    rvec **eigvec1,
+		    int nvec2,int *eignr2,rvec **eigvec2,
+		    int noutvec,int *outvec)
 {
   FILE *out;
   int i,v,vec,x;
@@ -200,15 +213,15 @@ void overlap(char *outfile,int natoms,
   fclose(out);
 }
 
-void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
-	     char *projfile,char *twodplotfile,char *threedplotfile,
-	     char *filterfile,int skip,
-	     char *extremefile,bool bExtrAll,real extreme,int nextr,
-	     t_atoms *atoms,int natoms,atom_id *index,
-	     bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
-	     real *sqrtm,rvec *xav,
-	     int *eignr,rvec **eigvec,
-	     int noutvec,int *outvec)
+static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
+		    char *projfile,char *twodplotfile,char *threedplotfile,
+		    char *filterfile,int skip,
+		    char *extremefile,bool bExtrAll,real extreme,int nextr,
+		    t_atoms *atoms,int natoms,atom_id *index,
+		    bool bFit,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
+		    real *sqrtm,rvec *xav,
+		    int *eignr,rvec **eigvec,
+		    int noutvec,int *outvec)
 {
   FILE    *xvgrout;
   int     status,out,nat,i,j,d,v,vec,nfr,nframes,snew_size,frame;
@@ -413,9 +426,9 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
   fprintf(stderr,"\n");
 }
 
-void components(char *outfile,int natoms,real *sqrtm,
-		int *eignr,rvec **eigvec,
-		int noutvec,int *outvec)
+static void components(char *outfile,int natoms,real *sqrtm,
+		       int *eignr,rvec **eigvec,
+		       int noutvec,int *outvec)
 {
   int g,v,i;
   real *x,**y;
@@ -446,7 +459,7 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "[TT]g_anaeig[tt] analyzes eigenvectors.",
     "The eigenvectors can be of a covariance matrix ([TT]g_covar[tt])",
-    "or of a Nomal Modes anaysis ([TT]g_nmeig[tt]).[PAR]",
+    "or of a Normal Modes anaysis ([TT]g_nmeig[tt]).[PAR]",
     "When a trajectory is projected on eigenvectors,",
     "all structures are fitted to the structure in the eigenvector file,",
     "if present, otherwise to the structure in the structure file.",
@@ -469,7 +482,7 @@ int main(int argc,char *argv[])
     "on the average structure and interpolate [TT]-nframes[tt] frames between",
     "them, or set your own extremes with [TT]-max[tt]. The eigenvector",
     "[TT]-first[tt] will be written unless [TT]-first[tt] and [TT]-last[tt]",
-    "are explicitly set, in which case all eigenvectors will be written",
+    "have been set explicitly, in which case all eigenvectors will be written",
     "to separate files.",
     "Chain identifiers will be added when",
     "writing a [TT].pdb[tt] file with two or three structures",
@@ -478,7 +491,9 @@ int main(int argc,char *argv[])
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
     "in file [TT]-v[tt].[PAR]",
     "[TT]-inpr[tt]: calculate a matrix of inner-products between eigenvectors",
-    "in files [TT]-v[tt] and [TT]-v2[tt]."
+    "in files [TT]-v[tt] and [TT]-v2[tt]. All eigenvectors of the first file",
+    "will be used unless [TT]-first[tt] and [TT]-last[tt] have been set",
+    "explicitly."
   };
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
@@ -516,7 +531,7 @@ int main(int argc,char *argv[])
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
-  bool       bFirstToLast,bExtremeAll,bTraj;
+  bool       bFirstToLast,bFirstLastSet,bTraj;
 
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -554,10 +569,10 @@ int main(int argc,char *argv[])
   bTop   = fn2bTPX(topfile);
   bProj  = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile 
     || FilterFile || ExtremeFile;
-  bExtremeAll  = 
+  bFirstLastSet  = 
     opt2parg_bSet("-first",NPA,pa) && opt2parg_bSet("-last",NPA,pa);
   bFirstToLast = CompFile || ProjOnVecFile || FilterFile || OverlapFile || 
-    ( ExtremeFile && bExtremeAll );
+    ((ExtremeFile || InpMatFile) && bFirstLastSet);
   bVec2  = Vec2File || OverlapFile || InpMatFile;
   bM     = CompFile || bProj;
   bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
@@ -710,9 +725,12 @@ int main(int argc,char *argv[])
       noutvec++;
     }
   }
-  fprintf(stderr,"%d eigenvectors selected for output:",noutvec);
-  for(j=0; j<noutvec; j++)
-    fprintf(stderr," %d",eignr1[outvec[j]]+1);
+  fprintf(stderr,"%d eigenvectors selected for output",noutvec);
+  if (noutvec <= 100) {
+    fprintf(stderr,":");
+    for(j=0; j<noutvec; j++)
+      fprintf(stderr," %d",eignr1[outvec[j]]+1);
+  }
   fprintf(stderr,"\n");
   
   if (CompFile)
@@ -722,7 +740,7 @@ int main(int argc,char *argv[])
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
 	    bTop ? &top : NULL,topbox,xtop,
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
-	    ExtremeFile,bExtremeAll,max,nextr,atoms,natoms,index,
+	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
 	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec);
   
@@ -732,7 +750,8 @@ int main(int argc,char *argv[])
   
   if (InpMatFile)
     inprod_matrix(InpMatFile,natoms,
-		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2);
+		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,
+		  bFirstLastSet,noutvec,outvec);
 
   if (!CompFile && !bProj && !OverlapFile && !InpMatFile)
     fprintf(stderr,"\nIf you want some output,"
