@@ -35,7 +35,9 @@ static char *SRCID_lrutil_c = "$Id$";
 #include "lrutil.h"
 #include "smalloc.h"
 #include "physics.h"
+#include "txtdump.h"
 #include "futil.h"
+#include "names.h"
 #include "fftgrid.h"
 #include "writeps.h"
 #include "macros.h"
@@ -282,33 +284,35 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   static real Vself;
   int    i,i1,i2,j,k,m,iv,jv;
   unsigned int *AA;
-  real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
+  double qq; /* Necessary for precision */
+  double isp=0.564189583547756;
+  real   qi,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl,qtot=0;
   rvec   df,dx;
   real   r1=fr->rcoulomb_switch;
   real   rc=fr->rcoulomb;
   real   ewc=fr->ewaldcoeff;
-  real   isp=0.564189583547756;
   ivec   shift;     
   int    start=START(nsb);
   int    natoms=HOMENR(nsb);
-
+  
   if (bFirst) {
     qq =0;  
-    for(i=start; (i<start+natoms); i++) {
-	qq  += charge[i]*charge[i];
-    }
-    qtot=0;
-    for(i=0;i<nsb->natoms;i++)
-      qtot+=charge[i];
+    for(i=start; (i<start+natoms); i++) 
+      qq  += charge[i]*charge[i];
     
+    /* Obsolete ? 
+       qtot=0;
+       for(i=0;i<nsb->natoms;i++)
+       qtot+=charge[i];
+    */
     if(fr->bEwald)
-	Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
+      Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
     else
-	Vself = 0.5*C*ONE_4PI_EPS0*qq;
+      Vself = 0.5*C*ONE_4PI_EPS0*qq;
     fprintf(fp,"calc_LRcorrections: r1 = %g, rc=%g\n",r1,rc);
     fprintf(fp,"calc_LRcorrections: start=%d,natoms=%d\n",start,natoms);
-    fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g\n",qq,Vself);
-    bFirst = FALSE;
+    fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g, bEwald = %s\n",
+	    qq,Vself,bool_names[fr->bEwald]);
   }
   AA = excl->a;
   Vexcl = 0;
@@ -373,6 +377,11 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       }
     }
   }
+  if (bFirst)
+    fprintf(fp,"calc_LRcorrections: Vexcl=%g\n",Vexcl);
+  
+  bFirst = FALSE;
+  
   return (Vself+Vexcl);
 }
   

@@ -535,7 +535,7 @@ static int pr_block_title(FILE *fp,int indent,char *title,t_block *block)
       indent=pr_title(fp,indent,title);
       (void) pr_indent(fp,indent);
       fprintf(fp,"multinr[division over procesors]:");
-      for (i=0; (i<MAXPROC) &&(block->multinr[i] > 0); i++) 
+      for (i=0; (i<MAXPROC); i++) 
 	(void) fprintf(fp," %d",block->multinr[i]);
       fprintf(fp,"\n");
       (void) pr_indent(fp,indent);

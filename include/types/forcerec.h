@@ -77,7 +77,8 @@ typedef struct {
   int  vdwtype;
   int  cg0,hcg;
   int  ndelta;
-  int  nWater;
+  bool bWaterOpt;
+  int  nWater,nWatMol;
   int  Dimension;
   bool bGrid,bDomDecomp;
   rvec *cg_cm;

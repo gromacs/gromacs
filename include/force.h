@@ -66,6 +66,7 @@ extern void init_forcerec(FILE       *log,
 			  t_block    *cgs,
 			  t_idef     *idef,
 			  t_mdatoms  *mdatoms,
+			  t_nsborder *nsb,
 			  matrix     box,
 			  bool       bMolEpot);
 /* The Force rec struct must be created with mk_forcerec 

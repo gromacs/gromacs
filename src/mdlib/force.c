@@ -263,6 +263,7 @@ void init_forcerec(FILE *log,
 		   t_block    *cgs,
 		   t_idef     *idef,
 		   t_mdatoms  *mdatoms,
+		   t_nsborder *nsb,
 		   matrix     box,
 		   bool bMolEpot)
 {
@@ -308,7 +309,15 @@ void init_forcerec(FILE *log,
   
   /* Must really support table functions with solvent_opt */
   fr->nWater     = ir->solvent_opt;
-
+  fr->bWaterOpt  = (fr->nWater >= 0);
+  
+  fr->nWatMol = 0;
+  if (fr->bWaterOpt) {
+    for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++)
+      if (fr->nWater == mdatoms->typeA[i])
+	fr->nWatMol++;
+  }
+  
   /* Parameters for generalized RF */
   fr->zsquare = 0.0;
   fr->temp    = 0.0;
@@ -619,13 +628,13 @@ void force(FILE       *log,     int        step,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     case eelPME:
-	Vlr = do_pme(log,FALSE,ir,x,fr->flr,md->chargeA,
-		     box_size,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
-	break;
+      Vlr = do_pme(log,FALSE,ir,x,fr->flr,md->chargeA,
+		   box_size,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+      break;
     case eelEWALD:
-	Vlr = do_ewald(log,FALSE,ir,x,fr->flr,md->chargeA,
-		       box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
-	break;
+      Vlr = do_ewald(log,FALSE,ir,x,fr->flr,md->chargeA,
+		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
+      break;
     default:
       Vlr = 0;
       fatal_error(0,"No such electrostatics method implemented %s",
