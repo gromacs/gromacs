@@ -55,8 +55,8 @@
           title     CDATA #REQUIRED>
 
 <!-- Input parameters -->		   
-<!ELEMENT inputrec (output,coupling,cutoff)>
-<!ATTLIST inputrec
+<!ELEMENT parameters (output,coupling,cutoff)>
+<!ATTLIST parameters
           algorithm ( md | steep | cg | bd | sd ) "md"
 	  nsteps    CDATA "1"
 	  init-t    CDATA "0"
@@ -140,54 +140,51 @@
 	  ptype    ( atom | dummy | shell ) "atom">
 <!ELEMENT atom EMPTY>	  
 <!ATTLIST atom
-          name     CDATA #REQUIRED
-	  type     CDATA #REQUIRED
+          aname    ID    #REQUIRED
+	  atype    IDREF #REQUIRED
 	  charge   CDATA #REQUIRED>
 
 <!ELEMENT topology (bonds*,angles*,dihedrals*)>
 
 <!ELEMENT bonds (bond*)>
 <!ELEMENT bond EMPTY>
+<!-- IDREFS should refer to *two* atoms -->
 <!ATTLIST bond
-          ai    CDATA #REQUIRED
-	  aj    CDATA #REQUIRED
-	  typeA CDATA #REQUIRED
-	  typeB CDATA #IMPLIED>
+          aname IDREFS #REQUIRED
+	  typeA CDATA  #REQUIRED
+	  typeB CDATA  #IMPLIED>
 
 <!ELEMENT angles (angle*)>
 <!ELEMENT angle EMPTY>
+<!-- IDREFS should refer to *three* atoms -->
 <!ATTLIST angle
-          ai    CDATA #REQUIRED
-	  aj    CDATA #REQUIRED
-	  ak    CDATA #REQUIRED
-	  typeA CDATA #REQUIRED
-	  typeB CDATA #IMPLIED>		    
+          aname IDREFS #REQUIRED
+	  typeA CDATA  #REQUIRED
+	  typeB CDATA  #IMPLIED>		    
 		    
 <!ELEMENT dihedrals EMPTY>
+<!-- IDREFS should refer to *four* atoms -->
 <!ATTLIST dihedrals
-          ai    CDATA #REQUIRED
-	  aj    CDATA #REQUIRED
-	  ak    CDATA #REQUIRED
-	  al    CDATA #REQUIRED
-	  typeA CDATA #REQUIRED
-	  typeB CDATA #IMPLIED>		    
+          aname IDREFS #REQUIRED
+	  typeA CDATA  #REQUIRED
+	  typeB CDATA  #IMPLIED>		    
 
 <!ELEMENT forcefield (nonbonded*,bonded*,special*)>
 <!ELEMENT nonbonded (lennardjones | buckingham)>
 <!ELEMENT lennardjones EMPTY>
+<!-- IDREFS is referring to *two* atomtypes -->
 <!ATTLIST lennardjones
-          ati   CDATA #REQUIRED
-	  atj   CDATA #REQUIRED
-	  cn    CDATA #REQUIRED
-	  c6    CDATA #REQUIRED>
+          atype IDREFS #REQUIRED
+	  cn    CDATA  #REQUIRED
+	  c6    CDATA  #REQUIRED>
 	  
 <!ELEMENT buckingham EMPTY>
+<!-- IDREF is referring to *two* atomtypes -->
 <!ATTLIST buckingham
-          ati   CDATA #REQUIRED
-	  atj   CDATA #REQUIRED
-	  A     CDATA #REQUIRED
-	  B     CDATA #REQUIRED
-	  C     CDATA #REQUIRED>
+          atype IDREFS #REQUIRED
+	  A     CDATA  #REQUIRED
+	  B     CDATA  #REQUIRED
+	  C     CDATA  #REQUIRED>
 
 <!-- Definitions for bondeds: this is the most complex bit   -->
 <!-- and the one that will most likely be extended first     -->	  
@@ -221,22 +218,22 @@
 <!-- End of angletypes -->
 
 <!-- A number of different types are available for dihedrals -->	 
-<!ELEMENT dihedraltype (proper | harmonic | ryckaert_bellemans | cosine_series)>
+<!ELEMENT dihedraltype (proper | harmonic | ryckaertbellemans | cosineseries)>
 <!ELEMENT proper EMPTY>
 <!ATTLIST proper
           ph0   CDATA #REQUIRED
 	  kph   CDATA #REQUIRED
 	  nmult CDATA #REQUIRED>
-<!ELEMENT ryckaert_bellemans EMPTY>
-<!ATTLIST ryckaert_bellemans
+<!ELEMENT ryckaertbellemans EMPTY>
+<!ATTLIST ryckaertbellemans
           c0 CDATA #REQUIRED
 	  c1 CDATA #REQUIRED
 	  c2 CDATA #REQUIRED
 	  c3 CDATA #REQUIRED
 	  c4 CDATA #REQUIRED
 	  c5 CDATA #REQUIRED>
-<!ELEMENT cosine_series EMPTY>
-<!ATTLIST cosine_series
+<!ELEMENT cosineseries EMPTY>
+<!ATTLIST cosineseries
           c0 CDATA #REQUIRED
 	  c1 CDATA #REQUIRED
 	  c2 CDATA #REQUIRED
@@ -252,7 +249,7 @@
 <!ELEMENT atomtypes (atomtype*)>
 <!ELEMENT atomtype EMPTY>
 <!ATTLIST atomtype
-          name  CDATA #REQUIRED
+          atype ID    #REQUIRED
 	  ptype CDATA #REQUIRED
 	  mass  CDATA #REQUIRED>
 
@@ -265,7 +262,7 @@
 <!ELEMENT forces      (rvec*)>
 <!ELEMENT rvec EMPTY>
 <!ATTLIST rvec 
-          id CDATA #REQUIRED
+          id IDREF #REQUIRED
           x  CDATA #REQUIRED
           y  CDATA #REQUIRED
           z  CDATA #REQUIRED>
