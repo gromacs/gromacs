@@ -294,11 +294,14 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
     pull->AbsoluteRef = TRUE;
     fprintf(stderr, "Pull code using absolute reference.\n");
   }
-  
+  else if (pull->AbsoluteRef == FALSE) {
+    fprintf(stderr,"Reference Group:  %s\n",refbuf);
+  }
+
   if (!strcmp(grpbuf[0],""))
     gmx_fatal(FARGS,"Need to specify at least group_1.");
   pull->ngrp = 1;
-  while (i<MAX_PULL_GROUPS && strcmp(grpbuf[pull->ngrp],""))
+  for(i=0; i<MAX_PULL_GROUPS && strcmp(grpbuf[pull->ngrp],""); i++)
     pull->ngrp++;
   
   fprintf(stderr,"Using %d pull groups\n",pull->ngrp);

@@ -83,7 +83,10 @@ static void print_info(FILE *log,t_pull *pull)
 
   switch(pull->reftype) {
   case eCom: 
-    fprintf(log,"REFERENCE TYPE: center of mass of reference group\n");
+    if(pull->AbsoluteRef)
+      fprintf(log,"REFERENCE TYPE: the origin (0,0,0) --> Absolute Coordinates\n");
+    else
+      fprintf(log,"REFERENCE TYPE: center of mass of reference group\n");
     break;
   case eComT0:
     fprintf(log,
@@ -248,6 +251,10 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   if (!pull->bPull)
     return;
 
+  /* initialize Absolute Reference boolean to FALSE  -- DLB */
+  /* if TRUE then read_pullparams() will update AbsoluteRef properly -- DLB */
+  pull->AbsoluteRef = FALSE;
+
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
 
   if (cr->nnodes > 1 && pull->runtype == eConstraint)
@@ -259,8 +266,6 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 
     pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
   }
-
-  pull->AbsoluteRef = FALSE;
 
   if(pull->reftype == eDyn || pull->reftype == eDynT0)
     pull->bCyl = TRUE;
@@ -329,9 +334,13 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   }
   copy_dvec(pull->ref.x_unc,pull->ref.x_con);
   copy_dvec(pull->ref.x_unc,pull->ref.x_ref);
-
-  for(j=0;j<pull->reflag;j++)
-    copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
+ 
+  /* DLB -- I'm not sure if ref.comhist needs to be initialized */
+  /* DLB    if we are using Absolute Ref., so I'm removing it from */
+  /* DLB    the picture.  Otherwise I get a bus error		*/
+  if (!pull->AbsoluteRef) /* DLB */
+    for(j=0;j<pull->reflag;j++)
+      copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
 
   if(MASTER(cr))
     fprintf(log,"Initializing reference group. Inv. mass: %8.3f\n"
