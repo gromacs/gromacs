@@ -3,7 +3,7 @@
 #
 
 # This should be your Gromacs directory, edit if necessary
-GMXHOME=/gmx2.0
+GMXHOME=/gmx
 export GMXHOME
 
 #
