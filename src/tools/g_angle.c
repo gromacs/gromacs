@@ -202,10 +202,10 @@ int main(int argc,char *argv[])
     out=xvgropen(opt2fn("-ov",NFILE,fnm),
 		 title,"Time (ps)","Angle (degrees)");
     for(i=0; (i<nframes); i++) {
-      fprintf(out,"%10.5f  %8.3f",time[i],aver_angle[i]);
+      fprintf(out,"%10.5f  %8.3f",time[i],aver_angle[i]*RAD2DEG);
       if (bALL)
 	for(j=0; (j<nangles); j++)
-	  fprintf(out,"  %8.3f",dih[j][i]);
+	  fprintf(out,"  %8.3f",dih[j][i]*RAD2DEG);
       fprintf(out,"\n");
     }	
     fclose(out);
