@@ -74,143 +74,6 @@ void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
   }
 }
 
-real my_fit(int natoms1,atom_id *index1,atom_id *index2,
-	    rvec *xp,
-	    int natoms2,rvec *x)
-{
-  int    c,r,n,j,m,i,irot;
-  double omega[7][7],om[7][7],d[7],xnr,xpc;
-  matrix vh,vk,R,u;
-  real   mn;
-  int    index;
-  real   max_d;
-  rvec   x_old;
-
-  for(i=0;(i<7);i++) {
-    d[i]=0;
-    for(j=0;(j<7);j++) {
-      omega[i][j]=0;
-      om[i][j]=0;
-    }
-  }
-
-
-#ifdef OLDCODE
-  /*calculate the matrix U*/
-  clear_mat(u);
-  for(n=0;(n<natoms1);n++) {
-    if ((mn = w_rls[n]) != 0.0) {
-      for(c=0; (c<DIM); c++) {
-	xpc=xp[n][c];
-	for(r=0; (r<DIM); r++) {
-	  xnr=x[n][r];
-	  u[c][r]+=mn*xnr*xpc;
-	}
-      }
-    }
-  }
-#else
-  /*calculate the matrix U*/
-  clear_mat(u);
-  for(n=0;(n<natoms1);n++) {
-    mn = 1.0;
-    
-    for(c=0; (c<DIM); c++) {
-      xpc=xp[index1[n]][c];
-      for(r=0; (r<DIM); r++) {
-	xnr=x[index2[n]][r];
-	u[c][r]+=mn*xnr*xpc;
-      }
-    }
-  }
-
-#endif
-  /*calculate its determinant*/
-
-  /*construct omega*/
-  /*omega is symmetric -> omega==omega' */
-  for(r=0;(r<6);r++)
-    for(c=0;(c<=r);c++)
-      if ((r>=3) && (c<3)) {
-        omega[r+1][c+1]=u[r-3][c];
-        omega[c+1][r+1]=u[r-3][c];
-      }
-      else {
-        omega[r+1][c+1]=0;
-        omega[c+1][r+1]=0;
-      }
-
-  /*determine h and k*/
-  jacobi(omega,6,d,om,&irot);
-  /*real   **omega = input matrix a[1..n][1..n] must be symmetric
-   *int     natoms = number of rows and columns
-   *real      NULL = d[1]..d[n] are the eigenvalues of a[][]
-   *real       **v = v[1..n][1..n] contains the vectors in columns
-   *int      *irot = number of jacobi rotations
-   */
-
-  if (irot==0) {
-    fprintf(stderr,"IROT=0\n");
-  }
-
-  index=0; /* For the compiler only */
-
-  for(j=0;(j<3);j++) {
-    max_d=-1000;
-    for(i=0;(i<6);i++)
-      if (d[i+1]>max_d) {
-        max_d=d[i+1];
-        index=i;
-      }
-    d[index+1]=-10000;
-    for(i=0;(i<3);i++) {
-      vh[j][i]=M_SQRT2*om[i+1][index+1];
-      vk[j][i]=M_SQRT2*om[i+4][index+1];
-    }
-  }
-
-  /*determine R*/
-  for(c=0;(c<3);c++)
-    for(r=0;(r<3);r++)
-      R[c][r]=vk[0][r]*vh[0][c]+
-              vk[1][r]*vh[1][c]+ 
-              vk[2][r]*vh[2][c];
-  if (det(R) < 0)
-    for(c=0;(c<3);c++)
-      for(r=0;(r<3);r++)
-	R[c][r]=vk[0][r]*vh[0][c]+
-	        vk[1][r]*vh[1][c]-
-	        vk[2][r]*vh[2][c];
-  
-  /*rotate X*/
-  for(j=0;(j<natoms2);j++) {
-    for(m=0;(m<3);m++)
-      x_old[m]=x[j][m];
-    for(r=0;(r<3);r++) {
-      x[j][r]=0;
-      for(c=0;(c<3);c++)
-        x[j][r]+=R[c][r]*x_old[c];
-    }
-  }
-
-  /* calculate deviation of fit */
-  {
-    int  aid1,aid2,i,m;
-    real e=0,tmas=0;
-    
-    /*calculate energy */
-    for(i=0; (i<natoms1); i++) {
-      aid1=index1[i];
-      aid2=index2[i];
-      for(m=0;(m<DIM);m++)
-      e+=(x[aid2][m]-xp[aid1][m])*(x[aid2][m]-xp[aid1][m]);
-    }
-    
-    /*return energy*/
-    return (sqrt(e/natoms1));
-  }
-}
-
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
@@ -231,7 +94,7 @@ int main (int argc,char *argv[])
     { "-pbc", FALSE, etBOOL, &bRmpbc, "Try to make molecules whole again" }
   };
   t_filenm fnm[] = {
-    { efSTX, "-f1",  "conf1", ffREAD  },
+    { efTPS, "-f1",  "conf1.gro", ffREAD  },
     { efSTX, "-f2",  "conf2", ffREAD  },
     { efSTO, "-o",    "fit.pdb",  ffWRITE },
     { efNDX, "-n1" ,  "fit1.ndx",   ffOPTRD  },
@@ -243,9 +106,13 @@ int main (int argc,char *argv[])
   /* the two gromos files */
   FILE    *fp;
   char    title_1[STRLEN],title_2[STRLEN],*name1,*name2;
+  t_topology top;
   t_atoms atoms_1,atoms_2;
-  int     natoms_1,natoms_2; 
-  rvec    *x_1,*v_1,*x_2,*v_2,*xf_1,*xf_2;
+  int     natoms_1,natoms_2,warn;
+  matrix  box;
+  atom_id at;
+  real    *w_rls,mass,totmass;
+  rvec    *x_1,*v_1,*x_2,*v_2,*xf_1,*xf_2,*fit_x;
   matrix  box_1,box_2;
   
   /* counters */
@@ -265,16 +132,11 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,0,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  /* reading first gromos file nb this is going 
+  /* reading first structure file, nb this is going 
    * to be the reference structure*/
-  get_stx_coordnum(opt2fn("-f1",NFILE,fnm),&(atoms_1.nr));
-  snew(x_1,atoms_1.nr);
-  snew(v_1,atoms_1.nr);
-  snew(atoms_1.resname,atoms_1.nr);
-  snew(atoms_1.atom,atoms_1.nr);
-  snew(atoms_1.atomname,atoms_1.nr);
   fprintf(stderr,"\nReading first structure file\n");
-  read_stx_conf(opt2fn("-f1",NFILE,fnm),title_1,&atoms_1,x_1,v_1,box_1);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title_1,&top,&x_1,&v_1,box,TRUE);
+  atoms_1 = top.atoms;
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title_1,atoms_1.nr,atoms_1.nres);
   srenew(atoms_1.resname,atoms_1.nres);
@@ -319,21 +181,6 @@ int main (int argc,char *argv[])
   if ( bRmpbc ) 
     rm_gropbc(&atoms_2,x_2,box_2);
 
-
-  
-  /* check if we have an NDX file */
-  /*
-  if ( opt2bSet("-n2",NFILE,fnm) ) {
-    fprintf(stderr,"\nSelect group for root least square fit\n");
-    rd_index(opt2fn("-n2",NFILE,fnm),1,&isize_2,&index_2,&groupnames_2);
-  } else {
-    isize_2 = atoms_2.nr;
-    snew(index_2,isize_2);
-    for(i=0;(i<isize_2);i++)
-      index_2[i]=i;
-    groupnames_2 = title_2;
-  }
-  */
   get_index(&atoms_2,opt2fn_null("-n2",NFILE,fnm),
 	    1,&isize_2,&index_2,&groupnames_2);
 
@@ -347,9 +194,16 @@ int main (int argc,char *argv[])
   for(i=0; (i<isize_1); i++) {
     name1=*atoms_1.atomname[index_1[i]];
     name2=*atoms_2.atomname[index_2[i]];
-    if (strcmp(name1,name2))
-      fprintf(stderr,"Warning: atomnames at index %d don't match: %d %s, %d %s\n",i+1,index_1[i]+1,name1,index_2[i]+1,name2);
+    if (strcmp(name1,name2)) {
+      if (warn<20)
+	fprintf(stderr,
+		"Warning: atomnames at index %d don't match: %d %s, %d %s\n",
+		i+1,index_1[i]+1,name1,index_2[i]+1,name2);
+      warn++;
+    }
   }
+  if (warn)
+    fprintf(stderr,"%d atomname%s did not match\n",warn,(warn==1) ? "":"s");
 
   /* calculate center of mass of reference structure */
   for(m=0;(m<3);m++)
@@ -375,10 +229,30 @@ int main (int argc,char *argv[])
     for(m=0;(m<DIM);m++)
       x_2[i][m]-=xcm_2[m];
   
+  snew(w_rls,atoms_2.nr);
+  snew(fit_x,atoms_2.nr);
+  for(at=0; at<isize_1; at++) {
+    w_rls[index_2[at]] = 1.0;
+    copy_rvec(x_1[index_1[at]],fit_x[index_2[at]]);
+  }
+
   /*do the least squares fit to the reference structure*/
+  /*
   rms = my_fit(isize_1,index_1,index_2,x_1,atoms_2.nr,x_2);
-  
-  fprintf(stderr,"RMS = %8.3f\n",rms);
+  */
+  do_fit(atoms_2.nr,w_rls,fit_x,x_2);
+ 
+  rms     = 0;
+  totmass = 0;
+  for(at=0; at<isize_1; at++) {
+    mass     = w_rls[index_2[at]];
+    for(m=0; m<3; m++)
+      rms     += sqr(x_1[index_1[at]][m] - x_2[index_2[at]][m])*mass;
+    totmass += mass;
+  }
+  rms = sqrt(rms/totmass);
+
+  fprintf(stderr,"Root mean square deviation after lsq fit = %g\n",rms);
 
   /* reset coordinates of reference and fitted structure */
   for(i=0;(i<atoms_1.nr);i++) {
