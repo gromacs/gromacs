@@ -688,7 +688,7 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
   rvec    xij,xjk,xperp,Fpij,Fppp,fv,f1,f2,f3;
   real    a1,b1,c1,c2,invdij,invdij2,invdp,fproj;
   t_iatom ai,aj,ak;
-  int     svi,sji,ski,skj,d;
+  int     svi,sji,skj,d;
   ivec    di;
 
   ai = ia[2];
@@ -746,13 +746,13 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
     svi = IVEC2IS(di);
     ivec_sub(SHIFT_IVEC(g,aj),SHIFT_IVEC(g,ai),di);
     sji = IVEC2IS(di);
-    ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,ai),di);
-    ski = IVEC2IS(di);
+    ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,aj),di);
+    skj = IVEC2IS(di);
   } else {
     svi = CENTRAL;
   }
 
-  if (svi!=CENTRAL || sji!=CENTRAL || ski!=CENTRAL) {
+  if (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL) {
     rvec_dec(fshift[svi],fv);
     fshift[CENTRAL][XX] += fv[XX] - f1[XX] - (1-c1)*f2[XX] + f3[XX];
     fshift[CENTRAL][YY] += fv[YY] - f1[YY] - (1-c1)*f2[YY] + f3[YY];
@@ -760,9 +760,9 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
     fshift[    sji][XX] +=          f1[XX] -    c1 *f2[XX] - f3[XX];
     fshift[    sji][YY] +=          f1[YY] -    c1 *f2[YY] - f3[YY];
     fshift[    sji][ZZ] +=          f1[ZZ] -    c1 *f2[ZZ] - f3[ZZ];
-    fshift[    ski][XX] +=                          f2[XX];
-    fshift[    ski][YY] +=                          f2[YY];
-    fshift[    ski][ZZ] +=                          f2[ZZ];
+    fshift[    skj][XX] +=                          f2[XX];
+    fshift[    skj][YY] +=                          f2[YY];
+    fshift[    skj][ZZ] +=                          f2[ZZ];
   }
   
   /* TOTAL: 113 flops */
