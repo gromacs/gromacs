@@ -1,6 +1,10 @@
 #!/bin/csh -f
 
-setenv	CUR	`pwd`
+if ( $?cwd) then
+  setenv	CUR	$cwd
+else
+  setenv	CUR	`pwd`
+endif
 setenv 	CORE	gmxcore
 setenv	BNC	gmxbench
 setenv	TST	gmxtest
@@ -94,7 +98,7 @@ else
 endif
 
 # Some directories that live below the root
-setenv GMXBIN 	\$GMXHOME/bin
+setenv GMXBIN 	\$GMXHOME/bin/\$CPU
 setenv GMXLIB	\$GMXHOME/top
 
 # 
