@@ -345,11 +345,11 @@ void get_ir(char *mdparin,char *mdparout,
     
   CCTYPE ("RUN CONTROL PARAMETERS");
   EETYPE("integrator",  ir->eI,         ei_names, nerror, TRUE);
-  CTYPE ("start time and timestep in ps");
+  CTYPE ("Start time and timestep in ps");
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
   ITYPE ("nsteps",      ir->nsteps,     0);
-  CTYPE ("after checkpoint or tpbconv restart we can start on step > 0");
+  CTYPE ("For exact run continuation or redoing part of a run");
   ITYPE ("init_step",   ir->init_step,  0);
   CTYPE ("mode for center of mass motion removal");
   EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);

@@ -29,7 +29,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#general"><b>General remarks</b></A>
 <p> </p>
 <li><A HREF="#pp"><b>preprocessing</b></A> (title, warnings, cpp, include, define)
-<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, comm_mode, nstcomm, comm_grps)
+<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, comm_mode, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter)
@@ -154,6 +154,15 @@ compiled in double precision.
 <tt>sd</tt> and <tt>bd</tt>)</dd>
 <dt><h4>nsteps: (0)</h4></dt>
 <dd>maximum number of steps to integrate</dd>
+<dt><h4>init_step: (0)</h4></dt>
+<dd>The starting step.
+The time at an step i in a run is calculated as: t = <tt>tinit</tt> + <tt>dt</tt>*(<tt>init_step</tt> + i).
+The free-energy lambda is calculated as: lambda = <tt>init_lambda</tt> + <tt>delta_lambda</tt>*(<tt>init_step</tt> + i).
+Also non-equilibrium MD parameters can depend on the step number.
+Thus for exact restarts or redoing part of a run it might be necessary to
+set <tt>init_step</tt> to the step number of the restart frame.
+<tt>tpbconv</tt> does this automatically.
+</dd>
 <dt><h4>comm_mode:</h4></dt>
 <dd><dl compact>
 <dt><b>Linear</b></dt>
@@ -940,6 +949,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#vel">gen_vel</A><br>
 <A HREF="#pp">include</A><br>
 <A HREF="#free">init_lambda</A><br>
+<A HREF="#run">init_step</A><br>
 <A HREF="#run">integrator</A><br>
 <A HREF="#ld">ld_seed</A><br>
 <A HREF="#bond2">lincs_order</A><br>
