@@ -49,10 +49,119 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #include "enxio.h"
 #include "nrjac.h"
 
-#define MAXBIN 200 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
 #define CM2D  SPEED_OF_LIGHT*1.0e+24    /* Coulomb meter to Debye */
+
+typedef struct {
+  int  nelem,totcount;
+  real spacing;
+  real *elem;
+  int  *count;
+} t_gkrbin;
+
+static t_gkrbin *mk_gkrbin(real radius)
+{
+  t_gkrbin *gb;
+  
+  snew(gb,1);
+  
+  gb->spacing = 0.01; /* nm */
+  gb->nelem   = 1 + radius/gb->spacing;
+  snew(gb->elem,gb->nelem);
+  snew(gb->count,gb->nelem);
+  gb->totcount = 0;
+  
+  return gb;
+}
+
+static void done_gkrbin(t_gkrbin **gb)
+{
+  sfree((*gb)->elem);
+  sfree((*gb)->count);
+  sfree((*gb));
+  *gb = NULL;
+}
+
+static void add_gkrelem(t_gkrbin *gb,real r,real value)
+{
+  int index;
+  
+  index = r/gb->spacing;
+  if (index < gb->nelem) {
+    gb->elem[index]  += value;
+    gb->count[index] ++;
+    gb->totcount ++;
+  }
+}
+
+void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
+	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
+	    matrix box,int nAtom)
+{
+  static rvec *xcm=NULL;
+  int  gi,aj,j0,j1,i,j,k,index;
+  real fac,r2,mu2;
+  rvec dx;
+  
+  if (!xcm)
+    snew(xcm,ngrp);
+    
+  for(i=0; (i<ngrp); i++) {
+    /* Calculate center of mass of molecule */
+    gi = grpindex ? grpindex[i] : i;
+    j0 = mindex[gi];
+    
+    if (nAtom >= 0)
+      copy_rvec(x[ma[j0+nAtom]],xcm[i]);
+    else {
+      j1 = mindex[gi+1];
+      clear_rvec(xcm[i]);
+      fac=1.0/(j1-j0);
+      for(j=j0; (j<j1); j++) {
+      aj = ma[j];
+      for(k=0; (k<DIM); k++)
+	xcm[i][k] += fac*x[aj][k];
+      }
+    }
+  }
+  
+  for(i=0; (i<ngrp); i++) {
+    for(j=i+1; (j<ngrp); j++) {
+      /* Compute distance between molecules including PBC */
+      pbc_dx(xcm[i],xcm[j],dx);
+      r2  = iprod(dx,dx);
+      mu2 = iprod(mu[i],mu[j]);
+      add_gkrelem(gb,sqrt(r2),mu2);
+    }
+  }
+}
+
+void print_gkrbin(char *fn,t_gkrbin *gb,real mu)
+{
+  FILE *fp;
+  char *leg[] = { "G\\sk\\N(r)", "<mu\\si\\N mu\\sj\\N> (r\\sij\\N = r)", 
+		  "Unnormalized raw data" }; 
+  int  i;
+  real x,y,ytot;
+  
+  fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
+  xvgr_legend(fp,asize(leg),leg);
+  ytot = 0;
+  for(i=0; (i<gb->nelem); i++) {
+    x = i*gb->spacing;
+    if (gb->count[i] > 0) {
+      y = gb->elem[i]/(mu*mu*gb->count[i]);
+    }
+    else
+      y = 0.0;
+      
+    ytot += y;
+    
+    fprintf(fp,"%10.5e  %12.7e  %12.7e  %12.7e\n",x,ytot,y,gb->elem[i]);
+  }
+  ffclose(fp);
+}
 
 bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
 		      real *t,int step,int nre)
@@ -201,81 +310,6 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   /*  sfree(xmass); */
 }
 
-void do_gkr(int ngrp,atom_id grpindex[],
-	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
-	    matrix box,int ngraph,real *graph,int *count,real rcut,
-	    int nAtom)
-{
-  static rvec *xcm=NULL;
-  int  gi,aj,j0,j1,i,j,k,index;
-  real fac,r2,rc2,rc_2,mu2;
-  rvec dx;
-  
-  if (!xcm)
-    snew(xcm,ngrp);
-    
-  rc2  = rcut*rcut;
-  rc_2 = 1.0/rc2;
-  for(i=0; (i<ngrp); i++) {
-    /* Calculate center of mass of molecule */
-    gi = grpindex ? grpindex[i] : i;
-    j0 = mindex[gi];
-    
-    if (nAtom >= 0)
-      copy_rvec(x[ma[j0+nAtom]],xcm[i]);
-    else {
-      j1 = mindex[gi+1];
-      clear_rvec(xcm[i]);
-      fac=1.0/(j1-j0);
-      for(j=j0; (j<j1); j++) {
-      aj = ma[j];
-      for(k=0; (k<DIM); k++)
-	xcm[i][k] += fac*x[aj][k];
-      }
-    }
-  }
-  
-  for(i=0; (i<ngrp); i++) {
-    for(j=i+1; (j<ngrp); j++) {
-      /* Compute distance between molecules including PBC */
-      pbc_dx(xcm[i],xcm[j],dx);
-      r2 = iprod(dx,dx);
-      if (r2 < rc2) {
-	index = ngraph*sqrt(r2*rc_2);
-	if (index < ngraph) {
-	  mu2           = iprod(mu[i],mu[j]);
-	  graph[index] += mu2;
-	  count[index] += 1;
-	}
-      }
-    }
-  }
-}
-
-void print_gkr(char *fn,int ngraph,real rcut,real graph[],int count[],
-	       real mu)
-{
-  FILE *fp;
-  int  i;
-  real x,y,ytot;
-  
-  fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
-  ytot = 0;
-  for(i=0; (i<ngraph); i++) {
-    x = (i*rcut)/ngraph;
-    if (count[i] > 0) {
-      y = graph[i]/(mu*mu*count[i]);
-    }
-    else
-      y = 0.0;
-      
-    ytot += y;
-    
-    fprintf(fp,"%10.5e  %12.7e  %12.7e  %12.7e\n",x,ytot,y,graph[i]);
-  }
-  ffclose(fp);
-}
-
 /*
  * Calculates epsilon according to M. Neumann, Mol. Phys. 50, 841 (1983)
  */ 
@@ -325,9 +359,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     "epsilon"
   };
   rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole=NULL;
-  real       *gkr=NULL;
-  int        *gkcount=NULL,nframes=1000;
-  int        fmu=0,nre,timecheck=0;
+  t_gkrbin   *gkrbin;
+  int        nframes=1000,fmu=0,nre,timecheck=0;
   char       **enm=NULL;
   real       rcut=0;
   matrix     box;
@@ -344,7 +377,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
   int        i,j,k,m,natom=0,nmol,status,teller,tel3;
-  int        *bin,ibin;
+  int        *dipole_bin,ndipbin,ibin;
   real       volume;
   unsigned long mode;
   /* PvM, I need these to be able to call read_tpx */
@@ -443,7 +476,9 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   else
     natom  = read_first_x(&status,fn,&t,&x,box);
   
-  snew(bin, MAXBIN);
+  /* Calculate spacing for dipole bin (simple histogram) */
+  ndipbin = 1+(mu_max/0.01);
+  snew(dipole_bin, ndipbin);
   epsilon    = 0.0;
   M_XX=M_XX2 = 0.0;
   M_YY=M_YY2 = 0.0;
@@ -458,9 +493,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   teller = 0;
 
   if (bGkr) {
-    rcut       = 0.475*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
-    snew(gkr,MAXBIN);
-    snew(gkcount,MAXBIN);
+    rcut   = 0.475*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+    gkrbin = mk_gkrbin(rcut); 
   }
   teller=0;
   do {
@@ -533,16 +567,15 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	}
 	
 	/* Update the dipole distribution */
-	ibin = (MAXBIN*sqrt(mu_mol)/mu_max);
-	if (ibin < MAXBIN)
-	  bin[ibin]++;
+	ibin = (ndipbin*sqrt(mu_mol)/mu_max);
+	if (ibin < ndipbin)
+	  dipole_bin[ibin]++;
       } /* End loop of all molecules in frame */
     } 
     
     if (bGkr) {
       init_pbc(box,FALSE);
-      do_gkr(gnx,grpindex,mols->index,mols->a,x,dipole,
-	     box,MAXBIN,gkr,gkcount,rcut,bFA);
+      do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,bFA);
     }
     
     if (bAverCorr) {
@@ -617,11 +650,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   fclose(out);
   fclose(outaver);
 
-  if (bGkr) {
-    print_gkr(gkrfn,MAXBIN,rcut,gkr,gkcount,mu);
-    sfree(gkr);
-    sfree(gkcount);
-  }
+  if (bGkr) 
+    print_gkrbin(gkrfn,gkrbin,mu);
 
   /* Autocorrelation function */  
   if (bCorr) {
@@ -676,11 +706,13 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     /* Write to file the dipole moment distibution during the simulation.
      */
     out=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","");
-    for(i=0; (i<MAXBIN); i++)
-      fprintf(out,"%10g  %d\n",(i*mu_max)/MAXBIN,bin[i]);
+    for(i=0; (i<ndipbin); i++)
+      fprintf(out,"%10g  %d\n",(i*mu_max)/ndipbin,dipole_bin[i]);
     fclose(out);
-    sfree(bin);
+    sfree(dipole_bin);
   }
+  if (bGkr) 
+    done_gkrbin(&gkrbin);
 }
 
 int main(int argc,char *argv[])
@@ -732,7 +764,7 @@ int main(int argc,char *argv[])
     { "-avercorr", FALSE, etBOOL, {&bAverCorr},
       "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
     { "-gkratom", FALSE, etINT, {&nFA},
-      "Use the n-th atom of a molecule (water ?) to calculate the distance between molecules rather than the center of geometry (when -1) in the calculation of distance dependent Kirkwood factors" }
+      "Use the n-th atom of a molecule (starting from 0) to calculate the distance between molecules rather than the center of geometry (when -1) in the calculation of distance dependent Kirkwood factors" }
   };
   int          gnx;
   atom_id      *grpindex;
