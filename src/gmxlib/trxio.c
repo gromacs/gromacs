@@ -53,6 +53,7 @@ static int frame=-666;
 #define PRINTSKIP(t) {frame++; CHECKCOUNT("Skipping",t);}
 #define PRINTREAD(t) {frame++; CHECKCOUNT("Reading",t);}
 #define PRINTLAST(t) { PRINTCOUNT("Last",t); fprintf(stderr,"\n"); }
+#define PRINTINCOMP(t,pt) { PRINTLAST(pt); fprintf(stderr,"WARINING: Incomplete frame: nr %6d time %8.3f\n",frame+1,t); }
 
 /* Globals for gromos-87 input */
 typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
@@ -74,11 +75,14 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
     bB = sh.box_size;
     pt = *t;
     *t = sh.t;
-    fread_htrn(status,&sh,
-	       bB ? box : NULL,
-	       bX ? x : NULL,
-	       NULL,
-	       NULL);
+    if (!fread_htrn(status,&sh,
+		    bB ? box : NULL,
+		    bX ? x : NULL,
+		    NULL,
+		    NULL)) {
+      PRINTINCOMP(*t,pt);
+      return FALSE;
+    }
     if ((ct=check_times(*t))==0) {
       PRINTREAD(*t)
       if (bB)
@@ -111,12 +115,14 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
     bB=sh.box_size;
     pt=*t;
     *t=sh.t;
-    fread_htrn(status,&sh,
-	       bB ? box : NULL,
-	       bX ? x : NULL,
-	       bV ? v : NULL,
-	       NULL);
-	       
+    if (!fread_htrn(status,&sh,
+		    bB ? box : NULL,
+		    bX ? x : NULL,
+		    bV ? v : NULL,
+		    NULL)) {
+      PRINTINCOMP(*t,pt);
+      return FALSE;
+    }
     if ((ct=check_times(*t))==0) {
       PRINTREAD(*t)
       if (bB)
@@ -158,12 +164,14 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
     bB=sh.box_size;
     pt=*t;
     *t=sh.t;
-    fread_htrn(status,&sh,
-	       bB ? box : NULL,
-	       bX ? x : NULL,
-	       bV ? v : NULL,
-	       NULL);
-    
+    if (!fread_htrn(status,&sh,
+		    bB ? box : NULL,
+		    bX ? x : NULL,
+		    bV ? v : NULL,
+		    NULL)) {
+      PRINTINCOMP(*t,pt);
+      return FALSE;
+    }
     if ((ct=check_times(*t))==0) {
       PRINTREAD(*t)
       if (bB)
@@ -553,7 +561,10 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
     fread_trnheader(fp,&sh);
     snew(*v,sh.natoms);
     *t = sh.t;
-    fread_htrn(fp,&sh,NULL,NULL,*v,NULL);
+    if (!fread_htrn(fp,&sh,NULL,NULL,*v,NULL)) {
+      PRINTINCOMP(*t,-1);
+      return FALSE;
+    }
     PRINTREAD(*t);
     return sh.natoms;
   case efGRO:
@@ -578,7 +589,10 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
     while (fread_trnheader(status,&sh)) {
       bV=sh.v_size;
       *t = sh.t;
-      fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL);
+      if (!fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL)) {
+	PRINTINCOMP(*t,pt);
+	return FALSE;
+      } 
       if ((check_times(*t)==0) && (bV)) {
 	PRINTREAD(*t)
 	return TRUE;

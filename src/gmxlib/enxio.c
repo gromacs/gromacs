@@ -63,20 +63,21 @@ static void edr_nms(XDR *xdr,int *nre,char ***nms)
   *nms=NM;
 }
 
-static bool do_eheader(int fp,t_eheader *eh)
+static bool do_eheader(int fp,t_eheader *eh,bool *bOK)
 {
   bool bRead = fio_getread(fp);
   
+  *bOK=TRUE;
   if (!do_real(eh->t))      return FALSE;
-  if (!do_int (eh->step))   return FALSE;
-  if (!do_int (eh->nre))    return FALSE;
-  if (!do_int (eh->ndisre)) return FALSE;
-  if (!do_int (eh->nuser))  return FALSE;
-  if (!do_int (eh->e_size)) return FALSE;
-  if (!do_int (eh->d_size)) return FALSE;
-  if (!do_int (eh->u_size)) return FALSE;
+  if (!do_int (eh->step))   *bOK = FALSE;
+  if (!do_int (eh->nre))    *bOK = FALSE;
+  if (!do_int (eh->ndisre)) *bOK = FALSE;
+  if (!do_int (eh->nuser))  *bOK = FALSE;
+  if (!do_int (eh->e_size)) *bOK = FALSE;
+  if (!do_int (eh->d_size)) *bOK = FALSE;
+  if (!do_int (eh->u_size)) *bOK = FALSE;
   
-  return TRUE;
+  return *bOK;
 }
 
 void do_enxnms(int fp,int *nre,char ***nms)
@@ -107,14 +108,15 @@ int open_enx(char *fn,char *mode)
   char      **nm=NULL;
   int       nre;
   t_eheader *eh;
-  
+  bool bDum=TRUE;
+
   if (mode[0]=='r') {
     fp=fio_open(fn,mode);
     fio_select(fp);
     fio_setprecision(fp,FALSE);
     do_enxnms(fp,&nre,&nm);
     snew(eh,1);
-    do_eheader(fp,eh);
+    do_eheader(fp,eh,&bDum);
     
     /* Now check whether this file is in single precision */
     if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(float) == eh->e_size)) ||
@@ -129,7 +131,7 @@ int open_enx(char *fn,char *mode)
       fio_select(fp);
       fio_setprecision(fp,TRUE);
       do_enxnms(fp,&nre,&nm);
-      do_eheader(fp,eh);
+      do_eheader(fp,eh,&bDum);
       if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(double) == eh->e_size)) ||
 	   (eh->d_size && (eh->ndisre*sizeof(double)*2+sizeof(int) == eh->d_size))))
 	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
@@ -155,8 +157,9 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
 {
   int       i;
   t_eheader eh;
-  bool      bRead;
+  bool      bRead,bOK,bOK1;
 
+  bOK = TRUE;
   bRead = fio_getread(fp);
   if (!bRead) {  
     eh.t      = *t;
@@ -171,19 +174,28 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   }
   fio_select(fp);
 
-  if (!do_eheader(fp,&eh)) {
-    if (bRead)
-      fprintf(stderr,"\rLast frame %d         ",framenr);
+  if (!do_eheader(fp,&eh,&bOK)) {
+    if (bRead) {
+	fprintf(stderr,"\rLast frame %d                    ",framenr-1);
+	if (!bOK)
+	  fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
+		  framenr,eh.t);
+    }
     return FALSE;
+  }
+  if (bRead) {
+    if ( ( framenr<10 ) || ( framenr%10 == 0) ) 
+      fprintf(stderr,"\rReading frame %6d time %8.3f   ",framenr,*t);
+    framenr++;
   }
   *t    = eh.t;
   *step = eh.step;
   *nre  = eh.nre;
   for(i=0; (i<*nre); i++) {
-    do_real(ener[i].e);
-    do_real(ener[i].eav);
-    do_real(ener[i].esum);
-    do_real(ener[i].e2sum);
+    bOK = bOK && do_real(ener[i].e);
+    bOK = bOK && do_real(ener[i].eav);
+    bOK = bOK && do_real(ener[i].esum);
+    bOK = bOK && do_real(ener[i].e2sum);
   }
   if (eh.ndisre) {
     if (drblock->ndr == 0) {
@@ -191,16 +203,19 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
       snew(drblock->rt,eh.ndisre);
       drblock->ndr = eh.ndisre;
     }
-    ndo_real(drblock->rav,drblock->ndr);
-    ndo_real(drblock->rt,drblock->ndr);
-  }
-  if (bRead) {
-    if ( ( framenr<10 ) || ( framenr%10 == 0) ) 
-      fprintf(stderr,"\rReading frame %6d time %8.3f   ",framenr,*t);
-    framenr++;
+    ndo_real(drblock->rav,drblock->ndr,bOK1);
+    bOK = bOK && bOK1;
+    ndo_real(drblock->rt,drblock->ndr,bOK1);
+    bOK = bOK && bOK1;
   }
   if (eh.u_size) {
     fatal_error(0,"Can't handle user blocks");
+  }
+  if (!bOK) {
+    fprintf(stderr,"\rLast frame read %d                     ",framenr-1);
+    fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
+	    framenr,*t);
+    return FALSE;
   }
   return TRUE;
 }

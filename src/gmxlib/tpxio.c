@@ -87,6 +87,7 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
 static void do_inputrec(t_inputrec *ir,bool bRead)
 {
   int i,j; 
+  bool bDum=TRUE;
 
   if (file_version >= 1) {  
     /* Basic inputrec stuff */  
@@ -169,12 +170,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       snew(ir->opts.acc,    ir->opts.ngacc); 
     } 
     if (ir->opts.ngtc > 0) {
-      ndo_int (ir->opts.nrdf, ir->opts.ngtc); 
-      ndo_real(ir->opts.ref_t,ir->opts.ngtc); 
-      ndo_real(ir->opts.tau_t,ir->opts.ngtc); 
+      ndo_int (ir->opts.nrdf, ir->opts.ngtc,bDum); 
+      ndo_real(ir->opts.ref_t,ir->opts.ngtc,bDum); 
+      ndo_real(ir->opts.tau_t,ir->opts.ngtc,bDum); 
     }
     if (ir->opts.ngfrz > 0) 
-      ndo_ivec(ir->opts.nFreeze,ir->opts.ngfrz);
+      ndo_ivec(ir->opts.nFreeze,ir->opts.ngfrz,bDum);
     if (ir->opts.ngacc > 0) 
       ndo_rvec(ir->opts.acc,ir->opts.ngacc); 
     
@@ -188,10 +189,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
 	snew(ir->et[j].a,  ir->et[j].n);
 	snew(ir->et[j].phi,ir->et[j].n);
       }
-      ndo_real(ir->ex[j].a,  ir->ex[j].n);
-      ndo_real(ir->ex[j].phi,ir->ex[j].n);
-      ndo_real(ir->et[j].a,  ir->et[j].n);
-      ndo_real(ir->et[j].phi,ir->et[j].n);
+      ndo_real(ir->ex[j].a,  ir->ex[j].n,bDum);
+      ndo_real(ir->ex[j].phi,ir->ex[j].n,bDum);
+      ndo_real(ir->et[j].a,  ir->et[j].n,bDum);
+      ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
   }  
   /* New version of the inputrec will work like this */
@@ -216,6 +217,7 @@ static void do_harm(t_iparams *iparams,bool bRead)
 void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
 {
   int i;
+  bool bDum;
   
   if (!bRead)
     set_comment(interaction_function[ftype].name);
@@ -269,7 +271,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_rvec(iparams->posres.fc);
     break;
   case F_RBDIHS:
-    ndo_real(iparams->rbdihs.rbc,NR_RBDIHS);
+    ndo_real(iparams->rbdihs.rbc,NR_RBDIHS,bDum);
     break;
   case F_SHAKE:
     do_real(iparams->shake.dA);
@@ -304,14 +306,15 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
 static void do_ilist(t_ilist *ilist,bool bRead,char *name)
 {
   int i;
+  bool bDum=TRUE;
   
   if (!bRead)
     set_comment(name);
-  ndo_int(ilist->multinr,MAXPROC);
+  ndo_int(ilist->multinr,MAXPROC,bDum);
   do_int (ilist->nr);
   if (bRead)
     snew(ilist->iatoms,ilist->nr);
-  ndo_int(ilist->iatoms,ilist->nr);
+  ndo_int(ilist->iatoms,ilist->nr,bDum);
   if (!bRead)
     unset_comment();
 }
@@ -319,6 +322,7 @@ static void do_ilist(t_ilist *ilist,bool bRead,char *name)
 static void do_idef(t_idef *idef,bool bRead)
 {
   int i,j;
+  bool bDum=TRUE;
   
   do_int(idef->atnr);
   do_int(idef->pid);
@@ -327,7 +331,7 @@ static void do_idef(t_idef *idef,bool bRead)
     snew(idef->functype,idef->ntypes);
     snew(idef->iparams,idef->ntypes);
   }
-  ndo_int(idef->functype,idef->ntypes);
+  ndo_int(idef->functype,idef->ntypes,bDum);
   
   for (i=0; (i<idef->ntypes); i++) 
     do_iparams(idef->functype[i],&idef->iparams[i],bRead);
@@ -339,16 +343,17 @@ static void do_idef(t_idef *idef,bool bRead)
 static void do_block(t_block *block,bool bRead)
 {
   int i;
-  
-  ndo_int(block->multinr,MAXPROC);
+  bool bDum=TRUE;
+
+  ndo_int(block->multinr,MAXPROC,bDum);
   do_int (block->nr);
   do_int (block->nra);
   if (bRead) {
     snew(block->index,block->nr+1);
     snew(block->a,block->nra);
   }
-  ndo_int(block->index,block->nr+1);
-  ndo_int(block->a,block->nra);
+  ndo_int(block->index,block->nr+1,bDum);
+  ndo_int(block->a,block->nra,bDum);
 }
 
 static void do_atom(t_atom *atom,bool bRead)
@@ -369,12 +374,13 @@ static void do_atom(t_atom *atom,bool bRead)
 static void do_grps(int ngrp,t_grps grps[],bool bRead)
 {
   int i,j;
+  bool bDum=TRUE;
   
   for(j=0; (j<ngrp); j++) {
     do_int (grps[j].nr);
     if (bRead)
       snew(grps[j].nm_ind,grps[j].nr);
-    ndo_int(grps[j].nm_ind,grps[j].nr);
+    ndo_int(grps[j].nm_ind,grps[j].nr,bDum);
   }
 }
 

@@ -129,44 +129,48 @@ extern void unset_comment(void);
   do_read ((void *)(item),1,eioSTRING,(#item),__FILE__,__LINE__) :\
   do_write((void *)(item),1,eioSTRING,(#item),__FILE__,__LINE__))
   
-#define ndo_real(item,n) \
+#define ndo_real(item,n,bOK) \
+  bOK=TRUE;\
   for(i=0; (i<n); i++) {\
     char buf[128];\
     sprintf(buf,"%s[%d]",#item,i);\
-    (bRead ?\
-     do_read ((void *)&((item)[i]),1,eioREAL,buf,__FILE__,__LINE__):\
-     do_write((void *)&(item[i]),1,eioREAL,buf,__FILE__,__LINE__));\
+    bOK = bOK && (bRead ?\
+      do_read ((void *)&((item)[i]),1,eioREAL,buf,__FILE__,__LINE__):\
+      do_write((void *)&(item[i]),1,eioREAL,buf,__FILE__,__LINE__));\
   }
      
-#define ndo_int(item,n)  \
+#define ndo_int(item,n,bOK)  \
+  bOK=TRUE;\
   for(i=0; (i<n); i++) {\
     char buf[128];\
     sprintf(buf,"%s[%d]",#item,i);\
-    (bRead ?\
-     do_read ((void *)&(item[i]),1,eioINT,buf,__FILE__,__LINE__):\
-     do_write((void *)&(item[i]),1,eioINT,buf,__FILE__,__LINE__));\
+    bOK = bOK && (bRead ?\
+      do_read ((void *)&(item[i]),1,eioINT,buf,__FILE__,__LINE__):\
+      do_write((void *)&(item[i]),1,eioINT,buf,__FILE__,__LINE__));\
   }
   
 #define ndo_rvec(item,n)      (bRead ?\
   do_read ((void *)(item),n,eioNRVEC,(#item),__FILE__,__LINE__) :\
   do_write((void *)(item),n,eioNRVEC,(#item),__FILE__,__LINE__))
   
-#define ndo_ivec(item,n) \
+#define ndo_ivec(item,n,bOK) \
+  bOK=TRUE;\
   for(i=0; (i<n); i++) {\
     char buf[128];\
     sprintf(buf,"%s[%d]",#item,i);\
-    (bRead ?\
-     do_read ((void *)(item)[i],1,eioIVEC,buf,__FILE__,__LINE__):\
-     do_write((void *)(item)[i],1,eioIVEC,buf,__FILE__,__LINE__));\
+    bOK = bOK && (bRead ?\
+      do_read ((void *)(item)[i],1,eioIVEC,buf,__FILE__,__LINE__):\
+      do_write((void *)(item)[i],1,eioIVEC,buf,__FILE__,__LINE__));\
   }
   
-#define ndo_string(item,n) \
+#define ndo_string(item,n,bOK) \
+  bOK=TRUE;\
   for(i=0; (i<n); i++) {\
     char buf[128];\
     sprintf(buf,"%s[%d]",#item,i);\
-    (bRead ?\
-     do_read ((void *)(item)[i],1,eioSTRING,buf,__FILE__,__LINE__):\
-     do_write((void *)(item)[i],1,eioSTRING,buf,__FILE__,__LINE__));\
+    bOK = bOK && (bRead ?\
+      do_read ((void *)(item)[i],1,eioSTRING,buf,__FILE__,__LINE__):\
+      do_write((void *)(item)[i],1,eioSTRING,buf,__FILE__,__LINE__));\
   }     
 
 #endif

@@ -67,40 +67,43 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh)
   static char *version = "GMX_trn_file";
   static bool bFirst=TRUE;
   char buf[256];
+  bool bOK;
   
+  bOK=TRUE;
+
   fio_select(fp);
   if (!do_int(magic))
     return FALSE;
   
   if (bRead) {
-    do_string(buf);
+    bOK = bOK && do_string(buf);
     if (bFirst) {
       fprintf(stderr,"trn version: %s\n",buf);
       bFirst = FALSE;
     }
   }
   else
-    do_string(version);
-  do_int(sh->ir_size);
-  do_int(sh->e_size);
-  do_int(sh->box_size);
-  do_int(sh->vir_size);
-  do_int(sh->pres_size);
-  do_int(sh->top_size); 
-  do_int(sh->sym_size); 
-  do_int(sh->x_size); 
-  do_int(sh->v_size); 
-  do_int(sh->f_size); 
+    bOK = bOK && do_string(version);
+  bOK = bOK && do_int(sh->ir_size);
+  bOK = bOK && do_int(sh->e_size);
+  bOK = bOK && do_int(sh->box_size);
+  bOK = bOK && do_int(sh->vir_size);
+  bOK = bOK && do_int(sh->pres_size);
+  bOK = bOK && do_int(sh->top_size); 
+  bOK = bOK && do_int(sh->sym_size); 
+  bOK = bOK && do_int(sh->x_size); 
+  bOK = bOK && do_int(sh->v_size); 
+  bOK = bOK && do_int(sh->f_size); 
   
   fio_setprecision(fp,(nFloatSize(sh) == sizeof(double)));
   
-  do_int(sh->natoms); 
-  do_int(sh->step); 
-  do_int(sh->nre); 
-  do_real(sh->t); 
-  do_real(sh->lambda); 
+  bOK = bOK && do_int(sh->natoms); 
+  bOK = bOK && do_int(sh->step); 
+  bOK = bOK && do_int(sh->nre); 
+  bOK = bOK && do_real(sh->t); 
+  bOK = bOK && do_real(sh->lambda); 
   
-  return TRUE;
+  return bOK;
 }
 
 void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh)
@@ -131,22 +134,24 @@ static bool do_htrn(int fp,bool bRead,t_trnheader *sh,
 		    rvec *box,rvec *x,rvec *v,rvec *f)
 {
   matrix pv;
-  
-  if (sh->box_size != 0) ndo_rvec(box,DIM);
-  if (sh->vir_size != 0) ndo_rvec(pv,DIM);
-  if (sh->pres_size!= 0) ndo_rvec(pv,DIM);
-  if (sh->x_size   != 0) ndo_rvec(x,sh->natoms);
-  if (sh->v_size   != 0) ndo_rvec(v,sh->natoms);
-  if (sh->f_size   != 0) ndo_rvec(f,sh->natoms);
+  bool bOK;
 
-  return TRUE;
+  bOK = TRUE;
+  if (sh->box_size != 0) bOK = bOK && ndo_rvec(box,DIM);
+  if (sh->vir_size != 0) bOK = bOK && ndo_rvec(pv,DIM);
+  if (sh->pres_size!= 0) bOK = bOK && ndo_rvec(pv,DIM);
+  if (sh->x_size   != 0) bOK = bOK && ndo_rvec(x,sh->natoms);
+  if (sh->v_size   != 0) bOK = bOK && ndo_rvec(v,sh->natoms);
+  if (sh->f_size   != 0) bOK = bOK && ndo_rvec(f,sh->natoms);
+
+  return bOK;
 }
 
 static bool do_trn(int fp,bool bRead,int *step,real *t,real *lambda,
 		   rvec *box,int *natoms,rvec *x,rvec *v,rvec *f)
 {
   t_trnheader *sh;
-  bool bResult;
+  bool bOK;
   
   snew(sh,1);
   if (!bRead) {
@@ -176,11 +181,11 @@ static bool do_trn(int fp,bool bRead,int *step,real *t,real *lambda,
     if (sh->sym_size)
       fatal_error(0,"symbol table in trn file");
   }
-  bResult = do_htrn(fp,bRead,sh,box,x,v,f);
+  bOK = do_htrn(fp,bRead,sh,box,x,v,f);
 
   sfree(sh);
   
-  return bResult;
+  return bOK;
 }
 
 /************************************************************
