@@ -40,7 +40,7 @@ static char *SRCID_strdb_h = "$Id$";
 
 extern bool get_a_line(FILE *fp,char line[],int n);
 /* Read a line of at most n characters form *fp to line. 
- * Leading spaces are removed.  
+ * Comment ';...' and leading spaces are removed, empty lines are skipped.
  * Return FALSE when eof. 
  */
 
