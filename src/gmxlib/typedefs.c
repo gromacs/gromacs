@@ -122,7 +122,8 @@ void done_block(t_block *block)
   block->nr    = 0;
   block->nra   = 0;
   sfree(block->index);
-  sfree(block->a);
+  if (block->a)
+    sfree(block->a);
 }
 
 void done_atom (t_atoms *at)
@@ -219,7 +220,7 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
   atoms->atomtypeB=NULL;
   snew(atoms->resname,natoms);
   snew(atoms->atom,natoms);
-  snew(atoms->grpname,natoms);
+  snew(atoms->grpname,natoms+2);
   if (bPdbinfo)
     snew(atoms->pdbinfo,natoms);
   else
