@@ -366,11 +366,11 @@ int main(int argc,char *argv[])
   };
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffOPTRD },
+    { efTRX, "-f2",  NULL, ffOPTRD },
     { efTPX, "-s1", "top1", ffOPTRD },
     { efTPX, "-s2", "top2", ffOPTRD },
     { efTPS, "-c",  NULL, ffOPTRD },
     { efENX, "-e",  NULL, ffOPTRD },
-    { efENX, "-e1", "ener1", ffOPTRD },
     { efENX, "-e2", "ener2", ffOPTRD }
   };
 #define NFILE asize(fnm)
@@ -394,9 +394,15 @@ int main(int argc,char *argv[])
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
-  
-  if (ftp2bSet(efTRX,NFILE,fnm))
-    chk_trj(ftp2fn(efTRX,NFILE,fnm));
+
+  fn1 = opt2fn_null("-f",NFILE,fnm);
+  fn2 = opt2fn_null("-f2",NFILE,fnm);
+  if (fn1 && fn2)
+    comp_trx(fn1,fn2,ftol);
+  else if (fn1)
+    chk_trj(fn1);
+  else if (fn2)
+    fprintf(stderr,"Please give me TWO trajectory (.xtc/.trr/.trj) files!\n");
   
   fn1 = opt2fn_null("-s1",NFILE,fnm);
   fn2 = opt2fn_null("-s2",NFILE,fnm);
@@ -405,18 +411,19 @@ int main(int argc,char *argv[])
   else if (fn1 || fn2)
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
 
-  fn1 = opt2fn_null("-e1",NFILE,fnm);
+  fn1 = opt2fn_null("-e",NFILE,fnm);
   fn2 = opt2fn_null("-e2",NFILE,fnm);
   if (fn1 && fn2)
     comp_enx(fn1,fn2,ftol);
-  else if (fn1 || fn2)
+  else if (fn1)
+    chk_enx(ftp2fn(efENX,NFILE,fnm));
+  else if (fn2)
     fprintf(stderr,"Please give me TWO energy (.edr/.ene) files!\n");
-
+  
   if (ftp2bSet(efTPS,NFILE,fnm))
     chk_tps(ftp2fn(efTPS,NFILE,fnm), vdw_fac, bon_lo, bon_hi);
   
   if (ftp2bSet(efENX,NFILE,fnm))
-    chk_enx(ftp2fn(efENX,NFILE,fnm));
   
   thanx(stderr);
   
