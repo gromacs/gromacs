@@ -32,6 +32,19 @@ void f77ljc flj_args
 #endif
 }
 
+define(`fbham_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fip[],real *egcoul,real *egnb)')
+extern void FUNCTION(forbhm) fbham_args;
+	    
+void f77bham fbham_args
+{
+#ifdef USEF77
+  FUNCTION(forbhm)(ix,iy,iz,qi,pos,nj,type,jjnr,
+		   charge,nbfp,faction,fip,egcoul,egnb);
+#else
+  fatal_error(0,"f77bhm called (Fortran routine from %s %d)",__FILE__,__LINE__);
+#endif
+}
+
 define(`fw_args',`(int  *i0,real xw[],real *eps,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fw[],real *egcoul,real *egnb)')
 
 extern void FUNCTION(forwater) fw_args;
