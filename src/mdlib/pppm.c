@@ -357,7 +357,8 @@ static real gather_f(FILE *log,bool bVerbose,
   return energy*0.5;
 }
 
-void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
+void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
+		 t_commrec *cr)
 {
   int      i,j,k,index;
   real     gk;
@@ -367,43 +368,59 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
   int jstart,jend;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
-
+  snew(nTest,grid->nptr);
+  
+  if(PAR(cr)) {
 #ifdef USE_MPI
     jstart=grid->pfft.local_y_start_after_transpose;
     jend=jstart+grid->pfft.local_ny_after_transpose;
-#else
-    jstart=0;
-    jend=ny;
-#endif
-  
-  snew(nTest,grid->nptr);
-  for(i=0; (i<nx); i++) {
-      for(j=jstart; (j<jend); j++) { /* local cells */
-	  for(k=0;k<(nz/2+1); k++) {
-	gk    = ghat[i][j][k];
-#ifdef USE_MPI
-	      index = INDEX(j,i,k);
-#else
-	index = INDEX(i,j,k);
-#endif
-	ptr[index].re *= gk;
-	ptr[index].im *= gk;
-	nTest[index]++;
-      }
+
+    for(j=jstart; (j<jend); j++) { /* local cells */
+	for(i=0; (i<nx); i++) {
+	    for(k=0;k<(nz/2+1); k++) {
+		gk    = ghat[i][j][k];
+		index = INDEX(j,i,k);
+		ptr[index].re *= gk;
+		ptr[index].im *= gk;
+		nTest[index]++;
+	    }
+	}
     }
-  }
-  for(i=0; (i<nx); i++) {
+#ifdef DEBUG
     for(j=jstart; (j<jend); j++) {
-      for(k=0; k<(nz/2+1); k++) {
-#ifdef USE_MPI
-	index = INDEX(j,i,k);
-#else
-	index = INDEX(i,j,k);
-#endif
-	if (nTest[index] != 1)
-	  fprintf(fp,"Index %d sucks, set %d times\n",index,nTest[index]);
-      }
+	for(i=0; (i<nx); i++) {
+	    for(k=0; k<(nz/2+1); k++) {
+		index = INDEX(j,i,k);
+		if (nTest[index] != 1)
+		    fprintf(fp,"Index %d sucks, set %d times\n",index,nTest[index]);
+	    }
+	}
     }
+#endif /* DEBUG */
+#endif /* USE_MPI */
+  } else { /* if not running in parallel */
+      for(i=0; (i<nx); i++) {
+	  for(j=0; (j<ny); j++) {
+	      for(k=0;k<(nz/2+1); k++) {
+		  gk    = ghat[i][j][k];
+		  index = INDEX(i,j,k);
+		  ptr[index].re *= gk;
+		  ptr[index].im *= gk;
+		  nTest[index]++;
+	      }
+	  }
+      }
+#ifdef DEBUG
+      for(i=0; (i<nx); i++) {
+	  for(j=0; (j<jny); j++) {
+	      for(k=0; k<(nz/2+1); k++) {
+		  index = INDEX(i,j,k);
+		  if (nTest[index] != 1)
+		      fprintf(fp,"Index %d sucks, set %d times\n",index,nTest[index]);
+	      }
+	  }
+      }
+#endif	
   }
   sfree(nTest);
 }
@@ -414,27 +431,27 @@ void solve_pppm(FILE *fp,t_commrec *cr,
 {
   int  ntot,npppm;
   
-  if (bVerbose) 
-    print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);
+/*  if (bVerbose) 
+    print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);*/
   
-  gmxfft3D(fp,bVerbose,grid,FFTW_FORWARD,cr);
+  gmxfft3D(grid,FFTW_FORWARD,cr);
   
-  if (bVerbose) {
+/*  if (bVerbose) {
     print_fftgrid(fp,"Q-k",grid,1.0,"qk-re.pdb",box,TRUE);
     print_fftgrid(fp,"Q-k",grid,1.0,"qk-im.pdb",box,FALSE);
     fprintf(stderr,"Doing convolution\n");
-  }
+    }*/
   
-  convolution(fp,bVerbose,grid,ghat); 
-  
-  if (bVerbose) 
-    print_fftgrid(fp,"Convolution",grid,1.0,
-		  "convolute.pdb",box,TRUE);
-  
-  gmxfft3D(fp,bVerbose,grid,FFTW_BACKWARD,cr);
+  convolution(fp,bVerbose,grid,ghat,cr); 
   
   if (bVerbose) 
-    print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);
+/*    print_fftgrid(fp,"Convolution",grid,1.0,
+      "convolute.pdb",box,TRUE);*/
+  
+  gmxfft3D(grid,FFTW_BACKWARD,cr);
+  
+/*  if (bVerbose) 
+    print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);*/
   
   ntot  = grid->nxyz;  
   npppm = ntot*log((real)ntot)/log(2.0);
@@ -539,14 +556,14 @@ real do_pppm(FILE *log,       bool bVerbose,
   
   /* In the parallel code we have to sum the grids from neighbouring processors */
   if (PAR(cr))
-    sum_qgrid(log,bVerbose,cr,nsb,grid,TRUE);
+    sum_qgrid(cr,nsb,grid,TRUE);
   
   /* Second step: solving the poisson equation in Fourier space */
   solve_pppm(log,cr,grid,ghat,box,bVerbose,nrnb);
   
   /* In the parallel code we have to sum once again... */
   if (PAR(cr))
-    sum_qgrid(log,bVerbose,cr,nsb,grid,FALSE);
+    sum_qgrid(cr,nsb,grid,FALSE);
   
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
