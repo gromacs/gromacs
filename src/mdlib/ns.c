@@ -308,7 +308,8 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
   int maxsr,maxsr_wat,maxlr,maxlr_wat;
     int solvent;
     
-  maxsr     = homenr-fr->nWatMol*3;
+  /* maxsr     = homenr-fr->nWatMol*3; */
+  maxsr     = homenr;
 
   if (maxsr < 0)
     gmx_fatal(FARGS,"%s, %d: Negative number of short range atoms.\n"
