@@ -118,23 +118,7 @@ static void insert_ion(real q,int *nwater,bool bSet[],real repl_q[],
   mdatoms->chargeA[index[ei]+1] = 0;
   mdatoms->chargeA[index[ei]+2] = 0;
 
-  /* Swap ei water at index ei with water at last index */
-  /*
-  owater = index[ei];
-  wlast  = index[nw-1];
-  for(m=0; (m<3); m++) {
-    copy_rvec(x[owater+m],xei);
-    copy_rvec(x[wlast+m],x[owater+m]);
-    copy_rvec(xei,x[wlast+m]);
-    pot[owater+m] = pot[wlast+m];
-  }
-
-  nw--;
-  *nwater = nw;
-   
-  */ 
   /* Mark all waters within rmin as unavailable for substitution */
-
   if (rmin > 0) {
     rmin2=rmin*rmin;
     for(i=0; (i<nw); i++) {
@@ -145,18 +129,6 @@ static void insert_ion(real q,int *nwater,bool bSet[],real repl_q[],
       }
     }
   }
-  /* Replace the oxygen with the ion */
-  /*
-  natoms=top->atoms.nr;
-  replace_atom(top,wlast,anm,resnm,q,1,1);
-  delete_atom(top,wlast+2);
-  delete_atom(top,wlast+1);
-  */
-  /* Now copy all the remaining coordinates two places down the x array */
-  /*
-  for(i=wlast+3; (i<natoms); i++)
-    copy_rvec(x[i],x[i-2]);
-    */
 }
 
 static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
