@@ -26,12 +26,12 @@
  * And Hey:
  * Good ROcking Metal Altar for Chronical Sinners
  */
-static char *SRCID_fftw_mpi_h = "$Id$";
-
 #ifndef FFTW_MPI_H
 #define FFTW_MPI_H
 
-#include <fftw.h>
+static char *SRCID_fftw_mpi_h = "$Id$";
+
+#include "fftw.h"
 #include <mpi.h> /* need access to the MPI type definitions */
 
 #ifdef __cplusplus

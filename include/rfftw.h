@@ -26,14 +26,13 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-
 /* rfftw.h -- system-wide definitions for rfftw */
 #ifndef RFFTW_H
 #define RFFTW_H
 
 static char *SRCID_rfftw_h = "$Id$";
 
-#include <fftw.h>
+#include "fftw.h"
 
 #ifdef __cplusplus
 extern "C" {

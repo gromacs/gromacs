@@ -26,10 +26,10 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_rfftw_mpi_h = "$Id$";
-
 #ifndef RFFTW_MPI_H
 #define RFFTW_MPI_H
+
+static char *SRCID_rfftw_mpi_h = "$Id$";
 
 #include <fftw_mpi.h>
 #include <rfftw.h>

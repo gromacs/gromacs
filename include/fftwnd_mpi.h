@@ -26,10 +26,10 @@
  * And Hey:
  * Good ROcking Metal Altar for Chronical Sinners
  */
-static char *SRCID_fftwnd_mpi_h = "$Id$";
-
 #ifndef FFTWND_MPI_H
 #define FFTWND_MPI_H
+
+static char *SRCID_fftwnd_mpi_h = "$Id$";
 
 #include "fftw.h"
 #include "transpose_mpi.h"

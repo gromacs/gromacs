@@ -26,12 +26,12 @@
  * And Hey:
  * Good ROcking Metal Altar for Chronical Sinners
  */
-static char *SRCID_fftw_threads_h = "$Id$";
-
 #ifndef FFTW_THREADS_H
 #define FFTW_THREADS_H
 
-#include <fftw.h>
+static char *SRCID_fftw_threads_h = "$Id$";
+
+#include "fftw.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -26,14 +26,14 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_rfftw_mpi_threads_h = "$Id$";
-
 #ifndef RFFTW_MPI_THREADS_H
 #define RFFTW_MPI_THREADS_H
 
-#include <rfftw_mpi.h>
-#include <fftw_threads.h>
-#include <rfftw.h>
+static char *SRCID_rfftw_mpi_threads_h = "$Id$";
+
+#include "rfftw_mpi.h"
+#include "fftw_threads.h"
+#include "rfftw.h"
 
 #ifdef __cplusplus
 extern "C" {
