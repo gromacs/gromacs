@@ -55,6 +55,8 @@ typedef struct {
   bool bGenPairs;
   real tempi;
   int  seed;
+  int  eDisre;
+  bool bMorse;
 } t_gromppopts;
 
 
