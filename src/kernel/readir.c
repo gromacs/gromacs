@@ -140,15 +140,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     ir->bDispCorr = FALSE;
   }
   
-  if ((ir->eBox != ebtNONE) && (ir->nstcomm < 0)) {
-    warning("Cannot stop rotation around the center of mass in a periodic system");
-    ir->nstcomm = -ir->nstcomm;
-  }
+  if ((ir->eBox != ebtNONE) && (ir->nstcomm < 0))
+    warning("Removing the rotation around the center of mass in a periodic system.");
   
   if ((EEL_LR(ir->coulombtype)) && (ir->bPert)) {
-      warning("You are using long-range electrostatics with free energy integration. "
-	      "This might give wrong results, since the long-range contributions "
-	      "to the free energy is not calculated.");
+    warning("You are using long-range electrostatics with free energy integration. "
+	    "This might give wrong results, since the long-range contributions "
+	    "to the free energy is not calculated.");
   }
   
   sprintf(err_buf,"Domain decomposition can only be used with grid NS");
