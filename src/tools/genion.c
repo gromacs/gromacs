@@ -296,6 +296,8 @@ int main(int argc, char *argv[])
   if ((p_num<0) || (n_num<0))
     fatal_error(0,"Negative number of ions to add?");
 
+  nsb.nodeid=0;
+
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
