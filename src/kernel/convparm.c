@@ -166,8 +166,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
 }
 
 static int enter_params(t_idef *idef, t_functype ftype,
-			int nrfp,real forceparams[MAXFORCEPARAM],
-			int maxtypes,int start,bool bNB)
+			real forceparams[MAXFORCEPARAM],int start,bool bNB)
 {
   t_iparams new;
   int       type;
@@ -210,14 +209,13 @@ static void append_interaction(t_ilist *ilist,
 static void enter_function(t_params *p,t_functype ftype,
                            t_idef *idef,int *maxtypes,bool bNB)
 {
-  int     k,type,nr,nral,nrfp,delta,start;
+  int     k,type,nr,nral,delta,start;
   t_ilist *il;
   
   il    = &(idef->il[ftype]);
   start = idef->ntypes;
   nr    = p->nr;
   nral  = NRAL(ftype);
-  nrfp  = NRFP(ftype);
   delta = nr*(nral+1);
   srenew(il->iatoms,il->nr+delta);
   
@@ -230,7 +228,7 @@ static void enter_function(t_params *p,t_functype ftype,
 	fprintf(debug,"%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
 		__FILE__,__LINE__,*maxtypes);
     }
-    type = enter_params(idef,ftype,nrfp,p->param[k].c,*maxtypes,start,bNB);
+    type = enter_params(idef,ftype,p->param[k].c,start,bNB);
     if (!bNB)
       append_interaction(il,type,nral,p->param[k].a);
   }

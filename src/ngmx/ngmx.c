@@ -61,7 +61,7 @@ static void dump_xw(char *dispname,Window w,char *fn)
   system(comm);
 }
 
-static void dump_it(char *dispname,Window w,t_manager *man)
+static void dump_it(t_manager *man)
 {
   FILE *ps;
   
@@ -79,7 +79,7 @@ static void done_gmx(t_x11 *x11,t_gmx *gmx)
   x11->UnRegisterCallback(x11,gmx->wd->self);
 }
 
-static void move_gmx(t_x11 *x11,t_gmx *gmx,int x,int y,int width,int height,
+static void move_gmx(t_x11 *x11,t_gmx *gmx,int width,int height,
 		     bool bSizePD)
 {
   int y0,wl,hl;
@@ -113,7 +113,7 @@ static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
   case IDDODUMP:
     if (gmx->man->bAnimate) 
       hide_but(x11,gmx->man->vbox);
-    dump_it(x11->dispname,gmx->man->molw->wd.self,gmx->man);
+    dump_it(gmx->man);
     if (gmx->man->bAnimate) 
       show_but(x11,gmx->man->vbox);
     break;
@@ -223,8 +223,7 @@ static bool MainCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
     width=event->xconfigure.width;
     height=event->xconfigure.height;
     if ((width!=gmx->wd->width) || (height!=gmx->wd->height))
-      move_gmx(x11,gmx,event->xconfigure.x,event->xconfigure.y,
-	       width,height,TRUE);
+      move_gmx(x11,gmx,width,height,TRUE);
     break;
   case ClientMessage:
     hide_pd(x11,gmx->pd);
@@ -361,7 +360,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   gmx->logo=init_logo(x11,gmx->wd->self);
 
   /* Now put all windows in the proper place */
-  move_gmx(x11,gmx,0,0,w0,h0,FALSE);
+  move_gmx(x11,gmx,w0,h0,FALSE);
   
   XMapWindow(x11->disp,gmx->wd->self);
   map_man(x11,gmx->man);
