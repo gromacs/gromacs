@@ -94,7 +94,7 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
  **************************************************************/
 static void do_inputrec(t_inputrec *ir,bool bRead)
 {
-  int  i,j,*tmp,idum; 
+  int  i,j,*tmp,idum=0; 
   bool bDum=TRUE;
   real rdum;
   rvec vdum;
