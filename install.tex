@@ -25,11 +25,11 @@ almost twice as large.
 
 The energies in single precision are accurate up to the last decimal,
 the last one or two decimals of the forces are non-significant.
-The virial is less accurate than the forces, since it is calculated
-using a single sum (\secref{virial}).
-In this sum forces are weighted proportional to the distance, so the long-range
-forces are more important, but in the force sum the small long-range forces
-are dominated by the larger short-range forces.
+The virial is less accurate than the forces, since the virial is only one
+order of magnitude larger than the size of each element in the sum over
+all atoms (\secref{virial}).
+In most cases this is not really a problem, since the fluctuations in de
+virial can be 2 orders of magnitude larger than the average.
 In periodic charged systems these errors are often negligible.
 Especially cut-off's for the Coulomb interactions cause large errors
 in the energies, forces and virial.
