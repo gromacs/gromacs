@@ -17,6 +17,115 @@
 #include "names.h"
 #include "ehdata.h"
 
+typedef struct {
+  int  nanal,index;
+  real dt;
+  real *t;
+  real *maxdist;
+  real *averdist,*ad2;
+  int  *nion;
+} t_analysis;
+
+static t_analysis *init_analysis(int nstep,int nsave,real timestep)
+{
+  t_analysis *anal;
+  
+  snew(anal,1);
+  anal->nanal = (nstep / nsave)+1;
+  anal->index = 0;
+  anal->dt    = nsave*timestep;
+  snew(anal->t,anal->nanal);
+  snew(anal->maxdist,anal->nanal);
+  snew(anal->averdist,anal->nanal);
+  snew(anal->ad2,anal->nanal);
+  snew(anal->nion,anal->nanal);
+  
+  return anal;
+}
+
+static void done_analysis(t_analysis *anal)
+{
+  sfree(anal->t);
+  sfree(anal->maxdist);
+  sfree(anal->averdist);
+  sfree(anal->ad2);
+  sfree(anal->nion);
+}
+
+static void reset_analysis(t_analysis *anal)
+{
+  int i;
+  
+  for(i=0; (i<anal->nanal); i++) {
+    anal->t[i] = 0;
+    anal->maxdist[i] = 0;
+    anal->averdist[i] = 0;
+    anal->ad2[i] = 0;
+    anal->nion[i] = 0;
+  }
+  anal->index = 0;
+}
+
+static void sum_analysis(t_analysis *total,t_analysis *add)
+{
+  int i;
+  
+  if (total->index == 0)
+    total->index = add->index;
+  else if (total->index != add->index)
+    fatal_error(0,"Analysis incompatible %s, %d",__FILE__,__LINE__);
+  for(i=0; (i<total->index); i++) {
+    if (total->t[i] == 0)
+      total->t[i] = add->t[i];
+    else if (total->t[i] != add->t[i])
+      fatal_error(0,"Inconsistent times in analysis %s, %d",__FILE__,__LINE__);
+    total->maxdist[i]  += add->maxdist[i];
+    total->averdist[i] += add->averdist[i];
+    total->ad2[i]      += add->ad2[i];
+    total->nion[i]     += add->nion[i];
+  }
+}
+
+static void analyse_it(t_analysis *anal,real t,rvec center,
+		       rvec x[],int nparticle,real charge[])
+{
+  int  i,j;
+  rvec dx;
+  real dx2,dx1;
+  
+  j = anal->index;
+  anal->t[j]       = t;
+  anal->maxdist[j] = 0;
+  for(i=0; (i<nparticle); i++) {
+    if (charge[i] < 0) {
+      rvec_sub(x[i],center,dx);
+      dx2 = iprod(dx,dx);
+      dx1 = sqrt(dx2);
+      anal->ad2[j] += dx2;
+      anal->averdist[j]  += dx1;
+      if (dx1 > anal->maxdist[j])
+	anal->maxdist[j] = dx1;
+    }
+  }
+  anal->nion[j] = nparticle/2;
+  anal->index++;
+}
+
+static void dump_analysis(char *rmax,char *nion,t_analysis *anal,int nsim)
+{
+  FILE *fp;
+  int  i;
+  
+  fp = xvgropen(rmax,"rmax","Time (fs)","r (nm)");
+  for(i=0; (i<anal->index); i++)
+    fprintf(fp,"%12g  %12.3f\n",1000*anal->t[i],anal->maxdist[i]/nsim);
+  fclose(fp);
+  fp = xvgropen(nion,"N ion","Time (fs)","N ions");
+  for(i=0; (i<anal->index); i++)
+    fprintf(fp,"%12g  %12.3f\n",1000*anal->t[i],(1.0*anal->nion[i])/nsim);
+  fclose(fp);
+}
+
 #define ELECTRONMASS 5.447e-4
 /* Resting mass of electron in a.m.u. */
 #define HOLEMASS (0.8*ELECTRONMASS)
@@ -211,8 +320,9 @@ static int create_auger(int index,rvec x[],rvec v[],rvec vold[],
 {
   m[index] = ELECTRONMASS;
   q[index] = -1;
-  
-  rand_vector(sqrt(2*e0/m[index]),v[index],seed);
+
+  clear_rvec(v[index]);
+  v[index][ZZ] = sqrt(2*e0/m[index]);
   copy_rvec(v[index],vold[index]);
   copy_rvec(center,x[index]);
   
@@ -356,14 +466,14 @@ static void integrate_positions(int nparticle,rvec x[],rvec v[],real dt)
 
 static void do_sim(char *fn,int *seed,int maxstep,real dt,
 		   int nsave,bool bForce,bool bScatter,
-		   int *nelec,int *nhole)
+		   int *nelec,int *nhole,int nana,t_analysis *total)
 {
-  FILE *fp;
-  int  nparticle[2];
-  rvec *x,*v[2],*f,center;
-  real *q,*m,*ener,*eparticle;
-  int  step;
-  int  cur = 0;
+  FILE       *fp;
+  int        nparticle[2];
+  rvec       *x,*v[2],*f,center;
+  real       *charge,*mass,*ener,*eparticle;
+  t_analysis *anal;
+  int        step,cur = 0;
 #define next (1-cur)
 
   /* Open output file */
@@ -379,7 +489,8 @@ static void do_sim(char *fn,int *seed,int maxstep,real dt,
 	  nsave,bool_names[bForce],bool_names[bScatter]);
   if (bForce)
     fprintf(fp,"REMARK Force constant for repulsion Alj = %g\n",Alj);
-  
+
+  anal = init_analysis(maxstep,nana,dt);
   /* Initiate arrays. The charge array determines whether a particle is 
    * a hole (+1) or an electron (-1)
    */
@@ -387,22 +498,21 @@ static void do_sim(char *fn,int *seed,int maxstep,real dt,
   snew(v[0],MAXPARTICLE);      /* Velocity  */
   snew(v[1],MAXPARTICLE);      /* Velocity  */
   snew(f,MAXPARTICLE);         /* Force     */
-  snew(q,MAXPARTICLE);         /* Charge    */
-  snew(m,MAXPARTICLE);         /* Mass      */
+  snew(charge,MAXPARTICLE);         /* Charge    */
+  snew(mass,MAXPARTICLE);         /* Mass      */
   snew(eparticle,MAXPARTICLE); /* Energy per particle */
   snew(ener,eNR);              /* Eenergies */
   
+  clear_rvec(center);
   /* Use first atom as center, it has coordinate 0,0,0 */
   if (bScatter) {
     /* Start with a single Auger electron */
-    clear_rvec(center);
-    nparticle[cur]  = create_auger(0,x,v[cur],v[next],m,q,center,
+    nparticle[cur]  = create_auger(0,x,v[cur],v[next],mass,charge,center,
 				 AUGER_ENERGY*ELECTRONVOLT,seed);
   }
   else if (bForce) {
     /* Start with two electron and hole pairs */
-    clear_rvec(center);
-    nparticle[cur]  = create_pair(0,x,v[cur],v[next],m,q,center,
+    nparticle[cur]  = create_pair(0,x,v[cur],v[next],mass,charge,center,
 				  0.2*AUGER_ENERGY*ELECTRONVOLT,seed);
     center[ZZ] = 0.5; /* nm */
     (*nelec)++;
@@ -414,16 +524,17 @@ static void do_sim(char *fn,int *seed,int maxstep,real dt,
   }
   nparticle[next] = nparticle[cur];
   for(step=0; (step<=maxstep); step++) {
-    if (bScatter && (step > 0))
+    if (bScatter)
       nparticle[next] = scatter_all(fp,nparticle[cur],x,v[cur],v[next],
-				    m,q,ener,eparticle,seed,dt,nelec,nhole);
+				    mass,charge,ener,eparticle,seed,dt,
+				    nelec,nhole);
     
     if (bForce)
-      calc_forces(nparticle[cur],x,f,q,ener);
+      calc_forces(nparticle[cur],x,f,charge,ener);
     
-    integrate_velocities(nparticle[next],v[cur],v[next],f,m,dt);
+    integrate_velocities(nparticle[next],v[cur],v[next],f,mass,dt);
     
-    calc_ekin(nparticle[next],v[cur],v[next],q,m,ener,eparticle);
+    calc_ekin(nparticle[next],v[cur],v[next],charge,mass,ener,eparticle);
     ener[eTOT] = ener[eKIN] + ener[ePOT];
     
     /* Produce output whenever the user says so, or when new
@@ -433,41 +544,61 @@ static void do_sim(char *fn,int *seed,int maxstep,real dt,
 	(step == maxstep) ||
 	((nsave != 0) && ((step % nsave) == 0))) {
       write_data(fp,step,(step*dt),nparticle[next],
-		 x,v[next],f,q,ener,eparticle);
+		 x,v[next],f,charge,ener,eparticle);
     }
+    if ((nana != 0) && ((step % nana) == 0))
+      analyse_it(anal,(step*dt),center,x,nparticle[next],charge);
     cur = next;
         
     integrate_positions(nparticle[cur],x,v[cur],dt);
   }
   fclose(fp);
+  sum_analysis(total,anal);
+  done_analysis(anal);
+  sfree(anal);
+  sfree(x); 
+  sfree(v[0]); 
+  sfree(v[1]);      
+  sfree(f);
+  sfree(charge); 
+  sfree(mass);    
+  sfree(eparticle); 
+  sfree(ener);
 }
 
-void do_sims(char *ptr,char *xvg,
+void do_sims(char *ptr,char *histo,char *rmax,char *nion,
 	     int *seed,int maxstep,real dt,int nsave,bool bForce,
 	     bool bScatter,int nsim)
 {
 #define NHISTO 50
-  int  *nelectron;
-  int  i,imax,ne,nh;
-  real aver;
-  FILE *fp;
-  char *buf;
+  t_analysis *total;
+  int        *nelectron;
+  int        i,imax,ne,nh,nana;
+  real       aver;
+  FILE       *fp;
+  char       *buf;
 
+  nana  = 1;
+  total = init_analysis(maxstep,nana,dt);
+  
   snew(nelectron,NHISTO);
   snew(buf,strlen(ptr)+10);
   for(i=0; (i<nsim); i++) {
     nh = ne = 0;
     sprintf(buf,"%s-%d.pdb",ptr,i+1);
-    do_sim(buf,seed,maxstep,dt,nsave,bForce,bScatter,&ne,&nh);
+    do_sim(buf,seed,maxstep,dt,nsave,bForce,bScatter,&ne,&nh,nana,total);
     nelectron[ne]++;
   }
   sfree(buf);
+  dump_analysis(rmax,nion,total,nsim);
+  done_analysis(total);
+  
   for(imax=NHISTO-1; (imax > 0); imax--)
     if (nelectron[imax] != 0) 
       break;
   if (imax > 0) {
     aver = 0;
-    fp = xvgropen(xvg,"Number of cascade electrons","N","");
+    fp = xvgropen(histo,"Number of cascade electrons","N","");
     for(i=0; (i<=imax); i++)
       if (nelectron[imax])
 	break;
@@ -527,8 +658,10 @@ int main(int argc,char *argv[])
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
-    { efPDB, "-o", "ehole", ffWRITE },
-    { efXVG, "-h", "histo", ffWRITE }
+    { efPDB, "-o", "ehole",  ffWRITE },
+    { efXVG, "-h", "histo",  ffWRITE },
+    { efXVG, "-r", "radius", ffWRITE },
+    { efXVG, "-n", "nion",   ffWRITE }
   };
 #define NFILE asize(fnm)
   char *buf,*ptr,*rptr;
@@ -548,7 +681,8 @@ int main(int argc,char *argv[])
     rptr = strdup(ptr);
     if ((ptr  = strstr(rptr,".pdb")) != NULL)
       *ptr = '\0';
-    do_sims(rptr,ftp2fn(efXVG,NFILE,fnm),
+    do_sims(rptr,opt2fn("-h",NFILE,fnm),opt2fn("-r",NFILE,fnm),
+	    opt2fn("-n",NFILE,fnm),
 	    &seed,maxstep,dt,nsave,bForce,bScatter,nsim);
   }
   thanx(stdout);

@@ -184,17 +184,23 @@ void unitcell_d(rvec x[],rvec box,real odist)
   printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
 }
 
-static t_bbb *mk_bonds(int natoms,rvec x[],real odist)
+static t_bbb *mk_bonds(int natoms,rvec x[],real odist,
+		       bool bPBC,matrix box)
 {
   real  od2 = odist*odist+1e-5;
   t_bbb *bbb;
   int   i,j;
   rvec  dx;
   
+  if (bPBC)
+    init_pbc(box,FALSE);
   snew(bbb,natoms);
   for(i=0; (i<natoms); i++) {
     for(j=i+1; (j<natoms); j++) {
-      rvec_sub(x[i],x[j],dx);
+      if (bPBC)
+	pbc_dx(x[i],x[j],dx);
+      else
+	rvec_sub(x[i],x[j],dx);
       if (iprod(dx,dx) <= od2) {
 	bbb[i].aa[bbb[i].n++] = j;
 	bbb[j].aa[bbb[j].n++] = i;
@@ -210,7 +216,8 @@ static t_bbb *mk_bonds(int natoms,rvec x[],real odist)
   return bbb;
 }
 
-static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
+static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab,
+		       bool bPBC,matrix box)
 {
   
   int   i,ib,j,k,l,m,nrm=0;
@@ -220,7 +227,7 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
   
   do {
     nrm = 0;
-    bbb = mk_bonds(a->nr,x,odist);
+    bbb = mk_bonds(a->nr,x,odist,bPBC,box);
     
     for(i=0; (i<a->nr); i++) {
       if (bbb[i].n < 2) {
@@ -252,7 +259,7 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
     sfree(bbb);
   } while (nrm > 0);
   /* Rename atoms */
-  bbb = mk_bonds(a->nr,x,odist);
+  bbb = mk_bonds(a->nr,x,odist,bPBC,box);
   for(i=0; (i<a->nr); i++) {
     switch (bbb[i].n) {
     case 4:
@@ -429,7 +436,7 @@ int main(int argc,char *argv[])
   };
   static int nx=1,ny=1,nz=1;
   static bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE;
-  static bool bOrdered=TRUE,bDiamond=FALSE;
+  static bool bOrdered=TRUE,bDiamond=FALSE,bPBC=TRUE;
   static real rcut=0.3,odist=0.274,hdist=0.09572;
   t_pargs pa[] = {
     { "-nx",    FALSE, etINT,  {&nx}, "nx" },
@@ -444,6 +451,7 @@ int main(int argc,char *argv[])
     { "-odist", FALSE, etREAL, {&odist}, "Distance (nm) between oxygens" },
     { "-hdist", FALSE, etREAL, {&hdist}, "Bondlength (nm) for OH bond" },
     { "-diamond",FALSE,etBOOL, {&bDiamond}, "Make a diamond instead" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC},  "Make a pariodic diamond" },
     { "-order", FALSE,etBOOL,  {&bOrdered}, "Make a proton-ordered ice lattice" },
     { "-series",FALSE, etBOOL, {&bSeries}, 
       "Do a series of virial calculations with different cut-off (from 0.3 up till the specified one)" }
@@ -548,7 +556,7 @@ int main(int argc,char *argv[])
   }
   
   if (bDiamond) 
-    mk_diamond(pdba,xx,odist,&symtab);
+    mk_diamond(pdba,xx,odist,&symtab,bPBC,boxje);
 
   fp = ftp2FILE(efPDB,NFILE,fnm,"w");
   if (bDiamond)
