@@ -212,11 +212,11 @@ int main(int argc,char *argv[])
     { efXVG, "-c", "cole",   ffWRITE }
   };
 #define NFILE asize(fnm)
-  int  i,j,nx,ny,nxtail;
+  int  i,j,nx,ny,nxtail,eFitFn,nfitparm;
   real **y,dt,integral,fitintegral,*fitparms,fac,rffac;
   char *legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
   static char *fix=NULL;
-  static int bFour = 0,bX = 1,nfitparm=2,nsmooth=3;
+  static int bFour = 0,bX = 1,nsmooth=3;
   static real tendInt=5.0,tbegin=5.0,tend=500.0;
   static real A=0.5,tau1=10.0,tau2=1.0,eps0=80,epsRF=78.5,tail=500.0;
   real   lambda;
@@ -245,8 +245,8 @@ int main(int argc,char *argv[])
       "Epsilon of the reaction field used in your simulation. A value of 0 means infinity." },
     { "-fix", FALSE, etSTR,  {&fix},
       "Fix this parameter at its start value, e.g. A, tau1 or tau2" },
-    { "-nparm", FALSE, etINT,  {&nfitparm},
-      "Number of parameters for fitting!" },
+    { "-ffn",    FALSE, etENUM, {s_ffn},
+      "Fit function" },
     { "-nsmooth", FALSE, etINT, {&nsmooth},
       "Number of points for smoothing" }
   };
@@ -285,6 +285,8 @@ int main(int argc,char *argv[])
       y[2][i] = fac;
   }
 
+  eFitFn = sffn2effn(s_ffn);
+  nfitparm = nfp_ffn[eFitFn];
   snew(fitparms,4);
   fitparms[0]=tau1;
   if (nfitparm > 1)
@@ -301,7 +303,7 @@ int main(int argc,char *argv[])
   integral = print_and_integrate(NULL,calc_nbegin(nx,y[0],tbegin),
 				 y[0][1]-y[0][0],y[1],1);
   integral += do_lmfit(nx,y[1],y[2],y[0][1]-y[0][0],y[0],tbegin,tend,
-		       TRUE,nfitparm,y[3],fitparms,fix);
+		       TRUE,eFitFn,y[3],fitparms,fix);
   if (epsRF == 0) {
     /* This means infinity! */
     lambda = 0;

@@ -58,7 +58,20 @@ extern real LegendreP(real x,unsigned long m);
 #define eacP2     (1<<6  | eacVector)
 #define eacP3     (1<<7  | eacVector)
 #define eacP4     (1<<8  | eacVector)
- 
+
+enum {
+  effnEXP1, effnEXP2, effnEXP3, effnVAC, effnNR
+};
+
+extern int  nfp_ffn[effnNR];
+
+extern char *s_ffn[effnNR+2];
+
+extern char *longs_ffn[effnNR];
+
+int sffn2effn(char **sffn);
+/* Returns the ffn enum corresponding to the selected enum option in sffn */
+
 extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
 /* Add options for autocorr to the current set of options.
  * *npargs must be initialised to the number of elements in pa,
@@ -260,12 +273,12 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
  * normhisto  normalized output histogram
  */
 
-/* Use Levenberg-Marquardt method to fit to a one parameter exponential */
+/* Use Levenberg-Marquardt method to fit to a nfitparm parameter exponential */
+/* or to a transverse current autocorrelation function */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
 extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
-		     real begintimefit,real endtimefit,
-		     bool bVerbose,int nfitparm,
-		     real fit[],real fitparms[],char *fix);
+		     real begintimefit,real endtimefit,bool bVerbose,
+		     int eFitFn,real fitparms[],real *fit,char *fix);
 /* Returns integral. if fit != NULL, than the fitted function is copied
  * into the original data array.
  * If x == NULL, the timestep dt will be used to create a time axis.

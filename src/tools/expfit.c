@@ -40,6 +40,17 @@ static char *SRCID_expfit_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 
+int  nfp_ffn[effnNR] = { 1, 2, 3, 2 };
+
+char *s_ffn[effnNR+2] = { NULL, "exp", "aexp", "exp_exp", "vac", NULL };
+
+char *longs_ffn[effnNR] = {
+  "y = exp(-a1 x)",
+  "y = a2 exp(-x/a1)",
+  "y = a2 exp(-x/a1) + (1-a2) exp(-x/a3)",
+  "y = exp(-v) (cosh(wv) + 1/w sinh(wv)), v = x/(2 a1), w = sqrt(1 - a2)"
+};
+
 extern void mrqmin(real x[],real y[],real sig[],int ndata,real a[],
 		   int ma,int lista[],int mfit,real **covar,real **alpha,
 		   real *chisq,
@@ -109,28 +120,73 @@ static void exp_3_parm(real x,real a[],real *y,real dyda[])
     x,*y,dyda[1],dyda[2],dyda[3]);  */
 }
 
+static void vac_2_parm(real x,real a[],real *y,real dyda[])
+{
+  /* Fit to function 
+   *
+   * y = 1/2 (1 - 1/w) exp(-(1+w)v) + 1/2 (1 + 1/w) exp(-(1-w)v)
+   *
+   *   = exp(-v) (cosh(wv) + 1/w sinh(wv))
+   *
+   *    v = x/(2 a1)
+   *    w = sqrt(1 - a2)
+   *
+   *    For tranverse current autocorrelation functions:
+   *       a1 = tau
+   *       a2 = 4 tau (eta/rho) k^2
+   *
+   */
+   
+  double v,det,omega,omega2,invom,em,ec,es;
+  
+  v   = x/(2*a[1]);
+  det = 1 - a[2];
+  em  = exp(-v);
+  if (det != 0) {
+    omega2  = fabs(det);
+    omega   = sqrt(omega2);
+    if (det > 0) {
+      ec = em*0.5*(exp(omega*v)+exp(-omega*v));
+      es = em*0.5*(exp(omega*v)-exp(-omega*v))/omega;
+    } else {
+      ec = em*cos(omega*v);
+      es = em*sin(omega*v)/omega;
+    }
+    *y      = ec + es;
+    dyda[2] = (v/det*ec+(v-1/det)*es)/(-2.0);
+    dyda[1] = (1-det)*v/a[1]*es;
+  } else {
+    *y      = (1+v)*em;
+    dyda[2] = -v*v*em*(0.5+v/6);
+    dyda[1] = v*v/a[1]*em;
+  }
+}
+
+typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
+myfitfn mfitfn[effnNR] = 
+{ exp_one_parm, exp_two_parm, exp_3_parm, vac_2_parm };
+
 /* lmfit_exp supports up to 3 parameter fitting of exponential functions */
 static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
-		      real parm[],real dparm[],bool bVerbose,int nfitparm,
-		      char *fix)
+		      real parm[],real dparm[],bool bVerbose,
+		      real *fit,int eFitFn,char *fix)
 {
-  typedef void (*myfitfn)(real x,real a[],real *y,real dyda[]);
-  myfitfn fitfn[3] = { exp_one_parm, exp_two_parm, exp_3_parm };
   real chisq,ochisq,alamda;
-  real *a,**covar,**alpha;
+  real *a,**covar,**alpha,*dum;
   bool bCont;
   int  i,j,ma,mfit,*lista,*ia;
 
-  if ((nfitparm < 1) || (nfitparm > 3))
-    fatal_error(0,"nfitparm = %d, should be in 1..3 (%s,%d)",
-		nfitparm,__FILE__,__LINE__);
+  if ((eFitFn < 0) || (eFitFn >= effnNR))
+    fatal_error(0,"fitfn = %d, should be in 0..%d (%s,%d)",
+		effnNR-1,eFitFn,__FILE__,__LINE__);
 
-  ma=mfit=nfitparm;         /* number of parameters to fit */
+  ma=mfit=nfp_ffn[eFitFn];         /* number of parameters to fit */
   snew(a,ma+1);
   snew(covar,ma+1);
   snew(alpha,ma+1);
   snew(lista,ma+1);
   snew(ia,ma+1);
+  snew(dum,ma+1);
   for(i=1; (i<ma+1); i++) {
     lista[i] = i;
     ia[i] = i;
@@ -153,9 +209,9 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   alamda = -1;    /* Starting value   */
   chisq  = 1e12;
   a[1]   = parm[0];    /* tau1 */
-  if (nfitparm > 1)
+  if (mfit > 1)
     a[2]   = parm[1];  /* AA   */
-  if (nfitparm > 2) 
+  if (mfit > 2) 
     a[3]   = parm[2];  /* tau2 */
 
   j = 0;      
@@ -165,10 +221,10 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   do {
     ochisq = chisq;
     /* mrqmin(x-1,y-1,dy-1,nframes,a,ma,lista,mfit,covar,alpha,
-     *   &chisq,fitfn[mfit-1],&alamda);
+     *   &chisq,expfn[mfit-1],&alamda);
      */
     mrqmin_new(x-1,y-1,dy-1,nframes,a,ia,ma,covar,alpha,&chisq,
-	       fitfn[mfit-1],&alamda);
+	       mfitfn[eFitFn],&alamda);
      
     if (bVerbose) {
       fprintf(stderr,"%4d  %10.5e  %10.5e  %10.5e",
@@ -190,16 +246,20 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   alamda = 0;
 
   /*  mrqmin(x-1,y-1,dy-1,nframes,a,ma,lista,mfit,covar,alpha,
-   * &chisq,fitfn[mfit-1],&alamda);
+   * &chisq,expfn[mfit-1],&alamda);
    */
   mrqmin_new(x-1,y-1,dy-1,nframes,a,ia,ma,covar,alpha,&chisq,
-	     fitfn[mfit-1],&alamda);
+	     mfitfn[eFitFn],&alamda);
 
   for(j=0; (j<mfit); j++) {
     parm[j]  = a[j+1];
     dparm[j] = covar[j+1][j+1];
   }
-	     
+
+  if (fit)
+    for(i=0; i<nframes; i++)
+      mfitfn[eFitFn](x[i],a,&(fit[i]),dum);
+
   for(i=0; (i<ma+1); i++) {
     sfree(covar[i]);
     sfree(alpha[i]);
@@ -208,25 +268,28 @@ static void lmfit_exp(int nframes,real x[],real y[],real dy[],real ftol,
   sfree(covar);
   sfree(alpha);
   sfree(lista);
+  sfree(dum);
 }
 
 real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
-	      real begintimefit,real endtimefit,bool bVerbose,int nfitparm,
-	      real fit[],real fitparms[],char *fix)
+	      real begintimefit,real endtimefit,bool bVerbose,
+	      int eFitFn,real fitparms[],
+	      real *fit,char *fix)
 {
   FILE *fp;
   char buf[32];
 
   int  i,j,nfitpnts;
-  real integral,fittedfunc,ttt;
+  real integral,ttt;
   real *parm,*dparm;
   real AA=0,tau1=0,tau2=0,srAA=0,srtau1,srtau2=0;  
   real *x,*y,*dy;
   real ftol = 1e-4;
+  bool bAllocFit;
 
   if (debug) {
     fprintf(debug,"There are %d points to fit %d vars!\n",
-	    ndata,nfitparm);
+	    ndata,nfp_ffn[eFitFn]);
     fprintf(debug,"Fit from %g thru %g, dt=%g\n",
 	    begintimefit,endtimefit,dt);
   }
@@ -254,36 +317,35 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
     }
   }
   nfitpnts=j;
-  if (j < nfitparm) {
+  if (j < nfp_ffn[eFitFn]) {
     fprintf(stderr,"Not enough data points for fitting!\n");
     integral = 0;
   }
   else {
+    bAllocFit = (fit==NULL && bVerbose);
+    if (bAllocFit)
+      snew(fit,nfitpnts);
+
     snew(parm,4);
     snew(dparm,4);
 
     parm[0]=parm[1]=parm[2] = 1.0;
-    if (fitparms) {
-      parm[0]=fitparms[0];
-      if (nfitparm == 2)
-	parm[1]=fitparms[1];
-      else {
-	parm[1]=fitparms[1];
-	parm[2]=fitparms[2];
-      }
-    }
+    if (fitparms)
+      for(i=0; i<nfp_ffn[eFitFn]; i++)
+	parm[i]=fitparms[i];
     
-    lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,nfitparm,fix);
+    lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,
+	      fit,eFitFn,fix);
     
     tau1 = parm[0];
     srtau1 = dparm[0];
-    if (nfitparm > 1) {
+    if (nfp_ffn[eFitFn] > 1) {
       AA = parm[1];
       srAA = dparm[1];
     }
     else 
       AA = 1.0;
-    if (nfitparm > 2) {
+    if (nfp_ffn[eFitFn] > 2) {
       tau2 = parm[2];
       srtau2 = dparm[2];
     }
@@ -309,17 +371,19 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       sprintf(buf,"test%d.xvg",nfitpnts);
       fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
       fprintf(fp,"# AA = %g, tau1 = %g, tau2 = %g\n",AA,tau1,tau2);
-      for(j=0; (j<ndata); j++) {
+      for(j=0; j<nfitpnts; j++) {
 	ttt = x0 ? x0[j] : dt*j;
-	fittedfunc = myexp(ttt,AA,tau1) + myexp(ttt,1-AA,tau2);
-	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",ttt,c1[j],fittedfunc);
+	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",ttt,c1[j],fit[j]);
       }
       fclose(fp);
     }
-    /* Now copy the fitted func into the fit array, if not null */
-    if (fit)
-      for(i=0; (i<ndata); i++) 
-	fit[i] = myexp(i*dt,AA,tau1) + myexp(i*dt,1-AA,tau2);
+
+    sfree(dparm);
+    
+    if (bAllocFit) {
+      sfree(fit);
+      fit = NULL;
+    }
   }
   
   fitparms[0]=tau1;

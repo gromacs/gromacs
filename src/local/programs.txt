@@ -88,6 +88,7 @@ END
 HEAD|Kinetic properties
 g_traj|plots x, v, f, box, temperature and rotational energy
 g_velacc|calculates velocity autocorrelation functions
+g_tcaf|calculates viscosities of liquids
 END
 
 HEAD|Electrostatic properties

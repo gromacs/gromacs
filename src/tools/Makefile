@@ -28,7 +28,8 @@ PROGRAMS = \
 	g_nmeig		g_nmens		g_order		g_potential	\
 	g_rama		g_rdens		g_rdf		g_rms		\
 	g_rmsdist	g_rmsf		g_rotacf	g_saltbr	\
-	g_sas		g_sgangle	g_sorient 	g_traj		\
+	g_sas		g_sgangle	g_sorient 	g_tcaf		\
+	g_traj		\
 	g_velacc	genbox		genconf		genion		\
 	genpr		make_ndx	mk_angndx	trjcat		\
 	trjconv         trjorder	wheel		xpm2ps
@@ -106,6 +107,9 @@ g_chi:		g_chi.o		anadih.o pp2shift.o	dlist.o $(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_velacc:	g_velacc.o	$(ACOBJ)
+	        $(LD) -o  $@ $^ $(SYSLIBS)
+
+g_tcaf:		g_tcaf.o	$(ACOBJ)
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
 g_angle:	g_angle.o  	anadih.o	$(ACOBJ)
