@@ -252,6 +252,7 @@ void func_args()
   declare_real_vector("Vc");
   /* RF_ARGS - Reaction field constant */
   declare_real("krf");
+  declare_real("crf");
 
   /* 3: LJ_ARGS */
   declare_int_vector("type");

@@ -8799,6 +8799,7 @@ proc inl2100_sse
 %$facel		arg
 %$Vc		arg			
 %$krf		arg	
+%$crf		arg	
 %$type		arg
 %$ntype  	arg
 %$nbfp		arg	
@@ -8825,19 +8826,20 @@ proc inl2100_sse
 .three       equ   272
 .two         equ   288
 .krf	     equ   304	 
-.is3         equ   320
-.ii3         equ   324
-.ntia	     equ   328
-.innerjjnr   equ   332
-.innerk      equ   336
-.salign	     equ   340								
+.crf	     equ   320	 
+.is3         equ   336
+.ii3         equ   340
+.ntia	     equ   344
+.innerjjnr   equ   348
+.innerk      equ   352
+.salign	     equ   356								
         push eax
         push ebx
         push ecx
         push edx
 	push esi
 	push edi
-	sub esp, dword 344		; local stack space
+	sub esp, dword 360		; local stack space
 	mov  eax, esp
 	and  eax, 0xf
 	sub esp, eax
@@ -8851,6 +8853,7 @@ proc inl2100_sse
 	movups xmm3, [sse_twelve]
 	movups xmm4, [sse_two]
 	movss xmm5, [ebp + %$krf]
+	movss xmm6, [ebp + %$crf]
 	
 	movaps [esp + .half],  xmm0
 	movaps [esp + .three], xmm1
@@ -8858,7 +8861,9 @@ proc inl2100_sse
 	movaps [esp + .twelve], xmm3
 	movaps [esp + .two], xmm4
 	shufps xmm5, xmm5, 0b
+	shufps xmm6, xmm6, 0b
 	movaps [esp + .krf], xmm5
+	movaps [esp + .crf], xmm6
 
 	;; assume we have at least one i particle - start directly	
 .outer:
@@ -9063,6 +9068,7 @@ proc inl2100_sse
 	movaps xmm6, xmm0
 	addps  xmm6, xmm7	;  xmm6=rinv+krsq
 	movaps xmm1, xmm4
+	subps  xmm6, [esp + .crf]
 	mulps  xmm1, xmm4
 	mulps  xmm1, xmm4	;  xmm1=rinvsix
 	movaps xmm2, xmm1
@@ -9262,11 +9268,12 @@ proc inl2100_sse
 	movaps xmm6, xmm0
 	addps  xmm6, xmm7	;  xmm6=rinv+krsq
 	movaps xmm1, xmm4
+	subps  xmm6, [esp + .crf]
 	mulps  xmm1, xmm4
 	mulps  xmm1, xmm4	;  xmm1=rinvsix
 	movaps xmm2, xmm1
 	mulps  xmm2, xmm2	;  xmm2=rinvtwelve
-	mulps  xmm6, xmm3	; xmm6=vcoul=qq*(rinv+krsq)
+	mulps  xmm6, xmm3	; xmm6=vcoul=qq*(rinv+krsq-crf)
 	mulps  xmm7, [esp + .two]	
 	mulps  xmm1, [esp + .c6]
 	mulps  xmm2, [esp + .c12]
@@ -9405,6 +9412,7 @@ proc inl2100_sse
 	movaps xmm6, xmm0
 	addps  xmm6, xmm7	;  xmm6=rinv+krsq
 	movaps xmm1, xmm4
+	subps  xmm6, [esp + .crf]	
 	mulps  xmm1, xmm4
 	mulps  xmm1, xmm4	;  xmm1=rinvsix
 	movaps xmm2, xmm1
@@ -9556,7 +9564,654 @@ proc inl2100_sse
 	emms
 	mov eax, [esp + .salign]
 	add esp, eax
-	add esp, dword 344
+	add esp, dword 360
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	endproc
+
+
+
+proc inl2000_sse
+%$nri		arg
+%$iinr		arg
+%$jindex	arg
+%$jjnr		arg
+%$shift		arg
+%$shiftvec	arg
+%$fshift	arg
+%$gid		arg
+%$pos		arg		
+%$faction	arg
+%$charge	arg
+%$facel		arg
+%$Vc		arg			
+%$krf		arg	
+%$crf           arg
+	;; stack offsets for local variables
+	;; bottom of stack is cache-aligned for sse use
+.ix	     equ     0
+.iy	     equ    16
+.iz          equ    32
+.iq          equ    48
+.dx          equ    64
+.dy          equ    80
+.dz          equ    96	
+.vctot       equ   112
+.fix         equ   128
+.fiy         equ   144
+.fiz         equ   160
+.half        equ   176
+.three       equ   192
+.two         equ   208
+.krf	     equ   224	 
+.crf	     equ   240	 
+.is3         equ   256
+.ii3         equ   260
+.innerjjnr   equ   264
+.innerk      equ   268
+.salign	     equ   272								
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, dword 276		; local stack space
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + .salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movups xmm4, [sse_two]
+	movss xmm5, [ebp + %$krf]
+	movss xmm6, [ebp + %$crf]
+	
+	movaps [esp + .half],  xmm0
+	movaps [esp + .three], xmm1
+	movaps [esp + .two], xmm4
+	shufps xmm5, xmm5, 0b
+	movaps [esp + .krf], xmm5
+	shufps xmm6, xmm6, 0b
+	movaps [esp + .crf], xmm6
+
+	;; assume we have at least one i particle - start directly	
+.outer:
+	mov   eax, [ebp + %$shift]      ;  eax = pointer into shift[]
+	mov   ebx, [eax]		;  ebx=shift[n]
+	add   [ebp + %$shift], dword 4  ;  advance pointer one step
+	
+	lea   ebx, [ebx + ebx*2]        ;  ebx=3*is
+	mov   [esp + .is3],ebx    	;  store is3
+
+	mov   eax, [ebp + %$shiftvec]   ;  eax = base of shiftvec[] 
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
+	add   [ebp + %$iinr], dword 4   ;  advance pointer
+	mov   ebx, [ecx]	        ;  ebx =ii
+
+	mov   edx, [ebp + %$charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + %$facel]
+	shufps xmm3, xmm3, 0b
+		
+	lea   ebx, [ebx + ebx*2]	;  ebx = 3*ii=ii3
+	mov   eax, [ebp + %$pos]        ;  eax = base of pos[]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + .iq], xmm3
+	
+	shufps xmm0, xmm0, 0b
+	shufps xmm1, xmm1, 0b
+	shufps xmm2, xmm2, 0b
+
+	movaps [esp + .ix], xmm0
+	movaps [esp + .iy], xmm1
+	movaps [esp + .iz], xmm2
+
+	mov   [esp + .ii3], ebx
+	
+	; clear vctot and i forces
+	xorps xmm4, xmm4
+	movaps [esp + .vctot], xmm4
+	movaps [esp + .fix], xmm4
+	movaps [esp + .fiy], xmm4
+	movaps [esp + .fiz], xmm4
+	
+	mov   eax, [ebp + %$jindex]
+	mov   ecx, [eax]	         ;  jindex[n]
+	mov   edx, [eax + 4]	         ;  jindex[n+1]
+	add   [ebp + %$jindex], dword 4
+	sub   edx, ecx                   ;  number of innerloop atoms
+
+	mov   esi, [ebp + %$pos]
+	mov   edi, [ebp + %$faction]	
+	mov   eax, [ebp + %$jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + .innerjjnr], eax     ;  pointer to jjnr[nj0]
+	sub   edx, dword 4
+	mov   [esp + .innerk], edx        ;  number of innerloop atoms
+	jge   .unroll_loop
+	jmp   .finish_inner
+.unroll_loop:	
+	;; quad-unroll innerloop here.
+	mov   edx, [esp + .innerjjnr]     ; pointer to jjnr[k] 
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             ; eax-edx=jnr1-4 
+	add   [esp + .innerjjnr], dword 16 ; advance pointer (unrolled 4) 
+
+	mov esi, [ebp + %$charge]        ; base of charge[]
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + .iq]
+	shufps xmm3, xmm6, 00000000b 
+	shufps xmm4, xmm7, 00000000b 
+	shufps xmm3, xmm4, 10001000b ;  all charges in xmm3
+
+	mov esi, [ebp + %$pos]        ; base of pos[]
+
+	lea   eax, [eax + eax*2]         ;  replace jnr with j3
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         ;  replace jnr with j3
+	lea   edx, [edx + edx*2]	
+
+	; move four coordinates to xmm0-xmm2	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0b
+	shufps xmm6, xmm1, 0b
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 10001000b
+	
+	shufps xmm0, xmm5, 10001000b
+	shufps xmm1, xmm5, 11011101b		
+
+	; move ix-iz to xmm4-xmm6
+	movaps xmm4, [esp + .ix]
+	movaps xmm5, [esp + .iy]
+	movaps xmm6, [esp + .iz]
+
+	; calc dr
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	; store dr
+	movaps [esp + .dx], xmm4
+	movaps [esp + .dy], xmm5
+	movaps [esp + .dz], xmm6
+	; square it
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	; rsq in xmm4
+	
+	movaps xmm7, [esp + .krf]
+	rsqrtps xmm5, xmm4
+	; lookup seed in xmm5
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + .three]
+	mulps xmm5, xmm4	;rsq*lu*lu			
+	movaps xmm0, [esp + .half]
+	mulps  xmm7, xmm4	;  xmm7=krsq
+	subps xmm1, xmm5	; 3.0-rsq*lu*lu
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	; xmm0=rinv
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	; xmm4=rinvsq
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	;  xmm6=rinv+krsq
+
+	subps  xmm6, [esp + .crf] ;  xmm6=rinv+krsq-crf
+
+	mulps  xmm6, xmm3	; xmm6=vcoul=qq*(rinv+krsq)
+	mulps  xmm7, [esp + .two]
+
+	subps  xmm0, xmm7
+	mulps  xmm3, xmm0	
+	mulps  xmm4, xmm3	; xmm4=total fscal
+	addps  xmm6, [esp + .vctot]
+
+	movaps xmm0, [esp + .dx]
+	movaps xmm1, [esp + .dy]
+	movaps xmm2, [esp + .dz]
+
+	movaps [esp + .vctot], xmm6
+
+	mov    edi, [ebp + %$faction]
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+	; xmm0-xmm2 contains tx-tz (partial force)
+	; now update f_i 
+	movaps xmm3, [esp + .fix]
+	movaps xmm4, [esp + .fiy]
+	movaps xmm5, [esp + .fiz]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	addps  xmm5, xmm2
+	movaps [esp + .fix], xmm3
+	movaps [esp + .fiy], xmm4
+	movaps [esp + .fiz], xmm5
+	; the fj's - start by accumulating x & y forces from memory
+	movlps xmm4, [edi + eax*4]
+	movlps xmm6, [edi + ecx*4]
+	movhps xmm4, [edi + ebx*4]
+	movhps xmm6, [edi + edx*4]
+
+	movaps xmm3, xmm4
+	shufps xmm3, xmm6, 10001000b
+	shufps xmm4, xmm6, 11011101b			      
+
+	; now xmm3-xmm5 contains fjx, fjy, fjz
+	subps  xmm3, xmm0
+	subps  xmm4, xmm1
+	
+	; unpack them back so we can store them - first x & y in xmm3/xmm4
+
+	movaps xmm6, xmm3
+	unpcklps xmm6, xmm4
+	unpckhps xmm3, xmm4	
+	; xmm6(l)=x & y for j1, (h) for j2
+	; xmm3(l)=x & y for j3, (h) for j4
+	movlps [edi + eax*4], xmm6
+	movlps [edi + ecx*4], xmm3
+	
+	movhps [edi + ebx*4], xmm6
+	movhps [edi + edx*4], xmm3
+
+	;;  and the z forces
+	movss  xmm4, [edi + eax*4 + 8]
+	movss  xmm5, [edi + ebx*4 + 8]
+	movss  xmm6, [edi + ecx*4 + 8]
+	movss  xmm7, [edi + edx*4 + 8]
+	subss  xmm4, xmm2
+	shufps xmm2, xmm2, 11100101b
+	subss  xmm5, xmm2
+	shufps xmm2, xmm2, 11101010b
+	subss  xmm6, xmm2
+	shufps xmm2, xmm2, 11111111b
+	subss  xmm7, xmm2
+	movss  [edi + eax*4 + 8], xmm4
+	movss  [edi + ebx*4 + 8], xmm5
+	movss  [edi + ecx*4 + 8], xmm6
+	movss  [edi + edx*4 + 8], xmm7
+	
+	;; should we do one more iteration?
+	sub   [esp + .innerk], dword 4
+	jl    .finish_inner
+	jmp   .unroll_loop
+.finish_inner:
+	;;  check if at least two particles remain
+	add   [esp + .innerk], dword 4
+	mov   edx, [esp + .innerk]
+	and   edx, 10b
+	jnz   .dopair
+	jmp   .checksingle
+.dopair:	
+	mov esi, [ebp + %$charge]
+
+        mov   ecx, [esp + .innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + .innerjjnr], dword 8
+
+	xorps xmm3, xmm3
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 00001100b 
+	shufps xmm3, xmm3, 01011000b ; xmm3(0,1) has the charges.	
+
+	mov edi, [ebp + %$pos]	
+				
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	; move coordinates to xmm0-xmm2
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + .iq]
+
+	xorps  xmm7,xmm7
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0b
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 10001000b
+	
+	shufps xmm0, xmm0, 10001000b
+	shufps xmm1, xmm1, 11011101b
+			
+	mov    edi, [ebp + %$faction]
+	; move ix-iz to xmm4-xmm6
+	
+	movaps xmm4, [esp + .ix]
+	movaps xmm5, [esp + .iy]
+	movaps xmm6, [esp + .iz]
+
+	; calc dr
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	; store dr
+	movaps [esp + .dx], xmm4
+	movaps [esp + .dy], xmm5
+	movaps [esp + .dz], xmm6
+	; square it
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	; rsq in xmm4
+
+	movaps xmm7, [esp + .krf]
+	rsqrtps xmm5, xmm4
+	; lookup seed in xmm5
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + .three]
+	mulps xmm5, xmm4	;rsq*lu*lu			
+	movaps xmm0, [esp + .half]
+	mulps  xmm7, xmm4	;  xmm7=krsq
+	subps xmm1, xmm5	; 3.0-rsq*lu*lu
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	; xmm0=rinv
+	
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	; xmm4=rinvsq
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	;  xmm6=rinv+krsq
+
+	subps  xmm6, [esp + .crf] ;  xmm6=rinv+krsq-crf
+
+	mulps  xmm6, xmm3	; xmm6=vcoul=qq*(rinv+krsq-crf)
+	mulps  xmm7, [esp + .two]	
+
+	subps  xmm0, xmm7
+	mulps  xmm3, xmm0	
+
+	mulps  xmm4, xmm3	; xmm4=total fscal
+	addps  xmm6, [esp + .vctot]
+
+	movaps xmm0, [esp + .dx]
+	movaps xmm1, [esp + .dy]
+	movaps xmm2, [esp + .dz]
+
+	movaps [esp + .vctot], xmm6
+
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+	; xmm0-xmm2 contains tx-tz (partial force)
+	; now update f_i 
+	movaps xmm3, [esp + .fix]
+	movaps xmm4, [esp + .fiy]
+	movaps xmm5, [esp + .fiz]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	addps  xmm5, xmm2
+	movaps [esp + .fix], xmm3
+	movaps [esp + .fiy], xmm4
+	movaps [esp + .fiz], xmm5
+	; update the fj's
+	movss   xmm3, [edi + eax*4]
+	movss   xmm4, [edi + eax*4 + 4]
+	movss   xmm5, [edi + eax*4 + 8]
+	subss   xmm3, xmm0
+	subss   xmm4, xmm1
+	subss   xmm5, xmm2	
+	movss   [edi + eax*4], xmm3
+	movss   [edi + eax*4 + 4], xmm4
+	movss   [edi + eax*4 + 8], xmm5	
+
+	shufps  xmm0, xmm0, 11100001b
+	shufps  xmm1, xmm1, 11100001b
+	shufps  xmm2, xmm2, 11100001b
+
+	movss   xmm3, [edi + ebx*4]
+	movss   xmm4, [edi + ebx*4 + 4]
+	movss   xmm5, [edi + ebx*4 + 8]
+	subss   xmm3, xmm0
+	subss   xmm4, xmm1
+	subss   xmm5, xmm2	
+	movss   [edi + ebx*4], xmm3
+	movss   [edi + ebx*4 + 4], xmm4
+	movss   [edi + ebx*4 + 8], xmm5	
+
+.checksingle:				
+	mov   edx, [esp + .innerk]
+	and   edx, 1b
+	jnz    .dosingle
+	jmp    .updateouterdata
+.dosingle:			
+	mov esi, [ebp + %$charge]
+	mov edi, [ebp + %$pos]
+	mov   ecx, [esp + .innerjjnr]
+	xorps xmm3, xmm3
+	mov   eax, [ecx]
+	movss xmm3, [esi + eax*4]	; xmm3(0) has the charge		
+		
+	lea   eax, [eax + eax*2]
+	
+	; move coordinates to xmm0-xmm2
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + .iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + .ix]
+	movaps xmm5, [esp + .iy]
+	movaps xmm6, [esp + .iz]
+
+	; calc dr
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	; store dr
+	movaps [esp + .dx], xmm4
+	movaps [esp + .dy], xmm5
+	movaps [esp + .dz], xmm6
+	; square it
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	; rsq in xmm4
+
+	movaps xmm7, [esp + .krf]
+	rsqrtps xmm5, xmm4
+	; lookup seed in xmm5
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + .three]
+	mulps xmm5, xmm4	;rsq*lu*lu			
+	movaps xmm0, [esp + .half]
+	mulps  xmm7, xmm4	;  xmm7=krsq
+	subps xmm1, xmm5	; 3.0-rsq*lu*lu
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	; xmm0=rinv
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	; xmm4=rinvsq
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	;  xmm6=rinv+krsq
+
+	subps  xmm6, [esp + .crf] ;  xmm6=rinv+krsq-crf
+
+	mulps  xmm6, xmm3	; xmm6=vcoul
+	mulps  xmm7, [esp + .two]
+
+	subps  xmm0, xmm7
+	mulps  xmm3, xmm0
+	mulps  xmm4, xmm3	; xmm4=total fscal
+	addps  xmm6, [esp + .vctot]
+	
+	mov    edi, [ebp + %$faction]
+
+	movaps xmm0, [esp + .dx]
+	movaps xmm1, [esp + .dy]
+	movaps xmm2, [esp + .dz]
+
+	movaps [esp + .vctot], xmm6
+
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+	; xmm0-xmm2 contains tx-tz (partial force)
+	; now update f_i 
+	movaps xmm3, [esp + .fix]
+	movaps xmm4, [esp + .fiy]
+	movaps xmm5, [esp + .fiz]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	addps  xmm5, xmm2
+	movaps [esp + .fix], xmm3
+	movaps [esp + .fiy], xmm4
+	movaps [esp + .fiz], xmm5
+	; update fj
+	
+	movss   xmm3, [edi + eax*4]
+	movss   xmm4, [edi + eax*4 + 4]
+	movss   xmm5, [edi + eax*4 + 8]
+	subss   xmm3, xmm0
+	subss   xmm4, xmm1
+	subss   xmm5, xmm2	
+	movss   [edi + eax*4], xmm3
+	movss   [edi + eax*4 + 4], xmm4
+	movss   [edi + eax*4 + 8], xmm5	
+.updateouterdata:
+	mov   ecx, [esp + .ii3]
+	mov   edi, [ebp + %$faction]
+	mov   esi, [ebp + %$fshift]
+	mov   edx, [esp + .is3]
+
+	; accumulate i forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fix]
+	movaps xmm1, [esp + .fiy]
+	movaps xmm2, [esp + .fiz]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4]
+	movss  xmm4, [edi + ecx*4 + 4]
+	movss  xmm5, [edi + ecx*4 + 8]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4],     xmm3
+	movss  [edi + ecx*4 + 4], xmm4
+	movss  [edi + ecx*4 + 8], xmm5
+
+	; increment fshift force
+	movss  xmm3, [esi + edx*4]
+	movss  xmm4, [esi + edx*4 + 4]
+	movss  xmm5, [esi + edx*4 + 8]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [esi + edx*4],     xmm3
+	movss  [esi + edx*4 + 4], xmm4
+	movss  [esi + edx*4 + 8], xmm5
+
+	; get group index for i particle
+	mov   edx, [ebp + %$gid]      ; get group index for this i particle
+	mov   edx, [edx]
+	add   [ebp + %$gid], dword 4  ;  advance pointer
+
+	; accumulate total potential energy and update it.
+	movaps xmm7, [esp + .vctot]
+	; accumulate
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	; pos 0-1 in xmm7 have the sum now
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1b
+	addss  xmm7, xmm6		
+
+	; add earlier value from mem.
+	mov   eax, [ebp + %$Vc]
+	addss xmm7, [eax + edx*4] 
+	; move back to mem.
+	movss [eax + edx*4], xmm7 
+	
+	;; finish if last
+	mov   ecx, [ebp + %$nri]
+	dec ecx
+	jecxz .end
+	;;  not last, iterate once more!
+	mov [ebp + %$nri], ecx
+	jmp .outer
+.end:
+	emms
+	mov eax, [esp + .salign]
+	add esp, eax
+	add esp, dword 276
 	pop edi
 	pop esi
         pop edx
@@ -13749,6 +14404,7 @@ proc inl2120_sse
 %$facel		arg
 %$Vc		arg			
 %$krf		arg	
+%$crf		arg	
 %$type		arg
 %$ntype  	arg
 %$nbfp		arg	
@@ -13799,22 +14455,23 @@ proc inl2120_sse
 .three       equ   656
 .two	     equ   672
 .krf	     equ   688
-.krsqO       equ   704
-.krsqH1      equ   720
-.krsqH2	     equ   736	 		
-.is3         equ   752
-.ii3         equ   756
-.ntia	     equ   760	
-.innerjjnr   equ   764
-.innerk      equ   768
-.salign	     equ   772								
+.crf	     equ   704
+.krsqO       equ   720
+.krsqH1      equ   736
+.krsqH2	     equ   752	 		
+.is3         equ   768
+.ii3         equ   772
+.ntia	     equ   776	
+.innerjjnr   equ   780
+.innerk      equ   784
+.salign	     equ   788								
         push eax
         push ebx
         push ecx
         push edx
 	push esi
 	push edi
-	sub esp, 776		; local stack space
+	sub esp, 792		; local stack space
 	mov  eax, esp
 	and  eax, 0xf
 	sub esp, eax
@@ -13828,6 +14485,7 @@ proc inl2120_sse
 	movups xmm3, [sse_twelve]
 	movups xmm4, [sse_two]
 	movss xmm5, [ebp + %$krf]
+	movss xmm6, [ebp + %$crf]
 
 	movaps [esp + .half],  xmm0
 	movaps [esp + .three], xmm1
@@ -13835,7 +14493,9 @@ proc inl2120_sse
 	movaps [esp + .twelve], xmm3
 	movaps [esp + .two], xmm4
 	shufps xmm5, xmm5, 0b
+	shufps xmm6, xmm6, 0b
 	movaps [esp + .krf], xmm5
+	movaps [esp + .crf], xmm6
 	
 	;; assume we have at least one i particle - start directly
 	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
@@ -14173,6 +14833,7 @@ proc inl2120_sse
 	movaps xmm1, [esp + .krsqO]
 	addps  xmm0, xmm1
 	mulps  xmm1, [esp + .two]
+	subps  xmm0, [esp + .crf] ;  xmm0=rinv+krsq-crf
 	subps  xmm7, xmm1
 	mulps  xmm0, [esp + .qqO]
 	mulps  xmm7, [esp + .qqO]
@@ -14213,6 +14874,7 @@ proc inl2120_sse
 	movaps  xmm0, [esp + .krsqH1]
 	addps   xmm6, xmm0	; xmm6=rinv+krsq
 	mulps   xmm0, [esp + .two]
+	subps   xmm6, [esp + .crf]
 	subps   xmm7, xmm0	; xmm7=rinv-2*krsq
 	mulps   xmm6, [esp + .qqH] ;  vcoul
 	mulps   xmm7, [esp + .qqH]
@@ -14251,8 +14913,9 @@ proc inl2120_sse
 	mulps   xmm4, xmm4	; xmm5=rinv, xmm4=rinvsq
 	movaps  xmm7, xmm5
 	movaps  xmm0, [esp + .krsqH2]
-	addps   xmm5, xmm0	; xmm6=rinv+krsq
+	addps   xmm5, xmm0	; xmm5=rinv+krsq
 	mulps   xmm0, [esp + .two]
+	subps   xmm5, [esp + .crf]
 	subps   xmm7, xmm0	; xmm7=rinv-2*krsq
 	mulps   xmm5, [esp + .qqH] ;  vcoul
 	mulps   xmm7, [esp + .qqH]
@@ -14434,6 +15097,7 @@ proc inl2120_sse
 	movaps xmm3, [esp + .krsqO]
 	addps  xmm0, xmm3	; xmm0=rinv+krsq
 	mulps  xmm3, [esp + .two]
+	subps  xmm0, [esp + .crf] ;  xmm0=rinv+krsq-crf
 	subps  xmm1, xmm3	; xmm1=rinv-2*krsq
 	mulps  xmm0, [esp + .qqO]	; xmm0=vcoul
 	mulps  xmm1, [esp + .qqO] 	; xmm1=coul part of fs
@@ -14691,7 +15355,7 @@ proc inl2120_sse
 	emms
 	mov eax, [esp + .salign]
 	add esp, eax
-	add esp, 776
+	add esp, 792
 	pop edi
 	pop esi
         pop edx
@@ -14717,6 +15381,7 @@ proc inl2130_sse
 %$facel		arg
 %$Vc		arg			
 %$krf		arg
+%$crf		arg
 %$type		arg
 %$ntype  	arg
 %$nbfp		arg	
@@ -14817,18 +15482,19 @@ proc inl2130_sse
 .rinvH2H2    equ  1456
 .two         equ  1472
 .krf	     equ  1488	
-.is3         equ  1504
-.ii3         equ  1508
-.innerjjnr   equ  1512
-.innerk      equ  1516
-.salign	     equ  1520							
+.crf	     equ  1504
+.is3         equ  1520
+.ii3         equ  1524
+.innerjjnr   equ  1528
+.innerk      equ  1532
+.salign	     equ  1536							
         push eax
         push ebx
         push ecx
         push edx
 	push esi
 	push edi
-	sub esp, 1524		; local stack space
+	sub esp, 1540		; local stack space
 	mov  eax, esp
 	and  eax, 0xf
 	sub esp, eax
@@ -14842,13 +15508,17 @@ proc inl2130_sse
 	movups xmm3, [sse_twelve]
 	movups xmm4, [sse_two]
 	movss xmm5, [ebp + %$krf]
+	movss xmm6, [ebp + %$crf]
+	
 	movaps [esp + .half],  xmm0
 	movaps [esp + .three], xmm1
 	movaps [esp + .six],  xmm2
 	movaps [esp + .twelve], xmm3
 	movaps [esp + .two], xmm4
 	shufps xmm5, xmm5, 0b
+	shufps xmm6, xmm6, 0b
 	movaps [esp + .krf], xmm5
+	movaps [esp + .crf], xmm6
 	
 	;; assume we have at least one i particle - start directly
 	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
@@ -15304,8 +15974,9 @@ proc inl2130_sse
 	mulps  xmm5, [esp + .rsqOO] ;  xmm5=krsq
 	movaps xmm6, xmm5
 	addps  xmm6, xmm7	;  xmm6=rinv+krsq
-
-	mulps  xmm6, [esp + .qqOO] ;  xmm6=voul=qq*(rinv+krsq)
+	subps  xmm6, [esp + .crf]
+	
+	mulps  xmm6, [esp + .qqOO] ;  xmm6=voul=qq*(rinv+krsq-crf)
 	mulps xmm5, [esp + .two]
 	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
 	mulps  xmm7, [esp + .qqOO] ; xmm7 = coul part of fscal
@@ -15356,6 +16027,7 @@ proc inl2130_sse
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
 	mulps  xmm0, xmm0
+	subps  xmm4, [esp + .crf]
 	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
 	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
@@ -15393,6 +16065,7 @@ proc inl2130_sse
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
 	mulps xmm0, xmm0
+	subps  xmm4, [esp + .crf]
 	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
 	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
@@ -15430,6 +16103,7 @@ proc inl2130_sse
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
 	mulps xmm0, xmm0
+	subps  xmm4, [esp + .crf]
 	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
 	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
@@ -15466,6 +16140,7 @@ proc inl2130_sse
 	mulps  xmm5, [esp + .rsqH1H1] ;  xmm5=krsq
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
 	mulps xmm0, xmm0
 	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
@@ -15504,6 +16179,7 @@ proc inl2130_sse
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
 	mulps xmm0, xmm0
+	subps  xmm4, [esp + .crf]
 	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
 	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
@@ -15540,6 +16216,7 @@ proc inl2130_sse
 	mulps  xmm5, [esp + .rsqH2O] ;  xmm5=krsq
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
 	mulps xmm0, xmm0
 	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
@@ -15577,6 +16254,7 @@ proc inl2130_sse
 	mulps  xmm5, [esp + .rsqH2H1] ;  xmm5=krsq
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
 	mulps xmm0, xmm0
 	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
@@ -15614,6 +16292,7 @@ proc inl2130_sse
 	mulps  xmm5, [esp + .rsqH2H2] ;  xmm5=krsq
 	movaps xmm4, xmm5
 	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
 	mulps xmm0, xmm0
 	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq)
 	mulps  xmm5, [esp + .two]
@@ -15807,7 +16486,8 @@ proc inl2130_sse
 
 	addps   xmm6, xmm3	;  xmm6=rinv+krsq
 	mulps   xmm7, [esp + .two]
-			
+	subps  xmm6, [esp + .crf]	;  xmm6=rinv+krsq-crf
+	
 	xorps   xmm1, xmm1
 	movaps  xmm0, xmm3
 	subps   xmm3, xmm7	; xmm3=rinv-2*krsq
@@ -15916,7 +16596,6 @@ proc inl2130_sse
 	mulps xmm0, [esp + .krf] ;  krsq
 	mulps xmm4, [esp + .krf] ;  krsq 
 
-	
 
 	;; assemble charges in xmm6
 	xorps   xmm6, xmm6
@@ -15926,6 +16605,8 @@ proc inl2130_sse
 	movaps  xmm5, xmm4
 	addps   xmm0, xmm3	; krsq+rinv
 	addps   xmm4, xmm7	; krsq+rinv
+	subps xmm0, [esp + .crf]
+	subps xmm4, [esp + .crf]
 	mulps   xmm1, [esp + .two]
 	mulps   xmm5, [esp + .two]
 	mulps   xmm0, xmm6	;  vcoul
@@ -16198,7 +16879,2318 @@ proc inl2130_sse
 	emms
 	mov eax, [esp + .salign]
 	add esp, eax
-	add esp, 1524
+	add esp, 1540
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	endproc
+
+
+	
+
+proc inl2020_sse
+%$nri		arg
+%$iinr		arg
+%$jindex	arg
+%$jjnr		arg
+%$shift		arg
+%$shiftvec	arg
+%$fshift	arg
+%$gid		arg
+%$pos		arg		
+%$faction	arg
+%$charge	arg
+%$facel		arg
+%$Vc		arg			
+%$krf		arg	
+%$crf		arg	
+	;; stack offsets for local variables
+	;; bottom of stack is cache-aligned for sse use
+.ixO	     equ     0
+.iyO	     equ    16
+.izO         equ    32
+.ixH1	     equ    48
+.iyH1	     equ    64
+.izH1        equ    80
+.ixH2	     equ    96
+.iyH2	     equ   112
+.izH2        equ   128
+.iqO         equ   144 
+.iqH         equ   160 
+.dxO         equ   176
+.dyO         equ   192
+.dzO         equ   208	
+.dxH1        equ   224
+.dyH1        equ   240
+.dzH1        equ   256	
+.dxH2        equ   272
+.dyH2        equ   288
+.dzH2        equ   304	
+.qqO         equ   320
+.qqH         equ   336
+.vctot       equ   352
+.fixO        equ   384
+.fiyO        equ   400
+.fizO        equ   416
+.fixH1       equ   432
+.fiyH1       equ   448
+.fizH1       equ   464
+.fixH2       equ   480
+.fiyH2       equ   496
+.fizH2       equ   512
+.fjx	     equ   528
+.fjy         equ   544
+.fjz         equ   560
+.half        equ   576
+.three       equ   592
+.two	     equ   608
+.krf	     equ   624
+.crf	     equ   640
+.krsqO       equ   656
+.krsqH1      equ   672
+.krsqH2	     equ   688	 		
+.is3         equ   704
+.ii3         equ   708
+.innerjjnr   equ   712
+.innerk      equ   716
+.salign	     equ   720								
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 724		; local stack space
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + .salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movups xmm4, [sse_two]
+	movss xmm5, [ebp + %$krf]
+	movss xmm6, [ebp + %$crf]
+
+	movaps [esp + .half],  xmm0
+	movaps [esp + .three], xmm1
+	movaps [esp + .two], xmm4
+	shufps xmm5, xmm5, 0b
+	shufps xmm6, xmm6, 0b
+	movaps [esp + .krf], xmm5
+	movaps [esp + .crf], xmm6
+	
+	;; assume we have at least one i particle - start directly
+	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
+	mov   ebx, [ecx]	        ;  ebx =ii
+
+	mov   edx, [ebp + %$charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + %$facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0b
+	shufps xmm4, xmm4, 0b
+	movaps [esp + .iqO], xmm3
+	movaps [esp + .iqH], xmm4
+			
+.outer:
+	mov   eax, [ebp + %$shift]      ;  eax = pointer into shift[]
+	mov   ebx, [eax]		;  ebx=shift[n]
+	add   [ebp + %$shift], dword 4  ;  advance pointer one step
+	
+	lea   ebx, [ebx + ebx*2]        ;  ebx=3*is
+	mov   [esp + .is3],ebx    	;  store is3
+
+	mov   eax, [ebp + %$shiftvec]   ;  eax = base of shiftvec[] 
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
+	add   [ebp + %$iinr], dword 4   ;  advance pointer
+	mov   ebx, [ecx]	        ;  ebx =ii
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	;  ebx = 3*ii=ii3
+	mov   eax, [ebp + %$pos]        ;  eax = base of pos[]
+	mov   [esp + .ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0b
+	shufps xmm4, xmm4, 0b
+	shufps xmm5, xmm5, 0b
+	movaps [esp + .ixO], xmm3
+	movaps [esp + .iyO], xmm4
+	movaps [esp + .izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0b
+	shufps xmm1, xmm1, 0b
+	shufps xmm2, xmm2, 0b
+	shufps xmm3, xmm3, 0b
+	shufps xmm4, xmm4, 0b
+	shufps xmm5, xmm5, 0b
+	movaps [esp + .ixH1], xmm0
+	movaps [esp + .iyH1], xmm1
+	movaps [esp + .izH1], xmm2
+	movaps [esp + .ixH2], xmm3
+	movaps [esp + .iyH2], xmm4
+	movaps [esp + .izH2], xmm5
+	
+	; clear vctot and i forces
+	xorps xmm4, xmm4
+	movaps [esp + .vctot], xmm4
+	movaps [esp + .fixO], xmm4
+	movaps [esp + .fiyO], xmm4
+	movaps [esp + .fizO], xmm4
+	movaps [esp + .fixH1], xmm4
+	movaps [esp + .fiyH1], xmm4
+	movaps [esp + .fizH1], xmm4
+	movaps [esp + .fixH2], xmm4
+	movaps [esp + .fiyH2], xmm4
+	movaps [esp + .fizH2], xmm4
+	
+	mov   eax, [ebp + %$jindex]
+	mov   ecx, [eax]	         ;  jindex[n]
+	mov   edx, [eax + 4]	         ;  jindex[n+1]
+	add   [ebp + %$jindex], dword 4
+	sub   edx, ecx                   ;  number of innerloop atoms
+
+	mov   esi, [ebp + %$pos]
+	mov   edi, [ebp + %$faction]	
+	mov   eax, [ebp + %$jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + .innerjjnr], eax     ;  pointer to jjnr[nj0]
+	sub   edx, dword 4
+	mov   [esp + .innerk], edx        ;  number of innerloop atoms
+	jge   .unroll_loop
+	jmp   .odd_inner
+.unroll_loop:
+	;; quad-unroll innerloop here.
+	mov   edx, [esp + .innerjjnr]     ; pointer to jjnr[k] 
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             ; eax-edx=jnr1-4 
+
+	add   [esp + .innerjjnr], dword 16 ; advance pointer (unrolled 4) 
+
+	mov esi, [ebp + %$charge]        ; base of charge[]
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 00000000b 
+	shufps xmm4, xmm7, 00000000b 
+	shufps xmm3, xmm4, 10001000b ;  all charges in xmm3
+	movaps xmm4, xmm3	     ;  and in xmm4
+	mulps  xmm3, [esp + .iqO]
+	mulps  xmm4, [esp + .iqH]
+
+	movaps  [esp + .qqO], xmm3
+	movaps  [esp + .qqH], xmm4
+
+	mov esi, [ebp + %$pos]        ; base of pos[]
+
+	lea   eax, [eax + eax*2]         ;  replace jnr with j3
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         ;  replace jnr with j3
+	lea   edx, [edx + edx*2]	
+
+	; move four coordinates to xmm0-xmm2	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0b
+	shufps xmm6, xmm1, 0b
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 10001000b
+	
+	shufps xmm0, xmm5, 10001000b
+	shufps xmm1, xmm5, 11011101b		
+
+	; move ixO-izO to xmm4-xmm6
+	movaps xmm4, [esp + .ixO]
+	movaps xmm5, [esp + .iyO]
+	movaps xmm6, [esp + .izO]
+
+	; calc dr
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	; store dr
+	movaps [esp + .dxO], xmm4
+	movaps [esp + .dyO], xmm5
+	movaps [esp + .dzO], xmm6
+	; square it
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	; rsqO in xmm7
+
+	; move ixH1-izH1 to xmm4-xmm6
+	movaps xmm4, [esp + .ixH1]
+	movaps xmm5, [esp + .iyH1]
+	movaps xmm6, [esp + .izH1]
+
+	; calc dr
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	; store dr
+	movaps [esp + .dxH1], xmm4
+	movaps [esp + .dyH1], xmm5
+	movaps [esp + .dzH1], xmm6
+	; square it
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	; rsqH1 in xmm6
+
+	; move ixH2-izH2 to xmm3-xmm5
+	movaps xmm3, [esp + .ixH2]
+	movaps xmm4, [esp + .iyH2]
+	movaps xmm5, [esp + .izH2]
+
+	; calc dr
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	; store dr
+	movaps [esp + .dxH2], xmm3
+	movaps [esp + .dyH2], xmm4
+	movaps [esp + .dzH2], xmm5
+	; square it
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	; rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7
+
+	movaps xmm0, xmm5
+	movaps xmm1, xmm6
+	movaps xmm2, xmm7
+
+	mulps  xmm0, [esp + .krf]	
+	mulps  xmm1, [esp + .krf]	
+	mulps  xmm2, [esp + .krf]	
+
+	movaps [esp + .krsqH2], xmm0
+	movaps [esp + .krsqH1], xmm1
+	movaps [esp + .krsqO], xmm2
+	
+	; start with rsqO - seed in xmm2	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + .three]
+	mulps   xmm2, xmm7	; rsq*lu*lu
+	subps   xmm4, xmm2	; 3.0-rsq*lu*lu
+	mulps   xmm4, xmm3	; lu*(3-rsq*lu*lu)
+	mulps   xmm4, [esp + .half]
+	movaps  xmm7, xmm4	; rinvO in xmm7
+	; rsqH1 - seed in xmm2	
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + .three]
+	mulps   xmm2, xmm6	; rsq*lu*lu
+	subps   xmm4, xmm2	; 3.0-rsq*lu*lu
+	mulps   xmm4, xmm3	; lu*(3-rsq*lu*lu)
+	mulps   xmm4, [esp + .half]
+	movaps  xmm6, xmm4	; rinvH1 in xmm6
+	; rsqH2 - seed in xmm2	
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + .three]
+	mulps   xmm2, xmm5	; rsq*lu*lu
+	subps   xmm4, xmm2	; 3.0-rsq*lu*lu
+	mulps   xmm4, xmm3	; lu*(3-rsq*lu*lu)
+	mulps   xmm4, [esp + .half]
+	movaps  xmm5, xmm4	; rinvH2 in xmm5
+
+	; do O interactions
+	movaps  xmm4, xmm7	
+	mulps   xmm4, xmm4	; xmm7=rinv, xmm4=rinvsq
+
+	movaps xmm0, xmm7
+	movaps xmm1, [esp + .krsqO]
+	addps  xmm0, xmm1
+	subps  xmm0, [esp + .crf] ;  xmm0=rinv+krsq-crf
+	mulps  xmm1, [esp + .two]
+	subps  xmm7, xmm1
+	mulps  xmm0, [esp + .qqO]
+	mulps  xmm7, [esp + .qqO]
+
+	mulps  xmm4, xmm7	; total fsO in xmm4
+
+	addps  xmm0, [esp + .vctot]
+	movaps [esp + .vctot], xmm0
+
+	movaps xmm0, [esp + .dxO]
+	movaps xmm1, [esp + .dyO]
+	movaps xmm2, [esp + .dzO]
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+
+	; update O forces
+	movaps xmm3, [esp + .fixO]
+	movaps xmm4, [esp + .fiyO]
+	movaps xmm7, [esp + .fizO]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	addps  xmm7, xmm2
+	movaps [esp + .fixO], xmm3
+	movaps [esp + .fiyO], xmm4
+	movaps [esp + .fizO], xmm7
+	; update j forces with water O
+	movaps [esp + .fjx], xmm0
+	movaps [esp + .fjy], xmm1
+	movaps [esp + .fjz], xmm2
+
+	; H1 interactions
+	movaps  xmm4, xmm6	
+	mulps   xmm4, xmm4	; xmm6=rinv, xmm4=rinvsq
+	movaps  xmm7, xmm6
+	movaps  xmm0, [esp + .krsqH1]
+	addps   xmm6, xmm0	; xmm6=rinv+krsq
+	subps   xmm6, [esp + .crf] ;  xmm6=rinv+krsq-crf
+	mulps   xmm0, [esp + .two]
+	subps   xmm7, xmm0	; xmm7=rinv-2*krsq
+	mulps   xmm6, [esp + .qqH] ;  vcoul
+	mulps   xmm7, [esp + .qqH]
+	mulps  xmm4, xmm7		; total fsH1 in xmm4
+	
+	addps  xmm6, [esp + .vctot]
+
+	movaps xmm0, [esp + .dxH1]
+	movaps xmm1, [esp + .dyH1]
+	movaps xmm2, [esp + .dzH1]
+	movaps [esp + .vctot], xmm6
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+
+	; update H1 forces
+	movaps xmm3, [esp + .fixH1]
+	movaps xmm4, [esp + .fiyH1]
+	movaps xmm7, [esp + .fizH1]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	addps  xmm7, xmm2
+	movaps [esp + .fixH1], xmm3
+	movaps [esp + .fiyH1], xmm4
+	movaps [esp + .fizH1], xmm7
+	; update j forces with water H1
+	addps  xmm0, [esp + .fjx]
+	addps  xmm1, [esp + .fjy]
+	addps  xmm2, [esp + .fjz]
+	movaps [esp + .fjx], xmm0
+	movaps [esp + .fjy], xmm1
+	movaps [esp + .fjz], xmm2
+
+	; H2 interactions
+	movaps  xmm4, xmm5	
+	mulps   xmm4, xmm4	; xmm5=rinv, xmm4=rinvsq
+	movaps  xmm7, xmm5
+	movaps  xmm0, [esp + .krsqH2]
+	addps   xmm5, xmm0	; xmm6=rinv+krsq
+	subps   xmm5, [esp + .crf] ;  xmm5=rinv+krsq-crf
+	mulps   xmm0, [esp + .two]
+	subps   xmm7, xmm0	; xmm7=rinv-2*krsq
+	mulps   xmm5, [esp + .qqH] ;  vcoul
+	mulps   xmm7, [esp + .qqH]
+	mulps  xmm4, xmm7		; total fsH2 in xmm4
+	
+	addps  xmm5, [esp + .vctot]
+
+	movaps xmm0, [esp + .dxH2]
+	movaps xmm1, [esp + .dyH2]
+	movaps xmm2, [esp + .dzH2]
+	movaps [esp + .vctot], xmm5
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+
+	; update H2 forces
+	movaps xmm3, [esp + .fixH2]
+	movaps xmm4, [esp + .fiyH2]
+	movaps xmm7, [esp + .fizH2]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	addps  xmm7, xmm2
+	movaps [esp + .fixH2], xmm3
+	movaps [esp + .fiyH2], xmm4
+	movaps [esp + .fizH2], xmm7
+
+	mov edi, [ebp +%$faction]
+	; update j forces
+	addps xmm0, [esp + .fjx]
+	addps xmm1, [esp + .fjy]
+	addps xmm2, [esp + .fjz]
+
+	movlps xmm4, [edi + eax*4]
+	movlps xmm7, [edi + ecx*4]
+	movhps xmm4, [edi + ebx*4]
+	movhps xmm7, [edi + edx*4]
+	
+	movaps xmm3, xmm4
+	shufps xmm3, xmm7, 10001000b
+	shufps xmm4, xmm7, 11011101b			      
+	; xmm3 has fjx, xmm4 has fjy.
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	; unpack the back for storing.
+	movaps xmm7, xmm3
+	unpcklps xmm7, xmm4
+	unpckhps xmm3, xmm4	
+	movlps [edi + eax*4], xmm7
+	movlps [edi + ecx*4], xmm3
+	movhps [edi + ebx*4], xmm7
+	movhps [edi + edx*4], xmm3
+	; finally z forces 
+	movss  xmm0, [edi + eax*4 + 8]
+	movss  xmm1, [edi + ebx*4 + 8]
+	movss  xmm3, [edi + ecx*4 + 8]
+	movss  xmm4, [edi + edx*4 + 8]
+	subss  xmm0, xmm2
+	shufps xmm2, xmm2, 11100101b
+	subss  xmm1, xmm2
+	shufps xmm2, xmm2, 11101010b
+	subss  xmm3, xmm2
+	shufps xmm2, xmm2, 11111111b
+	subss  xmm4, xmm2
+	movss  [edi + eax*4 + 8], xmm0
+	movss  [edi + ebx*4 + 8], xmm1
+	movss  [edi + ecx*4 + 8], xmm3
+	movss  [edi + edx*4 + 8], xmm4
+	
+	;; should we do one more iteration?
+	sub   [esp + .innerk], dword 4
+	jl    .odd_inner
+	jmp   .unroll_loop
+.odd_inner:	
+	add   [esp + .innerk], dword 4
+	jnz   .odd_loop
+	jmp   .updateouterdata
+.odd_loop:
+	mov   edx, [esp + .innerjjnr]     ; pointer to jjnr[k] 
+	mov   eax, [edx]	
+	add   [esp + .innerjjnr], dword 4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + .iqO]
+	mov esi, [ebp + %$charge] 
+	movhps xmm4, [esp + .iqH]     
+	movss xmm3, [esi + eax*4]	; charge in xmm3
+	shufps xmm3, xmm3, 0b
+	mulps xmm3, xmm4
+	movaps [esp + .qqO], xmm3	; use oxygen qq for storage.
+
+	mov esi, [ebp + %$pos]
+	lea   eax, [eax + eax*2]  
+	
+	; move j coords to xmm0-xmm2
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0b
+	shufps xmm1, xmm1, 0b
+	shufps xmm2, xmm2, 0b
+	
+	movss xmm3, [esp + .ixO]
+	movss xmm4, [esp + .iyO]
+	movss xmm5, [esp + .izO]
+		
+	movlps xmm6, [esp + .ixH1]
+	movlps xmm7, [esp + .ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + .iyH1]
+	movlps xmm7, [esp + .iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + .izH1]
+	movlps xmm7, [esp + .izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	
+	movaps [esp + .dxO], xmm3
+	movaps [esp + .dyO], xmm4
+	movaps [esp + .dzO], xmm5
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	; rsq in xmm4.
+
+	movaps xmm0, xmm4
+	mulps xmm0, [esp + .krf]
+	movaps [esp + .krsqO], xmm0
+	
+	rsqrtps xmm5, xmm4
+	; lookup seed in xmm5
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + .three]
+	mulps xmm5, xmm4	;rsq*lu*lu			
+	movaps xmm0, [esp + .half]
+	subps xmm1, xmm5	; 3.0-rsq*lu*lu
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	; xmm0=rinv
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	; xmm4=rinvsq
+
+	movaps xmm1, xmm0	; xmm1=rinv
+	movaps xmm3, [esp + .krsqO]
+	addps  xmm0, xmm3	; xmm0=rinv+krsq
+	subps  xmm0, [esp + .crf] ;  xmm0=rinv+krsq-crf
+	mulps  xmm3, [esp + .two]
+	subps  xmm1, xmm3	; xmm1=rinv-2*krsq
+	mulps  xmm0, [esp + .qqO]	; xmm0=vcoul
+	mulps  xmm1, [esp + .qqO] 	; xmm1=coul part of fs
+
+	
+	mulps  xmm4, xmm1	; xmm4=total fscal
+	addps  xmm0, [esp + .vctot]
+	movaps [esp + .vctot], xmm0
+	
+	movaps xmm0, [esp + .dxO]
+	movaps xmm1, [esp + .dyO]
+	movaps xmm2, [esp + .dzO]
+
+	mulps  xmm0, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm2, xmm4
+	; xmm0-xmm2 contains tx-tz (partial force)
+	movss  xmm3, [esp + .fixO]	
+	movss  xmm4, [esp + .fiyO]	
+	movss  xmm5, [esp + .fizO]	
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [esp + .fixO], xmm3	
+	movss  [esp + .fiyO], xmm4	
+	movss  [esp + .fizO], xmm5	; updated the O force. now do the H's
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	shufps xmm3, xmm3, 11100110b	; shift right
+	shufps xmm4, xmm4, 11100110b
+	shufps xmm5, xmm5, 11100110b
+	addss  xmm3, [esp + .fixH1]
+	addss  xmm4, [esp + .fiyH1]
+	addss  xmm5, [esp + .fizH1]
+	movss  [esp + .fixH1], xmm3	
+	movss  [esp + .fiyH1], xmm4	
+	movss  [esp + .fizH1], xmm5	; updated the H1 force. 
+
+	mov edi, [ebp + %$faction]
+	shufps xmm3, xmm3, 11100111b	; shift right
+	shufps xmm4, xmm4, 11100111b
+	shufps xmm5, xmm5, 11100111b
+	addss  xmm3, [esp + .fixH2]
+	addss  xmm4, [esp + .fiyH2]
+	addss  xmm5, [esp + .fizH2]
+	movss  [esp + .fixH2], xmm3	
+	movss  [esp + .fiyH2], xmm4	
+	movss  [esp + .fizH2], xmm5	; updated the H2 force. 
+
+	; the fj's - start by accumulating the tx/ty/tz force in xmm0, xmm1.
+	xorps  xmm5, xmm5
+	movaps xmm3, xmm0
+	movlps xmm6, [edi + eax*4]
+	movss  xmm7, [edi + eax*4 + 8]
+	unpcklps xmm3, xmm1
+	movlhps  xmm3, xmm5	
+	unpckhps xmm0, xmm1		
+	addps    xmm0, xmm3
+	movhlps  xmm3, xmm0	
+	addps    xmm0, xmm3	; x,y sum in xmm0
+
+	movhlps  xmm1, xmm2
+	addss    xmm2, xmm1
+	shufps   xmm1, xmm1, 1b 
+	addss    xmm2, xmm1    ; z sum in xmm2
+	subps    xmm6, xmm0
+	subss    xmm7, xmm2
+	
+	movlps [edi + eax*4],     xmm6
+	movss  [edi + eax*4 + 8], xmm7
+
+	dec   dword [esp + .innerk]
+	jz    .updateouterdata
+	jmp   .odd_loop
+.updateouterdata:
+	mov   ecx, [esp + .ii3]
+	mov   edi, [ebp + %$faction]
+	mov   esi, [ebp + %$fshift]
+	mov   edx, [esp + .is3]
+
+	; accumulate Oi forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fixO]
+	movaps xmm1, [esp + .fiyO]
+	movaps xmm2, [esp + .fizO]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4]
+	movss  xmm4, [edi + ecx*4 + 4]
+	movss  xmm5, [edi + ecx*4 + 8]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4],     xmm3
+	movss  [edi + ecx*4 + 4], xmm4
+	movss  [edi + ecx*4 + 8], xmm5
+
+	; accumulate force in xmm6/xmm7 for fshift
+	movaps xmm6, xmm0
+	movss xmm7, xmm2
+	movlhps xmm6, xmm1
+	shufps  xmm6, xmm6, 1000b	
+
+	; accumulate H1i forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fixH1]
+	movaps xmm1, [esp + .fiyH1]
+	movaps xmm2, [esp + .fizH1]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4 + 12]
+	movss  xmm4, [edi + ecx*4 + 16]
+	movss  xmm5, [edi + ecx*4 + 20]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4 + 12], xmm3
+	movss  [edi + ecx*4 + 16], xmm4
+	movss  [edi + ecx*4 + 20], xmm5
+
+	;accumulate force in xmm6/xmm7 for fshift
+	addss xmm7, xmm2
+	movlhps xmm0, xmm1
+	shufps  xmm0, xmm0, 1000b	
+	addps   xmm6, xmm0
+
+	; accumulate H2i forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fixH2]
+	movaps xmm1, [esp + .fiyH2]
+	movaps xmm2, [esp + .fizH2]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4 + 24]
+	movss  xmm4, [edi + ecx*4 + 28]
+	movss  xmm5, [edi + ecx*4 + 32]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4 + 24], xmm3
+	movss  [edi + ecx*4 + 28], xmm4
+	movss  [edi + ecx*4 + 32], xmm5
+
+	;accumulate force in xmm6/xmm7 for fshift
+	addss xmm7, xmm2
+	movlhps xmm0, xmm1
+	shufps  xmm0, xmm0, 1000b	
+	addps   xmm6, xmm0
+
+	; increment fshift force
+	movlps  xmm3, [esi + edx*4]
+	movss  xmm4, [esi + edx*4 + 8]
+	addps  xmm3, xmm6
+	addss  xmm4, xmm7
+	movlps  [esi + edx*4],    xmm3
+	movss  [esi + edx*4 + 8], xmm4
+
+	mov   edx, [ebp + %$gid]  
+	mov   edx, [edx]
+	add   [ebp + %$gid], dword 4	
+
+	; accumulate total potential energy and update it.
+	movaps xmm7, [esp + .vctot]
+	; accumulate
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	; pos 0-1 in xmm7 have the sum now
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1b
+	addss  xmm7, xmm6		
+        
+	; add earlier value from mem.
+	mov   eax, [ebp + %$Vc]
+	addss xmm7, [eax + edx*4] 
+	; move back to mem.
+	movss [eax + edx*4], xmm7 
+	
+	;; finish if last
+	mov   ecx, [ebp + %$nri]
+	dec ecx
+	jecxz .end
+	;;  not last, iterate once more!
+	mov [ebp + %$nri], ecx
+	jmp .outer
+.end:
+	emms
+	mov eax, [esp + .salign]
+	add esp, eax
+	add esp, 724
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	endproc
+
+
+	
+proc inl2030_sse
+%$nri		arg
+%$iinr		arg
+%$jindex	arg
+%$jjnr		arg
+%$shift		arg
+%$shiftvec	arg
+%$fshift	arg
+%$gid		arg
+%$pos		arg		
+%$faction	arg
+%$charge	arg
+%$facel		arg
+%$Vc		arg			
+%$krf		arg
+%$crf		arg
+	;; stack offsets for local variables
+	;; bottom of stack is cache-aligned for sse use
+.ixO	     equ     0
+.iyO	     equ    16
+.izO         equ    32
+.ixH1	     equ    48
+.iyH1	     equ    64
+.izH1        equ    80
+.ixH2	     equ    96
+.iyH2	     equ   112
+.izH2        equ   128
+.jxO	     equ   144
+.jyO	     equ   160
+.jzO         equ   176
+.jxH1	     equ   192
+.jyH1	     equ   208
+.jzH1        equ   224
+.jxH2	     equ   240
+.jyH2	     equ   256
+.jzH2        equ   272
+.dxOO        equ   288
+.dyOO        equ   304
+.dzOO        equ   320	
+.dxOH1       equ   336
+.dyOH1       equ   352
+.dzOH1       equ   368	
+.dxOH2       equ   384
+.dyOH2       equ   400
+.dzOH2       equ   416	
+.dxH1O       equ   432
+.dyH1O       equ   448
+.dzH1O       equ   464	
+.dxH1H1      equ   480
+.dyH1H1      equ   496
+.dzH1H1      equ   512	
+.dxH1H2      equ   528
+.dyH1H2      equ   544
+.dzH1H2      equ   560	
+.dxH2O       equ   576
+.dyH2O       equ   592
+.dzH2O       equ   608	
+.dxH2H1      equ   624
+.dyH2H1      equ   640
+.dzH2H1      equ   656	
+.dxH2H2      equ   672
+.dyH2H2      equ   688
+.dzH2H2      equ   704
+.qqOO        equ   720
+.qqOH        equ   736
+.qqHH        equ   752
+.vctot       equ   768
+.fixO        equ   784
+.fiyO        equ   800
+.fizO        equ   816
+.fixH1       equ   832
+.fiyH1       equ   848
+.fizH1       equ   864
+.fixH2       equ   880
+.fiyH2       equ   896
+.fizH2       equ   912
+.fjxO	     equ   928
+.fjyO        equ   944
+.fjzO        equ   960
+.fjxH1	     equ   976
+.fjyH1       equ   992
+.fjzH1       equ  1008
+.fjxH2	     equ  1024
+.fjyH2       equ  1040
+.fjzH2       equ  1056
+.half        equ  1072
+.three       equ  1088
+.rsqOO       equ  1104
+.rsqOH1      equ  1120
+.rsqOH2      equ  1136
+.rsqH1O      equ  1152
+.rsqH1H1     equ  1168
+.rsqH1H2     equ  1184
+.rsqH2O      equ  1200
+.rsqH2H1     equ  1216
+.rsqH2H2     equ  1232
+.rinvOO      equ  1248
+.rinvOH1     equ  1264
+.rinvOH2     equ  1280
+.rinvH1O     equ  1296
+.rinvH1H1    equ  1312
+.rinvH1H2    equ  1328
+.rinvH2O     equ  1344
+.rinvH2H1    equ  1360
+.rinvH2H2    equ  1376
+.two         equ  1392
+.krf	     equ  1408	
+.crf	     equ  1424
+.is3         equ  1440
+.ii3         equ  1444
+.innerjjnr   equ  1448
+.innerk      equ  1452
+.salign	     equ  1456							
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 1460		; local stack space
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + .salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movups xmm4, [sse_two]
+	movss xmm5, [ebp + %$krf]
+	movss xmm6, [ebp + %$crf]
+	
+	movaps [esp + .half],  xmm0
+	movaps [esp + .three], xmm1
+	movaps [esp + .two], xmm4
+	shufps xmm5, xmm5, 0b
+	shufps xmm6, xmm6, 0b
+	movaps [esp + .krf], xmm5
+	movaps [esp + .crf], xmm6
+	
+	;; assume we have at least one i particle - start directly
+	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
+	mov   ebx, [ecx]	        ;  ebx =ii
+
+	mov   edx, [ebp + %$charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + %$facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0b
+	shufps xmm4, xmm4, 0b
+	shufps xmm5, xmm5, 0b
+	movaps [esp + .qqOO], xmm3
+	movaps [esp + .qqOH], xmm4
+	movaps [esp + .qqHH], xmm5
+	
+.outer:
+	mov   eax, [ebp + %$shift]      ;  eax = pointer into shift[]
+	mov   ebx, [eax]		;  ebx=shift[n]
+	add   [ebp + %$shift], dword 4  ;  advance pointer one step
+	
+	lea   ebx, [ebx + ebx*2]        ;  ebx=3*is
+	mov   [esp + .is3],ebx    	;  store is3
+
+	mov   eax, [ebp + %$shiftvec]   ;  eax = base of shiftvec[] 
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + %$iinr]       ;  ecx = pointer into iinr[]	
+	add   [ebp + %$iinr], dword 4   ;  advance pointer
+	mov   ebx, [ecx]	        ;  ebx =ii
+
+	lea   ebx, [ebx + ebx*2]	;  ebx = 3*ii=ii3
+	mov   eax, [ebp + %$pos]        ;  eax = base of pos[]
+	mov   [esp + .ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0b
+	shufps xmm4, xmm4, 0b
+	shufps xmm5, xmm5, 0b
+	movaps [esp + .ixO], xmm3
+	movaps [esp + .iyO], xmm4
+	movaps [esp + .izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0b
+	shufps xmm1, xmm1, 0b
+	shufps xmm2, xmm2, 0b
+	shufps xmm3, xmm3, 0b
+	shufps xmm4, xmm4, 0b
+	shufps xmm5, xmm5, 0b
+	movaps [esp + .ixH1], xmm0
+	movaps [esp + .iyH1], xmm1
+	movaps [esp + .izH1], xmm2
+	movaps [esp + .ixH2], xmm3
+	movaps [esp + .iyH2], xmm4
+	movaps [esp + .izH2], xmm5
+
+	; clear vctot and i forces
+	xorps xmm4, xmm4
+	movaps [esp + .vctot], xmm4
+	movaps [esp + .fixO], xmm4
+	movaps [esp + .fiyO], xmm4
+	movaps [esp + .fizO], xmm4
+	movaps [esp + .fixH1], xmm4
+	movaps [esp + .fiyH1], xmm4
+	movaps [esp + .fizH1], xmm4
+	movaps [esp + .fixH2], xmm4
+	movaps [esp + .fiyH2], xmm4
+	movaps [esp + .fizH2], xmm4
+	
+	mov   eax, [ebp + %$jindex]
+	mov   ecx, [eax]	         ;  jindex[n]
+	mov   edx, [eax + 4]	         ;  jindex[n+1]
+	add   [ebp + %$jindex], dword 4
+	sub   edx, ecx                   ;  number of innerloop atoms
+
+	mov   esi, [ebp + %$pos]
+	mov   edi, [ebp + %$faction]	
+	mov   eax, [ebp + %$jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + .innerjjnr], eax     ;  pointer to jjnr[nj0]
+	sub   edx, dword 4
+	mov   [esp + .innerk], edx        ;  number of innerloop atoms
+	jge   .unroll_loop
+	jmp   .single_check
+.unroll_loop:	
+	;; quad-unroll innerloop here.
+	mov   edx, [esp + .innerjjnr]     ; pointer to jjnr[k] 
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             ; eax-edx=jnr1-4 
+	
+	add   [esp + .innerjjnr], dword 16 ; advance pointer (unrolled 4) 
+
+	mov esi, [ebp + %$pos]        ; base of pos[]
+
+	lea   eax, [eax + eax*2]         ;  replace jnr with j3
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         ;  replace jnr with j3
+	lea   edx, [edx + edx*2]	
+	
+	; move j coordinates to local temp. variables
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	;; current state:	
+	;;  xmm2= jxOa  jyOa  jxOc  jyOc
+	;;  xmm3= jxH1a jyH1a jxH1c jyH1c
+	;;  xmm4= jxH2a jyH2a jxH2c jyH2c
+	;;  xmm5= jxOb  jyOb  jxOd  jyOd
+	;;  xmm6= jxH1b jyH1b jxH1d jyH1d
+	;;  xmm7= jxH2b jyH2b jxH2d jyH2d
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	; xmm0= jxOa  jxOb  jyOa  jyOb
+	unpcklps xmm1, xmm6	; xmm1= jxH1a jxH1b jyH1a jyH1b
+	unpckhps xmm2, xmm5	; xmm2= jxOc  jxOd  jyOc  jyOd
+	unpckhps xmm3, xmm6	; xmm3= jxH1c jxH1d jyH1c jyH1d 
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	; xmm4= jxH2a jxH2b jyH2a jyH2b		
+	unpckhps xmm5, xmm7	; xmm5= jxH2c jxH2d jyH2c jyH2d
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	; xmm0= jxOa  jxOb  jxOc  jxOd 
+	movaps [esp + .jxO], xmm0
+	movhlps  xmm2, xmm6	; xmm2= jyOa  jyOb  jyOc  jyOd
+	movaps [esp + .jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + .jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + .jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + .jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + .jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 11001100b
+	shufps xmm1, xmm4, 11001100b
+	shufps xmm2, xmm5, 11001100b
+	movaps [esp + .jzO],  xmm0
+	movaps [esp + .jzH1],  xmm1
+	movaps [esp + .jzH2],  xmm2
+
+	movaps xmm0, [esp + .ixO]
+	movaps xmm1, [esp + .iyO]
+	movaps xmm2, [esp + .izO]
+	movaps xmm3, [esp + .ixO]
+	movaps xmm4, [esp + .iyO]
+	movaps xmm5, [esp + .izO]
+	subps  xmm0, [esp + .jxO]
+	subps  xmm1, [esp + .jyO]
+	subps  xmm2, [esp + .jzO]
+	subps  xmm3, [esp + .jxH1]
+	subps  xmm4, [esp + .jyH1]
+	subps  xmm5, [esp + .jzH1]
+	movaps [esp + .dxOO], xmm0
+	movaps [esp + .dyOO], xmm1
+	movaps [esp + .dzOO], xmm2
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	movaps [esp + .dxOH1], xmm3
+	movaps [esp + .dyOH1], xmm4
+	movaps [esp + .dzOH1], xmm5
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + .rsqOO], xmm0
+	movaps [esp + .rsqOH1], xmm3
+
+	movaps xmm0, [esp + .ixO]
+	movaps xmm1, [esp + .iyO]
+	movaps xmm2, [esp + .izO]
+	movaps xmm3, [esp + .ixH1]
+	movaps xmm4, [esp + .iyH1]
+	movaps xmm5, [esp + .izH1]
+	subps  xmm0, [esp + .jxH2]
+	subps  xmm1, [esp + .jyH2]
+	subps  xmm2, [esp + .jzH2]
+	subps  xmm3, [esp + .jxO]
+	subps  xmm4, [esp + .jyO]
+	subps  xmm5, [esp + .jzO]
+	movaps [esp + .dxOH2], xmm0
+	movaps [esp + .dyOH2], xmm1
+	movaps [esp + .dzOH2], xmm2
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	movaps [esp + .dxH1O], xmm3
+	movaps [esp + .dyH1O], xmm4
+	movaps [esp + .dzH1O], xmm5
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + .rsqOH2], xmm0
+	movaps [esp + .rsqH1O], xmm3
+
+	movaps xmm0, [esp + .ixH1]
+	movaps xmm1, [esp + .iyH1]
+	movaps xmm2, [esp + .izH1]
+	movaps xmm3, [esp + .ixH1]
+	movaps xmm4, [esp + .iyH1]
+	movaps xmm5, [esp + .izH1]
+	subps  xmm0, [esp + .jxH1]
+	subps  xmm1, [esp + .jyH1]
+	subps  xmm2, [esp + .jzH1]
+	subps  xmm3, [esp + .jxH2]
+	subps  xmm4, [esp + .jyH2]
+	subps  xmm5, [esp + .jzH2]
+	movaps [esp + .dxH1H1], xmm0
+	movaps [esp + .dyH1H1], xmm1
+	movaps [esp + .dzH1H1], xmm2
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	movaps [esp + .dxH1H2], xmm3
+	movaps [esp + .dyH1H2], xmm4
+	movaps [esp + .dzH1H2], xmm5
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + .rsqH1H1], xmm0
+	movaps [esp + .rsqH1H2], xmm3
+
+	movaps xmm0, [esp + .ixH2]
+	movaps xmm1, [esp + .iyH2]
+	movaps xmm2, [esp + .izH2]
+	movaps xmm3, [esp + .ixH2]
+	movaps xmm4, [esp + .iyH2]
+	movaps xmm5, [esp + .izH2]
+	subps  xmm0, [esp + .jxO]
+	subps  xmm1, [esp + .jyO]
+	subps  xmm2, [esp + .jzO]
+	subps  xmm3, [esp + .jxH1]
+	subps  xmm4, [esp + .jyH1]
+	subps  xmm5, [esp + .jzH1]
+	movaps [esp + .dxH2O], xmm0
+	movaps [esp + .dyH2O], xmm1
+	movaps [esp + .dzH2O], xmm2
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	movaps [esp + .dxH2H1], xmm3
+	movaps [esp + .dyH2H1], xmm4
+	movaps [esp + .dzH2H1], xmm5
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + .rsqH2O], xmm0
+	movaps [esp + .rsqH2H1], xmm4
+
+	movaps xmm0, [esp + .ixH2]
+	movaps xmm1, [esp + .iyH2]
+	movaps xmm2, [esp + .izH2]
+	subps  xmm0, [esp + .jxH2]
+	subps  xmm1, [esp + .jyH2]
+	subps  xmm2, [esp + .jzH2]
+	movaps [esp + .dxH2H2], xmm0
+	movaps [esp + .dyH2H2], xmm1
+	movaps [esp + .dzH2H2], xmm2
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + .rsqH2H2], xmm0
+		
+	; start doing invsqrt. use rsq values in xmm0, xmm4
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + .three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + .half] ; rinvH2H2
+	mulps   xmm7, [esp + .half] ; rinvH2H1
+	movaps  [esp + .rinvH2H2], xmm3
+	movaps  [esp + .rinvH2H1], xmm7
+	
+	rsqrtps xmm1, [esp + .rsqOO]
+	rsqrtps xmm5, [esp + .rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + .three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + .rsqOO]
+	mulps   xmm5, [esp + .rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + .half] 
+	mulps   xmm7, [esp + .half]
+	movaps  [esp + .rinvOO], xmm3
+	movaps  [esp + .rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + .rsqOH2]
+	rsqrtps xmm5, [esp + .rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + .three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + .rsqOH2]
+	mulps   xmm5, [esp + .rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + .half] 
+	mulps   xmm7, [esp + .half]
+	movaps  [esp + .rinvOH2], xmm3
+	movaps  [esp + .rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + .rsqH1H1]
+	rsqrtps xmm5, [esp + .rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + .three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + .rsqH1H1]
+	mulps   xmm5, [esp + .rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + .half] 
+	mulps   xmm7, [esp + .half]
+	movaps  [esp + .rinvH1H1], xmm3
+	movaps  [esp + .rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + .rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + .three]
+	mulps   xmm1, [esp + .rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + .half] 
+	movaps  [esp + .rinvH2O], xmm3
+
+	;; start with OO interaction.
+	movaps xmm0, [esp + .rinvOO]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]
+	mulps  xmm0, xmm0	;  xmm0=rinvsq
+
+	mulps  xmm5, [esp + .rsqOO] ;  xmm5=krsq
+	movaps xmm6, xmm5
+	addps  xmm6, xmm7	;  xmm6=rinv+krsq
+	subps  xmm6, [esp + .crf]
+	mulps  xmm6, [esp + .qqOO] ;  xmm6=voul=qq*(rinv+krsq-crf)
+	mulps xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqOO] ; xmm7 = coul part of fscal
+	
+	addps  xmm6, [esp + .vctot] ;  local vctot summation variable
+	mulps  xmm0, xmm7
+	
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	xorps xmm3, xmm3
+	movaps xmm4, xmm3
+	movaps xmm5, xmm3
+	mulps xmm0, [esp + .dxOO]
+	mulps xmm1, [esp + .dyOO]
+	mulps xmm2, [esp + .dzOO]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixO]
+	addps xmm1, [esp + .fiyO]
+	addps xmm2, [esp + .fizO]
+	movaps [esp + .fjxO], xmm3
+	movaps [esp + .fjyO], xmm4
+	movaps [esp + .fjzO], xmm5
+	movaps [esp + .fixO], xmm0
+	movaps [esp + .fiyO], xmm1
+	movaps [esp + .fizO], xmm2
+
+	; O-H1 interaction
+	movaps xmm0, [esp + .rinvOH1]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqOH1] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps  xmm0, xmm0
+	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqOH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH1 
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+	
+	xorps xmm3, xmm3
+	movaps xmm4, xmm3
+	movaps xmm5, xmm3
+	mulps xmm0, [esp + .dxOH1]
+	mulps xmm1, [esp + .dyOH1]
+	mulps xmm2, [esp + .dzOH1]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixO]
+	addps xmm1, [esp + .fiyO]
+	addps xmm2, [esp + .fizO]
+	movaps [esp + .fjxH1], xmm3
+	movaps [esp + .fjyH1], xmm4
+	movaps [esp + .fjzH1], xmm5
+	movaps [esp + .fixO], xmm0
+	movaps [esp + .fiyO], xmm1
+	movaps [esp + .fizO], xmm2
+
+	; O-H2 interaction
+	movaps xmm0, [esp + .rinvOH2]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqOH2] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqOH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	xorps xmm3, xmm3
+	movaps xmm4, xmm3
+	movaps xmm5, xmm3
+	mulps xmm0, [esp + .dxOH2]
+	mulps xmm1, [esp + .dyOH2]
+	mulps xmm2, [esp + .dzOH2]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixO]
+	addps xmm1, [esp + .fiyO]
+	addps xmm2, [esp + .fizO]
+	movaps [esp + .fjxH2], xmm3
+	movaps [esp + .fjyH2], xmm4
+	movaps [esp + .fjzH2], xmm5
+	movaps [esp + .fixO], xmm0
+	movaps [esp + .fiyO], xmm1
+	movaps [esp + .fizO], xmm2
+
+	; H1-O interaction
+	movaps xmm0, [esp + .rinvH1O]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqH1O] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqOH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	movaps xmm3, [esp + .fjxO]
+	movaps xmm4, [esp + .fjyO]
+	movaps xmm5, [esp + .fjzO]
+	mulps xmm0, [esp + .dxH1O]
+	mulps xmm1, [esp + .dyH1O]
+	mulps xmm2, [esp + .dzH1O]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixH1]
+	addps xmm1, [esp + .fiyH1]
+	addps xmm2, [esp + .fizH1]
+	movaps [esp + .fjxO], xmm3
+	movaps [esp + .fjyO], xmm4
+	movaps [esp + .fjzO], xmm5
+	movaps [esp + .fixH1], xmm0
+	movaps [esp + .fiyH1], xmm1
+	movaps [esp + .fizH1], xmm2
+
+	; H1-H1 interaction
+	movaps xmm0, [esp + .rinvH1H1]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqH1H1] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqHH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	movaps xmm3, [esp + .fjxH1]
+	movaps xmm4, [esp + .fjyH1]
+	movaps xmm5, [esp + .fjzH1]
+	mulps xmm0, [esp + .dxH1H1]
+	mulps xmm1, [esp + .dyH1H1]
+	mulps xmm2, [esp + .dzH1H1]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixH1]
+	addps xmm1, [esp + .fiyH1]
+	addps xmm2, [esp + .fizH1]
+	movaps [esp + .fjxH1], xmm3
+	movaps [esp + .fjyH1], xmm4
+	movaps [esp + .fjzH1], xmm5
+	movaps [esp + .fixH1], xmm0
+	movaps [esp + .fiyH1], xmm1
+	movaps [esp + .fizH1], xmm2
+
+	; H1-H2 interaction
+	movaps xmm0, [esp + .rinvH1H2]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqH1H2] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqHH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+	
+	movaps xmm3, [esp + .fjxH2]
+	movaps xmm4, [esp + .fjyH2]
+	movaps xmm5, [esp + .fjzH2]
+	mulps xmm0, [esp + .dxH1H2]
+	mulps xmm1, [esp + .dyH1H2]
+	mulps xmm2, [esp + .dzH1H2]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixH1]
+	addps xmm1, [esp + .fiyH1]
+	addps xmm2, [esp + .fizH1]
+	movaps [esp + .fjxH2], xmm3
+	movaps [esp + .fjyH2], xmm4
+	movaps [esp + .fjzH2], xmm5
+	movaps [esp + .fixH1], xmm0
+	movaps [esp + .fiyH1], xmm1
+	movaps [esp + .fizH1], xmm2
+
+	; H2-O interaction
+	movaps xmm0, [esp + .rinvH2O]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqH2O] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqOH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqOH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	movaps xmm3, [esp + .fjxO]
+	movaps xmm4, [esp + .fjyO]
+	movaps xmm5, [esp + .fjzO]
+	mulps xmm0, [esp + .dxH2O]
+	mulps xmm1, [esp + .dyH2O]
+	mulps xmm2, [esp + .dzH2O]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixH2]
+	addps xmm1, [esp + .fiyH2]
+	addps xmm2, [esp + .fizH2]
+	movaps [esp + .fjxO], xmm3
+	movaps [esp + .fjyO], xmm4
+	movaps [esp + .fjzO], xmm5
+	movaps [esp + .fixH2], xmm0
+	movaps [esp + .fiyH2], xmm1
+	movaps [esp + .fizH2], xmm2
+
+	; H2-H1 interaction
+	movaps xmm0, [esp + .rinvH2H1]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqH2H1] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqHH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	movaps xmm3, [esp + .fjxH1]
+	movaps xmm4, [esp + .fjyH1]
+	movaps xmm5, [esp + .fjzH1]
+	mulps xmm0, [esp + .dxH2H1]
+	mulps xmm1, [esp + .dyH2H1]
+	mulps xmm2, [esp + .dzH2H1]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixH2]
+	addps xmm1, [esp + .fiyH2]
+	addps xmm2, [esp + .fizH2]
+	movaps [esp + .fjxH1], xmm3
+	movaps [esp + .fjyH1], xmm4
+	movaps [esp + .fjzH1], xmm5
+	movaps [esp + .fixH2], xmm0
+	movaps [esp + .fiyH2], xmm1
+	movaps [esp + .fizH2], xmm2
+
+	; H2-H2 interaction
+	movaps xmm0, [esp + .rinvH2H2]
+	movaps xmm7, xmm0	;  xmm7=rinv
+	movaps xmm5, [esp + .krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + .rsqH2H2] ;  xmm5=krsq
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	; xmm4=rinv+krsq
+	subps  xmm4, [esp + .crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + .qqHH] ;  xmm4=voul=qq*(rinv+krsq-crf)
+	mulps  xmm5, [esp + .two]
+	subps  xmm7, xmm5	; xmm7=rinv-2*krsq
+	mulps  xmm7, [esp + .qqHH] ; xmm7 = coul part of fscal
+	addps  xmm6, xmm4	; add to local vctot.
+	mulps xmm0, xmm7	; fsOH2
+	movaps xmm1, xmm0
+	movaps xmm2, xmm0
+
+	movaps xmm1, xmm0
+	movaps [esp + .vctot], xmm6
+	movaps xmm2, xmm0
+	
+	movaps xmm3, [esp + .fjxH2]
+	movaps xmm4, [esp + .fjyH2]
+	movaps xmm5, [esp + .fjzH2]
+	mulps xmm0, [esp + .dxH2H2]
+	mulps xmm1, [esp + .dyH2H2]
+	mulps xmm2, [esp + .dzH2H2]
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	addps xmm0, [esp + .fixH2]
+	addps xmm1, [esp + .fiyH2]
+	addps xmm2, [esp + .fizH2]
+	movaps [esp + .fjxH2], xmm3
+	movaps [esp + .fjyH2], xmm4
+	movaps [esp + .fjzH2], xmm5
+	movaps [esp + .fixH2], xmm0
+	movaps [esp + .fiyH2], xmm1
+	movaps [esp + .fizH2], xmm2
+
+	mov edi, [ebp +%$faction]
+		
+	; Did all interactions - now update j forces.
+	; 4 j waters with three atoms each - first do a & b j particles
+	movaps xmm0, [esp + .fjxO] ; xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
+	movaps xmm1, [esp + .fjyO] ; xmm1= fjyOa  fjyOb  fjyOc  fjyOd 
+	unpcklps xmm0, xmm1    	   ; xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	movaps xmm1, [esp + .fjzO]
+	movaps xmm2, [esp + .fjxH1]
+	movhlps  xmm3, xmm0	   ; xmm3= fjxOb  fjyOb
+	unpcklps xmm1, xmm2	   ; xmm1= fjzOa  fjxH1a fjzOb  fjxH1b
+	movaps xmm4, [esp + .fjyH1]
+	movaps xmm5, [esp + .fjzH1]
+	unpcklps xmm4, xmm5	   ; xmm4= fjyH1a fjzH1a fjyH1b fjzH1b
+	movaps xmm5, [esp + .fjxH2]
+	movaps xmm6, [esp + .fjyH2]
+	movhlps  xmm7, xmm4	   ; xmm7= fjyH1b fjzH1b
+	unpcklps xmm5, xmm6	   ; xmm5= fjxH2a fjyH2a fjxH2b fjyH2b
+	movlhps  xmm0, xmm1    	   ; xmm0= fjxOa  fjyOa  fjzOa  fjxH1a  
+	shufps   xmm3, xmm1, 11100100b
+                                   ; xmm3= fjxOb  fjyOb  fjzOb  fjxH1b
+	movlhps  xmm4, xmm5   	   ; xmm4= fjyH1a fjzH1a fjxH2a fjyH2a
+	shufps   xmm7, xmm5, 11100100b
+                                   ; xmm7= fjyH1b fjzH1b fjxH2b fjyH2b
+	movups   xmm1, [edi + eax*4]
+	movups   xmm2, [edi + eax*4 + 16]
+	movups   xmm5, [edi + ebx*4]
+	movups   xmm6, [edi + ebx*4 + 16]
+	addps    xmm1, xmm0
+	addps    xmm2, xmm4
+	addps    xmm5, xmm3
+	addps    xmm6, xmm7
+	movss    xmm0, [edi + eax*4 + 32]
+	movss    xmm3, [edi + ebx*4 + 32]
+	
+	movaps   xmm4, [esp + .fjzH2]
+	movaps   xmm7, xmm4
+	shufps   xmm7, xmm7, 1b
+	
+	movups   [edi + eax*4],     xmm1
+	movups   [edi + eax*4 + 16],xmm2
+	movups   [edi + ebx*4],     xmm5
+	movups   [edi + ebx*4 + 16],xmm6	
+	addss    xmm0, xmm4
+	addss    xmm3, xmm7
+	movss    [edi + eax*4 + 32], xmm0
+	movss    [edi + ebx*4 + 32], xmm3	
+
+	;; then do the second pair (c & d)
+	movaps xmm0, [esp + .fjxO] ; xmm0= fjxOa  fjxOb  fjxOc  fjxOd
+	movaps xmm1, [esp + .fjyO] ; xmm1= fjyOa  fjyOb  fjyOc  fjyOd 
+	unpckhps xmm0, xmm1	   ; xmm0= fjxOc  fjyOc  fjxOd  fjyOd
+	movaps xmm1, [esp + .fjzO]
+	movaps xmm2, [esp + .fjxH1]
+	movhlps  xmm3, xmm0	   ; xmm3= fjxOd  fjyOd
+	unpckhps xmm1, xmm2	   ; xmm1= fjzOc  fjxH1c fjzOd  fjxH1d
+	movaps xmm4, [esp + .fjyH1]
+	movaps xmm5, [esp + .fjzH1]
+	unpckhps xmm4, xmm5	   ; xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
+	movaps xmm5, [esp + .fjxH2]
+	movaps xmm6, [esp + .fjyH2]
+	movhlps  xmm7, xmm4	   ; xmm7= fjyH1d fjzH1d	 
+	unpckhps xmm5, xmm6	   ; xmm5= fjxH2c fjyH2c fjxH2d fjyH2d
+	movlhps  xmm0, xmm1	   ; xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
+	shufps   xmm3, xmm1, 11100100b
+                                   ; xmm3= fjxOd  fjyOd  fjzOd  fjxH1d
+	movlhps  xmm4, xmm5	   ; xmm4= fjyH1c fjzH1c fjxH2c fjyH2c 
+	shufps   xmm7, xmm5, 11100100b
+                                   ; xmm7= fjyH1d fjzH1d fjxH2d fjyH2d
+	movups   xmm1, [edi + ecx*4]
+	movups   xmm2, [edi + ecx*4 + 16]
+	movups   xmm5, [edi + edx*4]
+	movups   xmm6, [edi + edx*4 + 16]
+	addps    xmm1, xmm0
+	addps    xmm2, xmm4
+	addps    xmm5, xmm3
+	addps    xmm6, xmm7
+	movss    xmm0, [edi + ecx*4 + 32]
+	movss    xmm3, [edi + edx*4 + 32]
+	
+	movaps   xmm4, [esp + .fjzH2]
+	movaps   xmm7, xmm4
+	shufps   xmm4, xmm4, 10b
+	shufps   xmm7, xmm7, 11b
+	movups   [edi + ecx*4],     xmm1
+	movups   [edi + ecx*4 + 16],xmm2
+	movups   [edi + edx*4],     xmm5
+	movups   [edi + edx*4 + 16],xmm6	
+	addss    xmm0, xmm4
+	addss    xmm3, xmm7
+	movss    [edi + ecx*4 + 32], xmm0
+	movss    [edi + edx*4 + 32], xmm3	
+	
+	;; should we do one more iteration?
+	sub   [esp + .innerk], dword 4
+	jl    .single_check
+	jmp   .unroll_loop
+.single_check:
+	add   [esp + .innerk], dword 4
+	jnz   .single_loop
+	jmp   .updateouterdata
+.single_loop:
+	mov   edx, [esp + .innerjjnr]     ; pointer to jjnr[k] 
+	mov   eax, [edx]	
+	add   [esp + .innerjjnr], dword 4	
+
+	mov esi, [ebp + %$pos]
+	lea   eax, [eax + eax*2]  
+
+	; fetch j coordinates
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	; xmm6=jxH1 jyH1 jxH2 jyH2
+	;;  fetch both z coords in one go, to positions 0 and 3 in xmm7
+	movups xmm7, [esi + eax*4 + 20] ; xmm7=jzH1 jxH2 jyH2 jzH2
+	shufps xmm6, xmm6, 11011000b    ;  xmm6=jxH1 jxH2 jyH1 jyH2
+	movlhps xmm3, xmm6      	; xmm3= jxO   0  jxH1 jxH2 
+	movaps  xmm0, [esp + .ixO]     
+	movaps  xmm1, [esp + .iyO]
+	movaps  xmm2, [esp + .izO]	
+	shufps  xmm4, xmm6, 11100100b ;  xmm4= jyO   0   jyH1 jyH2
+	shufps xmm5, xmm7, 11000100b  ;  xmm5= jzO   0   jzH1 jzH2  
+	;;  store all j coordinates in jO
+	movaps [esp + .jxO], xmm3
+	movaps [esp + .jyO], xmm4
+	movaps [esp + .jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	movaps [esp + .dxOO], xmm0
+	movaps [esp + .dyOO], xmm1
+	movaps [esp + .dzOO], xmm2
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	;  have rsq in xmm0.
+
+	movaps xmm6, xmm0
+	
+	;;  do invsqrt
+	rsqrtps xmm1, xmm0
+	mulps   xmm6, [esp + .krf] ; xmm6=krsq
+	movaps  xmm2, xmm1
+	movaps  xmm7, xmm6         ; xmm7=krsq
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + .three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + .half] ; rinv iO - j water
+
+
+	
+	addps   xmm6, xmm3	;  xmm6=rinv+krsq
+	mulps   xmm7, [esp + .two]
+	subps   xmm6, [esp + .crf] ; xmm6=rinv+krsq-crf
+	
+	xorps   xmm1, xmm1
+	movaps  xmm0, xmm3
+	subps   xmm3, xmm7	; xmm3=rinv-2*krsq
+	xorps   xmm4, xmm4
+	mulps   xmm0, xmm0	; xmm0=rinvsq
+	;; fetch charges to xmm4 (temporary)
+	movss   xmm4, [esp + .qqOO]
+	movhps  xmm4, [esp + .qqOH]
+
+	mulps xmm6, xmm4	;  vcoul 
+	mulps xmm3, xmm4	;  coul part of fs
+
+
+	addps   xmm6, [esp + .vctot]
+	mulps   xmm0, xmm3	;  total fscal
+	movaps  [esp + .vctot], xmm6	
+
+	movaps  xmm1, xmm0
+	movaps  xmm2, xmm0
+	mulps   xmm0, [esp + .dxOO]
+	mulps   xmm1, [esp + .dyOO]
+	mulps   xmm2, [esp + .dzOO]
+	
+	;; initial update for j forces
+	xorps   xmm3, xmm3
+	xorps   xmm4, xmm4
+	xorps   xmm5, xmm5
+	subps   xmm3, xmm0
+	subps   xmm4, xmm1
+	subps   xmm5, xmm2
+	movaps  [esp + .fjxO], xmm3
+	movaps  [esp + .fjyO], xmm4
+	movaps  [esp + .fjzO], xmm5
+	addps   xmm0, [esp + .fixO]
+	addps   xmm1, [esp + .fiyO]
+	addps   xmm2, [esp + .fizO]
+	movaps  [esp + .fixO], xmm0
+	movaps  [esp + .fiyO], xmm1
+	movaps  [esp + .fizO], xmm2
+
+	
+	;;  done with i O. Now do i H1 & H2 simultaneously. first get i particle coords:
+	movaps  xmm0, [esp + .ixH1]
+	movaps  xmm1, [esp + .iyH1]
+	movaps  xmm2, [esp + .izH1]	
+	movaps  xmm3, [esp + .ixH2] 
+	movaps  xmm4, [esp + .iyH2] 
+	movaps  xmm5, [esp + .izH2] 
+	subps   xmm0, [esp + .jxO]
+	subps   xmm1, [esp + .jyO]
+	subps   xmm2, [esp + .jzO]
+	subps   xmm3, [esp + .jxO]
+	subps   xmm4, [esp + .jyO]
+	subps   xmm5, [esp + .jzO]
+	movaps [esp + .dxH1O], xmm0
+	movaps [esp + .dyH1O], xmm1
+	movaps [esp + .dzH1O], xmm2
+	movaps [esp + .dxH2O], xmm3
+	movaps [esp + .dyH2O], xmm4
+	movaps [esp + .dzH2O], xmm5
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	;  have rsqH1 in xmm0.
+	addps xmm4, xmm5	;  have rsqH2 in xmm4.
+	
+	;;  do invsqrt
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + .three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + .half] ; rinv H1 - j water
+	mulps   xmm7, [esp + .half] ; rinv H2 - j water
+
+	mulps xmm0, [esp + .krf] ;  krsq
+	mulps xmm4, [esp + .krf] ;  krsq 
+
+	;; assemble charges in xmm6
+	xorps   xmm6, xmm6
+	movss   xmm6, [esp + .qqOH]
+	movhps  xmm6, [esp + .qqHH]
+	movaps  xmm1, xmm0
+	movaps  xmm5, xmm4
+	addps   xmm0, xmm3	; krsq+rinv
+	addps   xmm4, xmm7	; krsq+rinv
+	subps   xmm0, [esp + .crf]
+	subps   xmm4, [esp + .crf]
+	mulps   xmm1, [esp + .two]
+	mulps   xmm5, [esp + .two]
+	mulps   xmm0, xmm6	;  vcoul
+	mulps   xmm4, xmm6	;  vcoul
+	addps   xmm4, xmm0		
+	addps   xmm4, [esp + .vctot]
+	movaps  [esp + .vctot], xmm4
+	movaps  xmm0, xmm3
+	movaps  xmm4, xmm7
+	mulps   xmm3, xmm3
+	mulps   xmm7, xmm7
+	subps   xmm0, xmm1
+	subps   xmm4, xmm5
+	mulps   xmm0, xmm6
+	mulps   xmm4, xmm6
+	mulps   xmm0, xmm3	;  fscal
+	mulps   xmm7, xmm4	;  fscal
+	
+	movaps  xmm1, xmm0
+	movaps  xmm2, xmm0
+	mulps   xmm0, [esp + .dxH1O]
+	mulps   xmm1, [esp + .dyH1O]
+	mulps   xmm2, [esp + .dzH1O]
+	;;  update forces H1 - j water
+	movaps  xmm3, [esp + .fjxO]
+	movaps  xmm4, [esp + .fjyO]
+	movaps  xmm5, [esp + .fjzO]
+	subps   xmm3, xmm0
+	subps   xmm4, xmm1
+	subps   xmm5, xmm2
+	movaps  [esp + .fjxO], xmm3
+	movaps  [esp + .fjyO], xmm4
+	movaps  [esp + .fjzO], xmm5
+	addps   xmm0, [esp + .fixH1]
+	addps   xmm1, [esp + .fiyH1]
+	addps   xmm2, [esp + .fizH1]
+	movaps  [esp + .fixH1], xmm0
+	movaps  [esp + .fiyH1], xmm1
+	movaps  [esp + .fizH1], xmm2
+	;; do forces H2 - j water
+	movaps xmm0, xmm7
+	movaps xmm1, xmm7
+	movaps xmm2, xmm7
+	mulps   xmm0, [esp + .dxH2O]
+	mulps   xmm1, [esp + .dyH2O]
+	mulps   xmm2, [esp + .dzH2O]
+	movaps  xmm3, [esp + .fjxO]
+	movaps  xmm4, [esp + .fjyO]
+	movaps  xmm5, [esp + .fjzO]
+	subps   xmm3, xmm0
+	subps   xmm4, xmm1
+	subps   xmm5, xmm2
+	mov     esi, [ebp + %$faction]
+	movaps  [esp + .fjxO], xmm3
+	movaps  [esp + .fjyO], xmm4
+	movaps  [esp + .fjzO], xmm5
+	addps   xmm0, [esp + .fixH2]
+	addps   xmm1, [esp + .fiyH2]
+	addps   xmm2, [esp + .fizH2]
+	movaps  [esp + .fixH2], xmm0
+	movaps  [esp + .fiyH2], xmm1
+	movaps  [esp + .fizH2], xmm2
+
+	;; update j water forces from local variables
+	movlps  xmm0, [esi + eax*4]
+	movlps  xmm1, [esi + eax*4 + 12]
+	movhps  xmm1, [esi + eax*4 + 24]
+	movaps  xmm3, [esp + .fjxO]
+	movaps  xmm4, [esp + .fjyO]
+	movaps  xmm5, [esp + .fjzO]
+	movaps  xmm6, xmm5
+	movaps  xmm7, xmm5
+	shufps  xmm6, xmm6, 10b
+	shufps  xmm7, xmm7, 11b
+	addss   xmm5, [esi + eax*4 + 8]
+	addss   xmm6, [esi + eax*4 + 20]
+	addss   xmm7, [esi + eax*4 + 32]
+	movss   [esi + eax*4 + 8], xmm5
+	movss   [esi + eax*4 + 20], xmm6
+	movss   [esi + eax*4 + 32], xmm7
+	movaps   xmm5, xmm3
+	unpcklps xmm3, xmm4
+	unpckhps xmm5, xmm4
+	addps    xmm0, xmm3
+	addps    xmm1, xmm5
+	movlps  [esi + eax*4], xmm0 
+	movlps  [esi + eax*4 + 12], xmm1 
+	movhps  [esi + eax*4 + 24], xmm1 
+	
+	dec   dword [esp + .innerk]
+	jz    .updateouterdata
+	jmp   .single_loop
+.updateouterdata:
+	mov   ecx, [esp + .ii3]
+	mov   edi, [ebp + %$faction]
+	mov   esi, [ebp + %$fshift]
+	mov   edx, [esp + .is3]
+
+	; accumulate Oi forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fixO]
+	movaps xmm1, [esp + .fiyO] 
+	movaps xmm2, [esp + .fizO]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4]
+	movss  xmm4, [edi + ecx*4 + 4]
+	movss  xmm5, [edi + ecx*4 + 8]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4],     xmm3
+	movss  [edi + ecx*4 + 4], xmm4
+	movss  [edi + ecx*4 + 8], xmm5
+
+	; accumulate force in xmm6/xmm7 for fshift
+	movaps xmm6, xmm0
+	movss xmm7, xmm2
+	movlhps xmm6, xmm1
+	shufps  xmm6, xmm6, 1000b	
+ 
+	; accumulate H1i forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fixH1]
+	movaps xmm1, [esp + .fiyH1]
+	movaps xmm2, [esp + .fizH1]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4 + 12]
+	movss  xmm4, [edi + ecx*4 + 16]
+	movss  xmm5, [edi + ecx*4 + 20]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4 + 12], xmm3
+	movss  [edi + ecx*4 + 16], xmm4
+	movss  [edi + ecx*4 + 20], xmm5
+
+	;accumulate force in xmm6/xmm7 for fshift
+	addss xmm7, xmm2
+	movlhps xmm0, xmm1
+	shufps  xmm0, xmm0, 1000b	
+	addps   xmm6, xmm0
+
+	; accumulate H2i forces in xmm0, xmm1, xmm2
+	movaps xmm0, [esp + .fixH2]
+	movaps xmm1, [esp + .fiyH2]
+	movaps xmm2, [esp + .fizH2]
+
+	movhlps xmm3, xmm0
+	movhlps xmm4, xmm1
+	movhlps xmm5, xmm2
+	addps  xmm0, xmm3
+	addps  xmm1, xmm4
+	addps  xmm2, xmm5 ; summan ligger i 1/2 i xmm0-xmm2
+
+	movaps xmm3, xmm0	
+	movaps xmm4, xmm1	
+	movaps xmm5, xmm2	
+
+	shufps xmm3, xmm3, 1b
+	shufps xmm4, xmm4, 1b
+	shufps xmm5, xmm5, 1b
+	addss  xmm0, xmm3
+	addss  xmm1, xmm4
+	addss  xmm2, xmm5	; xmm0-xmm2 has single force in pos0.
+
+	; increment i force
+	movss  xmm3, [edi + ecx*4 + 24]
+	movss  xmm4, [edi + ecx*4 + 28]
+	movss  xmm5, [edi + ecx*4 + 32]
+	addss  xmm3, xmm0
+	addss  xmm4, xmm1
+	addss  xmm5, xmm2
+	movss  [edi + ecx*4 + 24], xmm3
+	movss  [edi + ecx*4 + 28], xmm4
+	movss  [edi + ecx*4 + 32], xmm5
+
+	;accumulate force in xmm6/xmm7 for fshift
+	addss xmm7, xmm2
+	movlhps xmm0, xmm1
+	shufps  xmm0, xmm0, 1000b	
+	addps   xmm6, xmm0
+
+	; increment fshift force
+	movlps  xmm3, [esi + edx*4]
+	movss  xmm4, [esi + edx*4 + 8]
+	addps  xmm3, xmm6
+	addss  xmm4, xmm7
+	movlps  [esi + edx*4],    xmm3
+	movss  [esi + edx*4 + 8], xmm4
+
+	; get group index for i particle
+	mov   edx, [ebp + %$gid]      ; get group index for this i particle
+	mov   edx, [edx]
+	add   [ebp + %$gid], dword 4  ;  advance pointer
+
+	; accumulate total potential energy and update it.
+	movaps xmm7, [esp + .vctot]
+	; accumulate
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	; pos 0-1 in xmm7 have the sum now
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1b
+	addss  xmm7, xmm6		
+
+	; add earlier value from mem.
+	mov   eax, [ebp + %$Vc]
+	addss xmm7, [eax + edx*4] 
+	; move back to mem.
+	movss [eax + edx*4], xmm7 	
+	
+	;; finish if last
+	mov   ecx, [ebp + %$nri]
+	dec ecx
+	jecxz .end
+	;;  not last, iterate once more!
+	mov [ebp + %$nri], ecx
+	jmp .outer
+.end:
+	emms
+	mov eax, [esp + .salign]
+	add esp, eax
+	add esp, 1460
 	pop edi
 	pop esi
         pop edx
@@ -16208,6 +19200,7 @@ proc inl2130_sse
 	endproc
 
 	
+		
 
 proc inl3000_sse
 %$nri		arg

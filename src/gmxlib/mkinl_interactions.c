@@ -495,7 +495,7 @@ int do_rf(int i, int j)
 
     /* this short code is the actual interaction! */
     assign("krsq","krf*rsq%d",ij);
-    assign("vcoul","%s*(rinv%d+krsq)",qq,ij);
+    assign("vcoul","%s*(rinv%d+krsq-crf)",qq,ij);
 
     /* concatenate the potential to the force buffer string.
      * This is later multiplied by 1/r to get the force once

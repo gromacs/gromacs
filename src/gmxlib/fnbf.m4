@@ -169,7 +169,7 @@ define(`INVSQRT_WW_BUF2',`ifdef(`VECTORIZE_INVSQRT_WW',`ifdef(`USE_VECTOR',`',`,
 define(`LJ_ARGS',`,mdatoms->typeA, SCAL(fr->ntype),fr->nbfp,egnb')
 define(`COUL_ARGS',`,mdatoms->chargeA, SCAL(fr->epsfac),egcoul')
 define(`SOFTCORE_LJARGS',`,mdatoms->typeA, SCAL(fr->ntype),fr->nbfp')
-define(`RF_ARGS',`,SCAL(fr->k_rf)')
+define(`RF_ARGS',`,SCAL(fr->k_rf),SCAL(fr->c_rf)')
 define(`LJCTAB_ARGS',`,SCAL(fr->tabscale),fr->coulvdwtab')
 define(`COULTAB_ARGS',`,SCAL(fr->tabscale),fr->coultab')
 define(`LJTAB_ARGS',`,SCAL(fr->tabscale),fr->vdwtab')
@@ -362,16 +362,31 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl1430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL2000:
- 	  FUNC(inl2000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+          if(x86cpu==X86_SSE)	
+	    inl2000_sse(COMMON_ARGS COUL_ARGS RF_ARGS);	
+	  else	
+#endif
+ 	    FUNC(inl2000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2010:
 	  FUNC(inl2010)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2020:
-	  FUNC(inl2020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+          if(x86cpu==X86_SSE)	
+	    inl2020_sse(COMMON_ARGS COUL_ARGS RF_ARGS);	
+	  else	
+#endif
+	    FUNC(inl2020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2030:
-	  FUNC(inl2030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS);
+#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
+          if(x86cpu==X86_SSE)	
+	    inl2030_sse(COMMON_ARGS COUL_ARGS RF_ARGS);	
+	  else	
+#endif
+	    FUNC(inl2030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2100:
 #if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)

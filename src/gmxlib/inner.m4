@@ -17,7 +17,7 @@ define(`INVSQRT_WW_BUF2',`ifdef(`VECTORIZE_INVSQRT_WW',`ifdef(`USE_VECTOR',`',`,
 define(`LJ_ARGS',`,int typeA[],int SCALARG(ntype),real nbfp[],real egnb[]')
 define(`COUL_ARGS',`,real chargeA[],real SCALARG(epsfac),real egcoul[]')
 define(`SOFTCORE_LJARGS',`,int typeA[],int SCALARG(ntype),real nbfp[]')
-define(`RF_ARGS',`,real SCALARG(krf)')
+define(`RF_ARGS',`,real SCALARG(krf),real SCALARG(crf)')
 define(`LJCTAB_ARGS',`,real SCALARG(tabscale),real VFtab[]')
 define(`LJTAB_ARGS',`,real SCALARG(tabscale),real VFtab[]')
 define(`COULTAB_ARGS',`,real SCALARG(tabscale),real VFtab[]')
