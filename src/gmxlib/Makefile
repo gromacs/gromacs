@@ -16,7 +16,7 @@ OBJ		= 	\
 		3dview.o	block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\
 		calcvir.o	callf77.o	clincs.o	\
-		clincsld.o	confio.o	congrad.o	\
+		clincsld.o	confio.o	\
 		copyrite.o	coupling.o	\
 		csettle.o	cshake.o	disre.o		\
 		do_fit.o	dummies.o	ebin.o		\
@@ -38,9 +38,9 @@ OBJ		= 	\
 		pdbio.o		pppm.o		princ.o		\
 		rando.o		random.o	rbin.o		\
 		rdgroup.o	readinp.o	replace.o	\
-		rmpbc.o		runner.o	shakef.o	\
+		rmpbc.o		shakef.o	\
 		sim_util.o	smalloc.o	splittop.o	\
-		stat.o		statutil.o	steep.o		\
+		stat.o		statutil.o	\
 		strdb.o		string2.o	symtab.o	\
 		tables.o	tgroup.o	tpxio.o		\
 		trnio.o		trxio.o		txtdump.o	\
