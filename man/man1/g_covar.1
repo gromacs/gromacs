@@ -1,4 +1,4 @@
-.TH g_covar 1 "Thu 5 Jul 2001"
+.TH g_covar 1 "Mon 23 Jul 2001"
 .SH NAME
 g_covar
 .B VERSION 3.0
@@ -19,6 +19,7 @@ g_covar
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
+.BI "-tu" " enum "
 .BI "-[no]fit" ""
 .BI "-[no]ref" ""
 .BI "-[no]mwa" ""
@@ -119,6 +120,25 @@ written.
 
 .BI "-dt"  " time" "     -1" 
  Only use frame when t MOD dt = first time (ps)
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
 
 .BI "-[no]fit"  "   yes"
  Fit to a reference structure

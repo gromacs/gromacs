@@ -1,4 +1,4 @@
-.TH g_bundle 1 "Thu 5 Jul 2001"
+.TH g_bundle 1 "Mon 23 Jul 2001"
 .SH NAME
 g_bundle
 .B VERSION 3.0
@@ -9,9 +9,13 @@ g_bundle
 .BI "-n" " index.ndx "
 .BI "-ol" " bun_len.xvg "
 .BI "-od" " bun_dist.xvg "
+.BI "-oz" " bun_z.xvg "
 .BI "-ot" " bun_tilt.xvg "
 .BI "-otr" " bun_tiltr.xvg "
 .BI "-otl" " bun_tiltl.xvg "
+.BI "-ok" " bun_kink.xvg "
+.BI "-okr" " bun_kinkr.xvg "
+.BI "-okl" " bun_kinkl.xvg "
 .BI "-oa" " axes.pdb "
 .BI "-[no]h" ""
 .BI "-[no]X" ""
@@ -19,6 +23,7 @@ g_bundle
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
+.BI "-tu" " enum "
 .BI "-na" " int "
 .BI "-[no]z" ""
 .SH DESCRIPTION
@@ -26,21 +31,41 @@ g_bundle analyzes bundles of axes. The axes can be for instance
 helix axes. The program reads two index groups and divides both
 of them in 
 .B -na
-parts. The groups define the tops and
-bottoms of the axes. Several quantities are written to file:
-the axis length, the distance from the axis centers to the average
-center of all axes, the total tilt, the radial tilt and the lateral
-tilt with respect to the average axis.
+parts. The centers of mass of these parts
+define the tops and bottoms of the axes.
+Several quantities are written to file:
+the axis length, the distance and the z-shift of the axis mid-points
+with respect to the average center of all axes, the total tilt,
+the radial tilt and the lateral tilt with respect to the average axis.
+
+
+
+With options 
+.B -ok
+, 
+.B -okr
+and 
+.B -okl
+the total,
+radial and lateral kinks of the axes are plotted. An extra index
+group of kink atoms is required, which is also divided into 
+.B -na
+
+parts. The kink angle is defined as the angle between the kink-top and
+the bottom-kink vectors.
 
 
 
 With option 
 .B -oa
-the top, mid and bottom points of each axis
+the top, mid (or kink when 
+.B -ok
+is set)
+and bottom points of each axis
 are written to a pdb file each frame. The residue numbers correspond
 to the axis numbers. When viewing this file with 
 .B rasmol
-use the
+, use the
 command line option 
 .B -nmrpdb
 , and type 
@@ -68,6 +93,10 @@ display the reference axis.
 .B Output
  xvgr/xmgr file 
 
+.BI "-oz" " bun_z.xvg" 
+.B Output
+ xvgr/xmgr file 
+
 .BI "-ot" " bun_tilt.xvg" 
 .B Output
  xvgr/xmgr file 
@@ -78,6 +107,18 @@ display the reference axis.
 
 .BI "-otl" " bun_tiltl.xvg" 
 .B Output
+ xvgr/xmgr file 
+
+.BI "-ok" " bun_kink.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-okr" " bun_kinkr.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-okl" " bun_kinkl.xvg" 
+.B Output, Opt.
  xvgr/xmgr file 
 
 .BI "-oa" " axes.pdb" 
@@ -102,6 +143,25 @@ display the reference axis.
 
 .BI "-dt"  " time" "     -1" 
  Only use frame when t MOD dt = first time (ps)
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
 
 .BI "-na"  " int" " 0" 
  Number of axes

@@ -1,4 +1,4 @@
-.TH g_traj 1 "Thu 5 Jul 2001"
+.TH g_traj 1 "Mon 23 Jul 2001"
 .SH NAME
 g_traj
 .B VERSION 3.0
@@ -19,6 +19,7 @@ g_traj
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
+.BI "-tu" " enum "
 .BI "-[no]w" ""
 .BI "-[no]com" ""
 .BI "-[no]mol" ""
@@ -112,6 +113,25 @@ This implies
 
 .BI "-dt"  " time" "     -1" 
  Only use frame when t MOD dt = first time (ps)
+
+.BI "-tu"  " enum" " ps" 
+ Time unit: 
+.B ps
+, 
+.B fs
+, 
+.B ns
+, 
+.B us
+, 
+.B ms
+, 
+.B s
+, 
+.B m
+or 
+.B h
+
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
