@@ -461,7 +461,7 @@ int main(int argc,char *argv[])
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
   if(!nfile)
-    fatal_error(0,"No input files!");
+    gmx_fatal(FARGS,"No input files!");
   
   snew(settime,nfile+1);
   snew(readtime,nfile+1);
@@ -481,11 +481,8 @@ int main(int argc,char *argv[])
   else
     lastee=NULL;
 
-  /* if(begin>0) */
-    snew(startee,nremax);
-    /* else
-    startee=NULL;
-    */
+  snew(startee,nremax);
+    
   noutfr=0;
   bFirst=TRUE;
 
@@ -532,7 +529,7 @@ int main(int argc,char *argv[])
 	if (bFirst) {
 	  bFirst = FALSE;
 	  startstep = fr->step;	
-	  if /*(startee != NULL)*/ (begin > 0)
+	  if (begin > 0)
 	    copy_ee(fr->ener,startee,nre);
 	}
 	update_ee(lastee,laststep,startee,startstep,
