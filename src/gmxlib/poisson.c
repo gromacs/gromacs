@@ -10,20 +10,6 @@
 #include "pppm.h"
 #include "poisson.h"
 
-real *make_sftab(real r1,real rc,int n,real tabspace)
-{
-  real *tab,r,invspace;
-  int  i;
-  
-  invspace = 1.0/tabspace;
-  snew(tab,n);
-  for(i=0; (i<n); i++) {
-    r = invspace*i;
-    tab[i] = spreadfunction(r1,rc,r);
-  }
-  return tab; 
-}
-
 t_PSgrid *mk_PSgrid(int nx,int ny,int nz)
 {
   t_PSgrid *ps;
@@ -143,17 +129,17 @@ real do_poisson(FILE *log,       bool bVerbose,
 		rvec x[],        rvec f[],
 		real charge[],   rvec box,
 		real phi[],      t_commrec *cr,
-		t_nrnb *nrnb)
+		t_nrnb *nrnb,    int *nit,   
+		bool bOld)
 {
   static  bool bFirst  = TRUE;
   static  bool bSecond = TRUE;
   static  t_PSgrid *pot,*rho;
-  static  int       niter,ntab;
+  static  int       maxnit;
   static  real      r1,rc;
-  static  real      *sftab,tabspace;
   static  rvec      beta;
   
-  const     real tol = 1e-5;
+  const     real tol = 1e-2;
   int       i,m;
   real      ctot;
   real      aver,tot,ener;
@@ -163,7 +149,7 @@ real do_poisson(FILE *log,       bool bVerbose,
   ener = 0.0;
   
   if (bFirst) {
-    niter = ir->niter;
+    maxnit = ir->niter;
 
     fprintf(log,"Will use Poisson Solver for long-range electrostatics\n");
     fprintf(log,"Grid size is %d x %d x %d\n",ir->nkx,ir->nky,ir->nkz);
@@ -177,26 +163,22 @@ real do_poisson(FILE *log,       bool bVerbose,
     r1 = ir->rshort;
     rc = ir->rlong;
     for(m=0; (m<DIM); m++)
-      beta[m] = 4.0/3.0;
-      
-    ntab      = 500;
-    tabspace  = (1.5*rc)/ntab;
-    sftab     = make_sftab(r1,rc,ntab,tabspace);
+      beta[m] = 1.85;
       
     bFirst = FALSE;
   }
   else {
     /* Make the grid empty */
     clear_PSgrid(rho);
-    spread_q_poisson(log,bVerbose,natoms,x,charge,box,r1,rc,rho,nrnb,
-		     ntab,sftab,tabspace);
+    spread_q_poisson(log,bVerbose,TRUE,natoms,x,charge,box,rc,rho,nrnb,
+		     bOld,r1);
     
     symmetrize_PSgrid(log,rho,0.0);
     if (bSecond) 
       copy_PSgrid(pot,rho);
 
     /* Second step: solving the poisson equation in real space */
-    solve_poisson(log,pot,rho,bVerbose,nrnb,niter,0.01,box);
+    *nit = solve_poisson(log,pot,rho,bVerbose,nrnb,maxnit,tol,box);
     
     symmetrize_PSgrid(log,pot,0.0);
     /* Third and last step: gather the forces, energies and potential
@@ -204,9 +186,6 @@ real do_poisson(FILE *log,       bool bVerbose,
      */
     ener = ps_gather_f(log,bVerbose,natoms,x,f,charge,box,phi,pot,beta,nrnb);
 
-    /*write_grid_pqr("Poisson-phi.pdb",pot->nx,pot->ny,pot->nz,pot->ptr);
-      write_grid_pqr("Poisson-rho.pdb",pot->nx,pot->ny,pot->nz,rho->ptr);
-    */
     bSecond = FALSE;
   }
   
@@ -219,7 +198,8 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
 			 real charge[],   rvec box,
 			 real phi[],      t_commrec *cr,
 			 t_nrnb *nrnb,    rvec f_ref[],
-			 real phi_ref[],  rvec beta)
+			 real phi_ref[],  rvec beta,
+			 bool bOld)
 {
 #define BMIN 1.6
 #define DB   0.025
@@ -227,13 +207,12 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
   static  bool bFirst  = TRUE;
   static  bool bSecond = TRUE;
   static  t_PSgrid *pot,*rho;
-  static  int       niter,ntab;
+  static  int       maxnit;
   static  real      r1,rc;
-  static  real      *sftab,tabspace;
   
   real      rmsf[NB][NB][NB],rmsf_min,rrmsf;
   ivec      minimum;
-  const     real tol = 1e-5;
+  const     real tol = 1e-2;
   int       i,m,bx,by,bz;
   char      buf[128];
   real      ctot;
@@ -244,7 +223,7 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
   ener = 0.0;
   
   if (bFirst) {
-    niter = ir->niter;
+    maxnit = ir->niter;
 
     fprintf(log,"Will use Poisson Solver for long-range electrostatics\n");
     fprintf(log,"Grid size is %d x %d x %d\n",ir->nkx,ir->nky,ir->nkz);
@@ -260,24 +239,20 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
     for(m=0; (m<DIM); m++)
       beta[m] = 4.0/3.0;
       
-    ntab      = 500;
-    tabspace  = (1.5*rc)/ntab;
-    sftab     = make_sftab(r1,rc,ntab,tabspace);
-    
     bFirst = FALSE;
   }
   else {
     /* Make the grid empty */
     clear_PSgrid(rho);
-    spread_q_poisson(log,bVerbose,natoms,x,charge,box,r1,rc,rho,nrnb,
-		     ntab,sftab,tabspace);
-    
+    spread_q_poisson(log,bVerbose,TRUE,natoms,x,charge,box,rc,rho,nrnb,
+		     bOld,r1);
+
     symmetrize_PSgrid(log,rho,0.0);
     if (bSecond) 
       copy_PSgrid(pot,rho);
 
     /* Second step: solving the poisson equation in real space */
-    solve_poisson(log,pot,rho,bVerbose,nrnb,niter,0.01,box);
+    (void) solve_poisson(log,pot,rho,bVerbose,nrnb,maxnit,tol,box);
     
     symmetrize_PSgrid(log,pot,0.0);
     /* Third and last step: gather the forces, energies and potential
@@ -328,9 +303,18 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
       }
     }
   }
+  beta[XX] = BETA(minimum[XX]);
+  beta[YY] = BETA(minimum[YY]);
+  beta[ZZ] = BETA(minimum[ZZ]);
   fprintf(log,"Minimum RMSF %8.3f at Beta = %6.3f  %6.3f  %6.3f\n",
-	  rmsf_min,BETA(minimum[XX]),BETA(minimum[YY]),BETA(minimum[ZZ]));
-  
+	  rmsf_min,beta[XX],beta[YY],beta[ZZ]);
+  /* Computing optimum once more... */
+  for(i=0; (i<natoms); i++) {
+    phi[i] = 0.0;
+    clear_rvec(f[i]);
+  }
+  ener = ps_gather_f(log,bVerbose,natoms,x,f,charge,box,phi,pot,beta,nrnb);
+
   return ener;
 }
 

@@ -152,7 +152,8 @@ void print_qkgrid(FILE *out,char *title,t_complex ***grid,real factor,
 real do_ewald(FILE *log,       t_inputrec *ir,
 	      int natoms,      rvec x[],rvec f[],
 	      real charge[],   rvec box,
-	      real phi[],      t_commrec *cr)
+	      real phi[],      t_commrec *cr,
+	      bool bOld)
 {
   static    bool bFirst = TRUE;
   static    t_complex ***qtab;
@@ -181,7 +182,7 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     gtab = mk_rgrid(nx,ny,nz);
     qtab = mk_cgrid(nx,ny,nz);
 
-    mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rlong,TRUE);
+    mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rlong,TRUE,bOld);
     
     bFirst = FALSE;
   }

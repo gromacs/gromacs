@@ -50,6 +50,7 @@ static char *SRCID_testlr_c = "$Id$";
 #include "nrnb.h"
 #include "lrutil.h"
 #include "mshift.h"
+#include "poisson.h"
 #include "mdatoms.h"
 
 void pr_f(char *fn,int natoms,rvec f[])
@@ -69,7 +70,8 @@ void test_pppm(FILE *log,       bool bVerbose,
 	       rvec x[],        rvec f[],
 	       real charge[],   rvec box,
 	       real phi[],      real phi_s[],
-	       int nmol,        t_commrec *cr)
+	       int nmol,        t_commrec *cr,
+	       bool bOld)
 {
   char buf[256];
   real ener;
@@ -80,9 +82,9 @@ void test_pppm(FILE *log,       bool bVerbose,
   
   /* First time only setup is done! */
   ener = do_pppm(log,bVerbose,bGenerGhat,ghatfn,ir,atoms->nr,  
-		 x,f,charge,box,phi,cr,&nrnb);
+		 x,f,charge,box,phi,cr,&nrnb,bOld);
   ener = do_pppm(log,bVerbose,bGenerGhat,NULL,NULL,atoms->nr,  
-		 x,f,charge,box,phi,cr,&nrnb);
+		 x,f,charge,box,phi,cr,&nrnb,bOld);
   fprintf(log,"Vpppm = %g\n",ener);
   
   sprintf(buf,"PPPM-%d.pdb",ir->nkx);
@@ -107,12 +109,12 @@ void test_poisson(FILE *log,       bool bVerbose,
 		  real phi[],      real phi_s[],
 		  int nmol,        t_commrec *cr,
 		  bool bFour,      rvec f_four[],
-		  real phi_f[])
+		  real phi_f[],    bool bOld)
 {
   char buf[256];
   real ener;
   rvec beta;
-  int  i;
+  int  i,nit;
   t_nrnb nrnb;
   
   init_nrnb(&nrnb);
@@ -122,18 +124,20 @@ void test_poisson(FILE *log,       bool bVerbose,
     for(i=0; (i<atoms->nr); i++)
       phi_f[i] -= phi_s[i];
     ener = do_optimize_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,
-			       box,phi,cr,&nrnb,f_four,phi_f,beta);
+			       box,phi,cr,&nrnb,f_four,phi_f,beta,bOld);
     ener = do_optimize_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,
-			       phi,cr,&nrnb,f_four,phi_f,beta);
+			       phi,cr,&nrnb,f_four,phi_f,beta,bOld);
     for(i=0; (i<atoms->nr); i++)
       phi_f[i] += phi_s[i];
   }
   else {
-    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
-    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,
+		      cr,&nrnb,&nit,bOld);
+    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,
+		      cr,&nrnb,&nit,bOld);
   }
     
-  fprintf(log,"Vpoisson = %g\n",ener);
+  fprintf(log,"Vpoisson = %g, nit = %d\n",ener,nit);
   
   sprintf(buf,"POISSON-%d.pdb",ir->nkx);
   write_pqr(buf,atoms,x,phi,0);
@@ -152,12 +156,13 @@ void test_poisson(FILE *log,       bool bVerbose,
 
 void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 	       t_inputrec *ir,rvec x[],rvec f[],rvec box,real charge[],
-	       real phi_f[],real phi_s[],int nmol,t_commrec *cr)
+	       real phi_f[],real phi_s[],int nmol,t_commrec *cr,
+	       bool bOld)
 {
   int  i;
   real energy;
   
-  energy = do_ewald(log,ir,atoms->nr,x,f,charge,box,phi_f,cr);
+  energy = do_ewald(log,ir,atoms->nr,x,f,charge,box,phi_f,cr,bOld);
   
   /*symmetrize_phi(log,atoms->nr,phi_f,bVerbose);*/
     
@@ -236,7 +241,7 @@ int main(int argc,char *argv[])
   real         t,lambda,vsr,*charge,*phi_f,*phi_pois,*phi_s,*phi_p3m,*rho;
   
   static bool bFour=FALSE,bVerbose=FALSE,bGGhat=FALSE,bPPPM=TRUE,
-    bPoisson=FALSE;
+    bPoisson=FALSE,bOld=FALSE;
   static int nprocs = 1;
   static t_pargs pa[] = {
     { "-np",     FALSE, etINT,  &nprocs,  "Do it in parallel" },
@@ -244,7 +249,8 @@ int main(int argc,char *argv[])
     { "-pppm",   FALSE, etBOOL, &bPPPM,   "Do a PPPM solution" },
     { "-poisson",FALSE, etBOOL, &bPoisson,"Do a Poisson solution" },
     {    "-v",   FALSE, etBOOL, &bVerbose,"Verbose on"},
-    { "-ghat",   FALSE, etBOOL, &bGGhat,  "Generate Ghat function"}
+    { "-ghat",   FALSE, etBOOL, &bGGhat,  "Generate Ghat function"},
+    { "-old",    FALSE, etBOOL, &bOld,    "Use old function types"}
   };
 
   CopyRight(stderr,argv[0]);
@@ -313,7 +319,8 @@ int main(int argc,char *argv[])
   
   /* Compute the short range potential */
   put_all_atoms_in_box(natoms,box,x);
-  vsr=phi_sr(log,natoms,x,charge,ir.rlong,ir.rshort,box_size,phi_s,excl,f_sr); 
+  vsr=phi_sr(log,natoms,x,charge,ir.rlong,ir.rshort,box_size,phi_s,excl,f_sr,
+	     bOld); 
   pr_f("f_sr.dat",natoms,f_sr);
   
   /* Plot the short range potential in a matrix */    
@@ -322,16 +329,17 @@ int main(int argc,char *argv[])
   
   if (bFour)   
     test_four(log,NFILE,fnm,&(top.atoms),&ir,x,f_four,box_size,charge,phi_f,
-	      phi_s,nmol,cr);
+	      phi_s,nmol,cr,bOld);
   
   if (bPPPM) 
     test_pppm(log,bVerbose,bGGhat,opt2fn("-g",NFILE,fnm),
-	      &(top.atoms),&ir,x,f_pppm,charge,box_size,phi_p3m,phi_s,nmol,cr);
+	      &(top.atoms),&ir,x,f_pppm,charge,box_size,phi_p3m,phi_s,nmol,
+	      cr,bOld);
   
   if (bPoisson)
     test_poisson(log,bVerbose,
 		 &(top.atoms),&ir,x,f_pois,charge,box_size,phi_pois,
-		 phi_s,nmol,cr,bFour,f_four,phi_f);
+		 phi_s,nmol,cr,bFour,f_four,phi_f,bOld);
 	        
   if (bPPPM && bFour) 
     analyse_diff(log,"PPPM",

@@ -3,21 +3,21 @@
 #include "physics.h"
 #include "vec.h"
 	
-void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
+int solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
 		   bool bVerbose,t_nrnb *nrnb,int maxnit,real tol,
 		   rvec box)
 {
   /* A simple Gauss-Seidel relaxation method for solving the Poisson
-   * equation: Nabla^2 Pot = -Rho/epsilon(0) 
+   * equation: Nabla^2 Pot = -Rho
+   * (epsilon0 should be in Rho in the case of coulomb potential)
    * Successive overrelaxation is applied, which speeds up considerably.
    *
    */
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;
   static real fac,dx_2,dy_2,dz_2,fac_1,omega;
-  const  real eps0_1=1.0/EPSILON0;
   real   deviation,val_ijk,epsrho;
-  real   dx2,dy2,dz2,residual,sum,xi;
+  real   dx2,dy2,dz2,residual,sum,xi,aver;
   int    nit;
   int    i,ix,jy,j,kz,k,i_1,i1,j_1,j1,k_1,k1;
   int    nx,ny,nz;
@@ -28,7 +28,6 @@ void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
   
   if (bFirst) {
     fprintf(log,"Solving Poisson Equation on %dx%dx%d grid\n",nx,ny,nz);
-    fprintf(log,"eps0 = %g\n",eps0_1);
     calc_nxyz(nx,ny,nz,&nnx,&nny,&nnz);
     
     /* Prefactors corresponding to grid spacing squared for 
@@ -55,7 +54,8 @@ void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
   }
 
   /* Solve by simple averaging */
-  nit = 0;
+  aver = 0;
+  nit  = 0;
   do {
     deviation = 0.0;
     sum = 0.0;
@@ -73,7 +73,7 @@ void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
 	  k1  = nnz[k+1+nz];
 	  
 	  /* Get the new value by averaging surrounding grid points */
-	  epsrho  = eps0_1*rho_ptr[i][j][k];
+	  epsrho  = rho_ptr[i][j][k];
 	  val_ijk = pot_ptr[i][j][k];
 	      
 	  /* Calculate the error in the current potential */
@@ -89,6 +89,10 @@ void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
       }
     }
     
+    /* This call may or may not be necessary. For a 32 cube grid and coulomb
+     * interaction it does NOT make a difference in the forces nor in the
+     * potential. It is quite expensive however...
+     */
     symmetrize_PSgrid(NULL,pot,sum);
     
     deviation = (deviation/(nx*ny*nz));
@@ -101,5 +105,17 @@ void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
   } while ((nit < maxnit) && (deviation > tol));
   if (bVerbose)
     fprintf(stderr,"\n");
+  if (nit == maxnit)
+    fatal_error(0,"Poisson Solver did *not* converge in %d iterations\n",nit);
+  
+  return nit;
 }
+
+
+
+
+
+
+
+
 

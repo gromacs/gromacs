@@ -45,7 +45,7 @@ static char *SRCID_lrutil_c = "$Id$";
 #define p3(x) ((x)*(x)*(x)) 
 #define p4(x) ((x)*(x)*(x)*(x)) 
 
-static real A,A_3,B,B_4,C,c1,c2,c3,c4,c5,c6,One_4pi,FourPi_V,N0;
+static real A,A_3,B,B_4,C,c1,c2,c3,c4,c5,c6,One_4pi,FourPi_V,Vol,N0;
 
 void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
 {
@@ -70,8 +70,8 @@ void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
     fr->B_4 = B_4;
     fr->C   = C;
   }
-  
-  FourPi_V=4.0*M_PI/(box[XX]*box[YY]*box[ZZ]);
+  Vol     =(box[XX]*box[YY]*box[ZZ]);
+  FourPi_V=4.0*M_PI/Vol;
 
   fprintf(log,"Constants for short-range and fourier stuff:\n"
 	  "r1 = %10.3f,  rc = %10.3f\n"
@@ -108,6 +108,16 @@ real gk(real k,real rc,real r1)
   return gg;
 }
 
+real gknew(real k,real rc,real r1)
+{
+  real rck,rck2;
+  
+  rck = rc*k;
+  rck2= rck*rck;
+  
+  return -15.0*((rck2-3.0)*sin(rck) + 3*rck*cos(rck))/(Vol*rck2*rck2*rck);
+}
+
 real calc_dx2dx(rvec xi,rvec xj,rvec box,rvec dx)
 {
   int  m;
@@ -133,11 +143,72 @@ real calc_dx2(rvec xi,rvec xj,rvec box)
   return calc_dx2dx(xi,xj,box,dx);
 }
 
+real shiftfunction(real r1,real rc,real R)
+{
+  real dr;
+
+  if (R <= r1)
+    return 0.0;
+  else if (R >= rc)
+    return -1.0/(R*R);
+  
+  dr=R-r1;
+  
+  return A*dr*dr+B*dr*dr*dr;
+}
+
+real new_f(real r,real rc)
+{
+  real rrc,rrc2,rrc3;
+  
+  rrc  = r/rc;
+  rrc2 = rrc*rrc;
+  rrc3 = rrc2*rrc;
+  return 1.5*rrc2*rrc3 - 2.5*rrc3 + 1.0;
+}
+
+real new_phi(real r,real rc)
+{
+  real rrr;
+  
+  rrr = sqr(r/rc);
+  
+  return 1/r-(0.125/rc)*(15 + 3*rrr*rrr - 10*rrr);
+}
+
+real old_f(real r,real rc,real r1)
+{
+  real dr,r2;
+
+  if (r <= r1)
+    return 1.0;
+  else if (r >= rc)
+    return 0;
+  
+  dr = r-r1;
+  r2 = r*r;
+  return 1+A*r2*dr*dr+B*r2*dr*dr*dr;
+}
+
+real old_phi(real r,real rc,real r1)
+{
+  real dr;
+  
+  if (r <= r1)
+    return 1/r-C;
+  else if (r >= rc)
+    return 0.0;
+    
+  dr = r-r1;
+  
+  return 1/r-A_3*dr*dr*dr-B_4*dr*dr*dr*dr - C;
+}
+
 real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,rvec box,
-	    real phi[],t_block *excl,rvec f_sr[])
+	    real phi[],t_block *excl,rvec f_sr[],bool bOld)
 {
   int  i,j,k,m,ni,i1,i2;
-  real pp,r2,R,R_1,r12,rc2;
+  real pp,r2,R,R_1,R_2,r12,rc2;
   real qi,qj,vsr,eps,fscal;
   rvec dx;
   
@@ -157,19 +228,18 @@ real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,rvec box,
       if (k == i2) {
 	r2=calc_dx2dx(x[i],x[j],box,dx);
 	if (r2 < rc2) {
-	  qj  = charge[j];
-	  R_1 = invsqrt(r2);
-	  pp  = R_1-C;
-	  if (r2 > r12) {
-	    R     = 1.0/R_1;
-	    pp   -= A_3*p3(R-r1)+B_4*p4(R-r1);
-	    fscal = sqr(R_1) + A*sqr(R-r1) + B*p3(R-r1);
+	  qj    = charge[j];
+	  R_1   = invsqrt(r2);
+	  R_2   = R_1*R_1;
+	  R     = invsqrt(R_2);
+	  if (bOld) {
+	    fscal = old_f(R,rc,r1)*R_2;
+	    pp    = old_phi(R,rc,r1);
 	  }
 	  else {
-	    fscal = sqr(R_1);
+	    fscal = new_f(R,rc)*R_2;
+	    pp    = new_phi(R,rc);
 	  }
-	  fscal  *= qi*qj*eps;
-	  
 	  phi[i] += eps*qj*pp;
 	  phi[j] += eps*qi*pp;
 	  vsr    += eps*qj*qi*pp;
@@ -185,20 +255,6 @@ real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,rvec box,
   fprintf(log,"There were %d short range interactions, vsr=%g\n",ni,vsr);
   
   return vsr;
-}
-
-real shiftfunction(real r1,real rc,real R)
-{
-  real dr;
-
-  if (R <= r1)
-    return 0.0;
-  else if (R >= rc)
-    return -1.0/(R*R);
-  
-  dr=R-r1;
-  
-  return A*dr*dr+B*dr*dr*dr;
 }
 
 real spreadfunction(real r1,real rc,real R)

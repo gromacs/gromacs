@@ -14,6 +14,7 @@ typedef struct {
 
 extern void unpack_PSgrid(t_PSgrid *grid,int *nx,int *ny,int *nz,real ****ptr);
 
+extern void symmetrize_PSgrid(FILE *fp,t_PSgrid *grid,real sum);
 
 extern void calc_nxyz(int nx,int ny,int nz,
 		      int **nnx,int **nny,int **nnz);
@@ -23,14 +24,22 @@ extern real ps_gather_f(FILE *log,bool bVerbose,
 			int natoms,rvec x[],rvec f[],real charge[],rvec box,
 			real pot[],t_PSgrid *grid,rvec beta,t_nrnb *nrnb);
 
-extern void spread_q_poisson(FILE *log,bool bVerbose,
-			     int natoms,rvec x[],real charge[],rvec box,
-			     real r1,real rc,t_PSgrid *grid,t_nrnb *nrnb,
-			     int ntab,real sftab[],real tabfactor);
-			     
-extern void solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
-			  bool bVerbose,t_nrnb *nrnb,int maxnit,real tol,
-			  rvec box);
+extern void spread_q_poisson(FILE *log,bool bVerbose,bool bCoulomb,
+			     int natoms,rvec x[],real prop[],rvec box,
+			     real rc,t_PSgrid *grid,t_nrnb *nrnb,
+			     bool bOld,real r1);
+/* Spreading charges (if BCoulomb)  or C6 (or any other property)
+ * by convolution in real space of the spread function with   
+ * the neighbouring grid points, (that is within the cut-off rc).
+ * bOld and r1 are for backwards compatibility and testing.
+ */
+
+extern int solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
+			 bool bVerbose,t_nrnb *nrnb,int maxnit,real tol,
+			 rvec box);
+/* Solves a Poisson equation: Nabla^2 Phi = Rho, using Gauss-Seidel relaxation
+ * returns the number of iterations.
+ */
 
 static void calc_invh_h(rvec box,int nx,int ny,int nz,rvec invh,rvec h)
 {
@@ -41,5 +50,24 @@ static void calc_invh_h(rvec box,int nx,int ny,int nz,rvec invh,rvec h)
   h[YY]    = 1.0/invh[YY];
   h[ZZ]    = 1.0/invh[ZZ];
 }
+
+extern real do_poisson(FILE *log,       bool bVerbose,
+		       t_inputrec *ir,  int natoms,
+		       rvec x[],        rvec f[],
+		       real charge[],   rvec box,
+		       real phi[],      t_commrec *cr,
+		       t_nrnb *nrnb,    int *nit,
+		       bool bOld);
+/* Calculate potentials etc. using a poisson solver */
+
+extern real do_optimize_poisson(FILE *log,       bool bVerbose,
+				t_inputrec *ir,  int natoms,
+				rvec x[],        rvec f[],
+				real charge[],   rvec box,
+				real phi[],      t_commrec *cr,
+				t_nrnb *nrnb,    rvec f_ref[],
+				real phi_ref[],  rvec beta,
+				bool bOld);
+/* Does the same, but optimizes beta by comparison with something else */
 
 #endif

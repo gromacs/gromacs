@@ -428,7 +428,7 @@ real do_pppm(FILE *log,       bool bVerbose,
 	     rvec x[],        rvec f[],
 	     real charge[],   rvec box,
 	     real phi[],      t_commrec *cr,
-	     t_nrnb *nrnb)
+	     t_nrnb *nrnb,    bool bNew)
 {
   static  bool bFirst = TRUE;
   static  real      ***ghat;
@@ -459,7 +459,7 @@ real do_pppm(FILE *log,       bool bVerbose,
       ny     = ir->nky;
       nz     = ir->nkz;
       ghat   = mk_rgrid(nx,ny,nz);
-      mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE);
+      mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE,bNew);
       
       pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat);
     }
@@ -537,7 +537,7 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
 		 real charge[],   rvec box,
 		 real phi[],      t_commrec *cr,
 		 t_nrnb *nrnb,    rvec beta,
-		 t_fftgrid *grid)
+		 t_fftgrid *grid, bool bNew)
 {
   real      ***ghat;
   int       m,nx,ny,nz;
@@ -552,7 +552,7 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
   ny     = ir->nky;
   nz     = ir->nkz;
   ghat   = mk_rgrid(nx,ny,nz);
-  mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE);
+  mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE,bNew);
   
   /* pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat); */
   
