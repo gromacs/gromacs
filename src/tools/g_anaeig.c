@@ -570,59 +570,65 @@ static void components(char *outfile,int natoms,real *sqrtm,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "[TT]g_anaeig[tt] analyzes eigenvectors.",
-    "The eigenvectors can be of a covariance matrix ([TT]g_covar[tt])",
-    "or of a Normal Modes anaysis ([TT]g_nmeig[tt]).[PAR]",
-    "When a trajectory is projected on eigenvectors,",
-    "all structures are fitted to the structure in the eigenvector file,",
-    "if present, otherwise to the structure in the structure file.",
-    "When no run input file is supplied, periodicity will not be taken into",
-    "account.",  
-    "Most analyses are done on eigenvectors [TT]-first[tt] to [TT]-last[tt],",
-    "but when [TT]-first[tt] is set to -1 you will be prompted for a",
-    "selection.[PAR]",
+    "[TT]g_anaeig[tt] analyzes eigenvectors. The eigenvectors can be of a",
+    "covariance matrix ([TT]g_covar[tt]) or of a Normal Modes anaysis",
+    "([TT]g_nmeig[tt]).[PAR]",
+    
+    "When a trajectory is projected on eigenvectors, all structures are",
+    "fitted to the structure in the eigenvector file, if present, otherwise",
+    "to the structure in the structure file. When no run input file is",
+    "supplied, periodicity will not be taken into account. Most analysis",
+    "is done on eigenvectors [TT]-first[tt] to [TT]-last[tt], but when",
+    "[TT]-first[tt] is set to -1 you will be prompted for a selection.[PAR]",
+    
     "[TT]-disp[tt]: plot all atom displacements of eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
+    
     "[TT]-proj[tt]: calculate projections of a trajectory on eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
+    
     "[TT]-2d[tt]: calculate a 2d projection of a trajectory on eigenvectors",
     "[TT]-first[tt] and [TT]-last[tt].[PAR]",
+    
     "[TT]-3d[tt]: calculate a 3d projection of a trajectory on the first",
     "three selected eigenvectors.[PAR]",
+    
     "[TT]-filt[tt]: filter the trajectory to show only the motion along",
     "eigenvectors [TT]-first[tt] to [TT]-last[tt].[PAR]",
+    
     "[TT]-extr[tt]: calculate the two extreme projections along a trajectory",
-    "on the average structure and interpolate [TT]-nframes[tt] frames between",
-    "them, or set your own extremes with [TT]-max[tt]. The eigenvector",
-    "[TT]-first[tt] will be written unless [TT]-first[tt] and [TT]-last[tt]",
-    "have been set explicitly, in which case all eigenvectors will be written",
-    "to separate files.",
-    "Chain identifiers will be added when",
-    "writing a [TT].pdb[tt] file with two or three structures",
-    "(you can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
-    "  Overlap calculations between covariance analyses:[BR]",
-    "  NOTE: the analyses should use the same fitting structure[PAR]",
+    "on the average structure and interpolate [TT]-nframes[tt] frames",
+    "between them, or set your own extremes with [TT]-max[tt]. The",
+    "eigenvector [TT]-first[tt] will be written unless [TT]-first[tt] and",
+    "[TT]-last[tt] have been set explicitly, in which case all eigenvectors",
+    "will be written to separate files. Chain identifiers will be added",
+    "when writing a [TT].pdb[tt] file with two or three structures (you",
+    "can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
+    
+    "  Overlap calculations between covariance analysis:[BR]",
+    "  NOTE: the analysis should use the same fitting structure[PAR]",
+    
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
     "in file [TT]-v[tt].[PAR]",
-    "[TT]-inpr[tt]: calculate a matrix of inner-products between eigenvectors",
-    "in files [TT]-v[tt] and [TT]-v2[tt]. All eigenvectors of both files",
-    "will be used unless [TT]-first[tt] and [TT]-last[tt] have been set",
-    "explicitly.[PAR]",
+    
+    "[TT]-inpr[tt]: calculate a matrix of inner-products between",
+    "eigenvectors in files [TT]-v[tt] and [TT]-v2[tt]. All eigenvectors",
+    "of both files will be used unless [TT]-first[tt] and [TT]-last[tt]",
+    "have been set explicitly.[PAR]",
+    
     "When [TT]-v[tt], [TT]-eig1[tt], [TT]-v2[tt] and [TT]-eig2[tt] are given,",
     "a single number for the overlap between the covariance matrices is",
-    "generated.",
-    "The formulas are:[BR]",
+    "generated. The formulas are:[BR]",
     "        difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))[BR]",
     "           overlap = sqrt(tr(M1) + tr(M2)) - difference[BR]",
     "normalized overlap = 1 - difference/sqrt(tr(M1) + tr(M2))[BR]",
     "     shape overlap = 1 - sqrt(tr((sqrt(M1/tr(M1)) - sqrt(M2/tr(M2)))^2))[BR]",
-    "where M1 and M2 are the two covariance matrices and",
-    "tr is the trace of a matrix.",
-    "The numbers are proportional to the overlap of the square root of the",
-    "fluctuations. The normalized overlap is the most useful number, it is 1",
-    "for identical matrices and 0 when the sampled subspaces are orthogonal.",
-
+    "where M1 and M2 are the two covariance matrices and tr is the trace",
+    "of a matrix. The numbers are proportional to the overlap of the square",
+    "root of the fluctuations. The normalized overlap is the most useful",
+    "number, it is 1 for identical matrices and 0 when the sampled",
+    "subspaces are orthogonal."
   };
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;

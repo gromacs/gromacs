@@ -476,7 +476,7 @@ int main(int argc,char *argv[])
     "read when they are seperated by & (option [TT]-n[tt]),",
     "in this case only one y value is read from each line.",
     "All lines starting with # and @ are skipped.",
-    "All analyses can also be done for the derivative of a set",
+    "All analysis can also be done for the derivative of a set",
     "(option [TT]-d[tt]).[PAR]",
     "g_analyze always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",

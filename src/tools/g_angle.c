@@ -148,7 +148,7 @@ int main(int argc,char *argv[])
 		mult,(mult==3) ? "angle triplets" : "dihedral quadruplets");
   
 
-  /* Check whether specific analyses have to be performed */
+  /* Check whether specific analysis has to be performed */
   bCorr=opt2bSet("-oc",NFILE,fnm);
   bAver=opt2bSet("-ov",NFILE,fnm);
   bTrans=opt2bSet("-ot",NFILE,fnm);
