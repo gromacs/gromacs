@@ -247,7 +247,8 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 {
   char      buf[256];
   int       i,ti;
-
+  bool      bSet;
+  
   /* First check whether we have a valid filename already */
   /* ti is the extension type */
   ti=fn2ftp(name); 
@@ -263,19 +264,22 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
     
     return;
   }
-  for(i=0; (i<nopts); i++) {
-    ti=ftps[i];
-    if (name) {
-      strcpy(buf,name);
-      set_extension(buf,ti);
+  bSet=FALSE;
+  if (fnm->flag & ffREAD) { 
+    /* for input-files only: search for filenames in the directory */ 
+    for(i=0; (i<nopts) && !bSet; i++) {
+      ti=ftps[i];
+      if (name) {
+	strcpy(buf,name);
+	set_extension(buf,ti);
+      }
+      else
+	strcpy(buf,ftp2defnm(ti));
+      if (fexist(buf))
+	bSet=TRUE;
     }
-    else
-      strcpy(buf,ftp2defnm(ti));
-    
-    if (fexist(buf))
-      break;
   }
-  if (i == nopts) {
+  if (!bSet) {
     ti=ftps[0];
     if (name) {
       strcpy(buf,name);
