@@ -36,7 +36,7 @@ static char *SRCID_typedefs_h = "$Id$";
 extern "C" {
 #endif
 
-
+#define STRLEN 4096
 #define NOTSET -12345
 
 #include <sys/types.h>

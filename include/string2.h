@@ -49,10 +49,10 @@ extern "C" {
 
 #include <string.h>
 #include <stdio.h>
+#include "typedefs.h"
 
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
-#define STRLEN      4096
 
 int continuing(char *s);
 
