@@ -69,7 +69,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_bonded ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER,idihs   ),
   def_bonded ("LJ14",     "LJ-14",           2, 2, 2,  eNR_LJC, do_14       ),
   def_nofc   ("COUL14",   "Coulomb-14"       ),
-  def_nb     ("LJ",       "LJ",              2, 2      ),
+  def_nb     ("LJ",       "LJ (SR)",         2, 2      ),
   def_nb     ("BHAM",     "BuckingHam",      2, 3      ),
   def_nofc   ("LJLR",     "LJ (LR)"          ),
   def_nofc   ("DISPCORR", "Disper. corr."    ),
@@ -93,7 +93,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("EKIN",     "Kinetic En."      ),
   def_nofc   ("ETOT",     "Total Energy"     ),
   def_nofc   ("TEMP",     "Temperature"      ),
-  def_nofc   ("PRES",     "Pressure"         ),
+  def_nofc   ("PRES",     "Pressure (bar)"   ),
   def_nofc   ("DV/DL",    "dVpot/dlambda"    ),
   def_nofc   ("DK/DL",    "dEkin/dlambda"    )
 };
