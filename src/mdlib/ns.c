@@ -256,12 +256,12 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
 	(nlist->iinr[nri] != -1)) {
       
       /* If so increase the counter */
+      nlist->nri++;
+      nri++;
       if (nlist->nri >= nlist->maxnri) {
 	nlist->maxnri += NLI_INC;
 	reallocate_nblist(nlist);
       }
-      nlist->nri++;
-      nri++;
     }
     /* Set the number of neighbours and the atom number */
     nlist->jindex[nri+1] = nlist->jindex[nri];
