@@ -195,7 +195,7 @@ static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
   
   /* Check whether there is something from anyone */
   debug_gmx();
-#ifdef HAVE_MPI
+#ifdef GMX_MPI
   gmx_rx(MPI_ANY_SOURCE,record(nodeid));
   do {
     usleep(1000);
