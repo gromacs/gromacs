@@ -43,14 +43,19 @@ static char *SRCID_matio_c = "$Id$";
 static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
 #define NMAP strlen(mapper)
 
+bool matelmt_cmp(t_matelmt e1, t_matelmt e2) 
+{ 
+  return (e1.c1 == e2.c1) && (e1.c2 == e2.c2);
+}
+    
 int searchcmap(int n,t_mapping map[],t_matelmt c)
 {
   int i;
   
-  for(i=0; (i<n); i++) {
-    if ((map[i].code.c1 == c.c1) && (map[i].code.c2 == c.c2))
+  for(i=0; (i<n); i++)
+    if (matelmt_cmp(map[i].code, c))
       return i;
-  }
+  
   return -1;
 }
 
