@@ -868,7 +868,7 @@
     CE    C2   0.000     5
    HE1    HC   0.000     5
    HE2    HC   0.000     5
-    NZ    NT  -0.830     5
+    NZ    NL  -0.830     5
    HZ1     H   0.415     5
    HZ2     H   0.415     5
      C     C   0.380     6
@@ -1185,7 +1185,8 @@
      N    -C    CA     H
     -C   -CA     N    -O
     CA     N     C    CB
-
+    CB   OG1   CG2    CA
+  
 [ TRP ]
  [ atoms ]
      N     N  -0.280     0
