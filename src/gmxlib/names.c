@@ -40,7 +40,7 @@ char *eblock_names[ebNR+1]=
 
 char *epbc_names[epbcNR+1]=
 {
-  "xyz", "none", NULL
+  "xyz", "no", NULL
 };
 
 char *ens_names[enNR+1]=
