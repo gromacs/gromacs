@@ -40,6 +40,7 @@ static char *SRCID_g_com_c = "$Id$";
 #include "xvgr.h"
 #include "string2.h"
 #include "rdgroup.h"
+#include "tpxio.h"
 
 real calc_ekrot(int natoms,real mass[],rvec x[],rvec v[])
 {
@@ -141,7 +142,7 @@ int main(int argc,char *argv[])
   };
   t_filenm fnm[] = {
     { efTRX,  "-f",  NULL, ffREAD },
-    { efTPX,  NULL,  NULL, ffREAD },
+    { efTPS,  NULL,  NULL, ffREAD },
     { efNDX,  NULL,  NULL, ffOPTRD },
     { efXVG, "-ox", "xcm", ffWRITE },
     { efXVG, "-oe", "ekrot",ffOPTWR }
@@ -155,9 +156,9 @@ int main(int argc,char *argv[])
   int      *isize;      /* the size of each group */
   char     **grpnames;  /* the name of each group */
   atom_id  **index;     /* the index array of each group */
-  t_topology *top;
+  t_topology top;
   int      g;           /* group counter */
-  char     format[STRLEN],filename[STRLEN];
+  char     format[STRLEN],filename[STRLEN],title[STRLEN];
   FILE     **outX,*outek;
   int      status,ftpout;
   int      i,j,idum,step,natoms;
@@ -184,7 +185,8 @@ int main(int argc,char *argv[])
   }
   
   /* open input files, read topology and index */
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,TRUE);
+  sfree(x);
   
   fprintf(stderr,"How many groups do you want to calc com of ? ");
   scanf("%d",&ngrps);
@@ -194,20 +196,20 @@ int main(int argc,char *argv[])
   snew(index,ngrps);
   snew(isize,ngrps);
   
-  get_index(&(top->atoms),ftp2fn_null(efNDX,NFILE,fnm),
+  get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    ngrps,isize,index,grpnames);
   
   if ( bReadV )
     natoms=read_first_x_or_v(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
   else
     natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
-  if ( natoms > top->atoms.nr )
+  if ( natoms > top.atoms.nr )
     fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
-		top->atoms.nr,natoms);
+		top.atoms.nr,natoms);
   
   snew(mass,natoms);
   for(i=0; (i<natoms); i++)
-    mass[i]=top->atoms.atom[i].m;
+    mass[i]=top.atoms.atom[i].m;
   
   /* open output files */
   snew(outX,ngrps);
@@ -255,7 +257,8 @@ int main(int argc,char *argv[])
   } while ((bReadV && read_next_x_or_v(status,&t,natoms,x,v,box)) ||
 	   (!bReadV && read_next_x(status,&t,natoms,x,box)));
   sfree(x);
-  sfree(v);
+  if (bReadV)
+    sfree(v);
   sfree(mass);
   
   close_trj(status);
