@@ -436,7 +436,7 @@ static void write_htmlman(FILE *out,
       fprintf(out,
 	      "<TR>"
 	      "<TD ALIGN=RIGHT> <b>%s</b> </TD>"
-	      "<TD> <a href=\"%s.html\">%12s</a> </TD>"
+	      "<TD ALIGN=RIGHT> <a href=\"%s.html\">%12s</a> </TD>"
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
 	      "</TR>\n",
@@ -461,8 +461,8 @@ static void write_htmlman(FILE *out,
       fprintf(out,
 	      "<TR>"
 	      "<TD ALIGN=RIGHT> <b>%s%s</b> </TD>"
-	      "<TD> %s </TD>"
-	      "<TD> <i>%s</i> </TD>"
+	      "<TD ALIGN=RIGHT> %s </TD>"
+	      "<TD ALIGN=RIGHT> <i>%s</i> </TD>"
 	      "<TD> %s </TD>"
 	      "</TD>\n",
 	      (pa[i].type == etBOOL)?"-</b>[no]<b>":"-",pa[i].option+1,
