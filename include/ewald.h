@@ -44,8 +44,7 @@ extern real do_ewald(FILE *log,       bool bVerbose,
 		     t_inputrec *ir,
 		    rvec x[],        rvec f[],
 		    real charge[],   rvec box,
-		    real phi[],      t_commrec *cr,
-		     t_nsborder *nsb, t_nrnb *nrnb,
+		     t_commrec *cr,  t_nsborder *nsb,
 		     matrix lrvir, real ewaldcoeff);
 /* Do an Ewald calculation for the long range electrostatics. */
  
