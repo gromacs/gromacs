@@ -54,139 +54,139 @@ typedef struct {
 
 
 static const t_nrnb_data nbdata[eNRNB] = {
-    { "LJ",                            31  }, /* nb_kernel010 */
-    { "Buckingham",                    36  }, /* nb_kernel020 */ 
-    { "VdW(T)",                        52  }, /* nb_kernel030 */
-    { "Coulomb",                       27  }, /* nb_kernel100 */
-    { "Coulomb [W3]",                  80  }, /* nb_kernel101 */
+    { "LJ",                             33 }, /* nb_kernel010 */
+    { "Buckingham",                     61 }, /* nb_kernel020 */ 
+    { "VdW(T)",                         54 }, /* nb_kernel030 */
+    { "Coulomb",                        27 }, /* nb_kernel100 */
+    { "Coulomb [W3]",                   80 }, /* nb_kernel101 */
     { "Coulomb [W3-W3]",               234 }, /* nb_kernel102 */
-    { "Coulomb [W4]",                  80  }, /* nb_kernel103 */
+    { "Coulomb [W4]",                   80 }, /* nb_kernel103 */
     { "Coulomb [W4-W4]",               234 }, /* nb_kernel104 */
-    { "Coulomb + LJ",                  38  }, /* nb_kernel110 */
-    { "Coulomb + LJ [W3]",             91  }, /* nb_kernel111 */
+    { "Coulomb + LJ",                   38 }, /* nb_kernel110 */
+    { "Coulomb + LJ [W3]",              91 }, /* nb_kernel111 */
     { "Coulomb + LJ [W3-W3]",          245 }, /* nb_kernel112 */
     { "Coulomb + LJ [W4]",             113 }, /* nb_kernel113 */
     { "Coulomb + LJ [W4-W4]",          267 }, /* nb_kernel114 */
-    { "Coulomb + Bham ",               64  }, /* nb_kernel120 */
+    { "Coulomb + Bham ",                64 }, /* nb_kernel120 */
     { "Coulomb + Bham [W3]",           117 }, /* nb_kernel121 */
     { "Coulomb + Bham [W3-W3]",        271 }, /* nb_kernel122 */
     { "Coulomb + Bham [W4]",           141 }, /* nb_kernel123 */
     { "Coulomb + Bham [W4-W4]",        295 }, /* nb_kernel124 */
-    { "Coulomb + VdW(T) ",             59  }, /* nb_kernel130 */
+    { "Coulomb + VdW(T) ",              59 }, /* nb_kernel130 */
     { "Coulomb + VdW(T) [W3]",         112 }, /* nb_kernel131 */
     { "Coulomb + VdW(T) [W3-W3]",      266 }, /* nb_kernel132 */
     { "Coulomb + VdW(T) [W4]",         134 }, /* nb_kernel133 */
     { "Coulomb + VdW(T) [W4-W4]",      288 }, /* nb_kernel134 */
-    { "RF Coul",                       33  }, /* nb_kernel200 */
-    { "RF Coul [W3]",                  98  }, /* nb_kernel201 */
+    { "RF Coul",                        33 }, /* nb_kernel200 */
+    { "RF Coul [W3]",                   98 }, /* nb_kernel201 */
     { "RF Coul [W3-W3]",               288 }, /* nb_kernel202 */
-    { "RF Coul [W4]",                  98  }, /* nb_kernel203 */
+    { "RF Coul [W4]",                   98 }, /* nb_kernel203 */
     { "RF Coul [W4-W4]",               288 }, /* nb_kernel204 */
-    { "RF Coul + LJ",                  44  }, /* nb_kernel210 */
+    { "RF Coul + LJ",                   44 }, /* nb_kernel210 */
     { "RF Coul + LJ [W3]",             109 }, /* nb_kernel211 */
     { "RF Coul + LJ [W3-W3]",          299 }, /* nb_kernel212 */
     { "RF Coul + LJ [W4]",             131 }, /* nb_kernel213 */
     { "RF Coul + LJ [W4-W4]",          321 }, /* nb_kernel214 */
-    { "RF Coul + Bham ",               70  }, /* nb_kernel220 */
+    { "RF Coul + Bham ",                70 }, /* nb_kernel220 */
     { "RF Coul + Bham [W3]",           135 }, /* nb_kernel221 */
     { "RF Coul + Bham [W3-W3]",        325 }, /* nb_kernel222 */
     { "RF Coul + Bham [W4]",           159 }, /* nb_kernel223 */
     { "RF Coul + Bham [W4-W4]",        349 }, /* nb_kernel224 */
-    { "RF Coul + VdW(T) ",             65  }, /* nb_kernel230 */
+    { "RF Coul + VdW(T) ",              65 }, /* nb_kernel230 */
     { "RF Coul + VdW(T) [W3]",         130 }, /* nb_kernel231 */
     { "RF Coul + VdW(T) [W3-W3]",      320 }, /* nb_kernel232 */
     { "RF Coul + VdW(T) [W4]",         152 }, /* nb_kernel233 */
     { "RF Coul + VdW(T) [W4-W4]",      342 }, /* nb_kernel234 */
-    { "Coul(T)",                       42  }, /* nb_kernel300 */
+    { "Coul(T)",                        42 }, /* nb_kernel300 */
     { "Coul(T) [W3]",                  125 }, /* nb_kernel301 */
     { "Coul(T) [W3-W3]",               369 }, /* nb_kernel302 */
     { "Coul(T) [W4]",                  125 }, /* nb_kernel303 */
     { "Coul(T) [W4-W4]",               369 }, /* nb_kernel304 */
-    { "Coul(T) + LJ",                  55  }, /* nb_kernel310 */
+    { "Coul(T) + LJ",                   55 }, /* nb_kernel310 */
     { "Coul(T) + LJ [W3]",             138 }, /* nb_kernel311 */
     { "Coul(T) + LJ [W3-W3]",          382 }, /* nb_kernel312 */
     { "Coul(T) + LJ [W4]",             158 }, /* nb_kernel313 */
     { "Coul(T) + LJ [W4-W4]",          402 }, /* nb_kernel314 */
-    { "Coul(T) + Bham",                81  }, /* nb_kernel320 */
+    { "Coul(T) + Bham",                 81 }, /* nb_kernel320 */
     { "Coul(T) + Bham [W3]",           164 }, /* nb_kernel321 */
     { "Coul(T) + Bham [W3-W3]",        408 }, /* nb_kernel322 */
     { "Coul(T) + Bham [W4]",           186 }, /* nb_kernel323 */
     { "Coul(T) + Bham [W4-W4]",        430 }, /* nb_kernel324 */
-    { "Coul(T) + VdW(T)",              68  }, /* nb_kernel330 */
+    { "Coul(T) + VdW(T)",               68 }, /* nb_kernel330 */
     { "Coul(T) + VdW(T) [W3]",         151 }, /* nb_kernel331 */
     { "Coul(T) + VdW(T) [W3-W3]",      395 }, /* nb_kernel332 */
     { "Coul(T) + VdW(T) [W4]",         179 }, /* nb_kernel333 */
     { "Coul(T) + VdW(T) [W4-W4]",      423 }, /* nb_kernel334 */
-    { "Generalized Born Coulomb",      48  }, /* nb_kernel400 */
-    { "GB Coulomb + LJ",               61  }, /* nb_kernel410 */
-    { "GB Coulomb + VdW(T)",           78  }, /* nb_kernel430 */
-    { "LJ NF",                         31  }, /* nb_kernel010nf */
-    { "Buckingham NF",                 36  }, /* nb_kernel020nf */ 
-    { "VdW(T) NF",                     52  }, /* nb_kernel030nf */
-    { "Coulomb NF",                    27  }, /* nb_kernel100nf */
-    { "Coulomb [W3] NF",               80  }, /* nb_kernel101nf */
-    { "Coulomb [W3-W3] NF",            234 }, /* nb_kernel102nf */
-    { "Coulomb [W4] NF",               80  }, /* nb_kernel103nf */
-    { "Coulomb [W4-W4] NF",            234 }, /* nb_kernel104nf */
-    { "Coulomb + LJ NF",               38  }, /* nb_kernel110nf */
-    { "Coulomb + LJ [W3] NF",          91  }, /* nb_kernel111nf */
-    { "Coulomb + LJ [W3-W3] NF",       245 }, /* nb_kernel112nf */
-    { "Coulomb + LJ [W4] NF",          113 }, /* nb_kernel113nf */
-    { "Coulomb + LJ [W4-W4] NF",       267 }, /* nb_kernel114nf */
-    { "Coulomb + Bham  NF",            64  }, /* nb_kernel120nf */
-    { "Coulomb + Bham [W3] NF",        117 }, /* nb_kernel121nf */
-    { "Coulomb + Bham [W3-W3] NF",     271 }, /* nb_kernel122nf */
-    { "Coulomb + Bham [W4] NF",        141 }, /* nb_kernel123nf */
-    { "Coulomb + Bham [W4-W4] NF",     295 }, /* nb_kernel124nf */
-    { "Coulomb + VdW(T)  NF",          59  }, /* nb_kernel130nf */
-    { "Coulomb + VdW(T) [W3] NF",      112 }, /* nb_kernel131nf */
-    { "Coulomb + VdW(T) [W3-W3] NF",   266 }, /* nb_kernel132nf */
-    { "Coulomb + VdW(T) [W4] NF",      134 }, /* nb_kernel133nf */
-    { "Coulomb + VdW(T) [W4-W4] NF",   288 }, /* nb_kernel134nf */
-    { "RF Coul NF",                    33  }, /* nb_kernel200nf */
-    { "RF Coul [W3] NF",               98  }, /* nb_kernel201nf */
-    { "RF Coul [W3-W3] NF",            288 }, /* nb_kernel202nf */
-    { "RF Coul [W4] NF",               98  }, /* nb_kernel203nf */
-    { "RF Coul [W4-W4] NF",            288 }, /* nb_kernel204nf */
-    { "RF Coul + LJ NF",               44  }, /* nb_kernel210nf */
-    { "RF Coul + LJ [W3] NF",          109 }, /* nb_kernel211nf */
-    { "RF Coul + LJ [W3-W3] NF",       299 }, /* nb_kernel212nf */
-    { "RF Coul + LJ [W4] NF",          131 }, /* nb_kernel213nf */
-    { "RF Coul + LJ [W4-W4] NF",       321 }, /* nb_kernel214nf */
-    { "RF Coul + Bham  NF",            70  }, /* nb_kernel220nf */
-    { "RF Coul + Bham [W3] NF",        135 }, /* nb_kernel221nf */
-    { "RF Coul + Bham [W3-W3] NF",     325 }, /* nb_kernel222nf */
-    { "RF Coul + Bham [W4] NF",        159 }, /* nb_kernel223nf */
-    { "RF Coul + Bham [W4-W4] NF",     349 }, /* nb_kernel224nf */
-    { "RF Coul + VdW(T)  NF",          65  }, /* nb_kernel230nf */
-    { "RF Coul + VdW(T) [W3] NF",      130 }, /* nb_kernel231nf */
-    { "RF Coul + VdW(T) [W3-W3] NF",   320 }, /* nb_kernel232nf */
-    { "RF Coul + VdW(T) [W4] NF",      152 }, /* nb_kernel233nf */
-    { "RF Coul + VdW(T) [W4-W4] NF",   342 }, /* nb_kernel234nf */
-    { "Coul(T) NF",                    42  }, /* nb_kernel300nf */
-    { "Coul(T) [W3] NF",               125 }, /* nb_kernel301nf */
-    { "Coul(T) [W3-W3] NF",            369 }, /* nb_kernel302nf */
-    { "Coul(T) [W4] NF",               125 }, /* nb_kernel303nf */
-    { "Coul(T) [W4-W4] NF",            369 }, /* nb_kernel304nf */
-    { "Coul(T) + LJ NF",               55  }, /* nb_kernel310nf */
-    { "Coul(T) + LJ [W3] NF",          138 }, /* nb_kernel311nf */
-    { "Coul(T) + LJ [W3-W3] NF",       382 }, /* nb_kernel312nf */
-    { "Coul(T) + LJ [W4] NF",          158 }, /* nb_kernel313nf */
-    { "Coul(T) + LJ [W4-W4] NF",       402 }, /* nb_kernel314nf */
-    { "Coul(T) + Bham NF",             81  }, /* nb_kernel320nf */
-    { "Coul(T) + Bham [W3] NF",        164 }, /* nb_kernel321nf */
-    { "Coul(T) + Bham [W3-W3] NF",     408 }, /* nb_kernel322nf */
-    { "Coul(T) + Bham [W4] NF",        186 }, /* nb_kernel323nf */
-    { "Coul(T) + Bham [W4-W4] NF",     430 }, /* nb_kernel324nf */
-    { "Coul(T) + VdW(T) NF",           68  }, /* nb_kernel330nf */
-    { "Coul(T) + VdW(T) [W3] NF",      151 }, /* nb_kernel331nf */
-    { "Coul(T) + VdW(T) [W3-W3] NF",   395 }, /* nb_kernel332nf */
-    { "Coul(T) + VdW(T) [W4] NF",      179 }, /* nb_kernel333nf */
-    { "Coul(T) + VdW(T) [W4-W4] NF",   423 }, /* nb_kernel334nf */
-    { "Generalized Born Coulomb NF",   48  }, /* nb_kernel400nf */
-    { "GB Coulomb + LJ NF",            61  }, /* nb_kernel410nf */
-    { "GB Coulomb + VdW(T) NF",        78  }, /* nb_kernel430nf */
-    { "Outer nonbonded loop",          10  },
+    { "Generalized Born Coulomb",       48 }, /* nb_kernel400 */
+    { "GB Coulomb + LJ",                61 }, /* nb_kernel410 */
+    { "GB Coulomb + VdW(T)",            79 }, /* nb_kernel430 */
+    { "LJ NF",                          19 }, /* nb_kernel010nf */
+    { "Buckingham NF",                  48 }, /* nb_kernel020nf */ 
+    { "VdW(T) NF",                      33 }, /* nb_kernel030nf */
+    { "Coulomb NF",                     16 }, /* nb_kernel100nf */
+    { "Coulomb [W3] NF",                47 }, /* nb_kernel101nf */
+    { "Coulomb [W3-W3] NF",            135 }, /* nb_kernel102nf */
+    { "Coulomb [W4] NF",                47 }, /* nb_kernel103nf */
+    { "Coulomb [W4-W4] NF",            135 }, /* nb_kernel104nf */
+    { "Coulomb + LJ NF",                24 }, /* nb_kernel110nf */
+    { "Coulomb + LJ [W3] NF",           55 }, /* nb_kernel111nf */
+    { "Coulomb + LJ [W3-W3] NF",       143 }, /* nb_kernel112nf */
+    { "Coulomb + LJ [W4] NF",           66 }, /* nb_kernel113nf */
+    { "Coulomb + LJ [W4-W4] NF",       154 }, /* nb_kernel114nf */
+    { "Coulomb + Bham  NF",             51 }, /* nb_kernel120nf */
+    { "Coulomb + Bham [W3] NF",         82 }, /* nb_kernel121nf */
+    { "Coulomb + Bham [W3-W3] NF",     170 }, /* nb_kernel122nf */
+    { "Coulomb + Bham [W4] NF",         95 }, /* nb_kernel123nf */
+    { "Coulomb + Bham [W4-W4] NF",     183 }, /* nb_kernel124nf */
+    { "Coulomb + VdW(T)  NF",           36 }, /* nb_kernel130nf */
+    { "Coulomb + VdW(T) [W3] NF",       67 }, /* nb_kernel131nf */
+    { "Coulomb + VdW(T) [W3-W3] NF",   155 }, /* nb_kernel132nf */
+    { "Coulomb + VdW(T) [W4] NF",       80 }, /* nb_kernel133nf */
+    { "Coulomb + VdW(T) [W4-W4] NF",   168 }, /* nb_kernel134nf */
+    { "RF Coul NF",                     19 }, /* nb_kernel200nf */
+    { "RF Coul [W3] NF",                56 }, /* nb_kernel201nf */
+    { "RF Coul [W3-W3] NF",            162 }, /* nb_kernel202nf */
+    { "RF Coul [W4] NF",                56 }, /* nb_kernel203nf */
+    { "RF Coul [W4-W4] NF",            162 }, /* nb_kernel204nf */
+    { "RF Coul + LJ NF",                27 }, /* nb_kernel210nf */
+    { "RF Coul + LJ [W3] NF",           64 }, /* nb_kernel211nf */
+    { "RF Coul + LJ [W3-W3] NF",       170 }, /* nb_kernel212nf */
+    { "RF Coul + LJ [W4] NF",           75 }, /* nb_kernel213nf */
+    { "RF Coul + LJ [W4-W4] NF",       181 }, /* nb_kernel214nf */
+    { "RF Coul + Bham  NF",             54 }, /* nb_kernel220nf */
+    { "RF Coul + Bham [W3] NF",         91 }, /* nb_kernel221nf */
+    { "RF Coul + Bham [W3-W3] NF",     197 }, /* nb_kernel222nf */
+    { "RF Coul + Bham [W4] NF",        104 }, /* nb_kernel223nf */
+    { "RF Coul + Bham [W4-W4] NF",     210 }, /* nb_kernel224nf */
+    { "RF Coul + VdW(T)  NF",           39 }, /* nb_kernel230nf */
+    { "RF Coul + VdW(T) [W3] NF",       76 }, /* nb_kernel231nf */
+    { "RF Coul + VdW(T) [W3-W3] NF",   182 }, /* nb_kernel232nf */
+    { "RF Coul + VdW(T) [W4] NF",       89 }, /* nb_kernel233nf */
+    { "RF Coul + VdW(T) [W4-W4] NF",   195 }, /* nb_kernel234nf */
+    { "Coul(T) NF",                     26 }, /* nb_kernel300nf */
+    { "Coul(T) [W3] NF",                77 }, /* nb_kernel301nf */
+    { "Coul(T) [W3-W3] NF",            225 }, /* nb_kernel302nf */
+    { "Coul(T) [W4] NF",                77 }, /* nb_kernel303nf */
+    { "Coul(T) [W4-W4] NF",            225 }, /* nb_kernel304nf */
+    { "Coul(T) + LJ NF",                34 }, /* nb_kernel310nf */
+    { "Coul(T) + LJ [W3] NF",           85 }, /* nb_kernel311nf */
+    { "Coul(T) + LJ [W3-W3] NF",       233 }, /* nb_kernel312nf */
+    { "Coul(T) + LJ [W4] NF",           96 }, /* nb_kernel313nf */
+    { "Coul(T) + LJ [W4-W4] NF",       244 }, /* nb_kernel314nf */
+    { "Coul(T) + Bham NF",              61 }, /* nb_kernel320nf */
+    { "Coul(T) + Bham [W3] NF",        112 }, /* nb_kernel321nf */
+    { "Coul(T) + Bham [W3-W3] NF",     260 }, /* nb_kernel322nf */
+    { "Coul(T) + Bham [W4] NF",        125 }, /* nb_kernel323nf */
+    { "Coul(T) + Bham [W4-W4] NF",     273 }, /* nb_kernel324nf */
+    { "Coul(T) + VdW(T) NF",            42 }, /* nb_kernel330nf */
+    { "Coul(T) + VdW(T) [W3] NF",       93 }, /* nb_kernel331nf */
+    { "Coul(T) + VdW(T) [W3-W3] NF",   241 }, /* nb_kernel332nf */
+    { "Coul(T) + VdW(T) [W4] NF",      110 }, /* nb_kernel333nf */
+    { "Coul(T) + VdW(T) [W4-W4] NF",   258 }, /* nb_kernel334nf */
+    { "Generalized Born Coulomb NF",    29 }, /* nb_kernel400nf */
+    { "GB Coulomb + LJ NF",             37 }, /* nb_kernel410nf */
+    { "GB Coulomb + VdW(T) NF",         49 }, /* nb_kernel430nf */
+    { "Outer nonbonded loop",           10 },
     { "1,4 nonbonded interactions",    43  },
     { "Calc Weights",                  36  },
     { "Spread Q",                      6   },
@@ -233,8 +233,8 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Shake-Init",                    10  },
     { "Constraint-Vir",                18  },
     { "Settle",                        323 },
-    { "Virtual Site 2",                17  },
-    { "Virtual Site 3",                28  },
+    { "Virtual Site 2",                23  },
+    { "Virtual Site 3",                37  },
     { "Virtual Site 3fd",              95  },
     { "Virtual Site 3fad",             176 },
     { "Virtual Site 3out",             87  },
