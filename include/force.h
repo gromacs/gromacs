@@ -84,12 +84,9 @@ extern void init_forcerec(FILE       *log,
 extern void update_forcerec(FILE *log,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
-/* Compute the average C6 param for LJ corrections */
-extern void set_avcsix(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms);
-
-/* Compute the average C12 param for LJ corrections */
-extern void set_avctwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms);
-
+/* Compute the average C6 and C12 params for LJ corrections */
+extern void set_avcsixtwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms,
+			     t_block *excl);
 
 extern void ns(FILE *log,
 	       t_forcerec *fr,

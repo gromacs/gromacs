@@ -410,85 +410,77 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 	     &fr->kappa,&fr->epsfac,&fr->k_rf,&fr->c_rf);
 }
 
-static double calc_avcsix(FILE *log,real *nbfp,int atnr,
-			  int natoms,int type[],bool bBHAM)
+void set_avcsixtwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms,
+		      t_block *excl)
 {
-  int    i,j,tpi,tpj;
-  double csix;
+  int    i,j,tpi,tpj,j1,j2,k,nexcl;
+  double csix,ctwelve;
+  int    natoms,ntp,*type;
+  bool   bBHAM;
+  real   *nbfp;
+  atom_id *AA;
 
-  /* Check this code: do we really need a double loop? */  
+  natoms = mdatoms->nr;
+  ntp = fr->ntype;
+  type = mdatoms->typeA;
+  bBHAM = fr->bBHAM;
+  nbfp = fr->nbfp;
+  AA = excl->a;
+
   csix = 0;
+  ctwelve = 0;
+  /* We loop over all the atom pairs and subtract the excluded pairs.
+   * The main reason for substracting exclusions is that in some cases some
+   * combinations might never occur and the parameters could have any value.
+   * These unused values should not influence the dispersion correction.
+   */
+  nexcl = 0;
   for(i=0; (i<natoms); i++) {
     tpi = type[i];
 #ifdef DEBUG
-    if (tpi >= atnr)
-      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,atnr);
+    if (tpi >= ntp)
+      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntp);
 #endif
-    for(j=0; (j<natoms); j++) {
+    for(j=i+1; (j<natoms); j++) {
       tpj   = type[j];
 #ifdef DEBUG
-      if (tpj >= atnr)
-	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,atnr);
+      if (tpj >= ntp)
+	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntp);
 #endif
-      if (bBHAM)
-	csix += BHAMC(nbfp,atnr,tpi,tpj);
-      else
-	csix += C6(nbfp,atnr,tpi,tpj);
+      if (bBHAM) {
+	csix += BHAMC(nbfp,ntp,tpi,tpj);
+      } else {
+	csix    += C6 (nbfp,ntp,tpi,tpj);
+	ctwelve += C12(nbfp,ntp,tpi,tpj);
+      }
+    }
+    /* Subtract the exclusions */
+    j1  = excl->index[i];
+    j2  = excl->index[i+1];
+    for(j=j1; j<j2; j++) {
+      k = AA[j];
+      if (k > i) {
+	tpj   = type[k];
+	if (bBHAM) {
+	  csix -= BHAMC(nbfp,ntp,tpi,tpj);
+	} else {
+	  csix    -= C6 (nbfp,ntp,tpi,tpj);
+	  ctwelve -= C12(nbfp,ntp,tpi,tpj);
+	}
+	nexcl++;
+      }
     }
   }
-  csix /= ((double)natoms*(double)natoms);
-  if (debug)
+  csix    /= 0.5*natoms*(natoms - 1) - nexcl;
+  ctwelve /= 0.5*natoms*(natoms - 1) - nexcl;
+  if (debug) {
+    fprintf(debug,"Counted %d exclusions\n",nexcl);
     fprintf(debug,"Average C6 parameter is: %10g\n",csix);
-  
-  return csix;
-}
-
-void set_avcsix(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
-{
-  fr->avcsix=calc_avcsix(log,fr->nbfp,fr->ntype,mdatoms->nr,
-			 mdatoms->typeA,fr->bBHAM);
-}
-
-static double calc_avctwelve(FILE *log,real *nbfp,int atnr,
-			     int natoms,int type[],bool bBHAM)
-{
-  int    i,j,tpi,tpj;
-  double ctwel;
-  
-  /* Check this code: do we really need a double loop? */  
-  ctwel = 0;
-  for(i=0; (i<natoms); i++) {
-    tpi = type[i];
-#ifdef DEBUG
-    if (tpi >= atnr)
-      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,atnr);
-#endif
-    for(j=0; (j<natoms); j++) {
-      tpj   = type[j];
-#ifdef DEBUG
-      if (tpj >= atnr)
-        fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,atnr);
-#endif
-      if (bBHAM)
-        /*no repulsion correction for Buckingham for now*/
-        ctwel += 0;
-      else
-        ctwel += C12(nbfp,atnr,tpi,tpj);
-    }
+    fprintf(debug,"Average C12 parameter is: %10g\n",ctwelve);
   }
-  ctwel /= (natoms*natoms);
-  if (debug)
-    fprintf(debug,"Average C12 parameter is: %10g\n",ctwel);
-  
-  return ctwel;
+  fr->avcsix = csix;
+  fr->avctwelve = ctwelve;
 }
-
-void set_avctwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
-{
-  fr->avctwelve=calc_avctwelve(log,fr->nbfp,fr->ntype,mdatoms->nr,
-			       mdatoms->typeA,fr->bBHAM);
-}
-
 
 static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 {
@@ -723,10 +715,9 @@ void init_forcerec(FILE *fp,
     fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
-  if (ir->eDispCorr != edispcNO) {
-    set_avcsix(fp,fr,mdatoms);
-    set_avctwelve(fp,fr,mdatoms);
-  }
+  if (ir->eDispCorr != edispcNO)
+    set_avcsixtwelve(fp,fr,mdatoms,&top->atoms.excl);
+
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);
   

@@ -810,10 +810,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */
-    if (bTCR || bFFscan) {
-      set_avcsix(log,fr,mdatoms);
-      set_avctwelve(log,fr,mdatoms);
-    }
+    if (bTCR || bFFscan)
+      set_avcsixtwelve(log,fr,mdatoms,&top->atoms.excl);
     
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,parm->ir.eDispCorr,
