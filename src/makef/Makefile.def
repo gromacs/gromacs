@@ -34,8 +34,8 @@ RM		= /bin/rm -f
 else
 RM              = rm -f
 endif
-BINMODE		= 775
-LIBMODE		= 664
+BINMODE		= 755
+LIBMODE		= 644
 INCS		= -I. -I$(SRCDIR)/$(INCDIR) $(X11INC) 
 ADDFLAGS	= -D_$(CPU)_ $(DEFS) $(SYSDEFS) $(INCS)
 C-FLAGS		= $(CFLAGS)  $(ADDFLAGS)
