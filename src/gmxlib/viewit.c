@@ -60,7 +60,7 @@ void do_view(char *fn, char *opts)
       fatal_error(0,"unsupported file type %s(%d) in ftp_view",fn,fn2ftp(fn));
     }
     sprintf(buf,"%s %s %s &",cmd,fn,opts ? opts : "");
-    if(debug) fprintf(stderr,"executing '%s'\n",buf);
+    fprintf(stderr,"executing '%s'\n",buf);
     system(buf);
   }
 }
