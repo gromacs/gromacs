@@ -1,5 +1,8 @@
 #!/bin/csh -f
 
+set TOPFILE = include_top.html
+set BOTFILE = include_bot.html
+
 if ($#argv >= 1) then
   set FILES = $1
 else
@@ -9,21 +12,37 @@ endif
 echo Will process $FILES
 
 foreach file ( $FILES )
-  if ($file != "include_top.html") then
+  if ( ($file != "$TOPFILE") && ($file != "$BOTFILE") ) then
     echo Processing $file
     
     grep -v "<\!--I-->" $file >! tmp1
     
-    awk '{ printf "%s\n", $0 ;if (($1=="<body>")||($1=="<BODY>")||($1=="<body")||($1=="<BODY")) exit; }' tmp1 >! tmp 
+    set body = `grep -i "<body" tmp1 | wc -l`
     
-    awk '{ printf "<\!--I-->%s\n", $0 }' include_top.html >> tmp
-    
-    awk '{ if (($1=="</body>")||($1=="</BODY>")) exit; if (doit==1) printf "%s\n", $0; if (($1=="<body>")||($1=="<BODY>")||($1=="<body")||($1=="<BODY")) doit=1; }' tmp1 >> tmp
-    
-    awk '{ printf "<\!--I-->%s\n", $0 }' include_bot.html >> tmp
-    
-    awk '{ if (($1=="</body>")||($1=="</BODY>")) doit=1; if (doit==1) printf "%s\n", $0; }' tmp1 >> tmp
-    
+    if ($body == 0) then
+      grep -i "<TITLE>" tmp1 >! tmp
+      echo "<BODY>" >> tmp
+      awk '{ printf "<\!--I-->%s\n", $0 }' $TOPFILE >> tmp
+      grep -v -i "<TITLE>" tmp1 >> tmp
+      awk '{ printf "<\!--I-->%s\n", $0 }' $BOTFILE >> tmp
+      echo "</BODY>" >> tmp
+    else
+      awk '{ printf "%s\n", $0;\
+             if (($1=="<body>")||($1=="<BODY>")||\
+	         ($1=="<body" )||($1=="<BODY" )) exit; }' tmp1 >! tmp 
+
+      awk '{ printf "<\!--I-->%s\n", $0 }' $TOPFILE >> tmp
+
+      awk '{ if (($1=="</body>")||($1=="</BODY>")) exit; \
+      	     if (doit==1) printf "%s\n", $0; \
+	     if (($1=="<body>")||($1=="<BODY>")||\
+	     	 ($1=="<body" )||($1=="<BODY" )) doit=1; }' tmp1 >> tmp
+
+      awk '{ printf "<\!--I-->%s\n", $0 }' $BOTFILE >> tmp
+
+      awk '{ if (($1=="</body>")||($1=="</BODY>")) doit=1; \
+      	     if (doit==1) printf "%s\n", $0; }' tmp1 >> tmp
+    endif
     \rm tmp1
     if ( -f \#$file\# ) \rm \#$file\#
     mv $file \#$file\#
