@@ -77,7 +77,7 @@ typedef struct {
   real ewald_rtol;      /* Real space tolerance for Ewald, determines   */
                         /* the real/reciprocal space relative weight    */
   int  ewald_geometry;  /* normal/3d ewald, or pseudo-2d LR corrections */
-  bool epsilon_surface; /* Epsilon for PME dipole correction            */
+  real epsilon_surface; /* Epsilon for PME dipole correction            */
   bool bOptFFT;         /* optimize the fft plan at start               */
   int  ePBC;		/* Type of periodic boundary conditions		*/
   bool bUncStart;       /* Do not constrain the start configuration	*/
