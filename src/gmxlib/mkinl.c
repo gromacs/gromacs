@@ -30,8 +30,6 @@ typedef int bool;
 #define FALSE 0
 #define TRUE  1
 
-/* #define PAUL*/
-
 #ifndef USEVECTOR
 #define PREFETCH 1
 #endif
@@ -52,7 +50,7 @@ static FILE *fp    = NULL;
 static bool bC     = TRUE;
 static bool bLJC   = FALSE;
 static bool bEquiv = TRUE; /* Don't make false: generates type errors */
-static bool bCoul,bBHAM,bRF,bTab,bWater,bFREE,bInline;
+static bool bCoul,bBHAM,bRF,bTab,bWater,bFREE,bInline,bEwald;
 static int  prec = 4;
 static char buf[256];
 static char buf2[256];
@@ -115,6 +113,16 @@ void p_real(char *name)
     fprintf(fp,"%sreal %s;\n",indent(),name);
   else 
     fprintf(fp,"%sreal*%1d  %s\n",indent(),prec,name);
+}
+
+
+void p_real4(char *name)
+/* lookup seed for invsqrt must be 4 bytes even in double prec. */
+{
+  if(bC)
+    fprintf(fp,"%sfloat %s;\n",indent(),name);
+  else
+    fprintf(fp,"%sreal*4  %s\n",indent(),name);
 }
 
 void p_creal(char *name,double val)
@@ -208,7 +216,7 @@ void fseed(void)
   p_int("expseed,fracseed");
   if (!bEquiv || !bInline) {
     p_int("fl2i");
-    p_real("i2fl");
+    p_real4("i2fl");
   }
   p_line("parameter (nexp=256,nfract=4096,maxfract=8388607)");
   p_line("parameter (fractshift=12,fractmask=8388607,fractf=1065353216)");
@@ -238,12 +246,8 @@ void p_finvsqrt(void)
 #ifdef DOUBLE        
   p_line("function invsqrt(x)");
   fseed();
-  p_line("real*8    invsqrt,x,y,y2");
-#ifdef PAUL
-  p_line("real*4    luO,luH1,luH2,rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2,xin");
-#else
+  p_line("real*8    invsqrt,x,y");
   p_line("real*4    lu,xin");
-#endif /* PAUL */
   p_line("integer*4 exp,addr,bval,result");
   newline();
   
@@ -312,137 +316,70 @@ void p_finvsqrt(void)
   }
 }
 
-void p_invsqrt1(char *tmp,char *right)
-{
-  comment("Doing fast invsqrt");
-  if (bC) {
-    p_state("bit_pattern.fval",right);
-    p_state("exp_addr","EXP_ADDR(bit_pattern.bval)");
-    p_state("fract","FRACT_ADDR(bit_pattern.bval)");
-    p_state("result.bval","lookup_table.exp_seed[exp_addr] | lookup_table.fract_seed[fract]");
-    p_state(tmp,"result.fval");
-  }
-  else {
-    p_state("xin",right);
-    p_state("iexp","rshift(and(bval,expmask),expshift)");
-    p_state("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
-    p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
-  }
-}
-
-void p_invsqrt2(char *left,char *tmp,char *right)
-{
-  /* Language independent! */
-  sprintf(buf,"(half*%s*(three-((%s*lu)*lu)))",tmp,right);
-#ifdef DOUBLE
-  p_state("y1",buf);
-  sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
-  p_state(left,buf);
-#else
-  p_state(left,buf);
-#endif /* DOUBLE */
-}
-
 int p_invsqrt(char *left,char *right)
 {
-  bool bInvsqrt = FALSE;
-  
-#ifdef CINVSQRT
-  bInvsqrt = bC;
-#endif
-#ifdef FINVSQRT
-  bInvsqrt = !bC;
-#endif
+  char ibuf[256];
+  char nbuf[256];
 
-  if (bInvsqrt) {
-    if (bInline) {
-      p_invsqrt1("lu",right);
-      p_invsqrt2(left,"lu",right);
-    }
-    else {
-      sprintf(buf,"invsqrt(%s)",right);
-      p_state(left,buf);
-    }
-  }
-  else {
-    sprintf(buf,"1.0/sqrt(%s)",right);
+  sprintf(ibuf,"invsqrt(%s)",right);
+  sprintf(nbuf,"1.0/sqrt(%s)",right);
 #ifdef HAVE_SQRTF
 #ifndef DOUBLE
-    if (bC)
-      sprintf(buf,"1.0/sqrtf(%s)",right);
+  if (bC)
+    sprintf(nbuf,"1.0/sqrtf(%s)",right);
 #endif
 #endif
-    p_state(left,buf);
+
+  if (bC) {
+#ifdef CINVSQRT
+    if (bInline) {
+      comment("Doing fast invsqrt");
+      p_state("bit_pattern.fval",right);
+      p_state("exp_addr","EXP_ADDR(bit_pattern.bval)");
+      p_state("fract","FRACT_ADDR(bit_pattern.bval)");
+      p_state("result.bval","lookup_table.exp_seed[exp_addr] | lookup_table.fract_seed[fract]");
+      p_state("lu","result.fval");
+      sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
+#ifdef DOUBLE
+      p_state("y1",buf);
+      sprintf(buf,"(half*y1*(three-((%s*y1)*y1)))",right);
+      p_state(left,buf);
+#else
+      p_state(left,buf);
+#endif /* DOUBLE */
+    }
+    else 
+      p_state(left,ibuf);
+#else
+    p_state(left,nbuf);
+#endif /* CINVSQRT */
+  }
+  else {
+#ifdef FINVSQRT
+    if (bInline) {
+      p_state("xin",right);
+      p_state("iexp","rshift(and(bval,expmask),expshift)");
+      p_state("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
+      p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
+      sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
+#ifdef DOUBLE
+      p_state("y1",buf);
+      sprintf(buf,"(half*y1*(three-((%s*y1)*y1)))",right);
+      p_state(left,buf);
+#else
+      p_state(left,buf);
+#endif /* DOUBLE */
+    }
+    else
+      p_state(left,ibuf);
+#else
+    p_state(left,nbuf);
+#endif
   }
 #ifdef DOUBLE
   return 10;
 #else
   return 5;
-#endif
-}
-
-int p_waterinvsqrt(void)
-{
-  char *w[] = { "O", "H1", "H2" };
-  char vbuf[16],rbuf[32];
-  int  m;
-  bool bInvsqrt = FALSE;
-  
-#ifdef CINVSQRT
-  bInvsqrt = bC;
-#endif
-#ifdef FINVSQRT
-  bInvsqrt = !bC;
-#endif
-
-  if (bInvsqrt) {
-    if (bInline) {
-      for(m=0; (m<3); m++) {
-	sprintf(vbuf,"lu%s",w[m]);
-	sprintf(rbuf,"rsq%s",w[m]);
-	p_invsqrt1(vbuf,rbuf);
-      }
-      for(m=0; (m<3); m++) {
-	sprintf(vbuf,"rsqlu%s",w[m]);
-	sprintf(rbuf,"rsq%s*lu%s",w[m],w[m]);
-	p_state(vbuf,rbuf);
-      }
-      for(m=0; (m<3); m++) {
-	sprintf(vbuf,"tmp%s",w[m]);
-	sprintf(rbuf,"rsqlu%s*lu%s",w[m],w[m]);
-	p_state(vbuf,rbuf);
-      }
-      for(m=0; (m<3); m++) {
-	sprintf(vbuf,"rinv1%s",w[m]);
-	sprintf(rbuf,"half*lu%s*(three-tmp%s)",w[m],w[m]);
-	p_state(vbuf,rbuf);
-      }
-    }
-    else {
-      for(m=0; (m<3); m++) {
-	sprintf(vbuf,"rinv1%s",w[m]);
-	sprintf(rbuf,"invsqrt(rsq%s)",w[m]);
-	p_state(vbuf,rbuf);
-      }
-    }
-  }
-  else {
-    for(m=0; (m<3); m++) {
-      sprintf(vbuf,"rinv1%s",w[m]);
-      sprintf(rbuf,"1.0/sqrt(rsq%s)",w[m]);
-#ifdef HAVE_SQRTF
-#ifndef DOUBLE
-      if (bC)
-	sprintf(rbuf,"1.0/sqrtf(rsq%s)",w[m]);
-#endif
-#endif
-      p_state(vbuf,rbuf);
-    }
-  }
-#ifdef DOUBLE
-  return 30;
-#else
-  return 15;
 #endif
 }
 
@@ -465,7 +402,7 @@ void fheader(void)
     p_int("i,exp,newexp,bval,addr,indx,findex");
     oprec = prec;
     prec  = 4;
-    p_real("fval,bflt");
+    p_real4("fval,bflt");
     prec  = oprec;
     if (bEquiv) {
       p_line("equivalence(fval,findex)");
@@ -563,6 +500,8 @@ void fcall_args(void)
 	    FCON "ntype,type,nbfp,vnb,\n");
   if (bRF)
     fprintf(fp,"%s",bC ? "krf,\n\t" : FCON "   krf,\n");
+  if (bEwald)
+    fprintf(fp,"%s",bC ? "ewc,\n\t" : FCON "   ewc,\n");
   if (bTab)
     fprintf(fp,"%s",bC ? 
 	    "tabscale,VFtab,\n\t" :
@@ -599,6 +538,9 @@ void fargs(void)
 	    FCON "  type,\n" FCON "  nbfp,\n" FCON "  vnb,\n");
   if (bRF)
     fprintf(fp,"%s",bC ? "real krf,\n\t" : FCON "   krf,\n");
+  if (bEwald)
+    fprintf(fp,"%s",bC ? "real ewc,\n\t" : FCON "   ewc,\n");    
+
   if (bTab)
     fprintf(fp,"%s",bC ? 
 	    "real tabscale,\n\treal VFtab[],\n\t" :
@@ -644,6 +586,10 @@ void fargs(void)
       comment("Reaction field parameters");
       p_real("krf");
     }
+    if (bEwald) {
+      comment("Ewald coefficient");
+      p_real("ewc");
+    }
     if (bTab) {
       comment("Table lookup parameters");
       p_real("tabscale,vftab(*)");
@@ -684,6 +630,11 @@ void flocal(void)
     p_real("krsqO");
     if (bWater)
       p_real("krsqH1,krsqH2");
+  }
+  if (bEwald) {
+      comment("Ewald correction");
+      p_creal("isp",0.564189583547756);
+      p_real("ewtmp"); /* needed to break long lines into two */
   }
   if (bTab) {
     comment("Table stuff");
@@ -731,13 +682,9 @@ void flocal(void)
     p_creal("three",3.0);
     fprintf(fp,"%st_convert   result,bit_pattern;\n",indent());
     fprintf(fp,"%sword        exp_addr,fract;\n",indent());
-#ifdef PAUL
-    fprintf(fp,"%sfloat       lu,luO,luH1,luH2,rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2;\n",indent());
-#else
     fprintf(fp,"%sfloat       lu;\n",indent());
-#endif /* PAUL */
 #ifdef DOUBLE
-    p_real("y1,y2");
+    p_real("y1");
 #endif /* DOUBLE */
   }
 #endif /* CINVSQRT */
@@ -759,9 +706,10 @@ void flocal(void)
     if (bInline) {
       fseed();
       p_int("fractaddr,expaddr");
-      p_real("xin,lu,half,three");
+      p_real4("xin,lu");
+      p_real("half,three");
 #ifdef DOUBLE
-      p_real("y1,y2");
+      p_real("y1");
 #endif
       p_int("iexp,addr,bval,result");
       if (bEquiv) {
@@ -784,6 +732,8 @@ void flocal(void)
       p_real("rinv2H1,rinv2H2");
     p_real("vcH1,vcH2,fsH1,fsH2,qH,qqH");
   }
+  if(!bC && bEwald && !bTab)
+      p_real("cerfc");
 }
 
 void flocal_init(void)
@@ -793,6 +743,8 @@ void flocal_init(void)
     p_state("nul","0.0");
     if (bRF) 
       p_state("two","2.0");
+    if(bEwald)
+	p_state("isp","0.564189583547756");
     if (bTab) {
       p_state("one","1.0");
       p_state("two","2.0");
@@ -946,21 +898,6 @@ void finnerloop(char *loopname)
   p_state("jy",ARR(pos,j3+1));
   p_state("jz",ARR(pos,j3+2));  
   
-#ifdef PAUL
-  bDelayInvsqrt = FALSE;
-  if (bWater) {
-    comment("Ramones forever");
-    nflop += p_sqr("O");
-    nflop += p_sqr("H1");
-    nflop += p_sqr("H2");
-    nflop += p_waterinvsqrt();
-  }
-  else {
-    comment("First one is for oxygen, with LJ");
-    nflop += p_sqr("O");
-    nflop += p_invsqrt("rinv1O","rsqO");
-  }
-#else
   comment("First one is for oxygen, with LJ");
   nflop += p_sqr("O");
   nflop += p_invsqrt("rinv1O","rsqO");
@@ -976,7 +913,7 @@ void finnerloop(char *loopname)
       nflop += p_invsqrt("rinv1H2","rsqH2");
     }
   }
-#endif  
+  
 #ifdef PREFETCH
   comment("Prefetch the forces");
   p_state("fxJ",ARR(faction,j3));
@@ -1161,8 +1098,30 @@ void finnerloop(char *loopname)
 	nflop += 4;
       }
     }
+    else if (bEwald) {
+	comment("Ewald corrected terms");
+	if(bC)
+	    p_state("vcO","qqO*rinv1O*erfc(ewc/rinv1O)");
+	else
+	    p_state("vcO","qqO*rinv1O*cerfc(ewc/rinv1O)");	    
+	nflop += 20; /* wild guess for erfc? */
+      if (bLJC) {
+	  p_state("ewtmp","(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
+	p_state("fsO","(twelve*vnb12-six*vnb6+ewtmp)*rinv2O");
+	nflop += 5;
+      } 
+      else if (bBHAM) {
+	  p_state("ewtmp","(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
+	  p_state("fsO","(br*vnbexp-six*vnb6+ewtmp)*rinv2O"); 
+	nflop += 5;
+      } 
     else {
-      comment("No reaction field");
+	p_state("fsO","rinv2O*(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
+	nflop += 1;
+      } 
+    } 
+    else {
+      comment("No reaction field or Ewald correction");
       p_state("vcO","qqO*rinv1O");
       nflop += 1;
       if (bLJC) {
@@ -1265,8 +1224,15 @@ void finnerloop(char *loopname)
 	p_state("fsH1","qqH*(rinv1H1-two*krsqH1)*rinv2H1");
 	nflop += 7;
       }
-      else {
-	comment("No reaction field");
+      else if (bEwald) {
+	  comment("Ewald corrected terms");
+	  if(bC)
+	      p_state("vcH1","qqH*rinv1H1*erfc(ewc/rinv1H1)");
+	  else
+	      p_state("vcH1","qqH*rinv1H1*cerfc(ewc/rinv1H1)");	      
+	  p_state("fsH1","vcH1*rinv2H1+2*ewc*exp(-ewc*ewc*rsqH1)*rinv2H1*isp");        
+      } else {
+	comment("No reaction field or Ewald correction");
 	p_state("vcH1","qqH*rinv1H1");
 	p_state("fsH1","vcH1*rinv2H1");
 	nflop += 2;
@@ -1319,6 +1285,14 @@ void finnerloop(char *loopname)
 	p_state("vcH2","qqH*(rinv1H2+krsqH2)");
 	p_state("fsH2","qqH*(rinv1H2-two*krsqH2)*rinv2H2");
 	nflop += 7;
+      }
+      else if (bEwald) {
+	  comment("Ewald corrected terms");
+	  if(bC)
+	      p_state("vcH2","qqH*rinv1H2*erfc(ewc/rinv1H2)");
+	  else
+	      p_state("vcH2","qqH*rinv1H2*cerfc(ewc/rinv1H2)");	      
+	p_state("fsH2","vcH2*rinv2H2+2*ewc*exp(-ewc*ewc*rsqH2)*rinv2H2*isp");        
       }
       else {
 	comment("No reaction field");
@@ -1626,7 +1600,11 @@ void doit(void)
   
   bLJC = (!bCoul && !bBHAM);
   
-  if (bFREE && (!bTab || bCoul || bRF || bWater)) {
+  if (bFREE && (!bTab || bCoul || bRF || bWater || bEwald)) {
+    fprintf(stderr,"Unsupported combination of options to doit\n");
+    return;
+  }
+  if(bRF && bEwald) {
     fprintf(stderr,"Unsupported combination of options to doit\n");
     return;
   }
@@ -1635,6 +1613,8 @@ void doit(void)
     strcat(loopname,"water");
   if (bFREE)
     strcat(loopname,"free");
+  if(bEwald)
+    strcat(loopname,"ewald");
   fname(loopname);
   fargs();
   flocal();
@@ -1679,16 +1659,19 @@ int count_lines(char *fn)
 
 int main(int argc,char *argv[])
 {
-  bool bbb[9][4] = {
-    { 1, 0, 0, 0 },
-    { 0, 0, 0, 0 },
-    { 0, 1, 0, 0 },
-    { 1, 0, 1, 0 },
-    { 0, 0, 1, 0 },
-    { 0, 1, 1, 0 },
-    { 1, 0, 0, 1 },
-    { 0, 0, 0, 1 },
-    { 0, 1, 0, 1 }
+  bool bbb[12][5] = {
+    { 1, 0, 0, 0, 0 },
+    { 1, 0, 0, 0, 1 },
+    { 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 1 },
+    { 0, 1, 0, 0, 0 },
+    { 0, 1, 0, 0, 1 },
+    { 1, 0, 1, 0, 0 },
+    { 0, 0, 1, 0, 0 },
+    { 0, 1, 1, 0, 0 },
+    { 1, 0, 0, 1, 0 },
+    { 0, 0, 0, 1, 0 },
+    { 0, 1, 0, 1, 0 },
   };
   int i,j,nfunc,nlines;
   char fn[256];
@@ -1735,6 +1718,7 @@ int main(int argc,char *argv[])
   bFREE  = TRUE;  
   bCoul  = FALSE;
   bRF    = FALSE;
+  bEwald = FALSE; /* no free ewald yet */
   bTab   = TRUE;
   bWater = FALSE;
   bBHAM  = FALSE;
@@ -1745,11 +1729,12 @@ int main(int argc,char *argv[])
   nfunc  = 2;
    
   for(i=0; (i<2); i++) {
-    for(j=0; (j<9); j++) {
+    for(j=0; (j<12); j++) {
       bCoul  = bbb[j][0];
       bBHAM  = bbb[j][1];
       bRF    = bbb[j][2];
       bTab   = bbb[j][3];
+      bEwald = bbb[j][4];
       bWater = i;
       doit();
       nfunc++;
