@@ -223,7 +223,6 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 		if(kz>0 && kz<(nz+1)/2)
 		    struct2*=2;
 		energy+=eterm*struct2;
-		struct2;
 		vfactor=(factor*m2+1)*2.0/m2;
 		vir[XX][XX]+=0.25*eterm*struct2*(vfactor*mx*mx-1.0);
 		vir[XX][YY]+=0.25*eterm*struct2*(vfactor*mx*my);   
