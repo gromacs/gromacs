@@ -65,9 +65,11 @@ int main(int argc,char *argv[])
     "are written as frames with the eigenvector number as timestamp.",
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
   };
-  static bool bM=FALSE;
+  static bool bFit=TRUE,bM=FALSE;
   static int  end=-1;
   t_pargs pa[] = {
+    { "-fit",  FALSE, etBOOL, &bFit,
+      "Fit to a reference structure"},
     { "-mwa",  FALSE, etBOOL, &bM,
       "Mass-weighted covariance analysis"},
     { "-last",  FALSE, etINT, &end, 
@@ -106,24 +108,27 @@ int main(int argc,char *argv[])
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),str,&top,&xref,NULL,box,TRUE);
   atoms=&top.atoms;
 
-  printf("\nChoose a group for the least squares fit\n"); 
-  get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
-	    &nfit,&ifit,&grpname);
+  if (bFit) {
+    printf("\nChoose a group for the least squares fit\n"); 
+    get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
+	      &nfit,&ifit,&grpname);
+    if (nfit < 3) 
+      fatal_error(0,"Need >= 3 points to fit!\n");
+  } else
+    nfit=0;
   printf("\nChoose a group for the covariance analysis\n"); 
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 	    &natoms,&index,&grpname);
 
-  if (nfit < 3) 
-    fatal_error(0,"Need >= 3 points to fit!\n");
-
   bDiffMass1=FALSE;
-  snew(w_rls,atoms->nr);
-  for(i=0; (i<nfit); i++) {
+  if (bFit) {
+    snew(w_rls,atoms->nr);
+    for(i=0; (i<nfit); i++) {
       w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
       if (i)
         bDiffMass1 = bDiffMass1 || (w_rls[ifit[i]]!=w_rls[ifit[i-1]]);
+    }
   }
-  
   bDiffMass2=FALSE;
   snew(sqrtm,natoms);
   for(i=0; (i<natoms); i++)
@@ -135,7 +140,7 @@ int main(int argc,char *argv[])
     else
       sqrtm[i]=1.0;
   
-  if (bDiffMass1 && !bDiffMass2) {
+  if (bFit && bDiffMass1 && !bDiffMass2) {
     bDiffMass1 = natoms != nfit;
     i=0;
     for (i=0; (i<natoms) && !bDiffMass1; i++)
@@ -157,7 +162,8 @@ int main(int argc,char *argv[])
   /* Prepare reference frame */
   if (bTop)
     rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
-  reset_x(nfit,ifit,atoms->nr,all_at,xref,w_rls);
+  if (bFit)
+    reset_x(nfit,ifit,atoms->nr,all_at,xref,w_rls);
 
   infile=opt2fn("-f",NFILE,fnm);
 
@@ -175,8 +181,10 @@ int main(int argc,char *argv[])
     /* calculate x: a fitted struture of the selected atoms */
     if (bTop)
       rm_pbc(&(top.idef),nat,box,xread,xread);
-    reset_x(nfit,ifit,nat,all_at,xread,w_rls);
-    do_fit(nat,w_rls,xref,xread);
+    if (bFit) {
+      reset_x(nfit,ifit,nat,all_at,xread,w_rls);
+      do_fit(nat,w_rls,xref,xread);
+    }
     for (i=0; i<natoms; i++)
       copy_rvec(xread[index[i]],x[i]);
 
@@ -280,7 +288,11 @@ int main(int argc,char *argv[])
       copy_rvec(xref[ifit[i]],x[i]);
     /* misuse lambda: 0/1 mass weighted fit no/yes */  
     fwrite_trn(trjout,-1,-1,bDiffMass1 ? 1 : 0,zerobox,natoms,x,NULL,NULL);
-  }
+  } else 
+    if (!bFit)
+      /* misuse lambda: -1 for no fit */  
+      fwrite_trn(trjout,-1,-1,-1,zerobox,natoms,xav,NULL,NULL);
+
   /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
   fwrite_trn(trjout,0,0,bDiffMass2 ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
   for(i=1; i<=end; i++) {
