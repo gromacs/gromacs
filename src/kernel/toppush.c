@@ -331,6 +331,99 @@ void push_bt(directive d,t_params bt[],int nral,t_atomtype *at,char *line)
   push_bondtype (&(bt[ftype]),&p,nral,ftype,line);
 }
 
+
+void push_dihedraltype(directive d,t_params bt[],t_atomtype *at,char *line)
+{
+  static   char *formal[MAXATOMLIST+1] = {
+    "%s",
+    "%s%s",
+    "%s%s%s",
+    "%s%s%s%s",
+    "%s%s%s%s%s",
+    "%s%s%s%s%s%s"
+  };
+  static   char *formnl[MAXATOMLIST+1] = {
+    "%*s",
+    "%*s%*s",
+    "%*s%*s%*s",
+    "%*s%*s%*s%*s",
+    "%*s%*s%*s%*s%*s",
+    "%*s%*s%*s%*s%*s%*s"
+  };
+  static   char *formlf[MAXFORCEPARAM] = {
+    "%lf",
+    "%lf%lf",
+    "%lf%lf%lf",
+    "%lf%lf%lf%lf",
+    "%lf%lf%lf%lf%lf",
+    "%lf%lf%lf%lf%lf%lf",
+  };
+  int      i,ft,ftype,nn,nrfp,nral;
+  char     f1[STRLEN];
+  char     alc[MAXATOMLIST+1][20];
+  double   c[MAXFORCEPARAM];
+  t_param  p;
+
+  /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
+   *
+   * We first check for 4 atoms with the 5th column being an integer 
+   * defining the type. If this isn't the case, we try it with 2 atoms
+   * and the third column defining the dihedral type.
+   */
+  nn=sscanf(line,formal[4],alc[0],alc[1],alc[2],alc[3],alc[4]);
+  if(nn==5 && strlen(alc[4])==1 && isdigit(alc[4][0])) {
+    nral=4;
+    ft    = atoi(alc[nral]);
+  } else if(nn>=3 && strlen(alc[2])==1 && isdigit(alc[2][0])) {
+    nral=2;
+    ft    = atoi(alc[nral]);
+    /* Move atom types around a bit and use '*' for wildcard atoms
+     * to create a 4-atom dihedral definition with arbitrary atoms in
+     * position 1 and 4.
+     */
+    if(alc[2][0]=='2') {
+      /* improper - the two atomtypes are 1,4. Use wildcards for 2,3 */
+      strcpy(alc[3],alc[1]);
+      sprintf(alc[2],"*");
+      sprintf(alc[1],"*");
+      /* alc[0] stays put */
+    } else {
+      /* proper - the two atomtypes are 2,3. Use wildcards for 1,4 */
+      sprintf(alc[3],"*");
+      strcpy(alc[2],alc[1]);
+      strcpy(alc[1],alc[0]);
+      sprintf(alc[0],"*");
+    }
+  } else {
+    sprintf(errbuf,"Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)",nn-1);
+    warning(errbuf);
+    return;
+  }
+  
+  ftype = ifunc_index(d,ft);
+  nrfp  = NRFP(ftype);
+  strcpy(f1,formnl[nral]);
+  strcat(f1,formlf[nrfp-1]);
+  if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5])) 
+      != nrfp) {
+    for( ; (nn<nrfp); nn++)
+      c[nn] = 0.0;
+  }
+  for(i=0; (i<4); i++) {
+    if(!strcmp(alc[i],"*"))
+      p.a[i]=-1;
+    else
+      p.a[i]=at2type(alc[i],at);
+  }
+  for(i=0; (i<nrfp); i++)
+    p.c[i]=c[i];
+  /* Always use 4 atoms here, since we created two wildcard atoms
+   * if there wasn't of them 4 already.
+   */
+  push_bondtype (&(bt[ftype]),&p,4,ftype,line);
+}
+
+
 void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
 	      char *pline,int nb_funct)
 {
@@ -556,36 +649,87 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_param *p,
   bFound=FALSE;
   for (i=0; ((i < nr) && !bFound); i++) {
     pi=&(bt[ftype].param[i]);
-    if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
-      /* The j and k atoms are decisive about which dihedral type
-       * we should take.
-       */
-      if (bB)
-	bFound=((at->atom[p->AJ].typeB==pi->AI) &&
-		(at->atom[p->AK].typeB==pi->AJ));
-      else
-	bFound=((at->atom[p->AJ].type==pi->AI) &&
-		(at->atom[p->AK].type==pi->AJ));
+    if (bB)
+      for (j=0; ((j < nral) && 
+		 (at->atom[p->a[j]].typeB == pi->a[j])); j++);
+    else
+      for (j=0; ((j < nral) && 
+		 (at->atom[p->a[j]].type == pi->a[j])); j++);
+    bFound=(j==nral);
+  }
+  /* If we didn't find a 4-atom dihedral, check for a dihedraltype where
+   * ONE of the atoms is wildcarded. This can be I or L for proper 
+   * dihedrals and J or K for improper dihedrals.
+   */
+  if(!bFound && (ftype == F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS)) {
+    for(i=0; ((i < nr) && !bFound); i++) {
+      pi=&(bt[ftype].param[i]);
+      if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
+	/* The j and k atoms are decisive about which dihedral type
+	 * we should take.
+	 */
+	if(bB) 
+	  bFound=((at->atom[p->AJ].typeB==pi->AJ) &&
+		  (at->atom[p->AK].typeB==pi->AK) &&
+		  (((at->atom[p->AI].typeB==pi->AI) && (pi->AL==-1)) ||
+		   ((at->atom[p->AL].typeB==pi->AL) && (pi->AI==-1))));
+	else
+	  bFound=((at->atom[p->AJ].type==pi->AJ) &&
+		  (at->atom[p->AK].type==pi->AK) &&
+		  (((at->atom[p->AI].type==pi->AI) && (pi->AL==-1)) ||
+		   ((at->atom[p->AL].type==pi->AL) && (pi->AI==-1))));
+      }
+      else if (ftype == F_IDIHS) {
+	/* The i and l atoms are decisive about which dihedral type
+	 * we should take. 
+	 */
+	if (bB)
+	  bFound=((at->atom[p->AI].typeB==pi->AI) &&
+		  (at->atom[p->AL].typeB==pi->AL) &&
+		  (((at->atom[p->AJ].typeB==pi->AJ) && (pi->AK==-1)) ||
+		   ((at->atom[p->AK].typeB==pi->AK) && (pi->AJ==-1))));
+	else
+	  bFound=((at->atom[p->AI].type==pi->AI) &&
+		  (at->atom[p->AL].type==pi->AL) &&
+		  (((at->atom[p->AJ].type==pi->AJ) && (pi->AK==-1)) ||
+		   ((at->atom[p->AK].type==pi->AK) && (pi->AJ==-1))));
+      }
     }
-    else if (ftype == F_IDIHS) {
-      /* The i and l atoms are decisive about which dihedral type
-       * we should take.
-       */
-      if (bB)
-	bFound=((at->atom[p->AI].typeB==pi->AI) &&
-		(at->atom[p->AL].typeB==pi->AJ));
-      else
-	bFound=((at->atom[p->AI].type==pi->AI) &&
-		(at->atom[p->AL].type==pi->AJ));
-    }
-    else {
-      if (bB)
-	for (j=0; ((j < nral) && 
-		   (at->atom[p->a[j]].typeB == pi->a[j])); j++);
-      else
-	for (j=0; ((j < nral) && 
-		   (at->atom[p->a[j]].type == pi->a[j])); j++);
-      bFound=(j==nral);
+    /* Still not found, check for types with two wildcards */
+    if(!bFound) {
+      for(i=0; ((i < nr) && !bFound); i++) {
+	pi=&(bt[ftype].param[i]);
+	if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
+	  /* The j and k atoms are decisive about which dihedral type
+	   * we should take.
+	   */
+	  if(bB) 
+	    bFound=((pi->AI==-1) &&
+		    (at->atom[p->AJ].typeB==pi->AJ) &&
+		    (at->atom[p->AK].typeB==pi->AK) &&
+		    (pi->AL==-1));
+	  else
+	    bFound=((pi->AI==-1) &&
+		    (at->atom[p->AJ].type==pi->AJ) &&
+		    (at->atom[p->AK].type==pi->AK) &&
+		    (pi->AL==-1));
+	}
+	else if (ftype == F_IDIHS) {
+	  /* The i and l atoms are decisive about which dihedral type
+	   * we should take. 
+	   */
+	  if(bB) 
+	    bFound=((at->atom[p->AI].typeB==pi->AI) &&
+		    (pi->AJ==-1) &&
+		    (pi->AK==-1) &&
+		    (at->atom[p->AL].typeB==pi->AL) );
+	  else
+	    bFound=((at->atom[p->AI].type==pi->AI) &&
+		    (pi->AJ==-1) &&
+		    (pi->AK==-1) &&
+		    (at->atom[p->AL].type==pi->AL) );
+	}
+      }
     }
   }
   if (bFound) {
@@ -795,6 +939,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Put the values in the appropriate arrays */
   push_bondnow (&bond[ftype],&param);
 }
+
+
 
 void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
 		  int *nrcopies)

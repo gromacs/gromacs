@@ -245,7 +245,9 @@ int main(int argc, char *argv[])
   rvec       *pdbx,*x;
   bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
-  
+  int        nrexcl;
+  bool       bAlldih;
+
   CopyRight(stderr,argv[0]);
 	
   ff = strdup("ffgmx2");
@@ -258,7 +260,7 @@ int main(int argc, char *argv[])
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&symtab);
+  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl);
   
   /* read hydrogen database */
   nah=read_h_db(ff,&ah);
