@@ -171,7 +171,7 @@ XmString get_widget_desc(Widget www)
 
 bool have_windex_desc(windex www)
 {
-  widget_range_check(www);
+  range_check(win,0,nwindex);
   
   return w[www].bDesc;
 }
