@@ -294,11 +294,12 @@ int do_softcore(int i, int j)
       add_to_buffer(fabuf,"FFCa");
       add_to_buffer(fbbuf,"FFCb");
       assign("vcoul","lambda*VVCb+L1*VVCa");
+      increment("vctot","vcoul");
       add_to_buffer(dvdlbuf,"VVCb-VVCa");
       nflop += 7;
     }
     if(DO_VDWTAB) {		
-      assign("vnbtot","lambda*(VVDb+VVRb)+L1*(VVDa+VVRa)");
+      increment("vnbtot","lambda*(VVDb+VVRb)+L1*(VVDa+VVRa)");
       add_to_buffer(dvdlbuf,"VVDb+VVRb-VVDa-VVRa");
       add_to_buffer(fabuf,"FFDa+FFRa");
       add_to_buffer(fbbuf,"FFDb+FFRb");
