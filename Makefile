@@ -15,6 +15,7 @@ DVIPS	=	dvips
 
 LOCAL	=	$(GMXHOME)/src/local
 HTML	=	$(GMXHOME)/html
+COPYRGT	=	$(LOCAL)/copyrgt
 
 TEXFS = algorithms	analyse		averages	cutoff		\
 	defunits	files		forcefield	ieee		\
@@ -81,6 +82,9 @@ proglist.tex:	$(LOCAL)/mkonline $(LOCAL)/programs.txt
 
 man:		
 		mkman
+
+copyrgt:
+		$(COPYRGT) *.tex
 
 clean:
 		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *.ps *~ #*# *.idx *.ilg *.ind 
