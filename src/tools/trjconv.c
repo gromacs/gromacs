@@ -172,6 +172,8 @@ int main(int argc,char *argv[])
     "[BB]8.[bb] reduce the number of frames[BR]",
     "[BB]9.[bb] change the timestamps of the frames (e.g. t0 and delta-t)",
     "[PAR]",
+    "The program [TT]trjcat[tt] can concatenate multiple trajectory files.",
+    "[PAR]",
     "Currently seven formats are supported for input and output:",
     "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt],",
     "[TT].pdb[tt] and [TT].g87[tt].",
@@ -231,7 +233,8 @@ int main(int argc,char *argv[])
     "Also the option [TT]-checkdouble[tt] may be used to remove all",
     "duplicate frames from such a concatenated trajectory, this is done",
     "by ignoring all frames with a time smaller than or equal to the previous",
-    "frame.[PAR]",
+    "frame. [TT]trjcat[tt] is more suitable for concatenating trajectory",
+    "files.[PAR]",
     "The option [TT]-dump[tt] can be used to extract a frame at or near",
     "one specific time from your trajectory."
   };
