@@ -6,7 +6,7 @@
 extern void four1(real data[],int nn,int isign);
 extern void correl(real data1[],real data2[],int n,real ans[]);
 
-#ifndef WITHOUT_FFTW
+#ifndef GMX_WITHOUT_FFTW
 #include "fftw_wrapper.h"
 
 typedef struct {
