@@ -77,10 +77,10 @@ void do_view(char *fn, char *opts)
       switch(ftp) {
       case efXVG:
 	if ( ! (cmd=getenv(env)) ) {
-	  if ( getenv("XMGRACE") )
-	    cmd="xmgrace";
-	  else
+	  if ( getenv("XMGR") )
 	    cmd="xmgr";
+	  else
+	    cmd="xmgrace";
 	}
 	break;
       default:
