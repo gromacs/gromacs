@@ -35,6 +35,7 @@ static char *SRCID_do_gct_h = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 #include "filenm.h"
+#include "network.h"
 
 enum { eoPres, eoEpot, eoPolarizability, eoDipole, eoMemory, eoInter, eoNR };
 extern char *eoNames[eoNR];
@@ -97,8 +98,10 @@ extern t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 				  t_commrec *cr,t_forcerec *fr,t_mdatoms *md,
 				  t_idef *idef);
 
-extern void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
+extern void do_coupling(FILE *log,int nfile,t_filenm fnm[],
+			t_coupl_rec *tcr,real t,int step,real ener[],
 			t_forcerec *fr,t_inputrec *ir,bool bMaster,
-			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols);
+			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
+			t_commrec *cr);
 		     
 #endif

@@ -71,6 +71,53 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "ionize.h" 
 #include "pppm.h"
 
+static bool      bMultiSim = FALSE;
+static t_commrec *cr_msim;
+
+char *par_fn(char *base,int ftp,t_commrec *cr)
+{
+  static char buf[256];
+  
+  /* Copy to buf, and strip extension */
+  strcpy(buf,base);
+  buf[strlen(base)-4] = '\0';
+  
+  /* Add processor info */
+  if (PAR(cr)) 
+    sprintf(buf+strlen(buf),"-P%d",cr->pid);
+  strcat(buf,".");
+  
+  /* Add extension again */
+  strcat(buf,(ftp == efTPX) ? "tpr" : 
+	 (ftp == efENX) ? "edr" :
+	 ftp2ext(ftp));
+    
+  return buf;
+}
+
+t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
+{
+  t_commrec *cr_new;
+  int  i;
+  char *buf;
+  
+  cr_msim = cr;
+  snew(cr_new,1);
+  cr_new->pid    = 0;
+  cr_new->nprocs = 1;
+  
+  /* Patch file names (except log which has been done already) */
+  for(i=0; (i<nfile); i++) {
+    if (fnm[i].ftp != efLOG) {
+      buf = par_fn(fnm[i].fn,fnm[i].ftp,cr);
+      sfree(fnm[i].fn);
+      fnm[i].fn = strdup(buf);
+    }
+  }
+  
+  return cr_new;
+}
+
 real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
 {
   int  k,kk,m;
@@ -753,9 +800,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		fr,md->nr,parm->box,parm->pres,ener);
     
     if (bTCR)
-      do_coupling(log,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr),md,&(top->idef),mu_aver,
-		  top->blocks[ebMOLS].nr);
+      do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
+		  &(parm->ir),MASTER(cr) || bMultiSim,md,&(top->idef),mu_aver,
+		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr);
     
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);
@@ -795,21 +842,25 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "xmdrun is the experimental MD program. New features are tested in this",
     "program before being implemented in the default mdrun. Currently under",
-    "investigation are: polarizibility, glass and Free energy perturbation.",
+    "investigation are: polarizibility, glass simulations, Free energy perturbation",
+    "and parallel independent simulations."
   };
 
   t_commrec    *cr;
   t_filenm fnm[] = {
-    { efTPX, NULL, NULL,       ffREAD },
-    { efTRJ, "-o", NULL,       ffWRITE },
-    { efXTC, "-x", NULL,       ffOPTWR },
-    { efGRO, "-c",  "confout", ffWRITE },
-    { efGCT, "-j",  "wham",    ffOPTRD },
-    { efGCT, "-jo", "bam",     ffOPTRD },
-    { efHAT, "-hat","ghat",    ffOPTRD },
-    { efENX, "-e",  "ener",    ffWRITE },
-    { efLOG, "-g",  "md",      ffWRITE },
-    { efNDX, "-n",  "mols",    ffREAD }
+    { efTPX, NULL,      NULL,       ffREAD },
+    { efTRJ, "-o",      NULL,       ffWRITE },
+    { efXTC, "-x",      NULL,       ffOPTWR },
+    { efGRO, "-c",      "confout",  ffWRITE },
+    { efHAT, "-hat",    "ghat",     ffOPTRD },
+    { efENX, "-e",      "ener",     ffWRITE },
+    { efLOG, "-g",      "md",       ffWRITE },
+    { efNDX, "-n",      "mols",     ffREAD  },
+    { efGCT, "-j",      "wham",     ffOPTRD },
+    { efGCT, "-jo",     "bam",      ffOPTRD },
+    { efXVG, "-ffout",  "gct",      ffOPTWR },
+    { efXVG, "-devout", "deviatie", ffOPTWR },
+    { efXVG, "-runav",  "runaver",  ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -819,7 +870,8 @@ int main(int argc,char *argv[])
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, &nprocs,
       "Number of processors, must be the same as used for grompp. THIS SHOULD BE THE FIRST ARGUMENT ON THE COMMAND LINE FOR MPI" },
-    { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
+    { "-v",       FALSE, etBOOL,&bVerbose,  "Verbose mode" },
+    { "-multi",   FALSE, etBOOL,&bMultiSim, "Do multiple simulations in parallel (only with -np > 1)" },
     { "-compact", FALSE, etBOOL,&bCompact,
       "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
     { "-dlb",     FALSE, etINT, &nDLB,
@@ -845,7 +897,11 @@ int main(int argc,char *argv[])
 		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 		    
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
-  
+
+  if (bMultiSim && PAR(cr)) {
+    cr = init_msim(cr,NFILE,fnm);
+  }
+    
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
     please_cite(stdlog,"Berendsen95a");
