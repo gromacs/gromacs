@@ -86,6 +86,9 @@ int main(int argc,char *argv[])
     "Vector options can be used with 1 or 3 parameters. When only one "
     "parameter is supplied the two others are also set to this value.",
 
+    "For many GROMACS programs, the time options can be supplied in different "
+    "time units, depending on the setting of the [TT]-tu[tt] option.",
+    
     "All GROMACS programs can read compressed or g-zipped files. There "
     "might be a problem with reading compressed [TT].xtc[tt], "
     "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
@@ -93,7 +96,11 @@ int main(int argc,char *argv[])
 
     "Most GROMACS programs can process a trajectory with less atoms than "
     "the run input or structure file, but only if the trajectory consists "
-    "of the first n atoms of the run input or structure file."
+    "of the first n atoms of the run input or structure file.",
+    
+    "Many GROMACS programs will accept the [TT]-tu[tt] option to set the "
+    "time units to use in output files (e.g. for [TT]xmgr[tt] graphs or "
+    "[TT]xpm[tt] matrices) and in all time options."
   };
 
   CopyRight(stderr,argv[0]);
