@@ -287,17 +287,17 @@ nsteps              =  100	; total 0.2 ps.
 nstcomm             =  1
 nstxout             =  10
 nstvout             =  1000
-nstgrp              =  0
 nstfout             =  0
-nstprint            =  10
+nstlog              =  10
+nstenergy           =  10
 nsthf               =  0
 nstlist             =  10
 ns_type             =  grid
 deltagrid           =  2
-shift               =  no
-rshort              =  1.0
-rlong               =  1.0
-box                 =  cubic
+rlist               =  1.0
+rcoulomb            =  1.0
+rvdw                =  1.0
+box                 =  rectangular
 ; Temperature coupling is on in two groups
 Tcoupl              =  yes
 tau_t               =  0.1	0.1
@@ -306,7 +306,7 @@ ref_t               =  300	300
 ; Pressure coupling is not on
 Pcoupl              =  no
 tau_p               =  0.5
-compress            =  1e-3
+compressibility     =  4.6e-3
 ref_p               =  1.0
 ; Generate velocites is on at 300 K.
 gen_vel             =  yes
