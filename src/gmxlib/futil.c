@@ -333,21 +333,21 @@ bool get_libdir(char *libdir)
   strcpy(bin_name,Program());
   
   /* Only do the smart search part if we got a real name */
-  if(bin_name && strcmp(bin_name,"GROMACS")) {
+  if (bin_name && strcmp(bin_name,"GROMACS")) {
   
     if (!strchr(bin_name,'/')) {
       /* No "/" in name means it must be in the path - search it! */
       system_path=getenv("PATH");
       s=system_path;
       found=FALSE;
-      while(!found && (dir=strtok(s,":"))!=NULL) {
+      while (!found && (dir=strtok(s,":"))!=NULL) {
 	sprintf(full_path,"%s/%s",dir,bin_name);
 	found=fexist(full_path);
 	s=NULL; /* pointer should be null for subseq. calls to strtok */
       }
-      if(!found)
+      if (!found)
 	return FALSE;
-    } else if (bin_name[0]!='/') {
+    } else if (bin_name[0] != '/') {
       /* name is relative the current dir */
       getcwd(buf,sizeof(buf)-1);
       strcpy(full_path,buf);
@@ -362,7 +362,7 @@ bool get_libdir(char *libdir)
     while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
       buf[i]='\0';
       /* If it doesn't start with "/" it is relative */
-      if(buf[0]!='/') {
+      if (buf[0]!='/') {
 	strcpy(strrchr(full_path,'/')+1,buf);
       } else
 	strcpy(full_path,buf);
@@ -399,19 +399,20 @@ char *low_libfn(char *file, bool bFatal)
   char *ret=NULL;
   char *lib,*dir;
   static char buf[1024];
-  static char libpath[4096],tmppath[4096];
+  static char libpath[4096];
   static int  bFirst=1;
   static bool env_is_set;
+  char   *s,tmppath[4096];
   bool found;
   
-  if(bFirst) {
+  if (bFirst) {
     /* GMXLIB can be a path now */
     lib=getenv("GMXLIB");
-    if(lib!=NULL) {
+    if (lib != NULL) {
       env_is_set=TRUE;
       strcpy(libpath,lib);
     } else {
-      if(!get_libdir(libpath))
+      if (!get_libdir(libpath))
 	strcpy(libpath,GMXLIBDIR);
     }
     bFirst=0;
@@ -422,9 +423,11 @@ char *low_libfn(char *file, bool bFatal)
   else {
     found=FALSE;
     strcpy(tmppath,libpath);
-    while(!found && (dir=strtok(tmppath,":"))!=NULL) {
+    s=tmppath;
+    while(!found && (dir=strtok(s,":"))!=NULL) {
       sprintf(buf,"%s/%s",dir,file);
       found=fexist(buf);
+      s = NULL;
     }
     ret=buf;
     if (bFatal && !found) {
