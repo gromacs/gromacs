@@ -49,9 +49,8 @@ void file_header(void)
      * invsqrt and reciprocal
      * Corresponding c table routines are found in vec.h
      */
-    if(arch.gmx_invsqrt) 
+
       fortran_invsqrt();
-    if(arch.gmx_recip) 
       fortran_recip();
     if(arch.gmx_invsqrt || arch.gmx_recip)
       init_block_data();

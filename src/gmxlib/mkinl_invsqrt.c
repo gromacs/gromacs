@@ -201,6 +201,7 @@ void invsqrt_vars()
 void fortran_invsqrt()
 {
   /* First the nonvectorized version */
+#ifdef GMX_INVSQRT
   newline();
   comment("fortran invsqrt routine");
   strcat(header,"      function invsqrt(");
@@ -255,6 +256,7 @@ void fortran_invsqrt()
   code("end");
   flush_buffers();
 
+#endif
   
   /* And now the vectorized version */
   newline();
@@ -265,7 +267,8 @@ void fortran_invsqrt()
   declare_int("n");
   nargs=ndecl;
   
-  
+  declare_int("i");  
+#ifdef GMX_INVSQRT
   declare_int4("finvsqrtexptab"); 
   declare_int4("finvsqrtfracttab"); 
 
@@ -276,7 +279,7 @@ void fortran_invsqrt()
   declare_real4("lu");
   declare_int("iexp");
   declare_int("addr");
-  declare_int("i");
+
   
   code("equivalence(bval,fval)");
   code("equivalence(result,lu)");
@@ -312,6 +315,12 @@ void fortran_invsqrt()
   assign("utdata(i)","(half*lu*(three-((x*lu)*lu)))");
 #endif
   end_loop();
+
+#else /* no GMX_INVSQRT */
+  start_loop("i","1","n");
+  assign("utdata(i)","1.0/sqrt(indata(i))");
+  end_loop();
+#endif
   code("end");
   flush_buffers();
 }
