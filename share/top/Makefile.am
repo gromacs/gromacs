@@ -20,6 +20,12 @@ topol_DATA = \
 	ffG45a3-c.tdb  	ffG45a3.atp    	ffG45a3.hdb    	ffG45a3.rtp	\
 	ffG45a3nb.itp	ffG45a3-n.tdb  	ffG45a3.ddb    	ffG45a3.itp	\
 	ffG45a3bon.itp							\
+	ffG53a5-c.tdb  	ffG53a5.atp    	ffG53a5.hdb    	ffG53a5.rtp	\
+	ffG53a5nb.itp	ffG53a5-n.tdb  	ffG53a5.ddb    	ffG53a5.itp	\
+	ffG53a5bon.itp							\
+	ffG53a6-c.tdb  	ffG53a6.atp    	ffG53a6.hdb    	ffG53a6.rtp	\
+	ffG53a6nb.itp	ffG53a6-n.tdb  	ffG53a6.ddb    	ffG53a6.itp	\
+	ffG53a6bon.itp							\
 	ffoplsaa.atp    ffoplsaa.itp	ffoplsaabon.itp ffoplsaanb.itp  \
 	ffoplsaa.hdb	ffoplsaa-n.tdb	ffoplsaa-c.tdb	ffoplsaa.rtp	\
 	ffoplsaa.ddb							\
