@@ -49,6 +49,7 @@ static char *constraints[eshNR+1]    = {
 typedef struct {
   int warnings;
   int nshake;
+  real fourierspacing;
   int nprocs;
   int splitalg;
   char *title;

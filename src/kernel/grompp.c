@@ -39,6 +39,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "smalloc.h"
 #include "macros.h"
 #include "string2.h"
+#include "readir.h"
 #include "toputil.h"
 #include "topio.h"
 #include "confio.h"
@@ -61,6 +62,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "tpxio.h"
 #include "dum_parm.h"
 #include "txtdump.h"
+#include "calcgrid.h"
 
 void check_solvent(bool bVerbose,t_molinfo msys[],
 		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
@@ -769,6 +771,18 @@ int main (int argc, char *argv[])
       fprintf(stderr,"getting data from old trajectory ...\n");
     cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,fr_time,ir,&natoms,
 		&x,&v,box,sys);
+  }
+  
+  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME)) {
+    /* Calculate the optimal grid dimensions */
+    calc_grid(box,opts->fourierspacing,
+	      &(ir->nkx),&(ir->nky),&(ir->nkz),nprocs);
+    if ((ir->coulombtype == eelPPPM) && 
+	((ir->nkx>0.1) || (ir->nky>0.1) || (ir->nkz>0.1))) {
+      set_warning_line(ftp2fn(efMDP,NFILE,fnm),-1);
+      sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
+      warning(NULL);
+    }
   }
   
   /* This is also necessary for setting the multinr arrays */

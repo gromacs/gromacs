@@ -310,9 +310,10 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Some thingies for future use");
   ITYPE ("niter",       ir->niter,      100);
   RTYPE ("gauss_width", ir->gausswidth, 0.1);
-  ITYPE ("fourier_nx",  ir->nkx,        10);
-  ITYPE ("fourier_ny",  ir->nky,        10);
-  ITYPE ("fourier_nz",  ir->nkz,        10);
+  RTYPE ("fourierspacing", opts->fourierspacing,0.125);
+  ITYPE ("fourier_nx",  ir->nkx,         0);
+  ITYPE ("fourier_ny",  ir->nky,         0);
+  ITYPE ("fourier_nz",  ir->nkz,         0);
   ITYPE ("pme_order",   ir->pme_order,   4);
   RTYPE ("ewald_rtol",  ir->ewald_rtol, 0.00001);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, FALSE);

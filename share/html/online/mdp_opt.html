@@ -17,7 +17,7 @@
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box, rlist)
-<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
+<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, niter, gauss_width, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
@@ -211,7 +211,7 @@ electrostatic interactions.
 Use for example <b>rlist</b><tt>=1.0</tt>, <b>rcoulomb_switch</b><tt>=0.0</TT>,
 <b>rcoulomb</b><tt>=0.85</TT>, <b>rvdw_switch</b><tt>=1.0</TT>
 and <b>rvdw</b><tt>=1.0</TT>. The grid
-dimensions are controlled by <b>fourier_nx, fourier_ny, fourier_nz</b>.
+dimensions are controlled by <b>fourierspacing</b>.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See <tt>Shift</tt> for the details of the particle-particle potential.
 NOTE: Pressure scaling is not possible with PPPM.
@@ -325,12 +325,18 @@ corresponds to the cut-off in the user-defined function.
 <dt><h4>gauss_width </b>(0.1)<b></h4>
 <dd>for future use
 
-<dt><h4>fourier_nx </b>(10)<b> ;  
-fourier_ny </b>(10)<b> ;  
-fourier_nz: </b>(10)</h4>
+<dt><h4>fourierspacing: </b>(0.125) [nm]</h4>
+<dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
+Each direction can be overriden by entering a non-zero value for
+<b>fourier_n*</b>.
+
+<dt><h4>fourier_nx </b>(0)<b> ;  
+fourier_ny </b>(0)<b> ;  
+fourier_nz: </b>(0)</h4>
 <dd>Highest magnitude of wavevectors in reciprocal space when using Ewald.
-<dd>Grid size when using PPPM or PME. The best choice is powers of 2,
-or at least products of 2,3,5. Avoid large primes.
+<dd>Grid size when using PPPM or PME. These values override the 
+<b>fourierspacing</b> per direction. The best choice is powers of 2,
+or at least products of 2,3,5,7. Avoid large primes.
 
 <dt><h4>pme_order </b>(4)<b></h4>
 <dd>Interpolation order for PME. 4 equals cubic interpolation. You might try
@@ -699,6 +705,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#el2">fourier_nx</A><br>
 <A HREF="#el2">fourier_ny</A><br>
 <A HREF="#el2">fourier_nz</A><br>
+<A HREF="#el2">fourier_spacing</A><br>
 <A HREF="#free">free_energy</A><br>
 <A HREF="#neq">freezedim </A><br>
 <A HREF="#neq">freezegrps</A><br>

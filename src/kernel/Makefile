@@ -21,7 +21,8 @@ GOBJ		= \
 		grompp.o	topio.o 	toppush.o 	\
 		topcat.o 	topshake.o 	convparm.o 	\
 		tomorse.o	sorting.o 	splitter.o	\
-		readir.o	dum_parm.o	$(PGOBJ)
+		readir.o	dum_parm.o	calcgrid.o	\
+		$(PGOBJ)
 # Objects for pdb2gmx
 POBJ		= \
 		pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
