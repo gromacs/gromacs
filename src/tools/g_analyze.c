@@ -245,7 +245,7 @@ void estimate_error(char *eefile,int resol,int n,int nset,
 	  var += sqr(av[s] - blav/bs);
 	  nb++;
 	}
-	fprintf(fp," %g %g\n",bs*dt,sqrt(var/(nb*(nb-1))));
+	fprintf(fp," %g %g\n",bs*dt,sqrt(var/(nb*(nb-1.0))));
       }
       prev_bs = bs;
     }
