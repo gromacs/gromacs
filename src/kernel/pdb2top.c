@@ -564,6 +564,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
     /* generate exclusions for dummy masses and atoms */ 
     init_nnb(&nnb,atoms->nr,nrexcl);
     gen_nnb(&nnb,plist);
+    excl.nr=atoms->nr;
     nnb2excl(&nnb,&excl);
     done_nnb(&nnb);
     
