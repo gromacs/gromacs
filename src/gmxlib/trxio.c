@@ -49,13 +49,42 @@ static char *SRCID_trxio_c = "$Id$";
 static int frame=-666;
 #define SKIP 10
 #define INITCOUNT frame=-1
-#define PRINTCOUNT(l,t) fprintf(stderr,"\r%s frame %6d time %8.3f   ",l,frame,t)
-#define CHECKCOUNT(l,t) if ( ((frame % SKIP)==0) || (frame < SKIP)) PRINTCOUNT(l,t)
-#define PRINTSKIP(t) {frame++; CHECKCOUNT("Skipping",t);}
-#define PRINTREAD(t) {frame++; CHECKCOUNT("Reading",t);}
-#define PRINTLAST(t) { PRINTCOUNT("Last",t); fprintf(stderr,"\n"); }
-#define PRINTINCOMP(t,pt) { PRINTLAST(pt); fprintf(stderr,"WARNING: Incomplete frame: nr %d time %g\n",frame+1,t); }
-#define PRINTINCOMPH(t) { fprintf(stderr,"WARNING: Incomplete frame header: nr %d time %g\n",frame+1,t); }
+
+static void printcount(char *l,real t)
+{
+  fprintf(stderr,"\r%s frame %6d time %8.3f   ",l,frame,t);
+}
+
+#define CHECKCOUNT(l,t) if ( ((frame % SKIP)==0) || (frame < SKIP)) printcount(l,t)
+
+static void printskip(real t)
+{
+  frame++;
+  CHECKCOUNT("Skipping",t);
+}
+
+static void printread(real t)
+{
+  frame++;
+  CHECKCOUNT("Reading",t);
+}
+
+static void printlast(real t)
+{
+  printcount("Last",t);
+  fprintf(stderr,"\n");
+}
+
+static void printincomp(real t, real pt)
+{
+  fprintf(stderr,"WARNING: Incomplete frame: nr %d time %g\n",frame+1,t);
+}
+
+static void printincomph(real t)
+{
+  fprintf(stderr,"WARNING: Incomplete frame header: nr %d time %g\n",
+	  frame+1,t);
+}
 
 /* Globals for gromos-87 input */
 typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
@@ -212,24 +241,25 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 		    bX ? x : NULL,
 		    NULL,
 		    NULL)) {
-      PRINTINCOMP(*t,pt)
+      printlast(pt);
+      printincomp(*t,pt);
       return FALSE;
     }
     if ((ct=check_times(*t))==0) {
-      PRINTREAD(*t)
+      printread(*t);
       if (bB)
 	init_pbc(box,FALSE);  
       if (bX)
 	return TRUE;
     } else if (ct > 0) {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     } else {
-      PRINTSKIP(*t)
+      printskip(*t);
     }
   }
-  PRINTLAST(pt)
-  if (!bOK) PRINTINCOMPH(sh.t)
+  printlast(pt);
+  if (!bOK) printincomph(sh.t);
 
   return FALSE;    
 }
@@ -254,11 +284,12 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
 		    bX ? x : NULL,
 		    bV ? v : NULL,
 		    NULL)) {
-      PRINTINCOMP(*t,pt);
+      printlast(pt);
+      printincomp(*t,pt);
       return FALSE;
     }
     if ((ct=check_times(*t))==0) {
-      PRINTREAD(*t)
+      printread(*t);
       if (bB)
 	init_pbc(box,FALSE);  
       if (bX || bV ) {
@@ -273,16 +304,15 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
 	return TRUE;
       }
     } else if (ct > 0) {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     } else {
-      PRINTSKIP(*t)
+      printskip(*t);
     }
   }
-  if (bOK)
-    PRINTLAST(pt)
-  else
-    PRINTINCOMPH(sh.t)
+  printlast(pt);
+  if (!bOK)
+    printincomph(sh.t);
       
   return FALSE;    
 }
@@ -307,24 +337,25 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
 		    bX ? x : NULL,
 		    bV ? v : NULL,
 		    NULL)) {
-      PRINTINCOMP(*t,pt);
+      printlast(pt);
+      printincomp(*t,pt);
       return FALSE;
     }
     if ((ct=check_times(*t))==0) {
-      PRINTREAD(*t)
+      printread(*t);
       if (bB)
 	init_pbc(box,FALSE);  
       if (bX && bV )
 	return TRUE;
     } else if (ct > 0) {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     } else {
-      PRINTSKIP(*t)
+      printskip(*t);
     }
   }
-  PRINTLAST(pt)
-  if (!bOK) PRINTINCOMPH(sh.t) 
+  printlast(pt);
+  if (!bOK) printincomph(sh.t);
 
   return FALSE;    
 }
@@ -344,7 +375,7 @@ static int gmx_first_x(int status, real *t, rvec **x, matrix box)
       exit(1);
     }
   }
-  if (!bOK) PRINTINCOMPH(sh.t)
+  if (!bOK) printincomph(sh.t);
 
   return sh.natoms;
 }
@@ -365,7 +396,7 @@ static int gmx_first_x_v(int status, real *t, rvec **x,rvec **v,matrix box)
       exit(1);
     }
   }
-  if (!bOK) PRINTINCOMPH(sh.t)
+  if (!bOK) printincomph(sh.t);
 
   return sh.natoms;
 }
@@ -386,7 +417,7 @@ static int gmx_first_x_or_v(int status, real *t,rvec **x,rvec **v,matrix box)
       exit(1);
     }
   }
-  if (!bOK) PRINTINCOMPH(sh.t)
+  if (!bOK) printincomph(sh.t);
   
   return sh.natoms;
 }
@@ -488,21 +519,21 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
   while ((tbegin >= 0) && (*t < tbegin)) {
     if (!do_read_xyz(status,natoms,x,box))
       return FALSE;
-    PRINTSKIP(*t)
+    printskip(*t);
     *t+=DT;
     pt=*t;
   }
   if (((tend >= 0) && (*t < tend)) || (tend < 0.0)) {
     if (!do_read_xyz(status,natoms,x,box)) {
-      PRINTLAST(*t)
+      printlast(*t);
       return FALSE;
     }
-    PRINTREAD(*t)
+    printread(*t);
     pt=*t;
     *t+=DT;
     return TRUE;
   }
-  PRINTLAST(pt)
+  printlast(pt);
   return FALSE;
 }
 
@@ -612,7 +643,7 @@ int read_first_x(int *status,char *fn,
     if (check_times(*t) < 0)
       if (!read_next_x(*status,t,natoms,*x,box))
 	return 0;
-    PRINTREAD(*t)
+    printread(*t);
     break;
   case efPDB:
     natoms=pdb_first_x(fio_getfp(fp),t,x,box);
@@ -644,37 +675,37 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
     pt=*t;
     while (read_next_xtc(status,&natoms,&step,t,box,x,&prec,&bOK)) {
       if ((ct=check_times(*t)) == 0) {
-	PRINTREAD(*t)
+	printread(*t);
 	init_pbc(box,FALSE);  
 	return TRUE;
       }
       else if (ct > 0) {
-	PRINTLAST(pt)
+	printlast(pt);
 	return FALSE;
       } else {
-	PRINTSKIP(*t)
+	printskip(*t);
       }
     }
-    PRINTLAST(pt)
+    printlast(pt);
     if (!bOK)
-      PRINTINCOMP(*t,pt)
+      printincomp(*t,pt);
     return FALSE;
   case efPDB:
     pt=*t;
     if (pdb_next_x(fio_getfp(status),t,natoms,x,box)) {
-      PRINTREAD(*t)
+      printread(*t);
       return TRUE;
     } else {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     }
   case efGRO:
     pt=*t;
     if (gro_next_x(fio_getfp(status),t,natoms,x,box)) {
-      PRINTREAD(*t)
+      printread(*t);
       return TRUE;
     } else {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     }
   default:
@@ -715,13 +746,13 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
       snew(*v,sh.natoms);
       *t = sh.t;
       if (!fread_htrn(fp,&sh,NULL,NULL,*v,NULL)) {
-	PRINTINCOMP(*t,-1);
+	printincomp(*t,-1);
 	return FALSE;
       }
-      PRINTREAD(*t)
+      printread(*t);
       return sh.natoms;
     }
-    if (!bOK) PRINTINCOMPH(sh.t)
+    if (!bOK) printincomph(sh.t);
     return -1;
   case efGRO:
     return gro_first_v(fio_getfp(fp),t,v,box);
@@ -746,27 +777,28 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
       bV=sh.v_size;
       *t = sh.t;
       if (!fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL)) {
-	PRINTINCOMP(*t,pt);
+	printlast(pt);
+	printincomp(*t,pt);
 	return FALSE;
       } 
       if ((check_times(*t)==0) && (bV)) {
-	PRINTREAD(*t)
+	printread(*t);
 	return TRUE;
       }
       if (check_times(*t) > 0) {
-	PRINTLAST(pt)
+	printlast(pt);
 	return FALSE;
       }
     }
-    PRINTLAST(pt)
-    if (!bOK) PRINTINCOMPH(sh.t)
+    printlast(pt);
+    if (!bOK) printincomph(sh.t);
     break;
   case efGRO: 
     if (gro_next_v(fio_getfp(status),t,natoms,v,box)) {
-      PRINTREAD(*t)
+      printread(*t);
       return TRUE;
     } else {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     }
   default:
@@ -816,10 +848,10 @@ bool read_next_x_v(int status,real *t, int natoms,
   case efGRO: 
     pt=*t;
     if (gro_next_x_v(fio_getfp(status),t,natoms,x,v,box)) {
-      PRINTREAD(*t)
+      printread(*t);
       return TRUE;
     } else {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     }
   default:
@@ -865,10 +897,10 @@ bool read_next_x_or_v(int status,real *t, int natoms,
   case efGRO:
     pt=*t;
     if (gro_next_x_or_v(fio_getfp(status),t,natoms,x,v,box)) {
-      PRINTREAD(*t)
+      printread(*t);
       return TRUE;
     } else {
-      PRINTLAST(pt)
+      printlast(pt);
       return FALSE;
     }
   default:
