@@ -45,8 +45,10 @@ extern int open_trn(char *fn,char *mode);
 extern void close_trn(int fp);
 /* Close it */
 
-extern bool fread_trnheader(int fp,t_trnheader *trn);
-/* Read the header of a trn file. Return FALSE if unsuccesfull */
+extern bool fread_trnheader(int fp,t_trnheader *trn,bool *bOK);
+/* Read the header of a trn file. Return FALSE if there is no frame.
+ * bOK will be FALSE when the header is incomplete.
+ */
 
 extern void read_trnheader(char *fn,t_trnheader *header);
 /* Read the header of a trn file from fn, and close the file afterwards. 

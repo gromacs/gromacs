@@ -112,36 +112,43 @@ static void list_trn(char *fn)
   rvec        *x,*v,*f;
   matrix      box;
   t_trnheader trn;
+  bool        bOK;
 
   fpread  = open_trn(fn,"r"); 
   fpwrite = open_tpx(NULL,"w");
   fio_setdebug(fpwrite,TRUE);
   
   nframe = 0;
-  while (fread_trnheader(fpread,&trn)) {
+  while (fread_trnheader(fpread,&trn,&bOK)) {
     snew(x,trn.natoms);
     snew(v,trn.natoms);
     snew(f,trn.natoms);
-    fread_htrn(fpread,&trn,
+    if (fread_htrn(fpread,&trn,
 	       trn.box_size ? box : NULL,
 	       trn.x_size   ? x : NULL,
 	       trn.v_size   ? v : NULL,
-	       trn.f_size   ? f : NULL);
-    printf("----------- begin of %s frame %d ------------\n",fn,nframe);
-    fwrite_tpx(fpwrite,trn.step,trn.t,trn.lambda,NULL,
-	       trn.box_size ? box : NULL,
-	       trn.natoms,
-	       trn.x_size   ? x : NULL,
-	       trn.v_size   ? v : NULL,
-	       trn.f_size   ? f : NULL,
-	       NULL);
-    printf("----------- end of %s frame %d ------------\n",fn,nframe);
+		   trn.f_size   ? f : NULL)) {
+      printf("----------- begin of %s frame %d ------------\n",fn,nframe);
+      fwrite_tpx(fpwrite,trn.step,trn.t,trn.lambda,NULL,
+		 trn.box_size ? box : NULL,
+		 trn.natoms,
+		 trn.x_size   ? x : NULL,
+		 trn.v_size   ? v : NULL,
+		 trn.f_size   ? f : NULL,
+		 NULL);
+      printf("----------- end of %s frame %d ------------\n",fn,nframe);
+    } else
+      fprintf(stderr,"\nWARNING: Incomplete frame: nr %d, t=%g\n",
+	      nframe,trn.t);
     
     sfree(x);
     sfree(v);
     sfree(f);
     nframe++;
   }
+  if (!bOK)
+    fprintf(stderr,"\nWARNING: Incomplete frame header: nr %d, t=%g\n",
+	    nframe,trn.t);
   close_tpx(fpwrite);
   close_trn(fpread);
 }

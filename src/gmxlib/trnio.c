@@ -61,49 +61,49 @@ static int nFloatSize(t_trnheader *sh)
   return nflsize;
 }
 
-static bool do_trnheader(int fp,bool bRead,t_trnheader *sh)
+static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
 {
   static int magic=GROMACS_MAGIC;
   static char *version = "GMX_trn_file";
   static bool bFirst=TRUE;
   char buf[256];
-  bool bOK;
   
-  bOK=TRUE;
+  *bOK=TRUE;
 
   fio_select(fp);
   if (!do_int(magic))
     return FALSE;
   
   if (bRead) {
-    bOK = bOK && do_string(buf);
+    *bOK = *bOK && do_string(buf);
     if (bFirst) {
       fprintf(stderr,"trn version: %s\n",buf);
       bFirst = FALSE;
     }
   }
   else
-    bOK = bOK && do_string(version);
-  bOK = bOK && do_int(sh->ir_size);
-  bOK = bOK && do_int(sh->e_size);
-  bOK = bOK && do_int(sh->box_size);
-  bOK = bOK && do_int(sh->vir_size);
-  bOK = bOK && do_int(sh->pres_size);
-  bOK = bOK && do_int(sh->top_size); 
-  bOK = bOK && do_int(sh->sym_size); 
-  bOK = bOK && do_int(sh->x_size); 
-  bOK = bOK && do_int(sh->v_size); 
-  bOK = bOK && do_int(sh->f_size); 
+    *bOK = *bOK && do_string(version);
+  *bOK = *bOK && do_int(sh->ir_size);
+  *bOK = *bOK && do_int(sh->e_size);
+  *bOK = *bOK && do_int(sh->box_size);
+  *bOK = *bOK && do_int(sh->vir_size);
+  *bOK = *bOK && do_int(sh->pres_size);
+  *bOK = *bOK && do_int(sh->top_size); 
+  *bOK = *bOK && do_int(sh->sym_size); 
+  *bOK = *bOK && do_int(sh->x_size); 
+  *bOK = *bOK && do_int(sh->v_size); 
+  *bOK = *bOK && do_int(sh->f_size); 
   
+  if (!*bOK) return *bOK; 
   fio_setprecision(fp,(nFloatSize(sh) == sizeof(double)));
   
-  bOK = bOK && do_int(sh->natoms); 
-  bOK = bOK && do_int(sh->step); 
-  bOK = bOK && do_int(sh->nre); 
-  bOK = bOK && do_real(sh->t); 
-  bOK = bOK && do_real(sh->lambda); 
+  *bOK = *bOK && do_int(sh->natoms); 
+  *bOK = *bOK && do_int(sh->step); 
+  *bOK = *bOK && do_int(sh->nre); 
+  *bOK = *bOK && do_real(sh->t); 
+  *bOK = *bOK && do_real(sh->lambda); 
   
-  return bOK;
+  return *bOK;
 }
 
 void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh)
@@ -165,7 +165,7 @@ static bool do_trn(int fp,bool bRead,int *step,real *t,real *lambda,
     sh->t      = *t;
     sh->lambda = *lambda;
   }
-  if (!do_trnheader(fp,bRead,sh))
+  if (!do_trnheader(fp,bRead,sh,&bOK))
     return FALSE;
   if (bRead) {
     *natoms = sh->natoms;
@@ -197,16 +197,17 @@ static bool do_trn(int fp,bool bRead,int *step,real *t,real *lambda,
 void read_trnheader(char *fn,t_trnheader *trn)
 {
   int  fp;
+  bool bOK;
   
   fp = open_trn(fn,"r");
-  if (!do_trnheader(fp,TRUE,trn))
+  if (!do_trnheader(fp,TRUE,trn,&bOK))
     fatal_error(0,"Empty file %s",fn);
   close_trn(fp);
 }
 
-bool fread_trnheader(int fp,t_trnheader *trn)
+bool fread_trnheader(int fp,t_trnheader *trn, bool *bOK)
 {
-  return do_trnheader(fp,TRUE,trn);
+  return do_trnheader(fp,TRUE,trn,bOK);
 }
 
 void write_trn(char *fn,int step,real t,real lambda,

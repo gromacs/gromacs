@@ -58,7 +58,7 @@ void chk_trj(char *fn)
   t_trnheader  sh,count;
   int          idum,j,natoms,step;
   real         rdum,t,t0,old_t1,old_t2,prec;
-  bool         bShowTimestep=TRUE;
+  bool         bShowTimestep=TRUE,bOK;
   rvec         *x;
   matrix       box;
   size_t       fpos;
@@ -87,7 +87,7 @@ void chk_trj(char *fn)
     old_t2 = -2.0;
     old_t1 = -1.0;
     fpos   = fio_ftell(status);
-    while (fread_trnheader(status,&sh)) {
+    while (fread_trnheader(status,&sh,&bOK)) {
       if (j>=2) {
 	if ( fabs((sh.t-old_t1)-(old_t1-old_t2)) > 
 	     0.1*(fabs(sh.t-old_t1)+fabs(old_t1-old_t2)) ) {
@@ -114,6 +114,8 @@ void chk_trj(char *fn)
       INC(sh,count,v_size);
       INC(sh,count,f_size);
     }
+    if (!bOK)
+      fprintf(stderr,"\nIncomplete frame header at t=%g\n",sh.t);
     close_trn(status);
     t=sh.t;
     break;

@@ -90,7 +90,7 @@ void do_trunc(char *fn, real t0)
 {
   int          in;
   FILE         *fp;
-  bool         bStop;
+  bool         bStop,bOK;
   t_trnheader  sh;
   long         fpos;
   char         yesno[256];
@@ -108,7 +108,7 @@ void do_trunc(char *fn, real t0)
   j    = 0;
   fpos = fio_ftell(in);
   bStop= FALSE;
-  while (!bStop && fread_trnheader(in,&sh)) {
+  while (!bStop && fread_trnheader(in,&sh,&bOK)) {
     fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
     fpos=ftell(fp);
     t=sh.t;
@@ -370,7 +370,6 @@ int main(int argc,char *argv[])
       bHaveX=TRUE;
       bHaveV=FALSE;
     }
-    printf("bVels %d %s %s\n",bVels,in_file,out_file);
     if ((bAppend) && (fexist(out_file))) {
       strcpy(filemode,"a");
       fprintf(stderr,"APPENDING to existing file %s\n",out_file);

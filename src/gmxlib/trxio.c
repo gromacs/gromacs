@@ -53,7 +53,8 @@ static int frame=-666;
 #define PRINTSKIP(t) {frame++; CHECKCOUNT("Skipping",t);}
 #define PRINTREAD(t) {frame++; CHECKCOUNT("Reading",t);}
 #define PRINTLAST(t) { PRINTCOUNT("Last",t); fprintf(stderr,"\n"); }
-#define PRINTINCOMP(t,pt) { PRINTLAST(pt); fprintf(stderr,"WARNING: Incomplete frame: nr %6d time %8.3f\n",frame+1,t); }
+#define PRINTINCOMP(t,pt) { PRINTLAST(pt); fprintf(stderr,"WARNING: Incomplete frame: nr %d time %g\n",frame+1,t); }
+#define PRINTINCOMPH(t) { fprintf(stderr,"WARNING: Incomplete frame header: nr %d time %g\n",frame+1,t); }
 
 /* Globals for gromos-87 input */
 typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
@@ -67,10 +68,10 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
   t_trnheader sh;
   real pt;
   int  ct;
-  bool bB,bX;
+  bool bB,bX,bOK;
   
   pt=*t;
-  while (fread_trnheader(status,&sh)) {
+  while (fread_trnheader(status,&sh,&bOK)) {
     bX = sh.x_size;
     bB = sh.box_size;
     pt = *t;
@@ -80,7 +81,7 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 		    bX ? x : NULL,
 		    NULL,
 		    NULL)) {
-      PRINTINCOMP(*t,pt);
+      PRINTINCOMP(*t,pt)
       return FALSE;
     }
     if ((ct=check_times(*t))==0) {
@@ -97,6 +98,8 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
     }
   }
   PRINTLAST(pt)
+  if (!bOK) PRINTINCOMPH(sh.t)
+
   return FALSE;    
 }
 
@@ -106,10 +109,10 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
   t_trnheader sh;
   real pt;
   int  i,d,ct;
-  bool bB,bX,bV;
+  bool bB,bX,bV,bOK;
     
   pt=*t;
-  while (fread_trnheader(status,&sh)) {
+  while (fread_trnheader(status,&sh,&bOK)) {
     bX=sh.x_size;
     bV=sh.v_size;
     bB=sh.box_size;
@@ -146,6 +149,8 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
     }
   }
   PRINTLAST(pt)
+  if (!bOK) PRINTINCOMPH(sh.t)
+
   return FALSE;    
 }
   
@@ -155,10 +160,10 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
   t_trnheader sh;
   real pt;
   int  ct;
-  bool bB,bX,bV;
+  bool bB,bX,bV,bOK;
     
   pt=*t;
-  while (fread_trnheader(status,&sh)) {
+  while (fread_trnheader(status,&sh,&bOK)) {
     bX=sh.x_size;
     bV=sh.v_size;
     bB=sh.box_size;
@@ -186,23 +191,27 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
     }
   }
   PRINTLAST(pt)
+  if (!bOK) PRINTINCOMPH(sh.t) 
+
   return FALSE;    
 }
 
 static int gmx_first_x(int status, real *t, rvec **x, matrix box)
 {
   t_trnheader sh;
+  bool bOK;
   
   INITCOUNT;
 
-  fread_trnheader(status,&sh);
-  
-  snew(*x,sh.natoms);
-  rewind_trj(status);
-  if (!gmx_next_x(status,t,sh.natoms,*x,box)) {
-    fprintf(stderr,"No coordinates in trajectory\n");
-    exit(1);
+  if (fread_trnheader(status,&sh,&bOK)) {
+    snew(*x,sh.natoms);
+    rewind_trj(status);
+    if (!gmx_next_x(status,t,sh.natoms,*x,box)) {
+      fprintf(stderr,"No coordinates in trajectory\n");
+      exit(1);
+    }
   }
+  if (!bOK) PRINTINCOMPH(sh.t)
 
   return sh.natoms;
 }
@@ -210,35 +219,41 @@ static int gmx_first_x(int status, real *t, rvec **x, matrix box)
 static int gmx_first_x_v(int status, real *t, rvec **x,rvec **v,matrix box)
 {
   t_trnheader sh;
-  
+  bool bOK;
+
   INITCOUNT;
   
-  fread_trnheader(status,&sh);
-  snew(*x,sh.natoms);
-  snew(*v,sh.natoms);
-  rewind_trj(status);
-  if (!gmx_next_x_v(status,t,sh.natoms,*x,*v,box)) {
-    fprintf(stderr,"No coordinates and velocities in trajectory\n");
-    exit(1);
+  if (fread_trnheader(status,&sh,&bOK)) {
+    snew(*x,sh.natoms);
+    snew(*v,sh.natoms);
+    rewind_trj(status);
+    if (!gmx_next_x_v(status,t,sh.natoms,*x,*v,box)) {
+      fprintf(stderr,"No coordinates and velocities in trajectory\n");
+      exit(1);
+    }
   }
-  
+  if (!bOK) PRINTINCOMPH(sh.t)
+
   return sh.natoms;
 }
 
 static int gmx_first_x_or_v(int status, real *t,rvec **x,rvec **v,matrix box)
 {
   t_trnheader sh;
+  bool bOK;
   
   INITCOUNT;
   
-  fread_trnheader(status,&sh);
-  snew(*x,sh.natoms);
-  snew(*v,sh.natoms);
-  rewind_trj(status);
-  if (!gmx_next_x_or_v(status,t,sh.natoms,*x,*v,box)) {
-    fprintf(stderr,"No coordinates and velocities in trajectory\n");
-    exit(1);
+  if (fread_trnheader(status,&sh,&bOK)) {
+    snew(*x,sh.natoms);
+    snew(*v,sh.natoms);
+    rewind_trj(status);
+    if (!gmx_next_x_or_v(status,t,sh.natoms,*x,*v,box)) {
+      fprintf(stderr,"No coordinates and velocities in trajectory\n");
+      exit(1);
+    }
   }
+  if (!bOK) PRINTINCOMPH(sh.t)
   
   return sh.natoms;
 }
@@ -550,6 +565,7 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
 {
   t_trnheader sh;
   int  fp;
+  bool bOK;
 
   INITCOUNT;
   
@@ -558,15 +574,18 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
   switch (fio_getftp(fp)) {
   case efTRJ:
   case efTRR:
-    fread_trnheader(fp,&sh);
-    snew(*v,sh.natoms);
-    *t = sh.t;
-    if (!fread_htrn(fp,&sh,NULL,NULL,*v,NULL)) {
-      PRINTINCOMP(*t,-1);
-      return FALSE;
+    if (fread_trnheader(fp,&sh,&bOK)) {
+      snew(*v,sh.natoms);
+      *t = sh.t;
+      if (!fread_htrn(fp,&sh,NULL,NULL,*v,NULL)) {
+	PRINTINCOMP(*t,-1);
+	return FALSE;
+      }
+      PRINTREAD(*t)
+      return sh.natoms;
     }
-    PRINTREAD(*t);
-    return sh.natoms;
+    if (!bOK) PRINTINCOMPH(sh.t)
+    return -1;
   case efGRO:
     return gro_first_v(fio_getfp(fp),t,v,box);
   default:
@@ -580,13 +599,13 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
 {
   t_trnheader sh;
   real pt;
-  bool bV;
+  bool bV,bOK;
   
   pt=*t;
   switch (fio_getftp(status)) {
   case efTRJ:
   case efTRR:
-    while (fread_trnheader(status,&sh)) {
+    while (fread_trnheader(status,&sh,&bOK)) {
       bV=sh.v_size;
       *t = sh.t;
       if (!fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL)) {
@@ -603,6 +622,7 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
       }
     }
     PRINTLAST(pt)
+    if (!bOK) PRINTINCOMPH(sh.t)
     break;
   case efGRO: 
     if (gro_next_v(fio_getfp(status),t,natoms,v,box)) {
