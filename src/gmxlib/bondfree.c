@@ -676,12 +676,13 @@ static real low_angres(int nbonds,
   real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
   
   vtot = 0.0;
+  ak=al=0; /* to avoid warnings */
   for(i=0; i<nbonds; ) {
     type = forceatoms[i++];
     ai   = forceatoms[i++];
     aj   = forceatoms[i++];
     pbc_rvec_sub(x[aj],x[ai],r_ij);            	/*  3		*/
-    if (!bZAxis) {
+    if (!bZAxis) {      
       ak   = forceatoms[i++];
       al   = forceatoms[i++];
       pbc_rvec_sub(x[al],x[ak],r_kl);           /*  3		*/

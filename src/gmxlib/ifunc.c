@@ -93,8 +93,8 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("ETOT",     "Total Energy"),
   def_nofc   ("TEMP",     "Temperature"),
   def_nofc   ("PRES",     "Pressure"),
-  def_nofc   ("DV/DL",    "d Vpot/d mu"),
-  def_nofc   ("DK/DL",    "d Ekin/d mu")
+  def_nofc   ("DV/DL",    "d Vpot/d lambda"),
+  def_nofc   ("DK/DL",    "d Ekin/d lambda")
 };
 
 bool have_interaction(t_idef *idef,int ftype)

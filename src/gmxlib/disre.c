@@ -107,6 +107,7 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
   bool        bConservative,bMixed,bViolation;
   static real exp_min_t_tau=1.0;
 
+  tav_viol=instant_viol=mixed_viol=tav_viol_Rav7=instant_viol_Rav7=0;
   /* scaling factor to smoothly turn on the restraint forces *
    * when using time averaging                               */
   exp_min_t_tau *= ETerm;

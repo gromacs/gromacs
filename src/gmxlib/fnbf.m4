@@ -57,6 +57,13 @@ static char *SRCID_fnbf_c = "$Id$";
 static real *fbuf=NULL;
 #endif	
 
+#ifdef USEF77
+#ifdef FINVSQRT
+void fillbuf();
+#endif
+#endif
+
+
 #ifdef SUPERARRAY
 static real *super=NULL;
 #endif
