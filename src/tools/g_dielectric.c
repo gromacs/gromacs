@@ -255,7 +255,8 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-
+  please_cite(stdout,"Spoel98a");
+  
   nx     = read_xvg(opt2fn("-f",NFILE,fnm),&y,&ny);
   dt     = y[0][1]-y[0][0];
   nxtail = min(tail/dt,nx);

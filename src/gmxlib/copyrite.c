@@ -292,7 +292,13 @@ void please_cite(FILE *fp,char *key)
    "B. L. de Groot and D. M. F. van Aalten and R. M. Scheek and A. Amadei and G. Vriend and H. J. C. Berendsen",
    "Prediction of Protein Conformational Freedom From Distance Constrains",
    "Proteins",
-   "29 1997 240 251"
+   "29 1997 240 251",
+   
+   "Spoel98a",
+   "D. van der Spoel and P. J. van Maaren and H. J. C. Berendsen",
+   "A systematic study of water models for molecular simulation. Derivation of models optimized for use with a reaction-field.",
+   "J. Chem. Phys.",
+   "108 1998 10220 10230"
   };
 #define NSTR asize(citedb)
   
