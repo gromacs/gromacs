@@ -119,11 +119,69 @@ t_block *init_index(char *gfile, char ***grpname)
   return b;
 }
 
+static void minstring(char *str)
+{
+  int i;
+
+  for (i=0; (i < (int)strlen(str)); i++) 
+    if (str[i]=='-')
+      str[i]='_';
+}
+
+int find_group(char s[], int ngrps, char **grpname)
+{
+  int aa, i, n;
+  char string[STRLEN];
+  bool bMultiple;
+  
+  bMultiple = FALSE;
+  n = strlen(s);
+  aa=NOTSET;
+  /* first look for whole name match */
+  if (aa==NOTSET)
+    for(i=0; i<ngrps; i++)
+      if (strcasecmp_min(s,grpname[i])==0) {
+	if(aa!=NOTSET)
+	  bMultiple = TRUE;
+	aa=i;
+      }
+  /* second look for first string match */
+  if (aa==NOTSET)
+    for(i=0; i<ngrps; i++)
+      if (strncasecmp_min(s,grpname[i],n)==0) {
+	if(aa!=NOTSET)
+	  bMultiple = TRUE;
+	aa=i;
+      }
+  /* last look for arbitrary substring match */
+  if (aa==NOTSET) {
+    upstring(s);
+    minstring(s);
+    for(i=0; i<ngrps; i++) {
+      strcpy(string, grpname[i]);
+      upstring(string);
+      minstring(string);
+      if (strstr(s,string)!=NULL) {
+	if(aa!=NOTSET)
+	  bMultiple = TRUE;
+	aa=i;
+      }
+    }
+  }
+  if (bMultiple) {
+    printf("Error: Multiple groups '%s' selected\n", s);
+    aa=NOTSET;
+  }
+  return aa;
+}
+
 static int qgroup(int *a, int ngrps, char **grpname)
 {
   char s[STRLEN];
-  int  i, aa;
+  int  aa;
+  bool bInRange;
   
+  do {
   fprintf(stderr,"Select a group: ");
   do {
     if ( scanf("%s",s)!=1 ) 
@@ -131,18 +189,12 @@ static int qgroup(int *a, int ngrps, char **grpname)
   trim(s); /* remove spaces */
   } while (strlen(s)==0);
   aa = atoi(s);
-  if (aa==0 && strcmp(s,"0")!=0 ) { /* string entered */
-    aa=NOTSET;
-    for(i=0; i<ngrps; i++) {
-      if (strcasecmp_min(s,grpname[i])==0) {
-	if(aa!=NOTSET)
-	  fatal_error(0,"Multiple group '%s' selected", s);
-	aa=i;
-    }
-    }
-    if (aa==NOTSET)
-      fatal_error(0,"No such group '%s'", s);
-  }
+    if (aa==0 && strcmp(s,"0")!=0 ) /* string entered */
+      aa = find_group(s, ngrps, grpname);
+    bInRange = aa>=0 && aa<ngrps;
+    if (!bInRange)
+      printf("Error: No such group '%s'\n", s);
+  } while (!bInRange);
   printf("Selected %d: '%s'\n", aa, grpname[aa]);
   *a = aa;
   return aa;
