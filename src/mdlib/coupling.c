@@ -108,6 +108,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
   int    n,d,g;
   real   scalar_pressure, xy_pressure, p_corr_z;
   rvec   factor,mu;
+  char   *ptr;
   
   /*
    *  PRESSURE SCALING 
@@ -191,6 +192,10 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     for (n=0; n<DIM; n++)
       for (d=0; d<DIM; d++)
 	box[n][d] *= mu[d];
+
+    ptr = check_box(box);
+    if (ptr)
+      fatal_error(0,ptr);
 
     inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
   }
