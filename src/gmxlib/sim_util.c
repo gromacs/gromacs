@@ -46,6 +46,7 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "update.h"
 #include "physics.h"
 #include "main.h"
+#include "network.h"
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
