@@ -111,6 +111,9 @@ cat	> $RC << EOD
 # users have a c-shell allways
 #
 
+# remove previous GROMACS environment, if present
+source NOGMX -quiet
+
 # This is were the sources are
 setenv GMXHOME	$PATHPREFIX
 
