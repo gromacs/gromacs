@@ -233,7 +233,7 @@ static char **read_topol(char        *infile,
 			 bool        bVerbose)
 {
   FILE       *in;
-  int        nb_funct,comb;
+  int        i,nb_funct,comb;
   bool       nb_flag = FALSE;
   char       *pline,**title=NULL;
   int        curline;
@@ -494,7 +494,9 @@ static char **read_topol(char        *infile,
   }
   fclose (in);
   DS_Done (&DS);
-  sfree(block2);
+  for(i=0; i<nmol; i++)
+    done_block2(&(block2[i]));
+  free(block2);
   *nrmols=nmol;
   
   *nsim=Nsim;
