@@ -70,6 +70,7 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
   fprintf(xvgr,"@    title \"%s\"\n",title);
   fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
   fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
+  fprintf(xvgr,"@TYPE nxy\n");
   
   return xvgr;
 }
