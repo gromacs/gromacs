@@ -57,7 +57,7 @@ own analysis programs.
 # and includedir.
 # (This way the package won't interfere with a manual gromacs installation)
 
-./configure --prefix=%{prefix} --exec-prefix=%{prefix}
+./configure --enable-shared --prefix=%{prefix} --exec-prefix=%{prefix}
 make 
 
 %install

@@ -42,7 +42,7 @@ you probably want the full source anyway...
 
 %build
 # Call it mdrun_mpi
-./configure --enable-mpi --prefix=%{prefix} --exec-prefix=%{prefix} --program-suffix=_mpi
+./configure --enable-shared --enable-mpi --prefix=%{prefix} --exec-prefix=%{prefix} --program-suffix=_mpi
 make mdrun
 
 %install
