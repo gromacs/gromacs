@@ -430,6 +430,8 @@ int main(int argc, char *argv[])
     "is that the input file is a run input file.",
     "The B-factor field is then filled with the Van der Waals radius",
     "of the atoms while the occupancy field will hold the charge.[PAR]",
+    "The option -grasp is similar, but it puts the charges in the B-factor",
+    "and the radius in the occupancy.[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
     "to a pdb file, which can be useful for analysis with e.g. rasmol."
   };
@@ -439,7 +441,7 @@ int main(int argc, char *argv[])
   };
   static real dist=0.0,rbox=0.0,to_diam=0.0;
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
-  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE;
+  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0,rvdw=0.12;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
@@ -468,6 +470,8 @@ int main(int argc, char *argv[])
       "Remove the periodicity (make molecule whole again)" },
     { "-mead",   FALSE, etBOOL, {&bMead},
       "Store the charge of the atom in the occupancy field and the radius of the atom in the B-factor field" },
+    { "-grasp",  FALSE, etBOOL, {&bGrasp},
+      "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
     { "-rvdw",   FALSE, etREAL, {&rvdw},
       "Default Van der Waals radius if one can not be found in the database" },
     { "-atom",   FALSE, etBOOL, {&peratom}, "Force B-factor attachment per atom" },
@@ -520,12 +524,16 @@ int main(int argc, char *argv[])
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
   outftp  = fn2ftp(outfile);
-  if (bMead && (outftp != efPDB))
+  if (bMead && bGrasp) {
+    fprintf(stderr,"Incompatible options -mead and -grasp. Turning off -grasp\n");
+    bGrasp = FALSE;
+  }
+  if ((bMead || bGrasp) && (outftp != efPDB))
     fatal_error(0,"Output file should be a .pdb file"
 		" when using the -mead option\n");
-  if (bMead && !((fn2ftp(infile) == efTPR) || 
-		 (fn2ftp(infile) == efTPA) ||
-		 (fn2ftp(infile) == efTPB)))
+  if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) || 
+			     (fn2ftp(infile) == efTPA) ||
+			     (fn2ftp(infile) == efTPB)))
     fatal_error(0,"Input file should be a .tp[abr] file"
 		" when using the -mead option\n");
   
@@ -536,17 +544,27 @@ int main(int argc, char *argv[])
   read_stx_conf(infile,title,&atoms,x,v,box);
   printf("Read %d atoms\n",atoms.nr); 
 
-  if (bMead) {
+  if (bMead || bGrasp) {
     top = read_top(infile);
     if (atoms.nr != top->atoms.nr)
       fatal_error(0,"Atom numbers don't match (%d vs. %d)",
 		  atoms.nr,top->atoms.nr);
     for(i=0; (i<atoms.nr); i++) {
-      atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
-      /* Factor of 10 for Angstroms */
-      atoms.pdbinfo[i].bfac  = 
-	10*get_vdw(*top->atoms.resname[top->atoms.atom[i].resnr],
-		   *top->atoms.atomname[i],rvdw);
+      if (bMead) {
+	atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
+	/* Factor of 10 for Angstroms */
+	atoms.pdbinfo[i].bfac  = 
+	  10*get_vdw(*top->atoms.resname[top->atoms.atom[i].resnr],
+		     *top->atoms.atomname[i],rvdw);
+      }
+      else {
+	/* Factor of 10 for Angstroms */
+	atoms.pdbinfo[i].occup = 
+	  10*get_vdw(*top->atoms.resname[top->atoms.atom[i].resnr],
+		     *top->atoms.atomname[i],rvdw);
+	
+	atoms.pdbinfo[i].bfac  = top->atoms.atom[i].q;
+      }
     }
   }
   bHaveV=FALSE;
@@ -730,12 +748,21 @@ int main(int argc, char *argv[])
 	for(i=0; (i<atoms.nr); i++) 
 	  atoms.atom[i].chain=label[0];
       }
-      if (bMead) {
-	set_pdb_wide_format(TRUE);
-        fprintf(out,"REMARK    "
-		"The b-factors in this file hold atomic radii\n");
-	fprintf(out,"REMARK    "
-		"The occupancy in this file hold atomic charges\n");
+      if (bMead || bGrasp) {
+	if (bMead) {
+	  set_pdb_wide_format(TRUE);
+	  fprintf(out,"REMARK    "
+		  "The b-factors in this file hold atomic radii\n");
+	  fprintf(out,"REMARK    "
+		  "The occupancy in this file hold atomic charges\n");
+	}
+	else {
+	  fprintf(out,"GRASP PDB FILE\nFORMAT NUMBER=1\n");
+	  fprintf(out,"REMARK    "
+		  "The b-factors in this file hold atomic charges\n");
+	  fprintf(out,"REMARK    "
+		  "The occupancy in this file hold atomic radii\n");
+	}
       }
       write_pdbfile(out,title,&atoms,x,box,0,(!bLegend && visbox[0]<=0)?0:-1);
       if (bLegend)
