@@ -72,6 +72,17 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->harmonic.rB =sqr(old[2]);
     new->harmonic.krB=old[3];
     break;
+  case F_CROSS_BOND_BONDS:
+    new->cross_bb.r1e=old[0];
+    new->cross_bb.r2e=old[1];
+    new->cross_bb.krr=old[2];
+    break;
+  case F_CROSS_BOND_ANGLES:
+    new->cross_ba.r1e=old[0];
+    new->cross_ba.r2e=old[1];
+    new->cross_ba.r3e=old[2];
+    new->cross_ba.krt=old[3];
+    break;
   case F_ANGLES:
   case F_BONDS:
   case F_HARMONIC:

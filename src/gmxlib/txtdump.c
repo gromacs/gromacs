@@ -477,6 +477,16 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_G96ANGLES:
     pr_harm(fp,iparams,"th","ct");
     break;
+  case F_CROSS_BOND_BONDS:
+    fprintf(fp,"r1e=%15.8e, r2e=%15.8e, krr=%15.8e\n",
+	    iparams->cross_bb.r1e,iparams->cross_bb.r2e,
+	    iparams->cross_bb.krr);
+    break;
+  case F_CROSS_BOND_ANGLES:
+    fprintf(fp,"r1e=%15.8e, r1e=%15.8e, r3e=%15.8e, krt=%15.8e\n",
+	    iparams->cross_ba.r1e,iparams->cross_ba.r2e,
+	    iparams->cross_ba.r3e,iparams->cross_ba.krt);
+    break;
   case F_BHAM:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
 	    iparams->bham.a,iparams->bham.b,iparams->bham.c);

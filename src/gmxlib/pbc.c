@@ -396,10 +396,11 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
 
 void calc_box_center(matrix box,rvec box_center)
 {
-  int d;
-  
-  for(d=0; d<DIM; d++)
-    box_center[d] = 0.5*box[d][d];
+  int d,m;
+
+  for(m=0; (m<DIM); m++)  
+    for(d=0; d<DIM; d++)
+      box_center[d] = 0.5*box[m][d];
 }
 
 void calc_triclinic_images(matrix box,rvec img[])

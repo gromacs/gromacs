@@ -917,7 +917,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
   sfree(na_vcm);
 }
 
-static void decode_cos(char *s,t_cosines *cosine)
+static void decode_cos(char *s,t_cosines *cosine,bool bTime)
 {
   char   *t;
   char   format[STRLEN],f1[STRLEN];
@@ -1241,12 +1241,12 @@ void do_index(char *ndx,
   if (bExcl && EEL_LR(ir->coulombtype))
     warning("Can not exclude the lattice Coulomb energy between energy groups");
   
-  decode_cos(efield_x,&(ir->ex[XX]));
-  decode_cos(efield_xt,&(ir->et[XX]));
-  decode_cos(efield_y,&(ir->ex[YY]));
-  decode_cos(efield_yt,&(ir->et[YY]));
-  decode_cos(efield_z,&(ir->ex[ZZ]));
-  decode_cos(efield_zt,&(ir->et[ZZ]));
+  decode_cos(efield_x,&(ir->ex[XX]),FALSE);
+  decode_cos(efield_xt,&(ir->et[XX]),TRUE);
+  decode_cos(efield_y,&(ir->ex[YY]),FALSE);
+  decode_cos(efield_yt,&(ir->et[YY]),TRUE);
+  decode_cos(efield_z,&(ir->ex[ZZ]),FALSE);
+  decode_cos(efield_zt,&(ir->et[ZZ]),TRUE);
   
   for(i=0; (i<grps->nr); i++)
     sfree(gnames[i]);

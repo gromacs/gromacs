@@ -1214,3 +1214,152 @@ real g96angles(int nbonds,
   return vtot;
 }
 
+real cross_bond_bond(int nbonds,
+		     t_iatom forceatoms[],t_iparams forceparams[],
+		     rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+		     matrix box,real lambda,real *dvdlambda,
+		     t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		     t_fcdata *fcd)
+{
+  /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
+   * pp. 842-847
+   */
+  int  i,ai,aj,ak,type,m,t1,t2;
+  rvec r_ij,r_kj;
+  real vtot,vrr,s1,s2,r1,r2,r1e,r2e,krr;
+  rvec f_i,f_j,f_k;
+  ivec jt,dt_ij,dt_kj;
+  
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    r1e  = forceparams[type].cross_bb.r1e;
+    r2e  = forceparams[type].cross_bb.r2e;
+    krr  = forceparams[type].cross_bb.krr;
+    
+    /* Compute distance vectors ... */
+    t1 = pbc_rvec_sub(x[ai],x[aj],r_ij);
+    t2 = pbc_rvec_sub(x[ak],x[aj],r_kj);
+    
+    /* ... and their lengths */
+    r1 = norm(r_ij);
+    r2 = norm(r_kj);
+    
+    /* Deviations from ideality */
+    s1 = r1-r1e;
+    s2 = r2-r2e;
+    
+    /* Energy (can be negative!) */
+    vrr   = krr*s1*s2;
+    vtot += vrr;
+    
+    /* Forces */
+    svmul(-krr*s2/r1,r_ij,f_i);
+    svmul(-krr*s1/r2,r_kj,f_k);
+    
+    for (m=0; (m<DIM); m++) {			/*  12	*/
+      f_j[m]    = -f_i[m] - f_k[m];
+      f[ai][m] += f_i[m];
+      f[aj][m] += f_j[m];
+      f[ak][m] += f_k[m];
+    }
+    
+    /* Virial stuff */
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+      ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+    }      
+    rvec_inc(fr->fshift[t1],f_i);
+    rvec_inc(fr->fshift[CENTRAL],f_j);
+    rvec_inc(fr->fshift[t2],f_k);               /* 9 */
+    /* 163 TOTAL	*/
+  }
+  return vtot;
+}
+
+real cross_bond_angle(int nbonds,
+		      t_iatom forceatoms[],t_iparams forceparams[],
+		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+		      matrix box,real lambda,real *dvdlambda,
+		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		      t_fcdata *fcd)
+{
+  /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
+   * pp. 842-847
+   */
+  int  i,ai,aj,ak,type,m,t1,t2,t3;
+  rvec r_ij,r_kj,r_ik;
+  real vtot,vrt,s1,s2,s3,r1,r2,r3,r1e,r2e,r3e,krt,k1,k2,k3;
+  rvec f_i,f_j,f_k;
+  ivec jt,dt_ij,dt_kj;
+  
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    r1e  = forceparams[type].cross_ba.r1e;
+    r2e  = forceparams[type].cross_ba.r2e;
+    r3e  = forceparams[type].cross_ba.r3e;
+    krt  = forceparams[type].cross_ba.krt;
+    
+    /* Compute distance vectors ... */
+    t1 = pbc_rvec_sub(x[ai],x[aj],r_ij);
+    t2 = pbc_rvec_sub(x[ak],x[aj],r_kj);
+    t3 = pbc_rvec_sub(x[ai],x[ak],r_ik);
+    
+    /* ... and their lengths */
+    r1 = norm(r_ij);
+    r2 = norm(r_kj);
+    r3 = norm(r_ik);
+    
+    /* Deviations from ideality */
+    s1 = r1-r1e;
+    s2 = r2-r2e;
+    s3 = r3-r3e;
+    
+    /* Energy (can be negative!) */
+    vrt   = krt*s3*(s1+s2);
+    vtot += vrt;
+    
+    /* Forces */
+    k1 = -krt*(s3/r1);
+    k2 = -krt*(s3/r2);
+    k3 = -krt*(s1+s2)/r3;
+    for(m=0; (m<DIM); m++) {
+      f_i[m] = k1*r_ij[m] + k3*r_ik[m];
+      f_k[m] = k2*r_kj[m] - k3*r_ik[m];
+      f_j[m] = -f_i[m] - f_k[m];
+    }
+    
+    for (m=0; (m<DIM); m++) {			/*  12	*/
+      f[ai][m] += f_i[m];
+      f[aj][m] += f_j[m];
+      f[ak][m] += f_k[m];
+    }
+    
+    /* Virial stuff */
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+      ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+    }      
+    rvec_inc(fr->fshift[t1],f_i);
+    rvec_inc(fr->fshift[CENTRAL],f_j);
+    rvec_inc(fr->fshift[t2],f_k);               /* 9 */
+    /* 163 TOTAL	*/
+  }
+  return vtot;
+}
+

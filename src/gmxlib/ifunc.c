@@ -82,6 +82,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bondedg("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds         ),
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
+  def_angle  ("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 3,  0,          cross_bond_bond ),
+  def_angle  ("CROSS_BOND_ANGLE","BA-Cross",   3, 4, 4,  0,          cross_bond_angle ),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs         ),
   def_bonded ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 6,  eNR_RB, rbdihs            ),
   def_bonded ("FOURDIHS", "Fourier Dih.",    4, 4, 4,  eNR_FOURDIH, rbdihs       ),

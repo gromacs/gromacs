@@ -44,6 +44,13 @@ typedef struct {
 } t_cosines;
 
 typedef struct {
+  real E0;              /* Field strength (V/nm)                        */
+  real omega;           /* Frequency (1/ps)                             */
+  real t0;              /* Centre of the Gaussian pulse (ps)            */
+  real sigma;           /* Width of the Gaussian pulse (FWHM) (ps)      */
+} t_efield;
+
+typedef struct {
   int     ngtc;                  /* # T-Coupl groups                       */
   int     ngacc;                 /* # Accelerate groups                    */
   int     ngfrz;                 /* # Freeze groups                        */

@@ -106,7 +106,9 @@ static const t_ftupd ftupd[] = {
   { 26, F_FOURDIHS     },
   { 26, F_PIDIHS       },
   { 26, F_DIHRES       },
-  { 26, F_DIHRESVIOL   }
+  { 26, F_DIHRESVIOL   },
+  { 29, F_CROSS_BOND_BONDS },
+  { 29, F_CROSS_BOND_ANGLES }
 };
 #define NFTUPD asize(ftupd)
 
@@ -526,6 +528,17 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_ANGRES:
   case F_ANGRESZ:
     do_harm(iparams,bRead);
+    break;
+  case F_CROSS_BOND_BONDS:
+    do_real(iparams->cross_bb.r1e);
+    do_real(iparams->cross_bb.r2e);
+    do_real(iparams->cross_bb.krr);
+    break;
+  case F_CROSS_BOND_ANGLES:
+    do_real(iparams->cross_ba.r1e);
+    do_real(iparams->cross_ba.r2e);
+    do_real(iparams->cross_ba.r3e);
+    do_real(iparams->cross_ba.krt);
     break;
   case F_BHAM:
     do_real(iparams->bham.a);

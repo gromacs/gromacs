@@ -59,7 +59,9 @@ enum {
   F_CONNBONDS,
   F_HARMONIC,
   F_ANGLES, 
-  F_G96ANGLES, 
+  F_G96ANGLES,
+  F_CROSS_BOND_BONDS,
+  F_CROSS_BOND_ANGLES,
   F_PDIHS,
   F_RBDIHS, 
   F_FOURDIHS,
@@ -113,18 +115,19 @@ typedef union
    */
   struct {real a,b,c;	                                   } bham;
   struct {real rA,krA,rB,krB;           	           } harmonic; 
-  /* No free energy supported for cubic bonds */ 
-  struct {real b0,kb,kcub;                                } cubic; 
-  /* No free energy supported for WPOL */ 
-  struct {real kx,ky,kz,rOH,rHH,rOD;                      } wpol; 
+  /* No free energy supported for cubic bonds, WPOL or cross terms */ 
+  struct {real b0,kb,kcub;                                 } cubic;
+  struct {real r1e,r2e,krr;                                } cross_bb;
+  struct {real r1e,r2e,r3e,krt;                            } cross_ba;
+  struct {real kx,ky,kz,rOH,rHH,rOD;                       } wpol;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
   /* Proper dihedrals can not have different multiplicity when
    * doing free energy calculations, because the potential would not
    * be periodic anymore.
    */ 
-  struct {real phiA,cpA;int mult;real phiB,cpB;          } pdihs;
-  struct {real dA,dB;		        	          } shake;
+  struct {real phiA,cpA;int mult;real phiB,cpB;            } pdihs;
+  struct {real dA,dB;		        	           } shake;
   /* Settle can not be used for Free energy calculations of water bond geometry.
    * Use shake (or lincs) instead if you have to change the water bonds.
    */

@@ -67,6 +67,10 @@ int ifunc_index(directive d,int type)
       return F_ANGLES;
     else if (type == 2)
       return F_G96ANGLES;
+    else if (type == 3)
+      return F_CROSS_BOND_BONDS;
+    else if (type == 4)
+      return F_CROSS_BOND_ANGLES;
     else
       fatal_error(0,"Invalid angle type %d",type);
   case d_pairs:

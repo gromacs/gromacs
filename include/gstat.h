@@ -69,8 +69,8 @@ extern real LegendreP(real x,unsigned long m);
 #define eacP4     (1<<8  | eacVector)
 
 enum {
-  effnNONE, effnEXP1, effnEXP2, effnEXP3, effnVAC, 
-  effnEXP5, effnEXP7, effnERREST, effnNR
+  effnNONE, effnEXP1, effnEXP2, effnEXP3,   effnVAC, 
+  effnEXP5, effnEXP7, effnEXP9, effnERREST, effnNR
 };
 
 /* must correspond with 'leg' g_chi.c:727 */

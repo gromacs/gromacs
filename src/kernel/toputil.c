@@ -269,6 +269,9 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   case F_HARMONIC:
     f = 5;
     break;
+  case F_CROSS_BOND_ANGLES:
+    f = 2;
+    break;
   case F_PDIHS:
   case F_RBDIHS:
   case F_FOURDIHS:
