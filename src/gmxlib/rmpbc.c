@@ -53,7 +53,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
   if (box[0][0]) {
     n=-1;
     for(i=0; i<ngraph; i++)
-      if (mgraph[n].natoms==natoms)
+      if (mgraph[i].natoms==natoms)
 	n=i;
     if (n==-1) {
       /* make a new graph if there isn't one with this number of atoms */
