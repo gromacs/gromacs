@@ -296,7 +296,7 @@ static void set_trxnm(t_filenm *fnm,char *name)
 
 static void set_stxnm(t_filenm *fnm,char *name)
 {
-  static    int stxs[]={ efGRO, efPDB, efBRK, efENT, efTPB, efTPA, efTPX };
+  static    int stxs[]={ efGRO, efPDB, efBRK, efENT, efTPR, efTPB, efTPA };
 #define NSTXS asize(stxs)
   
   set_grpfnm(fnm,name,NSTXS,stxs);
