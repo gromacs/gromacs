@@ -65,21 +65,21 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Table-LJC-H2O",  166 },
   { "LJC-FreeEner",   101 },
   { "BHAM-FreeEner",  106 },
-  { "LJC-Ewald",      150 }, /* not correct yet */
-  { "Coul-Ewald",     150 }, /* not correct yet */
-  { "BHAM-Ewald",     150 }, /* not correct yet */
-  { "LJC-Ewald-H2O",  150 }, /* not correct yet */
-  { "Coul-Ewald-H2O", 150 }, /* not correct yet */
-  { "BHAM-Ewald-H2O", 150 }, /* not correct yet */
+  { "LJC-Ewald",      150 }, /* not correct yet, but not used either */
+  { "Coul-Ewald",     150 }, /* not correct yet, but not used either */
+  { "BHAM-Ewald",     150 }, /* not correct yet, but not used either */
+  { "LJC-Ewald-H2O",  150 }, /* not correct yet, but not used either */
+  { "Coul-Ewald-H2O", 150 }, /* not correct yet, but not used either */
+  { "BHAM-Ewald-H2O", 150 }, /* not correct yet, but not used either */
   { "Innerloop-Iatom", 10 },
   { "Calc Weights",    36 },
   { "Spread Q",         6 },
-  { "Spread Q Bspline",50 }, /* not correct yet */
+  { "Spread Q Bspline", 2 }, /* a first guess */
   { "Gather F",        23 },
-  { "Gather F Bspline",50 }, /* not correct yet */
+  { "Gather F Bspline",12 }, /* a first guess */
   { "3D-FFT",           8 },
   { "Convolution",      4 },
-  { "Solve PME",       50 }, /* not correct yet */
+  { "Solve PME",       64 }, /* a first guess */
   { "NS-Pairs",        21 },
   { "Reset In Box",     9 },
   { "Shift-X",          6 },
