@@ -546,17 +546,20 @@ int main(int argc, char *argv[])
     "those with as few hydrogens as possible, this is useful for use with",
     "the Charmm forcefield.[PAR]",
     
-    "The option -convert removes or slows down hydrogen motions. Angular",
-    "and out-of-plane motions can be removed by changing hydrogens into",
-    "dummy atoms and fixing angles, which fixes their position relative",
-    "to neighboring atoms. Slowing down of dihedral motion is done by",
-    "increasing the hydrogen-mass by a factor of 4. This is also done",
-    "for water hydrogens to slow down the rotational motion of water.",
+    "The option [TT]-dummy[tt] removes hydrogen and fast improper dihedral",
+    "motions. Angular and out-of-plane motions can be removed by changing",
+    "hydrogens into dummy atoms and fixing angles, which fixes their",
+    "position relative to neighboring atoms. Additionally, all atoms in the",
+    "aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)",
+    "can be converted into dummy atoms, elminating the fast improper dihedral",
+    "fluctuations in these rings. Note that in this case all other hydrogen",
+    "atoms are also converted to dummy atoms. The mass of all atoms that are",
+    "converted into dummy atoms, is added to the heavy atoms.[PAR]",
+    "Also slowing down of dihedral motion can be done with [TT]-heavyh[tt]",
+    "done by increasing the hydrogen-mass by a factor of 4. This is also",
+    "done for water hydrogens to slow down the rotational motion of water.",
     "The increase in mass of the hydrogens is subtracted from the bonded",
-    "(heavy) atom so that the total mass of the system remains the same.",
-    "Three options are available: normal topology; dummy hydrogens and",
-    "fixed angles; increase mass of hydrogens (heavy); both dummies and",
-    "increased mass."
+    "(heavy) atom so that the total mass of the system remains the same."
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
@@ -613,7 +616,7 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP;
+  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics;
   real       mHmult=0;
   
   t_filenm   fnm[] = { 
@@ -630,11 +633,11 @@ int main(int argc, char *argv[])
   static bool bNewRTP=FALSE;
   static bool bInter=FALSE, bFFMan=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan = FALSE;
-  static bool bTerMan=FALSE, bUnA=FALSE;
+  static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
   static bool bAlldih=FALSE;
   static real angle=135.0,distance=0.3;
-  static char *dumstr[] = { NULL, "normal", "dummy", "heavy", "both", NULL };
+  static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, &bNewRTP,
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
@@ -669,8 +672,10 @@ int main(int argc, char *argv[])
       "Retain hydrogen atoms that are in the pdb file" },
     { "-alldih", FALSE, etBOOL, &bAlldih, 
       "Generate all proper dihedrals" },
-    { "-convert",FALSE, etENUM, &dumstr, 
-      "Convert atoms" }
+    { "-dummy",FALSE, etENUM, &dumstr, 
+      "Convert atoms to dummy atoms" },
+    { "-heavyh", FALSE, etBOOL, &bHeavyH,
+      "Make hydrogen atoms heavy" }
   };
 #define NPARGS asize(pa)
   
@@ -688,25 +693,27 @@ int main(int argc, char *argv[])
     bHisMan = TRUE;
   }
   
+  if (bHeavyH)
+    mHmult=4.0;
+  else
+    mHmult=1.0;
+  
   switch(dumstr[0][0]) {
-  case 'n': /* normal */
+  case 'n': /* none */
     bDummies=FALSE;
-    mHmult=1.0;
+    bDummyAromatics=FALSE;
     break;
-  case 'd': /* dummy */
+  case 'h': /* hydrogens */
     bDummies=TRUE;
-    mHmult=1.0;
+    bDummyAromatics=FALSE;
     break;
-  case 'h': /* heavy */
-    bDummies=FALSE;
-    mHmult=4.0;
-    break;
-  case 'b': /* both */
+  case 'a': /* aromatics */
     bDummies=TRUE;
-    mHmult=4.0;
+    bDummyAromatics=TRUE;
     break;
   default:
-    fatal_error(0,"DEATH HORROR in pdb2gmx: dumstr[0]='%s'",dumstr[0]);
+    fatal_error(0,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
+		__FILE__,__LINE__,dumstr[0]);
   }/* end switch */
   
   clear_mat(box);
@@ -1006,7 +1013,7 @@ int main(int argc, char *argv[])
     pdb2top(ff,top_file2,posre_fn,molname,nincl,incls,nmol,mols,pdba,
 	    &x,atype,&tab,bts,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
-	    bDummies,mHmult,nssbonds,ssbonds,NREXCL);
+	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL);
     
     if (bITP)
       fclose(itp_file);
