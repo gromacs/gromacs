@@ -162,6 +162,7 @@ extern void doexceptions(void);
 #define gmx_call(msg)   gmx_error("call",msg)
 #define gmx_comm(msg)   gmx_error("comm",msg)
 #define gmx_file(msg)   gmx_error("file",msg)
+#define gmx_cmd(msg)    gmx_error("cmd",msg)
 #define gmx_impl(msg)   gmx_error("impl",msg)
 #define gmx_incons(msg) gmx_error("incons",msg)
 #define gmx_input(msg)  gmx_error("input",msg)

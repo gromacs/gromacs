@@ -749,9 +749,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   
   if (!FF(PCA_NOEXIT_ON_ARGS)) {
     if (*argc > 1) {
-      for(i=1; (i<*argc); i++) 
-	fprintf(stderr,"Unknown argument: %s\n",argv[i]);
-      gmx_fatal(FARGS,"Program %s halted",Program());
+      gmx_cmd(argv[1]);
     }
   } 
   if (bExit) {

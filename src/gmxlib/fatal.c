@@ -514,10 +514,11 @@ char *gmx_strerror(char *key)
     { "call",   "Routine should not have been called" },
     { "comm",   "Communication (parallel processing) problem" },
     { "fatal",  "Fatal error" },
+    { "cmd",    "Invalid command line argument" },
     { "file",   "File input/output error" },
     { "impl",   "Implementation restriction" },
     { "incons", "Software inconsistency error" },
-    { "input",  "Input error or inconsistency" },
+    { "input",  "Input error or input inconsistency" },
     { "mem",    "Memory allocation/freeing error" },
     { "open",   "Can not open file" },
     { "range",  "Range checking error" }
@@ -549,9 +550,10 @@ void _gmx_error(char *key,char *msg,char *file,int line)
   /* protect the audience from suggestive discussions */
   char *lines = "-------------------------------------------------------";
   
-  sprintf(buf,"%s\nIn GROMACS %s\nAt source code file: %s, line: %d\n"
+  sprintf(buf,"%s\nProgram %s, %s\n"
+	  "Source code file: %s, line: %d\n\n"
 	  "%s:\n%s\n%s\n\n%s\n",
-	  lines,GromacsVersion(),file,line,
+	  lines,ShortProgram(),GromacsVersion(),file,line,
 	  gmx_strerror(key),msg ? msg : warn_buf,lines,
   	  cool_quote(tmpbuf,1023,&cqnum));
   
