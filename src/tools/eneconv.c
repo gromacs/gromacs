@@ -344,7 +344,9 @@ int main(int argc,char *argv[])
     "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
     "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
   };
-  
+  static char *bugs[] = {
+    "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
+  };
   int       in,out=0;
   t_energy  *ee,*lastee,*outee,*startee;
   int       step,laststep,outstep,startstep;
@@ -389,7 +391,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   tadjust=0;
   snew(fnms,argc);
   nfile=0;
