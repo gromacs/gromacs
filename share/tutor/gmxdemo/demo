@@ -117,15 +117,11 @@ echo "Starting editconf and genbox..."
 if ( $?DISPLAY ) then 
 	xterm -title genbox -sb -e tail +0f output.genbox &
 endif
-editconf -f ${MOL}.gro -o ${MOL}.gro -dc 0.5 >& ! output.genbox 
-
-echo "editconf finished"
-echo -n "Press <enter>"
-set  ans = $<
+editconf -f ${MOL}.gro -o ${MOL}.gro -d 0.5 >& ! output.genbox 
 
 genbox -cp ${MOL}.gro -cs -o ${MOL}_b4em.gro -p ${MOL}.top >>& ! output.genbox 
 
-echo "genbox finished"
+echo "editconf and genbox finished"
 echo -n "Press <enter>"
 set  ans = $<
 
@@ -230,6 +226,7 @@ echo -n "Press <enter>"
 set  ans = $<
 
 echo "starting energy minimisation mdrun..."
+
 if ( $?DISPLAY ) then 
 	xterm -title mdrun -sb -e tail +0f output.mdrun_em &
 endif
@@ -288,7 +285,7 @@ constraints         =  all-bonds
 integrator          =  md
 tinit               =  0.0
 dt                  =  0.002	; ps !
-nsteps              =  100	; total 0.2 ps.
+nsteps              =  500	; total 1.0 ps.
 nstcomm             =  1
 nstxout             =  10
 nstvout             =  1000
@@ -338,7 +335,7 @@ cat << _EOF_
 -----------------------------------------------------------------
 Now we start the Position restrained Molecular Dynamics simulation. It
 is important to note that in this example the simulated time is too
-short to equilibrate our system completely, but that would simple take
+short (1 ps) to equilibrate our system completely, but that would simple take
 too much time. ( about one day ). 
 
 -----------------------------------------------------------------
@@ -395,9 +392,9 @@ constraints         =  all-bonds
 integrator          =  md
 tinit               =  0.0
 dt                  =  0.002	; ps !
-nsteps              =  250	; total 0.5 ps.
+nsteps              =  2500	; total 5 ps.
 nstcomm             =  1
-nstxout             =  1
+nstxout             =  50
 nstvout             =  0
 nstfout             =  0
 nstlist             =  10
@@ -441,7 +438,7 @@ cat << _EOF_
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 Now we can start the MD simualtion. Watch the number of steps
-increasing ( the total number of steps is 250 ).
+increasing ( the total number of steps is 2500, for 5 ps ).
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
