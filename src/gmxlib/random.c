@@ -133,7 +133,11 @@ void maxwell_speed(real tempi,int nrdf,int seed,t_atoms *atoms, rvec v[])
 {
   atom_id *dummy;
   int     i;
-
+  
+  if (seed == -1) {
+    seed = make_seed();
+    fprintf(stderr,"Using random seed %d for generating velocities\n",seed);
+  }
   snew(dummy,atoms->nr);
   for(i=0; (i<atoms->nr); i++)
     dummy[i]=i;

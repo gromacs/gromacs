@@ -55,7 +55,9 @@ extern real rando(int *ig);
 
 extern void grp_maxwell(t_block *grp,real tempi[],int nrdf[],int seed,
 			t_atoms *atoms,rvec v[]);
-/* Generate for each group in grp a temperature. */
+/* Generate for each group in grp a temperature.
+ * When seed = -1, set the seed to make_seed.
+ */
 
 extern void maxwell_speed(real tempi,int nrdf,int seed, 
 			  t_atoms *atoms, rvec v[]);
