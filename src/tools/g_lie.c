@@ -41,6 +41,7 @@ static char *SRCID_g_analyze_c = "$Id$";
 #include "futil.h"
 #include "statutil.h"
 #include "txtdump.h"
+#include "enxio.h"
 #include "gstat.h"
 #include "xvgr.h"
 
@@ -67,12 +68,12 @@ static t_liedata *analyze_names(int nre,char *names[],char *ligand)
       if (strstr(names[i],"LJ") != NULL) {
 	ld->nlj++;
 	srenew(ld->lj,ld->nlj);
-	lj->lj[ld->nlj-1] = i;
+	ld->lj[ld->nlj-1] = i;
       }
       else if (strstr(names[i],"Coul") != NULL) {
 	ld->nqq++;
 	srenew(ld->qq,ld->nqq);
-	lj->qq[ld->nqq-1] = i;
+	ld->qq[ld->nqq-1] = i;
       }
     }
   }
@@ -96,13 +97,13 @@ real calc_lie(t_liedata *ld,t_energy ee[],real lie_lj,real lie_qq,
   
   lj_tot = 0;
   for(i=0; (i<ld->nlj); i++)
-    lj_tot += ee[ld->lj[i]].ener;
+    lj_tot += ee[ld->lj[i]].e;
   qq_tot = 0;
   for(i=0; (i<ld->nqq); i++)
-    qq_tot += ee[ld->qq[i]].ener;
+    qq_tot += ee[ld->qq[i]].e;
     
   /* And now the great LIE formula: */
-  return fac_lj*(lj_tot-lj_lie)+fac_qq*(qq_tot-qq_lie);
+  return fac_lj*(lj_tot-lie_lj)+fac_qq*(qq_tot-lie_qq);
 }
 
 int main(int argc,char *argv[])
@@ -123,14 +124,15 @@ int main(int argc,char *argv[])
       "Factor in the LIE equation for Lennard-Jones component of energy" },
     { "-Cqq",  FALSE, etREAL, {&lie_qq},
       "Factor in the LIE equation for Coulomb component of energy" },
-    { "-ligand",  FALSE, etSTRING, {&ligand},
+    { "-ligand",  FALSE, etSTR, {&ligand},
       "Name of the ligand in the energy file" }
   };
 #define NPA asize(pa)
 
-  FILE      *out,*fp;
-  int       nre,ndr,step;
+  FILE      *out;
+  int       fp,nre,ndr,step;
   char      **enm=NULL;
+  bool      bCont;
   t_liedata *ld;
   t_energy  *ee;
   real      t,lie;
@@ -156,7 +158,7 @@ int main(int argc,char *argv[])
     lie   = calc_lie(ld,ee,lie_lj,lie_qq,fac_lj,fac_qq);
     fprintf(out,"%10g  %10g\n",t,lie);
   } while (bCont);
-  fclose(fp);
+  close_enx(fp);
   fclose(out);
 
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
