@@ -592,7 +592,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   if(bFirst) {
     bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
                                    ir->eI!=eiSteep,cr);
-    bHaveConstr = bHaveConstr || pulldata->bPull;
+    bHaveConstr = bHaveConstr || pulldata->bPull || edyn->bEdsam;
     bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARRINELLORAHMAN);
 
     if(edyn->bEdsam)
