@@ -333,11 +333,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       do_log = do_per_step(count,parm->ir.nstlog);
       print_ebin(fp_ene,do_ene,FALSE,do_log?log:NULL,count,count,lambda,0.0,
 		 eprNORMAL,TRUE,mdebin,grps,&(top->atoms));
+      fflush(log);
 
       if (bVerbose) {
 	fprintf(stderr,"Step = %5d, Dmax = %7.2e nm, Epot = %12.5e Fmax = %11.5e%c",
 		count,ustep,Epot[TRY],Fmax[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
-	fflush(log);
       }
 
       if (Epot[TRY] < Epot[Min]) {
