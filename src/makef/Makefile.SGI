@@ -9,7 +9,7 @@
 #
 #	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -D__INLINE_INTRINSICS -DHAVE_STRDUP -D_SGI_
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -D__INLINE_INTRINSICS -DHAVE_STRDUP -D_SGI_ 
 
 CC		= cc
 CCC		= CC
@@ -22,23 +22,14 @@ CCFLAGS		= $(ABI) $(OPT) -DHAVE_BOOL
 FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 
-#-n32 -mips4 -Ofast -LIST:options
-#$(OPT) -OPT:cray_ivdep=TRUE  -TENV:X=4
-
-# Linking shit
 LDFLAGS		= -L$(LIBDIR) $(ABI) 
 LD		= $(CC) $(LDFLAGS)
 CCLD		= $(CCC) $(LDFLAGS)
 FLD		= $(F77) $(LDFLAGS)
 
-USE_SGI_FFT	= yes
 USE_SGI_FPE	= no
 XLIBS		= -lX11
 SYSLIBS		= $(LINKLIB) -lm
-ifeq ($(USE_SGI_FFT),yes)
-	SYSDEFS += -DUSE_SGI_FFT
-	FFTLIBS = -lftn -lcomplib.sgimath 
-endif
 ifeq ($(USE_SGI_FPE),yes)
 	SYSDEFS += -DUSE_SGI_FPE
 	SYSLIBS += -lfpe
@@ -84,4 +75,4 @@ HAVE_GL		= no
 # If something does not work, please check out the link command line
 # in that file (e.g. for PVM)
 #
-
+USE_SGI_FFT	= yes
