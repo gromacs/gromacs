@@ -63,6 +63,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   }
 
   val = NULL;
+  *t0 = 0;
   fp  = ffopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
     if (nsets_in == 1)
@@ -182,9 +183,16 @@ void histogram(char *distfile,real binwidth,int n, int nset, real **val)
   fclose(fp);
 }
 
-int real_comp(const void *a,const void *b)
+static int real_comp(const void *a,const void *b)
 {
-  return (*(real *)a < *(real *)b);
+  real dif = *(real *)a - *(real *)b;
+
+  if (dif < 0)
+    return -1;
+  else if (dif > 0)
+    return 1;
+  else
+    return 0;
 }
 
 static void average(char *avfile,char **avbar_opt,
@@ -192,7 +200,8 @@ static void average(char *avfile,char **avbar_opt,
 {
   FILE   *fp;
   int    i,s,edge=0;
-  double av,var,err,*tmp=NULL;
+  double av,var,err;
+  real   *tmp=NULL;
   char   c;
   
   c = avbar_opt[0][0];
@@ -223,7 +232,7 @@ static void average(char *avfile,char **avbar_opt,
 	for(s=0; s<nset; s++)
 	  tmp[s] = val[s][i];
 	qsort(tmp,nset,sizeof(tmp[0]),real_comp);
-	fprintf(fp," %g %g",tmp[edge]-av,av-tmp[nset-1-edge]);
+	fprintf(fp," %g %g",tmp[nset-1-edge]-av,av-tmp[edge]);
       } else {
 	for(s=0; s<nset; s++)
 	  var += sqr(val[s][i]-av);
