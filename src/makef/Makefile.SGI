@@ -75,4 +75,3 @@ HAVE_GL		= no
 # If something does not work, please check out the link command line
 # in that file (e.g. for PVM)
 #
-USE_SGI_FFT	= yes
