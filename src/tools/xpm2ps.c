@@ -380,11 +380,11 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 	mylab = mat[i].label_y;
       if (strlen(mylab) > 0) {
 	ps_strfont(ps,psr->Y.font,psr->Y.fontsize);
-	ps_rotate(ps,TRUE);
+	ps_flip(ps,TRUE);
 	xxx=x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
 	ps_ctext(ps,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
 		 mylab,eXCenter);
-	ps_rotate(ps,FALSE);
+	ps_flip(ps,FALSE);
       }
     }
     
