@@ -292,11 +292,23 @@ int fn2ftp(char *fn)
 
 static void set_extension(char *buf,int ftp)
 {
-  int len;
+#define NZEXT 2
+  char *z_ext[NZEXT] = { ".gz", ".Z" };
+  int i,len,extlen;
   t_deffile *df;
   
   df=&(deffile[ftp]);
   len=strlen(buf);
+  
+  /* check if filename ends in .gz or .Z, if so remove that: */
+  for (i=0; i<NZEXT; i++) {
+    extlen = strlen(z_ext[i]);
+    if (len >= extlen)
+      if (strcasecmp(&(buf[len-extlen]),z_ext[i]) == 0) {
+	buf[len-extlen]='\0';
+	len-=extlen;
+      }
+  }
   
   /* check if extension is already at end of filename */
   if (len >= 4) 
