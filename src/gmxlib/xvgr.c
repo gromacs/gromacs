@@ -37,6 +37,7 @@ static char *SRCID_xvgr_c = "$Id$";
 #include "copyrite.h"
 #include "smalloc.h"
 #include "xvgr.h"
+#include "viewit.h"
 
 bool bXmGrace(void)
 {
@@ -75,37 +76,12 @@ FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
   return xvgr;
 }
 
-void xgraph_file(char *fn,char *opts)
-{
-  char doit[STRLEN];
-
-  if (bDoView()) {
-    if (!opts)
-      opts="";
-    sprintf(doit,"xgraph =100+100 %s %s &",opts,fn);
-    system(doit);
-  }
-}
-
+/* don't use xvgr_file, use do_view in stead */
+/* optional support for xmgrace now via env. GMX_VIEW_XVG */
+/* see viewit.c/.h (gmxlib) */
 void xvgr_file(char *fn,char *opts)
 {
-  char   doit[STRLEN];
-
-  if (bDoView()) {
-    sprintf(doit,"%s %s %s &",
-	    bXmGrace() ? "xmgrace" : "xmgr",opts ? opts : "",fn);
-    system(doit);
-  }
-}
-
-void xv_file(char *fn,char *opts)
-{
-  char   doit[STRLEN];
-
-  if (bDoView()) {
-    sprintf(doit,"xv %s %s &",opts ? opts : "",fn);
-    system(doit);
-  }
+  do_view(fn,opts);
 }
 
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax)

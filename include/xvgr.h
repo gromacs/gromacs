@@ -88,7 +88,11 @@ extern FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis);
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 
 extern void xvgr_file(char *fn,char *opts);
-/* Starts xvgr with a file fn in the background,
+/* ! - - - DEPRECATED - - - !
+ * use do_view now instead!
+ * optional support for xmgrace now via env. GMX_VIEW_XVG
+ * see viewit.c/.h (gmxlib)
+ * Starts xvgr with a file fn in the background,
  * opts (options to xvgr) may be NULL
  */
 
@@ -121,12 +125,6 @@ extern void dump_xvg(char *fn,char *title,int nx,int ny,real **y);
 /* Quicly dump a two D array (y) of dimensions nx rows times
  * ny columns to a file.
  */
-
-/***************************************************
- *            XV  ROUTINES
- ***************************************************/
-extern void xv_file(char *fn,char *opts);
-/* View a file using xv */
 
 /****************************************************
  *           Some statistics utilities 
