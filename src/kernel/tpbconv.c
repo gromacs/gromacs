@@ -47,7 +47,6 @@ static char *SRCID_tpbconv_c = "$Id$";
 #include "vec.h"
 #include "rdgroup.h"
 
-
 static bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
   bool *b;
@@ -320,16 +319,16 @@ int main (int argc, char *argv[])
 		  top.atoms.nr,head.natoms);
     snew(newx,head.natoms);
     snew(newv,head.natoms);
-    run_t=head.t;
-    run_step=head.step;
-    run_lambda=head.lambda;
-    bOK=fread_htrn(fp,&head,box,x,v,NULL);
+    run_t      = head.t;
+    run_step   = head.step;
+    run_lambda = head.lambda;
+    bOK        = fread_htrn(fp,&head,box,x,v,NULL);
 
     /* Now scan until the last set of x and v (step == 0)
      * or the ones at step step.
      */
-    bFrame=bOK;
-    frame=0;
+    bFrame = bOK;
+    frame  = 0;
     while (bFrame) {
       fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",
 	      frame,run_step,run_t);
@@ -341,15 +340,15 @@ int main (int argc, char *argv[])
 	bOK=fread_htrn(fp,&head,newbox,newx,newv,NULL);
       bFrame=bFrame && bOK;
       if (bFrame && (head.x_size) && (head.v_size)) {
-	tmpx=newx;
-	newx=x;
-	x=tmpx;
-	tmpv=newv;
-	newv=v;
-	v=tmpv;
-	run_t=head.t;
-	run_step=head.step;
-	run_lambda=head.lambda;
+	tmpx = newx;
+	newx = x;
+	x    = tmpx;
+	tmpv = newv;
+	newv = v;
+	v    = tmpv;
+	run_t      = head.t;
+	run_step   = head.step;
+	run_lambda = head.lambda;
 	copy_mat(newbox,box);
       }
       if ((max_t != -1.0) && (head.t >= max_t))
@@ -370,7 +369,7 @@ int main (int argc, char *argv[])
 
   /* change the input record to the actual data */
   if (bMDP) {
-    ir=irnew;
+    ir = irnew;
     if (ir->init_t != run_t)
       fprintf(stderr,"WARNING: I'm using t_init in mdp-file (%g),\n"
 	      "         while in %s it is (%g)\n",ir->init_t,frame_fn,run_t);
@@ -396,7 +395,8 @@ int main (int argc, char *argv[])
 	      "atoms\n",grpname,gnx);
       reduce_topology_x(gnx,index,&top,x,v);
       natoms = gnx;
-    } else
+    } 
+    else
       fprintf(stderr,"Will write full tpx file (no selection)\n");
   }    
   

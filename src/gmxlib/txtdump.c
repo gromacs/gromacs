@@ -248,6 +248,8 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
+    PS("bDomDecomp",BOOL(ir->bDomDecomp));
+    PI("decomp_dir",ir->decomp_dir);
     PI("nstcomm",ir->nstcomm);
     PI("nstlog",ir->nstlog);
     PI("nstxout",ir->nstxout);

@@ -235,6 +235,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(ns_type);
   CII(nstlist);
   CII(ndelta);
+  CIB(bDomDecomp);
+  CII(decomp_dir);
   CII(nstcomm);
   CII(nstlog);
   CII(nstxout);
