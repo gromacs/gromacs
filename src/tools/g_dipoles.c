@@ -205,43 +205,6 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   /*  sfree(xmass); */
 }
 
-/*
-void calc_quad(t_block *mols,t_atom atom[],rvec x[])
-{
-  int    i,j,k,m,n;
-  real   q,n_1;
-  rvec   xcm,x0;
-  tensor Qt;
-  
-  clear_mat(Qt);
-  for(i=0; (i<mols->nr); i++) {
-    clear_rvec(xcm);
-    for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
-      k = mols->a[j];
-      rvec_inc(xcm,x[k]);
-    }
-    n_1 = 1.0/(mols->index[i+1]-mols->index[i]);
-    for(m=0; (m<DIM); m++)
-      xcm[m] *= n_1;
-      
-#define delta(a,b) ( a == b ) ? 1 : 0
-    for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
-      k = mols->a[j];
-      q = atom[k].q;
-      rvec_sub(x[k],xcm,x0);
-      for(m=0; (m<DIM); m++)
-	for(n=0; (n<DIM); n++)
-	  Qt[m][n] += 0.5*q*x0[m]*x0[n]*(3.0 - delta(m,n));
-    }
-  }
-  for(m=0; (m<DIM); m++)
-    for(n=0; (n<DIM); n++)
-      Qt[m][n] /= mols->nr;
-  pr_rvecs(stdout,0,"Qtotal",Qt,DIM);
-  exit(0);
-}
-*/
-
 void do_gkr(int ngrp,atom_id grpindex[],
 	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
 	    matrix box,int ngraph,real *graph,int *count,real rcut,
