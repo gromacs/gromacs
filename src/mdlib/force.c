@@ -243,7 +243,10 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
 	    fr->nWatMol++;
 	  }
 	  else {
-#ifdef USE_PPC_ALTIVEC
+/* Do not use MNO loops as they are often much slower than the normal loops */
+#define DISABLE_MNO
+#ifdef DISABLE_MNO
+/* #ifdef USE_PPC_ALTIVEC */
 	    fr->solvent_type[cgid[aj]] = esolNO;
 #else
 	    /* Time to compute M & N & O */
