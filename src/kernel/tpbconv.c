@@ -241,7 +241,7 @@ int main (int argc, char *argv[])
   t_trnheader head;
   int          i,natoms,frame,step,run_step;
   real         run_t,run_lambda;
-  bool         bOK,bFrame,bTime;
+  bool         bOK,bFrame,bTime,bSel;
   t_topology   top;
   t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
@@ -259,11 +259,12 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static real max_t = -1.0;
-  static bool bSel=FALSE;
+  static real start_t = -1.0, extend_t = 0.0;
   static t_pargs pa[] = {
-    { "-time", FALSE, etREAL, {&max_t}, 
-      "Continue from frame at this time instead of the last frame" },
+    { "-time", FALSE, etREAL, {&start_t}, 
+      "Continue from frame at this time (ps) instead of the last frame" },
+    { "-extend", FALSE, etREAL, {&extend_t}, 
+      "Extend runtime by this amount (ps)" },
   };
   int nerror = 0;
   
@@ -273,7 +274,6 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  bSel  = (bSel || ftp2bSet(efNDX,NFILE,fnm));
   bTime = opt2parg_bSet("-time",asize(pa),pa);
   
   top_fn = ftp2fn(efTPX,NFILE,fnm);
@@ -332,7 +332,7 @@ int main (int argc, char *argv[])
 	run_lambda = head.lambda;
 	copy_mat(newbox,box);
       }
-      if (bTime && (head.t >= max_t))
+      if (bTime && (head.t >= start_t))
 	bFrame=FALSE;
     }
     close_trn(fp);
@@ -349,6 +349,13 @@ int main (int argc, char *argv[])
   }
 
   ir->nsteps     -= run_step;
+  if (extend_t) {
+    i = ir->nsteps;
+    ir->nsteps     += extend_t / ir->delta_t;
+    fprintf(stderr,
+	    "Extending remaining runtime of %g ps by %g ps (now %d steps)\n",
+	    i*ir->delta_t, extend_t, ir->nsteps);
+  }
   ir->init_t      = run_t;
   ir->init_lambda = run_lambda;
   
