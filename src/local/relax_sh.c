@@ -1,0 +1,257 @@
+#include <stdio.h>
+#include "typedefs.h"
+#include "smalloc.h"
+#include "fatal.h"
+#include "vec.h"
+#include "txtdump.h"
+#include "mdrun.h"
+#include "init_sh.h"
+#include "mdatoms.h"
+#include "network.h"
+
+static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
+{
+  real xo,yo,zo;
+  real dx,dy,dz,dx2;
+  
+  xo=xold[XX];
+  yo=xold[YY];
+  zo=xold[ZZ];
+  
+  dx=f[XX]*k_1;
+  dy=f[YY]*k_1;
+  dz=f[ZZ]*k_1;
+  
+  xnew[XX]=xo+dx*step;
+  xnew[YY]=yo+dy*step;
+  xnew[ZZ]=zo+dz*step;
+}
+
+static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
+			 int ns,t_shell s[])
+{
+  int  i,shell;
+  real k_1;
+  
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
+    k_1   = s[i].k_1;
+    do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
+  }
+}
+
+static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[])
+{
+  int  i,m;
+  real dt_1,dt_2,dt_3,fudge;
+
+  /* We introduce a fudge factor for performance reasons: with this choice
+   * the initial force on the shells is about a factor of two lower than without
+   */
+  fudge = 1.0/sqrt(3.0);
+  dt_1 = dt*fudge;
+  dt_2 = (0.5*dt)*fudge;
+  dt_3 = (dt/3.0)*fudge;
+  
+  for(i=0; (i<ns); i++) {
+    switch (s[i].nnucl) {
+    case 1:
+      for(m=0; (m<DIM); m++)
+	x[s[i].shell][m]+=v[s[i].nucl1][m]*dt_1;
+      break;
+    case 2:
+      for(m=0; (m<DIM); m++)
+	x[s[i].shell][m]+=(v[s[i].nucl1][m]+v[s[i].nucl2][m])*dt_2;
+      break;
+    case 3:
+      for(m=0; (m<DIM); m++)
+	x[s[i].shell][m]+=(v[s[i].nucl1][m]+v[s[i].nucl2][m]+v[s[i].nucl3][m])*dt_3;
+      break;
+    default:
+      fatal_error(0,"Shell %d has %d nuclei!",i,s[i].nnucl);
+    }
+  }
+}
+
+static void print_epot(char *which,
+		       int mdstep,int count,real step,real epot,real df)
+{
+  fprintf(stderr,"MDStep=%5d/%2d lamb: %6g, E-Pot: %12.8e",
+	  mdstep,count,step,epot);
+  
+  if (count != 0)
+    fprintf(stderr,", rmsF: %12.8e %s\n",df,which);
+  else
+    fprintf(stderr,"\n");
+}
+
+
+static real rms_force(rvec f[],int ns,t_shell s[])
+{
+  int  i,shell;
+  real df2;
+  
+  df2=0.0;
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
+    df2  += iprod(f[shell],f[shell]);
+  }
+  return sqrt(df2/ns);
+}
+
+static void check_pbc(FILE *fp,rvec x[],int shell)
+{
+  int m;
+  
+  for(m=0; (m<DIM); m++)
+    if (fabs(x[shell][m]-x[shell-3][m]) > 0.3)
+      pr_rvecs(fp,0,"SHELL-X",x+(4*(shell / 4)),4);
+}
+
+static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
+{
+  int  i,shell;
+  real ft2,ff2;
+  
+  ft2 = sqr(ftol);
+  
+  for(i=0; (i<ns); i++) {
+    shell = s[i].shell;
+    ff2   = iprod(f[shell],f[shell]);
+    if (ff2 > ft2)
+      fprintf(fp,"SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
+	      shell,f[shell][XX],f[shell][YY],f[shell][ZZ],sqrt(ff2));
+    check_pbc(fp,x,shell);
+  }
+}
+
+int relax_shells(FILE *ene,FILE *log,t_commrec *cr,bool bVerbose,
+		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
+		 t_topology *top,real ener[],
+		 rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
+		 t_graph *graph,t_groups *grps,tensor vir_part,
+		 int nshell,t_shell shells[],t_forcerec *fr,
+		 char *traj,real t,real lambda,
+		 int natoms,matrix box,t_mdebin *mdebin)
+{
+  static bool bFirst=TRUE;
+  static rvec *pos[2],*force[2];
+  real   Epot[2],df[2];
+#define NEPOT asize(Epot)
+  real   ftol,step;
+  real   step0;
+  bool   bDone,bMinSet;
+  int    g;
+  int    number_steps;
+  int    count=0;
+  int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
+  int    Min=0;
+#define  Try (1-Min)             /* At start Try = 1 */
+
+  if (bFirst) {
+    /* Allocate local arrays */
+    for(i=0; (i<2); i++) {
+      snew(pos[i],nsb->natoms);
+      snew(force[i],nsb->natoms);
+    }
+    bFirst=FALSE;
+  }
+  
+  ftol         = parm->ir.em_tol;
+  number_steps = parm->ir.niter;
+  step0        = 1.0;
+
+  /* Do a prediction of the shell positions */
+  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells);
+    
+  /* Calculate the forces first time around */
+  do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
+	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
+	   lambda,graph,bDoNS,FALSE,fr);
+  df[Min]=rms_force(force[Min],nshell,shells);
+  
+  /* Copy x to pos[Min] & pos[Try]: during minimization only the
+   * shell positions are updated, therefore the other particles must
+   * be set here.
+   */
+  memcpy(pos[Min],x,nsb->natoms*sizeof(x[0]));
+  memcpy(pos[Try],x,nsb->natoms*sizeof(x[0]));
+
+  /* Sum the potential energy terms from group contributions */
+  sum_epot(&(parm->ir.opts),grps,ener);
+  Epot[Min]=ener[F_EPOT];
+  if (PAR(cr))
+    gmx_sum(NEPOT,Epot,cr);
+  
+  step=step0;
+  if (bVerbose && MASTER(cr))
+    print_epot("",mdstep,0,step,Epot[Min],df[Min]);
+
+  if (debug) {
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_EKIN].longname, ener[F_EKIN]);
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_EPOT].longname, ener[F_EPOT]);
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_ETOT].longname, ener[F_ETOT]);
+  }
+
+  if (debug)
+    fprintf(debug,"SHELLSTEP %d\n",mdstep);
+    
+  bDone=((nshell == 0) || (df[Min] < ftol));
+  bMinSet=FALSE;
+  for(count=1; 
+      !(bDone || ((number_steps > 0) && (count>=number_steps))); count++) {
+    
+    /* New positions, Steepest descent */
+    shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
+
+#ifdef DEBUG
+    if (debug) {
+      pr_rvecs(debug,0,"pos[Try] b4 do_force",&(pos[Try][start]),homenr);
+      pr_rvecs(debug,0,"pos[Min] b4 do_force",&(pos[Min][start]),homenr);
+    }
+#endif
+    /* Try the new positions */
+    do_force(log,cr,parm,nsb,vir_part,1,nrnb,
+	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
+	     lambda,graph,FALSE,FALSE,fr);
+    df[Try]=rms_force(force[Try],nshell,shells);
+#ifdef DEBUG
+    if (debug) 
+      pr_rvecs(debug,0,"F na do_force",&(force[Try][start]),homenr);
+#endif
+    if (debug) {
+      fprintf(debug,"SHELL ITER %d\n",count);
+      dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
+    }
+    /* Sum the potential energy terms from group contributions */
+    sum_epot(&(parm->ir.opts),grps,ener);
+    Epot[Try]=ener[F_EPOT];
+    if (PAR(cr)) 
+      gmx_sum(NEPOT,Epot,cr);
+    
+    if (bVerbose && MASTER(cr))
+      print_epot("",mdstep,count,step,Epot[Try],df[Try]);
+
+    bDone=(df[Try] < ftol);
+    
+    if ((Epot[Try] < Epot[Min])) {
+      Min  = Try;
+      step = step0;
+    }
+    else
+      step *= 0.8;
+  }
+  if (MASTER(cr) && !bDone) 
+    fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
+  
+  /* Parallelise this one! */
+  memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
+  memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
+
+  return count; 
+}
+

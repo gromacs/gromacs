@@ -23,7 +23,7 @@ all:		bin
 xmdrun:		xmdrun.o $(XOBJ)
 		$(LD) -o $@ $^ -lmd.$(CPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
-shell_md:	shell_md.o $(XOBJ)
+shell_md:	shell_md.o relax_sh.o $(XOBJ)
 		$(LD) -o $@ $^ -lmd.$(CPU) $(SYSLIBS) $(FFTLIBS) $(SYSLIBS)
 
 copyrgt:	copyrgt.o1;
