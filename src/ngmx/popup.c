@@ -33,13 +33,16 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <math.h>
 #include <macros.h>
 #include <smalloc.h>
 #include <x11.h>
 #include <xutil.h>
-#include "config.h"
 #include "popup.h"
 
 bool ChildCallBack(t_x11 *x11,XEvent *event, Window w, void *data)

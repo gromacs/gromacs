@@ -33,6 +33,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <sysstuff.h>
 #include <Xstuff.h>
 #include <xutil.h>
@@ -40,7 +44,6 @@
 #include <macros.h>
 #include <futil.h>
 #include <string2.h>
-#include "config.h"
 
 #define YSPACE 2
 

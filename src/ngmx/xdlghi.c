@@ -1,3 +1,4 @@
+
 /*
  * $Id$
  * 
@@ -33,10 +34,13 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <assert.h>
 #include <string.h>
 
-#include "config.h"
 #include "fatal.h"
 #include "string2.h"
 #include "sysstuff.h"

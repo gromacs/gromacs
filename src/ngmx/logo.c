@@ -33,8 +33,11 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "sysstuff.h"
-#include "config.h"
 #include "Xstuff.h"
 #include "xutil.h"
 #include "smalloc.h"
