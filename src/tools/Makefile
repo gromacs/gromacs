@@ -202,10 +202,7 @@ mkice:		mkice.o
 g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o	rdfang.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-corrutil.o:	corrutil.h	corrutil.cc
-g_msd.o:	corrutil.h	g_msd.cc
-
-g_msd:		corrutil.o	g_msd.o	lsq.o
+g_msd:		g_msd.o	lsq.o
 		$(CCLD) -o $@ $^ $(SYSLIBS)
 
 g_hbond:	g_hbond.o	$(ACOBJ)
