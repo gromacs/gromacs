@@ -46,6 +46,7 @@ static char *SRCID_g_disre_c = "$Id$";
 #include "pdbio.h"
 #include "rdgroup.h"
 #include "mdatoms.h"
+#include "nsb.h"
 
 typedef struct {
   int n;
@@ -285,6 +286,7 @@ int main (int argc,char *argv[])
   mdatoms=atoms2md(&top->atoms,ir->opts.nFreeze,FALSE,FALSE);  
   fr=mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
+  calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
   init_forcerec(stdlog,fr,ir,&(top->blocks[ebMOLS]),cr,
 		&(top->blocks[ebCGS]),&(top->idef),mdatoms,nsb,box,FALSE);
   init_nrnb(&nrnb);

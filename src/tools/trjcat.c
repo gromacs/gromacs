@@ -55,6 +55,9 @@ static char *SRCID_trjconv_c = "";
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
 #define TIME_LAST     2
+#ifndef FLT_MAX
+#define FLT_MAX 1e36
+#endif
 
 static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep)
 {
