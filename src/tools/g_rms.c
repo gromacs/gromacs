@@ -47,25 +47,6 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "matio.h"
 #include "tpxio.h"
 
-static real do_rms(int nind,atom_id index[],real w_rms[],rvec x[],rvec xp[])
-{
-  int  i,j,m;
-  real e,tmas;
-  
-  /*calculate energy */
-  e=0.0;
-  tmas=0.0;
-  for(j=0; (j<nind); j++) {
-    i=index[j];
-    tmas+=w_rms[i];
-    for(m=0;(m<DIM);m++)
-      e+=w_rms[i]*(x[i][m]-xp[i][m])*(x[i][m]-xp[i][m]);
-  }
-  
-  /*return energy*/
-  return (sqrt(e/tmas));
-}
-
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
@@ -139,10 +120,10 @@ int main (int argc,char *argv[])
   matrix       box;
   rvec         *x,*xp,**mat_x,**mat_x2,*mat_x2_j,**mat_b,**mat_b2,vec;
   int          status;
-  char         buf[256],buf2[256],tstr[12];
+  char         buf[256],tstr[12];
   
   int          nrms,ncons;
-  FILE         *fp,*fpav;
+  FILE         *fp;
   real         rlstot,**rls,*time,*time2,*rlsnorm,**rmsd_mat,**bond_mat,
                *axis,*axis2,*del_xaxis,*del_yaxis,
                rmsd_max,rmsd_min,bond_max,bond_min,ang,ipr;
@@ -344,10 +325,10 @@ int main (int argc,char *argv[])
     }    
 
     for(j=0; (j<nrms); j++) 
-      rls[j][teller]=do_rms(irms[j],ind_rms[j],w_rms,x,xp);
+      rls[j][teller] = rmsdev_ind(irms[j],ind_rms[j],w_rms,x,xp);
     if (bNorm) {
       for(j=0; (j<irms[0]); j++)
-	rlsnorm[j]+=do_rms(1,&(ind_rms[0][j]),w_rms,x,xp);
+	rlsnorm[j] += rmsdev_ind(1,&(ind_rms[0][j]),w_rms,x,xp);
     } 
     time[teller]=t;
     if (bNano) time[teller] *= 0.001;
@@ -478,7 +459,8 @@ int main (int argc,char *argv[])
 	  mat_x2_j=mat_x2[j];
 	if (bMat) {
 	  if (bFile2 || (i<=j)) {
-	    rmsd_mat[i][j]=do_rms(irms[0],ind_rms[0],w_rms,mat_x[i],mat_x2_j);
+	    rmsd_mat[i][j] =
+	      rmsdev_ind(irms[0],ind_rms[0],w_rms,mat_x[i],mat_x2_j);
 	    if (rmsd_mat[i][j] > rmsd_max) rmsd_max=rmsd_mat[i][j];
 	    if (rmsd_mat[i][j] < rmsd_min) rmsd_min=rmsd_mat[i][j];
 	  }
@@ -606,57 +588,45 @@ int main (int argc,char *argv[])
   }
     
   bAv=opt2bSet("-a",NFILE,fnm);
-  if (bAv)
-    fpav=xvgropen(opt2fn("-a",NFILE,fnm),"Average RMS","Residue","nm");
-  else
-    fpav=NULL;
-    
-  for(j=0; (j<nrms); j++) {
-    char *ptr;
-    
-    sprintf(buf,"%s",ftp2fn(efXVG,NFILE,fnm));
-    ptr=strstr(buf,".xvg");
-    sprintf(ptr,"%s.xvg",gn_rms[j]);
 
-    if (!bPrev) {
-      fp=xvgropen(buf,"RMS Deviation",tstr,"nm");
-      fprintf(fp,"@ subtitle \"of %s lsq fitted to %s\"\n",
-	      gn_rms[j],gn_fit);
-      rlstot=0.0;
-      for(i=0; (i<teller); i++) {
-	fprintf(fp,"%8.4f %8.4f\n",time[i],rls[j][i]);
-	if (bAv)
-	  rlstot+=rls[j][i];
-      }
-      fclose(fp);
-    }
-    else {
-      if (bNano)
-	sprintf(buf2,"RMSD with frame %g ns ago",time[prev*freq]-time[0]);
-      else
-	sprintf(buf2,"RMSD with frame %g ps ago",time[prev*freq]-time[0]);
-      fp=xvgropen(buf,buf2,tstr,"nm");
-      fprintf(fp,"@ subtitle \"of %s lsq fitted to %s\"\n",
-	      gn_rms[j],gn_fit);
-      rlstot=0.0;
-      for(i=prev; (i<tel_mat); i++) {
-	fprintf(fp,"%8.4f %8.4f\n",time[freq*i],rls[j][i]);
-	if (bAv)
-	  rlstot+=rls[j][i];
-      }
-      fclose(fp);
-    }
-    if (bAv)
-      fprintf(fpav,"%10d  %10g\n",j,rlstot/teller);
+  /* Write the RMSD's to file */
+  if (!bPrev)
+    sprintf(buf,"RMS Deviation");
+  else {
+    if (bNano)
+      sprintf(buf,"RMSD with frame %g ns ago",time[prev*freq]-time[0]);
+    else
+      sprintf(buf,"RMSD with frame %g ps ago",time[prev*freq]-time[0]);
   }
-  if (bAv)
-    fclose(fpav);
-  
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,tstr,"nm");
+  if (nrms == 1)
+    fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
+  else {
+    fprintf(fp,"@ subtitle \"after lsq fit to %s\"\n",gn_fit);
+    xvgr_legend(fp,nrms,gn_rms);
+  }
+  for(i=0; (i<teller); i++) {
+    fprintf(fp,"%8.4f",time[bPrev ? freq*i : i]);
+    for(j=0; (j<nrms); j++) {
+      fprintf(fp," %8.4f",rls[j][i]);
+      if (bAv)
+	rlstot+=rls[j][i];
+    }
+    fprintf(fp,"\n");
+  }
+
+  if (bAv) {
+    fp = xvgropen(opt2fn("-a",NFILE,fnm),"Average RMS","Residue","nm");
+    for(j=0; (j<nrms); j++)
+      fprintf(fp,"%10d  %10g\n",j,rlstot/teller);
+    fclose(fp);
+  }
+
   if (bNorm) {
-    fpav=xvgropen("aver.xvg",gn_rms[0],"Residue","nm");
+    fp = xvgropen("aver.xvg",gn_rms[0],"Residue","nm");
     for(j=0; (j<irms[0]); j++)
-      fprintf(fpav,"%10d  %10g\n",j,rlsnorm[j]/teller);
-    fclose(fpav);
+      fprintf(fp,"%10d  %10g\n",j,rlsnorm[j]/teller);
+    fclose(fp);
   }
   if (bAv)
     xvgr_file(opt2fn("-a",NFILE,fnm),"-graphtype bar");
