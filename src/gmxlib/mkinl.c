@@ -30,6 +30,14 @@ typedef int bool;
 #define FALSE 0
 #define TRUE  1
 
+#ifdef CINVSQRT
+#define DECREASE_LATENCY
+#endif
+
+#ifdef FINVSQRT
+#define DECREASE_LATENCY
+#endif
+
 #ifndef USEVECTOR
 #define PREFETCH 1
 #endif
@@ -260,6 +268,7 @@ void p_finvsqrt(void)
     p_state("bval","fl2i(xin)");
   p_state("exp","expaddr(bval)");
   p_state("addr","fractaddr(bval)");
+#ifdef DECREASE_LATENCY
   p_state("result","or(expseed(exp+1),fracseed(addr+1))");
   if (!bEquiv)
     p_state("lu","i2fl(result)");
@@ -269,12 +278,54 @@ void p_finvsqrt(void)
   p_state("invsqrt","(0.5*y*(3.0-((x*y)*y)))");
   newline();
   
+#else
+  p_state("result","or(expseed(exp+1),fracseed(addr+1))");
+  if (!bEquiv)
+    p_state("lu","i2fl(result)");
+  newline();
+  
+  p_state("y","(0.5*lu*(3.0-((x*lu)*lu)))");
+  p_state("invsqrt","(0.5*y*(3.0-((x*y)*y)))");
+#endif /* DECREASE_LATENCY */
+  newline();
+
   p_line("return");
   p_line("end");
-#else
+#else /* ! DOUBLE */
   p_line("function invsqrt(x)");
   fseed();
-  p_line("real*4    invsqrt,x,xin,y,lu");
+  p_real4("invsqrt,x,y");
+#ifdef DECREASE_LATENCY
+  if (bWater) {
+    p_real4("luO,luH1,luH2,rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2,xin");
+    p_line("integer*4 exp,addr,bval,resultrsqO,resultrsqH1,resultrsqH2");
+    newline();
+    
+    if (bEquiv) {
+      p_line("equivalence(xin,bval)");
+      p_line("equivalence(luO,resultrsqO)");
+      p_line("equivalence(luH1,resultrsqH1)");
+      p_line("equivalence(luH2,resultrsqH2)");
+      p_state("xin","x");
+    }
+    else
+      p_state("bval","fl2i(x)");
+  }
+  else {
+    p_line("real*4    lu,xin");
+    p_line("integer*4 exp,addr,bval,result");
+    newline();
+    
+    if (bEquiv) {
+      p_line("equivalence(xin,bval)");
+      p_line("equivalence(lu,result)");
+      p_state("xin","x");
+    }
+    else
+      p_state("bval","fl2i(x)");
+  }
+#else
+  p_line("real*4    lu,xin");
   p_line("integer*4 exp,addr,bval,result");
   newline();
   
@@ -285,18 +336,46 @@ void p_finvsqrt(void)
   }
   else
     p_state("bval","fl2i(x)");
+#endif /* DECREASE_LATENCY */
+
     
   p_state("exp","expaddr(bval)");
   p_state("addr","fractaddr(bval)");
+#ifdef DECREASE_LATENCY
+  if (bWater) {
+    p_state("resultrsqO","or(expseed(exp+1),fracseed(addr+1))");
+    if (!bEquiv)
+      p_state("luO","i2fl(resultrsqO)");
+    p_state("invsqrt","(0.5*luO*(3.0-((x*luO)*luO)))");
+
+    p_state("resultH1","or(expseed(exp+1),fracseed(addr+1))");
+    if (!bEquiv)
+      p_state("luH1","i2fl(resultH1)");
+    p_state("invsqrt","(0.5*luH1*(3.0-((x*luH1)*luH1)))");
+
+    p_state("resultH2","or(expseed(exp+1),fracseed(addr+1))");
+    if (!bEquiv)
+      p_state("luH2","i2fl(resultH2)");
+    p_state("invsqrt","(0.5*luH2*(3.0-((x*luH2)*luH2)))");
+  }
+  else {
+    p_state("result","or(expseed(exp+1),fracseed(addr+1))");
+    if (!bEquiv)
+      p_state("lu","i2fl(result)");
+    
+    p_state("invsqrt","(0.5*lu*(3.0-((x*lu)*lu)))");
+  }
+#else 
   p_state("result","or(expseed(exp+1),fracseed(addr+1))");
   if (!bEquiv)
     p_state("lu","i2fl(result)");
 
   p_state("invsqrt","(0.5*lu*(3.0-((x*lu)*lu)))");
+#endif /* DECREASE_LATENCY */
 
   p_line("return");
   p_line("end");
-#endif
+#endif /* DOUBLE */
   if (!bEquiv) {
     p_line("function fl2i(x)");
     comment("convert float to integer (when a float is passed to this routine)");
@@ -316,65 +395,149 @@ void p_finvsqrt(void)
   }
 }
 
-int p_invsqrt(char *left,char *right)
+void p_invsqrt1(char *tmp,char *right)
 {
-  char ibuf[256];
-  char nbuf[256];
+  char rstlbuf[16];
 
-  sprintf(ibuf,"invsqrt(%s)",right);
-  sprintf(nbuf,"1.0/sqrt(%s)",right);
-#ifdef HAVE_SQRTF
-#ifndef DOUBLE
-  if (bC)
-    sprintf(nbuf,"1.0/sqrtf(%s)",right);
-#endif
-#endif
-
+  comment("Doing fast invsqrt");
   if (bC) {
-#ifdef CINVSQRT
-    if (bInline) {
-      comment("Doing fast invsqrt");
-      p_state("bit_pattern.fval",right);
-      p_state("exp_addr","EXP_ADDR(bit_pattern.bval)");
-      p_state("fract","FRACT_ADDR(bit_pattern.bval)");
-      p_state("result.bval","lookup_table.exp_seed[exp_addr] | lookup_table.fract_seed[fract]");
-      p_state("lu","result.fval");
-      sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
-#ifdef DOUBLE
-      p_state("y1",buf);
-      sprintf(buf,"(half*y1*(three-((%s*y1)*y1)))",right);
-      p_state(left,buf);
-#else
-      p_state(left,buf);
-#endif /* DOUBLE */
-    }
-    else 
-      p_state(left,ibuf);
-#else
-    p_state(left,nbuf);
-#endif /* CINVSQRT */
+    p_state("bit_pattern.fval",right);
+    p_state("exp_addr","EXP_ADDR(bit_pattern.bval)");
+    p_state("fract","FRACT_ADDR(bit_pattern.bval)");
+    p_state("result.bval","lookup_table.exp_seed[exp_addr] | lookup_table.fract_seed[fract]");
+    p_state(tmp,"result.fval");
   }
   else {
-#ifdef FINVSQRT
-    if (bInline) {
-      p_state("xin",right);
-      p_state("iexp","rshift(and(bval,expmask),expshift)");
-      p_state("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
-      p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
-      sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
-#ifdef DOUBLE
-      p_state("y1",buf);
-      sprintf(buf,"(half*y1*(three-((%s*y1)*y1)))",right);
-      p_state(left,buf);
-#else
-      p_state(left,buf);
-#endif /* DOUBLE */
+    p_state("xin",right);
+    p_state("iexp","rshift(and(bval,expmask),expshift)");
+    p_state("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
+#ifdef DECREASE_LATENCY
+    if (bWater) {
+      sprintf(rstlbuf,"result%s",right);
+      p_state(rstlbuf,"or(expseed(iexp+1),fracseed(addr+1))");
     }
-    else
-      p_state(left,ibuf);
+    else {
+      p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
+    }
 #else
-    p_state(left,nbuf);
+    p_state("result","or(expseed(iexp+1),fracseed(addr+1))");
+#endif /* DECREASE_LATENCY */
+  }
+}
+
+void p_invsqrt2(char *left,char *tmp,char *right)
+{
+  /* Language independent! */
+  sprintf(buf,"(half*%s*(three-((%s*lu)*lu)))",tmp,right);
+#ifdef DOUBLE
+  p_state("y1",buf);
+  sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
+  p_state(left,buf);
+#else
+  p_state(left,buf);
+#endif /* DOUBLE */
+}
+
+int p_invsqrt(char *left,char *right)
+{
+  bool bInvsqrt = FALSE;
+  
+#ifdef CINVSQRT
+  bInvsqrt = bC;
 #endif
+#ifdef FINVSQRT
+  bInvsqrt = !bC;
+#endif
+
+  if (bInvsqrt) {
+    if (bInline) {
+      p_invsqrt1("lu",right);
+      p_invsqrt2(left,"lu",right);
+    }
+    else {
+      sprintf(buf,"invsqrt(%s)",right);
+      p_state(left,buf);
+    }
+  }
+  else {
+    sprintf(buf,"1.0/sqrt(%s)",right);
+#ifdef HAVE_SQRTF
+#ifndef DOUBLE
+    if (bC)
+      sprintf(buf,"1.0/sqrtf(%s)",right);
+#endif
+#endif
+    p_state(left,buf);
+  }
+#ifdef DOUBLE
+  return 10;
+#else
+  return 5;
+#endif
+}
+
+int p_waterinvsqrt(void)
+{
+  char *w[] = { "O", "H1", "H2" };
+  char vbuf[16],rbuf[32];
+  int  m;
+  bool bInvsqrt = FALSE;
+  
+  if (bC)
+#ifdef CINVSQRT
+    bInvsqrt = TRUE
+#endif
+      ;
+  else
+#ifdef FINVSQRT
+    bInvsqrt = TRUE
+#endif
+      ;
+  
+  if (bInvsqrt) {
+    if (bInline) {
+      comment("Water invsqrt optimization");
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"lu%s",w[m]);
+	sprintf(rbuf,"rsq%s",w[m]);
+	p_invsqrt1(vbuf,rbuf);
+      }
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"rsqlu%s",w[m]);
+	sprintf(rbuf,"rsq%s*lu%s",w[m],w[m]);
+	p_state(vbuf,rbuf);
+      }
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"tmp%s",w[m]);
+	sprintf(rbuf,"rsqlu%s*lu%s",w[m],w[m]);
+	p_state(vbuf,rbuf);
+      }
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"rinv1%s",w[m]);
+	sprintf(rbuf,"half*lu%s*(three-tmp%s)",w[m],w[m]);
+	p_state(vbuf,rbuf);
+      }
+    }
+    else {
+      for(m=0; (m<3); m++) {
+	sprintf(vbuf,"rinv1%s",w[m]);
+	sprintf(rbuf,"invsqrt(rsq%s)",w[m]);
+	p_state(vbuf,rbuf);
+      }
+    }
+  } 
+  else {
+    for(m=0; (m<3); m++) {
+      sprintf(vbuf,"rinv1%s",w[m]);
+      sprintf(rbuf,"1.0/sqrt(rsq%s)",w[m]);
+#ifdef HAVE_SQRTF
+#ifndef DOUBLE
+      if (bC)
+	sprintf(rbuf,"1.0/sqrtf(rsq%s)",w[m]);
+#endif
+#endif
+      p_state(vbuf,rbuf);
+    }
   }
 #ifdef DOUBLE
   return 10;
@@ -680,9 +843,18 @@ void flocal(void)
     comment("Fast invsqrt stuff");
     p_creal("half",0.5);
     p_creal("three",3.0);
-    fprintf(fp,"%st_convert   result,bit_pattern;\n",indent());
-    fprintf(fp,"%sword        exp_addr,fract;\n",indent());
-    fprintf(fp,"%sfloat       lu;\n",indent());
+    fprintf(fp,"%st_convert  result,bit_pattern;\n",indent());
+    fprintf(fp,"%sword       exp_addr,fract;\n",indent());
+#ifdef DECREASE_LATENCY
+    if (bWater) {
+      p_real("rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2");
+      p_real4("luO,luH1,luH2");
+    }
+    else
+      p_real4("lu");
+#else
+    p_real4("lu");
+#endif /* DECREASE_LATENCY */
 #ifdef DOUBLE
     p_real("y1");
 #endif /* DOUBLE */
@@ -706,21 +878,63 @@ void flocal(void)
     if (bInline) {
       fseed();
       p_int("fractaddr,expaddr");
-      p_real4("xin,lu");
-      p_real("half,three");
+#ifdef DECREASE_LATENCY
+      if (bWater) {
+	p_real("xin,luO,luH1,luH2,half,three");
+      }	
+      else {
+	p_real("xin,lu,half,three");
+      }
+#else
+      p_real("xin,lu,half,three");
+#endif /* DECREASE_LATENCY */
 #ifdef DOUBLE
-      p_real("y1");
-#endif
+      p_real("y1,y2");
+#endif /* DOUBLE */
+#ifdef DECREASE_LATENCY
+      if (bWater) {
+	p_int("iexp,addr,bval,resultrsqO,resultrsqH1,resultrsqH2");
+	if (bEquiv) {
+	  fprintf(fp,"%sequivalence(xin,bval)\n",indent());
+	  fprintf(fp,"%sequivalence(luO,resultrsqO)\n",indent());
+	  fprintf(fp,"%sequivalence(luH1,resultrsqH1)\n",indent());
+	  fprintf(fp,"%sequivalence(luH2,resultrsqH2)\n",indent());
+	}
+      }
+      else {
+	p_int("iexp,addr,bval,result");
+	if (bEquiv) {
+	  fprintf(fp,"%sequivalence(xin,bval)\n",indent());
+	  fprintf(fp,"%sequivalence(lu,result)\n",indent());
+	}
+      }
+#else
       p_int("iexp,addr,bval,result");
       if (bEquiv) {
 	fprintf(fp,"%sequivalence(xin,bval)\n",indent());
 	fprintf(fp,"%sequivalence(lu,result)\n",indent());
       }
+#endif /* DECREASE_LATENCY */
     }
     else
       p_real("invsqrt");
   }
-#endif
+#endif /* FINVSQRT */
+#ifdef DECREASE_LATENCY
+  if (bWater) {
+    comment("Water stuff");
+    p_real("fxH1,fyH1,fzH1,fxH2,fyH2,fzH2");
+    p_real("ixH1,iyH1,izH1,ixH2,iyH2,izH2");
+    p_real("dxH1,dyH1,dzH1,dxH2,dyH2,dzH2");
+    p_real("txH1,tyH1,tzH1,txH2,tyH2,tzH2");
+    p_real("rsqH1,rsqH2,rinv1H1,rinv1H2");
+    if (!bC)
+      p_real("rsqluO,rsqluH1,rsqluH2,tmpO,tmpH1,tmpH2");
+    if (!bTab)
+      p_real("rinv2H1,rinv2H2");
+    p_real("vcH1,vcH2,fsH1,fsH2,qH,qqH");
+  }
+#else
   if (bWater) {
     comment("Water stuff");
     p_real("fxH1,fyH1,fzH1,fxH2,fyH2,fzH2");
@@ -732,6 +946,7 @@ void flocal(void)
       p_real("rinv2H1,rinv2H2");
     p_real("vcH1,vcH2,fsH1,fsH2,qH,qqH");
   }
+#endif /* DECREASE_LATENCY */
   if(!bC && bEwald && !bTab)
       p_real("cerfc");
 }
@@ -898,6 +1113,24 @@ void finnerloop(char *loopname)
   p_state("jy",ARR(pos,j3+1));
   p_state("jz",ARR(pos,j3+2));  
   
+#ifdef DECREASE_LATENCY
+  bDelayInvsqrt = FALSE;
+  if (bWater) {
+    comment("Ramones forever");
+    comment("Determine square for Oxygen");
+    nflop += p_sqr("O");
+    comment("Determine square for first Hydrogen");
+    nflop += p_sqr("H1");
+    comment("Determine square for second Hydrogen");
+    nflop += p_sqr("H2");
+    nflop += p_waterinvsqrt();
+  }
+  else {
+    comment("First one is for oxygen, with LJ");
+    nflop += p_sqr("O");
+    nflop += p_invsqrt("rinv1O","rsqO");
+  }
+#else
   comment("First one is for oxygen, with LJ");
   nflop += p_sqr("O");
   nflop += p_invsqrt("rinv1O","rsqO");
@@ -913,7 +1146,8 @@ void finnerloop(char *loopname)
       nflop += p_invsqrt("rinv1H2","rsqH2");
     }
   }
-  
+#endif /* DECREASE_LATENCY */ 
+
 #ifdef PREFETCH
   comment("Prefetch the forces");
   p_state("fxJ",ARR(faction,j3));
@@ -921,8 +1155,11 @@ void finnerloop(char *loopname)
   p_state("fzJ",ARR(faction,j3+2));
   nflop += 3;
 #endif
-  
+
+#ifdef DECREASE_LATENCY
+#else
   comment("O block");
+#endif /* DECREASE_LATENCY */
   if (!bFREE) {
     p_state("qqO","qO*qj");
     nflop ++;
@@ -935,10 +1172,27 @@ void finnerloop(char *loopname)
     p_state("qqq","(L12*qqA + lam2*qqB)");
     nflop += 5;
   }
-  
+
+#ifdef DECREASE_LATENCY
+  if (bWater) {
+    comment("inverse squares (for forces)");
+    p_state("rinv2O","rinv1O*rinv1O");
+    if (!bTab) {
+      p_state("rinv2H1","rinv1H1*rinv1H1");
+      p_state("rinv2H2","rinv1H2*rinv1H2");
+      nflop += 2;
+    }
+    nflop++;
+  }
+  else {
+    p_state("rinv2O","rinv1O*rinv1O");
+    nflop ++;
+  }
+#else
   p_state("rinv2O","rinv1O*rinv1O");
   nflop ++;
-  
+#endif /* DECREASE_LATENCY */
+
   if (bTab) {
     p_state("r1","one/rinv1O");
     p_state("r1t","r1*tabscale");
@@ -1099,23 +1353,23 @@ void finnerloop(char *loopname)
       }
     }
     else if (bEwald) {
-	comment("Ewald corrected terms");
-	if(bC)
-	    p_state("vcO","qqO*rinv1O*erfc(ewc/rinv1O)");
-	else
-	    p_state("vcO","qqO*rinv1O*cerfc(ewc/rinv1O)");	    
-	nflop += 20; /* wild guess for erfc? */
+      comment("Ewald corrected terms");
+      if(bC)
+	p_state("vcO","qqO*rinv1O*erfc(ewc/rinv1O)");
+      else
+	p_state("vcO","qqO*rinv1O*cerfc(ewc/rinv1O)");	    
+      nflop += 20; /* wild guess for erfc? */
       if (bLJC) {
-	  p_state("ewtmp","(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
+	p_state("ewtmp","(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
 	p_state("fsO","(twelve*vnb12-six*vnb6+ewtmp)*rinv2O");
 	nflop += 5;
       } 
       else if (bBHAM) {
-	  p_state("ewtmp","(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
-	  p_state("fsO","(br*vnbexp-six*vnb6+ewtmp)*rinv2O"); 
+	p_state("ewtmp","(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
+	p_state("fsO","(br*vnbexp-six*vnb6+ewtmp)*rinv2O"); 
 	nflop += 5;
       } 
-    else {
+      else {
 	p_state("fsO","rinv2O*(vcO+2*qqO*ewc*exp(-ewc*ewc*rsqO)*isp)");
 	nflop += 1;
       } 
@@ -1140,6 +1394,13 @@ void finnerloop(char *loopname)
     p_incr("vctot","vcO");
     nflop += 1;
   }
+
+#ifdef DECREASE_LATENCY
+  if (bWater) {
+    p_state("qqH","qH*qj");
+    nflop += 1;
+  }
+#endif /* DECREASE_LATENCY */
   
   comment("Sum the forces");   
   p_state("txO","dxO * fsO");
@@ -1173,6 +1434,7 @@ void finnerloop(char *loopname)
   }
   nflop += 9;
 #else
+
   if (!bWater) {
     p_sub(ARR(faction,j3),"fxJ","txO");
     p_sub(ARR(faction,j3+1),"fyJ","tyO");
@@ -1187,9 +1449,10 @@ void finnerloop(char *loopname)
 #endif
   
   if (bWater) {
+#ifndef DECREASE_LATENCY
     p_state("qqH","qH*qj");
     nflop += 1;
-    
+#endif /* DECREASE_LATENCY */
     comment("H1 block");
     if (bDelayInvsqrt) {
       nflop += p_sqr("H1");
@@ -1215,8 +1478,10 @@ void finnerloop(char *loopname)
       nflop += 5;
     }
     else {
+#ifndef DECREASE_LATENCY
       p_state("rinv2H1","rinv1H1*rinv1H1");
       nflop += 1;
+#endif DECREASE_LATENCY
       if (bRF) {
 	comment("Reaction field");
 	p_state("krsqH1","krf*rsqH1");
@@ -1225,12 +1490,12 @@ void finnerloop(char *loopname)
 	nflop += 7;
       }
       else if (bEwald) {
-	  comment("Ewald corrected terms");
-	  if(bC)
-	      p_state("vcH1","qqH*rinv1H1*erfc(ewc/rinv1H1)");
-	  else
-	      p_state("vcH1","qqH*rinv1H1*cerfc(ewc/rinv1H1)");	      
-	  p_state("fsH1","vcH1*rinv2H1+2*ewc*exp(-ewc*ewc*rsqH1)*rinv2H1*isp");        
+	comment("Ewald corrected terms");
+	if(bC)
+	  p_state("vcH1","qqH*rinv1H1*erfc(ewc/rinv1H1)");
+	else
+	  p_state("vcH1","qqH*rinv1H1*cerfc(ewc/rinv1H1)");	      
+	p_state("fsH1","vcH1*rinv2H1+2*ewc*exp(-ewc*ewc*rsqH1)*rinv2H1*isp");        
       } else {
 	comment("No reaction field or Ewald correction");
 	p_state("vcH1","qqH*rinv1H1");
@@ -1277,8 +1542,10 @@ void finnerloop(char *loopname)
       nflop += 5;
     }
     else {
+#ifndef DECREASE_LATENCY
       p_state("rinv2H2","rinv1H2*rinv1H2");
       nflop += 1;
+#endif /* DECREASE_LATENCY */
       if (bRF) {
 	comment("Reaction field");
 	p_state("krsqH2","krf*rsqH2");
@@ -1287,11 +1554,11 @@ void finnerloop(char *loopname)
 	nflop += 7;
       }
       else if (bEwald) {
-	  comment("Ewald corrected terms");
-	  if(bC)
-	      p_state("vcH2","qqH*rinv1H2*erfc(ewc/rinv1H2)");
-	  else
-	      p_state("vcH2","qqH*rinv1H2*cerfc(ewc/rinv1H2)");	      
+	comment("Ewald corrected terms");
+	if(bC)
+	  p_state("vcH2","qqH*rinv1H2*erfc(ewc/rinv1H2)");
+	else
+	  p_state("vcH2","qqH*rinv1H2*cerfc(ewc/rinv1H2)");	      
 	p_state("fsH2","vcH2*rinv2H2+2*ewc*exp(-ewc*ewc*rsqH2)*rinv2H2*isp");        
       }
       else {
