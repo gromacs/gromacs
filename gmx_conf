@@ -19,7 +19,7 @@ else
 
     echo 	'Unpacking archives...'
 
-    foreach fz ( ../$CORE ../$BNC ../$TST )
+    foreach fz ( $CORE $BNC $TST )
     echo 	$fz
     if ( -f $fz.taz ) then
 	    cat $fz.taz | uncompress -c | tar xf -
@@ -31,7 +31,8 @@ else
 			    echo FATAL, no file $fz.tgz or $fz.taz found
 			    exit
 		    else
-			    echo No compressed version of $fz
+			    echo FATAL, no compressed version of $fz
+    			    exit
 		    endif
 	    endif
     endif
