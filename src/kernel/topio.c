@@ -535,7 +535,8 @@ char **do_top(bool         bVerbose,
 	      int          *nsim,
 	      t_simsystem  **sims)
 {
-  char tmpfile[13];
+  /* Tmpfile might contain a long path */
+  char tmpfile[1024];
   char **title;
   int  combination_rule;
   
