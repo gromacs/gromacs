@@ -213,7 +213,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
   if (fr->eeltype == eelPME)
-    init_pme(stdlog,cr,nsb,FALSE,&parm->ir);
+    init_pme(stdlog,cr,nsb,&parm->ir);
 		
   /* Now do whatever the user wants us to do (how flexible...) */
   if (bNM) {
