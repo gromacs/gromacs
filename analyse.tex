@@ -37,16 +37,17 @@ particles.
 Groups can therefore consist of a series of {\em atom numbers}, but in
 some cases also of {\em molecule numbers}.  It is also possible to
 specify a series of angles by {\em triples} of {\em atom numbers},
-dihedrals by {\em quatriples} of {\em atom numbers} and bonds or
+dihedrals by {\em quadruplets} of {\em atom numbers} and bonds or
 vectors (in a molecule) by {\em couples} of {\em atom numbers}. When
-appropriate the type of index-file will be specified for the following
-analysis programs.  To help creating such index-files ({\tt
+appropriate the type of index file will be specified for the following
+analysis programs.  To help creating such index files ({\tt
 index.ndx}), there are a couple of programs to generate them, using
 either your input configuration or the topology.  To generate an
-index-file consisting of a series of {\em atom numbers} (as in the
-example of $g_{AB}$) use {\tt make\_ndx}. To generate an index-file
+index file consisting of a series of {\em atom numbers} (as in the
+example of $g_{AB}$) use {\tt make\_ndx}. To generate an index file
 with angles or dihedrals, use {\tt mk\_angndx}. Of course you can also
 make them by hand. The general format is presented here:
+{\samepage
 \begin{verbatim}
 [ Oxygen ]
    1       4       7 
@@ -54,8 +55,9 @@ make them by hand. The general format is presented here:
    2       3       5       6
    8       9
 \end{verbatim}
+}
 First the group name is written between square brackets.
-The following atom numbers may spread out over as many lines as you like.
+The following atom numbers may be spread out over as many lines as you like.
 The atom numbering starts from 1. 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Looking at your trajectory
@@ -301,7 +303,7 @@ can use the Einstein relation~\cite{Allen87} \beq \lim_{t \rightarrow
 This {\em Mean Square Displacement} and $D_A$ are calculated by the
 program {\tt g\_msd}. For molecules consisting of more than one atom,
 ${\bf r}_i$ is the centre of mass positions. In that case you should
-use an index-file with molecule numbers! The program can also be used
+use an index file with molecule numbers! The program can also be used
 for calculating diffusion in one or two dimensions. This is useful for
 studying lateral diffusion on interfaces. 
 
@@ -328,26 +330,32 @@ g_sgangle
 \end{verbatim}
 To monitor specific {\em bonds} in your molecules during time, the program 
 {\tt g\_bond} calculates the distribution of the bondlength in time. 
-The index-file consists of pairs of atom numbers, for example
+The index file consists of pairs of atom numbers, for example
+{\samepage
 \begin{verbatim}
-2   8
-bonds_1    6    0     1
-                2     3
-                8     9
-bonds_2    2   11    12
+[ bonds_1 ]
+ 1     2
+ 3     4
+ 9    10
+[ bonds_2 ]
+12    13
 \end{verbatim}
+}
 
 The program {\tt g\_angle} calculates the distribution of {\em angles} and 
 {\em dihedrals} in time. It also gives the average angle or dihedral. 
-The index-file consists of triples or quatriples of atom numbers:
+The index file consists of triplets or quadruplets of atom numbers:
+{\samepage
 \begin{verbatim}
-2   17
-angles     9   0     1     2
-               1     2     3
-               2     3     4
-dihedrals  8   0     1     2     3
-               1     2     3     4
+[ angles ]
+ 1     2     3
+ 2     3     4
+ 3     4     5
+[ dihedrals ]
+ 1     2     3     4
+ 2     3     5     5
 \end{verbatim}
+}
 For the dihedral angles you can use eighter the ``biochemical convention'' 
 ($\phi = 0 \equiv cis$) or ``polymer convention'' ($\phi = 0 \equiv trans$), 
 see fig~\ref{fig:dih_def}.
@@ -379,12 +387,16 @@ $d_1$ and $d_2$ between 2 atoms (of a vector) and the centre of a plane
 defined by 3 atoms (see fig.~\ref{fig:sgangle}D). It further calculates the 
 distance $d$ between the centre of the plane and the middle of this vector. 
 Depending on the input groups (i.e. groups of 2 or 3 atom numbers), the 
-program decides what angles and distances to calculate. For example, the index-file could look like this:
+program decides what angles and distances to calculate. For example, the index
+file could look like this:
+{\samepage
 \begin{verbatim}
-2   5
-a_plane   3     0     1     2
-a_vector  2     3     4
+[ a_plane ]
+ 1     2     3
+[ a_vector ]
+ 3     4     5
 \end{verbatim}
+}
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Radius of gyration and distances
 %
@@ -557,25 +569,26 @@ H-bonds {\em inside} this group are monitored. You can also specify {\em two}
 or {\em more} groups. In that case the program only analyses the H-bonds 
 {\em between} those groups. 
 
-It is also possible to analyse specific H-bonds. To do so, your index-file has 
+It is also possible to analyse specific H-bonds. To do so, your index file has 
 to contain a {\em group of H-bonds}, in the following way:
+{\samepage
 \begin{verbatim}
-    3     24
-internal     12 
-    20    21    24
-    25    26    29
-     0     3     6
-    47    48    52
-intermolecular      0 
-all_bonds     12 
-    20    21    24
-    25    26    29
-     0     3     6
-    47    48    52
+[ internal ]
+    21    22    25
+    26    27    30
+     1     4     7
+    48    49    53
+[ intermolecular ]   
+[ all_bonds ] 
+    21    22    25
+    26    27    30
+     1     4     7
+    48    49    53
 \end{verbatim}
+}
 So after the usual definitions of the groups each group consists of 
 {\em triples} of atom numbers, i.e. Donor, Hydrogen and Acceptor. 
-You can for example use the index-file which is generated by the program when 
+You can for example use the index file which is generated by the program when 
 analysing one or more groups. The output, besides the normal output, is a 
 ``matrix'' in time. For every specified H-bond is indicated whether or not 
 this H-bond is formed at that timeframe. An existing H-bond is indicated by 
