@@ -496,20 +496,58 @@ static void sort_hb(int *nr_a, t_donor **donors)
 	  }
 }
 
-#define OFFSET(frame) (frame >> 8)
-#define MASK(frame)   (frame % 256)
+#define OFFSET(frame) (frame / 32)
+#define MASK(frame)   (1 << (frame % 32))
 
-static void set_hb(unsigned char hbexist[],int frame,bool bValue)
+static void set_hb(unsigned int hbexist[],unsigned int frame,bool bValue)
 {
   if (bValue)
     hbexist[OFFSET(frame)] |= MASK(frame);
   else
-    hbexist[OFFSET(frame)] &= !MASK(frame);
+    hbexist[OFFSET(frame)] &= ~MASK(frame);
 }
 
-static bool is_hb(unsigned char hbexist[],int frame)
+static bool is_hb(unsigned int hbexist[],int frame)
 {
-  return (bool) ((hbexist[OFFSET(frame)] & MASK(frame)) != 0);
+  return ((hbexist[OFFSET(frame)] & MASK(frame)) != 0) ? 1 : 0;
+}
+
+static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
+		    real time[])
+{
+  FILE *fp;
+  int  i,j;
+  real *rhbex;
+  real *ct,tail;
+  
+  /* build hbexist matrix in reals for autocorr */
+  fprintf(stderr,"Will allocate %.2f Mb of memory\n",
+	  nrhb*nframes*sizeof(real)/(1024.0*1024.0));
+  snew(rhbex,nframes);
+  snew(ct,nframes);
+  for(i=0; i<nrhb; i++) {
+    for(j=0; j<nframes; j++)
+      rhbex[j]=is_hb(hbexist[i],j);
+    low_do_autocorr(NULL,NULL,
+		    nframes,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
+		    TRUE,TRUE,TRUE,FALSE,0,-1,0,1);
+    for(j=0; j<nframes; j++)
+      ct[j] += rhbex[j];
+  }
+  sfree(rhbex);
+
+  /* Determine final value */
+  tail = 0;
+  for(j=nframes/4; (j<nframes/2); j++)
+    tail += ct[j];
+  tail /= (nframes/2 - nframes/4);
+  
+  fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
+  for(j=0; (j<nframes/2); j++)
+    fprintf(fp,"%10g  %10g\n",time[j]-time[0],(ct[j]-tail)/(nrhb-tail));
+  fclose(fp);
+  do_view(fn,NULL);
+  sfree(ct);
 }
 
 int gmx_hbond(int argc,char *argv[])
@@ -609,7 +647,7 @@ int gmx_hbond(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   
-#define FRINC 100
+#define FRINC 8192
 #define HBINC 100
   
 #define NRGRPS 3
@@ -648,14 +686,13 @@ int gmx_hbond(int argc,char *argv[])
   int     *nhb,*adist,*rdist;
   t_hx    *nhx;
   int     max_nrhb,nrhb,nabin,nrbin,bin,resdist,idx;
-  unsigned char **hbexist;
+  unsigned int **hbexist;
   FILE       *fp,*fpins=NULL,*fplog;
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
   t_icell    *danr;
   ivec       ngrid;
   t_donor    *donors[grNR];
-  real       **rhbex;
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,asize(pa),pa,
@@ -844,7 +881,7 @@ int gmx_hbond(int argc,char *argv[])
       srenew(time,max_nframes);
       if (bHBMap)
 	for (i=0; i<max_nrhb; i++)
-	  srenew(hbexist[i],max_nframes/8);
+	  srenew(hbexist[i],max_nframes/32);
       if (bDAnr)
 	srenew(danr,max_nframes);
     }
@@ -902,7 +939,7 @@ int gmx_hbond(int argc,char *argv[])
 			  max_nrhb+=HBINC;
 			  srenew(hbexist,max_nrhb);
 			  for (l=max_nrhb-HBINC; l<max_nrhb; l++)
-			    snew(hbexist[l],max_nframes);
+			    snew(hbexist[l],max_nframes/32);
 			}
 			nrhb++;
 		      }
@@ -999,7 +1036,7 @@ int gmx_hbond(int argc,char *argv[])
 			    max_nrhb+=HBINC;
 			    srenew(hbexist,max_nrhb);
 			    for (l=max_nrhb-HBINC; l<max_nrhb; l++)
-			      snew(hbexist[l],max_nframes);
+			      snew(hbexist[l],max_nframes/32);
 			  }
 			  nrhb++;
 			}
@@ -1102,22 +1139,8 @@ int gmx_hbond(int argc,char *argv[])
       fclose(fp);
     }
     
-    
-    if (opt2bSet("-ac",NFILE,fnm)) {
-      /* build hbexist matrix in reals for autocorr */
-      snew(rhbex,nrhb);
-      for(i=0; i<nrhb; i++) {
-	snew(rhbex[i],nframes);
-	for(j=0; j<nframes; j++)
-	  rhbex[i][j]=is_hb(hbexist[i],HB_YES);
-      }
-      low_do_autocorr(opt2fn("-ac",NFILE,fnm), "Hydrogen Bond Autocorrelation",
-		      nframes,nrhb,-1,rhbex,time[1]-time[0],eacNormal,1,
-		      TRUE,TRUE,TRUE,FALSE,0,-1,2,1);
-      for(i=0; i<nrhb; i++)
-	sfree(rhbex[i]);
-      sfree(rhbex);
-    }
+    if (opt2bSet("-ac",NFILE,fnm))
+      do_hbac(opt2fn("-ac",NFILE,fnm),hbexist,nrhb,nframes,time);
     
     if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;
