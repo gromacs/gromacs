@@ -43,8 +43,15 @@ AC_ARG_ENABLE(double,
 #####
 
 AC_ARG_ENABLE(type-suffix,     
- [  --disable-type-suffix         Remove the suffix on MPI or double precision files], 
+ [  --disable-type-suffix         Don't add a suffix to double precision files], 
  enable_type_suffix=$enableval, enable_type_suffix=yes)
+
+
+#####
+
+AC_ARG_ENABLE(mpi-suffix,     
+ [  --enable-mpi-suffix           Add a suffix to MPI files (default on ibm)], 
+ enable_mpi_suffix=$enableval, enable_mpi_suffix=check)
 
 
 #####
@@ -152,7 +159,7 @@ AC_ARG_ENABLE(hide_table_latency,
 
 AC_ARG_WITH(mpi-environment,     
  [  --with-mpi-environment=VAR    Only start MPI mdrun when VAR is set], 
- with_mpi_environment="$withval", with_mpi_environment=no)
+ with_mpi_environment="$withval", with_mpi_environment=check)
 
 
 ########################################################################
@@ -179,6 +186,18 @@ case "${host_cpu}-${host_os}" in
 
   *)
     enable_fortran=no 
+    ;;
+ esac  
+fi
+
+if test "$enable_mpi_suffix" = "check"; then
+case "${host_cpu}-${host_os}" in
+
+  rs6000*-aix* | powerpc*-aix*)
+    enable_mpi_suffix=yes
+    ;;
+  *)
+    enable_mpi_suffix=no 
     ;;
  esac  
 fi
@@ -221,6 +240,17 @@ case "${host_cpu}-${host_os}" in
     ;;
 esac
 fi
+
+if [test "$with_mpi_environment" = "check" -a "$enable_mpi" = "yes"]; then
+case "${host_cpu}" in
+  mips*-irix*)
+    with_mpi_environment="MPI_ENVIRONMENT"
+    ;;
+   *)
+    with_mpi_environment=no
+    ;;
+esac
+  
 
 case "${host_cpu}" in
  alpha*)  
@@ -493,7 +523,7 @@ SUFFIX=""
 if test "$enable_mpi" = "yes"; then
 	AC_DEFINE(USE_MPI,,[Make a parallel version of Gromacs using MPI])
         PAR_OBJ='${mpi_obj}'
-        if test "$enable_type_suffix" = "yes"; then
+        if test "$enable_mpi_suffix" = "yes"; then
 	  SUFFIX="_mpi"
 	fi
 else
@@ -740,11 +770,12 @@ fi
 echo "MPI parallelization           : $enable_mpi"
 if test "$enable_mpi" = "yes"; then
 echo "Checking MPI environment      : $with_mpi_environment"
+echo "MPI suffix on files           : $enable_mpi_suffix"
 fi
 echo "Vector architecture           : $enable_vector"
 echo "Using Fortran code            : $enable_fortran"
 echo "Double precision              : $enable_double"
-if test "$enable_double" = "yes" -o "$enable_mpi" = "yes"; then
+if test "$enable_double" = "yes"; then
 echo "Type suffix on files          : $enable_type_suffix"
 fi
 echo "Expanding water loops         : $enable_simplewater"
