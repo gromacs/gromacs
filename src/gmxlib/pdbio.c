@@ -207,7 +207,7 @@ void print_pdbatoms(FILE *out,int natom,t_pdbatom pdba[],matrix box)
   fprintf(out,"HEADER    %s\n",bromacs());
   if (box != NULL) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
+    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f %7.2f %7.2f P 1          1\n",
 	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
   }
   for(i=0; (i<natom); i++) {
