@@ -284,7 +284,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 			 real time[], real reftemp,
 			 t_energy oldee[],t_energy ee[],
 			 int nset,int set[],int nenergy,real **eneset,
-			 char *leg[])
+			 char *leg[],real Vaver)
 {
   FILE *fp;
   /* Check out the printed manual for equations! */
@@ -293,7 +293,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta=0,expE,expEtot,*gibbs=NULL;
   int  nsteps,iset;
-  real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
+  real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,VarT=-1;
   int  i,j,m,k;
   char buf[256];
 
@@ -564,7 +564,7 @@ int main(int argc,char *argv[])
   int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt;
-  real       **eneset=NULL,*time=NULL;
+  real       **eneset=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
   char       **enm=NULL,**leg=NULL,**pairleg;
   char       **nms;
@@ -600,6 +600,7 @@ int main(int argc,char *argv[])
   snew(ee[NEXT],nre);
   snew(oldee,nre);
   nenergy = 0;
+  Vaver = -1;
   
   bVisco = opt2bSet("-vis",NFILE,fnm);
 
@@ -616,8 +617,12 @@ int main(int argc,char *argv[])
 	  }
 	}
 	if (i == nre)
-	  fatal_error(0,"Could not find term %s for viscosity calculation",
-		      setnm[j]);
+	  if (strcmp(setnm[j],"Volume")==0) {
+	    printf("Enter the box volume (nm^3): ");
+	    scanf("%f",&Vaver);
+	  } else
+	    fatal_error(0,"Could not find term %s for viscosity calculation",
+			setnm[j]);
       }
     }
     else {
@@ -825,7 +830,7 @@ int main(int argc,char *argv[])
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bGibbs,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
-		 oldee,ee[cur],nset,set,nenergy,eneset,leg);
+		 oldee,ee[cur],nset,set,nenergy,eneset,leg,Vaver);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
     
