@@ -47,7 +47,7 @@ static char *SRCID_md_c = "$Id$";
 
 volatile bool bGotTermSignal = FALSE;
 
-static void signal_handler()
+static void signal_handler(int n /* to keep the DEC compiler happy */)
 {
   bGotTermSignal = TRUE;
 }
