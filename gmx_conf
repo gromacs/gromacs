@@ -92,9 +92,9 @@ echo	'-------------------------------'
 echo	'If you do *NOT* want cool quotes type No here'
 set	cq = $<
 if ( $cq != No ) then
-	setenv 	COOL	YES
+	setenv 	COOL	setenv
 else
-	setenv	COOL	NO
+	setenv	COOL	\#setenv
 	echo	'Now you will be treated like a fast food addict'
 endif
 
@@ -159,7 +159,7 @@ endif
 
 # Now finally, if you consider our Cool Quotes to be offensive
 # you might consider commenting out the following line:
-setenv	IAMCOOL	$COOL
+$COOL	IAMCOOL	YES
 
 if ( -f \$GMXHOME/complete ) source \$GMXHOME/complete
 
