@@ -31,7 +31,7 @@ static char *SRCID_testtab_c = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 #include "force.h"
-#include "lrutil.h"
+#include "shift_util.h"
 
 int main(int argc,char *argv[])
 {
@@ -44,7 +44,7 @@ int main(int argc,char *argv[])
   fr->eeltype = eelTWIN;
   box[XX]=box[YY]=box[ZZ]=1.0;
   
-  set_LRconsts(stdout,fr->r1,fr->rc,box,fr);
+  set_shift_consts(stdout,fr->r1,fr->rc,box,fr);
 
   make_tables(fr);
   

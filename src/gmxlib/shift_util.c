@@ -26,13 +26,13 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_lrutil_c = "$Id$";
+static char *SRCID_shift_util_c = " ";
 
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
 #include "vec.h"
-#include "lrutil.h"
+#include "shift_util.h"
 #include "smalloc.h"
 #include "physics.h"
 #include "txtdump.h"
@@ -49,7 +49,7 @@ static char *SRCID_lrutil_c = "$Id$";
 
 static real A,A_3,B,B_4,C,c1,c2,c3,c4,c5,c6,One_4pi,FourPi_V,Vol,N0;
 
-void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
+void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
 {
   /* A, B and C are recalculated in tables.c */
   if (r1 < rc) {
@@ -69,10 +69,11 @@ void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   Vol     =(box[XX]*box[YY]*box[ZZ]);
   FourPi_V=4.0*M_PI/Vol;
 
-  fprintf(log,"Constants for short-range and fourier stuff:\n"
-	  "r1 = %10.3f,  rc = %10.3f\n"
-	  "A  = %10.3e,  B  = %10.3e,  C  = %10.3e, FourPi_V = %10.3e\n",
-	  r1,rc,A,B,C,FourPi_V);
+  if(debug)
+      fprintf(log,"Constants for short-range and fourier stuff:\n"
+	      "r1 = %10.3f,  rc = %10.3f\n"
+	      "A  = %10.3e,  B  = %10.3e,  C  = %10.3e, FourPi_V = %10.3e\n",
+	      r1,rc,A,B,C,FourPi_V);
 
   /* Constants derived by Mathematica */
   c1 = -40*rc*rc    + 50*rc*r1    - 16*r1*r1;
@@ -82,9 +83,10 @@ void set_LRconsts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   c5 = -c2;
   c6 = -5*rc*rc*r1  +  7*rc*r1*r1 - 2*r1*r1*r1;
 
-  fprintf(log,"c1 = %10.3e,  c2 = %10.3e,  c3 = %10.3e\n"
-	  "c4 = %10.3e,  c5 = %10.3e,  c6 = %10.3e,  N0 = %10.3e\n",
-	  c1,c2,c3,c4,c5,c6,N0);
+  if(debug)
+      fprintf(log,"c1 = %10.3e,  c2 = %10.3e,  c3 = %10.3e\n"
+	      "c4 = %10.3e,  c5 = %10.3e,  c6 = %10.3e,  N0 = %10.3e\n",
+	      c1,c2,c3,c4,c5,c6,N0);
     
   One_4pi = 1.0/(4.0*M_PI);
 }
@@ -276,7 +278,9 @@ real potential(real r1,real rc,real R)
     return 0.0;
 }
 
-real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
+
+
+real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
 			bool bOld,rvec box_size,matrix lr_vir)
 {
@@ -290,7 +294,6 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   rvec   df,dx;
   real   r1=fr->rcoulomb_switch;
   real   rc=fr->rcoulomb;
-  real   ewc=fr->ewaldcoeff;
   ivec   shift;     
   int    start=START(nsb);
   int    natoms=HOMENR(nsb);
@@ -300,19 +303,20 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     for(i=start; (i<start+natoms); i++) 
       qq  += charge[i]*charge[i];
     
-    /* Obsolete ? 
+    /* Obsolete, until we implement dipole and charge corrections.
        qtot=0;
        for(i=0;i<nsb->natoms;i++)
        qtot+=charge[i];
     */
-    if(fr->bEwald)
-      Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
-    else
-      Vself = 0.5*C*ONE_4PI_EPS0*qq;
-    fprintf(fp,"calc_LRcorrections: r1 = %g, rc=%g\n",r1,rc);
-    fprintf(fp,"calc_LRcorrections: start=%d,natoms=%d\n",start,natoms);
-    fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g, bEwald = %s\n",
-	    qq,Vself,bool_names[fr->bEwald]);
+   
+    Vself = 0.5*C*ONE_4PI_EPS0*qq;
+    if(debug) {
+	fprintf(fp,"Long Range corrections for shifted interactions:\n");
+	fprintf(fp,"r1 = %g, rc=%g\n",r1,rc);
+	fprintf(fp,"start=%d,natoms=%d\n",start,natoms);
+	fprintf(fp,"qq = %g, Vself=%g\n",qq,Vself);
+    }
+    
   }
   AA = excl->a;
   Vexcl = 0;
@@ -352,15 +356,10 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	  dr      = 1.0/dr_1;
 	  dr_3    = dr_1*dr_1*dr_1;
 	  /* Compute exclusion energy and scalar force */
-	  if(fr->bEwald) {
-	      Vexcl  += qq*erf(ewc*dr)*dr_1;
-	      fscal   =
-		  qq*(erf(ewc*dr)*dr_3-2*exp(-ewc*ewc*dr2)*ewc*isp*dr_1*dr_1);
-	  }
-	  else {
+
 	  Vexcl  += qq*(dr_1-potential(r1,rc,dr));
 	  fscal   = qq*(-shiftfunction(r1,rc,dr))*dr_3;
-	  }
+	  
 	  if ((fscal != 0) && debug)
 	    fprintf(debug,"i: %d, k: %d, dr: %.3f fscal: %.3f\n",i,k,dr,fscal);
 	    
@@ -377,8 +376,8 @@ real calc_LRcorrections(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       }
     }
   }
-  if (bFirst)
-    fprintf(fp,"calc_LRcorrections: Vexcl=%g\n",Vexcl);
+  if (bFirst && debug)
+    fprintf(fp,"Long Range correction: Vexcl=%g\n",Vexcl);
   
   bFirst = FALSE;
   

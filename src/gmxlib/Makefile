@@ -34,7 +34,8 @@ OBJ		= \
 		ifunc.o		index.o		invblock.o	\
 		javaio.o	lutab.o		macros.o	\
 		main.o		maths.o		matio.o		\
-		lrutil.o	memdump.o	mshift.o	\
+		shift_util.o	ewald_util.o			\
+		memdump.o	mshift.o			\
 		mvdata.o	mvxvf.o		names.o		\
 		network.o	nrama.o		nrjac.o		\
 		nrnb.o		pargs.o		pbc.o		\
