@@ -4,21 +4,21 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "fftw.h"
+#include "rfftw.h"
 #ifdef USE_MPI
 #include "mpi.h"
-#include "fftwnd_mpi.h"
+#include "rfftw_mpi.h"
 #endif
 #include "complex.h"
 #include "network.h"
 
 /* Use FFTW */
 
-typedef t_complex t_fft_tp;
-#define GR_ASSIGN(gr,val)        gr.re=val
-#define GR_INC(gr,val)           gr.re+=val
-#define GR_MULT(gr,val)          gr.re*=val
-#define GR_VALUE(gr)             gr.re
-#define INDEX(i,j,k)             ((i)*la12+(j)*la2+k)
+typedef t_complex t_fft_c;
+typedef real      t_fft_r;
+
+#define INDEX(i,j,k)             ((i)*la12+(j)*la2+(k))      
+
 
 typedef struct {
   int local_nx,local_x_start,local_ny_after_transpose;
@@ -26,17 +26,22 @@ typedef struct {
 } t_parfft;
 
 typedef struct {
-  t_fft_tp *ptr;
-  int      nx,ny,nz,la1,la2,la12;
+    t_fft_r *ptr;
+    t_fft_r *localptr;
+    t_fft_r *workspace;    
+    int      nx,ny,nz,la2r,la2c,la12r,la12c;
   int      nptr,nxyz;
-  fftwnd_plan     plan_fw,plan_bw;         /* fw = FORWARD, bw = BACKWARD */
+    rfftwnd_plan     plan_fw;
+    rfftwnd_plan     plan_bw;
 #ifdef USE_MPI
-  fftwnd_mpi_plan plan_mpi_fw,plan_mpi_bw;
-  t_parfft        pfft_fw,pfft_bw;
+    rfftwnd_mpi_plan plan_mpi_fw;
+    rfftwnd_mpi_plan plan_mpi_bw;
+    t_parfft         pfft;
 #endif
 } t_fftgrid;
 
-extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz);
+extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,
+			     int nz,bool bOptFFT);
 /* Create an FFT grid (1 Dimensional), to be indexed by the INDEX macro 
  * Setup FFTW plans and extract local sizes for the grid.
  * If the file pointer is given, information is printed to it.
@@ -55,7 +60,8 @@ extern void clear_fftgrid(t_fftgrid *grid);
 /* Set it to zero */
 
 extern void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
-			   int *la1,int *la2,int *la12,t_fft_tp **ptr);
+			   int *la2, int *la12,bool bReal, t_fft_r **ptr);
+
 /* Get the values for the constants into local copies */
 
 extern void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,
