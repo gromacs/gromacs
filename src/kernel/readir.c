@@ -94,8 +94,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
      ir->ndelta);
   BS((ir->epsilon_r <= 0),"Epsilon-R must be > 0 instead of %g\n",
      ir->epsilon_r);
-  BS((ir->epc && (ir->tau_p <= 0)),
-     "tau_p must be > 0 instead of %g\n",ir->tau_p);
+  if (ir->epc != epcNO) {
+    BS((ir->epc && (ir->tau_p <= 0)),
+       "tau_p must be > 0 instead of %g\n",ir->tau_p);
+    if (ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0)) {
+      fprintf(stderr,"ERROR: system is incompressible while using pressure coupling\n",ir->tau_p);
+      (*nerror)++;
+    }
+  }
   if ((ir->rshort == 0.0) && (ir->rlong == 0.0)) {
     if (ir->eBox != ebtNONE) {
       fprintf(stderr,"ERROR: can not have cut-off to zero (=infinite) with periodic\n"
@@ -630,7 +636,7 @@ void do_index(char *ndx,
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
   ntcg   = str_nelem(tcgrps,MAXPTR,ptr3);
   if ((ntau_t != ntcg) || (nref_t != ntcg)) 
-    fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and"
+    fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and "
 		"%d tau_t values",ntcg,nref_t,ntau_t);
  
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
