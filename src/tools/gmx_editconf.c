@@ -61,6 +61,7 @@
 #include "princ.h"
 #include "txtdump.h"
 #include "viewit.h"
+#include "rmpbc.h"
 
 typedef struct {
   char   sanm[12];
@@ -167,27 +168,6 @@ void scale_conf(int natom,rvec x[],matrix box,rvec scale)
   for (i=0; i<DIM; i++)
     for (j=0; j<DIM; j++)
       box[i][j] *= scale[j];
-}
-
-void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
-{
-  real dist;
-  int  n,m,d;
-  
-  /* check periodic boundary */
-  for(n=1;(n<atoms->nr);n++) {
-    for(m=DIM-1; m>=0; m--) {
-      dist = x[n][m]-x[n-1][m];
-      if (fabs(dist) > 0.9*box[m][m]) { 
-	if ( dist >  0 )
-	  for(d=0; d<=m; d++)
-	    x[n][d] -= box[m][d];
-	else
-	  for(d=0; d<=m; d++)
-	    x[n][d] += box[m][d];
-      } 	
-    }
-  }
 }
 
 void read_bfac(char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)

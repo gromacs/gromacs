@@ -91,3 +91,24 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
       copy_rvec(x[i],x_s[i]);
 }
 
+void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
+{
+  real dist;
+  int  n,m,d;
+  
+  /* check periodic boundary */
+  for(n=1;(n<atoms->nr);n++) {
+    for(m=DIM-1; m>=0; m--) {
+      dist = x[n][m]-x[n-1][m];
+      if (fabs(dist) > 0.9*box[m][m]) { 
+	if ( dist >  0 )
+	  for(d=0; d<=m; d++)
+	    x[n][d] -= box[m][d];
+	else
+	  for(d=0; d<=m; d++)
+	    x[n][d] += box[m][d];
+      } 	
+    }
+  }
+}
+

@@ -57,24 +57,7 @@
 #include "txtdump.h"
 #include "do_fit.h"
 #include "viewit.h"
-
-void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
-{
-  real dist;
-  int  n,d;
-  
-  /* check periodic boundary */
-  for(d=0; d<DIM; d++)
-    for(n=1; n<atoms->nr; n++) {
-      dist = x[n][d]-x[n-1][d];
-      if ( fabs(dist) > 0.9 * box[d][d]  ) {
-	if ( dist >  0 )
-	  x[n][d]-=box[d][d];
-	else
-	  x[n][d]+=box[d][d];
-      }
-    }
-}
+#include "rmpbc.h"
 
 void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
 {
