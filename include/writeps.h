@@ -56,6 +56,7 @@ extern char *fontnm[efontNR];
 
 extern FILE *ps_open(char *fn,real x1,real y1,real x2,real y2);
 
+extern void ps_linewidth(FILE *ps,int lw);
 extern void ps_color(FILE *ps,real r,real g,real b);
 extern void ps_rgb(FILE *ps,t_rgb *rgb);
 

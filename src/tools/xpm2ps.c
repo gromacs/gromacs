@@ -60,6 +60,7 @@ typedef struct {
 
 typedef struct {
   int       bw;
+  int       linewidth;
   real      xoffs,yoffs;
   bool      bTitle;
   real      titfontsize;
@@ -84,6 +85,7 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   
   inp=read_inpfile(mpin,&ninp);
   ETYPE("black&white",		psr->bw,          bools);
+  ITYPE("linewidth",            psr->linewidth,   2);
   STYPE("titlefont",		psr->titfont,     "Helvetica");
   RTYPE("titlefontsize",	psr->titfontsize, 20.0);
   ETYPE("legend",		psr->legend,     bools);
@@ -539,12 +541,6 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   /* Start box at */
   x0=dw;
   y0=dh;
-  /*
-  if (bTitle) 
-    out=ps_open(outf,0,0,W+psr->xoffs+5*DDD,H+psr->yoffs+4*DDD+
-		2*psr->titfontsize);
-  else
-  */
   x = W+psr->xoffs;
   y = H+psr->yoffs;
   if (bFrame) {
@@ -552,6 +548,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     y += 4*DDD;
   }
   out=ps_open(outf,0,0,x,y);
+  ps_linewidth(out,psr->linewidth);
   ps_init_rgb_box(out,psr->xboxsize,psr->yboxsize);
   ps_init_rgb_nbox(out,psr->xboxsize,psr->yboxsize);
   ps_translate(out,psr->xoffs,psr->yoffs);
@@ -560,17 +557,6 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     ps_comment(out,"Here starts the BOX drawing");  
     draw_boxes(out,x0,y0,w,h,nmat,mat,psr);
   }
-  /*
-  if (bTitle) {
-    ps_strfont(out,psr->titfont,psr->titfontsize); 
-    if (!mat2 || (strcmp(mat[nmat-1].title,mat2[nmat-1].title) == 0))
-      strcpy(buf,mat[nmat-1].title);
-    else
-      sprintf(buf,"%s / %s",mat[nmat-1].title,mat2[nmat-1].title);
-    ps_ctext(out,x0+w/2,y0+h+2*DDD+psr->titfontsize,
-	     buf,eXCenter);
-  }
-  */
 
   /* LANDSCAPE */
   for(i=0; (i<nmat); i++) {

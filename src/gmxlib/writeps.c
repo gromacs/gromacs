@@ -65,6 +65,11 @@ FILE *ps_open(char *fn,real x1,real y1,real x2,real y2)
   return ps;
 }
 
+void ps_linewidth(FILE *ps, int lw)
+{
+  fprintf(ps,"%d setlinewidth\n",lw);
+}
+
 static void ps_defcolor(FILE *ps,real r,real g,real b,char *cname)
 {
   fprintf(ps,"/%s {%g %g %g setrgbcolor} bind def\n",cname,r,g,b);
