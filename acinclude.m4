@@ -18,36 +18,38 @@ else
   fftwcheckprefix=s
 fi
 
-usedprefix=""
+xfftwname=${fftwcheckprefix}$1
+
 ok="no"
 # check header doesn't work, since we must use mpicc to get includes, 
 # we cant trust cpp.
-AC_MSG_CHECKING([for $1.h])
-AC_TRY_COMPILE([#include <$1.h>],,
+AC_MSG_CHECKING([for $xfftwname.h])
+AC_TRY_COMPILE([#include <$xfftwname.h>],,
 [
-fftwname=$1 
+fftwname=$xfftwname 
 AC_MSG_RESULT(yes)
 ],
 AC_MSG_RESULT(no))
 
+# fftwname was set if we found a header
 
 if test -n "$fftwname"; then
 # we cannot run the code since an MPI program might not be allowed 
 # on a login node of a supercomputer
 AC_TRY_COMPILE([#include <$fftwname.h>],
 [int _array_ [1 - 2 * !((sizeof(fftw_real)) == $sizeof_real)]; ],
-[ok=yes],[ok=no])
+[
+ok=yes
+usedprefix=$fftwcheckprefix
+],[ok=no])
 fi
 
-fftwname=$1
-
 if test "$ok" != "yes"; then
-  xfftwname=${fftwcheckprefix}${fftwname}
-  AC_MSG_CHECKING([for $xfftwname.h])
-  AC_TRY_COMPILE([#include <$xfftwname.h>],,AC_MSG_RESULT(yes),
+  AC_MSG_CHECKING([for $1.h])
+  AC_TRY_COMPILE([#include <$1.h>],,AC_MSG_RESULT(yes),
 [
 AC_MSG_RESULT(no)
-AC_MSG_ERROR([Cannot find any $prec precision $fftwname.h or $xfftwname.h]
+AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
 [Do you have $prec precision FFTW installed? If you are using packages,]
 [note that you also need fftw-devel to compile GROMACS. You can find the ]
 [software at www.fftw.org, and detailed instructions at www.gromacs.org.]
@@ -62,14 +64,14 @@ AC_MSG_ERROR([Cannot find any $prec precision $fftwname.h or $xfftwname.h]
 [/usr/local/include and /usr/local/lib by default.]
 [You can find information at www.gromacs.org, or in the INSTALL file.])
 ])
-AC_TRY_COMPILE([#include <$xfftwname.h>],
+AC_TRY_COMPILE([#include <$fftwname.h>],
 [int _array_ [1 - 2 * !((sizeof(fftw_real)) == $sizeof_real)];],
 [
-fftwname=$xfftwname 
 usedprefix=$fftwcheckprefix
+fftwname=$1
 ],
 [
-AC_MSG_ERROR([Cannot find any $prec precision $fftwname.h or $xfftwname.h]
+AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
 [Do you have $prec precision FFTW installed? If you are using packages,]
 [note that you also need fftw-devel to compile GROMACS. You can find the ]
 [software at www.fftw.org, and detailed instructions at www.gromacs.org.]
@@ -535,15 +537,14 @@ case "${host_cpu}-${host_os}" in
 
   ia64*-*)
     # The GNU compilers are checked outside this case statement.
-    # 1. Check for the SGI compilers. Actually, they report the are GNU C,
-    #    so this check isn't used right now, but we want to identify them
-    #    even if they change this later.
-   if ($CC -v 2>&1 | grep SGI > /dev/null); then
-     xCFLAGS="-O3 -Ofast"
+    # Check for Intel Compilers. The SGI one was killed before
+    # it went final, so I cant imagine anyone is using it...
+   if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
+     xCFLAGS="-O3"
      xASFLAGS=$xCFLAGS
    fi  
-   if ($F77 -v 2>&1 | grep SGI > /dev/null); then
-     xFFLAGS="-O3 -Ofast"
+   if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
+     xFFLAGS="-O3"
    fi  
    # PORTME 2. Check for intel compilers when we get our hands on one!
    ;;	
@@ -721,7 +722,7 @@ case "${host_cpu}-${host_os}" in
     fi
 
     # Intel compilers
-    if $CC -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+    if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
       case "${host_cpu}" in
 	i686)
 	  xCFLAGS="-O3 -tpp6 -axK -ip" 
@@ -735,7 +736,7 @@ case "${host_cpu}-${host_os}" in
       CPPFLAGS="$CPPFLAGS -I/usr/local/include"
     fi
     if test "$enable_fortran" = "yes"; then
-      if $F77 -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+      if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
 	xFFLAGS="$xCFLAGS -w95"
       fi	
     fi
