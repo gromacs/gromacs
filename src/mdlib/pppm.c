@@ -434,27 +434,27 @@ void solve_pppm(FILE *fp,t_commrec *cr,
 {
   int  ntot,npppm;
   
-/*  if (bVerbose) 
-    print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);*/
+  /*  if (bVerbose) 
+      print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);*/
   
   gmxfft3D(grid,FFTW_FORWARD,cr);
   
-/*  if (bVerbose) {
-    print_fftgrid(fp,"Q-k",grid,1.0,"qk-re.pdb",box,TRUE);
-    print_fftgrid(fp,"Q-k",grid,1.0,"qk-im.pdb",box,FALSE);
-    fprintf(stderr,"Doing convolution\n");
-    }*/
+  /*  if (bVerbose) {
+      print_fftgrid(fp,"Q-k",grid,1.0,"qk-re.pdb",box,TRUE);
+      print_fftgrid(fp,"Q-k",grid,1.0,"qk-im.pdb",box,FALSE);
+      fprintf(stderr,"Doing convolution\n");
+      }*/
   
   convolution(fp,bVerbose,grid,ghat,cr); 
   
-  if (bVerbose) 
-/*    print_fftgrid(fp,"Convolution",grid,1.0,
+  /*  if (bVerbose) 
+      print_fftgrid(fp,"Convolution",grid,1.0,
       "convolute.pdb",box,TRUE);*/
   
   gmxfft3D(grid,FFTW_BACKWARD,cr);
   
-/*  if (bVerbose) 
-    print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);*/
+  /*  if (bVerbose) 
+      print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);*/
   
   ntot  = grid->nxyz;  
   npppm = ntot*log((real)ntot)/log(2.0);
