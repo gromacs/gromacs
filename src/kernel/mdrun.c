@@ -151,7 +151,7 @@ int main(int argc,char *argv[])
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
 #endif
     { "-latevir", FALSE, etBOOL,{&bLateVir},
-      "[HIDDEN]Calculate virial late in the algorithm" },
+      "HIDDENCalculate virial late in the algorithm" },
     { "-dlb",     FALSE, etINT, {&nDLB},
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, {&nstepout},
