@@ -463,7 +463,7 @@ int main(int argc, char *argv[])
     "in that case you can use trjconv"
   };
   static real dist=0.0,rbox=0.0,to_diam=0.0;
-  static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
+  static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE,bVOL=TRUE;
   static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE;
   static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
@@ -491,6 +491,8 @@ int main(int argc, char *argv[])
     { "-scale",  FALSE, etRVEC, {scale}, "Scaling factor" },
     { "-density",FALSE, etREAL, {&rho}, 
       "Density (g/l) of the output box achieved by scaling" },
+    { "-vol",    FALSE, etBOOL, {&bVOL}, 
+      "Compute and print volume of the box" },
     { "-pbc",    FALSE, etBOOL, {&bRMPBC}, 
       "Remove the periodicity (make molecule whole again)" },
     { "-mead",   FALSE, etBOOL, {&bMead},
@@ -569,6 +571,11 @@ int main(int argc, char *argv[])
   snew(v,natom);
   read_stx_conf(infile,title,&atoms,x,v,box);
   printf("Read %d atoms\n",atoms.nr); 
+  if (bVOL) {
+    real vol = det(box);
+    printf("Volume: %g nm^3, corresponds to roughly %d electrons\n",
+	   vol,100*((int)(vol*4.5)));
+  }
 
   if (bMead || bGrasp) {
     top = read_top(infile);
