@@ -610,7 +610,8 @@ int fio_open(char *fn,char *mode)
 	  fatal_error(0,"File %s not found",fn);
       }
       snew(fio->xdr,1);
-      xdropen(fio->xdr,fn,m);
+      if (!xdropen(fio->xdr,fn,m))
+	fatal_error(-1,"Could not open %s",fn);
     }
     else {
       /* If it is not, open it as a regular file */
