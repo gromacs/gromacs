@@ -130,8 +130,8 @@ int open_enx(char *fn,char *mode)
       fio_setprecision(fp,TRUE);
       do_enxnms(fp,&nre,&nm);
       do_eheader(fp,eh);
-      if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(float) == eh->e_size)) ||
-	   (eh->d_size && (eh->ndisre*sizeof(float)*2+sizeof(int) == eh->d_size))))
+      if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(double) == eh->e_size)) ||
+	   (eh->d_size && (eh->ndisre*sizeof(double)*2+sizeof(int) == eh->d_size))))
 	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
       else
 	fatal_error(0,"Energy file %s not recognized, maybe different CPU?",fn);
