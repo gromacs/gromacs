@@ -1,0 +1,12 @@
+# Linux/x86 Double Prec. w PGI
+#	@(#) Makefile.ln8 1.8 27 Jun 1996
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on a i486 processor (Linux)
+#
+include		$(GMXHOME)/src/makef/Makefile.pgi
+FFLAGS		+= -r8
+SYSDEFS		+= -DDOUBLE
