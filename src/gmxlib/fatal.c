@@ -250,7 +250,7 @@ void fatal_error(int fatal_errno,char *fmt,...)
 	  bputc(msg,&len,ibuf[index]);
 	break;
       case 'c':
-	cval=va_arg(ap,int); /* char is promoted to int */
+	cval=(char) va_arg(ap,int); /* char is promoted to int */
 	bputc(msg,&len,cval);
 	break;
       case 's':
