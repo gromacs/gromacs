@@ -611,17 +611,17 @@ int main(int argc,char *argv[])
   static bool bForceInside=FALSE;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {&new_box},   
-      "box size" },
+      "Box size" },
     { "-nmol",   FALSE, etINT , {&nmol_ins},  
-      "no of extra molecules to insert" },
+      "No of extra molecules to insert" },
     { "-try",    FALSE, etINT , {&nmol_try},  
-      "try inserting -nmol*-try times" },
+      "Try inserting -nmol*-try times" },
     { "-seed",   FALSE, etINT , {&seed},      
-      "random generator seed"},
+      "Random generator seed"},
     { "-vdwd",   FALSE, etREAL, {&r_distance},
-      "default vdwaals distance"},
+      "Default vdwaals distance"},
     { "-inside", FALSE, etBOOL, {&bForceInside},
-      "Force all atoms to be inside the box. Usually this is unnecessary as overlap between Van der Waals spheres is check with periodic boundary conditions taken into account" }
+      "HIDDENForce all atoms to be inside the box. Usually this is unnecessary as overlap between Van der Waals spheres is check with periodic boundary conditions taken into account" }
   };
 
   CopyRight(stderr,argv[0]);
