@@ -9,8 +9,8 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DCINVSQRT -DFINVSQRT -DHAVE_STRDUP
-
+SYSDEFS         = -DHAVE_IDENT -DHAVE_STRDUP -DGMX_INVSQRT -DINLINE_INVSQRT -DDECREASE_SQUARE_LATENCY -DFAST_X86TRUNC
+#
 #
 #	USER MODIFIABLE SECTION
 #
@@ -25,8 +25,8 @@ USEF77		= no
 # set both to no. If you select both, something will break!!!
 #
 USE_PVM3	= no
-#LAMHOME		= /usr/local
-USE_MPI		= no
+LAMHOME		= /usr/local
+USE_MPI		= yes
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
