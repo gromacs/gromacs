@@ -225,7 +225,7 @@ int main(int argc,char *argv[])
       "In case of double time frames the one in the later file is used. ",
       "By specifying [TT]-settime[tt] you will be asked for the start time ",
       "of each file. The input files are taken from the command line, ",
-      "such that a command like [TT]trjconv -o fixed.trr *.trr[tt] should do ",
+      "such that a command like [TT]trjcat -o fixed.trr *.trr[tt] should do ",
       "the trick."
   };
   static bool  bVels=TRUE;
