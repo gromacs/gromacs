@@ -31,7 +31,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_rdens		g_rdf		g_rms		\
 		g_rmsdist	g_rmsf		g_rotacf	\
 		g_saltbr	g_sas		g_sgangle	\
-		g_traj		\
+		g_traj		g_dyndom	\
 		g_velacc	genbox		genconf		\
 		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
@@ -245,6 +245,9 @@ g_analyze:	g_analyze.o $(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_morph:	g_morph.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+g_dyndom:	g_dyndom.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 include	Make.dep

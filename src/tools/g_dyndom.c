@@ -11,7 +11,8 @@
 #include "random.h"
 
 static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
-		     rvec head,rvec tail,matrix box,int isize,atom_id index[])
+		     rvec head,rvec tail,matrix box,int isize,atom_id index[],
+		     rvec xout[],rvec vout[])
 {
   rvec     arrow,center,xcm;
   real     theta,phi,arrow_len;
@@ -22,26 +23,37 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
   
   rvec_sub(tail,head,arrow);
   arrow_len = norm(arrow);
-  printf("Arrow vector:   %10.4f  %10.4f  %10.4f\n",
-	 arrow[XX],arrow[YY],arrow[ZZ]);
-  printf("Effective translation %g nm\n",trans);
+  if (debug) {
+    fprintf(debug,"Arrow vector:   %10.4f  %10.4f  %10.4f\n",
+	    arrow[XX],arrow[YY],arrow[ZZ]);
+    fprintf(debug,"Effective translation %g nm\n",trans);
+  }
   if (arrow_len == 0.0)
     fatal_error(0,"Arrow vector not given");
 
+  /* Copy all aoms to output */
+  for(i=0; (i<atoms->nr);i ++) {
+    copy_rvec(x[i],xout[i]);
+    copy_rvec(v[i],vout[i]);
+  }
+    
   /* Compute center of mass and move atoms there */
   clear_rvec(xcm);
   for(i=0; (i<isize); i++)
     rvec_inc(xcm,x[index[i]]);
   for(i=0; (i<DIM); i++)
     xcm[i] /= isize;
-  printf("Center of mass: %10.4f  %10.4f  %10.4f\n",xcm[XX],xcm[YY],xcm[ZZ]);
+  if (debug)
+    fprintf(debug,"Center of mass: %10.4f  %10.4f  %10.4f\n",
+	    xcm[XX],xcm[YY],xcm[ZZ]);
   for(i=0; (i<isize); i++)
-    rvec_dec(x[index[i]],xcm);
+    rvec_sub(x[index[i]],xcm,xout[index[i]]);
   
   /* Compute theta and phi that describe the arrow */
   theta = acos(arrow[ZZ]/arrow_len);
   phi   = atan2(arrow[YY]/arrow_len,arrow[XX]/arrow_len);
-  printf("Phi = %.1f, Theta = %.1f\n",RAD2DEG*phi,RAD2DEG*theta);
+  if (debug)
+    fprintf(debug,"Phi = %.1f, Theta = %.1f\n",RAD2DEG*phi,RAD2DEG*theta);
 
   /* Now the total rotation matrix: */
   /* Rotate a couple of times */
@@ -66,17 +78,17 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
 
   for(i=0; (i<isize); i++) {
     ai = index[i];
-    m4_op(Mtot,x[ai],xv);
-    rvec_add(xv,xcm,x[ai]);
+    m4_op(Mtot,xout[ai],xv);
+    rvec_add(xv,xcm,xout[ai]);
     m4_op(Mtot,v[ai],xv);
-    copy_rvec(xv,v[ai]);
+    copy_rvec(xv,vout[ai]);
   }
 }
 
 int main(int argc,char *argv[])
 {
   char *desc[] = {
-    "afterdd reads a pdb file output from DynDom",
+    "g_dyndom reads a pdb file output from DynDom",
     "http://md.chem.rug.nl/~steve/DynDom/dyndom.home.html",
     "It reads the coordinates, and the coordinates of the rotation axis",
     "furthermore it reads an index file containing the domains.",
@@ -95,35 +107,38 @@ int main(int argc,char *argv[])
     "inspection, and energy minimization may be necessary to",
     "validate the structure."
   };
-  static real trans = 0;
+  static real trans0 = 0;
   static rvec head  = { 0,0,0 };
   static rvec tail  = { 0,0,0 };
-  static real angle = 0,maxangle = 0;
-  static int  label = 0;
+  static real angle0 = 0,angle1 = 0, maxangle = 0;
+  static int  label = 0,nframes=11;
   t_pargs pa[] = {
-    { "-angle",    FALSE, etREAL, {&angle},
+    { "-firstangle",    FALSE, etREAL, {&angle0},
       "Angle of rotation about rotation vector" },
+    { "-lastangle",    FALSE, etREAL, {&angle1},
+      "Angle of rotation about rotation vector" },
+    { "-nframe",   FALSE, etINT,  {&nframes},
+      "Number of steps on the pathway" },
     { "-maxangle", FALSE, etREAL, {&maxangle},
       "DymDom dtermined angle of rotation about rotation vector" },
-    { "-trans",    FALSE, etREAL, {&trans},
-      "Translation along rotation vector (see DynDom info file)" },
+    { "-trans",    FALSE, etREAL, {&trans0},
+      "Translation (Aangstroem) along rotation vector (see DynDom info file)" },
     { "-head",     FALSE, etRVEC, {head},
       "First atom of the arrow vector" },
     { "-tail",     FALSE, etRVEC, {tail},
-      "Last atom of the arrow vector" },
-    { "-label",    FALSE, etINT,  {&label},
-      "Label in the outgoing pdb file is made by adding this value to 'A'" }
+      "Last atom of the arrow vector" }
   };
-  int     i,natoms,isize;
-  atom_id *index=NULL;
+  int     i,j,natoms,isize,status;
+  atom_id *index=NULL,*index_all;
   char    title[256],*grpname;
   t_atoms atoms;
-  rvec    *x,*v;
+  real    angle,trans;
+  rvec    *x,*v,*xout,*vout;
   matrix  box;
   
   t_filenm fnm[] = {
     { efPDB, "-f", "dyndom",  ffREAD },
-    { efPDB, "-o", "rotated", ffWRITE },
+    { efTRX, "-o", "rotated", ffWRITE },
     { efNDX, "-n", "domains", ffREAD }
   };
 #define NFILE asize(fnm)
@@ -138,25 +153,35 @@ int main(int argc,char *argv[])
   snew(x,natoms);
   snew(v,natoms);
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,&atoms,x,v,box);
+  snew(xout,natoms);
+  snew(vout,natoms);
   
   printf("Select group to rotate:\n"); 
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   printf("Going to rotate %s containg %d atoms\n",grpname,isize);
 
-  trans = -trans*0.1*angle/maxangle;
-  rot_conf(&atoms,x,v,trans,angle,head,tail,box,isize,index);
-
-  if (label < 0)
-    label = 'A';
-  else {
-    if (label+'A' >= 'Z')
-      label = label % 26;
-    label += 'A';
-  }
+  snew(index_all,atoms.nr);
   for(i=0; (i<atoms.nr); i++)
-    atoms.atom[i].chain = label;
+    index_all[i] = i;
     
-  write_sto_conf(opt2fn("-o",NFILE,fnm),title,&atoms,x,v,box);
+  status = open_trx(opt2fn("-o",NFILE,fnm),"w");
+  
+  label = 'A';
+  for(i=0; (i<nframes); i++,label++) {
+    angle = angle0 + (i*(angle1-angle0))/(nframes-1);
+    trans = trans0*0.1*angle/maxangle;
+    printf("Frame: %2d (label %c), angle: %8.3f deg., trans: %8.3f nm\n",
+	   i,label,angle,trans);
+    rot_conf(&atoms,x,v,trans,angle,head,tail,box,isize,index,xout,vout);
+    
+    if (label > 'Z')
+      label-=26;
+    for(j=0; (j<atoms.nr); j++)
+      atoms.atom[j].chain = label;
+    
+    write_trx(status,atoms.nr,index_all,&atoms,i,angle,box,xout,vout);  
+  }
+  close_trx(status);
   
   thanx(stdout);
   
