@@ -60,7 +60,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   int    status,natoms;
   matrix box;
   real   t,fac;
-  int    bind,i,j,i0,i1;
+  int    bind,i,nframes,i0,i1;
   
   if (!bAver) {
     snew(b_all,gnx/2);
@@ -77,9 +77,9 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   if (natoms == 0) 
     fatal_error(0,"No atoms in trajectory!");
     
-  j=0;
+  nframes=0;
   do {
-    j++; /* count frames */
+    nframes++; /* count frames */
     for(i=0; (i<gnx); i+=2) {
       pbc_dx(x[index[i]],x[index[i+1]],dx);
       bond   = norm(dx);
@@ -97,7 +97,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
 	    db   = (2.0*(b1-b0))/MAXTAB;
 	  }
 	}
-	bind = ((bond-b0)/db);
+	bind = (int)((bond-b0)/db+0.5);
 	if ((bind >= 0) && (bind <= MAXTAB))
 	  btab[bind]++;
 	else {
@@ -133,7 +133,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
 	    error_lsq(&b_one));
 	    
     out=xvgropen(outf,"Bond Stretching Distribution",
-		 "Bond Length (nm)","Time (ps)");
+		 "Bond Length (nm)","");
     
     for(i0=0;      ((i0 < MAXTAB) && (btab[i0]==0)); i0++)
       ;
@@ -145,9 +145,9 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
     if (i0 >= i1)
       fatal_error(0,"No distribution... (i0 = %d, i1 = %d)? ? ! ! ? !",i0,i1);
     
-    fac=((2.0/j)/gnx);
+    fac=2.0/(nframes*gnx*db);
     for(i=i0; (i<=i1); i++)
-      fprintf(out,"%16.10e  %16.10e  %10d\n",b0+i*db,btab[i]*fac,btab[i]);
+      fprintf(out,"%8.5f  %8.5f\n",b0+i*db,btab[i]*fac);
     fclose(out);
   }
   else {
