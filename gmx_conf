@@ -1,0 +1,139 @@
+#!/bin/csh -f
+
+setenv	CUR	`pwd`
+setenv 	CORE	gmxcore
+setenv	BNC	gmxbench
+setenv	TST	gmxtest
+
+clear
+# Determine which CPUS are available
+setenv CPUS ""
+set ncpu = 0
+foreach i ( src/makef/Makefile.* )
+  setenv	EXT	$i:e
+  if ( ( $EXT != SGI ) && ( $EXT != def ) && ( $EXT != std ) && ( $EXT != no ) && ( $EXT != ruggr2 ) && ( $EXT != ins ) && ( $EXT != ind) ) then
+     setenv	CPUS	"$CPUS"" ""$EXT"
+     @ ncpu += 1
+  endif
+end
+
+echo	'Which CPU/Machine do you have ?'
+echo	'-------------------------------'
+set i = 0
+foreach cpu ( $CPUS )
+  echo -n $cpu `head -1 src/makef/Makefile.$cpu`  "   "
+  if ( $i == 0 ) then
+    set i = 1
+  else
+    echo ""
+    set i = 0
+  endif
+end
+echo ""
+
+setenv	MKPREFIX	src/makef/Makefile
+
+echo	'Please select the cpu that is appropriate'
+set 	cpu = $<
+if ( -f $MKPREFIX.$cpu ) then
+	echo 	$cpu is OK
+	set  	cpmf = 0
+else
+	echo 	'Give a short abbreviation for your CPU/Machine, eg. ibm'
+	set	cpu = $<
+	set	cpmf = 1
+endif
+
+if ( $cpmf == 1 ) then
+	cp	$MKPREFIX.no	$MKPREFIX.$cpu
+	echo	'I have created a file called ' $MKPREFIX.$cpu
+	echo	'Please follow the instructions in the online readme.hmtl file'
+endif
+
+echo	' '
+echo	'GROMACS Cool Quote Installation'
+echo	'-------------------------------'
+echo	'If you do *NOT* want cool quotes type No here'
+set	cq = $<
+if ( $cq != No ) then
+	setenv 	COOL	YES
+else
+	setenv	COOL	NO
+	echo	'Now you will be treated like a fast food addict'
+endif
+
+setenv	RC	 GMXRC
+echo	Creating $RC file
+if ( -f  $RC ) mv $RC $RC.bak
+
+setenv	PATHPREFIX	`pwd`
+cat	> $RC << EOD
+#
+# Directories, edit to match your site, we assume
+# users have a c-shell allways
+#
+
+# This were the sources are
+setenv GMXHOME	$PATHPREFIX
+
+#
+# If you support multiple machines then it's useful to 
+# have a switch statement here, which, depending on hostname
+# point to the proper directories, and sets the CPU variable
+# 
+# For easy updating, it is also recommended to put you local
+# stuff in the GMXRC.local file
+# Don't forget the CPU variable
+#
+setenv	LOCAL_RC	\$GMXHOME/GMXRC.local
+if ( -f \$LOCAL_RC ) then
+	source	\$LOCAL_RC
+else
+# Here are some defaults, if you have one machine, edit these
+	setenv	CPU	$cpu
+endif
+
+# Some directories that live below the root
+setenv GMXBIN 	\$GMXHOME/bin
+setenv GMXLIB	\$GMXHOME/top
+
+# 
+# If your machine can handle multiple manpaths use this
+# It allows for easy cleanup etc.
+#
+setenv GMXMAN	\$GMXHOME/man
+
+# 
+# Default Graphics Font
+#
+setenv GMXFONT	10x20
+
+#
+# Set the path and manpath
+#
+setenv 	PATH 	"\$PATH":"\$GMXBIN"
+#
+# Watch out! If a manpath is set, it may disable other manpages
+# The solution to this is, to add all the system manpath's here
+# as well...
+#
+
+if ( \$?MANPATH ) then
+	 setenv MANPATH	"\$MANPATH":\$GMXMAN
+endif
+
+if ( \$?LD_LIBRARY_PATH ) then
+	 setenv LD_LIBRARY_PATH	"\$LD_LIBRARY_PATH":\$GMXLIB
+else
+	 setenv LD_LIBRARY_PATH	\$GMXLIB
+endif
+
+# Now finally, if you consider our Cool Quotes to be offensive
+# you might consider commenting out the following line:
+setenv	IAMCOOL	$COOL
+
+# end of script
+EOD
+
+echo	'Done, it is compile time now.'
+echo	'Source GMXRC and read instructions in the README file'
