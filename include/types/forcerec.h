@@ -54,6 +54,11 @@ typedef struct {
   int  ntab;
   real tabscale;
   real *VFtab;
+  real *VFtab14; /* special 1-4 tables to use when the ordinary
+		  * tabulated coulomb interactions are LR shifted.
+		  * not a pretty solution to double LJ, but it works.
+		  * Erik 990903
+		  */
 
   /* PPPM & Shifting stuff */
   real rcoulomb_switch,rcoulomb;
