@@ -668,7 +668,8 @@ int main(int argc,char *argv[])
   
     for(i=0; (i<atoms_1.nres); i++) {
       /* calculate number of SOLvent molecules */
-      if (strcmp(*atoms_1.resname[i],"SOL")==0)
+      if ( (strcmp(*atoms_1.resname[i],"SOL")==0) ||
+	   (strcmp(*atoms_1.resname[i],"HOH")==0) )
 	nsol++;
     }
     
@@ -719,7 +720,14 @@ int main(int argc,char *argv[])
 	} else if (bMolecules) {
 	  /* check if this is a line with solvent molecules */
 	  sscanf(buf,"%s",buf2);
-	  bSkip = (strcmp(buf2,"SOL")==0);
+	  if (strcmp(buf2,"SOL")==0) {
+	    sscanf(buf,"%*s %d",&i);
+	    nsol-=i;
+	    if (nsol<0) {
+	      bSkip=TRUE;
+	      nsol+=i;
+	    }
+	  }
 	}
 	if (bSkip) {
 	  if (temp=strchr(buf,'\n'))
@@ -734,9 +742,7 @@ int main(int argc,char *argv[])
 	fprintf(stdout,"Adding line for %d solute molecules to "
 		"topology file (%s)\n",nsol,topinout);
 	fprintf(fpout,"%-15s %5d\n","SOL",nsol);
-      } else
-	fprintf(stdout,"No SOL molecules, not adding anything to "
-		"topology file (%s)\n",topinout);
+      }
       fclose(fpout);
       /* use ffopen to generate backup of topinout */
       fpout=ffopen(topinout,"w");
