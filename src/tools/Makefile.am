@@ -63,15 +63,6 @@ gmx_ana_SOURCES      =  gmx-ana.c gmx-ana.h
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
-# Two problems with this:
-# 1. We are not allowed to change things in the srcdir - that will
-#    potentially ruin VPATH builds, so make distcheck will fail.
-# 2. We should not assume every system has a full perl distribution...
-#
-#gmx-ana.c:	$(srcdir)/gmx-ana.pl
-#		chmod +x $(srcdir)/gmx-ana.pl
-#		$(srcdir)/gmx-ana.pl $(xxx)
-
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
 	libname="libgmxana@LIBSUFFIX@"; \
@@ -81,7 +72,6 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
-	/bin/cp $(xxx) $(bindir)
 
 CLEANFILES   = *.la *~ \\\#*
 
