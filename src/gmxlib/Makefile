@@ -20,7 +20,7 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  disre.o	init.o 		stat.o 		\
 		  mvdata.o	steep.o		sim_util.o	\
 		  update.o 	tgroup.o	dummies.o	\
-                  block_tx.o	mvxvf.o		\
+                  block_tx.o	mvxvf.o		runner.o	\
 		  ebin.o	rbin.o		vcm.o		\
 		  mdebin.o	splittop.o	mdatom.o	\
 		  shakef.o	cshake.o	csettle.o	\
@@ -35,13 +35,13 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  fatal.o 	copyrite.o 	memdump.o 	\
 		  smalloc.o 	string2.o 	gbutil.o	\
 		  macros.o 	ffscanf.o 	futil.o 	\
-		  symtab.o 	invblock.o 	\
+		  symtab.o 	invblock.o 	fftgrid.o	\
 		  strdb.o 	3dview.o 	rando.o		\
 		  buffer.o	main.o		network.o 	\
 		  nrama.o	do_fit.o	writeps.o	\
 		  rmpbc.o	matio.o 	nrjac.o   	\
 		  wgms.o 	princ.o		pppm.o		\
-		  lrutil.o	four1.o		fourn.o		\
+		  lrutil.o	\
 		  grids.o	ghat.o		tables.o	\
 		  edsam.o	congrad.o	javaio.o        \
 		  index.o       readcmap.o	\
@@ -50,8 +50,7 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  
 ifeq ($(USEF77),yes)
 OBJ		+= inloopf.o	fshake.o	fsettle.o	\
-		   flincs.o	flincsld.o	doconv.o	\
-		   fournf.o	four1f.o
+		   flincs.o	flincsld.o	doconv.o
 endif
 
 ifeq ($(USE_XDR),yes)
@@ -105,7 +104,7 @@ include		$(STDTARGET)
 #
 
 testfft:	testfft.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+		$(LD) -o $@ $^ $(SYSLIBS) -lcomplib.sgimath
 testtab:	testtab.o	tables.o	lrutil.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 libxdrf.o:	libxdrf.m4 $(M4FILE)
@@ -129,9 +128,9 @@ libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o
 repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-testlr:		testlr.o	plotphi.o	ewald.o	pppm.o	\
-		four1f.o	fournf.o	grids.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+testlr:		testlr.o	ewald.o		pppm.o	\
+		grids.o		ghat.o		lrutil.o	fftgrid.o
+		$(LD) -o $@ $^  $(SYSLIBS) 
 
 lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
