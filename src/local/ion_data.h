@@ -55,7 +55,7 @@ static t_cross   cross_sec_s[] = {
   { 3.29e+2,      1.29e+1,     6.94e+0,         2.80e-1 }
 };
 
-ypedef struct {
+typedef struct {
   char *name;
   int  nel;
   t_cross *cross;

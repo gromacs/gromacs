@@ -57,8 +57,11 @@ static gmx_inline real invsqrt(float x)
   t_convert   result,bit_pattern;
   word        exp,fract;
   float       lu;
-  real        y,y2;
-  
+  real        y;
+#ifdef DOUBLE
+  real        y2;
+#endif
+
   bit_pattern.fval=x;
   exp   = EXP_ADDR(bit_pattern.bval);
   fract = FRACT_ADDR(bit_pattern.bval);
