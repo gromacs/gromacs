@@ -31,7 +31,7 @@ static char *SRCID_csettle_c = "$Id$";
 #include <math.h>
 #include <stdio.h>
 #include "vec.h"
-#include "update.h"
+#include "constr.h"
 #include "fatal.h"
 
 #ifdef DEBUG

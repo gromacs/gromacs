@@ -34,7 +34,7 @@ static char *SRCID_cshake_c = "$Id$";
 #include "smalloc.h"
 #include "pbc.h"
 #include "txtdump.h"
-#include "update.h"
+#include "constr.h"
 #include "vec.h"
 #include "nrnb.h"
 

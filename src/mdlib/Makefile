@@ -21,6 +21,7 @@ SONAME		= libmd.$(GMXCPU).so
 OBJ		= \
 		calcmu.o	calcvir.o	callf77.o	\
 		clincs.o	clincsld.o	congrad.o	\
+		constr.o	\
 		coupling.o	csettle.o	cshake.o	\
 		dummies.o	ebin.o		edsam.o		\
 		fftgrid.o	force.o		ghat.o		\

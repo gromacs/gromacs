@@ -36,7 +36,7 @@ static char *SRCID_shakef_c = "$Id$";
 #include "txtdump.h"
 #include "vec.h"
 #include "nrnb.h"
-#include "update.h"
+#include "constr.h"
 #include "copyrite.h"
 #include "callf77.h"
 

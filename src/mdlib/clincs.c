@@ -30,7 +30,7 @@ static char *SRCID_clincs_c = "$Id$";
 
 #include <math.h>
 #include "main.h"
-#include "update.h"
+#include "constr.h"
 #include "physics.h"
 #include "vec.h"
 
