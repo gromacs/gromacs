@@ -135,24 +135,29 @@ static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
 
 void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 {
-  /* Make this tunable! (does not seem to be a big difference though) 
+  /* Make maxlr tunable! (does not seem to be a big difference though) 
    * This parameter determines the number of i particles in a long range 
    * neighbourlist. Too few means many function calls, too many means
    * cache trashing.
    */
-  int maxlr=max(homenr/20,50);
+  int maxsr,maxsr_wat,maxlr,maxlr_wat;
   
-  init_nblist(&fr->nlist_sr[eNL_VDW],(homenr-fr->nWatMol*3),
+  maxsr     = homenr-fr->nWatMol*3;
+  maxsr_wat = fr->nWatMol; 
+  maxlr     = max(maxsr/10,50);
+  maxlr_wat = max(maxsr_wat/10,50);
+
+  init_nblist(&fr->nlist_sr[eNL_VDW],maxsr,
 	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
-  init_nblist(&fr->nlist_sr[eNL_QQ],(homenr-fr->nWatMol*3),
+  init_nblist(&fr->nlist_sr[eNL_QQ],maxsr,
 	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   if (fr->bPert)
-    init_nblist(&fr->nlist_sr[eNL_FREE],homenr-fr->nWatMol*3,
+    init_nblist(&fr->nlist_sr[eNL_FREE],maxsr,
 		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
   if (fr->bWaterOpt) {
-    init_nblist(&fr->nlist_sr[eNL_VDW_WAT],fr->nWatMol,
+    init_nblist(&fr->nlist_sr[eNL_VDW_WAT],maxsr_wat,
 		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
-    init_nblist(&fr->nlist_sr[eNL_QQ_WAT],fr->nWatMol,
+    init_nblist(&fr->nlist_sr[eNL_QQ_WAT],maxsr_wat,
 		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
   }
   if (fr->bTwinRange) {
@@ -166,9 +171,9 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
       init_nblist(&fr->nlist_lr[eNL_FREE],maxlr,
 		  fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
     if (fr->bWaterOpt) {
-      init_nblist(&fr->nlist_lr[eNL_VDW_WAT],maxlr,
+      init_nblist(&fr->nlist_lr[eNL_VDW_WAT],maxlr_wat,
 		  nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
-      init_nblist(&fr->nlist_lr[eNL_QQ_WAT],maxlr,
+      init_nblist(&fr->nlist_lr[eNL_QQ_WAT],maxlr_wat,
 		  nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
     }
   }
@@ -227,8 +232,7 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
       if (nlist->nri < nlist->maxnri) {
 	nlist->nri++;
 	nri++;
-      }
-      else
+      } else
 	fatal_error(0,"Too many i-atoms for %s (i_atom = %d, maxnri = %d)",
 		    interaction_function[ftype].longname,i_atom,nlist->maxnri);
     }
