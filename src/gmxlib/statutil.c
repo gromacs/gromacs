@@ -574,7 +574,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     set_default_time_unit(envstr);
     npall = add_parg(npall,&(all_pa),&time_pa);
   } else
-    default_time();
+    set_default_time_unit("ps");
   if (FF(PCA_CAN_VIEW))
     npall = add_parg(npall,&(all_pa),&view_pa);
 
