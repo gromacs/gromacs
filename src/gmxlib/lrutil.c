@@ -220,41 +220,73 @@ real potential(real r1,real rc,real R)
     return 0.0;
 }
 
-real calc_selfenergy(FILE *fp,int natoms,real charge[],t_block *excl)
+real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
+			real charge[],t_block *excl,rvec x[],rvec f[])
 {
   static bool bFirst=TRUE;
   static real Vself;
-  int  i,i1,i2,j,k;
-  real qq,qi,qjsum,Vex,Vc;
+  int    i,i1,i2,j,k;
+  unsigned int *AA;
+  real   qi,qq,dx,dy,dz,dr,dr2,dr_1,dr_3,fscal,Vexcl;
+  rvec   df;
   
   if (bFirst) {
-    qq   = 0;
-    for(i=0; (i<natoms); i++) 
+    qq =0;  
+    for(i=start; (i<natoms); i++) 
       qq  += charge[i]*charge[i];
-    Vc = 0.5*C*ONE_4PI_EPS0*qq;
-    fprintf(fp,"calc_self: qq = %g, Vc=%g\n",qq,Vc);
-  
-    qq = 0;
-    for(i=0; (i<excl->nr); i++) {
-      i1 = excl->index[i];
-      i2 = excl->index[i+1];
-      qjsum = 0;
-      for(j=i1; (j<i2); j++) {
-	k = excl->a[j];
-	if (k != i)
-	  qjsum+=charge[k];
-      }
-      qq += charge[i]*qjsum;
-    }
-    Vex   = qq*0.5*C*ONE_4PI_EPS0;
-    Vself = Vc + Vex;
-    
-    fprintf(fp,"calc_self: qq = %g, Vex=%g, Vself=%g\n",qq,Vex,Vself);
-    
+    Vself = 0.5*C*ONE_4PI_EPS0*qq;
+    fprintf(fp,"calc_LRcorrections: r1 = %g, rc=%g\n",r1,rc);
+    fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g\n",qq,Vself);
     bFirst = FALSE;
   }
   
-  return Vself;
+  AA = excl->a;
+  
+  Vexcl = 0;
+  for(i=start; (i<natoms); i++) {
+    /* Initiate local variables (for this i-particle) to 0 */
+    i1  = excl->index[i];
+    i2  = excl->index[i+1];
+    qi  = charge[i]*ONE_4PI_EPS0;
+
+    /* Loop over excluded neighbours */
+    for(j=i1; (j<i2); j++) {
+      k = AA[j];
+      /* 
+       * First we must test whether k <> i, and then, because the
+       * exclusions are all listed twice i->k and k->i we must select
+       * just one of the two.
+       * As a minor optimization we only compute forces when the charges
+       * are non-zero.
+       */
+      if (k > i) {
+	qq = qi*charge[k];
+	if (qq != 0.0) {
+	  /* Compute distance vector */
+	  dx      = x[i][XX] - x[k][XX];
+	  dy      = x[i][YY] - x[k][YY];
+	  dz      = x[i][ZZ] - x[k][ZZ];
+	  dr2     = (dx*dx+dy*dy+dz*dz);
+	  dr_1    = invsqrt(dr2);
+	  dr      = 1.0/dr_1;
+	  dr_3    = dr_1*dr_1*dr_1;
+	  /* Compute exclusion energy and scalar force */
+	  Vexcl  += qq*(dr_1-potential(r1,rc,dr));
+	  fscal   = qq*(-shiftfunction(r1,rc,dr))*dr_3;
+	  /* The force vector is obtained by multiplication with the 
+	   * distance vector 
+	   */
+	  df[XX]  = fscal*dx;
+	  df[YY]  = fscal*dy;
+	  df[ZZ]  = fscal*dz;
+	  rvec_inc(f[k],df);
+	  rvec_dec(f[i],df);
+	}
+      }
+    }
+  }
+  
+  return (Vself+Vexcl);
 }
 
 
