@@ -32,7 +32,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init_step, comm_mode, nstcomm, comm_grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter)
+<li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, surface_epsilon, optimize_fft)
@@ -211,7 +211,7 @@ to <b>ld_seed</b> plus the processor number.
 <hr>
 <h3><!--Idx-->Energy minimization<!--EIdx--></h3>
 <dl>
-<dt><h4>emtol: (100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
+<dt><h4>emtol: (10.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
 <dd>the minimization is converged when the maximum force is smaller than 
 this value</dd>
 <dt><h4>emstep: (0.01) [nm]</h4></dt>
@@ -227,18 +227,30 @@ number is (at least theoretically) more accurate, but slower.</dd>
 
 <A NAME="xmdrun"><br>
 <hr>
-<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3> When doing
-shell molecular dynamics the positions of the shells are optimized at
-every time step until either the RMS force on the shells is less than
-emtol, or a maximum number of iterations (niter) has been reached
+<h3><!--Idx-->Shell Molecular Dynamics<!--EIdx--></h3> When shells or
+flexible constraints are present in the system the positions of the shells
+and the lengths of the flexible constraints are optimized at
+every time step until either the RMS force on the shells and constraints
+is less than emtol, or a maximum number of iterations (niter) has been reached
 <dl>
-<dt><h4>emtol: (100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
+<dt><h4>emtol: (10.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
 <dd>the minimization is converged when the maximum force is smaller than 
 this value. For shell MD this value should be 1.0 at most, but since the
-variable is used for energy minimization as well the default is 100.0.</dd>
+variable is used for energy minimization as well the default is 10.0.</dd>
 <dt><h4>niter: (20)</h4></dt>
-<dd>maximum number of iterations for optimizing the shell positions.</dd>
+<dd>maximum number of iterations for optimizing the shell positions
+and the flexible constraints.</dd>
+<dt><h4>fcstep: (0) [ps<sup>2</sup>]</h4></dt>
+<dd>the step size for optimizing the flexible constraints.
+Should be chosen as mu/(d<sup>2</sup>V/d q<sup>2</sup>)
+where mu is the reduced mass of two particles in a flexible constraint
+and d<sup>2</sup>V/d q<sup>2</sup> is the second derivative of the potential
+in the constraint direction. Hopefully this number does not differ too
+much between the flexible constraints, as the number of iterations
+and thus the runtime is very sensitive to <tt>fcstep</tt>.
+Try several values!</dd>
 </dl>
+
 
 <A NAME="out"><br>
 <hr>
@@ -983,6 +995,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#ef">E_yt</A><br>
 <A HREF="#ef">E_z</A><br>
 <A HREF="#ef">E_zt </A><br>
+<A HREF="#xmdrun">fcstep</A><br>
 <A HREF="#ewald">fourier_nx</A><br>
 <A HREF="#ewald">fourier_ny</A><br>
 <A HREF="#ewald">fourier_nz</A><br>
@@ -1003,6 +1016,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>
+<A HREF="#xmdrun">niter</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
