@@ -40,3 +40,9 @@ extern void orient_mol(t_atoms *atoms,char *indexnm,rvec x[],rvec *v);
 /* Orient a molecule along its principal component axes. 
  * indexnm may be the name of an index file or null.
  */
+ 
+extern void make_shell(t_atoms *atoms,int natoms_prot,
+		       real radius[],rvec x[],matrix box,real r_shell);
+/* Keep all the residues around the protein (0..natoms_prot-1)
+ * that are within r_shell distance.
+ */
