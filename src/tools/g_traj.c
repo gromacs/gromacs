@@ -378,20 +378,20 @@ int main(int argc,char *argv[])
     outx = xvgropen(opt2fn("-ox",NFILE,fnm),
 		    bCom ? "Center of mass" : "Coordinate",
 		    "Time (ps)","Coordinate (nm)");
-    make_legend(outx,ngrps,isize[0],index[0],grpname,bCom,bMol,bDim);
+    make_legend(outx,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOV) {
     flags = flags | TRX_READ_V;
     outv = xvgropen(opt2fn("-ov",NFILE,fnm),
 		    bCom ? "Center of mass velocity" : "Velocity",
 		    "Time (ps)","Velocity (nm/ps)");
-   make_legend(outv,ngrps,isize[0],index[0],grpname,bCom,bMol,bDim); 
+   make_legend(outv,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim); 
   }
   if (bOF) {
     flags = flags | TRX_READ_F;
     outf = xvgropen(opt2fn("-of",NFILE,fnm),"Force",
 		    "Time (ps)","Force (kJ mol\\S-1\\N nm\\S-1\\N)");
-    make_legend(outf,ngrps,isize[0],index[0],grpname,bCom,bMol,bDim);
+    make_legend(outf,ngrps,isize0[0],index0[0],grpname,bCom,bMol,bDim);
   }
   if (bOB) {
     outb = xvgropen(opt2fn("-ob",NFILE,fnm),"Box vector elements",
