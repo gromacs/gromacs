@@ -52,6 +52,7 @@ static char *SRCID_stat_c = "$Id$";
 #include "xtcio.h"
 #include "gmxfio.h"
 #include "trnio.h"
+#include "statutil.h"
 
 void global_stat(FILE *log,
 		 t_commrec *cr,real ener[],
@@ -245,7 +246,7 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
 	}
       }
     }
-    if (write_xtc(xd,natoms,step,t,box,x_sel,prec) != 0) {
+    if (write_xtc(xd,natoms,step,t,box,x_sel,prec) == 0) {
       fprintf(stderr,"XTC error. Quitting %s\n",Program());
       exit(1);
     }
