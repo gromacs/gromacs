@@ -318,12 +318,11 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     fprintf(stderr,"processing coordinates...\n");
   
   get_stx_coordnum(confin,natoms);
-  if (*natoms != sys->atoms.nr) {
-    fprintf(stderr,
-	    "ERROR: number of coordinates in confin (%d) "
-	    "does not match topology (%d)\n",*natoms,sys->atoms.nr);
-    (*nerror)++;
-  } else {
+  if (*natoms != sys->atoms.nr)
+    fatal_error(0,"number of coordinates in coordinate file (%s, %d)\n"
+		"             does not match topology (%s, %d)",
+		confin,*natoms,topfile,sys->atoms.nr);
+  else {
     /* make space for coordinates and velocities */
     snew(confat,1);
     init_t_atoms(confat,*natoms,FALSE);
