@@ -19,7 +19,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
-		  g_angle	g_dih				\
+		  g_angle	g_dih		eneconv		\
 		  g_bond	g_dipoles			\
 		  g_mdmat	g_energy	g_sas		\
 		  do_dssp	sas2mat         g_rmsdist	\
