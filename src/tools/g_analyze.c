@@ -164,12 +164,17 @@ void histogram(char *distfile,real binwidth,int n, int nset, real **val)
   fclose(fp);
 }
 
+int real_comp(const void *a,const void *b)
+{
+  return (*(real *)a < *(real *)b);
+}
+
 void average(char *avfile,char **avbar_opt,
 	     int n, int nset,real **val,real t0,real dt)
 {
   FILE *fp;
-  int  i,s;
-  real av,var,err;
+  int  i,s,edge;
+  real av,var,err,*tmp;
   char c;
   
   c = avbar_opt[0][0];
@@ -178,7 +183,14 @@ void average(char *avfile,char **avbar_opt,
   if ((c == 'e') && (nset == 1))
     c = 'n';
   if (c != 'n') 
-    fprintf(fp,"@TYPE xydy\n");
+    if (c == '9') {
+      snew(tmp,nset);
+      fprintf(fp,"@TYPE xydydy\n");
+      edge = (int)(nset*0.05+0.5);
+      fprintf(stderr,"Errorbars: discarding %d points on both sides: %d%%"
+	      " interval\n",edge,(int)(100*(nset-2*edge)/nset+0.5));
+    } else
+      fprintf(fp,"@TYPE xydy\n");
   
   
   for(i=0; i<n; i++) {
@@ -189,17 +201,27 @@ void average(char *avfile,char **avbar_opt,
     fprintf(fp," %g %g",t0+dt*i,av);
     var = 0;
     if (c != 'n') {
-      for(s=0; s<nset; s++)
-	var += sqr(val[s][i]-av);
-      if (c == 's')
-	err = sqrt(var/nset);
-      else
-	err = sqrt(var/(nset*(nset-1)));
-      fprintf(fp," %g",err);
+      if (c == '9') {
+	for(s=0; s<nset; s++)
+	  tmp[s] = val[s][i];
+	qsort(tmp,nset,sizeof(tmp[0]),real_comp);
+	fprintf(fp," %g %g",tmp[nset-1-edge]-av,av-tmp[edge]);
+      } else {
+	for(s=0; s<nset; s++)
+	  var += sqr(val[s][i]-av);
+	if (c == 's')
+	  err = sqrt(var/nset);
+	else
+	  err = sqrt(var/(nset*(nset-1)));
+	fprintf(fp," %g",err);
+      }
     }
     fprintf(fp,"\n");
   }
   fclose(fp);
+  
+  if (c == '9')
+    sfree(tmp);
 }
 
 void estimate_error(char *eefile,int resol,int n,int nset,
@@ -271,8 +293,12 @@ int main(int argc,char *argv[])
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
     "Option [TT]-msd[tt] produces the mean square displacement(s).[PAR]",
     "Option [TT]-dist[tt] produces distribution plot(s).[PAR]",
-    "Option [TT]-av[tt] produces the average over the sets,",
-    "optionally with error bars ([TT]-errbar[tt]).[PAR]",
+    "Option [TT]-av[tt] produces the average over the sets.",
+    "Error bars can be added with the option [TT]-errbar[tt].",
+    "The errorbars can represent the standard deviation, the error",
+    "(assuming the points are independent) or the interval containing",
+    "90% of the points, by discarding 5% of the points at the top and",
+    "the bottom.[PAR]",
     "Option [TT]-ee[tt] produces error estimates using block averaging.",
     "A set is divided in a number of blocks and averages are calculated for",
     "each block. The error for the total average is calculated from the",
@@ -285,7 +311,7 @@ int main(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
   static int  nsets_in=1,d=1,resol=8;
 
-  static char *avbar_opt[] = { NULL, "none", "stddev", "error", NULL };
+  static char *avbar_opt[] = { NULL, "none", "stddev", "error", "90", NULL };
 
   t_pargs pa[] = {
     { "-time", FALSE, etBOOL, {&bHaveT},
@@ -299,7 +325,7 @@ int main(int argc,char *argv[])
     { "-bw", FALSE, etREAL, {&binwidth},
       "Binwidth for the distribution" },
     { "-errbar", FALSE, etENUM, {&avbar_opt},
-      "Error bars for the average" },
+      "Error bars for -av" },
     { "-resol", FALSE, etINT, {&resol},
       "HIDDENResolution for the block averaging, block size increases with"
     " a factor 2^(1/#)" },
