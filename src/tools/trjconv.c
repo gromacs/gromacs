@@ -371,34 +371,11 @@ int main(int argc,char *argv[])
       bVels= ((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO)) 
 	&& ((ftpin==efTRR) ||(ftpin==efTRJ) || (ftpin==efGRO));
     }
-     if (!bVels) {
+    if (!bVels) {
       bHaveX=TRUE;
       bHaveV=FALSE;
     }
-    if ((bAppend) && (fexist(out_file))) {
-      strcpy(filemode,"a");
-      fprintf(stderr,"APPENDING to existing file %s\n",out_file);
-    } else
-      strcpy(filemode,"w");
-    switch (ftp) {
-    case efXTC:
-      xdr = open_xtc(out_file,filemode);
-      break;
-    case efG87:
-      out=ffopen(out_file,filemode);
-      break;
-    case efTRR:
-    case efTRJ:
-      out=NULL;
-      trjout = open_tpx(out_file,filemode);
-      break;
-    case efGRO:
-    case efPDB:
-      if (!bSeparate) 
-	out=ffopen(out_file,filemode);
-      break;
-    }
-    
+     
     /* skipping */  
     if (skip_nr <= 0) {
       fprintf(stderr,"The number of frames to skip is <= 0. "
@@ -490,6 +467,31 @@ int main(int argc,char *argv[])
       tshift=tzero-t;
     else
       tzero=t;
+
+    /* open output for writing */
+    if ((bAppend) && (fexist(out_file))) {
+      strcpy(filemode,"a");
+      fprintf(stderr,"APPENDING to existing file %s\n",out_file);
+    } else
+      strcpy(filemode,"w");
+    switch (ftp) {
+    case efXTC:
+      xdr = open_xtc(out_file,filemode);
+      break;
+    case efG87:
+      out=ffopen(out_file,filemode);
+      break;
+    case efTRR:
+    case efTRJ:
+      out=NULL;
+      trjout = open_tpx(out_file,filemode);
+      break;
+    case efGRO:
+    case efPDB:
+      if (!bSeparate) 
+	out=ffopen(out_file,filemode);
+      break;
+    }
     
     /* check if index is meaningful */
     if (isize > natoms)
