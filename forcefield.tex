@@ -312,6 +312,49 @@ with the force
 \ve{F}_i(\rvij)	= k^b_{ij}(\rij-b_{ij}) \rnorm
 \eeq
 
+\subsection{Morse potential bond stretching}
+%\author{F.P.X. Everdij}
+%
+For some systems that require an anharmonic bond stretching potential, the Morse potential between two atoms {\it i} and {\it j} is available in GROMACS. This potential differs from the harmonic potential in having and asymmetric potential well and a zero force at infinite distance
+The functional form is:
+\beq
+\displaystyle V_{morse} (r_{ij}) = D_{ij} [1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2,
+\eeq
+and the corresponding force is:
+\beq
+\begin{array}{rcl}
+\displaystyle {\bf F}_{morse} ({\bf r}_{ij})&=&2 D_{ij} \beta_{ij} r_{ij} exp(-\beta_{ij}(r_{ij}-b_{ij})) * \\
+\displaystyle \: & \: &[1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))] \frac{\displaystyle {\bf r}_{ij}}{\displaystyle r_{ij}},
+\end{array}
+\eeq
+where \( \displaystyle D_{ij} \) is the depth of the well in kJ/mole, \( \displaystyle \beta_{ij} \) defines the steepness of the well (in nm\(^{-1} \)), and \( \displaystyle b_{ij} \) is the equilibrium distance in nm.
+The steepness parameter \( \displaystyle \beta_{ij} \) can be expressed in terms of the reduced mass of the atoms {\it i} and {\it j}, the fundamental vibration frequency \( \displaystyle \omega_{ij} \) and the well depth \( \displaystyle D_{ij} \):
+\beq
+\displaystyle \beta_{ij}= \omega_{ij} \sqrt{\frac{\mu_{ij}}{2 D_{ij}}}
+\eeq
+and because \( \displaystyle \omega = \sqrt{k/\mu} \), one can rewrite \( \displaystyle \beta_{ij} \) in terms of the harmonic force constant \( \displaystyle k_{ij} \)
+\beq
+\displaystyle \beta_{ij}= \sqrt{\frac{k_{ij}}{2 D_{ij}}}
+\eeq
+For small deviations \( \displaystyle (r_{ij}-b_{ij}) \), one can expand the \( \displaystyle exp \)-term to first-order in the Taylor expansion: 
+\beq
+\displaystyle exp(-x) \approx 1-x
+\eeq
+Substituting this in the functional from;
+\beq
+\begin{array}{rcl}
+\displaystyle V_{morse} (r_{ij})&=&D_{ij} [1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2\\
+\displaystyle \:&=&D_{ij} [1 - (1 -\sqrt{\frac{k_{ij}}{2 D_{ij}}}(r_{ij}-b_{ij}))]^2\\
+\displaystyle \:&=&\frac{1}{2} k_{ij} (r_{ij}-b_{ij}))^2,
+\end{array}
+\eeq
+one recovers the harmonic bond stretching potential.
+\begin {figure}[ht]
+\centerline{\psfig {figure=plots/f_morse.eps,width=7cm}}
+\caption {The Morse potential well, with bondlength 0.15 nm}
+\label{fig:morse}
+\end {figure}
+
 \subsection{Bond angle vibration}
 The bond \normindex{angle vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\theta_{ijk}$
