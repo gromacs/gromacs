@@ -380,7 +380,7 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
 
   for(i=0; (i<opts->ngtc); i++) {
     if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
-      Qinv=1.0/(opts->tau_t[i]*opts->tau_t[i]*opts->ref_t[i])/(4*M_PI*M_PI);
+      Qinv=1.0/(opts->tau_t[i]*opts->tau_t[i]*opts->ref_t[i]/(4*M_PI*M_PI));
     else
       Qinv=0.0;
     reft = max(0.0,opts->ref_t[i]);
