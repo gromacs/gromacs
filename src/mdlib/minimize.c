@@ -200,7 +200,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   t_vcm      *vcm;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
-  bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14,bRand,brerun;
+  bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14,bRand,brerun,bBeta0=FALSE;
   rvec   mu_tot;
   time_t start_t;
   tensor force_vir,shake_vir,pme_vir;
@@ -314,12 +314,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    * bDone is a BOOLEAN variable, which will be set TRUE when
    * the minimization has converged.
    */
-  for(count=1,bDone=FALSE; 
-      !(bDone || ((number_steps > 0) && (count==number_steps))); count++) {
-
+  bDone=FALSE; 
+  for(count=1; (!bDone && (count < number_steps)); count++) {
+    
     /* start conjugate gradient, determine search interval a,b */
-    gpa=0.0;
-    for(i=start; i<end; i++) {
+    gpa = 0.0;
+    for(i=start; (i<end); i++) {
       gf = mdatoms->cFREEZE[i];
       for(m=0; m<DIM; m++) 
 	if (!parm->ir.opts.nFreeze[gf][m]) {
@@ -329,20 +329,20 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     }
     if (PAR(cr))
       gmx_sumd(1,&gpa,cr);
-    pnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
+    pnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
 
-    a    = 0.0;
     /* Set variables for stepsize (in nm). This is the largest 
      * step that we are going to make in any direction.
      */
+    a    = 0.0;
     b    = parm->ir.em_stepsize/pnorm;
     niti = 0;
 
     /* search a,b iteratively, if necessary */
     brerun=TRUE;
     while (brerun) {
-      for (i=start; i<end; i++) {
-	for(m=0; m<DIM; m++) {
+      for (i=start; (i<end); i++) {
+	for(m=0; (m<DIM); m++) {
 	  xprime[i][m] = x[i][m] + b*p[i][m];
 	}
       }
@@ -355,7 +355,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       
       /* Calc force & energy on new trial position  */
       /* do_force always puts the charge groups in the box and shifts again
-       * We do not unshift, so molecules are always whole in congrad.c
+       * We do not unshift, so molecules are always whole in conjugate
+       * gradients
        */
       do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
 	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
@@ -363,8 +364,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       
       /* Spread the force on dummy particle to the other particles... */
-      if(bDummies) 
-	spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
+      if (bDummies) 
+	spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef,
+		       dummycomm,cr); 
       
       /* Sum the potential energy terms from group contributions */
       sum_epot(&(parm->ir.opts),grps,ener);
@@ -373,9 +375,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       bNS = (parm->ir.nstlist > 0);
 
       gpb=0.0;
-      for(i=start; i<end; i++)
-	for(m=0; m<DIM; m++) 
-	  gpb -= p[i][m]*f[i][m];
+      for(i=start; (i<end); i++)
+	gpb -= iprod(p[i],f[i]);
 
       if (PAR(cr))
 	gmx_sumd(1,&gpb,cr);
@@ -392,7 +393,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	global_stat(log,cr,ener,force_vir,shake_vir,
 		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
 
-      EpotB=ener[F_EPOT];
+      EpotB = ener[F_EPOT];
       
       if ((gpb >= 0.0) || (EpotB >= EpotA))
 	brerun=FALSE;
@@ -400,7 +401,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	a     = b;
 	EpotA = EpotB;
 	gpa   = gpb;
-	b    += b;
+	b     = 2.0*b;
       }
       niti++;
     }
@@ -416,70 +417,75 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       fprintf(stderr,"a= %20.12e, b= %20.12e\n",a,b);
       fprintf(stderr,"EpotA= %20.12e, EpotB= %20.12e\n",EpotA,EpotB);
       fprintf(stderr,"Negative number for sqrt encountered (%f)\n",w);
-      fprintf(stderr,"Terminating minimization\n");
-      break;
-    }      
-    w    = sqrt(w);
-    smin = b - ((gpb+w-zet)*(b-a))/((gpb-gpa)+2.0*w);
 
-    /* new positions */
-    for (i=start; i<end; i++)
-      for(m=0; m<DIM; m++) 
-	xprime[i][m] = x[i][m] + smin*p[i][m];
-
-    if (bDummies) 
-      construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			graph,cr,parm->box,dummycomm);
-
-    /* new energy, forces
-     * do_force always puts the charge groups in the box and shifts again
-     * We do not unshift, so molecules are always whole in congrad.c
-     */
-    do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
-	     count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
-	     buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
-    
-    /* Spread the force on dummy particle to the other particles... */
-    if(bDummies)
-      spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
-
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener); 
-    fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
-    
-    /* Clear stuff again */
-    clear_mat(force_vir);
-    clear_mat(shake_vir);
+      bBeta0 = TRUE;      
+      /* fprintf(stderr,"Terminating minimization\n");
+	 break; */
+    } 
+    else {
+      w    = sqrt(w);
+      smin = b - ((gpb+w-zet)*(b-a))/((gpb-gpa)+2.0*w);
       
-    /* Communicate stuff when parallel */
-    if (PAR(cr)) 
-      global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
-
-    EpotA=ener[F_EPOT];
-
+      /* new positions */
+      for (i=start; i<end; i++)
+	for(m=0; m<DIM; m++) 
+	  xprime[i][m] = x[i][m] + smin*p[i][m];
+      
+      if (bDummies) 
+	construct_dummies(log,xprime,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+			  graph,cr,parm->box,dummycomm);
+      
+      /* new energy, forces
+       * do_force always puts the charge groups in the box and shifts again
+       * We do not unshift, so molecules are always whole in congrad.c
+       */
+      do_force(log,cr,mcr,parm,nsb,force_vir,pme_vir,
+	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
+	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
+      
+      /* Spread the force on dummy particle to the other particles... */
+      if(bDummies)
+	spread_dummy_f(log,xprime,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
+      
+      /* Sum the potential energy terms from group contributions */
+      sum_epot(&(parm->ir.opts),grps,ener); 
+      fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
+      
+      /* Clear stuff again */
+      clear_mat(force_vir);
+      clear_mat(shake_vir);
+      
+      /* Communicate stuff when parallel */
+      if (PAR(cr)) 
+	global_stat(log,cr,ener,force_vir,shake_vir,
+		    &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
+      
+      EpotA  = ener[F_EPOT];
+      
+      bBeta0 = FALSE;
+    }   
     /* new search direction */
     /* beta = 0 means steepest descents */
-    if (nstcg && ((count % nstcg)==0)) 
+    if (bBeta0 || (nstcg && ((count % nstcg)==0)))
       beta = 0.0;
     else
-      beta=fnorm*fnorm/(fnorm_old*fnorm_old);
-
+      beta = fnorm*fnorm/(fnorm_old*fnorm_old);
+    
     /* update x, fnorm_old */
     for (i=start; i<end; i++)
       copy_rvec(xprime[i],x[i]);
     fnorm_old=fnorm;
-
+    
     /* Test whether the convergence criterion is met */
     fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
 	       start,end,f,&nfmax);
-
+    
     /* Print it if necessary */
     if (bVerbose && MASTER(cr)) {
       fprintf(stderr,"\rStep %d, E-Pot = %16.10e, Fmax = %12.5e, atom = %d\n",
 	      count,EpotA,fmax,nfmax);
-      /* Store the new (lower) energies */
+	/* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		 ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot,
@@ -492,12 +498,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
     /* Stop when the maximum force lies below tolerance */
     bDone=(fmax < parm->ir.em_tol);
-
-    /*if (MASTER(cr))
-      fprintf(stderr,"\n");*/
-	
   } /* End of the loop */
-
+  
   /* Print some shit... */
   if (MASTER(cr))
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
