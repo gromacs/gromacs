@@ -274,7 +274,7 @@ static real anal_ee(real *parm,real T,real t)
 	      parm[3]*2*parm[2]/T*((e2 - 1)*parm[2]/t + 1));
 }
 
-static void estimate_error(char *eefile,int resol,int n,int nset,
+static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 			   double *av,double *sig,real **val,real dt,
 			   bool bFitAc)
 {
@@ -301,7 +301,7 @@ static void estimate_error(char *eefile,int resol,int n,int nset,
   for(s=0; s<nset; s++) {
     nbs = 0;
     prev_bs = 0;
-    nbr = 4;
+    nbr = nb_min;
     while (nbr <= n) {
       bs = n/(int)nbr;
       if (bs != prev_bs) {
@@ -374,7 +374,7 @@ static void estimate_error(char *eefile,int resol,int n,int nset,
       ac_fit[0] = 0.002*n*dt;
       ac_fit[1] = 0.95;
       ac_fit[2] = 0.2*n*dt;
-      do_lmfit((n+1)/4,ac,fitsig,dt,0,0,dt*(n+1)*0.25,
+      do_lmfit((n+1)/nb_min,ac,fitsig,dt,0,0,dt*(n+1)*0.25,
               bDebugMode(),effnEXP3,ac_fit,0);
       ac_fit[3] = 1 - ac_fit[1];
 
@@ -443,7 +443,7 @@ int main(int argc,char *argv[])
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
   static bool bEeFitAc=FALSE;
-  static int  linelen=4096,nsets_in=1,d=1,resol=10;
+  static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
   static char *avbar_opt[] = { NULL, "none", "stddev", "error", "90", NULL };
 
@@ -466,6 +466,8 @@ int main(int argc,char *argv[])
       "Binwidth for the distribution" },
     { "-errbar", FALSE, etENUM, {&avbar_opt},
       "Error bars for -av" },
+    { "-nbmin", FALSE, etINT, {&nb_min},
+      "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
       "HIDDENResolution for the block averaging, block size increases with"
     " a factor 2^(1/#)" },
@@ -591,7 +593,7 @@ int main(int argc,char *argv[])
     do_view(avfile, NULL);
   }
   if (eefile) {
-    estimate_error(eefile,resol,n,nset,av,sig,val,dt,bEeFitAc);
+    estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc);
     do_view(eefile, NULL);
   }
   if (acfile) {
