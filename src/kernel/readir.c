@@ -376,7 +376,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Max number of iterations in relax_shells");
   ITYPE ("niter",       ir->niter,      20);
   CTYPE ("Step size (1/ps^2) for minimization of flexible constraints");
-  ITYPE ("fcstep",      ir->fc_stepsize, 0);
+  RTYPE ("fcstep",      ir->fc_stepsize, 0);
   CTYPE ("Frequency of steepest descents steps when doing CG");
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
   ITYPE ("nbfgscorr",   ir->nbfgscorr,  10); 
@@ -1386,8 +1386,8 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
       min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
       if (sqr(2*rlong) >= min_size) {
 	fprintf(stderr,"ERROR: One of the box vectors is shorter than twice the cut-off length. Increase the box size or decrease %s.\n",
-		bTWIN ? "rcoulomb":"rlist");
-      (*nerror)++;
+		bTWIN ? (ir->rcoulomb==rlong ? "rcoulomb" : "rvdw"):"rlist");
+	(*nerror)++;
       }
     } else {
       min_size = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
