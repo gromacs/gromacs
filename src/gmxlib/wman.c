@@ -116,14 +116,19 @@ t_sandr sandrHTML[] = {
 
 static char *mydate(void)
 {
+  static char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+			 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+  static char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
   time_t now;
-  char   *cnow;
+  static char tbuf[128];
+  struct tm *tm;
   
-  now=time(NULL);
+  (void) time(&now);
+  tm = localtime(&now);
+  sprintf(tbuf,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
+	  mon[tm->tm_mon],tm->tm_year+1900);
   
-  cnow=strdup(ctime(&now));
-  
-  return cnow;
+  return tbuf;
 }
 
 static char *repall(char *s,int nsr,t_sandr sa[])
@@ -280,12 +285,8 @@ static void write_nroffman(FILE *out,
 
 {
   int i,slen; /* counter */
-  char buf[128];
   
-  sprintf(buf,"%s",mydate());
-  slen=strlen(buf);
-  buf[slen-1] = '\0';
-  fprintf(out,".TH %s 1 \"manpage generated @ %s\"\n",program,buf);
+  fprintf(out,".TH %s 1 \"%s\"\n",program,mydate());
   fprintf(out,".SH NAME\n");
   fprintf(out,"%s\n",program);
   fprintf(out,".B %s\n",GromacsVersion());
