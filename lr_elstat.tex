@@ -108,7 +108,7 @@ anisotropic scaling can introduce artificial ordering in some systems.
 The Particle-Particle Particle-Mesh methods of Hockney \& Eastwood
 can also be applied in {\gromacs} for the treatment of longe range 
 electrostatic interactions~\cite{Hockney81,Darden93,Luty95a}. 
-With this algorithm the charges of all particles are spread over a grid of dimension
+With this algorithm the charges of all particles are spread over a grid of dimensions
 ($n_x$,$n_y$,$n_z$) using a weighting function called the
 triangle-shaped charged distribution:
 \beq
@@ -126,7 +126,7 @@ W(\xi)  &=& \left\{
 \end{array}
 \eeq
 where $\xi$ (is x, y or z) is the distance to a grid point in the corresponding
-dimension. Only the 27 closest grid need to be taken into account for each charge.
+dimension. Only the 27 closest grid points need to be taken into account for each charge.
 
 Then, this charge distribution is fourier transformed using a 3D inverse FFT 
 routine.
