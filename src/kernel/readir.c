@@ -920,9 +920,9 @@ void do_index(char *ndx,
   negexcl=str_nelem(egexcl,MAXPTR,ptr1);
   if (negexcl % 2 != 0)
     fatal_error(0,"The number of groups for energygrp_excl is odd");
+  nr=atoms->grps[egcENER].nr;
   snew(ir->opts.eg_excl,nr*nr);
   bExcl=FALSE;
-  nr=atoms->grps[egcENER].nr;
   for(i=0; i<negexcl/2; i++) {
     j=0;
     while ((j < nr) &&
