@@ -1070,7 +1070,8 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   fprintf(stderr,"Added %d new constraints\n",plist[F_SHAKENC].nr);
 }
 
-void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult)
+void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult,
+	       bool bDeuterate)
 {
   int i,j,a;
   
@@ -1095,8 +1096,10 @@ void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult)
       
       /* adjust mass of i (hydrogen) with mHmult
 	 and correct mass of a (bonded atom) with same amount */
-      at->atom[a].m -= (mHmult-1.0)*at->atom[i].m;
-      at->atom[a].mB-= (mHmult-1.0)*at->atom[i].m;
+      if (!bDeuterate) {
+	at->atom[a].m -= (mHmult-1.0)*at->atom[i].m;
+	at->atom[a].mB-= (mHmult-1.0)*at->atom[i].m;
+      }
       at->atom[i].m *= mHmult;
       at->atom[i].mB*= mHmult;
     }

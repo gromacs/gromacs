@@ -1041,7 +1041,7 @@ int main(int argc, char *argv[])
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&tab,bts,nrtp,restp,
 	    sel_ntdb,sel_ctdb,bH14,cc->nterpairs,cc->rN,cc->rC,bAlldih,
 	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL, 
-	    long_bond_dist, short_bond_dist);
+	    long_bond_dist, short_bond_dist,bDeuterate);
     
     if (!cc->bAllWat)
       write_posres(posre_fn,pdba);

@@ -620,7 +620,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     bool bH14, int nterpairs, int *rn, int *rc, bool bAlldih,
 	     bool bDummies, bool bDummyAromatics, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
-	     real long_bond_dist, real short_bond_dist)
+	     real long_bond_dist, real short_bond_dist,
+	     bool bDeuterate)
 {
   t_hackblock *hb;
   t_restp  *restp;
@@ -678,7 +679,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
-    do_h_mass(&(plist[F_BONDS]),dummy_type,atoms,mHmult);
+    do_h_mass(&(plist[F_BONDS]),dummy_type,atoms,mHmult,bDeuterate);
   sfree(dummy_type);
   
   /* Cleanup bonds (sort and rm doubles) */ 

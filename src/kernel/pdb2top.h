@@ -73,7 +73,8 @@ extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    bool bH14, int nterpairs, int *rn, int *rc, bool bAlldih,
 		    bool bDummies, bool bDummyAromatics, real mHmult,
 		    int nssbonds, t_ssbond ssbonds[], int nrexcl, 
-		    real long_bond_dist, real short_bond_dist);
+		    real long_bond_dist, real short_bond_dist,
+		    bool bDeuterate);
 /* Create a topology ! */
 extern bool is_int(double x);
 /* Returns TRUE when x is integer */
