@@ -217,6 +217,12 @@ void merge_hacks(t_hackblock *s, t_hackblock *d)
   merge_hacks_lo(s->nhack, s->hack, &d->nhack, &d->hack);
 }
 
+void merge_t_hackblock(t_hackblock *s, t_hackblock *d)
+{
+  merge_hacks(s, d);
+  merge_t_bondeds(s->rb, d->rb);
+}
+
 void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
 {
   int i;
@@ -225,12 +231,11 @@ void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
   d->name  = safe_strdup(s->name);
   d->nhack = 0;
   d->hack  = NULL;
-  merge_hacks(s, d);
   for(i=0; i<ebtsNR; i++) {
     d->rb[i].nb=0;
     d->rb[i].b=NULL;
   }
-  merge_t_bondeds(s->rb, d->rb);
+  merge_t_hackblock(s, d);
 }
 
 #undef safe_strdup
@@ -240,20 +245,19 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
   int i,j,k,l;
   
 #define SS(s) (s) ? (s) : "-"
+#define SA(s) (s) ? "+" : ""
   fprintf(out,"t_hackblock\n");
   for(i=0; i<nres; i++) {
     fprintf(out, "%3d %4s %2d %2d\n",
 	    i, SS(hb[i].name), hb[i].nhack, hb[i].maxhack);
     if (hb[i].nhack)
       for(j=0; j<hb[i].nhack; j++) {
-#define SA(s) (s) ? "+" : ""
 	fprintf(out, "%d: %d %4s %4s %1s %2d %d %4s %4s %4s %4s\n", 
 		j, hb[i].hack[j].nr, 
 		SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
 		SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
 		SS(hb[i].hack[j].AI), SS(hb[i].hack[j].AJ),
 		SS(hb[i].hack[j].AK), SS(hb[i].hack[j].AL) );
-#undef SA
       }
     for(j=0; j<ebtsNR; j++)
       if (hb[i].rb[j].nb) {
@@ -269,5 +273,6 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
     fprintf(out,"\n");
   }
 #undef SS
+#undef SA
 }
 

@@ -119,6 +119,9 @@ extern void merge_hacks_lo(int ns, t_hack *s, int *nd, t_hack **d);
 extern void merge_hacks(t_hackblock *s, t_hackblock *d);
 /* add s->hacks[] to d->hacks[] */
 
+extern void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
+/* add s->hacks[] and s->rb[] to d*/
+
 extern void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
 
