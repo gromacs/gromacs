@@ -43,6 +43,7 @@ static char *SRCID_trxio_c = "$Id$";
 #include "xtcio.h"
 #include "pdbio.h"
 #include "confio.h"
+#include "wgms.h"
 
 /* defines for frame counter output */
 static int frame=-666;
@@ -62,6 +63,136 @@ static eFileFormat eFF;
 static int         NATOMS;
 static double      DT,BOX[3];
 static bool        bReadBox;
+
+typedef struct {
+  int  fnum;
+  FILE *fp;
+  int  ftp;
+} t_trx_out;
+
+static int nfile=0;
+static t_trx_out *trx_out=NULL;
+
+int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
+	      int step,real time,matrix box,rvec x[],rvec *v)
+{
+  char title[STRLEN];
+  rvec *xout,*vout;
+  int i;
+
+  switch (trx_out[fnum].ftp) {
+  case efTRN: 
+    if (v) {
+      snew(vout,nind);
+      for(i=0; i<nind; i++) 
+	copy_rvec(v[ind[i]],vout[i]);
+    }
+  case efXTC:
+  case efG87:
+    snew(xout,nind);
+    for(i=0; i<nind; i++) 
+      copy_rvec(x[ind[i]],xout[i]);
+    break;
+  default:
+    break;
+  }
+
+  switch (trx_out[fnum].ftp) {
+  case efXTC: 
+    write_xtc(trx_out[fnum].fnum,nind,step,time,box,xout,1000);
+    break;
+  case efTRN:
+    fwrite_trn(trx_out[fnum].fnum,frame,time,step,box,nind,xout,vout,NULL);
+    break;
+  case efPDB:
+  case efBRK:
+  case efENT:
+    sprintf(title,"frame t= %.3f",time);
+    write_pdbfile_indexed(trx_out[fnum].fp,title,atoms,x,box,0,TRUE,nind,ind);
+    break;
+  case efGRO:
+    sprintf(title,"frame t= %.3f",time);
+    write_hconf_indexed(trx_out[fnum].fp,title,atoms,nind,ind,x,v,box);
+    break;
+  case efG87:
+    write_gms(trx_out[fnum].fp,nind,xout,box);
+    break;
+  default:
+    fatal_error(0,"Sorry, write_trx_x can not write %s",
+		ftp2ext(trx_out[fnum].ftp));
+    break;
+  }
+
+  switch (trx_out[fnum].ftp) {
+  case efTRN:
+    if (v) sfree(vout);
+  case efXTC:
+  case efG87:
+    sfree(xout);
+    break;
+  default:
+    break;
+  }
+  
+  return 0;
+}
+
+int close_trx(int fnum)
+{
+  switch (trx_out[fnum].ftp) {
+  case efXTC: 
+    close_xtc(trx_out[fnum].fnum);
+    break;
+  case efTRN:
+    close_trn(trx_out[fnum].fnum);
+    break;
+  case efPDB:
+  case efBRK:
+  case efENT:
+  case efGRO:
+  case efG87:  
+    fclose(trx_out[fnum].fp);
+    break;
+  default:
+    fatal_error(0,"Sorry, write_trx_x can not close file %d",fnum);
+    break;
+  }
+
+  return 0;
+}
+
+int open_trx(char *outfile,char *filemode)
+{
+  if (filemode[0] != 'w')
+    fatal_error(0,"Sorry, write_trx_x can only write");
+  
+  srenew(trx_out,nfile+1);
+  
+  trx_out[nfile].ftp = fn2ftp(outfile);
+  
+  switch (trx_out[nfile].ftp) {
+  case efXTC: 
+    trx_out[nfile].fnum = open_xtc(outfile,filemode);
+    break;
+  case efTRN:
+    trx_out[nfile].fnum = open_trn(outfile,filemode);
+    break;
+  case efPDB:
+  case efBRK:
+  case efENT:
+  case efGRO:
+  case efG87:  
+    trx_out[nfile].fp = ffopen(outfile,filemode);
+    break;
+  default:
+    fatal_error(0,"Sorry write_trx_x can not write %s",outfile);
+    break;
+  }
+  
+  nfile++;
+
+  return nfile-1;
+}
 
 static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 {

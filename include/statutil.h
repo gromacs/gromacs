@@ -57,6 +57,17 @@ extern char *Program(void);
  *             Trajectory functions
  ************************************************/
 
+
+int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
+	      int step,real time,matrix box,rvec x[],rvec *v);
+/* write an indexed frame to a TRX file */ 
+
+int close_trx(int fnum);
+/* Close a TRX file */
+
+int open_trx(char *outfile,char *filemode);
+/* Open a TRX file and return the file number */
+
 extern int check_times(real t);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin,
