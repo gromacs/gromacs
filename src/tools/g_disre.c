@@ -149,8 +149,11 @@ static void check_viol(FILE *log,t_commrec *mcr,
     type  = forceatoms[i];
     n     = 0;
     label = forceparams[type].disres.label;
+    if (debug) 
+      fprintf(debug,"DISRE: ndr = %d, label = %d  i=%d, n =%d\n",
+	      ndr,label,i,n);
     if (ndr != label) 
-      fatal_error(0,"ndr = %d, label = %d\n",ndr,label);
+      fatal_error(0,"tpr inconsistency. ndr = %d, label = %d\n",ndr,label);
     do {
       n += nat;
     } while (((i+n) < disres->nr) && 
@@ -377,9 +380,12 @@ int gmx_disre(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
 
+  cr  = init_par(&argc,&argv);
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    
+  
   if (ntop)
     init5(ntop);
   
@@ -388,11 +394,11 @@ int gmx_disre(int argc,char *argv[])
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&ntopatoms,xtop,NULL,NULL,&top);
 
+  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
+
   check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
 
   g   = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);  
-  cr  = init_par(&argc,&argv);
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
