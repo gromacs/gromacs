@@ -550,7 +550,8 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   for(i=0; (i<ng); i++) {
     /* Lookup the group name in the block structure */
     gid = search_string(ptrs[i],block->nr,gnames);
-    groups->nm_ind[groups->nr++]=gid;
+    if ((i==0) || !bOneGroup)
+      groups->nm_ind[groups->nr++]=gid;
     if (debug) 
       fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
     
@@ -580,29 +581,24 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   
   /* Now check whether we have done all atoms */
   if (ntot != atoms->nr) {
-    if (bOneGroup)
-      i = 1;
-    else {
-      if (bVerbose)
-	fprintf(stderr,
-		"Making dummy/rest group for %s containing %d elements\n",
-		title,atoms->nr-ntot);
-      /* Add group name "rest" */
-      i = groups->nr;
-    }
-    groups->nm_ind[groups->nr++] = restnm;
+    if (bVerbose)
+      fprintf(stderr,"Making dummy/rest group for %s containing %d elements\n",
+	      title,atoms->nr-ntot);
+    /* Add group name "rest" */ 
+    groups->nm_ind[groups->nr] = restnm;
     
     /* Assign the rest name to all atoms not currently assigned to a group */
     for(j=0; (j<atoms->nr); j++) {
       if (cbuf[j] == NOGID)
-	cbuf[j] = i;
+	cbuf[j] = groups->nr;
     }
+    groups->nr++;
   }
   /*  if (forward != NULL) {
       for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[forward[j]];
-  }
-  else*/ {
+      }
+      else*/ {
     for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[j];
   }
