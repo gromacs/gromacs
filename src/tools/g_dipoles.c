@@ -312,7 +312,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   bool bMU,     char *mufn,
 		   int gnx,atom_id grpindex[],
 		   real mu_max,real mu,real epsilonRF,real temp,
-		   int nframes,bool bFA)
+		   bool bFA)
 {
   FILE       *out,*outaver;
   static char *legoutf[] = { 
@@ -330,7 +330,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   };
   rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole=NULL;
   real       *gkr=NULL;
-  int        *gkcount=NULL;
+  int        *gkcount=NULL,nframes=1000;
   int        fmu=0,nre,timecheck=0;
   char       **enm=NULL;
   real       rcut=0;
@@ -390,8 +390,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   /* Correlation stuff */ 
   if (bCorr) {
     if (bAverCorr) {
-      fprintf(stderr,"Going to malloc %lu bytes!\n",
-	      DIM*nframes*sizeof(muall[0][0]));
       snew(muall,1);
       snew(muall[0],nframes*DIM);
       if (bQuad) {
@@ -400,8 +398,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
       }
     }
     else {
-      fprintf(stderr,"Going to malloc %lu bytes!\n",
-	      gnx*DIM*nframes*sizeof(muall[0][0]));
       snew(muall,gnx);
       for(i=0; (i<gnx); i++)
 	snew(muall[i],nframes*DIM);
@@ -475,9 +471,20 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   teller=0;
   do {
     if (bCorr && (teller >= nframes)) {
-      fprintf(stderr,"Read %d frames. That's more than the %d you told me.\n"
-	      "Stopping analysis here.\n",teller+1,nframes);    
-      break;
+      nframes += 1000;
+      if (bAverCorr) {
+	srenew(muall[0],nframes*DIM);
+	if (bQuad) 
+	  srenew(quadall[0],nframes*DIM);
+      }
+      else {
+	for(i=0; (i<gnx); i++)
+	  srenew(muall[i],nframes*DIM);
+	if (bQuad) {
+	  for(i=0; (i<gnx); i++)
+	    srenew(quadall[i],nframes*DIM);
+	}
+      }
     }
     t1 = t;
 
@@ -704,7 +711,7 @@ int main(int argc,char *argv[])
     "a rectangular or cubic simulation box is used.[PAR]",
     "[PAR]",
     "EXAMPLES[PAR]",
-    "g_dipoles -P1 -n mols -o dip_sqr -mu 2.273 -mumax 5.0 -nframes 1001",
+    "g_dipoles -P1 -n mols -o dip_sqr -mu 2.273 -mumax 5.0",
     "-nofft[PAR]",
     "This will calculate the autocorrelation function of the molecular",
     "dipoles using a first order Legendre polynomial of the angle of the",
@@ -717,10 +724,7 @@ int main(int argc,char *argv[])
   static real mu_max=5, mu=2.5;
   static real epsilonRF=0.0, temp=300;
   static bool bAverCorr=FALSE,bFA=FALSE;
-  static int  nframes = 10;
   t_pargs pa[] = {
-    { "-nframes", FALSE, etINT, {&nframes},
-      "Number of frames in trajectory (overestimating is OK)" },
     { "-mu",       FALSE, etREAL, {&mu},
       "dipole of a single molecule (in Debye)" },
     { "-mumax",    FALSE, etREAL, {&mu_max},
@@ -790,7 +794,7 @@ int main(int argc,char *argv[])
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bMU,     opt2fn("-enx",NFILE,fnm),
-	 gnx,grpindex,mu_max,mu,epsilonRF,temp,nframes,bFA);
+	 gnx,grpindex,mu_max,mu,epsilonRF,temp,bFA);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
   xvgr_file(opt2fn("-a",NFILE,fnm),"-autoscale xy -nxy");
