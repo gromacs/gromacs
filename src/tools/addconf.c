@@ -223,6 +223,13 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[])
   }
   totmass = sub_xcm(x,atoms->nr,simp,atoms->atom,xcm,FALSE);
   principal_comp(isize,index,atoms->atom,x,trans,angle);
+  
+  /* Check whether this trans matrix mirrors the molecule */
+  if (det(trans) < 0) {
+    fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
+    for(m=0; (m<DIM); m++)
+      trans[ZZ][m] *= -1;
+  }  
   rotate_atoms(atoms->nr,simp,x,trans);
   
   if (debug) {
