@@ -282,7 +282,8 @@ real potential(real r1,real rc,real R)
 }
 
 real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
-			real charge[],t_block *excl,rvec x[],rvec f[])
+			real charge[],t_block *excl,rvec x[],
+			rvec f[],bool bOld)
 {
   static bool bFirst=TRUE;
   static real Vself;

@@ -159,13 +159,14 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
 #endif
     
     /* If not all atoms are bonded, calculate their virial contribution 
-     * anyway, without shifting back their coordinates
+     * anyway, without shifting back their coordinates.
+     * Note the nifty pointer arithmetic...
      */
     if (start > i0) 
-      calc_vir(log,start-i0,&(x[i0]),&(f[i0]),vir,cr);
+      calc_vir(log,start-i0,x + i0,f + i0,vir,cr);
     if (end < i1)
-      calc_vir(log,i1-end,&(x[end]),&(f[end]),vir,cr);
+      calc_vir(log,i1-end,x + end,f + end,vir,cr);
   }
   else
-    calc_vir(log,i1-i0,&(x[i0]),&(f[i0]),vir,cr);
+    calc_vir(log,i1-i0,x + i0,f + i0,vir,cr);
 }

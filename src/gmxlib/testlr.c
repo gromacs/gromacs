@@ -312,7 +312,8 @@ int main(int argc,char *argv[])
   graph = mk_graph(&(top.idef),top.atoms.nr,FALSE);
   shift_self(graph,fr->shift_vec,x);
 
-  calc_LRcorrections(log,0,natoms,ir.rshort,ir.rlong,charge,excl,x,f_excl);
+  calc_LRcorrections(log,0,natoms,ir.rshort,ir.rlong,charge,excl,x,
+		     f_excl,bOld);
   pr_f("f_excl.dat",natoms,f_excl);
   
   /* Compute the short range potential */
