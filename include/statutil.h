@@ -170,7 +170,7 @@ extern void default_time(void);
 #define DATA_NOT_OK   (1<<1)
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
-extern bool read_first_frame(int *status,char *fn,t_trxframe *fr,int flags);
+extern int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags);
   /* Read the first frame which is in accordance with flags, which are
    * defined further up in this file. 
    * Returns natoms when succeeded, 0 otherwise.
