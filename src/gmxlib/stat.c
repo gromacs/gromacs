@@ -135,7 +135,6 @@ int do_any_io(int step, t_inputrec *ir)
 {
   return (do_per_step(step,ir->nstxout)  ||
 	  do_per_step(step,ir->nstprint) ||
-	  do_per_step(step,ir->nstgrp)   ||
 	  do_per_step(step,ir->nstfout)  ||
 	  do_per_step(step,ir->nstvout));
 }
