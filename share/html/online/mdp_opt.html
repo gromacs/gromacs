@@ -8,9 +8,7 @@ LaTeX file. If you're not sure about what you're doing, don't do it! -->
 
 <h1>mdp options</h1>
 
-<A NAME="TOP">
-
-<H3><IMG SRC="../gif/charts_cont.gif"> Table of Contents:</H3>
+<H3>Table of Contents:</H3>
 
 <ul>
 <li><A HREF="#general"><b>General remarks</b></A>
@@ -33,14 +31,13 @@ LaTeX file. If you're not sure about what you're doing, don't do it! -->
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim )
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, user3_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
-<li><A HREF="#idx"><b><IMG SRC="../gif/charts_idx.gif" ALIGN=ABSMIDDLE> Index</b></A>
+<li><A HREF="#idx">Index</b></A>
 </ul>
 </P>
 
-<hr>
-
 <A NAME="general"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#top"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_down.gif"></A> General</h3>
+<hr>
+<h3>General</h3>
 
 <P>
 Default values are given in parentheses. The first option is
@@ -52,10 +49,9 @@ A <a href="mdp.html">sample <TT>.mdp</TT> file</a> is
 available. This should be appropriate to start a normal
 simulation. Edit it to suit your specific needs and desires. </P>
 
-<hr>
-
 <A NAME="pp"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#general"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#run"><IMG SRC="../gif/charts_down.gif"></A> Preprocessing</h3>
+<hr>
+<h3>Preprocessing</h3>
 
 <dl>
 <dt><h4>title:</h4>
@@ -82,7 +78,8 @@ position restraints.
 </dl>
 
 <A NAME="run"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_down.gif"></A> Run control</h3>
+<hr>
+<h3>Run control</h3>
 
 <dl>
 <dt><h4>integrator:</h4>
@@ -122,7 +119,8 @@ motion removal (should only be used for vacuum simulations)
 </dl>
 
 <A NAME="ld"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#run"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#em"><IMG SRC="../gif/charts_down.gif"></A> Langevin dynamics</h3>
+<hr>
+<h3>Langevin dynamics</h3>
 
 <dl>
 <dt><h4>ld_temp: </b>(300) [K]</h4>
@@ -136,7 +134,8 @@ motion removal (should only be used for vacuum simulations)
 </dl>
 
 <A NAME="em"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_down.gif"></A> Energy minimization</h3>
+<hr>
+<h3>Energy minimization</h3>
 <dl>
 <dt><h4>emtol: </b>(100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4>
 <dd>the minimization is converged when the maximum force is smaller than 
@@ -149,7 +148,8 @@ conjugate gradient energy minimization.
 </dl>
 
 <A NAME="out"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#em"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_down.gif"></A> Output control</h3>
+<hr>
+<h3>Output control</h3>
 <dl>
 <dt><h4>nstxout: </b>(100) [steps]</h4>
 <dd>frequency to write coordinates to output trajectory,
@@ -177,7 +177,8 @@ the last energies are always written
 </dl>
 
 <A NAME="nl"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#el"><IMG SRC="../gif/charts_down.gif"></A> Neighborsearching</h3>
+<hr>
+<h3>Neighborsearching</h3>
 <dl>
 <dt><h4>nstlist: </b>(10) [steps]</h4>
 <dd>frequency to update neighborlist
@@ -214,7 +215,8 @@ every <b>nstlist</b> steps.
 
 
 <A NAME="el"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#tc"><IMG SRC="../gif/charts_down.gif"></A> Electrostatics and VdW</h3>
+<hr>
+<h3>Electrostatics and VdW</h3>
 <dl>
 <dt><h4>coulombtype:</h4>
 <dd><dl compact>
@@ -376,7 +378,8 @@ at start.
 </dl>
 
 <A NAME="tc"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#el"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#pc"><IMG SRC="../gif/charts_down.gif"></A> Temperature coupling</h3>
+<hr>
+<h3>Temperature coupling</h3>
 
 <dl>
 <dt><h4>tcoupl:</h4>
@@ -401,7 +404,8 @@ Several groups can be coupled seperately, these are specified in the
 </dl>
 
 <A NAME="pc"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#tc"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#sa"><IMG SRC="../gif/charts_down.gif"></A> Pressure coupling</h3>
+<hr>
+<h3>Pressure coupling</h3>
 
 <dl>
 <dt><h4>pcoupl:</h4>
@@ -451,7 +455,8 @@ For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].
 </dl>
 
 <A NAME="sa"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#pc"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#vel"><IMG SRC="../gif/charts_down.gif"></A> Simulated annealing</h3>
+<hr>
+<h3>Simulated annealing</h3>
 
 <dl>
 <dt><h4>annealing:</h4>
@@ -477,7 +482,8 @@ graph of temperature vs. time.
 </dl>
 
 <A NAME="vel"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#sa"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#sol"><IMG SRC="../gif/charts_down.gif"></A> Velocity generation</h3>
+<hr>
+<h3>Velocity generation</h3>
 
 <dl>
 <dt><h4>gen_vel:</h4>
@@ -497,7 +503,8 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.
 </dl>
 
 <A NAME="sol"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#vel"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#bond"><IMG SRC="../gif/charts_down.gif"></A> Solvent optimization</h3>
+<hr>
+<h3>Solvent optimization</h3>
 
 <dl>
 <dt><h4>solvent_optimization:</h4>
@@ -515,7 +522,8 @@ if it is faster.
 </dl>
 
 <A NAME="bond"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#sol"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#nmr"><IMG SRC="../gif/charts_down.gif"></A> Bonds</h3>
+<hr>
+<h3>Bonds</h3>
 
 <dl>
 <dt><h4>constraints:</h4>
@@ -581,7 +589,8 @@ during energy minimization, only one iteration is used in MD.
 </dl>
 
 <A NAME="nmr"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#bond"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#free"><IMG SRC="../gif/charts_down.gif"></A> NMR refinement</h3>
+<hr>
+<h3>NMR refinement</h3>
 <dl>
 <dt><h4>disre:</h4>
 <dd><dl compact>
@@ -623,7 +632,8 @@ of all atom pairs involved in restraints to the energy file
 </dl>
 
 <A NAME="free"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nmr"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#neq"><IMG SRC="../gif/charts_down.gif"></A> Free energy</h3>
+<hr>
+<h3>Free energy</h3>
 
 <dl>
 <dt><h4>free_energy:</h4>
@@ -643,7 +653,8 @@ per time step is <b>delta_lambda</b>.
 </dl>
 
 <A NAME="neq"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#free"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#ef"><IMG SRC="../gif/charts_down.gif"></A> Non-equilibrium MD</h3>
+<hr>
+<h3>Non-equilibrium MD</h3>
 
 <dl>
 <dt><h4>acc_grps: </b></h4>
@@ -668,7 +679,8 @@ move in any direction).
 </dl>
 
 <A NAME="ef"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#neq"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#user"><IMG SRC="../gif/charts_down.gif"></A> Electric fields</h3>
+<hr>
+<h3>Electric fields</h3>
 
 <dl>
 <dt><h4>E_x ; E_y ; E_z:</h4>
@@ -684,7 +696,8 @@ since a cosine of frequency zero has no phase.
 </dl>
 
 <A NAME="user"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ef"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_down.gif"></A> User defined thingies</h3>
+<hr>
+<h3>User defined thingies</h3>
 
 <dl>
 <dt><h4>user1_grps </b><b> ; user2_grps </b><b> ; user3_grps: </b></h4>
@@ -696,10 +709,9 @@ reals to your subroutine. Check the inputrec definition in
 
 </dl>
 
-<hr>
-
 <A NAME="idx"><br>
-<h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#user"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#bot"><IMG SRC="../gif/charts_down.gif"></a> Index</h3>
+<hr>
+<h3>Index</h3>
 
 <P>
 
