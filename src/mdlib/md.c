@@ -74,15 +74,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,bLastStep,
-             bNEMD,do_log;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,
+             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m;
   rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
-  int        natoms=0,status;
+  int        status;
+  t_trxframe rerun_fr;
   t_pull     pulldata; /* for pull code */
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
@@ -202,39 +203,57 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
    *
    ************************************************************/
   
-  /* if rerunMD then read coordinates from input trajectory,
-   * set velocities to zero */
+  /* if rerunMD then read coordinates and velocities from input trajectory */
   if (bRerunMD) {
-    int i;
-
-    natoms=read_first_x(&status,opt2fn("-rerun",nfile,fnm),&t,&x,parm->box);
-    if (natoms != mdatoms->nr)
+    bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
+				     &rerun_fr,TRX_NEED_X | TRX_READ_V);
+    if (rerun_fr.natoms != mdatoms->nr)
       fatal_error(0,"Number of atoms in trajectory (%d) does not match the "
-		  "run input file (%d)\n",natoms,mdatoms->nr);
-    for(i=0;(i<natoms);i++) 
-      clear_rvec(v[i]);
-
-    bNotLastFrame = (natoms!=0);
+		  "run input file (%d)\n",rerun_fr.natoms,mdatoms->nr);
   } 
-
+  
   /* loop over MD steps or if rerunMD to end of input trajectory */
-  for(step=0; ((!bRerunMD && (step<=parm->ir.nsteps)) || 
-	       (bRerunMD && bNotLastFrame)); step++) {
-	       
-    bLastStep=(step==parm->ir.nsteps);
+  bFirstStep = TRUE;
+  step = 0;
+  while ((!bRerunMD && (step<=parm->ir.nsteps)) ||  
+	 (bRerunMD && bNotLastFrame)) {
+    
+    if (bRerunMD) {
+      if (rerun_fr.bStep)
+	step = rerun_fr.step;
+      if (rerun_fr.bTime)
+	t = rerun_fr.time;
+      else
+	t = step;
+      for(i=0; i<mdatoms->nr; i++)
+	copy_rvec(rerun_fr.x[i],x[i]);
+      if (rerun_fr.bV)
+	for(i=0; i<mdatoms->nr; i++)
+	  copy_rvec(rerun_fr.v[i],v[i]);
+      else {
+	for(i=0; i<mdatoms->nr; i++)
+	    clear_rvec(v[i]);
+	if (bRerunWarnNoV) {
+	  fprintf(stderr,"\nWARNING: Some frames do not contain velocities.\n"
+		  "         Ekin, temperature and pressure are incorrect.\n"
+		  "\n");
+	  bRerunWarnNoV = FALSE;
+	}
+      }
+      copy_mat(rerun_fr.box,parm->box);
 
+      /* for rerun MD always do Neighbour Searching */
+      bNS = ((parm->ir.nstlist!=0) || bFirstStep);
+    } else
+      /* Determine whether or not to do Neighbour Searching */
+      bNS = ((parm->ir.nstlist && (step % parm->ir.nstlist==0)) || bFirstStep);
+    
+    bLastStep=(step==parm->ir.nsteps);
+    
     do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
     
-    if (bRerunMD)
-      /* for rerun MD always do Neighbour Searching */
-      bNS = ((parm->ir.nstlist!=0) || (step==0));
-    else {
-      /* Stop Center of Mass motion */
-      get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
-    
-      /* Determine whether or not to do Neighbour Searching */
-      bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
-    }
+    /* Stop Center of Mass motion */
+    get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
     
     if (bDummies) {
       /* Construct dummy particles. This is parallellized */
@@ -247,7 +266,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Set values for invmass etc. This routine not parallellized, but hardly
      * ever used, only when doing free energy calculations.
      */
-    init_mdatoms(mdatoms,lambda,(step==0));
+    init_mdatoms(mdatoms,lambda,bFirstStep);
     
     clear_mat(force_vir);
     
@@ -313,8 +332,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD)
       t        = t0   + step*parm->ir.delta_t;
     
-    if (parm->ir.efep != efepNO)
-      lambda   = lam0 + step*parm->ir.delta_lambda;
+    if (parm->ir.efep != efepNO) {
+      if (bRerunMD && rerun_fr.bLambda)
+	lambda = rerun_fr.lambda;
+      else
+	lambda = lam0 + step*parm->ir.delta_lambda;
+    }
     if (parm->ir.bSimAnn) {
       SAfactor = 1.0  - t/parm->ir.zero_temp_time;
       if (SAfactor < 0) 
@@ -337,7 +360,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     debug_gmx();
     
-    /* for rerunMD, certain things don't have to be done */
+    /* don't write xtc and last structure for rerunMD */
     if (!bRerunMD) {
       if (do_per_step(step,parm->ir.nstxtcout))
 	write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
@@ -348,57 +371,56 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		       *top->name, &(top->atoms),x,v,parm->box);
       }
       debug_gmx();
+    }
       
-      clear_mat(shake_vir);
-
-      /* Afm and Umbrella type pulling happens before the update, 
+    clear_mat(shake_vir);
+    
+    /* Afm and Umbrella type pulling happens before the update, 
 	 other types in update */
-      if (pulldata.bPull && 
-	  (pulldata.runtype == eAfm || pulldata.runtype == eUmbrella ||
-	   pulldata.runtype == eTest))
-	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
-	     natoms,mdatoms); 
-
+    if (pulldata.bPull && 
+	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella ||
+	 pulldata.runtype == eTest))
+      pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
+	   mdatoms->nr,mdatoms); 
+    
 #ifdef XMDRUN
       /* Check magnitude of the forces */
-      fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
-		   START(nsb)+HOMENR(nsb),f);
-      debug_gmx();
-      parm->ir.delta_t = timestep;
+    fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
+		 START(nsb)+HOMENR(nsb),f);
+    debug_gmx();
+    parm->ir.delta_t = timestep;
 #endif
-
-      /* This is also parallellized, but check code in update.c */
-      update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	     &(parm->ir),mdatoms,x,graph,f,
-	     buf,vold,v,vt,parm->pres,parm->box,
-	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
-      /* The coordinates (x) were unshifted in update */
-
+    
+    /* This is also parallellized, but check code in update.c */
+    update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
+	   &(parm->ir),mdatoms,x,graph,f,buf,vold,v,vt,parm->pres,parm->box,
+           top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
+    /* The coordinates (x) were unshifted in update */
+    
 #ifdef DEBUG
-      pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
+    pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
 #endif
-      /* Non-equilibrium MD: this is parallellized, but only does communication
-       * when there really is NEMD.
-       */
-      if (PAR(cr) && bNEMD) 
-	accumulate_u(cr,&(parm->ir.opts),grps);
+    /* Non-equilibrium MD: this is parallellized, but only does communication
+     * when there really is NEMD.
+     */
+    if (PAR(cr) && bNEMD) 
+      accumulate_u(cr,&(parm->ir.opts),grps);
       
-      debug_gmx();
+    debug_gmx();
       /* Calculate partial Kinetic Energy (for this processor) 
        * per group! Parallelized
        */
-      if (grps->cosacc.cos_accel == 0)
-	calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
-		     mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-      else
-	calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),
-			  parm->box,x,vold,v,vt,&(parm->ir.opts),
-			  mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-      debug_gmx();
-      /* Calculate center of mass velocity if necessary, also parallellized */
-      if (bStopCM)
-	calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
-    }
+    if (grps->cosacc.cos_accel == 0)
+      calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+		   mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+    else
+      calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),
+			parm->box,x,vold,v,vt,&(parm->ir.opts),
+			mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
+    debug_gmx();
+    /* Calculate center of mass velocity if necessary, also parallellized */
+    if (bStopCM)
+      calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
 
     /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
@@ -460,55 +482,51 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       terminate = 0;
     }
     
-    if (!bRerunMD) {
-      /* Do center of mass motion removal */
-      if (bStopCM) {
-	check_cm(log,vcm,mdatoms->tmass);
-	do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,
-		  mdatoms->tmass,mdatoms->invmass);
+    /* Do center of mass motion removal */
+    if (bStopCM) {
+      check_cm(log,vcm,mdatoms->tmass);
+      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,
+		mdatoms->tmass,mdatoms->invmass);
 	inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
-      }
-      
-      /* Do fit to remove overall rotation */
-      if (bStopRot) {
-	/* this check is also in grompp.c, if it becomes obsolete here,
-	   also remove it there */
-	if (PAR(cr))
-	  fatal_error(0,"Can not stop rotation about center of mass in a "
-		      "parallel run\n");
-	do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
-      }
-      /* Add force and shake contribution to the virial */
-      m_add(force_vir,shake_vir,parm->vir);
     }
     
+    /* Do fit to remove overall rotation */
+    if (bStopRot) {
+      /* this check is also in grompp.c, if it becomes obsolete here,
+	 also remove it there */
+      if (PAR(cr))
+	  fatal_error(0,"Can not stop rotation about center of mass in a "
+		      "parallel run\n");
+      do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
+    }
+    /* Add force and shake contribution to the virial */
+    m_add(force_vir,shake_vir,parm->vir);
+  
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
 
     /* Calculate the amplitude of the cosine velocity profile */
     grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
 
-    if (!bRerunMD) {
-      /* Sum the kinetic energies of the groups & calc temp */
-      ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-      ener[F_EKIN]=trace(parm->ekin);
-      ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
-
+    /* Sum the kinetic energies of the groups & calc temp */
+    ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
+    ener[F_EKIN]=trace(parm->ekin);
+    ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
+    
 #ifdef XMDRUN
-      /* Check for excessively large energies */
-      if (fabs(ener[F_ETOT]) > 1e18) {
-	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
-	break;
-      }
+    /* Check for excessively large energies */
+    if (fabs(ener[F_ETOT]) > 1e18) {
+      fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+      break;
+    }
 #endif
       
-      /* Calculate Temperature coupling parameters lambda */
-      tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+    /* Calculate Temperature coupling parameters lambda */
+    tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
     
-      /* Calculate pressure and apply LR correction if PPPM is used */
-      calc_pres(fr->ePBC,parm->box,parm->ekin,parm->vir,parm->pres,
-		(fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
-    }
+    /* Calculate pressure and apply LR correction if PPPM is used */
+    calc_pres(fr->ePBC,parm->box,parm->ekin,parm->vir,parm->pres,
+	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     
 #ifdef XMDRUN    
     /* Calculate long range corrections to pressure and energy */
@@ -566,9 +584,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       print_time(stderr,start_t,step,&parm->ir);
     }
     
-    /* if rerunMD read next frame from input trajectory */
+    bFirstStep = FALSE;
+
     if (bRerunMD) 
-      bNotLastFrame = read_next_x(status,&t,natoms,x,parm->box);
+      /* read next frame from input trajectory */
+      bNotLastFrame = read_next_frame(status,&rerun_fr);
+    
+    if (!bRerunMD || !rerun_fr.bStep)
+      /* increase the MD step number */
+      step++;
   }
   /* End of main MD loop */
   debug_gmx();
