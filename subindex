@@ -10,74 +10,82 @@
 #
 
 BEGIN {
-  h1=0;
-  h2=0;
+  n=0;
 }
 
-/, \\see/ {
-  sub(", \\\\see.*","");
+/[{ ]Symbols[ }]/ {
+  if ( substr(1,1,$0)!="%" )
+    $0 = "% " $0;
 }
 
-!/\\item/ {
-  if (substr($0,1,1)!="%" && index($NF,"Symbol")==1)
-    $0 = "% "$0;
-  if ( pp ) {
-    if ( index($0,"\item ")==0 || 
-	 index($0,"\subitem ")==0 || 
-	 index($0,"\subsubitem ")==0 )
-      $0 = pp"\n"$0;
-    else
-      $0 = pp$0;
-    pp=0;
-  } else {
-    if ( index(p,"\\see") ) sub(", *$","",p);
-    if(NR>1 && p!=-1) print p;
-    if ( (index(p,"\\see")==0 || index($0,"\\see")==0) && p!=-1 || $0=="")
-      p=$0;
-    else
-      p=-1;
-  }
+/^[ \t]*\\see/ {
+  sub("^[ \t]*","");
+  pp = pp $0;
+  next;
 }
 
-/\\item/ {
-  if ( $NF == "\\hfill" ) {
-    pp=$0;
-  } else {
-    c1=$2;
-    c2=$3;
-    c3=$4;
-    sub(",$","",c1);
-    sub(",$","",c2);
-    if(c1==p1) {
-      if(c2==p2) {
-	sub("item "c1" "c2",*","subitem");
-	if (p3!="\\hfill" && !h2) {
-	  printf("  \\item %s %s \\hfill\n",c1,c2);
-	  sub("item "c1" "c2",*","subitem",p);
-	}
-	h2=1;
-      } else {
-	sub("item "c1",*","subitem");
-	if (p2!="\\hfill" && !h1) {
-	  printf("  \\item %s \\hfill\n",c1);
-	  sub("item "c1",*","subitem",p);
-	}
-	h1=1;
-	h2=0;
-      }
-    } else {
-      h1=0;
+{
+  sub(", \\\\see.*","",pp);
+}
+
+function dump() {
+  printf("%% %d %d %d %d |", mc, nc, mp, np);
+  for(i=1;i<=nc;i++) printf(" %s",c[i]);
+  printf(" |");
+  for(i=1;i<=np;i++) printf(" %s",p[i]);
+  printf(" |\n");
+}
+
+
+{
+  mc=0;
+  if ($1=="\\item") {
+    for(i=1; $(i)!="\\hfill" && i<=NF; i++) {
+      c[i]=$(i+1);
+      sub(",$","",c[i]);
+      if (i<=np && c[i]==p[i]) mc=i;
     }
-    if (p!=-1) print p;
-    p=$0;
-    p1=c1;
-    p2=c2;
-    p3=c3;
+    nc=i-2;
+  } else {
+    nc=0;
+    mc=0;
   }
+#  if (mc) dump();
+  if (mc && mc<=nc) {
+    if (mc) {
+      key=c[1];
+      for(i=2; i<=mc; i++)
+	key=key" "c[i];
+    } else 
+      key="";
+    if (key != pkey && mc<np)
+      printf("  \\item %s \\hfill \\nopagebreak\n", key);
+    pkey=key;
+  }
+  if (mp) m=mp; else m=mc;
+  skey=p[m+1];
+  for(i=m+2; i<=np; i++)
+    skey=skey" "p[i];
+  if (mc<np)
+    for(i=1; i<=mp || i<=mc; i++) {
+      sub("item "key" ", "subitem ", pp);
+      sub("item "key", "skey, "subitem "skey" $\\sim$", pp);
+      pp="  "pp;
+    }
+  
+  np=nc;
+  mp=mc;
+  for(i=1;i<=np;i++)
+    p[i]=c[i];
+}
+
+{
+  if (NR>1) print pp;
+  pp=$0;
 }
 
 END {
-  print p;
+  print pp;
 }
 
 #last line
