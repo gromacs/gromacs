@@ -490,7 +490,8 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   close_trj(status); 
   
   sfree(x);
-  sfree(x_s);
+  if (top)
+    sfree(x_s);
   sfree(angles[cur]);
   sfree(angles[prev]);
   
