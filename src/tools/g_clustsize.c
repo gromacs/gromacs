@@ -72,6 +72,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   rvec    *x=NULL,dx;
   matrix  box;
   char    *gname;
+  char    timebuf[32];
   bool    bSame;
   /* Topology stuff */
   t_tpxheader tpxh;
@@ -81,14 +82,16 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   real    ttt,lll;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
-  real    t,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav;
+  real    t,tf,dx2,cut2,*t_x=NULL,*t_y,cmid,cmax,cav;
   int     i,j,k,ai,aj,ak,ci,cj,nframe,nclust,n_x,n_y,max_size=0;
   int     *clust_index,*clust_size,max_clust_size,nav,nhisto;
   t_rgb   rlo = { 1.0, 1.0, 1.0 };
   
-  fp = xvgropen(ncl,"Number of clusters","Time (ps)","N");
-  gp = xvgropen(acl,"Average cluster size","Time (ps)","#molecules");
-  hp = xvgropen(mcl,"Max cluster size","Time (ps)","#molecules");
+  sprintf(timebuf,"Time (%s)",time_unit());
+  tf = time_factor();
+  fp = xvgropen(ncl,"Number of clusters",timebuf,"N");
+  gp = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
+  hp = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
   natoms = read_first_x(&status,trx,&t,&x,box);
   if (bMol) {
     read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
@@ -180,7 +183,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
       }
       n_x++;
       srenew(t_x,n_x);
-      t_x[n_x-1] = t;
+      t_x[n_x-1] = t*tf;
       srenew(cs_dist,n_x);
       snew(cs_dist[n_x-1],nindex);
       nclust = 0;
@@ -226,7 +229,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   cmid = 1;
   fp = ffopen(xpm,"w");
-  write_xpm3(fp,"Cluster size distribution","# clusters","Time (ps)","Size",
+  write_xpm3(fp,"Cluster size distribution","# clusters",timebuf,"Size",
 	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
@@ -238,8 +241,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     }
   fprintf(stderr,"cmid: %g, cmax: %g, max_size: %d\n",cmid,cmax,max_size);
   fp = ffopen(xpmw,"w");
-  write_xpm3(fp,"Weighted cluster size distribution","Fraction",
-	     "Time (ps)","Size",
+  write_xpm3(fp,"Weighted cluster size distribution","Fraction",timebuf,"Size",
 	     n_x,max_size,t_x,t_y,cs_dist,0,cmid,cmax,
 	     rlo,rmid,rhi,&nlevels);
   fclose(fp);
@@ -314,7 +316,7 @@ int gmx_clustsize(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
 
   fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
