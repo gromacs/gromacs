@@ -57,7 +57,13 @@ static char *SRCID_statutil_c = "$Id$";
  ******************************************************************/
 
 /* Globals for trajectory input */
-real         tbegin=-1.0,tend=-1.0,tdelta=-1.0;
+real         tbegin = -1;
+real         tend   = -1;
+real         tdelta = -1;
+real         timefactor = NOTSET;
+char         *timelabel = NULL;
+static char *timestr[] = { NULL, "ps", "fs", "ns", "us", "ms", "s",   NULL };
+real timefactors[]     = { 0,    1,    1e3,  1e-3, 1e-6, 1e-9, 1e-12, 0 };
 static bool  bView=FALSE;
 static unsigned long uFlags=0;
 static char  *program=NULL;
@@ -109,16 +115,54 @@ bool bRmod(double a,double b)
 
 int check_times(real t,real t0) 
 {
+  int r;
+  
+  r=-1;
   if ((((tbegin >= 0.0) && (t >= tbegin)) || (tbegin == -1.0)) &&
       (((tend   >= 0.0) && (t <= tend))   || (tend   == -1.0))) {
     if (tdelta > 0 && !bRmod(t-t0,tdelta))
-      return -1;
+      r = -1;
     else
-      return 0;
+      r = 0;
   }
   else if ((tend != -1.0) && (t>=tend))
-    return 1;
-  return -1;
+    r = 1;
+  if (debug) fprintf(debug,"t=%g, t0=%g, b=%g, e=%g, dt=%g: r=%d\n",
+		     t,t0,tbegin,tend,tdelta,r);
+  return r;
+}
+
+char *time_label(void)
+{
+  return timestr[0];
+}
+
+#define INIT_TIME_FACTOR \
+  if (timefactor==NOTSET) timefactor = timefactors[nenum(timestr)]
+
+real time_factor(void)
+{
+  INIT_TIME_FACTOR;
+  
+  return timefactor;
+}
+
+real convert_time(real time)
+{
+  INIT_TIME_FACTOR;
+  
+  return time*timefactor;
+}
+
+void convert_times(int n, real *time)
+{
+  int i;
+  
+  INIT_TIME_FACTOR;
+ 
+  if (timefactor!=1)
+    for(i=0; i<n; i++)
+      time[i] *= timefactor;
 }
 
 /***** T O P O L O G Y   S T U F F ******/
@@ -313,7 +357,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   static char *deffnm=NULL;
-
+  
   FILE *fp;  
   bool bPrint;
   int  i,j,k,npall;
@@ -322,28 +366,30 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   
   t_pargs *all_pa=NULL;
   
-  t_pargs motif_pa  = { "-X",    FALSE, etBOOL, {&bGUI},
+  t_pargs motif_pa  = { "-X",    FALSE, etBOOL,  {&bGUI},
 		       "Use dialog box GUI to edit command line options" };
   t_pargs fpe_pa    = { "-exception", FALSE, etBOOL, {&bExcept},
 		       "HIDDENTurn on exception handling" };
   t_pargs npri_paX  = { "-npri", FALSE, etENUM,  {not_npristr},
 		       "Set non blocking priority" };
-  t_pargs npri_pa   = { "-npri", FALSE, etINT,  {&npri},
+  t_pargs npri_pa   = { "-npri", FALSE, etINT,   {&npri},
 		       "Set non blocking priority (try 128)" };
-  t_pargs nice_paX  = { "-nice", FALSE, etENUM, {not_nicestr}, 
+  t_pargs nice_paX  = { "-nice", FALSE, etENUM,  {not_nicestr}, 
 		       "Set the nicelevel" };
-  t_pargs nice_pa   = { "-nice", FALSE, etINT,  {&nicelevel}, 
+  t_pargs nice_pa   = { "-nice", FALSE, etINT,   {&nicelevel}, 
 		       "Set the nicelevel" };
-  t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR,  {&deffnm}, 
+  t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR, {&deffnm}, 
 		       "Set the default filename for all file options" };
-  t_pargs begin_pa  = { "-b",    FALSE, etREAL, {&tbegin},        
+  t_pargs begin_pa  = { "-b",    FALSE, etREAL,  {&tbegin},        
 		       "First frame (ps) to read from trajectory" };
-  t_pargs end_pa    = { "-e",    FALSE, etREAL, {&tend},        
+  t_pargs end_pa    = { "-e",    FALSE, etREAL,  {&tend},        
 		       "Last frame (ps) to read from trajectory" };
   t_pargs dt_pa     = { "-dt",    FALSE, etREAL, {&tdelta},        
 		       "Only use frame when t MOD dt = first time" };
-  t_pargs view_pa   = { "-w",    FALSE, etBOOL, {&bView},     
+  t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},     
 		       "View output xvg, xpm, eps and pdb files" };
+  t_pargs time_pa   = { "-time", FALSE, etENUM,  {timestr},
+			"Time unit" };
   
   t_pargs pca_pa[] = {
     { "-h",    FALSE, etBOOL, {&bHelp},     
@@ -462,6 +508,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     npall = add_parg(npall,&(all_pa),&end_pa);
   if (FF(PCA_CAN_DT))
     npall = add_parg(npall,&(all_pa),&dt_pa);
+  if (FF(PCA_TIME_UNIT))
+    npall = add_parg(npall,&(all_pa),&time_pa);
   if (FF(PCA_CAN_VIEW))
     npall = add_parg(npall,&(all_pa),&view_pa);
 

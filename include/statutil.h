@@ -111,6 +111,18 @@ extern int check_times(real t,real t0);
  *         1  if t>tend
  */
 
+extern char *time_label(void);
+/* return time unit label (e.g. ps or ns) */
+
+extern real time_factor(void);
+/* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
+
+extern real convert_time(real time);
+/* return converted time */
+
+extern void convert_times(int n, real *time);
+/* convert array of times */
+
 /* For trxframe.flags, used in trxframe read routines.
  * When a READ flag is set, the field will be read when present,
  * but a frame might be returned which does not contain the field.
@@ -186,6 +198,8 @@ extern bool bDoView(void);
 #define PCA_CAN_DT         (1<<14)
 #define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
 /* adds options -b and -e for begin and end time for reading trajectories */
+#define PCA_TIME_UNIT      (1<<15)
+/* set time unit for output */
 #define PCA_KEEP_ARGS      (1<<8)
 /* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */
 #define PCA_SILENT         (1<<9)
