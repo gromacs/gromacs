@@ -100,7 +100,7 @@ needed for a whole aromatic group.
 \label{sec:dummyhydro}
 \subsubsection{Construction of Dummy Atoms} %%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
-\centerline{\psfig{figure=plots/dumtypes.eps,width=11cm}}
+\centerline{\includegraphics[width=11cm]{plots/dumtypes}}
 \caption[Dummy atom constructions for hydrogen atoms.]{The different
 types of dummy atom constructions used for hydrogen atoms. The atoms
 used in the construction of the dummy atom(s) are depicted as black
@@ -175,7 +175,7 @@ degrees of freedom. See \figref{dumhydro}D.
 \end{itemize}
 
 \begin{figure}
-\centerline{\psfig{figure=plots/dumaro.eps,width=15cm}}
+\centerline{\includegraphics[width=15cm]{plots/dumaro}}
 \caption[Dummy atom constructions for aromatic residues.]{The
 different types of dummy atom constructions used for aromatic
 residues. The atoms used in the construction of the dummy atom(s) are
@@ -286,7 +286,7 @@ The viscosity can be calculated from $A$ and $V$:
 In the simulation $V$ is defined as:
 \beq
 V = \frac{\displaystyle \sum_{i=1}^N m_i v_{i,x} 2 \cos\left(\frac{2\pi z}{l_z}\right)}
-	 {\displaystyle \sum_{i=1}^N m_i}
+         {\displaystyle \sum_{i=1}^N m_i}
 \eeq
 The generated velocity profile is not coupled to the heat bath, also
 the velocity profile is excluded from the kinetic energy.
@@ -373,74 +373,26 @@ zeroes) must be entered in all columns.  A number of pre-built table
 files can be found in the GMXLIB directory, for 6-8, 6-9, 6-10, 6-11, 6-12
 Lennard Jones potentials combined with a normal Coulomb.
 
-\section{Running with \normindex{PVM}}
-{\bf Note: the use of PVM is deprecated due to the fact that the FFTW
-library only has support for MPI.}\\
-If you have a parallel computer, it may be equipped with PVM (Parallel
-Virtual Machines, see also \chref{algorithms}), otherwise,
-have your system administrator install it. The package is public
-domain software and supports virtually every commercially available
-computer, such as an SGI Power Challenge, Paragon {\intel} box,
-Thinking machines CM-5, CRAY-J9036287, Convex MPP, etc., or on a
-cluster of workstations.
 
-The {\gromacs} software can work with the PVM library, but only
-on computers with the same processor, it is not possible to mix
-{\eg} Sparc and MIPS chips. We will assume
-here that the software is installed with PVM. A sample PVM session
-is described below.
-
-First, set the PVM environment variables in your {\tt .cshrc} file.
-\begin{verbatim}
-setenv	PVM_ROOT=/home/pvm
-setenv	PVM_ARG=SGI
-\end{verbatim}
-You also need access to a number of workstations, let's call them
-{\bf vince}, {\bf butch} and {\bf mia}, we'll assume your username
-is {\bf wallace}. Make a {\tt .rhosts} file in your home directory:
-\begin{verbatim}
-vince   wallace
-butch   wallace
-mia     wallace
-\end{verbatim}
-Now log off and on again to effectuate all this (assuming you are sitting on 
-{\tt vince}). Start the pvm front-end: 
-\begin{verbatim}
-% pvm
-pvm>add butch mia
-2 successful
-                    HOST     DTID
-                   vince    80000
-                     mia   100000
-pvm>quit
-
-pvmd still running.
-%
-\end{verbatim}
-Now you can use {\gromacs} with PVM. You just have to add the option
-{\tt -N 3} to your {\tt grompp} and {\tt mdrun} command lines. Since the
-remotely running mdruns will start from your home directory, give a full 
-path for the log file, {\eg}:\\
-{\tt -g /data/pulp/wallace/speptide/md}.
-
-PVM jobs can be stopped within the PVM command line utility with
-{\tt kill process}. All PVM's can be terminated with the {\tt halt} command.
-
-\section{Running with \normindex{MPI}}
+\section{Running {\gromacs} in parallel}
 If you have installed the MPI (Message Passing Interface) on your computer(s)
-you can compile {\gromacs} with this communication library. Some
-hardware vendors provide optimized MPI libraries for shared-memory
-architectures, or whatever is fast on their particular platform.
-Compiling the {\gromacs} distribution with MPI support is straightforward.
-Edit your {\tt Makefile.\$CPU} in the {\tt gmxhome/src/makef} directory,
-and set the {\tt USE\_MPI} variable to {\tt yes} and recompile all sources.
-If all is well, you can now run with MPI. 
+you can compile {\gromacs} with this library to run simulations in parallel. 
+All supercomputers are shipped with MPI libraries optimized for 
+that particular platform, and if you are using a cluster of workstations
+there are several good free MPI implementations. You can find updated links
+to these on the gromacs homepage {\wwwpage}. Once you have an MPI library
+installed it's trivial to compile {\gromacs} with MPI support: Just set
+the option {\tt --enable-mpi} to the configure script and recompile.
+(But don't forget to make distclean before running configure if you have
+previously compiled with a different configuration.) If you are using a 
+supercomputer you might also want to turn of the default nicing of the
+mdrun process with the {\tt --disable-nice} option.
 
-There usually is a program called {\tt mpirun} with which you can fire
+There is usually a program called {\tt mpirun} with which you can fire
 up the parallel processes. A typical command line looks like:
 \type{mpirun -p goofus,doofus,fred 10 mdrun -s topol -v -N 30}
 this runs on each of the machines goofus,doofus,fred with 10 processes
-on each\footnote{This example taken from Silicon Graphics manual}.
+on each\footnote{Example taken from Silicon Graphics manual}.
 
 If you have a single machine with multiple processors you don't have to
 use the {\tt mpirun} command, but you can do with an extra option to
@@ -449,11 +401,10 @@ use the {\tt mpirun} command, but you can do with an extra option to
 In this example MPI reads the first option from the command line.
 Since {\tt mdrun} also wants to know the number of processes you have to
 type it twice.
-Please note that no automatic nicing is done, which means that only
-the first process will be niced by default. 
+
 Check your local manuals (or online manual) for exact details
 of your MPI implementation.
 
-The online manual for MPI on the web can be found at:\\
+An online manual of the  MPI standard can be found on the web at:\\
 {\tt http:://www.mcs.anl.gov/mpi/index.html}
 

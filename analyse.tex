@@ -33,7 +33,7 @@ In this chapter different ways of analyzing your trajectory are described.
 The names of the corresponding analysis programs are given. 
 Specific info on the in- and output of these programs can be found 
 in the on-line manual at {\wwwpage}.
-Often the output files are in {\tt xmgr}-format.
+The output files are often produced as finished Grace/Xmgr graphs.
 
 First in \secref{groups} the group concept in analysis is explained. 
 Then the different analysis tools are presented.
@@ -54,7 +54,7 @@ consider a simulation of a binary mixture of components A and B. When
 we want to calculate the radial distribution function (rdf)
 $g_{AB}(r)$ of A with respect to B, we have to calculate
 \beq
-4\pi r^2 g_{AB}(r)	~=~	V~\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} P(r)
+4\pi r^2 g_{AB}(r)      ~=~     V~\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} P(r)
 \eeq
 where $V$ is the volume and $P(r)$ is the probability to find a B atom
 at a distance $r$ from an A atom.
@@ -95,43 +95,43 @@ When no index file is supplied to analysis tools, a number of default
 groups can be generated to choose from:
 \begin{description}
 \item[{\tt System}]\mbox{}\\
-	all atoms in the system
+        all atoms in the system
 \item[{\tt Protein}]\mbox{}\\
-	all protein atoms
+        all protein atoms
 \item[{\tt Protein-H}]\mbox{}\\
-	protein atoms excluding hydrogens
+        protein atoms excluding hydrogens
 \item[{\tt C-alpha}]\mbox{}\\
-	C$_{\alpha}$ atoms
+        C$_{\alpha}$ atoms
 \item[{\tt Backbone}]\mbox{}\\
-	protein backbone atoms; N, C$_{\alpha}$ and C
+        protein backbone atoms; N, C$_{\alpha}$ and C
 \item[{\tt MainChain}]\mbox{}\\
-	protein main chain atoms: N, C$_{\alpha}$, C and O, including
-	oxygens in C-terminus
+        protein main chain atoms: N, C$_{\alpha}$, C and O, including
+        oxygens in C-terminus
 \item[{\tt MainChain+Cb}]\mbox{}\\
-	protein main chain atoms including C$_{\beta}$
+        protein main chain atoms including C$_{\beta}$
 \item[{\tt MainChain+H}]\mbox{}\\
-	protein main chain atoms including backbone amide hydrogen and
-	hydrogens on the N-terminus
+        protein main chain atoms including backbone amide hydrogen and
+        hydrogens on the N-terminus
 \item[{\tt SideChain}]\mbox{}\\
-	protein side chain atoms; that is all atoms except N,
-	C$_{\alpha}$, C, O, backbone amide hydrogen, oxygens in
-	C-terminus and hydrogens on the N-terminus
+        protein side chain atoms; that is all atoms except N,
+        C$_{\alpha}$, C, O, backbone amide hydrogen, oxygens in
+        C-terminus and hydrogens on the N-terminus
 \item[{\tt SideChain-H}]\mbox{}\\
-	protein side chain atoms excluding all hydrogens
+        protein side chain atoms excluding all hydrogens
 \item[{\tt Prot-Masses}]\mbox{}\\
-	protein atoms excluding dummy masses (as used in dummy atom
-	constructions of NH$_3$ groups and Tryptophane sidechains),
-	see also \secref{dummytop}; this group is only included when
-	it differs from the '{\tt Protein}' group
+        protein atoms excluding dummy masses (as used in dummy atom
+        constructions of NH$_3$ groups and Tryptophane sidechains),
+        see also \secref{dummytop}; this group is only included when
+        it differs from the '{\tt Protein}' group
 \item[{\tt Non-Protein}]\mbox{}\\
-	all non-protein atoms
+        all non-protein atoms
 \item[{\tt DNA}]\mbox{}\\
-	all DNA atoms
+        all DNA atoms
 \item[{\tt molecule\_name}]\mbox{}\\
-	for all residues/molecules which are not recognized as protein
-	or DNA, one group per residue/molecule name is generated
+        for all residues/molecules which are not recognized as protein
+        or DNA, one group per residue/molecule name is generated
 \item[{\tt Other}]\mbox{}\\
-	all atoms which are neither protein nor DNA.
+        all atoms which are neither protein nor DNA.
 \end{description}
 Empty groups will not be generated.
 
@@ -145,16 +145,21 @@ ngmx
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/ngmxdump.eps,width=8cm,angle=90}}}
+{\includegraphics[width=8cm,angle=90]{plots/ngmxdump}}}
 \caption{The window of {\tt ngmx} showing a box of water.}
 \label{fig:ngmxdump}
 \end{figure}
 
 Before analyzing your trajectory it is often informative to look at
-your trajectory first. There is a special graphics program {\tt ngmx}
-to show your binary trajectory. It is also possible to generate a
+your trajectory first. Gromacs comes with a simple trajectory
+viewer {\tt ngmx}; the advantage with this one is that it does not
+require OpenGL, which usually isn't present e.g. on supercomputers.
+It is also possible to generate a
 hard-copy in Encapsulated Postscript format, see
-\figref{ngmxdump}.
+\figref{ngmxdump}. If you want a faster and more fancy viewer
+ there are several programs
+that can read the {\gromacs} trajectory formats -- have a look at our
+homepage {\wwwpage} for updated links. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% General properties
 
@@ -193,10 +198,10 @@ in the following way:
 \newcommand{\dfrac}[2]{\displaystyle \frac{#1}{#2}}
 \beq
 \begin{array}{rcl}
-g_{AB}(r)&=&	\dfrac{\langle \rho_B(r) \rangle}{\langle\rho_B\rangle_{local}}		\\
-	 &=&	\dfrac{1}{\langle\rho_B\rangle_{local}}\dfrac{1}{N_A}
-	 	\sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} 
-		\dfrac{\delta( r_{ij} - r )}{4 \pi r^2}		\\
+g_{AB}(r)&=&    \dfrac{\langle \rho_B(r) \rangle}{\langle\rho_B\rangle_{local}}         \\
+         &=&    \dfrac{1}{\langle\rho_B\rangle_{local}}\dfrac{1}{N_A}
+                \sum_{i \in A}^{N_A} \sum_{j \in B}^{N_B} 
+                \dfrac{\delta( r_{ij} - r )}{4 \pi r^2}         \\
 \end{array}
 \eeq
 with $\langle\rho_B(r)\rangle$ the particle density of type $B$ at a distance $r$
@@ -206,7 +211,7 @@ $r_{max}$ (see \figref{rdfex}C).
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/rdf.eps,width=7cm,angle=270}}}
+{\includegraphics[width=7cm,angle=270]{plots/rdf}}}
 \caption[Definition of slices in {\tt g\_rdf}.]{Definition of slices
 in {\tt g\_rdf}: A. $g_{AB}(r)$. B. $g_{AB}(r,\theta)$. The slices are
 colored grey. C. Normalization $\langle\rho_B\rangle_{local}$. D. Normalization
@@ -223,7 +228,7 @@ SPC-water~\cite{Berendsen81} is given in \figref{rdf}.
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/rdfO_O.eps,width=7cm,angle=270}}}
+{\includegraphics[width=7cm,angle=270]{plots/rdfO_O}}}
 \caption{$g_{OO}(r)$ for Oxygen-Oxygen of SPC-water.}
 \label{fig:rdf}
 \end{figure}
@@ -252,7 +257,7 @@ However we want to describe here the implementation of the various
 The definition of the \swapindex{autocorrelation}{function} (ACF)
 $C_f(t)$ for a property $f(t)$ is
 \beq
-C_f(t)	~=~	\left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
+C_f(t)  ~=~     \left\langle f(\xi) f(\xi+t)\right\rangle_{\xi}
 \label{eqn:corr}
 \eeq
 where the notation on the right hand side means averaging over $\xi$, {\ie} over
@@ -260,21 +265,21 @@ time origins.
 It is also possible to compute cross-correlation function from two properties
 $f(t)$ and $g(t)$:
 \beq
-C_{fg}(t) ~=~ 	\left\langle f(\xi) g(\xi+t)\right\rangle_{\xi}
+C_{fg}(t) ~=~   \left\langle f(\xi) g(\xi+t)\right\rangle_{\xi}
 \eeq
 however, in {\gromacs} there is no standard mechanism to do this
 ({\bf note:} you can use the {\tt xmgr} program to compute cross correlations).
 The integral of the correlation function over time is the 
 correlation time $\tau_f$:
 \beq
-\tau_f	~=~	\int_0^{\infty} C_f(t) {\rm d} t
+\tau_f  ~=~     \int_0^{\infty} C_f(t) {\rm d} t
 \label{eqn:corrtime}
 \eeq
 
 In practice correlation functions are calculated based on data points with
 discrete time intervals {$\Delta$t}, so that the ACF from an MD simulation is:
 \beq
-C_f(j\Delta t)	~=~	\frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Delta t)
+C_f(j\Delta t)  ~=~     \frac{1}{N-j}\sum_{i=0}^{N-1-j} f(i\Delta t) f((i+j)\Delta t)
 \label{eqn:corrmd}
 \eeq
 where $N$ is the number of available time frames for the calculation.
@@ -289,7 +294,7 @@ for $C_f(\Delta t)$ but only 1 for $C_f((N-1)\Delta t)$. However, if we decide t
 compute only an ACF of length $M\Delta t$, where $M \leq N/2$ we can compute 
 all points with the same statistical accuracy:
 \beq
-C_f(j\Delta t)	~=~ \frac{1}{M}\sum_{i=0}^{N-1-M} f(i\Delta t)f((i+j)\Delta t)
+C_f(j\Delta t)  ~=~ \frac{1}{M}\sum_{i=0}^{N-1-M} f(i\Delta t)f((i+j)\Delta t)
 \eeq
 here of course $j < M$.
 $M$ is sometimes referred to as the \normindex{time lag} of the correlation function. 
@@ -303,7 +308,7 @@ This can be tested using a block-averaging procedure, where only time origins
 with a spacing at least the length of the time lag are included, {\eg} using 
 $k$ time origins with spacing of $M\Delta t$ (where $kM \leq N$):
 \beq
-C_f(j\Delta t)	~=~ \frac{1}{k}\sum_{i=0}^{k-1} f(iM\Delta t)f((iM+j)\Delta t)
+C_f(j\Delta t)  ~=~ \frac{1}{k}\sum_{i=0}^{k-1} f(iM\Delta t)f((iM+j)\Delta t)
 \eeq
 However, one
 needs very long simulations to get good accuracy this way, because there are 
@@ -317,7 +322,7 @@ by using fast Fourier transforms to do the convolution~\cite{Allen87}.
 \subsection{Special forms of the ACF}
 There are some important varieties on the ACF, {\eg} the ACF of a vector \ve{p}:
 \beq
-C_{\ve{p}}(t) ~=~	\int_0^{\infty} P_n(\cos\angle\left(\ve{p}(t),\ve{p}(t+\xi)\right) {\rm d} \xi
+C_{\ve{p}}(t) ~=~       \int_0^{\infty} P_n(\cos\angle\left(\ve{p}(t),\ve{p}(t+\xi)\right) {\rm d} \xi
 \label{eqn:corrleg}
 \eeq
 where $P_n(x)$ is the $n^{th}$ order Legendre polynomial
@@ -332,14 +337,14 @@ dipole autocorrelation ({\tt g\_dipoles}).
 In order to study torsion angle dynamics we define a dihedral 
 autocorrelation function as~\cite{Spoel97a}:
 \beq
-C(t)	~=~	\left\langle \cos(\theta(\tau)-\theta(\tau+t))\right\rangle_{\tau}
+C(t)    ~=~     \left\langle \cos(\theta(\tau)-\theta(\tau+t))\right\rangle_{\tau}
 \label{eqn:coenk}
 \eeq
 Note that this is not a  product of two functions 
 as is generally used for correlation
 functions, but it may be rewritten as the sum of two products:
 \beq
-C(t)	~=~	\left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\theta(\tau))\sin(\theta(\tau+t))\right\rangle_{\tau}
+C(t)    ~=~     \left\langle\cos(\theta(\tau))\cos(\theta(\tau+t))\,+\,\sin(\theta(\tau))\sin(\theta(\tau+t))\right\rangle_{\tau}
 \label{eqn:cot}
 \eeq
 
@@ -397,7 +402,7 @@ An example of the mean square displacement of SPC-water is given in
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/msdwater.eps,width=6.5cm,angle=270}}}
+{\includegraphics[width=6.5cm,angle=270]{plots/msdwater}}}
 \caption{Mean Square Displacement of SPC-water.}
 \label{fig:msdwater}
 \end{figure}
@@ -445,7 +450,7 @@ see \figref{dih_def}.
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/dih_def.eps,width=3.5cm,angle=270}}}
+{\includegraphics[width=3.5cm,angle=270]{plots/dih_def}}}
 \caption[Dihedral conventions.]{Dihedral conventions: A. ``Biochemical
 convention''. B. ``Polymer convention''.}
 \label{fig:dih_def}
@@ -458,7 +463,7 @@ g\_sgangle}.
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/sgangle.eps,width=6.5cm,angle=270}}}
+{\includegraphics[width=6.5cm,angle=270]{plots/sgangle}}}
 \caption[Options of {\tt g\_sgangle}.]{Options of {\tt g\_sgangle}: A. Angle between 2 vectors. B. Angle between a vector and the normal of a plane. C. Angle between two planes. D. Distance between the geometrical centers of 2 planes. E. Distances between a vector and the center of a plane.}
 \label{fig:sgangle}
 \end{figure}
@@ -529,7 +534,7 @@ the matrix, you can convert it with
 {\tt xpm2ps} into a Postscript picture, see \figref{mdmat}.
 \begin{figure}
 \centerline{
-\psfig {figure=plots/distm.eps,width=6.5cm}}
+\includegraphics[width=6.5cm]{plots/distm}}
 \caption{A minimum distance matrix for a peptide~\protect\cite{Spoel96b}.}
 \label{fig:mdmat}
 \end{figure}
@@ -572,7 +577,7 @@ such a matrix.
 Alternatively the $RMSD$ can be computed using a fit-free method with the 
 program {\tt g\_rmsdist}:
 \beq
-RMSD(t)	~=~	\left[\frac{1}{N^2}\sum_{i=1}^N	\sum_{j=1}^N	\|{\bf r}_{ij}(t)-{\bf r}_{ij}(0)\|^2\right]^{\frac{1}{2}}
+RMSD(t) ~=~     \left[\frac{1}{N^2}\sum_{i=1}^N \sum_{j=1}^N    \|{\bf r}_{ij}(t)-{\bf r}_{ij}(0)\|^2\right]^{\frac{1}{2}}
 \label{eqn:rmsdff}
 \eeq
 where the {\em distance} {\bf r}$_{ij}$ between atoms at time $t$ 
@@ -724,13 +729,13 @@ H-bond exists, a geometrical criterion is used, see also
 \figref{hbond}:
 \beq
 \begin{array}{rclcl}
-r	& \leq	& r_{HB}	& = & 0.35 \mbox{nm}	\\
-\alpha	& \leq	& \alpha_{HB}	& = & 60^o 		\\
+r       & \leq  & r_{HB}        & = & 0.35 \mbox{nm}    \\
+\alpha  & \leq  & \alpha_{HB}   & = & 60^o              \\
 \end{array}
 \eeq
 
 \begin{figure}
-\centerline{\psfig{figure=plots/hbond.eps,width=2.5cm,angle=270}}
+\centerline{\includegraphics[width=2.5cm,angle=270]{plots/hbond}}
 \caption{Geometrical Hydrogen bond criterion.}
 \label{fig:hbond}
 \end{figure}
@@ -745,7 +750,7 @@ the following ways:
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/hbond_insert.eps,width=5cm,angle=270}}}
+{\includegraphics[width=5cm,angle=270]{plots/hbond_insert}}}
 \caption[Insertion of water into an H-bond.]{Insertion of water into
 an H-bond. (1) Normal H-bond between two residues. (2) H-bonding
 bridge via a water molecule.}
@@ -825,7 +830,7 @@ further information, see the {\tt dssp}-manual. A typical output plot of
 
 \begin{figure}
 \centerline{
-\psfig {figure=plots/dssp.eps,width=12cm}}
+\includegraphics[width=12cm]{plots/dssp}}
 \caption{Analysis of the secondary structure elements of a peptide in time.}
 \label{fig:dssp}
 \end{figure}
@@ -837,7 +842,7 @@ $\psi$ of the protein backbone, see \figref{phipsi}.
 
 \begin{figure}
 \centerline{
-\psfig {figure=plots/phipsi.eps,width=5cm}}
+\includegraphics[width=5cm]{plots/phipsi}}
 \caption{Definition of the dihedral angles $\phi$ and $\psi$ of the protein backbone.}
 \label{fig:phipsi}
 \end{figure}
@@ -847,7 +852,7 @@ A typical output is given in \figref{rama}.
 
 \begin{figure}
 \centerline{
-{\psfig {figure=plots/rama.eps,width=9cm,angle=270}}}
+{\includegraphics[width=9cm,angle=270]{plots/rama}}}
 \caption{Ramachandran plot of a small protein.}
 \label{fig:rama}
 \end{figure}
@@ -863,7 +868,7 @@ using the {\tt wheel} program. Two examples are
 plotted in \figref{wheel}.
 
 \begin{figure}
-\centerline{\psfig{figure=plots/hpr-wheel.eps,width=\htw}}
+\centerline{\includegraphics[width=\htw]{plots/hpr-wheel}}
 \caption{Helical wheel projection of the N-terminal helix of HPr.}
 \label{fig:wheel}
 \end{figure}

@@ -7,7 +7,7 @@
 % 
 % GROningen MAchine for Chemical Simulations
 % 
-%               VERSION 2.0
+%               VERSION 3.0
 % 
 % Copyright (c) 1991-1999
 % BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -18,17 +18,14 @@
 % H.J.C. Berendsen, D. van der Spoel and R. van Drunen
 % Comp. Phys. Comm. 91, 43-56 (1995)
 % 
-% Also check out our WWW page:
-% http://md.chem.rug.nl/~gmx
-% or e-mail to:
-% gromacs@chem.rug.nl
-% 
+%  Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+
 % And Hey:
 % Gnomes, ROck Monsters And Chili Sauce
 %
 
-\documentclass[11pt,dvips]{book}
-\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort,multicol,dcolumn,times}
+\documentclass[11pt]{book}
+\usepackage{here,picins,fancy,graphicx,array,tabularx,makeidx,a4,citesort,multicol,dcolumn,times}
 \makeindex
 \input{macros}
 \sloppy
@@ -50,10 +47,9 @@
 \newcommand{\ssecref}[1]{\ref{subsec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\appref}[1]{Appendix~\ref{app:#1}}
-%\newcommand{\wwwpage}{http://md.chem.rug.nl/\raisebox{-0.8ex}{\~{ }}gmx}
 \newcommand{\wwwpage}{http://www.gromacs.org}
 % NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
-\newcommand{\email}{{\tt gromacs@chem.rug.nl}}
+\newcommand{\email}{{\tt gromacs@gromacs.org}}
 \newcommand{\mcc}[2]{\multicolumn{#1}{c|}{#2}}
 \newcommand{\mcl}[2]{\multicolumn{#1}{l}{#2}}
 \setlength{\headwidth}{\textwidth}
@@ -90,16 +86,13 @@
 
 \vspace{1cm}
 
-\psfig {figure=plots/warning.eps,width=1.8cm,angle=-80}
+\rotatebox{-80}{\includegraphics[width=1.8cm]{plots/warning}}
 
 \vspace{1cm}
 
-\psfig {figure=plots/pla.eps,width=\ntw}
+\includegraphics[width=\ntw]{plots/fp-nolabel}
 
 \vspace{1ex}
-
-{\em Phospholipase A2 ready to attack a lecithin \quad
-\quad mono layer \quad ~}
 
 \vspace{1cm}
 \rule{13cm}{0.1mm}
@@ -144,7 +137,7 @@ Herman J.C. Berendsen}
 
 \vspace{0.5cm}
 
-\centerline{\psfig{figure=plots/bioson.eps,width=8cm}}
+\centerline{\includegraphics[width=8cm]{plots/bioson}}
 
 \vspace{1cm}
 
@@ -166,10 +159,12 @@ Fax: +31 (0)50 63 4800       \\
 \newpage
 \section*{Preface \& Disclaimer.}
 This manual is not complete and has no pretention to be complete, due
-to lack of time of the contributors. It is meant as a source of
-information and references for the {\gromacs} user.  It contains the
-background physics of MD simulations and is still being worked on
-which in some cases means that the information is not correct.
+to lack of time of the contributors -- our first priority is to improve
+the software. It is meant as a source of
+information and references for the {\gromacs} user.  It covers both the
+physical background of MD simulations in general and details of 
+the {\gromacs} software in particular. Iis continuously being worked on,
+which in some cases might mean the information is not entirely correct.
 
 When \normindex{citing} this document in any scientific publication
 please refer to it as:
@@ -192,17 +187,17 @@ or, if you use BibTeX, you can directly copy the following:
                  Apol and Pieter J. Meulen\-hoff and D. Peter Tieleman and
                  Alfons L. T. M. Sij\-bers and Berk Hess and K. Anton
                  Feenstra and Erik Lindahl and Rudi van Drunen and 
-		 Herman J. C. Berendsen",
+                 Herman J. C. Berendsen",
   address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
                  Internet: http://www.gromacs.org",
   year =         "2001"
 }
 \end{verbatim}
 
-Please do also cite the {\gromacs} papers~\cite{Berendsen95a,Lindahl2001a}.
+Please also cite the {\gromacs} papers~\cite{Berendsen95a,Lindahl2001a}.
 
 
-Any comment is welcome, please send it by e-mail to {\email}
+Any comments are welcome, please send them by e-mail to {\email}
 \medskip
 
 Groningen, \today
@@ -235,8 +230,6 @@ HyperChem & is a trademark of AutoDesk inc.\\
 \end{tabularx}
 
 \vspace{0.5cm}
-
-The figure on front page was made with Molscript~\cite{Kraulis91}.
 
 %
 %       C O N T E N T S
@@ -288,3 +281,27 @@ The figure on front page was made with Molscript~\cite{Kraulis91}.
 \printindex
 
 \end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

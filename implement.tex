@@ -34,29 +34,45 @@ that would otherwise be hard to understand.
 \input{virial}
 
 \section{Optimizations}
-Here we describe some of the optimizations used in {\gromacs}, apart
-from parallelism. One of these, the implementation of the 
+Here we describe some of the algorithmic optimizations used 
+in {\gromacs}, apart from parallelism. 
+One of these, the implementation of the 
 1.0/sqrt(x) function is treated separately in \secref{sqrt}.
 The most important other optimizations are described below.
 
-\subsection{Inner Loop for Water}
-In {\gromacs} a special inner loop that calculates non-bonded
-interactions for a water molecule with something else is 
-implemented. This loop assumes that the water model is like
+\subsection{Inner Loops for Water}
+{\gromacs} users special inner loop to calculate non-bonded
+interactions for water molecules with other atoms, and yet
+another set of loops for interactions between pairs of
+water molecules. This very optimized loop assumes 
+a water model similar to
 SPC~\cite{Berendsen81}, {\ie}:
 \begin{enumerate}
-\item	The first atom is oxygen, the other two are hydrogens
-\item	The first atom has Lennard-Jones (\secref{lj}) and 
-	coulomb (\secref{coul}) interactions, the other
-	two only have coulomb.
+\item   There are three atoms in the molecule.
+\item   The first atom has Lennard-Jones (\secref{lj}) and 
+        coulomb (\secref{coul}) interactions.
+\item   Atoms two and three have only coulomb interactions, 
+        and equal charges.
 \end{enumerate}
 
 The loop also works for the SPC/E~\cite{Berendsen87} and 
-TIP3P~\cite{Jorgensen83} water models. No assumption is made about
-force field parameters, or charges.
-The gain of this implementation is that there are more floating point
+TIP3P~\cite{Jorgensen83} water models. For more complicated molecules
+there is a general solvent loop assuming
+(note the order):
+\begin{enumerate}
+\item   At the beginning of the molecule topology there is
+        an arbitrary number of atoms with Lennard-Jones and
+        coulomb interactions.
+\item   Then we have an arbitrary number of atoms with coulomb interactions only.
+\item   And finally there can be an arbitrary number of 
+        atoms with Lennard-Jones interactions only.
+\end{enumerate}
+Note that this loop provides much less optimization than the water
+loop, but it is slightly better than the default routine.
+
+The gain of these implementations is that there are more floating point
 operations in a single loop, which implies that some compilers
-can schedule the code better. It turns out however, that even
+can schedule the code better. However, it turns out that even
 some of the most advanced compilers have problems with scheduling, 
 implying that manual tweaking is necessary to get optimum 
 \normindex{performance}.
@@ -69,45 +85,10 @@ C-compilers, for most machines anyway. For some machines ({\eg} SGI
 Power Challenge) the difference may be up to a factor of 3, in the
 case of vector computers this may be even larger. Therefore, some of
 the routines that take up a lot of computer time have been translated
-into Fortran. On most machine, calling a Fortran routine from C is not
-hard to do, but we did not rigorously test this. The default for
-compiling {\gromacs} is to not use Fortran loops, except for machines
-where we have tested it, but it may be turned on in your local {\tt
-Makefile.CPU}. When you have problems with linking, check your Fortran
-object files (using the UNIX {\tt nm} utility) to see what the name of
-the function is, and modify the code where the function is
-called. Please note, that C-compilers usually add an underscore before
-or after each function name. Also do not forget that C code, unlike
-Fortran, is case sensitive. When the Fortran function name in the
-object file is in uppercase, you probably need to put the call in
-uppercase as well.
-
-Here is a list of the functions that have a Fortran equivalent:
-\begin{table}[h]
-\centerline{
-\begin{tabularx}{\linewidth}{|ll|ll|X|}
-\dline
-C	& Source	& Fortran	& Source	& Purpose \\
-\hline
-c\_coul	& inloopc.c	& fcoul		& inloopf.f	& Coulomb interaction \\
-c\_ljc	& inloopc.c	& fljc		& inloopf.f	& Lennard-Jones and Coulomb interaction\\
-c\_coul	& inloopc.c	& fcoul8	& inloopf.f	& Coulomb\\
-c\_ljc	& inloopc.c	& fljc8		& inloopf.f	& LJ+Coulomb\\
-c\_water& inloopc.c	& fwater	& inloopf.f	& Water Loop\\
-cshake	& shakef.c	& fshake	& fshake.f	& Shake\\
-cshake	& shakef.c	& fshake8	& fshake.f	& Shake\\
-csettle	& csettle.c	& fsettle	& fsettle.f	& Settle\\
-csettle	& csettle.c	& fsettle8	& fsettle.f	& Settle\\
-\dline
-\end{tabularx}
-}
-\caption[List of C functions and their Fortran equivalent, plus the
-source files.]{List of C functions and their Fortran equivalent, plus
-the source files. Note that the Fortan and C source files are both
-generated from one {\tt .m4} file. The 8 refers to double precision
-version of the same routine. In C it is not necessary to use a special
-version of the code due to the use of {\tt typedef}.}
-\end{table}
+into Fortran and even assembly code for Intel and AMD x86 processors.
+In most cases, the Fortran or assembly loops should be selected 
+automatically by the configure script when appropriate, but you can
+also tweak this by setting options to the configure script.
 
 \input{sqrt}
 

@@ -55,8 +55,9 @@ and online at:\\
 \centerline{\tt {\wwwpage}/online\gmxver/files.html}
 
 {\gromacs} files written in \normindex{xdr} format can be read on any
-architecture with a {\gromacs} version (1.6 or newer) compiled with an
-XDR library.
+architecture with a {\gromacs} version 1.6 or newer if the configuration
+script found the XDR libraries on your system (they are essentially
+always present).
 \input{files}
 
 \section{\swapindex{Run}{Parameters}s}
@@ -95,8 +96,8 @@ All {\gromacs} programs have 4 hidden options:\\
 \vspace{-5ex}
 
 \item
-When compiled with the {\tt HAVE\_MOTIF} option, all {\gromacs} programs
-have an additional option:\\
+If the configuration script found Motif (or Lesstif) on your system,
+all {\gromacs} programs will have an additional option:\\
 \vspace{-5ex}
 \begin{tabbing}
 {\tt ~~~~~~~~~} \= vector \= {\tt ~~~~~~~~} \= \kill

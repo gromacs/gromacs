@@ -30,28 +30,42 @@
 \chapter{Technical Details.}
 \label{ch:install}
 \section{Installation.}
+The {\gromacs} software is Free Software, licensed under the GNU
+General Public License. The main distribution site is our WWW server at
+{\wwwpage}. 
+
+
 The {\gromacs} code is distributed in SOURCE form by our WWW server at\\
 {\wwwpage}\\
-On this server you will find all the information you need to 
-\normindex{install}
-the software, as well as the \swapindex{license}{form} that you have to submit
-before you are allowed to down load the code. When you have filled in this
-license form, a user name and password will be sent to you by e-mail
-with which you can down load the files. The e-mail address you specify
-on your license sheet will also be used to send you information on
-updates, bug-fixes etc.
-
-For \normindex{commercial use} of the software, please contact us
-directly: {\email}
+On this page you will find all the information you need to 
+\normindex{install} the package, mailing lists with archives,
+and several additional online resources like contributed topologies, etc.
+The default installation action is simply to unpack the source code and
+the issue
+\begin{verbatim}
+./configure
+make
+make install
+\end{verbatim}
+The configuration script should automatically determine the best options
+for your platform, and it will tell you if anything is missing on
+your system.
 
 \section{Single or Double precision}
-{\gromacs} can be compiled in both single\index{single
+{\gromacs} can be compiled in either single\index{single
 precision|see{precision, single}}\index{precision, single}
-and \pawsindex{double}{precision}.
+or \pawsindex{double}{precision}. The default choice is single
+precision, but it is easy to turn on double precision by selecting
+the {\tt --enable-double} option to the configuration script.
 Double precision will be 0 to 50\% slower than single precision depending
 on the architecture you are running on. Double precision will use somewhat more
 memory and run input, energy and full-precision trajectory files will be
-almost twice as large.
+almost twice as large. Note that the assembly loops are only available in
+single precision; Although the Intel SSE2 instruction set (available
+on Pentium IV and later) supports double precision instructions the performance
+is much lower than single precision. It would also mean very much extra
+work for a feature that very few people use, so we will probably not 
+provide double precision assembly loops in the future either.
 
 The energies in single precision are accurate up to the last decimal,
 the last one or two decimals of the forces are non-significant.
@@ -81,52 +95,41 @@ and without cut-off's)
 \end{itemize}
 
 \section{Porting {\gromacs}.}
-The {\gromacs} system is designed with portability as one major design
+The {\gromacs} system is designed with portability as a major design
 goal. However there are a number of things we assume to be present on
 the system {\gromacs} is being ported on. We assume the following
 features:
 
 \begin{enumerate}
-\item 	the UNIX operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
-	or UNIX-like libraries
-\item 	an ANSI C compiler 
-\item	optionally a Fortran-77 compiler or Fortran-90 compiler
-	for faster (on some computers) inner loop routines
-\item	optionally an XDR library, which will allow you to use the
-	portable versions of the {\gromacs} binary file types
-	({\gromacs} files written in XDR format can be read on any
-	architecture with a {\gromacs} version compiled with XDR)
-\item 	If you want to use the graphics, the X-window system version 
-	11 Release 4 or higher and the X-lib graphics libraries
+\item   A UNIX-like operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
+        or UNIX-like libraries running under e.g. CygWin
+\item   an ANSI C compiler 
+\item   optionally a Fortran-77 compiler or Fortran-90 compiler
+        for faster (on some computers) inner loop routines
+\item   optionally the Nasm assembler to use the assembly innerloops
+        on x86 processors.
 \end{enumerate}
 
-These are the requirements of a single processor system. If you want
-to compile {\gromacs} on a multi processor environment there is another
-requirement:
+There are some additional features in the package that require extra
+stuff to be present, but it is checked for in the configuration script
+and you will be warned if anything important is missing.
 
-\begin{enumerate}
-\item Message-passing architecture
-\item Ring structure.
-\end{enumerate}
+That's the requirements for a single processor system. If you want
+to compile {\gromacs} for a multiple processor environment you also
+need a MPI library (Message-Passing Interface) to perform the 
+parallel communication. This is always shipped with supercomputers, and
+for workstations you can find links to free MPI implementations through
+the {\gromacs} homepage at {\wwwpage}.
 
-One can understand that a message passing architecture also can be
-mapped onto a shared memory machine. This implementation is left to
-the reader as an exercise in parallel programming. Also the ring
-structure can be mapped onto {\eg} a hypercube.
+\subsection{Multi-processor Optimization}
 
-\subsection{Multi-processor Porting}
+If you want to, you could write your own optimized communication
+(perhaps using specific libraries for your hardware) instead
+of MPI. This should never be necessary for normal use
+(we haven't heard of a modern computer where it isn't possible
+to run MPI), but if you absolutely want to do it, here are some clues.
 
-In the case you want to run the {\gromacs} software on a
-multi-processor machine, you have two options.
-\begin{enumerate}
-\item	Install \normindex{MPI} or \normindex{PVM}. The {\gromacs} WWW
-	page has some pointers to relevant documents.
-\item	Write communication routines yourself. 
-\end{enumerate}
-
-It may be clear that you will hardly ever need to write the routines
-yourself, but if you can't avoid it, here are some clues.
-The interface between these routines and the
+The interface between the communication routines and the
 rest of the {\gromacs} system is described in the file {\tt
 \$GMXHOME/src/include/network.h} We will give a short description of the
 different routines below.
@@ -172,35 +175,62 @@ file.
 variables. First of all, the variables set in the \normindex{GMXRC} file
 are essential for running and compiling {\gromacs}. Other variables are:
 \begin{enumerate}
-\item	{\tt DUMP\_NL}, dump neighbor list. 
-	If set to a positive number the {\em entire}
-	neighbor list is printed in the log file (may be many megabytes).
-	Mainly for debugging purposes, but may also be handy for
-	porting to other platforms.
-\item	{\tt IAMCOOL}, when set prints cool quotes, otherwise
-	your {\gromacs} life will be dull and boring.
-\item	{\tt WHERE}, when set print debugging info on line numbers.
-\item	{\tt LOG\_BUFS}, the size of the buffer for file I/O. When set
-	to 0, all file I/O will be unbuffered and therefore very slow.
-	This can be handy for debugging purposes, because it ensures
-	that all files are always totally up-to-date.
+\item   {\tt DUMP\_NL}, dump neighbor list. 
+        If set to a positive number the {\em entire}
+        neighbor list is printed in the log file (may be many megabytes).
+        Mainly for debugging purposes, but may also be handy for
+        porting to other platforms.
+\item   {\tt IAMCOOL}, if this is explicitly set to NO your
+        {\gromacs} life will be dull and boring. (i.e., no cool quotes).
+\item   {\tt WHERE}, when set print debugging info on line numbers.
+\item   {\tt LOG\_BUFS}, the size of the buffer for file I/O. When set
+        to 0, all file I/O will be unbuffered and therefore very slow.
+        This can be handy for debugging purposes, because it ensures
+        that all files are always totally up-to-date.
 \item   {\tt GMXNPRI}, for SGI systems only. When set, gives the
-	default non-degrading priority (npri) for {\tt
-	mdrun}, {\tt nmrun}, {\tt g\_covar} and {\tt g\_nmeig},
-	{\eg}\@ setting \verb'setenv GMXNPRI 250' causes all
-	runs to be performed at near-lowest priority by default.
-\item	{\tt GMX\_VIEW\_XPM}, {\tt GMX\_VIEW\_XVG}, {\tt
-	GMX\_VIEW\_EPS} and {\tt GMX\_VIEW\_PDB}, commands used to
-	automatically view resp.\@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
-	and {\tt .pdb} file types. Default to {\tt xv}, {\tt xmgr},
-	{\tt ghostview} and {\tt rasmol}. Set to empty to disable
-	automatic viewing of a particular file type. The command will
-	be forked off and run in the background at the same priority
-	as the {\gromacs} tool (which might not be what you want).
-	Be careful not to use a command which blocks the terminal
-	(e.g. {\tt vi}), since multiple instances might be run.
+        default non-degrading priority (npri) for {\tt
+        mdrun}, {\tt nmrun}, {\tt g\_covar} and {\tt g\_nmeig},
+        {\eg}\@ setting \verb'setenv GMXNPRI 250' causes all
+        runs to be performed at near-lowest priority by default.
+\item   {\tt GMX\_VIEW\_XPM}, {\tt GMX\_VIEW\_XVG}, {\tt
+        GMX\_VIEW\_EPS} and {\tt GMX\_VIEW\_PDB}, commands used to
+        automatically view resp.\@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
+        and {\tt .pdb} file types. Default to {\tt xv}, {\tt xmgr},
+        {\tt ghostview} and {\tt rasmol}. Set to empty to disable
+        automatic viewing of a particular file type. The command will
+        be forked off and run in the background at the same priority
+        as the {\gromacs} tool (which might not be what you want).
+        Be careful not to use a command which blocks the terminal
+        (e.g. {\tt vi}), since multiple instances might be run.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
 TOTAL for the {\tt \normindex{do\_shift}} program, and DSPP for the
 {\tt \normindex{do\_dssp}} program.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
