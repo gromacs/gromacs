@@ -61,7 +61,7 @@ static char *SRCID_trjcat_c = "$Id$";
 #define FLT_MAX 1e36
 #endif
 
-static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep)
+static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep,atom_id imax)
 {
   /* Check start time of all files */
   int i,flags,status,natoms=0;
@@ -75,9 +75,9 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep
     ok=read_first_frame(&status,fnms[i],&fr,flags);
     
     if(!ok) 
-      fatal_error(0,"Couldn't read frame from file.");
+      fatal_error(0,"\nCouldn't read frame from file.");
     if(!fr.bTime)
-      fatal_error(0,"Couldn't find a time in the frame.");
+      fatal_error(0,"\nCouldn't find a time in the frame.");
     readtime[i]=fr.time;
     
     if(i==0) {
@@ -86,13 +86,19 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep
       
       ok=read_next_frame(status,&fr);
       if(!ok || !fr.bTime) 
-	fatal_error(0,"Couldn't read time from second frame.");
+	fatal_error(0,"\nCouldn't read time from second frame.");
       
       *timestep=fr.time-t;
     }
     else {
-      if(natoms!=fr.natoms) 
-	fatal_error(0,"Different number of atoms in files");
+      if (imax==NOTSET)
+	if(natoms!=fr.natoms) 
+	  fatal_error(0,"\nDifferent number of atoms (%d/%d)in files",
+		      natoms,fr.natoms);
+      else
+	if(fr.natoms >= imax)
+	  fatal_error(0,"\nNot enough atoms (%d) for index group (%d)",
+		      fr.natoms,imax);
     }
     close_trj(status);
   }
@@ -253,19 +259,23 @@ int main(int argc,char *argv[])
 	"Sort trajectory files (not frames)" }
   };
       
-  int          status,ftp,ftpin,i,frame,frame_out,step,trjout=0;
-  rvec         *x,*v;
-  real         xtcpr,t_corr;
-  t_trxframe   fr,frout;
-  char         **fnms;
-  int          trxout=-1;
-  bool         bNewFile;
-  char         *in_file,*out_file;
-  int          flags,earliersteps,nfile,*cont_type,last_ok_step;
-  real         *readtime,*settime,first_time=0,last_ok_t=-1,timestep;
+  int         status,ftp,ftpin,i,frame,frame_out,step,trjout=0;
+  rvec        *x,*v;
+  real        xtcpr,t_corr;
+  t_trxframe  fr,frout;
+  char        **fnms;
+  int         trxout=-1;
+  bool        bNewFile,bIndex;
+  char        *in_file,*out_file;
+  int         flags,earliersteps,nfile,*cont_type,last_ok_step;
+  real        *readtime,*settime,first_time=0,last_ok_t=-1,timestep;
+  int         isize;
+  atom_id     *index=NULL,imax;
+  char        *grpname;
 
   t_filenm fnm[] = {
-      { efTRX, "-o", "trajout", ffWRITE }
+      { efTRX, "-o", "trajout", ffWRITE },
+      { efNDX, NULL,  NULL,     ffOPTRD }
   };
   
 #define NFILE asize(fnm)
@@ -274,6 +284,17 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
+
+  bIndex=ftp2bSet(efNDX,NFILE,fnm);
+  
+  imax=NOTSET;
+  if (bIndex) {
+    printf("Select group for output\n");
+    rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
+    /* scan index */
+    for(i=0; i<isize; i++)
+      imax = max(imax, index[i]);
+  }
 
   /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
   xtcpr=1;
@@ -293,13 +314,13 @@ int main(int argc,char *argv[])
   snew(readtime,nfile+1);
   snew(cont_type,nfile+1);
   
-  scan_trj_files(fnms,nfile,readtime,&timestep);
+  scan_trj_files(fnms,nfile,readtime,&timestep,imax);
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);
   
   earliersteps=0;    
   out_file=opt2fn("-o",NFILE,fnm);
   ftp=fn2ftp(out_file);
-
+  
   /* Not checking input format, could be dangerous :-) */
  
   flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
@@ -372,8 +393,11 @@ int main(int argc,char *argv[])
 	    case efTRJ:
 	    case efTRR:
 	    case efXTC:
+	      if (bIndex)
+		write_trxframe_indexed(trxout,&frout,isize,index);
+	      else
 		write_trxframe(trxout,&frout);
-		break;
+	      break;
 	    default:
 	      fatal_error(0,"This fileformat doesn't work here yet.");
 	    }
