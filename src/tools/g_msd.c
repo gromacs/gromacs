@@ -106,7 +106,12 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
       this->mass[i]=atoms->atom[i].m;
     }
   }
-  else if (bMol) {
+  if (bMol) {
+    atoms=&top->atoms;
+    snew(this->mass,atoms->nr);
+    for(i=0; (i<atoms->nr); i++) {
+      this->mass[i]=atoms->atom[i].m;
+    }
     this->mols = &(top->blocks[ebMOLS]);
   }
   
@@ -594,10 +599,6 @@ int main(int argc,char *argv[])
     { "-trestart",      FALSE, etREAL, {&dt},
       "Time between restarting points in trajectory (only with -nrestart > 1)" }
   };
-  static char *bugs[] = {
-    "The diffusion constant given in the title of the graph for lateral"
-    " diffusion has to be multiplied by 6/4"
-  };
 
   t_filenm fnm[] = { 
     { efTRX, NULL, NULL,  ffREAD },
@@ -620,13 +621,17 @@ int main(int argc,char *argv[])
   CopyRight(stdout,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   if (ngroup < 1)
     fatal_error(0,"Must have at least 1 group (now %d)",ngroup);
 
   bMol = opt2bSet("-m",NFILE,fnm);
-          
+  if (bMol && bMW) 
+    fatal_error(0,"Can't have mass weighted diffusion per molecule");
+  if (bMol) 
+    fprintf(stderr,"Calculating diffusion coefficients for molecules.\n");
+
   if (normtype[0][0]!='n') {
     type = normtype[0][0] - 'x'+1; /* See defines above */
     dim_factor = 2.0;
@@ -646,7 +651,7 @@ int main(int argc,char *argv[])
 	  type,axis,dim_factor);
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xdum,NULL,box,bMW); 
   if (bMol && !bTop)
-    fatal_error(0,"Could not read a topology form %s. Try a tpr file instead.",
+    fatal_error(0,"Could not read a topology from %s. Try a tpr file instead.",
 		ftp2fn(efTPS,NFILE,fnm));
     
   do_corr(NFILE,fnm,ngroup,&top,bMol,bMW,type,dim_factor,axis,nrestart,dt);

@@ -116,31 +116,55 @@ real calc_radius(char *atom)
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real qcut,int nskip)
 {
-  FILE         *fp;
+  FILE         *fp,*fp2=NULL;
   real         t;
   int          status;
-  int          i,j,natoms,flag,nsurfacedots;
+  int          i,ii,j,natoms,flag,nsurfacedots;
   rvec         *x;
   matrix       box;
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
+  bool         bAtom, bIndex;
   real         *radius,*area=NULL,*surfacedots=NULL;
-  real         totarea,totvolume,harea;
-    
+  real         *atom_area,*atom_area2;
+  real         totarea,totvolume,harea,tarea_ndx;
+  atom_id      *index;
+  int          nx;
+  char         *grpname;
+  real         stddev;
+
+  bAtom = opt2bSet("-ao",nfile,fnm);
+  bIndex = opt2bSet("-n",nfile,fnm);
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
 			   &t,&x,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
+
   top=read_top(ftp2fn(efTPX,nfile,fnm));
 
-  /* Now comput atomic readii including solvent probe size */
+  if (bAtom) {
+    fprintf(stderr,"Printing out areas per atom\n");
+    fp2=xvgropen(opt2fn("-ao",nfile,fnm),"Area per atom","Atom #",
+	      "Area (nm\\S2\\N)");
+  }
+
+  if (bIndex) {
+    fprintf(stderr,"Using index group to print out atoms\n"); 
+    get_index(&(top->atoms),ftp2fn(efNDX,nfile,fnm),1,&nx,&index,&grpname);
+  }    
+
+  /* Now compute atomic readii including solvent probe size */
   snew(radius,natoms);
   snew(bPhobic,natoms);
+  snew(atom_area,natoms); 
+  snew(atom_area2,natoms);
+
   for(i=0; (i<natoms); i++) {
     radius[i]  = calc_radius(*(top->atoms.atomname[i])) + solsize;
     bPhobic[i] = fabs(top->atoms.atom[i].q) <= qcut;
   }
-  fp=xvgropen(ftp2fn(efXVG,nfile,fnm),"Solvent Accessible Surface","Time (ps)",
+
+  fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
   
   j=0;
@@ -166,13 +190,27 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 		      nsurfacedots,surfacedots,x,&(top->atoms),
 		      &(top->symtab),box);
       
-      harea = 0;
-      for(i=0; (i<natoms); i++) {
-	if (bPhobic[i])
-	  harea += area[i];
+      harea = 0; tarea_ndx = 0;
+      if (bIndex) {
+	for(i=0; (i<nx); i++) {
+	  ii=index[i];
+	  atom_area[i] += area[ii];
+	  atom_area2[i] += area[ii]*area[ii];
+	  tarea_ndx += area[ii];
+	  if (bPhobic[ii])
+	    harea += area[ii];
+	}
+	fprintf(fp,"%10g  %10g  %10g\n",t,harea,tarea_ndx);
+      } else {
+	for(i=0; (i<natoms); i++) {
+	  atom_area[i] += area[i];
+	  atom_area2[i] += area[i]*area[i];
+	  if (bPhobic[i])
+	    harea += area[i];
+	}
+	fprintf(fp,"%10g  %10g  %10g\n",t,harea,tarea_ndx);
       }
-      fprintf(fp,"%10g  %10g  %10g\n",t,harea,totarea);
-    
+      
       if (area) 
 	sfree(area);
       if (surfacedots)
@@ -182,6 +220,22 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   fprintf(stderr,"\n");
   close_trj(status);
+  
+  /* if necessary, print areas per atom to file too: */
+  if (bAtom) {
+    if (bIndex) {
+      for (i=0;i<nx;i++) 
+	fprintf(fp2,"%d %g %g\n",i+1,atom_area[index[i]]/j,
+		atom_area2[index[i]]/j);
+    } else {
+      for (i=0;i<natoms;i++) {
+	stddev = atom_area2[i]/j; 
+	if (stddev > 0) 
+	  stddev = sqrt(stddev);
+	fprintf(fp2,"%d %g %g\n",i+1,atom_area[i]/j,stddev);
+      }
+    }
+  }
 
   sfree(x);
 }
@@ -209,7 +263,9 @@ int main(int argc,char *argv[])
     { efTRX, "-f",   NULL,       ffREAD },
     { efTPX, "-s",   NULL,       ffREAD },
     { efXVG, "-o",   "area",     ffWRITE },
-    { efPDB, "-q",   "connelly", ffOPTWR }
+    { efPDB, "-q",   "connelly", ffOPTWR },
+    { efXVG, "-ao",  "atomarea", ffOPTWR },
+    { efNDX, "-n",   "index",    ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -228,7 +284,8 @@ int main(int argc,char *argv[])
   sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
-  
+  xvgr_file(opt2fn("-ao",NFILE,fnm),"-xydy");
+
   thanx(stdout);
   
   return 0;
