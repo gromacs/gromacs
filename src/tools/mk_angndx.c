@@ -59,6 +59,10 @@ static void fill_ft_ind(int FTYPE,int ft_ind[],t_idef *idef,char *grpnames[])
     if (ft == FTYPE) {
       ft_ind[i]=ind;
       switch (FTYPE) {
+      case F_G96ANGLES:
+	sprintf(buf,"Theta=%.1f_%g",idef->iparams[i].harmonic.rA,
+		idef->iparams[i].harmonic.krA);
+	break;
       case F_ANGLES:
 	sprintf(buf,"Theta=%.1f_%g",idef->iparams[i].harmonic.rA,
 		idef->iparams[i].harmonic.krA);
@@ -112,7 +116,7 @@ int main(int argc,char *argv[])
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
-  static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
+  static char *opt[] = { NULL, "angle", "g96-angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, opt,
       "Type of angle" }
@@ -143,6 +147,10 @@ int main(int argc,char *argv[])
   case 'a':
     mult=3;
     FTYPE=F_ANGLES;
+    break;
+  case 'g':
+    mult=3;
+    FTYPE=F_G96ANGLES;
     break;
   case 'd':
     FTYPE=F_PDIHS;
