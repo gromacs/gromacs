@@ -220,7 +220,7 @@ void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,
     bfac_max /= 10;
     bfac_min /= 10;
   }
-  while ( (abs(bfac_max) < 0.5) && (abs(bfac_min) < 0.5) ) {
+  while ( (fabs(bfac_max) < 0.5) && (fabs(bfac_min) < 0.5) ) {
     fprintf(stderr,"Range of values for B-factors too small (min %g, max %g) "
 	    "will scale up a factor 10\n",bfac_min,bfac_max);
     for(i=0; (i<n_bfac); i++)
@@ -519,7 +519,8 @@ int main(int argc, char *argv[])
   if (bMead) {
     top = read_top(infile);
     if (atoms.nr != top->atoms.nr)
-      fatal_error(0,"Atom numbers don't match");
+      fatal_error(0,"Atom numbers don't match (%d vs. %d)",
+		  atoms.nr,top->atoms.nr);
     for(i=0; (i<atoms.nr); i++) {
       atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
       /* Factor of 10 for Angstroms */
@@ -704,6 +705,7 @@ int main(int argc, char *argv[])
 	  atoms.atom[i].chain=label[0];
       }
       if (bMead) {
+	set_pdb_wide_format(TRUE);
         fprintf(out,"REMARK    The b-factors in this file hold atomic radii\n");
 	fprintf(out,"REMARK    The occupancy in this file hold atomic charges\n");
       }

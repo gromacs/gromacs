@@ -144,7 +144,7 @@ int main(int argc,char *argv[])
 	else
 	  rdum=0.0;
       }
-      if (abs(rdum)>1.0e-5) {
+      if (fabs(rdum)>1.0e-5) {
 	fprintf(stderr,"possible non-symmetric matrix:\n");
 	fprintf(stderr,"x[%d][%d]=%e,x[%d][%d]=%e\n",i,j,\
 		hess[i*ndim+j],j,i,hess[j*ndim+i]);
@@ -181,7 +181,7 @@ int main(int argc,char *argv[])
 
   bSuck=FALSE;
   for (i=0; (i<6); i++) {
-    if (abs(eigv[i]) > 1.0e-3) 
+    if (fabs(eigv[i]) > 1.0e-3) 
       bSuck=TRUE;
   }
   if (bSuck) {

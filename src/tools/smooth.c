@@ -228,7 +228,7 @@ int triangle_lower_bound (t_dist *d,int natoms,real tol)
 
 	    /* Smooth lower bound */
 	    if (!OVERLAP(b_lb,b_ub,c_lb,c_ub)) {
-	      new_lb = min(abs(b_lb-c_ub),abs(c_lb-b_ub));
+	      new_lb = min(fabs(b_lb-c_ub),fabs(c_lb-b_ub));
 	      if ( tol < new_lb - a_lb) {
 		set_dist(d,natoms,i,j,new_lb,a_ub,a_len);
 		nsmooth++;
@@ -237,7 +237,7 @@ int triangle_lower_bound (t_dist *d,int natoms,real tol)
 	      }
 	    }
 	    if (!OVERLAP(a_lb,a_ub,c_lb,c_ub)) {
-	      new_lb = min(abs(a_lb-c_ub),abs(c_lb-a_ub));
+	      new_lb = min(fabs(a_lb-c_ub),fabs(c_lb-a_ub));
 	      if ( tol < new_lb - b_lb) {
 		set_dist(d,natoms,i,k,new_lb,b_ub,b_len);
 		nsmooth++;
@@ -246,7 +246,7 @@ int triangle_lower_bound (t_dist *d,int natoms,real tol)
 	      }
 	    }
 	    if (!OVERLAP(a_lb,a_ub,b_lb,b_ub)) {
-	      new_lb = min(abs(a_lb-b_ub),abs(b_lb-a_ub));
+	      new_lb = min(fabs(a_lb-b_ub),fabs(b_lb-a_ub));
 	      /*Programming error? */
 	      /* if ( (a_ub+b_ub) < c_ub ) { */
 	      /* New if-statement 990609 Adam */

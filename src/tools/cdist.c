@@ -372,25 +372,22 @@ static real *read_weights(char *fn,int natom)
   return w;
 }
 
-
-
-
-void init_rot_matrix(real matrix[3][3],real theta, real omega)
+void init_rot_matrix(real mat[3][3],real theta, real omega)
 {
-  matrix[0][0] = -(cos(theta)*cos(omega));
-  matrix[1][0] = -(cos(theta)*sin(omega));
-  matrix[2][0] = sin(theta);
+  mat[0][0] = -(cos(theta)*cos(omega));
+  mat[1][0] = -(cos(theta)*sin(omega));
+  mat[2][0] = sin(theta);
 
-  matrix[0][1] = sin(omega);
-  matrix[1][1] = -(cos(omega));
-  matrix[2][1] = 0.0;
+  mat[0][1] = sin(omega);
+  mat[1][1] = -(cos(omega));
+  mat[2][1] = 0.0;
   
-  matrix[0][2] = sin(theta)*cos(omega);
-  matrix[1][2] = sin(theta)*sin(omega);
-  matrix[2][2] = cos(theta);
+  mat[0][2] = sin(theta)*cos(omega);
+  mat[1][2] = sin(theta)*sin(omega);
+  mat[2][2] = cos(theta);
 }
 
-void vect_matrix(real vect[3], real matrix[3][3]) 
+void vect_matrix(real vect[3], real mat[3][3]) 
 {
 
   real tmp[3];
@@ -402,7 +399,7 @@ void vect_matrix(real vect[3], real matrix[3][3])
 
   for ( i=0 ; i <= 2 ; i++ ) {
     for ( j=0 ; j <=2 ; j++ ) {
-      tmp[i]=tmp[i]+matrix[i][j]*vect[j];
+      tmp[i]=tmp[i]+mat[i][j]*vect[j];
     }
   }
   for ( i=0 ; i <=2 ; i++ ) {
@@ -700,10 +697,11 @@ static void release_domains(FILE *fp,char *ndx,t_dist dist[],t_atoms *atoms)
   t_block *doms;
   char    **grpname=NULL;
   int     i,j,k,ii,jj,ai,aj,natoms;
-  real    lb;
+  real    lb,maxdist;
   
-  natoms = atoms->nr;
-  doms   = init_index(ndx,&grpname);
+  maxdist = (atoms->nres+3)*3.5; /* Ca-Ca distance + some buffer */
+  natoms  = atoms->nr;
+  doms    = init_index(ndx,&grpname);
   if (doms->nr > 1) {
     fprintf(fp,"Found %d domains, named:\n",doms->nr);
     for(i=0; (i<doms->nr); i++)
@@ -716,7 +714,7 @@ static void release_domains(FILE *fp,char *ndx,t_dist dist[],t_atoms *atoms)
 	  for(jj=doms->index[j]; (jj<doms->index[j+1]); jj++) {
 	    aj    = doms->a[jj];
 	    lb    = vdwlen(atoms,ai,aj);
-	    set_dist(dist,natoms,ai,aj,lb,0,lb);
+	    set_dist(dist,natoms,ai,aj,lb,maxdist,0.0);
 	  }
 	}
       }
