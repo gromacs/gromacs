@@ -1,2 +1,0 @@
-#!/bin/csh -f
-$0:h/gmx-ana -type angle $argv
