@@ -432,7 +432,7 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
     }
     ltrim(copy);
   }
-  sfree(copy);
+
   return np;
 }
 
