@@ -134,7 +134,7 @@ $(LIB)(inloopf.o):	inloopf.m4
 		/lib/cpp $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
 		$(F77) $(FFLAGS) -c inloopf.f
 		$(AR) $(ARFLAGS) $(LIB) inloopf.o
-#		$(RM) inloopf.f inloopf.o
+		$(RM) inloopf.f inloopf.o
 
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
