@@ -161,12 +161,12 @@ int main(int argc,char *argv[])
 	c1[i][tel3+YY]=m*fr.v[index[i]][YY];
 	c1[i][tel3+ZZ]=m*fr.v[index[i]][ZZ];
       }
-    
+
+    t1=fr.time;
+
     teller ++;
   } while (read_next_frame(status,&fr));
   close_trj(status);
-
-  t1=fr.time;
 
   do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Velocity Autocorrelation Function",
 	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,TRUE);
