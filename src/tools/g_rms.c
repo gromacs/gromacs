@@ -84,47 +84,45 @@ int main (int argc,char *argv[])
     "Option [TT]-bin[tt] does a binary dump of the RMSD matrix.[PAR]",
     "Option [TT]-bm[tt] produces a matrix of average bond angle deviations",
     "analogously to the [TT]-m[tt] option. Only bonds between atoms of RMSD",
-    "group are considered.[PAR]",
-    "Option [TT]-dm[tt] calculate rmsd vs delta t matrix from your RMSD",
-    "matrix."
+    "group are considered."
   };
   static bool bPBC=TRUE,bFit=TRUE,bFitAll=FALSE;
   static bool bNano=FALSE,bDeltaLog=FALSE;
   static int  prev=0,freq=1,freq2=1,nlevels=40,avl=0;
   static real rmsd_user_max=-1,rmsd_user_min=-1, 
               bond_user_max=-1,bond_user_min=-1,
-              delta_maxy=0.25;
+              delta_maxy=0.0;
   t_pargs pa[] = {
     { "-pbc", FALSE, etBOOL, &bPBC,
       "PBC check" },
     { "-fit",FALSE, etBOOL, &bFit,
-      "fit to reference structure" },
+      "Fit to reference structure" },
     { "-ns", FALSE, etBOOL, &bNano  ,
       "ns on axis instead of ps"},
     { "-prev", FALSE, etINT, &prev,
-      "calculate rmsd with previous frame" },
+      "Calculate rmsd with previous frame" },
     { "-fitall",FALSE,etBOOL,&bFitAll,
-      "fit all pairs of structures in rmsd matrix" },
+      "Fit all pairs of structures in matrix" },
     { "-skip", FALSE, etINT, &freq,
-      "only write every nr-th frame to RMSD matrix" },
+      "Only write every nr-th frame to matrix" },
     { "-skip2", FALSE, etINT, &freq2,
-      "only write every nr-th frame to RMSD matrix" },
+      "Only write every nr-th frame to matrix" },
     { "-max", FALSE, etREAL, &rmsd_user_max,
-      "maximum level in RMSD matrix" },
+      "Maximum level in RMSD matrix" },
     { "-min", FALSE, etREAL, &rmsd_user_min,
-      "minimum level in RMSD matrix" },
+      "Minimum level in RMSD matrix" },
     { "-bmax", FALSE, etREAL, &bond_user_max,
-      "maximum level in bond angle matrix" },
+      "Maximum level in bond angle matrix" },
     { "-bmin", FALSE, etREAL, &bond_user_min,
-      "minimum level in bond angle matrix" },
+      "Minimum level in bond angle matrix" },
     { "-nlevels", FALSE, etINT, &nlevels,
-      "number of levels in the RMSD matrix" },
+      "Number of levels in the matrices" },
     { "-dlog", FALSE, etBOOL, &bDeltaLog,
-      "use a log x-axis in the delta t matrix"},
+      "HIDDENUse a log x-axis in the delta t matrix"},
     { "-dmax", FALSE, etREAL, &delta_maxy,
-      "maximum rmsd in delta matrix" },
+      "HIDDENMaximum rmsd in delta matrix" },
     { "-aver", FALSE, etINT, &avl,
-      "average over this distance in the RMSD matrix" }
+      "HIDDENAverage over this distance in the RMSD matrix" }
   };
   int          step,nre,natoms,natoms2;
   int          i,j,k,m,teller,teller2,tel_mat,tel_mat2;
@@ -163,8 +161,7 @@ int main (int argc,char *argv[])
     { efXVG, "-a",  "avgrp", ffOPTWR },
     { efXPM, "-m",  "rmsd",  ffOPTWR },
     { efDAT, "-bin","rmsd",  ffOPTWR },
-    { efXPM, "-bm", "bond",  ffOPTWR },
-    { efXPM, "-dm", "delta", ffOPTWR } 
+    { efXPM, "-bm", "bond",  ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -172,10 +169,11 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  bFile2=opt2bSet("-f2",NFILE,fnm);
-  bMat  =opt2bSet("-m" ,NFILE,fnm);
-  bBond =opt2bSet("-bm",NFILE,fnm);
-  bDelta=opt2bSet("-dm",NFILE,fnm);
+  bFile2 = opt2bSet("-f2",NFILE,fnm);
+  bMat   = opt2bSet("-m" ,NFILE,fnm);
+  bBond  = opt2bSet("-bm",NFILE,fnm);
+  bDelta = (delta_maxy > 0); /* calculate rmsd vs delta t matrix from *
+			      *	your RMSD matrix (hidden option       */
   bNorm=opt2bSet("-a",NFILE,fnm);
   bFreq2=opt2parg_bSet("-skip2", asize(pa), pa);
   bPrev = (prev > 0);
@@ -576,10 +574,11 @@ int main (int argc,char *argv[])
 	for (i=0; i<del_lev+1; i++)
 	  del_yaxis[i]=delta_maxy*i/del_lev;
 	sprintf(buf,"%s RMSD vs. delta t",gn_rms[0]);
-	write_xpm(opt2FILE("-dm",NFILE,fnm,"w"),buf,"density",
-		  tstr,"RMSD (nm)",
+	fp = ffopen("delta.xpm","w");
+	write_xpm(fp,buf,"density",tstr,"RMSD (nm)",
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
+	fclose(fp);
       }
       if (opt2bSet("-bin",NFILE,fnm)) {
 	fp=ftp2FILE(efDAT,NFILE,fnm,"wb");
