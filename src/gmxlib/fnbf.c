@@ -71,12 +71,16 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
   chargeB = mdatoms->chargeB;
 
   svec    = fr->shift_vec;
-  fshift  = fr->fshift;
   bTab    = fr->bTab;
   eps     = fr->epsfac;
   
   nr_ljc=nr_qq=nr_bham=nr_fsum=nr_free=0;
 
+  if (bLR)
+    fshift = fr->fshift_lr;
+  else
+    fshift = fr->fshift;
+  
   switch (ftype) {
   case F_SR:
     nlist = bLR ? fr->coul_lr : fr->coul;
