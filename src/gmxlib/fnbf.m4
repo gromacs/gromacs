@@ -132,14 +132,14 @@ static real *_buf2=NULL;
 
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined VECTORIZE_RECIP)
       /* make sure buffers can hold the longest neighbourlist */
-      if(nlist->solvent==esolWATERWATER)			
+      if (nlist->solvent==esolWATERWATER)			
 	sz = 9*nlist->maxlen;
-      else if(nlist->solvent==esolWATER) 
+      else if (nlist->solvent==esolWATER) 
 	sz = 3*nlist->maxlen;
       else	
         sz = nlist->maxlen;
 
-      if(sz>buflen) {
+      if (sz>buflen) {
 	buflen=(sz+100); /* use some extra size to avoid reallocating next step */
     	srenew(drbuf,3*buflen);
     	srenew(_buf1,buflen+31);
@@ -622,50 +622,54 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
       /* Mega flops accounting */
       if (nlist->solvent==esolWATER) 
         inc_nrnb(nrnb,eNR_INL_IATOM,3*nlist->nri);
-      else if(nlist->solvent==esolWATERWATER)
+      else if (nlist->solvent==esolWATERWATER)
         inc_nrnb(nrnb,eNR_INL_IATOM,9*nlist->nri);
-      else if(nlist->solvent!=esolMNO)
+      else if (nlist->solvent!=esolMNO)
        inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nri);
 
 
-      if(nlist->solvent==esolMNO) {
+      if (nlist->solvent==esolMNO) {
 	switch(nrnb_ind) {
-	  case eNR_INL1110:
-	  case eNR_INL1210:
-	  case eNR_INL1310:
-	  case eNR_INL1410:
-	  case eNR_INL2110:
-	  case eNR_INL2210:
-	  case eNR_INL2310:
-	  case eNR_INL2410:
-	  case eNR_INL3110:
-	  case eNR_INL3210:
-	  case eNR_INL3310:
-	  case eNR_INL3410:
+	case eNR_INL1110:
+	case eNR_INL1210:
+	case eNR_INL1310:
+	case eNR_INL1410:
+	case eNR_INL2110:
+	case eNR_INL2210:
+	case eNR_INL2310:
+	case eNR_INL2410:
+	case eNR_INL3110:
+	case eNR_INL3210:
+	case eNR_INL3310:
+	case eNR_INL3410:
 	  /* vdwc loops */
-	    nav = fr->nMNOav[0];
-	    inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
-	    inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
+	  nav = fr->nMNOav[0];
+	  inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
+	  inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
-	  case eNR_INL1010:
-	  case eNR_INL2010:
-	  case eNR_INL3010:
+	case eNR_INL1010:
+	case eNR_INL2010:
+	case eNR_INL3010:
 	  /* coul loops */
-	    nav = fr->nMNOav[2] - fr->nMNOav[1];
-	    inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
-	    inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
+	  nav = fr->nMNOav[0];
+	  inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
+	  inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
-	  case eNR_INL0110:
-	  case eNR_INL0210:
-	  case eNR_INL0310:
-	  case eNR_INL0410:
+	case eNR_INL0110:
+	case eNR_INL0210:
+	case eNR_INL0310:
+	case eNR_INL0410:
 	  /* vdw loops */
-	    nav = fr->nMNOav[0] - fr->nMNOav[2];
-	    inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
-	    inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
+	  nav = fr->nMNOav[0];
+	  inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
+	  inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
+	default:
+	  fatal_error(0,"MFlops accounting wrong in %s, %d, nrnb_ind = %d",
+		      __FILE__,__LINE__,nrnb_ind);
 	}	
-      } else 
+      } 
+      else 
         inc_nrnb(nrnb,nrnb_ind,nlist->nrj);	
     }
   }
