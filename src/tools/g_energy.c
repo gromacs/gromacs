@@ -236,7 +236,7 @@ static void einstein_visco(char *fn,int nsets,int nframes,real **set,
 			   real V,real T,real time[])
 {
   FILE *fp;
-  real fac,**integral,dt,di,r_nf2;
+  real fac,**integral,dt,di;
   int  i,j,m,nf2;
   
   if (nframes < 1)
@@ -263,12 +263,11 @@ static void einstein_visco(char *fn,int nsets,int nframes,real **set,
   }
 
   fp=xvgropen(fn,"Shear viscosity using Einstein relation","Time (ps)","cp");
-  fac   = (V*1e-26)/(2*BOLTZMANN*T);
-  r_nf2 = 1.0/nf2;
+  fac   = (V*1e-26)/(2*BOLTZMANN*T)/(nf2*dt);
   for(i=0; (i<nf2); i++) {
     fprintf(fp,"%10g",time[i]);
     for(m=0; (m<=nsets); m++) 
-      fprintf(fp,"  %10g",fac*sqr(r_nf2*integral[m][i]));
+      fprintf(fp,"  %10g",fac*sqr(integral[m][i]));
     fprintf(fp,"\n");
   }
   fclose(fp);
