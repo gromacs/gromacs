@@ -50,6 +50,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "atomprop.h"
 #include "addconf.h"
 #include "tpxio.h"
+#include "pbc.h"
 
 typedef struct {
   char   sanm[12];
@@ -528,9 +529,8 @@ int main(int argc, char *argv[])
   }
 
   /* calculate new coords for geometrical center */
-  if (!bSetCenter) 
-    for (i=0; (i<DIM); i++)
-      center[i]=box[i][i]/2;
+  if (!bSetCenter)
+    calc_box_center(box,center);
 
   /* center molecule on 'center' */
   if (bCenter)
