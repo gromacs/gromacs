@@ -49,6 +49,7 @@ static char *SRCID_pbc_c = "$Id$";
 static bool bInit=FALSE;
 static bool bTriclinic,bSupported;
 static rvec gl_fbox,gl_hbox,gl_mhbox,*tric_vec=NULL;
+static ivec *tric_shift=NULL;
 static matrix gl_box;
 static int ntric_vec;
 static real sure_dist2;
@@ -117,8 +118,12 @@ void init_pbc(matrix box)
 		if (ntric_vec >= nalloc) {
 		  nalloc+=20;
 		  srenew(tric_vec,nalloc);
+		  srenew(tric_shift,nalloc);
 		}
 	      copy_rvec(try,tric_vec[ntric_vec]);
+	      tric_shift[ntric_vec][XX] = i;
+	      tric_shift[ntric_vec][YY] = j;
+	      tric_shift[ntric_vec][ZZ] = k;
 	      ntric_vec++;
 	      }
 	    }
@@ -141,16 +146,15 @@ int pbc_dx(const rvec x1, const rvec x2, rvec dx)
   if (bSupported) {
     if (bTriclinic) {
       for(i=DIM-1; i>=0; i--)
-	if (dx[i] > gl_hbox[i])
-	  for (j=i; j>=0; j--) {
+	if (dx[i] > gl_hbox[i]) {
+	  for (j=i; j>=0; j--)
 	    dx[j] -= gl_box[i][j];
-	    ishift[j]--;
-	  }
-	else if (dx[i] <= gl_mhbox[i])
-	  for (j=i; j>=0; j--) {
+	  ishift[i]--;
+	} else if (dx[i] <= gl_mhbox[i]) {
+	  for (j=i; j>=0; j--)
 	    dx[j] += gl_box[i][j];
-	    ishift[j]++;
-	  }
+	  ishift[i]++;
+	}
       /* dx is the distance in a rectangular box */
       copy_rvec(dx,dx_start);
       d2min = norm2(dx);
@@ -161,6 +165,7 @@ int pbc_dx(const rvec x1, const rvec x2, rvec dx)
 	d2try = norm2(try);
 	if (d2try < d2min) {
 	  copy_rvec(try,dx);
+	  ivec_inc(ishift,tric_shift[i]);
 	  d2min = d2try;
 	}
 	i++;
