@@ -1,0 +1,95 @@
+#!/bin/csh -f
+
+if ( $#argv >= 1 ) set GMXHOME = $1
+
+set VER		= 2.0
+set MANDIR	= online
+set HTML	= $GMXHOME/html
+set HTMLOL	= $HTML/$MANDIR
+set HTMLIDX	= $HTML/$MANDIR.html
+set TEXDIR	= $GMXHOME/doc
+if ( ! -d $TEXDIR ) set $TEXDIR = .
+set TEXIDX	= $TEXDIR/proglist.tex
+set PROGFILE	= programs.txt
+
+set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options count:Top_of_the_Pops"
+
+set PROGRAMS	= "average do_dssp editconf eneconv g_anaeig g_angle g_bond g_chi g_cluster g_com g_confrms g_covar g_density g_dielectric g_dih g_dipoles g_disre g_dist g_enemat g_energy g_gyrate g_h2order g_hbond g_helix g_mdmat g_mindist g_msd g_nmeig g_nmens g_order g_potential g_rama g_rdens g_rdf g_rms g_rmsdist g_rmsf g_rotacf g_saltbr g_sas g_sgangle g_velacc genbox genconf gendr genion genpr gmxcheck gmxdump grompp highway luck make_ndx mdrun mk_angndx ngmx nmrun pdb2gmx protonate tpbconv trjconv wheel xpm2ps xrama"
+
+echo "generating html page"
+
+if ( -f $HTMLIDX ) \rm $HTMLIDX
+touch $HTMLIDX
+
+echo "<HTML>" >> $HTMLIDX
+echo "<TITLE>GROMACS $VER Manual </TITLE>" >> $HTMLIDX
+echo "<BODY>" >> $HTMLIDX
+echo "<H1>GROMACS $VER manual</H1>" >> $HTMLIDX
+echo "<TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10>" >> $HTMLIDX
+echo "<TR>" >> $HTMLIDX
+echo "<TD VALIGN=top WIDTH=25%>" >> $HTMLIDX
+echo "<h3>General</h3>" >> $HTMLIDX
+echo "<A HREF=changes$VER.html>New features</a>" >> $HTMLIDX
+echo "<br>" >> $HTMLIDX
+foreach i ( $GENERAL )
+  set file = `echo $i | cut -d: -f1`
+  set desc = `echo $i | cut -d: -f2 | sed 's/_/ /g'`
+  echo "<br><A HREF=$MANDIR/"$file".html >"$desc"</a>" >> $HTMLIDX
+  echo "<br>" >> $HTMLIDX
+end
+echo "</TD>" >> $HTMLIDX
+echo "<TD VALIGN=top WIDTH=75%>" >> $HTMLIDX
+echo "<h3>Programs Alphabetical</h3>" >> $HTMLIDX
+echo "<multicol cols=5> " >> $HTMLIDX
+echo "<A HREF=$MANDIR/options.html >Options</a>" >> $HTMLIDX
+echo "<br>" >> $HTMLIDX
+foreach i ( $PROGRAMS )
+  echo "<br><a href=$MANDIR/$i.html>$i</a>" >> $HTMLIDX
+end
+echo "</multicol>" >> $HTMLIDX
+echo "</TD>" >> $HTMLIDX
+echo "</TR>" >> $HTMLIDX
+echo "</TABLE>" >> $HTMLIDX
+echo "<h3>Programs by topic</h3>" >> $HTMLIDX
+echo "<table>" >> $HTMLIDX
+awk -F '|' -v mandir=$MANDIR '{\
+  if (NF) {\
+    if ( $1 == "HEAD" ) {\
+      printf("<TR><TD COLSPAN=2><b>%s</b>\n",$2);\
+    } else if ( $1 == "END" ) {\
+      printf("<TR><TD>&nbsp;<TD>\n");\
+    } else {\
+      printf("<TR><TD><A HREF=\"%s/%s.html\">%s</A><TD>%s\n",mandir,$1,$1,$2);\
+    }\
+  }\
+}' $PROGFILE >> $HTMLIDX
+echo "</table>" >> $HTMLIDX
+echo "</BODY>" >> $HTMLIDX
+echo "</HTML>" >> $HTMLIDX
+
+echo "generating latex page"
+
+if ( -f $TEXIDX ) \rm $TEXIDX
+touch $TEXIDX
+
+echo "\\begin{description}" >> $TEXIDX
+awk -F '|' -v mandir=$MANDIR -v longest="mk\\_angndx" '{\
+  gsub("_","\\_",$0);\
+  gsub("%","\\%",$0);\
+  if (NF) {\
+    if ( $1 == "LONGEST" ) {\
+      longest = $2;\
+    } else if ( $1 == "HEAD" ) {\
+      printf("\\item {\\large\\bf %s}\n",$2);\
+      printf("\\begin{tabbing}\n");\
+      printf("{\\bf %s} \\= \\kill\n",longest);\
+    } else if ( $1 == "END" ) {\
+      printf("\\end{tabbing}\n\n");\
+    } else {\
+      printf("{\\bf %s} \\> %s \\\\\n",$1,$2);\
+    }\
+  }\
+}' $PROGFILE >> $TEXIDX
+echo "\end{description}" >> $TEXIDX
+
+#last line
