@@ -59,14 +59,15 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "vcm.h"
 #include "dummies.h"
 
-#define MD_MULTISIM  1
-#define MD_GLAS      2
-#define MD_POLARISE  4
-#define MD_IONIZE    8
-#define MD_RERUN    16
-#define MD_LATEVIR  32
-#define MD_TWEAK    64
-#define MD_SEPDVDL 128
+#define MD_MULTISIM  (1<<0)
+#define MD_GLAS      (1<<1)
+#define MD_POLARISE  (1<<2)
+#define MD_IONIZE    (1<<3)
+#define MD_RERUN     (1<<4)
+#define MD_LATEVIR   (1<<5)
+#define MD_XMDRUN    (1<<6)
+#define MD_FFSCAN    (1<<7)
+#define MD_SEPDVDL   (1<<8)
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -98,7 +99,7 @@ extern real f_norm(t_commrec *cr,
 		   int start,int end,rvec grad[]);
 /* Calculates norm of force */
 
-extern real f_max(int left,int right,int nprocs,
+extern real f_max(int left,int right,int nnodes,
 		  t_grpopts *opts,t_mdatoms *mdatoms,
 		  int start,int end,rvec grad[]);
 /* Calculates max force */
