@@ -182,7 +182,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".eps", "plot",   NULL, "Encapsulated PostScript (tm) file"      },
   { eftASC, ".mat", "ss",     NULL, "Matrix Data file"			     },
   { eftASC, ".m2p", "ps",     NULL, "Input file for mat2ps"                  },
-  { eftBIN, ".mtx", "hessian","-m", "Hessian matrix"                         },
+  { eftXDR, ".mtx", "hessian","-m", "Hessian matrix"                         },
   { eftASC, ".edi", "sam",    NULL, "ED sampling input"                      },
   { eftASC, ".edo", "sam",    NULL, "ED sampling output"                     },
   { eftASC, ".ppa", "pull",   NULL, "Pull parameters"                        },
