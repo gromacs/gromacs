@@ -1,5 +1,5 @@
 # Generated automatically from Makefile.in by configure.
-# Makefile.in generated automatically by automake 1.4h from Makefile.am.
+# Makefile.in generated automatically by automake 1.4f from Makefile.am.
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
 # Free Software Foundation, Inc.
@@ -42,10 +42,10 @@ pkglibdir = $(libdir)/gromacs
 pkgincludedir = $(includedir)/gromacs
 top_builddir = ..
 
-ACLOCAL = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run aclocal
-AUTOCONF = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run autoconf
-AUTOMAKE = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run automake
-AUTOHEADER = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run autoheader
+ACLOCAL = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run aclocal
+AUTOCONF = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run autoconf
+AUTOMAKE = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run automake
+AUTOHEADER = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run autoheader
 
 INSTALL = /usr/bin/install -c
 INSTALL_PROGRAM = ${INSTALL}
@@ -61,7 +61,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_alias = i686-pc-linux-gnu
 host_triplet = i686-pc-linux-gnu
-AMTAR = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run tar
+AMTAR = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run tar
 AS = cc
 ASFLAGS =  -x assembler-with-cpp -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -malign-double
 AWK = gawk
@@ -77,9 +77,9 @@ F77 =
 FLIBS = 
 GCJ = @GCJ@
 GCJFLAGS = @GCJFLAGS@
-GMXLIB_LIBOBJS =  innerc.lo libnet.lo x86_cpuid.lo x86_sse.lo x86_3dnow.lo
-IDENT = no
-INCLUDES =   -I/usr/X11R6/include 
+GMXLIB_LIBOBJS =  innerc.lo libnet.lo x86_cpuid.lo x86_sse.lo x86_3dnow.lo mgmx.lo widget.lo
+IDENT = /usr/bin/ident
+INCLUDES =    -I/usr/X11R6/include 
 INSTALL_STRIP_PROGRAM = ${SHELL} `CDPATH=: && cd config && pwd`/install-sh -c -s
 LIBSUFFIX = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
@@ -113,15 +113,6 @@ DIST_COMMON = Makefile.am Makefile.in
 all: all-am
 
 .SUFFIXES:
-
-mostlyclean-libtool:
-	-rm -f *.lo
-
-clean-libtool:
-	-rm -rf .libs _libs
-
-distclean-libtool:
-	-rm -f libtool
 $(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
 	cd $(top_srcdir) && \
 	  $(AUTOMAKE) --gnu  admin/Makefile
@@ -186,11 +177,11 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic mostlyclean-am
 
 distclean: distclean-am
 
-distclean-am: clean-am distclean-generic distclean-libtool
+distclean-am: clean-am distclean-generic
 
 dvi: dvi-am
 
@@ -216,18 +207,19 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic mostlyclean-libtool
+mostlyclean-am: mostlyclean-generic
 
 uninstall-am: uninstall-info-am
 
-.PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	distclean distclean-generic distclean-libtool distdir dvi \
-	dvi-am info info-am install install-am install-data \
-	install-data-am install-exec install-exec-am install-info \
-	install-info-am install-man install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool uninstall uninstall-am uninstall-info-am
+uninstall-info: uninstall-info-am
+
+.PHONY: all all-am check check-am clean clean-generic distclean \
+	distclean-generic distdir dvi dvi-am info info-am install \
+	install-am install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic uninstall uninstall-am uninstall-info-am
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

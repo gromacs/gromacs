@@ -26,6 +26,8 @@ double precision. For Gromacs you probably want to change this to
 single with --enable-float. It is a good idea to install both single
 and double precision FFTW.). You can find links to the software you 
 need through the GROMACS homepage at http://md.chem.rug.nl/~gmx/  
+(It is possible to compile a crippled GROMACS without FFTW, but we
+ don't recommend it - check the configure options for details)
 
 If you install FFTW in your homedirectory or some other place where
 it isn't found automatically (not all systems search /usr/local)
@@ -54,21 +56,21 @@ fortran loops per default, so if you know you have a fast fortan
 compiler you should check that option. It won't have much effect
 for modern x86 boxes though, since these use assembly innerloops.
 
-For instance, if you want to run in parallel on a dedicated machine
-we need MPI and want to disable the normal low-priority of mdrun.
-To create only this mdrun binary you write:
+For instance, if you want to compile only the mdrun executable
+with parallel MPI support:
 
 make clean               
 ./configure --enable-mpi --disable-nice
 make mdrun 
 make install-mdrun
 
-Note that the special mdrun_install instruction will rename the
-binary to mdrun_mpi when using mpi. If you only want to create
-the MPI version of the package you can just issue the normal
-make commands. This can also be useful to have e.g. a general
-version of gromacs for analysis in the main binary directory, and
-then subdirectories with only an optimized mdrun for each cpu.
+If you want to keep your non-mpi mdrun instead of overwriting
+it, you can append a suffix with --program-suffix="_mpi":
+If you only want to create the MPI version of the entire package 
+you can just issue the normal make commands. The mdrun-only
+installation can also be useful to have e.g. a general version 
+of gromacs for analysis in the main binary directory, and then 
+subdirectories with only an optimized mdrun for each cpu.
 
 You can find more installation information on the GROMACS homepage
 if you have any problems, and don't hesitate to contact us if you 
@@ -80,8 +82,8 @@ specification to enable higher optimization.
 If you want to do development on several architectures, you should
 use a version of make that support VPATH (we suggest GNU make)
 and create a new directory to contain the object files for this 
-architecture (e.g. obj/i686). Then run configure from this new
-directory (../../configure) - you might have to make distclean first.
+architecture (e.g. i686-pc-linux-gnu/obj). Then run configure from this 
+new directory (../../configure) - you might have to make distclean first.
 This way you keep all your object files (speeds up compiles) and 
 change architecture by switching to a different object directory.
 
@@ -89,13 +91,13 @@ change architecture by switching to a different object directory.
 
      	               THE GROMACS CREW 
 
-		      gromacs@chem.rug.nl
+		      gromacs@gromacs.org
 
 
 
 ---------------------------------------------------------------------
 
-These are generic install instructions from autoconf:
+These are the generic install instructions from autoconf:
   
    The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses

@@ -1,4 +1,4 @@
-# aclocal.m4 generated automatically by aclocal 1.4h
+# aclocal.m4 generated automatically by aclocal 1.4f
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000
 # Free Software Foundation, Inc.
@@ -1819,7 +1819,7 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Version number of package])])
 # Autoconf 2.50 wants to disallow AM_ names.  We explicitly allow
 # the ones we care about.
 ifdef([m4_pattern_allow],
-      [m4_pattern_allow([^AM_[A-Z]+FLAGS])])dnl
+      [m4_pattern_allow([^AM_(C|CPP|CXX|OBJC|F|R|GCJ)FLAGS])])dnl
 
 # Some tools Automake needs.
 AC_REQUIRE([AM_SANITY_CHECK])dnl

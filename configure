@@ -818,7 +818,7 @@ else
   echo "configure: warning: ${am_backtick}missing' script is too old or missing" 1>&2
 fi
 
-for ac_prog in gawk mawk nawk awk
+for ac_prog in mawk gawk nawk awk
 do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -7741,13 +7741,15 @@ done
 ac_given_srcdir=$srcdir
 ac_given_INSTALL="$INSTALL"
 
-trap 'rm -fr `echo "Makefile include/Makefile src/Makefile
+trap 'rm -fr `echo "Makefile include/Makefile include/types/Makefile src/Makefile
            src/gmxlib/Makefile src/mdlib/Makefile src/kernel/Makefile
            src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile
            scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile
-           share/template/Makefile share/top/Makefile share/html/Makefile 
-           share/html/images/Makefile share/html/online/Makefile man/Makefile 
-           man/man1/Makefile include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+           share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile 
+           share/tutor/nmr2/Makefile share/tutor/water/Makefile
+           share/tutor/speptide/Makefile share/template/Makefile 
+           share/top/Makefile share/html/Makefile share/html/images/Makefile 
+           share/html/online/Makefile man/Makefile man/man1/Makefile include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -7881,13 +7883,15 @@ EOF
 
 cat >> $CONFIG_STATUS <<EOF
 
-CONFIG_FILES=\${CONFIG_FILES-"Makefile include/Makefile src/Makefile
+CONFIG_FILES=\${CONFIG_FILES-"Makefile include/Makefile include/types/Makefile src/Makefile
            src/gmxlib/Makefile src/mdlib/Makefile src/kernel/Makefile
            src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile
            scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile
-           share/template/Makefile share/top/Makefile share/html/Makefile 
-           share/html/images/Makefile share/html/online/Makefile man/Makefile 
-           man/man1/Makefile"}
+           share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile 
+           share/tutor/nmr2/Makefile share/tutor/water/Makefile
+           share/tutor/speptide/Makefile share/template/Makefile 
+           share/top/Makefile share/html/Makefile share/html/images/Makefile 
+           share/html/online/Makefile man/Makefile man/man1/Makefile"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then

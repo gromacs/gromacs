@@ -42,17 +42,10 @@ ac_pre_ext=F
 objext=o
 
 # Code to be used in simple compile tests
-lt_simple_compile_test_code="      
-      subroutine t
-      return
-      end
-"
+lt_simple_compile_test_code="\40\40\40\40\40\40subroutine t\n\40\40\40\40\40\40return\n\40\40\40\40\40\40end\n"      
 
 # Code to be used in simple link tests
-lt_simple_link_test_code="
-      program t
-      end
-"
+lt_simple_link_test_code="\40\40\40\40\40\40program t\n\40\40\40\40\40\40end"
 
 # fortran compiler
 F77=${F77-f77}
@@ -775,49 +768,6 @@ else
   esac
 fi
 
+# This shouldn't matter, since we don't support linking with f77...
 need_lc=yes
-if test "$enable_shared" = yes && test "$with_gcc" = yes; then
-  case $archive_cmds in
-  *'~'*)
-    # FIXME: we may have to deal with multi-command sequences.
-    ;;
-  '$CC '*)
-    # Test whether the compiler implicitly links with -lc since on some
-    # systems, -lgcc has to come before -lc. If gcc already passes -lc
-    # to ld, don't add -lc before -lgcc.
-    echo $ac_n "checking whether -lc should be explicitly linked in... $ac_c" 1>&6
-    if eval "test \"`echo '$''{'ac_cv_archive_cmds_needs_lc'+set}'`\" = set"; then
-      echo $ac_n "(cached) $ac_c" 1>&6
-      need_lc=$ac_cv_archive_cmds_needs_lc
-    else
-      $rm conftest*
-      echo "static int dummy;" > conftest.$ac_ext
-      if { (eval echo ltcf-c.sh:need_lc: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>conftest.err; }; then
-	# Append any warnings to the config.log.
-	cat conftest.err 1>&5
-	soname=conftest
-	lib=conftest
-	libobjs=conftest.$ac_objext
-	deplibs=
-	wl=$ac_cv_prog_cc_wl
-	compiler_flags=-v
-	linker_flags=-v
-	verstring=
-	output_objdir=.
-	libname=conftest
-	save_allow_undefined_flag=$allow_undefined_flag
-	allow_undefined_flag=
-	if { (eval echo ltcf-c.sh:need_lc: \"$archive_cmds\") 1>&5; (eval $archive_cmds) 2>&1 | grep " -lc " 1>&5 ; }; then
-	  need_lc=no
-	fi
-	allow_undefined_flag=$save_allow_undefined_flag
-      else
-	cat conftest.err 1>&5
-      fi
-    fi
-    $rm conftest*
-    echo "$ac_t$need_lc" 1>&6
-    ;;
-  esac
-fi
 ac_cv_archive_cmds_needs_lc=$need_lc

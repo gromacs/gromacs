@@ -691,7 +691,7 @@ else
   else
     ac_cv_prog_cc_pic_works=yes
     $rm conftest*
-    echo $lt_simple_compile_test_code > conftest.$ac_ext
+    echo -e $lt_simple_compile_test_code > conftest.$ac_ext
     save_CFLAGS="$CFLAGS"
     CFLAGS="$CFLAGS $ac_cv_prog_cc_pic -DPIC"
     if { (eval echo $progname:697: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>conftest.err; } && test -s conftest.$objext; then
@@ -752,7 +752,7 @@ if test "X${ac_cv_prog_cc_static_works+set}" = Xset && \
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   $rm conftest*
-  echo $lt_simple_link_test_code > conftest.$ac_ext
+  echo -e $lt_simple_link_test_code > conftest.$ac_ext
   save_LDFLAGS="$LDFLAGS"
   LDFLAGS="$LDFLAGS $ac_cv_prog_cc_static"
   if { (eval echo $progname:758: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
@@ -820,7 +820,7 @@ else
   mkdir conftest
   cd conftest
   $rm conftest*
-  echo $lt_simple_compile_test_code > conftest.$ac_ext
+  echo -e $lt_simple_compile_test_code > conftest.$ac_ext
   mkdir out
   # According to Tom Tromey, Ian Lance Taylor reported there are C compilers
   # that will create temporary files in the current directory regardless of
@@ -881,7 +881,7 @@ if test "$with_gcc" = yes; then
   # Check to see if options -fno-rtti -fno-exceptions are supported by compiler
   echo $ac_n "checking if $compiler supports -fno-rtti -fno-exceptions ... $ac_c" 1>&6
   $rm conftest*
-  echo $lt_simple_compile_test_code > conftest.$ac_ext
+  echo -e $lt_simple_compile_test_code > conftest.$ac_ext
   save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS -fno-rtti -fno-exceptions -c conftest.$ac_ext"
   echo "$progname:887: checking if $compiler supports -fno-rtti -fno-exceptions" >&5
