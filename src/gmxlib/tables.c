@@ -127,7 +127,8 @@ void copy2table(int n,int n0,int stride,
 }
 
 enum { etabLJ6, etabLJ12, etabLJ6David, etabLJ12David, etabDavid,
-       etabRF, etabCOUL, etabLJ6sw, etabLJ12sw, etabCOULsw, etabNR };
+       etabRF, etabCOUL, etabLJ6sw, etabLJ12sw, etabCOULsw, etabEXPMIN,
+       etabNR };
 
 void read_table(int n0,int n,real x[],
 		real Vtab[],real Vtab2[],
@@ -290,6 +291,12 @@ void fill_table(int n0,int n,real x[],
       Vtab2[i] = 2.0/(r2*r) + rffac2;
       Ftab2[i] = 6.0/(r2*r2);
       break;
+    case etabEXPMIN:
+      Vtab[i]  = exp(-r);
+      Ftab[i]  = exp(-r);
+      Vtab2[i] = exp(-r);
+      Ftab2[i] = exp(-r);
+      break;
     default:
       fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
 		  tp,__FILE__,__LINE__);
@@ -332,7 +339,8 @@ void fill_table(int n0,int n,real x[],
 
 void make_tables(t_forcerec *fr,bool bVerbose)
 {
-  char *fns[3]    = { "ctab.xvg", "dtab.xvg", "rtab.xvg"  };
+  char *fns[3]      = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
+
   /*
   int  pppmtab[3] = { etabDavid,  etabLJ6David,   etabLJ12David };
   int  rftab[3]   = { etabRF,     etabLJ6,   etabLJ12 };
@@ -344,8 +352,8 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   int  ljswtab[2] = { etabLJ6sw,    etabLJ12sw  };
   FILE     *fp;
   real     x0,y0,yp;
-  int      i,j,k,n0,n,tabsel;
-  real     *x,*Vtab,*Vtab2,*Ftab,*Ftab2;
+  int      i,j,k,n0,n,tabsel,ntabs;
+  real     *x,*xnormal,*xexp,*Vtab,*Vtab2,*Ftab,*Ftab2;
   
 #ifdef DOUBLE
   fr->tabscale = 2000.0;
@@ -355,12 +363,11 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   n = fr->ntab = (fr->rc+0.5)*fr->tabscale;
 
   snew(fr->VFtab,12*n+1);
-  snew(x,n+1);
+  snew(xnormal,n+1);
   
   n0 = 10;
-  for(i=n0; (i<=n); i++) {
-    x[i]  = (i/fr->tabscale);
-  }
+  for(i=n0; i<=n; i++)
+    xnormal[i]  = (i/fr->tabscale);
   
   /* Now fill three tables with 
    * Dispersion, Repulsion and Coulomb (David's function)
@@ -372,10 +379,17 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   snew(Vtab2,n+1);
   snew(Ftab,n+1);
   snew(Ftab2,n+1);
+  
+  if (fr->bBHAM) {
+    snew(xexp,n+1);
+    fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
+    for(i=n0; i<=n; i++)
+      xexp[i]  = (i/fr->tabscale_exp);
+  }
 
   for(k=0; (k<3); k++) {
     /* Check which table we have to use */
-    if (k==0)
+    if (k == 0)
       switch (fr->eeltype) {
       case eelPPPM:
       case eelPOISSON:
@@ -394,32 +408,40 @@ void make_tables(t_forcerec *fr,bool bVerbose)
 	tabsel = etabCOUL;
       }
     else
-      switch (fr->eeltype) {
-      case eelSWITCH:
-	tabsel = ljswtab[k-1];
-	break;
-      default:
-	if (fr->bLJshift)
-	  tabsel = ljshtab[k-1];
+      if (!fr->bBHAM) 
+	switch (fr->eeltype) {
+	case eelSWITCH:
+	  tabsel = ljswtab[k-1];
+	  break;
+	default:
+	  if (fr->bLJshift)
+	    tabsel = ljshtab[k-1];
+	  else
+	    tabsel = ljtab[k-1];
+	}  
+      else
+	if (k==1)
+	  tabsel = etabLJ6;
 	else
-	  tabsel = ljtab[k-1];
-      }  
-    if (fr->eeltype == eelUSER) {
+	  tabsel = etabEXPMIN;
+    if (tabsel == etabEXPMIN)
+      x = xexp;
+    else
+      x = xnormal;
+    if (fr->eeltype == eelUSER)
       /* Read tables from file */
       read_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,fns[k],fr);
-    }
-    else {
+    else
       fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel,fr);
-    }
     /*
-       if (tabsel == etabRF)
-       copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rc);
-       else
-       */
+      if (tabsel == etabRF)
+      copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,fr->rc);
+      else
+      */
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
     
     if (bDebugMode()) {
-      fp=xvgropen(fns[k],fns[k],"r","V");  
+      fp=xvgropen(fns[k],fns[k],"r","V"); 
       for(i=n0; (i<n); i++) {
 	for(j=0; (j<4); j++) {
 	  x0=x[i]+0.25*j*(x[i+1]-x[i]);
@@ -434,7 +456,9 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   sfree(Vtab2);
   sfree(Ftab);
   sfree(Ftab2);
-  sfree(x);
+  sfree(xnormal);
+  if (fr->bBHAM)
+    sfree(xexp);
 }
 
 

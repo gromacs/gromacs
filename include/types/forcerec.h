@@ -52,6 +52,8 @@ typedef struct {
   int  ntab;
   real tabscale;
   real *VFtab;
+  real bham_b_max;
+  real tabscale_exp;
   real *phi;
   
   /* NS Stuff */

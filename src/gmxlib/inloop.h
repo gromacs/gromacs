@@ -105,6 +105,13 @@ extern void c_tab(real ix,real iy,real iz,real qi,
 		  real pos[],int nj,int type[],int jjnr[],real charge[],
 		  real nbfp[],real faction[],real fip[],
 		  real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[]);
+
+extern void c_bhamtab(real ix,real iy,real iz,real qi,
+		      real pos[],int nj,int type[],int jjnr[],real charge[],
+		      real nbfp[],real faction[],real fip[],
+		      real *Vc,real *Vnb,int ntab,
+		      real tabscale,real tabscale_bham,real VFtab[]);
+
 extern void c_coultab(real ix,real iy,real iz,real qi,
 		      real pos[],int nj,int type[],int jjnr[],real charge[],
 		      real nbfp[],real faction[],real fip[],

@@ -176,13 +176,20 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	  break;
 	  
 	case F_BHAM:
+	  if (bTab)
+	    c_bhamtab(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		      x[0],nj,typeA,nl_j,
+		      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		      fr->ntab,fr->tabscale,fr->tabscale_exp,fr->VFtab);
+	  else {
 #ifdef USEF77
-	  f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,x[0],&nj,typeA,nl_j,
-		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+	    f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,x[0],&nj,typeA,nl_j,
+		    chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
 #else
-	  c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,x[0],nj,typeA,nl_j,
-		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+	    c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,x[0],nj,typeA,nl_j,
+		   chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
 #endif
+	  }
 	  nr_bham+=nj;
 	  break;
 	  

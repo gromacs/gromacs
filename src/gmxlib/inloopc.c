@@ -764,6 +764,113 @@ void c_tab(real ix,real iy,real iz,real qi,
 #endif
 }
 
+void c_bhamtab(real ix,real iy,real iz,real qi,
+	       real pos[],int nj,int type[],int jjnr[],real charge[],
+	       real nbfp[],real faction[],real fip[],
+	       real *Vc,real *Vnb,int ntab,
+	       real tabscale,real tabscale_exp,real VFtab[])
+{
+#ifdef DEBUG
+  static FILE   *fp=NULL,*gp;
+#endif
+  int       k,jnr,j3,tj;
+  real      fX,fY,fZ;
+  real      rijX,rijY,rijZ;
+  real      vijcoul,fijD,fijR,fijC,fijscal;
+  real      fjx,fjy,fjz;
+  real      tx,ty,tz,vnb6,vnbexp;
+  real      vctot,vnbtot;
+  real      qq,c6,a,b,rsq;
+  real      r1,r1t,invh,invh_exp;
+  real      eps,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV,FF;
+  int       n0,n1,nnn;
+  
+  fX     = 0;
+  fY     = 0;
+  fZ     = 0;
+  vctot  = 0;
+  vnbtot = 0;
+  invh     = tabscale;
+  invh_exp = tabscale_exp;
+
+#ifdef DEBUG
+  if (!fp) {
+    fp=ffopen("fdump.dat","w");
+    gp=ffopen("ftab.dat","w");
+  }
+#endif
+  for(k=0; (k<nj); k++) {  
+    jnr            = jjnr[k];
+    j3             = 3*jnr;
+    rijX           = ix - pos[j3];
+    rijY           = iy - pos[j3+1];
+    rijZ           = iz - pos[j3+2];
+         
+    rsq            = (rijX*rijX)+(rijY*rijY)+(rijZ*rijZ);
+    r1             = sqrt(rsq);
+    r1t            = r1*tabscale;
+    n0             = r1t;
+    n1             = 12*n0;
+    eps            = (r1t-n0);
+    eps2           = eps*eps;
+        
+#define EXTRACT(nn) { nnn = nn; Y=VFtab[nnn]; F=VFtab[nnn+1]; Geps=VFtab[nnn+2]*eps; Heps2=VFtab[nnn+3]*eps2; Fp=F+Geps+Heps2; VV=Y+eps*Fp; FF=Fp+Geps+two*Heps2; }
+
+    /* Coulomb */
+    EXTRACT(n1)
+    qq             = qi*charge[jnr];
+    vijcoul        = qq*VV;
+    fijC           = qq*FF;
+    vctot          = vctot  + vijcoul;
+    
+    /* Dispersion */
+    tj             = 3*type[jnr];
+    c6             = nbfp[tj+2];
+    EXTRACT(n1+4)
+    vnb6           = c6*VV;
+    fijD           = c6*FF;
+			 
+    /* Repulsion */
+    b              = nbfp[tj+1];
+    r1t            = b*r1*tabscale_exp;
+    n0             = r1t;
+    n1             = 12*n0;
+    eps            = (r1t-n0);
+    eps2           = eps*eps;
+    a              = nbfp[tj];
+    EXTRACT(n1+8)
+    vnbexp         = a*VV;
+    fijR           = a*b*FF;
+    vnbtot         = vnbtot + vnbexp + vnb6;
+
+    /* Total force */
+    fijscal        = -((fijD + fijC)*invh + fijR*invh_exp)/r1;
+
+    fjx            = faction[j3+XX];
+    tx             = rijX*fijscal;
+    fX             = fX + tx;
+    faction[j3+XX] = fjx - tx;
+    fjy            = faction[j3+YY];
+    ty             = rijY*fijscal;
+    fY             = fY + ty;
+    faction[j3+YY] = fjy - ty;
+    fjz            = faction[j3+ZZ];
+    tz             = rijZ*fijscal;
+    fZ             = fZ + tz;
+    faction[j3+ZZ] = fjz - tz;
+  }
+
+  fip[XX] = fX;
+  fip[YY] = fY;
+  fip[ZZ] = fZ;
+  *Vc   += vctot;
+  *Vnb  += vnbtot;
+
+#ifdef DEBUG  
+  fflush(fp);
+#endif
+}
+
 void c_coultab(real ix,real iy,real iz,real qi,
 	       real pos[],int nj,int type[],int jjnr[],real charge[],
 	       real nbfp[],real faction[],real fip[],
