@@ -30,6 +30,7 @@ static char *SRCID_ewald_util_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>
+#include "assert.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "ewald_util.h"
@@ -43,9 +44,6 @@ static char *SRCID_ewald_util_c = "$Id$";
 #include "macros.h"
 #include "xvgr.h"
 
-
-
-	      
 real calc_ewaldcoeff(real rc,real dtol)
 {
   real x=5,low,high;
@@ -76,42 +74,47 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
 			rvec box_size,matrix lr_vir)
 {
-  static bool bFirst=TRUE;
-  static real Vself;
+  static  bool bFirst=TRUE;
+  static  real Vself;
 
-  int    i,i1,i2,j,k,m,iv,jv,n0,n1,nnn;
-  unsigned int *AA;
-  double qq; /* Necessary for precision */
-  double isp=0.564189583547756;
-  real   ewc=fr->ewaldcoeff;
-  real   qi,dr,ddd,dr2,fscal,Vexcl,qtot=0,dr_3,rinv2;
-  rvec   df,dx;
-  real   tabscale=fr->tabscale;
-  real   eps,eps2,vc,VV,FF,F,Y,Geps,Heps2,Fp,fijC,r1t,rinv,fscal2,Vexcl2;
-  real   *VFtab=fr->VFtab;
-  ivec   shift;     
-  int    start=START(nsb);
-  int    natoms=HOMENR(nsb);
+  int     i,i1,i2,j,k,m,iv,jv;
+  atom_id *AA;
+  double  qq; /* Necessary for precision */
+  real    vc,qi,dr,ddd,dr2,rinv,fscal,Vexcl,rinv2,ewc=fr->ewaldcoeff;
+  rvec    df,dx;
+  rvec    *flr=fr->flr;
+  /*#define TABLES*/
+#ifdef TABLES
+  real    tabscale=fr->tabscale;
+  real    eps,eps2,VV,FF,F,Y,Geps,Heps2,Fp,fijC,r1t;
+  real    *VFtab=fr->VFtab;
+  int     n0,n1,nnn;
+#else
+  double  isp=0.564189583547756;
+  real    dr_3;
+#endif
+  int     start = START(nsb);
+  int     end   = start+HOMENR(nsb);
   
   if (bFirst) {
     qq =0;  
-    for(i=start; (i<start+natoms); i++) 
+    for(i=start; (i<end); i++) 
       qq  += charge[i]*charge[i];
-    /* Charge and dipole correction to be implemented...
-    */
+    
+    /* Charge and dipole correction remain to be implemented... */
 
     Vself=ewc*ONE_4PI_EPS0*qq/sqrt(M_PI);
-    if(debug) {
-	fprintf(fp,"Long Range corrections for Ewald interactions:\n");
-	fprintf(fp,"start=%d,natoms=%d\n",start,natoms);
-	fprintf(fp,"qq = %g, Vself=%g\n",qq,Vself);
+    if (debug) {
+      fprintf(fp,"Long Range corrections for Ewald interactions:\n");
+      fprintf(fp,"start=%d,natoms=%d\n",start,end-start);
+      fprintf(fp,"qq = %g, Vself=%g\n",qq,Vself);
     }
   }
   
-  AA = excl->a;
+  AA    = excl->a;
   Vexcl = 0;
  
-  for(i=start; (i<start+natoms); i++) {
+  for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qi  = charge[i]*ONE_4PI_EPS0;
       i1  = excl->index[i];
@@ -156,8 +159,10 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	  rinv              = invsqrt(dr2);
 	  rinv2             = rinv*rinv;
 	  dr                = 1.0/rinv;      
+#ifdef TABLES
 	  r1t               = tabscale*dr;   
 	  n0                = r1t;
+	  assert(n0 >= 3);
 	  n1                = 12*n0;
 	  eps               = r1t-n0;
 	  eps2              = eps*eps;
@@ -175,25 +180,29 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 	  
 	  fscal             = vc*rinv2+fijC*tabscale*rinv;
 	  /* End of tabulated interaction part */
+#else
 
 	  /* This is the code you would want instead if not using
-	   * tables:
-	   *
-	   * dr_3    = rinv*rinv2;
-	   * vc     = qq*erf(ewc*dr)*rinv;
-	   * Vexcl  += vc;
-	   * fscal   = rinv2*(vc-2.0*qq*exp(-ewc*ewc*dr2)*ewc*isp);
+	   * tables: 
 	   */
+	  dr_3    = rinv*rinv2;
+	  vc      = qq*erf(ewc*dr)*rinv;
+	  Vexcl  += vc;
+	  fscal   = rinv2*(vc-2.0*qq*ewc*isp*exp(-ewc*ewc*dr2));
+#endif
 	  
 	  /* The force vector is obtained by multiplication with the 
 	   * distance vector 
 	   */
 	  svmul(fscal,dx,df);
-	  rvec_inc(fr->flr[k],df);
-	  rvec_dec(fr->flr[i],df);
-	  for(iv=0;iv<DIM;iv++)
-	      for(jv=0;jv<DIM;jv++)
-		  lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
+	  if (debug)
+	    fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
+		    dr,fscal,df[XX],df[YY],df[ZZ]);
+	  rvec_inc(flr[k],df);
+	  rvec_dec(flr[i],df);
+	  for(iv=0; (iv<DIM); iv++)
+	    for(jv=0; (jv<DIM); jv++)
+	      lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
 	}
       }
     }
