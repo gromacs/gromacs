@@ -29,7 +29,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#general"><b>General remarks</b></A>
 <p> </p>
 <li><A HREF="#pp"><b>preprocessing</b></A> (title, warnings, cpp, include, define)
-<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm, comm_grps)
+<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm, comm-grps, comm-mode)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter)
@@ -152,12 +152,12 @@ file</dd>
 <dt><h4>nsteps: </b>(1)</h4></dt>
 <dd>maximum number of steps to integrate</dd>
 <dt><h4>nstcomm: (1) [steps]</h4></dt>
-<dd>if positive: frequency for center of mass motion removal>/dd>
-<dd>if negative: frequency for center of mass motion and rotational 
+<dd>frequency for center of mass motion removal>/dd>
 motion removal (should only be used for vacuum simulations)</dd>
-<dt><h4>comm_grps:</h4></dt>
-<dd>group(s) for center of mass motion removal, default is the whole system,
-rotation removal can only be done on the whole system</dd>
+<dt><h4>comm-grps:</h4></dt>
+<dd>group(s) for center of mass motion removal, default is the whole system</dd>
+<dt><h4>comm-mode:</h4>>/dt>
+<dd>Mode of center of mass motion removal: Linear (default), Angular or None</dd>
 </dl>
 
 <A NAME="ld"><br>
