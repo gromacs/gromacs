@@ -64,16 +64,19 @@ int main(int argc,char *argv[])
     "is non mass-weighted, the fit will also be non mass-weighted.[PAR]",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "When the same atoms are used for the fit and the covariance analysis,",
-    "the reference structure is written first with t=-1.",
-    "The average structure is written with t=0, the eigenvectors",
-    "are written as frames with the eigenvector number as timestamp.",
+    "the reference structure for the fit is written first with t=-1.",
+    "The average (or reference when [TT]-ref[tt] is used) structure is",
+    "written with t=0, the eigenvectors",
+    "are written as frames with the eigenvector number as timestamp.[PAR]",
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
   };
-  static bool bFit=TRUE,bM=FALSE;
+  static bool bFit=TRUE,bRef=FALSE,bM=FALSE;
   static int  end=-1;
   t_pargs pa[] = {
     { "-fit",  FALSE, etBOOL, {&bFit},
       "Fit to a reference structure"},
+    { "-ref",  FALSE, etBOOL, {&bRef},
+      "Use the deviation from the conformation in the structure file instead of from the average" },
     { "-mwa",  FALSE, etBOOL, {&bM},
       "Mass-weighted covariance analysis"},
     { "-last",  FALSE, etINT, {&end}, 
@@ -198,9 +201,13 @@ int main(int argc,char *argv[])
       reset_x(nfit,ifit,nat,all_at,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
     }
-    for (i=0; i<natoms; i++)
-      copy_rvec(xread[index[i]],x[i]);
-
+    if (bRef)
+      for (i=0; i<natoms; i++)
+	rvec_sub(xread[index[i]],xref[index[i]],x[i]);
+    else
+      for (i=0; i<natoms; i++)
+	copy_rvec(xread[index[i]],x[i]);
+    
     for (j=0; j<natoms; j++) {
       /* calculate average structure */
       rvec_inc(xav[j],x[j]);
@@ -218,25 +225,39 @@ int main(int argc,char *argv[])
   } while (read_next_x(status,&t,nat,xread,box));
   close_trj(status);
 
-  /* calculate the mass-weighted covariance matrix */
+  /* calculate and write the average structure */
   inv_nframes=1.0/nframes;
   for (i=0; i<natoms; i++) {
     svmul(inv_nframes,xav[i],xav[i]);
     copy_rvec(xav[i],xread[index[i]]);
   }
-
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
 			 atoms,xread,NULL,zerobox,natoms,index);
   
-  for (j=0; j<natoms; j++) 
-    for (dj=0; dj<DIM; dj++) 
-      for (i=j; i<natoms; i++) { 
-	k=ndim*(DIM*j+dj)+DIM*i;
-	for (d=0; d<DIM; d++) {
-	  mat[k+d]=(mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
-	    *sqrtm[i]*sqrtm[j];
+  if (bRef) {
+    /* copy the reference structure to the average array */
+    for (i=0; i<natoms; i++)
+      copy_rvec(xref[index[i]],xav[i]);
+    /* correct the covariance matrix for the mass */
+    for (j=0; j<natoms; j++) 
+      for (dj=0; dj<DIM; dj++) 
+	for (i=j; i<natoms; i++) { 
+	  k = ndim*(DIM*j+dj)+DIM*i;
+	  for (d=0; d<DIM; d++)
+	    mat[k+d] = mat[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
 	}
-      }
+  } else {
+    /* correct the covariance matrix for the mass and the average */
+    for (j=0; j<natoms; j++) 
+      for (dj=0; dj<DIM; dj++) 
+	for (i=j; i<natoms; i++) { 
+	  k = ndim*(DIM*j+dj)+DIM*i;
+	  for (d=0; d<DIM; d++)
+	    mat[k+d] = (mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
+	      *sqrtm[i]*sqrtm[j];
+	}
+  }
+  /* symmetrize the matrix */
   for (j=0; j<ndim; j++) 
     for (i=j; i<ndim; i++)
       mat[ndim*i+j]=mat[ndim*j+i];
@@ -246,7 +267,7 @@ int main(int argc,char *argv[])
     trace+=mat[i*ndim+i];
   fprintf(stderr,"\nTrace of the covariance matrix: %g (%snm^2)\n",
 	  trace,bM ? "amu " : "");
-
+  
   if (debug) {
     fprintf(stderr,"Dumping the covariance matrix to covmat.dat\n"); 
     out = ffopen("covmat.dat","w");
@@ -256,9 +277,9 @@ int main(int argc,char *argv[])
       fprintf(out,"\n");
     }
   }
-
+  
   /* call diagonalization routine */
-
+  
   fprintf(stderr,"\nDiagonalizing...\n");
   fflush(stderr);
 
