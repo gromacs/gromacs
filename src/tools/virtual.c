@@ -28,6 +28,8 @@
  */
 static char *SRCID_virtual_c = "$Id$";
 
+#include "cdist.h"
+
 int set_virtual (int *ATMS,int N,real margin,t_dist *d,int natoms)
 {
   /* Routine to add distances to virtual particle. 
