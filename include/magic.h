@@ -28,6 +28,10 @@
  */
 static char *SRCID_magic_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifndef GROMACS_MAGIC
 #define GROMACS_MAGIC 0xff0d
 #endif

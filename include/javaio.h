@@ -32,6 +32,10 @@
 
 static char *SRCID_javaio_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 void write_java(FILE *out,

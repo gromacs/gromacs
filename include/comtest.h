@@ -32,6 +32,10 @@
 
 static char *SRCID_comtest_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) comtest.h 1.3 11/23/92"
 #endif /* HAVE_IDENT */

@@ -105,3 +105,32 @@ extern void cconerr(real *max,real *rms,int *imax,rvec *xprime,
 
 void lincs_warning(rvec *x,rvec *xprime,
 		   int ncons,int *bla1,int *bla2,real *bllen,real wangle);
+
+
+#ifdef USE_FORTRAN
+extern void F77_FUNC(fsettle,FSETTLE)(int *nshake,int owptr[],
+				      real b4[],real after[],
+				      real *dOH,real *dHH,
+				      real *mO,real *mH,int *error);
+extern void F77_FUNC(fshake,FSHAKE)(atom_id iatom[],int *ncon,
+				    int *nit, int *maxnit,
+				    real dist2[],real xp[],
+				    real rij[],real m2[],
+				    real invmass[],real tt[],
+				    real lambda[],int *error);
+extern void F77_FUNC(flincsp,FLINCSP)(real *x,real *f,real *fp,
+				      int *nc, int *bla1,int *bla2,
+				      int *blnr,int *blbnb,
+				      real *blc,real *blcc,real *blm,
+				      int *nrec,real *invmass,
+				      real *r, real *rhs1, real *rhs2,
+				      real *sol);
+extern void F77_FUNC(flincsp,FLINCSP)(real *x,real *xp,int *nc,
+				      int *bla1,int *bla2,int *blnr,
+				      int *blbnb,real *bllen,
+				      real *blc,real *blcc,real *blm,
+				      int *nit,int *nrec,real *invmass,
+				      real *r,real *temp1,real *temp2,
+				      real *temp3,real *wangle,
+				      int *warn,real *lambda);
+#endif 

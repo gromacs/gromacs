@@ -30,6 +30,10 @@
 #ifndef _gstat_h
 #define _gstat_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 static char *SRCID_gstat_h = "$Id$";
 
 #include "typedefs.h"

@@ -262,21 +262,21 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       nit = 1;
     
     if (bCoordinates) {
-#ifdef USEF77
-      flincs(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
-	     bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
-	     md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
-	     lincslam);
+#ifdef USE_FORTRAN
+      F77_FUNC(flincs,FLINCS)(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
+			      bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
+			      md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
+			      lincslam);
 #else
       clincs(x,xprime,nc,bla1,bla2,blnr,blbnb,
 	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
 	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 #endif
     } else {
-#ifdef USEF77
-      flincsp(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
-	      blc,blcc,blm,&ir->nProjOrder,
-	      md->invmass,r[0],tmp1,tmp2,tmp3);
+#ifdef USE_FORTRAN
+      F77_FUNC(flincsp,FLINCSP)(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
+				blc,blcc,blm,&ir->nProjOrder,
+				md->invmass,r[0],tmp1,tmp2,tmp3);
 #else
       clincsp(x,xprime,min_proj,nc,bla1,bla2,blnr,blbnb,
 	      blc,blcc,blm,ir->nProjOrder,
@@ -494,8 +494,9 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       mH   = md->massA[ow1+1];
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
-#ifdef USEF77
-      fsettle(&nsettle,owptr,x[0],xprime[0],&dOH,&dHH,&mO,&mH,&error);
+#ifdef USE_FORTRAN
+      F77_FUNC(fsettle,FSETTLE)(&nsettle,owptr,x[0],xprime[0],
+				&dOH,&dHH,&mO,&mH,&error);
 #else
       csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,&error);
 #endif

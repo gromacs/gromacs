@@ -32,6 +32,10 @@
 
 static char *SRCID_delay_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) delay.h 1.5 11/23/92"
 #endif /* HAVE_IDENT */

@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef struct {
   int  nr;			/* Row- and Column-length of vectors	*/
   int  nrfp;			/* Number of force parameters		*/

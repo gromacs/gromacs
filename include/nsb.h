@@ -32,6 +32,10 @@
 
 static char *SRCID_nsb_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern void calc_nsbshift(FILE *fp,t_nsborder *nsb);
 /* Calculates the shift and bshift variables */
 

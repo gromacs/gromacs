@@ -1,16 +1,28 @@
-      subroutine forlincsp(x,f,fp,ncons,
+c     IMPORTANT!
+c     Note that this file comes in two flavours -
+c     fshake.f for single precision and fshaked.f 
+c     for double precision. The only difference is 
+c     the size of the real variables.
+c     This is an unfortunate, but necessary setup      
+c     since not all f77 compilers (e.g. g77) have
+c     switches to change the real size, and neither
+c     do all f77 compilers support preprocessing.
+c     Thus, if you edit one of the files, make sure  
+c      to change to other similarly!
+ 
+      subroutine flincsp(x,f,fp,ncons,
      $     bla1,bla2,blnr,blbnb,blc,blcc,blm,
      $     nrec,invmass,r,rhs1,rhs2,sol)
 
       implicit none
 
-      real  x(*),f(*),fp(*),blc(*),blcc(*),blm(*),invmass(*)
-      real  r(*),rhs1(*),rhs2(*),sol(*)
+      real*4  x(*),f(*),fp(*),blc(*),blcc(*),blm(*),invmass(*)
+      real*4  r(*),rhs1(*),rhs2(*),sol(*)
       integer*4 ncons,nrec,bla1(*),bla2(*),blnr(*),blbnb(*)
 
       integer*4 b,i,j,k,n,b3,i3,j3,it,rec
-      real  tmp0,tmp1,tmp2,im1,im2,mvb,rlen 
-      real  u0,u1,u2,v0,v1,v2
+      real*4  tmp0,tmp1,tmp2,im1,im2,mvb,rlen 
+      real*4  u0,u1,u2,v0,v1,v2
 
 
       do b=1,ncons
@@ -98,21 +110,21 @@
       end
 
 
-      subroutine forlincs(x,xp,ncons,
+      subroutine flincs(x,xp,ncons,
      $     bla1,bla2,blnr,blbnb,bllen,blc,blcc,blm,
      $     nit,nrec,invmass,r,rhs1,rhs2,sol,wangle,warn,
      $     lambda)
 
       implicit none
 
-      real  x(*),xp(*),bllen(*),blc(*),blcc(*),blm(*),invmass(*)
-      real  r(*),rhs1(*),rhs2(*),sol(*),wangle,lambda(*)
+      real*4  x(*),xp(*),bllen(*),blc(*),blcc(*),blm(*),invmass(*)
+      real*4  r(*),rhs1(*),rhs2(*),sol(*),wangle,lambda(*)
+      real*4  tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam 
+      real*4  u0,u1,u2,v0,v1,v2
+
       integer*4 ncons,nit,nrec,bla1(*),bla2(*),blnr(*),blbnb(*)
       integer*4 warn
-
       integer*4 b,i,j,k,n,b3,i3,j3,it,rec
-      real  tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam 
-      real  u0,u1,u2,v0,v1,v2
 
 
       warn=0

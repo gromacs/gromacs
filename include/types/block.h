@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef struct {
   int multinr[MAXNODES];       	/* The indices for the multinode
                                  * version. For n=0, the blocks run from 0

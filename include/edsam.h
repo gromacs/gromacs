@@ -32,6 +32,10 @@
 
 static char *SRCID_edsam_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn);
 extern void init_edsam(FILE *log,t_topology *top,
 	   t_mdatoms *md,int start,int homenr,

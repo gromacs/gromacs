@@ -28,5 +28,10 @@
  */
 static char *SRCID_ffscanf_h = "$Id$";
 
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern void ffscanf(FILE *in,char *fmt, ...);
 

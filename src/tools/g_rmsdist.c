@@ -243,7 +243,7 @@ static int analyze_noe_equivalent(char *eq_fn,
       neq=read_equiv(eq_fn,&equiv);
       if (debug) dump_equiv(debug,neq,equiv);
     } else {
-      neq=NULL;
+      neq=0;
       equiv=NULL;
     }
     
@@ -525,15 +525,15 @@ int main (int argc,char *argv[])
   rvec         *x;
   FILE         *fp;
 
-  int      status,isize,gnr;
+  int      status,isize,gnr=0;
   atom_id  *index, *noe_index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
   real     **dtot1_3=NULL,**dtot1_6=NULL;
   real     rmsnow,meanmax,rmsmax,rmscmax;
   real     max1_3,max1_6;
-  t_noe_gr *noe_gr;
-  t_noe    **noe;
+  t_noe_gr *noe_gr=NULL;
+  t_noe    **noe=NULL;
   t_rgb    rlo,rhi;
   char     buf[255];
   bool bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;

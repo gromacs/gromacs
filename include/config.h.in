@@ -1,0 +1,200 @@
+/* src/include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define to empty if the keyword does not work.  */
+#undef const
+
+/* Define to `int' if <sys/types.h> doesn't define.  */
+#undef gid_t
+
+/* Define if you don't have vprintf but do have _doprnt.  */
+#undef HAVE_DOPRNT
+
+/* Define if you have the vprintf function.  */
+#undef HAVE_VPRINTF
+
+/* Define as __inline if that's what the C compiler calls it.  */
+#undef inline
+
+/* Define as the return type of signal handlers (int or void).  */
+#undef RETSIGTYPE
+
+/* Define to `unsigned' if <sys/types.h> doesn't define.  */
+#undef size_t
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if your <sys/time.h> declares struct tm.  */
+#undef TM_IN_SYS_TIME
+
+/* Define to `int' if <sys/types.h> doesn't define.  */
+#undef uid_t
+
+/* Define if the X Window System is missing or not being used.  */
+#undef X_DISPLAY_MISSING
+
+/* Define if you have the strcasecmp function.  */
+#undef HAVE_STRCASECMP
+
+/* Define if you have the strdup function.  */
+#undef HAVE_STRDUP
+
+/* Define if you have the <limits.h> header file.  */
+#undef HAVE_LIMITS_H
+
+/* Define if you have the <malloc.h> header file.  */
+#undef HAVE_MALLOC_H
+
+/* Define if you have the <rpc/rpc.h> header file.  */
+#undef HAVE_RPC_RPC_H
+
+/* Define if you have the <rpc/xdr.h> header file.  */
+#undef HAVE_RPC_XDR_H
+
+/* Define if you have the <strings.h> header file.  */
+#undef HAVE_STRINGS_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if you have the m library (-lm).  */
+#undef HAVE_LIBM
+
+/* Define if you have the mass library (-lmass).  */
+#undef HAVE_LIBMASS
+
+/* Define if you have the nsl library (-lnsl).  */
+#undef HAVE_LIBNSL
+
+/* Define if you have the xlopt library (-lxlopt).  */
+#undef HAVE_LIBXLOPT
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+/* Include Alpha AXP assembly for vectorized sqrt/invsqrt */
+#undef USE_AXP_ASM
+
+/* call f77 with lowercase, no underscore */
+#undef F77_NAME_LOWERCASE
+
+/* call f77 with lowercase and underscore */
+#undef F77_NAME_LOWERCASE_UNDERSCORE
+
+/* call f77 with uppercase, no underscore */
+#undef F77_NAME_UPPERCASE
+
+/* call f77 with uppercase and underscore */
+#undef F77_NAME_UPPERCASE_UNDERSCORE
+
+/* Append extra underscore to already underscored names */
+#undef F77_NAME_EXTRA_UNDERSCORE
+
+/* Does this machine have the ident command */
+#undef HAVE_IDENT
+
+/* Use the vectorized routines in IBM MASS library */
+#undef USE_IBM_MASS
+
+/* Use the d prefix on fftw includes */
+#undef FFTW_NAME_DFFTW
+
+/* Use the s prefix on fftw includes */
+#undef FFTW_NAME_SFFTW
+
+/* Dont use any prefixing on fftw includes */
+#undef FFTW_NAME_FFTW
+
+/* Use motif/lesstif libraries */
+#undef HAVE_MOTIF
+
+/* Make a parallel version of Gromacs using MPI */
+#undef USE_MPI
+
+/* Optimize for a vector architecture */
+#undef USE_VECTOR
+
+/* Use Fortran for innerloops and some other core stuff */
+#undef USE_FORTRAN
+
+/* Compile in double precision */
+#undef DOUBLE
+
+/* Expand the water loops to three inner loops */
+#undef SIMPLEWATER
+
+/* Don't use special loops for all-water interactions */
+#undef DISABLE_WATERWATER_LOOPS
+
+/* Turn off the automatic nicing of gromacs */
+#undef NO_NICE
+
+/* Use x86 assembly with SSE instructions */
+#undef USE_SSE
+
+/* Use x86 assembly with 3DNow instructions */
+#undef USE_3DNOW
+
+/* Use xdr routines to make trajectories portable */
+#undef USE_XDR
+
+/* Use the Gromacs software 1/sqrt(x) */
+#undef SOFTWARE_SQRT
+
+/* Use the Gromacs software 1/x */
+#undef SOFTWARE_RECIP
+
+/* Try to get coordinates to cache before using them */
+#undef DECREASE_SQUARE_LATENCY
+
+/* Try to get table data to cache before using it */
+#undef DECREASE_LOOKUP_LATENCY
+
+/* If defined, only start MPI runs when this variable is set */
+#undef CHECK_MPI_ENV
+
+/* Vectorize 1/sqrt(x) in normal loops */
+#undef VECTORIZE_INVSQRT
+
+/* Vectorize 1/sqrt(x) in solvent loops */
+#undef VECTORIZE_INVSQRT_S
+
+/* Vectorize 1/sqrt(x) in water loops */
+#undef VECTORIZE_INVSQRT_W
+
+/* Vectorize 1/sqrt(x) in water-water loops */
+#undef VECTORIZE_INVSQRT_WW
+
+/* Prefetch coordinates in normal loops */
+#undef PREFETCH_X
+
+/* Prefetch coordinates in solvent loops */
+#undef PREFETCH_X_S
+
+/* Prefetch coordinates in water loops */
+#undef PREFETCH_X_W
+
+/* Prefetch coordinates in water-water loops */
+#undef PREFETCH_X_WW
+
+/* Prefetch coordinates in normal loops */
+#undef PREFETCH_F
+
+/* Prefetch coordinates in solvent loops */
+#undef PREFETCH_F_S
+
+/* Prefetch coordinates in water loops */
+#undef PREFETCH_F_W
+
+/* Prefetch coordinates in water-water loops */
+#undef PREFETCH_F_WW
+
+/* Vectorize the reciprocal calculation */
+#undef VECTORIZE_RECIP
+
+/* Default topology file location */
+#undef GMXLIBDIR
+

@@ -28,6 +28,10 @@
  */
 static char *SRCID_rdklib_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /* Rolf-Dieter Klein, 900907   1.0   SPC 860     */
 /* rev 900917 r 2.01                             */
 /* rev 901213 r 2.10                             */

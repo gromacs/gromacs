@@ -56,7 +56,7 @@ void file_header(void)
       init_block_data();
   } 
 
-#if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
+#if ((defined __GNUC__ || defined __PGI) && defined __i386__ && !defined DISABLE_X86TRUNC)
   /* This is a very fast inline assembly truncation routine
    * The slow step an most x86 chips is to store and restore
    * the control word when we want to do truncation. Here it
@@ -67,6 +67,14 @@ void file_header(void)
   if(bC)
     fprintf(output,"\n\n#define x86trunc(a,b) asm(\"fld %%1 ; fistpl %%0\" : \"=m\" (*&b) : \"f\" (a));\n\n");
 #endif
+#ifdef USE_IBM_MASS
+   fprintf(output,
+ 	  "void vsrec(float *, float *, int *);\n"
+ 	  "void vsrsqrt(float *, float *, int *);\n"
+ 	  "void vrec(double *, double *, int *);\n"
+ 	  "void vrsqrt(double *, double *, int *);\n");
+#endif
+  
 }
 
 
@@ -613,7 +621,7 @@ void func_init_vars()
    * (But for MNO solvent we have to do it)
    */
 
-#if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
+#if ((defined __GNUC__ || defined __PGI) && defined __i386__ && !defined DISABLE_X86TRUNC)
   /* store cw */
   if(bC && DO_TAB) {
     strcat(codebuffer,"asm(\"fnstcw %%0\" : \"=m\" (*&x86_cwsave));\n");

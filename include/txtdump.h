@@ -32,6 +32,10 @@
 
 static char *SRCID_txtdump_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) txtdump.h 1.20 12/16/92"
 #endif /* HAVE_IDENT */

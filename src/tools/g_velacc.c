@@ -69,9 +69,9 @@ int main(int argc,char *argv[])
   t_topology top;
   t_trxframe fr;
   matrix     box;
-  bool       bTPS,bTop;
+  bool       bTPS,bTop=FALSE;
   int        gnx;
-  atom_id    *index,*a,*atndx,at;
+  atom_id    *index,*a=NULL,*atndx=NULL,at;
   char       *grpname;
   char       title[256];
   real       t0,t1,m;

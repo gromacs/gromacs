@@ -33,6 +33,10 @@
 
 static char *SRCID_pull_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "vec.h"
 #include "typedefs.h"
 

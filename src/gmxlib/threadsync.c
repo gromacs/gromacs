@@ -4,7 +4,7 @@
  * in a calling c program we call these wrapper syncronization
  * routines from the fortran innerloops
  */
-#ifdef USEF77
+#ifdef USE_FORTRAN
 void FUNCTION(inlsync)(int *nri,int *nthreads,int *count,int *ii0,
 		       int *ii1, pthread_mutex_t *mtx)
 {

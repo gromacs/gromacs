@@ -32,6 +32,10 @@
 
 static char *SRCID_mdatoms_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 extern t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],

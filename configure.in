@@ -1,0 +1,743 @@
+#######################################################################
+# Process this file wth autoconf to produce a configure script.
+#######################################################################
+AC_INIT(src/gmxlib/3dview.c)
+AC_CONFIG_AUX_DIR(./config)
+AM_INIT_AUTOMAKE(gromacs, 3.0b)
+AC_PREFIX_DEFAULT(/usr/local/gromacs)
+AM_CONFIG_HEADER(src/include/config.h)
+
+#######################################################################
+# User options
+#######################################################################
+
+#####
+
+AC_ARG_ENABLE(mpi,     
+ [  --enable-mpi                  Compile parallel version of Gromacs], 
+ enable_mpi=$enableval, enable_mpi=no)
+
+
+#####
+
+AC_ARG_ENABLE(vector,     
+ [  --enable-vector               Compile for a vector machine], 
+ enable_vector=$enableval, enable_vector=no)
+
+
+#####
+
+AC_ARG_ENABLE(fortran, 
+ [  --enable-fortran              Dortran loops (default on sgi,ibm,sun,tru64/dec)], 
+ enable_fortran=$enableval,enable_fortran=check)
+
+
+#####
+
+AC_ARG_ENABLE(double,  
+ [  --enable-double               Compile double precision Gromacs], 
+ enable_double=$enableval, enable_double=no)
+
+
+#####
+
+AC_ARG_ENABLE(type-suffix,     
+ [  --disable-type-suffix         Remove the suffix on MPI or double precision files], 
+ enable_type_suffix=$enableval, enable_type_suffix=yes)
+
+
+#####
+
+AC_ARG_ENABLE(simplewater,     
+ [  --enable-simplewater          Unroll water innerloops (default on sgi)], 
+ enable_simplewater=$enableval, enable_simplewater=check)
+
+
+#####
+AC_ARG_ENABLE(waterwater-loops,     
+ [  --disable-waterwater-loops    No special water-water loops (default on sgi)], 
+ enable_waterwater_loops=$enableval, enable_waterwater_loops=check)
+
+
+#####
+
+AC_ARG_ENABLE(nice,
+ [  --disable-nice                Disable the nice priority on mdrun], 
+ enable_nice=$enableval, enable_nice=yes)
+
+
+#####
+
+AC_ARG_ENABLE(sse,     
+ [  --disable-sse                 Disable SSE assembly loops on x86], 
+ enable_sse=$enableval, enable_sse=yes)
+
+
+#####
+
+AC_ARG_ENABLE(3dnow,     
+ [  --disable-3dnow               Disable 3DNow assembly loops on x86], 
+ enable_3dnow=$enableval, enable_3dnow=yes)
+
+
+#####
+
+AC_ARG_ENABLE(xdr,     
+ [  --disable-xdr                 Disable portable trajectory routines], 
+ enable_xdr=$enableval, enable_xdr=yes)
+
+
+#####
+
+AC_ARG_ENABLE(cpu-detection,     
+ [  --disable-cpu-detection       Don't extend detection with exact cpu type], 
+ enable_cpu_detection=$enableval, enable_cpu_detection=yes)
+
+
+#####
+
+AC_ARG_ENABLE(softwarerecip,     
+[  --enable-softwarerecip        Do software 1/x (might be slower)], 
+ enable_softwarerecip=$enableval, enable_softwarerecip=no)
+
+
+#####
+
+AC_ARG_ENABLE(softwaresqrt,     
+[  --disable-softwaresqrt        No software 1/sqrt (default on sgi,rs6000)], 
+ enable_softwaresqrt=$enableval, enable_softwaresqrt=check)
+
+
+#####
+
+AC_ARG_ENABLE(vectorized_recip,     
+ [  --enable-vectorized-recip     Vectorize the reciprocal in LJ-only loops],
+ enable_vectorized_recip=$enableval, enable_vectorized_recip=no)
+
+
+#####
+
+AC_ARG_ENABLE(vectorized_sqrt,     
+ [  --enable-vectorized-sqrt=A,B  Loops to vectorize, default none. 
+                                Choices: normal,solvent,water,water-water],
+ enable_vectorized_sqrt=$enableval, enable_vectorized_sqrt=no)
+
+
+#####
+AC_ARG_ENABLE(prefetch_x,     
+ [  --enable-prefetch-x=A,B       Prefetch coordinates in selected innerloops],
+ enable_prefetch_x=$enableval, enable_prefetch_x=no)
+
+
+#####
+AC_ARG_ENABLE(prefetch_f,     
+ [  --enable-prefetch-f=A,B       Prefetch forces in selected innerloops],
+ enable_prefetch_f=$enableval, enable_prefetch_f=no)
+
+
+#####
+AC_ARG_ENABLE(hide_square_latency,     
+ [  --enable-hide-square-latency  Try to get coords to cache before using them],
+ enable_hide_square_latency=$enableval, enable_hide_square_latency=no)
+
+
+#####
+AC_ARG_ENABLE(hide_table_latency,     
+ [  --enable-hide-table-latency   Try to get table data to cache before using it],
+ enable_hide_table_latency=$enableval, enable_hide_table_latency=no)
+
+
+#####
+
+AC_ARG_WITH(mpi-environment,     
+ [  --with-mpi-environment=VAR    Only start MPI mdrun when VAR is set], 
+ with_mpi_environment=$enableval, with_mpi_environment=no)
+
+
+########################################################################
+# Process the options
+########################################################################
+
+AC_CANONICAL_HOST
+
+case "${host_cpu}" in
+ i?86)  
+   x86=yes 
+   ;;	
+ *)      
+   x86=false 
+   ;;
+esac
+
+if test "$enable_fortran" = "check"; then
+case "${host_cpu}-${host_os}" in
+
+  sparc*-solaris* | alpha*-osf* | rs6000*-aix* | mips*-irix*)
+    enable_fortran=yes 
+    ;;
+
+  *)
+    enable_fortran=no 
+    ;;
+ esac  
+fi
+
+if test "$enable_simplewater" = "check"; then
+case "${host_cpu}-${host_os}" in
+
+  mips*-irix*)
+    enable_simplewater=yes 
+    ;;
+
+  *)
+    enable_simplewater=no 
+    ;;
+esac	
+fi
+
+if test "$enable_waterwater_loops" = "check"; then
+case "${host_cpu}-${host_os}" in
+
+   mips*-irix*)
+     enable_waterwater_loops=no 
+     ;;
+
+   *)
+     enable_waterwater_loops=yes 
+     ;;
+esac
+fi
+
+if test "$enable_softwaresqrt" = "check"; then
+case "${host_cpu}-${host_os}" in
+
+  mips*-irix* | rs6000*-aix*)
+    enable_softwaresqrt=no 
+    ;;
+
+  *)
+    enable_softwaresqrt=yes 
+    ;;
+esac
+fi
+
+case "${host_cpu}" in
+ alpha*)  
+   AC_DEFINE(USE_AXP_ASM,,[Include Alpha AXP assembly for vectorized sqrt/invsqrt]) 
+   ;;	
+ *)      
+   ;;
+esac
+
+if test "$enable_fortran" = "yes"; then
+  # vendor f77 before g77
+  AC_CHECK_PROGS(F77, f77 xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90)
+  AC_PROG_F77
+  if test -z "$F77"; then
+    AC_MSG_ERROR([No fortran compiler found])
+  fi
+fi
+
+# Checks for programs.
+AC_PROG_MAKE_SET
+
+AC_CHECK_PROG(CC, cc, cc) # do vendor cc before gcc
+AC_PROG_CC
+BUILD_CC=$CC
+AC_SUBST(BUILD_CC)
+
+if test "$enable_fortran" = "yes"; then
+  AC_F77_LIBRARY_LDFLAGS  
+  ACX_F77_NAME_MANGLING
+fi
+
+# if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
+# above, since the autoconf checks that the created file can be executed. This would
+# fail on platforms where MPI executables can only be run through a batchqueue.
+
+if test "$enable_mpi" = "yes"; then
+  AC_CHECK_PROGS(MPICC, mpicc mpcc mpxlf hcc, $CC)	
+# now change the normal cc to the MPI one - see the comment above.
+  CC=$MPICC
+  AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
+  AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
+		AC_MSG_RESULT([yes]),
+	        AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
+  AM_CONDITIONAL(USE_MPI,true)
+else
+  AM_CONDITIONAL(USE_MPI,false)
+fi
+
+AC_PROG_INSTALL
+AC_PROG_CPP
+
+# A rather complicated check for the nasm program and x86 assembly capabilities
+# to run under windows we must insert a test a change nasm "-f elf" to "-f win32"
+if test "$x86" = "yes"; then
+  if [ test "$enable_sse" = "yes" -o "$enable_3dnow" = "yes"]; then
+    if test "$enable_double" = "yes"; then
+      AC_MSG_WARN([SSE/3Dnow assembly can only be used in single precision])
+      enable_sse=no
+      enable_3dnow=no
+    else 
+      AC_PATH_PROG(NASM,nasm,no)
+      NASMFLAGS="-f elf" 
+      AC_SUBST(NASMFLAGS)
+      if test "$NASM" = "no"; then 
+	  AC_MSG_ERROR([Nasm is required for SSE and 3DNow loops.])
+      fi
+      if test "$enable_sse" = "yes"; then
+        AC_MSG_CHECKING([whether nasm supports SSE instructions])
+cat > conftest_sse.s << EOF
+	global checksse	
+checksse:
+	emms
+	xorps xmm0,xmm0
+	emms
+	ret
+EOF
+        if AC_TRY_COMMAND($NASM conftest_sse.s); then
+ 	  AC_MSG_RESULT([yes])
+        else
+	  AC_MSG_RESULT([no]) 
+	  AC_MSG_ERROR([Download a patched nasm from the Gromacs homepage,]     
+                       [or disable SSE assembly.])
+        fi
+      fi	
+      if test "$enable_3dnow" = "yes"; then
+        AC_MSG_CHECKING([whether nasm supports extended 3DNow instructions])
+cat > conftest_3dnow.s << EOF
+	global check3dnow      	
+check3dnow:	
+	femms
+	pswapd mm0,mm0
+	femms
+	ret
+EOF
+        if AC_TRY_COMMAND([$NASM -f elf conftest_3dnow.s]); then
+ 	  AC_MSG_RESULT([yes])
+        else
+	  AC_MSG_RESULT([no])
+	  AC_MSG_ERROR([Download a patched nasm from the Gromacs homepage,]
+                       [or disable 3DNow assembly.])
+        fi
+      fi
+    fi
+  fi
+else # not x86
+enable_sse=no
+enable_3dnow=no
+fi
+
+AC_PATH_PROG(IDENT,ident,no)
+if test "$IDENT" != "no"; then
+  AC_DEFINE(HAVE_IDENT,,[Does this machine have the ident command]) 
+fi
+
+AC_PROG_RANLIB
+AC_CHECK_FUNCS(strcasecmp)
+AC_CHECK_FUNCS(strdup)
+
+# Try to detect the cpu - must be done before some lib searches
+if test "$enable_cpu_detection" = "yes"; then
+  ACX_DETECT_GMXCPU
+else
+  gmxcpu=""
+fi
+
+############################################################################
+# Checks for libraries.
+############################################################################
+#####
+# IBM provides a MASS library with vectorized and optimized math stuff,
+# and an xlopt library which partly overlaps this. They must come before
+# libm in the link list.
+if test "${host_vendor}" = "ibm"; then
+  vectmass=no
+  case "$gmxcpu" in
+    power4*)
+      AC_CHECK_LIB(massvp4,main,vectmass=yes)  ;;
+    power3*)
+      AC_CHECK_LIB(massvp3,main,vectmass=yes)  ;;
+    power2*)
+      AC_CHECK_LIB(massvp3,main,vectmass=yes)  ;;
+    *)
+      AC_CHECK_LIB(massv,main,vectmass=yes)  ;;
+  esac
+  AC_CHECK_LIB(mass,main)  
+  if test "$vectmass" = "yes"; then
+    AC_DEFINE(USE_IBM_MASS,,[Use the vectorized routines in IBM MASS library])
+  fi
+AC_CHECK_LIB(xlopt,main)
+fi 
+
+AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
+
+if test "$enable_double" = "yes"; then
+  precision=8
+else
+  precision=4
+fi
+
+if test "$enable_mpi" = "yes"; then
+  ACX_CHECK_FFTW(fftw_mpi,$precision)
+  ACX_CHECK_FFTW(rfftw_mpi,$precision)
+fi
+
+ACX_CHECK_FFTW(fftw,$precision)
+ACX_CHECK_FFTW(rfftw,$precision)
+
+case ${ac_fftw_savedprefix} in
+ d)
+   AC_DEFINE(FFTW_NAME_DFFTW,,[Use the d prefix on fftw includes])
+   ;;	
+ s)
+   AC_DEFINE(FFTW_NAME_SFFTW,,[Use the s prefix on fftw includes])
+   ;;	
+ *)
+   AC_DEFINE(FFTW_NAME_FFTW,,[Dont use any prefixing on fftw includes])
+   ;;	
+esac
+
+######
+if test "$enable_xdr" = "no"; then
+  AC_MSG_WARN([* Not using XDR cripples Gromacs significantly. You won't be able to *]
+              [* read or write any hardware independent or compressed trajectories. *]
+              [* We strongly suggest you try to locate the RPC routines instead!    *])
+else
+# check for xtc headers
+  AC_CHECK_HEADERS(rpc/rpc.h rpc/xdr.h,,AC_MSG_ERROR([RPC/XDR include headers not found]))
+# check for xtc libs
+# on solaris the xdr stuff is in -lnsl
+  AC_CHECK_LIB(nsl,xdr_float)
+  AC_TRY_LINK(
+[#include<rpc/rpc.h> 
+ #include<rpc/xdr.h>],
+  [ XDR *xd; float f; xdr_float(xd,&f);],,AC_MSG_ERROR([RPC/XDR libraries not found]))
+AM_CONDITIONAL(GMX_USE_XDR,true)
+fi
+
+#####
+# Look for X
+AC_PATH_XTRA
+
+# try to find motif headers and libraries
+AC_FIND_MOTIF
+if [test "$motif_includes" = "none" -a "$motif_libraries" != "none"]; then
+  AC_MSG_WARN([ In addition to Motif/Lesstif libraries we also need includes. Disabling.])
+  motif_include=none
+fi
+
+if test "$motif_includes" != "none"; then
+  use_motif="yes"
+else
+  use_motif="no"
+fi
+
+#####
+# Checks for header files.
+
+AC_CHECK_HEADERS([limits.h malloc.h strings.h unistd.h],,AC_MSG_ERROR([Include headers not found]))
+
+#####
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_STRUCT_TM
+AC_TYPE_UID_T
+AC_C_INLINE
+
+#####
+# Checks for library functions.
+#AC_FUNC_MALLOC
+AC_FUNC_MEMCMP
+AC_TYPE_SIGNAL
+AC_FUNC_VPRINTF
+
+#####
+# Collect the libraries and includes for X and/or motif
+if test "$no_x" != "yes"; then
+  LIBS="$X_LIBS $LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
+  INCLUDES="$INCLUDES $X_CFLAGS $MOTIF_CFLAGS" 
+  AM_CONDITIONAL(USE_X11,true)
+  use_x11="yes"
+else
+  use_x11="no"
+fi
+
+#### 
+# And collect the f77 libs to the linker - at least on Solaris, f77 stuff must go first
+LIBS="$FLIBS $LIBS"
+
+########################################################################
+# Substitute things in output and header files.
+########################################################################
+SUFFIX=""
+
+if test "$enable_mpi" = "yes"; then
+	AC_DEFINE(USE_MPI,,[Make a parallel version of Gromacs using MPI])
+        PAR_OBJ='${mpi_obj}'
+        if test "$enable_type_suffix" = "yes"; then
+	  SUFFIX="_mpi"
+	fi
+else
+	PAR_OBJ='${libnet_obj}' 
+fi
+
+if test "$enable_vector" = "yes"; then
+	AC_DEFINE(USE_VECTOR,,[Optimize for a vector architecture])
+fi
+
+if test "$enable_fortran" = "yes"; then
+	AC_DEFINE(USE_FORTRAN,,[Use Fortran for innerloops and some other core stuff])
+	INNER_F77_OBJ='${inner_f77_obj}'
+else
+	INNER_C_OBJ='${inner_c_obj}'
+fi
+
+if test "$enable_double" = "yes"; then
+	AC_DEFINE(DOUBLE,,[Compile in double precision])
+        if test "$enable_type_suffix" = "yes"; then
+	  SUFFIX="${SUFFIX}_d"
+	fi
+	AM_CONDITIONAL(USE_DOUBLE,true)
+else
+	AM_CONDITIONAL(USE_DOUBLE,false)
+fi
+
+if test "$enable_simplewater" = "yes"; then
+	AC_DEFINE(SIMPLEWATER,,[Expand the water loops to three inner loops])
+fi
+
+if test "$enable_waterwater_loops" = "no"; then
+	AC_DEFINE(DISABLE_WATERWATER_LOOPS,,[Don't use special loops for all-water interactions])
+fi
+
+if test "$enable_nice" = "no"; then
+	AC_DEFINE(NO_NICE,,[Turn off the automatic nicing of gromacs])
+fi
+
+if test "$enable_sse" = "yes"; then
+	AC_DEFINE(USE_SSE,,[Use x86 assembly with SSE instructions])
+	SSE_OBJ='${sse_obj}'
+fi
+
+if test "$enable_3dnow" = "yes"; then
+	AC_DEFINE(USE_3DNOW,,[Use x86 assembly with 3DNow instructions])
+	TDN_OBJ='${tdn_obj}'
+fi
+
+if [test "$enable_sse" = "yes" -o "$enable_3dnow" = "yes"]; then
+	X86_ASM_OBJ='${x86_asm_obj}'	
+fi
+
+if [test "$motif_includes" != "none" -a "$motif_libraries" != "none"]; then
+	MOTIF_OBJ='${motif_obj}'
+fi
+
+if test "$enable_xdr" = "yes"; then
+	AC_DEFINE(USE_XDR,,[Use xdr routines to make trajectories portable])
+	XDR_OBJ='${xdr_obj}'
+else
+	XDR_OBJ='${noxdr_obj}'
+fi
+
+if test "$enable_softwaresqrt" = "yes"; then
+	AC_DEFINE(SOFTWARE_SQRT,,[Use the Gromacs software 1/sqrt(x)])
+fi
+
+if test "$enable_softwarerecip" = "yes"; then
+	AC_DEFINE(SOFTWARE_RECIP,,[Use the Gromacs software 1/x])
+fi
+
+if test "$enable_hide_square_latency" = "yes"; then
+	AC_DEFINE(DECREASE_SQUARE_LATENCY,,[Try to get coordinates to cache before using them])
+fi
+
+if test "$enable_hide_table_latency" = "yes"; then
+	AC_DEFINE(DECREASE_LOOKUP_LATENCY,,[Try to get table data to cache before using it])
+fi
+
+if test "$with_mpi_environment" != "no" -a "$enable_mpi" = "yes"; then
+	AC_DEFINE(CHECK_MPI_ENV,"$with_mpi_environment",
+                 [If defined, only start MPI runs when this variable is set])
+fi
+
+
+list_of_vectorized_sqrt=""
+if test "$enable_vectorized_sqrt" != "no"; then
+  if test "$enable_vectorized_sqrt" = "yes"; then
+    enable_vectorized_sqrt="normal,solvent,water,water-water"
+  fi
+  if echo $enable_vectorized_sqrt | grep "normal" >/dev/null; then
+    list_of_vectorized_sqrt="normal "
+    AC_DEFINE(VECTORIZE_INVSQRT,,[Vectorize 1/sqrt(x) in normal loops])
+  fi
+  if echo $enable_vectorized_sqrt | grep "solvent" >/dev/null; then
+    list_of_vectorized_sqrt="${list_of_vectorized_sqrt}solvent "
+    AC_DEFINE(VECTORIZE_INVSQRT_S,,[Vectorize 1/sqrt(x) in solvent loops])
+  fi
+  if echo $enable_vectorized_sqrt | sed 's/water-water//' | grep "water" >/dev/null; then
+    list_of_vectorized_sqrt="${list_of_vectorized_sqrt}water "
+    AC_DEFINE(VECTORIZE_INVSQRT_W,,[Vectorize 1/sqrt(x) in water loops])
+  fi
+  if echo $enable_vectorized_sqrt | grep "water-water" >/dev/null; then
+    list_of_vectorized_sqrt="${list_of_vectorized_sqrt}water-water "
+    AC_DEFINE(VECTORIZE_INVSQRT_WW,,[Vectorize 1/sqrt(x) in water-water loops])
+  fi
+fi
+if test -z "$list_of_vectorized_sqrt"; then
+  list_of_vectorized_sqrt="no"
+fi
+
+
+list_of_prefetch_x=""
+if test "$enable_prefetch_x" != "no"; then
+  if test "$enable_prefetch_x" = "yes"; then
+    enable_prefetch_x="normal,solvent,water,water-water"
+  fi
+  if echo $enable_prefetch_x | grep "normal" >/dev/null; then
+    list_of_prefetch_x="normal "
+    AC_DEFINE(PREFETCH_X,,[Prefetch coordinates in normal loops])
+  fi
+  if echo $enable_prefetch_x | grep "solvent" >/dev/null; then
+    list_of_prefetch_x="${list_of_prefetch_x}solvent "
+    AC_DEFINE(PREFETCH_X_S,,[Prefetch coordinates in solvent loops])
+  fi
+  if echo $enable_prefetch_x | sed 's/water-water//' | grep "water" >/dev/null; then
+    list_of_prefetch_x="${list_of_prefetch_x}water "
+    AC_DEFINE(PREFETCH_X_W,,[Prefetch coordinates in water loops])
+  fi
+  if echo $enable_prefetch_x | grep "water-water" >/dev/null; then
+    list_of_prefetch_x="${list_of_prefetch_x}water-water "
+    AC_DEFINE(PREFETCH_X_WW,,[Prefetch coordinates in water-water loops])
+  fi
+fi
+if test -z "$list_of_prefetch_x"; then
+  list_of_prefetch_x="no"
+fi
+
+list_of_prefetch_f=""
+if test "$enable_prefetch_f" != "no"; then
+  if test "$enable_prefetch_f" = "yes"; then
+    enable_prefetch_f="normal,solvent,water,water-water"
+  fi
+  if echo $enable_prefetch_f | grep "normal" >/dev/null; then
+    list_of_prefetch_f="normal "
+    AC_DEFINE(PREFETCH_F,,[Prefetch coordinates in normal loops])
+  fi
+  if echo $enable_prefetch_f | grep "solvent" >/dev/null; then
+    list_of_prefetch_f="${list_of_prefetch_f}solvent "
+    AC_DEFINE(PREFETCH_F_S,,[Prefetch coordinates in solvent loops])
+  fi
+  if echo $enable_prefetch_f | sed 's/water-water//' | grep "water"; then
+    list_of_prefetch_f="${list_of_prefetch_f}water "
+    AC_DEFINE(PREFETCH_F_W,,[Prefetch coordinates in water loops])
+  fi
+  if echo $enable_prefetch_f | grep "water-water" >/dev/null; then
+    list_of_prefetch_f="${list_of_prefetch_f}water-water "
+    AC_DEFINE(PREFETCH_F_WW,,[Prefetch coordinates in water-water loops])
+  fi
+fi
+if test -z "$list_of_prefetch_f"; then
+  list_of_prefetch_f="no"
+fi
+
+if test "$enable_vectorized_recip" != "yes" -a "$enable_vectorized_recip" != "no"; then
+  AC_MSG_ERROR([Vectorized reciprocal is only meaningful for normal loops])
+fi
+
+if test "$enable_vectorized_recip" = "yes"; then
+  AC_DEFINE(VECTORIZE_RECIP,,[Vectorize the reciprocal calculation])
+fi
+
+AC_DEFINE_UNQUOTED(GMXLIBDIR,"${ac_default_prefix}/top",[Default topology file location])
+
+AC_SUBST(PAR_OBJ)
+AC_SUBST(INNER_F77_OBJ)
+AC_SUBST(INNER_C_OBJ)
+AC_SUBST(SSE_OBJ)
+AC_SUBST(TDN_OBJ)
+AC_SUBST(X86_ASM_OBJ)
+AC_SUBST(MOTIF_OBJ)
+AC_SUBST(XDR_OBJ)
+AC_SUBST(AXP_ASM_OBJ) # not used right now
+ACX_SUBST_XXX(SUFFIX)
+AC_SUBST(SUFFIX)
+
+# Check if there are any optimizations and options for this arch and cpu
+ACX_COMPILER_MAXOPT
+AC_SUBST(INCLUDES)          # should be automatic, but doesnt seem to be?
+
+# put binaries and libraries in subdirectories named as the arch
+if test -n "$gmxcpu"; then
+  bindir="\${exec_prefix}/bin/${host}/${gmxcpu}"
+  libdir="\${exec_prefix}/lib/${host}/${gmxcpu}"
+else
+  bindir="\${exec_prefix}/bin/${host}"
+  libdir="\${exec_prefix}/lib/${host}"
+fi
+
+AC_SUBST(bindir)
+AC_SUBST(libdir)
+
+
+AC_OUTPUT([Makefile
+                 src/Makefile
+                 src/gmxlib/Makefile
+                 src/mdlib/Makefile
+                 src/kernel/Makefile
+                 src/tools/Makefile
+                 src/ngmx/Makefile
+		 src/include/Makefile
+		 src/include/types/Makefile
+		 tutor/Makefile
+		 tutor/gmxdemo/Makefile
+		 tutor/nmr1/Makefile
+		 tutor/nmr2/Makefile
+		 tutor/water/Makefile
+		 tutor/speptide/Makefile
+		 tutor/template/Makefile
+		 tutor/template/Template.mak
+		 top/Makefile
+		 html/Makefile
+                 html/gif/Makefile
+                 html/online/Makefile])
+
+echo ""
+echo "Gromacs is ready to compile. Summary of options used:"
+echo "Architecture                  : $host"
+if test "$enable_cpu_detection" = "yes"; then
+if test -n "$gmxcpu"; then
+echo "Optimize for CPU              : $gmxcpu"
+else
+echo "(Extra CPU detection not necessary or unavailable on this host)"	
+fi
+fi
+echo "MPI parallelization           : $enable_mpi"
+if test "$enable_mpi" = "yes"; then
+echo "Checking MPI environment      : $with_mpi_environment"
+fi
+echo "Vector architecture           : $enable_vector"
+echo "Using Fortran code            : $enable_fortran"
+echo "Double precision              : $enable_double"
+if test "$enable_double" = "yes" -o "$enable_mpi" = "yes"; then
+echo "Type suffix on files          : $enable_type_suffix"
+fi
+echo "Expanding water loops         : $enable_simplewater"
+echo "Using water-water loops       : $enable_waterwater_loops"
+echo "Automatically nice mdrun      : $enable_nice"
+echo "Using x86 SSE assembly        : $enable_sse"
+echo "Using x86 3DNow assembly      : $enable_3dnow"
+echo "Portable trajectories (xdr)   : $enable_xdr"
+echo "Software 1/x                  : $enable_softwarerecip"
+echo "Software 1/sqrt(x)            : $enable_softwaresqrt"
+echo "Vectorize 1/x                 : $enable_vectorized_recip"
+echo "Vectorize 1/sqrt(x)           : $list_of_vectorized_sqrt"
+echo "Prefetch coordinates in loops : $list_of_prefetch_x"
+echo "Prefetch forces in loops      : $list_of_prefetch_f"
+echo "Hide square latency           : $enable_hide_square_latency"
+echo "Hide table lookup latency     : $enable_hide_table_latency"
+echo "Using X11                     : $use_x11"
+echo "Motif support                 : $use_motif"
+echo ""

@@ -32,6 +32,10 @@
 
 static char *SRCID_vcm_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) vcm.h 1.9 9/29/97"
 #endif /* HAVE_IDENT */

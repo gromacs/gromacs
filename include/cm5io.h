@@ -32,6 +32,10 @@
 
 static char *SRCID_cm5io_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 
 extern void cm5io_tx(int pid,void *buf,int bufsize);

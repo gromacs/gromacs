@@ -32,6 +32,10 @@
 
 static char *SRCID_pdebug_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) pdebug.h 1.7 2/2/97"
 #endif /* HAVE_IDENT */

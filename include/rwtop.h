@@ -32,6 +32,10 @@
 
 static char *SRCID_rwtop_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) rwtop.h 1.5 12/16/92"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,10 @@
 
 static char *SRCID_sheader_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) sheader.h 1.4 11/23/92"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,10 @@
 
 static char *SRCID_xvgr_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) xvgr.h 1.8 7/28/97"
 #endif /* HAVE_IDENT */

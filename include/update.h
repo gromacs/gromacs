@@ -32,6 +32,10 @@
 
 static char *SRCID_update_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) update.h 1.33 24 Jun 1996"
 #endif /* HAVE_IDENT */

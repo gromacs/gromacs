@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 enum { egCOUL, egLJ, egBHAM, egLR, egLJLR, egCOUL14, egLJ14, egNR };
 	
 typedef struct {

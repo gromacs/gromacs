@@ -61,15 +61,12 @@ static char *SRCID_mkinl_c = "$Id$";
  * -DUSE_AXP_ASM       Use gromacs assembly routines to perform
  *                     vectorized invsqrt on dec/compaq alpha chips.
  *
- * -DFAST_X86TRUNC     Change the x86 control word once in each
+ * automatic on gcc:   Change the x86 control word once in each
  *                     routine to speed up truncation. This will
- *                     increase table routine performance significantly,
- *                     but it might also affect the floating point
- *                     precision. Check your output to see if you
- *                     can live with it.
+ *                     increase table routine performance significantly.
  *
- * -DUSE_SSE_AND_3DNOW Include assembly loops which can utilize fast 
- *                     single precision optimizations in newer Intel and
+ * -DUSE_SSE           Include assembly loops which can utilize fast 
+ * -DUSE_3DNOW         single precision optimizations in newer Intel and
  *                     Amd processors. The code will still run on any
  *                     x86 machine, but to make use of the special loops you
  *                     will need e.g. redhat>=6.2 and a pentium III/amd k6 
@@ -85,14 +82,14 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     the processors due to e.g. other jobs on a machine. 
  *                     Only choose one of them!
  *
- * -DGMX_INVSQRT       Use the gromacs implementation of the inverse
+ * -DSOFTWARE_SQRT     Use the gromacs implementation of the inverse
  *                     square root.
  *                     This is probably a good thing to do on most 
  *                     computers except SGI and ibm power2/power3 which
  *                     have special hardware invsqrt instructions.
  *                     (but the PPC604 available in some ibm smp nodes doesnt)
  *
- * -DGMX_RECIP         Same as invsqrt, but this is for 1/x. This
+ * -DSOFTWARE_RECIP    Same as invsqrt, but this is for 1/x. This
  *                     should NOT be used without checking - most 
  *                     computers have a more efficient hardware
  *                     routine, but it may help on SOME x86 boxes.
@@ -105,23 +102,23 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     it, which comes handy for debugging. It is
  *                     probably slightly slower, though.
  *
- * -DPREFETCH_F        Prefetching of forces. The two extra options 
- * -DPREFETCH_F_W      additionally does it for single water and 
- * -DPREFETCH_F_WW     water-water loops.
+ * -DPREFETCH_F        Prefetching of forces in normal, solvent, water 
+ * -DPREFETCH_F_S      and water-water loops. 
+ * -DPREFETCH_F_W
+ * -DPREFETCH_F_WW     
  * 
- * -DPREFETCH_X        Prefetches coordinates.
- * -DPREFETCH_X_W      In general, more prefetching is better, but on
- * -DPREFETCH_X_WW     processors with few registers (x86) it can decrease
- *                     performance when we run out of them.
- *                     This is even more probable for the water-water loops,
- *                     so they have special options.
+ * -DPREFETCH_X        Prefetching of coordinates in normal, solvent, water 
+ * -DPREFETCH_X_S      and water-water loops. 
+ * -DPREFETCH_X_W
+ * -DPREFETCH_X_WW     
  *
  * -DVECTORIZE_INVSQRT    Vectorize the corresponding part of the force
- * -DVECTORIZE_INVSQRT_W  calculation. This can avoid cache trashing, and
- * -DVECTORIZE_INVSQRT_WW in some cases it makes it possible to use vector
- * -DVECTORIZE_RECIP      intrinsic functions. (also on scalar machines)
- *                        The two extra invsqrt options control water
- *                        loops in the same way as the prefetching.           
+ * -DVECTORIZE_INVSQRT_S  calculation. This can avoid cache trashing, and
+ * -DVECTORIZE_INVSQRT_W  in some cases it makes it possible to use vector
+ * -DVECTORIZE_INVSQRT_WW intrinsic functions. (also on scalar machines)
+ * -DVECTORIZE_RECIP      Water loops are only used when we include coulomb
+ *                        interactions (requiring sqrt), so the reciprocal  
+ *                        vectorization is only meaningful on normal loops.
  *
  * -DDECREASE_SQUARE_LATENCY  Try to hide latencies by doing some operations
  * -DDECREASE_LOOKUP_LATENCY  in parallel rather than serial in the innermost loop.
@@ -179,43 +176,44 @@ void set_loop_options(void)
    * mkinl_interactions.c
    */
   loop.coul_needs_rinv=TRUE;
-
+  /* all current coulomb stuff needs 1/r */
   loop.coul_needs_rinvsq=(loop.coul && !DO_COULTAB);
   /* non-table coul also need r^-2 */
   loop.coul_needs_rsq=(DO_RF || (loop.coul && loop.free));
   /* reaction field and softcore need r^2 */
-  loop.coul_needs_r=DO_COULTAB && !DO_SOFTCORE;
+  loop.coul_needs_r=DO_COULTAB;
   /* tabulated coulomb needs r */ 
 
-  /* If we are vectorizing the invsqrt it is probably faster to
-   * include the vdw-only atoms in that loop and square the
-   * result to get rinvsq. Just tell the generator we want rinv for
-   * those atoms too:
-   */
-  loop.vdw_needs_rinv=(DO_VDWTAB || (loop.coul && loop.vectorize_invsqrt));
-  
   /* table nb needs 1/r */
   loop.vdw_needs_rinvsq=(loop.vdw && !DO_VDWTAB);
   /* all other need r^-2 */
   loop.vdw_needs_rsq=(loop.vdw && loop.free);
   /* softcore needs r^2 */
-  loop.vdw_needs_r=(DO_BHAM || DO_VDWTAB || (loop.vdw && loop.free)) && !DO_SOFTCORE;
+  loop.vdw_needs_r=(DO_BHAM || DO_VDWTAB || (loop.vdw && loop.free));
   /* softcore and buckingham need r */
 
   /* Now, what shall we calculate? */ 
-  loop.invsqrt=!DO_SOFTCORE &&
-    ((loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
-     (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r)));
+  loop.invsqrt=
+    (loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
+    (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r));
   
-  loop.recip=!DO_SOFTCORE && !loop.invsqrt;
+  loop.recip=!loop.invsqrt;
 
-  loop.vectorize_invsqrt=loop.invsqrt && 
-    (opt.vectorize_invsqrt==YES_WW || 
-     (opt.vectorize_invsqrt==YES_W && loop.sol!=SOL_WATERWATER) ||
-     (opt.vectorize_invsqrt==YES && !DO_WATER));
+  loop.vectorize_invsqrt=loop.invsqrt && !DO_SOFTCORE &&
+    ((loop.sol==SOL_NO && (opt.vectorize_invsqrt & TYPE_NORMAL)) ||
+     (loop.sol==SOL_MNO && (opt.vectorize_invsqrt & TYPE_SOLVENT)) ||
+     (loop.sol==SOL_WATER && (opt.vectorize_invsqrt & TYPE_WATER)) ||
+     (loop.sol==SOL_WATERWATER && (opt.vectorize_invsqrt & TYPE_WATERWATER)));
 
-  loop.vectorize_recip=loop.recip && opt.vectorize_recip;
+  loop.vectorize_recip=loop.recip && opt.vectorize_recip && !DO_SOFTCORE;
      
+  /* If we are vectorizing the invsqrt it is probably faster to
+   * include the vdw-only atoms in that loop and square the
+   * result to get rinvsq. Just tell the generator we want rinv for
+   * those atoms too:
+   */
+  loop.vdw_needs_rinv=DO_VDWTAB || (loop.coul && loop.vectorize_invsqrt);
+  
   table_element_size=0;
   if(DO_COULTAB)
     table_element_size+=4;
@@ -243,7 +241,7 @@ void make_func(char *appendname)
   /* start the loop over i particles (neighborlists) */    
   outer_loop();
   /* The innerloop creation is called from the outerloop creation */
-#if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
+#if ((defined __GNUC__ || defined __PGI) && defined __i386__ && !defined DISABLE_X86TRUNC)
   if(bC && DO_TAB)
     strcat(codebuffer,"asm(\"fldcw %%0\" : : \"m\" (*&x86_cwsave));\n");
 #endif
@@ -275,37 +273,33 @@ int main(int argc,char *argv[])
 	  (prec == 8) ? "double" : "single",
 	  bC ? "C" : "Fortran 77",fn);
 
-#ifdef USE_SSE_AND_3DNOW
-  arch.sse_and_3dnow=FALSE; /* no support - yet */
-  fprintf(stderr,">>> Including x86 assembly loops with SSE and 3DNOW instructions\n");
-#else
-  arch.sse_and_3dnow=FALSE;
+#ifdef USE_SSE
+  fprintf(stderr,">>> Including x86 assembly loops with SSE instructions\n");
+#endif
+#ifdef USE_3DNOW
+  fprintf(stderr,">>> Including x86 assembly loops with 3DNOW instructions\n");
 #endif
 
-#if (defined __GNUC__ && defined _lnx_)
-#ifdef FAST_X86TRUNC
+#if ((defined __GNUC__ || defined __PGI) && defined __i386__ && !defined DISABLE_X86TRUNC)
   fprintf(stderr,">>> Using fast inline assembly gcc/x86 truncation. Since we are changing\n"
 	         "    the control word this might affect the numerical result slightly.\n");
-#else
-  fprintf(stderr,">>> Using normal x86 truncation\n");
-#endif  
 #endif  
   
-#ifdef GMX_INVSQRT
+#ifdef SOFTWARE_SQRT
   arch.gmx_invsqrt = TRUE;
   fprintf(stderr,">>> Using gromacs invsqrt code\n");
 #else
   arch.gmx_invsqrt = FALSE;
 #endif
     
-#ifdef GMX_RECIP
+#ifdef SOFTWARE_RECIP
   arch.gmx_recip = TRUE;
   fprintf(stderr,">>> Using gromacs reciprocal code\n");
 #else
   arch.gmx_recip = FALSE;
 #endif
     
-#if ((defined GMX_INVSQRT || defined GMX_RECIP) && !defined DONT_INLINE_GMXCODE)
+#if ((defined SOFTWARE_SQRT || defined SOFTWARE_RECIP) && !defined DONT_INLINE)
   opt.inline_gmxcode = TRUE;
   fprintf(stderr,">>> Inlining gromacs invsqrt and/or reciprocal code\n");
 #else
@@ -320,31 +314,54 @@ int main(int argc,char *argv[])
   arch.simplewater = FALSE;
 #endif
 
-#ifdef PREFETCH_X 
-  opt.prefetch_x = YES;
-  fprintf(stderr,">>> Prefetching coordinates\n");
-#elif defined PREFETCH_X_W
-  opt.prefetch_x = YES_W;
-  fprintf(stderr,">>> Prefetching coordinates (also single water loops)\n");
-#elif defined PREFETCH_X_WW
-  opt.prefetch_x = YES_WW;
-  fprintf(stderr,">>> Prefetching coordinates (all loops)\n");
-#else
-  opt.prefetch_x = NO;
+  fprintf(stderr,">>> Prefetching coordinates in loops: ");
+#if (!defined PREFETCH_X) && (!defined PREFETCH_X_S) && \
+    (!defined PREFETCH_X_W) && (!defined PREFETCH_X_WW)
+  fprintf(stderr,"none");
 #endif
-
+  opt.prefetch_x=0;
+#ifdef PREFETCH_X
+  fprintf(stderr,"normal ");
+  opt.prefetch_x |= TYPE_NORMAL;
+#endif
+#ifdef PREFETCH_X_S
+  fprintf(stderr,"solvent ");
+  opt.prefetch_x |= TYPE_SOLVENT;
+#endif
+#ifdef PREFETCH_X_W
+  fprintf(stderr,"water ");
+  opt.prefetch_x |= TYPE_WATER;
+#endif
+#ifdef PREFETCH_X_WW
+  fprintf(stderr,"water-water ");
+  opt.prefetch_x |= TYPE_WATERWATER;
+#endif
+  fprintf(stderr,"\n");
+  
+  fprintf(stderr,">>> Prefetching forces in loops: ");
+#if (!defined PREFETCH_F) && (!defined PREFETCH_F_S) && \
+    (!defined PREFETCH_F_W) && (!defined PREFETCH_F_WW)
+  fprintf(stderr,"none");
+#endif
+  opt.prefetch_f=0;
 #ifdef PREFETCH_F
-  opt.prefetch_f = YES;
-  fprintf(stderr,">>> Prefetching forces\n");
-#elif defined PREFETCH_F_W
-  opt.prefetch_f = YES_W;
-  fprintf(stderr,">>> Prefetching forces (also single water loops)\n");
-#elif defined PREFETCH_F_WW
-  opt.prefetch_f = YES_WW;
-  fprintf(stderr,">>> Prefetching forces (all loops)\n");
-#else
-  opt.prefetch_f = NO;
+  fprintf(stderr,"normal ");
+  opt.prefetch_f |= TYPE_NORMAL;
 #endif
+#ifdef PREFETCH_F_S
+  fprintf(stderr,"solvent ");
+  opt.prefetch_f |= TYPE_SOLVENT;
+#endif
+#ifdef PREFETCH_F_W
+  fprintf(stderr,"water ");
+  opt.prefetch_f |= TYPE_WATER;
+#endif
+#ifdef PREFETCH_F_WW
+  fprintf(stderr,"water-water ");
+  opt.prefetch_f |= TYPE_WATERWATER;
+#endif
+  fprintf(stderr,"\n");  
+
 
 #ifdef DECREASE_SQUARE_LATENCY
   opt.decrease_square_latency = TRUE;
@@ -373,26 +390,40 @@ int main(int argc,char *argv[])
   fprintf(stderr,">>> Nonthreaded inner loops\n");
 #endif
 
-#ifdef _SGI_
+#ifdef __sgi
   opt.delay_invsqrt = TRUE;
   fprintf(stderr,">>> Delaying invsqrt and reciprocal\n");
 #else
   opt.delay_invsqrt = FALSE;
-#endif 
-
-#ifdef VECTORIZE_INVSQRT
-  opt.vectorize_invsqrt = YES;
-  fprintf(stderr,">>> Vectorizing the invsqrt calculation\n");
-#elif defined VECTORIZE_INVSQRT_W
-  opt.vectorize_invsqrt = YES_W;
-  fprintf(stderr,">>> Vectorizing the invsqrt calculation (also single water loops)\n");
-#elif defined VECTORIZE_INVSQRT_WW
-  opt.vectorize_invsqrt = YES_WW;
-  fprintf(stderr,">>> Vectorizing the invsqrt calculation (all loops)\n");
-#else
-  opt.vectorize_invsqrt = NO;
 #endif
+  
 
+  fprintf(stderr,">>> Vectorizing invsqrt in loops:");
+#if (!defined VECTORIZE_INVSQRT) && (!defined VECTORIZE_INVSQRT_S) && \
+    (!defined VECTORIZE_INVSQRT_W) && (!defined VECTORIZE_INVSQRT_WW)
+  fprintf(stderr,"none");
+#endif
+  opt.vectorize_invsqrt=0;
+#ifdef VECTORIZE_INVSQRT
+  fprintf(stderr,"normal ");
+  opt.vectorize_invsqrt |= TYPE_NORMAL;
+#endif
+#ifdef VECTORIZE_INVSQRT_S
+  fprintf(stderr,"solvent ");
+  opt.vectorize_invsqrt |= TYPE_SOLVENT;
+#endif
+#ifdef VECTORIZE_INVSQRT_W
+  fprintf(stderr,"water ");
+  opt.vectorize_invsqrt |= TYPE_WATER;
+#endif
+#ifdef VECTORIZE_INVSQRT_WW
+  fprintf(stderr,"water-water ");
+  opt.vectorize_invsqrt |= TYPE_WATERWATER;
+#endif
+  fprintf(stderr,"\n");  
+
+
+  
 #ifdef VECTORIZE_RECIP
   opt.vectorize_recip = TRUE;
   fprintf(stderr,">>> Vectorizing the reciprocal calculation\n");
@@ -423,13 +454,10 @@ int main(int argc,char *argv[])
     exit(-1);
   }
   if(opt.delay_invsqrt && arch.gmx_invsqrt) {
-    fprintf(stderr,"Error: Can't delay invsqrt when using gromacs code.\n");
-    exit(-1);
-  }
-  if(prec!=4 && arch.sse_and_3dnow) {
-    fprintf(stderr,"Error: SSE/3DNOW loops can only be used in single precision\n");
-    fprintf(stderr,"       (Not our choice - blame Intel and AMD.)\n");    
-    exit(-1);
+    fprintf(stderr,
+	    "Warning: Can't delay invsqrt when using gromacs code.\n"
+	    "         Turning off the delayed invsqrt\n");
+    opt.delay_invsqrt=FALSE;
   }
  
   if ((output = fopen(fn,"w")) == NULL) {
@@ -471,8 +499,8 @@ int main(int argc,char *argv[])
 			  opt. */
 	  if(DO_WATER && !loop.coul)
 	    continue;    /* No point with LJ only water loops */	      
-	  /* (but we have LJ only general solvent loops) */	  
-
+	  /* (but we have LJ only general solvent loops) */
+	  
 	  /* Write metacode to buffer */
 	  make_func("");
 	  flush_buffers();

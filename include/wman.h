@@ -32,6 +32,10 @@
 
 static char *SRCID_wman_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) wman.h 1.11 10/2/97"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,10 @@
 
 static char *SRCID_pdbio_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) pdbio.h 1.12 7/28/97"
 #endif /* HAVE_IDENT */

@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
        eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
        eNL_VDWQQ_SOLMNO, eNL_VDW_SOLMNO, eNL_QQ_SOLMNO, 

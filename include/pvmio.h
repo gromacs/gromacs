@@ -32,6 +32,10 @@
 
 static char *SRCID_pvmio_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "pvm3.h"
 
 extern void pvmio_tx(int nodeid,void *buf,int bufsize);

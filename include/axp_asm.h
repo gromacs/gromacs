@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /* Function definitions for alpha AXP assembly routines */
 
 /* Double precision inverse square root */

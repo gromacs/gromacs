@@ -32,6 +32,10 @@
 
 static char *SRCID_maths_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) maths.h 1.11 11/24/92"
 #endif /* HAVE_IDENT */

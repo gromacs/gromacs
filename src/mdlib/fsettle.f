@@ -1,4 +1,16 @@
-      subroutine FORSETTLE(nshake,owptr,b4,after,
+c     IMPORTANT!
+c     Note that this file comes in two flavours -
+c     fshake.f for single precision and fshaked.f 
+c     for double precision. The only difference is 
+c     the size of the real variables.
+c     This is an unfortunate, but necessary setup      
+c     since not all f77 compilers (e.g. g77) have
+c     switches to change the real size, and neither
+c     do all f77 compilers support preprocessing.
+c     Thus, if you edit one of the files, make sure  
+c      to change to other similarly!
+     
+      subroutine fsettle(nshake,owptr,b4,after,
      &     dOH,dHH,mO,mH,error)
       implicit none
 c*****************************************************************
@@ -12,24 +24,25 @@ c           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992). **
 c                                                               **
 c*****************************************************************
       integer nshake,owptr(*),error
-      real  b4(*),after(*),mO,mH,dOH,dHH
-      
-      integer i,ow1,hw2,hw3
-      real  wo,wh,wohh,ra,rb,rc,rc2,tmp,tmp2
 
-      real gama, beta, alpa, xcom, ycom, zcom, al2be2
-      real axlng, aylng, azlng, trns11, trns21, trns31, trns12, 
+      real*4  b4(*),after(*),mO,mH
+     $     ,dOH,dHH
+      real*4  wo,wh,wohh,ra,rb,rc,rc2,tmp,tmp2
+      real*4 gama, beta, alpa, xcom, ycom, zcom, al2be2
+      real*4 axlng, aylng, azlng, trns11, trns21, trns31, trns12, 
      &     trns22, trns32, trns13, trns23, trns33, cosphi, 
      &     costhe, sinphi, sinthe, cospsi, xaksxd, yaksxd, 
      &     xakszd, yakszd, zakszd, zaksxd, xaksyd, 
      &     xb0, yb0, zb0, xc0, yc0, zc0, xa1
-      real ya1, za1, xb1, yb1
-      real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, 
+      real*4 ya1, za1, xb1, yb1
+      real*4 zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, 
      &     xa3, ya3, za3, xb3, yb3, zb3, xc3, yc3, zc3, 
      &     xb0d, yb0d, xc0d, yc0d, xa1d, ya1d, 
      &     za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, 
      &     xb2d, yb2d, yc2d, 
      &     xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d
+      
+      integer i,ow1,hw2,hw3
 
       error= -1
       wo   = mO

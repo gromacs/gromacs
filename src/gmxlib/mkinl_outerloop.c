@@ -448,7 +448,7 @@ void outer_loop()
     nflop ++;
   }
   /* Only print vanilla loop count */
-  if(!DO_VECTORIZE && !arch.sse_and_3dnow && !arch.vector) {
+  if(!DO_VECTORIZE && !arch.vector) {
     sprintf(buf,"Outerloop of %s costs %d flops",loopname,nflop);
     comment(buf);    
   }

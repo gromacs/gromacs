@@ -1,6 +1,10 @@
 #ifndef _sortwater_h
 #define _sortwater_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 extern void randwater(int astart,int nwater,int nwatom,

@@ -30,6 +30,8 @@
 #ifndef _grompp_h
 #define _grompp_h
 
+#include <config.h>
+
 static char *SRCID_grompp_h = "$Id$";
 
 #ifdef HAVE_IDENT

@@ -32,6 +32,10 @@
 
 static char *SRCID_steep_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) steep.h 1.6 03 Mar 1996"
 #endif /* HAVE_IDENT */

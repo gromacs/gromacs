@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #define D_BOX_Z 1
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
 #define D_BOX_Y 2

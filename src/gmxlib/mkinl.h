@@ -2,6 +2,7 @@
 #define _mkinl_h
 
 static char *SRCID_mkinl_h = "";
+#include <config.h>
 #include <types/simple.h>
 #include <metacode.h>
 
@@ -23,20 +24,21 @@ static char *SRCID_mkinl_h = "";
 #define DO_TAB         (DO_COULTAB || DO_VDWTAB)
 #define DO_BHAM        ((loop.vdw==VDW_BHAM) || (loop.vdw==VDW_BHAMTAB))
 
-#define DO_PREFETCH_X  (opt.prefetch_x==YES_WW || \
-		         (opt.prefetch_x==YES_W && \
-                          (loop.sol!=SOL_WATERWATER)) || \
-		         (opt.prefetch_x==YES && !DO_WATER))
-#define DO_PREFETCH_F  (opt.prefetch_f==YES_WW || \
-		         (opt.prefetch_f==YES_W && \
-			  (loop.sol!=SOL_WATERWATER)) || \
-		         (opt.prefetch_f==YES && !DO_WATER))
+#define DO_PREFETCH_X  ((loop.sol==SOL_NO && (opt.prefetch_x & TYPE_NORMAL)) || \
+                        (loop.sol==SOL_MNO && (opt.prefetch_x & TYPE_SOLVENT)) || \
+                        (loop.sol==SOL_WATER && (opt.prefetch_x & TYPE_WATER)) || \
+                        (loop.sol==SOL_WATERWATER && (opt.prefetch_x & TYPE_WATERWATER)))
 
+#define DO_PREFETCH_F  ((loop.sol==SOL_NO && (opt.prefetch_f & TYPE_NORMAL)) || \
+                        (loop.sol==SOL_MNO && (opt.prefetch_f & TYPE_SOLVENT)) || \
+                        (loop.sol==SOL_WATER && (opt.prefetch_f & TYPE_WATER)) || \
+                        (loop.sol==SOL_WATERWATER && (opt.prefetch_f & TYPE_WATERWATER)))
+  
 #define DO_SOL         (loop.sol==SOL_MNO) /* non-water solvent optimzations */
 #define DO_WATER       (loop.sol==SOL_WATER || loop.sol==SOL_WATERWATER)
 #define DO_SOFTCORE    (loop.free==FREE_SOFTCORE)
 
-#define DO_VECTORIZE   (loop.vectorize_invsqrt || loop.vectorize_recip)
+#define DO_VECTORIZE    (loop.vectorize_invsqrt || loop.vectorize_recip)
 
 /* For pure LJ-only loops we can save some cycles by just calculating the
  * reciprocal. In all other cases we need to do the invsqrt
@@ -101,19 +103,26 @@ typedef enum {
 } thread_t;
 
 
-typedef enum {
-  NO,
-  YES,           /* prefetch only non-solvent loops            */
-  YES_W,         /* prefetch single solvent or water loops too */
-  YES_WW         /* prefetch everywhere                        */
-} waterbool_t;
+/* This is essentially a boolean telling for which loop types
+ * some features are enabled.
+ * Bit 0 concerns normal loops,
+ * bit 1 solvent loops and
+ * bit 2 water loops and
+ * bit 3 water-water loops.
+ */
+typedef int looptype_t;
+
+#define TYPE_NORMAL     1
+#define TYPE_SOLVENT    2
+#define TYPE_WATER      4
+#define TYPE_WATERWATER 8
+
 
 /* Global structure determining architectural options */
 typedef struct {
   bool     gmx_invsqrt;    /* Use gmx software routines? */
   bool     gmx_recip;    
   thread_t threads;
-  bool     sse_and_3dnow;
   bool     simplewater;
   bool     vector;          
   bool     cray_pragma;
@@ -123,16 +132,17 @@ typedef struct {
 /* Global structure determining optimization options */
 typedef struct {
   bool         inline_gmxcode;            /* Inline gmx software routines */
-  waterbool_t  prefetch_x;       
-  waterbool_t  prefetch_f;
+  looptype_t   prefetch_x;       
+  looptype_t   prefetch_f;
   bool         decrease_square_latency;   /* Try to hide latencies */ 
   bool         decrease_lookup_latency;   
   bool         delay_invsqrt;
   /* Dont try to hide latency for (hardware) invsqrt or reciprocal
    * by calculating the before we need them. 
    */
-  waterbool_t  vectorize_invsqrt;         /* vectorize distance calculation when possible */
-  bool         vectorize_recip;
+  
+  looptype_t   vectorize_invsqrt;         /* vectorize distance calculation when possible */
+  bool         vectorize_recip;           /* not meaningful on water loops */
 } opt_t;
 
 

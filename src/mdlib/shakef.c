@@ -292,9 +292,9 @@ int vec_shakef(FILE *log,
   }
 
   /* We have a FORTRAN shake now! */  
-#ifdef USEF77
-  fshake(iatom,&ncon,&nit,&maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lagr,
-	 &error);
+#ifdef USE_FORTRAN
+  F77_FUNC(fshake,FSHAKE)(iatom,&ncon,&nit,&maxnit,dist2,xp[0],
+			  rij[0],M2,invmass,tt,lagr,&error);
 #else
   /* And a c shake also ! */
   cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lagr,&error);

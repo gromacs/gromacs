@@ -32,6 +32,10 @@
 
 static char *SRCID_vec_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) vec.h 1.8 12/16/92"
 #endif /* HAVE_IDENT */
@@ -93,13 +97,7 @@ static char *SRCID_vec_h = "$Id$";
 #include "sysstuff.h"
 #include "macros.h"
 #include "fatal.h"
-#include "x86cpu.h"
-
-#ifdef _lnx_
-#define gmx_inline inline
-#else
-#define gmx_inline
-#endif
+#include "x86_cpu.h"
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
@@ -113,12 +111,12 @@ static char *SRCID_vec_h = "$Id$";
 
 
 
-#ifdef GMX_INVSQRT
+#ifdef SOFTWARE_SQRT
 extern const unsigned int cinvsqrtexptab[];
 extern const unsigned int cinvsqrtfracttab[];
 #endif
 
-#ifdef GMX_RECIP
+#ifdef SOFTWARE_RECIP
 extern const unsigned int crecipexptab[];
 extern const unsigned int crecipfracttab[];
 #endif
@@ -130,8 +128,8 @@ typedef union
 } t_convert;
 
 
-#ifdef GMX_INVSQRT
-static gmx_inline real invsqrt(float x)
+#ifdef SOFTWARE_INVSQRT
+static inline real invsqrt(float x)
 {
   const real  half=0.5;
   const real  three=3.0;
@@ -167,7 +165,7 @@ static gmx_inline real invsqrt(float x)
 
 
 
-static gmx_inline void vecinvsqrt(real in[],real out[],int n)
+static inline void vecinvsqrt(real in[],real out[],int n)
 {
 #ifdef INVSQRT_DONE  
   const real  half=0.5;
@@ -180,14 +178,19 @@ static gmx_inline void vecinvsqrt(real in[],real out[],int n)
 #endif
 #endif /* INVSQRT_DONE */
   int i;
-
-#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE) 
-  if(x86cpu==X86_3DNOW)
+  
+#ifndef DOUBLE
+#ifdef USE_3DNOW
+  if(cpu_capabilities & X86_3DNOW_SUPPORT)
     vecinvsqrt_3dnow(in,out,n);
-  else if(x86cpu==X86_SSE && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
+  else
+#endif
+#ifdef USE_SSE
+  if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
     vecinvsqrt_sse(in,out,n);
   else
 #endif /* no x86 optimizations */
+#endif /* not double */    
 #ifdef INVSQRT_DONE
     for(i=0;i<n;i++) {
       x=in[i];
@@ -210,8 +213,8 @@ static gmx_inline void vecinvsqrt(real in[],real out[],int n)
 #endif /* INVSQRT_DONE */
 }
 
-#ifdef GMX_RECIP
-static gmx_inline real recip(float x)
+#ifdef SOFTWARE_RECIP
+static inline real recip(float x)
 {
   const real  two=2.0;
   t_convert   result,bit_pattern;
@@ -240,9 +243,9 @@ static gmx_inline real recip(float x)
 #endif
 
 
-static gmx_inline void vecrecip(real in[],real out[],int n)
+static inline void vecrecip(real in[],real out[],int n)
 {
-#ifdef GMX_RECIP
+#ifdef SOFTWARE_RECIP
   const real  two=2.0;
   t_convert   result,bit_pattern;
   unsigned int exp,fract;
@@ -250,17 +253,22 @@ static gmx_inline void vecrecip(real in[],real out[],int n)
 #ifdef DOUBLE
   real        y;
 #endif
-#endif /* GMX_RECIP */
+#endif /* SOFTWARE_RECIP */
   int i;
 
-#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE) 
-  if(x86cpu==X86_3DNOW)
+#ifndef DOUBLE  
+#ifdef USE_3DNOW
+  if(cpu_capabilities & X86_3DNOW_SUPPORT)
     vecrecip_3dnow(in,out,n);
-  else if(x86cpu==X86_SSE && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
+  else
+#endif
+#ifdef USE_SSE
+  if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
     vecrecip_sse(in,out,n);
   else
 #endif /* no x86 optimizations */
-#ifdef GMX_RECIP
+#endif /* not double */    
+#ifdef SOFTWARE_RECIP
     for(i=0;i<n;i++) {
       x=in[i];
       bit_pattern.fval=x;
@@ -279,15 +287,15 @@ static gmx_inline void vecrecip(real in[],real out[],int n)
 #else /* No gmx recip */ 
     for(i=0;i<n;i++)
       out[i]=1.0f/(in[i]);
-#endif /* GMX_RECIP */
+#endif /* SOFTWARE_RECIP */
 }
 
-static gmx_inline real sqr(real x)
+static inline real sqr(real x)
 {
   return (x*x);
 }
 
-static gmx_inline void rvec_add(const rvec a,const rvec b,rvec c)
+static inline void rvec_add(const rvec a,const rvec b,rvec c)
 {
   real x,y,z;
   
@@ -300,7 +308,7 @@ static gmx_inline void rvec_add(const rvec a,const rvec b,rvec c)
   c[ZZ]=z;
 }
 
-static gmx_inline void rvec_inc(rvec a,rvec b)
+static inline void rvec_inc(rvec a,rvec b)
 {
   real x,y,z;
   
@@ -313,7 +321,7 @@ static gmx_inline void rvec_inc(rvec a,rvec b)
   a[ZZ]=z;
 }
 
-static gmx_inline void rvec_sub(const rvec a,const rvec b,rvec c)
+static inline void rvec_sub(const rvec a,const rvec b,rvec c)
 {
   real x,y,z;
   
@@ -326,7 +334,7 @@ static gmx_inline void rvec_sub(const rvec a,const rvec b,rvec c)
   c[ZZ]=z;
 }
 
-static gmx_inline void rvec_dec(rvec a,rvec b)
+static inline void rvec_dec(rvec a,rvec b)
 {
   real x,y,z;
   
@@ -339,21 +347,21 @@ static gmx_inline void rvec_dec(rvec a,rvec b)
   a[ZZ]=z;
 }
 
-static gmx_inline void copy_rvec(const rvec a,rvec b)
+static inline void copy_rvec(const rvec a,rvec b)
 {
   b[XX]=a[XX];
   b[YY]=a[YY];
   b[ZZ]=a[ZZ];
 }
 
-static gmx_inline void copy_ivec(const ivec a,ivec b)
+static inline void copy_ivec(const ivec a,ivec b)
 {
   b[XX]=a[XX];
   b[YY]=a[YY];
   b[ZZ]=a[ZZ];
 }
 
-static gmx_inline void ivec_sub(const ivec a,const ivec b,ivec c)
+static inline void ivec_sub(const ivec a,const ivec b,ivec c)
 {
   int x,y,z;
   
@@ -366,33 +374,33 @@ static gmx_inline void ivec_sub(const ivec a,const ivec b,ivec c)
   c[ZZ]=z;
 }
 
-static gmx_inline void copy_mat(matrix a,matrix b)
+static inline void copy_mat(matrix a,matrix b)
 {
   copy_rvec(a[XX],b[XX]);
   copy_rvec(a[YY],b[YY]);
   copy_rvec(a[ZZ],b[ZZ]);
 }
 
-static gmx_inline void svmul(real a,rvec v1,rvec v2)
+static inline void svmul(real a,rvec v1,rvec v2)
 {
   v2[XX]=a*v1[XX];
   v2[YY]=a*v1[YY];
   v2[ZZ]=a*v1[ZZ];
 }
 
-static gmx_inline real distance2(rvec v1, rvec v2)
+static inline real distance2(rvec v1, rvec v2)
 {
   return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
 }
 
-static gmx_inline void clear_rvec(rvec a)
+static inline void clear_rvec(rvec a)
 {
   const real nul=0.0;
   
   a[XX]=a[YY]=a[ZZ]=nul;
 }
 
-static gmx_inline void clear_rvecs(int n,rvec v[])
+static inline void clear_rvecs(int n,rvec v[])
 {
   int i;
   
@@ -400,7 +408,7 @@ static gmx_inline void clear_rvecs(int n,rvec v[])
     clear_rvec(v[i]);
 }
 
-static gmx_inline void clear_mat(matrix a)
+static inline void clear_mat(matrix a)
 {
   const real nul=0.0;
   
@@ -409,27 +417,27 @@ static gmx_inline void clear_mat(matrix a)
   a[ZZ][XX]=a[ZZ][YY]=a[ZZ][ZZ]=nul;
 }
 
-static gmx_inline real iprod(rvec a,rvec b)
+static inline real iprod(rvec a,rvec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static gmx_inline real iiprod(ivec a,ivec b)
+static inline real iiprod(ivec a,ivec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
-static gmx_inline real norm2(rvec a)
+static inline real norm2(rvec a)
 {
   return a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ];
 }
 
-static gmx_inline real norm(rvec a)
+static inline real norm(rvec a)
 {
   return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
 
-static gmx_inline real cos_angle(rvec a,rvec b)
+static inline real cos_angle(rvec a,rvec b)
 {
   /* 
    *                  ax*bx + ay*by + az*bz
@@ -458,7 +466,7 @@ static gmx_inline real cos_angle(rvec a,rvec b)
   return cos;
 }
 
-static gmx_inline real cos_angle_no_table(rvec a,rvec b)
+static inline real cos_angle_no_table(rvec a,rvec b)
 {
   /* This version does not need the invsqrt lookup table */
   real   cos;
@@ -483,14 +491,14 @@ static gmx_inline real cos_angle_no_table(rvec a,rvec b)
   return cos;
 }
 
-static gmx_inline void oprod(rvec a,rvec b,rvec c)
+static inline void oprod(rvec a,rvec b,rvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
   c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];
   c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
 }
 
-static gmx_inline void mmul(matrix a,matrix b,matrix dest)
+static inline void mmul(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]*b[XX][XX]+a[XX][YY]*b[YY][XX]+a[XX][ZZ]*b[ZZ][XX];
   dest[YY][XX]=a[YY][XX]*b[XX][XX]+a[YY][YY]*b[YY][XX]+a[YY][ZZ]*b[ZZ][XX];
@@ -503,7 +511,7 @@ static gmx_inline void mmul(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][XX]*b[XX][ZZ]+a[ZZ][YY]*b[YY][ZZ]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline void transpose(matrix src,matrix dest)
+static inline void transpose(matrix src,matrix dest)
 {
   dest[XX][XX]=src[XX][XX];
   dest[YY][XX]=src[XX][YY];
@@ -516,7 +524,7 @@ static gmx_inline void transpose(matrix src,matrix dest)
   dest[ZZ][ZZ]=src[ZZ][ZZ];
 }
 
-static gmx_inline void tmmul(matrix a,matrix b,matrix dest)
+static inline void tmmul(matrix a,matrix b,matrix dest)
 {
   /* Computes dest=mmul(transpose(a),b,dest) - used in do_pr_pcoupl */
   dest[XX][XX]=a[XX][XX]*b[XX][XX]+a[YY][XX]*b[YY][XX]+a[ZZ][XX]*b[ZZ][XX];
@@ -530,7 +538,7 @@ static gmx_inline void tmmul(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[XX][ZZ]*b[XX][ZZ]+a[YY][ZZ]*b[YY][ZZ]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline void mtmul(matrix a,matrix b,matrix dest)
+static inline void mtmul(matrix a,matrix b,matrix dest)
 {
   /* Computes dest=mmul(a,transpose(b),dest) - used in do_pr_pcoupl */
   dest[XX][XX]=a[XX][XX]*b[XX][XX]+a[XX][YY]*b[XX][YY]+a[XX][ZZ]*b[XX][ZZ];
@@ -544,14 +552,14 @@ static gmx_inline void mtmul(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][XX]*b[ZZ][XX]+a[ZZ][YY]*b[ZZ][YY]+a[ZZ][ZZ]*b[ZZ][ZZ];
 }
 
-static gmx_inline real det(matrix a)
+static inline real det(matrix a)
 {
   return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
 	  -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
 	  +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
 }
 
-static gmx_inline void m_add(matrix a,matrix b,matrix dest)
+static inline void m_add(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]+b[XX][XX];
   dest[XX][YY]=a[XX][YY]+b[XX][YY];
@@ -564,7 +572,7 @@ static gmx_inline void m_add(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][ZZ]+b[ZZ][ZZ];
 }
 
-static gmx_inline void m_sub(matrix a,matrix b,matrix dest)
+static inline void m_sub(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]-b[XX][XX];
   dest[XX][YY]=a[XX][YY]-b[XX][YY];
@@ -577,7 +585,7 @@ static gmx_inline void m_sub(matrix a,matrix b,matrix dest)
   dest[ZZ][ZZ]=a[ZZ][ZZ]-b[ZZ][ZZ];
 }
 
-static gmx_inline void msmul(matrix m1,real r1,matrix dest)
+static inline void msmul(matrix m1,real r1,matrix dest)
 {
   dest[XX][XX]=r1*m1[XX][XX];
   dest[XX][YY]=r1*m1[XX][YY];
@@ -590,7 +598,7 @@ static gmx_inline void msmul(matrix m1,real r1,matrix dest)
   dest[ZZ][ZZ]=r1*m1[ZZ][ZZ];
 }
 
-static gmx_inline void m_inv(matrix src,matrix dest)
+static inline void m_inv(matrix src,matrix dest)
 {
   const real smallreal = 1.0e-18;
   const real largereal = 1.0e18;
@@ -614,14 +622,14 @@ static gmx_inline void m_inv(matrix src,matrix dest)
   dest[ZZ][ZZ]= c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
 }
 
-static gmx_inline void mvmul(matrix a,rvec src,rvec dest)
+static inline void mvmul(matrix a,rvec src,rvec dest)
 {
   dest[XX]=a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
   dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
 }
 
-static gmx_inline void unitv(rvec src,rvec dest)
+static inline void unitv(rvec src,rvec dest)
 {
   real linv;
   
@@ -631,7 +639,7 @@ static gmx_inline void unitv(rvec src,rvec dest)
   dest[ZZ]=linv*src[ZZ];
 }
 
-static gmx_inline void unitv_no_table(rvec src,rvec dest)
+static inline void unitv_no_table(rvec src,rvec dest)
 {
   real linv;
   
@@ -641,19 +649,19 @@ static gmx_inline void unitv_no_table(rvec src,rvec dest)
   dest[ZZ]=linv*src[ZZ];
 }
 
-static gmx_inline real trace(matrix m)
+static inline real trace(matrix m)
 {
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);
 }
 
-static gmx_inline real _divide(real a,real b,char *file,int line)
+static inline real _divide(real a,real b,char *file,int line)
 {
   if (b == 0.0) 
     fatal_error(0,"Dividing by zero, file %s, line %d",file,line);
   return a/b;
 }
 
-static gmx_inline int _mod(int a,int b,char *file,int line)
+static inline int _mod(int a,int b,char *file,int line)
 {
   if (b == 0)
     fatal_error(0,"Modulo zero, file %s, line %d",file,line);

@@ -32,6 +32,10 @@
 
 static char *SRCID_writeps_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) writeps.h 1.10 8/25/97"
 #endif /* HAVE_IDENT */

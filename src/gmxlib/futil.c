@@ -288,27 +288,28 @@ FILE *ffopen(char *file,char *mode)
 
 char *low_libfn(char *file,bool bFatal)
 {
-  static char *libdir="GMXLIB";
-  char *ret=NULL,*lib;
+  char *ret=NULL;
+  char *lib;
   static char buf[1024];
+  static char libdir[1024];
+  static int  bFirst=1;
+  
+  if(bFirst) {
+    if((lib=getenv("GMXLIB")) != NULL)
+      strcpy(libdir,lib);
+    else
+      strcpy(libdir,GMXLIBDIR);
+    bFirst=0;
+  }
   
   if (fexist(file))
     ret=file;
   else {
-    if ((lib=getenv(libdir)) == NULL) {
-      if (bFatal)
-	fatal_error(0,"%s environment variable not set and file %s not found",
-		    libdir,file);
-      else 
-	return NULL;
-    }
-    else {
-      sprintf(buf,"%s/%s",lib,file);
-      ret=buf;
-      if (bFatal && !fexist(ret))
-	fatal_error(0,"Library file %s found in current dir nor in libdir %s",
-		    ret,lib);
-    }
+    sprintf(buf,"%s/%s",libdir,file);
+    ret=buf;
+    if (bFatal && !fexist(ret))
+      fatal_error(0,"Library file %s not found in current dir nor in libdir %s",
+		  ret,libdir);
   }
     
   return ret;

@@ -32,6 +32,10 @@
 
 static char *SRCID_do_nm_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) do_nm.h 1.12 03 Mar 1996"
 #endif /* HAVE_IDENT */

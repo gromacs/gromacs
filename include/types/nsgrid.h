@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef struct {
   int	 nr;		/* Total number of charge groups	*/
   int	 nrx,nry,nrz;	/* The dimension of the grid		*/

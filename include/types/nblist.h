@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef struct {
   int     il_code;             /* Code that determines the innerloop    */
                                /* corresponding to codes in nrnb.h      */

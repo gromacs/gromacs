@@ -32,6 +32,10 @@
 
 static char *SRCID_ewald_util_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include "typedefs.h"
 #include "complex.h"

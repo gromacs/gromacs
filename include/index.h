@@ -28,6 +28,10 @@
  */
 static char *SRCID_index_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern t_block *new_block(void);
 /* allocate new block */
 

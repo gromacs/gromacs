@@ -31,6 +31,9 @@
 #define _binio_h
 
 static char *SRCID_binio_h = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef HAVE_IDENT
 #ident	"@(#) binio.h 1.5 11/23/92"

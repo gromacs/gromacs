@@ -32,6 +32,10 @@
 
 static char *SRCID_memdump_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) memdump.h 1.6 11/23/92"
 #endif /* HAVE_IDENT */

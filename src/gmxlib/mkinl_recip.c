@@ -199,7 +199,7 @@ void recip_vars()
 void fortran_recip()
 {
   /* First the nonvectorized version */
-#ifdef GMX_RECIP
+#ifdef SOFTWARE_RECIP
   newline();
   comment("fortran recip routine");
   strcat(header,"      function recip(");
@@ -264,7 +264,7 @@ void fortran_recip()
   
   nargs=ndecl; 
   declare_int("i");
-#ifdef GMX_RECIP
+#ifdef SOFTWARE_RECIP
   declare_real4("x");
   
   declare_int4("frecipexptab"); 
@@ -313,7 +313,7 @@ void fortran_recip()
   end_loop();
   
 
-#else /* no GMX_RECIP */
+#else /* no SOFTWARE_RECIP */
   start_loop("i","1","n");
   assign("utdata(i)","1.0/indata(i)");
   end_loop();

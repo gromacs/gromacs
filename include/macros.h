@@ -32,6 +32,10 @@
 
 static char *SRCID_macros_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) macros.h 1.8 11/23/92"
 #endif /* HAVE_IDENT */

@@ -32,14 +32,13 @@
 
 static char *SRCID_fftgrid_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include "typedefs.h"
-#include "fftw.h"
-#include "rfftw.h"
-#ifdef USE_MPI
-#include "mpi.h"
-#include "rfftw_mpi.h"
-#endif
+#include "fftw_wrapper.h"
 #include "complex.h"
 #include "network.h"
 

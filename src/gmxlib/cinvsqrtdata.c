@@ -1,4 +1,11 @@
-#ifdef GMX_INVSQRT
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+/* just put something here to avoid empty file warnings */
+int cinvsqrtdata_stub;
+
+#ifdef SOFTWARE_SQRT
 const unsigned int cinvsqrtexptab[256] = {
   0x5f000000,0x5e800000,0x5e800000,0x5e000000,0x5e000000,0x5d800000,0x5d800000,0x5d000000,
   0x5d000000,0x5c800000,0x5c800000,0x5c000000,0x5c000000,0x5b800000,0x5b800000,0x5b000000,

@@ -28,6 +28,10 @@
  */
 static char *SRCID_general_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifndef __GENERAL__
 #define __GENERAL__
 

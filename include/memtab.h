@@ -32,6 +32,10 @@
 
 static char *SRCID_memtab_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) memtab.h 1.12 12/16/92"
 #endif /* HAVE_IDENT */

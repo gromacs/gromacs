@@ -32,8 +32,12 @@
 
 static char *SRCID_xdrf_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef USE_XDR
-#ifdef _lnx_
+#ifdef __GNUC__  
 #ifdef FALSE
 #undef FALSE
 #endif
@@ -41,7 +45,8 @@ static char *SRCID_xdrf_h = "$Id$";
 #undef TRUE
 #endif
 #endif
-#ifdef _pgi_
+
+#ifdef __PGI    /*Portland group compiler*/
 #define int64_t long long
 #endif
 

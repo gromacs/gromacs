@@ -32,6 +32,10 @@
 
 static char *SRCID_filenm_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) filenm.h 1.14 2/2/97"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,10 @@
 
 static char *SRCID_nrjac_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern void jacobi(double **a,int n,double d[],double **v,int *nrot);
 /* 
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric

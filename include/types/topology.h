@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef struct {
   char  	**name;		/* Name of the topology			*/
   t_idef	idef;		/* The interaction function definition	*/

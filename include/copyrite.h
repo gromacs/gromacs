@@ -32,6 +32,10 @@
 
 static char *SRCID_copyrite_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) copyright.h 1.10 11/23/92"
 #endif /* HAVE_IDENT */
@@ -39,12 +43,13 @@ static char *SRCID_copyrite_h = "$Id$";
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
-
+  
 #include <stdio.h>
 
-/* Please no spaces in this one... */  
-#define GromacsVersion() "VERSION 3.0b"
-
+/* Has to be a function, so we can get version number from autoconf */   
+char *GromacsVersion();
+  
+  
 static char *CopyrightText[] = {
   "",
   "Copyright (c) 1991-2001",

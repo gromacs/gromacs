@@ -28,6 +28,10 @@
  */
 static char *SRCID_gbutil_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 

@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef struct {
   int  nodeid;			/* Node id	         		*/
   int  nnodes;			/* The number of nodes    		*/

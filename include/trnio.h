@@ -32,6 +32,10 @@
 
 static char *SRCID_trnio_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /**************************************************************
  *
  * These routines handle trj (trajectory) I/O, they read and

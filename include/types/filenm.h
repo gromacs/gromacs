@@ -27,6 +27,9 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
  
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {

@@ -32,6 +32,10 @@
 
 static char *SRCID_mdrun_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) do_md.h 1.12 03 Mar 1996"
 #endif /* HAVE_IDENT */

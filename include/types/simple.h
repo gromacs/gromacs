@@ -29,6 +29,10 @@
 #ifndef _simple_h
 #define _simple_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef CPLUSPLUS
 extern "C" {
 #endif

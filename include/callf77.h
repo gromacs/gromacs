@@ -32,34 +32,59 @@
 
 static char *SRCID_callf77_h = "$Id$";
 
-#include "typedefs.h"
-   
-/* Initiate invsqrt calculations in fortran */
-extern void fillbuf(void);
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-/* Fortran versions of shake and settle */
-extern void fsettle(int *nshake,int owptr[],
-		    real b4[],real after[],
-		    real *dOH,real *dHH,real *mO,real *mH,int *error);
-		     
-extern void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,
-		   real dist2[],real xp[],real rij[],real m2[],
-		   real invmass[],real tt[],real lambda[],int *error);
+#ifdef USE_FORTRAN
 
-/* Fortran routines for LINCS algorithm */ 
-extern void flincsp(real *x,real *f,real *fp,int *nc,
-		    int *bla1,int *bla2,int *blnr,
-		    int *blbnb,real *blc,real *blcc,real *blm,
-		    int *nrec,real *invmass,real *r,real *temp1,
-		    real *temp2,real *temp3);
+#define FUNC(name,NAME) F77_FUNC(name,NAME)
+#define SCALARG(name) *name
+#define SCAL(name) &(name)
 
-extern void flincs(real *x,real *xp,int *nc,
-		   int *bla1,int *bla2,int *blnr,
-		   int *blbnb,real *bllen,real *blc,real *blcc,real *blm,
-		   int *nit,int *nrec,real *invmass,real *r,real *temp1,
-		   real *temp2,real *temp3,real *wangle,int *warn,
-		   real *lambda);
+/* define f77 name mangling - we dont need any
+ * special macros for names with underscores since
+ * no such identifiers exist in gromacs right now.
+ * If you add one you should include the definition
+ * of F77_NAME_EXTRA_UNDERSCORE below and create
+ * the macro F77_FUNC_(name,NAME).
+ */
+#ifdef F77_NAME_LOWERCASE
+#  define F77_FUNC(name,NAME)     name
+#  ifdef F77_NAME_EXTRA_UNDERSCORE
+#    define F77_FUNC_(name,NAME)  name ## _
+#  else
+#    define F77_FUNC_(name,NAME)  name
+#  endif
+#elif defined F77_NAME_LOWERCASE_UNDERSCORE
+#  define F77_FUNC(name,NAME)     name ## _
+#  ifdef F77_NAME_EXTRA_UNDERSCORE
+#    define F77_FUNC_(name,NAME)  name ## __
+#  else
+#    define F77_FUNC_(name,NAME)  name ## _
+#  endif
+#elif defined F77_NAME_UPPERCASE
+#  define F77_FUNC(name,NAME)     NAME
+#  ifdef F77_NAME_EXTRA_UNDERSCORE
+#    define F77_FUNC_(name,NAME)  NAME ## _
+#  else
+#    define F77_FUNC_(name,NAME)  NAME
+#  endif
+#elif defined F77_NAME_UPPERCASE_UNDERSCORE
+#  define F77_FUNC(name,NAME)     NAME ## _
+#  ifdef F77_NAME_EXTRA_UNDERSCORE
+#    define F77_FUNC_(name,NAME)  NAME ## __
+#  else
+#    define F77_FUNC_(name,NAME)  NAME ## _
+#  endif
+#endif
 
-extern void fql77(int *n,real *x, real *d, real *e, int *nmax);
+#else /* Use C */
+
+#define FUNC(name,NAME) name
+#define SCALARG(name) name
+#define SCAL(name) name
+
+#endif
 
 #endif

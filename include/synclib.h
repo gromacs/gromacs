@@ -32,6 +32,10 @@
 
 static char *SRCID_synclib_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) synclib.h 1.3 11/23/92"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,9 @@
 
 static char *SRCID_nr_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 	
 extern void ludcmp(real **a,int n,int *indx,real *d);
 

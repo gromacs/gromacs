@@ -32,6 +32,10 @@
 
 static char *SRCID_readinp_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 typedef struct {

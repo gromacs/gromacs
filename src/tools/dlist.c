@@ -191,16 +191,15 @@ bool has_dihedral(int Dih,t_dlist *dl)
   bool b = FALSE;
   int  ddd;
   
-#define BBB(x) (dl->atm.##x != -1)
   switch (Dih) {
   case edPhi:
-    b = (BBB(H) && BBB(N) && BBB(Cn[1]) && BBB(C));
+    b = ((dl->atm.H!=-1) && (dl->atm.N!=-1) && (dl->atm.Cn[1]!=-1) && (dl->atm.C!=-1));
     break;
   case edPsi:
-    b = (BBB(N) && BBB(Cn[1]) && BBB(C) && BBB(O));
+    b = ((dl->atm.N!=-1) && (dl->atm.Cn[1]!=-1) && (dl->atm.C!=-1) && (dl->atm.O!=-1));
     break;
   case edOmega:
-    b = (BBB(minO) && BBB(minC) && BBB(N) && BBB(Cn[1]));
+    b = ((dl->atm.minO!=-1) && (dl->atm.minC!=-1) && (dl->atm.N!=-1) && (dl->atm.Cn[1]!=-1));
     break;
   case edChi1:
   case edChi2:
@@ -209,7 +208,8 @@ bool has_dihedral(int Dih,t_dlist *dl)
   case edChi5:
   case edChi6:
     ddd = Dih - edChi1;
-    b   = (BBB(Cn[ddd]) && BBB(Cn[ddd+1]) && BBB(Cn[ddd+2]) && BBB(Cn[ddd+3]));
+    b   = ((dl->atm.Cn[ddd]!=-1) &&  (dl->atm.Cn[ddd+1]!=-1)&&
+	   (dl->atm.Cn[ddd+2]!=-1) && (dl->atm.Cn[ddd+3]!=-1));
     break;
   default:
     pr_dlist(stdout,1,dl,1);

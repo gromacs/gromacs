@@ -28,7 +28,10 @@
  */
 static char *SRCID_block_tx_h = "$Id$";
 
-        
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 extern void _blocktx(int dest,int nelem,int size,void *data);
 extern void _blockrx(int src,int nelem,int size,void *data);
 

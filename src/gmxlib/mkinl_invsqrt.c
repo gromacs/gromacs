@@ -201,7 +201,7 @@ void invsqrt_vars()
 void fortran_invsqrt()
 {
   /* First the nonvectorized version */
-#ifdef GMX_INVSQRT
+#ifdef SOFTWARE_INVSQRT
   newline();
   comment("fortran invsqrt routine");
   strcat(header,"      function invsqrt(");
@@ -268,7 +268,7 @@ void fortran_invsqrt()
   nargs=ndecl;
   
   declare_int("i");  
-#ifdef GMX_INVSQRT
+#ifdef SOFTWARE_INVSQRT
   declare_int4("finvsqrtexptab"); 
   declare_int4("finvsqrtfracttab"); 
 
@@ -316,7 +316,7 @@ void fortran_invsqrt()
 #endif
   end_loop();
 
-#else /* no GMX_INVSQRT */
+#else /* no SOFTWARE_INVSQRT */
   start_loop("i","1","n");
   assign("utdata(i)","1.0/sqrt(indata(i))");
   end_loop();

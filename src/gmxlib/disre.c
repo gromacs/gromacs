@@ -100,7 +100,7 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
   real        weight_rt_1[MAX_DRPAIRS];
   rvec        *fshift;
   real        smooth_fc,rt,Rt,Rav,rav_3,rt_1,rt_3,Rav_6,Rt_6,rt2;
-  real        k0,f_scal,fmax_scal,fk_scal,fij;
+  real        k0,f_scal=0,fmax_scal,fk_scal,fij;
   real        tav_viol,instant_viol,mixed_viol,violtot;
   real        tav_viol_Rav7,instant_viol_Rav7;
   real        up1,up2,low;

@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /* The bools indicate whether a field was read from the trajectory.
  * Do not try to use a pointer when its bool is FALSE, as memory might
  * not be allocated.

@@ -1,4 +1,16 @@
-      subroutine FORSHAKE(iatom,ncon,nit,maxnit,
+c     IMPORTANT!
+c     Note that this file comes in two flavours -
+c     fshake.f for single precision and fshaked.f 
+c     for double precision. The only difference is 
+c     the size of the real variables.
+c     This is an unfortunate, but necessary setup      
+c     since not all f77 compilers (e.g. g77) have
+c     switches to change the real size, and neither
+c     do all f77 compilers support preprocessing.
+c     Thus, if you edit one of the files, make sure  
+c      to change to other similarly!
+ 
+      subroutine fshake(iatom,ncon,nit,maxnit,
      $     dist2,xp,rij,m2,invmass,tt,lagr,error)
       
       implicit none
@@ -6,15 +18,15 @@
       integer*4 iatom(*)
       integer*4 ncon,nit,maxnit
       integer*4 error
-      real      dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*),lagr(*)
+      real*4    dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*),lagr(*)
       
       integer*4 ll,i,j,i3,j3,l3,nconv,iconv
       integer*4 ix,iy,iz,jx,jy,jz
-      real    toler,rpij2,rrpr,tx,ty,tz,diff,acor,im,jm
-      real    xh,yh,zh,rijx,rijy,rijz
-      real    tix,tiy,tiz
-      real    tjx,tjy,tjz
-      real    mytol
+      real*4  toler,rpij2,rrpr,tx,ty,tz,diff,acor,im,jm
+      real*4  xh,yh,zh,rijx,rijy,rijz
+      real*4  tix,tiy,tiz
+      real*4  tjx,tjy,tjz
+      real*4  mytol
       
       parameter(mytol=1e-6)
       

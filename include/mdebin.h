@@ -32,6 +32,10 @@
 
 static char *SRCID_mdebin_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) mdebin.h 1.12 2/2/97"
 #endif /* HAVE_IDENT */

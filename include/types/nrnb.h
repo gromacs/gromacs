@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 /* Oh my god, it's full of loops!
  * There are quite a few innerloops, so they have been given numbers
  * instead of names. The first figure is the coulomb alternative, the

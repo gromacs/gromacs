@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
   double *yav,yyy,yyy2,ymin,ymax,aver,var,sd;
   int    i,j,k,nav=100,ncol=1,MAX=50000;
   char   buf[STRLEN];
-  bool   bSilent=FALSE,bVerySilent;
+  bool   bSilent=FALSE,bVerySilent=FALSE;
   double   lsq_a,lsq_b,rms_res;
   
   for(i=1; (i<argc); i++) {

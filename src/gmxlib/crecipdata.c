@@ -1,4 +1,11 @@
-#ifdef GMX_RECIP
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+/* just put something here to avoid empty file warnings */
+int crecipdata_stub;
+
+#ifdef SOFTWARE_RECIP
 const unsigned int crecipexptab[256] = {
   0x7e800000,0x7e000000,0x7d800000,0x7d000000,0x7c800000,0x7c000000,0x7b800000,0x7b000000,
   0x7a800000,0x7a000000,0x79800000,0x79000000,0x78800000,0x78000000,0x77800000,0x77000000,

@@ -30,7 +30,12 @@
 #ifndef _buffer_h
 #define _buffer_h
 
+
 static char *SRCID_buffer_h = "$Id$";
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef HAVE_IDENT
 #ident	"@(#) buffer.h 1.8 11/23/92"

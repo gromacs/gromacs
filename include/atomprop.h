@@ -26,7 +26,11 @@
  * And Hey:
  * Good ROcking Metal Altar for Chronical Sinners
  */
+
 static char *SRCID_atomprop_h = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 extern real get_mass(char *resnm, char *atomnm);
 /* search the mass belonging to residue and atom,

@@ -32,6 +32,10 @@
 
 static char *SRCID_typedefs_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef CPLUSPLUS
 extern "C" {
 #endif

@@ -32,6 +32,10 @@
 
 static char *SRCID_mshift_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) mshift.h 1.11 2/2/97"
 #endif /* HAVE_IDENT */

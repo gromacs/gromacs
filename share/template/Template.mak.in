@@ -1,0 +1,31 @@
+# Generated automatically from Makefile.in by configure.
+#
+# This is a Gromacs 3.0 template makefile for your own utility programs.
+# To enable 
+# the options in this file.
+#
+# Copy this file to whatever directory you are using for your own
+# software and add more targets like the one below
+#
+# If you are using gmake it is relatively straightforward to add
+# an include based on environment variables (like previous Gromacs versions)
+# to select compiler flags and stuff automatically, but below it is static:
+#
+
+# Variables set by the configuration script:
+prefix       = @prefix@
+exec_prefix  = @exec_prefix@
+LDFLAGS      = @LDFLAGS@
+CFLAGS	     = @CFLAGS@	
+CPPFLAGS     = @CPPFLAGS@
+INCLUDES     = -I@includedir@ @INCLUDES@
+LIBS         = -L@libdir@ -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX @LIBS@
+CC           = @CC@
+LD           = $CC
+
+# The real make targets - note that most make programs support
+# the shortcut $^ instead of listing all object files a second
+# time, but we cannot count on it...
+
+template:	template.o
+		$(LD) $(LDFLAGS) -o $@ template.o $(LIBS)

@@ -32,6 +32,10 @@
 
 static char *SRCID_struc2_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) struc2.h 1.2 15 Sep 1993"
 #endif /* HAVE_IDENT */

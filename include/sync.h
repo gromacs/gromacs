@@ -32,6 +32,10 @@
 
 static char *SRCID_sync_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) sync.h 1.9 11/23/92"
 #endif /* HAVE_IDENT */

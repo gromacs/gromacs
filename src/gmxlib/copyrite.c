@@ -90,9 +90,12 @@ void pr_difftime(FILE *out,double dt)
 bool be_cool(void)
 {
   static int cool=-1;
+  char *envptr;
   
   if (cool == -1) {
-    if ((getenv("IAMCOOL")) == NULL) 
+    envptr=getenv("IAMCOOL");
+
+    if ((envptr!=NULL) && (!strcmp(envptr,"no") || !strcmp(envptr,"NO")))
       cool=0;
     else
       cool=1;
@@ -126,11 +129,6 @@ static void ster_print(FILE *out,char *s)
   space(out,(80-slen)/2);
   fprintf(out,"%s\n",buf);
 }
-
-/* char *GromacsVersion() */
-/* { */
-/*   return ver; */
-/* } */
 
 static int nran=0;
 
@@ -191,7 +189,7 @@ char *cool_quote(void)
 
 void CopyRight(FILE *out,char *szProgram)
 {
-#define NCR asize(CopyrightText)
+#define NCR (int)asize(CopyrightText)
   char buf[256];
   char *ptr;
   
@@ -199,17 +197,17 @@ void CopyRight(FILE *out,char *szProgram)
   
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
-
+  
   ptr=bromacs();
   sp_print(out,ptr); 
   fprintf(out,"\n");
-  
+
   ster_print(out,GromacsVersion());
   fprintf(out,"\n");
-
+  
   for(i=0; (i<NCR); i++) 
     sp_print(out,CopyrightText[i]);
-
+  
   sprintf(buf,"%s",szProgram);
 #ifdef DOUBLE
   strcat(buf," (double precision)");
@@ -217,6 +215,7 @@ void CopyRight(FILE *out,char *szProgram)
   ster_print(out,buf);
   fprintf(out,"\n");
 }
+
 
 void thanx(FILE *fp)
 {
@@ -300,7 +299,7 @@ void please_cite(FILE *fp,char *key)
    "J. Chem. Phys.",
    "108 1998 10220 10230"
   };
-#define NSTR asize(citedb)
+#define NSTR (int)asize(citedb)
   
   int  j,index,year,vol,p1,p2;
   char *ptr[3];
@@ -327,4 +326,18 @@ void please_cite(FILE *fp,char *key)
   }
   fprintf(fp,"-------- -------- --- Thank You --- -------- --------\n\n");
   fflush(fp);
+}
+
+char *GromacsVersion()
+{
+  static bool bFirst=TRUE;
+  static char ver_string[100];
+
+  /* The version number is defined by the autoconf scripts */
+  if(bFirst) {
+    sprintf(ver_string,"VERSION %s",VERSION);
+    bFirst=FALSE;
+  }
+  
+  return ver_string;
 }

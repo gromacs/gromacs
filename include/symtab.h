@@ -32,6 +32,10 @@
 
 static char *SRCID_symtab_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) symtab.h 1.6 12/16/92"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,10 @@
 
 static char *SRCID_tgroup_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) tgroup.h 1.12 2/2/97"
 #endif /* HAVE_IDENT */

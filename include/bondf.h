@@ -32,6 +32,10 @@
 
 static char *SRCID_bondf_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) bondf.h 1.28 2/19/97"
 #endif /* HAVE_IDENT */

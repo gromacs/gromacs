@@ -32,6 +32,10 @@
 
 static char *SRCID_force_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) force.h 1.53 5/15/97"
 #endif /* HAVE_IDENT */
@@ -40,6 +44,7 @@ static char *SRCID_force_h = "$Id$";
 #include "nsb.h"
 #include "network.h"
 #include "tgroup.h"
+
 
 extern void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
 		     t_commrec *cr);

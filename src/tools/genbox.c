@@ -106,7 +106,7 @@ void sort_molecule(t_atoms **atoms_solvt,rvec *x,rvec *v,real *r)
   t_moltypes *moltypes;
   int *tps;
   t_atoms *atoms,*newatoms;
-  rvec *newx, *newv;
+  rvec *newx, *newv=NULL;
   real *newr;
   
   fprintf(stderr,"Sorting configuration\n");

@@ -32,6 +32,10 @@
 
 static char *SRCID_matio_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) matio.h 1.11 5/20/97"
 #endif /* HAVE_IDENT */

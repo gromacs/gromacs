@@ -32,6 +32,10 @@
 
 static char *SRCID_princ_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 
 extern void rotate_atoms(int gnx,atom_id index[],rvec x[],matrix trans);

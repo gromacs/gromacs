@@ -30,6 +30,10 @@
 #ifndef _gmxfio_h
 #define _gmxfio_h
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 static char *SRCID_gmxfio_h = "$Id$";
 
 #include "typedefs.h"

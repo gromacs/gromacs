@@ -32,6 +32,10 @@
 
 static char *SRCID_rmpbc_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) rmpbc.h 1.6 2/2/97"
 #endif /* HAVE_IDENT */

@@ -32,6 +32,10 @@
 
 static char *SRCID_futil_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) futil.h 1.1 11/23/92"
 #endif /* HAVE_IDENT */

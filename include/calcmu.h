@@ -32,6 +32,10 @@
 
 static char *SRCID_calcmu_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "typedefs.h"
 #include "network.h"
 

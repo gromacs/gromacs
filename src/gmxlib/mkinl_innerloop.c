@@ -220,7 +220,7 @@ void inner_loop(bool calcdist, bool calcforce)
     nflop += calc_interactions(calcdist && DO_PREFETCH_X);
     
     /* Only print vanilla loop count */
-    if(!DO_VECTORIZE && !DO_PREFETCH_X && !arch.sse_and_3dnow && !arch.vector) {
+    if(!DO_VECTORIZE && !DO_PREFETCH_X && !arch.vector) {
       sprintf(buf,"Innerloop of %s costs %d flops",loopname,nflop);
       comment(buf);
     }

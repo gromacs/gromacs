@@ -32,6 +32,10 @@
 
 static char *SRCID_do_fit_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #ifdef HAVE_IDENT
 #ident	"@(#) do_fit.h 1.8 2/2/97"
 #endif /* HAVE_IDENT */

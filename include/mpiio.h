@@ -32,6 +32,10 @@
 
 static char *SRCID_mpiio_h = "$Id$";
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <mpi.h>
 #include "typedefs.h"
 

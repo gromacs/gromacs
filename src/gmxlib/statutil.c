@@ -45,7 +45,7 @@ static char *SRCID_statutil_c = "$Id$";
 #include "network.h"
 
 /* used for npri */
-#ifdef _SGI_
+#ifdef __sgi
 #include <sys/schedctl.h>
 #include <sys/sysmp.h>
 #endif
@@ -417,7 +417,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   npall = add_parg(npall,&(all_pa),&motif_pa);
 #endif
 
-#ifdef _SGI_
+#ifdef __sgi
 #ifdef USE_SGI_FPE
   npall = add_parg(npall,&(all_pa),&fpe_pa);
 #endif
@@ -514,7 +514,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     all_pa[i].desc = mk_desc(&(all_pa[i]));
   }
     
-#ifdef _SGI_
+#ifdef __sgi
 #ifdef USE_SGI_FPE
   /* Install exception handler if necessary */
   if (bExcept)
@@ -523,7 +523,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 #endif
   
   /* Set the nice level */
-#ifdef _SGI_
+#ifdef __sgi
   if (bGUI)
     if (npri)
       sscanf(npristr[0],"%d",&npri);

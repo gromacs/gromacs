@@ -91,19 +91,20 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep
       *timestep=fr.time-t;
     }
     else {
-      if (imax==NOTSET)
+      if (imax==NOTSET) {
 	if(natoms!=fr.natoms) 
 	  fatal_error(0,"\nDifferent number of atoms (%d/%d)in files",
 		      natoms,fr.natoms);
-      else
+      } else {
 	if(fr.natoms >= imax)
 	  fatal_error(0,"\nNot enough atoms (%d) for index group (%d)",
 		      fr.natoms,imax);
+      }
     }
     close_trj(status);
   }
   fprintf(stderr,"\n");
-
+  
   sfree(fr.x);
 }
 

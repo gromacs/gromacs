@@ -281,7 +281,7 @@ static void reset_neighbor_list(t_forcerec *fr,bool bLR,int eNL)
   }
 }
 
-static gmx_inline void new_i_nblist(t_nblist *nlist,
+static inline void new_i_nblist(t_nblist *nlist,
 				    int ftype,atom_id i_atom,int shift,int gid,
 				    int *mno)
 {
@@ -357,7 +357,7 @@ static void quicksort(atom_id v[], int left, int right)
 }
 #endif
 
-static gmx_inline void close_i_nblist(t_nblist *nlist) 
+static inline void close_i_nblist(t_nblist *nlist) 
 {
   int nri = nlist->nri;
   int len;
@@ -376,7 +376,7 @@ static gmx_inline void close_i_nblist(t_nblist *nlist)
     nlist->maxlen = len;
 }
 
-static gmx_inline void close_nblist(t_nblist *nlist)
+static inline void close_nblist(t_nblist *nlist)
 {
   if (nlist->maxnri > 0) {
     int nri = nlist->nri;
@@ -389,7 +389,7 @@ static gmx_inline void close_nblist(t_nblist *nlist)
   }
 }
 
-static gmx_inline void close_neighbor_list(t_forcerec *fr,bool bLR,int eNL)
+static inline void close_neighbor_list(t_forcerec *fr,bool bLR,int eNL)
 {
   int i;
 
@@ -409,7 +409,7 @@ static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom)
   nlist->nrj ++;
 }
 
-static gmx_inline void put_in_list(bool bHaveLJ[],
+static inline void put_in_list(bool bHaveLJ[],
 				   int ngid,t_mdatoms *md,
 				   int icg,int jgid,int nj,atom_id jjcg[],
 				   atom_id index[],atom_id a[],
@@ -1097,7 +1097,7 @@ static int ns_simple_core(t_forcerec *fr,
  *
  ************************************************/
 
-static gmx_inline void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
+static inline void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
 			      int *dx0,int *dx1,real *dcx2)
 {
   real dcx,tmp;

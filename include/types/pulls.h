@@ -27,6 +27,10 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 typedef enum {eStart, eAfm, eConstraint, eUmbrella, eTest} t_runtype;
 typedef enum {eCom, eComT0, eDyn, eDynT0} t_reftype;
 

@@ -533,7 +533,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 {
   real space;
   bool bTryAgain,bFive;
-  int  i,j,t,f,ten;
+  int  i,j,t,f=0,ten;
 #define NFACT 6
   int major_fact[NFACT] = {1, 2, 2.5, 4, 5, 7.5};
   int minor_fact[NFACT] = {5, 4, 5,   4, 5, 2.5};
