@@ -431,10 +431,6 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
   if ((nra > 0) && (nra < atoms->nr))
     add_grp(gb,gn,nra,aid,"Other"); 
   sfree(aid);
+  sfree(natres);
+  sfree(restp);
 }
-
-
-
-
-
-
