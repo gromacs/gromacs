@@ -114,7 +114,9 @@ void test_poisson(FILE *log,       bool bVerbose,
   
   init_nrnb(&nrnb);
   
-  ener = do_poisson(log,bVerbose,NULL,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+  /* First time only setup is done! */
+  ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+  ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
   fprintf(log,"Vpoisson = %g\n",ener);
   
   sprintf(buf,"POISSON-%d.pdb",ir->nkx);
@@ -239,8 +241,9 @@ int main(int argc,char *argv[])
     log = stdlog;
   }
   else {
-    cr = NULL;
-    log=ftp2FILE(efLOG,NFILE,fnm,"w");
+    cr     = init_par(argv);
+    log    = ftp2FILE(efLOG,NFILE,fnm,"w");
+    stdlog = log;
   }
   
 #ifdef CINVSQRT
