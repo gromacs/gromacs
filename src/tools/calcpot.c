@@ -205,16 +205,17 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 }
 
 void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
-		  rvec **x,t_parm *parm,t_commrec *cr,
+		  t_parm *parm,t_commrec *cr,
 		  t_graph **graph,t_mdatoms **mdatoms,
 		  t_nsborder *nsb,t_groups *grps,
 		  t_forcerec **fr,real **pot,
-		  matrix box)
+		  matrix box,rvec **x)
 {
   real     t,t0,lam,lam0;
   bool     bTYZ,bNEMD,bSA;
   char     *traj,*xtc_traj;
-  rvec     *v,mutot;
+  t_state  *state;
+  rvec     mutot;
   t_nrnb   nrnb;
   t_mdebin *mdebin;
   t_vcm    *vcm=NULL;
@@ -233,8 +234,9 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   }
 
   init_nrnb(&nrnb);
-/*  init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);*/
-  init_md(cr,&(parm->ir),box,&t,&t0,&lam,&lam0,
+  snew(state,1);
+  init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,state,mdatoms,nsb);
+  init_md(cr,&(parm->ir),state->box,&t,&t0,&lam,&lam0,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
 	  &mdebin,grps,force_vir,pme_vir,
 	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
@@ -242,7 +244,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 
   /* Calculate intramolecular shift vectors to make molecules whole again */
   *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-  mk_mshift(stdlog,*graph,box,*x);
+  mk_mshift(stdlog,*graph,state->box,state->x);
   
   /* Turn off twin range if appropriate */
   parm->ir.rvdw  = parm->ir.rcoulomb;
@@ -259,17 +261,19 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,box,FALSE,"table.xvg",TRUE);
+		nsb,box,FALSE,opt2fn("-table",nfile,fnm),TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
-    box_size[m] = box[m][m];
+    box_size[m] = state->box[m][m];
   if (parm->ir.ePBC != epbcNONE)
-    do_pbc_first(stdlog,parm,box_size,*fr,*graph,*x);
+    do_pbc_first(stdlog,state->box,box_size,*fr,*graph,state->x);
 
-  copy_mat(box,box);
-      
+  copy_mat(state->box,box);
+  *x = state->x;
+  state->x = NULL;
+  done_state(state);
+  sfree(state);
+
   snew(*pot,nsb->natoms);
-  
-  sfree(v);
 }

@@ -226,16 +226,17 @@ int main(int argc, char *argv[])
     "normal GROMACS particle based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
     "The potential is recalculated after every ion insertion.",
-    "If specified in the run input file, a reaction field or shift function",
-    "can be used.",
+    "If specified in the run input file, a reaction field, shift function",
+    "or user function can be used. For the user function a table file",
+    "can be specified with the option [TT]-table[tt].",
     "The group of solvent molecules should be continuous and all molecules",
     "should have the same number of atoms.",
     "The user should add the ion molecules to the topology file and include",
     "the file [TT]ions.itp[tt].",
     "Ion names for Gromos96 should include the charge.[PAR]",
-    "The potential can be written as B-factors",
+    "With the option [TT]-pot[tt] the potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol).",
-    "The unit of the potential is 0.001 kJ/(mol e), the scaling be changed",
+    "The unit of the potential is 1000 kJ/(mol e), the scaling be changed",
     "with the [TT]-scale[tt] option.[PAR]",
     "For larger ions, e.g. sulfate we recommended to use genbox."
   };
@@ -274,6 +275,7 @@ int main(int argc, char *argv[])
   int         i,nw,nwa,nsa;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,      ffREAD  },
+    { efXVG, "-table","table", ffOPTRD },
     { efNDX, NULL,  NULL,      ffOPTRD },
     { efSTO, "-o",  NULL,      ffWRITE },
     { efLOG, "-g",  "genion",  ffWRITE },
@@ -297,8 +299,8 @@ int main(int argc, char *argv[])
   nsb.nodeid=0;
 
   snew(top,1);
-  init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
-	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
+  init_calcpot(NFILE,fnm,top,&parm,&cr,
+	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box,&x);
 
   if ((p_num == 0) && (n_num == 0)) {
     if (!bPDB) {
