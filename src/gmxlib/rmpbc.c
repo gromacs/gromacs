@@ -39,13 +39,12 @@ static char *SRCID_rmpbc_c = "$Id$";
 
 void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 {
-
   typedef struct {
     int     natoms;
     t_graph *gr;
   } multi_graph;
   
-  static int ngraph;
+  static int ngraph=0;
   static multi_graph *mgraph=NULL;
   static bool bFirst=TRUE;
   rvec   sv[SHIFTS],box_size;
@@ -72,12 +71,11 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
       calc_shifts(box,box_size,sv,FALSE);
       shift_x(mgraph[n].gr,sv,x,x_s);
       bNeedToCopy=FALSE;
-    } else
-      if (bFirst) {
-	fprintf(stderr,
-		"\nWarning: can not make broken molecules whole without a run input file\n");
-	bFirst=FALSE;
-      }
+    } else if (bFirst) {
+      fprintf(stderr,
+	      "\nWarning: can not make broken molecules whole without a run input file\n");
+      bFirst=FALSE;
+    }
   }
   if (bNeedToCopy)
     for (i=0; i<natoms; i++)
