@@ -411,17 +411,21 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   bPrint = do_per_step(step,ir->nstprint);
   dt     = ir->delta_t;
 
+  /* Initiate coupling to the reference pressure and temperature to start
+   * coupling slowly.
+   */
+  if (step == 0) {
+    tcr->pres = tcr->pres0;
+    tcr->epot = tcr->epot0*nmols;
+  }
+
   /* We want to optimize the LJ params, usually to the Vaporization energy 
    * therefore we only count intermolecular degrees of freedom.
    * Note that this is now optional. switch UseEinter to yes in your gct file
    * if you want this.
    */
   Eintern = Ecouple(tcr,ener);
-  if (step == 0) {
-    tcr->pres = ener[F_PRES];
-    tcr->epot = Eintern;
-  }
-
+  
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
    * in avoiding local minima in parameter space.
@@ -453,136 +457,122 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   else 
     deviation[eoEpot] = tcr->epot0*nmols - tcr->epot;
   
-  /* Start coupling only after we have the correct average over 
-   * tcr->nmemory points.
-   */
-  if (step >= tcr->nmemory) {
-
-    if (bPrint)
-      pr_dev(t,deviation,cr,nfile,fnm);
-
-    /* First set all factors to 1 */
-    for(i=0; (i<atnr2); i++) {
-      f6[i] = f12[i] = fa[i] = fb[i] = fc[i] = 1.0;
-    }
-    for(i=0; (i<idef->atnr); i++) 
-      fq[i] = 1.0;
-    
-          
-    if (!fr->bBHAM) {
-      for(i=0; (i<tcr->nLJ); i++) {
-	tclj=&(tcr->tcLJ[i]);
+  if (bPrint)
+    pr_dev(t,deviation,cr,nfile,fnm);
+  
+  /* First set all factors to 1 */
+  for(i=0; (i<atnr2); i++) {
+    f6[i] = f12[i] = fa[i] = fb[i] = fc[i] = 1.0;
+  }
+  for(i=0; (i<idef->atnr); i++) 
+    fq[i] = 1.0;
+  
+  
+  if (!fr->bBHAM) {
+    for(i=0; (i<tcr->nLJ); i++) {
+      tclj=&(tcr->tcLJ[i]);
+      
+      factor=deviation[tclj->eObs];
+      
+      ati=tclj->at_i;
+      atj=tclj->at_j;
+      
+      ff6 = ff12 = 1.0;	
+      if (tclj->xi_6)      
+	ff6  += (dt/tclj->xi_6)  * factor;
+      if (tclj->xi_12)     
+	ff12 += (dt/tclj->xi_12) * factor;
+      
+      set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
+      set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
+      
+      /*f6  = min(max(f6, FMIN),FMAX);
+	f12 = min(max(f12,FMIN),FMAX);
 	
-	factor=deviation[tclj->eObs];
-	
-	ati=tclj->at_i;
-	atj=tclj->at_j;
-
-	ff6 = ff12 = 1.0;	
-	if (tclj->xi_6)      
-	  ff6  += (dt/tclj->xi_6)  * factor;
-	if (tclj->xi_12)     
-	  ff12 += (dt/tclj->xi_12) * factor;
-	
-	set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
-	set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
-	
-	/*f6  = min(max(f6, FMIN),FMAX);
-	  f12 = min(max(f12,FMIN),FMAX);
-	  
 	  upd_nbfplj(log,tclj,fr->nbfp,ati,atj,idef->atnr,f6,f12);
-	*/
-      }
-      if (PAR(cr)) {
-	gprod(cr,atnr2,f6);
-	gprod(cr,atnr2,f12);
-      }
-      upd_nbfplj2(log,fr->nbfp,idef->atnr,f6,f12);
-      
-      /* Copy for printing */
-      for(i=0; (i<tcr->nLJ); i++) {
-	tclj=&(tcr->tcLJ[i]);
-	tclj->c6  =  C6(fr->nbfp,tclj->at_i,tclj->at_i);
-	tclj->c12 = C12(fr->nbfp,tclj->at_i,tclj->at_i);
-      }
+      */
     }
-    else {
-      for(i=0; (i<tcr->nBU); i++) {
-	tcbu=&(tcr->tcBU[i]);
-	
-	factor=deviation[tcbu->eObs];
-	
-	if (tcbu->xi_a)      
-	  ffa = 1 + (dt/tcbu->xi_a)  * factor;
-	if (tcbu->xi_b)      
-	  ffb = 1 + (dt/tcbu->xi_b)  * factor;
-	if (tcbu->xi_c)      
-	  ffc = 1 + (dt/tcbu->xi_c)  * factor;
-      
-	ati=tcbu->at_i;
-	atj=tcbu->at_j;
-	
-	set_factor_matrix(idef->atnr,fa,sqrt(ffa),ati,atj);
-	set_factor_matrix(idef->atnr,fa,sqrt(ffb),ati,atj);
-	set_factor_matrix(idef->atnr,fc,sqrt(ffc),ati,atj);
-	
-	/*fa  = min(max(fa, FMIN),FMAX);
-	  fb  = min(max(fb, FMIN),FMAX);
-	  fc  = min(max(fc, FMIN),FMAX);
-      
-	  upd_nbfpbu(log,tcbu,fr->nbfp,ati,atj,idef->atnr,fa,fb,fc);
-	*/
-      }
-      if (PAR(cr)) {
-	gprod(cr,atnr2,fa);
-	gprod(cr,atnr2,fb);
-	gprod(cr,atnr2,fc);
-      }
-      upd_nbfpbu2(log,fr->nbfp,idef->atnr,fa,fb,fc);
+    if (PAR(cr)) {
+      gprod(cr,atnr2,f6);
+      gprod(cr,atnr2,f12);
     }
+    upd_nbfplj2(log,fr->nbfp,idef->atnr,f6,f12);
     
-    for(i=0; (i<tcr->nQ); i++) {
-      tcq=&(tcr->tcQ[i]);
-      
-      if (tcq->xi_Q)     
-	ffq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
-      else
-	ffq = 1.0;
-      fq[tcq->at_i] *= ffq;
-      
-    }
-    if (PAR(cr))
-      gprod(cr,idef->atnr,fq);
-    
-    for(j=0; (j<md->nr); j++) {
-      md->chargeA[j] *= fq[md->typeA[j]];
-    }
     /* Copy for printing */
-    for(i=0; (i<tcr->nQ); i++) {
-      tcq    = &(tcr->tcQ[i]);
-      tcq->Q = md->chargeA[tcq->at_i]; 
+    for(i=0; (i<tcr->nLJ); i++) {
+      tclj=&(tcr->tcLJ[i]);
+      tclj->c6  =  C6(fr->nbfp,tclj->at_i,tclj->at_i);
+      tclj->c12 = C12(fr->nbfp,tclj->at_i,tclj->at_i);
     }
+  }
+  else {
+    for(i=0; (i<tcr->nBU); i++) {
+      tcbu=&(tcr->tcBU[i]);
+      
+      factor=deviation[tcbu->eObs];
+      
+      if (tcbu->xi_a)      
+	ffa = 1 + (dt/tcbu->xi_a)  * factor;
+      if (tcbu->xi_b)      
+	  ffb = 1 + (dt/tcbu->xi_b)  * factor;
+      if (tcbu->xi_c)      
+	ffc = 1 + (dt/tcbu->xi_c)  * factor;
+      
+      ati=tcbu->at_i;
+      atj=tcbu->at_j;
+      set_factor_matrix(idef->atnr,fa,sqrt(ffa),ati,atj);
+      set_factor_matrix(idef->atnr,fa,sqrt(ffb),ati,atj);
+      set_factor_matrix(idef->atnr,fc,sqrt(ffc),ati,atj);
+      /*fa  = min(max(fa, FMIN),FMAX);
+	fb  = min(max(fb, FMIN),FMAX);
+	fc  = min(max(fc, FMIN),FMAX);
+	upd_nbfpbu(log,tcbu,fr->nbfp,ati,atj,idef->atnr,fa,fb,fc);
+      */
+    }
+    if (PAR(cr)) {
+      gprod(cr,atnr2,fa);
+      gprod(cr,atnr2,fb);
+      gprod(cr,atnr2,fc);
+    }
+    upd_nbfpbu2(log,fr->nbfp,idef->atnr,fa,fb,fc);
+  }
+  
+  for(i=0; (i<tcr->nQ); i++) {
+    tcq=&(tcr->tcQ[i]);
     
-    for(i=0; (i<tcr->nIP); i++) {
-      tip    = &(tcr->tIP[i]);
-      type   = tip->type;
-      ftype  = idef->functype[type];
-      factor = dt*deviation[tip->eObs];
+    if (tcq->xi_Q)     
+      ffq = 1.0 + (dt/tcq->xi_Q) * deviation[tcq->eObs];
+    else
+      ffq=1.0;
+    fq[tcq->at_i] *= ffq;
     
-      /* Time for a killer macro */
+  }
+  if (PAR(cr))
+    gprod(cr,idef->atnr,fq);
+  
+  for(j=0; (j<md->nr); j++) {
+    md->chargeA[j] *= fq[md->typeA[j]];
+  }
+  
+  for(i=0; (i<tcr->nIP); i++) {
+    tip    = &(tcr->tIP[i]);
+    type   = tip->type;
+    ftype  = idef->functype[type];
+    factor = dt*deviation[tip->eObs];
+    
+    /* Time for a killer macro */
 #define DOIP(ip) if (tip->xi.##ip) idef->iparams[type].##ip *= (1+factor/tip->xi.##ip)
       
-      switch(ftype) {
-      case F_BONDS:
-	DOIP(harmonic.krA);
-	DOIP(harmonic.rA);
+    switch(ftype) {
+    case F_BONDS:
+      DOIP(harmonic.krA);
+      DOIP(harmonic.rA);
 	break;
-      default:
-	break;
-      }
-#undef DOIP
-      tip->iprint=idef->iparams[type];
+    default:
+      break;
     }
+#undef DOIP
+    tip->iprint=idef->iparams[type];
   }
 }
 
