@@ -681,7 +681,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	       &dummy_type, &cgnr, mHmult, bDummyAromatics, ff);
   
   /* Make Angles and Dihedrals */
-  fprintf(stderr,"Generating angles and dihedrals...\n");
+  fprintf(stderr,"Generating angles, dihedrals and pairs...\n");
   snew(excls,atoms->nr);
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);

@@ -329,50 +329,14 @@ static int n_hydro(atom_id a[],char ***atomname)
   return nh;
 }
 
-static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
-		      t_atoms *atoms, t_hackblock hb[],bool bAlldih)
+static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
+		      t_atoms *atoms,bool bAlldih)
 {
-  char      *a0;
-  t_rbondeds *idihs;
-  t_rbonded  *hbidih;
-  int       i,j,k,l,start,aa0;
-  int       *index,nind;
-  atom_id   ai[MAXATOMLIST];
-  bool      bStop,bIsSet,bKeep;
-  int bestl,nh,minh;
+  int  i,j,k,l;
+  int  *index,nind;
+  bool bIsSet,bKeep;
+  int  bestl,nh,minh;
   
-  /* First add all the impropers from the residue database
-   * to the list.
-   */
-  start=0;
-  if (hb != NULL) {
-    for(i=0; (i<atoms->nres); i++) {
-      idihs=&hb[i].rb[ebtsIDIHS];
-      for(j=0; (j<idihs->nb); j++) {
-	bStop=FALSE;
-	for(k=0; (k<4) && !bStop; k++) {
-	  ai[k]=search_atom(idihs->b[j].a[k],start,
-			    atoms->nr,atoms->atom,atoms->atomname);
-	  if (ai[k] == NO_ATID) {
-	    if (debug) 
-	      fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
-		      idihs->b[j].a[k], k, atoms->atom[start].resnr);
-	    bStop=TRUE;
-	  }
-	}
-	if (!bStop) {
-	  /* Not broken out */
-	  set_p(&idih[*nidih],ai,NULL,idihs->b[j].s);
-	  (*nidih)++;
-	}
-      }
-      while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
-	start++;
-    }
-  }
-  if (*ndih == 0)
-    return;
-
   snew(index,*ndih+1);
   if (bAlldih) {
     fprintf(stderr,"Keeping all generated dihedrals\n");
@@ -398,7 +362,7 @@ static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
     bKeep = TRUE;
     if (!bIsSet)
       /* remove the dihedral if there is an improper on the same bond */
-      for(j=0; (j<(*nidih)) && bKeep; j++)
+      for(j=0; (j<nidih) && bKeep; j++)
 	bKeep = !deq(&dih[index[i]],&idih[j]);
 
     if (bKeep) {
@@ -430,6 +394,55 @@ static void pdih2idih(t_param *dih, int *ndih,t_param idih[],int *nidih,
   *ndih = k;
 
   sfree(index);
+}
+
+static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih)
+{
+  char      *a0;
+  t_rbondeds *idihs;
+  t_rbonded  *hbidih;
+  int       nidih,i,j,k,start,ninc,nalloc;
+  atom_id   ai[MAXATOMLIST];
+  bool      bStop;
+  
+  ninc = 500;
+  nalloc = ninc;
+  snew(*idih,nalloc);
+
+  /* Add all the impropers from the residue database to the list. */
+  nidih = 0;
+  start = 0;
+  if (hb != NULL) {
+    for(i=0; (i<atoms->nres); i++) {
+      idihs=&hb[i].rb[ebtsIDIHS];
+      for(j=0; (j<idihs->nb); j++) {
+	bStop=FALSE;
+	for(k=0; (k<4) && !bStop; k++) {
+	  ai[k] = search_atom(idihs->b[j].a[k],start,
+			      atoms->nr,atoms->atom,atoms->atomname);
+	  if (ai[k] == NO_ATID) {
+	    if (debug) 
+	      fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
+		      idihs->b[j].a[k], k, atoms->atom[start].resnr);
+	    bStop = TRUE;
+	  }
+	}
+	if (!bStop) {
+	  if (nidih == nalloc) {
+	    nalloc += ninc;
+	    srenew(*idih,nalloc);
+	  }
+	  /* Not broken out */
+	  set_p(&((*idih)[nidih]),ai,NULL,idihs->b[j].s);
+	  nidih++;
+	}
+      }
+      while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
+	start++;
+    }
+  }
+  
+  return nidih;
 }
 
 static int nb_dist(t_nextnb *nnb,int ai,int aj)
@@ -579,22 +592,20 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   char    anm[4][12];
   int     res,minres,maxres;
   int     i,j,j1,k,k1,l,l1,m,n,i1,i2;
-  int     maxang,maxdih,maxpai;
+  int     ninc,maxang,maxdih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
-  int     dang,ddih,nFound;
+  int     nFound;
   bool    bFound,bExcl;
   
-  /* These are the angles, pairs, impropers and dihedrals that we generate
+  /* These are the angles, dihedrals and pairs that we generate
    * from the bonds. The ones that are already there from the rtp file
    * will be retained.
    */
-  nang    = 0;
-  npai    = 0;
-  ndih    = 0;
-  dang    = 6*nnb->nr;
-  ddih    = 24*nnb->nr;
-  maxang  = dang;
-  maxdih  = maxpai = ddih;
+  nang   = 0;
+  npai   = 0;
+  ndih   = 0;
+  ninc   = 500;
+  maxang = maxdih = maxpai = ninc;
   snew(ang, maxang);
   snew(dih, maxdih);
   snew(pai, maxpai);
@@ -615,8 +626,8 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 	  /* Generate every angle only once */
 	  if (i < k1) {
 	    if (nang == maxang) {
-	      srenew(ang,maxang+dang);
-	      maxang += dang;
+	      maxang += ninc;
+	      srenew(ang,maxang);
 	    }
 	    ang[nang].AI=i;
 	    ang[nang].AJ=j1;
@@ -660,7 +671,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 	      l1=nnb->a[k1][1][l];
 	      if ((l1 != i) && (l1 != j1)) {
 		if (ndih == maxdih) {
-		  maxdih += ddih;
+		  maxdih += ninc;
 		  srenew(dih,maxdih);
 		}
 		dih[ndih].AI=i;
@@ -692,8 +703,19 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 				 (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
 				 (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
 		      if (bFound) {
+			set_p_string(&dih[ndih],hbdih->b[n].s);
+			
+			/* Set the last parameter to be able to see
+			   if the dihedral was in the rtp list.
+			   */
+			dih[ndih].c[MAXFORCEPARAM-1] = 0;
+			nFound++;
+			ndih++;
+			/* Set the next direct in case the rtp contains
+			   multiple entries for this dihedral.
+			   */
 			if (ndih == maxdih) {
-			  maxdih += ddih;
+			  maxdih += ninc;
 			  srenew(dih,maxdih);
 			}
 			dih[ndih].AI=i;
@@ -702,20 +724,13 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 			dih[ndih].AL=l1;
 			for (m=0; m<MAXFORCEPARAM; m++)
 			  dih[ndih].c[m]=NOTSET;
-			set_p_string(&dih[ndih],hbdih->b[n].s);
-			
-			/* Set the last parameter to be able to see
-			   if the dihedral was in the rtp list */
-			dih[ndih].c[MAXFORCEPARAM-1] = 0;
-			nFound++;
-			ndih++;
 		      }
 		    }
 		  } while (res < maxres);
 		}
 		if (nFound == 0) {
 		  if (ndih == maxdih) {
-		    maxdih += ddih;
+		    maxdih += ninc;
 		    srenew(dih,maxdih);
 		  }
 		  dih[ndih].AI=i;
@@ -740,7 +755,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 		  if (!bExcl) {
 		    if (bH14 || !(is_hydro(atoms,i1) && is_hydro(atoms,i2))) {
 		      if (npai == maxpai) {
-			maxpai += ddih;
+			maxpai += ninc;
 			srenew(pai,maxpai);
 		      }
 		      pai[npai].AI=i1;
@@ -766,26 +781,32 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
   if (ndih > 1)
     qsort(dih,ndih,(size_t)sizeof(dih[0]),dcomp);
-  
-  /* Generate impropers, remove dihedrals which are impropers
-     and when bAlldih is not set remove multiple dihedrals over one bond.
-     */
-  fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
-  nidih = 0;
-  snew(idih,ndih);
-  pdih2idih(dih,&ndih,idih,&nidih,atoms,hb,bAlldih);
-  
-  /* Sort the impropers */
-  sort_id(nidih,idih);
-  
+
   /* Sort the pairs */
   if (npai > 1)
     qsort(pai,npai,(size_t)sizeof(pai[0]),pcomp);
-  /* Remove doubles, could occur in 6-rings, such as phenyls,
-     maybe one does not want this when fudgeQQ < 1.
-     */
-  rm2par(pai,&npai,preq);
+  if (npai > 0) {
+    /* Remove doubles, could occur in 6-rings, such as phenyls,
+       maybe one does not want this when fudgeQQ < 1.
+       */
+    fprintf(stderr,"Before cleaning: %d pairs\n",npai);
+    rm2par(pai,&npai,preq);
+  }
 
+  /* Get the impropers from the database */
+  nidih = get_impropers(atoms,hb,&idih);
+
+  /* Sort the impropers */
+  sort_id(nidih,idih);
+
+  if (ndih > 0) {
+    /* Remove dihedrals which are impropers
+       and when bAlldih is not set remove multiple dihedrals over one bond.
+       */
+    fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
+    clean_dih(dih,&ndih,idih,nidih,atoms,bAlldih);
+  }
+  
   /* Now we have unique lists of angles and dihedrals 
    * Copy them into the destination struct
    */
