@@ -103,28 +103,33 @@ int main(int argc, char *argv[])
     "and interspaces the grid point with an extra space [TT]-dist[tt].[PAR]",
     "When option [TT]-rot[tt] is used the program does not check for overlap",
     "between molecules on grid points. It is recommended to make the box in",
-    "the input file at least as big as the coordinates + Vander Waals radius."
+    "the input file at least as big as the coordinates + ",
+    "Van der Waals radius.[PAR]",
+    "If the optional trajectory file is given, conformations are not",
+    "generated, but read from this file and translated appropriately to",
+    "build the grid."
+    
   };
-  /* The program should be more flexible, to allow for random displacement 
-     off lattice points (for each cartesian coordinate), and specify the 
-     (maximum) random rotation per coordinate to be useful for building 
-     membranes.
-     */
+  static char *bugs[] = {
+    "The program should be more flexible, to allow for random displacement off lattice points (for each cartesian coordinate), and specify the (maximum) random rotation per coordinate to be useful for building membranes." };
 
   int     vol;          
   t_atoms *atoms;       /* list with all atoms */
   char    title[STRLEN];
-  rvec    *x,*v;        /* coordinates? */
+  rvec    *x,*xx,*v;        /* coordinates? */
+  real    t;
   vec4    *xrot,*vrot;  
   matrix  box;          /* box length matrix */
   rvec    shift;         
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
-  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz;
+  int     i,j,k,l,m,ndx,nrdx,nx,ny,nz,status=-1;
+  bool    bTRX;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
-    { efSTO, "-o", "out",  ffWRITE }
+    { efSTO, "-o", "out",  ffWRITE },
+    { efTRX, "-trj",NULL,  ffOPTRD }
   };
 #define NFILE asize(fnm)
   static rvec nrbox={1,1,1};
@@ -146,11 +151,12 @@ int main(int argc, char *argv[])
   
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL);
+		    asize(desc),desc,asize(bugs),bugs);
 
-  nx=(int)(nrbox[XX]+0.5);
-  ny=(int)(nrbox[YY]+0.5);
-  nz=(int)(nrbox[ZZ]+0.5);
+  bTRX = ftp2bSet(efTRX,NFILE,fnm);
+  nx   = (int)(nrbox[XX]+0.5);
+  ny   = (int)(nrbox[YY]+0.5);
+  nz   = (int)(nrbox[ZZ]+0.5);
   
   if ((nx <= 0) || (ny <= 0) || (nz <= 0))
     fatal_error(0,"Number of boxes (-nbox) should be positive");
@@ -172,6 +178,12 @@ int main(int argc, char *argv[])
 
   nres=atoms->nres;                /* nr of residues in one element? */
 
+  if (bTRX) {
+    if (!read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,box))
+      fatal_error(0,"No atoms in trajectory %s",ftp2fn(efTRX,NFILE,fnm));
+  }
+  
+  
   for(i=0; (i<nx); i++) {          /* loop over all gridpositions    */
     shift[XX]=i*(dist[XX]+box[XX][XX]);
     
@@ -188,7 +200,7 @@ int main(int argc, char *argv[])
 
 	  /* Random rotation on input coords */
 	  if (bRandom)
-	    rand_rot(natoms,x,v,xrot,vrot,&seed,max_rot);
+	    rand_rot(natoms,bTRX ? xx : x,v,xrot,vrot,&seed,max_rot);
 	  
 	  for(l=0; (l<natoms); l++) {
 	    for(m=0; (m<DIM); m++) {
@@ -197,7 +209,7 @@ int main(int argc, char *argv[])
 		v[ndx+l][m]=vrot[l][m];
 	      }
 	      else {
-		x[ndx+l][m]=x[l][m]+shift[m];
+		x[ndx+l][m]=(bTRX ? xx[l][m] : x[l][m])+shift[m];
 		v[ndx+l][m]=v[l][m];
 	      }
 	    }
@@ -207,10 +219,16 @@ int main(int argc, char *argv[])
 
 	  for(l=0; (l<nres); l++)
 	    atoms->resname[nrdx+l]=atoms->resname[l];
+	  if (bTRX)
+	    if (!read_next_x(status,&t,natoms,xx,box) && 
+		((i+1)*(j+1)*(k+1) < vol))
+	      fatal_error(0,"Not enough frames in trajectory");
 	}
       }
     }
   }
+  if (bTRX)
+    close_trj(status);
 
   box[XX][XX] = nx*(box[XX][XX]+dist[XX]); /* make box bigger */
   box[YY][YY] = ny*(box[YY][YY]+dist[YY]);
