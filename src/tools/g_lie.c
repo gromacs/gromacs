@@ -168,7 +168,7 @@ int main(int argc,char *argv[])
 		 "Time (ps)","DGbind (kJ/mol)");
   do {
     bCont = do_enx(fp,&t,&step,&nre,ee,&ndr,NULL);
-    ct    = check_times(t);
+    ct    = check_times(t,0);
     if (ct == 0) {
       lie = calc_lie(ld,ee,lie_lj,lie_qq,fac_lj,fac_qq);
       lieaver += lie;

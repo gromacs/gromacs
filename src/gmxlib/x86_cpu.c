@@ -42,7 +42,7 @@ static char *SRCID_x86_cpu_c = "$Id$";
 #include <stdio.h>
 #include <x86_cpu.h>
 
-#if(defined USE_SSE || defined USE_3DNOW)
+#ifdef USE_X86_ASM
 /* there is a fallback routine at the end
  * of this file which returns UNKNOWN_CPU
  * if we do not use x86 support
@@ -86,7 +86,7 @@ int check_x86cpu(FILE *log)
 
   if(eax>0) {
     cpuflags |= X86_CPU;
-#ifdef USE_SSE
+#ifdef USE_X86_ASM
     fprintf(log,"\nTesting x86 SSE capabilities...\n");
     if(ebx==VENDOR_INTEL) {
       /* intel - we need SSE support, bit 25 of edx should be set */
@@ -103,8 +103,7 @@ int check_x86cpu(FILE *log)
 	}
       }
     }
-#endif    
-#ifdef USE_3DNOW
+
     fprintf(log,"\nTesting x86 3DNow capabilities...\n");
     if(ebx==VENDOR_AMD) {
       /* amd - start by checking for extended functions */
@@ -144,16 +143,11 @@ int check_x86cpu(FILE *log)
     } else if(cpu3DNow) {      
       fprintf(log,"CPU supports extended 3DNow, but your OS doesn't.\n");
     } else if(!cpuSSE && !cpu3DNow) {
-#ifdef USE_SSE
-      fprintf(log,"No SSE support found.\n");
+#ifdef USE_X86_ASM
+      fprintf(log,"No SSE/3DNow support found.\n");
 #else
-      fprintf(log,"Not checking SEE support.\n");
+      fprintf(log,"Not checking SEE/3DNow support.\n");
 #endif      
-#ifdef USE_3DNOW
-      fprintf(log,"No 3DNow support found.\n");
-#else
-      fprintf(log,"Not checking 3DNow support.\n");
-#endif
     }
     fprintf(log,"Using normal Gromacs innerloops.\n\n");
   }

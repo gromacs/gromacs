@@ -135,7 +135,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   clear_mat(zerobox);
@@ -441,8 +441,8 @@ int main(int argc,char *argv[])
   getcwd(str,STRLEN);
   fprintf(out,"Working directory: %s\n\n",str);
 
-  fprintf(out,"Read %d frames from %s (time %g to %g %s)\n",nframes,trxfile,
-	  convert_time(tstart),convert_time(tend),time_unit());
+  fprintf(out,"Read %d frames from %s (time %g to %g)\n",nframes,trxfile,
+	  tstart,tend);
   if (bFit)
     fprintf(out,"Read reference structure for fit from %s\n",fitfile);
   if (ndxfile)
@@ -477,3 +477,9 @@ int main(int argc,char *argv[])
   
   return 0;
 }
+  
+
+
+
+
+

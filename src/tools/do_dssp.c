@@ -105,7 +105,7 @@ static void strip_dssp(char *dsspfile,int nres,
   if (bFirst) {
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
-    sprintf(mat->label_x,"%s",time_label());
+    sprintf(mat->label_x,"Time (%s)", time_label());
     sprintf(mat->label_y,"Residue");
     mat->bDiscrete=TRUE;
     mat->ny=nr;
@@ -268,7 +268,7 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
     leg[s+1]=map[s].desc;
   
   fp=xvgropen(outfile,"Secondary Structure",
-	      xvgr_tlabel(),"Number of Residues");
+	      mat->label_x,"Number of Residues");
   fprintf(fp,"@ subtitle \"Structure = ");
   for(s=0; s<strlen(ss_string); s++) {
     if (s>0)
@@ -448,8 +448,9 @@ int main(int argc,char *argv[])
 #endif
   
   if (fnTArea) {
+    sprintf(title, "Time (%s)", time_label());
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
-		    xvgr_tlabel(),"Area (nm\\S2\\N)");
+		    title,"Area (nm\\S2\\N)");
     xvgr_legend(fTArea,2,leg);
   } else
     fTArea=NULL;

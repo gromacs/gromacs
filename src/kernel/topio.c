@@ -167,7 +167,7 @@ void preprocess(char *infile,char *outfile,
     if(lib!=NULL) {
       strcpy(libdir,lib);
     } else {
-      if(get_libdir(libdir))
+      if(!get_libdir(libdir))
 	strcpy(libdir,GMXLIBDIR);
     }
     bFirst=0;

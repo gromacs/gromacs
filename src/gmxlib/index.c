@@ -398,7 +398,8 @@ static void analyse_dna(eRestp restp[],t_atoms *atoms,
     printf("Analysing DNA... (not really)\n");
   if (debug)
     printf("eRestp %p; atoms %p; gb %p; gn %p; bASK %s; bASK %s",
-	   restp, atoms, gb, gn, bool_names[bASK], bool_names[bVerb]);
+	   (void *)restp, (void *)atoms, (void *)gb, (void *)gn, 
+	   bool_names[bASK], bool_names[bVerb]);
 }
 
 bool is_protein(char *resnm)

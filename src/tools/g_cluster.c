@@ -755,7 +755,8 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
     ana_trans(clust, nf, transfn, ntransfn, log);
   
   if (clustidfn) {
-    fp=xvgropen(clustidfn,"Clusters",xvgr_tlabel(),"Cluster #");
+    sprintf(buf,"Time (%s)",time_label());
+    fp=xvgropen(clustidfn,"Clusters",buf,"Cluster #");
     fprintf(fp,"@    s0 symbol 2\n");
     fprintf(fp,"@    s0 symbol size 0.2\n");
     fprintf(fp,"@    s0 linestyle 0\n");
@@ -1341,6 +1342,7 @@ int main(int argc,char *argv[])
 	      readmat[0].label_y,nf,nf,readmat[0].axis_x,readmat[0].axis_y,
 	      rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   } else {
+    sprintf(buf,"Time (%s)", time_label());
     write_xpm(fp,bRMSdist ? "RMS Distance Deviation" : "RMS Deviation",
 	      "RMSD (nm)",buf,buf,
 	      nf,nf,time,time,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);

@@ -58,7 +58,11 @@ static t_atomcolor ac[] = {
   { "F",  &LIGHTGREY,    { 0.6,0.6,0.6 } },
   { "Z",  &LIGHTGREY,    { 0.6,0.6,0.6 } },
   { "P",  &LIGHTBLUE,    { 0.4,0.4,1.0 } },
-  { "H",  &WHITE,        { 0.8,0.8,0.8 } }
+  { "H",  &WHITE,        { 0.8,0.8,0.8 } },
+  { "C2", &GREEN,         { 0.8,0.2,0.2 } },
+  { "BE1", &VIOLET,       { 0.8,0.2,0.2 } },
+  { "W6R", &VIOLET,       { 0.8,0.2,0.2 } },
+  { "W5R", &LIGHTGREY,    { 0.8,0.2,0.2 } },
 };
 #define NAC asize(ac)
 

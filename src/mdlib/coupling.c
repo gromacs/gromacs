@@ -207,10 +207,13 @@ void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
        * we need them for shifting later. It is instead done last
        * in the update() routine.
        */
-      if(box[d][n]!=0)
-	change=fabs(ir->delta_t*boxv[d][n]/box[d][n]);
-      else
-	change=fabs(ir->delta_t*boxv[d][n]/box[d][d]);
+
+      /* Calculate the change relative to diagonal elements -
+       * since it's perfectly ok for the off-diagonal ones to
+       * be zero it doesn't make sense to check the change relative
+       * to its current size.
+       */
+      change=fabs(ir->delta_t*boxv[d][n]/box[d][d]);
       if(change>maxchange)
 	maxchange=change;
     }
@@ -353,8 +356,7 @@ void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
       }
       /* compute final boxlengths */
       for (d=0; d<DIM; d++) {
-	box[d][XX] = mu[XX][XX]*box[d][XX]+mu[XX][YY]*box[d][YY]
-	  +mu[XX][ZZ]*box[d][ZZ];
+	box[d][XX] = mu[XX][XX]*box[d][XX]+mu[XX][YY]*box[d][YY]+mu[XX][ZZ]*box[d][ZZ];
 	box[d][YY] = mu[YY][YY]*box[d][YY]+mu[YY][ZZ]*box[d][ZZ];
 	box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
       }      

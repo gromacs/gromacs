@@ -339,7 +339,7 @@ bool get_libdir(char *libdir)
 
   /* First - detect binary name */
   strcpy(bin_name,Program());
-
+  
   /* Only do the smart search part if we got a real name */
   if(bin_name && strcmp(bin_name,"GROMACS")) {
   
@@ -360,9 +360,11 @@ bool get_libdir(char *libdir)
       getcwd(buf,sizeof(buf)-1);
       strcpy(full_path,buf);
       strcat(full_path,bin_name+1);
+    } else {
+      strcpy(full_path,bin_name);
     }
 
-    /* Now we should have a full path and name in full_bin_name,
+    /* Now we should have a full path and name in full_path,
      * but it might be a link, or a link to a link to a link...
      */
     while( (i=readlink(full_path,buf,sizeof(buf)-1)) > 0 ) {
@@ -376,7 +378,6 @@ bool get_libdir(char *libdir)
     
     /* Remove the executable name - it always contains at least one slash */
     *(strrchr(full_path,'/')+1)='\0';
-    
     /* Now we have the full path to the gromacs executable.
      * Use it to find the library dir. 
      */
@@ -397,7 +398,6 @@ bool get_libdir(char *libdir)
     found=search_subdirs("/usr",libdir);
   if(!found) 
     found=search_subdirs("/opt",libdir);
-
   return found;
 }
 
@@ -417,21 +417,20 @@ char *low_libfn(char *file, bool bFatal)
       env_is_set=TRUE;
       strcpy(libdir,lib);
     } else {
-      env_is_set=FALSE;
-      if(get_libdir(libdir))
+      if(!get_libdir(libdir))
 	strcpy(libdir,GMXLIBDIR);
     }
     bFirst=0;
   }
-  
+
   if (fexist(file))
     ret=file;
   else {
     sprintf(buf,"%s/%s",libdir,file);
     ret=buf;
     if (bFatal && !fexist(ret))
-      fatal_error(0,"Library file %s not found in current dir nor in libdir %s\n"
-		  "%s\n",ret,libdir, 
+      fatal_error(0,"Library file %s not found in current dir nor the default libdirs.\n"
+		  "%s\n",file, 
 		  env_is_set ? "" : "(You can override libdir with the GMXLIB environment variable.)");
   }
     

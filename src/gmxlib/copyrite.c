@@ -42,6 +42,7 @@ static char *SRCID_copyrite_c = "$Id$";
 #include "macros.h"
 #include "time.h"
 #include "random.h"
+#include "statutil.h"
 #include "copyrite.h"
 #include "strdb.h"
 #include "futil.h"
@@ -195,6 +196,9 @@ char *cool_quote(void)
 
 void CopyRight(FILE *out,char *szProgram)
 {
+  /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the 
+   * name of a file. Otherwise, we won't be able to find the library dir.
+   */
 #define NCR (int)asize(CopyrightText)
 #define NGPL (int)asize(GPLText)
 
@@ -202,7 +206,9 @@ void CopyRight(FILE *out,char *szProgram)
   char *ptr;
   
   int i;
-  
+
+  set_program_name(szProgram);
+
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
   
@@ -220,7 +226,7 @@ void CopyRight(FILE *out,char *szProgram)
 
   fprintf(out,"\n");
 
-  sprintf(buf,"%s",szProgram);
+  sprintf(buf,"%s",Program());
 #ifdef DOUBLE
   strcat(buf," (double precision)");
 #endif

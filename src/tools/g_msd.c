@@ -152,11 +152,13 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
 {
   FILE *out;
   int  i,j;
+  char ylabel[15];
   
-  out=xvgropen(fn,title,xvgr_tlabel(),yaxis);
+  sprintf(ylabel,"Time (%s)", time_label());
+  out=xvgropen(fn,title,ylabel,yaxis);
   if (DD) {
     fprintf(out,"# Diffusion constants fitted from time %g to %g (%s)\n",
-	    beginfit,endfit,time_unit());
+	    beginfit,endfit,time_label());
     for(i=0; i<this->ngrp; i++) 
       fprintf(out,"# D[%10s] = %.3f (+/- %.3f) (1e-5 cm^2/s)\n",
 	      grpname[i],DD[i],SigmaD[i]);
@@ -300,8 +302,8 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
   } while (read_next_x(status,&t,this->natoms,x[cur],box));
   fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
 	  this->nrestart, 
-	  convert_time(dt), time_unit(),
-	  convert_time(t), time_unit() );
+	  convert_time(dt), time_label(),
+	  convert_time(t), time_label() );
   
   close_trj(status);
 }

@@ -94,6 +94,47 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
   }
 }
 
+static void zero_shell_forces(FILE *log,rvec f[],int ns,t_shell s[])
+{
+  int i,s1,n1,n2;
+  real m1,m2,m3,tm;
+  
+  /* Subtract remaining forces on shells from the attaching atoms.
+   * This way energy conservation may get better, and it is not unreasonable:
+   * It corresponds to an ad-hoc change in the force constants, which is exactly
+   * large enough to compensate for the remaining force on the shell. The
+   * shell forces then becomes zero.
+   */  
+  for(i=0; (i<ns); i++) {
+    s1 = s[i].shell;
+    switch (s[i].nnucl) {
+    case 1:
+      n1 = s[i].nucl1;
+      rvec_dec(f[n1],f[s1]);
+      clear_rvec(f[s1]);
+      break;
+    case 2:
+      n1 = s[i].nucl1;
+      n2 = s[i].nucl2;
+      /*m1 = mass[n1];
+	m2 = mass[n2];
+	tm = dt_1/(m1+m2);*/
+      break;
+    case 3:
+      n1 = s[i].nucl1;
+      n2 = s[i].nucl2;
+      /*n3 = s[i].nucl3;
+      m1 = mass[n1];
+      m2 = mass[n2];
+      m3 = mass[n3];
+      tm = dt_1/(m1+m2+m3);*/
+      break;
+    default:
+      fatal_error(0,"Shell %d has %d nuclei!",i,s[i].nnucl);
+    }
+  }
+}
+
 static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
 			   int ns,t_shell s[],
 			   real mass[],bool bInit)
@@ -380,6 +421,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (MASTER(cr) && !bDone) 
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
 
+  /*if (bDone)
+    zero_shell_forces(log,force[Min],nshell,shells);
+  */
   /* Parallelise this one! */
   if (EEL_LR(fr->eeltype)) {
     for(i=start; (i<end); i++)

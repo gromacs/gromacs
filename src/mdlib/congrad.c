@@ -214,13 +214,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
   where();
   
+  /* Copy stuff to the energy bin for easy printing etc. */
+  upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
+	     ener,parm->box,shake_vir,
+	     force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER));
+  where();
+  	
+  /* Print only if we are the master node and thread */
   if (MASTER(cr)) {
-    /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
-	       ener,parm->box,shake_vir,
-	       force_vir,parm->vir,parm->pres,grps,mu_tot,
-	       (parm->ir.etc==etcNOSEHOOVER));
-    
     print_ebin_header(log,count,count,lambda,0.0);
     print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
 	       TRUE,mdebin,&(top->atoms));
@@ -230,16 +231,19 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* This is the starting energy */
   EpotA=ener[F_EPOT];
 
-  if (MASTER(cr))
+  if (MASTER(cr)) {
+    /* Print to the screen */
+    start_t=print_date_and_time(log,cr->nodeid,"Started EM");
     sp_header(stderr,EpotA,ftol);
-  sp_header(log,EpotA,ftol);
+    sp_header(log,EpotA,ftol);
+  }
 
   /* normalising step size, this saves a few hundred steps in the
    * beginning of the run.
    */
-  fnorm = f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
+  fnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,f);
   fnorm_old=fnorm;
-
+  
   /* Print stepsize */
   if (MASTER(cr)) {
     fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm);
@@ -263,7 +267,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  gpa     = gpa - p[i][m]*f[i][m];
 	}
     }
-    gmx_sumd(1,&gpa,cr);
     pnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
 
     a    = 0.0;
@@ -278,8 +281,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  xprime[i][m] = x[i][m] + b*p[i][m];
 	}
       }
-      bNS = (parm->ir.nstlist > 0);
-
+      bNS = ((parm->ir.nstlist > 0) || (count==0));
+      /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
       if (bDummies) {
 	/* Molecules always whole, but I'm not sure whether
 	 * the periodicity and shift are guaranteed to be consistent
@@ -325,12 +328,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       }
 
       bNS = (parm->ir.nstlist > 0);
-
+      /*bNS=FALSE;*/
       gpb=0.0;
       for(i=start; i<end; i++)
 	for(m=0; m<DIM; m++) 
 	  gpb -= p[i][m]*f[i][m];
-
+      
       gmx_sumd(1,&gpb,cr);
 
       /* Sum the potential energy terms from group contributions */
@@ -504,8 +507,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     }
     fprintf(stderr,"  Function value at minimum = %12.4e\n",EpotA);
     fprintf(log,"  Function value at minimum = %12.4e\n",EpotA);
-
-    close_enx(fp_ene);
   }
   
   /* To print the actual number of steps we needed somewhere */

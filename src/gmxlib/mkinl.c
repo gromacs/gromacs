@@ -71,8 +71,8 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     routine to speed up truncation. This will
  *                     increase table routine performance significantly.
  *
- * -DUSE_SSE           Include assembly loops which can utilize fast 
- * -DUSE_3DNOW         single precision optimizations in newer Intel and
+ * -DUSE_X86_ASM       Include assembly loops which can utilize fast 
+ *                     single precision optimizations in newer Intel and
  *                     Amd processors. The code will still run on any
  *                     x86 machine, but to make use of the special loops you
  *                     will need e.g. redhat>=6.2 and a pentium III/amd k6 
@@ -279,11 +279,8 @@ int main(int argc,char *argv[])
 	  (prec == 8) ? "double" : "single",
 	  bC ? "C" : "Fortran 77",fn);
 
-#ifdef USE_SSE
-  fprintf(stderr,">>> Including x86 assembly loops with SSE instructions\n");
-#endif
-#ifdef USE_3DNOW
-  fprintf(stderr,">>> Including x86 assembly loops with 3DNOW instructions\n");
+#ifdef USE_X86_ASM
+  fprintf(stderr,">>> Including x86 assembly loops with SSE/3DNow instructions\n");
 #endif
 
 #if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)

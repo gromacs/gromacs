@@ -5,10 +5,11 @@ or documented, so if there are problems your best bet is probably
 either the mailing lists or to contact the author listed in the file.
 
 To add a program, you should edit Makefile.am. Have a look at 
-developer.gromacs.org if you are unfamiliar with automake/autoconf.
-Unfortunately there is a bug in automake 1.4. Until 1.5 is released,
-make sure you use either version 1.3 or version 1.4d that is available
-from ftp://sources.redhat.com/pub/automake/
+www.gromacs.org/developer if you are unfamiliar with automake/autoconf.
+Since gromacs uses both assembly, fortran, shared libraries and 
+dynamic dependency tracking on all platforms we rely on features in
+the prereleases of autoconf 1.5. Until this is released,
+you can get version 1.4h or later from ftp.gromacs.org/developer
 
 The EXTRA_PROGRAMS tag used here means they are not compiled and
 installed for the default package configuration setup.

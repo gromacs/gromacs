@@ -1,3 +1,4 @@
+
 ## Process this file with automake to produce Makefile.in
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
@@ -39,11 +40,19 @@ EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 nodist_EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = innerf.f innerc.c
 
 
-# The inner loops
-innerf.f:	mkinl 
-		./mkinl	fortran	
-innerc.c:	mkinl
-		./mkinl c
+# Compaq are fscking around with their compiler... some versions require
+# .s and some .S. It's checked by configure. COMPAQ: FIX YOUR COMPILER!
+if AXP_ASM_CAPITAL_S
+axp_asm.lo: $(srcdir)/axp_asm.s
+	ln -sf $(srcdir)/axp_asm.s axp_asm.S
+	$(LTASCOMPILE) -c axp_asm.S
+endif
+
+# The inner loops are made with our program and not included in the dist.
+innerf.f: mkinl 
+	./mkinl	fortran	
+innerc.c: mkinl
+	./mkinl c
 
 
 # mkinl is special - cant use a noinst_PROGRAMS target, since it might have 
@@ -96,7 +105,7 @@ install-exec-hook:
 	fi; 
 
 # clean all libtool libraries, since the target names might have changed
-CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl axp_asm.S
 
 
 

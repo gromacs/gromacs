@@ -178,7 +178,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   static int localsize;
   static int maxproc;
 
-#ifdef USE_MPI
+#if (defined USE_MPI && ! defined WITHOUT_FFTW)
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
@@ -209,7 +209,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
 		GMX_MPI_REAL,i,MPI_COMM_WORLD);
   }
 #else
-  fatal_error(0,"Parallel grid summation requires MPI.\n");    
+  fatal_error(0,"Parallel grid summation requires MPI and FFTW.\n");    
 #endif
 }
 
@@ -311,13 +311,13 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   maxkz = nz/2+1;
     
   if (bPar) { /* transpose X & Y and only sum local cells */
-#ifdef USE_MPI
+#if (defined USE_MPI && !defined WITHOUT_FFTW)
     kystart = grid->pfft.local_y_start_after_transpose;
     kyend   = kystart+grid->pfft.local_ny_after_transpose;
     if (debug)
       fprintf(debug,"solve_pme: kystart = %d, kyend=%d\n",kystart,kyend);
 #else
-    fatal_error(0,"Parallel PME attempted without MPI");
+    fatal_error(0,"Parallel PME attempted without MPI and FFTW");
 #endif /* end of parallel case loop */
   }
   else {

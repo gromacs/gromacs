@@ -170,9 +170,6 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
 
-  if (bRandom && (seed == 0))
-    seed = make_seed();
-		    
   bTRX = ftp2bSet(efTRX,NFILE,fnm);
   nx   = (int)(nrbox[XX]+0.5);
   ny   = (int)(nrbox[YY]+0.5);
@@ -220,7 +217,7 @@ int main(int argc, char *argv[])
 	ndx=(i*ny*nz+j*nz+k)*natoms;
 	nrdx=(i*ny*nz+j*nz+k)*nres;
 	
-	if ((ndx >= 0) || (bTRX)) {
+	if ((ndx > 0) || (bTRX)) {
 
 	  /* Random rotation on input coords */
 	  if (bRandom)

@@ -377,7 +377,7 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
   snew(nTest,grid->nptr);
   
   if(PAR(cr)) {
-#ifdef USE_MPI
+#if (defined USE_MPI && !defined WITHOUT_FFTW)
     jstart=grid->pfft.local_y_start_after_transpose;
     jend=jstart+grid->pfft.local_ny_after_transpose;
 

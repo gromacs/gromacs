@@ -72,8 +72,6 @@ static char *timestr[] = { NULL, "fs", "ps", "ns", "us", "ms", "s",
 			   "m",              "h",                NULL };
 real timefactors[]     = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 
 			   (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
-static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
-			       "m", "h", NULL };
 static bool  bView=FALSE;
 static unsigned long uFlags=0;
 static char  *program=NULL;
@@ -102,6 +100,20 @@ char *Program(void)
     return "GROMACS";
 }
 
+void set_program_name(char *argvzero)
+{
+  /* When you run a dynamically linked program before installing
+   * it, libtool uses wrapper scripts and prefixes the name with "lt-".
+   * Until libtool is fixed to set argv[0] right, rip away the prefix:
+   */
+  if(program==NULL) {
+    if(strlen(argvzero)>3 && !strncmp(argvzero,"lt-",3)) 
+      program = strdup(argvzero+3);
+    else
+      program = strdup(argvzero);
+  }
+}
+
 /****************************************************************
  *
  *            E X P O R T E D   F U N C T I O N S
@@ -123,19 +135,13 @@ bool bRmod(double a,double b)
     return FALSE;
 }
 
-int check_times2(real t,real t0,real tp, real tpp)
+int check_times(real t,real t0) 
 {
-  int  r;
-  real margin;
+  int r;
   
-  if (t-tp>0 && tp-tpp>0)
-    margin = 0.1*min(t-tp,tp-tpp);
-  else
-    margin = 0;
-
   r=-1;
   if ((((tbegin >= 0.0) && (t >= tbegin)) || (tbegin == -1.0)) &&
-      (((tend   >= 0.0) && (t <= tend+margin))   || (tend   == -1.0))) {
+      (((tend   >= 0.0) && (t <= tend))   || (tend   == -1.0))) {
     if (tdelta > 0 && !bRmod(t-t0,tdelta))
       r = -1;
     else
@@ -148,61 +154,40 @@ int check_times2(real t,real t0,real tp, real tpp)
   return r;
 }
 
-int check_times(real t)
-{
-  return check_times2(t,t,t,t);
-}
-
-char *time_unit(void)
+char *time_label(void)
 {
   return timestr[0];
 }
 
-char *time_label(void)
-{
-  static char label[20];
-
-  sprintf(label,"Time (%s)",timestr[0] ? timestr[0] : "ps");
-
-  return label;
-}
-
-char *xvgr_tlabel(void)
-{
-  static char label[20];
-
-  sprintf(label,"Time (%s)",
-	  nenum(timestr) ? xvgrtimestr[nenum(timestr)] : "ps");
-
-  return label;
-}
-
-static void init_time_factor()
-{
-  if (timefactor == NOTSET) 
-    timefactor = timefactors[nenum(timestr)];
-}
+#define INIT_TIME_FACTOR \
+  if (timefactor==NOTSET) timefactor = timefactors[nenum(timestr)]
 
 real time_factor(void)
 {
-  init_time_factor();
+  INIT_TIME_FACTOR;
   
   return timefactor;
 }
 
 real convert_time(real time)
 {
-  init_time_factor();
+  INIT_TIME_FACTOR;
   
-  return (time*timefactor);
+  return time*timefactor;
 }
 
+static real inv_convert_time(real time)
+{
+  INIT_TIME_FACTOR;
+  
+  return time/timefactor;
+}
 
 void convert_times(int n, real *time)
 {
   int i;
   
-  init_time_factor();
+  INIT_TIME_FACTOR;
  
   if (timefactor!=1)
     for(i=0; i<n; i++)
@@ -213,7 +198,6 @@ void default_time(void)
 {
   timestr[0] = timestr[1];
   timefactor = timefactors[1];
-  xvgrtimestr[0] = xvgrtimestr[1];
 }
 
 static void set_default_time_unit(char *select)
@@ -226,15 +210,12 @@ static void set_default_time_unit(char *select)
   if (strcmp(timestr[i], select)==0) {
     timestr[0] = timestr[i];
     timefactors[0] = timefactors[i];
-    xvgrtimestr[0] = xvgrtimestr[i];
     for(j=i; j>1; j--) {
       timestr[j]=timestr[j-1];
       timefactors[j]=timefactors[j-1];
-      xvgrtimestr[j]=xvgrtimestr[j-1];
     }
     timestr[1]=timestr[0];
     timefactors[1]=timefactors[0];
-    xvgrtimestr[1]=xvgrtimestr[0];
   }
 }
 
@@ -378,7 +359,7 @@ static int add_parg(int npargs,t_pargs **pa,t_pargs *pa_add)
   return npargs+1;
 }
 
-static char *mk_desc(t_pargs *pa, char *time_unit_str)
+static char *mk_desc(t_pargs *pa, char *time_unit)
 {
   char *newdesc=NULL,*ndesc=NULL,*ptr=NULL;
   int  len,k;
@@ -408,10 +389,10 @@ static char *mk_desc(t_pargs *pa, char *time_unit_str)
     while( (ptr=strstr(newdesc,TUNITLABEL)) != NULL ) {
       ptr[0]='\0';
       ptr+=NTUNIT;
-      len+=strlen(time_unit_str)-NTUNIT;
+      len+=strlen(time_unit)-NTUNIT;
       snew(ndesc,len);
       strcpy(ndesc,newdesc);
-      strcat(ndesc,time_unit_str);
+      strcat(ndesc,time_unit);
       strcat(ndesc,ptr);
       sfree(newdesc);
       newdesc=ndesc;
@@ -542,14 +523,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   bGUI = FALSE;
 #endif
   
-  /* When you run a dynamically linked program before installing
-   * it, libtool uses wrapper scripts and prefixes the name with "lt-".
-   * Until libtool is fixed to set argv[0] right, rip away the prefix:
-   */
-  if(strlen(argv[0])>3 && !strncmp(argv[0],"lt-",3)) 
-    program = strdup(argv[0]+3);
-  else
-    program = strdup(argv[0]);
+  set_program_name(argv[0]);
 
   /* Check ALL the flags ... */
   snew(all_pa,NPCA_PA+npargs);
@@ -656,7 +630,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   
   for(i=0; (i<npall); i++)
-    all_pa[i].desc = mk_desc(&(all_pa[i]), time_unit() );
+    all_pa[i].desc = mk_desc(&(all_pa[i]), time_label() );
 
   bExit = bHelp || (strcmp(manstr[0],"no") != 0);
 
@@ -718,12 +692,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   }
   
   /* convert time options, must be done after printing! */
-  init_time_factor();
-  for(i=0; i<npall; i++) {
-    if ((all_pa[i].type == etTIME) && (*all_pa[i].u.r >= 0)) {
-      *all_pa[i].u.r /= timefactor;
-    }
-  }
+#define pca_convert_time(t) if (t>=0.0) t=(double)inv_convert_time((real)(t))
+  for(i=0; i<npall; i++)
+    if (all_pa[i].type == etTIME)
+      pca_convert_time(*all_pa[i].u.r);
+#undef pca_convert_time
   
   /* clear memory */
   for(i=0; i<npall; i++)
