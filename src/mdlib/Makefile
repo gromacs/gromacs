@@ -24,11 +24,13 @@ OBJ		= \
 		constr.o	\
 		coupling.o	csettle.o	cshake.o	\
 		dummies.o	ebin.o		edsam.o		\
-		fftgrid.o	force.o		ghat.o		\
+		ewald.o         fftgrid.o	force.o  	\
+		ghat.o		\
 		init.o		md.o		\
 		mdatom.o	mdebin.o	nm.o		\
 		ns.o		nsb.o		nsgrid.o	\
-		poisson.o	pppm.o		psgather.o	\
+		pme.o		poisson.o	pppm.o		\
+		psgather.o	\
 		pssolve.o	psspread.o	runner.o	\
 		shakef.o	sim_util.o	splittop.o	\
 		steep.o		tables.o	tgroup.o	\
