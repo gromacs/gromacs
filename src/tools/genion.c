@@ -299,6 +299,7 @@ int main(int argc, char *argv[])
     }
     nw = 0;
   } else {
+    printf("Select a continuous group of solvent molecules\n");
     get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
     for(i=1; i<nwa; i++)
       if (index[i] != index[i-1]+1)
