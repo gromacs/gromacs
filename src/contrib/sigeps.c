@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_sigeps_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"

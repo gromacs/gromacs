@@ -29,113 +29,125 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_names_c = "$Id$";
+
 #include "typedefs.h"
 #include "names.h"
 
 /* note: these arrays should correspond to enums in include/types/enums.h */
 
-char *eblock_names[ebNR+1]=
+const char *eblock_names[ebNR+1]=
 {
   "CGS","MOLS","SBLOCKS",NULL
 };
 
-char *epbc_names[epbcNR+1]=
+const char *epbc_names[epbcNR+1]=
 {
   "xyz", "no", NULL
 };
 
-char *ens_names[ensNR+1]=
+const char *ens_names[ensNR+1]=
 {
   "Grid","Simple", NULL
 };
 
-char *ei_names[eiNR+1]=
+const char *ei_names[eiNR+1]=
 {
   "md", "steep", "cg", "bd", "sd", "nm", NULL 
 };
 
-char *bool_names[BOOL_NR+1]=
+const char *bool_names[BOOL_NR+1]=
 {
   "FALSE","TRUE", NULL
 };
 
-char *yesno_names[BOOL_NR+1]=
+const char *yesno_names[BOOL_NR+1]=
 {
   "no","yes", NULL
 };
 
-char *ptype_str[eptNR+1] = {
+const char *ptype_str[eptNR+1] = {
   "Atom", "Nucleus", "Shell", "Bond", "Dummy", NULL
 };
 
-char *eel_names[eelNR+1] = {
+const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
-  "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", NULL
+  "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", 
+  "Generalized-Born", NULL
 };
 
-char *eewg_names[eewgNR+1] = {
+const char *eewg_names[eewgNR+1] = {
   "3d", "3dc", NULL
 };
 
-char *evdw_names[evdwNR+1] = {
+const char *evdw_names[evdwNR+1] = {
   "Cut-off", "Switch", "Shift", "User", NULL
 };
 
-char *eshake_names[estNR+1] = {
+const char *eshake_names[estNR+1] = {
   "Lincs", "Shake", NULL
 };
 
-char *egrp_nm[egNR+1] = { 
+const char *egrp_nm[egNR+1] = { 
   "Coul-SR","LJ","Buck", "Coul-LR", "LJ-LR", "Coul-14", "LJ-14", NULL
 };
 
-char *etcoupl_names[etcNR+1] = {
-  "No", "Berendsen", "Nose-Hoover", "yes", NULL
+const char *etcoupl_names[etcNR+1] = {
+  "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-interval", NULL
 }; /* yes is alias for berendsen */
 
-char *epcoupl_names[epcNR+1] = {
+const char *epcoupl_names[epcNR+1] = {
   "No", "Berendsen", "Parrinello-Rahman", "Isotropic", NULL
 }; /* isotropic is alias for berendsen */
 
-char *epcoupltype_names[epctNR+1] = {
+const char *epcoupltype_names[epctNR+1] = {
   "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL
 };
 
-char *edisre_names[edrNR+1] = {
+const char *edisre_names[edrNR+1] = {
   "No", "Simple", "Ensemble", NULL
 };
 
-char *edisreweighting_names[edrwNR+1] = {
+const char *edisreweighting_names[edrwNR+1] = {
   "Conservative", "Equal", NULL
 };
 
-char *enbf_names[eNBF_NR+1] = {
+const char *enbf_names[eNBF_NR+1] = {
   "", "LJ", "Buckingham", NULL
 };
 
-char *ecomb_names[eCOMB_NR+1] = {
+const char *ecomb_names[eCOMB_NR+1] = {
   "", "Arithmetic", "Geometric", "ArithSigEps", NULL
 };
 
-char *gtypes[egcNR+1] = {
+const char *gtypes[egcNR+1] = {
   "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
   "User1", "User2", "VCM", "XTC", "Or. Res. Fit", NULL
 };
 
-char *efep_names[efepNR+1] = {
+const char *efep_names[efepNR+1] = {
   "no", "yes", NULL
 };
 
-char *esolv_names[esolNR+1] = {
+const char *esolv_names[esolNR+1] = {
   "General", "MNO Solvent", "Water", "Water-Water", NULL
 };
 
-char *edispc_names[edispcNR+1] = {
+const char *edispc_names[edispcNR+1] = {
   "No", "EnerPres", "Ener", NULL
 };
 
-char *ecm_names[ecmNR+1] = { 
+const char *ecm_names[ecmNR+1] = { 
   "Linear", "Angular", "None", NULL 
 };
- 
+
+const char *eann_names[eannNR+1] = {
+  "No", "Single", "Periodic", NULL
+};
+
+const char *egb_names[egbNR+1] = {
+  "Still", "Karplus", NULL
+};
+
+const char *eis_names[eisNR+1] = {
+  "No", "LCPO", NULL
+};

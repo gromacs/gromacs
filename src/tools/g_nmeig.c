@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_nmeig_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include "statutil.h"

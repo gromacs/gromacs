@@ -29,8 +29,9 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_addquote_c = "$Id$";
+
 #include <ctype.h>
+#include <string.h>
 #include "strdb.h"
 #include "copyrite.h"
 #include "smalloc.h"

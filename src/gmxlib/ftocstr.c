@@ -29,7 +29,8 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_ftocstr_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 int ftocstr(char *ds, int dl, char *ss, int sl)
     /* dst, src ptrs */
     /* dst max len */

@@ -29,9 +29,10 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_hrefify_c = "$Id$";
+
 #include <math.h>
-#include <string.h>
+#include <string.h> 
+#include <ctype.h>
 #include "smalloc.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -41,6 +42,7 @@ static char *SRCID_hrefify_c = "$Id$";
 #include "statutil.h"
 #include "copyrite.h"
 #include "pdbio.h"
+#include "strdb.h"
 
 bool isword(char c)
 {
@@ -64,7 +66,7 @@ char *strncasestr(char *line,char *str)
 
 char *strstr_href(char *line,bool *bInHREF,int *i_dat,int n_dat,char **dat)
 {
-  char *start,*found,*href;
+  char *start,*found,*href=NULL;
   bool bIn;
   int i;
 
@@ -88,16 +90,18 @@ char *strstr_href(char *line,bool *bInHREF,int *i_dat,int n_dat,char **dat)
       i=0;
       while((i<n_dat) && !found) {
 	found=strncasestr(start,dat[i]);
-	if (found) 
+	if (found) {
 	  if (href && (found>href))
 	    found=NULL;
-	  else 
+	  else {
 	    if (((found!=start) && isword(found[-1])) || 
 		isword(found[strlen(dat[i])])) 
 	      found=NULL;
 	    else
 	      *i_dat=i;
-	i++;
+	  }
+	  i++;
+	}
       }
     }
   } while (strlen(start) && !found && href);
@@ -133,12 +137,12 @@ int main(int argc, char *argv[])
   static char *in=NULL,*out=NULL,*excl=NULL,*link_text=NULL;
   static bool peratom=FALSE;
   t_pargs pa[] = {
-    { "-f", FALSE, etSTR, &in, "HTML input" },
-    { "-o", FALSE, etSTR, &out, "HTML output" },
-    { "-e", FALSE, etSTR, &excl, "Exclude a string from HREF's, "
+    { "-f", FALSE, etSTR, { &in } , "HTML input" },
+    { "-o", FALSE, etSTR, { &out } , "HTML output" },
+    { "-e", FALSE, etSTR, { &excl } , "Exclude a string from HREF's, "
       "when this option is not set, the filename without path and extension "
       "will be excluded from HREF's"},
-    { "-t", FALSE, etSTR, &link_text, "Insert a string in front of the "
+    { "-t", FALSE, etSTR, { &link_text } , "Insert a string in front of the "
       "href file name, useful for scripts" }
   };
   
@@ -196,7 +200,7 @@ int main(int argc, char *argv[])
 	strcpy(word,ref);
         word[ptr-ref+strlen(str[i_str])]='\0';
 	strcpy(end,ptr+strlen(str[i_str]));
-	sprintf(line,"%s<a href=\"%s%s.html\">%s</a>%s\0",
+	sprintf(line,"%s<a href=\"%s%s.html\">%s</a>%s",
 		start,link_text,str[i_str],word,end);
 	fprintf(stderr,"line %d: %s\n",l+1,str[i_str]);
 	n_repl++;

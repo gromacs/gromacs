@@ -33,10 +33,6 @@
 #ifndef _topexcl_h
 #define _topexcl_h
 
-static char *SRCID_topexcl_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) topexcl.h 1.11 11/23/92"
-#endif /* HAVE_IDENT */
 
 #include "topio.h"
 

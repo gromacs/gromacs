@@ -33,11 +33,6 @@
 #ifndef _fgrid_h
 #define _fgrid_h
 
-static char *SRCID_fgrid_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) fgrid.h 1.3 9/29/92"
-#endif /* HAVE_IDENT */
-
 #include <typedefs.h>
 #include <xdlg.h>
 

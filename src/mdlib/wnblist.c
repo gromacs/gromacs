@@ -29,7 +29,8 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID_wnblist_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #include <stdio.h>
 #include <string.h>
 #include "string2.h"

@@ -29,14 +29,16 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_replace_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <ctype.h>
 #include "string2.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "replace.h"
 
-char *replace(char *string,char *search,char *replace)
+char *replace(const char *string,const char *search,const char *replace)
 {
   char *buf=NULL,*ptr=NULL,*bufptr=NULL;
   int  blen,stringlen,slen,rlen;
@@ -80,7 +82,7 @@ char *replace(char *string,char *search,char *replace)
   return buf;
 }
 
-char *replaceww(char *string,char *search,char *replace)
+char *replaceww(char *string,const char *search,const char *replace)
 {
   char *buf=NULL,*ptr=NULL,*bufptr=NULL;
   int  buflen,stringlen,searchlen,replacelen;

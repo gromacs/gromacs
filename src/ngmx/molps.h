@@ -33,10 +33,6 @@
 #ifndef _molps_h
 #define _molps_h
 
-static char *SRCID_molps_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) molps.h 1.10 9/30/97"
-#endif /* HAVE_IDENT */
 #include "sysstuff.h"
 #include "manager.h"
 	

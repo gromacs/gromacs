@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_do_shift_c = "$Id$";
+
 #include <stdlib.h>
 #include "errno.h"
 #include "sysstuff.h"

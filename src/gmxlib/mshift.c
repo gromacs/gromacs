@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_mshift_c = "$Id$";
+
 #include <string.h>
 #include "assert.h"
 #include "smalloc.h"
@@ -55,8 +55,6 @@ static char *SRCID_mshift_c = "$Id$";
  *
  ************************************************************/
  
-typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
-
 static void add_gbond(t_graph *g,t_iatom ia[],int np)
 {
   int     j,k,l;
@@ -282,6 +280,10 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 #ifdef DEBUG
   p_graph(stdlog,"graph",g);
 #endif
+
+  g->negc = 0;
+  g->egc = NULL;
+  
   return g;
 }
 
@@ -293,6 +295,7 @@ void done_graph(t_graph *g)
     /* This is malloced in a NASTY way, see above */
     sfree(g->edge[0]);
     sfree(g->edge);
+    sfree(g->egc);
   }
 }
 
@@ -412,8 +415,6 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
   int    nerror=0;
-  static int   negc=0;
-  static egCol *egc=NULL;	/* The colour of each node	*/
 
   /* This puts everything in the central box, that is does not move it 
    * at all. If we return without doing this for a system without bonds
@@ -427,11 +428,11 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
     return;
 
   nnodes=g->nnodes;
-  if (nnodes > negc) {
-    negc = nnodes;
-    srenew(egc,negc);
+  if (nnodes > g->negc) {
+    g->negc = nnodes;
+    srenew(g->egc,g->negc);
   }
-  memset(egc,0,(size_t)(nnodes*sizeof(egc[0])));
+  memset(g->egc,0,(size_t)(nnodes*sizeof(g->egc[0])));
 
   nW=g->nbound;
   nG=0;
@@ -450,11 +451,11 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
      * number than before, because no nodes are made white
      * in the loop
      */
-    if ((fW=first_colour(fW,egcolWhite,g,egc)) == -1) 
+    if ((fW=first_colour(fW,egcolWhite,g,g->egc)) == -1) 
       fatal_error(0,"No WHITE nodes found while nW=%d\n",nW);
     
     /* Make the first white node grey */
-    egc[fW]=egcolGrey;
+    g->egc[fW]=egcolGrey;
     nG++;
     nW--;
 
@@ -465,18 +466,18 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
 	    nW,nG,nB,nW+nG+nB);
 #endif
     while (nG > 0) {
-      if ((fG=first_colour(fG,egcolGrey,g,egc)) == -1)
+      if ((fG=first_colour(fG,egcolGrey,g,g->egc)) == -1)
 	fatal_error(0,"No GREY nodes found while nG=%d\n",nG);
       
       /* Make the first grey node black */
-      egc[fG]=egcolBlack;
+      g->egc[fG]=egcolBlack;
       nB++;
       nG--;
 
       /* Make all the neighbours of this black node grey
        * and set their periodicity 
        */
-      ng=mk_grey(log,nnodes,egc,g,&fG,box,x,&nerror);
+      ng=mk_grey(log,nnodes,g->egc,g,&fG,box,x,&nerror);
       /* ng is the number of white nodes made grey */
       nG+=ng;
       nW-=ng;

@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_run_rms_c = "$Id$";
+
 #include <math.h>
 #include "smalloc.h"
 #include "typedefs.h"
@@ -80,7 +80,6 @@ int main (int argc,char *argv[])
   real         t,lambda,*w_rls,*w_rms,tmas;
   int          status;
   t_tpxheader  header;
-  t_inputrec   ir;
   t_topology   top;
   matrix       box;
   rvec         **x,*xp,*v,xcm,*temp;
@@ -104,7 +103,7 @@ int main (int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   snew(x,run_time+1);
 
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header,TRUE);
   snew(xp,header.natoms);
   for(i=0;(i<run_time+1);i++)
     snew(x[i],header.natoms);
@@ -113,7 +112,7 @@ int main (int argc,char *argv[])
   snew(v,header.natoms);
   
   read_tpx(ftp2fn(efTPX,NFILE,fnm),
-	   &step,&t,&lambda,&ir,
+	   &step,&t,&lambda,NULL,
 	   box,&natom,xp,NULL,NULL,&top);
 
   /*set box type*/

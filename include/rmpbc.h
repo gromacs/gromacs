@@ -33,14 +33,11 @@
 #ifndef _rmpbc_h
 #define _rmpbc_h
 
-static char *SRCID_rmpbc_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) rmpbc.h 1.6 2/2/97"
-#endif /* HAVE_IDENT */
+
 #include "typedefs.h"
 	
 extern void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[]);

@@ -33,14 +33,11 @@
 #ifndef _ebin_h
 #define _ebin_h
 
-static char *SRCID_ebin_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) ebin.h 1.10 5/2/97"
-#endif /* HAVE_IDENT */
+
 #include "sysstuff.h"
 #include "typedefs.h"
 	

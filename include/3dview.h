@@ -33,7 +33,6 @@
 #ifndef _3dview_h
 #define _3dview_h
 
-static char *SRCID_3dview_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -47,13 +46,15 @@ typedef real vec4[4];
 typedef real mat4[4][4];
 
 typedef int  iv2[2];
-
+ 
 typedef struct {
   matrix box;
   vec4   eye,origin;	/* The eye and origin position		*/
   mat4   proj;		/* Projection matrix 			*/
   mat4   Rot;           /* Total rotation matrix                */
   real   sc_x,sc_y;	/* Scaling for aspect ratio		*/
+  mat4   RotP[DIM];     /* state for 3d rotations  */
+  mat4   RotM[DIM];
 } t_3dview;
 
 extern void print_m4(FILE *fp,char *s,mat4 A);
@@ -91,6 +92,9 @@ extern bool zoom_3d(t_3dview *view,real fac);
 /* Zoom in or out with factor fac, returns TRUE when zoom succesful,
  * FALSE otherwise.
  */
+
+extern void init_rotate_3d(t_3dview *view);
+/* Initiates the state of 3d rotation matrices in the structure */
 
 extern void rotate_3d(t_3dview *view,int axis,bool bPositive);
 /* Rotate the eye around the center of the box, around axis */

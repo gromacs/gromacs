@@ -33,17 +33,13 @@
 #ifndef _pdb2top_h
 #define _pdb2top_h
 
-static char *SRCID_pdb2top_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) pdb2top.h 1.19 2/2/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 #include "toputil.h"
 #include "hackblock.h"
 
 /* this *MUST* correspond to array in pdb2top.c */
 enum { ehisA, ehisB, ehisH, ehis1, ehisNR };
-extern char *hh[ehisNR];
+extern const char *hh[ehisNR];
 
 typedef struct {
   int  res1,res2;
@@ -55,7 +51,7 @@ typedef struct {
   int  nr;
 } t_mols;
 
-extern char *choose_ff(void);
+extern char *choose_ff(char buf[],int sz);
 /* Strange place for this function... */
 
 extern void print_top_comment(FILE *out,char *filename,char *title,bool bITP);

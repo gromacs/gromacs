@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_fnbf_c = "$Id$";
+
  
 #ifdef USE_THREADS  
 #include <pthread.h>  /* must come first! */
@@ -1011,7 +1011,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
   if (nbfp14 == NULL) {
     nbfp14 = mk_14parm(fr->ntype,nbonds,iatoms,iparams,md->typeA);
     if (debug)
-      pr_rvec(debug,0,"nbfp14",nbfp14,sqr(fr->ntype));
+      pr_rvec(debug,0,"nbfp14",nbfp14,sqr(fr->ntype),TRUE);
   }
   shift14 = CENTRAL;
   

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_prfn_c = "$Id$";
+
 #include "filenm.h"
 #include "futil.h"
 #include "wman.h"
@@ -76,7 +76,7 @@ void pr_htmldefs(FILE *fp)
 }
 
 
-void main()
+int main()
 {
   FILE *out;
   
@@ -87,5 +87,7 @@ void main()
   out=ffopen("files.html","w");
   pr_htmldefs(out);
   fclose(out);
+
+  return 0;
 }
  

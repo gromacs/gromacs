@@ -29,7 +29,8 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_viewit_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include <string.h>
 #include "statutil.h"
 #include "viewit.h"
@@ -37,11 +38,11 @@ static char *SRCID_viewit_c = "$Id$";
 #include "filenm.h"
 #include "macros.h"
 
-static int can_view_ftp[] = { 0,
+static const int can_view_ftp[] = { 0,
   efEPS,           efXPM,         efXVG,          efPDB };
 #define NVIEW asize(can_view_ftp)
-static char* view_program[] = { NULL,
-  "ghostview",    "xv",           NULL,           "xterm -e rasmol" };
+static const char* view_program[] = { NULL,
+  "ghostview",    "display",      NULL,           "xterm -e rasmol" };
 
 int can_view(int ftp)
 {
@@ -57,7 +58,8 @@ int can_view(int ftp)
 void do_view(char *fn, char *opts)
 {
 #define N_EXT 3
-  char buf[STRLEN], env[20], ext[N_EXT], *cmd;
+  char buf[STRLEN], env[20], ext[N_EXT];
+  const char *cmd;
   int ftp, n;
   
   if (bDoView() && fn) {

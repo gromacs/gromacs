@@ -37,9 +37,7 @@
 #ifndef	_stop_ani_bm
 #define	_stop_ani_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) stop_ani.bm 1.2 11/23/92"
-#endif /* HAVE_IDENT */
+
 #define stop_ani_width 40
 #define stop_ani_height 32
 static unsigned char stop_ani_bits[] = {

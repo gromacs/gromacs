@@ -29,10 +29,6 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_hbond_c = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) g_hbond.cc 1.29 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "statutil.h"
 #include "copyrite.h"

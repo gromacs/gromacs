@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_matio_c = "$Id$";
+
 #include <ctype.h>
 #include "sysstuff.h"
 #include "futil.h"
@@ -42,7 +42,7 @@ static char *SRCID_matio_c = "$Id$";
 
 #define round(a) (int)(a+0.5)
 
-static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
+static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
 #define NMAP strlen(mapper)
 
 #define MAX_XPM_LINELENGTH 4096

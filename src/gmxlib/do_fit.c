@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_do_fit_c = "$Id$";
+
 #include "maths.h"
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -94,22 +94,20 @@ real rhodev(int natoms,real mass[],rvec x[],rvec xp[])
 void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
 {
   int    c,r,n,j,m,i,irot;
-  static double **omega=NULL,**om=NULL;
+  double **omega,**om;
   double d[2*DIM],xnr,xpc;
   matrix vh,vk,u;
   real   mn;
   int    index;
   real   max_d;
 
-  if (omega == NULL) {
-    snew(omega,2*DIM);
-    snew(om,2*DIM);
-    for(i=0; i<2*DIM; i++) {
-      snew(omega[i],2*DIM);
-      snew(om[i],2*DIM);
-    }
+  snew(omega,2*DIM);
+  snew(om,2*DIM);
+  for(i=0; i<2*DIM; i++) {
+    snew(omega[i],2*DIM);
+    snew(om[i],2*DIM);
   }
-
+  
   for(i=0; i<2*DIM; i++) {
     d[i]=0;
     for(j=0; j<2*DIM; j++) {
@@ -182,6 +180,13 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
       R[r][c] = vk[0][r]*vh[0][c] +
 	        vk[1][r]*vh[1][c] +
 	        vk[2][r]*vh[2][c];
+
+  for(i=0; i<2*DIM; i++) {
+    sfree(omega[i]);
+    sfree(om[i]);
+  }
+  sfree(omega);
+  sfree(om);
 }
 
 void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)

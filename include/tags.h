@@ -33,14 +33,10 @@
 #ifndef _tags_h
 #define _tags_h
 
-static char *SRCID_tags_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) tags.h 1.3 11/23/92"
-#endif /* HAVE_IDENT */
 
 #define SYSCALL_TAG	0x11		/* Tag for server system calls      */
 #define SEMGET_TAG	0x10		/* Server subcommand i860_semget()  */

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_calcfdev_c = "$Id$";
+
 #include "typedefs.h"
 #include "main.h"
 #include "vec.h"

@@ -33,7 +33,12 @@
 #ifndef _mkinl_h
 #define _mkinl_h
 
-static char *SRCID_mkinl_h = "$Id$";
+/* This file is NOT threadsafe, but it is only used to create
+ * the innerloops during the build process, so it will never be
+ * executed by multiple threads.
+ */
+
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -85,12 +85,20 @@ typedef struct {
 				/* use: (*(atomtypeB[i]))		*/
   int		nres;		/* Nr of residue names			*/
   char		***resname; 	/* Array of pointers to residue names 	*/
-				/* use: (*(resname[i]))			*/
-  int           ngrpname;       /* Number of groupnames                 */
+				/* use: (*(resname[i]))	       	*/
+  int           ngrpname;        /* Number of groupnames                 */
   char          ***grpname;	/* Names of the groups		        */
-  t_block	excl;		/* Exclusions				*/
+  t_block	excl;		/* Exclusions		       	*/
   t_grps        grps[egcNR];    /* Groups of things                     */
   t_pdbinfo     *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
+
+typedef struct {
+  int           nr;              /* number of atomtypes                     */
+  real         *radius;         /* GBSA radius for each atomtype        */
+  real         *vol;            /* GBSA efective volume for each atomtype   */
+  real         *surftens;       /* implicit solvent surftens for each atomtype */
+} t_atomtypes;
+
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))

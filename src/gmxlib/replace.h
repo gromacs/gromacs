@@ -33,16 +33,12 @@
 #ifndef _replace_h
 #define _replace_h
 
-static char *SRCID_replace_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) replace.h 1.16 10/14/97"
-#endif /* HAVE_IDENT */
-extern char *replace(char *string,char *search,char *replace);
+extern char *replace(const char *string,const char *search,const char *replace);
 /* Replace all occurences of 
  * string 'search' in string 'string' by 'replace' 
  */
 
-extern char *replaceww(char *string,char *search,char *replace);
+extern char *replaceww(char *string,const char *search,const char *replace);
 /* Replace all occurences of string 'search' delimited by non-alphanum
  * characters (i.e. whole words) in string 'string' by 'replace' 
  */

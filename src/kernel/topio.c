@@ -29,11 +29,6 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_topio_c = "$Id$";
-#ifdef HAVE_IDENT
-#ident "@(#) topio.c 1.87 9/30/97"
-#endif
-
 #include <math.h>
 #include <sys/types.h>
 #include <stdio.h>
@@ -182,24 +177,20 @@ void preprocess(char *infile,char *outfile,
 		char *cpp,char *define,
 		char *include)
 {
-  static char libdir[1024];
-  static bool bFirst=TRUE;
+  char libdir[1024];
   char *lib;
   char command[2048];
   int  error;
 
-  if (bFirst) {
-    lib=getenv("GMXLIB");
-    if (lib!=NULL) {
-      strcpy(libdir,lib);
-    } 
-    else {
-      if(!get_libdir(libdir))
-	strcpy(libdir,GMXLIBDIR);
-    }
-    bFirst=FALSE;
+  lib=getenv("GMXLIB");
+  if (lib!=NULL) {
+    strcpy(libdir,lib);
+  } 
+  else {
+    if(!get_libdir(libdir))
+      strcpy(libdir,GMXLIBDIR);
   }
-
+  
   /* build the command line. Second output name is not supported 
    * on OS X it seems, so we use redirection instead in that case.
    */
@@ -213,7 +204,7 @@ void preprocess(char *infile,char *outfile,
   
   if (debug)
     fprintf(debug,"Command line for cpp:\n\t%s\n",command);
-
+  
   /* execute preprocessor */
   error=system(command);
   if (error) {
@@ -294,6 +285,7 @@ static char **read_topol(char        *infile,
   bool       bReadDefaults,bReadMolType,bGenPairs;
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype *batype;
+  int        lastcg=-1;
   
   /* open input and output file */
   if ((in = fopen(infile,"r")) == NULL)
@@ -460,14 +452,15 @@ static char **read_topol(char        *infile,
 				  atype->nr);
 	    fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
 	    free_nbparam(nbparam,atype->nr);
-	    
-	    if (bGenPairs) {
+   	    if (bGenPairs) {
 	      gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
 	      ncopy = copy_nbparams(pair,nb_funct,&(plist[F_LJ14]),
 				    atype->nr);
 	      fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
 	      free_nbparam(pair,atype->nr);
 	    }
+	    /* Copy GBSA parameters to atomtype array */
+	    
 	    bReadMolType = TRUE;
 	  }
 	  
@@ -482,7 +475,7 @@ static char **read_topol(char        *infile,
 	  break;
 	}
 	case d_atoms: 
-	  push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline);
+	  push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline,&lastcg);
 	  break;
 	  
 	case d_pairs: 
@@ -501,6 +494,7 @@ static char **read_topol(char        *infile,
 	case d_angle_restraints_z:
 	case d_distance_restraints: 
 	case d_orientation_restraints:
+	case d_dihedral_restraints:
 	case d_dihedrals:
 	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,bGenPairs);
 	  break;

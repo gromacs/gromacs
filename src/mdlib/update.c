@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_update_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 
@@ -40,7 +40,6 @@ static char *SRCID_update_c = "$Id$";
 #include "nrnb.h"
 #include "physics.h"
 #include "macros.h"
-#include "vveclib.h"
 #include "vec.h"
 #include "main.h"
 #include "confio.h"
@@ -68,11 +67,9 @@ typedef struct {
   real d;
 } t_sdconst;
 
-/* constants for a (bad) random number generator */
-const unsigned long im = 0xffff;
-const unsigned long ia = 1093;
-const unsigned long ic = 18257;
-const real inv_im      = 1.0/(0xffff);
+
+
+
 
 static t_sdconst *sdc;
 
@@ -233,22 +230,6 @@ static void do_update_visc(int start,int homenr,double dt,
   }
 }
 
-static real fgauss(unsigned long *jran)
-{
-  static real sqrt3 = 1.7320508075688772;
-  real jr;
-
-  *jran = (*jran*ia+ic) & im;
-  jr = (real)*jran;
-  *jran = (*jran*ia+ic) & im;
-  jr += (real)*jran;
-  *jran = (*jran*ia+ic) & im;
-  jr += (real)*jran;
-  *jran = (*jran*ia+ic) & im;
-  jr += (real)*jran;
-
-  return sqrt3*(jr*inv_im-2);
-}
 
 void init_sd_consts(int ngtc,real tau_t[],real dt)
 {
@@ -283,10 +264,10 @@ static void do_update_sd(int start,int homenr,
                          rvec accel[],ivec nFreeze[],
                          real invmass[],unsigned short ptype[],
                          unsigned short cFREEZE[],unsigned short cACC[],
-                         unsigned short cTC[],real SAfactor,
+                         unsigned short cTC[],
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
                          int ngtc,real tau_t[],real ref_t[],
-                         int *seed, bool bFirstHalf)
+                         t_Gaussdata gaussrand, bool bFirstHalf)
 {
   typedef struct {
     real V;
@@ -313,7 +294,7 @@ static void do_update_sd(int start,int homenr,
 
   if(bFirstHalf) {
     for(n=0; n<ngtc; n++) {
-      kT = BOLTZ*SAfactor*ref_t[n];
+      kT = BOLTZ*ref_t[n];
       /* The mass is encounted for later, since this differs per atom */
       sig[n].V  = sqrt(kT*(1-sdc[n].em));
       sig[n].X  = sqrt(kT*sqr(tau_t[n])*sdc[n].c);
@@ -321,8 +302,6 @@ static void do_update_sd(int start,int homenr,
       sig[n].Yx = sqrt(kT*sqr(tau_t[n])*sdc[n].b/(1-sdc[n].em));
     }
   }
-
-  jran = (unsigned long)((real)im*rando(seed));
 
   for(n=start; n<start+homenr; n++) {
     ism = sqrt(invmass[n]);
@@ -339,11 +318,11 @@ static void do_update_sd(int start,int homenr,
         if(bFirstHalf) {
 
           if(bFirst)
-            X[n-start][d] = ism*sig[gt].X*fgauss(&jran);
+            X[n-start][d] = ism*sig[gt].X*gauss(gaussrand);
 
           Vmh = X[n-start][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
-                + ism*sig[gt].Yv*fgauss(&jran);
-          V[n-start][d] = ism*sig[gt].V*fgauss(&jran);
+                + ism*sig[gt].Yv*gauss(gaussrand);
+          V[n-start][d] = ism*sig[gt].V*gauss(gaussrand);
 
           v[n][d] = vn*sdc[gt].em 
                     + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
@@ -358,8 +337,8 @@ static void do_update_sd(int start,int homenr,
           (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
 
           Xmh = V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
-                + ism*sig[gt].Yx*fgauss(&jran);
-          X[n-start][d] = ism*sig[gt].X*fgauss(&jran);
+                + ism*sig[gt].Yx*gauss(gaussrand);
+          X[n-start][d] = ism*sig[gt].X*gauss(gaussrand);
 
           xprime[n][d] += X[n-start][d] - Xmh;
 
@@ -383,7 +362,7 @@ static void do_update_bd(int start,int homenr,double dt,
                          rvec x[],rvec xprime[],rvec v[],rvec vold[],
                          rvec f[],real temp,real fr,
                          int ngtc,real tau_t[],real ref_t[],
-                         int *seed)
+                         t_Gaussdata gaussrand)
 {
   int    gf,gt;
   real   vn;
@@ -402,8 +381,6 @@ static void do_update_bd(int start,int homenr,double dt,
     for(n=0; n<ngtc; n++)
       rf[n]  = sqrt(2.0*BOLTZ*ref_t[n]);
 
-  jran = (unsigned long)((real)im*rando(seed));
-
   for(n=start; (n<start+homenr); n++) {
     gf = cFREEZE[n];
     gt = cTC[n];
@@ -411,11 +388,11 @@ static void do_update_bd(int start,int homenr,double dt,
       vold[n][d]     = v[n][d];
       if((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
         if(fr)
-          vn         = invfr*f[n][d] + rfac*fgauss(&jran);
+          vn         = invfr*f[n][d] + rfac*gauss(gaussrand);
         else
           /* NOTE: invmass = 1/(mass*fric_const*dt) */
           vn         = invmass[n]*f[n][d]*dt 
-                       + sqrt(invmass[n])*rf[gt]*fgauss(&jran);
+                       + sqrt(invmass[n])*rf[gt]*gauss(gaussrand);
 
         v[n][d]      = vn;
         xprime[n][d] = x[n][d]+vn*dt;
@@ -581,7 +558,6 @@ void update(int          natoms,  /* number of atoms in simulation */
             real         lambda,
             real         *dvdlambda,    /* FEP stuff */
             t_parm       *parm,         /* input record and box stuff	*/
-            real         SAfactor,      /* simulated annealing factor   */
             t_mdatoms    *md,
             rvec         x[],         /* coordinates of home particles */
             t_graph      *graph,  
@@ -612,7 +588,8 @@ void update(int          natoms,  /* number of atoms in simulation */
   int              i,n,m,g;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
-
+  t_Gaussdata      sd_gaussrand=NULL;
+  
   if(bFirst) {
     bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
                                    ir->eI!=eiSteep,cr);
@@ -623,6 +600,10 @@ void update(int          natoms,  /* number of atoms in simulation */
       init_edsam(stdlog,top,md,start,homenr,x,parm->box,
                  edyn,&edpar);
 
+    /* Initiate random number generator for stochastic and brownian dynamic integrators */
+    if(ir->eI==eiSD || ir->eI==eiBD) 
+      sd_gaussrand=init_gauss(ir->ld_seed);
+    
     /* Allocate memory for xold, original atomic positions
      * and for xprime.
      */
@@ -631,7 +612,6 @@ void update(int          natoms,  /* number of atoms in simulation */
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=ir->opts.ngacc;    
     ngtc=ir->opts.ngtc;    
-
     snew(lamb,ngtc);
 
     /* done with initializing */
@@ -683,10 +663,10 @@ void update(int          natoms,  /* number of atoms in simulation */
       do_update_sd(start,homenr,
                    ir->opts.acc,ir->opts.nFreeze,
                    md->invmass,md->ptype,
-                   md->cFREEZE,md->cACC,md->cTC,SAfactor,
+                   md->cFREEZE,md->cACC,md->cTC,
                    x,xprime,v,vold,force,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
-                   &ir->ld_seed,TRUE);
+                   sd_gaussrand,TRUE);
       if(bHaveConstr) {
         for(n=start; n<start+homenr; n++)
           copy_rvec(xprime[n],x_unc[n-start]);
@@ -704,10 +684,10 @@ void update(int          natoms,  /* number of atoms in simulation */
       do_update_sd(start,homenr,
                    ir->opts.acc,ir->opts.nFreeze,
                    md->invmass,md->ptype,
-                   md->cFREEZE,md->cACC,md->cTC,SAfactor,
+                   md->cFREEZE,md->cACC,md->cTC,
                    x,xprime,v,vold,force,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
-                   &ir->ld_seed,FALSE);
+                   sd_gaussrand,FALSE);
     } else if(ir->eI==eiBD)
       do_update_bd(start,homenr,dt,
                    ir->opts.nFreeze,md->invmass,md->ptype,
@@ -715,7 +695,7 @@ void update(int          natoms,  /* number of atoms in simulation */
                    x,xprime,v,vold,force,
                    ir->bd_temp,ir->bd_fric,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
-                   &ir->ld_seed);
+                   sd_gaussrand);
     else
       fatal_error(0,"Don't know how to update coordinates");
 

@@ -33,10 +33,7 @@
 #ifndef _wnblist_h
 #define _wnblist_h
 
-static char *SRCID_wnblist_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) wnblist.h 1.1 23 Oct 1994"
-#endif /* HAVE_IDENT */
+
 #include "stdio.h"
 #include "typedefs.h"
 

@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_dielectric_c = "$Id$";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

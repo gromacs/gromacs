@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_eigio_c = "$Id$";
+
 #include "smalloc.h"
 #include "vec.h"
 #include "eigio.h"

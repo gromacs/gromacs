@@ -29,7 +29,9 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_pargs_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -218,11 +220,14 @@ char *opt2parg_enum(char *option,int nparg,t_pargs pa[])
   return NULL;
 }
 
-char *pa_val(t_pargs *pa)
+char *pa_val(t_pargs *pa, char buf[], int sz)
 {
-  static char buf[256];
   
   buf[0]='\0';
+
+  if(sz<255)
+    fatal_error(0,"Buffer must be at least 255 chars\n");
+  
   switch(pa->type) {
   case etINT:
     sprintf(buf,"%d",*(pa->u.i));
@@ -236,7 +241,7 @@ char *pa_val(t_pargs *pa)
     break;
   case etSTR:
     if (*(pa->u.c)) {
-      if (strlen(*(pa->u.c)) >= 256)
+      if (strlen(*(pa->u.c)) >= sz)
 	fatal_error(0,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));
@@ -255,7 +260,7 @@ char *pa_val(t_pargs *pa)
 void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 {
   bool bShowHidden;
-  char buf[32],buf2[256];
+  char buf[32],buf2[256],tmp[256];
   char *wdesc;
   int  i;
   
@@ -281,14 +286,14 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(argtp[pa[i].type]),4))) {
 	  fprintf(fp,"%12s\n",buf);
 	  sprintf(buf2,"%12s %6s %6s  %s\n",
-		"",argtp[pa[i].type],pa_val(&(pa[i])),check_tty(pa[i].desc));
+		"",argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
 	} else if (strlen(buf)>OPTLEN) {
 	  /* so type can be 4 or 5 char's (max(...,4)), this fits in the %5s */
 	  sprintf(buf2,"%-14s%5s %6s  %s\n",
-		  buf,argtp[pa[i].type],pa_val(&(pa[i])),check_tty(pa[i].desc));
+		  buf,argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
 	} else
 	  sprintf(buf2,"%12s %6s %6s  %s\n",
-		buf,argtp[pa[i].type],pa_val(&(pa[i])),check_tty(pa[i].desc));
+		buf,argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
 	wdesc=wrap_lines(buf2,80,28);
 	fprintf(fp,wdesc);
 	sfree(wdesc);

@@ -33,11 +33,6 @@
 #ifndef _Xstuff_h
 #define _Xstuff_h
 
-static char *SRCID_Xstuff_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) Xstuff.h 1.16 11/23/92"
-#endif /* HAVE_IDENT */
-
 /* The altivec extensions for ppc define some stupid overlapping
  * macros like pixel and vector - turn them off here, we only
  * need them in the inner loops.

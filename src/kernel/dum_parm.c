@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_dum_parm_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

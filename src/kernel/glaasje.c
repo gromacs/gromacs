@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_glaasje_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"

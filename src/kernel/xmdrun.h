@@ -33,7 +33,6 @@
 #ifndef _xmdrun_h
 #define _xmdrun_h
 
-static char *SRCID_xmdrun_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

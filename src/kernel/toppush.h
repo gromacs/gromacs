@@ -33,10 +33,6 @@
 #ifndef _toppush_h
 #define _toppush_h
 
-static char *SRCID_toppush_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) toppush.h 1.31 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 #include "toputil.h"
@@ -68,7 +64,8 @@ extern void push_atom(t_symtab   *symtab,
 		      t_block    *cgs,
 		      t_atoms    *at,
 		      t_atomtype *atype,
-		      char       *line);
+		      char       *line,
+		      int        *lastcg);
 
 extern void push_bondnow (t_params *bond, t_param *b);
 

@@ -29,7 +29,7 @@
  * And Hey:
  * S  C  A  M  O  R  G
  */
-static char *SRCID_filenm_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -63,28 +63,28 @@ enum { eftASC, eftBIN, eftXDR, eftGEN, eftNR };
 /* To support multiple file types with one general (eg TRX) we have 
  * these arrays.
  */
-static    int trxs[]={
+static const int trxs[]={
 #ifdef USE_XDR 
   efXTC, efTRR, 
 #endif
   efTRJ, efGRO, efG96, efPDB, efG87 };
 #define NTRXS asize(trxs)
 
-static    int trns[]={ 
+static const int trns[]={ 
 #ifdef USE_XDR
   efTRR, 
 #endif
   efTRJ };
 #define NTRNS asize(trns)
 
-static    int stos[]={ efGRO, efG96, efPDB, efBRK, 
+static const int stos[]={ efGRO, efG96, efPDB, efBRK, 
 #ifdef HAVE_XML
   efXML, 
 #endif
   efENT};
 #define NSTOS asize(stos)
 
-static    int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
+static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
 #ifdef USE_XDR 
 		       efTPR, 
 #endif 
@@ -95,14 +95,14 @@ static    int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
 		        };
 #define NSTXS asize(stxs)
 
-static    int enxs[]={ 
+static const int enxs[]={ 
 #ifdef USE_XDR
   efEDR, 
 #endif
   efENE };
 #define NENXS asize(enxs)
 
-static    int tpxs[]={ 
+static const int tpxs[]={ 
 #ifdef USE_XDR
   efTPR, 
 #endif
@@ -113,7 +113,7 @@ static    int tpxs[]={
   };
 #define NTPXS asize(tpxs)
 
-static    int tpss[]={ 
+static const int tpss[]={ 
 #ifdef USE_XDR
   efTPR, 
 #endif
@@ -129,10 +129,11 @@ typedef struct {
   char *ext;
   char *defnm;
   char *defopt;
-  char *descr;
+  const char *descr;
   int  ntps;
-  int  *tps;
+  const int  *tps;
 } t_deffile;
+ 
 
 /* this array should correspond to the enum in include/types/filenm.h */
 static t_deffile deffile[efNR] = {
@@ -190,9 +191,9 @@ static t_deffile deffile[efNR] = {
 static char *default_file_name=NULL;
 
 #define NZEXT 2
-char *z_ext[NZEXT] = { ".gz", ".Z" };
+const char *z_ext[NZEXT] = { ".gz", ".Z" };
 
-void set_default_file_name(char *name)
+void set_default_file_name(const char *name)
 {
   int i;
 
@@ -202,7 +203,7 @@ void set_default_file_name(char *name)
     deffile[i].defnm = default_file_name;
 }
 
-char *ftp2ext(int ftp)
+const char *ftp2ext(int ftp)
 {
   if ((0 <= ftp) && (ftp < efNR))
     return deffile[ftp].ext+1;
@@ -210,7 +211,7 @@ char *ftp2ext(int ftp)
     return "unknown";
 }
 
-char *ftp2desc(int ftp)
+const char *ftp2desc(int ftp)
 {
   if ((0 <= ftp) && (ftp < efNR))
     return deffile[ftp].descr;
@@ -218,7 +219,7 @@ char *ftp2desc(int ftp)
     return "unknown filetype";
 }
 
-char *ftp2ftype(int ftp)
+const char *ftp2ftype(int ftp)
 {
   if ((ftp >= 0) && (ftp < efNR)) {
     switch (deffile[ftp].ftype) {
@@ -234,7 +235,7 @@ char *ftp2ftype(int ftp)
   return "unknown";
 }
 
-char *ftp2defnm(int ftp)
+const char *ftp2defnm(int ftp)
 {
   static char buf[256];
   
@@ -248,7 +249,8 @@ char *ftp2defnm(int ftp)
 void pr_def(FILE *fp,int ftp)
 {
   t_deffile *df;
-  char *s=NULL,*ext,*desc,*flst;
+  char *s=NULL,*flst;
+  const char *ext,*desc;
   
   df=&(deffile[ftp]);
   /* find default file extension and \tt-ify description */
@@ -304,7 +306,7 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
   for(i=0; (i<nf); i++) {
     for(f=0; f<tfn[i].nf; f++) {
       sprintf(buf, "%4s %14s  %-12s", f==0?tfn[i].opt:"", tfn[i].fns[f],
-	      f==0?fileopt(tfn[i].flag):"");
+	      f==0?fileopt(tfn[i].flag,buf,255):"");
       if ( f < tfn[i].nf-1 )
 	fprintf(fp, "%s\n", buf);
     }
@@ -457,7 +459,7 @@ static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
   int  i,type;
   bool bValidExt;
   int  nopts;
-  int  *ftps;
+  const int  *ftps;
   
   nopts = deffile[fnm->ftp].ntps;
   ftps  = deffile[fnm->ftp].tps;
@@ -705,7 +707,7 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   return NULL;
 }
 
-static void add_filters(char *filter,int *n,int nf,int ftp[])
+static void add_filters(char *filter,int *n,int nf,const int ftp[])
 {
   char buf[8];
   int  i;

@@ -40,21 +40,28 @@ typedef struct {
 } t_cosines;
 
 typedef struct {
-  int     ngtc;         /* # T-Coupl groups                             */
-  int     ngacc;        /* # Accelerate groups                          */
-  int     ngfrz;        /* # Freeze groups                              */
-  int     ngener;	/* # Ener groups				*/
-  real    *nrdf;	/* Nr of degrees of freedom in a group		*/
-  real    *ref_t;	/* Coupling temperature	per group		*/
-  real    *tau_t;	/* Tau coupling time 				*/
-  rvec    *acc;		/* Acceleration per group			*/
-  ivec    *nFreeze;	/* Freeze the group in each direction ?	        */
-  bool    *eg_excl;     /* Exclusions of energy group pairs             */
+  int     ngtc;                  /* # T-Coupl groups                       */
+  int     ngacc;                 /* # Accelerate groups                    */
+  int     ngfrz;                 /* # Freeze groups                        */
+  int     ngener;	         /* # Ener groups			   */
+  real    *nrdf;	         /* Nr of degrees of freedom in a group	   */
+  real    *ref_t;	         /* Coupling temperature	per group  */
+  int     *annealing;            /* No/simple/periodic SA for each group   */
+  int     *anneal_npoints;       /* Number of annealing time points per grp*/    
+  real    **anneal_time;         /* For ea. group: Time points             */
+  real    **anneal_temp;         /* For ea. grp: Temperature at these times*/
+                                 /* Final temp after all intervals is ref_t*/  
+  real    *tau_t;	         /* Tau coupling time 			   */
+  rvec    *acc;		         /* Acceleration per group		   */
+  ivec    *nFreeze;	         /* Freeze the group in each direction ?   */
+  bool    *eg_excl;              /* Exclusions of energy group pairs       */
 } t_grpopts;
+
 
 typedef struct {
   int  eI;              /* Integration method 				*/
   int  nsteps;		/* number of steps to be taken			*/
+  int  init_step;	/* start at a stepcount >0 (used w. tpbconv)    */
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/
@@ -62,6 +69,7 @@ typedef struct {
   int  decomp_dir;      /* Direction of decomposition (may not be opt.) */
   int  nstcomm;		/* number of steps after which center of mass	*/
                         /* motion is removed				*/
+  int nstcheckpoint;    /* checkpointing frequency                      */
   int nstlog;		/* number of steps after which print to logfile	*/
   int nstxout;		/* number of steps after which X is output	*/
   int nstvout;		/* id. for V					*/
@@ -87,16 +95,20 @@ typedef struct {
   real tau_p;		/* pressure coupling time (ps)			*/
   tensor ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
   tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/
-  bool bSimAnn;         /* simulated annealing (SA)                     */
-  real zero_temp_time;  /* time at which temp becomes zero in sim. ann. */
+  int  andersen_seed;   /* Random seed for Andersen thermostat.         */
   real rlist;		/* short range pairlist cut-off (nm)		*/
   int  coulombtype;	/* Type of electrostatics treatment             */
   real rcoulomb_switch; /* Coulomb switch range start (nm)		*/
   real rcoulomb;        /* Coulomb cutoff (nm)		                */
+  real epsilon_r;       /* relative dielectric constant                 */ 
+  int  gb_algorithm;    /* Algorithm to use for calculation Born radii  */
+  int  nstgbradii;      /* Frequency of updating Generalized Born radii */
+  real rgbradii;        /* Cutoff for GB radii calculation              */
+  real gb_saltconc;     /* Salt concentration (M) for GBSA models       */
   int  vdwtype;         /* Type of Van der Waals treatment              */
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
   real rvdw;		/* Van der Waals cutoff (nm)		        */
-  real epsilon_r;       /* relative dielectric constant                 */
+  int  implicit_solvent;/* No (=explicit water), or GBSA solvent models */
   int  eDispCorr;       /* Perform Long range dispersion corrections    */
   real shake_tol;	/* tolerance for shake				*/
   real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
@@ -113,6 +125,9 @@ typedef struct {
   real orires_fc;	/* force constant for orientational restraints  */
   real orires_tau;	/* time constant for memory function in orires 	*/
   int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
+  int  dihre_fc;        /* force constant for dihedral restraints	*/
+  int  nstdihreout;     /* frequency of writing dihedrals to enx        */ 
+  real dihre_tau;       /* time constant for memory function in dihres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */
@@ -124,6 +139,7 @@ typedef struct {
   int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
+  int  nLincsIter;      /* Number of iterations in the final Lincs step */
   bool bShakeSOR;       /* Use successive overrelaxation for shake      */
   real bd_temp;         /* Temperature for Brownian Dynamics (BD)       */
   real bd_fric;         /* Friction coefficient for BD (amu / ps)       */

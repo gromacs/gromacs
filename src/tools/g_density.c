@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_density_c = "$Id$";
+
 #include <math.h>
 #include <ctype.h>
 #include "sysstuff.h"

@@ -33,10 +33,6 @@
 #ifndef _topdirs_h
 #define _topdirs_h
 
-static char *SRCID_topdirs_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) topdirs.h 1.30 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "grompp.h"
 

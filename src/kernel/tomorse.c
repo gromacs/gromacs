@@ -29,7 +29,8 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_tomorse_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #include <stdlib.h>
 #include <math.h>
 #include <ctype.h>

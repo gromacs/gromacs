@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_glasmd_c = "$Id$";
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -182,7 +182,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
     
     /* Set values for invmass etc. */
-    init_mdatoms(mdatoms,lambda,FALSE);
+    if (parm->ir.bPert)
+      init_mdatoms(mdatoms,lambda,FALSE);
     
     /*init_forcerec(log,fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
       &(top->blocks[ebCGS]),&(top->idef),mdatoms,parm->box,FALSE);

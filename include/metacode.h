@@ -33,7 +33,6 @@
 #ifndef _metacode_h
 #define _metacode_h
 
-static char *SRCID_metacode_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -33,14 +33,9 @@
 #ifndef _string2_h
 #define _string2_h
 
-static char *SRCID_string2_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) string2.h 1.13 11/23/92"
-#endif /* HAVE_IDENT */
 
 /*
  *
@@ -99,7 +94,7 @@ extern char *gmx_strdup(const char *src);
 #define strdup gmx_strdup
 #endif
 
-extern char *wrap_lines(char *buf,int line_width, int indent);
+extern char *wrap_lines(const char *buf,int line_width, int indent);
 /* wraps lines at 'linewidth', indenting all following
  * lines by 'indent' spaces. A temp buffer is allocated and returned,
  * which can be disposed of if no longer needed.

@@ -33,7 +33,6 @@
 #ifndef _readinp_h
 #define _readinp_h
 
-static char *SRCID_readinp_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -51,20 +50,20 @@ extern t_inpfile *read_inpfile(char *fn,int *ninp);
 
 extern void write_inpfile(char *fn,int ninp,t_inpfile inp[]);
 
-extern int get_eint(int *ninp,t_inpfile **inp,char *name,int def);
+extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def);
 
-extern real get_ereal(int *ninp,t_inpfile **inp,char *name,real def);
+extern real get_ereal(int *ninp,t_inpfile **inp,const char *name,real def);
 
-extern char *get_estr(int *ninp,t_inpfile **inp,char *name,char *def);
+extern char *get_estr(int *ninp,t_inpfile **inp,const char *name,char *def);
 
-extern int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
+extern int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 		      int *nerror,bool bPrintError);
 /* defs must be NULL terminated, 
  * Add errors to nerror 
  * When bPrintError=TRUE and invalid enum: print "ERROR: ..."
  */
 
-extern int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs);
+extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs);
 /* defs must be NULL terminated */
 
 /* Here are some macros to extract data from the inp structures.
@@ -115,8 +114,10 @@ extern void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
 extern bool is_hidden(t_pargs *pa);
 /* Return TRUE when the option is a secret one */
 
-extern char *pa_val(t_pargs *pa);
-/* Return a pointer to a static buffer containing the value of pa */
+extern char *pa_val(t_pargs *pa,char *buf, int sz);
+/* Return the value of pa in the provided buffer buf, of size sz.
+ * The return value is also a pointer to buf.
+ */
 
 extern int opt2parg_int(char *option,int nparg,t_pargs pa[]);
 

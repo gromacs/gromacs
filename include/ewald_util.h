@@ -33,7 +33,7 @@
 #ifndef _ewald_util_h
 #define _ewald_util_h
 
-static char *SRCID_ewald_util_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

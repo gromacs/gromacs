@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_testfft_c = "$Id$";
+
 #include <math.h>
 #include <stdio.h>
 #include "typedefs.h"

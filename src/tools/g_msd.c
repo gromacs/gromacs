@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_msd_c = "$Id$";
+
  
 #include <string.h>
 #include <ctype.h>

@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_nsc_h = "$Id$";
+
 #include "typedefs.h"
 
 #define FLAG_DOTS       01

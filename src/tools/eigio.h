@@ -33,7 +33,7 @@
 #ifndef _eigio_h
 #define _eigio_h
 
-static char *SRCID_eigio_h = "$Id$";
+
 #include "typedefs.h"
 
 enum { eWXR_NO, eWXR_YES, eWXR_NOFIT };

@@ -33,10 +33,6 @@
 #ifndef _pgutil_h
 #define _pgutil_h
 
-static char *SRCID_pgutil_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) pgutil.h 1.14 9/30/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 
 extern atom_id search_atom(char *type,int start,

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_rdgroup_c = "$Id$";
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_manager_c = "$Id$";
+
 #include <sysstuff.h>
 #include <string.h>
 #include <smalloc.h>
@@ -167,14 +167,14 @@ static void hide_label(t_x11 *x11,t_manager *man,int x,int y)
 
 void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
 {
-  char         buf[256];
+  char         buf[256],quote[256];
   t_tpxheader  sh;
   t_atoms      *at;
   bool         *bB;
   int          i,idum;
   real         rdum;
 
-  read_tpxheader(status,&sh);
+  read_tpxheader(status,&sh,TRUE,NULL,NULL);
   snew(man->ix,sh.natoms);
   snew(man->zz,sh.natoms);
   snew(man->col,sh.natoms);
@@ -201,7 +201,7 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
 		"do not match",status,man->top.atoms.nr,
 		trajectory,man->natom);
   
-  sprintf(buf,"%s: %s",*man->top.name,cool_quote());
+  sprintf(buf,"%s: %s",*man->top.name,cool_quote(quote,255,NULL));
   man->title.text = strdup(buf);
   man->view       = init_view(man->box);
   at=&(man->top.atoms);

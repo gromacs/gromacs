@@ -33,14 +33,10 @@
 #ifndef _smalloc_h
 #define _smalloc_h
 
-static char *SRCID_smalloc_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) smalloc.h 1.14 11/23/92"
-#endif /* HAVE_IDENT */
 
 /*
  * Memory allocation routines in gromacs:
@@ -91,7 +87,7 @@ static char *SRCID_smalloc_h = "$Id$";
  *    If ptr equals NULL, malloc is called in stead of realloc, in this way
  *    it is possible to combine first and later allocations.
  *
- * extern void save_free(char *name,char *file,int line,void *ptr);
+ * extern void save_free(char *name,char *file,int line,const void *ptr);
  *    Like free, uses name, file and line to generate an error message when 
  *    the free failed.
  *
@@ -129,7 +125,7 @@ void *save_calloc(char *name,char *file,int line,
 		  unsigned nelem,unsigned elsize); 
 void *save_realloc(char *name,char *file,int line,
 		   void *ptr,unsigned size);
-void save_free(char *name,char *file,int line,void *ptr);
+void save_free(char *name,char *file,int line,const void *ptr);
 unsigned maxavail(void);
 unsigned memavail(void);
 

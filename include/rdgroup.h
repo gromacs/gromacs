@@ -33,14 +33,10 @@
 #ifndef _rdgroup_h
 #define _rdgroup_h
 
-static char *SRCID_rdgroup_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) rdgroup.h 1.15 2/2/97"
-#endif /* HAVE_IDENT */
 #include <typedefs.h>
 
 #ifdef CPLUSPLUS

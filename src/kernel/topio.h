@@ -33,10 +33,6 @@
 #ifndef _topio_h
 #define _topio_h
 
-static char *SRCID_topio_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) topio.h 1.46 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 #include "readir.h"

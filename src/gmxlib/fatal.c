@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_fatal_c = "$Id$";
+
 #include <sysstuff.h>
 #include <ctype.h>
 #include <errno.h>
@@ -43,6 +43,7 @@ static char *SRCID_fatal_c = "$Id$";
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
+
 
 static bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;

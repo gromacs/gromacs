@@ -29,7 +29,8 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_init_sh_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #include "xmdrun.h"
 #include "smalloc.h"
 #include "assert.h"

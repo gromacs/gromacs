@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_x2top_c = "$Id$";
+
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -394,7 +394,7 @@ int main(int argc, char *argv[])
   t_nextnb   nnb;
   t_nm2type  *nm2t;
   t_mols     mymol;
-  char       *ff;
+  char       ff[256];
   int        nnm;
   char       title[STRLEN];
   rvec       *x;        /* coordinates? */
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box);
 
-  ff = choose_ff();
+  choose_ff(ff,255);
   
   snew(nbonds,atoms->nr);
   

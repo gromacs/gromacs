@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_readev_h = "$Id$";
+
 #include "typedefs.h"
 
 #ifndef _readev_h

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_force_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"
@@ -55,7 +55,6 @@ static char *SRCID_force_c = "$Id$";
 #include "ewald_util.h"
 #include "shift_util.h"
 #include "pppm.h"
-#include "poisson.h"
 #include "ewald.h"
 #include "pme.h"
 #include "mdrun.h"
@@ -677,7 +676,20 @@ void init_forcerec(FILE *fp,
     set_avcsix(fp,fr,mdatoms);
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);
-  
+
+  /* Copy the GBSA data (radius, volume and surftens for each
+   * atomtype) from the topology atomtype section to forcerec.
+   */
+  snew(fr->atype_radius,fr->ntype);
+  snew(fr->atype_vol,fr->ntype);
+  snew(fr->atype_surftens,fr->ntype);
+  for(i=0;i<fr->ntype;i++)
+    fr->atype_radius[i]=top->atomtypes.radius[i];
+  for(i=0;i<fr->ntype;i++)
+    fr->atype_vol[i]=top->atomtypes.vol[i];
+  for(i=0;i<fr->ntype;i++)
+    fr->atype_surftens[i]=top->atomtypes.surftens[i];
+    
   /* Now update the rest of the vars */
   update_forcerec(fp,fr,box);
   /* if we are using LR electrostatics, and they are tabulated,
@@ -921,10 +933,6 @@ void force(FILE       *fp,     int        step,
     case eelPPPM:
       Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeT,
 		    box_size,fr->phi,cr,nsb,nrnb);
-      break;
-    case eelPOISSON:
-      Vlr = do_poisson(fp,FALSE,ir,md->nr,x,fr->f_pme,md->chargeT,
-		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
     case eelPME:
       Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeT,

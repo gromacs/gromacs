@@ -33,11 +33,6 @@
 #ifndef _topcat_h
 #define _topcat_h
 
-static char *SRCID_topcat_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) topcat.h 1.23 9/30/97"
-#endif /* HAVE_IDENT */
-
 #include "typedefs.h"
 
 extern void topcat(t_molinfo *dest,int nsrc,t_molinfo src[],

@@ -33,11 +33,6 @@
 #ifndef _resall_h
 #define _resall_h
 
-static char *SRCID_resall_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) resall.h 1.16 9/30/97"
-#endif /* HAVE_IDENT */
-
 #include "typedefs.h"
 #include "hackblock.h"
 #include "grompp.h"

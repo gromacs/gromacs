@@ -33,14 +33,10 @@
 #ifndef _main_h
 #define _main_h
 
-static char *SRCID_main_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) main.h 1.3 11/23/92"
-#endif /* HAVE_IDENT */
 
 #include <stdio.h>
 #include "network.h"
@@ -48,7 +44,7 @@ static char *SRCID_main_h = "$Id$";
 extern FILE *stdlog;
 extern int  gmx_parallel; /* 1 when running in parallel */
 
-extern char *par_fn(char *base,int ftp,t_commrec *cr);
+extern char *par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize);
 /* Add processor id in the filename right before the extension */
 
 extern void open_log(char *fn,t_commrec *cr);

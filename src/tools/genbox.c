@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_genbox_c = "$Id$";
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"

@@ -29,7 +29,9 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_tstsqrtc_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "vec.h"
 
 int main(int argc,char *argv[])

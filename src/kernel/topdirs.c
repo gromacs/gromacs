@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_topdirs_c = "$Id$";
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -78,6 +78,10 @@ int ifunc_index(directive d,int type)
       return F_IDIHS;
     case 3:
       return F_RBDIHS;
+    case 4:  
+      return F_PIDIHS;
+    case 5:
+      return F_FOURDIHS;
     default:
       fatal_error(0,"Invalid dihedral type %d",type);
     }
@@ -133,6 +137,8 @@ int ifunc_index(directive d,int type)
     return F_DISRES;
   case d_orientation_restraints:
     return F_ORIRES;
+  case d_dihedral_restraints:
+    return F_DIHRES;
   default:
     fatal_error(0,"invalid directive %s in ifunc_index (%s:%s)",
 		dir2str(d),__FILE__,__LINE__);
@@ -211,6 +217,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_angle_restraints_z]),d_atoms,d_none);
     set_nec(&(necessary[d_distance_restraints]),d_atoms,d_none);
     set_nec(&(necessary[d_orientation_restraints]),d_atoms,d_none);
+    set_nec(&(necessary[d_dihedral_restraints]),d_atoms,d_none);
     for(i=0; (i<d_maxdir); i++) {
       if (debug)
 	fprintf(debug,"%20s:  ",dir2str((directive)i));

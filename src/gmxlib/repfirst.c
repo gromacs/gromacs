@@ -29,7 +29,8 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_repfirst_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include "string2.h"
 #include "typedefs.h"
 #include "smalloc.h"

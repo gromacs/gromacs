@@ -33,14 +33,9 @@
 #ifndef _assert_h
 #define _assert_h
 
-static char *SRCID_assert_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) assert.h 1.12 11/23/92"
-#endif /* HAVE_IDENT */
 
 #include <ctype.h>
 #include "sysstuff.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_testxml_c = "$Id$";
+
 #include "macros.h"
 #include "smalloc.h"
 #include "xmlio.h"
@@ -61,7 +61,7 @@ int main(int argc,char *argv[])
   else {
     t_tpxheader tpx;
     
-    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx);
+    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,FALSE);
     snew(x,tpx.natoms);
     snew(v,tpx.natoms);
     f = NULL;

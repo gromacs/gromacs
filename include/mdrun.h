@@ -33,14 +33,10 @@
 #ifndef _mdrun_h
 #define _mdrun_h
 
-static char *SRCID_mdrun_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) do_md.h 1.12 03 Mar 1996"
-#endif /* HAVE_IDENT */
 #include <stdio.h>
 #include "typedefs.h"
 #include "network.h"
@@ -152,11 +148,12 @@ extern void write_xtc_traj(FILE *log,t_commrec *cr,
 extern void close_xtc_traj(void);
 
 /* ROUTINES from sim_util.c */
-extern void init_mdatoms(t_mdatoms *md,real lambda,bool bFirst);
+extern void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst);
 /* Compute fields from mdatoms struct (invmass etc.) which may change
  * due to lambda dependent FEP calculations.
  * If bFirst all values are set, this is necessary once in the
  * first step.
+ * You only have to call this routine again if lambda changes.
  */
  
 extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
@@ -288,14 +285,14 @@ extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 /* Driver routine, that calls the different methods */
 
 extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
-		    real *lambda,real *lam0,real *SAfactor,
+		    real *lambda,real *lam0,
 		    t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,
 		    char **xtc_traj,int *fp_ene,
 		    FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor pme_vir,
 		    tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
-		    bool *bNEMD,t_vcm **vcm,t_nsborder *nsb);
+		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);
 /* Routine in sim_util.c */
 		     
 #endif	/* _mdrun_h */

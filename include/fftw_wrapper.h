@@ -33,7 +33,7 @@
 #ifndef _fftw_wrapper_h
 #define _fftw_wrapper_h
 
-static char *SRCID_fftw_wrapper_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_mgmx_c = "$Id$";
+
 #include <string.h>
 #include <ctype.h>
 
@@ -455,8 +455,9 @@ static XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
 {
   int      i;
   XmString xmstr;
-  char     *ptr,*cptr,*nlptr;
-  
+  char     *cptr,*nlptr;
+  const char *ptr;
+
   if (ndesc <= 0)
     return empty_str;
   else {
@@ -533,7 +534,7 @@ static windex mk_filedlgs(int parent,int top,int nfile,
   char   **wname;
   int    i,j,ftp,narg,dx,www[NWC];
   Widget topw;
-  char   *fn,dbuf[256];
+  char   *fn,dbuf[256],buf[255];
 
   wc[nwcTEXT]   = xmTextFieldWidgetClass;
   wc[nwcFDLG]   = xmPushButtonWidgetClass;
@@ -548,7 +549,7 @@ static windex mk_filedlgs(int parent,int top,int nfile,
   for(i=0; (i<nfile); i++) {
     ftp = fnm[i].ftp;
     dx  = (i % 2)*50;
-    sprintf(dbuf,"%s [%s]",ftp2desc(ftp),fileopt(fnm[i].flag));
+    sprintf(dbuf,"%s [%s]",ftp2desc(ftp),fileopt(fnm[i].flag,buf,255));
     if ((fn = strrchr(fnm[i].fns[0],'/')) == NULL)
       fn = fnm[i].fns[0];
     else
@@ -742,8 +743,9 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
 {
 #define DELTA 256
   int  i,slen,width=80;
-  char *ptr,*nptr;
- 
+  char *nptr;
+  const char *ptr;
+
   ptr = check_tty(str);
   if (indent > 0) {
     slen=strlen(ptr);
@@ -910,8 +912,7 @@ static int mk_about(Widget base)
     "In the fifth pane you find the usual buttons, [BB]OK[bb], [BB]Cancel[bb],",
     "[BB]Help[bb], and [BB]About[bb] which presumably don't need any explanation.[PAR]",
     "The GUI was written by David van der Spoel (comments to spoel@xray.bmc.uu.se)[PAR]",
-    "And hey:[BR]",
-    NULL
+    "And hey:[BR]"
   };
 #define NABOUT asize(about)
 
@@ -921,8 +922,9 @@ static int mk_about(Widget base)
     "It took about 1500 lines of pretty ugly C code to get this dialog box working"
   };
 
-  about[NABOUT-1] = cool_quote();
-
+  char tmpstr[256];
+  int dum;
+  
   return low_mk_help(base,
 		     "ABOUT THE GROMACS MOTIF USER INTERFACE",asize(about),about,
 		     "PROBLEMS IN THE GUI",asize(mbugs),mbugs,

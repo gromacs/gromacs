@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_clustsize_c = "$Id$";
+
 #include <math.h>
 #include <ctype.h>
 #include "string2.h"

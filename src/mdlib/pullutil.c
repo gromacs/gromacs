@@ -33,7 +33,7 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-static char *SRCID_pullutil_c = "$Id$";
+
 #include <stdlib.h>
 #include "sysstuff.h"
 #include "princ.h"

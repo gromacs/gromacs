@@ -37,9 +37,6 @@
 #ifndef	_alert_bm
 #define	_alert_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) alert.bm 1.4 9/29/92"
-#endif /* HAVE_IDENT */
 
 #define alert_width 48
 #define alert_height 42

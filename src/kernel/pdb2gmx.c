@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_pdb2gmx_c = "$Id$";
+
 #include <time.h>
 #include <ctype.h>
 #include "assert.h"
@@ -63,7 +63,7 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "hizzie.h"
 
 
-static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
+static const char *select_res(int nr,int resnr,const char *name[],const char *expl[],char *title)
 {
   int sel=0;
 
@@ -78,11 +78,11 @@ static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
   return name[sel];
 }
 
-static char *get_asptp(int resnr)
+static const char *get_asptp(int resnr)
 {
   enum { easp, easpH, easpNR };
-  static char *lh[easpNR] = { "ASP", "ASPH" };
-  static char *expl[easpNR] = {
+  const char *lh[easpNR] = { "ASP", "ASPH" };
+  const char *expl[easpNR] = {
     "Not protonated (charge -1)",
     "Protonated (charge 0)"
   };
@@ -90,11 +90,11 @@ static char *get_asptp(int resnr)
   return select_res(easpNR,resnr,lh,expl,"ASPARTIC ACID");
 }
 
-static char *get_glutp(int resnr)
+static const char *get_glutp(int resnr)
 {
   enum { eglu, egluH, egluNR };
-  static char *lh[egluNR] = { "GLU", "GLUH" };
-  static char *expl[egluNR] = {
+  const char *lh[egluNR] = { "GLU", "GLUH" };
+  const char *expl[egluNR] = {
     "Not protonated (charge -1)",
     "Protonated (charge 0)"
   };
@@ -102,11 +102,11 @@ static char *get_glutp(int resnr)
   return select_res(egluNR,resnr,lh,expl,"GLUTAMIC ACID");
 }
 
-static char *get_lystp(int resnr)
+static const char *get_lystp(int resnr)
 {
   enum { elys, elysH, elysNR };
-  static char *lh[elysNR] = { "LYS", "LYSH" };
-  static char *expl[elysNR] = {
+  const  char *lh[elysNR] = { "LYS", "LYSH" };
+  const char *expl[elysNR] = {
     "Not protonated (charge 0)",
     "Protonated (charge +1)"
   };
@@ -114,11 +114,11 @@ static char *get_lystp(int resnr)
   return select_res(elysNR,resnr,lh,expl,"LYSINE");
 }
 
-static char *get_cystp(int resnr)
+static const char *get_cystp(int resnr)
 {
   enum { ecys, ecysH, ecysNR };
-  static char *lh[ecysNR] = { "CYS", "CYSH" };
-  static char *expl[ecysNR] = {
+  const char *lh[ecysNR] = { "CYS", "CYSH" };
+  const char *expl[ecysNR] = {
     "Cysteine in disulfide bridge",
     "Protonated"
   };
@@ -127,9 +127,9 @@ static char *get_cystp(int resnr)
 
 }
 
-static char *get_histp(int resnr)
+static const char *get_histp(int resnr)
 {
-  static char *expl[ehisNR] = {
+  const char *expl[ehisNR] = {
     "H on ND1 only",
     "H on NE2 only",
     "H on ND1 and NE2",
@@ -155,11 +155,12 @@ static void rename_pdbres(t_atoms *pdba,char *oldnm,char *newnm,
 }
 
 static void rename_pdbresint(t_atoms *pdba,char *oldnm,
-			     char *gettp(int),bool bFullCompare,
+			     const char *gettp(int),bool bFullCompare,
 			     t_symtab *symtab)
 {
   int  i;
-  char *ptr,*resnm;
+  const char *ptr;
+  char *resnm;
   
   for(i=0; i<pdba->nres; i++) {
     resnm=*pdba->resname[i];
@@ -588,7 +589,7 @@ int main(int argc, char *argv[])
   char       **gnames;
   matrix     box;
   rvec       box_space;
-  char       *ff;
+  char       ff[256];
   int        i,j,k,l,nrtp;
   int        *swap_index,si;
   int        bts[ebtsNR];
@@ -597,7 +598,7 @@ int main(int argc, char *argv[])
   t_symtab   symtab;
   t_atomtype *atype;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN],resname[STRLEN];
+  char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[256];
   char       *c;
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
@@ -873,7 +874,7 @@ int main(int argc, char *argv[])
   
   check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm));
   
-  ff=choose_ff();
+  choose_ff(ff,255);
   printf("Using %s force field\n",ff);
   
   /* Read atomtypes... */
@@ -1089,7 +1090,7 @@ int main(int argc, char *argv[])
 	sprintf(fn,"chain.pdb");
       else
 	sprintf(fn,"chain_%c.pdb",cc->chain);
-      write_sto_conf(fn,cool_quote(),pdba,x,NULL,box);
+      write_sto_conf(fn,cool_quote(quote,255,NULL),pdba,x,NULL,box);
     }
   }
   

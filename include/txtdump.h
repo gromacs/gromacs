@@ -33,14 +33,10 @@
 #ifndef _txtdump_h
 #define _txtdump_h
 
-static char *SRCID_txtdump_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) txtdump.h 1.20 12/16/92"
-#endif /* HAVE_IDENT */
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -55,22 +51,21 @@ extern char *atomname(t_atoms *a,int i);
 /* Return pointer to a buffer which holds the atomname in the
  * form resname resnr atomname. Pointer can be freed afterwards.
  */
-extern void pr_shownumbers(bool bShow);
 extern int available(FILE *fp,void *p,char *title);
 extern int pr_indent(FILE *fp,int n);
 extern int pr_title(FILE *fp,int indent,char *title);
 extern int pr_title_n(FILE *fp,int indent,char *title,int n);
 extern int pr_title_nxn(FILE *fp,int indent,char *title,int n1,int n2);
-extern void pr_ivec(FILE *fp,int indent,char *title,int vec[],int n);
-extern void pr_ivecs(FILE *fp,int indent,char *title,ivec vec[],int n);
-extern void pr_rvec(FILE *fp,int indent,char *title,real vec[],int n);
+extern void pr_ivec(FILE *fp,int indent,char *title,int vec[],int n, bool bShowNumbers);
+extern void pr_ivecs(FILE *fp,int indent,char *title,ivec vec[],int n, bool bShowNumbers);
+extern void pr_rvec(FILE *fp,int indent,char *title,real vec[],int n, bool bShowNumbers);
 extern void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n);
 extern void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n);
-extern void pr_block(FILE *fp,int indent,char *title,t_block *block);
+extern void pr_block(FILE *fp,int indent,char *title,t_block *block, bool bShowNumbers);
 extern void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
-extern void pr_idef(FILE *fp,int indent,char *title,t_idef *idef);
+extern void pr_idef(FILE *fp,int indent,char *title,t_idef *idef, bool bShowNumbers);
 extern void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir);
-extern void pr_top(FILE *fp,int indent,char *title,t_topology *top);
+extern void pr_top(FILE *fp,int indent,char *title,t_topology *top, bool bShowNumbers);
 /*
  * This routine prints out a (human) readable representation of 
  * the topology to the file fp. Ident specifies the number of 
@@ -78,12 +73,11 @@ extern void pr_top(FILE *fp,int indent,char *title,t_topology *top);
  * header text.
  */
 extern void pr_header(FILE *fp,int indent,char *title,t_tpxheader *sh);
-     /*
+      /*
       * This routine prints out a (human) readable representation of
       * a header to the file fp. Ident specifies the number of spaces
       * the text should be indented. Title is used to print a header text.
       */
-
 
 
 #endif	/* _txtdump_h */

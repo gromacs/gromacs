@@ -32,8 +32,6 @@
 
 #ifndef _pme_h
 #define _pme_h
-
-static char *SRCID_pme_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -33,7 +33,7 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-static char *SRCID_pullio_c = "$Id$";
+
 #include <string.h>
 #include <stdlib.h>
 #include "sysstuff.h"
@@ -196,25 +196,25 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   enum {
     erunSTART, erunAFM, erunConstraint, erunUmbrella, erunTest, erunNR
   };
-  static char *runtypes[erunNR+1] = { 
+  static const char *runtypes[erunNR+1] = { 
     "start", "afm", "constraint", "umbrella", "test", NULL
   };
   enum {
     erefCom, erefComT0, erefDyn, erefDynT0, erefNR
   };
-  static char *reftypes[erefNR+1] = {
+  static const char *reftypes[erefNR+1] = {
     "com", "com_t0", "dynamic", "dynamic_t0", NULL
   };
   enum {
     ereverseTO_REF, ereverseFROM_REF, ereverseNR
   };
-  static char *reversetypes[ereverseNR+1] = {
+  static const char *reversetypes[ereverseNR+1] = {
     "from_reference", "to_reference", NULL
   };
   enum {
     everboseYES, everboseNO, everboseNR
   };
-  static char *verbosetypes[erefNR+1] = {
+  static const char *verbosetypes[erefNR+1] = {
     "no", "yes", NULL
   };
   int nerror = 0;

@@ -33,10 +33,6 @@
 #ifndef _ter_db_h
 #define _ter_db_h
 
-static char *SRCID_ter_db_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) ter_db.h 1.16 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "sysstuff.h"
 #include "hackblock.h"

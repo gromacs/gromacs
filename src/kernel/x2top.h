@@ -33,7 +33,6 @@
 #ifndef _x2top_h
 #define _x2top_h
 
-static char *SRCID_x2top_h = "$Id$";
 	
 #include <stdio.h>
 	

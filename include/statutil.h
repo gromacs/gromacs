@@ -33,7 +33,6 @@
 #ifndef _statutil_h
 #define _statutil_h
 
-static char *SRCID_statutil_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

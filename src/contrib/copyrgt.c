@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_copyrgt_c = "$Id$";
+
 #include "stdio.h"
 #include "stdlib.h"
 #include "macros.h"
@@ -73,7 +73,7 @@ static char *head2[]= {
 #define NH2 asize(head2)
 #define MAXS 10240
 
-void head(FILE *out, char *fn_, bool bH, bool bSRCID,
+void head(FILE *out, char *fn_, bool bH,
 	  char *cstart, char *ccont, char *cend)
 {
   int i;
@@ -97,10 +97,6 @@ void head(FILE *out, char *fn_, bool bH, bool bSRCID,
     fprintf(out,"#define _%s\n",fn_);
     fprintf(out,"\n");
   }
-  if (bSRCID)
-    fprintf(out,"static char *SRCID_%s = \"$""Id""$\";\n",fn_);
-  /* NOTE: the "" are to mislead CVS so it will not replace by version info */
-  /*fprintf(out,"\n");*/
 }
 
 void cr_c(char *fn)
@@ -108,7 +104,7 @@ void cr_c(char *fn)
   FILE *in,*out;
   char ofn[1024],line[MAXS+1],cwd[1024];
   char *p,*fn_;
-  bool bH,bSRCID;
+  bool bH;
   
   sprintf(ofn,"%s.bak",fn);
   
@@ -146,16 +142,9 @@ void cr_c(char *fn)
 	   (strstr(line,"#define") != NULL) )
 	bH=TRUE;
     } while ( ( (strstr(line,fn_) != NULL)  ||
-		(strstr(line,"static char *SRCID") != NULL) ||
 		(strlen(line)==0) ) && (!feof(in) ) );
     getcwd(cwd,STRLEN);
-    bSRCID = TRUE;
-    /* Do not put source id's in include/types since some filenames are
-     * be equal to those in include */
-    if ((strlen(cwd)>strlen("types")) &&
-	(!strcmp(cwd+strlen(cwd)-strlen("types"),"types")))
-      bSRCID = FALSE;
-    head(out,fn_,bH,bSRCID,"/*"," *"," */");
+    head(out,fn_,bH,"/*"," *"," */");
     do {
       fprintf(out,"%s\n",line);
     } while (!feof(in) && fgets2(line,MAXS,in));
@@ -171,12 +160,11 @@ void cr_other(char *fn)
   /*  FILE *in,*out;
   char ofn[1024],line[MAXS+1],line2[MAXS+1],cwd[1024];
   char *p,*fn_,*ptr;
-  bool bH,bSRCID;
+  bool bH;
   
   sprintf(ofn,"%s.bak",fn);
   
-  fprintf(stderr,"Processing %s (backed up to %s)\n",
-	  fn,ofn);
+  fprintf(stderr,"Processing %s (backed up to %s)\n",fn,ofn);
   
   if (rename(fn,ofn) != 0) {
     perror(ofn);
@@ -186,55 +174,7 @@ void cr_other(char *fn)
   out=ffopen(fn,"w");
   */
   /* Skip over empty lines in the beginning only */
-  /*
-  do { 
-    if (fgets2(line,MAXS,in))
-      rtrim(line);
-  } while ((strlen(line) == 0) && (!feof(in)));
-  */
-  /* Now we are at end of file, or we have a non-empty string */
-  /*
-  if (strlen(line) != 0) {  
-    strcpy(line2,line);
-    trim(line2);
-    while ((line2[0] == ';') && (!feof(in))) {
-      fgets2(line,MAXS,in);
-      strcpy(line2,line);
-      trim(line2);
-      }
-  */
-    /*
-    fn_=strdup(fn);
-    p=strchr(fn_,'.');
-    if (p)
-      p[0]='_';
-    bH=FALSE;
-    do {
-      fgets2(line,MAXS,in);
-      if ( (strstr(line,fn_) != NULL) && 
-	   (strstr(line,"#define") != NULL) )
-	bH=TRUE;
-    } while ( ( (strstr(line,fn_) != NULL)  ||
-		(strstr(line,"static char *SRCID") != NULL) ||
-		(strlen(line)==0) ) && (!feof(in) ) );
-    getcwd(cwd,STRLEN);
-    bSRCID = TRUE;
-    */
-    /* Do not put source id's in include/types since some filenames are
-     * be equal to those in include */
-    /*if ((strlen(cwd)>strlen("types")) &&
-	(strcmp(cwd+strlen(cwd)-strlen("types"),"types") == NULL))
-    */
-  /*
-  bSRCID = FALSE;
-    head(out,fn_,bH,bSRCID,";",";",";");
-    do {
-      fprintf(out,"%s\n",line);
-    } while (!feof(in) && fgets2(line,MAXS,in));
-  }
-  fclose(in);
-  fclose(out);
-  */
+
 }
 
 void cr_tex(char *fn)

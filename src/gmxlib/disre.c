@@ -29,7 +29,9 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_disre_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <math.h>
 #include "typedefs.h"
 #include "sysstuff.h"
@@ -174,8 +176,8 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	       t_fcdata *fcd)
 {
-  static real sixth=1.0/6.0;
-  static real seven_three=7.0/3.0;
+  const real sixth=1.0/6.0;
+  const real seven_three=7.0/3.0;
   
   atom_id     ai,aj;
   int         fa,res,npairs,p,pair,ki,kj,m;

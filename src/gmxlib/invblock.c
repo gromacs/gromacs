@@ -29,7 +29,9 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_invblock_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "invblock.h"

@@ -29,7 +29,8 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_mindist_c = "$Id$";
+
+
 #include <math.h>
 #include <stdlib.h>
 #include "sysstuff.h"
@@ -210,8 +211,13 @@ void dist_plot(char *fn,char *afile,char *dfile,
   int          trxout;
   char         buf[256];
   char         **leg;
+<<<<<<< g_mindist.c
+  real         t,md,**mdist=NULL;
+  int          nd,status;
+=======
   real         t,dmin,dmax,**mindres,**maxdres;
   int          nmin,nmax,status;
+>>>>>>> 1.29
   int          i,j,k,natoms;
   int	       min1,min2,max1,max2;
   atom_id      oindex[2];
@@ -359,7 +365,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
 int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
 {
   int i;
-  int nres,resnr, presnr;
+  int nres=0,resnr, presnr;
   int *residx;
   
   /* build index of first atom numbers for each residue */  

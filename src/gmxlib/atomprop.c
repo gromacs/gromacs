@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- *                This source code is part of
+ *                This source code ispart of
  * 
  *                 G   R   O   M   A   C   S
  * 
@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_atomprop_c = "$Id$";
+
 #include <ctype.h>
 #include "sysstuff.h"
 #include "smalloc.h"

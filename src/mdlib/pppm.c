@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_pppm_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "assert.h"
@@ -521,9 +521,9 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
     /* Check whether boxes correspond */
     for(m=0; (m<DIM); m++)
       if (fabs(box[m]-grids[m]*spacing[m]) > tol) {
-	pr_rvec(log,0,"box",box,DIM);
-	pr_rvec(log,0,"grid-spacing",spacing,DIM);
-	pr_ivec(log,0,"grid size",grids,DIM);
+	pr_rvec(log,0,"box",box,DIM,TRUE);
+	pr_rvec(log,0,"grid-spacing",spacing,DIM,TRUE);
+	pr_ivec(log,0,"grid size",grids,DIM,TRUE);
 	fflush(log);
 	fatal_error(0,"Box sizes in tpb file and Ghat file %s do not match\n"
 		    "Check your log file!",ghatfn);

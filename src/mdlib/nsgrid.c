@@ -29,7 +29,8 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_nsgrid_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"

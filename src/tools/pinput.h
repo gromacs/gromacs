@@ -33,7 +33,6 @@
 #ifndef _pinput_h
 #define _pinput_h
 
-static char *SRCID_pinput_h = "$Id$";
 #include "typedefs.h"
 #include "string2.h"
 

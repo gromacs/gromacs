@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_compnl_c = "$Id$";
+
 #include "ns.h"
 #include "smalloc.h"
 #include "wnblist.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_mdrun_c = "$Id$";
+
 #include "typedefs.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -148,9 +148,13 @@ int main(int argc,char *argv[])
   static int  nDLB=0; 
   static int  nnodes=1;
   static int  nstepout=10;
+  static int  nthreads=1;
+
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, {&nnodes},
       "Number of nodes, must be the same as used for grompp" },
+    { "-nt",      FALSE, etINT, {&nthreads},
+      "Number of threads to start on each node" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -184,6 +188,10 @@ int main(int argc,char *argv[])
 #ifndef USE_MPI
   if (nnodes > 1) 
     fatal_error(0,"GROMACS compiled without MPI support - can't do parallel runs");
+#endif
+#ifndef USE_THREADS
+  if(nthreads > 1)
+    fatal_error(0,"GROMACS compiled without threads support - can only use one thread");
 #endif
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);

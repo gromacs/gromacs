@@ -33,14 +33,9 @@
 #ifndef _orires_h
 #define _orires_h
 
-static char *SRCID_orires_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) disre.h 1.13 2/2/97"
-#endif /* HAVE_IDENT */
 
 #ifdef CPLUSPLUS
 extern "C" {

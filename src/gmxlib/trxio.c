@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_trxio_c = "$Id$";
+
 #include <ctype.h>
 #include "sysstuff.h"
 #include "string2.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_discopar_c = "$Id$";
+
 #include "typedefs.h"
 #include "network.h"
 #include "smalloc.h"

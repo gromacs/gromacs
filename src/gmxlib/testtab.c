@@ -29,7 +29,8 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_testtab_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include <stdio.h>
 #include "typedefs.h"
 #include "force.h"

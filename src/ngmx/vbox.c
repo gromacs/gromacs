@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_vbox_c = "$Id$";
+
 #include "x11.h"
 #include "nmol.h"
 

@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_timefft_c = "$Id$";
+
 #include <math.h>
 #include <stdio.h>
 #include <time.h>

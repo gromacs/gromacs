@@ -29,7 +29,9 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_nsb_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "sysstuff.h"
 #include "assert.h"
 #include "typedefs.h"

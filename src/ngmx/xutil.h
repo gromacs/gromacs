@@ -33,10 +33,6 @@
 #ifndef _xutil_h
 #define _xutil_h
 
-static char *SRCID_xutil_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) xutil.h 1.5 11/11/92"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 #include "writeps.h"

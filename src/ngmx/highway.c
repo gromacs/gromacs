@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_highway_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "futil.h"

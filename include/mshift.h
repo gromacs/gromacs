@@ -33,16 +33,12 @@
 #ifndef _mshift_h
 #define _mshift_h
 
-static char *SRCID_mshift_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) mshift.h 1.11 2/2/97"
-#endif /* HAVE_IDENT */
-
 #include "typedefs.h"
+
 
 extern t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle);
 /* Build a graph from an idef description. The graph can be used

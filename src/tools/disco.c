@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_disco_c = "$Id$";
+
 #include "macros.h"
 #include "statutil.h"
 #include "pdbio.h"

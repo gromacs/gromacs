@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_wgms_c = "$Id$";
+
 #include <stdio.h>
 #include "gstat.h"
 

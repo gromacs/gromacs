@@ -33,16 +33,9 @@
 #ifndef _shift_h
 #define _shift_h
 
-static char *SRCID_shift_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) shift.h 1.6 2/2/97"
-#endif /* HAVE_IDENT */
-#ifdef HAVE_IDENT
-#endif /* HAVE_IDENT */
 
 extern real *mk_shift_tab(int n,real r1,real rc,real dr,real *sfac);
 /* Return a table of length n, containing the parabolic

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_debugb_h = "$Id$";
+
 #ifndef DEBUG
 #define DEBUG_BOND(log,x,ai,aj,dx,dr2,dr,bondparams,delta_r,vbond,fbond,fij)
 #define DEBUG_ANGLE_UPD(log,f_i,f_j,f_k)

@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_pinput_c = "$Id$";
+
 #include "paramio.h"
 #include "pinput.h"
 

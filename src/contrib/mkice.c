@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_mkice_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
@@ -457,7 +457,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   FILE      *fp;
-  char      *fn;
+  char      *fn,quote[256];
   int       i,j,k,n,nmax,m,natom,natmol;
   t_atoms   *pdba;
   t_atoms   atoms;
@@ -564,11 +564,11 @@ int main(int argc,char *argv[])
 	    nx,ny,nz,odist,hdist);
     fprintf(fp,"REMARK    Density of this crystal is %g (g/l)\n",
 	    density(pdba,boxje));
-    write_pdbfile(fp,bromacs(),pdba,xx,boxje,' ',-1);
+    write_pdbfile(fp,bromacs(quote,255),pdba,xx,boxje,' ',-1);
     fclose(fp);
   }
   else {
-    write_sto_conf(fn,bromacs(),pdba,xx,NULL,boxje);
+    write_sto_conf(fn,bromacs(quote,255),pdba,xx,NULL,boxje);
   }
   
   if (ftp2bSet(efTRN,NFILE,fnm))

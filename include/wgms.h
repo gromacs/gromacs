@@ -32,8 +32,6 @@
 
 #ifndef _wgms_h
 #define _wgms_h
-
-static char *SRCID_wgms_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

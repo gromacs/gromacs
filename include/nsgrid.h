@@ -33,14 +33,9 @@
 #ifndef _nsgrid_h
 #define _nsgrid_h
 
-static char *SRCID_nsgrid_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) nsgrid.h 1.7 11/23/92"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 

@@ -29,7 +29,16 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_smalloc_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+/* This file is completely threadsafe - keep it that way! */
+#ifdef USE_THREADS
+#include <pthread.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +57,12 @@ static void log_action(int bMal,char *what,char *file,int line,
   bytes=size*nelem;
   if (!bMal)
     bytes=-bytes;
+  
+#ifdef USE_THREADS
+  pthread_mutex_lock(&gmx_logfile_mtx);
+#endif
+
+  /* This static variable is protected by the mutex too... */
   btot+=bytes;
     
   bytes/=1024;
@@ -55,6 +70,9 @@ static void log_action(int bMal,char *what,char *file,int line,
     fprintf(stdlog,"%30s:%6d kb (%7d kb) [%s, line %d, nelem %d, size %d]\n",
 	    what ? what : NN,bytes,btot/1024,
 	    file ? file : NN,line,nelem,size);
+#ifdef USE_THREADS
+  pthread_mutex_unlock(&gmx_logfile_mtx);
+#endif
 }
 #endif
 
@@ -122,7 +140,7 @@ void *save_realloc(char *name,char *file,int line,void *ptr,unsigned size)
   return p;
 }
 
-void save_free(char *name,char *file,int line,void *ptr)
+void save_free(char *name,char *file,int line,const void *ptr)
 {
 #ifdef DEBUG
   log_action(0,name,file,line,0,0,ptr);

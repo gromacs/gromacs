@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_ql77_h = "$Id$";
+
 extern void ql77 (int n,real *x,real *d);
 /* Determine the eigenvalues d[n] and eigenvectors   *
  * of the symmetric n x n matrix x. The eigenvectors *

@@ -29,7 +29,6 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_calcpot_h = "$Id$";
 	
 extern void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 			 rvec **x,t_parm *parm,t_commrec *cr,

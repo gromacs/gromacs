@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_pdb2top_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
@@ -59,7 +59,7 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "add_par.h"
 
 /* this must correspond to enum in pdb2top.h */
-char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
+const char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
 static int missing_atoms(t_restp *rp, int resnr,
 			 t_atoms *at, int i0, int i, bool bCTer)
@@ -104,10 +104,9 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
-char *choose_ff(void)
+char *choose_ff(char ffbuf[],int size)
 {
   typedef struct { char *desc,*fn; } t_fff;
-  static  char *fnsel;
   FILE    *in;
   t_fff   *fff;
   int     i,nff,sel;
@@ -140,7 +139,7 @@ char *choose_ff(void)
   else
     sel=0;
 
-  fnsel=strdup(fff[sel].fn);
+  strncpy(ffbuf,fff[sel].fn,size-1);
 
   for(i=0; (i<nff); i++) {
     sfree(fff[i].desc);
@@ -148,7 +147,7 @@ char *choose_ff(void)
   }
   sfree(fff);
   
-  return fnsel;
+  return ffbuf;
 }
 
 static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype, 
@@ -234,9 +233,11 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 
 void print_top_comment(FILE *out,char *filename,char *title,bool bITP)
 {
+  char tmp[256]; 
+  
   nice_header(out,filename);
   fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,";\t%s\n",title[0]?title:cool_quote());
+  fprintf(out,";\t%s\n",title[0]?title:cool_quote(tmp,255,NULL));
   fprintf(out,";\n");
 }
 

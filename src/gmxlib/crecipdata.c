@@ -29,13 +29,15 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_crecipdata_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 /* just put something here to avoid empty file warnings */
-int crecipdata_stub;
+const int crecipdata_stub;
 
 #ifdef SOFTWARE_RECIP
 const unsigned int crecipexptab[256] = {

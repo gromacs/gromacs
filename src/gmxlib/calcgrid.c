@@ -29,7 +29,6 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_calcgrid_c = "$Id$";
 #include "typedefs.h"
 #include "smalloc.h"
 #include "fatal.h"

@@ -33,14 +33,9 @@
 #ifndef _nhash_h
 #define _nhash_h
 
-static char *SRCID_nhash_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) nhash.h 1.3 11/23/92"
-#endif /* HAVE_IDENT */
 
 #define MAX_LJQQ 997
 

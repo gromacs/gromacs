@@ -33,7 +33,7 @@
 #ifndef _hxprops_h
 #define _hxprops_h
 
-static char *SRCID_hxprops_h = "$Id$";
+
 #include <stdio.h>
 #include "typedefs.h"
 

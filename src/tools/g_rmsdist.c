@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_rmsdist_c = "$Id$";
+
 #include <math.h>
 #include <ctype.h>
 #include "macros.h"

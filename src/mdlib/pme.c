@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_pme_c = "$Id$";
+
 /* IMPORTANT FOR DEVELOPERS:
  *
  * Triclinic pme stuff isn't entirely trivial, and we've experienced

@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_md_c = "$Id$";
+
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"
@@ -56,6 +56,7 @@ static char *SRCID_md_c = "$Id$";
 #include "xmdrun.h"
 #include "disre.h"
 #include "orires.h"
+#include "dihre.h"
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
@@ -160,6 +161,10 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
 	      top->idef.iparams,x,mdatoms,&(parm->ir),mcr,fcd);
 
+  /* Dihedral Restraints */
+  init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
+	      top->idef.iparams,&(parm->ir),mcr,fcd);
+
   /* check if there are dummies */
   bDummies=FALSE;
   for(i=0; (i<F_NRE) && !bDummies; i++)
@@ -254,8 +259,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   int        fp_ene=0,fp_trn=0,step;
   FILE       *fp_dgdl=NULL;
   time_t     start_t;
-  real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
+  real       t,lambda,t0,lam0;
+  bool       bNS,bSimAnn,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE;
   tensor     force_vir,pme_vir,shake_vir;
   t_nrnb     mynrnb;
@@ -296,10 +301,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
   
   /* Initial values */
-  init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,
+  init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,
 	  &mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,
-	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm,nsb);
+	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
   /* Check for polarizable models */
@@ -360,10 +365,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   if(parm->ir.etc==etcBERENDSEN)
     berendsen_tcoupl(&(parm->ir.opts),grps,
-		     parm->ir.delta_t,SAfactor);
+		     parm->ir.delta_t);
   else if(parm->ir.etc==etcNOSEHOOVER)
     nosehoover_tcoupl(&(parm->ir.opts),grps,
-		      parm->ir.delta_t,SAfactor);
+		      parm->ir.delta_t);
   debug_gmx();
   
   /* Initiate data for the special cases */
@@ -390,6 +395,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
+
+  /* Initialize values for invmass, etc. */
+  update_mdatoms(mdatoms,lambda,TRUE);
+
   /* Set the node time counter to 0 after initialisation */
   start_time();
   debug_gmx();
@@ -472,7 +481,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Set values for invmass etc. This routine not parallellized, but hardly
      * ever used, only when doing free energy calculations.
      */
-    init_mdatoms(mdatoms,lambda,bFirstStep);
+    if(parm->ir.efep != efepNO)
+      update_mdatoms(mdatoms,lambda,FALSE); 
     
     clear_mat(force_vir);
     
@@ -535,14 +545,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       else
 	lambda = lam0 + step*parm->ir.delta_lambda;
     }
-    if (parm->ir.bSimAnn) {
-      SAfactor = 1.0  - t/parm->ir.zero_temp_time;
-      if (SAfactor < 0) 
-	SAfactor = 0;
-    }
+    if (bSimAnn) 
+      update_annealing_target_temp(&(parm->ir.opts),t);
 
     if (MASTER(cr) && do_log && !bFFscan)
-      print_ebin_header(log,step,t,lambda,SAfactor);
+      print_ebin_header(log,step,t,lambda);
     
     if (bDummies) 
       spread_dummy_f(log,x,f,&mynrnb,&top->idef,dummycomm,cr);
@@ -597,7 +604,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL], */
     bOK = TRUE;
     update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-		 parm,SAfactor,mdatoms,x,graph,f,buf,vold,vt,v,
+		 parm,mdatoms,x,graph,f,buf,vold,vt,v,
 		 top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
     if (!bOK && !bFFscan)
       fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
@@ -694,7 +701,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* erase the terminate signal */
       terminate = 0;
     }
-
+      
     /* Do center of mass motion removal */
     if (bStopCM && !bFFscan) {
       check_cm_grp(log,vcm);
@@ -732,9 +739,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * target temp when doing simulated annealing
      */
     if(parm->ir.etc==etcBERENDSEN)
-      berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+      berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
     else if(parm->ir.etc==etcNOSEHOOVER)
-      nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor);
+      nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
 
     /* Calculate pressure and apply LR correction if PPPM is used */
     calc_pres(fr->ePBC,parm->box,parm->ekin,parm->vir,parm->pres,
@@ -769,7 +776,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
     /* Output stuff */
     if (MASTER(cr) && !bFFscan) {
-      bool do_ene,do_dr,do_or;
+      bool do_ene,do_dr,do_or,do_dihr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot,
@@ -777,8 +784,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
       do_or  = do_per_step(step,parm->ir.nstorireout) || bLastStep;
-      print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?log:NULL,step,t,
-		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms));
+      do_dihr= do_per_step(step,parm->ir.nstdihreout) || bLastStep;
+      print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,step,t,
+		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
       if (bVerbose)
 	fflush(log);
     }
@@ -824,10 +832,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     sfree(ct);
   }
   if (MASTER(cr)) {
-    print_ebin(fp_ene,FALSE,FALSE,FALSE,log,step,t,
-	       eprAVER,FALSE,mdebin,fcd,&(top->atoms));
-    print_ebin(fp_ene,FALSE,FALSE,FALSE,log,step,t,
-	       eprRMS,FALSE,mdebin,fcd,&(top->atoms));
+    print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,t,
+	       eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+    print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,t,
+	       eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
     close_enx(fp_ene);
     if (!bRerunMD && parm->ir.nstxtcout)
       close_xtc_traj();

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_ewald_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"

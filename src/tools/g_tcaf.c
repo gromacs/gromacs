@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_tcaf_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "confio.h"

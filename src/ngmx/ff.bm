@@ -37,9 +37,6 @@
 #ifndef	_ff_bm
 #define	_ff_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) ff.bm 1.2 11/23/92"
-#endif /* HAVE_IDENT */
 #define ff_width 40
 #define ff_height 32
 static unsigned char ff_bits[] = {

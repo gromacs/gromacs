@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_fitahx_c = "$Id$";
+
 #include "fitahx.h"
 #include "vec.h"
 #include "do_fit.h"

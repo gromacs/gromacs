@@ -33,7 +33,7 @@
 #ifndef _widget_h
 #define _widget_h
 
-static char *SRCID_widget_h = "$Id$";
+
 #include "typedefs.h"
 #include <Xm/Xm.h>
 
@@ -62,7 +62,7 @@ extern Widget   get_widget_other(windex win,bool bFail);
 extern void     set_widget_other(windex win,Widget www);
 
 extern void     mk_desc_callbacks(void);
-extern XmString char2xms(char *ptr);
+extern XmString char2xms(const char *ptr);
 extern char     *xms2char(XmString xms);
 
 #endif

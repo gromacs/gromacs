@@ -33,14 +33,9 @@
 #ifndef _readcomp_h
 #define _readcomp_h
 
-static char *SRCID_readcomp_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) readcomp.h 1.12 25 Jan 1993"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 

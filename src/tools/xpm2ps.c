@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_xpm2ps_c = "$Id$";
+
 #include <math.h>
 #include "string2.h"
 #include "copyrite.h"
@@ -93,9 +93,9 @@ enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
 
   void get_params(char *mpin,char *mpout,t_psrec *psr)
 {
-  static char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
+  static const char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
-  static char *colors[] = { "none", "black", "white", NULL };
+  static const char *colors[] = { "none", "black", "white", NULL };
   t_inpfile *inp;
   char      *tmp;
   int       ninp;
@@ -181,7 +181,7 @@ bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
   return bDiff;
 }
   
-void leg_discrete(FILE *ps,real x0,real y0,char *label,
+void leg_discrete(t_psdata ps,real x0,real y0,char *label,
 		  real fontsize,char *font,int nmap,t_mapping map[])
 {
   int   i;
@@ -208,7 +208,7 @@ void leg_discrete(FILE *ps,real x0,real y0,char *label,
   }
 }
 
-void leg_continuous(FILE *ps,real x0,real x,real y0,char *label,
+void leg_continuous(t_psdata ps,real x0,real x,real y0,char *label,
 		    real fontsize,char *font,
 		    int nmap,t_mapping map[])
 {
@@ -241,7 +241,7 @@ void leg_continuous(FILE *ps,real x0,real x,real y0,char *label,
   ps_ctext(ps,xx0+(nmap*boxxh)-boxxh/2,yhh,map[nmap-1].desc,eXCenter);
 }
 
-void leg_bicontinuous(FILE *ps,real x0,real x,real y0,char *label1,char *label2,
+void leg_bicontinuous(t_psdata ps,real x0,real x,real y0,char *label1,char *label2,
 		      real fontsize,char *font,
 		      int nmap1,t_mapping map1[],int nmap2,t_mapping map2[])
 {
@@ -290,7 +290,7 @@ static bool box_do_all_x_min_ticks(t_psrec *psr)
   return (psr->boxspacing>(1.5*psr->X.minorticklen));
 }
 
-static void draw_boxes(FILE *out,real x0,real y0,real w,
+static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 		       int nmat,t_matrix mat[],t_psrec *psr)
 {
   char   buf[12];
@@ -304,17 +304,17 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
   strlength = 0;
   
   /* Draw the box */
-  ps_rgb(out,BLACK);
-  ps_linewidth(out,psr->boxlinewidth);
+  ps_rgb(ps,BLACK);
+  ps_linewidth(ps,psr->boxlinewidth);
   yy00=y0;
   for(i=0; (i<nmat); i++) {
     dy=box_height(&(mat[i]),psr);
-    ps_box(out,x0-1,yy00-1,x0+w+1,yy00+dy+1);
+    ps_box(ps,x0-1,yy00-1,x0+w+1,yy00+dy+1);
     yy00+=dy+box_dh(psr)+box_dh_top(IS_ONCE,psr);
   }
   
   /* Draw the ticks on the axes */
-  ps_linewidth(out,psr->ticklinewidth);
+  ps_linewidth(ps,psr->ticklinewidth);
   xx00=x0-1;
   yy00=y0-1;
   for (i=0; (i<nmat); i++) {
@@ -323,29 +323,29 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
       sprintf(buf,"%g",mat[i].axis_x[j]);
       xtick[j]=strdup(buf);
     }
-    ps_strfont(out,psr->X.tickfont,psr->X.tickfontsize);
+    ps_strfont(ps,psr->X.tickfont,psr->X.tickfontsize);
     for(x=0; (x<mat[i].nx); x++) {
       xx=xx00+(x+0.7)*psr->xboxsize;
       if ( ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.major) || 
 	     (psr->X.first && (x==0))) &&
 	   ( (i == 0) || box_do_all_x_maj_ticks(psr) ) ) {
 	/* Longer tick marks */
-	ps_line (out,xx,yy00,xx,yy00-psr->X.majorticklen);
+	ps_line (ps,xx,yy00,xx,yy00-psr->X.majorticklen);
 	/* Plot label on lowest graph only */
 	if (i == 0)
-	  ps_ctext(out,xx,
+	  ps_ctext(ps,xx,
 		   yy00-DDD-psr->X.majorticklen-psr->X.tickfontsize*0.8,
 		   xtick[x],eXCenter);
       } else if ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.minor) &&
 		( (i == 0) || box_do_all_x_min_ticks(psr) ) ){
 	/* Shorter tick marks */
-	ps_line(out,xx,yy00,xx,yy00-psr->X.minorticklen);
+	ps_line(ps,xx,yy00,xx,yy00-psr->X.minorticklen);
       } else if ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.major) ) {
 	/* Even shorter marks, only each X.major */
-	ps_line(out,xx,yy00,xx,yy00-(psr->boxspacing/2));
+	ps_line(ps,xx,yy00,xx,yy00-(psr->boxspacing/2));
       }
     }
-    ps_strfont(out,psr->Y.tickfont,psr->Y.tickfontsize);
+    ps_strfont(ps,psr->Y.tickfont,psr->Y.tickfontsize);
     snew(ytick,mat[i].ny);
     for(j=0; (j<mat[i].ny); j++) {
       sprintf(buf,"%g",mat[i].axis_y[j]);
@@ -358,13 +358,13 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
 	   (psr->Y.first && (y==0))) {
 	/* Major ticks */
 	strlength=max(strlength,(int)strlen(ytick[y]));
-	ps_line (out,xx00,yy,xx00-psr->Y.majorticklen,yy);
-	ps_ctext(out,xx00-psr->Y.majorticklen-DDD,
+	ps_line (ps,xx00,yy,xx00-psr->Y.majorticklen,yy);
+	ps_ctext(ps,xx00-psr->Y.majorticklen-DDD,
 		 yy-psr->Y.tickfontsize/3.0,ytick[y],eXRight);
       }
       else if ( bRmod(mat[i].axis_y[y] - psr->Y.offset, psr->Y.minor) ) {
 	/* Minor ticks */
-	ps_line(out,xx00,yy,xx00-psr->Y.minorticklen,yy);
+	ps_line(ps,xx00,yy,xx00-psr->Y.minorticklen,yy);
       }
     }
     sfree(xtick);
@@ -377,13 +377,12 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
       else
 	mylab = mat[i].label_y;
       if (strlen(mylab) > 0) {
-	fprintf(out,"%%%% Printing Y-label\n");
-	ps_strfont(out,psr->Y.font,psr->Y.fontsize);
-	ps_rotate(out,TRUE);
+	ps_strfont(ps,psr->Y.font,psr->Y.fontsize);
+	ps_rotate(ps,TRUE);
 	xxx=x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
-	ps_ctext(out,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
+	ps_ctext(ps,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
 		 mylab,eXCenter);
-	ps_rotate(out,FALSE);
+	ps_rotate(ps,FALSE);
       }
     }
     
@@ -395,14 +394,13 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
   else
     mylab = mat[0].label_x;
   if (strlen(mylab) > 0) {
-    fprintf(out,"%%%% Printing X-label\n");
-    ps_strfont(out,psr->X.font,psr->X.fontsize);
-    ps_ctext(out,x0+w/2,y0-DDD-psr->X.majorticklen-psr->X.tickfontsize*FUDGE-
+    ps_strfont(ps,psr->X.font,psr->X.fontsize);
+    ps_ctext(ps,x0+w/2,y0-DDD-psr->X.majorticklen-psr->X.tickfontsize*FUDGE-
 	     psr->X.fontsize,mylab,eXCenter);
   }
 }
 
-static void draw_zerolines(FILE *out,real x0,real y0,real w,
+static void draw_zerolines(t_psdata out,real x0,real y0,real w,
 			   int nmat,t_matrix mat[],t_psrec *psr)
 {
   real   xx,yy,dy,xx00,yy00;
@@ -615,7 +613,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    int elegend,real boxx,real boxy,char *m2p,char *m2pout)
 {
   char   *libm2p,buf[256],*legend;
-  FILE   *out;
+  t_psdata out;
   t_psrec  psrec,*psr;
   int    W,H;
   int    i,j,x,y,col,leg=0;

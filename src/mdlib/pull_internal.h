@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_pull_internal_h = "$Id$";
+
 
 #ifndef _pull_internal_h
 #define _pull_internal_h

@@ -29,7 +29,6 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_addconf_h = "$Id$";
 #include "typedefs.h"
 
 extern 

@@ -33,7 +33,7 @@
 #ifndef _buttons_h
 #define _buttons_h
 
-static char *SRCID_buttons_h = "$Id$";
+
 #include <xutil.h>
 
 enum { 

@@ -33,10 +33,6 @@
 #ifndef _topdef_h
 #define _topdef_h
 
-static char *SRCID_topdef_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) topdef.h 1.9 11/23/92"
-#endif /* HAVE_IDENT */
 
 /* These are the indices for combination rule selection 	*/
 #define COMB_GROMOS 	1	/* Gromos rules			*/

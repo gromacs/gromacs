@@ -24,12 +24,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
+
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_minimize_c = "$Id$";
+
 #include <string.h>
 #include <time.h>
 #include <math.h>
@@ -60,7 +61,7 @@ static char *SRCID_minimize_c = "$Id$";
 #include "dummies.h"
 #include "mdrun.h"
 
-static void sp_header(FILE *out,char *minimizer,real ftol,int nsteps)
+static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
   fprintf(out,"%s:\n",minimizer);
   fprintf(out,"   Tolerance         = %12.5e\n",ftol);
@@ -78,7 +79,7 @@ static void warn_step(FILE *fp,real ustep,real ftol,bool bConstrain)
 	    "off constraints alltogether (set constraints = none in mdp file)\n");
 }
 
-static void print_converged(FILE *fp,char *alg,real ftol,int count,bool bDone,
+static void print_converged(FILE *fp,const char *alg,real ftol,int count,bool bDone,
 			    int nsteps,real epot,real fmax)
 {
   if (bDone)
@@ -154,7 +155,7 @@ static real f_norm(t_commrec *cr,
   return sqrt(fnorm2); 
 } 
 
-static void init_em(FILE *log,char *title,
+static void init_em(FILE *log,const char *title,
 		    t_parm *parm,real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
 		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
 		    t_commrec *cr,t_vcm **vcm,int *start,int *end)
@@ -176,7 +177,7 @@ static void init_em(FILE *log,char *title,
   *end   = nsb->homenr[cr->nodeid] + *start;
 
   /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,*lambda,TRUE);
+  update_mdatoms(mdatoms,*lambda,TRUE);
 
   *vcm = init_vcm(log,top,cr,mdatoms,
 		  *start,HOMENR(nsb),parm->ir.nstcomm);
@@ -191,7 +192,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_commrec *cr,t_commrec *mcr,t_graph *graph,
 	     t_forcerec *fr,rvec box_size)
 {
-  static char *CG="Conjugate Gradients";
+  const char *CG="Conjugate Gradients";
   double gpa,gpb;
   double EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,zet,w;
   real   lambda,fmax,testf,smin;
@@ -289,9 +290,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       force_vir,parm->vir,parm->pres,grps,mu_tot,
 	       (parm->ir.etc==etcNOSEHOOVER));
     
-    print_ebin_header(log,count,count,lambda,0.0);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,log,count,count,eprNORMAL,
-	       TRUE,mdebin,fcd,&(top->atoms));
+    print_ebin_header(log,count,count,lambda);
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
+	       TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
   }
   where();
   
@@ -492,9 +493,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		 force_vir,parm->vir,parm->pres,grps,mu_tot,
 		 (parm->ir.etc==etcNOSEHOOVER));
       /* Print the energies allways when we should be verbose */
-      print_ebin_header(log,count,count,lambda,0.0);
-      print_ebin(fp_ene,TRUE,FALSE,FALSE,log,count,count,eprNORMAL,
-		 TRUE,mdebin,fcd,&(top->atoms));
+      print_ebin_header(log,count,count,lambda);
+      print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,count,count,eprNORMAL,
+		 TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
     }
     
     /* Stop when the maximum force lies below tolerance */
@@ -538,7 +539,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		t_commrec *cr,t_commrec *mcr,t_graph *graph,
 		t_forcerec *fr,rvec box_size) 
 { 
-  static char *SD="Steepest Descents"; 
+  const char *SD="Steepest Descents"; 
   real   stepsize,constepsize,lambda,fmax; 
   rvec   *pos[2],*force[2],*xcf=NULL; 
   rvec   *xx,*ff; 
@@ -678,7 +679,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     sum_epot(&(parm->ir.opts),grps,ener); 
 
     if (MASTER(cr))
-      print_ebin_header(log,count,count,lambda,0.0);
+      print_ebin_header(log,count,count,lambda);
 
     if (bConstrain) {
       fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,start,end,
@@ -729,7 +730,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,parm->ir.nstdisreout),
 		   do_per_step(steps_accepted,parm->ir.nstorireout),
-		   log,count,count,eprNORMAL,TRUE,mdebin,fcd,&(top->atoms));
+		   do_per_step(steps_accepted,parm->ir.nstdihreout),
+		   log,count,count,eprNORMAL,TRUE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
 	fflush(log);
       }
     } 
@@ -881,12 +883,11 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     bBHAM,b14,parm->ir.efep!=efepNO,parm->ir.epc,
 		     parm->ir.eDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr);
 
-  /* Calculate Temperature coupling parameters lambda */
-  ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
+   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   if(parm->ir.etc==etcBERENDSEN)
-    berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
+    berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
   else if(parm->ir.etc==etcNOSEHOOVER)
-    nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,lam0);
+    nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
 
   where();
   
@@ -998,10 +999,10 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   lambda=lam0+step*parm->ir.delta_lambda;
   
   if (MASTER(cr)) {
-    print_ebin(-1,FALSE,FALSE,FALSE,log,step,t,eprAVER,
-	       FALSE,mdebin,fcd,&(top->atoms));
-    print_ebin(-1,FALSE,FALSE,FALSE,log,step,t,eprRMS,
-	       FALSE,mdebin,fcd,&(top->atoms));
+    print_ebin(-1,FALSE,FALSE,FALSE,FALSE,log,step,t,eprAVER,
+	       FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+    print_ebin(-1,FALSE,FALSE,FALSE,FALSE,log,step,t,eprRMS,
+	       FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
   }
   
   /* Construct dummy particles, for last output frame */

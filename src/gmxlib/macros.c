@@ -29,15 +29,15 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_macros_c = "$Id$";
+
 #include "macros.h"
 
-real ZERO   =  0.0;
-real THIRD  =  (1.0/3.0);
-real HALF   =  0.5;
-real ONE    =  1.0;
-real TWO    =  2.0;
-real THREE  =  3.0;
-real SIX    =  6.0;
-real TEN    = 10.0;
-real TWELVE = 12.0;
+const real ZERO   =  0.0;
+const real THIRD  =  (1.0/3.0);
+const real HALF   =  0.5;
+const real ONE    =  1.0;
+const real TWO    =  2.0;
+const real THREE  =  3.0;
+const real SIX    =  6.0;
+const real TEN    = 10.0;
+const real TWELVE = 12.0;

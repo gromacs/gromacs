@@ -33,14 +33,9 @@
 #ifndef _update_h
 #define _update_h
 
-static char *SRCID_update_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) update.h 1.33 24 Jun 1996"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 #include "mshift.h"
@@ -56,7 +51,6 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   real         lambda, /* FEP scaling parameter */
 		   real         *dvdlambda, /* FEP stuff */
 		   t_parm       *parm,    /* input record and box stuff	*/
-		   real         SAfactor, /* simulated annealing factor   */
 		   t_mdatoms    *md,
 		   rvec         x[],	/* coordinates of home particles */
 		   t_graph      *graph,	
@@ -121,11 +115,12 @@ extern void init_sd_consts(int ngtc,real tau_t[],real dt);
  */
 extern real run_aver(real old,real cur,int step,int nmem);
 
-extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
-			     real dt,real SAfactor);
-extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,
-			      real dt,real SAfactor);
+extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
+extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
 /* Compute temperature scaling. For Nose-Hoover it is done in update. */
+
+/* Set reference temp for simulated annealing at time t*/
+extern void update_annealing_target_temp(t_grpopts *opts,real t); 
 
 extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */

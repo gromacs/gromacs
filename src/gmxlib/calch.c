@@ -29,7 +29,6 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_calch_c = "$Id$";
 #include "macros.h"
 #include "calch.h"
 #include "maths.h"

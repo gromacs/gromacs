@@ -29,7 +29,7 @@
  * And Hey:
  * Grunge ROck MAChoS
  */
-static char *SRCID_block_tx_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

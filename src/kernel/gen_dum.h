@@ -33,7 +33,7 @@
 #ifndef _gen_dum_h
 #define _gen_dum_h
 
-static char *SRCID_gen_dum_h = "$Id$";
+
 #include "typedefs.h"
 #include "grompp.h"
 #include "hackblock.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_splittop_h = "$Id$";
+
 #include "dummies.h"
 
 extern void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr,

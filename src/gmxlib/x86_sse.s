@@ -126,7 +126,7 @@ _vecinvsqrt_sse:
 	mov eax, [ebp + 8]
 	mov ebx, [ebp + 12]	
 	mov ecx, [ebp + 16]
-    mov edx, ecx
+        mov edx, ecx
 	movups xmm6,[sse_three]
 	movups xmm7,[sse_minushalf]
     shr ecx, 3

@@ -33,7 +33,6 @@
 #ifndef _xdrf_h
 #define _xdrf_h
 
-static char *SRCID_xdrf_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

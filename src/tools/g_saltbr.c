@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_saltbr_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include "macros.h"

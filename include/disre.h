@@ -33,14 +33,9 @@
 #ifndef _disre_h
 #define _disre_h
 
-static char *SRCID_disre_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) disre.h 1.13 2/2/97"
-#endif /* HAVE_IDENT */
 
 #ifdef CPLUSPLUS
 extern "C" {

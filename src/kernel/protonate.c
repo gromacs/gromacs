@@ -29,7 +29,6 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_protonate_c = "$Id$";
 #include <math.h>
 #include "typedefs.h"
 #include "macros.h"

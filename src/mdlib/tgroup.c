@@ -29,7 +29,8 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_tgroup_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #include <math.h>
 #include "macros.h"
 #include "main.h"
@@ -39,7 +40,6 @@ static char *SRCID_tgroup_c = "$Id$";
 #include "vec.h"
 #include "network.h"
 #include "smalloc.h"
-#include "vveclib.h"
 #include "update.h"
 #include "rbin.h"
 #include "assert.h"

@@ -17,13 +17,13 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
 	ns.c		nsb.c		nsgrid.c	\
-	pme.c		poisson.c	pppm.c		\
-	psgather.c	pull.c 		pullinit.c	\
-	pullio.c	pullutil.c	pssolve.c	\
-	psspread.c	shakef.c	sim_util.c	\
+	pme.c		pppm.c		\
+	pull.c 		pullinit.c	\
+	pullio.c	pullutil.c	\
+	shakef.c	sim_util.c	\
 	splittop.c	tables.c	tgroup.c	\
 	update.c	vcm.c		wnblist.c	\
-	poisson.h	splittop.h	wnblist.h	\
+	splittop.h	wnblist.h	\
 	pull_internal.h
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \

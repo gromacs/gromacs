@@ -85,7 +85,7 @@ typedef struct
 #define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && interaction_function[(ftype)].flags & IF_CHEMBOND)
 /* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
-extern t_interaction_function interaction_function[F_NRE];
+extern const t_interaction_function interaction_function[F_NRE];
 /* initialised interaction functions descriptor				*/
 
 #endif

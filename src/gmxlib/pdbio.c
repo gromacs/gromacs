@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_pdbio_c = "$Id$";
+
 #include "sysstuff.h"
 #include "string2.h"
 #include "vec.h"
@@ -44,7 +44,7 @@ static char *SRCID_pdbio_c = "$Id$";
 #include "physics.h"
 #include "pbc.h"
 	
-static char *pdbtp[epdbNR]={
+static const char *pdbtp[epdbNR]={
   "ATOM  ","HETATM", "ANISOU", "CRYST1",
   "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
 };
@@ -83,14 +83,14 @@ void write_pdbfile_indexed(FILE *out,char *title,
 			   t_atoms *atoms,rvec x[],matrix box,char chain,
 			   int model_nr, atom_id nindex, atom_id index[])
 {
-  char resnm[6],nm[6],ch,pdbform[128];
+  char resnm[6],nm[6],ch,pdbform[128],pukestring[100];
   atom_id i,ii;
   int  resnr,type;
   real occup,bfac;
   real alpha,beta,gamma;
   bool bOccup;
 
-  fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs());
+  fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs(pukestring,99));
   if (bWideFormat) {
     fprintf(out,"REMARK    This file does not adhere to the PDB standard\n");
     fprintf(out,"REMARK    As a result of, some programs may not like it\n");

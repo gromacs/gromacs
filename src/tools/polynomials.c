@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_polynomials_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"

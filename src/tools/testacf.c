@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_testacf_c = "$Id$";
+
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"

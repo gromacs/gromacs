@@ -33,10 +33,6 @@
 #ifndef _nener_h
 #define _nener_h
 
-static char *SRCID_nener_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) nener.h 1.19 9/30/97"
-#endif /* HAVE_IDENT */
 #include "x11.h"
 #include "xutil.h"
 #include "popup.h"

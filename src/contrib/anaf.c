@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_anaf_c = "$Id$";
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -56,7 +56,7 @@ static char *nm[5]  = { "OW", "HW1", "HW2", "DW", "SW" };
 static void list_trn(char *fn)
 {
   static real mass[5] = { 15.9994, 1.008, 1.008, 0.0, 0.0 };
-  int         i,j,m,fpread,fpwrite,nframe;
+  int         i,j=0,m,fpread,fpwrite,nframe;
   rvec        *x,*v,*f,fmol[2],xcm[2],torque[j],dx;
   real        mmm,len;
   matrix      box;

@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID_dialogs_c = "$Id$";
+
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "macros.h"

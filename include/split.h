@@ -33,14 +33,9 @@
 #ifndef _split_h
 #define _split_h
 
-static char *SRCID_split_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) split.h 1.20 12/16/92"
-#endif /* HAVE_IDENT */
 
 /*
  * Determine on which node a particle should reside and on which

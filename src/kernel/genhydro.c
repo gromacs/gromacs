@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_genhydro_c = "$Id$";
+
 #include <time.h>
 #include <ctype.h>
 #include "assert.h"
@@ -140,19 +140,15 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   return hb;
 }
 
-static char Hnum[] = "123456";
+static const char Hnum[] = "123456";
 
 static void expand_hackblocks_one(t_hackblock *hbr, char *atomname, 
 				  int *nabi, t_hack **abi, bool bN, bool bC)
 {
   int j, k, l, d;
   bool bIgnore;
-  /* recursion depth is recorded for debug purposes only: */
-  static int depth=-1;
   
-  depth++;
   /* we'll recursively add atoms to atoms */
-  if (debug) fprintf(debug,"\n[%d] %s:",depth,atomname);
   for(j=0; j < hbr->nhack; j++) {
     /* first check if we're in the N- or C-terminus, then we should ignore 
        all hacks involving atoms from resp. previous or next residue
@@ -209,7 +205,6 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
 				nabi, abi, bN, bC);
     }
   }
-  depth--;
 }
 
 static void expand_hackblocks(t_atoms *pdba, t_hackblock hb[], 

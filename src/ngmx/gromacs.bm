@@ -38,9 +38,6 @@
 #ifndef	_gromacs_bm
 #define	_gromacs_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) gromacs.bm 1.9 9/29/92"
-#endif /* HAVE_IDENT */
 
 #define gromacs_width 48
 #define gromacs_height 48

@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_maths_c = "$Id$";
+
 #include <math.h>
 #include <limits.h>
 #include "maths.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_sortwater_c = "$Id$";
+
 #include "typedefs.h"
 #include "random.h"
 #include "smalloc.h"

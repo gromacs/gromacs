@@ -33,12 +33,6 @@ Makefile.@host@ Makefile.@host@_double: Template.mak Makefile
 	sed 's,@CC\@,$(CC),' | \
 	sed 's,@host\@,@host@,' >$@
 
-install-data-hook:
-if DOUBLE
-	(cd $(DESTDIR)$(templatedir) && ! (test -e Makefile) && $(LN_S) Makefile.@host@_double Makefile ; exit 0)
-else
-	(cd $(DESTDIR)$(templatedir) && ! (test -e Makefile) && $(LN_S) Makefile.@host@ Makefile ; exit 0)
-endif
 CLEANFILES = Makefile.@host@ Makefile.@host@_double *~ \\\#*
 
 

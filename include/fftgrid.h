@@ -33,7 +33,7 @@
 #ifndef _fftgrid_h
 #define _fftgrid_h
 
-static char *SRCID_fftgrid_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

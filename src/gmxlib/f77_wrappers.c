@@ -29,7 +29,8 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_f77_wrappers_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

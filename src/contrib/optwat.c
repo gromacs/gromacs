@@ -29,7 +29,8 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_optwat_c = "$Id$";
+
+#include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -70,21 +71,20 @@ void get_results(char *enx,real P[],real *epot,int pindex,int eindex)
   char     **nms=NULL;
   int      nre,step,ndr,i;
   real     t;
-  t_energy *ener;
+  t_enxframe fr;
   
   fp_ene = open_enx(enx,"r");
   
   do_enxnms(fp_ene,&nre,&nms);
-  snew(ener,nre);
   
   /* Read until the last frame */
-  while (do_enx(fp_ene,&t,&step,&nre,ener,&ndr,NULL));
+  while (do_enx(fp_ene,&fr));
   
   close_enx(fp_ene);
   
-  *epot = ener[eindex].e;
+  *epot = fr.ener[eindex].e;
   for(i=pindex; (i<pindex+9); i++)
-    P[i-pindex] = ener[i].e;
+    P[i-pindex] = fr.ener[i].e;
     
   sfree(ener);
 }
@@ -194,7 +194,7 @@ int main(int argc,char *argv[])
 		    asize(desc),desc,0,NULL);
 
   /* Read initial topology and coordaintes etc. */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&sh);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&sh,TRUE,NULL,NULL);
   snew(xx,sh.natoms);
   snew(vv,sh.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,&natoms,

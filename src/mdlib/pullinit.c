@@ -33,7 +33,9 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-static char *SRCID_pullinit_c = "$Id$";
+
+/* This file is threadsafe - keep it that way */
+
 #include <string.h>
 #include "princ.h"
 #include <stdlib.h>

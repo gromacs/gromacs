@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_nrama_c = "$Id$";
+
 #include <math.h>
 #include "assert.h"
 #include "sysstuff.h"
@@ -44,7 +44,7 @@ static char *SRCID_nrama_c = "$Id$";
 #include "nrama.h"
 #include "rmpbc.h"
 
-static char *pp_pat[] = { "C", "N", "CA", "C", "N" };
+static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
 
 static int d_comp(const void *a,const void *b)
@@ -91,7 +91,7 @@ bool new_data(t_xrama *xr)
   return TRUE;
 }
 
-static int find_atom(char *find,char ***names,int start,int nr)
+static int find_atom(const char *find,char ***names,int start,int nr)
 {
   int i;
 
@@ -121,7 +121,7 @@ static void add_xr(t_xrama *xr,int ff[5],t_atoms *atoms)
 	  atoms->atom[ff[1]].resnr+1);
   xr->pp[xr->npp].label=strdup(buf);
   xr->npp++;
-}
+} 
 
 static void get_dih(t_xrama *xr,t_atoms *atoms)
 {
@@ -288,9 +288,11 @@ static void get_dih_props(t_xrama *xr,t_idef *idef)
 		  xr->dih[i].ai[1],xr->dih[i].ai[2]);
 }
 
-void init_rama(char *infile,char *topfile,t_xrama *xr)
+
+
+t_topology *init_rama(char *infile,char *topfile,t_xrama *xr)
 {
-  static t_topology *top;
+  t_topology *top;
   real   t;
 
   top=read_top(topfile);
@@ -303,5 +305,7 @@ void init_rama(char *infile,char *topfile,t_xrama *xr)
   
   min_max(xr);
   calc_dihs(xr);
+
+  return top;
 }
 

@@ -33,11 +33,6 @@
 #ifndef _x11_h
 #define _x11_h
 
-static char *SRCID_x11_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) x11.h 1.6 12/16/92"
-#endif /* HAVE_IDENT */
-
 #include <stdio.h>
 #include "typedefs.h"
 #include "Xstuff.h"

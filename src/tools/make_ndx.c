@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_make_ndx_c = "$Id$";
+
 #include <ctype.h>
 #include "sysstuff.h"
 #include "strdb.h"

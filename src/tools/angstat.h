@@ -33,7 +33,6 @@
 #ifndef _angstat_h
 #define _angstat_h
 
-static char *SRCID_angstat_h = "$Id$";
 #include <stdio.h>
 #include <typedefs.h>
 

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_csettle_c = "$Id$";
+
 #include <math.h>
 #include <stdio.h>
 #include "vec.h"
@@ -51,6 +51,91 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 	  title,OW1/DIM,HW2/DIM,HW3/DIM,norm(dOH1),norm(dOH2),norm(dHH));
 }
 #endif
+
+
+/* Our local shake routine to be used when settle breaks down due to a zero determinant */
+static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH) 
+{  
+  real bondsq[3];
+  real bond[9];
+  real invmass[3];
+  real M2[3];
+  int iconv;
+  int iatom[3]={0,0,1};
+  int jatom[3]={1,2,2};
+  real rijx,rijy,rijz,tx,ty,tz,im,jm,acor,rp,diff;
+  int i,ll,ii,jj,l3,ix,iy,iz,jx,jy,jz,conv;
+
+  invmass[0]=1.0/mO;
+  invmass[1]=1.0/mH;
+  invmass[2]=1.0/mH;
+
+  bondsq[0]=dOH*dOH;
+  bondsq[1]=bondsq[0];
+  bondsq[2]=dHH*dHH;
+  
+  M2[0]=1.0/(2.0*(invmass[0]+invmass[1]));
+  M2[1]=M2[0];
+  M2[2]=1.0/(2.0*(invmass[1]+invmass[2]));
+
+  for(ll=0;ll<3;ll++) {
+    l3=3*ll;
+    ix=3*iatom[ll];
+    jx=3*jatom[ll];
+    for(i=0;i<3;i++) 
+      bond[l3+i]= b4[ix+i] - b4[jx+i];
+  }
+
+  for(i=0,iconv=0;i<1000 && iconv<3; i++) {
+    for(ll=0;ll<3;ll++) {
+      ii = iatom[ll];
+      jj = jatom[ll];
+      l3 = 3*ll;
+      ix = 3*ii;
+      jx = 3*jj;
+      iy = ix+1;
+      jy = jx+1;
+      iz = ix+2;
+      jz = jx+2;
+
+      rijx = bond[l3];
+      rijy = bond[l3+1];
+      rijz = bond[l3+2];  
+
+      
+      tx   = after[ix]-after[jx];
+      ty   = after[iy]-after[jy];
+      tz   = after[iz]-after[jz];
+      
+      rp   = tx*tx+ty*ty+tz*tz;
+      diff = bondsq[ll] - rp;
+
+      if(fabs(diff)<1e-8) {
+	iconv++;
+      } else {
+	rp = rijx*tx+rijy*ty+rijz*tz;
+	if(rp<1e-8) {
+	  printf("SHITSHITSHIT\n");
+	  return -1;
+	}
+	acor = diff*M2[ll]/rp;
+	im           = invmass[ii];
+	jm           = invmass[jj];
+	tx           = rijx*acor;
+	ty           = rijy*acor;
+	tz           = rijz*acor;
+	after[ix] += tx*im;
+	after[iy] += ty*im;
+	after[iz] += tz*im;
+	after[jx] -= tx*jm;
+	after[jy] -= ty*jm;
+	after[jz] -= tz*jm;
+      }
+    }
+  }
+  return 0;
+}
+
 
 void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
 	     real dOH,real dHH,real mO,real mH,int *error)
@@ -87,8 +172,10 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
     za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d, 
     xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
   real t1,t2;
+
+  int doshake;
   
-  int i, ow1, hw2, hw3;
+  int i, shakeret, ow1, hw2, hw3;
 
   *error=-1;
   if (bFirst) {
@@ -116,6 +203,7 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
 #pragma ivdep
 #endif
   for (i = 0; i < nshake; ++i) {
+    doshake = 0;
     /*    --- Step1  A1' ---      */
     ow1 = owptr[i] * 3;
     hw2 = ow1 + 3;
@@ -191,6 +279,7 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
     tmp    = rone - sinphi * sinphi;
     if (tmp <= 0) {
       *error = i;
+      doshake = 1;
       cosphi = 0;
     }
     else
@@ -199,65 +288,71 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
     tmp2   = rone - sinpsi * sinpsi;
     if (tmp2 <= 0) {
       *error = i;
+      doshake = 1;
       cospsi = 0;
     }
     else
       cospsi = tmp2*invsqrt(tmp2);
     /* 46 flops */
     
-    ya2d =  ra * cosphi;
-    xb2d = -rc * cospsi;
-    t1   = -rb * cosphi;
-    t2   =  rc * sinpsi * sinphi;
-    yb2d =  t1 - t2;
-    yc2d =  t1 + t2;
-    /* 7 flops */
-        
-    /*     --- Step3  al,be,ga 		      --- */
-    alpa   = xb2d * (xb0d - xc0d) + yb0d * yb2d + yc0d * yc2d;
-    beta   = xb2d * (yc0d - yb0d) + xb0d * yb2d + xc0d * yc2d;
-    gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
-    al2be2 = alpa * alpa + beta * beta;
-    tmp2   = (al2be2 - gama * gama);
-    sinthe = (alpa * gama - beta * tmp2*invsqrt(tmp2)) / al2be2;
-    /* 47 flops */
-    
-    /*  --- Step4  A3' --- */
-    tmp2  = rone - sinthe *sinthe;
-    costhe = tmp2*invsqrt(tmp2);
-    xa3d = -ya2d * sinthe;
-    ya3d = ya2d * costhe;
-    za3d = za1d;
-    xb3d = xb2d * costhe - yb2d * sinthe;
-    yb3d = xb2d * sinthe + yb2d * costhe;
-    zb3d = zb1d;
-    xc3d = -xb2d * costhe - yc2d * sinthe;
-    yc3d = -xb2d * sinthe + yc2d * costhe;
-    zc3d = zc1d;
-    /* 26 flops */
-    
-    /*    --- Step5  A3 --- */
-    xa3 = trns11 * xa3d + trns12 * ya3d + trns13 * za3d;
-    ya3 = trns21 * xa3d + trns22 * ya3d + trns23 * za3d;
-    za3 = trns31 * xa3d + trns32 * ya3d + trns33 * za3d;
-    xb3 = trns11 * xb3d + trns12 * yb3d + trns13 * zb3d;
-    yb3 = trns21 * xb3d + trns22 * yb3d + trns23 * zb3d;
-    zb3 = trns31 * xb3d + trns32 * yb3d + trns33 * zb3d;
-    xc3 = trns11 * xc3d + trns12 * yc3d + trns13 * zc3d;
-    yc3 = trns21 * xc3d + trns22 * yc3d + trns23 * zc3d;
-    zc3 = trns31 * xc3d + trns32 * yc3d + trns33 * zc3d;
-    /* 45 flops */
-    
-    after[ow1] = xcom + xa3;
-    after[ow1 + 1] = ycom + ya3;
-    after[ow1 + 2] = zcom + za3;
-    after[hw2] = xcom + xb3;
-    after[hw2 + 1] = ycom + yb3;
-    after[hw2 + 2] = zcom + zb3;
-    after[hw3] = xcom + xc3;
-    after[hw3 + 1] = ycom + yc3;
-    after[hw3 + 2] = zcom + zc3;
+    if(!doshake) {
+      ya2d =  ra * cosphi;
+      xb2d = -rc * cospsi;
+      t1   = -rb * cosphi;
+      t2   =  rc * sinpsi * sinphi;
+      yb2d =  t1 - t2;
+      yc2d =  t1 + t2;
+      /* 7 flops */
+      
+      /*     --- Step3  al,be,ga 		      --- */
+      alpa   = xb2d * (xb0d - xc0d) + yb0d * yb2d + yc0d * yc2d;
+      beta   = xb2d * (yc0d - yb0d) + xb0d * yb2d + xc0d * yc2d;
+      gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
+      al2be2 = alpa * alpa + beta * beta;
+      tmp2   = (al2be2 - gama * gama);
+      sinthe = (alpa * gama - beta * tmp2*invsqrt(tmp2)) / al2be2;
+      /* 47 flops */
+      
+      /*  --- Step4  A3' --- */
+      tmp2  = rone - sinthe *sinthe;
+      costhe = tmp2*invsqrt(tmp2);
+      xa3d = -ya2d * sinthe;
+      ya3d = ya2d * costhe;
+      za3d = za1d;
+      xb3d = xb2d * costhe - yb2d * sinthe;
+      yb3d = xb2d * sinthe + yb2d * costhe;
+      zb3d = zb1d;
+      xc3d = -xb2d * costhe - yc2d * sinthe;
+      yc3d = -xb2d * sinthe + yc2d * costhe;
+      zc3d = zc1d;
+      /* 26 flops */
+      
+      /*    --- Step5  A3 --- */
+      xa3 = trns11 * xa3d + trns12 * ya3d + trns13 * za3d;
+      ya3 = trns21 * xa3d + trns22 * ya3d + trns23 * za3d;
+      za3 = trns31 * xa3d + trns32 * ya3d + trns33 * za3d;
+      xb3 = trns11 * xb3d + trns12 * yb3d + trns13 * zb3d;
+      yb3 = trns21 * xb3d + trns22 * yb3d + trns23 * zb3d;
+      zb3 = trns31 * xb3d + trns32 * yb3d + trns33 * zb3d;
+      xc3 = trns11 * xc3d + trns12 * yc3d + trns13 * zc3d;
+      yc3 = trns21 * xc3d + trns22 * yc3d + trns23 * zc3d;
+      zc3 = trns31 * xc3d + trns32 * yc3d + trns33 * zc3d;
+      /* 45 flops */
+      after[ow1] = xcom + xa3;
+      after[ow1 + 1] = ycom + ya3;
+      after[ow1 + 2] = zcom + za3;
+      after[hw2] = xcom + xb3;
+      after[hw2 + 1] = ycom + yb3;
+      after[hw2 + 2] = zcom + zb3;
+      after[hw3] = xcom + xc3;
+      after[hw3 + 1] = ycom + yc3;
+      after[hw3 + 2] = zcom + zc3;
     /* 9 flops */
+    } else {
+      /* If we couldn't settle this water, try a simplified iterative shake instead */
+      if(xshake(b4+ow1,after+ow1,dOH,dHH,mO,mH)!=0)
+	*error=i;
+    }
 #ifdef DEBUG
     check_cons(fp,"settle",after,ow1,hw2,hw3);
 #endif

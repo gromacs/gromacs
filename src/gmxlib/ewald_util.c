@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_ewald_util_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "assert.h"
@@ -78,9 +78,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			matrix box,rvec mu_tot,real qsum, int ewald_geometry,
 			real epsilon_surface,matrix lr_vir)
 {
-  static  bool bFirst=TRUE;
-  static  real Vself;
-
+  real Vself;
   int     i,i1,i2,j,k,m,iv,jv;
   atom_id *AA;
   double  q2sum; /* Necessary for precision */

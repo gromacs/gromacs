@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_gen_dum_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -93,7 +93,7 @@ enum { DDB_CH3, DDB_NH3, DDB_NH2, DDB_PHE, DDB_TYR,
 
 typedef char t_dirname[STRLEN];
 
-static t_dirname ddb_dirnames[DDB_DIR_NR] = {
+static const t_dirname ddb_dirnames[DDB_DIR_NR] = {
   "CH3",
   "NH3",
   "NH2",

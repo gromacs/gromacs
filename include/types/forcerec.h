@@ -146,6 +146,15 @@ typedef struct {
 
   /* xmdrun flexible constraints */
   real fc_stepsize;
+
+  /* Generalized born stuff */
+  /* VdW radius for each atomtype (dim is thus ntype) */
+  real *atype_radius;
+  /* Effective radius (derived from effective volume) for each type */
+  real *atype_vol;
+  /* Implicit solvent - surface tension for each atomtype */
+  real *atype_surftens;
+
 } t_forcerec;
 
 #define C6(nbfp,ntp,ai,aj)     (nbfp)[2*((ntp)*(ai)+(aj))]

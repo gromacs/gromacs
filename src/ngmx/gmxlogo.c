@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_gmxlogo_c = "$Id$";
+
 #include "logo.h"
 
 void main(int argc, char *argv[])

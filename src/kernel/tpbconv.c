@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_tpbconv_c = "$Id$";
+
 #include <math.h>
 #include "rdgroup.h"
 #include "fatal.h"
@@ -78,7 +78,7 @@ static atom_id *invind(int gnx,int natoms,atom_id index[])
 }
 
 static void reduce_block(atom_id invindex[],bool bKeep[],t_block *block,
-			 char *name,bool bExcl)
+			 const char *name,bool bExcl)
 {
   atom_id *index,*a;
   int i,j,k,newi,newj;
@@ -301,7 +301,7 @@ int main (int argc, char *argv[])
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
-  read_tpxheader(top_fn,&tpx);
+  read_tpxheader(top_fn,&tpx,FALSE,NULL,NULL);
   snew(x,tpx.natoms);
   snew(v,tpx.natoms);
   snew(ir,1);

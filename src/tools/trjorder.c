@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_trjorder_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include "statutil.h"

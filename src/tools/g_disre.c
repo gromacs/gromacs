@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_disre_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include <assert.h>
@@ -383,7 +383,7 @@ int main (int argc,char *argv[])
   if (ntop)
     init5(ntop);
   
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header,FALSE,NULL,NULL);
   snew(xtop,header.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&ntopatoms,xtop,NULL,NULL,&top);

@@ -33,7 +33,7 @@
 #ifndef _hizzie_h
 #define _hizzie_h
 
-static char *SRCID_hizzie_h = "$Id$";
+
 extern void set_histp(t_atoms *pdba,rvec *x,real angle,real distance);
 /* calculate HIStidine protonation state */
 

@@ -33,10 +33,6 @@
 #ifndef _topshake_h
 #define _topshake_h
 
-static char *SRCID_topshake_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) topshake.h 1.19 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "topio.h"
 

@@ -33,10 +33,6 @@
 #ifndef _toputil_h
 #define _toputil_h
 
-static char *SRCID_toputil_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) toputil.h 1.25 19 Nov 1995"
-#endif /* HAVE_IDENT */
 
 #include "grompp.h"
 

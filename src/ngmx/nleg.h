@@ -33,10 +33,6 @@
 #ifndef _nleg_h
 #define _nleg_h
 
-static char *SRCID_nleg_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) nleg.h 1.19 9/30/97"
-#endif /* HAVE_IDENT */
 #include "x11.h"
 #include "xutil.h"
 #include "writeps.h"

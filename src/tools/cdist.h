@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_cdist_h = "$Id$";
+
 #define HEAD_LOADED
 #include <stdio.h>
 #include <math.h>

@@ -33,14 +33,10 @@
 #ifndef _matio_h
 #define _matio_h
 
-static char *SRCID_matio_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) matio.h 1.11 5/20/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 
 extern bool matelmt_cmp(t_xpmelmt e1, t_xpmelmt e2);

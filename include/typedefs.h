@@ -33,7 +33,6 @@
 #ifndef _typedefs_h
 #define _typedefs_h
 
-static char *SRCID_typedefs_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

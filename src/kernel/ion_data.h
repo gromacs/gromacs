@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_ion_data_h = "$Id$";
+
 	
 typedef struct {
   real photo,coh,incoh,incoh_abs;

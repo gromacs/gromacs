@@ -33,14 +33,9 @@
 #ifndef _wman_h
 #define _wman_h
 
-static char *SRCID_wman_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) wman.h 1.11 10/2/97"
-#endif /* HAVE_IDENT */
 
 #include "readinp.h"
 
@@ -57,17 +52,17 @@ extern void write_man(FILE *out,char *mantp,char *program,
 		      int nbug,char **bugs,
 		      bool bHidden);
 
-extern char *fileopt(unsigned long flag);
+extern char *fileopt(unsigned long flag,char buf[],int maxsize);
 /* Return a string describing the file type in flag.
  * flag should the flag field of a filenm struct.
+ * You have to provide a buffer and buffer length in which
+ * the result will be written. The returned pointer is just
+ * a pointer to this buffer.
  */
 
-extern char *check_tty(char *s);
-extern char *check_tex(char *s);
-extern char *check_html(char *s,char *program);
-/* Check LaTeX or HTML strings for codes, and remove them 
- * the program variable may be NULL
- */
+extern const char *check_tex(const char *s);
+
+extern const char *check_tty(const char *s);
 
 #endif	/* _wman_h */
 

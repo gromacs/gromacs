@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_orise_c = "$Id$";
+
 #include "typedefs.h"
 #include "maths.h"
 #include "string2.h"

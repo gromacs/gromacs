@@ -29,11 +29,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_nrnb_c = "$Id$";
+
 #include <string.h>
 #include "sysstuff.h"
 #include "fatal.h"
-#include "vveclib.h"
 #include "names.h"
 #include "macros.h"
 #include "nrnb.h"
@@ -47,7 +46,7 @@ typedef struct {
 } t_nrnb_data;
 
 
-static t_nrnb_data nbdata[eNRNB] = {
+static const t_nrnb_data nbdata[eNRNB] = {
   { "LJ",                              31 }, /* inl0100 */
   { "LJ(S)",                           31 }, /* inl0110 */  
   { "Buckingham",                      36 }, /* inl0200 */
@@ -147,8 +146,10 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Propers",                        229 },
   { "Impropers",                      208 },
   { "RB-Dihedrals",                   247 },
+  { "Four. Dihedrals",                247 },
   { "Dist. Restr.",                   200 },
   { "Orient. Restr.",                 200 },
+  { "Dihedral Restr.",                200 },
   { "Pos. Restr.",                     50 },
   { "Angle Restr.",                   191 },
   { "Angle Restr. Z",                 164 },
@@ -300,14 +301,14 @@ char *nrnb_str(int enr)
   return nbdata[enr].name;
 }
 
-static int    force_index[]={ 
+static const int    force_index[]={ 
   eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER, 
   eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
   eNR_NS,     eNR_INL_IATOM
 };
 #define NFORCE_INDEX asize(force_index)
 
-static int    shake_index[]={ 
+static const int    shake_index[]={ 
   eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
   eNR_SHAKE_VIR, eNR_SHAKE_V,   eNR_PSHAKEINITLD, eNR_PSHAKEINITMD, eNR_PSHAKE
 };

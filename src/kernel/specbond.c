@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_specbond_c = "$Id$";
+
 #include <ctype.h>
 #include <math.h>
 #include "typedefs.h"
@@ -54,7 +54,7 @@ bool yesno(void)
 
 t_specbond *get_specbonds(int *nspecbond)
 {
-  static char  *sbfile="specbond.dat";
+  const char  *sbfile="specbond.dat";
   
   t_specbond *sb=NULL;
   char   r1buf[32],r2buf[32],a1buf[32],a2buf[32],nr1buf[32],nr2buf[32];

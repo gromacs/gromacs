@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_cmat_c = "$Id$";
+
 #include "cmat.h"
 #include "smalloc.h"
 #include "macros.h"

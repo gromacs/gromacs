@@ -29,12 +29,11 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_bondfree_c = "$Id$";
+
 #include <math.h>
 #include "assert.h"
 #include "physics.h"
 #include "vec.h"
-#include "vveclib.h"
 #include "maths.h"
 #include "txtdump.h"
 #include "bondf.h"
@@ -704,6 +703,8 @@ real pdihs(int nbonds,
   return vtot;
 }
 
+
+
 real idihs(int nbonds,
 	   t_iatom forceatoms[],t_iparams forceparams[],
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
@@ -712,9 +713,13 @@ real idihs(int nbonds,
 	   t_fcdata *fcd)
 {
   int  i,type,ai,aj,ak,al;
-  real phi,cos_phi,ddphi,sign,vid,vtot;
+  real phi,phi0,cos_phi,ddphi,sign,vtot;
   rvec r_ij,r_kj,r_kl,m,n;
-  
+  real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl;
+
+  L1 = 1.0-lambda;
+  dvdl = 0;
+
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
@@ -726,13 +731,36 @@ real idihs(int nbonds,
     phi=dih_angle(box,x[ai],x[aj],x[ak],x[al],r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign);			/*  84		*/
     
-    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
-			   forceparams[type].harmonic.krB,
-			   forceparams[type].harmonic.rA*DEG2RAD,
-			   forceparams[type].harmonic.rB*DEG2RAD,
-			   phi,lambda,&vid,&ddphi);    /*   21          */   
+    /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
+     * force changes if we just apply a normal harmonic.
+     * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).
+     * This means we will never have the periodicity problem, unless
+     * the dihedral is Pi away from phiO, which is very unlikely due to
+     * the potential.
+     */
+    kA = forceparams[type].harmonic.krA;
+    kB = forceparams[type].harmonic.krB;
+    pA = forceparams[type].harmonic.rA;
+    pB = forceparams[type].harmonic.rB;
 
-    vtot += vid;
+    phi0 = L1*kA+lambda*kB;
+    kk   = (L1*pA+lambda*pB)*DEG2RAD;
+    
+    /* dp = (phi-phi0), modulo (-pi,pi) */
+    dp = phi-phi0;  
+    /* dp cannot be outside (-2*pi,2*pi) */
+    if(dp>=M_PI)
+      dp -= 2*M_PI;
+    else if(dp<-M_PI)
+      dp += 2*M_PI;
+    
+    dp2 = dp*dp;
+
+    vtot += 0.5*kk*dp2;
+    ddphi = -kk*dp;
+    
+    dvdl += 0.5*(kB-kA)*dp2 + (pA-pB)*kk*dp;
+
     do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
 	       f,fr,g,x);				/* 112		*/
     /* 217 TOTAL	*/
@@ -741,8 +769,11 @@ real idihs(int nbonds,
 	    ai,aj,ak,al,cos_phi,phi);
 #endif
   }
+  
+  *dvdlambda += dvdl;
   return vtot;
 }
+
 
 real posres(int nbonds,
 	    t_iatom forceatoms[],t_iparams forceparams[],
@@ -879,6 +910,7 @@ real angresz(int nbonds,
 		    lambda,dvdlambda,TRUE);
 }
 
+
 real unimplemented(int nbonds,
 		   t_iatom forceatoms[],t_iparams forceparams[],
 		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
@@ -905,7 +937,7 @@ real rbdihs(int nbonds,
 	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 	    t_fcdata *fcd)
 {
-  static const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
+  const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
   int  type,ai,aj,ak,al,i,j;
   rvec r_ij,r_kj,r_kl,m,n;
   real parmA[NR_RBDIHS];

@@ -29,7 +29,12 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_mkinl_c = "$Id$";
+
+/* This file is NOT threadsafe, but it is only used to create
+ * the innerloops during the build process, so it will never be
+ * executed by multiple threads.
+ */
+
 #include <string.h>
 #include "mkinl.h"
 #include <types/simple.h>

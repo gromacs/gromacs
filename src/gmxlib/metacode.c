@@ -29,12 +29,17 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_metacode_c = "$Id$";
+
 #include <stdlib.h>
 #include <string.h>
 #include <metacode.h>
 #include <stdarg.h>
 #include <ctype.h>
+
+/* This file is NOT threadsafe, but it is only used to create
+ * the innerloops during the build process, so it will never be
+ * executed by multiple threads.
+ */
 
 #define MAXCODESIZE 1000000
 #define MAXDECL 1000

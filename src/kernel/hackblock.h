@@ -33,7 +33,7 @@
 #ifndef _hackblock_h
 #define _hackblock_h
 
-static char *SRCID_hackblock_h = "$Id$";
+
 #include "typedefs.h"
 #include "pdbio.h"
 #include "grompp.h"
@@ -42,8 +42,8 @@ static char *SRCID_hackblock_h = "$Id$";
 /* ebtsBONDS must be the first, new types can be added to the end */
 /* these *MUST* correspond to the arrays in hackblock.c */
 enum { ebtsBONDS, ebtsANGLES, ebtsPDIHS, ebtsIDIHS, ebtsEXCLS, ebtsNR };
-extern char *btsNames[ebtsNR];
-extern int btsNiatoms[ebtsNR];
+extern const char *btsNames[ebtsNR];
+extern const int btsNiatoms[ebtsNR];
 
 /* if changing any of these structs, make sure that all of the
    free/clear/copy/merge_t_* functions stay updated */

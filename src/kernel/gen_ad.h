@@ -33,10 +33,7 @@
 #ifndef _gen_ad_h
 #define _gen_ad_h
 
-static char *SRCID_gen_ad_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) gen_ad.h 1.17 9/30/97"
-#endif /* HAVE_IDENT */
+
 #include "typedefs.h"
 #include "toputil.h"
 #include "topio.h"

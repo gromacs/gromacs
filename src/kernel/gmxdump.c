@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_gmxdump_c = "$Id$";
+
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -51,7 +51,7 @@ static char *SRCID_gmxdump_c = "$Id$";
 #include "trnio.h"
 #include "txtdump.h"
 
-static void list_tpx(char *fn)
+static void list_tpx(char *fn, bool bShowNumbers)
 {
   int         step,natoms,fp,indent,i,j,**gcount,atot;
   real        t,lambda;
@@ -60,11 +60,11 @@ static void list_tpx(char *fn)
   t_inputrec  ir;
   t_tpxheader tpx;
   t_topology  top;
- 
-  read_tpxheader(fn,&tpx);
+  read_tpxheader(fn,&tpx,TRUE,NULL,NULL);
   snew(x,tpx.natoms);
   snew(v,tpx.natoms);
   snew(f,tpx.natoms);
+
   read_tpx(fn,&step,&t,&lambda,
 	   tpx.bIr  ? &ir : NULL,
 	   tpx.bBox ? box : NULL,
@@ -83,7 +83,7 @@ static void list_tpx(char *fn)
     pr_rvecs(stdout,indent,"x",x,natoms);
     pr_rvecs(stdout,indent,"v",v,natoms);
     pr_rvecs(stdout,indent,"f",f,natoms);
-    pr_top(stdout,indent,"topology",&(top));
+    pr_top(stdout,indent,"topology",&(top),bShowNumbers);
   }
 
   snew(gcount,egcNR);
@@ -301,10 +301,10 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
-  
-  pr_shownumbers(bShowNumbers);
+
+
   if (ftp2bSet(efTPX,NFILE,fnm)) 
-    list_tpx(ftp2fn(efTPX,NFILE,fnm));
+    list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers);
     
   if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);

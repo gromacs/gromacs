@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_pp2shift_c = "$Id$";
+
 #include <stdlib.h>
 #include <math.h>
 #include "typedefs.h"

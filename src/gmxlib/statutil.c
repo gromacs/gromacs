@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_statutil_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_readinp_c = "$Id$";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "typedefs.h"
@@ -140,9 +140,12 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
   out=ffopen(fn,"w");
   nice_header(out,fn);
   for(i=0; (i<ninp); i++) {
-    if (inp[i].bSet)
-      fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
-    else {
+    if (inp[i].bSet) {
+      if(inp[i].name[0]==';' || (strlen(inp[i].name)>2 && inp[i].name[1]==';'))
+	fprintf(out,"%-24s\n",inp[i].name);
+      else
+	fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
+     } else {
       sprintf(warn_buf,"Unknown left-hand %s in parameter file\n",
 	      inp[i].name);
       warning(NULL);
@@ -151,7 +154,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
   fclose(out);
 }
 
-static int get_einp(int *ninp,t_inpfile **inp,char *name)
+static int get_einp(int *ninp,t_inpfile **inp,const char *name)
 {
   int    i;
   
@@ -177,7 +180,7 @@ static int get_einp(int *ninp,t_inpfile **inp,char *name)
     return i;
 }
 
-int get_eint(int *ninp,t_inpfile **inp,char *name,int def)
+int get_eint(int *ninp,t_inpfile **inp,const char *name,int def)
 {
   char buf[32];
   int  ii;
@@ -194,7 +197,7 @@ int get_eint(int *ninp,t_inpfile **inp,char *name,int def)
     return atoi((*inp)[ii].value);
 }
 
-real get_ereal(int *ninp,t_inpfile **inp,char *name,real def)
+real get_ereal(int *ninp,t_inpfile **inp,const char *name,real def)
 {
   char buf[32];
   int  ii;
@@ -211,7 +214,7 @@ real get_ereal(int *ninp,t_inpfile **inp,char *name,real def)
     return atof((*inp)[ii].value);
 }
 
-char *get_estr(int *ninp,t_inpfile **inp,char *name,char *def)
+char *get_estr(int *ninp,t_inpfile **inp,const char *name,char *def)
 {
   char buf[32];
   int  ii;
@@ -232,7 +235,7 @@ char *get_estr(int *ninp,t_inpfile **inp,char *name,char *def)
     return (*inp)[ii].value;
 }
 
-int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
+int get_eeenum(int *ninp,t_inpfile **inp,const char *name,const char **defs,
 	       int *nerror,bool bPrintError)
 {
   int  ii,i,j;
@@ -268,7 +271,7 @@ int get_eeenum(int *ninp,t_inpfile **inp,char *name,char **defs,
   return i;
 }
 
-int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
+int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **defs)
 {
   int dum=0;
 

@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_rotacf_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include "sysstuff.h"

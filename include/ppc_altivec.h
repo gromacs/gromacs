@@ -33,7 +33,6 @@
 #ifndef _ppc_altivec_h
 #define _ppc_altivec_h
 
-static char *SRCID_ppc_altivec_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -29,7 +29,8 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_block_tx_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include "network.h"
 #include "block_tx.h"
 #include "fatal.h"

@@ -29,10 +29,6 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_toputil_c = "$Id$";
-#ifdef HAVE_IDENT
-#ident "@(#) toputil.c 1.68 9/30/97"
-#endif
 
 #include "assert.h"
 #include "smalloc.h"
@@ -130,6 +126,10 @@ void init_atomtype (t_atomtype *at)
   at->atomname = NULL;
   at->nb       = NULL;
   at->bondatomtype = NULL;
+  at->radius   = NULL;
+  at->vol      = NULL;
+  at->surftens = NULL;
+  
 }
 
 void init_bond_atomtype (t_bond_atomtype *bat)
@@ -238,7 +238,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   /* This dihp is a DIRTY patch because the dih-types do not use
    * all four atoms to determine the type.
    */
-  static int dihp[2][2] = { { 1,2 }, { 0,3 } };
+  const int dihp[2][2] = { { 1,2 }, { 0,3 } };
   t_params *bt;
   int      i,j,f,nral,nrfp;
   bool     bDih=FALSE,bSwapParity;
@@ -268,6 +268,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     break;
   case F_PDIHS:
   case F_RBDIHS:
+  case F_FOURDIHS:
     bDih=TRUE;
     break;
   case F_IDIHS:

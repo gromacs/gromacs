@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_xrama_c = "$Id$";
+
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -309,6 +309,7 @@ int main(int argc,char *argv[])
   };
 
   t_x11     *x11;
+  t_topology *ramatop;
   t_app     *app;
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL, ffREAD },
@@ -328,15 +329,16 @@ int main(int argc,char *argv[])
   XSetForeground(x11->disp,x11->gc,x11->fg);
   app=init_app(x11,argc,argv);
 
-  init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),app->xr);
+  ramatop = init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),app->xr);
   mk_gly(app);
   
   XMapWindow(x11->disp,app->wd.self);
   XMapSubwindows(x11->disp,app->wd.self);
   x11->MainLoop(x11);
   x11->CleanUp(x11);
-
+  
   thanx(stderr);
   
   return 0;
 }
+ 

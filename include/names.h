@@ -33,14 +33,10 @@
 #ifndef _names_h
 #define _names_h
 
-static char *SRCID_names_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) names.h 1.23 5/20/97"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 
@@ -48,30 +44,33 @@ static char *SRCID_names_h = "$Id$";
  * extra argument (the +1)
  * these should correspond to names.c and include/types/enums.h
  */
-extern char *eblock_names[ebNR+1];
-extern char *epbc_names[epbcNR+1];
-extern char *etcoupl_names[etcNR+1];
-extern char *epcoupl_names[epcNR+1];
-extern char *epcoupltype_names[epctNR+1];
-extern char *ens_names[ensNR+1];
-extern char *ei_names[eiNR+1];
-extern char *yesno_names[BOOL_NR+1];
-extern char *bool_names[BOOL_NR+1];
-extern char *eel_names[eelNR+1];
-extern char *eewg_names[eewgNR+1];
-extern char *evdw_names[evdwNR+1];
-extern char *eshake_names[estNR+1];
-extern char *ptype_str[eptNR+1];
-extern char *egrp_nm[egNR+1];
-extern char *edisre_names[edrNR+1];
-extern char *edisreweighting_names[edrwNR+1];
-extern char *enbf_names[eNBF_NR+1];
-extern char *ecomb_names[eCOMB_NR+1];
-extern char *gtypes[egcNR+1];
-extern char *efep_names[efepNR+1];
-extern char *esolv_names[esolNR+1];
-extern char *edispc_names[edispcNR+1];
-extern char *ecm_names[ecmNR+1];
+extern const char *eblock_names[ebNR+1];
+extern const char *epbc_names[epbcNR+1];
+extern const char *etcoupl_names[etcNR+1];
+extern const char *epcoupl_names[epcNR+1];
+extern const char *epcoupltype_names[epctNR+1];
+extern const char *ens_names[ensNR+1];
+extern const char *ei_names[eiNR+1];
+extern const char *yesno_names[BOOL_NR+1];
+extern const char *bool_names[BOOL_NR+1];
+extern const char *eel_names[eelNR+1];
+extern const char *eewg_names[eewgNR+1];
+extern const char *evdw_names[evdwNR+1];
+extern const char *eshake_names[estNR+1];
+extern const char *ptype_str[eptNR+1];
+extern const char *egrp_nm[egNR+1];
+extern const char *edisre_names[edrNR+1];
+extern const char *edisreweighting_names[edrwNR+1];
+extern const char *enbf_names[eNBF_NR+1];
+extern const char *ecomb_names[eCOMB_NR+1];
+extern const char *gtypes[egcNR+1];
+extern const char *efep_names[efepNR+1];
+extern const char *esolv_names[esolNR+1];
+extern const char *edispc_names[edispcNR+1];
+extern const char *ecm_names[ecmNR+1];
+extern const char *eann_names[eannNR+1];
+extern const char *egb_names[egbNR+1];
+extern const char *eis_names[eisNR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
@@ -96,4 +95,7 @@ extern char *ecm_names[ecmNR+1];
 #define ESOLVTYPE(e)   ENUM_NAME(e,esolNR,esolv_names)
 #define EDISPCORR(e)   ENUM_NAME(e,edispcNR,edispc_names)
 #define ECOM(e)        ENUM_NAME(e,ecmNR,ecm_names)
+#define EANNEAL(e)      ENUM_NAME(e,eannNR,eann_names)
+#define EGBALGORITHM(e) ENUM_NAME(e,egbNR,egb_names)
+#define EIMPLICITSOL(e) ENUM_NAME(e,eisNR,eis_names)
 #endif	/* _names_h */

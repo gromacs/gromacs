@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_widget_c = "$Id$";
+
 #include "widget.h"
 #include "smalloc.h"
 #include "fatal.h"
@@ -257,7 +257,7 @@ void set_widget_other(windex win,Widget www)
   w[win].other = www;
 }
    
-XmString char2xms(char *ptr)
+XmString char2xms(const char *ptr)
 {
   return XmStringCreate(ptr,XmSTRING_DEFAULT_CHARSET);
 }

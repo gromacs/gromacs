@@ -44,7 +44,7 @@ enum {
 };
 
 enum {
-  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcNR
+  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENINTERVAL, etcNR
 }; /* yes is an alias for berendsen */
 
 enum {
@@ -58,7 +58,7 @@ enum {
 
 enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
-  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelNR
+  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelNR
 };
 
 /* Ewald geometry */
@@ -125,5 +125,20 @@ enum {
 /* Center of mass motion selection */
 enum { 
   ecmLINEAR, ecmANGULAR, ecmNO, ecmNR 
+};
+
+/* New version of simulated annealing */
+enum { 
+  eannNO, eannSINGLE, eannPERIODIC, eannNR 
+};
+
+/* Algorithms for calculating GB radii */
+enum { 
+  egbSTILL, egbKARPLUS, egbNR 
+};
+
+/* Implicit solvent algorithms */
+enum { 
+  eisNO, eisLCPO, eisNR 
 };
 

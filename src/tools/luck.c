@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_luck_c = "$Id$";
+
 #include <stdio.h>
 #include "copyrite.h"
 #include "string.h"

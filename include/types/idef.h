@@ -41,6 +41,7 @@
 #define MAXATOMLIST	5
 #define MAXFORCEPARAM	12
 #define NR_RBDIHS	6
+#define NR_FOURDIHS     4
 
 typedef atom_id t_iatom;
 
@@ -56,8 +57,10 @@ enum {
   F_ANGLES, 
   F_G96ANGLES, 
   F_PDIHS,
-  F_RBDIHS,
+  F_RBDIHS, 
+  F_FOURDIHS,
   F_IDIHS, 
+  F_PIDIHS, 
   F_LJ14,
   F_COUL14,
   F_LJ,
@@ -74,6 +77,8 @@ enum {
   F_ORIRESDEV,
   F_ANGRES,
   F_ANGRESZ,
+  F_DIHRES,
+  F_DIHRESVIOL,
   F_SHAKE,
   F_SHAKENC,
   F_SETTLE,
@@ -102,32 +107,33 @@ typedef union
    * The harmonic type is used for all harmonic potentials:
    * bonds, angles and improper dihedrals
    */
-  struct {real a,b,c;				} bham;
-  struct {real rA,krA,rB,krB;           	} harmonic; 
-  /* No free energy support for cubic bonds */
-  struct {real b0,kb,kcub;                      } cubic; 
+  struct {real a,b,c;	                                   } bham;
+  struct {real rA,krA,rB,krB;           	           } harmonic; 
+  /* No free energy supported for cubic bonds */ 
+  struct {real b0,kb,kcub;                                } cubic; 
   /* No free energy supported for WPOL */ 
-  struct {real kx,ky,kz,rOH,rHH,rOD;            } wpol; 
-  struct {real c6,c12;				} lj;
-  struct {real c6A,c12A,c6B,c12B;		} lj14;
+  struct {real kx,ky,kz,rOH,rHH,rOD;                      } wpol; 
+  struct {real c6,c12;				           } lj;
+  struct {real c6A,c12A,c6B,c12B;		           } lj14;
   /* Proper dihedrals can not have different multiplicity when
    * doing free energy calculations, because the potential would not
    * be periodic anymore.
    */ 
-  struct {real phiA,cpA;int mult;real phiB,cpB; } pdihs;
-  struct {real dA,dB;		        	} shake;
-  /* Settle can not be used for Free energy calculations.
-   * Use shake (or lincs) instead.
-   * The rest of the things cannot (yet) be used in FEP studies either.
+  struct {real phiA,cpA;int mult;real phiB,cpB;          } pdihs;
+  struct {real dA,dB;		        	          } shake;
+  /* Settle can not be used for Free energy calculations of water bond geometry.
+   * Use shake (or lincs) instead if you have to change the water bonds.
    */
-  struct {real doh,dhh;                         } settle;
-  struct {real b0,cb,beta;            	 	} morse;
-  struct {real pos0[DIM],fc[DIM];	        } posres;
-  struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];} rbdihs;
-  struct {real a,b,c,d,e,f;                     } dummy;   
-  struct {real low,up1,up2,kfac;int type,label; } disres; 
-  struct {int  ex,power,label; real c,obs,kfac; } orires;
-  struct {real buf[MAXFORCEPARAM];		} generic; /* Conversion */
+  struct {real doh,dhh;                                   } settle;
+  /* No free energy supported for morse bonds */ 
+  struct {real b0,cb,beta;                        	   } morse;
+  struct {real pos0[DIM],fc[DIM];              	           } posres;
+  struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
+  struct {real a,b,c,d,e,f;                               } dummy;   
+  struct {real low,up1,up2,kfac;int type,label;           } disres; 
+  struct {real phi,dphi,kfac;int label,power;             } dihres;  
+  struct {int  ex,power,label; real c,obs,kfac;           } orires;
+  struct {real buf[MAXFORCEPARAM];	  	           } generic; /* Conversion */
 } t_iparams;
 
 typedef int t_functype;

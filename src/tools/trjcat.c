@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_trjcat_c = "$Id$";
+
 #include <string.h>
 #include <math.h>
 #include "macros.h"
@@ -52,7 +52,6 @@ static char *SRCID_trjcat_c = "$Id$";
 #include "rmpbc.h"
 #include "wgms.h"
 #include "magic.h"
-#include "binio.h"
 #include "pbc.h"
 
 #define TIME_EXPLICIT 0

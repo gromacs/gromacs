@@ -35,6 +35,8 @@
 
 #include "fatal.h"
 
+typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
+
 typedef struct {
   int      maxedge;     /* Max number of edges per atom                 */
   int      nnodes;	/* The number of nodes				*/
@@ -44,6 +46,8 @@ typedef struct {
   int      *nedge;	/* For each node the number of edges		*/
   atom_id  **edge;	/* For each node, the actual edges (bidirect.)	*/
   ivec     *ishift;	/* Shift for each particle              	*/
+  int      negc;         
+  egCol   *egc;         /* color of each node */
 } t_graph;
 
 

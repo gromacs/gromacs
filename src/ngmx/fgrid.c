@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID_fgrid_c = "$Id$";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

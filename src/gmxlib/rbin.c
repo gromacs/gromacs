@@ -29,7 +29,9 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_rbin_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "typedefs.h"
 #include "main.h"
 #include "network.h"

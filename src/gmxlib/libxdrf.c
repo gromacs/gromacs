@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_libxdrf_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -42,11 +42,14 @@ static char *SRCID_libxdrf_c = "$Id$";
 #include "xdrf.h"
 #include <callf77.h>
 
-#define MAXID 20
+
+
+#define MAXID 256
 static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
+
 
 #ifdef USE_FORTRAN
 

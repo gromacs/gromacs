@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_pdb2gmx_c = "$Id$";
+
 #include <time.h>
 #include <ctype.h>
 #include "assert.h"

@@ -33,14 +33,10 @@
 #ifndef _nrama_h
 #define _nrama_h
 
-static char *SRCID_nrama_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) nrama.h 1.9 2/2/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
@@ -72,7 +68,7 @@ typedef struct {
   t_idef    *idef;
 } t_xrama;
 
-extern void init_rama(char *infile,char *topfile,t_xrama *xr);
+extern t_topology *init_rama(char *infile,char *topfile,t_xrama *xr);
 
 extern bool new_data(t_xrama *xr);
 

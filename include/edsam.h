@@ -33,7 +33,7 @@
 #ifndef _edsam_h
 #define _edsam_h
 
-static char *SRCID_edsam_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

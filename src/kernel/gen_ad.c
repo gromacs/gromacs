@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_gen_ad_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <math.h>
 #include <ctype.h>
 #include "sysstuff.h"
@@ -340,9 +342,10 @@ static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
   snew(index,*ndih+1);
   if (bAlldih) {
     fprintf(stderr,"Keeping all generated dihedrals\n");
-    nind = *ndih+1;
+    nind = *ndih;
     for(i=0; i<nind; i++) 
       index[i] = i;
+    index[nind] = *ndih;
   } else {
     /* Make an index of all dihedrals over each bond */
     nind = 0;
@@ -389,6 +392,7 @@ static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
       k++;
     }
   }
+
   for (i=k; i<*ndih; i++)
     strcpy(dih[i].s,"");
   *ndih = k;
@@ -777,11 +781,11 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   /* Sort angles with respect to j-i-k (middle atom first) */
   if (nang > 1)
     qsort(ang,nang,(size_t)sizeof(ang[0]),acomp);
-
+  
   /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
   if (ndih > 1)
     qsort(dih,ndih,(size_t)sizeof(dih[0]),dcomp);
-
+  
   /* Sort the pairs */
   if (npai > 1)
     qsort(pai,npai,(size_t)sizeof(pai[0]),pcomp);
@@ -798,7 +802,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 
   /* Sort the impropers */
   sort_id(nidih,idih);
-
+ 
   if (ndih > 0) {
     /* Remove dihedrals which are impropers
        and when bAlldih is not set remove multiple dihedrals over one bond.
@@ -806,7 +810,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
     fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
     clean_dih(dih,&ndih,idih,nidih,atoms,bAlldih);
   }
-  
+
   /* Now we have unique lists of angles and dihedrals 
    * Copy them into the destination struct
    */

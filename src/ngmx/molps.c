@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_molps_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "string.h"
@@ -46,7 +46,7 @@ static char *SRCID_molps_c = "$Id$";
 
 #define MSIZE 4
 
-static void ps_draw_atom(FILE *ps,atom_id ai,iv2 vec2[],char **atomnm[])
+static void ps_draw_atom(t_psdata ps,atom_id ai,iv2 vec2[],char **atomnm[])
 {
   int xi,yi;
   
@@ -86,7 +86,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
   return TRUE;
 }
 
-static void ps_draw_bond(FILE *ps,
+static void ps_draw_bond(t_psdata ps,
 			 atom_id ai,atom_id aj,iv2 vec2[],
 			 rvec x[],char **atomnm[],int size[],bool bBalls)
 {
@@ -124,7 +124,7 @@ static void ps_draw_bond(FILE *ps,
   }
 }
 
-void ps_draw_objects(FILE *ps,int nobj,t_object objs[],iv2 vec2[],rvec x[],
+void ps_draw_objects(t_psdata ps,int nobj,t_object objs[],iv2 vec2[],rvec x[],
 		     char **atomnm[],int size[],bool bShowHydro,int bond_type,
 		     bool bPlus)
 {
@@ -161,7 +161,7 @@ static void v4_to_iv2(vec4 x4,iv2 v2,int x0,int y0,real sx,real sy)
   v2[YY]=y0-sy*x4[YY]*inv_z;
 }
 
-static void draw_box(FILE *ps,t_3dview *view,matrix box,
+static void draw_box(t_psdata ps,t_3dview *view,matrix box,
 		     int x0,int y0,real sx,real sy)
 {
   int  ivec[8][4] =  { 
@@ -191,7 +191,7 @@ static void draw_box(FILE *ps,t_3dview *view,matrix box,
 	    vec2[bonds[i][1]][XX],vec2[bonds[i][1]][YY]);
 }
 
-void ps_draw_mol(FILE *ps,t_manager *man)
+void ps_draw_mol(t_psdata ps,t_manager *man)
 {
   static char tstr[2][20];
   static int  ntime=0;

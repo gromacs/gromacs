@@ -29,6 +29,6 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_my_dssp_c = "$Id$";
+
 #define MY_DSSP
 #include "../tools/do_dssp.c"

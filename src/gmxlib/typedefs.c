@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_typedefs_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
 #include "smalloc.h"
 #include "assert.h"
 #include "symtab.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_xmlio_c = "$Id$";
+
 #ifdef HAVE_XML
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -46,10 +46,10 @@ static char *SRCID_xmlio_c = "$Id$";
 #include "symtab.h"
 #include "xmlio.h"
 
-static char *xyz_names[]    = { 
+static const char *xyz_names[]    = { 
   "x", "y", "z" 
 };
-static char *tensor_names[] = { 
+static const char *tensor_names[] = { 
   "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz"
 };
 
@@ -68,7 +68,7 @@ typedef struct {
   real value;
 } t_masstype;
 
-static char *xmltypes[] = { 
+static const char *xmltypes[] = { 
   NULL, 
   "XML_ELEMENT_NODE",
   "XML_ATTRIBUTE_NODE",
@@ -106,7 +106,7 @@ enum {
   exmlCOORDINATES, exmlVELOCITIES,  exmlFORCES,      exmlNR 
 };
   
-static char *exml_names[] = {
+static const char *exml_names[] = {
   "gromacs",
   /* Inputrec stuff */
   "parameters",  "output",     "coupling", "cutoff",   "pmeparm",
@@ -135,13 +135,13 @@ static int find_elem(char *name,int nr,char *names[])
   return i;
 }
 	
-static char *sp(int n)
+static char *sp(int n, char buf[], int maxindent)
 {
-  static char buf[80];
   int i;
+  if(n>=maxindent)
+    n=maxindent-1;
   
-  /* Don't indent more than 80 characters */
-  n = n % 80;
+  /* Don't indent more than maxindent characters */
   for(i=0; (i<n); i++)
     buf[i] = ' ';
   buf[i] = '\0';
@@ -153,6 +153,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 			 int indent,t_xmlrec *xml)
 {
   char *attrname,*attrval;
+  char buf[100];
   
   while (attr != NULL) {
     attrname = (char *)attr->name;
@@ -193,7 +194,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlFORCES: 
     default:
       if (fp)
-	fprintf(fp,"%sProperty: '%s' Value: '%s'\n",sp(indent),
+	fprintf(fp,"%sProperty: '%s' Value: '%s'\n",sp(indent,buf,99),
 		attrname,attrval);
     }
     attr = attr->next;
@@ -204,13 +205,14 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 static void process_tree(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
 {
   int elem;
+  char buf[100];
   
   while (tree != NULL) {
     switch (tree->type) {
     case XML_ELEMENT_NODE:
       elem = find_elem((char *)tree->name,exmlNR,exml_names);
       if (fp)
-	fprintf(fp,"%sElement node name %s\n",sp(indent),(char *)tree->name);
+	fprintf(fp,"%sElement node name %s\n",sp(indent,buf,99),(char *)tree->name);
       
       process_attr(fp,tree->properties,elem,indent+2,xml);
       
@@ -261,29 +263,19 @@ void read_xml(char *fn,int *step,real *t,real *lambda,
   sfree(xml);
 }
 
-static char *itoa(int i)
-{
-  static char buf[32];
-  sprintf(buf,"%d",i);
-  return buf;
-}
-
-static char *dtoa(double d)
-{
-  static char buf[32];
-  sprintf(buf,"%g",d);
-  return buf;
-}
-
 static void add_xml_int(xmlNodePtr ptr,char *name,int val)
 {
-  if (xmlSetProp(ptr,name,itoa(val)) == 0)
+  char buf[32];
+  sprintf(buf,"%d",val);
+  if (xmlSetProp(ptr,name,buf) == 0)
     fatal_error(0,"Setting %s %d",name,val);
 }
 
 static void add_xml_real(xmlNodePtr ptr,char *name,real val)
 {
-  if (xmlSetProp(ptr,name,dtoa(val)) == 0)
+  char buf[32];
+  sprintf(buf,"%g",val);
+  if (xmlSetProp(ptr,name,buf) == 0)
     fatal_error(0,"Setting %s %f",name,val);
 }
 
@@ -373,6 +365,7 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   add_xml_int(outputptr,"energy",ir->nstenergy);
   add_xml_int(outputptr,"x-xtc",ir->nstxtcout);
   add_xml_int(outputptr,"xtc-precision",ir->xtcprec);
+  add_xml_int(outputptr,"andersen_seed",ir->andersen_seed);
   
   tcptr = add_xml_child(irptr,exmlTCOUPLING);
   add_xml_char(tcptr,"algorithm",etcoupl_names[ir->etc]);

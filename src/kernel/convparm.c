@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_convparm_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <math.h>
 #include "sysstuff.h"
 #include "physics.h"
@@ -47,7 +49,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
 			 real old[MAXFORCEPARAM])
 {
   int i,j;
-  
+
   /* Set to zero */
   for(j=0; (j<MAXFORCEPARAM); j++)
     new->generic.buf[j]=0.0;
@@ -146,12 +148,39 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->orires.obs   = old[4];
     new->orires.kfac  = old[5];
     break;
+  case F_DIHRES:
+    new->dihres.label = old[0];
+    new->dihres.phi   = old[1];
+    new->dihres.dphi  = old[2];
+    new->dihres.kfac  = old[3];
+    new->dihres.power = old[4];
+    break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {
       new->rbdihs.rbcA[i]=old[i]; 
       new->rbdihs.rbcB[i]=old[NR_RBDIHS+i]; 
     }
     break;
+  case F_FOURDIHS:
+    /* Read the dihedral parameters to temporary arrays,
+     * and convert them to the computationally faster
+     * Ryckaert-Bellemans form.
+     */   
+    /* Use conversion formula for OPLS to Ryckaert-Bellemans: */
+    new->rbdihs.rbcA[0]=old[1]+0.5*(old[0]+old[2]);
+    new->rbdihs.rbcA[1]=0.5*(3.0*old[2]-old[0]);
+    new->rbdihs.rbcA[2]=4.0*old[3]-old[1];
+    new->rbdihs.rbcA[3]=-2.0*old[2];
+    new->rbdihs.rbcA[4]=-4.0*old[3];
+    new->rbdihs.rbcA[5]=0.0;
+
+    new->rbdihs.rbcB[0]=old[NR_FOURDIHS+1]+0.5*(old[NR_FOURDIHS+0]+old[NR_FOURDIHS+2]);
+    new->rbdihs.rbcB[1]=0.5*(3.0*old[NR_FOURDIHS+2]-old[NR_FOURDIHS+0]);
+    new->rbdihs.rbcB[2]=4.0*old[NR_FOURDIHS+3]-old[NR_FOURDIHS+1];
+    new->rbdihs.rbcB[3]=-2.0*old[NR_FOURDIHS+2];
+    new->rbdihs.rbcB[4]=-4.0*old[NR_FOURDIHS+3];
+    new->rbdihs.rbcB[5]=0.0;
+    break;    
   case F_SHAKE:
   case F_SHAKENC:
     new->shake.dA = old[0];
@@ -289,7 +318,7 @@ void convert_params(int atnr,t_params nbtypes[],
 		 &maxtypes,TRUE,TRUE);
   enter_function(&(plist[F_POSRES]),(t_functype)F_POSRES,idef,
 		 &maxtypes,FALSE,TRUE);
-		 
+
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
     if ((i != F_LJ) && (i != F_BHAM) && (i != F_POSRES) &&

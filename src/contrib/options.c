@@ -33,7 +33,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_options_c = "$Id$";
+
 
 #include "typedefs.h"
 #include "macros.h"

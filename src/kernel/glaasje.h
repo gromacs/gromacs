@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_glaasje_h = "$Id$";
+
 extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		    t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
 		    real ener[]);

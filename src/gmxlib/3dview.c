@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_3dview_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -226,39 +226,31 @@ bool zoom_3d(t_3dview *view,real fac)
   return TRUE;
 }
 
+void init_rotate_3d(t_3dview *view)
+{
+  real rot=DEG2RAD*15;
+  int i;
+  
+  for(i=0; (i<DIM); i++) {
+    rotate(i,        rot ,view->RotP[i]);
+    rotate(i,(real)(-rot),view->RotM[i]);
+#ifdef DEBUG
+    print_m4(debug,"RotP",view->RotP[i]);
+    print_m4(debug,"RotM",view->RotM[i]);
+#endif
+  }
+}
+
+ 
 void rotate_3d(t_3dview *view,int axis,bool bPositive)
 {
-  static bool bFirst=TRUE;
-  static mat4 RotP[DIM];
-  static mat4 RotM[DIM];
   int  i,j;
   mat4 m4;
 
-  if (bFirst) {
-    real rot=DEG2RAD*15;
-
-    for(i=0; (i<DIM); i++) {
-      rotate(i,        rot ,RotP[i]);
-      rotate(i,(real)(-rot),RotM[i]);
-#ifdef DEBUG
-      print_m4(debug,"RotP",RotP[i]);
-      print_m4(debug,"RotM",RotM[i]);
-#endif
-    }
-  }
-
-  /*
-    if (bPositive)
-    m4_op(RotP[axis],view->eye,v4);
-    else
-    m4_op(RotM[axis],view->eye,v4);
-    for(i=0; (i<DIM); i++)
-    view->eye[i]=v4[i];
-    */
   if (bPositive)
-    mult_matrix(m4,view->Rot,RotP[axis]);
+    mult_matrix(m4,view->Rot,view->RotP[axis]);
   else
-    mult_matrix(m4,view->Rot,RotM[axis]);
+    mult_matrix(m4,view->Rot,view->RotM[axis]);
   for(i=0; (i<N); i++)
     for(j=0; (j<N); j++)
     view->Rot[i][j]=m4[i][j];
@@ -295,6 +287,8 @@ void reset_view(t_3dview *view)
   /* Initiate the matrix */
   unity_m4(view->Rot);
   calculate_view(view);
+
+  init_rotate_3d(view);
 }
 
 t_3dview *init_view(matrix box)

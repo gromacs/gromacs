@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_trnio_c = "$Id$";
+
  
 #include <string.h>
 #include "sysstuff.h"
@@ -67,8 +67,8 @@ static int nFloatSize(t_trnheader *sh)
 
 static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
 {
-  static int magic=GROMACS_MAGIC;
-  static char *version = "GMX_trn_file";
+  const int magic=GROMACS_MAGIC;
+  const char *version = "GMX_trn_file";
   static bool bFirst=TRUE;
   char buf[256];
   bool bDouble;
@@ -100,6 +100,7 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
   if (!*bOK) return *bOK; 
   bDouble = (nFloatSize(sh) == sizeof(double));
   fio_setprecision(fp,bDouble);
+
   if (bRead && bFirst) {
     fprintf(stderr,"(%s precision)\n",bDouble ? "double" : "single");
     bFirst = FALSE;

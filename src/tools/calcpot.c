@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_calcpot_c = "$Id$";
+
 #include "vec.h"
 #include "calcpot.h"
 #include "nrnb.h"
@@ -211,8 +211,8 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 		  t_forcerec **fr,real **pot,
 		  matrix box)
 {
-  real     t,t0,lam,lam0,SAfac;
-  bool     bTYZ,bNEMD;
+  real     t,t0,lam,lam0;
+  bool     bTYZ,bNEMD,bSA;
   char     *traj,*xtc_traj;
   rvec     *v,mutot;
   t_nrnb   nrnb;
@@ -234,10 +234,10 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 
   init_nrnb(&nrnb);
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
-  init_md(cr,&(parm->ir),parm->box,&t,&t0,&lam,&lam0,&SAfac,
+  init_md(cr,&(parm->ir),parm->box,&t,&t0,&lam,&lam0,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
 	  &mdebin,grps,force_vir,pme_vir,
-	  shake_vir,*mdatoms,mutot,&bNEMD,&vcm,nsb);
+	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
   /* Calculate intramolecular shift vectors to make molecules whole again */

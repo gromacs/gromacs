@@ -33,7 +33,6 @@
 #ifndef _nrjac_h
 #define _nrjac_h
 
-static char *SRCID_nrjac_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -32,15 +32,11 @@
 #ifndef _network_h
 #define _network_h
 
-static char *SRCID_network_h = "$Id$";
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) gmx_comm.h 1.9 11/23/92"
-#endif /* HAVE_IDENT */
 
 /*
  * This module defines the interface of the actual communication routines.

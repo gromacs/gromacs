@@ -29,8 +29,16 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_tpxio_c = "$Id$";
- 
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+/* This file is completely threadsafe - keep it that way! */
+#ifdef USE_THREADS
+#include <pthread.h>
+#endif
+
 #include <ctype.h>
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -53,11 +61,25 @@ static char *SRCID_tpxio_c = "$Id$";
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 25;
-/* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 9;
-/* This is the version of the file we are reading */
-static int file_version = 0;
+static const int tpx_version = 26;
+
+/* This number should only be increased when you edit the TOPOLOGY section
+ * of the tpx format. This way we can maintain forward compatibility too
+ * for all analysis tools and/or external programs that only need to
+ * know the atom/residue names, charges, and bond connectivity.
+ *  
+ * It first appeared in tpx version 26, when I also moved the inputrecord
+ * to the end of the tpx file, so we can just skip it if we only
+ * want the topology.
+ */
+static const int tpx_generation = 1;
+
+/* This number should be the most recent backwards incompatible version 
+ * I.e., if this number is 9, we cannot read tpx version 9 with this code.
+ */
+static const int tpx_incompatible_version = 9;
+
+
 
 /* Struct used to maintain tpx compatibility when function types are added */
 typedef struct {
@@ -70,14 +92,18 @@ typedef struct {
  * 1. ascending file version number
  * 2. ascending function type number
  */
-t_ftupd ftupd[] = {
-  { 20, F_CUBICBONDS },
-  { 20, F_CONNBONDS  },
-  { 20, F_HARMONIC   },
-  { 20, F_EQM,       },
-  { 22, F_DISRESVIOL },
-  { 22, F_ORIRES     },
-  { 22, F_ORIRESDEV  }
+static const t_ftupd ftupd[] = {
+  { 20, F_CUBICBONDS   },
+  { 20, F_CONNBONDS    },
+  { 20, F_HARMONIC     },
+  { 20, F_EQM,         },
+  { 22, F_DISRESVIOL   },
+  { 22, F_ORIRES       },
+  { 22, F_ORIRESDEV    },
+  { 26, F_FOURDIHS     },
+  { 26, F_PIDIHS       },
+  { 26, F_DIHRES       },
+  { 26, F_DIHRESVIOL   }
 };
 #define NFTUPD asize(ftupd)
 
@@ -118,13 +144,15 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
-static void do_inputrec(t_inputrec *ir,bool bRead)
+static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
 {
-  int  i,j,*tmp,idum=0; 
+  int  i,j,k,*tmp,idum=0; 
   bool bDum=TRUE;
   real rdum;
   rvec vdum;
-
+  bool bSimAnn;
+  real zerotemptime,finish_t,init_temp,finish_temp;
+  
   if (file_version != tpx_version) {
     /* Give a warning about features that are not accessible */
     fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
@@ -135,6 +163,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
     do_int(ir->nsteps); 
+    if(file_version > 25)
+      do_int(ir->init_step);
+    else
+      ir->init_step=0;
+
     do_int(ir->ePBC);
     if (file_version <= 15 && ir->ePBC == 2)
       ir->ePBC = epbcNONE;
@@ -144,6 +177,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->bDomDecomp);
     do_int(ir->decomp_dir);
     do_int(ir->nstcomm); 
+
+    if(file_version > 25)
+      do_int(ir->nstcheckpoint);
+    else
+      ir->nstcheckpoint=0;
+    
     do_int(ir->nstcgsteep); 
     do_int(ir->nstlog); 
     do_int(ir->nstxout); 
@@ -169,6 +208,21 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->rvdw); 
     do_int(ir->eDispCorr); 
     do_real(ir->epsilon_r);
+
+    if(file_version > 25) {
+      do_int(ir->gb_algorithm);
+      do_int(ir->nstgbradii);
+      do_real(ir->rgbradii);
+      do_real(ir->gb_saltconc);
+      do_int(ir->implicit_solvent);
+    } else {
+      ir->gb_algorithm=egbSTILL;
+      ir->nstgbradii=0;
+      ir->rgbradii=0;
+      ir->gb_saltconc=0;
+      ir->implicit_solvent=eisNO;
+    }
+
     do_int(ir->nkx); 
     do_int(ir->nky); 
     do_int(ir->nkz);
@@ -239,9 +293,18 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       do_rvec(ir->compress[YY]);
       do_rvec(ir->compress[ZZ]);
     }
-    do_int(ir->bSimAnn); 
-    do_real(ir->zero_temp_time); 
+    if(file_version > 25)
+      do_int(ir->andersen_seed);
+    else
+      ir->andersen_seed=0;
+    
+    if(file_version < 26) {
+      do_int(bSimAnn); 
+      do_real(zerotemptime);
+    }
+    
     do_real(ir->epsilon_r); 
+
     do_real(ir->shake_tol);
     do_real(ir->fudgeQQ);
     do_int(ir->efep);
@@ -277,6 +340,16 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       ir->orires_tau = 0;
       ir->nstorireout = 0;
     }
+    if(file_version >=26) {
+      do_real(ir->dihre_fc);
+      do_real(ir->dihre_tau);
+      do_int(ir->nstdihreout);
+    } else {
+      ir->dihre_fc=0;
+      ir->dihre_tau=0;
+      ir->nstdihreout=0;
+    }
+
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
     if (file_version >= 22) 
@@ -299,6 +372,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->LincsWarnAngle);
     if (file_version <= 14)
       do_int(idum);
+    if (file_version >=26)
+      do_int(ir->nLincsIter);
     do_real(ir->bd_temp);
     do_real(ir->bd_fric);
     do_int(ir->ld_seed);
@@ -319,10 +394,15 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->opts.ngtc); 
     do_int(ir->opts.ngacc); 
     do_int(ir->opts.ngfrz); 
-    do_int(ir->opts.ngener); 
+    do_int(ir->opts.ngener);
+
     if (bRead) {
       snew(ir->opts.nrdf,   ir->opts.ngtc); 
       snew(ir->opts.ref_t,  ir->opts.ngtc); 
+      snew(ir->opts.annealing, ir->opts.ngtc); 
+      snew(ir->opts.anneal_npoints, ir->opts.ngtc); 
+      snew(ir->opts.anneal_time, ir->opts.ngtc); 
+      snew(ir->opts.anneal_temp, ir->opts.ngtc); 
       snew(ir->opts.tau_t,  ir->opts.ngtc); 
       snew(ir->opts.nFreeze,ir->opts.ngfrz); 
       snew(ir->opts.acc,    ir->opts.ngacc); 
@@ -348,6 +428,41 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     if (file_version >= 12)
       ndo_int(ir->opts.eg_excl,ir->opts.ngener*ir->opts.ngener,bDum);
 
+    if(bRead && file_version < 26) {
+      for(i=0;i<ir->opts.ngtc;i++) {
+	if(bSimAnn) {
+	  ir->opts.annealing[i] = eannSINGLE;
+	  ir->opts.anneal_npoints[i] = 2;
+	  snew(ir->opts.anneal_time[i],2);
+	  snew(ir->opts.anneal_temp[i],2);
+	  /* calculate the starting/ending temperatures from reft, zerotemptime, and nsteps */
+	  finish_t = ir->init_t + ir->nsteps * ir->delta_t;
+	  init_temp = ir->opts.ref_t[i]*(1-ir->init_t/zerotemptime);
+	  finish_temp = ir->opts.ref_t[i]*(1-finish_t/zerotemptime);
+	  ir->opts.anneal_time[i][0] = ir->init_t;
+	  ir->opts.anneal_time[i][1] = finish_t;
+	  ir->opts.anneal_temp[i][0] = init_temp;
+	  ir->opts.anneal_temp[i][1] = finish_temp;
+	} else {
+	  ir->opts.annealing[i] = eannNO;
+	  ir->opts.anneal_npoints[i] = 0;
+	}
+      }
+    } else {
+      /* file version 26 or later */
+      /* First read the lists with annealing and npoints for each group */
+      ndo_int(ir->opts.annealing,ir->opts.ngtc,bDum);
+      ndo_int(ir->opts.anneal_npoints,ir->opts.ngtc,bDum);
+      for(j=0;j<(ir->opts.ngtc);j++) {
+	k=ir->opts.anneal_npoints[j];
+	if(bRead) {
+	  snew(ir->opts.anneal_time[j],k);
+	  snew(ir->opts.anneal_temp[j],k);
+	}
+	ndo_real(ir->opts.anneal_time[j],k,bDum);
+	ndo_real(ir->opts.anneal_temp[j],k,bDum);
+      }
+    }		   
     /* Cosine stuff for electric fields */
     for(j=0; (j<DIM); j++) {
       do_int  (ir->ex[j].n);
@@ -378,6 +493,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
 {
   int i;
   bool bDum;
+  real VA[4],VB[4];
   
   if (!bRead)
     set_comment(interaction_function[ftype].name);
@@ -428,6 +544,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->lj14.c12B);
     break;
   case F_PDIHS:
+  case F_PIDIHS:
     do_real(iparams->pdihs.phiA);
     do_real(iparams->pdihs.cpA);
     do_real(iparams->pdihs.phiB);
@@ -450,6 +567,13 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->orires.obs);
     do_real(iparams->orires.kfac);
     break;
+  case F_DIHRES:
+    do_int (iparams->dihres.power);
+    do_int (iparams->dihres.label);
+    do_real(iparams->dihres.phi);
+    do_real(iparams->dihres.dphi);
+    do_real(iparams->dihres.kfac);
+    break;
   case F_POSRES:
     do_rvec(iparams->posres.pos0);
     do_rvec(iparams->posres.fc);
@@ -458,6 +582,13 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     ndo_real(iparams->rbdihs.rbcA,NR_RBDIHS,bDum);
     if(file_version>=25) 
       ndo_real(iparams->rbdihs.rbcB,NR_RBDIHS,bDum);
+    break;
+  case F_FOURDIHS:
+    /* Fourier dihedrals are internally represented
+     * as Ryckaert-Bellemans since those are faster to compute.
+     */
+    ndo_real(VA,NR_RBDIHS,bDum);
+    ndo_real(VB,NR_RBDIHS,bDum);
     break;
   case F_SHAKE:
   case F_SHAKENC:
@@ -507,7 +638,7 @@ static void do_ilist(t_ilist *ilist,bool bRead,char *name)
     unset_comment();
 }
 
-static void do_idef(t_idef *idef,bool bRead)
+static void do_idef(t_idef *idef,bool bRead, int file_version)
 {
   int i,j,k;
   bool bDum=TRUE,bClear;
@@ -562,7 +693,7 @@ static void do_block(t_block *block,bool bRead)
   ndo_int(block->a,block->nra,bDum);
 }
 
-static void do_atom(t_atom *atom,int ngrp,bool bRead)
+static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version)
 {
   do_real (atom->m);
   do_real (atom->q);
@@ -579,7 +710,7 @@ static void do_atom(t_atom *atom,int ngrp,bool bRead)
   do_nuchar(atom->grpnr,ngrp);
 }
 
-static void do_grps(int ngrp,t_grps grps[],bool bRead)
+static void do_grps(int ngrp,t_grps grps[],bool bRead, int file_version)
 {
   int i,j;
   bool bDum=TRUE;
@@ -620,7 +751,7 @@ static void do_strstr(int nstr,char ***nm,bool bRead,t_symtab *symtab)
     do_symstr(&(nm[j]),bRead,symtab);
 }
 
-static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
+static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab, int file_version)
 {
   int i;
   
@@ -637,7 +768,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
     atoms->pdbinfo = NULL;
   }
   for(i=0; (i<atoms->nr); i++)
-    do_atom(&atoms->atom[i],egcNR,bRead);
+    do_atom(&atoms->atom[i],egcNR,bRead, file_version);
   do_strstr(atoms->nr,atoms->atomname,bRead,symtab);
   if (bRead && (file_version <= 20)) {
     for(i=0; i<atoms->nr; i++) {
@@ -651,9 +782,34 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
   do_strstr(atoms->nres,atoms->resname,bRead,symtab);
   do_strstr(atoms->ngrpname,atoms->grpname,bRead,symtab);
   
-  do_grps(egcNR,atoms->grps,bRead);
+  do_grps(egcNR,atoms->grps,bRead,file_version);
   
   do_block(&(atoms->excl),bRead);
+}
+
+static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,t_symtab *symtab, int file_version)
+{
+  int i,j;
+  bool bDum = TRUE;
+  
+  if (file_version > 25) {
+    do_int(atomtypes->nr);
+    j=atomtypes->nr;
+    if(bRead) {
+      snew(atomtypes->radius,j);
+      snew(atomtypes->vol,j);
+      snew(atomtypes->surftens,j);
+    }
+    ndo_real(atomtypes->radius,j,bDum);
+    ndo_real(atomtypes->vol,j,bDum);
+    ndo_real(atomtypes->surftens,j,bDum);
+  } else {
+    /* File versions prior to 26 cannot do GBSA, so they dont use this structure */
+    atomtypes->nr = 0;
+    atomtypes->radius = NULL;
+    atomtypes->vol = NULL;
+    atomtypes->surftens = NULL;
+  }  
 }
 
 static void do_symtab(t_symtab *symtab,bool bRead)
@@ -710,14 +866,15 @@ static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
       atoms->atom[a].chain=' ';
 }
   
-static void do_top(t_topology *top,bool bRead)
+static void do_top(t_topology *top,bool bRead, int file_version)
 {
   int  i;
   
   do_symtab(&(top->symtab),bRead);
   do_symstr(&(top->name),bRead,&(top->symtab));
-  do_atoms (&(top->atoms),bRead,&(top->symtab));
-  do_idef  (&(top->idef),bRead);
+  do_atoms (&(top->atoms),bRead,&(top->symtab), file_version);
+  do_atomtypes (&(top->atomtypes),bRead,&(top->symtab), file_version);
+  do_idef  (&(top->idef),bRead,file_version);
   for(i=0; (i<ebNR); i++)
     do_block(&(top->blocks[i]),bRead);
   if (bRead) {
@@ -726,12 +883,22 @@ static void do_top(t_topology *top,bool bRead)
   }
 }
 
-static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
+/* If TopOnlyOK is TRUE then we can read even future versions
+ * of tpx files, provided the file_generation hasn't changed.
+ * If it is FALSE, we need the inputrecord too, and bail out
+ * if the file is newer than the program.
+ * 
+ * The version and generation if the topology (see top of this file)
+ * are returned in the two last arguments.
+ * 
+ * If possible, we will read the inputrec even when TopOnlyOK is TRUE.
+ */
+static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int *file_version, int *file_generation)
 {
   char  buf[STRLEN];
   bool  bDouble;
   int   precision;
- 
+  int   fver,fgen;
   fio_select(fp);
   fio_setdebug(fp,bDebugMode());
   
@@ -759,16 +926,29 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
     bDouble = (precision == sizeof(double));
     fio_setprecision(fp,bDouble);
     do_int(precision);
-    file_version = tpx_version;
+    fver = tpx_version;
   }
   
   /* Check versions! */
-  do_int(file_version);
-  if ((file_version <= tpx_incompatible_version) ||
-      (file_version > tpx_version))
+  do_int(fver);
+  
+  if(fver>=26)
+    do_int(fgen);
+  else
+    fgen=0;
+ 
+  if(file_version!=NULL)
+    *file_version = fver;
+  if(file_version!=NULL)
+    *file_generation = fgen;
+   
+  
+  if ((fver <= tpx_incompatible_version) ||
+      ((fver > tpx_version) && !TopOnlyOK) ||
+      (fgen > tpx_generation))
     fatal_error(0,"reading tpx file (%s) version %d with version %d program",
-		fio_getname(fp),file_version,tpx_version);
-    
+		fio_getname(fp),fver,tpx_version);
+  
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);
   do_int (tpx->step);
@@ -780,6 +960,11 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   do_int (tpx->bV);
   do_int (tpx->bF);
   do_int (tpx->bBox);
+
+  if((fgen > tpx_generation)) {
+    /* This can only happen if TopOnlyOK=TRUE */
+    tpx->bIr=FALSE;
+  }
 }
 
 static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
@@ -789,7 +974,9 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   t_tpxheader tpx;
   t_inputrec  dum_ir;
   t_topology  dum_top;
-
+  bool        TopOnlyOK;
+  int         file_version,file_generation;
+  
   if (!bRead) {
     tpx.natoms = *natoms;
     tpx.step   = *step;
@@ -803,39 +990,48 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
     tpx.bBox = (box != NULL);
   }
   
-  do_tpxheader(fp,bRead,&tpx);
+  TopOnlyOK = (ir==NULL);
   
+  do_tpxheader(fp,bRead,&tpx,TopOnlyOK,&file_version,&file_generation);
+
   if (bRead) {
     *natoms = tpx.natoms;
     *step   = tpx.step;
     *t      = tpx.t;
     *lambda = tpx.lambda;
   }
-  
+
 #define do_test(b,p) if (bRead && (p!=NULL) && !b) fatal_error(0,"No %s in %s",#p,fio_getname(fp)) 
-  
+
   do_test(tpx.bBox,box);
   do_section(eitemBOX,bRead);
   if (tpx.bBox) ndo_rvec(box,DIM);
 
-  do_test(tpx.bIr,ir);
-  do_section(eitemIR,bRead);
-  if (tpx.bIr) {
-    if (ir)
-      do_inputrec(ir,bRead);
-    else {
-      init_inputrec(&dum_ir);
-      do_inputrec  (&dum_ir,bRead);
-      done_inputrec(&dum_ir);
+  /* Prior to tpx version 26, the inputrec was here.
+   * I moved it to enable partial forward-compatibility
+   * for analysis/viewer programs.
+   */
+  if(file_version<26) {
+    do_test(tpx.bIr,ir);
+    do_section(eitemIR,bRead);
+    if (tpx.bIr) {
+      if (ir)
+	do_inputrec(ir,bRead,file_version);
+      else {
+	init_inputrec(&dum_ir);
+	do_inputrec  (&dum_ir,bRead,file_version);
+	done_inputrec(&dum_ir);
+      }
     }
   }
+  
   do_test(tpx.bTop,top);
   do_section(eitemTOP,bRead);
   if (tpx.bTop) {
     if (top)
-      do_top(top,bRead);
+      do_top(top,bRead, file_version);
     else {
-      do_top(&dum_top,bRead);
+      do_top(&dum_top,bRead,file_version);
       done_top(&dum_top);
     }
   }
@@ -850,6 +1046,20 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
   do_test(tpx.bF,f);
   do_section(eitemF,bRead);
   if (tpx.bF) ndo_rvec(f,*natoms);
+
+  /* Starting with tpx version 26, we have the inputrec
+   * at the end of the file, so we can ignore it 
+   * if the file is never than the software (but still the
+   * same generation - see comments at the top of this file.
+   *
+   * 
+   */
+  if((file_version>=26) && (file_generation<=tpx_generation)) {
+    do_test(tpx.bIr,ir);
+    do_section(eitemIR,bRead);
+    if (tpx.bIr && ir)
+      do_inputrec(ir,bRead,file_version);
+  }
 }
 
 /************************************************************
@@ -868,7 +1078,7 @@ void close_tpx(int fp)
   fio_close(fp);
 }
 
-void read_tpxheader(char *fn,t_tpxheader *tpx)
+void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version, int *file_generation)
 {
   int fp;
 
@@ -879,7 +1089,7 @@ void read_tpxheader(char *fn,t_tpxheader *tpx)
   else {
 #endif
     fp = open_tpx(fn,"r");
-    do_tpxheader(fp,TRUE,tpx);
+    do_tpxheader(fp,TRUE,tpx,TopOnlyOK,file_version,file_generation);
     close_tpx(fp);
 #ifdef HAVE_XML
   }
@@ -953,12 +1163,12 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
 {
   t_tpxheader  header;
   real         t,lambda;
-  int          natoms,step,i;
+  int          natoms,step,i,version,generation;
   bool         bTop,bXNULL;
-
+  
   bTop=fn2bTPX(infile);
   if (bTop) {
-    read_tpxheader(infile,&header);
+    read_tpxheader(infile,&header,TRUE,&version,&generation);
     if (x)
       snew(*x,header.natoms);
     if (v)

@@ -29,13 +29,12 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_init_c = "$Id$";
+
 #include <stdio.h>
 #include "typedefs.h"
 #include "tpxio.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "vveclib.h"
 #include "main.h"
 #include "mvdata.h"
 #include "fatal.h"
@@ -65,11 +64,9 @@ void check_nnodes_top(char *fn,t_topology *top,int nnodes)
 		fn,np,ShortProgram(),nnodes);
 }
 
-static char *int_title(char *title,int nodeid)
+static char *int_title(char *title,int nodeid,char buf[], int size)
 {
-  static char buf[BUFSIZE];
-
-  sprintf(buf,"%s (%d)",title,nodeid);
+  snprintf(buf,size-1,"%s (%d)",title,nodeid);
   return buf;
 }
 
@@ -109,7 +106,7 @@ void init_single(FILE *log,t_parm *parm,
 
   snew(tpx,1);
   
-  read_tpxheader(tpxfile,tpx);
+  read_tpxheader(tpxfile,tpx,FALSE,NULL,NULL);
   snew(*x,tpx->natoms);
   snew(*v,tpx->natoms);
   
@@ -139,7 +136,7 @@ void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
   t_nsborder  nsb;
   rvec        *x,*v;
   
-  read_tpxheader(tpxfile,&tpx);
+  read_tpxheader(tpxfile,&tpx,FALSE,NULL,NULL);
   snew(x,tpx.natoms);
   snew(v,tpx.natoms);
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,parm->box,
@@ -159,6 +156,8 @@ void init_parts(FILE *log,t_commrec *cr,
 		t_nsborder *nsb,int list, bool *bParallelDummies,
 		t_comm_dummies *dummycomm)
 {
+  char buf[256];
+  
   ld_data(cr->left,cr->right,parm,nsb,top,x,v);
   if (cr->nodeid != 0)
     mv_data(cr->left,cr->right,parm,nsb,top,*x,*v);
@@ -174,11 +173,11 @@ void init_parts(FILE *log,t_commrec *cr,
     if (list&LIST_PARM)
       write_parm(log,"parameters of the run",cr->nodeid,parm);
     if (list&LIST_X)
-      pr_rvecs(log,0,int_title("x",0),*x,nsb->natoms);
+      pr_rvecs(log,0,int_title("x",0,buf,255),*x,nsb->natoms);
     if (list&LIST_V)
-      pr_rvecs(log,0,int_title("v",0),*v,nsb->natoms);
+      pr_rvecs(log,0,int_title("v",0,buf,255),*v,nsb->natoms);
     if (list&LIST_TOP)
-      pr_top(log,0,int_title("topology",cr->nodeid),top);
+      pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
     fflush(log);
   }
   *mdatoms=atoms2md(log,&(top->atoms),parm->ir.opts.nFreeze,

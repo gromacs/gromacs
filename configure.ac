@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.1.99_20020920, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.1.99_20021031, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.1.99_20020920)
+AM_INIT_AUTOMAKE(gromacs, 3.1.99_20021031)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -58,6 +58,10 @@ AC_SUBST(F77LINK,"\$(LINK)")
 ### MPI or not
 AC_ARG_ENABLE(mpi,
  [  --enable-mpi                  compile for parallel runs using MPI],,enable_mpi=no)
+
+### Threads
+AC_ARG_ENABLE(threads,
+ [  --disable-threads             don't try to use multithreading],,enable_threads=yes)
 
 
 ### MPI environment
@@ -209,7 +213,7 @@ if test -z "$CC_FOR_BUILD"; then
 fi
 AC_SUBST(CC_FOR_BUILD) 
 
-if test "$enable_fortran" = "yes"; then
+if test "$enable_fortran" = "yes"; then 
   AC_PROG_F77( $f77_names )
   if test -z "$F77"; then
     AC_MSG_ERROR([No fortran compiler found])
@@ -237,6 +241,12 @@ if test "$enable_mpi" = "yes"; then
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
     AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(USE_MPI,,[Make a parallel version of GROMACS using MPI])
+fi
+
+if test "$enable_threads" = "yes"; then
+   AC_MSG_CHECKING([for pthreads])
+   AC_MSG_RESULT([yes])
+#  ACX_PTHREAD([],AC_MSG_ERROR([Cannot compile with pthreads; use --disable-threads])
 fi
 
 if test "$enable_fortran" = "yes"; then

@@ -33,14 +33,10 @@
 #ifndef _reorder_h
 #define _reorder_h
 
-static char *SRCID_reorder_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) reorder.h 1.4 11/23/92"
-#endif /* HAVE_IDENT */
 
 extern void reorder(t_topology *topin,t_topology topout[],
                     int nnodes,int load[],int tload[]);

@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_dipoles_c = "$Id$";
+
 #include <string.h>
 #include <math.h>
 #include "macros.h"
@@ -331,7 +331,7 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   }
 
   if (debug)
-    pr_rvec(debug,0,"Quadrupole",quad,DIM);
+    pr_rvec(debug,0,"Quadrupole",quad,DIM,TRUE);
 
   /* clean-up */
   for(i=0; (i<DIM); i++) {

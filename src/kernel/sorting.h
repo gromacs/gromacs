@@ -33,10 +33,6 @@
 #ifndef _sorting_h
 #define _sorting_h
 
-static char *SRCID_sorting_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) sorting.h 1.21 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 typedef atom_id t_bond[2];

@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_network_c = "$Id$";
+
 #include <string.h>
 #include "fatal.h"
 #include "main.h"
@@ -40,9 +40,6 @@ static char *SRCID_network_c = "$Id$";
 #endif
 
 #ifdef USE_MPI
-static int  mpi_num_nodes=0;
-static int  mpi_my_rank=-1;
-static char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
 static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 #else
@@ -185,6 +182,9 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   char   buf[256];
   int    resultlen;               /* actual length of node name      */
   int    i,flag;
+  int  mpi_num_nodes;
+  int  mpi_my_rank;
+  char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
   /* Call the MPI routines */
   (void) MPI_Init(argc,&argv);
@@ -206,7 +206,9 @@ int  gmx_node_num(void)
 #ifndef USE_MPI
   return 1;
 #else
-  return mpi_num_nodes;
+  int i;
+  return MPI_Comm_size(MPI_COMM_WORLD, &i);
+  return i;
 #endif
 }
 
@@ -215,7 +217,9 @@ int gmx_node_id(void)
 #ifndef USE_MPI
   return 0;
 #else
-  return mpi_my_rank;
+  int i;
+  return MPI_Comm_rank(MPI_COMM_WORLD, &i);
+  return i;
 #endif
 }
 

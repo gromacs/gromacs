@@ -33,7 +33,6 @@
 #ifndef _manager_h
 #define _manager_h
 
-static char *SRCID_manager_h = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 #include "x11.h"

@@ -29,7 +29,6 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_wman_c = "$Id$";
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -47,7 +46,7 @@ typedef struct {
   char *search,*replace;
 } t_sandr;
 
-t_sandr sandrTeX[] = {
+const t_sandr sandrTeX[] = {
   { "[TT]", "{\\tt " },
   { "[tt]", "}"      },
   { "[BB]", "{\\bf " },
@@ -72,7 +71,7 @@ t_sandr sandrTeX[] = {
 };
 #define NSRTEX asize(sandrTeX)
 
-t_sandr sandrTty[] = {
+const t_sandr sandrTty[] = {
   { "[TT]", "" },
   { "[tt]", "" },
   { "[BB]", "" },
@@ -84,7 +83,7 @@ t_sandr sandrTty[] = {
 };
 #define NSRTTY asize(sandrTty)
 
-t_sandr sandrNROFF[] = {
+const t_sandr sandrNROFF[] = {
   { "[TT]", "\n.B " },
   { "[tt]", "\n" },
   { "[BB]", "\n.B " },
@@ -101,7 +100,7 @@ t_sandr sandrNROFF[] = {
 };
 #define NSRNROFF asize(sandrNROFF)
 
-t_sandr sandrHTML[] = {
+const t_sandr sandrHTML[] = {
   { "<",    "&lt;" },
   { ">",    "&gt;" },
   { "[TT]", "<tt>" },
@@ -115,29 +114,30 @@ t_sandr sandrHTML[] = {
 };
 #define NSRHTML asize(sandrHTML)
 
-static char *mydate(void)
+static char *mydate(char buf[], int maxsize)
 {
-  static char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+  const char *mon[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
 			 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-  static char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+  const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
   time_t now;
-  static char tbuf[128];
   struct tm *tm;
   
   (void) time(&now);
   tm = localtime(&now);
-  sprintf(tbuf,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
+  /* subtract one from maxsize, so we have room for \0. */
+  snprintf(buf,maxsize-1,"%s %d %s %d",day[tm->tm_wday],tm->tm_mday,
 	  mon[tm->tm_mon],tm->tm_year+1900);
   
-  return tbuf;
+  return buf;
 }
 
-static char *repall(char *s,int nsr,t_sandr sa[])
+static const char *repall(const char *s,int nsr,const t_sandr sa[])
 {
   int  i;
-  char *buf,*buf2;
+  const char *buf;
+  char *buf2;
   
-  buf=s;
+  buf=s; 
   for(i=0; (i<nsr); i++) {
     buf2=replace(buf,sa[i].search,sa[i].replace);
     if (i && buf)
@@ -146,14 +146,14 @@ static char *repall(char *s,int nsr,t_sandr sa[])
   }
   
   return buf;
-}
+} 
 
-static char *repallww(char *s,int nsr,t_sandr sa[])
+static char *repallww(char *s,int nsr,const t_sandr sa[])
 {
   int  i;
   char *buf,*buf2;
   
-  buf=s;
+  buf=s; 
   for(i=0; (i<nsr); i++) {
     buf2=replaceww(buf,sa[i].search,sa[i].replace);
     if (i && buf)
@@ -164,64 +164,98 @@ static char *repallww(char *s,int nsr,t_sandr sa[])
   return buf;
 }
 
-char *check_tex(char *s)
+const char *check_tex(const char *s)
 {
   return repall(s,NSRTEX,sandrTeX);
 }
 
-char *check_nroff(char *s)
+static const char *check_nroff(const char *s)
 {
   return repall(s,NSRNROFF,sandrNROFF);
 }
 
-static char *html_xref(char *s,char *program)
+/* Data structure for saved HTML links */
+typedef struct {
+  int     nsr;
+  t_sandr *sr;
+} t_linkdata;
+
+static t_linkdata *init_linkdata()
 {
-  static int     nstr;
-  static char    **str;
-  static t_sandr *sr=NULL;
-  char   buf[256];
-  int    i,j;
+  t_linkdata *p;
+  snew(p,1);
+  p->sr=NULL;
+  p->nsr=0;
+
+  return p;
+}
+
+static void finish_linkdata(t_linkdata *p)
+{
+  int i;
   
-  if (sr == NULL) {
-    nstr=get_file("links.dat",&str);
-    snew(sr,nstr);
-    for(i=j=0; (i<nstr); i++) {
-      if (!program || (strcasecmp(program,str[i]) != 0)) {
-	sr[j].search=str[i];
-	sprintf(buf,"<a href=\"%s.html\">%s</a>",str[i],str[i]);
-	sr[j].replace=strdup(buf);
+  sfree(p->sr);
+  for(i=0;i<p->nsr;i++) {
+    sfree(p->sr[i].search);    
+    sfree(p->sr[i].replace);
+  }
+  sfree(p);
+}
+ 
+
+static char *html_xref(char *s,char *program, t_linkdata *links)
+{
+  char   buf[256],**filestr;
+  int    i,j,n;
+  
+  if (links->sr == NULL) {
+    n=get_file("links.dat",&(filestr));
+    links->nsr=n;
+    snew(links->sr,n);
+    for(i=0,j=0; (i<n); i++) {
+      if (!program || (strcasecmp(program,filestr[i])  != 0)) {
+	links->sr[j].search=strdup(filestr[i]);
+	sprintf(buf,"<a href=\"%s.html\">%s</a>",filestr[i],filestr[i]);
+	links->sr[j].replace=strdup(buf);
 	j++;
       }
     }
-    nstr=j;
+    links->nsr=j;
+    for(i=0;i<n;i++)
+      sfree(filestr[i]);
+    sfree(filestr);
   }
-  return repallww(s,nstr,sr);
+  return repallww(s,links->nsr,links->sr);
 }
 
 #define FLAG_SET(flag, mask) ((flag & mask) == mask)
-char *fileopt(unsigned long flag)
+char *fileopt(unsigned long flag,char buf[],int maxsize)
 {
-  static char buf[32];
+  char tmp[256];
   
   if (FLAG_SET(flag, ffRW))
-    strcpy(buf,"In/Out");
+    sprintf(tmp,"In/Out");
   else if (FLAG_SET(flag, ffREAD))
-    strcpy(buf,"Input");
+    sprintf(tmp,"Input");
   else if (FLAG_SET(flag, ffWRITE))
-    strcpy(buf,"Output");
+    sprintf(tmp,"Output");
   else
-    strcpy(buf,"Dunno");
+    sprintf(tmp,"Dunno");
+
   if (FLAG_SET(flag, ffOPT)) {
-    strcat(buf,", Opt");
+    strcat(tmp,", Opt");
     if (FLAG_SET(flag, ffSET)) 
-      strcat(buf,"!");
+      strcat(tmp,"!");
     else
-      strcat(buf,".");
+      strcat(tmp,".");
   }
   if (FLAG_SET(flag, ffLIB))
-    strcat(buf,", Lib.");
+    strcat(tmp,", Lib.");
   if (FLAG_SET(flag, ffMULT))
-    strcat(buf,", Mult.");
+    strcat(tmp,", Mult.");
+
+  snprintf(buf,maxsize-1,tmp);
+  
   return buf;
 }
 
@@ -232,6 +266,7 @@ static void write_texman(FILE *out,char *program,
 			 int nbug,char **bugs)
 {
   int i;
+  char tmp[256];
   
   fprintf(out,"\\section{\\normindex{%s}}\n\n",check_tex(program));
   
@@ -248,7 +283,7 @@ static void write_texman(FILE *out,char *program,
       fprintf(out,"\\>{\\tt %s} \\'\\> {\\tt %s} \\' %s \\> "
 	      "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
 	      check_tex(fnm[i].opt),check_tex(fnm[i].fns[0]),
-	      check_tex(fileopt(fnm[i].flag)),
+	      check_tex(fileopt(fnm[i].flag,tmp,255)),
 	      check_tex(ftp2desc(fnm[i].ftp)));
     fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
   }
@@ -258,18 +293,18 @@ static void write_texman(FILE *out,char *program,
     fprintf(out,"{\\tt ~~~~~~~~~~} \\= vector \\= "
 	    "{\\tt ~~~~~~~} \\= \\nopagebreak\\kill\n");
     for(i=0; (i<npargs); i++) {
-      if (strlen(check_tex(pa_val(&(pa[i])))) <= 8)
+      if (strlen(check_tex(pa_val(&(pa[i]),tmp,255))) <= 8)
 	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
 		"\\parbox[t]{0.68\\linewidth}{%s}\\\\\n",
 		check_tex(pa[i].option),argtp[pa[i].type],
-		check_tex(pa_val(&(pa[i]))),
+		check_tex(pa_val(&(pa[i]),tmp,255)),
 		check_tex(pa[i].desc));
       else
       	fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\>\\\\\n"
 		"\\> \\'\\> \\'\\> {\\tt %s} \\' "
 		"\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
 		check_tex(pa[i].option),argtp[pa[i].type],
-		check_tex(pa_val(&(pa[i]))),
+		check_tex(pa_val(&(pa[i]),tmp,255)),
 		check_tex(pa[i].desc));
     }
     fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
@@ -293,8 +328,10 @@ static void write_nroffman(FILE *out,
 
 {
   int i;
+  char tmp[256];
   
-  fprintf(out,".TH %s 1 \"%s\"\n",program,mydate());
+  
+  fprintf(out,".TH %s 1 \"%s\"\n",program,mydate(tmp,255));
   fprintf(out,".SH NAME\n");
   fprintf(out,"%s\n",program);
   fprintf(out,".B %s\n",GromacsVersion());
@@ -329,7 +366,7 @@ static void write_nroffman(FILE *out,
     fprintf(out,".SH FILES\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
-	      fnm[i].opt,fnm[i].fns[0],fileopt(fnm[i].flag),
+	      fnm[i].opt,fnm[i].fns[0],fileopt(fnm[i].flag,tmp,255),
 	      check_nroff(ftp2desc(fnm[i].ftp)));
   }
   
@@ -340,11 +377,11 @@ static void write_nroffman(FILE *out,
       if (pa[i].type == etBOOL)
 	fprintf(out,".BI \"-[no]%s\"  \"%s\"\n %s\n\n",
 		check_nroff(pa[i].option+1),
-		pa_val(&(pa[i])),check_nroff(pa[i].desc));
+		pa_val(&(pa[i]),tmp,255),check_nroff(pa[i].desc));
       else
 	fprintf(out,".BI \"%s\"  \" %s\" \" %s\" \n %s\n\n",
 		check_nroff(pa[i].option),argtp[pa[i].type],
-		pa_val(&(pa[i])),check_nroff(pa[i].desc));
+		pa_val(&(pa[i]),tmp,255),check_nroff(pa[i].desc));
     }
   }
 
@@ -355,14 +392,15 @@ static void write_nroffman(FILE *out,
 
 }
 
-char *check_tty(char *s)
+const char *check_tty(const char *s)
 {
   return repall(s,NSRTTY,sandrTty);
 }
 
 void print_tty_formatted(FILE *out, int nldesc, char **desc)
 {
-  char *buf,*temp;
+  char *buf;
+  const char *temp;
   int i,j;
 
   /* Just to be sure */
@@ -393,11 +431,12 @@ static void write_ttyman(FILE *out,
 			 int nbug,char **bugs,bool bHeader)
 {
   int i;
+  char buf[256];
   char *tmp;
   
   if (bHeader) {
     fprintf(out,"%s\n\n",check_tty(program));
-    fprintf(out,"%s\n%s\n",GromacsVersion(),mydate());
+    fprintf(out,"%s\n%s\n",GromacsVersion(),mydate(buf,255));
   }
   if (nldesc > 0) {
     fprintf(out,"DESCRIPTION:\n\n");
@@ -422,12 +461,12 @@ static void write_ttyman(FILE *out,
   }
 }
 
-char *check_html(char *s,char *program)
+static const char *check_html(const char *s,char *program, t_linkdata *links)
 {
-  char *buf;
+  const char *buf;
   
   buf=repall(s,NSRHTML,sandrHTML);
-  buf=html_xref(buf,program);
+  buf=html_xref(buf,program,links);
   
   return buf;
 }
@@ -440,9 +479,12 @@ static void write_htmlman(FILE *out,
 			  int nbug,char **bugs)
 {
   int i;
-  char link[10];
+  char link[10],tmp[255];
+  t_linkdata *links;
   
-#define NSR(s) check_html(s,program)
+  links=init_linkdata();
+
+#define NSR(s) check_html(s,program,links)
   
   fprintf(out,"<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n",program);
   fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
@@ -456,7 +498,7 @@ static void write_htmlman(FILE *out,
 	  "<br><h2>%s</h2>",program);
   fprintf(out,"<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
   fprintf(out,"<br></td>\n</TABLE></TD><TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM><p><B>%s<br>\n",GromacsVersion());
-  fprintf(out,"%s</B></td></tr></TABLE>\n<HR>\n",mydate());
+  fprintf(out,"%s</B></td></tr></TABLE>\n<HR>\n",mydate(tmp,255));
   
   if (nldesc > 0) {
     fprintf(out,"<H3>Description</H3>\n<p>\n");
@@ -485,7 +527,7 @@ static void write_htmlman(FILE *out,
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
 	      "</TR>\n",
-	      fnm[i].opt,link,fnm[i].fns[0],fileopt(fnm[i].flag),
+	      fnm[i].opt,link,fnm[i].fns[0],fileopt(fnm[i].flag,tmp,255),
 	      NSR(ftp2desc(fnm[i].ftp)));
     }
     fprintf(out,"</TABLE>\n");
@@ -510,7 +552,7 @@ static void write_htmlman(FILE *out,
 	      "<TD> %s </TD>"
 	      "</TD>\n",
 	      (pa[i].type == etBOOL)?"-[no]":"-",pa[i].option+1,
-	      argtp[pa[i].type],pa_val(&(pa[i])),NSR(pa[i].desc));
+	      argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),NSR(pa[i].desc));
     fprintf(out,"</TABLE>\n");
   }
   if (nbug > 0) {
@@ -528,6 +570,8 @@ static void write_htmlman(FILE *out,
 	  "gromacs@gromacs.org</a></font><br>\n");
   fprintf(out,"</div>\n");
   fprintf(out,"</BODY>\n");
+
+  finish_linkdata(links);
 }
 
 static void pr_opts(FILE *fp, 

@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_hizzie_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <stdio.h>
 #include <string.h>
 #include "typedefs.h"
@@ -41,7 +43,7 @@ static char *SRCID_hizzie_c = "$Id$";
 #include "pdb2top.h"
 #include "string2.h"
 
-static int in_strings(char *key,int nstr,char **str)
+static int in_strings(char *key,int nstr,const char **str)
 {
   int j;
   
@@ -167,11 +169,11 @@ static void calc_ringh(rvec xattach,rvec xb,rvec xc,rvec xh)
 }
 
 void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
-  static char *prot_acc[] = {
+  static const char *prot_acc[] = {
     "O", "OD1", "OD2", "OE1", "OE2", "OG", "OG1", "OH", "OW"
   };
 #define NPA asize(prot_acc)
-  static char *prot_don[] = {
+  static const char *prot_don[] = {
     "N", "NH1", "NH2", "NE", "ND1", "ND2", "NE2", "NZ", "OG", "OG1", "OH", "NE1", "OW"
   };
 #define NPD asize(prot_don)

@@ -29,9 +29,10 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_readir_c = "$Id$";
+
 #include <ctype.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -43,7 +44,7 @@ static char *SRCID_readir_c = "$Id$";
 #include "symtab.h"
 #include "string2.h"
 #include "readinp.h"
-#include "readir.h"
+#include "readir.h" 
 #include "toputil.h"
 #include "index.h"
 #include "network.h"
@@ -64,6 +65,8 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   orirefitgrp[STRLEN],egexcl[STRLEN];
+static char anneal[STRLEN],anneal_npoints[STRLEN],
+  anneal_time[STRLEN],anneal_temp[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
@@ -196,11 +199,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	           "changing \"yes\" to \"Berendsen\"\n");
   }
   
-  if(ir->etc==etcNOSEHOOVER && ir->epc==epcBERENDSEN) {
+  if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
+     && ir->epc==epcBERENDSEN) {
     sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
-	    "true ensemble for the Nose-Hoover thermostat");
+	    "true ensemble for the thermostat");
     warning(NULL);
   }
+
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
@@ -258,11 +263,21 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) ||
      (ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) 
     if((ir->rlist == ir->rcoulomb) || (ir->rlist == ir->rvdw)) {
-      sprintf(warn_buf,"For strict energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb/rvdw.");
+      sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb/rvdw.");
       warning(NULL);
     }
 
- 
+  /* CONSTRAINTS */
+  if(ir->etc==etcNO && ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
+    sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n"
+	    "You can safely ignore this if your system doesn't have any LINCS-constrained bonds;\n"
+	    "for water molecules we normally use the analytical SETTLE algorithm instead."); 
+    warning(NULL);
+  }
+  if(((ir->eI == eiSteep) || (ir->eI == eiCG)) && (ir->nLincsIter<4)) {
+    sprintf(warn_buf,"For energy minimization with constraints, lincs_iter should be 4 to 8.");
+    warning(NULL);
+  }
 }
 
 static int str_nelem(char *str,int maxptr,char *ptr[])
@@ -311,6 +326,7 @@ void get_ir(char *mdparin,char *mdparout,
 
   snew(dumstr[0],STRLEN);
   snew(dumstr[1],STRLEN);
+
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   STYPE ("title",	opts->title,	NULL);
   STYPE ("cpp",		opts->cpp,	"/lib/cpp");
@@ -323,6 +339,8 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
   ITYPE ("nsteps",      ir->nsteps,     0);
+  CTYPE ("after checkpoint or tpbconv restart we can start on step > 0");
+  ITYPE ("init_step",   ir->init_step,  0);
   CTYPE ("mode for center of mass motion removal");
   EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);
   CTYPE ("number of steps for center of mass motion removal");
@@ -354,6 +372,8 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstxout",	ir->nstxout,	100);
   ITYPE ("nstvout",	ir->nstvout,	100);
   ITYPE ("nstfout",	ir->nstfout,	0);
+  CTYPE ("Checkpointing helps you continue after crashes");
+  ITYPE ("nstcheckpoint",  ir->nstcheckpoint,	1000);
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
@@ -394,7 +414,8 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("cut-off lengths");
   RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
   RTYPE ("rvdw",	ir->rvdw,	1.0);
-    
+
+
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("DispCorr",    ir->eDispCorr,  edispc_names, nerror, TRUE);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
@@ -410,6 +431,20 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("epsilon_surface", ir->epsilon_surface, 0.0);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, TRUE);
 
+  CCTYPE ("GENERALIZED BORN ELECTROSTATICS"); 
+  CTYPE ("Algorithm for calculating Born radii");
+  EETYPE("gb_algorithm", ir->gb_algorithm, egb_names, nerror, TRUE);
+  CTYPE ("Frequency of calculating the Born radii inside rlist");
+  ITYPE ("nstgbradii", ir->nstgbradii, 1);
+  CTYPE ("Cutoff for Born radii calculation; the contribution from atoms");
+  CTYPE ("between rlist and rgbradii is updated every nstlist steps");
+  RTYPE ("rgbradii",  ir->rgbradii, 2.0);
+  CTYPE ("Salt concentration in M for Generalized Born models");
+  RTYPE ("gb_saltconc",  ir->gb_saltconc, 0.0); 
+
+  CCTYPE("IMPLICIT SOLVENT (for use with Generalized Born electrostatics)");
+  EETYPE("implicit_solvent", ir->implicit_solvent, eis_names, nerror, TRUE);
+  
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
@@ -427,11 +462,19 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("compressibility",	dumstr[0],	NULL);
   STYPE ("ref-p",       dumstr[1],      NULL);
   
+  CTYPE ("Random seed for Andersen thermostat");
+  ITYPE ("andersen_seed", ir->andersen_seed, 815131);
+
   /* Simulated annealing */
-  CCTYPE ("SIMULATED ANNEALING CONTROL");
-  EETYPE("annealing",	ir->bSimAnn,    yesno_names, nerror, TRUE);
-  CTYPE ("Time at which temperature should be zero (ps)");
-  RTYPE ("zero-temp_time",ir->zero_temp_time,0.0);
+  CCTYPE("SIMULATED ANNEALING");
+  CTYPE ("Type of annealing for each temperature group (no/single/periodic)");
+  STYPE ("annealing",   anneal,      NULL);
+  CTYPE ("Number of time points to use for specifying annealing in each group");
+  STYPE ("annealing_npoints", anneal_npoints, NULL);
+  CTYPE ("List of times at the annealing points for each group");
+  STYPE ("annealing_time",       anneal_time,       NULL);
+  CTYPE ("Temp. at each annealing point, for each group.");
+  STYPE ("annealing_temp",  anneal_temp,  NULL);
   
   /* Startup run */
   CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
@@ -452,6 +495,10 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("shake-tol", ir->shake_tol, 0.0001);
   CTYPE ("Highest order in the expansion of the constraint coupling matrix");
   ITYPE ("lincs-order", ir->nProjOrder, 4);
+  CTYPE ("Number of iterations in the final step of LINCS. 1 is fine for");
+  CTYPE ("normal simulations, but use 2 to conserve energy in NVE runs.");
+  CTYPE ("For energy minimization with constraints it should be 4 to 8.");
+  ITYPE ("lincs-iter", ir->nLincsIter, 1);
   CTYPE ("Lincs will write a warning to the stderr if in one step a bond"); 
   CTYPE ("rotates over more degrees than");
   RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
@@ -483,6 +530,12 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("orire-fitgrp",orirefitgrp,    NULL);
   CTYPE ("Output frequency for trace(SD) to energy file");
   ITYPE ("nstorireout", ir->nstorireout, 100);
+  CTYPE ("Dihedral angle restraints: No, Simple or Ensemble");
+  EETYPE("dihre",       opts->eDihre,   edisre_names, nerror, TRUE);
+  RTYPE ("dihre-fc",	ir->dihre_fc,	1000.0);
+  RTYPE ("dihre-tau",	ir->dihre_tau,	0.0);
+  CTYPE ("Output frequency for dihedral values to energy file");
+  ITYPE ("nstdihreout", ir->nstdihreout, 100);
 
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
@@ -653,7 +706,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
   int    i,j,gid,aj,ognr,ntot=0;
-  char   *title;
+  const char  *title;
 
   if (debug)
     fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
@@ -895,11 +948,12 @@ void do_index(char *ndx,
 {
   t_block *grps;
   char    warnbuf[STRLEN],**gnames;
-  int     nr,ntcg,ntau_t,nref_t,nacc,nofg;
+  int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
   int     nacg,nfreeze,nfrdim,nenergy,nuser,negexcl;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
-  bool    bExcl,bSetTCpar;
+  real    SAtime;
+  bool    bExcl,bSetTCpar,bAnneal;
   
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -927,14 +981,6 @@ void do_index(char *ndx,
   for(i=0; (i<atoms->nr); i++)
     for(j=0; (j<egcNR); j++)
       atoms->atom[i].grpnr[j]=NOGID;
-  
-  if (ir->bSimAnn) {
-    if (ir->eI==eiMD && ir->etc==etcNO)
-      fatal_error(0,"You must select a temperature coupling algorithm "
-		  "for simulated annealing");
-    if (ir->zero_temp_time == 0)
-      fatal_error(0,"Cannot anneal to zero temp at t=0");
-  }  
 
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
@@ -972,14 +1018,105 @@ void do_index(char *ndx,
     }
   }
 
+  /* Simulated annealing for each group. There are nr groups */
+  nSA = str_nelem(anneal,MAXPTR,ptr1);
+  if(nSA>0 && nSA != nr) 
+    fatal_error(0,"Not enough annealing values: %d (for %d groups)\n",nSA,nr);
+  else {
+    snew(ir->opts.annealing,nr);
+    snew(ir->opts.anneal_npoints,nr);
+    snew(ir->opts.anneal_time,nr);
+    snew(ir->opts.anneal_temp,nr);
+    if(nSA==0) {
+      fprintf(stderr,"Not using any simulated annealing\n"); 
+      for(i=0;i<nr;i++) {
+	ir->opts.annealing[i]=eannNO;
+	ir->opts.anneal_npoints[i]=0;
+	ir->opts.anneal_time[i]=NULL;
+	ir->opts.anneal_temp[i]=NULL;
+      }
+    } else {
+      bAnneal=FALSE;
+      for(i=0;i<nr;i++) { 
+	if(ptr1[i][0]=='n' || ptr1[i][0]=='N') {
+	  ir->opts.annealing[i]=eannNO;
+	} else if(ptr1[i][0]=='s'|| ptr1[i][0]=='S') {
+	  ir->opts.annealing[i]=eannSINGLE;
+	  bAnneal=TRUE;
+	} else if(ptr1[i][0]=='p'|| ptr1[i][0]=='P') {
+	  ir->opts.annealing[i]=eannPERIODIC;
+	  bAnneal=TRUE;
+	} 
+      } 
+      if(bAnneal) {
+	/* Read the other fields too */
+	nSA_points = str_nelem(anneal_npoints,MAXPTR,ptr1);
+	if(nSA_points!=nSA) 
+	  fatal_error(0,"Found %d annealing_npoints values for %d groups\n",nSA_points,nSA);
+	for(k=0,i=0;i<nr;i++) {
+	  ir->opts.anneal_npoints[i]=strtol(ptr1[i],NULL,10);
+	  if(ir->opts.anneal_npoints[i]==1)
+	    fatal_error(0,"It doesn't make sense to use only one point for annealing!\n");
+	  snew(ir->opts.anneal_time[i],ir->opts.anneal_npoints[i]);
+	  snew(ir->opts.anneal_temp[i],ir->opts.anneal_npoints[i]);
+	  k += ir->opts.anneal_npoints[i];
+	}
+	
+	nSA_time = str_nelem(anneal_time,MAXPTR,ptr1);
+	if(nSA_time!=k) 
+	  fatal_error(0,"Found %d annealing_time values, wanter %d\n",nSA_time,k);
+	nSA_temp = str_nelem(anneal_temp,MAXPTR,ptr2);
+	if(nSA_temp!=k) 
+	  fatal_error(0,"Found %d annealing_temp values, wanted %d\n",nSA_temp,k);
+	for(i=0,k=0;i<nr;i++) {
+	    if(ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
+	      fatal_error(0,"First time point for annealing > init_t.\n");      
+	  
+	  for(j=0;j<ir->opts.anneal_npoints[i];j++) {
+	    ir->opts.anneal_time[i][j]=atof(ptr1[k]);
+	    ir->opts.anneal_temp[i][j]=atof(ptr2[k]);
+	    if(j>0 && (ir->opts.anneal_time[i][j]<ir->opts.anneal_time[i][j-1]))
+	      fatal_error(0,"Annealing timepoints out of order: t=%f comes after t=%f\n",
+			  ir->opts.anneal_time[i][j],ir->opts.anneal_time[i][j-1]);
+	    if(ir->opts.anneal_temp[i][j]<0) 
+	      fatal_error(0,"Found negative temperature in annealing: %f\n",ir->opts.anneal_temp[i][j]);    
+	    k++;
+	  }
+	}
+	/* Print out some summary information, to make sure we got it right */
+	for(i=0,k=0;i<nr;i++) {
+	  if(ir->opts.annealing[i]!=eannNO) {
+	    j=atoms->grps[egcTC].nm_ind[i];
+	    fprintf(stderr,"Simulated annealing for group %s: %s, %d timepoints\n",
+		    *(atoms->grpname[j]),eann_names[ir->opts.annealing[i]],
+		    ir->opts.anneal_npoints[i]);
+	    fprintf(stderr,"Time (ps)   Temperature (K)\n");
+	    /* All terms except the last one */
+	    for(j=0;j<(ir->opts.anneal_npoints[i]-1);j++) 
+		fprintf(stderr,"%9.1f      %5.1f\n",ir->opts.anneal_time[i][j],ir->opts.anneal_temp[i][j]);
+	    
+	    /* Finally the last one */
+	    j = ir->opts.anneal_npoints[i]-1;
+	    if(ir->opts.annealing[i]==eannSINGLE)
+	      fprintf(stderr,"%9.1f-     %5.1f\n",ir->opts.anneal_time[i][j],ir->opts.anneal_temp[i][j]);
+	    else {
+	      fprintf(stderr,"%9.1f      %5.1f\n",ir->opts.anneal_time[i][j],ir->opts.anneal_temp[i][j]);
+	      if(fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0])>GMX_REAL_EPS)
+		fprintf(stderr,"Note: There is a temperature jump when your annealing loops back.\n");
+	    }
+	  }
+	} 
+      }
+    }
+  }	
+
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);
   if (nacg*DIM != nacc)
     fatal_error(0,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
-	       restnm,forward,FALSE,bVerbose);
-  nr=atoms->grps[egcACC].nr;
+	       restnm,forward,FALSE,bVerbose);  nr=atoms->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
   
@@ -1104,9 +1241,9 @@ void do_index(char *ndx,
   sfree(gnames);
   done_block(grps);
   sfree(grps);
-}
+	}
 
-  static void check_disre(t_topology *sys)
+	static void check_disre(t_topology *sys)
 {
   t_functype *functype;
   t_iparams  *ip;
@@ -1220,7 +1357,6 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
 	if (TRICLINIC(box))
 	  fprintf(stderr,"Grid search might allow larger cut-off's than simple search with triclinic boxes.");
       }
-      
     }
   }
 }

@@ -33,14 +33,9 @@
 #ifndef _sysstuff_h
 #define _sysstuff_h
 
-static char *SRCID_sysstuff_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) sysstuff.h 1.22 12/16/92"
-#endif /* HAVE_IDENT */
 
 #ifdef CPLUSPLUS
 extern "C" { 

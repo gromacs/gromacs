@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_popup_c = "$Id$";
+
 #include <string.h>
 #include <math.h>
 #include <macros.h>

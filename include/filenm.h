@@ -37,34 +37,30 @@
 #ifndef _filenm_h
 #define _filenm_h
 
-static char *SRCID_filenm_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) filenm.h 1.14 2/2/97"
-#endif /* HAVE_IDENT */
 
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
   
 #include "futil.h"
-  
-void set_default_file_name(char *name);
+
+void set_default_file_name(const char *name);
 /* Set the default file name for all file types to name */
 
-extern char *ftp2ext(int ftp);
+extern const char *ftp2ext(int ftp);
 /* Return extension for filetype */
 
-extern char *ftp2desc(int ftp);
+extern const char *ftp2desc(int ftp);
 /* Return description for file type */
 
-extern char *ftp2defnm(int ftp);
+extern const char *ftp2defnm(int ftp);
 /* Return default file name for file type */
 
-extern char *ftp2ftype(int ftp);
+extern const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
 
 extern void pr_def(FILE *fp,int ftp);

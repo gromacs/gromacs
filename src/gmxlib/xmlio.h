@@ -29,7 +29,6 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_xmlio_h = "$Id$";
 extern void read_xml(char *fn,int *step,real *t,real *lambda,
 		     t_inputrec *ir,rvec *box,int *natoms,
 		     rvec **x,rvec **v,rvec **f,t_topology *top);

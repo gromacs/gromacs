@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_rando_c = "$Id$";
+
 #include <time.h>
 #include "sysstuff.h"
 #include "typedefs.h"

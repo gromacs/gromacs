@@ -29,13 +29,15 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_sheader_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <string.h>
 #include "sheader.h"
 #include "txtdump.h"
 #include "tpxio.h"
 
-static char *version="@(#) sheader.c 1.5 12/16/92";
+
 
 void pr_header(FILE *fp,int indent,char *title,t_tpxheader *sh)
 {

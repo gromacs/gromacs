@@ -29,7 +29,14 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_ffscanf_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+/* This file is completely threadsafe - keep it that way! */
+
+
 #include <stdarg.h>
 #include <ctype.h>
 #include "typedefs.h"

@@ -29,13 +29,14 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_cinvsqrtdata_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 /* just put something here to avoid empty file warnings */
-int cinvsqrtdata_stub;
+const int cinvsqrtdata_stub;
 
 #ifdef SOFTWARE_INVSQRT
 const unsigned int cinvsqrtexptab[256] = {

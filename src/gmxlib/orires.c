@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_orires_c = "$Id$";
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -216,7 +216,7 @@ real calc_orires_dev(t_commrec *mcr,
   rvec         *xref,*xtmp,com,r_unrot,r;
   t_oriresdata *od;
   bool         bTAV;
-  static real  two_thr=2.0/3.0;
+  const real  two_thr=2.0/3.0;
 
   od = &(fcd->orires);
 

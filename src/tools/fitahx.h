@@ -33,7 +33,6 @@
 #ifndef _fitahx_h
 #define _fitahx_h
 
-static char *SRCID_fitahx_h = "$Id$";
 	
 #include "typedefs.h"
 #include "hxprops.h"

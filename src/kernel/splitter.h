@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_splitter_h = "$Id$";
+
 extern void split_top(bool bVerbose,int nnodes,t_topology *top,real *capacity);
 /* Split the topology (blocks and forces, based on charge groups 
  * and shake blocks.

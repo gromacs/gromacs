@@ -33,7 +33,7 @@
 #ifndef _ionize_h
 #define _ionize_h
 
-static char *SRCID_ionize_h = "$Id$";
+
 #include <stdio.h>
 #include "typedefs.h"
 

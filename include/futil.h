@@ -33,14 +33,10 @@
 #ifndef _futil_h
 #define _futil_h
 
-static char *SRCID_futil_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) futil.h 1.1 11/23/92"
-#endif /* HAVE_IDENT */
 #include <stdio.h>
 #include "typedefs.h"
 
@@ -51,7 +47,7 @@ extern "C" {
 extern void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
-extern bool fexist(char *fname);
+extern bool fexist(const char *fname);
 /* Return TRUE when fname exists, FALSE otherwise */
 
 extern bool eof(FILE *fp);
@@ -60,15 +56,15 @@ extern bool eof(FILE *fp);
 extern bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
-extern char *backup_fn(char *file);
+extern char *backup_fn(const char *file);
 /* Return a backup name for file (name with # before and after) */
 
 /*  Make a backup of file if necessary.  
     Return false if there was a problem.
 */
-extern bool make_backup(char * file);
+extern bool make_backup(const char * file);
 
-extern FILE *ffopen(char *file,char *mode);
+extern FILE *ffopen(const char *file,char *mode);
 /* Return a valid file pointer when succesfull, exits otherwise 
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)

@@ -33,14 +33,9 @@
 #ifndef _ns_h
 #define _ns_h
 
-static char *SRCID_ns_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) ns.h 1.50 2/2/97"
-#endif /* HAVE_IDENT */
 
 #include <stdio.h>
 #include "sysstuff.h"

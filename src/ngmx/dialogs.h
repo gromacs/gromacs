@@ -33,7 +33,7 @@
 #ifndef _dialogs_h
 #define _dialogs_h
 
-static char *SRCID_dialogs_h = "$Id$";
+
 #include "xdlg.h"
 #include "pulldown.h"
 #include "manager.h"

@@ -33,15 +33,11 @@
 #ifndef _h_db_h
 #define _h_db_h
 
-static char *SRCID_h_db_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) h_db.h 1.10 2/2/97"
-#endif /* HAVE_IDENT */
 #include "sysstuff.h"
 #include "hackblock.h"
 
 /* number of control atoms for each 'add' type */
-extern int ncontrol[];
+extern const int ncontrol[];
   
 /* functions for the h-database */
 

@@ -33,7 +33,7 @@
 #ifndef _add_par_h
 #define _add_par_h
 
-static char *SRCID_add_par_h = "$Id$";
+
 #include "typedefs.h"
 #include "pdb2top.h"
 

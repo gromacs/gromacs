@@ -33,7 +33,6 @@
 #ifndef _x86_3dnow_h
 #define _x86_3dnow_h
 
-static char *SRCID_x86_3dnow_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -29,7 +29,8 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_tpbcmp_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -195,7 +196,7 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol)
     cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]));
 }
 
-static void cmp_block(FILE *fp,t_block *b1,t_block *b2,char *s)
+static void cmp_block(FILE *fp,t_block *b1,t_block *b2,const char *s)
 {
   int i,j,k;
   char buf[32];
@@ -261,7 +262,8 @@ static void cmp_rvecs(FILE *fp,char *title,int n,rvec x1[],rvec x2[],real ftol)
 
 static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol)
 {
-  int i;
+  int i,j;
+  char buf1[256],buf2[256];
   
   cmp_int(fp,"inputrec->grpopts.ngtc",0,  opt1->ngtc,opt2->ngtc);
   cmp_int(fp,"inputrec->grpopts.ngacc",0, opt1->ngacc,opt2->ngacc);
@@ -271,6 +273,17 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol)
     cmp_real(fp,"inputrec->grpopts.nrdf",i,opt1->nrdf[i],opt2->nrdf[i],ftol);
     cmp_real(fp,"inputrec->grpopts.ref_t",i,opt1->ref_t[i],opt2->ref_t[i],ftol);
     cmp_real(fp,"inputrec->grpopts.tau_t",i,opt1->tau_t[i],opt2->tau_t[i],ftol);
+    cmp_int(fp,"inputrec->grpopts.annealing",i,opt1->annealing[i],opt2->annealing[i]);
+    cmp_int(fp,"inputrec->grpopts.anneal_npoints",i,
+	    opt1->anneal_npoints[i],opt2->anneal_npoints[i]);
+    if(opt1->anneal_npoints[i]==opt2->anneal_npoints[i]) {
+      sprintf(buf1,"inputrec->grpopts.anneal_time[%d]",i);
+      sprintf(buf2,"inputrec->grpopts.anneal_temp[%d]",i);
+      for(j=0;j<opt1->anneal_npoints[i];j++) {
+	cmp_real(fp,buf1,j,opt1->anneal_time[i][j],opt2->anneal_time[i][j],ftol);
+	cmp_real(fp,buf2,j,opt1->anneal_temp[i][j],opt2->anneal_temp[i][j],ftol);
+      }
+    }
   }
   for(i=0; (i<min(opt1->ngacc,opt2->ngacc)); i++)
     cmp_rvec(fp,"inputrec->grpopts.acc",i,opt1->acc[i],opt2->acc[i],ftol);
@@ -306,6 +319,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
    */
   cmp_int(fp,"inputrec->eI",0,ir1->eI,ir2->eI);
   cmp_int(fp,"inputrec->nsteps",0,ir1->nsteps,ir2->nsteps);
+  cmp_int(fp,"inputrec->init_step",0,ir1->init_step,ir2->init_step);
   cmp_int(fp,"inputrec->ePBC",0,ir1->ePBC,ir2->ePBC);
   cmp_int(fp,"inputrec->ns_type",0,ir1->ns_type,ir2->ns_type);
   cmp_int(fp,"inputrec->nstlist",0,ir1->nstlist,ir2->nstlist);
@@ -313,6 +327,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->bDomDecomp",0,ir1->bDomDecomp,ir2->bDomDecomp);
   cmp_int(fp,"inputrec->decomp_dir",0,ir1->decomp_dir,ir2->decomp_dir);
   cmp_int(fp,"inputrec->nstcomm",0,ir1->nstcomm,ir2->nstcomm);
+  cmp_int(fp,"inputrec->nstcheckpoint",0,ir1->nstcheckpoint,ir2->nstcheckpoint);
   cmp_int(fp,"inputrec->nstlog",0,ir1->nstlog,ir2->nstlog);
   cmp_int(fp,"inputrec->nstxout",0,ir1->nstxout,ir2->nstxout);
   cmp_int(fp,"inputrec->nstvout",0,ir1->nstvout,ir2->nstvout);
@@ -342,8 +357,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_rvec(fp,"inputrec->compress(x)",0,ir1->compress[XX],ir2->compress[XX],ftol);
   cmp_rvec(fp,"inputrec->compress(y)",0,ir1->compress[YY],ir2->compress[YY],ftol);
   cmp_rvec(fp,"inputrec->compress(z)",0,ir1->compress[ZZ],ir2->compress[ZZ],ftol);
-  cmp_int(fp,"inputrec->bSimAnn",0,ir1->bSimAnn,ir2->bSimAnn);
-  cmp_real(fp,"inputrec->zero_temp_time",0,ir1->zero_temp_time,ir2->zero_temp_time,ftol);
+  cmp_int(fp,"inputrec->andersen_seed",0,ir1->andersen_seed,ir2->andersen_seed);
   cmp_real(fp,"inputrec->rlist",0,ir1->rlist,ir2->rlist,ftol);
   cmp_int(fp,"inputrec->coulombtype",0,ir1->coulombtype,ir2->coulombtype);
   cmp_real(fp,"inputrec->rcoulomb_switch",0,ir1->rcoulomb_switch,ir2->rcoulomb_switch,ftol);
@@ -352,6 +366,11 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->rvdw_switch",0,ir1->rvdw_switch,ir2->rvdw_switch,ftol);
   cmp_real(fp,"inputrec->rvdw",0,ir1->rvdw,ir2->rvdw,ftol);
   cmp_real(fp,"inputrec->epsilon_r",0,ir1->epsilon_r,ir2->epsilon_r,ftol);
+  cmp_int(fp,"inputrec->gb_algorithm",0,ir1->gb_algorithm,ir2->gb_algorithm);
+  cmp_int(fp,"inputrec->nstgbradii",0,ir1->nstgbradii,ir2->nstgbradii);
+  cmp_real(fp,"inputrec->rgbradii",0,ir1->rgbradii,ir2->rgbradii,ftol);
+  cmp_real(fp,"inputrec->gb_saltconc",0,ir1->gb_saltconc,ir2->gb_saltconc,ftol);
+  cmp_int(fp,"inputrec->implicit_solvent",0,ir1->implicit_solvent,ir2->implicit_solvent);
   cmp_int(fp,"inputrec->eDispCorr",0,ir1->eDispCorr,ir2->eDispCorr);
   cmp_real(fp,"inputrec->shake_tol",0,ir1->shake_tol,ir2->shake_tol,ftol);
   cmp_real(fp,"inputrec->fudgeQQ",0,ir1->fudgeQQ,ir2->fudgeQQ,ftol);
@@ -368,6 +387,9 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->orires_fc",0,ir1->orires_fc,ir2->orires_fc,ftol);
   cmp_real(fp,"inputrec->orires_tau",0,ir1->orires_tau,ir2->orires_tau,ftol);
   cmp_int(fp,"inputrec->nstorireout",0,ir1->nstorireout,ir2->nstorireout);
+  cmp_real(fp,"inputrec->dihre_fc",0,ir1->dihre_fc,ir2->dihre_fc,ftol);
+  cmp_int(fp,"inputrec->nstdihreout",0,ir1->nstdihreout,ir2->nstdihreout);
+  cmp_real(fp,"inputrec->dihre_tau",0,ir1->dihre_tau,ir2->dihre_tau,ftol);
   cmp_real(fp,"inputrec->em_stepsize",0,ir1->em_stepsize,ir2->em_stepsize,ftol);
   cmp_real(fp,"inputrec->em_tol",0,ir1->em_tol,ir2->em_tol,ftol);
   cmp_int(fp,"inputrec->niter",0,ir1->niter,ir2->niter);
@@ -376,6 +398,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->eConstrAlg",0,ir1->eConstrAlg,ir2->eConstrAlg);
   cmp_int(fp,"inputrec->nProjOrder",0,ir1->nProjOrder,ir2->nProjOrder);
   cmp_real(fp,"inputrec->LincsWarnAngle",0,ir1->LincsWarnAngle,ir2->LincsWarnAngle,ftol);
+  cmp_int(fp,"inputrec->nLincsIter",0,ir1->nLincsIter,ir2->nLincsIter);
   cmp_real(fp,"inputrec->bd_temp",0,ir1->bd_temp,ir2->bd_temp,ftol);
   cmp_real(fp,"inputrec->bd_fric",0,ir1->bd_fric,ir2->bd_fric,ftol);
   cmp_int(fp,"inputrec->ld_seed",0,ir1->ld_seed,ir2->ld_seed);
@@ -407,7 +430,7 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
   ff[0]=fn1;
   ff[1]=fn2;
   for(i=0; (i<2); i++) {
-    read_tpxheader(ff[i],&(sh[i]));
+    read_tpxheader(ff[i],&(sh[i]),FALSE,NULL,NULL);
     snew(xx[i],sh[i].natoms);
     snew(vv[i],sh[i].natoms);
     read_tpx(ff[i],&step,&t,&lambda,&(ir[i]),box[i],&natoms,

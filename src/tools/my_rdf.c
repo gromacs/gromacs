@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_my_rdf_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "string.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_recomb_c = "$Id$";
+
 #include "recomb.h"
 #include "futil.h"
 #include "wgms.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_ns_c = "$Id$";
+
 #ifdef USE_THREADS
 #include <pthread.h> /* must come first */
 #endif
@@ -1754,7 +1754,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       }
     }
     if (debug) 
-      pr_ivec(debug,0,"bHaveLJ",bHaveLJ,fr->ntype);
+      pr_ivec(debug,0,"bHaveLJ",bHaveLJ,fr->ntype,TRUE);
     
     bFirst=FALSE;
   }

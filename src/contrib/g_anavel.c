@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_g_anavel_c = "$Id$";
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -74,27 +74,28 @@ int main(int argc,char *argv[])
   FILE       *fp;
   int        *npts,nmax;
   int        status;
-  int        i,j,idum,step,nframe=0,natoms,index;
-  real       t,temp,rdum,hboxx,hboxy,scale,xnorm;
+  int        i,j,idum,step,nframe=0,index;
+  real       temp,rdum,hboxx,hboxy,scale,xnorm=0;
   real       **profile=NULL;
   real       *t_x=NULL,*t_y,hi=0;
-  rvec       *x,*v;
   t_topology *top;
   int        d,m,n;
   matrix     box;
   atom_id    *sysindex;
   bool       bHaveV,bReadV;
   t_rgb      rgblo = { 0, 0, 1 },rgbhi = { 1, 0, 0 };
-  
+  int        flags = TRX_READ_X | TRX_READ_V;
+  t_trxframe fr;
+
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE ,NFILE,fnm,
 		    asize(pa),pa,asize(desc),desc,0,NULL);
 
   top    = read_top(ftp2fn(efTPX,NFILE,fnm));
-		    
-  natoms = read_first_x_v(&status,ftp2fn(efTRN,NFILE,fnm),&t,&x,&v,box);
-  
+
+  read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
+	
   if (xmax > 0) {
     scale  = 5;
     nmax   = xmax*scale;
@@ -113,21 +114,21 @@ int main(int argc,char *argv[])
     srenew(profile,++nframe);
     snew(profile[nframe-1],nmax+1);
     srenew(t_x,nframe);
-    t_x[nframe-1] = t*1000;
+    t_x[nframe-1] = fr.time*1000;
     hboxx = box[XX][XX]/2;
     hboxy = box[YY][YY]/2;
-    for(i=0; (i<natoms); i++) {
+    for(i=0; (i<fr.natoms); i++) {
       /* determine position dependent on mode */
       switch (mode) {
       case 0:
-	xnorm = sqrt(sqr(x[i][XX]-hboxx) + sqr(x[i][YY]-hboxy));
+	xnorm = sqrt(sqr(fr.x[i][XX]-hboxx) + sqr(fr.x[i][YY]-hboxy));
 	break;
       default:
 	fatal_error(0,"Unknown mode %d",mode);
       }
       index = xnorm*scale;
       if (index <= nmax) {
-	temp = top->atoms.atom[i].m*iprod(v[i],v[i])/(2*BOLTZ);
+	temp = top->atoms.atom[i].m*iprod(fr.v[i],fr.v[i])/(2*BOLTZ);
 	if (temp > hi)
 	  hi = temp;
 	npts[index]++;
@@ -139,8 +140,8 @@ int main(int argc,char *argv[])
 	profile[nframe-1][i] /= npts[i];
       npts[i] = 0;
     }
-  } while (read_next_x_v(status,&t,natoms,x,v,box));
-  close_trn(status);
+  } while (read_next_frame(status,&fr));
+  close_trx(status);
 
   fp = ftp2FILE(efXPM,NFILE,fnm,"w");
   write_xpm(fp,"Temp. profile","T (a.u.)",

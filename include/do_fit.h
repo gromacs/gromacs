@@ -33,14 +33,11 @@
 #ifndef _do_fit_h
 #define _do_fit_h
 
-static char *SRCID_do_fit_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) do_fit.h 1.8 2/2/97"
-#endif /* HAVE_IDENT */
+
 extern real calc_similar_ind(bool bRho,int nind,atom_id *index,real mass[],
 			     rvec x[],rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */

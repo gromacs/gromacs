@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID_buttons_c = "$Id$";
+
 #include <sysstuff.h>
 #include <string.h>
 #include <smalloc.h>

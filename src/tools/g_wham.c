@@ -35,7 +35,7 @@
  */
 
 /* This line is only for CVS version info */
-static char *SRCID_template_c = "$Id$";
+
 static float Temperature=298.0;
 #include "statutil.h"
 #include "typedefs.h"

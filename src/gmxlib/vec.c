@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_vec_c = "$Id$";
+
 #include <typedefs.h>
 #include <vec.h>
 #include <detectcpu.h>
@@ -38,20 +38,11 @@ static char *SRCID_vec_c = "$Id$";
  * Assembly routines are used for Alpha processors, AMD processors
  * with 3DNow. On IBM we use the MASS libraries if they are present.
  * 
- * WE ALSO HAVE AN ASSEMBLY LOOP FOR PENTIUM PROCESSORS, BUT IT CAN
- * ONLY BE USED IF YOUR INPUT AND OUTPUT ARRAYS ARE ALIGNED TO
- * THE CACHE LINE!
- * This is not complicated to do, but you must do it when you allocate
- * your memory. Start by allocating 31 bytes more than you need, put
- * this in a temp variable (e.g. _buf, so you can free it later), and
- * create your aligned array buf with
- * 
- *  buf=(real *) ( ( (unsigned long int)_buf + 31 ) & (~0x1f) );
- *
- * And, of course, simliar for your output buffer. 
- * If you have an SSE-enabled CPU (pentium III and later) and OS
- * (Linux 2.4 and later) you will now be able to perform 1/sqrt(x)
- * in 3-4 clocks/element for long lists!
+ * We cannot call the SSE/3DNow/SSE2/Altivec from this general loop,
+ * since the CPU detection is costly and we dont want to maintain
+ * a separate variable for the cpu detected. Call detectcpu()
+ * yourself, and use the SSE/3DNow/SSE2/Altivec versions directly
+ * if the flags match. 
  */
  
 void vecinvsqrt(real in[],real out[],int n)
@@ -62,17 +53,15 @@ void vecinvsqrt(real in[],real out[],int n)
    sqrtiv_(in,out,&n);
 #  else /* SINGLE */
    ssqrtiv_(in,out,&n);
-#  endif    
+#  endif /* SINGLE/DOUBLE */   
 #elif defined HAVE_LIBMASSV_ANY
  /* On IBM we should definitely use vectorized MASS if present. */ 
 #  ifdef DOUBLE
    vrsqrt(out,in,&n);
 #  else /* SINGLE */
    vsrsqrt(out,in,&n);
-#  endif 
-#else /* not alpha, and not IBM with MASS */
-   /* Software routines and calls to x86 assembly. */
-#ifdef SOFTWARE_INVSQRT
+#  endif  /* SINGLE/DOUBLE */   
+#elif defined SOFTWARE_INVSQRT /* gromacs software 1/sqrt*/
   const real  half=0.5;
   const real  three=3.0;
   t_convert   result,bit_pattern;
@@ -81,59 +70,12 @@ void vecinvsqrt(real in[],real out[],int n)
   real        x;
 #ifdef DOUBLE
   real        y;
-#endif
-#endif /* VARIABLES FOR SOFTWARE_INVSQRT */
-  int i;
- 
-#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE) 
-  static bool bFirst=TRUE;
-  static int cpu_capabilities;
-  
-  if(bFirst) {
-    cpu_capabilities=detect_cpu(NULL);
-    bFirst=FALSE;
-  }
-
-  if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
-    vecinvsqrt_sse(in,out,n);
-  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
-    vecinvsqrt_3dnow(in,out,n);
-  else
-#endif /* no x86 optimizations */
-#if (defined USE_X86_SSE2 && defined DOUBLE) 
-  static bool bFirst=TRUE;
-  static int cpu_capabilities;
-  
-  if(bFirst) {
-    cpu_capabilities=detect_cpu(NULL);
-    bFirst=FALSE;
-  }
-
-  if((cpu_capabilities & X86_SSE2_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE2 data must be cache aligned */
-    vecinvsqrt_sse2(in,out,n);
-  else
-#endif /* no sse2 optimizations */
-#ifdef SOFTWARE_INVSQRT
-    for(i=0;i<n;i++) {
-      x=in[i];
-      bit_pattern.fval=x;
-      exp   = EXP_ADDR(bit_pattern.bval);
-      fract = FRACT_ADDR(bit_pattern.bval);
-      result.bval=cinvsqrtexptab[exp] | cinvsqrtfracttab[fract];
-      lu    = result.fval;
-      
-#ifdef DOUBLE
-      y=(half*lu*(three-((x*lu)*lu)));
-      out[i]=(half*y*(three-((x*y)*y)));
-#else
-      out[i]=(half*lu*(three-((x*lu)*lu)));
-#endif
-    }
-#else  /* no gmx invsqrt */
+#endif /* DOUBLE */
+#else /* NO INVSQRT */
+  int i; 
     for(i=0;i<n;i++)
       out[i]=1.0f/sqrt(in[i]);
 #endif /* SOFTWARE_INVSQRT */
-#endif
 }
 
 
@@ -153,32 +95,6 @@ void vecrecip(real in[],real out[],int n)
 
   int i;
 
-#if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
-  static bool bFirst=TRUE;
-  static int cpu_capabilities;
-
-  if(bFirst) {
-    cpu_capabilities=detect_cpu(NULL);
-    bFirst=FALSE;
-  }
-  if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
-    vecrecip_sse(in,out,n);
-  else if(cpu_capabilities & X86_3DNOW_SUPPORT)
-    vecrecip_3dnow(in,out,n);
-  else
-#endif /* no x86 optimizations */
-#if (defined USE_X86_SSE2 && defined DOUBLE)
-  static bool bFirst=TRUE;
-  static int cpu_capabilities;
-
-  if(bFirst) {
-    cpu_capabilities=detect_cpu(NULL);
-    bFirst=FALSE;
-  }
-  if((cpu_capabilities & X86_SSE2_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE2 data must be cache aligned */
-    vecrecip_sse2(in,out,n);
-  else
-#endif /* no sse2 optimizations */
     for(i=0;i<n;i++)
       out[i]=1.0f/(in[i]);
 #endif

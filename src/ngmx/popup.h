@@ -33,10 +33,6 @@
 #ifndef _popup_h
 #define _popup_h
 
-static char *SRCID_popup_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) popup.h 1.3 11/23/92"
-#endif /* HAVE_IDENT */
 #include "x11.h"
 #include "xutil.h"
 

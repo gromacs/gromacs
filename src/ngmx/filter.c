@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_filter_c = "$Id$";
+
 #include <string.h>
 #include "sysstuff.h"
 #include "futil.h"

@@ -33,7 +33,6 @@
 #ifndef _tpxio_h
 #define _tpxio_h
 
-static char *SRCID_tpxio_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -86,8 +85,16 @@ extern int open_tpx(char *fn,char *mode);
 extern void close_tpx(int fp);
 /*  Close the file corresponding to fp */
   
-extern void read_tpxheader(char *fn,t_tpxheader *tpx);
-/* Read the header from a tpx file and then close it again */
+extern void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK, int *version, int *generation);
+/* Read the header from a tpx file and then close it again.
+ * By setting TopOnlyOK to true, it is possible to read future
+ * versions too (we skip the changed inputrec), provided we havent
+ * changed the topology description. If it is possible to read
+ * the inputrec it will still be done even if TopOnlyOK is TRUE.
+ *
+ * The version and generation if the topology (see top of tpxio.c)
+ * are returned in the two last arguments.
+ */
 
 extern void write_tpx(char *fn,int step,real t,real lambda,
 		      t_inputrec *ir,rvec *box,int natoms,

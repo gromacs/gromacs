@@ -31,7 +31,7 @@
    CH3     C
      C     O
 [ impropers ]
-    O     C   +N    CH3     improper_O_C_X_Y
+     C   CH3    +N     O     improper_O_C_X_Y
 
 [ ALA ]
  [ atoms ] 

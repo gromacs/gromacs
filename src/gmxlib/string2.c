@@ -29,7 +29,9 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_string2_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -230,7 +232,7 @@ char *gmx_strdup(const char *src)
   return dest;
 }
 
-char *wrap_lines(char *buf,int line_width, int indent)
+char *wrap_lines(const char *buf,int line_width, int indent)
 {
   char *b2;
   int i,i0,i2,j,b2len,lspace=0,l2space=0;

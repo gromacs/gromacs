@@ -33,7 +33,7 @@
 #ifndef _xlate_h
 #define _xlate_h
 
-static char *SRCID_xlate_h = "$Id$";
+
 extern void rename_atoms(t_atoms *atoms,t_symtab *symtab);
 
 #endif

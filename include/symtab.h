@@ -33,14 +33,11 @@
 #ifndef _symtab_h
 #define _symtab_h
 
-static char *SRCID_symtab_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) symtab.h 1.6 12/16/92"
-#endif /* HAVE_IDENT */
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -73,7 +70,7 @@ extern void done_symtab(t_symtab *symtab);
      /* Frees the space allocated by the symbol table, including all
       * entries in it */
 
-extern char **put_symtab(t_symtab *symtab,char *name);
+extern char **put_symtab(t_symtab *symtab,const char *name);
      /* Enters a string into the symbol table symtab, if it was not
       * available, a reference to a copy is returned else a reference 
       * to the earlier entered value is returned. Strings are trimmed

@@ -29,7 +29,16 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_copyrite_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#ifdef USE_THREADS
+#include <pthread.h>
+#endif
+/* This file is completely threadsafe - keep it that way! */
+
 #include <string.h>
 #include <ctype.h>
 #include "sysstuff.h"
@@ -90,11 +99,16 @@ void pr_difftime(FILE *out,double dt)
   fprintf(out,"\n");
 }
 
+
 bool be_cool(void)
 {
-  static int cool=-1;
+  int cool=-1;
   char *envptr;
-  
+
+  /* Yes, it is bad to check the environment variable every call,
+   * but we dont call this routine often, and it avoids using 
+   * a mutex for locking the variable...
+   */
   if (cool == -1) {
     envptr=getenv("IAMCOOL");
 
@@ -103,6 +117,7 @@ bool be_cool(void)
     else
       cool=1;
   }
+
   return cool;
 }
 
@@ -113,7 +128,7 @@ void space(FILE *out, int n)
 
 void f(char *a){int i;for(i=0;i<(int)strlen(a);i++)a[i]=~a[i]; }
 
-static void sp_print(FILE *out,char *s)
+static void sp_print(FILE *out,const char *s)
 {
   int slen;
   
@@ -122,7 +137,7 @@ static void sp_print(FILE *out,char *s)
   fprintf(out,"%s\n",s);
 }
 
-static void ster_print(FILE *out,char *s)
+static void ster_print(FILE *out,const char *s)
 {
   int  slen;
   char buf[128];
@@ -133,61 +148,70 @@ static void ster_print(FILE *out,char *s)
   fprintf(out,"%s\n",buf);
 }
 
-static int nran=0;
 
-static char *pukeit(char *db,char *defstring)
+static char *pukeit(char *db,char *defstring, char *retstring, int retsize, int *cqnum)
 {
-  static char hulp[STRLEN];
   FILE *fp;
   char **help;
   int  i,nhlp;
   int  seed;
-  
+ 
   if (!be_cool())
     return defstring;
   else if ((fp = low_libopen(db,FALSE)) != NULL) {
     nhlp=fget_lines(fp,&help);
     fclose(fp);
     seed=time(NULL);
-    nran=nhlp*rando(&seed);
-    if (strlen(help[nran]) >= STRLEN)
-      help[nran][STRLEN-1] = '\0';
-    strcpy(hulp,help[nran]);
-    f(hulp);
+    *cqnum=nhlp*rando(&seed);
+    if (strlen(help[*cqnum]) >= STRLEN)
+      help[*cqnum][STRLEN-1] = '\0';
+    strncpy(retstring,help[*cqnum],retsize);
+    f(retstring);
     for(i=0; (i<nhlp); i++)
       sfree(help[i]);
     sfree(help);
-  
-    return hulp;
+    return retstring;
   }
   else
     return defstring;
 }
 
-char *bromacs(void)
+
+char *bromacs(char *retstring, int retsize)
 {
+  int dum;
+
   return pukeit("bromacs.dat",
-                "Groningen Machine for Chemical Simulation");
+                "Groningen Machine for Chemical Simulation",
+		retstring,retsize,&dum);
 }
 
-char *cool_quote(void)
+
+char *cool_quote(char *retstring, int retsize, int *cqnum)
 {
-  static char buf[1024];
+  char tmpstr[1024];
   char *s,*ptr;
+  int tmpcq,*p;
+  
+  if(cqnum!=NULL)
+    p=cqnum;
+  else
+    p=&tmpcq;
   
   /* protect audience from explicit lyrics */
-  s = pukeit("gurgle.dat","Thanx for Using GROMACS - Have a Nice Day");
+  pukeit("gurgle.dat","Thanx for Using GROMACS - Have a Nice Day",
+	 tmpstr,1024,p);
 
-  if (be_cool() && ((ptr=strchr(s,'_')) != NULL)) {
+  if (be_cool() && ((ptr=strchr(tmpstr,'_')) != NULL)) {
     *ptr='\0';
     ptr++;
-    sprintf(buf,"\"%s\" %s",s,ptr);
+    sprintf(retstring,"\"%s\" %s",tmpstr,ptr);
   }
   else {
-    strcpy(buf,s);
+    strncpy(retstring,tmpstr,1023);
   }
     
-  return buf;
+  return retstring;
 }
 
 void CopyRight(FILE *out,char *szProgram)
@@ -198,7 +222,8 @@ void CopyRight(FILE *out,char *szProgram)
 #define NCR (int)asize(CopyrightText)
 #define NGPL (int)asize(GPLText)
 
-  char buf[256];
+  char buf[256],tmpstr[1024];
+  
   char *ptr;
   
   int i;
@@ -208,7 +233,7 @@ void CopyRight(FILE *out,char *szProgram)
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
   
-  ptr=bromacs();
+  ptr=bromacs(tmpstr,1023);
   sp_print(out,ptr); 
   fprintf(out,"\n");
 
@@ -216,6 +241,7 @@ void CopyRight(FILE *out,char *szProgram)
   fprintf(out,"\n");
 
   fprintf(out,"\n");
+
   sp_print(out,"PLEASE NOTE: THIS IS A BETA VERSION\n");
   
   fprintf(out,"\n");
@@ -238,14 +264,18 @@ void CopyRight(FILE *out,char *szProgram)
 
 void thanx(FILE *fp)
 {
+  char tmpbuf[1024];
   char *cq,*c;
+  int cqnum;
 
   /* protect the audience from suggestive discussions */
-  cq=cool_quote();
+  cq=cool_quote(tmpbuf,1023,&cqnum);
   
   if (be_cool()) {
     snew(c,strlen(cq)+20);
-    sprintf(c,"gcq#%d: %s\n",nran,cq);
+
+    sprintf(c,"gcq#%d: %s\n",cqnum,cq);
+
     fprintf(fp,"\n%s\n",c);
     sfree(c);
   }
@@ -389,16 +419,16 @@ void please_cite(FILE *fp,char *key)
   fflush(fp);
 }
 
-char *GromacsVersion()
+/* This routine only returns a static (constant) string, so we use a 
+ * mutex to initialize it. Since the string is only written to the
+ * first time, there is no risk with multiple calls overwriting the
+ * output for each other.
+ */
+const char *GromacsVersion()
 {
-  static bool bFirst=TRUE;
-  static char ver_string[100];
 
-  /* The version number is defined by the autoconf scripts */
-  if(bFirst) {
-    sprintf(ver_string,"VERSION %s",VERSION);
-    bFirst=FALSE;
-  }
+  /* Concatenate the version info during preprocessing */
+  static const char ver_string[]="VERSION " VERSION;
   
   return ver_string;
 }

@@ -29,7 +29,8 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_fourn_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
 #include <math.h>
 #include "typedefs.h"
 #include "nr.h"

@@ -33,7 +33,6 @@
 #ifndef _vec_h
 #define _vec_h
 
-static char *SRCID_vec_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #define gmx_inline inline
@@ -172,16 +171,20 @@ extern void vecinvsqrt(real in[],real out[],int n);
 /* Perform out[i]=1.0/sqrt(in[i]) for n elements */
 
 
-
 extern void vecrecip(real in[],real out[],int n);
-/* Perform out[i]=1.0/(in[i]) for n elements 
- * Note that this function can be much faster than writing
- * the loop yourself, even if the recip(x) is slow on your machine.
- * Not only do we get better cache usage in vecrecip, but it
- * might be possible to use optimized vector libraries.
+/* Perform out[i]=1.0/(in[i]) for n elements */
+
+/* Note: If you need a fast version of vecinvsqrt 
+ * and/or vecrecip, call detectcpu() and run the SSE/3DNow/SSE2/Altivec
+ * versions if your hardware supports it.
+ *
+ * To use those routines, your memory HAS TO BE CACHE-ALIGNED.
+ * Start by allocating 31 bytes more than you need, put
+ * this in a temp variable (e.g. _buf, so you can free it later), and
+ * create your aligned array buf with
+ * 
+ *  buf=(real *) ( ( (unsigned long int)_buf + 31 ) & (~0x1f) );
  */
-
-
 
 
 static inline void rvec_add(const rvec a,const rvec b,rvec c)

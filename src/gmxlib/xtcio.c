@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_xtcio_c = "$Id$";
+
 #include <string.h>
 #include "typedefs.h"
 #include "xdrf.h"

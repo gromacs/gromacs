@@ -33,10 +33,6 @@
 #ifndef _readir_h
 #define _readir_h
 
-static char *SRCID_readir_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) readir.h 1.20 9/30/97"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 #include "string2.h"
@@ -44,7 +40,7 @@ static char *SRCID_readir_h = "$Id$";
 
 enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
 
-static char *constraints[eshNR+1]    = { 
+static const char *constraints[eshNR+1]    = { 
     "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL 
   };
 
@@ -65,6 +61,7 @@ typedef struct {
   int  seed;
   int  eDisre;
   bool bOrire;
+  int  eDihre;
   bool bMorse;
 } t_gromppopts;
 

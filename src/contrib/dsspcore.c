@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_dsspcore_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -37,285 +37,6 @@ static char *SRCID_dsspcore_c = "$Id$";
 /* Output from p2c, the Pascal-to-C translator */
 /* From input file "dssp.p" */
 
-
-
-/* ------------------------------------------------------------------ */
-/*
-
-DSSP version October 1988.
-This copy for Rudi Drunen at Univ_Groningen
-who have agreed to the following software license agreement:
-
-
-An academic license for the DSSP program
-((c) W. Kabsch, C. Sander and MPI-MF, 1983, 1985, 1988)
-is granted to in exchange for the following commitments:
-
-I hereby certify that
-
-        (1) I am an academic user at an academic research institution. In
-            using the software, I will respect the interests of the authors
-            and their institutions.
-
-        (2) I will not use the software in commercial activities without
-            a written commercial license agreement; commercial activities
-            include, in particular, work under contract from a commercial
-            company.
-
-        (3) I will not redistribute the software to others outside of my
-            immediate research group. I will suggest to other interested
-            research groups to contact the authors directly.
-
-        (4) I will not alter or suppress the run-time copyright message.
-
-        (5) I will acknowledge the program authors on any publication of
-            scientific results based in part on use of the program and
-            cite the article in which the program was described.
-
-        (6) I will report evidence of program bugs to the authors.
-
-        (7) I will send the source code of any bug corrections and program
-            extensions, major or minor, to the original authors, for free
-            academic use. If I have made major extensions which are incor-
-            porated by the authors, I reserve the right to be appropriately
-            included in any future commercial license agreement.
-
-        (8) I will not extract part of the software, e.g. modules or sub-
-            routines, for use in other contexts without permission by the
-            authors.
-
-        (9) I will not use the program in the context of classified research.
-*/
-/* PREVIOUS RELEASE: VERSION OCTOBER 1985                             */
-/* PREVIOUS RELEASE: VERSION JUNE 1983                                */
-/* LANGUAGE: STANDARD PASCAL WITH 128 CHARACTER ASCII SET             */
-/* AUTHORS AND COPYRIGHT (1983,1985,1988):
-   Wolfgang Kabsch and Chris Sander, Max Planck Institut
-   fuer Medizinische Forschung, Jahnstr. 29, 6900 Heidelberg, Germany
-   Telephone: +49-6221-486 276  Telex: 461505 mpimf d
-   Bitnet:    KABSCH@EMBL
-   Current address for Chris Sander:
-   Biocomputing, EMBL, 6900 Heidelberg, Germany
-   Telephone: +49-6221-387 361 Telex: 461613 embl d
-   Telefax:   +49-6221-387 306
-   Bitnet:    SANDER@EMBL
-   Do report errors if you find any.
-   Reference: Kabsch,W. and Sander,C. (1983) Biopolymers 22, 2577-2637*/
-/*--------------------------------------------------------------------*/
-/* DEFINES SECONDARY STRUCTURE AND SOLVENT EXPOSURE OF PROTEINS FROM
-   ATOMIC COORDINATES AS GIVEN BY THE BROOKHAVEN PROTEIN DATA BANK.   */
-/*--------------------------------------------------------------------*/
-/* This program including sample input and output files for dataset 1PPT
-   is available from the authors in exchange for an academic or
-   commercial license agreement. The program is no longer available
-   from the Brookhaven Protein Data Bank */
-/*--------------------------------------------------------------------*/
-/* CORRECTION AND MODIFICATION LOG SINCE JUNE 1983 */
-/* (1) MODIFICATIONS THAT AFFECT OUTPUT ON FILE TAPEOUT FOR AT LEAST ONE
-       OF THE 62 PROTEIN DATA SETS IN THE 1983 BIOPOLYMERS PAPER:
-   - SIDECHAIN ATOMS MORE THAN MAXDIST ANGSTROM DISTANT FROM ATOM CA ARE
-     DECLARED ILLEGAL AND IGNORED. OUTPUT CHANGE: ACCESSIBILITY VALUES
-     FOR ASN 76 OF 1SBT (ILLEGAL ATOM OD1) AND PRO 49 OF 156B (ILLEGAL
-     ATOM UNK).
-   - ANY RESIDUE WITH INCOMPLETE BACKBONE IS IGNORED. OUTPUT CHANGE:
-     CHAIN BREAK BETWEEN RESIDUE SER 11 AND ILE 16 IN 2GCH
-     (DUE TO INCOMPLETE COORDINATES FOR SER 11) IS NOW CORRECT.
-   (2) MODIFICATIONS THAT DO NOT AFFECT OUTPUT ON FILE TAPEOUT FOR ANY
-       OF THE 62 PROTEIN DATA SETS IN THE 1983 BIOPOLYMERS PAPER:
-   - SPELLING OF FLAGCHIRALITY AND TESTSSBOND CORRECTED.
-   - WARNING MESSAGE FOR RESIDUES WITH NON-STANDARD NUMBER OF
-     SIDECHAIN ATOMS HAS BEEN ADDED. FOR EXAMPLE, THIS ALERTS THE USER
-     TO BAD DATA FOR RESIDUES 8,12,21,24 AND 44 OF DATA SET 2RXN.
-   - WARNING MESSAGE FOR RESIDUES IGNORED DUE TO NON-STANDARD RESIDUE
-     NAME SUCH AS 'ACE' AND 'FOR' HAS BEEN ADDED.
-   - WARNING MESSAGE FOR ALTERNATE ATOM LOCATION IDENTIFIER HAS BEEN
-     ADDED. FOR EXAMPLE, THE USER IS NOW WARNED THAT ATOM CH2 IN ANY
-     TRP OF DATA SET 1APP IS IGNORED DUE TO BAD ALTERNATE LOCATION
-     IDENTIFIER '2'.
-   WE THANK STEVEN SHERIFF, FRANCOIS COLONNA AND JOHN MOULT FOR
-   REPORTING PROBLEMS AND STEVEN SHERIF, JANET THORNTON AND
-   WILLIE TAYLOR FOR RESULTS OF TEST RUNS ON VAX COMPUTERS.
-
-   Changes after 1985:
-
-   - program speeded up by a factor of two or three by avoiding use
-     of square root.
-   - hydrogen atoms in data set ignored on input (H of NH of backbone
-     is built as before)
-   - 18-AUG-1988: CADIST=9.0, replacing CADIST=8.0. Has affected output
-     for 63/300 proteins in a minor way. Thanks to Jean Richelle (Bruxelles)
-     for pointing out this bug.
-
-     Output changes due to change in parameter CADIST (8 to 9 Angstrom) :
-     additional backbone-backbone Hbonds found with slight
-     adjustments in secondary structure summary. In about 300 protein
-     data sets from the Fall 1988 PDB release, 63 additional
-     Hbonds were found, i.e. 0.2 Hbonds per protein (29 of type
-     i,i+5;  16 of type i,i+4; 6 of type i,i+3; 10 in antiparallel beta
-     bridges and 2 in a parallel beta bridge). These additional
-     Hbonds affected the secondary structure summary of 26 of these
-     protein data sets in a minor way, typically joining a 4-turn to
-     an alpha-helix, changing a geometrical turn to a hydrogen-
-     bonded turn or adding an extra residue pair to a beta ladder.
-     The changes are (using _ for blank):
-
-     [protein id, old secstruc summary > corrected summary]
-
-     1FC2_E > EE   and  _T > ET
-     1GP1GGG > HHH
-     1HBSS > T
-     1HDSS > T and  GGGGGG > TTHHHH
-     1HFM__ > TT
-     1HKGSSS > TTT
-     1IG2S_ > TT
-     1LDX GGG > HTT
-     1MEV__ > TT  and  _BS > TBS  and  SSS > TTS
-     1PFCSSS > TTS
-     1PP2_E > EE  and  _S > ES
-     1RN3E_SS_E > EEEEEE  and _E > EE  (>3-res beta bulge)
-     1RNSsame as 1RN3
-     2ATCHH > TT
-     2CABB_ > EE
-     2CPPSS > TT  and  GGGGGG > HHHHTT
-     2LYZT > H
-     2MDHSSS > TTT
-     3CPA TTT > HHH
-     4CATTTT > HHH
-     4SBVS > T
-     5API_ > B
-     5CPATTT > HHH
-     7LYZS > H
-     8CAT_ > B  and  _ > B
-     8LYZT > H
-
-     Note that this bugfix results in a small variation in the total
-     number of Hbonds, compared to the variation which would
-     result, say, from changing the (somewhat arbitrary) cutoff of
-     -0.5 kcal/mol for the Hbond electrostatic potential energy. We
-     cannot here solve the fundamental difficulty of arbitrary
-     cutoffs involved in extracting binary classifications (an Hbond
-     exists, yes/no) from real numbers (coordinates, energies).
-     However, for most purposes the secondary structure summary agrees
-     will with anyone's intuitive definition, especially for well-refined and
-     high resolution structures. For a more clearcut assignment of protein
-     substructure, we recommend using the detailed H-bond and other assignments
-     in the columns following the summary column, i.e. columns 19-38 (xxx):
-
-     ....;....1....;....2....;....3....;....4....;....5....;....6....;....7..
-                       xxxxxxxxxxxxxxxxxxxx
-                       .-- 3-turns/helix
-                       |.-- 4-turns/helix
-                       ||.-- 5-turns/helix
-                       |||.-- geometrical bend
-                       ||||.-- chirality
-                       |||||.-- beta bridge label
-                       ||||||.-- beta bridge label
-                       |||||||   .-- beta bridge partner resnum
-                       |||||||   |   .-- beta bridge partner resnum
-                       |||||||   |   |.-- beta sheet label
-                       |||||||   |   ||   .-- solvent accessibility
-                       |||||||   |   ||   |
-        35   47   I  E     +     0   0    2
-        36   48   R  E >  S- K   0  39C  97
-        37   49   Q  T 3  S+     0   0   86    (example from 1EST)
-        38   50   N  T 3  S+     0   0   34
-        39   51   W  E <   -KL  36  98C   6
-                                                                           */
-/*--------------------------------------------------------------------*/
-/* GENERAL PROGRAM INSTALLATION GUIDE. */
-/* (1) THE PROGRAM REQUIRES THE FULL STANDARD ASCII 128 CHARACTER SET,
-       IN PARTICULAR LOWER CASE LETTERS 'abcdefg....'.
-   (2) STANDARD PASCAL MAY NOT RECOGNIZE REAL NUMBERS SUCH AS .1, +.1,
-       -.1 ON INPUT. CHANGE TO 0.1,+0.1,-0.1.
-   (3) THE NON-STANDARD PROCEDURE 'DATE' RETURNS THE CURRENT DAY, MONTH,
-       AND YEAR. IF THE PROCEDURE IS NOT CALLED (LINE COMMENTED OUT)
-       THE PSYCHEDELIC DATE DEC 24, 2001 IS RETURNED. YOU MAY  REPLACE
-       'DATE' BY THE CORRESPONDING PROCEDURE FROM YOUR PASCAL
-       IMPLEMENTATION. THE EXAMPLE GIVEN WORKS IN DEC VAX VMS 5.0.
-   (4) DUE TO INCOMPATIBLE ASCII CODES, SQUARE BRACKETS '[' AND ']'
-       MAY APPEAR AS '!','?' ETC. USE YOUR EDITOR TO CONVERT THESE.   */
-/* INSTALLATION GUIDE FOR VAX/VMS USERS. */
-/* (1) THE /OPTIMIZE OPTION OF THE PASCAL COMPILER PRODUCED
-       INCORRECT CODE ON THE VAX 8600 AT EMBL RUNNING UNDER VMS V4.2.
-       LATER VERSIONS OF VMS (E.G. VMS 5.0) PRODUCED CORRECT CODE.
-       IF IN DOUBT, COMPILE USING PASCAL /NOOPTIMIZE.
-   (2) COPY BROOKHAVEN DATA BANK COORDINATE INPUT TO A FILE NAMED
-       TAPEIN.DAT . OUTPUT WILL BE IN A FILE NAMED TAPEOUT.DAT        */
-/* IMPLEMENTATION ON OTHER COMPUTERS */
-/* (1) NORD-500. EXECUTION TIME COMPARABLE TO VAX 780.
-   (2) SUN-3.    EXECUTION TIME COMPARABLE TO VAX 780.
-                 Compile using: pc -L
-                 in ORDER to map upper case letters in keywords
-                 and identifiers to lower case.
-   (3) ATARI 520 ST. RUNS FACTOR 60 SLOWER THAN NORD-500 DUE TO
-       SOFTWARE-EMULATED FLOATING POINT OPERATIONS ON MC68000.        */
-/*--------------------------------------------------------------------*/
-/* INPUT/OUTPUT FILES. */
-/* INPUT:   DEFAULT  INPUT UNIT, E.G. YOUR TERMINAL
-   OUTPUT:  DEFAULT OUTPUT UNIT, E.G. YOUR TERMINAL,
-            USED FOR RUN-TIME MESSAGES. WARNINGS AND ERRORS LOOK
-            LIKE THIS: !!! TEXT !!!
-   TAPEIN:  FILE WITH PROTEIN DATA BANK COORDINATES, E.G. PDB3PTI.COO
-   TAPEOUT: DSSP OUTPUT OF LINE LENGTH 128, E.G. PAPER PRINTER        */
-/*--------------------------------------------------------------------*/
-/* DESCRIPTION OF OUTPUT ON FILE TAPEOUT:
-   LINE LENGTH OF OUTPUT IS 128 CHARCTERS.
-   FOR DEFINITONS, SEE ABOVE BIOPOLYMERS ARTICLE.
-   IN ADDITION NOTE:
-   HISTOGRAMS - E.G. 2 UNDER COLUMN '8' IN LINE 'RESIDUES PER ALPHA
-            HELIX' MEANS: THERE ARE 2 ALPHA HELICES OF LENGTH  8
-            RESIDUES IN THIS DATA SET.
-   #  RESIDUE AA STRUCTURE BP1 BP2 ACC ..ETC..FOR EACH RESIDUE I:
-   #  RESIDUE - TWO COLUMNS OF RESIDUE NUMBERS. FIRST COLUMN IS DSSP'S
-            SEQUENTIAL RESIDUE NUMBER, STARTING AT THE FIRST
-            RESIDUE ACTUALLY IN THE DATA SET AND INCLUDING CHAIN BREAKS;
-            THIS NUMBER IS USED TO REFER TO RESIDUES THROUGHOUT. SECOND
-            COLUMN GIVES CRYSTALLOGRAPHERS' 'RESIDUE SEQUENCE
-            NUMBER','INSERTION CODE' AND 'CHAIN IDENTIFIER' (SEE PROTEIN
-            DATA BANK FILE RECORD FORMAT MANUAL), GIVEN FOR REFERENCE
-            ONLY AND NOT USED FURTHER..
-   AA -     ONE LETTER AMINO ACID CODE, LOWER CASE FOR SS-BRIDGE CYS.
-   STRUCTURE - SEE BIOPOLYMERS
-   BP1 BP2  - RESIDUE NUMBER OF FIRST AND SECOND BRIDGE PARTNER
-            FOLLOWED BY ONE LETTER SHEET LABEL
-   ACC -    NUMBER OF WATER MOLECULES IN CONTACT WITH THIS RESIDUE *10.
-            OR RESIDUE WATER EXPOSED SURFACE IN ANGSTROM**2.
-   N-H-->O ETC. -  HYDROGEN BONDS. E.G. -3,-1.4 MEANS: IF THIS RESIDUE
-            IS RESIDUE I THEN N-H OF I IS H-BONDED TO C=O OF I-3
-            WITH AN ELECTROSTATIC H-BOND ENERGY OF -1.4 KCAL/MOL.
-   TCO -    COSINE OF ANGLE BETWEEN C=O OF RESIDUE I AND C=O OF
-            RESIDUE I-1. FOR ALPHA-HELICES, TCO IS NEAR +1, FOR
-            BETA-SHEETS TCO IS NEAR -1. NOT USED FOR STRUCTURE
-            DEFINITION.
-   KAPPA -  VIRTUAL BOND ANGLE (BEND ANGLE) DEFINED BY THE THREE
-            C-ALPHA ATOMS OF RESIDUES I-2,I,I+2. USED TO DEFINE
-            BEND (STRUCTURE CODE 'S').
-   ALPHA -  VIRTUAL TORSION ANGLE (DIHEDRAL ANGLE) DEFINED BY THE FOUR
-            C-ALPHA ATOMS OF RESIDUES I-1,I,I+1,I+2. USED TO DEFINE
-            CHIRALITY (STRUCTURE CODE '+' OR '-').
-   PHI PSI - IUPAC PEPTIDE BACKBONE TORSION ANGLES
-   X-CA Y-CA Z-CA -  ECHO OF C-ALPHA ATOM COORDINATES              */
-/*--------------------------------------------------------------------*/
-/* WORDS OF CAUTION */
-/* THE VALUES FOR SOLVENT EXPOSURE MAY NOT MEAN WHAT YOU THINK!
-    (A) EFFECTS LEADING TO LARGER THAN EXPECTED VALUES:
-     SOLVENT EXPOSURE CALCULATION IGNORES UNUSUAL RESIDUES, LIKE ACE,
-     OR RESIDUES WITH INCOMPLETE BACKBONE, LIKE ALA 1 OF DATA SET 1CPA.
-     IT ALSO IGNORES HETATOMS, LIKE A HEME OR METAL LIGANDS.
-     ALSO, SIDE CHAINS MAY BE INCOMPLETE (AN ERROR MESSAGE IS WRITTEN).
-    (B) EFFECTS LEADING TO SMALLER THAN EXPECTED VALUES:
-     IF YOU APPLY THIS PROGRAM TO PROTEIN DATA BANK DATA SETS
-     CONTAINING OLIGOMERS, SOLVENT EXPOSURE IS FOR THE ENTIRE ASSEMBLY,
-     NOT FOR THE MONOMER. ALSO, ATOM OXT OF C-TERMINAL RESIDUES IS
-     TREATED LIKE A SIDE CHAIN ATOM IF IT IS LISTED AS PART OF THE LAST
-     RESIDUE. ALSO, PEPTIDE SUBSTRATES, WHEN LISTED AS ATOMS RATHER THAN
-     HETATOMS, ARE TREATED AS PART OF THE PROTEIN, E.G. RESIDUES 499 S
-     AND 500 S IN 1CPA.                                               */
-/* UNKNOWN OR UNUSUAL RESIDUES ARE NAMED X ON OUTPUT AND THEY ARE
-   NOT CHECKED FOR STANDARD NUMBER OF SIDECHAIN ATOMS.                */
-/* ALL EXPLICIT WATER MOLECULES, LIKE OTHER HETATOMS, ARE IGNORED.    */
-/* END OF INTRODUCTORY COMMENTS */
-/**********************************************************************/
 
 
 /************************************************************
@@ -1798,6 +1519,7 @@ int code;
         exit(EXIT_FAILURE);
     fprintf(stderr, "%s\n", _ShowEscape(buf, P_escapecode, P_ioresult, ""));
     exit(EXIT_FAILURE);
+    return 0;
 }
 
 int _EscIO(code)
@@ -2827,8 +2549,8 @@ long i, j;
   backbone *WITH;
 
   WITH = &chain[i];
-  return (WITH->acceptor[0].residue == j && WITH->acceptor[0].energy < HBHIGH ||
-	  WITH->acceptor[1].residue == j && WITH->acceptor[1].energy < HBHIGH);
+  return ((WITH->acceptor[0].residue == j && WITH->acceptor[0].energy < HBHIGH) ||
+	  (WITH->acceptor[1].residue == j && WITH->acceptor[1].energy < HBHIGH));
 }  /* Testbond */
 
 
@@ -3192,13 +2914,17 @@ Local Void Extendladder()
 	switch (WITH->btyp) {
 
 	case parallel:
-	  bulge = (jb1 - WITH->je < 6 && ib1 - WITH->ie < 3 ||
-		   jb1 - WITH->je < 3) & Nochainbreak(WITH->je, jb1);
+	  bulge = ((jb1 - WITH->je < 6 && ib1 - WITH->ie < 3) ||
+		   (jb1 - WITH->je < 3) & Nochainbreak(WITH->je, jb1));
 	  break;
 
 	case antiparallel:
-	  bulge = (WITH->jb - je1 < 6 && ib1 - WITH->ie < 3 ||
-		   WITH->jb - je1 < 3) & Nochainbreak(je1, WITH->jb);
+	  bulge = ((WITH->jb - je1 < 6 && ib1 - WITH->ie < 3) ||
+		   (WITH->jb - je1 < 3) & Nochainbreak(je1, WITH->jb));
+	  break;
+	default:
+	  printf("Uh-oh.. this shouln't happen..\n");
+	  exit(0);
 	  break;
 	}
       }
@@ -3249,8 +2975,8 @@ long l1, l2;
   ie2 = bridgetable[l2 - 1].ie;
   jb2 = bridgetable[l2 - 1].jb;
   je2 = bridgetable[l2 - 1].je;
-  return (ie1 >= ib2 && ib1 <= ie2 || ie1 >= jb2 && ib1 <= je2 ||
-	  je1 >= ib2 && jb1 <= ie2 || je1 >= jb2 && jb1 <= je2);
+  return ((ie1 >= ib2 && ib1 <= ie2) || (ie1 >= jb2 && ib1 <= je2) ||
+	  (je1 >= ib2 && jb1 <= ie2) || (je1 >= jb2 && jb1 <= je2));
 }  /* Link */
 
 /***/

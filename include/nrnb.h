@@ -33,14 +33,10 @@
 #ifndef _nrnb_h
 #define _nrnb_h
 
-static char *SRCID_nrnb_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) nrnb.h 1.9 2/2/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 
 extern void init_nrnb(t_nrnb *nrnb);

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_constr_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -268,7 +268,6 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   static real      *bllen,*blc,*blcc,*blm,*tmp1,*tmp2,*tmp3,*lincslam,
                    *bllen0,*ddist;
   static int       nc;
-  static bool      bItEqOrder;
 
   char             buf[STRLEN];
   int              b,i,j,nit,warn,p_imax,error;
@@ -284,7 +283,6 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	       &r,&bla1,&bla2,&blnr,&blbnb,
 	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
 	       &bllen0,&ddist);
-    bItEqOrder = (getenv("GMX_ACCURATE_LINCS") != NULL);
   } 
   else if (nc != 0) {
     /* If there are any constraints */
@@ -311,13 +309,8 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       
       if (do_per_step(step,ir->nstlog) || step<0)
 	cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
-      
-      if ((ir->eI == eiSteep) || (ir->eI == eiCG) || bItEqOrder)
-	/* Use more iterations when doing energy minimization, *
-	 * because we need very accurate positions and forces. */
-	nit = ir->nProjOrder;
-      else
-	nit = 1;
+
+      nit = ir->nLincsIter;
       
 #ifdef USE_FORTRAN
       F77_FUNC(flincs,FLINCS)(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,

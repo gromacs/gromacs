@@ -33,7 +33,6 @@
 #ifndef _gstat_h
 #define _gstat_h
 
-static char *SRCID_gstat_h = "$Id$";
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

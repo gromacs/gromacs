@@ -29,23 +29,18 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_nrjac_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "gstat.h"
 #include "smalloc.h"
 
-/* These routines were taken from NUMERICAL RECIPES */
 
 #define ROTATE(a,i,j,k,l) g=a[i][j];h=a[k][l];a[i][j]=g-s*(h+g*tau);\
   a[k][l]=h+s*(g-h*tau);
 	
-static void nrerror(char *error_text)
-{
-  fatal_error(0,"Numerical Recipes: %s\n",error_text);
-}
-
 void jacobi(double **a,int n,double d[],double **v,int *nrot)
 {
   int j,i;
@@ -124,7 +119,7 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot)
       z[ip]  =  0.0;
     }
   }
-  nrerror("Too many iterations in routine JACOBI");
+  fatal_error(0,"Error: Too many iterations in routine JACOBI\n");
 }
 
 int m_inv_gen(real **m,int n,real **minv)

@@ -33,14 +33,9 @@
 #ifndef _utils_h
 #define _utils_h
 
-static char *SRCID_utils_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) utils.h 1.11 2/2/97"
-#endif /* HAVE_IDENT */
 
 #include <stdio.h>
 #include "typedefs.h"

@@ -29,10 +29,6 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_toppush_c = "$Id$";
-#ifdef HAVE_IDENT
-#ident "@(#) toppush.c 1.72 9/30/97"
-#endif
 
 #include <math.h>
 
@@ -48,7 +44,6 @@ static char *SRCID_toppush_c = "$Id$";
 #include "symtab.h"
 #include "fatal.h"
 
-static char  errbuf[256];
 
 void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
 		       real npow)
@@ -56,6 +51,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
   int   i,j,k=-1,nf;
   int   nr,nrfp;
   real  c,sig6,sigma_ij,eps_ij,bi,bj;
+  char  errbuf[256];
 
   /* Lean mean shortcuts */
   nr   = atype->nr;
@@ -147,42 +143,75 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
   };
   
   int    nr,i,nfields,j,pt,nfp0=-1;
-  int    batype_nr;
+  int    batype_nr,nread;
   char   type[STRLEN],btype[STRLEN],ptype[STRLEN];
   double m,q;
   double c[MAXFORCEPARAM];
-  char   tmpfield[10][100]; /* Max 10 fields of width 100 */
-
+  double radius,vol,surftens;
+  char   tmpfield[12][100]; /* Max 12 fields of width 100 */
+  char  errbuf[256];
+  
   /* First assign input line to temporary array */
-  nfields=sscanf(line,"%s%s%s%s%s%s%s%s%s%s",
- 		 tmpfield[0],tmpfield[1],tmpfield[2],tmpfield[3],tmpfield[4],
-		 tmpfield[5],tmpfield[6],tmpfield[7],tmpfield[8],tmpfield[9]);
-
+  nfields=sscanf(line,"%s%s%s%s%s%s%s%s%s%s%s%s",
+ 		 tmpfield[0],tmpfield[1],tmpfield[2],tmpfield[3],tmpfield[4],tmpfield[5],
+		 tmpfield[6],tmpfield[7],tmpfield[8],tmpfield[9],tmpfield[10],tmpfield[11]);
+  
   switch (nb_funct) {
   case F_LJ:
     nfp0 = 2;
-    /* If the 5th field is a particletype and we have 7 fields in total there
-     * is a bond_atomtype in field 2, otherwise not (set it identical to atomtype then) */
-    if(nfields==7 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) 
-      sscanf (line,"%s%s%lf%lf%s%lf%lf",type,btype,&m,&q,ptype,&c[0],&c[1]);
-    else if (nfields==6) {
-      sscanf (line,"%s%lf%lf%s%lf%lf",type,&m,&q,ptype,&c[0],&c[1]);
+    /* If the 5th field is a particletype, then there is a bond_atomtype 
+     *iin field 2, otherwise not (set it identical to atomtype then) */
+    if(nfields>=7 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) {
+      nread = sscanf (line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf",
+		      type,btype,&m,&q,ptype,&c[0],&c[1],&radius,&vol,&surftens);
+      if(nread<10)
+	surftens = -1;
+      if(nread<9)
+	vol = 0;
+      if(nread<8)
+	radius = 0;
+    }
+    else if (nfields>=6) {
+      nread = sscanf (line,"%s%lf%lf%s%lf%lf%lf%lf%lf",
+		      type,&m,&q,ptype,&c[0],&c[1],&radius,&vol,&surftens);
+      if(nread<9)
+	surftens = -1;
+      if(nread<8)
+	vol = 0;
+      if(nread<7)
+	radius = 0;
       strcpy(btype,type);
+
     } else {
       too_few();
       return;
-    }
+    } 
     break;
 
   case F_BHAM:
     nfp0 = 3;
     /* If the 5th field is a particletype and we have 8 fields in total there
      * is a bond_atomtype in field 2, otherwise not (set it identical to atomtype then) */
-    if(nfields==8 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) 
-      sscanf (line,"%s%s%lf%lf%s%lf%lf%lf",type,btype,&m,&q,ptype,&c[0],&c[1],&c[2]);
-    else if (nfields==7) {
-      sscanf (line,"%s%lf%lf%s%lf%lf%lf",type,&m,&q,ptype,&c[0],&c[1],&c[2]);
+    if(nfields>=8 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) {
+      nread = sscanf (line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
+		      type,btype,&m,&q,ptype,&c[0],&c[1],&c[2],&radius,&vol,&surftens);
+      if(nread<11)
+	surftens = -1;
+      if(nread<10)
+	vol = 0;
+      if(nread<9)
+	radius = 0;
+    }
+    else if (nfields>=7) {
+      nread = sscanf (line,"%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
+		      type,&m,&q,ptype,&c[0],&c[1],&c[2],&radius,&vol,&surftens);
       strcpy(btype,type);
+      if(nread<10)
+	surftens = -1;
+      if(nread<9)
+	vol = 0;
+      if(nread<8)
+	radius = 0;
     } else {
       too_few();
       return;
@@ -235,6 +264,9 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
     srenew(at->atomname,nr+1);
     srenew(at->bondatomtype,nr+1);
     srenew(at->nb,nr+1);
+    srenew(at->radius,nr+1);
+    srenew(at->vol,nr+1);
+    srenew(at->surftens,nr+1);
     at->nr++;
     /* Add space in the non-bonded parameters matrix */
     srenew(*nbparam,at->nr);
@@ -248,14 +280,18 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
     sprintf(errbuf,"Overriding atomtype %s",type);
     warning(errbuf);
     nr = i;
-  }
+  } 
+
   /* fill the arrays */
   at->atomname[nr] = put_symtab(symtab,type);
   at->bondatomtype[nr] = batype_nr;
   at->atom[nr].ptype = pt;
   at->atom[nr].m = m;
   at->atom[nr].q = q;
-  
+  at->radius[nr] = radius;
+  at->vol[nr] = vol;
+  at->surftens[nr] = surftens;
+
   for (i=0; (i<MAXFORCEPARAM); i++)
     at->nb[nr].c[i] = c[i];
 }
@@ -267,6 +303,7 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
   bool bTest,bFound,bId;
   int  nr   = bt->nr;
   int  nrfp = NRFP(ftype);
+  char  errbuf[256];
 
   /* Check if this entry overwrites another */
   bFound=FALSE;
@@ -317,7 +354,7 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
 
 void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,char *line)
 {
-  static   char *formal[MAXATOMLIST+1] = {
+  const char *formal[MAXATOMLIST+1] = {
     "%s",
     "%s%s",
     "%s%s%s",
@@ -325,7 +362,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
     "%s%s%s%s%s",
     "%s%s%s%s%s%s"
   };
-  static   char *formnl[MAXATOMLIST+1] = {
+  const char *formnl[MAXATOMLIST+1] = {
     "%*s",
     "%*s%*s",
     "%*s%*s%*s",
@@ -333,7 +370,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  static   char *formlf[MAXFORCEPARAM] = {
+  const char *formlf[MAXFORCEPARAM] = {
     "%lf",
     "%lf%lf",
     "%lf%lf%lf",
@@ -352,7 +389,8 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
   char     alc[MAXATOMLIST+1][20];
   double   c[MAXFORCEPARAM];
   t_param  p;
-  
+  char  errbuf[256];
+
   /* Make format string (nral ints+functype) */
   if ((nn=sscanf(line,formal[nral],
 		 alc[0],alc[1],alc[2],alc[3],alc[4],alc[5])) != nral+1) {
@@ -381,7 +419,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
 
 void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,char *line)
 {
-  static   char *formal[MAXATOMLIST+1] = {
+  const char *formal[MAXATOMLIST+1] = {
     "%s",
     "%s%s",
     "%s%s%s",
@@ -389,7 +427,7 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
     "%s%s%s%s%s",
     "%s%s%s%s%s%s"
   };
-  static   char *formnl[MAXATOMLIST+1] = {
+  const char *formnl[MAXATOMLIST+1] = {
     "%*s",
     "%*s%*s",
     "%*s%*s%*s",
@@ -397,7 +435,7 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  static   char *formlf[MAXFORCEPARAM] = {
+  const char *formlf[MAXFORCEPARAM] = {
     "%lf",
     "%lf%lf",
     "%lf%lf%lf",
@@ -416,6 +454,7 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   char     alc[MAXATOMLIST+1][20];
   double   c[MAXFORCEPARAM];
   t_param  p;
+  char  errbuf[256];
 
   /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
    *
@@ -481,8 +520,8 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
 	      char *pline,int nb_funct)
 {
   /* swap the atoms */
-  static char *form2="%*s%*s%*s%lf%lf";
-  static char *form3="%*s%*s%*s%lf%lf%lf";
+  const char *form2="%*s%*s%*s%lf%lf";
+  const char *form3="%*s%*s%*s%lf%lf%lf";
   char    a0[80],a1[80];
   int     i,f,k,ftype,atnr,nrfp;
   double  c[3];
@@ -490,7 +529,8 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   atom_id ai,aj;
   t_nbparam *nbp;
   bool    bId;
-  
+  char  errbuf[256];
+
   if (sscanf (pline,"%s%s%d",a0,a1,&f) != 3) {
     too_few();
     return;
@@ -615,10 +655,9 @@ void push_cg(t_block *block, int *lastindex, int index, int a)
 }
 
 void push_atom(t_symtab *symtab,t_block *cgs,
-	       t_atoms *at,t_atomtype *atype,char *line)
+	       t_atoms *at,t_atomtype *atype,char *line,int *lastcg)
 {
   int 		nr,ptype;
-  static int    lastcg;
   int 		resnumber,cgnumber,atomnr,type,typeB,nscan;
   char 		id[STRLEN],ctype[STRLEN],ctypeB[STRLEN],
        		resname[STRLEN],name[STRLEN];
@@ -669,7 +708,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   if (debug) 
     fprintf(debug,"mB=%g, qB=%g, typeB=%d\n",mB,qB,typeB);
   
-  push_cg(cgs,&lastcg,cgnumber,nr);
+  push_cg(cgs,lastcg,cgnumber,nr);
 
   push_atom_now(symtab,at,atomnr,type,ctype,ptype,resnumber,cgnumber,
 		resname,name,m0,q0,typeB,
@@ -839,21 +878,21 @@ void push_bondnow(t_params *bond, t_param *b)
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,t_atomtype *atype,char *line,bool bBonded,bool bGenPairs)
 {
-  static char *aaformat[MAXATOMLIST]= {
+  const char *aaformat[MAXATOMLIST]= {
     "%d%d",
     "%d%d%d",
     "%d%d%d%d",
     "%d%d%d%d%d",
     "%d%d%d%d%d%d"
   };
-  static char *asformat[MAXATOMLIST]= {
+  const char *asformat[MAXATOMLIST]= {
     "%*s%*s",
     "%*s%*s%*s",
     "%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  static char *ccformat[MAXFORCEPARAM+1]= {
+  const char *ccformat[MAXFORCEPARAM+1]= {
     "",
     "%lf",
     "%lf%lf",
@@ -874,7 +913,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB;
   bool     bFoundA,bFoundB,bDef,bPert,bSwapParity=FALSE;
-  
+  char  errbuf[256];
+
   ftype = ifunc_index(d,1);
   nral  = NRAL(ftype);
   for(j=0; j<MAXATOMLIST; j++)

@@ -33,10 +33,6 @@
 #ifndef _convparm_h
 #define _convparm_h
 
-static char *SRCID_convparm_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) convparm.h 1.2 12/16/92"
-#endif /* HAVE_IDENT */
 
 #include "typedefs.h"
 

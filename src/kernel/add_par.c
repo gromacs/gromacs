@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_add_par_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"

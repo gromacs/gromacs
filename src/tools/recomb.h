@@ -33,7 +33,6 @@
 #ifndef _recomb_h
 #define _recomb_h
 
-static char *SRCID_recomb_h = "$Id$";
 	
 #include "typedefs.h"
 	

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_ehdata_h = "$Id$";
+
 	
 extern real get_omega(real ekin,int *seed,FILE *fp,char *fn);
 

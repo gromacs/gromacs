@@ -33,14 +33,11 @@
 #ifndef _force_h
 #define _force_h
 
-static char *SRCID_force_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) force.h 1.53 5/15/97"
-#endif /* HAVE_IDENT */
+
 #include "typedefs.h"
 #include "pbc.h"
 #include "nsb.h"

@@ -33,14 +33,11 @@
 #ifndef _transfer_h
 #define _transfer_h
 
-static char *SRCID_transfer_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) transfer.h 1.6 11/23/92"
-#endif /* HAVE_IDENT */
 
 extern void linkio_write(int linkno,int nbytes);
 extern void linkio_read(int linkno,int nbytes);

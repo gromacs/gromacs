@@ -33,7 +33,7 @@
 #ifndef _dummies_h
 #define _dummies_h
 
-static char *SRCID_dummies_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

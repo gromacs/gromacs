@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_splitter_c = "$Id$";
+
 #include <stdio.h>
 #include "sysstuff.h"
 #include "assert.h"
@@ -332,8 +332,8 @@ static void split_blocks(bool bVerbose,int nnodes,
   atom_id *shknum,*cgsnum;
   
   if (debug) {
-    pr_block(debug,0,"cgs",cgs);
-    pr_block(debug,0,"sblock",sblock);
+    pr_block(debug,0,"cgs",cgs,TRUE);
+    pr_block(debug,0,"sblock",sblock,TRUE);
   }
 
   shknum = make_invblock(sblock,cgs->nra+1);
@@ -423,8 +423,6 @@ static int sid_comp(const void *a,const void *b)
     return dd;
 }
 
-typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
-
 static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
 		   t_sid sid[])
 {
@@ -476,7 +474,7 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
   int    ng,nnodes;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
-  static egCol *egc=NULL;	/* The colour of each node	*/
+  egCol  *egc=NULL;	        /* The colour of each node	*/
   int    g0,nblock;
   
   if (!g->nbound) 

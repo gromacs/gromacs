@@ -29,7 +29,9 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-static char *SRCID_vcm_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "macros.h"
 #include "vcm.h"
 #include "vec.h"

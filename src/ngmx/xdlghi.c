@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_xdlghi_c = "$Id$";
+
 #include <assert.h>
 #include <string.h>
 

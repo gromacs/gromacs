@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_sorting_c = "$Id$";
+
 #include <limits.h>
 #include "sysstuff.h"
 #include "smalloc.h"

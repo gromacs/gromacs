@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_nm2type_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"

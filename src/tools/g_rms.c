@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_rms_c = "$Id$";
+
 #include "smalloc.h"
 #include "math.h"
 #include "macros.h"
@@ -177,7 +177,7 @@ int main (int argc,char *argv[])
   int        maxframe=NFRAME,maxframe2=NFRAME;
   real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
   bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
-  bool       bFit,bReset;
+  bool       bFit=FALSE,bReset=FALSE;
   t_topology top;
   t_iatom    *iatom=NULL;
 

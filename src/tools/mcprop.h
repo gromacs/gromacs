@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_mcprop_h = "$Id$";
+
 #include "typedefs.h"
 
 typedef real t_propfunc(int nx,real x[]);

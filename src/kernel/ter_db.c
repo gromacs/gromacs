@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_ter_db_c = "$Id$";
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"

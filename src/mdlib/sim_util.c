@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_sim_util_c = "$Id$";
+
 #include <stdio.h>
 #include <time.h>
 #include "typedefs.h"
@@ -414,7 +414,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     fprintf(log,"\nConstraining the starting coordinates (step %d)\n",step);
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,step,lambda,&ener[F_DVDL],
-	   parm,1.0,md,x,graph,
+	   parm,md,x,graph,
 	   NULL,NULL,vold,NULL,x,top,grps,shake_vir,cr,nrnb,bTYZ,
 	   FALSE,edyn,pulldata,FALSE);
     /* Compute coordinates at t=-dt, store them in buf */
@@ -433,7 +433,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     fprintf(log,"\nConstraining the coordinates at t0-dt (step %d)\n",step);
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
-	   step,lambda,&ener[F_DVDL],parm,1.0,md,f,graph,
+	   step,lambda,&ener[F_DVDL],parm,md,f,graph,
 	   NULL,NULL,vold,NULL,buf,top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,
 	   edyn,pulldata,FALSE);
     
@@ -569,18 +569,19 @@ void finish_run(FILE *log,t_commrec *cr,char *confout,
 }
 
 void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
-	     real *lambda,real *lam0,real *SAfactor,
+	     real *lambda,real *lam0,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,
 	     char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor pme_vir,
 	     tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
-	     bool *bNEMD,t_vcm **vcm,t_nsborder *nsb)
+	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb)
 {
   bool bBHAM,b14,bLR,bLJLR;
-  int  i;
-  
+  int  i,j,n;
+  real tmpt,mod;
+
   /* Initial values */
   *t = *t0       = ir->init_t;
   if (ir->efep != efepNO) {
@@ -589,13 +590,16 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   else {
     *lambda = *lam0   = 0.0;
   } 
-  if (ir->bSimAnn) {
-    *SAfactor = 1.0 - *t0/ir->zero_temp_time;
-    if (*SAfactor < 0) 
-      *SAfactor = 0;
-  } else
-    *SAfactor     = 1.0;
-    
+ 
+  *bSimAnn=FALSE;
+  for(i=0;i<ir->opts.ngtc;i++) {
+    /* set bSimAnn if any group is being annealed */
+    if(ir->opts.annealing[i]!=eannNO)
+      *bSimAnn = *bSimAnn || TRUE;
+  }
+  if(*bSimAnn) 
+    update_annealing_target_temp(&(ir->opts),ir->init_t); 
+
   init_nrnb(mynrnb);
   
   /* Check Environment variables & other booleans */
@@ -630,7 +634,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   clear_rvec(mu_tot);
   
   /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,*lambda,TRUE);
+  update_mdatoms(mdatoms,*lambda,TRUE);
 
   *vcm = init_vcm(stdlog,top,cr,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm);
     

@@ -33,7 +33,7 @@
 #ifndef _minvert_h
 #define _minvert_h
 
-static char *SRCID_minvert_h = "$Id$";
+
 #include "typedefs.h"
 
 /* A bunch of routines that works on matrices that run from 1 thru n

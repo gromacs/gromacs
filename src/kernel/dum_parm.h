@@ -33,7 +33,7 @@
 #ifndef _dum_parm_h
 #define _dum_parm_h
 
-static char *SRCID_dum_parm_h = "$Id$";
+
 #include "typedefs.h"
 #include "grompp.h"
 

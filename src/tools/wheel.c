@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_wheel_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "physics.h"
@@ -74,7 +74,7 @@ void wheel(char *fn,int nres,char *resnm[],int r0,real rot0,char *title)
   const real fontasp   = 0.6;
   const real fontwidth = fontsize*fontasp;
   
-  FILE *out;
+  t_psdata out;
   int  i,sl,slen;
   real ring,inner,outer;
   real xc,yc,box;

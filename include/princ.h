@@ -33,7 +33,6 @@
 #ifndef _princ_h
 #define _princ_h
 
-static char *SRCID_princ_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

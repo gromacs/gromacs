@@ -33,7 +33,6 @@
 #ifndef _specbond_h
 #define _specbond_h
 
-static char *SRCID_specbond_h = "$Id$";
 #include "pdb2top.h"
 
 extern int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,

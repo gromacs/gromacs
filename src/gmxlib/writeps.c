@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_writeps_c = "$Id$";
+
 #include <stdio.h>
 #include "futil.h"
 #include "fatal.h"
@@ -37,111 +37,127 @@ static char *SRCID_writeps_c = "$Id$";
 #include "writeps.h"
 #include "smalloc.h"
 
-static int maxrgb=0;
-static int   nrgb=0;
-static t_rgb *rgb=NULL;
+const char *fontnm[efontNR] = { 
+  "Times-Roman","Times-Italic",     "Times-Bold",    "Times-BoldItalic",
+  "Helvetica",  "Helvetica-Oblique","Helvetica-Bold","Helvetica-BoldOblique",
+  "Courier",    "Courier-Oblique",  "Courier-Bold",  "Courier-BoldOblique"
+};
 
-FILE *ps_open(char *fn,real x1,real y1,real x2,real y2)
+
+/* Internal psdata structure (abstract datatype) 
+ * to maintain the current state of the ps engine.
+ */
+struct t_int_psdata  {
+  FILE   *fp;
+  int    maxrgb;
+  int    nrgb;
+  t_rgb  *rgb;
+  real   gen_ybox;
+  int    ostack;
+};
+
+
+t_psdata ps_open(char *fn,real x1,real y1,real x2,real y2)
 {
-  FILE *ps;
+  t_psdata ps;
   
-  ps=ffopen(fn,"w");
-  fprintf(ps,"%%!PS-Adobe-2.0 EPSF-1.2\n");
-  fprintf(ps,"%%%%Creator: GROMACS\n");
-  fprintf(ps,"%%%%Title: %s\n",fn);
-  fprintf(ps,"%%%%BoundingBox: %g %g %g %g\n",x1,y1,x2,y2);
-  fprintf(ps,"%%%%EndComments\n");
-  fprintf(ps,"/m {moveto} bind def\n");
-  fprintf(ps,"/l {lineto} bind def\n");
-  fprintf(ps,"/rm {rmoveto} bind def\n");
-  fprintf(ps,"/r  {rlineto} bind def\n");
-  fprintf(ps,"/f {fill} bind def\n");
-  fprintf(ps,"/s {stroke} bind def\n");
+  snew(ps,1);
+  
+  ps->fp=ffopen(fn,"w");
+  fprintf(ps->fp,"%%!PS-Adobe-2.0 EPSF-1.2\n");
+  fprintf(ps->fp,"%%%%Creator: GROMACS\n");
+  fprintf(ps->fp,"%%%%Title: %s\n",fn);
+  fprintf(ps->fp,"%%%%BoundingBox: %g %g %g %g\n",x1,y1,x2,y2);
+  fprintf(ps->fp,"%%%%EndComments\n");
+  fprintf(ps->fp,"/m {moveto} bind def\n");
+  fprintf(ps->fp,"/l {lineto} bind def\n");
+  fprintf(ps->fp,"/rm {rmoveto} bind def\n");
+  fprintf(ps->fp,"/r  {rlineto} bind def\n");
+  fprintf(ps->fp,"/f {fill} bind def\n");
+  fprintf(ps->fp,"/s {stroke} bind def\n");
 
-  if (nrgb > 0) {
-    fprintf(stderr,"Warning: resetting color table in %s when opening %s\n",
-	    __FILE__,fn);
-    nrgb=0;
-  }
-      
+  ps->nrgb=0;
+  ps->maxrgb=0;
+  ps->rgb=NULL;
+  ps->gen_ybox=0;
+  ps->ostack=0;
+  
   return ps;
 }
 
-void ps_linewidth(FILE *ps, int lw)
+void ps_linewidth(t_psdata ps, int lw)
 {
-  fprintf(ps,"%d setlinewidth\n",lw);
+  fprintf(ps->fp,"%d setlinewidth\n",lw);
 }
 
-static void ps_defcolor(FILE *ps,real r,real g,real b,char *cname)
+static void ps_defcolor(t_psdata ps,real r,real g,real b,char *cname)
 {
-  fprintf(ps,"/%s {%g %g %g setrgbcolor} bind def\n",cname,r,g,b);
+  fprintf(ps->fp,"/%s {%g %g %g setrgbcolor} bind def\n",cname,r,g,b);
 }
 
-static void ps_selcolor(FILE *ps,char *cname)
+static void ps_selcolor(t_psdata ps,char *cname)
 {
-  fprintf(ps,"%s\n",cname);
+  fprintf(ps->fp,"%s\n",cname);
 }
 
-static char *i2a(int i)
-{
-  static char buf[12];
-  
-  sprintf(buf,"C%d",i);
-  
-  return buf;
-}
-
-static int search_col(FILE *ps,real r,real g,real b)
+static int search_col(t_psdata ps,real r,real g,real b)
 {
   int  i;
+  char buf[12];
   
-  for(i=0; (i<nrgb); i++)
-    if ((rgb[i].r == r) && (rgb[i].g == g) && (rgb[i].b == b))
+  for(i=0; (i<ps->nrgb); i++)
+    if ((ps->rgb[i].r == r) && (ps->rgb[i].g == g) && (ps->rgb[i].b == b))
       return i;
   
-  if (nrgb >= maxrgb) {
-    maxrgb+=100;
-    srenew(rgb,maxrgb);
+  if (ps->nrgb >= ps->maxrgb) {
+    ps->maxrgb+=100;
+    srenew(ps->rgb,ps->maxrgb);
   }
   
-  ps_defcolor(ps,r,g,b,i2a(nrgb));
-  fprintf(ps,"/B%d {%s b} bind def\n",nrgb,i2a(nrgb));
-  rgb[i].r=r;
-  rgb[i].g=g;
-  rgb[i].b=b;
-  nrgb++;
+  snprintf(buf,11,"C%d",ps->nrgb);
+  ps_defcolor(ps,r,g,b,buf);
+  fprintf(ps->fp,"/B%d {%s b} bind def\n",ps->nrgb,buf);
+  ps->rgb[i].r=r;
+  ps->rgb[i].g=g;
+  ps->rgb[i].b=b;
+  ps->nrgb++;
   
-  return nrgb-1;
+  return (ps->nrgb-1);
 }
 
-void ps_color(FILE *ps,real r,real g,real b)
+void ps_color(t_psdata ps,real r,real g,real b)
 {
-  ps_selcolor(ps,i2a(search_col(ps,r,g,b)));
+  char buf[12];
+  int i;
+  
+  i=search_col(ps,r,g,b);
+  
+  snprintf(buf,11,"C%d",i);
+  ps_selcolor(ps,buf);
 }
 
-void ps_rgb(FILE *ps,t_rgb *rgb)
+void ps_rgb(t_psdata ps,t_rgb *rgb)
 {
   ps_color(ps,rgb->r,rgb->g,rgb->b);
 }
 
-static real gen_ybox=0;
 
-void ps_init_rgb_nbox(FILE *ps,real xbox, real ybox)
+void ps_init_rgb_nbox(t_psdata ps,real xbox, real ybox)
 {
-  gen_ybox=ybox;
-  fprintf(ps,"/by {def currentpoint "
+  ps->gen_ybox=ybox;
+  fprintf(ps->fp,"/by {def currentpoint "
 	  "%g y r %g %g r %g y neg r %g %g r f y add moveto} bind def\n",
 	  0.0,xbox,0.0,0.0,-xbox,0.0);
   /* macro bn is used in ps_rgb_nbox to draw rectangular boxes */
 }
 
-void ps_rgb_nbox(FILE *ps,t_rgb *rgb,real n)
+void ps_rgb_nbox(t_psdata ps,t_rgb *rgb,real n)
 {
   int i;
   
   if ( n>2 ) {
     ps_rgb(ps,rgb);
-    fprintf(ps,"/y %g by\n",n*gen_ybox);
+    fprintf(ps->fp,"/y %g by\n",n*ps->gen_ybox);
     /* macro by is defined in ps_init_rgb_nbox */
   } else
     for (i=0; (i<n); i++)
@@ -149,48 +165,48 @@ void ps_rgb_nbox(FILE *ps,t_rgb *rgb,real n)
   
 }
 
-void ps_init_rgb_box(FILE *ps,real xbox, real ybox)
+void ps_init_rgb_box(t_psdata ps,real xbox, real ybox)
 {
-  fprintf(ps,"/b {currentpoint "
+  fprintf(ps->fp,"/b {currentpoint "
 	  "%g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
 	  0.0,ybox,xbox,0.0,0.0,-ybox,-xbox,0.0,ybox);
   /* macro b is used in search_col to define macro B */
 }
 
-void ps_rgb_box(FILE *ps,t_rgb *rgb)
+void ps_rgb_box(t_psdata ps,t_rgb *rgb)
 {
-  fprintf(ps,"B%d\n",search_col(ps,rgb->r,rgb->g,rgb->b));
+  fprintf(ps->fp,"B%d\n",search_col(ps,rgb->r,rgb->g,rgb->b));
   /* macro B is defined in search_col from macro b */
 }
 
-void ps_lineto(FILE *ps,real x,real y)
+void ps_lineto(t_psdata ps,real x,real y)
 {
-  fprintf(ps,"%g %g l\n",x,y);
+  fprintf(ps->fp,"%g %g l\n",x,y);
 }
 
-void ps_linerel(FILE *ps,real dx,real dy)
+void ps_linerel(t_psdata ps,real dx,real dy)
 {
-  fprintf(ps,"%g %g r\n",dx,dy);
+  fprintf(ps->fp,"%g %g r\n",dx,dy);
 }
 
-void ps_moveto(FILE *ps,real x,real y)
+void ps_moveto(t_psdata ps,real x,real y)
 {
-  fprintf(ps,"%g %g m\n",x,y);
+  fprintf(ps->fp,"%g %g m\n",x,y);
 }
 
-void ps_moverel(FILE *ps,real dx,real dy)
+void ps_moverel(t_psdata ps,real dx,real dy)
 {
-  fprintf(ps,"%g %g rm\n",dx,dy);
+  fprintf(ps->fp,"%g %g rm\n",dx,dy);
 }
 
-void ps_line(FILE *ps,real x1,real y1,real x2,real y2)
+void ps_line(t_psdata ps,real x1,real y1,real x2,real y2)
 {
   ps_moveto(ps,x1,y1);
   ps_lineto(ps,x2,y2);
-  fprintf(ps,"s\n");
+  fprintf(ps->fp,"s\n");
 }
 
-static void do_box(FILE *ps,real x1,real y1,real x2,real y2)
+static void do_box(t_psdata ps,real x1,real y1,real x2,real y2)
 {
   ps_moveto(ps,x1,y1);
   ps_linerel(ps,0,(real)(y2-y1));
@@ -199,137 +215,131 @@ static void do_box(FILE *ps,real x1,real y1,real x2,real y2)
   ps_linerel(ps,(real)(x1-x2),0);
 }
 
-void ps_box(FILE *ps,real x1,real y1,real x2,real y2)
+void ps_box(t_psdata ps,real x1,real y1,real x2,real y2)
 {
   do_box(ps,x1,y1,x2,y2);
-  fprintf(ps,"s\n");
+  fprintf(ps->fp,"s\n");
 }
 
-void ps_fillbox(FILE *ps,real x1,real y1,real x2,real y2)
+void ps_fillbox(t_psdata ps,real x1,real y1,real x2,real y2)
 {
   do_box(ps,x1,y1,x2,y2);
-  fprintf(ps,"f\n");
+  fprintf(ps->fp,"f\n");
 }
 
-void ps_arc(FILE *ps,real x1,real y1,real rad,real a0,real a1)
+void ps_arc(t_psdata ps,real x1,real y1,real rad,real a0,real a1)
 {
-  fprintf(ps,"%g %g %g %g %g arc s\n",x1,y1,rad,a0,a1);
+  fprintf(ps->fp,"%g %g %g %g %g arc s\n",x1,y1,rad,a0,a1);
 }
 
-void ps_fillarc(FILE *ps,real x1,real y1,real rad,real a0,real a1)
+void ps_fillarc(t_psdata ps,real x1,real y1,real rad,real a0,real a1)
 {
-  fprintf(ps,"%g %g %g %g %g arc f\n",x1,y1,rad,a0,a1);
+  fprintf(ps->fp,"%g %g %g %g %g arc f\n",x1,y1,rad,a0,a1);
 }
 
-void ps_arcslice(FILE *ps,real xc,real yc,
+void ps_arcslice(t_psdata ps,real xc,real yc,
 		 real rad1,real rad2,real a0,real a1)
 {
-  fprintf(ps,"newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath s\n",
+  fprintf(ps->fp,"newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath s\n",
 	  xc,yc,rad1,a0,a1,xc,yc,rad2,a1,a0);
 }
   
-void ps_fillarcslice(FILE *ps,real xc,real yc,
+void ps_fillarcslice(t_psdata ps,real xc,real yc,
 		     real rad1,real rad2,real a0,real a1)
 {
-  fprintf(ps,"newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath f\n",
+  fprintf(ps->fp,"newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath f\n",
 	  xc,yc,rad1,a0,a1,xc,yc,rad2,a1,a0);
 }
   
-void ps_circle(FILE *ps,real x1,real y1,real rad)
+void ps_circle(t_psdata ps,real x1,real y1,real rad)
 {
   ps_arc(ps,x1,y1,rad,0,360);
 }
 
-char *fontnm[efontNR] = { 
-  "Times-Roman","Times-Italic",     "Times-Bold",    "Times-BoldItalic",
-  "Helvetica",  "Helvetica-Oblique","Helvetica-Bold","Helvetica-BoldOblique",
-  "Courier",    "Courier-Oblique",  "Courier-Bold",  "Courier-BoldOblique"
-};
-
-void ps_font(FILE *ps,int font,real size)
+void ps_font(t_psdata ps,int font,real size)
 {
   
   if ((font < 0) || (font > efontNR)) {
     fprintf(stderr,"Invalid Font: %d, using %s\n",font,fontnm[0]);
     font=0;
   }
-  fprintf(ps,"/%s findfont\n",fontnm[font]);
-  fprintf(ps,"%g scalefont setfont\n",size);
+  fprintf(ps->fp,"/%s findfont\n",fontnm[font]);
+  fprintf(ps->fp,"%g scalefont setfont\n",size);
 }
 
-void ps_strfont(FILE *ps,char *font,real size)
+void ps_strfont(t_psdata ps,char *font,real size)
 {
-  fprintf(ps,"/%s findfont\n",font);
-  fprintf(ps,"%g scalefont setfont\n",size);
+  fprintf(ps->fp,"/%s findfont\n",font);
+  fprintf(ps->fp,"%g scalefont setfont\n",size);
 }
 
-void ps_text(FILE *ps,real x1,real y1,char *str)
+void ps_text(t_psdata ps,real x1,real y1,char *str)
 {
   ps_moveto(ps,x1,y1);
-  fprintf(ps,"(%s) show\n",str);
+  fprintf(ps->fp,"(%s) show\n",str);
 }
 
-void ps_rotate(FILE *ps,bool bPlus)
+void ps_rotate(t_psdata ps,bool bPlus)
 {
   if (bPlus) 
-    fprintf(ps,"612.5 0 translate 90 rotate\n");
+    fprintf(ps->fp,"612.5 0 translate 90 rotate\n");
   else
-    fprintf(ps,"-90 rotate -612.5 0 translate\n");
+    fprintf(ps->fp,"-90 rotate -612.5 0 translate\n");
 }
 
-void ps_ctext(FILE *ps,real x1,real y1,char *str,int expos)
+void ps_ctext(t_psdata ps,real x1,real y1,char *str,int expos)
 {
   if (expos == eXLeft) {
     ps_text(ps,x1,y1,str);
     return;
   }
   ps_moveto(ps,x1,y1);
-  fprintf(ps,"(%s) stringwidth\n",str);
+  fprintf(ps->fp,"(%s) stringwidth\n",str);
   switch (expos) {
   case eXLeft:
-    fprintf(ps,"exch 0 exch pop exch\n");
+    fprintf(ps->fp,"exch 0 exch pop exch\n");
     break;
   case eXCenter:
-    fprintf(ps,"exch 2 div neg exch\n");
+    fprintf(ps->fp,"exch 2 div neg exch\n");
     break;
   case eXRight:
-    fprintf(ps,"exch neg exch\n");
+    fprintf(ps->fp,"exch neg exch\n");
     break;
   default:
     fatal_error(0,"invalid position index (expos=%d)",expos);
   }
-  fprintf(ps,"rmoveto (%s) show\n",str);
+  fprintf(ps->fp,"rmoveto (%s) show\n",str);
 }
 
-void ps_translate(FILE *ps,real x,real y)
+void ps_translate(t_psdata ps,real x,real y)
 {
-  fprintf(ps,"%g %g translate\n",x,y);
+  fprintf(ps->fp,"%g %g translate\n",x,y);
 }
 
-static int ostack=0;
-
-void ps_setorigin(FILE *ps)
+void ps_setorigin(t_psdata ps)
 {
-  fprintf(ps,"currentpoint dup 3 -1 roll dup 4 1 roll exch translate\n");
-  ostack++;
+  fprintf(ps->fp,"currentpoint dup 3 -1 roll dup 4 1 roll exch translate\n");
+  ps->ostack++;
 }
 
-void ps_unsetorigin(FILE *ps)
+void ps_unsetorigin(t_psdata ps)
 {
-  if (ostack <= 0)
+  if (ps->ostack <= 0)
     fatal_error(0,"No origin on stack!\n");
-  fprintf(ps,"neg exch neg exch translate\n");
-  ostack--;
+  fprintf(ps->fp,"neg exch neg exch translate\n");
+  ps->ostack--;
 }
 
-void ps_close(FILE *ps)
+void ps_close(t_psdata ps)
 {
-  fprintf(ps,"%%showpage\n");
-  fprintf(ps,"%%%%EOF\n");
-  fclose(ps);
+  fprintf(ps->fp,"%%showpage\n");
+  fprintf(ps->fp,"%%%%EOF\n");
+  fclose(ps->fp);
+  sfree(ps->rgb);
+  sfree(ps);
 }
 
-void ps_comment(FILE *ps,char *s)
+void ps_comment(t_psdata ps,char *s)
 {
-  fprintf(ps,"%%%% %s\n",s);
+  fprintf(ps->fp,"%%%% %s\n",s);
 }

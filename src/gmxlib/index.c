@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_index_c = "$Id$";
+
 #include <ctype.h>
 #include <string.h>
 #include "sysstuff.h"
@@ -46,9 +46,9 @@ static char *SRCID_index_c = "$Id$";
 #include "smalloc.h"
 
 typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
-static  char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
+static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
 
-static char   *Sugars[]     = { "A", "T", "G", "C", "U" };
+static const char   *Sugars[]     = { "A", "T", "G", "C", "U" };
 #define  NDNA asize(Sugars)
 
 static bool yn(bool bASK)
@@ -95,7 +95,7 @@ void write_index(char *outf, t_block *b,char **gnames)
   fclose(out);
 }
 
-void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],char *name)
+void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],const char *name)
 {
   int i;
 
@@ -242,35 +242,35 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 			 t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
-  static char *pnoh[]    = { "H" };
-  static char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
+  const char *pnoh[]    = { "H" };
+  const char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
-  static char *calpha[]  = { "CA" };
-  static char *bb[]      = { "N","CA","C" };
-  static char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
-  static char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
-  static char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
+  const char *calpha[]  = { "CA" };
+  const char *bb[]      = { "N","CA","C" };
+  const char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
+  const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
+  const char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
 			     "H1","H2","H3","H" };
   /* array of arrays of atomnames: */
-  static char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
+  const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
 #define NCH asize(chains)
   /* array of sizes of arrays of atomnames: */
-  static int       sizes[NCH] = { 
+  const int       sizes[NCH] = { 
     0, asize(pnoh), asize(calpha), asize(bb), 
     asize(mc), asize(mcb), asize(mch), asize(mch), asize(mch), asize(pnodum)
   };
   /* descriptive names of index groups */
-  static char   *ch_name[NCH] = { 
+  const char   *ch_name[NCH] = { 
     "Protein", "Protein-H", "C-alpha", "Backbone", 
     "MainChain", "MainChain+Cb", "MainChain+H", "SideChain", "SideChain-H", 
     "Prot-Masses"
   };
   /* construct index group containing (TRUE) or excluding (FALSE)
      given atom names */
-  static bool complement[NCH] = { 
+  const bool complement[NCH] = { 
     TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE
   };
-  static int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
+  const int  wholename[NCH]  = { -1, 0,-1,-1,-1,-1,-1,-1, 11,-1 };
   /* the index in wholename gives the first item in the arrays of 
    * atomtypes that should be tested with 'strncasecmp' in stead of
    * strcasecmp, or -1 if all items should be tested with strcasecmp
@@ -279,7 +279,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
    */
   /* only add index group if it differs from the specified one, 
      specify -1 to always add group */
-  static int compareto[NCH] = { -1,-1,-1,-1,-1,-1,-1,-1,-1, 0 };
+  const int compareto[NCH] = { -1,-1,-1,-1,-1,-1,-1,-1,-1, 0 };
 
   int     i,n,j;
   atom_id *aid;
@@ -400,15 +400,11 @@ static void analyse_dna(eRestp restp[],t_atoms *atoms,
 
 bool is_protein(char *resnm)
 {
-  static bool bRead=FALSE;
-  static int  naa;
-  static char **aas;
+  int  naa;
+  char **aas;
   int i;
   
-  if (!bRead) {
-    naa = get_strings("aminoacids.dat",&aas);
-    bRead=TRUE;
-  }
+  naa = get_strings("aminoacids.dat",&aas);
   
   for(i=0; (i<naa); i++)
     if (strcasecmp(aas[i],resnm) == 0)

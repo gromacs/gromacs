@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_futil_c = "$Id$";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -193,7 +193,7 @@ FILE *gunzip(char *fn,char *mode)
   return fp;
 }
 
-bool fexist(char *fname)
+bool fexist(const char *fname)
 {
   FILE *test;
   
@@ -222,7 +222,7 @@ bool eof(FILE *fp)
   }
 }
 
-char *backup_fn(char *file)
+char *backup_fn(const char *file)
 {
   /* Use a reasonably low value for countmax; we might
    * generate 4-5 files in each round, and we dont
@@ -264,7 +264,7 @@ char *backup_fn(char *file)
   return buf;
 }
 
-bool make_backup(char * name)
+bool make_backup(const char * name)
 {
     char * backup;
 
@@ -281,7 +281,7 @@ bool make_backup(char * name)
     return TRUE;
 }
 
-FILE *ffopen(char *file,char *mode)
+FILE *ffopen(const char *file,char *mode)
 {
   FILE *ff=NULL;
   char buf[256],*bf,*bufsize=0,*ptr;

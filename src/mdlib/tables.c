@@ -29,7 +29,7 @@
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
-static char *SRCID_tables_c = "$Id$";
+
 #include <math.h>
 #include "typedefs.h"
 #include "names.h"
@@ -47,7 +47,7 @@ enum {
   etabRF,    etabCOUL, etabEwald, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
   etabEXPMIN,etabUSER, etabNR 
 };
-static char *tabnm[etabNR] = { 
+static const char *tabnm[etabNR] = { 
   "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
   "RF",    "COUL", "Ewald", "LJ6Switch", "LJ12Switch","COULSwitch", 
   "EXPMIN","USER" 
@@ -540,7 +540,7 @@ static void set_table_type(int tabsel[],t_forcerec *fr)
 
 void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
 {
-  static char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
+  const char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE        *fp;
   t_tabledata *td;
   bool        bReadTab,bGenTab;

@@ -33,7 +33,6 @@
 #ifndef _callf77_h
 #define _callf77_h
 
-static char *SRCID_callf77_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

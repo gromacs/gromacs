@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_ionize_c = "$Id$";
+
 #include <string.h>
 #include "smalloc.h"
 #include "typedefs.h"
@@ -56,7 +56,7 @@ typedef struct {
 /* Units are barn. They are converted to nm^2 by multiplying  */
 /* by 1e-10, which is done in Imax (ionize.c)                 */
 
-static t_cross   cross_sec_h[] = {
+static const t_cross   cross_sec_h[] = {
   { 2.63e-2,     1.01e-1,      5.49e-1,         7.12e-3 },
   { 9.79e-3,     6.18e-2,      5.83e-1,         9.60e-3 },
   { 4.55e-3,     4.16e-2,      5.99e-1,         1.19e-2 },
@@ -64,7 +64,7 @@ static t_cross   cross_sec_h[] = {
   { 1.12e-3,     1.96e-2,      6.09e-1,         1.73e-2 },
   { 4.16e-4,     1.13e-2,      6.07e-1,         2.23e-2 }
 };
-static t_cross   cross_sec_c[] = {
+static const t_cross   cross_sec_c[] = {
   { 1.99e+2,     5.88e+0,      2.29e+0,         3.06e-2 },
   { 8.01e+1,     4.22e+0,      2.56e+0,         4.38e-2 },
   { 3.92e+1,     3.26e+0,      2.74e+0,         5.72e-2 },
@@ -72,7 +72,7 @@ static t_cross   cross_sec_c[] = {
   { 1.06e+1,     1.97e+0,      3.04e+0,         9.15e-2 },
   { 4.15e+0,     1.30e+0,      3.20e+0,         1.24e-1 }
 };
-static t_cross   cross_sec_n[] = {
+static const t_cross   cross_sec_n[] = {
   { 3.91e+2,     8.99e+0,      2.49e+0,         3.43e-2 },
   { 1.59e+2,     6.29e+0,      2.86e+0,         5.01e-2 },
   { 7.88e+1,     4.76e+0,      3.10e+0,         6.57e-2 },
@@ -80,7 +80,7 @@ static t_cross   cross_sec_n[] = {
   { 2.16e+1,     2.82e+0,      3.46e+0,         1.05e-1 },
   { 8.52e+0,     1.88e+0,      3.65e+0,         1.43e-1 }
 };
-static t_cross   cross_sec_o[] = {
+static const t_cross   cross_sec_o[] = {
   { 6.90e+2,     1.33e+1,      2.66e+0,         3.75e-2 },
   { 2.84e+2,     9.21e+0,      3.14e+0,         5.62e-2 },
   { 1.42e+2,     6.85e+0,      3.44e+0,         7.43e-2 },
@@ -88,7 +88,7 @@ static t_cross   cross_sec_o[] = {
   { 3.95e+1,     3.97e+0,      3.87e+0,         1.18e-1 },
   { 1.57e+1,     2.64e+0,      4.10e+0,         1.61e-1 }
 };
-static t_cross   cross_sec_s[] = {
+static const t_cross   cross_sec_s[] = {
   { 1.10e+4,      5.54e+1,     3.98e+0,         5.42e-2 },
   { 4.91e+3,      4.29e+1,     4.71e+0,         8.38e-2 },
   { 2.58e+3,      3.36e+1,     5.32e+0,         1.16e-1 },
@@ -100,10 +100,10 @@ static t_cross   cross_sec_s[] = {
 typedef struct {
   char *name;
   int  nel;
-  t_cross *cross;
+  const t_cross *cross;
 } t_element;
 
-static t_element element[] = {
+static const t_element element[] = {
   { "H",   1, cross_sec_h },
   { "C",   6, cross_sec_c },
   { "N",   7, cross_sec_n },
@@ -129,7 +129,7 @@ typedef struct {
   real E_K,E_L,Prob_K,tau;
 } t_recoil;
 
-t_recoil recoil[] = {
+const t_recoil recoil[] = {
   { 0.0,    0.0,   0.0,   0},                
   { 0.0136, 0.0,   0.0,   0},
   { 0.0246, 0.0,   0.0,   0},
@@ -483,7 +483,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static int   dq_tot,nkd_tot,ephot,mode;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-    
+  static t_Gaussdata gaussrand=NULL;
+  
   real factor,E_lost=0;
   real pt,ptot,pphot,pcoll[ecollNR],tmax;
   real hboxx,hboxy,rho2;
@@ -498,11 +499,12 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     nphot    = ir->userreal2;  /* Intensity                             */
     width    = ir->userreal3;  /* Width of the peak (in time)           */
     rho      = ir->userreal4;  /* Diameter of the focal spot (nm)       */
-    ionize_seed = ir->userint1;   /* Random seed for stochastic ionization */
+    ionize_seed= ir->userint1;   /* Random seed for stochastic ionization */
     ephot    = ir->userint2;   /* Energy of the photons                 */
     mode     = ir->userint3;   /* Mode of ionizing                      */
     interval = 0.001*ir->userint4;   /* Interval between pulses (ps)    */
-     
+    gaussrand=init_gauss(ionize_seed);
+   
     if ((width <= 0) || (nphot <= 0))
       fatal_error(0,"Your parameters for ionization are not set properly\n"
 		  "width (userreal3) = %f,  nphot (userreal2) = %f",
@@ -640,7 +642,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	
 	/* Get parameters for photoelestic effect */
 	/* Note that in the article this is called 2 theta */
-	theta = DEG2RAD*gauss(70.0,26.0,&ionize_seed);
+	theta = DEG2RAD*gauss(gaussrand)*26.0+70.0;
+	
 	phi   = 2*M_PI*rando(&ionize_seed);
 	
 	if (bL)
@@ -669,7 +672,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    dv[m] -= factor*ddv[m];
 	
 	  if (debug)
-	    pr_rvec(debug,0,"ELL",dv,DIM);
+	    pr_rvec(debug,0,"ELL",dv,DIM,TRUE);
 	  
 	  bIonize = TRUE;
 	}
@@ -701,7 +704,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    dv[ZZ] -= factor*cos(theta);
 	  */
 	  if (debug)
-	    pr_rvec(debug,0,"INELL",dv,DIM);
+	    pr_rvec(debug,0,"INELL",dv,DIM,TRUE);
 	}
 	break;
       }

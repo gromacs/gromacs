@@ -33,10 +33,6 @@
 #ifndef _nmol_h
 #define _nmol_h
 
-static char *SRCID_nmol_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) nmol.h 1.1 11/19/92"
-#endif /* HAVE_IDENT */
 
 #include "x11.h"
 #include "xutil.h"

@@ -29,7 +29,8 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_mvxvf_c = "$Id$";
+/* This file is completely threadsafe - keep it that way! */
+
 #include <sysstuff.h>
 #include <string.h>
 #include "typedefs.h"

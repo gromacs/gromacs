@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_index_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -40,7 +40,7 @@ extern t_block *new_block(void);
 extern void write_index(char *outf, t_block *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],char *name);
+void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
 extern void analyse(t_atoms *atoms,t_block *gb,char ***gn,

@@ -33,7 +33,6 @@
 #ifndef _cmat_h
 #define _cmat_h
 
-static char *SRCID_cmat_h = "$Id$";
 #include "typedefs.h"
 
 typedef struct {

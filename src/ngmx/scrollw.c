@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_scrollw_c = "$Id$";
+
 #include <sysstuff.h>
 #include <Xstuff.h>
 #include <xutil.h>

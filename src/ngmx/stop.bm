@@ -37,9 +37,6 @@
 #ifndef	_stop_bm
 #define	_stop_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) stop.bm 1.4 9/29/92"
-#endif /* HAVE_IDENT */
 
 #define stop_width 48
 #define stop_height 48

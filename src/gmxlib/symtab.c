@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_symtab_c = "$Id$";
+
 #include <stdio.h>
 #include <string.h>
 #include "sysstuff.h"
@@ -45,22 +45,24 @@ static char *SRCID_symtab_c = "$Id$";
 #define	BUFSIZE			1024
 #define	TABLESIZE		5
 
-static char *trim_string(char *s)
+static char *trim_string(char *s,char *out, int maxlen)
      /*
       * Returns a pointer to a static area which contains a copy 
       * of s without leading or trailing spaces. Strings are
       * truncated to BUFSIZE positions.
       */      
 {
-  static char buf[BUFSIZE];
   int len,i;
+ 
+  if(strlen(s)>maxlen-1)
+    fatal_error(0,"Character buffer size too small\n");
   
   for (; (*s)&&((*s)==' '); s++);
   for (len=strlen(s); (len>0); len--) if (s[len-1]!=' ') break;
   if (len>=BUFSIZE) len=BUFSIZE-1;
-  for (i=0; i<len; i++) buf[i]=*(s++);
-  buf[i]=0;
-  return buf;
+  for (i=0; i<len; i++) out[i]=*(s++);
+  out[i]=0;
+  return out;
 }
 
 int lookup_symtab(t_symtab *symtab,char **name)
@@ -148,9 +150,11 @@ static char **enter_buf(t_symtab *symtab,char *name)
   return &(symbuf->buf[0]);
 }
 
-char **put_symtab(t_symtab *symtab,char *name)
+char **put_symtab(t_symtab *symtab,const char *name)
 {
-  return enter_buf(symtab,trim_string(name));
+  char buf[256];
+  
+  return enter_buf(symtab,trim_string(name,buf,255));
 }
 
 void open_symtab(t_symtab *symtab)

@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_mk_ghat_c = "$Id$";
+
 #include <math.h>
 #include <stdio.h>
 #include "copyrite.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_morph_c = "$Id$";
+
 #include "confio.h"
 #include "statutil.h"
 #include "smalloc.h"

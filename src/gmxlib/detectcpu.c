@@ -29,14 +29,29 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_detectcpu_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
+
+/* This file is completely threadsafe - keep it that way! */
+
+#ifdef USE_THREADS
+#include <pthread.h>
 #endif
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <detectcpu.h>
+
+/* This file uses some global variables to catch illegal instruction
+ * signals from the operating system. To make it thread-safe, we use
+ * a global mutex which is locked immediately when the detect_cpu()
+ * routine is called (if we use threads). Do NOT call any of the 
+ * lower-level CPU detection routines directly, since these do not
+ * lock the mutex.
+ */
 
 
 #if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2 || defined USE_PPC_ALTIVEC)
@@ -52,8 +67,10 @@ static char *SRCID_detectcpu_c = "$Id$";
  * be clobbered by the longjmp. We get rid of this
  * warning by making them global...
  */
-static int cpuSSE,cpuSSE2,cpu3DNow,doSSE,doSSE2,do3DNow,cpuflags;
-static int cpuAltivec;
+
+#ifdef USE_THREADS
+static pthread_mutex_t detectcpu_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
   
 static jmp_buf mainloop;
 static int success=1;
@@ -85,7 +102,8 @@ static int detect_altivec(FILE *log)
    * to perform the extensive tests like for x86 to recommend
    * users to upgrade. Just check if an instruction works!
    */
-  cpuflags=cpuAltivec=0;
+  int cpuAltivec=0;
+  int cpuflags=0;
   
   /* if we got here, its ppc! */
   cpuflags |= PPC_CPU;
@@ -117,11 +135,8 @@ static int detect_altivec(FILE *log)
 static int detect_sse2(FILE *log)
 {
   unsigned long eax,ebx,ecx,edx;
+  int cpuflags=0;
   
-  cpuSSE2=doSSE2=cpuflags=0;
-  
-  if(log)    
-    fprintf(log,"\nTesting x86 processor CPUID...\n");
   /* start by trying to issue the cpuid instruction */
   success=1;
   signal(SIGILL,sigill_handler);
@@ -139,14 +154,12 @@ static int detect_sse2(FILE *log)
     /* for SSE support, bit 25 of edx should be set */
     x86_cpuid(1,&eax,&ebx,&ecx,&edx);
     if(edx & FLAGS_SUPPORT_SSE2) {
-      cpuSSE2=1;
       cpuflags |= CPU_SSE2_SUPPORT;/* CPU ok, but OS might not be */
       /* try it */
       success=1;
       setjmp(mainloop); /* return to this point if we get SIGILL */
       if(success) {
 	checksse2();
-	doSSE2=1;
 	cpuflags |= X86_SSE2_SUPPORT;
       }
     }
@@ -160,10 +173,8 @@ static int detect_sse(FILE *log)
 {
   unsigned long eax,ebx,ecx,edx;
   
-  cpuSSE=doSSE=cpuflags=0;
+  int cpuflags=0;
   
-  if(log)    
-    fprintf(log,"\nTesting x86 processor CPUID...\n");
   /* start by trying to issue the cpuid instruction */
   success=1;
   signal(SIGILL,sigill_handler);
@@ -181,14 +192,12 @@ static int detect_sse(FILE *log)
     /* for SSE support, bit 25 of edx should be set */
     x86_cpuid(1,&eax,&ebx,&ecx,&edx);
     if(edx & FLAGS_SUPPORT_SSE) {
-      cpuSSE=1;
       cpuflags |= CPU_SSE_SUPPORT;/* CPU ok, but OS might not be */
       /* try it */
       success=1;
       setjmp(mainloop); /* return to this point if we get SIGILL */
       if(success) {
 	checksse();
-	doSSE=1;
 	cpuflags |= X86_SSE_SUPPORT;
       }
     }
@@ -200,10 +209,8 @@ static int detect_3dnow(FILE *log)
 {
   unsigned long eax,ebx,ecx,edx;
   
-  cpu3DNow=do3DNow=cpuflags=0;
+  int cpuflags=0;
   
-  if(log)    
-    fprintf(log,"\nTesting x86 processor CPUID...\n");
   /* start by trying to issue the cpuid instruction */
   success=1;
   signal(SIGILL,sigill_handler);
@@ -224,13 +231,11 @@ static int detect_3dnow(FILE *log)
       if(eax>=0x80000001) {
 	x86_cpuid(0x80000001,&eax,&ebx,&ecx,&edx);
 	if(edx & FLAGS_SUPPORT_EXT_3DNOW) {
-	  cpu3DNow=1;
 	  /* try it */
 	  success=1;
 	  setjmp(mainloop); /* return to this point if we get SIGILL */
 	  if(success) {
 	    check3dnow();
-	    do3DNow=1;
 	    cpuflags |= X86_3DNOW_SUPPORT;
 	  }
 	}
@@ -244,7 +249,42 @@ static int detect_3dnow(FILE *log)
 #if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2)
 static int detect_x86(FILE *log)
 {
-  cpuflags=0;
+  unsigned long eax,ebx,ecx,edx;
+
+  int cpuflags=0;
+
+  /* First we check if this is an Intel or AMD cpu */
+  if(log)    
+    fprintf(log,"\nTesting x86 processor CPUID...\n");
+  /* start by trying to issue the cpuid instruction */
+  success=1;
+  signal(SIGILL,sigill_handler);
+  setjmp(mainloop); /* return to this point if we get SIGILL */  
+
+  if(success) 
+    x86_cpuid(0,&eax,&ebx,&ecx,&edx);
+  else if(log)
+    fprintf(log,"This CPU doesn't support CPUID.\n");
+  
+  if(eax>0) {
+    cpuflags |= X86_CPU;
+  } else {
+    if(log)
+      fprintf(log,"Didn't recognize this as an x86-type CPU.\n");
+    return cpuflags;
+  }
+  
+  if(ebx==VENDOR_INTEL) {
+    if(log) 
+      fprintf(log,"CPU manufactured by Intel.\n");
+    cpuflags |= INTEL_CPU;
+  }
+  else if(ebx==VENDOR_AMD) {
+     if(log) 
+      fprintf(log,"CPU manufactured by AMD.\n");
+    cpuflags |= AMD_CPU;
+  }
+    
 #ifdef USE_X86_SSE2
   /* For double precision we need SSE2 */
   cpuflags=detect_sse2(log);
@@ -298,9 +338,16 @@ static int detect_x86(FILE *log)
 }
 #endif
 
-int detect_cpu(FILE *log)
+
+int 
+detect_cpu(FILE *log)
 {
   int cpuflags=0;
+
+  /* Use a global lock for all CPU detection */
+#ifdef USE_THREADS
+  pthread_mutex_lock(&detectcpu_mutex);
+#endif
 
 #ifdef USE_PPC_ALTIVEC
   cpuflags=detect_altivec(log);
@@ -311,6 +358,12 @@ int detect_cpu(FILE *log)
     fprintf(log,"Not checking cpu support for SSE/SSE2/3DNow/Altivec\n");
   cpuflags=UNKNOWN_CPU;
 #endif
+
+  /* release lock */
+#ifdef USE_THREADS
+  pthread_mutex_unlock(&detectcpu_mutex);
+#endif
+
   if (getenv("NOASSEMBLYLOOPS") != NULL) {
     cpuflags &= (~X86_SSE_SUPPORT) & (~X86_SSE2_SUPPORT) & (~X86_3DNOW_SUPPORT) & (~PPC_ALTIVEC_SUPPORT);
     
@@ -319,7 +372,11 @@ int detect_cpu(FILE *log)
 	      "Found environment variable NOASSEMBLYLOOPS.\n"
 	      "Disabling all SSE/SSE2/3DNow/Altivec support.\n");
   }
+
   return cpuflags;
 }
 #endif /* detectcpu */
+
+
+
 

@@ -33,15 +33,9 @@
 #ifndef _grompp_h
 #define _grompp_h
 
-static char *SRCID_grompp_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-
-#ifdef HAVE_IDENT
-#ident	"@(#) grompp.h 1.37 2/2/97"
-#endif /* HAVE_IDENT */
 
 #include <stdio.h>
 #include "typedefs.h"
@@ -84,6 +78,7 @@ typedef struct {
   t_block       cgs;            /* Charge groups                        */
   t_block       mols;           /* Molecules                            */
   t_params      plist[F_NRE];   /* Parameters in old style              */
+  
 } t_molinfo;
 
 typedef struct {
@@ -92,6 +87,9 @@ typedef struct {
   char          ***atomname;	/* Names of the atomtypes		*/
   t_param	*nb;		/* Nonbonded force default params	*/
   int           *bondatomtype;  /* The bond_atomtype for each atomtype  */
+  real          *radius;        /* Radius for GBSA stuff                */
+  real          *vol;           /* Effective volume for GBSA            */
+  real          *surftens;      /* Surface tension with water, for GBSA */
 } t_atomtype;
 
 typedef struct {
@@ -129,6 +127,7 @@ typedef enum {
   d_angle_restraints_z,
   d_distance_restraints,
   d_orientation_restraints,
+  d_dihedral_restraints,
   d_maxdir,
   d_invalid,
   d_none
@@ -164,9 +163,18 @@ static char *ds[d_maxdir+1] = {
   "angle_restraints_z",
   "distance_restraints",
   "orientation_restraints",
+  "dihedral_restraints",
   "invalid"
   };
 
 extern void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype);
 
 #endif	/* _grompp_h */
+
+
+
+
+
+
+
+

@@ -33,7 +33,6 @@
 #ifndef _pppm_h
 #define _pppm_h
 
-static char *SRCID_pppm_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_shift_util_c = "$Id$";
+
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
@@ -462,7 +462,7 @@ static real rgbset(real col)
 
 void plot_phi(char *fn,rvec box,int natoms,rvec x[],real phi[])
 {
-  FILE *eps;
+  t_psdata eps;
   real phi_max,rr,gg,bb,fac,dx,x0,y0;
   real offset;
   int  i;

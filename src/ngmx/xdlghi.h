@@ -33,10 +33,6 @@
 #ifndef _xdlghi_h
 #define _xdlghi_h
 
-static char *SRCID_xdlghi_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) xdlghi.h 1.2 9/29/92"
-#endif /* HAVE_IDENT */
 
 #include <stdarg.h>
 #include "Xstuff.h"

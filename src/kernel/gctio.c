@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_gctio_c = "$Id$";
+
 #include "typedefs.h"
 #include "xmdrun.h"
 #include "block_tx.h"
@@ -66,7 +66,7 @@ static int Name2eo(char *s)
   return res;
 }
 
-static char *NoYes[] = { "No", "Yes" };
+static const char *NoYes[] = { "No", "Yes" };
 	
 static void send_tcr(int dest,t_coupl_rec *tcr)
 {

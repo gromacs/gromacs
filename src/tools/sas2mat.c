@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_sas2mat_c = "$Id$";
+
 #include <string.h>
 #include "sysstuff.h"
 #include "matio.h"

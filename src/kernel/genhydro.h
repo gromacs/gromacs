@@ -33,7 +33,7 @@
 #ifndef _genhydro_h
 #define _genhydro_h
 
-static char *SRCID_genhydro_h = "$Id$";
+
 #include "pdbio.h"
 #include "hackblock.h"
 

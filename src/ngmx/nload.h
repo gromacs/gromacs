@@ -33,10 +33,6 @@
 #ifndef _nload_h
 #define _nload_h
 
-static char *SRCID_nload_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) nload.h 1.19 9/30/97"
-#endif /* HAVE_IDENT */
 #include "x11.h"
 #include "xutil.h"
 

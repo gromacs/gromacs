@@ -33,10 +33,6 @@
 #ifndef _logo_h
 #define _logo_h
 
-static char *SRCID_logo_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) logo.h 1.15 9/30/97"
-#endif /* HAVE_IDENT */
 #include <x11.h>
 #include <xutil.h>
 

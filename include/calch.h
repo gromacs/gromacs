@@ -33,14 +33,10 @@
 #ifndef _calch_h
 #define _calch_h
 
-static char *SRCID_calch_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) calch.h 1.8 2/2/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 	
 extern void calc_h_pos(int nht, rvec xa[], rvec xh[]);

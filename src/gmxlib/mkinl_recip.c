@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_mkinl_recip_c = "$Id$";
+
 #include "mkinl.h"
 #include <string.h>
 

@@ -33,7 +33,6 @@
 #ifndef _axp_asm_h
 #define _axp_asm_h
 
-static char *SRCID_axp_asm_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_coupling_c = "$Id$";
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "update.h"
@@ -124,22 +124,19 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
    */
   
   int    d,n;
-  static tensor winv;
-  static bool bFirst=TRUE;
+  tensor winv;
   real   vol=box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real   fac=vol/PRESFAC;
   real   atot,arel,change,maxchange,xy_pressure;
   tensor invbox,pdiff,t1,t2;
 
-  if(bFirst) {
-    real maxl;
-    maxl=max(box[XX][XX],box[YY][YY]);
-    maxl=max(maxl,box[ZZ][ZZ]);
-    for(d=0;d<DIM;d++)
-      for(n=0;n<DIM;n++)
-	winv[d][n]=(4*M_PI*M_PI*ir->compress[d][n])/(3*ir->tau_p*ir->tau_p*maxl);
-    bFirst=FALSE;
-  }
+  real maxl;
+  maxl=max(box[XX][XX],box[YY][YY]);
+  maxl=max(maxl,box[ZZ][ZZ]);
+  for(d=0;d<DIM;d++)
+    for(n=0;n<DIM;n++)
+      winv[d][n]=(4*M_PI*M_PI*ir->compress[d][n])/(3*ir->tau_p*ir->tau_p*maxl);
+
   
   m_inv(box,invbox);
   m_sub(pres,ir->ref_p,pdiff);
@@ -337,17 +334,18 @@ void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,
     }
 }
 
-void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
-		      real dt,real SAfactor)
+void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
 {
   int    i;
+  
   real   T,reft=0,lll; 
 
   for(i=0; (i<opts->ngtc); i++) {
     T = grps->tcstat[i].T;
     
     if ((opts->tau_t[i] > 0) && (T > 0.0)) {
-      reft = max(0.0,opts->ref_t[i]*SAfactor);
+ 
+      reft = max(0.0,opts->ref_t[i]);
       lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
       grps->tcstat[i].lambda = max(min(lll,1.25),0.8);
     }
@@ -360,28 +358,58 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
   }
 }
 
-void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,
-		       real dt,real SAfactor)
+void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
 {
-  static real *Qinv=NULL;
-  int    i;
-  real   reft=0,xit,oldxi;
-
-  if (Qinv == NULL) {
-    snew(Qinv,opts->ngtc);
-    
-    /* Use inputrec ref_t - Q shouldnt change during the run. */
-    for(i=0;i<opts->ngtc;i++) {
-      if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
-	Qinv[i]=1.0/(opts->tau_t[i]*opts->tau_t[i]*opts->ref_t[i])/(4*M_PI*M_PI);
-      else
-	Qinv[i]=0.0;
-    }
-  }
+  real  Qinv;
+  int   i;
+  real  reft=0,xit,oldxi;
 
   for(i=0; (i<opts->ngtc); i++) {
-    reft = max(0.0,opts->ref_t[i]*SAfactor);
-    grps->tcstat[i].xi += dt*Qinv[i]*(grps->tcstat[i].T-reft);
+    if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
+      Qinv=1.0/(opts->tau_t[i]*opts->tau_t[i]*opts->ref_t[i])/(4*M_PI*M_PI);
+    else
+      Qinv=0.0;
+    reft = max(0.0,opts->ref_t[i]);
+    grps->tcstat[i].xi += dt*Qinv*(grps->tcstat[i].T-reft);
   }
 }
   
+/* set target temperatures if we are annealing */
+void 
+update_annealing_target_temp(t_grpopts *opts,real t)
+{
+  int i,j,n;
+  real pert,thist,x;
+
+  for(i=0;i<opts->ngtc;i++) {
+    if(opts->annealing[i] == eannNO)
+      continue;
+    else if(opts->annealing[i] == eannPERIODIC) {
+      /* calculate time modulo the period */
+      pert = opts->anneal_time[i][opts->anneal_npoints[i]-1];
+      n = t / pert;
+      thist = t - n*pert; /* modulo time */
+      /* Make sure rounding didn't get us outside the interval */
+      if(fabs(thist-pert)<GMX_REAL_EPS*100)
+	thist=0;
+    } else /* nonperiodic annealing run */ {
+      thist = t;
+    }
+    /* We are doing annealing for this group if we got here, 
+     * and we have the (relative) time as thist.
+     * calculate target temp */
+    j=0;
+    while(thist>(opts->anneal_time[i][j+1]))
+      j++;
+    /* Found our position between points j and j+1. 
+     * Interpolate: x is the amount from j+1, (1-x) from point j 
+     * First treat possible jumps in temperature as a special case.
+     */
+    if((opts->anneal_time[i][j+1]-opts->anneal_time[i][j])<GMX_REAL_EPS*100)
+      opts->ref_t[i]=opts->anneal_temp[i][j+1];
+    else {
+      x=(thist-opts->anneal_time[i][j])/(opts->anneal_time[i][j+1]-opts->anneal_time[i][j]);
+      opts->ref_t[i]=x*opts->anneal_temp[i][j+1]+(1-x)*opts->anneal_temp[i][j];
+    }
+  }
+}

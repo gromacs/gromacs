@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_main_c = "$Id$";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +43,18 @@ static char *SRCID_main_c = "$Id$";
 #include "filenm.h"
 
 #define BUFSIZE	1024
+
+
+#ifdef USE_THREADS
+/* These are a couple of Global mutex variables that
+ * we use when writing to log files, so we avoid different
+ * threads printing to the same file at once. (It wont crash,
+ * but the print statements would be completely mixed up)
+ */
+pthread_mutex_t gmx_logfile_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t gmx_stdout_mtx  = PTHREAD_MUTEX_INITIALIZER;
+
+#endif
 
 FILE *stdlog=NULL;
 int  gmx_parallel=0;
@@ -114,13 +126,16 @@ static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
   return 1;
 }
 
-char *par_fn(char *base,int ftp,t_commrec *cr)
+char *par_fn(char *base,int ftp,t_commrec *cr, char buf[], int bufsize)
 {
-  static char buf[256];
+  int n;
   
+  if(bufsize<(strlen(base)+4))
+     fatal_error(0,"Character buffer too small!\n");
+
   /* Copy to buf, and strip extension */
   strcpy(buf,base);
-  buf[strlen(base)-4] = '\0';
+  buf[strlen(buf)-4] = '\0';
   
   /* Add node info */
   if (PAR(cr)) 
@@ -164,7 +179,7 @@ void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
 void open_log(char *lognm,t_commrec *cr)
 {
   int  len,testlen,pid;
-  char *buf,*host;
+  char buf[256],*host;
   
   debug_gmx();
   
@@ -197,7 +212,7 @@ void open_log(char *lognm,t_commrec *cr)
   debug_gmx();
 
   /* Since log always ends with '.log' let's use this info */
-  buf    = par_fn(lognm,efLOG,cr);
+  par_fn(lognm,efLOG,cr,buf,255);
   stdlog = ffopen(buf,"w");
   
   /* Get some machine parameters */
@@ -258,7 +273,7 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
 {
   t_commrec *mcr;
   int  i,ftp;
-  char *buf;
+  char buf[256];
   
   snew(mcr,1);
 
@@ -274,6 +289,19 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
     /* Because of possible multiple extensions per type we must look 
      * at the actual file name 
      */
+<<<<<<< main.c
+    ftp = fn2ftp(fnm[i].fn);
+    if (ftp != efLOG) {
+#ifdef DEBUGPAR
+      fprintf(stderr,"Old file name: %s",fnm[i].fn);
+#endif
+      par_fn(fnm[i].fn,ftp,mcr,buf,255);
+      sfree(fnm[i].fn);
+      fnm[i].fn = strdup(buf);
+#ifdef DEBUGPAR
+      fprintf(stderr,", new: %s\n",fnm[i].fn);
+#endif
+=======
     ftp = fn2ftp(fnm[i].fns[0]);
     if (ftp != efLOG && ftp!= efTPX && ftp != efTPR && ftp != efTPS && ftp!=efTPA && ftp!=efTPB) {
       /* fprintf(stderr,"Old file name: %s",fnm[i].fns[0]); */
@@ -281,6 +309,7 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
       sfree(fnm[i].fns[0]);
       fnm[i].fns[0] = strdup(buf);
       /* fprintf(stderr,", new: %s\n",fnm[i].fns[0]); */
+>>>>>>> 1.30
     }
   }
 

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_gmxfio_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -59,14 +59,14 @@ typedef struct {
 } t_fileio;
 
 /* These simple lists define the I/O type for these files */
-static int ftpXDR[] = { efTPR, efTRR, efEDR, efXTC };
-static int ftpASC[] = { efTPA, efGRO, efPDB };
-static int ftpBIN[] = { efTPB, efTRJ, efMTX, efENE };
+static const int ftpXDR[] = { efTPR, efTRR, efEDR, efXTC };
+static const int ftpASC[] = { efTPA, efGRO, efPDB };
+static const int ftpBIN[] = { efTPB, efTRJ, efMTX, efENE };
 #ifdef HAVE_XML
-static int ftpXML[] = { efXML };
+static const int ftpXML[] = { efXML };
 #endif
 
-bool in_ftpset(int ftp,int nset,int set[])
+bool in_ftpset(int ftp,int nset,const int set[])
 {
   int i;
   bool bResult;

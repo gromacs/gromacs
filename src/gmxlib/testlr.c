@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_testlr_c = "$Id$";
+
 #include <math.h>
 #include <string.h>
 #include "typedefs.h"
@@ -274,7 +274,7 @@ int main(int argc,char *argv[])
   
 
   /* Read topology and coordinates */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&stath);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&stath,FALSE);
   snew(x,stath.natoms);
   snew(f_sr,stath.natoms);
   snew(f_excl,stath.natoms);

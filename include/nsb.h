@@ -33,7 +33,6 @@
 #ifndef _nsb_h
 #define _nsb_h
 
-static char *SRCID_nsb_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

@@ -33,10 +33,6 @@
 #ifndef _xdlg_h
 #define _xdlg_h
 
-static char *SRCID_xdlg_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) xdlg.h 1.3 9/29/92"
-#endif /* HAVE_IDENT */
 
 #include <xdlgitem.h>
 

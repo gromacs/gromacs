@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_nsc_c = "$Id$";
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

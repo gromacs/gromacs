@@ -29,7 +29,7 @@
  * And Hey:
  * GROtesk MACabre and Sinister
  */
-static char *SRCID_g_sgangle_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "string.h"

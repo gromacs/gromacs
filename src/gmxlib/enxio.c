@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_enxio_c = "$Id$";
+
 #include "futil.h"
 #include "string2.h"
 #include "fatal.h"

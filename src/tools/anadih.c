@@ -29,9 +29,10 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_anadih_c = "$Id$";
+
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include "physics.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -363,8 +364,8 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 			   real core_frac, bool bAll, char *fnall) 
 {
 
-  bool bRotZero, bHaveChi; 
-  int  accum, index, i,j,k,Xi,n,b ; 
+  bool bRotZero, bHaveChi=FALSE; 
+  int  accum=0, index, i,j,k,Xi,n,b ; 
   real *chi_prtrj; 
   int  *chi_prhist; 
   int  nbin ; 
@@ -549,8 +550,8 @@ static void calc_angles(FILE *log,matrix box,
   if (debug) {
     fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
 	    ang[0],costh,index[0],index[1],index[2]);
-    pr_rvec(debug,0,"rij",r_ij,DIM);
-    pr_rvec(debug,0,"rkj",r_kj,DIM);
+    pr_rvec(debug,0,"rij",r_ij,DIM,TRUE);
+    pr_rvec(debug,0,"rkj",r_kj,DIM,TRUE);
     pr_rvecs(debug,0,"box",box,DIM);
   }
 }

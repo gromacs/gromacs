@@ -37,9 +37,6 @@
 #ifndef	_play_bm
 #define	_play_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) play.bm 1.2 11/23/92"
-#endif /* HAVE_IDENT */
 #define play_width 40
 #define play_height 32
 static unsigned char play_bits[] = {

@@ -33,11 +33,6 @@
 #ifndef _xmb_h
 #define _xmb_h
 
-static char *SRCID_xmb_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) xmb.h 1.3 9/29/92"
-#endif /* HAVE_IDENT */
-
 #include <x11.h>
 
 #define MB_OK              1

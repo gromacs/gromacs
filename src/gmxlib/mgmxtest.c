@@ -29,7 +29,7 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_mgmxtest_c = "$Id$";
+
 #include "copyrite.h"
 #include "statutil.h"
 #include "macros.h"

@@ -29,7 +29,6 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_xdrd_c = "$Id$";
 #include "typedefs.h"
 #include "xdrf.h"
 #include "fatal.h"
@@ -54,19 +53,17 @@ int xdr_real(XDR *xdrs,real *r)
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
 {
 #ifdef DOUBLE
-  static float *ffp=NULL;
+  float *ffp;
   float  fprec;
   int    i,ret,isize;
   
   isize=*size*DIM;
-  if (ffp == NULL)  {
-    if (isize > 0) {
-      snew(ffp,isize);
-    }
-    else
-      fatal_error(0,"Don't know what to malloc for ffp (file %s, line %d)",
-		  __FILE__,__LINE__);
-  }
+  if (isize > 0) 
+    snew(ffp,isize);
+  else
+    fatal_error(0,"Don't know what to malloc for ffp (file %s, line %d)",
+		__FILE__,__LINE__);
+
   for(i=0; (i<isize); i++)
     ffp[i]=fp[i];
   fprec=*precision;
@@ -75,7 +72,8 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
   *precision=fprec;
   for(i=0; (i<isize); i++)
     fp[i]=ffp[i];
-  
+
+  sfree(ffp);
   return ret;
 #else
   return xdr3dfcoord(xdrs,(float *)fp,size,(float *)precision);

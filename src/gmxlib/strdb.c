@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_strdb_c = "$Id$";
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "string2.h"
@@ -40,14 +40,11 @@ static char *SRCID_strdb_c = "$Id$";
 
 bool get_a_line(FILE *fp,char line[],int n)
 {
-  static char *line0=NULL;
-  static int nalloc=0;
+  char *line0;
   char *dum;
   
-  if (n>nalloc) {
-    nalloc=n;
-    srenew(line0,nalloc+1);
-  }
+  snew(line0,n+1);
+ 
   do {
     if (!fgets(line0,n+1,fp)) {
       return FALSE;
@@ -64,11 +61,12 @@ bool get_a_line(FILE *fp,char line[],int n)
     dum=strchr(line0,';');
     if (dum) 
       dum[0]='\0';
-    strcpy(line,line0);
+    strncpy(line,line0,n);
     dum=line0;
     ltrim(dum);
   } while (dum[0] == '\0'); 
-
+  
+  sfree(line0);
   return TRUE;
 }
 

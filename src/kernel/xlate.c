@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_xlate_c = "$Id$";
+
 #include <ctype.h>
 #include <string.h>
 #include "typedefs.h"
@@ -47,7 +47,7 @@ typedef struct {
 
 static t_xlate_atom *get_xlatoms(int *nxlatom)
 {
-  static char  *xlfile="xlateat.dat";
+  const char  *xlfile="xlateat.dat";
   
   t_xlate_atom *xl=NULL;
   char rbuf[32],abuf[32],repbuf[32];

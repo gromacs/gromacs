@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_bondlist_c = "$Id$";
+
 #include "cdist.h"
 
 typedef struct list {

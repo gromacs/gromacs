@@ -33,14 +33,9 @@
 #ifndef _viewit_h
 #define _viewit_h
 
-static char *SRCID_viewit_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident "$Id$"
-#endif /* HAVE_IDENT */
 
 #ifdef CPLUSPLUS
 extern "C" {

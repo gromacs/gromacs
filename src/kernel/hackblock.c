@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_hackblock_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <string.h>
 #include "hackblock.h"
 #include "smalloc.h"
@@ -37,8 +39,8 @@ static char *SRCID_hackblock_c = "$Id$";
 #include "string2.h"
 
 /* these MUST correspond to the enum in hackblock.h */
-char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions" };
-int btsNiatoms[ebtsNR] = { 2,       3,        4,           4,          2 };
+const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions" };
+const int btsNiatoms[ebtsNR] = { 2,       3,        4,           4,          2 };
 
 static void free_t_bonded(t_rbonded *rb)
 {

@@ -33,7 +33,7 @@
 #ifndef _detectcpu_h
 #define _detectcpu_h
 
-static char *SRCID_detectcpu_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -59,6 +59,8 @@ extern int cpu_capabilities;
 #define IA64_CPU              (1 << 7)
 #define PPC_CPU               (1 << 8)
 #define PPC_ALTIVEC_SUPPORT   (1 << 9)
+#define AMD_CPU               (1 << 10)
+#define INTEL_CPU             (1 << 11)
 
 /* Values that are return by cpuid instructions on x86 */
 #define VENDOR_AMD   0x68747541

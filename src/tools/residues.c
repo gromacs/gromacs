@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_residues_c = "$Id$";
+
 #include <math.h>
 #include "assert.h"
 #include "cdist.h"

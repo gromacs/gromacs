@@ -33,14 +33,10 @@
 #ifndef _mdebin_h
 #define _mdebin_h
 
-static char *SRCID_mdebin_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) mdebin.h 1.12 2/2/97"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "ebin.h"
@@ -70,13 +66,12 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       t_groups *grps,
 		       rvec mu_tot, bool bNoseHoover);
      
-extern void print_ebin_header(FILE *log,int steps,real time,
-			      real lamb,real SAfactor);
+extern void print_ebin_header(FILE *log,int steps,real time,real lamb);
 
-extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
+extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 		       FILE *log,int steps,real time,
 		       int mode,bool bCompact,
-		       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms);
+		       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts);
 
 #endif	/* _mdebin_h */
 

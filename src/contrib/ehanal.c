@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_ehanal_c = "$Id$";
+
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>

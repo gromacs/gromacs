@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_ngmx_c = "$Id$";
+
 #include <ctype.h>
 #include <string.h>
 
@@ -65,7 +65,7 @@ static void dump_xw(char *dispname,Window w,char *fn)
 
 static void dump_it(t_manager *man)
 {
-  FILE *ps;
+  t_psdata ps;
   
   ps=ps_open("ngmx.ps",0,0,man->molw->wd.width,man->molw->wd.height);
   ps_draw_mol(ps,man);
@@ -343,7 +343,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   matrix               box;
   t_trxframe           fr;
   int                  status;
-
+  char                 quote[256];
+  
   snew(gmx,1);
   snew(gmx->wd,1);
 
@@ -357,7 +358,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   /* Creates a simple window */
   w0=DisplayWidth(x11->disp,x11->screen)-132;
   h0=DisplayHeight(x11->disp,x11->screen)-140;
-  InitWin(gmx->wd,0,0,w0,h0,3,bromacs());
+  InitWin(gmx->wd,0,0,w0,h0,3,bromacs(quote,255));
   gmx->wd->self=XCreateSimpleWindow(x11->disp,x11->root,
 				    gmx->wd->x, gmx->wd->y,
 				    gmx->wd->width,gmx->wd->height,

@@ -29,7 +29,7 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_confio_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -641,7 +641,7 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   char resnm[6],nm[6],format[100];
   int  ai,i,resnr,l,vpr;
 
-  fprintf (out,"%s\n",(title && title[0])?title:bromacs());
+  fprintf (out,"%s\n",(title && title[0])?title:bromacs(format,99));
   fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
      something like "%8.3f" for x and "%8.4f" for v */
@@ -833,7 +833,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
 void get_stx_coordnum(char *infile,int *natoms)
 {
   FILE *in;
-  int ftp;
+  int ftp,tpxver,tpxgen;
   t_trxframe fr;
 
   ftp=fn2ftp(infile);
@@ -864,7 +864,7 @@ void get_stx_coordnum(char *infile,int *natoms)
   case efTPR: {
     t_tpxheader tpx;
     
-    read_tpxheader(infile,&tpx);
+    read_tpxheader(infile,&tpx,TRUE,&tpxver,&tpxgen);
     *natoms = tpx.natoms;
     break;
   }

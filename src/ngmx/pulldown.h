@@ -33,10 +33,7 @@
 #ifndef _pulldown_h
 #define _pulldown_h
 
-static char *SRCID_pulldown_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) pulldown.h 1.4 11/23/92"
-#endif /* HAVE_IDENT */
+
 #include "popup.h"
 
 typedef struct {

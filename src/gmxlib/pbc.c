@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_pbc_c = "$Id$";
+
 #include <math.h>
 #include "sysstuff.h"
 #include "typedefs.h"

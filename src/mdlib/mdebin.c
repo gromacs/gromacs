@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_mdebin_c = "$Id$";
+
 #include <string.h>
 #include "typedefs.h"
 #include "string2.h"
@@ -403,16 +403,16 @@ static void pprint(FILE *log,char *s)
   fprintf(log,"  ======>\n\n");
 }
 
-void print_ebin_header(FILE *log,int steps,real time,real lamb,real SAfactor)
+void print_ebin_header(FILE *log,int steps,real time,real lamb)
 {
-  fprintf(log,"   %12s   %12s   %12s   %12s\n"
-	  "   %12d   %12.5f   %12.5f   %12.5f\n\n",
-	  "Step","Time","Lambda","Annealing",steps,time,lamb,SAfactor);
+  fprintf(log,"   %12s   %12s   %12s\n"
+	  "   %12d   %12.5f   %12.5f\n\n",
+	  "Step","Time","Lambda",steps,time,lamb);
 }
 
-void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
+void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 		FILE *log,int steps,real time,int mode,bool bCompact,
-		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms)
+		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts)
 {
   static char **grpnms=NULL;
   static char *kjm="(kJ/mol)";
@@ -421,7 +421,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
   int         nr[enxNR];
   real        *block[enxNR];
   t_enxframe  fr;
-
+  
   switch (mode) {
   case eprNORMAL:
     fr.t          = time;
@@ -456,6 +456,11 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
   }
   
   if (log) {
+    for(i=0;i<opts->ngtc;i++)
+      if(opts->annealing[i]!=eannNO)
+	fprintf(log,"Current ref_t for group %s: %8.1f\n",
+		*(atoms->grpname[atoms->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
+  
     if (mode==eprNORMAL && fcd->orires.nr>0)
       print_orires_log(log,fcd);
 

@@ -29,8 +29,10 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_mkinl_fortrandata_h = "$Id$";
-static char finvsqrtdata[]={  
+
+/* This file is completely threadsafe - keep it that way! */
+
+static const char finvsqrtdata[]={  
   "      DATA (finvsqrtexptab(I), I=    1,   64) /\n"
   "     $     X'5f000000', X'5e800000', X'5e800000', X'5e000000',\n"
   "     $     X'5e000000', X'5d800000', X'5d800000', X'5d000000',\n"

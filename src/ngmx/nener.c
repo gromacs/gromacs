@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_nener_c = "$Id$";
+
 #include <math.h>
 #include <smalloc.h>
 #include <macros.h>

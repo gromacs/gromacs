@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_h_db_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include <string.h>
 #include "string2.h"
 #include "sysstuff.h"
@@ -44,8 +46,8 @@ static char *SRCID_h_db_c = "$Id$";
  * Here these number are given. Because arrays start at 0 an
  * extra dummy for index 0 is added 
  */
-/*                       1  2  3  4  5  6  7  8  9 */
-int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
+/*                                    1  2  3  4  5  6  7  8  9 */
+const int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
 
 int compaddh(const void *a,const void *b)
 {

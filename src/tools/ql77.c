@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_ql77_c = "$Id$";
+
 #include <math.h>
 #include "typedefs.h"
 #include "vec.h"

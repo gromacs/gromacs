@@ -29,7 +29,9 @@
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
-static char *SRCID_minvert_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #include "minvert.h"
 #include "nr.h"
 #include "smalloc.h"
@@ -97,19 +99,16 @@ void print_mat(FILE *fp,char *title,int n,real **a,int *indx)
 
 void invert_mat(int n,real **A,real **Ainv)
 {
-  static real *col=NULL;
-  static int  *indx=NULL;
-  static int  N=0;
+  real *col=NULL;
+  int  *indx=NULL;
   
   real d;
   int  i,j;
   
-  if (n > N) {
-    srenew(col,n+1);
-    srenew(indx,n+1);
-    N=n;
-  }
-  ludcmp(A,N,indx,&d);
+  snew(col,n+1);
+  snew(indx,n+1);
+  
+  ludcmp(A,n,indx,&d);
   
   /* A is an LU-decomposed matrix, now back substitute to get Ainv */
   for(j=1; (j<=n); j++) {
@@ -120,5 +119,7 @@ void invert_mat(int n,real **A,real **Ainv)
     for(i=1; (i<=n); i++)
       Ainv[i][j]=col[i];
   }
+  sfree(col);
+  sfree(indx);
 }
 

@@ -33,30 +33,45 @@
 #ifndef _random_h
 #define _random_h
 
-static char *SRCID_random_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#ifdef HAVE_IDENT
-#ident	"@(#) random.h 1.5 12/16/92"
-#endif /* HAVE_IDENT */
-
 #include <typedefs.h>
 
-extern real gauss(real am, real sd, int *ig);
-/* Generate a gaussian number with:
- * am = center of the distribution
- * sd = standard deviation
- * ig = the random number seed.
+
+typedef struct t_gaussdata *t_Gaussdata;
+/* Abstract data type for the internal state of
+ * a gaussian random number generator 
  */
+
+t_Gaussdata init_gauss(int seed);
+/* Initialize (and warm up) a gaussian random number generator
+ * by copying the seed. The routine returns a handle to the
+ * new generator.
+ */
+
+real 
+gauss(t_Gaussdata data);
+/* Return a new gaussian random number with expectation value
+ * 0.0 and standard deviation 1.0. This routine is NOT thread-safe
+ * for performance reasons - you will either have to do the locking
+ * yourself, or better: initialize one generator per thread.
+ */
+
+void 
+finish_gauss(t_Gaussdata data);
+/* Release all the resources used for the generator */
+
+
+
 
 extern int make_seed(void);
 /* Make a random seed: (time+getpid) % 1000000 */
 
-extern real rando(int *ig);
-/* Generate a random number 0 <= r < 1. ig is the (address of) the
- * seed variable.
+extern real rando(int *seed);
+/* Generate a random number 0 <= r < 1. seed is the (address of) the
+ * random seed variable.
  */
 
 extern void grp_maxwell(t_block *grp,real tempi[],int nrdf[],int seed,

@@ -29,7 +29,7 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_do_gct_c = "$Id$";
+
 #include "typedefs.h"
 #include "xmdrun.h"
 #include "block_tx.h"

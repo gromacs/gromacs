@@ -29,11 +29,8 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_topexcl_c = "$Id$";
-#ifdef HAVE_IDENT
-#ident "@(#) topexcl.c 1.38 2/2/97"
-#endif
 
+/* This file is completely threadsafe - keep it that way! */
 #include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"

@@ -29,7 +29,9 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-static char *SRCID_pgutil_c = "$Id$";
+
+/* This file is completely threadsafe - keep it that way! */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

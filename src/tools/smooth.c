@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_smooth_c = "$Id$";
+
 #include "cdist.h"
 
 #define NMRLEN  99.9

@@ -33,10 +33,6 @@
 #ifndef _dlb_h
 #define _dlb_h
 
-static char *SRCID_dlb_h = "$Id$";
-#ifdef HAVE_IDENT
-#ident	"@(#) dlb.h 1.3 31 Jan 1995"
-#endif /* HAVE_IDENT */
 #include "typedefs.h"
 
 extern void count_nb(t_commrec *cr,t_nsborder *nsb,t_block *cgs,int nns,

@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_dummies_c = "$Id$";
+
 #include <stdio.h>
 #include "typedefs.h"
 #include "assert.h"

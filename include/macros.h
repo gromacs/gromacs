@@ -33,14 +33,10 @@
 #ifndef _macros_h
 #define _macros_h
 
-static char *SRCID_macros_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-#ifdef HAVE_IDENT
-#ident	"@(#) macros.h 1.8 11/23/92"
-#endif /* HAVE_IDENT */
 
 #ifdef CPLUSPLUS
 extern "C" { 
@@ -81,15 +77,15 @@ extern "C" {
 /* This macro calculates the size of a array */
 #define asize(a) (sizeof(a)/sizeof((a)[0]))
 
-extern real ZERO;
-extern real THIRD;
-extern real HALF;
-extern real ONE;
-extern real TWO;
-extern real THREE;
-extern real SIX;
-extern real TEN;
-extern real TWELVE;
+extern const real ZERO;
+extern const real THIRD;
+extern const real HALF;
+extern const real ONE;
+extern const real TWO;
+extern const real THREE;
+extern const real SIX;
+extern const real TEN;
+extern const real TWELVE;
 
 #ifdef CPLUSPLUS
 }

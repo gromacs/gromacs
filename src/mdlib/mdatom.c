@@ -29,7 +29,7 @@
  * And Hey:
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
-static char *SRCID_mdatom_c = "$Id$";
+
 #include "typedefs.h"
 #include "mdatoms.h"
 #include "smalloc.h"
@@ -187,35 +187,21 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
   }
 }
 
-void init_mdatoms(t_mdatoms *md,real lambda,bool bFirst)
+void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst)
 {
-  static real lambda0;
   int    i,end;
   real   L1=1.0-lambda;
   
-  if (bFirst)
-    lambda0 = lambda;
   end=md->nr;
-  
-  /* Only do this loop the first time, or when lambda has changed.
-   * One could also check whether there is any perturbed atom at all,
-   * but if you don't have perturbed atoms, it does not make sense to modify lambda.
-   * In principle this has to be parallellized, although it would mean extra 
-   * communication. Basically only the charges are used on other nodes...
-   */
-  if (bFirst || (lambda0 != lambda)) {
-    for(i=0; (i<end); i++) {
-      if (md->bPerturbed[i] || bFirst) {
-	md->massT[i]=L1*md->massA[i]+lambda*md->massB[i];
-	if (md->invmass[i] > 1.1*ALMOST_ZERO)
-	  md->invmass[i]=1.0/md->massT[i];
-	md->chargeT[i]=L1*md->chargeA[i]+lambda*md->chargeB[i];
-      }
+
+  for(i=0; (i<end); i++) {
+    if (md->bPerturbed[i] || bFirst) {
+      md->massT[i]=L1*md->massA[i]+lambda*md->massB[i];
+      if (md->invmass[i] > 1.1*ALMOST_ZERO)
+	md->invmass[i]=1.0/md->massT[i];
+      md->chargeT[i]=L1*md->chargeA[i]+lambda*md->chargeB[i];
     }
   }
-  lambda0 = lambda;
 }
-
-
 
 

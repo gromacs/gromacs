@@ -29,7 +29,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-static char *SRCID_trjconv_c = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -56,7 +56,6 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "rmpbc.h"
 #include "wgms.h"
 #include "magic.h"
-#include "binio.h"
 #include "pbc.h"
 #include "viewit.h"
 
@@ -377,7 +376,7 @@ int main(int argc,char *argv[])
       "Start writing new file when t MOD split = first time (%t)" },
     { "-sep", FALSE,  etBOOL, {&bSeparate},
       "Write each frame to a separate .gro, .g96 or .pdb file"},
-    { "-ter", FALSE, etBOOL, &bTer,
+    { "-ter", FALSE, etBOOL, {&bTer},
       "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" }
   };
       

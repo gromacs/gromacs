@@ -33,7 +33,6 @@
 #ifndef _mdatoms_h
 #define _mdatoms_h
 
-static char *SRCID_mdatoms_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

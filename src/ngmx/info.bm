@@ -37,10 +37,6 @@
 #ifndef	_info_bm
 #define	_info_bm
 
-#ifdef HAVE_IDENT
-#ident	"@(#) info.bm 1.4 9/29/92"
-#endif /* HAVE_IDENT */
-
 #define info_width 48
 #define info_height 48
 static unsigned char info_bits[] = {

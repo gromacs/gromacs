@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-static char *SRCID_g_dyndom_c = "$Id$";
+
 #include "3dview.h"
 #include "statutil.h"
 #include "smalloc.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
-static char *SRCID_xstat_c = "$Id$";
+
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "x11.h"

@@ -29,7 +29,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-static char *SRCID_xvgr_c = "$Id$";
+
 #include <string.h>
 #include <ctype.h>
 #include "sysstuff.h"
@@ -52,15 +52,17 @@ static bool use_xmgr()
   return (env!=NULL && strcmp(env,"xmgr")==0);
 } 
 
-FILE *xvgropen(char *fn,char *title,char *xaxis,char *yaxis)
+FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *yaxis)
 {
   FILE *xvgr;
+  char pukestr[100];
+  
   time_t t;
   
   xvgr=(FILE *)ffopen(fn,"w");
   fprintf(xvgr,"# This file was created by %s\n",Program());
   fprintf(xvgr,"# which is part of G R O M A C S:\n");
-  fprintf(xvgr,"# %s\n",bromacs());
+  fprintf(xvgr,"# %s\n",bromacs(pukestr,99));
   time(&t);
   fprintf(xvgr,"# All this happened at: %s",ctime(&t));
   fprintf(xvgr,"#\n");
@@ -114,8 +116,8 @@ void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor)
   fprintf(out, "@    s%d color %d\n", NrSet, LineColor);
 }
 
-static char *LocTypeStr[] = { "view", "world" };
-static char *BoxFillStr[] = { "none", "color", "pattern" };
+static const char *LocTypeStr[] = { "view", "world" };
+static const char *BoxFillStr[] = { "none", "color", "pattern" };
  
 void xvgr_box(FILE *out,
 	      int LocType,
@@ -174,30 +176,26 @@ real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b)
     return 0;
 }
 
-static char *fgets3(FILE *fp)
+static char *fgets3(FILE *fp,char ptr[],int *len)
 {
-  static char *ptr = NULL;
-  static int  len  = STRLEN;
   char *p;
   int  slen;
-  
-  if (ptr==NULL)
-    snew(ptr,len);
 
-  if (fgets(ptr,len-1,fp) == NULL)
+  if (fgets(ptr,*len-1,fp) == NULL)
     return NULL;
   p = ptr;
   while ((strchr(ptr,'\n') == NULL) && (!feof(fp))) {
     /* This line is longer than len characters, let's increase len! */
-    len += STRLEN;
-    p   += STRLEN;
-    srenew(ptr,len);
+    *len += STRLEN;
+    p    += STRLEN;
+    srenew(ptr,*len);
     if (fgets(p-1,STRLEN,fp) == NULL)
       break;
   }
   slen = strlen(ptr);
   if (ptr[slen-1] == '\n')
     ptr[slen-1] = '\0';
+
   return ptr;
 }
 
@@ -229,13 +227,17 @@ int read_xvg(char *fn,real ***y,int *ny)
   int    k,line=0,nny,nx,maxx,rval;
   double lf;
   real   **yy=NULL;
-  
+  char  *tmpbuf;
+  int    len=STRLEN;
   *ny  = 0;
   nny  = 0;
   nx   = 0;
   maxx = 0;
   fp   = ffopen(fn,"r");
-  while ((ptr = fgets3(fp)) != NULL) {
+
+  snew(tmpbuf,len);
+
+  while ((ptr = fgets3(fp,tmpbuf,&len)) != NULL) {
     line++;
     trim(ptr);
     if ((ptr[0] != '@') && (ptr[0] != '#')) {
@@ -283,7 +285,8 @@ int read_xvg(char *fn,real ***y,int *ny)
   ffclose(fp);
   
   *y = yy;
-  
+  sfree(tmpbuf);
+
   return nx;
 }
 

@@ -33,7 +33,7 @@
 #ifndef _calcmu_h
 #define _calcmu_h
 
-static char *SRCID_calcmu_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
