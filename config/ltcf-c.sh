@@ -32,10 +32,10 @@ ac_ext=c
 objext=o
 
 # Code to be used in simple compile tests
-lt_simple_compile_test_code="int some_variable = 0;"
+lt_simple_compile_test_code="int some_variable = 0;\n"
 
 # Code to be used in simple link tests
-lt_simple_link_test_code='main(){return(0);}'
+lt_simple_link_test_code="main(){return(0);}\n"
 
 ## Linker Characteristics
 case $host_os in

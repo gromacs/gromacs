@@ -480,7 +480,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
   static bool  bFirst = TRUE,bElectron = FALSE;
-  static real  t0,imax,width,inv_nratoms,rho,nphot;
+  static real  t0,imax,width,rho,nphot;
   static real  interval;
   static int   dq_tot,nkd_tot,ephot,mode;
   static t_cross_atom *ca;
@@ -488,7 +488,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     
   real factor,E_lost=0;
   real pt,ptot,pphot,pcoll[ecollNR],tmax;
-  real sigmaPincoh,hboxx,hboxy,rho2;
+  real hboxx,hboxy,rho2;
   rvec dv,ddv;
   bool bIonize=FALSE,bKHole,bL,bDOIT;
   int  i,k,kk,m,nK,nL,dq,nkh,nkdecay;
@@ -541,7 +541,6 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     
     dq_tot  = 0;
     nkd_tot = 0;
-    inv_nratoms = 1.0/md->nr;
 
     xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()");
     xvgr_legend(xvg,asize(leg),leg);
@@ -586,9 +585,6 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   hboxy       = 0.5*box[YY][YY];
   rho2        = sqr(rho);
   
-  /* Width of gaussian for probability of incoherent scattering */
-  sigmaPincoh = 1/sqrt(44.0);
-
   /* Arrays for ionization statistics */
   snew(nionize,md->nr);
   snew(nkhole,md->nr);

@@ -62,7 +62,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
   char      libfilename[128];
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
-  int       i,n,nb,nnnm,line=1;
+  int       i,nb,nnnm,line=1;
   t_nm2type *nm2t=NULL;
   
   sprintf(libfilename,"%s.n2t",ff);
@@ -76,7 +76,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
     if (bCont) {
       /* Remove comment */
       strip_comment(buf);
-      if ((n = sscanf(buf,"%s%s%d",elem,type,&nb)) == 3) {
+      if (sscanf(buf,"%s%s%d",elem,type,&nb) == 3) {
 	/* If we can read the first three, there probably is more */
 	if (nb > 0) {
 	  snew(newbuf,nb);

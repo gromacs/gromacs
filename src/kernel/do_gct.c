@@ -336,9 +336,10 @@ static void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
 
 static real calc_deviation(real xav,real xt,real x0)
 {
-  real dev;
-  
   /* This may prevent overshooting in GCT coupling... */
+
+  /* real dev;
+  
   if (xav > x0) {
     if (xt > x0)
       dev = /*max(x0-xav,x0-xt);*/ min(xav-x0,xt-x0);
@@ -350,7 +351,8 @@ static real calc_deviation(real xav,real xt,real x0)
       dev = max(xav-x0,xt-x0);
     else
       dev = 0;
-  }
+  } 
+*/
   return x0-xav;
 }
 

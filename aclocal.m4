@@ -657,7 +657,7 @@ case "${host_cpu}-${host_os}" in
     ;;
 
   mips*-irix*)
-    xCFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -fullwarn -woff 1174 -D__INLINE_INTRINSICS"
+    xCFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -woff 1174,84 -D__INLINE_INTRINSICS"
     xFFLAGS="-O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -OPT:cray_ivdep=TRUE"
 
     if $CC -version | grep "Version 7.1" > /dev/null 2>&1; then
@@ -1634,7 +1634,9 @@ ifdef([AC_PROVIDE_IFELSE],
 AC_DEFUN([AC_LIBTOOL_F77], [AC_REQUIRE([_AC_LIBTOOL_F77])])
 
 AC_DEFUN([_AC_LIBTOOL_F77],
-[AC_REQUIRE([AC_PROG_F77])
+[
+if test "$ac_cv_prog_f77_works" = "yes"; then
+AC_REQUIRE([AC_PROG_F77])
 LIBTOOL_DEPS=$LIBTOOL_DEPS" $ac_aux_dir/ltcf-f77.sh"
 lt_save_CC="$CC"
 lt_save_CFLAGS="$CFLAGS"
@@ -1656,6 +1658,7 @@ CFLAGS="$lt_save_CFLAGS"
 # Redirect the config.log output again, so that the ltconfig log is not
 # clobbered by the next message.
 exec 5>>./config.log
+fi
 ])
 
 # AC_LIBTOOL_CXX - enable support for C++ libraries

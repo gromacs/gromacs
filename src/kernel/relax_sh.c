@@ -96,7 +96,7 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
 
 static void zero_shell_forces(FILE *log,rvec f[],int ns,t_shell s[])
 {
-  int i,s1,n1,n2,n3;
+  int i,s1,n1,n2;
   real m1,m2,m3,tm;
   
   /* Subtract remaining forces on shells from the attaching atoms.
@@ -123,8 +123,8 @@ static void zero_shell_forces(FILE *log,rvec f[],int ns,t_shell s[])
     case 3:
       n1 = s[i].nucl1;
       n2 = s[i].nucl2;
-      n3 = s[i].nucl3;
-      /*m1 = mass[n1];
+      /*n3 = s[i].nucl3;
+      m1 = mass[n1];
       m2 = mass[n2];
       m3 = mass[n3];
       tm = dt_1/(m1+m2+m3);*/

@@ -252,13 +252,12 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
-  real ksw,swi,swi1,swi2,swi3;
+  real ksw,swi,swi1,swi2;
   /* Temporary parameters */
   bool bSwitch,bShift;
   real VtabT;  
   real VtabT1;  
   real VtabT2; 
-  real VtabT3;
   real ewc=fr->ewaldcoeff;
   real isp= 0.564189583547756;
    
@@ -316,7 +315,6 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
       swi      = (rc-r)*(rc-r)*(rc+2*r-3*r1)*ksw;
       swi1     = 6*(rc-r)*(r1-r)*ksw;
       swi2     = -6*(r1+rc-2*r)*ksw;
-      swi3     = 12*ksw;
     }
     else {
       swi = swi1 = swi2 = swi3 = 1.0;
@@ -421,18 +419,10 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
       VtabT     = Vtab;
       VtabT1    = -Ftab;
       VtabT2    = Vtab2;
-      VtabT3    = -Ftab2;
       Vtab   = VtabT*swi;
       Vtab2  = VtabT2*swi + VtabT1*swi1 + VtabT1*swi1 + VtabT*swi2;
-      /* Ftab   = -(VtabT1*swi+ VtabT*swi1);
-	 Ftab2  = -(VtabT3*swi + VtabT2*swi1 + VtabT1*swi2 + VtabT2*swi1 +
-	 VtabT2*swi1 + VtabT1*swi2 + VtabT1*swi2 + VtabT*swi3);
-      */
     }  
     
-    /* Ftab  /= r;
-       Ftab2 /= r;
-    */
     td->v[i]  = Vtab;
     td->v2[i] = Vtab2;
   }

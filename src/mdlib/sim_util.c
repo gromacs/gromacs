@@ -186,12 +186,11 @@ void do_force(FILE *log,t_commrec *cr,
 {
   static rvec box_size;
   static real dvdl_lr = 0;
-  int    nodeid,cg0,cg1,i,j;
+  int    cg0,cg1,i,j;
   int    start,homenr;
   static real mu_and_q[DIM+1]; 
   real   qsum;
   
-  nodeid    = cr->nodeid;
   start  = START(nsb);
   homenr = HOMENR(nsb);
   cg0    = CG0(nsb);

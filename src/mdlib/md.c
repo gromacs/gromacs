@@ -103,9 +103,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_shell     *shells;
   real        timestep;
   double      tcount=0;
-  bool        bDynamicStep,bIonize,bMultiSim,bGlas;
+  bool        bIonize,bMultiSim,bGlas;
   bool        bTCR,bConverged;
-  real        mu_aver=0,fmax;
+  real        mu_aver=0;
   int         gnx;
   atom_id     *grpindex;
   char        *grpname;
@@ -132,7 +132,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  bool_names[bLateVir],bool_names[bTweak]);
   
 #ifdef XMDRUN
-  bDynamicStep = FALSE;
   bIonize      = (Flags & MD_IONIZE)   == MD_IONIZE;
   bMultiSim    = (Flags & MD_MULTISIM) == MD_MULTISIM;
   bGlas        = (Flags & MD_GLAS)     == MD_GLAS;
@@ -466,8 +465,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
 #ifdef XMDRUN
       /* Check magnitude of the forces */
-    fmax = f_max(cr->left,cr->right,cr->nnodes,&(parm->ir.opts),mdatoms,
-		 START(nsb),START(nsb)+HOMENR(nsb),f);
+    /* fmax = f_max(cr->left,cr->right,cr->nnodes,&(parm->ir.opts),mdatoms,
+       START(nsb),START(nsb)+HOMENR(nsb),f); */
     debug_gmx();
     parm->ir.delta_t = timestep;
 #endif

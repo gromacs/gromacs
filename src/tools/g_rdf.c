@@ -485,7 +485,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   real       I0,C,t,k_max,factor,yfactor,segvol;
   rvec       *x,*xndx,box_size,kk,lll;
   real       fj0,*fj,max_spacing,r,lambda_1;
-  bool       *bExcl,bTop;
+  bool       *bExcl;
   matrix     box;
   int        nx,ny,nz,nelectron;
   atom_id    ix,jx,**pairs;
@@ -495,7 +495,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   t_nrnb     nrnb;
   t_xdata    *data;
     
-  bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
+  /*  bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE); */
 
   fprintf(stderr,"\nSelect group for structure factor computation:\n");
   get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
@@ -619,12 +619,9 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   if (fnXPM) {
     t_rgb rhi = { 0,0,0 }, rlo = { 1,1,1 };
     real *tx,*ty,hi,inv_nframes;
-    int  maxkx,maxky;
     
     hi = 0;
     inv_nframes = 1.0/nframes;
-    maxkx = (nx+1)/2;
-    maxky = (ny+1)/2;
     snew(tx,npixel);
     snew(ty,npixel);
     for(i=0; (i<npixel); i++) {

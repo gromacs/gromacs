@@ -1,8 +1,8 @@
-bin
-lib
-obj
 Makefile.in
+Makefile
 include
 config.log
 config.cache
 libtool
+config.status
+stamp-h

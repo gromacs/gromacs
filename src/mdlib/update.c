@@ -632,7 +632,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static bool      bHaveConstr,bExtended;
   double           dt;
   real             dt_1,dt_2,mdt_2;
-  int              i,n,m,g,vol;
+  int              i,n,m,g;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
   
@@ -664,7 +664,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
   dt   = ir->delta_t;
   dt_1 = 1.0/dt;
   dt_2 = 1.0/(dt*dt);
-  vol  = det(parm->box);
 
   for(i=0; i<ngtc; i++) {
     real l=grps->tcstat[i].lambda;

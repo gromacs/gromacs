@@ -132,25 +132,12 @@ real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
 real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
 		  t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[])
 {
-  int     i,start,end;
+  int     i;
   real    mu_ave;
-  t_atom  *atom;
   t_block *mols;
-  
-  start = START(nsb);
-  end   = start + HOMENR(nsb);  
-  
-  atom = top->atoms.atom;
+    
   mols = &(top->blocks[ebMOLS]);
-  /*
-  clear_rvec(mu);
-  for(i=start; (i<end); i++)
-    for(m=0; (m<DIM); m++)
-      mu[m] += q[i]*x[i][m];
-  if (PAR(cr)) {
-    gmx_sum(DIM,mu,cr);
-  }
-  */
+
   /* I guess we have to parallelise this one! */
 
   if (gnx > 0) {
