@@ -145,7 +145,8 @@ cylinder (which causes jumps in the constraint forces).
 The same as {\tt dynamic}, but the coordinates are corrected for
 boxcrossings like in {\tt com\_t0}. Note that strictly speaking this is
 not correct if the reference group is not the whole system, including
-the groups defined with {\tt group\_1} and {\tt group\_2}.
+the groups defined with {\tt group\_1}, {\tt group\_2}, {\tt group\_3}
+and {\tt group\_4}.
 \end{description}
 
 To further smooth rapidly fluctuating distances between the reference
@@ -155,9 +156,12 @@ reflag} to the number of steps to average over. However, using this
 option is not strictly correct for calculating potentials of mean
 force from the average constraint force. 
 
-\subsubsection{The parameter file}
+\subsection{The parameter file}
+
+\subsubsection{General}
 
 \begin{description}
+
 \item[\tt verbose                  = no]\mbox{}\\
 If this is set to {\tt yes}, a large amount of detailed information
 is sent to {\tt stderr}, which is only useful for diagnostic
@@ -165,12 +169,14 @@ purposes. The {\tt .pdo} file also becomes more detailed, which is not
 necessary for normal use.
 
 \item[\tt runtype                  = constraint]\mbox{}\\
-Options are {\tt start, afm, constraint, umbrella}. This selects the
-type of calculation: making starting structures, AFM pulling,
-constraint force calculation or umbrella sampling.
+Options are {\tt afm, constraint, umbrella}. This selects
+the type of calculation: AFM pulling, constraint force calculation
+or umbrella sampling.
 
 \item[\tt group\_1                  = MB21\_1]
-\item[\tt group\_2                  = MB21\_2]\mbox{}\\                 
+\item[\tt group\_2                  = MB21\_2]
+\item[\tt group\_3                  = ]
+\item[\tt group\_4                  = ]\mbox{}\\      
 The groups with the atoms to act on. The first group is mandatory, the
 second optional.
 
@@ -181,6 +187,18 @@ constraint force between two ions is needed, you would specifiy {\tt
 group\_1} as a group with 1 ion, and {\tt reference\_group} as the other
 ion.
 
+\item[\tt weights\_1                  = ]
+\item[\tt weights\_2                  = ]
+\item[\tt weights\_3                  = ]
+\item[\tt weights\_4                  = ]
+\item[\tt reference\_weights          = ]\mbox{}\\
+The relative weights for all atoms in each group.
+The center of mass and the force calculation are peformed using
+the masses of the atoms multiplied by the weights.
+The weights are scaled before use, thus only the ratios in the input matter.
+When no weights are given all weights are set to one.
+Weights can not be used with dynamic reference groups.
+
 \item[\tt reftype                  = com]\mbox{}\\
 The type of reference group. Options are {\tt com, com\_t0, dynamic,
 dynamic\_t0} as explained above. 
@@ -189,16 +207,17 @@ dynamic\_t0} as explained above.
 The position of the reference group can be taken as average over a
 number of steps, specified by {\tt reflag} (see above).
 
-\item[\tt direction                = 0.0 0.0 1.0]\mbox{}\\
-Distances are calculated weighted by x, y, z as specified in {\tt
-direction}. Setting them all to 1.0 calculates the distance between
-two groups, setting the first two to 0.0 and the third to 1.0
-calculates the distance in the z direction only.
+\item[\tt pulldim                  = N N Y]\mbox{}\\
+Selects the dimensions used for the pulling.
+In this example the distance is calculated using only the z-component
+and pulling is performed only in the z-direction.
+If nothing is given all three dimensions are used.
 
-\item[\tt reverse                  = to\_reference]\mbox{}\\
-This option selects the direction in which the groups are moved with
-respect to the reference group for AFM pull\-ing and start\-ing structure
-calcu\-lations. Choices are {\tt to\_reference, from\_reference}.
+\end{description}
+
+\subsubsection{Dynamic reference group options}
+
+\begin{description}
 
 \item[\tt r                        = 0]\mbox{}\\
 If dynamic reference groups are selected ({\tt dynamic, dynamic\_t0}),
@@ -216,33 +235,23 @@ will depend strongly on the exact system of interest.
 The frequency with which the dynamic reference groups are
 recalculated. Usually there is no reason to use anything other than 1.
 
-\item[\tt pullrate                 = 0.00005]\mbox{}\\
-The pull rate in nm/timestep for AFM pulling.
+\end{description}
 
-\item[\tt forceconstant            = 100]\mbox{}\\
-The force constant for the spring in AFM pulling, in kJ mol$^{-1}$
-nm$^{-2}$.
+\subsubsection{Constraint run options}
 
-\item[\tt width                    = 0]\mbox{}\\
-Width of the umbrella sampling potential in kJ mol$^{-1}$ nm$^{-2}$. 
+\begin{description}
+\item[\tt constraint\_direction     = ]\mbox{}\\
+The direction for constraining.
+The default is 0.0 0.0 0.0, which means no direction and
+thus the distance between groups is constrained.
+The direction is normalized before use.
 
-\item[\tt r0\_group2                = 0.0  0.0   3.300]\mbox{}\\
-The initial location of the groups with respect to the reference
-group. Only coordinates selected with {\tt direction} are taken into account.
-The groups are moved to these initial positions before the
-actual creation of a series of starting structures commences.
+\item[\tt constraint\_rate          = ]\mbox{}\\
+The rate of the change of the constraint distance in nm/ps,
+is 0 by default.
 
-\item[\tt tolerance                = 0.001]\mbox{}\\
-The accuracy with which the actual position of the groups must match
-the calculated ideal positions for a starting structure (in nm).
- 
-\item[\tt translation\_rate         = 0.00001]\mbox{}\\
-The rate of translation in all directions (nm/step). As mentioned
-above, normal MD force calculations and position updates also act on
-the groups.
-
-\item[\tt transstep                = 0.2]\mbox{}\\
-The interval in nm at which structures are written out. 
+\item[\tt constraint\_tolerance     = ]\mbox{}\\
+The tolerance for the constraint distance, 1E-6 nm is the default.
 
 \end{description}
 
