@@ -446,8 +446,8 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   
   convolution(fp,bVerbose,grid,ghat,cr); 
   
-  if (bVerbose) 
-/*    print_fftgrid(fp,"Convolution",grid,1.0,
+  /* if (bVerbose) 
+     print_fftgrid(fp,"Convolution",grid,1.0,
       "convolute.pdb",box,TRUE);*/
   
   gmxfft3D(grid,FFTW_BACKWARD,cr);

@@ -65,8 +65,19 @@ t_atomtype *read_atype(char *adb,t_symtab *tab)
       fatal_error(0,"nratt >= MAXAT(%d). Increase the latter",MAXAT);
     if (feof(in))
       break;
-    if (fgets2(buf,STRLEN,in) == NULL)
+
+    /* Skip blank or comment-only lines */
+    do {
+      fgets2(buf,STRLEN,in);
+      if(buf) {
+	strip_comment(buf);
+	trim(buf);
+      }
+    } while (buf && strlen(buf)==0);
+
+    if(buf==NULL)
       break;
+    
     if (sscanf(buf,"%s%lf",name,&m) != 2)
       break;
     set_at(&(at->atom[nratt]),m,0.0,nratt,0);
@@ -254,7 +265,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
   bts[1] = 1; /* normal angles    */
   bts[2] = 1; /* normal dihedrals */
   bts[3] = 2; /* normal impropers */
-
+  
   /* Column 5 & 6 aren't really bonded types, but we include
    * them here to avoid introducing a new section:
    * Column 5: 1 means generate all dihedrals, 0 not.

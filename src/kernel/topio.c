@@ -294,7 +294,7 @@ static char **read_topol(char        *infile,
   bool       bReadDefaults,bReadMolType,bGenPairs;
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype *batype;
-
+  
   /* open input and output file */
   if ((in = fopen(infile,"r")) == NULL)
     fatal_error(0,"Could not open %s",infile);
@@ -312,7 +312,6 @@ static char **read_topol(char        *infile,
   
   snew(batype,1);
   init_bond_atomtype(batype);
-
   /* parse the actual file */
   bReadDefaults = FALSE;
   bGenPairs     = FALSE;
@@ -486,10 +485,10 @@ static char **read_topol(char        *infile,
 	  push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline);
 	  break;
 	  
- 	case d_pairs: 
- 	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE);
- 	  break;
-
+	case d_pairs: 
+	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,bGenPairs);
+	  break;
+	  
 	case d_dum2:
 	case d_dum3:
 	case d_dum4:
@@ -503,8 +502,9 @@ static char **read_topol(char        *infile,
 	case d_distance_restraints: 
 	case d_orientation_restraints:
 	case d_dihedrals:
-	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE);
+	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,bGenPairs);
 	  break;
+
 	case d_exclusions:
 	  if (!block2[nmol-1].nr)
 	    init_block2(&(block2[nmol-1]),mi0->atoms.nr);

@@ -131,8 +131,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
   }
 }
 
-void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
-	      char *line,int nb_funct,
+void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,int nb_funct,
 	      t_nbparam ***nbparam,t_nbparam ***pair)
 {
   typedef struct {
@@ -153,19 +152,17 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
   double m,q;
   double c[MAXFORCEPARAM];
   char   tmpfield[10][100]; /* Max 10 fields of width 100 */
-  
+
   /* First assign input line to temporary array */
   nfields=sscanf(line,"%s%s%s%s%s%s%s%s%s%s",
-  		 tmpfield[0],tmpfield[1],tmpfield[2],tmpfield[3],tmpfield[4],
- 		 tmpfield[5],tmpfield[6],tmpfield[7],tmpfield[8],tmpfield[9]);
+ 		 tmpfield[0],tmpfield[1],tmpfield[2],tmpfield[3],tmpfield[4],
+		 tmpfield[5],tmpfield[6],tmpfield[7],tmpfield[8],tmpfield[9]);
 
   switch (nb_funct) {
   case F_LJ:
     nfp0 = 2;
-    /* If the 5th field is a particletype and we have 7 fields in total 
-     * there is a bond_atomtype in field 2, otherwise not (set it 
-     * identical to atomtype then) 
-     */
+    /* If the 5th field is a particletype and we have 7 fields in total there
+     * is a bond_atomtype in field 2, otherwise not (set it identical to atomtype then) */
     if(nfields==7 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) 
       sscanf (line,"%s%s%lf%lf%s%lf%lf",type,btype,&m,&q,ptype,&c[0],&c[1]);
     else if (nfields==6) {
@@ -179,10 +176,8 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
 
   case F_BHAM:
     nfp0 = 3;
-    /* If the 5th field is a particletype and we have 8 fields in total 
-     * thereis a bond_atomtype in field 2, otherwise not (set it 
-     * identical to atomtype then) 
-     */
+    /* If the 5th field is a particletype and we have 8 fields in total there
+     * is a bond_atomtype in field 2, otherwise not (set it identical to atomtype then) */
     if(nfields==8 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) 
       sscanf (line,"%s%s%lf%lf%s%lf%lf%lf",type,btype,&m,&q,ptype,&c[0],&c[1],&c[2]);
     else if (nfields==7) {
@@ -193,7 +188,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
       return;
     }
     break;
-    
+
   default:
     fatal_error(0,"Invalid function type %d in push_at %s %d",nb_funct,
 		__FILE__,__LINE__);
@@ -207,7 +202,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
   if(strlen(btype)==1 && isdigit(btype[0])) 
      fatal_error(0,"Bond atom type names can't be single digits.");
 
-   for(j=0; (j<eptNR); j++)
+  for(j=0; (j<eptNR); j++)
     if (strcasecmp(ptype,xl[j].entry) == 0)
       break;
   if (j == eptNR)
@@ -218,7 +213,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
     fprintf(debug,"ptype: %s\n",ptype_str[pt]);
   
   nr = bat->nr;
-  /* Test if we have a new bond_atomtype */
+  /* First test if we have a new bond_atomtype */
   for (i=0; ((i<nr) && (strcasecmp(*(bat->atomname[i]),btype) != 0)); i++)
     ;
   if ((i==nr) || (nr==0)) {
@@ -230,10 +225,10 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
   batype_nr=i;
 
   nr = at->nr;
-  /* Test if the atomtype overwrites another */
+  /* Test if this atomtype overwrites another */
   for (i=0; ((i<nr) && (strcasecmp(*(at->atomname[i]),type) != 0)); i++)
     ;
-  
+
   if ((i==nr) || (nr==0)) {
     /* New atomtype, get new space for arrays */
     srenew(at->atom,nr+1);
@@ -272,7 +267,7 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
   bool bTest,bFound,bId;
   int  nr   = bt->nr;
   int  nrfp = NRFP(ftype);
-  
+
   /* Check if this entry overwrites another */
   bFound=FALSE;
   for (i=0; (i < nr); i++) {
@@ -371,7 +366,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
       c[nn] = 0.0;
   }
   for(i=0; (i<nral); i++)
-    p.a[i]=name2index(alc[i],typenames,ntypes);
+    p.a[i]=name2index(alc[i],typenames,ntypes); 
   for(i=0; (i<nrfp); i++)
     p.c[i]=c[i];
   push_bondtype (&(bt[ftype]),&p,nral,ftype,line);
@@ -420,22 +415,22 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   if(nn>=3 && strlen(alc[2])==1 && isdigit(alc[2][0])) {
     nral=2;
     ft    = atoi(alc[nral]);
-    /* Move atom types around a bit and use '*' for wildcard atoms
+    /* Move atom types around a bit and use 'X' for wildcard atoms
      * to create a 4-atom dihedral definition with arbitrary atoms in
      * position 1 and 4.
      */
     if(alc[2][0]=='2') {
       /* improper - the two atomtypes are 1,4. Use wildcards for 2,3 */
       strcpy(alc[3],alc[1]);
-      sprintf(alc[2],"*");
-      sprintf(alc[1],"*");
+      sprintf(alc[2],"X");
+      sprintf(alc[1],"X");
       /* alc[0] stays put */
     } else {
       /* proper - the two atomtypes are 2,3. Use wildcards for 1,4 */
-      sprintf(alc[3],"*");
+      sprintf(alc[3],"X");
       strcpy(alc[2],alc[1]);
       strcpy(alc[1],alc[0]);
-      sprintf(alc[0],"*");
+      sprintf(alc[0],"X");
     }
   } else if(nn==5 && strlen(alc[4])==1 && isdigit(alc[4][0])) {
     nral=4;
@@ -456,10 +451,10 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
       c[nn] = 0.0;
   }
   for(i=0; (i<4); i++) {
-    if(!strcmp(alc[i],"*"))
+    if(!strcmp(alc[i],"X"))
       p.a[i]=-1;
     else
-      p.a[i]=name2index(alc[i],typenames,ntypes);
+    p.a[i]=name2index(alc[i],typenames,ntypes); 
   }
   for(i=0; (i<nrfp); i++)
     p.c[i]=c[i];
@@ -501,19 +496,23 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   
   /* Get the force parameters */
   nrfp = NRFP(ftype);
-  if (nrfp) {
+  if (nrfp == 2) {
     if (sscanf(pline,form2,&c[0],&c[1]) != 2) {
       too_few();
       return;
     }
   }
-  else {
+  else if (nrfp == 3) {
     if (sscanf(pline,form3,&c[0],&c[1],&c[2]) != 3) {
       too_few();
       return;
     }
   }
-  for(i=0; i<nrfp; i++)
+  else {
+    fatal_error(0,"Number of force parameters for nonbonded interactions is %d"
+		" in file %s, line %d",nrfp,__FILE__,__LINE__);
+  }
+  for(i=0; (i<nrfp); i++)
     cr[i] = c[i];
 
   /* Put the parameters in the matrix */
@@ -681,11 +680,10 @@ void push_molt(t_symtab *symtab,t_molinfo *newmol,char *line)
   newmol->excl_set = FALSE;
 }
 
-
 static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
-			      t_param *p,bool bB)
+			      t_param *p,bool bB,bool bGenPairs)
 {
-  int      i,j;
+  int      i,j,ti,tj,ntype;
   bool     bFound;
   t_param  *pi=NULL;
   int      nr   = bt[ftype].nr;
@@ -694,15 +692,34 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   int      nrfpB= interaction_function[ftype].nrfpB;
 
   bFound=FALSE;
-  for (i=0; ((i < nr) && !bFound); i++) {
-    pi=&(bt[ftype].param[i]);
-    if (bB)
-      for (j=0; ((j < nral) && 
-		 (at->atom[p->a[j]].typeB == pi->a[j])); j++);
-    else
-      for (j=0; ((j < nral) && 
-		 (at->atom[p->a[j]].type == pi->a[j])); j++);
-    bFound=(j==nral);
+  if(bGenPairs) {
+    /* First test the generated-pair position to save
+     * time when we have 1000*1000 entries for e.g. OPLS...
+     */
+    ntype=sqrt(nr);
+    if(bB) {
+      ti=at->atom[p->a[0]].typeB;
+      tj=at->atom[p->a[1]].typeB;
+    } else {
+      ti=at->atom[p->a[0]].type;
+      tj=at->atom[p->a[1]].type;
+    } 
+    pi=&(bt[ftype].param[ntype*ti+tj]);
+    bFound=((ti == pi->a[0]) && (tj == pi->a[1]));
+  }
+
+  /* Search explicitly if we didnt find it */
+  if(!bFound) {
+    for (i=0; ((i < nr) && !bFound); i++) {
+      pi=&(bt[ftype].param[i]);
+      if (bB)
+	for (j=0; ((j < nral) && 
+		   (at->atom[p->a[j]].typeB == pi->a[j])); j++);
+      else
+	for (j=0; ((j < nral) && 
+		   (at->atom[p->a[j]].type == pi->a[j])); j++);
+      bFound=(j==nral);
+    }
   }
   
   if (bFound) {
@@ -733,91 +750,44 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
   int      nral = NRAL(ftype);
   int      nrfp = interaction_function[ftype].nrfpA;
   int      nrfpB= interaction_function[ftype].nrfpB;
+  int     *batype=atype->bondatomtype;
 
-  bFound=FALSE;
-  for (i=0; ((i < nr) && !bFound); i++) {
-    pi=&(bt[ftype].param[i]);
-    if (bB)
-      for (j=0; ((j < nral) && 
-		 (atype->bondatomtype[at->atom[p->a[j]].typeB] == pi->a[j])); j++);
-    else
-      for (j=0; ((j < nral) && 
-		 (atype->bondatomtype[at->atom[p->a[j]].type] == pi->a[j])); j++);
-    bFound=(j==nral);
-  }
-  /* If we didn't find a 4-atom dihedral, check for a dihedraltype where
-   * ONE of the atoms is wildcarded. This can be I or L for proper 
-   * dihedrals and J or K for improper dihedrals.
+  /* We allow wildcards now. The first type (with or without wildcards) that
+   * fits is used, so you should probably put the wildcarded bondtypes
+   * at the end of each section.
    */
-  if(!bFound && (ftype == F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS)) {
-    for(i=0; ((i < nr) && !bFound); i++) {
-      pi=&(bt[ftype].param[i]);
-      if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
-	/* The j and k atoms are decisive about which dihedral type
-	 * we should take.
-	 */
-	if(bB) 
-	  bFound=((atype->bondatomtype[at->atom[p->AJ].typeB]==pi->AJ) &&
-		  (atype->bondatomtype[at->atom[p->AK].typeB]==pi->AK) &&
-		  (((atype->bondatomtype[at->atom[p->AI].typeB]==pi->AI) && (pi->AL==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AL].typeB]==pi->AL) && (pi->AI==-1))));
-	else
-	  bFound=((atype->bondatomtype[at->atom[p->AJ].type]==pi->AJ) &&
-		  (atype->bondatomtype[at->atom[p->AK].type]==pi->AK) &&
-		  (((atype->bondatomtype[at->atom[p->AI].type]==pi->AI) && (pi->AL==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AL].type]==pi->AL) && (pi->AI==-1))));
+  bFound=FALSE;
+  /* OPLS uses 1000s of dihedraltypes, so in order to speed up the scanning we have a 
+   * special case for this. Check for B state outside loop to speed it up.
+   */
+  if( ftype==F_PDIHS || ftype == F_RBDIHS || ftype == F_IDIHS) {
+    if (bB) {
+      for (i=0; ((i < nr) && !bFound); i++) {
+	pi=&(bt[ftype].param[i]);
+	bFound=( ((pi->AI==-1) || (batype[at->atom[p->AI].typeB]==pi->AI)) &&
+		 ((pi->AJ==-1) || (batype[at->atom[p->AJ].typeB]==pi->AJ)) &&
+		 ((pi->AK==-1) || (batype[at->atom[p->AK].typeB]==pi->AK)) &&
+		 ((pi->AL==-1) || (batype[at->atom[p->AL].typeB]==pi->AL)) );
       }
-      else if (ftype == F_IDIHS) {
-	/* The i and l atoms are decisive about which dihedral type
-	 * we should take. 
-	 */
-	if (bB)
-	  bFound=((atype->bondatomtype[at->atom[p->AI].typeB]==pi->AI) &&
-		  (atype->bondatomtype[at->atom[p->AL].typeB]==pi->AL) &&
-		  (((atype->bondatomtype[at->atom[p->AJ].typeB]==pi->AJ) && (pi->AK==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AK].typeB]==pi->AK) && (pi->AJ==-1))));
-	else
-	  bFound=((atype->bondatomtype[at->atom[p->AI].type]==pi->AI) &&
-		  (atype->bondatomtype[at->atom[p->AL].type]==pi->AL) &&
-		  (((atype->bondatomtype[at->atom[p->AJ].type]==pi->AJ) && (pi->AK==-1)) ||
-		   ((atype->bondatomtype[at->atom[p->AK].type]==pi->AK) && (pi->AJ==-1))));
+    } else {
+      for (i=0; ((i < nr) && !bFound); i++) {
+	pi=&(bt[ftype].param[i]);
+	bFound=( ((pi->AI==-1) || (batype[at->atom[p->AI].type]==pi->AI)) &&
+		 ((pi->AJ==-1) || (batype[at->atom[p->AJ].type]==pi->AJ)) &&
+		 ((pi->AK==-1) || (batype[at->atom[p->AK].type]==pi->AK)) &&
+		 ((pi->AL==-1) || (batype[at->atom[p->AL].type]==pi->AL)) );
       }
     }
-    /* Still not found, check for types with two wildcards */
-    if(!bFound) {
-      for(i=0; ((i < nr) && !bFound); i++) {
-	pi=&(bt[ftype].param[i]);
-	if ((ftype == F_PDIHS)  || (ftype == F_RBDIHS)) {
-	  /* The j and k atoms are decisive about which dihedral type
-	   * we should take.
-	   */
-	  if(bB) 
-	    bFound=((pi->AI==-1) &&
-		    (atype->bondatomtype[at->atom[p->AJ].typeB]==pi->AJ) &&
-		    (atype->bondatomtype[at->atom[p->AK].typeB]==pi->AK) &&
-		    (pi->AL==-1));
-	  else
-	    bFound=((pi->AI==-1) &&
-		    (atype->bondatomtype[at->atom[p->AJ].type]==pi->AJ) &&
-		    (atype->bondatomtype[at->atom[p->AK].type]==pi->AK) &&
-		    (pi->AL==-1));
-	}
-	else if (ftype == F_IDIHS) {
-	  /* The i and l atoms are decisive about which dihedral type
-	   * we should take. 
-	   */
-	  if(bB) 
-	    bFound=((atype->bondatomtype[at->atom[p->AI].typeB]==pi->AI) &&
-		    (pi->AJ==-1) &&
-		    (pi->AK==-1) &&
-		    (atype->bondatomtype[at->atom[p->AL].typeB]==pi->AL) );
-	  else
-	    bFound=((atype->bondatomtype[at->atom[p->AI].type]==pi->AI) &&
-		    (pi->AJ==-1) &&
-		    (pi->AK==-1) &&
-		    (atype->bondatomtype[at->atom[p->AL].type]==pi->AL) );
-	}
-      }
+  } else { /* Not a dihedral */
+    for (i=0; ((i < nr) && !bFound); i++) {
+      pi=&(bt[ftype].param[i]);
+      if (bB)
+	for (j=0; ((j < nral) && 
+		   (atype->bondatomtype[at->atom[p->a[j]].typeB] == pi->a[j])); j++);
+      else
+	for (j=0; ((j < nral) && 
+		   (atype->bondatomtype[at->atom[p->a[j]].type] == pi->a[j])); j++);
+      bFound=(j==nral);
     }
   }
   if (bFound) {
@@ -855,7 +825,7 @@ void push_bondnow(t_params *bond, t_param *b)
 }
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
-	       t_atoms *at,t_atomtype *atype,char *line, bool bBonded)
+	       t_atoms *at,t_atomtype *atype,char *line,bool bBonded,bool bGenPairs)
 {
   static char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -951,8 +921,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE);
     bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE);
   } else {
-    bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE);
-    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE);
+    bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE,bGenPairs);
+    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
   }
   bDef    = TRUE;
   
@@ -1031,9 +1001,21 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		interaction_function[ftype].longname,
 		param.c[2],param.c[5]);
 
+  /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
+  if (ftype==F_RBDIHS) {
+    nr=0;
+    for(i=0;i<nrfp;i++) {
+      if(param.c[i]!=0)
+	nr++;
+    }
+    if(nr==0)
+      return;
+  }
+
   /* Put the values in the appropriate arrays */
   push_bondnow (&bond[ftype],&param);
 }
+
 
 
 
