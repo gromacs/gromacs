@@ -51,9 +51,12 @@ static char *SRCID_g_bundle_c = "$Id$";
 #include "tpxio.h"
 #include "physics.h"
 
+#define MAX_ENDS 3
+
 typedef struct{
   int n;
-  rvec *end[2];
+  int nend;
+  rvec *end[MAX_ENDS];
   rvec *mid;
   rvec *dir;
   real *len;
@@ -65,7 +68,7 @@ static void rotate_ends(t_bundle *bun,rvec axis,int c0,int c1)
   rvec ax,tmp;
 
   unitv(axis,ax);
-  for(end=0; end<2; end++)
+  for(end=0; end<bun->nend; end++)
     for(i=0; i<bun->n; i++) {
       copy_rvec(bun->end[end][i],tmp);
       bun->end[end][i][c0] = ax[c1]*tmp[c0] - ax[c0]*tmp[c1];
@@ -81,11 +84,11 @@ static void calc_axes(rvec x[],t_atom atom[],int gnx[],atom_id *index[],
 {
   int  end,i,div,d;
   real *mtot,m;
-  rvec axis[2],cent;
+  rvec axis[MAX_ENDS],cent;
   
   snew(mtot,bun->n);
 
-  for(end=0; end<2; end++) {
+  for(end=0; end<bun->nend; end++) {
     for(i=0; i<bun->n; i++) {
       clear_rvec(bun->end[end][i]);
       mtot[i] = 0;
@@ -109,7 +112,7 @@ static void calc_axes(rvec x[],t_atom atom[],int gnx[],atom_id *index[],
   rvec_add(axis[0],axis[1],cent);
   svmul(0.5,cent,cent);
   /* center the bundle on the origin */
-  for(end=0; end<2; end++) {
+  for(end=0; end<bun->nend; end++) {
     rvec_dec(axis[end],cent);
     for(i=0; i<bun->n; i++)
       rvec_dec(bun->end[end][i],cent);
@@ -139,7 +142,10 @@ static void dump_axes(int fp,t_trxframe *fr,t_atoms *outat,t_bundle *bun)
 
   for(i=0; i<bun->n; i++) {
     copy_rvec(bun->end[0][i],xout[3*i]);
-    copy_rvec(bun->mid[i],   xout[3*i+1]);
+    if (bun->nend >= 3)
+      copy_rvec(bun->end[2][i],xout[3*i+1]);
+    else
+      copy_rvec(bun->mid[i],xout[3*i+1]);
     copy_rvec(bun->end[1][i],xout[3*i+2]);
   }
   frout = *fr;
@@ -158,15 +164,22 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_bundle analyzes bundles of axes. The axes can be for instance",
     "helix axes. The program reads two index groups and divides both",
-    "of them in [TT]-na[tt] parts. The groups define the tops and",
-    "bottoms of the axes. Several quantities are written to file:",
-    "the axis length, the distance from the axis centers to the average",
+    "of them in [TT]-na[tt] parts. The centers of mass of these parts",
+    "define the tops and bottoms of the axes.",
+    "Several quantities are written to file:",
+    "the axis length, the distance from the axis mid-points to the average",
     "center of all axes, the total tilt, the radial tilt and the lateral",
     "tilt with respect to the average axis.",
     "[PAR]",
-    "With option [TT]-oa[tt] the top, mid and bottom points of each axis",
+    "With option [TT]-ok[tt] the kink of the axes is plotted. An extra index",
+    "group of kink atoms is required, which is also divided into [TT]-na[tt]",
+    "parts. The kink angle is defined as the angle between the kink-top and",
+    "the bottom-kink vectors.",
+    "[PAR]",
+    "With option [TT]-oa[tt] the top, mid (or kink when [TT]-ok[tt] is set)",
+    "and bottom points of each axis",
     "are written to a pdb file each frame. The residue numbers correspond",
-    "to the axis numbers. When viewing this file with [TT]rasmol[tt] use the",
+    "to the axis numbers. When viewing this file with [TT]rasmol[tt], use the",
     "command line option [TT]-nmrpdb[tt], and type [TT]set axis true[tt] to",
     "display the reference axis."
   };
@@ -178,7 +191,7 @@ int main(int argc,char *argv[])
     { "-z", FALSE, etBOOL, {&bZ},
 	"Use the Z-axis as reference iso the average axis" }
   };
-  FILE       *out,*flen,*fdist,*ftilt,*ftiltr,*ftiltl;
+  FILE       *out,*flen,*fdist,*ftilt,*ftiltr,*ftiltl,*fkink;
   int        status,fpdb;
   t_topology top;
   rvec       *xtop;
@@ -187,10 +200,12 @@ int main(int argc,char *argv[])
   t_atoms    outatoms;
   real       t,comp;
   int        natoms;
-  char       *grpname[2],title[256],*anm="CA",*rnm="GLY";
-  int        i,j,gnx[2];
-  atom_id    *index[2];
+  char       *grpname[MAX_ENDS],title[256],*anm="CA",*rnm="GLY";
+  int        i,j,gnx[MAX_ENDS];
+  atom_id    *index[MAX_ENDS];
   t_bundle   bun;
+  bool       bKink;
+  rvec       va,vb;
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
@@ -201,6 +216,7 @@ int main(int argc,char *argv[])
     { efXVG, "-ot", "bun_tilt", ffWRITE },
     { efXVG, "-otr", "bun_tiltr", ffWRITE },
     { efXVG, "-otl", "bun_tiltl", ffWRITE },
+    { efXVG, "-ok", "bun_kink", ffOPTWR },
     { efPDB, "-oa", "axes", ffOPTWR }
   }; 
 #define NFILE asize(fnm) 
@@ -211,15 +227,27 @@ int main(int argc,char *argv[])
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
 
-  fprintf(stderr,"Select a group of top and a group of bottom atoms\n");
-  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),2,gnx,index,grpname);
+  bKink = opt2bSet("-ok",NFILE,fnm);
+  if (bKink)
+    bun.nend = 3;
+  else
+    bun.nend = 2;
+  
+  fprintf(stderr,"Select a group of top and a group of bottom ");
+  if (bKink)
+    fprintf(stderr,"and a group of kink ");
+  fprintf(stderr,"atoms\n");
+  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),bun.nend,
+	    gnx,index,grpname);
 
-  if (n<=0 || gnx[0] % n || gnx[1] % n)
+  if (n<=0 || gnx[0] % n || gnx[1] % n || (bKink && gnx[2] % n))
     fatal_error(0,
 		"The size of one of your index groups is not a multiple of n");
   bun.n = n;
   snew(bun.end[0],n);
   snew(bun.end[1],n);
+  if (bKink)
+    snew(bun.end[2],n);
   snew(bun.mid,n);
   snew(bun.dir,n);
   snew(bun.len,n);
@@ -234,6 +262,10 @@ int main(int argc,char *argv[])
 		   "Time (ps)","(degrees)");
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
 		   "Time (ps)","(degrees)");
+
+  if (bKink)
+    fkink = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
+		     "Time (ps)","(degrees)");
 
   if (opt2bSet("-oa",NFILE,fnm)) {
     init_t_atoms(&outatoms,3*n,FALSE);
@@ -257,6 +289,8 @@ int main(int argc,char *argv[])
     fprintf(ftilt," %10g",fr.time);
     fprintf(ftiltr," %10g",fr.time);
     fprintf(ftiltl," %10g",fr.time);
+    if (bKink)
+      fprintf(fkink," %10g",fr.time);
 
     for(i=0; i<bun.n; i++) {
       fprintf(flen," %6g",bun.len[i]);
@@ -268,12 +302,19 @@ int main(int argc,char *argv[])
       comp = bun.mid[i][YY]*bun.dir[i][XX]-bun.mid[i][XX]*bun.dir[i][YY];
       fprintf(ftiltl," %6g",RAD2DEG*
 	      asin(comp/sqrt(sqr(comp)+sqr(bun.dir[i][ZZ]))));
+      if (bKink) {
+	rvec_sub(bun.end[0][i],bun.end[2][i],va);
+	rvec_sub(bun.end[2][i],bun.end[1][i],vb);
+	fprintf(fkink," %6g",RAD2DEG*acos(cos_angle_no_table(va,vb)));
+      }
     }
     fprintf(flen,"\n");
     fprintf(fdist,"\n");
     fprintf(ftilt,"\n");
     fprintf(ftiltr,"\n");
     fprintf(ftiltl,"\n");
+    if (bKink)
+      fprintf(fkink,"\n");
     if (fpdb >= 0)
       dump_axes(fpdb,&fr,&outatoms,&bun);
   } while(read_next_frame(status,&fr));
@@ -287,8 +328,8 @@ int main(int argc,char *argv[])
   fclose(ftilt);
   fclose(ftiltr);
   fclose(ftiltl);
-  
-  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
+  if (bKink)
+    fclose(fkink);
   
   thanx(stderr);
   
