@@ -131,7 +131,8 @@ int main (int argc,char *argv[])
     { "-aver", FALSE, etINT, &avl,
       "average over this distance in the RMSD matrix" }
   };
-  int          step,nre,natom,natoms,i,j,k,m,teller,teller2,tel_mat,tel_mat2;
+  int          step,nre,natom,natoms,natoms2;
+  int          i,j,k,m,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int          maxframe=NFRAME,maxframe2=NFRAME;
   real         t,lambda,*w_rls,*w_rms,tmas;
@@ -280,11 +281,7 @@ int main (int argc,char *argv[])
   reset_x(ifit,ind_fit,natom,all_at,xp,w_rls);
   
   /* read first frame */
-  if ((natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box)) 
-      != top.atoms.nr) 
-    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
-		top.atoms.nr,natoms);
-  
+  natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
   if (bMat || bPrev) snew(mat_x,NFRAME);
   if (bBond) {
     idef=&top.idef;
@@ -315,12 +312,12 @@ int main (int argc,char *argv[])
   teller = 0;
   do {
     if (bPBC) 
-      rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
+      rm_pbc(&(top.idef),natoms,box,x,x);
     
     if (bFit) {  
       /*do the least squares fit to original structure*/
-      reset_x(ifit,ind_fit,natom,all_at,x,w_rls);
-      do_fit(header.natoms,w_rls,xp,x);
+      reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
+      do_fit(natoms,w_rls,xp,x);
     }
 
     if (teller % freq == 0) {
@@ -352,8 +349,8 @@ int main (int argc,char *argv[])
       for (i=0;i<natoms;i++)
 	copy_rvec(mat_x[j][i],xp[i]);
       if (bFit) {  
-	reset_x(ifit,ind_fit,natom,all_at,xp,w_rls);
-	do_fit(header.natoms,w_rls,x,xp);
+	reset_x(ifit,ind_fit,natoms,all_at,xp,w_rls);
+	do_fit(natoms,w_rls,x,xp);
       }
     }    
 
@@ -374,27 +371,27 @@ int main (int argc,char *argv[])
       for(j=0; (j<nrms); j++) 
 	srenew(rls[j],maxframe);
     }
-  } while (read_next_x(status,&t,natom,x,box));
+  } while (read_next_x(status,&t,natoms,x,box));
   close_trj(status);
 
   if (bFile2) {
     fprintf(stderr,"\nWill read second trajectory file\n");
     snew(mat_x2,NFRAME);
-    if ((natoms=read_first_x(&status,opt2fn("-f2",NFILE,fnm),&t,&x,box)) 
-	!= top.atoms.nr) 
-      fatal_error(0,"Topology (%d atoms) does not match 2nd trajectory"
-		  "(%d atoms)",top.atoms.nr,natoms);
+    if ((natoms2=read_first_x(&status,opt2fn("-f2",NFILE,fnm),&t,&x,box)) 
+	!= natoms) 
+      fatal_error(0,"Second trajectory (%d atoms) does not match the first one"
+		  " (%d atoms)",natoms2,natoms);
     if (!bFreq2) freq2=freq;
     tel_mat2 = 0;
     teller2 = 0;
     do {
       if (bPBC) 
-	rm_pbc(&(top.idef),top.atoms.nr,box,x,x);
+	rm_pbc(&(top.idef),natoms,box,x,x);
 
       if (bFit) {  
 	/*do the least squares fit to original structure*/
-	reset_x(ifit,ind_fit,natom,all_at,x,w_rls);
-	do_fit(header.natoms,w_rls,xp,x);
+	reset_x(ifit,ind_fit,natoms,all_at,x,w_rls);
+	do_fit(natoms,w_rls,xp,x);
       }
 
       if (teller2 % freq2 == 0) {
@@ -426,7 +423,7 @@ int main (int argc,char *argv[])
 	maxframe2 +=NFRAME;
 	srenew(time2,maxframe2);
       }
-    } while (read_next_x(status,&t,natom,x,box));
+    } while (read_next_x(status,&t,natoms,x,box));
     close_trj(status);
   } else {
     mat_x2=mat_x;
@@ -487,7 +484,7 @@ int main (int argc,char *argv[])
 	if (bFitAll) {
 	  for (k=0;k<natoms;k++)
 	    copy_rvec(mat_x2[j][k],mat_x2_j[k]);
-	  do_fit(header.natoms,w_rls,mat_x[i],mat_x2_j);
+	  do_fit(natoms,w_rls,mat_x[i],mat_x2_j);
 	} else
 	  mat_x2_j=mat_x2[j];
 	if (bMat) {
