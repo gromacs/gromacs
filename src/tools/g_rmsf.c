@@ -408,7 +408,8 @@ int main (int argc,char *argv[])
     /* Write a pdb file with B-factors and optionally anisou records */
     for(i=0; i<isize; i++)
       rvec_inc(xref[index[i]],xcm);
-    write_sto_conf(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);
+    write_sto_conf_indexed(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,
+			   NULL,pdbbox,isize,index);
   }
   if (opt2bSet("-ox",NFILE,fnm)) {
     /* Misuse xref as a temporary array */
