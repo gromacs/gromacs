@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SUBDIRS = nmr1 nmr2 speptide water gmxdemo 
+SUBDIRS = nmr1 nmr2 speptide water gmxdemo  methanol mixed
 
 tutordir = ${datadir}/tutor
 

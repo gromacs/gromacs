@@ -43,14 +43,14 @@ nstcgsteep               = 1000
 
 ; OUTPUT CONTROL OPTIONS = 
 ; Output frequency for coords (x), velocities (v) and forces (f) = 
-nstxout                  = 50
-nstvout                  = 10000
+nstxout                  = 0
+nstvout                  = 0
 nstfout                  = 0
 ; Output frequency for energies to log file and energy file = 
 nstlog                   = 50
 nstenergy                = 50
 ; Output frequency and precision for xtc file = 
-nstxtcout                = 0
+nstxtcout                = 50
 xtc-precision            = 1000
 ; This selects the subset of atoms for the xtc file. You can = 
 ; select multiple groups. By default all atoms will be written. = 
