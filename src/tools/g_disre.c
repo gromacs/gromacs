@@ -42,7 +42,6 @@ static char *SRCID_g_disre_c = "$Id$";
 #include "force.h"
 #include "gstat.h"
 #include "main.h"
-#include "genhydro.h"
 #include "pdbio.h"
 #include "rdgroup.h"
 #include "mdatoms.h"
