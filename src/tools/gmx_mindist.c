@@ -199,9 +199,9 @@ static void calc_dist(real rcut, matrix box, rvec x[],
 	  *jxmax=jx;
 	}
 	if (r2 < rcut2)
-	  *nmin++;
+	  (*nmin)++;
 	else if (r2 > rcut2)
-	  *nmax++;
+	  (*nmax)++;
       }
     }
   }
