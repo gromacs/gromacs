@@ -355,7 +355,7 @@ void p_finvsqrt(void)
       p_state("bval","fl2i(x)");
   }
 #else
-  p_line("real*4    lu,xin");
+  p_real4("lu,xin");
   p_line("integer*4 exp,addr,bval,result");
   newline();
   
@@ -915,13 +915,16 @@ void flocal(void)
       p_int("fractaddr,expaddr");
 #ifdef DECREASE_LATENCY
       if (bWater) {
-	p_real("xin,luO,luH1,luH2,half,three");
+	p_real4("xin,luO,luH1,luH2");
+	p_real("half,three");
       }	
       else {
-	p_real("xin,lu,half,three");
+	p_real4("xin,lu");
+	p_real("half,three");
       }
 #else
-      p_real("xin,lu,half,three");
+      p_real4("xin,lu");
+      p_real("half,three");
 #endif /* DECREASE_LATENCY */
 #ifdef DOUBLE
       p_real("y1,y2");
