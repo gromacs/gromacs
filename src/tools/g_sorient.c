@@ -41,6 +41,51 @@ static char *SRCID_g_sorient_c = "$Id$";
 #include "rdgroup.h"
 #include "tpxio.h"
 
+static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],
+			 rvec xref,matrix box)
+{
+  const real tol=1e-4;
+  bool  bChanged;
+  int   m,j,ai,iter;
+  real  mass,mtot;
+  rvec  dx,xtest;
+  
+  /* First simple calculation */
+  clear_rvec(xref);
+  mtot = 0;
+  for(m=0; (m<nrefat); m++) {
+    ai = index[m];
+    mass = top->atoms.atom[ai].m;
+    for(j=0; (j<DIM); j++)
+      xref[j] += mass*x[ai][j];
+    mtot += mass;
+  }
+  svmul(1/mtot,xref,xref);
+  /* Now check if any atom is more than half the box from the COM */
+  if (box) {
+    iter = 0;
+    do {
+      bChanged = FALSE;
+      for(m=0; (m<nrefat); m++) {
+	ai   = index[m];
+	mass = top->atoms.atom[ai].m/mtot;
+	pbc_dx(x[ai],xref,dx);
+	rvec_add(xref,dx,xtest);
+	for(j=0; (j<DIM); j++)
+	  if (fabs(xtest[j]-x[ai][j]) > tol) {
+	    /* Here we have used the wrong image for contributing to the COM */
+	    xref[j] += mass*(xtest[j]-x[ai][j]);
+	    x[ai][j] = xtest[j];
+	    bChanged = TRUE;
+	  }
+      }
+      if (bChanged)
+	printf("COM: %8.3f  %8.3f  %8.3f  iter = %d\n",xref[XX],xref[YY],xref[ZZ],iter);
+      iter++;
+    } while (bChanged);
+  }
+}
+
 int main(int argc,char *argv[])
 {
   t_topology top;
@@ -87,7 +132,7 @@ int main(int argc,char *argv[])
     "of cos(theta1) and 3cos^2(theta2)-1 as a function of r.[PAR]"
   };
   
-  static bool bCom = FALSE;
+  static bool bCom = FALSE,bPBC = FALSE;
   static int nbin=20;
   static real rmin=0.0,rmax=0.5;
   t_pargs pa[] = {
@@ -95,7 +140,8 @@ int main(int argc,char *argv[])
       "Use the center of mass as the reference postion" },
     { "-rmin",  FALSE, etREAL, {&rmin}, "Minimum distance" },
     { "-rmax",  FALSE, etREAL, {&rmax}, "Maximum distance" },
-    { "-nbin",  FALSE, etINT,  {&nbin}, "Number of bins" }
+    { "-nbin",  FALSE, etINT,  {&nbin}, "Number of bins" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
   };
   
   t_filenm fnm[] = {
@@ -162,19 +208,12 @@ int main(int argc,char *argv[])
     rm_pbc(&top.idef,natoms,box,x,x);
     
     init_pbc(box);
-    n = 0;
-    inp = 0;
+    n    = 0;
+    inp  = 0;
     outp = 0;
-    for(p=0; p<nrefgrp; p++) {
-      clear_rvec(xref);
-      mtot = 0;
-      for(m=0; m<nrefat; m++) {
-	mass = top.atoms.atom[index[0][p]].m;
-	for(j=0; j<DIM; j++)
-	  xref[j] += mass*x[index[0][p]][j];
-	mtot += mass;
-      }
-      svmul(1/mtot,xref,xref);
+    for(p=0; (p<nrefgrp); p++) {
+      calc_com_pbc(nrefat,&top,x,index[0],xref,bPBC ? box : NULL);
+      
       for(m=0; m<isize[1]; m+=3) {
 	sa0 = index[1][m];
 	sa1 = index[1][m+1];
