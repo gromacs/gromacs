@@ -25,8 +25,7 @@ USEF77		= yes
 # set both to no. If you select both, something will break!!!
 #
 USE_PVM3	= no
-HOME		= /usr/local/lam
-USE_MPI		= yes
+USE_MPI		= no
 #
 # If you want to use compressed data files set this to yes
 # This uses the xdr libraries of your UNIX system, which is virtually
@@ -44,17 +43,17 @@ HAVE_MOTIF	= yes
 #
 
 # Dec C compilers
-LOWOPT		= -O2 
-ALLOPT		= -O5 -tune host  -unroll 16 -arch host -pipeline -fp_reorder -transform_loops -fast -math_library fast -inline all #-trapuv
+ALLOPT		= -O5 -tune host -fast -math_library fast  -unroll 2 -arch host -pipeline -fp_reorder #-inline all 
 #ALLOPT		= -g
 # If you have cc.alt installed you can use it, it gives faster code
 # but is not guaranteed by DEC (let alone by the GROMACS crew)
 #CC		= cc.alt
-CC		= $(HOME)/bin/hcc
-F77		= $(HOME)/bin/hf77
-CFLAGS		= -std1 $(ALLOPT) -warnprotos #-trapuv
+CC		= cc
+CCC		= cxx
+F77		= f77
+CFLAGS		= -std1 $(ALLOPT) -w0 -warnprotos #-trapuv
 CCFLAGS		= -O
-FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive 
+FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 
 # Gnu compilers
 #OPT		= -O3 -funroll-loops -ffast-math -fschedule-insns -fschedule-insns2
@@ -65,9 +64,9 @@ FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 #FFLAGS		= $(OPT)
 #CCFLAGS		= $(OPT)
 
-LDFLAGS		= -L$(LIBDIR) -L$(HOME)/lib
+LDFLAGS		= -L$(LIBDIR) 
 LD		= $(CC)  $(LDFLAGS) 
-RUNLDOPT	= -O3 
+RUNLDOPT	= -O4 -non_shared
 FLD		= $(F77) $(LDFLAGS)
 CCLD		= -$(CCC) $(LDFLAGS)
 
@@ -84,6 +83,6 @@ endif
 ARFLAGS		= ruv
 RANLIB		= ranlib
 
-#ifeq ($(USE_MPI),yes)
-#SYSLIBS         += -lrt -limc -pthread
-#endif
+ifeq ($(USE_MPI),yes)
+SYSLIBS         += -lrt -limc -pthread
+endif
