@@ -10,9 +10,8 @@
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 LIB		=
-POBJ		= g_hbond.o dah.o hbond.o list.o parse.o
 PROGRAMS	= g_rdf		g_msd		g_dist		\
-		  g_hbond	g_lifetime	merge_freq	\
+		  g_hbond	merge_freq	\
 		  genbox 	genconf 	genion		\
 		  make_ndx	genpr 		\
 		  trjconv       mk_angndx	eneconv		\
@@ -245,8 +244,6 @@ mkice:		mkice.o
 
 fcount:		fcount.o
 		$(LD) -o $@ $^ $(SYSLIBS)
-waterins:	waterins.o
-		$(LD) -o $@ $^ $(SYSLIBS)
 
 anaeig:		anaeig.o	readev.o
 	        $(LD) -o $@ $^ $(SYSLIBS)
@@ -267,12 +264,8 @@ g_msd.o:	corrutil.h	g_msd.cc
 g_msd:		corrutil.o	g_msd.o
 		$(CCLD) -o $@ $^ $(SYSLIBS)
 
-g_hbond:	g_hbond.o hbond.o list.o dah.o parse.o 
-		$(CCLD) -g -o $@ $^ $(SYSLIBS)
-
-
-g_lifetime:	g_lifetime.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+g_hbond:	g_hbond.o	$(ACOBJ)
+		$(LD) -g -o $@ $^ $(SYSLIBS)
 
 g_quadrup:	g_quadrup.o
 		$(LD) -o $@ $^ $(SYSLIBS)
@@ -281,14 +274,6 @@ merge_freq:	merge_freq.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 g_enemat:	g_enemat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
-
-g_hbond.o: g_hbond.cc
-g_hbond.o: g_hbond.h
-g_hbond.o: parse.h
-g_hbond.o: hbond.h
-g_hbond.o: list.h
-g_hbond.o: dah.h
-g_hbond.o: water.h
 
 g_sas:		g_sas.o	nsc.o
 		$(LD) -o $@ $^ $(SYSLIBS)
