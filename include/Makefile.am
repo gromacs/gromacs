@@ -28,7 +28,7 @@ include_HEADERS = \
 	wman.h		force.h      \
 	string2.h     	writeps.h	gmxcomplex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\
-	x86_3dnow.h	gbutil.h         	\
+	x86_3dnow.h	gbutil.h        gmx_random.h 	\
 	rbin.h      	detectcpu.h	tgroup.h	\
 	mshift.h    	symtab.h      	\
 	x86_sse.h	confio.h    	gmxfio.h        	\

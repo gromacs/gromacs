@@ -39,108 +39,12 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "vec.h"
+#include "gmx_random.h"
 #include "random.h"
-
-#define GAUSS_NXP 16
-/* The size of the data area is 2^GAUSS_NXP */
-
-struct t_gaussdata {
-  real  *x;      /* Pointer to the work area */
-  int   seed;    /* The random seed */
-  int   uselast; /* Is there a saved number we can use? */
-  real  last;    /* The possibly saved number */
-};
-
-
-/* Initialize (and warm up) a gaussian random number generator
- * by copying the seed. The routine returns a handle to the
- * new generator.
- */
-t_Gaussdata 
-init_gauss(int seed)
-{
-  int size = (1 << GAUSS_NXP);
-  int nwarmup = GAUSS_NXP*(size-1);
-  int k;
-  real tmp;
-  t_Gaussdata gaussdata;
-  gaussdata=(t_Gaussdata)malloc(sizeof(struct t_gaussdata));
-  gaussdata->x=(real *)malloc(size*sizeof(real));
-  gaussdata->seed    = seed;
-  gaussdata->last    = 0;
-  gaussdata->uselast = 0;
-  
-  for(k=0;k<size;k++)
-    gaussdata->x[k]=1;
-
-  for(k=0;k<nwarmup;k++)
-    tmp=gauss(gaussdata);
-
-  return gaussdata;
-}
-
-
-
-/* Return a new gaussian random number with expectation value
- * 0.0 and standard deviation 1.0. This routine is NOT thread-safe
- * for performance reasons - you will either have to do the locking
- * yourself, or better: initialize one generator per thread.
- */
-real 
-gauss(t_Gaussdata gaussdata)
-{
-  int i,n1=0,n2;
-  int intt;
-  int mo;
-  int j1;
-  int isgn;
-  int ne = 31-GAUSS_NXP;
-
-  if(gaussdata->uselast) {
-    gaussdata->uselast=0;
-    return gaussdata->last;
-  } else {
-    do {
-      for (i=0;i<2;i++) {
-	intt=(gaussdata->seed)/127773;
-	mo=(gaussdata->seed)-intt*127773;
-	j1=2836*intt;
-	(gaussdata->seed)=16807*mo-j1;
-	if(gaussdata->seed<0)
-	  gaussdata->seed+=2147483647;
-	if(i==0)
-	  n1 = gaussdata->seed >> ne;
-      }
-      n2 = gaussdata->seed >> ne;
-    } while (n1==n2);
-    
-    isgn=2*(gaussdata->seed & 1)-1;
-
-    gaussdata->x[n1]=isgn*(0.7071067811865475*(gaussdata->x[n1]+gaussdata->x[n2]));
-    gaussdata->x[n2]=-gaussdata->x[n1]+isgn*1.414213562373095*gaussdata->x[n2];
-    gaussdata->last = gaussdata->x[n2];
-    gaussdata->uselast = 1;
-    return gaussdata->x[n1];
-  }
-}
-
-
-
-/* Release all the resources used for the generator */
-void 
-finish_gauss(t_Gaussdata data)
-{
-  free(data->x);
-  free(data);
-  data=NULL;
-  
-  return;
-}
-
 
 
 void low_mspeed(real tempi,int nrdf,int nat,atom_id a[],
-		t_atoms *atoms,rvec v[], t_Gaussdata gaussdata)
+		t_atoms *atoms,rvec v[], gmx_rng_t rng)
 {
   int  i,j,m;
   real boltz,sd;
@@ -154,7 +58,7 @@ void low_mspeed(real tempi,int nrdf,int nat,atom_id a[],
     if (mass > 0) {
       sd=sqrt(boltz/mass);
       for (m=0; (m<DIM); m++) {
-	v[j][m]=sd*gauss(gaussdata);
+	v[j][m]=sd*gmx_rng_gaussian_real(rng);
 	ekin+=0.5*mass*v[j][m]*v[j][m];
       }
     }
@@ -180,19 +84,20 @@ void grp_maxwell(t_block *grp,real tempi[],int nrdf[],int seed,
 		 t_atoms *atoms,rvec v[])
 {
   int i,s,n;
-  t_Gaussdata gaussdata;
+  gmx_rng_t rng;
   bool bFirst=TRUE;
 
   if(bFirst) {
     bFirst=FALSE;
-    gaussdata = init_gauss(seed);
+    rng = gmx_rng_init(seed);
   }
 
   for(i=0; (i<grp->nr); i++) {
     s=grp->index[i];
     n=grp->index[i+1]-s;
-    low_mspeed(tempi[i],nrdf[i],n,&(grp->a[s]),atoms,v,gaussdata);
+    low_mspeed(tempi[i],nrdf[i],n,&(grp->a[s]),atoms,v,rng);
   }
+  gmx_rng_destroy(rng);
 }
 
 
@@ -200,7 +105,7 @@ void maxwell_speed(real tempi,int nrdf,int seed,t_atoms *atoms, rvec v[])
 {
   atom_id *dummy;
   int     i;
-  t_Gaussdata gaussdata;
+  gmx_rng_t rng;
   bool bFirst=TRUE;
   
   if (seed == -1) {
@@ -210,14 +115,15 @@ void maxwell_speed(real tempi,int nrdf,int seed,t_atoms *atoms, rvec v[])
 
   if(bFirst) {
     bFirst=FALSE;
-    gaussdata = init_gauss(seed);
+    rng = gmx_rng_init(seed);
   }
 
   snew(dummy,atoms->nr);
   for(i=0; (i<atoms->nr); i++)
     dummy[i]=i;
-  low_mspeed(tempi,nrdf,atoms->nr,dummy,atoms,v,gaussdata);
+  low_mspeed(tempi,nrdf,atoms->nr,dummy,atoms,v,rng);
   sfree(dummy);
+  gmx_rng_destroy(rng);
 }
 
 real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],

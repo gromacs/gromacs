@@ -23,7 +23,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	mshift.c	mvdata.c	mvxvf.c		names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
 	pargs.c		pbc.c		pdbio.c		princ.c		\
-	rando.c		random.c	rbin.c			\
+	rando.c		random.c	gmx_random.c	rbin.c		\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
 	sortwater.c	smalloc.c	stat.c		statutil.c	\
 	strdb.c		string2.c	symtab.c	tpxio.c		\
