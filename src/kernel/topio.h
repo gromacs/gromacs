@@ -47,6 +47,9 @@ typedef struct {
 
 extern void stupid_fill(t_block *grp, int maxf);
 
+extern real check_mol(t_atoms *atoms);
+/* Check mass and charge */
+
 extern void preprocess(char *infile, 
 		       char *outfile,
 		       char *cpp,
