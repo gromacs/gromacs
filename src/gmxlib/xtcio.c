@@ -46,8 +46,10 @@ int open_xtc(char *fn,char *mode)
 
   if (mode[0]=='r')
     m="rb";
-  else
+  else if (mode[0]=='w')
     m="wb";
+  else
+    m="ab";
 
   return fio_open(fn,m);
 }

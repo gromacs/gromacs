@@ -625,8 +625,10 @@ int open_tpx(char *fn,char *mode)
   else {
     if (mode[0]=='r')
       m="rb";
-    else
+    else if (mode[0]=='w')
       m="wb";
+    else
+      m="ab";
   }
 
   return fio_open(fn,m);
