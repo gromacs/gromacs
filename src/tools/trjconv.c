@@ -291,7 +291,7 @@ int main(int argc,char *argv[])
       
   FILE         *out=NULL;
   int          trjout;
-  int          status,ftp,ftpout,file_nr;
+  int          status,ftp,ftpin,file_nr;
   rvec         *x,*xn,*xout,*v,*vn,*vout;
   rvec         *xp,shift;
   real         xtcpr, lambda,*w_rls;
@@ -363,13 +363,14 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Will write %s: %s\n",ftp2ext(ftp),ftp2desc(ftp));
     if (bVels) {
       /* check if velocities are possible in input and output files */
-      ftpout=fn2ftp(in_file);
-      bVels=((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO)) 
-	&& ((ftpout==efTRR) ||(ftpout==efTRJ) || (ftpout==efGRO));
+      ftpin=fn2ftp(in_file);
+      bVels= ((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO)) 
+	&& ((ftpin==efTRR) ||(ftpin==efTRJ) || (ftpin==efGRO));
     } else {
       bHaveX=TRUE;
       bHaveV=FALSE;
     }
+    printf("bVels %d %s %s\n",bVels,in_file,out_file);
     if ((bAppend) && (fexist(out_file))) {
       strcpy(filemode,"a");
       fprintf(stderr,"APPENDING to existing file %s\n",out_file);
@@ -470,9 +471,9 @@ int main(int argc,char *argv[])
     }
     /* open trj file for reading */
     if (bVels)
-      natoms=read_first_x_v(&status,in_file,&t,&x,&v,box);
+      natoms=read_first_x_or_v(&status,in_file,&t,&x,&v,box);
     else
-      natoms=read_first_x  (&status,in_file,&t,&x,   box);
+      natoms=read_first_x     (&status,in_file,&t,&x,   box);
     if (bSetTime)
       tshift=tzero-t;
     else
@@ -616,7 +617,7 @@ int main(int argc,char *argv[])
 	  if (bSelect) {
 	    for(i=0; (i<isize); i++) {
 	      copy_rvec(x[index[i]],xout[i]);
-	      copy_rvec(v[index[i]],vout[i]);
+	      if (bVels) copy_rvec(v[index[i]],vout[i]);
 	    }
 	  }
 	  
