@@ -416,26 +416,31 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
 static bool is_hbond(atom_id d, atom_id h, atom_id a, 
 		     real rcut, real ccut, 
 		     rvec x[], bool bBox, matrix box,rvec hbox,
-		     real *d_ha, real *ang)
+		     real *d_ha, real *ang,bool bDA)
 {
-  rvec r_dh,r_ha;
-  real d_ha2,ca;
+  rvec dist,r_dh,r_ha;
+  real d2,ca;
   int m;
-  
-  rvec_sub(x[a],x[h],r_ha);
+
+  if (bDA) 
+    rvec_sub(x[a],x[d],dist);
+  else 
+    rvec_sub(x[a],x[h],dist);
+    
   for(m=DIM-1; m>=0; m--) {
     if (bBox) {
-      if ( r_ha[m] < -hbox[m] )
-	rvec_inc(r_ha,box[m]);
-      else if ( r_ha[m] >= hbox[m] )
-	rvec_dec(r_ha,box[m]);
+      if ( dist[m] < -hbox[m] )
+	rvec_inc(dist,box[m]);
+      else if ( dist[m] >= hbox[m] )
+	rvec_dec(dist,box[m]);
     }
-    if ( (r_ha[m]>rcut) || (-r_ha[m]>rcut) )
+    if ( (dist[m]>rcut) || (-dist[m]>rcut) )
       return FALSE;
   }
-  d_ha2 = iprod(r_ha,r_ha);
-  if ( d_ha2 <= rcut*rcut ) {
+  d2 = iprod(dist,dist);
+  if ( d2 <= rcut*rcut ) {
     rvec_sub(x[h],x[d],r_dh);
+    rvec_sub(x[h],x[a],r_ha);
     if (bBox)
       for(m=DIM-1; m>=0; m--) {
 	if ( r_dh[m] < -hbox[m] )
@@ -445,8 +450,8 @@ static bool is_hbond(atom_id d, atom_id h, atom_id a,
       }
     ca = cos_angle(r_dh,r_ha);
     /* if angle is smaller, cos is larger */
-    if ( ca>=ccut ) {
-      *d_ha = sqrt(d_ha2);
+    if (ca >= ccut) {
+      *d_ha = sqrt(d2);
       *ang = acos(ca);
       return TRUE;
     }
@@ -609,8 +614,8 @@ int gmx_hbond(int argc,char *argv[])
     "each timeframe. This is especially usefull when using [TT]-shell[tt]."
   };
   
-  static real acut=60, abin=1, rcut=0.25, rbin=0.005, rshell=-1;
-  static bool bNitAcc=TRUE,bInsert=FALSE;
+  static real acut=30, abin=1, rcut=0.35, rbin=0.005, rshell=-1;
+  static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE;
   /* options */
   t_pargs pa [] = {
     { "-ins",  FALSE, etBOOL, {&bInsert},
@@ -618,7 +623,9 @@ int gmx_hbond(int argc,char *argv[])
     { "-a",    FALSE, etREAL, {&acut},
       "Cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
     { "-r",    FALSE, etREAL, {&rcut},
-      "Cutoff radius (nm, Hydrogen - Acceptor)" },
+      "Cutoff radius (nm, X - Acceptor, see next option)" },
+    { "-dh",   FALSE, etBOOL, {&bDA},
+      "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
     { "-abin", FALSE, etREAL, {&abin},
       "Binwidth angle distribution (degrees)" },
     { "-rbin", FALSE, etREAL, {&rbin},
@@ -923,7 +930,7 @@ int gmx_hbond(int argc,char *argv[])
 		      if (j == donors[grp][i].hb[k].a)
 			idx=k;
 		    if ( is_hbond(a[ grp+grD][i],a[ grp+grH][i],a[OGRP+grA][j],
-				  rcut,ccut,x,bBox,box,hbox,&dist,&ang) ) {
+				  rcut,ccut,x,bBox,box,hbox,&dist,&ang,bDA) ) {
 		      /* add to index if not already there */
 		      if (idx==NOTSET) {
 			if (donors[grp][i].nrhb>=donors[grp][i].maxnr) {
@@ -984,7 +991,8 @@ int gmx_hbond(int argc,char *argv[])
 			  if (is_hbond(a[grp+grD][i],
 				       a[grp+grH][i],
 				       a[   grIA][k],
-				       rcut,ccut,x,bBox,box,hbox,&dist,&ang))
+				       rcut,ccut,x,bBox,box,hbox,
+				       &dist,&ang,bDA))
 			    if (dist<ins_d_dist) {
 			      ins_d=TRUE;
 			      ins_d_dist=dist;
@@ -1004,7 +1012,8 @@ int gmx_hbond(int argc,char *argv[])
 			  if (is_hbond(a[    grID][k],
 				       a[    grIH][k],
 				       a[OGRP+grA][j],
-				       rcut,ccut,x,bBox,box,hbox,&dist,&ang))
+				       rcut,ccut,x,bBox,box,hbox,
+				       &dist,&ang,bDA))
 			    if (dist<ins_a_dist) {
 			      ins_a=TRUE;
 			      ins_a_dist=dist;
