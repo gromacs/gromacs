@@ -31,7 +31,12 @@ typedef struct {
 } t_rgb;
 
 typedef struct {
-  char code;
+  char c1;
+  char c2;
+} t_matelmt;
+
+typedef struct {
+  t_matelmt code;
   char *desc;
   t_rgb rgb;
 } t_mapping;
@@ -46,7 +51,7 @@ typedef struct {
   bool bDiscrete;
   real *axis_x;
   real *axis_y;
-  char **matrix;
+  t_matelmt **matrix;
   int nmap;
   t_mapping *map;
 } t_matrix;

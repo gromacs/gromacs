@@ -37,29 +37,43 @@ static char *SRCID_matio_h = "$Id$";
 #endif /* HAVE_IDENT */
 #include "typedefs.h"
 
-extern t_matrix *read_matrix(char *fn,int *nmat);
-/* Returns a pointer to an array of matrices. nmat tells you how many */
+extern int searchcmap(int n,t_mapping map[],t_matelmt c);
+/* Seach in the map for code 'c' and return entry number. 
+ * return -1 if not found
+ */
 
-int read_xpm_matrix(char *fnm, t_matrix **matrix);
-/* Reads a number of matrices from .xpm file fnm and returns thsi number */
+extern int getcmap(FILE *in,char *fn,t_mapping **map);
+/* Read the mapping table from in, return number of entries */
 
-void write_xpm_m(FILE *out, t_matrix m);
+extern int readcmap(char *fn,t_mapping **map);
+/* Read the mapping table from fn, return number of entries */
+
+extern void printcmap(FILE *out,int n,t_mapping map[]);
+/* print mapping table to out */
+
+extern void writecmap(char *fn,int n,t_mapping map[]);
+/* print mapping table to fn */
+
+extern int read_xpm_matrix(char *fnm, t_matrix **matrix);
+/* Reads a number of matrices from .xpm file fnm and returns this number */
+
+extern void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */ 
 
-void write_xpm3(FILE *out,
-		char *title,char *legend,char *label_x,char *label_y,
-		int n_x,int n_y,real axis_x[],real axis_y[],
-		real *matrix[],real lo,real mid,real hi,
-		t_rgb rlo,t_rgb rmid,t_rgb rhi,int *nlevels);
+extern void write_xpm3(FILE *out,
+		       char *title,char *legend,char *label_x,char *label_y,
+		       int n_x,int n_y,real axis_x[],real axis_y[],
+		       real *matrix[],real lo,real mid,real hi,
+		       t_rgb rlo,t_rgb rmid,t_rgb rhi,int *nlevels);
 /* See write_xpm.
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
 
-void write_xpm(FILE *out,
-	       char *title,char *legend,char *label_x,char *label_y,
-	       int n_x,int n_y,real t_x[],real t_y[],
-	       real *matrix[],real lo,real hi,
-	       t_rgb rlo,t_rgb rhi,int *nlevels);
+extern void write_xpm(FILE *out,
+		      char *title,char *legend,char *label_x,char *label_y,
+		      int n_x,int n_y,real t_x[],real t_y[],
+		      real *matrix[],real lo,real hi,
+		      t_rgb rlo,t_rgb rhi,int *nlevels);
 /* out        xpm file
  * title      matrix title
  * legend     label for the continuous legend

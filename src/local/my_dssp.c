@@ -43,7 +43,6 @@ static char *SRCID_my_dssp_c = "$Id$";
 #include "matio.h"
 #include "rdgroup.h"
 #include "gstat.h"
-#include "readcmap.h"
 
 extern void dssp_main();
 
@@ -118,7 +117,7 @@ static void strip_dssp(int nres,int r0,
   mat->axis_x[frame]=t;
   snew(mat->matrix[frame],nr);
   for(i=0; i<nr; i++)
-    mat->matrix[frame][i]=ssbuf[i];
+    mat->matrix[frame][i].c1=ssbuf[i];
   frame++;
   mat->nx=frame;
   

@@ -44,7 +44,7 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  lrutil.o	\
 		  grids.o	ghat.o		tables.o	\
 		  edsam.o	congrad.o	javaio.o        \
-		  index.o       readcmap.o	\
+		  index.o       \
 		  gmxfio.o	trnio.o		tpxio.o		\
 		  enxio.o
 		  

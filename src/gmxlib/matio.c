@@ -40,101 +40,81 @@ static char *SRCID_matio_c = "$Id$";
 
 #define round(a) (int)(a+0.5)
 
-char *read_quotestr(char *buf)
+static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
+#define NMAP strlen(mapper)
+
+int searchcmap(int n,t_mapping map[],t_matelmt c)
 {
-  int    i,j;
-  static char bufje[STRLEN];
+  int i;
   
-  for(i=0; (i<(int)strlen(buf)); i++)
-    if (buf[i] =='"')
-      break;
-  for(j=0,i++; (i<(int)strlen(buf)); i++)
-    if (buf[i] !='"')
-      bufje[j++]=buf[i];
-    else
-      break;
-  bufje[j]='\0';
-  
-  return bufje;
+  for(i=0; (i<n); i++) {
+    if ((map[i].code.c1 == c.c1) && (map[i].code.c2 == c.c2))
+      return i;
+  }
+  return -1;
 }
 
-t_matrix *read_matrix(char *fn,int *nmat)
+int getcmap(FILE *in,char *fn,t_mapping **map)
 {
-  FILE     *in;
-  char     buf[2048],sss[2048],*test;
-  t_matrix *mat=NULL,*mm;
-  double   tt,yy0,uu0;
-  int      nt,ny,nm=0,nline=1,i,quotes;
+  int       i,n;
+  char      line[STRLEN];
+  char      code,desc[STRLEN];
+  double    r,g,b;
+  t_mapping *m;
   
-  in=ffopen(fn,"r");
+  if (fgets2(line,STRLEN-1,in) == NULL)
+    fatal_error(0,"Not enough lines in colormap file %s"
+		"(just wanted to read number of entries)",fn);
+  sscanf(line,"%d",&n);
+  snew(m,n);
+  for(i=0; (i<n); i++) {
+    if (fgets2(line,STRLEN-1,in) == NULL)
+      fatal_error(0,"Not enough lines in colormap file %s"
+		  "(should be %d, found only %d)",fn,n+1,i);
+    sscanf(line,"%c%s%lf%lf%lf",&code,desc,&r,&g,&b);
+    m[i].code.c1=code;
+    m[i].code.c2=0;
+    m[i].desc=strdup(desc);
+    m[i].rgb.r=r;
+    m[i].rgb.g=g;
+    m[i].rgb.b=b;
+  }
+  *map=m;
   
-  if (fgets2(buf,2048-1,in) == NULL)
-    fatal_error(0,"Empty file %s",fn);
-  do {
-    nline++;
-    srenew(mat,++nm);
-    mm=&(mat[nm-1]);
-    mm->axis_x=NULL;
-    mm->axis_y=NULL;
-    mm->label_x[0]='\0';
-    mm->matrix=NULL;
-    
-    sscanf(buf,"%d",&ny);
-    nt=0;
-    if (fgets2(buf,2048-1,in) == NULL)
-      fatal_error(0,"No y0 in file %s, line %d",fn,nline);
-    if (buf[0] == '"') {
-      strcpy(mm->label_x,read_quotestr(buf));
-      quotes=0;
-      i=-1;
-      while (quotes <3) {
-	i++;
-	if (buf[i]=='"') quotes++;
-      }      
-      strcpy(mm->label_y,read_quotestr(buf+i));
-      snew(mm->axis_y,ny);
-      for(i=0;i<ny;i++) {
-	fscanf(in,"%lf",&uu0);
-	mm->axis_y[i] = uu0;
-      }
-      fgets2(buf,2048-1,in);
-      mm->y0=0;
-    }
-    else {
-      sscanf(buf,"%lf",&yy0);
-      mm->y0=yy0;
-      strcpy(mm->label_y,read_quotestr(buf));
-    }
-      
-    nline++;
-    while ((test=fgets2(buf,2048-1,in)) != NULL) {
-      if (sscanf(buf,"%lf %s",&tt,sss) != 2)
-	break;
-      if (ny != strlen(sss)-2) 
-	fatal_error(0,"Your input file '%s' sucks!\n"
-		    "line %d contains %d residues while line 1 has %d\n",
-		    fn,nline+1,strlen(sss)-2,ny);
-      
-      srenew(mm->axis_x,nt+1);
-      mm->axis_x[nt]=tt;
-      
-      srenew(mm->matrix,nt+1);
-      mm->matrix[nt]=strdup(read_quotestr(sss));
-      
-      nt++;
-      nline++;
-    }
-    mm->ny=ny;
-    mm->nx=nt;
-  } while (test != NULL);
+  return n;
+}
+
+int readcmap(char *fn,t_mapping **map)
+{
+  FILE      *in;
+  int       n;
+  t_mapping *m;
+  
+  in=libopen(fn);
+  n=getcmap(in,fn,map);
   fclose(in);
   
-  *nmat=nm;
-  return mat;
+  return n;
 }
 
-static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
-#define NMAP asize(mapper)
+void printcmap(FILE *out,int n,t_mapping map[])
+{
+  int i;
+  
+  fprintf(out,"%d\n",n);
+  for(i=0; (i<n); i++)
+    fprintf(out,"%c  %20s  %10g  %10g  %10g\n",map[i].code,map[i].desc,
+	    map[i].rgb.r,map[i].rgb.g,map[i].rgb.b);
+}
+
+void writecmap(char *fn,int n,t_mapping map[])
+{
+  FILE *out;
+  
+  out=ffopen(fn,"w");
+  printcmap(out,n,map);
+  fclose(out);
+}
 
 void do_wmap(FILE *out,int i0,int imax,
 	     int nlevels,t_rgb rlo,t_rgb rhi,real lo,real hi)
@@ -210,7 +190,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 {
   t_mapping *map;
   char *line=NULL,*str,buf[256];
-  int i,m,col_len;
+  int i,m,col_len,nch;
   long r,g,b;
   double u;
   char *fg;
@@ -248,14 +228,15 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 
     if  ( line[0] == '\"' ) {
       line2string(&line);
-      sscanf(line,"%d %d %d %d",&(mm->nx),&(mm->ny),&(mm->nmap),&i);
-      if (i>1)
-	fatal_error(0,"Sorry can only read xpm's with one caracter per pixel\n");
+      sscanf(line,"%d %d %d %d",&(mm->nx),&(mm->ny),&(mm->nmap),&nch);
+      if (nch>2)
+	fatal_error(0,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
       bGetOnWithIt=TRUE;
     }
   }
   if (debug)
-    printf("%d %d %d\n",mm->nx,mm->ny,mm->nmap);
+    printf("mm->nx %d mm->ny %d mm->nmap %d nch %d\n",
+	   mm->nx,mm->ny,mm->nmap,nch);
   
   /* Read color map */
   snew(map,mm->nmap);
@@ -273,13 +254,23 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       while (isxdigit(str[col_len]))
 	col_len++;
       if (col_len==6) {
-	sscanf(line,"%c %*c #%2x%2x%2x",&(map[m].code),&r,&g,&b);
+	sscanf(line,"%s %*c #%2x%2x%2x",buf,&r,&g,&b);
+	map[m].code.c1=buf[0];
+	if (nch==1)
+	  map[m].code.c2=0;
+	else
+	  map[m].code.c2=buf[1];
 	map[m].rgb.r=r/255.0;
 	map[m].rgb.g=g/255.0;
 	map[m].rgb.b=b/255.0;
       }
       else if (col_len==12) {
-	sscanf(line,"%c %*c #%4x%4x%4x",&(map[m].code),&r,&g,&b);
+	sscanf(line,"%s %*c #%4x%4x%4x",buf,&r,&g,&b);
+	map[m].code.c1=buf[0];
+	if (nch==1)
+	  map[m].code.c2=0;
+	else
+	  map[m].code.c2=buf[1];
 	map[m].rgb.r=r/65535.0;
 	map[m].rgb.g=g/65535.0;
 	map[m].rgb.b=b/65535.0;
@@ -295,7 +286,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
   }
   if (debug)
     for(m=0;m<mm->nmap;m++) 
-      printf("%c %f %f %f %s\n",map[m].code,map[m].rgb.r,map[m].rgb.g,
+      printf("%c %f %f %f %s\n",map[m].code.c1,map[m].rgb.r,map[m].rgb.g,
 	     map[m].rgb.b,map[m].desc);
 
   /* Read axes, if the are any */ 
@@ -343,8 +334,14 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       fatal_error(0,"Not enough caracters in row %d of the matrix\n",m+1);
     else {
       line++;
-      for(i=0; i<mm->nx; i++)
-	mm->matrix[i][m] = line[i];
+      if (nch==1)
+	for(i=0; i<mm->nx; i++)
+	  mm->matrix[i][m].c1 = line[i];
+      else 
+	for(i=0; i<mm->nx; i++) {
+	  mm->matrix[i][m].c1 = line[2*i];
+	  mm->matrix[i][m].c2 = line[2*i+1];
+	}
       m--;
     }
   } while ((m>=0) && fgetline(&line,in));
@@ -401,25 +398,23 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
   int    i,nlo,nmid;
   real   r,g,b,clevels;
 
-  fprintf(stderr,"THIS IS NEW 4");
-    
-  if (*nlevels > NMAP) {
-    fprintf(stderr,"Warning, too many levels (%d) in file %s line %d, using %d only\n",*nlevels,__FILE__,__LINE__,NMAP);
-    *nlevels=NMAP;
+  if (*nlevels > NMAP*NMAP) {
+    fprintf(stderr,"Warning, too many levels (%d) in matrix, using %d only\n",*nlevels,NMAP*NMAP);
+    *nlevels=NMAP*NMAP;
   }
-  else if (*nlevels <= 1) {
-    fprintf(stderr,"Warning, too few levels (%d) in file %s line %d, using 2 instead\n",*nlevels,__FILE__,__LINE__);
+  else if (*nlevels < 2) {
+    fprintf(stderr,"Warning, too few levels (%d) in matrix, using 2 instead\n",*nlevels);
     *nlevels=2;
-  }
+  }   
   if (!((mid > lo) && (mid < hi)))
     fatal_error(0,"Lo: %f, Mid: %f, Hi: %f\n",lo,mid,hi);
 
   fprintf(out,"static char * gv_xpm[] = {\n");
-  fprintf(out,"\"%d %d   %d %d\",\n",n_x,n_y,*nlevels+1,1);
+  fprintf(out,"\"%d %d   %d %d\",\n",n_x,n_y,*nlevels,1 + (*nlevels-1)/NMAP);
 
-  nmid = ((mid-lo)/(hi-lo))*(*nlevels);
+  nmid = ((mid-lo)/(hi-lo))*(*nlevels-1);
   if (*nlevels > (2 * nmid))
-    clevels = *nlevels-nmid;
+    clevels = *nlevels-1-nmid;
   else
     clevels = nmid;
   for(i=0; (i<nmid); i++) {
@@ -427,18 +422,22 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
     r=rmid.r+(nlo*(rlo.r-rmid.r)/clevels);
     g=rmid.g+(nlo*(rlo.g-rmid.g)/clevels);
     b=rmid.b+(nlo*(rlo.b-rmid.b)/clevels);
-    fprintf(out,"\"%c  c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-	    mapper[i],round(255*r),round(255*g),round(255*b),
+    fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
+	    mapper[i % NMAP],
+	    (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
+	    round(255*r),round(255*g),round(255*b),
 	    (nlo*lo+i*mid)/nmid);
      }
-  for(i=0; (i<(*nlevels+1-nmid)); i++) {
-    nlo=(*nlevels-nmid)-i;
+  for(i=0; (i<(*nlevels-nmid)); i++) {
+    nlo=(*nlevels-1-nmid)-i;
     r=rmid.r+(i*(rhi.r-rmid.r)/clevels);
     g=rmid.g+(i*(rhi.g-rmid.g)/clevels);
     b=rmid.b+(i*(rhi.b-rmid.b)/clevels);
-    fprintf(out,"\"%c  c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-	    mapper[i+nmid],round(255*r),round(255*g),round(255*b),
-	    (nlo*mid+i*hi)/(*nlevels-nmid));
+    fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
+	    mapper[(i+nmid) % NMAP],
+	    (*nlevels <= NMAP) ? ' ' : mapper[(i+nmid)/NMAP],
+	    round(255*r),round(255*g),round(255*b),
+	    (nlo*mid+i*hi)/(*nlevels-1-nmid));
   }
 }
 
@@ -448,27 +447,28 @@ void write_xpm_map(FILE *out,int n_x, int n_y,int *nlevels,real lo,real hi,
 {
   int    i,nlo;
   real   invlevel,r,g,b;
-  
-  if (*nlevels > NMAP) {
-    fprintf(stderr,"Warning, too many levels (%d) in file %s line %d, using %d only\n",*nlevels,__FILE__,__LINE__,NMAP);
-    *nlevels=NMAP;
+
+  if (*nlevels > NMAP*NMAP) {
+    fprintf(stderr,"Warning, too many levels (%d) in matrix, using %d only\n",*nlevels,NMAP*NMAP);
+    *nlevels=NMAP*NMAP;
   }
-  else if (*nlevels <= 1) {
-    fprintf(stderr,"Warning, too few levels (%d) in file %s line %d, using 2 instead\n",*nlevels,__FILE__,__LINE__);
+  else if (*nlevels < 2) {
+    fprintf(stderr,"Warning, too few levels (%d) in matrix, using 2 instead\n",*nlevels);
     *nlevels=2;
   }
 
   fprintf(out,"static char * gv_xpm[] = {\n");
-  fprintf(out,"\"%d %d   %d %d\",\n",n_x,n_y,*nlevels+1,1);
+  fprintf(out,"\"%d %d   %d %d\",\n",n_x,n_y,*nlevels,1);
 
-  invlevel=1.0/(*nlevels);
-  for(i=0; (i<(*nlevels)+1); i++) {
-    nlo=*nlevels-i;
+  invlevel=1.0/(*nlevels-1);
+  for(i=0; (i<*nlevels); i++) {
+    nlo=*nlevels-1-i;
     r=(nlo*rlo.r+i*rhi.r)*invlevel;
     g=(nlo*rlo.g+i*rhi.g)*invlevel;
     b=(nlo*rlo.b+i*rhi.b)*invlevel;
-    fprintf(out,"\"%c  c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-	    mapper[i],round(255*r),round(255*g),round(255*b),
+    fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
+	    mapper[i % NMAP],(*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
+	    round(255*r),round(255*g),round(255*b),
 	    (nlo*lo+i*hi)*invlevel);
   }
 }
@@ -492,14 +492,17 @@ void write_xpm_data(FILE *out, int n_x, int n_y, real **matrix,
   int i,j,c;
   real invlevel;
 
-  invlevel=nlevels/(hi-lo);
+  invlevel=(nlevels-1)/(hi-lo);
   for(j=n_y-1; (j>=0); j--) {
     fprintf(out,"\"");
     for(i=0; (i<n_x); i++) {
       c=round((matrix[i][j]-lo)*invlevel);
       if (c<0) c=0;
-      if (c>nlevels) c=nlevels;
-      fprintf(out,"%c",mapper[c]);
+      if (c>=nlevels) c=nlevels-1;
+      if (nlevels <= NMAP)
+	fprintf(out,"%c",mapper[c]);
+      else
+	fprintf(out,"%c%c",mapper[c % NMAP],mapper[c / NMAP]);
     }
     if (j > 0)
       fprintf(out,"\",\n");
@@ -513,23 +516,30 @@ void write_xpm_m(FILE *out, t_matrix m)
   /* Writes a t_matrix struct to .xpm file */ 
      
   int i,j;
-  
+  bool bOneChar;
 
+  bOneChar=(m.map[0].code.c2 == 0);
   write_xpm_header(out,m.title,m.legend,m.label_x,m.label_y,
 		   m.bDiscrete);
   fprintf(out,"static char * gv_xpm[] = {\n");
-  fprintf(out,"\"%d %d   %d %d\",\n",m.nx,m.ny,m.nmap,1);
+  fprintf(out,"\"%d %d   %d %d\",\n",m.nx,m.ny,m.nmap,bOneChar ? 1 : 2);
   for(i=0; (i<m.nmap); i++) 
-    fprintf(out,"\"%c  c #%02X%02X%02X \" /* \"%s\" */,\n",
-	    m.map[i].code,round(m.map[i].rgb.r*255),
-	                  round(m.map[i].rgb.g*255),
-	                  round(m.map[i].rgb.b*255),m.map[i].desc);
+    fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%s\" */,\n",
+	    m.map[i].code.c1,
+	    bOneChar ? ' ' : m.map[i].code.c2,
+	    round(m.map[i].rgb.r*255),
+	    round(m.map[i].rgb.g*255),
+	    round(m.map[i].rgb.b*255),m.map[i].desc);
   write_xpm_axis(out,"x",m.nx,m.axis_x);
   write_xpm_axis(out,"y",m.ny,m.axis_y);
   for(j=m.ny-1; (j>=0); j--) {
     fprintf(out,"\"");
-    for(i=0; (i<m.nx); i++) 
-      fprintf(out,"%c",m.matrix[i][j]);
+    if (bOneChar)
+      for(i=0; (i<m.nx); i++) 
+	fprintf(out,"%c",m.matrix[i][j].c1);
+    else
+      for(i=0; (i<m.nx); i++) 
+	fprintf(out,"%c%c",m.matrix[i][j].c1,m.matrix[i][j].c2);
     if (j > 0)
       fprintf(out,"\",\n");
     else

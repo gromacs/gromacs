@@ -137,7 +137,8 @@ bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
     else {
       bDiff=FALSE;
       for(i=0; i<nmap1; i++) {
-	if (map1[i].code != map2[i].code) bDiff=TRUE;
+	if (map1[i].code.c1 != map2[i].code.c1) bDiff=TRUE;
+	if (map1[i].code.c2 != map2[i].code.c2) bDiff=TRUE;
 	if (strcmp(map1[i].desc,map2[i].desc) != 0) bDiff=TRUE;
 	if ((map1[i].rgb.r!=map2[i].rgb.r) ||
 	    (map1[i].rgb.g!=map2[i].rgb.g) ||
@@ -413,8 +414,9 @@ void xpm_mat(char *outf,
   char   buf[100];
   int    i,j,k,x,y,col;
   static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?"; 
-  int       nmap1,nmap2;
-  t_mapping map[100];
+#define NMAP strlen(mapper)
+  int       nmap,nmap1,nmap2;
+  t_mapping *map;
 
    out=ffopen(outf,"w");
    
@@ -424,10 +426,14 @@ void xpm_mat(char *outf,
      else {
        nmap1=mat[i].nmap;
        nmap2=mat2[i].nmap;
-       if (nmap1+nmap2 > sizeof(mapper)) 
+       nmap=nmap1+nmap2;
+       snew(map,nmap);
+       if (nmap > NMAP*NMAP) 
 	 fatal_error(0,"Not enough symbols to merge the two colormaps\n");
        for(j=0; j<nmap1; j++) {
-	 map[j].code=mapper[j];
+	 map[j].code.c1=mapper[j % NMAP];
+	 if (nmap > NMAP)
+	   map[j].code.c2=mapper[j/NMAP];
 	 map[j].rgb.r=mat[i].map[j].rgb.r;
 	 map[j].rgb.g=mat[i].map[j].rgb.g;
 	 map[j].rgb.b=mat[i].map[j].rgb.b;
@@ -435,14 +441,14 @@ void xpm_mat(char *outf,
        }
        for(j=0; j<nmap2; j++) {
 	 k=j+nmap1;
-	 map[k].code=mapper[k];
+	 map[k].code.c1=mapper[k % NMAP];
+	 if (nmap > NMAP)
+	   map[k].code.c2=mapper[k/NMAP];
 	 map[k].rgb.r=mat2[i].map[j].rgb.r;
 	 map[k].rgb.g=mat2[i].map[j].rgb.g;
 	 map[k].rgb.b=mat2[i].map[j].rgb.b;
 	 map[k].desc=mat2[i].map[j].desc;
        }
-       mat[i].nmap=nmap1+nmap2;
-       mat[i].map=map;
        for(x=0; (x<mat[i].nx); x++) {
 	 for(y=0; (y<mat[i].nx); y++) {
 	   if (x<=y) { /* upper left  -> map1 */
@@ -450,12 +456,20 @@ void xpm_mat(char *outf,
 	   } else  {   /* lower right -> map2 */
 	     col=nmap1+searchcmap(mat2[i].nmap,mat2[i].map,mat[i].matrix[x][y]);
 	   }
-	   if ((bDiag) || (x!=y))
-	     mat[i].matrix[x][y]=mapper[col];
-	   else
-	     mat[i].matrix[x][y]=mapper[0];
+	   if ((bDiag) || (x!=y)) {
+	     mat[i].matrix[x][y].c1=mapper[col % NMAP];
+	     if (nmap > NMAP)
+	       mat[i].matrix[x][y].c2=mapper[col / NMAP];
+	   }
+	   else {
+	     mat[i].matrix[x][y].c1=mapper[0];
+	     if (nmap > NMAP)
+	       mat[i].matrix[x][y].c2=mapper[0];
+	   }
 	 }
        }
+       mat[i].nmap=nmap;
+       mat[i].map=map;
        if (mat2 && (strcmp(mat[i].title,mat2[i].title) != 0))
 	 sprintf(mat[i].title,"%s / %s\0",mat[i].title,mat2[i].title);
        if (mat2 && (strcmp(mat[i].legend,mat2[i].legend) != 0))
