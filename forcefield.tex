@@ -1277,7 +1277,8 @@ In columns {\tt
 ai} and {\tt aj} you find the atom numbers of the particles to be
 restrained. The {\tt type} column should always be 1.
 The {\tt exp.} column denotes the experiment number, this starts
-numbering at 1. The label should be a unique number larger than zero
+numbering at 1. For each experiment a separate order tensor $\SSS$
+is optimized. The label should be a unique number larger than zero
 for each restraint. The {\tt alpha} column contains the power $\alpha$ 
 which is used in equation~(\ref{orient_def}) to calculate the orientation.
 The {\tt const.} column contains the constant $c_i$ used in the same
@@ -1314,7 +1315,7 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
         a reasonable choice.	
 \item[{\tt nstorireout}: orientation output frequency.]
         Determines how often the orientations for all restraints
-        are written to the energy file.
+        and the order tensor(s) $\SSS$ are written to the energy file.
 	When using time and/or ensemble averaging, the time and ensemble
 	averaged orientations as well as the instantaneous non-ensemble
 	averaged orientations are written to the energy file.
