@@ -353,33 +353,6 @@ static real calc_dist(FILE *log,rvec x[])
     return 0.0;
 }
 
-void calc_force(int natom,rvec f[])
-{
-  int  i,j,m;
-  int  jindex[] = { 0, 4, 8};
-  rvec fff[2],xxx[2],dx,df;
-  real msf1,msf2;
-  
-  for(j=0; (j<2); j++) {
-    clear_rvec(fff[j]);
-    for(i=jindex[j]; (i<jindex[j+1]); i++) {
-      for(m=0; (m<DIM); m++) {
-	fff[j][m] += f[i][m];
-      }
-    }
-  }
-  
-  msf1 = iprod(fff[0],fff[0]);
-  msf2 = iprod(fff[1],fff[1]);
-
-  pr_rvecs(stdlog,0,"force",f,natom);
-    
-  fprintf(stdlog,"FMOL:  %10.3f  %10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
-	  fff[0][XX],fff[0][YY],fff[0][ZZ],fff[1][XX],fff[1][YY],fff[1][ZZ]);
-  fprintf(stdlog,"RMSF:  %10.3e  %10.3e\n",msf1,msf2);
-  
-}
-
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
@@ -469,8 +442,8 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   Eintern   = Ecouple(tcr,ener);
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
 
-  if (bPrint)
-    calc_force(md->nr,f);
+  /*if (bPrint)
+    calc_force(md->nr,f);*/
   
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
@@ -508,7 +481,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   deviation[eoVir]    = calc_deviation(tcr->vir,  Virial,      tcr->vir0);
   deviation[eoDist]   = calc_deviation(tcr->dist, dist,        tcr->dist0);
   deviation[eoMu]     = calc_deviation(tcr->mu,   muabs,       tcr->mu0);
-  calc_f_dev(md->nr,md->chargeA,x,idef,&xiH,&xiS);
+  calc_f_dev(md->nr,md->chargeA,x,f,idef,&xiH,&xiS);
   
   prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
   prdev[eoEpot]   = epot0      - Eintern;
@@ -540,11 +513,11 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 	fprintf(log,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
 	if (ati == 1) {
 	  /* Hydrogen */
-	  ff12 += max(-1,dt*xiH); 
+	  ff12 += xiH; 
 	}
 	else if (ati == 2) {
 	  /* Shell */
-	  ff12 += max(-1,dt*xiS); 
+	  ff12 += xiS; 
 	}
 	else
 	  fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",__FILE__,__LINE__);
