@@ -212,7 +212,8 @@ void CopyRight(FILE *out,char *szProgram)
   fprintf(out,"\n");
   
   for(i=0; (i<NCR); i++) 
-    sp_print(out,CopyrightText[i]);
+    fprintf(out,"  %s\n",CopyrightText[i]);
+
   
   sprintf(buf,"%s",szProgram);
 #ifdef DOUBLE
@@ -319,7 +320,7 @@ void please_cite(FILE *fp,char *key)
     { "Lindahl2001a",
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
-      "Submitted",
+      "To appear in J. Mol. Mod.",
       0, 2001, 0, 0 }
   };
 #define NSTR (int)asize(citedb)

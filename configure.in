@@ -3,8 +3,11 @@
 #######################################################################
 AC_INIT(src/gmxlib/3dview.c)
 AC_PREREQ(2.13)
-AC_CONFIG_AUX_DIR(./config)
+AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(gromacs, 3.0)
+dnl This is the version info according to the libtool versioning system.
+dnl It does *not* correspond to the release number.
+SHARED_VERSION_INFO="1:0:0"
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/include/config.h)
 
@@ -15,7 +18,7 @@ AM_CONFIG_HEADER(src/include/config.h)
 #####
 
 AC_ARG_ENABLE(mpi,     
- [  --enable-mpi                  Compile parallel version of Gromacs], 
+ [  --enable-mpi                  Compile parallel version of GROMACS], 
  enable_mpi=$enableval, enable_mpi=no)
 
 
@@ -29,15 +32,15 @@ AC_ARG_ENABLE(vector,
 #####
 
 AC_ARG_ENABLE(fortran, 
- [  --enable-fortran              Dortran loops (default on sgi,ibm,sun,tru64/dec)], 
+ [  --enable-fortran              Fortran loops (default on sgi,ibm,sun,axp)], 
  enable_fortran=$enableval,enable_fortran=check)
 
 
 #####
 
-AC_ARG_ENABLE(double,  
- [  --enable-double               Compile double precision Gromacs], 
- enable_double=$enableval, enable_double=no)
+AC_ARG_ENABLE(float,  
+ [  --enable-float                Compile single precision GROMACS], 
+ enable_float=$enableval, enable_float=yes)
 
 
 #####
@@ -52,7 +55,6 @@ AC_ARG_ENABLE(type-suffix,
 AC_ARG_ENABLE(mpi-suffix,     
  [  --enable-mpi-suffix           Add a suffix to MPI files (default on ibm)], 
  enable_mpi_suffix=$enableval, enable_mpi_suffix=check)
-
 
 #####
 
@@ -76,16 +78,9 @@ AC_ARG_ENABLE(nice,
 
 #####
 
-AC_ARG_ENABLE(sse,     
- [  --disable-sse                 Disable SSE assembly loops on x86], 
- enable_sse=$enableval, enable_sse=yes)
-
-
-#####
-
-AC_ARG_ENABLE(3dnow,     
- [  --disable-3dnow               Disable 3DNow assembly loops on x86], 
- enable_3dnow=$enableval, enable_3dnow=yes)
+AC_ARG_ENABLE(x86_asm,     
+ [  --disable-x86-asm             Disable assembly loops on x86], 
+ enable_x86_asm=$enableval, enable_x86_asm=yes)
 
 
 #####
@@ -180,7 +175,7 @@ esac
 if test "$enable_fortran" = "check"; then
 case "${host_cpu}-${host_os}" in
 
-  sparc*-solaris* | alpha*-osf* | rs6000*-aix* | mips*-irix*)
+  sparc*-solaris* | alpha*-* | rs6000*-aix* | mips*-irix*)
     enable_fortran=yes 
     ;;
 
@@ -261,19 +256,31 @@ case "${host_cpu}" in
 esac
 
 if test "$enable_fortran" = "yes"; then
-  # vendor f77 before g77
-  AC_CHECK_PROGS(F77, f77 xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90)
+  # vendor f77 before g77 - but special compiler list for alpha-linux
+  case "${host_cpu}-${host_os}" in
+    alpha*-linux*)
+      AC_CHECK_PROGS(F77, fort f77 g77)
+      ;;
+    *)   
+      AC_CHECK_PROGS(F77, f77 xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90)
+      ;;
+  esac
   AC_PROG_F77
   if test -z "$F77"; then
     AC_MSG_ERROR([No fortran compiler found])
   fi
 fi
 
-# Checks for programs.
-AC_PROG_MAKE_SET
-
-AC_CHECK_PROG(CC, cc, cc) # do vendor cc before gcc
+case "${host_cpu}-${host_os}" in
+    alpha*-linux*)
+      AC_CHECK_PROGS(CC, ccc cc) # do vendor cc before gcc
+      ;;
+    *)   
+      AC_CHECK_PROG(CC, cc, cc) # do vendor cc before gcc
+      ;;
+esac
 AC_PROG_CC
+AC_PROG_CPP
 BUILD_CC=$CC
 AC_SUBST(BUILD_CC)
 
@@ -283,7 +290,7 @@ if test "$enable_fortran" = "yes"; then
 fi
 
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
-# above, since the autoconf checks that the created file can be executed. This would
+# above, since autoconf checks that the created file can be executed. This would
 # fail on platforms where MPI executables can only be run through a batchqueue.
 
 if test "$enable_mpi" = "yes"; then
@@ -299,65 +306,35 @@ else
   AM_CONDITIONAL(USE_MPI,false)
 fi
 
-AC_PROG_INSTALL
-AC_PROG_CPP
-
-# A rather complicated check for the nasm program and x86 assembly capabilities
-# to run under windows we must insert a test a change nasm "-f elf" to "-f win32"
+# A rather complicated check for the capabilities of as, to make
+# sure we can compile the assembly innerloops.
 if test "$x86" = "yes"; then
-  if [ test "$enable_sse" = "yes" -o "$enable_3dnow" = "yes"]; then
-    if test "$enable_double" = "yes"; then
-      AC_MSG_WARN([SSE/3Dnow assembly can only be used in single precision])
-      enable_sse=no
-      enable_3dnow=no
+  if [ test "$enable_x86_asm" = "yes"]; then
+    if test "$enable_float" = "no"; then
+      AC_MSG_WARN([The assembly loops can only be used in single precision - disabling])
+      enable_x86_asm=no
     else 
-      AC_PATH_PROG(NASM,nasm,no)
-      NASMFLAGS="-f elf" 
-      AC_SUBST(NASMFLAGS)
-      if test "$NASM" = "no"; then 
-	  AC_MSG_ERROR([Nasm is required for SSE and 3DNow loops.])
-      fi
-      if test "$enable_sse" = "yes"; then
-        AC_MSG_CHECKING([whether nasm supports SSE instructions])
-cat > conftest_sse.s << EOF
-	global checksse	
-checksse:
+      AC_MSG_CHECKING([whether as fully supports intel syntax])
+cat > conftest.s << EOF
+.intel_syntax noprefix 
+checkasm:
 	emms
-	xorps xmm0,xmm0
-	emms
-	ret
-EOF
-        if AC_TRY_COMMAND($NASM conftest_sse.s); then
- 	  AC_MSG_RESULT([yes])
-        else
-	  AC_MSG_RESULT([no]) 
-	  AC_MSG_ERROR([Download a patched nasm from the Gromacs homepage,]     
-                       [or disable SSE assembly.])
-        fi
-      fi	
-      if test "$enable_3dnow" = "yes"; then
-        AC_MSG_CHECKING([whether nasm supports extended 3DNow instructions])
-cat > conftest_3dnow.s << EOF
-	global check3dnow      	
-check3dnow:	
-	femms
 	pswapd mm0,mm0
-	femms
+	movups xmm0,[checkasm]
+	emms
 	ret
 EOF
-        if AC_TRY_COMMAND([$NASM -f elf conftest_3dnow.s]); then
- 	  AC_MSG_RESULT([yes])
-        else
-	  AC_MSG_RESULT([no])
-	  AC_MSG_ERROR([Download a patched nasm from the Gromacs homepage,]
-                       [or disable 3DNow assembly.])
-        fi
+      if AC_TRY_COMMAND($CC -c conftest.s); then
+ 	AC_MSG_RESULT([yes])
+      else
+        AC_MSG_RESULT([no]) 
+	AC_MSG_ERROR([Upgrade to binutils>=2.11, download the as executable]     
+                    [from www.gromacs.org, or disable assembly loops.])
       fi
-    fi
+    fi	
   fi
 else # not x86
-enable_sse=no
-enable_3dnow=no
+enable_x86_asm=no
 fi
 
 AC_PATH_PROG(IDENT,ident,no)
@@ -371,7 +348,9 @@ if test "$IDENT" != "no"; then
     AC_MSG_RESULT([no]))
 fi
 
-AC_PROG_RANLIB
+
+AC_PROG_LN_S
+AM_PROG_LIBTOOL
 AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
 
@@ -410,10 +389,10 @@ if test "${host_vendor}" = "ibm"; then
   fi
 fi 
 
-if test "$enable_double" = "yes"; then
-  precision=8
-else
+if test "$enable_float" = "yes"; then
   precision=4
+else
+  precision=8
 fi
 
 if test "$enable_mpi" = "yes"; then
@@ -438,9 +417,9 @@ esac
 
 ######
 if test "$enable_xdr" = "no"; then
-  AC_MSG_WARN([* Not using XDR cripples Gromacs significantly. You won't be able to *]
-              [* read or write any hardware independent or compressed trajectories. *]
-              [* We strongly suggest you try to locate the RPC routines instead!    *])
+  AC_MSG_WARN([* Not using XDR cripples GROMACS significantly. You won't be able to *]
+              [* read or write any compressed trajectories. You have no choice on   *]
+              [* windows, but if you run UNIX locate the RPC files - you have them! *])
 else
 # check for xtc headers
   AC_CHECK_HEADERS(rpc/rpc.h rpc/xdr.h,,AC_MSG_ERROR([RPC/XDR include headers not found]))
@@ -519,15 +498,16 @@ esac
 # Substitute things in output and header files.
 ########################################################################
 SUFFIX=""
+GMXLIB_COND_OBJ=""
 
 if test "$enable_mpi" = "yes"; then
-	AC_DEFINE(USE_MPI,,[Make a parallel version of Gromacs using MPI])
-        PAR_OBJ='${mpi_obj}'
+	AC_DEFINE(USE_MPI,,[Make a parallel version of GROMACS using MPI])
+        GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} mpiio.lo"
         if test "$enable_mpi_suffix" = "yes"; then
 	  SUFFIX="_mpi"
 	fi
 else
-	PAR_OBJ='${libnet_obj}' 
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} libnet.lo"
 fi
 
 if test "$enable_vector" = "yes"; then
@@ -536,14 +516,20 @@ fi
 
 if test "$enable_fortran" = "yes"; then
 	AC_DEFINE(USE_FORTRAN,,[Use Fortran for innerloops and some other core stuff])
-	INNER_F77_OBJ='${inner_f77_obj}'
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} innerf.lo f77_wrappers.lo"
+	if test "$enable_float" = "yes"; then
+          MDLIB_COND_OBJ="flincs.lo fsettle.lo fshake.lo"
+        else
+          MDLIB_COND_OBJ="flincsd.lo fsettled.lo fshaked.lo"
+	fi
 	AM_CONDITIONAL(USE_FORTRAN,true)
 else
-	INNER_C_OBJ='${inner_c_obj}'
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} innerc.lo"
+        MDLIB_COND_OBJ="clincs.lo csettle.lo cshake.lo"
 	AM_CONDITIONAL(USE_FORTRAN,false)
 fi
 
-if test "$enable_double" = "yes"; then
+if test "$enable_float" = "no"; then
 	AC_DEFINE(DOUBLE,,[Compile in double precision])
         if test "$enable_type_suffix" = "yes"; then
 	  SUFFIX="${SUFFIX}_d"
@@ -565,37 +551,28 @@ if test "$enable_nice" = "no"; then
 	AC_DEFINE(NO_NICE,,[Turn off the automatic nicing of gromacs])
 fi
 
-if test "$enable_sse" = "yes"; then
-	AC_DEFINE(USE_SSE,,[Use x86 assembly with SSE instructions])
-	SSE_OBJ='${sse_obj}'
-fi
-
-if test "$enable_3dnow" = "yes"; then
-	AC_DEFINE(USE_3DNOW,,[Use x86 assembly with 3DNow instructions])
-	TDN_OBJ='${tdn_obj}'
-fi
-
-if [test "$enable_sse" = "yes" -o "$enable_3dnow" = "yes"]; then
-	X86_ASM_OBJ='${x86_asm_obj}'	
+if test "$enable_x86_asm" = "yes"; then
+	AC_DEFINE(USE_SSE,,[Use x86 assembly loops])
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} x86_cpuid.lo x86_sse.lo x86_3dnow.lo"
 fi
 
 if [test "$motif_includes" != "none" -a "$motif_libraries" != "none"]; then
-	MOTIF_OBJ='${motif_obj}'
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} mgmx.lo widget.lo"
 fi
 
 if test "$enable_xdr" = "yes"; then
 	AC_DEFINE(USE_XDR,,[Use xdr routines to make trajectories portable])
-	XDR_OBJ='${xdr_obj}'
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} libxdrf.lo ftocstr.lo"
 else
-	XDR_OBJ='${noxdr_obj}'
+	GMXLIB_COND_OBJ="${GMXLIB_COND_OBJ} dumxdrf.lo"
 fi
 
 if test "$enable_softwaresqrt" = "yes"; then
-	AC_DEFINE(SOFTWARE_SQRT,,[Use the Gromacs software 1/sqrt(x)])
+	AC_DEFINE(SOFTWARE_SQRT,,[Use the GROMACS software 1/sqrt(x)])
 fi
 
 if test "$enable_softwarerecip" = "yes"; then
-	AC_DEFINE(SOFTWARE_RECIP,,[Use the Gromacs software 1/x])
+	AC_DEFINE(SOFTWARE_RECIP,,[Use the GROMACS software 1/x])
 fi
 
 if test "$enable_hide_square_latency" = "yes"; then
@@ -705,21 +682,15 @@ else
   AC_DEFINE_UNQUOTED(GMXLIBDIR,"${prefix}/top",[Default topology file location])
 fi
 
-AC_SUBST(PAR_OBJ)
-AC_SUBST(INNER_F77_OBJ)
-AC_SUBST(INNER_C_OBJ)
-AC_SUBST(SSE_OBJ)
-AC_SUBST(TDN_OBJ)
-AC_SUBST(X86_ASM_OBJ)
-AC_SUBST(MOTIF_OBJ)
-AC_SUBST(XDR_OBJ)
-AC_SUBST(AXP_ASM_OBJ) # not used right now
-ACX_SUBST_XXX(SUFFIX)
-AC_SUBST(SUFFIX)
-
 # Check if there are any optimizations and options for this arch and cpu
 ACX_COMPILER_MAXOPT
 AC_SUBST(INCLUDES)          # should be automatic, but doesnt seem to be?
+
+AC_SUBST(GMXLIB_COND_OBJ)
+AC_SUBST(MDLIB_COND_OBJ)
+ACX_SUBST_XXX(SUFFIX)
+AC_SUBST(SUFFIX)
+
 
 # put binaries and libraries in subdirectories named as the arch
 if test -n "$gmxcpu"; then
@@ -732,7 +703,6 @@ fi
 
 AC_SUBST(bindir)
 AC_SUBST(libdir)
-
 
 AC_OUTPUT([Makefile
                  src/Makefile
@@ -760,7 +730,7 @@ AC_OUTPUT([Makefile
                  man/Makefile])
 
 echo ""
-echo "Gromacs is ready to compile. Summary of options used:"
+echo "GROMACS is ready to compile. Summary of main options:"
 echo "Architecture                  : $host"
 if test "$enable_cpu_detection" = "yes"; then
 if test -n "$gmxcpu"; then
@@ -769,35 +739,30 @@ else
 echo "(Extra CPU detection not necessary or unavailable on this host)"	
 fi
 fi
+echo "Vector architecture           : $enable_vector"
 echo "MPI parallelization           : $enable_mpi"
 if test "$enable_mpi" = "yes"; then
 echo "Checking MPI environment      : $with_mpi_environment"
 echo "MPI suffix on files           : $enable_mpi_suffix"
 fi
-echo "Vector architecture           : $enable_vector"
 echo "Using Fortran code            : $enable_fortran"
-echo "Double precision              : $enable_double"
-if test "$enable_double" = "yes"; then
-echo "Type suffix on files          : $enable_type_suffix"
+echo "Single precision              : $enable_float"
+if test "$enable_float" = "no"; then
+echo "Suffix on double prec. files  : $enable_type_suffix"
 fi
-echo "Expanding water loops         : $enable_simplewater"
-echo "Using water-water loops       : $enable_waterwater_loops"
 echo "Automatically nice mdrun      : $enable_nice"
-echo "Using x86 SSE assembly        : $enable_sse"
-echo "Using x86 3DNow assembly      : $enable_3dnow"
-echo "Portable trajectories (xdr)   : $enable_xdr"
+echo "Using x86 SSE/3DNow assembly  : $enable_x86_asm"
 echo "Software 1/x                  : $enable_softwarerecip"
 echo "Software 1/sqrt(x)            : $enable_softwaresqrt"
 echo "Vectorize 1/x                 : $enable_vectorized_recip"
 echo "Vectorize 1/sqrt(x)           : $list_of_vectorized_sqrt"
 echo "Prefetch coordinates in loops : $list_of_prefetch_x"
 echo "Prefetch forces in loops      : $list_of_prefetch_f"
-echo "Hide square latency           : $enable_hide_square_latency"
-echo "Hide table lookup latency     : $enable_hide_table_latency"
-echo "Using X11                     : $use_x11"
+echo "X11 support                   : $use_x11"
 echo "Motif support                 : $use_motif"
 echo ""
 echo "GROMACS will be installed under $prefix"
 echo "Make sure to update your PATH and MANPATH to find the"
-echo "programs and unix manual pages."
+echo "programs and unix manual pages, and possibly LD_LIBRARY_PATH"
+echo "or /etc/ld.so.conf if you are using dynamic libraries"
 

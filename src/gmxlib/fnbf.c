@@ -211,10 +211,12 @@ static real *_buf2=NULL;
 #endif
 
 #if (defined USE_SSE || defined USE_3DNOW)
+ 
   if(cpu_capabilities==UNKNOWN_CPU) 
     cpu_capabilities=check_x86cpu(log);
+ 
 #endif
-
+  
   if (eNL >= 0) {
     i0 = eNL;
     i1 = i0+1;

@@ -9,8 +9,7 @@ include $(srcdir)/../Makefile.inc
 # but it can probably be done in a nicer way...
 INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib
-LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
-
+LDADD = ../gmxlib/libgmxXXX_SUFFIX_XXX.la ../mdlib/libmdXXX_SUFFIX_XXX.la
 
 bin_PROGRAMS = \
 	gromppXXX_SUFFIX_XXX		mdrunXXX_SUFFIX_XXX		\
@@ -31,13 +30,16 @@ gromppXXX_SUFFIX_XXX_SOURCES = \
 	sorting.h	topdirs.h	toppush.h	dum_parm.h	\
 	readir.h	topcat.h	topexcl.h	topshake.h
 
+
 mdrunXXX_SUFFIX_XXX_SOURCES = \
 	mdrun.c
+
 
 tpbconvXXX_SUFFIX_XXX_SOURCES = \
 	readir.c	toputil.c	topdirs.c	add_par.c	\
 	topexcl.c	tpbconv.c	add_par.h	toputil.h	\
 	topdirs.h	readir.h	topexcl.h
+
 
 pdb2gmxXXX_SUFFIX_XXX_SOURCES = \
 	hizzie.c	xlate.c		specbond.c	ter_db.c	\
@@ -50,6 +52,7 @@ pdb2gmxXXX_SUFFIX_XXX_SOURCES = \
 	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
 	topexcl.h
 
+
 protonateXXX_SUFFIX_XXX_SOURCES = \
 	hackblock.c	ter_db.c	h_db.c		genhydro.c	\
 	pgutil.c	resall.c	add_par.c	topexcl.c	\
@@ -57,17 +60,22 @@ protonateXXX_SUFFIX_XXX_SOURCES = \
 	h_db.h		resall.h	toputil.h	hackblock.h	\
 	pgutil.h	ter_db.h	topdirs.h	topexcl.h
 
+
 nmrunXXX_SUFFIX_XXX_SOURCES = \
 	nmrun.c
+
 
 luckXXX_SUFFIX_XXX_SOURCES = \
 	luck.c
 
+
 gmxdumpXXX_SUFFIX_XXX_SOURCES = \
 	gmxdump.c
 
+
 gmxcheckXXX_SUFFIX_XXX_SOURCES = \
 	gmxcheck.c	tpbcmp.c	tpbcmp.h
+
 
 x2topXXX_SUFFIX_XXX_SOURCES = \
 	toppush.c 	nm2type.c	pdb2top.c 	gen_ad.c 	\
@@ -78,10 +86,12 @@ x2topXXX_SUFFIX_XXX_SOURCES = \
 	pgutil.h	topdirs.h	toppush.h	topexcl.h	\
 	x2top.h
 
+
 xmdrunXXX_SUFFIX_XXX_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
 	init_sh.h 	ionize.c 	ionize.h 	ion_data.h 	\
 	xmdrun.c 	do_gct.c 	do_gct.h 	relax_sh.c
+
 
 install-mdrun: mdrunXXX_SUFFIX_XXX
 	$(mkinstalldirs) $(DESTDIR)$(bindir)
@@ -89,6 +99,8 @@ install-mdrun: mdrunXXX_SUFFIX_XXX
 		echo "$(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) mdrunXXX_SUFFIX_XXX $(DESTDIR)$(bindir)/mdrunXXX_SUFFIX_XXX"; \
 	     $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) mdrunXXX_SUFFIX_XXX $(DESTDIR)$(bindir)/mdrunXXX_SUFFIX_XXX; \
 	fi
+
+
 
 # clean things explicitly, since the target names might have changed
 

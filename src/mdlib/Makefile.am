@@ -9,9 +9,17 @@ include $(srcdir)/../Makefile.inc
 # but it can probably be done in a nicer way...
 INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 
-lib_LIBRARIES = libmdXXX_SUFFIX_XXX.a
+# Dependencies and extra objects should come before the target definition
+libmdXXX_SUFFIX_XXX_la_LIBADD         = @MDLIB_COND_OBJ@	
+libmdXXX_SUFFIX_XXX_la_DEPENDENCIES   = @MDLIB_COND_OBJ@	
 
-libmdXXX_SUFFIX_XXX_a_SOURCES = \
+
+
+# Finally, the library definition
+
+lib_LTLIBRARIES = libmdXXX_SUFFIX_XXX.la
+
+libmdXXX_SUFFIX_XXX_la_SOURCES = \
 	calcmu.c	calcvir.c			\
 	congrad.c	constr.c	coupling.c	\
 	dummies.c	ebin.c		edsam.c		\
@@ -28,22 +36,10 @@ libmdXXX_SUFFIX_XXX_a_SOURCES = \
 	vcm.c		wnblist.c	poisson.h	\
 	splittop.h	wnblist.h
 
-EXTRA_libmdXXX_SUFFIX_XXX_a_SOURCES = \
+EXTRA_libmdXXX_SUFFIX_XXX_la_SOURCES = \
 	cshake.c	csettle.c	clincs.c	\
 	fshake.f	fsettle.f	flincs.f	\
 	fshaked.f	fsettled.f	flincsd.f
-
-if USE_DOUBLE
-  inner_f77_obj	= fshaked.o	fsettled.o	flincsd.o
-else
-  inner_f77_obj	= fshake.o	fsettle.o	flincs.o
-endif
-
-inner_c_obj	= cshake.o	csettle.o	clincs.o
-
-
-libmdXXX_SUFFIX_XXX_a_LIBADD       = 	@INNER_F77_OBJ@		@INNER_C_OBJ@
-libmdXXX_SUFFIX_XXX_a_DEPENDENCIES = 	@INNER_F77_OBJ@		@INNER_C_OBJ@
 
 # clean things explicitly, since the target names might have changed
 CLEANFILES     = ${lib_LIBRARIES} *_d.a *_mpi.a *~ \\\#*

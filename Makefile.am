@@ -11,10 +11,13 @@ SUBDIRS = src top html tutor man
 
 #
 # Most files in the config subdir is included automatically when
-# we issue "make dist", but not depcomp. This just includes that file...
-#
-EXTRA_DIST = config/depcomp
+# we issue "make dist", but some versions of automake seem to have
+# problems with it, so we include them all...
 
+EXTRA_DIST = config/depcomp 	config/ltconfig 	config/ltcf-c.sh   \
+             config/ltcf-f77.sh config/config.guess	config/config.sub  \
+	     config/install-sh  config/missing          config/ltmain.sh   \
+             config/mkinstalldirs
 
 #
 # This is a shortcut to construct the mdrun executable by first
@@ -29,10 +32,15 @@ mdrun:
 install-mdrun:
 	(cd ${top_builddir}/src/kernel && $(MAKE) install-mdrun)
 
+links:
+	(cd /usr/local/bin && $(LN_S) ${bindir}/* .)
+
 #
 # Apart from normal things like .o, things matching this are removed
 # (The second one removes files beginning with a #)
-CLEANFILES = *~ \\\#*
+CLEANFILES = *~ \\\#* 
+DISTCLEANFILES = libtool config.cache config.log
+
 
 
 

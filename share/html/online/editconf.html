@@ -1,13 +1,13 @@
-<TITLE>editconf</TITLE>
+<HTML>/n<HEAD>/n<TITLE>editconf</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<H2>editconf</H2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<table WIDTH="800" NOBORDER >
 <TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<td WIDTH="120" HEIGHT="133">
+<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
+Mon 11 Jun 2001</B></td></tr></TABLE>
+<HR>
 <H3>Description</H3>
 editconf converts generic structure format to <tt>.<a href="gro.html">gro</a></tt>, <tt>.<a href="g96.html">g96</a></tt>
 or <tt>.<a href="pdb.html">pdb</a></tt>.
@@ -78,7 +78,11 @@ The option -grasp is similar, but it puts the charges in the B-factor
 and the radius in the occupancy.
 <p>
 Finally with option <tt>-label</tt> editconf can add a chain identifier
-to a <a href="pdb.html">pdb</a> file, which can be useful for analysis with e.g. rasmol.
+to a <a href="pdb.html">pdb</a> file, which can be useful for analysis with e.g. rasmol.<p>
+To convert a truncated octrahedron file produced by a package which uses
+a cubic box with the corners cut off (such as Gromos) use:<br>
+<tt>editconf -f &lt;infile&gt; -rotate 0 -45 -35.2644 -bt o -box &lt;veclen&gt; -o &lt;outfile&gt;</tt><br>
+where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>

@@ -7,6 +7,7 @@
 
 EXTRA_DIST = 	grompplog2top	make_gromos_nb.pl	make_gromos_rtp.py  \
 		mkhtml   	mkonline		make_gromos_bon.pl  \
-		mkcompl      	mknroff			make_gromos_rtp.pl  
+		mkcompl      	mknroff			make_gromos_rtp.pl  \
+		mktex		GMXRC           	NOGMX
 
 

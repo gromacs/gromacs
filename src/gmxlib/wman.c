@@ -448,18 +448,22 @@ static void write_htmlman(FILE *out,
   
 #define NSR(s) check_html(s,program)
   
-  fprintf(out,"<TITLE>%s</TITLE>\n",program);
+  fprintf(out,"<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n",program);
   fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
-  fprintf(out,"<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000EF\" vlink=\"#650065\" alink=\"#FF0000\">\n");
-  fprintf(out,"<H2>%s</H2>\n",program);
-  fprintf(out,"<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH=\"98%%\">\n");
-  fprintf(out,"<TR>\n<TD><font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font></TD>\n");
-  fprintf(out,"<TD ALIGN=RIGHT><B>%s</B></TR>\n",GromacsVersion());
-  fprintf(out,"<TR><TD><font size=-1><A HREF=\"http://www.gromacs.org\">GROMACS homepage</A></font></TD>\n");
-  fprintf(out,"<TD ALIGN=RIGHT><B>%s</B></TR></TABLE></CENTER><HR>\n",mydate());
+  fprintf(out,"<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">\n");
+  fprintf(out,"<table WIDTH=\"800\" NOBORDER >\n<TR>\n");
+  fprintf(out,"<td WIDTH=\"120\" HEIGHT=\"133\">\n"
+	  "<a href=\"http://www.gromacs.org/\">"
+	  "<img SRC=\"../gif/gmxlogo_small.jpg\""
+	  "BORDER=0 height=133 width=116></a></td>");
+  fprintf(out,"<td ALIGN=LEFT VALIGN=TOP WIDTH=480>"
+	  "<br><br><h2>GROMACS Online Reference:<br>%s</h2>",program);
+  fprintf(out,"<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
+  fprintf(out,"<br></td>\n<TD ALIGN=RIGHT VALIGN=BOTTOM><B>%s<br>\n",GromacsVersion());
+  fprintf(out,"%s</B></td></tr></TABLE>\n<HR>\n",mydate());
   
   if (nldesc > 0) {
-    fprintf(out,"<H3>Description</H3>\n");
+    fprintf(out,"<H3>Description</H3>\n<p>\n");
     for(i=0; (i<nldesc); i++) 
       fprintf(out,"%s\n",NSR(desc[i]));
   }

@@ -8,7 +8,7 @@ include $(srcdir)/../Makefile.inc
 # but it can probably be done in a nicer way...
 INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
-LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
+LDADD = ../gmxlib/libgmxXXX_SUFFIX_XXX.la ../mdlib/libmdXXX_SUFFIX_XXX.la
 
 bin_PROGRAMS = \
 	averageXXX_SUFFIX_XXX		do_dsspXXX_SUFFIX_XXX		\

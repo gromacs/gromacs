@@ -1,13 +1,13 @@
-<TITLE>ngmx</TITLE>
+<HTML>/n<HEAD>/n<TITLE>ngmx</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<H2>ngmx</H2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<table WIDTH="800" NOBORDER >
 <TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<td WIDTH="120" HEIGHT="133">
+<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>ngmx</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
+Mon 11 Jun 2001</B></td></tr></TABLE>
+<HR>
 <H3>Description</H3>
 ngmx is the Gromacs trajectory viewer. This program reads a
 trajectory file, a run input file and an index file and plots a
@@ -38,9 +38,9 @@ Some of the more common X command line options can be used:<br>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (fs) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (fs) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (fs) </TD></TD>
 </TABLE>
 <P>
 <H3>Diagnostics</H3>

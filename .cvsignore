@@ -3,3 +3,6 @@ lib
 obj
 Makefile.in
 include
+config.log
+config.cache
+libtool

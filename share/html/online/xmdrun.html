@@ -1,0 +1,111 @@
+<HTML>/n<HEAD>/n<TITLE>xmdrun</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<table WIDTH="800" NOBORDER >
+<TR>
+<td WIDTH="120" HEIGHT="133">
+<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>xmdrun</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
+Mon 11 Jun 2001</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+xmdrun is the experimental MD program. New features are tested in this
+program before being implemented in the default <a href="mdrun.html">mdrun</a>. Currently under
+investigation are: polarizibility, glass simulations, 
+Free energy perturbation, X-Ray bombardments
+and parallel independent simulations.It reads the run input file (<tt>-s</tt>) and distributes the
+topology over nodes if needed. The coordinates are passed
+around, so that computations can begin.
+First a neighborlist is made, then the forces are computed.
+The forces are globally summed, and the velocities and
+positions are updated. If necessary shake is performed to constrain
+bond lengths and/or bond angles.
+Temperature and Pressure can be controlled using weak coupling to a
+bath.<p>
+<a href="mdrun.html">mdrun</a> produces at least three output file, plus one log file
+(<tt>-g</tt>) per node.
+The trajectory file (<tt>-o</tt>), contains coordinates, velocities and
+optionally forces.
+The structure file (<tt>-c</tt>) contains the coordinates and
+velocities of the last step.
+The energy file (<tt>-e</tt>) contains energies, the temperature,
+pressure, etc, a lot of these things are also printed in the log file
+of node 0.
+Optionally coordinates can be written to a compressed trajectory file
+(<tt>-x</tt>).<p>
+When running in parallel with PVM or an old version of MPI the
+<tt>-np</tt> option must be given to indicate the number of
+nodes.<p>
+The option <tt>-dgdl</tt> is only used when free energy perturbation is
+turned on.<p>
+With <tt>-rerun</tt> an input trajectory can be given for which 
+forces and energies will be (re)calculated. Neighbor searching will be
+performed for every frame, unless <tt>nstlist</tt> is zero
+(see the <tt>.<a href="mdp.html">mdp</a></tt> file).<p>
+ED (essential dynamics) sampling is switched on by using the <tt>-ei</tt>
+flag followed by an <tt>.<a href="edi.html">edi</a></tt> file.
+The <tt>.<a href="edi.html">edi</a></tt> file can be produced using options in the essdyn
+menu of the WHAT IF program. <a href="mdrun.html">mdrun</a> produces a <tt>.<a href="edo.html">edo</a></tt> file that
+contains projections of positions, velocities and forces onto selected
+eigenvectors.<p>
+The -table option can be used to pass <a href="mdrun.html">mdrun</a> a formatted table with
+user-defined potential functions. The file is read from either the
+current directory or from the GMXLIB directory. A number of preformatted
+tables are presented in the GMXLIB dir, for 6-8, 6-9, 6-10, 6-11, 6-12
+Lennard Jones potentials with normal Coulomb.<p>
+The options <tt>-pi</tt>, <tt>-po</tt>, <tt>-pd</tt>, <tt>-pn</tt> are used
+for potential of mean force calculations and umbrella sampling.
+See manual.<p>
+When <a href="mdrun.html">mdrun</a> receives a TERM signal, it will set nsteps to the current
+step plus one. When <a href="mdrun.html">mdrun</a> receives a USR1 signal, it will set nsteps
+to the next multiple of nstxout after the current step.
+In both cases all the usual output will be written to file.
+When running with MPI, a signal to one of the <a href="mdrun.html">mdrun</a> processes
+is sufficient, this signal should not be sent to mpirun or
+the <a href="mdrun.html">mdrun</a> process that is the parent of the others.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-x</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xtc.html">    traj.xtc</a></tt> </TD><TD> Output, Opt. </TD><TD> Compressed trajectory (portable xdr format) </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> confout.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Output </TD><TD> Generic energy: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">      md.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dgdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dgdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-devout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">deviatie.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-pi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ppa.html">    pull.ppa</a></tt> </TD><TD> Input, Opt. </TD><TD> Pull parameters </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-po</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ppa.html"> pullout.ppa</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull parameters </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-pd</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdo.html">    pull.pdo</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull data output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-pn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">    pull.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Be loud and noisy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Write a compact log file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]multi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do multiple simulations in parallel (only with -np &gt; 1) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]glas</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do glass simulation with special long range corrections </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

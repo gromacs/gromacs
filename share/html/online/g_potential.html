@@ -1,13 +1,13 @@
-<TITLE>g_potential</TITLE>
+<HTML>/n<HEAD>/n<TITLE>g_potential</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<H2>g_potential</H2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<table WIDTH="800" NOBORDER >
 <TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<td WIDTH="120" HEIGHT="133">
+<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>g_potential</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
+Mon 11 Jun 2001</B></td></tr></TABLE>
+<HR>
 <H3>Description</H3>
 Compute the electrostatical potential across the box. The potential iscalculated by first summing the charges per slice and then integratingtwice of this charge distribution. Periodic boundaries are not taken  into account. Reference of potential is taken to be the left side ofthe box. It's also possible to calculate the potential in sphericalcoordinates as function of r by calculating a charge distribution inspherical slices and twice integrating them. epsilon_r is taken as 1,2 is more appropriate in many cases
 <P>
@@ -28,9 +28,9 @@ Compute the electrostatical potential across the box. The potential iscalculated
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]X</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use dialog box GUI to edit command line options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (fs) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (fs) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (fs) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>Z</tt> </TD><TD> Take the normal on the membrane in direction X, Y or Z. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-sl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Calculate potential as function of boxlength, dividing the box in #nr slices. </TD></TD>

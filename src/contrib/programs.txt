@@ -13,6 +13,7 @@ HEAD|Running a simulation
 grompp|makes a run input file
 tpbconv|makes a run input file for restarting a crashed run
 mdrun|performs a simulation
+xmdrun|performs simulations with extra experimental features
 END
 
 HEAD|Viewing trajectories

@@ -111,7 +111,7 @@
 /* Use motif/lesstif libraries */
 #undef HAVE_MOTIF
 
-/* Make a parallel version of Gromacs using MPI */
+/* Make a parallel version of GROMACS using MPI */
 #undef USE_MPI
 
 /* Optimize for a vector architecture */
@@ -132,19 +132,16 @@
 /* Turn off the automatic nicing of gromacs */
 #undef NO_NICE
 
-/* Use x86 assembly with SSE instructions */
+/* Use x86 assembly loops */
 #undef USE_SSE
-
-/* Use x86 assembly with 3DNow instructions */
-#undef USE_3DNOW
 
 /* Use xdr routines to make trajectories portable */
 #undef USE_XDR
 
-/* Use the Gromacs software 1/sqrt(x) */
+/* Use the GROMACS software 1/sqrt(x) */
 #undef SOFTWARE_SQRT
 
-/* Use the Gromacs software 1/x */
+/* Use the GROMACS software 1/x */
 #undef SOFTWARE_RECIP
 
 /* Try to get coordinates to cache before using them */

@@ -1,20 +1,20 @@
 ## Process this file with automake to produce Makefile.in
 #
-# Don't edit - this file is generated automatically from Makefile.am
-#
+# Note that Makefile is generated automatically from Makefile.in,
+# which is automatically generated from Makefile.am
 
 include $(srcdir)/../Makefile.inc
 # 
 # This is necessary for VPATH builds (and thus distcheck) to work, 
-# but it can probably included in a nicer way...
+# but it can probably be included in a nicer way...
 INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 
 # produce the gmx library
 #
 
-lib_LIBRARIES = libgmxXXX_SUFFIX_XXX.a
+lib_LTLIBRARIES = libgmxXXX_SUFFIX_XXX.la
 
-libgmxXXX_SUFFIX_XXX_a_SOURCES = \
+libgmxXXX_SUFFIX_XXX_la_SOURCES = \
 	3dview.c	atomprop.c	block_tx.c	bondfree.c	\
 	buffer.c	calcgrid.c	calch.c		inner.h		\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
@@ -35,11 +35,11 @@ libgmxXXX_SUFFIX_XXX_a_SOURCES = \
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
 	x86_cpu.c	
 
-EXTRA_libgmxXXX_SUFFIX_XXX_a_SOURCES = \
-	mpiio.c		libnet.c	x86_3dnow.asm	f77_wrappers.c  \
+EXTRA_libgmxXXX_SUFFIX_XXX_la_SOURCES = \
+	mpiio.c		libnet.c	x86_3dnow.S	f77_wrappers.c  \
 	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
-	widget.c	widget.h	x86_cpuid.asm	axp_asm.S	\
-	x86_sse.asm	innerc.c	innerf.f
+	widget.c	widget.h	x86_cpuid.S	axp_asm.s	\
+	x86_sse.S	
 
 if USE_FORTRAN
 BUILT_SOURCES = innerf.f
@@ -47,27 +47,14 @@ else
 BUILT_SOURCES = innerc.c
 endif
 
-mpi_obj 	= mpiio.o
-libnet_obj 	= libnet.o
-inner_f77_obj	= innerf.o	f77_wrappers.o
-inner_c_obj	= innerc.o  
-xdr_obj		= libxdrf.o ftocstr.o
-noxdr_obj	= dumxdrf.o
-motif_obj       = mgmx.o widget.o
-x86_asm_obj     = x86_cpuid.o
-sse_obj         = x86_sse.o
-tdn_obj         = x86_3dnow.o 
-axp_asm_obj     = axp_asm.o
+#
+# NB: The contents of GMXLIB_COND_OBJ is defined in
+#     the main configure.in script file
+#
 
-libgmxXXX_SUFFIX_XXX_a_LIBADD = \
-	@PAR_OBJ@ 	@INNER_F77_OBJ@	@INNER_C_OBJ@	\
-	@AXP_ASM_OBJ@	@X86_ASM_OBJ@	@SSE_OBJ@	\
-	@TDN_OBJ@	@MOTIF_OBJ@	@XDR_OBJ@	
+libgmxXXX_SUFFIX_XXX_la_LIBADD = @GMXLIB_COND_OBJ@	
 
-libgmxXXX_SUFFIX_XXX_a_DEPENDENCIES = \
-	@PAR_OBJ@ 	@INNER_F77_OBJ@	@INNER_C_OBJ@	\
-	@AXP_ASM_OBJ@	@X86_ASM_OBJ@	@SSE_OBJ@	\
-	@TDN_OBJ@	@MOTIF_OBJ@	@XDR_OBJ@	
+libgmxXXX_SUFFIX_XXX_la_DEPENDENCIES = @GMXLIB_COND_OBJ@	
 
 # The inner loops
 innerf.f:	mkinl 
@@ -76,9 +63,21 @@ innerf.f:	mkinl
 innerc.c:	mkinl
 		./mkinl c
 
-noinst_PROGRAMS  = mkinl
+# The compaq compiler is really stupid and thinks a .S file is some
+# kind of object. Instead it preprocesses the .s files.
+# To make this work with both gcc and the compaq compilers, we
+# do a workaround to make gcc preprocess the .s file instead:
 
-mkinl_SOURCES 	 = \
+if GNU_CC
+axp_asm.lo:	axp_asm.s
+	$(COMPILE) -x assembler-with-cpp -c $(srcdir)/axp_asm.s
+endif
+
+# Mkinl is special - we cant use a noinst_PROGRAMS target, since it
+# might have to be compiled with a special non-MPI compiler whose files
+# can be executed on the build machine (i.e., not for the target host):
+
+EXTRA_DIST 	 = \
 	mkinl.c			mkinl_declarations.c	mkinl_outerloop.c  \
 	mkinl_innerloop.c	mkinl_calcdist.c	mkinl_invsqrt.c	   \
 	mkinl_recip.c		mkinl_interactions.c	metacode.c	   \
@@ -112,5 +111,5 @@ mkinl:		$(MKINL_OBJ)
 		$(BUILD_COMPILE) -o $@ $(MKINL_OBJ)
 
 # clean things explicitly, since the target names might have changed
-CLEANFILES     = ${lib_LIBRARIES} *_d.a *_mpi.a *~ \\\#* innerc.c innerf.f
+CLEANFILES     = ${lib_LTLIBRARIES} *_d.la *_mpi.la *~ \\\#* innerc.c innerf.f mkinl
 

@@ -40,6 +40,21 @@ static char *SRCID_bfunc_h = "$Id$";
  *	Bcopy/Memcpy patch.
  *
 $Log$
+Revision 1.7  2001/06/20 10:34:01  lindahl
+
+Converted assembly to use gcc instead of nasm, updated html man
+pages.
+The x86 assembly loops is now a single option to configure,
+and the single/double prec. is controlled with --enable-float
+(default is yes), to be consistent with fftw.
+Removed the less common options from the summary printed by
+configure, but they are still available.
+Introduced libtool to create both static and dynamic libraries -
+you can control it with configure options. --disable-shared might
+be suitable for development work.
+To avoid compiling both PIC and non-PIC code you can try --with-pic,
+but the default is both.
+
 Revision 1.6  2001/05/14 17:58:06  lindahl
 
 Tagged files with gromacs 3.0 header
@@ -65,6 +80,9 @@ For instance the shared libraries do not work any longer...
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #if defined(SYSVBFUNC)
 #include <memory.h>

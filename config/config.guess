@@ -208,7 +208,7 @@ main:
 	jsr \$26,exit
 	.end main
 EOF
-	$CC_FOR_BUILD $dummy.s -o $dummy 2>/dev/null
+	$CC_FOR_BUILD $dummy.s -o $dummy 2>/dev/null >/dev/null
 	if test "$?" = 0 ; then
 		case `./$dummy` in
 			0-0)
@@ -592,7 +592,7 @@ EOF
                   exit (0);
               }
 EOF
-	(CCOPTS= $CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null ) && HP_ARCH=`./$dummy`
+	(CCOPTS= $CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null > /dev/null) && HP_ARCH=`./$dummy`
 	if test -z "$HP_ARCH"; then HP_ARCH=hppa; fi
 	rm -f $dummy.c $dummy
 	fi ;;
@@ -831,7 +831,7 @@ main(argc, argv)
 }
 EOF
 		LIBC=""
-		$CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null
+		$CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null >/dev/null
 		if test "$?" = 0 ; then
 			./$dummy | grep 1\.99 > /dev/null
 			if test "$?" = 0 ; then
@@ -875,7 +875,7 @@ EOF
 			.end main
 EOF
 		LIBC=""
-		$CC_FOR_BUILD $dummy.s -o $dummy 2>/dev/null
+		$CC_FOR_BUILD $dummy.s -o $dummy 2>/dev/null >/dev/null
 		if test "$?" = 0 ; then
 			case `./$dummy` in
 			0-0)
@@ -923,7 +923,7 @@ EOF
   return 0;
 }
 EOF
-	  $CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null && ./$dummy "${UNAME_MACHINE}" && rm $dummy.c $dummy && exit 0
+	  $CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null >/dev/null && ./$dummy "${UNAME_MACHINE}" && rm $dummy.c $dummy && exit 0
 	  rm -f $dummy.c $dummy
 	elif test "${UNAME_MACHINE}" = "s390"; then
 	  echo s390-ibm-linux && exit 0
@@ -985,7 +985,7 @@ EOF
   return 0;
 }
 EOF
-	  $CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null && ./$dummy "${UNAME_MACHINE}" && rm $dummy.c $dummy && exit 0
+	  $CC_FOR_BUILD $dummy.c -o $dummy 2>/dev/null >/dev/null && ./$dummy "${UNAME_MACHINE}" && rm $dummy.c $dummy && exit 0
 	  rm -f $dummy.c $dummy
 	  test x"${TENTATIVE}" != x && echo "${TENTATIVE}" && exit 0
 	fi ;;

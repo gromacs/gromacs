@@ -10,7 +10,9 @@ include $(srcdir)/../Makefile.inc
 # but it can probably be done in a nicer way...
 INCLUDES = @INCLUDES@ -I$(top_srcdir)/src/include
 LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
-LDADD = -lmdXXX_SUFFIX_XXX -lgmxXXX_SUFFIX_XXX
+LDADD = ../gmxlib/libgmxXXX_SUFFIX_XXX.la ../mdlib/libmdXXX_SUFFIX_XXX.la
+
+EXTRA_DIST              = README  programs.txt  gromacs-3.0.spec
 
 # NB: The programs in contrib do not get double/mpi suffixes automatically,
 # to make it easier for new developers to understand this file. If you want

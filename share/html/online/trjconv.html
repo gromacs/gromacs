@@ -1,13 +1,13 @@
-<TITLE>trjconv</TITLE>
+<HTML>/n<HEAD>/n<TITLE>trjconv</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<H2>trjconv</H2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<table WIDTH="800" NOBORDER >
 <TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<td WIDTH="120" HEIGHT="133">
+<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>trjconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
+Mon 11 Jun 2001</B></td></tr></TABLE>
+<HR>
 <H3>Description</H3>
 trjconv can convert trajectory files in many ways:<br>
 <b>1.</b> from one format to another<br>
@@ -134,6 +134,7 @@ one specific time from your trajectory.
 <TR><TD ALIGN=RIGHT> <b><tt>-trunc</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Truncate input <a href="trj.html">trj</a> file after this time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-exec</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Execute command for every output frame with the frame number as argument </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]app</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Append output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-split</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Start writing new file when t MOD split = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write each frame to a separate .<a href="gro.html">gro</a> or .<a href="pdb.html">pdb</a> file </TD></TD>
 </TABLE>
 <P>

@@ -1,13 +1,13 @@
-<TITLE>xpm2ps</TITLE>
+<HTML>/n<HEAD>/n<TITLE>xpm2ps</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
-<BODY text="#000000" bgcolor="#FFFFFF" link="#0000EF" vlink="#650065" alink="#FF0000">
-<H2>xpm2ps</H2>
-<CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<table WIDTH="800" NOBORDER >
 <TR>
-<TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 3.0</B></TR>
-<TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Tue 15 May 2001</B></TR></TABLE></CENTER><HR>
+<td WIDTH="120" HEIGHT="133">
+<a href="http://www.gromacs.org/"><img SRC="../gif/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td><td ALIGN=LEFT VALIGN=TOP WIDTH=480><br><br><h2>Online Reference:<br>xpm2ps</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+<TD ALIGN=RIGHT VALIGN=BOTTOM><B>VERSION 3.0<br>
+Mon 11 Jun 2001</B></td></tr></TABLE>
+<HR>
 <H3>Description</H3>
 xpm2ps makes a beautiful color plot of an XPixelMap file.
 Labels and axis can be displayed, when they are supplied
@@ -26,7 +26,10 @@ first one (<tt>-f</tt>) is plotted together with the lower right
 half of the second one (<tt>-f2</tt>). The diagonal will contain
 values from the matrix file selected with <tt>-diag</tt>.
 Plotting of the diagonal values can be suppressed altogether by
-setting <tt>-diag</tt> to <tt>none</tt>.<p>
+setting <tt>-diag</tt> to <tt>none</tt>. With 
+<tt>-combine</tt> an alternative operation can be selected to combine
+the matrices. In this case, a new color map will be generated with
+a red gradient for negative numbers and a blue for positive.<p>
 If the color coding and legend labels of both matrices are identical,
 only one legend will be displayed, else two separate legends are
 displayed.<p>
@@ -57,12 +60,15 @@ the <tt>-<a href="xpm.html">xpm</a></tt> option.
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]frame</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Display frame, ticks, labels, title and legend </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-title</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>top</tt> </TD><TD> Show title at: <a href="top.html">top</a>, ylabel or none </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-title</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>top</tt> </TD><TD> Show title at: <a href="top.html">top</a>, once, ylabel or none </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]yonce</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Show y-label only once </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-legend</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>both</tt> </TD><TD> Show legend: both, first, second or none </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-diag</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>first</tt> </TD><TD> Diagonal: first, second or none </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-combine</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>halves</tt> </TD><TD> Combine two matrices: halves, add, sub, mult or div </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bx</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Box x-size (also y-size when -by is not set) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-by</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Box y-size </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rainbow</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Rainbow colors, convert white to: no, blue or red </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-gradient</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b} </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> only write out every nr-th row and column </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroline</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> insert line in <a href="xpm.html">xpm</a> matrix where axis label is zero </TD></TD>
 </TABLE>

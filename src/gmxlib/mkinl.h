@@ -38,7 +38,11 @@
 #define _mkinl_h
 
 static char *SRCID_mkinl_h = "$Id$";
+
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+
 #include <types/simple.h>
 #include <metacode.h>
 
