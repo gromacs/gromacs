@@ -50,7 +50,6 @@ static char *SRCID_steep_c = "$Id$";
 #include "fatal.h"
 #include "txtdump.h"
 #include "typedefs.h"
-#include "update.h"
 #include "random.h"
 #include "vec.h"
 #include "enxio.h"
@@ -59,21 +58,22 @@ static char *SRCID_steep_c = "$Id$";
 #include "mdrun.h"
 #include "pppm.h"
 #include "dummies.h"
+#include "constr.h"
 
 #ifdef FORCE_CRIT
-static void sp_header(FILE *out,real epot,real fsqrt,real step,real ftol)
+static void sp_header(FILE *out,real epot,real fsqrt,real stepsize,real ftol)
 {
   fprintf(out,"STEEPEST DESCENTS:\n");
-  fprintf(out,"   Stepsize          = %12.5e\n",step);
+  fprintf(out,"   Stepsize          = %12.5e\n",stepsize);
   fprintf(out,"   Tolerance         = %12.5e\n",ftol);
   fprintf(out,"   Starting rmsF     = %30.20e\n",fsqrt);
   fprintf(out,"   Starting Energy   = %30.20e\n",epot);
 }
 #else
-static void sp_header(FILE *out,real epot,real step,real ftol)
+static void sp_header(FILE *out,real epot,real stepsize,real ftol)
 {
   fprintf(out,"STEEPEST DESCENTS:\n");
-  fprintf(out,"   Stepsize          = %12.5e\n",step);
+  fprintf(out,"   Stepsize          = %12.5e\n",stepsize);
   fprintf(out,"   Tolerance         = %12.5e\n",ftol);
   fprintf(out,"   Starting Energy   = %30.20e\n",epot);
 }
@@ -164,7 +164,7 @@ real f_sqrt(FILE *log,
 } 
 
 static void do_step(int start,int end,rvec x[],rvec f[], 
- 		    bool bRandom,real step) 
+ 		    bool bRandom,real stepsize) 
 { 
   static int seed=1993; 
   int    i,m; 
@@ -175,7 +175,7 @@ static void do_step(int start,int end,rvec x[],rvec f[],
     for(i=start; (i<end); i++) { 
       for(m=0; (m<DIM); m++) { 
  	r=rando(&seed); 
- 	x[i][m]=x[i][m]+step*r; 
+ 	x[i][m]=x[i][m]+stepsize*r; 
       } 
     } 
   } 
@@ -183,7 +183,7 @@ static void do_step(int start,int end,rvec x[],rvec f[],
     /* New positions to try  */
     for(i=start; (i<end);i++) 
       for(m=0; (m<DIM); m++) 
- 	x[i][m] = x[i][m]+step*f[i][m]; 
+ 	x[i][m] = x[i][m]+stepsize*f[i][m]; 
   } 
 } 
 
@@ -195,18 +195,19 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph,
 		t_forcerec *fr,rvec box_size) 
 { 
-  static char *SD="STEEPEST DESCENTS"; 
-  real   step,lambda,ftol,fmax; 
-  rvec   *pos[2],*force[2]; 
+  static char *SD="STEEPEST DESCENTS",sbuf[STRLEN]; 
+  real   stepsize,constepsize,lambda,ftol,fmax; 
+  rvec   *pos[2],*force[2],*xcf; 
   rvec   *xx,*ff; 
 #ifdef FORCE_CRIT 
   real   Fsqrt[2]; 
 #endif 
   real   Epot[2]; 
-  real   vcm[4],fnorm,ustep; 
+  real   vcm[4],fnorm,ustep,dvdlambda; 
   int        fp_ene; 
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
+  t_inputrec *ir;
   bool   bNS=TRUE,bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
   time_t start_t; 
   tensor force_vir,shake_vir; 
@@ -216,13 +217,15 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int    i,m,start,end; 
   int    Min=0; 
   int    steps_accepted=0; 
-#define  TRY (1-Min) 
+  bool   bConstrain;
+#define  TRY (1-Min)
   
   /* Initiate some variables  */
   if (parm->ir.bPert)
     lambda       = parm->ir.init_lambda;
   else 
     lambda = 0.0;
+  ir = &(parm->ir);
 
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE); 
@@ -252,13 +255,20 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
-		     bBHAM,b14,parm->ir.bPert,parm->ir.epc,
-		     parm->ir.bDispCorr); 
+		     bBHAM,b14,ir->bPert,ir->epc,
+		     ir->bDispCorr); 
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 
   clear_mat(shake_vir); 
+
+  /* Initiate constraint stuff */
+  bConstrain=init_constraints(stdlog,top,&(parm->ir),mdatoms,
+			      start,start+end);
   
+  if (bConstrain)
+    snew(xcf,nsb->natoms); 
+
   /* Copy coord vectors to our temp array  */
   for(i=0; (i<nsb->natoms); i++) { 
     copy_rvec(x[i],pos[Min][i]); 
@@ -268,13 +278,14 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 
    */
-  step=ustep=parm->ir.em_stepsize; 
-  
+  ustep    = ir->em_stepsize; 
+  stepsize = 0;
+
   /* Tolerance for conversion  */
-  ftol=parm->ir.em_tol; 
+  ftol=ir->em_tol; 
   
   /* Max number of steps  */
-  nsteps=parm->ir.nsteps; 
+  nsteps=ir->nsteps; 
   
   if (MASTER(cr)) { 
     /* Print to the screen  */
@@ -301,14 +312,23 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (count>0)
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
-	  pos[TRY][i][m] = pos[Min][i][m] + step * force[Min][i][m]; 
-    
-    if (bDummies) {
-      /* Construct dummy particles */
+	  pos[TRY][i][m] = pos[Min][i][m] + stepsize * force[Min][i][m]; 
+
+    if (bConstrain || bDummies)
       shift_self(graph,fr->shift_vec,pos[TRY]);
-      construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
-      unshift_self(graph,fr->shift_vec,pos[TRY]);
+    
+    if (bConstrain) {
+      dvdlambda=0;
+      constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
+		pos[Min],pos[TRY],parm->box,lambda,&dvdlambda,nrnb);
     }
+
+    if (bDummies)
+      /* Construct dummy particles */
+      construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
+
+    if (bConstrain || bDummies) 
+      unshift_self(graph,fr->shift_vec,pos[TRY]);
     
     /* Calc force & energy on new positions  */
     do_force(log,cr,parm,nsb,force_vir, 
@@ -321,7 +341,24 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);
     
     /* Sum the potential energy terms from group contributions  */
-    sum_epot(&(parm->ir.opts),grps,ener); 
+    sum_epot(&(ir->opts),grps,ener); 
+
+    if (bConstrain) {
+#define MIN_BL 0.1
+      fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]);
+      constepsize=ustep/fnorm;
+      for(i=start; (i<end); i++)  
+	for(m=0;(m<DIM);m++) 
+	  xcf[i][m] = pos[TRY][i][m] + constepsize*force[TRY][i][m];
+      
+      dvdlambda=0;
+      constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
+		pos[TRY],xcf,parm->box,lambda,&dvdlambda,nrnb);
+      
+      for(i=start; (i<end); i++)  
+	for(m=0;(m<DIM);m++) 
+	  force[TRY][i][m] = (xcf[i][m] - pos[TRY][i][m])/constepsize;
+    }
     
     /* Clear stuff again  */
     clear_mat(force_vir); 
@@ -330,7 +367,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir, 
- 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot); 
+ 		  &(ir->opts),grps,&mynrnb,nrnb,vcm,mu_tot); 
     
     /* This is the new energy  */
 #ifdef FORCE_CRIT 
@@ -342,10 +379,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (bVerbose && MASTER(cr)) { 
 #ifdef FORCE_CRIT 
       fprintf(stderr,"Step = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e%c",
-	      count,step,Epot[TRY],Fsqrt[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
+	      count,stepsize,Epot[TRY],Fsqrt[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
 #else 
       fprintf(stderr,"Step = %5d, Dx = %12.5e, E-Pot = %30.20e%c", 
- 	      count,step,Epot[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r' ); 
+ 	      count,stepsize,Epot[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r' ); 
 #endif 
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
@@ -365,11 +402,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     if ( (count==0) || (Epot[TRY] < Epot[Min]) ) {
       steps_accepted++; 
-      if (do_per_step(steps_accepted,parm->ir.nstfout)) 
+      if (do_per_step(steps_accepted,ir->nstfout)) 
 	ff=force[TRY];  
       else 
 	ff=NULL;    
-      if (do_per_step(steps_accepted,parm->ir.nstxout)) {
+      if (do_per_step(steps_accepted,ir->nstxout)) {
 	xx=pos[TRY];   
 	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 		   nsb,count,(real) count, 
@@ -401,16 +438,16 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       ustep *= 0.5;
     
     /* Determine new step  */
-    fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
-    step=ustep/fnorm;
+    fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]);
+    stepsize=ustep/fnorm;
     
     /* Check if stepsize is too small
      * NOTE: this involves machine precision and some compilers might not 
-     * recognize that the expression could return TRUE for small step */
-    if ( 1.0+step == 1.0 ) {
+     * recognize that the expression could return TRUE for small stepsize */
+    if ( 1.0+stepsize == 1.0 ) {
       fprintf(stderr,"Stepsize too small: "
-	      "ustep=%g (kJ mol-1) fnorm=%g (kJ mol-1 nm-1) step=%g (nm)\n",
-	      ustep,fnorm,step);
+	      "ustep=%g (nm) fnorm=%g (kJ mol-1 nm-1) stepsize=%g (mol kJ-1)\n",
+	      ustep,fnorm,stepsize);
       bAbort=TRUE;
     }
     
@@ -455,7 +492,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     copy_rvec(pos[Min][i],x[i]);
   
   /* To print the actual number of steps we needed somewhere */
-  parm->ir.nsteps=count;
+  ir->nsteps=count;
   
   return start_t;
 } /* That's all folks */
