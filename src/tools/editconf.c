@@ -84,9 +84,10 @@ real calc_mass(t_atoms *atoms,bool bGetMass)
   return tmass;
 }
 
-void calc_geom(char *indexfn, t_atoms *atoms,
-	       rvec *x, rvec geom_center, rvec min, rvec max)
+real calc_geom(char *indexfn, t_atoms *atoms,
+	       rvec *x, rvec geom_center, rvec min, rvec max,bool bDiam)
 {
+  real    diam2,d;
   int     isize;
   atom_id *index;
   char    *grpnames;
@@ -94,29 +95,37 @@ void calc_geom(char *indexfn, t_atoms *atoms,
 
   if (indexfn) {
     /* Make an index for principal component analysis */
-    fprintf(stderr,"\nSelect group for selecting system size:\n");
+    fprintf(stderr,"\nSelect a group for determining the system size:\n");
     get_index(atoms,indexfn,1,&isize,&index,&grpnames);
   }
   else {
     isize = atoms->nr;
     snew(index,isize);
-    for(i=0; (i<isize); i++) {
+    for(i=0; i<isize; i++) {
       index[i]=i;
     }
   }
   clear_rvec(geom_center);
-  for (j=0; (j<DIM); j++)
+  for (j=0; j<DIM; j++)
     min[j]=max[j]=x[0][j];
-  for (i=0; (i<isize); i++) {
+  diam2 = 0;
+  for (i=0; i<isize; i++) {
     ii = index[i];
     rvec_inc(geom_center,x[ii]);
-    for (j=0; (j<DIM); j++) {
+    for (j=0; j<DIM; j++) {
       if (x[ii][j] < min[j]) min[j]=x[ii][j];
       if (x[ii][j] > max[j]) max[j]=x[ii][j];
     }
+    if (bDiam) 
+      for (j=0; j<isize; j++) {
+	d = distance2(x[ii],x[index[j]]);
+	diam2 = max(d,diam2);
+      }
   }
   svmul(1.0/isize,geom_center,geom_center);
   sfree(index);
+  
+  return sqrt(diam2);
 }
 
 void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
@@ -126,7 +135,7 @@ void center_conf(int natom, rvec *x, rvec center, rvec geom_cent)
   
   rvec_sub(center,geom_cent,shift);
 
-  printf("shift     : %6.3f %6.3f %6.3f\n",
+  printf("    shift       :%7.3f%7.3f%7.3f (nm)\n",
 	 shift[XX],shift[YY],shift[ZZ]);
 
   for (i=0; (i<natom); i++) 
@@ -137,12 +146,13 @@ void scale_conf(int natom,rvec x[],matrix box,rvec scale)
 {
   int i,j;
   
-  for(i=0; (i<natom); i++) {
-    for (j=0; (j<DIM); j++)
+  for(i=0; i<natom; i++) {
+    for (j=0; j<DIM; j++)
       x[i][j] *= scale[j];
   }
-  for (j=0; (j<DIM); j++)
-    box[j][j] *= scale[j];
+  for (i=0; i<DIM; i++)
+    for (j=0; j<DIM; j++)
+      box[i][j] *= scale[j];
 }
 
 void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
@@ -281,18 +291,25 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "editconf converts generic structure format to [TT].gro[tt] or",
-    "[TT].pdb[tt].[PAR]",
-    "A number of options is present to modify the coordinates",
-    "and box. [TT]-d[tt], [TT]-dc[tt], [TT]-box[tt] and [TT]-to[tt] modify",
-    "the box and center the coordinates relative to the new box.",
-    "[TT]-dc[tt] takes precedent over [TT]-d[tt]. [TT]-box[tt]",
-    "takes precedent over [TT]-dc[tt] and [TT]-d[tt].[PAR]",
-    "[TT]-to[tt] generates a truncated octahedron. This is a special case",
-    "of a triclinic box. The diameter is the diameter of an inscribed sphere,",
-    "which is equal to the distance between two opposite hexagons.",
-    "The volume of this box is 3/4 of that of a cubic box with the same",
-    "diameter.[PAR]",
+    "editconf converts generic structure format to [TT].gro[tt], [TT].g96[tt]",
+    "or [TT].pdb[tt].[PAR]",
+    "The box can be modified with options [TT]-box[tt] and [TT]-d[tt], both",
+    "will center the system in the box.",
+    "Option [TT]-bt[tt] determines the box type: [TT]rect[tt] is a",
+    "rectangular box, [TT]cubic[tt] is a cubic box and",
+    "[TT]truncoct[tt] is a truncated octahedron, which is a special case of",
+    "a triclinic box.",
+    "The size of the truncated octahedron is the shortest distance between",
+    "two opposite hexagons. The volume of a truncated octahedron is 3/4 of",
+    "that of a cubic box of the same size. Option [TT]-box[tt] requires only",
+    "one value for a cubic box or a truncated octahedron.",
+    "With [TT]-d[tt] and [TT]rect[tt] the size of the system in the x, y",
+    "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt] or",
+    "[TT]truncoct[tt] the diameter of the system is used, which is the",
+    "largest distance between two atoms.[PAR]",
+    "When an index file is supplied ([TT]-n[tt]) a group can be selected",
+    "for calculating the size and the geometric center, otherwise the whole",
+    "system is used.[PAR]",
     "[TT]-rotate[tt] rotates the coordinates and velocities.",
     "[TT]-princ[tt] aligns the principal axes of the system along the",
     "coordinate axes, this may allow you to decrease the box volume,",
@@ -332,19 +349,17 @@ int main(int argc, char *argv[])
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
-  static char *label="A";
+  static char *btype[]={ NULL, "rect", "cubic", "truncoct", NULL },*label="A";
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
       "Choose output from default index groups" },    
+    { "-bt",   FALSE, etENUM, {btype}, 
+      "Box type for -box and -d" },
+    { "-box",    FALSE, etRVEC, {&newbox}, "Size of the box" },
     { "-d",      FALSE, etREAL, {&dist}, 
-      "Distance between the solute and the rectangular box" }, 
-    { "-dc",     FALSE, etREAL, {&dist},
-      "Distance between the solute and the cubic box" },
-    { "-box",    FALSE, etRVEC, {&newbox}, "Size of box" },
-    { "-to",     FALSE, etREAL, {&to_diam}, 
-      "Diameter of the truncated octahedron" },
+      "Distance between the solute and the box" },
     { "-c",      FALSE, etBOOL, {&bCenter},
-      "Center molecule in box (implied by -d -dc -box -to)" },
+      "Center molecule in box (implied by -box and -d)" },
     { "-center", FALSE, etRVEC, {&center}, "Coordinates of geometrical center"},
     { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
@@ -371,9 +386,9 @@ int main(int argc, char *argv[])
   atom_id   *index;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSize,bCubic,bDist,bSetCenter,bTruncOct;
+  bool      bSetSize,bCubic,bDist,bSetCenter;
   bool      bHaveV,bScale,bRho,bRotate,bCalcGeom;
-  real      xs,ys,zs,xcent,ycent,zcent,d;
+  real      xs,ys,zs,xcent,ycent,zcent,diam,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
     { efNDX, "-n", NULL, ffOPTRD },
@@ -388,10 +403,8 @@ int main(int argc, char *argv[])
 
   bSetSize  = opt2parg_bSet("-box" ,NPA,pa);
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
-  bCubic    = opt2parg_bSet("-dc",NPA,pa);
-  bDist     = opt2parg_bSet("-d" ,NPA,pa) || bCubic;
-  bTruncOct = opt2parg_bSet("-to" ,NPA,pa);
-  bCenter   = bCenter || bDist || bSetCenter || bSetSize || bTruncOct;
+  bDist     = opt2parg_bSet("-d" ,NPA,pa);
+  bCenter   = bCenter || bDist || bSetCenter || bSetSize;
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
   bRotate   = opt2parg_bSet("-rotate",NPA,pa);
@@ -422,14 +435,21 @@ int main(int argc, char *argv[])
     rm_gropbc(&atoms,x,box);
 
   if (bCalcGeom) {
-    calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
+    diam=calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x,gc,min,max,TRUE);
     rvec_sub(max, min, size);
-    printf("size      : %6.3f %6.3f %6.3f\n", size[XX], size[YY], size[ZZ]);
-    printf("center    : %6.3f %6.3f %6.3f\n", gc[XX], gc[YY], gc[ZZ]);
-    printf("box       : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
-	   box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
+    printf("    system size :%7.3f%7.3f%7.3f (nm)\n",
+	   size[XX], size[YY], size[ZZ]);
+    printf("    diameter    :%7.3f               (nm)\n",diam);
+    printf("    center      :%7.3f%7.3f%7.3f (nm)\n", gc[XX], gc[YY], gc[ZZ]);
+    printf("    box vectors :%7.3f%7.3f%7.3f (nm)\n", 
+	   norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
+    printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
+	   RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ])),
+	   RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ])),
+	   RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY])));
+    printf("    box volume  :%7.2f               (nm^3)\n",det(box));
   }
-
+  
   if (bOrient)
     /* Orient the principal axes along the coordinate axes */
     orient_mol(&atoms,ftp2fn_null(efNDX,NFILE,fnm),x,bHaveV ? v : NULL);
@@ -443,16 +463,16 @@ int main(int argc, char *argv[])
       vol = det(box);
       mass = calc_mass(&atoms,!fn2bTPX(infile));
       dens = (mass*AMU)/(vol*NANO*NANO*NANO);
-      fprintf(stderr,"Volume  of input %g (nm3)\n",vol);
+      fprintf(stderr,"Volume  of input %g (nm^3)\n",vol);
       fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
       fprintf(stderr,"Density of input %g (g/l)\n",dens);
       if (vol==0.0)
 	fatal_error(0,"Cannot scale density with zero box\n");
       if (mass==0.0)
 	fatal_error(0,"Cannot scale density with zero mass\n");
-
+      
       scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
-      fprintf(stderr,"Scaling all box edges by %g\n",scale[XX]);
+      fprintf(stderr,"Scaling all box vectors by %g\n",scale[XX]);
     }
     scale_conf(atoms.nr,x,box,scale);
   }
@@ -464,37 +484,47 @@ int main(int argc, char *argv[])
       rotangles[i] *= DEG2RAD;
     rotate_conf(natom,x,v,rotangles[XX],rotangles[YY],rotangles[ZZ]);
   }
-
+  
   if (bCalcGeom) {
     /* recalc geometrical center and max and min coordinates and size */
-    calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x, gc, min, max);
+    calc_geom(ftp2fn_null(efNDX,NFILE,fnm),&atoms,x,gc,min,max,FALSE);
     rvec_sub(max, min, size);
     if (bScale || bOrient || bRotate)
-      printf("new size  : %6.3f %6.3f %6.3f\n",size[XX],size[YY],size[ZZ]);
+      printf("new system size : %6.3f %6.3f %6.3f\n",
+	     size[XX],size[YY],size[ZZ]);
   }
 
-  /* calculate new boxsize */
-  if (bDist) 
-    for (i=0; (i<DIM); i++)
-      box[i][i]=size[i]+2*dist;
-  if (bSetSize)
-    for (i=0; (i<DIM); i++)
-      box[i][i]=newbox[i];
-  if (bCubic) {
-    d=box[XX][XX];
-    for (i=1; (i<DIM); i++)
-      if (box[i][i]>d) d=box[i][i];
-    for (i=0; (i<DIM); i++)
-      box[i][i]=d;
-  }
-  if (bTruncOct) {
+  if (bSetSize || bDist) {
     clear_mat(box);
-    box[XX][XX] = to_diam;
-    box[YY][XX] = to_diam/3;
-    box[YY][YY] = to_diam*sqrt(2)*3/4;
-    box[ZZ][XX] = -to_diam*sqrt(6)/6;
-    box[ZZ][YY] = to_diam*sqrt(2)*3/8;
-    box[ZZ][ZZ] = to_diam*sqrt(2)/2;
+    /* calculate new boxsize */
+    switch(btype[0][0]){
+    case 'r':
+      if (bSetSize)
+	for (i=0; (i<DIM); i++)
+	  box[i][i]=newbox[i];
+      else 
+	for (i=0; (i<DIM); i++)
+	  box[i][i]=size[i]+2*dist;
+      break;
+    case 'c':
+    case 't':
+      if (bSetSize)
+	d = newbox[0];
+      else
+	d = diam+2*dist;
+      if (btype[0][0] == 'c')
+	for(i=0; i<DIM; i++)
+	  box[i][i] = d;
+      else {
+	box[XX][XX] = d;
+	box[YY][XX] = d/3;
+	box[YY][YY] = d*sqrt(2)*3/4;
+	box[ZZ][XX] = -d*sqrt(6)/6;
+	box[ZZ][YY] = d*sqrt(2)*3/8;
+	box[ZZ][ZZ] = d*sqrt(2)/2;
+      }
+     break;
+    } 
   }
 
   /* calculate new coords for geometrical center */
@@ -507,15 +537,20 @@ int main(int argc, char *argv[])
     center_conf(natom,x,center,gc);
     
   /* print some */
-  if (bCenter || bScale || bOrient || bRotate) {
-    calc_geom(NULL,&atoms,x, gc, min, max);
-    printf("new center: %6.3f %6.3f %6.3f\n", 
-	   gc[XX],gc[YY],gc[ZZ]);
+  if (bCalcGeom) {
+    calc_geom(NULL,&atoms,x, gc, min, max, FALSE);
+    printf("new center      :%7.3f%7.3f%7.3f (nm)\n",gc[XX],gc[YY],gc[ZZ]);
   }
-  if ( bOrient || bScale || bDist || bSetSize || bTruncOct )
-    printf("new box   : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
-	   box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
-  
+  if (bOrient || bScale || bDist || bSetSize) {
+    printf("new box vectors :%7.3f%7.3f%7.3f (nm)\n", 
+	   norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
+    printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
+	   RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ])),
+	   RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ])),
+	   RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY])));
+    printf("new box volume  :%7.2f               (nm^3)\n",det(box));
+  }  
+
   if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
     fprintf(stderr,"\nSelect a group for output:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
