@@ -8033,24 +8033,24 @@ AO3PB   APG AO3PG AH3PG    gd_9
 ;   ai    aj    ak    al  gromos type
 [ SO42- ]
  [ atoms ]
-   IS     S    0.540     0
-  IO1    OM   -0.635     0
-  IO2    OM   -0.635     0
-  IO3    OM   -0.635     0
-  IO4    OM   -0.635     0
+    S     S    0.540     0
+   O1    OM   -0.635     0
+   O2    OM   -0.635     0
+   O3    OM   -0.635     0
+   O4    OM   -0.635     0
  [ bonds ]
-   IS   IO1    gb_24
-   IS   IO2    gb_24
-   IS   IO3    gb_24
-   IS   IO4    gb_24
+    S    O1    gb_24
+    S    O2    gb_24
+    S    O3    gb_24
+    S    O4    gb_24
  [ angles ]
 ;   ai    aj    ak  gromos type
-  IO1    IS   IO2    ga_12
-  IO1    IS   IO3    ga_12
-  IO1    IS   IO4    ga_12
-  IO2    IS   IO3    ga_12
-  IO2    IS   IO4    ga_12
-  IO3    IS   IO4    ga_12
+   O1     S    O2    ga_12
+   O1     S    O3    ga_12
+   O1     S    O4    ga_12
+   O2     S    O3    ga_12
+   O2     S    O4    ga_12
+   O3     S    O4    ga_12
  [ impropers ]
 ;   ai    aj    ak    al  gromos type
  [ dihedrals ]

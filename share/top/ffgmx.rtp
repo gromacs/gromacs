@@ -4242,16 +4242,16 @@
 
 [ SO4 ]
  [ atoms ]
-    IS     S   0.540     0
-   IO1    OM  -0.635     0
-   IO2    OM  -0.635     0
-   IO3    OM  -0.635     0
-   IO4    OM  -0.635     0
+     S     S   0.540     0
+    O1    OM  -0.635     0
+    O2    OM  -0.635     0
+    O3    OM  -0.635     0
+    O4    OM  -0.635     0
  [ bonds ]
-    IS   IO1
-    IS   IO2
-    IS   IO3
-    IS   IO4
+     S    O1
+     S    O2
+     S    O3
+     S    O4
 
 [ TEMP ]
  [ atoms ]
