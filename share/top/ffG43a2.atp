@@ -45,3 +45,5 @@ CLCL4  35.453   ;     chloride in carbontetrachloride (solvent)
  MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
    MW   0       ;     Dummy mass in rigid tyrosine rings
    IW   0       ;     Dummy particle in TIP4P etc.
+ OWT3  15.99940 ;     TIP3P WATER OXYGEN                 
+ OWT4  15.99940 ;     TIP4P WATER OXYGEN

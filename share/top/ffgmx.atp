@@ -43,6 +43,7 @@
   CR6  12.01100 ;     AROMATIC C- bonded to H (6-RING)+H
   HCR   1.00800 ;     H attached to aromatic C (5 or 6 ri
  OWT3  15.99940 ;     TIP3P WATER OXYGEN
+ OWT4  15.99940 ;     TIP4P WATER OXYGEN
    SD  32.06000 ;     DMSO Sulphur
    OD  15.99940 ;     DMSO Oxygen
    CD  15.03500 ;     DMSO Carbon
