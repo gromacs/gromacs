@@ -329,25 +329,29 @@ static int read_atom(t_symtab *symtab,char line[],int type,int natom,
   for(k=0; (k<6); k++,j++) bfac[k]=line[j];
   bfac[k]=nc;
 
-  atomn=&(atoms->atom[natom]);
-  if ((natom==0) || (strcmp(oldresnr,pdbresnr)!=0) || 
-      (strcmp(oldresnm,resnm)!=0)) {
-    strcpy(oldresnr,pdbresnr);
-    strcpy(oldresnm,resnm);
-    if (natom==0)
-      newres=0;
+  if (atoms->atom) {
+    atomn=&(atoms->atom[natom]);
+    if ((natom==0) || (strcmp(oldresnr,pdbresnr)!=0) || 
+	(strcmp(oldresnm,resnm)!=0)) {
+      strcpy(oldresnr,pdbresnr);
+      strcpy(oldresnm,resnm);
+      if (natom==0)
+	newres=0;
+      else
+	newres=atoms->atom[natom-1].resnr+1;
+      atoms->nres=newres+1;
+      atoms->resname[newres]=put_symtab(symtab,resnm);
+    }
     else
-      newres=atoms->atom[natom-1].resnr+1;
-    atoms->nres=newres+1;
-    atoms->resname[newres]=put_symtab(symtab,resnm);
+      newres=atoms->atom[natom-1].resnr;
+    if (bChange)
+      gromacs_name(anm); 
+    atoms->atomname[natom]=put_symtab(symtab,anm);
+    atomn->chain=chain[0];
+    atomn->resnr=newres;
+    atomn->m = 0.0;
+    atomn->q = 0.0;
   }
-  else
-    newres=atoms->atom[natom-1].resnr;
-  if (bChange)
-    gromacs_name(anm); 
-  atoms->atomname[natom]=put_symtab(symtab,anm);
-  atomn->chain=chain[0];
-  atomn->resnr=newres;
   x[natom][XX]=atof(xc)*0.1;
   x[natom][YY]=atof(yc)*0.1;
   x[natom][ZZ]=atof(zc)*0.1;
@@ -359,8 +363,6 @@ static int read_atom(t_symtab *symtab,char line[],int type,int natom,
     atoms->pdbinfo[natom].bfac=atof(bfac);
     atoms->pdbinfo[natom].occup=atof(occup);
   }
-  atomn->m = 0.0;
-  atomn->q = 0.0;
   natom++;
   
   return natom;
@@ -428,7 +430,7 @@ int read_pdbfile(FILE *in,char *title,
       break;
       
     case epdbANISOU:
-      if (atoms->pdbinfo != NULL)
+      if (atoms->pdbinfo)
 	read_anisou(line,natom,atoms);
       break;
 
