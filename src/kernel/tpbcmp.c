@@ -39,6 +39,7 @@ static char *SRCID_tpbcmp_c = "$Id$";
 #include "txtdump.h"
 #include "fatal.h"
 #include "names.h"
+#include "tpxio.h"
 
 static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
 {
@@ -180,16 +181,13 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2)
   cmp_atoms(fp,&(t1->atoms),&(t2->atoms));
 }
 
-static void cmp_xv(FILE *fp,int natoms,rvec x1[],rvec x2[],rvec v1[],rvec v2[])
+static void cmp_rvecs(FILE *fp,char *title,int n,rvec x1[],rvec x2[])
 {
   int i;
   
-  fprintf(fp,"comparing x\n");
-  for(i=0; (i<natoms); i++)
-    cmp_rvec(fp,"x",i,x1[i],x2[i]);
-  fprintf(fp,"comparing v\n");
-  for(i=0; (i<natoms); i++)
-    cmp_rvec(fp,"v",i,v1[i],v2[i]);
+  fprintf(fp,"comparing %s\n",title);
+  for(i=0; (i<n); i++)
+    cmp_rvec(fp,title,i,x1[i],x2[i]);
 }
 
 static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2)
@@ -300,28 +298,30 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
 }
 
 
-void comp_tpb(char *fn1,char *fn2)
+void comp_tpx(char *fn1,char *fn2)
 {
-  FILE       *ff[2];
-  t_statheader  sh[2];
-  t_inputrec ir[2];
-  rvec       *xx[2],*vv[2];
-  t_topology top[2];
-  int        i,step,natoms,nre;
-  real       t,lambda;
+  char        *ff[2];
+  t_tpxheader sh[2];
+  t_inputrec  ir[2];
+  rvec        *xx[2],*vv[2];
+  t_topology  top[2];
+  matrix      box[2];
+  int         i,step,natoms,nre;
+  real        t,lambda;
 
-  ff[0]=ffopen(fn1,"r");
-  ff[1]=ffopen(fn2,"r");
+  ff[0]=fn1;
+  ff[1]=fn2;
   for(i=0; (i<2); i++) {
-    rd_header(ff[i],&(sh[i]));
+    read_tpxheader(ff[i],&(sh[i]));
     snew(xx[i],sh[i].natoms);
     snew(vv[i],sh[i].natoms);
-    rd_hstatus(ff[i],&(sh[i]),&step,&t,
-	       &lambda,&(ir[i]),NULL,NULL,NULL,&natoms,
-	       xx[i],vv[i],NULL,&nre,NULL,&(top[i]));
+    read_tpx(ff[i],&step,&t,&lambda,&(ir[i]),box[i],&natoms,
+	     xx[i],vv[i],NULL,&(top[i]));
   }
   cmp_inputrec(stdout,&ir[0],&ir[1]);
   cmp_top(stdout,&top[0],&top[1]);
-  cmp_xv(stdout,natoms,xx[0],xx[1],vv[0],vv[1]);
+  cmp_rvecs(stdout,"box",DIM,box[0],box[1]);
+  cmp_rvecs(stdout,"x",natoms,xx[0],xx[1]);
+  cmp_rvecs(stdout,"v",natoms,vv[0],vv[1]);
 }
 

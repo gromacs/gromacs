@@ -62,19 +62,20 @@ static t_deffile deffile[efNR] = {
   { FALSE, ".wdp", "widom",  "-f", "g_widom input parameters."               },
   { FALSE, ".gct", "gct",    "-f", "general coupling stuff"                  },
   { FALSE, ".gpp", "group",  "-g", "group related input for grompp"          },
-  { TRUE,  ".trx", "xtraj",  NULL, "Generic trajectory file format"          },
-  { TRUE,  ".trj", "traj",   NULL, "Trajectory file"                         },
-  { TRUE , ".xtc", "ctraj",  NULL, "Compressed trajectory file (portable xdr format)"},
+  { TRUE,  ".???", "xtraj",  NULL, "Generic trajectory file format"          },
+  { TRUE,  ".trr", "traj",   NULL, "Trajectory in portable xdr format" },
+  { TRUE,  ".trj", "btraj",  NULL, "Trajectory file (cpu specific)"    },
+  { TRUE , ".xtc", "ctraj",  NULL, "Compressed trajectory (portable xdr format)"},
   { FALSE, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format" },
   { FALSE, ".asc", "atraj",  NULL, "Trajectory file in ascii converted by stat2asc" },
-  { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
+  { TRUE,  ".???", "ener",   NULL, "Generic energy format" },
   { TRUE,  ".edr", "ener",   NULL, "Energy file in portable XDR format"      },
-  { TRUE,  ".drs", "disre",  NULL, "Distance restraint output file"          },
+  { TRUE,  ".ene", "ener",   NULL, "Energy file"                             },
+  { FALSE, ".???", "xconf",  NULL, "Generic structure format"                },
   { FALSE, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"     },
   { FALSE, ".pdb", "eiwit",  "-f", "Protein data bank file"                  },
   { FALSE, ".brk", "eiwit",  "-f", "Brookhaven data bank file"               },
   { FALSE, ".ent", "eiwit",  "-f", "Entry in the protein date bank"          },
-  { FALSE, ".stx", "xconf",  NULL, "Generic structure format"                },
   { TRUE , ".xdr", "cconf",  NULL, "Compressed coordinate file (portable xdr format)"},
   { FALSE, ".log", "run",    "-l", "Log file from MD/LD/EM/NM run"           },
   { FALSE, ".xvg", "graph",  "-o", "xvgr input file as produced by analysis tools"  },
@@ -82,8 +83,10 @@ static t_deffile deffile[efNR] = {
   { FALSE, ".ndx", "index",  "-n", "GROMACS indexfile",                      },
   { FALSE, ".top", "topol",  "-p", "GROMACS topology file"                   },
   { FALSE, ".itp", "topinc", NULL, "Include file for GROMACS topology"       },
-  { TRUE,  ".tpb", "topol",  "-s", "Binary GROMACS topology"                 },
-  { FALSE, ".rmt", "topol",  "-f", "Gromos-87 formatted topology file"       },
+  { TRUE,  ".???", "topol",  "-s", "Generic GROMACS processed topology"      },
+  { TRUE,  ".tpr", "topol",  "-s", "XDR GROMACS processed topology"          },
+  { FALSE, ".tpa", "topol",  "-s", "Ascii GROMACS processed topology"        },
+  { TRUE,  ".tpb", "topol",  "-s", "Binary GROMACS processed topology"       },
   { FALSE, ".tex", "doc",    "-o", "LaTeX file, suitable for inclusion in article" },
   { FALSE, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"       },
   { FALSE, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"           },
@@ -227,10 +230,8 @@ static void set_extension(char *buf,int ftp)
   strcat(buf,df->ext);
 }
 
-static void set_trxnm(t_filenm *fnm,char *name)
+void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 {
-  static    int trjs[]={ efTRJ, efXTC, efG87, efPDB, efGRO };
-#define NTRJS asize(trjs)
   char      buf[256];
   int       i,len,ti;
 
@@ -238,19 +239,19 @@ static void set_trxnm(t_filenm *fnm,char *name)
   /* ti is the extension type */
   ti=fn2ftp(name); 
   
-  for(i=0; (i<NTRJS); i++) {
+  for(i=0; (i<nopts); i++) {
     /* check if it is a trajectory */
-    if (ti == trjs[i]) 
+    if (ti == ftps[i]) 
       break;
   }
-  if (i != NTRJS) {
+  if (i != nopts) {
     /* If it is a trajectory file, return */
     fnm->fn=strdup(name);
     
     return;
   }
-  for(i=0; (i<NTRJS); i++) {
-    ti=trjs[i];
+  for(i=0; (i<nopts); i++) {
+    ti=ftps[i];
     if (name) {
       strcpy(buf,name);
       set_extension(buf,ti);
@@ -261,8 +262,8 @@ static void set_trxnm(t_filenm *fnm,char *name)
     if (fexist(buf))
       break;
   }
-  if (i == NTRJS) {
-    ti=trjs[0];
+  if (i == nopts) {
+    ti=ftps[0];
     if (name) {
       strcpy(buf,name);
       set_extension(buf,ti);
@@ -271,53 +272,40 @@ static void set_trxnm(t_filenm *fnm,char *name)
       strcpy(buf,ftp2defnm(ti));
   }
   fnm->fn=strdup(buf);
+}
+
+static void set_trxnm(t_filenm *fnm,char *name)
+{
+  static    int trjs[]={ efTRR, efTRJ, efXTC, efG87, efPDB, efGRO };
+#define NTRJS asize(trjs)
+
+  set_grpfnm(fnm,name,NTRJS,trjs);
 }
 
 static void set_stxnm(t_filenm *fnm,char *name)
 {
-  static    int stxs[]={ efGRO, efPDB, efBRK, efENT, efTPB };
+  static    int stxs[]={ efGRO, efPDB, efBRK, efENT, efTPB, efTPA, efTPX };
 #define NSTXS asize(stxs)
-  char      buf[256];
-  int       i,len,ti;
-
-  /* First check whether we have a valid filename already */
-  /* ti is the extension type */
-  ti=fn2ftp(name); 
   
-  for(i=0; (i<NSTXS); i++) {
-    /* check if it is a trajectory */
-    if (ti == stxs[i]) 
-      break;
-  }
-  if (i != NSTXS) {
-    /* If it is a trajectory file, return */
-    fnm->fn=strdup(name);
-    
-    return;
-  }
-  for(i=0; (i<NSTXS); i++) {
-    ti=stxs[i];
-    if (name) {
-      strcpy(buf,name);
-      set_extension(buf,ti);
-    }
-    else
-      strcpy(buf,ftp2defnm(ti));
-    
-    if (fexist(buf))
-      break;
-  }
-  if (i == NSTXS) {
-    ti=stxs[0];
-    if (name) {
-      strcpy(buf,name);
-      set_extension(buf,ti);
-    }
-    else
-      strcpy(buf,ftp2defnm(ti));
-  }
-  fnm->fn=strdup(buf);
+  set_grpfnm(fnm,name,NSTXS,stxs);
 }
+
+static void set_enxnm(t_filenm *fnm,char *name)
+{
+  static    int enxs[]={ efEDR, efENE };
+#define ENTXS asize(enxs)
+  
+  set_grpfnm(fnm,name,ENTXS,enxs);
+}
+
+static void set_tpxnm(t_filenm *fnm,char *name)
+{
+  static    int tpxs[]={ efTPR, efTPB, efTPA };
+#define NTPXS asize(tpxs)
+  
+  set_grpfnm(fnm,name,NTPXS,tpxs);
+}
+
 
 static void set_filenm(t_filenm *fnm,char *name)
 {
@@ -333,9 +321,14 @@ static void set_filenm(t_filenm *fnm,char *name)
   if (fnm->ftp == efTRX) {
     set_trxnm(fnm,name);
   }
-  else
-  if (fnm->ftp == efSTX) {
+  else if (fnm->ftp == efSTX) {
     set_stxnm(fnm,name);
+  }
+  else if (fnm->ftp == efTPX) {
+    set_tpxnm(fnm,name);
+  }
+  else if (fnm->ftp == efENX) {
+    set_enxnm(fnm,name);
   }
   else {
     if (name != NULL) {
@@ -440,9 +433,10 @@ bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (ftp == fnm[i].ftp)
-      return is_set(fnm[i]);
+      return (bool) is_set(fnm[i]);
       
   fprintf(stderr,"ftp2bSet: No filetype %s\n",deffile[ftp].ext);
+  
   return FALSE;
 }
 
@@ -452,9 +446,10 @@ bool opt2bSet(char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0)
-      return is_set(fnm[i]);
+      return (bool) is_set(fnm[i]);
 
   fprintf(stderr,"No option %s\n",opt);
+  
   return FALSE;
 }
 

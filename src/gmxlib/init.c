@@ -30,16 +30,14 @@ static char *SRCID_init_c = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "statusio.h"
+#include "tpxio.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "vveclib.h"
 #include "main.h"
 #include "mvdata.h"
 #include "fatal.h"
-#include "rwtop.h"
-#include "binio.h"
-#include "statutil.h"
+#include "symtab.h"
 #include "txtdump.h"
 #include "splittop.h"
 #include "mdatoms.h"
@@ -58,24 +56,46 @@ static char *int_title(char *title,int pid)
   return buf;
 }
 
+static void rm_idef(t_idef *idef)
+{
+  int i;
+  
+  sfree(idef->functype);
+  sfree(idef->iparams);
+  for(i=0; (i<F_NRE); i++)
+    sfree(idef->il[i].iatoms);
+}
+
+static void rm_block(t_block *block)
+{
+  sfree(block->index);
+  sfree(block->a);
+}
+
+static void rm_atoms(t_atoms *atoms)
+{
+  sfree(atoms->atom);
+  sfree(atoms->atomname);
+  sfree(atoms->resname);
+  sfree(atoms->grpname);
+  rm_block(&atoms->excl);
+}
+
 void init_single(FILE *log,t_parm *parm,
-		 char *tpbfile,t_topology *top, 
+		 char *tpxfile,t_topology *top, 
                  rvec **x,rvec **v,t_mdatoms **mdatoms,
 		 t_nsborder *nsb)
 {
-  int        step,natoms,nre;
-  real       t,lambda;
-  char       *szVer;
-  t_statheader stath;
+  int         step,natoms,nre;
+  real        t,lambda;
+  t_tpxheader tpx;
 
-  read_status_header(tpbfile,&stath);
+  read_tpxheader(tpxfile,&tpx);
 
-  snew(*x,stath.natoms);
-  snew(*v,stath.natoms);
-  szVer=read_status(tpbfile,&step,&t,&lambda,&parm->ir,
-                    parm->box,NULL,NULL,
-		    &natoms,*x,*v,NULL,&nre,NULL,top);
-  fprintf(log,"status file version=%s\n",szVer);
+  snew(*x,tpx.natoms);
+  snew(*v,tpx.natoms);
+  read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,
+	   parm->box,&natoms,*x,*v,NULL,top);
   
   *mdatoms=atoms2md(&top->atoms,parm->ir.bPert);
   
@@ -85,30 +105,26 @@ void init_single(FILE *log,t_parm *parm,
 }
 
 void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
-		      char *tpbfile,int nstDlb)
+		      char *tpxfile,int nstDlb)
 {
-  char *szVer;
-  int natoms,nre,step;
-  real t,lambda;
-  FILE *fp;
-  t_statheader sh;
-  t_topology top;
-  t_nsborder nsb;
-  rvec *x,*v;
+  int         natoms,nre,step;
+  real        t,lambda;
+  t_tpxheader tpx;
+  t_topology  top;
+  t_nsborder  nsb;
+  rvec        *x,*v;
   
-  fp=ffopen(tpbfile,"r");
-  szVer=rd_header(fp,&sh);
-  snew(x,sh.natoms);
-  snew(v,sh.natoms);
-  szVer=rd_hstatus(fp,&sh,&step,&t,&lambda,&parm->ir,parm->box,
-                   NULL,NULL,&natoms,x,v,NULL,&nre,NULL,&top);
-  printf("status version:\"%s\" done\n",szVer); fflush(stdout);
+  read_tpxheader(tpxfile,&tpx);
+  snew(x,tpx.natoms);
+  snew(v,tpx.natoms);
+  read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,parm->box,
+	   &natoms,x,v,NULL,&top);
+  
   calc_nsb(&(top.blocks[ebCGS]),nprocs,&nsb,nstDlb);
   mv_data(left,right,parm,&nsb,&top,x,v);
-  rm_top(&top);
+  done_top(&top);
   sfree(x);
   sfree(v);
-  fclose(fp);
 }
 
 static void count_ones(FILE *log,t_commrec *cr)

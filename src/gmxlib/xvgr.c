@@ -29,6 +29,7 @@
 static char *SRCID_xvgr_c = "$Id$";
 
 #include <string.h>
+#include <ctype.h>
 #include "sysstuff.h"
 #include "string2.h"
 #include "futil.h"

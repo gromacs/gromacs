@@ -35,8 +35,6 @@ static char *SRCID_mshift_c = "$Id$";
 #include "fatal.h"
 #include "macros.h"
 #include "vec.h"
-#include "statusio.h"
-#include "statutil.h"
 #include "futil.h"
 #include "copyrite.h"
 #include "mshift.h"

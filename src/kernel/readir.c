@@ -548,7 +548,7 @@ void do_index(char *ndx,
     snew(grps,1);
     snew(grps->index,1);
     snew(gnames,1);
-    analyse(atoms,grps,&gnames,FALSE,FALSE);
+    analyse(atoms,grps,&gnames,FALSE,TRUE);
   }
   else {
     grps=init_index(ndx,&gnames);

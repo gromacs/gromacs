@@ -42,7 +42,9 @@ static char *SRCID_confio_c = "$Id$";
 #include "assert.h"
 #include "futil.h"
 #include "xdrf.h"
+#include "filenm.h"
 #include "pdbio.h"
+#include "tpxio.h"
 #include "fatal.h"
 #include "copyrite.h"
 
@@ -773,12 +775,16 @@ void get_stx_coordnum (char *infile,int *natoms)
   case efENT:
     get_pdb_coordnum (infile, natoms);
     break;
+  case efTPX:
+  case efTPA:
   case efTPB:
-    read_status(infile,&i1,&r1,&r2,NULL,
-		NULL,NULL,NULL,
-		natoms,NULL,NULL,NULL,&i2,
-		NULL,NULL);
+  case efTPR: {
+    t_tpxheader tpx;
+    
+    read_tpxheader(infile,&tpx);
+    *natoms = tpx.natoms;
     break;
+  }
   default:
     fatal_error(0,"Not supported in read_stx_conf: %s",infile);
   }
@@ -787,10 +793,9 @@ void get_stx_coordnum (char *infile,int *natoms)
 void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec v[], matrix box)
 {
-  int ftp;
   t_topology *top;
-  int natoms,i1,i2;
-  real r1,r2;
+  int        ftp,natoms,i1,i2;
+  real       r1,r2;
 
   ftp=fn2ftp(infile);
   switch (ftp) {
@@ -804,13 +809,16 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     break;
   case efTPB:
     snew(top,1); 
-    read_status(infile,&i1,&r1,&r2,NULL,
-		box,NULL,NULL,
-		&natoms,x,v,NULL,&i2,
-		NULL,top);
+    read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
     strcpy(title,*(top->name));
     *atoms=top->atoms;
-    sfree(top);
+    break;
+  case efTPA:
+  case efTPX: 
+    snew(top,1);
+    read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
+    strcpy(title,*(top->name));
+    *atoms=top->atoms;
     break;
   default:
     fatal_error(0,"Not supported in read_stx_conf: %s",infile);

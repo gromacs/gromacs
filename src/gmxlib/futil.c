@@ -298,8 +298,12 @@ char *low_libfn(char *file,bool bFatal)
     else {
       sprintf(buf,"%s/%s",lib,file);
       ret=buf;
+      if (bFatal && !fexist(ret))
+	fatal_error(0,"Library file %s found in current dir nor in libdir %s",
+		    ret,lib);
     }
   }
+    
   return ret;
 }
 
@@ -310,8 +314,9 @@ FILE *low_libopen(char *file,bool bFatal)
 
   fn=low_libfn(file,bFatal);
 
-  if (fn==NULL)
+  if (fn==NULL) {
     ff=NULL;
+  }
   else
     ff=fopen(fn,"r");
 
@@ -327,5 +332,4 @@ FILE *libopen(char *file)
 {
   return low_libopen(file,TRUE);
 }
-
 

@@ -34,12 +34,12 @@ static char *SRCID_statutil_c = "$Id$";
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
-#include "statusio.h"
 #include "statutil.h"
 #include "names.h"
 #include "vec.h"
 #include "futil.h"
 #include "wman.h"
+#include "tpxio.h"
 #include "assert.h"
 #include "fatal.h"
 
@@ -140,28 +140,6 @@ bool read_next_x_v(FILE *status,real *t,int natoms,rvec x[],rvec v[],matrix box)
 
 #endif
 
-/****** E N E R G Y   S T U F F *****/
-
-bool next_e(FILE *status,real *t,t_energy e[])
-{
-  t_statheader sh;
-  real lambda;
-  int  step,nre;
-  bool bE;
-  
-  while (!eof(status)) {
-    rd_header(status,&sh);
-    bE=sh.e_size;
-    rd_hstatus(status,&sh,&step,t,&lambda,NULL,
-	       NULL,NULL,NULL,&sh.natoms,NULL,NULL,NULL,
-	       &nre,bE ? e : NULL,NULL);
-    if (bE && (check_times(*t)==0))
-      return TRUE;
-  }
-  
-  return FALSE;
-}
-
 /***** T O P O L O G Y   S T U F F ******/
 
 t_topology *read_top(char *fn)
@@ -171,8 +149,8 @@ t_topology *read_top(char *fn)
   t_topology *top;
 
   snew(top,1);
-  read_status(fn,&step,&t,&lambda,NULL,NULL,NULL,NULL,
-	      &natoms,NULL,NULL,NULL,&nre,NULL,top);
+  read_tpx(fn,&step,&t,&lambda,NULL,NULL,
+	   &natoms,NULL,NULL,NULL,top);
   
   return top;
 }
@@ -185,26 +163,6 @@ void mk_single_top(t_topology *top)
     top->blocks[i].multinr[0]=top->blocks[i].multinr[MAXPROC-1];
   for(i=0; (i<F_NRE); i++)
     top->idef.il[i].multinr[0]=top->idef.il[i].multinr[MAXPROC-1];
-}
-
-char *status_title(FILE *status)
-{
-  t_statheader sh;
-  t_topology   top;
-  int          step,natoms,nre;
-  real         lambda,t;
-
-  rewind(status);
-  (void) rd_header(status,&sh);
-  rewind(status);
-  if (sh.top_size > 0) { 
-    (void) rd_status(status,&step,&t,&lambda,NULL,NULL,NULL,NULL,&natoms,NULL,
-		     NULL,NULL,&nre,NULL,&top);
-    rewind(status);
-    return strdup(*top.name);
-  }
-  else
-    return "No Title!";
 }
 
 /*************************************************************
@@ -300,7 +258,7 @@ void usage(char *prog,char *arg)
   exit(1);
 }
 
-bool bDoView()
+bool bDoView(void)
 {
   return bView;
 }
@@ -392,9 +350,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     nicelevel = 19;
     
   /* Check whether we have to add -b -e or -w options */
-  bFlags[0] = (Flags & PCA_CAN_BEGIN);
-  bFlags[1] = (Flags & PCA_CAN_END);
-  bFlags[2] = (Flags & PCA_CAN_VIEW);
+  bFlags[0] = (bool) (Flags & PCA_CAN_BEGIN);
+  bFlags[1] = (bool) (Flags & PCA_CAN_END);
+  bFlags[2] = (bool) (Flags & PCA_CAN_VIEW);
     
   snew(all_pa,NPCA_PA+npargs);
   for(i=npall=0; (i<NPCA_PA); i++)
@@ -428,14 +386,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Set the nice level */
 #ifdef _SGI_
   if (npri != 0) {
-    /* These are some old include files...
-       #include <limits.h>
-       #include <sys/types.h>
-       #include <sys/prctl.h>
-     */
+#include <sys/schedctl.h>
 #include <sys/sysmp.h>
-#define NDPRI MPTS_RTPRI
-    (void) schedctl(NDPRI,0,npri);
+    (void) schedctl(MPTS_RTPRI,0,npri);
   }
   else
 #endif
@@ -453,7 +406,8 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   }
   
   if (bHelp)
-     write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
+     write_man(stdout,eotHelp,program,
+	       ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
   else if (bPrint) {
     pr_fns(stdout,nfile,fnm);
     print_pargs(stdout,npall,all_pa);

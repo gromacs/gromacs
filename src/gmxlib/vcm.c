@@ -31,6 +31,7 @@ static char *SRCID_vcm_c = "$Id$";
 #include "macros.h"
 #include "vcm.h"
 #include "vec.h"
+#include "do_fit.h"
 #include "smalloc.h"
  
 void calc_vcm(FILE *log,int homenr,int start,real mass[],rvec v[],rvec vcm)
@@ -86,10 +87,10 @@ void check_cm(FILE *log,rvec mvcm,real tm)
 
 void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], real mass[])
 {
-  int i;
-  static int *index=NULL;
-  rvec half_box;
+  static atom_id *index=NULL;
   static rvec *old_x=NULL;
+  rvec   half_box;
+  int    i;
   
   for (i=0; (i<DIM); i++)
     half_box[i]=box[i]*0.5;

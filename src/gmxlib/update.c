@@ -46,7 +46,6 @@ static char *SRCID_update_c = "$Id$";
 #include "confio.h"
 #include "update.h"
 #include "random.h"
-#include "rwtop.h"
 #include "futil.h"
 #include "mshift.h"
 #include "tgroup.h"
@@ -340,36 +339,37 @@ static void do_update_lang(int start,int homenr,double dt,
 		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
 		      real temp, real fr, int *seed)
 {
-  real   vn,vv;
-  real   rfac,invfr,rhalf,jr;
-  int    n,d;
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
   const unsigned long ic = 18257;
-  unsigned long  jran;
+  real   vn,vv,rim;
+  real   rfac,invfr,rhalf,jr;
+  int    n,d;
+  ulong  jran;
 
   /* (r-0.5) n times:  var_n = n * var_1 = n/12
      n=4:  var_n = 1/3, so multiply with 3 */
   
   rfac  = sqrt(3.0 * 2.0*BOLTZ*temp/(fr*dt));
   rhalf = 2.0*rfac; 
-  rfac  = rfac/im;
+  rim   = (real)im;
+  rfac  = rfac/rim;
   invfr = 1.0/fr;
   
-  jran = im*rando(seed);
+  jran = (ulong)(rim*rando(seed));
 
   for (n=start; (n<start+homenr); n++) {  
     for (d=0; (d<DIM); d++) {
       vn             = v[n][d];
       vold[n][d]     = vn;
       jran = (jran*ia+ic) & im;
-      jr = jran;
+      jr   = (real)jran;
       jran = (jran*ia+ic) & im;
-      jr += jran;
+      jr  += (real)jran;
       jran = (jran*ia+ic) & im;
-      jr += jran;
+      jr  += (real)jran;
       jran = (jran*ia+ic) & im;
-      jr += jran;
+      jr  += (real)jran;
       vv             = invfr*f[n][d] + rfac * jr - rhalf;
       v[n][d]        = vv;
       xprime[n][d]   = x[n][d]+v[n][d]*dt;

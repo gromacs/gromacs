@@ -161,7 +161,7 @@ int main(int argc,char *argv[])
     "long range electrostatics problem."
   };
   static t_filenm  fnm[] = {
-    { efTPB, NULL,   NULL,       ffREAD },
+    { efTPX, NULL,   NULL,       ffREAD },
     { efHAT, "-g",   "ghat",     ffOPTRD },
     { efOUT, "-o",   "rho",      ffOPTWR },
     { efOUT, "-op",  "lr-pb",    ffOPTWR },
@@ -186,7 +186,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   FILE         *log;
   t_topology   top;
-  t_statheader stath;
+  t_tpaheader stath;
   t_inputrec   ir;
   t_block      *excl;
   t_forcerec   *fr;
@@ -220,12 +220,11 @@ int main(int argc,char *argv[])
   }
   
   /* Read topology and coordinates */
-  read_status_header(ftp2fn(efTPB,NFILE,fnm),&stath);
+  read_tpaheader(ftp2fn(efTPX,NFILE,fnm),&stath);
   snew(x,stath.natoms);
   snew(f,stath.natoms);
-  read_status(ftp2fn(efTPB,NFILE,fnm),&step,&t,&lambda,&ir,
-	      box,NULL,NULL,
-	      &natoms,x,NULL,NULL,&nre,NULL,&top);
+  read_tpa(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
+	   box,&natoms,x,NULL,NULL,&top);
   excl=&(top.atoms.excl);
   nmol=top.blocks[ebMOLS].nr;
   

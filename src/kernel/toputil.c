@@ -113,37 +113,6 @@ void pr_alloc (int extra, t_params *pr)
 
 /* INIT STRUCTURES */
 
-void init_block(t_block *block)
-{
-  int i;
-
-  block->nr    = 0;
-  block->nra   = 0;
-  snew(block->index,1);
-  block->index[0] = 0;
-  block->a     = NULL;
-  for(i=0; (i<MAXPROC); i++)
-    block->multinr[i]=0;
-}
-
-void init_atom (t_atoms *at)
-{
-  int i;
-  
-  init_block(&(at->excl));
-  at->nr       = 0;
-  at->nres     = 0;
-  at->ngrpname = 0;
-  at->atom     = NULL;
-  at->resname  = NULL;
-  at->atomname = NULL;
-  at->grpname  = NULL;
-  for(i=0; (i<egcNR); i++) {
-    at->grps[i].nr=0;
-    at->grps[i].nm_ind=NULL;
-  }
-}
-
 void init_atomtype (t_atomtype *at)
 {
   at->nr   = 0;
@@ -173,48 +142,11 @@ void init_molinfo(t_molinfo *mol)
   init_atom(&mol->atoms);
 }
 
-void init_top (t_topology *top)
-{
-  int i;
-  
-  top->name = NULL;
-  init_atom (&(top->atoms));
-  for (i=0; (i<ebNR); i++)
-    init_block(&(top->blocks[i]));
-}
-
 /* FREEING MEMORY */
 
 void done_bt (t_params *pl)
 {
   sfree(pl->param);
-}
-
-void done_block(t_block *block)
-{
-  block->nr    = 0;
-  block->nra   = 0;
-  sfree(block->index);
-  sfree(block->a);
-}
-
-void done_atom (t_atoms *at)
-{
-  done_block(&(at->excl));
-  at->nr       = 0;
-  at->nres     = 0;
-  sfree(at->atom);
-  sfree(at->resname);
-  sfree(at->atomname);
-}
-
-void done_top(t_topology *top)
-{
-  int i;
-  
-  done_atom (&(top->atoms));
-  for (i=0; (i<ebNR); i++)
-    done_block(&(top->blocks[i]));
 }
 
 void done_mi(t_molinfo *mi)
@@ -467,7 +399,7 @@ void print_bonds(FILE *out,int natoms,directive d,
   }
   print_bt(out,d,&dumatype,ftype,plist,bConsts,TRUE);
     
-  rm_symtab(&dumtab);
+  done_symtab(&dumtab);
   sfree(dumatype.atom);
   sfree(dumatype.atomname);
 }

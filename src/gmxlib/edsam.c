@@ -31,7 +31,6 @@ static char *SRCID_edsam_c = "$Id$";
 #include <stdio.h>
 #include <time.h>
 #include "typedefs.h"
-#include "statusio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"

@@ -35,10 +35,11 @@ static char *SRCID_javaio_c = "$Id$";
 #include "readinp.h"
 #include "filenm.h"
 #include "copyrite.h"
+#include "wman.h"
 
 extern char *check_tty(char *s);
 
-void doindent(FILE *out,int indent,char *file,int line)
+static void doindent(FILE *out,int indent,char *file,int line)
 {
   int i;
 
@@ -53,7 +54,7 @@ void doindent(FILE *out,int indent,char *file,int line)
 #define INDENT() doindent(out,indent,__FILE__,__LINE__)
 #define WLN() fprintf(out,"\n")
 
-void comment(FILE *out,char *s,int indent)
+static void comment(FILE *out,char *s,int indent)
 {
   INDENT();
   fprintf(out,"// %s\n",s);
@@ -62,8 +63,7 @@ void comment(FILE *out,char *s,int indent)
 #define COMMENT(s) comment(out,s,indent)
 
 void write_java(FILE *out,
-		char *program,bool bNice,
-		ulong Flags,
+		char *program,
 		int nldesc,char *desc[],
 		int nfile,t_filenm fnm[],
 		int npargs,t_pargs pa[],

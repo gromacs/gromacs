@@ -28,6 +28,7 @@
  */
 static char *SRCID_specbond_c = "$Id$";
 
+#include <ctype.h>
 #include "typedefs.h"
 #include "pdbio.h"
 #include "strdb.h"

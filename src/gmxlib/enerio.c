@@ -40,6 +40,9 @@ static char *SRCID_enerio_c = "$Id$";
 #include "fatal.h"
 #include "xdrf.h"
 #include "xtcio.h"
+<<<<<<< enerio.c
+#include "tpaio.h"
+=======
 
 void wr_ener_nms(FILE *out,int nre,char *nms[])
 {
@@ -49,6 +52,7 @@ void wr_ener_nms(FILE *out,int nre,char *nms[])
   for(i=0; (i<nre); i++)
     fprintf(out,"%s\n",nms[i]);
 }
+>>>>>>> 1.2
 
 static void low_wr_ener(FILE *out,t_eheader *eh,
 			t_energy ener[],t_drblock *drblock,void *ublock)
@@ -85,6 +89,15 @@ void wr_ener(FILE *out,real t,int step,int nre,t_energy ener[],
   low_wr_ener(out,&eh,ener,drblock,NULL);
 }
 
+void wr_ener_nms(FILE *out,int nre,char *nms[])
+{
+  int i;
+  
+  fprintf(out,"%d\n",nre);
+  for(i=0; (i<nre); i++)
+    fprintf(out,"%s\n",nms[i]);
+}
+
 void rd_ener_nms(FILE *in,int *nre,char ***nm)
 {
   char line[256];
@@ -98,6 +111,7 @@ void rd_ener_nms(FILE *in,int *nre,char ***nm)
   snew((*nm),*nre);
   for(i=0; (i< (*nre)); i++) {
     fgets2(line,255,in);
+    trim(line);
     (*nm)[i]=strdup(line);
   }
 }
@@ -120,7 +134,7 @@ bool gmx_fread(void *ptr,char *s,size_t size,size_t n,
 
 #define FREAD(p,s,n,fp) gmx_fread(p,#p,s,n,fp,__FILE__,__LINE__)
 
-static ulong lowest_read(FILE *in,ulong fpos,int size,void *ptr,char *nm,
+static ulong lowest_read(FILE *in,long fpos,int size,void *ptr,char *nm,
 			 bool bCanSeek)
 {
   if (ptr) {
@@ -296,4 +310,140 @@ void edr_nms(XDR *xdr,int *nre,char ***nms)
     xdr_string(xdr,&(NM[i]),STRLEN);
   *nms=NM;
 }
+
+void do_enernms(int fp,bool bRead,int *nre,char ***nms)
+{
+  int i;
+  char buf[64];
+
+  if (fio_ftp(fp) == efEDR) {
+    select_tpa(fp);
+    edr_nms(xdr_tpa(fp),nre,nms);
+  }
+  else if (bRead)
+    rd_ener_nms(fp_tpa(fp),nre,nms);
+  else
+    wr_ener_nms(fp_tpa(fp),*nre,*nms);
+}
+
+static bool do_eheader(int fp,bool bRead,t_eheader *eh)
+{
+  if (!do_real(eh->t))      return FALSE;
+  if (!do_int (eh->step))   return FALSE;
+  if (!do_int (eh->nre))    return FALSE;
+  if (!do_int (eh->ndisre)) return FALSE;
+  if (!do_int (eh->nuser))  return FALSE;
+  if (!do_int (eh->e_size)) return FALSE;
+  if (!do_int (eh->d_size)) return FALSE;
+  if (!do_int (eh->u_size)) return FALSE;
+  
+  return TRUE;
+}
+
+void bswap4(void *n)
+{
+  ushort lo,hi;
+  int    *nn;
+  
+  nn  = (int *)n;
+  hi  = (*nn) & 0xff;
+  lo  = (*nn-hi) >> 16;
+  
+  *nn = (hi << 16) + lo;
+}
+
+int open_enx(char *fn,char *mode)
+{
+  int       i,fp;
+  char      **nm=NULL;
+  int       nre;
+  t_eheader *eh;
+  
+  if (strcmp(mode,"r") == 0) {
+    fp=open_tpa(fn,mode);
+    select_tpa(fp);
+    set_precision(fp,FALSE);
+    do_enernms(fp,TRUE,&nre,&nm);
+    snew(eh,1);
+    do_eheader(fp,TRUE,eh);
+    
+    /* Now check whether this file is in single precision */
+    if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(float) == eh->e_size)) ||
+	 (eh->d_size && (eh->ndisre*sizeof(float)*2+sizeof(int) == eh->d_size)))){
+      fprintf(stderr,"Opened %s as single precision energy file\n",fn);
+      for(i=0; (i<nre); i++)
+	sfree(nm[i]);
+      sfree(nm);
+    }
+    else {
+      rewind_tpa(fp);
+      select_tpa(fp);
+      set_precision(fp,TRUE);
+      do_enernms(fp,TRUE,&nre,&nm);
+      do_eheader(fp,TRUE,eh);
+      if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(float) == eh->e_size)) ||
+	   (eh->d_size && (eh->ndisre*sizeof(float)*2+sizeof(int) == eh->d_size))))
+	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
+      else
+	fatal_error(0,"Energy file %s not recognized, maybe different CPU?",fn);
+      for(i=0; (i<nre); i++)
+	sfree(nm[i]);
+      sfree(nm);
+    }
+    sfree(eh);
+    rewind_tpa(fp);
+  }
+  else 
+    fp = open_tpa(fn,mode);
+    
+  return fp;
+}
+
+bool do_energy(int fp,bool bRead,
+	       real *t,int *step,int *nre,t_energy ener[],
+	       t_drblock *drblock)
+{
+  int       i,nre_dum;
+  t_eheader eh;
+
+  if (!bRead) {  
+    eh.t      = *t;
+    eh.step   = *step;
+    eh.nre    = *nre;
+    eh.ndisre = drblock ? (drblock->ndr) : 0;
+    eh.nuser  = 0;
+    eh.e_size = (*nre)*sizeof(ener[0]);
+    eh.d_size = eh.ndisre ? (drblock->ndr*
+		(sizeof(drblock->rav[0])+sizeof(drblock->rt[0]))) : 0;
+    eh.u_size = 0;
+  }
+  select_tpa(fp);
+
+  if (!do_eheader(fp,bRead,&eh))
+    return FALSE;
+  *t    = eh.t;
+  *step = eh.step;
+  *nre  = eh.nre;
+  for(i=0; (i<*nre); i++) {
+    do_real(ener[i].e);
+    do_real(ener[i].eav);
+    do_real(ener[i].esum);
+    do_real(ener[i].e2sum);
+  }
+  if (eh.ndisre) {
+    if (drblock->ndr == 0) {
+      snew(drblock->rav,eh.ndisre);
+      snew(drblock->rt,eh.ndisre);
+      drblock->ndr = eh.ndisre;
+    }
+    ndo_real(drblock->rav,drblock->ndr);
+    ndo_real(drblock->rt,drblock->ndr);
+  }
+  if (eh.u_size) {
+    fatal_error(0,"Can't handle user blocks");
+  }
+  return TRUE;
+}
+
+
 

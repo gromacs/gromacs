@@ -39,30 +39,30 @@ static char *SRCID_gmxcheck_c = "$Id$";
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "fatal.h"
-#include "sheader.h"
-#include "statusio.h"
+#include "gmxfio.h"
+#include "trnio.h"
 #include "xtcio.h"
 #include "tpbcmp.h"
 
-void chk_trj(int ftp,char *fn)
+void chk_trj(char *fn)
 {
-  t_statheader sh,count;
+  t_trnheader  sh,count;
   int          idum,j,natoms,step;
   real         rdum,t,t0,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE;
   rvec         *x;
   matrix       box;
   size_t       fpos;
-  XDR          xd;
-  FILE         *status;
+  int          xd;
+  int          status,ftp;
   
 #define BOGUSTIME -1e10
 
+  ftp    = fn2ftp(fn);
   natoms = 0;  
   t      = 0;
   t0     = BOGUSTIME;
   step   = 0;
-  count.e_size=0;
   count.box_size=0;
   count.vir_size=0;
   count.pres_size=0;
@@ -73,14 +73,14 @@ void chk_trj(int ftp,char *fn)
   printf("Checking file %s\n",fn);
   switch (ftp) {
   case efTRJ:
-    status = ffopen(fn,"r");
-    j=0;
-    t=-1;
-    old_t2=-2.0;
-    old_t1=-1.0;
-    while (!eof(status)) {
-      fpos=ftell(status);
-      rd_header(status,&sh);
+  case efTRR:
+    status = open_trn(fn,"r");
+    j      =  0;
+    t      = -1;
+    old_t2 = -2.0;
+    old_t1 = -1.0;
+    fpos   = fio_ftell(status);
+    while (fread_trnheader(status,&sh)) {
       if (j>=2) {
 	if ( fabs((sh.t-old_t1)-(old_t1-old_t2)) > 
 	     0.1*(fabs(sh.t-old_t1)+fabs(old_t1-old_t2)) ) {
@@ -95,11 +95,9 @@ void chk_trj(int ftp,char *fn)
       fprintf(stderr,"\rframe: %6d, t: %10.3f bytes: %10d",j,sh.t,fpos);
       if (j == 0)
 	fprintf(stderr,"\n");
-      rd_hstatus(status,&sh,&idum,&t,&rdum,NULL,
-		 NULL,NULL,NULL,&natoms,NULL,NULL,NULL,&idum,NULL,NULL);
+      fread_htrn(status,&sh,NULL,NULL,NULL,NULL);
       j++;
 #define INC(s,n,item) if (s.item  != 0) n.item++
-      INC(sh,count,e_size);
       INC(sh,count,box_size);
       INC(sh,count,vir_size);
       INC(sh,count,pres_size);
@@ -107,11 +105,12 @@ void chk_trj(int ftp,char *fn)
       INC(sh,count,v_size);
       INC(sh,count,f_size);
     }
-    fclose(status);
+    close_trn(status);
     t=sh.t;
     break;
   case efXTC:
-    if (read_first_xtc(&xd,fn,&natoms,&step,&t,box,&x,&prec)) {
+    xd = open_xtc(fn,"r");
+    if (read_first_xtc(xd,&natoms,&step,&t,box,&x,&prec)) {
       fprintf(stderr,"\nXTC precision %g\n\n",prec);
       j=0;
       old_t2=-2.0;
@@ -134,8 +133,8 @@ void chk_trj(int ftp,char *fn)
 	count.x_size++;
 	count.box_size++;
 	j++;
-      } while (read_next_xtc(&xd,&natoms,&step,&t,box,x,&prec));
-      close_xtc(&xd);
+      } while (read_next_xtc(xd,&natoms,&step,&t,box,x,&prec));
+      close_xtc(xd);
     }
     else
       fprintf(stderr,"Empty file %s\n",fn);
@@ -238,19 +237,18 @@ void chk_ndx(char *fn)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "gmxcheck reads a binary trajectory ([TT].trj[tt]), ",
+    "gmxcheck reads a binary trajectory ([TT].trj[tt]),  ",
     "a xtc ([TT].xtc[tt]) or an index ([TT].ndx[tt]) file and",
     "prints out useful information about these files",
     "and their contents of course.[PAR]",
-    "The program will compare binary topology ([TT].tpb[tt]) files",
+    "The program will compare binary topology ([TT].tpx[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
   };
   t_filenm fnm[] = {
-    { efTRJ, "-f", NULL, ffOPTRD },
-    { efXTC, "-x", NULL, ffOPTRD },
+    { efTRX, "-f", NULL, ffOPTRD },
     { efNDX, "-n", NULL, ffOPTRD },
-    { efTPB, "-s1", "top1", ffOPTRD },
-    { efTPB, "-s2", "top2", ffOPTRD }
+    { efTPX, "-s1", "top1", ffOPTRD },
+    { efTPX, "-s2", "top2", ffOPTRD }
 
   };
 #define NFILE asize(fnm)
@@ -260,11 +258,8 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,
 		    asize(desc),desc,0,NULL);
   
-  if (ftp2bSet(efTRJ,NFILE,fnm)) {
-    chk_trj(efTRJ,ftp2fn(efTRJ,NFILE,fnm));
-  }
-  if (ftp2bSet(efXTC,NFILE,fnm)) {
-    chk_trj(efXTC,ftp2fn(efXTC,NFILE,fnm));
+  if (ftp2bSet(efTRX,NFILE,fnm)) {
+    chk_trj(ftp2fn(efTRX,NFILE,fnm));
   }
   if (ftp2bSet(efNDX,NFILE,fnm)) {
     chk_ndx(ftp2fn(efNDX,NFILE,fnm));
@@ -274,9 +269,9 @@ int main(int argc,char *argv[])
   if (opt2bSet("-s2",NFILE,fnm))
     fn2=opt2fn("-s2",NFILE,fnm);
   if (fn1 && fn2)
-    comp_tpb(fn1,fn2);
+    comp_tpx(fn1,fn2);
   else if (fn1 || fn2)
-    fprintf(stderr,"Please give me TWO .tpb files!\n");
+    fprintf(stderr,"Please give me TWO .tpr/.tpa/.tpb files!\n");
   
   thanx(stderr);
   

@@ -36,7 +36,6 @@ static char *SRCID_runner_c = "$Id$";
 #include "led.h"
 #include "network.h"
 #include "confio.h"
-#include "binio.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "main.h"
@@ -140,7 +139,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
      */
     if (MASTER(cr)) 
       distribute_parts(cr->left,cr->right,cr->pid,cr->nprocs,parm,
-		       ftp2fn(efTPB,nfile,fnm),nDlb);
+		       ftp2fn(efTPX,nfile,fnm),nDlb);
     
     /* Every processor (including the master) reads the data from the ring */
     init_parts(stdlog,cr,
@@ -150,7 +149,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   }
   else {
     /* Read it up... */
-    init_single(stdlog,parm,ftp2fn(efTPB,nfile,fnm),
+    init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),
 		top,&x,&v,&mdatoms,nsb);
   }
   snew(buf,nsb->natoms);

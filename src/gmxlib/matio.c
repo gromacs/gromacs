@@ -28,6 +28,7 @@
  */
 static char *SRCID_matio_c = "$Id$";
 
+#include <ctype.h>
 #include "sysstuff.h"
 #include "futil.h"
 #include "string2.h"

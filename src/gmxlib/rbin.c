@@ -34,7 +34,7 @@ static char *SRCID_rbin_c = "$Id$";
 #include "rbin.h"
 #include "smalloc.h"
 	
-t_bin *mk_bin()
+t_bin *mk_bin(void)
 {
   t_bin *b;
   

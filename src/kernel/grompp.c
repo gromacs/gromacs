@@ -43,7 +43,6 @@ static char *SRCID_grompp_c = "$Id$";
 #include "topio.h"
 #include "confio.h"
 #include "topcat.h"
-#include "statusio.h"
 #include "copyrite.h"
 #include "readir.h"
 #include "symtab.h"
@@ -56,6 +55,9 @@ static char *SRCID_grompp_c = "$Id$";
 #include "convparm.h"
 #include "fatal.h"
 #include "rdgroup.h"
+#include "gmxfio.h"
+#include "trnio.h"
+#include "tpxio.h"
 
 static void triple_check(t_inputrec *ir,t_topology *sys)
 {
@@ -342,64 +344,40 @@ static void cont_status(char *slog,bool bGenVel, real time,
 			t_topology *sys)
      /* If time == -1 read the last frame available which is complete */
 {
-  FILE         *fp;
-  t_statheader sh;
-  int          nstep,sread;
-  real         t,lambda;
-  bool         bRead;
+  int         fp;
+  int         nstep;
+  real        tt;
+  bool        bRead;
 
+  tt      = ir->init_t;
   fprintf(stderr,
 	  "Reading Coordinates,Velocities and Box size from old trajectory\n");
   if (time == -1)
     fprintf(stderr,"Will read whole trajectory\n");
   else
     fprintf(stderr,"Will read till time %g\n",time);
-  fp=ffopen(slog,"r");
-  rd_header(fp,&sh);
-  if(sys->atoms.nr!=sh.natoms) {
-    fprintf(stderr,"Number of atoms in Topology is not the same as in Trajectory\n");
+  *natoms = read_first_x_v(&fp,slog,&tt,x ,v,box);
+  
+  if(sys->atoms.nr != *natoms) {
+    fprintf(stderr,
+	    "Number of atoms in Topology is not the same as in Trajectory\n");
     exit(0);
   }
 
-  /*
-  snew(*x,sh.natoms*sizeof((*x)[0]));
-  snew(*v,sh.natoms*sizeof((*v)[0]));
-  */
-  snew(*e,sh.nre*sizeof((*e)[0]));
-  
-  /* Now scan until the last set of box, x and v (time == -1)
-   * or the ones at time time.
+  /* Now scan until the last set of box, x and v (step == 0)
+   * or the ones at step step.
    * Or only until box and x if gen_vel is set.
    */
-  sread=0;
-  rewind(fp);
-  while (!eof(fp)) {
-    rd_header(fp,&sh);
-    bRead = (sh.x_size && (sh.v_size || bGenVel) && sh.box_size);
-    rd_hstatus(fp,&sh,&nstep,
-	       &t,
-	       &lambda,
-	       NULL,
-	       bRead ? box : NULL , 
-	       NULL, 
-	       NULL,
-	       natoms,
-	       bRead ? *x : NULL,
-	       (bRead && (!bGenVel)) ? *v : NULL,
-	       NULL,nre,NULL,NULL);
-    fprintf(stderr,"\r Step %d; Time = %6.2f",nstep,t);
-    if (bRead)
-      sread++;
-    if ( (time != -1) && (t >= time) )
+  while (read_next_x_v(fp,&tt,*natoms,*x,*v,box)) {
+    if ( (time != -1) && (tt >= time) )
       break;
   }
-  fclose(fp);
-  if (sread==0) 
-    fatal_error(0,"No valid frames in trajectory.\n");
+  close_trj(fp);
 
   /*change the input record to the actual data*/
-  ir->init_t = t;
-  ir->init_lambda = lambda;
+  ir->init_t = tt;
+  
+  fprintf(stderr,"Read frames from t = %g\n",tt);
 }
 
 static void gen_posres(t_params *pr,char *fn)
@@ -554,14 +532,14 @@ int main (int argc, char *argv[])
   rvec         *x=NULL,*v=NULL;
   matrix       box;
   t_filenm fnm[] = {
-    { efMDP, NULL,  NULL,    ffREAD },
-    { efMDP, "-fo", "mdout", ffWRITE },
-    { efSTX, "-c",  NULL,    ffREAD },
-    { efTOP, NULL,  NULL,    ffREAD },
-    { efNDX, NULL,  NULL,    ffOPTRD },
+    { efMDP, NULL,  NULL,    ffREAD  },
+    { efMDP, "-po", "mdout", ffWRITE },
+    { efSTX, "-c",  NULL,    ffREAD  },
     { efSTX, "-r",  NULL,    ffOPTRD },
-    { efTRJ, "-t",  NULL,    ffOPTRD },
-    { efTPB, "-o",  NULL,    ffWRITE }
+    { efNDX, NULL,  NULL,    ffOPTRD },
+    { efTOP, NULL,  NULL,    ffREAD  },
+    { efTPX, "-o",  NULL,    ffWRITE },
+    { efTRX, "-t",  NULL,    ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -612,7 +590,7 @@ int main (int argc, char *argv[])
   }
 	       
   /* PARAMETER file processing */
-  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-fo",NFILE,fnm),ir,opts);
+  get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),ir,opts);
 
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
@@ -656,22 +634,22 @@ int main (int argc, char *argv[])
   triple_check(ir,&sys);
   close_symtab(&sys.symtab);
 
-  if (ftp2bSet(efTRJ,NFILE,fnm)) {
+  if (ftp2bSet(efTRX,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRJ,NFILE,fnm),opts->bGenVel,time,ir,&natoms,
+    cont_status(ftp2fn(efTRX,NFILE,fnm),opts->bGenVel,time,ir,&natoms,
 		&x,&v,box,&nre,&e,&sys);
   }
   /* This is also necessary for setting the multinr arrays */
   split_top(bVerbose,nprocs,&sys);
 
   if (bVerbose) 
-    fprintf(stderr,"writing statusfile...\n");
+    fprintf(stderr,"writing processed topology...\n");
 
-  write_status(ftp2fn(efTPB,NFILE,fnm),
-	       0,ir->init_t,ir->init_lambda,ir,box,NULL,NULL,
-	       natoms,x,v,NULL,nre,e,&sys);
-
+  write_tpx(ftp2fn(efTPX,NFILE,fnm),
+	    0,ir->init_t,ir->init_lambda,ir,box,
+	    natoms,x,v,NULL,&sys);
+  
   thanx(stdout);
 	       
   return 0;

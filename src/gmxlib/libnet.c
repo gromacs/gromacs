@@ -68,22 +68,22 @@ void gmx_rxs(int pid,void *bufptr,int bufsize)
   MYFATAL("gmx_rxs");
 }
 
-int gmx_cpu_num()
+int gmx_cpu_num(void)
 {
   return 1;
 }
 
-int gmx_cpu_id()
+int gmx_cpu_id(void)
 {
   return 0;
 }
 
-int  get_idle_rec()  					
+int  get_idle_rec(void)  					
 { 
   return 0; 
 }
 
-int  get_idle_send() 					
+int  get_idle_send(void) 					
 { 
   return 0; 
 }

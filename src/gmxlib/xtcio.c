@@ -31,6 +31,7 @@ static char *SRCID_xtcio_c = "$Id$";
 #include <string.h>
 #include "typedefs.h"
 #include "xdrf.h"
+#include "gmxfio.h"
 #include "xtcio.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -39,34 +40,14 @@ static char *SRCID_xtcio_c = "$Id$";
 
 #define XTC_MAGIC 1995
 
-/* 
- * Open XTC file 
- */
-int open_xtc(XDR *xd,char *filename,char *mode)
+int open_xtc(char *fn,char *mode)
 {
-  char *bf;
-  
-  if ((strcmp(mode,"w")==0)&&fexist(filename)) {
-    bf=(char *)backup_fn(filename);
-    if (rename(filename,bf) == 0) {
-      fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",filename,bf);
-    }
-    else
-      fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",filename,bf);
-  }
-  if ( !xdropen(xd,filename,mode) ) {
-    perror(filename);
-    exit(1);
-  }
-  return 0;
+  return fio_open(fn,mode);
 }
 
-/*
- * Close XTC file
- */
-void close_xtc(XDR *xd)
+void close_xtc(int fp)
 {
-  xdrclose(xd);
+  fio_close(fp);
 }
 
 static void check_xtc_magic(int magic)
@@ -137,12 +118,14 @@ static int xtc_io(XDR *xd,int *magic,
   return xtc_coord(xd,natoms,box,x,prec);
 }
 
-int write_xtc(XDR *xd,
+int write_xtc(int fp,
 	      int natoms,int step,real time,
 	      matrix box,rvec *x,real prec)
 {
   int magic_number = XTC_MAGIC;
+  XDR *xd;
   
+  xd = fio_getxdr(fp);
   /* write magic number and xtc identidier */
   if (!xtc_header(xd,&magic_number,&natoms,&step,&time))
     return 0;
@@ -151,14 +134,13 @@ int write_xtc(XDR *xd,
   return xtc_coord(xd,&natoms,box,x,&prec);
 }
 
-int read_first_xtc(XDR *xd,char *filename,
-		   int *natoms,int *step,real *time,
+int read_first_xtc(int fp,int *natoms,int *step,real *time,
 		   matrix box,rvec **x,real *prec)
 {
   int magic;
-
-  /* Open the ecstacy XTC file */
-  open_xtc(xd,filename,"r");
+  XDR *xd;
+  
+  xd = fio_getxdr(fp);
   
   /* read header and malloc x */
   if ( !xtc_header(xd,&magic,natoms,step,time))
@@ -172,12 +154,15 @@ int read_first_xtc(XDR *xd,char *filename,
   return xtc_coord(xd,natoms,box,*x,prec);
 }
 
-int read_next_xtc(XDR *xd,
+int read_next_xtc(int fp,
 		  int *natoms,int *step,real *time,
 		  matrix box,rvec *x,real *prec)
 {
   int magic;
-
+  XDR *xd;
+  
+  xd = fio_getxdr(fp);
+  
   /* read header */
   if ( !xtc_header(xd,&magic,natoms,step,time))
     return 0;

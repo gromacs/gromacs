@@ -34,7 +34,6 @@ static char *SRCID_stat_c = "$Id$";
 #include "sysstuff.h"
 #include "fatal.h"
 #include "network.h"
-#include "statusio.h"
 #include "txtdump.h"
 #include "names.h"
 #include "physics.h"
@@ -51,6 +50,8 @@ static char *SRCID_stat_c = "$Id$";
 #include "rbin.h"
 #include "tgroup.h"
 #include "xtcio.h"
+#include "gmxfio.h"
+#include "trnio.h"
 
 void global_stat(FILE *log,
 		 t_commrec *cr,real ener[],
@@ -176,16 +177,16 @@ void write_traj(FILE *log,t_commrec *cr,
 		int step,real t,real lambda,t_nrnb nrnb[],
 		int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box)
 {
-  static FILE *fp=NULL;
+  static int fp=-1;
   int    i;
   
-  if ((fp == NULL) && MASTER(cr)) {
+  if ((fp == -1) && MASTER(cr)) {
 #ifdef DEBUG
     fprintf(log,"Going to open trajectory file: %s\n",traj);
 #endif
-    fp=ffopen(traj,"w");
+    fp = open_trn(traj,"w");
   }
-
+  
 #define MX(xvf) moveit(log,cr->left,cr->right,#xvf,xvf,nsb)
   if (cr->nprocs > 1) {
     MX(xx);
@@ -193,14 +194,13 @@ void write_traj(FILE *log,t_commrec *cr,
     MX(ff);
   }
   if ((xx || vv || ff) && MASTER(cr)) {
-    wr_status(fp,step,t,lambda,NULL,box,NULL,NULL,
-	      natoms,xx,vv,ff,0,NULL,NULL);
-    fflush(fp);
+    fwrite_trn(fp,step,t,lambda,box,natoms,xx,vv,ff);
+    fio_flush(fp);
   }
 }
 
 /* XDR stuff for compressed trajectories */
-static XDR xd;
+static int xd;
 
 void write_xtc_traj(FILE *log,t_commrec *cr,
 		    char *xtc_traj,t_nsborder *nsb,t_mdatoms *md,
@@ -215,7 +215,7 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
 #ifdef DEBUG
     fprintf(log,"Going to open compressed trajectory file: %s\n",xtc_traj);
 #endif
-    open_xtc(&xd,xtc_traj,"w");
+    xd = open_xtc(xtc_traj,"w");
     
     /* Count the number of atoms in the selection */
     natoms=0;
@@ -245,13 +245,13 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
 	}
       }
     }
-    write_xtc(&xd,natoms,step,t,box,x_sel,prec);
+    write_xtc(xd,natoms,step,t,box,x_sel,prec);
   }
 }
 
 void close_xtc_traj(void)
 {
-  close_xtc(&xd);
+  close_xtc(xd);
 }
 
 

@@ -50,27 +50,28 @@ real gauss (real am, real sd, int *ig)
   real gval;
 
   /* use our own gaussian, or modified boxmuller's ? */
-  if (1) {
-    a = 0;
-    for (i=0; (i<12); i++)
-      a = a + rando (ig);
-    gval = (a-6.0)*sd+am;
+#define STRAND
+#ifdef STRAND
+  a = 0;
+  for (i=0; (i<12); i++)
+    a = a + rando (ig);
+  gval = (a-6.0)*sd+am;
+#else
+  if (!gliset) {
+    do {
+      v1 = 2.0*rando(ig)-1.0;
+      v2 = 2.0*rando(ig)-1.0;
+      r = v1*v1 + v2*v2;
+    } while (r >= 1.0);
+    fac = sqrt (-2*log(r)/r);
+    glgset = v1*fac;
+    gval = v2*fac;
   }
-  else {
-    if (!gliset) {
-      do {
-	v1 = 2.0*rando(ig)-1.0;
-	v2 = 2.0*rando(ig)-1.0;
-	r = v1*v1 + v2*v2;
-      } while (r >= 1.0);
-      fac = sqrt (-2*log(r)/r);
-      glgset = v1*fac;
-      gval = v2*fac;
-    }
-    else 
-      gval = glgset; /* use the spare gaussian  */
-    gliset=!gliset;  /* set the spare indicator */
-  }
+  else 
+    gval = glgset; /* use the spare gaussian  */
+  gliset=!gliset;  /* set the spare indicator */
+#endif
+
   return gval;
 }
 

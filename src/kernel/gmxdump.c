@@ -39,32 +39,99 @@ static char *SRCID_gmxdump_c = "$Id$";
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "fatal.h"
-#include "tconf.h"
 #include "xtcio.h"
-#include "enerio.h"
+#include "enxio.h"
 #include "assert.h"
 #include "smalloc.h"
+#include "gmxfio.h"
+#include "tpxio.h"
+#include "trnio.h"
 
-static void list_file(char *fn)
+static void list_tpx(char *fn)
 {
-  FILE     *fp;
-  char     *version;
-  t_config cf;
+  int         step,natoms,fp;
+  real        t,lambda;
+  rvec        *x,*v,*f;
+  matrix      box;
+  t_inputrec  ir;
+  t_tpxheader tpx;
+  t_topology  top;
+ 
+  read_tpxheader(fn,&tpx);
+  snew(x,tpx.natoms);
+  snew(v,tpx.natoms);
+  snew(f,tpx.natoms);
+  read_tpx(fn,&step,&t,&lambda,
+	   tpx.bIr  ? &ir : NULL,
+	   tpx.bBox ? box : NULL,
+	   &natoms,
+	   tpx.bX   ? x : NULL,
+	   tpx.bV   ? v : NULL,
+	   tpx.bF   ? f : NULL,
+	   tpx.bTop ? &top: NULL);
+  printf("----------- begin of %s ------------\n",fn);
+  fp = open_tpx(NULL,"w");
+  fio_setdebug(fp,TRUE);
+  fwrite_tpx(fp,step,t,lambda,
+	     tpx.bIr  ? &ir : NULL,
+	     tpx.bBox ? box : NULL,
+	     natoms,
+	     tpx.bX   ? x : NULL,
+	     tpx.bV   ? v : NULL,
+	     tpx.bF   ? f : NULL,
+	     tpx.bTop ? &top : NULL);
+  close_tpx(fp);
+  printf("----------- end of %s ------------\n",fn);
+  
+  sfree(x);
+  sfree(v);
+  sfree(f);
+}
 
-  printf("gmxdump: %s\n",fn);
-  fp=ffopen(fn,"r");
-  version=init_configuration(fp,&cf);
-  fprintf(stderr,"version=%s\n",version);
-  do {
-    version=rd_configuration(fp,&cf); 
-    pr_configuration(stdout,0,fn,&cf.data);
-  } while (!eof(fp)); 
-  ffclose(fp);
+static void list_trn(char *fn)
+{
+  int         step,natoms,fpread,fpwrite,nframe;
+  real        t,lambda;
+  rvec        *x,*v,*f;
+  matrix      box;
+  t_trnheader trn;
+
+  fpread  = open_trn(fn,"r"); 
+  fpwrite = open_tpx(NULL,"w");
+  fio_setdebug(fpwrite,TRUE);
+  
+  nframe = 0;
+  while (fread_trnheader(fpread,&trn)) {
+    snew(x,trn.natoms);
+    snew(v,trn.natoms);
+    snew(f,trn.natoms);
+    fread_htrn(fpread,&trn,
+	       trn.box_size ? box : NULL,
+	       trn.x_size   ? x : NULL,
+	       trn.v_size   ? v : NULL,
+	       trn.f_size   ? f : NULL);
+    printf("----------- begin of %s frame %d ------------\n",fn,nframe);
+    fwrite_tpx(fpwrite,trn.step,trn.t,trn.lambda,NULL,
+	       trn.box_size ? box : NULL,
+	       trn.natoms,
+	       trn.x_size   ? x : NULL,
+	       trn.v_size   ? v : NULL,
+	       trn.f_size   ? f : NULL,
+	       NULL);
+    printf("----------- end of %s frame %d ------------\n",fn,nframe);
+    
+    sfree(x);
+    sfree(v);
+    sfree(f);
+    nframe++;
+  }
+  close_tpx(fpwrite);
+  close_trn(fpread);
 }
 
 void list_xtc(char *fn)
 {
-  XDR    xd;
+  int    xd;
   rvec   *x;
   matrix box;
   int    natoms,step;
@@ -72,22 +139,36 @@ void list_xtc(char *fn)
   
   printf("gmxdump: %s\n",fn);
   
-  read_first_xtc(&xd,fn,&natoms,&step,&time,box,&x,&prec);
+  xd = open_xtc(fn,"r");
+  read_first_xtc(xd,&natoms,&step,&time,box,&x,&prec);
 		 
   do {
     printf("natoms=%10d  step=%10d  time=%10g  prec=%10g\n",
 	   natoms,step,time,prec);
     pr_rvecs(stdout,0,"box",box,DIM);
     pr_rvecs(stdout,0,"x",x,natoms);
-  } while (read_next_xtc(&xd,&natoms,&step,&time,box,x,&prec));
+  } while (read_next_xtc(xd,&natoms,&step,&time,box,x,&prec));
   
-  close_xtc(&xd);
+  close_xtc(xd);
+}
+
+void list_trx(char *fn)
+{
+  int ftp;
+  
+  ftp = fn2ftp(fn);
+  if (ftp == efXTC)
+    list_xtc(fn);
+  else if ((ftp == efTRR) || (ftp == efTRJ))
+    list_trn(fn);
+  else
+    fprintf(stderr,"File %s not supported. Try using more %s\n",
+	    fn,fn);
 }
 
 void list_ene(char *fn,bool bEDR)
 {
-  FILE      *in;
-  XDR       xdrs;
+  int       in;
   bool      bCont;
   t_energy  *ener;
   t_drblock drblock;
@@ -96,14 +177,9 @@ void list_ene(char *fn,bool bEDR)
   char      **enm=NULL;
 
   printf("gmxdump: %s\n",fn);
-  if (bEDR) {
-    xdropen(&xdrs,fn,"r");
-    edr_nms(&xdrs,&nre,&enm);
-  }
-  else {
-    in=ffopen(fn,"r");
-    rd_ener_nms(in,&nre,&enm);
-  }
+  in = open_enx(fn,"r");
+  do_enxnms(in,&nre,&enm);
+  
   printf("energy components:\n");
   for(i=0; (i<nre); i++) 
     printf("%5d  %s\n",i,enm[i]);
@@ -112,13 +188,9 @@ void list_ene(char *fn,bool bEDR)
   minthird=-1.0/3.0;
   snew(ener,nre);
   do {
-    if (bEDR) {
-      bCont=edr_io(&xdrs,&t,&step,&nre2,ener,&drblock);
-      assert(nre2==nre);
-    }
-    else
-      bCont=rd_ener(in,&t,&step,ener,&drblock);
-      
+    bCont=do_enx(in,&t,&step,&nre2,ener,&drblock);
+    assert(nre2==nre);
+    
     if (bCont) {
       printf("\n%24s  %12.5e  %12s  %12d\n","time:",t,"step:",step);
       printf("%24s  %12s  %12s  %12s\n",
@@ -135,10 +207,7 @@ void list_ene(char *fn,bool bEDR)
     }
   } while (bCont);
   
-  if (bEDR)
-    xdrclose(&xdrs);
-  else
-    ffclose(in);
+  close_enx(in);
   
   sfree(ener);
   sfree(enm);
@@ -151,19 +220,17 @@ void list_ene(char *fn,bool bEDR)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "rstat reads a binary topology ([BB].tpb[bb]), a"
-    "trajectory ([BB].trj[bb]) an energy ([BB].ene[bb] or [BB].edr[bb])",
+    "gmxdump reads a binary topology ([BB].tpa/,tpr/.tpb[bb]), a"
+    "trajectory ([BB].trn[bb]) an energy ([BB].ene[bb] or [BB].edr[bb])",
     " or a xtc ([BB].xtc[bb]) file and",
     "prints that to standard output in a readable format.",
     "This program is essential for checking your topology",
     "in case of problems.[PAR]",
   };
   t_filenm fnm[] = {
-    { efTPB, "-s", NULL, ffOPTRD },
-    { efXTC, "-x", NULL, ffOPTRD },
-    { efTRJ, "-f", NULL, ffOPTRD },
-    { efENE, "-e", NULL, ffOPTRD },
-    { efEDR, "-d", NULL, ffOPTRD }
+    { efTPX, "-s", NULL, ffOPTRD },
+    { efTRX, "-f", NULL, ffOPTRD },
+    { efENX, "-e", NULL, ffOPTRD },
   };
 #define NFILE asize(fnm)
   
@@ -171,20 +238,14 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,
 		    asize(desc),desc,0,NULL);
   
-  if (ftp2bSet(efTPB,NFILE,fnm)) 
-    list_file(ftp2fn(efTPB,NFILE,fnm));
+  if (ftp2bSet(efTPX,NFILE,fnm)) 
+    list_tpx(ftp2fn(efTPX,NFILE,fnm));
     
-  if (ftp2bSet(efTRJ,NFILE,fnm)) 
-    list_file(ftp2fn(efTRJ,NFILE,fnm));
+  if (ftp2bSet(efTRX,NFILE,fnm)) 
+    list_trx(ftp2fn(efTRX,NFILE,fnm));
   
-  if (ftp2bSet(efXTC,NFILE,fnm)) 
-    list_xtc(ftp2fn(efXTC,NFILE,fnm));
-
-  if (ftp2bSet(efENE,NFILE,fnm))
-    list_ene(ftp2fn(efENE,NFILE,fnm),FALSE);
-    
-  if (ftp2bSet(efEDR,NFILE,fnm))
-    list_ene(ftp2fn(efEDR,NFILE,fnm),TRUE);
+  if (ftp2bSet(efENX,NFILE,fnm))
+    list_ene(ftp2fn(efENX,NFILE,fnm),FALSE);
     
   thanx(stdout);
 

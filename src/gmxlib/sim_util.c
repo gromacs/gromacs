@@ -31,7 +31,6 @@ static char *SRCID_sim_util_c = "$Id$";
 #include <stdio.h>
 #include <time.h>
 #include "typedefs.h"
-#include "statusio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
@@ -70,7 +69,7 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
     dt=(ir->nsteps-step)*time_per_step;
 
     if (dt >= 300) {    
-      finish = end+dt;
+      finish = end+(time_t)dt;
       sprintf(buf,"%s",ctime(&finish));
       buf[strlen(buf)-1]='\0';
       fprintf(out,", will finish at %s",buf);

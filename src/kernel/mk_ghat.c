@@ -40,7 +40,9 @@ static char *SRCID_mk_ghat_c = "$Id$";
 #include "lrutil.h"
 #include "physics.h"
 #include "statutil.h"
+#include "tpxio.h"
 #include "grids.h"
+#include "copyrite.h"
 
 const real tol = 1e-8;
 
@@ -373,8 +375,7 @@ void read_params(char *fn,t_inputrec *ir,rvec boxs)
   matrix box;
   
   /* Read topology and coordinates */
-  read_status(fn,&step,&t,&lambda,ir,box,NULL,NULL,
-	      &natoms,NULL,NULL,NULL,&nre,NULL,NULL);
+  read_tpx(fn,&step,&t,&lambda,ir,box,&natoms,NULL,NULL,NULL,NULL);
   for(m=0; (m<DIM); m++)
     boxs[m] = box[m][m];
 }
@@ -400,7 +401,7 @@ int main(int argc,char *argv[])
   int    i,j,ii,jj,kk,nn;
   t_inputrec ir;
   t_filenm fnm[] = {
-    { efTPB, NULL, NULL,   ffREAD },
+    { efTPX, NULL, NULL,   ffREAD },
     { efHAT, "-o", "ghat", ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -412,7 +413,7 @@ int main(int argc,char *argv[])
   CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
   
-  read_params(ftp2fn(efTPB,NFILE,fnm),&ir,box);
+  read_params(ftp2fn(efTPX,NFILE,fnm),&ir,box);
   acut   = ir.rlong;
   r1     = ir.rshort;
   n1max  = ir.nkx;

@@ -451,7 +451,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
 #endif
 #else
   sign = 1;
-  rlft3f_(cptr,speq,&nx,&ny,&nz,&sign);
+  /*rlft3f_(cptr,speq,&nx,&ny,&nz,&sign);*/
 #endif
   if (bVerbose) {
     (void) print_rgrid(fp,"Qk",nx,ny,nz,grid);
@@ -472,7 +472,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
 #endif
 #else
   sign = -1;
-  rlft3f_(cptr,speq,&nx,&ny,&nz,&sign);
+  /*rlft3f_(cptr,speq,&nx,&ny,&nz,&sign);*/
 #endif
   
   if (bVerbose) {

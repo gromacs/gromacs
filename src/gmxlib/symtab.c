@@ -32,7 +32,6 @@ static char *SRCID_symtab_c = "$Id$";
 #include <string.h>
 #include "sysstuff.h"
 #include "string2.h"
-#include "binio.h"
 #include "assert.h"
 #include "typedefs.h"
 #include "fatal.h"
@@ -119,6 +118,7 @@ static char **enter_buf(t_symtab *symtab,char *name)
 {
   int      i;
   t_symbuf *dummy;
+  bool     bCont;
   
   if (symtab->symbuf == NULL)
     symtab->symbuf=new_symbuf();
@@ -134,11 +134,13 @@ static char **enter_buf(t_symtab *symtab,char *name)
       else if (strcmp(dummy->buf[i],name)==0)
 	return &(dummy->buf[i]);
     }
-    if (dummy->next != NULL)
+    if (dummy->next != NULL) {
       dummy=dummy->next;
+      bCont = TRUE;
+    }
     else
-      break;
-  } while (1);
+      bCont = FALSE;
+  } while (bCont);
 
   dummy->next=new_symbuf();
   dummy=dummy->next;
@@ -163,27 +165,32 @@ void close_symtab(t_symtab *symtab)
 {
 }
 
-void rm_symtab(t_symtab *symtab)
+void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
 {
-  int i;
-  t_symbuf *symbuf,*freeptr;
+  int i,j,nr;
+  t_symbuf *symbuf;
   
-  close_symtab(symtab);
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL)
+  if (available(fp,symtab,title))
     {
-      for (i=0; (i<symbuf->bufsize)&&(i<symtab->nr); i++)
-        sfree(symbuf->buf[i]);
-      symtab->nr-=i;
-      sfree(symbuf->buf);
-      freeptr=symbuf;
-      symbuf=symbuf->next;
-      sfree(freeptr);
+      indent=pr_title_n(fp,indent,title,symtab->nr);
+      i=0;
+      nr=symtab->nr;
+      symbuf=symtab->symbuf;
+      while (symbuf!=NULL)
+        {
+          for (j=0; (j<symbuf->bufsize)&&(j<nr); j++)
+            {
+              pr_indent(fp,indent);
+              (void) fprintf(fp,"%s[%d]=\"%s\"\n",title,i++,symbuf->buf[j]);
+            }
+          nr-=j;
+          symbuf=symbuf->next;
+        }
+      assert(nr==0);
     }
-  symtab->symbuf=NULL;
-  assert(symtab->nr==0);
 }
 
+/* OLD STUFF
 long wr_symtab(FILE *fp,t_symtab *symtab)
 {
   int i,nr,len;
@@ -229,27 +236,4 @@ long rd_symtab(FILE *fp,t_symtab *symtab)
   return (ftell(fp)-fpos);
 }
 
-void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
-{
-  int i,j,nr;
-  t_symbuf *symbuf;
-  
-  if (available(fp,symtab,title))
-    {
-      indent=pr_title_n(fp,indent,title,symtab->nr);
-      i=0;
-      nr=symtab->nr;
-      symbuf=symtab->symbuf;
-      while (symbuf!=NULL)
-        {
-          for (j=0; (j<symbuf->bufsize)&&(j<nr); j++)
-            {
-              pr_indent(fp,indent);
-              (void) fprintf(fp,"%s[%d]=\"%s\"\n",title,i++,symbuf->buf[j]);
-            }
-          nr-=j;
-          symbuf=symbuf->next;
-        }
-      assert(nr==0);
-    }
-}
+*/

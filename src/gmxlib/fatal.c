@@ -37,6 +37,7 @@ static char *SRCID_fatal_c = "$Id$";
 #include "main.h"
 #include "network.h"
 #include "fatal.h"
+#include "macros.h"
 
 static bool bDebug = FALSE;
 
@@ -308,20 +309,33 @@ static void user_routine(unsigned us[5], int ii[2])
 static void abort_routine(unsigned int **ii)
 {
   fprintf(stderr,"Abort routine\n");
-  exit(1);
+  abort();
+}
+
+static void handle_signals(int n)
+{
+  fprintf(stderr,"Handle signals: n = %d\n",n);
+  fprintf(stderr,"Dumping core\n");
+  abort();
 }
 
 #ifdef USE_SGI_FPE
 void doexceptions()
 {
 #include <sigfpe.h>
-  int onoff,en_mask,abort_action;
+#include <signal.h>
+  int hs[] = { SIGILL, SIGFPE, SIGTRAP, SIGEMT, SIGSYS };
+  
+  int onoff,en_mask,abort_action,i;
   
   onoff   = _DEBUG;
   en_mask = _EN_UNDERFL | _EN_OVERFL | _EN_DIVZERO | 
     _EN_INVALID | _EN_INT_OVERFL;
   abort_action = _ABORT_ON_ERROR;
   handle_sigfpes(onoff,en_mask,user_routine,abort_action,abort_routine);
+  
+  for(i=0; (i<asize(hs)); i++)
+    signal(hs[i],handle_signals);
 }
 #endif
 #endif

@@ -33,13 +33,16 @@ static char *SRCID_trxio_c = "$Id$";
 #include "string2.h"
 #include "smalloc.h"
 #include "pbc.h"
-#include "statusio.h"
 #include "statutil.h"
+#include "gmxfio.h"
+#include "trnio.h"
 #include "names.h"
 #include "vec.h"
 #include "futil.h"
+#include "gmxfio.h"
 #include "xtcio.h"
 #include "pdbio.h"
+#include "confio.h"
 
 /* defines for frame counter output */
 static int frame=-666;
@@ -58,22 +61,23 @@ static int         NATOMS;
 static double      DT,BOX[3];
 static bool        bReadBox;
 
-static bool gmx_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
+static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   real lambda,pt;
   int  step,nre,ct;
   bool bB,bX;
   
-  while (!eof(status)) {
-    rd_header(status,&sh);
-    bX=sh.x_size;
-    bB=sh.box_size;
-    pt=*t;
-    rd_hstatus(status,&sh,&step,t,&lambda,NULL,
-	       bB ? box : NULL,NULL,NULL,&sh.natoms,
-	       bX ? x : NULL,NULL,NULL,
-	       &nre,NULL,NULL);
+  while (fread_trnheader(status,&sh)) {
+    bX = sh.x_size;
+    bB = sh.box_size;
+    pt = *t;
+    *t = sh.t;
+    fread_htrn(status,&sh,
+	       bB ? box : NULL,
+	       bX ? x : NULL,
+	       NULL,
+	       NULL);
     if (ct=check_times(*t)==0) {
       PRINTREAD(*t);
       if (bB)
@@ -91,26 +95,24 @@ static bool gmx_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
   return FALSE;    
 }
 
-static bool gmx_next_x_or_v(FILE *status,real *t,int natoms,
+static bool gmx_next_x_or_v(int status,real *t,int natoms,
 			    rvec x[],rvec v[],matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   real lambda,pt;
   int  i,d,step,nre,ct;
   bool bB,bX,bV;
     
-  while (!eof(status)) {
-    rd_header(status,&sh);
+  while (fread_trnheader(status,&sh)) {
     bX=sh.x_size;
     bV=sh.v_size;
     bB=sh.box_size;
     pt=*t;
-    rd_hstatus(status,&sh,&step,t,&lambda,NULL,
+    fread_htrn(status,&sh,
 	       bB ? box : NULL,
-	       NULL,NULL,&sh.natoms,
 	       bX ? x : NULL,
 	       bV ? v : NULL,
-	       NULL,&nre,NULL,NULL);
+	       NULL);
 	       
     if (ct=check_times(*t)==0) {
       PRINTREAD(*t);
@@ -137,28 +139,26 @@ static bool gmx_next_x_or_v(FILE *status,real *t,int natoms,
   PRINTLAST(pt);
   return FALSE;    
 }
-
-static bool gmx_next_x_v(FILE *status,real *t,int natoms,
+  
+static bool gmx_next_x_v(int status,real *t,int natoms,
 			 rvec x[],rvec v[],matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   real lambda,pt;
   int  step,nre,ct;
   bool bB,bX,bV;
     
-  while (!eof(status)) {
-    rd_header(status,&sh);
+  while (fread_trnheader(status,&sh)) {
     bX=sh.x_size;
     bV=sh.v_size;
     bB=sh.box_size;
     pt=*t;
-    rd_hstatus(status,&sh,&step,t,&lambda,NULL,
+    fread_htrn(status,&sh,
 	       bB ? box : NULL,
-	       NULL,NULL,&sh.natoms,
 	       bX ? x : NULL,
 	       bV ? v : NULL,
-	       NULL,&nre,NULL,NULL);
-	       
+	       NULL);
+    
     if (ct=check_times(*t)==0) {
       PRINTREAD(*t);
       if (bB)
@@ -176,16 +176,16 @@ static bool gmx_next_x_v(FILE *status,real *t,int natoms,
   return FALSE;    
 }
 
-static int gmx_first_x(FILE *status, real *t, rvec **x, matrix box)
+static int gmx_first_x(int status, real *t, rvec **x, matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   
   INITCOUNT;
 
-  fprintf(stderr,"\nReading statusfile, version: %s\n",rd_header(status,&sh));
-
+  fread_trnheader(status,&sh);
+  
   snew(*x,sh.natoms);
-  frewind(status);
+  rewind_trj(status);
   if (!gmx_next_x(status,t,sh.natoms,*x,box)) {
     fprintf(stderr,"No coordinates in trajectory\n");
     exit(1);
@@ -194,35 +194,34 @@ static int gmx_first_x(FILE *status, real *t, rvec **x, matrix box)
   return sh.natoms;
 }
 
-static int gmx_first_x_v(FILE *status, real *t, rvec **x,rvec **v,matrix box)
+static int gmx_first_x_v(int status, real *t, rvec **x,rvec **v,matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   
   INITCOUNT;
-
-  fprintf(stderr,"\nReading statusfile, version: %s\n",rd_header(status,&sh));
+  
+  fread_trnheader(status,&sh);
   snew(*x,sh.natoms);
   snew(*v,sh.natoms);
-  frewind(status);
+  rewind_trj(status);
   if (!gmx_next_x_v(status,t,sh.natoms,*x,*v,box)) {
     fprintf(stderr,"No coordinates and velocities in trajectory\n");
     exit(1);
   }
-
+  
   return sh.natoms;
 }
 
-static int gmx_first_x_or_v(FILE *status, real *t, 
-			    rvec **x,rvec **v,matrix box)
+static int gmx_first_x_or_v(int status, real *t,rvec **x,rvec **v,matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   
   INITCOUNT;
-
-  fprintf(stderr,"\nReading statusfile, version: %s\n",rd_header(status,&sh));
+  
+  fread_trnheader(status,&sh);
   snew(*x,sh.natoms);
   snew(*v,sh.natoms);
-  frewind(status);
+  rewind_trj(status);
   if (!gmx_next_x_or_v(status,t,sh.natoms,*x,*v,box)) {
     fprintf(stderr,"No coordinates and velocities in trajectory\n");
     exit(1);
@@ -424,48 +423,29 @@ static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
 
 /***** C O O R D I N A T E   S T U F F *****/
 
-typedef struct {
-  int  ftp;
-  char *fn;
-  FILE *fp;
-  XDR  xd;
-} t_trjf;
-
-static t_trjf *trjf=NULL;
-static int    ntrjf=0;
-
 int read_first_x(int *status,char *fn,
 		 real *t,rvec **x,matrix box)
 {
+  int  fp;
   char buf[256];
-  int  natoms,step,ftp;
+  int  natoms,step;
   real prec;
 
   INITCOUNT;
   
-  ftp=fn2ftp(fn);
-  *status=ntrjf;
-  srenew(trjf,ntrjf+1);
-  trjf[ntrjf].ftp=ftp;
-  trjf[ntrjf].fn=strdup(fn);
-  ntrjf++;
+  fp = *status =fio_open(fn,"r");
 
-  switch (ftp) {
+  switch (fio_getftp(fp)) {
   case efTRJ:
-    trjf[ntrjf-1].fp=ffopen(fn,"r");
-    natoms=gmx_first_x(trjf[ntrjf-1].fp,t,x,box);
-    break;
+  case efTRR:
   case efMTX:
-    trjf[ntrjf-1].fp=ffopen(fn,"r");
-    natoms=gmx_first_x(trjf[ntrjf-1].fp,t,x,box);
+    natoms=gmx_first_x(fp,t,x,box);
     break;
   case efG87:
-    trjf[ntrjf-1].fp=ffopen(fn,"r");
-    natoms=xyz_first_x(trjf[ntrjf-1].fp,t,x,box);
+    natoms=xyz_first_x(fio_getfp(fp),t,x,box);
     break;
   case efXTC:
-    if (read_first_xtc(&(trjf[ntrjf-1].xd),fn,
-		       &natoms,&step,t,box,x,&prec) == 0)
+    if (read_first_xtc(fp,&natoms,&step,t,box,x,&prec) == 0)
       fatal_error(0,"No XTC!\n");
     if (check_times(*t) < 0)
       if (!read_next_x(*status,t,natoms,*x,box))
@@ -473,17 +453,15 @@ int read_first_x(int *status,char *fn,
     PRINTREAD(*t);
     break;
   case efPDB:
-    trjf[ntrjf-1].fp=ffopen(fn,"r");
-    natoms=pdb_first_x(trjf[ntrjf-1].fp,t,x,box);
+    natoms=pdb_first_x(fio_getfp(fp),t,x,box);
     break;
   case efGRO:
-    trjf[ntrjf-1].fp=ffopen(fn,"r");
-    natoms=gro_first_x(trjf[ntrjf-1].fp,t,x,box);
+    natoms=gro_first_x(fio_getfp(fp),t,x,box);
     break;
   default:
     fatal_error(0,"Not supported in read_first_x: %s",fn);
   }
-
+  
   return natoms;
 }
 
@@ -492,19 +470,16 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
   int step,ct;
   real prec,pt;
   
-  if (status >= ntrjf)
-    fatal_error(0,"File %d not opened yet... (call read_first_x)",status);
-    
-  switch (trjf[status].ftp) {
+  switch (fio_getftp(status)) {
   case efTRJ:
-    return gmx_next_x(trjf[status].fp,t,natoms,x,box);
+  case efTRR:
   case efMTX:
-    return gmx_next_x(trjf[status].fp,t,natoms,x,box);
+    return gmx_next_x(status,t,natoms,x,box);
   case efG87:
-    return xyz_next_x(trjf[status].fp,t,natoms,x,box);
+    return xyz_next_x(fio_getfp(status),t,natoms,x,box);
   case efXTC:
     pt=*t;
-    while (read_next_xtc(&(trjf[status].xd),&natoms,&step,t,box,x,&prec)) {
+    while (read_next_xtc(status,&natoms,&step,t,box,x,&prec)) {
       if ((ct=check_times(*t)) == 0) {
 	PRINTREAD(*t);
 	init_pbc(box,FALSE);  
@@ -520,10 +495,10 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
     PRINTLAST(pt);
     return FALSE;
   case efPDB:
-    return pdb_next_x(trjf[status].fp,t,natoms,x,box);
+    return pdb_next_x(fio_getfp(status),t,natoms,x,box);
   case efGRO:
     pt=*t;
-    if (gro_next_x(trjf[status].fp,t,natoms,x,box)) {
+    if (gro_next_x(fio_getfp(status),t,natoms,x,box)) {
       PRINTREAD(*t);
       return TRUE;
     } else {
@@ -531,94 +506,47 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
       return FALSE;
     }
   default:
-    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x ftp=%d,status=%d",
-		trjf[status].ftp,status);
+    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x ftp=%s,status=%d",
+		ftp2ext(fio_getftp(status)),status);
   }
   return FALSE;
 }
 
 void close_trj(int status)
 {
-  if (status >= ntrjf)
-    fatal_error(0,"File %d not opened yet... (call read_first_x)",status);
-    
-  switch (trjf[status].ftp) {
-  case efTRJ:
-  case efMTX:
-  case efG87:
-  case efPDB:
-  case efGRO:
-    fclose(trjf[status].fp);
-    break;
-  case efXTC:
-    xdrclose(&trjf[status].xd);
-    break;
-  default:
-    fatal_error(0,"\nDeath HORROR in close_trj ftp=%d",trjf[status].ftp);
-  }
-  trjf[status].ftp=-1;
+  fio_close(status);
 }
 
 void rewind_trj(int status)
 {
-  char buf[256];
-  
   INITCOUNT;
   
-  if (status >= ntrjf)
-    fatal_error(0,"File %d not opened yet... (call read_first_x)",status);
-  
-  switch (trjf[status].ftp) {
-  case efTRJ:
-    frewind(trjf[status].fp);
-    break;
-  case efG87:
-    frewind(trjf[status].fp);
-    fgets2(buf,254,trjf[status].fp);
-    break;
-  case efXTC:
-    xdrclose(&trjf[status].xd);
-    xdropen(&trjf[status].xd,trjf[status].fn,"r");
-    break;
-  case efPDB:
-    frewind(trjf[status].fp);
-    break;
-  default:
-    fatal_error(0,"\nDeath HORROR in rewind_trj ftp=%d",trjf[status].ftp);
-  }
+  fio_rewind(status);
 }
 
 /***** V E L O C I T Y   S T U F F *****/
 
 int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   real lambda;
-  int  step,nre,natoms;
+  int  fp,step,nre,natoms;
 
   INITCOUNT;
   
-  *status=ntrjf;
-  srenew(trjf,ntrjf+1);
-  trjf[ntrjf].ftp=fn2ftp(fn);
-  trjf[ntrjf].fn=strdup(fn);
-  trjf[ntrjf].fp=ffopen(fn,"r");
-  ntrjf++;
+  fp = *status = fio_open(fn,"r");
   
-  switch (trjf[ntrjf-1].ftp) {
+  switch (fio_getftp(fp)) {
   case efTRJ:
-    fprintf(stderr,"Reading trj file, version: %s\n",
-	    rd_header(trjf[ntrjf-1].fp,&sh));
+  case efTRR:
+    fread_trnheader(fp,&sh);
     snew(*v,sh.natoms);
-    rd_hstatus(trjf[ntrjf-1].fp,
-	       &sh,&step,t,&lambda,NULL,NULL,NULL,NULL,
-	       &sh.natoms,NULL,*v,NULL,
-	       &nre,NULL,NULL);
+    fread_htrn(fp,&sh,NULL,NULL,*v,NULL);
     return sh.natoms;
   case efGRO:
-    return gro_first_v(trjf[ntrjf-1].fp,t,v,box);
+    return gro_first_v(fio_getfp(fp),t,v,box);
   default:
-    fatal_error(0,"Not supported in read_first_v: %s",trjf[ntrjf-1].fn);
+    fatal_error(0,"Not supported in read_first_v: %s",fn);
   }
     
   return 0;
@@ -626,23 +554,17 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
 
 bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
 {
-  t_statheader sh;
+  t_trnheader sh;
   real lambda,pt;
   int  step,nre;
   bool bV;
 
-  if (status >= ntrjf)
-    fatal_error(0,"File %d not opened yet... (call read_first_*)",status);
-    
-  switch (trjf[status].ftp) {
+  switch (fio_getftp(status)) {
   case efTRJ:
-    while (!eof(trjf[status].fp)) {
-      rd_header(trjf[status].fp,&sh);
+  case efTRR:
+    while (fread_trnheader(status,&sh)) {
       bV=sh.v_size;
-      rd_hstatus(trjf[status].fp,
-		 &sh,&step,t,&lambda,NULL,NULL,NULL,NULL,
-		 &sh.natoms,NULL,bV ? v : NULL,NULL,
-		 &nre,NULL,NULL);
+      fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL);
       if ((check_times(*t)==0) && (bV))
 	return TRUE;
       if (check_times(*t) > 0)
@@ -652,7 +574,7 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
     break;
   case efGRO: 
     pt=*t;
-    if (gro_next_v(trjf[status].fp,t,natoms,v,box)) {
+    if (gro_next_v(fio_getfp(status),t,natoms,v,box)) {
       PRINTREAD(*t);
       return TRUE;
     } else {
@@ -660,8 +582,8 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
       return FALSE;
     }
   default:
-    fatal_error(0,"DEATH HORROR in read_next_v: ftp=%d,status=%d",
-		trjf[status].ftp,status);
+    fatal_error(0,"DEATH HORROR in read_next_v: ftp=%s,status=%d",
+		ftp2ext(fio_getftp(status)),status);
   }
   
   return FALSE;
@@ -674,27 +596,23 @@ int read_first_x_v(int *status,char *fn,
 		   real *t,rvec **x,rvec **v,matrix box)
 {
   char buf[256];
-  int  natoms,step,ftp;
+  int  fp,natoms,step,ftp;
   real prec;
   
   INITCOUNT;
 
-  *status=ntrjf;
-  srenew(trjf,ntrjf+1);
-  trjf[ntrjf].ftp=fn2ftp(fn);
-  trjf[ntrjf].fn=strdup(fn);
-  trjf[ntrjf].fp=ffopen(fn,"r");
-  ntrjf++;
+  fp = *status = fio_open(fn,"r");
 
-  switch (trjf[ntrjf-1].ftp) {
+  switch (fio_getftp(fp)) {
   case efTRJ:
-    natoms=gmx_first_x_v(trjf[ntrjf-1].fp,t,x,v,box);
+  case efTRR:
+    natoms=gmx_first_x_v(fp,t,x,v,box);
     break;
   case efGRO:
-    natoms=gro_first_x_v(trjf[ntrjf-1].fp,t,x,v,box);
+    natoms=gro_first_x_v(fio_getfp(fp),t,x,v,box);
     break;
   default:
-    fatal_error(0,"Not supported in read_first_x_v: %s",trjf[ntrjf-1].fn);
+    fatal_error(0,"Not supported in read_first_x_v: %s",fn);
   }
 
   return natoms;
@@ -706,15 +624,13 @@ bool read_next_x_v(int status,real *t, int natoms,
   int step,ct;
   real prec,pt;
   
-  if (status >= ntrjf)
-    fatal_error(0,"File %d not opened yet... (call read_first_*)",status);
-    
-  switch (trjf[status].ftp) {
+  switch (fio_getftp(status)) {
   case efTRJ:
-    return gmx_next_x_v(trjf[status].fp,t,natoms,x,v,box);
+  case efTRR:
+    return gmx_next_x_v(status,t,natoms,x,v,box);
   case efGRO: 
     pt=*t;
-    if (gro_next_x_v(trjf[status].fp,t,natoms,x,v,box)) {
+    if (gro_next_x_v(fio_getfp(status),t,natoms,x,v,box)) {
       PRINTREAD(*t);
       return TRUE;
     } else {
@@ -722,8 +638,8 @@ bool read_next_x_v(int status,real *t, int natoms,
       return FALSE;
     }
   default:
-    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x_v ftp=%d,status=%d",
-		trjf[status].ftp,status);
+    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x_v ftp=%s,status=%d",
+		ftp2ext(fio_getftp(status)),status);
   }
   return FALSE;
 }
@@ -732,27 +648,23 @@ int read_first_x_or_v(int *status,char *fn,
 		   real *t,rvec **x,rvec **v,matrix box)
 {
   char buf[256];
-  int  natoms,step,ftp;
+  int  fp,natoms,step,ftp;
   real prec;
   
   INITCOUNT;
 
-  *status=ntrjf;
-  srenew(trjf,ntrjf+1);
-  trjf[ntrjf].ftp=fn2ftp(fn);
-  trjf[ntrjf].fn=strdup(fn);
-  trjf[ntrjf].fp=ffopen(fn,"r");
-  ntrjf++;
+  fp = *status = fio_open(fn,"r");
 
-  switch (trjf[ntrjf-1].ftp) {
+  switch (fio_getftp(fp)) {
   case efTRJ:
-    natoms=gmx_first_x_or_v(trjf[ntrjf-1].fp,t,x,v,box);
+  case efTRR:
+    natoms=gmx_first_x_or_v(fp,t,x,v,box);
     break;
   case efGRO:
-    natoms=gro_first_x_or_v(trjf[ntrjf-1].fp,t,x,v,box);
+    natoms=gro_first_x_or_v(fio_getfp(fp),t,x,v,box);
     break;
   default:
-    fatal_error(0,"Not supported in read_first_x_or_v: %s",trjf[ntrjf-1].fn);
+    fatal_error(0,"Not supported in read_first_x_or_v: %s",fn);
   }
 
   return natoms;
@@ -763,16 +675,14 @@ bool read_next_x_or_v(int status,real *t, int natoms,
 {
   int step,ct;
   real prec,pt;
-  
-  if (status >= ntrjf)
-    fatal_error(0,"File %d not opened yet... (call read_first_*)",status);
-    
-  switch (trjf[status].ftp) {
+
+  switch (fio_getftp(status)) {
   case efTRJ:
-    return gmx_next_x_or_v(trjf[status].fp,t,natoms,x,v,box);
+  case efTRR:
+    return gmx_next_x_or_v(status,t,natoms,x,v,box);
   case efGRO:
     pt=*t;
-    if (gro_next_x_or_v(trjf[status].fp,t,natoms,x,v,box)) {
+    if (gro_next_x_or_v(fio_getfp(status),t,natoms,x,v,box)) {
       PRINTREAD(*t);
       return TRUE;
     } else {
@@ -780,8 +690,8 @@ bool read_next_x_or_v(int status,real *t, int natoms,
       return FALSE;
     }
   default:
-    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x_or_v ftp=%d,status=%d",
-		trjf[status].ftp,status);
+    fatal_error(0,"\nDEATH HORROR ERROR in read_next_x_or_v ftp=%s,status=%d",
+		ftp2ext(fio_getftp(status)),status);
   }
   return FALSE;
 }

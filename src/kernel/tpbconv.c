@@ -29,6 +29,7 @@
 static char *SRCID_tpbconv_c = "$Id$";
 
 #include <math.h>
+#include "rdgroup.h"
 #include "fatal.h"
 #include "string2.h"
 #include "sysstuff.h"
@@ -36,7 +37,8 @@ static char *SRCID_tpbconv_c = "$Id$";
 #include "macros.h"
 #include "names.h"
 #include "typedefs.h"
-#include "statusio.h"
+#include "tpxio.h"
+#include "trnio.h"
 #include "readir.h"
 #include "statutil.h"
 #include "copyrite.h"
@@ -219,26 +221,27 @@ static void reduce_topology_x(int gnx,atom_id index[],
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
-    "tpbconv can edit tpb files in multiple ways.[PAR]"
+    "tpbconv can edit tpx files in multiple ways.[PAR]"
     "[BB]1st.[bb] by creating a binary topology file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation topology.",
     "Note that both velocities and coordinates are needed,",
     "which means that when you never write velocities, you can not use",
     "tpbconv and you have to start the run again from the beginning.[PAR]",
-    "[BB]2nd.[bb] by creating a tpb file for a subset of your original",
-    "tpb file, which is useful when you want to remove the solvent from",
-    "your tpb file, or when you want to make e.g. a pure Ca tpb file.",
-    "[BB]WARNING: this tpb file is not fully functional[bb].[PAR]",
+    "[BB]2nd.[bb] by creating a tpx file for a subset of your original",
+    "tpx file, which is useful when you want to remove the solvent from",
+    "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
+    "[BB]WARNING: this tpx file is not fully functional[bb].[PAR]",
     "[BB]3rd.[bb] If the optional mdp file is [BB]explicitly[bb] given, ",
     "the inputrec",
     "will be read from there, and some options may be overruled this way.",
-    "Note that this is a fast way to make a continuation tpb",
+    "Note that this is a fast way to make a continuation tpx",
     "as the topology does not have to be processed again."
   };
 
-  FILE         *fp;
-  t_statheader sh;
+  char         *fn;
+  int          fp;
+  t_tpxheader  tpx;
   int          i,nstep,step0,natoms,nre;
   real         t,lambda,t0,l0;
   bool         bRead,bOnce,bCont;
@@ -253,9 +256,9 @@ int main (int argc, char *argv[])
   t_filenm fnm[] = {
     { efMDP, "-pi",  NULL,   ffOPTRD },
     { efMDP, "-po", "mdout", ffOPTWR },
-    { efTRJ, "-f",  NULL,    ffOPTRD },
-    { efTPB, NULL,  NULL,    ffREAD  },
-    { efTPB, "-o",  "tpbout",ffWRITE },
+    { efTRX, "-f",  NULL,    ffOPTRD },
+    { efTPX, NULL,  NULL,    ffREAD  },
+    { efTPX, "-o",  "tpxout",ffWRITE },
     { efNDX, NULL,  NULL,    ffOPTRD },
   };
 #define NFILE asize(fnm)
@@ -275,18 +278,16 @@ int main (int argc, char *argv[])
 		    asize(desc),desc,0,NULL);
 
   bSel = (bSel || ftp2bSet(efNDX,NFILE,fnm));
-		      
-  printf("Reading toplogy and shit from %s\n",ftp2fn(efTPB,NFILE,fnm));
-  fp=ftp2FILE(efTPB,NFILE,fnm,"r");
-  rd_header(fp,&sh);
-  snew(x,sh.natoms);
-  snew(v,sh.natoms);
+  
+  fn = ftp2fn(efTPX,NFILE,fnm);
+  printf("Reading toplogy and shit from %s\n",fn);
+  
+  read_tpxheader(fn,&tpx);
+  snew(x,tpx.natoms);
+  snew(v,tpx.natoms);
   snew(ir,1);
-  printf("Version: %s\n",
-	 rd_hstatus(fp,&sh,&nstep,&t,&lambda,ir,box,NULL,NULL,&natoms,
-		    x,v,NULL,&nre,NULL,&top));
-  fclose(fp);
-	 
+  read_tpx(fn,&nstep,&t,&lambda,ir,box,&natoms,x,v,NULL,&top);
+  
   bCont=(ftp2bSet(efMDP,NFILE,fnm));
   if (bCont) {
     printf("Reading new inputrec from %s\n",ftp2fn(efMDP,NFILE,fnm));
@@ -295,56 +296,36 @@ int main (int argc, char *argv[])
     snew(irnew,1);
     snew(gopts,1);
     init_ir(irnew,gopts);
-  
+    
     /* PARAMETER file processing */
     get_ir(ftp2fn(efMDP,NFILE,fnm),opt2fn("-po",NFILE,fnm),irnew,gopts);
   }
   
-  if (ftp2bSet(efTRJ,NFILE,fnm)) {
-    printf("\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
-	   ftp2fn(efTRJ,NFILE,fnm));
+  if (ftp2bSet(efTRX,NFILE,fnm)) {
+    fn = ftp2fn(efTRX,NFILE,fnm);
+    printf("\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",fn);
     
-    fp=ftp2FILE(efTRJ,NFILE,fnm,"r");
-    rd_header(fp,&sh);
-    if (top.atoms.nr != sh.natoms) 
+    sfree(x);
+    sfree(v);
+    natoms = read_first_x_v(&fp,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
+
+    if (top.atoms.nr != natoms) 
       fatal_error(0,"Number of atoms in Topology (%d) "
 		  "is not the same as in Trajectory (%d)\n",
-		  top.atoms.nr,sh.natoms);
+		  top.atoms.nr,natoms);
     
     /* Now scan until the last set of x and v (step == 0)
      * or the ones at step step.
      */
-    rewind(fp);
-    bOnce=FALSE;
-    while (!eof(fp)) {
-      rd_header(fp,&sh);
-      bRead = (sh.x_size && sh.v_size && sh.box_size);
-      bOnce = bOnce || bRead;
-      rd_hstatus(fp,&sh,
-		 bRead ? &nstep  : &step0,
-		 bRead ? &t      : &t0,
-		 bRead ? &lambda : &l0,
-		 NULL,
-		 bRead ? box : NULL , 
-		 NULL, 
-		 NULL,
-		 &natoms,
-		 bRead ? x : NULL,
-		 bRead ? v : NULL,
-		 NULL,&nre,NULL,NULL);
-      fprintf(stderr,"\r Time = %6.2f",t);
+    while (read_next_x_v(fp,&t,natoms,x,v,box)) {
       if ((max_t != -1.0) && (t >= max_t))
 	break;
     }
-    fclose(fp);
+    close_trj(fp);
     fprintf(stderr,"\n");
-    if (!bOnce)
-      fatal_error(0,"\nThere are no simultaneous velocities and "
-		  "coordinates in %s\n*** I CAN NOT CREATE %s ***\n\n",
-		  ftp2fn(efTRJ,NFILE,fnm),opt2fn("-o",NFILE,fnm));
   } else 
-    printf("\nUSING COORDS, VELS AND BOX FROM TPB FILE %s...\n\n",
-	   ftp2fn(efTPB,NFILE,fnm));
+    printf("\nUSING COORDS, VELS AND BOX FROM TPX FILE %s...\n\n",
+	   ftp2fn(efTPX,NFILE,fnm));
   
   /* change the input record to the actual data */
   if (bCont) {
@@ -362,25 +343,25 @@ int main (int argc, char *argv[])
     ir->init_lambda = lambda;
   }
   
-  if (!ftp2bSet(efTRJ,NFILE,fnm)) {
+  if (!ftp2bSet(efTRX,NFILE,fnm)) {
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 	      &gnx,&index,&grpname);
     bSel=(gnx!=natoms);
     for (i=0; ((i<gnx) && (!bSel)); i++)
       bSel = (i!=index[i]);
     if (bSel) {
-      fprintf(stderr,"Will write subset %s of original tpb containg %d "
+      fprintf(stderr,"Will write subset %s of original tpx containg %d "
 	      "atoms\n",grpname,gnx);
       reduce_topology_x(gnx,index,&top,x,v);
       natoms = gnx;
     } else
-      fprintf(stderr,"Will write full tpb file (no selection)\n");
+      fprintf(stderr,"Will write full tpx file (no selection)\n");
   }    
   
   printf("writing statusfile with starting time %g...\n",ir->init_t);
-  write_status(opt2fn("-o",NFILE,fnm),
-	       0,ir->init_t,ir->init_lambda,ir,box,NULL,NULL,
-	       natoms,x,v,NULL,nre,NULL,&top);
+  write_tpx(opt2fn("-o",NFILE,fnm),
+	    0,ir->init_t,ir->init_lambda,ir,box,
+	    natoms,x,v,NULL,&top);
   thanx(stdout);
   
   return 0;

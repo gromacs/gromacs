@@ -62,10 +62,9 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
 
   in=libopen(inf);
     
-  do {
-    if (fscanf(in,"%s",bname) != 1) break;
-    
+  while (fscanf(in,"%s",bname) == 1) {
     srenew(tb,nb+1);
+    
     /* Name of block */
     tb[nb].bname=strdup(bname);
     
@@ -107,7 +106,7 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
       tb[nb].nm_del[i]=strdup(nnew);
     }
     nb++;
-  } while (1);
+  } 
   
   fclose(in);
 

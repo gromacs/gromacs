@@ -36,7 +36,6 @@ static char *SRCID_congrad_c = "$Id$";
 #include "led.h"
 #include "network.h"
 #include "confio.h"
-#include "binio.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "nrnb.h"
@@ -81,14 +80,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   rvec   *xx,*ff,box_size;
   real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,gpa,gpb;
   real   vcm[4],fnorm,pnorm,fnorm_old;
-  FILE       *ene;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
   bool   bNS=TRUE,bDone,bLR,bBHAM,b14,bRand,brerun;
   time_t start_t;
   tensor force_vir,shake_vir;
   int    number_steps,naccept=0,nstcg=parm->ir.userint1;
-  int    count=0;
+  int    fp_ene,count=0;
   int    i,m,start,end,niti;
 
   /* Initiate some variables */
@@ -118,9 +116,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   /* Open the energy file */  
   if (MASTER(cr))
-    ene=ftp2FILE(efENE,nfile,fnm,"w");
+    fp_ene=open_enx(ftp2fn(efENE,nfile,fnm),"w");
   else
-    ene=NULL;
+    fp_ene=-1;
     
   /* Set some booleans for the epot routines */
   bLR=(parm->ir.rlong > parm->ir.rshort);   /* Long Range Coulomb   ? */
@@ -128,7 +126,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   b14=(top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ? */
 
   /* Init bin for energy stuff */
-  mdebin=init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14);
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
   
   /* Clear some matrix variables */
   clear_mat(force_vir);
@@ -176,7 +174,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   	
   /* Print only if we are the master processor */
   if (MASTER(cr))
-    print_ebin(ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
+    print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
 	       mdebin,grps,&(top->atoms));
   where();
   
@@ -336,7 +334,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		 force_vir,parm->vir,parm->pres,grps);
       /* Print the energies allways when we should be verbose */
       if (MASTER(cr))
-	print_ebin(ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
+	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE,
 		   mdebin,grps,&(top->atoms));
     }
     

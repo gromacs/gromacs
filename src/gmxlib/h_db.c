@@ -96,9 +96,7 @@ int read_h_db(char *fn,t_addh **ah)
 
   sprintf(hfn,"%s.hdb",fn);
   in=libopen(hfn);
-  while (TRUE) {
-    if (fscanf(in,"%s",buf) != 1)
-      break;
+  while (fscanf(in,"%s",buf) == 1) {
     srenew(aah,++nah);
     aah[nah-1].resname=strdup(buf);
     fscanf(in,"%d",&nab);

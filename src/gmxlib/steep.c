@@ -38,7 +38,6 @@ static char *SRCID_steep_c = "$Id$";
 #include "led.h"
 #include "network.h"
 #include "confio.h"
-#include "binio.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "nrnb.h"
@@ -55,7 +54,7 @@ static char *SRCID_steep_c = "$Id$";
 #include "update.h"
 #include "random.h"
 #include "vec.h"
-#include "statutil.h"
+#include "enxio.h"
 #include "tgroup.h"
 #include "mdebin.h"
 #include "mdrun.h"
@@ -208,7 +207,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #endif 
   real   Epot[2]; 
   real   vcm[4],fnorm,ustep; 
-  FILE       *ene; 
+  int        fp_ene; 
   t_mdebin   *mdebin; 
   t_nrnb mynrnb; 
   bool   bNS=TRUE,bDone,bLR,bBHAM,b14,bRand; 
@@ -252,9 +251,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   /* Open the enrgy file */   
   if (MASTER(cr)) 
-    ene=ftp2FILE(efENE,nfile,fnm,"w"); 
+    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w"); 
   else 
-    ene=NULL; 
+    fp_ene=-1; 
   
   /* Set some booleans for the epot routines  */
   bLR=(parm->ir.rlong > parm->ir.rshort);   /* Long Range Coulomb   ?  */
@@ -262,7 +261,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   b14=(top->idef.il[F_LJ14].nr > 0);        /* Use 1-4 interactions ?  */
   
   /* Init bin for energy stuff  */
-  mdebin=init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14); 
+  mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14); 
   
   /* Clear some matrix variables  */
   clear_mat(force_vir); 
@@ -325,7 +324,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   /* Print only if we are the moster processor  */
   if (MASTER(cr)) 
-    print_ebin(ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
+    print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
  	       mdebin,grps,&(top->atoms)); 
   where(); 
   
@@ -409,7 +408,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		 force_vir,parm->vir,parm->pres,grps); 
       /* Print the energies allways when we should be verbose  */
       if (MASTER(cr)) 
- 	print_ebin(ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
+ 	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
  		   mdebin,grps,&(top->atoms)); 
     } 
 #else 
@@ -423,7 +422,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		 force_vir,parm->vir,parm->pres,grps); 
       /* Print the energies allways when we should be verbose  */
       if (MASTER(cr)) 
- 	print_ebin(ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
+ 	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
  		   mdebin,grps,&(top->atoms)); 
     } 
 #endif 
@@ -521,7 +520,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     fprintf(stderr,"  Function value at minimum = %12.4e\n",Epot[Min]); 
     fprintf(log,"  Function value at minimum = %12.4e\n",Epot[Min]); 
   }
-  
+  if (MASTER(cr))
+    close_enx(fp_ene);
+    
   /* Put the coordinates bakc in the x array (otherwise the whole
    * minimization would be in vain)
    */

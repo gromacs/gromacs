@@ -109,16 +109,6 @@ static void rd_idef(FILE *fp,t_idef *idef)
     rd_ilist(fp,&idef->il[i]);
 }
 
-static void rm_idef(t_idef *idef)
-{
-  int i;
-  
-  sfree(idef->functype);
-  sfree(idef->iparams);
-  for(i=0; (i<F_NRE); i++)
-    sfree(idef->il[i].iatoms);
-}
-
 static void wr_strings(FILE *fp,t_symtab *symtab,int nr,char ***nm)
 {
   int i;
@@ -155,12 +145,6 @@ static void rd_block(FILE *fp,t_block *block)
   blockread(fp,block->nra);
   snew(block->a,block->nra);
   nblockread(fp,block->nra,block->a);  
-}
-
-static void rm_block(t_block *block)
-{
-  sfree(block->index);
-  sfree(block->a);
 }
 
 static void wr_atom(FILE *fp,t_symtab *symtab,int nr,t_atom *atom)
@@ -248,15 +232,6 @@ static void rd_atoms(FILE *fp,t_symtab *symtab,t_atoms *atoms)
   (void) rd_grps(fp,atoms->grps);
 }
 
-static void rm_atoms(t_atoms *atoms)
-{
-  sfree(atoms->atom);
-  sfree(atoms->atomname);
-  sfree(atoms->resname);
-  sfree(atoms->grpname);
-  rm_block(&atoms->excl);
-}
-
 long wr_top(FILE *fp,t_topology *top)
 {
   int i;
@@ -283,16 +258,5 @@ long rd_top(FILE *fp,t_topology *top)
   for (i=0; i<ebNR; i++) rd_block(fp,&top->blocks[i]);
   rd_idef(fp,&top->idef);
   return (ftell(fp)-fpos);
-}
-
-void rm_top(t_topology *top)
-{
-  int i;
-
-  rm_symtab(&top->symtab);
-  rm_atoms(&top->atoms);
-  for (i=0; i<ebNR; i++) 
-    rm_block(&top->blocks[i]);
-  rm_idef(&top->idef);
 }
 

@@ -151,7 +151,7 @@ void save_free(char *name,char *file,int line,void *ptr)
    }
 }
 
-unsigned maxavail()
+unsigned maxavail(void)
 {
   char *ptr;
   unsigned low,high,size;
@@ -172,7 +172,7 @@ unsigned maxavail()
   return low;
 }
 
-unsigned memavail()
+unsigned memavail(void)
 {
   char *ptr;
   unsigned size;

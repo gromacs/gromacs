@@ -28,6 +28,7 @@
  */
 static char *SRCID_replace_c = "$Id$";
 
+#include <ctype.h>
 #include "string2.h"
 #include "smalloc.h"
 #include "macros.h"

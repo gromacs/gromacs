@@ -37,7 +37,6 @@ static char *SRCID_nmrun_c = "$Id$";
 #include "nrnb.h"
 #include "network.h"
 #include "confio.h"
-#include "binio.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "main.h"
@@ -77,8 +76,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_forcerec *fr;
   t_mdebin   *mdebin;
-  FILE       *ene;
-  int        step,nre;
+  int        fp_ene,step,nre;
   time_t     start_t;
   real       t,lambda,t0,lam0;
   bool       bNS,bStopCM,bTYZ,bLR,bBHAM,b14;
@@ -127,11 +125,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   mtx=ftp2fn(efMTX,nfile,fnm);
   
-  ene=NULL;
   bLR=(parm->ir.rlong > parm->ir.rshort);
   bBHAM=(top->idef.functype[0]==F_BHAM);
   b14=(top->idef.il[F_LJ14].nr > 0);
-  mdebin=init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14);
+  mdebin=init_mdebin(-1,grps,&(top->atoms),bLR,bBHAM,b14);
 
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,0,top->atoms.nr,
@@ -268,7 +265,7 @@ int main(int argc,char *argv[])
   };
   t_commrec    *cr;
   t_filenm fnm[] = {
-    { efTPB, NULL, NULL,      ffREAD },
+    { efTPX, NULL, NULL,      ffREAD },
     { efMTX, "-m", "hessian", ffWRITE },
     { efLOG, "-g", "nm",      ffWRITE },
   };

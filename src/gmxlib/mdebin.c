@@ -35,7 +35,7 @@ static char *SRCID_mdebin_c = "$Id$";
 #include "assert.h"
 #include "smalloc.h"
 #include "physics.h"
-#include "enerio.h"
+#include "enxio.h"
 #include "vec.h"
 #include "disre.h"
 #include "main.h"
@@ -43,7 +43,7 @@ static char *SRCID_mdebin_c = "$Id$";
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
 
-t_mdebin *init_mdebin(FILE *ene,t_groups *grps,t_atoms *atoms,
+t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
 		      bool bLR,bool bBHAM,bool b14)
 {
   char *ener_nm[F_NRE];
@@ -167,8 +167,9 @@ t_mdebin *init_mdebin(FILE *ene,t_groups *grps,t_atoms *atoms,
     sfree(grpnms);
   }
   
-  if (ene != NULL)
-    wr_ener_nms(ene,md->ebin->nener,md->ebin->enm);
+  if (fp_ene != -1)
+    do_enxnms(fp_ene,&md->ebin->nener,&md->ebin->enm);
+    
 #ifdef DEBUG
   for(i=0; (i<md->ebin->nener); i++)
     fprintf(stdlog,"%5d  %20s\n",i,md->ebin->enm[i]);
@@ -259,7 +260,7 @@ static void pprint(FILE *log,char *s)
   fprintf(log,"\t%s  ",r3); npr(log,slen,CHAR); fprintf(log,"  %s\n\n",l3);
 }
 
-void print_ebin(FILE *ene,FILE *log,int steps,real time,real lamb,
+void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
 		real SAfactor,int mode,bool bCompact,
 		t_mdebin *md,t_groups *grps,t_atoms *atoms)
 {
@@ -274,8 +275,8 @@ void print_ebin(FILE *ene,FILE *log,int steps,real time,real lamb,
     drblock=NULL;
   switch (mode) {
   case eprNORMAL:
-    if (ene != NULL)
-      wr_ener(ene,time,steps,md->ebin->nener,md->ebin->e,drblock);
+    if (fp_ene != -1)
+      do_enx(fp_ene,&time,&steps,&md->ebin->nener,md->ebin->e,drblock);
     fprintf(log,"   %12s   %12s   %12s   %12s\n"
 	    "   %12d   %12.5f   %12.5f   %12.5f\n\n",
 	    "Step","Time","Lambda","Annealing",steps,time,lamb,SAfactor);
