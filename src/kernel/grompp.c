@@ -34,6 +34,8 @@ static char *SRCID_grompp_c = "$Id$";
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "sysstuff.h"
 #include "smalloc.h"
@@ -353,13 +355,13 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   return forward;
 }
 
-static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real time,
+static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,int *natoms,
 			rvec **x,rvec **v,matrix box,
 			int *nre,
 			t_energy **e,
 			t_topology *sys)
-     /* If time == -1 read the last frame available which is complete */
+     /* If fr_time == -1 read the last frame available which is complete */
 {
   int         fp;
   real        tt;
@@ -368,10 +370,10 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real time,
   fprintf(stderr,
 	  "Reading Coordinates%s and Box size from old trajectory\n",
 	  (!bNeedVel || bGenVel) ? "" : ", Velocities");
-  if (time == -1)
+  if (fr_time == -1)
     fprintf(stderr,"Will read whole trajectory\n");
   else
-    fprintf(stderr,"Will read till time %g\n",time);
+    fprintf(stderr,"Will read till time %g\n",fr_time);
   if (!bNeedVel || bGenVel) {
     if (bGenVel)
       fprintf(stderr,"Velocities generated: "
@@ -391,7 +393,7 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real time,
   while ((!bNeedVel || bGenVel) ?
 	 read_next_x(fp,&tt,*natoms,*x,box):
 	 read_next_x_v(fp,&tt,*natoms,*x,*v,box)) {
-    if ( (time != -1) && (tt >= time) )
+    if ( (fr_time != -1) && (tt >= fr_time) )
       break;
   }
   close_trj(fp);
@@ -594,11 +596,11 @@ int main (int argc, char *argv[])
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
   static int  nprocs=1,maxwarn=10;
-  static real time=-1;
+  static real fr_time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
       "Generate statusfile for # processors" },
-    { "-time",    FALSE, etREAL, &time,
+    { "-time",    FALSE, etREAL, &fr_time,
       "Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, &bVerbose,
       "Be loud and noisy" },
@@ -643,6 +645,11 @@ int main (int argc, char *argv[])
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts,&nerror);
+
+  if (ir->ld_seed == 0) {
+    ir->ld_seed = (time(NULL)+getpid()) % 65536;
+    fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
+  }
 
   if (bShuffle && (opts->eDisre==edrEnsemble)) {
     fprintf(stderr,"Can not shuffle and do ensemble averaging, "
@@ -737,7 +744,7 @@ int main (int argc, char *argv[])
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
-    cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,time,ir,&natoms,
+    cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,fr_time,ir,&natoms,
 		&x,&v,box,&nre,&e,sys);
   }
   

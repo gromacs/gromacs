@@ -120,6 +120,8 @@ motion removal (should only be used for vacuum simulations)
 <dd>ld friction coefficient
 <dt><h4>ld_seed: </b>(1993) [integer]</h4>
 <dd>used to initialize random generator for thermal noise
+<dd>when <b>ld_seed</b> is set to zero, the seed is calculated as
+<tt>(time() + getpid()) % 65536</tt>
 </dl>
 
 <A NAME="em"><br><h3><A HREF="#top"><IMG SRC="../gif/charts_cont.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_down.gif"></A> Energy minimization</h3>
