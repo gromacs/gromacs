@@ -42,7 +42,7 @@ static char *SRCID_pbc_h = "$Id$";
 extern "C" { 
 #endif
 
-#define TRICLINIC(box) (box[YY][XX]!=0) || (box[ZZ][XX]!=0) || (box[ZZ][YY]!=0)
+#define TRICLINIC(box) (box[YY][XX]!=0 || box[ZZ][XX]!=0 || box[ZZ][YY]!=0)
 
 #define NTRICIMG 14
 #define NCUCVERT 24
