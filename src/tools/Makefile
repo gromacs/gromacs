@@ -25,7 +25,7 @@ PROGRAMS	= do_dssp	editconf	eneconv		\
 		g_sas		g_sgangle	g_velacc	\
 		genbox		genconf		gendr		\
 		genion		genpr		make_ndx	\
-		merge_freq	mk_angndx	protonate	\
+		mk_angndx	protonate	\
 		sas2mat		trjconv		wheel		\
 		xpm2ps
 
