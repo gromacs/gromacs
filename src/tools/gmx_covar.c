@@ -90,7 +90,7 @@ int gmx_covar(int argc,char *argv[])
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
     "written."
   };
-  static bool bFit=TRUE,bRef=FALSE,bM=FALSE;
+  static bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
   static int  end=-1;
   t_pargs pa[] = {
     { "-fit",  FALSE, etBOOL, {&bFit},
@@ -100,7 +100,9 @@ int gmx_covar(int argc,char *argv[])
     { "-mwa",  FALSE, etBOOL, {&bM},
       "Mass-weighted covariance analysis"},
     { "-last",  FALSE, etINT, {&end}, 
-      "Last eigenvector to write away (-1 is till the last)" }
+      "Last eigenvector to write away (-1 is till the last)" },
+    { "-pbc",  FALSE,  etBOOL, {&bPBC},
+      "Apply corrections for periodic boundary conditions" }
   };
   FILE       *out;
   int        status,trjout;
@@ -206,7 +208,8 @@ int gmx_covar(int argc,char *argv[])
   }
 
   /* Prepare reference frame */
-  rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
+  if (bPBC)
+    rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
   if (bFit)
     reset_x(nfit,ifit,atoms->nr,NULL,xref,w_rls);
 
@@ -221,7 +224,8 @@ int gmx_covar(int argc,char *argv[])
   do {
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
-    rm_pbc(&(top.idef),nat,box,xread,xread);
+    if (bPBC)
+      rm_pbc(&(top.idef),nat,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -249,7 +253,8 @@ int gmx_covar(int argc,char *argv[])
     nframes++;
     tend = t;
     /* calculate x: a (fitted) structure of the selected atoms */
-    rm_pbc(&(top.idef),nat,box,xread,xread);
+    if (bPBC)
+      rm_pbc(&(top.idef),nat,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
