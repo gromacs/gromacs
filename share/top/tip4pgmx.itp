@@ -26,7 +26,7 @@ SOL		1
 
 ; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
 
-[ dummies2 ]
+[ dummies3 ]
 ; Dummy from			funct	a		b
 4	1	2	3	1	0.128012065	0.128012065
 
