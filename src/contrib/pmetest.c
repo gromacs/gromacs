@@ -54,6 +54,7 @@
 #include "pme.h"
 #include "pbc.h"
 #include "mpi.h"
+#include "block_tx.h"
 
 rvec *xptr=NULL;
 
@@ -85,6 +86,7 @@ static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
   rvec   mu_tot;
   int    i,m,ii;
   t_forcerec *fr;
+  bool   bSort = FALSE;
   
   snew(fr,1);
   fr->ewaldcoeff = ewaldcoeff;
@@ -105,13 +107,16 @@ static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
    * Alternatively, one could just put the atoms in one of the
    * cr->nnodes slabs. That is much cheaper than sorting.
    */
-  xptr = x;
-  qsort(index,sizeof(index[0]),nsb->natoms,comp_xptr);
+  if (bSort) {
+    xptr = x;
+    qsort(index,sizeof(index[0]),nsb->natoms,comp_xptr);
+  }
   for(i=0; (i<nsb->natoms); i++) {
     ii = index[i];
     qbuf[i] = charge[ii];
     copy_rvec(x[ii],xbuf[i]);
   }
+  
   
   put_atoms_in_box(box,nsb->natoms,x);      
   ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,box,cr,
@@ -120,12 +125,16 @@ static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
 			     xbuf,box,mu_tot,qtot,
 			     ir->ewald_geometry,ir->epsilon_surface,
 			     vir_corr);
+  gmx_sum(1,&ener,cr);
+  gmx_sum(1,&vcorr,cr);
   fprintf(fp,"Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
 	  ener,vcorr,ener+vcorr);
   if (bVerbose) {
     m_add(vir,vir_corr,vir_tot);
+    gmx_sum(9,vir_tot[0],cr);
     pr_rvecs(fp,0,"virial",vir_tot,DIM); 
   }
+  fflush(fp);
 }
 
 int main(int argc,char *argv[])
@@ -148,10 +157,10 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bVerbose=FALSE;
   static bool bOptFFT=FALSE;
-  static int  ewald_geometry=0;
+  static int  ewald_geometry=eewg3D;
   static int  nnodes=1;
   static int  nthreads=1;
-  static int  pme_order=4;
+  static int  pme_order=0;
   static rvec grid = { -1, -1, -1 };
   static real rc   = 0.0;
   static real dtol = 0.0;
@@ -251,41 +260,28 @@ int main(int argc,char *argv[])
   if (PAR(cr)) {
     /* Distribute the data over processors */
     MPI_Bcast(&natoms,1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&(ir->nkx),1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&(ir->nky),1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&(ir->nkz),1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&(ir->pme_order),1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&(ir->rcoulomb),1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&(ir->ewald_rtol),1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
-    where();
     MPI_Bcast(&qtot,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
-    where();
-    MPI_Bcast(&(top.blocks[ebCGS].nr),1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
-    MPI_Bcast(&(top.blocks[ebCGS].nra),1,MPI_INT,root,MPI_COMM_WORLD);
-    where();
-    if (!MASTER(cr)) {
-      snew(top.blocks[ebCGS].index,top.blocks[ebCGS].nr+1);
-      snew(top.blocks[ebCGS].a,top.blocks[ebCGS].nra);
-      snew(charge,natoms);
+    for(i=1; (i<cr->nnodes); i++) {
+      if (MASTER(cr)) {
+	mv_block(i,&(top.blocks[ebCGS]));
+	mv_block(i,&(top.atoms.excl));
+      }
+      else {
+	ld_block(0,&(top.blocks[ebCGS]));
+	ld_block(0,&(top.atoms.excl));
+      }
     }
-    where();
-    MPI_Bcast(top.blocks[ebCGS].index,top.blocks[ebCGS].nr+1,
-	      MPI_INT,root,MPI_COMM_WORLD);
-    where();
-    MPI_Bcast(top.blocks[ebCGS].a,top.blocks[ebCGS].nra,
-	      MPI_INT,root,MPI_COMM_WORLD);
-    where();
-    MPI_Bcast(top.blocks[ebCGS].multinr,MAXNODES,MPI_INT,root,MPI_COMM_WORLD);
-    where();
+    if (!MASTER(cr)) {
+      snew(charge,natoms);
+      snew(x,natoms);
+    }
     MPI_Bcast(charge,natoms,GMX_MPI_REAL,root,MPI_COMM_WORLD);
-    where();
   }
   ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
   if (MASTER(cr))
@@ -320,6 +316,7 @@ int main(int argc,char *argv[])
   
   calc_nsb(stdlog,&(top.blocks[ebCGS]),cr->nnodes,nsb,0);
   print_nsb(stdlog,"pmetest",nsb);  
+  fflush(stdlog);
   
   /* First do PME based on coordinates in tpr file */
   if (MASTER(cr))
@@ -358,9 +355,11 @@ int main(int argc,char *argv[])
     if (MASTER(cr)) 
       close_trx(status);
   }
+  if (bVerbose) {
+    fprintf(stdlog,"-----\n");
+    print_nrnb(stdlog,&nrnb);
+  }
   
-  print_nrnb(stdlog,&nrnb);
-    
   if (gmx_parallel_env)
     gmx_finalize(cr);
 
