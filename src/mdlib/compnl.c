@@ -30,31 +30,50 @@ static char *SRCID_compnl_c = "$Id$";
 
 #include "ns.h"
 #include "smalloc.h"
-#include "../mdlib/wnblist.h"
+#include "wnblist.h"
 #include "futil.h"
 #include "macros.h"
 #include "statutil.h"
 #include "copyrite.h"
+#include "confio.h"
+#include "pbc.h"
+#include "vec.h"
 
 int main(int argc,char *argv[])
 {
-  FILE *in,*out;
-  int  i,j,nmiss,mod;
-  int ***mat;
+  FILE    *in,*out;
+  int     i,j,nmiss,mod;
+  char    *fn1,*fn2,title[256];
+  int     ***mat;
+  bool    bConf;
+  rvec    *x,dx;
+  matrix  box;
+  t_atoms atoms;
+  
   t_filenm fnm[] = {
     { efLOG, "-f1", NULL, ffREAD },
     { efLOG, "-f2", NULL, ffREAD },
-    { efOUT, "-o",  "compnl", ffWRITE }
+    { efOUT, "-o",  "compnl", ffWRITE },
+    { efSTX, "-c",  NULL, ffOPTRD }
   };
 #define NFILE asize(fnm)
   static int natoms=648;
   static t_pargs pa[] = {
-    { "-nat",      FALSE, etINT, &natoms, "Number of atoms" }
+    { "-nat",      FALSE, etINT, { &natoms }, "Number of atoms" }
   };
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
 
+  bConf = (opt2bSet("-c",NFILE,fnm));
+  if (bConf) {
+    get_stx_coordnum (opt2fn("-c",NFILE,fnm),&natoms);
+    init_t_atoms(&atoms,natoms,FALSE);
+    snew(x,natoms);
+    read_stx_conf(opt2fn("-c",NFILE,fnm),title,&atoms,x,NULL,box);
+    init_pbc(box,FALSE);
+  }
+  
   snew(mat,2);  
   snew(mat[0],natoms);
   snew(mat[1],natoms);
@@ -63,7 +82,9 @@ int main(int argc,char *argv[])
     snew(mat[1][i],natoms);
   }
   out = ffopen(ftp2fn(efOUT,NFILE,fnm),"w");
-  
+  fn1 = opt2fn("-f1",NFILE,fnm);
+  fn2 = opt2fn("-f2",NFILE,fnm);
+    
   for(i=0; (i<2); i++) {
     in = ffopen(fnm[i].fn,"r");
     fprintf(stderr,"Reading %s\n",fnm[i].fn);
@@ -78,8 +99,14 @@ int main(int argc,char *argv[])
   for(i=0; (i<natoms); i+=mod) {
     for(j=0; (j<natoms); j+=mod) {
       if (mat[0][i][j] != mat[1][i][j]) {
-	fprintf(out,"i: %5d, j: %5d, shift1: %5d, shift2: %5d\n",
-		i,j,mat[0][i][j]-1,mat[1][i][j]-1);
+	fprintf(out,"i: %5d, j: %5d, shift[%s]: %3d, shift[%s]: %3d",
+		i,j,fn1,mat[0][i][j]-1,fn2,mat[1][i][j]-1);
+	if (bConf) {
+	  pbc_dx(x[i],x[j],dx);
+	  fprintf(out," dist: %8.3f\n",norm(dx));
+	}
+	else
+	  fprintf(out,"\n");
 	nmiss++;
       }
     }
@@ -89,6 +116,10 @@ int main(int argc,char *argv[])
   fclose(out);
   fprintf(stderr,"There were %d mismatches\n",nmiss);
   fprintf(stderr,"Finished\n");
+  
+  thanx(stdout);
+  
+  return 0;
 }
 
 
