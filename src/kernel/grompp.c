@@ -93,24 +93,37 @@ static void triple_check(t_inputrec *ir,t_topology *sys)
 static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
 {
   bool bStop=FALSE;
-  int  ncons;
   real bmin;
 
-#define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
-  ncons=mol->plist[F_SHAKE].nr+mol->plist[F_SETTLE].nr;
-  BS((ir->shake_tol <= 0.0) && (ncons > 0),
-     "shake_tol must be > 0 instead of %10.5e when using shake\n",
-     ir->shake_tol);
-  
+  if( (ir->eConstrAlg==estSHAKE) && 
+      (mol->plist[F_SHAKE].nr > 0) && 
+      (ir->shake_tol <= 0.0) ) {
+    fprintf(stderr,"shake_tol must be > 0 instead of %g\n",ir->shake_tol);
+    bStop=TRUE;
+  }
+  bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
   if (ir->eBox != ebtNONE) {
     /* rlong must be less than half the box */
-    bmin=min(box[XX][XX],box[YY][YY]);
-    bmin=0.5*(min(bmin,box[ZZ][ZZ]));
-    if (ir->rlong > bmin) {
+    if (ir->rlong > 0.5*bmin) {
       fprintf(stderr,
-	      "rlong (%10.5e) must be < half a box (%10.5e,%10.5e,%10.5e)\n",
+	      "rlong (%g) must be < half a box (%g,%g,%g)\n",
 	      ir->rlong,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
       bStop = TRUE;
+    }
+    /* box must be large enough for gridsearch */
+    if (ir->ns_type==ensGRID) {
+      int  k;
+      ivec cx;
+      
+      for(k=0; (k<DIM); k++)
+	cx[k]=ir->ndelta*box[k][k]/ir->rlong;
+      if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
+	      (cx[YY] >= 2*ir->ndelta+1) && 
+	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
+	fprintf(stderr,"box too small for grid-search, "
+		"use simple neighboursearch.\n");
+	bStop=TRUE;
+      }
     }
   }
   if (bStop) {
