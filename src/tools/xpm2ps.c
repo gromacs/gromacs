@@ -71,6 +71,8 @@ typedef struct {
   real linewidth;
   real xoffs,yoffs;
   bool bTitle;
+  bool bTitleOnce;
+  bool bYonce;
   real titfontsize;
   char titfont[STRLEN];
   bool legend;
@@ -86,6 +88,9 @@ typedef struct {
   real zerolinewidth;
   t_axisdef X,Y;
 } t_psrec;
+
+/* MUST correspond to char *legend[] in main() */
+enum { elSel, elBoth, elFirst, elSecond, elNone, elNR };
 
 void get_params(char *mpin,char *mpout,t_psrec *psr)
 {
@@ -261,15 +266,16 @@ static real box_dh(t_psrec *psr)
   return psr->boxspacing;
 }
 
-static real box_dh_top(t_psrec *psr)
+#define IS_ONCE (i==nmat-1)
+static real box_dh_top(bool bOnce, t_psrec *psr)
 {
   real dh;
-
-  if (psr->bTitle)
+  
+  if (psr->bTitle || (psr->bTitleOnce && bOnce) )
     dh=2*psr->titfontsize;
   else
     dh=0;
-
+  
   return  dh;
 }
 
@@ -302,7 +308,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
   for(i=0; (i<nmat); i++) {
     dy=box_height(&(mat[i]),psr);
     ps_box(out,x0-1,yy00-1,x0+w+1,yy00+dy+1);
-    yy00+=dy+box_dh(psr)+box_dh_top(psr);
+    yy00+=dy+box_dh(psr)+box_dh_top(IS_ONCE,psr);
   }
   
   /* Draw the ticks on the axes */
@@ -363,14 +369,16 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,
     sfree(ytick);
     
     /* Label on Y-axis */
-    ps_strfont(out,psr->Y.font,psr->Y.fontsize);
-    ps_rotate(out,TRUE);
-    xxx=x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
-    ps_ctext(out,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
-	     mat[i].label_y,eXCenter);
-    ps_rotate(out,FALSE);
-
-    yy00+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
+    if (!psr->bYonce || i==nmat/2) {
+      ps_strfont(out,psr->Y.font,psr->Y.fontsize);
+      ps_rotate(out,TRUE);
+      xxx=x0-psr->X.majorticklen-psr->X.tickfontsize*strlength-DDD;
+      ps_ctext(out,yy00+box_height(&mat[i],psr)/2.0,612.5-xxx,
+	       mat[i].label_y,eXCenter);
+      ps_rotate(out,FALSE);
+    }
+    
+    yy00+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(IS_ONCE,psr);
   }
   /* Label on X-axis */  
   ps_strfont(out,psr->X.font,psr->X.fontsize);
@@ -418,12 +426,12 @@ static void draw_zerolines(FILE *out,real x0,real y0,real w,
 	}
       }
     }
-    yy00+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
+    yy00+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(IS_ONCE,psr);
   }
 }
 
 static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
-		    char w_legend,bool bFrame,
+		    int elegend,bool bFrame,
 		    real *w,real *h,real *dw,real *dh)
 {
   int i,maxytick;
@@ -449,9 +457,10 @@ static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
     
     if (mat[0].label_x[0])
       dhh+=psr->X.fontsize+2*DDD;
-    if (((w_legend == 'b') && (mat[0].legend[0] || mat2[0].legend[0])) ||
-	((w_legend == 'f') && mat[0].legend[0]) ||
-    ((w_legend == 's') && mat2[0].legend[0]))
+    if (/* fool emacs auto-indent */
+	(elegend==elBoth && (mat[0].legend[0] || mat2[0].legend[0])) ||
+	(elegend==elFirst && mat[0].legend[0]) ||
+	(elegend==elSecond && mat2[0].legend[0]) )
       dhh+=2*(psr->legfontsize*FUDGE+2*DDD);
     else 
       dhh+=psr->legfontsize*FUDGE+2*DDD;
@@ -460,7 +469,10 @@ static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
     else if (psr->X.minor > 0)
       dhh+=psr->X.minorticklen;
     
-    hh+=(nmat-1)*box_dh(psr)+nmat*box_dh_top(psr);
+    hh+=(nmat-1)*box_dh(psr);
+    hh+=box_dh_top(TRUE,psr);
+    if (nmat>1)
+      hh+=(nmat-1)*box_dh_top(FALSE,psr);
   }
   *w=ww;
   *h=hh;
@@ -573,9 +585,9 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 }
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
-	    bool bFrame,
-	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
-	    real boxx,real boxy,char *m2p,char *m2pout)
+	    bool bFrame,bool bDiag,bool bFirstDiag,
+	    bool bTitle,bool bTitleOnce,bool bYonce,
+	    int elegend,real boxx,real boxy,char *m2p,char *m2pout)
 {
   char   *libm2p,buf[256],*legend;
   FILE   *out;
@@ -634,11 +646,14 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   if ( (mat[0].legend[0]==0) && psr->legend )
     strcpy(mat[0].legend, psr->leglabel);
 
-  bTitle = bTitle && mat[nmat-1].title[0];
-  psr->bTitle = bTitle;
+  bTitle     = bTitle     && mat[nmat-1].title[0];
+  bTitleOnce = bTitleOnce && mat[nmat-1].title[0];
+  psr->bTitle     = bTitle;
+  psr->bTitleOnce = bTitleOnce;
+  psr->bYonce     = bYonce;
 
   /* Set up size of box for nice colors */
-  box_dim(nmat,mat,mat2,psr,w_legend,bFrame,&w,&h,&dw,&dh);
+  box_dim(nmat,mat,mat2,psr,elegend,bFrame,&w,&h,&dw,&dh);
   
   /* Set up bounding box */
   W=w+dw;
@@ -665,7 +680,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   }
 
   for(i=0; (i<nmat); i++) {
-    if (bTitle) {
+    if (bTitle || (bTitleOnce && i==nmat-1) ) {
       /* Print title, if any */
       ps_rgb(out,BLACK);
       ps_strfont(out,psr->titfont,psr->titfontsize); 
@@ -712,7 +727,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	  }
 	}
     }
-    y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
+    y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(IS_ONCE,psr);
   }
   
   if (psr->X.lineatzero || psr->Y.lineatzero) {
@@ -722,10 +737,10 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     draw_zerolines(out,x0,y0,w,nmat,mat,psr);
   }
   
-  if (w_legend != 'n') {
+  if (elegend!=elNone) {
     ps_comment(out,"Now it's legend time!");
     ps_linewidth(out,psr->linewidth);
-    if ((mat2==NULL) || (w_legend != 's')) {
+    if ( mat2==NULL || elegend!=elSecond ) {
       bDiscrete = mat[0].bDiscrete;
       legend    = mat[0].legend;
       leg_nmap  = nmap1;
@@ -740,7 +755,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
       leg_discrete(out,psr->legfontsize,DDD,legend,
 		   psr->legfontsize,psr->legfont,leg_nmap,leg_map);
     else {
-      if (w_legend != 'b')
+      if ( elegend!=elBoth )
 	leg_continuous(out,x0+w/2,w/2,DDD,legend,
 		       psr->legfontsize,psr->legfont,leg_nmap,leg_map);
       else
@@ -837,11 +852,9 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
 }
 
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
-	    bool bFrame, bool bZeroLine,
-	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
-	    real boxx,real boxy,
-	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,
-	    int skip)
+	    bool bFrame,bool bZeroLine,bool bDiag,bool bFirstDiag,bool bTitle,
+	    bool bTitleOnce,bool bYonce,int elegend,real boxx,real boxy,
+	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,int skip)
 {
   int      i,j,k,copy_start;
 
@@ -873,12 +886,12 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bFrame,bDiag,bFirstDiag,
-	   bTitle,w_legend,boxx,boxy,m2p,m2pout);
+	   bTitle,bTitleOnce,bYonce,elegend,boxx,boxy,m2p,m2pout);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
 }
 
-void rainbow_map(char *rainbow, int nmat, t_matrix mat[])
+void rainbow_map(bool bBlue, int nmat, t_matrix mat[])
 {
   t_mapping *map;
   int m,i;
@@ -890,21 +903,21 @@ void rainbow_map(char *rainbow, int nmat, t_matrix mat[])
       c = (map[i].rgb.r + map[i].rgb.g + map[i].rgb.b)/3;
       if (c > 1)
 	  c = 1;
-      if (rainbow[0] == 'b')
+      if (bBlue)
 	c = 1 - c;
-      if (c <= 0.25) {
+      if (c <= 0.25) { /* 0-0.25 */
 	r = 0;
 	g = pow(4*c,0.666);
 	b = 1;
-      } else if (c <= 0.5) {
+      } else if (c <= 0.5) { /* 0.25-0.5 */
 	r = 0;
 	g = 1;
 	b = pow(2-4*c,0.666);
-      } else if (c <= 0.75) {
+      } else if (c <= 0.75) { /* 0.5-0.75 */
 	r = pow(4*c-2,0.666);
 	g = 1;
 	b = 0;
-      } else {
+      } else { /* 0.75-1 */
 	r = 1;
 	g = pow(4-4*c,0.666);
 	b = 0;
@@ -950,21 +963,25 @@ int main(int argc,char *argv[])
   };
 
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
-  char      w_legend;
-  int       i,nmat,nmat2;
+  int       i,nmat,nmat2,etitle,elegend,ediag,erainbow;
   t_matrix *mat=NULL,*mat2=NULL;
-  bool      bTitle,bDiag,bFirstDiag;
-  static bool bFrame=TRUE,bZeroLine=FALSE;
+  bool      bTitle,bTitleOnce,bDiag,bFirstDiag;
+  static bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE;
   static real boxx=0,boxy=0;
-  static char *title[]   = { NULL, "top", "ylabel", "none", NULL };
+  enum                    { etSel, etTop, etOnce, etYlabel, etNone, etNR };
+  static char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
+  /* MUST correspond to enum elXxx as defined at top of file */
   static char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
+  enum                    { edSel, edFirst, edSecond, edNone, edNR };
   static char *diag[]    = { NULL, "first", "second", "none", NULL };
+  enum                    { erSel, erNo, erBlue, erRed, erNR };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
   static int skip=1;
   t_pargs pa[] = {
     { "-frame",   FALSE, etBOOL, {&bFrame},
       "Display frame, ticks, labels, title and legend" },
     { "-title",   FALSE, etENUM, {title},   "Show title at" },
+    { "-yonce",   FALSE, etBOOL, {&bYonce}, "Show y-label only once" },
     { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
     { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
     { "-bx",      FALSE, etREAL, {&boxx},
@@ -992,9 +1009,13 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
+  etitle   = nenum(title);
+  elegend  = nenum(legend);
+  ediag    = nenum(diag);
+  erainbow = nenum(rainbow);
   if (!bFrame) {
-    title[0]  = "none";
-    legend[0] = "none";
+    etitle = etNone;
+    elegend = elNone;
   }
 
   if (ftp2bSet(efEPS,NFILE,fnm))
@@ -1004,8 +1025,8 @@ int main(int argc,char *argv[])
   if ((epsfile==NULL) && (xpmfile==NULL))
     epsfile=ftp2fn(efEPS,NFILE,fnm);
 
-  bDiag      = (diag[0][0] != 'n');
-  bFirstDiag = (diag[0][0] != 's');
+  bDiag      = ediag!=edNone;
+  bFirstDiag = ediag!=edSecond;
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
@@ -1022,29 +1043,28 @@ int main(int argc,char *argv[])
   else {
     nmat2=0;
   }
-  bTitle = (title[0][0] == 't');
-  if (title[0][0] == 'y') {
-    bTitle=FALSE; /* don't print title in two places at once */
+  bTitle     = etitle==etTop;
+  bTitleOnce = etitle==etOnce;
+  if ( etitle==etYlabel ) {
     for (i=0; (i<nmat); i++) {
       strcpy(mat[i].label_y, mat[i].title);
       if (mat2)
 	strcpy(mat2[i].label_y, mat2[i].title);
     }
   }
-  if (rainbow[0][0] != 'n') {
-    rainbow_map(rainbow[0],nmat,mat);
+  if (erainbow!=erNo) {
+    rainbow_map(erainbow==erBlue,nmat,mat);
     if (mat2)
-      rainbow_map(rainbow[0],nmat2,mat2);
+      rainbow_map(erainbow==erBlue,nmat2,mat2);
   }
 
-  w_legend = legend[0][0];
-  if ((mat2 == NULL) && (w_legend != 'n'))
-    w_legend = 'f';
+  if ((mat2 == NULL) && (elegend!=elNone))
+    elegend = elFirst;
 
-  do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,bTitle,w_legend,
-	 boxx,boxy,epsfile,xpmfile,
-	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm),
-	 skip);
+  do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
+	 bTitle,bTitleOnce,bYonce,
+	 elegend, boxx,boxy,epsfile,xpmfile,
+	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip);
   
   do_view(ftp2fn_null(efEPS,NFILE,fnm),NULL);
   do_view(opt2fn_null("-xpm",NFILE,fnm),NULL);
