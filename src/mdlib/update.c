@@ -622,7 +622,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    bool         bDoUpdate,
 	    t_edsamyn    *edyn,
 	    t_pull       *pulldata,
-	    bool         bConstrain,
 	    bool         bNEMD)
 {
   static bool      bFirst=TRUE;
@@ -639,7 +638,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   
   if (bFirst) {
     bHaveConstr = init_constraints(stdlog,top,&(parm->ir),md,start,homenr,
-				    ir->eI!=eiSteep && bConstrain);
+				    ir->eI!=eiSteep);
     bHaveConstr = bHaveConstr || pulldata->bPull;
     bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARINELLORAHMAN);
     
@@ -712,7 +711,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		   x,xprime,v,vold,force,
 		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
 		   &ir->ld_seed,TRUE);
-      if (bHaveConstr && bConstrain) {
+      if (bHaveConstr) {
 	for(n=start; n<start+homenr; n++)
 	  copy_rvec(xprime[n],x_unc[n-start]);
 	/* Constrain the coordinates xprime */
@@ -768,7 +767,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-  if (bHaveConstr && bConstrain) {
+  if (bHaveConstr) {
     if (ir->eI != eiSD)
       /* Copy Unconstrained X to temp array */
       for(n=start; n<start+homenr; n++)

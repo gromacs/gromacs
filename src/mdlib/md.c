@@ -163,7 +163,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box); 
   
-  if (!parm->ir.bUncStart && fr->k_dirmin==0) 
+  if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
@@ -474,8 +474,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	   parm,SAfactor,mdatoms,
            x,graph,f,buf,vold,vt,v,
-	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,
-	   fr->k_dirmin==0,bNEMD);
+	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
     /* The coordinates (x) were unshifted in update */
 
     /* Non-equilibrium MD: this is parallellized, but only does communication
