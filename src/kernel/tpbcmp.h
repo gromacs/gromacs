@@ -44,7 +44,7 @@ extern void comp_tpx(char *fn1,char *fn2,real ftol);
 extern void comp_trx(char *fn1,char *fn2,real ftol);
 /* Compare two binary trajectory files */
 
-extern void comp_enx(char *fn1,char *fn2,real ftol);
+extern void comp_enx(char *fn1,char *fn2,real ftol,char *lastener);
 /* Compare two binary energy files */
 
 #endif
