@@ -698,7 +698,7 @@ int main (int argc, char *argv[])
   mdparin = opt2fn("-f",NFILE,fnm);
   set_warning_line(mdparin,-1);    
   get_ir(mdparin,opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
-
+  
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts,&nerror);
@@ -712,6 +712,15 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Can not shuffle and do ensemble averaging, "
 	    "turning off shuffle\n");
     bShuffle=FALSE;
+  }
+  
+  if ( (nprocs > 1) && (ir->nstcomm < 0) ) {
+    /* this check is also in md.c, if it becomes obsolete here,
+       also remove it there */
+    fprintf(stderr,
+	    "ERROR: removing rotation around center of mass (nstcomm=%d)"
+	    "in a parallel run (np=%d) not implemented\n",ir->nstcomm,nprocs);
+    nerror++;
   }
   
   bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
