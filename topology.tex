@@ -793,6 +793,9 @@ calculations, which bonded interactions are used by {\tt grompp}
 for generating exclusions and which bonded interactions can be converted
 to constraints by {\tt grompp}.
 
+%\newcommand{\tts}{\tt \footnotesize}
+\newcommand{\tts}{\tt \small}
+
 % move these figures so they end up on facing pages 
 % (first figure on even page)
 \newcommand{\kJmol}{kJ mol$^{-1}$}
@@ -800,30 +803,30 @@ to constraints by {\tt grompp}.
 \newcommand{\kJmolrad}[1]{\kJmol rad$^{#1}$}
 \newcommand{\kJmoldeg}[1]{\kJmol deg$^{#1}$}
 \begin{table}[p]
-\centerline{\small\begin{tabular}{|l|lllll|}
+\centerline{\small\begin{tabular}{|l|llllc|}
 \multicolumn{6}{c}{\bf \large Parameters} \\
 \dline
-interaction 	& directive   	      & \#  & f. & parameters 				& pert \\
+interaction 	& directive   	      & \#  & f. & parameters 				& F. E. \\
 type	&		      	      & at. & tp &					& 	\\
 \dline
-{\em mandatory} & {\tt defaults}	& & &	non-bonded function type; & \\
+{\em mandatory} & {\tts defaults}	& & &	non-bonded function type; & \\
 		&			& & &	combination rule$^{(a)}$; &\\
 		&			& & &   generate pairs (no/yes); & \\
 		&			& & &	fudge LJ (); fudge QQ () & \\
 \hline
-{\em mandatory} & {\tt atomtypes}	&   & 	& atom type; m (u); q (e); particle type; & \\
+{\em mandatory} & {\tts atomtypes}	&   & 	& atom type; m (u); q (e); particle type; & \\
 		&			&   &	& V$^{(a)}$; W$^{(a)}$ & \\
 %\hline
-		& {\tt bondtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tt bonds})}		& 	\\
-		& {\tt constrainttypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tt constraints})}		& 	\\
-		& {\tt pairtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tt pairs})}		& 	\\
-		& {\tt angletypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tt angles})}		& 	\\
-proper dih.	& {\tt dihedraltypes}	& 2$^{(c)}$ & 1	& $\theta_{max}$ (deg); f$_c$ (\kJmol); mult & X$^{(b)}$ \\
-improper dih.	& {\tt dihedraltypes}	& 2$^{(d)}$ & 2	& $\theta_0$ (deg); f$_c$ (\kJmolrad{-2}) & X	\\
-RB dihedral	& {\tt dihedraltypes}	& 2$^{(c)}$ & 3	&  C$_0$, C$_1$, C$_2$, C$_3$, C$_4$, C$_5$ (\kJmol) 		&	\\
-LJ 		& {\tt nonbond\_params}	& 2 & 1	& V$^{(a)}$; W$^{(a)}$ & \\
-Buckingham    	& {\tt nonbond\_params}	& 2 & 2	& a (\kJmol); b (nm$^{-1})$;  & \\
- & & & & c$_6$ (\kJmolnm{6}) & \\
+		& {\tts bondtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts bonds})}		& 	\\
+		& {\tts constrainttypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts constraints})}		& 	\\
+		& {\tts pairtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts pairs})}		& 	\\
+		& {\tts angletypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts angles})}		& 	\\
+proper dih.	& {\tts dihedraltypes}	& 2$^{(b)}$ & 1	& $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity & $\phi,k$ \\
+improper dih.	& {\tts dihedraltypes}	& 2$^{(c)}$ & 2	& $\xi_0$ (deg); $k_\xi$ (\kJmolrad{-2}) & all	\\
+RB dihedral	& {\tts dihedraltypes}	& 2$^{(b)}$ & 3	&  $C_0$, $C_1$, $C_2$, $C_3$, $C_4$, $C_5$ (\kJmol) 		& all	\\
+LJ 		& {\tts nonbond\_params}	& 2 & 1	& $V^{(a)}$; $W^{(a)}$ & \\
+Buckingham    	& {\tts nonbond\_params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;  & \\
+ & & & & $c_6$ (\kJmolnm{6}) & \\
 \dline
 \multicolumn{6}{c}{~} \\
 \multicolumn{6}{c}{\bf \large Molecule definition(s)} \\
@@ -836,20 +839,19 @@ Buckingham    	& {\tt nonbond\_params}	& 2 & 2	& a (\kJmol); b (nm$^{-1})$;  & \
 \multicolumn{6}{c}{~} \\
 \multicolumn{6}{c}{\bf \large System} \\
 \dline
-{\em mandatory} & {\tt system}		& & &	system name	&	\\
+{\em mandatory} & {\tts system}		& & &	system name	&	\\
 \hline
-{\em mandatory} & {\tt molecules}	& & &	\multicolumn{2}{l|}{molecule name; number of molecules}	\\
+{\em mandatory} & {\tts molecules}	& & &	\multicolumn{2}{l|}{molecule name; number of molecules}	\\
 \dline
 \multicolumn{6}{c}{~} \\
 \multicolumn{6}{l}{'\# at' is the number of atom types} \\
 \multicolumn{6}{l}{'f. tp' is function type} \\
-\multicolumn{6}{l}{'pert' indicates if this interaction type
-can be perturbed during free energy calculations} \\
+\multicolumn{6}{l}{'F. E.' indicates which parameters can be interpolated
+during free energy calculations} \\
 \multicolumn{6}{l}{~$^{(a)}$ the combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\\
-\multicolumn{6}{l}{~$^{(b)}$ multiplicities can not be perturbed} \\
-\multicolumn{6}{l}{~$^{(c)}$ the inner two atoms in the dihedral} \\
-\multicolumn{6}{l}{~$^{(d)}$ the outer two atoms in the dihedral} \\
-\multicolumn{6}{l}{For free energy calculations, the parameters for topology 'B' (lambda = 1) should be added} \\
+\multicolumn{6}{l}{~$^{(b)}$ the inner two atoms in the dihedral} \\
+\multicolumn{6}{l}{~$^{(c)}$ the outer two atoms in the dihedral} \\
+\multicolumn{6}{l}{For free energy calculations, the parameters for topology 'B' ($\lambda = 1$) should be added} \\
 \multicolumn{6}{l}{on the same line, after the normal parameters,
 in the same order as the normal parameters.} \\
 \end{tabular}
@@ -858,64 +860,63 @@ in the same order as the normal parameters.} \\
 \label{tab:topfile1}
 \end{table}
 \begin{table}[p]
-\centerline{\small\begin{tabular}{|l|lllll|}
+\centerline{\small\begin{tabular}{|l|llllc|}
 \multicolumn{6}{c}{\bf \large Molecule definition} \\
 \dline
-interaction 	& directive   	      & \#  & f. & parameters 				& pert \\
+interaction 	& directive   	      & \#  & f. & parameters 				& F. E. \\
 type	&		      	      & at. & tp &					& 	\\
 \dline
-{\em mandatory} & {\tt moleculetype}	& & & 	molecule name; &	\\
+{\em mandatory} & {\tts moleculetype}	& & & 	molecule name; &	\\
 		&			& & & 	exclude neighbors \# bonds away &	\\
 		&			& & & 	for non-bonded interactions & \\
 \hline
-{\em mandatory} & {\tt atoms}		& 1 & 	& atom type; residue number; 	& 	\\
+{\em mandatory} & {\tts atoms}		& 1 & 	& atom type; residue number; 	& type	\\
 		&			&   &	& residue name; atom name; 	& 	\\
-		&			&   &	& charge group number; q (e); m (u) 	& X$^{(c)}$ \\
+		&			&   &	& charge group number; $q$ (e); $m$ (u) 	& $q,m$ \\
 \hline
-bond		& {\tt bonds}$^{(d,e)}$	& 2 & 1	& b$_0$ (nm); f$_c$ (\kJmolnm{-2})	& X	\\
-G96 bond	& {\tt bonds}$^{(d,e)}$	& 2 & 2	& b$_0$ (nm); f$_c$ (\kJmolnm{-4})	& X	\\
-morse		& {\tt bonds}$^{(d,e)}$	& 2 & 3	& b$_0$ (nm); D (\kJmol); $\beta$ (nm$^{-1}$) & \\
-cubic bond	& {\tt bonds}$^{(d,e)}$ & 2 & 4	& b$_0$ (nm); C$_2$ (\kJmolnm{-2}); & \\
- & & & & C$_3$ (\kJmolnm{-3}) & \\
-connection	& {\tt bonds}$^{(d)}$	& 2 & 5	& & \\
-harmonic pot.	& {\tt bonds}		& 2 & 6	& b$_0$ (nm); f$_c$ (\kJmolnm{-2})	& X	\\
-LJ/Coul. 1-4	& {\tt pairs}		& 2 & 1	& V$^{(a)}$; W$^{(a)}$ & X \\
-angle		& {\tt angles}$^{(e)}$	& 3 & 1	& $\theta_0$ (deg); f$_c$ (\kJmolrad{-2}) & X	\\
-G96 angle	& {\tt angles}$^{(e)}$	& 3 & 2	& $\theta_0$ (deg); f$_c$ (\kJmol) & X	\\
-proper dih.	& {\tt dihedrals}	& 4 & 1	& $\theta_{max}$ (deg); f$_c$ (\kJmol); mult & X$^{(b)}$	\\
-improper dih.	& {\tt dihedrals}	& 4 & 2	& $\theta_0$ (deg); f$_c$ (\kJmolrad{-2}) & X	\\
-RB dihedral	& {\tt dihedrals}	& 4 & 3	& C$_0$, C$_1$, C$_2$, C$_3$, C$_4$, C$_5$ (\kJmol) 		&	\\
-constraint	& {\tt constraints}$^{(d)}$& 2 & 1	& b$_0$ (nm) 				& X	\\
-constr. n.c.    & {\tt constraints}	& 2 & 2	& b$_0$ (nm) 				& X	\\
-settle		& {\tt settles}		& 3 & 1	& d$_{\mbox{\sc oh}}$, d$_{\mbox{\sc hh}}$ (nm) 		& 	\\
-vsite2		& {\tt virtual\_sites2}	& 3 & 1	& a ()					& 	\\
-vsite3		& {\tt virtual\_sites3}	& 4 & 1	& a, b ()				& 	\\
-vsite3fd	& {\tt virtual\_sites3}	& 4 & 2	& a (); d (nm)				& 	\\
-vsite3fad	& {\tt virtual\_sites3}	& 4 & 3	& $\theta$ (deg); d (nm) 		& 	\\
-vsite3out	& {\tt virtual\_sites3}	& 4 & 4	& a, b (); c (nm$^{-1}$) 		& 	\\
-vsite4fd	& {\tt virtual\_sites4}	& 5 & 1	& a, b (); d (nm);	   		& 	\\
-position res.	& {\small\tt position\_restraints}	& 1 & 1	& k$_{x}$, k$_{y}$, k$_{z}$ (\kJmolnm{-2}) & X	\\
-%wpol	& {\tt position\_restraints}	& 1 & 2	& ???	& 	\\
-distance res.	& {\small\tt distance\_restraints}	& 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
+bond		& {\tts bonds}$^{(b,c)}$	& 2 & 1	& $b_0$ (nm); $k_b$ (\kJmolnm{-2})	& all	\\
+G96 bond	& {\tts bonds}$^{(b,c)}$	& 2 & 2	& $b_0$ (nm); $k_b$ (\kJmolnm{-4})	& all	\\
+morse		& {\tts bonds}$^{(b,c)}$	& 2 & 3	& $b_0$ (nm); $D$ (\kJmol); $\beta$ (nm$^{-1}$) & \\
+cubic bond	& {\tts bonds}$^{(b,c)}$ & 2 & 4	& $b_0$ (nm); $C_{i=2,3}$ (\kJmolnm{-i}); & \\
+connection	& {\tts bonds}$^{(b)}$	& 2 & 5	& & \\
+harmonic pot.	& {\tts bonds}		& 2 & 6	& $b_0$ (nm); $k_b$ (\kJmolnm{-2})	& all	\\
+FENE bond	& {\tts bonds}		& 2 & 7	& $b_m$ (nm); $k_b$ (\kJmolnm{-2})	& 	\\
+LJ/Coul. 1-4	& {\tts pairs}		& 2 & 1	& $V^{(a)}$; $W^{(a)}$ & all \\
+angle		& {\tts angles}$^{(c)}$	& 3 & 1	& $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}) & all	\\
+G96 angle	& {\tts angles}$^{(c)}$	& 3 & 2	& $\theta_0$ (deg); $k_\theta$ (\kJmol) & all	\\
+quartic angle	& {\tts angles}$^{(c)}$	& 3 & 6	& \multicolumn{2}{l|}{$\theta_0$ (deg); $C_{i=0,1,2,3,4}$ (\kJmolrad{-i})}	\\
+proper dih.	& {\tts dihedrals}	& 4 & 1	& $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity & $\phi,k$	\\
+improper dih.	& {\tts dihedrals}	& 4 & 2	& $\xi_0$ (deg); $k_\xi$ (\kJmolrad{-2}) & all	\\
+RB dihedral	& {\tts dihedrals}	& 4 & 3	& $C_0$, $C_1$, $C_2$, $C_3$, $C_4$, $C_5$ (\kJmol) 		& all	\\
+constraint	& {\tts constraints}$^{(b)}$& 2 & 1	& $b_0$ (nm) 				& all	\\
+constr. n.c.    & {\tts constraints}	& 2 & 2	& $b_0$ (nm) 				& all	\\
+settle		& {\tts settles}		& 3 & 1	& $d_{\mbox{\sc oh}}$, $d_{\mbox{\sc hh}}$ (nm) 		& 	\\
+vsite2		& {\tts virtual\_sites2}	& 3 & 1	& $a$ ()					& 	\\
+vsite3		& {\tts virtual\_sites3}	& 4 & 1	& $a$, $b$ ()				& 	\\
+vsite3fd	& {\tts virtual\_sites3}	& 4 & 2	& $a$ (); $d$ (nm)				& 	\\
+vsite3fad	& {\tts virtual\_sites3}	& 4 & 3	& $\theta$ (deg); $d$ (nm) 		& 	\\
+vsite3out	& {\tts virtual\_sites3}	& 4 & 4	& $a$, $b$ (); $c$ (nm$^{-1}$) 		& 	\\
+vsite4fd	& {\tts virtual\_sites4}	& 5 & 1	& $a$, $b$ (); $d$ (nm);	   		& 	\\
+position res.	& {\tts position\_restraints}	& 1 & 1	& $k_{x}$, $k_{y}$, $k_{z}$ (\kJmolnm{-2}) & all	\\
+%wpol	& {\tts position\_restraints}	& 1 & 2	& ???	& 	\\
+distance res.	& {\tts distance\_restraints}	& 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
  & & & & weight () & \\
-orient. res.    & \multicolumn{2}{l}{\small\tt orientation\_restraints} & & &\\
- &	                                & 2 & 1	& exp.; label; $\alpha$; c (U nm$^\alpha$); obs. (U); & \\
+orient. res.    & \multicolumn{2}{l}{\tts orientation\_restraints} & & &\\
+ &	                                & 2 & 1	& exp.; label; $\alpha$; $c$ (U nm$^\alpha$); obs. (U); & \\
  & & & & weight (U$^{-1}$) &\\
-angle res.	& {\small\tt angle\_restraints}	& 4 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol); mult & X$^{(b)}$	\\
-angle res. z & {\small\tt angle\_restraints\_z}	& 2 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol); mult & X$^{(b)}$	\\
-exclusions	& {\tt exclusions}	& 1 & 	& one or more atom indices				& 	\\
+angle res.	& {\tts angle\_restraints}	& 4 & 1	& $\theta_0$ (deg); $k_c$ (\kJmol); multiplicity & $\theta,k$	\\
+angle res. z & {\tts angle\_restraints\_z}	& 2 & 1	& $\theta_0$ (deg); $k_c$ (\kJmol); multiplicity & $\theta,k$	\\
+exclusions	& {\tts exclusions}	& 1 & 	& one or more atom indices				& 	\\
 \dline
 \multicolumn{6}{c}{~} \\
 \multicolumn{6}{l}{'\# at' is the number of atom indices}\\
 \multicolumn{6}{l}{'f. tp' is function type}\\
-\multicolumn{6}{l}{'pert' indicates if this interaction type
-can be perturbed during free energy calculations}\\
+\multicolumn{6}{l}{'F. E.' indicates which parameters
+can be interpolated during free energy calculations}\\
 \multicolumn{6}{l}{~$^{(a)}$ the combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\\
-\multicolumn{6}{l}{~$^{(b)}$ multiplicities can not be perturbed}\\
-\multicolumn{6}{l}{~$^{(c)}$ only the atom type, charge and mass can be perturbed} \\
-\multicolumn{6}{l}{~$^{(d)}$ used by {\tt grompp} for generating exclusions}\\
-\multicolumn{6}{l}{~$^{(e)}$ can be converted to constraints by {\tt grompp}}\\
-\multicolumn{6}{l}{For free energy calculations, the parameters for topology 'B' (lambda = 1) should be added}\\
+\multicolumn{6}{l}{~$^{(b)}$ used by {\tt grompp} for generating exclusions}\\
+\multicolumn{6}{l}{~$^{(c)}$ can be converted to constraints by {\tt grompp}}\\
+\multicolumn{6}{l}{For free energy calculations, the parameters for topology 'B' ($\lambda = 1$) should be added}\\
 \multicolumn{6}{l}{on the same line, after the normal parameters,
 in the same order as the normal parameters.}
 \end{tabular}

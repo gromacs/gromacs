@@ -499,6 +499,22 @@ The force corresponding to this potential is:
 \ve{F}_i(\rvij) = 2k^b_{ij}(\rij-b_{ij})~\rnorm + 3k^b_{ij}k^{cub}_{ij}(\rij-b_{ij})^2~\rnorm
 \eeq
 
+\subsection{FENE bond stretching potential}
+\index{FENE potential}
+In coarse-grained polymer simulations the beads are often connected
+by a FENE (finite extensible nonlinear elastic) potential:
+\beq
+V_{\mbox{\small FENE}}(\rij) =
+  -\half k^b_{ij} b^2_{ij} \log\left(1 - \frac{\rij^2}{b^2_{ij}}\right)
+\eeq
+The potential looks complicated, but the fromula for the force is simpler:
+\beq
+F_{\mbox{\small FENE}}(\rvij) =
+  k^b_{ij} \left(1 - \frac{\rij^2}{b^2_{ij}}\right)^{-1} \rvij
+\eeq
+At short distances the potential asymptotically goes to a harmonic
+potential with force constant $k^b$, while it diverges at distance $b$.
+
 \subsection{Harmonic angle potential}
 \label{sec:anglepot}
 \newcommand{\tijk}{\theta_{ijk}}
@@ -601,6 +617,13 @@ associated with the potential on atom $i$ is:
 + \left(\left|\ve{r}_{i}-\ve{r}_j\right|-r_{1e} + \left|\ve{r}_{k}-\ve{r}_j\right|-r_{2e}\right)\frac{\ve{r}_i-\ve{r}_k}{\left|\ve{r}_{i}-\ve{r}_k\right|}\right]
 \end{equation}
 
+\subsection{Quartic angle potential}
+For special purposes there is an angle potential
+that uses a fourth order polynomial:
+\beq
+V_q(\tijk) ~=~ \sum_{n=0}^5 C_n (\tijk-\tijk^0)^n
+\eeq
+
 %% new commands %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\rvkj}{{\bf r}_{kj}}
 \newcommand{\rkj}{r_{kj}}
@@ -658,9 +681,8 @@ planes, with {\bf zero} corresponding to the {\em cis} configuration
 (left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
 \end{figure}
-
 \beq
-V_d(\phi_{ijkl}) = k_{\phi}(1 + \cos(n \phi - \phi_0))
+V_d(\phi_{ijkl}) = k_{\phi}(1 + \cos(n \phi - \phi_s))
 \eeq
 
 \subsubsection{Proper dihedrals: Ryckaert-Bellemans function}
@@ -1367,11 +1389,11 @@ and the equilibrium position. Formulas are not given here.
 For the proper dihedrals, the equations are somewhat more complicated:
 \bea
 V_d     &=&(\LL k_d^A + \LAM k_d^B) 
-        ( 1+ \cos(n_{\phi} \phi - (\LL \phi_0^A + \LAM \phi_0^B)) \\
+        ( 1+ \cos(n_{\phi} \phi - (\LL \phi_s^A + \LAM \phi_s^B)) \\
 \dvdl{V_d}&=&(k_d^B-k_d^A) 
-                \biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_0^A + \LAM \phi_0^B])-\nonumber\\
-        &&(\LL k_d^A + \LAM k_d^B) (\phi_0^A - \phi_0^B) 
-        \sin(n_{\phi}\phi - [\LL \phi_0^A + \LAM \phi_0^B]\biggr]
+                \biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_s^A + \LAM \phi_s^B])-\nonumber\\
+        &&(\LL k_d^A + \LAM k_d^B) (\phi_s^A - \phi_s^B) 
+        \sin(n_{\phi}\phi - [\LL \phi_s^A + \LAM \phi_s^B]\biggr]
 \eea
 {\bf Note:} that the multiplicity $n_{\phi}$ can not be parameterized
 because the function should remain periodic on the interval $[0,2\pi]$.
