@@ -49,16 +49,18 @@ static char *SRCID_genconf_c = "$Id$";
 #include "topexcl.h"
 #include "x2top.h"
 
-t_nm2type *rd_nm2type(int *nnm)
+t_nm2type *rd_nm2type(char *ff,int *nnm)
 {
   FILE      *fp;
   bool      bCont;
+  char      libfilename[128];
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
   int       i,n,nb,nnnm,line=1;
   t_nm2type *nm2t=NULL;
   
-  fp = libopen("nm2type.dat");
+  sprintf(libfilename,"%s.n2t",ff);
+  fp = libopen(libfilename);
   
   nnnm = 0;
   do {
@@ -78,7 +80,7 @@ t_nm2type *rd_nm2type(int *nnm)
 	    strcpy(f1,format);
 	    strcat(f1,"%s");
 	    if (sscanf(buf,f1,nbbuf) != 1)
-	      fatal_error(0,"Error on line %d of nm2type.dat",line);
+	      fatal_error(0,"Error on line %d of %s",line,libfilename);
 	    newbuf[i] = strdup(nbbuf);
 	    strcat(format,"%*s");
 	  }

@@ -9,8 +9,10 @@ typedef struct {
   char **bond;
 } t_nm2type;
 
-extern t_nm2type *rd_nm2type(int *nnm);
-/* Read the name 2 type database. nnm is the number of entries */
+extern t_nm2type *rd_nm2type(char *ff,int *nnm);
+/* Read the name 2 type database. nnm is the number of entries 
+ * ff is the force field.
+ */
 
 extern void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
