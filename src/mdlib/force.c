@@ -286,10 +286,11 @@ void init_forcerec(FILE *log,
   fr->vdwtype    = ir->vdwtype;
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   fr->bEwald     = ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD));
-  fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+  fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT) ||
+		    (fr->bPert));
   fr->bRF        = (((fr->eeltype == eelRF) || (fr->eeltype == eelGRF)) &&
 		    (fr->vdwtype == evdwCUT));
-  if ((fr->bRF) && (fr->vdwtype == evdwCUT))
+  if ((fr->bRF) && (fr->vdwtype == evdwCUT) && !fr->bPert)
     fr->bTab = FALSE;
   fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
   
@@ -447,7 +448,7 @@ void init_forcerec(FILE *log,
 #define TAB_EXT 0.6
 
   if (fr->bTab) {
-    if(EEL_LR(fr->eeltype)) {
+    if (EEL_LR(fr->eeltype)) {
       /* generate extra tables for 1-4 interactions only
        * fake the forcerec so make_tables thinks it should
        * just create the non shifted version 
@@ -459,7 +460,10 @@ void init_forcerec(FILE *log,
       fr->VFtab14=fr->VFtab;
       fr->VFtab=NULL;
     }
-    fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
+    if (fr->eBox == ebtNONE)
+      fr->rtab = 5;
+    else
+      fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
   } 
   else
     fr->rtab = MAX_14_DIST;
