@@ -357,7 +357,7 @@ static char *mk_desc(t_pargs *pa, char *time_unit)
   if (pa->type == etENUM) {
     len += 10;
     for(k=1; (pa->u.c[k] != NULL); k++) {
-      len += strlen(pa->u.c[k])+4;
+      len += strlen(pa->u.c[k])+12;
     }
   }
   snew(newdesc,len);
@@ -391,7 +391,9 @@ static char *mk_desc(t_pargs *pa, char *time_unit)
   if (pa->type == etENUM) {
     strcat(newdesc,": ");
     for(k=1; (pa->u.c[k] != NULL); k++) {
+      strcat(newdesc,"[TT]");
       strcat(newdesc,pa->u.c[k]);
+      strcat(newdesc,"[tt]");
       /* Print a comma everywhere but at the last one */
       if (pa->u.c[k+1] != NULL) {
 	if (pa->u.c[k+2] == NULL)
