@@ -1,0 +1,783 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+   <TITLE>GROMACS FAQ.</TITLE>
+</HEAD>
+<BODY text="#243b4a" BGCOLOR="#FFFFFF">
+<!--I--><CENTER>
+<!--I--><A HREF="features.html"><IMG SRC="gif/features.gif" BORDER=0 ALT="Features"></A>
+<!--I--><A HREF="software.html"><IMG SRC="gif/software.gif" BORDER=0 ALT="Software"></A>
+<!--I--><A HREF="online1.6.html"><IMG SRC="gif/manual.gif" BORDER=0 ALT="Manual"></A>
+<!--I--><A HREF="topologies.html"><IMG SRC="gif/topologies.gif" BORDER=0 ALT="Topologies"></A>
+<!--I--><A HREF="articles.html"><IMG SRC="gif/articles.gif" BORDER=0 ALT="Articles"></A>
+<!--I--><A HREF="gmxbench.html"><IMG SRC="gif/bench.gif" BORDER=0 ALT="GMXBench"></A>
+<!--I--><A HREF="links.html"><IMG SRC="gif/links.gif" BORDER=0 ALT="Links"></A>
+<!--I--><A HREF="gmxfaq.html"><IMG SRC="gif/faq.gif" BORDER=0 ALT="FAQ"></A>
+<!--I--><A HREF="comment-form.html"><IMG SRC="gif/mail.gif" BORDER=0 ALT="Mail"></A>
+<!--I--></CENTER>
+
+<H2>GROMACS Frequently Answered Questions.</H2>
+
+Since this FAQ is written for version 2.0, not all of the solutions
+may apply to previous GROMACS versions.
+
+<UL>
+<LI><A HREF="#want">I want GROMACS.</A>
+<LI><A HREF="#mightwant">I might want GROMACS, but I don't know if my system 
+is supported.</A>
+<LI><A HREF="#install">I want to compile and install GROMACS.</A>
+<LI><A HREF="#MPI">I want to run GROMACS multi-processor.</A>
+<LI><A HREF="#speed">I want to run GROMACS faster.</A>
+<LI><A HREF="#size">I want to simulate a very large system using GROMACS.</A>
+<LI><A HREF="#PDB">I have a PDB file.</A>
+<LI><A HREF="#multi">I have a protein with multiple subunits.</A>
+<LI><A HREF="#scmis"><TT>pdb2gmx</TT> is complaining about long bonds and/or
+missing atoms.</A>
+<LI><A HREF="#2000"><TT>mdrun</TT> says my run will end somewhere in (or after)
+the year 2000.</A>
+<LI><A HREF="#1-4cut"><TT>mdrun</TT> says: "1-4 (#,#) interaction not within cut-off".</A>
+<LI><A HREF="#output">My run seems to be running, but no output is produced.</A>
+<LI><A HREF="#simann">I get very strange temperatures during my simulated annealing run.</A>
+<LI><A HREF="#multPDB">I have a PDB file with multiple entries which I want 
+to analyze.</A>
+<LI><A HREF="#twostruc">I want to fit two structures which do not have the 
+same number/sequence of atoms.</A> 
+<LI><A HREF="#group">I get tired of having to select the same index group 
+over and over again.</A>
+<LI><A HREF="#diys">I want to do an analysis GROMACS doesn't have a program
+for.</A>
+<LI><A HREF="#none">My problem is none of the above or none of the solutions below seem to work.</A>
+</UL>
+<P>
+
+<DL>
+<HR>
+
+<A NAME="want">
+<DT><B><FONT COLOR="#FF0000">I want GROMACS. Now what?</FONT></B>
+<P>
+<DD>Go to the <A HREF="software.html">software page</A> and read it.
+You should also fill in the <A HREF="docs/license_form.html">license
+agreement</A> and send it to us.  For academic institutions the
+license is free. We will give you a username and password so you can
+download GROMACS.
+
+<P> (More info can be found in the 
+<A HREF="readme2.0.html">download page</A>.)
+
+<P>
+
+<A NAME="mightwant">
+<DT><B><FONT COLOR="#FF0000">I might want GROMACS, but I don't know if
+my system is supported. Now what?</FONT></B>
+
+<P>
+<DD><B>GROMACS</B> is short for 
+<FONT COLOR="#0000FF"><B>G</B></FONT>ROMACS 
+<FONT COLOR="#0000FF"><B>R</B></FONT>uns 
+<FONT COLOR="#0000FF"><B>O</B></FONT>n 
+<FONT COLOR="#0000FF"><B>M</B></FONT>ost 
+<FONT COLOR="#0000FF"><B>O</B></FONT>f 
+<FONT COLOR="#0000FF"><B>A</B></FONT>ll 
+<FONT COLOR="#0000FF"><B>C</B></FONT>omputer 
+<FONT COLOR="#0000FF"><B>S</B></FONT>ystems. For all unix dialects no
+problems should exist. Especially SUN (SunOS), SGI (IRIX) and LINUX
+are known to be virtually problem-free. It is even possible to use
+GROMACS on a MS Windows (pref. 95 or NT) system, but this needs a
+<I>lot</I> of work to get it going so <i>we do not recommend
+this</i>. The basic requirements are a version of GNU make (usually
+called gmake) and a C/C++ compiler. For better performance a good
+FORTRAN compiler should be available too.
+
+<P>
+Systems for which a default Makefile is present are listed below. 
+For all these systems GROMACS normally compiles without any problems,
+and can also run in parallel (providing a good version of MPI or PVM is 
+present).
+<TABLE>
+<TR><TD>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=5 >
+<TR><TD>cm5</TD><TD>CM5</TD></TR>
+<TR><TD>dec</TD><TD>Alpha/Dec UNIX</TD></TR>
+<TR><TD> hp</TD><TD>HP/PaRISC</TD></TR>
+<TR><TD>lnx</TD><TD>Linux/x86</TD></TR>
+</TABLE>
+</TD><TD>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=5 >
+<TR><TD>s10</TD><TD>SGI (IRIX)/R10k</TD></TR>
+<TR><TD>s5k</TD><TD>SGI (IRIX)/R5k</TD></TR>
+<TR><TD>s8k</TD><TD>SGI (IRIX)/R8k</TD></TR>
+<TR><TD>sgi</TD><TD>SGI (IRIX)/R4k</TD></TR>
+</TABLE>
+</TD><TD>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=5 >
+<TR><TD>sol</TD><TD>Sun/SOLARIS</TD></TR>
+<TR><TD>sp2</TD><TD>IBM/SP2</TD></TR>
+<TR><TD>spp</TD><TD>Convex SPP</TD></TR>
+<TR><TD>ymp</TD><TD>Cray/YMP</TD></TR>
+</TABLE>
+</TD></TR>
+</TABLE>
+
+<P> (More info can be found in the
+<A HREF="readme2.0.html">download page</A>.)
+
+<P>
+
+<A NAME="install">
+<DT><B><FONT COLOR="#FF0000">I want to compile and install GROMACS. Now what?</FONT></B>
+<P>
+<DD>Check out the <A HREF="readme2.0.html">download page</A> for
+instructions on 
+<A HREF="readme2.0.html#install">installing and compiling</A> 
+GROMACS and <A HREF="readme2.0.html#problems">some hints</A> 
+for when things go wrong. 
+If all else fails, please don't hesitate to
+<A HREF="mailto:gromacs@chem.rug.nl">contact us</A>. Also if you have experienced
+a problem and found a solution, please 
+<A HREF="mailto:gromacs@chem.rug.nl">let us know</A> so other people won't have to
+do the work you already did all over again.
+
+<P>
+
+<A NAME="MPI">
+<DT><B><FONT COLOR="#FF0000">I want to run GROMACS multi-processor. Now what?</FONT></B>
+
+<P>
+<DD>
+You will need an up to date version of MPI or PVM.
+If you don't have single processor versions of the Gromacs binaries yet,
+make them. The only multi-processor binary you need is mdrun.
+To make this one, set <TT>USE_MPI</TT> or <TT>USE_PVM</TT> to <TT>yes</TT> 
+in your <TT>Makefile.cpu</TT> and type:
+<PRE>cd $GMXHOME/src/gmxlib
+gmake clean
+gmake lib
+cd $GMXHOME/src/kernel
+gmake clean
+gmake mdrun
+</PRE>
+Now there sould be an MPI or PVM <TT>mdrun</TT> binary in the
+<TT>src/kernel</TT> directory.
+<P>
+The extra things needed to start a run on multiple processors are:
+you have to specify the <TT>-np &lt;nr&gt;</TT> option with
+<A HREF="online2.0/grompp.html"><TT>grompp</TT></A>
+and you need to start <A HREF="online2.0/mdrun.html"><TT>mdrun</TT></A>
+with the appropriate options.
+For instance on an SGI with the newest verison of MPI:
+<PRE>
+grompp -np&lt;nr&gt; -o topol.tpb &lt;other options&gt;
+mpirun -np &lt;nr&gt; &lt;dir&gt;/mdrun -s topol.tpb &lt;other options&gt;
+</PRE>
+NOTE: you have to specify the full path of the MPI mdrun binary.
+The newest version of MPI does not require the <TT>-np</TT> option
+after <TT>mdrun</TT>.
+<P>
+
+<A NAME="speed">
+<DT><B><FONT COLOR="#FF0000">I want to run GROMACS faster. Now what?</FONT></B>
+
+<P>
+<DD>
+
+<P> First rest assured that GROMACS is amongst the fastest MD programs
+currently available. We are often a factor of 2 faster than some of
+the other leading packages.</P>
+
+<P> Ultimately, one would want to simulate seconds of whole ensembles
+of proteins. Since that is not nearly possible (we only come 9 orders
+of magnitude short in time and 18 orders of magnitude short in number
+of particles), we suggest the following things to at least get the
+maximum performance currently available: </P>
+
+<UL>
+
+<LI>Turn off double precision by selecting a non-double precision CPU
+type when running <tt>gmx_conf</TT>. This does not have a negative
+effect on the outcome of your simulations, the accuracy is normally
+not restricted by the precision of the floating point notation, but by
+the numerical integration scheme itself. <em>This is a free-for-all
+performance gain of up to a factor of 2!</em> (On our SGI Power
+Challenge, the double precision version runs some 30% slower than
+single precision.)
+
+<LI>Use Fortran inner loops (providing you have a good Fortran
+compiler available for your system). On our SGI Power Challenge, using
+Fortran inner loops speeds up simulations by a factor of 2! See our <A
+HREF="gmxbench.html">benchmark page</A>.
+
+<LI>If your system consists partly of water, use water specific
+non-bonded optimizations (set <tt>watertype = SOL</tt> in your <A
+HREF="online2.0/mdp_opt.html"><TT>.mdp</TT> file</A>.  This need
+not always be faster, check your runtime to see if it is indeed
+faster.
+
+<LI>If you have a SGI system, use the old Fortran compilers (version
+7.1 or earlier, which still supports the F77 options
+-GCM:aggressive_speculation and -GCM:array_speculation). This gives a
+preformance increase of about 7%.
+
+<LI>Run GROMACS parallel on multiple processors (<A HREF="#MPI">see
+above</A>). Although this increases overall performance, effiency may
+be lost due to sub-linear scaling of the parallel system, e.g. 2
+processors perform at 85% of twice the performance of one
+processor. This gets progressively worse for more processors, for more
+than 8 processors efficiency drops to about 60%. Because of this,
+it is often better to run multiple runs on one or a few
+processors. Check out or <A HREF="gmxbench.html">benchmark page</A>
+for some real-life examples on both single- and multi-processor
+systems.
+
+<LI>Preliminary tests show that PPPM (new in GROMACS 2.0) is also
+somewhat faster than simulating with a twin range cut-off of 1.0/1.7
+nm. Although this still has to be verified, it seems that irrespective
+of improvement of the treatment of electrostatics in your simulation,
+PPPM should be the method of choice.
+
+<LI>We have a new option <TT>-dummies</TT> for
+<A HREF="online2.0/pdb2gmx.html"><TT>pdb2gmx</TT></A> in GROMACS 2.0
+which controls the constraining of hydrogen atoms. This eliminates the
+highest freqency motions in your system, enabling you to increase the
+timestep without loss of accuracy to 4 or 5 fs, or with increased mass
+for the hydrogen atoms with remaining motional freedom, even up to 8
+or 9 fs!
+
+<LI>If your system has relatively slow disk-IO, and/or you write
+frames and energies out very often, and/or you have a very large
+system the performance might be limited by disk access. In that case,
+you might consider writing less frames to your trajectories
+(<TT>.xtc</TT> and especially <TT>.trr</TT> or <TT>.trj</TT>) and
+energy file (<TT>.ene</TT> or <TT>.edr</TT>).
+
+<LI>At last, if you do not yet have the fastest computer available,
+get it! Or if you <em>do</em> have a very fast computer already, get
+another one or two.
+
+</UL>
+
+<P> Also see our <A HREF="gmxbench.html">benchmark page</A> for more
+details on GROMACS performance. Also be sure to check it out in case
+you are still considering what type of machine you should buy to
+perform your simulations.</P>
+ 
+<P>
+
+<A NAME="size">
+<DT><B><FONT COLOR="#FF0000">I want to simulate a very large system using GROMACS. Now what?</FONT></B>
+
+<P> 
+
+<DD> Just do it. The limit on the number of atoms in the calculation
+is only determined by the amount of memory available in your computer
+system. As an indictaion: a system of 12000 atoms takes about 10Mb of
+memory, and 6000 atoms about 5.5Mb (on a SGI O2 machine with GROMACS
+1.6), which comes down to just over 900 bytes memory use per atom in
+your system (your mileage may vary). Due to the fact that we initially
+developed GROMACS to run on our home-built parallel machine, with
+only 8Mb of memory per processor, the code is quite well optimized for
+memory use. To get an indication of scaling of GROMACS performance as
+a function of system size, have a look at the
+<A HREF="gmxbench.html">benchmark page</A>.
+
+<P>
+
+<A NAME="PDB">
+<DT><B><FONT COLOR="#FF0000">I have a PDB file. Now what?</FONT></B>
+
+<P>
+<DD> Look at the <A
+HREF="online2.0/flow.html">flowchart</A> for a quick overview. 
+Start where it says "eiwit.pdb" (this is somewhere at the top). 
+More detailed info can be found in the 
+<A HREF="online2.0/getting_started.html">Getting Started</A>
+section, you probably can start where it says "Ribonuclease S-Peptide".
+<P>
+
+<A NAME="multi">
+<DT><B><FONT COLOR="#FF0000">I have a protein with multiple subunits. Now what?</FONT></B>
+
+<P>
+<DD> You could wait for GROMACS 2.0 to come out, wich will feature a
+<TT>pdb2gmx</TT> that can automatically process multimeric
+proteins. Probably, however, you will not want to wait for that. The
+other option is to do things by hand:
+
+<UL>
+<LI>put all your protein subunits in separate <TT>.pdb</TT> files
+<LI>run <TT>pdb2gmx</TT> for each of the subunit <TT>.pdb</TT> files
+<LI>rename the resulting topology (<TT>.top</TT>) files
+<TT>a.itp</TT>, <TT>b.itp</TT> etc.
+<LI>In all these <TT>.itp</TT> files, remove all lines before the
+'<TT>[ moleculetype ]</TT>' line and change the name
+'<TT>Protein</TT>' (just below '<TT>[ moleculetype ]</TT>') into
+<TT>Protein_A</TT>, <TT>Protein_B</TT> (etc.) respectively. Also
+remove all the lines at the end, starting with '<TT>; Include Position
+restraint file</TT>'.
+
+<LI>Now make a new file called '<TT>topol.top</TT>' which contains:
+
+<PRE>
+; Include forcefield constants
+
+; Include other parts of system
+
+; Include Position restraint file
+#ifdef POSRES
+#endif
+
+; Include water topology
+#ifdef FLEX_SPC
+#else
+#endif
+
+[ system ]
+; Name
+Protein in Water
+
+[ molecules ]
+; Compound        #mols
+Protein_A           1
+Protein_B           1
+</PRE>
+lines as you have subunits.
+<LI>last, you should run your origional <TT>.pdb</TT> file (with the
+whole protein) through <TT>pdb2gmx</TT> to get a coordinate file with
+your whole protein in it.
+
+</UL> Using this coordinate file and the <TT>topol.top</TT> described
+above you should be able to start a simulation.
+
+<P>
+
+<A NAME="scmis">
+<DT><B><FONT COLOR="#FF0000"><TT>pdb2gmx</TT> is complaining about 
+long bonds and/or missing atoms. Now what?</FONT></B>
+
+<P>
+<DD> There are probably atoms missing earlier in the 
+<A HREF="online2.0/pdb.html"><TT>.pdb</TT></A> file
+which makes <A HREF="online2.0/pdb2gmx.html"><TT>pdb2gmx</TT></A>
+go crazy. Check the screen output of <TT>pdb2gmx</TT>, as it
+will tell you which one is missing. Then add the atoms in your pdb file,
+energy minimization will put them in the right place, 
+or fix the side chain with e.g. the 
+<A HREF="http://swift.embl-heidelberg.de/whatif/">WhatIF program</A>.
+<P>
+
+<A NAME="2000">
+<DT><B><FONT COLOR="#FF0000"><TT>mdrun</TT> says my run will end somewhere 
+in (or after) the year 2000. Now what?</FONT></B>
+
+<P>
+<DD> This could mean that you have started a very long simulation, or
+you are using a very slow computer. You might want to check if your
+simulations really should be as long as it is, or get a faster
+computer. It might also mean that your simulation somehow caused
+Not-a-Numbers to be generated (check the energies in your
+logfile). Either way, there is nothing to worry about because GROMACS
+is <FONT COLOR="#AA00CC"><B>fully 2000 compliant</B></FONT>.
+<P>
+
+<A NAME="simann">
+<DT><B><FONT COLOR="#FF0000">I get very strange temperatures during my simulated annealing run. Now what?</FONT></B>
+
+<P>
+
+<DD> This probably means that the initial time in your simulation is
+not zero ps. The temperature during simulated annealing is controlled
+by two points on a linear curve: temperature will be zero K at
+<TT>zero_temp_time</TT> ps and it will be <TT>ref_t</TT> K at zero
+ps. This means that if you do not start your simulation at zero ps,
+the simulation will not start at <TT>ref_t</TT> K. So if your
+<TT>zero_temp_time</TT> is positive and the starting time for your
+simulation is larger than that, the temperature in your simulation
+will be zero. If your <TT>zero_temp_time</TT> is negative, temperature
+will rise indefenitely with increasing time. Below two schematic
+graphs are included to clarify things a bit.
+<BR>
+<TABLE>
+<TR>
+<TH ALIGN=CENTER COLSPAN=3>System temperature v.s. Time in simulated annealing:
+<TR><TD COLSPAN=3>&nbsp;
+<TR>
+<TH ALIGN=CENTER><TT>zero_temp_time < 0</TT> :
+<TD>
+<TH ALIGN=CENTER><TT>zero_temp_time > 0</TT> :
+<TR>
+<TH ALIGN=CENTER>Heating to inf.
+<TD>
+<TH ALIGN=CENTER>Cooling to zero
+<TR><TD COLSPAN=3>&nbsp;
+<TR>
+<TD ALIGN=CENTER><IMG SRC="gif/annealup.gif">
+<TD>&nbsp;&nbsp;&nbsp;
+<TD ALIGN=CENTER><IMG SRC="gif/annealdn.gif">
+</TABLE>
+<P>
+
+<A NAME="recover">
+<DT><B><FONT COLOR="#FF0000">My run crashed and I want to continue it. Now what?</FONT></B>
+
+<P>
+<DD>
+
+To really continue a simulation as if nothing had happened, you will
+need coordinates and velocities in full precision (i.e. <TT><a href="online1.6/trj.html">.trj</a></TT>
+format). <TT><a href="online1.6/xtc.html">.xtc</a></TT> trajectories are in reduced precision (only 3 decimal
+places after the decimal point) and do not contain velocity
+information at all. Feed this trajectory and your origional
+<TT><a href="online1.6/tpb.html">.tpb</a></TT> file to <TT><a href="online1.6/tpbconv.html">tpbconv</a></TT> to obtain a new <TT><a href="online1.6/tpb.html">.tpb</a></TT>
+file, <EM>be sure</EM> to specify the one-but-last frame from your
+<TT><a href="online1.6/trj.html">.trj</a></TT> file, since the very last frame is likely to be
+corrupted due to the crash. With the <TT><a href="online1.6/tpb.html">.tpb</a></TT> file
+<TT><a href="online1.6/tpbconv.html">tpbconv</a></TT> produces you can restart your simulation.
+
+<P>
+
+It is ofcourse possible to start a simulation from the coordinates in
+your <a href="online1.6/xtc.html">xtc</a> file, but in that case new velocities will have to be
+generated resulting in a 'kink' in the simulation. To prevent this you
+should write coordinates and velocities to a <TT><a href="online1.6/trj.html">.trj</a></TT> file during
+your simulations.  Do this by setting <TT>nstxout</TT> and
+<TT>nstvout</TT> in your <TT><a href="online1.6/mdp.html">.mdp</a></TT> file. You don't need these
+frames very often (every 10 ps or so), but remember that when
+<TT><a href="online1.6/mdrun.html">mdrun</a></TT> crashes, everything calculated after the last frame in
+the <TT><a href="online1.6/trj.html">.trj</a></TT> file, will have to be recalculated for a proper
+continuation.
+
+<P>
+
+<A NAME="1-4cut">
+<DT><B><FONT COLOR="#FF0000"><TT>mdrun</TT> says: "1-4 (#,#) interaction 
+not within cut-off". Now what?</FONT></B>
+
+<P>
+<DD> Most importantly: <b>do not increase your cut-off!</b> This error
+actually indicates that some atoms have gotten a very large velocity,
+which usually means that (part of) your molecule(s) is (are)
+exploding. If you are using LINCS for contraints, you probably also
+already got a number of LINCS warnings. When using SHAKE this will
+give rise to a SHAKE error, which halts your simulation before the
+"1-4 not within cutoff" error can appear. 
+<P>
+There can be a number of reasons for the large velocities in
+your system. If it happens at the
+beginning of the simulation, your system might be not equilibrated
+well enough (e.g. it contains some bad contacts). Try a(nother) round
+of energy minimization to fix this. Otherwise you might have a very
+high temperature (which might be caused by incorrect use of 
+<A HREF="#simann">simulated annealing</A>), and/or a too large
+timestep. Experiment with these parameters till the error stops
+occurring.
+
+<P>
+
+<A NAME="output">
+<DT><B><FONT COLOR="#FF0000">My run seems to be running, but no output is produced. Now what?</FONT></B>
+
+<P>
+
+<UL> 
+
+<LI>Your simulation might simply be (very) slow, and since output is
+buffered, it can take quite some time for output to appear in the
+respective files. If you are trying to fix some problems and you want
+to get output as fast as possible, you can set the environment
+variable <TT>LOG_BUFS</TT> to 0 by using <TT>setenv LOG_BUFS 0</TT>,
+this disables output buffering. Use <TT>unsetenv LOG_BUFS</TT> to turn
+buffering on again.
+
+<LI>Something might be going wrong in your simulation, causing
+e.g. <tt>not-a-number</tt>s (<TT>NAN</TT>) to be generated (these are
+the result of e.g. division by zero). Subsequent calculations with
+<TT>NAN</TT>'s will generate floating point exceptions which slow
+everything down by orders of magnitude. On a SGI system this will
+usually result in a large percentage of CPU time being devoted to
+'system' (check it with <TT>osview</TT>, or for a multi-processor
+machine with <TT>top</TT> and <TT>osview</TT>).
+
+<LI>You might have all <TT>nst*</TT> parameters (see 
+<A HREF="online2.0/mdp_opt.html#out">output control</A>) in your 
+<A HREF="online2.0/mdp_opt.html"><TT>.mdp</TT></A> file set to 0, this
+will suppress most output.
+
+<LI>Your disk might be full. Eventually this will lead to
+<TT>mdrun</TT> crashing, but since output is buffered, it might take a
+while for <TT>mdrun</TT> to realize it can't write.
+
+</UL>
+<P>
+
+<A NAME="multPDB">
+<DT><B><FONT COLOR="#FF0000">I have a PDB file with multiple entries
+which I want to analyze. Now what?</FONT></B>
+
+<P> 
+
+<B>NOTE:</B> this is <EM>not</EM> about <A HREF="#multi">multi-subunit
+proteins</A>.
+
+<P>
+<DD> I assume your <A HREF="online2.0/pdb.html"><TT>.pdb</TT></A> 
+file is called "<TT>eiwit.pdb</TT>".  Then this is what you would do:
+
+<PRE>
+pdb2gmx -f eiwit.pdb -reth -ter -n
+</PRE>
+
+<TT>-reth</TT> lets 
+<A HREF="online2.0/pdb2gmx.html"><TT>pdb2gmx</TT></A> keep all
+hydrogens which are present in your input file. It will also <B>not
+add</B> any missing hydrogens, so your molecules should be
+complete. <TT>-ter</TT> will cause <TT>pdb2gmx</TT> to ask for termini
+types for which you must select 'none' for both C- and N-terminus.
+<TT>-n</TT> tells <TT>pdb2gmx</TT> to generate a 
+<A HREF="online2.0/ndx.html"><TT>.ndx</TT></A> file with the atoms
+reordered to the GROMACS standard. <TT>pdb2gmx</TT> now generates a
+topology file (<A HREF="online2.0/top.html"><TT>topol.top</TT></A>)
+which exactly corresponds with the molecule(s) in your input file.
+It also writes a coordinate file 
+(<A HREF="online2.0/gro.html"><TT>conf.gro</TT></A>).
+
+<P>
+The next step is:
+<PRE>
+trjconv -f eiwit.pdb -ox -n clean -timestep 1 -ter -box 10 -center
+</PRE>
+Yes, <TT>-f eiwit.pdb</TT> works because a <TT>.pdb</TT> is also a
+<A HREF="online2.0/files.html">trajectory format</A>
+in GROMACS. <TT>-ox</TT> sets output to 
+<A HREF="online2.0/xtc.html"><TT>.xtc</TT></A>. <TT>-n clean</TT>
+tells <A HREF="online2.0/trjconv.html"><TT>trjconv</TT></A> to
+use the <TT>clean.ndx</TT> generated by 
+<A HREF="online2.0/pdb2gmx.html"><TT>pdb2gmx</TT></A>, so the atom
+ordering in the output (<TT>.xtc</TT>) file will be according to GROMACS
+standards. <TT>-timestep 1</TT> sets the timestep between output frames
+to one, so the structures from the <TT>.pdb</TT> file get numbered 
+sequentially.
+<TT>-ter</TT> causes <TT>TER</TT> markers in the <TT>.pdb</TT>
+file to be seen as end-of-frame, default <TT>ENDMDL</TT> is used. If you
+are not sure what is in your <TT>eiwit.pdb</TT>, <TT>TER</TT> is a good
+guess, but you should check. If you have <TT>ENDMDL</TT> in stead of 
+<TT>TER</TT>, omit the <TT>-ter</TT>. <TT>-box 10</TT> sets a default
+box-size in the output <TT>.xtc</TT> trajectory (since no box is stored
+in a <TT>.pdb</TT> file). The size is in nm and should be larger than
+your molecule size. <TT>-center</TT> resets the geometrical center of
+each of your structures to the center of the box (the one you specify
+with <TT>-box</TT>). <TT>trjconv</TT> will generate a <TT>.xtc</TT>
+trajectory file with all the coordinates from your <TT>eiwit.pdb</TT>.
+
+<P>
+A not very exiting but obligatory step is:
+<PRE>
+grompp -f grompp.mdp -c conf.gro -p topol.top
+</PRE>
+This will generate a binary topology file 
+(<A HREF="online2.0/tpb.html"><TT>topol.tpb</TT></A>) from the 
+<TT>topol.top</TT> and <TT>conf.gro</TT> you generated with 
+<TT>pdb2gmx</TT>. 
+A <A HREF="online2.0/mdp.html">default <TT>grompp.mdp</TT></A> is 
+available. You can probably use it 'as is', but you might want or need 
+to modify some thing. In any case you are encouraged to 
+<A HREF="online2.0/mdp_opt.html">review the description</A> of the 
+numerous options in the <TT>.mdp</TT> file.
+
+<P>
+Now, suppose you want to calculate all cross-rmsd values for all
+structures. You will do:
+<PRE>
+g_rms -f ctrajout.xtc -s topol.tpb -m
+</PRE>
+<TT>-f ctrajout.xtc</TT> and <TT>-s topol.tpb</TT> are self-explanatory.
+<TT>-m</TT> tells <A HREF="online2.0/g_rms.html"><TT>g_rms</TT></A>
+to output an RMSD matrix in 
+<A HREF="online2.0/xpm.html"><TT>.xpm</TT></A> format, which can be
+directly viewed with for example <TT>xv</TT>.
+
+<P>
+Of course there are many more analysis tools available. For example
+<A HREF="online2.0/ngmx.html"><TT>ngmx</TT></A> a trajectory viewer.
+A list of all tools is available in the <A HREF="online2.0.html">online
+manual</A>.
+
+<P>
+
+<A NAME="twostruc">
+<DT><B><FONT COLOR="#FF0000">I want to fit two structures which do not have
+the same number/sequence of atoms. Now what?</FONT></B>
+<P>
+<DD>Just type:
+<PRE>
+<A HREF="online2.0/g_confrms.html">g_confrms</A> -f1 file1.xxx -f2 file2.xxx
+</PRE>
+g_confrms accepts 
+<A HREF="online2.0/files.html">generic structure format</A> which can
+be for instance <TT>.pdb</TT>, <TT>.gro</TT> or <TT>.tpb</TT>.
+The program will ask you to select subgroups of both structures for the
+(non mass weighted) LSQ fit. These subgroups must have the same number of atoms, however the two 
+structures do <B>not</B> need to have the same number of atoms, i.e. two proteins
+with the same number of residues but not the same type of residues can be
+fitted on c-alpha's. You will be warned when the atomnames in the fit groups
+do not match, but the program will go on.
+Option <TT>-o</TT> gives a <TT>.gro</TT> file of the second structure fitted
+one the first.
+Option <TT>-op</TT> gives a <TT>.gro</TT> file of the two structures fitted
+on top of each other.
+</P>
+
+<A NAME="group">
+<DT><B><FONT COLOR="#FF0000">I get tired of having to select the same 
+index group over and over again. Now what?</FONT></B>
+<P>
+<DD>
+Use <A HREF="online2.0/make_ndx.html"><TT>make_ndx</TT></A> to create 
+an <A HREF="online2.0/ndx.html"><TT>.ndx</TT></A> file with only one
+group in it, this is done by typing '<TT>keep #</TT>' in <TT>make_ndx</TT>,
+where '<TT>#</TT>' stands for the one group you want to have. 
+Name the file <TT>index.ndx</TT> (which is the default
+filename for index files) and specify the option <TT>-n</TT> with your
+favorite GROMACS analysis tool. Now this one group will get selected 
+automatically every time an index group is needed.
+<P>
+
+<A NAME="diys">
+<DT><B><FONT COLOR="#FF0000">I want to do an analysis GROMACS doesn't 
+have a program for. Now what?</FONT></B>
+<P>
+<DD>
+<P> Try the following minimal C program: 
+<SMALL>
+<PRE>
+
+void main(int argc,char *argv[])
+{
+  t_topology *top;
+  int      status;
+  int      natoms;
+  real     t;
+  rvec     *x;
+  matrix   box;
+
+  static char *desc[] = {
+    "This program will perform your analysis."
+  };
+  
+  static char *bugs[] = {
+    "This program does not do anything."
+  };
+  
+  static bool bDoIt=TRUE;
+  t_pargs pa[] = {
+    { "-doit", FALSE, etBOOL, &bDoIt, "Do it" }
+  };
+
+  t_filenm fnm[] = {
+    { efTPX, NULL,  NULL,  ffREAD },
+    { efTRX, NULL,  NULL,  ffREAD }
+  };
+#define NFILE asize(fnm)
+
+  CopyRight(stderr,argv[0]);
+  parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
+  
+  /* read topology (atomnames, bonds etc.):                 */
+  /* (if you don't need those you can omit this step)       */
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  natoms=top->atoms.nr;
+
+  /* initialize reading trajectory:                         */
+  natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+
+  /* check topology against trajectory:                     */
+  /* if you did not read a topology, omit this also         */
+  if (natoms != top->atoms.nr)
+    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
+		top->atoms.nr,natoms);
+
+  /* start analysis of trajectory */
+  if (bDoIt)
+    do {
+
+</PRE><FONT COLOR="#OO80OO"><PRE>
+      /* PUT YOUR ANALYSIS HERE */
+</PRE></FONT><PRE>
+      
+    }  while (read_next_x(status,&t,natoms,x,box));
+
+  /* clean up */
+  sfree(x);
+  close_trj(status);
+
+}
+</PRE>
+</SMALL>
+
+Note that this has to be edited before it will do anything usefull.
+You have to be sure all the GROMACS include files and library are
+available when compiling this. The easiest way to do this is to make a
+new file (e.g. <TT>g_myanal.c</TT>) in the <TT>src/tools</TT>
+directory and also add this to the Makefile in <TT>src/tools</TT>
+(look how other programs are in there and copy that). After that typing
+
+<PRE>
+% gmake g_myanal
+</PRE>
+
+should do the trick. If you don't want to clutter up the
+<TT>src/tools</TT> directory, you can also make a new directory in
+<TT>src</TT> (e.g. <TT>local</TT> or <TT>special</TT>), copy the
+<TT>src/tools/Makefile</TT> there and modify it. If you want more
+fancy options in your program, try modifying one of the smaller
+GROMACS analysis tools. <TT>g_com.c</TT> is a good one to start from
+although you might want to take one which already does something
+similar to what you want to do.
+
+<P>Finally, if you wrote an analysis tool which, to your opinion, adds
+something that is really missing in GROMACS, please 
+<A HREF="mailto:gromacs@chem.rug.nl">tell us</A> so we, and all other GROMACS
+users, can also benefit from it.
+</P>
+
+<A NAME="none">
+<DT><B><FONT COLOR="#FF0000">My problem is none of the above or none of the solutions seem to work. Now what?</FONT></B>
+<P>
+<DD>
+<P>Look at the <A HREF="readme2.0.html">download page</A> to
+see if your problem (and/or a possible solution) is mentioned
+there. Be sure to check the 
+<A HREF="readme2.0.html#problems">problems section</A> on the 
+download page. Also try 
+<A HREF="online2.0/getting_started.html">"Getting Started"</A> 
+where a guided tour of GROMACS is provided. 
+A quick glance at the <A HREF="online2.0/flow.html">flowchart</A>
+will tell you if you missed any essential steps in setting up a run.
+Also checking your <A HREF="online2.0/mdp.html"><TT>.mdp</TT></A>
+file against our <A HREF="online2.0/mdp.html">sample <TT>.mdp</TT>
+file</A> and the <A HREF="online2.0/mdp_opt.html">mdp options
+list</A> will solve a number of potential problems. In general it
+never hurts to read the <A HREF="online2.0.html">manual pages</A> of
+all the GROMACS programs you (tried to) use. If all this still leaves
+you with any unanswered questions, <A HREF="mailto:gromacs@chem.rug.nl">please
+don't hesitate to contact us</A>.
+</P>
+
+<P>For summary, the pages to check:
+<UL>
+<LI>The <A HREF="readme1.6.html">download page</A> (esp. the <A HREF="readme1.6.html#problems">problems section</A>).
+<LI>The <A HREF="online1.6/getting_started.html">"Getting Started"</A>
+guided tour
+<LI>The <A HREF="online1.6/flow.html">flowchart</A>
+<LI>Our <A HREF="online1.6/mdp.html">sample <TT>.mdp</TT> file</A>
+<LI>The <A HREF="online1.6/mdp_opt.html">mdp options list</A>
+<LI>And finally the <A HREF="online1.6.html">manual pages</A>
+<LI><A HREF="mailto:gromacs@chem.rug.nl">Us</A>
+</UL>
+</P>
+</DL>
+
+<HR>
+<BR>
+</BODY>
+</HTML>
