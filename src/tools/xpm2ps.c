@@ -98,7 +98,7 @@ enum { elSel, elBoth, elFirst, elSecond, elNone, elNR };
 /* MUST correspond to char *combine[] in main() */
 enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
 
-  void get_params(char *mpin,char *mpout,t_psrec *psr)
+void get_params(char *mpin,char *mpout,t_psrec *psr)
 {
   static const char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
@@ -120,8 +120,8 @@ enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
   STYPE("legendlabel",    psr->leglabel,       "");
   STYPE("legend2label",   psr->leg2label,      psr->leglabel);
   RTYPE("legendfontsize", psr->legfontsize,    14.0);
-  RTYPE("xbox",           psr->xboxsize,       1.0);
-  RTYPE("ybox",           psr->yboxsize,       psr->xboxsize);
+  RTYPE("xbox",           psr->xboxsize,       0.0);
+  RTYPE("ybox",           psr->yboxsize,       0.0);
   RTYPE("matrixspacing",  psr->boxspacing,     20.0);
   RTYPE("xoffset",        psr->xoffs,          0.0);
   RTYPE("yoffset",        psr->yoffs,          psr->xoffs);
@@ -598,9 +598,9 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
   real space;
   bool bTryAgain,bFive;
   int  i,j,t,f=0,ten;
-#define NFACT 6
-  int major_fact[NFACT] = {1, 2, 2.5, 4, 5, 7.5};
-  int minor_fact[NFACT] = {5, 4, 5,   4, 5, 2.5};
+#define NFACT 5
+  int major_fact[NFACT] = {1, 2, 2.5, 5, 7.5};
+  int minor_fact[NFACT] = {5, 4, 5,   5, 2.5};
   
   /* start with interval between 10 matrix points: */
   space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
@@ -632,8 +632,8 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    bool bFrame,bool bDiag,bool bFirstDiag,
-	    bool bTitle,bool bTitleOnce,bool bYonce,
-	    int elegend,real boxx,real boxy,char *m2p,char *m2pout,
+	    bool bTitle,bool bTitleOnce,bool bYonce,int elegend,
+	    real size,real boxx,real boxy,char *m2p,char *m2pout,
 	    int mapoffset)
 {
   char   *libm2p;
@@ -665,13 +665,22 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 		 &(psr->Y.major), &(psr->Y.minor) );
   if (psr->Y.minor <= 0)
     psr->Y.minor = psr->Y.major / 2;
-  
+
   if (boxx>0) {
     psr->xboxsize=boxx;
     psr->yboxsize=boxx;
   }
   if (boxy>0)
     psr->yboxsize=boxy;  
+
+  if (psr->xboxsize==0) {
+    psr->xboxsize = size/mat[0].nx;
+    printf("Set the x-size of the box to %.3f\n",psr->xboxsize);
+  }
+  if (psr->yboxsize==0) {
+    psr->yboxsize = size/mat[0].nx;
+    printf("Set the y-size of the box to %.3f\n",psr->yboxsize);
+  }
 
   nmap1=0;
   for (i=0; (i<nmat); i++)
@@ -955,7 +964,8 @@ void write_combined_matrix(int ecombine, char *fn,
 
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
 	    bool bFrame,bool bZeroLine,bool bDiag,bool bFirstDiag,bool bTitle,
-	    bool bTitleOnce,bool bYonce,int elegend,real boxx,real boxy,
+	    bool bTitleOnce,bool bYonce,int elegend,
+	    real size,real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,int skip,
 	    int mapoffset)
 {
@@ -984,7 +994,8 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bFrame,bDiag,bFirstDiag,
-	   bTitle,bTitleOnce,bYonce,elegend,boxx,boxy,m2p,m2pout,mapoffset);
+	   bTitle,bTitleOnce,bYonce,elegend,
+	   size,boxx,boxy,m2p,m2pout,mapoffset);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
 }
@@ -1066,6 +1077,12 @@ int main(int argc,char *argv[])
     "titlefont -> legendfont; titlefont -> (xfont -> yfont -> ytickfont)",
     "-> xtickfont, e.g. setting titlefont sets all fonts, setting xfont",
     "sets yfont, ytickfont and xtickfont.[PAR]",
+    "When no [TT]m2p[tt] file is supplied, many setting are set by",
+    "command line options. The most important option is [TT]-size[tt]",
+    "which sets the size of the whole matrix in postscript units.",
+    "This option can be overridden with the [TT]-bx[tt] and [TT]-by[tt]",
+    "options (and the corresponding parameters in the [TT]m2p[tt] file),",
+    "which set the size of a single matrix element.[PAR]",
     "With [TT]-f2[tt] a 2nd matrix file can be supplied, both matrix",
     "files will be read simultaneously and the upper left half of the",
     "first one ([TT]-f[tt]) is plotted together with the lower right",
@@ -1093,7 +1110,7 @@ int main(int argc,char *argv[])
   t_matrix *mat=NULL,*mat2=NULL;
   bool      bTitle,bTitleOnce,bDiag,bFirstDiag,bGrad;
   static bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE,bAdd=FALSE;
-  static real boxx=0,boxy=0;
+  static real size=400,boxx=0,boxy=0;
   static rvec grad={0,0,0};
   enum                    { etSel, etTop, etOnce, etYlabel, etNone, etNR };
   static char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
@@ -1115,9 +1132,11 @@ int main(int argc,char *argv[])
     { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
     { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
     { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
+    { "-size",    FALSE, etREAL, {&size},
+      "Horizontal size of the matrix in ps units" },
     { "-bx",      FALSE, etREAL, {&boxx},
-      "Box x-size (also y-size when -by is not set)" },
-    { "-by",      FALSE, etREAL, {&boxy},   "Box y-size" },
+      "Element x-size, overrides -size (also y-size when -by is not set)" },
+    { "-by",      FALSE, etREAL, {&boxy},   "Element y-size" },
     { "-rainbow", FALSE, etENUM, {rainbow},
       "Rainbow colors, convert white to" },
     { "-gradient",FALSE, etRVEC, {grad},
@@ -1224,7 +1243,7 @@ int main(int argc,char *argv[])
   else
     do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
 	   bTitle,bTitleOnce,bYonce,
-	   elegend, boxx,boxy,epsfile,xpmfile,
+	   elegend,size,boxx,boxy,epsfile,xpmfile,
 	   opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip,
 	   mapoffset);
   
