@@ -96,18 +96,18 @@ static void insert_ion(int nsa,int *nwater,
     }
   }
   if (ei == -1)
-    fatal_error(0,"No More replaceable waters!");
-  fprintf(stderr,"Replacing water %d (atom %d) with %s\n",
+    fatal_error(0,"No more replaceable solvent!");
+  fprintf(stderr,"Replacing solvent molecule %d (atom %d) with %s\n",
 	  ei,index[nsa*ei],ionname);
   
-  /* Replace water charges with ion charge */
+  /* Replace solvent molecule charges with ion charge */
   bSet[ei] = TRUE;
   repl[ei] = sign;
   mdatoms->chargeA[index[nsa*ei]] = q;
-  mdatoms->chargeA[index[nsa*ei+1]] = 0;
-  mdatoms->chargeA[index[nsa*ei+2]] = 0;
+  for(i=1; i<nsa; i++)
+    mdatoms->chargeA[index[nsa*ei+i]] = 0;
 
-  /* Mark all waters within rmin as unavailable for substitution */
+  /* Mark all solvent molecules within rmin as unavailable for substitution */
   if (rmin > 0) {
     rmin2=rmin*rmin;
     for(i=0; (i<nw); i++) {
@@ -149,7 +149,7 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
 
   snew(xt,atoms->nr);
 
-  /* Put all the water in front and count the added ions */
+  /* Put all the solvent in front and count the added ions */
   np=0;
   nn=0;
   j=index[0];
@@ -200,12 +200,12 @@ void sort_ions(int nsa,int nw,int repl[],atom_id index[],
       }
     }
     for(i=index[nsa*nw-1]+1; i<atoms->nr; i++) {
-      j = i-2*(np+nn);
+      j = i-(nsa-1)*(np+nn);
       atoms->atomname[j] = atoms->atomname[i];
       atoms->atom[j] = atoms->atom[i];
       copy_rvec(x[i],xt[j]);
     }
-    atoms->nr -= 2*(np+nn);
+    atoms->nr -= (nsa-1)*(np+nn);
 
     /* Copy the new positions back */
     for(i=index[0]; i<atoms->nr; i++)
