@@ -184,14 +184,14 @@ may be set in the in the input for {\tt grompp}.
 \subsection{Coulomb interaction with \normindex{reaction field}}
 \label{sec:coulrf}
 The coulomb interaction can be modified for homogeneous systems, by
-assuming a constant dielectric environment beyond the cut-off $r_c$
+assuming a constant dielectric environment beyond the cutoff $r_c$
 with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
 V_{crf} ~=~     f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
 \label{eqn:vcrf}
 \eeq
 in which the constant expression on the right makes the potential
-zero at the cut-off $r_c$. We can rewrite this for simplicity as
+zero at the cutoff $r_c$. We can rewrite this for simplicity as
 \beq
 V_{crf} ~=~     f q_i q_j\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
 \eeq
@@ -201,20 +201,20 @@ k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{\epsrf-1}{(2\epsrf+1)}   \label{eqn:krf}\
 c_{rf}  &=&     \frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+1)}
 \label{eqn:crf}
 \eea
-for large $\epsrf$ the $k_{rf}$ goes to 0.5~$r_c^{-3}$,
+For large $\epsrf$ the $k_{rf}$ goes to 0.5~$r_c^{-3}$,
 while for $\epsrf$ = 1 the correction vanishes.
 This makes it possible to use
 the same expression with and without reaction field, albeit at some
 computational cost. 
 In \figref{coul}
 the modified interaction is plotted, and it is clear that the derivative 
-with respect to $\rij$ (= -force) goes to zero at the cut-off distance.
+with respect to $\rij$ (= -force) goes to zero at the cutoff distance.
 The force derived from this potential reads:
 \beq
 \ve{F}_i(\rvij) = f q_i q_j\left[\frac{1}{\rij^2} - 2 k_{rf}\rij\right]\rnorm
 \eeq
 Tironi {\etal} have introduced a generalized reaction field in which
-the dielectric continuum beyond the cut-off $r_c$ also has an ionic strength
+the dielectric continuum beyond the cutoff $r_c$ also has an ionic strength
 $I$~\cite{Tironi95}. In this case we can rewrite the constants $k_{rf}$ and 
 $c_{rf}$ using the inverse Debye screening length $\kappa$:
 \bea
@@ -226,7 +226,7 @@ c_{rf}  &=&     \frac{1}{r_c}\,\frac{3\epsrf(1+\kappa r_c+(\kappa r_c)^2)}{(2\ep
 where $F$ is Faraday's constant, $R$ is the ideal gas constant, $T$
 the absolute temperature, $c_i$ the molar concentration for species
 $i$ and $z_i$ the charge number of species $i$ where we have $K$
-different species. In the limit of zero ionic strength ($\kappa$ = 0)
+different species. In the limit of zero ionic strength ($\kappa=0$)
 \eqnsref{kgrf}{cgrf} reduce to the simple forms of \eqnsref{krf}{crf}
 respectively.
 
@@ -234,7 +234,7 @@ respectively.
 In the {\gromacs} force field the non-bonded potentials can be
 modified by a shift function. The purpose of this is to replace the
 truncated forces by forces that are continuous and have continuous
-derivatives at the \normindex{cut-off} radius. With such forces the
+derivatives at the \normindex{cutoff} radius. With such forces the
 time-step integration produces much smaller errors and there are no
 such complications as creating charges from dipoles by the truncation
 procedure. In fact, by using shifted forces there is no need for
@@ -244,7 +244,7 @@ potential. Unless the 'missing' long-range potential is properly
 calculated and added (through the use of PPPM, Ewald, or PME), the
 effect of such modifications must be carefully evaluated.  The
 modification of the Lennard-Jones dispersion and repulsion is only
-minor, but it does remove the noise caused by cut-off effects.
+minor, but it does remove the noise caused by cutoff effects.
  
 There is {\em no} fundamental difference between a switch function
 (which multiplies the potential with a function) and a shift function
@@ -414,7 +414,7 @@ the Morse potential~\cite{Morse29}
 between two atoms {\it i} and {\it j} is available
 in {\gromacs}. This potential differs from the harmonic potential in
 having an asymmetric potential well and a zero force at infinite
-distance The functional form is:
+distance. The functional form is:
 \beq
 \displaystyle V_{morse} (r_{ij}) = D_{ij} [1 - \exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2,
 \eeq
@@ -438,12 +438,16 @@ and {\it j}, the fundamental vibration frequency \( \displaystyle
 and because \( \displaystyle \omega = \sqrt{k/\mu} \), one can rewrite \( \displaystyle \beta_{ij} \) in terms of the harmonic force constant \( \displaystyle k_{ij} \)
 \beq
 \displaystyle \beta_{ij}= \sqrt{\frac{k_{ij}}{2 D_{ij}}}
+\label{eqn:betaij}
 \eeq
-For small deviations \( \displaystyle (r_{ij}-b_{ij}) \), one can expand the \( \displaystyle \exp \)-term to first-order in the Taylor expansion: 
+For small deviations \( \displaystyle (r_{ij}-b_{ij}) \), one can
+approximate the \( \displaystyle \exp \)-term to first-order using a
+Taylor expansion:
 \beq
 \displaystyle \exp(-x) \approx 1-x
+\label{eqn:expminx}
 \eeq
-Substituting this in the functional from;
+and substituting \eqnref{betaij} and \eqnref{expminx} in the functional from,
 \beq
 \begin{array}{rcl}
 \displaystyle V_{morse} (r_{ij})&=&D_{ij} [1 - \exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2\\
@@ -451,7 +455,7 @@ Substituting this in the functional from;
 \displaystyle \:&=&\frac{1}{2} k_{ij} (r_{ij}-b_{ij}))^2,
 \end{array}
 \eeq
-one recovers the harmonic bond stretching potential.
+we recover the harmonic bond stretching potential.
 
 \begin{figure}
 \centerline{\includegraphics[width=7cm]{plots/f_morse}}
@@ -470,9 +474,9 @@ A flexible \normindex{water} model (based on
 the SPC water model~\cite{Berendsen81}) including 
 a cubic bond stretching potential for the O-H bond
 was developed by Ferguson~\cite{Ferguson95}. This model was found
-to yield a reasonable Infrared spectrum. The Ferguson water model is
+to yield a reasonable infrared spectrum. The Ferguson water model is
 available in the {\gromacs} library. 
-It should be noted that the potential is asymetric, overstretching leads to
+It should be noted that the potential is asymmetric: overstretching leads to
 infinitely low energies. The \swapindex{integration}{timestep} is therefore
 limited to 1 fs.
 
@@ -497,7 +501,7 @@ bond angle potential (right).}
 \beq
 V_a(\tijk) = \half k^{\theta}_{ijk}(\tijk-\tijk^0)^2
 \eeq
-As the bond-angle vibration is represented by a harmonic potential the
+As the bond-angle vibration is represented by a harmonic potential, the
 form is the same as the bond stretching (\figref{bstretch1}).
 
 The force equations are given by the chain rule:
@@ -510,7 +514,8 @@ The force equations are given by the chain rule:
 ~ \mbox{ ~ where ~ } ~
  \tijk = \arccos \frac{(\rvij \cdot \ve{r}_{kj})}{r_{ij}r_{kj}}
 \eeq
-The numbering $i,j,k$ is in sequence of covalently bonded atoms, with $j$ denoting the middle atom (see \figref{angle}).
+The numbering $i,j,k$ is in sequence of covalently bonded atoms. Atom
+$j$ is in the middle; atoms $i$  and $k$ are at the ends (see \figref{angle}).
 
 \subsection{Cosine based angle potential}
 \label{sec:cosangle}
@@ -555,7 +560,7 @@ in all cases.}
 \beq
 V_{id}(\xi_{ijkl}) = k_{\xi}(\xi_{ijkl}-\xi_0)^2
 \eeq
-This is also a harmonic potential, it is plotted in
+This is also a harmonic potential; it is plotted in
 \figref{imps}. Note that, since it is harmonic, periodicity is
 not taken into account, so it is best to define improper dihedrals
 to have a $\xi_0$ as far away from $\pm 180^\circ$ as you can manage.
@@ -625,7 +630,7 @@ $C_1$   & 12.16 & $C_3$   & -3.06   & $C_5$   & -31.5   \\
 \label{fig:rbdih}
 \end{figure}
 
-({\bf Note:} The use of this potential implies exclusions of LJ-interactions
+({\bf Note:} The use of this potential implies exclusion of LJ interactions
 between the first and the last atom of the dihedral, and $\psi$ is defined
 according to the 'polymer convention' ($\psi_{trans}=0$).)
 
@@ -656,7 +661,7 @@ Ryckaert-Bellemans parameters as follows:
 with OPLS parameters in protein convention and RB parameters in 
 polymer convention.\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
-OPLS and RB parameters in literature to {\em kJ mol$^{-1}$} in {\gromacs}.
+literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.
 
 \subsection{Special interactions}
 Special potentials are used for imposing restraints on the motion of
@@ -679,8 +684,8 @@ proper interaction from missing particles outside the
 shell. Restraining will then maintain the integrity of the inner
 part. For spherical shells it is a wise procedure to make the force
 constant depend on the radius, increasing from zero at the inner
-boundary to a large value at the outer boundary. This application has
-not been implemented in {\gromacs} however.
+boundary to a large value at the outer boundary. This feature has
+not, however, been implemented in {\gromacs}.
 \newcommand{\unitv}[1]{\hat{\bf #1}}
 \newcommand{\halfje}[1]{\frac{#1}{2}}
 
@@ -818,8 +823,8 @@ This way an atom can satisfy two incompatible distance restraints
 {\em on average} by moving between two positions. 
 An example would be an amino-acid side-chain which is rotating around
 its $\chi$ dihedral angle, thereby coming close to various other groups.
-Such a mobile side chain may give rise to multiple NOEs, which can not be
-fulfilled in a single structure.
+Such a mobile side chain can give rise to multiple NOEs that can not be
+fulfilled by a single structure.
 
 The computation of the time
 averaged distance in the {\tt mdrun} program is done in the following fashion:
@@ -849,7 +854,8 @@ to distinguish between the protons, therefore they should all be taken into
 account when calculating the distance between this methyl group and another
 proton (or group of protons).
 Due to the physical nature of magnetic resonance, the intensity of the
-NOE signal is proportional to the distance between atoms to the power of -6.
+NOE signal is inversely proportional to the sixth power of the interatomic 
+distance.
 Thus, when combining atom pairs, 
 a fixed list of $N$ restraints may be taken together, 
 where the apparent ``distance'' is given by:
@@ -865,9 +871,9 @@ will increase, and the summed ``distance'' will be shorter than any of
 its components due to the reciprocal summation. 
 
 There are two options for distributing the forces over the atom pairs.
-In the conservative option the force is defined as the derivate of the
+In the conservative option the force is defined as the derivative of the
 restraint potential with respect to the coordinates. This results in
-a conservative potential when no time averaging is used.
+a conservative potential when time averaging is not used.
 The force distribution over the pairs is proportional to $r^{-6}$.
 This means that a close pair feels a much larger force than a distant pair,
 which might lead to a 'too rigid' molecule.
@@ -922,11 +928,11 @@ column. In our example, the restraints 10-28 and 10-46 both have index
 for treating restraints together, is that the restraints should be on
 successive lines, without any other intervening restraint.  The {\tt
 type'} column will usually be 1, but can be set to 2 to obtain a
-distance restraint which will never be time and ensemble averaged,
+distance restraint which will never be time and ensemble averaged;
 this can be useful for restraining hydrogen bonds.  The columns {\tt
 low}, {\tt up1} and {\tt up2} hold the values of $r_0$, $r_1$ and
 $r_2$ from ~\eqnref{disre}.  In some cases it can be useful to have
-different force constants for some restraints, this is controlled by
+different force constants for some restraints; this is controlled by
 the column {\tt fac}.  The force constant in the parameter file is
 multiplied by the value in the column {\tt fac} for each restraint.
 
@@ -934,10 +940,10 @@ Some parameters for NMR refinement can be specified in the
 {\tt grompp.mdp} file:
 \begin{description}
 \item[{\tt disre}: type of distance restraining.]
-        The {\tt disre} variable sets the type of distance restraining.
-        {\tt no/simple} turns the distance restraining off/on.
+        The {\tt disre} variable sets the type of distance restraint.
+        {\tt no/simple} turns the distance restraints off/on.
         When multiple proteins or peptides are used
-        in the simulation ensemble averaging 
+        in the simulation, ensemble averaging 
         can be turned on by setting {\tt disre = ensemble}.
 \item[{\tt disre\_weighting}: force-weighting in restraints with
          multiple pairs.]
@@ -948,9 +954,9 @@ Some parameters for NMR refinement can be specified in the
         If you instead set this option to {\tt disre\_weighting = conservative}
         you get conservative forces when {\tt disre\_tau = 0}.
 \item[{\tt disre\_mixed}: how to calculate the violations.]
-        {\tt disre\_mixed = no} gives normal time averaged violations.
+        {\tt disre\_mixed = no} gives normal time-averaged violations.
         When {\tt disre\_mixed = yes} the square root of the
-        product of the time averaged and the instantaneous
+        product of the time-averaged and the instantaneous
         violations is used.
 \item[{\tt disre\_fc}: force constant $k_{dr}$ for distance restraints.] 
         $k_{dr}$  (\eqnref{disre}) can be set
@@ -964,7 +970,7 @@ Some parameters for NMR refinement can be specified in the
         10 ps. Time averaging can be turned off by setting {\tt disre\_tau}
         to 0.
 \item[{\tt nstdisreout}: pair distance output frequency.]
-        Determines how often the time averaged and 
+        Determines how often the time-averaged and 
         instantaneous distances of all atom pairs involved in
         distance restraints are written to the energy file.
 \end{description}
@@ -984,7 +990,7 @@ of the interaction parameters. Non-bonded interactions can be
 interpolated linearly or via soft-core interactions.
 
 \subsubsection{Harmonic potentials}
-The example given here is for the bond potential which is harmonic
+The example given here is for the bond potential, which is harmonic
 in {\gromacs}. However,  these equations apply to the angle potential
 and the improper dihedral potential as well.
 \bea
@@ -1054,13 +1060,13 @@ $\sigma$ and $\epsilon$ rather
 than the derived parameters $C_{12}$ and $C_{6}$.
 However, the difference between the pathways in parameter space
 is not large, and the free energy itself
-does not depend on the pathway, therefore we use the simple formulation
+does not depend on the pathway, so we use the simple formulation
 presented above.
 
 \subsubsection{Kinetic Energy}
-When the mass of a particle changes there is also a contribution of
+When the mass of a particle changes, there is also a contribution of
 the kinetic energy to the free energy (note that we can not write 
-the momentum \ve{p} as m\ve{v} since that would result 
+the momentum \ve{p} as m\ve{v}, since that would result 
 in the sign of $\dvdl{Ek}$ being incorrect~\cite{Gunsteren98a}):
 
 \bea
@@ -1082,8 +1088,8 @@ If we have a number of constraint equations $g_k$:
 g_k     =       r_{k} - d_{k}
 \eeq
 where $\ve{r}_k$ is the distance vector between two particles and 
-$d_k$ is the constraint distance between the two particles we can write
-this using a $\LAM$ dependent distance as
+$d_k$ is the constraint distance between the two particles, we can write
+this using a $\LAM$-dependent distance as
 \beq
 g_k     =       r_{k} - \left(\LL d_{k}^A + \LAM d_k^B\right)
 \eeq
@@ -1116,8 +1122,8 @@ r_A = \left(\alpha \sigma_A^6 \LAM^2 + r^6 \right)^\frac{1}{6}
 \beq
 r_B = \left(\alpha \sigma_B^6 \LL^2 + r^6 \right)^\frac{1}{6}
 \eeq
-where $V^A$ and $V^B$ are the normal 'hard core' Van der Waals or
-Electrostatic potentials in state A ($\LAM=0$) and state B ($\LAM=1$)
+where $V^A$ and $V^B$ are the normal ``hard core'' Van der Waals or
+electrostatic potentials in state A ($\LAM=0$) and state B ($\LAM=1$)
 respectively, $\alpha$ is the soft-core parameter, which mainly controls the
 height of the potential around $r=0$, $\sigma$ is the radius of the
 interaction, which is $(C_{12}/C_6)^{1/6}$ or a predefined value when
@@ -1147,7 +1153,7 @@ Atoms within a molecule that are close by in the chain,
 {\ie} atoms that are covalently bonded, or linked by one respectively two
 atoms are so-called {\em first neighbors, second neighbors} and 
 {\em \swapindex{third}{neighbor}s}, (see \figref{chain}). Since the
-interactions of atom {\bf i} with {\bf i+1} 
+interactions of atom {\bf i} with atoms {\bf i+1} and {\bf i+2} 
 
 \begin{figure}
 \centerline{\includegraphics[angle=270,width=8cm]{plots/chain}}
@@ -1155,11 +1161,11 @@ interactions of atom {\bf i} with {\bf i+1}
 \label{fig:chain}
 \end{figure}
 
-and the interaction of atom {\bf i} with atom {\bf i+2} are mainly
+are mainly
 quantum mechanical, they can not be modeled by a Lennard-Jones potential.
 Instead it is assumed that these interactions are adequately modeled
-by a harmonic bond term or constraint ({\bf i,i+1}) and a harmonic angle term
-({\bf i,i+2}). The first and second neighbors (atoms {\bf i+1}and {\bf i+2}) 
+by a harmonic bond term or constraint ({\bf i, i+1}) and a harmonic angle term
+({\bf i, i+2}). The first and second neighbors (atoms {\bf i+1} and {\bf i+2}) 
 are therefore
 {\em excluded} from the Lennard-Jones \swapindex{interaction}{list} 
 of atom {\bf i};
@@ -1168,7 +1174,7 @@ atoms {\bf i+1} and {\bf i+2} are called {\em \normindex{exclusions}} of atom {\
 For third neighbors the normal Lennard-Jones repulsion is sometimes
 still too strong, which means that when applied to a molecule the
 molecule would deform or break due to the internal strain. This is
-especially the case for Carbon-Carbon interactions in a {\em
+especially the case for carbon-carbon interactions in a {\em
 cis}-conformation ({\eg} {\em cis}-butane).  Therefore for some of these
 interactions the Lennard-Jones repulsion has been reduced in the
 {\gromos} force field, which is implemented by keeping a separate list of
@@ -1181,29 +1187,29 @@ and the coulomb interaction are scaled.
 \subsection{\normindex{Charge Group}s.}
 \label{sec:cg}
 In principle the force calculation in MD is an $O(N^2)$ problem.
-Therefore we apply a \normindex{cut-off} for non-bonded force (NBF)
+Therefore we apply a \normindex{cutoff} for non-bonded force (NBF)
 calculations: only the particles within a certain distance of each
 other are interacting. This reduces the cost to $O(N)$ (typically
 $100N$ to $200N$) of the NBF. It also introduces an error, which is,
-in most cases, acceptable, except when applying the cut-off implies
+in most cases, acceptable, except when applying the cutoff implies
 the creation of charges, in which case you should consider using the
 lattice sum methods provided by {\gromacs}.
 
 Consider a water molecule interacting with another atom. When we would apply
-the cut-off on an atom-atom basis we might include the atom-Oxygen
+the cutoff on an atom-atom basis we might include the atom-Oxygen
 interaction (with a charge of -0.82) without the compensating charge
-of the Hydrogens and so induce a large dipole moment over the system.
+of the protons and so induce a large dipole moment over the system.
 Therefore we have to keep groups of atoms with total charge
-0 together, the so-called {\em charge groups}.
+0 together. These groups are called {\em charge groups}.
 
-\subsection{Treatment of cut-offs}
+\subsection{Treatment of cutoffs}
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
-{\gromacs} is quite flexible in treating cut-offs, which implies
+{\gromacs} is quite flexible in treating cutoffs, which implies
 there can be quite a number of parameters to set. These parameters are
 set in the input file for grompp. There are two sort of parameters
-that affect the cut-off interactions; you can select which type
-of interaction to use in each case, and which cut-offs should be
+that affect the cutoff interactions; you can select which type
+of interaction to use in each case, and which cutoffs should be
 used in the neighborsearching.
 
 For both Coulomb and van der Waals interactions there are interaction
@@ -1220,11 +1226,11 @@ Usually one builds the neighbor list every 10 time steps
 or every 20 fs (parameter {\tt nstlist}). In the neighbor list all interaction 
 pairs that  fall within {\tt rlist} are stored. Furthermore, the 
 interactions between pairs that do not
-fall within {\tt rlist} but do fall within and max({\tt rcoulomb},{\tt rvdw})
+fall within {\tt rlist} but do fall within max({\tt rcoulomb},{\tt rvdw})
 are computed during NS, and the
 forces and energy are stored separately, and added to short-range forces
 at every time step between successive NS. If {\tt rlist} = 
-max({\tt rcoulomb},{\tt rvdw}) no forces
+max({\tt rcoulomb},{\tt rvdw}), no forces
 are evaluated during neighbor list generation.
 The \normindex{virial} is calculated from the sum of the short- and
 long-range forces.
@@ -1234,7 +1240,7 @@ off-diagonal elements are about as large as each element in the sum.
 In most cases this is not really a problem, since the fluctuations in de
 virial can be 2 orders of magnitude larger than the average.
 
-Except for the plain cut-off,
+Except for the plain cutoff,
 all of the interaction functions in \tabref{funcparm}
 require that neighbor searching is done with a larger radius than the $r_c$
 specified for the functional form, because of the use of charge groups.
@@ -1246,7 +1252,7 @@ charge group can diffuse within neighbor list updates).
 %groups, by setting the option 
 %{\tt bAtomList = yes} in your {\tt grompp.mdp} file.
 %In this case only a small extra radius to account for diffusion needs to be 
-%added (0.1 nm). Do not however use this together with the plain cut-off
+%added (0.1 nm). Do not however use this together with the plain cutoff
 %method, as it will generate large artifacts (\secref{cg}).
 %In summary, there are four parameters that describe NS behavior:
 %{\tt nstlist} (update frequency in number of time steps),
@@ -1260,12 +1266,12 @@ charge group can diffuse within neighbor list updates).
 \dline
 \multicolumn{2}{|c|}{Type}              & Parameters            \\
 \hline
-Coulomb&Plain cut-off   & $r_c$, $\epsr$        \\
+Coulomb&Plain cutoff   & $r_c$, $\epsr$        \\
 &Reaction field         & $r_c$, $\epsrf$       \\
 &Shift function         & $r_1$, $r_c$, $\epsr$         \\
 &Switch function        & $r_1$, $r_c$, $\epsr$         \\
 \hline
-VdW&Plain cut-off       & $r_c$         \\
+VdW&Plain cutoff       & $r_c$         \\
 &Shift function         & $r_1$, $r_c$          \\
 &Switch function        & $r_1$, $r_c$          \\
 \dline
@@ -1325,42 +1331,41 @@ where $\Fdum$ is the force on the dummy particle and $x_d$, $y_d$ and
 $z_d$ are the coordinates of the dummy particle. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
 
-As a further note, the computation of the virial (\eqnref{Xi})
-\normindex{virial} is
-non-trivial when dummy atoms are used. Since the virial involves a
-summation over all the atoms (rather than virtual particles) the forces
-most be redistributed from the dummies to the atoms (using
-~\eqnref{fdum}) {\em before} computation of the virial. In some
-special cases where the forces on the atoms can be written as a linear
-combination of the forces on the dummies (types 2 and 3 below) there
-is no difference between computing the virial before and after the
-redistribution of forces.  However, in the general case redistribution
-should be done first.
+As a further note, the computation of the \normindex{virial}
+(\eqnref{Xi}) is non-trivial when dummy atoms are used. Since the
+virial involves a summation over all the atoms (rather than virtual
+particles) the forces most be redistributed from the dummies to the
+atoms (using ~\eqnref{fdum}) {\em before} computation of the
+virial. In some special cases where the forces on the atoms can be
+written as a linear combination of the forces on the dummies (types 2
+and 3 below) there is no difference between computing the virial
+before and after the redistribution of forces.  However, in the
+general case redistribution should be done first.
 
 \begin{figure}
 \centerline{\includegraphics[width=15cm]{plots/dummies}}
 \caption[Dummy atom construction.]{The six different types of dummy
-atom construction in \protect{\gromacs}, the constructing atoms are
+atom construction in \protect{\gromacs}. The constructing atoms are
 shown as black circles, the dummy atoms in grey.}
 \label{fig:dummies}
 \end{figure}
 
 There are six ways to construct dummies from surrounding atoms in
-{\gromacs}, which we categorize based on the number of constructing
-atoms. Note that all dummies types mentioned can be constructed from
+{\gromacs}, which we classify by the number of constructing
+atoms. Note that all dummy types mentioned can be constructed from
 types 3fd (normalized, in-plane) and 3out (non-normalized, out of
 plane). However, the amount of computation involved increases sharply
-along this list, so it is strongly recommended to always use the first
-dummy type that will be sufficient for a certain purpose. An overview
-of the dummy constructions is given in \figref{dummies}.
+along this list, so we strongly recommended using the first adequate
+dummy type that will be sufficient for a certain purpose.
+\figref{dummies} gives an overview of the available dummy constructions.
 
 \begin{itemize}
-\item[2.]As a linear combination of two atoms
+\item[{\bf\sf 2.}]As a linear combination of two atoms
         (\figref{dummies} 2):
 \beq
         \ve{r}_d ~=~ \ve{r}_i + a \rvij
 \eeq
-        in this case the dummy is on the line through atoms $i$ and
+        In this case the dummy is on the line through atoms $i$ and
         $j$. The force on particles $i$ and $j$ due to the force on
         the dummy can be computed as:
 \beq
@@ -1370,12 +1375,12 @@ of the dummy constructions is given in \figref{dummies}.
         \end{array}
 \eeq
 
-\item[3.]As a linear combination of three atoms
+\item[{\bf\sf 3.}]As a linear combination of three atoms
         (\figref{dummies} 3):
 \beq
         \ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik
 \eeq
-        in this case the dummy is in the plane of the other three particles.
+        In this case the dummy is in the plane of the other three particles.
         The force on particles $i$, $j$ and $k$ due to the force on the dummy
         can be computed as:
 \beq
@@ -1386,13 +1391,13 @@ of the dummy constructions is given in \figref{dummies}.
         \end{array}
 \eeq
 
-\item[3fd.]In the plane of three atoms, with a fixed distance
+\item[{\bf\sf 3fd.}]In the plane of three atoms, with a fixed distance
         (\figref{dummies} 3fd):
 \beq
         \ve{r}_d ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
                                      {| \rvij + a \rvjk |}      
 \eeq
-        in this case the dummy is in the plane of the other three
+        In this case the dummy is in the plane of the other three
         particles at a distance of $|b|$ from $i$.
         The force on particles $i$, $j$ and $k$ due to the force on the dummy
         can be computed as:
@@ -1410,7 +1415,7 @@ of the dummy constructions is given in \figref{dummies}.
         \end{array}
 \eeq
 
-\item[3fad.]In the plane of three atoms, with a fixed angle and
+\item[{\bf\sf 3fad.}]In the plane of three atoms, with a fixed angle and
         distance (\figref{dummies} 3fad):
 \beq
 \label{eqn:dum2fad-F}
@@ -1423,11 +1428,11 @@ of the dummy constructions is given in \figref{dummies}.
                              { \rvij \cdot \rvij }
                          \rvij
 \eeq
-        in this case the dummy is in the plane of the other three
+        In this case the dummy is in the plane of the other three
         particles at a distance of $|d|$ from $i$ at an angle of
         $\alpha$ with $\rvij$. Atom $k$ defines the plane and the
         direction of the angle. Note that in this case $b$ and
-        $\alpha$ must be specified in stead of $a$ and $b$ (see also
+        $\alpha$ must be specified, instead of $a$ and $b$ (see also
         \secref{dummytop}). The force on particles $i$, $j$ and $k$
         due to the force on the dummy can be computed as (with
         $\ve{r}_\perp$ as defined in \eqnref{dum2fad-F}):
@@ -1465,13 +1470,13 @@ of the dummy constructions is given in \figref{dummies}.
 \end{array}
 \eeq
 
-\item[3out.]As a non-linear combination of three atoms, out of plane
+\item[{\bf\sf 3out.}]As a non-linear combination of three atoms, out of plane
         (\figref{dummies} 3out):
 \beq
         \ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik +
                 c (\rvij \times \rvik)
 \eeq
-        this enables the construction of dummies out of the plane of the
+        This enables the construction of dummies out of the plane of the
         other atoms.
         The force on particles $i,j$ and $k$ due to the force on the dummy
         can be computed as:
@@ -1493,13 +1498,13 @@ of the dummy constructions is given in \figref{dummies}.
 \end{array}
 \eeq
 
-\item[4fd.]From four atoms, with a fixed distance
+\item[{\bf\sf 4fd.}]From four atoms, with a fixed distance
         (\figref{dummies} 4fd):
 \beq
         \ve{r}_d ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
                                      {| \rvij + a \rvjk + b \rvjl|}     
 \eeq
-        in this case the dummy is at a distance of $|c|$ from $i$.
+        In this case the dummy is at a distance of $|c|$ from $i$.
         The force on particles $i$, $j$, $k$ and $l$ due to the force 
         on the dummy can be computed as:
 \beq
@@ -1540,9 +1545,9 @@ very slow.
 
 Ewald summation was first introduced as a method to calculate
 long-range interactions of the periodic images in
-crystals~\cite{Ewald21}. The idea is to convert the single slowly
-converging sum \eqnref{totalcoulomb} into two fast converging terms
-and a constant term:
+crystals~\cite{Ewald21}. The idea is to convert the single
+slowly-converging sum \eqnref{totalcoulomb} into two
+quickly-converging terms and a constant term:
 \begin{eqnarray}
 V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
 V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N} 
@@ -1556,12 +1561,12 @@ V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,
 \end{eqnarray}
 where $\beta$ is a parameter that determines the relative weight of the
 direct and reciprocal sums and ${\bf m}=(m_x,m_y,m_z)$.
-In this way we can use a short cut-off (of the order of $1$~nm) in the direct space sum and a
-short cut-off in the reciprocal space sum ({\eg} 10 wave vectors in each 
+In this way we can use a short cutoff (of the order of $1$~nm) in the direct space sum and a
+short cutoff in the reciprocal space sum ({\eg} 10 wave vectors in each 
 direction). Unfortunately, the computational cost of the reciprocal
 part of the sum increases as $N^2$
 (or $N^{3/2}$ with a slightly better algorithm) and it is therefore not 
-realistic to use for any large systems.
+realistic for use in large systems.
 
 \subsubsection{Using Ewald}
 Don't use Ewald unless you are absolutely sure this is what you want -
@@ -1581,7 +1586,7 @@ the highest magnitude of wave vectors $m_x,m_y,m_z$ to use in each
 direction. With a 3~nm cubic box this example would use $11$ wave vectors
 (from $-5$ to $5$) in each direction.  The {\tt ewald\_rtol} parameter
 is the relative strength of the electrostatic interaction at the
-cut-off. Decreasing this gives you a more accurate direct sum, but a
+cutoff. Decreasing this gives you a more accurate direct sum, but a
 less accurate reciprocal sum.
  
 \subsection{\normindex{PME}}
@@ -1760,7 +1765,7 @@ by {\tt pdb2gmx}.  The \gromosv{96} force field is a further
 development of the \gromosv{87} force field on which the {\gromacs}
 forcefield is based. The \gromosv{96} force field has improvements
 over the {\gromacs} force field for proteins and small molecules.
-It is, however, not recommended to be used for long alkanes and
+It is not, however, recommended for use with long alkanes and
 lipids.  The \gromosv{96} force field differs from the {\gromacs}
 force field in a few aspects:
 \begin{itemize}
@@ -1776,12 +1781,12 @@ with both packages:
 \item in \gromosv{96} neighbor searching for solvents is performed on the
 first atom of the solvent molecule, this is not implemented in {\gromacs},
 but the difference with searching with centers of charge groups is very small
-\item the virial in \gromosv{96} is molecule based, this is not implemented in
+\item the virial in \gromosv{96} is molecule-based. This is not implemented in
 {\gromacs}, which uses atomic virials
 \end{itemize}
-The \gromosv{96} force field was parameterized with a Lennard-Jones cut-off
-of 1.4 nm, so be sure to use a Lennard-Jones cut-off of at least 1.4.
-A larger cut-off is possible, because the Lennard-Jones potential and forces
+The \gromosv{96} force field was parameterized with a Lennard-Jones cutoff
+of 1.4 nm, so be sure to use a Lennard-Jones cutoff of at least 1.4.
+A larger cutoff is possible, because the Lennard-Jones potential and forces
 are almost zero beyond 1.4 nm.
 
 \subsection{\gromosv{96} files}\index{gromos-96 files}\index{files,
@@ -1790,7 +1795,7 @@ gromos|see{gromos-96 files}}
 These files should have the extension {\tt .g96}.
 Such a file can be a \gromosv{96} initial/final
 configuration file or a coordinate trajectory file or a combination of both.
-The file is fixed format, all floats are written as 15.9 (files can get huge).
+The file is fixed format; all floats are written as 15.9 (files can get huge).
 {\gromacs} supports the following data blocks in the given order:
 \begin{itemize}
 \item Header block:
@@ -1805,5 +1810,6 @@ VELOCITY/VELOCITYRED (optional)
 BOX (optional)
 \end{verbatim}
 \end{itemize}
-See the \gromosv{96} manual~\cite{gromos96} for a complete description of the
-blocks. Note that all {\gromacs} programs can read compressed or gzip:ed files.
+See the \gromosv{96} manual~\cite{gromos96} for a complete description
+of the blocks. Note that all {\gromacs} programs can read compressed
+(.Z) or gzipped (.gz) files.
