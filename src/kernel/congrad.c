@@ -54,6 +54,7 @@ static char *SRCID_congrad_c = "$Id$";
 #include "statutil.h"
 #include "tgroup.h"
 #include "mdebin.h"
+#include "dummies.h"
 #include "mdrun.h"
 
 static void sp_header(FILE *out,real epot,real ftol)
@@ -68,7 +69,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_groups *grps,t_nsborder *nsb,
 	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     tensor ekin,real ener[],t_nrnb nrnb[],
-	     bool bVerbose,t_commrec *cr,t_graph *graph,
+	     bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph,
 	     t_forcerec *fr,rvec box_size)
 {
   static char *CG="Conjugate Gradients";
@@ -136,12 +137,22 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Max number of steps */
   number_steps=parm->ir.nsteps;
 
+  if (bDummies) {
+    /* Construct dummy particles */
+    shift_self(graph,fr->shift_vec,x);
+    construct_dummies(log,x,&(nrnb[cr->pid]),1,NULL,&top->idef);
+    unshift_self(graph,fr->shift_vec,x);
+  }
+
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->pid]),top,grps,
 	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr);
   unshift_self(graph,fr->shift_vec,x);
   where();
+
+  /* Spread the force on dummy particle to the other particles... */
+  spread_dummy_f(log,x,f,&(nrnb[cr->pid]),&top->idef);
   
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -221,6 +232,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       }
       bNS = ((parm->ir.nstlist > 0) || (count==0));
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
+      if (bDummies) {
+	/* Construct dummy particles */
+	shift_self(graph,fr->shift_vec,xprime);
+	construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
+	unshift_self(graph,fr->shift_vec,xprime);
+      }
       
       /* Calc force & energy on new trial position  */
       do_force(log,cr,parm,nsb,force_vir,
@@ -228,6 +245,10 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr);
       unshift_self(graph,fr->shift_vec,xprime);
+      
+      /* Spread the force on dummy particle to the other particles... */
+      spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
+
       bNS = (parm->ir.nstlist > 0);
       /*bNS=FALSE;*/
       gpb=0.0;
@@ -285,6 +306,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	xprime[i][m]=x[i][m] + smin*p[i][m];
       }
     }
+
+    if (bDummies) {
+      /* Construct dummy particles */
+      shift_self(graph,fr->shift_vec,xprime);
+      construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
+      unshift_self(graph,fr->shift_vec,xprime);
+    }
+    
     /* new energy, forces */
     do_force(log,cr,parm,nsb,force_vir,
 	     count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
@@ -292,6 +321,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     lambda,graph,bNS,FALSE,fr);
     unshift_self(graph,fr->shift_vec,xprime);
     
+    /* Spread the force on dummy particle to the other particles... */
+    spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
+
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
     fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,f);

@@ -299,9 +299,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     if (bDummies) {
       /* Construct dummy particles */
-      shift_self(graph,fr->shift_vec,x);
+      shift_self(graph,fr->shift_vec,pos[TRY]);
       construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
-      unshift_self(graph,fr->shift_vec,x);
+      unshift_self(graph,fr->shift_vec,pos[TRY]);
     }
     
     /* Calc force & energy on new positions  */

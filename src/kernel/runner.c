@@ -237,7 +237,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     case eiCG:
       start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
 		    x,f,buf,mdatoms,parm->ekin,ener,
-		    nrnb,bVerbose,cr,graph,fr,box_size);
+		    nrnb,bVerbose,bDummies,cr,graph,fr,box_size);
       break;
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,

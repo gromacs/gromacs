@@ -95,7 +95,8 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_groups *grps,t_nsborder *nsb,
 		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    tensor ekin,real ener[],t_nrnb nrnb[],
-		    bool bVerbose,t_commrec *cr,t_graph *graph,t_forcerec *fr,
+		    bool bVerbose,bool bDummies,
+		    t_commrec *cr,t_graph *graph,t_forcerec *fr,
 		    rvec box_size);
 /* Do conjugate gradients EM! */
 
