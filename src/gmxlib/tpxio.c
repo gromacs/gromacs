@@ -197,7 +197,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
   }  
   else {
     /* Give a warning about features that are not accessible */
-    /* fprintf(stderr,"Warning can not read version 2 things in tpxfile\n"); */
+    fprintf(stderr,"WARNING: can not read version %d (and above) things "
+	    "in tpxfile\n",tpx_version+1);
   }
 }
 
@@ -486,7 +487,8 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   
   do_int (file_version);
   if (file_version < tpx_version)
-    fprintf(stderr,"Reading tpx file version %d with %d code. Some options may not work\n",file_version,tpx_version);
+    fprintf(stderr,"Reading tpx file version %d with %d code. "
+	    "Some options may not work\n",file_version,tpx_version);
     
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);
