@@ -537,103 +537,6 @@ void write_conf(char *outfile, char *title, t_atoms *atoms,
 {
   write_conf_p(outfile, title, atoms, 3, x, v, box);
 }
-/*
-static void change_name(char *name)
-{
-  int i,length;
-  char temp;
-  bool bH;
-  length=strlen(name);
-  if (isdigit(name[length-1])&&isdigit(name[length-2])) {
-    bH=FALSE;
-    for (i=0;(i<length);i++)
-      if (name[i] == 'H') 
-        bH=TRUE;
-    if (bH) {
-      temp=name[length-1]; 
-      for(i=length-1;(i>0);i--)
-	name[i]=name[i-1];
-      name[0]=temp;
-    }
-  }
-  else {
-    if(strcmp(name,"O2")==0)
-    strcpy(name,"OXT");
-  }
-}
-
-extern void write_pdb_conf(char *outfile,char *title,
-			   t_atoms *atoms,rvec x[],matrix box,
-			   bool bChange)
-{
-  FILE *out;
-  out=ffopen(outfile,"w");
-  write_pdbfile(out,title,atoms,x,box,TRUE,bChange);
-  fclose(out);
-}
-    
-void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
-{
-  FILE *out;
-  int n;
-  char chain,str[STRLEN];
-
-  out=ffopen(outfile,"w");
-  
-  for(n=0;(n<number);n++) {
-    chain='A'+n;
-    fprintf(stderr,"writing chain %c\n",chain);
-    sprintf(str,"Chain %c",chain);
-    write_pdbfile(out,str,atoms[n],x[n],NULL,chain,(n==number-1),TRUE);
-  }
-
-  ffclose(out);
-}
-
-void hwrite_pdb_conf_indexed(FILE *out,char *title, 
-			     t_atoms *atoms,rvec x[],matrix box,
-			     int gnx,atom_id index[])
-{
-  char resnm[6],nm[6],chain;
-  int  ii,i,resnr;
-
-  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
-  if (box != NULL) {
-    fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-    fprintf(out,"CRYST1%9.3f%9.3f%9.3f %6.2f%6.2f%6.2f P 1            1\n",
-	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
-  }
-  for (ii=0; (ii<gnx); ii++) {
-    i=index[ii];
-    resnr=atoms->atom[i].resnr;
-    strcpy(resnm,*atoms->resname[resnr]);
-    strcpy(nm,*atoms->atomname[i]);
-    change_name(nm);
-    if (atoms->chain)
-      chain=atoms->chain[i];
-    else
-      chain=' ';
-    if (strlen(nm)==4)
-      fprintf(out,"ATOM  %5d %-4.4s %3.3s %c%4d    ",i+1,nm,resnm,chain,resnr+1);
-    else
-      fprintf(out,"ATOM  %5d  %-4.4s%3.3s %c%4d    ",i+1,nm,resnm,chain,resnr+1);
-    fprintf(out,"%8.3f%8.3f%8.3f  1.00  0.00\n",10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
-  }
-  fprintf(out,"TER\n");
-}
-
-void write_pdb_conf_indexed(char *outfile,char *title,
-			    t_atoms *atoms,rvec x[],matrix box,
-			    int gnx,atom_id index[])
-{
-  FILE *out;
-
-  out=ffopen(outfile,"w");
-  hwrite_pdb_conf_indexed(out,title,atoms,x,box,gnx,index);
-  fflush(out);
-  ffclose(out);
-}
-*/
 
 void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
 		    rvec x[],rvec v[],matrix box)
@@ -743,6 +646,37 @@ void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],mat
   
   xdrclose(&xd);
   close_symtab(&symtab);
+}
+
+void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
+			    rvec x[],rvec v[],matrix box,
+			    atom_id nindex,atom_id index[])
+{
+  FILE       *out;
+  int        ftp;
+
+  ftp=fn2ftp(outfile);
+  switch (ftp) {
+  case efGRO:
+    out=ffopen(outfile,"w");
+    write_hconf_indexed(out, title, atoms, nindex, index, x, v, box);
+    fclose(out);
+    break;
+  case efPDB:
+  case efBRK:
+  case efENT:
+    out=ffopen(outfile,"w");
+    hwrite_pdb_conf_indexed(out, title, atoms, x, box, nindex, index);
+    fclose(out);
+    break;
+  case efTPR:
+  case efTPB:
+  case efTPA:
+    fatal_error(0,"Sorry, can not write a topology to %s",outfile);
+    break;
+  default:
+    fatal_error(0,"Not supported in write_sto_conf_indexed: %s",outfile);
+  }
 }
 
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 

@@ -106,6 +106,11 @@ extern void read_xdr_coordnum(char *infile,int *natoms);
 
 extern void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],matrix box);
 
+void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
+			    rvec x[],rvec v[],matrix box,
+			    atom_id nindex,atom_id index[]);
+/* like write_sto_conf, but indexed */ 
+
 extern void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec v[], matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
