@@ -502,12 +502,12 @@ The force corresponding to this potential is:
 \subsection{FENE bond stretching potential}
 \index{FENE potential}
 In coarse-grained polymer simulations the beads are often connected
-by a FENE (finite extensible nonlinear elastic) potential:
+by a FENE (finitely extendible nonlinear elastic) potential~\cite{Warner72}:
 \beq
 V_{\mbox{\small FENE}}(\rij) =
   -\half k^b_{ij} b^2_{ij} \log\left(1 - \frac{\rij^2}{b^2_{ij}}\right)
 \eeq
-The potential looks complicated, but the fromula for the force is simpler:
+The potential looks complicated, but the expression for the force is simpler:
 \beq
 F_{\mbox{\small FENE}}(\rvij) =
   k^b_{ij} \left(1 - \frac{\rij^2}{b^2_{ij}}\right)^{-1} \rvij
