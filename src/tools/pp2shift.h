@@ -1,14 +1,14 @@
 #ifndef _pp2shift_h
 #define _pp2shift_h
 	
-enum { edPhi=0, edPsi, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
+enum { edPhi=0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
 
 #define NHISTO 360
-#define NONCHI 2
+#define NONCHI 3
 #define MAXCHI edMax-NONCHI
 
 typedef struct {
-  int H,N,C,O,Cn[MAXCHI+3];
+  int minO,minC,H,N,C,O,Cn[MAXCHI+3];
 } t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
 
 typedef struct {
