@@ -220,7 +220,7 @@ extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
 
 extern void low_do_autocorr(char *fn,char *title,
-			    int  nframes,int nitem,real **c1,
+			    int  nframes,int nitem,int nlag,real **c1,
 			    real dt,unsigned long mode,int nrestart,
 			    bool bFull,bool bAver,bool bFour,bool bNormalize,
 			    char *fitfn,char *fittitle,bool bVerbose,
