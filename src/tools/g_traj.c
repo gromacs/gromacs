@@ -388,7 +388,7 @@ int main(int argc,char *argv[])
   read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
 
   do {
-    if (fr.bX && bNoJump && !fr.bBox) {
+    if (fr.bX && bNoJump && fr.bBox) {
       if (xp)
 	remove_jump(fr.box,fr.natoms,xp,fr.x);
       else 
