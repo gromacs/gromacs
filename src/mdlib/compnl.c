@@ -62,7 +62,8 @@ int main(int argc,char *argv[])
   int     ***mat,nnb;
   real    mb;
   bool    bConf;
-  rvec    *x,dx;
+  rvec    *x = NULL;
+  rvec    dx;
   matrix  box;
   t_atoms atoms;
   t_pbc   pbc;
@@ -74,12 +75,11 @@ int main(int argc,char *argv[])
     { efSTX, "-c",  NULL, ffOPTRD }
   };
 #define NFILE asize(fnm)
-  static int natoms=648,nmno=4;
+  static int natoms=648;
   static bool bSymm=TRUE;
   static t_pargs pa[] = {
     { "-nat",  FALSE, etINT, { &natoms }, "Number of atoms" },
     { "-symm", FALSE, etBOOL,{ &bSymm  }, "Symmetrize the matrices" },
-    { "-mno",  FALSE, etINT, { &nmno   }, "Number of atoms in MNO solvent" }
   };
 
   CopyRight(stderr,argv[0]);
@@ -110,7 +110,7 @@ int main(int argc,char *argv[])
     snew(mat[i],natoms);
     for(j=0; (j<natoms); j++) 
       snew(mat[i][j],natoms);
-    nnb = read_nblist(in,out,mat[i],natoms,bSymm,nmno);
+    nnb = read_nblist(in,out,mat[i],natoms,bSymm);
     fclose(in);
     fprintf(stderr,"Interaction matrix %d has %d entries\n",i,nnb);
     fprintf(out,   "Interaction matrix %d has %d entries\n",i,nnb);

@@ -57,10 +57,10 @@ static void write_nblist(FILE *out,t_nblist *nblist)
   int i,j,j0,k,i_atom,jid,nj;
 
   if (nblist->nri > 0) {  
-    fprintf(out,"il_code: %s solvent: %s\n",
-	    innerloop_name(nblist->il_code),
-	    esolv_names[nblist->solvent]);
-    fprintf(out,"nri: %d  nrj: %d\n",nblist->nri,nblist->nrj);
+    fprintf(out,"il_name: %s  Solvent opt: %s\n",
+            nrnb_str(nblist->il_code),
+            enlist_names[nblist->solvent_opt]);
+      fprintf(out,"nri: %d  nrj: %d\n",nblist->nri,nblist->nrj);
     for(i=0; i<nblist->nri; i++) {
       nj = nblist->jindex[i+1] - nblist->jindex[i];
       fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
@@ -89,67 +89,63 @@ static void set_mat(FILE *fp,int **mat,int i0,int ni,int j0,int nj,
   }
 }
 
-int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm,int nmno)
+int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
 {
-  bool bNL;
-  char buf[256],b1[32],b2[32],solv[256],il_code[256];
-  int  i,ii,j,nnbl,full,icmp,nri,isolv;
-  int  iatom,nrj,nj,shift,gid,nargs,njtot=0;
-  
-  do {
-    if (fgets2(buf,255,in) == NULL)
-      gmx_fatal(FARGS,"EOF when looking for '%s' in logfile",header);
-  } while (strstr(buf,header) == NULL);
-  
-  do {
-    if ((nargs = fscanf(in,"%*s%s%*s%s",il_code,solv)) != 2)
-      return njtot;
-    for(isolv=0; (isolv<esolNR); isolv++)
-      if (strstr(esolv_names[isolv],solv) != NULL)
-	break;
-    if (isolv == esolNR)
-      return njtot;
-      
-    /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
-    if ((nargs = fscanf(in,"%*s%d%*s%d",&nri,&nrj)) != 2)
-      gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
-    for(ii=0; (ii<nri); ii++) {
-      if ((nargs = fscanf(in,"%*s%d%*s%d%*s%d%*s%d",
-			  &iatom,&shift,&gid,&nj)) != 4)
-	gmx_fatal(FARGS,"Can not read iatom, shift gid or nj (nargs=%d)",nargs);
-      /* Number shifts from 1 to 27 iso 0 to 26, to distinguish uninitialized 
-       * matrix elements.
-       */
-      range_check(iatom,0,natoms);
-      for(i=0; (i<nj); i++) {
-	if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
-	  gmx_fatal(FARGS,"Can not read j");
-	range_check(j,0,natoms);
-	switch (isolv) {
-	case esolNO:
-	  set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
-	  njtot++;
-	  break;
-	case esolMNO:
-	  set_mat(fp,mat,iatom,nmno,j,1,bSymm,shift);
-	  njtot+=nmno;
-	  break;
-	case esolWATER:
-	  set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
-	  njtot+=3;
-	  break;
-	case esolWATERWATER:
-	  set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
-	  njtot+=9;
-	  break;
-	default:
-	  gmx_incons("non-existing solvent type");
-	}
-      }
-    }
-    fprintf(fp,"nri = %d  nrj = %d\n",nri,nrj);
-  } while (TRUE);
-  return -1;
+    bool bNL;
+    char buf[256],b1[32],b2[32],solv[256],il_code[256];
+    int  i,ii,j,nnbl,full,icmp,nri,isolv;
+    int  iatom,nrj,nj,shift,gid,nargs,njtot=0;
+    
+    do {
+        if (fgets2(buf,255,in) == NULL)
+            gmx_fatal(FARGS,"EOF when looking for '%s' in logfile",header);
+    } while (strstr(buf,header) == NULL);
+    
+    do {
+        if ((nargs = fscanf(in,"%*s%s%*s%s",il_code,solv)) != 2)
+            return njtot;
+        for(isolv=0; (isolv<esolNR); isolv++)
+            if (strstr(esol_names[isolv],solv) != NULL)
+                break;
+        if (isolv == esolNR)
+            return njtot;
+        
+        /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
+        if ((nargs = fscanf(in,"%*s%d%*s%d",&nri,&nrj)) != 2)
+            gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
+        for(ii=0; (ii<nri); ii++) {
+            if ((nargs = fscanf(in,"%*s%d%*s%d%*s%d%*s%d",
+                                &iatom,&shift,&gid,&nj)) != 4)
+                gmx_fatal(FARGS,"Can not read iatom, shift gid or nj (nargs=%d)",nargs);
+            /* Number shifts from 1 to 27 iso 0 to 26, to distinguish uninitialized 
+            * matrix elements.
+            */
+            range_check(iatom,0,natoms);
+            for(i=0; (i<nj); i++) {
+                if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
+                    gmx_fatal(FARGS,"Can not read j");
+                range_check(j,0,natoms);
+                switch (isolv) {
+                    case enlistATOM:
+                        set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
+                        njtot++;
+                        break;
+                    case enlistWATER:
+                        set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
+                        njtot+=3;
+                        break;
+                    case enlistWATERWATER:
+                        set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
+                        njtot+=9;
+                        break;
+                    default:
+                        gmx_incons("non-existing solvent type");
+                }
+            }
+        }
+        fprintf(fp,"nri = %d  nrj = %d\n",nri,nrj);
+    } while (TRUE);
+    return -1;
 }
 
 void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
