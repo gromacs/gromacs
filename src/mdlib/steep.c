@@ -335,30 +335,36 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Print it if necessary  */
 #ifdef FORCE_CRIT 
-    if ((bVerbose || (Fsqrt[TRY] < Fsqrt[Min])) && MASTER(cr)) { 
+    if (bVerbose && MASTER(cr)) { 
       fprintf(stderr,
-	      "\rStep = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e\n", 
- 	      count,step,Epot[TRY],Fsqrt[TRY]); 
-      /* Store the new (lower) energies  */
-      upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
+	      "Step = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e%c",
+	      count,step,Epot[TRY],Fsqrt[TRY], 
+ 	      (Fsqrt[TRY] < Fsqrt[Min])?'\n':'\r');
+      
+      if (Fsqrt[TRY] < Fsqrt[Min]) {
+	/* Store the new (lower) energies  */
+	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
  		 force_vir,parm->vir,parm->pres,grps,mu_tot); 
-      /* Print the energies allways when we should be verbose  */
-      if (MASTER(cr)) 
- 	print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,
-		   0.0,eprNORMAL,TRUE,mdebin,grps,&(top->atoms)); 
+	/* Print the energies allways when we should be verbose  */
+	if (MASTER(cr)) 
+	  print_ebin(fp_ene,TRUE,FALSE,log,count,count,lambda,
+		     0.0,eprNORMAL,TRUE,mdebin,grps,&(top->atoms));
+      }
     } 
 #else 
-    if ((bVerbose || (Epot[TRY] < Epot[Min])) && MASTER(cr)) { 
-      fprintf(stderr,"\rStep = %5d, Dx = %12.5e, E-Pot = %30.20e\n", 
- 	      count,step,Epot[TRY]); 
+    if (bVerbose && MASTER(cr)) { 
+      fprintf(stderr,"Step = %5d, Dx = %12.5e, E-Pot = %30.20e%c", 
+ 	      count,step,Epot[TRY],(Epot[TRY] < Epot[Min])?'\n':'\r' ); 
       
-      /* Store the new (lower) energies  */
-      upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
- 		 force_vir,parm->vir,parm->pres,grps); 
-      /* Print the energies allways when we should be verbose  */
-      if (MASTER(cr)) 
- 	print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
- 		   mdebin,grps,&(top->atoms)); 
+      if (Epot[TRY] < Epot[Min]) {
+	/* Store the new (lower) energies  */
+	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
+		   force_vir,parm->vir,parm->pres,grps); 
+	/* Print the energies allways when we should be verbose  */
+	if (MASTER(cr)) 
+	  print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
+		     mdebin,grps,&(top->atoms)); 
+      }
     } 
 #endif 
     
