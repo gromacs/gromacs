@@ -34,7 +34,7 @@ echo "<HTML>" >> $HTMLIDX
 echo "<TITLE>GROMACS $VER Manual </TITLE>" >> $HTMLIDX
 echo "<BODY>" >> $HTMLIDX
 echo "<H1>GROMACS $VER manual</H1>" >> $HTMLIDX
-echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
+echo "<IMG SRC="\""gif/rainbow.gif"\"" WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "<P>" >> $HTMLIDX
 echo "<TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10>" >> $HTMLIDX
 echo "<TR>" >> $HTMLIDX
@@ -43,23 +43,24 @@ echo "<h3>General</h3>" >> $HTMLIDX
 foreach i ( $GENERAL )
   set file = `echo $i | cut -d: -f1`
   set desc = `echo $i | cut -d: -f2 | sed 's/_/ /g'`
-  echo "<br><A HREF=$MANDIR/"$file".html >"$desc"</a>" >> $HTMLIDX
-  echo "<br>" >> $HTMLIDX
+  echo "<A HREF="\""$MANDIR/"$file".html"\"">"$desc"</a>" >> $HTMLIDX
+  echo "<br><br>" >> $HTMLIDX
 end
+echo "<A HREF="\""gmxfaq.html"\"">FAQ</a>" >> $HTMLIDX
 echo "</TD>" >> $HTMLIDX
 echo "<TD VALIGN=top WIDTH=75%>" >> $HTMLIDX
-echo "<h3>Programs Alphabetical</h3>" >> $HTMLIDX
+echo "<h3>Programs</h3>" >> $HTMLIDX
 echo "<multicol cols=5> " >> $HTMLIDX
-echo "<A HREF=$MANDIR/options.html >Options</a>" >> $HTMLIDX
+echo "<A HREF="\""$MANDIR/options.html"\"">Options</a>" >> $HTMLIDX
 echo "<br>" >> $HTMLIDX
 foreach program ( $PROGRAMS )
-  echo "<br><a href=$MANDIR/$program.html>$program</a>" >> $HTMLIDX
+  echo "<br><a href="\""$MANDIR/$program.html"\"">$program</a>" >> $HTMLIDX
 end
 echo "</multicol>" >> $HTMLIDX
 echo "</TD>" >> $HTMLIDX
 echo "</TR>" >> $HTMLIDX
 echo "</TABLE>" >> $HTMLIDX
-echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
+echo "<IMG SRC="\""gif/rainbow.gif"\"" WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "<h3>Programs by Topic</h3>" >> $HTMLIDX
 echo "<multicol cols=3> " >> $HTMLIDX
 awk -F '|' -v mandir=$MANDIR '{\
@@ -86,7 +87,7 @@ awk -F '|' -v mandir=$MANDIR '{\
   }\
 }' $PROGFILE >> $HTMLIDX
 echo "<p>" >> $HTMLIDX
-echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
+echo "<IMG SRC="\""gif/rainbow.gif"\"" WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "<p>" >> $HTMLIDX
 echo "</BODY>" >> $HTMLIDX
 echo "</HTML>" >> $HTMLIDX
