@@ -52,7 +52,7 @@ static char *SRCID_mvxvf_c = "$Id$";
 #include "nrnb.h"
 
 void move_rvecs(FILE *log,bool bForward,bool bSum,
-		int left,int right,rvec *vecs,rvec buf[],
+		int left,int right,rvec vecs[],rvec buf[],
 		int shift,t_nsborder *nsb,t_nrnb *nrnb)
 {
   int    i,j,j0=137,j1=391;
@@ -82,24 +82,24 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
     }
     /* Forward pulse around the ring, to increasing NODE number */
     if (bForward) {
-      gmx_tx(right,vecs[nsb->index[cur]],sizeof(rvec)*nsb->homenr[cur]);
+      gmx_tx(right,  arrayp(vecs[nsb->index[cur]], nsb->homenr[cur]));
       /* If we want to sum these arrays, we have to store the rvecs
        * we receive in a temp buffer.
        */
       if (bSum)
-	gmx_rx(left, buf [nsb->index[prev]],sizeof(rvec)*nsb->homenr[prev]);
+	gmx_rx(left, arrayp(buf [nsb->index[prev]],nsb->homenr[prev]));
       else
-	gmx_rx(left, vecs[nsb->index[prev]],sizeof(rvec)*nsb->homenr[prev]);
+	gmx_rx(left, arrayp(vecs[nsb->index[prev]],nsb->homenr[prev]));
     }
     
     /* Backward pulse around the ring, to decreasing NODE number */
     else {
-      gmx_tx(left,vecs[nsb->index[cur]], nsb->homenr[cur]);
+      gmx_tx(left,    arrayp(vecs[nsb->index[cur]], nsb->homenr[cur]));
       /* See above */
       if (bSum)
-	gmx_rx(right,buf [nsb->index[next]],sizeof(rvec)*nsb->homenr[next]);
+	gmx_rx(right, arrayp(buf [nsb->index[next]],nsb->homenr[next]));
       else
-	gmx_rx(right,vecs[nsb->index[next]],sizeof(rvec)*nsb->homenr[next]);
+	gmx_rx(right, arrayp(vecs[nsb->index[next]],nsb->homenr[next]));
     }
     /* Wait for communication to end */
     if (bForward) {
@@ -145,9 +145,8 @@ void move_x(FILE *log,
       displs[i]     = nsb->index[i]*sizeof(x[0]);
     }
   }
-  MPI_Allgatherv(x[nsb->index[nsb->nodeid]],
-	       sizeof(rvec)*(nsb->homenr[nsb->nodeid]),
-	       MPI_BYTE,x,recvcounts,displs,MPI_BYTE,MPI_COMM_WORLD);
+  MPI_Allgatherv(arrayp(x[nsb->index[nsb->nodeid]],nsb->homenr[nsb->nodeid]),
+		 MPI_BYTE,x,recvcounts,displs,MPI_BYTE,MPI_COMM_WORLD);
 #else
   move_rvecs(log,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
   where();
