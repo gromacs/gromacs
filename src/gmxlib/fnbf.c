@@ -915,7 +915,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 /* We don't do SSE or altivec here, due to large overhead for 4-fold unrolling on short lists */
 #if (defined USE_X86_ASM && !defined DOUBLE)
  if(cpu_capabilities==UNKNOWN_CPU) 
-	cpu_capabilities=check_x86cpu(NULL);
+	cpu_capabilities=detect_cpu(NULL);
 #endif
 
   if (nbfp14 == NULL) {
