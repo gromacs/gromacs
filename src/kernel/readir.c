@@ -111,6 +111,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
      
   /* NEIGHBOURSEARCHING */
 
+  if (ir->eBox == ebtNONE && ir->ns_type != ensSIMPLE) {
+    sprintf(warn_buf,"Can only use nstype=%s with box=%s, setting nstype "
+	    "to %s\n",
+	    ens_names[ensSIMPLE],eboxtype_names[ebtNONE],ens_names[ensSIMPLE]);
+    warning(NULL);
+    ir->ns_type = ensSIMPLE;
+  }
+
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
 	    "with coulombtype = %s and simple neighborsearch\n"
