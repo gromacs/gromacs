@@ -103,6 +103,8 @@ typedef struct {
   real dr_tau;		/* time constant for memory function in disres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/
+  int  niter;           /* Number of iterations for convergence of      */
+                        /* steepest descent in relax_shells             */
   int  nstcgsteep;      /* number of steps after which a steepest       */
                         /* descents step is done while doing cg         */
   int  eConstrAlg;      /* Type of constraint algorithm                 */

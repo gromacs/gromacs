@@ -45,9 +45,9 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 10;
+static int tpx_version = 11;
 /* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 9;
+static int tpx_incompatible_version = 10;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -156,6 +156,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->nstdisreout);
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
+    do_int(ir->niter);
     do_int(ir->eConstrAlg); 
     do_int(ir->nProjOrder); 
     do_real(ir->LincsWarnAngle); 
