@@ -152,14 +152,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   clear_mat(force_vir);
     
-  bNS=1;
-
+  bNS=TRUE;
   do_force(log,cr,parm,nsb,force_vir,0,&mynrnb,
 	   top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr);
+  bNS=FALSE;
+  /* Shift back the coordinates, since we're not calling update */
+  unshift_self(graph,fr->shift_vec,x);
 
-  bNS=0;
-
+  
   /* if forces not small, warn user */
   fmax=f_max(log,cr->left,cr->right,nsb->nprocs,0,top->atoms.nr,f);
   fprintf(stderr,"Maximum force:%12.5e\n",fmax);
@@ -194,6 +195,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum),&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr);
+      /* Shift back the coordinates, since we're not calling update */
+      unshift_self(graph,fr->shift_vec,x);
 
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
@@ -208,6 +211,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum)+1,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr);
+      /* Shift back the coordinates, since we're not calling update */
+      unshift_self(graph,fr->shift_vec,x);
 
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
@@ -241,8 +246,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   lambda=lam0+step*parm->ir.delta_lambda;
   
   if (MASTER(cr)) {
-    print_ebin(NULL,log,step,t,lambda,0.0,eprAVER,FALSE,mdebin,grps,&(top->atoms));
-    print_ebin(NULL,log,step,t,lambda,0.0,eprRMS,FALSE,mdebin,grps,&(top->atoms));
+    print_ebin(-1,log,step,t,lambda,0.0,eprAVER,FALSE,mdebin,grps,&(top->atoms));
+    print_ebin(-1,log,step,t,lambda,0.0,eprRMS,FALSE,mdebin,grps,&(top->atoms));
   }
   
   /* Construct dummy particles, for last output frame */
