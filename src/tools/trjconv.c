@@ -456,7 +456,8 @@ int main(int argc,char *argv[])
       copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,nout,index,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
-    }
+    } else
+      clear_rvec(x_shift);
     
     /* Make atoms struct for output in GRO or PDB files */
     if ((ftp == efGRO) || ((ftp == efG96) && bTPS) || (ftp == efPDB)) {
