@@ -201,7 +201,7 @@ int main(int argc,char *argv[])
   t_atoms    outatoms;
   real       t,comp;
   int        natoms;
-  char       *grpname[MAX_ENDS],title[256],*anm="CA",*rnm="GLY";
+  char       *grpname[MAX_ENDS],title[256],timelabel[256],*anm="CA",*rnm="GLY";
   int        i,j,gnx[MAX_ENDS];
   atom_id    *index[MAX_ENDS];
   t_bundle   bun;
@@ -225,7 +225,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
@@ -256,24 +256,26 @@ int main(int argc,char *argv[])
   snew(bun.dir,n);
   snew(bun.len,n);
 
+  sprintf(timelabel, "Time (%s)", time_label());
+
   flen  = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
-		   "Time (ps)","(nm)");
+		   timelabel,"(nm)");
   fdist = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
-		   "Time (ps)","(nm)");
+		   timelabel,"(nm)");
   ftilt = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
-		   "Time (ps)","(degrees)");
+		   timelabel,"(degrees)");
   ftiltr = xvgropen(opt2fn("-otr",NFILE,fnm),"Radial axis tilts",
-		   "Time (ps)","(degrees)");
+		   timelabel,"(degrees)");
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
-		   "Time (ps)","(degrees)");
+		   timelabel,"(degrees)");
 
   if (bKink) {
     fkink = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
-		     "Time (ps)","(degrees)");
+		     timelabel,"(degrees)");
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
-		      "Time (ps)","(degrees)");
+		      timelabel,"(degrees)");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
-		      "Time (ps)","(degrees)");
+		      timelabel,"(degrees)");
   }
 
   if (opt2bSet("-oa",NFILE,fnm)) {
@@ -293,15 +295,16 @@ int main(int argc,char *argv[])
   do {
     rm_pbc(&top.idef,fr.natoms,fr.box,fr.x,fr.x);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
-    fprintf(flen," %10g",fr.time);
-    fprintf(fdist," %10g",fr.time);
-    fprintf(ftilt," %10g",fr.time);
-    fprintf(ftiltr," %10g",fr.time);
-    fprintf(ftiltl," %10g",fr.time);
+    t = convert_time(fr.time);
+    fprintf(flen," %10g",t);
+    fprintf(fdist," %10g",t);
+    fprintf(ftilt," %10g",t);
+    fprintf(ftiltr," %10g",t);
+    fprintf(ftiltl," %10g",t);
     if (bKink) {
-      fprintf(fkink," %10g",fr.time);
-      fprintf(fkinkr," %10g",fr.time);
-      fprintf(fkinkl," %10g",fr.time);
+      fprintf(fkink," %10g",t);
+      fprintf(fkinkr," %10g",t);
+      fprintf(fkinkl," %10g",t);
     }
 
     for(i=0; i<bun.n; i++) {
