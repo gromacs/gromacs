@@ -19,15 +19,6 @@ Wed 27 Feb 2002</B></td></tr></TABLE>
 Now you are going to simulate 216 molecules of methanol and 216
 molecules of water in a rectangular box (of 4.72 x 2.36 x 2.36 nm). 
 The molecules are completely demixed in the start conformation.
-In this example the GROMACS software team already generated most of
-the necessary input files. The files needed in this example are:
-</p>
-<ul>
-<LI> Initial structure of a box of 216 methanol + 216 water molecules (<TT><a href="gro.html">.gro</a></TT>)</li>
-
-<LI> Topology file of methanol and water(<tt><a href="top.html">.top</a></tt>)</li>
-<LI> Molecular Dynamics parameter file (<TT><a href="mdp_opt.html">.mdp</a></TT>)</li>
-</ul>
 
 <P>
 Change your directory to <tt>tutor/mixed </tt>:   
@@ -42,34 +33,22 @@ Change your directory to <tt>tutor/mixed </tt>:
 </tr>
 </table>
 <br>
-Let's first have a look at the coordinate file:
+
+Start by viewing the simulation box graphically:
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt>  more conf.gro
+<tt>  rasmol mixed.pdb
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
-Or to view the water box graphically:
-<br><br>
-<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
-<tr NOSAVE>
-<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
-
-<tt>  rasmol methanol.pdb
-</tt>
-<td></td>
-</tr>
-</table>
-<br>
-The Carbon group (CH3) is treated as one particle. In the file it 
-is called Me1 (methyl 1) and rasmol does not recognize it as carbon. 
+Note that one side of the box only contains methanol while the other only
+contains water.
 </p>
 
 <p>
@@ -91,21 +70,24 @@ MD-program <TT><a href="mdrun.html">mdrun</a></TT>.
 </table>
 <br>
 
-Now it's time to start the simulation of 20 picoseconds.
+Now it's time to start the simulation of 1000 picoseconds. Since this will 
+take some time, it has to be started in the background, otherwise you will
+not be able to log out without terminating the simulation. 
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> mdrun -v
+<tt> nohup mdrun -v >& log &
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
 
-After the MD simulation is finished, it is possible to view the
+After the MD simulation is finished (but even while it is still running), 
+it is possible to view the
 trajectory with the <a href="ngmx.html">ngmx</a> program:
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
@@ -121,36 +103,73 @@ trajectory with the <a href="ngmx.html">ngmx</a> program:
 <br>
 
 <P>
-When the program starts, you must select a group of atoms to view. In
-our case that will be "MeOH" (for methanol) or "System", which is the
-same for a box of water as we have. Select one and click OK. Then
-select Display->Animate from the menu. Use the buttons to see your
-water moving (note: "Play" steps one frame forward; "Fast Forward"
-plays; "Rewind" skips back to the beginning of the trajectory).
+When the program starts, you must select a group of atoms to view. 
+You can choose to select only one group, or both. If you select first methanol
+and then rewind the trajectory and select water, you see how the mixing takes 
+place.
 </P>
 
 <hr>
 <h2>Analysis of the simulation</h2>
 <ol>
-<li><p> Calculate a radial distribution function of the oxygen atoms
-around oxygen atoms. The index file <TT><a
-href="ndx.html">index.ndx</a></TT> now contains two groups, one with
-the methyl atoms and one with the oxygen atoms. 
+<li><p>First we will analyze the mixing process. We can compute the density
+of molecules, along the long axis of the simulation box, at different
+times in the simulation.
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> g_rdf -n index -o rdf-oo.xvg
+<tt> g_density -n index -o dens0 -b 0 -e 50 -d X
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+Here the <TT>-b</TT> and <TT>-e</TT> options indicate begin and end of the
+analysis. When asked which groups to analyse you select two groups,
+MeOH and Water. Now do the same for four more stretches of 50 ps along the 
+1000 ps trajectory (remember to change the name of the output file as well),
+e.g. with begin times 0, 240, 480, 720, 950). And view all the output files
+at once:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> xmgrace -nxy dens0.xvg  -nxy dens240.xvg  -nxy dens480.xvg  -nxy dens7200.xvg  -nxy dens950.xvg -legend load
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+<font color="red">Explain the results. When (at which timepoint)
+do you consider the system  completely mixed?</font>
+
+</p>
+</li>
+<li><p> Calculate a radial distribution function of the oxygen atoms
+around oxygen atoms. The index file <TT><a
+href="ndx.html">index.ndx</a></TT> now contains multiple groups.
+Select oxygen (containing both the water oxygen and the methanol oxygen).
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> g_rdf -n index -o rdf-oo.xvg -b 900
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
 The program will ask you for how many groups you want the calculate
-the RDF, answer 1 (and select oxygen and oxygen). Now,
-view the output graph.
+the RDF, answer 1 (and select oxygen and oxygen). We start at 900 ps
+in order to only use the completely mixed system.
+Now, view the output graph.
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
@@ -163,9 +182,10 @@ view the output graph.
 </tr>
 </table>
 <br>
-Which shows you the radial distribution function for oxygen-oxygen in
-Methanol. Now do the same thing using the methyl group as reference and
-as target (and use e.g. <tt>rdf-mm.xvg</tt> as output file name). View all
+Which shows you the radial distribution function for oxygen-oxygen in the 
+mixture. Now do the same thing using the methyl group as reference and
+as target (and use e.g. <tt>rdf-mm.xvg</tt> as output file name). Do not 
+forget the <TT>-b 900</TT> option to <TT>g_rdf</tt>. View all
 the graphs together:
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
@@ -173,7 +193,7 @@ the graphs together:
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> xmgrace rdf-oo.xvg rdf-mm.xvg ../water/rdf.xvg -legend load
+<tt> xmgrace rdf-oo.xvg ../methanol/rdf-oo.xvg ../water/rdf.xvg -legend load
 </tt>
 <td></td>
 </tr>
@@ -181,8 +201,11 @@ the graphs together:
 <br>
 The <tt>xmgrace</tt> program will display three different graphs.
 <font color="red">Compare the resulting graphs. Explain the differences and the
-similarities.</font>
+similarities.</font><br>
 
+Do the same analysis for the Me-Me RDF in the mixture and in pure methanol.
+<font color="red">Compare the resulting graphs. Explain the differences and the
+similarities.</font>
 </P></li>
 
 <li><p>
@@ -213,27 +236,27 @@ Select twice 0, when asked. Check the output with
 </tr>
 </table>
 <br>
-<font color="red">What is the number of hydrogen bonds per methanol
-molecule? What is the maximum possible number? Compare the results to
-those from water</font>
+<font color="red">What is the number of hydrogen bonds per 
+molecule? Compare the results to
+those from pure water and from pure methanol. Does the total 
+number of hydrogen bonds change during the mixing process?</font>
 </p></li>
 
 <li><p> As a further test of the simulation we will compute the self
-diffusion constant of Methanol, again from the <b>Mean
-square displacement</b> (MSD) function. 
+diffusion constant of Methanol and water in the mixed state.
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> g_msd -n index
+<tt> g_msd -n index -b 900
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
-(Select Me1, or O2). View the output
+(Run it twice, first selecting Me1 and then OW). View the output
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
@@ -248,7 +271,8 @@ square displacement</b> (MSD) function.
 <br>
 Check that the graph is roughly linear. The <tt>g_msd</tt> program also
 computes the diffusion constant D for you. 
-<font color="red">Compare the result to water. Is it as you would expect?
+<font color="red">Compare the result to pure water and pure methanol. 
+Is it as you would expect?
 </font>
 </p></li>
 </ol>
