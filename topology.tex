@@ -199,16 +199,18 @@ for type 4fd like this:
 5       1      2      3      4       1       0.33333    0.33333    -0.105
 \end{verbatim}}
 
-This will result in the construction of a dummy `atom', number 4
+This will result in the construction of a dummy `atom', number 5
 (first column `\verb'Dummy''), based on the positions of 1 and 2 or 1,
-2 and 3 (next 2 or 3 columns `\verb'from'') following the rules
-determined by the function number (next column `\verb'funct'') with
-the parameters specified (last 2 or three columns `\verb'a b' . .').
+2 and 3 or 1, 2, 3 and 4 (next two, three or four columns
+`\verb'from'') following the rules determined by the function number
+(next column `\verb'funct'') with the parameters specified (last one,
+two or three columns `\verb'a b' . .').
 
-Note that dummy atoms generally do not have any bonds to other atoms,
-because that would make no sense, but that also means that no
-exclusions will be generated for the dummy atoms. These should be
-added manually.
+Note that any bonds defined between dummy atoms and/or normal atoms
+will be removed by {\tt grompp} after the exclusions have been
+generated. This way, exclusions will not be affected by an atom being
+defined as dummy atom or not, but by the bonding configuration of the
+atom.
 
 \section{Parameter files}
 \label{sec:paramfiles}
@@ -226,7 +228,7 @@ of amino acids or user defined building blocks.
 When generating a topology ({\tt *.top}) using the {\tt \normindex{pdb2gmx}} 
 program the information from these files is combined.
  
-\begin{table}
+\begin{table}[h]
 \centerline{
 \begin{tabular}{|l|c|c|}
 \dline
@@ -474,39 +476,32 @@ specified  dihedrals. It is possible to put more than one dihedral on a
 rotatable bond. 
 
 \subsection{Hydrogen and termini database}
-The hydrogen database (see \tabref{ffgmxhdb}) is stored in {\tt ffgmx.hdb}. The termini
-databases are stored in {\tt ffgmx-n.tdb} and {\tt ffgmx-c.tdb} for the
-N- and C-terminus respectively. They contain information for the {\tt pdb2gmx}
-program on how to connect new atoms to existing ones. The termini
-database files also contain information on which atoms should be
-removed or changed and which (improper) dihedral angles should be
-added.
+The hydrogen database is stored in {\tt ffgmx.hdb}. The termini
+databases are stored in {\tt ffgmx-n.tdb} and {\tt ffgmx-c.tdb} for
+the N- and C-terminus respectively. They contain information for the
+{\tt pdb2gmx} program on how to connect new atoms to existing
+ones. The termini database files also contain information on which
+atoms should be removed or changed and which (improper) dihedral
+angles should be added.
 
-\begin{table}[h]
-\caption{A sample piece of the {\tt ffgmx.hdb} file 
-(table headers are included for explanation purposes)}
-\label{tab:ffgmxhdb}
-\centering
-\begin{tabular}{lllllll}
-residue & \#additions&  &       &       &  	&	\\
-        & \#H add    & H-code& 1$^{st}$ atom    & 2$^{nd}$ & 3$^{rd}$ & 4$^{th}$ \\
-\hline
-ARG     & 4	&	&  	&	&	&	\\
-        & 1	& 2     & N     & -C	& -O	&     	\\
-        & 1	& 1     & NE    & CD	& CZ	&    	\\
-        & 2	& 3     & NH1   & CZ	& NE	&   	\\
-        & 2	& 3     & NH2   & CZ	& NE	& 	\\
-ALA 	& 2	& 	&	&	&	&	\\
-	& 1	& 1	& N	& -C	& CA	&	\\
-	& 1	& 5	& CA	& N	& C	& CB
-\end{tabular}
-\end{table}
+{\small\begin{verbatim}
+; res   # additions
+        # H add type    i       j       k
+ALA     1
+        1       1       N       -C      CA
+ARG     4
+        1       2       N       CA      C
+        1       1       NE      CD      CZ
+        2       3       NH1     CZ      NE
+        2       3       NH2     CZ      NE
+\end{verbatim}
+}
 
 On the first line we see the residue name (ARG) and the number of additions.
 On each subsequent line we then see 
 \begin{itemize}
-\item[A] The number of H atoms added
-\item[B] The way of adding H atoms, can be any of
+\item The number of H atoms added
+\item The way of adding H atoms, can be any of
 \begin{enumerate}
 \item[1]{\em one planar hydrogen, e.g. rings or peptide bond}\\
 one hydrogen atom (n) is generated, lying in the plane of atoms
@@ -548,7 +543,7 @@ two oxygens (n1,n2) are generatd according to rule 3, at distances of
 around n2 according to rule 2, where n-i-j and n-i-j-k should be read
 as n'-n2-i and n'-n2-i-j resp.
 \end{enumerate}
-\item[C]
+\item
 Three or four control atoms (i,j,k,l), where the first always is the
 atom to which the H atoms are connected. The other two or three depend
 on the code selected.
@@ -562,157 +557,6 @@ to add any type of atom, except for the bondlength and angles which
 are fixed (as specified above). Note however that only the termini
 database supports type specification for the atoms, the hydrogen
 database will (naturally) always add hydrogens.
-
-\newcommand{\amine}{-NH$_2$}
-\newcommand{\amines}{-NH-}
-\newcommand{\aminep}{-NH$_3^+$}
-\subsection{Dummy database}
-The dummy database is stored in \verb'ffgmx.ddb'. This information is
-used by \verb'pdb2gmx' to determine which atoms should be turned into
-dummy atoms. An example is given here:
-
-{\small\begin{verbatim}
-[ NL ]
- [ masses ]
-; name  type      nr      type  dCN       dNH       aCNH
-  M     MNH3      2       1     0.147     0.1       109.5
- [ dummies ]
-; atom  from              type  a         b         c
-  N     *     M     M     2     0.481     0.4810
-  H     *     M     M     3    -0.00505   1.1857    6.749
-  H     *     M     M     3    -0.00505   1.1857   -6.749
-  H     *     M     M     2     1.781    -0.6004
-
-[ NT ]
- [ dummies ]
-; atom  from              type  theta     b
-  H     N     *     O     5     120       0.1
-  H     N     *     O     5     240       0.1
-
-[ NE ]
- [ dummies ]
-; atom  from              type  a         b
-  H     *     *     *     4     0.5324   -0.1
-
-[ OA ]
- [ angles ]
-; atoms             d        fc
-  H     O     *     0.19849  500000.0
-\end{verbatim}}
-
-Dummy constructions are grouped by atom type, which are specified by
-the block name (e.g.\@ \verb'[ NL ]'). The atom which corresponds to
-this atom type is called the 'main atom'. The last entry in the dummy
-database can have a wildcard (\verb'*') for the atom type, which will
-be processed for all remaining atoms. Three entries are possible per
-atom type, \verb'[ dummies ]', \verb'[ angles ]' and \verb'[ masses ]'.
-\begin{description}
-\item[\mbox{\tt[ dummies ]}:]
-The first column specifies which atoms should be 'dummyfied', based on
-atom names. Atom name comparison is done only for the specified
-characters (i.e.\@ \verb'H' means any atom beginning with an 'H') and
-\verb'*' stands for any atom name. Searching for matching atoms is
-done along bonds, in the order of first-bonded, second-bonded
-etc. Next three colomns specify the constructing atoms for the dummy
-atom. Column 5 specifies the dummy type, 1, 2 and 3 corresponding to
-dummy types 1, 2 and 3 (see \secref{dummy}) resp.\@ and 4 and 5
-corresponding to types 2$'$ and 2$''$ resp. The remaining columns
-specify the parameters for the dummy atom construction, as described
-in \secref{dummy}.
-\item[\mbox{\tt[ angles ]}:]
-Specifies which atoms should be angle constrained by defining a bond
-between the outer atoms of the angle. First three columns specify
-three atoms which define the angle, last two columns specify distance
-and force constant. The force constant is only relevant for energy
-minimization, since for MD all bonds will be constrained.
-\item[\mbox{\tt[ masses ]}:]
-Specifies the addition of dummy masses bonded to the 'main atom' and,
-in a circular fashion, to each other, as in: main-M1-...-M2-main. The
-first 2 columns specify dummy mass name and atom type, next 2 the
-number of dummy masses to add and the type (only implemented is adding
-2 atoms of type 1). Next are parameters which depend on the type of dummy
-masses:
-\begin{itemize}
-\item[1.] dummy masses for {\aminep} group: two dummy masses are generated
-with each a mass equal to half the mass of the {\aminep} group and placed
-such that center of mass and moment of inertia for rotation around the
-C-N bond are conserved. Parameters are: C-N and N-H bond length and
-C-N-H bond angle. Works also for umbrella {\amine} group.
-\end{itemize}
-\end{description}
-Additionally, all bonds, angles and dihedrals that are defined on one
-of the degrees of freedom that are removed by the introduction of
-dummy atoms or angle constraints, are also removed. This boils down to
-removing all bonds to dummy atoms, all angles that involve two or
-three dummy atoms and all dihedrals that involve at least one dummy
-atom and for which all other atoms are used in constructing the dummy
-atom(s). Note that this leaves the force field itself unchanged.
-
-Ideally all dummy parameters should be calculated from the topology
-information of the groups involved, this might one day be implemented.
-
-\begin{figure}
-\centerline{\psfig{figure=plots/dumtypes.eps,width=12cm}}
-\caption[Schematic view of the different types of dummy atom
-constructions used.]{Schematic view of the different types of dummy
-atom constructions used. The atoms used in the construction of the
-dummy atom(s) are depicted as black circles, dummy atoms as grey
-ones. Hydrogens are smaller than heavy atoms. {\sf A}: fixed bond
-angle, note that here the hydrogen is not a dummy atom; {\sf B}:
-linear combination of bond vectors; {\sf C}: in the plane of three
-atoms, with fixed distance; {\sf D}: in the plane of three atoms, with
-fixed angle and distance; {\sf E}: construction for amine groups
-({\amine} or {\aminep}), see text for details.}
-\label{fig:dumtypes}
-\end{figure}
-
-The dummy database in \verb'ffgmx.ddb' is written to convert all
-hydrogen atoms in proteins into dummy atoms, except for hydroxyl and
-sulfhydryl group hydrogens which are angle-constraint and amine group
-(umbrella -NH$_2$ or -NH$^+_3$) hydrogens which are constructed from
-dummy masses, or in more detail~\cite{feenstra98}:
-\begin{itemize}
-\item{\em hydroxyl (-OH) or sulfhydryl (-SH)
-hydrogen:\/} The only internal degree of freedom in a hydroxyl group
-that can be constrained is the bending of the C-O-H
-angle. This angle is fixed by defining an additional bond of
-appropriate length, see \figref{dumtypes}A. This removes the high
-frequency angle bending, but leaves the dihedral rotational
-freedom. The same goes for a sulfhydryl group. Note that in these
-cases the hydrogen is not treated as a dummy atom.
-\item{\em aromatic hydrogens (-CH-):\/} The positions of
-aromatic hydrogens (which are explicit) are constructed from a linear
-combination of two C-C bond vectors, see \figref{dumtypes}B.
-\item{\em single amine or amide ({\amines}) hydrogen:\/} The position
-of a single amine hydrogen cannot be constructed from a linear
-combination of C-N bond vectors, because of the flexibility of
-the C-N-C angle. In stead, the hydrogen atom is positioned at
-a fixed distance from the nitrogen atom on a line going through the
-nitrogen and a point on the line through the C and C{$_\alpha$}
-atoms, see \figref{dumtypes}C. The arginine single amine hydrogen is
-treated in the same way.
-\item{\em planar amine ({\amine}) hydrogens:\/} The method used for
-the single amide hydrogen is not well suited for planar amine groups,
-because no suitable two heavy atoms can be found to define the
-direction of the hydrogen atoms. In stead, the hydrogen is constructed
-at a fixed distance from the nitrogen atom, with a fixed angle to the
-carbon atom, in the plane defined by one of the other heavy atoms, see
-\figref{dumtypes}D.
-\item{\em amine group (umbrella {\amine} or {\aminep}) hydrogens:\/}
-Amine hydrogens with rotational freedom cannot be constructed as dummy
-atoms from the heavy atoms they are connected to, since this would
-result in loss of the rotational freedom of the amine group. To
-preserve the rotational freedom, two ``dummy masses'' are constructed
-with the same moment of inertia (for rotation around the C-N
-bond) and center of mass as the amine group. These dummy masses have
-no interaction with any other atom, except for the fact that they are
-connected to the carbon and to each other, resulting in a rigid
-triangle. From these three particles the positions of the nitrogen and
-hydrogen atoms are constructed as a linear combination of two bond
-vectors and their outer product, resulting in an amine group with
-rotational freedom intact, but without other internal degrees of
-freedom. See \figref{dumtypes}E.
-\end{itemize}
 
 \section{File formats}
 \subsection{Topology file}
@@ -732,11 +576,10 @@ Description of the file layout:
       \verb'[ pairtypes ]', \verb'[ angletypes ]', 
       \verb'[ dihedraltypes ]', \verb'[ nonbond-params ]'
 \item \raggedright
-      for molecule level: \verb'[ moleculetype ]', \verb'[ atoms ]', 
-      \verb'[ bonds ]', \verb'[ exclusions ]', \verb'[ pairs ]', 
+      for molecule level: \verb'[ moleculetype ]', \verb'[ atoms ]',
+      \verb'[ bonds ]', \verb'[ exclusions ]', \verb'[ pairs ]',
       \verb'[ angles ]', \verb'[ dihedrals ]', 
-      \verb'[ position_restraints ]', 
-      \verb'[ distance_restraints ]', 
+      \verb'[ position_restraints ]', \verb'[ distance_restraints ]',
       \verb'[ dummies1 ]', \verb'[ dummies2 ]', \verb'[ dummies3 ]'
 \item for system level: \verb'[ system ]', \verb'[ molecules ]'
 \item items should be seperated by spaces or tabs, not commas
@@ -759,6 +602,73 @@ Description of the file layout:
 \item using an unknown string in \verb'[ ]' causes all the data until
       the next directive to be ignored, and generates a warning.
 \end{itemize}
+
+\newcommand{\kJmol}{kJ mol$^{-1}$}
+\newcommand{\kJmolnm}[1]{\kJmol nm$^{#1}$}
+\newcommand{\kJmolrad}[1]{\kJmol rad$^{#1}$}
+\newcommand{\kJmoldeg}[1]{\kJmol deg$^{#1}$}
+\begin{table}
+\centerline{\small\begin{tabular}{|llllll|}
+\dline
+interaction 	& directive   	      & \#  & f. & parameters 				& pert. \\
+	&		      	      & at. & tp &					& 	\\
+\hline
+		& {\tt defaults}	& & &	non-bonded function type; combination rule; 	& \\
+		&			& & &	generate pairs (no/yes); fudge LJ (); fudge QQ () & \\
+\hline
+		& {\tt atomtypes}	& 1 & 	& m (u); q (e); particle type (); 	&	\\
+		&			&   &	& c$_6$ (\kJmolnm{6}); c$_{12}$ (\kJmolnm{12}) & \\
+\hline
+		& {\tt bondtypes}	&   & 	& (see interaction table)		& 	\\
+		& {\tt constrainttypes}	&   & 	& (see interaction table)		& 	\\
+		& {\tt pairtypes}	&   & 	& (see interaction table)		& 	\\
+		& {\tt angletypes}	&   & 	& (see interaction table)		& 	\\
+proper dih.	& {\tt dihedraltypes}	& 2 & 1	& $\theta_{max}$ (deg); f$_c$ (\kJmol) 	& X	\\
+improper dih.	& {\tt dihedraltypes}	& 2 & 2	& $\theta_0$ (deg); f$_c$ (\kJmolnm{-2}) & X	\\
+RB dihedral	& {\tt dihedraltypes}	& 2 & 3	& C$_{0 \ldots 5}$ (\kJmol) 		&	\\
+LJ 		& {\tt nonbond\_params}	& 2 & 1	& c$_6$ (\kJmolnm{6}); c$_{12}$ (\kJmolnm{12}) & \\
+Buckingham    	& {\tt nonbond\_params}	& 2 & 2	& a (\kJmol); b (nm$^{-1})$; c$_6$ (\kJmolnm{6}) & \\
+\dline
+		& {\tt moleculetype}	& & & 	Molecule name; exclude neighbors \# bonds &	\\
+		&			& & & 	away for non-bonded interactions () 	&	\\
+\hline
+		& {\tt atoms}		& 1 & 	& atom type (name); residue (\#); 	& 	\\
+		&			&   &	& residue (name); atom name (name); 	& 	\\
+		&			&   &	& charge group (index); q (e); m (u) 	& X	\\
+\hline
+bond		& {\tt bonds}		& 2 & 1	& b$_0$ (nm); f$_c$ (\kJmolnm{-2})	& X	\\
+G96 bond	& {\tt bonds}		& 2 & 2	& b$_0$ (nm); f$_c$ (\kJmolnm{-4})	& X	\\
+morse		& {\tt bonds}		& 2 & 3	& b$_0$ (nm); D (\kJmol); $\beta$ (nm$^{-1}$) & X \\
+LJ 1-4		& {\tt pairs}		& 2 & 1	& c$_6$ (\kJmolnm{6}); c$_{12}$ (\kJmolnm{12}) & X \\
+angle		& {\tt angles}		& 3 & 1	& $\theta_0$ (deg); f$_c$ (\kJmolrad{-1}) & X	\\
+G96 angle	& {\tt angles}		& 3 & 2	& $\theta_0$ (deg); f$_c$ (\kJmoldeg{-2}) & X	\\
+proper dih.	& {\tt dihedrals}	& 4 & 1	& $\theta_{max}$ (deg); f$_c$ (\kJmol) 	& X	\\
+improper dih.	& {\tt dihedrals}	& 4 & 2	& $\theta_0$ (deg); f$_c$ (\kJmolnm{-2}) & X	\\
+RB dihedral	& {\tt dihedrals}	& 4 & 3	& C$_{0 \ldots 5}$ (\kJmol) 		&	\\
+constraint	& {\tt constraints}	& 2 & 1	& b$_0$ (nm) 				& X	\\
+constr. (n.c.)  & {\tt constraints}	& 2 & 2	& b$_0$ (nm) 				& X	\\
+settle		& {\tt settles}		& 3 & 1	& d$_{OH}$, d$_{HH}$ (nm) 		& 	\\
+dummy2		& {\tt dummies2}	& 2 & 1	& a ()					& 	\\
+dummy3		& {\tt dummies3}	& 3 & 1	& a, b ()				& 	\\
+dummy3fd	& {\tt dummies3}	& 3 & 2	& a (); d (nm)				& 	\\
+dummy3fad	& {\tt dummies3}	& 3 & 3	& d (nm); $\theta$ (deg) 		& 	\\
+dummy3out	& {\tt dummies3}	& 3 & 4	& a, b (); c (nm$^{-1}$) 		& 	\\
+dummy4fd	& {\tt dummies4}	& 4 & 1	& a, b (); d (nm);	   		& 	\\
+posres	& {\tt position\_restraints}	& 1 & 1	& k$_{x}$, k$_{y}$, k$_{z}$ (\kJmolnm{-2}) & 	\\
+wpol	& {\tt position\_restraints}	& 1 & 2	& ???	& 	\\
+disres	& {\tt distance\_restraints}	& 2 & 1	& type, index (); low, up$_1$, up$_2$ (nm); factor () & \\
+angres	& {\tt angle\_restraints}	& 4 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol) 	& X	\\
+angres z& {\tt angle\_restraints\_z}	& 2 & 1	& $\theta_0$ (deg); f$_c$ (\kJmol) 	& X	\\
+excl		& {\tt exclusions}	& 1 & 	& atoms (index)				& 	\\
+\dline
+		& {\tt system}		& & &	System Name 				&	\\
+		& {\tt molecules}	& & &	Molecule Name; Number of molecules () 	&	\\
+\dline
+\end{tabular}
+}
+\caption{}
+\label{ta:interactions}
+\end{table}
 
 Here is an example of a topology file, \verb'urea.top':
 {\small\begin{verbatim}
@@ -784,7 +694,7 @@ Urea         3
      8       H       1    UREA      H8       3   0.276
 
 [ bonds ]
-;  ai    aj funct           c0           c1
+;  ai    aj funct           b0           kb
     3     4     1 1.000000e-01 3.744680e+05 
     3     5     1 1.000000e-01 3.744680e+05 
     6     7     1 1.000000e-01 3.744680e+05 
@@ -794,7 +704,7 @@ Urea         3
     1     6     1 1.330000e-01 3.765600e+05 
 
 [ pairs ]
-;  ai    aj funct           c0           c1
+;  ai    aj funct           c6          c12
     2     4     1 0.000000e+00 0.000000e+00 
     2     5     1 0.000000e+00 0.000000e+00 
     2     7     1 0.000000e+00 0.000000e+00 
@@ -805,7 +715,7 @@ Urea         3
     5     6     1 0.000000e+00 0.000000e+00 
 
 [ angles ]
-;  ai    aj    ak funct           c0           c1
+;  ai    aj    ak funct          th0          cth
     1     3     4     1 1.200000e+02 2.928800e+02 
     1     3     5     1 1.200000e+02 2.928800e+02 
     4     3     5     1 1.200000e+02 3.347200e+02 
@@ -817,7 +727,7 @@ Urea         3
     3     1     6     1 1.170000e+02 5.020800e+02 
 
 [ dihedrals ]
-;  ai    aj    ak    al funct           c0           c1           c2
+;  ai    aj    ak    al funct          phi           cp         mult
     2     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
     6     1     3     4     1 1.800000e+02 3.347200e+01 2.000000e+00 
     2     1     3     5     1 1.800000e+02 3.347200e+01 2.000000e+00 
@@ -828,10 +738,11 @@ Urea         3
     3     1     6     8     1 1.800000e+02 3.347200e+01 2.000000e+00 
 
 [ dihedrals ]
-;  ai    aj    ak    al funct           c0           c1
+;  ai    aj    ak    al funct           q0           cq
     3     4     5     1     2 0.000000e+00 1.673600e+02 
     6     7     8     1     2 0.000000e+00 1.673600e+02 
-    1     3     6     2     2 0.000000e+00 1.673600e+02  
+    1     3     6     2     2 0.000000e+00 1.673600e+02 
+ 
 [ position_restraints ]
 ; This you wouldn't use normally for a molecule like Urea,
 ; but it's here for didactical purposes
