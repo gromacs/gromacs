@@ -247,7 +247,7 @@ void make_func(char *appendname)
   /* start the loop over i particles (neighborlists) */    
   outer_loop();
   /* The innerloop creation is called from the outerloop creation */
-#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && !defined DISABLE_X86TRUNC)
   if(bC && DO_TAB)
     strcat(codebuffer,"asm(\"fldcw %%0\" : : \"m\" (*&x86_cwsave));\n");
 #endif
@@ -283,7 +283,7 @@ int main(int argc,char *argv[])
   fprintf(stderr,">>> Including x86 assembly loops with SSE/3DNow instructions\n");
 #endif
 
-#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DISABLE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && !defined DISABLE_X86TRUNC)
   fprintf(stderr,">>> Using fast inline assembly gcc/x86 truncation. Since we are changing\n"
 	         "    the control word this might affect the numerical result slightly.\n");
 #endif  
