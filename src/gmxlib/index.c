@@ -159,7 +159,7 @@ atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
   return a;
 }
 
-static void analyse_other(int nres,eRestp Restp[],t_atoms *atoms,
+static void analyse_other(eRestp Restp[],t_atoms *atoms,
 			  t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   char **restp=NULL;
@@ -168,10 +168,10 @@ static void analyse_other(int nres,eRestp Restp[],t_atoms *atoms,
   atom_id *other_ndx,*aid,*aaid;
   int  i,j,k,l,resnr,naid,naaid,natp,nrestp=0;
   
-  for(i=0; (i<nres); i++)
+  for(i=0; (i<atoms->nres); i++)
     if (Restp[i] == etOther)
       break;
-  if (i < nres) {
+  if (i < atoms->nres) {
     /* we have others */
     if (bVerb)
       printf("Analysing Other...\n");
@@ -236,7 +236,7 @@ static void analyse_other(int nres,eRestp Restp[],t_atoms *atoms,
   }
 }
 
-static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
+static void analyse_prot(eRestp restp[],t_atoms *atoms,
 			 t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
@@ -385,14 +385,14 @@ static void analyse_prot(int nres,eRestp restp[],t_atoms *atoms,
   sfree(aid);
 }
 
-static void analyse_dna(int nres,eRestp restp[],t_atoms *atoms,
+static void analyse_dna(eRestp restp[],t_atoms *atoms,
 			t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   if (bVerb)
     printf("Analysing DNA... (not really)\n");
   if (debug)
-    printf("nres %d; eRestp %p; atoms %p; gb %p; gn %p; bASK %s; bASK %s",
-	   nres, restp, atoms, gb, gn, bool_names[bASK], bool_names[bVerb]);
+    printf("eRestp %p; atoms %p; gb %p; gn %p; bASK %s; bASK %s",
+	   restp, atoms, gb, gn, bool_names[bASK], bool_names[bVerb]);
 }
 
 bool is_protein(char *resnm)
@@ -444,7 +444,7 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
   /* Protein */
   aid=mk_aid(atoms,restp,etProt,&nra,TRUE);
   if (nra > 0) 
-    analyse_prot(atoms->nres,restp,atoms,gb,gn,bASK,bVerb);
+    analyse_prot(restp,atoms,gb,gn,bASK,bVerb);
   
   sfree(aid);
 
@@ -458,12 +458,12 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
   aid=mk_aid(atoms,restp,etDNA,&nra,TRUE);
   if (nra > 0) {
     add_grp(gb,gn,nra,aid,"DNA"); 
-    analyse_dna(atoms->nres,restp,atoms,gb,gn,bASK,bVerb);
+    analyse_dna(restp,atoms,gb,gn,bASK,bVerb);
   }
   sfree(aid);
 
   /* Other */
-  analyse_other(atoms->nres,restp,atoms,gb,gn,bASK,bVerb);
+  analyse_other(restp,atoms,gb,gn,bASK,bVerb);
   aid=mk_aid(atoms,restp,etOther,&nra,TRUE);
   if ((nra > 0) && (nra < atoms->nr))
     add_grp(gb,gn,nra,aid,"Other"); 
