@@ -105,8 +105,8 @@ void close_trx(int status);
 int open_trx(char *outfile,char *filemode);
 /* Open a TRX file and return the file number */
 
-extern bool bRmod(double a,double b);
-/* Returns TRUE when a MOD b = 0, using a margin which is slightly
+extern bool bRmod(double a, double b, double c);
+/* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
  */
 

@@ -123,16 +123,16 @@ void set_program_name(char *argvzero)
  *
  ****************************************************************/
 
-bool bRmod(double a,double b)
+bool bRmod(double a, double b, double c)
 {
   int iq;
   double tol;
 
   tol = 5*GMX_REAL_EPS;
 
-  iq = ((1.0+tol)*a)/b;
-  
-  if (fabs(a-b*iq) <= tol*fabs(a))
+  iq = (a - b + tol*a)/c;
+
+  if (fabs(a - b - c*iq) <= tol*fabs(a))
     return TRUE;
   else
     return FALSE;
@@ -151,7 +151,7 @@ int check_times2(real t,real t0,real tp, real tpp)
   r=-1;
   if ((((tbegin >= 0.0) && (t >= tbegin)) || (tbegin == -1.0)) &&
       (((tend   >= 0.0) && (t <= tend+margin))   || (tend   == -1.0))) {
-    if (tdelta > 0 && !bRmod(t-t0,tdelta))
+    if (tdelta > 0 && !bRmod(t,t0,tdelta))
       r = -1;
     else
       r = 0;

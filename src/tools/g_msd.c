@@ -259,7 +259,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
   memcpy(x[cur],x[prev],this->natoms*sizeof(x[prev][0]));
   t=this->t0;
   do {
-    if (bRmod(t-this->t0,dt))
+    if (bRmod(t,this->t0,dt))
       init_restart(this);
     if (this->nframes >= maxframes-1) {
       if (maxframes==0) {

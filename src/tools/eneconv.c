@@ -532,7 +532,7 @@ int main(int argc,char *argv[])
       }	  
       
       /* determine if we should write it */
-      if (bWrite && (delta_t==0 || bRmod(t-toffset,delta_t))) {
+      if (bWrite && (delta_t==0 || bRmod(t,toffset,delta_t))) {
 	fro->t = t;
 	if(bNewOutput) {
 	  bNewOutput=FALSE;

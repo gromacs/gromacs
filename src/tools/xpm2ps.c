@@ -328,7 +328,7 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
     ps_strfont(ps,psr->X.tickfont,psr->X.tickfontsize);
     for(x=0; (x<mat[i].nx); x++) {
       xx=xx00+(x+0.7)*psr->xboxsize;
-      if ( ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.major) || 
+      if ( ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) || 
 	     (psr->X.first && (x==0))) &&
 	   ( (i == 0) || box_do_all_x_maj_ticks(psr) ) ) {
 	/* Longer tick marks */
@@ -338,11 +338,11 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 	  ps_ctext(ps,xx,
 		   yy00-DDD-psr->X.majorticklen-psr->X.tickfontsize*0.8,
 		   xtick[x],eXCenter);
-      } else if ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.minor) &&
+      } else if ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.minor) &&
 		( (i == 0) || box_do_all_x_min_ticks(psr) ) ){
 	/* Shorter tick marks */
 	ps_line(ps,xx,yy00,xx,yy00-psr->X.minorticklen);
-      } else if ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.major) ) {
+      } else if ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) ) {
 	/* Even shorter marks, only each X.major */
 	ps_line(ps,xx,yy00,xx,yy00-(psr->boxspacing/2));
       }
@@ -356,7 +356,7 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 
     for(y=0; (y<mat[i].ny); y++) {
       yy=yy00+(y+0.7)*psr->yboxsize;
-      if ( bRmod(mat[i].axis_y[y] - psr->Y.offset, psr->Y.major) || 
+      if ( bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.major) || 
 	   (psr->Y.first && (y==0))) {
 	/* Major ticks */
 	strlength=max(strlength,(int)strlen(ytick[y]));
@@ -364,7 +364,7 @@ static void draw_boxes(t_psdata ps,real x0,real y0,real w,
 	ps_ctext(ps,xx00-psr->Y.majorticklen-DDD,
 		 yy-psr->Y.tickfontsize/3.0,ytick[y],eXRight);
       }
-      else if ( bRmod(mat[i].axis_y[y] - psr->Y.offset, psr->Y.minor) ) {
+      else if ( bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.minor) ) {
 	/* Minor ticks */
 	ps_line(ps,xx00,yy,xx00-psr->Y.minorticklen,yy);
       }
@@ -592,7 +592,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
       /* count how many ticks we would get: */
       i = 0;
       for(j=0; j<n; j++)
-	if ( bRmod(axis[j] - offset, space) )
+	if ( bRmod(axis[j], offset, space) )
 	  i++;
       /* do we have a reasonable number of ticks ? */
       bTryAgain = i > min(10, n-1) || i < 5;

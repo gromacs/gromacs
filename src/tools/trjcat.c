@@ -467,7 +467,7 @@ int main(int argc,char *argv[])
 	  if (frame_out == -1)
 	    first_time = frout.time;
 	  lasttime = frout.time;
-	  if (dt==0 || bRmod(frout.time-first_time,dt)) {
+	  if (dt==0 || bRmod(frout.time,first_time,dt)) {
 	    frame_out++;
 	    last_ok_t=frout.time;
 	    if(bNewFile) {

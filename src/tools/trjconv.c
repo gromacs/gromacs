@@ -932,7 +932,7 @@ int main(int argc,char *argv[])
 	/* check for writing at each delta_t */
 	  bDoIt=(delta_t == 0);
 	  if (!bDoIt)
-	    bDoIt=bRmod(fr.time-tzero, delta_t);
+	    bDoIt=bRmod(fr.time,tzero, delta_t);
 	
 	  if (bDoIt || bTDump) {
 	    /* print sometimes */
@@ -992,7 +992,7 @@ int main(int argc,char *argv[])
 		for (d=0; d<DIM; d++)
 		  frout.x[i][d] += outframe*shift[d];
 	  
-	    bSplit = split_t!=0 && bRmod(fr.time-tzero, split_t);
+	    bSplit = split_t!=0 && bRmod(fr.time,tzero, split_t);
 	    if (bSeparate || bSplit)
 	      sprintf(out_file2,"%s_%d%s",outf_base,file_nr,outf_ext);
 	    switch(ftp) {
