@@ -351,7 +351,7 @@ int main (int argc, char *argv[])
   ir->nsteps     -= run_step;
   if (extend_t) {
     i = ir->nsteps;
-    ir->nsteps     += extend_t / ir->delta_t;
+    ir->nsteps     += (int)(extend_t/ir->delta_t + 0.5);
     fprintf(stderr,
 	    "Extending remaining runtime of %g ps by %g ps (now %d steps)\n",
 	    i*ir->delta_t, extend_t, ir->nsteps);
