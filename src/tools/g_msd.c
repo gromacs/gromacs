@@ -146,17 +146,19 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
 {
   FILE *out;
   int  i,j;
+  char ylabel[15];
   
-  out=xvgropen(fn,title,"Time (ps)",yaxis);
+  sprintf(ylabel,"Time (%s)", time_label());
+  out=xvgropen(fn,title,ylabel,yaxis);
   if (DD) {
-    fprintf(out,"# Diffusion constants fitted from time %g to %g (ps)\n",
-	    beginfit,endfit);
+    fprintf(out,"# Diffusion constants fitted from time %g to %g (%s)\n",
+	    beginfit,endfit,time_label());
     for(i=0; i<this->ngrp; i++) 
       fprintf(out,"# D[%10s] = %.3f (+/- %.3f) (1e-5 cm^2/s)\n",
 	      grpname[i],DD[i],SigmaD[i]);
   }
   for(i=0; i<this->nframes; i++) {
-    fprintf(out,"%10g",this->time[i]);
+    fprintf(out,"%10g",convert_time(this->time[i]));
     for(j=0; j<this->ngrp; j++)
       fprintf(out,"  %10g",this->data[j][i]);
     fprintf(out,"\n");
@@ -174,7 +176,6 @@ static void calc_corr(t_corr *this,int nr,int nx,atom_id index[],rvec xc[],
   /* Check for new starting point */
   if (this->nlast < this->nrestart) {
     if ((thistime(this) >= (this->nlast*this->delta_t)) && (nr==0)) {
-      printf("New starting point\n");
       memcpy(this->x0[this->nlast],xc,this->natoms*sizeof(xc[0]));
       this->n_offs[this->nlast]=this->nframes;
       this->nlast++;
@@ -293,7 +294,10 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
     
     this->nframes++;
   } while (read_next_x(status,&t,this->natoms,x[cur],box));
-  fprintf(stderr,"\n");
+  fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
+	  this->nrestart, 
+	  convert_time(dt), time_label(),
+	  convert_time(t), time_label() );
   
   close_trj(status);
 }
@@ -460,15 +464,15 @@ void printmol(t_corr *this,char *fn)
   sfree(D);
 }
 
-void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
-	     t_topology *top,bool bMol,bool bMW,
+void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
+	     int nrgrp, t_topology *top,bool bMW,
 	     int type,real dim_factor,int axis,
 	     real dt,real beginfit,real endfit)
 {
   t_corr       *msd;
   int          *gnx;
   atom_id      **index;
-  char         *ndx,**grpname;
+  char         **grpname;
   int          i,i0,i1,j,N;
   real         *DD,*SigmaD,a,a2,b;
   
@@ -476,8 +480,7 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
   snew(index,nrgrp);
   snew(grpname,nrgrp);
     
-  ndx = ftp2fn_null(efNDX,NFILE,fnm);
-  if (bMol && !ndx) {
+  if (mol_file && !ndx_file) {
     gnx[0] = top->blocks[ebMOLS].nr;
     snew(index[0],gnx[0]);
     grpname[0] = "Molecules";
@@ -485,21 +488,21 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
       index[0][i] = i;
   }
   else
-    get_index(&top->atoms,ndx,nrgrp,gnx,index,grpname);
+    get_index(&top->atoms,ndx_file,nrgrp,gnx,index,grpname);
 
-  msd = init_corr(nrgrp,type,axis,dim_factor,bMW,bMol,dt,top);
+  msd = init_corr(nrgrp,type,axis,dim_factor,bMW,(mol_file!=NULL),dt,top);
   
-  corr_loop(msd,ftp2fn(efTRX,NFILE,fnm),gnx,index,
-	    bMol ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
-	    bMol ? prep_data_mol : prep_data_norm,dt);
+  corr_loop(msd,trx_file,gnx,index,
+	    (mol_file!=NULL) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
+	    (mol_file!=NULL) ? prep_data_mol : prep_data_norm,dt);
   
   /* Correct for the number of points */
   for(j=0; (j<msd->ngrp); j++)
     for(i=0; (i<msd->nframes); i++)
       msd->data[j][i] /= msd->ndata[j][i];
 
-  if (bMol) 
-    printmol(msd,opt2fn("-mol",NFILE,fnm));
+  if (mol_file) 
+    printmol(msd,mol_file);
 
   DD     = NULL;
   SigmaD = NULL;
@@ -532,12 +535,11 @@ void do_corr(int NFILE, t_filenm fnm[],int nrgrp,
 	      grpname[j],DD[j],SigmaD[j]);
     }
   }
-  /* Print and show mean square displacement */
-  corr_print(msd,opt2fn("-o",NFILE,fnm),
+  /* Print mean square displacement */
+  corr_print(msd,msd_file,
 	     "Mean Square Displacement",
 	     "MSD (nm\\S2\\N)",
 	     beginfit,endfit,DD,SigmaD,grpname);
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
 }
 
 int main(int argc,char *argv[])
@@ -576,12 +578,12 @@ int main(int argc,char *argv[])
       "Number of groups to calculate MSD for" },
     { "-mw",      FALSE, etBOOL, {&bMW},
       "Mass weighted MSD" },
-    { "-trestart",FALSE, etREAL, {&dt},
-      "Time between restarting points in trajectory" },
-    { "-beginfit",FALSE, etREAL, {&beginfit},
-      "Start time for fitting the MSD" },
-    { "-endfit",FALSE, etREAL, {&endfit},
-      "End time for fitting the MSD, -1 is till the end" }
+    { "-trestart",FALSE, etTIME, {&dt},
+      "Time between restarting points in trajectory (%t)" },
+    { "-beginfit",FALSE, etTIME, {&beginfit},
+      "Start time for fitting the MSD (%t)" },
+    { "-endfit",FALSE, etTIME, {&endfit},
+      "End time for fitting the MSD (%t), -1 is till end" }
   };
 
   t_filenm fnm[] = { 
@@ -596,21 +598,26 @@ int main(int argc,char *argv[])
   t_topology  top;
   matrix      box;
   char        title[256];
+  char        *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file;
   rvec        *xdum;
-  bool        bTop,bMol;
+  bool        bTop;
   int         axis,type;
   real        dim_factor;
 
   CopyRight(stderr,argv[0]);
 
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  trx_file = ftp2fn_null(efTRX,NFILE,fnm);
+  tps_file = ftp2fn_null(efTPS,NFILE,fnm);
+  ndx_file = ftp2fn_null(efNDX,NFILE,fnm);
+  msd_file = ftp2fn_null(efXVG,NFILE,fnm);
+  mol_file = opt2fn_null("-mol",NFILE,fnm);
+  
   if (ngroup < 1)
     fatal_error(0,"Must have at least 1 group (now %d)",ngroup);
 
-  bMol = opt2bSet("-mol",NFILE,fnm);
-  if (bMol) {
+  if (mol_file) {
     bMW  = TRUE;
     fprintf(stderr,"Calculating diffusion coefficients for molecules.\n");
   }
@@ -630,17 +637,16 @@ int main(int argc,char *argv[])
   }
   else
     axis = 0;
-  fprintf(stdout,"type = %d, axis = %d, dim_factor = %g\n",
-	  type,axis,dim_factor);
-  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xdum,NULL,box,bMW); 
-  if (bMol && !bTop)
+  bTop=read_tps_conf(tps_file,title,&top,&xdum,NULL,box,bMW); 
+  if (mol_file && !bTop)
     fatal_error(0,"Could not read a topology from %s. Try a tpr file instead.",
-		ftp2fn(efTPS,NFILE,fnm));
+		tps_file);
     
-  do_corr(NFILE,fnm,ngroup,
-	  &top,bMol,bMW,type,dim_factor,axis,
-	  dt,beginfit,endfit);
-
+  do_corr(trx_file,ndx_file,msd_file,mol_file,ngroup,
+	  &top,bMW,type,dim_factor,axis,dt,beginfit,endfit);
+  
+  view_all(NFILE, fnm);
+  
   thanx(stderr);
   
   return 0;
