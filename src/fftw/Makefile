@@ -57,9 +57,9 @@ BLOCKS = $(NOTW_BLOCKS) $(NOTWI_BLOCKS) $(TWID_BLOCKS) $(TWIDI_BLOCKS)
 
 OBJ = $(BLOCKS) $(OTHEROBJ)
 
-#ifeq ($(USE_MPI),yes)
-#OBJ		+= $(MPIOBJ)
-#endif
+ifeq ($(USE_MPI),yes)
+OBJ		+= $(MPIOBJ)
+endif
 
 #
 include		$(STDTARGET)
