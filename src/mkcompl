@@ -20,7 +20,7 @@ foreach i ( $PROGRAMS )
       grep " enum " $i.html | awk '{ split($0,o1,"<b>"); split(o1[2],o,"</b>"); split($0,l,":"); gsub(",","",l[2]); gsub(" or","",l[2]); gsub(" </TD></TD>","",l[2]); gsub("<a href=\"tex.html\">","",l[2]); gsub("<a href=\"top.html\">","",l[2]); gsub("</a>","",l[2]); printf(" \"n/%s/(%s)/\"",o[1],l[2]); }' >> $out
       \rm $i.html
     endif
-    $i -hidden -h | & awk '{ if ($2=="Filename") {o=1}; if ($0=="") {o=0}; if (o) {nl++; if (nl>2) { split($2,fn,"."); ext=fn[2]; n=split($0,l,":"); if (n>1) { ext=l[2] }; printf("\"n/%s/f:*.{",$1); n=split(ext,e," "); for(i=1; i<=n; i++) { printf("%s",e[i]); if (i<n) printf(","); } printf("}/\"\n"); } } }' | sort -r | awk '{gsub("\n","",$0); printf(" %s",$0)}' >> $out
+    $i -hidden -h | & awk '{ if ($2=="Filename") {o=1}; if ($0=="") {o=0}; if (o) {nl++; if (nl>2) { split($2,fn,"."); ext=fn[2]; n=split($0,l,":"); if (n>1) { ext=l[2] }; printf("\"n/%s/f:*.{",$1); n=split(ext,e," "); for(i=1; i<=n; i++) { printf("%s",e[i]); if (i<n) printf(","); } printf("}{,.gz,.Z}/\"\n"); } } }' | sort -r | awk '{gsub("\n","",$0); printf(" %s",$0)}' >> $out
     printf ' \"c/-/(' >> $out
     $i -hidden -h | & awk '{ if ($1=="Option") {o=1}; if (o) { if (o && (substr($1,1,1)=="-") && (substr($1,2,1)!="-")) { sub("-","",$1); if (sub("\\[no\\]","",$1) && ($3=="yes") && ($1!="h") && ($1!="hidden")) { printf(" no%s", $1)} else { printf(" %s", $1) } } } }' >> $out
     printf ')/\"' >> $out
