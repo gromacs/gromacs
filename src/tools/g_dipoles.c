@@ -309,7 +309,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   bool bCorr,   char *corf,
 		   bool bGkr,    char *gkrfn,
 		   bool bQuad,   char *quadfn,
-		   bool bExpfit, char *expfitfn,
 		   bool bMU,     char *mufn,
 		   int gnx,atom_id grpindex[],
 		   real mu_max,real mu,real epsilonRF,real temp,
@@ -475,9 +474,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   }
   teller=0;
   do {
-    if ((teller % 10) == 0)
-      fprintf(stderr,"\rFrame: %d t: %.1f",teller,t);
-
     if (bCorr && (teller >= nframes)) {
       fprintf(stderr,"Read %d frames. That's more than the %d you told me.\n"
 	      "Stopping analysis here.\n",teller+1,nframes);    
@@ -640,12 +636,10 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 
       if (bAverCorr)
 	do_autocorr(corf,"Autocorrelation Function of Total Dipole",
-		    teller,1,muall,dt,mode,TRUE,
-		    expfitfn,"Exponential fit to the dipole ACF");
+		    teller,1,muall,dt,mode,TRUE);
       else
 	do_autocorr(corf,"Dipole Autocorrelation Function",
-		    teller,gnx,muall,dt,mode,TRUE,
-		    expfitfn,"Exponential fit to the dipole ACF");
+		    teller,gnx,muall,dt,mode,TRUE);
     }
   }
   if (!bMU) {
@@ -743,7 +737,7 @@ int main(int argc,char *argv[])
   int          gnx;
   atom_id      *grpindex;
   char         *grpname;
-  bool         bCorr,bQuad,bGkr,bFitACF,bMU;  
+  bool         bCorr,bQuad,bGkr,bMU;  
   t_filenm fnm[] = {
     { efENX, "-enx", NULL,    ffOPTRD },
     { efTRX, "-f", NULL,      ffREAD },
@@ -754,7 +748,6 @@ int main(int argc,char *argv[])
     { efXVG, "-d", "dipdist", ffWRITE },
     { efXVG, "-c", "dipcorr", ffOPTWR },
     { efXVG, "-g", "gkr",     ffOPTWR },
-    { efXVG, "-fa", "fitacf",    ffOPTWR },
     { efXVG, "-q", "quadrupole", ffOPTWR },
   };
 #define NFILE asize(fnm)
@@ -789,7 +782,6 @@ int main(int argc,char *argv[])
     grpindex=NULL;
   }
   bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
-  bFitACF = opt2bSet("-fa",NFILE,fnm);
   do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	 ftp2fn(efXVG,NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
@@ -797,7 +789,6 @@ int main(int argc,char *argv[])
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
-	 bFitACF, opt2fn("-fa",NFILE,fnm),
 	 bMU,     opt2fn("-enx",NFILE,fnm),
 	 gnx,grpindex,mu_max,mu,epsilonRF,temp,nframes,bFA);
   
