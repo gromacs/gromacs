@@ -98,11 +98,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
      * and remove them from the bond list
      */
     for(ftype = 0; (ftype < F_NRE); ftype++) {
-      if (interaction_function[ftype].flags & IF_BTYPE
-#ifdef USE_CUBICBONDS
-	  && ftype!=F_CONNBONDS
-#endif
-	  ) {
+      if (interaction_function[ftype].flags & IF_BTYPE) {
 	bonds=&(plist[ftype]);
 	
 	if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {

@@ -48,12 +48,12 @@ int ifunc_index(directive d,int type)
       return F_G96BONDS;
     else if (type == 3)
       return F_MORSE;
-#ifdef USE_CUBICBONDS
     else if (type == 4)
       return F_CUBICBONDS;
     else if (type == 5)
       return F_CONNBONDS;
-#endif
+    else if (type == 6)
+      return F_HARMONIC;
     else
       fatal_error(0,"Invalid bond type %d",type);
   case d_angles:

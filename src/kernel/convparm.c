@@ -67,6 +67,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
     break;
   case F_ANGLES:
   case F_BONDS:
+  case F_HARMONIC:
   case F_IDIHS:
     new->harmonic.rA =old[0];
     new->harmonic.krA=old[1];
@@ -78,7 +79,6 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->morse.cb    =old[1];
     new->morse.beta  =old[2];
     break;
-#ifdef USE_CUBICBONDS
   case F_CUBICBONDS:
     new->cubic.b0    =old[0];
     new->cubic.kb    =old[1];
@@ -86,7 +86,6 @@ static void assign_param(t_functype ftype,t_iparams *new,
     break;
   case F_CONNBONDS:
     break;
-#endif
   case F_WPOL:
     new->wpol.kx     =old[0];
     new->wpol.ky     =old[1];

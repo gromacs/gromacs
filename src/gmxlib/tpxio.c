@@ -48,7 +48,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 19;
+static int tpx_version = 20;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -335,6 +335,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
   case F_G96ANGLES:
   case F_BONDS:
   case F_G96BONDS:
+  case F_HARMONIC:
   case F_IDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
@@ -350,7 +351,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_real(iparams->morse.cb);
     do_real(iparams->morse.beta);
     break;
-#ifdef USE_CUBICBONDS
   case F_CUBICBONDS:
     do_real(iparams->cubic.b0);
     do_real(iparams->cubic.kb);
@@ -358,7 +358,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     break;
   case F_CONNBONDS:
     break;
-#endif
   case F_WPOL:
     do_real(iparams->wpol.kx);
     do_real(iparams->wpol.ky);
@@ -461,14 +460,19 @@ static void do_idef(t_idef *idef,bool bRead)
   }
   ndo_int(idef->functype,idef->ntypes,bDum);
   
-  for (i=0; (i<idef->ntypes); i++) 
+  for (i=0; (i<idef->ntypes); i++) {
+    if (bRead && (file_version <= 19) 
+	&& (idef->functype[i] >= F_CUBICBONDS)) {
+      idef->functype[i] += 3;
+      if (idef->functype[i] >= F_EQM)
+	idef->functype[i] += 1;
+    }
     do_iparams(idef->functype[i],&idef->iparams[i],bRead);
-  
+  }  
+
   for(j=0; (j<F_NRE); j++) {
-    if ((bRead && (file_version < 6)) && 
-	((j == F_G96ANGLES) || (j == F_G96BONDS))) {
-      fprintf(stderr,"Warning: file_version %d < 6: no GROMOS96 Force field\n"
-	      ,file_version);
+    if (bRead && (file_version <= 19)
+	&& (j==F_CUBICBONDS || j==F_CONNBONDS || j==F_HARMONIC || j==F_EQM)) {
       idef->il[j].nr         = 0;
       idef->il[j].multinr[0] = 0;
       idef->il[j].iatoms     = NULL;

@@ -40,7 +40,10 @@ static char *SRCID_ifunc_c = "$Id$";
    
 #define   def_bond(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT | IF_BTYPE,(ind),(func)}
-   
+
+#define def_bondnb(str,lstr,nra,nrpa,nrpb,ind,func)\
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT,(ind),(func)}
+
 #define  def_dummy(str,lstr,nra,nrpa)\
    {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_CONNECT,     -1, unimplemented}
    
@@ -62,10 +65,9 @@ t_interaction_function interaction_function[F_NRE]=
   def_bond   ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds    ),
   def_bond   ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds ),
   def_bond   ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE, morsebonds),
-#ifdef USE_CUBICBONDS
   def_bond   ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubicbonds),
-  def_bond   ("CONNBONDS","Connect Bonds",   2, 0, 0   ),
-#endif
+  def_bondnb ("CONNBONDS","Connect Bonds",   2, 0, 0,  0,      unimplemented),
+  def_bonded ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds    ),
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles   ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs    ),
@@ -93,6 +95,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_dummy  ("DUMMY3FAD","Dummy3fad",       4, 2      ),
   def_dummy  ("DUMMY3OUT","Dummy3out",       4, 3      ),
   def_dummy  ("DUMMY4FD", "Dummy4fd",        5, 3      ),
+  def_nofc   ("EQM",      "Quantum En."      ),
   def_nofc   ("EPOT",     "Potential"        ),
   def_nofc   ("EKIN",     "Kinetic En."      ),
   def_nofc   ("ETOT",     "Total Energy"     ),

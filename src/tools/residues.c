@@ -1818,9 +1818,7 @@ void simple_bonds_and_angles(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,
 			     real weight[],real bond_margin,real angle_margin)
 {
   static int bbb[] = { F_BONDS, F_SHAKE, F_G96BONDS,
-#ifdef USE_CUBICBONDS
 		       F_CUBICBONDS, F_CONNBONDS,
-#endif
 		       F_MORSE };
   static int aaa[] = { F_ANGLES, F_G96ANGLES };
   

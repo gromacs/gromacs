@@ -48,10 +48,9 @@ enum {
   F_BONDS,
   F_G96BONDS,
   F_MORSE,
-#ifdef USE_CUBICBONDS
   F_CUBICBONDS,
   F_CONNBONDS,
-#endif
+  F_HARMONIC,
   F_ANGLES, 
   F_G96ANGLES, 
   F_PDIHS,
@@ -79,6 +78,7 @@ enum {
   F_DUMMY3FAD,
   F_DUMMY3OUT,
   F_DUMMY4FD,
+  F_EQM,
   F_EPOT,
   F_EKIN,
   F_ETOT,

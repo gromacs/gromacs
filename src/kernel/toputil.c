@@ -233,14 +233,15 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   case F_MORSE:
     f = 2;
     break;
-#ifdef USE_CUBICBONDS
   case F_CUBICBONDS:
     f = 3;
     break;
   case F_CONNBONDS:
     f = 4;
     break;
-#endif
+  case F_HARMONIC:
+    f = 5;
+    break;
   case F_PDIHS:
   case F_RBDIHS:
     bDih=TRUE;
