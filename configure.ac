@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.0.1, gromacs@gromacs.org)
+AC_INIT(GROMACS, 3.0.2, gromacs@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.0.1)
+AM_INIT_AUTOMAKE(gromacs, 3.0.2)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -250,18 +250,10 @@ if test "$enable_mpi" = "yes"; then
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
-  # -lmpi might be in the LDADD variable
-  if test -n "$LDADD"; then
-    tmp_LIBS=$LIBS
-    LIBS="$LIBS $LDADD"
-  fi 
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
     AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(USE_MPI,,[Make a parallel version of GROMACS using MPI])
-  GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} mpiio.lo" 
-  if test -n "$LDADD"; then
-    LIBS=$tmp_LIBS
-  fi
+  GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} mpiio.lo"
 else
   GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} libnet.lo" 
 fi
