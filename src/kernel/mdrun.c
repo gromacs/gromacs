@@ -36,6 +36,8 @@ static char *SRCID_mdrun_c = "$Id$";
 #include "futil.h"
 #include "edsam.h"
 #include "mdrun.h"
+/* afm stuf */
+#include "pull.h"
 
 int main(int argc,char *argv[])
 {
@@ -85,7 +87,10 @@ int main(int argc,char *argv[])
     /* function "optRerunMDset" (in runner.c) checks if -rerun is specified */
     { efHAT, "-hat","ghat",   ffOPTRD },
     { efEDI, "-ei", "sam",    ffOPTRD },
-    { efEDO, "-eo", "sam",    ffOPTWR }
+    { efEDO, "-eo", "sam",    ffOPTWR },
+    { efDAT, "-pi","pull",    ffOPTRD },
+    { efOUT, "-po","pull",    ffOPTWR },
+    { efNDX, "-n", "pull",    ffOPTRD },
   };
 #define NFILE asize(fnm)
 
