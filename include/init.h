@@ -37,7 +37,6 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "mvdata.h"
-#include "parm.h"
 #include "nsb.h"
 
 typedef enum

@@ -40,9 +40,7 @@
 #include "mshift.h"
 #include "force.h"
 #include "tgroup.h"
-#include "parm.h"
 #include "time.h"
-
 
 extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 
