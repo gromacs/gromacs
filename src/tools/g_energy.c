@@ -292,7 +292,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 			 t_energy oldee[],t_energy ee[],
 			 int nset,int set[],int nenergy,real **eneset,
 			 real **enesum,
-			 char *leg[],real Vaver)
+			 char *leg[],real Vaver,real ezero)
 {
   FILE *fp;
   /* Check out the printed manual for equations! */
@@ -302,7 +302,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
   double beta=0,expE,expEtot,*fee=NULL;
   int  nsteps,iset;
   real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,VarT=-1;
-  int  i,j,m,k;
+  int  i,j,m,k,kkk;
+  bool bIsEner;
   char buf[256];
 
   nsteps  = step - oldstep;
@@ -374,8 +375,12 @@ static void analyse_ener(bool bCorr,char *corrfn,
       } else if (strstr(leg[i],"essure") != NULL) {
 	Pres = aver;
       }
-      if (iset < F_TEMP) {
-	pr_aver   = aver/nmol;
+      bIsEner = FALSE;
+      for (kkk=0; (kkk <= F_ETOT); kkk++)
+	bIsEner = bIsEner || 
+	  (strcmp(interaction_function[kkk].longname,leg[i]) == 0);
+      if (bIsEner) {
+	pr_aver   = aver/nmol-ezero;
 	pr_stddev = stddev/nmol;
       }
       else {
@@ -921,14 +926,14 @@ int main(int argc,char *argv[])
 	  if (nre > 0) {
 	    print_one(out,bDp,t[cur]);
 	    if (bSum) 
-	      print_one(out,bDp,(eneset[nset][nenergy-1]-ezero)/nmol);
+	      print_one(out,bDp,(eneset[nset][nenergy-1])/nmol-ezero);
 	    else if ((nset == 1) && bAll) {
 	      print_one(out,bDp,ee[cur][set[0]].e);
 	      print_one(out,bDp,ee[cur][set[0]].esum);
 	      print_one(out,bDp,ee[cur][set[0]].eav);
 	    }
 	    else for(i=0; (i<nset); i++)
-	      print_one(out,bDp,(ee[cur][set[i]].e-ezero)/nmol);
+	      print_one(out,bDp,(ee[cur][set[i]].e)/nmol-ezero);
 
 	    fprintf(out,"\n");
 	  }
@@ -952,7 +957,8 @@ int main(int argc,char *argv[])
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
-		 oldee,ee[cur],nset,set,nenergy,eneset,enesum,leg,Vaver);
+		 oldee,ee[cur],nset,set,nenergy,eneset,enesum,leg,Vaver,
+		 ezero);
   if (opt2bSet("-f2",NFILE,fnm))
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
 	reftemp, nset, set, leg, nenergy, eneset, time );
