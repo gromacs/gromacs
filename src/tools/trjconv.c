@@ -288,7 +288,7 @@ int main(int argc,char *argv[])
   static char  *exec_command;
   
   t_pargs pa[] = {
-    { "-x", FALSE,  etBOOL, &bInBox,
+    { "-inbox", FALSE,  etBOOL, &bInBox,
       "make sure all atoms are inside box." },
     { "-pbc", FALSE,  etBOOL, &bPBC,
       "make sure molecules are not broken into parts in output." },
