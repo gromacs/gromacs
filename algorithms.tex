@@ -1,3 +1,11 @@
+\newcommand{\nproc}{\mbox{$M$}}
+\newcommand{\natom}{\mbox{$N$}}
+\newcommand{\nx}{\mbox{$n_x$}}
+\newcommand{\ny}{\mbox{$n_y$}}
+\newcommand{\nz}{\mbox{$n_z$}}
+\newcommand{\nsgrid}{NS grid}
+\newcommand{\fftgrid}{FFT grid}
+\newcommand{\dgrid}{\mbox{$\delta_{grid}$}}
 \chapter{Algorithms}
 \label{ch:algorithms}
 \section{Introduction}
@@ -251,7 +259,7 @@ As mentioned in chapter~\ref{ch:ff}, internal forces are
 either generated from fixed (static) lists, or from dynamics lists.
 The latter concern non-bonded interactions between any pair of particles.
 
-\subsubsection*{Pair lists generation}
+\subsubsection{Pair lists generation}
 The non-bonded pair forces need to be calculated only for those pairs
 $i,j$  for which the distance $r_{ij}$ between $i$ and the 
 \myindex{nearest image} 
@@ -294,6 +302,55 @@ y_i & = & y_i - b*\verb'round'([y_i-y_0-b/2]/b) \\
 z_i & = & z_i - c*\verb'round'([z_i-z_0-c/2]/c)
 \eea
 
+\subsubsection{Image calculation on a grid.}
+\label{sec:nsgrid}
+{\gromacs} uses an \myindex{interaction list} for nonbonded interactions,
+usually called the {\em \myindex{neighbourlist}}.
+This list is made every {\tt nstlist} MD steps, where {\tt nstlist} is
+typically 10 MD steps. 
+To make the neighbourlist all particles that are close 
+(i.e. within the cut-off) to a given particle must be found.
+This searching, usually called neighbour searching (NS), 
+involves peridic boundary conditions and 
+determining the {\em image} (see Sec.~\ref{sec:pbc}).
+When the cut-off is large compared to the box edge $l$ ($>$ 0.4$l$)
+searching is done using an $O({\natom}^2)$ algorithm that computes
+all distances and compares them to the cut-off $r_c$.
+When the cut-off is smaller than 0.4$l$ in all directions (x,y and z)
+searching is done using a grid, the {\nsgrid}. All particles are put on 
+the {\nsgrid},
+with the smallest spacing  $\ge$ $r_c/2$ in each of the directions
+\footnote{In fact the cut-off is divided into sub-blocks, the number of which
+can be chosen by the user. The default for this number (\dgrid) is 2, 
+such that the {\nsgrid} spacing must be $\ge r_c/2$. For 
+simplicity we will just use this particular choice
+in the remainder of the text. However, it can be easily understood that 
+if {\dgrid} = 3, we need at least 2{\dgrid} = 7 grid-cells, 
+each of which has size $\ge r_c/3$}.
+We have depicted the computational box, divided into {\nsgrid} cells in 
+Figure~\ref{fig:nsgrid}.
+\begin{figure}
+\centerline{\psfig{figure=plots/nsgrid.eps,width=6cm}}
+\caption{The computational box in two dimensions, divided into {\nsgrid} cells with three particles, $i$, $j$ and $k$. Each {\nsgrid} cell is of size $\ge r_c/2$.}
+\label{fig:nsgrid}
+\end{figure}
+In each spatial dimension, a particle $i$ has three images. For each direction
+the image may be -1,0 or 1, corresponding to a translation over -1, 0 or +1
+box vector. We do not search the surrounding {\nsgrid} cells for
+neighbours of $i$ and then calculate the image, 
+but rather construct the images first and then 
+search neighbours corresponding to that image of $i$.
+Since we demand that the number of {\nsgrid} cells $\ge$ 5 in each direction 
+the same neighbour will not be found twice. For every particle, exactly 125 (5$^3$)
+neighbouring cells are searched. Therefore, the algorithm scales linear with the 
+number of particles. Although the prefactor is large (125) the scaling behaviour
+makes the algorithm far superior over the standard $O({\natom}^2)$ 
+algorithm when the number of particles exceeds a few hundred.
+
+In the example of Figure~\ref{fig:nsgrid} the image $t_x$ = 0 of particle
+$i$ will find $j$ as a neighbour, while image $t_x$ = 1 of particle $i$
+will find $k$ as a neighbour.
+
 \subsubsection{Charge groups}
 Where applicable, \myindex{neighbour searching} is carried out on the basis of
 {\em  charge groups}. A \myindex{charge group} is a small set of nearby atoms
@@ -321,14 +378,14 @@ long-range interactions, which is not yet implemented in \gromacs.
 The actual neighbour search is performed on a grid. The details of the
 algorithm are not relevant for the user and are not given here.
 
-\subsubsection*{Potential energy}
+\subsubsection{Potential energy}
 When forces are computed, the \myindex{potential energy} of each interaction
 term is computed as well. The total potential energy is summed for
 various contributions, such as Lennard Jones, Coulomb, and bonded
 terms. It is also possible to compute these contributions for {\em
 groups} of atoms that are separately defined (see section~\ref{sec:group}).
 
-\subsubsection*{Kinetic energy and temperature}
+\subsubsection{Kinetic energy and temperature}
 The \myindex{temperature} is given by the total \myindex{kinetic energy} of the
 $N$-particle system:
 \beq
@@ -357,7 +414,7 @@ forces  are imposed:
 {\bf E}_{kin} = \half \sum_i^N m_i \vvi \otimes \vvi
 \eeq
 
-\subsubsection*{Pressure and virial}
+\subsubsection{Pressure and virial}
 The \myindex{pressure} 
 tensor {\bf P} is calculated from the difference between 
 kinetic energy $E_{kin}$ and the \myindex{virial} ${\bf \Xi}$

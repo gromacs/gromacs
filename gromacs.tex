@@ -1,5 +1,5 @@
 \documentclass[11pt,dvips]{book}
-\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort}
+\usepackage{here,picins,fancy,doc,epsfig,array,tabularx,makeidx,a4,citesort}
 %\setpapersize{USletter}
 \makeindex
 \input{macros}
@@ -126,7 +126,7 @@ van Drunen, R. and Berendsen, H.~J.~C.
 Netherlands. Internet: {\wwwpage} 1997
 \end{quote}
 
-or, if you use bibtex, you can directly copy the following:
+or, if you use {\BibTeX}, you can directly copy the following:
 \begin{verbatim}
 @Manual{gmx20,
   title =        "Gromacs {U}ser {M}anual version 2.0",
@@ -139,6 +139,8 @@ or, if you use bibtex, you can directly copy the following:
   year =         "1997"
 }
 \end{verbatim}
+Please do also cite the original {\gromacs} paper~\cite{Berendsen95a}.
+
 
 Any comment is welcome, please send it by e-mail to
 {\tt gromacs@chem.rug.nl}. 
@@ -199,6 +201,7 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \include{intro}
 \include{defunits}
 \include{algorithms}
+\include{par-md}
 \include{forcefield}
 \input{pppm}
 \include{topology}
