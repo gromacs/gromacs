@@ -1,0 +1,13 @@
+#!/bin/csh -f
+
+# first: put each residue on one line; newlines are replaced by '@'
+# then: sort lines
+# finally: replace '@' again by newline (and eliminate empty lines)
+awk '\
+NF==2 {printf "\n"; printf $0"@";} \
+NF>2 {printf $0"@"}\
+' $1 | sort | awk '\
+{gsub("@","\n"); print;}\
+' | awk 'NF'
+
+#last line
