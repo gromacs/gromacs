@@ -478,8 +478,11 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->posres.fc[YY],iparams->posres.fc[ZZ]);
     break;
   case F_RBDIHS:
-    for (i=0; i<NR_RBDIHS; i++)
-      fprintf(fp,"%srbc[%d]=%15.8e",i==0?"":", ",i,iparams->rbdihs.rbc[i]);
+    for (i=0; i<NR_RBDIHS; i++) 
+      fprintf(fp,"%srbcA[%d]=%15.8e",i==0?"":", ",i,iparams->rbdihs.rbcA[i]);
+    fprintf(fp,"\n");
+    for (i=0; i<NR_RBDIHS; i++) 
+      fprintf(fp,"%srbcB[%d]=%15.8e",i==0?"":", ",i,iparams->rbdihs.rbcB[i]);
     fprintf(fp,"\n");
     break;
   case F_SHAKE:

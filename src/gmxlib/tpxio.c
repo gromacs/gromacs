@@ -53,7 +53,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 24;
+static int tpx_version = 25;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -374,7 +374,7 @@ static void do_harm(t_iparams *iparams,bool bRead)
   do_real(iparams->harmonic.krB);
 }
 
-void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
+void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version)
 {
   int i;
   bool bDum;
@@ -455,7 +455,9 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_rvec(iparams->posres.fc);
     break;
   case F_RBDIHS:
-    ndo_real(iparams->rbdihs.rbc,NR_RBDIHS,bDum);
+    ndo_real(iparams->rbdihs.rbcA,NR_RBDIHS,bDum);
+    if(file_version>=25) 
+      ndo_real(iparams->rbdihs.rbcB,NR_RBDIHS,bDum);
     break;
   case F_SHAKE:
   case F_SHAKENC:
@@ -525,7 +527,7 @@ static void do_idef(t_idef *idef,bool bRead)
 	if ((file_version < ftupd[k].fvnr) && 
 	    (idef->functype[i] >= ftupd[k].ftype))
 	  idef->functype[i] += 1;
-    do_iparams(idef->functype[i],&idef->iparams[i],bRead);
+    do_iparams(idef->functype[i],&idef->iparams[i],bRead,file_version);
   }
 
   for(j=0; (j<F_NRE); j++) {

@@ -77,7 +77,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles   ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles),
   def_bonded ("PDIHS",    "Proper Dih.",     4, 3, 3,  eNR_PROPER, pdihs    ),
-  def_bonded ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 0,  eNR_RB, rbdihs       ),
+  def_bonded ("RBDIHS",   "Ryckaert-Bell.",  4, 6, 6,  eNR_RB, rbdihs       ),
   def_bonded ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER,idihs   ),
   def_bonded ("LJ14",     "LJ-14",           2, 2, 2,  eNR_INL1100, do_14   ),
   def_nofc   ("COUL14",   "Coulomb-14"       ),

@@ -147,8 +147,10 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->orires.kfac  = old[5];
     break;
   case F_RBDIHS:
-    for (i=0; (i<NR_RBDIHS); i++) 
-      new->rbdihs.rbc[i]=old[i]; 
+    for (i=0; (i<NR_RBDIHS); i++) {
+      new->rbdihs.rbcA[i]=old[i]; 
+      new->rbdihs.rbcB[i]=old[NR_RBDIHS+i]; 
+    }
     break;
   case F_SHAKE:
   case F_SHAKENC:

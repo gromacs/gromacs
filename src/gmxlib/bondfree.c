@@ -908,10 +908,14 @@ real rbdihs(int nbonds,
   static const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
   int  type,ai,aj,ak,al,i,j;
   rvec r_ij,r_kj,r_kl,m,n;
+  real parmA[NR_RBDIHS];
+  real parmB[NR_RBDIHS];
   real parm[NR_RBDIHS];
-  real phi,cos_phi,rbp;
+  real phi,cos_phi,rbp,rbpBA;
   real v,sign,ddphi,sin_phi;
   real cosfac,vtot;
+  real L1   = 1.0-lambda;
+  real dvdl=0;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -932,44 +936,60 @@ real rbdihs(int nbonds,
     cos_phi = -cos_phi;					/*   1		*/
     
     sin_phi=sin(phi);
-    
-    for(j=0; (j<NR_RBDIHS); j++)
-      parm[j] = forceparams[type].rbdihs.rbc[j];
-    
+
+    for(j=0; (j<NR_RBDIHS); j++) {
+      parmA[j] = forceparams[type].rbdihs.rbcA[j];
+      parmB[j] = forceparams[type].rbdihs.rbcB[j];
+      parm[j]  = L1*parmA[j]+lambda*parmB[j];
+    }
     /* Calculate cosine powers */
     /* Calculate the energy */
     /* Calculate the derivative */
+
     v       = parm[0];
+    dvdl   += (parmB[0]-parmA[0]);
     ddphi   = c0;
     cosfac  = c1;
     
     rbp     = parm[1];
+    rbpBA   = parmB[1]-parmA[1];
     ddphi  += rbp*cosfac;
     cosfac *= cos_phi;
     v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
     rbp     = parm[2];
+    rbpBA   = parmB[2]-parmA[2];    
     ddphi  += c2*rbp*cosfac;
     cosfac *= cos_phi;
     v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
     rbp     = parm[3];
+    rbpBA   = parmB[3]-parmA[3];
     ddphi  += c3*rbp*cosfac;
     cosfac *= cos_phi;
     v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
     rbp     = parm[4];
+    rbpBA   = parmB[4]-parmA[4];
     ddphi  += c4*rbp*cosfac;
     cosfac *= cos_phi;
     v      += cosfac*rbp;
+    dvdl   += cosfac*rbpBA;
     rbp     = parm[5];
+    rbpBA   = parmB[5]-parmA[5];
     ddphi  += c5*rbp*cosfac;
     cosfac *= cos_phi;
     v      += cosfac*rbp;
-    
+    dvdl   += cosfac*rbpBA;
+   
     ddphi = -ddphi*sin_phi;				/*  11		*/
     
     do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
 	       f,fr,g,x);				/* 112		*/
     vtot += v;
   }  
+  *dvdlambda += dvdl;
+
   return vtot;
 }
 

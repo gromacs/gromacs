@@ -39,7 +39,7 @@
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST	5
-#define MAXFORCEPARAM	6
+#define MAXFORCEPARAM	12
 #define NR_RBDIHS	6
 
 typedef atom_id t_iatom;
@@ -123,7 +123,7 @@ typedef union
   struct {real doh,dhh;                         } settle;
   struct {real b0,cb,beta;            	 	} morse;
   struct {real pos0[DIM],fc[DIM];	        } posres;
-  struct {real rbc[NR_RBDIHS];			} rbdihs;
+  struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];} rbdihs;
   struct {real a,b,c,d,e,f;                     } dummy;   
   struct {real low,up1,up2,kfac;int type,label; } disres; 
   struct {int  ex,power,label; real c,obs,kfac; } orires;
