@@ -555,6 +555,7 @@ int main(int argc,char *argv[])
   /* don't read mass-database as masses (and top) are not used */
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&x1,NULL,box,FALSE);
   
+  fprintf(stderr,"\nSelect group for RMSD calculation:\n");
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    1,&isize,&index,&grpname);
 
