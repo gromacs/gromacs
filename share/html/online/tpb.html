@@ -1,0 +1,21 @@
+<title>tpb file format</title>
+<h1>tpb file format</h1>
+<h2>Description</h2>
+The tpb file extension stands for binary run input file. This file contains 
+the starting structure of your simulation, The molecular topology and 
+all the simulation data. Because this file is in binary format it 
+cannot be read with a normal editor. To read a binary run input file type:
+<PRE>
+% <a href="gmxdump.html">gmxdump</a> -s topol.tpb 
+</PRE>
+or if you're not such a fast reader:
+<PRE>
+% gmxdump -s topol.tpb | more
+</PRE>
+
+<p>
+You can also compare two tpb files using:
+<pre>
+% <a href="gmxcheck.html">gmxcheck</a> -s1 top1 -s2 top2 | more
+</pre>
+

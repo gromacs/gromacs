@@ -1,0 +1,21 @@
+#!/bin/csh -f
+
+if ($#argv >= 1) then
+  set FILES = $1
+else
+  set FILES = *.html
+endif
+
+echo Will process $FILES
+
+foreach file ( $FILES )
+  if ($file != "include_top.html") then
+    echo Processing $file
+    grep -v "include_top.html" $file | grep -v "include_bot.html" | awk '{if (($1=="<body>")||($1=="<BODY>")||($1=="<body")||($1=="<BODY")) { printf "%s\n<\!--#include file=\"include_top.html\"-->\n", $0 } else { if (($1=="</body>")||($1=="</BODY>")) { printf "<\!--#include file=\"include_bot.html\"-->\n%s\n", $0} else { printf "%s\n", $0 } } } ' >! tmp
+    if ( -f \#$file\# ) \rm \#$file\#
+    mv $file \#$file\#
+    mv tmp $file
+  endif
+end
+
+#last line

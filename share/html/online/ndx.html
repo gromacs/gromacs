@@ -1,0 +1,42 @@
+<title>ndx file format</title>
+<h1>ndx file format</h1>
+<h2>Description</h2>
+The gromacs index file (usually called index.ndx) contains some
+user definable sets of eg. atoms. The file is read by
+most analysis programs, by the graphics program (<a href=ngmx.html>ngmx</a>) 
+and by the preprocessor (<a href=grompp.html>grompp</a>).
+
+Some examples of why this file is useful:
+<ul>
+<li>You have done a simulation of diffusion of small molecules
+through a polymer membrane, and you want to calculate the
+diffusion constant (using <a href=g_msd.html>g_msd</a>). 
+You have written out some timeframes
+of coordinates. In the index file you specify the atom numbers
+of the small molecules you want to calculate the mean-
+square displacement of. The analysis program reads the index
+file and prompts you to select the groups (of atoms) you want
+to do the analysis on.
+<li>You have a complicated system, which you want to see an 
+animated trajectory of. You can leave hydrogens from the menu in the
+graphics program, but you can make more powerful selection
+with the filter option, which lets you select groups of atoms
+from your index file.
+</ul>
+<p>
+
+An example file is here:
+<pre>
+2 	9
+Oxygen 		3 	0 	3 	6 
+Hydrogen 	6	1	2	4	5	7	8
+</pre>
+
+There are two groups, and total nine atoms. The first group
+<b>Oxygen</b> has 3 elements (0, 3 and 6). The second group
+<b>Hydrogen</b> has 6 elements (1, 2, 4, 5, 7, and 8).
+<p>
+An indexfile generation tool is available: <a href=make_ndx.html>make_ndx</a>
+For special things you can easily write a small program yourself.
+
+

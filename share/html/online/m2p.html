@@ -1,0 +1,37 @@
+<h1>m2p file format</h1>
+The m2p file format contains input options for the 
+<a href="xpm2ps.html">xpm2ps</a> program. All of these options
+are very easy to comprehend when you look at the PosScript(tm) output
+from <a href="xpm2ps.html">xpm2ps</a>.
+<pre>
+black&white         =  no		; Obsolete
+titlefont           =  Times-Roman	; A PostScript Font
+titlefontsize       =  20       	; Font size (pt)
+legend              =  Discrete		; Off, Discrete or Continuous
+legendfont          =  Times-Roman	; A PostScript Font
+legendfontsize      =  14       	; Font size (pt)
+xbox                =  2       		; Size of matrix element (x)
+ybox                =  2       		; Id. (y)
+x-major             =  20		; Major ticks on x axis every .. frames
+x-minor             =  5		; Id. Minor ticks
+x-firstmajor        =  0                ; first frame for major tick
+x-majorat0          =  no               ; major tick at first frame
+x-majorticklen      =  8       		; Major Tick len in pt.
+x-minorticklen      =  4       		; Minor id.
+x-label             =  Time (ps)	; string for x-axis label
+x-fontsize          =  16       	; Font size for label
+x-font              =  Times-Roman	; Font for label
+x-tickfontsize      =  10       	; Font size for tick marks
+x-tickfont          =  Helvetica	; Font for tickmarks
+y-major             =  10		; This is all the same as for X
+y-minor             =  5
+y-firstmajor        =  0
+y-majorat0          =  no
+y-majorticklen      =  8
+y-minorticklen      =  4
+y-label             =  Residue Number
+y-fontsize          =  16
+y-font              =  Symbol
+y-tickfontsize      =  10
+y-tickfont          =  Helvetica
+</pre>

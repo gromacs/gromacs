@@ -1,0 +1,204 @@
+<HEAD>
+<TITLE>
+Gromacs Flow Chart
+</TITLE>
+</HEAD>
+<BODY LINK=#0000FF TEXT=#00000 VLINK=#0000FF ALINK=#FF0000>
+<H2>Gromacs Flow chart</H2>
+This is a flow chart of a typical Gromacs MD run of a protein
+in a box of water.
+A more detailed example is available in the
+<A HREF="getting_started.html">Getting Started</A>
+section. Several steps of energy minimization may be nescessary,
+these consist of cycles: grompp -> mdrun.
+<p>
+
+<CENTER>
+<TABLE BORDER=0 CELLMARGIN=0 CELLPADDING=0 CELLSPACING=0>
+
+<TR>
+<TD COLSPAN=2 ALIGN=RIGHT VALIGN=CENTER> <A HREF=pdb.html onMouseOver="window.status='Protein Databank file'; return true">eiwit.pdb</A></TD>
+<TD ALIGN=RIGHT><IMG SRC=../gif/flow_leftrightdown.gif></TD>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+</TR>
+
+<TR>
+<TD COLSPAN=2 ALIGN=LEFT>Generate Gromacs topology </TD>
+<TD></TD>
+<TD BGCOLOR=#777777 COLSPAN=3 ALIGN=CENTER VALIGN=CENTER>&nbsp;<A HREF=pdb2gmx.html onMouseOver="window.status='Convert PDB file to GROMAX coordinate file and topology'; return true"><FONT COLOR=#000000>pdb2gmx</FONT></A>&nbsp;</TD>
+</TR>
+
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif BORDER=0></TD>
+<TD WIDTH=20></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><A HREF=gro.html onMouseOver="window.status='GROMACS coordinate file containing molecules from PDB file'; return true">conf.gro</A></TD>
+<TD></TD>
+<TD ALIGN=CENTER> <A HREF=top.html onMouseOver="window.status='GROMACS ascii topology file'; return true">topol.top</A> </TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif BORDER=0></TD>
+<TD></TD>
+<TD ROWSPAN=5 COLSPAN=1 ALIGN=CENTER VALIGN=CENTER><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_down.gif></TD>
+</TR>
+
+<TR>
+<TD COLSPAN=2 ALIGN=left>Enlarge the box</TD>
+<TD></TD>
+<TD ALIGN=CENTER BGCOLOR=#777777>&nbsp;&nbsp;<A HREF=editconf.html onMouseOver="window.status='Adjust boxsize and placement of molecule'; return true"><FONT COLOR=#000000>editconf</FONT></A>&nbsp;&nbsp;</TD>
+<TD></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER> <A HREF=gro.html onMouseOver="window.status='GROMACS coordinate file with adjusted box etc.'; return true">conf.gro</A> </TD>
+<TD></TD>
+</TR>
+
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD></TD>
+</TR>
+
+<TR>
+<TD COLSPAN=2 ALIGN=LEFT>Solvate protein</TD>
+<TD></TD>
+<TD COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=genbox.html onMouseOver="window.status='Fill box with water (solvate molecule)'; return true"><FONT COLOR=#000000>genbox</FONT></A>&nbsp;</TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><A HREF=gro.html onMouseOver="window.status='GROMACS coordinate file with water molecules added'; return true">conf.gro</A></TD>
+<TD></TD>
+<TD ALIGN=CENTER> <A HREF=top.html onMouseOver="window.status='GROMACS ascii topology file with water molecules added'; return true">topol.top</A> </TD>
+</TR>
+
+<TR>
+<TD COLSPAN=2 ALIGN=RIGHT><A HREF=mdp.html onMouseOver="window.status='Parameter file for grompp (controls all MD parameters)'; return true">grompp.mdp</A></TD>
+<TD ALIGN=RIGHT><IMG SRC=../gif/flow_leftrightdown.gif></TD>
+<TD ALIGN=CENTER VALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD></TD>
+<TD ALIGN=CENTER VALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+</TR>
+
+
+<TR>
+<TD COLSPAN=2 ALIGN=LEFT>Generate mdrun input file</TD>
+<TD></TD>
+<TD COLSPAN=3 ALIGN=CENTER VALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=grompp.html onMouseOver="window.status='Process parameters, coordinates and topology and write binary topology'; return true"><FONT COLOR=#000000>grompp</FONT></A>&nbsp;</TD>
+<TD ROWSPAN=2 ALIGN=CENTER><IMG SRC=../gif/flow_downleft.gif><BR><IMG SRC=../gif/flow_vline.gif></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD COLSPAN=3 ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD COLSPAN=3 ALIGN=CENTER> <A HREF=tpr.html onMouseOver="window.status='GROMACS Binary run input file (contains all information to start MD run)'; return true">topol.tpr</A> </TD>
+<TD ALIGN=CENTER><A HREF=trr.html onMouseOver="window.status='Binary trajectory can be used to extend run'; return true">traj.trr</A></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD COLSPAN=3 ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD ROWSPAN=2 ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif><BR><IMG SRC=../gif/flow_leftup.gif></TD>
+</TR>
+
+<TR>
+<TD COLSPAN=2>Run the simulation (EM, MD or LD)</TD>
+<TD></TD>
+<TD  COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=mdrun.html onMouseOver="window.status='The moment you have all been waiting for! START YOUR MD RUN'; return true"><FONT COLOR=#000000>mdrun</FONT></A>&nbsp;</TD>
+<TD > </TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_vline.gif></TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER> <A HREF=xtc.html onMouseOver="window.status='Portable compressed trajectory'; return true">ctraj.xtc</A> </TD>
+<TD></TD>
+<TD ALIGN=CENTER> <A HREF=edr.html onMouseOver="window.status='Energy file'; return true">ener.edr</A> </TD>
+</TR>
+
+<TR>
+<TD></TD>
+<TD></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+<TD></TD>
+<TD ALIGN=CENTER><IMG SRC=../gif/flow_down.gif></TD>
+</TR>
+
+<TR>
+<TD COLSPAN=2 ALIGN=LEFT>Analysis</TD>
+<TD></TD>
+<TD COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=ngmx.html onMouseOver="window.status='Your favourite GROMACS analysis tool'; return true"><FONT COLOR=#000000>g_..... or ngmx</FONT></A>&nbsp;</TD>
+</TR>
+
+
+</TABLE>
+</CENTER>
+
+<br>
+
+</BODY>
+

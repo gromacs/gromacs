@@ -1,0 +1,52 @@
+<title>rtp file format</title>
+<h1>rtp file format</h1>
+<h2>Description</h2>
+The rtp file extension stands for residue toplogy. 
+Such a file is needed by <a href="pdb2gmx.html">pdb2gmx</a>
+to make a Gromacs topology for a protein contained in a <tt>.pdb</tt>
+file. The file contains residues entries, which consist of atoms and
+optionally bonds and impropers. Parameters can be added to bonds,
+angles and impropers, these parameters override the standard parameters
+in the <a href="itp.html"><tt>.itp</tt></a> files.
+This should only be used in special cases.
+<a href="pdb2gmx.html">pdb2gmx</a> automatically generates all angles
+and proper dihedrals, this means that the <tt>[angles]</tt> field is only
+useful for overriding <a href="itp.html"><tt>.itp</tt></a> parameters.  
+A sample is included below.
+
+
+<PRE>
+[ GLY ]  ; mandatory
+
+ [ atoms ]  ; mandatory 
+; name  type  charge  chargegroup       
+     N     N  -0.280     0
+     H     H   0.280     0
+    CA   CH2   0.000     1
+     C     C   0.380     2
+     O     O  -0.380     2
+
+ [ bonds ]  ; optional
+;atom1 atom2      c0      c1
+     N     H
+     N    CA
+    CA     C
+     C     O
+    -C     N
+
+ [ angles ]  ; optional
+;atom1 atom2 atom3     c0     c1
+
+ [ impropers ]  ; optional
+;atom1 atom2 atom3 atom4     c0     c1
+     N    -C    CA     H
+    -C   -CA     N    -O
+
+
+[ ZN ]
+ [ atoms ]
+    ZN    ZN   2.000     0
+</PRE>
+
+
+  

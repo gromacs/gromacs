@@ -1,0 +1,638 @@
+<TITLE>mdp options</TITLE>
+<BODY>
+
+<HTML>
+<h1>mdp options</h1>
+
+<A NAME="TOP">
+<P>
+
+A <a href="mdp.html">sample <TT>.mdp</TT> file</a> is available. This
+should be appropriate to start a normal simulation. Edit it to suit
+your specific needs and desires.
+
+</P>
+<H3>General:</H3>
+
+<P> Default values are given in parentheses. The first option is
+always the default option. The difference between a dash and an
+underscore is ignored. </P>
+
+<H3>Table of Contents:</H3>
+
+<ul>
+<li><A HREF="#pp"><b>preprocessing</b></A> (title, warnings, cpp, include, define)
+<li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm)
+<li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
+<li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstgrp, nstprint, nstxtcout, xtc_precision, xtc_grps, energygrps)
+<li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box)
+<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rshort, rlong, epsilon_r, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
+<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compress, ref_p)
+<li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
+<li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
+<li><A HREF="#sol"><b>water models</b></A> (watertype, nwatoms)
+<li><A HREF="#bond"><b>bonds</b></A> (constraints, shake_type, shake_first, tol, lincs_order, lincs_warnangle, nstlincsout, morse)
+<li><A HREF="#nmr"><b>NMR refinement</b></A> (dihre_fc, disre, disre_fc, disre_tau)
+<li><A HREF="#free"><b>Free energy</b></A> (free_energy, init_lambda, delta_lambda)
+<li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim )
+<li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
+<li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, user3_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
+<li><A HREF="#idx"><b><IMG SRC="../gif/charts_idx.gif" ALIGN=ABSMIDDLE> Index</b></A>
+</ul>
+</P>
+
+<hr>
+
+<A NAME="pp"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#top"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#run"><IMG SRC="../gif/charts_down.gif"></A> preprocessing:</h3>
+
+<dl>
+<dt><h4>title:</h4>
+<dd>this is reduntant, so you can type anything you want
+<dt><h4>cpp: </b>(/lib/cpp)</h4>
+<dd>your preprocessor
+<dt><h4>include:</h4>
+<dd>directories to include in your topology. format: 
+<PRE>-I/home/john/my_lib -I../more_lib</PRE>
+<dt><h4>define: </b>()</h4>
+<dd>defines to pass to the preprocessor, default is no defines. You can use
+any defines to control options in your customized topology files. Options
+that are already available by default are:
+<dd><dl compact>
+<dt><b>-DFLEX_SPC</b>
+<dd>Will tell grompp to include FLEX_SPC in stead of SPC into your
+topology, this is necessary to make the energy minimizing integrators
+(<b><A HREF="#run">steep</A></b> and <b><A HREF="#run">cg</A></b>) work.
+<dt><b>-DPOSRE</b>
+<dd>Will tell grompp to include posre.itp into your topology, used for
+position restraints.
+</dl>
+</dl>
+
+<A NAME="run"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#pp"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_down.gif"></A> run control:</h3>
+
+<dl>
+<dt><h4>integrator:</h4>
+<dd><dl compact>
+<dt><b>md</b> 
+<dd>A leap-frog algorithm for integrating Newtons equations.
+<dt><b>steep</b>
+<dd>A steepest descent algorithm for energy minimization.
+The maximum stepsize is <b><A HREF="#em">emstep</A></b> [nm], the tolerance is 
+<b><A HREF="#em">emtol</A></b> [<sup>kJ</sup>/<sub>mol nm</sub>].
+<dt><b>cg</b>
+<dd> A conjugate gradients algorithm for energy minimization,
+the tolerance is <b>emtol</b> [<sup>kJ</sup>/<sub>mol nm</sub>]. 
+CG is more efficient
+when a steepest descent step is done every once in a while,
+this is determined by <b><A HREF="#em">nstcgsteep</A></b>.
+<dt><b>ld</b>
+<dd> An Euler integrator for position Langevin dynamics, the
+velocity is the force divided by a friction coefficient 
+(<b><A HREF="#ld">ld_fric</A></b> [amu/ps])
+plus random thermal noise (<b><A HREF="#ld">ld_temp</A></b> [K]). 
+The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>
+</dl>
+
+<dt><h4>tinit: </b>(0) [ps]</h4>
+<dd>starting time for your run (only makes sense for integrators <b>md</b> 
+and <b>ld</b>)
+<dt><h4>dt: </b>(0.001) [ps]</h4>
+<dd>time step for integration (only makes sense for integrators <b>md</b> 
+and <b>ld</b>)
+<dt><h4>nsteps: </b>(1)</h4>
+<dd>maximum number of steps to integrate
+<dt><h4>nstcomm: </b>(1) [steps]</h4>
+<dd>if positive: frequency for center of mass motion removal
+<dd>if negative: frequency for center of mass motion and rotational 
+motion removal (should only be used for vacuum simulations)
+</dl>
+
+<A NAME="ld"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#run"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#em"><IMG SRC="../gif/charts_down.gif"></A> langevin dynamics</h3>
+
+<dl>
+<dt><h4>ld_temp: </b>(300) [K]</h4>
+<dd>temperature in ld run (controls thermal noise level)
+<dt><h4>ld_fric: </b>(0) [amu/ps]</h4>
+<dd>ld friction coefficient
+<dt><h4>ld_seed: </b>(1993) [integer]</h4>
+<dd>used to initialize random generator for thermal noise
+</dl>
+
+<A NAME="em"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ld"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_down.gif"></A> energy minimization</h3>
+<dl>
+<dt><h4>emtol: </b>(0.001) [<sup>kJ</sup>/<sub>mol nm</sub>]</h4>
+<dd>tolerance
+<dt><h4>emstep: </b>(0.1) [nm]</h4>
+<dd>maximum stepsize
+<dt><h4>nstcgsteep: </b>(1000) [steps]</h4>
+<dd>frequency of performing 1 steepest descents step while doing
+conjugate gradients energy minimization.
+</dl>
+
+<A NAME="out"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#em"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_down.gif"></A> output control</h3>
+<dl>
+<dt><h4>nstxout: </b>(1) [steps]</h4>
+<dd>frequency to write coordinates to output trajectory
+<dt><h4>nstvout: </b>(1) [steps]</h4>
+<dd>frequency  to write velocities to output trajectory
+<dt><h4>nstfout: </b>(1) [steps]</h4>
+<dd>frequency to write forces to output trajectory
+<dt><h4>nstgrp: </b>(1) [steps]</h4>
+<dd>frequency] to write group stuff to logfile
+<dt><h4>nstprint: </b>(1) [steps]</h4>
+<dd>frequency to write energies to energy file
+<dt><h4>nstxtcout: </b>(0) [steps]</h4>
+<dd>frequency to write coordinates to xtc trajectory
+<dt><h4>xtc_precision: </b>(1000) [real]</h4>
+<dd>precision to write to xtc trajectory
+<dt><h4>xtc_grps:</h4>
+<dd>group(s) to write to xtc trajectory
+<dt><h4>energygrps:</h4>
+<dd>group(s) to write to energy file
+</dl>
+
+<A NAME="nl"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#out"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#el"><IMG SRC="../gif/charts_down.gif"></A> neighborsearching</h3>
+<dl>
+<dt><h4>nstlist: </b>(10) [steps]</h4>
+<dd>frequency to update neighborlist
+<dt><h4>ns_type:</h4>
+<dd><dl compact>
+<dt><b>grid</b>
+<dd>Make a grid in the box and only check atoms in neighboring 
+grid cells when constructing a new neighborlist every <b>nstlist</b> steps. 
+The number of grid cells per Coulomb cut-off length is set with 
+<b>deltagrid</b>,
+this number should be 2 for optimal performance.
+In large systems grid search is much faster than simple search. 
+<dt><b>simple</b>
+<dd>Check every atom in the box when constructing a new neighborlist
+every <b>nstlist</b> steps.
+</dl>
+<dt><h4>deltagrid: </b>(2)</h4>
+<dd>number of grid cells per Coulomb cut-off length
+<dt><h4>box:</h4>
+<dd><dl compact>
+<dt><b>rectangular</b>
+<dd>Selects a rectangular box shape.
+<dt><b>triclinic</b>
+<dd>(NOTE: not fully implemented) Selects a triclinic box shape.
+<dt><b>none</b>
+<dd>Selects no box, for use in vacuum simulations.
+</dl>
+
+</dl>
+
+<A NAME="el"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nl"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#tc"><IMG SRC="../gif/charts_down.gif"></A> electrostatics</h3>
+<dl>
+<dt><h4>eel_type:</h4>
+<dd><dl compact>
+<dt><b>twin-range</b>
+<dd>Twin range electrostatics with LJ cut-off <b>rshort</b> [nm] and 
+Coulomb cut-off <b>rlong</b> [nm]. 
+The dielectric constant is set with <b>epsilon_r</b>.
+<dt><b>PPPM</b>
+<dd>Particle-Particle Particle-Mesh algorithm for long range
+electrostatic interactions. Use for example <b>rshort</b> <tt>=
+0.0</TT> and <b>rlong</b> <tt>= 0.8</TT>.  Use the 
+<a href="mk_ghat.html"><tt>mk_ghat</tt></a> program with the 
+<a href="files.html"><tt>.tpr</tt></a> file
+to generate an optimized G<sub>k</sub> function (
+<a href="hat.html"><tt>.hat</tt></a> file). 
+<dt><b>reaction-field</b>
+<dd>Reaction field with LJ and Coulomb cut-off <b>rshort</b> [nm].
+The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
+(Not thoroughly tested yet)
+<dt><b>generalized-reaction-field</b>
+<dd>Generalized reaction field with LJ and Coulomb cut-off <b>rshort</b> [nm].
+The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
+The ionic strength is computed from the number of charged 
+(i.e. with non zero charge) charge groups.
+The temperature for the GRF potential is set with 
+<b><A HREF="#tc">ref_t</A></b> [K]. (Not thoroughly tested yet)
+<dt><b>shift</b>
+<dd>The Coulomb potential is decreased over the whole range.
+The potential and the forces decay smoothly to zero between 
+<b>rshort</b> [nm] and <b>rlong</b> [nm].
+The LJ cut-off is <b>rlong</b> [nm].
+The dielectric constant is set with <b>epsilon_r</b>.
+(Not thoroughly tested yet)
+<dt><b>User</b>
+
+<dd>Specify <b>rshort</b> and <b>rlong</b> to the same value, mdrun
+will now expect to find three files with user-defined functions:
+<tt>rtab.xvg</tt> for Repulsion, <tt>dtab.xvg</tt> for Dispersion and
+<tt>ctab.xvg</tt> for Coulomb. These files should contain 5 colums:
+the <tt>x</tt> value, and the function value with its 1<sup>st</sup>
+to 3<sup>rd</sup> derivative. The <tt>x</tt> should run from 0 [nm] to
+<b>rlong</b><tt> + 0.5</tt> [nm], with a spacing of <tt>0.002</tt>
+[nm] when you run in single precision, or <tt>0.0005</tt> [nm] when
+you run in double precision (note that <b>rshort</b> and <b>rlong</b>
+should be the same). The function value at <tt>x=0</tt> is not
+important.
+
+
+</dl>
+<A NAME="el2">
+<dt><h4>rshort: </b>(1) [nm]</h4>
+<dd>distance for LJ cut-off
+<dt><h4>rlong: </b>(1) [nm]</h4>
+<dd>distance for Coulomb cut-off
+<dt><h4>epsilon_r: </b>(1)</h4>
+<dd>dielectric constant
+<dt><h4>bLJcorr:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>don't apply any correction
+<dt><b>yes</b>
+<dd>apply long range dispersion corrections for Energy and Pressure
+</dl>
+<dt><h4>niter </b>(100)<b> ;  
+gauss_width </b>(0.1)<b> ;  
+fourier_nx </b>(10)<b> ;  
+fourier_ny </b>(10)<b> ;  
+fourier_nz: </b>(10)</h4>
+<dd>for future use
+</dl>
+
+<A NAME="tc"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#el"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#pc"><IMG SRC="../gif/charts_down.gif"></A> Temperature coupling</h3>
+
+<dl>
+<dt><h4>tcoupl:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>No temperature coupling. 
+<dt><b>yes</b>
+<dd>Temperature coupling with a Berendsen-thermostat to a bath with
+temperature <b>ref_t</b> [K], with time constant <b>tau_t</b> [ps].
+Several groups can be coupled seperately, these are specified in the
+<b>tc_grps</b> field seperated by spaces.
+</dl>
+
+<dt><h4>ntcmemory: </b>(1) [steps]</h4>
+<dd>memory for running average to couple to bath
+<dt><h4>tc_grps:</h4>
+<dd>groups to couple separately to temperature bath
+<dt><h4>tau_t: </b>[ps]</h4>
+<dd>time constant for coupling (one for each group in tc_grps)
+<dt><h4>ref_t: </b>[K]</h4>
+<dd>reference temperature for coupling (one for each group in tc_grps)
+</dl>
+
+<A NAME="pc"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#tc"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#sa"><IMG SRC="../gif/charts_down.gif"></A> Pressure coupling</h3>
+
+<dl>
+<dt><h4>pcoupl:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>No pressure coupling. This means a fixed box size.
+<dt><b>isotropic</b>
+<dd>Pressure coupling with time constant <b>tau_p</b> [ps].
+The compressibility and reference pressure are set with
+<b>compress</b> [1/bar] and <b>ref_p</b> [bar], one
+value is needed.
+<dt><b>anisotropic</b>
+<dd>Idem, but 3 values are needed for x, y and z directions respectively.
+Beware that isotropic scaling can lead to extreme deformation
+of the simulation box.
+<dt><b>triclinic</b>
+<dd>Idem, but ?? values are needed . . .
+</dl>
+
+<dt><h4>npcmemory: </b>(1) [steps]</h4>
+<dd>memory for running average to couple
+<dt><h4>tau_p: </b>(1) [ps]</h4>
+<dd>time constant for coupling
+<dt><h4>compress: </b>[1/bar]</h4>
+<dd>compressibility (NOTE: this is now really in 1/bar)
+<dt><h4>ref_p: </b>[bar]</h4>
+<dd>reference pressure for coupling
+
+</dl>
+
+<A NAME="sa"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#pc"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#vel"><IMG SRC="../gif/charts_down.gif"></A> simulated annealing</h3>
+
+<dl>
+<dt><h4>annealing:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>No simulated annealing. 
+<dt><b>yes</b>
+<dd>Simulated annealing to 0 [K] at time <b>zero_temp_time</b> (ps).
+Reference temperature for the Berendsen-thermostat is
+<b><A HREF="#tc">ref_t</A></b> x (1 - time / <b>zero_temp_time</b>),
+time constant is <b>tau_t</b> [ps]. Note that the reference temperature
+will not go below 0 [K], i.e. after <b>zero_temp_time</b> (if it is positive) 
+the reference temperature will be 0 [K]. Negative <b>zero_temp_time</b> 
+results in heating, which will go on indefenitely.
+</dl>
+<dt><h4>zero_temp_time: </b>(0) [ps]</h4>
+<dd>time at which temperature will be zero (can be negative). Temperature
+during the run can be seen as a straight line going through 
+T=<b><A HREF="#tc">ref_t</A></b> [K] at t=0 [ps], and 
+T=0 [K] at t=<b>zero_temp_time</b> [ps]. Look in our 
+<A HREF="../gmxfaq.html#simann">FAQ</A> for a schematic 
+graph of temperature vs. time.
+</dl>
+
+<A NAME="vel"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#sa"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#sol"><IMG SRC="../gif/charts_down.gif"></A> velocity generation</h3>
+
+<dl>
+<dt><h4>gen_vel:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd> Do not generate velocities at startup. The velocities are set to zero
+when there are no velocities in the input structure file.
+<dt><b>yes</b>
+<dd>Generate velocities according to a Maxwell distribution at
+temperature <b>gen_temp</b> [K], with random seed <b>gen_seed</b>. 
+This is only meaningful with integrator <b><A HREF="#run">md</A></b>.
+</dl>
+<dt><h4>gen_temp: </b>(300) [K]</h4>
+<dd>temperature for Maxwell distribution
+<dt><h4>gen_seed: </b>(173529) [integer]</h4>
+<dd>used to initialize random generator for random velocities
+</dl>
+
+<A NAME="sol"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#vel"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#bond"><IMG SRC="../gif/charts_down.gif"></A> water models</h3>
+
+<dl>
+<dt><h4>watertype:</h4>
+<dd><dl compact>
+<dt><b>&lt;empty&gt;</b>
+<dd>Do not use water specific non-bonded optimizations
+<dt><b>SOL</b>
+<dd>Use water specific non-bonded optimizations. Check your run time to see 
+if it is faster. 
+</dl>
+<dt><h4>nwatoms: </b>(3)</h4>
+<dd>Number of atoms in water model. (Not implemented for non-three atom models)
+</dl>
+
+<A NAME="bond"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#sol"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#nmr"><IMG SRC="../gif/charts_down.gif"></A> bonds</h3>
+
+<dl>
+<dt><h4>constraints:</h4>
+<dd><dl compact>
+<dt><b>none</b>
+<dd>No constraints, i.e. bonds are represented by a harmonic or a
+morse potential (depending on the setting of <b>morse</b>) and angles
+by a harmonic potential.
+<dt><b>hbonds</b>
+<dd>Only constrain the bonds with H-atoms.
+<dt><b>all-bonds</b>
+<dd>Constrain all bonds.
+<dt><b>h-angles</b>
+<dd>Constrain all bonds and constrain the angles that involve H-atoms
+by adding bond-constraints.
+<dt><b>all-angles</b>
+<dd>Constrain all bonds and constrain all angles by adding bond-constraints.
+</dl>
+
+<dt><h4>shake_type:</h4>
+<dd><dl compact>
+<dt><b>lincs</b>
+<dd>LINear Constraint Solver. The accuracy in set with
+<b>lincs_order</b>, which sets the number of matrices in the expansion
+for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
+needed for LD with large timesteps. If a bond rotates more than
+<b>lincs_warnangle</b> [degrees] in one step, 
+a warning will be printed both to the log file and to <TT>stderr</TT>. 
+Lincs should not be used with angle constraints.
+<dt><b>shake</b>
+<dd>Shake is slower and less stable than Lincs, but does work with 
+angle constraints. 
+The relative tolerance is set with <b>tol</b>, 0.0001 is a good value for
+"normal" MD. 
+</dl>
+
+<A NAME="bond2">
+<dt><h4>shake_first:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>do not shake start configuration
+<dt><b>yes</b>
+<dd>shake start configuration (using either SHAKE or LINCS)
+</dl>
+<dt><h4>tol: </b>(0.0001)</h4>
+<dd>relative tolerance for shake
+<dt><h4>lincs_order: </b>(4)</h4>
+<dd>Highest order in the expansion of the constraint coupling matrix
+<dt><h4>lincs_warnangle: </b>(30) [degrees]</h4>
+<dd>maximum angle that a bond can rotate before Lincs will complain
+<dt><h4>nstlincsout: </b>(100) [steps]</h4>
+<dd>frequency to output constraint accuracy in log file
+
+<dt><h4>morse:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>bonds are represented by a harmonic potential
+<dt><b>yes</b>
+<dd>bonds are represented by a morse potential
+</dl>
+</dl>
+
+<A NAME="nmr"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#bond"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#free"><IMG SRC="../gif/charts_down.gif"></A> NMR refinement</h3>
+<dl>
+<dt><h4>dihre_fc: </b>(1000) [<sup>kJ</sup>/<sub>mol nm<sup>2</sup></sub>]</h4>
+<dd>force constant for dihedral restraints
+<dt><h4>disre:</h4>
+<dd><dl compact>
+<dt><b>none</b>
+<dd>no distance restraints (ignore distance restraints information in
+topology file)
+<dt><b>simple</b>
+<dd>simple (per-molecule) distance restraints
+<dt><b>ensemble</b>
+<dd>distance restraints over an ensemble of molecules
+</dl>
+<dt><h4>disre_fc: </b>(1000) [<sup>kJ</sup>/<sub>mol nm<sup>2</sup></sub>]</h4>
+<dd>force constant for distance restraints
+<dt><h4>disre_tau: </b>(1.25) [ps]</h4>
+<dd>time constant for distance restraints running average
+</dl>
+
+<A NAME="free"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#nmr"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#neq"><IMG SRC="../gif/charts_down.gif"></A> Free energy</h3>
+
+<dl>
+<dt><h4>free_energy:</h4>
+<dd><dl compact>
+<dt><b>no</b>
+<dd>Only use topology A. 
+<dt><b>yes</b>
+<dd>Change the system from topology A (lambda=0) to topology B (lambda=1)
+and calculate the free energy difference.
+The starting value of lambda is <b>init_lambda</b> the increase
+per time step is <b>delta_lambda</b>.
+</dl>
+<dt><h4>init_lambda: </b>(0)</h4>
+<dd>starting value for lambda
+<dt><h4>delta_lambda: </b>(0)</h4>
+<dd>increase per timestep for lambda
+</dl>
+
+<A NAME="neq"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#free"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#ef"><IMG SRC="../gif/charts_down.gif"></A> Non-equilibrium MD</h3>
+
+<dl>
+<dt><h4>acc_grps: </b></h4>
+<dd>groups for constant acceleration (e.g.: <tt>Protein Sol</tt>)
+all atoms in groups Protein and Sol will experience constant acceleration
+as specified in the <b>accelerate</b> line
+<dt><h4>accelerate: </b>(0) [nm/ps<sup>2</sup>]</h4>
+<dd>acceleration for <b>acc_grps</b>; x, y and z for each group
+(e.g. <tt>0.1 0.0 0.0 -0.1 0.0 0.0</tt> means that first group has constant 
+acceleration of 0.1 nm/ps<sup>2</sup> in X direction, second group the 
+opposite).
+<dt><h4>freezegrps: </b></h4>
+<dd>Groups that are to be frozen (i.e. their X, Y, and/or Z position will
+not be updated; e.g. <tt>Lipid SOL</tt>). <b>freezedim</b> specifies for
+which dimension the freezing applies.
+<dt><h4>freezedim: </b></h4>
+<dd>dimensions for which groups in <b>freezegrps</b> should be frozen, 
+specify <tt>Y</tt> or <tt>N</tt> for X, Y and Z and for each group
+(e.g. <tt>Y Y N N N N</tt> means that particles in the first group 
+can move only in Z direction. The particles in the second group can 
+move in any direction).
+</dl>
+
+<A NAME="ef"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#neq"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#user"><IMG SRC="../gif/charts_down.gif"></A> Electric fields</h3>
+
+<dl>
+<dt><h4>E_x </b>(0) [V/nm]<b> ;  
+E_y </b>(0) [V/nm]<b> ;  
+E_z: </b>(0) [V/nm]</h4>
+<dd>strength of constant electric field in resp. X, Y and Z direction
+<dt><h4>E_xt </b><b> ;  E_yt </b><b> ;  E_zt: </b></h4>
+<dd>not implemented yet
+</dl>
+
+<A NAME="user"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#ef"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#idx"><IMG SRC="../gif/charts_down.gif"></A> User defined thingies</h3>
+
+<dl>
+<dt><h4>user1_grps </b><b> ;  user2_grps </b><b> ;  user3_grps: </b></h4>
+<dt><h4>userint1 </b>(0)<b> ;  userint2 </b>(0)<b> ;  
+userint3 </b>(0)<b> ;  userint4: </b>(0)</h4>
+<dt><h4>userreal1 </b>(0)<b> ;  userreal2 </b>(0)<b> ;  
+userreal3 </b>(0)<b> ;  userreal4: </b>(0)</h4>
+<dd>These you can use if you hack out code. You can pass integers and
+reals to your subroutine. Check the inputrec definition in
+<tt>src/include/types/inputrec.h</tt>
+
+</dl>
+
+<hr>
+
+<A NAME="idx"><br><h3><A HREF="#idx"><IMG SRC="../gif/charts_idx.gif"></A><A HREF="#user"><IMG SRC="../gif/charts_up.gif"></A><A HREF="#bot"><IMG SRC="../gif/charts_down.gif"></a> Index</h3>
+
+<P>
+<!--
+Be aware that these links take you to the <b>top of the section</b> in
+which the parameter is mentioned. For some <b>long sections</b> you
+might have to <b>scroll down</b> in your browser window to see the
+desired parameter.
+</P>
+-->
+
+<TABLE>
+<MULTICOL COLS=4> 
+<A HREF="#neq">accelerate</A><br>
+<A HREF="#neq">acc_grps</A><br>
+<A HREF="#sa">annealing</A><br>
+<A HREF="#el2">bLJcorr</A><br>
+<A HREF="#nl">box</A><br>
+<A HREF="#pc">compress</A><br>
+<A HREF="#bond">constraints</A><br>
+<A HREF="#pp">cpp</A><br>
+<A HREF="#pp">define</A><br>
+<A HREF="#nl">deltagrid</A><br>
+<A HREF="#free">delta_lambda</A><br>
+<A HREF="#nmr">dihre_fc</A><br>
+<A HREF="#nmr">disre</A><br>
+<A HREF="#nmr">disre_fc</A><br>
+<A HREF="#nmr">disre_tau</A><br>
+<A HREF="#run">dt</A><br>
+<A HREF="#el">eel_type</A><br>
+<A HREF="#em">emstep</A><br>
+<A HREF="#em">emtol</A><br>
+<A HREF="#out">energygrps</A><br>
+<A HREF="#el2">epsilon_r</A><br>
+<A HREF="#ef">E_x</A><br>
+<A HREF="#ef">E_xt</A><br>
+<A HREF="#ef">E_y</A><br>
+<A HREF="#ef">E_yt</A><br>
+<A HREF="#ef">E_z</A><br>
+<A HREF="#ef">E_zt </A><br>
+<A HREF="#el2">fourier_nx</A><br>
+<A HREF="#el2">fourier_ny</A><br>
+<A HREF="#el2">fourier_nz</A><br>
+<A HREF="#free">free_energy</A><br>
+<A HREF="#neq">freezedim </A><br>
+<A HREF="#neq">freezegrps</A><br>
+<A HREF="#el2">gauss_width</A><br>
+<A HREF="#vel">gen_seed</A><br>
+<A HREF="#vel">gen_temp</A><br>
+<A HREF="#vel">gen_vel</A><br>
+<A HREF="#pp">include</A><br>
+<A HREF="#free">init_lambda</A><br>
+<A HREF="#run">integrator</A><br>
+<A HREF="#ld">ld_fric</A><br>
+<A HREF="#ld">ld_seed</A><br>
+<A HREF="#ld">ld_temp</A><br>
+<A HREF="#bond2">lincs_order</A><br>
+<A HREF="#bond2">lincs_warnangle</A><br>
+<A HREF="#bond2">morse</A><br>
+<A HREF="#el2">niter</A><br>
+<A HREF="#pc">npcmemory</A><br>
+<A HREF="#em">nstcgsteep</A><br>
+<A HREF="#run">nstcomm</A><br>
+<A HREF="#run">nsteps</A><br>
+<A HREF="#out">nstfout</A><br>
+<A HREF="#out">nstgrp</A><br>
+<A HREF="#bond2">nstlincsout</A><br>
+<A HREF="#nl">nstlist</A><br>
+<A HREF="#out">nstprint</A><br>
+<A HREF="#out">nstvout</A><br>
+<A HREF="#out">nstxout</A><br>
+<A HREF="#out">nstxtcout</A><br>
+<A HREF="#nl">ns_type</A><br>
+<A HREF="#tc">ntcmemory</A><br>
+<A HREF="#sol">nwatoms</A><br>
+<A HREF="#pc">pcoupl</A><br>
+<A HREF="#pc">ref_p</A><br>
+<A HREF="#tc">ref_t</A><br>
+<A HREF="#el2">rlong</A><br>
+<A HREF="#el2">rshort</A><br>
+<A HREF="#bond2">shake_first</A><br>
+<A HREF="#bond">shake_type</A><br>
+<A HREF="#pc">tau_p</A><br>
+<A HREF="#tc">tau_t</A><br>
+<A HREF="#tc">tc_grps</A><br>
+<A HREF="#tc">tcoupl</A><br>
+<A HREF="#run">tinit</A><br>
+<A HREF="#pp">title</A><br>
+<A HREF="#bond2">tol</A><br>
+<A HREF="#user">user1_grps</A><br>
+<A HREF="#user">user2_grps</A><br>
+<A HREF="#user">user3_grps</A><br>
+<A HREF="#user">userint1</A><br>
+<A HREF="#user">userint2</A><br>
+<A HREF="#user">userint3</A><br>
+<A HREF="#user">userint4</A><br>
+<A HREF="#user">userreal1</A><br>
+<A HREF="#user">userreal2</A><br>
+<A HREF="#user">userreal3</A><br>
+<A HREF="#user">userreal4</A><br>
+<A HREF="#pp">warnings</A><br>
+<A HREF="#sol">watertype</A><br>
+<A HREF="#out">xtc_grps</A><br>
+<A HREF="#out">xtc_precision</A><br>
+<A HREF="#sa">zero_temp_time</A><br>
+</MULTICOL>
+<hr>
+<A NAME="bot">
+
+</BODY>
+
+
+

@@ -1,0 +1,22 @@
+<title>tpr file format</title>
+<h1>tpr file format</h1>
+<h2>Description</h2>
+The tpr file extension stands for portable binary run input file. This file 
+contains  the starting structure of your simulation, the molecular topology 
+and all the simulation parameters. Because this file is in binary format it 
+cannot be read with a normal editor. To read a portable binary run input 
+file type:
+<PRE>
+% <a href="gmxdump.html">gmxdump</a> -s topol.tpr 
+</PRE>
+or if you're not such a fast reader:
+<PRE>
+% gmxdump -s topol.tpr | more
+</PRE>
+
+<p>
+You can also compare two tpr files using:
+<pre>
+<a href="gmxcheck.html">gmxcheck</a> -s1 top1 -s2 top2 | more
+</pre>
+

@@ -1,0 +1,20 @@
+<title>gip file format</title>
+<h1>gip file format</h1>
+Files with the gip file extension contain input data for the 
+<a href="genion.html">genion</a> program.<p>
+A sample is included below.<p>
+<pre>
+n+                  =  20	; # positive ions
+name+               =  Na	; Name of thes ions
+q+                  =  1.0	; Charge
+n-                  =  0	; # negative ions
+name-               =  		; Name of these ions
+q-                  =  -1.0	; Charge of these ions
+water-1             =  3172	; Atom number of first water -1 in the
+				; coordinate file. NOTE the atom numbers
+				; for genion start at 0, so 1 must be 
+				; subtracted from the first water in your
+				; coordinates.
+n-water             =  846	; # of water molecules
+rexcl               =  0.50	; Distance within which no two ions may be put
+</pre>

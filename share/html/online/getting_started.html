@@ -1,0 +1,675 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<!--Converted with LaTeX2HTML 97.1 (release) (July 13th, 1997)
+ by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippman, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Getting Started.</TITLE>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso_8859_1">
+</HEAD>
+<BODY >
+<h2>Contents</h2>
+<ul>
+<li><a href="#start">Getting started</a>
+<ul>
+	<li><a href="#setup">Setting up your environment</a>
+	<li><a href="#examples">Examples</a>
+</ul>
+<li><a href="#demo">GMX demo</a>
+<ul>
+	<li><a href="#top">Molecular topology file</a>
+	<li><a href="#gro">Molecular structure file</a>
+	<li><a href="#mdp">Molecular dynamics parameter file</a>
+	<li><a href="#ndx">Index file</a>
+	<li><a href="#tpb">Binary topology file</a>
+	<li><a href="#trx">Trajectory file</a>
+</ul>
+<li><a href="#water">Water</a>
+<li><a href="#spep">Ribonuclease S-Peptide</a>
+<ul>
+	<li><a href="#pdb2gmx">Generating a topology file</a>
+	<li><a href="#solvate">Solvate the peptide</a>
+	<li><a href="#indexfile">Generate an index file</a>
+	<li><a href="#em">Energy minimization</a>
+	<li><a href="#posres">Molecular dynamics with position restraints</a>
+	<li><a href="#full">Unrestrained molecular dynamics</a>
+	<li><a href="#analysis">Analysis of trajectory files</a>
+</ul>
+<li><a href="#you">Your own system</a>
+<li><a href="#info">More Info</a>
+<li><a href="#ref">References</a>
+</ul>
+
+<P>
+More info can be found in the 
+<A HREF="flow.html">flowchart</A> 
+(for a quick overview) and the 
+<A HREF="../gmxfaq.html">GMX FAQ</A>.
+</P>
+
+<br><hr><br>
+
+<a name="start"><H1>Getting started.</A></H1>
+
+In this chapter we assume the reader is familiar with Molecular
+Dynamics and familiar with Unix, including the use of a text editor
+such as <tt>emacs</tt> or <tt>vi</tt>. We furthermore assume the
+software is installed properly on your system. When you see a line
+like
+<P><TT>
+% ls -l 
+</TT></P>
+you are supposed to type the contents of that line (not the
+<TT>%</TT>) on your computer.
+
+<P>We will also assume that you know where your version of GROMACS is
+installed. For local users in the Groningen MD group that is simply
+'~gmx', e.g. the GMXRC is located in ~gmx/GMXRC. For other users that 
+is probably not the case, contact your local system administrator for
+more information. The directories named in this section are valid for the 
+Groningen MD group.
+
+<P><H2><A NAME="setup">Setting up your environment</A></H2>
+
+Edit your <TT>.cshrc</TT> file to include the following statement:
+<P><TT>
+source ~gmx/GMXRC
+</TT></P>
+which has some (system dependent) PATH settings etcetera. Then type
+<P><TT>
+% source ~gmx/GMXRC
+</TT></P>
+to start right away, or, alternatively 
+log off and on again to automatically source the environment.
+<P>
+Check if you now have the proper environment by
+<P><TT>
+% echo $GMXHOME
+</TT></P>
+It should read something like: 
+<P><TT>
+/home/gmx/gmx2.0
+</TT></P>
+This is the directory in which the binaries and
+library files live. If you see nothing (a blank line) something is
+wrong with the installation, check with your system manager, or (if
+<EM>you</EM> are the system manager) you did something wrong 
+somewhere <b>:(</b>
+
+<P><H2><A NAME="examples">Examples.</A></H2>
+Before starting the examples, you have to copy all the neccesary
+files, to your own directory. Chdir to the directory you want to put
+the examples directory. This directory (named <tt>tutor</tt>) 
+will need
+about 20 MB of disk space, when it is completely filled.
+<P>
+<TT>% cd </TT>``your own directory''
+</P> 
+then copy the examples: 
+<P><TT>
+% cp -r ~gmx/home1.6/tutor .
+</TT></P> 
+(NOTE: include the ``<TT>.</TT>'') You now have a subdirectory
+<tt>tutor</tt>. Move there
+<P><TT>
+% cd tutor
+</TT></P> 
+and view the contents of this directory
+<P><TT>
+% ls -l
+</TT></P> 
+If all is well you will have five subdirectories with examples 
+with names like <tt>gmxdemo</tt>, <tt>nmr1</tt>, <tt>nmr2</tt>, 
+<tt>speptide</tt> and <tt>water</tt>.
+<P>
+You are encouraged to look up the different programs and
+file formats in <a href="../online2.0.html">
+the online manual</a> while you are browsing through the examples.</p>
+
+<br><hr><br>
+
+<P><H1><A NAME="demo">GMX demo.</A></H1>
+The demo is designed to demonstrate the user-friendlyness
+of the GROMACS software package. Start the demo by going
+to your <tt>tutor/gmxdemo</tt> directory:
+<P><TT>
+% cd tutor/gmxdemo
+</TT></P> Start the demo: 
+<P><TT>
+% demo
+</TT></P>
+This demo handles a complete Molecular Dynamics simulation of a
+peptide in water, starting from a 
+<a href="pdb.html">pdb</a> structure. When we start a
+Molecular Dynamics simulation with GROMACS we need the following files.
+
+<P><H3><A NAME="top">Molecular Topology file (<TT><a href="top.html">.top</a></TT>)</A></H3>
+The molecular topology file is generated by the program <TT>
+<a href="pdb2gmx.html">pdb2gmx</a></TT>. <a href="pdb2gmx.html">pdb2gmx</a> translates a <a href="pdb.html">pdb</a> structure file of any peptide
+or protein
+to a molecular topology file. This topology file contains a complete
+description of all the interactions in your peptide or protein.
+	
+<P><H3><A NAME="gro">Molecular Structure file (<TT><a href="gro.html">.gro</a>, <a href="pdb.html">.pdb</a></TT>)</A></H3>
+When the <a href="pdb2gmx.html">pdb2gmx</a> program is executed to generate a molecular
+topology, it also translates the structure file (<TT><a href="pdb.html">.pdb</a></TT> file) 
+to a gromos
+structure file (<TT><a href="gro.html">.gro</a></TT> file). The main difference between a 
+<a href="pdb.html">pdb</a> file and a gromos file is their format and that
+a <TT><a href="gro.html">.gro</a></TT> file can also hold velocities. However, if you do not need the
+velocities, you can also use a <a href="pdb.html">pdb</a> file in most programs.
+To generate a box of solvent molecules
+around the peptide, the program 
+<a href="genbox.html">genbox</a> is used. First the program
+<a href="editconf.html">editconf</a> should be used to
+define a box of appropriate size around the molecule.
+<a href="genbox.html">genbox</a>
+dissolves a solute molecule (the peptide) into any solvent (in this
+case water). The output of <TT><a href="genbox.html">genbox</a></TT> is a gromos structure file of
+the peptide dissolved in water. The <a href="genbox.html">genbox</a> program also changes the
+molecular topology file (generated by <a href="pdb2gmx.html">pdb2gmx</a>) to add solvent
+to the topology. 
+
+<P><H3><A NAME="mdp">Molecular Dynamics parameter file (<TT><a href="mdp_opt.html">.mdp</a></TT>)</A></H3>
+The Molecular Dynamics Parameter (<TT><a href="mdp_opt.html">.mdp</a></TT>) file contains all
+information about the Molecular Dynamics simulation itself 
+e.g. time-step, number of steps, temperature, pressure etc. The
+easiest way of handling such a file is by adapting a sample <TT><a href="mdp_opt.html">mdp</a></TT>
+file. A <TT><a href="mdp.html">sample mdp file</a></TT>
+can be found online.
+
+<P><H3><A NAME="ndx">Index file (<TT><a href="ndx.html">.ndx</a></TT>)</A></H3>
+Sometimes you may need an index file to specify actions on groups of atoms
+(e.g. Temperature coupling, accelerations, freezing). For this demo we will
+not consider the use of index files however.
+
+<P><H3><A NAME="tpb">Binary Topology file (<TT><a href="tpb.html">.tpb</a></TT>)</A></H3>
+The next step is to combine the molecular structure (<TT><a href="gro.html">.gro</a></TT> file),
+topology (<TT><a href="top.html">.top</a></TT> file) MD-parameters (<TT><a href="mdp_opt.html">.mdp</a> file</TT>) and 
+(optionally) the
+index file (<TT><a href="ndx.html">ndx</a></TT>) to generate a binary topology file (<TT><a href="tpb.html">.tpb</a>
+extension</tt>). This file contains all information needed to start a
+Simulation with GROMACS. 
+The <a href="grompp.html">
+grompp</a> program processes all input files and generates the binary 
+topology <a href="tpb.html">tpb</a> file.
+
+<P><H3><A NAME="trx">Trajectory file (<TT><a href="trj.html">.trj</a></TT>)</A></H3>
+
+Once the binary topology is available, we can start the
+simulation. The program which starts the simulation is called 
+<a href="mdrun.html">mdrun</a>. The only input file
+of <TT><a href="mdrun.html">mdrun</a></TT> is the
+binary topology file (<a href="tpb.html">tpb</a>
+file).  The output files of 
+<TT><a href="mdrun.html">mdrun</a></TT> are the
+trajectory file (<TT><a href="trj.html">.trj</a></TT>
+file) and a logfile (
+<TT><a href="log.html">.log</A></TT> file).</p>
+
+<br><hr><br>
+
+<P><H1><A NAME="water">Water</A></H1>
+Now you are going to simulate 216 molecules of SPC water 
+(<A HREF=#berendsen81>Berendsen <it>et al.</it>, 1981</A>)
+in a rectangular box. In this example the GROMACS
+software team already generated most of the neccesary input
+files. The files needed in this example are:
+<ul>
+<LI> Initial structure of a box of 216 water molecules (<TT><a href="gro.html">gro</a></TT>)
+<LI> Topology file of water (<a href="top.html">top</a>)
+<LI> Molecular Dynamics parameter file (<TT><a href="mdp_opt.html">mdp</a></TT>)
+</ul>
+<P>
+Change your directory to <tt>tutor/water </tt>:   
+<P><TT>
+% cd tutor/water
+</TT></P>
+Let's first have a look at the coordinate file:
+<P><TT>
+% more <a href="../tutor/water/spc216.gro.txt">spc216.gro</a>
+</TT></P>
+Or to view the water box graphically:
+<P><TT>
+% rasmol <a href="../tutor/water/spc216.pdb.txt">spc216.pdb</a> 
+</TT></P>
+Have a look at the topology file:
+<P><TT>
+% more <a href="../tutor/water/water.top.txt">water.top</a>
+</TT></P>
+Have a look at the MD-parameters file:
+<P><TT>
+% more <a href="../tutor/water/water.mdp.txt">water.mdp</a>
+</TT></P>
+Since all the neccesary files are available, we are going to,
+preprocess all the input files to create a binary topology 
+(<TT><a href="tpb.html">tpb</a></TT>) file. 
+This binary topology file is the only input file for the
+MD-program <TT><a href="mdrun.html">mdrun</a></TT>. 
+<P><TT>
+% <a href="grompp.html">grompp</a> -f water -p water -c <a href="../tutor/water/spc216.gro.txt">spc216.gro</a> -o water
+</TT></P>
+The binary topology file is only viewable with the program 
+<TT><a href="gmxdump.html">gmxdump</a></TT>. 
+In this way it is possible to check if the  preprocessor 
+<TT><a href="grompp.html">grompp</a></TT> worked well.
+<P><TT>
+% <a href="gmxdump.html">gmxdump</a> -s water.tpb | more
+</TT></P>
+Now it's time to start to the simulation
+<P><TT>
+% <a href="mdrun.html">mdrun</a> -s water.tpb -o <a href="trj.html">water.trj</a> -c <a href="gro.html">water_out.gro</a> -v -g mdlog
+</TT></P>
+After the MD simulation is finished, it is possible to view the
+trajectory with the <a href="ngmx.html">ngmx</a> program:
+<P><TT>
+% <a href="ngmx.html">ngmx</a> -f <a href="trj.html">water.trj</a> -s <a href="tpb.html">water.tpb</a>
+</TT></P>
+Calculate a radial distribution function of the Oxygen atoms. The
+index file <TT><a href="../tutor/water/oxygen.ndx.txt">oxygen.ndx</a></TT> 
+contains one group with all the oxygen atoms. 
+<P><TT>
+% <a href="g_rdf.html">g_rdf</a> -f <a href="trj.html">water.trj</a> -n <a href="../tutor/water/oxygen.ndx.txt">oxygen.ndx</a> -o <a href="xvg.html">rdf.xvg</a> -s water.tpb
+</TT></P>
+view the output graph of <TT><a href="g_rdf.html">g_rdf</a></TT>
+<P><TT>
+% xvgr rdf.xvg 
+</TT></P>
+Which shows you the radial distribution function for Oxygen-Oxygen in
+SPC water. </p>
+
+<br><hr><br>
+
+<P><H1><A NAME="spep">Ribonuclease S-peptide.</A></H1>
+Ribonuclease A is a digestive enzyme, secreted by the pancreas. The enzyme
+can be cleaved by subtilisin at a single peptide bond to yield 
+Ribonuclease-S, a catalytically active complex of an S-peptide moiety
+(residues 1-20) and an S-protein moiety (residues 21-124), bound together
+by multiple non-covalent links (<A HREF=#stryer88>Stryer, 1988</A>).
+<P>
+The S-Peptide has been studied in many ways, experimentally
+as well as theoretically (simulation) because of the high a-helix 
+content in solution, which is remarkable in such a small peptide.
+<P>
+All the files of speptide are stored in the directory <TT>
+tutor/speptide</TT>. First go to this directory:cd speptide
+<P>
+To be able to simulate the S-Peptide we need a starting structure. This can
+be taken from the protein data bank. There are a number of different
+structure for Ribonuclease S, from one of which we have cut out the
+first 20 residues, and stored it in 
+<TT><a href="../tutor/speptide/speptide.pdb.txt">speptide.pdb</a></TT>. 
+Have a look at the file 
+<P><TT>
+% more <a href="../tutor/speptide/speptide.pdb.txt">speptide.pdb</a>
+</TT></P>
+If you have access to a molecular
+graphics program such as rasmol, xmol, 
+or a commercial package,
+you can look at the molecule on screen, eg: 
+<P><TT>
+% rasmol <a href="../tutor/speptide/speptide.pdb.txt">speptide.pdb</a>
+</TT></P>
+
+The following steps have to be taken to perform a simulation of the peptide.
+<ol>
+<li>	Convert the pdb-file 
+	<a href="../tutor/speptide/speptide.pdb.txt">speptide.pdb</a>
+	to a GROMACS structure file and a GROMACS topology file.
+<li>	Solvate the peptide in water
+<li>	Perform an energy minimization of the peptide in solvent
+<li>	Add ions if necessary (we will omit this step here)
+<li>	Perform a short MD run with position restraints on the peptide
+<li>	Perform full MD without restraints
+<li>	Analysis
+</ol>
+
+We will describe in detail how such a simulation can be done using
+, starting from a pdb-file.
+
+<P><H3><A NAME="pdb2gmx">
+Generate a a topology file (<a href="top.html">top</a>) from the pdb-file (<a href="pdb.html">pdb</a>)</a>
+</H3>
+<P>
+Generate a molecular topology and a structure file in 
+format. This can be done with the <a href="pdb2gmx.html">pdb2gmx</a> program: 
+<P><TT>
+% <a href="pdb2gmx.html">pdb2gmx</a> -f <a href="pdb.html">speptide.pdb</a> -p <a href="top.html">speptide.top</a> -o <a href="gro.html">speptide.gro</a>
+</TT></P>
+Note that the correct file extension are added automatically to the
+filenames on the command line. 
+Usually the program is non-interactive, but you can also 
+have <a href="pdb2gmx.html">pdb2gmx</a> ask you 
+about which forcefield to use, about protonation of residues, and
+about protonation of N- and C-terminus. For now we will assume no interaction
+is necessary. You can type
+<P><TT>
+% <a href="pdb2gmx.html">pdb2gmx</a> -h
+</TT></P>
+to see the available options.
+<P>
+The <a href="pdb2gmx.html">
+pdb2gmx</a> program has generated a topology file 
+<TT><a href="top.html">speptide.top</a></TT> and a
+GROMACS structure file <tt>speptide.gro</tt> and it will 
+generate hydrogen
+positions. The <tt>-p</tt> and <tt>-o</tt> options with he
+filenames are optional; without them the files <TT><a href="top.html">topol.top</a></TT> and <TT>
+<a href="gro.html">conf.gro</a></TT> will be generated.
+Now have a look at the output from <a href="pdb2gmx.html">pdb2gmx</a>,
+<P><TT>
+% more <a href="gro.html">speptide.gro</a>
+</TT></P>
+You will see a close resemblance to the <a href="pdb.html">pdb</a> file, only the layout of
+the file is a bit different. For the exact layout check 
+<a href="gro.html">gro.html</a>.
+Also do have a look at the topology 
+<P><TT>
+% more <a href="top.html">speptide.top</a>
+</TT></P>
+You will see a large file containing the atom types, the physical
+bonds between atoms, etcetera. If you want to know more about 
+the topology file read 
+<a href="top.html">top.html</a>.
+
+
+<P><H3><A NAME="solvate">
+Solvate the peptide in a periodic box filled with water</A></H3>
+This is done using the programs
+<a href="editconf.html">editconf</a> and
+<a href="genbox.html">genbox</a>.
+<a href="editconf.html">editconf</a>
+will make a rectangular box with empty space of user specified size
+around the molecule. 
+<a href="genbox.html">genbox</a>
+will read the structure file and fill the box with water.
+<P><TT>
+% <a href="editconf.html">editconf</a> -f speptide -o -dc 0.6
+% <a href="genbox.html">genbox</a> -cp out -cs -p speptide -o b4em
+</TT></P>
+The program prints some lines of user information, like the volume of
+the box and the number of water molecules added to your
+peptide. <TT><a href="genbox.html">genbox</a></TT>
+also changes the topology file 
+<TT><a href="top.html">speptide.top</a></TT> to include
+these water molecules in the topology. This can been seen by looking
+at the bottom of the 
+<TT><a href="top.html">speptide.top</a></TT> file
+<P><TT>
+% tail <a href="top.html">speptide.top</a>
+</TT></P>
+You will see some lines like 
+<P><TT>
+[ system ]
+; Name		Number
+Protein		1
+SOL		N
+</TT></P>
+where <tt>N</tt> is the number of water molecules added to your system by
+<TT><a href="genbox.html">genbox</a></TT>.
+<P>
+
+It is also possible to solvate a peptide in another solvent such as
+dimethylsulfoxide (DMSO), as has been done by 
+<A HREF=#mierke91>Mierke & Kessler, 1991</A>.
+
+<P><H3><A NAME="indexfile">Generate index file (<TT><a href="ndx.html">.ndx</a></TT> extension)</A></H3>
+By default, most GROMACS programs generate a set of index groups to select
+the most common subsets of atoms from your system (e.g. Protein, Backbone,
+C-alpha's, Solute, etc.).
+For the special cases when you need to select other groups than the
+default ones, an <a href="ndx.html">index file</a>
+can be generated using <a href="make_ndx.html">make_ndx</a>. 
+This is an interactive program that lets you manipulate molecules,
+residues and atom. It's use should be self-explanatory.  To invoke the
+program you would
+<P><TT>
+% <a href="make_ndx.html">make_ndx</a> -f b4em
+</TT></P>
+but don't bother for now.
+
+<P><H3><A NAME="em">Perform an energy minimization of the peptide in solvent</A></H3>
+
+Now we have to perform an <EM>energy minimization</EM> of the
+structure to remove the local strain in the peptide (due to generation
+of hydrogen positions) and to remove bad Van der Waals contacts
+(particles that are too close). This can be done with the
+<TT><a href="mdrun.html">mdrun</a></TT> program which
+is the MD and EM program. Before we can use the 
+<TT> <a href="mdrun.html">mdrun</a></TT> program
+however, we have to preprocess the topology file (
+<TT><a href="top.html">speptide.top</a></TT>), the
+structure file (
+<TT><a href="gro.html">speptide.gro</a></TT>) and a
+special parameter file (
+<TT><a href="../tutor/speptide/em.mdp.txt">em.mdp</a></TT>). Check
+the contents of this file 
+<P><TT>
+% more <a href="../tutor/speptide/em.mdp.txt">em.mdp</a>
+</TT></P>
+Preprocessing is done with the preprocessor called 
+<TT><a href="grompp.html">grompp</a></TT>. This reads
+up the files just mentioned:
+
+<P><TT>
+% <a href="grompp.html">grompp</a> -v -f em -c b4em -n analysis -o em -p speptide
+</TT></P>
+In this command the <tt>-v</tt> option turns on verbose mode, which
+gives a little bit of clarifying info on what the program is doing.
+We now have made a <EM>binary topology</EM> (<TT>em.tpb</TT>) which
+serves as input for the 
+<TT><a href="mdrun.html">mdrun</a></TT> program. Now
+we can do the energy minimization:
+<P><TT>
+% <a href="mdrun.html">mdrun</a> -v -s em -o em -c after_em -g emlog
+</TT></P>
+In this command the <tt>-v</tt> option turns on verbose mode again.
+The <tt>-o</tt> option sets the filename for the trajectory file,
+which is not very important in energy minimizations. The <tt>-c</tt>
+option sets the filename of the structure file after energy
+minimization. This file we will subsequently use as input for the MD
+run.  The energy minimization takes some time, the amount depending on
+the CPU in your computer, the load of your computer, etc. The 
+<TT><a href="mdrun.html">mdrun</a></TT> program is
+automatically <EM>niced</EM>; it runs at low priority. All programs
+that do extensive computations are automatically run at low
+priority. For most modern workstations this computation should be a
+matter of minutes. The minimization is finished when either the
+minimization has converged or a fixed number of steps has been
+performed.  Since the system consists merely of water, a quick check
+on the potential energy should reveal whether the minimization was
+successful: the potential energy of 1 SPC water molecule at 300 K is
+<tt>-42</tt> kJ mole<sup>-1</sup>. Since we have about <tt>9e+02</tt>
+SPC molecules the potential energy should be about <tt>-40e+3</tt> kJ
+mole<sup>-1</sup>. If the potential energy after minimization is lower
+than <tt>-30e+03</tt> kJ mole<sup>-1</sup> it is acceptable and the
+structure can be used for MD calculations.  After our EM calculation
+the program prints something like:
+<P><TT>
+STEEPEST DESCENTS converged to 0.001000 
+Function value at minimum = -3.4772e+04
+</TT></P>
+which means our criterium is met, and we can proceed to the next step.
+
+<P><H3><A NAME="posres">
+Perform a short MD run with position restraints on the peptide</A>
+</H3>
+Position restrained MD means Molecular Dynamics in which a part of the
+system is not allowed to move far off their starting positions.  To be
+able to run with position restraints we must add a section to the
+<TT><a href="top.html">speptide.top</a></TT> file,
+describing which atoms are to be restrained. Such a section is
+actually generated by the 
+<a href="pdb2gmx.html">pdb2gmx</a> program. In the
+topology file it looks like
+<P><TT>
+#ifdef POSRES
+#include "<a href="itp.html">posres.itp</a>"
+#endif
+</TT></P>
+In the <a href="top.html">topology file</a> we use
+conditional inclusion, i.e. only if a variable <TT>POSRES</TT> is set
+in the preprocessor do we include the file, this allows us to use the
+same topology file for runs with and without position restraints. In
+the <a href="../tutor/speptide/pr.mdp.txt">pr.mdp</a> parameter file 
+for the position restraints this variable is set indeed:
+<P><TT>
+define              =  -DPOSRES
+</TT></P>
+<P>
+At last we can generate the input for the position restrained mdrun:
+<P><TT>
+% <a href="grompp.html">grompp</a> -f pr -o pr -c after_em -r after_em -n analysis -p speptide
+</TT></P>
+Now it's <a href="mdrun.html">MDrun</a> time:
+<P><TT>
+% <a href="mdrun.html">mdrun</a> -v -s pr -e pr -o pr -c after_pr -g prlog >& pr.job &
+</TT></P>
+This run is started in the background (it will take a while), you
+can watch how long it will take by typing:
+<P><TT>
+% tail -f pr.job
+</TT></P>
+With the <tt>Ctrl-C</tt> key you can kill the <tt>tail</tt> command.
+A good check of your simulation is to see whether density and potential
+energies have converged:
+<P><TT>
+% <a href="g_energy.html">g_energy</a> -f pr -o out -w
+</TT></P>
+The <a href="g_energy.html">
+g_energy</a> program will prompt you to select a number of energy terms
+from a list. For potential energy type:
+<P><TT>
+20 0
+</TT></P>
+If you have the xmgr program installed it will automatically pop up on your
+screen with the energy plot. You can do the same for the density
+and other energy terms, such as Solvent-Protein interactions.
+
+<P><H3><A NAME="full">Perform full MD without restraints</A></H3>
+Full MD is very similar to the restrained MD as far as GROMACS is
+concerned. Check out the <a href="../tutor/speptide/full.mdp.txt">full.mdp</a>
+for details.
+<P><TT>
+% <a href="grompp.html">grompp</a> -v -f full -o full -c after_pr
+</TT></P>
+Then we can start mdrunning
+<P><TT>
+% <a href="mdrun.html">mdrun</a> -v -s full -e full -o full -c after_full -g flog >& full.job &
+</TT></P>
+You should do similar convergence checks (and more!) as for the position
+restrained simulation.
+
+<P><H3><A NAME="analysis">Analysis</A></H3>
+We will not describe analysis in detail, because most analysis tools
+are described in the Analysis chapter of the printed manual.
+We just list a few of the possibilities within GROMACS. By now you should be
+able to start programs yourself.
+<P><UL>
+<LI> View the trajectory on your own X-screen (program 
+<a href="ngmx.html">ngmx</a>).
+<li> Monitor energies using 
+	<a href="g_energy.html">g_energy</a>.
+
+<li> Root Mean Square Deviation with respect to the crystal
+	structure (program 
+	<a href="g_rms.html">g_rms</a>).
+<LI> Radius of Gyration (program 
+	<a href="g_gyrate.html">g_gyrate</a>).	).
+<LI> Secondary Structure analysis (program 
+	<a href="do_dssp.html">do_dssp</a>).
+	For this analysis you should have the dssp 
+	(<A HREF=#kabsch83>Kabsch & Sander, 1983</A>)
+	software installed. This program also produces
+	the solvent accesible surface area as a function of time.
+<LI> Ramachandran Plots (program 
+	<a href="g_rama.html">g_rama</a>).
+<LI> Salt Bridge analysis (program 
+	<a href="g_saltbr.html">g_saltbr</a>).
+</ul>
+<P>
+You have been witness of a full MD simulation starting from a pdb-file.
+It's that easy, but then again, maybe it was not that easy. The
+example presented here is a <EM>real</EM> example, this is how a 
+production run should be performed, the complexity is in the process 
+itself and not in the software (at least, that's our opinion).</p>
+
+<br><hr><br>
+
+<P><H1><A NAME="you">Your own System.</A></H1>
+<P>
+For proteins in water (or other solvent) the route is described above. 
+For other systemd (eg. pure liquids or mixtures) one needs:
+<ul> 
+<li> 	The atomic coordinates, which can be generated by a variety of 
+	interactive programs (eg. Quanta, Cerius, HyperChem). 
+	Coordinate files can be exported in pdb-format and 
+	converted to <a href="gro.html">.gro</a> format by 
+	the <a href="editconf.html">editconf</a> program:
+	<P><TT>
+% <a href="editconf.html">editconf</a> -f <a href="pdb.html">conf.pdb</a> -o <a href="gro.html">conf.gro</a>
+	</TT></P>
+	where <TT><a href="gro.html">conf.gro</a></TT> is the  coordinatefile, 
+	or converted back to pdb-format by
+	<P><TT>
+% <a href="editconf.html">editconf</a> -f <a href="gro.html">conf.gro</a> -o <a href="pdb.html">conf.pdb</a>
+	</TT></P>
+	where <TT>conf</TT> is a file with  coordinates, and <TT>
+	<a href="pdb.html">conf.pdb</a></TT> is the target file in <a href="pdb.html">.pdb</a> format.
+	<b>NOTE:</b> Make sure that the graphics programs export 
+	<b>whole</b> molecules instead of molecules that are cut in pieces
+	(due to the periodic boundary conditions)
+	If you have the coordinates of single molecules, you can also 
+	build systems (pure liquids or mixtures) with 
+	<a href="genbox.html">genbox</a>.
+	In contrast, the program
+	<a href="genconf.html">genconf</a>
+	produces the lattice of molecules with random displacements.
+<li> 	The topology you have to build yourself. Of course you can 
+	include topologies of part of your system (eg. <TT><a href="itp.html">spc.itp</a></TT>, 
+	<TT><a href="itp.html">decane.itp</a></TT> etc.) 
+</ul>
+<br><hr><br>
+
+<P><H1><A NAME="info">More Info</A></h1>
+
+<P>
+More info can be found in the 
+<A HREF="flow.html">flowchart</A> 
+(for a quick overview) and the 
+<A HREF="../gmxfaq.html">GMX FAQ</A>.
+</P>
+
+<br><hr><br>
+
+<P><H1><A NAME="ref">References</A></h1>
+
+<blockquote>
+<dl>
+
+<dt><A NAME="berendsen81">Berendsen, H.J.C., Postma, J.P.M., van
+Gunsteren, W.F., Hermans, J. (1981) <dd><it>Intermolecular
+Forces</it>, chapter Interaction models for water in relation to
+protein hydration, pp 331-342. Dordrecht: D. Reidel Publishing Company
+Dordrecht</dd><p>
+
+<dt><A NAME="kabsch83">Kabsch, W., Sander, C. (1983). <dd>Dictionary
+of protein secondary structure: Pattern recognition of hydrogen-bonded
+and geometrical features. <it>Biopolymers</it> <b>22</b>,
+2577--2637.</dd><p>
+
+<dt><A NAME="mierke91">Mierke, D.F., Kessler, H. (1991). <dd>Molecular
+dynamics with dimethyl sulfoxide as a solvent. Conformation of a
+cyclic hexapeptide. <it>J. Am. Chem. Soc.</it> <b>113</b>, 9446.</dd><p>
+
+<dt><A NAME="stryer88">Stryer, L. (1988). <dd><it>Biochemistry</it>
+vol. 1, p. 211. New York: Freeman, 3 edition.</dd><p>
+
+</dl>
+</blockquote>
+
+<br><hr><br>
+</BODY>
+</HTML>

@@ -1,0 +1,22 @@
+<title>trr file format</title>
+<h1>trr file format</h1>
+<h2>Description</h2>
+Files with the trr file extension contain the trajectory of a simulation. 
+In this file all the coordinates, velocities, forces and energies are 
+printed as you told Gromacs in your mdp file. This file is in portable binary 
+format an can be read with <a href=gmxdump.html>gmxdump</a>.
+<PRE>
+% <a href="gmxdump.html">gmxdump</a -f traj.trr
+</PRE>
+or if you're not such a fast reader:
+<PRE>
+% gmxdump> -f traj.trr | more
+</PRE>
+
+<p>
+You can also get a quick look in the contents of the file (number of 
+frames etc.) using:
+<PRE>
+% <a href="gmxcheck.html">gmxcheck</a> -f traj.trr
+</PRE>
+

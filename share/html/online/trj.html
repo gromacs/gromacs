@@ -1,0 +1,22 @@
+<title>trj file format</title>
+<h1>trj file format</h1>
+<h2>Description</h2>
+Files with the trj file extension contain the trajectory of a simulation. 
+In this file all the coordinates, velocities, forces and energies are 
+printed as you told Gromacs in your mdp file. This file is in binary 
+format an can be read with <a href=gmxdump.html>gmxdump</a>.
+<PRE>
+% <a href="gmxdump.html">gmxdump</a> -f traj.trj
+</PRE>
+or if you're not such a fast reader:
+<PRE>
+% gmxdump -f traj.trj | more
+</PRE>
+
+<p>
+You can also get a quick look in the contents of the file (number of 
+frames etc.) using:
+<PRE>
+% <a href="gmxcheck.html">gmxcheck</a> -f traj.trj
+</PRE>
+
