@@ -517,7 +517,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
       nx = fr->ntab = fr->rtab*fr->tabscale;
     }
   }
-  snew(fr->coulvdwtab,12*(nx+1)+1);
+  snew(fr->coulvdwtab,( fr->bBHAM ? 16 :12 )*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,tabsel[k],
