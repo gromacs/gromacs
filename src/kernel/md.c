@@ -39,6 +39,7 @@ static char *SRCID_md_c = "$Id$";
 #include "update.h"
 #include "trnio.h"
 #include "mdrun.h"
+#include "confio.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
@@ -181,9 +182,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
     if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=f; else ff=NULL;
-    
     write_traj(log,cr,traj,
 	       nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box);
+    if (bLastStep) {
+      fprintf(stderr,"Writing final coordinates.\n");
+      write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		     *top->name, &(top->atoms),x,v,parm->box);
+    }
     where();
     
     /* for rerunMD, certain things don't have to be done */

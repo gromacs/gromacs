@@ -82,7 +82,6 @@ void finish_run(FILE *log,t_commrec *cr,
                 t_nsborder *nsb,
 		t_topology *top,
 		t_parm *parm,
-		rvec x[],rvec v[],
 		t_nrnb nrnb[],
 		double cputime,double realtime,int step,
 		bool bWriteStat)
@@ -109,9 +108,6 @@ void finish_run(FILE *log,t_commrec *cr,
     print_perf(log,cputime,realtime,&ntot,nsb->nprocs);
     if (nsb->nprocs > 1)
       pr_load(log,nsb->nprocs,nrnb);
-    
-    fprintf(stderr,"writing final coordinates...\n");
-    write_sto_conf(confout,*top->name, &(top->atoms),x,v,parm->box);
   }
 }
 
@@ -260,7 +256,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       
       /* if rerunMD, don't write last frame again */
       finish_run(stdlog,cr,gro,nsb,top,parm,
-		 x,v,nrnb,cputime,realtime,parm->ir.nsteps,
+		 nrnb,cputime,realtime,parm->ir.nsteps,
 		 (parm->ir.eI==eiMD) || (parm->ir.eI==eiLD));
     }
   }

@@ -346,12 +346,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   /* Print some shit... */
   if (MASTER(cr)) {
-    fprintf(stderr,"\nwriting lowest energy coords to traj...\n");
+    fprintf(stderr,"\nwriting lowest energy coordinates.\n");
     xx=x;
     ff=f;
     write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
 	       nsb,count,(real) count,
-	       lambda,nrnb,nsb->natoms,xx,xx,ff,parm->box);
+	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
+    write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		   *top->name, &(top->atoms),xx,NULL,parm->box);
     fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,f);
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {

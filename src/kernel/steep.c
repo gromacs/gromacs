@@ -198,7 +198,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   static char *SD="STEEPEST DESCENTS"; 
   real   step,lambda,ftol,fmax,testf; 
   rvec   *pos[2],*force[2]; 
-  rvec   *xx,*ff,*vv; 
+  rvec   *xx,*ff; 
 #ifdef FORCE_CRIT 
   real   Fsqrt[2]; 
 #endif 
@@ -238,9 +238,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     snew(force[i],nsb->natoms); 
   } 
 
-  /* set temporary vv array */
-  snew(vv,nsb->natoms);
-  
   start=nsb->index[cr->pid]; 
   end=nsb->homenr[cr->pid]-start; 
   
@@ -385,7 +382,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	xx=pos[TRY];   
 	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 		   nsb,count,(real) count, 
-		   lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box); 
+		   lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box); 
       } else 
 	xx=NULL; 
       
@@ -433,12 +430,15 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
   /* Print some shit...  */
   if (MASTER(cr)) { 
-    fprintf(stderr,"\nwriting lowest energy coords to traj...\n"); 
+    fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
     xx=pos[Min]; 
     ff=force[Min]; 
     write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
  	       nsb,count,(real) count, 
- 	       lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box); 
+ 	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box); 
+    write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		   *top->name, &(top->atoms),xx,NULL,parm->box);
+    
     fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
     fprintf(stderr,"Maximum force: %12.5e\n",fmax); 
     if (bDone) { 
