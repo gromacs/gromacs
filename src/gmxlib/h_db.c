@@ -93,24 +93,30 @@ int read_h_db(char *fn,t_hackblock **ah)
   if (debug) fprintf(debug,"Hydrogen Database (%s):\n",hfn);
   nah=0;
   aah=NULL;
-  while (fgets(line,STRLEN,in)) {
-    sscanf(line,"%s%n",buf,&n);
-    if (debug) fprintf(debug,"%s",buf);
-    srenew(aah,++nah);
-    aah[nah-1].name=strdup(buf);
-    sscanf(line+n,"%d",&nab);
-    if (debug) fprintf(debug,"\t%d\n",nab);
-    snew(aah[nah-1].hack,nab);
-    aah[nah-1].nhack=nab;
-    for(i=0; (i<nab); i++) {
-      if (feof(in))
-	fatal_error(0, "Expected %d lines of hydrogens, found only %d "
-		    "while reading Hydrogen Database %s residue %s",
-		    nab, i-1, aah[nah-1].name, hfn);
-      fgets(buf, STRLEN, in);
-      read_ab(buf,hfn,&(aah[nah-1].hack[i]));
-      if (debug) print_ab(debug, &(aah[nah-1].hack[i]));
+  while (fgets2(line,STRLEN-1,in)) {
+    if (sscanf(line,"%s%n",buf,&n) != 1) {
+      fprintf(stderr,"Error in hdb file: nah = %d\nline = '%s'\n",
+	      nah,line);
+      break;
     }
+    if (debug) fprintf(debug,"%s",buf);
+    srenew(aah,nah+1);
+    aah[nah].name=strdup(buf);
+    if (sscanf(line+n,"%d",&nab) == 1) {
+      if (debug) fprintf(debug,"  %d\n",nab);
+      snew(aah[nah].hack,nab);
+      aah[nah].nhack = nab;
+      for(i=0; (i<nab); i++) {
+	if (feof(in))
+	  fatal_error(0, "Expected %d lines of hydrogens, found only %d "
+		      "while reading Hydrogen Database %s residue %s",
+		      nab, i-1, aah[nah].name, hfn);
+	fgets(buf, STRLEN, in);
+	read_ab(buf,hfn,&(aah[nah].hack[i]));
+	if (debug) print_ab(debug, &(aah[nah].hack[i]));
+      }
+    }
+    nah++;
   }
   fclose(in);
   
