@@ -100,7 +100,7 @@ void *save_calloc(char *name,char *file,int line,
     p=NULL;
   else
     {
-      if ((p=calloc(nelem,elsize))==NULL) 
+      if ((p=calloc((size_t)nelem,(size_t)elsize))==NULL) 
         fatal_error(errno,"calloc for %s (nelem=%d, elsize=%d, file %s"
                     ", line %d)",name,nelem,elsize,file,line);
     }
@@ -120,9 +120,9 @@ void *save_realloc(char *name,char *file,int line,void *ptr,unsigned size)
   else
     {
       if (ptr==NULL) 
-	p=malloc(size); 
+	p=malloc((size_t)size); 
       else 
-	p=realloc(ptr,size);
+	p=realloc(ptr,(size_t)size);
       if (p==NULL) 
         fatal_error(errno,
                     "realloc for %s (%d bytes, file %s, line %d, %s=0x%8x)",
@@ -161,7 +161,7 @@ unsigned maxavail(void)
   while ((high-low)>4)
     {
       size=(high+low)/2;
-      if ((ptr=malloc(size))==NULL)
+      if ((ptr=malloc((size_t)size))==NULL)
         high=size;
       else
         {
@@ -180,7 +180,7 @@ unsigned memavail(void)
   size=maxavail();
   if (size!=0)
     {
-      if ((ptr=malloc(size))!=NULL)
+      if ((ptr=malloc((size_t)size))!=NULL)
         {
           size+=memavail();
           free(ptr);

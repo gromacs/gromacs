@@ -159,7 +159,7 @@ void p_graph(FILE *log,char *title,t_graph *g)
     if (g->nedge[i] > 0) {
       fprintf(log,"%5d%6d%5d",g->start+i+1,g->ishift[i],g->nedge[i]);
       for(j=0; (j<g->nedge[i]); j++)
-	fprintf(log,"%5d",g->edge[i][j]+1);
+	fprintf(log,"%5u",g->edge[i][j]+1);
       fprintf(log,"\n");
     }
   fflush(log);
@@ -399,7 +399,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
   if (egc == NULL)
     snew(egc,nnodes);
   else
-    memset(egc,0,nnodes*sizeof(egc[0]));
+    memset(egc,0,(size_t)(nnodes*sizeof(egc[0])));
   
   nW=g->nbound;
   nG=0;

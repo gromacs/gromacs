@@ -546,7 +546,7 @@ void change_name(char *name)
   }
   else {
     if(strcmp(name,"O2")==0)
-    strcpy(name,"OXT");;
+    strcpy(name,"OXT");
   }
 }
     
@@ -655,7 +655,7 @@ void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
 		    rvec x[],rvec v[],matrix box)
 {
   XDR xd;
-  int i,j,t;
+  int i;
   real prec;
 
   int num_of_coord;
@@ -764,8 +764,6 @@ void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],mat
 void get_stx_coordnum (char *infile,int *natoms)
 {
   int ftp;
-  int i1,i2;
-  real r1,r2;
 
   ftp=fn2ftp(infile);
   switch (ftp) {
@@ -796,7 +794,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
 		   rvec x[],rvec v[], matrix box)
 {
   t_topology *top;
-  int        ftp,natoms,i1,i2;
+  int        ftp,natoms,i1;
   real       r1,r2;
 
   ftp=fn2ftp(infile);

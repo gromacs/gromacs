@@ -232,7 +232,6 @@ int read_xvg(char *fn,real ***y,int *ny)
   char   *ptr;
   char   *base;
   char   *fmt;
-  int    *strind;
   int    k,line,nny,nx,maxx,rval;
   double lf;
   real   **yy=NULL;

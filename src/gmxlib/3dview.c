@@ -157,8 +157,10 @@ static void get_view(t_3dview *view)
     fprintf(stderr,"Error: Zero Length Vector - No View Specified\n");
     exit(1);
   }
-  translate(-view->origin[XX],-view->origin[YY],-view->origin[ZZ],To);
-  translate(-view->eye[XX],-view->eye[YY],-view->eye[ZZ],Te);
+  translate((real)(-view->origin[XX]),
+	    (real)(-view->origin[YY]),(real)(-view->origin[ZZ]),To);
+  translate((real)(-view->eye[XX]),
+	    (real)(-view->eye[YY]),(real)(-view->eye[ZZ]),Te);
 
   unity_m4(T2);
   T2[YY][YY]=0, T2[YY][ZZ]=-1, T2[ZZ][YY]=1, T2[ZZ][ZZ]=0;
@@ -233,8 +235,8 @@ void rotate_3d(t_3dview *view,int axis,bool bPositive)
     real rot=DEG2RAD*15;
 
     for(i=0; (i<DIM); i++) {
-      rotate(i, rot,RotP[i]);
-      rotate(i,-rot,RotM[i]);
+      rotate(i,        rot ,RotP[i]);
+      rotate(i,(real)(-rot),RotM[i]);
 #ifdef DEBUG
       print_matrix("RotP",RotP[i]);
       print_matrix("RotM",RotM[i]);

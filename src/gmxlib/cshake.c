@@ -46,7 +46,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
   
   int     ll,i,j,i3,j3,l3;
   int     ix,iy,iz,jx,jy,jz;
-  real    toler,rpij2,rrpr,rrpr2,tx,ty,tz,diff,acor,im,jm;
+  real    toler,rpij2,rrpr,tx,ty,tz,diff,acor,im,jm;
   real    xh,yh,zh,rijx,rijy,rijz;
   real    tix,tiy,tiz;
   real    tjx,tjy,tjz;

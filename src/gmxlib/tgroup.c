@@ -125,10 +125,10 @@ static void reset_estat(int ngener,t_grp_ener *estat)
 
 void dump_estat(FILE *log,t_grp_ener *estat)
 {
-  int i,j;
+  int i;
   
-  for(j=0; (j<estat->nn); j++) {
-    fprintf(log,"%12.5e\n",estat->ee[egLJ][j]);
+  for(i=0; (i<estat->nn); i++) {
+    fprintf(log,"%12.5e\n",estat->ee[egLJ][i]);
   }
 }
 

@@ -238,7 +238,7 @@ static void set_extension(char *buf,int ftp)
 void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 {
   char      buf[256];
-  int       i,len,ti;
+  int       i,ti;
 
   /* First check whether we have a valid filename already */
   /* ti is the extension type */
@@ -362,7 +362,6 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 {
   int  i,j;
   bool *bRemove;
-  char buf[256];
 
   check_opts(nf,fnm);
   

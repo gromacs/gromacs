@@ -50,14 +50,12 @@ void _where(char *file,int line)
 {
   static int where =-1;
   static int nw    = 1;
-  int  i;
   
   if ( where == -1 ) {
     char *temp; 
     if ((temp=getenv("WHERE")) != NULL)
       where = atoi(temp);
   } 
-
 
   if ( where != -1 ) {
     
@@ -134,9 +132,10 @@ void _halt(char *file,int line,char *reason)
 
 void quit_gmx(int fatal_errno,char *msg)
 {
-  int  nprocs,pid;
+  int  nprocs;
   
 #ifdef PARALLEL
+  int  pid;
   
   nprocs = gmx_cpu_num();
   pid    = gmx_cpu_id();

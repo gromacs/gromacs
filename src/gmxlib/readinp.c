@@ -43,7 +43,7 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
 {
   FILE      *in;
   char      buf[STRLEN],lbuf[STRLEN],rbuf[STRLEN];
-  char      *ptr,*isptr,*cptr;
+  char      *ptr,*cptr;
   t_inpfile *inp=NULL;
   int       nin,lc,i,j,k;
 
@@ -114,7 +114,7 @@ static void sort_inp(int ninp,t_inpfile inp[])
     if (inp[i].count == 0)
       inp[i].count = mm++;
   }
-  qsort(inp,ninp,sizeof(inp[0]),inp_comp);
+  qsort(inp,ninp,sizeof(inp[0]),(size_t)inp_comp);
 }
 
 void write_inpfile(char *fn,int ninp,t_inpfile inp[])
@@ -136,8 +136,6 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[])
 
 static int get_einp(int *ninp,t_inpfile **inp,char *name)
 {
-  static int  ival;
-  static real rval;
   int    i;
   
   for(i=0; (i<(*ninp)); i++)

@@ -140,7 +140,7 @@ int read_pdbatoms(FILE *in,t_pdbatom **pdbaptr,matrix box,bool bFilterH)
 	srenew(pdba,maxpdba);
 	/* Clear new entries! */
 	for(k=natom; (k<maxpdba); k++)
-	  memset(&(pdba[k]),0,sizeof(pdba[k]));
+	  memset(&(pdba[k]),0,(size_t)sizeof(pdba[k]));
       }
       pdba[natom].pdbtp=j;
       pdba[natom].atomnr=atoi(anr);

@@ -429,7 +429,7 @@ static void pr_ilist(FILE *fp,int indent,char *title,
 	(void) fprintf(fp,"%d type=%d (%s)",
 		       j++,type,interaction_function[ftype].name);
 	for (k=0; k<interaction_function[ftype].nratoms; k++)
-	  (void) fprintf(fp," %d",*(iatoms++));
+	  (void) fprintf(fp," %u",*(iatoms++));
 	(void) fprintf(fp,"\n");
 	i+=1+interaction_function[ftype].nratoms;
 #else
@@ -493,12 +493,12 @@ static void low_pr_block(FILE *fp,int indent,char *title,t_block *block)
       for (i=0; i<=block->nr; i++)
         {
           (void) pr_indent(fp,indent+INDENT);
-          (void) fprintf(fp,"%s->index[%d]=%d\n",title,i,block->index[i]);
+          (void) fprintf(fp,"%s->index[%d]=%u\n",title,i,block->index[i]);
         }
       for (i=0; i<block->nra; i++)
         {
           (void) pr_indent(fp,indent+INDENT);
-          (void) fprintf(fp,"%s->a[%d]=%d\n",title,i,block->a[i]);
+          (void) fprintf(fp,"%s->a[%d]=%u\n",title,i,block->a[i]);
         }
     }
 }
@@ -531,7 +531,7 @@ void pr_block(FILE *fp,int indent,char *title,t_block *block)
                     (void) fprintf(fp,"\n");
                     size=pr_indent(fp,indent+INDENT);
                   }
-                size+=fprintf(fp,"%d",block->a[j]);
+                size+=fprintf(fp,"%u",block->a[j]);
               }
             (void) fprintf(fp,"}\n");
             start=end;

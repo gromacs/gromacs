@@ -73,7 +73,7 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
-  int       i,nra,nrd,tp,ftype,st;
+  int       i,nra,nrd,tp,ftype;
   t_iatom   adum,ai,aj,ak;
   t_iatom   *ia;
   t_iparams *ip;
@@ -172,7 +172,7 @@ static void spread_dum2(rvec fa,rvec fb,rvec fc,rvec f,real a,real b,real c)
 static void spread_dum3(rvec x1,rvec x2,rvec x3,
 			rvec fa,rvec fb,rvec fc,rvec f,real a,real b)
 {
-  rvec x21,x31,temp,ffb,ffc;
+  rvec x21,x31,ffb,ffc;
   real afx,afy,afz;
   real bfx,bfy,bfz;
   int  m;
@@ -209,8 +209,8 @@ static void spread_dum3(rvec x1,rvec x2,rvec x3,
 
 void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 {
-  real      a1,b1,c1,inv_dt;
-  int       i,n,nra,nrd,tp,ftype,st;
+  real      a1,b1,c1;
+  int       i,nra,nrd,tp,ftype;
   int       nd1,nd2,nd3;
   t_iatom   adum,ai,aj,ak;
   t_iatom   *ia;

@@ -42,7 +42,7 @@ t_block *init_index(char *gfile, char ***grpname)
   FILE     *in;
   t_block  *b;
   int      a;
-  int      i,j,ng,nratot;
+  int      i,j,ng;
   char     name[128];
 
   in=ffopen(gfile,"r");
@@ -124,7 +124,7 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
     exit(1);
   }
   for(i=0; (i<grps->nr); i++)
-    printf("Group %5d (%12s) has %5d elements\n",i,grpname[i],
+    printf("Group %5d (%12s) has %5u elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
   for(i=0; (i<ngrps); i++) {
     if (grps->nr > 1)

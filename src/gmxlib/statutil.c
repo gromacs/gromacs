@@ -144,7 +144,7 @@ bool read_next_x_v(FILE *status,real *t,int natoms,rvec x[],rvec v[],matrix box)
 
 t_topology *read_top(char *fn)
 {
-  int        step,nre,natoms;
+  int        step,natoms;
   real       t,lambda;
   t_topology *top;
 
@@ -292,10 +292,9 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static bool bDebug=FALSE;
   
   FILE *fp;  
-  bool *bKeep,bPrint,bNo_get_pargs;
-  int  i,k,b,npall;
+  bool bPrint,bNo_get_pargs;
+  int  i,k,npall;
   t_pargs *all_pa;
-  int      nall_pa;
   t_pargs pca_pa[] = {
     { "-b",    FALSE, etREAL, &tbegin,        
       "first frame (ps) to read from trajectory" },
@@ -357,11 +356,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   snew(all_pa,NPCA_PA+npargs);
   for(i=npall=0; (i<NPCA_PA); i++)
     if (bFlags[i]) {
-      memcpy(&(all_pa[npall]),&(pca_pa[i]),sizeof(pca_pa[i]));
+      memcpy(&(all_pa[npall]),&(pca_pa[i]),(size_t)sizeof(pca_pa[i]));
       npall++;
     }
   for(i=0; (i<npargs); i++,npall++)
-    memcpy(&(all_pa[npall]),&(pa[i]),sizeof(pa[i]));
+    memcpy(&(all_pa[npall]),&(pa[i]),(size_t)sizeof(pa[i]));
   
   /* Parse the file args */
   parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
@@ -372,7 +371,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   if (bNo_get_pargs) {  
     /* Now copy the results back... */
     for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
-      memcpy(&(pa[i]),&(all_pa[k]),sizeof(pa[i]));
+      memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   }
 #ifdef _SGI_
 #ifdef USE_SGI_FPE

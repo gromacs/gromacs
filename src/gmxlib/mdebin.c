@@ -252,7 +252,7 @@ static void pprint(FILE *log,char *s)
   static char *r2="<====";
   static char *r3="<==";
   char   CHAR='#';
-  int i,slen;
+  int slen;
 
   slen=strlen(s);
   fprintf(log,"\t%s  ",r1); npr(log,slen,CHAR); fprintf(log,"  %s\n",l1);
@@ -268,7 +268,7 @@ void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
   static char *kjm="(kJ/mole)";
   t_drblock *drblock;
   char buf[246];
-  int i,j,n,ni,nj,kk;
+  int i,j,n,ni,nj;
 
   drblock=get_drblock();
   if (drblock->ndr == 0)

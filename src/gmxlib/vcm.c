@@ -56,7 +56,6 @@ void calc_vcm(FILE *log,int homenr,int start,real mass[],rvec v[],rvec vcm)
 void do_stopcm(FILE *log,int homenr,int start,rvec v[],rvec mvcm,real tm)
 {
   int  i;
-  real x,y,z;
   rvec vcm;
   
   vcm[XX]=mvcm[XX]/tm;

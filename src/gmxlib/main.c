@@ -130,7 +130,7 @@ static int get_pid(FILE *log,int left,int right,int *pid,int *nprocs)
 
 void open_log(char *lognm,t_commrec *cr)
 {
-  int  i,len,testlen;
+  int  len,testlen;
   char buf[256];
   
   where();
@@ -168,7 +168,7 @@ void open_log(char *lognm,t_commrec *cr)
   if (getenv("HOST"))
     fprintf(stdlog,", host %s",getenv("HOST"));
 #ifndef NO_GETPID
-  fprintf(stdlog,", process id %d",getpid());
+  fprintf(stdlog,", process id %ld",getpid());
 #endif
   fprintf(stdlog,"\n");
   fflush(stdlog);

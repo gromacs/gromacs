@@ -154,7 +154,7 @@ static void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
       *kappa  = sqrt(2*I/(EPSILON0*eps*BOLTZ*Temp));
     }
     k1      = (1+*kappa*Rc);
-    k2      = eps*sqr(*kappa*Rc);
+    k2      = eps*sqr((real)(*kappa*Rc));
     krf0    = (eps-1)/((2*eps+1)*(Rc*Rc*Rc));
     *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+k2)/
 	       (Rc*Rc*Rc));

@@ -47,7 +47,7 @@ static char *SRCID_trxio_c = "$Id$";
 /* defines for frame counter output */
 static int frame=-666;
 #define SKIP 10
-#define INITCOUNT frame=-1;
+#define INITCOUNT frame=-1
 #define PRINTCOUNT(l,t) fprintf(stderr,"\r%s frame %6d time %8.3f   ",l,frame,t)
 #define CHECKCOUNT(l,t) if ( ((frame % SKIP)==0) || (frame < SKIP)) PRINTCOUNT(l,t)
 #define PRINTSKIP(t) {frame++; CHECKCOUNT("Skipping",t);}
@@ -64,8 +64,8 @@ static bool        bReadBox;
 static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 {
   t_trnheader sh;
-  real lambda,pt;
-  int  step,nre,ct;
+  real pt;
+  int  ct;
   bool bB,bX;
   
   while (fread_trnheader(status,&sh)) {
@@ -79,19 +79,19 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 	       NULL,
 	       NULL);
     if (ct=check_times(*t)==0) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       if (bB)
 	init_pbc(box,FALSE);  
       if (bX)
 	return TRUE;
     } else if (ct > 0) {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     } else {
-      PRINTSKIP(*t);
+      PRINTSKIP(*t)
     }
   }
-  PRINTLAST(pt);
+  PRINTLAST(pt)
   return FALSE;    
 }
 
@@ -99,8 +99,8 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
 			    rvec x[],rvec v[],matrix box)
 {
   t_trnheader sh;
-  real lambda,pt;
-  int  i,d,step,nre,ct;
+  real pt;
+  int  i,d,ct;
   bool bB,bX,bV;
     
   while (fread_trnheader(status,&sh)) {
@@ -115,7 +115,7 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
 	       NULL);
 	       
     if (ct=check_times(*t)==0) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       if (bB)
 	init_pbc(box,FALSE);  
       if (bX || bV ) {
@@ -130,13 +130,13 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
 	return TRUE;
       }
     } else if (ct > 0) {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     } else {
-      PRINTSKIP(*t);
+      PRINTSKIP(*t)
     }
   }
-  PRINTLAST(pt);
+  PRINTLAST(pt)
   return FALSE;    
 }
   
@@ -144,8 +144,8 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
 			 rvec x[],rvec v[],matrix box)
 {
   t_trnheader sh;
-  real lambda,pt;
-  int  step,nre,ct;
+  real pt;
+  int  ct;
   bool bB,bX,bV;
     
   while (fread_trnheader(status,&sh)) {
@@ -160,19 +160,19 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
 	       NULL);
     
     if (ct=check_times(*t)==0) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       if (bB)
 	init_pbc(box,FALSE);  
       if (bX && bV )
 	return TRUE;
     } else if (ct > 0) {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     } else {
-      PRINTSKIP(*t);
+      PRINTSKIP(*t)
     }
   }
-  PRINTLAST(pt);
+  PRINTLAST(pt)
   return FALSE;    
 }
 
@@ -301,7 +301,7 @@ static bool do_read_xyz(FILE *status,int natoms,rvec x[],matrix box)
 	  fprintf(stderr,"error reading statusfile: x[%d][%d]\n",i,m);
 	/* else eof! */
 	return FALSE;
-      };
+      }
       x[i][m]=x0;
     }
   }
@@ -326,20 +326,20 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
   while ((tbegin >= 0) && (*t < tbegin)) {
     if (!do_read_xyz(status,natoms,x,box))
       return FALSE;
-    PRINTSKIP(*t);
+    PRINTSKIP(*t)
     *t+=DT;
   }
   if (((tend >= 0) && (*t < tend)) || (tend < 0.0)) {
     if (!do_read_xyz(status,natoms,x,box)) {
-      PRINTLAST(*t);
+      PRINTLAST(*t)
       return FALSE;
     }
-    PRINTREAD(*t);
+    PRINTREAD(*t)
     pt=*t;
     *t+=DT;
     return TRUE;
   }
-  PRINTLAST(pt);
+  PRINTLAST(pt)
   return FALSE;
 }
 
@@ -394,7 +394,7 @@ static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
 static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
 {
   t_pdbatom *pdb;
-  int i, j, natoms;
+  int i, natoms;
   
   INITCOUNT;
   
@@ -427,7 +427,6 @@ int read_first_x(int *status,char *fn,
 		 real *t,rvec **x,matrix box)
 {
   int  fp;
-  char buf[256];
   int  natoms,step;
   real prec;
 
@@ -450,7 +449,7 @@ int read_first_x(int *status,char *fn,
     if (check_times(*t) < 0)
       if (!read_next_x(*status,t,natoms,*x,box))
 	return 0;
-    PRINTREAD(*t);
+    PRINTREAD(*t)
     break;
   case efPDB:
     natoms=pdb_first_x(fio_getfp(fp),t,x,box);
@@ -481,28 +480,28 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
     pt=*t;
     while (read_next_xtc(status,&natoms,&step,t,box,x,&prec)) {
       if ((ct=check_times(*t)) == 0) {
-	PRINTREAD(*t);
+	PRINTREAD(*t)
 	init_pbc(box,FALSE);  
 	return TRUE;
       }
       else if (ct > 0) {
-	PRINTLAST(pt);
+	PRINTLAST(pt)
 	return FALSE;
       } else {
-	PRINTSKIP(*t);
+	PRINTSKIP(*t)
       }
     }
-    PRINTLAST(pt);
+    PRINTLAST(pt)
     return FALSE;
   case efPDB:
     return pdb_next_x(fio_getfp(status),t,natoms,x,box);
   case efGRO:
     pt=*t;
     if (gro_next_x(fio_getfp(status),t,natoms,x,box)) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       return TRUE;
     } else {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     }
   default:
@@ -529,8 +528,7 @@ void rewind_trj(int status)
 int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
 {
   t_trnheader sh;
-  real lambda;
-  int  fp,step,nre,natoms;
+  int  fp;
 
   INITCOUNT;
   
@@ -555,8 +553,7 @@ int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box)
 bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
 {
   t_trnheader sh;
-  real lambda,pt;
-  int  step,nre;
+  real pt;
   bool bV;
 
   switch (fio_getftp(status)) {
@@ -570,15 +567,15 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
       if (check_times(*t) > 0)
 	return FALSE;
     }
-    PRINTREAD(*t);
+    PRINTREAD(*t)
     break;
   case efGRO: 
     pt=*t;
     if (gro_next_v(fio_getfp(status),t,natoms,v,box)) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       return TRUE;
     } else {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     }
   default:
@@ -595,9 +592,7 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
 int read_first_x_v(int *status,char *fn,
 		   real *t,rvec **x,rvec **v,matrix box)
 {
-  char buf[256];
-  int  fp,natoms,step,ftp;
-  real prec;
+  int  fp,natoms;
   
   INITCOUNT;
 
@@ -621,8 +616,7 @@ int read_first_x_v(int *status,char *fn,
 bool read_next_x_v(int status,real *t, int natoms, 
 		   rvec x[],rvec v[],matrix box)
 {
-  int step,ct;
-  real prec,pt;
+  real pt;
   
   switch (fio_getftp(status)) {
   case efTRJ:
@@ -631,10 +625,10 @@ bool read_next_x_v(int status,real *t, int natoms,
   case efGRO: 
     pt=*t;
     if (gro_next_x_v(fio_getfp(status),t,natoms,x,v,box)) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       return TRUE;
     } else {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     }
   default:
@@ -647,9 +641,7 @@ bool read_next_x_v(int status,real *t, int natoms,
 int read_first_x_or_v(int *status,char *fn,
 		   real *t,rvec **x,rvec **v,matrix box)
 {
-  char buf[256];
-  int  fp,natoms,step,ftp;
-  real prec;
+  int  fp,natoms;
   
   INITCOUNT;
 
@@ -673,8 +665,7 @@ int read_first_x_or_v(int *status,char *fn,
 bool read_next_x_or_v(int status,real *t, int natoms, 
 		      rvec x[],rvec v[],matrix box)
 {
-  int step,ct;
-  real prec,pt;
+  real pt;
 
   switch (fio_getftp(status)) {
   case efTRJ:
@@ -683,10 +674,10 @@ bool read_next_x_or_v(int status,real *t, int natoms,
   case efGRO:
     pt=*t;
     if (gro_next_x_or_v(fio_getfp(status),t,natoms,x,v,box)) {
-      PRINTREAD(*t);
+      PRINTREAD(*t)
       return TRUE;
     } else {
-      PRINTLAST(pt);
+      PRINTLAST(pt)
       return FALSE;
     }
   default:

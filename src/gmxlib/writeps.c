@@ -126,7 +126,7 @@ void ps_init_rgb_nbox(FILE *ps,real xbox, real ybox)
   gen_ybox=ybox;
   fprintf(ps,"/by {def currentpoint "
 	  "%g y r %g %g r %g y neg r %g %g r f y add moveto} bind def\n",
-	  0,xbox,0,0,-xbox,0);
+	  0.0,xbox,0.0,0.0,-xbox,0.0);
   /* macro bn is used in ps_rgb_nbox to draw rectangular boxes */
 }
 
@@ -148,7 +148,7 @@ void ps_init_rgb_box(FILE *ps,real xbox, real ybox)
 {
   fprintf(ps,"/b {currentpoint "
 	  "%g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
-	  0,ybox,xbox,0,0,-ybox,-xbox,0,ybox);
+	  0.0,ybox,xbox,0.0,0.0,-ybox,-xbox,0.0,ybox);
   /* macro b is used in search_col to define macro B */
 }
 
@@ -188,10 +188,10 @@ void ps_line(FILE *ps,real x1,real y1,real x2,real y2)
 static void do_box(FILE *ps,real x1,real y1,real x2,real y2)
 {
   ps_moveto(ps,x1,y1);
-  ps_linerel(ps,0,y2-y1);
-  ps_linerel(ps,x2-x1,0);
-  ps_linerel(ps,0,y1-y2);
-  ps_linerel(ps,x1-x2,0);
+  ps_linerel(ps,0,(real)(y2-y1));
+  ps_linerel(ps,(real)(x2-x1),0);
+  ps_linerel(ps,0,(real)(y1-y2));
+  ps_linerel(ps,(real)(x1-x2),0);
 }
 
 void ps_box(FILE *ps,real x1,real y1,real x2,real y2)

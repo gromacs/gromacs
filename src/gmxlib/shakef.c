@@ -301,7 +301,7 @@ int vec_shakef(FILE *log,
   }
   else if (error != 0) {
     fprintf(log,"Inproduct between old and new vector = 0.0!\n"
-	    "constraint #%d atoms %d and %d\n",
+	    "constraint #%d atoms %u and %u\n",
 	    error-1,iatom[3*(error-1)+1],iatom[3*(error-1)+2]);
     nit=0;
   }
