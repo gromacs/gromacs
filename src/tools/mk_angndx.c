@@ -60,13 +60,16 @@ static void fill_ft_ind(int FTYPE,int ft_ind[],t_idef *idef,char *grpnames[])
       ft_ind[i]=ind;
       switch (FTYPE) {
       case F_ANGLES:
-	sprintf(buf,"Theta=%.1f",idef->iparams[i].harmonic.krA);
+	sprintf(buf,"Theta=%.1f_%g",idef->iparams[i].harmonic.rA,
+		idef->iparams[i].harmonic.krA);
 	break;
       case F_PDIHS:
-	sprintf(buf,"Phi=%.1f",idef->iparams[i].pdihs.phiA);
+	sprintf(buf,"Phi=%.1f_%d_%g",idef->iparams[i].pdihs.phiA,
+		idef->iparams[i].pdihs.mult,idef->iparams[i].pdihs.cpA);
 	break;
       case F_IDIHS:
-	sprintf(buf,"Xi=%.1f",idef->iparams[i].harmonic.krA);
+	sprintf(buf,"Xi=%.1f_%g",idef->iparams[i].harmonic.rA,
+		idef->iparams[i].harmonic.krA);
 	break;
       case F_RBDIHS:
 	sprintf(buf,"RB-Dihs");
