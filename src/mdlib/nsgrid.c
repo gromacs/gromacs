@@ -78,7 +78,26 @@ void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
 	  grid->nrx,grid->nry,grid->nrz);
     
   if (debug) 
-    fprintf(log,"Succesfully allocated memory for grid pointers.");
+    fprintf(debug,"Succesfully allocated memory for grid pointers.");
+}
+
+void done_grid(t_grid *grid)
+{
+  grid->nr      = 0;
+  grid->nrx     = 0;
+  grid->nry     = 0;
+  grid->nrz     = 0;
+  grid->ncells  = 0;
+  grid->maxcells= 0;
+  grid->delta	= 0;
+  grid->gmax    = 0;
+  sfree(grid->cell_index);
+  sfree(grid->a);
+  sfree(grid->index);
+  sfree(grid->nra);
+  
+  if (debug) 
+    fprintf(debug,"Succesfully freed memory for grid pointers.");
 }
 
 int xyz2ci_(int nry,int nrz,int x,int y,int z)

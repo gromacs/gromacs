@@ -41,6 +41,8 @@ static char *SRCID_nsgrid_h = "$Id$";
 extern void init_grid(FILE *log,t_grid *grid,
 		      int delta,matrix box,real rlong,int ncg);
 
+extern void done_grid(t_grid *grid);
+
 extern void grid_first(FILE *log,t_grid *grid,matrix box,real rlong);
 
 extern void fill_grid(FILE *log,bool bDD,int cg_index[],
@@ -56,7 +58,7 @@ extern void grid_last(FILE *log,bool bDD,int cg_index[],
 		      t_grid *grid,int cg0,int cg1,int ncg);
 
 extern int xyz2ci_(int nry,int nrz,int x,int y,int z);
-#define xyz2ci(nry,nrz,x,y,z) (nry*nrz*x+nrz*y+z)
+#define xyz2ci(nry,nrz,x,y,z) ((nry)*(nrz)*(x)+(nrz)*(y)+(z))
 /* Return the cell index */
 
 extern void ci2xyz(t_grid *grid,int i,int *x,int *y,int *z);
