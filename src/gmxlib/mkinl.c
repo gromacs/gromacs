@@ -99,9 +99,11 @@ static char *SRCID_mkinl_c = "$Id$";
  *
  * INNERLOOP OPTIMIZATION OPTIONS:  
  * 
- * -DINLINE_GMXCODE    This inlines the gromacs inverse square root 
+ * -DDONT_INLINE_GMXCODE
+ *                     Turns off inlining of the gromacs inverse square root 
  *                     and/or reciprocal on architectures which use
- *                     it, saving some calling time in the inner loops.  
+ *                     it, which comes handy for debugging. It is
+ *                     probably slightly slower, though.
  *
  * -DPREFETCH_F        Prefetching of forces. The two extra options 
  * -DPREFETCH_F_W      additionally does it for single water and 
@@ -303,7 +305,7 @@ int main(int argc,char *argv[])
   arch.gmx_recip = FALSE;
 #endif
     
-#if ((defined GMX_INVSQRT || defined GMX_RECIP) && defined INLINE_GMXCODE)
+#if ((defined GMX_INVSQRT || defined GMX_RECIP) && !defined DONT_INLINE_GMXCODE)
   opt.inline_gmxcode = TRUE;
   fprintf(stderr,">>> Inlining gromacs invsqrt and/or reciprocal code\n");
 #else
