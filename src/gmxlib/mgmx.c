@@ -10,6 +10,7 @@
 #include <Xm/CascadeB.h>
 #include <Xm/Separator.h>
 #include <Xm/DrawnB.h>
+#include <Xm/DialogS.h>
 #include <Xm/Scale.h>
 #include <Xm/Frame.h>
 #include <Xm/FileSB.h>
@@ -42,9 +43,9 @@ typedef struct {
 } t_button;
 
 /* global variables */
-#define  NARGS    100
+#define  NARGS  20
 static Arg      args[NARGS];
-static Widget   gmxBase,FdlgCaller;
+static Widget   FdlgCaller;
 static int      helpw=-1,descw=-1,fdlgw=-1,gmxDialog;
 static int      *pa_index,*fnm_index;
 static bool     bFdlgUp=FALSE,bDone=FALSE;
@@ -192,7 +193,7 @@ XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
     for(i=0; (i<ndesc); i++) {
       xmstr = XmStringConcat(xmstr,XmStringSeparatorCreate());
       ptr   = check_tty(desc[i]);
-      cptr  = wrap_lines(ptr,100,0);
+      cptr  = wrap_lines(ptr,70,0);
       ptr   = cptr;
       while ((nlptr = strchr(ptr,'\n')) != NULL) {
 	*nlptr='\0';
@@ -248,8 +249,7 @@ int mk_helplabel(int parent,int top)
 void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
 {
 #define NWC 3
-  WidgetClass wc[NWC] = { 
-    xmLabelWidgetClass,xmTextFieldWidgetClass,xmPushButtonWidgetClass };
+  WidgetClass wc[NWC];
   int    left[NWC]  = { 1,  8, 40 };
   int    right[NWC] = { 8, 40, 49 };
   char   **wname;
@@ -257,6 +257,9 @@ void mk_filedlgs(int parent,int top,int nfile,t_filenm fnm[],int fnm_index[])
   Widget topw;
   char   *fn,dbuf[256];
   
+  wc[0] = xmLabelWidgetClass;
+  wc[1] = xmTextFieldWidgetClass;
+  wc[2] = xmPushButtonWidgetClass;
   snew(wname,NWC);
   for(i=0; (i<nfile); i++) {
     ftp = fnm[i].ftp;
@@ -410,6 +413,8 @@ void mk_help(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
   narg  = 0;
   XtSetArg(args[narg],XmNautoUnmanage,FALSE);  narg++;
   XtSetArg(args[narg],XmNmessageString,xmstr); narg++;
+  XtSetArg(args[narg],XmNdialogType,XmDIALOG_INFORMATION); narg++;
+  /*XtSetArg(args[narg],XmNdialogTitle,"Gromacs Help"); narg++;*/
   dialog = XmCreateMessageDialog(parent,"Help",args,narg);
   helpw  = add_widget(dialog,NULL);
   XtUnmanageChild(XmMessageBoxGetChild(dialog,XmDIALOG_CANCEL_BUTTON));
@@ -444,7 +449,8 @@ void mk_fdlg(Widget base)
     XmDIALOG_APPLY_BUTTON));*/
 }
 
-static void mk_gui(int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
+static void mk_gui(Widget gmxBase,
+		   int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 		   int ndesc,char *desc[],int nbugs,char *bugs[])
 {
   t_button bbb[] = {
@@ -555,8 +561,8 @@ static void file_callback(Widget www,caddr_t client_data,caddr_t call_data)
       if ((ftp = get_widget_ftp(www)) != -1) {
 	xms  = char2xms(ftp2filter(ftp));
 	narg = 0;
-	/*XtSetArg(args[narg],XmNdirMask,xms);        narg++;*/
-	XtSetArg(args[narg],XmNpattern,xms);        narg++;
+	XtSetArg(args[narg],XmNdirMask,xms);        narg++;
+	/*XtSetArg(args[narg],XmNpattern,xms);        narg++;*/
 	XtSetArg(args[narg],XmNlistUpdated, False); narg++;
 	
 	XtSetValues(fdlg,args,narg);
@@ -601,7 +607,8 @@ static void leave_callback(Widget www,int *which,caddr_t call_data)
   }
 }
 
-void MyMainLoop(int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
+void MyMainLoop(Widget gmxBase,
+		int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
 {
   int      i,narg;
   Widget   www;
@@ -688,20 +695,22 @@ void MyMainLoop(int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
   }
   /* Clean up windows */
   XtUnmanageChild(get_widget(gmxDialog));
+  XtUnmanageChild(get_widget(fdlgw));
+  XtUnmanageChild(get_widget(helpw));
   XtUnrealizeWidget(gmxBase);
+  /*XtCloseDisplay();*/
 }
 
 void gmx_gui(int *argc,char *argv[],
 	     int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 	     int ndesc,char *desc[],int nbugs,char *bugs[])
 {
-  XtAppContext app;
+  Widget       gmxBase;
   
   /* Initialize toolkit and parse command line options. */
-  /*gmxBase = XtVaAppInitialize(&app,"GROMACS",NULL,0,argc,argv,NULL,NULL,NULL);*/
   gmxBase = XtInitialize("GROMACS","GROMACS",NULL,0,argc,argv);
-  mk_gui(nfile,fnm,npargs,pa,ndesc,desc,nbugs,bugs);
+  mk_gui(gmxBase,nfile,fnm,npargs,pa,ndesc,desc,nbugs,bugs);
   XtRealizeWidget(gmxBase);
-  MyMainLoop(nfile,fnm,npargs,pa);
+  MyMainLoop(gmxBase,nfile,fnm,npargs,pa);
 }
 
