@@ -42,6 +42,7 @@ static char *SRCID_gstat_h = "$Id$";
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
+#include "pp2shift.h"
 #include "rmpbc.h"
 
 #ifdef CPLUSPLUS
@@ -208,6 +209,10 @@ extern void ana_dih_trans(char *fn_trans,char *fn_histo,
  * and per frame. The total number of transitions is printed to
  * stderr, as well as the average time between transitions.
  *
+ * is wrapper to low_ana_dih_trans, which also passes in and out the 
+     number of transitions per dihedral per residue. that uses struc dlist 
+     which is not external, so pp2shift.h must be included. 
+
  * Dihedrals are supposed to be in either of three minima,
  * (trans, gauche+, gauche-)
  * 
@@ -221,6 +226,20 @@ extern void ana_dih_trans(char *fn_trans,char *fn_histo,
  * bRb       determines whether the polymer convention is used
  *           (trans = 0)
  */
+
+extern void low_ana_dih_trans(bool bTrans, char *fn_trans,
+			      bool bHisto, char *fn_histo, int maxchi, 
+			      real **dih, int nlist, t_dlist dlist[], int nframes,
+			      int nangles, char *grpname, int xity[], 
+			      real t0, real dt, bool bRb, real core_frac); 
+  /* as above but passes dlist so can copy occupancies into it, and xity[] 
+   *  (1..nangles, corresp to dih[this][], so can have non-3 multiplicity of
+   * rotamers. Also production of xvg output files is conditional 
+   * and the fractional width of each rotamer can be set ie for a 3 fold 
+   * dihedral with core_frac = 0.5 only the central 60 degrees is assigned
+   * to each rotamer, the rest goes to rotamer zero */ 
+
+
 
 extern void read_ang_dih(char *trj_fn,char *tpb_fn,
 			 bool bAngles,bool bSaveAll,bool bRb,
@@ -251,6 +270,10 @@ extern void read_ang_dih(char *trj_fn,char *tpb_fn,
  * dih         all angles at each time frame
  */
  
+extern void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
+				    int nlist, t_dlist dlist[]);
+ /* Something to do with rotamers... */
+  
 extern void make_histo(FILE *log,
 		       int ndata,real data[],int npoints,int histo[],
 		       real minx,real maxx);
