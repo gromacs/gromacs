@@ -52,6 +52,7 @@ static char *SRCID_g_disre_c = "$Id$";
 #include "nsb.h"
 #include "tpxio.h"
 #include "init.h"
+#include "names.h"
 
 typedef struct {
   int n;
@@ -178,7 +179,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
       tviol += viol;
       for(j=0; (j<isize); j++) {
 	if (index[j] == forceparams[type].disres.label)
-	  vvindex[j]=pow(fcd->disres.Rt_6[index[j]],-6.0);
+	  vvindex[j]=pow(fcd->disres.Rt_6[0],-1.0/6.0);
 	}
     }
     ndr ++;
@@ -198,7 +199,8 @@ static void check_viol(FILE *log,t_commrec *mcr,
 }
 
 typedef struct {
-  int index;
+  int  index;
+  bool bCore;
   real up1,r,rT,viol,violT;
 } t_dr_stats;
 
@@ -217,37 +219,82 @@ static int drs_comp(const void *a,const void *b)
     return 0;
 }
 
-static void dump_dump(FILE *log,char *title,
-		      real viol_tot,int ndr,int nviol,real viol_max)
+static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
 {
-  fprintf(log,"\n");
-  fprintf(log,"+++++++ Using %s averaging: ++++++++\n",title);
-  fprintf(log,"Sum of violations: %8.3f nm\n",viol_tot);
-  fprintf(log,"Average violation: %8.3f nm\n",viol_tot/ndr);
-  fprintf(log,"Largest violation: %8.3f nm\n",viol_max);
-  fprintf(log,"Number of violated restraints: %d/%d\n",nviol,ndr);
+  static char *core[] = { "All restraints", "Core restraints" };
+  static char *tp[]   = { "linear", "third power" };
+  real viol_tot,viol_max,viol;
+  bool bCore,bTP;
+  int  nviol,nrestr;
+  int  i;
+
+  for(bCore = FALSE; (bCore <= TRUE); bCore++) {
+    for(bTP = FALSE; (bTP <= TRUE); bTP++) {
+      viol_tot  = 0;
+      viol_max  = 0;
+      nviol     = 0;
+      nrestr    = 0;
+      for(i=0; (i<ndr); i++) {
+	if (!bCore || (bCore && drs[i].bCore)) {
+	  viol = bTP ? drs[i].violT : drs[i].viol;
+	  viol_max     = max(viol_max,viol);
+	  if (viol > 0)
+	    nviol++;
+	  viol_tot  += viol;
+	  nrestr++;
+	}
+      }
+      if ((nrestr > 0) || (bCore && (nrestr < ndr))) {
+	fprintf(log,"\n");
+	fprintf(log,"+++++++ %s ++++++++\n",core[bCore]);
+	fprintf(log,"+++++++ Using %s averaging: ++++++++\n",tp[bTP]);
+	fprintf(log,"Sum of violations: %8.3f nm\n",viol_tot);
+	fprintf(log,"Average violation: %8.3f nm\n",viol_tot/nrestr);
+	fprintf(log,"Largest violation: %8.3f nm\n",viol_max);
+	fprintf(log,"Number of violated restraints: %d/%d\n",nviol,nrestr);
+      }
+    }
+  }
 }
+
+static void dump_viol(FILE *log,int ndr,t_dr_stats *drs,bool bViol)
+{
+  int i;
+  
+  fprintf(log," Restraint Core     Up1     <r>    <rT>  <viol> <violT>\n");
+  for(i=0; (i<ndr); i++) {
+    if (bViol  && (drs[i].viol == 0) && (drs[i].violT > 0))
+      break;
+    fprintf(log,"%10d%5s%8.3f%8.3f%8.3f%8.3f%8.3f\n",
+	    drs[i].index,yesno_names[drs[i].bCore],
+	    drs[i].up1,drs[i].r,drs[i].rT,
+	    drs[i].viol,drs[i].violT);
+  }
+}
+
+static bool is_core(int i,int isize,atom_id index[])
+{
+  int kk;
+  bool bIC = FALSE;
+  
+  for(kk=0; !bIC && (kk<isize); kk++)
+    bIC = (index[kk] == i);
+    
+  return bIC;
+}	      
 
 static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
 		       t_iparams ip[],real aver1[],real aver2[],
-		       real aver_3[])
+		       real aver_3[],int isize,atom_id index[])
 {
-  int  i,j,nra,nviol,nviolT;
-  real viol_tot,violT_tot,viol_max,violT_max;
+  int  i,j,nra;
   t_dr_stats *drs;
 
   fprintf(log,"\n");
   fprintf(log,"++++++++++++++ STATISTICS ++++++++++++++++++++++++\n");  
-  fprintf(log," Restraint     Up1     <r>    <rT>  <viol> <violT>\n");
   snew(drs,ndr);
   j         = 0;
   nra       = interaction_function[F_DISRES].nratoms+1;
-  viol_tot  = 0;
-  violT_tot = 0;
-  viol_max  = 0;
-  violT_max = 0;
-  nviol     = 0;
-  nviolT    = 0;
   for(i=0; (i<ndr); i++) {
     /* Search for the appropriate restraint */
     for( ; (j<disres->nr); j+=nra) {
@@ -255,43 +302,31 @@ static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
 	break;
     }
     drs[i].index = i;
+    drs[i].bCore = is_core(i,isize,index);
     drs[i].up1   = ip[disres->iatoms[j]].disres.up1;
     drs[i].r     = aver1[i]/nsteps;
     drs[i].rT    = pow(aver_3[i]/nsteps,-1.0/3.0);
     drs[i].viol  = max(0,drs[i].r-drs[i].up1);
     drs[i].violT = max(0,drs[i].rT-drs[i].up1);
-    viol_max     = max(viol_max,drs[i].viol);
-    violT_max    = max(violT_max,drs[i].violT);
-    if (drs[i].viol > 0)
-      nviol++;
-    if (drs[i].violT > 0)
-      nviolT++;
-    fprintf(log,"%10d%8.3f%8.3f%8.3f%8.3f%8.3f\n",
-	    drs[i].index,drs[i].up1,drs[i].r,drs[i].rT,drs[i].viol,drs[i].violT);
-    viol_tot  += drs[i].viol;
-    violT_tot += drs[i].violT;
   }
-  dump_dump(log,"linear",viol_tot,ndr,nviol,viol_max);
-  dump_dump(log,"third power",violT_tot,ndr,nviolT,violT_max);
+  dump_viol(log,ndr,drs,FALSE);
   
   fprintf(log,"+++ Sorted by linear averaged violations: +++\n");
   qsort(drs,ndr,sizeof(drs[0]),drs_comp);
-  for(i=0; (i<ndr); i++)
-    if ((drs[i].viol > 0) || (drs[i].violT > 0))
-      fprintf(log,"%10d%8.3f%8.3f%8.3f%8.3f%8.3f\n",
-	      drs[i].index,drs[i].up1,drs[i].r,drs[i].rT,
-	      drs[i].viol,drs[i].violT);
+  dump_viol(log,ndr,drs,TRUE);
+	      
+  dump_dump(log,ndr,drs);
   
-  fprintf(log,"++++++++++++++ STATISTICS ++++++++++++++++++++++++\n");  
-  fprintf(log,"\n");
   sfree(drs);
 }
 
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_disre computes violations of distance restraints. If necessary",
-    "all protons can be added to a protein molecule. The program allways",
+    "g_disre computes violations of distance restraints.",
+    "If necessary all protons can be added to a protein molecule ",
+    "using the protonate program.[PAR]",
+    "The program allways",
     "computes the instantaneous violations rather than time-averaged,",
     "because this analysis is done from a trajectory file afterwards",
     "it does not make sense to use time averaging. However,",
@@ -436,7 +471,7 @@ int main (int argc,char *argv[])
   
   close_trj(status);
   dump_stats(stdlog,j,fcd->disres.nr,&(top.idef.il[F_DISRES]),
-	     top.idef.iparams,aver1,aver2,aver_3);
+	     top.idef.iparams,aver1,aver2,aver_3,isize,index);
   fclose(out);
   fclose(aver);
   fclose(numv);
