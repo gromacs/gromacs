@@ -29,7 +29,7 @@ bin_PROGRAMS = \
 	g_msdXXX_SUFFIX_XXX		g_morphXXX_SUFFIX_XXX		\
 	g_nmeigXXX_SUFFIX_XXX		g_nmensXXX_SUFFIX_XXX		\
 	g_orderXXX_SUFFIX_XXX		g_potentialXXX_SUFFIX_XXX	\
-	g_ramaXXX_SUFFIX_XXX				s		\
+	g_ramaXXX_SUFFIX_XXX						\
 	g_rdfXXX_SUFFIX_XXX		g_rmsXXX_SUFFIX_XXX		\
 	g_rmsdistXXX_SUFFIX_XXX		g_rmsfXXX_SUFFIX_XXX		\
 	g_rotacfXXX_SUFFIX_XXX		g_saltbrXXX_SUFFIX_XXX		\
