@@ -30,6 +30,8 @@
 #ifndef _lutab_h
 #define _lutab_h
 
+#include <stdio.h>
+
 static char *SRCID_lutab_h = "$Id$";
 
 #ifdef HAVE_IDENT
@@ -87,6 +89,9 @@ typedef struct
   word fract_seed[FRACT_SEED_SIZE];
 } t_lutab;
 
+/* Global variable, must be initiated by a call to init_lookup_table */
 extern t_lutab lookup_table;
+
+extern void init_lookup_table(FILE *log);
 
 #endif	/* _lutab_h */
