@@ -249,11 +249,11 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
     PI("nstcomm",ir->nstcomm);
-    PI("nstprint",ir->nstprint);
+    PI("nstlog",ir->nstlog);
     PI("nstxout",ir->nstxout);
     PI("nstvout",ir->nstvout);
     PI("nstfout",ir->nstfout);
-    PI("nstgrp",ir->nstgrp);
+    PI("nstenergy",ir->nstenergy);
     PI("nstxtcout",ir->nstxtcout);
     PR("init_t",ir->init_t);
     PR("delta_t",ir->delta_t);
@@ -281,7 +281,6 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("rlong",ir->rlong);
     PR("epsilon_r",ir->epsilon_r);
     PS("bLJcorr",BOOL(ir->bLJcorr));
-    PR("tol",ir->shake_tol);
     PR("fudgeLJ",ir->fudgeLJ);
     PR("fudgeQQ",ir->fudgeQQ);
     PS("free_energy",BOOL(ir->bPert));
