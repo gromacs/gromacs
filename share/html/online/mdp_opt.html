@@ -347,6 +347,18 @@ This can be useful for membrane simulations.
 <dd>Idem, but 3 values are needed for x, y and z directions respectively.
 Beware that isotropic scaling can lead to extreme deformation
 of the simulation box.
+<dt><b>surface-tension</b>
+<dd>Surface tension couling for surfaces parallel to the xy-plane.
+Uses normal pressure coupling for the z-direction, while the surface tension
+is coupled to the x/y dimensions of the box.
+The first <b>ref_p</b> value is the reference surface tension times
+the number of surfaces [bar nm], 
+the second value is the reference z-pressure [bar].
+The two <b>compressibility</b> [1/bar] values are the compressibility
+in the x/y and z direction respectively.
+The value for the z-compressibility should be reasonably accurate since it
+influences the converge of the surface-tension, it can also be set to zero
+to have a box with constant height.
 <dt><b>triclinic</b>
 <dd>Not supported yet.
 </dl>
