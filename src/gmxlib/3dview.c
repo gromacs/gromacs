@@ -34,6 +34,7 @@ static char *SRCID_3dview_c = "$Id$";
 #include "macros.h"
 #include "physics.h"
 #include "3dview.h"
+#include "pbc.h"
 #include "vec.h"
 
 #define N 4
@@ -281,11 +282,8 @@ void reset_view(t_3dview *view)
   printf("Reset view called\n");
 #endif
   set_scale(view,4.0,4.0);
-  for(i=0; (i<DIM); i++) {
-    view->eye[i]=0.0;
-    /* view->origin[i]=0.5*view->box[i][i];*/
-    view->origin[i] = 0.5*(view->box[XX][i]+view->box[YY][i]+view->box[ZZ][i]);
-  }
+  clear_rvec(view->eye);
+  calc_box_center(view->box,view->origin);
   view->eye[ZZ]=4.0*norm(view->box[ZZ]);
   zoom_3d(view,1.0);
   view->eye[WW]=view->origin[WW]=0.0;
