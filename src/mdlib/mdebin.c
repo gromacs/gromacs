@@ -454,7 +454,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],step);
   }
   if (fp_dgdl)
-    fprintf(fp_dgdl,"%g %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);
+    fprintf(fp_dgdl,"%.4f %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);
 }
 
 static void npr(FILE *log,int n,char c)
