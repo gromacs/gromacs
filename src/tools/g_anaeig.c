@@ -126,6 +126,76 @@ static void write_xvgr_graphs(char *file,int ngraphs,
   fclose(out);
 }
 
+static void compare(int natoms,int n1,rvec **eigvec1,int n2,rvec **eigvec2,
+		    char *Eig1File,char *Eig2File)
+{
+  int    n,neig1,neig2,nrow;
+  real   **eig1,**eig2;
+  int    i,j,k;
+  double sum1,sum2,trace1,trace2,sab,samsb2,tmp,ip;  
+
+  n = min(n1,n2);
+
+  neig1 = read_xvg(Eig1File,&eig1,&nrow);
+  neig2 = read_xvg(Eig2File,&eig2,&nrow);
+  fprintf(stdout,"\nRead %d and %d eigenvalues\n",neig1,neig2);
+  n = min(n,min(neig1,neig2));
+  fprintf(stdout,"Will compare the covariance matrices using %d dimensions\n",
+	  n);
+
+  sum1 = 0;
+  for(i=0; i<n; i++) {
+    if (eig1[1][i] < 0)
+      eig1[1][i] = 0;
+    sum1 += eig1[1][i];
+    eig1[1][i] = sqrt(eig1[1][i]);
+  }
+  trace1 = sum1;
+  for(i=n; i<neig1; i++)
+    trace1 += eig1[1][i];
+  sum2 = 0;
+  for(i=0; i<n; i++) {
+    if (eig2[1][i] < 0)
+      eig2[1][i] = 0;
+    sum2 += eig2[1][i];
+    eig2[1][i] = sqrt(eig2[1][i]);
+  }
+  trace2 = sum2;
+  for(i=n; i<neig2; i++)
+    trace2 += eig1[1][i];
+
+  fprintf(stdout,"Trace of the two matrices: %g and %g\n",sum1,sum2);
+  if (neig1!=n || neig2!=n)
+    fprintf(stdout,"this is %d%% and %d%% of the total trace\n",
+	    (int)(100*sum1/trace1+0.5),(int)(100*sum2/trace2+0.5));
+  fprintf(stdout,"Square root of the traces: %g and %g\n",
+	  sqrt(sum1),sqrt(sum2));
+
+  sab = 0;
+  for(i=0; i<n; i++) {
+    tmp = 0;
+    for(j=0; j<n; j++) {
+      ip = 0;
+      for(k=0; k<natoms; k++)
+	ip += iprod(eigvec1[i][k],eigvec2[j][k]);
+      tmp += eig2[1][j]*ip*ip;
+    }
+    sab += eig1[1][i]*tmp;
+  }
+
+  samsb2 = sum1+sum2-2*sab;
+  if (samsb2 < 0)
+    samsb2 = 0;
+
+  fprintf(stdout,"The overlap of the covariance matrices:\n");
+  fprintf(stdout,"  unnormalized:  %g\n",sqrt(sum1+sum2)-sqrt(samsb2));
+  fprintf(stdout,"  normalized:    %.3f\n",1-sqrt(samsb2/(sum1+sum2)));
+  tmp = 1-sab/sqrt(sum1*sum2);
+  if (tmp < 0)
+    tmp = 0;
+  fprintf(stdout,"        shape:   %.3f\n",1-sqrt(tmp));
+}
+
 static void inprod_matrix(char *matfile,int natoms,
 			  int nvec1,int *eignr1,rvec **eigvec1,
 			  int nvec2,int *eignr2,rvec **eigvec2,
@@ -502,13 +572,29 @@ int main(int argc,char *argv[])
     "Chain identifiers will be added when",
     "writing a [TT].pdb[tt] file with two or three structures",
     "(you can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
+    "  Overlap calculations between covariance analyses:[BR]",
+    "  NOTE: the analyses should use the same fitting structure[PAR]",
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
     "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt]",
     "in file [TT]-v[tt].[PAR]",
     "[TT]-inpr[tt]: calculate a matrix of inner-products between eigenvectors",
     "in files [TT]-v[tt] and [TT]-v2[tt]. All eigenvectors of both files",
     "will be used unless [TT]-first[tt] and [TT]-last[tt] have been set",
-    "explicitly."
+    "explicitly.[PAR]",
+    "When [TT]-v[tt], [TT]-eig1[tt], [TT]-v2[tt] and [TT]-eig2[tt] are given,",
+    "a single number for the overlap between the covariance matrices is",
+    "generated.",
+    "The formulas are:[BR]",
+    "        difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))[BR]",
+    "           overlap = sqrt(tr(M1) + tr(M2)) - difference[BR]",
+    "normalized overlap = 1 - difference/sqrt(tr(M1) + tr(M2))[BR]",
+    "     shape overlap = 1 - sqrt(tr((sqrt(M1/tr(M1)) - sqrt(M2/tr(M2)))^2))[BR]",
+    "where M1 and M2 are the two covariance matrices and",
+    "tr is the trace of a matrix.",
+    "The numbers are proportional to the overlap of the square root of the",
+    "fluctuations. The normalized overlap is the most useful number, it is 1",
+    "for identical matrices and 0 when the sampled subspaces are orthogonal.",
+
   };
   static int  first=1,last=8,skip=1,nextr=2;
   static real max=0.0;
@@ -544,12 +630,14 @@ int main(int argc,char *argv[])
   int        i,j,d;
   int        nout,*iout,noutvec,*outvec,nfit;
   atom_id    *index,*ifit;
-  char       *Vec2File,*topfile,*CompFile;
-  char       *ProjOnVecFile,*TwoDPlotFile,*ThreeDPlotFile;
+  char       *Vec2File,*topfile;
+  char       *Eig1File,*Eig2File;
+  char       *CompFile,*ProjOnVecFile;
+  char       *TwoDPlotFile,*ThreeDPlotFile;
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
-  bool       bFirstToLast,bFirstLastSet,bTraj;
+  bool       bFirstToLast,bFirstLastSet,bTraj,bCompare;
 
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
@@ -557,6 +645,8 @@ int main(int argc,char *argv[])
     { efTRX, "-f",    NULL,          ffOPTRD }, 
     { efTPS, NULL,    NULL,          ffOPTRD },
     { efNDX, NULL,    NULL,          ffOPTRD },
+    { efXVG, "-eig1", "eigenval1",   ffOPTRD },
+    { efXVG, "-eig2", "eigenval2",   ffOPTRD },
     { efXVG, "-disp", "eigdisp",     ffOPTWR },
     { efXVG, "-proj", "proj",        ffOPTWR },
     { efXVG, "-2d",   "2dproj",      ffOPTWR },
@@ -576,6 +666,8 @@ int main(int argc,char *argv[])
 
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
   topfile         = ftp2fn(efTPS,NFILE,fnm); 
+  Eig1File        = opt2fn_null("-eig1",NFILE,fnm);
+  Eig2File        = opt2fn_null("-eig2",NFILE,fnm);
   CompFile        = opt2fn_null("-disp",NFILE,fnm);
   ProjOnVecFile   = opt2fn_null("-proj",NFILE,fnm);
   TwoDPlotFile    = opt2fn_null("-2d",NFILE,fnm);
@@ -598,6 +690,7 @@ int main(int argc,char *argv[])
   bIndex = bM || bProj;
   bTPS   = ftp2bSet(efTPS,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
+  bCompare = Vec2File && Eig1File && Eig2File;
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
 		    &xref1,&bDMR1,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1);
@@ -691,7 +784,7 @@ int main(int argc,char *argv[])
 	t+=sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
 	totmass+=sqr(sqrtm[i]);
       }
-    fprintf(stderr,"RMSD (without fit) between the two average structures:"
+    fprintf(stdout,"RMSD (without fit) between the two average structures:"
 	    " %.3f (nm)\n\n",sqrt(t/totmass));
   }
   
@@ -771,7 +864,10 @@ int main(int argc,char *argv[])
 		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,
 		  bFirstLastSet,noutvec,outvec);
 
-  if (!CompFile && !bProj && !OverlapFile && !InpMatFile)
+  if (bCompare)
+    compare(natoms,nvec1,eigvec1,nvec2,eigvec2,Eig1File,Eig2File);
+
+  if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare)
     fprintf(stderr,"\nIf you want some output,"
 	    " set one (or two or ...) of the output file options\n");
 
