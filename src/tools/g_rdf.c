@@ -59,7 +59,8 @@ int main(int argc,char *argv[])
     "exclusions. For eg. benzene a topology with nrexcl set to 5",
     "would eliminate all intramolecular contributions to the rdf.",
     "Note that all atoms in the selected groups are used, also the ones",
-    "that don't have Lennard-Jones interactions." 
+    "that don't have Lennard-Jones interactions.[PAR]",
+    "Option [TT]-cn[tt] produces the cumulative number rdf."
   };
   static bool bCM=FALSE;
   static real cutoff=0, binwidth=0.005;
@@ -78,7 +79,7 @@ int main(int argc,char *argv[])
   char       **grpname;
   char       outf1[STRLEN],outf2[STRLEN];
   char       title[STRLEN];
-  int        natoms,i,j,k,nbin,j0,j1,n;
+  int        natoms,i,j,k,nbin,j0,j1,n,nframes;
   int        *count;
   unsigned long int sum;
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
@@ -92,10 +93,11 @@ int main(int argc,char *argv[])
   t_topology top;
   t_block    *excl;
   t_filenm   fnm[] = {
-    { efTRX, "-f", NULL,   ffREAD },
-    { efTPS, NULL, NULL,   ffOPTRD },
-    { efNDX, NULL, NULL,   ffOPTRD },
-    { efXVG, NULL, "rdf",  ffWRITE },
+    { efTRX, "-f",  NULL,     ffREAD },
+    { efTPS, NULL,  NULL,     ffOPTRD },
+    { efNDX, NULL,  NULL,     ffOPTRD },
+    { efXVG, "-o",  "rdf",    ffWRITE },
+    { efXVG, "-cn", "rdf_cn", ffWRITE }
   };
 #define NFILE asize(fnm)
   
@@ -199,6 +201,7 @@ int main(int argc,char *argv[])
   sfree(bExcl);
 
   snew(x_i1,isize[1]);
+  nframes = 0;
   do {
     /* Must init pbc every step because of pressure coupling */
     init_pbc(box,FALSE);
@@ -240,6 +243,7 @@ int main(int argc,char *argv[])
 	    count[(int)(sqrt(r2)*invbinw)]++;
 	}
     }
+    nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   
@@ -265,18 +269,25 @@ int main(int argc,char *argv[])
   r = nbin*binwidth;
   normfac = (4.0/3.0)*M_PI * r*r*r / sum;
   
-  fp=xvgropen(ftp2fn(efXVG,NFILE,fnm),"Radial Distribution","r","");
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),"Radial Distribution","r","");
+  fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+  for(i=0; i<nbin; i++)
+    fprintf(fp,"%10g %10g\n", (i+0.5)*binwidth,count[i]*inv_segvol[i]*normfac);
+  ffclose(fp);
+
+  normfac = 1.0/(isize[0]*nframes);
+  fp=xvgropen(opt2fn("-cn",NFILE,fnm),"Cumulative Number RDF","r","number");
   fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
   sum = 0;
-  for(i = 0; i < nbin; i++) {
+  for(i=0; i<nbin; i++) {
+    fprintf(fp,"%10g %10g\n",i*binwidth,(real)((double)sum*normfac));
     sum += count[i];
-    fprintf(fp, "%10g %10g %10g\n", (i+0.5)*binwidth, 
-	    count[i]*inv_segvol[i]*normfac, (real)sum*normfac);
   }
   ffclose(fp);
-  
-  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
-  
+
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn("-cn",NFILE,fnm),NULL);
+
   thanx(stderr);
   
   return 0;
