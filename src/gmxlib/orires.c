@@ -45,6 +45,7 @@
 #include "orires.h"
 #include "do_fit.h"
 #include "main.h"
+#include "copyrite.h"
 
 void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 		 rvec *xref,t_mdatoms *md,t_inputrec *ir,
@@ -165,6 +166,8 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
     /* Copy the reference coordinates from the master to the other nodes */
     gmx_sum(DIM*fcd->orires.nref,fcd->orires.xref[0],mcr);
   }
+
+  please_cite(log,"Hess2003");
 }
 
 void print_orires_log(FILE *log,t_fcdata *fcd)
