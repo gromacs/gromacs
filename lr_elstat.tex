@@ -50,19 +50,17 @@ eeltype         = Ewald
 rvdw            = 0.9
 rlist           = 0.9
 rcoulomb        = 0.9
-fourier_nx      = 5
-fourier_ny      = 5
-fourier_nz      = 5
+fourierspacing  = 0.6
 ewald_rtol      = 1e-5
 \end{verbatim}
-The values of fourier\_n* are the highest magnitude of wavevectors
-$m_x,m_y,m_z$ to use in each direction (meaning 5 negative, the zero,
-and 5 positive wavevectors in this case.)
+The fourierspacing parameter times the box dimensions 
+determines the highest magnitude of wavevectors
+$m_x,m_y,m_z$ to use in each direction. With a 3~nm cubic box this example
+would use $11$ wavectors (from $-5$ to $5$) in each direction.
 The ewald\_rtol parameter is the relative
 strength of the electrostatic interaction at the cut-off. Decreasing
 this gives you a more accurate direct sum, but a less accurate
-reciprocal sum. For a box of different size the fourier\_n* terms
-should be scaled accordingly.
+reciprocal sum. 
  
 \subsection{PME}
 \label{sec:pme}
@@ -84,26 +82,23 @@ overhead in setting up grids and transforms.
 
 \subsubsection{Using PME}
 To use Particle-mesh Ewald summation in {\gromacs}, specify the
-following lines in your {\tt .mdp} file for a system approximately
-cubic with $3$~nm side:
+following lines in your {\tt .mdp} file:
 \begin{verbatim}
 eeltype         = PME
 rvdw            = 0.9
 rlist           = 0.9
 rcoulomb        = 0.9
-fourier_nx      = 32
-fourier_ny      = 32
-fourier_nz      = 32
+fourierspacing  = 0.12
 pme_order       = 4
 ewald_rtol      = 1e-5
 \end{verbatim}
-In this case the fourier\_n* values determine the grid dimensions, 
-and we have a new parameter pme\_order controlling the interpolation
-order. Using 4th order (cubic) interpolation and about $0.1$~nm per
-gridpoint 
-will give electrostatic energies accurate to about $2-3\cdot10^{-4}$. Since
-the Lennard-Jones energies are not this accurate it should even be possible 
+In this case the fourierspacing parameter determines the maximum spacing for the
+FFT grid and pme\_order controls the interpolation
+order. Using 4th order (cubic) interpolation and this spacing 
+should give electrostatic energies accurate to about $5\cdot10^{-3}$. Since
+the Lennard-Jones energies are not this accurate it might even be possible 
 to increase this spacing slightly.
+
 Pressure scaling works with PME, but be aware of the fact that
 anisotropic scaling can introduce artificial ordering in some systems.
 
@@ -142,7 +137,9 @@ where $\hat{g}$ is the fourier transform of the charge spread function
 g(r). This yield the long range potential $\hat{\phi}(k)$ on the mesh, which
 can be transformed using a forward FFT routine into the real space potential.
 Finally the potential and forces are retrieved using interpolation~\cite{Luty95a}.
-
+%
+% note - this accuracy is just a rough estimate...
+%
 It is not easy to calculate the full long-range virial tensor with
 PPPM, but it is possible to obtain the trace. This means that the sum
 of the pressure components is correct (and therefore the isotropic
@@ -160,18 +157,14 @@ rcoulomb        = 0.85
 rcoulomb_switch = 0.0
 rvdw            = 1.0
 rvdw_switch     = 1.0
-fourier_nx      = 40
-fourier_ny      = 40
-fourier_nz      = 40
+fourierspacing  = 0.075
 \end{verbatim}
 For details on the switch parameters see the section on modified
-long-range interactions in this manual. The fourier\_n* are the number
-of grid points in each 
-dimension.
-We recommend to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5 nm).
+long-range interactions in this manual. When using pppm we 
+recommend to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5 nm).
 PPPM does not provide the same accuracy as PME but is faster in most
 cases.
-
+% th
 \item   make a binary topology using {\tt\myindex{grompp}} as usual. 
 \item   Before you can perform MD simulations you have to create a 
         $\hat{G}(k)$ function optimized for your grid spacing using the
