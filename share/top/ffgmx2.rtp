@@ -1320,84 +1320,87 @@
 
 [ HEME ]
  [ atoms ]
-    FE    FE   0.400     0
-    NA    NP  -0.100     0
-    NB    NP  -0.100     0
-    NC    NP  -0.100     0
-    ND    NP  -0.100     0
-   CHA  CR61   0.000     1
-   HHA  HC   0.000     1
-   C1A   CHE   0.000     2
-   C2A   CHE   0.000     3
-   C3A   CHE   0.000     4
-   C4A   CHE   0.000     5
-   CMA   C3   0.000     6
-   HMA1	 HC	0	6
-   HMA2	 HC	0	6
-   HMA3	 HC	0	6
-   CAA   C2   0.000     7
-   HAA1	HC	0	7
-   HAA2	HC	0	7
-   CBA   C2   0.000     8
-   HBA1	HC	0	8
-   HBA2	HC	0	8
-   CGA     C   0.270     9
-   O1A    OM  -0.635     9
-   O2A    OM  -0.635     9
-   H2A	H	0	9
-   CHB  CR61   0.000    10
-   HHB  HC   0.000    10
-   C1B   CHE   0.000    11
-   C2B   CHE   0.000    12
-   H2B	HC	0	12
-   C3B   CHE   0.000    13
-   C4B   CHE   0.000    14
-   CMB   C3   0.000    15
-   HMB1	HC	0	15
-   HMB2	HC	0	15
-   HMB2	HC	0	15
-   CAB  CR61   0.000    16
-   HAB1  HC   0.000    16
-   HAB2  HC   0.000    16
-   CBB   C2   0.000    17
-   HBB1  HC   0.000    17
-   HBB2  HC   0.000    17
-   HBB3  HC   0.000    17
-   CHC  CR61   0.000    18
-   HHC  HC   0.000    18
-   C1C   CHE   0.000    19
-   C2C   CHE   0.000    20
-   H2C	HC	0	20
-   C3C   CHE   0.000    21
-   C4C   CHE   0.000    22
-   CMC   C3   0.000    23
-   CAC  CR61   0.000    24
-   HAC1 HC	0	24
-   HAC2	HC	0	24
-   CBC   C3   0.000    25
-   HBC1	HC	0	25
-   HBC2	HC	0	25
-   HBC3	HC	0	25
-   CHD  CR61   0.000    26
-   HHD  HC   0.000    26
-   C1D   CHE   0.000    27
-   C2D   CHE   0.000    28
-   C3D   CHE   0.000    29
-   C4D   CHE   0.000    30
-   CMD   C3   0.000    31
-   HMD1	HC	0	31
-   HMD2	HC	0	31
-   HMD3	HC	0	31
-   CAD   C2   0.000    32
-   HAD1	HC	0	32
-   HAD2	HC	0	32
-   CBD   C2   0.000    33
-   HBD1	HC	0	33
-   HBD2	HC	0	33
-   CGD     C   0.270    34
-   O1D    OM  -0.635    34
-   O2D    OM  -0.635    34
-   H2D	H	0	34
+    FE    	FE   	0.400     0
+    NA    	NP  	-0.100     0
+    NB    	NP  	-0.100     0
+    NC   	NP  	-0.100     0
+    ND   	NP  	-0.100     0
+   CHA	 	CR61   	0.000     1
+   HHA   	HC   	0.000     1
+   C1A   	CHE   	0.000     2
+   C2A   	CHE   	0.000     3
+   C3A   	CHE   	0.000     4
+   C4A   	CHE   	0.000     5
+   CMA   	C3   	0.000     6
+   HMA1	 	HC	0	6
+   HMA2	 	HC	0	6
+   HMA3	 	HC	0	6
+   CAA   	C2  	0.000     7
+   HAA1		HC	0	7
+   HAA2		HC	0	7
+   CBA   	C2   	0.000     8
+   HBA1		HC	0	8
+   HBA2		HC	0	8
+   CGA     	C   	0.270     9
+   O1A    	OM  	-0.635     9
+   O2A    	OM  	-0.635     9
+   H2A		H	0	9
+   CHB  	CR61   	0.000    10
+   HHB  	HC   	0.000    10
+   C1B  	CHE   	0.000    11
+   C2B   	CHE   	0.000    12
+   H2B		HC	0	12
+   C3B   	CHE   	0.000    13
+   C4B   	CHE   	0.000    14
+   CMB   	C3   	0.000    15
+   HMB1		HC	0	15
+   HMB2		HC	0	15
+   HMB3		HC	0	15
+   CAB  	CR61   	0.000    16
+   HAB1  	HC   	0.000    16
+   HAB2  	HC   	0.000    16
+   CBB   	C2   	0.000    17
+   HBB1  	HC   	0.000    17
+   HBB2  	HC   	0.000    17
+   HBB3  	HC   	0.000    17
+   CHC  	CR61   	0.000    18
+   HHC  	HC   	0.000    18
+   C1C   	CHE   	0.000    19
+   C2C   	CHE   	0.000    20
+   H2C		HC	0	20
+   C3C   	CHE   	0.000    21
+   C4C   	CHE   	0.000    22
+   CMC   	C3   	0.000    23
+   HMC1		HC	0	23
+   HMC2		HC	0	23
+   HMC3		HC	0	23
+   CAC  	CR61   	0.000    24
+   HAC1 	HC	0	24
+   HAC2		HC	0	24
+   CBC   	C3   	0.000    25
+   HBC1		HC	0	25
+   HBC2		HC	0	25
+   HBC3		HC	0	25
+   CHD  	CR61   	0.000    26
+   HHD  	HC   	0.000    26
+   C1D   	CHE   	0.000    27
+   C2D   	CHE   	0.000    28
+   C3D   	CHE   	0.000    29
+   C4D   	CHE   	0.000    30
+   CMD   	C3   	0.000    31
+   HMD1		HC	0	31
+   HMD2		HC	0	31
+   HMD3		HC	0	31
+   CAD   	C2   	0.000    32
+   HAD1		HC	0	32
+   HAD2		HC	0	32
+   CBD   	C2   	0.000    33
+   HBD1		HC	0	33
+   HBD2		HC	0	33
+   CGD     	C   	0.270    34
+   O1D    	OM  	-0.635    34
+   O2D    	OM  	-0.635    34
+   H2D		H	0	34
  [ bonds ]
     FE    NA
     FE    NB
@@ -1414,6 +1417,9 @@
    CGA   O1A
    CGA   O2A
    C3A   CMA
+   CMA	HMA1
+   CMA	HMA2
+   CMA	HMA3
    C4A   CHB
    CHB   C1B
     NB   C1B
@@ -1422,6 +1428,9 @@
    C3B   C4B
     NB   C4B
    C2B   CMB
+   CMB	HMB1
+   CMB	HMB2
+   CMB	HMB3
    C3B   CAB
    CAB   CBB
    C4B   CHC
@@ -1432,6 +1441,9 @@
    C3C   C4C
     NC   C4C
    C2C   CMC
+   CMC	HMC1
+   CMC	HMC2
+   CMC	HMC3
    C3C   CAC
    CAC   CBC
    C4C   CHD
@@ -1442,6 +1454,9 @@
    C3D   C4D
     ND   C4D
    C2D   CMD
+   CMD	HMD1
+   CMD	HMD2
+   CMD	HMD3
    C3D   CAD
    CAD   CBD
    CBD   CGD
