@@ -341,6 +341,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
       x1mk   = ee[iset].esum/(m+k); 
       xxx    = sqr(x1m - x1mk);
       sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
+      if((sigma/k)<GMX_REAL_EPS)
+	sigma=0;
       stddev = sqrt(sigma/k);
       
       if (bSum) 
@@ -373,6 +375,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	pr_stddev = stddev;
       }
       lsq_y_ax_b(nenergy,time,eneset[i],&a,&b);
+      if(fabs(a)<GMX_REAL_EPS)
+	a=0;
       totaldrift = a * delta_t * (nsteps+1)/nsteps;
       fluct2 = sqr(pr_stddev) - sqr(totaldrift)/12;
       if (fluct2 < 0)
