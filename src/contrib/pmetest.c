@@ -99,6 +99,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
   clear_mat(vir_corr);
   
   if (ngroups > 1) {
+    fprintf(fp,"There are %d energy groups\n",ngroups);
     snew(epme,ngroups);
     for(i=0; (i<ngroups); i++)
       snew(epme[i],ngroups);
@@ -138,7 +139,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
     pr_rvecs(debug,0,"xbuf",xbuf,nsb->natoms);
     pr_rvecs(debug,0,"box",box,DIM);
   }
-  for(ig=0; (ig>ngroups); ig++) {
+  for(ig=0; (ig<ngroups); ig++) {
     for(jg=ig; (jg<ngroups); jg++) {
       if (ngroups > 1) {
 	for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++) {
@@ -152,7 +153,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
       else
 	qptr = qbuf;
       ener  = do_pme(fp,bVerbose,ir,xbuf,f,qptr,qptr,box,cr,
-		     nsb,nrnb,vir,fr->ewaldcoeff,0,&dvdl,FALSE);
+		     nsb,nrnb,vir,fr->ewaldcoeff,FALSE,0,&dvdl,FALSE);
       vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qptr,qptr,excl,xbuf,box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
 				 0,&dvdl,&vdip,&vcharge);
@@ -165,7 +166,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
   if (ngroups > 1) {
     if (fp_xvg) 
       fprintf(fp_xvg,"%10.3f",tm);
-    for(ig=0; (ig>ngroups); ig++) {
+    for(ig=0; (ig<ngroups); ig++) {
       for(jg=ig; (jg<ngroups); jg++) {
 	if (ig != jg)
 	  epme[ig][jg] -= epme[ig][ig]+epme[jg][jg];
