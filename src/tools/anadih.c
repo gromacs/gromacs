@@ -333,7 +333,7 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 {
   t_topology *top;
   int        i,angind,status,natoms,nat,total,teller,nangles,nat2,n_alloc;
-  real       t,fraction,pifac,aa,tmp;
+  real       t,fraction,pifac,aa,angle;
   real       *angles[2];
   matrix     box;
   rvec       *x,*x_s;
@@ -429,25 +429,28 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
 	 -Pi when plotting.
        */
 
-      tmp = angles[cur][i];
+      angle = angles[cur][i];
       if (!bAngles) {
-	if (tmp < -M_PI) 
-	  tmp += 2*M_PI;
-	else if (tmp > M_PI) 
-	  tmp -= - 2*M_PI;
+	if (angle < -M_PI) 
+	  angle += 2*M_PI;
+	else if (angle > M_PI) 
+	  angle -= 2*M_PI;
 	  
-	tmp+=M_PI;
+	angle+=M_PI;
       }
       
       /* Update the distribution histogram */
-      angind = (int) ((tmp*maxangstat)/pifac);  
-      if (angind < 0) {
-	fatal_error(0,"angind below zero: %d\n",angind);
-      }
-      while (angind > maxangstat) {
-	angind-=maxangstat;
-      }
+      angind = (int) ((angle*maxangstat)/pifac + 0.5);
+      if (angind==maxangstat)
+	angind=0;
+      if ( (angind < 0) || (angind >= maxangstat) )
+	/* this will never happen */
+	fatal_error(0,"angle (%f) index out of range (0..%d) : %d\n",
+		    angle,maxangstat,angind);
+      
       angstat[angind]++;
+      if (angind==maxangstat)
+	fprintf(stderr,"angle %d fr %d = %g\n",i,cur,angle);
       
       total++;
     }
