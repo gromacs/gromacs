@@ -593,8 +593,12 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
       nx = fr->ntab = fr->rtab*fr->tabscale;
     }
   }
-  if (fr->bBHAM)
-    fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
+  if (fr->bBHAM) {
+    if(fr->bham_b_max!=0)
+      fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
+    else
+      fr->tabscale_exp = fr->tabscale;
+  }
 
   /* Each table type (e.g. coul,lj6,lj12) requires four 
    * numbers per datapoint.
