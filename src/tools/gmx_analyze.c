@@ -395,7 +395,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   int    s,i,j;
   double blav,var;
   char   **leg;
-  real   *tbs,*ybs,rtmp,*fitsig,fitparm[4];
+  real   *tbs,*ybs,rtmp,dens,*fitsig,twooe,tau1_est,fitparm[4];
 
   fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
   fprintf(fp,
@@ -425,7 +425,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 	  var += sqr(av[s] - blav/bs);
 	}
 	tbs[nbs] = bs*dt;
-	ybs[nbs] = sqrt(var/(nb*(nb-1.0))*(n*dt))/sig[s];
+	ybs[nbs] = var/(nb*(nb-1.0))*(n*dt)/(sig[s]*sig[s]);
 	nbs++;
       }
       nbr *= spacing;
@@ -441,13 +441,37 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       ybs[i]       = ybs[nbs-1-i];
       ybs[nbs-1-i] = rtmp;
     }
-    for(i=0; i<nbs; i++)
-      fitsig[i] = sqrt(tbs[i]);
+    /* The initial slope of the normalized ybs^2 is 1.
+     * For a single exponential autocorrelation: ybs(tau1) = 2/e tau1
+     * From this we take our initial guess for tau1.
+     */
+    twooe = 2/exp(1);
+    i = -1;
+    do {
+      i++;
+      tau1_est = tbs[i];
+    } while (ybs[i] > twooe*tau1_est && tau1_est*nb_min < (n-1)*dt);
+
+    if (debug)
+      fprintf(debug,"set %d tau1 estimate %f\n",s+1,tau1_est);
+
+    /* Generate more or less appropriate sigma's,
+     * also taking the density of points into account.
+     */
+    for(i=0; i<nbs; i++) {
+      if (i == 0)
+	dens = tbs[1]/tbs[0] - 1;
+      else if (i == nbs-1)
+	dens = tbs[nbs-1]/tbs[nbs-2] - 1;
+      else
+	dens = 0.5*(tbs[i+1]/tbs[i-1] - 1);
+      fitsig[i] = sqrt((tau1_est + tbs[i])/dens);
+    }
 
     if (!bSingleExpFit) {
-      fitparm[0] = 0.002*n*dt;
+      fitparm[0] = tau1_est;
       fitparm[1] = 0.95;
-      fitparm[2] = 0.2*n*dt;
+      fitparm[2] = min(20*tau1_est,(n-1)*dt);
       do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
       fitparm[3] = 1-fitparm[1];
     }
@@ -466,7 +490,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 		fitparm[1],fitparm[0],fitparm[2]);
 	fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
       }
-      fitparm[0] = n*dt*0.002;
+      fitparm[0] = tau1_est;
       fitparm[1] = 1;
       fitparm[2] = 0;
       do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
@@ -479,11 +503,12 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
     fprintf(fp,"@ legend string %d \"ee %6g\"\n",
 	    2*s+1,sig[s]*anal_ee_inf(fitparm,n*dt));
     for(i=0; i<nbs; i++)
-      fprintf(fp,"%g %g %g\n",tbs[i],sig[s]/sqrt(n*dt)*ybs[i],
-	      sig[s]/sqrt(n*dt)*fit_function(effnERREST,fitparm,tbs[i]));
+      fprintf(fp,"%g %g %g\n",tbs[i],sig[s]*sqrt(ybs[i]/(n*dt)),
+	      sig[s]*sqrt(fit_function(effnERREST,fitparm,tbs[i])/(n*dt)));
 
     if (bFitAc) {
-      real *ac,ac_fit[4];
+      int fitlen;
+      real *ac,acint,ac_fit[4];
       
       snew(ac,n);
       for(i=0; i<n; i++) {
@@ -496,12 +521,24 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       low_do_autocorr(NULL,NULL,n,1,-1,&ac,
 		      dt,eacNormal,1,FALSE,TRUE,TRUE,
 		      FALSE,0,0,
-		      effnEXP3,0);
+		      effnNONE,0);
       
-      ac_fit[0] = 0.002*n*dt;
+      fitlen = n/nb_min;
+
+      /* Integrate ACF only up to fitlen/2 to avoid integrating noise */ 
+      acint = 0.5*ac[0];
+      for(i=1; i<=fitlen/2; i++)
+	acint += ac[i];
+      acint *= dt;
+
+      /* Generate more or less appropriate sigma's */
+      for(i=0; i<=fitlen; i++)
+	fitsig[i] = sqrt(acint + dt*i);
+
+      ac_fit[0] = 0.5*acint;
       ac_fit[1] = 0.95;
-      ac_fit[2] = 0.2*n*dt;
-      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,dt*n/nb_min,
+      ac_fit[2] = 10*acint;
+      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,fitlen*dt,
               bDebugMode(),effnEXP3,ac_fit,0);
       ac_fit[3] = 1 - ac_fit[1];
 
@@ -512,7 +549,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       fprintf(fp,"&\n");
       for(i=0; i<nbs; i++)
 	fprintf(fp,"%g %g\n",tbs[i],
-		sig[s]/sqrt(n*dt)*fit_function(effnERREST,ac_fit,tbs[i]));
+		sig[s]*sqrt(fit_function(effnERREST,ac_fit,tbs[i]))/(n*dt));
 
       sfree(ac);
     }
@@ -693,12 +730,11 @@ int gmx_analyze(int argc,char *argv[])
     "These errors are plotted as a function of the block size.",
     "Also an analytical block average curve is plotted, assuming",
     "that the autocorrelation is a sum of two exponentials.",
-    "The analytical curve for the block average BA is:[BR]",
-    "BA(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +[BR]",
-    "                        (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),[BR]"
+    "The analytical curve for the block average is:[BR]",
+    "f(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +[BR]",
+    "                       (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),[BR]"
     "where T is the total time.",
-    "a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block",
-    "average.",
+    "a, tau1 and tau2 are obtained by fitting f^2(t) to error^2.",
     "When the actual block average is very close to the analytical curve,",
     "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).",
     "The complete derivation is given in",

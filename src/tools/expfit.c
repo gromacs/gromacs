@@ -61,7 +61,7 @@ char *longs_ffn[effnNR] = {
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5",
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7",
   "y = a1 exp(-x/a2) +  a3 exp(-x/a4) + a5 exp(-x/a6) + a7 exp(-x/a8) + a9",
-  "y = sqrt(a2*ee(a1,x) + (1-a2)*ee(a2,x))"
+  "y = a2*ee(a1,x) + (1-a2)*ee(a2,x)"
 };
 
 extern bool mrqmin(real x[],real y[],real sig[],int ndata,real a[],
@@ -265,10 +265,10 @@ static void errest_3_parm(real x,real a[],real *y,real dyda[])
   if (x > 0) {
     v1 = 2*a[1]*(e1*a[1]/x + 1);
     v2 = 2*a[3]*(e2*a[3]/x + 1);
-    *y      = sqrt(a[2]*v1 + (1-a[2])*v2);
-    dyda[1] = (v1/a[1] + e1)/(*y);
-    dyda[3] = (v2/a[3] + e2)/(*y);
-    dyda[2] = (v1 - v2)/(2*(*y));
+    *y      = a[2]*v1 + (1-a[2])*v2;
+    dyda[1] = 2*     a[2] *(v1/a[1] + e1);
+    dyda[3] = 2*(1 - a[2])*(v2/a[3] + e2);
+    dyda[2] = (v1 - v2);
   } else {
     *y      = 0;
     dyda[1] = 0;
