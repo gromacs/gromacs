@@ -609,19 +609,19 @@ int main (int argc, char *argv[])
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
   t_pargs pa[] = {
-    { "-np",      FALSE, etINT,  &nprocs,
+    { "-np",      FALSE, etINT,  {&nprocs},
       "Generate statusfile for # processors" },
-    { "-time",    FALSE, etREAL, &fr_time,
+    { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
-    { "-v",       FALSE, etBOOL, &bVerbose,
+    { "-v",       FALSE, etBOOL, {&bVerbose},
       "Be loud and noisy" },
-    { "-renum",   FALSE, etBOOL, &bRenum,
+    { "-renum",   FALSE, etBOOL, {&bRenum},
       "HIDDENRenumber atomtypes and minimize number of atomtypes" },
-    { "-shuffle", FALSE, etBOOL, &bShuffle,
+    { "-shuffle", FALSE, etBOOL, {&bShuffle},
       "Shuffle molecules over processors (only with np > 1)" },
-    { "-rmdumbds",FALSE, etBOOL, &bRmDumBds,
+    { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
       "Remove bonded interactions involving dummy atoms" },
-    { "-maxwarn", FALSE, etINT,  &maxwarn,
+    { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of warnings after which input processing stops" }
   };
   

@@ -45,7 +45,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 {
   int  i,j,l,m,n0,nrfp,nral;
   int  src_natoms,dest_natoms;
-  int  index,max_index;
+  int  index,max_index=0;
   real fac,type;
   bool bDisres;
   

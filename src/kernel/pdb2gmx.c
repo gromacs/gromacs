@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics;
+  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
   
   t_filenm   fnm[] = { 
@@ -634,44 +634,44 @@ int main(int argc, char *argv[])
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   t_pargs pa[] = {
-    { "-newrtp", FALSE, etBOOL, &bNewRTP,
+    { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
-    { "-lb",     FALSE, etREAL, &long_bond_dist,
+    { "-lb",     FALSE, etREAL, {&long_bond_dist},
       "HIDDENLong bond warning distance" },
-    { "-sb",     FALSE, etREAL, &short_bond_dist,
+    { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
-    { "-inter",  FALSE, etBOOL, &bInter,
+    { "-inter",  FALSE, etBOOL, {&bInter},
       "Set the next 6 options to interactive"},
-    { "-ss",     FALSE, etBOOL, &bCysMan, 
+    { "-ss",     FALSE, etBOOL, {&bCysMan}, 
       "Interactive SS bridge selection" },
-    { "-ter",    FALSE, etBOOL, &bTerMan, 
+    { "-ter",    FALSE, etBOOL, {&bTerMan}, 
       "Interactive termini selection, iso charged" },
-    { "-lys",    FALSE, etBOOL, &bLysMan, 
+    { "-lys",    FALSE, etBOOL, {&bLysMan}, 
       "Interactive Lysine selection, iso charged" },
-    { "-asp",    FALSE, etBOOL, &bAspMan, 
+    { "-asp",    FALSE, etBOOL, {&bAspMan}, 
       "Interactive Aspartic Acid selection, iso charged" },
-    { "-glu",    FALSE, etBOOL, &bGluMan, 
+    { "-glu",    FALSE, etBOOL, {&bGluMan}, 
       "Interactive Glutamic Acid selection, iso charged" },
-    { "-his",    FALSE, etBOOL, &bHisMan,
+    { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
-    { "-angle",  FALSE, etREAL, &angle, 
+    { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
-    { "-dist",   FALSE, etREAL, &distance,
+    { "-dist",   FALSE, etREAL, {&distance},
       "Maximum donor-acceptor distance for a H-bond (nm)" },
-    { "-una",    FALSE, etBOOL, &bUnA, 
+    { "-una",    FALSE, etBOOL, {&bUnA}, 
       "Select aromatic rings with united CH atoms on Phenylalanine, "
       "Tryptophane and Tyrosine" },
-    { "-sort",   FALSE, etBOOL, &bSort, 
+    { "-sort",   FALSE, etBOOL, {&bSort}, 
       "Sort the residues according to database" },
-    { "-H14",    FALSE, etBOOL, &bH14, 
+    { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
-    { "-reth",   FALSE, etBOOL, &bRetainH, 
+    { "-reth",   FALSE, etBOOL, {&bRetainH}, 
       "Retain hydrogen atoms that are in the pdb file" },
-    { "-alldih", FALSE, etBOOL, &bAlldih, 
+    { "-alldih", FALSE, etBOOL, {&bAlldih}, 
       "Generate all proper dihedrals" },
-    { "-dummy",  FALSE, etENUM, dumstr, 
+    { "-dummy",  FALSE, etENUM, {dumstr}, 
       "Convert atoms to dummy atoms" },
-    { "-heavyh", FALSE, etBOOL, &bHeavyH,
+    { "-heavyh", FALSE, etBOOL, {&bHeavyH},
       "Make hydrogen atoms heavy" }
   };
 #define NPARGS asize(pa)

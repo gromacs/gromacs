@@ -286,8 +286,8 @@ int main(int argc,char *argv[])
   static bool bAltLayout=FALSE;
   static bool bShowNumbers=TRUE;
   t_pargs pa[] = {
-    { "-a", FALSE, etBOOL, &bAltLayout, "HIDDENAlternative layout for run startup files" },
-    { "-nr",FALSE, etBOOL, &bShowNumbers,"Show index numbers in output (leaving them out makes comparsion easier, but creates a useless topology)" }
+    { "-a", FALSE, etBOOL, {&bAltLayout}, "HIDDENAlternative layout for run startup files" },
+    { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparsion easier, but creates a useless topology)" }
   };
   
   CopyRight(stdout,argv[0]);

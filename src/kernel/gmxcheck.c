@@ -419,13 +419,13 @@ int main(int argc,char *argv[])
   static real bon_hi=0.7;
   static real ftol=0;
   static t_pargs pa[] = {
-    { "-vdwfac", FALSE, etREAL, &vdw_fac,
+    { "-vdwfac", FALSE, etREAL, {&vdw_fac},
       "Fraction of sum of VdW radii used as warning cutoff" },
-    { "-bonlo",  FALSE, etREAL, &bon_lo,
+    { "-bonlo",  FALSE, etREAL, {&bon_lo},
       "Min. fract. of sum of VdW radii for bonded atoms" },
-    { "-bonhi",  FALSE, etREAL, &bon_hi,
+    { "-bonhi",  FALSE, etREAL, {&bon_hi},
       "Max. fract. of sum of VdW radii for bonded atoms" },
-    { "-tol",    FALSE, etREAL, &ftol,
+    { "-tol",    FALSE, etREAL, {&ftol},
       "Tolerance for difference between energy terms when comparing energy files" }
   };
 

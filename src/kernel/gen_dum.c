@@ -262,9 +262,11 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
   real a,b,dCGCE,tmp1,tmp2,mtot;
   /* CG, CE1 and CE2 stay and each get 1/3 of the total mass, 
      rest gets dummified */
-  if (bDoZ)
+
+  if (bDoZ) {
     assert(atNR == nrfound);
-  
+  }
+
   /* constraints between CG, CE1 and CE2: */
   dCGCE = sqrt( cosrule(bR6,bR6,aR6) );
   my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE1],dCGCE);
@@ -649,7 +651,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 {
 #define MAXATOMSPERRESIDUE 16
   int  i,j,k,i0,ni0,whatres,resnr,add_shift,ftype,ndum,nadd;
-  int  nrfound,needed,nrbonds,nrHatoms,Heavy,nrheavies,tpM,tpHeavy;
+  int  nrfound=0,needed,nrbonds,nrHatoms,Heavy,nrheavies,tpM,tpHeavy;
   int  Hatoms[4],heavies[4],bb;
   bool bWARNING,bAddDumParam,bFirstWater;
   bool *bResProcessed;
@@ -661,7 +663,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   t_atom *newatom;
   t_params *params;
   char ***newatomname;
-  char *resnm;
+  char *resnm=NULL;
   
   /* if bDummyAromatics=TRUE do_dummies will specifically convert atoms in 
      PHE, TRP, TYR and HIS to a construction of dummy atoms */

@@ -73,7 +73,7 @@ static void read_atom(char *line, t_atom *a, t_atomtype *atype,
   char   type[12];
   double m, q;
   
-  if ( i=sscanf(line,"%s%s%lf%lf%n", nnew, type, &m, &q, &n) != 4 ) 
+  if ( (i=sscanf(line,"%s%s%lf%lf%n", nnew, type, &m, &q, &n)) != 4 ) 
     fatal_error(0,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 4, i, line);
   a->m=m;
   a->q=q;

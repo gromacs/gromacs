@@ -32,11 +32,12 @@ static char *SRCID_luck_c = "$Id$";
 #include "copyrite.h"
 #include "string.h"
 
-void main(int argc,char *argv[])
+int main(int argc,char *argv[])
 {
   if ( argc == 2 ) 
     if ( strcmp(argv[1],"-c")==0)
       CopyRight(stdout,argv[0]);
   printf("%s\n",cool_quote());
+  return 0;
 }
  

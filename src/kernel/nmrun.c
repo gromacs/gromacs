@@ -60,15 +60,15 @@ int main(int argc,char *argv[])
   static int  nDLB=0,nstepout=10;
   static t_pargs pa[] = {
 #ifdef PARALLEL
-    { "-np",      FALSE, etINT, &nprocs,
+    { "-np",      FALSE, etINT, {&nprocs},
       "Number of processors, must be the same as used for grompp" },
 #endif
-    { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
-    { "-compact", FALSE, etBOOL,&bCompact,
+    { "-v",       FALSE, etBOOL,{&bVerbose}, "Verbose mode" },
+    { "-compact", FALSE, etBOOL,{&bCompact},
       "Write a compact log file" },
-    { "-dlb",     FALSE, etINT, &nDLB,
+    { "-dlb",     FALSE, etINT, {&nDLB},
       "HIDDENFrequency of dynamic load balancing. BUGGY do not use" },
-    { "-stepout", FALSE, etINT, &nstepout,
+    { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
   t_edsamyn edyn;

@@ -262,7 +262,7 @@ int main (int argc, char *argv[])
   static real max_t = -1.0;
   static bool bSel=FALSE;
   static t_pargs pa[] = {
-    { "-time", FALSE, etREAL, &max_t, 
+    { "-time", FALSE, etREAL, {&max_t}, 
       "Continue from frame at this time instead of the last frame" },
   };
   int nerror = 0;
