@@ -124,12 +124,12 @@ void print_orires_log(FILE *log,t_fcdata *fcd)
   }
 }
 
-real calc_orires_viol(t_commrec *mcr,
-		      int nfa,t_iatom forceatoms[],t_iparams ip[],
-		      rvec x[],t_forcerec *fr,t_fcdata *fcd)
+real calc_orires_dev(t_commrec *mcr,
+		     int nfa,t_iatom forceatoms[],t_iparams ip[],
+		     rvec x[],t_forcerec *fr,t_fcdata *fcd)
 {
   int          fa,d,i,j,type,ex;
-  real         edt,edt1,pfac,r2,invr,corrfac,weight,wsv2,sw,viol;
+  real         edt,edt1,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
   real         two_thn;
   tensor       *S;
   rvec5        *Dins,*Dtav,*rhs;
@@ -269,16 +269,16 @@ real calc_orires_viol(t_commrec *mcr,
   for(fa=0; fa<nfa; fa+=3) {
     type = forceatoms[fa];
     
-    viol = od->otav[d] - ip[type].orires.obs;
+    dev = od->otav[d] - ip[type].orires.obs;
     
-    wsv2 += ip[type].orires.kfac*sqr(viol);
+    wsv2 += ip[type].orires.kfac*sqr(dev);
     sw   += ip[type].orires.kfac;
     
     d++;
   }
-  od->rmsviol = sqrt(wsv2/sw);
+  od->rmsdev = sqrt(wsv2/sw);
   
-  return od->rmsviol;
+  return od->rmsdev;
   
   /* Approx. 120*nfa/3 flops */
 }
@@ -292,7 +292,7 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
   atom_id      ai,aj;
   int          fa,d,i,type,ex,power,ki;
   ivec         dt;
-  real         r2,invr,invr2,fc,smooth_fc,viol,violins,pfac;
+  real         r2,invr,invr2,fc,smooth_fc,dev,devins,pfac;
   rvec         r,Sr,fij;
   real         vtot;
   t_oriresdata *od;
@@ -319,20 +319,20 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
       ex    = ip[type].orires.ex;
       power = ip[type].orires.pow;
       fc    = smooth_fc*ip[type].orires.kfac;
-      viol  = od->otav[d] - ip[type].orires.obs;
+      dev   = od->otav[d] - ip[type].orires.obs;
       
       /* NOTE: there is no real potential when time averaging is applied */
-      vtot += 0.5*fc*sqr(viol);
+      vtot += 0.5*fc*sqr(dev);
       
       if (bTAV) {
 	/* Calculate the force as the sqrt of tav times instantaneous */
-	violins = od->oins[d] - ip[type].orires.obs;
-	if (viol*violins <= 0)
-	  viol = 0;
+	devins = od->oins[d] - ip[type].orires.obs;
+	if (dev*devins <= 0)
+	  dev = 0;
 	else {
-	  viol = sqrt(viol*violins);
-	  if (violins < 0)
-	    viol = -viol;
+	  dev = sqrt(dev*devins);
+	  if (dev < 0)
+	    dev = -dev;
 	}
       }
       
@@ -341,7 +341,7 @@ real orires(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	pfac *= invr;
       mvmul(od->S[ex],r,Sr);
       for(i=0; i<DIM; i++)
-	fij[i] = -pfac*viol*(4*Sr[i] - 2*(2+power)*invr2*iprod(Sr,r)*r[i]);
+	fij[i] = -pfac*dev*(4*Sr[i] - 2*(2+power)*invr2*iprod(Sr,r)*r[i]);
       
       ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
       ki=IVEC2IS(dt);

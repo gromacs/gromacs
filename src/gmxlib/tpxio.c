@@ -78,7 +78,7 @@ t_ftupd ftupd[] = {
   { 20, F_EQM,       },
   { 22, F_DISRESVIOL },
   { 22, F_ORIRES     },
-  { 22, F_ORIRESVIOL }
+  { 22, F_ORIRESDEV  }
 };
 #define NFTUPD asize(ftupd)
 

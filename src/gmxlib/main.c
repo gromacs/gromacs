@@ -137,6 +137,41 @@ char *par_fn(char *base,int ftp,t_commrec *cr)
   return buf;
 }
 
+static void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
+{
+  int  *ibuf,p;
+  bool bCompatible;
+
+  snew(ibuf,mcr->nnodes);
+  ibuf[mcr->nodeid] = val;
+  gmx_sumi(mcr->nnodes,ibuf,mcr);
+  
+  bCompatible = TRUE;
+  for(p=1; p<mcr->nnodes; p++)
+    bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+  
+  if (!bCompatible) {
+    fprintf(log,"%s is not equal for all subsystems\n",name);
+    for(p=0; p<mcr->nnodes; p++)
+      fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
+    fatal_error(0,"The %d subsystems are not compatible\n",mcr->nnodes);
+  }
+  
+  sfree(ibuf);
+}
+
+void check_multisystem(FILE *log,t_commrec *mcr,t_fcdata *fcd)
+{
+  if (mcr->nnodes) {
+    fprintf(log,"Checking the \"multi\" compatibility of the %d subsystems\n",
+	    mcr->nnodes);
+    check_multi_int(log,mcr,fcd->disres.npr,
+		    "The number of distance restraint pairs");
+    check_multi_int(log,mcr,fcd->orires.nr,
+		    "The number of orientation restraints");
+  }
+}
+
 void open_log(char *lognm,t_commrec *cr)
 {
   int  len,testlen,pid;
@@ -226,6 +261,43 @@ static void comm_args(t_commrec *cr,int *argc,char ***argv)
     *argv = argv_tmp;
   }
   debug_gmx();
+}
+
+t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
+{
+  t_commrec *mcr;
+  int  i,ftp;
+  char *buf;
+  
+  snew(mcr,1);
+
+  mcr->nodeid = cr->nodeid;
+  mcr->nnodes = cr->nnodes;
+  mcr->left   = cr->left;
+  mcr->right  = cr->right;
+  cr->nodeid  = 0;
+  cr->nnodes  = 1;
+  
+  /* Patch file names (except log which has been done already) */
+  for(i=0; (i<nfile); i++) {
+    /* Because of possible multiple extensions per type we must look 
+     * at the actual file name 
+     */
+    ftp = fn2ftp(fnm[i].fn);
+    if (ftp != efLOG) {
+#ifdef DEBUGPAR
+      fprintf(stderr,"Old file name: %s",fnm[i].fn);
+#endif
+      buf = par_fn(fnm[i].fn,ftp,mcr);
+      sfree(fnm[i].fn);
+      fnm[i].fn = strdup(buf);
+#ifdef DEBUGPAR
+      fprintf(stderr,", new: %s\n",fnm[i].fn);
+#endif
+    }
+  }
+
+  return mcr;
 }
 
 t_commrec *init_par(int *argc,char ***argv_ptr)

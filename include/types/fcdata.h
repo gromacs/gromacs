@@ -71,7 +71,7 @@ typedef struct {
   real   *oinsl;      /* The calculated instantaneous orientations         */
   real   *oins;       /* The calculated emsemble averaged orientations     */
   real   *otav;       /* The calculated time and ensemble averaged orient. */
-  real   rmsviol;     /* The weighted (using kfac) RMS violation           */
+  real   rmsdev;      /* The weighted (using kfac) RMS deviation           */
   rvec5  *tmp;        /* An array of temporary 5-vectors (nex);            */ 
   real   ***TMP;      /* An array of temporary 5x5 matrices (nex);         */
 } t_oriresdata;

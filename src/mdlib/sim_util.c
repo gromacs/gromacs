@@ -675,6 +675,10 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,parm->ir.pme_order,
 	     HOMENR(nsb),parm->ir.bOptFFT);
   
+  /* Check compatibility of the subsystems for mdrun -multi */
+  if (mcr)
+    check_multisystem(stdlog,mcr,fcd);
+  
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (parm->ir.eI) {
   case eiMD:

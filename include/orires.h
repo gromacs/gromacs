@@ -57,13 +57,12 @@ extern void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 			t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd);
 /* Initializes all the orientation restraint stuff in *fcd */
 
-extern real calc_orires_viol(t_commrec *mcr,
-			     int nfa,t_iatom forceatoms[],t_iparams ip[],
-			     rvec x[],t_forcerec *fr,t_fcdata *fcd);
+extern real calc_orires_dev(t_commrec *mcr,
+			    int nfa,t_iatom forceatoms[],t_iparams ip[],
+			    rvec x[],t_forcerec *fr,t_fcdata *fcd);
 /* 
- * Calculates the time averaged D matrices, the S matrix for each
- * experiment and the violations.
- * Returns the weighted RMS violation of the orientation restraints.
+ * Calculates the time averaged D matrices, the S matrix for each experiment.
+ * Returns the weighted RMS deviation of the orientation restraints.
  */
 
 extern void print_orires_log(FILE *log,t_fcdata *fcd);

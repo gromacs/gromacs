@@ -137,7 +137,7 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
       bEner[i] = TRUE;
     else if (i == F_DISRESVIOL)
       bEner[i] = (idef->il[F_DISRES].nr > 0);
-    else if (i == F_ORIRESVIOL)
+    else if (i == F_ORIRESDEV)
       bEner[i] = (idef->il[F_ORIRES].nr > 0);
     else
       bEner[i] = (idef->il[i].nr > 0);

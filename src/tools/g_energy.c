@@ -649,17 +649,18 @@ int main(int argc,char *argv[])
     "running time-averaged and instantaneous distances between",
     "selected pairs can be plotted with the [TT]-pairs[tt] option.[PAR]",
 
-    "Options [TT]-ora[tt], [TT]-ort[tt], [TT]-ova[tt], [TT]-ovr[tt] and",
-    "[TT]-ovt[tt] are used for analyzing orientation restraint data.",
+    "Options [TT]-ora[tt], [TT]-ort[tt], [TT]-oda[tt], [TT]-odr[tt] and",
+    "[TT]-odt[tt] are used for analyzing orientation restraint data.",
     "The first two options plot the orientation, the last three the",
-    "violations of the restraints. The options that end on an a plot",
-    "the average over time as a function of restraint. The options that",
-    "end on a t prompt the user for restraint label numbers and plot",
-    "the data as a function of time. Option [TT]-ovr[tt] plots the RMS",
-    "violation as a function of restraint.",
+    "deviations of the orientations from the experimental values.",
+    "The options that end on an 'a' plot the average over time",
+    "as a function of restraint. The options that end on a 't'",
+    "prompt the user for restraint label numbers and plot the data",
+    "as a function of time. Option [TT]-odr[tt] plots the RMS",
+    "deviation as a function of restraint.",
     "When the run used time or ensemble averaged orientation restraints,",
     "option [TT]-orinst[tt] can be used to analyse the instantaneous,",
-    "not ensemble-averaged orientations and violations instead of",
+    "not ensemble-averaged orientations and deviations instead of",
     "the time and ensemble averages.[PAR]",
 
     "With [TT]-fee[tt] a free energy estimate is calculated using",
@@ -718,7 +719,7 @@ int main(int argc,char *argv[])
     "Volume",  "Pressure"
   };
   
-  FILE       *out,*fp_pairs=NULL,*fort=NULL,*fovt=NULL;
+  FILE       *out,*fp_pairs=NULL,*fort=NULL,*fodt=NULL;
   FILE       **drout;
   int        fp;
   int        timecheck=0;
@@ -730,15 +731,15 @@ int main(int argc,char *argv[])
 #define NEXT (1-cur)
   int        nre,teller,teller_disre,oldstep,nor=0,norfr=0,enx_i=0;
   real       oldt;
-  real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*ovrms=NULL;
+  real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
   int        *index,*pair,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
-  bool       bDisRe,bDRAll,bORA,bORT,bOVA,bOVR,bOVT,bORIRE;
+  bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE;
   bool       bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,dbl;
   real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
-  char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg, **ovtleg;
+  char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg, **odtleg;
   char       **nms;
   char       *orinst_sub = "@ subtitle \"instantaneous\"\n";
   t_filenm   fnm[] = {
@@ -750,9 +751,9 @@ int main(int argc,char *argv[])
     { efXVG, "-pairs","pairs",   ffOPTWR },
     { efXVG, "-ora",  "orienta", ffOPTWR },
     { efXVG, "-ort",  "orientt", ffOPTWR },
-    { efXVG, "-ova",  "oriviola",ffOPTWR },
-    { efXVG, "-ovr",  "oriviolr",ffOPTWR },
-    { efXVG, "-ovt",  "oriviolt",ffOPTWR },
+    { efXVG, "-oda",  "orideva",ffOPTWR },
+    { efXVG, "-odr",  "oridevr",ffOPTWR },
+    { efXVG, "-odt",  "oridevt",ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
     { efXVG, "-vis",  "visco",   ffOPTWR },
     { efXVG, "-ravg", "runavgdf",ffOPTWR }
@@ -771,10 +772,10 @@ int main(int argc,char *argv[])
   bDisRe = opt2bSet("-viol",NFILE,fnm) || bDRAll;
   bORA   = opt2bSet("-ora",NFILE,fnm);
   bORT   = opt2bSet("-ort",NFILE,fnm);
-  bOVA   = opt2bSet("-ova",NFILE,fnm);
-  bOVR   = opt2bSet("-ovr",NFILE,fnm);
-  bOVT   = opt2bSet("-ovt",NFILE,fnm);
-  bORIRE = bORA || bORT || bOVA || bOVR || bOVT;
+  bODA   = opt2bSet("-oda",NFILE,fnm);
+  bODR   = opt2bSet("-odr",NFILE,fnm);
+  bODT   = opt2bSet("-odt",NFILE,fnm);
+  bORIRE = bORA || bORT || bODA || bODR || bODT;
 
   snew(frame,2);
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
@@ -838,11 +839,11 @@ int main(int argc,char *argv[])
       else
 	enx_i = enxOR;
 
-      if (bORA || bOVA)
+      if (bORA || bODA)
 	snew(orient,nor);
-      if (bOVR)
-	snew(ovrms,nor);
-      if (bORT || bOVT) {
+      if (bODR)
+	snew(odrms,nor);
+      if (bORT || bODT) {
 	fprintf(stderr,"Select the orientation restraint labels you want\n");
 	fprintf(stderr,"End your selection with 0\n");
 	j = -1;
@@ -864,10 +865,10 @@ int main(int argc,char *argv[])
 	    fprintf(stderr,"Orientation restraint label %d not found\n",
 		    orsel[i]);
 	}
-	snew(ovtleg,norsel);
+	snew(odtleg,norsel);
 	for(i=0; i<norsel; i++) {
-	  snew(ovtleg[i],256);
-	  sprintf(ovtleg[i],"%d",or_label[orsel[i]]);
+	  snew(odtleg[i],256);
+	  sprintf(odtleg[i],"%d",or_label[orsel[i]]);
 	}
 	if (bORT) {
 	  fort=xvgropen(opt2fn("-ort",NFILE,fnm),
@@ -875,15 +876,15 @@ int main(int argc,char *argv[])
 			"Time (ps)","");
 	  if (bOrinst)
 	    fprintf(fort,"%s",orinst_sub);
-	  xvgr_legend(fort,norsel,ovtleg);
+	  xvgr_legend(fort,norsel,odtleg);
 	}
-	if (bOVT) {
-	  fovt=xvgropen(opt2fn("-ovt",NFILE,fnm),
-			"Orientation restraint violations",
+	if (bODT) {
+	  fodt=xvgropen(opt2fn("-odt",NFILE,fnm),
+			"Orientation restraint deviation",
 			"Time (ps)","");
 	  if (bOrinst)
-	    fprintf(fovt,"%s",orinst_sub);
-	  xvgr_legend(fovt,norsel,ovtleg);
+	    fprintf(fodt,"%s",orinst_sub);
+	  xvgr_legend(fodt,norsel,odtleg);
 	}
       }
     }
@@ -1060,23 +1061,23 @@ int main(int argc,char *argv[])
 	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
 	    if (fr->nr[enx_i] != nor)
 	      fatal_error(0,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)",fr->nr[enx_i],nor);
-	    if (bORA || bOVA)
+	    if (bORA || bODA)
 	      for(i=0; i<nor; i++)
 		orient[i] += fr->block[enx_i][i];
-	    if (bOVR)
+	    if (bODR)
 	      for(i=0; i<nor; i++)
-		ovrms[i] += sqr(fr->block[enx_i][i]-oobs[i]);
+		odrms[i] += sqr(fr->block[enx_i][i]-oobs[i]);
 	    if (bORT) {
 	      fprintf(fort,"  %10f",fr->t);
 	      for(i=0; i<norsel; i++)
 		fprintf(fort," %g",fr->block[enx_i][orsel[i]]); 
 	      fprintf(fort,"\n");
 	    }
-	    if (bOVT) {
-	      fprintf(fovt,"  %10f",fr->t);
+	    if (bODT) {
+	      fprintf(fodt,"  %10f",fr->t);
 	      for(i=0; i<norsel; i++)
-		fprintf(fovt," %g",fr->block[enx_i][orsel[i]]-oobs[orsel[i]]); 
-	      fprintf(fovt,"\n");
+		fprintf(fodt," %g",fr->block[enx_i][orsel[i]]-oobs[orsel[i]]); 
+	      fprintf(fodt,"\n");
 	    }
 	    norfr++;
 	  }
@@ -1096,8 +1097,8 @@ int main(int argc,char *argv[])
 
   if (bORT)
     ffclose(fort);
-  if (bOVT)
-    ffclose(fovt);
+  if (bODT)
+    ffclose(fodt);
   if (bORA) {
     out = xvgropen(opt2fn("-ora",NFILE,fnm),
 		   "Average calculated orientations",
@@ -1108,9 +1109,9 @@ int main(int argc,char *argv[])
       fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr);
     ffclose(out);
   }
-  if (bOVA) {
-    out = xvgropen(opt2fn("-ova",NFILE,fnm),
-		   "Average restraint violations",
+  if (bODA) {
+    out = xvgropen(opt2fn("-oda",NFILE,fnm),
+		   "Average restraint deviation",
 		   "Restraint label","");
     if (bOrinst)
       fprintf(out,"%s",orinst_sub);
@@ -1118,14 +1119,14 @@ int main(int argc,char *argv[])
       fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr-oobs[i]);
     ffclose(out);
   }
-  if (bOVR) {
-    out = xvgropen(opt2fn("-ovr",NFILE,fnm),
-		   "RMS orientation restraint violations",
+  if (bODR) {
+    out = xvgropen(opt2fn("-odr",NFILE,fnm),
+		   "RMS orientation restraint deviations",
 		   "Restraint label","");
     if (bOrinst)
       fprintf(out,"%s",orinst_sub);
     for(i=0; i<nor; i++)
-      fprintf(out,"%5d  %g\n",or_label[i],sqrt(ovrms[i]/norfr));
+      fprintf(out,"%5d  %g\n",or_label[i],sqrt(odrms[i]/norfr));
     ffclose(out);
   }
 
@@ -1146,9 +1147,9 @@ int main(int argc,char *argv[])
   do_view(opt2fn_null("-ravg",NFILE,fnm),NULL);
   do_view(opt2fn_null("-ora",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-ort",NFILE,fnm),"-nxy");
-  do_view(opt2fn_null("-ova",NFILE,fnm),"-nxy");
-  do_view(opt2fn_null("-ovr",NFILE,fnm),"-nxy");
-  do_view(opt2fn_null("-ovt",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-oda",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-odr",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-odt",NFILE,fnm),"-nxy");
 
   thanx(stderr);
   

@@ -60,6 +60,19 @@ extern void open_log(char *fn,t_commrec *cr);
  * communicated around the ring.
  */
 
+extern void check_multisystem(FILE *log,t_commrec *mcr,t_fcdata *fcd);
+/* Check if the subsystem are compatible for a "multi" simulation.
+ * A fatal_error is generated when the systems are incompatible.
+ */
+
+extern t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[]);
+/* Returns copy of the cr commrec to be used for simulating a system
+ * of cr->nnodes linked subsystems,
+ * cr is modified to be non-parallel:
+ *   cr->nnodes = 1;
+ *   cr->nodeid = 0;
+ */
+
 extern t_commrec *init_par(int *argc,char ***argv_ptr);
 /* Initiate the parallel computer. Return the communication record
  * (see network.h). The command line arguments are communicated so that they can be

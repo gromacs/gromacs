@@ -133,6 +133,9 @@ extern void gmx_rxs(int chan,void *buf,int bufsize);
       * available after gmx_rxs() returns.
       */
 
+extern int gmx_setup(int *argc,char **argv,int *nnodes);
+/* Initializes the parallel communication, return the ID of the node */
+
 extern int gmx_node_num(void);
 /* return the number of nodes in the ring */
 

@@ -174,9 +174,6 @@ extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		    t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
 		    real ener[]);
 
-extern t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[]);
-/* For running multiple (almost) independent simulations */
-
 extern real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[]);
 /* Calculate total dipole for group of atoms */
 

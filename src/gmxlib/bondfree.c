@@ -96,10 +96,10 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
   }
   /* Do pre force calculation stuff which might require communication */
   if (idef->il[F_ORIRES].nr)
-    epot[F_ORIRESVIOL] = calc_orires_viol(mcr,
-					  idef->il[F_ORIRES].nr,
-					  idef->il[F_ORIRES].iatoms,
-					  idef->iparams,x_s,fr,fcd);
+    epot[F_ORIRESDEV] = calc_orires_dev(mcr,
+					idef->il[F_ORIRES].nr,
+					idef->il[F_ORIRES].iatoms,
+					idef->iparams,x_s,fr,fcd);
 
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {

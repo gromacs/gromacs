@@ -193,7 +193,7 @@ int main(int argc,char *argv[])
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
   if (bMultiSim && PAR(cr))
-    mcr = init_msim(cr,NFILE,fnm);
+    mcr = init_multisystem(cr,NFILE,fnm);
   else
     mcr = cr;
 
