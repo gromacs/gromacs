@@ -919,10 +919,12 @@ Therefore we have to keep groups of atoms with total charge
 \newcommand{\Fi}{\ve{F}_i'}
 \newcommand{\Fj}{\ve{F}_j'}
 \newcommand{\Fk}{\ve{F}_k'}
+\newcommand{\Fl}{\ve{F}_l'}
 \newcommand{\Fdum}{\ve{F}_{d}}
 \newcommand{\rvik}{\ve{r}_{ik}}
 \newcommand{\rvid}{\ve{r}_{id}}
 \newcommand{\rvjk}{\ve{r}_{jk}}
+\newcommand{\rvjl}{\ve{r}_{jl}}
 
 \section{Dummy atoms.}
 \label{sec:dummy}
@@ -963,20 +965,24 @@ force and the total torque are conserved~\cite{Berendsen84b}.
 
 \begin {figure}
 \centerline{\psfig{figure=plots/dummies.eps,width=13cm}}
-\caption{The five different types of dummy construction in \protect\gromacs.}
+\caption{The six different types of dummy atom construction in
+\protect\gromacs, the constructing atoms are shown as black circles,
+the dummy atoms in grey.}
 \label{fig:dummies}
 \end {figure}
 
-There are five ways to construct dummies from surrounding atoms in
-{\gromacs}. Note that all dummies types mentioned can be constructed
-from types 2$''$ (normalized, in-plane) and 3 (non-normalized, out of
+There are six ways to construct dummies from surrounding atoms in
+{\gromacs}, which we categorize based on the number of constructing
+atoms. Note that all dummies types mentioned can be constructed from
+types 3fd (normalized, in-plane) and 3out (non-normalized, out of
 plane). However, the amount of computation involved increases sharply
 along this list, so it is strongly recommended to always use the first
 dummy type that will be sufficient for a certain purpose. An overview
 of the dummy constructions is given in fig.~\ref{fig:dummies}.
 
 \begin{itemize}
-\item[1.]As a linear combination of two atoms:
+\item[2.]As a linear combination of two atoms
+	(fig.~\ref{fig:dummies} 2):
 \beq
 	\ve{r}_d ~=~ \ve{r}_i + a \rvij
 \eeq
@@ -990,12 +996,12 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 	\end{array}
 \eeq
 
-\item[2.]As a linear combination of three atoms:
+\item[3.]As a linear combination of three atoms
+	(fig.~\ref{fig:dummies} 3):
 \beq
 	\ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik
 \eeq
-	in this case the dummy is always in the plane of the other three
-	particles.
+	in this case the dummy is in the plane of the other three particles.
 	The force on particles $i$, $j$ and $k$ due to the force on the dummy
 	can be computed as:
 \beq
@@ -1006,13 +1012,14 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 	\end{array}
 \eeq
 
-\item[2$'$.]In the plane of three atoms, with a fixed distance:
+\item[3fd.]In the plane of three atoms, with a fixed distance
+	(fig.~\ref{fig:dummies} 3fd):
 \beq
 	\ve{r}_d ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
 				     {| \rvij + a \rvjk |}	
 \eeq
 	in this case the dummy is in the plane of the other three
-	particles at a distance of $b$ from $i$.
+	particles at a distance of $|b|$ from $i$.
 	The force on particles $i$, $j$ and $k$ due to the force on the dummy
 	can be computed as:
 \beq
@@ -1029,7 +1036,8 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 	\end{array}
 \eeq
 
-\item[2$''$.]In the plane of three atoms, with a fixed angle and distance:
+\item[3fad.]In the plane of three atoms, with a fixed angle and
+	distance (fig.~\ref{fig:dummies} 3fad):
 \beq
 \label{eqn:dum2fad-F}
 	 \ve{r}_d ~=~ \ve{r}_i +
@@ -1042,7 +1050,7 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 			 \rvij
 \eeq
 	in this case the dummy is in the plane of the other three
-	particles at a distance of $d$ from $i$ at an angle of
+	particles at a distance of $|d|$ from $i$ at an angle of
 	$\alpha$ with $\rvij$. Atom $k$ defines the plane and the
 	direction of the angle. Note that in this case $b$ and
 	$\alpha$ must be specified in stead of $a$ and $b$ (see also
@@ -1054,20 +1062,20 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 \begin{array}{c}
 	\begin{array}{lclllll}
 	\Fi &=& \Fdum &-& 
-		\dfrac{b \cos \alpha}{|\rvij|} \ve{F}_1 &+&
-		\dfrac{b \sin \alpha}{|\ve{r}_\perp|} \left( 
+		\dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &+&
+		\dfrac{d \sin \theta}{|\ve{r}_\perp|} \left( 
 		\dfrac{ \rvij \cdot \rvjk }
 		     { \rvij \cdot \rvij } \ve{F}_2	+
 		\ve{F}_3 \right)				\\[3ex]
 	\Fj &=& &&
-		\dfrac{b \cos \alpha}{|\rvij|} \ve{F}_1 &-&
-		\dfrac{b \sin \alpha}{|\ve{r}_\perp|} \left(
+		\dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &-&
+		\dfrac{d \sin \theta}{|\ve{r}_\perp|} \left(
 		 \ve{F}_2 + 
 		 \dfrac{ \rvij \cdot \rvjk }
 			{ \rvij \cdot \rvij } \ve{F}_2 +
 		\ve{F}_3 \right)				\\[3ex]
 	\Fk &=& && &&
-		\dfrac{b \sin \alpha}{|\ve{r}_\perp|} \ve{F}_2	\\[3ex]
+		\dfrac{d \sin \theta}{|\ve{r}_\perp|} \ve{F}_2	\\[3ex]
 	\end{array}						\\[5ex]
 	\mbox{where ~}
 	\ve{F}_1 = \Fdum -
@@ -1083,7 +1091,8 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 \end{array}
 \eeq
 
-\item[3.]As a non-linear combination of three atoms, out of plane:
+\item[3out.]As a non-linear combination of three atoms, out of plane
+	(fig.~\ref{fig:dummies} 3out):
 \beq
 	\ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik +
 		c (\rvij \times \rvik)
@@ -1109,6 +1118,31 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 \Fi &=& \Fdum - \Fj - \Fk
 \end{array}
 \eeq
+
+\item[4fd.]From four atoms, with a fixed distance
+	(fig.~\ref{fig:dummies} 4fd):
+\beq
+	\ve{r}_d ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
+				     {| \rvij + a \rvjk + b \rvjl|}	
+\eeq
+	in this case the dummy is at a distance of $|c|$ from $i$.
+	The force on particles $i$, $j$, $k$ and $l$ due to the force 
+	on the dummy can be computed as:
+\beq
+	\begin{array}{lcr}
+	\Fi &=&	\displaystyle \Fdum - \gamma ( \Fdum - \ve{p} )	\\[1ex]
+	\Fj &=&	\displaystyle (1-a-b)\gamma (\Fdum - \ve{p})	\\[1ex]
+	\Fk &=&	\displaystyle a \gamma (\Fdum - \ve{p}) 	\\[1ex]
+	\Fl &=&	\displaystyle b \gamma (\Fdum - \ve{p}) 	\\
+	\end{array}
+	~\mbox{~ where~ }~
+	\begin{array}{c}
+\displaystyle \gamma = \frac{c}{| \rvij + a \rvjk + b \rvjl |} \\[2ex]
+\displaystyle \ve{p} = \frac{ \rvid \cdot \Fdum }
+		      { \rvid \cdot \rvid } \rvid
+	\end{array}
+\eeq
+
 
 \end{itemize}
 

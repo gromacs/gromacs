@@ -151,44 +151,52 @@ from real atoms) on which certain interaction functions are located
 \normindex{quadrupole}). This is described in~\secref{dummy}.
 
 To make dummy atoms in your system, you should include a section 
-\verb'[ dummy? ]' in your topology file, where the \verb'?' stands for
-the number of parameters the dummy requires. This will be \verb'1' for
-type 1 or \verb'2' for types 2, 2$'$ and 2$''$ or \verb'3' for type 3
-(the different types are explained in~\secref{dummy}).
+\verb'[ dummies? ]' in your topology file, where the `\verb|?|' stands for
+the number constructing atoms for the dummy atom. This will be
+`\verb|2|' for type 2, `\verb|3|' for types 3, 3fd, 3fad and 3out and
+`\verb|4|' for type 4fd (the different types are explained
+in~\secref{dummy}).
 
-Parameters for type 1 should look like this:
+Parameters for type 2 should look like this:
 {\small\begin{verbatim}
-[ dummies1 ]
-; Dummy from                 funct   a
-4       1      2             1       0.7439756
-\end{verbatim}}
-
-for type 2 like this:
-{\small\begin{verbatim}
-[ dummies2 ]
-; Dummy from                 funct   a          b
-4       1      2      3      1       0.7439756  0.128012
-\end{verbatim}}
-
-for type 2$'$ like this:
-{\small\begin{verbatim}
-[ dummies2 ]
-; Dummy from                 funct   a          b
-4       1      2      3      2       0.5        0.105
-\end{verbatim}}
-
-for type 2$''$ like this:
-{\small\begin{verbatim}
-[ dummies2 ]
-; Dummy from                 funct   a          b
-4       1      2      3      3       0.5        120
+[ dummies2 ] 
+; Dummy from          funct  a 
+5       1      2      1      0.7439756
 \end{verbatim}}
 
 for type 3 like this:
 {\small\begin{verbatim}
 [ dummies3 ]
+; Dummy from                 funct   a          b
+5       1      2      3      1       0.7439756  0.128012
+\end{verbatim}}
+
+for type 3fd like this:
+{\small\begin{verbatim}
+[ dummies3 ]
+; Dummy from                 funct   a          b
+5       1      2      3      2       0.5        -0.105
+\end{verbatim}}
+
+for type 3fad like this:
+{\small\begin{verbatim}
+[ dummies3 ]
+; Dummy from                 funct   d          theta
+5       1      2      3      3       0.5        120
+\end{verbatim}}
+
+for type 3out like this:
+{\small\begin{verbatim}
+[ dummies3 ]
 ; Dummy from                 funct   a          b          c
-4       1      2      3      1       -0.4       -0.4       6.9281
+5       1      2      3      4       -0.4       -0.4       6.9281
+\end{verbatim}}
+
+for type 4fd like this:
+{\small\begin{verbatim}
+[ dummies4 ]
+; Dummy from                         funct   a          b          c
+5       1      2      3      4       1       0.33333    0.33333    -0.105
 \end{verbatim}}
 
 This will result in the construction of a dummy `atom', number 4
