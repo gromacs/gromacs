@@ -33,9 +33,11 @@ static char *SRCID_mdatom_c = "$Id$";
 #include "smalloc.h"
 #include "main.h"
 
-t_mdatoms *atoms2md(t_atoms *atoms,bool bPert,bool bFree)
+#define ALMOST_ZERO 1e-30
+
+t_mdatoms *atoms2md(t_atoms *atoms,ivec nFreeze[],bool bPert,bool bFree)
 {
-  int       i,np;
+  int       i,np,g;
   double    tm;
   t_mdatoms *md;
   
@@ -82,10 +84,14 @@ t_mdatoms *atoms2md(t_atoms *atoms,bool bPert,bool bFree)
     md->cXTC[i]      	= atoms->atom[i].grpnr[egcXTC];
     if (md->massA[i] != 0.0) {
       tm               += md->massT[i];
-      if (md->cFREEZE[i] == 0)
-	md->invmass[i]	= 1.0/md->massT[i];
+      g = md->cFREEZE[i];
+      if (nFreeze[g][XX] && nFreeze[g][YY] && nFreeze[g][ZZ])
+	/* Set the mass of completely frozen particles to ALMOST_ZERO iso 0
+	   to avoid div by zero in lincs or shake.
+	   Note that constraints can still move a partially frozen particle. */
+	md->invmass[i]	= ALMOST_ZERO;
       else
-	md->invmass[i]	= 0.0;
+	md->invmass[i]	= 1.0/md->massT[i];
     }
     if (bPert) {
       md->bPerturbed[i]   = PERTURBED(atoms->atom[i]);
@@ -164,10 +170,8 @@ void init_mdatoms(t_mdatoms *md,real lambda,bool bFirst)
   for(i=0; (i<end); i++) {
     if (md->bPerturbed[i] || bFirst) {
       md->massT[i]=L1*md->massA[i]+lambda*md->massB[i];
-      if (md->massT[i] != 0.0)
+      if (md->invmass[i] > 1.1*ALMOST_ZERO)
 	md->invmass[i]=1.0/md->massT[i];
-      else
-	md->invmass[i]=0.0;
       md->chargeT[i]=L1*md->chargeA[i]+lambda*md->chargeB[i];
     }
   }
