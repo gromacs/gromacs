@@ -264,10 +264,31 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
   }
 }
 
-void rotate_conf(int natoms,rvec x[],rvec v[],matrix box,char *dir)
+void simple_rotate_conf(int natom,rvec x[],rvec v[],matrix box,char *dir)
 {
-  fprintf(stderr,"Rotating coming soon...\n");
-  exit(1);
+  real dum;
+  
+  switch (dir[0]) {
+  case 'X':
+    rotate_conf(natom,x,v,90,0,0);
+    dum = box[ZZ][ZZ];
+    box[ZZ][ZZ] = -box[YY][YY];
+    box[YY][YY] = dum;
+    break;
+  case 'Y':
+    rotate_conf(natom,x,v,0,90,0);
+    dum = box[XX][XX];
+    box[XX][XX] = -box[ZZ][ZZ];
+    box[ZZ][ZZ] = dum;
+    break;
+  case 'Z':
+    rotate_conf(natom,x,v,0,0,90);
+    dum = box[YY][YY];
+    box[YY][YY] = -box[XX][XX];
+    box[XX][XX] = dum;
+    break;
+  }
+  fprintf(stderr,"WARNING Rotating not debugged CHECK OUTPUT...\n");
 }
 
 int main(int argc, char *argv[])
@@ -456,7 +477,7 @@ int main(int argc, char *argv[])
     
   /* rotate it, if necessary */
   if (bRotate)
-    rotate_conf(natom,x,v,box,cRotate[0]);
+    simple_rotate_conf(natom,x,v,box,cRotate[0]);
     
   /* print some */
   if (bCenter || bScale)
