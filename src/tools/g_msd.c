@@ -385,11 +385,11 @@ static void prep_data_norm(t_corr *this,int gnx,atom_id index[],
     hbox[m]=0.5*box[m][m];
   for(i=0; (i<gnx); i++) {
     ind=index[i];
-    for(m=0; (m<DIM); m++) {
+    for(m=DIM-1; m>=0; m--) {
       while(xcur[ind][m]-xprev[ind][m] <= hbox[m])
-	xcur[ind][m] += box[m][m];
+	rvec_inc(xcur[ind],box[m]);
       while(xcur[ind][m]-xprev[ind][m] >  hbox[m])
-	xcur[ind][m] -= box[m][m];
+	rvec_dec(xcur[ind],box[m]);
     }      
   }
 }
