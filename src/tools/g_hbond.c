@@ -551,8 +551,9 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   }
   ffclose(fp);
   
-  for(i=0; i<nrhb; i++) {
-    fprintf(stderr,"\rACF %d/%d",i+1,nrhb);
+  for(i=0; (i<nrhb); i++) {
+    if ((((i+1) % 10) == 0) || (i==nrhb-1))
+      fprintf(stderr,"\rACF %d/%d",i+1,nrhb);
     nnn=0;
     for(j=0; (j<nframes); j++) {
       ihb      = is_hb(hbexist[i],j);
@@ -561,10 +562,12 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
       nnn     += ihb;
     }
     /* Subtract average value */
-    subtract = aver_nhb; /* nnn/((real)nframes);*/
+    /*subtract = aver_nhb;
+    subtract = nnn/((real)nframes);
+    subtract = 0;
     for(j=0; (j<nframes); j++)
       rhbex[j] -= subtract;
-    
+    */
     /* The autocorrelation function is normalized after summation only */
     low_do_autocorr(NULL,NULL,
 		    nframes,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
@@ -601,7 +604,7 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   }
   fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
   for(j=0; (j<nframes/2); j++)
-    fprintf(fp,"%10g  %10g\n",time[j]-time[0],ct[j]);
+    fprintf(fp,"%10g  %10g\n",time[j]-time[0],(ct[j]-tail)/(1-tail));
   
   fclose(fp);
   do_view(fn,NULL);
