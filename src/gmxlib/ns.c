@@ -213,7 +213,8 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
 	    (!bPert[a[i0]]) && (!bPert[a[i0+1]]) && (!bPert[a[i0+2]]));
   if (bWater)
     nicg = 1;
-    
+
+  /* Loop over the atoms in the i charge group */    
   for(i=0; (i<nicg); i++) {
     i_atom = a[i0+i];
     nit    = type[i_atom]*atnr;
@@ -228,16 +229,24 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
       new_i_nblist(log,&free[gid],F_DVDL,i_atom,bWater,shift);
     }
     
+    /* Loop over the j charge groups */
     for(j=0; (j<nj); j++) {
       jcg=jjcg[j];
       
       if (bWater && (jcg==icg))
 	continue;
-      
+
+      /* The atoms in this j charge group run from jj0 to jj1 */
       jj0=index[jcg];
       jj1=index[jcg+1];
-      if(jcg==icg)
-	jj0+=i+1;
+      
+      /* Patch for the same charge group, to prevent double interactions within
+       * one charge group.
+       */
+      if (icg == jcg)
+	jj0 += i+1;
+	
+      /* Finally loop over the atoms in the j-charge group */	
       for(jj=jj0; (jj<jj1); jj++) {
 	j_atom = a[jj];
 	jgid   = cENER[j_atom];

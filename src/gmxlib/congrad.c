@@ -231,12 +231,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	}
       }
       bNS=((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0)); 
+      
       /* Calc force & energy on new trial position  */
       do_force(log,cr,parm,nsb,force_vir,
 	       count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr);
-      unshift_self(graph,fr->shift_vec,x);
+      unshift_self(graph,fr->shift_vec,xprime);
       bNS=FALSE;
       gpb=0.0;
       for(i=start;i<end;i++) {
@@ -295,7 +296,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr);
-    unshift_self(graph,fr->shift_vec,x);
+    unshift_self(graph,fr->shift_vec,xprime);
+    
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener); 
     fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,f);

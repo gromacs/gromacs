@@ -321,7 +321,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  	     count,&(nrnb[cr->pid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
  	     lambda,graph,bNS,FALSE,fr); 
-    unshift_self(graph,fr->shift_vec,x);
+    unshift_self(graph,fr->shift_vec,pos[TRY]);
 
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);
