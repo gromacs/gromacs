@@ -15,7 +15,11 @@ topol_DATA = \
 	ffG43a2bon.itp	ffG43a2.atp	ffG43a2.hdb	ffG43a2.rtp	\
 	ffG43a2-c.tdb	ffG43a2-n.tdb	ffG43b1.itp	ffG43b1nb.itp	\
 	ffG43b1bon.itp	ffG43b1.atp	ffG43b1.hdb	ffG43b1.rtp	\
-	ffG43b1-c.tdb	ffG43b1-n.tdb					\
+	ffG43b1-c.tdb	ffG43b1-n.tdb	ffgmx.ddb	ffgmx2.ddb	\
+	ffG43a1.ddb	ffG43a2.ddb	ffG43b1.ddb			\
+	ffoplsaa.atp    ffoplsaa.itp	ffoplsaabon.itp ffoplsaanb.itp  \
+	ffoplsaa.hdb	ffoplsaa-n.tdb	ffoplsaa-c.tdb	ffoplsaa.rtp	\
+	ffoplsaa.ddb							\
 	1mlg.itp	2mlg.itp	benzamide.itp	bondadd.itp	\
 	buck.itp	decane.itp	dlg.itp		dmso.itp	\
 	fa.itp		ff_dum.itp	flexspc.itp	flexspce.itp	\

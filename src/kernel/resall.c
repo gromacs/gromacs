@@ -45,7 +45,7 @@ static char *SRCID_resall_c = "$Id$";
 
 t_atomtype *read_atype(char *adb,t_symtab *tab)
 {
-#define MAXAT 1000
+#define MAXAT 5000
   FILE       *in;
   char       aadb[STRLEN];
   char       buf[STRLEN],name[STRLEN];

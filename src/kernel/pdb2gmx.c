@@ -62,6 +62,7 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "index.h"
 #include "hizzie.h"
 
+
 static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
 {
   int sel=0;
@@ -715,7 +716,6 @@ int main(int argc, char *argv[])
     fatal_error(0,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
 		__FILE__,__LINE__,dumstr[0]);
   }/* end switch */
-  if (bDummies) please_cite(stdout,"Feenstra99");
   
   /* Open the symbol table */
   open_symtab(&symtab);
@@ -878,7 +878,7 @@ int main(int argc, char *argv[])
   
   /* Read atomtypes... */
   atype=read_atype(ff,&symtab);
-    
+  
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
   nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl);
@@ -1070,9 +1070,9 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
-	    bH14,bAlldih,bDummies,bDummyAromatics,
+	    bH14,bAlldih,bDummies,bDummyAromatics,ff,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
-	    long_bond_dist, short_bond_dist,bDeuterate);
+	    long_bond_dist,short_bond_dist,bDeuterate);
     
     if (!cc->bAllWat)
       write_posres(posre_fn,pdba,posre_fc);

@@ -439,7 +439,6 @@ static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
   }
   if (*nalldih == 0)
     return;
-  
   /* Copy the impropers and dihedrals to separate arrays. */
   snew(dih,*nalldih);
   ndih = 0;

@@ -30,7 +30,7 @@
     O     C   +N    CH3     improper_O_C_X_Y
 
 [ ALA ]
- [ atoms ]
+ [ atoms ] 
      N    opls_238   -0.500     1
      H    opls_241    0.300     1 
     CA    opls_224B   0.140     1 
@@ -208,7 +208,6 @@
      C    CA    +N     O    improper_O_C_X_Y
     NE    CD    CZ    HE    improper_Z_N_X_Y 
     CZ   NH1   NH2    NE    improper_O_C_X_Y ; according to Amber 
-   NH1  HH11  HH12    CZ    improper_Z_N_X_Y 
    NH2  HH21  HH22    CZ    improper_Z_N_X_Y 
 
 

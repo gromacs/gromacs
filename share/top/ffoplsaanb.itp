@@ -699,6 +699,7 @@
  opls_965   F      18.99840    -0.120       A    2.95000e-01  2.21900e-01
 ; special dummy-type particles
      MNH3   MNH3    0.0         0.000       A    0.0          0.0
+     MNH2   MNH2    0.0         0.000       A    0.0          0.0
     MCH3A   MCH3A   0.0         0.000       A    0.0          0.0
     MCH3B   MCH3B   0.0         0.000       A    0.0          0.0
        MW   MW      0.0         0.000       A    0.0          0.0

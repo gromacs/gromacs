@@ -99,6 +99,7 @@ typedef struct {
   char          ***atomname;    /* Names of the bond_atomtypes          */
 } t_bond_atomtype;
 
+
 typedef enum {
   d_defaults,
   d_atomtypes,

@@ -79,10 +79,10 @@ O
 [ GLY-COOH ]
 [ replace ]
 C	C	opls_267   12.0110   0.520
-O	O	opls_269   15.9994  -0.440 
+O	O	opls_268   15.9994  -0.530 
 [ add ]
 1	2	C	CA	N
-	OT	opls_268   15.9994  -0.530
+	OT	opls_269   15.9994  -0.440
 1	2	O	C	CA
 	HO	opls_270    1.0080   0.450
 [ impropers ]
@@ -91,10 +91,10 @@ C	OT 	 O	CA	improper_O_C_X_Y
 [ COOH ]
 [ replace ]
 C	C	opls_267   12.0110   0.520
-O	O	opls_269   15.9994  -0.440 
+O	O	opls_268   15.9994  -0.530 
 [ add ]
 1	2	C	CA	N
-	OT	opls_268   15.9994  -0.530
+	OT	opls_269   15.9994  -0.440
 1	2	O	C	CA
 	HO	opls_270    1.0080   0.450
 [ impropers ]

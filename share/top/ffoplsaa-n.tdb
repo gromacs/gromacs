@@ -71,12 +71,12 @@ H
 
 [ PRO-NH ]
 [ replace ]
-N	N      opls_238   14.0027  -0.500 
-CA	CA     opls_246   12.0110   0.010 
-CD      CD     opls_245   12.0110  -0.050 
+N	N      opls_901   14.0027  -0.78
+CA	CA     opls_246   12.0110   0.14 
+CD      CD     opls_245   12.0110   0.08 
 [ add ]
 1	4	N	CA	C
-	H      opls_909    1.0080   0.360
+	H      opls_910    1.0080   0.380
 
 [ NH2 ]
 [ replace ]
@@ -88,4 +88,3 @@ CA      CA     opls_912B   12.0110    0.120
 [ delete ]
 H
 
- 

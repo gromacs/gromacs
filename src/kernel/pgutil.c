@@ -55,9 +55,11 @@ atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
       if (start < natoms)
 	resnr = at[start].resnr;
     }
-    for(i=start; (i<natoms) && (bNext || (at[i].resnr == resnr)); i++)
+    
+    for(i=start; (i<natoms) && (bNext || (at[i].resnr == resnr)); i++) {
       if (strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
+    }
   }
   else {
     /* The previous residue */

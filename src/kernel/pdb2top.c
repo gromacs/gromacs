@@ -619,7 +619,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     int bts[], int nrtp, t_restp   rtp[],
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
 	     int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,
-	     bool bDummies, bool bDummyAromatics, real mHmult,
+	     bool bDummies, bool bDummyAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
 	     bool bDeuterate)
@@ -677,7 +677,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* determine which atoms will be dummies and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
     do_dummies(nrtp, rtp, atype, atoms, tab, x, plist, 
-	       &dummy_type, &cgnr, mHmult, bDummyAromatics);
+	       &dummy_type, &cgnr, mHmult, bDummyAromatics, ff);
   
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles and dihedrals...\n");
