@@ -250,17 +250,17 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 			 t_block *gb,char ***gn,bool bASK,bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
-  const char *pnoh[]    = { "H" };
-  const char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
+  static const char *pnoh[]    = { "H" };
+  static const char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
 			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
-  const char *calpha[]  = { "CA" };
-  const char *bb[]      = { "N","CA","C" };
-  const char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
-  const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
-  const char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
+  static const char *calpha[]  = { "CA" };
+  static const char *bb[]      = { "N","CA","C" };
+  static const char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
+  static const char *mcb[]     = { "N","CA","CB","C","O","O1","O2","OT","OXT" };
+  static const char *mch[]     = { "N","CA","C","O","O1","O2","OT","OXT",
 			     "H1","H2","H3","H" };
   /* array of arrays of atomnames: */
-  const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
+  static const char **chains[] = { NULL,pnoh,calpha,bb,mc,mcb,mch,mch,mch,pnodum };
 #define NCH asize(chains)
   /* array of sizes of arrays of atomnames: */
   const int       sizes[NCH] = { 
