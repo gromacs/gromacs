@@ -689,7 +689,7 @@ has reached equilibrium it might be more important to probe a
 correct canonical ensemble. This is unfortunately not the case for
 the weak coupling scheme, although the difference is usually negligible.
 
-To enable canonical ensemble simulations, \gromacs also supports the 
+To enable canonical ensemble simulations, {\gromacs} also supports the 
 extended-ensemble approach first proposed by Nos\'e\cite{Nose84} and later 
 modified by Hoover\cite{Hoover85}. The system Hamiltonian 
 is extended by introducing a 
@@ -727,7 +727,7 @@ reference temperature (and some implementations even include the number
 of degrees of freedom in your system when defining $Q$). 
 To maintain the coupling strength, one would have to change $Q$ in
 proportion to the change in reference temperature. For this reason,
-we prefer to let the \gromacs user work instead with the
+we prefer to let the {\gromacs} user work instead with the
 period $\tau_T$ of the oscillations of kinetic energy between the 
 system and the reservoir instead. It is directly related to $Q$ and $T_0$ via
 
@@ -840,12 +840,12 @@ are important {\em per se} ({\eg} to calculate thermodynamic
 properties) it might at least theoretically be a problem that the 
 exact ensemble is not well-defined for the weak coupling scheme. 
 
-For this reason, \gromacs also supports constant-pressure simulations using 
+For this reason, {\gromacs} also supports constant-pressure simulations using 
 the Parrinello-Rahman approach\cite{Parrinello81,Nose83}, which is similar
 to the Nos\'e-Hoover temperature coupling. With the Parrinello-Rahman 
 barostat, the box vectors as represented by the matrix \ve{b} obey
 the matrix equation of motion\footnote{The box matrix representation \ve{b} in 
-\gromacs corresponds to the transpose of the box matrix representation 
+{\gromacs} corresponds to the transpose of the box matrix representation 
 \ve{h} in the paper by Nos\'e and Klein. Because of this, some of our 
 equations will look slightly different.}
 
@@ -873,7 +873,7 @@ strength of the coupling, and how the box can be deformed.
 The box restriction (\ref{box_rot}) will be fulfilled automatically
 if the corresponding elements of $\ve{W}^{-1}$ are zero. Since the
 coupling strength also depends on the size of your box, we prefer
-to calculate it automatically in \gromacs. 
+to calculate it automatically in {\gromacs}. 
 You only have to provide the approximate
 isothermal compressibilities {\boldmath $\beta$} 
 and the pressure time constant $\tau_p$ in the input file
@@ -1505,7 +1505,7 @@ and $\lambda=1$ describes system B:
 \beq
   H(p,q;0)=H\sA (p,q);~~~~ H(p,q;1)=H\sB (p,q).
 \eeq
-In \gromacs, the functional form of the $\lambda$-dependence is
+In {\gromacs}, the functional form of the $\lambda$-dependence is
 different for the various force-field contributions and is described
 in section \secref{feia}.
 

@@ -20,11 +20,11 @@ COPYRGT	=	copyrgt
 OPTIONS =       options
 
 TEXFS = algorithms	analyse		averages			\
-	defunits	files		forcefield	ieee		\
+	defunits	files		forcefield			\
 	implement	install		intro		lr-corr		\
-	lr_elstat	macros		mdp_opt		\
+	macros		mdp_opt		\
 	proglist	progman		programs	special		\
-	sqrt		tables		topolfig	topology	\
+	sqrt		tables		topology	\
 	virial
 
 AUXFS = algorithms	analyse		averages	defunits	\
