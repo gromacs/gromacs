@@ -108,29 +108,30 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
   }
 }
 
-static void print_epot(int mdstep,int count,real step,real epot,real df,
+static void print_epot(FILE *fp,
+		       int mdstep,int count,real step,real epot,real df,
 		       bool bOptim,bool bLast)
 {
   if (bOptim) {
     if (bLast)
-      fprintf(stderr,"MDStep=%5d    EPot: %12.8e\n",mdstep,epot);
+      fprintf(fp,"MDStep=%5d    EPot: %12.8e\n",mdstep,epot);
     else if (count > 0)
-      fprintf(stderr,"MDStep=%5d/%2d lamb: %6g, RMSF: %12.8e\n",
+      fprintf(fp,"MDStep=%5d/%2d lamb: %6g, RMSF: %12.8e\n",
 	      mdstep,count,step,df);
   }
   else {
-    fprintf(stderr,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
+    fprintf(fp,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
 	    mdstep,count,step,epot);
     
     if (count != 0)
-      fprintf(stderr,", rmsF: %12.8e\n",df);
+      fprintf(fp,", rmsF: %12.8e\n",df);
     else
-      fprintf(stderr,"\n");
+      fprintf(fp,"\n");
   }
 }
 
 
-static real rms_force(rvec f[],int ns,t_shell s[])
+static real rms_force(t_commrec *cr,rvec f[],int ns,t_shell s[])
 {
   int  i,shell;
   real df2;
@@ -141,6 +142,10 @@ static real rms_force(rvec f[],int ns,t_shell s[])
   for(i=0; (i<ns); i++) {
     shell = s[i].shell;
     df2  += iprod(f[shell],f[shell]);
+  }
+  if (PAR(cr)) {
+    gmx_sum(1,&df2,cr);
+    gmx_sumi(1,&ns,cr);
   }
   return sqrt(df2/ns);
 }
@@ -259,7 +264,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
-  df[Min]=rms_force(force[Min],nshell,shells);
+  df[Min]=rms_force(cr,force[Min],nshell,shells);
+  if (debug)
+    fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
+    
 #ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
@@ -277,12 +285,14 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
   Epot[Min]=ener[F_EPOT];
+
   if (PAR(cr))
     gmx_sum(NEPOT,Epot,cr);
   
   step=step0;
+  
   if (bVerbose && MASTER(cr) && (nshell > 0))
-    print_epot(mdstep,0,step,Epot[Min],df[Min],bOptim,FALSE);
+    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],bOptim,FALSE);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
@@ -291,13 +301,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	    interaction_function[F_EPOT].longname, ener[F_EPOT]);
     fprintf(debug,"%17s: %14.10e\n",
 	    interaction_function[F_ETOT].longname, ener[F_ETOT]);
-  }
-
-  if (debug)
     fprintf(debug,"SHELLSTEP %d\n",mdstep);
-
-  /* First check whether we should do shells, or whether the force is low enough
-   * even without minimization.
+  }
+  
+  /* First check whether we should do shells, or whether the force is 
+   * low enough even without minimization.
    */
   *bConverged = bDone = (df[Min] < ftol) || (nshell == 0);
   
@@ -306,41 +314,40 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
 
-#ifdef DEBUG
     if (debug) {
-      pr_rvecs(debug,0,"pos[Try] b4 do_force",(rvec *)(pos[Try][start]),
-	       homenr);
-      pr_rvecs(debug,0,"pos[Min] b4 do_force",(rvec *)(pos[Min][start]),
-	       homenr);
+      pr_rvecs(debug,0,"pos[Try] b4 do_force",pos[Try] + start,homenr);
+      pr_rvecs(debug,0,"pos[Min] b4 do_force",pos[Min] + start,homenr);
     }
-#endif
     /* Try the new positions */
     clear_mat(my_vir[Try]);
     do_force(log,cr,parm,nsb,my_vir[Try],1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr);
-    df[Try]=rms_force(force[Try],nshell,shells);
-
-    if (debug) 
-      pr_rvecs(debug,0,"F na do_force",(rvec *)(force[Try][start]),homenr);
+    df[Try]=rms_force(cr,force[Try],nshell,shells);
+    if (debug)
+      fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
 
     if (debug) {
+      pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);
       fprintf(debug,"SHELL ITER %d\n",count);
       dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
     }
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
     Epot[Try]=ener[F_EPOT];
-    if (PAR(cr)) 
-      gmx_sum(NEPOT,Epot,cr);
-    
-    if (bVerbose && MASTER(cr))
-      print_epot(mdstep,count,step,Epot[Try],df[Try],bOptim,FALSE);
 
+    if (PAR(cr)) 
+      gmx_sum(1,&Epot[Try],cr);
+
+    if (bVerbose && MASTER(cr))
+      print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],bOptim,FALSE);
+      
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.5);
     
     if ((Epot[Try] < Epot[Min])) {
+      if (debug)
+	fprintf(debug,"Swapping Min and Try\n");
       Min  = Try;
       step = step0;
     }
@@ -378,7 +385,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* Last output line */
     if (bVerbose && MASTER(cr)) {
       Epot[Try]=ener[F_EPOT];
-      print_epot(mdstep,count,step,Epot[Try],0.0,bOptim,TRUE);
+      print_epot(stdout,mdstep,count,step,Epot[Try],0.0,bOptim,TRUE);
     }
     /* Sum the forces from the previous calc. (shells only) 
      * and the current calc (atoms only)

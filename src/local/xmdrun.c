@@ -225,7 +225,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Will do General Coupling Theory!\n");
   
   /* Remove periodicity */  
-  if (parm->ir.eBox != ebtNONE)
+  if (fr->eBox != ebtNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
   
   /* Initialize pull code */
@@ -243,15 +243,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot,&terminate);
   clear_rvec(vcm);
-
+  debug_gmx();
+  
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
 	 0,parm->ir.ntcmemory);
-  where();
+  debug_gmx();
   
   shells = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,mdatoms,&nshell);
-  where();
+  debug_gmx();
   
   /* Write start time and temperature */
   sprintf(strbuf,"Started %s",Program());
@@ -351,12 +352,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     else ff=NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			&mynrnb,nsb->natoms,xx,vv,ff,parm->box);
-    where();
+    debug_gmx();
 
     if (do_per_step(step,parm->ir.nstxtcout)) {
       write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
                      step,t,x,parm->box,parm->ir.xtcprec);
-      where();
+      debug_gmx();
     }
     if (bLastStep  && MASTER(cr)) {
       fprintf(stderr,"Writing final coordinates.\n");
@@ -364,7 +365,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     *top->name, &(top->atoms),x,v,parm->box);
     }
 
-    where();
+    debug_gmx();
 
     clear_mat(shake_vir);
     
@@ -378,7 +379,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Check magnitude of the forces */
     fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
 		 START(nsb)+HOMENR(nsb),fbuf[next]);
-
+    debug_gmx();
+    
     /* This is the bit where integration of coordinates and velocities is done */
     parm->ir.delta_t = timestep;
     
@@ -392,6 +394,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (PAR(cr)) 
       accumulate_u(cr,&(parm->ir.opts),grps);
+    debug_gmx();
     
     /* Calculate partial Kinetic Energy (for this processor) 
      * per group!
@@ -399,7 +402,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     calc_ke_part(FALSE,START(nsb),HOMENR(nsb),
 		 vold,v,vt,&(parm->ir.opts),
 		 mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-    where();
+    debug_gmx();
     if (bStopCM)
       calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
     
@@ -413,6 +416,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     else 
       cp_nrnb(&(nrnb[0]),&mynrnb);
+    debug_gmx();
     
     if (bStopCM) {
       check_cm(log,vcm,mdatoms->tmass);
@@ -463,13 +467,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
 		  parm->box,parm->vir,mu_tot,x,fbuf[next],bConverged);
+    debug_gmx();
     
-    upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
-	       force_vir,parm->vir,parm->pres,grps,mu_tot);
-    
-    where();
     if ( MASTER(cr) ) {
       bool do_ene,do_dr,do_log;
+      
+      upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
+		 force_vir,parm->vir,parm->pres,grps,mu_tot);
+      debug_gmx();
       
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
@@ -478,12 +483,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
       if (bVerbose)
 	fflush(log);
-    }
-    
-    if (MASTER(cr) && bVerbose && ((step % stepout)==0)) {
-      if (nshell > 0)
-	fprintf(stderr,"\n");
-      print_time(stderr,start_t,step,&parm->ir);
+      
+      if (bVerbose && ((step % stepout)==0)) {
+	if (nshell > 0)
+	  fprintf(stderr,"\n");
+	print_time(stderr,start_t,step,&parm->ir);
+      }
     }
   }
   
@@ -527,6 +532,8 @@ int main(int argc,char *argv[])
     { efENX, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
     { efNDX, "-n",      "mols",     ffOPTRD },
+    { efEDI, "-ei", "sam",          ffOPTRD },
+    { efEDO, "-eo", "sam",          ffOPTWR },
     { efGCT, "-j",      "wham",     ffOPTRD },
     { efGCT, "-jo",     "bam",      ffOPTRD },
     { efXVG, "-ffout",  "gct",      ffOPTWR },
@@ -562,30 +569,19 @@ int main(int argc,char *argv[])
   bVerbose    = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
   
-  debug_gmx();
-
-  Flags = PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS;
   if (MASTER(cr)) 
     CopyRight(stderr,argv[0]);
-  else
-    Flags |= PCA_QUIET;
     
-  debug_gmx();
-  parse_common_args(&argc,argv,Flags,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  parse_common_args(&argc,argv,
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_SET_NPRI |
+		    (MASTER(cr) ? 0 : PCA_QUIET),
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  debug_gmx();
-
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
-  debug_gmx();
-  
-  if (bMultiSim && PAR(cr)) {
+  if (bMultiSim && PAR(cr))
     cr = init_msim(cr,NFILE,fnm);
-  }
     
-  debug_gmx();  
-  
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
     please_cite(stdlog,"Berendsen95a");
