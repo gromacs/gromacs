@@ -46,7 +46,7 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
   int     na[4];
   ushort  type,tpM;
   char    name[STRLEN],tpstr[STRLEN],bname[STRLEN],*bres;
-  bool    *bProcessed,bWild;
+  bool    *bProcessed,bWild,bNterm;
   t_restp *rtpp=NULL;
 
   if (debug) printf("Searching for atoms to make dumies...\n");
@@ -77,10 +77,11 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
       if (at->atom[i].resnr != resnr) {
 	resnr=at->atom[i].resnr;
 	rtpp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
+	bNterm=is_protein(*(at->resname[resnr])) && (resnr == 0);
       }
       /* look up type for this atom */
       if (at->atom[i].m == 0) {
-	j=search_jtype(rtpp,*(at->atomname[i]),(resnr == 0));
+	j=search_jtype(rtpp,*(at->atomname[i]),bNterm);
 	type = rtpp->atom[j].type;
       } else
 	type = at->atom[i].type;
@@ -199,8 +200,12 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
 		if (at->atom[na[l]].m)
 		  mass[l]=at->atom[na[l]].m;
 		else {
+		  bool bNterm;
+		  int  resnr;
 		  /* get mass from rtp */
-		  j=search_jtype(rtpp,*(at->atomname[na[l]]),(resnr == 0));
+		  resnr = at->atom[na[l]].resnr;
+		  bNterm=is_protein(*(at->resname[resnr])) && (resnr==0);
+		  j=search_jtype(rtpp,*(at->atomname[na[l]]),bNterm);
 		  mass[l]=rtpp->atom[j].m;
 		}
 		mtot+=mass[l];
@@ -492,7 +497,7 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
   int     ai,aj,ak[4],*ad;
   int     nmba,naba,nms,*ms,na2,*a2,*na3,**a3;
   ushort  type;
-  bool    *bProcessed,bWild,bLookH;
+  bool    *bProcessed,bWild,bLookH,bNterm;
   t_restp *rp;
   char    *bres,bname[STRLEN],tpstr[STRLEN];
   t_dmbp  *c;
@@ -524,10 +529,11 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
       if (at->atom[i].resnr != resnr) {
 	resnr=at->atom[i].resnr;
 	rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
+	bNterm=is_protein(*(at->resname[resnr])) && (resnr == 0);
       }
       /* look up type for this atom */
       if (at->atom[i].m == 0) {
-	j=search_jtype(rp,*(at->atomname[i]),(resnr == 0));
+	j=search_jtype(rp,*(at->atomname[i]),bNterm);
 	type = rp->atom[j].type;
       } else
 	type = at->atom[i].type;

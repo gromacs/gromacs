@@ -86,7 +86,7 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
   int     i,j,resnr,i0;
   char    *name;
   t_restp *rp=NULL;
-  bool    bFirst, bProt;
+  bool    bFirst, bProt, bNterm;
 
   bFirst=TRUE;
   resnr=-1;
@@ -100,6 +100,7 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
 	rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
 	missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
 	bProt=is_protein(*(at->resname[resnr]));
+	bNterm=bProt && (resnr == 0);
 	i0=i;
       }
       resnr=at->atom[i].resnr;
@@ -112,7 +113,7 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
     }
     if (at->atom[i].m == 0) {
       name=*(at->atomname[i]);
-      j=search_jtype(rp,name,bProt && (resnr == 0));
+      j=search_jtype(rp,name,bNterm);
       at->atom[i].type  = rp->atom[j].type;
       at->atom[i].q     = rp->atom[j].q;
       at->atom[i].m     = atype->atom[rp->atom[j].type].m;
