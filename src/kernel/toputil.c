@@ -49,6 +49,7 @@ static char *SRCID_toputil_c = "$Id$";
 #include "toputil.h"
 #include "symtab.h"
 #include "fatal.h"
+#include <math.h>
 
 /* UTILITIES */
 
@@ -399,8 +400,10 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
 		*(atype->atomname[at->atom[i].typeB]),
 		at->atom[i].qB,at->atom[i].mB);
       }
-      qtot += at->atom[i].q;
-      fprintf(out,"   ; qtot %g\n",qtot);
+      qtot += (double)at->atom[i].q;
+      if ( fabs(qtot) < 4*GMX_REAL_EPS ) 
+	qtot=0;
+      fprintf(out,"   ; qtot %.4g\n",qtot);
     }
   }
   fprintf(out,"\n");
