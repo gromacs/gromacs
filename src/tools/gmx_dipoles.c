@@ -374,16 +374,32 @@ real calc_eps(double M_diff,double volume,double epsRF,double temp)
   return eps;
 }
 
-real compute_avercos(int n,rvec dip[])
+static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis)
 {
   int    i,j,k;
-  double d;
+  double dc,dc1,d,d2,n5,ddc1,ddc2,ddc3;
+  rvec   xxx = { 1, 0, 0 };
+  rvec   yyy = { 0, 1, 0 };
+  rvec   zzz = { 0, 0, 1 };
   
-  d=0;
-  for(i=k=0; (i<n); i++)
-    for(j=i+1; (j<n); j++,k++) 
-      d += fabs(dcos_angle(dip[i],dip[j]));
-  return (d+n*0.5)/(k+n*0.5);
+  d=d2=0;
+  ddc1 = ddc2 = ddc3 = 0;
+  for(i=k=0; (i<n); i++) {
+    ddc1 += fabs(cos_angle(dip[i],xxx));
+    ddc2 += fabs(cos_angle(dip[i],yyy));
+    ddc3 += fabs(cos_angle(dip[i],zzz));
+    for(j=i+1; (j<n); j++,k++) {
+      dc  = cos_angle(dip[i],dip[j]);
+      d  += fabs(dc);
+      d2 += dc*dc;
+    }
+  }
+  n5   = 0.5*n;
+  *dd  = (d+n5)/(k+n5);
+  *dd2 = (d2+n5)/(k+n5);
+  axis[XX] = ddc1/n;
+  axis[YY] = ddc2/n;
+  axis[ZZ] = ddc3/n;
 }
 
 static void do_dip(char *fn,char *topf,
@@ -419,6 +435,14 @@ static void do_dip(char *fn,char *topf,
     "< |M| >\\S2\\N / < |M|\\S2\\N >"
   };
 #define NLEGAVER asize(leg_aver)
+  static char *leg_cosaver[] = {
+    "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
+    "\\f{4}<cos\\S2\\N\\f{12}q\\f{4}\\sij\\N>",
+    "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
+    "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
+    "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
+  };
+#define NLEGCOSAVER asize(leg_cosaver)
 
   FILE       *outdd,*outmtot,*outaver,*outeps,*caver;
   rvec       *x,*dipole=NULL,mu_t,quad;
@@ -429,7 +453,8 @@ static void do_dip(char *fn,char *topf,
   int        *dipole_bin,ndipbin,ibin,iVol,natoms,step;
   unsigned long mode;
   char       **enm=NULL;
-  real       rcut=0,t,t0,t1,dt,volume,lambda;
+  real       rcut=0,t,t0,t1,dt,volume,lambda,dd,dd2;
+  rvec       dipaxis;
   matrix     box;
   bool       bCont;
   double     M_diff=0,epsilon,invtel,vol_aver;
@@ -509,9 +534,10 @@ static void do_dip(char *fn,char *topf,
 		     "Time (ps)","");
   outaver = xvgropen(out_aver,"Total dipole moment",
 		     "Time (ps)","D");
-  if (cosaver)
-    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","\\f{4}<|cos\\f{12}q\\f{4}|>");
-    
+  if (cosaver) {
+    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","");
+    xvgr_legend(caver,NLEGCOSAVER,leg_cosaver);
+  }
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
   xvgr_legend(outaver,NLEGAVER,leg_aver);
@@ -621,8 +647,11 @@ static void do_dip(char *fn,char *topf,
     for(m=0; (m<DIM); m++)
       M_av2[m] = M_av[m]*M_av[m];
     
-    if (cosaver) 
-      fprintf(caver,"%10.3e  %10.3e\n",t,compute_avercos(gnx,dipole));
+    if (cosaver) {
+      compute_avercos(gnx,dipole,&dd,&dd2,dipaxis);
+      fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
+	      t,dd,dd2,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
+    }
     
     if (bGkr) {
       do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
