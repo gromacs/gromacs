@@ -152,7 +152,7 @@ void quit_gmx(int fatal_errno,char *msg)
   }
   
 #ifdef PARALLEL
-  {
+  if (gmx_parallel) {
     int  nprocs;
     int  pid;
     

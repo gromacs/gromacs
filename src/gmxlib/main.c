@@ -44,6 +44,7 @@ static char *SRCID_main_c = "$Id$";
 #define BUFSIZE	1024
 
 FILE *stdlog=NULL;
+int  gmx_parallel=0;
 
 static void mem_init(void)
 {
@@ -301,9 +302,10 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   }
   
   /* Communicate arguments if parallel */
-  if (PAR(cr))
+  if (PAR(cr)) {
+    gmx_parallel = 1;
     comm_args(cr,argc,argv_ptr);
-    
+  }
   return cr;
 }
 
