@@ -378,38 +378,50 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
 void 
 update_annealing_target_temp(t_grpopts *opts,real t)
 {
-  int i,j,n;
+  int i,j,n,npoints;
   real pert,thist,x;
 
   for(i=0;i<opts->ngtc;i++) {
-    if(opts->annealing[i] == eannNO)
+    npoints = opts->anneal_npoints[i];
+    switch (opts->annealing[i]) {
+    case eannNO:
       continue;
-    else if(opts->annealing[i] == eannPERIODIC) {
+    case  eannPERIODIC:
       /* calculate time modulo the period */
-      pert = opts->anneal_time[i][opts->anneal_npoints[i]-1];
-      n = t / pert;
+      pert  = opts->anneal_time[i][npoints-1];
+      n     = t / pert;
       thist = t - n*pert; /* modulo time */
       /* Make sure rounding didn't get us outside the interval */
-      if(fabs(thist-pert)<GMX_REAL_EPS*100)
+      if (fabs(thist-pert) < GMX_REAL_EPS*100)
 	thist=0;
-    } else /* nonperiodic annealing run */ {
+      break;
+    case eannSINGLE:
       thist = t;
+      break;
+    default:
+      fatal_error(0,"Death horror in update_annealing_target_temp");
     }
     /* We are doing annealing for this group if we got here, 
      * and we have the (relative) time as thist.
      * calculate target temp */
     j=0;
-    while(thist>(opts->anneal_time[i][j+1]))
+    while ((j < npoints-1) && (thist>(opts->anneal_time[i][j+1])))
       j++;
-    /* Found our position between points j and j+1. 
-     * Interpolate: x is the amount from j+1, (1-x) from point j 
-     * First treat possible jumps in temperature as a special case.
-     */
-    if((opts->anneal_time[i][j+1]-opts->anneal_time[i][j])<GMX_REAL_EPS*100)
-      opts->ref_t[i]=opts->anneal_temp[i][j+1];
+    if (j < npoints-1) {
+      /* Found our position between points j and j+1. 
+       * Interpolate: x is the amount from j+1, (1-x) from point j 
+       * First treat possible jumps in temperature as a special case.
+       */
+      if ((opts->anneal_time[i][j+1]-opts->anneal_time[i][j]) < GMX_REAL_EPS*100)
+	opts->ref_t[i]=opts->anneal_temp[i][j+1];
+      else {
+	x = ((thist-opts->anneal_time[i][j])/
+	     (opts->anneal_time[i][j+1]-opts->anneal_time[i][j]));
+	opts->ref_t[i] = x*opts->anneal_temp[i][j+1]+(1-x)*opts->anneal_temp[i][j];
+      }
+    }
     else {
-      x=(thist-opts->anneal_time[i][j])/(opts->anneal_time[i][j+1]-opts->anneal_time[i][j]);
-      opts->ref_t[i]=x*opts->anneal_temp[i][j+1]+(1-x)*opts->anneal_temp[i][j];
+      opts->ref_t[i] = opts->anneal_temp[i][npoints-1];
     }
   }
 }
