@@ -47,6 +47,11 @@ All GROMACS programs can read compressed or g-zipped files.
 There might be a problem with reading compressed
 <tt>.xtc</tt>, <tt>.trr</tt> and <tt>.trj</tt> files,
 be these will not compress very well anyway.
+<P>
+<LI>
+Most GROMACS programs can process a trajectory with less atoms than the run
+input or structure file, but only if the trajectory consists of the first
+n atoms of the run input or structure file.
 </UL>
 </BODY>
 
