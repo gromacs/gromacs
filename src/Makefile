@@ -3,8 +3,6 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.def
 #
-#this is a dirty hack to stop gmake from trying to go to directory 'fftw'
-#when it is not present. THIS IS NOT FOOL-PROOF!
 ifneq ($(USE_XWIN),no)
 DIRS	=	include	gmxlib fftw	kernel	tools	ngmx
 else
@@ -28,7 +26,7 @@ COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
 all:	dirs
-	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
+	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE) dep; $(MAKE); cd ..;)
 
 it:	
 	$(foreach DIR,$(LDIRS),cd $(DIR); $(MAKE); cd ..;)

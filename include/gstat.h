@@ -148,7 +148,7 @@ extern int in_box(int NTB,matrix box,rvec x);
 /*in_box() returns zero if atom x is inside the box*/
 
 extern void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
-/*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis*/
+/* rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis */
 
 extern void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
 /*orient() rotates a configuration until the largest atom-atom distance is 
