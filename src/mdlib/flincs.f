@@ -7,8 +7,8 @@
 
       real  x(*),xp(*),bllen(*),blc(*),blcc(*),blm(*),invmass(*)
       real  r(*),rhs1(*),rhs2(*),sol(*),wangle,lambda(*)
-      integer*4 ncons,ncm,nit,nrec,bla1(*),bla2(*),blnr(*),blbnb(*)
-      integer*4 cmax,warn
+      integer*4 ncons,nit,nrec,bla1(*),bla2(*),blnr(*),blbnb(*)
+      integer*4 warn
 
       integer*4 b,i,j,k,n,b3,i3,j3,it,rec
       real  tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam 
@@ -53,24 +53,20 @@
       do rec=1,nrec,2
          do b=1,ncons
             mvb=0.
-            if (blnr(b+1) .gt.  blnr(b)) then
-               do n=blnr(b)+1,blnr(b+1)
-                  j=blbnb(n)+1
-                  mvb=mvb+blm(n)*rhs1(j)
-               enddo
-            endif
+            do n=blnr(b)+1,blnr(b+1)
+               j=blbnb(n)+1
+               mvb=mvb+blm(n)*rhs1(j)
+            enddo
             rhs2(b)=mvb
             sol(b)=sol(b)+mvb
          enddo 
          if (rec .lt. nrec) then
             do b=1,ncons
                mvb=0.
-               if (blnr(b+1) .gt.  blnr(b)) then
-                  do n=blnr(b)+1,blnr(b+1)
-                     j=blbnb(n)+1
-                     mvb=mvb+blm(n)*rhs2(j)
-                  enddo
-               endif
+               do n=blnr(b)+1,blnr(b+1)
+                  j=blbnb(n)+1
+                  mvb=mvb+blm(n)*rhs2(j)
+               enddo
                rhs1(b)=mvb
                sol(b)=sol(b)+mvb
             enddo 
@@ -134,24 +130,20 @@ c     ********  Correction for centripetal effects  ********
          do rec=1,nrec,2
             do b=1,ncons
                mvb=0.
-               if (blnr(b+1) .gt.  blnr(b)) then
-                  do n=blnr(b)+1,blnr(b+1)
-                     j=blbnb(n)+1
-                     mvb=mvb+blm(n)*rhs1(j)
-                  enddo
-               endif
+               do n=blnr(b)+1,blnr(b+1)
+                  j=blbnb(n)+1
+                  mvb=mvb+blm(n)*rhs1(j)
+               enddo
                rhs2(b)=mvb
                sol(b)=sol(b)+mvb
             enddo 
             if (rec .lt. nrec) then
                do b=1,ncons
                   mvb=0.
-                  if (blnr(b+1) .gt.  blnr(b)) then
-                     do n=blnr(b)+1,blnr(b+1)
-                        j=blbnb(n)+1
-                        mvb=mvb+blm(n)*rhs2(j)
-                     enddo
-                  endif
+                  do n=blnr(b)+1,blnr(b+1)
+                     j=blbnb(n)+1
+                     mvb=mvb+blm(n)*rhs2(j)
+                  enddo
                   rhs1(b)=mvb
                   sol(b)=sol(b)+mvb
                enddo 
