@@ -580,7 +580,7 @@ static void components(char *outfile,int natoms,real *sqrtm,
     for(i=0; i<natoms; i++)
       y[g][i] = norm(eigvec[v][i])/sqrtm[i];
   }
-  write_xvgr_graphs(outfile,noutvec,"Atom displacements (nm)","Atom number",
+  write_xvgr_graphs(outfile,noutvec,"Atom displacements","Atom number",
 		    ylabel,natoms,x,y,1,TRUE,FALSE);
   fprintf(stderr,"\n");
 }
