@@ -252,8 +252,8 @@ Use e.g. <b>rlist</b>=0.9,
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
 wave vectors used in reciprocal space is controlled by <b>fourierspacing</b>.
 The relative accuracy of direct/reciprocal space
-is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N<sup>3/2</sup>)) and
-is thus extremely slow for large systems. It is included mainly for
+is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N<sup>3/2</sup>)
+and is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.
 
 <dt><b><!--Idx-->PME<!--EIdx--></b> 
@@ -452,6 +452,7 @@ As for Nose-Hoover temperature coupling the time constant <b>tau_p</b>
 probably a better method when you want to apply pressure scaling
 during data collection, but beware that you can get very large
 oscillations if you are starting from a different pressure.
+</dl>
 </dl>
 
 <dl>
