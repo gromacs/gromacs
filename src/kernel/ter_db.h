@@ -46,7 +46,10 @@ extern int read_ter_db(char *FF,char ter,
 		       t_hackblock **tbptr,t_atomtype *atype);
 /* Read database for N&C terminal hacking */
 
-extern t_hackblock *choose_ter(int nb,t_hackblock tb[],char *title);
+extern t_hackblock **filter_ter(int nb,t_hackblock tb[],char *resname,int *nret);
+/* Return a list of pointers to blocks that match residue name */
+
+extern t_hackblock *choose_ter(int nb,t_hackblock **tb,char *title);
 /* Interactively select one.. */
 
 extern void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype);

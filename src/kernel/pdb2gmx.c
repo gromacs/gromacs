@@ -531,7 +531,7 @@ int main(int argc, char *argv[])
     "identifiers. Therefore it is useful to enter a pdb file name at",
     "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
     "[PAR]",
-   
+    
     "The option [TT]-dummy[tt] removes hydrogen and fast improper dihedral",
     "motions. Angular and out-of-plane motions can be removed by changing",
     "hydrogens into dummy atoms and fixing angles, which fixes their",
@@ -595,17 +595,17 @@ int main(int argc, char *argv[])
   t_symtab   symtab;
   t_atomtype *atype;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN];
+  char       molname[STRLEN],title[STRLEN],resname[STRLEN];
   char       *c;
-  int        nah,nNtdb,nCtdb;
-  t_hackblock *ntdb,*ctdb;
+  int        nah,nNtdb,nCtdb,ntdblist;
+  t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
   bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
-  int        nrexcl;
   bool       bAlldih;
+  int        nrexcl;
 
   t_filenm   fnm[] = { 
     { efSTX, "-f", "eiwit.pdb", ffREAD  },
@@ -961,21 +961,36 @@ int main(int argc, char *argv[])
 	       "this chain appears to contain no protein\n");
 	cc->nterpairs = 0;
       } else {
-	/* set termini */
-	if ( (cc->rN[i]>=0) && (bTerMan || (nNtdb<4)) )
-	  cc->ntdb[i]=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
-	  else
-	    if (strncmp(*pdba->resname[pdba->atom[cc->rN[i]].resnr],"PRO",3))
-	      cc->ntdb[i] = &(ntdb[1]);
-	    else
-	      cc->ntdb[i] = &(ntdb[3]);
-	printf("N-terminus: %s\n",(cc->ntdb[i])->name);
-	
-	if ( (cc->rC[i]>=0) && (bTerMan || (nCtdb<2)) )
-	   cc->ctdb[i] = choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
+	/* Set termini.
+	 * We first apply a filter so we only have the
+	 * termini that can be applied to the residue in question
+	 * (or a generic terminus if no-residue specific is available).
+	 */
+	/* First the N terminus */
+	strncpy(resname,*pdba->resname[pdba->atom[cc->rN[i]].resnr],3);
+	tdblist=filter_ter(nNtdb,ntdb,resname,&ntdblist);
+	if(ntdblist==0)
+	  fatal_error(0,"No suitable N-terminus found in database");
+
+	if(bTerMan && ntdblist>1)
+	  cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select N-terminus type (start)");
 	else
-	  cc->ctdb[i] = &(ctdb[1]);
+	  cc->ntdb[i] = tdblist[0];
+	printf("N-terminus: %s\n",(cc->ntdb[i])->name);
+	sfree(tdblist);
+	
+	/* And the C terminus */
+	strncpy(resname,*pdba->resname[pdba->atom[cc->rC[i]].resnr],3);
+	tdblist=filter_ter(nCtdb,ctdb,resname,&ntdblist);
+	if(ntdblist==0)
+	  fatal_error(0,"No suitable C-terminus found in database");
+	
+	if(bTerMan && ntdblist>1)
+	  cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select C-terminus type (end)");
+	else
+	  cc->ctdb[i] = tdblist[0];
 	printf("C-terminus: %s\n",(cc->ctdb[i])->name);
+	sfree(tdblist);
       }
     }
 
