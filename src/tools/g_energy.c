@@ -93,7 +93,7 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs,
+int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
 	       t_topology *top,t_inputrec *ir)
 {
   t_functype *functype;
@@ -102,8 +102,8 @@ int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs,
   t_ilist    *disres;
   t_iatom    *iatom;
   real       *b,t;
-  int        *ind;
-  int        nb,index;
+  int        *ind,*pair;
+  int        nb,index1;
   matrix     box;
 
   read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,top);
@@ -120,19 +120,21 @@ int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs,
   
   /* Allocate memory */
   snew(b,nb);
-  snew(ind,nb+1);
+  snew(ind,nb);
+  snew(pair,nb+1);
   
   /* Fill the bound array */
   nb=0;
   for(i=0; (i<top->idef.ntypes); i++) {
     ftype = functype[i];
     if (ftype == F_DISRES) {
-      index = ip[i].disres.index;
-      if (b[index] != 0.0)
+      index1 = ip[i].disres.index;
+      if (b[index1] != 0.0)
 	fprintf(stderr,"warning index %d occurs multiple times in topology."
-		" i=%d, nb=%d\n",index,i,nb);
+		" i=%d, nb=%d\n",index1,i,nb);
       else {
-	b[nb] = ip[i].disres.up1;
+	b[nb]   = ip[i].disres.up1;
+	ind[nb] = index1;
 	nb++;
       }
     }
@@ -140,26 +142,27 @@ int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs,
   *bounds = b;
   
   /* Fill the index array */
-  index   = -1;
+  index1  = -1;
   disres  = &(top->idef.il[F_DISRES]);
   iatom   = disres->iatoms;
   for(i=j=k=0; (i<disres->nr); ) {
     type  = iatom[i];
     ftype = top->idef.functype[type];
     natom = interaction_function[ftype].nratoms+1;
-    if (index != top->idef.iparams[type].disres.index) {
-      ind[j] = k;
-      index  = top->idef.iparams[type].disres.index; 
+    if (index1 != top->idef.iparams[type].disres.index) {
+      pair[j] = k;
+      index1  = top->idef.iparams[type].disres.index; 
       j ++;
     }
     k++;
     i += natom;
   }
-  ind[j]  = k;
+  pair[j]  = k;
   *npairs = k;
   assert(j == nb);
-  
-  *dr_index = ind;
+
+  *index   = ind;
+  *dr_pair = pair;
   
   return nb;
 }
@@ -193,8 +196,8 @@ void calc_violations(real rt[],real rav3[],int nb,int index[],
 }
 
 static void analyse_disre(char *voutfn,    int nframes,
-			  real violaver[], real bounds[],
-			  int index[],     int nbounds)
+			  real violaver[], real bounds[], int index[],
+			  int pair[],      int nbounds)
 {
   FILE   *vout;
   double sum,sumt,sumaver;
@@ -202,7 +205,7 @@ static void analyse_disre(char *voutfn,    int nframes,
   
   /* Subtract bounds from distances, to calculate violations */
   calc_violations(violaver,violaver,
-		  nbounds,index,bounds,NULL,&sumt,&sumaver);
+		  nbounds,pair,bounds,NULL,&sumt,&sumaver);
   
 #ifdef DEBUG
   fprintf(stderr,"\nSum of violations averaged over simulation: %g nm\n",
@@ -216,13 +219,13 @@ static void analyse_disre(char *voutfn,    int nframes,
   for(i=0; (i<nbounds); i++) {
     /* Do ensemble averaging */
     sumaver = 0;
-    for(j=index[i]; (j<index[i+1]); j++) 
+    for(j=pair[i]; (j<pair[i+1]); j++) 
       sumaver += sqr(violaver[j]/nframes); 
     sumaver = max(0.0,mypow(sumaver,minsixth)-bounds[i]);
     
     sumt   += sumaver;
     sum     = max(sum,sumaver);
-    fprintf(vout,"%10d  %10.5e\n",i+1,sumaver);
+    fprintf(vout,"%10d  %10.5e\n",index[i],sumaver);
   }
 #ifdef DEBUG
   for(j=0; (j<dr.ndr); j++)
@@ -553,7 +556,7 @@ int main(int argc,char *argv[])
   int        cur=0;
 #define NEXT (1-cur)
   real       *bounds,*violaver=NULL;
-  int        *index;
+  int        *index,*pair;
   int        nbounds,npairs;
   bool       bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt;
@@ -631,7 +634,7 @@ int main(int argc,char *argv[])
     time = NULL;
   }
   else {
-    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&npairs,
+    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&pair,&npairs,
 		       &top,&ir);
     snew(violaver,npairs);
     if (!bDRAll) {
@@ -665,42 +668,45 @@ int main(int argc,char *argv[])
     } while (bCont && (timecheck < 0));
     
     if ((timecheck == 0) && bCont) {
-      /* 
-       * Only copy the values we just read, if we are within the time bounds
-       * It is necessary for statistics to start counting from 1 
-       */
-      cur  = NEXT;
-      step[cur]++;
-      
-      if (oldstep == -1) {
+      if (nre > 0) {
 	/* 
-	 * Initiate the previous step data 
-	 * Since step is incremented after reading, it is always >= 1,
-	 * therefore this will be executed only once.
+	 * Only copy the values we just read, if we are within the time bounds
+	 * It is necessary for statistics to start counting from 1 
 	 */
-	oldstep = step[cur] - 1;
-	oldt    = t[cur];
-	/* 
-	 * If we did not start at the first step, oldstep will be > 0
-	 * and we must initiate the data in the array. Otherwise it remains 0
-	 */
-	if (oldstep > 0)
-	  for(i=0; (i<nre); i++) {
-	    oldee[i].esum = ee[cur][i].esum - ee[cur][i].e;
-	    oldee[i].eav  = ee[cur][i].eav  - 
-	      (sqr(oldee[i].esum - oldstep*ee[cur][i].e)/(oldstep*step[cur]));
-	  }
+	cur  = NEXT;
+	step[cur]++;
+	
+	if (oldstep == -1) {
+	  /* 
+	   * Initiate the previous step data 
+	   * Since step is incremented after reading, it is always >= 1,
+	   * therefore this will be executed only once.
+	   */
+	  oldstep = step[cur] - 1;
+	  oldt    = t[cur];
+	  /* 
+	   * If we did not start at the first step, oldstep will be > 0
+	   * and we must initiate the data in the array. Otherwise it remains 0
+	   */
+	  if (oldstep > 0)
+	    for(i=0; (i<nre); i++) {
+	      oldee[i].esum = ee[cur][i].esum - ee[cur][i].e;
+	      oldee[i].eav  = ee[cur][i].eav  - 
+		(sqr(oldee[i].esum - oldstep*ee[cur][i].e)/(oldstep*step[cur]));
+	    }
+	}
       }
-      
       /*
        * Define distance restraint legends. Can only be done after
        * the first frame has been read... (Then we know how many there are)
        */
       if (bDisRe && bDRAll && !leg && (ndr > 0)) {
-	t_iatom *fa;
+	t_iatom   *fa;
+	t_iparams *ip;
 	
 	fa = top.idef.il[F_DISRES].iatoms; 
-	
+	ip = top.idef.iparams;
+
 	if (ndr != top.idef.il[F_DISRES].nr/3)
 	  fatal_error(0,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
 		      ndr,top.idef.il[F_DISRES].nr/3);
@@ -713,7 +719,7 @@ int main(int argc,char *argv[])
 	  sprintf(pairleg[i],"%d %s %d %s (%d)",
 		  top.atoms.atom[j].resnr+1,*top.atoms.atomname[j],
 		  top.atoms.atom[k].resnr+1,*top.atoms.atomname[k],
-		  index[i]+1);
+		  ip[fa[3*i]].disres.index);
 	}
 	set=select_it(dr.ndr,pairleg,&nset);
 	snew(leg,2*nset);
@@ -729,7 +735,7 @@ int main(int argc,char *argv[])
       /* 
        * Store energies for analysis afterwards... 
        */
-      if (!bDisRe) {
+      if (!bDisRe && (nre > 0)) {
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
 	  for(i=0; (i<=nset); i++)
@@ -749,19 +755,18 @@ int main(int argc,char *argv[])
        * Printing time, only when we do not want to skip frames
        */
       if ((!skip) || ((teller % skip) == 0)) {
-	print_one(out,bDp,t[cur]);
-	
-	/*******************************************
-	 * D I S T A N C E   R E S T R A I N T S  
-	 *******************************************/
 	if (bDisRe) {
+	  /*******************************************
+	   * D I S T A N C E   R E S T R A I N T S  
+	   *******************************************/
 	  if (ndr >0) {
+	    print_one(out,bDp,t[cur]);
 	    if (violaver == NULL)
 	      snew(violaver,dr.ndr);
 	    
 	    /* Subtract bounds from distances, to calculate violations */
 	    calc_violations(dr.rt,dr.rav,
-			    nbounds,index,bounds,violaver,&sumt,&sumaver);
+			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
 	    
 	    if (bDRAll) {
 	      for(i=0; (i<nset); i++) {
@@ -774,23 +779,28 @@ int main(int argc,char *argv[])
 	    else {
 	      fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
 	    }
+	    fprintf(out,"\n");
 	  }
 	}
 	/*******************************************
 	 * E N E R G I E S
 	 *******************************************/
 	else {
-	  if (bSum) 
-	    print_one(out,bDp,(eneset[nset][nenergy-1]-ezero)/nmol);
-	  else if ((nset == 1) && bAll) {
-	    print_one(out,bDp,ee[cur][set[0]].e);
-	    print_one(out,bDp,ee[cur][set[0]].esum);
-	    print_one(out,bDp,ee[cur][set[0]].eav);
+	  if (nre > 0) {
+	    print_one(out,bDp,t[cur]);
+	    if (bSum) 
+	      print_one(out,bDp,(eneset[nset][nenergy-1]-ezero)/nmol);
+	    else if ((nset == 1) && bAll) {
+	      print_one(out,bDp,ee[cur][set[0]].e);
+	      print_one(out,bDp,ee[cur][set[0]].esum);
+	      print_one(out,bDp,ee[cur][set[0]].eav);
+	    }
+	    else for(i=0; (i<nset); i++)
+	      print_one(out,bDp,(ee[cur][set[i]].e-ezero)/nmol);
+
+	    fprintf(out,"\n");
 	  }
-	  else for(i=0; (i<nset); i++)
-	    print_one(out,bDp,(ee[cur][set[i]].e-ezero)/nmol);
 	}
-	fprintf(out,"\n");
       }
       teller++;
     }
@@ -803,7 +813,7 @@ int main(int argc,char *argv[])
 
   if (bDisRe) 
     analyse_disre(opt2fn("-v",NFILE,fnm),
-		  teller_disre,violaver,bounds,index,nbounds);
+		  teller_disre,violaver,bounds,index,pair,nbounds);
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bDG,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
