@@ -127,8 +127,8 @@ _vecinvsqrt_sse:
 	mov ebx, [ebp + 12]	
 	mov ecx, [ebp + 16]
         mov edx, ecx
-	movups xmm6,[sse_three]
-	movups xmm7,[sse_minushalf]
+	movaps xmm6,[sse_three]
+	movaps xmm7,[sse_minushalf]
     shr ecx, 3
     jecxz .vecinvsqrt_iter4
     emms	
@@ -220,7 +220,7 @@ _vecrecip_sse:
 	mov ebx, [ebp + 12]	
 	mov ecx, [ebp + 16]
     mov edx, ecx
-	movups xmm6,[sse_two]
+	movaps xmm6,[sse_two]
     shr ecx, 3
     jecxz .vecrecip_iter4
     emms	
@@ -352,9 +352,9 @@ _inl0100_sse:
 
 	emms
 
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
 	movaps [esp + i0100_two], xmm1
 	movaps [esp + i0100_six],  xmm2
 	movaps [esp + i0100_twelve], xmm3
@@ -1049,9 +1049,9 @@ _inl0110_sse:
 
 	emms
 
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
 	movaps [esp + i0110_two], xmm1
 	movaps [esp + i0110_six],  xmm2
 	movaps [esp + i0110_twelve], xmm3
@@ -2341,9 +2341,9 @@ _inl0300_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i0300_tabscale]
 	movaps [esp + i0300_half],  xmm0
 	movaps [esp + i0300_two], xmm1
@@ -3258,9 +3258,9 @@ _inl0310_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i0310_tabscale]
 	movaps [esp + i0310_half],  xmm0
 	movaps [esp + i0310_two], xmm1
@@ -4972,8 +4972,8 @@ _inl1000_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + i1000_half],  xmm0
 	movaps [esp + i1000_three], xmm1
 
@@ -5583,8 +5583,8 @@ _inl1010_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + i1010_half],  xmm0
 	movaps [esp + i1010_three], xmm1
 	add dword ptr [ebp + i1010_nsatoms],  8
@@ -6247,8 +6247,8 @@ _inl1020_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + i1020_half],  xmm0
 	movaps [esp + i1020_three], xmm1
 
@@ -7107,8 +7107,8 @@ _inl1030_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + i1030_half],  xmm0
 	movaps [esp + i1030_three], xmm1
 	
@@ -7798,96 +7798,108 @@ i1030_unroll_loop:
 	mov edi, [ebp + i1030_faction]
 		
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i1030_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i1030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i1030_fjzO]
-	movaps xmm2, [esp + i1030_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i1030_fjyH1]
-	movaps xmm5, [esp + i1030_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i1030_fjxH2]
-	movaps xmm6, [esp + i1030_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i1030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i1030_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i1030_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i1030_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i1030_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i1030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i1030_fjzO]
-	movaps xmm2, [esp + i1030_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i1030_fjyH1]
-	movaps xmm5, [esp + i1030_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i1030_fjxH2]
-	movaps xmm6, [esp + i1030_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd  fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i1030_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i1030_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i1030_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
 	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i1030_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i1030_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i1030_fjzH2] 
+	addss xmm5, [esp + i1030_fjzH2 + 4] 
+	addss xmm6, [esp + i1030_fjzH2 + 8] 
+	addss xmm7, [esp + i1030_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
+
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i1030_innerk],  4
 	jl    i1030_single_check
@@ -7908,21 +7920,27 @@ i1030_single_loop:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i1030_ixO]     
 	movaps  xmm1, [esp + i1030_iyO]
 	movaps  xmm2, [esp + i1030_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+	
 	;# store all j coordinates in jO  
 	movaps [esp + i1030_jxO], xmm3
 	movaps [esp + i1030_jyO], xmm4
@@ -8370,10 +8388,10 @@ _inl1100_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
 	movaps [esp + i1100_half],  xmm0
 	movaps [esp + i1100_three], xmm1
 	movaps [esp + i1100_six],  xmm2
@@ -9136,11 +9154,11 @@ _inl2100_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
-	movups xmm4, [sse_two]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
+	movaps xmm4, [sse_two]
 	movss xmm5, [ebp + i2100_argkrf]
 	movss xmm6, [ebp + i2100_argcrf]
 	
@@ -9923,9 +9941,9 @@ _inl2000_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm4, [sse_two]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm4, [sse_two]
 	movss xmm5, [ebp + i2000_argkrf]
 	movss xmm6, [ebp + i2000_argcrf]
 	
@@ -10594,11 +10612,11 @@ _inl1110_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
-	movups xmm3, [sse_six]
-	movups xmm4, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
+	movaps xmm3, [sse_six]
+	movaps xmm4, [sse_twelve]
 	movaps [esp + i1110_half],  xmm0
 	movaps [esp + i1110_two], xmm1
 	movaps [esp + i1110_three], xmm2
@@ -12471,10 +12489,10 @@ _inl1120_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
 	movaps [esp + i1120_half],  xmm0
 	movaps [esp + i1120_three], xmm1
 	movaps [esp + i1120_six],  xmm2
@@ -13446,10 +13464,10 @@ _inl1130_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
 	movaps [esp + i1130_half],  xmm0
 	movaps [esp + i1130_three], xmm1
 	movaps [esp + i1130_six],  xmm2
@@ -14173,95 +14191,107 @@ i1130_unroll_loop:
 	mov edi, [ebp + i1130_faction]
 		
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i1130_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i1130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i1130_fjzO]
-	movaps xmm2, [esp + i1130_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i1130_fjyH1]
-	movaps xmm5, [esp + i1130_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i1130_fjxH2]
-	movaps xmm6, [esp + i1130_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i1130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i1130_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i1130_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i1130_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i1130_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i1130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i1130_fjzO]
-	movaps xmm2, [esp + i1130_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i1130_fjyH1]
-	movaps xmm5, [esp + i1130_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i1130_fjxH2]
-	movaps xmm6, [esp + i1130_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd  fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i1130_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i1130_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i1130_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
+	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i1130_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i1130_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i1130_fjzH2] 
+	addss xmm5, [esp + i1130_fjzH2 + 4] 
+	addss xmm6, [esp + i1130_fjzH2 + 8] 
+	addss xmm7, [esp + i1130_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
 	
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i1130_innerk],  4
@@ -14279,25 +14309,31 @@ i1130_single_loop:
 	mov esi, [ebp + i1130_pos]
 	lea   eax, [eax + eax*2]  
 
-	;# fetch j coordinates 
+	;# fetch j coordinates
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i1130_ixO]     
 	movaps  xmm1, [esp + i1130_iyO]
 	movaps  xmm2, [esp + i1130_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + i1130_jxO], xmm3
 	movaps [esp + i1130_jyO], xmm4
@@ -14803,11 +14839,11 @@ _inl2120_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
-	movups xmm4, [sse_two]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
+	movaps xmm4, [sse_two]
 	movss xmm5, [ebp + i2120_argkrf]
 	movss xmm6, [ebp + i2120_argcrf]
 
@@ -15838,11 +15874,11 @@ _inl2130_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm2, [sse_six]
-	movups xmm3, [sse_twelve]
-	movups xmm4, [sse_two]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm2, [sse_six]
+	movaps xmm3, [sse_twelve]
+	movaps xmm4, [sse_two]
 	movss xmm5, [ebp + i2130_argkrf]
 	movss xmm6, [ebp + i2130_argcrf]
 	
@@ -16665,95 +16701,107 @@ _inl2130_sse:
 	mov edi, [ebp + i2130_faction]
 		
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i2130_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i2130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i2130_fjzO]
-	movaps xmm2, [esp + i2130_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i2130_fjyH1]
-	movaps xmm5, [esp + i2130_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i2130_fjxH2]
-	movaps xmm6, [esp + i2130_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i2130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i2130_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i2130_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i2130_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i2130_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i2130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i2130_fjzO]
-	movaps xmm2, [esp + i2130_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i2130_fjyH1]
-	movaps xmm5, [esp + i2130_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i2130_fjxH2]
-	movaps xmm6, [esp + i2130_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd  fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i2130_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i2130_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i2130_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
+	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i2130_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i2130_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i2130_fjzH2] 
+	addss xmm5, [esp + i2130_fjzH2 + 4] 
+	addss xmm6, [esp + i2130_fjzH2 + 8] 
+	addss xmm7, [esp + i2130_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
 	
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i2130_innerk],  4
@@ -16775,21 +16823,27 @@ _inl2130_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
+
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i2130_ixO]     
 	movaps  xmm1, [esp + i2130_iyO]
 	movaps  xmm2, [esp + i2130_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+	
 	;# store all j coordinates in jO  
 	movaps [esp + i2130_jxO], xmm3
 	movaps [esp + i2130_jyO], xmm4
@@ -17313,9 +17367,9 @@ _inl2020_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm4, [sse_two]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm4, [sse_two]
 	movss xmm5, [ebp + i2020_argkrf]
 	movss xmm6, [ebp + i2020_argcrf]
 
@@ -18232,9 +18286,9 @@ _inl2030_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
-	movups xmm4, [sse_two]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
+	movaps xmm4, [sse_two]
 	movss xmm5, [ebp + i2030_argkrf]
 	movss xmm6, [ebp + i2030_argcrf]
 	
@@ -19024,95 +19078,107 @@ _inl2030_sse:
 	mov edi, [ebp + i2030_faction]
 		
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i2030_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i2030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i2030_fjzO]
-	movaps xmm2, [esp + i2030_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i2030_fjyH1]
-	movaps xmm5, [esp + i2030_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i2030_fjxH2]
-	movaps xmm6, [esp + i2030_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i2030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i2030_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i2030_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i2030_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i2030_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i2030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i2030_fjzO]
-	movaps xmm2, [esp + i2030_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i2030_fjyH1]
-	movaps xmm5, [esp + i2030_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i2030_fjxH2]
-	movaps xmm6, [esp + i2030_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd  fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i2030_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i2030_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i2030_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
+	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i2030_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i2030_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i2030_fjzH2] 
+	addss xmm5, [esp + i2030_fjzH2 + 4] 
+	addss xmm6, [esp + i2030_fjzH2 + 8] 
+	addss xmm7, [esp + i2030_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
 	
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i2030_innerk],  4
@@ -19134,21 +19200,27 @@ _inl2030_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i2030_ixO]     
 	movaps  xmm1, [esp + i2030_iyO]
 	movaps  xmm2, [esp + i2030_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + i2030_jxO], xmm3
 	movaps [esp + i2030_jyO], xmm4
@@ -19616,9 +19688,9 @@ _inl3000_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3000_tabscale]
 	movaps [esp + i3000_half],  xmm0
 	movaps [esp + i3000_two], xmm1
@@ -20394,9 +20466,9 @@ _inl3010_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3010_tabscale]
 	movaps [esp + i3010_half],  xmm0
 	movaps [esp + i3010_two], xmm1
@@ -21228,9 +21300,9 @@ _inl3020_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3020_tabscale]
 	
 	movaps [esp + i3020_half],  xmm0
@@ -22347,9 +22419,9 @@ _inl3030_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3030_tabscale]
 	movaps [esp + i3030_half],  xmm0
 	movaps [esp + i3030_two],  xmm1
@@ -23574,95 +23646,107 @@ _inl3030_sse:
 	movd edx, mm3
 	
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i3030_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i3030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i3030_fjzO]
-	movaps xmm2, [esp + i3030_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i3030_fjyH1]
-	movaps xmm5, [esp + i3030_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i3030_fjxH2]
-	movaps xmm6, [esp + i3030_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i3030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i3030_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i3030_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i3030_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i3030_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i3030_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i3030_fjzO]
-	movaps xmm2, [esp + i3030_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i3030_fjyH1]
-	movaps xmm5, [esp + i3030_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i3030_fjxH2]
-	movaps xmm6, [esp + i3030_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd  fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i3030_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i3030_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i3030_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
+	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i3030_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i3030_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i3030_fjzH2] 
+	addss xmm5, [esp + i3030_fjzH2 + 4] 
+	addss xmm6, [esp + i3030_fjzH2 + 8] 
+	addss xmm7, [esp + i3030_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
 	
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i3030_innerk],  4
@@ -23684,21 +23768,27 @@ _inl3030_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i3030_ixO]     
 	movaps  xmm1, [esp + i3030_iyO]
 	movaps  xmm2, [esp + i3030_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + i3030_jxO], xmm3
 	movaps [esp + i3030_jyO], xmm4
@@ -24315,11 +24405,11 @@ _inl3100_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
-	movups xmm3, [sse_six]
-	movups xmm4, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
+	movaps xmm3, [sse_six]
+	movaps xmm4, [sse_twelve]
 	movss xmm5, [ebp + i3100_tabscale]
 	movaps [esp + i3100_half],  xmm0
 	movaps [esp + i3100_two], xmm1
@@ -25259,11 +25349,11 @@ _inl3110_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
-	movups xmm3, [sse_six]
-	movups xmm4, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
+	movaps xmm3, [sse_six]
+	movaps xmm4, [sse_twelve]
 	movss xmm5, [ebp + i3110_tabscale]
 	movaps [esp + i3110_half],  xmm0
 	movaps [esp + i3110_two], xmm1
@@ -27466,11 +27556,11 @@ _inl3120_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
-	movups xmm3, [sse_six]
-	movups xmm4, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
+	movaps xmm3, [sse_six]
+	movaps xmm4, [sse_twelve]
 	movss xmm5, [ebp + i3120_tabscale]
 	
 	movaps [esp + i3120_half],  xmm0
@@ -28699,11 +28789,11 @@ _inl3130_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
-	movups xmm3, [sse_six]
-	movups xmm4, [sse_twelve]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
+	movaps xmm3, [sse_six]
+	movaps xmm4, [sse_twelve]
 	movss xmm5, [ebp + i3130_tabscale]
 	movaps [esp + i3130_half],  xmm0
 	movaps [esp + i3130_two],  xmm1
@@ -29964,95 +30054,107 @@ _inl3130_sse:
 	movd edx, mm3
 	
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i3130_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i3130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i3130_fjzO]
-	movaps xmm2, [esp + i3130_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i3130_fjyH1]
-	movaps xmm5, [esp + i3130_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i3130_fjxH2]
-	movaps xmm6, [esp + i3130_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i3130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i3130_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i3130_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i3130_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i3130_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i3130_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i3130_fjzO]
-	movaps xmm2, [esp + i3130_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i3130_fjyH1]
-	movaps xmm5, [esp + i3130_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i3130_fjxH2]
-	movaps xmm6, [esp + i3130_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd  fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i3130_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i3130_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i3130_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
+	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i3130_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i3130_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i3130_fjzH2] 
+	addss xmm5, [esp + i3130_fjzH2 + 4] 
+	addss xmm6, [esp + i3130_fjzH2 + 8] 
+	addss xmm7, [esp + i3130_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
 	
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i3130_innerk],  4
@@ -30074,21 +30176,27 @@ _inl3130_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i3130_ixO]     
 	movaps  xmm1, [esp + i3130_iyO]
 	movaps  xmm2, [esp + i3130_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + i3130_jxO], xmm3
 	movaps [esp + i3130_jyO], xmm4
@@ -30738,9 +30846,9 @@ _inl3300_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3300_tabscale]
 	movaps [esp + i3300_half],  xmm0
 	movaps [esp + i3300_two], xmm1
@@ -31829,9 +31937,9 @@ _inl3310_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3310_tabscale]
 	movaps [esp + i3310_half],  xmm0
 	movaps [esp + i3310_two], xmm1
@@ -34419,9 +34527,9 @@ _inl3320_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3320_tabscale]
 	
 	movaps [esp + i3320_half],  xmm0
@@ -35761,9 +35869,9 @@ _inl3330_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + i3330_tabscale]
 	movaps [esp + i3330_half],  xmm0
 	movaps [esp + i3330_two],  xmm1
@@ -37116,95 +37224,107 @@ _inl3330_sse:
 	movd edx, mm3
 	
 	;# Did all interactions - now update j forces 
-	;# 4 j waters with three atoms each - first do a & b j particles 
+	;# At this stage forces are still on the stack, in positions:
+	;# fjxO, fjyO, fjzO, ... , fjzH2.
+	;# Each position is a quadruplet of forces for the four 
+	;# corresponding j waters, so we need to transpose them before
+	;# adding to the memory positions.
+	;# 
+	;# This _used_ to be a simple transpose, but the resulting high number
+	;# of unaligned 128-bit load/stores might trigger a possible hardware 
+	;# bug on Athlon and Opteron chips, so I have worked around it
+	;# to use 64-bit load/stores instead. The performance hit should be
+	;# very modest, since the 128-bit unaligned memory instructions were
+	;# slow anyway. 
+	
+		
+	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
 	movaps xmm0, [esp + i3330_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i3330_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpcklps xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb 
-	movaps xmm1, [esp + i3330_fjzO]
-	movaps xmm2, [esp + i3330_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOb  fjyOb  
-	unpcklps xmm1, xmm2	   ;# xmm1= fjzOa  fjxH1a fjzOb  fjxH1b 
-	movaps xmm4, [esp + i3330_fjyH1]
-	movaps xmm5, [esp + i3330_fjzH1]
-	unpcklps xmm4, xmm5	   ;# xmm4= fjyH1a fjzH1a fjyH1b fjzH1b 
-	movaps xmm5, [esp + i3330_fjxH2]
-	movaps xmm6, [esp + i3330_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1b fjzH1b 
-	unpcklps xmm5, xmm6	   ;# xmm5= fjxH2a fjyH2a fjxH2b fjyH2b 
-	movlhps  xmm0, xmm1    	   ;# xmm0= fjxOa  fjyOa  fjzOa  fjxH1a 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOb  fjyOb  fjzOb  fjxH1b 
-	movlhps  xmm4, xmm5   	   ;# xmm4= fjyH1a fjzH1a fjxH2a fjyH2a 
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1b fjzH1b fjxH2b fjyH2b 
-	movups   xmm1, [edi + eax*4]
-	movups   xmm2, [edi + eax*4 + 16]
-	movups   xmm5, [edi + ebx*4]
-	movups   xmm6, [edi + ebx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + eax*4 + 32]
-	movss    xmm3, [edi + ebx*4 + 32]
+	movaps xmm2, [esp + i3330_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
+	movlps xmm3, [edi + eax*4]
+	movlps xmm4, [edi + ecx*4]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
+	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
+	movhps xmm3, [edi + ebx*4]
+	movhps xmm4, [edi + edx*4]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4], xmm3
+	movlps [edi + ecx*4], xmm4
+	movhps [edi + ebx*4], xmm3
+	movhps [edi + edx*4], xmm4
 	
-	movaps   xmm4, [esp + i3330_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm7, xmm7, 1
-	
-	movups   [edi + eax*4],     xmm1
-	movups   [edi + eax*4 + 16],xmm2
-	movups   [edi + ebx*4],     xmm5
-	movups   [edi + ebx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + eax*4 + 32], xmm0
-	movss    [edi + ebx*4 + 32], xmm3	
+	;# Oxygen Z & first hydrogen X forces for 4 j particles 
+	movaps xmm0, [esp + i3330_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
+	movaps xmm2, [esp + i3330_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
+	movlps xmm3, [edi + eax*4 + 8]
+	movlps xmm4, [edi + ecx*4 + 8]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
+	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
+	movhps xmm3, [edi + ebx*4 + 8]
+	movhps xmm4, [edi + edx*4 + 8]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 8], xmm3
+	movlps [edi + ecx*4 + 8], xmm4
+	movhps [edi + ebx*4 + 8], xmm3
+	movhps [edi + edx*4 + 8], xmm4
 
-	;# then do the second pair (c & d) 
-	movaps xmm0, [esp + i3330_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm1, [esp + i3330_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd  
-	unpckhps xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjxOd  fjyOd 
-	movaps xmm1, [esp + i3330_fjzO]
-	movaps xmm2, [esp + i3330_fjxH1]
-	movhlps  xmm3, xmm0	   ;# xmm3= fjxOd  fjyOd  
-	unpckhps xmm1, xmm2	   ;# xmm1= fjzOc  fjxH1c fjzOd  fjxH1d 
-	movaps xmm4, [esp + i3330_fjyH1]
-	movaps xmm5, [esp + i3330_fjzH1]
-	unpckhps xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjyH1d fjzH1d	
-	movaps xmm5, [esp + i3330_fjxH2]
-	movaps xmm6, [esp + i3330_fjyH2]
-	movhlps  xmm7, xmm4	   ;# xmm7= fjyH1d fjzH1d 	 
-	unpckhps xmm5, xmm6	   ;# xmm5= fjxH2c fjyH2c fjxH2d fjyH2d 
-	movlhps  xmm0, xmm1	   ;# xmm0= fjxOc  fjyOc  fjzOc  fjxH1c 
-	shufps   xmm3, xmm1, 228 ;# 11100100
-                               ;# xmm3= fjxOd  fjyOd fjzOd  fjxH1d 
-	movlhps  xmm4, xmm5	   ;# xmm4= fjyH1c fjzH1c fjxH2c fjyH2c  
-	shufps   xmm7, xmm5, 228 ;# 11100100
-                               ;# xmm7= fjyH1d fjzH1d fjxH2d fjyH2d 
-	movups   xmm1, [edi + ecx*4]
-	movups   xmm2, [edi + ecx*4 + 16]
-	movups   xmm5, [edi + edx*4]
-	movups   xmm6, [edi + edx*4 + 16]
-	addps    xmm1, xmm0
-	addps    xmm2, xmm4
-	addps    xmm5, xmm3
-	addps    xmm6, xmm7
-	movss    xmm0, [edi + ecx*4 + 32]
-	movss    xmm3, [edi + edx*4 + 32]
 	
-	movaps   xmm4, [esp + i3330_fjzH2]
-	movaps   xmm7, xmm4
-	shufps   xmm4, xmm4, 2 ;# 00000010
-	shufps   xmm7, xmm7, 3 ;# 00000011
-	movups   [edi + ecx*4],     xmm1
-	movups   [edi + ecx*4 + 16],xmm2
-	movups   [edi + edx*4],     xmm5
-	movups   [edi + edx*4 + 16],xmm6	
-	addss    xmm0, xmm4
-	addss    xmm3, xmm7
-	movss    [edi + ecx*4 + 32], xmm0
-	movss    [edi + edx*4 + 32], xmm3	
+	;# First hydrogen Y & Z forces for 4 j particles 
+	movaps xmm0, [esp + i3330_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
+	movaps xmm2, [esp + i3330_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
+	movlps xmm3, [edi + eax*4 + 16]
+	movlps xmm4, [edi + ecx*4 + 16]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
+	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
+	movhps xmm3, [edi + ebx*4 + 16]
+	movhps xmm4, [edi + edx*4 + 16]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 16], xmm3
+	movlps [edi + ecx*4 + 16], xmm4
+	movhps [edi + ebx*4 + 16], xmm3
+	movhps [edi + edx*4 + 16], xmm4
+
+	
+	;# Second hydrogen X & Y forces for 4 j particles 
+	movaps xmm0, [esp + i3330_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
+	movaps xmm2, [esp + i3330_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
+	movlps xmm3, [edi + eax*4 + 24]
+	movlps xmm4, [edi + ecx*4 + 24]
+	movaps xmm1, xmm0
+	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
+	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
+	movhps xmm3, [edi + ebx*4 + 24]
+	movhps xmm4, [edi + edx*4 + 24]
+	addps  xmm3, xmm0
+	addps  xmm4, xmm1
+	movlps [edi + eax*4 + 24], xmm3
+	movlps [edi + ecx*4 + 24], xmm4
+	movhps [edi + ebx*4 + 24], xmm3
+	movhps [edi + edx*4 + 24], xmm4
+
+	
+	;# Second hydrogen Z forces for 4 j particles 
+	;# Just load the four Z coords into one reg. each
+	movss xmm4, [edi + eax*4 + 32]
+	movss xmm5, [edi + ebx*4 + 32]
+	movss xmm6, [edi + ecx*4 + 32]
+	movss xmm7, [edi + edx*4 + 32]
+	;# add what we have on the stack
+	addss xmm4, [esp + i3330_fjzH2] 
+	addss xmm5, [esp + i3330_fjzH2 + 4] 
+	addss xmm6, [esp + i3330_fjzH2 + 8] 
+	addss xmm7, [esp + i3330_fjzH2 + 12]
+	;# store back
+	movss [edi + eax*4 + 32], xmm4
+	movss [edi + ebx*4 + 32], xmm5
+	movss [edi + ecx*4 + 32], xmm6
+	movss [edi + edx*4 + 32], xmm7
 	
 	;# should we do one more iteration? 
 	sub dword ptr [esp + i3330_innerk],  4
@@ -37226,21 +37346,27 @@ _inl3330_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + i3330_ixO]     
 	movaps  xmm1, [esp + i3330_iyO]
 	movaps  xmm2, [esp + i3330_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + i3330_jxO], xmm3
 	movaps [esp + i3330_jyO], xmm4
@@ -37915,7 +38041,7 @@ _mcinl0100_sse:
 
 	emms
 
-	movups xmm1, [sse_two]
+	movaps xmm1, [sse_two]
 	movaps [esp + mci0100_two], xmm1
 
 	;# assume we have at least one i particle - start directly 	
@@ -38377,7 +38503,7 @@ _mcinl0110_sse:
 
 	emms
 
-	movups xmm1, [sse_two]
+	movaps xmm1, [sse_two]
 	movaps [esp + mci0110_two], xmm1
 
 	;# assume we have at least one i particle - start directly 	
@@ -39210,8 +39336,8 @@ _mcinl0300_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci0300_tabscale]
 	movaps [esp + mci0300_half],  xmm0
 	movaps [esp + mci0300_three],  xmm2
@@ -39862,8 +39988,8 @@ _mcinl0310_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci0310_tabscale]
 	movaps [esp + mci0310_half],  xmm0
 	movaps [esp + mci0310_three], xmm2
@@ -41060,8 +41186,8 @@ _mcinl1000_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1000_half],  xmm0
 	movaps [esp + mci1000_three], xmm1
 
@@ -41453,8 +41579,8 @@ _mcinl1010_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1010_half],  xmm0
 	movaps [esp + mci1010_three], xmm1
 	add dword ptr [ebp + mci1010_nsatoms],  8
@@ -41883,8 +42009,8 @@ _mcinl1020_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1020_half],  xmm0
 	movaps [esp + mci1020_three], xmm1
 
@@ -42350,8 +42476,8 @@ _mcinl1030_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1030_half],  xmm0
 	movaps [esp + mci1030_three], xmm1
 	
@@ -42793,21 +42919,27 @@ _mcinl1030_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci1030_ixO]     
 	movaps  xmm1, [esp + mci1030_iyO]
 	movaps  xmm2, [esp + mci1030_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci1030_jxO], xmm3
 	movaps [esp + mci1030_jyO], xmm4
@@ -43003,8 +43135,8 @@ _mcinl1100_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1100_half],  xmm0
 	movaps [esp + mci1100_three], xmm1
 
@@ -43532,8 +43664,8 @@ _mcinl2100_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movss xmm5, [ebp + mci2100_argkrf]
 	movss xmm6, [ebp + mci2100_argcrf]
 	
@@ -44073,8 +44205,8 @@ _mcinl2000_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movss xmm5, [ebp + mci2000_argkrf]
 	movss xmm6, [ebp + mci2000_argcrf]
 	
@@ -44496,9 +44628,9 @@ _mcinl1110_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movaps [esp + mci1110_half],  xmm0
 	movaps [esp + mci1110_two], xmm1
 	movaps [esp + mci1110_three], xmm2
@@ -45666,8 +45798,8 @@ _mcinl1120_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1120_half],  xmm0
 	movaps [esp + mci1120_three], xmm1
 
@@ -46235,8 +46367,8 @@ _mcinl1130_sse:
 	mov [esp + mci1130_salign], eax
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movaps [esp + mci1130_half],  xmm0
 	movaps [esp + mci1130_three], xmm1
 
@@ -46699,21 +46831,27 @@ mci1130_single_loop:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci1130_ixO]     
 	movaps  xmm1, [esp + mci1130_iyO]
 	movaps  xmm2, [esp + mci1130_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci1130_jxO], xmm3
 	movaps [esp + mci1130_jyO], xmm4
@@ -46947,8 +47085,8 @@ _mcinl2120_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movss xmm5, [ebp + mci2120_argkrf]
 	movss xmm6, [ebp + mci2120_argcrf]
 
@@ -47562,8 +47700,8 @@ _mcinl2130_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movss xmm5, [ebp + mci2130_argkrf]
 	movss xmm6, [ebp + mci2130_argcrf]
 	
@@ -48128,21 +48266,27 @@ _mcinl2130_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci2130_ixO]     
 	movaps  xmm1, [esp + mci2130_iyO]
 	movaps  xmm2, [esp + mci2130_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci2130_jxO], xmm3
 	movaps [esp + mci2130_jyO], xmm4
@@ -48385,8 +48529,8 @@ _mcinl2020_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movss xmm5, [ebp + mci2020_argkrf]
 	movss xmm6, [ebp + mci2020_argcrf]
 
@@ -48895,8 +49039,8 @@ _mcinl2030_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_three]
 	movss xmm5, [ebp + mci2030_argkrf]
 	movss xmm6, [ebp + mci2030_argcrf]
 	
@@ -49378,21 +49522,27 @@ _mcinl2030_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci2030_ixO]     
 	movaps  xmm1, [esp + mci2030_iyO]
 	movaps  xmm2, [esp + mci2030_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci2030_jxO], xmm3
 	movaps [esp + mci2030_jyO], xmm4
@@ -49591,8 +49741,8 @@ _mcinl3000_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3000_tabscale]
 	movaps [esp + mci3000_half],  xmm0
 	movaps [esp + mci3000_three],  xmm2
@@ -50120,8 +50270,8 @@ _mcinl3010_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3010_tabscale]
 	movaps [esp + mci3010_half],  xmm0
 	movaps [esp + mci3010_three],  xmm2
@@ -50688,8 +50838,8 @@ _mcinl3020_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3020_tabscale]
 	
 	movaps [esp + mci3020_half],  xmm0
@@ -51387,8 +51537,8 @@ _mcinl3030_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3030_tabscale]
 	movaps [esp + mci3030_half],  xmm0
 	movaps [esp + mci3030_three], xmm2
@@ -52315,21 +52465,27 @@ _mcinl3030_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci3030_ixO]     
 	movaps  xmm1, [esp + mci3030_iyO]
 	movaps  xmm2, [esp + mci3030_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci3030_jxO], xmm3
 	movaps [esp + mci3030_jyO], xmm4
@@ -52669,8 +52825,8 @@ _mcinl3100_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm5, [ebp + mci3100_tabscale]
 	movaps [esp + mci3100_half],  xmm0
 	movaps [esp + mci3100_three],  xmm2
@@ -53354,9 +53510,9 @@ _mcinl3110_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm5, [ebp + mci3110_tabscale]
 	movaps [esp + mci3110_half],  xmm0
 	movaps [esp + mci3110_two], xmm1
@@ -54830,8 +54986,8 @@ _mcinl3120_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm5, [ebp + mci3120_tabscale]
 	
 	movaps [esp + mci3120_half],  xmm0
@@ -55633,8 +55789,8 @@ _mcinl3130_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm5, [ebp + mci3130_tabscale]
 	movaps [esp + mci3130_half],  xmm0
 	movaps [esp + mci3130_three], xmm2
@@ -56593,21 +56749,27 @@ _mcinl3130_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci3130_ixO]     
 	movaps  xmm1, [esp + mci3130_iyO]
 	movaps  xmm2, [esp + mci3130_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci3130_jxO], xmm3
 	movaps [esp + mci3130_jyO], xmm4
@@ -56978,8 +57140,8 @@ _mcinl3300_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3300_tabscale]
 	movaps [esp + mci3300_half],  xmm0
 	movaps [esp + mci3300_three],  xmm2
@@ -57777,9 +57939,9 @@ _mcinl3310_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm1, [sse_two]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm1, [sse_two]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3310_tabscale]
 	movaps [esp + mci3310_half],  xmm0
 	movaps [esp + mci3310_two], xmm1
@@ -59584,8 +59746,8 @@ _mcinl3320_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3320_tabscale]
 	
 	movaps [esp + mci3320_half],  xmm0
@@ -60480,8 +60642,8 @@ _mcinl3330_sse:
 
 	emms
 
-	movups xmm0, [sse_half]
-	movups xmm2, [sse_three]
+	movaps xmm0, [sse_half]
+	movaps xmm2, [sse_three]
 	movss xmm3, [ebp + mci3330_tabscale]
 	movaps [esp + mci3330_half],  xmm0
 	movaps [esp + mci3330_three], xmm2
@@ -61522,21 +61684,27 @@ _mcinl3330_sse:
 	xorps xmm3, xmm3
 	xorps xmm4, xmm4
 	xorps xmm5, xmm5
-	movss xmm3, [esi + eax*4]
-	movss xmm4, [esi + eax*4 + 4]
-	movss xmm5, [esi + eax*4 + 8]
+	
+	movss xmm3, [esi + eax*4]		;# jxO  -  -  -
+	movss xmm4, [esi + eax*4 + 4]		;# jyO  -  -  -
+	movss xmm5, [esi + eax*4 + 8]		;# jzO  -  -  -  
 
-	movlps xmm6, [esi + eax*4 + 12]
-	movhps xmm6, [esi + eax*4 + 24]	;# xmm6=jxH1 jyH1 jxH2 jyH2 
-	;# fetch both z coords in one go, to positions 0 and 3 in xmm7 
-	movups xmm7, [esi + eax*4 + 20] ;# xmm7=jzH1 jxH2 jyH2 jzH2 
-	shufps xmm6, xmm6, 216 ;# 11011000    ;# xmm6=jxH1 jxH2 jyH1 jyH2 
-	movlhps xmm3, xmm6      	;# xmm3= jxO   0  jxH1 jxH2 
+	movlps xmm6, [esi + eax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
+	movss  xmm7, [esi + eax*4 + 20]		;# xmm7 = jzH1   -    -    - 
+	movhps xmm6, [esi + eax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
+	movss  xmm2, [esi + eax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	
+	;# have all coords, time for some shuffling.
+
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
 	movaps  xmm0, [esp + mci3330_ixO]     
 	movaps  xmm1, [esp + mci3330_iyO]
 	movaps  xmm2, [esp + mci3330_izO]	
-	shufps  xmm4, xmm6, 228 ;# 11100100 ;# xmm4= jyO   0   jyH1 jyH2 
-	shufps xmm5, xmm7, 196 ;# 11000100  ;# xmm5= jzO   0   jzH1 jzH2 
+	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
+	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
+	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
 	movaps [esp + mci3330_jxO], xmm3
 	movaps [esp + mci3330_jyO], xmm4
