@@ -11,7 +11,7 @@ c     Thus, if you edit one of the files, make sure
 c      to change to other similarly!
  
       subroutine fshake(iatom,ncon,nit,maxnit,
-     $     dist2,xp,rij,m2,invmass,tt,lagr,error)
+     $     dist2,xp,rij,m2,omega,invmass,tt,lagr,error)
       
       implicit none
       
@@ -19,6 +19,7 @@ c      to change to other similarly!
       integer*4 ncon,nit,maxnit
       integer*4 error
       real*8    dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*),lagr(*)
+      real*8    omega
       
       integer*4 ll,i,j,i3,j3,l3,nconv,iconv
       integer*4 ix,iy,iz,jx,jy,jz
@@ -65,7 +66,7 @@ c      to change to other similarly!
                if (rrpr .lt. mytol*toler) then
                   error   = ll
                else
-                  acor    = diff*m2(ll)/rrpr
+                  acor    = omega*diff*m2(ll)/rrpr
                   lagr(ll) = lagr(ll) + acor
                   xh      = rijx*acor
                   yh      = rijy*acor

@@ -19,6 +19,7 @@ c      to change to other similarly!
       integer*4 ncon,nit,maxnit
       integer*4 error
       real*4    dist2(*),xp(*),rij(*),m2(*),invmass(*),tt(*),lagr(*)
+      real*4    omega
       
       integer*4 ll,i,j,i3,j3,l3,nconv,iconv
       integer*4 ix,iy,iz,jx,jy,jz
