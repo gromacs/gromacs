@@ -286,11 +286,10 @@ static void fatal_error(int f_errno,const char *fmt,...)
   gmx_error("fatal",msg);
 }
 
-void gmx_fatal(int f_errno,const char *file,
-	       int line,const char *fmt,...)
+void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 {
   va_list ap;
-  const char  *p;
+  const char    *p;
   char    cval,*sval,msg[STRLEN];
   char    ibuf[64],ifmt[64];
   int     index,ival,fld,len;
@@ -385,16 +384,12 @@ int get_warning_line()
   return lineno;
 }
 
-char *get_warning_file()
+const char *get_warning_file()
 {
   return filenm;
 }
 
-<<<<<<< fatal.c
-void warning(const char *s)
-=======
-static void low_warning(char *warn_err,char *s)
->>>>>>> 1.48
+static void low_warning(const char *warn_err,const char *s)
 {
 #define indent 2 
   char linenobuf[32], *temp, *temp2;
@@ -421,18 +416,18 @@ static void low_warning(char *warn_err,char *s)
     gmx_fatal(FARGS,"Too many warnings, %s terminated",Program());
 }
 
-void warning(char *s)
+void warning(const char *s)
 {
   low_warning("WARNING",s);
 }
 
-void warning_error(char *s)
+void warning_error(const char *s)
 {
   nwarn_error++;
   low_warning("ERROR",s);
 }
 
-void check_warning_error(int f_errno,char *file,int line)
+void check_warning_error(int f_errno,const char *file,int line)
 {
   if (nwarn_error > 0) {
     gmx_fatal(f_errno,file,line,"There were %d errors in input file(s)",
@@ -588,8 +583,7 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   gmx_error_handler(buf);
 }
 
-void _range_check(int n,int n_min,int n_max,
-		  const char *var,const char *file,int line)
+void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int line)
 {
   char buf[1024];
   
