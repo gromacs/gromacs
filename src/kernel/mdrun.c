@@ -181,6 +181,8 @@ int main(int argc,char *argv[])
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
+    { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
+      "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
     { "-multi",   FALSE, etBOOL,{&bMultiSim}, 
       "Do multiple simulations in parallel (only with -np > 1)" },
     { "-replex",   FALSE, etINT,{&repl_ex_nst}, 
@@ -191,8 +193,6 @@ int main(int argc,char *argv[])
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
-    { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
-      "HIDDENWrite separate V and dVdl terms for each interaction and node(!) to log file(s)" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
