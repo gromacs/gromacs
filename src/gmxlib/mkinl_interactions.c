@@ -451,7 +451,9 @@ int do_table(int i,int j)
   nflop += table_index(buf) + 1;
 
   assign("n1","%d*n0%s",table_element_size, bC ? "" : "+1");
-  
+  if(loop.sol==SOL_MNO && !loop.coul && table_element_size==12)
+    assign("n1","n1+4");
+    
   if(DO_COULTAB) {
     /* determine the name of and set the charge parameter q_i*q_j */
     nflop += assign_chargeproduct(i,j,qq);
