@@ -99,6 +99,7 @@ void lo_do_ljc(double r,
   *vr2 = 156.0*(*vr)/r2;
 }
 
+/* use with coulombtype = user */
 void lo_do_ljc_pme(double r,
 		   double rcoulomb, double ewald_rtol,
 		   double *vc,double *vc2,
@@ -126,7 +127,7 @@ void lo_do_ljc_pme(double r,
   *vr2 = 156.0*(*vr)/r2;
 }
 
-void lo_do_guillot(double r,double xi,
+void lo_do_guillot(double r,double xi, double xir,
 			    double *vc,double *vc2,
 			    double *vd,double *vd2,
 			    double *vr,double *vr2)
@@ -134,7 +135,6 @@ void lo_do_guillot(double r,double xi,
   double qO     = -0.888;
   double qOd    = 0.226;
   double f0     = qOd/qO;
-  double xir    = 0.0615;
   double sqpi   = sqrt(M_PI);
   double r1,r2,z;
   
@@ -152,37 +152,52 @@ void lo_do_guillot(double r,double xi,
   *vr2  = (sqpi*(*vr)/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*sqr(xir));
 }
 
-void lo_do_guillot_maple(double r,double xi,
-				  double *vc,double *vc2,
-				  double *vd,double *vd2,
-				  double *vr,double *vr2)
+void lo_do_guillot_maple(double r,double xi,double xir,
+			 double *vc,double *vc2,
+			 double *vd,double *vd2,
+			 double *vr,double *vr2)
 {
   double qO     = -0.888;
   double qOd    = 0.226;
   double f0     = qOd/qO;
-  double xir    = 0.0615;
   double sqpi   = sqrt(M_PI);
-  double r1,r2,z;
+
+  *vc = pow(-f0/(1.0+f0)+1.0,2.0)/r+pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/r+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/r;
+  *vc2 = 2.0*pow(-f0/(1.0+f0)+1.0,2.0)/(r*r*r)-pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/4.0)/2.0-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/4.0)/xi/(r*r)+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/(r*r*r)-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)-4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)/xi/(r*r)+4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/(r*r*r);
   
-  r1    = r/(2*xi);
-  r2    = r/(sqrt(2)*xi);
-  *vc   = 1/r + f0*f0*erf(r/xi/2.0)/r + 2.0*f0*erf(r*sqrt(2.0)/xi/2.0)/r;
-  *vc2  = 2.0/(r*r*r)-f0*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi
-*xi)/4.0)/2.0-2.0*f0*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/4.0)/xi/(r*
-r)+2.0*f0*f0*erf(r/xi/2.0)/(r*r*r)-2.0*f0/sqrt(M_PI)/(xi*xi*xi)
-*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)-4.0*f0/sqrt(M_PI)*exp(-r*r/(xi
-*xi)/2.0)*sqrt(2.0)/xi/(r*r)+4.0*f0*erf(r*sqrt(2.0)/xi/2.0)/(r*r*r);
   *vd   = -1.0/(r*r*r*r*r*r);
   *vd2  = -42.0/(r*r*r*r*r*r*r*r);
-  z     = r/(2.0*xir);
   *vr   = 2.0*erfc(r/xir/2.0)/r*xir;
   *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
 }
 
-static void do_guillot(FILE *fp,int eel,double resolution)
+/* use with coulombtype = user */
+void lo_do_guillot_maple_pme(double r,double xi,double xir,
+			     double rcoulomb, double ewald_rtol,
+			     double *vc,double *vc2,
+			     double *vd,double *vd2,
+			     double *vr,double *vr2)
+{
+  double qO    = -0.888;
+  double qOd   = 0.226;
+  double f0    = qOd/qO;
+  double sqpi  = sqrt(M_PI);
+  double isp   = 0.564189583547756;
+  double ewc;
+
+  ewc = calc_ewaldcoeff(rcoulomb,ewald_rtol);
+  *vc = pow(-f0/(1.0+f0)+1.0,2.0)/r+pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/r+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/r;
+  *vc2 = 2.0*pow(-f0/(1.0+f0)+1.0,2.0)/(r*r*r)-pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/4.0)/2.0-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/4.0)/xi/(r*r)+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/(r*r*r)-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)-4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)/xi/(r*r)+4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/(r*r*r);
+  
+  *vd   = -1.0/(r*r*r*r*r*r);
+  *vd2  = -42.0/(r*r*r*r*r*r*r*r);
+  *vr   = 2.0*erfc(r/xir/2.0)/r*xir;
+  *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
+}
+
+static void do_guillot(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
-  double xi     = 0.15;
   double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;
@@ -193,13 +208,13 @@ static void do_guillot(FILE *fp,int eel,double resolution)
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
     }
     else 
-      lo_do_guillot(r,xi,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      lo_do_guillot(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
     fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
 	    r,vc,vc2,vd,vd2,vr,vr2);
   }
 }
 
-static void do_ljc(FILE *fp,int eel,double resolution)
+static void do_ljc(FILE *fp,int eel,double resolution,real rc,real rtol)
 {
   int    i,i0,imax;
   double r,vc,vc2,vd,vd2,vr,vr2;
@@ -212,7 +227,7 @@ static void do_ljc(FILE *fp,int eel,double resolution)
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
     } else {
       if (eel == eelPME) {
-	lo_do_ljc_pme(r,0.9,1e-05,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+	lo_do_ljc_pme(r,rc,rtol,&vc,&vc2,&vd,&vd2,&vr,&vr2);
       } else if (eel == eelCUT) { 
 	lo_do_ljc(r,&vc,&vc2,&vd,&vd2,&vr,&vr2);
       }
@@ -222,10 +237,10 @@ static void do_ljc(FILE *fp,int eel,double resolution)
   }
 }
 
-static void do_guillot_maple(FILE *fp,int eel,double resolution)
+static void do_guillot_maple(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
-  double xi     = 0.15;
+  //  double xi     = 0.15;
   double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;
@@ -235,8 +250,12 @@ static void do_guillot_maple(FILE *fp,int eel,double resolution)
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
     }
-    else 
-      lo_do_guillot_maple(r,xi,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+    else
+      if (eel == eelPME) {
+	lo_do_guillot_maple_pme(r,xi,xir,rc,rtol,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      } else if (eel == eelCUT) { 
+	lo_do_guillot_maple(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      }
     fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
 	    r,vc,vc2,vd,vd2,vr,vr2);
   }
@@ -246,6 +265,7 @@ static void do_maaren(FILE *fp,int eel,double resolution,int npow)
 {
   int    i,i0,imax;
   double xi     = 0.05;
+  double xir     = 0.0615;
   double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;
@@ -256,7 +276,7 @@ static void do_maaren(FILE *fp,int eel,double resolution,int npow)
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
     }
     else {
-      lo_do_guillot(r,xi,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      lo_do_guillot(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
       vr  =  pow(r,-1.0*npow);
       vr2 = (npow+1.0)*(npow)*vr/sqr(r); 
     }
@@ -273,11 +293,19 @@ int main(int argc,char *argv[])
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
   static char *model[]   = { NULL, "guillot", "n61", "ljc", "maaren", "guillot_maple", "hard_wall", NULL };
-  static real resolution = 0.001,delta=0,efac=500;
+  static real resolution = 0.001,delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
   static int  npow       = 12;
   t_pargs pa[] = {
     { "-el",     FALSE, etENUM, {opt},
       "Electrostatics type: cut, rf or pme" },
+    { "-rc",     FALSE, etREAL, {&rc},
+      "Cut-off required for rf or pme" },
+    { "-rtol",   FALSE, etREAL, {&rtol},
+      "Ewald tolerance required for pme" },
+    { "-xi",   FALSE, etREAL, {&xi},
+      "Width of the Gaussian diffuse charge of the G&G model" },
+    { "-xir",   FALSE, etREAL, {&xir},
+      "Width of erfc(z)/z repulsion of the G&G model (z=0.5 rOO/xir)" },
     { "-m",      FALSE, etENUM, {model},
       "Model for the tables" },
     { "-resol",  FALSE, etREAL, {&resolution},
@@ -327,10 +355,10 @@ int main(int argc,char *argv[])
   fp = ffopen(opt2fn("-o",NFILE,fnm),"w");
   switch (m) {
   case mGuillot:
-    do_guillot(fp,eel,resolution);
+    do_guillot(fp,eel,resolution,rc,rtol,xi,xir);
     break;
   case mGuillot_Maple:
-    do_guillot_maple(fp,eel,resolution);
+    do_guillot_maple(fp,eel,resolution,rc,rtol,xi,xir);
     break;
   case mMaaren:
     do_maaren(fp,eel,resolution,npow);
@@ -339,7 +367,7 @@ int main(int argc,char *argv[])
     do_n61(fp,eel,resolution,npow);
     break;
   case mLjc:
-    do_ljc(fp,eel,resolution);
+    do_ljc(fp,eel,resolution,rc,rtol);
     break;
   case mHard_Wall:
     do_hard(fp,resolution,efac,delta);
