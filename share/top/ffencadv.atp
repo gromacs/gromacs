@@ -10,8 +10,8 @@
    A6	     	12.011     	; Aromatic carbon
    A5	     	12.011     	; Aromatic carbon
    A7	     	12.011     	; Aromatic carbon
-   A'	     	12.011     	; Aromatic carbon
-   A"	     	12.011		; Aromatic carbon
+   Aprime	     	12.011     	; Aromatic carbon
+   Abis	     	12.011		; Aromatic carbon
    L5	     	14.0067		; Acceptor nitrogen
    L6	     	14.0067		; Acceptor nitrogen
     P	     	30.9738		; Phosphorus
@@ -27,7 +27,7 @@
    HO	     	1.008		; Polar hydrogen
    HW	     	1.008		; Water hydrogen
    CL	     	35.453     	; Chloride ion
-   O"	     	15.9994		; Charged oxygen
+   Obis	     	15.9994		; Charged oxygen
    OP	     	15.9994		; Charged oxygen
     R	     	14.0067		; Heme nitrogen
     W	     	14.0067		; Heme nitrogen
