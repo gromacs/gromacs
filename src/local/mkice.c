@@ -50,7 +50,7 @@ static char *SRCID_mkice_c = "$Id$";
 #define TET   109.47
 #define DCONS 0.117265878
 
-static char *watname[] = { "OW1", "HW2", "HW3", "DW", "SW" };
+static char *watname[] = { "OW ", "HW1", "HW2", "DW", "SW" };
 static real qspc[]     = { -0.82, 0.41, 0.41 };
 static real qyaw[]     = { 1.24588, 0.62134, 0.62134, 0.0, -2.48856 };
 static real spc_lj[3][6] = {
