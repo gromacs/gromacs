@@ -421,20 +421,28 @@ void check_dist(FILE *log,t_correct *c)
   }
 }
 
-void check_final(FILE *log,t_correct *c,rvec x[])
+void check_final(FILE *log,t_correct *c,rvec x[],bool bVerbose)
 {
   int  i,ai,aj,nviol;
   rvec dx;
   real len;
   
+  fprintf(log,"Structure check after optimisation\n");
   nviol = 0;
   for(i=0; (i<c->ndist); i++) {
     ai = c->d[i].ai;
     aj = c->d[i].aj;
     rvec_sub(x[ai],x[aj],dx);
     len = norm(dx);
-    if ((len < c->d[i].lb) || (len > c->d[i].ub))
+    if ((len < c->d[i].lb) || (len > c->d[i].ub)) {
+      if (bVerbose) {
+	if ((nviol % 20) == 0)
+	  fprintf(log,"%5s  %5s  %8s  %8s  %8s\n","ai","aj","len","lb","ub");
+	fprintf(log,"%5d  %5d  %8.3f  %8.3f  %8.3f\n",ai,aj,len,
+		c->d[i].lb,c->d[i].ub);
+      }
       nviol++;
+    }
   }
-  fprintf(log,"\nChecking final structure: %d violations\n",nviol);
+  fprintf(log,"Totally %d violations\n",nviol);
 }
