@@ -424,6 +424,8 @@ int main(int argc,char *argv[])
   nfile=0;
   outstep=laststep=startstep=0;
   
+  dr.ndr = 0;
+
   for(i=1; (i<argc); i++)
     fnms[nfile++]=argv[i];
   if(nfile==0)
