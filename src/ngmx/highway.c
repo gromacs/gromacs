@@ -363,7 +363,7 @@ static bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
       break;
   }
   if (i == NBUT) {
-    fprintf(stderr,"Incorrect window: %x in butcallback\n",wd);
+    fprintf(stderr,"Incorrect window: %x in butcallback\n",(unsigned)wd);
     return FALSE;
   }
   win=&(xhw->but[i]);
