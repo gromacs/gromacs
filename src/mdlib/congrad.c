@@ -93,7 +93,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   tensor force_vir,shake_vir,pme_vir;
   int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
-  int    i,m,start,end,niti;
+  int    i,m,start,end,niti,gf;
   /* not used */
   real   terminate=0;
 
@@ -259,10 +259,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* start conjugate gradient, determine search interval a,b */
     gpa=0.0;
     for(i=start; i<end; i++) {
-      for(m=0;m<DIM;m++){
-	p[i][m] = f[i][m] + beta*p[i][m];
-	gpa     = gpa - p[i][m]*f[i][m];
-      }
+      gf = mdatoms->cFREEZE[i];
+      for(m=0; m<DIM; m++) 
+	if (!parm->ir.opts.nFreeze[gf][m]) {
+	  p[i][m] = f[i][m] + beta*p[i][m];
+	  gpa     = gpa - p[i][m]*f[i][m];
+	}
     }
     pnorm=f_norm(cr->left,cr->right,nsb->nnodes,start,end,p);
 
@@ -328,9 +330,10 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /*bNS=FALSE;*/
       gpb=0.0;
       for(i=start;i<end;i++) {
-	for(m=0;m<DIM;m++) {
-	  gpb=gpb-p[i][m]*f[i][m];
-	}
+	gf = mdatoms->cFREEZE[i];
+	for(m=0; m<DIM; m++) 
+	  if (!parm->ir.opts.nFreeze[gf][m])
+	    gpb=gpb-p[i][m]*f[i][m];
       } 
       
       /* Sum the potential energy terms from group contributions */
@@ -376,11 +379,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     smin = b - ((gpb+w-zet)*(b-a))/((gpb-gpa)+2.0*w);
 
     /* new positions */
-    for (i=start;i<end;i++){
-      for(m=0;m<DIM;m++){
-	xprime[i][m]=x[i][m] + smin*p[i][m];
-      }
-    }
+    for (i=start; i<end; i++)
+      for(m=0; m<DIM; m++) 
+	xprime[i][m] = x[i][m] + smin*p[i][m];
 
     if (bDummies) {
       /* Molecules always whole, but I'm not sure whether
@@ -455,7 +456,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fnorm_old=fnorm;
 
     /* Test whether the convergence criterion is met */
-    fmax=f_max(cr->left,cr->right,nsb->nnodes,start,end,f);     
+    fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	       start,end,f);
 
     /* Print it if necessary */
     if (bVerbose && MASTER(cr)) {
@@ -489,7 +491,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       lambda,nrnb,nsb->natoms,xx,NULL,ff,parm->box);
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
-    fmax=f_max(cr->left,cr->right,nsb->nnodes,start,end,f);
+    fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	       start,end,f);
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {
       fprintf(stderr,"\n%s converged to %8.6f in %d steps\n",CG,ftol,count-1);

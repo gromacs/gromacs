@@ -145,7 +145,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   
   /* if forces not small, warn user */
-  fmax=f_max(cr->left,cr->right,nsb->nnodes,0,top->atoms.nr,f);
+  fmax=f_max(cr->left,cr->right,nsb->nnodes,&(parm->ir.opts),mdatoms,
+	     0,top->atoms.nr,f);
   fprintf(stderr,"Maximum force:%12.5e\n",fmax);
   if (fmax > 1.0e-3) {
     fprintf(stderr,"Maximum force probably not small enough to");

@@ -98,6 +98,7 @@ extern real f_norm(int left,int right,int nprocs,
 /* Calculates norm of force */
 
 extern real f_max(int left,int right,int nprocs,
+		  t_grpopts *opts,t_mdatoms *mdatoms,
 		  int start,int end,rvec grad[]);
 /* Calculates max force */
 

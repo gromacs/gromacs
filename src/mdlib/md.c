@@ -466,8 +466,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
 #ifdef XMDRUN
       /* Check magnitude of the forces */
-    fmax = f_max(cr->left,cr->right,cr->nnodes,START(nsb),
-		 START(nsb)+HOMENR(nsb),f);
+    fmax = f_max(cr->left,cr->right,cr->nnodes,&(parm->ir.opts),mdatoms,
+		 START(nsb),START(nsb)+HOMENR(nsb),f);
     debug_gmx();
     parm->ir.delta_t = timestep;
 #endif

@@ -45,15 +45,6 @@ static char *SRCID_steep_h = "$Id$";
 #ifdef HAVE_IDENT
 #ident	"@(#) steep.h 1.6 03 Mar 1996"
 #endif /* HAVE_IDENT */
-extern real f_max(FILE *log,
-		  int left,int right,int nnodes,
-		  int start,int end,rvec grad[]);
-/* Globally calculate max force */
-
-extern real f_norm(FILE *log,
-		  int left,int right,int nnodes,
-		  int start,int end,rvec grad[]);
-/* Calculates norm of forcee */
 
 extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_parm *parm,t_topology *top,
