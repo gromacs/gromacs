@@ -69,10 +69,6 @@ t_mdatoms *atoms2md(t_atoms *atoms,bool bPert,bool bFree)
     md->massA[i]	= atoms->atom[i].m;
     md->massB[i]	= atoms->atom[i].mB;
     md->massT[i]	= atoms->atom[i].m;
-    if (md->massA[i] != 0.0) {
-      tm               += md->massT[i];
-      md->invmass[i]	= 1.0/md->massT[i];
-    }
     md->chargeA[i]	= atoms->atom[i].q;
     md->chargeB[i]	= atoms->atom[i].qB;
     md->resnr[i]	= atoms->atom[i].resnr;
@@ -84,6 +80,13 @@ t_mdatoms *atoms2md(t_atoms *atoms,bool bPert,bool bFree)
     md->cACC[i]		= atoms->atom[i].grpnr[egcACC];
     md->cFREEZE[i]	= atoms->atom[i].grpnr[egcFREEZE];
     md->cXTC[i]      	= atoms->atom[i].grpnr[egcXTC];
+    if (md->massA[i] != 0.0) {
+      tm               += md->massT[i];
+      if (md->cFREEZE[i] == 0)
+	md->invmass[i]	= 1.0/md->massT[i];
+      else
+	md->invmass[i]	= 0.0;
+    }
     if (bPert) {
       md->bPerturbed[i]   = PERTURBED(atoms->atom[i]);
       if (md->bPerturbed[i])

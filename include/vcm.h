@@ -42,7 +42,7 @@ extern void calc_vcm(FILE *log,int homenr,int start,
 		     real mass[],rvec v[],rvec vcm);
 
 extern void do_stopcm(FILE *log,int homenr,int start,
-		      rvec v[],rvec mvcm,real tm);
+		      rvec v[],rvec mvcm,real tm,real invmass[]);
 
 extern void check_cm(FILE *log,rvec mvcm,real tm);
 

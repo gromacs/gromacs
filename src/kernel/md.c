@@ -273,9 +273,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     calc_ljcorr(log,parm->ir.bLJcorr,
 		fr,mdatoms->nr,parm->box,parm->pres,parm->vir,ener);
     
-    upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
-	       force_vir,parm->vir,parm->pres,grps,mu_tot);
-    
+    if (MASTER(cr))
+      upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
+		 force_vir,parm->vir,parm->pres,grps,mu_tot);
     where();
     
     if ( MASTER(cr) && (do_per_step(step,parm->ir.nstprint)) ) {

@@ -494,11 +494,7 @@ int main(int argc,char *argv[])
   };
   static bool bDisRe=FALSE,bDRAll=FALSE;
   static bool bSum=FALSE,bDG=FALSE,bAll=FALSE,bFluct=FALSE;
-#ifdef DOUBLE
-  static bool bDp=TRUE;
-#else
-  static bool bDp=FALSE;
-#endif
+  static bool bDp=FALSE,bMutot=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -515,7 +511,9 @@ int main(int argc,char *argv[])
     { "-sum",  FALSE, etBOOL, &bSum,
       "Sum the energy terms selected rather than display them all" },
     { "-dp",   FALSE, etBOOL, &bDp,
-      "HIDDENPrint energies in high precision" },
+      "Print energies in high precision" },
+    { "-mutot",FALSE, etBOOL, &bMutot,
+      "Compute the total dipole moment from the components" },
     { "-skip", FALSE, etINT,  &skip,
       "Skip number of frames between data points" },
     { "-aver", FALSE, etBOOL, &bAll,

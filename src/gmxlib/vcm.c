@@ -53,17 +53,19 @@ void calc_vcm(FILE *log,int homenr,int start,real mass[],rvec v[],rvec vcm)
   vcm[ZZ]=z;
 }
 
-void do_stopcm(FILE *log,int homenr,int start,rvec v[],rvec mvcm,real tm)
+void do_stopcm(FILE *log,int homenr,int start,rvec v[],rvec mvcm,
+	       real tm,real invmass[])
 {
-  int  i;
+  int  i,m;
   rvec vcm;
   
   vcm[XX]=mvcm[XX]/tm;
   vcm[YY]=mvcm[YY]/tm;
   vcm[ZZ]=mvcm[ZZ]/tm;
-
+  
   for(i=start; (i<start+homenr); i++) 
-    rvec_dec(v[i],vcm);
+    if (invmass[i] != 0)
+      rvec_dec(v[i],vcm);
 }
 
 void check_cm(FILE *log,rvec mvcm,real tm)
