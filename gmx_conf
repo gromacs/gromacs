@@ -7,9 +7,38 @@ else
 endif
 setenv 	CORE	gmxcore
 setenv	BNC	gmxbench
-setenv	TST	gmxtest
+setenv	TST	gmxtests
 
 clear
+if ( -d src ) then
+    echo        'Source already present'
+    echo        'Will only configure GMXRC'
+else
+    echo	'Starting GROMACS installation'
+    echo	'-----------------------------'
+
+    echo 	'Unpacking archives...'
+
+    foreach fz ( ../$CORE ../$BNC ../$TST )
+    echo 	$fz
+    if ( -f $fz.taz ) then
+	    cat $fz.taz | uncompress -c | tar xf -
+    else
+	    if ( -f $fz.tgz ) then
+		    cat $fz.tgz | gzip -d -c | tar xf -
+	    else
+		    if ( $fz == $CORE ) then
+			    echo FATAL, no file $fz.tgz or $fz.taz found
+			    exit
+		    else
+			    echo No compressed version of $fz
+		    endif
+	    endif
+    endif
+endif
+
+echo ""
+
 # Determine which CPUS are available
 setenv CPUS ""
 set ncpu = 0
