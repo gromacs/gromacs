@@ -322,12 +322,13 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   if (bVerbose)
     fprintf(stderr,"Calculating Overlap...\n");
   
-  /* set margin around box edges to largest solvent dimension 
-   * The factor 1.1 is empirical...
+  /* Set margin around box edges to largest solvent dimension.
+   * The maximum distance between atoms in a solvent molecule should
+   * be calculated. At the moment a fudge factor of 2 is used.
    */
   r_prot     = *r;
-  box_margin = find_max_real(natoms_solvt,r_solvt)/1.1;
-  max_vdw    = (find_max_real(natoms_prot,r_prot) + 1.1*box_margin);
+  box_margin = 3*find_max_real(natoms_solvt,r_solvt);
+  max_vdw    = (find_max_real(natoms_prot,r_prot) + box_margin/3);
   fprintf(stderr,"box_margin = %g\n",box_margin);
   
   snew(remove,natoms_solvt);
