@@ -504,7 +504,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
       fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel[k],fr);
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->VFtab,-1);
     
-    if (bDebugMode() && (gmx_cpu_id() == 0)) {
+    if (bDebugMode() && bVerbose) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 
       for(i=n0; (i<n); i++) {
 	for(j=0; (j<4); j++) {
