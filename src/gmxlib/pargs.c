@@ -274,16 +274,14 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	  strcpy(buf,pa[i].option);
 	sprintf(buf2,"%12s %6s %6s  %s\n",
 		buf,argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
-	if (strlen(buf)>((OPTLEN+TYPELEN)-strlen(argtp[pa[i].type]))) {
-	  buf2[strlen(buf)]='\n';  
-	  for(j=strlen(buf2); j>strlen(buf); j--)
-	    buf2[j+OPTLEN+1]=buf2[j];
-	  for(j=0; j<OPTLEN+1; j++)
-	    buf2[strlen(buf)+1+j]=' ';
-	} else if (strlen(buf)>OPTLEN) {
-	  for(j=strlen(buf); j<strlen(buf2)-(strlen(buf)-OPTLEN)+1; j++)
-	    buf2[j]=buf2[j+strlen(buf)-OPTLEN];
-	}
+	if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(argtp[pa[i].type]),4))) {
+	  fprintf(fp,"%12s\n",buf);
+	  sprintf(buf2,"%12s %6s %6s  %s\n",
+		"",argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
+	} else if (strlen(buf)>OPTLEN)
+	  /* so type can be 4 or 5 char's (max(...,4)), this fits in the %5s */
+	  sprintf(buf2,"%-14s%5s %6s  %s\n",
+		  buf,argtp[pa[i].type],pa_val(&(pa[i])),pa[i].desc);
 	wdesc=wrap_lines(buf2,80,28);
 	fprintf(fp,wdesc);
 	sfree(wdesc);
