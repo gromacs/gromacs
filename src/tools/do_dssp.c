@@ -399,7 +399,6 @@ int main(int argc,char *argv[])
   fnTArea = opt2fn_null("-ta",NFILE,fnm);
   fnAArea = opt2fn_null("-aa",NFILE,fnm);
   bDoAccSurf=(fnArea || fnTArea || fnAArea);
-  printf("Will %sdo accessible surface calc\n",bDoAccSurf?"":"*NOT* ");
   
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
