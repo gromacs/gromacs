@@ -311,10 +311,13 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
     if (pull->bReverse) 
       svmul(-1.0,pull->pull.dir[i],pull->pull.dir[i]);
 
+    if (pull->runtype == eAfm) 
+      fprintf(log,"\nPull rate: %e nm/step. Force constant: %e kJ/(mol nm)",
+	      pull->rate,pull->k);
     if (pull->runtype == eAfm || pull->runtype == eStart)  
-      fprintf(log,"\nPull direction: %8.3f %8.3f %8.3f\n",
+      fprintf(log,"\nPull direction: %8.3f %8.3f %8.3f bReverse = %d\n",
 	      pull->pull.dir[i][XX],pull->pull.dir[i][YY],
-	      pull->pull.dir[i][ZZ]);
+	      pull->pull.dir[i][ZZ],pull->bReverse);
     
   }
   fprintf(log,"**************************************************\n"

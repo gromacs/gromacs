@@ -158,7 +158,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   };
   enum {ereverseTO_REF, ereverseFROM_REF, ereverseNR};
   static char *reversetypes[ereverseNR+1] = {
-    "to_reference", "from_reference", NULL
+    "from_reference", "to_reference", NULL
   };
   enum {everboseYES, everboseNO, everboseNR};
   static char *verbosetypes[erefNR+1] = {

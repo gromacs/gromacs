@@ -77,8 +77,8 @@ void calc_running_com(t_pull *pull) {
      of the center of mass over the last nhist[i] steps. x_unc[i] has the
      new ones. Remove the oldest one from the list, add the new one, calculate
      the average, put that in x_unc instead and return. We just move all coms
-     1 down in the list and add the latest one to the top. I am sure there
-     is a more efficient way but this should work. */
+     1 down in the list and add the latest one to the top. 
+   */
   
   if (pull->bCyl) {
     /* act on dyna groups */

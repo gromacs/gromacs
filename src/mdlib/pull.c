@@ -474,7 +474,7 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
       while (dr[m] < -box[m][m]/2) dr[m]+=box[m][m];
     }
 
-    /* calculate force from the spring on the pull group: f = k*dr */
+    /* calculate force from the spring on the pull group: f = - k*dr */
     for (m=0;m<DIM;m++)
       pull->pull.f[i][m] = pull->k*dr[m];
     
@@ -488,12 +488,8 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
     }
     
     /* move pulling spring along dir, over pull->rate  */
-    for (m=0;m<DIM;m++) {
-      if (pull->bReverse) 
-	pull->pull.spring[i][m]-=pull->pull.dir[i][m]*pull->rate;
-      else
-	pull->pull.spring[i][m]+=pull->pull.dir[i][m]*pull->rate;
-    }
+    for (m=0;m<DIM;m++) 
+      pull->pull.spring[i][m]+=pull->pull.dir[i][m]*pull->rate;
   }
   /* done */
 }
@@ -508,7 +504,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     snew(x_s,md->nr); /* can't rely on natoms */
 
   /* copy x to temp array x_s. We assume all molecules are whole already */
-  for (i=0;i<natoms;i++) 
+  for (i=0;i<md->nr;i++) 
     copy_rvec(x[i],x_s[i]);  
   
   switch (pull->runtype) {
