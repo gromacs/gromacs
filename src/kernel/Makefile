@@ -49,7 +49,7 @@ mdrun:		mdrun.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 mk_ghat:	mk_ghat.o
-		$(LD) -o $@ $^ $(SYSLIBS) 
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 nmrun:		nmrun.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)

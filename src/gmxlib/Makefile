@@ -11,7 +11,7 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
 M4FILE		= $(CPU).m4
-OBJ		= force.o 	ns.o 		grid.o     	\
+OBJ		= force.o 	ns.o 		nsgrid.o     	\
 		  lutab.o	calch.o		calcvir.o 	\
 		  random.o 	pbc.o  		wnblist.o 	\
 		  bondfree.o 	nrnb.o 		maths.o   	\
@@ -41,8 +41,7 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  nrama.o	do_fit.o	writeps.o	\
 		  rmpbc.o	matio.o 	nrjac.o   	\
 		  wgms.o 	princ.o		pppm.o		\
-		  lrutil.o	\
-		  grids.o	ghat.o		tables.o	\
+		  lrutil.o	ghat.o		tables.o	\
 		  edsam.o	congrad.o	javaio.o        \
 		  index.o       \
 		  gmxfio.o	trnio.o		tpxio.o		\
@@ -129,7 +128,7 @@ repfirst:	repfirst.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 testlr:		testlr.o	ewald.o		pppm.o	\
-		grids.o		ghat.o		lrutil.o	fftgrid.o
+		ghat.o		lrutil.o	fftgrid.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
 lfft:		lfft.o

@@ -49,7 +49,6 @@ genhydro.o:	genhydro.c
 ghat.o:	ghat.c
 ghat.o:	ghat.h
 grid.o:	grid.c
-grids.o:	grids.c
 h_db.o:	h_db.c
 idtio.o:	idtio.c
 ifunc.o:	ifunc.c
