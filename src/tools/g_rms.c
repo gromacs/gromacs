@@ -64,19 +64,14 @@ static real do_rms(int nind,atom_id index[],real w_rms[],rvec x[],rvec xp[])
   return (sqrt(e/tmas));
 }
 
-static real do_bond(int ncons,t_idef *idef,rvec x[],rvec xp[])
-{
-  return 1;
-}
-
 int main (int argc,char *argv[])
 {
   static char *desc[] = {
     "g_rms computes the root mean square deviation (RMSD) of a structure",
     "from a trajectory with respect to a reference structure from a",
     "run input file by LSQ fitting the structures on top of each other.",
-    "The reference structure is taken from the run input file",
-    "([TT].tpx[tt]).[PAR]",
+    "The reference structure is taken from the structure file",
+    "([TT]-s[tt]).[PAR]",
     "Option [TT]-a[tt] produces time averaged RMSD per group (e.g. residues",
     "in a protein).[PAR]",
     "Option [TT]-prev[tt] produces the RMSD with a previous frame.[PAR]",
@@ -131,17 +126,14 @@ int main (int argc,char *argv[])
     { "-aver", FALSE, etINT, &avl,
       "average over this distance in the RMSD matrix" }
   };
-  int          step,nre,natom,natoms,natoms2;
+  int          step,nre,natoms,natoms2;
   int          i,j,k,m,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int          maxframe=NFRAME,maxframe2=NFRAME;
   real         t,lambda,*w_rls,*w_rms,tmas;
   bool         bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta;
   
-  t_tpxheader  header;
-  t_inputrec   ir;
   t_topology   top;
-  t_idef       *idef;
   t_iatom     *iatom;
 
   matrix       box;
@@ -157,13 +149,13 @@ int main (int argc,char *argv[])
   real         **rmsdav_mat,av_tot,weight,weight_tot;
   real         **delta,delta_max,delta_scalex,delta_scaley,*delta_tot;
   int          delta_xsize,del_lev=100,mx,my,abs_my;
-  bool         bA1,bA2,bPrev;
+  bool         bA1,bA2,bPrev,bTop;
   int          ifit,*irms,ibond,*ind_bond;
   atom_id      *ind_fit,**ind_rms,*all_at;
   char         *gn_fit,**gn_rms,*bigbuf;
   t_rgb        rlo,rhi;
   t_filenm fnm[] = {
-    { efTPX, NULL,  NULL,    ffREAD  },
+    { efTPS, NULL,  NULL,    ffREAD  },
     { efTRX, "-f",  NULL,    ffREAD  },
     { efTRX, "-f2", NULL,    ffOPTRD },
     { efNDX, NULL,  NULL,    ffOPTRD },
@@ -184,6 +176,8 @@ int main (int argc,char *argv[])
   bMat  =opt2bSet("-m" ,NFILE,fnm);
   bBond =opt2bSet("-bm",NFILE,fnm);
   bDelta=opt2bSet("-dm",NFILE,fnm);
+  bNorm=opt2bSet("-a",NFILE,fnm);
+  bFreq2=opt2parg_bSet("-skip2", asize(pa), pa);
   bPrev = (prev > 0);
   if (bPrev) {
     prev=abs(prev);
@@ -207,18 +201,14 @@ int main (int argc,char *argv[])
     }
   }
   
-  bNorm=opt2bSet("-a",NFILE,fnm);
+  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&xp,NULL,box,TRUE);
+  snew(w_rls,top.atoms.nr);
+  snew(w_rms,top.atoms.nr);
 
-  bFreq2=opt2parg_bSet("-skip2", asize(pa), pa);
-
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
-
-  snew(xp,header.natoms);
-  snew(w_rls,header.natoms);
-  snew(w_rms,header.natoms);
-
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,
-	   &natom,xp,NULL,NULL,&top);
+  if (!bTop && bBond) {
+    fprintf(stderr,"\nNeed a run input file for bond angle matrix.\n\n");
+    bBond=FALSE;
+  }
 
   /*set box type*/
   init_pbc(box,FALSE);
@@ -271,22 +261,21 @@ int main (int argc,char *argv[])
     for(i=0; (i<irms[j]); i++)
       w_rms[ind_rms[j][i]]=top.atoms.atom[ind_rms[j][i]].m;
       
-  snew(all_at,natom);
-  for(j=0; (j<natom); j++)
+  snew(all_at,top.atoms.nr);
+  for(j=0; (j<top.atoms.nr); j++)
     all_at[j]=j;
       
   /* Prepare reference frame */
   if (bPBC)
     rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
-  reset_x(ifit,ind_fit,natom,all_at,xp,w_rls);
+  reset_x(ifit,ind_fit,top.atoms.nr,all_at,xp,w_rls);
   
   /* read first frame */
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
   if (bMat || bPrev) snew(mat_x,NFRAME);
   if (bBond) {
-    idef=&top.idef;
-    iatom=idef->il[F_SHAKE].iatoms;
-    ncons=idef->il[F_SHAKE].nr/3;
+    iatom=top.idef.il[F_SHAKE].iatoms;
+    ncons=top.idef.il[F_SHAKE].nr/3;
     fprintf(stderr,"Found %d bonds in topology\n",ncons);
     snew(ind_bond,ncons);
     ibond=0;
