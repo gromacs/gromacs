@@ -56,6 +56,7 @@ static char *SRCID_g_covar_c = "$Id$";
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
+#include "matio.h"
 #include "eigio.h"
 #include "ql77.h"
 
@@ -75,8 +76,15 @@ int main(int argc,char *argv[])
     "the reference structure for the fit is written first with t=-1.",
     "The average (or reference when [TT]-ref[tt] is used) structure is",
     "written with t=0, the eigenvectors",
-    "are written as frames with the eigenvector number as timestamp.[PAR]",
-    "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
+    "are written as frames with the eigenvector number as timestamp.",
+    "[PAR]",
+    "The eigenvectors can be analyzed with [TT]g_anaeig[tt].",
+    "[PAR]",
+    "Option [TT]-xpm[tt] writes the whole covariance matrix to an xpm file.",
+    "[PAR]",
+    "Option [TT]-xpma[tt] writes the atomic covariance matrix to an xpm file,",
+    "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
+    "written."
   };
   static bool bFit=TRUE,bRef=FALSE,bM=FALSE;
   static int  end=-1;
@@ -98,26 +106,31 @@ int main(int argc,char *argv[])
   rvec       *x,*xread,*xref,*xproj;
   matrix     box,zerobox;
   double     *matd;
-  real       t,tstart,tend,*mat,dev,trace,sum,*eigval,inv_nframes;
+  real       t,tstart,tend,*mat,**mat2,dev,trace,sum,*eigval,inv_nframes;
   real       xj,*sqrtm,*w_rls=NULL;
+  real       min,max,*axis;
   int        ntopatoms,step;
-  int        natoms,nat,ndim,count,nframes;
+  int        natoms,nat,ndim,count,nframes,nlevels;
   int        WriteXref;
   char       *fitfile,*trxfile,*ndxfile;
-  char       *eigvalfile,*eigvecfile,*averfile,*logfile;
+  char       *eigvalfile,*eigvecfile,*averfile,*logfile,*xpmfile,*xpmafile;
   char       str[STRLEN],*fitname,*ananame;
   int        i,j,k,l,d,dj,nfit;
   atom_id    *index,*ifit;
   bool       bDiffMass1,bDiffMass2;
   time_t     now;
+  t_rgb      rlo,rmi,rhi;
+
   t_filenm fnm[] = { 
-    { efTRX, "-f", NULL, ffREAD }, 
-    { efTPS, NULL, NULL, ffREAD },
-    { efNDX, NULL, NULL, ffOPTRD },
-    { efXVG, NULL, "eigenval", ffWRITE },
-    { efTRN, "-v", "eigenvec", ffWRITE },
+    { efTRX, "-f",  NULL, ffREAD }, 
+    { efTPS, NULL,  NULL, ffREAD },
+    { efNDX, NULL,  NULL, ffOPTRD },
+    { efXVG, NULL,  "eigenval", ffWRITE },
+    { efTRN, "-v",  "eigenvec", ffWRITE },
     { efSTO, "-av", "average.pdb", ffWRITE },
-    { efLOG, NULL, "covar", ffWRITE }
+    { efLOG, NULL,  "covar", ffWRITE },
+    { efXPM, "-xpm","covar", ffOPTWR },
+    { efXPM, "-xpma","covara", ffOPTWR }
   }; 
 #define NFILE asize(fnm) 
 
@@ -134,6 +147,8 @@ int main(int argc,char *argv[])
   eigvecfile = ftp2fn(efTRN,NFILE,fnm);
   averfile   = ftp2fn(efSTO,NFILE,fnm);
   logfile    = ftp2fn(efLOG,NFILE,fnm);
+  xpmfile    = opt2fn_null("-xpm",NFILE,fnm);
+  xpmafile   = opt2fn_null("-xpma",NFILE,fnm);
 
   read_tps_conf(fitfile,str,&top,&xref,NULL,box,TRUE);
   atoms=&top.atoms;
@@ -289,7 +304,7 @@ int main(int argc,char *argv[])
   for(i=0; i<ndim; i++)
     trace+=mat[i*ndim+i];
   fprintf(stderr,"\nTrace of the covariance matrix: %g (%snm^2)\n",
-	  trace,bM ? "amu " : "");
+	  trace,bM ? "u " : "");
   
   if (debug) {
     fprintf(stderr,"Dumping the covariance matrix to covmat.dat\n"); 
@@ -301,6 +316,72 @@ int main(int argc,char *argv[])
     }
   }
   
+  if (xpmfile) {
+    min = 0;
+    max = 0;
+    snew(mat2,ndim);
+    for (j=0; j<ndim; j++) {
+      mat2[j] = &(mat[ndim*j]);
+      for (i=0; i<=j; i++) {
+	if (mat2[j][i] < min)
+	  min = mat2[j][i];
+	if (mat2[j][j] > max)
+	  max = mat2[j][i];
+      }
+    }
+    snew(axis,ndim);
+    for(i=0; i<ndim; i++)
+      axis[i] = i+1;
+    rlo.r = 0; rlo.g = 0; rlo.b = 1;
+    rmi.r = 1; rmi.g = 1; rmi.b = 1;
+    rhi.r = 1; rhi.g = 0; rhi.b = 0;
+    out = ffopen(xpmfile,"w");
+    nlevels = 80;
+    write_xpm3(out,"Covariance",bM ? "u nm^2" : "nm^2",
+	       "dim","dim",ndim,ndim,axis,axis,
+	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
+    fclose(out);
+    sfree(axis);
+    sfree(mat2);
+  }
+
+  if (xpmafile) {
+    min = 0;
+    max = 0;
+    snew(mat2,ndim/3);
+    for (i=0; i<ndim/3; i++)
+      snew(mat2[i],ndim/3);
+    for (j=0; j<ndim/3; j++) {
+      for (i=0; i<=j; i++) {
+	mat2[j][i] = 0;
+	for(d=0; d<DIM; d++)
+	  mat2[j][i] += mat[ndim*(j+d)+i+d];
+	if (mat2[j][i] < min)
+	  min = mat2[j][i];
+	if (mat2[j][j] > max)
+	  max = mat2[j][i];
+	mat2[i][j] = mat2[j][i];
+      }
+    }
+    snew(axis,ndim/3);
+    for(i=0; i<ndim/3; i++)
+      axis[i] = i+1;
+    rlo.r = 0; rlo.g = 0; rlo.b = 1;
+    rmi.r = 1; rmi.g = 1; rmi.b = 1;
+    rhi.r = 1; rhi.g = 0; rhi.b = 0;
+    out = ffopen(xpmafile,"w");
+    nlevels = 80;
+    write_xpm3(out,"Covariance",bM ? "u nm^2" : "nm^2",
+	       "atom","atom",ndim/3,ndim/3,axis,axis,
+	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
+    fclose(out);
+    sfree(axis);
+    for (i=0; i<ndim/3; i++)
+      sfree(mat2[i]);
+    sfree(mat2);
+  }
+
+
   /* call diagonalization routine */
   
   fprintf(stderr,"\nDiagonalizing...\n");
@@ -315,13 +396,13 @@ int main(int argc,char *argv[])
   for(i=0; i<ndim; i++)
     sum+=eigval[i];
   fprintf(stderr,"\nSum of the eigenvalues: %g (%snm^2)\n",
-	  sum,bM ? "amu " : "");
+	  sum,bM ? "u " : "");
   if (fabs(trace-sum)>0.01*trace)
     fprintf(stderr,"\nWARNING: eigenvalue sum deviates from the trace of the covariance matrix\n");
   
   fprintf(stderr,"\nWriting eigenvalues to %s\n",eigvalfile);
 
-  sprintf(str,"(%snm\\S2\\N)",bM ? "amu " : "");
+  sprintf(str,"(%snm\\S2\\N)",bM ? "u " : "");
   out=xvgropen(eigvalfile, 
 	       "Eigenvalues of the covariance matrix",
 	       "Eigenvector index",str);  
