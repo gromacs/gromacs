@@ -1136,10 +1136,12 @@ static int ns_simple_core(t_forcerec *fr,
   rlist2 = sqr(fr->rlist);
 
   bBox = (fr->ePBC != epbcNONE);
-  if (bBox)
+  if (bBox) {
     for(m=0; (m<DIM); m++)
       b_inv[m]=divide(1.0,box_size[m]);
-  bTriclinic = TRICLINIC(box);
+    bTriclinic = TRICLINIC(box);
+  } else
+    bTriclinic = FALSE;
 
   nsearch=0;
   for (icg=fr->cg0; (icg<fr->hcg); icg++) {
