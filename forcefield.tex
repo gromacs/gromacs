@@ -1073,35 +1073,6 @@ is not large, and the free energy itself
 does not depend on the pathway, therefore we use the simple formulation
 presented above.
 
-\subsection{Near linear thermodynamic integration}
-In {\gromacs} the near linear thermodynamic integration (NLTI) method of Resat 
-and Mezei has been implemented~\cite{Resat93}. This method avoids singularities
-at the end points of the TI calculation ({$\LAM$} = 0, or 1) for the case of 
-creation or annihilation of particles. State B should the correspond to no particle.
-The modified equations for the Lennard-Jones contribution are:
-\bea
-V_{LJ}  &=&     \frac{(\LL^4 C_{12}^A + \LAM^4 C_{12}^B)}{\rij^{12}} \,-\,
-                \frac{\LL^3 C_6^A + \LAM^3 C_6^B}{\rij^6}       \\
-\dvdl{V_{LJ}}&=&4\,\frac{\LAM^3 C_{12}^B - \LL^3 C_{12}^A}{\rij^{12}} \,-\,
-                3\,\frac{\LAM^2 C_6^B - \LL^2 C_6^A}{\rij^6}
-\eea
-It can be seen immediately that when $C_{12}^B = C_6^B = 0$ (no particle) and
-$\LAM$ = 1, both $V_{LJ}$ and $\dvdl{V_{LJ}}$ are zero. (This means they need not 
-be evaluated either).
-For the coulomb contribution we have:
-\bea
-V_c &=& \frac{f}{\epsrf \rij}\left[(\LL^2 q_i^A+\LAM^2 q_i^B)\,(\LL^2 q_j^A+\LAM^2 q_i^B)\right]        \\
-\dvdl{V_c}&=& 2\,\frac{f}{\epsrf \rij}[(\LAM q_j^B-\LL q_j^A)(\LL^2 q_i^A+\LAM^2 q_i^B)\,+\,\\\nonumber
-        &~ &            (\LAM q_i^B-\LL q_i^A)(\LL^2 q_j^A+\LAM^2 q_j^B)]
-\eea
-Resat and Mezei have tested which exponents to $\LAM$ resp. $\LL$ are best and found
-that 4 for the repulsion, 3 for the dispersion and 2 for the Coulomb interaction to
-give good results~\cite{Resat93}.
-
-Although this method is an improvement over linear scaling, for small $\LAM$ there
-still can be large forces and/or energies, and therefore careful equilibration 
-should be done.
-
 \subsubsection{Kinetic Energy}
 When the mass of a particle changes there is also a contribution of
 the kinetic energy to the free energy (note that we can not write 
@@ -1121,7 +1092,7 @@ after taking the derivative, we {\em can} insert \ve{p} = m\ve{v}, such that:
 \newcommand{\clam}{C_{\lambda}}
 The constraints are formally part of the Hamiltonian, and therefore
 they give a contribution to the free energy. In {\gromacs} this can be
-calculated using the \normindex{LINCS} algorithm only.
+calculated using the \normindex{LINCS} or the \normindex{SHAKE} algorithm.
 If we have a number of constraint equations $g_k$:
 \beq
 g_k     =       r_{k} - d_{k}
@@ -1139,6 +1110,52 @@ to the Hamiltonian using Lagrange multipliers $\lambda$:
 \dvdl{\clam}    &=&     \sum_k \lambda_k \left(d_k^B-d_k^A\right)
 \eea
 
+
+\subsection{\normindex{Soft-core interactions}}
+\begin{figure}
+\centerline{\psfig {figure=plots/softcore.eps,height=6cm}}
+\caption{Soft-core interactions at $\LAM=0.5$, with
+$C_6^A=C_{12}^A=C_6^B=C_{12}^B=1$.}
+\label{fig:softcore}
+\end{figure}
+The linear interpolation of the Lennard-Jones and Coulomb potentials gives
+problems when growing particles out of nothing or when making particles
+disappear ($\LAM$ close to 0 or 1). To circumvent these problems, the
+singularities in the potentials need to be removed. This is done with
+soft-core potentials. In {\gromacs} the soft-core potential $V_{sc}$ is:
+\beq
+V_{sc}(r) = \LL V^A(r_A) + \LAM V^B(r_B)
+\eeq
+\beq
+r_A = \left(\alpha \sigma_A^6 \LAM^2 + r^6 \right)^\frac{1}{6}
+\eeq
+\beq
+r_B = \left(\alpha \sigma_B^6 \LL^2 + r^6 \right)^\frac{1}{6}
+\eeq
+where $V^A$ and $V^B$ are the normal 'hard core' Van der Waals or
+Electrostatic potentials in state A ($\LAM=0$) and state B ($\LAM=1$)
+respectively, $\alpha$ is the soft-core parameter, which mainly controls the
+height of the potential around $r=0$, $\sigma$ is the radius of the
+interaction, which is $(C_{12}/C_6)^{1/6}$ or a predefined value when
+$C_6$ or $C_{12}$ is zero.
+For intermediate $\LAM$, $r_A$ and $r_B$ alter the interactions very little
+when $r > \alpha^{1/6} \sigma$ and they quickly switch the soft-core
+interaction to an almost constant value when $r$ becomes smaller
+(\figref{softcore}). 
+The force is:
+\beq
+F_{sc}(r) = -\frac{\partial V_{sc}(r)}{\partial r} =
+ \LL F^A(r_A) \left(\frac{r}{r_A}\right)^5 +
+\LAM F^B(r_B) \left(\frac{r}{r_B}\right)^5
+\eeq
+where $F^A$ and $F^B$ are the 'hard core' forces.
+The contribution to the derivative of the free energy is:
+\beq
+\dvdl{V_{sc}(r)} =
+-V^A(r_A) + V^B(r_B) +
+\frac{1}{3} \alpha \LAM \LL 
+\left( -F^A(r_A) \sigma_A^6 r_A^{-5} + F^B(r_B) \sigma_B^6 r_B^{-5} \right)
+\eeq
 
 \section{Methods}
 \subsection{Exclusions and 1-4 Interactions.}
