@@ -170,11 +170,12 @@ void chk_trj(char *fn)
   PRINTITEM ( "Forces",     f_size );
 }  
 
-void chk_stx(char *fn)
+void chk_tps(char *fn)
 {
   int       natom,i,j,k,nvdw;
   char      title[STRLEN];
-  t_atoms   atoms;
+  t_topology top;
+  t_atoms   *atoms=NULL;
   rvec      *x,*v;
   rvec      dx;
   matrix    box;
@@ -184,16 +185,9 @@ void chk_stx(char *fn)
   real      *atom_vdw;
   
   fprintf(stderr,"Checking coordinate file %s\n",fn);
-  atoms.nr=0;
-  atoms.nres=0;
-  get_stx_coordnum(fn,&natom);
-  fprintf(stderr,"%d atoms in file\n",natom);
-  snew(atoms.atomname,natom);
-  snew(atoms.resname,natom);
-  snew(atoms.atom,natom);
-  snew(x,natom);
-  snew(v,natom);
-  read_stx_conf(fn,title,&atoms,x,v,box);
+  read_tps_conf(fn,title,&top,&atoms,&x,&v,box,TRUE);
+  natom=atoms->nr;
+  fprintf(stderr,"%d atoms in file\n",atoms->nr);
   
   /* check coordinates and box */
   bV=FALSE;
@@ -215,13 +209,10 @@ void chk_stx(char *fn)
   
   /* check velocities */
   if (bV) {
-    for (i=0; (i<natom); i++)
-      atoms.atom[i].m = get_mass(*atoms.resname[atoms.atom[i].resnr],
-				 *atoms.atomname[i]);
     ekin=0.0;
     for (i=0; (i<natom); i++)
       for (j=0; (j<DIM); j++)
-	ekin+=0.5*atoms.atom[i].m*v[i][j]*v[i][j];
+	ekin+=0.5*atoms->atom[i].m*v[i][j]*v[i][j];
     temp1=(2.0*ekin)/(natom*DIM*BOLTZ); 
     temp2=(2.0*ekin)/(natom*(DIM-1)*BOLTZ); 
     fprintf(stderr,"Kinetic energy: %g (kJ/mol)\n",ekin);
@@ -238,10 +229,10 @@ void chk_stx(char *fn)
     nvdw=read_vdw("radii.vdw",&vdw);
     snew(atom_vdw,natom);
     for (i=0; (i<natom); i++)
-      if ((atom_vdw[i]=get_vdw(nvdw,vdw,*(atoms.atomname[i])))==0.0)
-	if ( ((*atoms.atomname[i])[0]=='H') ||
-	     (isdigit((*(atoms.atomname[i]))[0]) && 
-	      ((*atoms.atomname[i])[1]=='H')) )
+      if ((atom_vdw[i]=get_vdw(nvdw,vdw,*(atoms->atomname[i])))==0.0)
+	if ( ((*atoms->atomname[i])[0]=='H') ||
+	     (isdigit((*(atoms->atomname[i]))[0]) && 
+	      ((*atoms->atomname[i])[1]=='H')) )
 	  atom_vdw[i]=0.1;
 	else
 	  atom_vdw[i]=0.2;
@@ -268,11 +259,11 @@ void chk_stx(char *fn)
 	  }
 	  fprintf(stderr,
 		  "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n",
-		  i+1,*(atoms.atomname[i]),
-		  *(atoms.resname[atoms.atom[i].resnr]),atoms.atom[i].resnr+1,
+		  i+1,*(atoms->atomname[i]),
+		  *(atoms->resname[atoms->atom[i].resnr]),atoms->atom[i].resnr+1,
 		  atom_vdw[i],
-		  j+1,*(atoms.atomname[j]),
-		  *(atoms.resname[atoms.atom[j].resnr]),atoms.atom[j].resnr+1,
+		  j+1,*(atoms->atomname[j]),
+		  *(atoms->resname[atoms->atom[j].resnr]),atoms->atom[j].resnr+1,
 		  atom_vdw[j],
 		  sqrt(r2) );
 	}
@@ -302,8 +293,9 @@ void chk_stx(char *fn)
 	  }
 	  fprintf(stderr,
 		  "%5d %4s %4s%4d %-5.3g",
-		  i,*(atoms.atomname[i]),*(atoms.resname[atoms.atom[i].resnr]),
-		  atoms.atom[i].resnr,atom_vdw[i]);
+		  i,*(atoms->atomname[i]),
+		  *(atoms->resname[atoms->atom[i].resnr]),
+		  atoms->atom[i].resnr,atom_vdw[i]);
 	  for (j=0; (j<DIM); j++)
 	    fprintf(stderr," %6.3g",x[i][j]);
 	  fprintf(stderr,"\n");
@@ -381,7 +373,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f", NULL, ffOPTRD },
     { efTPX, "-s1", "top1", ffOPTRD },
     { efTPX, "-s2", "top2", ffOPTRD },
-    { efSTX, "-c", NULL, ffOPTRD },
+    { efTPS, "-c", NULL, ffOPTRD },
     { efENX, "-e", NULL, ffOPTRD }
   };
 #define NFILE asize(fnm)
@@ -403,8 +395,8 @@ int main(int argc,char *argv[])
   else if (fn1 || fn2)
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
   
-  if (ftp2bSet(efSTX,NFILE,fnm))
-    chk_stx(ftp2fn(efSTX,NFILE,fnm));
+  if (ftp2bSet(efTPS,NFILE,fnm))
+    chk_tps(ftp2fn(efTPS,NFILE,fnm));
   
   if (ftp2bSet(efENX, NFILE,fnm))
     chk_enx(ftp2fn(efENX,NFILE,fnm));
