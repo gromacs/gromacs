@@ -29,7 +29,7 @@ david:		all	xmdrun	total	do_shift
 xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
 		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
-copyrgt:	copyrgt.o1;
+copyrgt:	copyrgt.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 my_dssp.o:	../tools/do_dssp.c
