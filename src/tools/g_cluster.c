@@ -41,6 +41,7 @@ static char *SRCID_g_rmsdist_c = "$Id$";
 #include "vec.h"
 #include "macros.h"
 #include "rdgroup.h"
+#include "random.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "futil.h"
@@ -86,6 +87,86 @@ static real **mk_matrix(int nf,bool b1D)
       snew(rms[i],nf);
   }
   return rms;
+}
+
+static real row_energy(int n1,int row,real **mat)
+{
+  real re = 0;
+  real n2_1;
+  int  i;
+  
+  n2_1 = 1.0/(n1*n1);
+  for(i=0; (i<n1); i++) 
+    re += (sqr(i-row)*n2_1)*mat[row][i];
+  
+  return re;
+}
+
+static real rows_energy(int n1,int row,real **mat,real *row_e)
+{
+  real re,retot;
+  real n2_1;
+  int  i,j;
+  
+  retot = 0;
+  n2_1 = 1.0/(n1*n1);
+  for(j=0; (j<n1); j++) {
+    re = 0;
+    for(i=0; (i<n1); i++) 
+      re += (sqr(i-j)*n2_1)*mat[j][i];
+    row_e[j] = re;
+    retot += re;
+  }
+  return retot;
+}
+
+static real energy(int n1,real **mat)
+{
+  real ee=0;
+  int  i;
+  
+  for(i=0; (i<n1); i++)
+    ee += row_energy(n1,i,mat);
+    
+  return ee/n1;
+}
+
+void pr_energy(FILE *fp,real e)
+{
+  fprintf(fp,"Energy: %8.4f\n",e);  
+}
+
+void swap_mat(int n1,real **mat,int isw,int jsw)
+{
+  real *tmp;
+  
+  /* Swap rows */
+  tmp      = mat[isw];
+  mat[isw] = mat[jsw];
+  mat[jsw] = tmp;
+  /* Swap columns, take into account that rows have been swapped already */
+}
+
+void mc_optimize(int n1,real **mat,int maxiter,real tol,int *seed)
+{
+  real e[2],*erow;
+  int  cur=0;
+#define next 1-cur
+  int  i,isw,jsw;
+  
+  fprintf(stderr,"Doing Monte Carlo clustering\n");
+  snew(erow,n1);
+  e[cur] = rows_energy(n1,mat,erow);
+  pr_energy(stderr,e[cur]);
+  for(i=0; (i<maxiter); i++) {
+    do {
+      isw = n1*rando(seed);
+      jsw = n1*rando(seed);
+    } while ((isw == jsw) || (isw >= n1) || (jsw >= n1));
+    /* Now try swapping rows */
+    swap_mat(n1,mat,isw,jsw);
+    
+  }
 }
 
 static void calc_dist_ind(int nind,atom_id index[],
@@ -357,7 +438,7 @@ void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P)
     else
       c[k].clust = c[k-1].clust;
   }
-  printf("Found %d clusters using Jarvis Patrick algorithm\n",c[n-1].clust);
+  printf("Found %d clusters using Jarvis Patrick algorithm\n",c[k-1].clust);
   if (log)
     for(k=0; (k<n1); k++)
       fprintf(log,"Cluster index for conformation %d: %d\n",
@@ -630,8 +711,9 @@ int main(int argc,char *argv[])
   }
   fprintf(stderr,"The maximum RMS was %g nm\n"
 	  "Average RMS was %g\n"
-	  "number of frames for matrix %d\n",
-	  maxrms,2*sum/(nf*(nf-1)),nf);
+	  "number of frames for matrix %d\n"
+	  "Energy of the matrix is %g nm\n",
+	  maxrms,2*sum/(nf*(nf-1)),nf,energy(nf,rms));
   
   /* Plot the rms distribution */
   rms_dist(opt2fn("-dist",NFILE,fnm),nf,rms,maxrms);
@@ -660,9 +742,11 @@ int main(int argc,char *argv[])
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
     fclose(fp);
   }
-  else
+  else {
     jarvis_patrick(debug,nf,rms,M,P);
-    
+    fprintf(stderr,"Energy of the matrix is %g nm\n",
+	    energy(nf,rms));
+  }
   write_xpm(opt2FILE("-os",NFILE,fnm,"w"),"RMS Sorted",
 	    "RMS (n)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
