@@ -190,8 +190,7 @@ static void do_update(int start,int homenr,double dt,
   double w_dt;
   int    gf,ga,gt;
   real   vn,vv,va,vb;
-  real   uold,l1,lg;
-  real   real1=1.0;
+  real   uold,lg;
   int    n,d;
   
   for (n=start; (n<start+homenr); n++) {  
@@ -204,15 +203,19 @@ static void do_update(int start,int homenr,double dt,
       vn             = v[n][d];
       lg             = lamb[gt][d];
       vold[n][d]     = vn;
-      vv             = lg*(vn + f[n][d]*w_dt);
-      
-      /* do not scale the mean velocities u */
-      uold           = gstat[ga].uold[d];
-      va             = vv + accel[ga][d]*dt;
-      l1             = (real1-lg);
-      vb             = va + l1*uold ;
-      v[n][d]        = vb;
-      xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
+      if (ptype[n]!=eptDummy) {
+	vv             = lg*(vn + f[n][d]*w_dt);
+	
+	/* do not scale the mean velocities u */
+	uold           = gstat[ga].uold[d];
+	va             = vv + accel[ga][d]*dt;
+	vb             = va + (1.0-lg)*uold ;
+	v[n][d]        = vb;
+	xprime[n][d]   = x[n][d]+vb*dt*freezefac[gf][d];
+      } else {
+	v[n][d]        = vn;
+	xprime[n][d]   = x[n][d];
+      }
     }
   }
 }
@@ -795,7 +798,10 @@ void update(int          natoms, 	/* number of atoms in simulation */
     for(n=0; (n<ngfrz); n++)
       for(m=0; (m<DIM); m++) {
 	freezefac[n][m]=(ir->opts.nFreeze[n][m]==0) ? 1.0 : 0.0;
+/* 	printf("n %d m %d ff %g\n",n,m,freezefac[n][m]); */
       }
+/*     for(i=0; (i<natoms); i++) */
+/*       printf("%d fg %d\n",i,md->cFREEZE[i]); */
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=ir->opts.ngacc;
     
