@@ -21,7 +21,6 @@ M4FILE		= $(M4DIR)/$(GMXCPU).m4
 M4MAC		= $(M4DIR)/gmxmac.m4
 LIB		= $(LIBDIR)/libgmx.$(GMXCPU).a
 SONAME		= libgmx.$(GMXCPU).so
-LOCALSHIT	= mkinl mkinl.o inner.h innerf.f innerc.c fnbf.c
 OBJ		= \
 		3dview.o	atomprop.o	block_tx.o	\
 		bondfree.o	buffer.o	calch.o		\
@@ -108,10 +107,6 @@ endif
 include		$(STDTARGET)
 #
 
-# Redefininf make clean to avoid mkinl problems
-clean:	oclean
-	$(RM) $(LIB) $(LOCALSHIT)
-
 testfft:	testfft.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lcomplib.sgimath
 testtab:	testtab.o
@@ -182,10 +177,10 @@ innerf.f:		mkinl inner.h Makefile $(CPUMAKEF)
 			./mkinl 0 1
 innerf.o:		innerf.f
 			$(F77) $(FFLAGS) -c innerf.f
-			$(RM) innerf.f
+			$(RM) innerf.f inner.h mkinl
 innerc.o:		innerc.c inner.h
 			$(CC) $(C-FLAGS) -c innerc.c
-			$(RM) innerc.c inner.h
+			$(RM) innerc.c inner.h mkinl
 
 include	Make.dep
 endif
