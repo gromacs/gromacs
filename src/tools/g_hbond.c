@@ -430,30 +430,31 @@ static bool is_hbond(atom_id d, atom_id h, atom_id a,
 		     rvec x[], bool bBox, matrix box,rvec hbox,
 		     real *d_ha, real *ang,bool bDA)
 {
-  rvec dist,r_dh,r_ha;
+  rvec r_dh,r_da,r_ha;
   real d2,ca;
   int m;
 
   if (d == a)
     return FALSE;
-  if (bDA)
-    rvec_sub(x[a],x[d],dist);
-  else 
-    rvec_sub(x[a],x[h],dist);
-
+  rvec_sub(x[d],x[a],r_da);
   if (bBox) 
-    pbc_correct(dist,box,hbox);    
-
-  d2 = iprod(dist,dist);
-  if ( d2 <= rcut*rcut ) {
-    rvec_sub(x[d],x[h],r_dh);
+    pbc_correct(r_da,box,hbox);    
+    
+  if (bDA) 
+    d2 = iprod(r_da,r_da);
+  else {
     rvec_sub(x[h],x[a],r_ha);
     if (bBox) 
-      pbc_correct(r_dh,box,hbox);    
-    if (bBox) 
       pbc_correct(r_ha,box,hbox);    
-
-    ca = cos_angle(r_dh,r_ha);
+    d2 = iprod(r_ha,r_ha);
+  }
+  
+  if ( d2 <= rcut*rcut ) {
+    rvec_sub(x[d],x[h],r_dh);
+    if (bBox)
+      pbc_correct(r_dh,box,hbox);
+      
+    ca = cos_angle(r_dh,r_da);
     /* if angle is smaller, cos is larger */
     if (ca >= ccut) {
       *d_ha = sqrt(d2);
@@ -523,60 +524,63 @@ static bool is_hb(unsigned int hbexist[],int frame)
 }
 
 static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
-		    real time[])
+		    real time[],real aver_nhb)
 {
   FILE *fp;
-  int  i,j,j0,ihb;
+  int  i,j,ihb,nnn;
   bool bNorm=FALSE;
   double nhb = 0;
   real *rhbex;
-  real *ct,tail,tail2,dtail,ct0;
+  real *ct,tail,tail2,dtail,ct0,subtract;
   const real tol = 1e-3;
-  int  *nct;
   
   /* build hbexist matrix in reals for autocorr */
   /* Allocate memory for computing ACF (rhbex) and aggregating the ACF (ct) */
   snew(rhbex,nframes);
   snew(ct,nframes);
-  snew(nct,nframes);
 
   /* Loop over hbonds */
+  fp = ffopen("debug-ac.xvg","w");
+  for(j=0; (j<nframes); j++) {
+    fprintf(fp,"%5d",j);
+    for(i=nrhb/2; i<min(nrhb/2+40,nrhb); i++) {
+      ihb      = is_hb(hbexist[i],j);
+      fprintf(fp,"  %3d",ihb);
+    }
+    fprintf(fp,"\n");
+  }
+  ffclose(fp);
+  
   for(i=0; i<nrhb; i++) {
     fprintf(stderr,"\rACF %d/%d",i+1,nrhb);
-    /* First skip until the first frame that a hbond exists */
-    j0=0;
-    /*while ((j0 < nframes) && (!is_hb(hbexist[i],j0)))
-      j0++;*/
-    for(j=j0; (j<nframes); j++) {
-      ihb         = is_hb(hbexist[i],j);
-      rhbex[j-j0] = ihb;
-      nhb        += ihb; 
+    nnn=0;
+    for(j=0; (j<nframes); j++) {
+      ihb      = is_hb(hbexist[i],j);
+      rhbex[j] = ihb;
+      nhb     += ihb; 
+      nnn     += ihb;
     }
-    /*for(j=nframes-j0; (j<nframes); j++)
-      rhbex[j] = 0;
-    j0 = 0;
-    */
+    /* Subtract average value */
+    subtract = aver_nhb; /* nnn/((real)nframes);*/
+    for(j=0; (j<nframes); j++)
+      rhbex[j] -= subtract;
+    
     /* The autocorrelation function is normalized after summation only */
     low_do_autocorr(NULL,NULL,
-		    nframes-j0,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
+		    nframes,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
 		    FALSE,TRUE,bNorm,FALSE,0,-1,0,1);
-    for(j=0; (j<(nframes-j0)/2); j++) {
+    for(j=0; (j<nframes/2); j++)
       ct[j] += rhbex[j];
-      nct[j]++;
-    }
   }
   fprintf(stderr,"\n");
   sfree(rhbex);
 
   /* Normalize */
-  for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
-    ct[j] /= nct[j];
-  nframes = j;
   ct0 = ct[0];
-  for(j=0; (j<nframes); j++)
+  for(j=0; (j<nframes/2); j++)
     ct[j] /= ct0;
   
-  /* Determine tail value for normalizing */
+  /* Determine tail value for statistics */
   tail  = 0;
   tail2 = 0;
   for(j=nframes/4; (j<nframes/2); j++) {
@@ -597,13 +601,11 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   }
   fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
   for(j=0; (j<nframes/2); j++)
-    fprintf(fp,"%10g  %10g  %10g\n",time[j]-time[0],
-	    (ct[j]-tail)/(1-tail),ct[j]);
+    fprintf(fp,"%10g  %10g\n",time[j]-time[0],ct[j]);
   
   fclose(fp);
   do_view(fn,NULL);
   sfree(ct);
-  sfree(nct);
 }
 
 int gmx_hbond(int argc,char *argv[])
@@ -661,7 +663,7 @@ int gmx_hbond(int argc,char *argv[])
     "frames, this also contains information on solvent insertion",
     "into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
     "index file.[BR]",
-    "[TT]-da[tt]: write out the number of donors and acceptors analyzed for",
+    "[TT]-dan[tt]: write out the number of donors and acceptors analyzed for",
     "each timeframe. This is especially usefull when using [TT]-shell[tt]."
   };
   
@@ -675,7 +677,7 @@ int gmx_hbond(int argc,char *argv[])
       "Cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
     { "-r",    FALSE, etREAL, {&rcut},
       "Cutoff radius (nm, X - Acceptor, see next option)" },
-    { "-dh",   FALSE, etBOOL, {&bDA},
+    { "-da",   FALSE, etBOOL, {&bDA},
       "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
     { "-abin", FALSE, etREAL, {&abin},
       "Binwidth angle distribution (degrees)" },
@@ -701,7 +703,7 @@ int gmx_hbond(int argc,char *argv[])
     { efXVG, "-hx",  "hbhelix",ffOPTWR },
     { efNDX, "-hbn", "hbond",  ffOPTWR },
     { efXPM, "-hbm", "hbmap",  ffOPTWR },
-    { efXVG, "-da",  "danum",  ffOPTWR }
+    { efXVG, "-dan",  "danum",  ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -732,6 +734,7 @@ int gmx_hbond(int argc,char *argv[])
   matrix  box;
   real    t,ccut,dist,ang;
   real    *time;
+  double  max_nhb,aver_nhb;
   int     i,j,k,l,start,end;
   int     xi,yi,zi,ai;
   int     xj,yj,zj,aj,xjj,yjj,zjj;
@@ -859,7 +862,6 @@ int gmx_hbond(int argc,char *argv[])
     }
     donors[gr1D] = donors[gr0D];
   }
-  
   /* check input */
   bStop=FALSE;
   for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC)
@@ -1150,11 +1152,15 @@ int gmx_hbond(int argc,char *argv[])
     
     /* Dump everything to output */
     sort_hb(nr_a,donors);
-    
+
+    aver_nhb = 0;    
     fp = xvgropen(opt2fn("-num",NFILE,fnm),"Hydrogen Bonds","Time","Number");
-    for(i=0; i<nframes; i++)
+    for(i=0; i<nframes; i++) {
       fprintf(fp,"%10g %10d\n",time[i],nhb[i]);
+      aver_nhb += nhb[i];
+    }
     fclose(fp);
+    aver_nhb /= nframes;
     
     if (opt2bSet("-dist",NFILE,fnm)) {
       long sum;
@@ -1170,7 +1176,7 @@ int gmx_hbond(int argc,char *argv[])
 	fprintf(fp,"%10g %10g\n",(i+0.5)*rbin,rdist[i]/(rbin*(real)sum));
       fclose(fp);
     }
-    
+  
     if (opt2bSet("-ang",NFILE,fnm)) {
       long sum;
       
@@ -1199,8 +1205,16 @@ int gmx_hbond(int argc,char *argv[])
       fclose(fp);
     }
     
+    /* Compute maximum possible number of different hbonds */
+    if (bTwo) 
+      max_nhb = nr_a[gr0H]*nr_a[gr1A] + nr_a[gr0A]*nr_a[gr1H];
+    else 
+      max_nhb = nr_a[gr0H]*nr_a[gr0A];
+    printf("Average number of hbonds per timeframe %.2f out of %g possible\n",
+	   aver_nhb,max_nhb);
     if (opt2bSet("-ac",NFILE,fnm))
-      do_hbac(opt2fn("-ac",NFILE,fnm),hbexist,nrhb,nframes,time);
+      do_hbac(opt2fn("-ac",NFILE,fnm),hbexist,nrhb,nframes,time,
+	      aver_nhb/max_nhb);
     
     if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;
