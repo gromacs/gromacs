@@ -158,7 +158,7 @@ endif
 # you might consider commenting out the following line:
 setenv	IAMCOOL	$COOL
 
-if ( -f complete ) source complete
+if ( -f $GMXHOME/complete ) source $GMXHOME/complete
 
 # end of script
 EOD
