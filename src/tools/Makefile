@@ -208,7 +208,7 @@ g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o		rdfang.o
 		$(CCLD) -o $@ $^ $(SYSLIBS)
 
 g_msd:		g_msd.o	lsq.o
-		$(CCLD) -o $@ $^ $(SYSLIBS)
+		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_hbond:	g_hbond.o	$(ACOBJ)
 		$(LD) -g -o $@ $^ $(SYSLIBS)
