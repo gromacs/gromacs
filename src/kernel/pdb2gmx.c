@@ -634,6 +634,7 @@ int main(int argc, char *argv[])
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
+  static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", NULL };
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, {&bNewRTP},
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
@@ -647,6 +648,8 @@ int main(int argc, char *argv[])
       "Set the next 6 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
       "Interactive SS bridge selection" },
+    { "-water",  FALSE, etSTR,  {watstr},
+      "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-ter",    FALSE, etBOOL, {&bTerMan}, 
       "Interactive termini selection, iso charged" },
     { "-lys",    FALSE, etBOOL, {&bLysMan}, 
@@ -1099,7 +1102,7 @@ int main(int argc, char *argv[])
     }
   }
   
-  print_top_mols(top_file,title,nincl,incls,nmol,mols);
+  print_top_mols(top_file,title,watstr[0],nincl,incls,nmol,mols);
   fclose(top_file);
 
   done_aa_names(&aan);
