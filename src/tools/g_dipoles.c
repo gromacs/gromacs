@@ -46,6 +46,8 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #include "names.h"
 #include "physics.h"
 #include "calcmu.h"
+#include "enxio.h"
+
 
 #define MAXBIN 200 
 #define enm2Debye 48.0321
@@ -55,6 +57,39 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #define CM2D  SPEED_OF_LIGHT*1.0e+19    /* Coulomb meter to Debye */
 
 void pr_jacobi(real **a,int n,real d[],real **v,int *nrot);
+
+bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
+		      real *t,int step,int nre)
+{
+  int      i;
+  bool     eof;
+  t_energy *ee;  
+
+  snew(ee,nre);
+
+  eof = do_enx(fmu,t,&step,&nre,ee,NULL);
+
+  if (eof) {
+    *vol = ee[Vol].e;
+    for (i=0;(i<DIM);i++)
+      mu[i]=ee[iMu[i]].e;
+  }
+  
+  return eof;
+
+/* For backward compatibility 
+  real mmm[4];
+  
+  if (fread(mmm,(size_t)(4*sizeof(mmm)),1,fp) != 1)
+    return FALSE;
+    
+  copy_rvec(mmm,mu);
+  *vol = mmm[3];
+  
+  return TRUE;
+  */
+}
+
 
 void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
 {
@@ -321,7 +356,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   real mu_max,real mu,real epsilonRF,real temp,
 		   int nframes,bool bFA)
 {
-  FILE       *out,*outaver,*fmu;
+  FILE       *out,*outaver;
   static char *legoutf[] = { 
     "< M\\sx \\N>", 
     "< M\\sy \\N>",
@@ -335,9 +370,11 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     "G\\sk",
     "epsilon"
   };
-  rvec       *x,*dipole,M_av,M_av2,Q_av,Q_av2,*quadrupole;
+  rvec       *x,*dipole,mu_t,M_av,M_av2,Q_av,Q_av2,*quadrupole;
   real       *gkr;
   int        *gkcount;
+  int        fmu,nre,timecheck;
+  char       **enm=NULL;
   real       rcut;
   matrix     box;
   bool       bCont;
@@ -345,6 +382,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   double     M_sqr_ave,M_ave_sqr,M_diff,epsilon;
   double     mu_ave,mu_mol,M2_ave,M_ave2;
   rvec       quad_ave,quad_mol;
+  ivec       iMu;
+  int        Vol;
   real       M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk,g_k;
   real       **muall,**quadall;
   t_topology *top;
@@ -355,8 +394,22 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   real       volume;
   unsigned long mode;
 
-  if (bMU)
-    fmu = ffopen(mufn,"r");
+  if (bMU) {
+    fmu = open_enx(mufn,"r");
+    do_enxnms(fmu,&nre,&enm);
+
+    /* Determine the indexes of the energy grps we need */
+    for (i=0; (i<nre); i++) {
+      if (strstr(enm[i],"Volume"))
+	Vol=i;
+      else if (strstr(enm[i],"Mu-X"))
+	iMu[XX]=i;
+      else if (strstr(enm[i],"Mu-Y"))
+	iMu[YY]=i;
+      else if (strstr(enm[i],"Mu-Z"))
+	iMu[ZZ]=i;
+    }
+  }
   else {
     top  = read_top(topf);
     atom = top->atoms.atom;
@@ -406,7 +459,24 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		   "Time (ps)","<|M|\\S2\\N>, <|M|>\\S2\\N (Debye\\S2)");
   xvgr_legend(outaver,asize(legoutfa),legoutfa);
 
-  if (!bMU)
+  teller = 0;
+  /* Read the first frame from energy or traj file */
+  if (bMU)
+    do {
+      bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
+      if (bCont) {  
+	timecheck=check_times(t);
+	if (timecheck < 0)
+	  teller++;
+	if ((teller % 10) == 0)
+	  fprintf(stderr,"\r Skipping Frame %6d, time: %8.3f", teller, t);
+      }
+      else {
+	fprintf(stderr,"End of %s reached\n",mufn);
+	break;
+      }
+    } while (bCont && (timecheck < 0));
+  else
     natom  = read_first_x(&status,fn,&t,&x,box);
   
   snew(bin, MAXBIN);
@@ -421,9 +491,9 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   if (bQuad)
     clear_rvec(quad_ave);
 
-  /* Start the loop over frames */
+  /* Start while loop over frames */
   t1 = t0 = t;
-  teller  = 0;
+  teller = 0;
 
   if (bGkr) {
     rcut       = 0.475*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
@@ -447,22 +517,13 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     clear_rvec(M_av2);
 
     if (bMU) {
-      rvec mu_t;
-      
-      bCont = read_mu(fmu,mu_t,&volume);
-      if (bCont) {
+      if (timecheck == 0) {
 	for(m=0; (m<DIM); m++) {
 	  M_av[m]  += mu_t[m];          /* M per frame */
 	  M_av2[m] += mu_t[m]*mu_t[m];  /* M^2 per frame */
 	}
       }
-      else {
-	fprintf(stderr,"End of %s reached\n",mufn);
-	break;
-      }
-      
-    }
-    else {
+    } else {
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
 	int gi = grpindex[i];
@@ -505,7 +566,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	if (ibin < MAXBIN)
 	  bin[ibin]++;
       } /* End loop of all molecules in frame */
-    }
+    } 
     
     if (bGkr) {
       init_pbc(box,FALSE);
@@ -567,8 +628,10 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
      */
     fprintf(outaver,"%10g  %12.8e %12.8e %12.8e %12.8e %12.8e\n",
 	    t, M2_ave, M_ave2, M_diff, Gk, epsilon);
-	    
-    if (!bMU) 
+
+    if (bMU)
+      bCont = read_mu_from_enx(fmu,Vol,iMu,mu_t,&volume,&t,teller,nre); 
+    else
       bCont = read_next_x(status,&t,natom,x,box);
   } while(bCont);
   
@@ -701,6 +764,7 @@ int main(int argc,char *argv[])
   bool         bCorr,bQuad,bGkr,bFitACF,bMU;  
   int          i,status;
   t_filenm fnm[] = {
+    { efENX, "-enx", NULL,    ffOPTRD },
     { efTRX, "-f", NULL,      ffREAD },
     { efTPX, NULL, NULL,      ffREAD },
     { efNDX, NULL, NULL,      ffREAD },
@@ -711,7 +775,6 @@ int main(int argc,char *argv[])
     { efXVG, "-g", "gkr",     ffOPTWR },
     { efXVG, "-fa", "fitacf",    ffOPTWR },
     { efXVG, "-q", "quadrupole", ffOPTWR },
-    { efDAT, "-fmu", "dipfile", ffOPTRD }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -732,18 +795,17 @@ int main(int argc,char *argv[])
   if (epsilonRF == 1.0)
     fprintf(stderr,"EpsilonRF = 1.0, are you really sure you want this...\n");
   
-  bMU = (opt2bSet("-fmu",NFILE,fnm));
+  bMU = (opt2bSet("-enx",NFILE,fnm));
   if (bMU) {
     bAverCorr = TRUE;
-    gnx   = 0;
     bQuad = FALSE;
     bGkr  = FALSE;
   }
   else {
-    rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&grpindex,&grpname);
     bQuad   = opt2bSet("-q",NFILE,fnm);
     bGkr    = opt2bSet("-g",NFILE,fnm);
   }
+  rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&grpindex,&grpname);
   bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
   bFitACF = opt2bSet("-fa",NFILE,fnm);
   do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
@@ -754,7 +816,7 @@ int main(int argc,char *argv[])
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bFitACF, opt2fn("-fa",NFILE,fnm),
-	 bMU,     opt2fn("-fmu",NFILE,fnm),
+	 bMU,     opt2fn("-enx",NFILE,fnm),
 	 gnx,grpindex,mu_max,mu,epsilonRF,temp,nframes,bFA);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
