@@ -110,7 +110,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->eI); 
     do_int(ir->nsteps); 
     do_int(ir->ePBC);
-    if (file_version <= 15 && ir->ePBC == epbcNR)
+    if (file_version <= 15 && ir->ePBC == 2)
       ir->ePBC = epbcNONE;
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 
@@ -152,7 +152,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       do_int(idum);
     do_int(ir->epc); 
     if (file_version <= 15) {
-      if (ir->epc == epcNR)
+      if (ir->epc == 5)
 	ir->epc = epcSURFACETENSION;
       do_int(idum);
     }
