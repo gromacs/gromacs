@@ -400,16 +400,17 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
 		       real count[],rvec box,int npixel,real *map[],
 		       t_xdata data[])
 {
-  int nx,ny,nz,la2,la12;
+  int     nx,ny,nz,nx2,ny2,nz2,la2,la12;
   t_fft_c *ptr,*p0;
-  int  i,j,k,maxkx,maxky,maxkz,n,ind,ix,iy;
-  real k1,kxy2,kz2,k2,z,kxy,kxy_max,cos_theta2,ttt,factor;
-  rvec lll,kk;
+  int     i,j,k,maxkx,maxky,maxkz,n,ind,ix,iy;
+  real    k1,kxy2,kz2,k2,z,kxy,kxy_max,cos_theta2,ttt,factor;
+  rvec    lll,kk;
   
   /*calc_lll(box,lll);
     k_max   = nbin/factor;
     kxy_max = k_max/sqrt(3);*/
-  unpack_fftgrid(fftgrid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
+  unpack_fftgrid(fftgrid,&nx,&ny,&nz,&nx2,&ny2,&nz2,
+		 &la2,&la12,FALSE,(t_fft_r **)&ptr);
   /* This bit copied from pme.c */
   maxkx = (nx+1)/2;
   maxky = (ny+1)/2;
