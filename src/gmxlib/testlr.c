@@ -158,61 +158,6 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
   calc_ener(log,"Fourier+SR",FALSE,nmol,atoms->nr,phi_f,charge,&atoms->excl);
 }
 
-void analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
-		  real phi_f[],real phi_p[],real phi_sr[],
-		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)
-{
-  int  i,m;
-  FILE *fp,*gp;
-  char buf[120];
-  real f2sum=0,p2sum=0;
-  real ftot2sum=0,ptot2sum=0;
-  real df,fmax,dp,pmax;
-  
-  fmax = fabs(ffour[0][0]-fpppm[0][0]);
-  pmax = fabs(phi_f[0] - phi_p[0]);
-  
-  for(i=0; (i<natom); i++) {
-    dp     = fabs(phi_f[i] - phi_p[i]);
-    pmax   = max(dp,pmax);
-    p2sum += dp*dp;
-    for(m=0; (m<DIM); m++) {
-      df     = fabs(ffour[i][m] - fpppm[i][m]);
-      fmax   = max(df,fmax);
-      f2sum += df*df;
-    }
-  }
-  
-  fprintf(log,"\n********************************\nERROR ANALYSIS\n");
-  fprintf(log,"%-10s%12s%12s\n","Error:","Max Abs","RMS");
-  fprintf(log,"%-10s  %10.3f  %10.3f\n","Force",fmax,sqrt(f2sum/(3.0*natom)));
-  fprintf(log,"%-10s  %10.3f  %10.3f\n","Potential",pmax,sqrt(p2sum/(natom)));
-  
-  fp = xvgropen(fcorr,"LR Force Correlation","Four-Force","PPPM-Force");
-  /*gp = xvgropen(ftotcorr,"Total Force Correlation","Four-Force","PPPM-Force");*/
-  for(i=0; (i<natom); i++) {
-    for(m=0; (m<DIM); m++) {
-      fprintf(fp,"%10.3f  %10.3f\n",ffour[i][m],fpppm[i][m]);
-      /*fprintf(gp,"%10.3f  %10.3f\n",ffour[i][m],fpppm[i][m]);*/
-    }
-  }
-  ffclose(fp);
-  /*ffclose(gp);*/
-  xvgr_file(fcorr,NULL);
-  xvgr_file(ftotcorr,NULL);
-  
-  fp = xvgropen(pcorr,"LR Potential Correlation","Four-Pot","PPPM-Pot");
-  gp = xvgropen(ptotcorr,"Total Potential Correlation","Four-Pot","PPPM-Pot");
-  for(i=0; (i<natom); i++) {
-    fprintf(fp,"%10.3f  %10.3f\n",phi_f[i],phi_p[i]);
-    fprintf(gp,"%10.3f  %10.3f\n",phi_f[i]+phi_sr[i],phi_p[i]+phi_sr[i]);
-  }
-  ffclose(fp);
-  ffclose(gp);
-  xvgr_file(pcorr,NULL);
-  xvgr_file(ptotcorr,NULL);
-}
-
 static void print_opts(FILE *fp,t_inputrec *ir,bool bFour)
 {
   fprintf(fp,"Ewald solution: %s\n",bool_names[bFour]);
@@ -268,7 +213,7 @@ int main(int argc,char *argv[])
   t_mdatoms    *mdatoms;
   t_graph      *graph;
   int          i,step,nre,natoms,nmol;
-  rvec         *x,*f_s,*f_four,*f_pppm,*f_pois,box_size,hbox;
+  rvec         *x,*f_sr,*f_excl,*f_four,*f_pppm,*f_pois,box_size,hbox;
   matrix       box;
   real         t,lambda,vsr,*charge,*phi_f,*phi_pois,*phi_s,*phi_p3m,*rho;
   
@@ -291,6 +236,7 @@ int main(int argc,char *argv[])
   if (nprocs > 1) {
     cr = init_par(argv);
     open_log(ftp2fn(efLOG,NFILE,fnm),cr);
+    log = stdlog;
   }
   else {
     cr = NULL;
@@ -304,7 +250,8 @@ int main(int argc,char *argv[])
   /* Read topology and coordinates */
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&stath);
   snew(x,stath.natoms);
-  snew(f_s,stath.natoms);
+  snew(f_sr,stath.natoms);
+  snew(f_excl,stath.natoms);
   snew(f_four,stath.natoms);
   snew(f_pppm,stath.natoms);
   snew(f_pois,stath.natoms);
@@ -342,12 +289,13 @@ int main(int argc,char *argv[])
   graph = mk_graph(&(top.idef),top.atoms.nr,FALSE);
   shift_self(graph,fr->shift_vec,x);
 
-  calc_LRcorrections(log,0,natoms,ir.rshort,ir.rlong,charge,excl,x,f_s);
-  pr_f("f_s.dat",natoms,f_s);
+  calc_LRcorrections(log,0,natoms,ir.rshort,ir.rlong,charge,excl,x,f_excl);
+  pr_f("f_excl.dat",natoms,f_excl);
   
   /* Compute the short range potential */
   put_all_atoms_in_box(natoms,box,x);
-  vsr=phi_sr(natoms,x,charge,ir.rlong,ir.rshort,box_size,phi_s,excl);  
+  vsr=phi_sr(log,natoms,x,charge,ir.rlong,ir.rshort,box_size,phi_s,excl,f_sr); 
+  pr_f("f_sr.dat",natoms,f_sr);
   
   /* Plot the short range potential in a matrix */    
   calc_ener(log,"Short Range",TRUE,nmol,natoms,phi_s,charge,excl);
