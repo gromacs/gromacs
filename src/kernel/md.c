@@ -291,7 +291,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bool do_ene,do_log,do_dr;
       
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
-      do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
+      if (top->idef.il[F_DISRES].nr)
+	do_dr = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
+      else
+	do_dr = FALSE; 
       do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
       print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
