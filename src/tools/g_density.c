@@ -181,7 +181,6 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 	  else  
 	    (*slDensity)[n][slice] += found->nr_el - 
 	                              top->atoms.atom[index[n][i]].q;
-	  /* take into account partial charge */
 	  free(sought.atomname);
 	}
     }
@@ -343,8 +342,16 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute partial densities across the box, using an index file. Densities",
-    "in gram/cubic centimeter, number densities or electron densities can be",
-    "calculated. For electron densities, each atom is weighed by its atomic",
+    "in kg/m^3, number densities or electron densities can be",
+    "calculated. For electron densities, a file describing the number of",
+    "electrons for each type of atom should be provided using [TT]-ei[tt].",
+    "It should look like:[BR]",
+    "   2[BR]",
+    "   atomname = nrelectrons[BR]",
+    "   atomname = nrelectrons[BR]",
+    "The first line contains the number of lines to read from the file.",
+    "There should be one line for each unique atom name in your system.",
+    "The number of electrons for each atom is modified by its atomic",
     "partial charge."
   };
   
@@ -384,7 +391,7 @@ int main(int argc,char *argv[])
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
     { efNDX, NULL, NULL,  ffOPTRD },    	    /* index file 		  */
     { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
-    { efDAT, "-ei", "electrons", ffWRITE },   /* file with nr. of electrons */
+    { efDAT, "-ei", "electrons", ffOPTRD },   /* file with nr. of electrons */
     { efXVG,"-o","density",ffWRITE }, 	    /* xvgr output file 	  */
   };
   t_electron *el_tab;                       /* tabel with nr. of electrons*/
