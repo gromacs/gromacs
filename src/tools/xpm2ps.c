@@ -58,16 +58,13 @@ typedef struct {
   char tickfont[STRLEN];
 } t_axisdef;
 
-enum { elOff, elDiscrete, elContinuous, elNR };
-static char *legs[] = { "Off", "Discrete", "Continuous", NULL };
-
 typedef struct {
   int       bw;
   real      xoffs,yoffs;
   bool      bTitle;
   real      titfontsize;
   char      titfont[STRLEN];
-  int       legtype;
+  bool      legend;
   real      legfontsize;
   char      legfont[STRLEN];
   char      leglabel[STRLEN];
@@ -78,7 +75,7 @@ typedef struct {
   t_axisdef X,Y;
 } t_psrec;
 
-void get_params(char *mpin,t_psrec *psr)
+void get_params(char *mpin,char *mpout,t_psrec *psr)
 {
   static char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   t_inpfile *inp;
@@ -89,7 +86,7 @@ void get_params(char *mpin,t_psrec *psr)
   ETYPE("black&white",		psr->bw,          bools);
   STYPE("titlefont",		psr->titfont,     "Times-Roman");
   RTYPE("titlefontsize",	psr->titfontsize, 20.0);
-  ETYPE("legend",		psr->legtype,     legs);
+  ETYPE("legend",		psr->legend,     bools);
   STYPE("legendfont",		psr->legfont,     "Times-Roman");
   STYPE("legendlabel",		psr->leglabel,	 "");
   STYPE("legend2label",		psr->leg2label,	 psr->leglabel);
@@ -121,6 +118,8 @@ void get_params(char *mpin,t_psrec *psr)
   STYPE("y-font",      		psr->Y.font,      	"Times-Roman");
   RTYPE("y-tickfontsize",     	psr->Y.tickfontsize, 	10.0);
   STYPE("y-tickfont",      	psr->Y.tickfont,		"Helvetica");
+  if (mpout)
+    write_inpfile(mpout,ninp,inp);
 }
 
 t_rgb black={ 0.0, 0.0, 0.0 };
@@ -475,7 +474,7 @@ void xpm_mat(char *outf,
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    bool bDiag,bool bTitle,bool bLegend,bool bLegSet,
-	    real boxx,real boxy,char *m2p)
+	    real boxx,real boxy,char *m2p,char *m2pout)
 {
   char   buf[256];
   FILE   *out;
@@ -488,7 +487,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   t_mapping *map1,*map2;
   bool   bMap1,bNextMap1;
   
-  get_params(libfn(m2p),&psrec);
+  get_params(libfn(m2p),m2pout,&psrec);
 
   psr=&psrec;
 
@@ -519,7 +518,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     if (leg!=1)
       printf("Selected legend of matrix # %d for second display\n",leg);
   }
-  if ( (mat[0].legend[0]==0) && (psr->legtype!=elOff) )
+  if ( (mat[0].legend[0]==0) && psr->legend )
     strcpy(mat[0].legend, psr->leglabel);
 
   bTitle = bTitle && mat[nmat-1].title[0];
@@ -612,7 +611,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
   }
   
-  if (!bLegSet && (psr->legtype != elOff) || (bLegSet && bLegend)) {
+  if ((!bLegSet && psr->legend) || (bLegSet && bLegend)) {
     ps_comment(out,"Now it's legend time!");
     if (mat[0].bDiscrete)
       leg_discrete(out,psr->legfontsize,DDD,mat[0].legend,
@@ -634,7 +633,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
 	    bool bDiag,bool bTitle,bool bLegend,bool bLegSet,
 	    real boxx,real boxy,
-	    char *epsfile,char *xpmfile,char *m2p)
+	    char *epsfile,char *xpmfile,char *m2p,char *m2pout)
 {
   int      i,j,k;
 
@@ -654,7 +653,7 @@ void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bDiag,bTitle,bLegend,bLegSet,
-	   boxx,boxy,m2p);
+	   boxx,boxy,m2p,m2pout);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag);
 }
@@ -702,6 +701,7 @@ int main(int argc,char *argv[])
     { efXPM, "-f",  NULL,      ffREAD },
     { efXPM, "-f2", "root2",   ffOPTRD },
     { efM2P, "-di", NULL,      ffLIBRD },
+    { efM2P, "-do", "out",     ffOPTWR },
     { efEPS, "-o",  NULL,      ffOPTWR },
     { efXPM, "-xpm",NULL,      ffOPTWR }
   };
@@ -745,7 +745,7 @@ int main(int argc,char *argv[])
 
   do_mat(nmat,mat,nmat2,mat2,bDiag,bTitle,bLegend,bLegSet,
 	 boxx,boxy,epsfile,xpmfile,
-	 opt2fn_null("-di",NFILE,fnm));
+	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
   
   if (bDoView())
     viewps(ftp2fn(efEPS,NFILE,fnm));
