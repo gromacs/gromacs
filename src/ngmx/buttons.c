@@ -153,7 +153,7 @@ static bool ButtonCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,ulong fg,ulong bg)
+t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,unsigned long fg,unsigned long bg)
 {
   Pixmap   pm;
   unsigned char     *data;
@@ -229,7 +229,7 @@ void hide_but(t_x11 *x11,t_butbox *bbox)
 }
 
 t_butbox *init_bbox(t_x11 *x11,Window Parent,Window SendTo,
-		    int width,ulong fg,ulong bg)
+		    int width,unsigned long fg,unsigned long bg)
 {
   t_butbox *bbox;
   static char *lbut[IDBUTNR] = {

@@ -60,9 +60,9 @@ typedef struct {
   t_windata    	win;     	/* The position and size of the window 	*/
   char          *title;         /* Window name 				*/
   Window	wDad;		/* The parent window 			*/
-  uint          xmax,ymax;      /* Dimensions of parent window 		*/
-  ulong         flags;          /* Flags for display 			*/
-  ulong         fg,bg;          /* The colours 				*/
+  unsigned int          xmax,ymax;      /* Dimensions of parent window 		*/
+  unsigned long         flags;          /* Flags for display 			*/
+  unsigned long         fg,bg;          /* The colours 				*/
   bool          bPop;           /* Should we pop the mouse back 	*/
   bool          bGrab;          /* Have we grabbed the mouse ? 		*/
   int         	nitem;		/* The number of items 			*/
@@ -78,7 +78,7 @@ typedef struct {
  *
  ****************************/
 t_dlg *CreateDlg(t_x11 *x11,Window Parent,char *title,
-		 int x0,int y0,int w,int h,int bw,ulong fg,ulong bg,
+		 int x0,int y0,int w,int h,int bw,unsigned long fg,unsigned long bg,
 		 DlgCallback *cb,void *data);
 
 /*****************************

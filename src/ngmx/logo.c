@@ -38,7 +38,7 @@ static char *SRCID_logo_c = "$Id$";
 
 typedef struct {
   int   x,y,rad;
-  ulong *col;
+  unsigned long *col;
 } t_circle;
 
 typedef struct {
@@ -172,7 +172,7 @@ t_logo *init_logo(t_x11 *x11,Window parent)
     };
 #define NSF asize(sfname)
   int    i;
-  ulong  bg;
+  unsigned long  bg;
   char   *newcol;
   t_logo *logo;
 

@@ -93,7 +93,7 @@ void set_def (t_molwin *mw)
 
 t_molwin *init_mw(t_x11 *x11,Window Parent,
 		  int x,int y,int width,int height,
-		  ulong fg,ulong bg)
+		  unsigned long fg,unsigned long bg)
 {
   t_molwin *mw;
 
@@ -147,7 +147,7 @@ void done_mw(t_x11 *x11,t_molwin *mw)
 }
 
 static void draw_atom(Display *disp,Window w,GC gc,
-		      atom_id ai,iv2 vec2[],ulong col[],int size[],
+		      atom_id ai,iv2 vec2[],unsigned long col[],int size[],
 		      bool bBall,bool bPlus)
 {
   int xi,yi;
@@ -202,9 +202,9 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
 static void draw_bond(Display *disp,Window w,GC gc,
 		      atom_id ai,atom_id aj,iv2 vec2[],
-		      rvec x[],ulong col[],int size[],bool bBalls)
+		      rvec x[],unsigned long col[],int size[],bool bBalls)
 {
-  ulong   ic,jc;
+  unsigned long   ic,jc;
   int     xi,yi,xj,yj;
   int     xm,ym;
 
@@ -327,7 +327,7 @@ int filter_vis(t_manager *man)
 
 void draw_objects(Display *disp,Window w,GC gc,int nobj,
 		  t_object objs[],iv2 vec2[],rvec x[],
-		  ulong col[],int size[],bool bShowHydro,int bond_type,
+		  unsigned long col[],int size[],bool bShowHydro,int bond_type,
 		  bool bPlus)
 {
   bool     bBalls;

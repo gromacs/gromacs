@@ -182,7 +182,7 @@ extern void gmx_gui(int *argc,char *argv[],
  */
 #endif
 
-extern void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
+extern void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 			      int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
 			      int ndesc,char **desc,int nbugs,char **bugs);
 /* Get arguments from the arg-list. The arguments extracted

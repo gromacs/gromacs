@@ -100,7 +100,7 @@ real run_aver(real old,real cur,int step,int nmem)
 
 void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 	       matrix box,int start,int nr_atoms,
-	       rvec x[],ushort cFREEZE[],
+	       rvec x[],unsigned short cFREEZE[],
 	       t_nrnb *nrnb,ivec nFreeze[])
 {
   static bool bFirst=TRUE;

@@ -197,7 +197,7 @@ static char *html_xref(char *s,char *program)
   return repallww(s,nstr,sr);
 }
 
-char *fileopt(ulong flag)
+char *fileopt(unsigned long flag)
 {
   static char buf[32];
   

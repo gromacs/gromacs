@@ -59,7 +59,7 @@ static char *SRCID_statutil_c = "$Id$";
 /* Globals for trajectory input */
 real         tbegin=-1.0,tend=-1.0;
 static bool  bView=FALSE;
-static ulong uFlags=0;
+static unsigned long uFlags=0;
 static char  *program=NULL;
 
 #define FF(arg) ((uFlags & arg)==arg)
@@ -270,7 +270,7 @@ static char *mk_desc(t_pargs *pa)
   return newdesc;
 }
 
-void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
+void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
 		       int ndesc,char **desc,int nbugs,char **bugs)
 {

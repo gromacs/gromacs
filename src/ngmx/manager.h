@@ -62,7 +62,7 @@ typedef struct {
 typedef struct {
   eObject 	eO;		/* The type of object			*/
   eVisible	eV;		/* Visibility status of the object	*/
-  ulong   	color;		/* The color (only when eV==evSpecial) 	*/
+  unsigned long   	color;		/* The color (only when eV==evSpecial) 	*/
   atom_id 	ai,aj;		/* The atom_id for i (and j if bond)	*/
   real    	z;		/* The Z-coordinate for depht cueing	*/
 } t_object;
@@ -98,7 +98,7 @@ typedef struct {
   bool      *bHydro;		/* TRUE for hydrogen atoms		*/
   bool      *bLabel;            /* Show a label on atom i?              */
   char      **szLab;            /* Array of pointers to labels          */
-  ulong     *col;		/* The colour of the atoms		*/
+  unsigned long     *col;		/* The colour of the atoms		*/
   int       *size;		/* The size of the atoms		*/
   real      *vdw;		/* The VDWaals radius of the atoms	*/
   bool      *bVis;              /* visibility of atoms                  */
@@ -121,7 +121,7 @@ typedef struct {
 
 extern t_manager *init_man(t_x11 *x11,Window Parent,
 			   int x,int y,int width,int height,
-			   ulong fg,ulong bg);
+			   unsigned long fg,unsigned long bg);
 /* Initiate the display manager */
 
 extern void move_man(t_x11 *x11,t_manager *man,int width,int height);

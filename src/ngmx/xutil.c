@@ -66,7 +66,7 @@ int CheckWin(Window win,char *file, int line)
   return 0;
 }
 
-void LightBorder(Display *disp, Window win, ulong color)
+void LightBorder(Display *disp, Window win, unsigned long color)
 {
   XSetWindowAttributes attributes;
 
@@ -200,7 +200,7 @@ void XDrawRoundRect(Display *disp, Window win, GC gc,
 }
 
 void RoundRectWin(Display *disp, GC gc, t_windata *win, 
-		  int offsx, int offsy,ulong color)
+		  int offsx, int offsy,unsigned long color)
 {
   XSetLineAttributes(disp,gc,1,LineOnOffDash,CapButt,JoinRound);
   XSetForeground(disp,gc,color);
@@ -209,7 +209,7 @@ void RoundRectWin(Display *disp, GC gc, t_windata *win,
   XSetLineAttributes(disp,gc,1,LineSolid,CapButt,JoinRound);
 }
 
-void RectWin(Display *disp, GC gc, t_windata *win, ulong color)
+void RectWin(Display *disp, GC gc, t_windata *win, unsigned long color)
 {
   int bw=1; /*2*w.bwidth;*/
 
@@ -229,7 +229,7 @@ void PushMouse(Display *disp, Window dest, int x, int y)
   Window root,child;
   int    root_x,root_y;
   int    win_x,win_y;
-  uint   keybut;
+  unsigned int   keybut;
   t_mpos *newpos;
   
   snew(newpos,1);

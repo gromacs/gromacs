@@ -48,8 +48,8 @@ typedef struct {
   float brake;		/* Break			*/
   int   lane,oldlane;	/* Currently in lane		*/
   bool  bBrake;		/* Currently on the brakes	*/
-  ulong col;		/* Colour			*/
-  ulong roof;		/* Roof Colour			*/
+  unsigned long col;		/* Colour			*/
+  unsigned long roof;		/* Roof Colour			*/
 } t_car;
 
 typedef struct {

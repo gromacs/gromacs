@@ -564,7 +564,7 @@ int main(int argc,char *argv[])
       "Do a simulation including the effect of an X-Ray bombardment on your system" }
   };
 
-  ulong     Flags;
+  unsigned long     Flags;
   t_edsamyn edyn;
   
   cr          = init_par(&argc,&argv);

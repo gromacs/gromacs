@@ -41,7 +41,7 @@ static char *SRCID_nmol_h = "$Id$";
 
 extern t_molwin *init_mw(t_x11 *x11,Window Parent,
 			 int x,int y,int width,int height,
-			 ulong fg,ulong bg);
+			 unsigned long fg,unsigned long bg);
 /* Create the molecule window using the x,y etc. */
 
 extern void map_mw(t_x11 *x11,t_molwin *mw);

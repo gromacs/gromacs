@@ -38,7 +38,7 @@ static char *SRCID_nleg_c = "$Id$";
 
 typedef struct {
   char  *tp;
-  ulong *col;
+  unsigned long *col;
   t_rgb rgb;
 } t_atomcolor;
 
@@ -81,7 +81,7 @@ int search_ac(char *type)
   return besti;
 }
 
-ulong Type2Color(char *type)
+unsigned long Type2Color(char *type)
 {
   int i;
   
@@ -146,7 +146,7 @@ static bool LegWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 
 t_legendwin *init_legw(t_x11 *x11,Window Parent,
 		       int x,int y,int width,int height,
-		       ulong fg,ulong bg)
+		       unsigned long fg,unsigned long bg)
 {
   t_legendwin *lw;
   

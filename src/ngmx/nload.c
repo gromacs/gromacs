@@ -123,7 +123,7 @@ static bool LWCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
 
 t_loadwin *init_lw(t_x11 *x11,Window Parent,
 		   int x,int y,int width,int height,
-		   ulong fg,ulong bg)
+		   unsigned long fg,unsigned long bg)
 {
   t_loadwin *lw;
   

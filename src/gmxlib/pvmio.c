@@ -48,7 +48,7 @@ typedef struct {
 
 static int   tids[MAXPROC];
 static int   mypid=0,mynprocs=1;
-static ulong idle_send=0,idle_rec=0;
+static unsigned long idle_send=0,idle_rec=0;
 
 void pvmio_tx(int dest,void *buf,int bufsize)
 {

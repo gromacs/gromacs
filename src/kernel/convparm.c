@@ -248,7 +248,7 @@ void convert_params(int atnr,t_params nbtypes[],
 		    t_params plist[],t_idef *idef)
 {
   int    i,j,maxtypes;
-  ulong  flags;
+  unsigned long  flags;
 
   maxtypes=0;
   

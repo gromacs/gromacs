@@ -53,7 +53,7 @@ static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
   }
 }
 
-static void cmp_us(FILE *fp,char *s,int index,ushort i1,ushort i2)
+static void cmp_us(FILE *fp,char *s,int index,unsigned short i1,unsigned short i2)
 {
   if (i1 != i2) {
     if (index != -1)

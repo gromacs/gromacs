@@ -77,14 +77,6 @@ typedef int             ivec[DIM];
 
 typedef int             imatrix[DIM][DIM];
 
-#ifndef HAVE_ULONG
-typedef unsigned long   ulong;
-#endif
-
-#ifdef NEED_USHORT
-typedef unsigned short  ushort;
-#endif
-
 #ifdef CPLUSPLUS
 }
 #endif

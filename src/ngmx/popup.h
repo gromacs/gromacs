@@ -59,7 +59,7 @@ typedef struct {
   bool      bGrabbed;   /* Did this menu grab the pointer?              */
 } t_menu;
 
-extern t_menu *init_menu(t_x11 *x11,Window Parent,ulong fg,ulong bg,
+extern t_menu *init_menu(t_x11 *x11,Window Parent,unsigned long fg,unsigned long bg,
 			 int nent,t_mentry ent[],int ncol);
 /* This routine will create a popup menu. It will create a
  * a base window, and child windows for all the items.

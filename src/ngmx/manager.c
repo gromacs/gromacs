@@ -130,7 +130,7 @@ static atom_id which_atom(t_manager *man,int x, int y)
 static void do_label(t_x11 *x11,t_manager *man,int x,int y,bool bSet)
 {
   atom_id ai;
-  ulong   col;
+  unsigned long   col;
 
   if ((ai=which_atom(man,x,y)) != NO_ATID) {
     x=man->ix[ai][XX];
@@ -528,7 +528,7 @@ bool toggle_pbc (t_manager *man)
 
 t_manager *init_man(t_x11 *x11,Window Parent,
 		    int x,int y,int width,int height,
-		    ulong fg,ulong bg)
+		    unsigned long fg,unsigned long bg)
 {
   t_manager *man;
 

@@ -522,7 +522,7 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *new)
 {
 #define EnterLeaveMask (EnterWindowMask | LeaveWindowMask)
 #define UserMask (ButtonPressMask | KeyPressMask)
-  static ulong InputMask[edlgNR] = {
+  static unsigned long InputMask[edlgNR] = {
     ExposureMask | UserMask | EnterLeaveMask, /* edlgBN */ 
     ExposureMask | UserMask | EnterLeaveMask, /* edlgRB */ 
     ExposureMask,                             /* edlgGB */
@@ -633,7 +633,7 @@ void FreeDlg(t_dlg *dlg)
  *
  ****************************/
 t_dlg *CreateDlg(t_x11 *x11, Window Parent, char *title,
-		 int x0,int y0,int w,int h,int bw, ulong fg, ulong bg,
+		 int x0,int y0,int w,int h,int bw, unsigned long fg, unsigned long bg,
 		 DlgCallback *cb,void *data)
 {
   t_dlg   *dlg;
@@ -656,7 +656,7 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, char *title,
   }
   else {
     Window root;
-    uint   dum;
+    unsigned int   dum;
 
     XGetGeometry(x11->disp,Parent,&root,&x,&y,
 		 &(dlg->xmax),&(dlg->ymax),&dum,&dum);

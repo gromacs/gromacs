@@ -51,7 +51,7 @@ extern void write_man(FILE *out,char *mantp,char *program,
 		      int nbug,char **bugs,
 		      bool bHidden);
 
-extern char *fileopt(ulong flag);
+extern char *fileopt(unsigned long flag);
 /* Return a string describing the file type in flag.
  * flag should the flag field of a filenm struct.
  */

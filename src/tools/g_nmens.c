@@ -118,7 +118,7 @@ int main(int argc,char *argv[])
   int        nout,*iout,noutvec,*outvec;
   atom_id    *index;
   real       rfac,invfr,rhalf,jr;
-  ulong      jran;
+  unsigned long      jran;
   const unsigned long im = 0xffff;
   const unsigned long ia = 1093;
   const unsigned long ic = 18257;

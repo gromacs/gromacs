@@ -153,13 +153,13 @@ extern  void    XDestroySubwindows(Display *disp, Window Win);
 extern  void    XDestroyWindow(Display *disp, Window Win);
 extern  void    XQueryPointer(Display *disp,Window Win,Window *root, 
 			      Window *child,int *root_x,int *root_y,
-			      int *win_x,int *win_y, uint *keybut);
+			      int *win_x,int *win_y, unsigned int *keybut);
 extern  void	XWarpPointer(Display *disp, Window src, Window dest,
-			     int src_x, int src_y, uint src_w, uint src_h,
+			     int src_x, int src_y, unsigned int src_w, unsigned int src_h,
 			     int dest_x, int dest_y);
 extern  void    XGetGeometry(Display *disp, Window w,Window *root, 
-			     int *x, int *y, uint *width, uint *height,
-			     uint *border_width, uint *depth);
+			     int *x, int *y, unsigned int *width, unsigned int *height,
+			     unsigned int *border_width, unsigned int *depth);
 #endif /* NEED_XSTUFF */
 
 #endif	/* _Xstuff_h */

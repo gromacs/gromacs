@@ -91,8 +91,8 @@ static void do_both(rvec xold,rvec x_unc,rvec x,rvec g,
 static void do_update(int start,int homenr,double dt,
 		      rvec lamb[],t_grp_acc gstat[],
 		      rvec accel[],ivec nFreeze[],
-		      real invmass[],ushort ptype[],
-		      ushort cFREEZE[],ushort cACC[],ushort cTC[],
+		      real invmass[],unsigned short ptype[],
+		      unsigned short cFREEZE[],unsigned short cACC[],unsigned short cTC[],
 		      rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[])
 {
   double w_dt;
@@ -128,7 +128,7 @@ static void do_update(int start,int homenr,double dt,
 }
 
 static void do_update_lang(int start,int homenr,double dt,
-			   ivec nFreeze[],ushort ptype[],ushort cFREEZE[],
+			   ivec nFreeze[],unsigned short ptype[],unsigned short cFREEZE[],
 			   rvec x[],rvec xprime[],rvec v[],rvec vold[],
 			   rvec f[],real temp, real fr, int *seed)
 {
@@ -139,7 +139,7 @@ static void do_update_lang(int start,int homenr,double dt,
   real   vn,vv;
   real   rfac,invfr,rhalf,jr;
   int    n,d;
-  ulong  jran;
+  unsigned long  jran;
 
   /* (r-0.5) n times:  var_n = n * var_1 = n/12
      n=4:  var_n = 1/3, so multiply with 3 */

@@ -66,7 +66,7 @@ typedef struct
                         /* this corresponds to the number of params in  */
                         /* iparams struct! (see idef.h)                 */
   /* A and B are for normal and free energy components respectively.    */
-  ulong   flags;        /* Flags (see above)                            */
+  unsigned long   flags;        /* Flags (see above)                            */
   int     nrnb_ind;     /* index for nrnb (-1 if unknown)               */
   t_ifunc *ifunc;	/* the function it self				*/
 } t_interaction_function;

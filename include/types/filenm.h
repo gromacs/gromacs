@@ -53,7 +53,7 @@ typedef struct {
   int  ftp;		/* File type (see enum above)		*/
   char *opt;		/* Command line option			*/
   char *fn;		/* File name				*/
-  ulong flag;		/* Flag for all kinds of info (see defs)*/
+  unsigned long flag;		/* Flag for all kinds of info (see defs)*/
 } t_filenm;
 
 #define ffSET    1<<0

@@ -106,7 +106,7 @@ bool MenuCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   return FALSE;
 }
 
-t_menu *init_menu(t_x11 *x11,Window Parent,ulong fg,ulong bg,
+t_menu *init_menu(t_x11 *x11,Window Parent,unsigned long fg,unsigned long bg,
 		  int nent,t_mentry ent[],int ncol)
 {
   int       i,mlen,mht,area,ht;

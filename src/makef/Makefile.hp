@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DNO_PWUID -DNEED_USHORT
+SYSDEFS		= -DNO_PWUID
 
 CC		= cc
 CCC		= CC

@@ -44,7 +44,7 @@ typedef struct {
   char        **lines;		/* The strings				*/
   int         wheight,wwidth;	/* The size of the window in chars	*/
   XFontStruct *font;		/* Font					*/
-  ulong       fg,bg;		/* Colours				*/
+  unsigned long       fg,bg;		/* Colours				*/
 } t_scrollw;
 
 static void calc_scrollw(t_scrollw *sw,int w,int h)
@@ -121,7 +121,7 @@ static bool SWCallback(t_x11 *x11,XEvent *event,Window w,void *data)
 }
 
 t_scrollw *init_scrollw(t_x11 *x11,Window parent,int x,int y,int w,int h,
-			ulong fg,ulong bg)
+			unsigned long fg,unsigned long bg)
 {
   t_scrollw *sw;
 

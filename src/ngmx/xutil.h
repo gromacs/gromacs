@@ -46,7 +46,7 @@ static char *SRCID_xutil_h = "$Id$";
 
 typedef struct {
   Window self,Parent;
-  ulong  color;
+  unsigned long  color;
   char   *text;
   bool   bFocus;
   int    x,y,width,height,bwidth;
@@ -57,7 +57,7 @@ extern int CheckWin(Window win,char *file, int line);
 
 #define CheckWindow(win) CheckWin(win,__FILE__,__LINE__)
 
-extern void LightBorder(Display *disp, Window win, ulong color);
+extern void LightBorder(Display *disp, Window win, unsigned long color);
 
 extern void SpecialTextInRect(t_x11 *x11,XFontStruct *font,Drawable win,
 			      char *s,int x,int y,int width,int height,
@@ -75,13 +75,13 @@ extern void FreeWin(Display *disp, t_windata *win);
 
 extern void ExposeWin(Display *disp,Window win);
 
-extern void RectWin(Display *disp, GC gc, t_windata *win, ulong color);
+extern void RectWin(Display *disp, GC gc, t_windata *win, unsigned long color);
 
 extern void XDrawRoundRect(Display *disp, Window win, GC gc,
 			   int x, int y, int w, int h);
 
 extern void RoundRectWin(Display *disp, GC gc, t_windata *win,
-			 int offsx, int offsy,ulong color);
+			 int offsx, int offsy,unsigned long color);
 
 extern void PushMouse(Display *disp, Window dest, int x, int y);
 

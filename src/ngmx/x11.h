@@ -41,10 +41,10 @@ static char *SRCID_x11_h = "$Id$";
 #include "Xstuff.h"
 
 /* These colours will be mapped to black on a monochrome screen */
-extern ulong BLACK,BLUE,GREEN,CYAN,RED,BROWN,GREY,DARKGREY;
+extern unsigned long BLACK,BLUE,GREEN,CYAN,RED,BROWN,GREY,DARKGREY;
 
 /* These colours will be mapped to white on a monochrome screen */
-extern ulong LIGHTBLUE,LIGHTGREY,LIGHTGREEN,LIGHTCYAN,
+extern unsigned long LIGHTBLUE,LIGHTGREY,LIGHTGREEN,LIGHTCYAN,
              LIGHTRED,VIOLET,YELLOW,WHITE;
 
 typedef enum { ecbOK } ecbReturn;
@@ -61,16 +61,16 @@ typedef struct t_x11 {
   FILE        *console;
   int         screen,depth;
   Colormap    cmap;
-  ulong       fg,bg;
+  unsigned long       fg,bg;
   char        *title;
   struct t_wlist *wlist;
-  void        (*GetNamedColor)(struct t_x11 *x11,char *name,ulong *col);
+  void        (*GetNamedColor)(struct t_x11 *x11,char *name,unsigned long *col);
   void        (*MainLoop)(struct t_x11 *x11);
   void        (*RegisterCallback)(struct t_x11 *x11,Window w,Window Parent,
 				  bool cb CBARGS, void *data);
   void        (*UnRegisterCallback)(struct t_x11 *x11, Window w);
-  void        (*SetInputMask)(struct t_x11 *x11, Window w, ulong mask);
-  ulong       (*GetInputMask)(struct t_x11 *x11, Window w);
+  void        (*SetInputMask)(struct t_x11 *x11, Window w, unsigned long mask);
+  unsigned long       (*GetInputMask)(struct t_x11 *x11, Window w);
   void        (*CleanUp)(struct t_x11 *x11);
   void        (*Flush)(struct t_x11 *x11);
 } t_x11;
@@ -81,7 +81,7 @@ typedef struct t_wlist {
   Window         w;		/* The window itself			*/
   Window         Parent;	/* It's parent window			*/
   CallBack       *cb;		/* Call back function			*/
-  ulong          mask;		/* Input mask				*/
+  unsigned long          mask;		/* Input mask				*/
   void           *data;		/* User data struct			*/
   struct t_wlist *next;
 } t_wlist;
@@ -129,6 +129,6 @@ t_x11 *GetX11(int *argc, char *argv[]);
  *    memory allocated by x11 before.
  */
 
-extern void GetNamedColor(t_x11 *x11,char *name,ulong *col);
+extern void GetNamedColor(t_x11 *x11,char *name,unsigned long *col);
 
 #endif	/* _x11_h */

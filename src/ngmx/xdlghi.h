@@ -68,7 +68,7 @@ extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, char *szTitle,
  */
 
 extern t_dlg *ReadDlg(t_x11 *x11,Window Parent, char *title,
-		      ulong fg, ulong bg, char *infile, 
+		      unsigned long fg, unsigned long bg, char *infile, 
 		      int x0, int y0, bool bAutoPosition,bool bUseMon,
 		      DlgCallback *cb,void *data);
 /* Read a dialog box from a template file */

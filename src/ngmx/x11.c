@@ -37,10 +37,10 @@ static char *SRCID_x11_c = "$Id$";
 #include "x11.h"
 
 /* These colours will be mapped to black on a monochrome screen */
-ulong BLACK,BLUE,GREEN,CYAN,RED,BROWN,GREY,DARKGREY;
+unsigned long BLACK,BLUE,GREEN,CYAN,RED,BROWN,GREY,DARKGREY;
 
 /* These colours will be mapped to white on a monochrome screen */
-ulong LIGHTBLUE,LIGHTGREEN,LIGHTGREY,LIGHTCYAN,LIGHTRED,VIOLET,YELLOW,WHITE;
+unsigned long LIGHTBLUE,LIGHTGREEN,LIGHTGREY,LIGHTCYAN,LIGHTRED,VIOLET,YELLOW,WHITE;
 
 static XFontStruct *XLQF(FILE *err, Display *disp, char *name)
 {
@@ -93,7 +93,7 @@ static GC GetGC(Display *disp, XFontStruct *font)
   return XCreateGC(disp,DefaultRootWindow(disp),GCForeground|GCFont,&values);
 }
 
-void GetNamedColor(t_x11 *x11,char *name,ulong *col)
+void GetNamedColor(t_x11 *x11,char *name,unsigned long *col)
 {
   /* If name is found than col set to that colour else col is unchanged */
   XColor exact,clr;
@@ -215,7 +215,7 @@ static void UnRegisterCallback(t_x11 *x11, Window w)
   }
 }
 
-static void SetInputMask(t_x11 *x11, Window w, ulong mask)
+static void SetInputMask(t_x11 *x11, Window w, unsigned long mask)
 {
   t_wlist *curs;
 
@@ -228,7 +228,7 @@ static void SetInputMask(t_x11 *x11, Window w, ulong mask)
     fprintf(x11->console,"No such window (%d)\n",(int)w);
 }
 
-static ulong GetInputMask(t_x11 *x11, Window w)
+static unsigned long GetInputMask(t_x11 *x11, Window w)
 {
   t_wlist *curs;
 

@@ -69,7 +69,7 @@ static bool PDCallBack(t_x11 *x11,XEvent *event,Window w,void *data)
 }
 
 t_pulldown *init_pd(t_x11 *x11,Window Parent,int width,int height,
-		    ulong fg,ulong bg,
+		    unsigned long fg,unsigned long bg,
 		    int nmenu,int *nsub,t_mentry *ent[],char **title)
 {
   t_pulldown *pd;

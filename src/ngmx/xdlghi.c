@@ -346,7 +346,7 @@ static void AddListFSimple(t_x11 *x11, t_dlgitemlist **grid,
 }
 
 t_dlg *ReadDlg(t_x11 *x11,Window Parent, char *title,
-	       ulong fg, ulong bg, char *infile, 
+	       unsigned long fg, unsigned long bg, char *infile, 
 	       int x0, int y0, bool bAutoPosition,bool bUseMon,
 	       DlgCallback *cb,void *data)
 {

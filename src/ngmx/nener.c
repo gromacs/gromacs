@@ -144,7 +144,7 @@ static void create_selener(t_x11 *x11,t_enerwin *ew,Window Parent)
 
 t_enerwin *init_ew(t_x11 *x11,Window Parent,
 		   int x,int y,int width,int height,
-		   ulong fg,ulong bg)
+		   unsigned long fg,unsigned long bg)
 {
   t_enerwin *ew;
   int       i;

@@ -39,9 +39,9 @@ typedef struct {
   bool          *bPerturbed;
   int           *resnr;
   int           *typeA,*typeB;
-  ushort        *ptype;
-  ushort        *cTC,*cENER,*cACC,*cFREEZE,*cXTC;
-  ushort        *cU1,*cU2,*cU3;
+  unsigned short        *ptype;
+  unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cXTC;
+  unsigned short        *cU1,*cU2,*cU3;
 } t_mdatoms;
 
 #endif

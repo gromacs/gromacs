@@ -558,7 +558,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 			 int gtype,char *title,int restnm,
 			 int *forward,bool bOneGroup,bool bVerbose)
 {
-  ushort *cbuf;
+  unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
   int i,j,gid,aj,ognr,ntot=0;
 

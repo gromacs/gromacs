@@ -352,7 +352,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   int       i0,nicg;
   
   int       *type;
-  ushort    *cENER;
+  unsigned short    *cENER;
   real      *charge;
   real      qi,qq,rlj;
   bool      bWater,bFree,bFreeJ,bNotEx,*bPert;
@@ -588,7 +588,7 @@ static real calc_image_rect(rvec xi,rvec xj,rvec box_size,
 
 static void ns_inner_rect(rvec x[],int icg,int njcg,atom_id jcg[],
 			  bool bBox,rvec box_size,rvec b_inv,real rcut2,
-			  t_block *cgs,t_ns_buf **ns_buf,ushort gid[])
+			  t_block *cgs,t_ns_buf **ns_buf,unsigned short gid[])
 {
   int      shift;
   int      j,nrj,jgid;
@@ -782,7 +782,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   static int     *nlr_ljc,*nlr_coul,*nsr;
   
   t_block *cgs=&(top->blocks[ebCGS]);
-  ushort  *gid=md->cENER;
+  unsigned short  *gid=md->cENER;
   atom_id *i_atoms,*cgsatoms=cgs->a,*cgsindex=cgs->index;
   int     tx,ty,tz,cx,cy,cz,dx,dy,dz,cj;
   int     dx0,dx1,dy0,dy1,dz0,dz1;

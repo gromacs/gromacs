@@ -57,12 +57,12 @@ typedef struct {
 } t_butbox;
 
 extern t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,
-			   ulong fg,ulong bg);
+			   unsigned long fg,unsigned long bg);
 
 extern void set_vbtime(t_x11 *x11,t_butbox *vbox,char *text);
 
 extern t_butbox *init_bbox(t_x11 *x11,Window Parent,Window SendTo,
-			   int width,ulong fg,ulong bg);
+			   int width,unsigned long fg,unsigned long bg);
 
 extern void show_but(t_x11 *x11,t_butbox *bbox);
 

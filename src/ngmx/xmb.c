@@ -51,10 +51,10 @@ static char *SRCID_xmb_c = "$Id$";
 static bmchar *icon_bits=NULL;
 static int     icon_width=0;
 static int     icon_height=0;
-static ulong   icon_fg=0;
-static ulong   icon_bg=0;
+static unsigned long   icon_fg=0;
+static unsigned long   icon_bg=0;
 
-void SetIcon(unsigned char *bits, int w, int h, ulong fg, ulong bg)
+void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long bg)
 {
   icon_bits=(bmchar *)bits;
   icon_width=w;
@@ -64,14 +64,14 @@ void SetIcon(unsigned char *bits, int w, int h, ulong fg, ulong bg)
 }
 
 t_dlg *MessageBox(t_x11 *x11, Window Parent, char *title,
-		  int nlines, char *lines[], ulong Flags,
+		  int nlines, char *lines[], unsigned long Flags,
 		  DlgCallback *cb, void *data)
 {
   t_dlg         *dlg;
   int		width,nicon;
   int           x,y,x0;
-  ulong         nFlag;
-  ulong         bg;
+  unsigned long         nFlag;
+  unsigned long         bg;
   
   /* Check flags for inconsistencies */
   if (((Flags & MB_OK) && (Flags & MB_YES)) 	||
