@@ -38,6 +38,14 @@ enum {
 };
 
 typedef struct {
+  int  type;
+  int  atomnr;
+  char pdbresnr[12];
+  bool bAnisotropic;
+  int  uij[6];                  /* Anisotropic B-factor                 */
+} t_pdbinfo;
+
+typedef struct {
   real 		m,q;		/* Mass and charge			*/
   real 		mB,qB;		/* Mass and charge for Free Energy calc */
   ushort	type;		/* Atom type				*/
@@ -45,6 +53,9 @@ typedef struct {
   int           ptype;		/* Particle type			*/
   int 		resnr;		/* Residue number			*/
   unsigned char grpnr[egcNR];   /* Group numbers			*/
+  char chain;
+  real occup;
+  real bfac;
 } t_atom;
 
 typedef struct {
@@ -67,6 +78,7 @@ typedef struct {
   char          ***grpname;	/* Names of the groups		        */
   t_block	excl;		/* Exclusions				*/
   t_grps        grps[egcNR];    /* Groups of things                     */
+  t_pdbinfo     *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
