@@ -89,8 +89,10 @@ EXTRA_DIST       =         \
 	mknb.c						\
 	mknb_metacode.c		mknb_metacode.h		\
 	mknb_common.c		mknb_common.h		\
-	mknb_declarations.c	mknb_outerloop.c	\
-	mknb_innerloop.c	mknb_interactions.c	
+	mknb_declarations.c	mknb_declarations.h	\
+	mknb_outerloop.c	mknb_outerloop.h	\
+	mknb_innerloop.c	mknb_innerloop.h	\
+	mknb_interactions.c	mknb_interactions.h	
 
 
 
