@@ -221,7 +221,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
     case X:
     case Y:
     case Z:
-      r = this->x0[nx0][ix][this->type-1]-xc[ix][this->type-1];
+      r = this->x0[nx0][ix][this->type-X]-xc[ix][this->type-X];
       break;
     case LATERAL:
       for(m=0; (m<DIM); m++) {
@@ -353,7 +353,7 @@ static real calc_one_mw(t_corr *this,int ix,int nx0,rvec xc[],real *tm)
   case X:
   case Y:
   case Z:
-    r  = this->x0[nx0][ix][this->type-1]-xc[ix][this->type-1];
+    r  = this->x0[nx0][ix][this->type-X]-xc[ix][this->type-X];
     r2 = this->mass[ix]*r*r;
       break;
   case LATERAL:
