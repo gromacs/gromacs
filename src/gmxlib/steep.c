@@ -58,6 +58,7 @@ static char *SRCID_steep_c = "$Id$";
 #include "mdebin.h"
 #include "mdrun.h"
 #include "pppm.h"
+#include "dummies.h"
 
 #ifdef FORCE_CRIT
 static void sp_header(FILE *out,real epot,real fsqrt,real step,real ftol)
@@ -132,8 +133,6 @@ real f_norm(FILE *log,
   
   fatal_error(0,"This version of Steepest Descents cannot be run in parallel"); 
   return fnorm; 
-  
-  
 } 
 
 real f_sqrt(FILE *log, 
@@ -198,7 +197,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 { 
   t_forcerec *fr; 
   static char *SD="STEEPEST DESCENTS"; 
-  real   step,step0,lambda,ftol,fmax,testf; 
+  real   step,lambda,ftol,fmax,testf; 
   rvec   *pos[2],*force[2]; 
   rvec   *xx,*ff,*vv,box_size; 
 #ifdef FORCE_CRIT 
@@ -218,7 +217,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int    i,m,start,end; 
   int    Min=0; 
   int    steps_accepted=0; 
-#define  Try (1-Min) 
+#define  TRY (1-Min) 
   
   /* Initiate some variables  */
   if (parm->ir.bPert)
@@ -271,7 +270,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Copy coord vectors to our temp array  */
   for(i=0; (i<nsb->natoms); i++) { 
     copy_rvec(x[i],pos[Min][i]); 
-    copy_rvec(x[i],pos[Try][i]); 
+    copy_rvec(x[i],pos[TRY][i]); 
   } 
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM) {
@@ -281,11 +280,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		  mdatoms->chargeT,box_size,fr->phi,cr,&mynrnb);
   }
   
-  
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 
    */
-  step=step0=parm->ir.em_stepsize; 
+  step=ustep=parm->ir.em_stepsize; 
   
   /* Tolerance for conversion  */
   ftol=parm->ir.em_tol; 
@@ -293,94 +291,41 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Max number of steps  */
   number_steps=parm->ir.nsteps; 
   
-  /* Call the force routine and some auxiliary (neighboursearching etc.)  */
-  do_force(log,cr, 
- 	   parm,nsb,force_vir, 
- 	   0,&(nrnb[cr->pid]),top,grps, 
- 	   pos[Min],buf,force[Min],buf, 
- 	   mdatoms,ener,bVerbose && !(PAR(cr)), 
- 	   lambda,graph,bNS,FALSE,fr); 
-  unshift_self(graph,fr->shift_vec,x);
-
-  where(); 
-  
-  /* Sum the potential energy terms from group contributions  */
-  sum_epot(&(parm->ir.opts),grps,ener); 
-  where(); 
-  
-  /* Clear var.  */
-  clear_mat(force_vir); 
-  where(); 
-  
-  /* Communicat energies etc.  */
-  if (PAR(cr))  
-    global_stat(log,cr,ener,force_vir,shake_vir, 
- 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot); 
-  where(); 
-  
-  /* Copy stuff to the energy bin for easy printing etc.  */
-  upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
- 	     force_vir,parm->vir,parm->pres,grps,mu_tot); 
-  where(); 
-  
-  /* Print only if we are the moster processor  */
-  if (MASTER(cr)) 
-    print_ebin(fp_ene,log,count,count,lambda,0.0,eprNORMAL,TRUE, 
- 	       mdebin,grps,&(top->atoms)); 
-  where(); 
-  
-  /* This is the starting energy  */
-#ifdef FORCE_CRIT 
-  Fsqrt[Min]=f_sqrt(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
-#endif
-  Epot[Min]=ener[F_EPOT]; 
-
   if (MASTER(cr)) { 
     /* Print to the screen  */
     start_t=print_date_and_time(log,cr->pid,"Started EM"); 
-#ifdef FORCE_CRIT 
-    sp_header(stderr,Epot[Min],Fsqrt[Min],step,ftol); 
-    sp_header(log,Epot[Min],Fsqrt[Min],step,ftol); 
-#else
-    sp_header(stderr,Epot[Min],step,ftol); 
-    sp_header(log,Epot[Min],step,ftol); 
-#endif 
-  } 
-
-
-  /* normalising step size, this saves a few hundred steps in the 
-   * beginning of the run. 
-   */
-  fnorm=f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
-  ustep=step0; 
-  step=ustep/fnorm; 
-  
-  /* Print stepsize  */
-  if (MASTER(cr)) { 
-    fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm); 
-    fprintf(stderr,"   Adjusted Stepsize = %12.5e\n",step); 
-    fprintf(stderr,"\n"); 
-  } 
-  
+    fprintf(stderr,"STEEPEST DESCENTS:\n");
+    fprintf(log,"STEEPEST DESCENTS:\n");
+    fprintf(stderr,"   Tolerance         = %12.5g\n",ftol); 
+    fprintf(log,"   Tolerance         = %12.5g\n",ftol); 
+    } 
+    
   /* Here starts the loop, count is the counter for the number of steps 
    * bDone is a BOOLEAN variable, which will be set TRUE when 
    * the minimization has converged. 
    */
-  for(count=1,bDone=FALSE;  
+  for(count=0,bDone=FALSE;  
       !(bDone || ((number_steps > 0) && (count==number_steps))); count++) { 
     
-    /* set new coordinates  */
-    for(i=start; (i<end); i++)  
-      for(m=0;(m<DIM);m++) 
- 	pos[Try][i][m] = pos[Min][i][m] + step * force[Min][i][m]; 
+    /* set new coordinates, except for first step */
+    if (count>0)
+      for(i=start; (i<end); i++)  
+	for(m=0;(m<DIM);m++) 
+	  pos[TRY][i][m] = pos[Min][i][m] + step * force[Min][i][m]; 
+    
+    /* Construct dummy particles */
+    construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
     
     /* Calc force & energy on new positions  */
     do_force(log,cr,parm,nsb,force_vir, 
- 	     count,&(nrnb[cr->pid]),top,grps,pos[Try],buf,force[Try], 
- 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)), 
+ 	     count,&(nrnb[cr->pid]),top,grps,pos[TRY],buf,force[TRY],buf,
+	     mdatoms,ener,bVerbose && !(PAR(cr)), 
  	     lambda,graph,bNS,FALSE,fr); 
     unshift_self(graph,fr->shift_vec,x);
 
+    /* Spread the force on dummy particle to the other particles... */
+    spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);
+    
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(parm->ir.opts),grps,ener); 
     
@@ -395,15 +340,16 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* This is the new energy  */
 #ifdef FORCE_CRIT 
-    Fsqrt[Try]=f_sqrt(log,cr->left,cr->right,nsb->nprocs,start,end,force[Try]); 
+    Fsqrt[TRY]=f_sqrt(log,cr->left,cr->right,nsb->nprocs,start,end,force[TRY]); 
 #endif 
-    Epot[Try]=ener[F_EPOT]; 
+    Epot[TRY]=ener[F_EPOT]; 
     
     /* Print it if necessary  */
 #ifdef FORCE_CRIT 
-    if ((bVerbose || (Fsqrt[Try] < Fsqrt[Min])) && MASTER(cr)) { 
-      fprintf(stderr,"\rStep = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e\n", 
- 	      count,step,Epot[Try],Fsqrt[Try]); 
+    if ((bVerbose || (Fsqrt[TRY] < Fsqrt[Min])) && MASTER(cr)) { 
+      fprintf(stderr,
+	      "\rStep = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e\n", 
+ 	      count,step,Epot[TRY],Fsqrt[TRY]); 
       /* Store the new (lower) energies  */
       upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
  		 force_vir,parm->vir,parm->pres,grps,mu_tot); 
@@ -413,10 +359,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		   mdebin,grps,&(top->atoms)); 
     } 
 #else 
-    if ((bVerbose || (Epot[Try] < Epot[Min])) && MASTER(cr)) { 
-      
+    if ((bVerbose || (Epot[TRY] < Epot[Min])) && MASTER(cr)) { 
       fprintf(stderr,"\rStep = %5d, Dx = %12.5e, E-Pot = %30.20e\n", 
- 	      count,step,Epot[Try]); 
+ 	      count,step,Epot[TRY]); 
       
       /* Store the new (lower) energies  */
       upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
@@ -429,24 +374,22 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #endif 
     
     /* Now if the new energy is smaller than the previous...  
+     * or if this is the first step!
      * or if we did random steps! 
      */
     
-    
-
-    
 #ifdef FORCE_CRIT 
-    if (Fsqrt[Try] < Fsqrt[Min] ) { 
+    if ( (count==0) || (Fsqrt[TRY] < Fsqrt[Min]) ) { 
 #else 
-    if (Epot[Try] < Epot[Min]) { 
+    if ( (count==0) || (Epot[TRY] < Epot[Min]) ) { 
 #endif 
       steps_accepted++; 
       if (do_per_step(steps_accepted,parm->ir.nstfout)) 
-	ff=force[Try];  
+	ff=force[TRY];  
       else 
 	ff=NULL;    
       if (do_per_step(steps_accepted,parm->ir.nstxout)) {
-	xx=pos[Try];   
+	xx=pos[TRY];   
 	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 		   nsb,count,(real) count, 
 		   lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box); 
@@ -455,46 +398,45 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       
       /* Test whether the convergence criterion is met...  */
 #ifdef FORCE_CRIT 
-      testf=fabs(Fsqrt[Min]-Fsqrt[Try]); 
+      testf=fabs(Fsqrt[Min]-Fsqrt[TRY]); 
 #else 
-      testf=fabs(Epot[Min]-Epot[Try]); 
+      testf=fabs(Epot[Min]-Epot[TRY]); 
 #endif 
       
       /* Stop when the difference between two tries is less than 
        * the tolerance times the energy. 
        */
 #ifdef FORCE_CRIT 
-      bDone=(testf < ftol*fabs(Fsqrt[Min])); /* || (fabs(Epot[Try]) < ftol));  */
+      bDone=(testf < ftol*fabs(Fsqrt[Min])); /* || (fabs(Epot[TRY]) < ftol));  */
 #else 
-      bDone=(testf < ftol*fabs(Epot[Min])); /* || (fabs(Epot[Try]) < ftol));  */
+      bDone=(testf < ftol*fabs(Epot[Min])); /* || (fabs(Epot[TRY]) < ftol));  */
 #endif 
       
       /* Copy the arrays for force, positions and energy  */
       /* The 'Min' array always holds the coords and forces of the minimal 
 	 sampled energy  */
-      Min = Try; 
+      Min = TRY; 
       
       /* increase step size  */
-      ustep *= 1.2; 
+      if (count>0)
+	ustep *= 1.2; 
       
       /*if (MASTER(cr)) 
 	fprintf(stderr,"\n"); */
     } 
     else { 
       /* If energy is not smaller make the step smaller...  */
-      if (ustep > 1.0e-14)  
-	ustep *= 0.5; 
-      else 
-	ustep = 1.0e-14; 
+      if (ustep > 1.0e-14)
+	ustep *= 0.5;
+      else
+	ustep = 1.0e-14;
     }
      
-    
     /* Determine new step  */
     fnorm = f_norm(log,cr->left,cr->right,nsb->nprocs,start,end,force[Min]); 
-    step=ustep/fnorm; 
-  
-  } /* End of the loop  */
+    step=ustep/fnorm;
     
+  } /* End of the loop  */
     
   /* Print some shit...  */
   if (MASTER(cr)) { 
@@ -524,7 +466,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   if (MASTER(cr))
     close_enx(fp_ene);
     
-  /* Put the coordinates bakc in the x array (otherwise the whole
+  /* Put the coordinates back in the x array (otherwise the whole
    * minimization would be in vain)
    */
   for(i=0; (i<nsb->natoms); i++)
