@@ -327,8 +327,7 @@ static void do_ac_core(int nframes,int nout,
   }
 }
 
-void normalize_acf(int nframes,int nout,
-		   real corr[],bool bFour,bool bNormalize)
+void normalize_acf(int nout,real corr[])
 {
   int  j;
   real c0;
@@ -338,24 +337,17 @@ void normalize_acf(int nframes,int nout,
     for(j=0; (j<nout); j++) 
       fprintf(debug,"%5d  %10f\n",j,corr[j]);
   }
-  
+
   /* Normalisation makes that c[0] = 1.0 and that other points are scaled
    * accordingly.
    */
-  if (bNormalize) {
-    if (corr[0] == 0.0)
-      c0 = 1.0;
-    else
-      c0 = 1.0/corr[0];
-    for(j=0; (j<nout); j++)
-      corr[j] *= c0;
-  }
-  if (bFour) {
-    if (debug)
-      fprintf(debug,"Correcting for FFT artefacts, nframes = %d\n",nframes);
-    for(j=0; (j<nout); j++)
-      corr[j] *= (real) nframes/(real) (nframes - j);
-  }
+  if (corr[0] == 0.0)
+    c0 = 1.0;
+  else
+    c0 = 1.0/corr[0];
+  for(j=0; (j<nout); j++)
+    corr[j] *= c0;
+
   if (debug) {
     fprintf(debug,"After normalization\n");
     for(j=0; (j<nout); j++) 
@@ -573,7 +565,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
   
   sfree(cfour);
   for(j=0; (j<nf2); j++)
-    c1[j] = csum[j];
+    c1[j] = csum[j]/(real)(nframes-j);
 }
 
 void fit_acf(int ncorr,int nfitparm,
@@ -699,7 +691,8 @@ void low_do_autocorr(char *fn,char *title,
   if (bAver) {
     average_acf(nframes,nitem,c1);
     
-    normalize_acf(nframes,nout,c1[0],bFour,bNormalize);
+    if (bNormalize)
+      normalize_acf(nout,c1[0]);
     
     if (tbeginfit < tendfit) {
       fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
@@ -713,7 +706,8 @@ void low_do_autocorr(char *fn,char *title,
   else {
     /* Not averaging. Normalize individual ACFs */
     for(i=0; (i<nitem); i++) {
-      normalize_acf(nframes,nout,c1[i],bFour,bNormalize);
+      if (bNormalize)
+	normalize_acf(nout,c1[i]);
       if (tbeginfit < tendfit) {
 	fit_acf(nout,nfitparm,fitfn,fittitle,bVerbose,
 		tbeginfit,tendfit,dt,c1[i]);
