@@ -1,0 +1,149 @@
+ABU 	1
+	1	1	N	-C	CA
+AIB     1       
+	1       1       N       -C      CA
+ALA 	1
+	1	1	N	-C	CA
+ARG 	4
+	1	1	N	-C	CA
+	1	1	NE	CD	CZ
+	2	3	NH1	CZ	NE
+	2	3	NH2	CZ	NE
+ARGN    4
+        1       1       N       -C      CA
+        1       1       NE      CD      CZ
+        1       2       NH1     CZ      NE
+        2       3       NH2     CZ      NE
+ASN 	2
+	1	1	N	-C	CA
+	2	3	ND2	CG	CB
+ASP 	1
+	1	1	N	-C	CA 
+ASPH 	2
+	1	1	N	-C	CA 
+	1	2	OD2	CG	CB
+ASP1 	2
+	1	1	N	-C	CA 
+	1	2	OD1	CG	CB
+CYS2	1
+	1	1	N	-C	CA
+CYSH 	2
+	1	1	N	-C	CA
+	1 	2	SG 	CB	CA
+GLN 	2
+	1	1	N	-C	CA
+	2 	3	NE2	CD	CG
+GLU 	1
+	1	1	N	-C	CA 
+GLUH 	2
+	1	1	N	-C	CA 
+	1	2	OE2	CD	CG
+GLY 	1
+	1	1	N	-C	CA 
+HIS1	2
+	1	1	N	-C	CA 
+	1 	1	ND1 	CG	CE1
+HISA	2
+	1	1	N	-C	CA
+	1 	1	ND1 	CG	CE1
+HISB	2
+	1	1	N	-C	CA
+	1 	1	NE2 	CE1	CD2
+HISH	3
+	1	1	N	-C	CA
+	1 	1	ND1 	CG	CE1
+	1	1	NE2 	CE1	CD2
+HOH	1
+	2	7	OW
+HYP	1
+	1	2	OD1	CG	CB
+ILE 	1
+	1	1	N	-C	CA 
+LEU 	1
+	1	1	N	-C	CA 
+LYS 	2
+	1	1	N	-C	CA
+	2	4	NZ	CE	CD
+LYSH	2
+	1	1	N	-C	CA
+	3	4	NZ	CE	CD
+MET 	1
+	1	1	N	-C	CA 
+PHEU	1
+	1	1	N	-C	CA 
+PHE  	6
+	1	1	N	-C	CA 
+	1	1	CD1	CG	CE1	
+	1	1	CD2	CG	CE2
+	1	1	CE1	CD1	CZ
+	1	1	CE2	CD2	CZ
+	1	1	CZ	CE1	CE2	
+PHL  	7
+	1	1	N	-C	CA 
+	1	1	CD1	CG	CE1	
+	1	1	CD2	CG	CE2
+	1	1	CE1	CD1	CZ
+	1	1	CE2	CD2	CZ
+	1	1	CZ	CE1	CE2	
+	1       2       OY      CX      CA
+SER 	2
+	1	1	N	-C	CA	
+	1	2	OG 	CB	CA
+THR 	2
+	1	1	N	-C	CA
+	1	2	OG1 	CB	CA
+TRPU	2
+	1	1	N	-C	CA
+	1	1	NE1 	CD1	CE2
+TRP  	7
+	1	1	N	-C	CA
+	1	1	CD1	CG	NE1
+	1	1	NE1 	CD1	CE2
+	1	1	CE3	CD2	CZ3
+	1	1	CZ3	CE3	CH2
+	1	1	CH2	CZ3	CZ2
+	1	1	CZ2	CE2	CH2	
+TYRU	2
+	1	1	N	-C	CA
+	1	2	OH 	CZ	CE1
+TYR  	6
+	1	1	N	-C	CA
+	1	1	CD1	CG	CE1	
+	1	1	CD2	CG	CE2
+	1	1	CE1	CD1	CZ
+	1	1	CE2	CD2	CZ
+	1	2	OH 	CZ	CE1
+VAL 	1
+	1	1	N	-C	CA 
+NH2 	1
+	2	3	N	-C	-CA
+TFE	1
+	1	2	O	CH2	C
+FAD	7
+	2	3	AN6	AC6	AC5
+	1	2	AO2*	AC2*	AC1*
+	1	2	AO3*	AC3*	AC2*
+	1	2	O4*	C4*	C5*
+	1	2	O3*	C3*	C4*
+	1	2	O2*	C2*	C3*
+	1	2	N3	C4	C4A
+ACEH	1
+	3	4	CA	C	O
+NAC 	1
+	1	1	N	-C	CA 
+NACH 	2
+	1	1	N	-C	CA 
+	3	4	CA	N	NH
+BEN	7
+	1	1	C2	C1	C3
+	1	1	C3	C2	C4
+	1	1	C4	C3	C5
+	1	1	C5	C4	C6
+	1	1	C6	C5	C1
+	2	3	N1	C7	C1
+	2	3	N2	C7	C1
+HEME	4
+	1	1	CHA	C1A	C4D
+	1	1	CHB	C1B	C4A
+	1	1	CHC	C1C	C4B
+	1	1	CHD	C1D	C4C
