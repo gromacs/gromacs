@@ -723,22 +723,22 @@ static void order_params(FILE *log,
   int  i,Dih,Xi;
   real S2Max, S2Min;
 
-  /* must correspond with enum in pp2shift.h:38 */  
-  char *leg[edMax] = { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+  /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */  
+  char *leg[2+edMax] = { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
 #define NLEG asize(leg) 
   
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2");
-  xvgr_legend(out,NONCHI+maxchi,leg);
+  xvgr_legend(fp,2+NONCHI+maxchi,leg);
   
   for (Dih=0; (Dih<edMax); Dih++)
     nh[Dih]=0;
   
   fprintf(fp,"%5s ","#Res.");
-  fprintf(fp,"%10s %10s ","S2Min","S2Max");
-  fprintf(fp,"%10s %10s %10s ","Phi","Psi","Omega");
-  for (Xi=1; (Xi<=maxchi); Xi++)
-    fprintf(fp,"%8s%2d ","Chi",Xi);
+  fprintf(fp,"%10s %10s ",leg[0],leg[1]);
+  fprintf(fp,"%10s %10s %10s ",leg[2+edPhi],leg[2+edPsi],leg[2+edOmega]);
+  for (Xi=0; Xi<maxchi; Xi++)
+    fprintf(fp,"%10s ",leg[2+NONCHI+Xi]);
   fprintf(fp,"%12s\n","Res. Name");
   
   for(i=0; (i<nlist); i++) {
@@ -763,7 +763,6 @@ static void order_params(FILE *log,
   ffclose(fp);
   
   if (pdbfn) {
-    int Xi;
     real x0,y0,z0;
     
     for(i=0; (i<atoms->nr); i++)
@@ -803,18 +802,14 @@ static void order_params(FILE *log,
   
   fprintf(log,"Dihedrals with S2 > 0.8\n");
   fprintf(log,"Dihedral: ");
-  if (bPhi) 
-    fprintf(log," Phi  ");
-  if (bPsi) 
-    fprintf(log," Psi  ");
+  if (bPhi) fprintf(log," Phi  ");
+  if (bPsi) fprintf(log," Psi  ");
   if (bChi)
     for(Xi=0; (Xi<maxchi); Xi++)
-      fprintf(log,"Chi%d  ",Xi+1);
+      fprintf(log,leg[2+NONCHI+Xi]);
   fprintf(log,"\nNumber:   ");
-  if (bPhi) 
-    fprintf(log,"%4d  ",nh[0]);
-  if (bPsi) 
-    fprintf(log,"%4d  ",nh[1]);
+  if (bPhi) fprintf(log,"%4d  ",nh[0]);
+  if (bPsi) fprintf(log,"%4d  ",nh[1]);
   if (bChi)
     for(Xi=0; (Xi<maxchi); Xi++)
       fprintf(log,"%4d  ",nh[NONCHI+Xi]);
