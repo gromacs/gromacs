@@ -156,7 +156,8 @@ extern void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,
 
 extern void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat);
 
-extern real analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
+extern real analyse_diff(FILE *log,char *label,
+			 int natom,rvec ffour[],rvec fpppm[],
 			 real phi_f[],real phi_p[],real phi_sr[],
 			 char *fcorr,char *pcorr,
 			 char *ftotcorr,char *ptotcorr);
