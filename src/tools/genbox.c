@@ -61,6 +61,25 @@ typedef struct {
   atom_ *atom;
 } molecule_;
 
+void center_conf(int natom, rvec *x, matrix box)
+{
+  int  i;
+  rvec geom_center,center,shift;
+
+  for (i=0; i<natom; i++)
+    rvec_inc(geom_center,x[i]);
+  svmul(1./natom,geom_center,geom_center);
+
+  for(i=0; i<DIM; i++)
+    center[i] = 0.5*box[i][i];
+  rvec_sub(center,geom_center,shift);
+
+  fprintf(stderr,"solute shift: %6.3f %6.3f %6.3f\n",
+	 shift[XX],shift[YY],shift[ZZ]);
+
+  for (i=0; i<natom; i++) 
+    rvec_inc(x[i], shift);
+}
 
 void print_stat(rvec *x,int natoms,matrix box)
 {
@@ -438,8 +457,10 @@ int main(int argc,char *argv[])
     
     "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
-    "The box specified in the solute coordinate file ([TT]-cp[tt]) is used.",
-    "The box can be modified with the program [TT]editconf[tt].",
+    "The box specified in the solute coordinate file ([TT]-cp[tt]) is used,",
+    "unless [TT]-box[tt] is set, which also centers the solute.",
+    "The program [TT]editconf[tt] has more sophisticated options to change",
+    "the box and center the solute.",
     "Solvent molecules are removed from the box where the ",
     "distance between any atom of the solute molecule(s) and any atom of ",
     "the solvent molecule is less than the sum of the VanderWaals radii of ",
@@ -501,7 +522,7 @@ int main(int argc,char *argv[])
   };
   
   /* parameter data */
-  bool bSol,bProt;
+  bool bSol,bProt,bBox;
   char *confin_1,*confin_2,*confin_3,*confout,*topinout;
   int  bInsert;
   real *r_1;
@@ -561,7 +582,8 @@ int main(int argc,char *argv[])
   bInsert = opt2bSet("-ci",NFILE,fnm);
   bSol = opt2bSet("-cs",NFILE,fnm);
   bProt= opt2bSet("-cp",NFILE,fnm);
-  if (!bProt && !opt2parg_bSet("-box",asize(pa),pa)) {
+  bBox = opt2parg_bSet("-box",asize(pa),pa);
+  if (!bProt && !bBox) {
     fprintf(stderr,"You must supply a solute (-cp) or a box size (-box)\n\n");
     exit(0);
   }
@@ -579,13 +601,6 @@ int main(int argc,char *argv[])
     }
   }
   else {
-    /* in case there is no a solute,
-     * the box size is set to new_box
-     */
-    clear_mat(box_1);
-    box_1[XX][XX]=new_box[XX];
-    box_1[YY][YY]=new_box[YY];
-    box_1[ZZ][ZZ]=new_box[ZZ];
     atoms_1.nr=0;
     atoms_1.nres=0;
     bRotate=FALSE;
@@ -595,6 +610,14 @@ int main(int argc,char *argv[])
     x_1=NULL;
     v_1=NULL;
     r_1=NULL;
+  }
+  if (bBox) {
+    clear_mat(box_1);
+    box_1[XX][XX]=new_box[XX];
+    box_1[YY][YY]=new_box[YY];
+    box_1[ZZ][ZZ]=new_box[ZZ];
+    if (bProt)
+      center_conf(atoms_1.nr,x_1,box_1);
   }
   init_pbc(box_1,ntb);
   
