@@ -296,37 +296,37 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   
   t_pargs *all_pa=NULL;
   
-  t_pargs motif_pa  = { "-X",    FALSE, etBOOL, &bGUI,
+  t_pargs motif_pa  = { "-X",    FALSE, etBOOL, {&bGUI},
 		       "Use dialog box GUI to edit command line options" };
-  t_pargs fpe_pa    = { "-exception", FALSE, etBOOL, &bExcept,
+  t_pargs fpe_pa    = { "-exception", FALSE, etBOOL, {&bExcept},
 		       "HIDDENTurn on exception handling" };
-  t_pargs npri_paX  = { "-npri", FALSE, etENUM,  not_npristr,
+  t_pargs npri_paX  = { "-npri", FALSE, etENUM,  {not_npristr},
 		       "Set non blocking priority" };
-  t_pargs npri_pa   = { "-npri", FALSE, etINT,  &npri,
+  t_pargs npri_pa   = { "-npri", FALSE, etINT,  {&npri},
 		       "Set non blocking priority (try 128)" };
-  t_pargs nice_paX  = { "-nice", FALSE, etENUM, not_nicestr, 
+  t_pargs nice_paX  = { "-nice", FALSE, etENUM, {not_nicestr}, 
 		       "Set the nicelevel" };
-  t_pargs nice_pa   = { "-nice", FALSE, etINT,  &nicelevel, 
+  t_pargs nice_pa   = { "-nice", FALSE, etINT,  {&nicelevel}, 
 		       "Set the nicelevel" };
-  t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR,  &deffnm, 
+  t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR,  {&deffnm}, 
 		       "Set the default filename for all file options" };
-  t_pargs begin_pa  = { "-b",    FALSE, etREAL, &tbegin,        
+  t_pargs begin_pa  = { "-b",    FALSE, etREAL, {&tbegin},        
 		       "First frame (ps) to read from trajectory" };
-  t_pargs end_pa    = { "-e",    FALSE, etREAL, &tend,        
+  t_pargs end_pa    = { "-e",    FALSE, etREAL, {&tend},        
 		       "Last frame (ps) to read from trajectory" };
-  t_pargs view_pa   = { "-w",    FALSE, etBOOL, &bView,     
+  t_pargs view_pa   = { "-w",    FALSE, etBOOL, {&bView},     
 		       "View output using xvgr or ghostview" };
   
   t_pargs pca_pa[] = {
-    { "-h",    FALSE, etBOOL, &bHelp,     
+    { "-h",    FALSE, etBOOL, {&bHelp},     
       "Print help info and quit" }, 
-    { "-hidden", FALSE, etBOOL, &bHidden,
+    { "-hidden", FALSE, etBOOL, {&bHidden},
       "HIDDENPrint hidden options" },
-    { "-quiet",FALSE, etBOOL, &bQuiet,
+    { "-quiet",FALSE, etBOOL, {&bQuiet},
       "HIDDENDo not print help info" },
-    { "-man",  FALSE, etENUM,  manstr,
+    { "-man",  FALSE, etENUM,  {manstr},
       "HIDDENWrite manual and quit" },
-    { "-debug",FALSE, etBOOL, &bDebug,
+    { "-debug",FALSE, etBOOL, {&bDebug},
       "HIDDENWrite file with debug information" },
   };
 #define NPCA_PA asize(pca_pa)
