@@ -223,7 +223,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,&(parm->ir),mdatoms,
-			      start,end,FALSE);
+			      start,end,FALSE,cr);
   
   if (bConstrain)
     snew(xcf,nsb->natoms); 

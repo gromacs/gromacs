@@ -92,9 +92,12 @@ extern void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
  * Init_constraints must have be called once, before calling constrain.
  */
 
-extern bool init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
-			     t_mdatoms *md,int start,int homenr,
-			     bool bOnlyCoords);
+extern int count_constraints(t_topology *top,t_commrec *cr);
+/* Returns the total number of constraints in the system */
+
+extern int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
+			    t_mdatoms *md,int start,int homenr,
+			    bool bOnlyCoords,t_commrec *cr);
 /* Initialize constraints stuff */
 
 /* C routines for LINCS algorithm */ 

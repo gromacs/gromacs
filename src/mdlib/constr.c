@@ -368,11 +368,11 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
-			  int step,t_mdatoms *md,int start,int homenr,
-			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			  real lambda,real *dvdlambda,t_nrnb *nrnb,
-			  bool bCoordinates,bool bInit)
+static int low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
+			 int step,t_mdatoms *md,int start,int homenr,
+			 rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+			 real lambda,real *dvdlambda,t_nrnb *nrnb,
+			 bool bCoordinates,bool bInit)
 {
   static int       nblocks=0;
   static int       *sblock=NULL;
@@ -548,7 +548,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     }
   }
   
-  return (nsettle+idef->il[F_SHAKE].nr > 0);
+  return idef->il[F_SETTLE].nr/2 + idef->il[F_SHAKE].nr/3;
 }
 
 void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
@@ -560,11 +560,24 @@ void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
 		lambda,dvdlambda,nrnb,bCoordinates,FALSE);
 }
 
-bool init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
-		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords)
+int count_constraints(t_topology *top,t_commrec *cr)
 {
-  return low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,NULL,
-		       0,NULL,NULL,bOnlyCoords,TRUE);
+  int nc;
+  
+  nc = top->idef.il[F_SETTLE].nr/2 + top->idef.il[F_SHAKE].nr/3;
+  gmx_sumi(1,&nc,cr);
+  
+  return nc;
+}
+
+int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
+		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords,
+		      t_commrec *cr)
+{
+  low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,NULL,
+		0,NULL,NULL,bOnlyCoords,TRUE);
+  
+  return count_constraints(top,cr);
 }
 
 void lincs_warning(rvec *x,rvec *xprime,

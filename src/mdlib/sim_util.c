@@ -54,6 +54,7 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "main.h"
 #include "network.h"
 #include "calcmu.h"
+#include "constr.h"
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
@@ -396,8 +397,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
   real   dt=parm->ir.delta_t;
   real   dt_1;
 
-  if ((top->idef.il[F_SHAKE].nr > 0)   ||
-      (top->idef.il[F_SETTLE].nr > 0)) {
+  if (count_constraints(top,cr)) {
     start  = START(nsb);
     homenr = HOMENR(nsb);
     end    = start+homenr;
