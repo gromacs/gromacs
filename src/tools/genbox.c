@@ -434,7 +434,7 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "Genbox can do one of 3 things:[PAR]",
     
-    "1) Generate a box of solvent. Specify -cs and -bx, -by and -bz.[PAR]",
+    "1) Generate a box of solvent. Specify -cs and -box.[PAR]",
     
     "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
@@ -537,7 +537,7 @@ int main(int argc,char *argv[])
   static real r_distance=0.105;
   static rvec new_box={0.0,0.0,0.0};
   t_pargs pa[] = {
-    { "-b",     FALSE,etRVEC,&new_box,   "box size" },
+    { "-box",   FALSE,etRVEC,&new_box,   "box size" },
     { "-nmol",  FALSE,etINT ,&nmol_3,    "no of extra molecules to insert" },
     { "-maxsol",FALSE,etINT ,&maxsol,    "max no of solvent molecules to add"},
     { "-rot",   FALSE,etBOOL,&bRotate,   "rotate solute to fit box best"},
@@ -561,9 +561,10 @@ int main(int argc,char *argv[])
   bInsert = opt2bSet("-ci",NFILE,fnm);
   bSol = opt2bSet("-cs",NFILE,fnm);
   bProt= opt2bSet("-cp",NFILE,fnm);
-  if (!bProt && ((new_box[XX]==0) || (new_box[YY]==0) || (new_box[YY]==0)) )
-    fatal_error(0,"No solute coordinates (-cp) "
-		"and no box size (-b) supplied\n");
+  if (!bProt && !opt2parg_bSet("-box",asize(pa),pa)) {
+    fprintf(stderr,"You must supply a solute (-cp) or a box size (-box)\n\n");
+    exit(0);
+  }
   /* read van der waals distances for all the existing atoms*/
   vdw=NULL;
   max_vdw=read_vdw(ftp2fn(efVDW,NFILE,fnm),&vdw);
