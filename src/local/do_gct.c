@@ -298,7 +298,7 @@ void gprod(t_commrec *cr,int n,real f[])
   for(j=0; (j<n); j++) 
     buf[cur][j] = f[j];
   
-  for(i=0; (i<cr->nprocs-1); i++) {
+  for(i=0; (i<cr->nnodes-1); i++) {
     gmx_tx(cr->left, array(buf[cur],n));
     gmx_rx(cr->right,array(buf[next],n));
     gmx_wait(cr->left,cr->right);

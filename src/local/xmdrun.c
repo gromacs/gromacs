@@ -82,8 +82,8 @@ t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
   
   cr_msim = cr;
   snew(cr_new,1);
-  cr_new->pid    = 0;
-  cr_new->nprocs = 1;
+  cr_new->nodeid = 0;
+  cr_new->nnodes = 1;
   cr_new->left   = cr->left;
   cr_new->right  = cr->right;
   

@@ -317,7 +317,7 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
 real electron_cross_section(FILE *fp,rvec v,real mass,int nelec)
 {
   /* Compute cross section for electrons */
-  real T,B,U,S,Q,t,u,lnt,sigma;
+  real T,B,U,S,Q,R,N,t,u,lnt,sigma;
   real a0 = 0.05292; /* nm */
   
   /* Have to determine T (kinetic energy of electron) */
@@ -402,7 +402,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     if (seed == 0)
       seed = make_seed();
     if (PAR(cr)) {
-      for(i=0; (i<cr->pid); i++)
+      for(i=0; (i<cr->nodeid); i++)
 	seed = INT_MAX*rando(&seed);
       fprintf(fp,PREFIX"Modifying seed on parallel processor to %d\n",
 	      seed);

@@ -98,7 +98,7 @@ void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr)
 {
   t_coupl_rec shit;
 
-  if (cr->pid == 0) {
+  if (MASTER(cr)) { 
     send_tcr(cr->left,*tcr);
     rec_tcr(cr->right,&shit);
   }
