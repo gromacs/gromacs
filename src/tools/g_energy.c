@@ -500,7 +500,7 @@ int main(int argc,char *argv[])
   static bool bDp=FALSE;
 #endif
   static int  skip=0,nmol=1,ndf=3;
-  static real reftemp=300.0;
+  static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
     { "-rall", FALSE, etBOOL, &bDRAll,
       "Extract individual distance restraint data rather than energy terms" },
@@ -510,6 +510,8 @@ int main(int argc,char *argv[])
       "Do a free energy estimate" },
     { "-temp", FALSE, etREAL, &reftemp,
       "Reference temperature for free energy calculation" },
+    { "-zero", FALSE, etREAL, &ezero,
+      "Subtract a zero-point energy" },
     { "-sum",  FALSE, etBOOL, &bSum,
       "Sum the energy terms selected rather than display them all" },
     { "-dp",   FALSE, etBOOL, &bDp,
@@ -749,16 +751,16 @@ int main(int argc,char *argv[])
 	   *******************************************/
 	else {
 	  if (bSum) 
-	    print_one(out,bDp,eneset[nset][nenergy-1]/nmol);
+	    print_one(out,bDp,(eneset[nset][nenergy-1]-ezero)/nmol);
 	  else if ((nset == 1) && bAll) {
 	    print_one(out,bDp,ee[cur][set[0]].e);
 	    print_one(out,bDp,ee[cur][set[0]].esum);
 	    print_one(out,bDp,ee[cur][set[0]].eav);
 	  }
 	  else for(i=0; (i<nset); i++)
-	    print_one(out,bDp,ee[cur][set[i]].e);
+	    print_one(out,bDp,(ee[cur][set[i]].e-ezero)/nmol);
 	}
-	  fprintf(out,"\n");
+	fprintf(out,"\n");
       }
       teller++;
     }

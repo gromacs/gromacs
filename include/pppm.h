@@ -37,7 +37,8 @@ static char *SRCID_pppm_h = "$Id$";
 #include "complex.h"
 #include "fftgrid.h"
 
-extern void init_pppm(FILE *log,t_commrec *cr,bool bVerbose,bool bOld,
+extern void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
+		      bool bVerbose,bool bOld,
 		      rvec box,char *ghatfn,t_inputrec *ir);
 /* Setup stuff for PPPM. 
  * Either reads a ghat function from file (when the file exists)
@@ -45,12 +46,11 @@ extern void init_pppm(FILE *log,t_commrec *cr,bool bVerbose,bool bOld,
  */
 
 extern real do_pppm(FILE *log,       bool bVerbose,
-		    int natoms,      rvec x[],
-		    rvec f[],        real charge[],   
-		    rvec box,        real phi[],      
-		    t_commrec *cr,   t_nrnb *nrnb);
-/* Do a PPPM calculation for the long range electrostatics.
- */
+		    rvec x[],        rvec f[],
+		    real charge[],   rvec box,
+		    real phi[],      t_commrec *cr,
+		    t_nsborder *nsb, t_nrnb *nrnb);
+/* Do a PPPM calculation for the long range electrostatics. */
  
 extern real do_opt_pppm(FILE *log,       bool bVerbose,
 			t_inputrec *ir,  int natoms,
@@ -72,11 +72,6 @@ extern real do_ewald(FILE *log,       t_inputrec *ir,
 /* Do an Ewald summation on a fixed grid as given in inputrec.
  * The spread function is David's function, rather than a gaussian.
  */
- 
-extern real gather_f(FILE *log,bool bVerbose,
-		     int natoms,rvec x[],rvec f[],real charge[],rvec box,
-		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb);
-/* Gather the forces and potential from a grid */
  
 #endif
 

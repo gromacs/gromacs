@@ -48,6 +48,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "rdgroup.h"
 #include "physics.h"
 #include "mass.h"
+#include "3dview.h"
 
 typedef struct {
   char   sanm[12];
@@ -263,6 +264,12 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
   }
 }
 
+void rotate_conf(int natoms,rvec x[],rvec v[],matrix box,char *dir)
+{
+  fprintf(stderr,"Rotating coming soon...\n");
+  exit(1);
+}
+
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
@@ -304,7 +311,7 @@ int main(int argc, char *argv[])
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0};
   static char *label="A";
-  
+  static char  *cRotate[] = { "X", "Y", "Z", NULL };  
   t_pargs pa[] = {
     { "-ndef", FALSE, etBOOL, &bNDEF, 
       "Choose output from default index groups" },    
@@ -323,7 +330,9 @@ int main(int argc, char *argv[])
       "Remove the periodicity (make molecule whole again)" },
     { "-atom", FALSE, etBOOL, &peratom, "Force B-factor attachment per atom" },
     { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend" },
-    { "-label", FALSE, etSTR, &label,   "Add chain label for all residues" }
+    { "-label", FALSE, etSTR, &label,   "Add chain label for all residues" },
+    { "-rotate", FALSE, etENUM, cRotate,
+      "Perform a rotation of the box around the given coordinate" }
   };
 #define NPA asize(pa)
 
@@ -339,7 +348,7 @@ int main(int argc, char *argv[])
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
   bool      bSetSize,bCubic,bDist,bSetCenter;
-  bool      bHaveV,bScale,bRho;
+  bool      bHaveV,bScale,bRho,bRotate;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -360,6 +369,7 @@ int main(int argc, char *argv[])
   bCenter   = bCenter || bDist || bSetCenter || bSetSize;
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
+  bRotate   = opt2parg_bSet("-rotate",NPA,pa);
   if (bScale && bRho)
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale  = bScale || bRho;
@@ -443,6 +453,11 @@ int main(int argc, char *argv[])
   /* center molecule on 'center' */
   if (bCenter)
     center_conf(natom, x,center,gc);
+    
+  /* rotate it, if necessary */
+  if (bRotate)
+    rotate_conf(natom,x,v,box,cRotate[0]);
+    
   /* print some */
   if (bCenter || bScale)
     printf("new center: %6.3f %6.3f %6.3f\n", 

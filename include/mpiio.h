@@ -41,7 +41,7 @@ extern void mpiio_txs(int pid,void *buf,int bufsize);
 extern void mpiio_rx(int pid,void *buf,int bufsize);
 extern void mpiio_rx_wait(int pid);
 extern void mpiio_rxs(int pid,void *buf,int bufsize);
-extern int  mpiio_setup(char *argv[],int *nprocs);
+extern int  mpiio_setup(int *argc,char *argv[],int *nprocs);
 /* If this is the master, spawn some kids. Nprocs is set to the
  * number of processors.
  * Return pid */
