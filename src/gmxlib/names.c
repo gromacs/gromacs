@@ -136,8 +136,12 @@ const char *efep_names[efepNR+1] = {
   "no", "yes", NULL
 };
 
-const char *esolv_names[esolNR+1] = {
-  "No", "MNO-Solvent", "Water", "Water-Water", NULL
+const char *esol_names[esolNR+1] = {
+  "No", "SPC", "TIP4p", NULL
+};
+
+const char *enlist_names[enlistNR+1] = {
+  "Atom", "Water", "Water-Water", NULL
 };
 
 const char *edispc_names[edispcNR+1] = {
