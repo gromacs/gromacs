@@ -158,9 +158,9 @@ int main(int argc,char *argv[])
     "[BB]4.[bb] keep multimeric molecules together[BR]",
     "[BB]5.[bb] center atoms in the box[BR]",
     "[BB]6.[bb] fit atoms to reference structure[BR]",
-    "[BB]7.[bb] remove duplicate frames[BR]",
-    "[BB]8.[bb] reduce the number of frames[BR]",
-    "[BB]9.[bb] change the timestamps of the frames (e.g. t0 and dt)",
+    "[BB]7.[bb] reduce the number of frames[BR]",
+    "[BB]8.[bb] change the timestamps of the frames ",
+    "([TT]-t0[tt] and [TT]-timestep[tt])",
     "[PAR]",
     "The program [TT]trjcat[tt] can concatenate multiple trajectory files.",
     "[PAR]",
@@ -242,6 +242,17 @@ int main(int argc,char *argv[])
   static char  *exec_command=NULL;
 
   t_pargs pa[] = {
+        { "-skip", FALSE,  etINT, {&skip_nr},
+      "Only write every nr-th frame" },
+    { "-dt", FALSE,  etREAL, {&delta_t},
+      "Only write frame when t MOD dt = first time" },
+    { "-dump", FALSE, etREAL, {&tdump},
+      "Dump frame nearest specified time" },
+    { "-t0", FALSE,  etREAL, {&tzero},
+      "Starting time for trajectory"
+      "(default: don't change)"},
+    { "-timestep", FALSE,  etREAL, {&timestep},
+      "Change time step between output frames" },
     { "-pbc", FALSE,  etENUM, {pbc_opt},
       "PBC treatment" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
@@ -262,24 +273,13 @@ int main(int argc,char *argv[])
       "Read and write velocities if possible" },
     { "-force", FALSE, etBOOL, {&bForce},
       "Read and write forces if possible" },
-    { "-skip", FALSE,  etINT, {&skip_nr},
-      "Only write every nr-th frame" },
-    { "-dt", FALSE,  etREAL, {&delta_t},
-      "Only write frame when t MOD dt = first time" },
-    { "-t0", FALSE,  etREAL, {&tzero},
-      "Starting time for trajectory"
-      "(default: don't change)"},
 #ifndef _win_
     { "-trunc", FALSE, etREAL, {&ttrunc},
       "Truncate input trj file after this amount of ps" },
 #endif
-    { "-dump", FALSE, etREAL, {&tdump},
-      "Dump frame nearest specified time" },
     { "-exec", FALSE,  etSTR, {&exec_command},
       "Execute command for every output frame with the frame number "
       "as argument" },
-    { "-timestep", FALSE,  etREAL, {&timestep},
-      "Set time step between output frames" },
     { "-app", FALSE,  etBOOL, {&bAppend},
       "Append output"},
     { "-sep", FALSE,  etBOOL, {&bSeparate},
