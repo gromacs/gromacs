@@ -563,8 +563,6 @@ int main(int argc, char *argv[])
     "(heavy) atom so that the total mass of the system remains the same."
   };
   static char *bugs[] = {
-    "Deuterium (D) is not recognized as a hydrogen and will crash the "
-    "program.",
     "It is assumed that atomic coordinates in pdb files are in Angstrom."
   };
   typedef struct {
@@ -628,26 +626,31 @@ int main(int argc, char *argv[])
   /* Command line arguments msut be static */
   static bool bNewRTP=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
-  static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan = FALSE;
+  static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bH14= FALSE,bSort=TRUE, bRetainH=TRUE;
+  static bool bH14=FALSE, bSort=TRUE, bRetainH=TRUE;
   static bool bAlldih=FALSE;
-  static real angle=135.0,distance=0.3;
+  static real angle=135.0, distance=0.3;
+  static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   t_pargs pa[] = {
     { "-newrtp", FALSE, etBOOL, &bNewRTP,
       "HIDDENWrite the residue database in new format to 'new.rtp'"},
+    { "-lb",     FALSE, etREAL, &long_bond_dist,
+      "HIDDENLong bond warning distance" },
+    { "-sb",     FALSE, etREAL, &short_bond_dist,
+      "HIDDENShort bond warning distance" },
     { "-inter",  FALSE, etBOOL, &bInter,
       "Set the next 6 options to interactive"},
     { "-ss",     FALSE, etBOOL, &bCysMan, 
       "Interactive SS bridge selection" },
     { "-ter",    FALSE, etBOOL, &bTerMan, 
       "Interactive termini selection, iso charged" },
-    { "-lys",   FALSE, etBOOL, &bLysMan, 
+    { "-lys",    FALSE, etBOOL, &bLysMan, 
       "Interactive Lysine selection, iso charged" },
-    { "-asp",   FALSE, etBOOL, &bAspMan, 
+    { "-asp",    FALSE, etBOOL, &bAspMan, 
       "Interactive Aspartic Acid selection, iso charged" },
-    { "-glu",   FALSE, etBOOL, &bGluMan, 
+    { "-glu",    FALSE, etBOOL, &bGluMan, 
       "Interactive Glutamic Acid selection, iso charged" },
     { "-his",    FALSE, etBOOL, &bHisMan,
       "Interactive Histidine selection, iso checking H-bonds" },
@@ -995,7 +998,8 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&tab,bts,nrtp,restp,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
-	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL);
+	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL, 
+	    long_bond_dist, short_bond_dist);
     
     if (!chains[chain].bAllWat)
       write_posres(posre_fn,pdba);
