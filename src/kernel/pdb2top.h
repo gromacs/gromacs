@@ -47,12 +47,25 @@ enum { ehisA, ehisB, ehisH, ehis1, ehisNR };
 extern char *hh[ehisNR];
 
 typedef struct {
-  int res1,res2;
+  int  res1,res2;
   char *a1,*a2;
 } t_ssbond;
 
-extern void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
-		    int nincl, char **incls, int nmol, char **mols,
+typedef struct {
+  char *name;
+  int  nr;
+} t_mols;
+
+extern void print_top_comment(FILE *out, char *title, bool bITP);
+
+extern void print_top_header(FILE *out, char *title, bool bITP, 
+			     char *ff, real mHmult);
+
+extern void print_top_mols(FILE *out, int nincl, char **incls,
+			   int nmol, t_mols *mols);
+
+extern void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
+		    int nincl, char **incls, int nmol, t_mols *mols,
 		    t_atoms *atoms,int nah,t_addh ah[],rvec **x,
 		    t_atomtype *atype,t_symtab *tab,
 		    int nrb, t_resbond rb[],
@@ -66,8 +79,8 @@ extern void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 		    int nssbonds,t_ssbond ssbonds[], int nrexcl);
 /* Create a topology ! */
 
-extern void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
-		      int nincl, char **incls, int nmol, char **mols,
+extern void write_top(char *ff,FILE *out,char *pr,char *molname,
+		      int nincl, char **incls, int nmol, t_mols *mols,
 		      t_atoms *at,t_params plist[],t_block *excl,
 		      t_atomtype *atype,int *cgnr, int nrexcl, real mHmult);
 /* write a topology 

@@ -161,25 +161,21 @@ static void print_top_heavy_H(FILE *out, real mHmult)
   }
 }
 
-static void print_top_header(FILE *out, char *title, bool bITP, 
-			     char *ff, int nincl, char **incls, real mHmult)
+void print_top_comment(FILE *out, char *title, bool bITP)
+{
+  fprintf(out,"; This is your %stopology file\n",bITP ? "include " : "");
+  fprintf(out,"; %s\n\n",title[0]?title:cool_quote());
+}
+
+void print_top_header(FILE *out, char *title, bool bITP, char *ff, real mHmult)
 {
   int i;
   
-  fprintf(out,"; This is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,"; %s\n",title[0]?title:cool_quote());
-  
-  if (!bITP) {
-    print_top_heavy_H(out, mHmult);
-    fprintf(out,"; Include forcefield constants\n");
-    fprintf(out,"#include \"%s.itp\"\n\n",ff);
-    if (nincl>0) {
-      fprintf(out,"; Include other parts of system\n");
-      for (i=0; (i<nincl); i++)
-	fprintf(out,"#include \"%s\"\n",incls[i]);
-      fprintf(out,"\n");
-    }
-  }
+  print_top_comment(out,title,bITP);
+
+  print_top_heavy_H(out, mHmult);
+  fprintf(out,"; Include forcefield parameters\n");
+  fprintf(out,"#include \"%s.itp\"\n\n",ff);
 }
 
 static void print_top_posre(FILE *out,char *pr)
@@ -207,34 +203,35 @@ static void print_top_system(FILE *out)
   fprintf(out,"Protein in Water\n\n");
 }
 
-static void print_top_mols(FILE *out, int nmol, char **mols)
+void print_top_mols(FILE *out, int nincl, char **incls, int nmol, t_mols *mols)
 {
   int i;
   
+  if (nincl>0) {
+    fprintf(out,"; Include chain topologies\n");
+    for (i=0; (i<nincl); i++)
+      fprintf(out,"#include \"%s\"\n",incls[i]);
+    fprintf(out,"\n");
+  }
+
+  print_top_water(out);
+  print_top_system(out);
+
   fprintf(out,"[ %s ]\n",dir2str(d_molecules));
   fprintf(out,"; %-15s %5s\n","Compound","#mols");
   if (nmol==0)
     fprintf(out,"Protein\t\t1\n");
   else
     for (i=0; (i<nmol); i++)
-      fprintf(out,"%-15s %5d\n",mols[i],1);
-  
+      fprintf(out,"%-15s %5d\n",mols[i].name,mols[i].nr);
 }
 
-void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
-	       int nincl, char **incls, int nmol, char **mols,
+void write_top(char *ff,FILE *out, char *pr,char *molname,
+	       int nincl, char **incls, int nmol, t_mols *mols,
 	       t_atoms *at,t_params plist[],t_block *excl,
 	       t_atomtype *atype,int *cgnr, int nrexcl, real mHmult)
      /* NOTE: nrexcl is not the size of *excl! */
 {
-  FILE *out;
-  bool bITP;
-  
-  bITP=(fn2ftp(fn)==efITP);
-  out=ffopen(fn,"w");
-  
-  print_top_header(out,title,bITP,ff,nincl,incls,mHmult);
-  
   if (at && atype && cgnr) {
     fprintf(out,"[ %s ]\n",dir2str(d_moleculetype));
     fprintf(out,"; %-15s %5s\n","Name","nrexcl");
@@ -258,14 +255,6 @@ void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
     if (pr)
       print_top_posre(out,pr);
   }
-  
-  if (!bITP) {
-    print_top_water(out);
-    print_top_system(out);
-    print_top_mols(out, nmol, mols);
-  }
-  
-  fclose(out);
 }
 
 static int search_res_atom(char *type,int resnr,
@@ -492,8 +481,8 @@ void print_sums(t_atoms *atoms, bool bSystem)
   fprintf(stderr,"Total charge%s %.3f e\n",where,qtot);
 }
 
-void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
-	     int nincl, char **incls, int nmol, char **mols,
+void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
+	     int nincl, char **incls, int nmol, t_mols *mols,
 	     t_atoms *atoms,int nah,t_addh ah[],rvec **x,
 	     t_atomtype *atype,t_symtab *tab,
 	     int nrb, t_resbond rb[],
@@ -601,11 +590,13 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	  plist[F_DUMMY2FAD].nr+plist[F_DUMMY3].nr);
   
   print_sums(atoms, FALSE);
-  
-  fprintf(stderr,"Writing topology file\n");
-  write_top(ff,fn,pr,title,molname,nincl,incls,nmol,mols,
-	    atoms,plist,&excl,atype,cgnr,nrexcl,mHmult);
-  
+
+  if (top_file) {
+    fprintf(stderr,"Writing topology\n");
+    write_top(ff,top_file,posre_fn,molname,nincl,incls,nmol,mols,
+	      atoms,plist,&excl,atype,cgnr,nrexcl,mHmult);
+  }
+
   for (i=0; (i<F_NRE); i++)
     sfree(plist[i].param);
 }
