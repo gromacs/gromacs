@@ -339,7 +339,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                      step,t,x,parm->box,parm->ir.xtcprec);
       where();
     }
-    if (bLastStep) {
+    if (bLastStep  && MASTER(cr)) {
       fprintf(stderr,"Writing final coordinates.\n");
       write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		     *top->name, &(top->atoms),x,v,parm->box);
