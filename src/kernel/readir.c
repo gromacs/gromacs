@@ -77,6 +77,16 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
   bool bStop=FALSE;
 
 #define BS(b,s,val) if (b) fprintf(stderr,s,val), bStop=TRUE
+  if ( (opts->nshake > 0) && (ir->eI != eiMD) && (ir->eI != eiLD) ) {
+    fprintf(stderr,"Turning off constraints for %s simulation\n",EI(ir->eI));
+    opts->nshake=0;
+  }
+  if ( (opts->nshake > 0) && (opts->bMorse) ) {
+    sprintf(warn_buf,
+	    "Using morse bond-potentials while constraining bonds is useless");
+    warning(NULL);
+  }
+ 
   BS(((ir->tol <= 0.0) && (opts->nshake > 0)),
      "tol must be > 0 instead of %10.5e while using shake\n",ir->tol);
   BS(((ir->ndelta < 1) && (ir->ns_type==ensGRID)),
@@ -90,8 +100,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
   if ((ir->rshort == 0.0) && (ir->rlong == 0.0)) {
     if (ir->eBox != ebtNONE) {
       fprintf(stderr,"Can not have cut-off to zero (=infinite) with periodic\n"
-	      "boundary conditions. Either set the box type to %s, or increase\n"
-	      "the cut-off radii\n",eboxtype_names[ebtNONE]);
+	      "boundary conditions. Either set the box type to %s, or "
+	      "increase the cut-off radii\n",eboxtype_names[ebtNONE]);
       bStop = TRUE;
     }
   }
@@ -190,6 +200,7 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("ENERGY MINIMIZATION OPTIONS");
   RTYPE ("emtol",       ir->em_tol,     0.001);
   RTYPE ("emstep",      ir->em_stepsize,0.1);
+  ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
   
   /* Output options */
   CCTYPE ("OUTPUT CONTROL OPTIONS");
@@ -287,7 +298,7 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nwatoms",     ir->nwatoms,    3);
 
   /* Shake stuff */
-  CCTYPE ("OPTIONS FOR CONSTRAINTS");
+  CCTYPE ("OPTIONS FOR BONDS");
   ETYPE ("constraints",	opts->nshake,	shake);
   CTYPE ("Type of constraint solver");
   ETYPE ("shake_type",  ir->eShakeType, eshake_names);
@@ -302,9 +313,13 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("lincs_warnangle", ir->LincsWarnAngle, 30.0);
   CTYPE ("Output frequency of the constraint accuracy");
   ITYPE ("nstLincsout",	ir->nstLincsout,100);
+  CTYPE ("Convert harmonic bonds to morse potentials");
+  ETYPE ("morse",       opts->bMorse,yesno_names);
   
   /* Refinement */
   CCTYPE ("NMR refinement stuff");
+  CTYPE ("Distance restraints type: None, Simple or Ensemble");
+  ETYPE ("disre",       opts->eDisre,   edisre_names);
   RTYPE ("dihre_fc",	ir->dihr_fc,	1000.0);
   RTYPE ("disre_fc",	ir->dr_fc,	1000.0);
   RTYPE ("disre_tau",	ir->dr_tau,	1.25);
