@@ -173,9 +173,7 @@ int main(int argc,char *argv[])
   unsigned long Flags;
 
   cr = init_par(&argc,&argv);
-  bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam=FALSE;
-  
 
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
@@ -184,6 +182,7 @@ int main(int argc,char *argv[])
 		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  bVerbose = bVerbose && MASTER(cr);
     
 #ifndef USE_MPI
   if (nnodes > 1) 
@@ -213,7 +212,7 @@ int main(int argc,char *argv[])
 	   (bIonize   ? MD_IONIZE   : 0) |
 	   (bMultiSim ? MD_MULTISIM : 0) |
 	   (bGlas     ? MD_GLAS     : 0));
-  
+
   mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,&edyn,Flags);
   
   if (gmx_parallel)
