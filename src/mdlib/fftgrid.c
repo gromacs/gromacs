@@ -23,7 +23,8 @@ static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
 		      bool bOptFFT)
 {
-  int       flags;
+/* parallel runs with non-parallel ffts haven't been tested yet */
+    int       flags;
   t_fftgrid *grid;
   
   snew(grid,1);
