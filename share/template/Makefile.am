@@ -13,9 +13,9 @@ LDFLAGS = -L@libdir@ @LDFLAGS@
 LIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
 CC = @CC@
 if DOUBLE
-CFLAGS = @CFLAGS@ -DDOUBLE @INCLUDES@ -I@includedir@ 
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -DDOUBLE
 else
-CFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ 
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@
 endif
 
 if DOUBLE
@@ -29,7 +29,7 @@ Makefile.@host@ Makefile.@host@_double: Template.mak Makefile
 	cat $(srcdir)/Template.mak | \
 	sed 's,@LDFLAGS\@,$(LDFLAGS),' | \
 	sed 's,@LIBS\@,$(LIBS),' | \
-	sed 's,@CFLAGS\@,$(CFLAGS),' | \
+	sed 's,@CFLAGS\@,$(MYCFLAGS),' | \
 	sed 's,@CC\@,$(CC),' | \
 	sed 's,@host\@,@host@,' >$@
 
