@@ -869,7 +869,9 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
     
     ctnb = wknb; 
     nnei = 0;
-    for (j=iat+1; (j<nat); j++) {
+    for (j=0; (j<nat); j++) {
+      if (j == iat)
+	continue;
       j_at = index[j];
       aj   = radius[j_at]; 
       ajsq = aj*aj;
@@ -894,9 +896,9 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
     }
 
     /* check points on accessibility */
+    i_ac = 0;
     if (nnei) {
       last = 0; 
-      i_ac = 0;
       for (l=0; (l<n_dot); l++) {
 	if (xus[3*l]*wknb[last].x+
 	    xus[1+3*l]*wknb[last].y+
@@ -927,8 +929,9 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
     a = aisq*dotarea* (real) i_ac;
     area = area + a;
     if (mode & FLAG_ATOM_AREA) {
-      atom_area[i_at] = a;
+      atom_area[iat] = a;
     }
+
     if (mode & FLAG_DOTS) {
       for (l=0; (l<n_dot); l++) {
 	if (wkdot[l]) {
@@ -969,9 +972,7 @@ int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
     *nu_dots = lfnr;
     *lidots = dots;
   }
-  if (mode & FLAG_ATOM_AREA) {
-    *at_area = atom_area;
-  }
+  *at_area = atom_area;
   *value_of_area = area;
 
 #if TEST_CUBE

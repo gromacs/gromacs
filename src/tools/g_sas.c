@@ -208,7 +208,7 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,int nskip,bool bSave,real minarea,bool bPBC,
+	      real qcut,bool bSave,real minarea,bool bPBC,
 	      real dgs_default)
 {
   FILE         *fp,*fp2,*fp3=NULL;
@@ -216,20 +216,22 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			     "Total", "D Gsolv" };
   real         t;
   int          status;
-  int          i,ii,j,natoms,flag,nsurfacedots;
+  int          i,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *x;
   matrix       box;
   t_topology   *top;
+  t_atoms      *atoms;
   bool         *bPhobic;
   bool         bConnelly;
   bool         bResAt,bITP,bDGsol;
-  real         *radius,*dgs_factor,*area=NULL,*surfacedots=NULL;
-  real         *atom_area,*atom_area2;
-  real         totarea,totvolume,harea,tarea,resarea;
+  real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
+  real         at_area,*atom_area=NULL,*atom_area2=NULL;
+  real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
+  real         totarea,totvolume,harea,tarea;
   atom_id      *index;
-  int          nx,ires,nphobic;
+  int          nx,nphobic;
   char         *grpname;
-  real         stddev,dgsolv;
+  real         dgsolv;
 
   bITP   = opt2bSet("-i",nfile,fnm);
   bResAt = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
@@ -238,90 +240,113 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			   &t,&x,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
 
-  top     = read_top(ftp2fn(efTPX,nfile,fnm));
-  bDGsol  = strcmp(*top->atoms.atomtype[0],"?") != 0;
+  top   = read_top(ftp2fn(efTPX,nfile,fnm));
+  atoms = &(top->atoms);
+  bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
   if (!bDGsol) 
     fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
     
   fprintf(stderr,"Select group for calculation of surface and for output:\n");
-  get_index(&(top->atoms),ftp2fn(efNDX,nfile,fnm),1,&nx,&index,&grpname);
+  get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nx,&index,&grpname);
 
   /* Now compute atomic readii including solvent probe size */
   snew(radius,natoms);
-  snew(bPhobic,natoms);
-  snew(atom_area,natoms); 
-  snew(atom_area2,natoms);
-  snew(dgs_factor,natoms);
+  snew(bPhobic,nx);
+  if (bResAt) {
+    snew(atom_area,nx);
+    snew(atom_area2,nx);
+    snew(res_a,atoms->nres);
+    snew(res_area,atoms->nres);
+    snew(res_area2,atoms->nres);
+  }
+  if (bDGsol)
+    snew(dgs_factor,nx);
   
   nphobic = 0;
-  for(i=0; (i<natoms); i++) {
+  for(i=0; (i<natoms); i++)
     radius[i]     = calc_radius(*(top->atoms.atomname[i])) + solsize;
-    if (bDGsol)
-      dgs_factor[i] = get_dgsolv(*(top->atoms.resname[top->atoms.atom[i].resnr]),
-				 *(top->atoms.atomtype[i]),dgs_default);
-    bPhobic[i]    = fabs(top->atoms.atom[i].q) <= qcut;
+  for(i=0; i<nx; i++) {
+    ii = index[i];
+    bPhobic[i] = fabs(atoms->atom[ii].q) <= qcut;
     if (bPhobic[i])
       nphobic++;
+    if (bDGsol)
+      dgs_factor[i] = get_dgsolv(*(atoms->resname[atoms->atom[ii].resnr]),
+				 *(atoms->atomtype[ii]),dgs_default);
     if (debug)
       fprintf(debug,"Atom %5d %5s-%5s: q= %6.3f, r= %6.3f, dgsol= %6.3f, hydrophobic= %s\n",
-	      i+1,*(top->atoms.resname[top->atoms.atom[i].resnr]),*(top->atoms.atomname[i]),
-	      top->atoms.atom[i].q,radius[i]-solsize,dgs_factor[i],BOOL(bPhobic[i]));
+	      ii+1,*(atoms->resname[atoms->atom[ii].resnr]),
+	      *(atoms->atomname[ii]),
+	      atoms->atom[ii].q,radius[ii]-solsize,dgs_factor[i],
+	      BOOL(bPhobic[i]));
   }
   fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
-	  nphobic,natoms);
+	  nphobic,nx);
   
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
   xvgr_legend(fp,asize(legend) - (bDGsol ? 0 : 1),legend);
   
-  j=0;
+  nfr=0;
   do {
-    if ((j++ % 10) == 0)
-      fprintf(stderr,"\rframe: %5d",j-1);
-      
-    if ((nskip > 0) && (((j-1) % nskip) == 0)) {
+    if (bPBC)
       rm_pbc(&top->idef,natoms,box,x,x);
-      
-      bConnelly = ((j == 1) && (opt2bSet("-q",nfile,fnm)));
-      if (bConnelly)
-	flag = FLAG_ATOM_AREA | FLAG_DOTS;
-      else
-	flag = FLAG_ATOM_AREA;
-      
-      if (nsc_dclm2(x,radius,nx,index,ndots,flag,&totarea,
-		    &area,&totvolume,&surfacedots,&nsurfacedots,
-		    bPBC ? box : NULL))
-	fatal_error(0,"Something wrong in nsc_dclm2");
-      
-      if (bConnelly)
-	connelly_plot(ftp2fn(efPDB,nfile,fnm),
-		      nsurfacedots,surfacedots,x,&(top->atoms),
-		      &(top->symtab),box,bSave);
-      
-      harea  = 0; 
-      tarea  = 0;
-      dgsolv = 0;
-      for(i=0; (i<nx); i++) {
-	ii=index[i];
-	atom_area[i] += area[ii];
-	atom_area2[i] += area[ii]*area[ii];
-	tarea += area[ii];
-	dgsolv += area[ii]*dgs_factor[ii];
-	if (bPhobic[ii])
-	  harea += area[ii];
+    
+    bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
+    if (bConnelly)
+      flag = FLAG_ATOM_AREA | FLAG_DOTS;
+    else
+      flag = FLAG_ATOM_AREA;
+    
+    write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
+
+    if (nsc_dclm2(x,radius,nx,index,ndots,flag,&totarea,
+		  &area,&totvolume,&surfacedots,&nsurfacedots,
+		  bPBC ? box : NULL))
+      fatal_error(0,"Something wrong in nsc_dclm2");
+    
+    if (bConnelly)
+      connelly_plot(ftp2fn(efPDB,nfile,fnm),
+		    nsurfacedots,surfacedots,x,atoms,
+		    &(top->symtab),box,bSave);
+    
+    harea  = 0; 
+    tarea  = 0;
+    dgsolv = 0;
+    if (bResAt)
+      for(i=0; i<atoms->nres; i++)
+	res_a[i] = 0;
+    for(i=0; (i<nx); i++) {
+      ii = index[i];
+      at_area = area[i];
+      if (bResAt) {
+	atom_area[i] += at_area;
+	atom_area2[i] += sqr(at_area);
+	res_a[atoms->atom[ii].resnr] += at_area;
       }
-      fprintf(fp,"%10g  %10g  %10g  %10g",t,harea,tarea-harea,tarea);
+      tarea += at_area;
       if (bDGsol)
-	fprintf(fp,"  %10g\n",dgsolv);
-      else
-	fprintf(fp,"\n");
-      
-      if (area) 
-	sfree(area);
-      if (surfacedots)
-	sfree(surfacedots);
+	dgsolv += at_area*dgs_factor[i];
+      if (bPhobic[i])
+	harea += at_area;
     }
+    if (bResAt)
+      for(i=0; i<atoms->nres; i++) {
+	res_area[i] += res_a[i];
+	res_area2[i] += sqr(res_a[i]);
+      }
+    fprintf(fp,"%10g  %10g  %10g  %10g",t,harea,tarea-harea,tarea);
+    if (bDGsol)
+      fprintf(fp,"  %10g\n",dgsolv);
+    else
+      fprintf(fp,"\n");
+    
+    if (area) 
+      sfree(area);
+    if (surfacedots)
+      sfree(surfacedots);
+    nfr++;
   } while (read_next_x(status,&t,natoms,x,box));
   
   fprintf(stderr,"\n");
@@ -330,16 +355,19 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   /* if necessary, print areas per atom to file too: */
   if (bResAt) {
+    for(i=0; i<atoms->nres; i++) {
+      res_area[i] /= nfr;
+      res_area2[i] /= nfr;
+    }
+    for(i=0; i<nx; i++) {
+      atom_area[i] /= nfr;
+      atom_area2[i] /= nfr;
+    }
     fprintf(stderr,"Printing out areas per atom\n");
-    fp2=xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom","Atom #",
-		 "Area (nm\\S2\\N)");
-    for (i=0; (i<nx); i++) 
-      fprintf(fp2,"%d %g %g\n",i+1,atom_area[index[i]]/j,
-	      atom_area2[index[i]]/j);
-    fclose(fp2);
-
-    fp = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
-		  "Area (nm\\S2\\N)");
+    fp  = xvgropen(opt2fn("-or",nfile,fnm),"Area per residue","Residue",
+		   "Area (nm\\S2\\N)");
+    fp2 = xvgropen(opt2fn("-oa",nfile,fnm),"Area per atom","Atom #",
+		   "Area (nm\\S2\\N)");
     if (bITP) {
       fp3 = ftp2FILE(efITP,nfile,fnm,"w");
       fprintf(fp3,"[ position_restraints ]\n"
@@ -348,25 +376,17 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      "#define FCZ 1000\n"
 	      "; Atom  Type  fx   fy   fz\n");
     }
-    ires    = top->atoms.atom[0].resnr-1;
-    resarea = 0;
-    for (i=0;i<natoms;i++) {
-      if (top->atoms.atom[i].resnr != ires) {
-	if (i > 0)
-	  fprintf(fp,"%10d  %10g\n",ires,resarea);
-	resarea = 0;
-	ires    = top->atoms.atom[i].resnr;
-      }
-      else
-	resarea += atom_area[i]/j;
-	stddev = atom_area2[i]/j; 
-	if (bITP && (atom_area2[i]/j > minarea))
-	  fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",i+1);
-	if (stddev > 0) 
-	  stddev = sqrt(stddev);
-	fprintf(fp2,"%d %g %g\n",i+1,atom_area[i]/j,stddev);
+    for(i=0; i<nx; i++) {
+      ii = index[i];
+      res = atoms->atom[ii].resnr;
+      if (i==nx-1 || res!=atoms->atom[index[i+1]].resnr)
+	fprintf(fp,"%10d  %10g %10g\n",res+1,res_area[res],
+		sqrt(res_area2[res]-sqr(res_area[res])));
+      fprintf(fp2,"%d %g %g\n",index[i]+1,atom_area[i],
+	      sqrt(atom_area2[i]-sqr(atom_area[i])));
+      if (bITP && (atom_area[i] > minarea))
+	fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",ii+1);
     }
-    fprintf(fp,"%10d  %10g\n",ires,resarea);
     if (bITP)
       fclose(fp3);
     fclose(fp);
@@ -391,7 +411,7 @@ int main(int argc,char *argv[])
   };
 
   static real solsize = 0.14;
-  static int  ndots   = 24,nskip=1;
+  static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
   static bool bSave   = TRUE,bPBC=TRUE;
@@ -404,8 +424,6 @@ int main(int argc,char *argv[])
 	"The maximum charge (e, absolute value) of a hydrophobic atom" },
     { "-minarea", FALSE, etREAL, {&minarea},
       "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
-    { "-skip",    FALSE, etINT,  {&nskip},
-      "Do only every nth frame" },
     { "-pbc",     FALSE, etBOOL, {&bPBC},
       "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
@@ -439,11 +457,11 @@ int main(int argc,char *argv[])
 
   please_cite(stderr,"Eisenhaber95");
     
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea,bPBC,dgs_default);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default);
   
-  do_view(opt2fn("-o",NFILE,fnm),"-nxy");
-  do_view(opt2fn_null("-or",NFILE,fnm),"-xydy");
-  do_view(opt2fn_null("-oa",NFILE,fnm),"-xydy");
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-or",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-oa",NFILE,fnm),NULL);
 
   thanx(stderr);
   
