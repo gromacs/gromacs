@@ -187,7 +187,7 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
     hOO  = 3.0*ggg/(rho*vol_s);
     Gkr += ggg;
     if (gb->count[i])
-      cosav = ggg/gb->count[i];
+      cosav = gb->elem[i]/gb->count[i];
     else
       cosav = 0;
     
@@ -797,6 +797,10 @@ int main(int argc,char *argv[])
     "of the total dipole moment of the simulation box.[PAR]",
     "At the moment the dielectric constant is calculated only correct if",
     "a rectangular or cubic simulation box is used.[PAR]",
+    "Option [TT]-g[tt] produces a plot of the distance dependent Kirkwood",
+    "G-factor, as well as the average cosine of the angle between the dipoles",
+    "as a function of the distance. The plot also includes gOO and hOO",
+    "according to Nymand & Linse, JCP 112 (2000) pp 6386-6395.[PAR]",
     "[PAR]",
     "EXAMPLES[PAR]",
     "g_dipoles -P1 -n mols -o dip_sqr -mu 2.273 -mumax 5.0",
