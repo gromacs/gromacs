@@ -341,12 +341,13 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 
 static int remove_double_atoms(t_atoms *pdba,rvec x[])
 {
-  int     i,j,nres,natoms,oldnatoms;
+  int     i,j,natoms,oldnatoms;
+/*   int nres; */
   
   printf("Checking for double atoms....\n");
   natoms    = pdba->nr;
   oldnatoms = natoms;
-  nres      = pdba->nres;
+/*   nres      = pdba->nres; */
   
   /* NOTE: natoms is modified inside the loop */
   for(i=1; (i<natoms); i++) {
@@ -591,7 +592,7 @@ int main(int argc, char *argv[])
       "Generate all proper dihedrals instead of only those with as few "
       "hydrogens as possible (useful for use with Charmm)" },
     { "-dummies",FALSE,etINT, &dumtp,
-      "1: dummy hydrogens, 2: also heavy hydrogens" }
+      "1: dummy hydrogens, 2: heavy hydrogens, 3: both" }
   };
 #define NPARGS asize(pa)
 
@@ -617,11 +618,15 @@ int main(int argc, char *argv[])
     mHmult=1.0;
     break;
   case 2:
+    bDummies=FALSE;
+    mHmult=4.0;
+    break;
+  case 3:
     bDummies=TRUE;
     mHmult=4.0;
     break;
   default:
-    fatal_error(0,"Illegal argument -dummies %d (must be 0,1 or 2)",dumtp);
+    fatal_error(0,"Illegal argument -dummies %d (must be 0, 1, 2 or 3)",dumtp);
   }/* end switch */
   
   clear_mat(box);

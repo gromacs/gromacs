@@ -74,6 +74,8 @@ extern void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
 		       int nddb, t_dumblock *ddb, 
 		       bool **is_dummy,real mHmult);
 
+extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult);
+
 extern void clean_dum_angles(t_params *ps, t_params *plist, bool *is_dum);
 
 extern void clean_dum_dihs(t_params *ps, int natom, char dihname[], 

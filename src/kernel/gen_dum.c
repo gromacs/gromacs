@@ -54,7 +54,6 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
   if (debug) printf("Searching for atoms to make dumies...\n");
   
   bWild=FALSE;
-  snew(*is_dummy,at->nr);
   snew(bProcessed,at->nr);
   /* loop over all entries in the .ddb database (atomtypes) */
   add=0;
@@ -304,6 +303,35 @@ void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
   
   /* clean up */
   sfree(bProcessed);
+}
+
+void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult)
+{
+  int i,j,a;
+
+  /* loop over all atoms */
+  for (i=0; i<at->nr; i++)
+    /* adjust masses if i is hydrogen and not a dummy atom */
+    if ( !is_dum[i] && is_hydrogen(*(at->atomname[i])) ) {
+      /* find bonded heavy atom */
+      a=NOTSET;
+      for(j=0; (j<psb->nr) && (a==NOTSET); j++) {
+	/* if other atom is not a dummy, it is the one we want */
+	if ( (psb->param[j].AI==i) && !is_dum[psb->param[j].AJ] )
+	  a=psb->param[j].AJ;
+	else if ( (psb->param[j].AJ==i) && !is_dum[psb->param[j].AI] )
+	  a=psb->param[j].AI;
+      }
+      if (a==NOTSET)
+	fatal_error(0,"Unbound hydrogen atom (%d) found while adjusting mass",i+1);
+      
+      /* adjust mass of i (hydrogen) with mHmult
+	 and correct mass of a (bonded atom) with same amount */
+      at->atom[a].m -= (mHmult-1.0)*at->atom[i].m;
+      at->atom[a].mB-= (mHmult-1.0)*at->atom[i].m;
+      at->atom[i].m *= mHmult;
+      at->atom[i].mB*= mHmult;
+    }
 }
 
 void clean_dum_angles(t_params *ps, t_params *plist, bool *is_dum)
@@ -826,13 +854,6 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
 	      naba++;
 	    }
 	    
-	    /* adjust masses if ak[0] is hydrogen */
-	    if ( (mHmult!=1.0) && is_hydrogen(*(at->atomname[ak[0]])) ) {
-	      at->atom[ak[1]].m -= (mHmult-1.0)*at->atom[ak[0]].m;
-	      at->atom[ak[1]].mB = at->atom[ak[1]].m;
-	      at->atom[ak[0]].m *= mHmult;
-	      at->atom[ak[0]].mB = at->atom[ak[0]].m;
-	    }
 	  }
 	sfree(ms);
 	sfree(a2);

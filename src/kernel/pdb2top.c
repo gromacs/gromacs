@@ -514,6 +514,7 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
   int      i;
   
   /* determine which atoms will be dummies and make space for dummy masses */
+  snew(is_dummy,atoms->nr);
   if (bDummies)
     do_dummies(atoms,atype,tab,nrtp,rtp,x,nddb,ddb,&is_dummy,mHmult);
     
@@ -582,9 +583,12 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
     clean_dum_angles(&(plist[F_ANGLES]), plist, is_dummy);
     clean_dum_dihs(&(plist[F_PDIHS ]), atoms->nr, "proper",   plist, is_dummy);
     clean_dum_dihs(&(plist[F_IDIHS ]), atoms->nr, "improper", plist, is_dummy);
-    
-    sfree(is_dummy);
   }
+  /* set mass of all remaining hydrogen atoms */
+  if (mHmult != 1.0)
+    do_h_mass(&(plist[F_BONDS]),is_dummy,atoms,mHmult);
+  sfree(is_dummy);
+  
   /* Cleanup bonds (sort and rm doubles) */ 
   clean_bonds(&(plist[F_BONDS]));
   
