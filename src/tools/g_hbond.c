@@ -545,7 +545,8 @@ int main(int argc,char *argv[])
     { "-nitacc",FALSE,etBOOL, {&bNitAcc},
       "Regard nitrogen atoms as acceptors" },
     { "-shell", FALSE,etREAL, {&rshell},
-      "Only calculate hydrogen bonds within shell around one particle" }
+      "when > 0, only calculate hydrogen bonds within # nm shell around "
+      "one particle" }
   };
 
   t_filenm fnm[] = {
