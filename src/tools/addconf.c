@@ -226,9 +226,10 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[])
   
   /* Check whether this trans matrix mirrors the molecule */
   if (det(trans) < 0) {
-    fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
+    if (debug)
+      fprintf(stderr,"Mirroring rotation matrix in Z direction\n");
     for(m=0; (m<DIM); m++)
-      trans[ZZ][m] *= -1;
+      trans[ZZ][m] = -trans[ZZ][m];
   }  
   rotate_atoms(atoms->nr,simp,x,trans);
   
