@@ -209,12 +209,12 @@ static void split_blocks(bool bVerbose,int nprocs,
 			 t_block *cgs,t_block *shakes)
 {
   int     maxatom[MAXPROC];
-  int     i,sbl;
+  int     i,ai,sbl;
   int     pid;
   real    load,tload;
   
-  bool    bCG,bSHK;
-  atom_id *cgnum,*shknum;
+  bool    bSHK;
+  atom_id *shknum;
   
   load  = cgs->nra / (real)nprocs;  
   tload = load;
@@ -224,26 +224,26 @@ static void split_blocks(bool bVerbose,int nprocs,
 	    "Going to use the WINKELHAAK Algorithm to split over %d cpus\n",
 	    nprocs);
   }
-  cgnum=make_invblock(cgs,cgs->nra+1);
-  shknum=make_invblock(shakes,cgs->nra+1);
+  shknum = make_invblock(shakes,cgs->nra+1);
   if (debug)
     for(i=0; (i<cgs->nra); i++)
-      fprintf(debug,"i: %5d, cgnum: %5u, shknum: %5u\n",i,cgnum[i],shknum[i]);
+      fprintf(debug,"i: %5d, shknum: %5d\n",i,shknum[i]);
   
   pid = 0;
   sbl = 0;
-  for(i=0; (i<cgs->nra); i++) {
-    bCG  =(cgnum[i]  != cgnum[i+1]);
-    bSHK =((shknum[i] == NO_ATID) || (shknum[i] != shknum[i+1]));
+  for(i=0; (i<cgs->nr); i++) {
+    ai   = cgs->a[cgs->index[i]];
+    bSHK = ((i == 0) || 
+	    ((shknum[ai] == NO_ATID) || (shknum[ai] != shknum[ai-1])));
     
-    if (shknum[i] != NO_ATID) 
-      sbl=max(sbl,shknum[i]);
+    if (shknum[ai] != NO_ATID) 
+      sbl=max(sbl,shknum[ai]);
     
-    if (bCG && bSHK && ((i+1) >= tload)) {
-      cgs->multinr[pid]    = cgnum[i]+1;
-      shakes->multinr[pid] = sbl+1;
+    if (bSHK && (cgs->a[cgs->index[i+1]] >= tload)) {
+      cgs->multinr[pid]    = i;
+      shakes->multinr[pid] = sbl;
       tload               += load;
-      maxatom[pid]         = i+1;
+      maxatom[pid]         = ai;
       pid++;
     }
   }
