@@ -248,11 +248,11 @@ static real calc_fraction(real angles[], int nangles)
   {
     angle = angles[i] * RAD2DEG;
 
-    if (angle > -45 && angle < 45)
+    if (angle > 135 && angle < 225)
       trans += 1.0;
-    else if (angle > 90 && angle < 150)
+    else if (angle > 270 && angle < 330)
       gauche += 1.0;
-    else if (angle < -90 && angle > -150)
+    else if (angle < 90 && angle > 30)
       gauche += 1.0;
   }
   if (trans+gauche > 0)
@@ -399,14 +399,18 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
       fraction = calc_fraction(angles[cur], nangles);
       (*trans_frac)[teller] = fraction;
       
-      /* Change Ryckaert-Bellemans dihedrals to polymer convention */
-      if (bRb) {
-	for(i=0; (i<nangles); i++)
-	  if (angles[cur][i] <= 0.0) 
-	    angles[cur][i] += M_PI;
-	  else
-	    angles[cur][i] -= M_PI;
-      }
+      /* Change Ryckaert-Bellemans dihedrals to polymer convention 
+       * Modified 990913 by Erik:
+       * We actually shouldn't change the convention, since it's
+       * calculated from polymer above, but we change the intervall
+       * from [-180,180] to [0,360].
+       */
+         if (bRb) {
+       	for(i=0; (i<nangles); i++)
+       	  if (angles[cur][i] <= 0.0) 
+       	    angles[cur][i] += 2*M_PI;
+        }
+      
       /* Periodicity in dihedral space... */
       if (teller > 1) {
 	for(i=0; (i<nangles); i++) {
