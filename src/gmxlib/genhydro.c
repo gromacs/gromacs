@@ -164,8 +164,10 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
   }
   
   /* Modify for termini HERE */
-  tadd+=hack_residue(rN,natom,pdba,ab,ntdb,1,nTH,bDel);
-  tadd+=hack_residue(rC,natom,pdba,ab,ctdb,-1,nTH,bDel);
+  if (rN>=0)
+    tadd+=hack_residue(rN,natom,pdba,ab,ntdb,1,nTH,bDel);
+  if (rC>=0)
+    tadd+=hack_residue(rC,natom,pdba,ab,ctdb,-1,nTH,bDel);
 
   /* Copy old atoms, making space for new ones */
   snew(newpdba,natom+tadd);
@@ -221,8 +223,10 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
   }
   
   /* Now let me do this... */
-  replace_atoms(ntdb,natom+tadd,newpdba,rN);
-  replace_atoms(ctdb,natom+tadd,newpdba,rC);
+  if (rN>=0)
+    replace_atoms(ntdb,natom+tadd,newpdba,rN);
+  if (rC>=0)
+    replace_atoms(ctdb,natom+tadd,newpdba,rC);
   
   /* Copy the coordinates for calc position */
   for(i=0; (i<natom+tadd); i++)
