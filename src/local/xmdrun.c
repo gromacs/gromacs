@@ -641,7 +641,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	    ghatfn,bGGhat ? "not " : "");
     (void)do_pppm(log,FALSE,bGGhat,ghatfn,
 		  &parm->ir,top->atoms.nr,x,f,md->chargeT,box_size,
-		  fr->phi,cr,&mynrnb);
+		  fr->phi,cr,&mynrnb,TRUE);
   }
   
 

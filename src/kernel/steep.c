@@ -277,7 +277,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     bool bGGhat = ! fexist(ftp2fn(efOUT,nfile,fnm));
     (void)do_pppm(log,FALSE,bGGhat,ftp2fn(efOUT,nfile,fnm),
 		  &parm->ir,top->atoms.nr,x,force[Min],
-		  mdatoms->chargeT,box_size,fr->phi,cr,&mynrnb);
+		  mdatoms->chargeT,box_size,fr->phi,cr,&mynrnb,TRUE);
   }
   
   /* Set variables for stepsize (in nm). This is the largest  
