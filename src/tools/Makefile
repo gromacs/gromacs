@@ -191,9 +191,9 @@ g_rdens:        g_rdens.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
 g_nmeig.o:	g_nmeig.c
+
 ifeq ($(USEF77),yes)
-fql77.o:	fql77.f
-g_nmeig:        g_nmeig.o fql77.o
+g_nmeig:        g_nmeig.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 else
 ql77.o:		ql77.c

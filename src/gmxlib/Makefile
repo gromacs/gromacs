@@ -50,7 +50,7 @@ OBJ		= 	\
 
 ifeq ($(USEF77),yes)
 OBJ		+= inloopf.o	fshake.o	fsettle.o	\
-		   flincs.o	flincsld.o	doconv.o
+		   flincs.o	flincsld.o	fql77.o
 endif
 
 ifeq ($(USE_XDR),yes)
