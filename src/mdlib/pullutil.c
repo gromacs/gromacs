@@ -17,7 +17,7 @@
 #include "pull.h"
 
 /* calculates center of mass of selection index from all coordines x */
-real calc_com(rvec x[],int gnx,atom_id *index,t_atom atom[],
+real calc_com(rvec x[],int gnx,atom_id *index,t_mdatoms *md,
 		     rvec com,matrix box)
 {
   int  i,ii,m;
@@ -27,7 +27,7 @@ real calc_com(rvec x[],int gnx,atom_id *index,t_atom atom[],
   tm=0;
   for(i=0; (i<gnx); i++) {
     ii=index[i];
-    m0=atom[ii].m;
+    m0=md->massT[ii];
     tm+=m0;
     for(m=0; (m<DIM); m++)
       com[m]+=m0*x[ii][m];
@@ -43,8 +43,8 @@ real calc_com(rvec x[],int gnx,atom_id *index,t_atom atom[],
 
 /* calculates com of all atoms in x[], *index has their index numbers
    to get the masses from atom[] */
-real calc_com2(rvec x[],int gnx,atom_id *index,t_atom atom[],
-		     rvec com,matrix box)
+real calc_com2(rvec x[],int gnx,atom_id *index,t_mdatoms *md,rvec com,
+	       matrix box)
 {
   int  i,ii,m;
   real m0,tm;
@@ -53,7 +53,7 @@ real calc_com2(rvec x[],int gnx,atom_id *index,t_atom atom[],
   tm=0;
   for(i=0; (i<gnx); i++) {
     ii=index[i];
-    m0=atom[ii].m;
+    m0=md->massT[ii];
     tm+=m0;
     for(m=0; (m<DIM); m++)
       com[m]+=m0*x[i][m];
@@ -66,7 +66,7 @@ real calc_com2(rvec x[],int gnx,atom_id *index,t_atom atom[],
   return tm;
 }
 
-void calc_running_com(t_pull *pull,matrix box) {
+void calc_running_com(t_pull *pull) {
   int i,j,n;
   rvec ave;
   real tm;
@@ -129,7 +129,7 @@ void calc_running_com(t_pull *pull,matrix box) {
   }
 }
 
-void correct_t0_pbc(t_pull *pull, rvec x[], t_topology *top, matrix box) {
+void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
   int i,ii,j,m;
   real tm;
   rvec com;
@@ -164,7 +164,7 @@ void correct_t0_pbc(t_pull *pull, rvec x[], t_topology *top, matrix box) {
     }
   }
   tm = calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
-		 top->atoms.atom,com,box);
+		 md,com,box);
   if (pull->bVerbose) 
     fprintf(stderr,"correct_t0: Group %s: mass:%8.3f com:%8.3f%8.3f%8.3f\n",
 	    pull->ref.grps[0],tm,com[0],com[1],com[2]);
@@ -222,7 +222,7 @@ static real get_cylinder_distance(rvec x, rvec com, matrix box) {
   return dr;
 }
 
-void make_refgrps(t_pull *pull,rvec x[],matrix box,t_topology *top) 
+void make_refgrps(t_pull *pull,matrix box,t_mdatoms *md) 
 {
   int ngrps,i,ii,j,k,m;
   static bool bFirst = TRUE;
@@ -258,7 +258,7 @@ void make_refgrps(t_pull *pull,rvec x[],matrix box,t_topology *top)
 
       if (dr < pull->rc) {
 	/* add to index, to sum of COM, to weight array */
-	mass = top->atoms.atom[ii].m;
+	mass = md->massT[ii];
 	truemass += mass;
 	pull->dyna.ngx[i]++;
 	pull->dyna.weights[i][k] = get_weight(dr,pull->r,pull->rc);

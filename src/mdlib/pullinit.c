@@ -160,14 +160,13 @@ static void print_whole_index(char **grpnames, atom_id **index, int *ngx, int
 }
 
 void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
-	       t_topology *top,rvec boxsize) 
+	       t_mdatoms *md,rvec boxsize) 
 {
   int i,j,m,ii;
   int ngrps;
   real tm;
   rvec tmp;
   matrix box;
-  /* index stuff */
   char **grpnames;
   atom_id **index;
   int *ngx;
@@ -227,7 +226,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   
   for (i=0;i<ngrps;i++) {
     tm = calc_com(x,pull->pull.ngx[i],pull->pull.idx[i],
- 		  top->atoms.atom,tmp,box);
+ 		  md,tmp,box);
     copy_rvec(tmp,pull->pull.x_con[i]);
     copy_rvec(tmp,pull->pull.x_unc[i]);
     copy_rvec(tmp,pull->pull.x_ref[i]);
@@ -239,7 +238,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   }
   
   /* initialize the reference group, in all cases */
-  tm = calc_com(x,pull->ref.ngx[0],pull->ref.idx[0],top->atoms.atom,
+  tm = calc_com(x,pull->ref.ngx[0],pull->ref.idx[0],md,
 		tmp,box);
   
   copy_rvec(tmp,pull->ref.x_unc[0]);
@@ -261,7 +260,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 
   /* if we use dynamic reference groups, do some initialising for them */
   if (pull->bCyl) {
-    make_refgrps(pull,x,box,top);
+    make_refgrps(pull,x,md);
     for (i=0;i<ngrps;i++) {
       copy_rvec(pull->dyna.x_unc[i],pull->dyna.x_con[i]);
       copy_rvec(pull->dyna.x_unc[i],pull->dyna.x_ref[i]);

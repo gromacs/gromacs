@@ -71,8 +71,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       vcm,mu_tot;
   rvec       *xx,*vv,*ff;
   int        natoms=0,status;
-  /* for pull code */
-  t_pull     pulldata;
+  t_pull     pulldata; /* for pull code */
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
 
@@ -94,7 +93,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,x,top,box_size); 
+  init_pull(log,nfile,fnm,&pulldata,x,mdatoms,box_size); 
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
@@ -234,7 +233,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (pulldata.bPull && 
 	  (pulldata.runtype == eAfm || pulldata.runtype == eUmbrella ||
 	   pulldata.runtype == eTest))
-	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,natoms); 
+	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,natoms,mdatoms); 
 
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),FALSE,mdatoms,x,graph,

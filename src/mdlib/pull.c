@@ -11,7 +11,6 @@
 #include "filenm.h"
 #include "string.h"
 #include "smalloc.h"
-#include "rmpbc.h"
 #include "pull.h"
 
 /* check if we're close enough to the target position */
@@ -36,8 +35,8 @@ static bool check_convergence(t_pull *pull) {
   return bTest;
 }
 
-static void do_start(t_pull *pull, rvec *x, matrix box, t_topology *top, 
-	      real dt, int step) 
+static void do_start(t_pull *pull, rvec *x, matrix box, t_mdatoms *md, 
+	      real dt, int step, t_topology *top) 
 {
   int i,j,ii,m;
   rvec dr,dx,tmp;     
@@ -85,7 +84,7 @@ static void do_start(t_pull *pull, rvec *x, matrix box, t_topology *top,
 
       /* get the new center of mass in pull.x_unc[i] */
       (void)calc_com(x,pull->pull.ngx[i],pull->pull.idx[i],
-		     top->atoms.atom,pull->pull.x_unc[i],box);
+		     md,pull->pull.x_unc[i],box);
     }
   }
 
@@ -110,7 +109,7 @@ static void do_start(t_pull *pull, rvec *x, matrix box, t_topology *top,
 }
 
 static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box, 
-			t_topology *top) 
+			t_mdatoms *md) 
 {
   int i,j,m,g;
   real mi;
@@ -133,7 +132,7 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
     /* distribute the force over all atoms in the group */
     for (j=0;j<pull->pull.ngx[i];j++) 
       for (m=0;m<DIM;m++) {
-	mi = top->atoms.atom[pull->pull.idx[i][j]].m;
+	mi = md->massT[pull->pull.idx[i][j]];
 	f[pull->pull.idx[i][j]][m] += 
 	  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
       }
@@ -146,8 +145,9 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
 }
 
 /* this implements a constraint run like SHAKE does. */
-static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top, 
-			  real dt) {
+static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md, 
+			  real dt) 
+{
   
   rvec r_ij, /* x_con[i] com of i in prev. step. Obeys constr. -> r_ij   */
     unc_ij,  /* x_unc[i] com of i this step, before constr.    -> unc_ij */
@@ -160,10 +160,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
   bool bConverged = FALSE;
   int n=0,i,ii,j,m,max_iter=1000;
   int ref;
-  double x1,x2,q,a,b,c; /* for solving the quadratic equation, 
-                         see Num. Recipes in C ed 2 p. 184 */
-  rvec *dr;             /* correction for group i */
-  rvec *ref_dr;         /* correction for group j */
+  double x1,x2,q,a,b,c;  /* for solving the quadratic equation, 
+                            see Num. Recipes in C ed 2 p. 184 */
+  rvec *dr;              /* correction for group i */
+  rvec *ref_dr;          /* correction for group j */
   rvec tmp,tmp2,tmp3,sum;
 
   if (pull->bCyl) {
@@ -250,6 +250,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 	svmul(-dt*dt*lambda/pull->pull.tmass[i],r_ij,dr[i]);
 	svmul(dt*dt*lambda/pull->ref.tmass[0],r_ij,ref_dr[0]);
       }
+
       /* and the direction of the constraint force: */
       direction[i] = cos_angle(r_ij,dr[i]);
 
@@ -308,10 +309,13 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 
       /* update the positions with dr */
       rvec_add(rinew[i],dr[i],rinew[i]);
+
       if (pull->bCyl) {
 	rvec_add(rjnew[i],ref_dr[i],rjnew[i]);
+	
 	/* calculate new distance between the two groups */
 	rvec_sub(rjnew[i],rinew[i],unc_ij);
+	
 	/* select components and check PBC again */
 	for (m=0;m<DIM;m++) {
 	  unc_ij[m] *= pull->dims[m];
@@ -320,8 +324,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 	}
       } else {
 	rvec_add(rjnew[0],ref_dr[0],rjnew[0]);
+
 	/* calculate new distance between the two groups */
 	rvec_sub(rjnew[0],rinew[i],unc_ij);
+
 	/* select components again and check PBC again */
 	for (m=0;m<DIM;m++) {
 	  unc_ij[m] *= pull->dims[m];
@@ -341,6 +347,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 	rvec_sub(rjnew[0],rinew[i],unc_ij);
 	rvec_sub(pull->ref.x_ref[0],pull->pull.x_ref[i],ref_ij);
       }
+
       for (m=0;m<DIM;m++) { 
 	ref_ij[m] *= pull->dims[m];
 	unc_ij[m] *= pull->dims[m];
@@ -349,9 +356,11 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 	if (ref_ij[m] < -0.5*box[m][m]) ref_ij[m] += box[m][m];
 	if (ref_ij[m] >  0.5*box[m][m]) ref_ij[m] -= box[m][m];
       }
+
       bConverged = bConverged && (fabs(norm(unc_ij)-norm(ref_ij)) < tol);
     }
     
+
     /* DEBUG */
     if (pull->bVerbose) {
       if (!bConverged)
@@ -360,6 +369,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 		i,pull->pull.grps[i], norm(ref_ij),norm(unc_ij));
     } /* END DEBUG */
     
+
     n++;
     /* if after all constraints are dealt with and bConverged is still TRUE
        we're finished, if not we do another iteration */
@@ -387,7 +397,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
     for (j=0;j<pull->pull.ngx[i];j++) {
       ii = pull->pull.idx[i][j];
       rvec_add(x[ii],dr[i],x[ii]);
-      svmul(top->atoms.atom[ii].m,dr[i],tmp);
+      svmul(md->massT[ii],dr[i],tmp);
       rvec_add(tmp,sum,sum);
     }
     if (pull->bVerbose) 
@@ -399,7 +409,6 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
   if (pull->bCyl) {
     /* update the dynamic reference groups */
     for (i=0;i<pull->pull.n;i++) {
-      /* get the final dr */
       rvec_sub(rjnew[i],pull->dyna.x_unc[i],ref_dr[i]);
       /* copy the new x_unc to x_con */
       copy_rvec(rjnew[i],pull->dyna.x_con[i]);
@@ -412,7 +421,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 	svmul(pull->dyna.weights[i][j],ref_dr[i],tmp); 
 	ii = pull->dyna.idx[i][j];
 	rvec_add(x[ii],tmp,x[ii]);
-	svmul(top->atoms.atom[ii].m,tmp,tmp2);
+	svmul(md->massT[ii],tmp,tmp2);
 	rvec_add(tmp2,sum,sum);
       }
       if (pull->bVerbose) 
@@ -431,7 +440,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
     for (j=0;j<pull->ref.ngx[0];j++) {
       ii = pull->ref.idx[0][j];
       rvec_add(x[ii],ref_dr[0],x[ii]);
-      svmul(top->atoms.atom[ii].m,ref_dr[0],tmp);
+      svmul(md->massT[ii],ref_dr[0],tmp);
       rvec_add(tmp,sum,sum);
     }
     if (pull->bVerbose) 
@@ -449,7 +458,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_topology *top,
 }
 
 /* mimicks an AFM experiment, groups are pulled via a spring */
-static void do_afm(t_pull *pull,rvec *f,matrix box,t_topology *top)
+static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
 {
   int i,ii,j,m,g;
   real mi; 
@@ -473,7 +482,7 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_topology *top)
     for (j=0;j<pull->pull.ngx[i];j++) {
       ii = pull->pull.idx[i][j];
       for (m=0;m<DIM;m++) {
-	mi = top->atoms.atom[ii].m;
+	mi = md->massT[ii];
 	f[ii][m] +=  mi*(pull->pull.f[i][m])/(pull->pull.tmass[i]);
       }
     }
@@ -489,40 +498,39 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_topology *top)
   /* done */
 }
 
-void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top, 
-	  real dt, int step, int natoms) 
+void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top, 
+	  real dt, int step, int natoms, t_mdatoms *md) 
 {
   int i;
-  rvec *x_s;
+  static rvec *x_s = NULL;
 
-  snew(x_s,natoms);
+  if (!x_s)
+    snew(x_s,natoms);
 
-  /* remove pbc for calculating coms. Don't act on the coordinates x_s,
-     act only on x */
+  /* copy x to temp array x_s. We assume all molecules are whole already */
   for (i=0;i<natoms;i++) 
     copy_rvec(x[i],x_s[i]);  
-  rm_pbc(&(top->idef),natoms,box,x_s,x_s);
   
   switch (pull->runtype) {
   case eAfm:
     /* calculate center of mass of the pull groups */
     for (i=0;i<pull->pull.n;i++) 
-      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],top->atoms.atom,
+      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
 		     pull->pull.x_unc[i],box);
-    do_afm(pull,f,box,top);
+    do_afm(pull,f,box,md);
     print_afm(pull,step);
     break;
     
   case eStart:
     for (i=0;i<pull->pull.n;i++) 
-      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],top->atoms.atom,
+      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
 		     pull->pull.x_unc[i],box);
     if (pull->bCyl)
-      make_refgrps(pull,x_s,box,top);
+      make_refgrps(pull,x_s,md);
     else 
-      (void)calc_com(x_s,pull->ref.ngx[0],pull->ref.idx[0],top->atoms.atom,
+      (void)calc_com(x_s,pull->ref.ngx[0],pull->ref.idx[0],md,
 		     pull->ref.x_unc[0],box);
-    do_start(pull,x,box,top,dt,step);
+    do_start(pull,x,box,md,dt,step,top);
     print_start(pull,step);
     break; 
     
@@ -534,7 +542,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
     if (pull->reftype == eComT0 || pull->reftype == eDynT0) {
       if (pull->bVerbose)
 	fprintf(stderr,"\nCalling correct_t0_pbc\n");
-      correct_t0_pbc(pull,x_s,top,box);
+      correct_t0_pbc(pull,x_s,md,box);
     } else {
       for (i=0;i<pull->ref.ngx[0];i++) 
 	copy_rvec(x_s[pull->ref.idx[0][i]],pull->ref.x0[0][i]);
@@ -543,7 +551,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
     /* get centers of mass for the pull groups. Does this work correctly
        with pbc? */
     for (i=0;i<pull->pull.n;i++) {
-      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],top->atoms.atom,
+      (void)calc_com(x_s,pull->pull.ngx[i],pull->pull.idx[i],md,
 		     pull->pull.x_unc[i],box);
     }
     
@@ -552,11 +560,11 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
     /* dynamic case */
     if (pull->bCyl) {
       if (step % pull->update == 0)    /* make new ones? */
-	make_refgrps(pull,x_s,box,top);
+	make_refgrps(pull,x_s,md);
       else {
 	for (i=0;i<pull->pull.n;i++) {
 	  (void)calc_com2(pull->ref.x0[0],pull->dyna.ngx[i],pull->dyna.idx[i],
-			  top->atoms.atom,pull->dyna.x_unc[i],box);
+			  md,pull->dyna.x_unc[i],box);
 	  if (pull->bVerbose) 
 	    fprintf(stderr,"dynacom: %8.3f%8.3f%8.3f\n",pull->dyna.x_unc[i][0],
 		    pull->dyna.x_unc[i][1],pull->dyna.x_unc[i][2]);
@@ -567,13 +575,13 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
     /* normal case */
     if (!pull->bCyl)
       (void)calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
-		      top->atoms.atom, pull->ref.x_unc[0],box);
+		      md,pull->ref.x_unc[0],box);
     
     /* if necessary, do a running average over the last reflag steps for com */
     if (pull->reflag > 1) {
       if (pull->bVerbose) 
 	fprintf(stderr,"Calling calc_running_com\n");
-      calc_running_com(pull,box);
+      calc_running_com(pull);
     }
 
     /* print some debug info if necessary */
@@ -594,12 +602,12 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
     }
     
     /* do the actual constraint calculation */
-    do_constraint(pull,x,box,top,dt);
+    do_constraint(pull,x,box,md,dt);
     print_constraint(pull,f,step,box); 
     break;
     
   case eUmbrella:
-    do_umbrella(pull, x, f, box, top);
+    do_umbrella(pull,x,f,box,md);
     print_umbrella(pull,step);
     break;
     
@@ -608,12 +616,12 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
        else 
     */
     (void)calc_com(x,pull->ref.ngx[0],pull->ref.idx[0],
-		   top->atoms.atom, pull->ref.x_unc[0],box);
+		   md,pull->ref.x_unc[0],box);
     fprintf(stderr,"ref: %8.3f %8.3f %8.3f\n",pull->ref.x_unc[0][XX],
 	    pull->ref.x_unc[0][YY],pull->ref.x_unc[0][ZZ]);
-    correct_t0_pbc(pull,x,top,box);
+    correct_t0_pbc(pull,x,md,box);
     (void)calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
-		    top->atoms.atom, pull->ref.x_unc[0],box);
+		    md,pull->ref.x_unc[0],box);
     fprintf(stderr,"ref_t0: %8.3f %8.3f %8.3f\n",pull->ref.x_unc[0][XX],
 	    pull->ref.x_unc[0][YY],pull->ref.x_unc[0][ZZ]);
     break;
@@ -621,7 +629,6 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box,t_topology *top,
   default:
     fatal_error(0,"undetermined runtype");
   }
-  sfree(x_s);
 }
 
 
