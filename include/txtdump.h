@@ -45,6 +45,7 @@ static char *SRCID_txtdump_h = "$Id$";
 #define	USE_WIDTH	((LINE_WIDTH)-(RMARGIN))
 #define INDENT		3
 
+extern void pr_shownumbers(bool bShow);
 extern int available(FILE *fp,void *p,char *title);
 extern int pr_indent(FILE *fp,int n);
 extern int pr_title(FILE *fp,int indent,char *title);
