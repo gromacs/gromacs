@@ -75,7 +75,7 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
       fprintf(out,", will finish at %s",buf);
     }
     else
-      fprintf(out,", remaining runtime: %5d s    ",(int)dt);
+      fprintf(out,", remaining runtime: %5d s               ",(int)dt);
   }
 #ifdef USE_MPI
   fprintf(out,"\n");
