@@ -117,7 +117,7 @@ void unpack_vector_machine_forces(bool calcdist,bool calcforce)
 }
 
 
-void prefetch_first_coord() 
+void prefetch_first_coord(void) 
 {
   int j;
   char buf[50];  

@@ -20,7 +20,7 @@ void recip_table_lookup(char *text)
 }
 
 
-int recip_iterate()
+int recip_iterate(void)
 {
   int nflop=0;
   int i,j;
@@ -88,7 +88,7 @@ int inlined_recip(void)
 	sprintf(buf,"%d",i*10+j);
 	recip_table_lookup(buf);
       }
-    nflop+=recip_iterate(TRUE);  
+    nflop+=recip_iterate();  
   } else {
     for(j=1;j<=loop.nj;j++)
 	for(i=1;i<=loop.ni;i++) {

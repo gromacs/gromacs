@@ -127,8 +127,8 @@ static int assign_chargeproduct(int i,int j,char *qq)
   int nflop = 0;
 
   if(loop.free==FREE_LAMBDA) {
-    assign("qqA","iqA*charge[jnr]");
-    assign("qqB","iqB*chargeB[jnr]");
+    assign("qqA","iqA*%s",ARRAY(charge,jnr));
+    assign("qqB","iqB*%s",ARRAY(chargeB,jnr));
     sprintf(qq,"qqq");
     nflop+=2;
   } else if(loop.free==FREE_SOFTCORE) {
@@ -137,7 +137,7 @@ static int assign_chargeproduct(int i,int j,char *qq)
   } else {
     switch(loop.sol) {
     case SOL_WATER:
-      assign("qq","%s*charge[jnr]", arch.simplewater ? "iqA" : ((i==1) ? "qO" : "qH"));
+      assign("qq","%s*%s", arch.simplewater ? "iqA" : ((i==1) ? "qO" : "qH"),ARRAY(charge,jnr));
       nflop += 1;
       sprintf(qq,"qq");
       break;
@@ -154,7 +154,7 @@ static int assign_chargeproduct(int i,int j,char *qq)
       }
       break;
     default:
-      assign("qq","iqA*charge[jnr]"); 
+      assign("qq","iqA*%s",ARRAY(charge,jnr)); 
       nflop += 1;
       sprintf(qq,"qq");
     }
@@ -231,7 +231,7 @@ int do_softcore(int i, int j)
     
     if(DO_COULTAB) {
       comment("Coulomb table");
-      assign("qqA","iqA*charge[jnr]");
+      assign("qqA","iqA*%s",ARRAY(charge,jnr));
       nflop += extract_table("n1");
       assign("VVCa","qqA*VV");
       assign("FFCa","qqA*tabscale*FF");
@@ -266,7 +266,7 @@ int do_softcore(int i, int j)
     assign("n1","%d*n0%s",table_element_size, bC ? "" : "+1");
     if(DO_COULTAB) {
       comment("Coulomb table");
-      assign("qqB","iqB*chargeB[jnr]");
+      assign("qqB","iqB*%s",ARRAY(chargeB,jnr));
       nflop += extract_table("n1");
       assign("VVCb","qqB*VV");
       assign("FFCb","qqB*tabscale*FF");

@@ -21,7 +21,7 @@ void invsqrt_table_lookup(char *text)
 }
 
 
-int invsqrt_iterate()
+int invsqrt_iterate(void)
 {
   int nflop=0;
   int i,j;
@@ -90,7 +90,7 @@ int inlined_invsqrt(void)
 	sprintf(buf,"%d",i*10+j);
 	invsqrt_table_lookup(buf);
       }
-    nflop+=invsqrt_iterate(TRUE);  
+    nflop+=invsqrt_iterate();  
   } else {
     for(j=1;j<=loop.nj;j++)
 	for(i=1;i<=loop.ni;i++) {
