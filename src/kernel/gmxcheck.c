@@ -433,7 +433,7 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
     "[TT].xtc[tt]), an index file ([TT].ndx[tt]) or an energy file",
-    "([TT].ene[tt] or [TT].edr])",
+    "([TT].ene[tt] or [TT].edr[tt])",
     "and prints out useful information about them.[PAR]",
     "For a coordinate file (generic structure file, e.g. [TT].gro[tt]) ",
     "gmxcheck will check for presence of coordinates, velocities and box",
