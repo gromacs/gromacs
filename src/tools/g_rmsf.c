@@ -344,10 +344,8 @@ int main (int argc,char *argv[])
   } else
     label = "Atom";
 
-  for(i=0; i<isize; i++) {
+  for(i=0; i<isize; i++)
     rmsf[i] = U[i][XX][XX] + U[i][YY][YY] + U[i][ZZ][ZZ];
-    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
-  }
   
   if (dirfn) {
     fprintf(stdout,"\n");
@@ -400,7 +398,10 @@ int main (int argc,char *argv[])
 		bRes ? top.atoms.atom[index[i]].resnr+1 : i+1,sqrt(rmsf[i]));
     fclose(fp);
   }
-  
+
+  for(i=0; i<isize; i++)
+    pdbatoms->pdbinfo[index[i]].bfac = 800*M_PI*M_PI/3.0*rmsf[i];
+
   if (opt2bSet("-oq",NFILE,fnm)) {
     /* Write a pdb file with B-factors and optionally anisou records */
     for(i=0; i<isize; i++)
