@@ -29,6 +29,7 @@
 typedef struct {
   /* Cut-Off stuff */
   real rshort,rlong;
+  
   /* Dielectric constant resp. multiplication factor for charges */
   real zsquare,temp;
   real epsilon_r,epsfac;  
@@ -55,7 +56,8 @@ typedef struct {
   int  cg0,hcg;
   int  ndelta;
   int  nWater;
-  bool bGrid;
+  int  Dimension;
+  bool bGrid,bDomDecomp;
   rvec *cg_cm;
   rvec *shift_vec;
   
