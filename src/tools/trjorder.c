@@ -152,7 +152,7 @@ int main(int argc,char *argv[])
   out=open_trx(opt2fn("-o",NFILE,fnm),"w");
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
-    init_pbc(box,FALSE);
+    init_pbc(box);
     
     for(i=0; i<nwat; i++) {
       sa = index[1][na*i];

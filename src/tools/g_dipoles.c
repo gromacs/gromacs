@@ -608,7 +608,7 @@ static void do_dip(char *fn,char *topf,
 	M_av2[m] = sqr(M_av[m]);
     }    
     if (bGkr) {
-      init_pbc(box,FALSE);
+      init_pbc(box);
       do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
 	     atom,gkatom);
     }

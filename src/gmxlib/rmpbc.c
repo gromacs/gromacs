@@ -74,7 +74,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 	mgraph[n].gr=mk_graph(idef,natoms,FALSE,FALSE);
       }
       mk_mshift(stdout,mgraph[n].gr,box,x);
-      calc_shifts(box,box_size,sv,FALSE);
+      calc_shifts(box,box_size,sv);
       shift_x(mgraph[n].gr,box,x,x_s);
       bNeedToCopy=FALSE;
     } else if (bFirst) {

@@ -234,7 +234,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
     }
     
     if (bB) 
-      init_pbc(box,FALSE);
+      init_pbc(box);
       
     bFirst=TRUE;
     for (i=0; (i<natom); i++) {

@@ -712,7 +712,7 @@ int main(int argc,char *argv[])
     fatal_error(0,"Undefined solute box.\nCreate one with editconf "
 		"or give explicit -box command line option");
   
-  init_pbc(box,FALSE);
+  init_pbc(box);
   
   /* add nmol_ins molecules of atoms_ins 
      in random orientation at random place */

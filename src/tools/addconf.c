@@ -287,8 +287,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
-  calc_shifts(box,box_size,fr->shift_vec,FALSE);
-  put_charge_groups_in_box(fp,0,cgs->nr,FALSE,box,box_size,cgs,
+  calc_shifts(box,box_size,fr->shift_vec);
+  put_charge_groups_in_box(fp,0,cgs->nr,box,box_size,cgs,
 			   x,fr->cg_cm);
   
   /* Do the actual neighboursearching */
@@ -344,7 +344,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   fprintf(stderr,"box_margin = %g\n",box_margin);
   
   snew(remove,natoms_solvt);
-  init_pbc(box,FALSE);
+  init_pbc(box);
 
   nremove = 0;
   for(i=0; i<atoms_solvt->nr; i++)

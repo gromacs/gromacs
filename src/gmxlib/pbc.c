@@ -78,7 +78,7 @@ char *check_box(matrix box)
   return ptr;
 }
 
-void init_pbc(matrix box,bool bNotUsed)
+void init_pbc(matrix box)
 {
   static int nalloc=0;
   int  i,j,k,d;
@@ -241,11 +241,11 @@ bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
   return TRUE;
 }
 
-void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bNotUsed)
+void calc_shifts(matrix box,rvec box_size,rvec shift_vec[])
 {
   int k,l,m,d,n,test;
   
-  init_pbc(box,bNotUsed);
+  init_pbc(box);
   for (m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
   
@@ -301,7 +301,7 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
   }
 }
 
-void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bNotUsed,
+void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
 			      matrix box,rvec box_size,t_block *cgs,
 			      rvec pos[],rvec cg_cm[])
 			      
@@ -547,7 +547,7 @@ void put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[])
   rvec box_center,dx;
   int  i;
 
-  init_pbc(box,FALSE);
+  init_pbc(box);
   calc_box_center(box,box_center);
   for(i=0; i<natoms; i++) {
     pbc_dx(x[i],box_center,dx);

@@ -145,7 +145,7 @@ int main(int argc,char *argv[])
   
   do {
     /* initialisation for correct distance calculations */
-    init_pbc(box,FALSE);
+    init_pbc(box);
     /* make molecules whole again */
     rm_pbc(&top->idef,natoms,box,x,x);
 

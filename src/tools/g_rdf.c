@@ -194,7 +194,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   vol_sum = 0;
   do {
     /* Must init pbc every step because of pressure coupling */
-    init_pbc(box,FALSE);
+    init_pbc(box);
     rm_pbc(&top.idef,natoms,box,x,x);
     
     vol = det(box);

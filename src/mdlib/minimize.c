@@ -56,6 +56,7 @@ static char *SRCID_congrad_c = "$Id$";
 #include "typedefs.h"
 #include "update.h"
 #include "random.h"
+#include "constr.h"
 #include "vec.h"
 #include "statutil.h"
 #include "tgroup.h"
@@ -172,7 +173,7 @@ static void init_em(FILE *log,char *title,
   init_nrnb(mynrnb);
     
   clear_rvec(mu_tot);
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+  calc_shifts(parm->box,box_size,fr->shift_vec);
   
   *start = nsb->index[cr->nodeid];
   *end   = nsb->homenr[cr->nodeid] + *start;
@@ -858,7 +859,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   bBox = (fr->ePBC != epbcNONE);
   if (bBox) {
-    calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+    calc_shifts(parm->box,box_size,fr->shift_vec);
     fprintf(log,"Removing pbc first time\n");
     mk_mshift(log,graph,parm->box,x);
     shift_self(graph,parm->box,x);

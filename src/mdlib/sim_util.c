@@ -215,12 +215,11 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
     if (parm->ir.epc != epcNO)
-      calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+      calc_shifts(parm->box,box_size,fr->shift_vec);
     
     if (bNS) { 
-      put_charge_groups_in_box(log,cg0,cg1,FALSE,
-			       parm->box,box_size,&(top->blocks[ebCGS]),x,
-			       fr->cg_cm);
+      put_charge_groups_in_box(log,cg0,cg1,parm->box,box_size,
+			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     } else if (parm->ir.eI==eiSteep || parm->ir.eI==eiCG)
       unshift_self(graph,parm->box,x);
@@ -521,7 +520,7 @@ void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
 {
   fprintf(log,"Removing pbc first time\n");
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+  calc_shifts(parm->box,box_size,fr->shift_vec);
   mk_mshift(log,graph,parm->box,x);
   if (getenv ("NOPBC") == NULL)
     shift_self(graph,parm->box,x);

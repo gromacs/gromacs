@@ -44,7 +44,7 @@ static char *SRCID_dummies_c = "$Id$";
 #include "vec.h"
 #include "mvdata.h"
 #include "network.h"
-
+#include "mshift.h"
 
 /* Communication buffers */
 

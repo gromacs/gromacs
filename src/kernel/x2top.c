@@ -146,7 +146,7 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
     atom[i].m    = get_amass(*atoms->atomname[i],nmass,nm2mass);
   }
   if (bPBC)
-    init_pbc(box,FALSE);
+    init_pbc(box);
   for(i=0; (i<atoms->nr); i++) {
     if ((i % 10) == 0)
       fprintf(stderr,"\ratom %d",i);

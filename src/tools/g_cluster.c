@@ -1178,7 +1178,7 @@ int main(int argc,char *argv[])
   }
 
   if (bReadTraj) {
-    init_pbc(box,FALSE);
+    init_pbc(box);
     
     /* Loop over first coordinate file */
     fn = opt2fn("-f",NFILE,fnm);

@@ -624,7 +624,7 @@ int main (int argc,char *argv[])
   }
 
   /*set box type*/
-  init_pbc(box,FALSE);
+  init_pbc(box);
   calc_dist(isize,index,x,d_r);
   sfree(x);
 

@@ -165,7 +165,7 @@ int main(int argc,char *argv[])
     /* make molecules whole again */
     rm_pbc(&top.idef,natoms,box,x,x);
     
-    init_pbc(box,FALSE);
+    init_pbc(box);
     n = 0;
     inp = 0;
     outp = 0;

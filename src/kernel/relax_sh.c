@@ -349,7 +349,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       snew(acc_dir,homenr);
       snew(x_old,homenr);
     }
-    init_pbc(parm->box,FALSE);
+    init_pbc(parm->box);
     for(i=0; i<homenr; i++) {
       for(d=0; d<DIM; d++)
         x_old[i][d] = x[start+i][d] - v[start+i][d]*parm->ir.delta_t;

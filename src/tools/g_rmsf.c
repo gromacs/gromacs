@@ -241,7 +241,7 @@ int main (int argc,char *argv[])
   snew(w_rls,top.atoms.nr);
 
   /* Set box type*/
-  init_pbc(box,FALSE);
+  init_pbc(box);
   
   fprintf(stderr,"Select group(s) for root mean square calculation\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);

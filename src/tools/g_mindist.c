@@ -157,7 +157,7 @@ static void calc_mindist(real MinDist,
   r_2=sqr(MinDist);
 
   /* Must init pbc every step because of pressure coupling */
-  init_pbc(box,FALSE);
+  init_pbc(box);
   if (index2) {
     j0=0;
     j1=nx2;

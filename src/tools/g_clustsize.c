@@ -89,7 +89,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,char *ncl,char *acl,
     t_y[i] = i+1;
   do {
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
-      init_pbc(box,FALSE);
+      init_pbc(box);
       max_clust_size = 1;
       for(i=0; (i<nindex); i++) {
 	clust_index[i] = i;

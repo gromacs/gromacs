@@ -202,7 +202,8 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
   real **d;
   char buf[10];
 
-  sb=get_specbonds(&nsb);
+  nbonds = 0;
+  sb     = get_specbonds(&nsb);
   
   if (nsb > 0) {
     snew(specp,pdba->nr);
@@ -267,7 +268,6 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     }
     
     snew(bonds,nspec);
-    nbonds = 0;
 
     for(i=0; (i<nspec); i++) {
       ai = sgp[i];

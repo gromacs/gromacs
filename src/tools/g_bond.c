@@ -79,7 +79,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   }
   
   natoms=read_first_x(&status,fn,&t,&x,box);
-  init_pbc(box,FALSE);
+  init_pbc(box);
   if (natoms == 0) 
     fatal_error(0,"No atoms in trajectory!");
     

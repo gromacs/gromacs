@@ -43,6 +43,7 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "physics.h"
 #include "network.h"
 #include "smalloc.h"
+#include "mdrun.h"
 #include "string2.h"
 #include "readinp.h"
 #include "filenm.h"

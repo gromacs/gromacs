@@ -248,7 +248,7 @@ int main (int argc,char *argv[])
   }
   
   /*set box type*/
-  init_pbc(box,FALSE);
+  init_pbc(box);
 
   if (bFit)
     fprintf(stderr,"Select group for least squares fit\n");

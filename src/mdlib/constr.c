@@ -287,10 +287,8 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	       &bllen0,&ddist);
     bItEqOrder = (getenv("GMX_ACCURATE_LINCS") != NULL);
   } 
-  else {
-    if (nc == 0)
-      return;
-
+  else if (nc != 0) {
+    /* If there are any constraints */
     if (bCoordinates) {
       dt   = ir->delta_t;
       dt_2 = 1.0/(dt*dt);
