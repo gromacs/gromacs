@@ -32,6 +32,7 @@
   CS2  14.02700 ;     SUGAR CH2-GROUP
    SI  28.08000 ;     SILICON
    NA  22.98980 ;     SODIUM (1+)
+    K  39.10000 ;     POTASSIUM (1+) (proefschrift Straatsma)
    CL  35.45300 ;     CHLORINE (1-)
    CA  40.08000 ;     CALCIUM (2+)
    MG  24.30500 ;     MAGNESIUM (2+)
