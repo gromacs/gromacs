@@ -647,11 +647,11 @@ beyond the largest distance (see figure~\ref{fig:dist}).
 \beq
 V_{dr}(r_{ij}) ~=~ \left\{
 \begin{array}{lcllllll}
-0		&\mbox{for}& 	 &     & r_{ij} & < & r_0	\\[1.5ex]
-\half k_{dr}(r_{ij}-r_0)^2	
-		&\mbox{for}& r_0 & \le & r_{ij} & < & r_1	\\[1.5ex]
-\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0)	
-		&\mbox{for}& r_1 & \le & r_{ij} &   &
+0		&\mbox{for}& 	 &     & r_{ij} & < & r_1	\\[1.5ex]
+\half k_{dr}(r_{ij}-r_1)^2	
+		&\mbox{for}& r_1 & \le & r_{ij} & < & r_2	\\[1.5ex]
+\half k_{dr}(r_2-r_1)(2r_{ij}-r_2-r_1)	
+		&\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array}\right.
 \label{eqn:disre}
 \eeq
@@ -666,11 +666,11 @@ The forces are
 \beq
 \ve{F}_i~=~ \left\{
 \begin{array}{lcllllll}
-0		&\mbox{for}& 	 &     & r_{ij} & < & r_0	\\[1.5ex]
--k_{dr}(r_{ij}-r_0)\frac{\rvij}{r_{ij}}	
-		&\mbox{for}& r_0 & \le & r_{ij} & < & r_1	\\[1.5ex]
--k_{dr}(r_1-r_0)\frac{\rvij}{r_{ij}}	
-		&\mbox{for}& r_1 & \le & r_{ij} &   &
+0		&\mbox{for}& 	 &     & r_{ij} & < & r_1	\\[1.5ex]
+-k_{dr}(r_{ij}-r_1)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}& r_1 & \le & r_{ij} & < & r_2	\\[1.5ex]
+-k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}& r_2 & \le & r_{ij} &   &
 \end{array} \right.
 \eeq
 The above formulae have been improved by introducing the
@@ -722,8 +722,8 @@ It is also possible to use {\em ensemble averaging} using multiple
 (protein)  molecules. In this case the bounds should be lowered as in:
 \beq
 \begin{array}{rcl}
-r_0	&~=~&	r_0 * M^{-1/6}	\\
-r_1	&~=~&	r_1 * M^{-1/6}
+r_1	&~=~&	r_1 * M^{-1/6}	\\
+r_2	&~=~&	r_2 * M^{-1/6}
 \end{array}
 \eeq
 where $M$ is the number of molecules. The {\gromacs} preprocessor {\tt grompp}
@@ -732,9 +732,9 @@ The resulting ``distance'' is
 then used to calculate the scalar force according to:
 \beq
 \begin{array}{rcl}
-\ve{F}_i~=~&~0 \hspace{4cm}  & r_{N} < r_0         \\
-  = ~&-~ k_{dr}(r_{N}-r_0)\frac{\rvij}{r_{ij}} & r_0 \le r_{N} < r_1 \\
-  = ~&-~ k_{dr}(r_1-r_0)\frac{\rvij}{r_{ij}}    & r_{N} \ge r_1	
+\ve{F}_i~=~&~0 \hspace{4cm}  & r_{N} < r_1         \\
+  = ~&-~ k_{dr}(r_{N}-r_1)\frac{\rvij}{r_{ij}} & r_1 \le r_{N} < r_2 \\
+  = ~&-~ k_{dr}(r_2-r_1)\frac{\rvij}{r_{ij}}    & r_{N} \ge r_2	
 \end{array}
 \eeq
 where $i$ and $j$ denote the atoms  of all the 
