@@ -160,9 +160,10 @@ bool read_bondeds(int bt, FILE *in, char *line, t_restp *rtp)
     }
     for(  ; j < MAXATOMLIST; j++)
       rtp->rb[bt].b[rtp->rb[bt].nb].a[j]=NULL;
-    strcpy(str, "");
-    sscanf(line+n,"%s",str);
-    rtp->rb[bt].b[rtp->rb[bt].nb].s=strdup(str);
+    while (isspace(line[n]))
+      n++;
+    rtrim(line+n);
+    rtp->rb[bt].b[rtp->rb[bt].nb].s=strdup(line+n);
     rtp->rb[bt].nb++;
   }
   /* give back unused memory */
