@@ -231,7 +231,7 @@ int main(int argc,char *argv[])
   static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
   static bool  bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
-  static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
+  static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
   static char  *exec_command=NULL;
 
@@ -259,11 +259,9 @@ int main(int argc,char *argv[])
     { "-vel", FALSE, etBOOL, &bVels,
       "Read and write velocities if possible" },
     { "-skip", FALSE,  etINT, &skip_nr,
-      "Only write out every nr-th frame" },
+      "Only write every nr-th frame" },
     { "-dt", FALSE,  etREAL, &delta_t,
-      "Only write out frame when (t MOD delta_t) == offset" },
-    { "-offset", FALSE, etREAL, &toffset,
-      "Time offset for -dt option" },
+      "Only write frame when t MOD dt = first time" },
     { "-t0", FALSE,  etREAL, &tzero,
       "Starting time for trajectory"
       "(default: don't change)"},
@@ -346,11 +344,6 @@ int main(int argc,char *argv[])
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
     bPBC = bPBC || bFit;
-    if (bPBC && !fn2bTPX(top_file)) {
-      fprintf(stderr,
-	      "WARNING: can not remove periodicity without a run input file\n");
-      bPBC=FALSE;
-    }
     if (bNoJump && bPBC) {
       fprintf(stderr,
 	      "WARNING: both -pbc and -removejump specified: ignoring -pbc\n");
@@ -464,8 +457,7 @@ int main(int argc,char *argv[])
       
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
-      if (bPBC)
-	rm_pbc(&(top.idef),atoms->nr,box,xp,xp);
+      rm_pbc(&(top.idef),atoms->nr,box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,isize,index,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
@@ -560,8 +552,7 @@ int main(int argc,char *argv[])
       if (bIFit) {
 	/* Now modify the coords according to the flags,
 	   for normal fit, this is only done for output frames */
-	if (bPBC)
-	  rm_pbc(&(top.idef),natoms,box,x,x);
+	rm_pbc(&(top.idef),natoms,box,x,x);
 	
 	reset_x(ifit,ind_fit,isize,index,x,w_rls);
 	do_fit(natoms,w_rls,xp,x);
@@ -598,9 +589,9 @@ int main(int argc,char *argv[])
 	  fprintf(stderr,"\nDumping frame at t= %g\n",t);
 
 	/* check for writing at each delta_t */
-	bDoIt=(delta_t == 0) || (t == 0);
+	bDoIt=(delta_t == 0);
 	if (!bDoIt)
-	  bDoIt=bRmod(t-toffset,delta_t);
+	  bDoIt=bRmod(t-tzero, delta_t);
 	
 	if (bDoIt || bTDump) {
 	  /* print sometimes */
@@ -615,8 +606,7 @@ int main(int argc,char *argv[])
 	  if (!bIFit) {
 	    /* Now modify the coords according to the flags,
 	       for IFit we did this already! */
-	    if (bPBC) 
-	      rm_pbc(&(top.idef),natoms,box,x,x);
+	    rm_pbc(&(top.idef),natoms,box,x,x);
 	  
 	    if (bFit) {
 	      reset_x(ifit,ind_fit,isize,index,x,w_rls);
