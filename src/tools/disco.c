@@ -128,6 +128,7 @@ void do_disco(FILE *log,char *outfn,char *keepfn,t_correct *c,
 
   natom  = atoms->nr;
   nres   = atoms->nres;
+  clear_mat(wrbox);
   wrbox[XX][XX] = wrbox[YY][YY] = wrbox[ZZ][ZZ] = nres;  
   status = open_trx(outfn,"w");
   if (keepfn)
