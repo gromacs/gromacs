@@ -649,7 +649,8 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
   t_myang  *angles;
   t_myidih *idihs;
   
-  bERROR=TRUE;
+  bFirst = TRUE;
+  bERROR = TRUE;
   if (debug)
     fprintf(debug, "\nCalculating parameters for dummy atoms\n");  
   for(ftype=0; (ftype<F_NRE); ftype++)
