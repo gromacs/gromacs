@@ -203,7 +203,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
-  if (fr->eeltype == eelPME)
+  if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
     (void) init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,
 		    parm->ir.pme_order,HOMENR(nsb),parm->ir.efep!=efepNO,
 		    parm->ir.bOptFFT,parm->ir.ewald_geometry);

@@ -79,7 +79,8 @@ const char *ptype_str[eptNR+1] = {
 const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", 
-  "Generalized-Born", "Reaction-Field-old", "Encad-shift", NULL
+  "Generalized-Born", "Reaction-Field-old", "Encad-shift", 
+  "PME-User", NULL
 };
 
 const char *eewg_names[eewgNR+1] = {

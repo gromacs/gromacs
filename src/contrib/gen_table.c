@@ -8,7 +8,45 @@
 #include "vec.h"
 #include "statutil.h"
 
-enum { mGuillot, mN61, mMaaren, mGuillot_maple, mNR };
+enum { mGuillot, mN61, mMaaren, mGuillot_Maple, mHard_Wall, mNR };
+
+static double erf2(double x)
+{
+  return -(4*x/(sqrt(M_PI)))*exp(-x*x);
+}
+
+static double erf1(double x)
+{
+  return (2/sqrt(M_PI))*exp(-x*x);
+}
+
+void do_hard(FILE *fp,double resolution,double efac,double delta)
+{
+  int    i,k,imax;
+  double x,vr,vr2,vc,vc2;
+  
+  if (delta < 0)
+    gmx_fatal(FARGS,"Delta should be >= 0 rather than %f\n",delta);
+    
+  imax     = 3.0/resolution;
+  for(i=0; (i<=imax); i++) {
+    x   =  i*resolution;
+    
+    if (x < delta) {
+      /* Avoid very high numbers */
+      vc = vc2 = 1/delta;
+    }
+    else {
+      vc  = 1/(x);
+      vc2 = 2/pow(x,3);
+    }
+    vr  = erfc(efac*(x-delta))/2;
+    vr2 = (1-erf2(efac*(x-delta)))/2;
+    fprintf(fp,"%10g  %10g  %10g  %10g  %10g  %10g  %10g\n",
+	    x,vr,vr2,0.0,0.0,vc,vc2);
+  }
+
+}
 
 void do_n61(FILE *fp,int eel,double resolution,int npow)
 {
@@ -37,16 +75,6 @@ void do_n61(FILE *fp,int eel,double resolution,int npow)
     }
     fprintf(fp,"\n");
   }
-}
-
-static double erf2(double x)
-{
-  return -(4*x/(sqrt(M_PI)))*exp(-x*x);
-}
-
-static double erf1(double x)
-{
-  return (2/sqrt(M_PI))*exp(-x*x);
 }
 
 void lo_do_guillot(double r,double xi,
@@ -172,16 +200,20 @@ int main(int argc,char *argv[])
     "potentials."
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
-  static char *model[]   = { NULL, "guillot", "n61", "maaren", "guillot_maple", NULL };
-  static real resolution = 0.001;
+  static char *model[]   = { NULL, "guillot", "n61", "maaren", "guillot_maple", "hard_wall", NULL };
+  static real resolution = 0.001,delta=0,efac=500;
   static int  npow       = 12;
   t_pargs pa[] = {
-    { "-el",      FALSE, etENUM, {opt},
+    { "-el",     FALSE, etENUM, {opt},
       "Electrostatics type: cut, rf or pme" },
     { "-m",      FALSE, etENUM, {model},
       "Model for the tables" },
     { "-resol",  FALSE, etREAL, {&resolution},
       "Resolution of the table (nm)" },
+    { "-delta",  FALSE, etREAL, {&delta},
+      "Displacement in the Coulomb functions (nm), used as 1/(r+delta). Only for hard wall potential." },
+    { "-efac",   FALSE, etREAL, {&efac},
+      "Number indicating the steepness of the hardwall potential." },
     { "-n",      FALSE, etINT,  {&npow},
       "Power for the repulsion potential (with model n61 or maaren)" }
   };
@@ -212,7 +244,9 @@ int main(int argc,char *argv[])
   else if (strcmp(model[0],"guillot") == 0) 
     m = mGuillot;
   else if (strcmp(model[0],"guillot_maple") == 0) 
-    m = mGuillot_maple;
+    m = mGuillot_Maple;
+  else if (strcmp(model[0],"hard_wall") == 0) 
+    m = mHard_Wall;
   else 
     gmx_fatal(FARGS,"Invalid argument %s for option -m",opt[0]);
     
@@ -221,7 +255,7 @@ int main(int argc,char *argv[])
   case mGuillot:
     do_guillot(fp,eel,resolution);
     break;
-  case mGuillot_maple:
+  case mGuillot_Maple:
     do_guillot_maple(fp,eel,resolution);
     break;
   case mMaaren:
@@ -229,6 +263,9 @@ int main(int argc,char *argv[])
     break;
   case mN61:
     do_n61(fp,eel,resolution,npow);
+    break;
+  case mHard_Wall:
+    do_hard(fp,resolution,efac,delta);
     break;
   default:
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);

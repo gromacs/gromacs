@@ -252,7 +252,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->rlist > ir->rcoulomb);
   }
 
-  if (ir->coulombtype == eelPME) {
+  if ((ir->coulombtype == eelPME) ||
+      (ir->coulombtype == eelPMEUSER)) {
     if ((ir->pme_order < 4) || ((ir->pme_order % 2) == 1)) {
       if (ir->pme_order < 4)
 	ir->pme_order = 4;

@@ -62,7 +62,8 @@ enum {
 
 enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
-  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_OLD, eelENCADSHIFT, eelNR
+  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_OLD, eelENCADSHIFT, 
+  eelPMEUSER, eelNR
 };
 
 /* Ewald geometry */

@@ -555,6 +555,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
     case eelSWITCH:
       tabsel[etiCOUL] = etabCOULSwitch;
       break;
+    case eelPMEUSER:
     case eelUSER:
       tabsel[etiCOUL] = etabUSER;
       break;

@@ -1134,8 +1134,8 @@ int main (int argc, char *argv[])
 		bNeedVel,bGenVel,fr_time,ir,&state,sys);
   }
   
-  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) ||
-      (ir->coulombtype == eelEWALD)) {
+  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) || 
+      (ir->coulombtype == eelPMEUSER)|| (ir->coulombtype == eelEWALD)) {
     /* Calculate the optimal grid dimensions */
     max_spacing = calc_grid(state.box,opts->fourierspacing,
 			    &(ir->nkx),&(ir->nky),&(ir->nkz),nnodes);

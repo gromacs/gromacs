@@ -713,7 +713,8 @@ void init_forcerec(FILE *fp,
   fr->vdwtype    = ir->vdwtype;
 
   fr->bTwinRange = fr->rlistlong > fr->rlist;
-  fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
+  fr->bEwald     = (fr->eeltype==eelPME || fr->eeltype==eelPMEUSER || 
+		    fr->eeltype==eelEWALD);
   fr->bvdwtab    = (fr->vdwtype != evdwCUT);
   
   fr->bcoultab   = (fr->eeltype != eelCUT) && !EEL_RF(fr->eeltype);
@@ -808,7 +809,8 @@ void init_forcerec(FILE *fp,
   
   if (EEL_FULL(fr->eeltype)) {
     if (ir->efep != efepNO) {
-      if (fr->eeltype== eelEWALD || fr->eeltype==eelPME) {
+      if (fr->eeltype == eelEWALD || fr->eeltype == eelPME || 
+	  fr->eeltype == eelPMEUSER) {
 	if (fr->sc_alpha != 0)
 	  fprintf(fp,
 		  "\nWARNING: With %s the soft-core is performed on erfc(beta r)/r instead of on 1/r\n\n",eel_names[fr->eeltype]);
@@ -1120,6 +1122,7 @@ void force(FILE       *fplog,   int        step,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPME:
+    case eelPMEUSER:
       Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
 		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
 		   lambda,&dvdlambda,bGatherOnly);
@@ -1134,7 +1137,7 @@ void force(FILE       *fplog,   int        step,
     default:
       Vlr = 0;
       gmx_fatal(FARGS,"No such electrostatics method implemented %s",
-		  eel_names[fr->eeltype]);
+		eel_names[fr->eeltype]);
     }
     epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
