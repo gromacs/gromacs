@@ -184,7 +184,7 @@ will read the structure file and fill the box with water.
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> editconf -f speptide -o -dc 0.5<BR>
+<tt> editconf -f speptide -o -d 0.5<BR>
 genbox -cp out -cs -p speptide -o b4em
 </tt>
 <td></td>
@@ -470,34 +470,227 @@ Then we can start mdrunning
 You should do similar convergence checks (and more!) as for the position
 restrained simulation.
 
+<br><hr><br>
+
 <P><H3><A NAME="analysis">Analysis</A></H3>
 <p>
 We will not describe analysis in detail, because most analysis tools
 are described in the Analysis chapter of the printed manual.
 We just list a few of the possibilities within GROMACS. By now you should be
 able to start programs yourself.
-<P><UL>
-<LI> View the trajectory on your own X-screen (program 
-<a href="ngmx.html">ngmx</a>).
-<li> Monitor energies using 
-	<a href="g_energy.html">g_energy</a>.
+<P>
+<oL>
+<LI><p> View the trajectory on your own X-screen (program 
+<a href="ngmx.html">ngmx</a>). 
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<li> Root Mean Square Deviation with respect to the crystal
-	structure (program 
-	<a href="g_rms.html">g_rms</a>).
-<LI> Radius of Gyration (program 
-	<a href="g_gyrate.html">g_gyrate</a>).	).
+<tt> ngmx -s pr -f full
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+<font color="red">What happens to the peptide?</font>
+</p>
+</li>
+
+<li><p>The Root Mean Square Deviation (RMSD) with respect to the crystal
+structure (program 
+<a href="g_rms.html">g_rms</a>) is a measure of how well the 
+crystal (starting) structure is maintained in the simulation. 
+The RMSD at time t  is computed as
+&lt;(<b>r</b>(t)-<b>r</b>(0))<sup>2</sup>&gt;<sup>1/2</sup>
+after performing a least squares super position of the structure at
+time t onto the structure at time 0.	
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> g_rms -s pr -f full -o rmsd
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+Select the 1 for the number of groups, and select Calpha (Ca) for fitting 
+and for computing the RMSD. View the output graph with xmgrace.
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> xmgrace rmsd.xvg
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+<font color="red">Does the RMSD
+converge within the simulation? If not, what does this indicate?</font>
+</p>
+
+<LI><p>The Radius of Gyration (Rg, program 
+<a href="g_gyrate.html">g_gyrate</a>)) is a measure of the size of the
+protein. It is computed as the mean square distance of atoms from the center
+of mass of the molecule: Rg(t) = SUM<sub>i=1 .. N</sub> 
+(<b>r</b><sub>i</sub>-<b>r</b><sub>com</sub>)<sup>2</sup>
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> g_gyrate -s pr -f full -o gyrate
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+View the graph with xmgrace:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> xmgrace gyrate.xvg
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+<font color="red">Does the radius of gyration change during the
+simulation?</font>
+</P>
+
+<LI><p>The Ramachandran Plot shows whether the backbone torsion angles
+(&phi;/&psi;) of your
+peptide are within the allowed region. 
+(program <a href="g_rama.html">g_rama</a>).
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> g_rama -s pr -f full -o rama
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+View the graph with xmgrace:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> xmgrace rama.xvg
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+Here you have all the backbone torsion angles from the trajectory.
+<font color="red">Are all the angles in the allowed region?
+What kind of structure do the angles indicate?</font>
+</P>
+
+<LI><p>A salt bridge analysis (program 
+<a href="g_saltbr.html">g_saltbr</a>) will tell you whether
+there are any saltbridges formed or broken during the simulation.
+It will also tell you about repulsive electrostatic interactions.
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> g_saltbr -s pr -f full  -t 0.5 -sep
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+This will generate four graphs (in xmgrace format). Two of them refer to
+attractive interactions. 
+You can view the graphs with xmgrace:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<tt>xmgrace sb-GLU2:ARG10.xvg sb-GLU2:LYSH7.xvg -legend load
+</tt>
+<td></td>
+</tr>
+</table>
+<br>	
+<font color="red">Which interaction is the strongest?</font>
+Look at the peptide molecule again (using rasmol).
+<font color="red">Which atoms form the closest contact in the saltbridge?
+</font>
+</P>
+
+
 <LI> Secondary Structure analysis (program 
-	<a href="do_dssp.html">do_dssp</a>).
-	For this analysis you should have the dssp 
-	(<A HREF=#kabsch83>Kabsch & Sander, 1983</A>)
-	software installed. This program also produces
-	the solvent accesible surface area as a function of time.
-<LI> Ramachandran Plots (program 
-	<a href="g_rama.html">g_rama</a>).
-<LI> Salt Bridge analysis (program 
-	<a href="g_saltbr.html">g_saltbr</a>).
-</ul>
+<a href="my_dssp.html">my_dssp</a>).
+This analysis uses the dssp (dictionary of secondary structure in proteins, 
+<A HREF=#kabsch83>Kabsch & Sander, 1983</A>)  software. 
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> my_dssp -s pr -f full
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+Select protein when asked to select a group. 
+You can postprecess the output file with:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> xpm2ps -f ss.xpm -o ss.eps
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+This will give you a postscript file which you can either print or
+view with xpsview.
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+
+<tt> xpsview ss.eps
+</tt>
+<td></td>
+</tr>
+</table>
+<br>
+<font color="red">What happens to the Alpha helix (in blue)?</font>
+
+</p>
+</li>
+</ol>
+<br><hr><br>
 <P>
 You have been witness of a full MD simulation starting from a pdb-file.
 It's that easy, but then again, maybe it was not that easy. The
@@ -506,7 +699,7 @@ production run should be performed, the complexity is in the process
 itself and not in the software (at least, that's our opinion).</p>
 
 <hr>
-<a href="yourown.html"><h3>Go to the next step</h3></a>
+<a href="protunf.html"><h3>Go to the next step</h3></a>
 <hr>
 
 </BODY>

@@ -19,7 +19,10 @@ image_DATA = \
 	flow_uprightleft.gif    software.gif		\
 	faq.gif          	flow_leftrightdown.gif  \
 	flow_vline.gif          topologies.gif		\
-	plotje.gif		xvgr.gif	
+	plotje.gif		xvgr.gif		\
+	1ctf-0.jpg		1ctf-0.2.jpg		\
+	1ctf-0.5.jpg		1ctf-1.jpg		\
+	1ctf-4.jpg		1ctf-10.jpg
 
 EXTRA_DIST = ${image_DATA}
 
