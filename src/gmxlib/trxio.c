@@ -403,10 +403,8 @@ static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
   natoms = read_pdbatoms(status, &pdb, box, FALSE);
   fprintf(stderr,"No of atoms: %d.\n", natoms);
 
-  clear_mat(box);
-
-  if (box[0][0] == 0)
-    box[0][0]=box[1][1]=box[2][2]=100;
+  if (box[XX][XX] == 0)
+    box[XX][XX]=box[YY][YY]=box[ZZ][ZZ]=10;
     
   if (natoms==0) {
     fprintf(stderr,"No coordinates in pdb file\n");
@@ -759,7 +757,7 @@ int read_first_x_or_v(int *status,char *fn,
 }
 
 bool read_next_x_or_v(int status,real *t, int natoms, 
-		   rvec x[],rvec v[],matrix box)
+		      rvec x[],rvec v[],matrix box)
 {
   int step,ct;
   real prec,pt;
