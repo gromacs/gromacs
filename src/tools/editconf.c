@@ -667,7 +667,7 @@ int main(int argc, char *argv[])
     char    *grpnames;
     
     /* Get a group for principal component analysis */
-    fprintf(stderr,"\nSelect group for orientation of molecule:\n");
+    fprintf(stderr,"\nSelect group for the determining the orientation\n");
     get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
     
     /* Orient the principal axes along the coordinate axes */
