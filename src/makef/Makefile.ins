@@ -18,12 +18,12 @@ SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG
 CC		= insure	# def c-compiler
 CCC		= insure	# c++ compiler
 F77		= f77		# fortran
-CFLAGS		= -g
-CCFLAGS		= -g
-FFLAGS		= -g
+CFLAGS		= -g -n32
+CCFLAGS		= -g -n32
+FFLAGS		= -g -n32
 
 # Linking shit
-LDFLAGS		= -L$(LIBDIR) -g
+LDFLAGS		= -L$(LIBDIR) -g -n32
 
 #
 #	USER MODIFIABLE SECTION
