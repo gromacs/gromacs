@@ -641,6 +641,7 @@ int main(int argc,char *argv[])
     atoms.resname=NULL;
     atoms.atomname=NULL;
     atoms.atom=NULL;
+    atoms.pdbinfo=NULL;
     x=NULL;
     r=NULL;
   }
@@ -684,3 +685,6 @@ int main(int argc,char *argv[])
   
   return 0;
 }
+
+
+
