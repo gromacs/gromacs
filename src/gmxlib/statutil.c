@@ -542,7 +542,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     }
   } 
   if (bHelp || (strcmp(manstr[0],"no") != 0)) {
-#ifdef USE_MPI
+#ifdef PARALLEL
     if (gmx_parallel)
       gmx_abort(gmx_cpu_id(),gmx_cpu_num(),0);
 #endif
