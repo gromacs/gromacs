@@ -431,13 +431,14 @@ char *read_prot(char *confin_1,int ntb,bool bRotate,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "Genbox can do one of ___ things:[PAR]",
+    "Genbox can do one of 3 things:[PAR]",
     
     "1) Generate a box of solvent. Specify -cs and -bx, -by and -bz.[PAR]",
     
     "2) Solvate a solute configuration, eg. a protein, in a bath of solvent ",
     "molecules. Specify [TT]-cp[tt] (solute) and [TT]-cs[tt] (solvent). ",
     "The box specified in the solute coordinate file ([TT]-cp[tt]) is used.",
+    "The box can be modified with the program [TT]editconv[tt].",
     "Solvent molecules are removed from the box where the ",
     "distance between any atom of the solute molecule(s) and any atom of ",
     "the solvent molecule is less than the sum of the VanderWaals radii of ",
