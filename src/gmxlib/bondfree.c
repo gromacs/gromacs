@@ -96,11 +96,14 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
   }
   /* Do pre force calculation stuff which might require communication */
   if (idef->il[F_ORIRES].nr)
-    epot[F_ORIRESDEV] = calc_orires_dev(mcr,
-					idef->il[F_ORIRES].nr,
+    epot[F_ORIRESDEV] = calc_orires_dev(mcr,idef->il[F_ORIRES].nr,
 					idef->il[F_ORIRES].iatoms,
-					idef->iparams,x_s,fr,fcd);
-
+					idef->iparams,md,x_s,fcd);
+  if (idef->il[F_DISRES].nr)
+    calc_disres_R_6(mcr,idef->il[F_DISRES].nr,
+		    idef->il[F_DISRES].iatoms,
+		    idef->iparams,x_s,fcd);
+  
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (interaction_function[ftype].flags & IF_BOND && ftype!=F_CONNBONDS) {

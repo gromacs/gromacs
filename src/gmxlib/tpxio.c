@@ -54,7 +54,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 22;
+static int tpx_version = 23;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -556,10 +556,8 @@ static void do_block(t_block *block,bool bRead)
   ndo_int(block->a,block->nra,bDum);
 }
 
-static void do_atom(t_atom *atom,bool bRead)
+static void do_atom(t_atom *atom,int ngrp,bool bRead)
 {
-  int ngrp=egcNR;
-  
   do_real (atom->m);
   do_real (atom->q);
   do_real (atom->mB);
@@ -568,6 +566,10 @@ static void do_atom(t_atom *atom,bool bRead)
   do_ushort(atom->typeB);
   do_int (atom->ptype);
   do_int (atom->resnr);
+  if (file_version < 23) {
+    ngrp = 8;
+    atom->grpnr[8] = 0;
+  }
   do_nuchar(atom->grpnr,ngrp);
 }
 
@@ -576,6 +578,12 @@ static void do_grps(int ngrp,t_grps grps[],bool bRead)
   int i,j;
   bool bDum=TRUE;
   
+  if (file_version < 23) {
+    ngrp = 8;
+    grps[8].nr = 1;
+    snew(grps[8].nm_ind,1);
+  }
+
   for(j=0; (j<ngrp); j++) {
     do_int (grps[j].nr);
     if (bRead)
@@ -623,7 +631,7 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab)
     atoms->pdbinfo = NULL;
   }
   for(i=0; (i<atoms->nr); i++)
-    do_atom(&atoms->atom[i],bRead);
+    do_atom(&atoms->atom[i],egcNR,bRead);
   do_strstr(atoms->nr,atoms->atomname,bRead,symtab);
   if (bRead && (file_version <= 20)) {
     for(i=0; i<atoms->nr; i++) {

@@ -66,9 +66,16 @@ extern real rhodev(int natoms,real mass[],rvec x[],rvec xp[]);
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
+extern void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R);
+/* Calculates the rotation matrix R for which
+ * sum_i w_rls_i (xp_i - R x_i).(xp_i - R x_i)
+ * is minimal. This matrix is also used do_fit.
+ * x_rotated[i] = sum R[i][j]*x[j]
+ */
+
 extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
- * (w_rls[i]) are not take into account in fitting.
+ * (w_rls[i]) are not taken into account in fitting.
  * This makes is possible to fit eg. on Calpha atoms and orient
  * all atoms. The routine only fits the rotational part,
  * therefore both xp and x should be centered round the origin.

@@ -53,9 +53,17 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-void init_disres(FILE *log,int nbonds,t_inputrec *ir,t_fcdata *fcd);
+void init_disres(FILE *log,int nbonds,t_iatom forceatoms[],t_iparams ip[],
+		 t_inputrec *ir,t_commrec *mcr,t_fcdata *fcd);
 /* Initiate *fcd data, must be called once, nbonds is the number 
  * of iatoms in the ilist of the idef struct
+ */
+
+extern void calc_disres_R_6(t_commrec *mcr,
+			    int nfa,t_iatom forceatoms[],t_iparams ip[],
+			    rvec x[],t_fcdata *fcd);
+/* Calculates r and r^-3 (inst. and time averaged) for all pairs
+ * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
 
 extern real ta_disres(int nbonds,t_iatom fa[],t_iparams *fp,
@@ -63,7 +71,7 @@ extern real ta_disres(int nbonds,t_iatom fa[],t_iparams *fp,
 		      matrix box,real lambda,real *dvdlambda,
 		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
 		      t_fcdata *fcd);
-/* Do the actual calculation */
+/* Calculate the distance restraint forces, return the potential */
 
 #ifdef CPLUSPLUS
 }

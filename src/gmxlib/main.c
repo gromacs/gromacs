@@ -137,11 +137,13 @@ char *par_fn(char *base,int ftp,t_commrec *cr)
   return buf;
 }
 
-static void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
+void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
 {
   int  *ibuf,p;
   bool bCompatible;
 
+  fprintf(log,"Multi-checking %s... ",name);
+  
   snew(ibuf,mcr->nnodes);
   ibuf[mcr->nodeid] = val;
   gmx_sumi(mcr->nnodes,ibuf,mcr);
@@ -150,26 +152,16 @@ static void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
   for(p=1; p<mcr->nnodes; p++)
     bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
   
-  if (!bCompatible) {
-    fprintf(log,"%s is not equal for all subsystems\n",name);
+  if (bCompatible) 
+    fprintf(log,"OK\n");
+  else {
+    fprintf(log,"\n%s is not equal for all subsystems\n",name);
     for(p=0; p<mcr->nnodes; p++)
       fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
     fatal_error(0,"The %d subsystems are not compatible\n",mcr->nnodes);
   }
   
   sfree(ibuf);
-}
-
-void check_multisystem(FILE *log,t_commrec *mcr,t_fcdata *fcd)
-{
-  if (mcr->nnodes > 1) {
-    fprintf(log,"Checking the \"multi\" compatibility of the %d subsystems\n",
-	    mcr->nnodes);
-    check_multi_int(log,mcr,fcd->disres.npr,
-		    "The number of distance restraint pairs");
-    check_multi_int(log,mcr,fcd->orires.nr,
-		    "The number of orientation restraints");
-  }
 }
 
 void open_log(char *lognm,t_commrec *cr)

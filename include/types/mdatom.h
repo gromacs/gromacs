@@ -51,7 +51,7 @@ typedef struct {
   int           *typeA,*typeB;
   unsigned short        *ptype;
   unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cXTC,*cVCM;
-  unsigned short        *cU1,*cU2;
+  unsigned short        *cU1,*cU2,*cORF;
 } t_mdatoms;
 
 #endif

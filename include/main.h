@@ -60,9 +60,10 @@ extern void open_log(char *fn,t_commrec *cr);
  * communicated around the ring.
  */
 
-extern void check_multisystem(FILE *log,t_commrec *mcr,t_fcdata *fcd);
-/* Check if the subsystem are compatible for a "multi" simulation.
- * A fatal_error is generated when the systems are incompatible.
+extern void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name);
+/* Check if val is the same on all processors for a mdrun -multi run
+ * The string name is used to print to the log file and in a fatal error
+ * if the val's don't match.
  */
 
 extern t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[]);

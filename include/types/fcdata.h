@@ -41,39 +41,50 @@ typedef real rvec5[5];
 
 /* Distance restraining stuff */
 typedef struct {
-  int  dr_weighting;  /* Weighting of pairs in one restraint        */
-  bool dr_bMixed;     /* Use sqrt of the instantaneous times        *
-		       * the time averaged violation                */
-  real dr_fc;	      /* Force constant for disres,                 *
-		       * which is multiplied by a (possibly)        *
-		       * different factor for each restraint        */
-  real dr_tau;	      /* Time constant for disres		    */
-  real ETerm;         /* multiplication factor for time averaging   */
-  real ETerm1;        /* 1 - ETerm1                                 */
-  real exp_min_t_tau; /* Factor for slowly switching on the force   */
-  int  npr;           /* The number of distance restraint pairs     */
-  real sumviol;       /* The sum of violations                      */
-  real *rav;          /* The calculated time averaged distance      */
-  real *rt;           /* The calculated instantaneous distance      */
+  int  dr_weighting;  /* Weighting of pairs in one restraint              */
+  bool dr_bMixed;     /* Use sqrt of the instantaneous times              *
+		       * the time averaged violation                      */
+  real dr_fc;	      /* Force constant for disres,                       *
+		       * which is multiplied by a (possibly)              *
+		       * different factor for each restraint              */
+  real dr_tau;	      /* Time constant for disres		          */
+  real ETerm;         /* multiplication factor for time averaging         */
+  real ETerm1;        /* 1 - ETerm1                                       */
+  real exp_min_t_tau; /* Factor for slowly switching on the force         */
+  int  nr;            /* The number of distance restraints                */
+  int  npr;           /* The number of distance restraint pairs           */
+  real sumviol;       /* The sum of violations                            */
+  real *rt;           /* The calculated instantaneous distance (npr)      */
+  real *rav;          /* The calculated time averaged distance (npr)      */
+  real *Rtl_6;        /* The calculated instantaneous r^-6 (nr)           */
+  real *Rt_6;         /* The calculated inst. ens. averaged r^-6 (nr)     */
+  real *Rav_6;        /* The calculated time and ens. averaged r^-6 (nr)  */
 } t_disresdata;
 
 /* Orientation restraining stuff */
 typedef struct {
-  real   fc;          /* Force constant for the restraints                 */
-  real   edt;         /* Multiplication factor for time averaging          */
-  real   edt1;        /* 1 - edt                                           */
-  real   exp_min_t_tau; /* Factor for slowly switching on the force        */
-  int    nr;          /* The number of orientation restraints              */
-  int    nex;         /* The number of experiments                         */
-  tensor *S;          /* Array of order tensors for each expiriment (nexp) */
-  rvec5  *Dins;       /* The order matrix for all restraints (nr x 5)      */
-  rvec5  *Dtav;       /* The order matrix for all restraints (nr x 5) tav. */
-  real   *oinsl;      /* The calculated instantaneous orientations         */
-  real   *oins;       /* The calculated emsemble averaged orientations     */
-  real   *otav;       /* The calculated time and ensemble averaged orient. */
-  real   rmsdev;      /* The weighted (using kfac) RMS deviation           */
-  rvec5  *tmp;        /* An array of temporary 5-vectors (nex);            */ 
-  real   ***TMP;      /* An array of temporary 5x5 matrices (nex);         */
+  real   fc;          /* Force constant for the restraints                  */
+  real   edt;         /* Multiplication factor for time averaging           */
+  real   edt1;        /* 1 - edt                                            */
+  real   exp_min_t_tau; /* Factor for slowly switching on the force         */
+  int    nr;          /* The number of orientation restraints               */
+  int    nex;         /* The number of experiments                          */
+  int  nref;          /* The number of atoms for the fit                    */
+  real invmref;       /* The inverse total mass of the fit atoms            */
+  real *mref;         /* The masses of the reference atoms                  */
+  rvec *xref;         /* The reference coordinates for the fit (nref)       */
+  rvec *xtmp;         /* Temporary array for fitting (nref)                 */
+  matrix R;           /* Rotation matrix to rotate to the reference coor.   */
+  tensor *S;          /* Array of order tensors for each expiriment (nexp)  */
+  rvec5  *Dinsl;      /* The order matrix D for all restraints (nr x 5)     */
+  rvec5  *Dins;       /* The ensemble averaged D (nr x 5)                   */
+  rvec5  *Dtav;       /* The time and ensemble averaged D (nr x 5)          */
+  real   *oinsl;      /* The calculated instantaneous orientations          */
+  real   *oins;       /* The calculated emsemble averaged orientations      */
+  real   *otav;       /* The calculated time and ensemble averaged orient.  */
+  real   rmsdev;      /* The weighted (using kfac) RMS deviation            */
+  rvec5  *tmp;        /* An array of temporary 5-vectors (nex);             */ 
+  real   ***TMP;      /* An array of temporary 5x5 matrices (nex);          */
 } t_oriresdata;
 
 /* 

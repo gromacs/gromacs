@@ -211,15 +211,15 @@ static int *shuffle_xv(char *ndx,bool bSort,bool bVerbose,
   return forward;
 }
 
-int rm_disre(int nrmols,t_molinfo mols[])
+static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
   int  i,n;
   
   n=0;
   /* For all the molecule types */
-  for(i=0; (i<nrmols); i++) {
-    n+=mols[i].plist[F_DISRES].nr;
-    mols[i].plist[F_DISRES].nr=0;
+  for(i=0; i<nrmols; i++) {
+    n += mols[i].plist[ifunc].nr;
+    mols[i].plist[ifunc].nr=0;
   }
   return n;
 }
@@ -361,11 +361,16 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   }
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
-  
-  if (opts->eDisre==edrNone) {
-    i=rm_disre(nrmols,molinfo);
+
+  if (opts->eDisre == edrNone) {
+    i = rm_interactions(F_DISRES,nrmols,molinfo);
     if (bVerbose && i)
       fprintf(stderr,"removed %d distance restraints\n",i);
+  }
+  if (opts->bOrire == FALSE) {
+    i = rm_interactions(F_ORIRES,nrmols,molinfo);
+    if (bVerbose && i)
+      fprintf(stderr,"removed %d orientation restraints\n",i);
   }
   
   topcat(msys,nrmols,molinfo,ntab,tab,Nsim,Sims,bEnsemble);

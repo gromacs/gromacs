@@ -69,6 +69,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   snew(md->cFREEZE,md->nr);
   snew(md->cXTC,md->nr);
   snew(md->cVCM,md->nr);
+  snew(md->cORF,md->nr);
   snew(md->bPerturbed,md->nr);
 
   snew(md->cU1,md->nr);
@@ -106,6 +107,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
     md->cFREEZE[i]	= atoms->atom[i].grpnr[egcFREEZE];
     md->cXTC[i]      	= atoms->atom[i].grpnr[egcXTC];
     md->cVCM[i]      	= atoms->atom[i].grpnr[egcVCM];
+    md->cORF[i]      	= atoms->atom[i].grpnr[egcORFIT];
     if (md->massA[i] != 0.0) {
       tm               += md->massT[i];
       g = md->cFREEZE[i];
@@ -158,6 +160,7 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
     atoms->atom[i].grpnr[egcFREEZE] = md->cFREEZE[i];
     atoms->atom[i].grpnr[egcVCM]    = md->cVCM[i];
     atoms->atom[i].grpnr[egcXTC]    = md->cXTC[i];
+    atoms->atom[i].grpnr[egcORFIT]  = md->cORF[i];
 
     atoms->atom[i].grpnr[egcUser1]  = md->cU1[i];
     atoms->atom[i].grpnr[egcUser2]  = md->cU2[i];
@@ -181,6 +184,7 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
     sfree(md->cFREEZE);
     sfree(md->cVCM);
     sfree(md->cXTC);
+    sfree(md->cORF);
     
     sfree(md->cU1);
     sfree(md->cU2);

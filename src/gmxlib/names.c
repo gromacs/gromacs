@@ -120,7 +120,7 @@ char *ecomb_names[eCOMB_NR+1] = {
 
 char *gtypes[egcNR+1] = {
   "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-  "User1", "User2", "VCM", "XTC", NULL
+  "User1", "User2", "VCM", "XTC", "Or. Res. Fit", NULL
 };
 
 char *efep_names[efepNR+1] = {
@@ -136,6 +136,6 @@ char *edispc_names[edispcNR+1] = {
 };
 
 char *ecm_names[ecmNR+1] = { 
-  "None", "Linear", "Angular", NULL 
+  "Linear", "Angular", "None", NULL 
 };
  

@@ -158,11 +158,12 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     p_graph(debug,"Initial graph",graph);
   
   /* Distance Restraints */
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir),fcd);
+  init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
+	      top->idef.iparams,&(parm->ir),mcr,fcd);
 
   /* Orientation restraints */
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,&(parm->ir),mcr,fcd);
+	      top->idef.iparams,x,mdatoms,&(parm->ir),mcr,fcd);
 
   /* check if there are dummies */
   bDummies=FALSE;
@@ -185,10 +186,6 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   if (fr->eeltype == eelPME)
     init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,parm->ir.pme_order,
 	     HOMENR(nsb),parm->ir.bOptFFT);
-  
-  /* Check compatibility of the subsystems for mdrun -multi */
-  if (mcr)
-    check_multisystem(stdlog,mcr,fcd);
   
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (parm->ir.eI) {

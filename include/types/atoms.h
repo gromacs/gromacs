@@ -43,8 +43,9 @@ enum {
 /* The particle type */
  
 enum {
-  egcTC,    egcENER,   egcACC,   egcFREEZE, 
+  egcTC,    egcENER,   egcACC, egcFREEZE, 
   egcUser1, egcUser2,  egcVCM, egcXTC,
+  egcORFIT,
   egcNR 
 };
 

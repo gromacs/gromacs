@@ -95,19 +95,15 @@ real rhodev(int natoms,real mass[],rvec x[],rvec xp[])
   return calc_similar_ind(TRUE, natoms, NULL, mass, x, xp);
 }
 
-void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
+void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
 {
   int    c,r,n,j,m,i,irot;
   static double **omega=NULL,**om=NULL;
   double d[2*DIM],xnr,xpc;
-  matrix vh,vk,R,u;
-  /*
-  matrix vh,vk,R,vh_d,vk_d,u;
-  */
+  matrix vh,vk,u;
   real   mn;
   int    index;
   real   max_d;
-  rvec   x_old;
 
   if (omega == NULL) {
     snew(omega,2*DIM);
@@ -185,11 +181,21 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   oprod(vk[0],vk[1],vk[2]);
 
   /*determine R*/
-  for(c=0; c<DIM; c++)
-    for(r=0; r<DIM; r++)
-      R[c][r]=vk[0][r]*vh[0][c]+
-	      vk[1][r]*vh[1][c]+
-	      vk[2][r]*vh[2][c];
+  for(r=0; r<DIM; r++)
+    for(c=0; c<DIM; c++)
+      R[r][c] = vk[0][r]*vh[0][c] +
+	        vk[1][r]*vh[1][c] +
+	        vk[2][r]*vh[2][c];
+}
+
+void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
+{
+  int    i,j,m,r,c;
+  matrix R;
+  rvec   x_old;
+
+  /* Calculate the rotation matrix R */
+  calc_fit_R(natoms,w_rls,xp,x,R);
 
   /*rotate X*/
   for(j=0; j<natoms; j++) {
@@ -198,7 +204,7 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
     for(r=0; r<DIM; r++) {
       x[j][r]=0;
       for(c=0; c<DIM; c++)
-        x[j][r]+=R[c][r]*x_old[c];
+        x[j][r]+=R[r][c]*x_old[c];
     }
   }
 }

@@ -67,7 +67,7 @@ static char *SRCID_readir_c = "$Id$";
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
-  egexcl[STRLEN];
+  orirefitgrp[STRLEN],egexcl[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
@@ -260,6 +260,35 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 }
 
+static int str_nelem(char *str,int maxptr,char *ptr[])
+{
+  int  np=0;
+  char *copy;
+  
+  copy=strdup(str);
+  ltrim(copy);
+  while (*copy != '\0') {
+    if (np >= maxptr)
+      fatal_error(0,"Too many groups on line: '%s' (max is %d)",
+		  str,maxptr);
+    if (ptr) 
+      ptr[np]=copy;
+    np++;
+    while ((*copy != '\0') && !isspace(*copy))
+      copy++;
+    if (*copy != '\0') {
+      *copy='\0';
+      copy++;
+    }
+    ltrim(copy);
+  }
+  if (ptr == NULL)
+    sfree(copy);
+
+  return np;
+}
+
+
 void get_ir(char *mdparin,char *mdparout,
 	    t_inputrec *ir,t_gromppopts *opts,int *nerror)
 {
@@ -288,11 +317,11 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
   ITYPE ("nsteps",      ir->nsteps,     1);
+  CTYPE ("mode for center of mass motion removal");
+  EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
-  CTYPE ("mode center of mass motion removal");
-  EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);
-  CTYPE ("definition of the group for center of mass motion removal");
+  CTYPE ("group(s) for center of mass motion removal");
   STYPE ("comm-grps",   vcm,            NULL);
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
@@ -439,9 +468,12 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("disre-tau",	ir->dr_tau,	0.0);
   CTYPE ("Output frequency for pair distances to energy file");
   ITYPE ("nstdisreout", ir->nstdisreout, 100);
+  CTYPE ("Orientation restraints: No or Yes");
+  EETYPE("orire",       opts->bOrire,   yesno_names, nerror, TRUE);
   CTYPE ("Orientation restraints force constant and tau for time averaging");
   RTYPE ("orire-fc",	ir->orires_fc,	0.0);
   RTYPE ("orire-tau",	ir->orires_tau,	0.0);
+  STYPE ("orire-fitgrp",orirefitgrp,    NULL);
   CTYPE ("Output frequency for trace(SD) to energy file");
   ITYPE ("nstorireout", ir->nstorireout, 100);
 
@@ -583,32 +615,15 @@ void get_ir(char *mdparin,char *mdparout,
       ir->nstcomm = -ir->nstcomm;
     break;
   }
+  
+  if (opts->bOrire && str_nelem(orirefitgrp,MAXPTR,NULL)!=1) {
+    fprintf(stderr,"ERROR: Need one orientation restraint fit group\n");
+    (*nerror)++;
+  }
+  
+
   sfree(dumstr[0]);
   sfree(dumstr[1]);
-}
-
-static int str_nelem(char *str,int maxptr,char *ptr[])
-{
-  int  np=0;
-  char *copy;
-  
-  copy=strdup(str);
-  ltrim(copy);
-  while (*copy != '\0') {
-    if (np >= maxptr)
-      fatal_error(0,"Too many groups on line: '%s' (max is %d)",
-		  str,maxptr);
-    ptr[np++]=copy;
-    while ((*copy != '\0') && !isspace(*copy))
-      copy++;
-    if (*copy != '\0') {
-      *copy='\0';
-      copy++;
-    }
-    ltrim(copy);
-  }
-
-  return np;
 }
 
 static int search_string(char *s,int ng,char *gn[])
@@ -626,15 +641,18 @@ static int search_string(char *s,int ng,char *gn[])
 
 static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 			 t_block *block,char *gnames[],
-			 int gtype,char *title,int restnm,
+			 int gtype,int restnm,
 			 int *forward,bool bOneGroup,bool bVerbose)
 {
   unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
-  int i,j,gid,aj,ognr,ntot=0;
+  int    i,j,gid,aj,ognr,ntot=0;
+  char   *title;
 
   if (debug)
     fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
+  
+  title = gtypes[gtype];
     
   snew(cbuf,atoms->nr);
   for(i=0; (i<atoms->nr); i++)
@@ -871,7 +889,8 @@ void do_index(char *ndx,
 {
   t_block *grps;
   char    warnbuf[STRLEN],**gnames;
-  int     nr,ntcg,ntau_t,nref_t,nacc,nacg,nfreeze,nfrdim,nenergy,nuser,negexcl;
+  int     nr,ntcg,ntau_t,nref_t,nacc,nofg;
+  int     nacg,nfreeze,nfrdim,nenergy,nuser,negexcl;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   bool    bExcl,bSetTCpar;
@@ -920,7 +939,7 @@ void do_index(char *ndx,
 
   if (ir->eI != eiMD)
     ir->etc = etcNO;
-  do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
+  do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;
   ir->opts.ngtc=nr;
@@ -946,13 +965,13 @@ void do_index(char *ndx,
 	fatal_error(0,"ref_t for group %d negative",i);
     }
   }
-  
+
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);
   if (nacg*DIM != nacc)
     fatal_error(0,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
-  do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,"Acceleration",
+  do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
@@ -970,7 +989,7 @@ void do_index(char *ndx,
   if (nfrdim != DIM*nfreeze)
     fatal_error(0,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
-  do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,"Freeze",
+  do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
@@ -991,11 +1010,11 @@ void do_index(char *ndx,
       ir->opts.nFreeze[i][j]=0;
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
-  do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,"Energy",
+  do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,
 	       restnm,forward,FALSE,bVerbose);
   ir->opts.ngener=atoms->grps[egcENER].nr;
   nuser=str_nelem(vcm,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,"VCM",
+  do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,
 	       restnm,forward,FALSE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
@@ -1017,14 +1036,18 @@ void do_index(char *ndx,
   }
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",
+  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,
 	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,"User2",
+  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,
 	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,"xtc_grps",
+  do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,
 	       restnm,forward,TRUE,bVerbose);
+  nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
+  do_numbering(atoms,nofg,ptr1,grps,gnames,egcORFIT,
+	       restnm,forward,FALSE,bVerbose);
+
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {
       fprintf(stderr,"%-16s has %d element(s):",gtypes[i],atoms->grps[i].nr); 

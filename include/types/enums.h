@@ -123,6 +123,6 @@ enum {
 
 /* Center of mass motion selection */
 enum { 
-  ecmNO, ecmLINEAR, ecmANGULAR, ecmNR 
+  ecmLINEAR, ecmANGULAR, ecmNO, ecmNR 
 };
 

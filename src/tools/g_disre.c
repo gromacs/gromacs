@@ -289,7 +289,8 @@ int main (int argc,char *argv[])
   
   snew(fcd,1);
   ir.dr_tau=0.0;
-  init_disres(stdlog,top.idef.il[F_DISRES].nr,&ir,fcd);
+  init_disres(stdlog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
+	      top.idef.iparams,&ir,NULL,fcd);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
@@ -358,10 +359,8 @@ int main (int argc,char *argv[])
   
   thanx(stderr);
 
-#ifdef USE_MPI
   if (gmx_parallel)
-    MPI_Finalize();
-#endif
+    gmx_finalize();
   
   return 0;
 }

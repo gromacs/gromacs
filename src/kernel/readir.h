@@ -68,6 +68,7 @@ typedef struct {
   real tempi;
   int  seed;
   int  eDisre;
+  bool bOrire;
   bool bMorse;
 } t_gromppopts;
 

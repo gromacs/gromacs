@@ -42,7 +42,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
-<li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
+<li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
@@ -232,7 +232,7 @@ the last energies are always written</dd>
 <dd>precision to write to xtc trajectory</dd>
 <dt><h4>xtc_grps:</h4></dt>
 <dd>group(s) to write to xtc trajectory, default the whole system is written
-(if <b>nstxtcout is larger than zero)</dd>
+(if <b>nstxtcout</b> is larger than zero)</dd>
 <dt><h4>energygrps:</h4></dt>
 <dd>group(s) to write to energy file</dd>
 </dl>
@@ -689,11 +689,13 @@ solvent. This is especially useful for speeding up energy calculations with
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>no <!--Idx-->distance restraints<!--EIdx--> (ignore distance
-restraints information in topology file)</dd>
+restraint information in topology file)</dd>
 <dt><b>simple</b></dt>
-<dd>simple (per-molecule) distance restraints</dd>
+<dd>simple (per-molecule) distance restraints,
+ensemble averaging can be performed with <tt>mdrun -multi</tt></dd>
 <dt><b>ensemble</b></dt>
-<dd>distance restraints over an ensemble of molecules</dd>
+<dd>distance restraints over an ensemble of molecules in one simulation box,
+should only be used for special cases, such as dimers</dd>
 </dl></dd>
 <dt><h4>disre_weighting:</h4></dt>
 <dd><dl compact>
@@ -725,14 +727,29 @@ square root of the time averaged violation times the instantaneous violation </d
 of all atom pairs involved in restraints to the energy file
 (can make the energy file very large)</dd>
 
+<A NAME="nmr2">
+<dt><h4>orire:</h4></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>no <!--Idx-->orientation restraints<!--EIdx--> (ignore orientation
+restraint information in topology file)</dd>
+<dt><b>yes</b></dt>
+<dd>use orientation restraints, ensemble averaging can be performed
+with <tt>mdrun -multi</tt></dd>
+</dl>
 <dt><h4>orire_fc: (0) [kJ mol]</h4></dt>
 <dd>force constant for orientation restraints, which is multiplied by a
-(possibly) different factor for each restraint</dd>
+(possibly) different factor for each restraint, can be set to zero to
+obtain the orientations from a free simulation</dd>
 <dt><h4>orire_tau: (0) [ps]</h4></dt>
 <dd>time constant for orientation restraints running average</dd>
+<dt><h4>orire_fitgrp: </h4></dt>
+<dd>fit group for orientation restraining, for a protein backbone is a good
+choice</dd>
 <dt><h4>nstorireout: (100) [steps]</h4></dt>
 <dd>frequency to write the running time averaged orientations
-for all restraints to the energy file (can make the energy file very large)</dd>
+for all restraints to the energy file
+(can make the energy file very large)</dd>
 </dl>
 
 <A NAME="free"><br>
@@ -901,6 +918,11 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstxtcout</A><br>
 <A HREF="#nl">ns_type</A><br>
 <A HREF="#el2">optimize_fft</A><br>
+<A HREF="#nmr2">orire</A><br>
+<A HREF="#nmr2">orire_fc</A><br>
+<A HREF="#nmr2">orire_tau</A><br>
+<A HREF="#nmr2">orire_fitgrp</A><br>
+<A HREF="#nmr2">nstorireout</A><br>
 <A HREF="#nl">pbc</A><br>
 <A HREF="#pc">pcoupl</A><br>
 <A HREF="#pc">pcoupltype</A><br>
