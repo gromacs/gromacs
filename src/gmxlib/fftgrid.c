@@ -17,19 +17,9 @@ t_fftgrid *mk_fftgrid(int nx,int ny,int nz)
   grid->nz   = nz;
   grid->nxyz = nx*ny*nz;
   
-#ifdef USE_SGI_FFT
-  if (nx != nz) {
-    fprintf(stderr,"You can't use SGI optimized FFT routines when the number of grid points is not the same in X and Z directions. Sorry\n");
-    exit(1);
-  }
-  grid->la1  = nx+2;
-  grid->la2  = ny;
-  grid->nptr = nz*grid->la2*grid->la1;
-#else
   grid->la1  = ny;
   grid->la2  = nz;
   grid->nptr = nx*ny*nz;
-#endif
   grid->la12 = grid->la1*grid->la2;
 
   snew(grid->ptr,grid->nptr);
@@ -40,46 +30,6 @@ t_fftgrid *mk_fftgrid(int nx,int ny,int nz)
 void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir)
 {
   static bool bFirst=TRUE;
-  
-#ifdef USE_SGI_FFT
-  static real *coeff;
-
-  if (bVerbose) {
-    if (dir == FFTW_FORWARD)
-      fprintf(stderr,"Doing forward 3D-FFT (%d)\n",dir);
-    else
-      fprintf(stderr,"Doing backward 3D-FFT (%d)\n",dir);
-  }
-  
-  if (bFirst) {
-    fprintf(fp,"Going to use SGI optimized FFT routines.\n");
-    
-#ifdef DOUBLE
-    coeff  = dzfft3dui(grid->nx,grid->ny,grid->nz,NULL);
-#else
-    coeff  = scfft3dui(grid->nx,grid->ny,grid->nz,NULL);
-#endif
-    bFirst = FALSE;
-  }
-  if (dir == FFTW_FORWARD) {
-#ifdef DOUBLE
-    dzfft3du(dir,grid->nx,grid->ny,grid->nz,
-	     grid->ptr,grid->la1,grid->la2,coeff);
-#else
-    scfft3du(dir,grid->nx,grid->ny,grid->nz,
-	     grid->ptr,grid->la1,grid->la2,coeff);
-#endif
-  }
-  else if (dir == FFTW_BACKWARD) {
-#ifdef DOUBLE
-    zdfft3du(dir,grid->nx,grid->ny,grid->nz,
-	     grid->ptr,grid->la1,grid->la2,coeff);
-#else
-    csfft3du(dir,grid->nx,grid->ny,grid->nz,
-	      grid->ptr,grid->la1,grid->la2,coeff);
-#endif
-  }
-#else
   static fftwnd_plan forward_plan,backward_plan;
   
   if (bFirst) {
@@ -98,7 +48,6 @@ void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir)
     fftwnd(backward_plan,1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
   else
     fatal_error(0,"Invalid direction for FFT: %d",dir);
-#endif
 }
 
 void clear_fftgrid(t_fftgrid *grid)
@@ -110,11 +59,7 @@ void clear_fftgrid(t_fftgrid *grid)
   ptr   = grid->ptr;
   
   for (i=0; (i<ngrid); i++) {
-#ifdef USE_SGI_FFT
-    ptr[i] = 0;
-#else
     ptr[i].re = ptr[i].im = 0;
-#endif
   }
 }
 
@@ -164,27 +109,17 @@ void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
       for(iz=0; (iz<nz); iz++,i++) {
 	g = ptr[INDEX(ix,iy,iz)];
 	if (pdb) {
-#ifdef USE_SGI_FFT
-	  value = g;
-#else
 	  value = bReal ? g.re : g.im;
-#endif
 	  if (fabs(value) > TOL)
 	    fprintf(fp,pdbformat,"ATOM",i,"H","H",' ',
 		    i,ix*boxfac[XX],iy*boxfac[YY],iz*boxfac[ZZ],
 		    1.0,factor*value);
 	} 
 	else {
-#ifdef USE_SGI_FFT
-	  if (fabs(g) > TOL)
-	    fprintf(fp,"%s[%2d][%2d][%2d] = %12.5e\n",
-		    title,ix,iy,iz,g*factor);
-#else
 	  if ((fabs(g.re) > TOL) || (fabs(g.im) > TOL))
 	    fprintf(fp,"%s[%2d][%2d][%2d] = %12.5e + i %12.5e%s\n",
 		    title,ix,iy,iz,g.re*factor,g.im*factor,
 		    (g.im != 0) ? " XXX" : "");
-#endif
 	}
       }
   fflush(fp);

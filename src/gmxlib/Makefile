@@ -115,6 +115,9 @@ libxdrf.o:	libxdrf.m4 $(M4FILE)
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
 		$(CC) $(C-FLAGS) -c libxdrf.c
 		$(RM) libxdrf.c
+callf77.o:	callf77.m4 $(M4FILE)
+		$(M4) $(M4FILE) callf77.m4  > callf77.c
+		$(CC) $(C-FLAGS) -c callf77.c
 
 inloopf.o:	inloopf.m4 
 		$(CC) -E $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
