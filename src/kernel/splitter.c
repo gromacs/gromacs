@@ -295,10 +295,10 @@ static void split_blocks(bool bVerbose,int nnodes,
 			 t_block *cgs,t_block *sblock,real capacity[])
 {
   int      maxatom[MAXNODES];
-  int      i,ai,b0,b1;
+  int      i,ii,ai,b0,b1;
   int      nodeid,last_shk,nbor;
   t_border *border;
-  double   *load,tload;
+  double   tload;
   
   bool    bSHK;
   atom_id *shknum,*cgsnum;
@@ -312,18 +312,10 @@ static void split_blocks(bool bVerbose,int nnodes,
   cgsnum = make_invblock(cgs,cgs->nra+1);
   border = mk_border(bVerbose,cgs->nra,cgsnum,shknum,&nbor);
 
-  snew(load,nnodes);
-  for(i=0; (i<nnodes); i++)
-    load[i] = capacity[i]*cgs->nra;
-  
-  /* Now the load array holds the load per node in number of atoms */
-  if (debug)
-    for(i=0; (i<nnodes); i++)
-      fprintf(debug,"load[%3d] = %g\n",i,load[i]);
-      
-  tload  = load[0];
-  nodeid    = 0;
-  for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
+  tload  = capacity[0]*cgs->nra;
+  nodeid = 0;
+  /* Start at bor is 1, to force the first block on the first processor */
+  for(i=1; (i<nbor) && (tload < cgs->nra); i++) {
     if(i<(nbor-1)) 
       b1=border[i+1].atom;
     else
@@ -331,14 +323,20 @@ static void split_blocks(bool bVerbose,int nnodes,
 
     b0 = border[i].atom;
     
-    if (fabs(b0-tload)<fabs(b1-tload)) {
+    if ((fabs(b0-tload)<fabs(b1-tload))) {
       /* New nodeid time */
       cgs->multinr[nodeid]    = border[i].ic;
       /* Store the atom number here, has to be processed later */
       sblock->multinr[nodeid] = border[i].atom;
       maxatom[nodeid]         = b0;
       nodeid++;
-      tload += load[nodeid];
+      
+      /* Recompute target load */
+      tload = b0 +
+	(cgs->nra-b0)*nnodes*capacity[nodeid]/(nnodes-nodeid);
+
+      if (debug)
+	fprintf(debug,"tload now is %g (nodeid %d)\n",tload,nodeid);
     } 
   }
   /* Now the last one... */
@@ -365,7 +363,6 @@ static void split_blocks(bool bVerbose,int nnodes,
   sfree(shknum);
   sfree(cgsnum);
   sfree(border);
-  sfree(load);
 }
 
 static void def_mnr(int nr,int mnr[])
