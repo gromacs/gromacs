@@ -109,21 +109,19 @@ This manual is not complete and has no pretention to be complete, due
 to lack of time of the contributors. It is meant as a source of
 information and references for the {\gromacs} user.  It contains the
 background physics of MD simulations and is still being worked on
-which in some cases means that the information is not correct. Some of
-the programs that are described in the online manual pages are not in
-the standard distribution, and therefore some of the file types that
-are listed in the appendix are obsolete.
+which in some cases means that the information is not correct.
 
 When \normindex{citing} this document in any scientific publication
 please refer to it as:
 
 \begin{quote}
+\raggedright
 van der Spoel, D., van Buuren, A.~R., Apol, E., Meulenhoff, P.~J.,
 Tieleman, D.~P., Sij\-bers, A.~L.~T.~M., Hess, B., Feenstra, K.~A.,
 van Drunen, R. and Berendsen, H.~J.~C.  
-\hspace{1em} Gromacs {U}ser {M}anual version \gmxver
-\hspace{1em} Nij\-enborgh 4, 9747 AG Groningen, The
-Netherlands. Internet: {\wwwpage} 1997
+\hspace{0.6em} Gromacs {U}ser {M}anual version \gmxver
+\hspace{0.6em} Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
+Internet: {\wwwpage} 1998
 \end{quote}
 
 or, if you use {\BibTeX}, you can directly copy the following:
@@ -136,7 +134,7 @@ or, if you use {\BibTeX}, you can directly copy the following:
                  Feenstra and Rudi van Drunen and Herman J. C. Berendsen",
   address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
                  Internet: http://rugmd0.chem.rug.nl/~gmx",
-  year =         "1997"
+  year =         "1998"
 }
 \end{verbatim}
 Please do also cite the original {\gromacs} paper~\cite{Berendsen95a}.
@@ -157,11 +155,9 @@ The Netherlands				\\
 Fax: 31-50-634800
 
 \newpage
-\subsection*{Multimedia Manual}
+\subsection*{Online Manual}
 If you  have access to a WWW browser such as NCSA \normindex{mosaic}
-or \normindex{Netscape}
-please look up
-our HTML page: \\
+or \normindex{Netscape} please look up our HTML page: \\
 {\bf \wwwpage}.
 
 \subsection*{Violated Copyrights}
@@ -193,7 +189,6 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 %
 %	R E A L   M A N U A L
 %
-\
 \cleardoublepage
 \setcounter{page}{1}
 \pagenumbering{arabic}
@@ -203,7 +198,7 @@ The figure on frontpage was made with Molscript~\cite{Kraulis91}.
 \include{algorithms}
 \include{par-md}
 \include{forcefield}
-\input{pppm}
+\include{pppm}
 \include{topology}
 %\include{starting}
 \include{special}

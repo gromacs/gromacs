@@ -7,12 +7,20 @@ electrostatic interactions~\cite{Hockney81,Darden93,Luty95a}.
 The charges of all particles are spread over a grid of dimension
 ($n_x$,$n_y$,$n_z$) using a weighting function called the
 triangle-shaped charged distribution:
-\bea
-W(\ve{r})	&=	W(x)~W(y)~W(z)	& \\
-		&	\frac{3}{4} - \left(\frac{\xi}{h}\right)^2 & |\xi| \leq \frac{h}{2}	\\\nonumber
-W(\xi)		=&	\frac{1}{2}\left(\frac{3}{2} - \frac{|\xi|}{h}\right)^2 & \frac{h}{2} < |\xi| < \frac{3h}{2}	\\
-		&	0	& {\rm otherwise} \nonumber
-\eea
+\beq
+\begin{array}{lcl}
+W(\ve{r}) &=&	W(x)~W(y)~W(z)	\\[1ex]
+W(\xi)	&=& \left\{
+\begin{array}{ll}
+\frac{3}{4} - \left(\frac{\xi}{h}\right)^2 
+	& |\xi| \leq \frac{h}{2}				\\[0.5ex]
+\frac{1}{2}\left(\frac{3}{2} - \frac{|\xi|}{h}\right)^2 
+	& \frac{h}{2} < |\xi| < \frac{3h}{2}			\\[0.5ex]
+0	& \frac{3h}{2} \leq |\xi|				\\[0.5ex]
+\end{array}
+\right.
+\end{array}
+\eeq
 where $\xi$ (is x, y or z) is the distance to a grid point in the corresponding
 dimension. Only the 27 closest grid need to be taken into account for each charge.
 

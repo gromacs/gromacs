@@ -120,6 +120,10 @@ are essential for running and compiling {\gromacs}. Other variables are:
 	to 0, all file I/O will be unbuffered and therefore very slow.
 	This can be handy for debugging purposes, because it ensures
 	that all files are always totally up-to-date.
+\item   \myindex{GMXNPRI}, for SGI systems only. When set, gives the
+	default non-degrading priority (npri) for mdrun, e.g.\@
+	setting \verb'setenv GMXNPRI 250' causes all runs to be
+	performed at near-lowest priority by default.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as

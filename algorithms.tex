@@ -701,25 +701,24 @@ The system is constrained by $K$ time-independent constraint equations
 g_i(\ve{r}) = | \ve{r}_{i_1}-\ve{r}_{i_2} | - d_i = 0 ~~~~~~i=1,\ldots,K
 \fe
 
-In a numerical integration scheme LINCS is applied after an 
-unconstrained update, just like SHAKE.
-The algorithm works in two steps (see figure \ref{lincs_fig}).
-In the first step the projections of the new bonds on the old
-bonds are set to zero. In the second step a correction is 
-applied for the lengthening of the bonds due to rotation.
-The numerics for the first step and the second step are very similar. 
-A complete derivation of the algorithm can be found in \cite{Hess97}.
-Only a short description of the first step is given here.
+In a numerical integration scheme LINCS is applied after an
+unconstrained update, just like SHAKE. The algorithm works in two
+steps (see figure \ref{lincs_fig}). In the first step the projections
+of the new bonds on the old bonds are set to zero. In the second step
+a correction is applied for the lengthening of the bonds due to
+rotation. The numerics for the first step and the second step are very
+similar. A complete derivation of the algorithm can be found in
+\cite{Hess97}. Only a short description of the first step is given
+here.
+
 \begin{figure}
 \centerline{\psfig{figure=plots/lincs.eps,height=50mm}}
-\caption{
-\label{lincs_fig}Schematic picture showing the three position updates needed 
-for one timestep. 
-The dashed line is the old bond of length $d$, 
-the solid lines are the new bonds.
-$l=d \cos \theta$ 
-and $p=(2 d^2 - l^2)^{1 \over 2}$.
-}
+\caption[Schematic picture showing the three position updates needed 
+for one timestep.]{Schematic picture showing the three position
+updates needed for one timestep. The dashed line is the old bond of
+length $d$, the solid lines are the new bonds. $l=d \cos \theta$ and
+$p=(2 d^2 - l^2)^{1 \over 2}$.}
+\label{lincs_fig}
 \end{figure}
 
 A new notation is introduced for the gradient matrix of the constraint 
@@ -1007,7 +1006,12 @@ If we are interested in the left-hand term we can equally well compute
 the right-hand term.
 \begin{figure}
 \centerline{\psfig{figure=plots/free1.eps,width=6cm,angle=270}\hspace{2cm}\psfig{figure=plots/free2.eps,width=6cm,angle=270}}
-\caption{Free energy cycles. {\bf A:} to calculate $\Delta G_{12}$ or the free energy difference between the binding of inhibitor {\bf I} to enzymes {\bf E} respectively {\bf E'}. {\bf B:} to calculate $\Delta G_{12}$ which is the free energy difference for binding of inhibitors {\bf I} respectively {\bf I'} to enzyme {\bf E}.}
+\caption[Free energy cycles.]{Free energy cycles. {\bf A:} to
+calculate $\Delta G_{12}$ or the free energy difference between the
+binding of inhibitor {\bf I} to enzymes {\bf E} respectively {\bf
+E'}. {\bf B:} to calculate $\Delta G_{12}$ which is the free energy
+difference for binding of inhibitors {\bf I} respectively {\bf I'} to
+enzyme {\bf E}.}
 \label{fig:free}
 \end{figure}
 
@@ -1184,7 +1188,11 @@ per particle is dependent on the {\em total number} $N$ of particles
 (see Figure~\ref{Fig:decomp}) and on the {\em particle number} $i$.
 The exact formulae are given in Table~\ref{Tab:decomp}
 \begin{table}
-\caption{The number of $j$ particles per $i$ particle is a function of the total number of particles $N$ and particle number $i$. Note that the / operator implies integer division, ie. with truncation.}
+\caption[The number of $j$ particles per $i$ particle is a function of
+the total number of particles $N$ and particle number $i$.]{The number
+of $j$ particles per $i$ particle is a function of the total number of
+particles $N$ and particle number $i$. Note that the / operator
+implies integer division, ie. with truncation.}
 \captspace
 \label{Tab:decomp}
 \centerline{
