@@ -386,7 +386,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
       ac_fit[0] = 0.002*n*dt;
       ac_fit[1] = 0.95;
       ac_fit[2] = 0.2*n*dt;
-      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,dt*n/nbmin,
+      do_lmfit(n/nb_min,ac,fitsig,dt,0,0,dt*n/nb_min,
               bDebugMode(),effnEXP3,ac_fit,0);
       ac_fit[3] = 1 - ac_fit[1];
 
