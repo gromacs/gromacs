@@ -190,12 +190,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With coulombtype = %s rcoulomb must be <= rlist",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb > ir->rlist);
-    sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
+    if(ir->coulombtype != eelEWALD && ir->coulombtype != eelPME) {
+	sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
+		eel_names[ir->coulombtype]);
+	CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
+    }
     }
   }
 
