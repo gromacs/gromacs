@@ -43,7 +43,8 @@ extern "C" {
 #define MAXPROC 	256		/* Max number of processors 	*/
 
 #ifndef HAVE_BOOL
-typedef int         	bool;
+#define bool int
+  /* typedef int         	bool; */
 #endif
 
 
