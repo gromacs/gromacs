@@ -279,7 +279,7 @@ int main(int argc,char *argv[])
       "Execute command for every output frame with the frame number "
       "as argument" },
     { "-timestep", FALSE,  etREAL, {&timestep},
-      "Change time step between frames" },
+      "Set time step between output frames" },
     { "-app", FALSE,  etBOOL, {&bAppend},
       "Append output"},
     { "-sep", FALSE,  etBOOL, {&bSeparate},
@@ -587,7 +587,7 @@ int main(int argc,char *argv[])
 	  
 	  /* calc new time */
 	  if (bTimeStep) 
-	    fr.time = tzero+frame*timestep;
+	    fr.time = tzero+outframe*timestep;
 	  else
 	    if (bSetTime)
 	      fr.time += tshift;
