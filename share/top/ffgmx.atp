@@ -46,4 +46,4 @@
    OD  15.99940 ;     DMSO Oxygen
    CD  15.03500 ;     DMSO Carbon
   CHE  12.01100 ;     HEME RING CARBON
- MNH3  19.0234  ;     Dummy mass in rigid NH3 group
+ MNH3   0       ;     Dummy mass in rigid tetraedrical NH3 group
