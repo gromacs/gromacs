@@ -121,7 +121,6 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
     fprintf(stderr,"Error: no groups in indexfile\n");
     exit(1);
   }
-  printf("There are %d groups in the index\n",grps->nr);
   for(i=0; (i<grps->nr); i++)
     printf("Group %5d (%12s) has %5d elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
@@ -132,8 +131,10 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
 	if ((gnr1<0) || (gnr1>=grps->nr))
 	  printf("Select between %d and %d.\n",0,grps->nr-1);
       }	while ((gnr1<0) || (gnr1>=grps->nr));
-    else 
+    else {
+      printf("There is one group in the index\n");
       gnr1=0;
+    }
     gnames[i]=strdup(grpname[gnr1]);
     isize[i]=grps->index[gnr1+1]-grps->index[gnr1];
     snew(index[i],isize[i]);
