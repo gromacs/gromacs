@@ -464,7 +464,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     fprintf(stderr,"Maximum force: %12.5e\n",Fmax[Min]); 
     if (bDone)
-      sprintf(sbuf,"\n%s converged to %g\n",SD,ftol); 
+      sprintf(sbuf,"\n%s converged to %g in %d steps\n",SD,ftol,count); 
     else 
       sprintf(sbuf,"\n%s did not converge in %d steps\n",SD,min(count,nsteps));
     fprintf(stderr,sbuf);
