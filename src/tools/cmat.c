@@ -198,14 +198,17 @@ void swap_mat(t_mat *m)
 void low_rmsd_dist(char *fn,real maxrms,int nn,real **mat)
 {
   FILE   *fp;
-  int    i,j,*histo;
+  int    i,j,*histo,x;
   real   fac;
   
   fac = 100/maxrms;
   snew(histo,101);
-  for(i=0; (i<nn); i++) 
-    for(j=i+1; (j<nn); j++)
-      histo[(int)(fac*mat[i][j])]++;
+  for(i=0; i<nn; i++) 
+    for(j=i+1; j<nn; j++) {
+      x = (int)(fac*mat[i][j]+0.5);
+      if (x <= 100)
+	histo[x]++;
+    }
       
   fp = xvgropen(fn,"RMS Distribution","RMS (nm)","a.u.");
   for(i=0; (i<101); i++)
