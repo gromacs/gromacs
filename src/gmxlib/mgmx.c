@@ -564,6 +564,7 @@ static windex mk_filedlgs(int parent,int top,int nfile,
 					 get_widget(parent),args,narg),dbuf);
     }
     fnm_index[i] = www[nwcTEXT];
+    set_windex_orignm(www[nwcTEXT],fnm[i].fn);
     set_widget_ftp(www[nwcFDLG],ftp);
     set_widget_other(www[nwcFDLG],get_widget(www[nwcTEXT]));
     
@@ -1023,13 +1024,20 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
 	narg = 0;
 	XtSetArg(args[narg],XmNset,&xmrb); narg++;
 	XtGetValues(www,args,narg);
-	fnm[i].flag = fnm[i].flag | ffSET;
+	if (xmrb)
+	  fnm[i].flag = fnm[i].flag | ffSET;
       }
       else
 	fatal_error(0,"No toggle button for optional file (option %s)",
 		    fnm[i].opt);
-      if (strcmp(fnm[i].fn,ftp2defnm(fnm[i].ftp)) != 0)
+      if (strcmp(fnm[i].fn,get_windex_orignm(fnm_index[i])) != 0) {
+	if (debug) {
+	  fprintf(debug,"File corr. to option %s has been modified from\n"
+		  "'%s' to '%s'\n",fnm[i].opt,
+		  get_windex_orignm(fnm_index[i]),fnm[i].fn);
+	}
 	fnm[i].flag = fnm[i].flag | ffSET;
+      }
     }
     if (debug)
       fprintf(debug,"%s,%d: File is now %s\n",__FILE__,__LINE__,buf);

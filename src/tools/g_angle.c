@@ -51,7 +51,8 @@ int main(int argc,char *argv[])
     "g_angle computes the angle distribution for a number of angles",
     "or dihedrals. This way you can check whether your simulation",
     "is correct. With option -ov you can plot the average angle of",
-    "a group of angles as a function of time.[PAR]",
+    "a group of angles as a function of time. With the -all option",
+    "the first graph is the average, the rest are the individual angles.[PAR]",
     "With the -of option g_angle also calculates the fraction of trans",
     "dihedrals (only for dihedrals) as function of time, but this is",
     "probably only fun for a selected few.[PAR]",
@@ -60,14 +61,14 @@ int main(int argc,char *argv[])
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash."
   };
-  static char *opt="A";
+  static char *opt[] = { "angles", "dihedrals", "impropers", "ryckaert-bellemans", NULL };
   static bool bALL=FALSE,bChandler=FALSE;
   static real binwidth=1;
   t_pargs pa[] = {
-    { "-type", FALSE, etSTR, &opt,
-      "Select either A (angles), D (dihedrals), I (impropers), R (Ryckaert-Bellemans)" },
+    { "-type", FALSE, etENUM, opt,
+      "Select either type of angle you want to analyse" },
     { "-all",    FALSE,  etBOOL, &bALL,
-      "Plot all angles separately in the averages file, in the order of appearance in the index file. This way the first graph is the average, the rest are the individual angles." },
+      "Plot all angles separately in the averages file, in the order of appearance in the index file." },
     { "-binwidth", FALSE, etREAL, &binwidth,
       "binwidth (degrees) for calculating the distribution" },
     { "-chandler", FALSE,  etBOOL, &bChandler,
@@ -117,26 +118,21 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,asize(bugs),bugs);
 		    
-  if (!opt)
-    usage(argv[0],opt);
-    
   mult   = 4;
   maxang = 360.0;
   bRb    = FALSE;
-  switch(opt[0]) {
-  case 'A':
+  switch(opt[0][0]) {
+  case 'a':
     mult   = 3;
     maxang = 180.0;
     break;
-  case 'D':
+  case 'd':
     break;
-  case 'I':
+  case 'i':
     break;
-  case 'R':
+  case 'r':
     bRb = TRUE;
     break;
-  default:
-    usage(argv[0],opt);
   }
 
   /* Calculate bin size */
@@ -177,7 +173,7 @@ int main(int argc,char *argv[])
    */
   if (bTrans || bCorr  || bALL)
     snew(dih,nangles);
-
+  
   snew(angstat,maxangstat);
 
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
