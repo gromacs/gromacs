@@ -45,7 +45,8 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 {
   int  i,j,l,m,n0,nrfp,nral;
   int  src_natoms,dest_natoms;
-  real fac;
+  int  index,max_index;
+  real fac,type;
   
   nrfp        = NRFP(ftype);
   nral        = NRAL(ftype);
@@ -59,18 +60,33 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
   
   /* First new entry. */
   l=dest->nr;
-  
+ 
+  if (src->nr)
+    max_index = src->param[0].c[1];
+  for(i=0; i<src->nr; i++)
+    max_index = max(src->param[i].c[1],max_index);
+      
   /* If we have to do ensemble averaging we interchange the loops! */
   if (bEnsemble) {
     if (src->nr > 0) {
       fac=pow((real)copies,-1.0/6.0);
-      fprintf(stderr,"multiplying every distance bound by %.3f for %d copies of %s\n",fac,copies,name);
+      fprintf(stderr,"multiplying every type 1 distance bound by %.3f for %d copies of %s\n",fac,copies,name);
       for (i=0; (i<src->nr); i++) {
 	for (j=0; (j<copies); j++) {
+	  type  = src->param[i].c[0];
+	  index = src->param[i].c[1];
+	  if ((type == 2) && (j>0)) {
+	    max_index++;
+	    index = max_index;
+	  }
+	  dest->param[l].c[0] = type;
+	  dest->param[l].c[1] = index;
 	  for(m=0; (m<2); m++)
 	    dest->param[l].c[m] = src->param[i].c[m];
-	  for(m=2; (m<nrfp); m++)
+	  for(m=2; (m<nrfp-1); m++)
 	    dest->param[l].c[m] = src->param[i].c[m]*fac;
+	  /* do not change the factor for the force-constant */
+	  dest->param[l].c[nrfp-1] = src->param[i].c[nrfp-1];
 	  for (m=0; (m<nral); m++)
 	    dest->param[l].a[m] = src->param[i].a[m]+
 	      j*src_natoms+dest_natoms;
@@ -86,6 +102,10 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	       (char *)&(src->param[i]),(size_t)sizeof(src->param[i]));
 	for (m=0; (m<nral); m++)
 	  dest->param[l].a[m] += n0;
+	if (j>0) {
+	  max_index++;
+	  dest->param[l].c[1] = max_index;
+	}
 	l++;
       }
       n0 += dstart;

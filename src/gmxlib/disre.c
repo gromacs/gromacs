@@ -95,7 +95,7 @@ real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   
   atom_id     ai,aj;
   int         fa,fa_start,i,pair,ki,kj,m;
-  int         restraint,pair_nr,pair_nr_start,rindex,npairs;
+  int         restraint,pair_nr,pair_nr_start,rindex,npairs,type;
   rvec        dx[MAX_DRPAIRS];
   real        weight_rt_1[MAX_DRPAIRS];
   rvec        *fshift;
@@ -103,8 +103,8 @@ real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   real        k0,f_scal,fmax_scal,fk_scal,fij;
   real        tav_viol,instant_viol,mixed_viol,violtot;
   real        tav_viol_Rav7,instant_viol_Rav7;
-  real        up1,up2;
-  bool        bConservative,bViolation;
+  real        up1,up2,low;
+  bool        bConservative,bMixed,bViolation;
   static real exp_min_t_tau=1.0;
 
   /* scaling factor to smoothly turn on the restraint forces *
@@ -116,8 +116,8 @@ real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   violtot = 0;
   pair_nr = 0;
   
-  /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraint, *
-   * the total number of atoms pairs is nfa/3                         */  
+  /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
+   * the total number of atoms pairs is nfa/3                          */  
   fa=0;
   while (fa < nfa) {
     restraint = forceatoms[fa];
@@ -157,42 +157,71 @@ real ta_disres(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
       Rt_6   += rt_3*rt_3;
     }
     npairs=pair;
-    /* save some flops when there is only one pair */
-    bConservative = (dr_weighting == edrwConservative) && (npairs>1);
     
     /* Take action depending on restraint, calculate scalar force */
-    up1       = ip[restraint].disres.up1;
-    up2       = ip[restraint].disres.up2;
-    k0        = smooth_fc*ip[restraint].disres.fac;
+    type = ip[restraint].disres.type;
+    up1  = ip[restraint].disres.up1;
+    up2  = ip[restraint].disres.up2;
+    low  = ip[restraint].disres.low;
+    k0   = smooth_fc*ip[restraint].disres.fac;
 
+    /* save some flops when there is only one pair */
+    if (type != 2) {
+      bConservative = (dr_weighting == edrwConservative) && (npairs>1);
+      bMixed        = dr_bMixed;
+    } else {
+      bConservative = npairs>1;
+      bMixed        = FALSE;
+    }
+    
     fmax_scal = -k0*(up2-up1); 
 
-    /* Compute rav from ensemble / restraint averaging */
-    Rav  = pow(Rav_6,-sixth);
     Rt   = pow(Rt_6,-sixth);
-
-    bViolation = (Rav > up1);
+    /* Compute rav from ensemble / restraint averaging */
+    if (type != 2)
+      Rav  = pow(Rav_6,-sixth);
+    else
+      /* Dirty trick to not use time averaging when type=2 */
+      Rav  = Rt; 
+    
+    if (Rav > up1) {
+      bViolation = TRUE;
+      tav_viol = Rav - up1;
+    } else if (Rav < low) {
+      bViolation = TRUE;
+      tav_viol = Rav - low;
+    } else
+      bViolation = FALSE;
     if (bViolation) {
-      tav_viol = Rav-up1;
-      if (!dr_bMixed) {
+      if (!bMixed) {
 	f_scal   = -k0*tav_viol;
-	violtot += tav_viol;
-      } else
+	violtot += fabs(tav_viol);
+      } else {
 	if (Rt > up1) {
-	  instant_viol = Rt - up1;
+	  if (tav_viol > 0)
+	    instant_viol = Rt - up1;
+	  else
+	    bViolation = FALSE;
+	} else if (Rt < low) {
+	  if (tav_viol < 0)
+	    instant_viol = Rt - low;
+	  else
+	    bViolation = FALSE;
+	} else
+	  bViolation = FALSE;
+	if (bViolation) {
 	  mixed_viol   = sqrt(tav_viol*instant_viol);
 	  f_scal       = -k0*mixed_viol;
 	  violtot     += mixed_viol;
-	} else
-	  bViolation = FALSE;
+	}
+      }
     }
-    
     /* save some flops and don't use variables when they are not calculated */
     if (bViolation) {
       /* Correct the force for the number of restraints */
       if (bConservative) {
 	f_scal  = max(f_scal,fmax_scal);
-	if (!dr_bMixed)
+	if (!bMixed)
 	  f_scal *= Rav/Rav_6;
 	else {
 	  f_scal /= 2*mixed_viol;
