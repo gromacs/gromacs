@@ -571,7 +571,7 @@ void init_forcerec(FILE *fp,
 
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
-  fr->bvdwtab    = TRUE; // fr->vdwtype != evdwCUT;
+  fr->bvdwtab    = fr->vdwtype != evdwCUT;
   fr->bRF        = (fr->eeltype==eelRF || fr->eeltype==eelGRF) &&
 		    fr->vdwtype==evdwCUT;
   fr->bcoultab   = (fr->eeltype!=eelCUT && !fr->bRF) || fr->bEwald;
@@ -716,6 +716,9 @@ void init_forcerec(FILE *fp,
 	      fr->rvdw_switch,fr->rvdw);
   } 
 
+  if (fr->bBHAM && (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwSWITCH))
+    fatal_error(0,"Switch/shift interaction not supported with Buckingham");
+  
   if (fp)
     fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
@@ -726,7 +729,7 @@ void init_forcerec(FILE *fp,
   }
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);
-
+  
   /* Copy the GBSA data (radius, volume and surftens for each
    * atomtype) from the topology atomtype section to forcerec.
    */
