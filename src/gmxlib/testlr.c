@@ -71,19 +71,21 @@ void test_pppm(FILE *log,       bool bVerbose,
 	       real charge[],   rvec box,
 	       real phi[],      real phi_s[],
 	       int nmol,        t_commrec *cr,
-	       bool bOld)
+	       bool bOld,       t_block *cgs)
 {
-  char buf[256];
-  real ener;
-  int  i;
-  t_nrnb nrnb;
+  char       buf[256];
+  real       ener;
+  int        i;
+  t_nrnb     nrnb;
+  t_nsborder nsb;
   
   init_nrnb(&nrnb);
+  calc_nsb(cgs,1,&nsb,0);
   
   /* First time only setup is done! */
-  init_pppm(log,cr,bVerbose,bOld,box,ghatfn,ir);
+  init_pppm(log,cr,&nsb,bVerbose,bOld,box,ghatfn,ir);
   
-  ener = do_pppm(log,bVerbose,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+  ener = do_pppm(log,bVerbose,x,f,charge,box,phi,cr,&nsb,&nrnb);
   fprintf(log,"Vpppm = %g\n",ener);
   
   sprintf(buf,"PPPM-%d.pdb",ir->nkx);
@@ -254,12 +256,12 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   if (nprocs > 1) {
-    cr = init_par(argv);
+    cr = init_par(&argc,argv);
     open_log(ftp2fn(efLOG,NFILE,fnm),cr);
     log = stdlog;
   }
   else {
-    cr     = init_par(argv);
+    cr     = init_par(&argc,argv);
     log    = ftp2FILE(efLOG,NFILE,fnm,"w");
     stdlog = log;
   }
@@ -330,7 +332,7 @@ int main(int argc,char *argv[])
   if (bPPPM) 
     test_pppm(log,bVerbose,bGGhat,opt2fn("-g",NFILE,fnm),
 	      &(top.atoms),&ir,x,f_pppm,charge,box_size,phi_p3m,phi_s,nmol,
-	      cr,bOld);
+	      cr,bOld,&(top.blocks[ebCGS]));
   
   if (bPoisson)
     test_poisson(log,bVerbose,
