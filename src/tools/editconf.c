@@ -74,16 +74,8 @@ real calc_mass(t_atoms *atoms)
 
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {
-    if ((atoms->atom[i].m = get_mass(*atoms->resname[atoms->atom[i].resnr], 
-				     *atoms->atomname[i])) == 0.0) {
-      if ( ((*atoms->atomname[i])[0]=='H') ||
-	   (isdigit((*atoms->atomname[i])[0]) && 
-	    ((*atoms->atomname[i])[1]=='H')) ) {
-	atoms->atom[i].m=1.008; /* proton mass */
-      } else {
-	atoms->atom[i].m=12.0110; /* carbon mass */
-      }
-    }
+    atoms->atom[i].m = get_mass(*atoms->resname[atoms->atom[i].resnr], 
+				*atoms->atomname[i]);
     tmass += atoms->atom[i].m;
   }
 

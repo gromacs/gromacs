@@ -44,6 +44,12 @@ static char *SRCID_mdebin_c = "$Id$";
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
 
 static bool bEner[F_NRE];
+static char *boxs_nm[] = {
+  "Box-X (nm)", "Box-Y (nm)", "Box-Z (nm)","Volume (nm^3)","Density (kg/l)",
+  "pV"
+};
+#define NBOXS asize(boxs_nm)
+
 static bool bShake,bPC;
 static int  f_nre=0;
 
@@ -52,9 +58,6 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
 		      bool bPcoupl)
 {
   char *ener_nm[F_NRE];
-  static char *boxs_nm[] = {
-    "Box-X (nm)", "Box-Y (nm)", "Box-Z (nm)","Volume (nm^3)","Density (kg/l)"
-  };
   static char *vir_nm[] = {
     "Vir-XX", "Vir-XY", "Vir-XZ",
     "Vir-YX", "Vir-YY", "Vir-YZ",
@@ -119,7 +122,7 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
   md->ebin  = mk_ebin();
   md->ie    = get_ebin_space(md->ebin,f_nre,ener_nm);
   if (bPC)
-    md->ib    = get_ebin_space(md->ebin,asize(boxs_nm),boxs_nm);
+    md->ib    = get_ebin_space(md->ebin,NBOXS,boxs_nm);
   if (bShake) {
     md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
     md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
@@ -238,18 +241,25 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
   static real *ttt=NULL;
   static rvec *uuu=NULL;
   int    i,j,k,kk,m,n,gid;
-  real   bs[5];
+  real   bs[NBOXS];
   real   eee[egNR];
   real   ecopy[F_NRE];
   
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
-  for(m=0; (m<DIM); m++) 
-    bs[m]=box[m][m];
-  bs[3] = bs[XX]*bs[YY]*bs[ZZ];
-  bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
-  if (bPC)
-    add_ebin(md->ebin,md->ib,5,bs,step);
+  if (bPC) {
+    for(m=0; (m<DIM); m++) 
+      bs[m]=box[m][m];
+    /* This is the volume */
+    bs[3] = bs[XX]*bs[YY]*bs[ZZ];
+    
+    /* This is the density */
+    bs[4] = (tmass*AMU)/(bs[3]*NANO*NANO*NANO*KILO);
+    
+    /* This is pV (in kJ/mole) */  
+    bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
+    add_ebin(md->ebin,md->ib,NBOXS,bs,step);
+  }
   if (bShake) {
     add_ebin(md->ebin,md->isvir,9,svir[0],step);
     add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
@@ -351,7 +361,7 @@ void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
     return;
     
   if (bPC) {
-    pr_ebin(log,md->ebin,md->ib,5,5,mode,steps,TRUE);      newline();
+    pr_ebin(log,md->ebin,md->ib,NBOXS,5,mode,steps,TRUE);      newline();
   }
   if (bShake) {
     fprintf(log,"   Shake Virial %s\n",kjm);

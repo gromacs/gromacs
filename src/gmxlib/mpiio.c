@@ -28,6 +28,7 @@
  */
 static char *SRCID_mpiio_c = "$Id$";
 
+#include <string.h>
 #include "mpiio.h"
 #include "fatal.h"
 #include "main.h"
@@ -111,13 +112,13 @@ int mpiio_setup(int *argc,char **argv,int *nprocs)
   char   buf[256];
   int    resultlen;               /* actual length of processor name      */
   int    i,flag;
-  
+
   /* Call the MPI routines */
   (void) MPI_Init(argc,&argv);
   (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_procs );
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
   (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
-  
+
   fprintf(stderr,"NPROCS=%d, MYRANK=%d, HOSTNAME=%s\n",
 	  mpi_num_procs,mpi_my_rank,mpi_hostname);
   

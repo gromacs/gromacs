@@ -116,7 +116,8 @@ void search_acceptors(t_topology *top, int isize, atom_id *index,
 	(bNitAcc && (*top->atoms.atomname[i][0] == 'N')))
       if (in_list(i,isize,index))
 	add_acc(i,&max_nr_a,nr_a,a);
-  srenew((*a),(*nr_a));
+  /* DvdS: this is done in add_acc allready */
+  /*srenew((*a),(*nr_a));*/
 }
 
 void add_dh(int id, int ih, int *max_nr,int *nr,atom_id **d,atom_id **h)
@@ -141,9 +142,10 @@ void search_donors(t_topology *top, int isize, atom_id *index,
   bool stop;
   
   max_nr_d=*nr_d;
-  for(func_type=0; func_type < F_NRE; func_type++) {
+  for(func_type=0; (func_type < F_NRE); func_type++) {
     interaction=&top->idef.il[func_type];
-    for(i=0; i<interaction->nr; i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
+    for(i=0; (i<interaction->nr); 
+	i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
       assert(func_type == top->idef.functype[interaction->iatoms[i]]);
       
       /* check out this functype */
@@ -185,8 +187,9 @@ void search_donors(t_topology *top, int isize, atom_id *index,
       }
     }
   }
-  srenew((*d),(*nr_d));
-  srenew((*h),(*nr_d));
+  /* DvdS double srenew may cause damage! */
+  /*srenew((*d),(*nr_d));
+    srenew((*h),(*nr_d));*/
 }
 
 void init_grid(bool bBox, matrix box, real rcut, 
@@ -201,8 +204,9 @@ void init_grid(bool bBox, matrix box, real rcut,
   if ( !bBox || (ngrid[XX]<3) || (ngrid[YY]<3) || (ngrid[ZZ]<3) )
     for(i=0; i<DIM; i++)
       ngrid[i]=1;
-  if (debug) fprintf(stderr,"\nWill do grid-seach on %dx%dx%d grid\n",
-		     ngrid[XX],ngrid[YY],ngrid[ZZ]);
+  if (debug) 
+    fprintf(debug,"Will do grid-seach on %dx%dx%d grid\n",
+	    ngrid[XX],ngrid[YY],ngrid[ZZ]);
   snew(*grid,ngrid[XX]);
   for (x=0; x<ngrid[XX]; x++) {
     snew((*grid)[x],ngrid[YY]);
@@ -263,11 +267,7 @@ void build_grid(int *nr, atom_id **a, rvec x[],
   }
 }
 
-#define LOOPGRIDOUTER(x,y,z,n)\
-  for(x=0; x<n[XX]; x++)\
-    for(y=0; y<n[YY]; y++)\
-      for(z=0; z<n[ZZ]; z++)
-    
+
 #define B(n,x)((n!=1)?(x-1):x)
 #define E(n,x)((n!=1)?(x+1):x)
 #define GRIDMOD(j,n) (j+n)%(n)
@@ -314,6 +314,7 @@ void dump_grid(FILE *fp, ivec ngrid, t_gridcell ****grid)
   fprintf(fp,"\n");
 }
 
+/* New GMX record! 5 * in a row. Congratulations! */
 void free_grid(ivec ngrid, t_gridcell *****grid)
 {
   int x,y,z;
@@ -339,11 +340,12 @@ bool is_hbond(atom_id d, atom_id h, atom_id a,
   
   for(m=0; m<DIM; m++) {
     r_da[m]=x[d][m]-x[a][m];
-    if (bBox)
+    if (bBox) {
       if (r_da[m]<-hbox[m]) 
 	r_da[m]+=2*hbox[m];
       else if (r_da[m]>=hbox[m]) 
 	r_da[m]-=2*hbox[m];
+    }
     if ( (r_da[m]>rcut) || (-r_da[m]>rcut) )
       return FALSE;
   }
@@ -351,11 +353,12 @@ bool is_hbond(atom_id d, atom_id h, atom_id a,
   if ( d_da2 <= rcut*rcut ) {
     rvec_sub(x[d],x[h],r_dh);
     for(m=0; m<DIM; m++) {
-      if (bBox)
+      if (bBox) {
 	if (r_dh[m]<-hbox[m]) 
 	  r_dh[m]+=2*hbox[m];
 	else if (r_dh[m]>=hbox[m]) 
 	  r_dh[m]-=2*hbox[m];
+      }
     }
     ca = cos_angle(r_da,r_dh);
     /* if angle is smaller, cos is larger */
@@ -539,7 +542,9 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
-  
+  /* Initiate lookup table for sqrt calculations */
+  init_lookup_table(stdout);
+
   /* process input */
   bSelected = opt2bSet("-sel",NFILE,fnm);
   ccut = cos(acut*DEG2RAD);
@@ -627,7 +632,7 @@ int main(int argc,char *argv[])
 		    &nr_a[i+grD],&a[i+grD],&a[i+grH],bDumConn);
       fprintf(stderr,"Found %d donors and %d acceptors in group '%s'\n",
 	      nr_a[i+grD],nr_a[i+grA],grpnames[i/grINC]);
-      snew(donors[i+grD],nr_a[i+grD]);
+      snew(donors[i+grD],natoms/*DvdS nr_a[i+grD]*/);
       sort_dha(nr_a[i+grD],a[i+grD],a[i+grH],nr_a[i+grA],a[i+grA]);
     }
   if (bSelected)
@@ -674,205 +679,211 @@ int main(int argc,char *argv[])
 		top.atoms.nr,natoms);
   bBox=ir.eBox!=ebtNONE;
   init_grid(bBox, box, rcut, ngrid, &grid);
-  max_nframes=nframes=0;
-  max_nrhb=nrhb=0;
-  hbexist=NULL;
-  nhb=NULL;
-  nhx=NULL;
-  time=NULL;
-  nabin=acut/abin;
-  nrbin=rcut/rbin;
+  max_nframes = nframes = 0;
+  max_nrhb    = nrhb    = 0;
+  hbexist     = NULL;
+  nhb         = NULL;
+  nhx         = NULL;
+  time        = NULL;
+  nabin       = acut/abin;
+  nrbin       = rcut/rbin;
   snew(adist,nabin);
   snew(rdist,nrbin);
   if (bInsert)
     snew(insert,natoms);
   do {
     build_grid(nr_a, a, x, bBox, box, hbox, rcut, ngrid, grid);
-    if (nframes>=max_nframes) {
-      max_nframes+=FRINC;
+    if (nframes >= max_nframes) {
+      max_nframes += FRINC;
       srenew(nhb,max_nframes);
       srenew(nhx,max_nframes);
       srenew(time,max_nframes);
       for (i=0; i<max_nrhb; i++)
 	srenew(hbexist[i],max_nframes);
     }
-    time[nframes]=t;
-    nhb[nframes]=0;
+    time[nframes] = t;
+    nhb[nframes]  = 0;
     for (i=0; i<max_hx; i++)
       nhx[nframes][i]=0;
     for (i=0; i<max_nrhb; i++)
       hbexist[i][nframes]=hbNO;
-    /* loop over all gridcells (xi,yi,zi) */
-    LOOPGRIDOUTER(xi,yi,zi,ngrid) {
-      /* loop over groups gr0 (always) and gr1 (if necessary) */
-      for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC) {
-	icell=&grid[xi][yi][zi][grp+grD];
-	/* loop over al donor atoms from group (grp) 
-	   in this gridcell (icell) */
-	for (ai=0; ai<icell->nr; ai++) {
-	  i=icell->atoms[ai];
-	  /* loop over all adjacent gridcells (xj,yj,zj) */
-	  LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid) {
-	    jcell=&grid[xj][yj][zj][ogrp+grA];
-	    /* loop over acceptor atoms from other group (ogrp) 
-	       in this adjacent gridcell (jcell) */
-	    for (aj=0; aj<jcell->nr; aj++) {
-	      j=jcell->atoms[aj];
-	      if ( (bSelected && (j==i)) || (!bSelected) ) {
-		/* check if this once was a h-bond */
-		idx=NOTSET;
-		for (k=0; (k<donors[grp][i].nrhb) && (idx==NOTSET); k++)
-		  if (j==donors[grp][i].hb[k].a)
-		    idx=k;
-		if ( is_hbond(a[ grp+grD][i],
-			      a[ grp+grH][i],
-			      a[ogrp+grA][j],
-			      rcut,ccut,x,bBox,hbox,&dist,&ang) ) {
-		  /* add to index if not already there */
-		  if (idx==NOTSET) {
-		    if (donors[grp][i].nrhb>=donors[grp][i].maxnr) {
-		      donors[grp][i].maxnr+=10;
-		      srenew(donors[grp][i].hb,donors[grp][i].maxnr);
-		    }
-		    donors[grp][i].hb[donors[grp][i].nrhb].a=j;
-		    donors[grp][i].hb[donors[grp][i].nrhb].nr=nrhb;
-		    idx=donors[grp][i].nrhb;
-		    donors[grp][i].nrhb++;
-		    if (nrhb>=max_nrhb) {
-		      max_nrhb+=HBINC;
-		      srenew(hbexist,max_nrhb);
-		      for (l=max_nrhb-HBINC; l<max_nrhb; l++)
-			snew(hbexist[l],max_nframes);
-		    }
-		    nrhb++;
-		  }
-		  /* update matrix */
-		  hbexist[donors[grp][i].hb[idx].nr][nframes] |= hbYES;
-		  
-		  /* count number of hbonds per frame */
-		  nhb[nframes]++;
-		  
-		  /* make angle and distance distributions */
-		  ang*=RAD2DEG;
-		  adist[(int)( ang/abin)]++;
-		  rdist[(int)(dist/rbin)]++;
-		  
-		  if (!bTwo) {
-		    resdist=abs(top.atoms.atom[a[ grp+grD][i]].resnr-
-				top.atoms.atom[a[ogrp+grA][j]].resnr);
-		    if (resdist >= max_hx) 
-		      resdist = max_hx-1;
-		    nhx[nframes][resdist]++;
-		  }
-		} 
-		if (bInsert && ( (idx!=NOTSET) || bSelected ) ) {
-		  /* this has been a h-bond, or we are analyzing 
-		     selected bonds: check for inserted */
-		  bool ins_d, ins_a;
-		  real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
-		  int  ins_d_k,ins_a_k;
-		  
-		  ins_d=ins_a=FALSE;
-		  ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
-		  
-		  /* loop over gridcells adjacent to i (xk,yk,zk) */
-		  LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid) {
-		    kcell=&grid[xk][yk][zk][grIA];
-		    /* loop over acceptor atoms from ins group 
-		       in this adjacent gridcell (kcell) */
-		    for (ak=0; ak<kcell->nr; ak++) {
-		      k=kcell->atoms[ak];
-		      if (is_hbond(a[grp+grD][i],
-				   a[grp+grH][i],
-				   a[   grIA][k],
-				   rcut,ccut,x,bBox,hbox,&dist,&ang))
-			if (dist<ins_d_dist) {
-			  ins_d=TRUE;
-			  ins_d_dist=dist;
-			  ins_d_ang =ang ;
-			  ins_d_k   =k   ;
+    
+    /* loop over all gridcells (xi,yi,zi)      */
+    /* Removed confusing macro, DvdS 27/12/98  */
+    for(xi=0; (xi<ngrid[XX]); xi++)
+      for(yi=0; (yi<ngrid[YY]); yi++)
+	for(zi=0; (zi<ngrid[ZZ]); zi++) {
+	  /* loop over groups gr0 (always) and gr1 (if necessary) */
+	  for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC) {
+	    icell=&grid[xi][yi][zi][grp+grD];
+	    /* loop over all donor atoms from group (grp) 
+	     * in this gridcell (icell) 
+	     */
+	    for (ai=0; ai<icell->nr; ai++) {
+	      i=icell->atoms[ai];
+	      /* loop over all adjacent gridcells (xj,yj,zj) */
+	      /* This is a macro!!! */
+	      LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid) {
+		jcell=&grid[xj][yj][zj][ogrp+grA];
+		/* loop over acceptor atoms from other group (ogrp) 
+		 * in this adjacent gridcell (jcell) 
+		 */
+		for (aj=0; aj<jcell->nr; aj++) {
+		  j=jcell->atoms[aj];
+		  if ( (bSelected && (j==i)) || (!bSelected) ) {
+		    /* check if this once was a h-bond */
+		    idx=NOTSET;
+		    for (k=0; (k<donors[grp][i].nrhb) && (idx==NOTSET); k++)
+		      if (j == donors[grp][i].hb[k].a)
+			idx=k;
+		    if ( is_hbond(a[ grp+grD][i],a[ grp+grH][i],a[ogrp+grA][j],
+				  rcut,ccut,x,bBox,hbox,&dist,&ang) ) {
+		      /* add to index if not already there */
+		      if (idx==NOTSET) {
+			if (donors[grp][i].nrhb>=donors[grp][i].maxnr) {
+			  donors[grp][i].maxnr+=10;
+			  srenew(donors[grp][i].hb,donors[grp][i].maxnr);
 			}
-		    }
-		  }
-		  ENDLOOPGRIDINNER;
-		  /* loop over gridcells adjacent to j (xk,yk,zk) */
-		  LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid) {
-		    kcell=&grid[xk][yk][zk][grID];
-		    /* loop over donor atoms from ins group 
-		       in this adjacent gridcell (kcell) */
-		    for (ak=0; ak<kcell->nr; ak++) {
-		      k=kcell->atoms[ak];
-		      if (is_hbond(a[    grID][k],
-				   a[    grIH][k],
-				   a[ogrp+grA][j],
-				   rcut,ccut,x,bBox,hbox,&dist,&ang))
-			if (dist<ins_a_dist) {
-			  ins_a=TRUE;
-			  ins_a_dist=dist;
-			  ins_a_ang =ang ;
-			  ins_a_k   =k   ;
+			/* Add a donor atom in a hbond */
+			donors[grp][i].hb[donors[grp][i].nrhb].a=j;
+			donors[grp][i].hb[donors[grp][i].nrhb].nr=nrhb;
+			idx = donors[grp][i].nrhb;
+			donors[grp][i].nrhb++;
+			if (nrhb >= max_nrhb) {
+			  max_nrhb+=HBINC;
+			  srenew(hbexist,max_nrhb);
+			  for (l=max_nrhb-HBINC; l<max_nrhb; l++)
+			    snew(hbexist[l],max_nframes);
 			}
+			nrhb++;
+		      }
+		      /* update matrix */
+		      hbexist[donors[grp][i].hb[idx].nr][nframes] |= hbYES;
+		      
+		      /* count number of hbonds per frame */
+		      nhb[nframes]++;
+		      
+		      /* make angle and distance distributions */
+		      ang*=RAD2DEG;
+		      adist[(int)( ang/abin)]++;
+		      rdist[(int)(dist/rbin)]++;
+		      
+		      if (!bTwo) {
+			resdist=abs(top.atoms.atom[a[ grp+grD][i]].resnr-
+				    top.atoms.atom[a[ogrp+grA][j]].resnr);
+			if (resdist >= max_hx) 
+			  resdist = max_hx-1;
+			nhx[nframes][resdist]++;
+		      }
+		    } 
+		    if (bInsert && ( (idx!=NOTSET) || bSelected ) ) {
+		      /* this has been a h-bond, or we are analyzing 
+			 selected bonds: check for inserted */
+		      bool ins_d, ins_a;
+		      real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
+		      int  ins_d_k,ins_a_k;
+		      
+		      ins_d=ins_a=FALSE;
+		      ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
+		      
+		      /* loop over gridcells adjacent to i (xk,yk,zk) */
+		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid) {
+			kcell=&grid[xk][yk][zk][grIA];
+			/* loop over acceptor atoms from ins group 
+			   in this adjacent gridcell (kcell) */
+			for (ak=0; ak<kcell->nr; ak++) {
+			  k=kcell->atoms[ak];
+			  if (is_hbond(a[grp+grD][i],
+				       a[grp+grH][i],
+				       a[   grIA][k],
+				       rcut,ccut,x,bBox,hbox,&dist,&ang))
+			    if (dist<ins_d_dist) {
+			      ins_d=TRUE;
+			      ins_d_dist=dist;
+			      ins_d_ang =ang ;
+			      ins_d_k   =k   ;
+			    }
+			}
+		      }
+		      ENDLOOPGRIDINNER;
+		      /* loop over gridcells adjacent to j (xk,yk,zk) */
+		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid) {
+			kcell=&grid[xk][yk][zk][grID];
+			/* loop over donor atoms from ins group 
+			   in this adjacent gridcell (kcell) */
+			for (ak=0; ak<kcell->nr; ak++) {
+			  k=kcell->atoms[ak];
+			  if (is_hbond(a[    grID][k],
+				       a[    grIH][k],
+				       a[ogrp+grA][j],
+				       rcut,ccut,x,bBox,hbox,&dist,&ang))
+			    if (dist<ins_a_dist) {
+			      ins_a=TRUE;
+			      ins_a_dist=dist;
+			      ins_a_ang =ang ;
+			      ins_a_k   =k   ;
+			    }
+			}
+		      }
+		      ENDLOOPGRIDINNER;
+		      
+		      if (ins_d && ins_a && 
+			  (a[grIA][ins_d_k] == a[grID][ins_a_k])) {
+			/* set insertion index */
+			insert[a[grID][ins_a_k]]=TRUE;
+			insert[a[grIH][ins_a_k]]=TRUE;
+			insert[a[grIA][ins_d_k]]=TRUE;
+			
+			/* add to hbond index if not already there */
+			if (idx==NOTSET) {
+			  if (donors[grp][i].nrhb>=donors[grp][i].maxnr) {
+			    donors[grp][i].maxnr+=10;
+			    srenew(donors[grp][i].hb,donors[grp][i].maxnr);
+			  }
+			  donors[grp][i].hb[donors[grp][i].nrhb].a=j;
+			  donors[grp][i].hb[donors[grp][i].nrhb].nr=nrhb;
+			  idx=donors[grp][i].nrhb;
+			  donors[grp][i].nrhb++;
+			  if (nrhb>=max_nrhb) {
+			    max_nrhb+=HBINC;
+			    srenew(hbexist,max_nrhb);
+			    for (l=max_nrhb-HBINC; l<max_nrhb; l++)
+			      snew(hbexist[l],max_nframes);
+			  }
+			  nrhb++;
+			}
+			
+			/* mark insertion in hbond index */
+			hbexist[donors[grp][i].hb[idx].nr][nframes] |= hbINS;
+			
+			/* print insertion info to file */
+			fprintf(fpins,
+				"%4g: %4d:%3.3s%4d%3.3s -> "
+				"%4d:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
+				"%4d:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
+				a[grIA][ins_d_k]+1,
+				*top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
+				top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
+				*top.atoms.atomname[a[grIA][ins_d_k]],
+				a[grp+grD][i]+1,
+				*top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
+				top.atoms.atom[a[grp+grD][i]].resnr+1,
+				*top.atoms.atomname[a[grp+grD][i]],
+				ins_d_dist,ins_d_ang*RAD2DEG,
+				a[ogrp+grA][j]+1,
+				*top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
+				top.atoms.atom[a[ogrp+grA][j]].resnr+1,
+				*top.atoms.atomname[a[ogrp+grA][j]],
+				ins_a_dist,ins_a_ang*RAD2DEG);
+		      }
 		    }
 		  }
-		  ENDLOOPGRIDINNER;
-		  
-		  if (ins_d && ins_a && 
-		      (a[grIA][ins_d_k] == a[grID][ins_a_k])) {
-		    /* set insertion index */
-		    insert[a[grID][ins_a_k]]=TRUE;
-		    insert[a[grIH][ins_a_k]]=TRUE;
-		    insert[a[grIA][ins_d_k]]=TRUE;
-		    
-		    /* add to hbond index if not already there */
-		    if (idx==NOTSET) {
-		      if (donors[grp][i].nrhb>=donors[grp][i].maxnr) {
-			donors[grp][i].maxnr+=10;
-			srenew(donors[grp][i].hb,donors[grp][i].maxnr);
-		      }
-		      donors[grp][i].hb[donors[grp][i].nrhb].a=j;
-		      donors[grp][i].hb[donors[grp][i].nrhb].nr=nrhb;
-		      idx=donors[grp][i].nrhb;
-		      donors[grp][i].nrhb++;
-		      if (nrhb>=max_nrhb) {
-			max_nrhb+=HBINC;
-			srenew(hbexist,max_nrhb);
-			for (l=max_nrhb-HBINC; l<max_nrhb; l++)
-			  snew(hbexist[l],max_nframes);
-		      }
-		      nrhb++;
-		    }
-		    
-		    /* mark insertion in hbond index */
-		    hbexist[donors[grp][i].hb[idx].nr][nframes] |= hbINS;
-		    
-		    /* print insertion info to file */
-		    fprintf(fpins,
-			    "%4g: %4d:%3.3s%4d%3.3s -> "
-			    "%4d:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
-			    "%4d:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
-			    a[grIA][ins_d_k]+1,
-			    *top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
-			    top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
-			    *top.atoms.atomname[a[grIA][ins_d_k]],
-			    a[grp+grD][i]+1,
-			    *top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
-			    top.atoms.atom[a[grp+grD][i]].resnr+1,
-			    *top.atoms.atomname[a[grp+grD][i]],
-			    ins_d_dist,ins_d_ang*RAD2DEG,
-			    a[ogrp+grA][j]+1,
-			    *top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
-			    top.atoms.atom[a[ogrp+grA][j]].resnr+1,
-			    *top.atoms.atomname[a[ogrp+grA][j]],
-			    ins_a_dist,ins_a_ang*RAD2DEG);
-		  }
-		}
+		} /* for aj  */
 	      }
-	    } /* for aj  */
-	  }
-	  ENDLOOPGRIDINNER;
-	} /* for ai  */
-      } /* for grp */
-    } /* LOOPGRIDOUTER */
+	      ENDLOOPGRIDINNER;
+	    } /* for ai  */
+	  } /* for grp */
+	} /* LOOPGRIDOUTER */
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
   

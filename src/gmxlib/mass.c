@@ -32,6 +32,7 @@ static char *SRCID_mass_c = "$Id$";
 #include "smalloc.h"
 #include "string2.h"
 #include "futil.h"
+#include "fatal.h"
 #include "mass.h"
 #include "macros.h"
 #include "index.h"
@@ -73,6 +74,14 @@ static int read_mass(char *massdata,t_mass **mass)
   return i;
 } /*read_mass()*/
 
+static void write_mass(FILE *fp,int nmass,t_mass *mass[]) 
+{
+  int i;
+  
+  for (i=0; (i<nmass); i++) 
+    fprintf(fp,"%10s  %10s  %10g\n",mass[i].resname,mass[i].atomname,mass[i].m);
+} /*read_mass()*/
+
 real get_mass(char *resnm, char *atomnm)
 {
   int  i,j,best,mlen,len;
@@ -84,18 +93,22 @@ real get_mass(char *resnm, char *atomnm)
   
   if (!bRead) {
     nmass = read_mass(ATOMMASS,&mass);
-    bRead=TRUE;
+    bRead = TRUE;
+    if (debug)
+      write_mass(debug,nmass,mass);
   }
   
-  best=-1;
-  mlen=0;
+  best = -1;
+  mlen = 0;
+  
   if (isdigit(atomnm[0])) {
     /* put digit after atomname */
     for (i=1; (i<strlen(atomnm)); i++)
       atomname[i-1]=atomnm[i];
     atomname[i++]=atomnm[0];
     atomname[i]='\0';
-  } else 
+  } 
+  else 
     strcpy(atomname,atomnm);
       
   for(i=0; (i<nmass); i++)
@@ -111,17 +124,19 @@ real get_mass(char *resnm, char *atomnm)
 	best=i;
       }
     }
-  m=mass[best].mass;
 
   if (best == -1) {
     if (debug)
       fprintf(stderr,"Could not find atom %s %s in %s\n",
 	      resnm,atomnm,ATOMMASS);
+    
     if ( (atomnm[0]=='H') || (isdigit(atomnm[0]) && (atomnm[1]=='H')) )
-	  m=1.008; /* proton mass */
-	else
-	  m=12.0110; /* carbon mass */
+      m=1.008; /* proton mass */
+    else
+      m=12.0110; /* carbon mass */
   }
+  else 
+    m = mass[best].mass;
 
   return m;
 } /* get_mass() */

@@ -655,7 +655,7 @@ int main (int argc, char *argv[])
   init_ir(ir,opts);
   
   /* Parse the command line */
-  parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,asize(bugs),bugs);
   
   if ((nprocs > 0) && (nprocs <= MAXPROC))

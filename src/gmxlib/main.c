@@ -135,12 +135,15 @@ void open_log(char *lognm,t_commrec *cr)
   char buf[256];
   
   where();
+  
+  fprintf(stderr,"OPEN_LOG: cr->pid = %d\n",cr->pid);
   /* Communicate the filename for logfile */
   if (cr->nprocs > 1) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
       gmx_txs(cr->right,record(len));
       gmx_rxs(cr->left,record(testlen));
+      fprintf(stderr,"cr->pid = %d, len = %d\n",cr->pid,testlen);
       gmx_txs(cr->right,lognm,len);
       gmx_rxs(cr->left,lognm,len);
       if (len != testlen)
@@ -149,6 +152,7 @@ void open_log(char *lognm,t_commrec *cr)
     }
     else {
       gmx_rxs(cr->left,record(len));
+      fprintf(stderr,"cr->pid = %d, len = %d\n",cr->pid,len);
       gmx_txs(cr->right,record(len));
       snew(lognm,len);
       gmx_rxs(cr->left,lognm,len);
@@ -184,8 +188,8 @@ t_commrec *init_par(int *argc,char *argv[])
   
   cr->nprocs=1;
   /* Get the number of processors.
-     This is useless for newer MPI versions.
-     */
+   * This is useless for newer MPI versions.
+   */
   for(i=0; (argv[i] != NULL); i++) {
     if (strcmp(argv[i],"-np")==0)
       if (argv[i+1]!=NULL)
@@ -212,7 +216,6 @@ t_commrec *init_par(int *argc,char *argv[])
 
   if (!PAR(cr) && (cr->pid != 0))
     exit(0);
-  
   
   if (PAR(cr)) {
     gmx_left_right(cr->nprocs,cr->pid,&cr->left,&cr->right);

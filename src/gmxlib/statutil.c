@@ -42,6 +42,7 @@ static char *SRCID_statutil_c = "$Id$";
 #include "tpxio.h"
 #include "assert.h"
 #include "fatal.h"
+#include "network.h"
 
 /* used for npri */
 #ifdef _SGI_
@@ -372,14 +373,25 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   };
 #define NPCA_PA asize(pca_pa)
 
+  debug_par();
+  fprintf(stderr,"PID=%d, argc = %d\n",gmx_cpu_id(),*argc);
+  for(i=0; (i<*argc); i++)
+    fprintf(stderr,"PID=%d, argv[%d] = %s\n",gmx_cpu_id(),i,argv[i]);
   /* Check for double arguments */
-  for (i=1; (i<*argc); i++)
-    if ( !isdigit(argv[i][1]) )
-      for (j=i+1; (j<*argc); j++)
+  /*for (i=1; (i<*argc); i++) {
+    if (argv[i] && (strlen(argv[i]) > 1) && (!isdigit(argv[i][1]))) {
+      for (j=i+1; (j<*argc); j++) {
 	if ( (argv[i][0]=='-') && (argv[j][0]=='-') && 
-	(strcmp(argv[i],argv[j])==0) )
-	  fatal_error(0,"Double command line argument %s\n",argv[i]);
-  
+	     (strcmp(argv[i],argv[j])==0) ) {
+	  if (FF(PCA_NOEXIT_ON_ARGS))
+	    fprintf(stderr,"Double command line argument %s\n",argv[i]);
+	  else
+	    fatal_error(0,"Double command line argument %s\n",argv[i]);
+	}
+      }
+    }
+    }*/
+  debug_par();
   /* Handle the flags argument, which is a bit field 
    * The FF macro returns whether or not the bit is set
    */
