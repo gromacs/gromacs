@@ -126,5 +126,5 @@ char *esolv_names[esolNR+1] = {
 };
 
 char *edispc_names[edispcNR+1] = {
-  "No", "EnerPres", "Ener"
+  "No", "EnerPres", "Ener", NULL
 };
