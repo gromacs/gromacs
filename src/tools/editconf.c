@@ -66,8 +66,6 @@ typedef struct {
   t_simat sat[3];
 } t_simlist;
 static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
-static char *pdbformat=
-"%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
 
 real calc_mass(t_atoms *atoms,bool bGetMass)
 {
