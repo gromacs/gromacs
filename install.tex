@@ -109,8 +109,7 @@ variables. First of all, the variables set in the \myindex{GMXRC} file
 are essential for running and compiling {\gromacs}. Other variables are:
 \begin{enumerate}
 \item	\myindex{DUMP\_NL}, dump \myindex{neighborlist}. 
-	If set to -1 the {\em number of j-particles} per i-particle are printed
-	in the log file, if set to a positive number the {\em entire}
+	If set to a positive number the {\em entire}
 	neighborlist is printed in the log file (may be many megabytes).
 	Mainly for debugging purposes, but may allso be handy for
 	\myindex{porting} to other platforms.
@@ -119,7 +118,8 @@ are essential for running and compiling {\gromacs}. Other variables are:
 \item	\myindex{WHERE}, when set print debugging info on line numbers.
 \item	\myindex{LOG\_BUFS}. The size of the buffer for file I/O. When set
 	to 0, all file I/O will be unbuffered and therefore very slow.
-	Mainly for debugging purposes.
+	This can be handy for debugging purposes, because it ensures
+	that all files are always totally up-to-date.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
