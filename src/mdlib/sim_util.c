@@ -203,25 +203,26 @@ void do_force(FILE *log,t_commrec *cr,
   cg1    = nsb->cgload[pid];
   
   update_forcerec(log,fr,parm->box);
-  
-  /* Compute shift vectors every step, because of pressure coupling! */
-  if (parm->ir.epc != epcNO)
-    calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  
-  if (bNS && (parm->ir.eBox != ebtNONE)) {
-    put_charge_groups_in_box(log,cg0,cg1,FALSE,
-			     parm->box,box_size,&(top->blocks[ebCGS]),x,
-			     fr->shift_vec,fr->cg_cm);
-    inc_nrnb(nrnb,eNR_RESETX,homenr);
-    inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
 
-    if (PAR(cr))
-      move_cgcm(log,cr,fr->cg_cm,nsb->cgload);
-    /*#define DEBUG*/
+  if (fr->eBox != ebtNONE) {
+    /* Compute shift vectors every step, because of pressure coupling! */
+    if (parm->ir.epc != epcNO)
+      calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+    
+    if (bNS) {
+      put_charge_groups_in_box(log,cg0,cg1,FALSE,
+			       parm->box,box_size,&(top->blocks[ebCGS]),x,
+			       fr->shift_vec,fr->cg_cm);
+      inc_nrnb(nrnb,eNR_RESETX,homenr);
+      inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
+      
+      if (PAR(cr))
+	move_cgcm(log,cr,fr->cg_cm,nsb->cgload);
 #ifdef DEBUG
-    if (debug)
-      pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
+      if (debug)
+	pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
 #endif
+    }
   }
   
   /* Communicate coordinates if necessary */
@@ -232,7 +233,7 @@ void do_force(FILE *log,t_commrec *cr,
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
   
   if (bNS) {
-    if (parm->ir.eBox != ebtNONE)
+    if (fr->eBox != ebtNONE)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(log,graph,parm->box,x);
 
