@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
   double *yav,yyy,yyy2,ymin,ymax,aver,var,sd;
   int    i,j,k,nav=100,ncol=1,MAX=50000;
   char   buf[STRLEN];
-  bool   bSilent=FALSE;
+  bool   bSilent=FALSE,bVerySilent;
   double   lsq_a,lsq_b,rms_res;
   
   for(i=1; (i<argc); i++) {
@@ -84,6 +84,9 @@ int main(int argc, char *argv[])
 	break;
       case 's':
 	bSilent=TRUE;
+	break;
+      case 'S':
+	bVerySilent=bSilent=TRUE;
 	break;
       default:
 	my_usage(argv[0],argv[i]);
@@ -110,15 +113,18 @@ int main(int argc, char *argv[])
 	for(k=0; (k<ncol); k++)
 	  scanf("%lf",&(y[k][i]));
 	if (i >= nav) {
-	  printf("%10e",x[i-nav/2]*value);
+	  if (!bVerySilent) 
+	    printf("%10e",x[i-nav/2]*value);
 	  for(k=0; (k<ncol); k++) {
 	    yav[k]=0;
 	    for(j=i-nav+1; (j<=i); j++)
 	      yav[k]+=y[k][j];
 	    yav[k]/=nav;
-	    printf("  %10e",yav[k]);
+	    if (!bVerySilent) 
+	      printf("  %10e",yav[k]);
 	  }
-	  printf("\n");
+	  if (!bVerySilent) 
+	    printf("\n");
 	}
 	i++;
       }
