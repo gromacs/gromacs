@@ -271,7 +271,7 @@ void fatal_error(int fatal_errno,char *fmt,...)
 static int  nwarn       = 0;
 static int  maxwarn     = 10;
 static int  lineno      = 1;
-static char filenm[256] = "\0";
+static char filenm[256] = "";
 char   warn_buf[1024];
 
 void init_warning(int maxwarning)
@@ -284,6 +284,16 @@ void set_warning_line(char *s,int line)
 {
   strcpy(filenm,s);
   lineno = line;
+}
+
+int get_warning_line()
+{
+  return lineno;
+}
+
+char *get_warning_file()
+{
+  return filenm;
 }
 
 void warning(char *s)

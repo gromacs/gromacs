@@ -83,6 +83,12 @@ extern void init_warning(int maxwarning);
 extern void set_warning_line(char *fn,int line);
 /* Set filename and linenumber for the warning */
   
+extern int get_warning_line(void);
+/* Get linenumber for the warning */
+  
+extern char *get_warning_file(void);
+/* Get filename for the warning */
+  
 extern char warn_buf[1024];
 /* Warning buffer of 1024 bytes, which can be used to print messages to */
 
