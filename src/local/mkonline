@@ -106,10 +106,10 @@ awk -F '|' -v mandir=$MANDIR -v longest="mk\\_angndx" '{\
       longest = $2;\
     } else if ( $1 == "HEAD" ) {\
       printf("\\item {\\large\\bf %s}\n",$2);\
-      printf("\\begin{tabbing}\n");\
+      printf("\\vspace{-2ex}\\begin{tabbing}\n");\
       printf("{\\bf %s} \\= \\kill\n",longest);\
     } else if ( $1 == "END" ) {\
-      printf("\\end{tabbing}\n\n");\
+      printf("\\end{tabbing}\\vspace{-2ex}\n\n");\
     } else {\
       printf("{\\bf %s} \\> %s \\\\\n",$1,$2);\
     }\
