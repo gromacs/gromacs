@@ -27,7 +27,7 @@ PROGRAMS	= do_dssp	editconf	eneconv		\
 		genion		genpr		make_ndx	\
 		mk_angndx	protonate	\
 		sas2mat		trjconv		wheel		\
-		xpm2ps
+		xpm2ps		average		g_diffuse
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
@@ -116,6 +116,12 @@ g_rms:	 	g_rms.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rmsf:	 	g_rmsf.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+g_diffuse:	g_diffuse.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+average:	average.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_mindist:	g_mindist.o
