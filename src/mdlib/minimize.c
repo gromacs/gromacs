@@ -152,7 +152,8 @@ static real f_norm(t_commrec *cr,
 	fnorm2 += sqr(grad[i][m]); 
   } 
   
-  gmx_sumd(1,&fnorm2,cr);
+  if (PAR(cr))
+    gmx_sumd(1,&fnorm2,cr);
 
   return sqrt(fnorm2); 
 } 
@@ -330,7 +331,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  gpa     = gpa - p[i][m]*f[i][m];
 	}
     }
-    gmx_sumd(1,&gpa,cr);
+    if (PAR(cr))
+      gmx_sumd(1,&gpa,cr);
     pnorm=f_norm(cr,&(parm->ir.opts),mdatoms,start,end,p);
 
     a    = 0.0;
@@ -379,7 +381,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	for(m=0; m<DIM; m++) 
 	  gpb -= p[i][m]*f[i][m];
 
-      gmx_sumd(1,&gpb,cr);
+      if (PAR(cr))
+	gmx_sumd(1,&gpb,cr);
 
       /* Sum the potential energy terms from group contributions */
       sum_epot(&(parm->ir.opts),grps,ener);
