@@ -6,7 +6,7 @@
  opls_112    1.00800  ; H TIP3P Water
  opls_113   15.99940  ; O TIP4P Water
  opls_114    1.00800  ; H TIP4P Water
- opls_115    4.02600  ; M TIP4P Water
+ opls_115    0.00000  ; M TIP4P Water
  opls_116   15.99940  ; O SPC Water
  opls_117    1.00800  ; H SPC Water
  opls_122   12.01100  ; C CCl4

@@ -9211,6 +9211,22 @@ AO3PB   APG AO3PG AH3PG     gd_9
  [ dihedrals ]
 ;  ai    aj    ak    al   gromos type
 
+[ HO4 ]
+ [ atoms ]
+   OW    OW    0.0     0
+  HW1     H    0.52     0
+  HW2     H    0.52     0
+  MW3   DUM   -1.04     0
+ [ bonds ]
+   OW   HW1    gb_35
+   OW   HW2    gb_35
+ [ angles ]
+;   ai    aj    ak  gromos type
+ [ impropers ]
+;   ai    aj    ak    al  gromos type
+ [ dihedrals ]
+;   ai    aj    ak    al  gromos type
+
 [ H2OE ]
  [ atoms ]
    OW    OW    -0.84760     0

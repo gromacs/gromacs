@@ -774,6 +774,17 @@
     OW   HW1
     OW   HW2
 
+[ HO4 ] 
+; TIP4P
+ [ atoms ]
+    OW   opls_113    0.00      0
+   HW1   opls_114    0.52      0
+   HW2   opls_114    0.52      0
+   HW3   opls_115   -1.04      0
+ [ bonds ]
+    OW   HW1
+    OW   HW2
+
 
 [ ILE ]
  [ atoms ]

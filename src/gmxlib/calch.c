@@ -79,6 +79,8 @@ void gen_waterhydrogen(rvec xa[], rvec xh[])
     xH1[m]=xAI[m]+matrix1[l][m];
     xH2[m]=xAI[m]+matrix2[l][m];
   }
+  if ((xH3[XX] == NOTSET) && (xH3[YY] == NOTSET) &&(xH3[ZZ] == NOTSET))
+    copy_rvec(xAI,xH3);
       
   l=(l+1) % 6;
 }
@@ -215,7 +217,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[])
     }
     break;
   }
-  case 7: /* two water hydrogens */
+  case 7: /* two or three water hydrogens */
     gen_waterhydrogen(xa, xh);
     break;
   case 8: /* two carboxyl oxygens, -COO- */

@@ -227,10 +227,10 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
 
 int read_pdball(char *inf, char *outf,char *title,
 		t_atoms *atoms, rvec **x,matrix box, bool bRemoveH,
-		t_symtab *symtab,t_aa_names *aan)
+		t_symtab *symtab,t_aa_names *aan,char *watres)
 /* Read a pdb file. (containing proteins) */
 {
-  int       natom,new_natom,i;
+  int  natom,new_natom,i;
   
   /* READ IT */
   printf("Reading %s...\n",inf);
@@ -258,8 +258,10 @@ int read_pdball(char *inf, char *outf,char *title,
   printf(" %d atoms\n",natom);
   
   /* Rename residues */
-  rename_pdbres(atoms,"SOL","HOH",FALSE,symtab);
-  rename_pdbres(atoms,"WAT","HOH",FALSE,symtab);
+  rename_pdbres(atoms,"HOH",watres,FALSE,symtab);
+  rename_pdbres(atoms,"SOL",watres,FALSE,symtab);
+  rename_pdbres(atoms,"WAT",watres,FALSE,symtab);
+  
   rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
   rename_atoms(atoms,symtab,aan);
@@ -603,7 +605,7 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[256];
-  char       *c;
+  char       *c,*watres;
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;
@@ -648,7 +650,7 @@ int main(int argc, char *argv[])
       "Set the next 6 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
       "Interactive SS bridge selection" },
-    { "-water",  FALSE, etSTR,  {watstr},
+    { "-water",  FALSE, etENUM, {watstr},
       "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-ter",    FALSE, etBOOL, {&bTerMan}, 
       "Interactive termini selection, iso charged" },
@@ -730,8 +732,13 @@ int main(int argc, char *argv[])
   aan = get_aa_names();
 
   clear_mat(box);
-  natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
-		    &pdba_all,&pdbx,box,bRemoveH,&symtab,aan);
+  if (strcmp(watstr[0],"tip4p") == 0)
+    watres = "HO4";
+  else
+    watres = "HOH";
+
+  natom = read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
+		      &pdba_all,&pdbx,box,bRemoveH,&symtab,aan,watres);
   
   if (natom==0)
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -744,7 +751,7 @@ int main(int argc, char *argv[])
   pchain='?';
   pdb_ch=NULL;
   for (i=0; (i<natom); i++) {
-    bWat = strcasecmp(*pdba_all.resname[pdba_all.atom[i].resnr],"HOH") == 0;
+    bWat = strcasecmp(*pdba_all.resname[pdba_all.atom[i].resnr],watres) == 0;
     if ((i==0) || (pdba_all.atom[i].chain!=pchain) || (bWat != bPrevWat)) {
       if (bMerge && i>0 && !bWat) {
 	printf("Merge chain '%c' and '%c'? (n/y) ",

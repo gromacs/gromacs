@@ -2641,6 +2641,16 @@
     OW   HW1
     OW   HW2
 
+[ HO4 ]
+ [ atoms ]
+   OW    OW    0.0      0
+  HW1     H    0.52     0
+  HW2     H    0.52     0
+  MW3   DUM   -1.04     0
+ [ bonds ]
+   OW   HW1    gb_35
+   OW   HW2    gb_35
+
 [ HYP ]
  [ atoms ]
      N     N   0.000     0

@@ -438,7 +438,7 @@ int main(int argc, char *argv[])
     { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions. Please set the GMXFULLPBC environment variable as well." },
+      "Use periodic boundary conditions." },
     { "-param", FALSE, etBOOL, {&bParam},
       "Print parameters in the output" },
     { "-round",  FALSE, etBOOL, {&bRound},
@@ -463,7 +463,7 @@ int main(int argc, char *argv[])
   cutoff = set_x_blen(scale);
 
   if (bPBC)
-    set_gmx_full_pbc(stdout);
+    set_gmx_full_pbc();
     		    
   mymol.name = strdup(molnm);
   mymol.nr   = 1;

@@ -65,11 +65,9 @@ static int pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
   }
 }
 
-void set_gmx_full_pbc(FILE *fp)
+void set_gmx_full_pbc()
 {
-  bFullPBC   = (getenv("GMXFULLPBC") != NULL);
-  if (bFullPBC && fp)
-    fprintf(fp,"Full PBC calculation = %s\n",bool_names[bFullPBC]);
+  bFullPBC = TRUE;
 }
 
 void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
@@ -90,10 +88,6 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
 
   if (bFirst) {
     bFullPBC   = (fr->ePBC == epbcFULL);
-    fprintf(log,"PBC treatment for bonded interactions is %s\n",
-	    epbc_names[fr->ePBC]);
-    if (!bFullPBC)
-      set_gmx_full_pbc(log);
     bFirst = FALSE;
 #ifdef DEBUG
     if (g)

@@ -276,7 +276,9 @@ static void print_top_water(FILE *out,char *water)
   fprintf(out,"[ position_restraints ]\n");
   fprintf(out,";%3s %5s %9s %10s %10s\n","i","funct","fcx","fcy","fcz");
   fprintf(out,"%4d %4d %10g %10g %10g\n",1,1,1000.0,1000.0,1000.0);
-  fprintf(out,"#endif\n");
+  fprintf(out,"#endif\n\n");
+  fprintf(out,"; Include generic topology for ions\n");
+  fprintf(out,"#include \"ions.itp\"\n");
   fprintf(out,"\n");
 }
 
