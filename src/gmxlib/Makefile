@@ -186,7 +186,7 @@ $(LIB)(innerf.o):	mkinl Makefile $(CPUMAKEF)
 			./mkinl 0 1
 			$(F77) $(FFLAGS) -c innerf.f
 			$(AR) $(ARFLAGS) $(LIB) innerf.o
-#			$(RM) innerf.f innerf.o mkinl.o mkinl
+			$(RM) innerf.f innerf.o mkinl.o mkinl
 
 $(LIB)(innerc.o):	mkinl inner.m4 Makefile $(CPUMAKEF)
 			$(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) inner.m4 > inner.h
@@ -194,7 +194,7 @@ $(LIB)(innerc.o):	mkinl inner.m4 Makefile $(CPUMAKEF)
 			$(RM) mkinl
 			$(CC) $(C-FLAGS) -c innerc.c
 			$(AR) $(ARFLAGS) $(LIB) innerc.o
-#			$(RM) innerc.c inner.h innerc.o mkinl.o mkinl
+			$(RM) innerc.c inner.h innerc.o mkinl.o mkinl
 
 innerf.f:		mkinl Makefile $(CPUMAKEF)
 			./mkinl 0 1
