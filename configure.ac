@@ -178,7 +178,7 @@ AC_ARG_ENABLE(prefetch,
 
 
 AC_ARG_ENABLE(all-static,
- [  --enable-all-static           make completely static binaries],enable_all_static=yes, enable_all_static=no)
+ [  --enable-all-static           make completely static binaries],, enable_all_static=no)
 # Dont add the -all-static flag until after the compiler test.
 
 ### Compile without FFTW - disabling it means you can't use PME or PPPM!
