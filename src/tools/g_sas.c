@@ -62,6 +62,7 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
   srenew(atoms->atom,atoms->nr+ndots);
   srenew(atoms->atomname,atoms->nr+ndots);
   srenew(atoms->resname,atoms->nr+ndots);
+  srenew(atoms->pdbinfo,atoms->nr+ndots);
   snew(xnew,atoms->nr+ndots);
   for(i=0; (i<atoms->nr); i++)
     copy_rvec(x[i],xnew[i]);
