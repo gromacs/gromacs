@@ -55,7 +55,8 @@ static char *SRCID_physics_h = "$Id$";
 #define ANGSTROM	 (1e-10)			/* Old...	*/
 #define KILO 		 (1e3)				/* Thousand	*/
 #define NANO		 (1e-9)				/* A Number	*/
-#define A2NM		 (ANGSTROM/0)			/* NANO	        */
+#define PICO		 (1e-12)			/* A Number	*/
+#define A2NM		 (ANGSTROM/NANO)		/* NANO	        */
 #define NM2A		 (NANO/ANGSTROM)		/* 10.0		*/
 #define RAD2DEG		 (180.0/M_PI)			/* Conversion	*/
 #define DEG2RAD		 (M_PI/180.0)			/* id		*/
