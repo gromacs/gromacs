@@ -396,12 +396,10 @@ static void clean_bonds(t_params *ps)
     for (i=1; (i<ps->nr); i++) {
       if ( ps->param[i].AI != ps->param[j-1].AI ||
 	   ps->param[i].AJ != ps->param[j-1].AJ ) {
-	if (j != i) {
-	  sfree(ps->param[j].s);
-	  ps->param[j] = ps->param[i];
-	}
+	ps->param[j] = ps->param[i];
 	j++;
-      }
+      } else
+	sfree(ps->param[i].s);
     }
     fprintf(stderr,"Number of bonds was %d, now %d\n",ps->nr,j);
     ps->nr=j;
