@@ -43,7 +43,7 @@ extern "C" {
 #include <stdio.h>
 
 /* Please no spaces in this one... */  
-#define GromacsVersion() "VERSION 2.0"
+#define GromacsVersion() "VERSION 2.1"
 
 static char *CopyrightText[] = {
   "",
