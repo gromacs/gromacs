@@ -247,7 +247,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   top     = read_top(ftp2fn(efTPX,nfile,fnm));
   bDGsol  = strcmp(*top->atoms.atomtype[0],"?") != 0;
   if (!bDGsol) 
-    fprintf(stderr,"Warning: your tpr file is too old, will not compute"
+    fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
     
   fprintf(stderr,"Select group for calculation of surface and for output:\n");
@@ -270,7 +270,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
-  xvgr_legend(fp,asize(legend),legend);
+  xvgr_legend(fp,asize(legend) - (bDGsol ? 0 : 1),legend);
   
   j=0;
   do {
