@@ -11,17 +11,17 @@ if ( -f $out) then
 endif
 touch $out
 
-cd $GMXHOME/bin/$GMXCPU
+cd $GMXHOME/bin/$GMXCPU 
 set PROGRAMS = [a-z]*
 cd $dir
 
 echo "if ( "'$shell'" == /bin/tcsh ) then" >> $out
 
-foreach i ( $PROGRAMS )
-  if ( ( $i != "average" ) && ( $i != "luck" ) ) then
-    $i -man completion >& /dev/null
-    cat $i.completion >> $out
-    \rm $i.completion
+foreach program ( $PROGRAMS )
+  if ( ( $program != "average" ) && ( $program != "luck" ) ) then
+    $GMXHOME/bin/$GMXCPU/$program -man completion >& /dev/null
+    cat $program.completion >> $out
+    \rm $program.completion
   endif
 end
 
