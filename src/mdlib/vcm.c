@@ -118,7 +118,7 @@ void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], real mass[])
   }
 }
 
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md)
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,int nstcomm)
 {
   t_vcm *vcm;
   int i,g;
@@ -132,10 +132,11 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md)
   vcm->group_id = md->cVCM;
   
   /* Not parallel... */
-  for(i=0; (i<md->nr); i++) {
-    g = vcm->group_id[i];
-    vcm->group_mass[g] += md->massT[i];
-  }
+  if (nstcomm != 0)
+    for(i=0; (i<md->nr); i++) {
+      g = vcm->group_id[i];
+      vcm->group_mass[g] += md->massT[i];
+    }
   
   /* Copy pointer to group names and print it. */
   fprintf(fp,"We have the following groups for center of mass motion removal:\n");

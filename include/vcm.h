@@ -46,7 +46,7 @@ typedef struct {
   unsigned short *group_id;  /* other structures.                   */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md);
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,int nstcomm);
 
 extern void calc_vcm(FILE *log,int homenr,int start,
 		     real mass[],rvec v[],rvec vcm);

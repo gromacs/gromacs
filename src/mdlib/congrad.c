@@ -99,7 +99,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
-  vcm = init_vcm(stdlog,top,mdatoms);
+  vcm = init_vcm(stdlog,top,mdatoms,parm->ir.nstcomm);
     
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Conjugate Gradients");
