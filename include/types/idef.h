@@ -29,7 +29,8 @@
 #ifndef _idef_h
 #define _idef_h
 
-#define MAXATOMLIST	4
+/* check kernel/toppush.c when you change these numbers */
+#define MAXATOMLIST	5
 #define MAXFORCEPARAM	6
 #define NR_RBDIHS	6
 
@@ -54,11 +55,12 @@ enum {
   F_RBDIHS,
   F_SHAKE,
   F_SETTLE,
-  F_DUMMY1,
   F_DUMMY2,
-  F_DUMMY2FD,
-  F_DUMMY2FAD,
   F_DUMMY3,
+  F_DUMMY3FD,
+  F_DUMMY3FAD,
+  F_DUMMY3OUT,
+  F_DUMMY4FD,
   F_SR,
   F_EPOT,
   F_EKIN,
@@ -99,7 +101,7 @@ typedef union
   struct {real pos0[DIM],fc[DIM];	        } posres;
   struct {real rbc[NR_RBDIHS];			} rbdihs;
   struct {real a,b,c,d,e,f;                     } dummy;   
-  struct {real rx0,rx1,rx2,rx3; int type,index; } disres; 
+  struct {real low,up1,up2,fac;int type,index;  } disres; 
   struct {real buf[MAXFORCEPARAM];		} generic; /* Conversion */
 } t_iparams;
 

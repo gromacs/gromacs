@@ -312,12 +312,15 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("morse",       opts->bMorse,yesno_names, nerror, TRUE);
   
   /* Refinement */
-  CCTYPE ("NMR refinement stuff");
+  CCTYPE("NMR refinement stuff");
   CTYPE ("Distance restraints type: None, Simple or Ensemble");
   EETYPE("disre",       opts->eDisre,   edisre_names, nerror, TRUE);
-  RTYPE ("dihre_fc",	ir->dihr_fc,	1000.0);
+  CTYPE ("Force weighting of pairs in one distance restraint: Equal or Conservative");
+  EETYPE("disre_weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);
+  CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
+  EETYPE("disre_mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
   RTYPE ("disre_fc",	ir->dr_fc,	1000.0);
-  RTYPE ("disre_tau",	ir->dr_tau,	1.25);
+  RTYPE ("disre_tau",	ir->dr_tau,	10.0);
   
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
@@ -326,14 +329,14 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("delta_lambda",ir->delta_lambda,0.0);
 
   /* Non-equilibrium MD stuff */  
-  CCTYPE ("Non-equilibrium MD stuff");
+  CCTYPE("Non-equilibrium MD stuff");
   STYPE ("acc_grps",    accgrps,        NULL);
   STYPE ("accelerate",  acc,            NULL);
   STYPE ("freezegrps",  freeze,         NULL);
   STYPE ("freezedim",   fdim,           NULL);
   
   /* Electric fields */
-  CCTYPE ("Electric fields");
+  CCTYPE("Electric fields");
   CTYPE ("Format is number of terms (int) and for all terms an amplitude (real)");
   CTYPE ("and a phase angle (real)");
   STYPE ("E_x",   	efield_x,	NULL);

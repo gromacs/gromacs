@@ -48,9 +48,9 @@ static char *ds[d_maxdir+1] = {
   "blocktype",
   "moleculetype",
   "atoms",
-  "dummies1",
   "dummies2",
   "dummies3",
+  "dummies4",
   "bonds",
   "exclusions",
   "pairs",
@@ -102,22 +102,23 @@ int ifunc_index(directive d,int type)
       return F_LJ;
     else
       return F_BHAM;
-  case d_dum1:
-    return F_DUMMY1;
   case d_dum2:
+    return F_DUMMY2;
+  case d_dum3:
     switch (type) {
     case 1:
-      return F_DUMMY2;
+      return F_DUMMY3;
     case 2: 
-      return F_DUMMY2FD;
+      return F_DUMMY3FD;
     case 3:
-      return F_DUMMY2FAD;
+      return F_DUMMY3FAD;
+    case 4:
+      return F_DUMMY3OUT;  
     default:
-      fatal_error(0,"Invalid dummy2 type %d",type);
+      fatal_error(0,"Invalid dummies3 type %d",type);
     }
-    break;
-  case d_dum3:
-    return F_DUMMY3;
+  case d_dum4:
+    return F_DUMMY4FD; 
   case d_constraints:
     return F_SHAKE;
   case d_settles:
@@ -200,6 +201,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_atoms]),d_blocktype,d_moleculetype,d_none);
     set_nec(&(necessary[d_dum2]),d_atoms,d_none);
     set_nec(&(necessary[d_dum3]),d_atoms,d_none);
+    set_nec(&(necessary[d_dum4]),d_atoms,d_none);
     set_nec(&(necessary[d_bonds]),d_atoms,d_none);
     set_nec(&(necessary[d_exclusions]),d_bonds,d_constraints,d_settles,d_none);
     set_nec(&(necessary[d_pairs]),d_atoms,d_none);

@@ -91,7 +91,8 @@ typedef struct {
   real delta_lambda;	/* change of lambda per time step (1/dt)	*/
   real dr_fc;		/* force constant for ta_disre			*/
   int  eDisre;          /* distance restraining type                    */
-  real dihr_fc;		/* force constant for dihedral restraints	*/
+  int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
+  bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   real dr_tau;		/* time constant for memory function in disres 	*/
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/

@@ -250,19 +250,21 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype)
 
 void push_bt(directive d,t_params bt[],int nral,t_atomtype *at,char *line)
 {
-  static   char *formal[5] = {
+  static   char *formal[MAXATOMLIST+1] = {
     "%s",
     "%s%s",
     "%s%s%s",
     "%s%s%s%s",
-    "%s%s%s%s%s"
+    "%s%s%s%s%s",
+    "%s%s%s%s%s%s"
   };
-  static   char *formnl[5] = {
+  static   char *formnl[MAXATOMLIST+1] = {
     "%*s",
     "%*s%*s",
     "%*s%*s%*s",
     "%*s%*s%*s%*s",
-    "%*s%*s%*s%*s%*s"
+    "%*s%*s%*s%*s%*s",
+    "%*s%*s%*s%*s%*s%*s"
   };
   static   char *formlf[MAXFORCEPARAM] = {
     "%lf",
@@ -274,13 +276,13 @@ void push_bt(directive d,t_params bt[],int nral,t_atomtype *at,char *line)
   };
   int      i,ft,ftype,nn,nrfp;
   char     f1[STRLEN];
-  char     alc[5][20];
+  char     alc[MAXATOMLIST+1][20];
   double   c[MAXFORCEPARAM];
   t_param  p;
   
   /* Make format string (nral ints+functype) */
   if ((nn=sscanf(line,formal[nral],
-		 alc[0],alc[1],alc[2],alc[3],alc[4])) != nral+1) {
+		 alc[0],alc[1],alc[2],alc[3],alc[4],alc[5])) != nral+1) {
     sprintf(errbuf,"Not enough atomtypes (%d instead of %d)",nn-1,nral);
     warning(errbuf);
     return;
@@ -566,17 +568,19 @@ void push_bondnow(t_params *bond, t_param *b)
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,char *line)
 {
-  static char *aaformat[4]= {
+  static char *aaformat[MAXATOMLIST]= {
     "%d%d",
     "%d%d%d",
     "%d%d%d%d",
-    "%d%d%d%d%d"
+    "%d%d%d%d%d",
+    "%d%d%d%d%d%d"
   };
-  static char *asformat[4]= {
+  static char *asformat[MAXATOMLIST]= {
     "%*s%*s",
     "%*s%*s%*s",
     "%*s%*s%*s%*s",
-    "%*s%*s%*s%*s%*s"
+    "%*s%*s%*s%*s%*s",
+    "%*s%*s%*s%*s%*s%*s"
   };
   static char *ccformat[6]= {
     "%lf",
@@ -595,7 +599,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   
   ftype = ifunc_index(d,1);
   nral  = NRAL(ftype);
-  nread = sscanf(line,aaformat[nral-1],&aa[0],&aa[1],&aa[2],&aa[3],&aa[4]);
+  nread = sscanf(line,aaformat[nral-1],
+		 &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
   if (nread < nral) {
     too_few();
     return;

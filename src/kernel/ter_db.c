@@ -115,7 +115,7 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
       fprintf(debug,"N_IDIH %d\n",tb[nb].nidih);
     snew(tb[nb].idih,tb[nb].nidih);
     for(i=0; (i<tb[nb].nidih); i++) {
-      for(j=0; (j<MAXATOMLIST); j++) {
+      for(j=0; (j<4); j++) {
 	if (fscanf(in,"%s",buf) != 1) FATAL();
 	tb[nb].idih[i].ai[j]=strdup(buf);
       }
@@ -180,7 +180,7 @@ void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype)
     }
     fprintf(out,"%d\n",tb[i].nidih);
     for(j=0; (j<tb[i].nidih); j++) {
-      for(k=0; (k<MAXATOMLIST); k++) 
+      for(k=0; (k<4); k++) 
 	fprintf(out,"%6s  ",tb[i].idih[j].ai[k]);
       fprintf(out,"\n");
     }

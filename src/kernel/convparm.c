@@ -104,10 +104,10 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_DISRES:
     new->disres.index=old[0];
     new->disres.type=old[1];
-    new->disres.rx0=old[2];
-    new->disres.rx1=old[3];
-    new->disres.rx2=old[4];
-    new->disres.rx3=old[5];
+    new->disres.low=old[2];
+    new->disres.up1=old[3];
+    new->disres.up2=old[4];
+    new->disres.fac=old[5];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) 
@@ -121,10 +121,11 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->settle.doh=old[0];
     new->settle.dhh=old[1];
     break;
-  case F_DUMMY1:
   case F_DUMMY2:
-  case F_DUMMY2FD:
   case F_DUMMY3:
+  case F_DUMMY3FD:
+  case F_DUMMY3OUT:
+  case F_DUMMY4FD:
     new->dummy.a=old[0];
     new->dummy.b=old[1];
     new->dummy.c=old[2];
@@ -132,7 +133,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->dummy.e=old[4];
     new->dummy.f=old[5];
     break;
-  case F_DUMMY2FAD:
+  case F_DUMMY3FAD:
     new->dummy.a=old[1] * cos(DEG2RAD * old[0]);
     new->dummy.b=old[1] * sin(DEG2RAD * old[0]);
     new->dummy.c=old[2];

@@ -243,11 +243,14 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     f=1;
     bDih=TRUE;
     break;
-  case F_DUMMY2FD:
+  case F_DUMMY3FD:
     f = 1;
     break;
-  case F_DUMMY2FAD:
+  case F_DUMMY3FAD:
     f = 2;
+    break;
+  case F_DUMMY3OUT:
+    f = 3; 
     break;
   default:
     bDih=FALSE;

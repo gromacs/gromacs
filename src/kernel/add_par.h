@@ -38,13 +38,13 @@ extern void add_param(t_params *ps,int ai,int aj, real *c);
 extern void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,
 			  real c0, real c1);
 
-extern void add_dum1_param(t_params *ps,int ai,int aj,int ak,real a);
+extern void add_dum2_2_param(t_params *ps,int ai,int aj,int ak,real a);
 
-extern void add_dum2_param(t_params *ps,int ai,int aj,int ak,int al,
-			   real a, real b);
+extern void add_dum3_2_param(t_params *ps,int ai,int aj,int ak,int al,
+			     real a, real b);
 
-extern void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al,
-			   real a, real b, real c);
+extern void add_dum3_3_param(t_params *ps,int ai,int aj,int ak,int al,
+			     real a, real b, real c);
 
 extern int search_jtype(t_restp *rp,char *name,bool bFirstRes);
 

@@ -54,6 +54,7 @@ extern char *eshake_names[estNR+1];
 extern char *ptype_str[eptNR+1];
 extern char *egrp_nm[egNR+1];
 extern char *edisre_names[edrNR+1];
+extern char *edisreweighting_names[edrwNR+1];
 extern char *enbf_names[eNBF_NR+1];
 extern char *ecomb_names[eCOMB_NR+1];
 
@@ -70,6 +71,7 @@ extern char *ecomb_names[eCOMB_NR+1];
 #define EELTYPE(e)     ENUM_NAME(e,eelNR,eel_names)
 #define ESHAKETYPE(e)  ENUM_NAME(e,estNR,eshake_names)
 #define EDISRETYPE(e)  ENUM_NAME(e,edrNR,edisre_names)
+#define EDISREWEIGHTING(e)  ENUM_NAME(e,edrwNR,edisreweighting_names)
 #define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
 #define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
 

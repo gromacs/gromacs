@@ -361,7 +361,7 @@ void clean_dum_angles(t_params *ps, t_params *plist, bool *is_dum)
 void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist, 
 		    bool *is_dum)
 {
-  int      i,j,k,l,m,n,ndum,kept_i;
+  int      ftype,i,j,k,l,m,n,ndum,kept_i;
   atom_id  atom,constr;
   atom_id  dumatoms[3];
   bool     keep,used,present;
@@ -369,12 +369,13 @@ void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist,
   
   /* make index into dummy entries of plist: */
   snew(pindex,natom);
-  for(i=F_DUMMY1; (i<=F_DUMMY3); i++)
-    for (j=0; (j<plist[i].nr); j++) {
-      k=plist[i].param[j].AI;
-      pindex[k].i=i;
-      pindex[k].j=j;
-    }
+  for(ftype=0; (ftype<F_NRE); ftype++)
+    if (interaction_function[ftype].flags & IF_DUMMY)
+      for (j=0; (j<plist[ftype].nr); j++) {
+	k=plist[ftype].param[j].AI;
+	pindex[k].i=ftype;
+	pindex[k].j=j;
+      }
   
   kept_i=0;
   for(i=0; (i<ps->nr); i++) { /* for all dihedrals in the plist */
@@ -520,8 +521,8 @@ static int get_atom(char *atnm, int incl,
   return atom;
 }
 
-void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3, 
-		t_params *psd2FD, t_params *psd2FAD, t_params *psda,
+void do_dum_top(t_params *psb, t_params *psd3, t_params *psd3OUT,
+		t_params *psd3FD, t_params *psd3FAD, t_params *psda,
 		int nddb,t_dumblock *ddb,bool is_dum[], t_atoms *at, 
 		t_atomtype *atype, int nrtp, t_restp rtp[], real mHmult)
 {
@@ -792,20 +793,20 @@ void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3,
 			    "in do_dum_top (%s)",k,ddb[n].bname);
 	    
 	    switch(ddb[n].dum[m].tp) {
-	    case 2: /* type 2 */
-	      add_dum2_param(psd2,ak[0],ak[1],ak[2],ak[3],
+	    case 2: /* type 3 */
+	      add_dum3_2_param(psd3,ak[0],ak[1],ak[2],ak[3],
 			     ddb[n].dum[m].a,ddb[n].dum[m].b);
 	      break;
-	    case 3: /* type 3 */
-	      add_dum3_param(psd3,ak[0],ak[1],ak[2],ak[3],ddb[n].dum[m].a,
+	    case 3: /* type 3out */
+	      add_dum3_3_param(psd3OUT,ak[0],ak[1],ak[2],ak[3],ddb[n].dum[m].a,
 			     ddb[n].dum[m].b,ddb[n].dum[m].c);
 	      break;
-	    case 4: /* type 2' */
-	      add_dum2_param(psd2FD,ak[0],ak[1],ak[2],ak[3],
+	    case 4: /* type 3fd */
+	      add_dum3_2_param(psd3FD,ak[0],ak[1],ak[2],ak[3],
 			     ddb[n].dum[m].a,ddb[n].dum[m].b);
 	      break;
-	    case 5: /* type 2'' */
-	      add_dum2_param(psd2FAD,ak[0],ak[1],ak[2],ak[3],
+	    case 5: /* type 3fad */
+	      add_dum3_2_param(psd3FAD,ak[0],ak[1],ak[2],ak[3],
 			     ddb[n].dum[m].a,ddb[n].dum[m].b);
 	      break;
 	    default:

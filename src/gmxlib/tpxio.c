@@ -45,7 +45,7 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version  = 3;
+static int tpx_version  = 4;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -137,10 +137,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->fudgeQQ); 
     do_int(ir->bPert); 
     do_real(ir->init_lambda); 
-    do_real(ir->delta_lambda); 
+    do_real(ir->delta_lambda);
+    do_int(ir->eDisreWeighting); 
+    do_int(ir->bDisreMixed); 
     do_real(ir->dr_fc); 
     do_real(ir->dr_tau); 
-    do_real(ir->dihr_fc); 
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
     do_int(ir->eConstrAlg); 
@@ -271,10 +272,10 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
   case F_DISRES:
     do_int (iparams->disres.index);
     do_int (iparams->disres.type);
-    do_real(iparams->disres.rx0);
-    do_real(iparams->disres.rx1);
-    do_real(iparams->disres.rx2);
-    do_real(iparams->disres.rx3);
+    do_real(iparams->disres.low);
+    do_real(iparams->disres.up1);
+    do_real(iparams->disres.up2);
+    do_real(iparams->disres.fac);
     break;
   case F_POSRES:
     do_rvec(iparams->posres.pos0);
@@ -291,16 +292,17 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_real(iparams->settle.doh);
     do_real(iparams->settle.dhh);
     break;
-  case F_DUMMY1:
+  case F_DUMMY2:
     do_real(iparams->dummy.a);
     break;
-  case F_DUMMY2:
-  case F_DUMMY2FD:
-  case F_DUMMY2FAD:
+  case F_DUMMY3:
+  case F_DUMMY3FD:
+  case F_DUMMY3FAD:
     do_real(iparams->dummy.a);
     do_real(iparams->dummy.b);
     break;
-  case F_DUMMY3:
+  case F_DUMMY3OUT:
+  case F_DUMMY4FD: 
     do_real(iparams->dummy.a);
     do_real(iparams->dummy.b);
     do_real(iparams->dummy.c);

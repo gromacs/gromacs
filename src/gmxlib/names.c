@@ -88,6 +88,10 @@ char *edisre_names[edrNR+1] = {
   "No", "Simple", "Ensemble", NULL
 };
 
+char *edisreweighting_names[edrwNR+1] = {
+  "Equal", "Conservative", NULL
+};
+
 char *enbf_names[eNBF_NR+1] = {
   "", "LJ", "Buckingham", NULL
 };

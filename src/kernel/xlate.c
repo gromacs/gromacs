@@ -92,7 +92,7 @@ void rename_atoms(t_atoms *atoms)
   t_symtab symtab;
   int nxlate,a,i;
   t_xlate_atom *xlatom;
-  char c,*ptr,*res,**atom;
+  char c,*res,**atom;
   bool bRenamed;
 
   xlatom = get_xlatoms(&nxlate);

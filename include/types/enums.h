@@ -64,6 +64,10 @@ enum {
   edrNone, edrSimple, edrEnsemble, edrNR
 };
 
+enum {
+  edrwEqual, edrwConservative, edrwNR
+};
+
 /* Combination rule things */
 enum { 
   eCOMB_NONE, eCOMB_ARITHMETIC, eCOMB_GEOMETRIC, eCOMB_ARITH_SIG_EPS, eCOMB_NR 

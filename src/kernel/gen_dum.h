@@ -81,8 +81,8 @@ extern void clean_dum_angles(t_params *ps, t_params *plist, bool *is_dum);
 extern void clean_dum_dihs(t_params *ps, int natom, char dihname[], 
 			   t_params *plist, bool *is_dum);
 
-extern void do_dum_top(t_params *psb, t_params *psd2, t_params *psd3, 
-		       t_params *psd2FD, t_params *psd2FAD, t_params *psda,
+extern void do_dum_top(t_params *psb, t_params *psd3, t_params *psd3OUT, 
+		       t_params *psd3FD, t_params *psd3FAD, t_params *psda,
 		       int nddb,t_dumblock *ddb,bool is_dum[],
 		       t_atoms *at, t_atomtype *atype, 
 		       int nrtp, t_restp rtp[], real mHmult);

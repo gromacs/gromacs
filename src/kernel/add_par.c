@@ -64,7 +64,7 @@ void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1)
   ps->param[ps->nr-1].C1=c1;
 }
 
-void add_dum1_param(t_params *ps,int ai,int aj,int ak,real a)
+void add_dum2_2_param(t_params *ps,int ai,int aj,int ak,real a)
 {
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;
@@ -73,7 +73,7 @@ void add_dum1_param(t_params *ps,int ai,int aj,int ak,real a)
   ps->param[ps->nr-1].C0=a;
 }
 
-void add_dum2_param(t_params *ps,int ai,int aj,int ak,int al,real a, real b)
+void add_dum3_2_param(t_params *ps,int ai,int aj,int ak,int al,real a, real b)
 {
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;
@@ -84,8 +84,8 @@ void add_dum2_param(t_params *ps,int ai,int aj,int ak,int al,real a, real b)
   ps->param[ps->nr-1].C1=b;
 }
 
-void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al,
-		    real a, real b, real c)
+void add_dum3_3_param(t_params *ps,int ai,int aj,int ak,int al,
+		      real a, real b, real c)
 {
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;

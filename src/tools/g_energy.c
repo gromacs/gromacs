@@ -129,7 +129,7 @@ int get_bounds(char *topnm,real **bounds,int **dr_index)
 	fprintf(stderr,"warning index %d occurs multiple times in topology."
 		" i=%d, nb=%d\n",index,i,nb);
       else {
-	b[nb] = ip[i].disres.rx0;
+	b[nb] = ip[i].disres.up1;
 	nb++;
       }
     }

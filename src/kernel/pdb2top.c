@@ -169,8 +169,6 @@ void print_top_comment(FILE *out, char *title, bool bITP)
 
 void print_top_header(FILE *out, char *title, bool bITP, char *ff, real mHmult)
 {
-  int i;
-  
   print_top_comment(out,title,bITP);
 
   print_top_heavy_H(out, mHmult);
@@ -243,10 +241,10 @@ void write_top(char *ff,FILE *out, char *pr,char *molname,
     print_bonds(out,at->nr,d_angles,F_ANGLES,plist,FALSE);
     print_bonds(out,at->nr,d_dihedrals,F_PDIHS,plist,FALSE);
     print_bonds(out,at->nr,d_dihedrals,F_IDIHS,plist,FALSE);
-    print_bonds(out,at->nr,d_dum2,F_DUMMY2,plist,FALSE);
-    print_bonds(out,at->nr,d_dum2,F_DUMMY2FD,plist,FALSE);
-    print_bonds(out,at->nr,d_dum2,F_DUMMY2FAD,plist,FALSE);
     print_bonds(out,at->nr,d_dum3,F_DUMMY3,plist,FALSE);
+    print_bonds(out,at->nr,d_dum3,F_DUMMY3FD,plist,FALSE);
+    print_bonds(out,at->nr,d_dum3,F_DUMMY3FAD,plist,FALSE);
+    print_bonds(out,at->nr,d_dum3,F_DUMMY3OUT,plist,FALSE);
     
     if (excl)
       if (excl->nr > 0)
@@ -564,8 +562,8 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
     /* remove bonds to dummy atoms and add bonds to dummy masses */
     /* also generate dummy parameters and set masses of dummies to 0 */
     do_dum_top(
-	       &(plist[F_BONDS]),&(plist[F_DUMMY2]),&(plist[F_DUMMY3]),
-	       &(plist[F_DUMMY2FD]),&(plist[F_DUMMY2FAD]),&(plist[F_ANGLES]),
+	       &(plist[F_BONDS]),&(plist[F_DUMMY3]),&(plist[F_DUMMY3OUT]),
+	       &(plist[F_DUMMY3FD]),&(plist[F_DUMMY3FAD]),&(plist[F_ANGLES]),
 	       nddb,ddb,is_dummy,atoms,atype,nrtp,rtp,mHmult);
     
     /* remove things with dummy atoms */
@@ -586,8 +584,8 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
 	  "          %4d pairs,     %4d bonds and  %4d dummies\n",
 	  plist[F_PDIHS].nr,plist[F_IDIHS].nr,plist[F_ANGLES].nr,
 	  plist[F_LJ14].nr,plist[F_BONDS].nr,
-	  plist[F_DUMMY1].nr+plist[F_DUMMY2].nr+plist[F_DUMMY2FD].nr+
-	  plist[F_DUMMY2FAD].nr+plist[F_DUMMY3].nr);
+	  plist[F_DUMMY2].nr+plist[F_DUMMY3].nr+plist[F_DUMMY3FD].nr+
+	  plist[F_DUMMY3FAD].nr+plist[F_DUMMY3OUT].nr+plist[F_DUMMY4FD].nr);
   
   print_sums(atoms, FALSE);
 

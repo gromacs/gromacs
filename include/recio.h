@@ -179,9 +179,10 @@ do { \
       block##io(fp,(ir).bPert); \
       block##io(fp,(ir).init_lambda); \
       block##io(fp,(ir).delta_lambda); \
+      block##io(fp,(ir).disreweighting); \
+      block##io(fp,(ir).bDisreMixed); \				   
       block##io(fp,(ir).dr_fc); \
       block##io(fp,(ir).dr_tau); \
-      block##io(fp,(ir).dihr_fc); \
       block##io(fp,(ir).em_stepsize); \
       block##io(fp,(ir).em_tol); \
       block##io(fp,(ir).nstcgsteep); \
@@ -246,10 +247,10 @@ do { \
         case F_DISRES: \
           block##io(fp,(iparams).disres.type); \
           block##io(fp,(iparams).disres.index); \
-          block##io(fp,(iparams).disres.rx0); \
-          block##io(fp,(iparams).disres.rx1); \
-          block##io(fp,(iparams).disres.rx2); \
-          block##io(fp,(iparams).disres.rx3); \
+	  block##io(fp,(iparams).disres.low); \				  
+          block##io(fp,(iparams).disres.up1); \
+          block##io(fp,(iparams).disres.up2); \
+          block##io(fp,(iparams).disres.fac); \
           break; \
         case F_POSRES: \
           nblock##io(fp,DIM,(iparams).posres.pos0); \

@@ -286,8 +286,9 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("free_energy",BOOL(ir->bPert));
     PR("init_lambda",ir->init_lambda);
     PR("delta_lambda",ir->delta_lambda);
+    PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));
+    PS("disre_mixed",BOOL(ir->bDisreMixed));
     PR("dr_fc",ir->dr_fc);
-    PR("dihr_fc",ir->dihr_fc);
     PR("dr_tau",ir->dr_tau);
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);
@@ -370,10 +371,10 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->pdihs.mult);
     break;
   case F_DISRES:
-    fprintf(fp,"index=%4d, type=%1d, rx=(%15.8e,%15.8e,%15.8e,%15.8e)\n",
+    fprintf(fp,"index=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
 	    iparams->disres.index,iparams->disres.type,
-	    iparams->disres.rx0,iparams->disres.rx1,
-	    iparams->disres.rx2,iparams->disres.rx3);
+	    iparams->disres.low,iparams->disres.up1,
+	    iparams->disres.up2,iparams->disres.fac);
     break;
   case F_POSRES:
     fprintf(fp,"pos0=(%15.8e,%15.8e,%15.8e), fc=(%15.8e,%15.8e,%15.8e)\n",
@@ -393,15 +394,16 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"doh=%15.8e, dhh=%15.8e\n",iparams->settle.doh,
 	    iparams->settle.dhh);
     break;
-  case F_DUMMY1:
+  case F_DUMMY2:
     fprintf(fp,"a=%15.8e\n",iparams->dummy.a);
     break;
-  case F_DUMMY2:
-  case F_DUMMY2FD:
-  case F_DUMMY2FAD:
+  case F_DUMMY3:
+  case F_DUMMY3FD:
+  case F_DUMMY3FAD:
     fprintf(fp,"a=%15.8e, b=%15.8e\n",iparams->dummy.a,iparams->dummy.b);
     break;
-  case F_DUMMY3:
+  case F_DUMMY3OUT:
+  case F_DUMMY4FD:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
 	    iparams->dummy.a,iparams->dummy.b,iparams->dummy.c);
     break;

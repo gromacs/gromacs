@@ -433,6 +433,7 @@ static char **read_topol(char        *infile,
 	  
 	case d_dum2:
 	case d_dum3:
+	case d_dum4:
         case d_bonds:
 	case d_pairs: 
 	case d_angles:

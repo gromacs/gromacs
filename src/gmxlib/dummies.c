@@ -71,7 +71,7 @@ void set_dummies_ptype(bool bVerbose, t_topology *sys)
   }
 }
 
-static void constr_dum1(rvec xi,rvec xj,rvec x,real a)
+static void constr_dum2(rvec xi,rvec xj,rvec x,real a)
 {
   real b;
   
@@ -86,7 +86,7 @@ static void constr_dum1(rvec xi,rvec xj,rvec x,real a)
   /* TOTAL: 10 flops */
 }
 
-static void constr_dum2(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
+static void constr_dum3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
 {
   real c;
   
@@ -101,7 +101,7 @@ static void constr_dum2(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
   /* TOTAL: 17 flops */
 }
 
-static void constr_dum2FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
+static void constr_dum3FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
 {
   rvec xij,xjk,temp;
   real c;
@@ -127,7 +127,7 @@ static void constr_dum2FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
   /* TOTAL: 34 flops */
 }
 
-static void constr_dum2FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
+static void constr_dum3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
 {
   rvec xij,xjk,xp;
   real a1,b1,c1,invdij;
@@ -153,7 +153,7 @@ static void constr_dum2FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
   /* TOTAL: 63 flops */
 }
 
-static void constr_dum3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,real c)
+static void constr_dum3OUT(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,real c)
 {
   rvec xij,xik,temp;
   
@@ -170,13 +170,41 @@ static void constr_dum3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,real c)
   /* TOTAL: 33 flops */
 }
 
+static void constr_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
+			  real a,real b,real c)
+{
+  rvec xij,xjk,xjl,temp;
+  real d;
+  
+  rvec_sub(xj,xi,xij);
+  rvec_sub(xk,xj,xjk);
+  rvec_sub(xl,xj,xjl);
+  /* 9 flops */
+
+  /* temp goes from i to a point on the plane jkl */  
+  temp[XX] = xij[XX] + a*xjk[XX] + b*xjl[XX];
+  temp[YY] = xij[YY] + a*xjk[YY] + b*xjl[YY];
+  temp[ZZ] = xij[ZZ] + a*xjk[ZZ] + b*xjl[ZZ];
+  /* 12 flops */
+  
+  d=c*invsqrt(iprod(temp,temp));
+  /* 6 + 10 flops */
+  
+  x[XX] = xi[XX] + d*temp[XX];
+  x[YY] = xi[YY] + d*temp[YY];
+  x[ZZ] = xi[ZZ] + d*temp[ZZ];
+  /* 6 Flops */
+  
+  /* TOTAL: 43 flops */
+}
+
 void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
 		       rvec *v,t_idef *idef)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
   int       i,nra,nrd,tp,ftype;
-  t_iatom   adum,ai,aj,ak;
+  t_iatom   adum,ai,aj,ak,al;
   t_iatom   *ia;
   t_iparams *ip;
   
@@ -207,29 +235,36 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 	
 	/* Construct the dummy depending on type */
 	switch (ftype) {
-	case F_DUMMY1:
-	  constr_dum1(x[ai],x[aj],x[adum],a1);
-	  break;
 	case F_DUMMY2:
-	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  constr_dum2(x[ai],x[aj],x[ak],x[adum],a1,b1);
-	  break;
-	case F_DUMMY2FD:
-	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  constr_dum2FD(x[ai],x[aj],x[ak],x[adum],a1,b1);
-	  break;
-	case F_DUMMY2FAD:
-	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  constr_dum2FAD(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  constr_dum2(x[ai],x[aj],x[adum],a1);
 	  break;
 	case F_DUMMY3:
 	  ak = ia[4];
 	  b1 = ip[tp].dummy.b;
+	  constr_dum3(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  break;
+	case F_DUMMY3FD:
+	  ak = ia[4];
+	  b1 = ip[tp].dummy.b;
+	  constr_dum3FD(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  break;
+	case F_DUMMY3FAD:
+	  ak = ia[4];
+	  b1 = ip[tp].dummy.b;
+	  constr_dum3FAD(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  break;
+	case F_DUMMY3OUT:
+	  ak = ia[4];
+	  b1 = ip[tp].dummy.b;
 	  c1 = ip[tp].dummy.c;
-	  constr_dum3(x[ai],x[aj],x[ak],x[adum],a1,b1,c1);
+	  constr_dum3OUT(x[ai],x[aj],x[ak],x[adum],a1,b1,c1);
+	  break;
+	case F_DUMMY4FD:
+	  ak = ia[4];
+	  al = ia[5];
+	  b1 = ip[tp].dummy.b;
+	  c1 = ip[tp].dummy.c;
+	  constr_dum4FD(x[ai],x[aj],x[ak],x[al],x[adum],a1,b1,c1);
 	  break;
 	default:
 	  fatal_error(0,"No such dummy type %d in %s, line %d",
@@ -248,7 +283,7 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   }
 }
 
-static void spread_dum1(rvec fi,rvec fj,rvec f,real a)
+static void spread_dum2(rvec fi,rvec fj,rvec f,real a)
 {
   real fx,fy,fz,b;
   
@@ -269,7 +304,7 @@ static void spread_dum1(rvec fi,rvec fj,rvec f,real a)
   /* TOTAL: 7 flops */
 }
 
-static void spread_dum2(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
+static void spread_dum3(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
   real fx,fy,fz,c;
   
@@ -293,7 +328,7 @@ static void spread_dum2(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
   /* TOTAL: 11 flops */
 }
 
-static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
+static void spread_dum3FD(rvec xi,rvec xj,rvec xk,
 			  rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
   real fx,fy,fz,c,invl,fproj,a1;
@@ -324,7 +359,7 @@ static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
   temp[ZZ]=c*(fz-fproj*xix[ZZ]);
   /* 16 */
   
-  /* c is already calculated in constr_dum2FD
+  /* c is already calculated in constr_dum3FD
      storing c somewhere will save 26 flops!     */
   
   a1=1-a;
@@ -337,12 +372,12 @@ static void spread_dum2FD(rvec xi,rvec xj,rvec xk,
   fk[XX]+= a*temp[XX];
   fk[YY]+= a*temp[YY];
   fk[ZZ]+= a*temp[ZZ];
-  /* 10 Flops */
+  /* 19 Flops */
   
-  /* TOTAL: 52 flops */
+  /* TOTAL: 61 flops */
 }
 
-static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
+static void spread_dum3FAD(rvec xi,rvec xj,rvec xk,
 			   rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
   rvec xij,xjk,xperp,Fpij,Fppp,f1,f2,f3;
@@ -365,7 +400,7 @@ static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
   b1 = b*invdp;
   /* 45 flops */
   
-  /* a1, b1 and c1 are already calculated in constr_dum2FAD
+  /* a1, b1 and c1 are already calculated in constr_dum3FAD
      storing them somewhere will save 45 flops!     */
   
   fproj=iprod(xij  ,f)*invdij2;
@@ -397,7 +432,7 @@ static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
   /* TOTAL: 113 flops */
 }
 
-static void spread_dum3(rvec xi,rvec xj,rvec xk,
+static void spread_dum3OUT(rvec xi,rvec xj,rvec xk,
 			rvec fi,rvec fj,rvec fk,rvec f,real a,real b,real c)
 {
   rvec xij,xik,ffj,ffk;
@@ -432,12 +467,66 @@ static void spread_dum3(rvec xi,rvec xj,rvec xk,
   /* TOTAL: 54 flops */
 }
 
+static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
+			  rvec fi,rvec fj,rvec fk,rvec fl,rvec f,
+			  real a,real b,real c)
+{
+  real fx,fy,fz,d,invl,fproj,a1;
+  rvec xij,xjk,xjl,xix,temp;
+  
+  rvec_sub(xj,xi,xij);
+  rvec_sub(xk,xj,xjk);
+  rvec_sub(xl,xj,xjl);
+  /* 9 flops */
+  
+  /* xix goes from i to point x on the plane jkl */  
+  xix[XX]=xij[XX]+a*xjk[XX]+b*xjk[XX];
+  xix[YY]=xij[YY]+a*xjk[YY]+b*xjk[YY];
+  xix[ZZ]=xij[ZZ]+a*xjk[ZZ]+b*xjk[ZZ];
+  /* 12 flops */
+  
+  invl=invsqrt(iprod(xix,xix));
+  d=c*invl;
+  /* 4 + ?10? flops */
+  
+  fproj=iprod(xix,f)*invl*invl; /* = (xix . f)/(xix . xix) */
+  
+  fx=f[XX];
+  fy=f[YY];
+  fz=f[ZZ];
+  
+  temp[XX]=d*(fx-fproj*xix[XX]);
+  temp[YY]=d*(fy-fproj*xix[YY]);
+  temp[ZZ]=d*(fz-fproj*xix[ZZ]);
+  /* 16 */
+  
+  /* c is already calculated in constr_dum3FD
+     storing c somewhere will save 35 flops!     */
+  
+  a1=1-a-b;
+  fi[XX]+=fx-temp[XX];
+  fi[YY]+=fy-temp[YY];
+  fi[ZZ]+=fz-temp[ZZ];
+  fj[XX]+=a1*temp[XX];
+  fj[YY]+=a1*temp[YY];
+  fj[ZZ]+=a1*temp[ZZ];
+  fk[XX]+= a*temp[XX];
+  fk[YY]+= a*temp[YY];
+  fk[ZZ]+= a*temp[ZZ];
+  fl[XX]+= b*temp[XX];
+  fl[YY]+= b*temp[YY];
+  fl[ZZ]+= b*temp[ZZ];
+  /* 26 Flops */
+  
+  /* TOTAL: 77 flops */
+}
+
 void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 {
   real      a1,b1,c1;
   int       i,nra,nrd,tp,ftype;
-  int       nd1,nd2,nd2FD,nd2FAD,nd3;
-  t_iatom   adum,ai,aj,ak;
+  int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD;
+  t_iatom   adum,ai,aj,ak,al;
   t_iatom   *ia;
   t_iparams *ip;
   
@@ -448,12 +537,13 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
-      nd1    = 0;
       nd2    = 0;
-      nd2FD  = 0;
-      nd2FAD = 0;
       nd3    = 0;
-      
+      nd3FD  = 0;
+      nd3FAD = 0;
+      nd3OUT = 0;
+      nd4FD  = 0;
+ 
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
 	assert(ftype == idef->functype[tp]);
@@ -468,34 +558,43 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 	
 	/* Construct the dummy depending on type */
 	switch (ftype) {
-	case F_DUMMY1:
-	  spread_dum1(f[ai],f[aj],f[adum],a1);
-	  nd1++;
-	  break;
 	case F_DUMMY2:
-	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  spread_dum2(f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  spread_dum2(f[ai],f[aj],f[adum],a1);
 	  nd2++;
-	  break;
-	case F_DUMMY2FD:
-	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  spread_dum2FD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
-	  nd2FD++;
-	  break;
-	case F_DUMMY2FAD:
-	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  spread_dum2FAD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
-	  nd2FAD++;
 	  break;
 	case F_DUMMY3:
 	  ak = ia[4];
 	  b1 = ip[tp].dummy.b;
-	  c1 = ip[tp].dummy.c;
-	  spread_dum3(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1,c1);
+	  spread_dum3(f[ai],f[aj],f[ak],f[adum],a1,b1);
 	  nd3++;
+	  break;
+	case F_DUMMY3FD:
+	  ak = ia[4];
+	  b1 = ip[tp].dummy.b;
+	  spread_dum3FD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  nd3FD++;
+	  break;
+	case F_DUMMY3FAD:
+	  ak = ia[4];
+	  b1 = ip[tp].dummy.b;
+	  spread_dum3FAD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  nd3FAD++;
+	  break;
+	case F_DUMMY3OUT:
+	  ak = ia[4];
+	  b1 = ip[tp].dummy.b;
+	  c1 = ip[tp].dummy.c;
+	  spread_dum3OUT(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1,c1);
+	  nd3OUT++;
+	  break;
+	case F_DUMMY4FD:
+	  ak = ia[4];
+	  al = ia[5];
+	  b1 = ip[tp].dummy.b;
+	  c1 = ip[tp].dummy.c;
+	  spread_dum4FD(x[ai],x[aj],x[ak],x[al],
+			f[ai],f[aj],f[ak],f[al],f[adum],a1,b1,c1);
+	  nd4FD++;
 	  break;
 	default:
 	  fatal_error(0,"No such dummy type %d in %s, line %d",
@@ -509,10 +608,11 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
       }
     }
   }
-  inc_nrnb(nrnb,eNR_DUM1,   nd1   );
   inc_nrnb(nrnb,eNR_DUM2,   nd2   );
-  inc_nrnb(nrnb,eNR_DUM2FD, nd2FD );
-  inc_nrnb(nrnb,eNR_DUM2FAD,nd2FAD);
   inc_nrnb(nrnb,eNR_DUM3,   nd3   );
+  inc_nrnb(nrnb,eNR_DUM3FD, nd3FD );
+  inc_nrnb(nrnb,eNR_DUM3FAD,nd3FAD);
+  inc_nrnb(nrnb,eNR_DUM3OUT,nd3OUT);
+  inc_nrnb(nrnb,eNR_DUM4FD, nd4FD );
 }
 

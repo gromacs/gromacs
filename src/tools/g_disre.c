@@ -291,7 +291,7 @@ int main (int argc,char *argv[])
   do {
     if ((j % 10) == 0)
       fprintf(stderr,"\rFrame: %d",j);
-    rm_pbc(&top->idef,top->atoms.nr,box,x,x);
+    rm_pbc(&top->idef,natoms,box,x,x);
 
     if (bProt) {
       protonate(&atoms,&x);
@@ -300,7 +300,7 @@ int main (int argc,char *argv[])
     check_viol(stdlog,
 	       &(top->idef.il[F_DISRES]),
 	       top->idef.iparams,top->idef.functype,
-	       atoms->nr,x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
+	       natoms,x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
 	       isize,index,vvindex);
     if (isize > 0) {
       fprintf(xvg,"%10g",t);

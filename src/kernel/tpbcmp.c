@@ -273,8 +273,9 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIB(bPert);
   CIR(init_lambda);
   CIR(delta_lambda);
+  CII(eDisreWeighting);
+  CIB(bDisreMixed);
   CIR(dr_fc);
-  CIR(dihr_fc);
   CIR(dr_tau);
   CIR(em_stepsize);
   CIR(em_tol);
