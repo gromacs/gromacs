@@ -542,9 +542,11 @@ case "${host_cpu}-${host_os}" in
    if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
      xCFLAGS="-O3"
      xASFLAGS=$xCFLAGS
+     ac_cv_prog_gcc="no"	
    fi  
    if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
      xFFLAGS="-O3 -w90 -w95"
+     ac_cv_prog_g77="no"
    fi  
    # PORTME 2. Check for intel compilers when we get our hands on one!
    ;;	
@@ -733,6 +735,7 @@ case "${host_cpu}-${host_os}" in
 
     # Intel compilers
     if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
+      ac_cv_prog_gcc="no"	
       case "${host_cpu}" in
 	i686)
 	  xCFLAGS="-O3 -tpp6 -axK -ip" 
@@ -747,6 +750,7 @@ case "${host_cpu}-${host_os}" in
     fi
     if test "$enable_fortran" = "yes"; then
       if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
+        ac_cv_prog_g77="no"
 	xFFLAGS="$xCFLAGS -w90 -w95"
       fi	
     fi

@@ -30,8 +30,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	detectcpu.c	libxdrf.c	vec.c			\
-	dihres.c	xmlio.c
+	detectcpu.c	libxdrf.c	vec.c		xmlio.h		\
+	dihres.c	xmlio.c		gmx_random_gausstable.h
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	x86_sse.s	x86_sse2.s	x86_3dnow.s  	inner_altivec.c \
