@@ -787,7 +787,7 @@ static real low_angres(int nbonds,
   rvec r_ij,r_kl,f_i,f_k;
   real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
 
-  ivec it,jt,dt;  
+  ivec dt;  
   
   vtot = 0.0;
   ak=al=0; /* to avoid warnings */
@@ -847,9 +847,8 @@ static real low_angres(int nbonds,
     rvec_inc(fr->fshift[t],f_i);
     rvec_dec(fr->fshift[CENTRAL],f_i);
     if (!bZAxis) {
-    ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
-    /* ivec_sub(it,jt,dt); */
-    t=IVEC2IS(dt);
+      ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
+      t=IVEC2IS(dt);
       rvec_inc(fr->fshift[t],f_k);
       rvec_dec(fr->fshift[CENTRAL],f_k);
     }
