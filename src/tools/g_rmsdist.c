@@ -29,13 +29,16 @@
 static char *SRCID_g_rmsdist_c = "$Id$";
 
 #include <math.h>
+#include <ctype.h>
 #include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
+#include "names.h"
 #include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "string2.h"
+#include "strdb.h"
 #include "vec.h"
 #include "macros.h"
 #include "rdgroup.h"
@@ -43,6 +46,7 @@ static char *SRCID_g_rmsdist_c = "$Id$";
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
+#include "assert.h"
 
 static void calc_dist(int nind,atom_id index[],rvec x[],real **d)
 {
@@ -75,7 +79,7 @@ static void calc_dist_tot(int nind,atom_id index[], rvec x[],
       temp2=dx[XX]*dx[XX]+dx[YY]*dx[YY]+dx[ZZ]*dx[ZZ];
       temp =sqrt(temp2);
       d[i][j]=temp;
-      dtot[i][j]+=temp; 
+      dtot[i][j]+=temp;
       dtot2[i][j]+=temp2;
       if (bNMR) {
 	temp1_3 = 1.0/(temp*temp2);
@@ -91,8 +95,7 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
 {
   int     i,j;
   real    temp1_3,temp1_6;
-
-
+  
   for(i=0; (i<nind-1); i++) {
     for(j=i+1; (j<nind); j++) {
       temp1_3 = pow(dtot1_3[i][j]/nframes,-1.0/3.0);
@@ -107,6 +110,291 @@ static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
   }
 }
 
+static char Hnum[] = "123";
+
+typedef struct {
+  int nr;
+  real r_3;
+  real r_6;
+} t_noe;
+
+typedef struct {
+  int  anr;
+  int  ianr;
+  int  rnr;
+  char *aname;
+  char *rname;
+} t_noe_gr;
+
+typedef struct {
+  int  rnr;
+  char *rname;
+  char *aname;
+} t_equiv;
+
+static int read_equiv(char *eq_fn, t_equiv ***equivptr)
+{
+  FILE *fp;
+  char   line[STRLEN],resname[10],atomname[10],*lp;
+  int neq, na, n, resnr;
+  t_equiv **equiv;
+  
+  fp = ffopen(eq_fn,"r");
+  neq=0;
+  equiv=NULL;
+  while(get_a_line(fp,line,STRLEN)) {
+    lp=line;
+    /* this is not efficient, but I'm lazy */
+    srenew(equiv,neq+1);
+    equiv[neq]=NULL;
+    na=0;
+    if (debug) fprintf(debug,"%d",neq);
+    while (sscanf(lp,"%d %s %s %n",&resnr,resname,atomname,&n)==3) {
+      /* this is not efficient, but I'm lazy (again) */
+      srenew(equiv[neq], na+1);
+      equiv[neq][na].rnr=resnr;
+      equiv[neq][na].rname=strdup(resname);
+      equiv[neq][na].aname=strdup(atomname);
+      if (debug) fprintf(debug," %d %s %s",resnr,resname,atomname);
+      na++;
+      lp+=n;
+    }
+    /* make empty element as flag for end of array */
+    srenew(equiv[neq], na+1);
+    equiv[neq][na].rnr=NOTSET;
+    equiv[neq][na].rname=NULL;
+    equiv[neq][na].aname=NULL;
+    if (debug) fprintf(debug,".\n");
+    
+    /* next */
+    neq++;
+  }
+  ffclose(fp);
+  
+  *equivptr=equiv;
+  
+  return neq;
+}
+    
+static bool is_equiv(int neq, t_equiv **equiv, 
+		     int rnr1, char *rname1, char *aname1,
+		     int rnr2, char *rname2, char *aname2)
+{
+  int i,j;
+  bool bFound;
+  
+  if(debug)fprintf(debug,"is_equiv %d %s %s - %d %s %s ?",
+		   rnr1, rname1, aname1, rnr2, rname2, aname2);
+  bFound=FALSE;
+  /* we can terminate each loop when bFound is true! */
+  for (i=0; i<neq && !bFound; i++) {
+    /* find first atom */
+    for(j=0; equiv[i][j].rnr!=NOTSET && !bFound; j++)
+      bFound = ( equiv[i][j].rnr==rnr1 &&
+		 strcmp(equiv[i][j].rname, rname1)==0 &&
+		 strcmp(equiv[i][j].aname, aname1)==0 );
+    if (bFound) {
+      /* find second atom */
+      bFound=FALSE;
+      for(j=0; equiv[i][j].rnr!=NOTSET && !bFound; j++)
+	bFound = ( equiv[i][j].rnr==rnr2 &&
+		   strcmp(equiv[i][j].rname, rname2)==0 &&
+		   strcmp(equiv[i][j].aname, aname2)==0 );
+    }
+  }
+  if(debug)fprintf(debug," %s\n",bool_names[bFound]);
+  
+  return bFound;
+}
+
+static int analyze_noe_equivalent(char *eq_fn,
+				  t_atoms *atoms, int isize, atom_id *index, 
+				  bool bSumH, 
+				  atom_id *noe_index, t_noe_gr *noe_gr)
+{
+  FILE   *fp;
+  int i, j, anmil, anmjl, rnri, rnrj, gi, groupnr, neq;
+  char *anmi, *anmj;
+  bool bMatch,bEquiv;
+  t_equiv **equiv;
+  
+  if (bSumH) {
+    if (eq_fn)
+      neq=read_equiv(eq_fn,&equiv);
+    else {
+      neq=NULL;
+      equiv=NULL;
+    }
+    
+    groupnr=0;
+    for(i=0; i<isize; i++) {
+      /* look for triplets of consecutive atoms with name XX?, 
+	 X are any number of letters or digits and ? goes from 1 to 3 */
+      anmi  = *atoms->atomname[index[i]];
+      anmil = strlen(anmi);
+      bMatch = i<isize-3 && anmi[anmil-1]=='1';
+      if (bMatch)
+	for(j=1; j<3; j++) {
+	  anmj  = *atoms->atomname[index[i+j]];
+	  anmjl = strlen(anmj);
+	  bMatch = bMatch && ( anmil==anmjl && anmj[anmjl-1]==Hnum[j] &&
+			       strncmp(anmi, anmj, anmil-1)==0 );
+	}
+      /* set index for this atom */
+      noe_index[i]=groupnr;
+      if (bMatch) {
+	/* set index for next two matching atoms */
+	for(j=1; j<3; j++)
+	  noe_index[i+j]=groupnr;
+	/* skip matching atoms */
+	i+=2;
+      } else if (equiv && i<isize-1) {
+	/* check list of equivalent atoms */
+	do {
+	  j=i+1;
+	  rnri=atoms->atom[index[i]].resnr;
+	  rnrj=atoms->atom[index[j]].resnr;
+	  bEquiv = 
+	    is_equiv(neq, equiv, 
+		     rnri, *atoms->resname[rnri], *atoms->atomname[index[i]],
+		     rnrj, *atoms->resname[rnrj], *atoms->atomname[index[j]]);
+	  if (bEquiv) {
+	    /* set index for matching atom */
+	    noe_index[j]=groupnr;
+	    /* skip matching atom */
+	    i=j;
+	  }
+	} while ( bEquiv );
+      }
+      groupnr++;
+    }
+  } else {
+    /* make index without looking for equivalent atoms */
+    for(i=0; i<isize; i++)
+      noe_index[i]=i;
+    groupnr=isize;
+  }
+  noe_index[isize]=groupnr;
+  
+  for(i=0; i<isize; i++) {
+    gi=noe_index[i];
+    if (!noe_gr[gi].aname) {
+      noe_gr[gi].ianr=i;
+      noe_gr[gi].anr=index[i];
+      noe_gr[gi].aname=strdup(*atoms->atomname[index[i]]);
+      if ( noe_index[i]==noe_index[i+1] )
+	noe_gr[gi].aname[strlen(noe_gr[gi].aname)-1]='*';
+      noe_gr[gi].rnr=atoms->atom[index[i]].resnr;
+      noe_gr[gi].rname=strdup(*atoms->resname[noe_gr[gi].rnr]);
+      if (debug) fprintf(debug,"%d %d %d %d %s %s %d\n",i,gi,
+			 noe_gr[gi].ianr,noe_gr[gi].anr,noe_gr[gi].aname,
+			 noe_gr[gi].rname,noe_gr[gi].rnr);
+    }
+  }
+  
+  return groupnr;
+}
+
+/* #define NSCALE 3 */
+/*  static char *noe_scale[NSCALE+1] = { */
+/*    "strong", "medium", "weak", "none" */
+/*  }; */
+#define NSCALE 6
+
+static char *noe2scale(real r3, real r6, real rmax)
+{
+  int i,s3, s6;
+  char buf[NSCALE+1];
+
+  /* r goes from 0 to rmax
+     r*NSCALE/rmax goes from 0 to NSCALE
+     NSCALE - r*NSCALE/rmax goes from NSCALE to 0 */
+  s3 = NSCALE - min(NSCALE, (int)(r3*NSCALE/rmax));
+  s6 = NSCALE - min(NSCALE, (int)(r6*NSCALE/rmax));
+  for(i=0; i<s3; i++)
+    buf[i]='=';
+  for(   ; i<s6; i++)
+    buf[i]='-';
+  buf[i]='\0';
+  
+  return buf;
+}
+
+static void calc_noe(int isize, atom_id *noe_index, 
+		     real **dtot1_3, real **dtot1_6, int gnr, t_noe **noe)
+{
+  int i, j, gi, gj;
+  
+  /* make half matrix of noe-group distances from atom distances */
+  for(i=0; i<isize; i++) {
+    gi=noe_index[i];
+    for(j=i; j<isize; j++) {
+      gj=noe_index[j];
+      noe[gi][gj].nr++;
+      noe[gi][gj].r_3+=pow(dtot1_3[i][j],-3);
+      noe[gi][gj].r_6+=pow(dtot1_6[i][j],-6);
+    }
+  }
+  
+  /* make averages */
+  for(i=0; i<gnr; i++)
+    for(j=i+1; j<gnr; j++) {
+      noe[i][j].r_3 = pow(noe[i][j].r_3/noe[i][j].nr,-1.0/3.0);
+      noe[i][j].r_6 = pow(noe[i][j].r_6/noe[i][j].nr,-1.0/6.0);
+      noe[j][i] = noe[i][j];
+    }
+}
+
+static void write_noe(FILE *fp,int gnr,t_noe **noe,t_noe_gr *noe_gr,real rmax)
+{
+  int  i,j;
+  real r3, r6, min3, min6;
+  char buf[10],b3[10],b6[10];
+  
+  min3 = min6 = 1e6;
+  fprintf(fp,";%4s %3s %4s %4s %3s %4s %4s %4s %4s %3s "
+	  "%8s %8s %3s %2s %-6s\n",
+	  "ianr","anr","anm","rnm","rnr","ianr","anr","anm","rnm","rnr",
+	  "1/r^3","1/r^6","Dr","Da","scale");
+  for(i=0; i<gnr; i++)
+    for(j=i+1; j<gnr; j++) {
+      r3 = noe[i][j].r_3;
+      r6 = noe[i][j].r_6;
+      min3 = min(r3,min3);
+      min6 = min(r6,min6);
+      if ( r3 < rmax || r6 < rmax ) {
+	if (noe_gr[j].rnr == noe_gr[i].rnr)
+	  sprintf(buf,"%2d", noe_gr[j].anr-noe_gr[i].anr);
+	else
+	  buf[0]='\0';
+	if ( r3 < rmax )
+	  sprintf(b3,"%-8g",r3);
+	else
+	  strcpy(b3,"-");
+	if ( r6 < rmax )
+	  sprintf(b6,"%-8g",r6);
+	else
+	  strcpy(b6,"-");
+	fprintf(fp, "%4d %4d %4s %4s %3d %4d %4d %4s %4s %3d "
+		"%8s %8s %3d %2s %-6s\n",
+		noe_gr[i].ianr+1, noe_gr[i].anr+1, noe_gr[i].aname, 
+		noe_gr[i].rname, noe_gr[i].rnr+1,
+		noe_gr[j].ianr+1, noe_gr[j].anr+1, noe_gr[j].aname, 
+		noe_gr[j].rname, noe_gr[j].rnr+1,
+		b3, b6, noe_gr[j].rnr-noe_gr[i].rnr, buf,
+		noe2scale(r3, r6, rmax));
+      }
+    }
+  for(i=3; i<=6; i+=3) {
+    if ( ((i==3)?min3:min6) > rmax )
+      fprintf(stdout,"NOTE: no 1/r^%d averaged distances found below %g, "
+	      "smallest was %g\n", i, rmax, ((i==3)?min3:min6) );
+    else
+      fprintf(stdout,"Smallest 1/r^%d averaged distance was %g\n", 
+	      i, ((i==3)?min3:min6) );
+  }
+}
+
 static void calc_rms(int nind, int nframes, 
 		     real **dtot, real **dtot2, 
 		     real **rmsmat,  real *rmsmax,
@@ -115,10 +403,8 @@ static void calc_rms(int nind, int nframes,
 {
   int     i,j;
   real    mean, mean2, rms, rmsc;
-/*  
- * N.B. dtot and dtot2 contain the total distance and the total squared
+/* N.B. dtot and dtot2 contain the total distance and the total squared
  * distance respectively, BUT they return RMS and the scaled RMS resp.
- *
  */
 
   *rmsmax=-1000;
@@ -127,32 +413,32 @@ static void calc_rms(int nind, int nframes,
 
   for(i=0; (i<nind-1); i++) {
     for(j=i+1; (j<nind); j++) {
-      mean =dtot[i][j]/nframes;   
-      mean2=dtot2[i][j]/nframes;  
+      mean =dtot[i][j]/nframes;
+      mean2=dtot2[i][j]/nframes;
       rms=sqrt(max(0,mean2-mean*mean));
       rmsc=rms/mean;
       if (mean > *meanmax) *meanmax=mean;
       if (rms  > *rmsmax ) *rmsmax =rms;
       if (rmsc > *rmscmax) *rmscmax=rmsc;
       meanmat[i][j]=meanmat[j][i]=mean;
-      rmsmat[i][j] =rmsmat[j][i] =rms;           
-      rmscmat[i][j]=rmscmat[j][i]=rmsc;      
+      rmsmat[i][j] =rmsmat[j][i] =rms;
+      rmscmat[i][j]=rmscmat[j][i]=rmsc;
     }
   }
 }
 
-real rms_diff(int isize,real **d,real **d_r)
+real rms_diff(int natom,real **d,real **d_r)
 {
   int  i,j;
   real r,r2;
   
   r2=0.0;
-  for(i=0; (i<isize-1); i++)
-    for(j=i+1; (j<isize); j++) {
+  for(i=0; (i<natom-1); i++)
+    for(j=i+1; (j<natom); j++) {
       r=d[i][j]-d_r[i][j];
       r2+=r*r;
     }    
-  r2/=(isize*(isize-1))/2;
+  r2/=(natom*(natom-1))/2;
   
   return sqrt(r2);
 }
@@ -169,46 +455,65 @@ int main (int argc,char *argv[])
     "structure and the structure at time t.[PAR]",
     "g_rmsdist can also produce matrices of the rms distances, rms distances",
     "scaled with the mean distance and the mean distances and matrices with",
-    "NMR averaged distances (1/r^3 and 1/r^6 averaging)."
+    "NMR averaged distances (1/r^3 and 1/r^6 averaging). Finally, lists",
+    "of atom pairs with 1/r^3 and 1/r^6 averaged distance below the",
+    "maximum distance ([TT]-max[tt], which will default to 0.6 in this case)",
+    "can be generated, by default averaging over equivalent hydrogens",
+    "(all triplets of hydrogens named *[123]). Additionally a list of",
+    "equivalent atoms can be supplied ([TT]-equiv[tt]), each line containing",
+    "a set of equivalent atoms specified as residue number and name and",
+    "atom name; e.g.:[PAR]",
+    "[TT]3 SER  HB1 3 SER  HB2[tt][PAR]",
+    "Residue and atom names must exactly match those in the structure",
+    "file, including case. Specifying non-sequential atoms is undefined."
+
   };
   
-  int          natom,i,teller;
+  int          natom,i,j,teller,gi,gj;
   real         t;
 
   t_topology   top;
+  t_atoms      *atoms;
   matrix       box;
   rvec         *x;
   FILE         *fp;
 
-  int      status,isize;
-  atom_id  *index;
+  int      status,isize,gnr;
+  atom_id  *index, *noe_index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
   real     **dtot1_3=NULL,**dtot1_6=NULL;
   real     rmsnow,meanmax,rmsmax,rmscmax;
   real     max1_3,max1_6;
+  t_noe_gr *noe_gr;
+  t_noe    **noe;
   t_rgb    rlo,rhi;
   char     buf[255];
-  bool bRMS, bScale, bMean, bNMR3, bNMR6;
+  bool bRMS, bScale, bMean, bNOE, bNMR3, bNMR6, bNMR;
   
   static int  nlevels=40;
   static real scalemax=-1.0;
+  static bool bSumH=TRUE;
   t_pargs pa[] = {
-    { "-nlevels",   FALSE, etINT,  {&nlevels},
+    { "-nlevels",   FALSE, etINT,  {&nlevels}, 
       "Discretize rms in # levels" },
-    { "-max",   FALSE, etREAL, {&scalemax},
-      "Maximum level in matrices" }
+    { "-max",   FALSE, etREAL, {&scalemax},    
+      "Maximum level in matrices" },
+    { "-sumh",  FALSE, etBOOL, {&bSumH},       
+      "average distance over equivalent hydrogens" }
   };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
     { efTPS, NULL,   NULL,       ffREAD },
     { efNDX, NULL,   NULL,       ffOPTRD },
-    { efXVG, NULL,   "distrmsd",  ffWRITE },
+    { efDAT, "-equiv","equiv",   ffOPTRD },
+    { efXVG, NULL,   "distrmsd", ffWRITE },
     { efXPM, "-rms", "rmsdist",  ffOPTWR },
     { efXPM, "-scl", "rmsscale", ffOPTWR },
     { efXPM, "-mean","rmsmean",  ffOPTWR },
     { efXPM, "-nmr3","nmr3",     ffOPTWR },
-    { efXPM, "-nmr6","nmr6",     ffOPTWR }
+    { efXPM, "-nmr6","nmr6",     ffOPTWR },
+    { efDAT, "-noe", "noe",     ffOPTWR },
   };
 #define NFILE asize(fnm)
 
@@ -216,22 +521,32 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  bRMS  =opt2bSet("-rms", NFILE,fnm);
-  bScale=opt2bSet("-scl", NFILE,fnm);
-  bMean =opt2bSet("-mean",NFILE,fnm);
-  bNMR3 =opt2bSet("-nmr3",NFILE,fnm);
-  bNMR6 =opt2bSet("-nmr6",NFILE,fnm);
-  
-  /* don't read mass-database as masses (and top) are not used */
+  bRMS  = opt2bSet("-rms", NFILE,fnm);
+  bScale= opt2bSet("-scl", NFILE,fnm);
+  bMean = opt2bSet("-mean",NFILE,fnm);
+  bNOE  = opt2bSet("-noe", NFILE,fnm);
+  bNMR3 = opt2bSet("-nmr3",NFILE,fnm);
+  bNMR6 = opt2bSet("-nmr6",NFILE,fnm);
+  bNMR  = bNMR3 || bNMR6 || bNOE;
+
+  /* check input */
+  if (bNOE && scalemax < 0) {
+    scalemax=0.6;
+    fprintf(stderr,"WARNING: using -noe without -max "
+	    "makes no sense, setting -max to %g\n\n",scalemax);
+  }
+    
+  /* get topology and index */
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&x,NULL,box,FALSE);
+  atoms=&(top.atoms);
   
-  get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	    1,&isize,&index,&grpname);
+  get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   
+  /* initialize arrays */
   snew(d,isize);
   snew(dtot,isize);
   snew(dtot2,isize);
-  if (bNMR3 || bNMR6) {
+  if (bNMR) {
     snew(dtot1_3,isize);
     snew(dtot1_6,isize);
   }
@@ -244,7 +559,7 @@ int main (int argc,char *argv[])
     snew(d[i],isize);
     snew(dtot[i],isize);
     snew(dtot2[i],isize);
-    if (bNMR3 || bNMR6) {
+    if (bNMR) {
       snew(dtot1_3[i],isize);
       snew(dtot1_6[i],isize);
     }
@@ -268,7 +583,7 @@ int main (int argc,char *argv[])
   natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   do {
-    calc_dist_tot(isize,index,x,d,dtot,dtot2,(bNMR3 || bNMR6),dtot1_3,dtot1_6);
+    calc_dist_tot(isize,index,x,d,dtot,dtot2,bNMR,dtot1_3,dtot1_6);
     
     rmsnow=rms_diff(isize,d,d_r);
     fprintf(fp,"%g  %g\n",t,rmsnow);
@@ -282,7 +597,7 @@ int main (int argc,char *argv[])
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   
-  if (bNMR3 || bNMR6) {
+  if (bNMR) {
     max1_3=0;
     max1_6=0;
     calc_nmr(isize,teller,dtot1_3,dtot1_6,&max1_3,&max1_6);
@@ -294,6 +609,20 @@ int main (int argc,char *argv[])
     meanmax=scalemax;
     max1_3=scalemax;
     max1_6=scalemax;
+  }
+
+  if (bNOE) {
+    /* make list of noe atom groups */
+    snew(noe_index, isize+1);
+    snew(noe_gr, isize);
+    gnr=analyze_noe_equivalent(opt2fn_null("-equiv",NFILE,fnm),
+			       atoms, isize, index, bSumH, noe_index, noe_gr);
+    
+    /* make half matrix of of noe-group distances from atom distances */
+    snew(noe,gnr);
+    for(i=0; i<gnr; i++)
+      snew(noe[i],gnr);
+    calc_noe(isize, noe_index, dtot1_3, dtot1_6, gnr, noe);
   }
   
   rlo.r=1.0, rlo.g=1.0, rlo.b=1.0;
@@ -315,13 +644,16 @@ int main (int argc,char *argv[])
 	      isize,isize,resnr,resnr,mean,0.0,meanmax,rlo,rhi,&nlevels);
   
   if (bNMR3)
-      write_xpm(opt2FILE("-nmr3",NFILE,fnm,"w"),"1/r^3 averaged distances",
-		"Distance (nm)","Atom Index","Atom Index",
-		isize,isize,resnr,resnr,dtot1_3,0.0,max1_3,rlo,rhi,&nlevels);
+    write_xpm(opt2FILE("-nmr3",NFILE,fnm,"w"),"1/r^3 averaged distances",
+	      "Distance (nm)","Atom Index","Atom Index",
+	      isize,isize,resnr,resnr,dtot1_3,0.0,max1_3,rlo,rhi,&nlevels);
   if (bNMR6)
-      write_xpm(opt2FILE("-nmr6",NFILE,fnm,"w"),"1/r^6 averaged distances",
-		"Distance (nm)","Atom Index","Atom Index",
-		isize,isize,resnr,resnr,dtot1_6,0.0,max1_6,rlo,rhi,&nlevels);
+    write_xpm(opt2FILE("-nmr6",NFILE,fnm,"w"),"1/r^6 averaged distances",
+	      "Distance (nm)","Atom Index","Atom Index",
+	      isize,isize,resnr,resnr,dtot1_6,0.0,max1_6,rlo,rhi,&nlevels);
+		
+  if (bNOE)
+    write_noe(opt2FILE("-noe",NFILE,fnm,"w"), gnr, noe, noe_gr, scalemax);
   
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
  
