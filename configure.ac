@@ -190,6 +190,10 @@ if test "$with_fftw" = "no"; then
 fi
 
 
+AC_ARG_WITH(xml,
+ [  --without-xml           disable xml support (libxml2)],, with_xml=yes)
+
+
 
 
 ############################################################
@@ -364,16 +368,6 @@ else
   AM_CONDITIONAL(AXP_ASM_CAPITAL_S,false)
 fi
 
-AC_PATH_PROG(IDENT,ident,no)
-if test "$IDENT" != "no"; then
-  # seems as if we have the ident program, but does the
-  # compiler support it?
-  AC_MSG_CHECKING([whether the compiler supports ident])	
-  AC_TRY_CPP([#ident  "@(#) file.h 1.1 12/16/92"],[
-    AC_MSG_RESULT([yes]) 
-    AC_DEFINE(HAVE_IDENT,,[Does this machine have the ident command])],
-    AC_MSG_RESULT([no]))
-fi
 
 # MPI builds on aix break with shared libs.
 AC_DISABLE_SHARED
@@ -536,9 +530,18 @@ fi
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
-AC_CHECK_LIB(xml2,main)
-# This should really only be done when the library is found. Doesn't hurt though.
-INCLUDES="$INCLUDES -I/usr/include/libxml2"
+if test "$with_xml" = "yes"; then
+  xml2flags=`xml2-config --cflags 2>/dev/null`
+  xml2libs=`xml2-config --libs 2>/dev/null`
+  CPPFLAGS="$CPPFLAGS $xml2flags"
+  CFLAGS="$CFLAGS $xml2flags"
+  LIBS="$LIBS $xml2libs"
+  # Compile ourselves so we use mpicc if that was selected...
+  AC_MSG_CHECKING([for libxml/xmlversion.h])
+  AC_TRY_COMPILE([#include<libxml/xmlversion.h>],,[
+  AC_DEFINE([GMX_USE_XML],,[XML support present (libxml2)])
+  AC_MSG_RESULT([yes])],[AC_MSG_RESULT([no])])
+fi
 
 
 #### 
