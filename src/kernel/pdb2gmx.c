@@ -708,7 +708,7 @@ int main(int argc, char *argv[])
     }
   }
   
-  if ((nchain==2) && ( (chains[0].chain==' ') || (chains[1].chain==' ') ) ){
+  if ((nchain==2) && ((chains[0].chain==' ') || (chains[1].chain==' ')) ){
     nchain=1;
     srenew(chains,nchain);
     chains[0].chain=' ';
@@ -830,7 +830,7 @@ int main(int argc, char *argv[])
 	      "without sorting no check for double atoms can be done\n");
     
     if (debug) {
-      if (chains[chain].chain == ' ')
+      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ')
 	sprintf(fn,"chain.pdb");
       else
 	sprintf(fn,"chain_%c.pdb",chains[chain].chain);
@@ -878,7 +878,7 @@ int main(int argc, char *argv[])
     /* make up molecule name(s) */
     if (chains[chain].bAllWat) 
       sprintf(molname,"Water");
-    else if (chains[chain].chain==' ')
+    else if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
       sprintf(molname,"Protein");
     else
       sprintf(molname,"Protein_%c",chains[chain].chain);
@@ -888,15 +888,15 @@ int main(int argc, char *argv[])
 	     ( (chain==nchain-1) && chains[chain].bAllWat ) ) ) {
       printf("Chain time...\n");
       c=strrchr(top_fn,'.');
-      if ( chains[chain].chain != ' ' )
-	sprintf(c,"_%c.itp",chains[chain].chain);
-      else 
+      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
 	sprintf(c,".itp");
+      else
+	sprintf(c,"_%c.itp",chains[chain].chain);
       c=strrchr(itp_fn,'.');
-      if ( chains[chain].chain != ' ' )
-	sprintf(c,"_%c.itp",chains[chain].chain);
-      else 
+      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
 	sprintf(c,".itp");
+      else
+	sprintf(c,"_%c.itp",chains[chain].chain);
       
       nincl++;
       srenew(incls,nincl);
@@ -921,7 +921,7 @@ int main(int argc, char *argv[])
     chains[chain].x = x;
     
     if (debug) {
-      if (chains[chain].chain == ' ')
+      if ( chains[chain].chain == '\0' || chains[chain].chain == ' ' )
 	sprintf(fn,"chain.pdb");
       else
 	sprintf(fn,"chain_%c.pdb",chains[chain].chain);
