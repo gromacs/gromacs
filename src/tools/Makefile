@@ -19,9 +19,9 @@ ifneq ($(PARALLEL_ONLY_MDRUN),yes)
 PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
 	g_analyze	g_anaeig	g_angle		g_bond		\
-	g_chi		g_cluster	g_confrms	g_covar		\
-	g_density	g_dielectric	g_dih		g_dipoles	\
-	g_disre		g_dist		g_dyndom	\
+	g_bundle	g_chi		g_cluster	g_confrms	\
+	g_covar		g_density	g_dielectric	g_dih		\
+	g_dipoles	g_disre		g_dist		g_dyndom	\
 	g_enemat	g_energy	\
 	g_gyrate	g_h2order	g_hbond		g_helix		\
 	g_mdmat		g_mindist	g_msd		g_morph		\
@@ -160,6 +160,9 @@ g_rama:		g_rama.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_sgangle:	g_sgangle.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+g_bundle:	g_bundle.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_sorient:	g_sorient.o

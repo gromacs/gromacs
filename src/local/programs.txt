@@ -81,6 +81,7 @@ g_sas|computes solvent accessible surface area
 g_order|computes the order parameter per atom for carbon tails
 g_sgangle|computes the angle and distance between two groups
 g_sorient|analyzes solvent orientation around solutes
+g_bundle|analyzes bundles of axes, e.g. helices
 g_disre|analyzes distance restraints
 END
 
@@ -110,6 +111,7 @@ g_potential|calculates the electrostatic potential across the box
 g_density|calculates the density of the system
 g_order|computes the order parameter per atom for carbon tails
 g_h2order|computes the orientation of water molecules
+g_bundle|analyzes bundles of axes, e.g. transmembrane helices
 END
 
 
