@@ -9,11 +9,12 @@ SHELL	=	/bin/csh -f
 
 CHMOD	=	chmod 664
 TEX	=	latex
+PDFTEX	=	pdflatex
 BIB	=	bibtex
 IDX	=	makeindex -s hfill.ist
 DVIPS	=	dvips
 
-LOCAL	=	$(GMXHOME)/src/local
+LOCAL	=	$(GMXHOME)/src/contrib
 HTML	=	$(GMXHOME)/html
 COPYRGT	=	$(LOCAL)/copyrgt
 
@@ -33,11 +34,11 @@ AUXFS = algorithms	analyse		averages	defunits	\
 AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
 
-all:		ps
+all:		ps	pdf
 
 ps:		gromacs.ps
-pdf:		gromacs.ps
-		ps2pdf gromacs.ps gromacs.pdf
+
+pdf:		gromacs.pdf
 
 full:		man all
 
@@ -68,6 +69,9 @@ gromacs.dvi:	bib+idx		gromacs.aux
 gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
 
+gromacs.pdf:	bib+idx		gromacs.aux
+		$(PDFTEX) gromacs
+
 letter.ps:	gromacs.dvi
 		dvips -M -t Letter -O 0cm,-0.9cm -o $@ $^
 
@@ -75,7 +79,8 @@ letter.ps:	gromacs.dvi
 
 prog:		mdp_opt.tex proglist.tex
 
-man:		./mkman
+man:		
+		./mkman $(GMXBIN)
 
 files.tex:	
 		$(LOCAL)/prfn; $(RM) files.html; ./mkfiles
@@ -86,11 +91,11 @@ progman.tex:
 mdp_opt.tex:	./mkmdp
 		./mkmdp $(GMXHOME)
 
-proglist.tex:	$(LOCAL)/mkonline $(LOCAL)/programs.txt
-		cd $(LOCAL) ; ./mkonline $(GMXHOME)
+proglist.tex:	$(LOCAL)/scripts/mkonline $(LOCAL)/programs.txt
+		cd $(LOCAL)/scripts ; ./mkonline $(GMXHOME)
 
-man:		
-		mkman
+#man:		
+#		mkman
 
 copyrgt:
 		$(COPYRGT) *.tex
