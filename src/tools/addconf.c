@@ -162,7 +162,7 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
   char    *grpnames;
   real    totmass;
   int     i,m;
-  rvec    xcm,angle;
+  rvec    xcm,prcomp;
   matrix  trans;
   
   /* Make an index for principal component analysis */
@@ -174,7 +174,7 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
     atoms->atom[i].m=1;
   }
   totmass = sub_xcm(x,atoms->nr,simp,atoms->atom,xcm,FALSE);
-  principal_comp(isize,index,atoms->atom,x,trans,angle);
+  principal_comp(isize,index,atoms->atom,x,trans,prcomp);
   
   /* Check whether this trans matrix mirrors the molecule */
   if (det(trans) < 0) {
@@ -191,9 +191,9 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
     
     /* print principal component data */
     fprintf(stderr,"Norm of principal axes before rotation: "
-	    "(%.3f, %.3f, %.3f)\n",angle[XX],angle[YY],angle[ZZ]);
+	    "(%.3f, %.3f, %.3f)\n",prcomp[XX],prcomp[YY],prcomp[ZZ]);
     fprintf(stderr,"Totmass = %g\n",totmass);
-    principal_comp(isize,index,atoms->atom,x,trans,angle);
+    principal_comp(isize,index,atoms->atom,x,trans,prcomp);
     rotate_atoms(atoms->nr,simp,x,trans);
     if (v) 
       rotate_atoms(atoms->nr,simp,v,trans);
