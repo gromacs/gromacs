@@ -41,7 +41,7 @@ static int list_comp(const void *a,const void *b)
 void calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nprocs)
 {
   int  d,n[DIM];
-  int  i,j,x,y,z,nmin[DIM],*list_index;
+  int  i,j=0,x,y,z,nmin[DIM],*list_index;
   rvec box_size,spac;
   real spac_av;
   bool bDone;
