@@ -199,7 +199,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
     /* compute final boxlengths */
     for (d=0; d<DIM; d++)
       for (m=0; m<DIM; m++)
-	box[d][m] *= mu[d][m];
+	box[d][m] *= mu[d][d];
   }
   inc_nrnb(nrnb,eNR_PCOUPL,ncoupl);
 }
