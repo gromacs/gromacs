@@ -67,7 +67,7 @@ static void sp_header(FILE *out,char *minimizer,real ftol,int nsteps)
 {
   fprintf(out,"%s:\n",minimizer);
   fprintf(out,"   Tolerance         = %12.5e\n",ftol);
-  fprintf(out,"   Number of steps   = %12de\n",nsteps);
+  fprintf(out,"   Number of steps   = %12d\n",nsteps);
 }
 
 static void warn_step(FILE *fp,real ustep,real ftol,bool bConstrain)
@@ -156,6 +156,34 @@ static real f_norm(t_commrec *cr,
   return sqrt(fnorm2); 
 } 
 
+static void init_em(FILE *log,char *title,
+		    t_parm *parm,real *lambda,t_nrnb *mynrnb,rvec mu_tot,rvec box_size,
+		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
+		    t_commrec *cr,t_vcm **vcm,int *start,int *end)
+{
+  fprintf(log,"Initiating %s\n",title);
+
+  /* Initiate some variables */
+  if (parm->ir.efep != efepNO)
+    *lambda = parm->ir.init_lambda;
+  else 
+    *lambda = 0.0;
+
+  init_nrnb(mynrnb);
+    
+  clear_rvec(mu_tot);
+  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+  
+  *start = nsb->index[cr->nodeid];
+  *end   = nsb->homenr[cr->nodeid] + *start;
+
+  /* Set initial values for invmass etc. */
+  init_mdatoms(mdatoms,*lambda,TRUE);
+
+  *vcm = init_vcm(log,top,mdatoms,
+		  *start,HOMENR(nsb),parm->ir.nstcomm);
+}
+
 time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_parm *parm,t_topology *top,
 	     t_groups *grps,t_nsborder *nsb,
@@ -184,33 +212,16 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* not used */
   real   terminate=0;
 
-  /* Initiate some variables */
-  if (parm->ir.efep != efepNO)
-    lambda = parm->ir.init_lambda;
-  else 
-    lambda = 0.0;
-
-  init_nrnb(&mynrnb);
-    
-  clear_rvec(mu_tot);
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+  init_em(log,CG,parm,&lambda,&mynrnb,mu_tot,box_size,fr,mdatoms,top,
+	  nsb,cr,&vcm,&start,&end);
   
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Conjugate Gradients");
   
-  /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,lambda,TRUE);
-
-  vcm = init_vcm(stdlog,top,mdatoms,
-		 START(nsb),HOMENR(nsb),parm->ir.nstcomm);
-    
   /* p is the search direction, f the force, xprime the new positions */
   snew(p,nsb->natoms);
   snew(f,nsb->natoms);
   snew(xprime,nsb->natoms);
-
-  start = nsb->index[cr->nodeid];
-  end   = nsb->homenr[cr->nodeid] + start;
 
   /* Set some booleans for the epot routines */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
@@ -525,7 +536,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		t_forcerec *fr,rvec box_size) 
 { 
   static char *SD="Steepest Descents"; 
-  real   stepsize,constepsize,lambda,ftol,fmax; 
+  real   stepsize,constepsize,lambda,fmax; 
   rvec   *pos[2],*force[2],*xcf=NULL; 
   rvec   *xx,*ff; 
   real   Fmax[2]; 
@@ -549,25 +560,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   real   terminate=0;
 #define  TRY (1-Min)
 
-  /* Initiate some variables  */
-  if (parm->ir.efep != efepNO)
-    lambda       = parm->ir.init_lambda;
-  else 
-    lambda = 0.0;
-
-  init_nrnb(&mynrnb);
-
-  clear_rvec(mu_tot);
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,box_size,fr,mdatoms,top,
+	  nsb,cr,&vcm,&start,&end);
    
   /* Print to log file  */
   start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents"); 
-  
-  /* Set initial values for invmass etc. */
-  init_mdatoms(mdatoms,lambda,TRUE);
-
-  vcm = init_vcm(stdlog,top,mdatoms,
-		 START(nsb),HOMENR(nsb),parm->ir.nstcomm);
   
   /* We need two coordinate arrays and two force arrays  */
   for(i=0; (i<2); i++) { 
@@ -575,9 +572,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     snew(force[i],nsb->natoms); 
   } 
 
-  start=nsb->index[cr->nodeid]; 
-  end=nsb->homenr[cr->nodeid]+start; 
-  
   /* Set some booleans for the epot routines  */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   
@@ -620,16 +614,13 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   ustep    = parm->ir.em_stepsize; 
   stepsize = 0;
 
-  /* Tolerance for conversion  */
-  ftol=parm->ir.em_tol; 
-  
   /* Max number of steps  */
   nsteps=parm->ir.nsteps; 
   
   if (MASTER(cr)) 
     /* Print to the screen  */
-    sp_header(stderr,SD,ftol,nsteps);
-  sp_header(log,SD,ftol,nsteps);
+    sp_header(stderr,SD,parm->ir.em_tol,nsteps);
+  sp_header(log,SD,parm->ir.em_tol,nsteps);
     
   /**** HERE STARTS THE LOOP ****
    * count is the counter for the number of steps 
@@ -759,7 +750,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	xx=NULL; 
       
       /* Test whether the convergence criterion is met...  */
-      bDone=(Fmax[TRY] < ftol);
+      bDone=(Fmax[TRY] < parm->ir.em_tol);
       
       /* Copy the arrays for force, positions and energy  */
       /* The 'Min' array always holds the coords and forces of the minimal 
@@ -785,8 +776,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #else
     if (ustep < 1e-6) {
 #endif
-      warn_step(stderr,ustep,ftol,bConstrain);
-      warn_step(log,ustep,ftol,bConstrain);
+      warn_step(stderr,ustep,parm->ir.em_tol,bConstrain);
+      warn_step(log,ustep,parm->ir.em_tol,bConstrain);
       bAbort=TRUE;
     }
     
@@ -805,8 +796,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),xx,NULL,parm->box);
     
-    print_converged(stderr,SD,ftol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
-    print_converged(log,SD,ftol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
+    print_converged(stderr,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
+    print_converged(log,SD,parm->ir.em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min]);
     close_enx(fp_ene);
   }
       

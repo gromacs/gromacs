@@ -136,6 +136,7 @@ int main(int argc,char *argv[])
     { efPPA, "-po",     "pullout",  ffOPTWR },
     { efPDO, "-pd",     "pull",     ffOPTWR },
     { efNDX, "-pn",     "pull",     ffOPTRD },
+    { efMTX, "-mtx",    "nm",       ffOPTWR }
   };
 #define NFILE asize(fnm)
 

@@ -705,6 +705,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  bVerbose,bCompact,nstepout,parm,grps,
 		  top,ener,fcd,x,vold,v,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
+    break;
   default:
     fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);
   }
