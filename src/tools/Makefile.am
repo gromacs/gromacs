@@ -61,9 +61,9 @@ anadock_SOURCES	     =  anadock.c lsq.c
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
-gmx-ana.c:	gmx-ana.pl
-		chmod +x gmx-ana.pl
-		./gmx-ana.pl $(xxx)
+gmx-ana.c:	$(srcdir)/gmx-ana.pl
+		chmod +x $(srcdir)/gmx-ana.pl
+		$(srcdir)/gmx-ana.pl $(xxx)
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
