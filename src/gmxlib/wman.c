@@ -278,7 +278,7 @@ static void write_texman(FILE *out,char *program,
     fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
   }
   if (nbug > 0) {
-    fprintf(out,"\n{\\normalsize \\bf Diagnostics}\n");
+    fprintf(out,"\n");
     fprintf(out,"\\begin{itemize}\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"\\item %s\n",check_tex(bugs[i]));
@@ -352,7 +352,6 @@ static void write_nroffman(FILE *out,
   }
 
   if (nbug > 0) {
-    fprintf(out,".SH DIAGNOSTICS\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"\\- %s\n\n",check_nroff(bugs[i]));
   }
@@ -408,7 +407,7 @@ static void write_ttyman(FILE *out,
     print_tty_formatted(out,nldesc,desc);
   }
   if (nbug > 0) {
-    fprintf(out,"\nDIAGNOSTICS\n");
+    fprintf(out,"\n");
     for(i=0; i<nbug; i++) {
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
@@ -519,7 +518,6 @@ static void write_htmlman(FILE *out,
   }
   if (nbug > 0) {
     fprintf(out,"<P>\n");
-    fprintf(out,"<H3>Diagnostics</H3>\n");
     fprintf(out,"<UL>\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"<LI>%s\n",NSR(bugs[i]));
