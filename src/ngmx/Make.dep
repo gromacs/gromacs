@@ -289,7 +289,7 @@ manager.o: $(GMXHOME)/src/include/tpxio.h
 manager.o: $(GMXHOME)/src/include/xdrf.h
 manager.o: $(GMXHOME)/src/include/macros.h
 manager.o: $(GMXHOME)/src/include/maths.h
-manager.o: $(GMXHOME)/src/include/vdw.h
+manager.o: $(GMXHOME)/src/include/atomprop.h
 manager.o: $(GMXHOME)/src/include/names.h
 manager.o: $(GMXHOME)/src/include/bondf.h
 manager.o: $(GMXHOME)/src/include/nrnb.h
@@ -304,6 +304,7 @@ manager.o: $(GMXHOME)/src/include/filenm.h
 manager.o: $(GMXHOME)/src/include/readinp.h
 manager.o: $(GMXHOME)/src/include/wman.h
 manager.o: $(GMXHOME)/src/include/mshift.h
+manager.o: $(GMXHOME)/src/include/rmpbc.h
 manager.o: $(GMXHOME)/src/include/vec.h
 molps.o: $(GMXHOME)/src/include/sysstuff.h
 molps.o: $(GMXHOME)/src/include/smalloc.h
@@ -856,7 +857,7 @@ xrama.o: $(GMXHOME)/src/include/statutil.h
 xrama.o: $(GMXHOME)/src/include/filenm.h
 xrama.o: $(GMXHOME)/src/include/readinp.h
 xrama.o: $(GMXHOME)/src/include/wman.h
-xrama.o: $(GMXHOME)/src/include/gstat.h
+xrama.o: $(GMXHOME)/src/include/nrama.h
 xrama.o: $(GMXHOME)/src/include/mshift.h
 xrama.o: $(GMXHOME)/src/include/lutab.h
 xstat.o: $(GMXHOME)/src/include/sysstuff.h

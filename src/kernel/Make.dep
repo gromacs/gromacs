@@ -99,11 +99,11 @@ $(LIB)(congrad.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/led.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/network.h
+$(LIB)(congrad.o): $(GMXHOME)/src/include/main.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/confio.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/copyrite.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/nrnb.h
-$(LIB)(congrad.o): $(GMXHOME)/src/include/main.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/pbc.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/force.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/nsb.h
@@ -126,12 +126,13 @@ $(LIB)(congrad.o): $(GMXHOME)/src/include/wman.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/mdebin.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/ebin.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/enxio.h
+$(LIB)(congrad.o): $(GMXHOME)/src/include/dummies.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/mdrun.h
 $(LIB)(congrad.o): $(GMXHOME)/src/include/edsam.h
 convparm.o: $(GMXHOME)/src/include/sysstuff.h
 convparm.o: $(GMXHOME)/src/include/physics.h
-convparm.o: $(GMXHOME)/src/include/assert.h
-convparm.o: $(GMXHOME)/src/include/smalloc.h
+convparm.o: $(GMXHOME)/src/include/vec.h
+convparm.o: $(GMXHOME)/src/include/maths.h
 convparm.o: $(GMXHOME)/src/include/typedefs.h
 convparm.o: $(GMXHOME)/src/include/types/simple.h
 convparm.o: $(GMXHOME)/src/include/types/enums.h
@@ -159,12 +160,14 @@ convparm.o: $(GMXHOME)/src/include/types/drblock.h
 convparm.o: $(GMXHOME)/src/include/types/parm.h
 convparm.o: $(GMXHOME)/src/include/types/matrix.h
 convparm.o: $(GMXHOME)/src/include/types/edsams.h
+convparm.o: $(GMXHOME)/src/include/macros.h
+convparm.o: $(GMXHOME)/src/include/assert.h
+convparm.o: $(GMXHOME)/src/include/smalloc.h
 convparm.o: $(GMXHOME)/src/include/bondf.h
 convparm.o: $(GMXHOME)/src/include/nrnb.h
 convparm.o: $(GMXHOME)/src/include/pbc.h
 convparm.o: $(GMXHOME)/src/include/string2.h
 convparm.o: $(GMXHOME)/src/include/grompp.h
-convparm.o: $(GMXHOME)/src/include/macros.h
 convparm.o: $(GMXHOME)/src/include/names.h
 dum_parm.o: $(GMXHOME)/src/include/assert.h
 dum_parm.o: $(GMXHOME)/src/include/sysstuff.h
@@ -328,8 +331,7 @@ gmxcheck.o: $(GMXHOME)/src/include/xdrf.h
 gmxcheck.o: $(GMXHOME)/src/include/gmxfio.h
 gmxcheck.o: $(GMXHOME)/src/include/trnio.h
 gmxcheck.o: $(GMXHOME)/src/include/xtcio.h
-gmxcheck.o: $(GMXHOME)/src/include/vdw.h
-gmxcheck.o: $(GMXHOME)/src/include/mass.h
+gmxcheck.o: $(GMXHOME)/src/include/atomprop.h
 gmxcheck.o: $(GMXHOME)/src/include/vec.h
 gmxcheck.o: $(GMXHOME)/src/include/maths.h
 gmxcheck.o: $(GMXHOME)/src/include/pbc.h
@@ -553,6 +555,7 @@ $(LIB)(md.o): $(GMXHOME)/src/include/xdrf.h
 $(LIB)(md.o): $(GMXHOME)/src/include/nrnb.h
 $(LIB)(md.o): $(GMXHOME)/src/include/calcmu.h
 $(LIB)(md.o): $(GMXHOME)/src/include/network.h
+$(LIB)(md.o): $(GMXHOME)/src/include/main.h
 $(LIB)(md.o): $(GMXHOME)/src/include/dummies.h
 $(LIB)(md.o): $(GMXHOME)/src/include/update.h
 $(LIB)(md.o): $(GMXHOME)/src/include/mshift.h
@@ -564,6 +567,7 @@ $(LIB)(md.o): $(GMXHOME)/src/include/trnio.h
 $(LIB)(md.o): $(GMXHOME)/src/include/mdrun.h
 $(LIB)(md.o): $(GMXHOME)/src/include/edsam.h
 $(LIB)(md.o): $(GMXHOME)/src/include/confio.h
+$(LIB)(md.o): $(GMXHOME)/src/include/sim_util.h
 mdrun.o: $(GMXHOME)/src/include/typedefs.h
 mdrun.o: $(GMXHOME)/src/include/sysstuff.h
 mdrun.o: $(GMXHOME)/src/include/types/simple.h
@@ -659,6 +663,7 @@ mk_ghat.o: $(GMXHOME)/src/include/xdrf.h
 mk_ghat.o: $(GMXHOME)/src/include/fftgrid.h
 mk_ghat.o: $(GMXHOME)/src/include/fftw.h
 mk_ghat.o: $(GMXHOME)/src/include/network.h
+mk_ghat.o: $(GMXHOME)/src/include/main.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/types/simple.h
@@ -704,6 +709,7 @@ $(LIB)(nm.o): $(GMXHOME)/src/include/xdrf.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/nrnb.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/calcmu.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/network.h
+$(LIB)(nm.o): $(GMXHOME)/src/include/main.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/dummies.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/pppm.h
 $(LIB)(nm.o): $(GMXHOME)/src/include/complex.h
@@ -851,9 +857,7 @@ pdb2gmx.o: $(GMXHOME)/src/include/h_db.h
 pdb2gmx.o: $(GMXHOME)/src/include/physics.h
 pdb2gmx.o: $(GMXHOME)/src/include/calch.h
 pdb2gmx.o: $(GMXHOME)/src/include/strdb.h
-pdb2gmx.o: $(GMXHOME)/src/include/gstat.h
-pdb2gmx.o: $(GMXHOME)/src/include/mshift.h
-pdb2gmx.o: $(GMXHOME)/src/include/rmpbc.h
+pdb2gmx.o: $(GMXHOME)/src/include/gbutil.h
 pdb2gmx.o: $(GMXHOME)/src/include/genhydro.h
 pdb2gmx.o: $(GMXHOME)/src/include/index.h
 pdb2top.o: $(GMXHOME)/src/include/vec.h
@@ -966,6 +970,8 @@ readir.o: $(GMXHOME)/src/include/string2.h
 readir.o: $(GMXHOME)/src/include/readinp.h
 readir.o: $(GMXHOME)/src/include/grompp.h
 readir.o: $(GMXHOME)/src/include/index.h
+readir.o: $(GMXHOME)/src/include/network.h
+readir.o: $(GMXHOME)/src/include/main.h
 resall.o: $(GMXHOME)/src/include/sysstuff.h
 resall.o: $(GMXHOME)/src/include/assert.h
 resall.o: $(GMXHOME)/src/include/string2.h
@@ -1035,10 +1041,10 @@ $(LIB)(runner.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/string2.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/led.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/network.h
+$(LIB)(runner.o): $(GMXHOME)/src/include/main.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/confio.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/copyrite.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/smalloc.h
-$(LIB)(runner.o): $(GMXHOME)/src/include/main.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/pbc.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/force.h
 $(LIB)(runner.o): $(GMXHOME)/src/include/nsb.h
@@ -1204,11 +1210,11 @@ $(LIB)(steep.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/led.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/network.h
+$(LIB)(steep.o): $(GMXHOME)/src/include/main.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/confio.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/copyrite.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/nrnb.h
-$(LIB)(steep.o): $(GMXHOME)/src/include/main.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/pbc.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/force.h
 $(LIB)(steep.o): $(GMXHOME)/src/include/nsb.h
@@ -1272,6 +1278,7 @@ ter_db.o: $(GMXHOME)/src/include/grompp.h
 ter_db.o: $(GMXHOME)/src/include/macros.h
 ter_db.o: $(GMXHOME)/src/include/h_db.h
 ter_db.o: $(GMXHOME)/src/include/string2.h
+ter_db.o: $(GMXHOME)/src/include/strdb.h
 tomorse.o: $(GMXHOME)/src/include/typedefs.h
 tomorse.o: $(GMXHOME)/src/include/sysstuff.h
 tomorse.o: $(GMXHOME)/src/include/types/simple.h
@@ -1584,6 +1591,7 @@ tpbcmp.o: $(GMXHOME)/src/include/txtdump.h
 tpbcmp.o: $(GMXHOME)/src/include/tpxio.h
 tpbcmp.o: $(GMXHOME)/src/include/xdrf.h
 tpbcmp.o: $(GMXHOME)/src/include/names.h
+tpbcmp.o: $(GMXHOME)/src/include/enxio.h
 tpbconv.o: $(GMXHOME)/src/include/rdgroup.h
 tpbconv.o: $(GMXHOME)/src/include/typedefs.h
 tpbconv.o: $(GMXHOME)/src/include/sysstuff.h

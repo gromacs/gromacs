@@ -145,6 +145,7 @@ do_gct.o: $(GMXHOME)/src/include/types/edsams.h
 do_gct.o: $(GMXHOME)/src/include/filenm.h
 do_gct.o: $(GMXHOME)/src/include/futil.h
 do_gct.o: $(GMXHOME)/src/include/network.h
+do_gct.o: $(GMXHOME)/src/include/main.h
 do_gct.o: $(GMXHOME)/src/include/block_tx.h
 do_gct.o: $(GMXHOME)/src/include/xvgr.h
 do_gct.o: $(GMXHOME)/src/include/macros.h
@@ -166,7 +167,6 @@ do_gct.o: $(GMXHOME)/src/include/xdrf.h
 do_gct.o: $(GMXHOME)/src/include/update.h
 do_gct.o: $(GMXHOME)/src/include/vec.h
 do_gct.o: $(GMXHOME)/src/include/maths.h
-do_gct.o: $(GMXHOME)/src/include/main.h
 do_gct.o: $(GMXHOME)/src/include/txtdump.h
 do_gct.o: $(GMXHOME)/src/include/tpxio.h
 do_shift.o: $(GMXHOME)/src/include/sysstuff.h
@@ -248,6 +248,7 @@ gctio.o: $(GMXHOME)/src/include/types/edsams.h
 gctio.o: $(GMXHOME)/src/include/filenm.h
 gctio.o: $(GMXHOME)/src/include/futil.h
 gctio.o: $(GMXHOME)/src/include/network.h
+gctio.o: $(GMXHOME)/src/include/main.h
 gctio.o: $(GMXHOME)/src/include/block_tx.h
 gctio.o: $(GMXHOME)/src/include/xvgr.h
 gctio.o: $(GMXHOME)/src/include/macros.h
@@ -317,11 +318,11 @@ glasmd.o: $(GMXHOME)/src/include/types/edsams.h
 glasmd.o: $(GMXHOME)/src/include/led.h
 glasmd.o: $(GMXHOME)/src/include/nrnb.h
 glasmd.o: $(GMXHOME)/src/include/network.h
+glasmd.o: $(GMXHOME)/src/include/main.h
 glasmd.o: $(GMXHOME)/src/include/confio.h
 glasmd.o: $(GMXHOME)/src/include/binio.h
 glasmd.o: $(GMXHOME)/src/include/copyrite.h
 glasmd.o: $(GMXHOME)/src/include/smalloc.h
-glasmd.o: $(GMXHOME)/src/include/main.h
 glasmd.o: $(GMXHOME)/src/include/pbc.h
 glasmd.o: $(GMXHOME)/src/include/force.h
 glasmd.o: $(GMXHOME)/src/include/nsb.h
@@ -493,8 +494,9 @@ my_dssp.o: $(GMXHOME)/src/include/gstat.h
 my_dssp.o: $(GMXHOME)/src/include/rmpbc.h
 my_dssp.o: $(GMXHOME)/src/include/tpxio.h
 my_dssp.o: $(GMXHOME)/src/include/xdrf.h
-relax_sh.o: $(GMXHOME)/src/include/typedefs.h
+relax_sh.o: $(GMXHOME)/src/include/assert.h
 relax_sh.o: $(GMXHOME)/src/include/sysstuff.h
+relax_sh.o: $(GMXHOME)/src/include/typedefs.h
 relax_sh.o: $(GMXHOME)/src/include/types/simple.h
 relax_sh.o: $(GMXHOME)/src/include/types/enums.h
 relax_sh.o: $(GMXHOME)/src/include/types/block.h
@@ -530,6 +532,7 @@ relax_sh.o: $(GMXHOME)/src/include/tpxio.h
 relax_sh.o: $(GMXHOME)/src/include/xdrf.h
 relax_sh.o: $(GMXHOME)/src/include/mdrun.h
 relax_sh.o: $(GMXHOME)/src/include/network.h
+relax_sh.o: $(GMXHOME)/src/include/main.h
 relax_sh.o: $(GMXHOME)/src/include/tgroup.h
 relax_sh.o: $(GMXHOME)/src/include/filenm.h
 relax_sh.o: $(GMXHOME)/src/include/futil.h
@@ -542,6 +545,7 @@ relax_sh.o: $(GMXHOME)/src/include/mdebin.h
 relax_sh.o: $(GMXHOME)/src/include/ebin.h
 relax_sh.o: $(GMXHOME)/src/include/enxio.h
 relax_sh.o: $(GMXHOME)/src/include/mdatoms.h
+relax_sh.o: $(GMXHOME)/src/include/names.h
 xmdrun.o: $(GMXHOME)/src/include/sysstuff.h
 xmdrun.o: $(GMXHOME)/src/include/string2.h
 xmdrun.o: $(GMXHOME)/src/include/typedefs.h
@@ -573,11 +577,11 @@ xmdrun.o: $(GMXHOME)/src/include/types/matrix.h
 xmdrun.o: $(GMXHOME)/src/include/types/edsams.h
 xmdrun.o: $(GMXHOME)/src/include/nrnb.h
 xmdrun.o: $(GMXHOME)/src/include/network.h
+xmdrun.o: $(GMXHOME)/src/include/main.h
 xmdrun.o: $(GMXHOME)/src/include/confio.h
 xmdrun.o: $(GMXHOME)/src/include/binio.h
 xmdrun.o: $(GMXHOME)/src/include/copyrite.h
 xmdrun.o: $(GMXHOME)/src/include/smalloc.h
-xmdrun.o: $(GMXHOME)/src/include/main.h
 xmdrun.o: $(GMXHOME)/src/include/pbc.h
 xmdrun.o: $(GMXHOME)/src/include/force.h
 xmdrun.o: $(GMXHOME)/src/include/nsb.h
@@ -603,6 +607,7 @@ xmdrun.o: $(GMXHOME)/src/include/statutil.h
 xmdrun.o: $(GMXHOME)/src/include/readinp.h
 xmdrun.o: $(GMXHOME)/src/include/wman.h
 xmdrun.o: $(GMXHOME)/src/include/vcm.h
+xmdrun.o: $(GMXHOME)/src/include/trnio.h
 xmdrun.o: $(GMXHOME)/src/include/disre.h
 xmdrun.o: $(GMXHOME)/src/include/dummies.h
 xmdrun.o: $(GMXHOME)/src/include/physics.h
