@@ -110,13 +110,15 @@ void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
     /* ugly, but it works. */
     for(n=0;n<nr;n++) {
 	if(charge[start+n]!=0) {
-
-	    
+	    /* the nx/2 factors is a temporary hack to be able to
+	     * compare with the algorithm of Darden -
+	     * they will eventually be removed
+	     */
 	    xidx=(int)(x[start+n][XX]*invh[XX]+nx/2.0);
 	    yidx=(int)(x[start+n][YY]*invh[YY]+ny/2.0);
 	    zidx=(int)(x[start+n][ZZ]*invh[ZZ]+nz/2.0);
 
-	    if(xidx>=nx)
+	    if(xidx>=nx)   /* ugly */
 		xidx-=nx;
 	    else if(xidx<0)
 		xidx+=nx;
@@ -148,7 +150,6 @@ void spread_q_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
 			k=k0;
 			if(k0<0)
 			    k+=nz;
-
 			grid->ptr[INDEX(i,j,k)]+=valxy*theta[ZZ][ithz+n*order];
 		    }
 		}
@@ -188,7 +189,9 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
     kystart=0;
     kyend=ny;
 #endif
-
+    /* might be useful trying to change the x/y order here when
+     * using mpi to optimize access to the matrix
+     */
     for(kx=0;kx<nx;kx++) {
 	if(kx<maxkx)
 	    mx=kx*invh[XX]/nx;
@@ -221,7 +224,6 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 		    struct2*=2;
 		energy+=eterm*struct2;
 		struct2;
-		
 		vfactor=(factor*m2+1)*2.0/m2;
 		vir[XX][XX]+=0.25*eterm*struct2*(vfactor*mx*mx-1.0);
 		vir[XX][YY]+=0.25*eterm*struct2*(vfactor*mx*my);   
@@ -237,8 +239,10 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
     vir[YY][XX]=vir[XX][YY];
     vir[ZZ][XX]=vir[XX][ZZ];
     vir[ZZ][YY]=vir[YY][ZZ];
-
+    /* this virial seems ok for isotropic scaling, but I'm
+     * experiencing problems on semiisotropic membranes */
     return(0.5*energy);
+    /* this energy should be corrected for a charged system */
 }
 
 
@@ -312,6 +316,15 @@ void gather_f_bsplines(t_fftgrid *grid,rvec invh,t_nsborder *nsb,
 	    f[start+n][ZZ]+=invh[ZZ]*fz*charge[start+n];
 	}
     }
+    /* Since the energy and not forces are interpolated
+     * the net force might not be exactly zero.
+     * This can be solved by also interpolating F, but
+     * that comes at a cost.
+     * A better hack is to remove the net force every
+     * step, but that must be done at a higher level
+     * since this routine doesn't see all atoms if running
+     * in parallel. Don't know how important it is?  EL 990726
+     */
 }
 
 
@@ -513,8 +526,7 @@ real do_pme(FILE *log,       bool bVerbose,
   /* interpolate forces for our local atoms */
   gather_f_bsplines(grid,invh,nsb,x,f,charge,theta,dtheta,ir->pme_order);
 
-  return energy;
-  
+  return energy;  
 }
 
 
