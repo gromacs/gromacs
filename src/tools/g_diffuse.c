@@ -274,7 +274,7 @@ int main(int argc,char *argv[])
   atom_id *index=NULL;
   char    *grpname=NULL;
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
