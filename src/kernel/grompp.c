@@ -794,7 +794,8 @@ int main (int argc, char *argv[])
   check_mol(&(sys->atoms));
   
   /* Now build the shakeblocks from the shakes */
-  gen_sblocks(bVerbose,sys->atoms.nr,&(sys->idef),&(sys->blocks[ebSBLOCKS]));
+  gen_sblocks(bVerbose,sys->atoms.nr,&(sys->idef),
+	      &(sys->blocks[ebSBLOCKS]),FALSE);
   if (debug)
     pr_symtab(debug,0,"After gen_sblocks",&sys->symtab);
    

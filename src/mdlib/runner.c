@@ -188,7 +188,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   init_groups(stdlog,mdatoms,&(parm->ir.opts),grps);
   
   /* Periodicity stuff */  
-  graph=mk_graph(&(top->idef),top->atoms.nr,FALSE);
+  graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
   if (debug)
     p_graph(debug,"Initial graph",graph);
   
