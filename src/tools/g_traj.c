@@ -52,7 +52,7 @@
 #include "confio.h"
 
 static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
-		    bool bDim[])
+			   bool bDim[])
 {
   int i,d;
   
@@ -78,23 +78,35 @@ static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
 static void average_data(rvec x[],rvec xav[],real *mass,
 			 int ngrps,int isize[],atom_id **index)
 {
-  int  g,i;
+  int  g,i,ind,d;
   real m,mtot;
   rvec tmp;
+  double sum[DIM];
 
   for(g=0; g<ngrps; g++) {
+    for(d=0; d<DIM; d++)
+      sum[d] = 0;
     clear_rvec(xav[g]);
     mtot = 0;
-    for(i=0; i<isize[g]; i++)
+    for(i=0; i<isize[g]; i++) {
+      ind = index[g][i];
       if (mass) {
-	m = mass[index[g][i]];
-	svmul(m,x[index[g][i]],tmp);
-	rvec_inc(xav[g],tmp);
+	m = mass[ind];
+	svmul(m,x[ind],tmp);
+	for(d=0; d<DIM; d++)
+	  sum[d] += tmp[d];
 	mtot += m;
       } else
-	rvec_inc(xav[g],x[index[g][i]]);
-    if (mass)
-      svmul(1/mtot,xav[g],xav[g]);
+	for(d=0; d<DIM; d++)
+	  sum[d] += x[ind][d];
+    }
+    if (mass) {
+      for(d=0; d<DIM; d++)
+	xav[g][d] = sum[d]/mtot;
+    } else {
+      for(d=0; d<DIM; d++)
+	xav[g][d] = sum[d]/isize[g];
+    }
   }
 }
   
@@ -269,12 +281,13 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
 }
 
 static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
-			   int isize,atom_id *index,int nfr,rvec *x,rvec *sum)
+			   int isize,atom_id *index,int nfr,rvec *x,rvec *sum,
+			   bool bDim[])
 {
   FILE    *fp;
   real    max,len2,scale;
   atom_id maxi; 
-  int     i;
+  int     i,m;
 
   if (nfr == 0) {
     fprintf(stderr,"No frames found for %s, will not write %s\n",title,fname);
@@ -286,7 +299,10 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
     max  = 0;
     maxi = 0;
     for(i=0; i<isize; i++) {
-      len2 = norm2(sum[index[i]]);
+      len2 = 0;
+      for(m=0; m<DIM; m++)
+	if (bDim[m] || bDim[DIM])
+	  len2 += sqr(sum[index[i]][m]);
       if (len2 > max) {
 	max  = len2;
 	maxi = index[i];
@@ -304,9 +320,13 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
     
     if (atoms->pdbinfo == NULL)
       snew(atoms->pdbinfo,atoms->nr);
-    for(i=0; i<isize; i++)
-      atoms->pdbinfo[index[i]].bfac = norm(sum[index[i]])*scale;
-    
+    for(i=0; i<isize; i++) {
+      len2 = 0;
+      for(m=0; m<DIM; m++) 
+	if (bDim[m] || bDim[DIM])
+	  len2 += sqr(sum[index[i]][m]);
+      atoms->pdbinfo[index[i]].bfac = sqrt(len2)*scale;
+    }
     write_sto_conf_indexed(fname,title,atoms,x,NULL,box,isize,index);
   }
 }
@@ -620,10 +640,10 @@ int gmx_traj(int argc,char *argv[])
 
   if (bCV)
     write_pdb_bfac(opt2fn("-cv",NFILE,fnm),"average velocity",&(top.atoms),
-		   topbox,isize[0],index[0],nr_vfr,sumxv,sumv);
+		   topbox,isize[0],index[0],nr_vfr,sumxv,sumv,bDim);
   if (bCF)
     write_pdb_bfac(opt2fn("-cf",NFILE,fnm),"average force",&(top.atoms),
-		   topbox,isize[0],index[0],nr_ffr,sumxf,sumf);
+		   topbox,isize[0],index[0],nr_ffr,sumxf,sumf,bDim);
 
   /* view it */
   view_all(NFILE, fnm);
