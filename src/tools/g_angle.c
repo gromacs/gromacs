@@ -82,11 +82,11 @@ int main(int argc,char *argv[])
   int        status,isize;
   atom_id    *index;
   char       *grpname;
-  real       maxang=0,Jc,S2,norm_fac;
+  real       maxang,Jc,S2,norm_fac,maxstat;
   unsigned long mode;
-  int        nframes,maxangstat=0,mult,*angstat;
+  int        nframes,maxangstat,mult,*angstat;
   int        i,j,total,nangles,natoms,nat2,first,last,angind;
-  bool       bAver,bRb=FALSE,
+  bool       bAver,bRb,bPeriodic,
     bFrac,          /* calculate fraction too?  */
     bTrans,         /* worry about transtions too? */
     bCorr;          /* correlation function ? */    
@@ -122,6 +122,7 @@ int main(int argc,char *argv[])
     
   mult   = 4;
   maxang = 360.0;
+  bRb    = FALSE;
   switch(opt[0]) {
   case 'A':
     mult   = 3;
@@ -140,6 +141,7 @@ int main(int argc,char *argv[])
 
   /* Calculate bin size */
   maxangstat=(int)(maxang/binwidth+0.5);
+  binwidth=maxang/maxangstat;
     
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   nangles=isize/mult;
@@ -158,7 +160,7 @@ int main(int argc,char *argv[])
   if (bChandler && !bCorr)
     bCorr=TRUE;
     
-  if (bFrac && bRb==FALSE) {
+  if (bFrac && !bRb) {
     fprintf(stderr,"Warning:"
 	    " calculating fractions as defined in this program\n"
 	    "makes sense for Ryckaert Bellemans dihs. only. Ignoring -of\n\n"); 
@@ -176,7 +178,7 @@ int main(int argc,char *argv[])
   if (bTrans || bCorr  || bALL)
     snew(dih,nangles);
 
-  snew(angstat,maxangstat+1);
+  snew(angstat,maxangstat);
 
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
 	       bALL || bCorr || bTrans,bRb,maxangstat,angstat,
@@ -252,9 +254,9 @@ int main(int argc,char *argv[])
 
   
   /* Determine the non-zero part of the distribution */
-  for(first=0; (first <= maxangstat) && (angstat[first] == 0); first++)
+  for(first=0; (first < maxangstat) && (angstat[first] == 0); first++)
     ;
-  for(last=maxangstat; (last >= 0) && (angstat[last] == 0) ; last--)
+  for(last=maxangstat-1; (last >= 0) && (angstat[last] == 0) ; last--)
     ;
 
   aver=0;
@@ -274,12 +276,31 @@ int main(int argc,char *argv[])
     calc_distribution_props(maxangstat,angstat,-180.0,0,NULL,&S2);
     fprintf(stderr,"Order parameter S^2 = %g\n",S2);
   }
+  
+  bPeriodic=(mult==4) && (first==0) && (last==maxangstat-1);
+  
   out=xvgropen(opt2fn("-od",NFILE,fnm),title,"Degrees","");
-  fprintf(out,"@    subtitle \"\average angle: %g\\So\\N\"\n",aver*RAD2DEG);
-  norm_fac=1.0/(nangles*nframes*maxang/maxangstat);
+  fprintf(out,"@    subtitle \"average angle: %g\\So\\N\"\n",aver*RAD2DEG);
+  norm_fac=1.0/(nangles*nframes*binwidth);
+  if (bPeriodic) {
+    maxstat=0;
+    for(i=first; (i<=last); i++) 
+      maxstat=max(maxstat,angstat[i]*norm_fac);
+    fprintf(out,"@with g0\n");
+    fprintf(out,"@    world xmin -180\n");
+    fprintf(out,"@    world xmax  180\n");
+    fprintf(out,"@    world ymin 0\n");
+    fprintf(out,"@    world ymax %g\n",maxstat*1.05);
+    fprintf(out,"@    xaxis  tick major 60\n");
+    fprintf(out,"@    xaxis  tick minor 30\n");
+    fprintf(out,"@    yaxis  tick major 0.005\n");
+    fprintf(out,"@    yaxis  tick minor 0.0025\n");
+  }
   for(i=first; (i<=last); i++) 
-    fprintf(out,"%10g  %10f\n",
-	    ((i*maxang)/maxangstat)+180.0-maxang,angstat[i]*norm_fac);
+    fprintf(out,"%10g  %10f\n",i*binwidth+180.0-maxang,angstat[i]*norm_fac);
+  if ( bPeriodic )
+    /* print first bin again as last one */
+    fprintf(out,"%10g  %10f\n",180.0,angstat[0]*norm_fac);
   
   fclose(out);
 
