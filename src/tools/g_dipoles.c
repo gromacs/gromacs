@@ -149,42 +149,35 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
   }
 }
 
-void print_gkrbin(char *fn,t_gkrbin *gb,real mu,
-		  int ngrp,int nframes,real volume)
+void print_gkrbin(char *fn,t_gkrbin *gb,real mu,int ngrp,int nframes)
 {
   FILE   *fp;
   char   *leg[] = { "G\\sk\\N(r)", "<mu\\si\\N mu\\sj\\N> (r\\sij\\N = r)" };
   int    i;
-  real   x,y,ytot,vol_s,rho;
+  real   x,y,ytot;
   double fac;
     
   if (mu == 0)
     fatal_error(0,"Trying to print Gk(r) but average dipole is zero!");
   fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
   xvgr_legend(fp,asize(leg),leg);
-  ytot = 0;
-  rho  = ngrp/volume;
-  fprintf(stderr,"Number density is %g molecules / nm^3\n",rho);
+  ytot = 1;
   
   /* Divide by dipole squared, by number of frames, by number of origins.
    * Multiply by 2 because we only take half the matrix of interactions
    * into account.
    */
-  fac  = 2.0/((mu*ngrp)*(mu*nframes));
+  fac  = 2.0/(ngrp*nframes);
 
   for(i=0; (i<gb->nelem); i++) {
     /* Centre of the coordinate in the spherical layer */
     x     = (i+0.5)*gb->spacing;
-    /* Volume of the layer */
-    vol_s = 4.0*M_PI*sqr(x)*gb->spacing;
-    /* Dipole correlation, normalized by the relative number density, like
-     * in a Radial ditribution function.
-     */
-    y     = gb->elem[i]*fac/(rho*vol_s);
-      
-    ytot += y*gb->spacing*rho;
-    
-    fprintf(fp,"%10.5e  %12.7e  %12.7e\n",x,ytot,y);
+
+    y     = gb->elem[i]/(mu*mu);
+
+    ytot += y*fac;
+
+    fprintf(fp,"%10.5e  %12.7e  %12.7e\n",x,ytot,y/gb->count[i]);
   }
   ffclose(fp);
 }
@@ -701,7 +694,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   vol_aver /= teller;
   fprintf(stderr,"Average volume over run is %g\n",vol_aver);
   if (bGkr) 
-    print_gkrbin(gkrfn,gkrbin,mu_aver,gnx,teller,vol_aver);
+    print_gkrbin(gkrfn,gkrbin,mu_aver,gnx,teller);
 
   /* Autocorrelation function */  
   if (bCorr) {
