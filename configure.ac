@@ -198,7 +198,9 @@ if test "$enable_hide_table_latency" = "yes"; then
   AC_DEFINE(DECREASE_LOOKUP_LATENCY,,[Try to get table data to cache before using it])
 fi
 
-
+AC_ARG_ENABLE(all-static,
+ [  --enable-all-static           make completely static binaries],enable_all_static=yes, enable_all_static=no)
+# Dont add the -all-static flag until after the compiler test.
 
 ### Compile without FFTW - disabling it means you can't use PME or PPPM!
 ### N.B.: This is only intended as a last resort, or for tests - don't use it!
@@ -773,10 +775,15 @@ fi
 RPM=rpm
 AC_SUBST(RPM)
 
+
+if test "$enable_all_static" = "yes"; then
+  LDFLAGS="$LDFLAGS -all-static"
+fi
+
 # we have asm source, so this is necessary for automake 1.6
 CCAS=$CC
 CCASFLAGS=$CFLAGS
-
+ 
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
 

@@ -165,7 +165,7 @@ real morsebonds(int nbonds,
 
     pbc_rvec_sub(x[ai],x[aj],dx);                   /*   3          */
     dr2  = iprod(dx,dx);                            /*   5          */
-    dr   = sqrt(dr2);                               /*  10          */
+    dr   = dr2*invsqrt(dr2);                        /*  10          */
     temp = exp(-be*(dr-b0));                        /*  12          */
     
     if (temp == one)
@@ -222,7 +222,7 @@ real cubicbonds(int nbonds,
     if (dr2 == 0.0)
       continue;
       
-    dr         = sqrt(dr2);                               /*  10          */
+    dr         = dr2*invsqrt(dr2);                      /*  10          */
     dist       = dr-b0;
     kdist      = kb*dist;
     kdist2     = kdist*dist;
@@ -292,7 +292,7 @@ real bonds(int nbonds,
   
     pbc_rvec_sub(x[ai],x[aj],dx);			/*   3 		*/
     dr2=iprod(dx,dx);				/*   5		*/
-    dr=sqrt(dr2);					/*  10		*/
+    dr=dr2*invsqrt(dr2);		       /*  10		*/
 
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
@@ -575,7 +575,7 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   
   ipr   = iprod(m,m);		/*  5 	*/
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
-  nrkj  = sqrt(nrkj2);		/* 10	*/
+  nrkj  = nrkj2*invsqrt(nrkj2);	/* 10	*/
   a     = -ddphi*nrkj/ipr;	/* 11	*/
   svmul(a,m,f_i);		/*  3	*/
   ipr   = iprod(n,n);		/*  5	*/

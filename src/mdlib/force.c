@@ -689,8 +689,12 @@ void init_forcerec(FILE *fp,
    */
 
 #define MAX_14_DIST 1.0
-  /* Shell to account for the maximum chargegroup radius (2*0.2 nm) *
-   * and diffusion during nstlist steps (0.2 nm)                    */
+  /* Shell to account for the maximum chargegroup radius (2*0.2 nm) 
+   * and diffusion during nstlist steps (0.2 nm)                    
+   * Changed 020624: Increased to 1.2 since we never check for this,
+   * so we must make absolutely sure the table length is always
+   * sufficient. It doesn't affect the performance either...
+   */ 
 #define TAB_EXT 1.2
 
   /* Construct tables.

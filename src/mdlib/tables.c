@@ -211,20 +211,20 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
   FILE *fp;
 #endif
   int  i,p;
-  real r1,rc,r12,r13;
-  real r,r2,r6;
-  real expr,Vtab,Ftab,Vtab2,Ftab2;
+  double r1,rc,r12,r13;
+  double r,r2,r6;
+  double expr,Vtab,Ftab,Vtab2,Ftab2;
   /* Parameters for David's function */
-  real A=0,B=0,C=0,A_3=0,B_4=0;
+  double A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
-  real ksw,swi,swi1,swi2;
+  double ksw,swi,swi1,swi2;
   /* Temporary parameters */
   bool bSwitch,bShift;
-  real VtabT;  
-  real VtabT1;  
-  real VtabT2; 
-  real ewc=fr->ewaldcoeff;
-  real isp= 0.564189583547756;
+  double VtabT;  
+  double VtabT1;  
+  double VtabT2; 
+  double ewc=fr->ewaldcoeff;
+  double isp= 0.564189583547756;
    
   bSwitch = ((tp == etabLJ6Switch)    || (tp == etabLJ12Switch)    || 
 	     (tp == etabCOULSwitch));

@@ -240,8 +240,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
          existing files
       */
       sprintf(buf,"/bin/gzip -f -c > %s", filename);
-      make_backup(filename);
-      if((pull->out = popen(buf,"w"))==NULL)
+            if((pull->out = popen(buf,"w"))==NULL)
         fatal_error(0,"Could not execute %s.",buf);
     } else {
       pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");

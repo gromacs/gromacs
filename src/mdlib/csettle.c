@@ -194,7 +194,7 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
       cosphi = 0;
     }
     else
-      cosphi = sqrt(tmp);
+      cosphi = tmp*invsqrt(tmp);
     sinpsi = (zb1d - zc1d) / (rc2 * cosphi);
     tmp2   = rone - sinpsi * sinpsi;
     if (tmp2 <= 0) {
@@ -202,7 +202,7 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
       cospsi = 0;
     }
     else
-      cospsi = sqrt(tmp2);
+      cospsi = tmp2*invsqrt(tmp2);
     /* 46 flops */
     
     ya2d =  ra * cosphi;
@@ -218,11 +218,13 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
     beta   = xb2d * (yc0d - yb0d) + xb0d * yb2d + xc0d * yc2d;
     gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
     al2be2 = alpa * alpa + beta * beta;
-    sinthe = (alpa * gama - beta * sqrt(al2be2 - gama * gama)) / al2be2;
+    tmp2   = (al2be2 - gama * gama);
+    sinthe = (alpa * gama - beta * tmp2*invsqrt(tmp2)) / al2be2;
     /* 47 flops */
     
     /*  --- Step4  A3' --- */
-    costhe = sqrt(rone - sinthe * sinthe);
+    tmp2  = rone - sinthe *sinthe;
+    costhe = tmp2*invsqrt(tmp2);
     xa3d = -ya2d * sinthe;
     ya3d = ya2d * costhe;
     za3d = za1d;

@@ -29068,93 +29068,6 @@ _inl3130_sse:
 	addps xmm0, xmm1
 	addps xmm0, xmm2
 	movaps [esp + i3130_rsqH2H2], xmm0
-		
-	;# start doing invsqrt use rsq values in xmm0, xmm4 
-	rsqrtps xmm1, xmm0
-	rsqrtps xmm5, xmm4
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [esp + i3130_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, xmm0
-	mulps   xmm5, xmm4
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [esp + i3130_half] ;# rinvH2H2 
-	mulps   xmm7, [esp + i3130_half] ;# rinvH2H1 
-	movaps  [esp + i3130_rinvH2H2], xmm3
-	movaps  [esp + i3130_rinvH2H1], xmm7
-		
-	rsqrtps xmm1, [esp + i3130_rsqOO]
-	rsqrtps xmm5, [esp + i3130_rsqOH1]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [esp + i3130_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [esp + i3130_rsqOO]
-	mulps   xmm5, [esp + i3130_rsqOH1]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [esp + i3130_half] 
-	mulps   xmm7, [esp + i3130_half]
-	movaps  [esp + i3130_rinvOO], xmm3
-	movaps  [esp + i3130_rinvOH1], xmm7
-	
-	rsqrtps xmm1, [esp + i3130_rsqOH2]
-	rsqrtps xmm5, [esp + i3130_rsqH1O]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [esp + i3130_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [esp + i3130_rsqOH2]
-	mulps   xmm5, [esp + i3130_rsqH1O]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [esp + i3130_half] 
-	mulps   xmm7, [esp + i3130_half]
-	movaps  [esp + i3130_rinvOH2], xmm3
-	movaps  [esp + i3130_rinvH1O], xmm7
-	
-	rsqrtps xmm1, [esp + i3130_rsqH1H1]
-	rsqrtps xmm5, [esp + i3130_rsqH1H2]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [esp + i3130_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [esp + i3130_rsqH1H1]
-	mulps   xmm5, [esp + i3130_rsqH1H2]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [esp + i3130_half] 
-	mulps   xmm7, [esp + i3130_half]
-	movaps  [esp + i3130_rinvH1H1], xmm3
-	movaps  [esp + i3130_rinvH1H2], xmm7
-	
-	rsqrtps xmm1, [esp + i3130_rsqH2O]
-	movaps  xmm2, xmm1
-	mulps   xmm1, xmm1
-	movaps  xmm3, [esp + i3130_three]
-	mulps   xmm1, [esp + i3130_rsqH2O]
-	subps   xmm3, xmm1
-	mulps   xmm3, xmm2
-	mulps   xmm3, [esp + i3130_half] 
-	movaps  [esp + i3130_rinvH2O], xmm3
 
 	;# start with OO interaction 
 	movaps xmm0, [esp + i3130_rinvOO]
@@ -29269,9 +29182,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizO], xmm2
 
 	;# O-H1 interaction 
-	movaps xmm0, [esp + i3130_rinvOH1]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqOH1] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqOH1]
 	mulps  xmm1, [esp + i3130_tsc]	
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29329,7 +29240,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29355,9 +29265,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizO], xmm2
 
 	;# O-H2 interaction  
-	movaps xmm0, [esp + i3130_rinvOH2]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqOH2] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqOH2]
 	mulps  xmm1, [esp + i3130_tsc]	
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29415,7 +29323,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29441,9 +29348,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizO], xmm2
 
 	;# H1-O interaction 
-	movaps xmm0, [esp + i3130_rinvH1O]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqH1O] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqH1O]
 	mulps  xmm1, [esp + i3130_tsc]	
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29501,7 +29406,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29527,9 +29431,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizH1], xmm2
 
 	;# H1-H1 interaction 
-	movaps xmm0, [esp + i3130_rinvH1H1]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqH1H1] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqH1H1]
 	mulps  xmm1, [esp + i3130_tsc]	
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29587,7 +29489,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29613,9 +29514,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizH1], xmm2
 
 	;# H1-H2 interaction 
-	movaps xmm0, [esp + i3130_rinvH1H2]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqH1H2] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqH1H2]
 	mulps  xmm1, [esp + i3130_tsc]
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29673,7 +29572,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29699,9 +29597,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizH1], xmm2
 
 	;# H2-O interaction 
-	movaps xmm0, [esp + i3130_rinvH2O]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqH2O] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqH2O]
 	mulps  xmm1, [esp + i3130_tsc]	
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29759,7 +29655,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29785,9 +29680,7 @@ _inl3130_sse:
 	movaps [esp + i3130_fizH2], xmm2
 
 	;# H2-H1 interaction 
-	movaps xmm0, [esp + i3130_rinvH2H1]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqH2H1] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqH2H1]
 	mulps  xmm1, [esp + i3130_tsc]
 	movhlps xmm2, xmm1
     cvttps2pi mm6, xmm1
@@ -29845,7 +29738,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -29871,29 +29763,27 @@ _inl3130_sse:
 	movaps [esp + i3130_fizH2], xmm2
 
 	;# H2-H2 interaction 
-	movaps xmm0, [esp + i3130_rinvH2H2]
-	movaps xmm1, xmm0
-	mulps  xmm1, [esp + i3130_rsqH2H2] ;# xmm1=r 
+	movaps xmm1, [esp + i3130_rsqH2H2]
 	mulps  xmm1, [esp + i3130_tsc]	
 	movhlps xmm2, xmm1
-    cvttps2pi mm6, xmm1
-    cvttps2pi mm7, xmm2     ;# mm6/mm7 contain lu indices 
-    cvtpi2ps xmm3, mm6
-    cvtpi2ps xmm2, mm7
+	cvttps2pi mm6, xmm1
+	cvttps2pi mm7, xmm2     ;# mm6/mm7 contain lu indices 
+	cvtpi2ps xmm3, mm6
+	cvtpi2ps xmm2, mm7
 	movlhps  xmm3, xmm2
 	subps    xmm1, xmm3	;# xmm1=eps 
-    movaps xmm2, xmm1
-    mulps  xmm2, xmm2       ;# xmm2=eps2 
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2       ;# xmm2=eps2 
 
 	pslld   mm6, 2
 	pslld   mm7, 2
 
-    movd eax, mm6
-    psrlq mm6, 32
-    movd ecx, mm7
-    psrlq mm7, 32
-    movd ebx, mm6
-    movd edx, mm7
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
 
     movlps xmm5, [esi + eax*4]
     movlps xmm7, [esi + ecx*4]
@@ -29931,7 +29821,6 @@ _inl3130_sse:
     movaps [esp + i3130_vctot], xmm5
 	xorps  xmm1, xmm1
 	mulps  xmm3,  [esp + i3130_tsc]
-	mulps  xmm3, xmm0
 	subps  xmm1, xmm3
 
 	movaps xmm0, xmm1
@@ -30255,32 +30144,10 @@ _inl3130_sse:
 	addps xmm4, xmm5	;# have rsqH2 in xmm4 
 
 	;# start with H1, save H2 data 
+	movaps [esp + i3130_rsqH1O], xmm0
 	movaps [esp + i3130_rsqH2O], xmm4
 	
-	;# do invsqrt 
-	rsqrtps xmm1, xmm0
-	rsqrtps xmm5, xmm4
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [esp + i3130_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, xmm0
-	mulps   xmm5, xmm4
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [esp + i3130_half] ;# rinv H1 - j water 
-	mulps   xmm7, [esp + i3130_half] ;# rinv H2 - j water  
-
-	;# start with H1, save H2 data 
-	movaps [esp + i3130_rinvH2O], xmm7
-
-	movaps xmm1, xmm3
-	mulps  xmm1, xmm0	;# xmm1=r 
-	movaps xmm0, xmm3	;# xmm0=rinv 
+	movaps xmm1, xmm0	;# xmm0=rinv 
 	mulps  xmm1, [esp + i3130_tsc]
 	
 	movhlps xmm2, xmm1	
@@ -30328,7 +30195,7 @@ _inl3130_sse:
     addps  xmm7, xmm6
     addps  xmm7, xmm5 ;# xmm7=FF 
     mulps  xmm5, xmm1 ;# xmm5=eps*Fp 
-    addps  xmm5, xmm4 ;# xmm5=VV 
+    addps  xmm5, xmm4 ;# xmm5=VV  
     mulps  xmm5, xmm3 ;# vcoul=qq*VV  
     mulps  xmm3, xmm7 ;# fijC=FF*qq 
     ;# at this point xmm5 contains vcoul and xmm3 fijC 
@@ -30338,7 +30205,6 @@ _inl3130_sse:
     xorps  xmm1, xmm1
 
     mulps xmm3, [esp + i3130_tsc]
-    mulps xmm3, xmm0
     subps  xmm1, xmm3
 	
 	movaps  xmm0, xmm1
@@ -30363,9 +30229,7 @@ _inl3130_sse:
 	movaps  [esp + i3130_fiyH1], xmm1
 	movaps  [esp + i3130_fizH1], xmm2
 	;# do table for H2 - j water interaction 
-	movaps xmm0, [esp + i3130_rinvH2O]
 	movaps xmm1, [esp + i3130_rsqH2O]
-	mulps  xmm1, xmm0	;# xmm0=rinv, xmm1=r 
 	mulps  xmm1, [esp + i3130_tsc]
 	
 	movhlps xmm2, xmm1	
@@ -30423,7 +30287,6 @@ _inl3130_sse:
     xorps  xmm1, xmm1
 
     mulps xmm3, [esp + i3130_tsc]
-    mulps xmm3, xmm0
     subps  xmm1, xmm3
 	
 	movaps  xmm0, xmm1

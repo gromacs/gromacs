@@ -168,9 +168,6 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     bDummies = ((interaction_function[i].flags & IF_DUMMY) && 
 		(top->idef.il[i].nr > 0));
 
-  if(bDummies)
-    please_cite(stdlog,"Feenstra99");
-
   /* Initiate forcerecord */
   fr = mk_forcerec();
   init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,parm->box,FALSE,

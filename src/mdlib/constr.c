@@ -30,6 +30,10 @@
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
 static char *SRCID_constr_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "confio.h"
 #include "constr.h"
 #include "callf77.h"
@@ -49,12 +53,16 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
+static int pcount=0;
+
 static int pcomp(const void *p1, const void *p2)
 {
   int     db;
   atom_id min1,min2,max1,max2;
   t_sortblock *a1=(t_sortblock *)p1;
   t_sortblock *a2=(t_sortblock *)p2;
+
+  pcount++;
   
   db=a1->blocknr-a2->blocknr;
   
@@ -265,7 +273,7 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   char             buf[STRLEN];
   int              b,i,j,nit,warn,p_imax,error;
   real             wang,p_max,p_rms;
-  real             dt,dt_2;
+  real             dt,dt_2,tmp;
   bool             bOK;
   
   bOK = TRUE;
@@ -293,9 +301,10 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	if (bllen0[b]==0) {
 	  i = bla1[b];
 	  j = bla2[b];
-	  bllen[b] = sqrt(sqr(x[i][XX]-x[j][XX])+
+	  tmp =   sqr(x[i][XX]-x[j][XX])+
 			  sqr(x[i][YY]-x[j][YY])+
-			  sqr(x[i][ZZ]-x[j][ZZ]));
+			  sqr(x[i][ZZ]-x[j][ZZ]);
+	  bllen[b] = tmp * invsqrt(tmp);	  
 	}
 
       wang=ir->LincsWarnAngle;
@@ -472,6 +481,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
       
       if (debug) {
+	fprintf(debug,"I used %d calls to pcomp\n",pcount);
 	pr_sortblock(debug,"After sorting",ncons,sb);
       }
       
@@ -633,7 +643,7 @@ void cconerr(real *max,real *rms,int *imax,rvec *xprime,
 	     int ncons,int *bla1,int *bla2,real *bllen)
      
 {
-  real      len,d,ma,ms,tmp0,tmp1,tmp2;
+  real      len,d,ma,ms,tmp0,tmp1,tmp2,r2;
   int       b,i,j,im;
   
   ma=0;
@@ -645,7 +655,8 @@ void cconerr(real *max,real *rms,int *imax,rvec *xprime,
     tmp0=xprime[i][0]-xprime[j][0];
     tmp1=xprime[i][1]-xprime[j][1];
     tmp2=xprime[i][2]-xprime[j][2];
-    len=sqrt(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
+    r2=tmp0*tmp0+tmp1*tmp1+tmp2*tmp2;
+    len=r2*invsqrt(r2);
     d=fabs(len/bllen[b]-1);
     if (d > ma) {
       ma=d;
