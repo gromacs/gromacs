@@ -281,9 +281,13 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     break;
   case F_DUMMY1:
     do_real(iparams->dummy.a);
-    do_real(iparams->dummy.b);
     break;
   case F_DUMMY2:
+  case F_DUMMY2FD:
+  case F_DUMMY2FAD:
+    do_real(iparams->dummy.a);
+    do_real(iparams->dummy.b);
+    break;
   case F_DUMMY3:
     do_real(iparams->dummy.a);
     do_real(iparams->dummy.b);

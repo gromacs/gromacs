@@ -88,8 +88,8 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "PShake",         7,  25 },
   { "Dummy1",        15,  70 },
   { "Dummy2",        24,  80 },
+  { "Dummy2fd",      70, 250 }, /* 250 is a wild guess */
   { "Dummy3",        81, 300 },
-  { "Dummy4",        15,  70 }
 };
 
 void init_nrnb(t_nrnb *nrnb)

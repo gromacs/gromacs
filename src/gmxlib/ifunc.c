@@ -47,34 +47,37 @@ static char *SRCID_ifunc_c = "$Id$";
 #define def_nofc(str,lstr)                        \
    {str,lstr,0,0,0,IF_NULL,-1,unimplemented}
 
+/* this MUST correspond to the enum in include/types/idef.h */
 t_interaction_function interaction_function[F_NRE]=
 {
-  def_bond("ANGLES",    "Angle",          3, 2, 2,  eNR_ANGLES, angles),
-  def_nb  ("BHAM",      "BuckingHam",     2, 3),
-  def_connect("BONDS",     "Bonds",          2, 2, 2,  eNR_BONDS, bonds),
-  def_connect("MORSE",     "Morse",          2, 3, 0,  eNR_MORSE,  morsebonds),
-  def_bond("DISRES",    "Dis. Res",       2, 6, 0,  eNR_DISRES, ta_disres),
-  def_bond("IDIHS",     "Impropers",      4, 2, 2,  eNR_IMPROPER, idihs),
-  def_nb  ("LJ",        "LJ",             2, 2),
-  def_bond("LJ14",      "LJ-14",          2, 2, 2,  eNR_LJC, do_14),
-  def_nofc("LR",        "Coulomb (LR)"),
-  def_nofc("LJLR",      "Dispersion (LR)"),
-  def_bond("PDIHS",     "Proper Dih.",    4, 3, 3,  eNR_PROPER, pdihs),
-  def_bond("POSRES",    "Position Rest.", 1, 3, 0,  eNR_POSRES, posres),
-  def_bond("RBDIHS",    "Ryckaert-Bell.", 4, 6, 0,  eNR_RB, rbdihs),
-  def_shkcon ("SHAKE",     "Shake",          2, 1, 1,  -1, unimplemented),
-  def_shk ("SETTLE",    "Settle",         1, 2, 0,  -1, unimplemented),
-  def_dumm("DUMMY1",    "Dummy1",         3, 2, 0,  -1, unimplemented),
-  def_dumm("DUMMY2",    "Dummy2",         4, 3, 0,  -1, unimplemented),
-  def_dumm("DUMMY3",    "Dummy3",         4, 3, 0,  -1, unimplemented),
-  def_nofc("SR",        "Coulomb (SR)"),
-  def_nofc("EPOT",      "Potential"), 
-  def_nofc("EKIN",      "Kinetic En."),
-  def_nofc("ETOT",      "Total Energy"),
-  def_nofc("TEMP",      "Temperature"),
-  def_nofc("PRES",      "Pressure"),
-  def_nofc("DV/DL",     "d Vpot/d mu"),
-  def_nofc("DK/DL",     "d Ekin/d mu")
+  def_bond   ("ANGLES",   "Angle",          3, 2, 2,  eNR_ANGLES, angles),
+  def_nb     ("BHAM",     "BuckingHam",     2, 3),
+  def_connect("BONDS",    "Bonds",          2, 2, 2,  eNR_BONDS, bonds),
+  def_connect("MORSE",    "Morse",          2, 3, 0,  eNR_MORSE,  morsebonds),
+  def_bond   ("DISRES",   "Dis. Res",       2, 6, 0,  eNR_DISRES, ta_disres),
+  def_bond   ("IDIHS",    "Impropers",      4, 2, 2,  eNR_IMPROPER, idihs),
+  def_nb     ("LJ",       "LJ",             2, 2),
+  def_bond   ("LJ14",     "Coulumb+LJ-14",  2, 2, 2,  eNR_LJC, do_14),
+  def_nofc   ("LR",       "Coulomb (LR)"),
+  def_nofc   ("LJLR",     "Dispersion(LR)"),
+  def_bond   ("PDIHS",    "Proper Dih.",    4, 3, 3,  eNR_PROPER, pdihs),
+  def_bond   ("POSRES",   "Position Rest.", 1, 3, 0,  eNR_POSRES, posres),
+  def_bond   ("RBDIHS",   "Ryckaert-Bell.", 4, 6, 0,  eNR_RB, rbdihs),
+  def_shkcon ("SHAKE",    "Shake",          2, 1, 1,  -1, unimplemented),
+  def_shk    ("SETTLE",   "Settle",         1, 2, 0,  -1, unimplemented),
+  def_dumm   ("DUMMY1",   "Dummy1",         3, 1, 0,  -1, unimplemented),
+  def_dumm   ("DUMMY2",   "Dummy2",         4, 2, 0,  -1, unimplemented),
+  def_dumm   ("DUMMY2FD", "Dummy2'",        4, 2, 0,  -1, unimplemented),
+  def_dumm   ("DUMMY2FAD","Dummy2''",       4, 2, 0,  -1, unimplemented),
+  def_dumm   ("DUMMY3",   "Dummy3",         4, 3, 0,  -1, unimplemented),
+  def_nofc   ("SR",       "Coulomb (SR)"),
+  def_nofc   ("EPOT",     "Potential"), 
+  def_nofc   ("EKIN",     "Kinetic En."),
+  def_nofc   ("ETOT",     "Total Energy"),
+  def_nofc   ("TEMP",     "Temperature"),
+  def_nofc   ("PRES",     "Pressure"),
+  def_nofc   ("DV/DL",    "d Vpot/d mu"),
+  def_nofc   ("DK/DL",    "d Ekin/d mu")
 };
 #undef def_bond
 #undef def_connect

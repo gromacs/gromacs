@@ -273,6 +273,8 @@ do { \
           break; \
         case F_DUMMY1: \
         case F_DUMMY2: \
+	case F_DUMMY2FD: \
+	case F_DUMMY2FAD: \
         case F_DUMMY3: \
           block##io(fp,(iparams).dummy.a); \
           block##io(fp,(iparams).dummy.b); \

@@ -35,6 +35,8 @@
 
 typedef atom_id t_iatom;
 
+/* this MUST correspond to the 
+   t_interaction_function[F_NRE] in gmxlib/ifunc.c */
 enum {
   F_ANGLES, 
   F_BHAM,
@@ -53,6 +55,8 @@ enum {
   F_SETTLE,
   F_DUMMY1,
   F_DUMMY2,
+  F_DUMMY2FD,
+  F_DUMMY2FAD,
   F_DUMMY3,
   F_SR,
   F_EPOT,

@@ -383,18 +383,20 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"\n");
     break;
   case F_SHAKE:
-    fprintf(fp,"dA=%15.8e, dB=%15.8e\n",
-	    iparams->shake.dA,iparams->shake.dB);
+    fprintf(fp,"dA=%15.8e, dB=%15.8e\n",iparams->shake.dA,iparams->shake.dB);
     break;
   case F_SETTLE:
     fprintf(fp,"doh=%15.8e, dhh=%15.8e\n",iparams->settle.doh,
 	    iparams->settle.dhh);
     break;
   case F_DUMMY1:
-    fprintf(fp,"a=%15.8e, b=%15.8e\n",
-	    iparams->dummy.a,iparams->dummy.b);
+    fprintf(fp,"a=%15.8e\n",iparams->dummy.a);
     break;
   case F_DUMMY2:
+  case F_DUMMY2FD:
+  case F_DUMMY2FAD:
+    fprintf(fp,"a=%15.8e, b=%15.8e\n",iparams->dummy.a,iparams->dummy.b);
+    break;
   case F_DUMMY3:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
 	    iparams->dummy.a,iparams->dummy.b,iparams->dummy.c);
