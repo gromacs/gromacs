@@ -382,7 +382,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #endif
       sprintf(sbuf,"\nStepsize too small "
 	      "Converged to machine precision,\n"
-	      "but not to the requested precision (%g)\n",ftol);
+	      "but not to the requested precision (%g)\n%s",
+	      ftol,bConstrain ? "You might need to increase your constraint accuracy\n" : "");
       fprintf(stderr,sbuf);
       fprintf(log,sbuf);
       bAbort=TRUE;
