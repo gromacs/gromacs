@@ -90,7 +90,7 @@ C     convert integer to float (when an integer is passed to this routine)
       end
 #endif
 
-      subroutine forfillbuf
+      subroutine ffillbuf
       include 'seed.inc'
       integer*4 i,exp,newexp,bval,addr,indx
       real*4 fval
