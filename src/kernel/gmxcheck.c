@@ -291,8 +291,10 @@ void chk_stx(char *fn)
     nmass=read_mass("atommass.dat",&mass);
     for (i=0; (i<natom); i++)
       if ((atoms.atom[i].m=get_mass(nmass,mass,*(atoms.atomname[i])))==0.0)
-	if (*(atoms.atomname[i])[0]=='H')
-	  atoms.atom[i].m=1.008;
+	if ( ((*(atoms.atomname[i]))[0]=='H') ||
+	     (isdigit((*(atoms.atomname[i]))[0]) && 
+	      ((*(atoms.atomname[i]))[1]=='H')) )
+	  atoms.atom[i].m=1.008; /* proton mass */
 	else
 	  atoms.atom[i].m=12.0110; /* carbon mass */
     ekin=0.0;
@@ -315,9 +317,9 @@ void chk_stx(char *fn)
     snew(atom_vdw,natom);
     for (i=0; (i<natom); i++)
       if ((atom_vdw[i]=get_vdw(nvdw,vdw,*(atoms.atomname[i])))==0.0)
-	if ( ((*(atoms.atomname[i]))[0]=='H') ||
+	if ( ((*atoms.atomname[i])[0]=='H') ||
 	     (isdigit((*(atoms.atomname[i]))[0]) && 
-	      ((*(atoms.atomname[i]))[1]=='H')) )
+	      ((*atoms.atomname[i])[1]=='H')) )
 	  atom_vdw[i]=0.1;
 	else
 	  atom_vdw[i]=0.2;
