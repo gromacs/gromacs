@@ -147,14 +147,14 @@ void correct_t0_pbc(t_pull *pull, rvec x[], t_topology *top, matrix box) {
       dx=x[ii][m]-pull->ref.xp[0][i][m];
       if (dx < -0.5*box[m][m]) {
 	dx += box[m][m];
-	if (pull->bVerbose && pull->dir[m])
+	if (pull->bVerbose && pull->dims[m])
 	  fprintf(stderr,"Jumped +box: nr %d dir: %d old:%8.3f\n",ii,m,
 		  pull->ref.x0[0][i][m]); 
       }
 
       if (dx >  0.5*box[m][m]) {
 	dx -= box[m][m];
-	if (pull->bVerbose && pull->dir[m]) 
+	if (pull->bVerbose && pull->dims[m]) 
 	  fprintf(stderr,"Jumped -box: nr %d dir: %d old:%8.3f\n",ii,m,
 		  pull->ref.x0[0][i][m]); 
       }

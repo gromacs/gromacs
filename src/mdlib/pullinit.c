@@ -21,7 +21,6 @@ static void get_pullmemory(t_pullgrps *pull, int ngrps)
 {
   snew(pull->ngx,ngrps);   
   snew(pull->x_con,ngrps);     
-  /*  snew(pull->xstart,ngrps); We need this earlier */
   snew(pull->xprev,ngrps);
   snew(pull->tmass,ngrps); 
   snew(pull->idx,ngrps);      
@@ -183,7 +182,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   if (!pull->bPull) return;
 
   pull->out = ffopen(opt2fn("-po",nfile,fnm),"w");
-  read_pullparams(pull, pull->out, opt2fn("-pi",nfile,fnm));
+  read_pullparams(pull, opt2fn("-pi",nfile,fnm));
   ngrps = pull->pull.n;
 
   if (pull->reftype == eDyn || pull->reftype == eDynT0) 
@@ -259,8 +258,8 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
     copy_rvec(x[pull->ref.idx[0][j]],pull->ref.xp[0][j]);
   }
   pull->ref.tmass[0] = tm;
-  
-  /* if we use dynamic reference groups, do some initialized for them */
+
+  /* if we use dynamic reference groups, do some initialising for them */
   if (pull->bCyl) {
     make_refgrps(pull,x,box,top);
     for (i=0;i<ngrps;i++) {
@@ -298,23 +297,18 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
     /* reference distance for constraint run */
     pull->pull.d_ref[i] = norm(tmp);
     
-    if (pull->runtype == eAfm || pull->runtype == eStart) {
-      /* direction along axis or in 3D ? and moving in reversed direction?*/
-      for (m=0;m<DIM;m++) 
-	if (pull->bReverse) {
-	  tmp[m] = tmp[m] * pull->dir[m]* -1;
-	  pull->pull.xstart[i][m] *= -1;
-	}
-	else
-	  tmp[m] = tmp[m] * pull->dir[m];
-      
-      svmul(1/norm(tmp),tmp,pull->pull.dir[i]);
-    }
+    /* select elements of direction vector to use for Afm and Start runs */
+    for (m=0;m<DIM;m++)  
+      tmp[m] = tmp[m] * pull->dims[m];
+    svmul(1/norm(tmp),tmp,pull->pull.dir[i]);
+    if (pull->bReverse) 
+      svmul(-1.0,pull->pull.dir[i],pull->pull.dir[i]);
+
+    if (pull->runtype == eAfm || pull->runtype == eStart)  
+      fprintf(log,"\nPull direction: %8.3f %8.3f %8.3f\n",
+	      pull->pull.dir[i][XX],pull->pull.dir[i][YY],
+	      pull->pull.dir[i][ZZ]);
     
-    if (pull->runtype == eAfm) 
-      fprintf(log,"Reference dir. for group %i (%s): %8.3f%8.3f%8.3f\n",
-	      i,pull->pull.grps[i],pull->pull.dir[i][XX],
-	      pull->pull.dir[i][YY],pull->pull.dir[i][ZZ]);
   }
   fprintf(log,"**************************************************\n"
 	  "                      END   PULL INFO                    \n"

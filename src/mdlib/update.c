@@ -443,8 +443,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
     /* apply pull constraints when required. Act on xprime, the SHAKED
        coordinates.  Don't do anything to f */
     if (pulldata->bPull && pulldata->runtype != eAfm && 
-	pulldata->runtype != eUmbrella) 
-      pull(stdlog,pulldata,xprime,force,box,top,dt,step,homenr); 
+	pulldata->runtype != eUmbrella &&
+	pulldata->runtype != eTest) 
+      pull(pulldata,xprime,force,box,top,dt,step,homenr); 
     
     where();
 

@@ -230,8 +230,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Afm and Umbrella type pulling happens before the update, 
 	 other types in update */
       if (pulldata.bPull && 
-	  (pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
-	pull(log,&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,natoms); 
+	  (pulldata.runtype == eAfm || pulldata.runtype == eUmbrella ||
+	   pulldata.runtype == eTest))
+	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,natoms); 
 
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),FALSE,mdatoms,x,graph,

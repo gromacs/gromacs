@@ -16,7 +16,8 @@
 #include "confio.h"
 #include "pull.h"
 
-void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, int nout) 
+void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
+	       int nout, real time) 
 {
   FILE *confout;
   char buf[128];
@@ -26,17 +27,19 @@ void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, int nout)
   nout++;
   confout = ffopen(buf,"w");
 
-  /* calculate the current positions of the center of mass of the grps */
-
+  /* calculate the current positions of the center of mass of the grps 
+     printed is pull - reference, so position with respect to reference
+     group 
+   */
   if (pull->pull.n == 2) {
-    rvec_sub(pull->ref.x_unc[0],pull->pull.x_unc[0],tmp1);
-    rvec_sub(pull->ref.x_unc[0],pull->pull.x_unc[1],tmp2);
-    sprintf(buf,"grp1:%8.3f%8.3f%8.3f grp2:%8.3f%8.3f%8.3f",
-	    tmp1[0],tmp1[1],tmp1[2],tmp2[0],tmp2[1],tmp2[2]);
+    rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
+    rvec_sub(pull->pull.x_unc[1],pull->ref.x_unc[0],tmp2);
+    sprintf(buf,"grp1:%8.3f%8.3f%8.3f grp2:%8.3f%8.3f%8.3f t:%8.3f",
+	    tmp1[0],tmp1[1],tmp1[2],tmp2[0],tmp2[1],tmp2[2],time);
   } else {
-    rvec_sub(pull->ref.x_unc[0],pull->pull.x_unc[0],tmp1);
-    sprintf(buf,"grp1:%8.3f%8.3f%8.3f",
-	    tmp1[XX],tmp1[YY],tmp1[ZZ]);
+    rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
+    sprintf(buf,"grp1:%8.3f%8.3f%8.3f t:%8.3f",
+	    tmp1[XX],tmp1[YY],tmp1[ZZ],time);
   }
   write_hconf(confout,buf,&top->atoms,x,NULL,box);  
 }
@@ -75,7 +78,7 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box)
     else 
       rvec_sub(pull->pull.x_con[i],pull->ref.x_con[0],tmp);
     for (m=0;m<DIM;m++) {
-      tmp[m] *= pull->dir[m];
+      tmp[m] *= pull->dims[m];
       if (tmp[m] < -0.5*box[m][m]) tmp[m] += box[m][m];
       if (tmp[m] > 0.5*box[m][m])  tmp[m] -= box[m][m];
     }
@@ -131,7 +134,7 @@ void print_umbrella(t_pull *pull, int step)
   fprintf(pull->out,"\n");
 }
 
-void read_pullparams(t_pull *pull, FILE *fp_out, char *infile) 
+void read_pullparams(t_pull *pull, char *infile) 
 {
   t_inpfile *inp;
   int ninp;
@@ -210,15 +213,15 @@ void read_pullparams(t_pull *pull, FILE *fp_out, char *infile)
   pull->ref.grps[0]  = (char *)strdup(grp3buf);
 
   if (pull->runtype == eStart) {
-    snew(pull->pull.xstart,pull->pull.n);
-    string2rvec(bf1,pull->pull.xstart[0]);
+    snew(pull->pull.xtarget,pull->pull.n);
+    string2rvec(bf1,pull->pull.xtarget[0]);
     if (pull->pull.n == 2)
-      string2rvec(bf2,pull->pull.xstart[1]);
+      string2rvec(bf2,pull->pull.xtarget[1]);
   }
 
-  string2rvec(dir,pull->dir);
+  string2rvec(dir,pull->dims);
   fprintf(stderr,"Using distance components %2.1f %2.1f %2.1f\n",
-	  pull->dir[0],pull->dir[1],pull->dir[2]);
+	  pull->dims[0],pull->dims[1],pull->dims[2]);
 
   if (pull->r > 0.001) 
     pull->bCyl = TRUE;
