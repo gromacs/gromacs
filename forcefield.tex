@@ -1,4 +1,4 @@
-\chapter{Force field}
+\chapter{Force fields}
 \label{ch:ff}
 A \normindex{force field} is built up from two distinct components:
 \begin{itemize}
@@ -327,9 +327,9 @@ Bonded interactions are based on a fixed list of atoms. They are not
 exclusively pair interactions, but include 3- and 4-body interactions
 as well. There are {\em bond stretching} (2-body), {\em bond angle}
 (3-body), and {\em dihedral angle} (4-body) interactions. A special
-type of dihedral interaction (called {\em improper dihedral} is used
+type of dihedral interaction (called {\em improper dihedral}) is used
 to force atoms to remain in a plane or to prevent transition to a
-configuration of opposite chirality (a mirror image).  
+configuration of opposite chirality (a mirror image).
 
 \subsection{Bond stretching}
 \label{sec:bondpot}
@@ -1294,16 +1294,16 @@ of the dummy constructions is given in fig.~\ref{fig:dummies}.
 
 \subsection{The \gromosv{96} force field\index{gromos-96 force field}}
 {\gromacs} supports the \gromosv{96} force fields~\cite{gromos96}.
-All parameters for the 43a1, 43a2 (development, improved alkane dihedrals) and
-43b1 (vacuum) force fields are included.
-All standard building blocks are included and topologies
-can be build automatically by {\tt pdb2gmx}. 
-The \gromosv{96} force field is a further development of the \gromosv{87} force
-field
-on which the {\gromacs} forcefield is based. The \gromosv{96} force field is an
-improvement over the {\gromacs} force field for proteins and all small molecules.
-It should, however, not be used for long alkanes and lipids.
-The \gromosv{96} force field differs from the {\gromacs} force field in a few aspects:
+All parameters for the 43a1, 43a2 (development, improved alkane
+dihedrals) and 43b1 (vacuum) force fields are included.  All standard
+building blocks are included and topologies can be build automatically
+by {\tt pdb2gmx}.  The \gromosv{96} force field is a further
+development of the \gromosv{87} force field on which the {\gromacs}
+forcefield is based. The \gromosv{96} force field has improvements
+over the {\gromacs} force field for proteins and all small molecules.
+It is, however, recommended to be used for long alkanes and lipids.
+The \gromosv{96} force field differs from the {\gromacs} force field
+in a few aspects:
 \begin{itemize}
 \item the force field parameters
 \item the parameters for the bonded interactions are not linked to atom types
