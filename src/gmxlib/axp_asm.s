@@ -1,5 +1,6 @@
-/* Vectorized single and double precision inverse and normal square root routines
- * for AXP 21164 and higher chips written by Kazushige Goto <goto@statabo.rim.or.jp>
+/* Vectorized single and double precision inverse and normal square 
+ * root routines for AXP 21164 and higher chips written by 
+ * Kazushige Goto <goto@statabo.rim.or.jp>
  * Edited and adapted to gromacs by Erik Lindahl, erik@theophys.kth.se 
  */
 #define ACCURACY 12

@@ -7,12 +7,8 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.0
- * 
- * Copyright (c) 1991-2001
- * BIOSON Research Institute, Dept. of Biophysical Chemistry
- * University of Groningen, The Netherlands
- * 
+ *                        VERSION 3.1
+ * Copyright (c) 1991-2001, University of Groningen, The Netherlands
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -28,10 +24,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
- * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
+ * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Good ROcking Metal Altar for Chronical Sinners
+ * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_bfunc_h = "$Id$";
 /*
@@ -40,6 +36,9 @@ static char *SRCID_bfunc_h = "$Id$";
  *	Bcopy/Memcpy patch.
  *
 $Log$
+Revision 1.8  2002/02/28 10:49:21  spoel
+Updated copyrgt wrapper
+
 Revision 1.7  2001/06/20 10:34:01  lindahl
 
 Converted assembly to use gcc instead of nasm, updated html man
