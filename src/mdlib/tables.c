@@ -370,7 +370,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
 #endif
   n = fr->ntab = fr->rtab*fr->tabscale;
   
-  fprintf(stdlog,"Making 3 tables%s of %g/%g = %d points (%u bytes)\n",
+  fprintf(stdlog,"Making 3 tables%s of %g(nm)*%g = %d points (%u bytes)\n",
 	  fr->bTab ? "" : " for 1-4 int.",
 	  fr->rtab,fr->tabscale,fr->ntab,12*sizeof(real)*fr->ntab);
   
