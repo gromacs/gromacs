@@ -8,7 +8,7 @@
 #
 Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
-Version: 3.0.4
+Version: 3.0.5
 Release: 1
 Copyright: GPL
 Group: Applications/Science
