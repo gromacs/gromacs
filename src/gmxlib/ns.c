@@ -236,6 +236,8 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
       
       jj0=index[jcg];
       jj1=index[jcg+1];
+      if(jcg==icg)
+	jj0+=i+1;
       for(jj=jj0; (jj<jj1); jj++) {
 	j_atom = a[jj];
 	jgid   = cENER[j_atom];
