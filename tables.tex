@@ -79,7 +79,7 @@ The algorithm goes a little something like this:
 \item	Calculate the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
 \end{enumerate}
 
-The tables are stored as y$_i$, F$_i$, G$_i$, H$_i$ in the order
+The tables are stored internally as y$_i$, F$_i$, G$_i$, H$_i$ in the order
 coulomb, dispersion, repulsion.
 In total there are 12 values in each table entry.
 Note that table lookup is significantly {\em slower} than computation
@@ -89,42 +89,3 @@ conjunction with the PPPM method. Finally it is much easier to modify
 a table for the potential (and get a graphical representation of it)
 than to modify the inner loops of the MD program.
 
-\subsection{Your own potential function}
-You can also use your own \swapindex{potential}{function}s 
-without editing the {\gromacs} code. 
-The potential function should be according to the following equation
-\beq
-V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 g(r_{ij}) + C_{12} h(r_{ij})
-\eeq
-with f,g,h user defined functions. Note that if g(r) represents 
-a normal dispersion interaction, g(r) should be $<$ 0. C$_6$, C$_{12}$ and the 
-charges are read from the topology. Also note that combination rules are
-only supported for Lennard Jones and Buckingham, and that your tables should
-match the parameters in the binary topology.
-
-When you add the following lines in your {\tt .mdp} file:
-\begin{verbatim}
-rlist           = 1.0
-coulombtype	= User
-rcoulomb        = 1.0
-vdwtype         = User
-rvdw            = 1.0
-\end{verbatim}
-the MD program will read a single file (name can be changed with option
-{\tt -table}) with seven columns of table 
-lookup data in the order: x, f(x), f''(x), g(x), g''(x), h(x), h''(x).
-The x should run from 0 to r$_c$+0.5, with a spacing of 0.002 nm when
-you run in single precision, or 0.0005 when you run in double
-precision.  This and other functions contain a singularity at x = 0, but
-since atoms are normally not closer to each other than 0.1 nm, the
-function value at x = 0 is not important and the tables can be started at
-e.g. 0.02 nm.  In this context r$_c$ denotes
-the cut-off denoted by the variables {\tt rvdw} and {\tt
-rcoulomb} (see above). These variables should be the same (but need not
-be 1.0) and consistent with the table data.  Finally, it is also possible
-to combine a standard Coulomb with a modified LJ potential. One then specifies
-e.g. coulombtype = Cut-off or coulombtype = PME, combined with vdwtype = User.
-The table file must always contain the 7 columns however.
-
-
-This mechanism allows the user to use their own preferred programming language,
