@@ -52,11 +52,11 @@ static char *SRCID_init_c = "$Id$";
 void check_nnodes_top(char *fn,t_topology *top,int nnodes)
 {
   int i,np=0;
+
+  for(i=MAXNODES-1; (i>0) && (top->blocks[ebCGS].multinr[i] == 0); i--)
+    ;
+  np = i+1;
   
-  for(i=0; (i<MAXNODES); i++)
-    if (top->blocks[ebCGS].multinr[i] != 0)
-      np++;
-      
   if (np != nnodes)
     fatal_error(0,"run input file %s was made for %d nodes,\n"
 		"             while %s expected it to be for %d nodes.",
