@@ -452,7 +452,8 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item)
 	for(m=0; (m<DIM); m++) 
 	  dvec[m] = ((real *)item)[m];
-      res=xdr_vector(curfio->xdr,(char *)dvec,DIM,sizeof(double),xdr_double);
+      res=xdr_vector(curfio->xdr,(char *)dvec,DIM,sizeof(double),
+		     (xdrproc_t)xdr_double);
       if (item)
 	for(m=0; (m<DIM); m++) 
 	  ((real *)item)[m] = dvec[m];
@@ -461,7 +462,8 @@ static bool do_xdr(void *item,int nitem,int eio,
       if (item)
 	for(m=0; (m<DIM); m++) 
 	  fvec[m] = ((real *)item)[m];
-      res=xdr_vector(curfio->xdr,(char *)fvec,DIM,sizeof(float),xdr_float);
+      res=xdr_vector(curfio->xdr,(char *)fvec,DIM,sizeof(float),
+		     (xdrproc_t)xdr_float);
       if (item)
 	for(m=0; (m<DIM); m++) 
 	  ((real *)item)[m] = fvec[m];
@@ -568,13 +570,20 @@ int fio_open(char *fn,char *mode)
       /* First check whether we have to make a backup,
        * only for writing, not for read or append.
        */
-      if ((strcmp(mode,"w") == 0) && fexist(fn)) {
-	bf=(char *)backup_fn(fn);
-	if (rename(fn,bf) == 0) {
-	  fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",fn,bf);
+      if (strcmp(mode,"w") == 0) {
+	if (fexist(fn)) {
+	  bf=(char *)backup_fn(fn);
+	  if (rename(fn,bf) == 0) {
+	    fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",fn,bf);
+	  }
+	  else
+	    fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
 	}
-	else
-	  fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
+      }
+      else {
+	/* Check whether file exists */
+	if (!fexist(fn))
+	  fatal_error(0,"File %s not found",fn);
       }
       snew(fio->xdr,1);
       xdropen(fio->xdr,fn,mode);
