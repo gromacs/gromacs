@@ -70,8 +70,8 @@ typedef struct {
   t_nblist *coul;
   t_nblist *free;
   
-  /* Long Range stuff. */
-  bool bLongRange;
+  /* Twin Range stuff. */
+  bool bTwinRange;
   int  nlr;
   rvec *flr;
   rvec *fshift_lr;
@@ -92,3 +92,4 @@ typedef struct {
 
 #define C6(nbfp,ai,aj)  (nbfp)[(ai)][2*(aj)]
 #define C12(nbfp,ai,aj) (nbfp)[(ai)][2*(aj)+1]
+

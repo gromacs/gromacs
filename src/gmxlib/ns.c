@@ -24,8 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Good ROcking Metal Altar for Chronical Sinners
- */
+ * Good ROcking Metal Altar for Chronical Sinners */
 static char *SRCID_ns_c = "$Id$";
 
 #include <math.h>
@@ -817,7 +816,9 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   if (bGrid) {
     grid_first(log,grid,box,fr->rlong);
     /* Check if box is big enough to do grid searching... */
-    bGrid=((grid->nrx >= 5) && (grid->nry >= 5) && (grid->nrz >= 5));
+    bGrid=((grid->nrx >= 2*grid->delta+1) && 
+	   (grid->nry >= 2*grid->delta+1) && 
+	   (grid->nrz >= 2*grid->delta+1));
   }
   where();
   
@@ -845,7 +846,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     }
   }
   else {
-    if (fr->bLongRange)
+    if (fr->bTwinRange)
       fatal_error(0,"Can't have TWIN-RANGE cut-off with Simple "
 		  "neighboursearching.\n"
 		  "Use grid neighboursearching, and make (rlong < 0.4 box)");

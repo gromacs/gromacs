@@ -98,6 +98,66 @@ static void pr_commrec(FILE *log,t_commrec *cr)
 	  cr->pid,cr->nprocs,cr->left,cr->right);
 }
 
+static void sum_forces(int start,int end,rvec f[],rvec flr[])
+{
+  int i;
+  
+  for(i=start; (i<end); i++)
+    rvec_inc(f[i],flr[i]);
+}
+
+static void reset_forces(bool bNS,rvec f[],t_forcerec *fr,int natoms)
+{
+  int i;
+  
+  if (fr->bTwinRange) {
+    if (bNS) {
+      clear_rvecs(natoms,fr->flr);
+      clear_rvecs(SHIFTS,fr->fshift_lr);
+    }
+    else {
+      for(i=0; (i<natoms); i++)
+	copy_rvec(fr->flr[i],f[i]);
+      for(i=0; (i<SHIFTS); i++)
+	copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
+    } 
+  }
+  else {
+    if (fr->eeltype == eelPPPM) 
+      clear_rvecs(natoms,fr->flr);
+    clear_rvecs(natoms,f);
+    clear_rvecs(SHIFTS,fr->fshift);
+  }
+}
+
+static void reset_energies(t_grpopts *opts,t_groups *grp,
+			   t_forcerec *fr,bool bNS,real epot[])
+{
+  const real zero=0.0;
+  int   i,j;
+  
+  /* First reset all energy components but the Long Range */
+  for(i=0; (i<egNR); i++)
+    if (i != egLR)
+      for(j=0; (j<grp->estat.nn); j++)
+	grp->estat.ee[i][j]=0.0;
+
+  /* If method of long range is twin range and we do neighboursearching,
+   * or if the method is PPPM
+   */
+  if ((fr->bTwinRange && bNS) || (fr->eeltype == eelPPPM)) {
+    for(i=0; (i<grp->estat.nn); i++) 
+      grp->estat.ee[egLR][i]=0.0;
+  }
+	
+  /* Normal potential energy components */
+  for(i=0; (i<=F_EPOT); i++)
+    epot[i] = zero;
+  epot[F_DVDL]    = zero;
+  epot[F_DVDLKIN] = zero;
+
+}
+
 void do_force(FILE *log,t_commrec *cr,
 	      t_parm *parm,t_nsborder *nsb,tensor vir_part,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
@@ -143,16 +203,19 @@ void do_force(FILE *log,t_commrec *cr,
   if (PAR(cr)) 
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
   where();
-  
-  /* Reset group energies etc. */
-  reset_grps(&(parm->ir.opts),grps);
+
+  /* Reset the forces and the enrgies */
+  reset_forces(bNS,f,fr,nsb->natoms);
+  reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
   where();
   
   if (bNS) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
     mk_mshift(log,graph,parm->box,x);
 
-    /* Do the actual neighbour searching */
+    /* Do the actual neighbour searching and if twin range electrostatics
+     * also do the calculation of long range forces and energies.
+     */
     ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
        cr,nrnb,nsb,step);
   }
@@ -167,13 +230,28 @@ void do_force(FILE *log,t_commrec *cr,
     print_nrnb(log,nrnb);
 #endif
 
-  if (PAR(cr)) 
-    move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
+  if (fr->eeltype != eelPPPM) {
+    /* This summing need actually not be done for all coordinates... */
+    if (fr->bTwinRange)
+      sum_forces(0,nsb->natoms,f,fr->flr);
+    if (PAR(cr)) 
+      move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
   
-  /* Calculate virial */
-  where(); 
-  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
-  inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+    /* Calculate virial */
+    f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
+    inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+  }
+  else {
+    /* If we do PPPM the long range forces should not be taken into account
+     * for computation of the virial. Rather a special formula
+     * due to Neumann is used.
+     */
+    f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
+    inc_nrnb(nrnb,eNR_VIRIAL,nsb->natoms);
+    sum_forces(0,nsb->natoms,f,fr->flr);
+    if (PAR(cr)) 
+      move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
+  }
   where(); 
 }
 

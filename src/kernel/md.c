@@ -329,7 +329,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Globally (over all CPUs) sum energy, virial etc. */
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,mu_tot);
-      if (!bNS) 
+      if (fr->bTwinRange && !bNS) 
 	for(i=0; (i<grps->estat.nn); i++)
 	  grps->estat.ee[egLR][i] /= cr->nprocs;
     }
@@ -366,7 +366,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     step,parm->ir.ntcmemory);
     
       /* Calculate pressure ! */
-      calc_pres(parm->box,parm->ekin,parm->vir,parm->pres);
+      calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
+		(fr->eeltype == eelPPPM) ? ener[F_LR] : 0.0);
     }
     
     /* Calculate long range corrections to pressure and energy */

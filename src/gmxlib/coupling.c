@@ -18,19 +18,26 @@
  *
  */
 
-void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
+void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
 {
   int  n,m;
-  real fac;
+  real fac,Plr;
 
   /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. */ 
   /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in het */
   /* systeem...       */
   
-  fac=PRESFAC*2.0/(det(box));
+  /* Long range correctie for periodic systems, see
+   * Neumann et al. JCP
+   * divide by 6 because it is multiplied by fac later on.
+   * If Elr = 0, no correction is made.
+   */
+  Plr = Elr/6.0;
+  
+  fac=PRESFAC*2.0/det(box);
   for(n=0; (n<DIM); n++)
     for(m=0; (m<DIM); m++)
-      pres[n][m]=(ekin[n][m]-vir[n][m])*fac;
+      pres[n][m]=(ekin[n][m]-vir[n][m]-Plr)*fac;
       
   if (debug) {
     pr_rvecs(debug,0,"PC: pres",pres,DIM);

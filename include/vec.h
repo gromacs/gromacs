@@ -165,6 +165,14 @@ static void clear_rvec(rvec a)
   a[XX]=a[YY]=a[ZZ]=nul;
 }
 
+static void clear_rvecs(int n,rvec v[])
+{
+  int i;
+  
+  for(i=0; (i<n); i++) 
+    clear_rvec(v[i]);
+}
+
 static void clear_mat(matrix a)
 {
   const real nul=0.0;

@@ -45,9 +45,6 @@ extern void init_groups(FILE *log,t_mdatoms *md,
 			t_grpopts *opts,t_groups *grps);
 /* Allocate memory and set the grpnr array. */
 
-extern void reset_grps(t_grpopts *opts,t_groups *grp);
-/* Set the ener arrays to 0 */
-
 extern void done_groups(t_groups *grps);
 /* Free the memory */
 
@@ -70,6 +67,5 @@ extern void update_grps(int start,int homenr,t_groups *grps,
 /* Do the update of group velocities and
  * (partial) group ekin.
  */
-
 
 #endif	/* _tgroup_h */

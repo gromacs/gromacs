@@ -54,15 +54,6 @@ static char *SRCID_force_c = "$Id$";
 #include "txtdump.h"
 #include "lrutil.h"
 #include "pppm.h"
-#include "xvgr.h"
-
-static void clear_rvecs(int n,rvec v[])
-{
-  int i;
-  
-  for(i=0; (i<n); i++) 
-    clear_rvec(v[i]);
-}
 
 t_forcerec *mk_forcerec(void)
 {
@@ -71,22 +62,6 @@ t_forcerec *mk_forcerec(void)
   snew(fr,1);
   
   return fr;
-}
-
-static void reset_f(rvec f[],t_forcerec *fr,int natoms)
-{
-  int i;
-  
-  if (fr->bLongRange) {
-    for(i=0; (i<natoms); i++)
-      copy_rvec(fr->flr[i],f[i]);
-    for(i=0; (i<SHIFTS); i++)
-      copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
-  }
-  else {
-    clear_rvecs(natoms,f);
-    clear_rvecs(SHIFTS,fr->fshift);
-  }
 }
 
 #ifdef DEBUG
@@ -249,13 +224,15 @@ void init_forcerec(FILE *log,
   fr->fudgeQQ    = ir->fudgeQQ;
   fr->ndelta     = ir->ndelta;
   fr->eeltype    = ir->eeltype;
-  if (fr->eeltype == eelTWIN)
+  if (fr->eeltype == eelTWIN) {
     fr->nWater   = ir->solvent_opt;
-  else
+    fr->bTwinRange = (fr->rlong > fr->rshort);
+  }
+  else {
     fr->nWater   = -1;
-    
+    fr->bTwinRange = FALSE;
+  }
   fr->bGrid      = (ir->ns_type == ensGRID);
-  fr->bLongRange = (fr->rlong > fr->rshort);
   
   if (getenv("DOMDECOMP") != NULL) {
     fr->bDomDecomp = TRUE;
@@ -293,12 +270,9 @@ void init_forcerec(FILE *log,
     fr->rc   = fr->rshort;
   }
   else if (fr->eeltype == eelSWITCH) {
-    fr->bLongRange = FALSE;
     fr->rshort     = fr->rlong;
   }
   else if ((fr->eeltype == eelPPPM) || (fr->eeltype == eelSHIFT)) {
-    fr->bLongRange = FALSE;
-    
     /* We must use the long range cut-off for neighboursearching...
      * An extra range of e.g. 0.1 nm (half the size of a charge group)
      * is necessary for neighboursearching. This allows diffusion 
@@ -324,7 +298,7 @@ void init_forcerec(FILE *log,
   
   
   /* Initiate arrays */
-  if (fr->bLongRange && (fr->flr==NULL)) {
+  if ((fr->bTwinRange || (fr->eeltype == eelPPPM)) && (fr->flr==NULL)) {
     snew(fr->flr,natoms);
     snew(fr->fshift_lr,SHIFTS);
   }
@@ -368,7 +342,7 @@ void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
   pr_real(log,fr->fudgeQQ);
   pr_int(log,fr->ndelta);
   pr_bool(log,fr->bGrid);
-  pr_bool(log,fr->bLongRange);
+  pr_bool(log,fr->bTwinRange);
   pr_int(log,fr->cg0);
   pr_int(log,fr->hcg);
   pr_int(log,fr->ntab);
@@ -425,16 +399,11 @@ void ns(FILE *log,
   }
     
   set_led(NS_LED);
-  if (fr->bLongRange) {
-    clear_rvecs(SHIFTS,fr->fshift_lr);
-    clear_rvecs(md->nr,fr->flr);
-    for(i=0; (i<grps->estat.nn); i++) 
-      grps->estat.ee[egLR][i]=0.0;
+  if (fr->bTwinRange) 
     fr->nlr=0;
-  }
 
   /* Whether or not we do dynamic load balancing,
-   * workload contains the proper numbers for charge groups
+   * workload contains the proper numbers of charge groups
    * to be searched.
    */
   if (cr->pid == 0)
@@ -444,10 +413,6 @@ void ns(FILE *log,
   fr->hcg=nsb->workload[cr->pid];
 
   search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md);
-
-  /*
-  nns=search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md);
-  */
 
   /* Check whether we have to do dynamic load balancing */
   /*if ((nsb->nstDlb > 0) && (mod(step,nsb->nstDlb) == 0))
@@ -472,7 +437,7 @@ void force(FILE *log,
 	   int        ngener,
 	   t_grpopts  *opts,
 	   rvec       x[],
-	   rvec       f[],    
+	   rvec       f[],
 	   tensor     virial,
 	   real       epot[], 
 	   bool       bVerbose,
@@ -482,7 +447,6 @@ void force(FILE *log,
 	   t_block    *excl)
 {
   bool    bBHAM;
-  const   real zero=0.0;
   int     i;
   bool    bDoEpot,bDebug=FALSE;
   rvec    box_size;
@@ -491,11 +455,7 @@ void force(FILE *log,
 
   bBHAM=(idef->functype[0] == F_BHAM);
   
-  /* Reset Epot & Stuff */
-  reset_f(f,fr,nsb->natoms);
-  for(i=0; (i<=F_EPOT); i++)
-    epot[i] = zero;
-  epot[F_DVDL] = zero;
+  /* Reset box */
   for(i=0; (i<DIM); i++)
     box_size[i]=box[i][i];
     
@@ -550,7 +510,7 @@ void force(FILE *log,
   where();
   if (fr->eeltype == eelPPPM) {
     real Vpppm,Vself;
-    Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,f,md->chargeA,
+    Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,fr->flr,md->chargeA,
 		    box_size,fr->phi,cr,nrnb,TRUE);
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
 			       md->chargeA,excl,x,f);
@@ -566,7 +526,6 @@ void force(FILE *log,
   print_nrnb(log,nrnb);
 #endif
   where();
-  
   
   calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	     opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);

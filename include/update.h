@@ -157,8 +157,10 @@ extern void tcoupl(bool bTC,t_grpopts *opts,t_groups *grps,
 extern real calc_temp(real ekin,int nrdf);
 /* Calculate the temperature */
 
-extern void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres);
-/* Calculate the pressure. Unit of pressure is bar */
+extern void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres,real Elr);
+/* Calculate the pressure. Unit of pressure is bar, If Elr != 0
+ * a long range correction based on Ewald/PPPM is made (see c-code)
+ */
 
 extern void do_pcoupl(t_inputrec *ir,int step,tensor pres,
 		      matrix box,int start,int nr_atoms,

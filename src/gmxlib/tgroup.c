@@ -113,16 +113,6 @@ void init_groups(FILE *log,t_mdatoms *md,t_grpopts *opts,t_groups *grps)
   init_grpener(log,opts->ngener,&grps->estat);
 }
 
-static void reset_estat(int ngener,t_grp_ener *estat)
-{
-  int i,j;
-  
-  for(i=0; (i<egNR); i++)
-    if (i != egLR)
-      for(j=0; (j<estat->nn); j++)
-	estat->ee[i][j]=0.0;
-}
-
 void dump_estat(FILE *log,t_grp_ener *estat)
 {
   int i;
@@ -130,23 +120,6 @@ void dump_estat(FILE *log,t_grp_ener *estat)
   for(i=0; (i<estat->nn); i++) {
     fprintf(log,"%12.5e\n",estat->ee[egLJ][i]);
   }
-}
-
-static void reset_acc(int ngacc,t_grp_acc gstat[])
-{
-
-}
-
-static void reset_grptcstat(int ngtc,t_grp_tcstat tcstat[])
-{
-
-}
-
-void reset_grps(t_grpopts *opts,t_groups *grp)
-{
-  reset_estat(opts->ngener,&grp->estat);
-  reset_acc(opts->ngacc,grp->grpstat);
-  reset_grptcstat(opts->ngtc,grp->tcstat);
 }
 
 real rms_ener(t_energy *e,int nsteps)
