@@ -259,7 +259,14 @@ The default is 0.0 0.0 0.0, which means no direction and
 thus the distance between groups is constrained.
 The direction is normalized before use.
 
-\item[\tt constraint\_rate          = ]\mbox{}\\
+\item[\tt constraint\_distance1     = ]
+\item[\tt constraint\_distance2     = ]\mbox{}\\
+The initial constraint distance in nm,
+is 0 by default, which means that the distance is determined
+by the starting coordinates.
+
+\item[\tt constraint\_rate1         = ]
+\item[\tt constraint\_rate2         = ]\mbox{}\\
 The rate of the change of the constraint distance in nm/ps,
 is 0 by default.
 
@@ -411,6 +418,15 @@ in the {\tt .mdp} file
 pulling is limited to whole molecules or groups of molecules.
 In some cases this limitation can be avoided by using the free energy code,
 see \secref{fepmf}.
+
+Another limitation is connected with pressure scaling.
+When pressure scaling is used, the shortest distance between the pull
+groups and the reference group should be within in the central unit-cell,
+not to periodic images of the pull groups.
+Otherwise the pressure scaling will affect the reference distances
+and thus also the forces.
+The exception is constraint pulling with {\tt constraint\_distance?} $> 0$,
+this will work correctly with pressure scaling under all conditions.
 
 \subsection{Implementation}
 
