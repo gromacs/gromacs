@@ -314,7 +314,8 @@ int main(int argc,char *argv[])
       else if (t0>=0) 
 	t += (t0-tstart);
       if ( bRmod(t-toffset,delta_t) || (delta_t==0) ) {
-	fprintf(stderr,"  ->  write %d, time %g",i,t);
+	if ((j%10) == 0)
+	  fprintf(stderr,"  ->  write %d, time %g",i,t);
 	do_enx(out,&t,&j,&nre,ee,dr);
 	i++;
       }
