@@ -117,7 +117,7 @@ void init_pbc(matrix box,bool bTruncOct)
   bInit   = TRUE;
 }
 
-void pbc_dx(rvec x1, rvec x2, rvec dx)
+void pbc_dx(const rvec x1, const rvec x2, rvec dx)
 {
   int i,j;
   rvec dx_start,try;
