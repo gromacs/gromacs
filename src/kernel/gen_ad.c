@@ -575,7 +575,8 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[])
   }
 
   for(a=0; a<atoms->nr; a++)
-    qsort(excls[a].e,excls[a].nr,(size_t)sizeof(atom_id),atom_id_comp);
+    if (excls[a].nr > 1)
+      qsort(excls[a].e,excls[a].nr,(size_t)sizeof(atom_id),atom_id_comp);
 }
 
 static void remove_excl(t_excls *excls, int remove)
