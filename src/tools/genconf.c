@@ -159,11 +159,15 @@ int main(int argc, char *argv[])
 
   get_stx_coordnum(opt2fn("-f",NFILE,fnm),&natoms); 
   snew(atoms,1);
+  /* make space for all the atoms */
   init_t_atoms(atoms,natoms*vol,FALSE);
   snew(x,natoms*vol);              /* get space for coordinates of all atoms */
   snew(xrot,natoms);               /* get space for rotation matrix? */
   snew(v,natoms*vol);              /* velocities. not really needed? */ 
   snew(vrot,natoms); 
+  /* set atoms->nr to the number in one box *
+   * to avoid complaints in read_stx_conf   */
+  atoms->nr = natoms;
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
 
   nres=atoms->nres;                /* nr of residues in one element? */
