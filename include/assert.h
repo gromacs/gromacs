@@ -50,6 +50,6 @@ static char *SRCID_assert_h = "$Id$";
     fflush(stderr); \
     if (toupper(getc(stdin))=='Y') \
       (void) abort(); else exit(-1); \
-  } else
+  }
 
 #endif	/* _assert_h */
