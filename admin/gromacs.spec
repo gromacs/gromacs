@@ -6,12 +6,13 @@
 #
 # Main package - only dynamic libs, and no header files
 #
-Summary: Molecular dynamics package (non-parallel)
+Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
 Version: 3.0
 Release: 1
 Copyright: GPL
 Group: Applications/Science
+Prefix: /usr/local
 Requires: fftw >= 2.1.3 
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
 URL: http://www.gromacs.org
@@ -28,6 +29,8 @@ utility programs you also need the headers and static
 libs in gromacs-dev. Linux kernel 2.4 or later is STRONGLY
 recommended on Pentium III and later processors since
 GROMACS then can use assembly loops with SSE instructions.
+You can also perform parallel simulations if you install
+gromacs-lammpi.
 
 #
 # The header files and static libraries go into gromacs-devel...
@@ -35,33 +38,33 @@ GROMACS then can use assembly loops with SSE instructions.
 %package devel
 Summary: Header files and static libraries for GROMACS
 Group: Applications/Science
+Prefix: %{prefix}
 Requires: fftw-devel >= 2.1.3, gromacs = 3.0-1
 %description devel
 This package contains header files, static libraries,
 and a program example for the GROMACS molecular
 dynamics software. You need it if you want to write your
-own analysis programs. A word of warning, though; 
-this package is still somewhat untidy, and might put a 
-lot of files in your standard include dir if you change
-the default prefix!
+own analysis programs. 
 
 %prep
 %setup
 
 %build
-# We can actually install in /usr/local/bin, /usr/local/lib, etc,  by using the options
-# --prefix=/usr/local, --exec-prefix=/usr/local  and --datadir=/usr/local/share/gromacs, 
-# but since the development package puts a lot of include files in {prefix}/include we
-# default to /usr/local/gromacs. Will try to fix that in gromacs 4.0 :-)
+# Use the standard /usr/local setup on linux, even if that's slightly
+# different from the normal gromacs directory standard. Don't use
+# the automatic gromacs architecture exec-prefix.
+# Since 'gromacs' isnt present in the prefix it will be added to datadir
+# and includedir.
+# (This way the package won't interfere with a manual gromacs installation)
 
-./configure --enable-shared 
+./configure --prefix=%{prefix} --exec-prefix=%{prefix}
 make 
 
 %install
 make DESTDIR=${RPM_BUILD_ROOT} install
 # Move mdrun to mdrun_nompi - we make a link at post-install script time!
 # If we don't do this we'd get a conflict with the gromacs-mpi package.
-(cd ${RPM_BUILD_ROOT}/usr/local/gromacs/%{_host}/bin && mv mdrun mdrun_nompi)
+(cd ${RPM_BUILD_ROOT}%{prefix}/bin && mv mdrun mdrun_nompi)
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
@@ -70,11 +73,11 @@ rm -rf ${RPM_BUILD_ROOT}
 #
 # Add our (final) library directory to /etc/ld.so.conf if it is not already there
 #
-if test -z `grep ${RPM_INSTALL_PREFIX}/%{_host}/lib /etc/ld.so.conf`; then
-     cat >> /etc/ld.so.conf < ${RPM_INSTALL_PREFIX}/%{_host}/lib
+if test -z `grep ${RPM_INSTALL_PREFIX}/lib  /etc/ld.so.conf`; then
+     cat >> /etc/ld.so.conf < ${RPM_INSTALL_PREFIX}/lib
 fi
 # Make a link from mdrun_nompi to mdrun - if it doesn't already exist!
-(cd ${RPM_INSTALL_PREFIX}/%{_host}/bin && test ! -e mdrun && ln -s mdrun_nompi mdrun)
+(cd ${RPM_INSTALL_PREFIX}/bin && test ! -e mdrun && ln -s mdrun_nompi mdrun)
 
 # run ldconfig to update the runtime linker database with the new libraries
 # (make sure /sbin is in the $PATH)
@@ -84,28 +87,31 @@ PATH="/sbin:$PATH" ldconfig
 # after uninstall, run ldconfig to remove the libs from the linker database
 PATH="/sbin:$PATH" ldconfig
 # and remove the link from mdrun_nompi to mdrun
-(cd ${RPM_INSTALL_PREFIX}/%{_host}/bin && rm -f mdrun)
+(cd ${RPM_INSTALL_PREFIX}/bin && rm -f mdrun)
 
 %files
 %defattr(-,root,root)
-/usr/local/gromacs/%{_host}/bin/*
-/usr/local/gromacs/share/top/*
-/usr/local/gromacs/share/tutor/*
-%docdir /usr/local/gromacs/share/html
-/usr/local/gromacs/share/html/
-%docdir /usr/local/gromacs/man
-/usr/local/gromacs/man/*
-/usr/local/gromacs/%{_host}/lib/libgmx.so.1.0.0
-/usr/local/gromacs/%{_host}/lib/libgmx.so.1
-/usr/local/gromacs/%{_host}/lib/libmd.so.1.0.0
-/usr/local/gromacs/%{_host}/lib/libmd.so.1
+%{prefix}/bin/*
+%{prefix}/share/gromacs/top/*
+%{prefix}/share/gromacs/tutor/*
+%docdir %{prefix}/share/gromacs/html
+%{prefix}/share/gromacs/html/
+%{prefix}/man/*
+%{prefix}/lib/libgmx.so.1.0.0
+%{prefix}/lib/libgmx.so.1
+%{prefix}/lib/libmd.so.1.0.0
+%{prefix}/lib/libmd.so.1
 %files devel
 %defattr(-,root,root)
-/usr/local/gromacs/share/template/*
-/usr/local/gromacs/%{_host}/lib/libgmx.so
-/usr/local/gromacs/%{_host}/lib/libgmx.a
-/usr/local/gromacs/%{_host}/lib/libgmx.la
-/usr/local/gromacs/%{_host}/lib/libmd.so
-/usr/local/gromacs/%{_host}/lib/libmd.a
-/usr/local/gromacs/%{_host}/lib/libmd.la
-/usr/local/gromacs/include/*
+%{prefix}/share/gromacs/template/*
+%{prefix}/lib/libgmx.so
+%{prefix}/lib/libgmx.a
+%{prefix}/lib/libgmx.la
+%{prefix}/lib/libmd.so
+%{prefix}/lib/libmd.a
+%{prefix}/lib/libmd.la
+%{prefix}/include/gromacs/*
+
+
+
+

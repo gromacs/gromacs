@@ -672,6 +672,13 @@ if test "$includedir" = "\${prefix}/include" -a -z "`echo ${prefix} | grep groma
 fi
 AC_SUBST(includedir)
 
+# automake has started to put the man pages under share, and says it
+# should be so according to FHS, but this is still debated so we keep
+# the old setup unless the user says different.
+if test "$mandir" = "\${prefix}/share/man"; then
+  mandir="\${prefix}/man"
+  AC_SUBST(mandir)
+fi
 
 # Use a variable for RPM - this way it can be 
 # overridden with make RPM=rpm3 rpm

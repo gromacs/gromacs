@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4j from Makefile.am.
+# Makefile.in generated automatically by automake 1.4h from Makefile.am.
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
 # Free Software Foundation, Inc.
@@ -34,7 +34,7 @@ sharedstatedir = ${prefix}/com
 localstatedir = /var/lib
 libdir = ${exec_prefix}/lib
 infodir = ${prefix}/share/info
-mandir = ${prefix}/share/man
+mandir = ${prefix}/man
 includedir = ${prefix}/include
 oldincludedir = /usr/include
 pkgdatadir = $(datadir)/gromacs
@@ -99,8 +99,8 @@ X_CFLAGS =  -I/usr/X11R6/include
 X_EXTRA_LIBS = 
 X_LIBS =  -L/usr/X11R6/lib
 X_PRE_LIBS =  -lSM -lICE
-am__include = include
-am__quote = 
+_am_include = include
+_am_quote = 
 install_sh = config/install-sh
 
 EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff  mktex 
