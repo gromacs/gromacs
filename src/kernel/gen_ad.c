@@ -570,6 +570,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   nang    = 0;
   nidih   = 0;
   npai    = 0;
+  ndih    = 0;
   maxang  = 6*nnb->nr;
   maxdih  = 24*nnb->nr;
   maxpai  = maxdih;
