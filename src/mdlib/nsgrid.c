@@ -217,8 +217,7 @@ void calc_elemnr(FILE *log,bool bDD,int cg_index[],
 
   ncells=grid->ncells;
   if(ncells<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
-		"is either due to an internal Gromacs bug or a compiler error.\n");
+    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
 		
   calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
@@ -239,8 +238,7 @@ void calc_ptrs(t_grid *grid)
 
   ncells=grid->ncells;
   if(ncells<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
-		"is either due to an internal Gromacs bug or a compiler error.\n");
+    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
   
   ci=nr=0;
   for(ix=0; (ix < grid->nrx); ix++)
@@ -269,8 +267,7 @@ void grid_last(FILE *log,bool bDD,int cg_index[],
 
   ncells=grid->ncells;
   if(ncells<=0 || grid->nr<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
-		"is either due to an internal Gromacs bug or a compiler error.\n");
+    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
 
   calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
