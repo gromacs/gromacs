@@ -1,3 +1,36 @@
+#include <stdio.h>
+#include <math.h>
+#include "smalloc.h"
+#include "typedefs.h"
+#include "lrutil.h"
+#include "macros.h"
+#include "fftgrid.h"
+#include "vec.h"
+#include "pppm.h"
+
+static void calc_nxyz(int nx,int ny,int nz,
+		      int **nnx,int **nny,int **nnz)
+{
+  int i;
+  
+  snew(*nnx,3*nx);
+  snew(*nny,3*ny);
+  snew(*nnz,3*nz);
+  for(i=0; (i<3*nx); i++)
+    (*nnx)[i] = i % nx;
+  for(i=0; (i<3*ny); i++)
+    (*nny)[i] = i % ny;
+  for(i=0; (i<3*nz); i++)
+    (*nnz)[i] = i % nz;
+}
+	
+static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
+{
+  invh[XX] = nx/box[XX];
+  invh[YY] = ny/box[YY];
+  invh[ZZ] = nz/box[ZZ];
+}
+
 static void spread_q_poisson(FILE *log,bool bVerbose,
 			     int natoms,rvec x[],real charge[],rvec box,
 			     real r1,real rc,
@@ -5,7 +38,6 @@ static void spread_q_poisson(FILE *log,bool bVerbose,
 {
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;
-  static ivec NXYZ;
   rvec   invh;
   real   qi,qt,qwt;
   rvec   gridpoint,dx;
@@ -27,7 +59,7 @@ static void spread_q_poisson(FILE *log,bool bVerbose,
 	    nx,ny,nz);
     fprintf(log,"invh = %10g,%10g,%10g\n",invh[XX],invh[YY],invh[ZZ]);
   
-    calc_nxyz(nx,ny,nz,NXYZ,&nnx,&nny,&nnz);
+    calc_nxyz(nx,ny,nz,&nnx,&nny,&nnz);
     
     bFirst = FALSE;
   }
@@ -83,7 +115,6 @@ void solve_poisson(FILE *log,t_fftgrid *grid,bool bVerbose,t_nrnb *nrnb)
 {
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;
-  static ivec NXYZ;
   int    i,j,k;
   int    nx,ny,nz,la1,la2,la12;
   t_fft_tp *ptr;
@@ -94,7 +125,7 @@ void solve_poisson(FILE *log,t_fftgrid *grid,bool bVerbose,t_nrnb *nrnb)
     fprintf(log,"Solving Poisson Equation on %dx%dx%d grid\n",
 	    nx,ny,nz);
   
-    calc_nxyz(nx,ny,nz,NXYZ,&nnx,&nny,&nnz);
+    calc_nxyz(nx,ny,nz,&nnx,&nny,&nnz);
     
     bFirst = FALSE;
   }

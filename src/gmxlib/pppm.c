@@ -272,9 +272,9 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
   return pi;
 }
 
-static real gather_f(FILE *log,bool bVerbose,
-		     int natoms,rvec x[],rvec f[],real charge[],rvec box,
-		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb)
+real gather_f(FILE *log,bool bVerbose,
+	      int natoms,rvec x[],rvec f[],real charge[],rvec box,
+	      real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb)
 {
   static bool bFirst=TRUE;
   static int  *nnx,*nny,*nnz;

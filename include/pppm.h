@@ -54,6 +54,20 @@ extern real do_ewald(FILE *log,       t_inputrec *ir,
  * The spread function is David's function, rather than a gaussian.
  */
  
+extern real do_poisson(FILE *log,       bool bVerbose,
+		       bool bGenerGhat, char *ghatfn,
+		       t_inputrec *ir,  int natoms,
+		       rvec x[],        rvec f[],
+		       real charge[],   rvec box,
+		       real phi[],      t_commrec *cr,
+		       t_nrnb *nrnb);
+/* Calculate potentials etc. using a poisson solver */
+
+extern real gather_f(FILE *log,bool bVerbose,
+		     int natoms,rvec x[],rvec f[],real charge[],rvec box,
+		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb);
+/* Gather the forces and potential from a grid */
+ 
 #endif
 
 
