@@ -482,7 +482,7 @@ static void pr_ilist(FILE *fp,int indent,char *title,
       fprintf(fp,"nr: %d\n",ilist->nr);
       if (ilist->nr > 0) {
 	(void) pr_indent(fp,indent);
-	fprintf(fp,"multinr[division over procesors]:");
+	fprintf(fp,"multinr[division over processors]:");
 	for (i=0; (i<MAXPROC) && (ilist->multinr[i] > 0); i++) 
 	  (void) fprintf(fp," %d",ilist->multinr[i]);
 	fprintf(fp,"\n");
@@ -544,7 +544,7 @@ static int pr_block_title(FILE *fp,int indent,char *title,t_block *block)
     {
       indent=pr_title(fp,indent,title);
       (void) pr_indent(fp,indent);
-      fprintf(fp,"multinr[division over procesors]:");
+      fprintf(fp,"multinr[division over processors]:");
       for (i=0; (i<MAXPROC); i++) 
 	(void) fprintf(fp," %d",block->multinr[i]);
       fprintf(fp,"\n");
