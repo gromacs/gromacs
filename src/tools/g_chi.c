@@ -481,7 +481,8 @@ static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
 }
 
 static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
-			real **dih,int maxchi,bool bPhi,bool bPsi,bool bChi)
+			real **dih,int maxchi,
+			bool bPhi,bool bPsi,bool bChi,bool bOmega)
 {
   char name[256];
   int  i,j,Xi;
@@ -489,11 +490,15 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
   /* Dump em all */
   for(i=0; (i<nlist); i++)
     if (bPhi)
-      print_one("Phi",dlist[i].name,name,nf,time,dih[0]);
+      print_one("phi",dlist[i].name,name,nf,time,dih[edPhi]);
   for(i=0; (i<nlist); i++)
     if (bPsi)
-      print_one("Psi",dlist[i].name,name,nf,time,dih[1]);
-  j=2;
+      print_one("psi",dlist[i].name,name,nf,time,dih[edPsi]);
+  for(i=0; (i<nlist); i++)
+    if (bOmega && has_dihedral(edOmega,&(dlist[i])))
+      print_one("omega",dlist[i].name,name,nf,time,dih[edOmega]);
+    
+  j = edChi1;
   for(Xi=0; (Xi<maxchi); Xi++)
     for(i=0; (i<nlist); i++)
       if (dlist[i].atm.Cn[Xi+3] != -1) {
@@ -1041,7 +1046,7 @@ int main(int argc,char *argv[])
   reset_em_all(nlist,dlist,nf,dih,maxchi,bPhi,bPsi,bChi);
   
   if (bAll)
-    dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi);
+    dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega);
   
   /* Histogramming & J coupling constants */
   histogramming(log,naa,aa,nf,maxchi,dih,nlist,dlist,bPhi,bPsi,bOmega,bChi);
