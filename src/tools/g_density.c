@@ -97,7 +97,7 @@ int get_electrons(t_electron **eltab, char *fn)
       fprintf(stderr,"Error reading datafile. Check your datafile.\n");
       exit(1);
     }
-    if (sscanf(buffer, "%s = %d", &tempname, &tempnr) != 2)
+    if (sscanf(buffer, "%s = %d", tempname, &tempnr) != 2)
     {
       fprintf(stderr,"Invalid line in datafile at line %d\n",i+1);
       exit(1);
