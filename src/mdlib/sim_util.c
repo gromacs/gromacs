@@ -277,7 +277,7 @@ void do_force(FILE *log,t_commrec *cr,
 #ifdef DEBUG
   if (debug) {
     pr_rvecs(debug,0,"fr->fshift",fr->fshift,SHIFTS);
-    pr_rvecs(debug,0,"in force.c vir",vir_part,DIM);
+    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
   }
 #endif
 

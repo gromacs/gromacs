@@ -268,9 +268,10 @@ void init_forcerec(FILE *log,
 		   matrix     box,
 		   bool bMolEpot)
 {
-  int  i,j,m,natoms,nrdf,ngrp;
-  real q,zsq,T;
-  rvec box_size;
+  int    i,j,m,natoms,nrdf,ngrp;
+  real   q,zsq,T;
+  rvec   box_size;
+  double rtab;
   
   natoms         = mdatoms->nr;
 
@@ -392,7 +393,11 @@ void init_forcerec(FILE *log,
 
   if (fr->cg_cm == NULL)
     snew(fr->cg_cm,cgs->nr);
-  
+  if (fr->cg_index == NULL) {
+    snew(fr->cg_index,cgs->nr+1);
+    for(i=0; (i<=cgs->nr);  i++)
+      fr->cg_index[i] = i;
+  }
   if (fr->shift_vec == NULL)
     snew(fr->shift_vec,SHIFTS);
     
@@ -461,21 +466,26 @@ void init_forcerec(FILE *log,
       fr->VFtab=NULL;
     }
     fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
-  } else if (fr->bPert) {
+  } 
+  else if (fr->bPert) {
     if (fr->rlistlong == 0) {
       char *ptr,*envvar="FEP_TABLE_LENGTH";
       fr->rtab = 5;
       ptr = getenv(envvar);
-      if (ptr)
-	sscanf(ptr,"%f",&(fr->rtab));
+      if (ptr) {
+	sscanf(ptr,"%lf",&rtab);
+	fr->rtab = rtab;
+      }
       fprintf(log,"\nNote: Setting the free energy table length to %g nm\n"
 	      "      You can set this value with the environment variable %s"
 	      "\n\n",fr->rtab,envvar);
-    } else
+    } 
+    else
       fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
-  } else
+  } 
+  else
     fr->rtab = MAX_14_DIST;
-    
+  
   /* make tables for ordinary interactions */
   make_tables(fr,MASTER(cr));
   if(!(EEL_LR(fr->eeltype) && fr->bTab))
@@ -494,8 +504,8 @@ void pr_forcerec(FILE *log,t_forcerec *fr,t_commrec *cr)
   pr_int(log,fr->ndelta);
   pr_bool(log,fr->bGrid);
   pr_bool(log,fr->bTwinRange);
-  pr_int(log,fr->cg0);
-  pr_int(log,fr->hcg);
+  /*pr_int(log,fr->cg0);
+    pr_int(log,fr->hcg);*/
   pr_int(log,fr->ntab);
   if (fr->ntab > 0) {
     pr_real(log,fr->rcoulomb_switch);
@@ -530,12 +540,12 @@ void ns(FILE *log,
   int    nsearch;
   
   if (bFirst) {
-    ptr=getenv("DUMP_NL");
+    ptr=getenv("DUMPNL");
     if (ptr)
       nDNL=atoi(ptr);
     else
       nDNL=0;
-      
+    fprintf(log,"nDNL = %d\n",nDNL);  
     /* Allocate memory for the neighbor lists */
     init_neighbor_list(log,fr,HOMENR(nsb));
       
@@ -554,11 +564,8 @@ void ns(FILE *log,
    * workload contains the proper numbers of charge groups
    * to be searched.
    */
-  if (cr->pid == 0)
-    fr->cg0=0;
-  else
-    fr->cg0=nsb->workload[cr->pid-1];
-  fr->hcg=nsb->workload[cr->pid];
+  /*fr->cg0 = CG0(nsb);
+    fr->hcg = CG1(nsb);*/
 
   nsearch = search_neighbours(log,fr,x,box,top,grps,cr,nsb,nrnb,md,
 			      lambda,dvdlambda);
@@ -568,8 +575,8 @@ void ns(FILE *log,
   /* Check whether we have to do dynamic load balancing */
   /*if ((nsb->nstDlb > 0) && (mod(step,nsb->nstDlb) == 0))
     count_nb(cr,nsb,&(top->blocks[ebCGS]),nns,fr->nlr,
-	     &(top->idef),opts->ngener);
-	     */
+    &(top->idef),opts->ngener);
+  */
   if (nDNL > 0)
     dump_nblist(log,fr,nDNL);
 }
@@ -610,18 +617,21 @@ void force(FILE       *log,     int        step,
 	  grps->estat.ee[egCOUL],box_size,nrnb,
 	  lambda,&epot[F_DVDL],FALSE,-1);
   debug_gmx();
+
+  if (debug) 
+    pr_rvecs(debug,0,"fshift after SR",fr->fshift,SHIFTS);
   
   /* Shift the coordinates. Must be done before bonded forces and PPPM, 
    * but is also necessary for SHAKE and update, therefore it can NOT 
    * go when no bonded forces have to be evaluated.
    */
-  if (debug)
+  if (debug && 0)
     p_graph(debug,"DeBUGGGG",graph);
   
   /* Check whether we need to do bondeds */
   if (!bNBFonly) {
     shift_self(graph,fr->shift_vec,x);
-    if (debug) {
+    if (debug && 0) {
       fprintf(debug,"BBBBBBBBBBBBBBBB\n");
       fprintf(debug,"%5d\n",graph->nnodes);
       for(i=graph->start; (i<=graph->end); i++)
@@ -667,6 +677,10 @@ void force(FILE       *log,     int        step,
     if (debug)
       fprintf(debug,"Vlr = %g, Vself = %g, Vlr_corr = %g\n",
 	      Vlr,Vself,epot[F_LR]);
+    if (debug) {
+      pr_rvecs(debug,0,"lr_vir after corr",lr_vir,DIM);
+      pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
+    }
   }
   debug_gmx();
   
@@ -674,9 +688,6 @@ void force(FILE       *log,     int        step,
     print_nrnb(debug,nrnb);
   debug_gmx();
 
-  if (debug) 
-    pr_rvecs(debug,0,"fshift",fr->fshift,SHIFTS);
-    
   if (!bNBFonly) {
     calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);

@@ -70,7 +70,7 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
     shell = s[i].shell;
     k_1   = s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-    if (debug) {
+    if (debug && 0) {
       pr_rvec(debug,0,"fshell",f[shell],DIM);
       pr_rvec(debug,0,"xold",xold[shell],DIM);
       pr_rvec(debug,0,"xnew",xnew[shell],DIM);
@@ -259,6 +259,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   tensor my_vir[2],vir_last;
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS;
+  char   cbuf[56];
   bool   bDone;
   int    g;
   int    number_steps;
@@ -294,11 +295,15 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
   df[Min]=rms_force(cr,force[Min],nshell,shells);
-  if (debug)
+  df[Try]=0;
+  if (debug) {
     fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
+    sprintf(cbuf,"myvir step %d",0);
+    pr_rvecs(debug,0,cbuf,my_vir[Min],DIM);
+  }
     
 #ifdef DEBUG
-  if (debug) {
+  if (debug && 0) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
     calc_f_dev(md->nr,md->chargeA,x,force[Min],&top->idef,&xiH,&xiS);
     fprintf(log,"xiH = %e, xiS = %e\n",xiH,xiS);
@@ -343,7 +348,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
 
-    if (debug) {
+    if (debug && 0) {
       pr_rvecs(debug,0,"pos[Try] b4 do_force",pos[Try] + start,homenr);
       pr_rvecs(debug,0,"pos[Min] b4 do_force",pos[Min] + start,homenr);
     }
@@ -357,9 +362,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
 
     if (debug) {
-      pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);
-      fprintf(debug,"SHELL ITER %d\n",count);
-      dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
+      /*pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);*/
+      sprintf(cbuf,"myvir step %d",count);
+      pr_rvecs(debug,0,cbuf,my_vir[Try],DIM);
+      /*fprintf(debug,"SHELL ITER %d\n",count);
+	dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);*/
     }
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
@@ -427,6 +434,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
     /* CHECK VIRIAL */
     copy_mat(my_vir[Min],vir_part);
+  }
+  if (debug) {
+    sprintf(cbuf,"myvir step %d",count);
+    pr_rvecs(debug,0,cbuf,vir_part,DIM);
   }
   memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
   return count; 

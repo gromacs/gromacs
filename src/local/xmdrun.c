@@ -283,7 +283,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (bDummies) {
       /* Construct dummy particles */
-      if (debug) {
+      if (debug && 0) {
 	pr_rvecs(debug,0,"x b4 gen dummy",x,mdatoms->nr);
 	pr_rvecs(debug,0,"v b4 gen dummy",v,mdatoms->nr);
       }
@@ -291,7 +291,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,(step == 0) ? NULL : v,
 			&top->idef);
       unshift_self(graph,fr->shift_vec,x);
-      if (debug) {
+      if (debug && 0) {
 	pr_rvecs(debug,0,"x after gen dummy",x,mdatoms->nr);
 	pr_rvecs(debug,0,"v after gen dummy",v,mdatoms->nr);
       }
@@ -346,11 +346,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bDummies)
       spread_dummy_f(log,x,fbuf[next],&mynrnb,&top->idef);
     
-    if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
-    if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
-    if (do_per_step(step,parm->ir.nstfout) || bLastStep) 
-      ff=fbuf[next]; 
-    else ff=NULL;
+    xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
+    vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
+    ff = (do_per_step(step,parm->ir.nstfout) || bLastStep) ? fbuf[next] : NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			&mynrnb,nsb->natoms,xx,vv,ff,parm->box);
     debug_gmx();
@@ -507,10 +505,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       close_trn(fp_trn);
   }
   
-  fprintf(log,"Fraction of iterations that converged:           %.2f\n",
-	  (nconverged*100.0)/parm->ir.nsteps);
+  fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",
+	  (nconverged*100.0)/(parm->ir.nsteps+1));
   fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
-	  tcount/parm->ir.nsteps);
+	  tcount/(parm->ir.nsteps+1));
 
   return start_t;
 }

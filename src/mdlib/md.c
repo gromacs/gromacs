@@ -209,9 +209,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Spread the force on dummy particle to the other particles... */
       spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
-    if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
-    if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
-    if (do_per_step(step,parm->ir.nstfout)) ff=f; else ff=NULL;
+    xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
+    vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
+    ff = (do_per_step(step,parm->ir.nstfout) || bLastStep) ? f : NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     debug_gmx();
