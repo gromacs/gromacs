@@ -68,9 +68,9 @@ real         tend   = -1;
 real         tdelta = -1;
 real         timefactor = NOTSET;
 char         *timelabel = NULL;
-static char *timestr[] = { NULL, "ps", "fs", "ns", "us", "ms", "s",   
+static char *timestr[] = { NULL, "fs", "ps", "ns", "us", "ms", "s",   
 			   "m",              "h",                NULL };
-real timefactors[]     = { 0,    1,    1e3,  1e-3, 1e-6, 1e-9, 1e-12, 
+real timefactors[]     = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 
 			   (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
 static bool  bView=FALSE;
 static unsigned long uFlags=0;
@@ -184,6 +184,25 @@ void default_time(void)
 {
   timestr[0] = timestr[1];
   timefactor = timefactors[1];
+}
+
+static void set_default_time_unit(char *select)
+{
+  int i;
+  
+  i=1;
+  while(timestr[i] && strcmp(timestr[i], select)!=0)
+    i++;
+  if (strcmp(timestr[i], select)==0) {
+    timestr[0] = timestr[i];
+    timefactors[0] = timefactors[i];
+    for(j=i; j>1; j--) {
+      timestr[j]=timestr[j-1];
+      timefactors[j]=timefactors[j-1];
+    }
+    timestr[1]=timestr[0];
+    timefactors[1]=timefactors[0];
+  }
 }
 
 /***** T O P O L O G Y   S T U F F ******/
@@ -425,11 +444,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 		       "First frame (%t) to read from trajectory" };
   t_pargs end_pa    = { "-e",    FALSE, etTIME,  {&tend},        
 		       "Last frame (%t) to read from trajectory" };
-  t_pargs dt_pa     = { "-dt",    FALSE, etTIME, {&tdelta},        
+  t_pargs dt_pa     = { "-dt",   FALSE, etTIME,  {&tdelta},        
 		       "Only use frame when t MOD dt = first time (%t)" };
   t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},     
 		       "View output xvg, xpm, eps and pdb files" };
-  t_pargs time_pa   = { "-tu", FALSE, etENUM,  {timestr},
+  t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {timestr},
 			"Time unit" };
   
   t_pargs pca_pa[] = {
@@ -546,9 +565,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     npall = add_parg(npall,&(all_pa),&end_pa);
   if (FF(PCA_CAN_DT))
     npall = add_parg(npall,&(all_pa),&dt_pa);
-  if (FF(PCA_TIME_UNIT))
+  if (FF(PCA_TIME_UNIT)) {
+    envstr = getenv("GMXTIMEUNIT");
+    if ( envstr == NULL )
+      envstr="ps";
+    set_default_time_unit(envstr);
     npall = add_parg(npall,&(all_pa),&time_pa);
-  else
+  } else
     default_time();
   if (FF(PCA_CAN_VIEW))
     npall = add_parg(npall,&(all_pa),&view_pa);
