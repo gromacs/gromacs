@@ -184,7 +184,9 @@ particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.</dd>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
 When <b>ld_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 1000000</tt></dd>
+<tt>(time() + getpid()) % 1000000</tt></dd>.
+When running on multiple processors, each processor uses a seed equal
+to <b>ld_seed</b> plus the processor number.
 </dl>
 
 <A NAME="em"><br>
