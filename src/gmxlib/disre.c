@@ -104,13 +104,9 @@ void calc_disres_R_6(t_commrec *mcr,
   real        rt_1,rt_3,rt2,rav_3,*rt,*rav,*Rtl_6,*Rt_6,*Rav_6;
   ivec        it,jt,dt;
   t_disresdata *dd;
-  int         dr_weighting;
-  bool        dr_bMixed;
   real        ETerm,ETerm1,cf1,cf2,invn=0;
 
   dd = &(fcd->disres);
-  dr_weighting = dd->dr_weighting;
-  dr_bMixed    = dd->dr_bMixed;
   ETerm        = dd->ETerm;
   ETerm1       = dd->ETerm1;
   rt           = dd->rt;

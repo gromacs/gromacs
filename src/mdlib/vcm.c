@@ -204,7 +204,7 @@ static void get_minv(tensor A,tensor B)
 void check_cm_grp(FILE *fp,t_vcm *vcm)
 {
   int    m,g;
-  real   ekcm,ekrot,max_vcm,tm,tm_1;
+  real   ekcm,ekrot,tm,tm_1;
   rvec   jcm;
   tensor Icm,Tcm;
     
@@ -257,7 +257,6 @@ void check_cm_grp(FILE *fp,t_vcm *vcm)
   }
   for(g=0; (g<vcm->nr); g++) {
     ekcm    = 0;
-    max_vcm = 0;
     if (vcm->group_mass[g] != 0) {
       for(m=0; (m<DIM); m++) 
 	ekcm += sqr(vcm->group_v[g][m]);

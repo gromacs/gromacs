@@ -548,7 +548,6 @@ void fec(char *ene2fn, char *runavgfn,
   real **eneset2;
   double dE, sum;
   t_enxframe *fr;
-  t_energy   *ee;
   
   /* read second energy file */
   snew(fr,1);
@@ -557,7 +556,6 @@ void fec(char *ene2fn, char *runavgfn,
   do_enxnms(enx,&(fr->nre),&enm);
   
   snew(eneset2,nset+1);
-  snew(ee,fr->nre);
   nenergy2=0;
   maxenergy=0;
   timecheck=0;
@@ -567,7 +565,6 @@ void fec(char *ene2fn, char *runavgfn,
      */
     do {
       bCont = do_enx(enx,fr);
-      /* bCont = do_enx(enx,&t,&step,&nre,ee,&ndr,&dr); */
       
       if (bCont)
 	timecheck = check_times(fr->t);
