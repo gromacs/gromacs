@@ -38,35 +38,65 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
     shell = s[i].shell;
     k_1   = s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
+    pr_rvec(log,0,"fshell",f[shell],DIM);
+    pr_rvec(log,0,"xold",xold[shell],DIM);
+    pr_rvec(log,0,"xnew",xnew[shell],DIM);
   }
 }
 
-static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[])
+static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[],
+			   real mass[],bool bInit)
 {
-  int  i,m;
-  real dt_1,dt_2,dt_3,fudge;
-
+  int  i,m,s1,n1,n2,n3;
+  real dt_1,dt_2,dt_3,fudge,tm,m1,m2,m3;
+  rvec *ptr;
+  
   /* We introduce a fudge factor for performance reasons: with this choice
    * the initial force on the shells is about a factor of two lower than without
    */
-  fudge = 1.0/sqrt(3.0);
+  fudge = 1.0; /*/sqrt(3.0);*/
   dt_1 = dt*fudge;
-  dt_2 = (0.5*dt)*fudge;
-  dt_3 = (dt/3.0)*fudge;
-  
+  /*dt_2 = (dt/2.0)*fudge;
+    dt_3 = (dt/3.0)*fudge;*/
+    
+  if (bInit) {
+    ptr  = x;
+    dt_1 = 1;
+  }
+  else {
+    ptr  = v;
+    dt_1 = fudge/dt;
+  }
+    
   for(i=0; (i<ns); i++) {
+    s1 = s[i].shell;
+    if (bInit)
+      clear_rvec(x[s1]);
     switch (s[i].nnucl) {
     case 1:
+      n1 = s[i].nucl1;
       for(m=0; (m<DIM); m++)
-	x[s[i].shell][m]+=v[s[i].nucl1][m]*dt_1;
+	x[s1][m]+=ptr[n1][m]*dt_1;
       break;
     case 2:
+      n1 = s[i].nucl1;
+      n2 = s[i].nucl2;
+      m1 = mass[n1];
+      m2 = mass[n2];
+      tm = dt_1/(m1+m2);
       for(m=0; (m<DIM); m++)
-	x[s[i].shell][m]+=(v[s[i].nucl1][m]+v[s[i].nucl2][m])*dt_2;
+	x[s1][m]+=(m1*ptr[n1][m]+m2*ptr[n2][m])*tm;
       break;
     case 3:
+      n1 = s[i].nucl1;
+      n2 = s[i].nucl2;
+      n3 = s[i].nucl3;
+      m1 = mass[n1];
+      m2 = mass[n2];
+      m3 = mass[n3];
+      tm = dt_1/(m1+m2+m3);
       for(m=0; (m<DIM); m++)
-	x[s[i].shell][m]+=(v[s[i].nucl1][m]+v[s[i].nucl2][m]+v[s[i].nucl3][m])*dt_3;
+	x[s1][m]+=(m1*ptr[n1][m]+m2*ptr[n2][m]+m3*ptr[n3][m])*tm;
       break;
     default:
       fatal_error(0,"Shell %d has %d nuclei!",i,s[i].nnucl);
@@ -165,7 +195,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   step0        = 1.0;
 
   /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells);
+  /*predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));*/
     
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
@@ -223,10 +253,10 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr);
     df[Try]=rms_force(force[Try],nshell,shells);
-#ifdef DEBUG
+
     if (debug) 
       pr_rvecs(debug,0,"F na do_force",&(force[Try][start]),homenr);
-#endif
+
     if (debug) {
       fprintf(debug,"SHELL ITER %d\n",count);
       dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
@@ -242,7 +272,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
     bDone=(df[Try] < ftol);
     
-    if ((Epot[Try] < Epot[Min])) {
+    if ((Epot[Try] < Epot[Min]) /* || (df[Try] < df[Min])*/) {
       Min  = Try;
       step = step0;
     }
@@ -306,7 +336,7 @@ int relax_shells2(FILE *log,t_commrec *cr,
   step         = step0;
   
   /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells);
+  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
     
   /* Calculate the forces first time around */
   do_force(log,cr,parm,nsb,vir_part,mdstep,nrnb,
