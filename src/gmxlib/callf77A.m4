@@ -1,3 +1,4 @@
+#include <math.h>
 #include "typedefs.h"
 #include "callf77.h"
 #include "fatal.h"
@@ -19,4 +20,7 @@ void fillbuf(void)
 #endif
 }
 
-
+real FUNCTION(cerfc)(real x)
+{
+	return erfc(x);
+}
