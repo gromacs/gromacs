@@ -243,7 +243,7 @@ real water_pol(FILE *log,int nbonds,
    * three spatial dimensions in the molecular frame.
    */
   int  i,m,ki,kj,aO,aH1,aH2,aD,aS,type;
-  rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx;
+  rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx,proj,df;
   real vtot,fij,r_HH,r_OH,r_OD,r_nW,tx,ty,tz;
   
   vtot = 0.0;
@@ -255,7 +255,14 @@ real water_pol(FILE *log,int nbonds,
     r_OH   = 1.0/forceparams[type].wpol.rOH;
     r_HH   = 1.0/forceparams[type].wpol.rHH;
     r_OD   = 1.0/forceparams[type].wpol.rOD;
-
+    if (debug) {
+      fprintf(debug,"WPOL: kk  = %10.3f        %10.3f        %10.3f\n",
+	      kk[XX],kk[YY],kk[ZZ]);
+      fprintf(debug,"WPOL: rOH = %10.3f  rHH = %10.3f  rOD = %10.3f\n",
+	      forceparams[type].wpol.rOH,
+	      forceparams[type].wpol.rHH,
+	      forceparams[type].wpol.rOD);
+    }
     for(i=0; (i<nbonds); ) {
       type = forceatoms[i++];
       aO   = forceatoms[i++];
@@ -276,6 +283,10 @@ real water_pol(FILE *log,int nbonds,
        * (this one could be precomputed, but I'm too lazy now)
        */
       r_nW = invsqrt(iprod(nW,nW));
+      /* This is for precision, but does not make a big difference,
+       * it can go later.
+       */
+      r_OD = invsqrt(iprod(dOD,dOD)); 
       
       /* Normalize the vectors in the water frame */
       svmul(r_nW,nW,nW);
@@ -283,38 +294,57 @@ real water_pol(FILE *log,int nbonds,
       svmul(r_OD,dOD,dOD);
       
       /* Compute displacement of shell along components of the vector */
-      dx[XX] = iprod(dDS,nW);
-      dx[YY] = iprod(dDS,dHH);
       dx[ZZ] = iprod(dDS,dOD);
+      /* Compute projection on the XY plane: dDS - dx[ZZ]*dOD */
+      for(m=0; (m<DIM); m++)
+	proj[m] = dDS[m]-dx[ZZ]*dOD[m];
       
+      /*dx[XX] = iprod(dDS,nW);
+	dx[YY] = iprod(dDS,dHH);*/
+      dx[XX] = iprod(proj,nW);
+      for(m=0; (m<DIM); m++)
+	proj[m] -= dx[XX]*nW[m];
+      dx[YY] = iprod(proj,dHH);
+      /*#define DEBUG*/
 #ifdef DEBUG
       if (debug) {
 	fprintf(debug,"WPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
-		sqr(dx[XX]),sqr(dx[YY]),sqr(dx[ZZ]),sqr(dx[XX])+sqr(dx[YY])+sqr(dx[ZZ]),iprod(dDS,dDS));
-	fprintf(debug,"WPOL: nW=(%10g,%10g,%10g), 1/r_nW = %10g\n",
+		sqr(dx[XX]),sqr(dx[YY]),sqr(dx[ZZ]),iprod(dx,dx),iprod(dDS,dDS));
+	fprintf(debug,"WPOL: dHH=(%10g,%10g,%10g)\n",dHH[XX],dHH[YY],dHH[ZZ]);
+	fprintf(debug,"WPOL: dOD=(%10g,%10g,%10g), 1/r_OD = %10g\n",
+		dOD[XX],dOD[YY],dOD[ZZ],1/r_OD);
+	fprintf(debug,"WPOL: nW =(%10g,%10g,%10g), 1/r_nW = %10g\n",
 		nW[XX],nW[YY],nW[ZZ],1/r_nW);
 	fprintf(debug,"WPOL: dx  =%10g, dy  =%10g, dz  =%10g\n",
 		dx[XX],dx[YY],dx[ZZ]);
-	fprintf(debug,"WPOL: dDSx=%10g, dDSy=%10g, dDSz=%10g\n",
+ 	fprintf(debug,"WPOL: dDSx=%10g, dDSy=%10g, dDSz=%10g\n",
 		dDS[XX],dDS[YY],dDS[ZZ]);
       }
 #endif
-      
       /* Now compute the forces and energy */
-      kdx[XX] = -kk[XX]*dx[XX];
-      kdx[YY] = -kk[YY]*dx[YY];
-      kdx[ZZ] = -kk[ZZ]*dx[ZZ];
+      kdx[XX] = kk[XX]*dx[XX];
+      kdx[YY] = kk[YY]*dx[YY];
+      kdx[ZZ] = kk[ZZ]*dx[ZZ];
+      vtot   += iprod(dx,kdx);
       for(m=0; (m<DIM); m++) {
 	/* This is a tensor operation but written out for speed */
 	tx        =  nW[m]*kdx[XX];
 	ty        = dHH[m]*kdx[YY];
 	tz        = dOD[m]*kdx[ZZ];
-	fij       = tx+ty+tz;
-	vtot     += 0.5*(tx*dx[XX]+ty*dx[YY]+tz*dx[ZZ]);
-
+	fij       = -tx-ty-tz;
+#ifdef DEBUG
+	df[m] = fij;
+#endif
 	f[aS][m] += fij;
 	f[aD][m] -= fij;
       }
+#ifdef DEBUG
+      if (debug) {
+	fprintf(debug,"WPOL: vwpol=%g\n",0.5*iprod(dx,kdx));
+	fprintf(debug,"WPOL: df = (%10g, %10g, %10g)\n",df[XX],df[YY],df[ZZ]);
+      }
+#undef DEBUG
+#endif
     }	
   }
   return 0.5*vtot;
