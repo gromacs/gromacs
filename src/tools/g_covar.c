@@ -58,14 +58,11 @@
 #include "eigio.h"
 #include "ql77.h"
 
-typedef double drvec[DIM];
-
 int gmx_covar(int argc,char *argv[])
 {
   static char *desc[] = {
     "[TT]g_covar[tt] calculates and diagonalizes the (mass-weighted)",
-    "covariance matrix. This is always done in double precision,",
-    "independent of the compilation options.",
+    "covariance matrix.",
     "All structures are fitted to the structure in the structure file.",
     "When this is not a run input file periodicity will not be taken into",
     "account. When the fit and analysis groups are identical and the analysis",
@@ -102,15 +99,14 @@ int gmx_covar(int argc,char *argv[])
   int        status,trjout;
   t_topology top;
   t_atoms    *atoms;  
-  drvec      *xav;
-  rvec       *x,*xread,*xref,*xproj;
+  rvec       *x,*xread,*xref,*xav,*xproj;
   matrix     box,zerobox;
-  double     *sqrtm,*mat,*eigval,sum,trace,inv_nframes;
+  real       *sqrtm,*mat,*eigval,sum,trace,inv_nframes;
   real       t,tstart,tend,**mat2;
   real       xj,*w_rls=NULL;
   real       min,max,*axis;
   int        ntopatoms,step;
-  int        natoms,nat,ndim,count,nframes,nlevels;
+  int        natoms,nat,ndim,count,nframes0,nframes,nlevels;
   int        WriteXref;
   char       *fitfile,*trxfile,*ndxfile;
   char       *eigvalfile,*eigvecfile,*averfile,*logfile,*xpmfile,*xpmafile;
@@ -205,19 +201,43 @@ int gmx_covar(int argc,char *argv[])
 
   snew(x,natoms);
   snew(xav,natoms);
-  snew(xproj,natoms);
   ndim=natoms*DIM;
   snew(mat,ndim*ndim);
 
-  fprintf(stderr,"Constructing covariance matrix (%dx%d)...\n",ndim,ndim);
+  fprintf(stderr,"Calculating the average structure ...\n");
+  nframes0 = 0;
+  nat=read_first_x(&status,trxfile,&t,&xread,box);
+  do {
+    nframes0++;
+    /* calculate x: a fitted struture of the selected atoms */
+    rm_pbc(&(top.idef),nat,box,xread,xread);
+    if (bFit) {
+      reset_x(nfit,ifit,nat,NULL,xread,w_rls);
+      do_fit(nat,w_rls,xref,xread);
+    }
+    for (i=0; i<natoms; i++)
+      rvec_inc(xav[i],xread[index[i]]);
+  } while (read_next_x(status,&t,nat,xread,box));
+  close_trj(status);
+  
+  inv_nframes = 1.0/nframes0;
+  for(i=0; i<natoms; i++)
+    for(d=0; d<DIM; d++) {
+      xav[i][d] *= inv_nframes;
+      xread[index[i]][d] = xav[i][d];
+    }
+  write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
+			 atoms,xread,NULL,zerobox,natoms,index);
+  sfree(xread);
 
+  fprintf(stderr,"Constructing covariance matrix (%dx%d) ...\n",ndim,ndim);
   nframes=0;
   nat=read_first_x(&status,trxfile,&t,&xread,box);
   tstart = t;
   do {
     nframes++;
     tend = t;
-    /* calculate x: a fitted struture of the selected atoms */
+    /* calculate x: a (fitted) structure of the selected atoms */
     rm_pbc(&(top.idef),nat,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
@@ -228,13 +248,9 @@ int gmx_covar(int argc,char *argv[])
 	rvec_sub(xread[index[i]],xref[index[i]],x[i]);
     else
       for (i=0; i<natoms; i++)
-	copy_rvec(xread[index[i]],x[i]);
+	rvec_sub(xread[index[i]],xav[i],x[i]);
     
     for (j=0; j<natoms; j++) {
-      /* calculate average structure */
-      for(d=0; d<DIM; d++)
-	xav[j][d] += x[j][d];
-      /* calculate cross product matrix */
       for (dj=0; dj<DIM; dj++) {
 	k=ndim*(DIM*j+dj);
 	xj=x[j][dj];
@@ -245,46 +261,30 @@ int gmx_covar(int argc,char *argv[])
 	}
       }
     }
-  } while (read_next_x(status,&t,nat,xread,box));
+  } while (read_next_x(status,&t,nat,xread,box) && 
+	   (bRef || nframes < nframes0));
   close_trj(status);
 
-  /* calculate and write the average structure */
-  inv_nframes=1.0/nframes;
-  for (i=0; i<natoms; i++)
-    for(d=0; d<DIM; d++) {
-      xav[i][d] *= inv_nframes;
-      xread[index[i]][d] = xav[i][d];
-    }
-  write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
-			 atoms,xread,NULL,zerobox,natoms,index);
+  fprintf(stderr,"Read %d frames\n",nframes);
   
   if (bRef) {
     /* copy the reference structure to the ouput array x */
+    snew(xproj,natoms);
     for (i=0; i<natoms; i++)
       copy_rvec(xref[index[i]],xproj[i]);
-    /* correct the covariance matrix for the mass */
-    for (j=0; j<natoms; j++) 
-      for (dj=0; dj<DIM; dj++) 
-	for (i=j; i<natoms; i++) { 
-	  k = ndim*(DIM*j+dj)+DIM*i;
-	  for (d=0; d<DIM; d++)
-	    mat[k+d] = mat[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
-	}
   } else {
-    /* copy the average structure to the ouput array x */
-    for (i=0; i<natoms; i++)
-      for(d=0; d<DIM; d++)
-	xproj[i][d] = xav[i][d];
-    /* correct the covariance matrix for the mass and the average */
-    for (j=0; j<natoms; j++) 
-      for (dj=0; dj<DIM; dj++) 
-	for (i=j; i<natoms; i++) { 
-	  k = ndim*(DIM*j+dj)+DIM*i;
-	  for (d=0; d<DIM; d++)
-	    mat[k+d] = (mat[k+d]*inv_nframes-xav[i][d]*xav[j][dj])
-	      *sqrtm[i]*sqrtm[j];
-	}
+    xproj = xav;
   }
+
+  /* correct the covariance matrix for the mass */
+  inv_nframes = 1.0/nframes;
+  for (j=0; j<natoms; j++) 
+    for (dj=0; dj<DIM; dj++) 
+      for (i=j; i<natoms; i++) { 
+	k = ndim*(DIM*j+dj)+DIM*i;
+	for (d=0; d<DIM; d++)
+	  mat[k+d] = mat[k+d]*inv_nframes*sqrtm[i]*sqrtm[j];
+      }
 
   /* symmetrize the matrix */
   for (j=0; j<ndim; j++) 
@@ -312,13 +312,7 @@ int gmx_covar(int argc,char *argv[])
     max = 0;
     snew(mat2,ndim);
     for (j=0; j<ndim; j++) {
-#ifndef DOUBLE
-      snew(mat2[j],ndim);
-      for(i=0; i<ndim; i++)
-	mat2[j][i] = mat[ndim*j + i];
-#else
       mat2[j] = &(mat[ndim*j]);
-#endif
       for (i=0; i<=j; i++) {
 	if (mat2[j][i] < min)
 	  min = mat2[j][i];
@@ -339,10 +333,6 @@ int gmx_covar(int argc,char *argv[])
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
     fclose(out);
     sfree(axis);
-#ifndef DOUBLE
-    for(i=0; i<ndim; i++)
-      sfree(mat2[i]);
-#endif
     sfree(mat2);
   }
 
@@ -385,7 +375,7 @@ int gmx_covar(int argc,char *argv[])
 
   /* call diagonalization routine */
   
-  fprintf(stderr,"\nDiagonalizing...\n");
+  fprintf(stderr,"\nDiagonalizing ...\n");
   fflush(stderr);
 
   snew(eigval,ndim);
