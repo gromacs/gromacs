@@ -93,8 +93,12 @@ real calc_geom(int isize,atom_id *index,
   int     ii,i,j;
   
   clear_rvec(geom_center);
+  if (index)
+    ii=index[0];
+  else
+    ii=0;
   for (j=0; j<DIM; j++)
-    min[j]=max[j]=x[0][j];
+    min[j]=max[j]=x[ii][j];
   diam2 = 0;
   for (i=0; i<isize; i++) {
     if (index)
