@@ -1,0 +1,433 @@
+#!/bin/awk -f 
+
+# reads Amber forcefield definition file(s) and converts to Gromacs
+# Version 1.1
+# Copyright (c) 2002
+# Anton Feenstra - Vrije Universiteit Amsterdam - The Netherlands
+
+function abs(r) {
+  return sqrt(r^2);
+}
+
+# unit conversion functions:
+
+# Angstrom (1e-10 m) to nanometers (1e-9 m)
+function A2nm(a) {
+  return a/10;
+}
+
+# Angstrom^-1 to nanometers^-1
+function pA2pnm(a) {
+  return a*10;
+}
+
+# kCalories to kJoules
+function kcal2kj(e) {
+  return e * 4.1868;
+}
+
+# kCal mol^-1 A^-n to kJoule mol^-1 nm^-n
+# 'n' is usually 2 (for bonds) or 6 or 12 (for LJ)
+function kcalpmolpA2kjpmolpnm(k, n) {
+  kk=kcal2kj(k);
+  for(ki=0; ki<n; ki++)
+    kk=pA2pnm(kk);
+  return kk;
+}
+
+function warning(s) {
+  printf("WARNING: %s\n", s);
+  nwarn++;
+}
+
+function print_warn() {
+  if (nwarn)
+    printf("\nThere were %d warnings\n\n", nwarn);
+}
+
+function fatal_error(s) {
+  printf("FATAL ERROR: %s\n", s);
+  exit -1;
+}
+
+BEGIN {
+  if (ARGC < 2) {
+    print("Usage:");
+    print("amber2gmxff [ffname=<name>] [debug=1] parm##.dat");
+    print("");
+    print("Reads Amber forcefield definition file (parm##.dat) and writes");
+    print("Gromacs forcefield files:");
+    print("ff<name>.atp, ff<name>.itp, ff<name>nb.itp, ff<name>bon.itp");
+    print("Default for <name> is 'amber'.");
+    print("");
+    print("Use 'debug=1' for extremely verbose output.");
+    print("");
+    xxit=1;
+    exit;
+  }
+  if ( !ffname ) ffname="amber";
+  ffbon = "ff" ffname "bon.itp";
+  ffnb  = "ff" ffname "nb.itp";
+  ffmain= "ff" ffname ".itp";
+  ffatp = "ff" ffname ".atp";
+  ffpdihs = ffname "-dihedrals.txt";
+  ffidihs = ffname "-impropers.txt";
+  printf("Sending output to: %s, %s and %s\n", ffmain, ffnb, ffbon);
+  printf("; Amber forcefield converted to Gromacs\n") > ffnb;
+  printf("; from file %s\n", ARGV[1]) > ffnb;
+  printf("; \n") > ffnb;
+  printf("; Amber forcefield converted to Gromacs\n") > ffbon;
+  printf("; from file %s\n", ARGV[1]) > ffbon;
+  printf("\n") > ffbon;
+  type=0;
+  nat=0; # atoms
+  nb=0;  # bonds
+  na=0;  # angles
+  np=0;  # propers
+  ni=0;  # impropers
+  nhb=0; # H-bonds (10-12)
+  neq=0; # equivalent 6-12
+  nlj=0; # LJ (6-12)
+  section[tp_TITL=0]="title";
+  section[tp_ATOM=1]="atom";
+  section[tp_HYDR=2]="hydro";
+  section[tp_BOND=3]="bond";
+  section[tp_ANGL=4]="angle";
+  section[tp_PDIH=5]="pdih";
+  section[tp_IDIH=6]="idih";
+  section[tp_HB  =7]="HB";
+  section[tp_EQ  =8]="eq";
+  section[tp_LJ  =9]="LJ";
+  
+}
+
+# keep track of what we are reading, sections are separated by empty line
+NF==0 {
+  if (type==tp_HB) {
+    if (bAllZero) {
+      printf("; NOTE: all H-bond (10-12) parameters are Zero\n") > ffnb;
+    } else {
+      printf("; WARNIGN: Not all H-bond (10-12) parameters are Zero\n") > ffnb;
+      warning("Not all H-bond (10-12) parameters are Zero\n");
+    }
+  }
+  type++;
+  printf("Start reading section: %d = %s\n", type, section[type]);
+  next; 
+}
+
+type==tp_TITL { # title
+  title = $0; 
+  printf("; %s\n", title) > ffnb;
+  printf("; \n") > ffnb;
+  printf("; %s\n", title) > ffbon;
+  printf("; \n") > ffbon;
+  type++;
+  next;
+}
+
+type==tp_ATOM { # atoms
+  if (debug) printf("; %s\n", $0);
+  anm = substr($0, 1, 2)  ; #  1- 2
+  anms[nat]  = anm;
+  amass[anm] = substr($0, 4,10)+0; #  4-13
+  atpol[anm] = substr($0,15,10)+0; # 15-24
+  atcom[anm] = substr($0,38,length); # rest
+  nat++;
+  if (debug) printf("; '%s' %10g %10g '%s'\n", 
+		    anm, amass[anm], atpol[anm], atcom[anm]);
+}
+
+type==tp_HYDR { # hydrophylic atoms
+  if (debug) printf("; %s\n", $0);
+  hydrophylics = $0;
+  type++;
+  next;
+}
+
+type>=tp_BOND && type<=tp_IDIH { # bonded interaction
+  ai = substr($0, 1, 2)  ; #  1- 2
+  aj = substr($0, 4, 2)  ; #  4- 5
+  ak = substr($0, 7, 2)  ; #  7- 8
+  al = substr($0,10, 2)  ; # 10-11
+}
+
+type==tp_BOND { # bonds
+  if (nb==0) {
+    printf("\n") > ffbon;
+    printf("[ bondtypes ]\n") > ffbon;
+    printf(";%4s %5s %4s %8s %8s\n", "ai", "aj", "ft", "b0", "kb") > ffbon;
+    printf(";%4s %5s %4s %8s %8s\n","","","", "(nm)", "(kj/mol/nm2)") > ffbon;
+    ft=1;
+  }
+  if (debug) printf("; %s\n", $0);
+  ibt[nb] = ai;
+  jbt[nb] = aj;
+  rk[nb]  = kcalpmolpA2kjpmolpnm(substr($0, 6,10), 2); #  6-15
+  req[nb] = A2nm(substr($0,16,10)); # 16-25
+  bcom[nb]= substr($0,29,length); # rest
+  printf("%5s %5s %4d %8g %8g ; %s\n", 
+	 ibt[nb], jbt[nb], ft, req[nb], rk[nb], bcom[nb]) > ffbon;
+  nb++;
+}
+
+type==tp_ANGL { # angles
+  if (na==0) {
+    printf("\n") > ffbon;
+    printf("[ angletypes ]\n") > ffbon;
+    printf(";%4s %5s %5s %4s %8s %8s\n", 
+	   "ai", "aj", "ak", "ft", "th0", "cth") > ffbon;
+    printf(";%4s %5s %5s %4s %8s %8s\n", 
+	   "", "", "", "", "(degr)", "(kj/mol/rad2)") > ffbon;
+    ft=1;
+  }
+  if (debug) printf("; %s\n", $0);
+  itt[na] = ai;
+  jtt[na] = aj;
+  ktt[na] = ak; 
+  tk[na]  = kcal2kj(substr($0, 9,10)); #  9-18
+  teq[na] = substr($0,19,10)+0; # 19-28
+  acom[na]= substr($0,33,length); # rest
+  printf("%5s %5s %5s %4d %8g %8g ; %s\n", 
+	 itt[na],jtt[na],ktt[na], ft, teq[na], tk[na], acom[na]) > ffbon;
+  na++;
+}
+
+type==tp_PDIH || type==tp_IDIH { # proper/improper dihedrals
+  if (type==tp_PDIH && np==0) {
+    ft=1;
+    bFirstPdihDefine=1;
+    printf("\n") > ffbon;
+    printf("[ dihedraltypes ]\n") > ffbon;
+    printf(";%4s %5s %5s %8s %8s %5s\n", 
+	   "aj","ak", "ft","phi0","cp","mult") > ffbon;
+    printf(";%4s %5s %5s %8s %8s %5s\n", 
+	   "","", "","(degr)","(kJ/mol/rad)","") > ffbon;
+  }
+  if (type==tp_IDIH && ni==0) {
+    ft=1; # we'll have to 'abuse' propers to correspond to Amber definition
+    printf("\n") > ffbon;
+    printf(";%4s %5s %5s %5s %5s %8s %8s %5s\n", 
+	   "ai","aj","ak","al", "ft","q0","cq","mult") > ffbon;
+    printf("; WARNING: using Gromacs propers to define Amber impropers\n") > ffbon;
+    printf("; defining improper parameters for improper types\n") > ffbon;
+    warning("using Gromacs propers to define Amber impropers\n");
+  }
+  if (debug) printf("; %s\n", $0);
+  idivf   = substr($0,12, 4)+0; # 12-15
+  pk      = kcal2kj(substr($0,16,15)); # 16-30
+  phase   = substr($0,31,15)+0; # 31-45
+  pn      = substr($0,46,15)+0; # 46-50
+  com     = substr($0,61,length); # rest
+  if (type==tp_PDIH) {
+    ipt[np] = ai;
+    jpt[np] = aj;
+    kpt[np] = ak;
+    lpt[np] = al;
+    p_idivf[np] = idivf;
+    p_pk[np]    = pk   ;
+    p_phase[np] = phase;
+    p_pn[np]    = pn   ;
+    p_com[np]   = com  ;
+    np++;
+    if ( ai=="X " && al=="X " ) {
+      # this is the type of dihedral GROMACS can manage:
+      printf("%5s %5s %5d %8g %8g %5d ; %s\n", 
+	     aj,ak, ft, phase, pk/idivf, pn, com) > ffbon;
+      if (pn<0) {
+	printf(" ; WARNING: multiple dihedral types not supperted") > ffbon;
+	warning("multiple dihedral types not supperted");
+      }
+    } else {
+      # here we need a hack, since we cannot hava a dihedral type 
+      # depend on all four atom types in GROMACS...
+      if (bFirstPdihDefine) {
+	bFirstPdihDefine=0;
+	printf("\n") > ffbon;
+	printf("; defining dihedral parameters for four-atom dependent\n") > ffbon;
+	printf("; dihedral types, which Gromacs does not handle by default\n") > ffbon;
+      }
+      print ai, aj, ak, al > ffpdihs;
+      gsub(" ","_",ai); gsub(" ","_",aj); gsub(" ","_",ak); gsub(" ","_",al);
+      if (pn<0 && ninc=="")
+	ninc=1;
+      printf("#define ad_%2s_%2s_%2s_%2s%1s%1s %8g %8g %5d %8g %8g %5d %s%s\n", 
+	     ai,aj,ak,al, ninc?"_":" ", ninc, 
+	     phase, pk/idivf, abs(pn), phase, pk/idivf, abs(pn), 
+	     length(com)?"; ":"", com) > ffbon;
+      if (pn<0)
+	ninc++;
+      else
+	ninc="";
+    }
+  }
+  if (type==tp_IDIH) {
+    iit[ni] = ai;
+    jit[ni] = aj;
+    kit[ni] = ak;
+    lit[ni] = al;
+    i_idivf[ni] = idivf;
+    i_pk[ni]    = pk   ;
+    i_phase[ni] = phase;
+    i_pn[ni]    = pn   ;
+    i_com[ni]   = com  ;
+    ni++;
+    # here we need a hack, since we cannot hava a dihedral type 
+    # depend on all four atom types in GROMACS...
+    print ai, aj, ak, al > ffidihs;
+    gsub(" ","_",ai); gsub(" ","_",aj); gsub(" ","_",ak); gsub(" ","_",al);
+    printf("#define ai_%2s_%2s_%2s_%2s %8g %8g %5d %8g %8g %5d %s%s\n",
+	   ai,aj,ak,al, pk,phase,pn,pk,phase,pn, 
+	   length(com)?"; ":"",com) > ffbon;
+  }
+}
+
+type==tp_HB { # H-bond 10-12 parameters
+  if (nhb==0) {
+    printf("\n") > ffnb;
+    printf("; H-bond params not implemented\n") > ffnb;
+    warning("H-bond params not implemented\n");
+    bAllZero=1;
+  }
+  if (debug) printf("; %s\n", $0);
+  a=substr($0, 11, 10)+0; # 11-20
+  b=substr($0, 21, 10)+0; # 21-30
+  if (a!=0 || b!=0) {
+    printf("; WARNING: non-zero H-bond (10-12) parameters: %s %s %g %g\n",
+	   ai, aj, a, b) > ffnb;
+    warning("non-zero H-bond (10-12) parameters:", ai, aj, a, b);
+    bAllZero=0;
+  }
+  nhb++;
+}
+
+type==tp_EQ { # equivalent atom symbols 6-12 parameters
+  if (neq==0) {
+    printf("\n") > ffnb;
+    printf("; LJ 6-12 equivalent atom symbols\n") > ffnb;
+    
+  }
+  if (debug) printf("; %s\n", $0);
+  anm=substr($0, 1, 2);
+  for(i=1; i<length; i+=4) {
+    eqat[neq]++;
+    eqat[neq, int(i/4)]=substr($0, i, 2);
+  }
+  printf("; ") > ffnb;
+  for(i=0; i<eqat[neq]; i++) {
+    printf("%3s ", eqat[neq, i]) > ffnb;
+  }
+  printf("(%d)\n", eqat[neq]) > ffnb;
+  neq++;
+}
+
+type==tp_LJ { # 6-12 potential parameters
+  if ( !kindnb ) {
+    label = $1;
+    kindnb= $2;
+    next;
+  }
+  if (nlj==0) {
+    printf("\n") > ffnb;
+    printf("; Define LJ 6-12 parameter types:\n") > ffnb;
+  }
+  if (debug) printf("; %s\n", $0);
+  ljt[nlj] = substr($0, 3, 2)  ; #  3- 4
+  p1       = substr($0,11,20)+0; # 11-20
+  p2       = substr($0,21,30)+0; # 21-30
+  if (kindnb=="AC") {
+    p  = kcalpmolpA2kjpmolpnm(p2, 6);
+    p2 = kcalpmolpA2kjpmolpnm(p1, 12);
+    p1 = p;
+  }
+  if (kindnb=="RE") {
+    p1 = A2nm(p1);
+    p2 = kcal2kj(p2);
+  }
+  p3 = substr($0,31,40)+0; # 31-40
+  if (debug) printf("; '%s' %10g %10g %10g\n", 
+		    ljt[nlj], p1, p2, p3);
+  printf("#define alj_%s %10g %10g\n", ljt[nlj], p1,p2) > ffnb;
+  nlj++;
+}
+
+END {
+  if (xxit) exit;
+  
+  # write forcefield main ff<name>.itp file
+  # we do that here so we have the title...
+  printf("#define _FF_%s\n", toupper(ffname)) > ffmain;
+  printf("; Amber forcefield converted to Gromacs\n") > ffmain;
+  printf("; from file %s\n", ARGV[1]) > ffmain;
+  printf("; \n") > ffmain;
+  printf("; %s\n", title) > ffmain;
+  printf("\n") > ffmain;
+  printf("[ defaults ]\n") > ffmain;
+  if (kindnb=="AC") cr=1;
+  if (kindnb=="RE") cr=2;
+  printf("; %8s %10s %10s %10s %10s\n", 
+	 "nbfunc", "comb-rule", "gen-pairs", "fudgeLJ", "fudgeQQ") > ffmain;
+  printf("%10d %10d %10s %10.3g %10.3g\n", 1, cr, "no", 1.0, 1.0) > ffmain;
+  printf("\n") > ffmain;
+  printf("#include \"%s\"\n", ffnb) > ffmain;
+  printf("#include \"%s\"\n", ffbon) > ffmain;
+  
+  # expand LJ parameters (using 'equivalent atoms')
+  for(i=0; i<neq; i++) {
+    eqnm = eqat[i, 0];
+    if (debug) print i, eqnm, eqat[i];
+    for(j=1; j<eqat[i]; j++)
+      atlj[eqat[i, j]] = eqnm;
+  }
+  for(i=0; i<nat; i++) {
+    anm=anms[i];
+    if (!atlj[anm]) atlj[anm]=anm;
+    if (debug) print i, anm, atlj[anm];
+  }
+  printf("\n") > ffnb;
+  printf("[ atomtypes ]\n") > ffnb;
+  if (kindnb=="AC")
+    printf(";%4s%10s %4s %2s %-10s\n", 
+	   "name", "mass", "q", "tp", "c6/c12") > ffnb;
+  if (kindnb=="RE")
+    printf(";%4s%10s %4s %2s %-10s\n", 
+	   "name", "mass", "q", "tp", "sigma/epsilon") > ffnb;
+  q=0;
+  ptype="A";
+  for(i=0; i<nat; i++) {
+    anm=anms[i];
+    printf("%4s %10.6g %4.2g %2s alj_%-3s ; %s\n", 
+	   anm, amass[anm], q, ptype, atlj[anm], atcom[anm]) > ffnb;
+    # here we write .atp
+    printf("%4s %10.6g ; %s\n", anm, amass[anm], atcom[anm]) > ffatp;
+  }
+  printf("\n");
+  
+  printf("Found:\n");
+  printf("# atoms:           %s\n", nat); 
+  printf("# bonds:           %s\n", nb);  
+  printf("# angles:          %s\n", na);  
+  printf("# propers:         %s\n", np);  
+  printf("# impropers:       %s\n", ni);  
+  printf("# H-bonds (10-12): %s\n", nhb); 
+  printf("# equivalent 6-12: %s\n", neq); 
+  printf("# LJ (6-12):       %s\n", nlj); 
+  
+  printf("\n") > ffnb;
+  printf("; Found:\n") > ffnb;
+  printf("; # atoms:           %s\n", nat) > ffnb; 
+  printf("; # H-bonds (10-12): %s\n", nhb) > ffnb; 
+  printf("; # equivalent 6-12: %s\n", neq) > ffnb; 
+  printf("; # LJ (6-12):       %s\n", nlj) > ffnb; 
+  printf("\n") > ffbon;
+  printf("; Found:\n") > ffbon;
+  printf("; # bonds:           %s\n", nb)  > ffbon;  
+  printf("; # angles:          %s\n", na)  > ffbon;  
+  printf("; # propers:         %s\n", np)  > ffbon;  
+  printf("; # impropers:       %s\n", ni)  > ffbon;  
+  
+  print_warn();
+  system("luck");
+}
+
+#last line
