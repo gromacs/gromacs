@@ -553,7 +553,7 @@ void change_name(char *name)
 void write_pdb_conf(char *outfile,t_atoms *atoms,rvec x[],matrix box,
 		    bool bChange)
 {
-  char resnm[6],nm[6];
+  char resnm[6],nm[6],chain;
   int  i,resnr;
   FILE *out;
 
@@ -574,10 +574,14 @@ void write_pdb_conf(char *outfile,t_atoms *atoms,rvec x[],matrix box,
     resnr++;
     if (resnr>=10000)
       resnr = resnr % 10000;
-    if (strlen(nm)==4)
-      fprintf(out,"ATOM  %5d %-4.4s %3.3s  %4d    ",i+1,nm,resnm,resnr);
+    if (atoms->chain)
+      chain=atoms->chain[i];
     else
-      fprintf(out,"ATOM  %5d  %-4.4s%3.3s  %4d    ",i+1,nm,resnm,resnr);
+      chain=' ';
+    if (strlen(nm)==4)
+      fprintf(out,"ATOM  %5d %-4.4s %3.3s %c%4d    ",i+1,nm,resnm,chain,resnr);
+    else
+      fprintf(out,"ATOM  %5d  %-4.4s%3.3s %c%4d    ",i+1,nm,resnm,chain,resnr);
     fprintf(out,"%8.3f%8.3f%8.3f  1.00  0.00\n",10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
   }
   fprintf(out,"TER\n");
@@ -594,7 +598,7 @@ void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
   out=ffopen(outfile,"w");
   
   for(n=0;(n<number);n++) {
-    chain=n+65;
+    chain='A'+n;
     fprintf(stderr,"writing chain %c\n",chain);
     for (i=0; (i<atoms[n]->nr); i++) {
       resnr=atoms[n]->atom[i].resnr;
@@ -615,7 +619,7 @@ void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
 void hwrite_pdb_conf_indexed(FILE *out,t_atoms *atoms,rvec x[],matrix box,
 			     int gnx,atom_id index[])
 {
-  char resnm[6],nm[6];
+  char resnm[6],nm[6],chain;
   int  ii,i,resnr;
 
   fprintf(out,"HEADER    %s\n",bromacs());
@@ -630,10 +634,14 @@ void hwrite_pdb_conf_indexed(FILE *out,t_atoms *atoms,rvec x[],matrix box,
     strcpy(resnm,*atoms->resname[resnr]);
     strcpy(nm,*atoms->atomname[i]);
     change_name(nm);
-    if (strlen(nm)==4)
-      fprintf(out,"ATOM  %5d %-4.4s %3.3s  %4d    ",i+1,nm,resnm,resnr+1);
+    if (atoms->chain)
+      chain=atoms->chain[i];
     else
-      fprintf(out,"ATOM  %5d  %-4.4s%3.3s  %4d    ",i+1,nm,resnm,resnr+1);
+      chain=' ';
+    if (strlen(nm)==4)
+      fprintf(out,"ATOM  %5d %-4.4s %3.3s %c%4d    ",i+1,nm,resnm,chain,resnr+1);
+    else
+      fprintf(out,"ATOM  %5d  %-4.4s%3.3s %c%4d    ",i+1,nm,resnm,chain,resnr+1);
     fprintf(out,"%8.3f%8.3f%8.3f  1.00  0.00\n",10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
   }
   fprintf(out,"TER\n");
@@ -775,7 +783,6 @@ void get_stx_coordnum (char *infile,int *natoms)
   case efENT:
     get_pdb_coordnum (infile, natoms);
     break;
-  case efTPX:
   case efTPA:
   case efTPB:
   case efTPR: {
@@ -807,14 +814,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efENT:
     read_pdb_conf(infile, atoms, x, box);
     break;
+  case efTPR:
   case efTPB:
-    snew(top,1); 
-    read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
-    strcpy(title,*(top->name));
-    *atoms=top->atoms;
-    break;
-  case efTPA:
-  case efTPX: 
+  case efTPA: 
     snew(top,1);
     read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
     strcpy(title,*(top->name));
