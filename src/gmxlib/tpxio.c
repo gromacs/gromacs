@@ -192,9 +192,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     else
       ir->sc_alpha = 0;
     if (file_version >= 15)
-      do_real(ir->sc_alpha);
+      do_real(ir->sc_sigma);
     else
-      ir->sc_alpha = 0.3;
+      ir->sc_sigma = 0.3;
     do_int(ir->eDisreWeighting); 
     do_int(ir->bDisreMixed); 
     do_real(ir->dr_fc); 
