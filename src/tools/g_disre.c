@@ -139,7 +139,8 @@ void check_viol(FILE *log,
     ftype=functype[type];
     viol=interaction_function[ftype].ifunc(bonds->nr,&forceatoms[i],
 					   &forceparams[type],
-					   x,f,fr,g,box,lam,&dvdl);
+					   x,f,fr,g,box,lam,&dvdl,
+					   NULL,0,NULL,NULL);
     if (viol > 0) {
       nviol++;
       add5(forceparams[type].disres.index,viol);
