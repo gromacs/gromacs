@@ -139,14 +139,11 @@ static real *_buf2=NULL;
         sz = nlist->maxlen;
 
       if(sz>buflen) {
-	fprintf(log,"Note: Increasing vectorization buffer from %d to %d to make room for\n"
-                    "longest neighbourlist. This might hurt cache performance, in which case\n"
-                    "you should consider disabling innerloop vectorization.\n\n",buflen,sz+100);
 	buflen=(sz+100); /* use some extra size to avoid reallocating next step */
     	srenew(drbuf,3*buflen);
     	srenew(_buf1,buflen+31);
     	srenew(_buf2,buflen+31);
-        /* use cache aligned buffer pointers */
+        /* make cache aligned buffer pointers */
         buf1=(real *) ( ( (unsigned long int)_buf1 + 31 ) & (~0x1f) );	 
         buf2=(real *) ( ( (unsigned long int)_buf2 + 31 ) & (~0x1f) );	 
       }	

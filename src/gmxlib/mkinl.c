@@ -69,7 +69,7 @@ static char *SRCID_mkinl_c = "$Id$";
  *                     can live with it.
  *
  * -DUSE_SSE_AND_3DNOW Include assembly loops which can utilize fast 
- * (NOT SUPPORTED YET) single precision optimizations in newer Intel and
+ *                     single precision optimizations in newer Intel and
  *                     Amd processors. The code will still run on any
  *                     x86 machine, but to make use of the special loops you
  *                     will need e.g. redhat>=6.2 and a pentium III/amd k6 
@@ -276,7 +276,7 @@ int main(int argc,char *argv[])
 #ifdef USE_SSE_AND_3DNOW
   arch.sse_and_3dnow=FALSE; /* no support - yet */
   fprintf(stderr,">>> Including x86 assembly loops with SSE and 3DNOW instructions\n");
-  fprintf(stderr,"This is not included yet, but doesn't break anything either.\n");
+  fprintf(stderr,"The SSE innerloops are not included yet, but SSE vectorization works.\n");
 #else
   arch.sse_and_3dnow=FALSE;
 #endif
