@@ -314,6 +314,9 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("fourier_nx",  ir->nkx,        10);
   ITYPE ("fourier_ny",  ir->nky,        10);
   ITYPE ("fourier_nz",  ir->nkz,        10);
+  ITYPE ("pme_order",   ir->pme_order,   4);
+  RTYPE ("ewald_rtol",  ir->ewald_rtol, 0.00001);
+  EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, FALSE);
 
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
