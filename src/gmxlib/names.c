@@ -85,12 +85,12 @@ char *egrp_nm[egNR+1] = {
 };
 
 char *etcoupl_names[etcNR+1] = {
-  "No", "Berendsen", "Nose-Hoover", NULL
-};
+  "No", "Berendsen", "Nose-Hoover", "yes", NULL
+}; /* yes is alias for berendsen */
 
 char *epcoupl_names[epcNR+1] = {
-  "No", "Berendsen", "Parinello-Rahman", NULL
-};
+  "No", "Berendsen", "Parinello-Rahman", "Isotropic", NULL
+}; /* isotropic is alias for berendsen */
 
 char *epcoupltype_names[epctNR+1] = {
   "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL

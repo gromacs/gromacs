@@ -58,7 +58,6 @@ static char *SRCID_readir_c = "$Id$";
  * message.
  */
 
-
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],user3[STRLEN],xtc_grps[STRLEN],
@@ -160,6 +159,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	&& (ir->ns_type == ensSIMPLE));
   
   /* PRESSURE COUPLING */
+  if(ir->epc == epcISOTROPIC) {
+    ir->epc = epcBERENDSEN;
+    fprintf(stderr,"Note: Old option for pressure coupling given: "
+	           "changing \"Isotropic\" to \"Berendsen\"\n"); 
+  }
+  
   if (ir->epc != epcNO) {
     sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
     CHECK(ir->tau_p <= 0);
@@ -178,6 +183,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
   
   /* TEMPERATURE COUPLING */
+  if(ir->etc == etcYES) {
+    ir->etc = etcBERENDSEN;
+    fprintf(stderr,"Note: Old option for temperature coupling given: "
+	           "changing \"yes\" to \"Berendsen\"\n");
+  }
+  
   if(ir->etc==etcNOSEHOOVER && ir->epc==epcBERENDSEN) {
     sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
 	    "true ensemble for the Nose-Hoover thermostat");
