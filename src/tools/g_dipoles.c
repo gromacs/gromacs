@@ -51,9 +51,8 @@ static char *SRCID_g_dipoles_c = "$Id$";
 
 #define MAXBIN 200 
 #define e2d(x) ENM2DEBYE*(x)
-#define SPEED_OF_LIGHT  2.9979245800e+10
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
-#define CM2D  SPEED_OF_LIGHT*1.0e+19    /* Coulomb meter to Debye */
+#define CM2D  SPEED_OF_LIGHT*1.0e+24    /* Coulomb meter to Debye */
 
 bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
 		      real *t,int step,int nre)

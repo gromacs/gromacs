@@ -406,7 +406,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	    imax,t0,width,seed,nphot,rho,ephot,yesno_names[bImpulse]);
     fprintf(log,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    PREFIX"Speed_of_light: %10.3e(nm/ps)\n",
-	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEEDOFLIGHT);
+	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEED_OF_LIGHT);
     fprintf(log,PREFIX"Interval between shots: %g ps\n",interval);
     fprintf(log,PREFIX"Eindex = %d\n",Eindex);
     fprintf(log,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
@@ -526,7 +526,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	else {
 	  /* Compute the components of the velocity vector */
 	  factor = ((ELECTRONMASS_keV/(ATOMICMASS_keV*md->massT[i]))*
-		    (SPEEDOFLIGHT*sqrt(2*E_lost/ELECTRONMASS_keV)));
+		    (SPEED_OF_LIGHT*sqrt(2*E_lost/ELECTRONMASS_keV)));
 	  
 	  /* Subtract momentum of recoiling electron */
 	  polar2cart(phi,theta,ddv);

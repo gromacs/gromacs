@@ -74,7 +74,7 @@ static char *SRCID_physics_h = "$Id$";
 #define EPSILON0 	 (5.72765E-4)		/* (e^2 Na/(kJ nm))     
 						   == (e^2/(kJ mol nm)) */
                                                 
-#define SPEEDOFLIGHT     (3.0e5)                /* nm/ps                */
+#define SPEED_OF_LIGHT   (2.9979245800E05)      /* nm/ps                */
 #define ATOMICMASS_keV   (940000.0)             /* Atomic mass in keV   */
 #define ELECTRONMASS_keV (512.0)                /* Electron mas in keV  */
 
@@ -89,3 +89,5 @@ static char *SRCID_physics_h = "$Id$";
 #define FIELDFAC          (FARADAY/KILO)
 
 #endif	/* _physics_h */
+
+
