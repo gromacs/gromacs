@@ -470,9 +470,10 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "highway is the gromacs highway simulator. It is an X-windows",
-    "gadget that shows a (periodic) autobahn with a user defined",
+    "gadget that shows a (periodic) Autobahn with a user defined",
     "number of cars. Fog can be turned on or off to increase the",
-    "number of crashes. Nice for a background CPU-eater"
+    "number of crashes. Nice for a background CPU-eater. A sample",
+    "input file is in $GMXDATA/top/highway.dat"
   };
   t_x11      *x11;
   t_xhighway *xhw;
