@@ -363,18 +363,19 @@ int main(int argc, char *argv[])
     "The box can be modified with options [TT]-box[tt] and [TT]-d[tt], both",
     "will center the system in the box.",
     "Option [TT]-bt[tt] determines the box type: [TT]rect[tt] is a",
-    "rectangular box, [TT]cubic[tt] is a cubic box and",
-    "[TT]truncoct[tt] is a truncated octahedron, which is a special case of",
-    "a triclinic box.",
+    "rectangular box, [TT]cubic[tt] is a cubic box, [TT]dodecahedron[tt] is",
+    "a rhombic dodecahedron and [TT]truncoct[tt] is a truncated octahedron.",
+    "The last two are special cases of a triclinic box.",
     "The length of the three box vectors of the truncated octahedron is the",
     "shortest distance between two opposite hexagons.",
-    "The volume of a truncated octahedron is 0.77 of that of a cubic box",
-    "with the same box vector length. Option [TT]-box[tt] requires only",
-    "one value for a cubic box or a truncated octahedron.",
+    "The volume of a dodecahedron is 0.71 and that of a truncated octahedron",
+    "is 0.77 of that of a cubic box with the same periodic image distance.",
+    "Option [TT]-box[tt] requires only",
+    "one value for a cubic box, dodecahedron and a truncated octahedron.",
     "With [TT]-d[tt] and [TT]rect[tt] the size of the system in the x, y",
-    "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt] or",
-    "[TT]truncoct[tt] the diameter of the system is used, which is the",
-    "largest distance between two atoms.[PAR]",
+    "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
+    "[TT]dodecahedron[tt] or [TT]truncoct[tt] the diameter of the system",
+    "is used, which is the largest distance between two atoms.[PAR]",
     "When [TT]-n[tt] or [TT]-ndef[tt] is set, a group",
     "can be selected for calculating the size and the geometric center,",
     "otherwise the whole system is used.[PAR]",
@@ -422,7 +423,7 @@ int main(int argc, char *argv[])
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
   static real rho=1000.0,rvdw=0.12;
   static rvec center={0.0,0.0,0.0},rotangles={0.0,0.0,0.0};
-  static char *btype[]={ NULL, "rect", "cubic", "truncoct", NULL },*label="A";
+  static char *btype[]={ NULL, "rect", "cubic", "dodecahedron", "truncoct", NULL },*label="A";
   static rvec visbox={0,0,0};
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
@@ -437,10 +438,6 @@ int main(int argc, char *argv[])
     { "-c",      FALSE, etBOOL, {&bCenter},
       "Center molecule in box (implied by -box and -d)" },
     { "-center", FALSE, etRVEC, {&center}, "Coordinates of geometrical center"},
-    { "-mead",   FALSE, etBOOL, {&bMead},
-      "Store the charge of the atom in the occupancy field and the radius of the atom in the b-factor field" },
-    { "-rvdw",   FALSE, etREAL, {&rvdw},
-      "Default Van der Waals radius if one can not be found in the database" },
     { "-rotate", FALSE, etRVEC, {rotangles},
       "Rotation around the X, Y and Z axes in degrees" },
     { "-princ",  FALSE, etBOOL, {&bOrient}, "Orient molecule(s) along their principal axes" },
@@ -449,6 +446,10 @@ int main(int argc, char *argv[])
       "Density (g/l) of the output box achieved by scaling" },
     { "-pbc",    FALSE, etBOOL, {&bRMPBC}, 
       "Remove the periodicity (make molecule whole again)" },
+    { "-mead",   FALSE, etBOOL, {&bMead},
+      "Store the charge of the atom in the occupancy field and the radius of the atom in the B-factor field" },
+    { "-rvdw",   FALSE, etREAL, {&rvdw},
+      "Default Van der Waals radius if one can not be found in the database" },
     { "-atom",   FALSE, etBOOL, {&peratom}, "Force B-factor attachment per atom" },
     { "-legend", FALSE, etBOOL, {&bLegend}, "Make B-factor legend" },
     { "-label",  FALSE, etSTR,  {&label},   "Add chain label for all residues" }
@@ -494,7 +495,7 @@ int main(int argc, char *argv[])
     fprintf(stderr,"WARNING: setting -density overrides -scale");
   bScale    = bScale || bRho;
   bCalcGeom = bCenter || bRotate || bOrient || bScale;
-  bCalcDiam = btype[0][0]=='c' || btype[0][0]=='t';
+  bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='t';
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
@@ -627,6 +628,7 @@ int main(int argc, char *argv[])
 	  box[i][i]=size[i]+2*dist;
       break;
     case 'c':
+    case 'd':
     case 't':
       if (bSetSize)
 	d = newbox[0];
@@ -635,7 +637,13 @@ int main(int argc, char *argv[])
       if (btype[0][0] == 'c')
 	for(i=0; i<DIM; i++)
 	  box[i][i] = d;
-      else {
+      else if (btype[0][0] == 'd') {
+	box[XX][XX] = d;
+	box[YY][YY] = d;
+	box[ZZ][XX] = d/2;
+	box[ZZ][YY] = d/2;
+	box[ZZ][ZZ] = d*sqrt(2)/2;
+      } else {
 	box[XX][XX] = d;
 	box[YY][XX] = d/3;
 	box[YY][YY] = d*sqrt(2)*2/3;
