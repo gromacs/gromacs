@@ -18,6 +18,7 @@ g_dielectric
 g_dih
 g_dipoles
 g_disre
+g_dist
 g_enemat
 g_energy
 g_gyrate
@@ -30,6 +31,7 @@ g_mindist
 g_msd
 g_nmeig
 g_order
+g_potential
 g_rama
 g_rdens
 g_rdf
@@ -37,7 +39,6 @@ g_rms
 g_rmsdist
 g_rmsf
 g_rotacf
-g_run_rms
 g_saltbr
 g_sas
 g_sgangle
@@ -57,6 +58,7 @@ highway
 itp
 log
 m2p
+ipgro
 make_ndx
 map
 mdp
