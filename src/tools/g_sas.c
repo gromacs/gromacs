@@ -43,7 +43,6 @@ static char *SRCID_g_sas_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "nsc.h"
-#include "vdw.h"
 #include "pdbio.h"
 #include "confio.h"
 #include "rmpbc.h"
@@ -114,16 +113,15 @@ real calc_radius(char *atom)
   return r;
 }
 
-void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
+void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real qcut)
 {
   FILE         *fp;
   real         t;
-  int          nvdw,status;
+  int          status;
   int          i,j,natoms,flag,nsurfacedots;
   rvec         *x;
   matrix       box;
-  /*  t_vdw        *vdw; */
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
@@ -135,19 +133,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,real defvdw,int ndots,
     fatal_error(0,"Could not read coordinates from statusfile\n");
   top=read_top(ftp2fn(efTPX,nfile,fnm));
 
-  /*
-  nvdw = read_vdw(ftp2fn(efVDW,nfile,fnm),&vdw);
-  fprintf(stderr,"There are %d VanderWaals radii\n",nvdw);
-  */
-
   /* Now comput atomic readii including solvent probe size */
   snew(radius,natoms);
   snew(bPhobic,natoms);
   for(i=0; (i<natoms); i++) {
     radius[i]  = calc_radius(*(top->atoms.atomname[i])) + solsize;
-    /*get_vdw(nvdw,vdw,*(top->atoms.atomname[i])) + solsize;*/
     bPhobic[i] = fabs(top->atoms.atom[i].q) <= qcut;
-    /*(*(top->atoms.atomname[i]))[0] == 'C';*/
   }
   fp=xvgropen(ftp2fn(efXVG,nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
@@ -199,14 +190,11 @@ int main(int argc,char *argv[])
   };
 
   static real solsize = 0.14;
-  static real defvdw  = 0.15;
   static int  ndots   = 24;
   static real qcut    = 0.2;
   t_pargs pa[] = {
     { "-solsize", FALSE, etREAL, &solsize,
 	"Radius of the solvent probe (nm)" },
-    { "-defvdw",  FALSE, etREAL, &defvdw,
-	"Default Van der Waals radius for unknown atoms" },
     { "-ndots",   FALSE, etINT,  &ndots,
 	"Number of dots per sphere, more dots means more accuracy" },
     { "-qmax",    FALSE, etREAL, &qcut,
@@ -215,7 +203,6 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
     { efTPX, "-s",   NULL,       ffREAD },
-    /*    { efVDW, "-vdw", NULL,       ffREAD }, */
     { efXVG, "-o",   "area",     ffWRITE },
     { efPDB, "-q",   "connelly", ffOPTWR }
   };
@@ -233,7 +220,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
   
-  sas_plot(NFILE,fnm,solsize,defvdw,ndots,qcut);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut);
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
   
@@ -241,4 +228,3 @@ int main(int argc,char *argv[])
   
   return 0;
 }
-
