@@ -479,8 +479,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
     /* The coordinates (x) were unshifted in update */
     
-    if (parm->ir.epc != epcNO)
-      correct_box(parm->box,fr);
+    if (parm->ir.epc!=epcNO)
+      correct_box(parm->box,fr,graph);
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
      */
