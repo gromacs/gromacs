@@ -82,9 +82,9 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
 		      real ewaldcoeff,t_block *excl,real qtot,
 		      int index[],FILE *fp_xvg)
 {
-  real   ener,vcorr,q,xx;
+  real   ener,vcorr,q,xx,dvdl=0;
   tensor vir,vir_corr,vir_tot;
-  rvec   mu_tot;
+  rvec   mu_tot[2];
   int    i,m,ii;
   t_forcerec *fr;
 
@@ -110,7 +110,7 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
   /* After sortimg we only need the part that is to be computed on 
    * this processor. We also compute the mu_tot here (system dipole)
    */
-  clear_rvec(mu_tot);
+  clear_rvec(mu_tot[0]);
   for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++) {
     ii      = index[i];
     q       = charge[ii];
@@ -118,20 +118,21 @@ static void do_my_pme(FILE *fp,real tm,bool bVerbose,t_inputrec *ir,
     for(m=0; (m<DIM); m++) {
       xx         = x[ii][m];
       xbuf[i][m] = xx;
-      mu_tot[m] += q*xx;
+      mu_tot[0][m] += q*xx;
     }
     clear_rvec(f[ii]);
   }
+  copy_rvec(mu_tot[0],mu_tot[1]);
   if (debug) {
     pr_rvec(debug,0,"qbuf",qbuf,nsb->natoms,TRUE);
     pr_rvecs(debug,0,"xbuf",xbuf,nsb->natoms);
     pr_rvecs(debug,0,"box",box,DIM);
   }  
-  ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,box,cr,
-		 nsb,nrnb,vir,ewaldcoeff,FALSE);
-  vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,excl,xbuf,box,mu_tot,qtot,
+  ener  = do_pme(fp,bVerbose,ir,xbuf,f,qbuf,qbuf,box,cr,
+		 nsb,nrnb,vir,ewaldcoeff,0,&dvdl,FALSE);
+  vcorr = ewald_LRcorrection(fp,nsb,cr,fr,qbuf,qbuf,excl,xbuf,box,mu_tot,
 			     ir->ewald_geometry,ir->epsilon_surface,
-			     vir_corr);
+			     0,&dvdl);
   gmx_sum(1,&ener,cr);
   gmx_sum(1,&vcorr,cr);
   fprintf(fp,"Time: %10.3f Energy: %12.5e  Correction: %12.5e  Total: %12.5e\n",
@@ -321,7 +322,7 @@ int main(int argc,char *argv[])
 
   /* Initialize the PME code */  
   init_pme(stdlog,cr,ir->nkx,ir->nky,ir->nkz,ir->pme_order,
-	   natoms,bOptFFT,ewald_geometry);
+	   natoms,FALSE,bOptFFT,ewald_geometry);
 	   
   /* MFlops accounting */
   init_nrnb(&nrnb);
