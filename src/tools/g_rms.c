@@ -47,6 +47,7 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "matio.h"
 #include "tpxio.h"
 #include "cmat.h"
+#include "viewit.h"
 
 int main (int argc,char *argv[])
 {
@@ -631,9 +632,11 @@ int main (int argc,char *argv[])
       fprintf(fp,"%10d  %10g\n",j,rlsnorm[j]/teller);
     fclose(fp);
   }
-  if (bAv)
-    xvgr_file(opt2fn("-a",NFILE,fnm),"-graphtype bar");
-  xvgr_file(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-a",NFILE,fnm),"-graphtype bar");
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-m",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-bm",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-dist",NFILE,fnm),NULL);
   
   thanx(stderr);
   
