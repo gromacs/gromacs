@@ -272,7 +272,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
   }
 }
 
-real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
+real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
 	       splinevec bsp_mod,matrix recipbox,
 	       matrix vir,t_commrec *cr)
 {
@@ -355,7 +355,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 
 	m2      = mhx*mhx+mhy*mhy+mhz*mhz;
 	denom   = m2*bx*by*bsp_mod[ZZ][kz];
-	eterm   = ONE_4PI_EPS0*exp(-factor*m2)/denom;
+	eterm   = ONE_4PI_EPS0*exp(-factor*m2)/(epsilon_r*denom);
 	p0->re  = d1*eterm;
 	p0->im  = d2*eterm;
 	
@@ -803,8 +803,8 @@ real do_pme(FILE *logfile,   bool bVerbose,
       
       /* solve in k-space for our local cells */
       vol = det(box);
-      energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,
-			     vir_AB[q],cr);
+      energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,ir->epsilon_r,
+			     bsp_mod,recipbox,vir_AB[q],cr);
       inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
 
       /* do 3d-invfft */

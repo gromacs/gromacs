@@ -89,6 +89,7 @@ real ewald_LRcorrection(FILE *fplog,
   int     i,i1,i2,j,k,m,iv,jv,q;
   atom_id *AA;
   double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
+  real    one_4pi_eps;
   real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
   real    VselfA,VselfB=0,Vcharge[2],Vdipole[2],rinv2,ewc=fr->ewaldcoeff;
   rvec    df,dx,mutot[2],dipcorrA,dipcorrB;
@@ -109,6 +110,8 @@ real ewald_LRcorrection(FILE *fplog,
   int     end   = start+HOMENR(nsb);
   bool    bFreeEnergy = (fr->efep != efepNO);
   bool    bFullPBC = (fr->ePBC == epbcFULL);
+
+  one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
 
   AA         = excl->a;
   Vexcl      = 0;
@@ -134,7 +137,8 @@ real ewald_LRcorrection(FILE *fplog,
   switch (ewald_geometry) {
   case eewg3D:
     if (epsilon_surface != 0) {
-      dipole_coeff = 2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
+      dipole_coeff =
+	2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface + fr->epsilon_r)*vol);
       for(i=0; (i<DIM); i++) {
 	dipcorrA[i] = 2*dipole_coeff*mutot[0][i];
 	dipcorrB[i] = 2*dipole_coeff*mutot[1][i];
@@ -142,7 +146,7 @@ real ewald_LRcorrection(FILE *fplog,
     }
     break;
   case eewg3DC:
-    dipole_coeff = 2*M_PI*ONE_4PI_EPS0/vol;
+    dipole_coeff = 2*M_PI*one_4pi_eps/vol;
     dipcorrA[ZZ] = 2*dipole_coeff*mutot[0][ZZ];
     dipcorrB[ZZ] = 2*dipole_coeff*mutot[1][ZZ];
     break;
@@ -160,7 +164,7 @@ real ewald_LRcorrection(FILE *fplog,
   if (!bFreeEnergy) {
     for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
-      qiA = chargeA[i]*ONE_4PI_EPS0;
+      qiA = chargeA[i]*one_4pi_eps;
       i1  = excl->index[i];
       i2  = excl->index[i+1];
       q2sumA += chargeA[i]*chargeA[i];
@@ -247,8 +251,8 @@ real ewald_LRcorrection(FILE *fplog,
   } else {
     for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
-      qiA = chargeA[i]*ONE_4PI_EPS0;
-      qiB = chargeB[i]*ONE_4PI_EPS0;
+      qiA = chargeA[i]*one_4pi_eps;
+      qiB = chargeB[i]*one_4pi_eps;
       i1  = excl->index[i];
       i2  = excl->index[i+1];
       q2sumA += chargeA[i]*chargeA[i];
@@ -310,7 +314,7 @@ real ewald_LRcorrection(FILE *fplog,
     for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
       /* Apply charge correction */
       /* use vc as a dummy variable */
-      vc = fr->qsum[q]*fr->qsum[q]*M_PI*ONE_4PI_EPS0/(2.0*vol*vol*ewc*ewc);
+      vc = fr->qsum[q]*fr->qsum[q]*M_PI*one_4pi_eps/(2.0*vol*vol*ewc*ewc);
       for(iv=0; (iv<DIM); iv++)
 	fr->vir_el_recip[iv][iv] +=
 	  (bFreeEnergy ? (q==0 ? L1*vc : lambda*vc) : vc);
@@ -328,14 +332,14 @@ real ewald_LRcorrection(FILE *fplog,
     }
   }    
   
-  VselfA = ewc*ONE_4PI_EPS0*q2sumA/sqrt(M_PI);
+  VselfA = ewc*one_4pi_eps*q2sumA/sqrt(M_PI);
 
   if (!bFreeEnergy) {
     *vcharge = Vcharge[0];
     *vdip    = Vdipole[0];
     enercorr = *vcharge + *vdip - VselfA - Vexcl;
    } else {
-    VselfB = ewc*ONE_4PI_EPS0*q2sumB/sqrt(M_PI);
+    VselfB = ewc*one_4pi_eps*q2sumB/sqrt(M_PI);
     *vcharge = L1*Vcharge[0]+lambda*Vcharge[1];
     *vdip    = L1*Vdipole[0]+lambda*Vdipole[1];
     enercorr = *vcharge + *vdip - (L1*VselfA + lambda*VselfB) - Vexcl;

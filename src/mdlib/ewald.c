@@ -209,7 +209,7 @@ real do_ewald(FILE *log,       bool bVerbose,
     }
   }
   
-  tmp=4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0;
+  tmp=4.0*M_PI/(box[XX]*box[YY]*box[ZZ])*ONE_4PI_EPS0/ir->epsilon_r;
 
   if (!bFreeEnergy) {
     energy = energy_AB[0];
