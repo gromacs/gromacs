@@ -38,6 +38,7 @@ static char *SRCID_txtdump_h = "$Id$";
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "tpxio.h"
 
 #define LINE_WIDTH	80
 #define RMARGIN		10
@@ -64,6 +65,12 @@ extern void pr_top(FILE *fp,int indent,char *title,t_topology *top);
  * spaces the text should be indented. Title is used to print a 
  * header text.
  */
+extern void pr_header(FILE *fp,int indent,char *title,t_tpxheader *sh);
+     /*
+      * This routine prints out a (human) readable representation of
+      * a header to the file fp. Ident specifies the number of spaces
+      * the text should be indented. Title is used to print a header text.
+      */
 
 
 
