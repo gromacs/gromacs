@@ -44,6 +44,7 @@ static char *SRCID_trxio_c = "$Id$";
 #include "pdbio.h"
 #include "confio.h"
 #include "wgms.h"
+#include <math.h>
 
 /* defines for frame counter output */
 static int __frame=NOTSET;
@@ -91,8 +92,8 @@ int prec2ndec(real prec)
 {
   if (prec <= 0)
     fatal_error(0,"DEATH HORROR prec (%g) <= 0 in prec2ndec",prec);
-
-  return (int)(log(prec)/log(10)+0.5);
+  
+  return (int)(log(prec)/log(10.0)+0.5);
 }
 
 /* Globals for gromos-87 input */
