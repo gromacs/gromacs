@@ -220,7 +220,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     else 
       realtime=0;
     
-    if (MASTER(cr) && ((parm->ir.eI==eiMD) || (parm->ir.eI==eiLD)) &&
+    if (((parm->ir.eI==eiMD) || (parm->ir.eI==eiLD)) &&
 	!optRerunMDset(nfile,fnm)) {
       real t      = parm->ir.init_t+parm->ir.nsteps*parm->ir.delta_t;
       real lambda = parm->ir.init_lambda+parm->ir.nsteps*parm->ir.delta_lambda;
@@ -233,7 +233,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
 	if (do_per_step(step,parm->ir.nstxtcout))
 	  write_xtc_traj(stdlog,cr,opt2fn("-x",nfile,fnm),nsb,mdatoms,
 			 step,t,x,parm->box,parm->ir.xtcprec);
-	close_xtc_traj();
+	if (MASTER(cr))
+	  close_xtc_traj();
       }
     }
     
