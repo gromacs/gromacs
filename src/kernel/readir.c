@@ -1317,11 +1317,14 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
   for(m=0; (m<DIM); m++) {
     if (fabs(acc[m]) > 1e-6) {
       char *dim[DIM] = { "X", "Y", "Z" };
-      fprintf(stderr,"Net Acceleration in %s direction, will be corrected\n",
-	      dim[m]);
-      acc[m]/=mt;
-      for (i=0; (i<sys->atoms.grps[egcACC].nr); i++)
-	ir->opts.acc[i][m]-=acc[m];
+      fprintf(stderr,
+	      "Net Acceleration in %s direction, will %s be corrected\n",
+	      dim[m],ir->nstcomm != 0 ? "" : "not");
+      if (ir->nstcomm != 0) {
+	acc[m]/=mt;
+	for (i=0; (i<sys->atoms.grps[egcACC].nr); i++)
+	  ir->opts.acc[i][m]-=acc[m];
+      }
     }
   }
   sfree(mgrp);
