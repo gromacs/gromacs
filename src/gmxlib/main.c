@@ -264,6 +264,10 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   if (getenv("MPI_ENVIRONMENT") == NULL)
     gmx_parallel = 0;
 #endif
+#ifdef CHECK_LAMWORLD
+  if (getenv("LAMWORLD") == NULL)
+    gmx_parallel = 0;
+#endif
   if (gmx_parallel)
     cr->pid=mpiio_setup(argc,argv,&cr->nprocs);
   else
