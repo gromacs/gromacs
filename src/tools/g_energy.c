@@ -43,6 +43,7 @@ static char *SRCID_g_energy_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "physics.h"
+#include "tpxio.h"
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -92,19 +93,21 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs)
+int get_bounds(char *topnm,real **bounds,int **dr_index,int *npairs,
+	       t_topology *top,t_inputrec *ir)
 {
-  t_topology *top;
   t_functype *functype;
   t_iparams  *ip;
-  int        i,j,k,type,ftype,natom;
+  int        natoms,i,j,k,type,ftype,natom;
   t_ilist    *disres;
   t_iatom    *iatom;
-  real       *b;
+  real       *b,t;
   int        *ind;
   int        nb,index;
-  
-  top      = read_top(topnm);
+  matrix     box;
+
+  read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,top);
+
   functype = top->idef.functype;
   ip       = top->idef.iparams;
   
@@ -535,12 +538,14 @@ int main(int argc,char *argv[])
     "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
     "Volume",  "Pressure"
   };
-  
+
   FILE       *out;
   FILE       **drout;
   int        fp;
   int        ndrout;
   int        timecheck;
+  t_topology top;
+  t_inputrec ir;
   t_energy   *oldee,**ee;
   t_drblock  dr;
   int        teller=0,nre,step[2],oldstep;
@@ -554,7 +559,7 @@ int main(int argc,char *argv[])
   double     sum,sumaver,sumt;
   real       **eneset,*time;
   int        *set,i,j,k,nset,sss,nenergy;
-  char       **enm=NULL,**leg=NULL;
+  char       **enm=NULL,**leg=NULL,**pairleg;
   char       **nms;
   t_filenm   fnm[] = {
     { efENX, "-f", NULL, ffOPTRD },
@@ -626,11 +631,18 @@ int main(int argc,char *argv[])
     time = NULL;
   }
   else {
-    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&npairs);
+    nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&npairs,
+		       &top,&ir);
     snew(violaver,npairs);
-    out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations","Time (ps)","nm");
-    if (!bDRAll)
-      xvgr_legend(out,2,drleg);    
+    if (!bDRAll) {
+      out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
+		   "Time (ps)","nm");
+      xvgr_legend(out,2,drleg);  
+    } else { 
+      out=xvgropen(opt2fn("-o",NFILE,fnm),"Pair Distances",
+		   "Time (ps)","Distance (nm)");
+      fprintf(out,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",ir.dr_tau);
+    }
   }
   
   /* Initiate counters */
@@ -683,17 +695,28 @@ int main(int argc,char *argv[])
        * the first frame has been read... (Then we know how many there are)
        */
       if (bDisRe && bDRAll && !leg) {
-	snew(leg,dr.ndr*2);
-	for(i=0,k=dr.ndr; (i<dr.ndr); i++,k++) {
-	  snew(leg[i],12);
-	  sprintf(leg[i],  "<r>  %2d",i);
-	  snew(leg[k],12);
-	  sprintf(leg[k],"r(t) %2d",i);
+	t_iatom *fa;
+	
+	fa = top.idef.il[F_DISRES].iatoms; 
+
+	snew(pairleg,dr.ndr);
+	for(i=0; (i<dr.ndr); i++) {
+	  snew(pairleg[i],20);
+	  j=fa[3*i+1];
+	  k=fa[3*i+2];
+	  sprintf(pairleg[i],"%d %s %d %s",
+		  top.atoms.atom[j].resnr,*top.atoms.atomname[j],
+		  top.atoms.atom[k].resnr,*top.atoms.atomname[k]);
 	}
-	set=select_it(dr.ndr*2,leg,&nset);
-	for(i=0; (i<nset); i++)
-	  leg[i]=leg[set[i]];
-	xvgr_legend(out,nset,leg);    
+	set=select_it(dr.ndr,pairleg,&nset);
+	snew(leg,2*nset);
+	for(i=0; (i<nset); i++) {
+	  snew(leg[2*i],22);
+	  sprintf(leg[2*i],  "a %s",pairleg[set[i]]);
+	  snew(leg[2*i+1],22);
+	  sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
+	}
+	xvgr_legend(out,2*nset,leg);    
       }
       
       /* 
@@ -735,10 +758,8 @@ int main(int argc,char *argv[])
 	  if (bDRAll) {
 	    for(i=0; (i<nset); i++) {
 	      sss=set[i];
-		if (sss < dr.ndr)
-		  fprintf(out,"  %8.4f",dr.rav[sss]);
-		else
-		  fprintf(out,"  %8.4f",dr.rt[sss-dr.ndr]);
+	      fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
+	      fprintf(out,"  %8.4f",dr.rt[sss]);
 	    }
 	  }
 	  else {
