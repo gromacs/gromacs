@@ -56,21 +56,14 @@ static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
   *atoms2->atomname[a2]=strdup(*atoms1->atomname[a1]);
 }
 
-int pdbasearch_atom(char *name,int resnr,t_atoms *pdba)
+atom_id pdbasearch_atom(char *name,int resnr,t_atoms *pdba)
 {
   int  i;
   
-  if (name[0] == '-') {
-    name++;
-    resnr--;
-  }
   for(i=0; (i<pdba->nr) && (pdba->atom[i].resnr != resnr); i++)
     ;
-  for(   ; (i<pdba->nr) && (pdba->atom[i].resnr == resnr); i++) {
-    if (strcmp(name,*pdba->atomname[i]) == 0)
-      return i;
-  }
-  return -1;
+    
+  return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname);
 }
 
 void hacksearch_atom(int *ii, int *jj, char *name, int nab[], t_hack *ab[], 
