@@ -333,6 +333,28 @@ int rm_disre(int nrmols,t_molinfo mols[])
   return n;
 }
 
+static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2)
+{
+  int i,nmismatch;
+#define MAXMISMATCH 20
+
+  assert(at1->nr==at2->nr);
+  
+  nmismatch=0;
+  for(i=0; i < at1->nr; i++)
+    if (strcmp( *(at1->atomname[i]) , *(at2->atomname[i]) ) != 0) {
+      if (nmismatch < MAXMISMATCH)
+	fprintf(stderr,
+		"Warning: atom names in %s and %s don't match (%s - %s)\n",
+		fn1, fn2, *(at1->atomname[i]), *(at2->atomname[i]));
+      else if (nmismatch == MAXMISMATCH)
+	fprintf(stderr,"(more than %d non-matching atom names)\n",MAXMISMATCH);
+      nmismatch++;
+    }
+  
+  return nmismatch;
+}
+
 static int *new_status(char *topfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bGenVel,bool bVerbose,int *natoms,
@@ -343,10 +365,11 @@ static int *new_status(char *topfile,char *confin,
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
-  t_atoms     *dumat;
+  t_atoms     *confat;
   int         *forward=NULL;
-  int         i,nrmols,Nsim;
+  int         i,nrmols,Nsim,nmismatch;
   int         ntab,*tab;
+  char        buf[STRLEN];
 
   init_top(sys);
   init_molinfo(msys);
@@ -391,17 +414,23 @@ static int *new_status(char *topfile,char *confin,
     nerror++;
   } else {
     /* make space for coordinates and velocities */
-    snew(dumat,1);
-    init_t_atoms(dumat,*natoms,FALSE);
+    snew(confat,1);
+    init_t_atoms(confat,*natoms,FALSE);
     snew(*x,*natoms);
     snew(*v,*natoms);
-    read_stx_conf(confin,opts->title,dumat,*x,*v,box);
+    read_stx_conf(confin,opts->title,confat,*x,*v,box);
     /* We can not dispose of atoms, as that might fuck up the stack,
      * at least in gcc/linux it does.
      *
      * free_t_atoms(dumat);
      * sfree(dumat);
      */
+    nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
+    if (nmismatch) {
+      sprintf(buf,"%d non-matching atom name%s\n",nmismatch,
+	      (nmismatch == 1) ? "" : "s");
+      warning(buf);
+    }
     if (ntab > 0) {
       if (bVerbose)
 	fprintf(stderr,"Shuffling coordinates...\n");
