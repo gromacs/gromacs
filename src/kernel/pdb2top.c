@@ -579,12 +579,10 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
     sfree(newbonds.param);
     
     /* remove things with dummy atoms */
-    clean_dum_bonds (&(plist[F_BONDS]),  dummy_type);
-    clean_dum_angles(&(plist[F_ANGLES]), dummy_type);
-    clean_dum_dihs  (&(plist[F_PDIHS ]), 
-		     atoms->nr, "proper",   plist, dummy_type);
-    clean_dum_dihs  (&(plist[F_IDIHS ]), 
-		     atoms->nr, "improper", plist, dummy_type);
+    clean_dum_bonds (&(plist[F_BONDS]),                            dummy_type);
+    clean_dum_angles(&(plist[F_ANGLES]),atoms->nr,           plist,dummy_type);
+    clean_dum_dihs  (&(plist[F_PDIHS ]),atoms->nr,"proper",  plist,dummy_type);
+    clean_dum_dihs  (&(plist[F_IDIHS ]),atoms->nr,"improper",plist,dummy_type);
   }
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)

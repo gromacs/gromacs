@@ -566,26 +566,111 @@ void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult)
     }
 }
 
-void clean_dum_angles(t_params *psa, int dummy_type[])
+void clean_dum_angles(t_params *psa, int natom, 
+		      t_params *plist, int dummy_type[])
 {
-  int i,j,k,ndum;
+  int      ftype,i,j,parnr,k,l,m,n,ndum,kept_i,dumnral,dumtype;
+  atom_id  atom,constr,at1,at2;
+  atom_id  dumatoms[MAXATOMLIST];
+  bool     bKeep,bUsed,bPresent,bAll3FAD,bFirstTwo;
+  struct { int ftype,parnr; } *pindex;
   
-  j=0;
-  for(i=0; (i<psa->nr); i++) {
-    /* count number of dummies in this angle: */
+  /* make index into dummy entries of plist: */
+  snew(pindex,natom);
+  for(ftype=0; (ftype<F_NRE); ftype++)
+    if (interaction_function[ftype].flags & IF_DUMMY)
+      for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
+	k=plist[ftype].param[parnr].AI;
+	pindex[k].ftype=ftype;
+	pindex[k].parnr=parnr;
+      }
+  
+  kept_i=0;
+  for(i=0; (i<psa->nr); i++) { /* for all angles in the plist */
+    bKeep=FALSE;
+    bAll3FAD=TRUE;
+    /* check if all dummies are constructed from the same atoms */
     ndum=0;
-    for(k=0; (k<3); k++)
-      if (is_dum(dummy_type[psa->param[i].a[k]]))
+    for(k=0; (k<3) && !bKeep; k++) { /* for all atoms in the angle */
+      atom = psa->param[i].a[k];
+      if (is_dum(dummy_type[atom])) {
 	ndum++;
-    /* if 0 or 1 dummies, keep angle: */
-    if ( ndum<2 ) {
-      memcpy(&(psa->param[j]),&(psa->param[i]),(size_t)sizeof(psa->param[0]));
-      j++;
+	bAll3FAD = bAll3FAD && (pindex[atom].ftype == F_DUMMY3FAD);
+	if (ndum==1) {
+	  /* store construction atoms of first dummy */
+	  dumnral=NRAL(pindex[atom].ftype)-1;
+	  for(m=0; (m<dumnral); m++)
+	    dumatoms[m]=
+	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	} else 
+	  /* check if this dummy is constructed from the same atoms */
+	  if (dumnral == NRAL(pindex[atom].ftype)-1 )
+	    for(m=0; (m<dumnral) && !bKeep; m++) {
+	      bPresent=FALSE;
+	      constr=
+		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	      for(n=0; (n<dumnral) && !bPresent; n++)
+		if (constr == dumatoms[n])
+		  bPresent=TRUE;
+	      if (!bPresent)
+		bKeep=TRUE;
+	    }
+	  else
+	    bKeep=TRUE;
+      }
+    }
+    
+    /* keep all angles with no dummies in them */
+    if (ndum==0)
+      bKeep=TRUE;
+    
+    /* check if all non-dummy atoms are used in construction: */
+    bFirstTwo=TRUE;
+    for(k=0; (k<3) && !bKeep; k++) { /* for all atoms in the angle */
+      atom = psa->param[i].a[k];
+      if (!is_dum(dummy_type[atom])) {
+	bUsed=FALSE;
+	for(m=0; (m<dumnral) && !bUsed; m++)
+	  if (atom == dumatoms[m]) {
+	    bUsed=TRUE;
+	    bFirstTwo = bFirstTwo && m<2;
+	  }
+	if (!bUsed)
+	  bKeep=TRUE;
+      }
+    }
+    
+    if ( ! bAll3FAD || ! bFirstTwo && dumnral<=3 ) {
+      /* check if all constructing atoms are bound together */
+      for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
+	at1 = dumatoms[m];
+	at2 = dumatoms[(m+1) % dumnral];
+	bPresent=FALSE;
+	for (parnr=0; parnr<plist[F_BONDS].nr && !bPresent; parnr++)
+	  /* all bonds until one matches */
+	  bPresent = ( ( (plist[F_BONDS].param[parnr].AI == at1) &&
+			 (plist[F_BONDS].param[parnr].AJ == at2) ) || 
+		       ( (plist[F_BONDS].param[parnr].AI == at2) &&
+			 (plist[F_BONDS].param[parnr].AJ == at1) ) );
+	if (!bPresent)
+	  bKeep=TRUE;
+      }
+    }
+    
+    if ( bKeep ) {
+      /* now copy the angle to the new array */
+      memcpy(&(psa->param[kept_i]),
+	     &(psa->param[i]),(size_t)sizeof(psa->param[0]));
+      kept_i++;
     }
   }
+  
   fprintf(stderr,"Removed %d angles with dummy atoms, now %d angles\n",
-	  psa->nr-j,j);
-  psa->nr=j;
+	  psa->nr-kept_i,kept_i);
+  psa->nr=kept_i;
+  
+  /* clean up */
+  sfree(pindex);
 }
 
 void clean_dum_dihs(t_params *psdih, int natom, char dihname[], 
@@ -594,7 +679,7 @@ void clean_dum_dihs(t_params *psdih, int natom, char dihname[],
   int      ftype,i,parnr,k,l,m,n,ndum,kept_i;
   atom_id  atom,constr;
   atom_id  dumatoms[3];
-  bool     keep,used,present;
+  bool     bKeep,bUsed,bPresent;
   struct { int ftype,parnr; } *pindex;
   
   /* make index into dummy entries of plist: */
@@ -609,10 +694,10 @@ void clean_dum_dihs(t_params *psdih, int natom, char dihname[],
   
   kept_i=0;
   for(i=0; (i<psdih->nr); i++) { /* for all dihedrals in the plist */
-    keep=FALSE;
+    bKeep=FALSE;
     /* check if all dummies are constructed from the same atoms */
     ndum=0;
-    for(k=0; (k<4) && !keep; k++) { /* for all atoms in the dihedral */
+    for(k=0; (k<4) && !bKeep; k++) { /* for all atoms in the dihedral */
       atom = psdih->param[i].a[k];
       if (is_dum(dummy_type[atom])) {
 	ndum++;
@@ -630,39 +715,39 @@ void clean_dum_dihs(t_params *psdih, int natom, char dihname[],
 	  }
 	} else 
 	  /* check if this dummy is constructed from the same atoms */
-	  for(m=1; (m<4) && !keep; m++) {
-	    present=FALSE;
+	  for(m=1; (m<4) && !bKeep; m++) {
+	    bPresent=FALSE;
 	    constr=plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m];
-	    for(n=0; (n<3) && !present; n++)
+	    for(n=0; (n<3) && !bPresent; n++)
 	      if (constr == dumatoms[n])
-		present=TRUE;
-	    if (!present)
-	      keep=TRUE;
+		bPresent=TRUE;
+	    if (!bPresent)
+	      bKeep=TRUE;
 	  }
       }
     }
     
     /* keep all dihedrals with no dummies in them */
     if (ndum==0)
-      keep=TRUE;
+      bKeep=TRUE;
     
     /* check if all atoms in dihedral are either dummies, or used in 
        construction of dummies. If so, keep it, if not throw away: */
-    for(k=0; (k<4) && !keep; k++) { /* for all atoms in the dihedral */
+    for(k=0; (k<4) && !bKeep; k++) { /* for all atoms in the dihedral */
       atom = psdih->param[i].a[k];
       if (!is_dum(dummy_type[atom])) {
-	used=FALSE;
-	for(m=0; (m<3) && !used; m++)
+	bUsed=FALSE;
+	for(m=0; (m<3) && !bUsed; m++)
 	  if (atom == dumatoms[m])
-	    used=TRUE;
-	if (!used) {
-	  keep=TRUE;
+	    bUsed=TRUE;
+	if (!bUsed) {
+	  bKeep=TRUE;
 	  if (debug) fprintf(debug,"unused atom in dih: %u\n",atom+1);
 	}
       }
     }
       
-    if ( keep ) {
+    if ( bKeep ) {
       memcpy(&(psdih->param[kept_i]),
 	     &(psdih->param[i]),(size_t)sizeof(psdih->param[0]));
       kept_i++;
