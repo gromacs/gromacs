@@ -374,6 +374,8 @@ static void write_ttyman(FILE *out,
 			 int nbug,char *bugs[],bool bHeader)
 {
   int i;
+  char *tmp;
+  
   if (bHeader) {
     fprintf(out,"%s\n\n",check_tty(program));
     fprintf(out,"%s\n%s\n",GromacsVersion(),mydate());
@@ -384,8 +386,13 @@ static void write_ttyman(FILE *out,
   }
   if (nbug > 0) {
     fprintf(out,"\nDIAGNOSTICS\n");
-    for(i=0; i<nbug; i++)
-      fprintf(out,"* %s\n",wrap_lines(bugs[i],80,2));
+    for(i=0; i<nbug; i++) {
+      snew(tmp,strlen(bugs[i])+2);
+      strcpy(tmp,"* ");
+      strcpy(tmp+2,bugs[i]);
+      fprintf(out,"%s\n",wrap_lines(tmp,80,2));
+      sfree(tmp);
+    }
   }
   if (nfile > 0) {
     fprintf(out,"\n");
