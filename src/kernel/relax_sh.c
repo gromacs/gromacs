@@ -41,6 +41,7 @@ static char *SRCID_relax_sh_c = "$Id$";
 #include "fatal.h"
 #include "vec.h"
 #include "txtdump.h"
+#include "mdrun.h"
 #include "xmdrun.h"
 #include "mdatoms.h"
 #include "network.h"
@@ -330,8 +331,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	snew(force[i],nsb->natoms);
       }
     }
-    else
+    else {
+      /* Copy pointers */
+      pos[Min]   = x;
       force[Min] = f;
+    }
     bInit  = (getenv("FORCEINIT") != NULL);
     bFirst = FALSE;
   }
