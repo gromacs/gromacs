@@ -87,8 +87,8 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
     while (!bEndOfSet && fgets(line0,linelen,fp)) {
       line = line0;
       bEndOfSet = (line[0] == '&');
-      if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
-	if (bFirstLine && bHaveT && line[0]!='\n') {
+      if (line[0]!='#' && line[0]!='@' && line[0]!='\n' && !bEndOfSet) {
+	if (bFirstLine && bHaveT) {
 	  /* Check the first line that should contain data */
 	  a = sscanf(line,"%lf%lf",&dbl,&dbl);
 	  if (a == 0) 
@@ -148,11 +148,18 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 	  line += nchar;
 	}
 	if (bTimeInRange) {
-	  n++;
-	  if (a != narg)
-	    fprintf(stderr,"Invalid line in %s:\n%s",fn,line0);
+	  if (a == 0) {
+	    fprintf(stderr,"Ignoring invalid line in %s:\n%s",fn,line0);
+	  } else {
+	    n++;
+	    if (a != narg)
+	      fprintf(stderr,"Invalid line in %s:\n%s"
+		      "Using zeros for the last %d sets\n",
+		      fn,line0,narg-a);
+	  }
 	}
-	bFirstLine = FALSE;
+	if (a > 0)
+	  bFirstLine = FALSE;
       }
     }
     if (sin==0) {
