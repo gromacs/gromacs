@@ -24,7 +24,7 @@
 
 #include <fftw_mpi.h>
 
-#include "sched.h"
+#include "fftw_sched.h"
 #include "TOMS_transpose.h"
 
 /**************************************************************************/

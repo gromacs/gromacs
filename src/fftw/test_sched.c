@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "sched.h"
+#include "fftw_sched.h"
 
 int main(int argc, char **argv)
 {

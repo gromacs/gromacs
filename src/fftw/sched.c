@@ -22,7 +22,7 @@
 
 #include <fftw_mpi.h>
 
-#include "sched.h"
+#include "fftw_sched.h"
 
 /* This file contains routines to compute communications schedules for
    all-to-all communications (complete exchanges) that are performed
