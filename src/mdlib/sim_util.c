@@ -78,7 +78,8 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
       fprintf(out,", remaining runtime: %5d s               ",(int)dt);
   }
 #ifdef USE_MPI
-  fprintf(out,"\n");
+  if (gmx_parallel)
+    fprintf(out,"\n");
 #endif
   fflush(out);
 }
