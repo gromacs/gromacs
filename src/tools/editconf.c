@@ -30,6 +30,7 @@ static char *SRCID_editconf_c = "$Id$";
 
 #include <math.h>
 #include <string.h>
+#include <ctype.h>
 #include "pdbio.h"
 #include "confio.h"
 #include "symtab.h"
@@ -46,6 +47,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "strdb.h"
 #include "rdgroup.h"
 #include "physics.h"
+#include "mass.h"
 
 typedef struct {
   char   sanm[12];
@@ -67,48 +69,26 @@ static char *pdbformat=
 real calc_mass(t_atoms *atoms)
 {
   char *massdb="atommass.dat";
-  char **mass,**mass_nm,buf[32];
-  real *mass_at;
-  double mm;
+  t_mass *mass;
   real tmass;
-  int  nmdb;
+  int  nmass;
   int i,j,k;
 
-  nmdb = get_lines(massdb,&mass);
-  snew(mass_nm,nmdb);
-  snew(mass_at,nmdb);
-  for(j=k=0; (j<nmdb); j++) {
-    if (sscanf(mass[j],"%s%lf",buf,&mm) != 2)
-      fprintf(stderr,"Error in mass database %s at line %d\n");
-    else {
-      mass_nm[k] = strdup(buf);
-      mass_at[k] = mm;
-      k++;
-    }
-    sfree(mass[j]);
-  }
-  sfree(mass);
-  fprintf(stderr,"Read %d atomic masses from %s\n",k,massdb);
-  nmdb  = k;
+  nmass=read_mass(massdb, &mass);
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {
-    /* Default mass of a carbon */
-    atoms->atom[i].m = 12.011;
-    for(j=0; (j<nmdb); j++) {
-      if (strcasecmp(mass_nm[j],*atoms->atomname[i]) == 0) {
-	atoms->atom[i].m = mass_at[j];
-	break;
+    if ((atoms->atom[i].m = get_mass(nmass, mass, *atoms->atomname[i]))==0.0) {
+      if ( ((*atoms->atomname[i])[0]=='H') ||
+	   (isdigit((*atoms->atomname[i])[0]) && 
+	    ((*atoms->atomname[i])[1]=='H')) ) {
+	atoms->atom[i].m=1.008; /* proton mass */
+      } else {
+	atoms->atom[i].m=12.0110; /* carbon mass */
       }
     }
-    if (j == nmdb)
-      fprintf(stderr,"No entry in %s for atom %s\n",
-	      massdb,*atoms->atomname[i]);
     tmass += atoms->atom[i].m;
   }
-  for(j=0; (j<nmdb); j++)
-    sfree(mass_nm[j]);
-  sfree(mass_nm);
-  sfree(mass_at);
+  sfree(mass);
   
   return tmass;
 }
@@ -331,29 +311,34 @@ int main(int argc, char *argv[])
   static char *label="A";
   
   t_pargs pa[] = {
-    { "-ndef", FALSE, etBOOL, &bNDEF, "Choose output from default index groups" },    
+    { "-ndef", FALSE, etBOOL, &bNDEF, 
+      "Choose output from default index groups" },    
     { "-d", FALSE, etREAL, &dist, 
-	"Distance between the solute and the rectangular box (default don't change box)" }, 
+      "Distance between the solute and the rectangular box "
+      "(default don't change box)" }, 
     { "-dc", FALSE, etREAL, &dist,
-      "Distance between the solute and the cubic box (default don't change box)" },
+      "Distance between the solute and the cubic box "
+      "(default don't change box)" },
     { "-b", FALSE, etREAL,  &rbox,
-	  "size of the cubic box (default don't change box)" },
+      "size of the cubic box (default don't change box)" },
     { "-center", FALSE, etBOOL, &bCenter,
-	"Center molecule in box (implied by -d -dc -b)" },
-    { "-cx", FALSE, etREAL, &center[XX], "x coordinate of geometrical center" },
-    { "-cy", FALSE, etREAL, &center[YY], "y coordinate of geometrical center" },
-    { "-cz", FALSE, etREAL, &center[ZZ], "z coordinate of geometrical center" },
+      "Center molecule in box (implied by -d -dc -b)" },
+    { "-cx", FALSE, etREAL, &center[XX], "x coordinate of geometrical center"},
+    { "-cy", FALSE, etREAL, &center[YY], "y coordinate of geometrical center"},
+    { "-cz", FALSE, etREAL, &center[ZZ], "z coordinate of geometrical center"},
     { "-bx", FALSE, etREAL, &newbox[XX], "x size of box" },
     { "-by", FALSE, etREAL, &newbox[YY], "y size of box" },
     { "-bz", FALSE, etREAL, &newbox[ZZ], "z size of box" },
     { "-sx", FALSE, etREAL, &scale[XX], "Scale factor for x coordinate" },
     { "-sy", FALSE, etREAL, &scale[YY], "Scale factor for y coordinate" },
     { "-sz", FALSE, etREAL, &scale[ZZ], "Scale factor for z coordinate" },
-    { "-rho",FALSE, etREAL, &rho, "Density (g/l) of the output box achieved by scaling" },
-    { "-pbc",  FALSE, etBOOL, &bRMPBC, "Remove the periodicity (make molecule whole again)" },
+    { "-rho",FALSE, etREAL, &rho, 
+      "Density (g/l) of the output box achieved by scaling" },
+    { "-pbc",  FALSE, etBOOL, &bRMPBC, 
+      "Remove the periodicity (make molecule whole again)" },
     { "-atom", FALSE, etBOOL, &peratom, "Attach B-factors per atom" },
     { "-res",  FALSE, etBOOL, &perres,  "Attach B-factors per residue" },
-    { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend"},
+    { "-legend",FALSE,etBOOL, &bLegend, "Make B-factor legend" },
     { "-label", FALSE, etSTR, &label,   "Add chain label for all residues" }
   };
 #define NPA asize(pa)
@@ -401,6 +386,8 @@ int main(int argc, char *argv[])
 	     opt2parg_bSet("-sy",NPA,pa) || 
 	     opt2parg_bSet("-sz",NPA,pa) );
   bRho    =  opt2parg_bSet("-rho",NPA,pa);
+  if (bScale && bRho)
+    fprintf(stderr,"WARNING: setting -rho overrides -sx, -sy and -sz");
   bScale  = bScale || bRho;
   
   /* set newbox size */
@@ -449,7 +436,14 @@ int main(int argc, char *argv[])
       vol = det(box);
       mass = calc_mass(&atoms);
       dens = (mass*AMU)/(vol*NANO*NANO*NANO);
+      fprintf(stderr,"Volume  of input %g (nm3)\n",vol);
+      fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
       fprintf(stderr,"Density of input %g (g/l)\n",dens);
+      if (vol==0.0)
+	fatal_error(0,"Cannot scale density with zero box\n");
+      if (mass==0.0)
+	fatal_error(0,"Cannot scale density with zero mass\n");
+
       scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
       fprintf(stderr,"Scaling all box edges by %g\n",scale[XX]);
     }
