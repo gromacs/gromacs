@@ -1,6 +1,3 @@
-[ defaults ]
-1	1
-
 #include "ffgmx.itp"
 #include "spc.itp"
 
