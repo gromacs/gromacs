@@ -115,10 +115,20 @@ void file_header(void)
 
 void function_info(void)
 {
-  char s1[60],s2[60],s3[60],s4[60],buf[512];
+  char s0[60],s1[60],s2[60],s3[60],s4[60],buf[512];
 
   /* Add a nice header before each routine telling what it does */
   
+
+  switch(loop.do_force) {
+  case TRUE:
+    sprintf(s0,"Calculated");
+    break;
+  case FALSE:
+    sprintf(s0,"Not calculated");
+    break;
+  }
+
   switch(loop.coul) {
   case COUL_NO:
     sprintf(s1,"Not calculated");
@@ -199,22 +209,24 @@ void function_info(void)
     sprintf(buf,
 	    "  /**********************************************************\n" 
 	    "   * This is gromacs innerloop %s\n"
+            "   * Forces:      %s\n"
 	    "   * Coulomb:     %s\n"
 	    "   * Nonbonded:   %s\n"
 	    "   * Solvent opt: %s\n"
 	    "   * Free energy: %s\n"
 	    "   **********************************************************/"
-	    "\n",loopname,s1,s2,s3,s4);
+	    "\n",loopname,s0,s1,s2,s3,s4);
   else
     sprintf(buf,
 	    "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n"
 	    "C    This is gromacs innerloop %1s\n" 
+	    "C    Forces:      %s\n"
 	    "C    Coulomb:     %s\n"
 	    "C    Nonbonded:   %s\n"
 	    "C    Solvent opt: %s\n"
 	    "C    Free energy: %s\n"
 	    "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
-	    "\n",loopname,s1,s2,s3,s4);
+	    "\n",loopname,s0,s1,s2,s3,s4);
   strcat(header,buf);
 }
 
@@ -224,7 +236,8 @@ void func_header(char *appendname)
 
   sprintf(buf,"\n\n\n\n");
   strcat(header,buf);
-  sprintf(loopname,"inl%1x%1x%1x%1x%s",
+  sprintf(loopname,"%sinl%1x%1x%1x%1x%s",
+          DO_FORCE ? "" : "mc",
 	  loop.coul,loop.vdw,loop.sol,loop.free,appendname);
   
   function_info();

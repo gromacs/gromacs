@@ -142,7 +142,6 @@ int calc_recip()
 {
     int nflop=0;
     int i,j,tmpflop;
-
     /* check if it should be inlined */
     if(opt.inline_gmxcode && arch.gmx_recip)
       inlined_recip();

@@ -52,7 +52,8 @@ void unpack_inner_data(bool calcdist,bool calcforce)
 
     } else { /* no prefetch, or vectorized */
       assign("jnr", "%s%s", ARRAY(jjnr,k), bC ? "" : "+1");
-      assign("j3",bC ? "3*jnr" : "3*jnr-2");
+      if(DO_FORCE || calcdist)
+	assign("j3",bC ? "3*jnr" : "3*jnr-2");
     }
 
     if(arch.vectorcpu && calcforce)    /* prefetch x is turned off in this case */
@@ -82,10 +83,7 @@ void fetch_coord(bool bPrefetch)
   comment("Fetching coordinates");
   
   if(DO_VECTORIZE && bPrefetch) {
-    /* update indices */
-    assign("nextjnr","%s%s", ARRAY(jjnr,nj0), bC ? "" : "+1");
-      assign("nextj3", bC ? "3*nextjnr" : "3*nextjnr-2");  
-    
+    /* Dont need to update indices */
       move_coords();
       /* get new coords */
       for(j=1;j<=loop.nj;j++) {
@@ -113,13 +111,14 @@ void prefetch_forces()
 {
 
   int j;
+  if(DO_FORCE) {  
+    comment("Prefetching forces");
   
-  comment("Prefetching forces");
-  
-  for(j=1;j<=loop.nj;j++) {
-    assign("fjx%d", _array("faction","j3+%d",3*(j-1)),j);
-    assign("fjy%d", _array("faction","j3+%d",3*(j-1)+1),j);
-    assign("fjz%d", _array("faction","j3+%d",3*(j-1)+2),j);
+    for(j=1;j<=loop.nj;j++) {
+      assign("fjx%d", _array("faction","j3+%d",3*(j-1)),j);
+      assign("fjy%d", _array("faction","j3+%d",3*(j-1)+1),j);
+      assign("fjz%d", _array("faction","j3+%d",3*(j-1)+2),j);
+    }
   }
   /* no flops */
 }
@@ -129,26 +128,27 @@ void prefetch_forces()
 void unpack_vector_machine_forces(bool calcdist,bool calcforce)
 {
   /* this shouldnt be used with prefetching */
-  comment("Unpack forces for vectorization on a vector machine");
-  vector_pragma();
-  start_loop("k","nj0","nj1");
-  
-  unpack_inner_data(calcdist,calcforce);  
-
-  assign(ARRAY(fbuf,kk), ARRAY(faction,j3));
-  assign(ARRAY(fbuf,kk+1), ARRAY(faction,j3+1));
-  assign(ARRAY(fbuf,kk+2), ARRAY(faction,j3+2));
-  
-  if(loop.sol==SOL_WATERWATER) {
-    assign(ARRAY(fbuf,kk+3), ARRAY(faction,j3+3));
-    assign(ARRAY(fbuf,kk+4), ARRAY(faction,j3+4));
-    assign(ARRAY(fbuf,kk+5), ARRAY(faction,j3+5));
-    assign(ARRAY(fbuf,kk+6), ARRAY(faction,j3+6));
-    assign(ARRAY(fbuf,kk+7), ARRAY(faction,j3+7));
-    assign(ARRAY(fbuf,kk+8), ARRAY(faction,j3+8));
+  if(DO_FORCE) {
+    comment("Unpack forces for vectorization on a vector machine");
+    vector_pragma();
+    start_loop("k","nj0","nj1");
+    
+    unpack_inner_data(calcdist,calcforce);  
+    
+    assign(ARRAY(fbuf,kk), ARRAY(faction,j3));
+    assign(ARRAY(fbuf,kk+1), ARRAY(faction,j3+1));
+    assign(ARRAY(fbuf,kk+2), ARRAY(faction,j3+2));
+    
+    if(loop.sol==SOL_WATERWATER) {
+      assign(ARRAY(fbuf,kk+3), ARRAY(faction,j3+3));
+      assign(ARRAY(fbuf,kk+4), ARRAY(faction,j3+4));
+      assign(ARRAY(fbuf,kk+5), ARRAY(faction,j3+5));
+      assign(ARRAY(fbuf,kk+6), ARRAY(faction,j3+6));
+      assign(ARRAY(fbuf,kk+7), ARRAY(faction,j3+7));
+      assign(ARRAY(fbuf,kk+8), ARRAY(faction,j3+8));
+    }
+    end_loop();
   }
-
-  end_loop();
 }
 
 

@@ -159,7 +159,7 @@ int calc_dist()
       for(m='x'; (m<='z'); m++) { 
 	subtract("d%c%d%d","i%c%d","j%c%d",m,i,j,m,i,m,j);
 	nflop ++;
-	if(DO_VECTORIZE) {
+	if(DO_VECTORIZE && DO_FORCE) {
 	  assign(ARRAY(drbuf,m3),"d%c%d%d",m,i,j);
 	  increment("m3","1");
 	}
@@ -183,7 +183,7 @@ int calc_rinv_and_rinvsq()
 {
   int nflop=0;
   int i,j;
-  
+
   if(!DO_VECTORIZE && !opt.delay_invsqrt) {
     if(loop.invsqrt)
       nflop += calc_invsqrt();

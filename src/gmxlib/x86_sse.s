@@ -8309,7 +8309,7 @@ inl1100_sse:
 .equ		_ntia,	        296	
 .equ		_innerjjnr,     300
 .equ		_innerk,        304
-.equ		_salign,        308								
+.equ		_salign,        308		
 	push ebp
 	mov ebp,esp	
         push eax
@@ -13374,7 +13374,7 @@ inl1130_sse:
 .equ		_ii3,		1476
 .equ		_innerjjnr,	1480
 .equ		_innerk,	1484
-.equ		_salign,	1488							
+.equ		_salign,	1488
 	push ebp
 	mov ebp,esp	
         push eax
@@ -37752,6 +37752,23954 @@ inl3330_sse:
 	mov eax, [esp + _salign]
 	add esp, eax
 	add esp, 1508
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+		
+.globl mcinl0100_sse
+	.type mcinl0100_sse,@function
+mcinl0100_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_type,		40
+.equ		_ntype,		44
+.equ		_nbfp,		48	
+.equ		_Vnb,		52	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_two,           48
+.equ		_c6,		64
+.equ		_c12,		80 
+.equ		_vnbtot,	96
+.equ		_half,		112
+.equ		_three,		128
+.equ		_is3,		144
+.equ		_ii3,		148
+.equ		_ntia,		152	
+.equ		_innerjjnr,     156
+.equ		_innerk,        160
+.equ		_salign,        164
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 168		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm1, [sse_two]
+	movaps [esp + _two], xmm1
+
+	/* assume we have at least one i particle - start directly */	
+.mci0100_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   dword ptr [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   dword ptr [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vnbtot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   dword ptr [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	
+	jge   .mci0100_unroll_loop
+	jmp   .mci0100_finish_inner
+.mci0100_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   dword ptr [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+
+	/* rsq in xmm4 */
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* should we do one more iteration? */
+	sub   dword ptr [esp + _innerk],  4
+	jl    .mci0100_finish_inner
+	jmp   .mci0100_unroll_loop
+.mci0100_finish_inner:
+	/* check if at least two particles remain */
+	add   dword ptr [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci0100_dopair
+	jmp   .mci0100_checksingle
+.mci0100_dopair:	
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   dword ptr [esp + _innerjjnr],  8
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci0100_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci0100_dosingle
+	jmp    .mci0100_updateouterdata
+.mci0100_dosingle:
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]		
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+	
+.mci0100_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   dword ptr [ebp + _gid],  4  /* advance pointer */
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6	
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci0100_end
+
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci0100_outer
+.mci0100_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 168
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+	
+.globl mcinl0110_sse
+	.type mcinl0110_sse,@function
+mcinl0110_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_type,		40
+.equ		_ntype,		44
+.equ		_nbfp,		48	
+.equ		_Vnb,		52
+.equ		_nsatoms,       56
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_two,           48		
+.equ		_c6,            64
+.equ		_c12,           80		 
+.equ		_vnbtot,        96
+.equ		_half,          112
+.equ		_three,         128
+.equ		_is3,           144
+.equ		_ii3,           148
+.equ		_shX,	        152
+.equ		_shY,           156
+.equ		_shZ,           160
+.equ		_ntia,          164	
+.equ		_innerjjnr0,    168
+.equ		_innerjjnr,     172
+.equ		_innerk0,       176
+.equ		_innerk,        180
+.equ		_salign,        184			
+.equ		_nsvdwc,        188
+.equ		_nscoul,        192
+.equ		_nsvdw,         196
+.equ		_solnr,	        200		
+	push ebp
+	mov ebp,esp		
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 204		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm1, [sse_two]
+	movaps [esp + _two], xmm1
+
+	/* assume we have at least one i particle - start directly */	
+.mci0110_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movlps xmm0, [eax + ebx*4]	/* getting the shiftvector */
+	movss xmm1, [eax + ebx*4 + 8] 
+	movlps [esp + _shX], xmm0
+	movss [esp + _shZ], xmm1
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	add   [ebp + _nsatoms],  12
+	mov   ecx, [eax]	
+	mov   edx, [eax + 4]
+	mov   eax, [eax + 8]	
+	sub   ecx, eax
+	sub   eax, edx
+	
+	mov   [esp + _nsvdwc], edx
+	mov   [esp + _nscoul], eax
+	mov   [esp + _nsvdw], ecx
+
+	/* clear vnbtot */
+	xorps xmm4, xmm4
+	movaps [esp + _vnbtot], xmm4
+	mov   [esp + _solnr],  ebx
+		
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nsvdwc]
+	cmp   ecx,  0
+	jnz   .mci0110_mno_vdwc
+	jmp   .mci0110_testvdw
+.mci0110_mno_vdwc:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci0110_unroll_vdwc_loop
+	jmp   .mci0110_finish_vdwc_inner
+.mci0110_unroll_vdwc_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci0110_finish_vdwc_inner
+	jmp   .mci0110_unroll_vdwc_loop	
+.mci0110_finish_vdwc_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci0110_dopair_vdwc
+	jmp   .mci0110_checksingle_vdwc
+.mci0110_dopair_vdwc:	
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci0110_checksingle_vdwc:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci0110_dosingle_vdwc
+	jmp    .mci0110_updateouterdata_vdwc
+.mci0110_dosingle_vdwc:			
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]		
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+.mci0110_updateouterdata_vdwc:
+
+	/* loop back to mno */
+	dec dword ptr [esp + _nsvdwc]
+	jz  .mci0110_testvdw
+	jmp .mci0110_mno_vdwc
+.mci0110_testvdw:	
+	mov  ebx,  [esp + _nscoul]
+	add  [esp + _solnr],  ebx
+
+	mov  ecx, [esp + _nsvdw]
+	cmp  ecx,  0
+	jnz  .mci0110_mno_vdw
+	jmp  .mci0110_last_mno
+.mci0110_mno_vdw:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci0110_unroll_vdw_loop
+	jmp   .mci0110_finish_vdw_inner
+.mci0110_unroll_vdw_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci0110_finish_vdw_inner
+	jmp   .mci0110_unroll_vdw_loop
+.mci0110_finish_vdw_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci0110_dopair_vdw
+	jmp   .mci0110_checksingle_vdw
+.mci0110_dopair_vdw:	
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci0110_checksingle_vdw:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz   .mci0110_dosingle_vdw
+	jmp   .mci0110_updateouterdata_vdw
+.mci0110_dosingle_vdw:			
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]		
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+.mci0110_updateouterdata_vdw:
+	
+	/* loop back to mno */
+	dec dword ptr [esp + _nsvdw]
+	jz  .mci0110_last_mno
+	jmp .mci0110_mno_vdw
+	
+.mci0110_last_mno:	
+
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci0110_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci0110_outer
+.mci0110_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 204
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+.globl mcinl0300_sse
+	.type mcinl0300_sse,@function
+mcinl0300_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_type,		40
+.equ		_ntype,		44
+.equ		_nbfp,		48	
+.equ		_Vnb,		52
+.equ		_tabscale,	56
+.equ		_VFtab,		60
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,		16
+.equ		_iz,            32
+.equ		_tsc,		48
+.equ		_c6,            64
+.equ		_c12,           80
+.equ		_vnbtot,        96
+.equ		_half,          112
+.equ		_three,         128
+.equ		_is3,           144
+.equ		_ii3,           148
+.equ		_ntia,	        152	
+.equ		_innerjjnr,     156
+.equ		_innerk,        160
+.equ		_salign,        164	
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 168		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+
+	/* assume we have at least one i particle - start directly */	
+.mci0300_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear tot potential and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci0300_unroll_loop
+	jmp   .mci0300_finish_inner
+.mci0300_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 3
+	pslld mm7, 3
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	/* dispersion */
+	movlps xmm5, [esi + eax*4 + 0]
+	movlps xmm7, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + ebx*4 + 0]
+	movhps xmm7, [esi + edx*4 + 0] /* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* Update vnbtot */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4  
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	xorps  xmm4, xmm4
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci0300_finish_inner
+	jmp   .mci0300_unroll_loop
+.mci0300_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci0300_dopair
+	jmp   .mci0300_checksingle
+.mci0300_dopair:	
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 3
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	/* dispersion */
+	movlps xmm5, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + edx*4 + 0]/* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/*  Update vnbtot  */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci0300_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci0300_dosingle
+	jmp    .mci0300_updateouterdata
+.mci0300_dosingle:
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 3
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	/* dispersion */
+	movlps xmm4, [esi + ebx*4 + 0]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack Update vnbtot directly */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+.mci0300_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci0300_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci0300_outer
+.mci0300_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 168
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+	
+.globl mcinl0310_sse
+	.type mcinl0310_sse,@function
+mcinl0310_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_type,		40
+.equ		_ntype,		44
+.equ		_nbfp,		48	
+.equ		_Vnb,		52	
+.equ		_tabscale,	56
+.equ		_VFtab,		60
+.equ		_nsatoms,	64
+	/* stack offsets for local variables */ 
+        /* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_tsc,           48
+.equ		_c6,            64
+.equ		_c12,           80
+.equ		_vnbtot,        96
+.equ		_half,          112
+.equ		_three,         128
+.equ		_is3,           144
+.equ		_ii3,           148
+.equ		_shX,           152
+.equ		_shY,           156
+.equ		_shZ,           160
+.equ		_ntia,	        164	
+.equ		_innerjjnr0,    168
+.equ		_innerjjnr,     172
+.equ		_innerk0,       176
+.equ		_innerk,        180
+.equ		_salign,        184
+.equ		_nsvdwc,        188
+.equ		_nscoul,        192
+.equ		_nsvdw,         196
+.equ		_solnr,         200
+	push ebp
+	mov ebp,esp	
+        push eax      
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 204		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+
+	/* assume we have at least one i particle - start directly */	
+.mci0310_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movlps xmm0, [eax + ebx*4]	/* getting the shiftvector */
+	movss xmm1, [eax + ebx*4 + 8] 
+	movlps [esp + _shX], xmm0
+	movss [esp + _shZ], xmm1
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	add   [ebp + _nsatoms],  12
+	mov   ecx, [eax]	
+	mov   edx, [eax + 4]
+	mov   eax, [eax + 8]	
+	sub   ecx, eax
+	sub   eax, edx
+	
+	mov   [esp + _nsvdwc], edx
+	mov   [esp + _nscoul], eax
+	mov   [esp + _nsvdw], ecx
+
+	/* clear vnbtot */
+	xorps xmm4, xmm4
+	movaps [esp + _vnbtot], xmm4
+	mov   [esp + _solnr],  ebx
+		
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nsvdwc]
+	cmp   ecx,  0
+	jnz   .mci0310_mno_vdwc
+	jmp   .mci0310_testvdw
+.mci0310_mno_vdwc:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci0310_unroll_vdwc_loop
+	jmp   .mci0310_finish_vdwc_inner
+.mci0310_unroll_vdwc_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 3
+	pslld mm7, 3
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	/* dispersion */
+	movlps xmm5, [esi + eax*4 + 0]
+	movlps xmm7, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + ebx*4 + 0]
+	movhps xmm7, [esi + edx*4 + 0] /* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* Update vnbtot directly */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci0310_finish_vdwc_inner
+	jmp   .mci0310_unroll_vdwc_loop
+.mci0310_finish_vdwc_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci0310_dopair_vdwc
+	jmp   .mci0310_checksingle_vdwc
+.mci0310_dopair_vdwc:	
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 3
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	/* dispersion */
+	movlps xmm5, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + edx*4 + 0]/* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* Update vnbtot directly */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci0310_checksingle_vdwc:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci0310_dosingle_vdwc
+	jmp    .mci0310_updateouterdata_vdwc
+.mci0310_dosingle_vdwc:
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 3
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	/* dispersion */
+	movlps xmm4, [esi + ebx*4 + 0]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack Update vnbtot directly */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+.mci0310_updateouterdata_vdwc:
+
+	/* loop back to mno */
+	dec  dword ptr [esp + _nsvdwc]
+	jz  .mci0310_testvdw
+	jmp .mci0310_mno_vdwc
+.mci0310_testvdw:	
+	mov  ebx,  [esp + _nscoul]
+	add  [esp + _solnr],  ebx
+
+	mov  ecx, [esp + _nsvdw]
+	cmp  ecx,  0
+	jnz  .mci0310_mno_vdw
+	jmp  .mci0310_last_mno
+.mci0310_mno_vdw:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci0310_unroll_vdw_loop
+	jmp   .mci0310_finish_vdw_inner
+.mci0310_unroll_vdw_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 3
+	pslld mm7, 3
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	/* dispersion */
+	movlps xmm5, [esi + eax*4 + 0]
+	movlps xmm7, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + ebx*4 + 0]
+	movhps xmm7, [esi + edx*4 + 0] /* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack Update vnbtot directly */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci0310_finish_vdw_inner
+	jmp   .mci0310_unroll_vdw_loop
+.mci0310_finish_vdw_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci0310_dopair_vdw
+	jmp   .mci0310_checksingle_vdw
+.mci0310_dopair_vdw:	
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 3
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	/* dispersion */
+	movlps xmm5, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + edx*4 + 0]/* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack Update vnbtot directly */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci0310_checksingle_vdw:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci0310_dosingle_vdw
+	jmp    .mci0310_updateouterdata_vdw
+.mci0310_dosingle_vdw:
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 3
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	/* dispersion */
+	movlps xmm4, [esi + ebx*4 + 0]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack Update vnbtot directly */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+.mci0310_updateouterdata_vdw:
+
+	/* loop back to mno */
+	dec  dword ptr [esp + _nsvdw]
+	jz  .mci0310_last_mno
+	jmp .mci0310_mno_vdw	
+.mci0310_last_mno:	
+
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci0310_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci0310_outer
+.mci0310_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 204
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+.globl mcinl1000_sse
+	.type mcinl1000_sse,@function
+mcinl1000_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,            0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_iq,            48
+.equ		_vctot,         64
+.equ		_half,          80
+.equ		_three,         96
+.equ		_is3,           112
+.equ		_ii3,           116
+.equ		_innerjjnr,     120
+.equ		_innerk,        124		
+.equ		_salign,        128
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx 
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 132		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+
+	/* assume we have at least one i particle - start directly */	
+.mci1000_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+	
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1000_unroll_loop
+	jmp   .mci1000_finish_inner
+.mci1000_unroll_loop:	
+	/* quad-unrolled innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm5, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0
+	shufps xmm3, xmm4, 0b10001000	      
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm5
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]	/* x1 y1 - - */
+	movlps xmm5, [esi + ecx*4]	/* x3 y3 - - */
+	movss xmm2, [esi + eax*4 + 8]	/* z1 -  - - */
+	movss xmm6, [esi + ecx*4 + 8]   /* z3 -  - - */
+
+	movhps xmm4, [esi + ebx*4]	/* x1 y1 x2 y2 */
+	movhps xmm5, [esi + edx*4]	/* x3 y3 x4 y4 */
+
+	movss xmm0, [esi + ebx*4 + 8]	/* z2 - - - */
+	movss xmm1, [esi + edx*4 + 8]	/* z4 - - - */
+
+	shufps xmm2, xmm0, 0		/* z1 z1 z2 z2 */
+	shufps xmm6, xmm1, 0		/* z3 z3 z4 z4 */
+	
+	movaps xmm0, xmm4		/* x1 y1 x2 y2 */	
+	movaps xmm1, xmm4		/* x1 y1 x2 y2 */
+
+	shufps xmm2, xmm6, 0b10001000	/* z1 z2 z3 z4 */
+	
+	shufps xmm0, xmm5, 0b10001000	/* x1 x2 x3 x4 */
+	shufps xmm1, xmm5, 0b11011101	/* y1 y2 y3 y4 */		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1000_finish_inner
+	jmp   .mci1000_unroll_loop
+.mci1000_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci1000_dopair
+	jmp   .mci1000_checksingle
+.mci1000_dopair:	
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+	xorps  xmm7,xmm7
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move _ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+.mci1000_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci1000_dosingle
+	jmp    .mci1000_updateouterdata
+.mci1000_dosingle:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */	
+	
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addss  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+.mci1000_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec  ecx
+	jecxz .mci1000_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1000_outer
+.mci1000_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 132
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+.globl mcinl1010_sse
+	.type mcinl1010_sse,@function
+mcinl1010_sse:	
+.equ		_nri,		 8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48
+.equ		_nsatoms,       52		
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_iq,            48
+.equ		_vctot,         64
+.equ		_half,          80
+.equ		_three,         96
+.equ		_is3,           112
+.equ		_ii3,           128
+.equ		_shX,	        144
+.equ		_shY,           160
+.equ		_shZ,           176
+.equ		_ntia,	        192	
+.equ		_innerjjnr0,    208
+.equ		_innerk0,       212
+.equ		_innerjjnr,     216
+.equ		_innerk,        220		
+.equ		_salign,        224
+.equ		_nscoul,        228
+.equ		_solnr,	        232		
+	push ebp
+	mov ebp,esp		
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 236		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	add   [ebp + _nsatoms],  8
+
+	/* assume we have at least one i particle - start directly */	
+.mci1010_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+	movss [esp + _shX], xmm0
+	movss [esp + _shY], xmm1
+	movss [esp + _shZ], xmm2
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	mov   ecx, [eax]
+	add   [ebp + _nsatoms],  12
+	mov   [esp + _nscoul], ecx	
+
+	/* clear vctot */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	mov   [esp + _solnr], ebx
+
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nscoul]
+	cmp   ecx,  0
+	jnz   .mci1010_mno_coul
+	jmp   .mci1010_last_mno
+.mci1010_mno_coul:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+	
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1010_unroll_coul_loop
+	jmp   .mci1010_finish_coul_inner
+
+.mci1010_unroll_coul_loop:	
+	/* quad-unrolled innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm5, [esp + _iq]
+	shufps xmm3, xmm6, 0
+	shufps xmm4, xmm7, 0
+	shufps xmm3, xmm4, 0b10001000	      
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm5
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move _ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1010_finish_coul_inner
+	jmp   .mci1010_unroll_coul_loop
+.mci1010_finish_coul_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci1010_dopair_coul
+	jmp   .mci1010_checksingle_coul
+.mci1010_dopair_coul:	
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+	xorps  xmm7,xmm7
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+.mci1010_checksingle_coul:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci1010_dosingle_coul
+	jmp    .mci1010_updateouterdata_coul
+.mci1010_dosingle_coul:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */	
+	
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addss  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+.mci1010_updateouterdata_coul:
+	mov   ecx, [esp + _ii3]
+	/* loop back to mno */
+	dec dword ptr [esp + _nscoul]
+	jz  .mci1010_last_mno
+	jmp .mci1010_mno_coul
+	
+.mci1010_last_mno:	
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci1010_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1010_outer
+.mci1010_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 236
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+.globl mcinl1020_sse
+	.type mcinl1020_sse,@function
+mcinl1020_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,	        0
+.equ		_iyO,	        16
+.equ		_izO,           32
+.equ		_ixH1,	        48
+.equ		_iyH1,	        64
+.equ		_izH1,          80
+.equ		_ixH2,	        96
+.equ		_iyH2,	        112
+.equ		_izH2,          128
+.equ		_iqO,           144 
+.equ		_iqH,           160 
+.equ		_qqO,           176
+.equ		_qqH,           192
+.equ		_vctot,         208
+.equ		_half,          224
+.equ		_three,         240
+.equ		_is3,           256
+.equ		_ii3,           260
+.equ		_innerjjnr,     264
+.equ		_innerk,        268
+.equ		_salign,        272
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 276		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+	
+.mci1020_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1020_unroll_loop
+	jmp   .mci1020_odd_inner
+.mci1020_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0
+	shufps xmm4, xmm7, 0
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4	
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	/* start with rsqO - seed in xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm7, xmm4	/* rinvO in xmm7 */
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm6, xmm4	/* rinvH1 in xmm6 */
+	/* rsqH2 - seed in xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm5, xmm4	/* rinvH2 in xmm5 */
+
+	/* do O interactions */
+	mulps  xmm7, [esp + _qqO]	/* xmm7=vcoul */
+	addps  xmm7, [esp + _vctot]
+	movaps [esp + _vctot], xmm7
+
+	/* H1 interactions */
+	mulps  xmm6, [esp + _qqH]	/* xmm6=vcoul */
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+
+	/* H2 interactions */
+	mulps  xmm5, [esp + _qqH]	/* xmm5=vcoul */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1020_odd_inner
+	jmp   .mci1020_unroll_loop
+.mci1020_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci1020_odd_loop
+	jmp   .mci1020_updateouterdata
+.mci1020_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm3, [esp + _qqO]
+
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm3, [esp + _vctot]
+	movaps [esp + _vctot], xmm3
+
+	dec   dword ptr [esp + _innerk]
+	jz    .mci1020_updateouterdata
+	jmp   .mci1020_odd_loop
+.mci1020_updateouterdata:
+	/* accumulate total potential energy and update it */
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 	
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci1020_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1020_outer
+.mci1020_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 276
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+	
+.globl mcinl1030_sse
+	.type mcinl1030_sse,@function
+mcinl1030_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */	
+.equ		_ixO,	        0
+.equ		_iyO,	        16
+.equ		_izO,           32
+.equ		_ixH1,	        48
+.equ		_iyH1,	        64
+.equ		_izH1,          80
+.equ		_ixH2,	        96
+.equ		_iyH2,	        112
+.equ		_izH2,          128
+.equ		_jxO,	        144
+.equ		_jyO,	        160
+.equ		_jzO,           176
+.equ		_jxH1,	        192
+.equ		_jyH1,	        208
+.equ		_jzH1,          224
+.equ		_jxH2,	        240
+.equ		_jyH2,	        256
+.equ		_jzH2,          272
+.equ		_qqOO,          288
+.equ		_qqOH,          304
+.equ		_qqHH,          320
+.equ		_vctot,         336
+.equ		_half,          352
+.equ		_three,         368
+.equ		_rsqOO,         384
+.equ		_rsqOH1,        400
+.equ		_rsqOH2,        416
+.equ		_rsqH1O,        432
+.equ		_rsqH1H1,       448
+.equ		_rsqH1H2,       464
+.equ		_rsqH2O,        480
+.equ		_rsqH2H1,       496
+.equ		_rsqH2H2,       512
+.equ		_rinvOO,        528
+.equ		_rinvOH1,       544
+.equ		_rinvOH2,       560
+.equ		_rinvH1O,       576
+.equ		_rinvH1H1,      592
+.equ		_rinvH1H2,      608
+.equ		_rinvH2O,       624
+.equ		_rinvH2H1,      640
+.equ		_rinvH2H2,      656
+.equ		_is3,           672
+.equ		_ii3,           676
+.equ		_innerjjnr,     680
+.equ		_innerk,        684
+.equ		_salign,        688							
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 692		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5
+
+.mci1030_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1030_unroll_loop
+	jmp   .mci1030_single_check
+.mci1030_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d  */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd  */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* sum OO pot in xmm0, OH in xmm1 HH in xmm2 */
+	movaps xmm0, [esp + _rinvOO]
+	movaps xmm1, [esp + _rinvOH1]
+	movaps xmm2, [esp + _rinvH1H1]
+	addps  xmm1, [esp + _rinvOH2]
+	addps  xmm2, [esp + _rinvH1H2]
+	addps  xmm1, [esp + _rinvH1O]
+	addps  xmm2, [esp + _rinvH2H1]
+	addps  xmm1, [esp + _rinvH2O]
+	addps  xmm2, [esp + _rinvH2H2]
+	
+	mulps  xmm0, [esp + _qqOO]
+	mulps  xmm1, [esp + _qqOH]
+	mulps  xmm2, [esp + _qqHH]
+	addps  xmm0, [esp + _vctot]
+	addps  xmm1, xmm2
+	addps  xmm0, xmm1
+	movaps 	[esp + _vctot], xmm0
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1030_single_check
+	jmp   .mci1030_unroll_loop
+.mci1030_single_check:
+	add   [esp + _innerk],  4
+	jnz   .mci1030_single_loop
+	jmp   .mci1030_updateouterdata
+.mci1030_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	movaps  xmm2, xmm1	
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+
+	xorps   xmm1, xmm1
+
+	xorps   xmm4, xmm4
+
+	/* fetch charges to xmm4 (temporary) */
+	movss   xmm4, [esp + _qqOO]
+
+	movhps  xmm4, [esp + _qqOH]
+
+	mulps   xmm3, xmm4	/* xmm3=vcoul */
+
+	addps   xmm3, [esp + _vctot]
+	movaps  [esp + _vctot], xmm3	
+
+	/* done with i O Now do i H1 & H2 simultaneously: */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+
+	/* assemble charges in xmm6 */
+	xorps   xmm6, xmm6
+	/* do coulomb interaction */
+	movaps  xmm0, xmm3
+	movss   xmm6, [esp + _qqOH]
+	movaps  xmm4, xmm7
+	movhps  xmm6, [esp + _qqHH]
+	mulps   xmm3, xmm6	/* vcoul */
+	mulps   xmm7, xmm6	/* vcoul */
+	addps   xmm3, xmm7	/* total vcoul */
+	addps   xmm3, [esp + _vctot]
+	movaps  [esp + _vctot], xmm3
+	
+	dec   dword ptr [esp + _innerk]
+	jz    .mci1030_updateouterdata
+	jmp   .mci1030_single_loop
+.mci1030_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 	
+
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci1030_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1030_outer
+.mci1030_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 692
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+
+.globl mcinl1100_sse
+	.type mcinl1100_sse,@function
+mcinl1100_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48	
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_iq,            48	
+.equ		_c6,            64
+.equ		_c12,           80		 
+.equ		_vctot,         96
+.equ		_vnbtot,        112
+.equ		_half,          128
+.equ		_three,         144
+.equ		_is3,           160
+.equ		_ii3,           164
+.equ		_ntia,	        168	
+.equ		_innerjjnr,     172
+.equ		_innerk,        176
+.equ		_salign,        180
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp,  184		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+
+	/* assume we have at least one i particle - start directly */	
+.mci1100_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1100_unroll_loop
+	jmp   .mci1100_finish_inner
+.mci1100_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0
+	shufps xmm4, xmm7, 0
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm3, [esp + _vctot]
+	movaps [esp + _vctot], xmm3
+	movaps [esp + _vnbtot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1100_finish_inner
+	jmp   .mci1100_unroll_loop
+.mci1100_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci1100_dopair
+	jmp   .mci1100_checksingle
+.mci1100_dopair:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	xorps xmm3, xmm3
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0b00001100 
+	shufps xmm3, xmm3, 0b01011000 /* xmm3(0,1) has the charges */
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm3, [esp + _vctot]
+	movaps [esp + _vctot], xmm3
+	movaps [esp + _vnbtot], xmm5
+
+.mci1100_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci1100_dosingle
+	jmp    .mci1100_updateouterdata
+.mci1100_dosingle:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	xorps xmm3, xmm3
+	mov   eax, [ecx]
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */	
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	addss  xmm3, [esp + _vctot]
+	movss [esp + _vctot], xmm3
+	movss [esp + _vnbtot], xmm5
+
+.mci1100_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci1100_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1100_outer
+.mci1100_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp,  184
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+.globl mcinl2100_sse
+	.type mcinl2100_sse,@function
+mcinl2100_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_argkrf,	52	
+.equ		_argcrf,	56	
+.equ		_type,		60
+.equ		_ntype,		64
+.equ		_nbfp,		68	
+.equ		_Vnb,		72	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_iq,            48	
+.equ		_c6,            64
+.equ		_c12,           80		 
+.equ		_vctot,         96
+.equ		_vnbtot,        112
+.equ		_half,          128
+.equ		_three,         144
+.equ		_krf,		160	 
+.equ		_crf,		176	 
+.equ		_is3,           192
+.equ		_ii3,           196
+.equ		_ntia,	        200
+.equ		_innerjjnr,     204
+.equ		_innerk,        208
+.equ		_salign,        212
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp,  216		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	shufps xmm5, xmm5, 0
+	shufps xmm6, xmm6, 0
+	movaps [esp + _krf], xmm5
+	movaps [esp + _crf], xmm6
+
+	/* assume we have at least one i particle - start directly */	
+.mci2100_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci2100_unroll_loop
+	jmp   .mci2100_finish_inner
+.mci2100_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+	
+	movaps xmm7, [esp + _krf]
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	mulps  xmm7, xmm4	/* xmm7=krsq */
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	movaps xmm1, xmm4
+	subps  xmm6, [esp + _crf]
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm6, xmm3	/* xmm6=vcoul=qq*(rinv+ krsq) */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+	movaps [esp + _vnbtot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci2100_finish_inner
+	jmp   .mci2100_unroll_loop
+.mci2100_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci2100_dopair
+	jmp   .mci2100_checksingle
+.mci2100_dopair:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	xorps xmm3, xmm3
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0b00001100 
+	shufps xmm3, xmm3, 0b01011000 /* xmm3(0,1) has the charges */
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	movaps xmm7, [esp + _krf]
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	mulps  xmm7, xmm4	/* xmm7=krsq */
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	movaps xmm1, xmm4
+	subps  xmm6, [esp + _crf]
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm6, xmm3	/* xmm6=vcoul=qq*(rinv+ krsq-crf) */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+	movaps [esp + _vnbtot], xmm5
+
+.mci2100_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci2100_dosingle
+	jmp    .mci2100_updateouterdata
+.mci2100_dosingle:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	xorps xmm3, xmm3
+	mov   eax, [ecx]
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */	
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	movaps xmm7, [esp + _krf]
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	mulps  xmm7, xmm4	/* xmm7=krsq */
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	movaps xmm1, xmm4
+	subps  xmm6, [esp + _crf]	
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm6, xmm3	/* xmm6=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	addss  xmm6, [esp + _vctot]
+	movss [esp + _vctot], xmm6
+	movss [esp + _vnbtot], xmm5
+
+.mci2100_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci2100_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci2100_outer
+.mci2100_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp,  216
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+.globl mcinl2000_sse
+	.type mcinl2000_sse,@function
+mcinl2000_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_argkrf,	52	
+.equ		_argcrf,	56
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_iq,            48	
+.equ		_vctot,         64
+.equ		_half,          80
+.equ		_three,         96
+.equ		_krf,	        112	 
+.equ		_crf,	        128	 
+.equ		_is3,           144
+.equ		_ii3,           148
+.equ		_innerjjnr,     152
+.equ		_innerk,        156
+.equ		_salign,	160	
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp,  164		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	shufps xmm5, xmm5, 0
+	movaps [esp + _krf], xmm5
+	shufps xmm6, xmm6, 0
+	movaps [esp + _crf], xmm6
+
+	/* assume we have at least one i particle - start directly */	
+.mci2000_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci2000_unroll_loop
+	jmp   .mci2000_finish_inner
+.mci2000_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+	
+	movaps xmm7, [esp + _krf]
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	mulps  xmm7, xmm4	/* xmm7=krsq */
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	subps  xmm6, [esp + _crf] /* xmm6=rinv+ krsq-crf */
+	mulps  xmm6, xmm3	/* xmm6=vcoul=qq*(rinv+ krsq) */
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci2000_finish_inner
+	jmp   .mci2000_unroll_loop
+.mci2000_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci2000_dopair
+	jmp   .mci2000_checksingle
+.mci2000_dopair:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	xorps xmm3, xmm3
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0b00001100 
+	shufps xmm3, xmm3, 0b01011000 /* xmm3(0,1) has the charges */	
+
+	mov edi, [ebp + _pos]	
+				
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+
+	xorps  xmm7,xmm7
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	movaps xmm7, [esp + _krf]
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	mulps  xmm7, xmm4	/* xmm7=krsq */
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	subps  xmm6, [esp + _crf] /* xmm6=rinv+ krsq-crf */
+	mulps  xmm6, xmm3	/* xmm6=vcoul=qq*(rinv+ krsq-crf) */
+
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+
+.mci2000_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci2000_dosingle
+	jmp    .mci2000_updateouterdata
+.mci2000_dosingle:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	xorps xmm3, xmm3
+	mov   eax, [ecx]
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	movaps xmm7, [esp + _krf]
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	mulps  xmm7, xmm4	/* xmm7=krsq */
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm6, xmm0
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	subps  xmm6, [esp + _crf] /* xmm6=rinv+ krsq-crf */
+	mulps  xmm6, xmm3	/* xmm6=vcoul */
+	addss  xmm6, [esp + _vctot]
+	movss [esp + _vctot], xmm6
+
+.mci2000_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci2000_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci2000_outer
+.mci2000_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp,  164
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+
+.globl mcinl1110_sse
+	.type mcinl1110_sse,@function
+mcinl1110_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64	
+.equ		_nsatoms,       68		
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,	        0
+.equ		_iy,	        16
+.equ		_iz,            32
+.equ		_iq,            48	
+.equ		_c6,            64
+.equ		_c12,           80
+.equ            _two,           96	
+.equ		_vctot,         112
+.equ		_vnbtot,        128
+.equ		_half,          144
+.equ		_three,         160
+.equ		_is3,           176
+.equ		_ii3,           180
+.equ		_shX,	        184
+.equ		_shY,           188
+.equ		_shZ,           192
+.equ		_ntia,	        196	
+.equ		_innerjjnr0,    200
+.equ		_innerk0,       204
+.equ		_innerjjnr,     208
+.equ		_innerk,        212
+.equ		_salign,	216
+.equ		_nsvdwc,        220
+.equ		_nscoul,        224
+.equ		_nsvdw,         228
+.equ		_solnr,	        232		
+	push ebp
+	mov ebp,esp	
+	push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 236		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_two]
+	movups xmm2, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _two], xmm1
+	movaps [esp + _three], xmm2
+
+	/* assume we have at least one i particle - start directly */	
+.mci1110_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movlps xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 8] 
+	movlps [esp + _shX], xmm0
+	movss [esp + _shZ], xmm1
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	add   [ebp + _nsatoms],  12
+	mov   ecx, [eax]	
+	mov   edx, [eax + 4]
+	mov   eax, [eax + 8]	
+	sub   ecx, eax
+	sub   eax, edx
+	
+	mov   [esp + _nsvdwc], edx
+	mov   [esp + _nscoul], eax
+	mov   [esp + _nsvdw], ecx
+		
+	/* clear potential */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	mov   [esp + _solnr],  ebx
+
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nsvdwc]
+	cmp   ecx,  0
+	jnz   .mci1110_mno_vdwc
+	jmp   .mci1110_testcoul
+.mci1110_mno_vdwc:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1110_unroll_vdwc_loop
+	jmp   .mci1110_finish_vdwc_inner
+.mci1110_unroll_vdwc_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm2
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm3, [esp + _vctot]
+	movaps [esp + _vctot], xmm3
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1110_finish_vdwc_inner
+	jmp   .mci1110_unroll_vdwc_loop
+.mci1110_finish_vdwc_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci1110_dopair_vdwc
+	jmp   .mci1110_checksingle_vdwc
+.mci1110_dopair_vdwc:	
+	mov esi, [ebp + _charge]
+        mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	shufps xmm2, xmm0, 0
+	movaps xmm0, xmm1
+	shufps xmm2, xmm2, 0b10001000
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm3, [esp + _vctot]
+	movaps [esp + _vctot], xmm3
+	movaps [esp + _vnbtot], xmm5
+
+.mci1110_checksingle_vdwc:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci1110_dosingle_vdwc
+	jmp    .mci1110_updateouterdata_vdwc
+.mci1110_dosingle_vdwc:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */	
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	addss  xmm3, [esp + _vctot]
+	movss [esp + _vctot], xmm3
+	movss [esp + _vnbtot], xmm5
+
+.mci1110_updateouterdata_vdwc:
+	/* loop back to mno */
+	dec dword ptr [esp + _nsvdwc]
+	jz  .mci1110_testcoul
+	jmp .mci1110_mno_vdwc
+.mci1110_testcoul:
+	mov  ecx, [esp + _nscoul]
+	cmp  ecx,  0
+	jnz  .mci1110_mno_coul
+	jmp  .mci1110_testvdw
+.mci1110_mno_coul:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+	
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1110_unroll_coul_loop
+	jmp   .mci1110_finish_coul_inner
+
+.mci1110_unroll_coul_loop:	
+	/* quad-unrolled innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm5, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000	      
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	mulps xmm3, xmm5
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1110_finish_coul_inner
+	jmp   .mci1110_unroll_coul_loop
+.mci1110_finish_coul_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci1110_dopair_coul
+	jmp   .mci1110_checksingle_coul
+.mci1110_dopair_coul:	
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	mulps  xmm3, [esp + _iq]
+	xorps  xmm7,xmm7
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0	
+	movaps xmm0, xmm1
+	shufps xmm2, xmm2, 0b10001000
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movaps [esp + _vctot], xmm5
+
+.mci1110_checksingle_coul:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci1110_dosingle_coul
+	jmp    .mci1110_updateouterdata_coul
+.mci1110_dosingle_coul:			
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	movss xmm3, [esi + eax*4]	/* xmm3(0) has the charge */	
+	
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+ 
+	mulps  xmm3, [esp + _iq]
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movss xmm5, [esp + _vctot]
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	addps  xmm5, xmm3
+	movss [esp + _vctot], xmm5
+
+.mci1110_updateouterdata_coul:
+
+	/* loop back to mno */
+	dec dword ptr [esp + _nscoul]
+	jz  .mci1110_testvdw
+	jmp .mci1110_mno_coul
+.mci1110_testvdw:
+	mov  ecx, [esp + _nsvdw]
+	cmp  ecx,  0
+	jnz  .mci1110_mno_vdw
+	jmp  .mci1110_last_mno
+.mci1110_mno_vdw:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1110_unroll_vdw_loop
+	jmp   .mci1110_finish_vdw_inner
+.mci1110_unroll_vdw_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+	
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1110_finish_vdw_inner
+	jmp   .mci1110_unroll_vdw_loop
+.mci1110_finish_vdw_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci1110_dopair_vdw
+	jmp   .mci1110_checksingle_vdw
+.mci1110_dopair_vdw:	
+
+        mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	xorps  xmm7,xmm7
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci1110_checksingle_vdw:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci1110_dosingle_vdw
+	jmp    .mci1110_updateouterdata_vdw
+.mci1110_dosingle_vdw:			
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]		
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	xorps  xmm6, xmm6
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	
+	
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+.mci1110_updateouterdata_vdw:
+	/* loop back to mno */
+	dec dword ptr [esp + _nsvdw]
+	jz  .mci1110_last_mno
+	jmp .mci1110_mno_vdw
+.mci1110_last_mno:	
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci1110_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1110_outer
+.mci1110_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 236
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+.globl mcinl1120_sse
+	.type mcinl1120_sse,@function
+mcinl1120_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,	        0
+.equ		_iyO,	        16
+.equ		_izO,           32
+.equ		_ixH1,	        48
+.equ		_iyH1,	        64
+.equ		_izH1,          80
+.equ		_ixH2,	        96
+.equ		_iyH2,	        112
+.equ		_izH2,          128
+.equ		_iqO,           144 
+.equ		_iqH,           160 	
+.equ		_qqO,           176
+.equ		_qqH,           192
+.equ		_c6,            208
+.equ		_c12,           224		 
+.equ		_vctot,         240
+.equ		_vnbtot,        256
+.equ		_half,          272
+.equ		_three,         288
+.equ		_is3,           304
+.equ		_ii3,           308
+.equ		_ntia,	        312	
+.equ		_innerjjnr,     316
+.equ		_innerk,        320
+.equ		_salign,        324
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 328		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+	
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	mov   [esp + _ntia], ecx		
+.mci1120_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci1120_unroll_loop
+	jmp   .mci1120_odd_inner
+.mci1120_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	/* start with rsqO - seed in xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm7, xmm4	/* rinvO in xmm7 */
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm6, xmm4	/* rinvH1 in xmm6 */
+	/* rsqH2 - seed in xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm5, xmm4	/* rinvH2 in xmm5 */
+
+	/* do O interactions */
+	movaps  xmm4, xmm7	
+	mulps   xmm4, xmm4	/* xmm7=rinv, xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm7, [esp + _qqO]	/* xmm7=vcoul */
+	
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm3, xmm2
+	subps  xmm3, xmm1	/* vnb=vnb12-vnb6 */		
+	addps  xmm3, [esp + _vnbtot]
+	addps  xmm7, [esp + _vctot]	
+	movaps [esp + _vnbtot], xmm3
+	movaps [esp + _vctot], xmm7
+
+	/* H1 & H2 interactions */
+	addps  xmm6, xmm5               /* add H2 rinv */
+	mulps  xmm6, [esp + _qqH]	/* xmm6=vcoul */
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci1120_odd_inner
+	jmp   .mci1120_unroll_loop
+.mci1120_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci1120_odd_loop
+	jmp   .mci1120_updateouterdata
+.mci1120_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	xorps xmm6, xmm6
+	mov esi, [ebp + _type]
+	mov ebx, [esi + eax*4]
+	mov esi, [ebp + _nbfp]
+	shl ebx, 1	
+	add ebx, [esp + _ntia]
+	movlps xmm6, [esi + ebx*4]
+	movaps xmm7, xmm6
+	shufps xmm6, xmm6, 0b11111100
+	shufps xmm7, xmm7, 0b11111101
+	movaps [esp + _c6], xmm6
+	movaps [esp + _c12], xmm7
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulss  xmm1, xmm4
+	movaps xmm3, [esp + _qqO]
+	mulss  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulss  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm3, xmm0	/* xmm3=vcoul */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subss  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	addps  xmm3, [esp + _vctot]
+	movaps [esp + _vctot], xmm3
+	movaps [esp + _vnbtot], xmm5
+
+	dec dword ptr [esp + _innerk]
+	jz    .mci1120_updateouterdata
+	jmp   .mci1120_odd_loop
+.mci1120_updateouterdata:
+	/* accumulate total potential energy and update it */
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci1120_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci1120_outer
+.mci1120_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 328
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+	
+.globl mcinl1130_sse
+	.type mcinl1130_sse,@function
+mcinl1130_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60
+.equ		_Vnb,		64
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_jxO,		144
+.equ		_jyO,		160
+.equ		_jzO,		176
+.equ		_jxH1,		192
+.equ		_jyH1,		208
+.equ		_jzH1,		224
+.equ		_jxH2,		240
+.equ		_jyH2,		256
+.equ		_jzH2,		272
+.equ		_qqOO,		288
+.equ		_qqOH,		304
+.equ		_qqHH,		320
+.equ		_c6,		336
+.equ		_c12,		352		 
+.equ		_vctot,		368
+.equ		_vnbtot,	384
+.equ		_half,		400
+.equ		_three,		416
+.equ		_rsqOO,		432
+.equ		_rsqOH1,	448
+.equ		_rsqOH2,	464
+.equ		_rsqH1O,	480
+.equ		_rsqH1H1,	496
+.equ		_rsqH1H2,	512
+.equ		_rsqH2O,	528 
+.equ		_rsqH2H1,	544
+.equ		_rsqH2H2,	560
+.equ		_rinvOO,	576
+.equ		_rinvOH1,	592
+.equ		_rinvOH2,	608
+.equ		_rinvH1O,	624
+.equ		_rinvH1H1,	640
+.equ		_rinvH1H2,	656
+.equ		_rinvH2O,	672
+.equ		_rinvH2H1,	688
+.equ		_rinvH2H2,	704
+.equ		_is3,		720
+.equ		_ii3,		724
+.equ		_innerjjnr,	728
+.equ		_innerk,	732
+.equ		_salign,	736							
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 740		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5
+		
+	xorps xmm0, xmm0
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	mov   edx, ecx
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	add   edx, ecx
+	mov   eax, [ebp + _nbfp]
+	movlps xmm0, [eax + edx*4] 
+	movaps xmm1, xmm0
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0b01010101
+	movaps [esp + _c6], xmm0
+	movaps [esp + _c12], xmm1
+
+mci1130_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]	
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   mci1130_unroll_loop
+	jmp   mci1130_single_check
+mci1130_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* start with OO interaction */
+	movaps xmm0, [esp + _rinvOO]
+	movaps xmm7, xmm0
+	mulps  xmm0, xmm0
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	mulps  xmm7, [esp + _qqOO]
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm1, [esp + _c6]	
+	mulps  xmm2, [esp + _c12]	
+	subps  xmm2, xmm1	/* xmm3=vnb12-vnb6 */
+	addps  xmm2, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm2
+	addps  xmm7, [esp + _vctot]
+
+	/* all other interaction */
+	movaps xmm0, [esp + _rinvOH1]
+	movaps xmm1, [esp + _rinvH1H1]
+	addps  xmm0, [esp + _rinvOH2]
+	addps  xmm1, [esp + _rinvH1H2]
+	addps  xmm0, [esp + _rinvH1O]
+	addps  xmm1, [esp + _rinvH2H1]
+	addps  xmm0, [esp + _rinvH2O]
+	addps  xmm1, [esp + _rinvH2H2]
+
+	mulps xmm0, [esp + _qqOH]
+	mulps xmm1, [esp + _qqHH]
+	addps xmm7, xmm0
+	addps xmm7, xmm1
+	movaps [esp + _vctot], xmm7
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    mci1130_single_check
+	jmp   mci1130_unroll_loop
+mci1130_single_check:
+	add   [esp + _innerk],  4
+	jnz   mci1130_single_loop
+	jmp   mci1130_updateouterdata
+mci1130_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	movaps  xmm2, xmm1	
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+
+	xorps   xmm1, xmm1
+	movaps  xmm0, xmm3
+	xorps   xmm4, xmm4
+	mulps   xmm0, xmm0	/* xmm0=rinvsq */
+	/* fetch charges to xmm4 (temporary) */
+	movss   xmm4, [esp + _qqOO]
+	movss   xmm1, xmm0
+	movhps  xmm4, [esp + _qqOH]
+	mulss   xmm1, xmm0
+	mulps   xmm3, xmm4	/* xmm3=vcoul */
+	mulss   xmm1, xmm0	/* xmm1(0)=rinvsix */
+	movaps  xmm2, xmm1	/* zero everything else in xmm2 */
+	mulss   xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulss   xmm1, [esp + _c6]
+	mulss   xmm2, [esp + _c12]
+	movaps  xmm4, xmm2
+	subss   xmm4, xmm1	/* vnbtot=vnb12-vnb6 */
+	addps   xmm4, [esp + _vnbtot]
+	movaps  [esp + _vnbtot], xmm4
+
+	addps   xmm3, [esp + _vctot]
+	movaps  [esp + _vctot], xmm3	
+	
+	/* done with i O Now do i H1 & H2 simultaneously first get i particle coords: */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1   /* do coulomb interaction */
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+	addps   xmm3, xmm7
+	/* assemble charges in xmm6 */
+	xorps   xmm6, xmm6
+	/* do coulomb interaction */
+	movaps  xmm0, xmm3
+	movss   xmm6, [esp + _qqOH]
+	movaps  xmm4, xmm7
+	movhps  xmm6, [esp + _qqHH]
+	mulps   xmm3, xmm6	/* total vcoul */
+	
+	addps   xmm3, [esp + _vctot]
+	movaps  [esp + _vctot], xmm3
+	
+	dec dword ptr [esp + _innerk]
+	jz    mci1130_updateouterdata
+	jmp   mci1130_single_loop
+mci1130_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz mci1130_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp mci1130_outer
+mci1130_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 740
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+	
+
+
+.globl mcinl2120_sse
+	.type mcinl2120_sse,@function
+mcinl2120_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_argkrf,	52	
+.equ		_argcrf,	56	
+.equ		_type,		60
+.equ		_ntype,		64
+.equ		_nbfp,		68	
+.equ		_Vnb,		72	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_iqO,		144 
+.equ		_iqH,		160 
+.equ		_qqO,		176
+.equ		_qqH,		192
+.equ		_c6,		208
+.equ		_c12,		224		 
+.equ		_vctot,		240
+.equ		_vnbtot,	256
+.equ		_half,		272
+.equ		_three,		288
+.equ		_krf,		304
+.equ		_crf,		320
+.equ		_krsqO,		336
+.equ		_krsqH1,	352
+.equ		_krsqH2,	368	 		
+.equ		_is3,		384
+.equ		_ii3,		388
+.equ		_ntia,		392	
+.equ		_innerjjnr,	396
+.equ		_innerk,	400
+.equ		_salign,	404								
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 408		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
+
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	shufps xmm5, xmm5, 0
+	shufps xmm6, xmm6, 0
+	movaps [esp + _krf], xmm5
+	movaps [esp + _crf], xmm6
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+	
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	mov   [esp + _ntia], ecx		
+.mci2120_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci2120_unroll_loop
+	jmp   .mci2120_odd_inner
+.mci2120_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+	
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+	
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	movaps xmm0, xmm5
+	movaps xmm1, xmm6
+	movaps xmm2, xmm7
+
+	mulps  xmm0, [esp + _krf]	
+	mulps  xmm1, [esp + _krf]	
+	mulps  xmm2, [esp + _krf]	
+
+	movaps [esp + _krsqH2], xmm0
+	movaps [esp + _krsqH1], xmm1
+	movaps [esp + _krsqO], xmm2
+	
+	/* start with rsqO - seed in xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm7, xmm4	/* rinvO in xmm7 */
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm6, xmm4	/* rinvH1 in xmm6 */
+	/* rsqH2 - seed in xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm5, xmm4	/* rinvH2 in xmm5 */
+
+	/* do O interactions */
+	movaps  xmm4, xmm7	
+	mulps   xmm4, xmm4	/* xmm7=rinv, xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulps  xmm1, xmm4
+	mulps  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm3, xmm2
+	subps  xmm3, xmm1	/* vnb=vnb12-vnb6 */		
+	addps  xmm3, [esp + _vnbtot]
+
+	movaps xmm0, xmm7
+	movaps xmm1, [esp + _krsqO]
+	addps  xmm0, xmm1
+	subps  xmm0, [esp + _crf] /* xmm0=rinv+ krsq-crf */
+	subps  xmm7, xmm1
+	mulps  xmm0, [esp + _qqO]
+	addps  xmm0, [esp + _vctot]
+	movaps [esp + _vnbtot], xmm3
+	movaps [esp + _vctot], xmm0
+
+	/* H1 interactions */
+	movaps  xmm0, [esp + _krsqH1]
+	addps   xmm6, xmm0	/* xmm6=rinv+ krsq */
+	subps   xmm6, [esp + _crf]
+	mulps   xmm6, [esp + _qqH] /* vcoul */
+	addps  xmm6, [esp + _vctot]
+	movaps [esp + _vctot], xmm6
+	
+	/* H2 interactions */
+	movaps  xmm7, xmm5  /* rinv */
+	movaps  xmm0, [esp + _krsqH2]
+	addps   xmm5, xmm0	/* xmm5=rinv+ krsq */
+	subps   xmm5, [esp + _crf]
+	mulps   xmm5, [esp + _qqH] /* vcoul */
+	addps   xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci2120_odd_inner
+	jmp   .mci2120_unroll_loop
+.mci2120_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci2120_odd_loop
+	jmp   .mci2120_updateouterdata
+.mci2120_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	xorps xmm6, xmm6
+	mov esi, [ebp + _type]
+	mov ebx, [esi + eax*4]
+	mov esi, [ebp + _nbfp]
+	shl ebx, 1	
+	add ebx, [esp + _ntia]
+	movlps xmm6, [esi + ebx*4]
+	movaps xmm7, xmm6
+	shufps xmm6, xmm6, 0b11111100
+	shufps xmm7, xmm7, 0b11111101
+	movaps [esp + _c6], xmm6
+	movaps [esp + _c12], xmm7
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	movaps xmm0, xmm4
+	mulps xmm0, [esp + _krf]
+	movaps [esp + _krsqO], xmm0
+	
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm4	/* xmm4=rinvsq */
+	movaps xmm1, xmm4
+	mulss  xmm1, xmm4
+	mulss  xmm1, xmm4	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulss  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subss  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps xmm1, xmm0	/* xmm1=rinv */
+	movaps xmm3, [esp + _krsqO]
+	addps  xmm0, xmm3	/* xmm0=rinv+ krsq */
+	subps  xmm0, [esp + _crf] /* xmm0=rinv+ krsq-crf */
+	mulps  xmm0, [esp + _qqO]	/* xmm0=vcoul */
+	addps  xmm0, [esp + _vctot]
+	movaps [esp + _vctot], xmm0
+	movaps [esp + _vnbtot], xmm5
+
+	dec dword ptr [esp + _innerk]
+	jz    .mci2120_updateouterdata
+	jmp   .mci2120_odd_loop
+.mci2120_updateouterdata:
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci2120_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci2120_outer
+.mci2120_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 408
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+	
+.globl mcinl2130_sse
+	.type mcinl2130_sse,@function
+mcinl2130_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_argkrf,	52
+.equ		_argcrf,	56
+.equ		_type,		60
+.equ		_ntype,		64
+.equ		_nbfp,		68	
+.equ		_Vnb,		72
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_jxO,		144
+.equ		_jyO,		160
+.equ		_jzO,		176
+.equ		_jxH1,		192
+.equ		_jyH1,		208
+.equ		_jzH1,		224
+.equ		_jxH2,		240
+.equ		_jyH2,		256
+.equ		_jzH2,		272
+.equ		_qqOO,		288
+.equ		_qqOH,		304
+.equ		_qqHH,		320
+.equ		_c6,		336
+.equ		_c12,		352		 
+.equ		_vctot,		368
+.equ		_vnbtot,	384
+.equ		_half,		400
+.equ		_three,		416
+.equ		_rsqOO,		432
+.equ		_rsqOH1,	448
+.equ		_rsqOH2,	464
+.equ		_rsqH1O,	480
+.equ		_rsqH1H1,	496
+.equ		_rsqH1H2,	512
+.equ		_rsqH2O,	528
+.equ		_rsqH2H1,	544
+.equ		_rsqH2H2,	560
+.equ		_rinvOO,	576
+.equ		_rinvOH1,	592
+.equ		_rinvOH2,	608
+.equ		_rinvH1O,	624
+.equ		_rinvH1H1,	640
+.equ		_rinvH1H2,	656
+.equ		_rinvH2O,	672
+.equ		_rinvH2H1,	688
+.equ		_rinvH2H2,	704
+.equ		_krf,		720	
+.equ		_crf,		736
+.equ		_is3,		752
+.equ		_ii3,		756
+.equ		_innerjjnr,	760
+.equ		_innerk,	764
+.equ		_salign,	768
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 772		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	shufps xmm5, xmm5, 0
+	shufps xmm6, xmm6, 0
+	movaps [esp + _krf], xmm5
+	movaps [esp + _crf], xmm6
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5
+		
+	xorps xmm0, xmm0
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	mov   edx, ecx
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	add   edx, ecx
+	mov   eax, [ebp + _nbfp]
+	movlps xmm0, [eax + edx*4] 
+	movaps xmm1, xmm0
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0b01010101
+	movaps [esp + _c6], xmm0
+	movaps [esp + _c12], xmm1
+
+.mci2130_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci2130_unroll_loop
+	jmp   .mci2130_single_check
+.mci2130_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* start with OO interaction */
+	movaps xmm0, [esp + _rinvOO]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]
+	mulps  xmm0, xmm0
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	mulps  xmm5, [esp + _rsqOO] /* xmm5=krsq */
+	movaps xmm6, xmm5
+	addps  xmm6, xmm7	/* xmm6=rinv+ krsq */
+	subps  xmm6, [esp + _crf]
+	
+	mulps  xmm6, [esp + _qqOO] /* xmm6=voul=qq*(rinv+ krsq-crf) */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm1, [esp + _c6]	
+	mulps  xmm2, [esp + _c12]	
+	subps  xmm2, xmm1	/* xmm3=vnb12-vnb6 */
+	addps  xmm2, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm2
+	addps  xmm6, [esp + _vctot] /* local vctot summation variable */
+
+	/* O-H1 interaction */
+	movaps xmm0, [esp + _rinvOH1]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqOH1] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=rinv+ krsq */
+	mulps  xmm0, xmm0
+	subps  xmm4, [esp + _crf]
+	mulps  xmm4, [esp + _qqOH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+
+	/* O-H2 interaction */ 
+	movaps xmm0, [esp + _rinvOH2]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqOH2] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=r inv+ krsq */
+	mulps xmm0, xmm0
+	subps  xmm4, [esp + _crf]
+	mulps  xmm4, [esp + _qqOH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+
+	/* H1-O interaction */
+	movaps xmm0, [esp + _rinvH1O]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqH1O] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=rinv+ krsq */
+	mulps xmm0, xmm0
+	subps  xmm4, [esp + _crf]
+	mulps  xmm4, [esp + _qqOH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+
+	/* H1-H1 interaction */
+	movaps xmm0, [esp + _rinvH1H1]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqH1H1] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=r inv+ krsq */
+	subps  xmm4, [esp + _crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + _qqHH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+	
+	/* H1-H2 interaction */
+	movaps xmm0, [esp + _rinvH1H2]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqH1H2] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=r inv+ krsq */
+	mulps xmm0, xmm0
+	subps  xmm4, [esp + _crf]
+	mulps  xmm4, [esp + _qqHH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+	
+	/* H2-O interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqH2O] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=r inv+ krsq */
+	subps  xmm4, [esp + _crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + _qqOH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+	
+	/* H2-H1 interaction */
+	movaps xmm0, [esp + _rinvH2H1]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqH2H1] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=r inv+ krsq */
+	subps  xmm4, [esp + _crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + _qqHH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+	
+	/* H2-H2 interaction */
+	movaps xmm0, [esp + _rinvH2H2]
+	movaps xmm7, xmm0	/* xmm7=rinv */
+	movaps xmm5, [esp + _krf]	
+	movaps xmm1, xmm0
+	mulps  xmm5, [esp + _rsqH2H2] /* xmm5=krsq */
+	movaps xmm4, xmm5
+	addps  xmm4, xmm7	/* xmm4=r inv+ krsq */
+	subps  xmm4, [esp + _crf]
+	mulps xmm0, xmm0
+	mulps  xmm4, [esp + _qqHH] /* xmm4=voul=qq*(rinv+ krsq) */
+	addps  xmm6, xmm4	/* add to local vctot */
+	movaps [esp + _vctot], xmm6
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci2130_single_check
+	jmp   .mci2130_unroll_loop
+.mci2130_single_check:
+	add   [esp + _innerk],  4
+	jnz   .mci2130_single_loop
+	jmp   .mci2130_updateouterdata
+.mci2130_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+
+	movaps xmm6, xmm0
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	mulps   xmm6, [esp + _krf] /* xmm6=krsq */
+	movaps  xmm2, xmm1
+	movaps  xmm7, xmm6
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+
+	addps   xmm6, xmm3	/* xmm6=rinv+ krsq */
+	mulps   xmm7, [esp + _two]
+	subps  xmm6, [esp + _crf]	/* xmm6=rinv+ krsq-crf */
+	
+	xorps   xmm1, xmm1
+	movaps  xmm0, xmm3
+	subps   xmm3, xmm7	/* xmm3=rinv-2*krsq */
+	xorps   xmm4, xmm4
+	mulps   xmm0, xmm0	/* xmm0=rinvsq */
+	/* fetch charges to xmm4 (temporary) */
+	movss   xmm4, [esp + _qqOO]
+	movss   xmm1, xmm0
+	movhps  xmm4, [esp + _qqOH]
+	mulss   xmm1, xmm0
+
+	mulps xmm6, xmm4	/* vcoul */ 
+	mulps xmm3, xmm4	/* coul part of fs */ 
+	
+	mulss   xmm1, xmm0	/* xmm1(0)=rinvsix */
+	movaps  xmm2, xmm1	/* zero everything else in xmm2 */
+	mulss   xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulss   xmm1, [esp + _c6]
+	mulss   xmm2, [esp + _c12]
+	movaps  xmm4, xmm2
+	subss   xmm4, xmm1	/* vnbtot=vnb12-vnb6 */
+	addps   xmm4, [esp + _vnbtot]	
+	movaps  [esp + _vnbtot], xmm4
+
+	addps   xmm6, [esp + _vctot]
+	movaps  [esp + _vctot], xmm6	
+
+	/* done with i O Now do i H1 & H2 simultaneously */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+
+	mulps xmm0, [esp + _krf] /* krsq */
+	mulps xmm4, [esp + _krf] /* krsq */ 
+
+
+	/* assemble charges in xmm6 */
+	xorps   xmm6, xmm6
+	movss   xmm6, [esp + _qqOH]
+	movhps  xmm6, [esp + _qqHH]
+	movaps  xmm1, xmm0
+	movaps  xmm5, xmm4
+	addps   xmm0, xmm3	/* krsq+ rinv */
+	addps   xmm4, xmm7	/* krsq+ rinv */
+	subps xmm0, [esp + _crf]
+	subps xmm4, [esp + _crf]
+	mulps   xmm1, [esp + _two]
+	mulps   xmm5, [esp + _two]
+	mulps   xmm0, xmm6	/* vcoul */
+	mulps   xmm4, xmm6	/* vcoul */
+	addps   xmm4, xmm0		
+	addps   xmm4, [esp + _vctot]
+	movaps  [esp + _vctot], xmm4
+	
+	dec dword ptr [esp + _innerk]
+	jz    .mci2130_updateouterdata
+	jmp   .mci2130_single_loop
+.mci2130_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid] /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci2130_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci2130_outer
+.mci2130_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 772
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+	
+
+.globl mcinl2020_sse
+	.type mcinl2020_sse,@function
+mcinl2020_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_argkrf,	52	
+.equ		_argcrf,	56	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_iqO,		144 
+.equ		_iqH,		160 
+.equ		_qqO,		176
+.equ		_qqH,		192
+.equ		_vctot,		208
+.equ		_half,		224
+.equ		_three,		240
+.equ		_krf,		256
+.equ		_crf,		272
+.equ		_krsqO,		288
+.equ		_krsqH1,	304
+.equ		_krsqH2,	320	 		
+.equ		_is3,		336
+.equ		_ii3,		340
+.equ		_innerjjnr,	344
+.equ		_innerk,	348
+.equ		_salign,	352
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 356		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
+
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	shufps xmm5, xmm5, 0
+	shufps xmm6, xmm6, 0
+	movaps [esp + _krf], xmm5
+	movaps [esp + _crf], xmm6
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+			
+.mci2020_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci2020_unroll_loop
+	jmp   .mci2020_odd_inner
+.mci2020_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	movaps xmm0, xmm5
+	movaps xmm1, xmm6
+	movaps xmm2, xmm7
+
+	mulps  xmm0, [esp + _krf]	
+	mulps  xmm1, [esp + _krf]	
+	mulps  xmm2, [esp + _krf]	
+
+	movaps [esp + _krsqH2], xmm0
+	movaps [esp + _krsqH1], xmm1
+	movaps [esp + _krsqO], xmm2
+	
+	/* start with rsqO - seed in xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm7, xmm4	/* rinvO in xmm7 */
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm6, xmm4	/* rinvH1 in xmm6 */
+	/* rsqH2 - seed in xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  xmm5, xmm4	/* rinvH2 in xmm5 */
+
+	/* do O interactions */
+
+	movaps xmm0, xmm7
+	movaps xmm1, [esp + _krsqO]
+	addps  xmm0, xmm1
+	subps  xmm0, [esp + _crf] /* xmm0=rinv+ krsq-crf */
+	mulps  xmm0, [esp + _qqO]
+
+	addps  xmm0, [esp + _vctot]
+	movaps [esp + _vctot], xmm0
+
+	/* H1 interactions */
+	movaps  xmm7, xmm6
+	movaps  xmm0, [esp + _krsqH1]
+	addps   xmm6, xmm0	/* xmm6=rinv+ krsq */
+	subps   xmm6, [esp + _crf] /* xmm6=rinv+ krsq-crf */
+	mulps   xmm6, [esp + _qqH] /* vcoul */
+	addps   xmm6, [esp + _vctot]
+	
+	/* H2 interactions */
+	movaps  xmm7, xmm5
+	movaps  xmm0, [esp + _krsqH2]
+	addps   xmm5, xmm0	/* xmm6=rinv+ krsq */
+	subps   xmm5, [esp + _crf] /* xmm5=rinv+ krsq-crf */
+	mulps   xmm5, [esp + _qqH] /* vcoul */
+	addps  xmm6, xmm5
+	movaps [esp + _vctot], xmm6
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci2020_odd_inner
+	jmp   .mci2020_unroll_loop
+.mci2020_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci2020_odd_loop
+	jmp   .mci2020_updateouterdata
+.mci2020_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	movaps xmm0, xmm4
+	mulps xmm0, [esp + _krf]
+	movaps [esp + _krsqO], xmm0
+	
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	movaps xmm3, [esp + _krsqO]
+	addps  xmm0, xmm3	/* xmm0=rinv+ krsq */
+	subps  xmm0, [esp + _crf] /* xmm0=rinv+ krsq-crf */
+	mulps  xmm0, [esp + _qqO]	/* xmm0=vcoul */
+	addps  xmm0, [esp + _vctot]
+	movaps [esp + _vctot], xmm0
+
+	dec dword ptr [esp + _innerk]
+	jz    .mci2020_updateouterdata
+	jmp   .mci2020_odd_loop
+.mci2020_updateouterdata:
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci2020_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci2020_outer
+.mci2020_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 356
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+	
+.globl mcinl2030_sse
+	.type mcinl2030_sse,@function
+mcinl2030_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_argkrf,	52
+.equ		_argcrf,	56
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_jxO,		144
+.equ		_jyO,		160
+.equ		_jzO,		176
+.equ		_jxH1,		192
+.equ		_jyH1,		208
+.equ		_jzH1,		224
+.equ		_jxH2,		240
+.equ		_jyH2,		256
+.equ		_jzH2,		272
+.equ		_qqOO,		288
+.equ		_qqOH,		304
+.equ		_qqHH,		320
+.equ		_vctot,		336
+.equ		_half,		352
+.equ		_three,		368
+.equ		_rsqOO,		384
+.equ		_rsqOH1,	400
+.equ		_rsqOH2,	416
+.equ		_rsqH1O,	432
+.equ		_rsqH1H1,	448
+.equ		_rsqH1H2,	464
+.equ		_rsqH2O,	480
+.equ		_rsqH2H1,	496
+.equ		_rsqH2H2,	512
+.equ		_rinvOO,	528
+.equ		_rinvOH1,	544
+.equ		_rinvOH2,	560
+.equ		_rinvH1O,	576
+.equ		_rinvH1H1,	592
+.equ		_rinvH1H2,	608
+.equ		_rinvH2O,	624
+.equ		_rinvH2H1,	640
+.equ		_rinvH2H2,	656
+.equ		_krf,		672	
+.equ		_crf,		688
+.equ		_is3,		704
+.equ		_ii3,		708
+.equ		_innerjjnr,	712
+.equ		_innerk,	716
+.equ		_salign,	720
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 724		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_three]
+	movss xmm5, [ebp + _argkrf]
+	movss xmm6, [ebp + _argcrf]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm1
+	shufps xmm5, xmm5, 0
+	shufps xmm6, xmm6, 0
+	movaps [esp + _krf], xmm5
+	movaps [esp + _crf], xmm6
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5
+	
+.mci2030_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]	
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci2030_unroll_loop
+	jmp   .mci2030_single_check
+.mci2030_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* start with OO interaction */
+	movaps xmm6, [esp + _krf]
+	mulps  xmm6, [esp + _rsqOO] /* xmm5=krsq */
+	addps  xmm6, [esp + _rinvOO]	/* xmm6=rinv+ krsq */
+	subps  xmm6, [esp + _crf]
+	mulps  xmm6, [esp + _qqOO] /* xmm6=voul=qq*(rinv+ krsq-crf) */
+	addps  xmm6, [esp + _vctot] /* local vctot summation variable */
+
+	/* O-H interactions */
+	movaps xmm0, [esp + _krf]
+	movaps xmm1, [esp + _krf]
+	movaps xmm2, [esp + _krf]
+	movaps xmm3, [esp + _krf]
+	mulps  xmm0, [esp + _rsqOH1] /* krsq */
+	mulps  xmm1, [esp + _rsqOH2] /* krsq */
+	mulps  xmm2, [esp + _rsqH1O] /* krsq */
+	mulps  xmm3, [esp + _rsqH2O] /* krsq */
+	addps  xmm0, [esp + _rinvOH1]	/* rinv+ krsq */
+	addps  xmm1, [esp + _rinvOH2]	/* rinv+ krsq */
+	addps  xmm2, [esp + _rinvH1O]	/* rinv+ krsq */
+	addps  xmm3, [esp + _rinvH2O]	/* rinv+ krsq */
+	subps  xmm0, [esp + _crf]
+	subps  xmm1, [esp + _crf]
+	subps  xmm2, [esp + _crf]
+	subps  xmm3, [esp + _crf]
+	mulps  xmm0, [esp + _qqOH] /* voul=qq*(rinv+ krsq-crf) */
+	mulps  xmm1, [esp + _qqOH] /* voul=qq*(rinv+ krsq-crf) */
+	mulps  xmm2, [esp + _qqOH] /* voul=qq*(rinv+ krsq-crf) */
+	mulps  xmm3, [esp + _qqOH] /* voul=qq*(rinv+ krsq-crf) */
+	addps xmm6, xmm0
+	addps xmm1, xmm2
+	addps xmm6, xmm3
+	addps xmm6, xmm1
+		
+	/* H-H interactions */
+	movaps xmm0, [esp + _krf]
+	movaps xmm1, [esp + _krf]
+	movaps xmm2, [esp + _krf]
+	movaps xmm3, [esp + _krf]
+	mulps  xmm0, [esp + _rsqH1H1] /* krsq */
+	mulps  xmm1, [esp + _rsqH1H2] /* krsq */
+	mulps  xmm2, [esp + _rsqH2H1] /* krsq */
+	mulps  xmm3, [esp + _rsqH2H2] /* krsq */
+	addps  xmm0, [esp + _rinvH1H1]	/* rinv+ krsq */
+	addps  xmm1, [esp + _rinvH1H2]	/* rinv+ krsq */
+	addps  xmm2, [esp + _rinvH2H1]	/* rinv+ krsq */
+	addps  xmm3, [esp + _rinvH2H2]	/* rinv+ krsq */
+	subps  xmm0, [esp + _crf]
+	subps  xmm1, [esp + _crf]
+	subps  xmm2, [esp + _crf]
+	subps  xmm3, [esp + _crf]
+	mulps  xmm0, [esp + _qqHH] /* voul=qq*(rinv+ krsq-crf) */
+	mulps  xmm1, [esp + _qqHH] /* voul=qq*(rinv+ krsq-crf) */
+	mulps  xmm2, [esp + _qqHH] /* voul=qq*(rinv+ krsq-crf) */
+	mulps  xmm3, [esp + _qqHH] /* voul=qq*(rinv+ krsq-crf) */
+	addps xmm6, xmm0
+	addps xmm1, xmm2
+	addps xmm6, xmm3
+	addps xmm6, xmm1
+	movaps [esp + _vctot], xmm6
+		
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci2030_single_check
+	jmp   .mci2030_unroll_loop
+.mci2030_single_check:
+	add   [esp + _innerk],  4
+	jnz   .mci2030_single_loop
+	jmp   .mci2030_updateouterdata
+.mci2030_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+
+	movaps xmm6, xmm0
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	mulps   xmm6, [esp + _krf] /* xmm6=krsq */
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+	
+	addps   xmm6, xmm3	/* xmm6=rinv+ krsq */
+	subps   xmm6, [esp + _crf] /* xmm6=rinv+ krsq-crf */
+	
+	xorps   xmm1, xmm1
+	movaps  xmm0, xmm3
+	subps   xmm3, xmm7	/* xmm3=rinv-2*krsq */
+	xorps   xmm4, xmm4
+	/* fetch charges to xmm4 (temporary) */
+	movss   xmm4, [esp + _qqOO]
+	movhps  xmm4, [esp + _qqOH]
+
+	mulps xmm6, xmm4	/* vcoul */ 
+
+	addps   xmm6, [esp + _vctot]
+	movaps  [esp + _vctot], xmm6
+	
+	/* done with i O Now do i H1 & H2 simultaneously first get i particle coords: */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+
+	mulps xmm0, [esp + _krf] /* krsq */
+	mulps xmm4, [esp + _krf] /* krsq */ 
+
+	/* assemble charges in xmm6 */
+	xorps   xmm6, xmm6
+	movss   xmm6, [esp + _qqOH]
+	movhps  xmm6, [esp + _qqHH]
+	addps   xmm0, xmm3	/* krsq+ rinv */
+	addps   xmm4, xmm7	/* krsq+ rinv */
+	subps   xmm0, [esp + _crf]
+	subps   xmm4, [esp + _crf]
+	mulps   xmm0, xmm6	/* vcoul */
+	mulps   xmm4, xmm6	/* vcoul */
+	addps   xmm4, xmm0		
+	addps   xmm4, [esp + _vctot]
+	movaps  [esp + _vctot], xmm4
+	
+	dec dword ptr [esp + _innerk]
+	jz    .mci2030_updateouterdata
+	jmp   .mci2030_single_loop
+.mci2030_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 	
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci2030_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci2030_outer
+.mci2030_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 724
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+		
+
+.globl mcinl3000_sse
+	.type mcinl3000_sse,@function
+mcinl3000_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_tabscale,	52
+.equ		_VFtab,		56
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,		16
+.equ		_iz,		32
+.equ		_iq,		48
+.equ		_tsc,		64
+.equ		_qq,		80
+.equ		_vctot,		96
+.equ		_half,		112
+.equ		_three,		128
+.equ		_is3,		144
+.equ		_ii3,		148
+.equ		_innerjjnr,	152
+.equ		_innerk,	156
+.equ		_salign,	160
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 164		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+
+	/* assume we have at least one i particle - start directly */	
+.mci3000_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3000_unroll_loop
+	jmp   .mci3000_finish_inner
+.mci3000_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	mulps  xmm3, xmm2
+
+	movaps [esp + _qq], xmm3	
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+		
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+
+	/* at this point xmm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3000_finish_inner
+	jmp   .mci3000_unroll_loop
+.mci3000_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3000_dopair
+	jmp   .mci3000_checksingle
+.mci3000_dopair:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov edi, [ebp + _pos]	
+	
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+.mci3000_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3000_dosingle
+	jmp    .mci3000_updateouterdata
+.mci3000_dosingle:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
+
+.mci3000_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3000_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3000_outer
+.mci3000_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 164
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+.globl mcinl3010_sse
+	.type mcinl3010_sse,@function
+mcinl3010_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48
+.equ		_tabscale,	52
+.equ		_VFtab,		56
+.equ		_nsatoms,	60	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,		16
+.equ		_iz,		32
+.equ		_iq,		48
+.equ		_tsc,		64
+.equ		_qq,		80
+.equ		_vctot,		96
+.equ		_half,		112
+.equ		_three,		128
+.equ		_is3,		144
+.equ		_ii3,		148
+.equ		_shX,		152
+.equ		_shY,		156
+.equ		_shZ,		160
+.equ		_ntia,		164	
+.equ		_innerjjnr0,	168
+.equ		_innerk0,	172
+.equ		_innerjjnr,	176
+.equ		_innerk,	180
+.equ		_salign,	184
+.equ		_nscoul,	188
+.equ		_solnr,		192			
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 196		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+
+	add   [ebp + _nsatoms],  8
+
+	/* assume we have at least one i particle - start directly */	
+.mci3010_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+	movss [esp + _shX], xmm0
+	movss [esp + _shY], xmm1
+	movss [esp + _shZ], xmm2
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	mov   ecx, [eax]
+	add   [ebp + _nsatoms],  12
+	mov   [esp + _nscoul], ecx	
+
+	/* clear vctot */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	mov   [esp + _solnr], ebx
+
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nscoul]
+	cmp   ecx,  0
+	jnz  .mci3010_mno_coul
+	jmp   .mci3010_last_mno
+.mci3010_mno_coul:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+	
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3010_unroll_coul_loop
+	jmp   .mci3010_finish_coul_inner
+
+.mci3010_unroll_coul_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	mulps  xmm3, xmm2
+
+	movaps [esp + _qq], xmm3	
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+		
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3010_finish_coul_inner
+	jmp   .mci3010_unroll_coul_loop
+.mci3010_finish_coul_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3010_dopair_coul
+	jmp   .mci3010_checksingle_coul
+.mci3010_dopair_coul:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov edi, [ebp + _pos]	
+	
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+.mci3010_checksingle_coul:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3010_dosingle_coul
+	jmp    .mci3010_updateouterdata_coul
+.mci3010_dosingle_coul:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
+
+.mci3010_updateouterdata_coul:
+	/* loop back to mno */
+	dec  dword ptr [esp + _nscoul]
+	jz  .mci3010_last_mno
+	jmp .mci3010_mno_coul
+	
+.mci3010_last_mno:	
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3010_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3010_outer
+.mci3010_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 196
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+.globl mcinl3020_sse
+	.type mcinl3020_sse,@function
+mcinl3020_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_tabscale,	52	
+.equ		_VFtab,		56	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_iqO,		144 
+.equ		_iqH,		160 
+.equ		_qqO,		176
+.equ		_qqH,		192
+.equ		_rinvO,		208
+.equ		_rinvH1,	224
+.equ		_rinvH2,	240		
+.equ		_rO,		256
+.equ		_rH1,		272
+.equ		_rH2,		288
+.equ		_tsc,		304
+.equ		_vctot,		320
+.equ		_half,		336
+.equ		_three,		352
+.equ		_is3,		368
+.equ		_ii3,		372
+.equ		_innerjjnr,	376
+.equ		_innerk,	380
+.equ		_salign,	384
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 388		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm3, xmm3, 0 
+	movaps [esp + _tsc], xmm3
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+	
+.mci3020_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3020_unroll_loop
+	jmp   .mci3020_odd_inner
+.mci3020_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4	
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+	
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	/* start with rsqO - seed to xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvO], xmm4	/* rinvO in xmm4 */
+	mulps   xmm7, xmm4
+	movaps  [esp + _rO], xmm7	
+
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvH1], xmm4	/* rinvH1 in xmm4 */
+	mulps   xmm6, xmm4
+	movaps  [esp + _rH1], xmm6
+
+	/* rsqH2 - seed to xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvH2], xmm4	/* rinvH2 in xmm4 */
+	mulps   xmm5, xmm4
+	movaps  [esp + _rH2], xmm5
+
+	/* do O interactions */
+	/* rO is still in xmm7 */
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd mm0, eax   
+        movd mm1, ebx
+        movd mm2, ecx
+        movd mm3, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */   
+        movaps xmm0, [esp + _qqO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* Done with O interactions - now H1! */
+	movaps xmm7, [esp + _rH1]
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5 
+
+	/* Done with H1, finally we do H2 interactions */
+	movaps xmm7, [esp + _rH2]
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3020_odd_inner
+	jmp   .mci3020_unroll_loop
+.mci3020_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci3020_odd_loop
+	jmp   .mci3020_updateouterdata
+.mci3020_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	movaps [esp + _rinvO], xmm0
+	
+	mulps xmm4, [esp + _tsc]
+	movhlps xmm7, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm7    /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm7, mm7
+        movlhps xmm3, xmm7
+
+	subps   xmm4, xmm3	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+	
+        movd mm0, eax   
+        movd mm1, ecx
+        movd mm2, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	dec dword ptr [esp + _innerk]
+	jz    .mci3020_updateouterdata
+	jmp   .mci3020_odd_loop
+.mci3020_updateouterdata:
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3020_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3020_outer
+.mci3020_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 388
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+	
+
+	
+.globl mcinl3030_sse
+	.type mcinl3030_sse,@function
+mcinl3030_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_tabscale,	52	
+.equ		_VFtab,		56
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_jxO,		144
+.equ		_jyO,		160
+.equ		_jzO,		176
+.equ		_jxH1,		192
+.equ		_jyH1,		208
+.equ		_jzH1,		224
+.equ		_jxH2,		240
+.equ		_jyH2,		256
+.equ		_jzH2,		272
+.equ		_qqOO,		288
+.equ		_qqOH,		304
+.equ		_qqHH,		320
+.equ		_tsc,		336
+.equ		_vctot,		352
+.equ		_half,		368
+.equ		_three,		384
+.equ		_rsqOO,		400
+.equ		_rsqOH1,	416
+.equ		_rsqOH2,	432
+.equ		_rsqH1O,	448
+.equ		_rsqH1H1,	464
+.equ		_rsqH1H2,	480
+.equ		_rsqH2O,	496
+.equ		_rsqH2H1,	512
+.equ		_rsqH2H2,	528
+.equ		_rinvOO,	544
+.equ		_rinvOH1,	560
+.equ		_rinvOH2,	576
+.equ		_rinvH1O,	592
+.equ		_rinvH1H1,	608
+.equ		_rinvH1H2,	624
+.equ		_rinvH2O,	640
+.equ		_rinvH2H1,	656
+.equ		_rinvH2H2,	672	
+.equ		_is3,		688
+.equ		_ii3,		692
+.equ		_innerjjnr,	696
+.equ		_innerk,	700
+.equ		_salign,	704
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 708		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc],  xmm3
+
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5		
+
+.mci3030_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3030_unroll_loop
+	jmp   .mci3030_single_check
+.mci3030_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+		
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* start with OO interaction */
+	movaps xmm0, [esp + _rinvOO]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOO] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+		
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+	
+        movd mm0, eax
+        movd mm1, ebx
+        movd mm2, ecx
+        movd mm3, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        /* update vctot */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* O-H1 interaction */
+	movaps xmm0, [esp + _rinvOH1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOH1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+	
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* O-H2 interaction */ 
+	movaps xmm0, [esp + _rinvOH2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOH2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H1-O interaction */
+	movaps xmm0, [esp + _rinvH1O]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1O] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H1-H1 interaction */
+	movaps xmm0, [esp + _rinvH1H1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1H1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	/* H1-H2 interaction */
+	movaps xmm0, [esp + _rinvH1H2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1H2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H2-O interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2O] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H2-H1 interaction */
+	movaps xmm0, [esp + _rinvH2H1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2H1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H2-H2 interaction */
+	movaps xmm0, [esp + _rinvH2H2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2H2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3030_single_check
+	jmp   .mci3030_unroll_loop
+.mci3030_single_check:
+	add   [esp + _innerk],  4
+	jnz   .mci3030_single_loop
+	jmp   .mci3030_updateouterdata
+.mci3030_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	movaps  xmm2, xmm1	
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+
+	movaps  xmm1, xmm3
+	mulps   xmm1, xmm0	/* xmm1=r */
+	movaps  xmm0, xmm3	/* xmm0=rinv */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+	
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+	mov esi, [ebp + _VFtab]
+	
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOO]
+	movhps  xmm3, [esp + _qqOH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+	
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* done with i O Now do i H1 & H2 simultaneously first get i particle coords: */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+
+	/* start with H1, save H2 data */
+	movaps [esp + _rsqH2O], xmm4
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+
+	/* start with H1, save H2 data */
+	movaps [esp + _rinvH2O], xmm7
+
+	movaps xmm1, xmm3
+	mulps  xmm1, xmm0	/* xmm1=r */
+	movaps xmm0, xmm3	/* xmm0=rinv */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+	
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOH]
+	movhps  xmm3, [esp + _qqHH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+
+	/* do table for H2 - j water interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm1, [esp + _rsqH2O]
+	mulps  xmm1, xmm0	/* xmm0=rinv, xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOH]
+	movhps  xmm3, [esp + _qqHH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+
+	dec dword ptr [esp + _innerk]
+	jz    .mci3030_updateouterdata
+	jmp   .mci3030_single_loop
+.mci3030_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3030_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3030_outer
+.mci3030_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 708
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+	
+
+
+
+.globl mcinl3100_sse
+	.type mcinl3100_sse,@function
+mcinl3100_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64
+.equ		_tabscale,	68
+.equ		_VFtab,		72
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,		16
+.equ		_iz,		32
+.equ		_iq,		48
+.equ		_tsc,		64
+.equ		_qq,		80	
+.equ		_c6,		96
+.equ		_c12,		112
+.equ		_vctot,		128
+.equ		_vnbtot,	144
+.equ		_half,		160
+.equ		_three,		176
+.equ		_is3,		192
+.equ		_ii3,		196
+.equ		_ntia,		200	
+.equ		_innerjjnr,	204
+.equ		_innerk,	208
+.equ		_salign,	212
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 216		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm5, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm5, xmm5, 0
+	movaps [esp + _tsc], xmm5
+
+	/* assume we have at least one i particle - start directly */	
+.mci3100_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3100_unroll_loop
+	jmp   .mci3100_finish_inner
+.mci3100_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	mulps  xmm3, xmm2
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps [esp + _qq], xmm3
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* L-J */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm0	/* xmm4=rinvsq */
+
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps xmm6, xmm4
+ 	mulps  xmm6, xmm4
+	movaps [esp + _vctot], xmm5 
+
+	mulps  xmm6, xmm4	/* xmm6=rinvsix */
+	movaps xmm4, xmm6
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm6, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movaps xmm7, [esp + _vnbtot]
+	addps  xmm7, xmm4
+	subps  xmm7, xmm6
+	movaps [esp + _vnbtot], xmm7
+
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3100_finish_inner
+	jmp   .mci3100_unroll_loop
+.mci3100_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3100_dopair
+	jmp   .mci3100_checksingle
+.mci3100_dopair:	
+	mov esi, [ebp + _charge]
+        mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* L-J */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm0	/* xmm4=rinvsq */
+
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+
+	movaps xmm6, xmm4
+	mulps  xmm6, xmm4
+
+	movaps [esp + _vctot], xmm5 
+
+	mulps  xmm6, xmm4	/* xmm6=rinvsix */
+	movaps xmm4, xmm6
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm6, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movaps xmm7, [esp + _vnbtot]
+	addps  xmm7, xmm4
+	subps  xmm7, xmm6
+	movaps [esp + _vnbtot], xmm7
+
+.mci3100_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3100_dosingle
+	jmp    .mci3100_updateouterdata
+.mci3100_dosingle:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* L-J */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm0	/* xmm4=rinvsq */
+
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+
+	movaps xmm6, xmm4
+	mulps  xmm6, xmm4
+
+	movss [esp + _vctot], xmm5 
+
+	mulps  xmm6, xmm4	/* xmm6=rinvsix */
+	movaps xmm4, xmm6
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm6, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movss xmm7, [esp + _vnbtot]
+	addps  xmm7, xmm4
+	subps  xmm7, xmm6
+	movss [esp + _vnbtot], xmm7
+
+.mci3100_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3100_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3100_outer
+.mci3100_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 216
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+.globl mcinl3110_sse
+	.type mcinl3110_sse,@function
+mcinl3110_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64
+.equ		_tabscale,	68
+.equ		_VFtab,		72
+.equ		_nsatoms,	76			
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,		16
+.equ		_iz,		32
+.equ		_iq,		48
+.equ		_two,		64
+.equ		_tsc,		80
+.equ		_qq,		96	
+.equ		_c6,		112
+.equ		_c12,		128
+.equ		_vctot,		144
+.equ		_vnbtot,	160
+.equ		_half,		176
+.equ		_three,		192
+.equ		_is3,		208
+.equ		_ii3,		224
+.equ		_shX,		240
+.equ		_shY,		244
+.equ		_shZ,		248
+.equ		_ntia,		252	
+.equ		_innerjjnr0,	256
+.equ		_innerk0,	260
+.equ		_innerjjnr,	264
+.equ		_innerk,	268
+.equ		_salign,	272
+.equ		_nsvdwc,	276
+.equ		_nscoul,	280
+.equ		_nsvdw,		284
+.equ		_solnr,		288		
+	push ebp
+	mov ebp,esp	
+	push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 292		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_two]
+	movups xmm2, [sse_three]
+	movss xmm5, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _two], xmm1
+	movaps [esp + _three], xmm2
+	shufps xmm5, xmm5, 0
+	movaps [esp + _tsc], xmm5
+
+	/* assume we have at least one i particle - start directly */	
+.mci3110_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movlps xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 8] 
+	movlps [esp + _shX], xmm0
+	movss [esp + _shZ], xmm1
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	add   [ebp + _nsatoms],  12
+	mov   ecx, [eax]	
+	mov   edx, [eax + 4]
+	mov   eax, [eax + 8]	
+	sub   ecx, eax
+	sub   eax, edx
+	
+	mov   [esp + _nsvdwc], edx
+	mov   [esp + _nscoul], eax
+	mov   [esp + _nsvdw], ecx
+		
+	/* clear potential */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	mov   [esp + _solnr],  ebx
+
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nsvdwc]
+	cmp   ecx,  0
+	jnz   .mci3110_mno_vdwc
+	jmp   .mci3110_testcoul
+.mci3110_mno_vdwc:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3110_unroll_vdwc_loop
+	jmp   .mci3110_finish_vdwc_inner
+.mci3110_unroll_vdwc_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	mulps  xmm3, xmm2
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps [esp + _qq], xmm3
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* L-J */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm0	/* xmm4=rinvsq */
+
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+
+	movaps xmm6, xmm4
+	mulps  xmm6, xmm4
+
+	movaps [esp + _vctot], xmm5 
+
+	mulps  xmm6, xmm4	/* xmm6=rinvsix */
+	movaps xmm4, xmm6
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm6, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movaps xmm7, [esp + _vnbtot]
+	addps  xmm7, xmm4
+	subps  xmm7, xmm6
+	movaps [esp + _vnbtot], xmm7
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3110_finish_vdwc_inner
+	jmp   .mci3110_unroll_vdwc_loop
+.mci3110_finish_vdwc_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3110_dopair_vdwc
+	jmp   .mci3110_checksingle_vdwc
+.mci3110_dopair_vdwc:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* L-J */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm0	/* xmm4=rinvsq */
+
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+
+	movaps xmm6, xmm4
+	mulps  xmm6, xmm4
+
+	movaps [esp + _vctot], xmm5 
+
+	mulps  xmm6, xmm4	/* xmm6=rinvsix */
+	movaps xmm4, xmm6
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm6, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movaps xmm7, [esp + _vnbtot]
+	addps  xmm7, xmm4
+	subps  xmm7, xmm6
+	movaps [esp + _vnbtot], xmm7
+.mci3110_checksingle_vdwc:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3110_dosingle_vdwc
+	jmp    .mci3110_updateouterdata_vdwc
+.mci3110_dosingle_vdwc:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+						
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */
+	/* L-J */
+	movaps xmm4, xmm0
+	mulps  xmm4, xmm0	/* xmm4=rinvsq */
+
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+
+	movaps xmm6, xmm4
+	mulps  xmm6, xmm4
+
+	movss [esp + _vctot], xmm5 
+
+	mulps  xmm6, xmm4	/* xmm6=rinvsix */
+	movaps xmm4, xmm6
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm6, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movss xmm7, [esp + _vnbtot]
+	addps  xmm7, xmm4
+	subps  xmm7, xmm6
+	movss [esp + _vnbtot], xmm7
+.mci3110_updateouterdata_vdwc:
+	/* loop back to mno */
+	dec  dword ptr [esp + _nsvdwc]
+	jz  .mci3110_testcoul
+	jmp .mci3110_mno_vdwc
+.mci3110_testcoul:
+	mov  ecx, [esp + _nscoul]
+	cmp  ecx,  0
+	jnz  .mci3110_mno_coul
+	jmp  .mci3110_testvdw
+.mci3110_mno_coul:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+	
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3110_unroll_coul_loop
+	jmp   .mci3110_finish_coul_inner
+
+.mci3110_unroll_coul_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	mulps  xmm3, xmm2
+
+	movaps [esp + _qq], xmm3	
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3110_finish_coul_inner
+	jmp   .mci3110_unroll_coul_loop
+.mci3110_finish_coul_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3110_dopair_coul
+	jmp   .mci3110_checksingle_coul
+.mci3110_dopair_coul:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov edi, [ebp + _pos]	
+	
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+.mci3110_checksingle_coul:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3110_dosingle_coul
+	jmp    .mci3110_updateouterdata_coul
+.mci3110_dosingle_coul:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul  */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
+
+.mci3110_updateouterdata_coul:
+	/* loop back to mno */
+	dec  dword ptr [esp + _nscoul]
+	jz  .mci3110_testvdw
+	jmp .mci3110_mno_coul
+.mci3110_testvdw:
+	mov  ecx, [esp + _nsvdw]
+	cmp  ecx,  0
+	jnz  .mci3110_mno_vdw
+	jmp  .mci3110_last_mno
+.mci3110_mno_vdw:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3110_unroll_vdw_loop
+	jmp   .mci3110_finish_vdw_inner
+.mci3110_unroll_vdw_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3110_finish_vdw_inner
+	jmp   .mci3110_unroll_vdw_loop
+.mci3110_finish_vdw_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3110_dopair_vdw
+	jmp   .mci3110_checksingle_vdw
+.mci3110_dopair_vdw:	
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+.mci3110_checksingle_vdw:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3110_dosingle_vdw
+	jmp    .mci3110_updateouterdata_vdw
+.mci3110_dosingle_vdw:
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rcpps xmm5, xmm4
+	/* 1/x lookup seed in xmm5 */
+	movaps xmm0, [esp + _two]
+	mulps xmm4, xmm5
+	subps xmm0, xmm4
+	mulps xmm0, xmm5	/* xmm0=rinvsq */
+	movaps xmm4, xmm0
+	
+	movaps xmm1, xmm0
+	mulps  xmm1, xmm0
+	mulps  xmm1, xmm0	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm5, xmm2
+	subps  xmm5, xmm1	/* vnb=vnb12-vnb6 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+.mci3110_updateouterdata_vdw:
+	/* loop back to mno */
+	dec dword ptr [esp + _nsvdw]
+	jz  .mci3110_last_mno
+	jmp .mci3110_mno_vdw
+.mci3110_last_mno:	
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3110_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3110_outer
+.mci3110_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 292
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+.globl mcinl3120_sse
+	.type mcinl3120_sse,@function
+mcinl3120_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64	
+.equ		_tabscale,	68	
+.equ		_VFtab,		72
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_iqO,		144 
+.equ		_iqH,		160 
+.equ		_qqO,		176
+.equ		_qqH,		192
+.equ		_rinvO,		208
+.equ		_rinvH1,	224
+.equ		_rinvH2,	240		
+.equ		_rO,		256
+.equ		_rH1,		272
+.equ		_rH2,		288
+.equ		_tsc,		304
+.equ		_c6,		320
+.equ		_c12,		336
+.equ		_vctot,		352
+.equ		_vnbtot,	368
+.equ		_half,		384
+.equ		_three,		400
+.equ		_is3,		416
+.equ		_ii3,		420
+.equ		_ntia,		424	
+.equ		_innerjjnr,	428
+.equ		_innerk,	432
+.equ		_salign,	436		
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 440		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm5, [ebp + _tabscale]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm5, xmm5, 0
+	movaps [esp + _tsc], xmm5
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+	
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	mov   [esp + _ntia], ecx		
+.mci3120_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3120_unroll_loop
+	jmp   .mci3120_odd_inner
+.mci3120_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+	
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	/* start with rsqO - seed to xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvO], xmm4	/* rinvO in xmm4 */
+	mulps   xmm7, xmm4
+	movaps  [esp + _rO], xmm7	
+
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvH1], xmm4	/* rinvH1 in xmm4 */
+	mulps   xmm6, xmm4
+	movaps  [esp + _rH1], xmm6
+
+	/* rsqH2 - seed to xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvH2], xmm4	/* rinvH2 in xmm4 */
+	mulps   xmm5, xmm4
+	movaps  [esp + _rH2], xmm5
+
+	/* do O interactions */
+	/* rO is still in xmm7 */
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd mm0, eax   
+        movd mm1, ebx
+        movd mm2, ecx
+        movd mm3, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */
+
+	/* do nontable L-J */
+	movaps xmm2, [esp + _rinvO]
+	mulps  xmm2, xmm2
+
+        /* at this point mm5 contains vcoul and */
+        /* increment vcoul - then we can get rid of mm5 */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5 
+
+	movaps xmm1, xmm2
+	mulps  xmm1, xmm1
+	mulps  xmm1, xmm2	/* xmm1=rinvsix */
+	movaps xmm4, xmm1
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movaps xmm3, xmm4
+	subps  xmm3, xmm1	/* xmm3=vnb12-vnb6 */
+	addps  xmm3, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm3
+
+	/* Done with O interactions - now H1! */
+	movaps xmm7, [esp + _rH1]
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* Done with H1, finally we do H2 interactions */
+	movaps xmm7, [esp + _rH2]
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm0, [esp + _qqH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3120_odd_inner
+	jmp   .mci3120_unroll_loop
+.mci3120_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci3120_odd_loop
+	jmp   .mci3120_updateouterdata
+.mci3120_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	xorps xmm6, xmm6
+	mov esi, [ebp + _type]
+	mov ebx, [esi + eax*4]
+	mov esi, [ebp + _nbfp]
+	shl ebx, 1	
+	add ebx, [esp + _ntia]
+	movlps xmm6, [esi + ebx*4]
+	movaps xmm7, xmm6
+	shufps xmm6, xmm6, 0b11111100
+	shufps xmm7, xmm7, 0b11111101
+	movaps [esp + _c6], xmm6
+	movaps [esp + _c12], xmm7
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	movaps [esp + _rinvO], xmm0
+	
+	mulps xmm4, [esp + _tsc]
+	movhlps xmm7, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm7    /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm7, mm7
+        movlhps xmm3, xmm7
+
+	subps   xmm4, xmm3	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+	
+        movd mm0, eax   
+        movd mm1, ecx
+        movd mm2, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */     
+        movaps xmm0, [esp + _qqO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul  */
+        /* increment vcoul - then we can get rid of mm5 */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* do nontable L-J */
+	movaps xmm2, [esp + _rinvO]
+	mulps  xmm2, xmm2
+	movaps xmm1, xmm2
+	mulps  xmm1, xmm1
+	mulps  xmm1, xmm2	/* xmm1=rinvsix */
+	movaps xmm4, xmm1
+	mulps  xmm4, xmm4	/* xmm4=rinvtwelve */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm4, [esp + _c12]
+	movaps xmm3, xmm4
+	subps  xmm3, xmm1	/* xmm3=vnb12-vnb6 */
+	addps  xmm3, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm3
+	
+	dec dword ptr [esp + _innerk]
+	jz    .mci3120_updateouterdata
+	jmp   .mci3120_odd_loop
+.mci3120_updateouterdata:
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3120_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3120_outer
+.mci3120_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 440
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+	
+
+	
+.globl mcinl3130_sse
+	.type mcinl3130_sse,@function
+mcinl3130_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64
+.equ		_tabscale,	68	
+.equ		_VFtab,		72
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_jxO,		144
+.equ		_jyO,		160
+.equ		_jzO,		176
+.equ		_jxH1,		192
+.equ		_jyH1,		208
+.equ		_jzH1,		224 
+.equ		_jxH2,		240
+.equ		_jyH2,		256
+.equ		_jzH2,		272
+.equ		_qqOO,		288
+.equ		_qqOH,		304
+.equ		_qqHH,		320
+.equ		_tsc,		336
+.equ		_c6,		352
+.equ		_c12,		368		 
+.equ		_vctot,		384
+.equ		_vnbtot,	400
+.equ		_half,		416
+.equ		_three,		432
+.equ		_rsqOO,		448
+.equ		_rsqOH1,	464
+.equ		_rsqOH2,	480
+.equ		_rsqH1O,	496
+.equ		_rsqH1H1,	512
+.equ		_rsqH1H2,	528
+.equ		_rsqH2O,	544
+.equ		_rsqH2H1,	560
+.equ		_rsqH2H2,	576
+.equ		_rinvOO,	592
+.equ		_rinvOH1,	608
+.equ		_rinvOH2,	624
+.equ		_rinvH1O,	640
+.equ		_rinvH1H1,	656
+.equ		_rinvH1H2,	672
+.equ		_rinvH2O,	688
+.equ		_rinvH2H1,	704
+.equ		_rinvH2H2,	720	
+.equ		_is3,		736
+.equ		_ii3,		740
+.equ		_innerjjnr,	744
+.equ		_innerk,	748
+.equ		_salign,	752
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 756		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm5, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm2
+	shufps xmm5, xmm5, 0
+	movaps [esp + _tsc],  xmm5
+
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5
+		
+	xorps xmm0, xmm0
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	mov   edx, ecx
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	add   edx, ecx
+	mov   eax, [ebp + _nbfp]
+	movlps xmm0, [eax + edx*4] 
+	movaps xmm1, xmm0
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0b01010101
+	movaps [esp + _c6], xmm0
+	movaps [esp + _c12], xmm1
+
+.mci3130_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3130_unroll_loop
+	jmp   .mci3130_single_check
+.mci3130_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+		
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* start with OO interaction */
+	movaps xmm0, [esp + _rinvOO]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOO] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+		
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+	
+        movd mm0, eax
+        movd mm1, ebx
+        movd mm2, ecx
+        movd mm3, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        /* update vctot */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* start doing lj */
+	movaps xmm2, xmm0
+	mulps  xmm2, xmm2
+	movaps xmm1, xmm2
+	mulps  xmm1, xmm2
+	mulps  xmm1, xmm2	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulps  xmm1, [esp + _c6]
+	mulps  xmm2, [esp + _c12]
+	movaps xmm4, xmm2
+	subps  xmm4, xmm1
+	addps  xmm4, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm4
+
+	/* O-H1 interaction */
+	movaps xmm0, [esp + _rinvOH1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOH1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+	
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* O-H2 interaction */ 
+	movaps xmm0, [esp + _rinvOH2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOH2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H1-O interaction */
+	movaps xmm0, [esp + _rinvH1O]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1O] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H1-H1 interaction */
+	movaps xmm0, [esp + _rinvH1H1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1H1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H1-H2 interaction */
+	movaps xmm0, [esp + _rinvH1H2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1H2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H2-O interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2O] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H2-H1 interaction */
+	movaps xmm0, [esp + _rinvH2H1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2H1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H2-H2 interaction */
+	movaps xmm0, [esp + _rinvH2H2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2H2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul  */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3130_single_check
+	jmp   .mci3130_unroll_loop
+.mci3130_single_check:
+	add   [esp + _innerk],  4
+	jnz   .mci3130_single_loop
+	jmp   .mci3130_updateouterdata
+.mci3130_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	movaps  xmm2, xmm1	
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+
+	movaps  xmm1, xmm3
+	mulps   xmm1, xmm0	/* xmm1=r */
+	movaps  xmm0, xmm3	/* xmm0=rinv */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+	
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+	mov esi, [ebp + _VFtab]
+	
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOO]
+	movhps  xmm3, [esp + _qqOH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+	
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* start doing lj */
+	xorps  xmm2, xmm2
+	movss  xmm2, xmm0
+	mulss  xmm2, xmm2
+	movaps xmm1, xmm2
+	mulss  xmm1, xmm2
+	mulss  xmm1, xmm2	/* xmm1=rinvsix */
+	movaps xmm2, xmm1
+	mulss  xmm2, xmm2	/* xmm2=rinvtwelve */
+	mulss  xmm1, [esp + _c6]
+	mulss  xmm2, [esp + _c12]
+	movaps xmm4, xmm2
+	subss  xmm4, xmm1
+	addps  xmm4, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm4
+	
+	/* done with i O Now do i H1 & H2 simultaneously first get i particle coords: */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+
+	/* start with H1, save H2 data */
+	movaps [esp + _rsqH2O], xmm4
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+
+	/* start with H1, save H2 data */
+	movaps [esp + _rinvH2O], xmm7
+
+	movaps xmm1, xmm3
+	mulps  xmm1, xmm0	/* xmm1=r */
+	movaps xmm0, xmm3	/* xmm0=rinv */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOH]
+	movhps  xmm3, [esp + _qqHH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+
+	/* do table for H2 - j water interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm1, [esp + _rsqH2O]
+	mulps  xmm1, xmm0	/* xmm0=rinv, xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+	pslld   mm6, 2
+	pslld   mm7, 2
+
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOH]
+	movhps  xmm3, [esp + _qqHH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+
+	dec dword ptr [esp + _innerk]
+	jz    .mci3130_updateouterdata
+	jmp   .mci3130_single_loop
+.mci3130_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3130_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3130_outer
+.mci3130_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 756
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+	
+
+
+.globl mcinl3300_sse
+	.type mcinl3300_sse,@function
+mcinl3300_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64
+.equ		_tabscale,	68
+.equ		_VFtab,		72
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,		16
+.equ		_iz,		32
+.equ		_iq,		48
+.equ		_tsc,		64
+.equ		_qq,		80	
+.equ		_c6,		96
+.equ		_c12,		112
+.equ		_vctot,		128
+.equ		_vnbtot,	144
+.equ		_half,		160
+.equ		_three,		176
+.equ		_is3,		192
+.equ		_ii3,		196
+.equ		_ntia,		200	
+.equ		_innerjjnr,	204
+.equ		_innerk,	208
+.equ		_salign,	212
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 216		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+
+	/* assume we have at least one i particle - start directly */	
+.mci3300_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	/* clear vctot */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]	
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3300_unroll_loop
+	jmp   .mci3300_finish_inner
+.mci3300_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	mulps  xmm3, xmm2
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps [esp + _qq], xmm3
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	lea   ecx, [ecx + ecx*2]
+	lea   edx, [edx + edx*2]
+		
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* dispersion */
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] /* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+	/* put scalar force on stack */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + eax*4 + 32]
+	movlps xmm7, [esi + ecx*4 + 32]
+	movhps xmm5, [esi + ebx*4 + 32]
+	movhps xmm7, [esi + edx*4 + 32] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 40]
+	movlps xmm3, [esi + ecx*4 + 40]
+	movhps xmm7, [esi + ebx*4 + 40]
+	movhps xmm3, [esi + edx*4 + 40] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3300_finish_inner
+	jmp   .mci3300_unroll_loop
+.mci3300_finish_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3300_dopair
+	jmp   .mci3300_checksingle
+.mci3300_dopair:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+	lea   ecx, [ecx + ecx*2]
+	lea   edx, [edx + edx*2]
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* dispersion */
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16]/* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+	/* put scalar force on stack */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + ecx*4 + 32]
+	movhps xmm5, [esi + edx*4 + 32] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + ecx*4 + 40]
+	movhps xmm7, [esi + edx*4 + 40] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+.mci3300_checksingle:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3300_dosingle
+	jmp    .mci3300_updateouterdata
+.mci3300_dosingle:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	lea  ebx, [ebx + ebx*2]
+						
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
+
+	/* dispersion */
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack  */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm4, [esi + ebx*4 + 32]
+	movlps xmm6, [esi + ebx*4 + 40]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+	
+.mci3300_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3300_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3300_outer
+.mci3300_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 216
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+
+
+.globl mcinl3310_sse
+	.type mcinl3310_sse,@function
+mcinl3310_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64
+.equ		_tabscale,	68
+.equ		_VFtab,		72
+.equ		_nsatoms,	76
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ix,		0
+.equ		_iy,		16
+.equ		_iz,		32
+.equ		_iq,		48
+.equ		_two,		64
+.equ		_tsc,		80
+.equ		_qq,		96	
+.equ		_c6,		112
+.equ		_c12,		128
+.equ		_vctot,		144
+.equ		_vnbtot,	160
+.equ		_half,		176
+.equ		_three,		192
+.equ		_is3,		208
+.equ		_ii3,		212
+.equ		_shX,		216
+.equ		_shY,		220
+.equ		_shZ,		224
+.equ		_ntia,		228	
+.equ		_innerjjnr0,	232
+.equ		_innerk0,	236	
+.equ		_innerjjnr,	240
+.equ		_innerk,	244
+.equ		_salign,	248
+.equ		_nsvdwc,	252
+.equ		_nscoul,	256
+.equ		_nsvdw,		260
+.equ		_solnr,		264		
+	push ebp
+	mov ebp,esp	
+	push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 268		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm1, [sse_two]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _two], xmm1
+	movaps [esp + _three], xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+
+	/* assume we have at least one i particle - start directly */	
+.mci3310_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movlps xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 8] 
+	movlps [esp + _shX], xmm0
+	movss [esp + _shZ], xmm1
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   eax, [ebp + _nsatoms]
+	add   [ebp + _nsatoms],  12
+	mov   ecx, [eax]	
+	mov   edx, [eax + 4]
+	mov   eax, [eax + 8]	
+	sub   ecx, eax
+	sub   eax, edx
+	
+	mov   [esp + _nsvdwc], edx
+	mov   [esp + _nscoul], eax
+	mov   [esp + _nsvdw], ecx
+		
+	/* clear potential */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	mov   [esp + _solnr],  ebx
+
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr0], eax     /* pointer to jjnr[nj0] */
+	mov   [esp + _innerk0], edx        /* number of innerloop atoms */
+
+	mov   ecx, [esp + _nsvdwc]
+	cmp   ecx,  0
+	jnz   .mci3310_mno_vdwc
+	jmp   .mci3310_testcoul
+.mci3310_mno_vdwc:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+	/* clear i forces */
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+	
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3310_unroll_vdwc_loop
+	jmp   .mci3310_finish_vdwc_inner
+.mci3310_unroll_vdwc_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	mulps  xmm3, xmm2
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps [esp + _qq], xmm3
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	lea   ecx, [ecx + ecx*2]
+	lea   edx, [edx + edx*2]
+		
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* dispersion */
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] /* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+	/* put scalar force on stack  */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + eax*4 + 32]
+	movlps xmm7, [esi + ecx*4 + 32]
+	movhps xmm5, [esi + ebx*4 + 32]
+	movhps xmm7, [esi + edx*4 + 32] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 40]
+	movlps xmm3, [esi + ecx*4 + 40]
+	movhps xmm7, [esi + ebx*4 + 40]
+	movhps xmm3, [esi + edx*4 + 40] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3310_finish_vdwc_inner
+	jmp   .mci3310_unroll_vdwc_loop
+.mci3310_finish_vdwc_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3310_dopair_vdwc
+	jmp   .mci3310_checksingle_vdwc
+.mci3310_dopair_vdwc:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+	lea   ecx, [ecx + ecx*2]
+	lea   edx, [edx + edx*2]
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+	/* dispersion */
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16]/* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+	/* put scalar force on stack Update vnbtot directly */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + ecx*4 + 32]
+	movhps xmm5, [esi + edx*4 + 32] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+
+	movlps xmm7, [esi + ecx*4 + 40]
+	movhps xmm7, [esi + edx*4 + 40] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci3310_checksingle_vdwc:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3310_dosingle_vdwc
+	jmp    .mci3310_updateouterdata_vdwc
+.mci3310_dosingle_vdwc:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	lea  ebx, [ebx + ebx*2]
+						
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
+
+	/* dispersion */
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm4, [esi + ebx*4 + 32]
+	movlps xmm6, [esi + ebx*4 + 40]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+	
+.mci3310_updateouterdata_vdwc:
+
+	/* loop back to mno */
+	dec  dword ptr [esp + _nsvdwc]
+	jz  .mci3310_testcoul
+	jmp .mci3310_mno_vdwc
+.mci3310_testcoul:
+	mov  ecx, [esp + _nscoul]
+	cmp  ecx,  0
+	jnz  .mci3310_mno_coul
+	jmp  .mci3310_testvdw
+.mci3310_mno_coul:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	mulss xmm3, [ebp + _facel]
+	shufps xmm3, xmm3, 0
+	
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	movaps [esp + _iq], xmm3
+	
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   [esp + _ii3], ebx
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3310_unroll_coul_loop
+	jmp   .mci3310_finish_coul_inner
+
+.mci3310_unroll_coul_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	movaps xmm2, [esp + _iq]
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	mulps  xmm3, xmm2
+
+	movaps [esp + _qq], xmm3	
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	lea   ecx, [ecx + ecx*2]
+	lea   edx, [edx + edx*2]
+		
+	movlps xmm5, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm5, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* coulomb table ready, in xmm4-xmm7 */ 	
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3310_finish_coul_inner
+	jmp   .mci3310_unroll_coul_loop
+.mci3310_finish_coul_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3310_dopair_coul
+	jmp   .mci3310_checksingle_coul
+.mci3310_dopair_coul:	
+	mov esi, [ebp + _charge]
+
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+	movss xmm3, [esi + eax*4]		
+	movss xmm6, [esi + ebx*4]
+	shufps xmm3, xmm6, 0 
+	shufps xmm3, xmm3, 0b00001000 /* xmm3(0,1) has the charges */
+
+	mulps  xmm3, [esp + _iq]
+	movlhps xmm3, xmm7
+	movaps [esp + _qq], xmm3
+
+	mov edi, [ebp + _pos]	
+	
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	lea   ecx, [ecx + ecx*2]
+	lea   edx, [edx + edx*2]
+
+	movlps xmm5, [esi + ecx*4]
+	movhps xmm5, [esi + edx*4] /* got half coulomb table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8]
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addps  xmm5, [esp + _vctot]
+	movaps [esp + _vctot], xmm5 
+
+.mci3310_checksingle_coul:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3310_dosingle_coul
+	jmp    .mci3310_updateouterdata_coul
+.mci3310_dosingle_coul:
+	mov esi, [ebp + _charge]
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+	movss xmm6, [esi + eax*4]	/* xmm6(0) has the charge */	
+	mulps  xmm6, [esp + _iq]
+	movaps [esp + _qq], xmm6
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+	
+	lea   ebx, [ebx + ebx*2]
+
+	movlps xmm4, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	movaps xmm3, [esp + _qq]
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+	mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+	/* at this point mm5 contains vcoul */
+	/* increment vcoul - then we can get rid of mm5 */
+	/* update vctot */
+	addss  xmm5, [esp + _vctot]
+	movss [esp + _vctot], xmm5 
+
+.mci3310_updateouterdata_coul:
+	/* loop back to mno */
+	dec  dword ptr [esp + _nscoul]
+	jz  .mci3310_testvdw
+	jmp .mci3310_mno_coul
+.mci3310_testvdw:
+	mov  ecx, [esp + _nsvdw]
+	cmp  ecx,  0
+	jnz  .mci3310_mno_vdw
+	jmp  .mci3310_last_mno
+.mci3310_mno_vdw:
+	mov   ebx,  [esp + _solnr]
+	inc   dword ptr [esp + _solnr]
+
+        mov   edx, [ebp + _type] 
+        mov   edx, [edx + ebx*4]
+        imul  edx, [ebp + _ntype]
+        shl   edx, 1
+        mov   [esp + _ntia], edx
+		
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	movss xmm0, [esp + _shX]
+	movss xmm1, [esp + _shY]
+	movss xmm2, [esp + _shZ]
+
+	addss xmm0, [eax + ebx*4]
+	addss xmm1, [eax + ebx*4 + 4]
+	addss xmm2, [eax + ebx*4 + 8]
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+
+	movaps [esp + _ix], xmm0
+	movaps [esp + _iy], xmm1
+	movaps [esp + _iz], xmm2
+
+	mov   ecx, [esp + _innerjjnr0]
+	mov   [esp + _innerjjnr], ecx
+	mov   edx, [esp + _innerk0]
+        sub   edx,  4
+        mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3310_unroll_vdw_loop
+	jmp   .mci3310_finish_vdw_inner
+.mci3310_unroll_vdw_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+	
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ix-iz to xmm4-xmm6 */
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	movhlps xmm5, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm5	/* mm6/mm7 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	cvtpi2ps xmm5, mm7
+	movlhps xmm6, xmm5
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+	pslld mm6, 2
+	pslld mm7, 2
+
+	movd mm0, eax	
+	movd mm1, ebx
+	movd mm2, ecx
+	movd mm3, edx
+
+	mov  esi, [ebp + _VFtab]
+	movd eax, mm6
+	psrlq mm6, 32
+	movd ecx, mm7
+	psrlq mm7, 32
+	movd ebx, mm6
+	movd edx, mm7
+
+	lea   eax, [eax + eax*2] 
+	lea   ebx, [ebx + ebx*2] 
+	lea   ecx, [ecx + ecx*2] 
+	lea   edx, [edx + edx*2] 
+
+	/* dispersion */
+	movlps xmm5, [esi + eax*4 + 0]
+	movlps xmm7, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + ebx*4 + 0]
+	movhps xmm7, [esi + edx*4 + 0] /* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+	
+	movlps xmm7, [esi + eax*4 + 8]
+	movlps xmm3, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + ebx*4 + 8]
+	movhps xmm3, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + eax*4 + 16]
+	movlps xmm7, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + ebx*4 + 16]
+	movhps xmm7, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + eax*4 + 24]
+	movlps xmm3, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + ebx*4 + 24]
+	movhps xmm3, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3310_finish_vdw_inner
+	jmp   .mci3310_unroll_vdw_loop
+.mci3310_finish_vdw_inner:
+	/* check if at least two particles remain */
+	add   [esp + _innerk],  4
+	mov   edx, [esp + _innerk]
+	and   edx, 2
+	jnz   .mci3310_dopair_vdw
+	jmp   .mci3310_checksingle_vdw
+.mci3310_dopair_vdw:	
+        mov   ecx, [esp + _innerjjnr]
+	
+	mov   eax, [ecx]	
+	mov   ebx, [ecx + 4]              
+	add   [esp + _innerjjnr],  8	
+	xorps xmm7, xmm7
+
+	mov esi, [ebp + _type]
+	mov   ecx, eax
+	mov   edx, ebx
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add ecx, edi
+	add edx, edi
+	movlps xmm6, [esi + ecx*4]
+	movhps xmm6, [esi + edx*4]
+	mov edi, [ebp + _pos]	
+	
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b1000 	
+	shufps xmm6, xmm6, 0b1101
+	movlhps xmm4, xmm7
+	movlhps xmm6, xmm7
+	
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+			
+	lea   eax, [eax + eax*2]
+	lea   ebx, [ebx + ebx*2]
+	/* move coordinates to xmm0-xmm2 */
+	movlps xmm1, [edi + eax*4]
+	movss xmm2, [edi + eax*4 + 8]	
+	movhps xmm1, [edi + ebx*4]
+	movss xmm0, [edi + ebx*4 + 8]	
+
+	movlhps xmm3, xmm7
+	
+	shufps xmm2, xmm0, 0
+	
+	movaps xmm0, xmm1
+
+	shufps xmm2, xmm2, 0b10001000
+	
+	shufps xmm0, xmm0, 0b10001000
+	shufps xmm1, xmm1, 0b11011101
+			
+	/* move ix-iz to xmm4-xmm6 */
+	xorps   xmm7, xmm7
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ecx, mm6
+	psrlq mm6, 32
+	movd edx, mm6
+
+	lea   ecx, [ecx + ecx*2] 
+	lea   edx, [edx + edx*2] 
+
+	/* dispersion */
+	movlps xmm5, [esi + ecx*4 + 0]
+	movhps xmm5, [esi + edx*4 + 0]/* got half dispersion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm4, 0b10001000
+	shufps xmm5, xmm5, 0b11011101
+	
+	movlps xmm7, [esi + ecx*4 + 8]
+	movhps xmm7, [esi + edx*4 + 8] /* other half of dispersion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 0b10001000
+	shufps xmm7, xmm7, 0b11011101
+	/* dispersion table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack */
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm5, [esi + ecx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 16] /* got half repulsion table */
+	movaps xmm4, xmm5
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm5, xmm7, 0b11011101
+
+	movlps xmm7, [esi + ecx*4 + 24]
+	movhps xmm7, [esi + edx*4 + 24] /* other half of repulsion table */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm3, 0b10001000
+	shufps xmm7, xmm3, 0b11011101
+	/* table ready, in xmm4-xmm7 */	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addps  xmm5, [esp + _vnbtot]
+	movaps [esp + _vnbtot], xmm5
+
+.mci3310_checksingle_vdw:				
+	mov   edx, [esp + _innerk]
+	and   edx, 1
+	jnz    .mci3310_dosingle_vdw
+	jmp    .mci3310_updateouterdata_vdw
+.mci3310_dosingle_vdw:
+	mov edi, [ebp + _pos]
+	mov   ecx, [esp + _innerjjnr]
+	mov   eax, [ecx]	
+	xorps  xmm6, xmm6
+
+	mov esi, [ebp + _type]
+	mov ecx, eax
+	mov ecx, [esi + ecx*4]	
+	mov esi, [ebp + _nbfp]
+	shl ecx, 1
+	add ecx, [esp + _ntia]
+	movlps xmm6, [esi + ecx*4]
+	movaps xmm4, xmm6
+	shufps xmm4, xmm4, 0b11111100	
+	shufps xmm6, xmm6, 0b11111101	
+			
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6	
+		
+	lea   eax, [eax + eax*2]
+	
+	/* move coordinates to xmm0-xmm2 */
+	movss xmm0, [edi + eax*4]	
+	movss xmm1, [edi + eax*4 + 4]	
+	movss xmm2, [edi + eax*4 + 8]	 
+	
+	movaps xmm4, [esp + _ix]
+	movaps xmm5, [esp + _iy]
+	movaps xmm6, [esp + _iz]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+
+	mulps xmm4, xmm0	/* xmm4=r */
+	mulps xmm4, [esp + _tsc]
+
+	cvttps2pi mm6, xmm4     /* mm6 contain lu indices */
+	cvtpi2ps xmm6, mm6
+	subps xmm4, xmm6	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1	
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+
+	pslld mm6, 2
+
+	mov  esi, [ebp + _VFtab]
+	movd ebx, mm6
+
+	lea   ebx, [ebx + ebx*2] 	
+
+	/* dispersion */
+	movlps xmm4, [esi + ebx*4 + 0]
+	movlps xmm6, [esi + ebx*4 + 8]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+
+	movaps xmm4, [esp + _c6]
+	mulps  xmm5, xmm4	 /* vnb6 */
+
+	/* put scalar force on stack Update vnbtot directly */
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+
+	/* repulsion */
+	movlps xmm4, [esi + ebx*4 + 16]
+	movlps xmm6, [esi + ebx*4 + 24]
+	movaps xmm5, xmm4
+	movaps xmm7, xmm6
+	shufps xmm5, xmm5, 1
+	shufps xmm7, xmm7, 1
+	/* table ready in xmm4-xmm7 */
+	
+	mulps  xmm6, xmm1	/* xmm6=Geps */
+	mulps  xmm7, xmm2	/* xmm7=Heps2 */
+	addps  xmm5, xmm6
+	addps  xmm5, xmm7	/* xmm5=Fp */	
+	mulps  xmm7, [esp + _two]	/* two*Heps2 */
+	mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+	addps  xmm5, xmm4 /* xmm5=VV */
+ 	
+	movaps xmm4, [esp + _c12]
+	mulps  xmm5, xmm4 /* vnb12 */
+	
+	addss  xmm5, [esp + _vnbtot]
+	movss [esp + _vnbtot], xmm5
+	
+.mci3310_updateouterdata_vdw:
+	
+	/* loop back to mno */
+	dec dword ptr [esp + _nsvdw]
+	jz  .mci3310_last_mno
+	jmp .mci3310_mno_vdw
+.mci3310_last_mno:	
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3310_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3310_outer
+.mci3310_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 268
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+
+
+
+.globl mcinl3320_sse
+	.type mcinl3320_sse,@function
+mcinl3320_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48			
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64	
+.equ		_tabscale,	68	
+.equ		_VFtab,		72	
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_iqO,		144 
+.equ		_iqH,		160 
+.equ		_qqO,		176
+.equ		_qqH,		192
+.equ		_rinvO,		208
+.equ		_rinvH1,	224
+.equ		_rinvH2,	240		
+.equ		_rO,		256
+.equ		_rH1,		272
+.equ		_rH2,		288
+.equ		_tsc,		304	
+.equ		_c6,		320
+.equ		_c12,		336
+.equ		_vctot,		352
+.equ		_vnbtot,	368
+.equ		_half,		384
+.equ		_three,		400
+.equ		_is3,		416
+.equ		_ii3,		420
+.equ		_ntia,		424	
+.equ		_innerjjnr,	428
+.equ		_innerk,	432
+.equ		_salign,	436
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 440		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three],  xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc], xmm3
+	
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, [edx + ebx*4 + 4]	
+	movss xmm5, [ebp + _facel]
+	mulss  xmm3, xmm5
+	mulss  xmm4, xmm5
+
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	movaps [esp + _iqO], xmm3
+	movaps [esp + _iqH], xmm4
+	
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	mov   [esp + _ntia], ecx		
+.mci3320_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx
+
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+	
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3320_unroll_loop
+	jmp   .mci3320_odd_inner
+.mci3320_unroll_loop:
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4]              
+	mov   ecx, [edx + 8]            
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _charge]        /* base of charge[] */
+	
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + ecx*4]
+	movss xmm6, [esi + ebx*4]
+	movss xmm7, [esi + edx*4]
+
+	shufps xmm3, xmm6, 0 
+	shufps xmm4, xmm7, 0 
+	shufps xmm3, xmm4, 0b10001000 /* all charges in xmm3 */ 
+	movaps xmm4, xmm3	     /* and in xmm4 */
+	mulps  xmm3, [esp + _iqO]
+	mulps  xmm4, [esp + _iqH]
+
+	movd  mm0, eax		/* use mmx registers as temp storage */
+	movd  mm1, ebx
+	movd  mm2, ecx
+	movd  mm3, edx
+
+	movaps  [esp + _qqO], xmm3
+	movaps  [esp + _qqH], xmm4
+	
+	mov esi, [ebp + _type]
+	mov eax, [esi + eax*4]
+	mov ebx, [esi + ebx*4]
+	mov ecx, [esi + ecx*4]
+	mov edx, [esi + edx*4]
+	mov esi, [ebp + _nbfp]
+	shl eax, 1	
+	shl ebx, 1	
+	shl ecx, 1	
+	shl edx, 1	
+	mov edi, [esp + _ntia]
+	add eax, edi
+	add ebx, edi
+	add ecx, edi
+	add edx, edi
+
+	movlps xmm6, [esi + eax*4]
+	movlps xmm7, [esi + ecx*4]
+	movhps xmm6, [esi + ebx*4]
+	movhps xmm7, [esi + edx*4]
+
+	movaps xmm4, xmm6
+	shufps xmm4, xmm7, 0b10001000
+	shufps xmm6, xmm7, 0b11011101
+	
+	movd  eax, mm0		
+	movd  ebx, mm1
+	movd  ecx, mm2
+	movd  edx, mm3
+
+	movaps [esp + _c6], xmm4
+	movaps [esp + _c12], xmm6
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+
+	/* move four coordinates to xmm0-xmm2 */	
+	movlps xmm4, [esi + eax*4]
+	movlps xmm5, [esi + ecx*4]
+	movss xmm2, [esi + eax*4 + 8]
+	movss xmm6, [esi + ecx*4 + 8]
+
+	movhps xmm4, [esi + ebx*4]
+	movhps xmm5, [esi + edx*4]
+
+	movss xmm0, [esi + ebx*4 + 8]
+	movss xmm1, [esi + edx*4 + 8]
+
+	shufps xmm2, xmm0, 0
+	shufps xmm6, xmm1, 0
+	
+	movaps xmm0, xmm4
+	movaps xmm1, xmm4
+
+	shufps xmm2, xmm6, 0b10001000
+	
+	shufps xmm0, xmm5, 0b10001000
+	shufps xmm1, xmm5, 0b11011101		
+
+	/* move ixO-izO to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixO]
+	movaps xmm5, [esp + _iyO]
+	movaps xmm6, [esp + _izO]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm4, xmm5
+	addps xmm4, xmm6
+	movaps xmm7, xmm4
+	/* rsqO in xmm7 */
+
+	/* move ixH1-izH1 to xmm4-xmm6 */
+	movaps xmm4, [esp + _ixH1]
+	movaps xmm5, [esp + _iyH1]
+	movaps xmm6, [esp + _izH1]
+
+	/* calc dr */
+	subps xmm4, xmm0
+	subps xmm5, xmm1
+	subps xmm6, xmm2
+
+	/* square it */
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	mulps xmm6,xmm6
+	addps xmm6, xmm5
+	addps xmm6, xmm4
+	/* rsqH1 in xmm6 */
+
+	/* move ixH2-izH2 to xmm3-xmm5 */ 
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+
+	/* calc dr */
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	/* square it */
+	mulps xmm3,xmm3
+	mulps xmm4,xmm4
+	mulps xmm5,xmm5
+	addps xmm5, xmm4
+	addps xmm5, xmm3
+	/* rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 */
+
+	/* start with rsqO - seed to xmm2 */	
+	rsqrtps xmm2, xmm7
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm7	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvO], xmm4	/* rinvO in xmm4 */
+	mulps   xmm7, xmm4
+	movaps  [esp + _rO], xmm7	
+
+	/* rsqH1 - seed in xmm2 */
+	rsqrtps xmm2, xmm6
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm6	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvH1], xmm4	/* rinvH1 in xmm4 */
+	mulps   xmm6, xmm4
+	movaps  [esp + _rH1], xmm6
+
+	/* rsqH2 - seed to xmm2 */
+	rsqrtps xmm2, xmm5
+	movaps  xmm3, xmm2
+	mulps   xmm2, xmm2
+	movaps  xmm4, [esp + _three]
+	mulps   xmm2, xmm5	/* rsq*lu*lu */
+	subps   xmm4, xmm2	/* 30-rsq*lu*lu */
+	mulps   xmm4, xmm3	/* lu*(3-rsq*lu*lu) */
+	mulps   xmm4, [esp + _half]
+	movaps  [esp + _rinvH2], xmm4	/* rinvH2 in xmm4 */
+	mulps   xmm5, xmm4
+	movaps  [esp + _rH2], xmm5
+
+	/* do O interactions */
+	/* rO is still in xmm7 */
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd mm0, eax   
+        movd mm1, ebx
+        movd mm2, ecx
+        movd mm3, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5 
+
+        /* dispersion */
+        movlps xmm5, [esi + eax*4 + 16]
+        movlps xmm7, [esi + ecx*4 + 16]
+        movhps xmm5, [esi + ebx*4 + 16]
+        movhps xmm7, [esi + edx*4 + 16] /* got half dispersion table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+        
+        movlps xmm7, [esi + eax*4 + 24]
+        movlps xmm3, [esi + ecx*4 + 24]
+        movhps xmm7, [esi + ebx*4 + 24]
+        movhps xmm3, [esi + edx*4 + 24] /* other half of dispersion table */
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* dispersion table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+
+        movaps xmm4, [esp + _c6]
+        mulps  xmm5, xmm4        /* vnb6 */
+        /* Update vnbtot directly */
+        addps  xmm5, [esp + _vnbtot]
+        movaps [esp + _vnbtot], xmm5
+
+        /* repulsion */
+        movlps xmm5, [esi + eax*4 + 32]
+        movlps xmm7, [esi + ecx*4 + 32]
+        movhps xmm5, [esi + ebx*4 + 32]
+        movhps xmm7, [esi + edx*4 + 32] /* got half repulsion table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 40]
+        movlps xmm3, [esi + ecx*4 + 40]
+        movhps xmm7, [esi + ebx*4 + 40]
+        movhps xmm3, [esi + edx*4 + 40] /* other half of repulsion table */
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* repulsion table ready, in xmm4-xmm7 */	
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+
+        movaps xmm4, [esp + _c12]
+        mulps  xmm5, xmm4        /* vnb12 */
+        addps  xmm5, [esp + _vnbtot] /* total nonbonded potential in xmm5 */
+        movaps [esp + _vnbtot], xmm5
+
+	/* Done with O interactions - now H1! */
+	movaps xmm7, [esp + _rH1]
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* Done with H1, finally we do H2 interactions */
+	movaps xmm7, [esp + _rH2]
+	mulps   xmm7, [esp + _tsc]
+	movhlps xmm4, xmm7
+	cvttps2pi mm6, xmm7
+	cvttps2pi mm7, xmm4    /* mm6/mm7 contain lu indices */
+	
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm4, mm7
+        movlhps xmm3, xmm4
+	
+        subps xmm7, xmm3
+	movaps xmm1, xmm7	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+		
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+		
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3320_odd_inner
+	jmp   .mci3320_unroll_loop
+.mci3320_odd_inner:	
+	add   [esp + _innerk],  4
+	jnz   .mci3320_odd_loop
+	jmp   .mci3320_updateouterdata
+.mci3320_odd_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+ 	xorps xmm4, xmm4
+	movss xmm4, [esp + _iqO]
+	mov esi, [ebp + _charge] 
+	movhps xmm4, [esp + _iqH]     
+	movss xmm3, [esi + eax*4]	/* charge in xmm3 */
+	shufps xmm3, xmm3, 0
+	mulps xmm3, xmm4
+	movaps [esp + _qqO], xmm3	/* use oxygen qq for storage */
+
+	xorps xmm6, xmm6
+	mov esi, [ebp + _type]
+	mov ebx, [esi + eax*4]
+	mov esi, [ebp + _nbfp]
+	shl ebx, 1	
+	add ebx, [esp + _ntia]
+	movlps xmm6, [esi + ebx*4]
+	movaps xmm7, xmm6
+	shufps xmm6, xmm6, 0b11111100
+	shufps xmm7, xmm7, 0b11111101
+	movaps [esp + _c6], xmm6
+	movaps [esp + _c12], xmm7
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+	
+	/* move j coords to xmm0-xmm2 */
+	movss xmm0, [esi + eax*4]
+	movss xmm1, [esi + eax*4 + 4]
+	movss xmm2, [esi + eax*4 + 8]
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	
+	movss xmm3, [esp + _ixO]
+	movss xmm4, [esp + _iyO]
+	movss xmm5, [esp + _izO]
+		
+	movlps xmm6, [esp + _ixH1]
+	movlps xmm7, [esp + _ixH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm3, xmm6
+	movlps xmm6, [esp + _iyH1]
+	movlps xmm7, [esp + _iyH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm4, xmm6
+	movlps xmm6, [esp + _izH1]
+	movlps xmm7, [esp + _izH2]
+	unpcklps xmm6, xmm7
+	movlhps xmm5, xmm6
+
+	subps xmm3, xmm0
+	subps xmm4, xmm1
+	subps xmm5, xmm2
+
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	/* rsq in xmm4 */
+
+	rsqrtps xmm5, xmm4
+	/* lookup seed in xmm5 */
+	movaps xmm2, xmm5
+	mulps xmm5, xmm5
+	movaps xmm1, [esp + _three]
+	mulps xmm5, xmm4	/* rsq*lu*lu */			
+	movaps xmm0, [esp + _half]
+	subps xmm1, xmm5	/* 30-rsq*lu*lu */
+	mulps xmm1, xmm2	
+	mulps xmm0, xmm1	/* xmm0=rinv */
+	mulps xmm4, xmm0	/* xmm4=r */
+	movaps [esp + _rinvO], xmm0
+	
+	mulps xmm4, [esp + _tsc]
+	movhlps xmm7, xmm4
+	cvttps2pi mm6, xmm4
+	cvttps2pi mm7, xmm7    /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm7, mm7
+        movlhps xmm3, xmm7
+
+	subps   xmm4, xmm3	
+	movaps xmm1, xmm4	/* xmm1=eps */
+	movaps xmm2, xmm1
+	mulps  xmm2, xmm2	/* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+	
+        movd mm0, eax   
+        movd mm1, ecx
+        movd mm2, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+	
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */     
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */       
+        movaps xmm0, [esp + _qqO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm0 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+        /* dispersion */
+        movlps xmm5, [esi + eax*4 + 16]	/* half table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm4, 0b11111100
+        shufps xmm5, xmm5, 0b11111101
+        
+        movlps xmm7, [esi + eax*4 + 24] /* other half of dispersion table */
+        movaps xmm6, xmm7
+        shufps xmm6, xmm6, 0b11111100
+        shufps xmm7, xmm7, 0b11111101
+        /* dispersion table ready, in xmm4-xmm7 */ 
+        mulss  xmm6, xmm1       /* xmm6=Geps */
+        mulss  xmm7, xmm2       /* xmm7=Heps2 */
+        addss  xmm5, xmm6	/* Update vnbtot directly */
+        addss  xmm5, xmm7       /* xmm5=Fp */       
+        mulss  xmm5, xmm1 /* xmm5=eps*Fp */
+        addss  xmm5, xmm4 /* xmm5=VV */
+
+        movaps xmm4, [esp + _c6]
+        mulps  xmm5, xmm4        /* vnb6 */
+        /* Update vnbtot directly */
+        addps  xmm5, [esp + _vnbtot]
+        movaps [esp + _vnbtot], xmm5
+
+        /* repulsion */
+        movlps xmm5, [esi + eax*4 + 32] /* got half repulsion table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm4, 0b10001000
+        shufps xmm5, xmm5, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 40] /* other half of repulsion table */
+        movaps xmm6, xmm7
+        shufps xmm6, xmm6, 0b10001000
+        shufps xmm7, xmm7, 0b11011101
+        /* repulsion table ready, in xmm4-xmm7 */	
+        mulss  xmm6, xmm1       /* xmm6=Geps */
+        mulss  xmm7, xmm2       /* xmm7=Heps2 */
+        addss  xmm5, xmm6
+        addss  xmm5, xmm7       /* xmm5=Fp */       
+        mulss  xmm5, xmm1 /* xmm5=eps*Fp */
+        addss  xmm5, xmm4 /* xmm5=VV */
+
+        movaps xmm4, [esp + _c12]
+        mulps  xmm5, xmm4        /* vnb12 */
+        addps  xmm5, [esp + _vnbtot] /* total nonbonded potential in xmm5 */
+        movaps [esp + _vnbtot], xmm5
+	
+	dec dword ptr [esp + _innerk]
+	jz    .mci3320_updateouterdata
+	jmp   .mci3320_odd_loop
+.mci3320_updateouterdata:
+	mov   edx, [ebp + _gid]  
+	mov   edx, [edx]
+	add   [ebp + _gid],  4	
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+        
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3320_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3320_outer
+.mci3320_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 440
+	pop edi
+	pop esi
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+	leave
+	ret
+	
+
+	
+.globl mcinl3330_sse
+	.type mcinl3330_sse,@function
+mcinl3330_sse:	
+.equ		_nri,		8
+.equ		_iinr,		12
+.equ		_jindex,	16
+.equ		_jjnr,		20
+.equ		_shift,		24
+.equ		_shiftvec,	28
+.equ		_gid,		32
+.equ		_pos,		36		
+.equ		_charge,	40
+.equ		_facel,		44
+.equ		_Vc,		48
+.equ		_type,		52
+.equ		_ntype,		56
+.equ		_nbfp,		60	
+.equ		_Vnb,		64
+.equ		_tabscale,	68
+.equ		_VFtab,		72
+	/* stack offsets for local variables */ 
+	/* bottom of stack is cache-aligned for sse use */
+.equ		_ixO,		0
+.equ		_iyO,		16
+.equ		_izO,		32
+.equ		_ixH1,		48
+.equ		_iyH1,		64
+.equ		_izH1,		80
+.equ		_ixH2,		96
+.equ		_iyH2,		112
+.equ		_izH2,		128
+.equ		_jxO,		144
+.equ		_jyO,		160
+.equ		_jzO,		176
+.equ		_jxH1,		192
+.equ		_jyH1,		208
+.equ		_jzH1,		224
+.equ		_jxH2,		240
+.equ		_jyH2,		256
+.equ		_jzH2,		272
+.equ		_qqOO,		288
+.equ		_qqOH,		304
+.equ		_qqHH,		320
+.equ		_tsc,		336
+.equ		_c6,		352
+.equ		_c12,		368		 
+.equ		_vctot,		384
+.equ		_vnbtot,	400
+.equ		_half,		416
+.equ		_three,		432
+.equ		_rsqOO,		448
+.equ		_rsqOH1,	464
+.equ		_rsqOH2,	480
+.equ		_rsqH1O,	496
+.equ		_rsqH1H1,	512
+.equ		_rsqH1H2,	528
+.equ		_rsqH2O,	544
+.equ		_rsqH2H1,	560
+.equ		_rsqH2H2,	576
+.equ		_rinvOO,	592
+.equ		_rinvOH1,	608
+.equ		_rinvOH2,	624
+.equ		_rinvH1O,	640
+.equ		_rinvH1H1,	656
+.equ		_rinvH1H2,	672
+.equ		_rinvH2O,	688
+.equ		_rinvH2H1,	704
+.equ		_rinvH2H2,	720	
+.equ		_is3,		736
+.equ		_ii3,		740
+.equ		_innerjjnr,	744
+.equ		_innerk,	748
+.equ		_salign,	752
+	push ebp
+	mov ebp,esp	
+        push eax
+        push ebx
+        push ecx
+        push edx
+	push esi
+	push edi
+	sub esp, 756		/* local stack space */
+	mov  eax, esp
+	and  eax, 0xf
+	sub esp, eax
+	mov [esp + _salign], eax
+
+	emms
+
+	movups xmm0, [sse_half]
+	movups xmm2, [sse_three]
+	movss xmm3, [ebp + _tabscale]
+	movaps [esp + _half],  xmm0
+	movaps [esp + _three], xmm2
+	shufps xmm3, xmm3, 0
+	movaps [esp + _tsc],  xmm3
+
+	/* assume we have at least one i particle - start directly */
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	mov   edx, [ebp + _charge]
+	movss xmm3, [edx + ebx*4]	
+	movss xmm4, xmm3	
+	movss xmm5, [edx + ebx*4 + 4]	
+	movss xmm6, [ebp + _facel]
+	mulss  xmm3, xmm3
+	mulss  xmm4, xmm5
+	mulss  xmm5, xmm5
+	mulss  xmm3, xmm6
+	mulss  xmm4, xmm6
+	mulss  xmm5, xmm6
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _qqOO], xmm3
+	movaps [esp + _qqOH], xmm4
+	movaps [esp + _qqHH], xmm5
+		
+	xorps xmm0, xmm0
+	mov   edx, [ebp + _type]
+	mov   ecx, [edx + ebx*4]
+	shl   ecx, 1
+	mov   edx, ecx
+	imul  ecx, [ebp + _ntype]      /* ecx = ntia = 2*ntype*type[ii0] */
+	add   edx, ecx
+	mov   eax, [ebp + _nbfp]
+	movlps xmm0, [eax + edx*4] 
+	movaps xmm1, xmm0
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0b01010101
+	movaps [esp + _c6], xmm0
+	movaps [esp + _c12], xmm1
+
+.mci3330_outer:
+	mov   eax, [ebp + _shift]      /* eax = pointer into shift[] */
+	mov   ebx, [eax]		/* ebx=shift[n] */
+	add   [ebp + _shift],  4  /* advance pointer one step */
+	
+	lea   ebx, [ebx + ebx*2]        /* ebx=3*is */
+	mov   [esp + _is3],ebx    	/* store is3 */
+
+	mov   eax, [ebp + _shiftvec]   /* eax = base of shiftvec[] */
+
+	movss xmm0, [eax + ebx*4]
+	movss xmm1, [eax + ebx*4 + 4]
+	movss xmm2, [eax + ebx*4 + 8] 
+
+	mov   ecx, [ebp + _iinr]       /* ecx = pointer into iinr[] */	
+	add   [ebp + _iinr],  4   /* advance pointer */
+	mov   ebx, [ecx]	        /* ebx =ii */
+
+	lea   ebx, [ebx + ebx*2]	/* ebx = 3*ii=ii3 */
+	mov   eax, [ebp + _pos]        /* eax = base of pos[] */ 
+	mov   [esp + _ii3], ebx	
+	
+	movaps xmm3, xmm0
+	movaps xmm4, xmm1
+	movaps xmm5, xmm2
+	addss xmm3, [eax + ebx*4]
+	addss xmm4, [eax + ebx*4 + 4]
+	addss xmm5, [eax + ebx*4 + 8]		
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixO], xmm3
+	movaps [esp + _iyO], xmm4
+	movaps [esp + _izO], xmm5
+
+	movss xmm3, xmm0
+	movss xmm4, xmm1
+	movss xmm5, xmm2
+	addss xmm0, [eax + ebx*4 + 12]
+	addss xmm1, [eax + ebx*4 + 16]
+	addss xmm2, [eax + ebx*4 + 20]		
+	addss xmm3, [eax + ebx*4 + 24]
+	addss xmm4, [eax + ebx*4 + 28]
+	addss xmm5, [eax + ebx*4 + 32]		
+
+	shufps xmm0, xmm0, 0
+	shufps xmm1, xmm1, 0
+	shufps xmm2, xmm2, 0
+	shufps xmm3, xmm3, 0
+	shufps xmm4, xmm4, 0
+	shufps xmm5, xmm5, 0
+	movaps [esp + _ixH1], xmm0
+	movaps [esp + _iyH1], xmm1
+	movaps [esp + _izH1], xmm2
+	movaps [esp + _ixH2], xmm3
+	movaps [esp + _iyH2], xmm4
+	movaps [esp + _izH2], xmm5
+
+	/* clear vctot and i forces */
+	xorps xmm4, xmm4
+	movaps [esp + _vctot], xmm4
+	movaps [esp + _vnbtot], xmm4
+	
+	mov   eax, [ebp + _jindex]
+	mov   ecx, [eax]	         /* jindex[n] */
+	mov   edx, [eax + 4]	         /* jindex[n+1] */
+	add   [ebp + _jindex],  4
+	sub   edx, ecx                   /* number of innerloop atoms */
+
+	mov   esi, [ebp + _pos]
+	mov   eax, [ebp + _jjnr]
+	shl   ecx, 2
+	add   eax, ecx
+	mov   [esp + _innerjjnr], eax     /* pointer to jjnr[nj0] */
+	sub   edx,  4
+	mov   [esp + _innerk], edx        /* number of innerloop atoms */
+	jge   .mci3330_unroll_loop
+	jmp   .mci3330_single_check
+.mci3330_unroll_loop:	
+	/* quad-unroll innerloop here */
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+
+	mov   eax, [edx]	
+	mov   ebx, [edx + 4] 
+	mov   ecx, [edx + 8]
+	mov   edx, [edx + 12]             /* eax-edx=jnr1-4 */
+	
+	add   [esp + _innerjjnr],  16 /* advance pointer (unrolled 4) */
+
+	mov esi, [ebp + _pos]       /* base of pos[] */
+
+	lea   eax, [eax + eax*2]         /* replace jnr with j3 */
+	lea   ebx, [ebx + ebx*2]	
+	lea   ecx, [ecx + ecx*2]         /* replace jnr with j3 */
+	lea   edx, [edx + edx*2]	
+	
+	/* move j coordinates to local temp variables */
+	movlps xmm2, [esi + eax*4]
+	movlps xmm3, [esi + eax*4 + 12]
+	movlps xmm4, [esi + eax*4 + 24]
+
+	movlps xmm5, [esi + ebx*4]
+	movlps xmm6, [esi + ebx*4 + 12]
+	movlps xmm7, [esi + ebx*4 + 24]
+
+	movhps xmm2, [esi + ecx*4]
+	movhps xmm3, [esi + ecx*4 + 12]
+	movhps xmm4, [esi + ecx*4 + 24]
+
+	movhps xmm5, [esi + edx*4]
+	movhps xmm6, [esi + edx*4 + 12]
+	movhps xmm7, [esi + edx*4 + 24]
+
+	/* current state: */	
+	/* xmm2= jxOa  jyOa  jxOc  jyOc */
+	/* xmm3= jxH1a jyH1a jxH1c jyH1c */
+	/* xmm4= jxH2a jyH2a jxH2c jyH2c */
+	/* xmm5= jxOb  jyOb  jxOd  jyOd */
+	/* xmm6= jxH1b jyH1b jxH1d jyH1d */
+	/* xmm7= jxH2b jyH2b jxH2d jyH2d */
+	
+	movaps xmm0, xmm2
+	movaps xmm1, xmm3
+	unpcklps xmm0, xmm5	/* xmm0= jxOa  jxOb  jyOa  jyOb */
+	unpcklps xmm1, xmm6	/* xmm1= jxH1a jxH1b jyH1a jyH1b */
+	unpckhps xmm2, xmm5	/* xmm2= jxOc  jxOd  jyOc  jyOd */
+	unpckhps xmm3, xmm6	/* xmm3= jxH1c jxH1d jyH1c jyH1d  */
+	movaps xmm5, xmm4
+	movaps   xmm6, xmm0
+	unpcklps xmm4, xmm7	/* xmm4= jxH2a jxH2b jyH2a jyH2b */		
+	unpckhps xmm5, xmm7	/* xmm5= jxH2c jxH2d jyH2c jyH2d */
+	movaps   xmm7, xmm1
+	movlhps  xmm0, xmm2	/* xmm0= jxOa  jxOb  jxOc  jxOd  */
+	movaps [esp + _jxO], xmm0
+	movhlps  xmm2, xmm6	/* xmm2= jyOa  jyOb  jyOc  jyOd */
+	movaps [esp + _jyO], xmm2
+	movlhps  xmm1, xmm3
+	movaps [esp + _jxH1], xmm1
+	movhlps  xmm3, xmm7
+	movaps   xmm6, xmm4
+	movaps [esp + _jyH1], xmm3
+	movlhps  xmm4, xmm5
+	movaps [esp + _jxH2], xmm4
+	movhlps  xmm5, xmm6
+	movaps [esp + _jyH2], xmm5
+
+	movss  xmm0, [esi + eax*4 + 8]
+	movss  xmm1, [esi + eax*4 + 20]
+	movss  xmm2, [esi + eax*4 + 32]
+
+	movss  xmm3, [esi + ecx*4 + 8]
+	movss  xmm4, [esi + ecx*4 + 20]
+	movss  xmm5, [esi + ecx*4 + 32]
+
+	movhps xmm0, [esi + ebx*4 + 4]
+	movhps xmm1, [esi + ebx*4 + 16]
+	movhps xmm2, [esi + ebx*4 + 28]
+	
+	movhps xmm3, [esi + edx*4 + 4]
+	movhps xmm4, [esi + edx*4 + 16]
+	movhps xmm5, [esi + edx*4 + 28]
+	
+	shufps xmm0, xmm3, 0b11001100
+	shufps xmm1, xmm4, 0b11001100
+	shufps xmm2, xmm5, 0b11001100
+	movaps [esp + _jzO],  xmm0
+	movaps [esp + _jzH1],  xmm1
+	movaps [esp + _jzH2],  xmm2
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixO]
+	movaps xmm4, [esp + _iyO]
+	movaps xmm5, [esp + _izO]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOO], xmm0
+	movaps [esp + _rsqOH1], xmm3
+
+	movaps xmm0, [esp + _ixO]
+	movaps xmm1, [esp + _iyO]
+	movaps xmm2, [esp + _izO]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	subps  xmm3, [esp + _jxO]
+	subps  xmm4, [esp + _jyO]
+	subps  xmm5, [esp + _jzO]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqOH2], xmm0
+	movaps [esp + _rsqH1O], xmm3
+
+	movaps xmm0, [esp + _ixH1]
+	movaps xmm1, [esp + _iyH1]
+	movaps xmm2, [esp + _izH1]
+	movaps xmm3, [esp + _ixH1]
+	movaps xmm4, [esp + _iyH1]
+	movaps xmm5, [esp + _izH1]
+	subps  xmm0, [esp + _jxH1]
+	subps  xmm1, [esp + _jyH1]
+	subps  xmm2, [esp + _jzH1]
+	subps  xmm3, [esp + _jxH2]
+	subps  xmm4, [esp + _jyH2]
+	subps  xmm5, [esp + _jzH2]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+	movaps [esp + _rsqH1H1], xmm0
+	movaps [esp + _rsqH1H2], xmm3
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	movaps xmm3, [esp + _ixH2]
+	movaps xmm4, [esp + _iyH2]
+	movaps xmm5, [esp + _izH2]
+	subps  xmm0, [esp + _jxO]
+	subps  xmm1, [esp + _jyO]
+	subps  xmm2, [esp + _jzO]
+	subps  xmm3, [esp + _jxH1]
+	subps  xmm4, [esp + _jyH1]
+	subps  xmm5, [esp + _jzH1]
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm4, xmm3
+	addps  xmm4, xmm5
+	movaps [esp + _rsqH2O], xmm0
+	movaps [esp + _rsqH2H1], xmm4
+
+	movaps xmm0, [esp + _ixH2]
+	movaps xmm1, [esp + _iyH2]
+	movaps xmm2, [esp + _izH2]
+	subps  xmm0, [esp + _jxH2]
+	subps  xmm1, [esp + _jyH2]
+	subps  xmm2, [esp + _jzH2]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2
+	movaps [esp + _rsqH2H2], xmm0
+		
+	/* start doing invsqrt use rsq values in xmm0, xmm4 */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinvH2H2 */
+	mulps   xmm7, [esp + _half] /* rinvH2H1 */
+	movaps  [esp + _rinvH2H2], xmm3
+	movaps  [esp + _rinvH2H1], xmm7
+		
+	rsqrtps xmm1, [esp + _rsqOO]
+	rsqrtps xmm5, [esp + _rsqOH1]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOO]
+	mulps   xmm5, [esp + _rsqOH1]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOO], xmm3
+	movaps  [esp + _rinvOH1], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqOH2]
+	rsqrtps xmm5, [esp + _rsqH1O]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqOH2]
+	mulps   xmm5, [esp + _rsqH1O]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvOH2], xmm3
+	movaps  [esp + _rinvH1O], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH1H1]
+	rsqrtps xmm5, [esp + _rsqH1H2]
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, [esp + _rsqH1H1]
+	mulps   xmm5, [esp + _rsqH1H2]
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] 
+	mulps   xmm7, [esp + _half]
+	movaps  [esp + _rinvH1H1], xmm3
+	movaps  [esp + _rinvH1H2], xmm7
+	
+	rsqrtps xmm1, [esp + _rsqH2O]
+	movaps  xmm2, xmm1
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, [esp + _rsqH2O]
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2
+	mulps   xmm3, [esp + _half] 
+	movaps  [esp + _rinvH2O], xmm3
+
+	/* start with OO interaction */
+	movaps xmm0, [esp + _rinvOO]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOO] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+		
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+	
+        movd mm0, eax
+        movd mm1, ebx
+        movd mm2, ecx
+        movd mm3, edx
+
+        mov  esi, [ebp + _VFtab]
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOO]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+        /* increment vcoul - then we can get rid of mm5 */
+        /* update vctot */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5 
+
+        /* dispersion */
+        movlps xmm5, [esi + eax*4 + 16]
+        movlps xmm7, [esi + ecx*4 + 16]
+        movhps xmm5, [esi + ebx*4 + 16]
+        movhps xmm7, [esi + edx*4 + 16] /* got half dispersion table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 24]
+        movlps xmm3, [esi + ecx*4 + 24]
+        movhps xmm7, [esi + ebx*4 + 24]
+        movhps xmm3, [esi + edx*4 + 24] /* other half of dispersion table */
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* dispersion table ready, in xmm4-xmm7 */
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+
+        movaps xmm4, [esp + _c6]
+        mulps  xmm5, xmm4        /* vnb6 */
+
+        /* put scalar force on stack Update vnbtot directly */
+        addps  xmm5, [esp + _vnbtot]
+        movaps [esp + _vnbtot], xmm5
+
+        /* repulsion */
+        movlps xmm5, [esi + eax*4 + 32]
+        movlps xmm7, [esi + ecx*4 + 32]
+        movhps xmm5, [esi + ebx*4 + 32]
+        movhps xmm7, [esi + edx*4 + 32] /* got half repulsion table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 40]
+        movlps xmm3, [esi + ecx*4 + 40]
+        movhps xmm7, [esi + ebx*4 + 40]
+        movhps xmm3, [esi + edx*4 + 40] /* other half of repulsion table */
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* table ready, in xmm4-xmm7 */
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+ 
+        movaps xmm4, [esp + _c12]
+        mulps  xmm5, xmm4 /* vnb12 */
+        addps  xmm5, [esp + _vnbtot]
+        movaps [esp + _vnbtot], xmm5
+	
+	/* O-H1 interaction */
+	movaps xmm0, [esp + _rinvOH1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOH1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* O-H2 interaction */ 
+	movaps xmm0, [esp + _rinvOH2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqOH2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H1-O interaction */
+	movaps xmm0, [esp + _rinvH1O]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1O] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H1-H1 interaction */
+	movaps xmm0, [esp + _rinvH1H1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1H1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H1-H2 interaction */
+	movaps xmm0, [esp + _rinvH1H2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH1H2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+	
+	/* H2-O interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2O] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqOH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H2-H1 interaction */
+	movaps xmm0, [esp + _rinvH2H1]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2H1] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+	/* H2-H2 interaction */
+	movaps xmm0, [esp + _rinvH2H2]
+	movaps xmm1, xmm0
+	mulps  xmm1, [esp + _rsqH2H2] /* xmm1=r */
+	mulps  xmm1, [esp + _tsc]	
+	movhlps xmm2, xmm1
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+
+        movd eax, mm6
+        psrlq mm6, 32
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd ebx, mm6
+        movd edx, mm7
+
+        lea   eax, [eax + eax*2]
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+
+        movlps xmm5, [esi + eax*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm5, [esi + ebx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + eax*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm7, [esi + ebx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+        movaps xmm3, [esp + _qqHH]
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point mm5 contains vcoul */
+
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+	
+	/* should we do one more iteration? */
+	sub   [esp + _innerk],  4
+	jl    .mci3330_single_check
+	jmp   .mci3330_unroll_loop
+.mci3330_single_check:
+	add   [esp + _innerk],  4
+	jnz   .mci3330_single_loop
+	jmp   .mci3330_updateouterdata
+.mci3330_single_loop:
+	mov   edx, [esp + _innerjjnr]     /* pointer to jjnr[k] */
+	mov   eax, [edx]	
+	add   [esp + _innerjjnr],  4	
+
+	mov esi, [ebp + _pos]
+	lea   eax, [eax + eax*2]  
+
+	/* fetch j coordinates */
+	xorps xmm3, xmm3
+	xorps xmm4, xmm4
+	xorps xmm5, xmm5
+	movss xmm3, [esi + eax*4]
+	movss xmm4, [esi + eax*4 + 4]
+	movss xmm5, [esi + eax*4 + 8]
+
+	movlps xmm6, [esi + eax*4 + 12]
+	movhps xmm6, [esi + eax*4 + 24]	/* xmm6=jxH1 jyH1 jxH2 jyH2 */
+	/* fetch both z coords in one go, to positions 0 and 3 in xmm7 */
+	movups xmm7, [esi + eax*4 + 20] /* xmm7=jzH1 jxH2 jyH2 jzH2 */
+	shufps xmm6, xmm6, 0b11011000    /* xmm6=jxH1 jxH2 jyH1 jyH2 */
+	movlhps xmm3, xmm6      	/* xmm3= jxO   0  jxH1 jxH2 */
+	movaps  xmm0, [esp + _ixO]     
+	movaps  xmm1, [esp + _iyO]
+	movaps  xmm2, [esp + _izO]	
+	shufps  xmm4, xmm6, 0b11100100 /* xmm4= jyO   0   jyH1 jyH2 */
+	shufps xmm5, xmm7, 0b11000100  /* xmm5= jzO   0   jzH1 jzH2 */
+	/* store all j coordinates in jO */ 
+	movaps [esp + _jxO], xmm3
+	movaps [esp + _jyO], xmm4
+	movaps [esp + _jzO], xmm5
+	subps  xmm0, xmm3
+	subps  xmm1, xmm4
+	subps  xmm2, xmm5
+	
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	addps xmm0, xmm1
+	addps xmm0, xmm2	/* have rsq in xmm0 */
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	movaps  xmm2, xmm1	
+	mulps   xmm1, xmm1
+	movaps  xmm3, [esp + _three]
+	mulps   xmm1, xmm0
+	subps   xmm3, xmm1
+	mulps   xmm3, xmm2							
+	mulps   xmm3, [esp + _half] /* rinv iO - j water */
+
+	movaps  xmm1, xmm3
+	mulps   xmm1, xmm0	/* xmm1=r */
+	movaps  xmm0, xmm3	/* xmm0=rinv */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+	mov esi, [ebp + _VFtab]
+	
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+	
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOO]
+	movhps  xmm3, [esp + _qqOH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point xmm5 contains vcoul */
+	
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5
+
+        /* dispersion */
+	movss  xmm4, [esi + ebx*4 + 16]	
+	movss  xmm5, [esi + ebx*4 + 20]	
+	movss  xmm6, [esi + ebx*4 + 24]	
+	movss  xmm7, [esi + ebx*4 + 28]
+        /* dispersion table ready, in xmm4-xmm7 */
+        mulss  xmm6, xmm1       /* xmm6=Geps */
+        mulss  xmm7, xmm2       /* xmm7=Heps2 */
+        addss  xmm5, xmm6
+        addss  xmm5, xmm7       /* xmm5=Fp */
+        mulss  xmm5, xmm1 /* xmm5=eps*Fp */
+        addss  xmm5, xmm4 /* xmm5=VV */
+	xorps  xmm4, xmm4
+        movss  xmm4, [esp + _c6]
+        mulps  xmm5, xmm4        /* vnb6 */
+        /* put scalar force on stack */
+        addps  xmm5, [esp + _vnbtot]
+        movaps [esp + _vnbtot], xmm5
+
+        /* repulsion */
+	movss  xmm4, [esi + ebx*4 + 32]	
+	movss  xmm5, [esi + ebx*4 + 36]	
+	movss  xmm6, [esi + ebx*4 + 40]	
+	movss  xmm7, [esi + ebx*4 + 44]
+        /* table ready, in xmm4-xmm7 */
+        mulss  xmm6, xmm1       /* xmm6=Geps */
+        mulss  xmm7, xmm2       /* xmm7=Heps2 */
+        addss  xmm5, xmm6
+        addss  xmm5, xmm7       /* xmm5=Fp */
+        mulss  xmm5, xmm1 /* xmm5=eps*Fp */
+        addss  xmm5, xmm4 /* xmm5=VV */
+
+	xorps  xmm4, xmm4
+        movss  xmm4, [esp + _c12]
+        mulps  xmm5, xmm4 /* vnb12 */
+        addps  xmm5, [esp + _vnbtot]
+        movaps [esp + _vnbtot], xmm5
+
+	
+	/* done with i O Now do i H1 & H2 simultaneously first get i particle coords: */
+	movaps  xmm0, [esp + _ixH1]
+	movaps  xmm1, [esp + _iyH1]
+	movaps  xmm2, [esp + _izH1]	
+	movaps  xmm3, [esp + _ixH2] 
+	movaps  xmm4, [esp + _iyH2] 
+	movaps  xmm5, [esp + _izH2] 
+	subps   xmm0, [esp + _jxO]
+	subps   xmm1, [esp + _jyO]
+	subps   xmm2, [esp + _jzO]
+	subps   xmm3, [esp + _jxO]
+	subps   xmm4, [esp + _jyO]
+	subps   xmm5, [esp + _jzO]
+	mulps xmm0, xmm0
+	mulps xmm1, xmm1
+	mulps xmm2, xmm2
+	mulps xmm3, xmm3
+	mulps xmm4, xmm4
+	mulps xmm5, xmm5
+	addps xmm0, xmm1
+	addps xmm4, xmm3
+	addps xmm0, xmm2	/* have rsqH1 in xmm0 */
+	addps xmm4, xmm5	/* have rsqH2 in xmm4 */
+
+	/* start with H1, save H2 data */
+	movaps [esp + _rsqH2O], xmm4
+	
+	/* do invsqrt */
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm5, xmm4
+	movaps  xmm2, xmm1
+	movaps  xmm6, xmm5
+	mulps   xmm1, xmm1
+	mulps   xmm5, xmm5
+	movaps  xmm3, [esp + _three]
+	movaps  xmm7, xmm3
+	mulps   xmm1, xmm0
+	mulps   xmm5, xmm4
+	subps   xmm3, xmm1
+	subps   xmm7, xmm5
+	mulps   xmm3, xmm2
+	mulps   xmm7, xmm6
+	mulps   xmm3, [esp + _half] /* rinv H1 - j water */
+	mulps   xmm7, [esp + _half] /* rinv H2 - j water */ 
+
+	/* start with H1, save H2 data */
+	movaps [esp + _rinvH2O], xmm7
+
+	movaps xmm1, xmm3
+	mulps  xmm1, xmm0	/* xmm1=r */
+	movaps xmm0, xmm3	/* xmm0=rinv */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+	
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOH]
+	movhps  xmm3, [esp + _qqHH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */
+        /* at this point xmm5 contains vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+
+	
+	/* do table for H2 - j water interaction */
+	movaps xmm0, [esp + _rinvH2O]
+	movaps xmm1, [esp + _rsqH2O]
+	mulps  xmm1, xmm0	/* xmm0=rinv, xmm1=r */
+	mulps  xmm1, [esp + _tsc]
+	
+	movhlps xmm2, xmm1	
+        cvttps2pi mm6, xmm1
+        cvttps2pi mm7, xmm2     /* mm6/mm7 contain lu indices */
+        cvtpi2ps xmm3, mm6
+        cvtpi2ps xmm2, mm7
+	movlhps  xmm3, xmm2
+	subps    xmm1, xmm3	/* xmm1=eps */
+        movaps xmm2, xmm1
+        mulps  xmm2, xmm2       /* xmm2=eps2 */
+        pslld mm6, 2
+        pslld mm7, 2
+        movd ebx, mm6
+        movd ecx, mm7
+        psrlq mm7, 32
+        movd edx, mm7		/* table indices in ebx,ecx,edx */
+
+        lea   ebx, [ebx + ebx*2]
+        lea   ecx, [ecx + ecx*2]
+        lea   edx, [edx + edx*2]
+	
+        movlps xmm5, [esi + ebx*4]
+        movlps xmm7, [esi + ecx*4]
+        movhps xmm7, [esi + edx*4] /* got half coulomb table */
+        movaps xmm4, xmm5
+        shufps xmm4, xmm7, 0b10001000
+        shufps xmm5, xmm7, 0b11011101
+
+        movlps xmm7, [esi + ebx*4 + 8]
+        movlps xmm3, [esi + ecx*4 + 8]
+        movhps xmm3, [esi + edx*4 + 8] /* other half of coulomb table */ 
+        movaps xmm6, xmm7
+        shufps xmm6, xmm3, 0b10001000
+        shufps xmm7, xmm3, 0b11011101
+        /* coulomb table ready, in xmm4-xmm7 */ 
+        mulps  xmm6, xmm1       /* xmm6=Geps */
+        mulps  xmm7, xmm2       /* xmm7=Heps2 */
+        addps  xmm5, xmm6
+        addps  xmm5, xmm7       /* xmm5=Fp */
+
+	xorps  xmm3, xmm3
+	/* fetch charges to xmm3 (temporary) */
+	movss   xmm3, [esp + _qqOH]
+	movhps  xmm3, [esp + _qqHH]
+		
+        mulps  xmm5, xmm1 /* xmm5=eps*Fp */
+        addps  xmm5, xmm4 /* xmm5=VV */
+        mulps  xmm5, xmm3 /* vcoul=qq*VV */ 
+        /* at this point xmm5 contains vcoul */
+        addps  xmm5, [esp + _vctot]
+        movaps [esp + _vctot], xmm5	
+	
+	dec dword ptr [esp + _innerk]
+	jz    .mci3330_updateouterdata
+	jmp   .mci3330_single_loop
+.mci3330_updateouterdata:
+	/* get group index for i particle */
+	mov   edx, [ebp + _gid]      /* get group index for this i particle */
+	mov   edx, [edx]
+	add   [ebp + _gid],  4  /* advance pointer */
+
+	/* accumulate total potential energy and update it */
+	movaps xmm7, [esp + _vctot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vc]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* accumulate total lj energy and update it */
+	movaps xmm7, [esp + _vnbtot]
+	/* accumulate */
+	movhlps xmm6, xmm7
+	addps  xmm7, xmm6	/* pos 0-1 in xmm7 have the sum now */
+	movaps xmm6, xmm7
+	shufps xmm6, xmm6, 1
+	addss  xmm7, xmm6		
+
+	/* add earlier value from mem */
+	mov   eax, [ebp + _Vnb]
+	addss xmm7, [eax + edx*4] 
+	/* move back to mem */
+	movss [eax + edx*4], xmm7 
+	
+	/* finish if last */
+	mov   ecx, [ebp + _nri]
+	dec ecx
+	jecxz .mci3330_end
+	/* not last, iterate once more! */ 
+	mov [ebp + _nri], ecx
+	jmp .mci3330_outer
+.mci3330_end:
+	emms
+	mov eax, [esp + _salign]
+	add esp, eax
+	add esp, 756
 	pop edi
 	pop esi
         pop edx

@@ -161,7 +161,6 @@ void vecrecip(real in[],real out[],int n)
     cpu_capabilities=detect_cpu(NULL);
     bFirst=FALSE;
   }
-
   if((cpu_capabilities & X86_SSE_SUPPORT) && !((unsigned long int)in & 0x1f) && !((unsigned long int)out & 0x1f)) /* SSE data must be cache aligned */
     vecrecip_sse(in,out,n);
   else if(cpu_capabilities & X86_3DNOW_SUPPORT)

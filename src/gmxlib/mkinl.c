@@ -183,16 +183,17 @@ void set_loop_options(void)
    */
   loop.coul_needs_rinv=TRUE;
   /* all current coulomb stuff needs 1/r */
-  loop.coul_needs_rinvsq=(loop.coul && !DO_COULTAB);
-  /* non-table coul also need r^-2 */
+  loop.coul_needs_rinvsq=(loop.coul && !DO_COULTAB) && DO_FORCE;
+  /* non-table coul also need r^-2 , except the MC loops */
   loop.coul_needs_rsq=(DO_RF || (loop.coul && loop.free));
   /* reaction field and softcore need r^2 */
   loop.coul_needs_r=DO_COULTAB;
   /* tabulated coulomb needs r */ 
 
   /* table nb needs 1/r */
-  loop.vdw_needs_rinvsq=(loop.vdw && !DO_VDWTAB);
+  loop.vdw_needs_rinv=(loop.vdw && DO_VDWTAB);
   /* all other need r^-2 */
+  loop.vdw_needs_rinvsq=(loop.vdw && !DO_VDWTAB);
   loop.vdw_needs_rsq=(loop.vdw && loop.free);
   /* softcore needs r^2 */
   loop.vdw_needs_r=(DO_BHAM || DO_VDWTAB || (loop.vdw && loop.free));
@@ -248,7 +249,7 @@ void make_func(char *appendname)
   outer_loop();
   /* The innerloop creation is called from the outerloop creation */
 #if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && !defined DISABLE_X86TRUNC)
-  if(bC && DO_TAB)
+  if(bC && DO_TAB && DO_FORCE)
     strcat(codebuffer,"asm(\"fldcw %%0\" : : \"m\" (*&x86_cwsave));\n");
 #endif
   close_func();
@@ -274,14 +275,10 @@ int main(int argc,char *argv[])
 
   sprintf(fn,"%s",bC ? "innerc.c" : "innerf.f");
   
-  fprintf(stderr,">>> This is the GROMACS innerloop code generator\n"
+  fprintf(stderr,">>> This is the GROMACS code generator for MD & MC inner loops\n"
 	  ">>> It will generate %s precision %s code in file %s\n",
 	  (prec == 8) ? "double" : "single",
 	  bC ? "C" : "Fortran 77",fn);
-
-#ifdef USE_X86_ASM
-  fprintf(stderr,">>> Including x86 assembly loops with SSE/3DNow instructions\n");
-#endif
 
 #if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && !defined DISABLE_X86TRUNC)
   fprintf(stderr,">>> Using fast inline assembly gcc/x86 truncation. Since we are changing\n"
@@ -470,11 +467,11 @@ int main(int argc,char *argv[])
 
   if(opt.vectorize_invsqrt || arch.threads) {
     bSep14=TRUE;
-    maxfunc=81;
+    maxfunc=162;
   } else {
     bSep14=FALSE;
-    maxfunc=78;
-    /* 74 different loops present right now... */
+    maxfunc=156;
+    /* there are both MC and MD loops now */
   }
   
   /* Allocate memory for the temporary code and variable buffers,
@@ -485,33 +482,36 @@ int main(int argc,char *argv[])
   nfunc=0;
 
   /* Loop over all combinations to construct innerloops */
-  for(loop.coul=COUL_NO;loop.coul<COUL_NR;loop.coul++)
-    for(loop.vdw=VDW_NO;loop.vdw<VDW_NR;loop.vdw++)
-      for(loop.sol=SOL_NO;loop.sol<SOL_NR;loop.sol++)
-	for(loop.free=FREE_NO;loop.free<FREE_NR;loop.free++) {
-	  /* Exclude some impossible or unnecessary
-	     combinations. */
-	  
-	  if(!loop.coul && !loop.vdw)
-	    continue;   /* no interactions at all to calculate */
-	  if(loop.free &&
-	     ((loop.coul && !DO_COULTAB) ||
-	      (loop.vdw && !DO_VDWTAB) ||
-	      DO_SOL || DO_WATER))
-	    continue;  /* Always tabulate free energy, w/o solvent
-			  opt. */
-	  if(DO_WATER && !loop.coul)
-	    continue;    /* No point with LJ only water loops */	      
-	  /* (but we have LJ only general solvent loops) */
-	  
-	  /* Write metacode to buffer */
-	  make_func("");
-	  flush_buffers();
-	  nfunc++;
-	  fprintf(stderr,"\rProgress: %2d%%",100*nfunc/maxfunc);
-	}
+  loop.do_force=TRUE;
+  for(i=0;i<2;i++) { /* force and non-force loops */
+    for(loop.coul=COUL_NO;loop.coul<COUL_NR;loop.coul++)
+      for(loop.vdw=VDW_NO;loop.vdw<VDW_NR;loop.vdw++)
+	for(loop.sol=SOL_NO;loop.sol<SOL_NR;loop.sol++)
+	  for(loop.free=FREE_NO;loop.free<FREE_NR;loop.free++) {
+	    /* Exclude some impossible or unnecessary
+	       combinations. */
+	    
+	    if(!loop.coul && !loop.vdw)
+	      continue;   /* no interactions at all to calculate */
+	    if(loop.free &&
+	       ((loop.coul && !DO_COULTAB) ||
+		(loop.vdw && !DO_VDWTAB) ||
+		DO_SOL || DO_WATER))
+	      continue;  /* Always tabulate free energy, w/o solvent
+			    opt. */
+	    if(DO_WATER && !loop.coul)
+	      continue;    /* No point with LJ only water loops */	      
+	    /* (but we have LJ only general solvent loops) */
 
-  /* And maybe some extra, special 1-4 loops without some fancy optimizations */
+	    /* Write metacode to buffer */
+	    make_func("");
+	    flush_buffers();
+	    nfunc++;
+	    fprintf(stderr,"\rProgress: %2d%%",100*nfunc/maxfunc);
+	  }
+    loop.do_force=FALSE; /* do the non-force loops next round */
+  }
+  /* And maybe the extra, special 1-4 loops without fancy optimizations */
 
   if(bSep14) {
     opt.vectorize_invsqrt=FALSE; 
@@ -519,11 +519,15 @@ int main(int argc,char *argv[])
     loop.coul=COUL_TAB;
     loop.vdw=VDW_TAB;
     loop.sol=SOL_NO;
-    for(loop.free=FREE_NO;loop.free<FREE_NR;loop.free++) {
-      make_func("n");
-      flush_buffers();
-      nfunc++;
-      fprintf(stderr,"\rProgress: %2d%%",100*nfunc/maxfunc);
+    loop.do_force=TRUE;
+    for(i=0;i<2;i++) {
+      for(loop.free=FREE_NO;loop.free<FREE_NR;loop.free++) {
+	make_func("n");
+	flush_buffers();
+	nfunc++;
+	fprintf(stderr,"\rProgress: %2d%%",100*nfunc/maxfunc);
+      }
+      loop.do_force=FALSE;
     }
   }
  

@@ -116,10 +116,12 @@ static int detect_altivec(FILE *log)
   
   if(success) {
     cpuflags |= PPC_ALTIVEC_SUPPORT;
-    fprintf(log,"CPU supports Altivec.\n"
-	    "Using Gromacs Altivec innerloops.\n\n");
+    if(log)
+      fprintf(log,"CPU supports Altivec.\n"
+	      "Using Gromacs Altivec innerloops.\n\n");
   } else {
-    fprintf(log,"No Altivec support found.\n");
+    if(log)
+      fprintf(log,"No Altivec support found.\n");
   }
   return cpuflags;
 }
@@ -147,7 +149,8 @@ static int detect_sse3dnow(FILE *log)
 
   if(eax>0) {
     cpuflags |= X86_CPU;
-    fprintf(log,"\nTesting x86 SSE capabilities...\n");
+    if(log)
+      fprintf(log,"\nTesting x86 SSE capabilities...\n");
     if(ebx==VENDOR_INTEL) {
       /* intel - we need SSE support, bit 25 of edx should be set */
       x86_cpuid(1,&eax,&ebx,&ecx,&edx);
@@ -163,8 +166,8 @@ static int detect_sse3dnow(FILE *log)
 	}
       }
     }
-
-    fprintf(log,"\nTesting x86 3DNow capabilities...\n");
+    if(log)
+      fprintf(log,"\nTesting x86 3DNow capabilities...\n");
     if(ebx==VENDOR_AMD) {
       /* Newer athlons support SSE which might be faster (or at least IEEE=better),
        * but I havent been able to test one yet, so it is not turned on yet.
@@ -198,18 +201,19 @@ static int detect_sse3dnow(FILE *log)
       fprintf(log,"CPU and OS support extended 3DNow.\n"
 	      "Using Gromacs 3DNow assembly innerloops.\n\n");
   } else if(log) {
-    if(cpuSSE) {
+    if(cpuSSE && log) {
       fprintf(log,"CPU supports SSE, but your OS doesn't.\n");
       fprintf(stderr,"NOTE: This version of gromacs is compiled with assembly innerloops\n" 
 	      "      using Intel SSE instructions. Your processor supports this,\n"
 	      "      but not your OS. Fixing this (e.g., upgrade to linux kernel 2.4)\n"
 	      "      will boost your gromacs performance SIGNIFICANTLY.\n");
-    } else if(cpu3DNow) {      
+    } else if(cpu3DNow && log) {      
       fprintf(log,"CPU supports extended 3DNow, but your OS doesn't.\n");
-    } else if(!cpuSSE && !cpu3DNow) {
+    } else if(!cpuSSE && !cpu3DNow && log) {
       fprintf(log,"No SSE/3DNow support found.\n");
     }
-    fprintf(log,"Using normal Gromacs innerloops.\n\n");
+    if(log)
+      fprintf(log,"Using normal Gromacs innerloops.\n\n");
   }
   return cpuflags; 
 } 
@@ -223,7 +227,8 @@ int detect_cpu(FILE *log)
 #elif defined USE_X86_ASM
   return detect_sse3dnow(log);
 #endif
-  fprintf(log,"Not checking cpu support for SSE/3DNow/Altivec\n");
+  if(log)
+    fprintf(log,"Not checking cpu support for SSE/3DNow/Altivec\n");
   return UNKNOWN_CPU;
 }
 

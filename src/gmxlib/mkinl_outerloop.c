@@ -178,7 +178,8 @@ void unpack_outer_indices(bool calcdist)
 
   if(calcdist || DO_VECTORIZE) {
     assign("ii", bC ? "%s" : "%s+1",ARRAY(iinr,n));
-    assign("ii3", bC ? "3*ii" : "3*ii-2");
+    if(DO_FORCE || calcdist)
+      assign("ii3", bC ? "3*ii" : "3*ii-2");
   }
   
   if(!(calcdist && DO_VECTORIZE)) {
@@ -240,11 +241,12 @@ int unpack_outer_data(bool calcdist, bool calcforce)
     }    
 
     /* zero local i forces */
-    for(i=1;i<=loop.ni;i++) {
-      assign("fix%d","nul",i);
-      assign("fiy%d","nul",i);
-      assign("fiz%d","nul",i);
-    }  
+    if(DO_FORCE) 
+      for(i=1;i<=loop.ni;i++) {
+	assign("fix%d","nul",i);
+	assign("fiy%d","nul",i);
+	assign("fiz%d","nul",i);
+      }  
   }
   return nflop;
 }
@@ -256,24 +258,25 @@ int update_outer_data(void)
   int i;
   char buf[3][256];
 
-  comment("Update forces on i particles");
-  buf[XX][0]=buf[YY][0]=buf[ZZ][0]=0;
+  if(DO_FORCE) {
+    comment("Update forces on i particles");
+    buf[XX][0]=buf[YY][0]=buf[ZZ][0]=0;
 
-  for(i=1;i<=loop.ni;i++) {
-    increment(_array("faction","ii3+%d",3*(i-1)),"fix%d",i);
-    increment(_array("faction","ii3+%d",3*(i-1)+1),"fiy%d",i);
-    increment(_array("faction","ii3+%d",3*(i-1)+2),"fiz%d",i);
-    
-    sprintf(buf[XX]+strlen(buf[XX]),"%sfix%d", (i==1) ? "" : "+",i);
-    sprintf(buf[YY]+strlen(buf[YY]),"%sfiy%d", (i==1) ? "" : "+",i);
-    sprintf(buf[ZZ]+strlen(buf[ZZ]),"%sfiz%d", (i==1) ? "" : "+",i);
-    nflop += 6;
+    for(i=1;i<=loop.ni;i++) {
+      increment(_array("faction","ii3+%d",3*(i-1)),"fix%d",i);
+      increment(_array("faction","ii3+%d",3*(i-1)+1),"fiy%d",i);
+      increment(_array("faction","ii3+%d",3*(i-1)+2),"fiz%d",i);
+      
+      sprintf(buf[XX]+strlen(buf[XX]),"%sfix%d", (i==1) ? "" : "+",i);
+      sprintf(buf[YY]+strlen(buf[YY]),"%sfiy%d", (i==1) ? "" : "+",i);
+      sprintf(buf[ZZ]+strlen(buf[ZZ]),"%sfiz%d", (i==1) ? "" : "+",i);
+      nflop += 6;
+    }
+    increment(ARRAY(fshift,is3),  buf[XX]);
+    increment(ARRAY(fshift,is3+1),buf[YY]);
+    increment(ARRAY(fshift,is3+2),buf[ZZ]);  
+    /* we add 3 flops too many above, so dont do it here */
   }
-  increment(ARRAY(fshift,is3),  buf[XX]);
-  increment(ARRAY(fshift,is3+1),buf[YY]);
-  increment(ARRAY(fshift,is3+2),buf[ZZ]);  
-  /* we add 3 flops too many above, so dont do it here */
-  
   return nflop;    
 }
 
@@ -318,7 +321,8 @@ void outer_loop()
      * i particles in the molecule (all atoms for calcdist)
      */
     assign("m", bC ? "0" : "1");
-    assign("m3", bC ? "0" : "1");
+    if(DO_FORCE)
+      assign("m3", bC ? "0" : "1");
 
     if(loop.sol==SOL_MNO) {
       if(loop.vdw && loop.coul)

@@ -138,7 +138,8 @@ int table_index(char *rin)
 int extract_table(char *pos)
 {
     char buf[25];
-    
+    int nflop=0;
+
     assign("nnn",pos);
     assign("Y",ARRAY(VFtab,nnn));
     assign("F",ARRAY(VFtab,nnn+1)); 
@@ -148,9 +149,14 @@ int extract_table(char *pos)
     assign("Heps2",buf);
     assign("Fp","F+Geps+Heps2"); 
     assign("VV","Y+eps*Fp"); 
-    assign("FF","Fp+Geps+two*Heps2");
-    
-    return 9;
+
+    nflop = 6;
+
+    if(DO_FORCE || DO_SOFTCORE) {
+      assign("FF","Fp+Geps+two*Heps2");
+      nflop += 3;
+    }
+    return nflop;
 }
 
 
@@ -446,13 +452,19 @@ int do_table(int i,int j)
     }
     nflop += extract_table("n1");
     assign("vcoul","%s*VV",qq);
-    assign("fijC","%s*FF",qq);
+    nflop ++;
+    if(DO_FORCE) {
+      assign("fijC","%s*FF",qq);
+      nflop ++;
+    }
     if(loop.free) {
       increment("dvdl","(qqB - qqA)*VV",j,j);
       nflop += 7;
     }
-    add_to_buffer(f1buf,"fijC");
-    nflop += 3;
+    if(DO_FORCE) {
+      add_to_buffer(f1buf,"fijC");
+      nflop ++;
+    }
   }
   /* only do VDW for the first atom in water interactions */
   if(DO_VDWTAB && 
@@ -475,7 +487,7 @@ int do_table(int i,int j)
 	nflop += 3;
       }
     } else if(loop.sol!=SOL_WATERWATER) {
-      assign("tjA","ntiA+2*%s%s", ARRAY(type,jnr) , bC ? "" : "+1");
+      assign("tjA","ntiA+%d*%s%s", N_VDWPARAM, ARRAY(type,jnr) , bC ? "" : "+1");
       assign("c6",ARRAY(nbfp,tjA));
       assign( DO_BHAM ? "cexp1" : "c12",ARRAY(nbfp,tjA+1));
       if(DO_BHAM) 
@@ -484,15 +496,19 @@ int do_table(int i,int j)
     comment("Dispersion");
     nflop += extract_table( DO_COULTAB ? "n1+4" : "n1");
     assign("vnb6","c6*VV");
-    assign("fijD","c6*FF");
-    nflop += 2;
+    nflop++;
+    if(DO_FORCE) {
+      assign("fijD","c6*FF");
+      nflop++;
+    }
     if(loop.free) {
       increment("dvdl","(c6b - c6a)*VV");
       nflop += 3;
     }
-    add_to_buffer(f1buf,"fijD");
-    nflop++;
-
+    if(DO_FORCE) {
+     add_to_buffer(f1buf,"fijD");
+     nflop++;
+    }
     if(DO_BHAM) {
       comment("Buckingham repulsion");
       /* Make a new lookup index for the exponential table */
@@ -518,35 +534,45 @@ int do_table(int i,int j)
 	nflop += 18;
       } else {
 	assign("vnbexp","cexp1*VV");
-	assign("fijR","cexp1*cexp2*FF");
-	nflop += 3;
+	nflop++;
+	if(DO_FORCE) {
+	  assign("fijR","cexp1*cexp2*FF");
+	  nflop += 2;
+	}
+	increment("vnbtot","vnb6 + vnbexp");
       }
-      add_to_buffer(f2buf,"fijR");
-      nflop++;
+      if(DO_FORCE) {
+	add_to_buffer(f2buf,"fijR");
+	nflop++;
+      }
     } else {
       comment("Lennard-Jones repulsion");   
       nflop += extract_table( DO_COULTAB ? "n1+8" : "n1+4");
       assign("vnb12","c12*VV");
-      assign("fijR","c12*FF");
+      if(DO_FORCE) {
+	assign("fijR","c12*FF");
+	nflop++;
+      }
       increment("vnbtot","vnb6 + vnb12");
       if(loop.free) {
 	increment("dvdl","(c12b - c12a)*VV");
 	nflop += 3;
       }
       add_to_buffer(f1buf,"fijR");
-      nflop += 5;
+      nflop += 4;
     }
   }
 
-  sprintf(buf,"(%s)*tabscale",f1buf);
-  if(strlen(f1buf)) {
-    add_to_buffer(tabforcebuf,buf);
-    nflop++;
-  }   
-  sprintf(buf,"(%s)*exptabscale",f2buf);  
-  if(strlen(f2buf)) {
-    add_to_buffer(tabforcebuf,buf);
-    nflop++;
+  if(DO_FORCE) {
+    sprintf(buf,"(%s)*tabscale",f1buf);
+    if(strlen(f1buf)) {
+      add_to_buffer(tabforcebuf,buf);
+    }   
+    sprintf(buf,"(%s)*exptabscale",f2buf);  
+    if(strlen(f2buf)) {
+      add_to_buffer(tabforcebuf,buf);
+    }
+    nflop+=2;
   }
   return nflop;
 }
@@ -570,9 +596,11 @@ int do_coul(int i, int j)
      * This is later multiplied by 1/r to get the force once
      * all interactions for this pair have been calculated
      */
-    add_to_buffer(forcebuf,"vcoul");
-
-    nflop += 2;
+    nflop = 1;
+    if(DO_FORCE) {
+      nflop ++;
+      add_to_buffer(forcebuf,"vcoul");
+    }
     return nflop;
 }
 
@@ -595,10 +623,12 @@ int do_rf(int i, int j)
      * This is later multiplied by 1/r to get the force once
      * all interactions for this pair have been calculated
      */
-    sprintf(buf,"%s*(rinv%d-two*krsq)",qq,ij);
-    add_to_buffer(forcebuf,buf);
-
-    nflop += 7;
+    nflop += 4;
+    if(DO_FORCE) {
+      sprintf(buf,"%s*(rinv%d-two*krsq)",qq,ij);
+      add_to_buffer(forcebuf,buf);
+      nflop += 4;
+    }
     return nflop;
 }
 
@@ -606,6 +636,7 @@ int do_rf(int i, int j)
 int do_lj(int i, int j)
 {
     int ij = 10*i+j;
+    int nflop=0;
 
     comment("LJ");
     /* calculate r^-6 from r^-2 */
@@ -622,17 +653,21 @@ int do_lj(int i, int j)
       assign("vnb12","rinvsix*rinvsix*%s",ARRAY(nbfp,tjA+1));
     }
 
-    add_to_buffer(forcebuf,"twelve*vnb12-six*vnb6");
+    nflop = 7;
+    if(DO_FORCE) {
+      add_to_buffer(forcebuf,"twelve*vnb12-six*vnb6");
+      nflop += 4;
+    }
     increment("vnbtot","vnb12-vnb6");
-  
-    return 11;
+    return nflop;
 }
 
 
 int do_bham(int i, int j)
 {
   int ij = 10*i+j;
-  
+  int nflop=0;
+
   comment("Buckingham");
   
   /* calculate r^-6 from r^-2 */
@@ -650,9 +685,13 @@ int do_bham(int i, int j)
     assign("br","r%d*%s",ij,ARRAY(nbfp,tjA+2));
     assign("vnbexp","exp(-br)*%s",ARRAY(nbfp,tjA+1));
   }
-  add_to_buffer(forcebuf,"br*vnbexp-six*vnb6");    
+  nflop=8;
+  if(DO_FORCE) {
+    add_to_buffer(forcebuf,"br*vnbexp-six*vnb6");    
+    nflop += 4;
+  }
   increment("vnbtot","vnbexp-vnb6");
-  return 12; 
+  return nflop;
 }
 
 
@@ -695,7 +734,7 @@ int calc_interactions(bool prefetchx)
 	  assign( "r%d" ,"%s*%s",ij,ARRAY(buf1,m),ARRAY(buf2,m));
 	increment("m","1");
 	/* get dr from buffer */
-	if(DO_PREFETCH_X) {
+	if(DO_PREFETCH_X && DO_FORCE) {
 	  assign("dx%d",ARRAY(drbuf,m3),ij);
 	  increment("m3","1");
 	  assign("dy%d",ARRAY(drbuf,m3),ij);
@@ -769,14 +808,15 @@ int calc_interactions(bool prefetchx)
       if((i==loop.ni && j==loop.nj) && prefetchx) 
 	fetch_coord(TRUE);
 
-      nflop += calc_scalar_force(i,j);
+      if(DO_FORCE)
+	nflop += calc_scalar_force(i,j);
 
       if(loop.coul) {
 	increment("vctot","vcoul");
 	nflop ++;
       }
-      
-      nflop += update_inner_forces(i,j);
+      if(DO_FORCE)
+	nflop += update_inner_forces(i,j);
     }       
   return nflop;
 }

@@ -58,6 +58,7 @@ static char *SRCID_mkinl_h = "$Id$";
  * the options in mkinl.c and most things should follow automatically.
  */
 
+#define DO_FORCE     (loop.do_force==TRUE)
 #define DO_RF        (loop.coul==COUL_RF)
 #define DO_COULTAB     (loop.coul==COUL_TAB)
 #define DO_VDWTAB       ((loop.vdw==VDW_TAB) || (loop.vdw==VDW_BHAMTAB))
@@ -192,9 +193,10 @@ typedef struct {
 
 typedef struct {
     coul_t   coul;         /* What kind of loop is this? */
-    vdw_t     vdw;
+    vdw_t    vdw;
     sol_t    sol;
     free_t   free;
+    bool     do_force;     /* dont calc force in MC loop versions */
     bool     coul_needs_rinv;    /* Which power of r are needed for the */
     bool     coul_needs_rinvsq;  /* coulombic interactions?             */
     bool     coul_needs_rsq;
