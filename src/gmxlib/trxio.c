@@ -46,9 +46,9 @@ static char *SRCID_trxio_c = "$Id$";
 #include "wgms.h"
 
 /* defines for frame counter output */
-static int frame=NOTSET;
+static int __frame=NOTSET;
 #define SKIP 10
-#define INITCOUNT frame=-1
+#define INITCOUNT __frame=-1
 
 /* frames for read_first/next_x */
 static t_trxframe *xframe=NULL;
@@ -56,18 +56,18 @@ static int nxframe=0;
 
 int nframes_read(void)
 {
-  return frame;
+  return __frame;
 }
   
 static void printcount_(char *l,real t)
 {
-  fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,frame,t);
+  fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,t);
 }
 
 static void printcount(real t,real t0)
 {
-  frame++;
-  if (frame % SKIP == 0 || frame < SKIP)
+  __frame++;
+  if (__frame % SKIP == 0 || __frame < SKIP)
     printcount_(check_times(t,t0) < 0 ? "Skipping frame": "Reading frame",t);
 }
 
@@ -81,10 +81,10 @@ static void printincomp(t_trxframe *fr)
 {
   if (fr->not_ok & HEADER_NOT_OK)
     fprintf(stderr,"WARNING: Incomplete header: nr %d time %g\n",
-	    frame+1,fr->time);
+	    __frame+1,fr->time);
   else if (fr->not_ok)
     fprintf(stderr,"WARNING: Incomplete frame: nr %d time %g\n",
-	    frame+1,fr->time);
+	    __frame+1,fr->time);
 }
 
 int prec2ndec(real prec)
