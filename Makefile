@@ -67,7 +67,7 @@ booklet.pdf:	gromacs.pdf
 
 gromacs.tex:	$(TEXFILES)
 
-gromacs.aux:	gromacs.tex $(AUXFILES)
+gromacs.aux:	gromacs.tex $(TEXFILES)
 		$(TEX) gromacs
 
 dvi_bib+idx:	gromacs.tex

@@ -72,6 +72,8 @@ sed \
 -e 's/<\/[dD][lL]>/\\end{description}/g' \
 -e 's/<[dD][tT]>\(.*\)/\\item[\1]\\mbox{}\\\\/g' \
 -e 's/<[dD][dD]>//g' \
+-e 's/<\/[dD][dD]>//g' \
+-e 's/<\/[dD][tT]>//g' \
 -e 's/ \(\[[^]]*\]\)\]/ {\1}\]/g' \
 -e 's/\$lt\$/$<$/g' \
 -e 's/\$gt\$/$>$/g' \
