@@ -82,3 +82,4 @@ typedef struct {
 #define ffLIBRD	(ffREAD	| ffLIB)
 #define ffLIBOPTRD (ffOPTRD | ffLIB)
 #define ffRDMULT   (ffREAD  | ffMULT)
+#define ffOPTRDMULT   (ffRDMULT | ffOPT)
