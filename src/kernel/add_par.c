@@ -114,7 +114,7 @@ void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1,
   ps->nr++;
 }
 
-void add_dum2_atoms(t_params *ps,int ai,int aj,int ak)
+void add_vsite2_atoms(t_params *ps,int ai,int aj,int ak)
 {
   pr_alloc(1,ps);
   ps->param[ps->nr].AI=ai;
@@ -126,7 +126,7 @@ void add_dum2_atoms(t_params *ps,int ai,int aj,int ak)
   ps->nr++;
 }
 
-void add_dum2_param(t_params *ps,int ai,int aj,int ak,real c0)
+void add_vsite2_param(t_params *ps,int ai,int aj,int ak,real c0)
 {
   pr_alloc(1,ps);
   ps->param[ps->nr].AI=ai;
@@ -139,7 +139,7 @@ void add_dum2_param(t_params *ps,int ai,int aj,int ak,real c0)
   ps->nr++;
 }
 
-void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, 
+void add_vsite3_param(t_params *ps,int ai,int aj,int ak,int al, 
 		    real c0, real c1)
 {
   pr_alloc(1,ps);
@@ -155,7 +155,7 @@ void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al,
   ps->nr++;
 }
 
-void add_dum3_atoms(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
+void add_vsite3_atoms(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
 {
   pr_alloc(1,ps);
   ps->param[ps->nr].AI=ai;
@@ -170,7 +170,7 @@ void add_dum3_atoms(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
   ps->nr++;
 }
 
-void add_dum4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
+void add_vsite4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
 {
   pr_alloc(1,ps);
   ps->param[ps->nr].AI=ai;

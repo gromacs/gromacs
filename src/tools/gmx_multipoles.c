@@ -641,7 +641,7 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   
   /* Start while loop over frames */
   do {
-    /* PvM, bug in rm_pbc??? Doesnot work for dummies...
+    /* PvM, bug in rm_pbc??? Does not work for virtual sites ...
     rm_pbc(&(top->idef),top->atoms.nr,box,x,x_s); */
 
 

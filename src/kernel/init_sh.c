@@ -94,7 +94,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   /* Print the number of each particle type */  
   for(i=0; (i<eptNR); i++)
     if (n[i]!=0)
-      fprintf(log,"There are: %d %s\n",n[i],ptype_str[i]);
+      fprintf(log,"There are: %d %ss\n",n[i],ptype_str[i]);
   
   ns      = n[eptShell];
   *nshell = ns;

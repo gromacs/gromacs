@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "mvdata.h"
 #include "nsb.h"
-#include "dummies.h"
+#include "vsite.h"
 
 typedef enum
 {
@@ -92,8 +92,8 @@ extern void init_parts(FILE *log,t_commrec *cr,
 		       t_parm *parm,t_topology *top,
 		       rvec **x,rvec **v,t_mdatoms **mdatoms,
 		       t_nsborder *nsb,int list,
-		       bool *bParallelDummies,
-		       t_comm_dummies *dummycomm);
+		       bool *bParallelVsites,
+		       t_comm_vsites *vsitecomm);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology
       * coordinates, velocities, and masses are initialised equal to using

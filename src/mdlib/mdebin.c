@@ -149,7 +149,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       bEner[i] = b14;
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
       bEner[i] = (ir->efep != efepNO);
-    else if ((strstr(interaction_function[i].name,"DUM") != NULL) ||
+    else if ((interaction_function[i].flags & IF_VSITE) ||
 	     (i == F_SHAKE) || (i == F_SETTLE))
       bEner[i] = FALSE;
     else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_ETOT) ||

@@ -61,7 +61,7 @@
 #include "gen_ad.h"
 #include "filenm.h"
 #include "index.h"
-#include "gen_dum.h"
+#include "gen_vsite.h"
 #include "add_par.h"
 
 /* this must correspond to enum in pdb2top.h */
@@ -336,12 +336,12 @@ void write_top(FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_angles,     F_ANGLES,   bts[ebtsANGLES],plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist);
-    print_bondeds(out,at->nr,d_dum2,       F_DUMMY2,   0,              plist);
-    print_bondeds(out,at->nr,d_dum3,       F_DUMMY3,   0,              plist);
-    print_bondeds(out,at->nr,d_dum3,       F_DUMMY3FD, 0,              plist);
-    print_bondeds(out,at->nr,d_dum3,       F_DUMMY3FAD,0,              plist);
-    print_bondeds(out,at->nr,d_dum3,       F_DUMMY3OUT,0,              plist);
-    print_bondeds(out,at->nr,d_dum4,       F_DUMMY4FD, 0,              plist);
+    print_bondeds(out,at->nr,d_vsites2,    F_VSITE2,   0,              plist);
+    print_bondeds(out,at->nr,d_vsites3,    F_VSITE3,   0,              plist);
+    print_bondeds(out,at->nr,d_vsites3,    F_VSITE3FD, 0,              plist);
+    print_bondeds(out,at->nr,d_vsites3,    F_VSITE3FAD,0,              plist);
+    print_bondeds(out,at->nr,d_vsites3,    F_VSITE3OUT,0,              plist);
+    print_bondeds(out,at->nr,d_vsites4,    F_VSITE4FD, 0,              plist);
     
     if (pr)
       print_top_posre(out,pr);
@@ -632,7 +632,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
 	     int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,
 	     bool bRemoveDih,
-	     bool bDummies, bool bDummyAromatics, char *ff, real mHmult,
+	     bool bVsites, bool bVsiteAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
 	     bool bDeuterate)
@@ -643,7 +643,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   t_excls  *excls;
   t_nextnb nnb;
   int      *cgnr;
-  int      *dummy_type;
+  int      *vsite_type;
   int      i,nmissat;
   
   init_plist(plist);
@@ -653,7 +653,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		     nterpairs, ntdb, ctdb, rn, rc);
   /* ideally, now we would not need the rtp itself anymore, but do 
      everything using the hb and restp arrays. Unfortunately, that 
-     requires some re-thinking of code in gen_dum.c, which I won't 
+     requires some re-thinking of code in gen_vsite.c, which I won't 
      do now :( AF 26-7-99 */
   
   if (debug) {
@@ -684,14 +684,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   /* Cleanup bonds (sort and rm doubles) */ 
   clean_bonds(&(plist[F_BONDS]));
   
-  snew(dummy_type,atoms->nr);
+  snew(vsite_type,atoms->nr);
   for(i=0; i<atoms->nr; i++)
-    dummy_type[i]=NOTSET;
-  if (bDummies)
-    /* determine which atoms will be dummies and add dummy masses 
+    vsite_type[i]=NOTSET;
+  if (bVsites)
+    /* determine which atoms will be vsites and add dummy masses 
        also renumber atom numbers in plist[0..F_NRE]! */
-    do_dummies(nrtp, rtp, atype, atoms, tab, x, plist, 
-	       &dummy_type, &cgnr, mHmult, bDummyAromatics, ff);
+    do_vsites(nrtp, rtp, atype, atoms, tab, x, plist, 
+	       &vsite_type, &cgnr, mHmult, bVsiteAromatics, ff);
   
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles, dihedrals and pairs...\n");
@@ -704,23 +704,23 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
-    do_h_mass(&(plist[F_BONDS]),dummy_type,atoms,mHmult,bDeuterate);
-  sfree(dummy_type);
+    do_h_mass(&(plist[F_BONDS]),vsite_type,atoms,mHmult,bDeuterate);
+  sfree(vsite_type);
   
   /* Cleanup bonds (sort and rm doubles) */ 
   /* clean_bonds(&(plist[F_BONDS]));*/
    
   fprintf(stderr,
 	  "There are %4d dihedrals, %4d impropers, %4d angles\n"
-	  "          %4d pairs,     %4d bonds and  %4d dummies\n",
+	  "          %4d pairs,     %4d bonds and  %4d virtual sites\n",
 	  plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
 	  plist[F_LJ14].nr, plist[F_BONDS].nr,
-	  plist[F_DUMMY2].nr +
-	  plist[F_DUMMY3].nr +
-	  plist[F_DUMMY3FD].nr +
-	  plist[F_DUMMY3FAD].nr +
-	  plist[F_DUMMY3OUT].nr +
-	  plist[F_DUMMY4FD].nr );
+	  plist[F_VSITE2].nr +
+	  plist[F_VSITE3].nr +
+	  plist[F_VSITE3FD].nr +
+	  plist[F_VSITE3FAD].nr +
+	  plist[F_VSITE3OUT].nr +
+	  plist[F_VSITE4FD].nr );
   
   print_sums(atoms, FALSE);
   

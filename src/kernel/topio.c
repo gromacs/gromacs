@@ -55,7 +55,7 @@
 #include "string2.h"
 #include "symtab.h"
 #include "fatal.h"
-#include "dum_parm.h"
+#include "vsite_parm.h"
 
 #include "toputil.h"
 #include "toppush.h"
@@ -148,7 +148,7 @@ real check_mol(t_atoms *atoms)
     m  = atoms->atom[i].m;
     pt = atoms->atom[i].ptype;
     /* If the particle is an atom or a nucleus it must have a mass,
-     * else, if it is a shell, a dummy or a bondshell it can have mass zero
+     * else, if it is a shell, a vsite or a bondshell it can have mass zero
      */
     if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus))) {
       rn=atoms->atom[i].resnr;
@@ -156,9 +156,9 @@ real check_mol(t_atoms *atoms)
 	      *(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
       warning_error(buf);
     } else 
-      if ((m!=0) && (pt == eptDummy)) {
+      if ((m!=0) && (pt == eptVSite)) {
 	rn=atoms->atom[i].resnr;
-	sprintf(buf,"dummy atom %s (Res %s-%d) has non-zero mass %g\n"
+	sprintf(buf,"virtual site %s (Res %s-%d) has non-zero mass %g\n"
 		"     Check your topology.\n",
 		*(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
 	warning_error(buf);
@@ -487,9 +487,9 @@ static char **read_topol(char        *infile,
 	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,bGenPairs);
 	  break;
 	  
-	case d_dum2:
-	case d_dum3:
-	case d_dum4:
+	case d_vsites2:
+	case d_vsites3:
+	case d_vsites4:
         case d_bonds:
 	case d_angles:
 	case d_constraints:

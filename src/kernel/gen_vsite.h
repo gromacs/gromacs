@@ -34,8 +34,8 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _gen_dum_h
-#define _gen_dum_h
+#ifndef _gen_vsite_h
+#define _gen_vsite_h
 
 #include "typedefs.h"
 #include "grompp.h"
@@ -43,12 +43,12 @@
 
 /* stuff for pdb2gmx */
 
-extern void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype, 
-		       t_atoms *at, t_symtab *symtab, rvec *x[], 
-		       t_params plist[], int *dummy_type[], int *cgnr[], 
-		       real mHmult, bool bDummyAromatics, char *ff);
+extern void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype, 
+		      t_atoms *at, t_symtab *symtab, rvec *x[], 
+		      t_params plist[], int *dummy_type[], int *cgnr[], 
+		      real mHmult, bool bVSiteAromatics, char *ff);
 
 extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult,
 		      bool bDeuterate);
 
-#endif	/* _gen_dum_h */
+#endif	/* _gen_vsite_h */

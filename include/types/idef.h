@@ -93,12 +93,12 @@ enum {
   F_SHAKE,
   F_SHAKENC,
   F_SETTLE,
-  F_DUMMY2,
-  F_DUMMY3,
-  F_DUMMY3FD,
-  F_DUMMY3FAD,
-  F_DUMMY3OUT,
-  F_DUMMY4FD,
+  F_VSITE2,
+  F_VSITE3,
+  F_VSITE3FD,
+  F_VSITE3FAD,
+  F_VSITE3OUT,
+  F_VSITE4FD,
   F_EQM,
   F_EPOT,
   F_EKIN,
@@ -143,7 +143,7 @@ typedef union
   struct {real b0,cb,beta;                        	  } morse;
   struct {real pos0A[DIM],fcA[DIM],pos0B[DIM],fcB[DIM];   } posres;
   struct {real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];          } rbdihs;
-  struct {real a,b,c,d,e,f;                               } dummy;   
+  struct {real a,b,c,d,e,f;                               } vsite;   
   struct {real low,up1,up2,kfac;int type,label;           } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;

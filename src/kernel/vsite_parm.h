@@ -34,21 +34,21 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _dum_parm_h
-#define _dum_parm_h
+#ifndef _vsite_parm_h
+#define _vsite_parm_h
 
 #include "typedefs.h"
 #include "grompp.h"
 
-extern int set_dummies(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
-		       t_params plist[]);
-/* set parameters for dummy atoms, return number of dummies */
+extern int set_vsites(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
+		      t_params plist[]);
+/* set parameters for vritual sites, return number of virtual sites */
 
-extern void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms);
-/* set ptype to Dummy for dummy atoms */
+extern void set_vsites_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms);
+/* set ptype to VSite for virtual sites */
 
-extern void clean_dum_bondeds(t_params *ps, int natoms, bool bRmDumBds);
+extern void clean_vsite_bondeds(t_params *ps, int natoms, bool bRmVSiteBds);
 /* remove all bonded interaction (bonds, angles and diherals) that
-   have become obsolete due to dummy atom constructions */
+   have become obsolete due to virtual site constructions */
 
-#endif	/* _dum_parm_h */
+#endif	/* _vsite_parm_h */

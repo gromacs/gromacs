@@ -437,7 +437,7 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 	if (func_type != top->idef.functype[interaction->iatoms[i]])
 	  gmx_incons("function type in search_donors");
 	
-	if ( interaction_function[func_type].flags & IF_DUMMY ) {
+	if ( interaction_function[func_type].flags & IF_VSITE ) {
 	  nr1=interaction->iatoms[i+1];
 	  if ( *top->atoms.atomname[nr1][0]  == 'H') {
 	    nr2=nr1-1;

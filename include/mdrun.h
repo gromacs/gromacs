@@ -53,7 +53,7 @@
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
-#include "dummies.h"
+#include "vsite.h"
 #include "pull.h"
 
 #define MD_MULTISIM  (1<<0)
@@ -67,8 +67,8 @@
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,bool bDummies,
-		    t_comm_dummies *dummycomm,int stepout,
+		    bool bVerbose,bool bCompact,bool bVsites,
+		    t_comm_vsites *vsitecomm,int stepout,
 		    t_parm *parm,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
@@ -85,7 +85,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_groups *grps,t_nsborder *nsb,
 		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
-		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,t_commrec *mcr,
 		       t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do steepest descents EM or something like that! */
@@ -95,7 +95,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_groups *grps,t_nsborder *nsb,
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
-		    bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		    bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		    t_commrec *cr,t_commrec *mcr,
 		    t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do conjugate gradients EM! */
@@ -105,7 +105,7 @@ extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		       t_groups *grps,t_nsborder *nsb, t_state *state,
 		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
-		       bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,t_commrec *mcr,
 		       t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do conjugate gradients EM! */
@@ -246,8 +246,8 @@ extern void init_parts(FILE *log,t_commrec *cr,
 		       t_parm *parm,t_topology *top,
 		       t_state *state,t_mdatoms **mdatoms,
 		       t_nsborder *nsb,int list,
-		       bool *bParallelDummies,
-		       t_comm_dummies *dummycomm);
+		       bool *bParallelVsites,
+		       t_comm_vsites *vsitecomm);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology
       * coordinates, velocities, and masses are initialised equal to using

@@ -73,7 +73,7 @@ const char *yesno_names[BOOL_NR+1]=
 };
 
 const char *ptype_str[eptNR+1] = {
-  "Atom", "Nucleus", "Shell", "Bond", "Dummy", NULL
+  "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
 };
 
 const char *eel_names[eelNR+1] = {

@@ -64,7 +64,7 @@
 #include "statutil.h"
 #include "tgroup.h"
 #include "mdebin.h"
-#include "dummies.h"
+#include "vsite.h"
 #include "mdrun.h"
 #include "trnio.h"
 
@@ -214,7 +214,7 @@ void init_em(FILE *log,const char *title,t_parm *parm,
 static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm, 
 			    t_topology *top,t_groups *grps,t_nsborder *nsb, 
 			    t_nrnb nrnb[], t_nrnb *mynrnb,
-			    bool bDummies,t_comm_dummies *dummycomm,
+			    bool bVsites,t_comm_vsites *vsitecomm,
 			    t_fcdata *fcd,t_commrec *cr,t_commrec *mcr,
 			    t_graph *graph,t_mdatoms *mdatoms,
 			    t_forcerec *fr, real lambda, t_vcm *vcm, 
@@ -227,9 +227,9 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
 
   bNS = (parm->ir.nstlist > 0);
 
-  if (bDummies)
-    construct_dummies(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,box,dummycomm);
+  if (bVsites)
+    construct_vsites(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+		      graph,cr,box,vsitecomm);
       
   /* Calc force & energy on new trial position  */
   /* do_force always puts the charge groups in the box and shifts again
@@ -240,9 +240,9 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
      
-  /* Spread the force on dummy particle to the other particles... */
-  if(bDummies) 
-    spread_dummy_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr); 
+  /* Spread the force on vsite particle to the other particles... */
+  if(bVsites) 
+    spread_vsite_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,vsitecomm,cr); 
       
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -267,7 +267,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_groups *grps,t_nsborder *nsb,
 	     t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
-	     bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+	     bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 	     t_commrec *cr,t_commrec *mcr,t_graph *graph,
 	     t_forcerec *fr,rvec box_size)
 {
@@ -337,9 +337,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     sp_header(stderr,CG,parm->ir.em_tol,number_steps);
   sp_header(log,CG,parm->ir.em_tol,number_steps);
 
-  if (bDummies)
-    construct_dummies(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,state->box,dummycomm);
+  if (bVsites)
+    construct_vsites(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+		      graph,cr,state->box,vsitecomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
@@ -351,9 +351,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
   where();
 
-  /* Spread the force on dummy particle to the other particles... */
-  if (bDummies)
-    spread_dummy_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr);
+  /* Spread the force on vsite particle to the other particles... */
+  if (bVsites)
+    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,vsitecomm,cr);
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -516,7 +516,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     neval++;
     /* Calculate energy for the trial step */
     EpotC = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
-			    bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+			    bVsites,vsitecomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,xc,fc,buf,ener,step);
     
     /* Calc derivative along line */
@@ -595,7 +595,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	neval++;
 	/* Calculate energy for the trial step */
 	EpotB = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
-				bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+				bVsites,vsitecomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,xb,fb,buf,ener,step);
 	
 	gpb=0;
@@ -838,7 +838,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		t_groups *grps,t_nsborder *nsb, t_state *state,
 		rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
-		bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
+		bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		t_commrec *cr,t_commrec *mcr,t_graph *graph,
 		t_forcerec *fr,rvec box_size)
 {
@@ -945,9 +945,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     sp_header(stderr,LBFGS,parm->ir.em_tol,number_steps);
   sp_header(log,LBFGS,parm->ir.em_tol,number_steps);
   
-  if (bDummies)
-    construct_dummies(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-		      graph,cr,state->box,dummycomm);
+  if (bVsites)
+    construct_vsites(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+		      graph,cr,state->box,vsitecomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
@@ -960,9 +960,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0,NULL);
   where();
   
-  /* Spread the force on dummy particle to the other particles... */
-  if (bDummies)
-    spread_dummy_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,dummycomm,cr);
+  /* Spread the force on vsite particle to the other particles... */
+  if (bVsites)
+    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,vsitecomm,cr);
   
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(parm->ir.opts),grps,ener);
@@ -1129,7 +1129,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     neval++;
     /* Calculate energy for the trial step */
     EpotC = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
-			    bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+			    bVsites,vsitecomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
     
     /* Calc derivative along line */
@@ -1202,7 +1202,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	neval++;
 	/* Calculate energy for the trial step */
 	EpotB = evaluate_energy(log,bVerbose,parm,top,grps,nsb,nrnb,&mynrnb,
-				bDummies,dummycomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
+				bVsites,vsitecomm,fcd,cr,mcr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
 	
 	for(gpb=0,i=0; i<n; i++) 
@@ -1469,7 +1469,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		    t_groups *grps,t_nsborder *nsb, 
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
-		    bool bVerbose,bool bDummies, t_comm_dummies *dummycomm,
+		    bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
 		    t_commrec *cr,t_commrec *mcr,t_graph *graph,
 		    t_forcerec *fr,rvec box_size) 
 { 
@@ -1588,9 +1588,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		TRUE);
     }
     
-    if (bDummies)
-      construct_dummies(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef,
-			graph,cr,state->box,dummycomm);
+    if (bVsites)
+      construct_vsites(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+			graph,cr,state->box,vsitecomm);
     
     /* Calc force & energy on new positions
      * do_force always puts the charge groups in the box and shifts again
@@ -1603,10 +1603,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,
 	     FALSE,0.0,NULL); 
     
-    /* Spread the force on dummy particle to the other particles... */
-    if (bDummies) 
-      spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
-		     &top->idef,dummycomm,cr);
+    /* Spread the force on vsite particle to the other particles... */
+    if (bVsites) 
+      spread_vsite_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
+		     &top->idef,vsitecomm,cr);
     
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(parm->ir.opts),grps,ener); 
@@ -1930,13 +1930,13 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
   }
   
-  /* Construct dummy particles, for last output frame */
+  /* Construct vsite particles, for last output frame */
   /* NB: I have not included the communication for parallel
-   * dummies here, since the rest of nm doesn't seem to
+   * vsites here, since the rest of nm doesn't seem to
    * be parallelized. Be sure to copy the correct code from
    * e.g. md.c or steep.c if you make nm parallel!
    */
-  construct_dummies(log,state->x,&mynrnb,parm->ir.delta_t,state->v,&top->idef,
+  construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,&top->idef,
 		    graph,cr,state->box,NULL);
     
   /*free_nslist(log);*/

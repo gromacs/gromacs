@@ -691,20 +691,20 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->settle.doh);
     do_real(iparams->settle.dhh);
     break;
-  case F_DUMMY2:
-    do_real(iparams->dummy.a);
+  case F_VSITE2:
+    do_real(iparams->vsite.a);
     break;
-  case F_DUMMY3:
-  case F_DUMMY3FD:
-  case F_DUMMY3FAD:
-    do_real(iparams->dummy.a);
-    do_real(iparams->dummy.b);
+  case F_VSITE3:
+  case F_VSITE3FD:
+  case F_VSITE3FAD:
+    do_real(iparams->vsite.a);
+    do_real(iparams->vsite.b);
     break;
-  case F_DUMMY3OUT:
-  case F_DUMMY4FD: 
-    do_real(iparams->dummy.a);
-    do_real(iparams->dummy.b);
-    do_real(iparams->dummy.c);
+  case F_VSITE3OUT:
+  case F_VSITE4FD: 
+    do_real(iparams->vsite.a);
+    do_real(iparams->vsite.b);
+    do_real(iparams->vsite.c);
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",

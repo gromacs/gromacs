@@ -48,17 +48,17 @@ extern void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
 extern void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,
 			  real c0, real c1, real c2, char *s);
 
-extern void add_dum2_atoms(t_params *ps, int ai, int aj, int ak);
+extern void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
 
-extern void add_dum3_atoms(t_params *ps, int ai, int aj, int ak, int al, 
+extern void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, 
 			   bool bSwapParity);
 
-extern void add_dum2_param(t_params *ps, int ai, int aj, int ak, real c0);
+extern void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0);
 
-extern void add_dum3_param(t_params *ps, int ai, int aj, int ak, int al, 
+extern void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al, 
 			   real c0, real c1);
 
-extern void add_dum4_atoms(t_params *ps, int ai, int aj, int ak, int al, 
+extern void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, 
 			   int am);
 
 extern int search_jtype(t_restp *rp,char *name,bool bFirstRes);

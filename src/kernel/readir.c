@@ -862,8 +862,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
   for(i=0; (i<idef->il[F_SHAKE].nr); ) {
     /* Subtract degrees of freedom for the constraints,
      * if the particles still have degrees of freedom left.
-     * If one of the particles is a dummy or a shell, then all
-     * constraints motion will go there, but since they do not
+     * If one of the particles is a vsite or a shell, then all
+     * constraint motion will go there, but since they do not
      * contribute to the constraints the degrees of freedom do not
      * change.
      */

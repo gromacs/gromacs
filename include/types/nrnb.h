@@ -88,8 +88,8 @@ enum {
   eNR_LINCSMAT,             eNR_SHAKE,                eNR_SHAKE_V,
   eNR_SHAKE_RIJ,            eNR_SHAKE_VIR,            eNR_SETTLE,
   eNR_PSHAKEINITLD,         eNR_PSHAKEINITMD,         eNR_PSHAKE,
-  eNR_DUM2,                 eNR_DUM3,                 eNR_DUM3FD,
-  eNR_DUM3FAD,              eNR_DUM3OUT,              eNR_DUM4FD, 
+  eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
+  eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD, 
   eNRNB
 };
 

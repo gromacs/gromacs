@@ -221,25 +221,25 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->settle.doh=old[0];
     new->settle.dhh=old[1];
     break;
-  case F_DUMMY2:
-  case F_DUMMY3:
-  case F_DUMMY3FD:
-  case F_DUMMY3OUT:
-  case F_DUMMY4FD:
-    new->dummy.a=old[0];
-    new->dummy.b=old[1];
-    new->dummy.c=old[2];
-    new->dummy.d=old[3];
-    new->dummy.e=old[4];
-    new->dummy.f=old[5];
+  case F_VSITE2:
+  case F_VSITE3:
+  case F_VSITE3FD:
+  case F_VSITE3OUT:
+  case F_VSITE4FD:
+    new->vsite.a=old[0];
+    new->vsite.b=old[1];
+    new->vsite.c=old[2];
+    new->vsite.d=old[3];
+    new->vsite.e=old[4];
+    new->vsite.f=old[5];
     break;
-  case F_DUMMY3FAD:
-    new->dummy.a=old[1] * cos(DEG2RAD * old[0]);
-    new->dummy.b=old[1] * sin(DEG2RAD * old[0]);
-    new->dummy.c=old[2];
-    new->dummy.d=old[3];
-    new->dummy.e=old[4];
-    new->dummy.f=old[5];
+  case F_VSITE3FAD:
+    new->vsite.a=old[1] * cos(DEG2RAD * old[0]);
+    new->vsite.b=old[1] * sin(DEG2RAD * old[0]);
+    new->vsite.c=old[2];
+    new->vsite.d=old[3];
+    new->vsite.e=old[4];
+    new->vsite.f=old[5];
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
@@ -353,7 +353,7 @@ void convert_params(int atnr,t_params nbtypes[],
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
     if ((i != F_LJ) && (i != F_BHAM) && (i != F_POSRES) &&
-	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_CONSTRAINT)))
+	((flags & IF_BOND) || (flags & IF_VSITE) || (flags & IF_CONSTRAINT)))
       enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE,FALSE);
   }
   if (debug)

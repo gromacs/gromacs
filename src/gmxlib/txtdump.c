@@ -604,18 +604,18 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"doh=%15.8e, dhh=%15.8e\n",iparams->settle.doh,
 	    iparams->settle.dhh);
     break;
-  case F_DUMMY2:
-    fprintf(fp,"a=%15.8e\n",iparams->dummy.a);
+  case F_VSITE2:
+    fprintf(fp,"a=%15.8e\n",iparams->vsite.a);
     break;
-  case F_DUMMY3:
-  case F_DUMMY3FD:
-  case F_DUMMY3FAD:
-    fprintf(fp,"a=%15.8e, b=%15.8e\n",iparams->dummy.a,iparams->dummy.b);
+  case F_VSITE3:
+  case F_VSITE3FD:
+  case F_VSITE3FAD:
+    fprintf(fp,"a=%15.8e, b=%15.8e\n",iparams->vsite.a,iparams->vsite.b);
     break;
-  case F_DUMMY3OUT:
-  case F_DUMMY4FD:
+  case F_VSITE3OUT:
+  case F_VSITE4FD:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
-	    iparams->dummy.a,iparams->dummy.b,iparams->dummy.c);
+	    iparams->vsite.a,iparams->vsite.b,iparams->vsite.c);
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",

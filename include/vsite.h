@@ -34,8 +34,8 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _dummies_h
-#define _dummies_h
+#ifndef _vsite_h
+#define _vsite_h
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -45,27 +45,27 @@
 #include "typedefs.h"
 
 typedef struct {
-  int nprevdum; /* how many dummy particles are nonlocal */     
-  int nnextdum;
-  int *idxprevdum; /* index of nonlocal dummy particles */
-  int *idxnextdum;
+  int nprevvsite; /* how many virtual sites are nonlocal */     
+  int nnextvsite;
+  int *idxprevvsite; /* index of nonlocal vsite particles */
+  int *idxnextvsite;
   int nprevconstr; /* how many constr. atoms are nonlocal */
   int nnextconstr;
   int *idxprevconstr; /* indices of nonlocal constructing atoms */
   int *idxnextconstr;
-} t_comm_dummies;
+} t_comm_vsites;
 
-extern void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,
+extern void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
 			      real dt,rvec v[],t_idef *idef,
 			      t_graph *graph,t_commrec *cr,
-			      matrix box,t_comm_dummies *dummycomm);
-/* Create positions of dummy atoms based on surrounding atoms.
+			      matrix box,t_comm_vsites *vsitecomm);
+/* Create positions of vsite atoms based on surrounding atoms.
  */
  
-extern void spread_dummy_f(FILE *log,rvec x[],rvec f[],
+extern void spread_vsite_f(FILE *log,rvec x[],rvec f[],
 			   t_nrnb *nrnb,t_idef *idef,
-			   t_comm_dummies *dummycomm,t_commrec *cr);
-/* Spread the force operating on the dummy atoms on the surrounding atoms.
+			   t_comm_vsites *vsitecomm,t_commrec *cr);
+/* Spread the force operating on the vsite atoms on the surrounding atoms.
  */
 
 #endif

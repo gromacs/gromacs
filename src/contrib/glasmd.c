@@ -69,7 +69,7 @@
 #include "vcm.h"
 #include "ebin.h"
 #include "mdebin.h"
-#include "dummies.h"
+#include "vsite.h"
 #include "mdrun.h"
 #include "physics.h"
 #include "glaasje.h"
@@ -185,8 +185,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
     
-    /* Construct dummy particles */
-    construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+    /* Construct virtual sites */
+    construct_vsites(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
     
     /* Set values for invmass etc. */
     if (parm->ir.bPert)
@@ -212,8 +212,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       lambda   = lam0 + step*parm->ir.delta_lambda;
     SAfactor = 1.0  - step*parm->ir.delta_t*parm->ir.cooling_rate;
     
-    /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,x,f,&mynrnb,&top->idef);
+    /* Spread the force on virtual sites to the other particles... */
+    spread_vsite_f(log,x,f,&mynrnb,&top->idef);
     
     if (do_per_step(step,parm->ir.nstxout)) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout)) vv=v; else vv=NULL;
@@ -315,8 +315,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (ene)
     ffclose(ene);
   
-  /* Construct dummy particles, for last output frame */
-  construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+  /* Construct virtual sites, for last output frame */
+  construct_vsites(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
     
   /*free_nslist(log);*/
   

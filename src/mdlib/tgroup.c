@@ -235,7 +235,7 @@ real sum_ekin(t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ)
   for(i=0; (i<ngtc); i++) {
     nd=ndf[i]*ndfac;
     /* Sometimes a group does not have degrees of freedom, e.g.
-     * when it consists of shells and dummies, then we just
+     * when it consists of shells and virtual sites, then we just
      * set the temperatue to 0 and also neglect the kinetic
      * energy, which should be  zero anyway.
      */

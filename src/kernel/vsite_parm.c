@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "dum_parm.h"
+#include "vsite_parm.h"
 #include "smalloc.h"
 #include "resall.h"
 #include "add_par.h"
@@ -82,7 +82,7 @@ static void get_bondeds(int nrat, t_iatom atoms[],
 {
   int     i,j,k,ftype;
   int     nra,nrd,tp,nrcheck;
-  t_iatom *ia,adum;
+  t_iatom *ia;
   bool    bCheck;
   t_param param;
   
@@ -221,12 +221,12 @@ static real get_angle(int nrang, t_mybonded angles[],
   return angle;
 }
 
-static bool calc_dum3_param(t_atomtype *atype,
-			    t_param *param, t_atoms *at,
-			    int nrbond, t_mybonded *bonds,
-			    int nrang,  t_mybonded *angles )
+static bool calc_vsite3_param(t_atomtype *atype,
+			      t_param *param, t_atoms *at,
+			      int nrbond, t_mybonded *bonds,
+			      int nrang,  t_mybonded *angles )
 {
-  /* i = dummy atom            |    ,k
+  /* i = virtual site          |    ,k
    * j = 1st bonded heavy atom | i-j
    * k,l = 2nd bonded atoms    |    `l
    */
@@ -292,24 +292,24 @@ static bool calc_dum3_param(t_atomtype *atype,
       b = 0.5 * ( dH/dM - rH/rM );
     }
   } else
-    gmx_fatal(FARGS,"calc_dum3_param not implemented for the general case "
+    gmx_fatal(FARGS,"calc_vsite3_param not implemented for the general case "
 		"(atom %d)",param->AI+1);
   
   param->C0 = a;
   param->C1 = b;
   
   if (debug)
-    fprintf(debug,"params for dummy3 %u: %g %g\n",
+    fprintf(debug,"params for vsite3 %u: %g %g\n",
 	    param->AI+1,param->C0,param->C1);
   
   return bError;
 }
 
-static bool calc_dum3fd_param(t_param *param,
-			      int nrbond, t_mybonded *bonds,
-			      int nrang,  t_mybonded *angles)
+static bool calc_vsite3fd_param(t_param *param,
+				int nrbond, t_mybonded *bonds,
+				int nrang,  t_mybonded *angles)
 {
-  /* i = dummy atom            |    ,k
+  /* i = virtual site          |    ,k
    * j = 1st bonded heavy atom | i-j
    * k,l = 2nd bonded atoms    |    `l
    */
@@ -328,19 +328,19 @@ static bool calc_dum3fd_param(t_param *param,
   rk = bjk * sin(aijk);
   rl = bjl * sin(aijl);
   param->C0 = rk / (rk + rl);
-  param->C1 = -bij; /* 'bond'-length for fixed distance dummy */
+  param->C1 = -bij; /* 'bond'-length for fixed distance vsite */
   
   if (debug)
-    fprintf(debug,"params for dummy3fd %u: %g %g\n",
+    fprintf(debug,"params for vsite3fd %u: %g %g\n",
 	    param->AI+1,param->C0,param->C1);
   return bError;
 }
 
-static bool calc_dum3fad_param(t_param *param,
-			       int nrbond, t_mybonded *bonds,
-			       int nrang,  t_mybonded *angles)
+static bool calc_vsite3fad_param(t_param *param,
+				 int nrbond, t_mybonded *bonds,
+				 int nrang,  t_mybonded *angles)
 {
-  /* i = dummy atom            |
+  /* i = virtual site          |
    * j = 1st bonded heavy atom | i-j
    * k = 2nd bonded heavy atom |    `k-l
    * l = 3d bonded heavy atom  |
@@ -355,24 +355,24 @@ static bool calc_dum3fad_param(t_param *param,
   aijk = get_angle      (nrang, angles, param->AI, param->AJ, param->AK);
   bError = (bij==NOTSET) || (aijk==NOTSET);
   
-  param->C1 = bij;          /* 'bond'-length for fixed distance dummy */
-  param->C0 = RAD2DEG*aijk; /* 'bond'-angle for fixed angle dummy */
+  param->C1 = bij;          /* 'bond'-length for fixed distance vsite */
+  param->C0 = RAD2DEG*aijk; /* 'bond'-angle for fixed angle vsite */
   
   if (bSwapParity)
     param->C0 = 360 - param->C0;
   
   if (debug)
-    fprintf(debug,"params for dummy3fad %u: %g %g\n",
+    fprintf(debug,"params for vsite3fad %u: %g %g\n",
 	    param->AI+1,param->C0,param->C1);
   return bError;
 }
 
-static bool calc_dum3out_param(t_atomtype *atype,
-			       t_param *param, t_atoms *at,
-			       int nrbond, t_mybonded *bonds,
-			       int nrang,  t_mybonded *angles)
+static bool calc_vsite3out_param(t_atomtype *atype,
+				 t_param *param, t_atoms *at,
+				 int nrbond, t_mybonded *bonds,
+				 int nrang,  t_mybonded *angles)
 {
-  /* i = dummy atom            |    ,k
+  /* i = virtual site          |    ,k
    * j = 1st bonded heavy atom | i-j
    * k,l = 2nd bonded atoms    |    `l
    * NOTE: i is out of the j-k-l plane!
@@ -462,16 +462,16 @@ static bool calc_dum3out_param(t_atomtype *atype,
   else
     param->C2 =  c;
   if (debug)
-    fprintf(debug,"params for dummy3out %u: %g %g %g\n",
+    fprintf(debug,"params for vsite3out %u: %g %g %g\n",
 	    param->AI+1,param->C0,param->C1,param->C2);
   return bError;
 }
 
-static bool calc_dum4fd_param(t_param *param,
-			      int nrbond, t_mybonded *bonds,
-			      int nrang,  t_mybonded *angles)
+static bool calc_vsite4fd_param(t_param *param,
+				int nrbond, t_mybonded *bonds,
+				int nrang,  t_mybonded *angles)
 {
-  /* i = dummy atom            |    ,k
+  /* i = virtual site          |    ,k
    * j = 1st bonded heavy atom | i-j-m
    * k,l,m = 2nd bonded atoms  |    `l
    */
@@ -500,9 +500,9 @@ static bool calc_dum4fd_param(t_param *param,
     cosakl = (cos(akjl) - cos(aijk)*cos(aijl)) / (sin(aijk)*sin(aijl));
     cosakm = (cos(akjm) - cos(aijk)*cos(aijm)) / (sin(aijk)*sin(aijm));
     if ( cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1 ) {
-      fprintf(stderr,"dummy atom %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
+      fprintf(stderr,"virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
 	      param->AI+1,RAD2DEG*aijk,RAD2DEG*aijl,RAD2DEG*aijm);
-      gmx_fatal(FARGS,"invalid construction in calc_dum4fd for atom %d: "
+      gmx_fatal(FARGS,"invalid construction in calc_vsite4fd for atom %d: "
 		  "cosakl=%f, cosakm=%f\n",param->AI+1,cosakl,cosakm);
     }
     sinakl = sqrt(1-sqr(cosakl));
@@ -516,18 +516,18 @@ static bool calc_dum4fd_param(t_param *param,
     param->C1 = cm;
     param->C2 = -bij;
     if (debug)
-      fprintf(debug,"params for dummy4fd %u: %g %g %g\n",
+      fprintf(debug,"params for vsite4fd %u: %g %g %g\n",
 	      param->AI+1,param->C0,param->C1,param->C2);
   }
   
   return bError;
 }
 
-int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 		t_params plist[])
 {
   int i,j,ftype;
-  int ndum,nrbond,nrang,nridih,nrset;
+  int nvsite,nrbond,nrang,nridih,nrset;
   bool bFirst,bSet,bERROR;
   t_mybonded *bonds;
   t_mybonded *angles;
@@ -535,13 +535,13 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
   
   bFirst = TRUE;
   bERROR = TRUE;
-  ndum=0;
+  nvsite=0;
   if (debug)
-    fprintf(debug, "\nCalculating parameters for dummy atoms\n");  
+    fprintf(debug, "\nCalculating parameters for virtual sites\n");  
   for(ftype=0; (ftype<F_NRE); ftype++)
-    if (interaction_function[ftype].flags & IF_DUMMY) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
       nrset=0;
-      ndum+=plist[ftype].nr;
+      nvsite+=plist[ftype].nr;
       for(i=0; (i<plist[ftype].nr); i++) {
 	/* check if all parameters are set */
 	bSet=TRUE;
@@ -554,7 +554,7 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	}
 	if (!bSet) {
 	  if (bVerbose && bFirst) {
-	    fprintf(stderr,"Calculating parameters for dummy atoms\n");
+	    fprintf(stderr,"Calculating parameters for virtual sites\n");
 	    bFirst=FALSE;
 	  }
 	  
@@ -563,41 +563,41 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	  angles= NULL;
 	  idihs = NULL;
 	  nrset++;
-	  /* now set the dummy parameters: */
+	  /* now set the vsite parameters: */
 	  get_bondeds(NRAL(ftype), plist[ftype].param[i].a, plist, 
 		      &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
 	  if (debug) {
 	    fprintf(debug, "Found %d bonds, %d angles and %d idihs "
-		    "for dummy atom %u (%s)\n",nrbond,nrang,nridih,
+		    "for virtual site %u (%s)\n",nrbond,nrang,nridih,
 		    plist[ftype].param[i].AI+1,
 		    interaction_function[ftype].longname);
 	    print_bad(debug, nrbond, bonds, nrang, angles, nridih, idihs);
 	  } /* debug */
 	  switch(ftype) {
-	  case F_DUMMY3: 
+	  case F_VSITE3: 
 	    bERROR = 
-	      calc_dum3_param(&atype, &(plist[ftype].param[i]), atoms,
-			      nrbond, bonds, nrang, angles);
-	    break;
-	  case F_DUMMY3FD:
-	    bERROR = 
-	      calc_dum3fd_param(&(plist[ftype].param[i]),
+	      calc_vsite3_param(&atype, &(plist[ftype].param[i]), atoms,
 				nrbond, bonds, nrang, angles);
 	    break;
-	  case F_DUMMY3FAD:
+	  case F_VSITE3FD:
 	    bERROR = 
-	      calc_dum3fad_param(&(plist[ftype].param[i]),
-				 nrbond, bonds, nrang, angles);
+	      calc_vsite3fd_param(&(plist[ftype].param[i]),
+				  nrbond, bonds, nrang, angles);
 	    break;
-	  case F_DUMMY3OUT:
+	  case F_VSITE3FAD:
 	    bERROR = 
-	      calc_dum3out_param(&atype, &(plist[ftype].param[i]), atoms,
-				 nrbond, bonds, nrang, angles);
+	      calc_vsite3fad_param(&(plist[ftype].param[i]),
+				   nrbond, bonds, nrang, angles);
 	    break;
-	  case F_DUMMY4FD:
+	  case F_VSITE3OUT:
 	    bERROR = 
-	      calc_dum4fd_param(&(plist[ftype].param[i]), 
-				nrbond, bonds, nrang, angles);
+	      calc_vsite3out_param(&atype, &(plist[ftype].param[i]), atoms,
+				   nrbond, bonds, nrang, angles);
+	    break;
+	  case F_VSITE4FD:
+	    bERROR = 
+	      calc_vsite4fd_param(&(plist[ftype].param[i]), 
+				  nrbond, bonds, nrang, angles);
 	    break;
 	  default:
 	    gmx_fatal(FARGS,"Automatic parameter generation not supported "
@@ -618,39 +618,39 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
       if (debug && plist[ftype].nr)
 	fprintf(stderr,"Calculated parameters for %d out of %d %s atoms\n",
 		nrset,plist[ftype].nr,interaction_function[ftype].longname);
-    } /* if IF_DUMMY */
+    } /* if IF_VSITE */
   
-  return ndum;
+  return nvsite;
 }
 
-void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms)
+void set_vsites_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms)
 {
   int i,ftype;
   int nra,nrd,tp;
-  t_iatom *ia,adum;
+  t_iatom *ia,avsite;
   
   if (bVerbose)
-    fprintf(stderr,"Setting particle type to Dummy for dummy atoms\n");
+    fprintf(stderr,"Setting particle type to V for virtual sites\n");
   if (debug)
     fprintf(stderr,"checking %d functypes\n",F_NRE);
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_DUMMY) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
       
       if (debug && nrd)
-	fprintf(stderr,"doing %d %s dummies\n",
+	fprintf(stderr,"doing %d %s virtual sites\n",
 		(nrd / (nra+1)),interaction_function[ftype].longname);
       
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
 	if (ftype != idef->functype[tp])
-	  gmx_incons("function type error in set_dummies_ptype");
+	  gmx_incons("function type error in set_vsites_ptype");
 	
-	/* The dummy atom */
-	adum = ia[1];
-	atoms->atom[adum].ptype=eptDummy;
+	/* The virtual site */
+	avsite = ia[1];
+	atoms->atom[avsite].ptype=eptVSite;
 	
 	i  += nra+1;
 	ia += nra+1;
@@ -664,8 +664,8 @@ typedef struct {
   int ftype,parnr;
 } t_pindex;
 
-static void check_dum_constraints(t_params *plist, 
-				  int cftype, int dummy_type[])
+static void check_vsite_constraints(t_params *plist, 
+				    int cftype, int vsite_type[])
 {
   int      i,k,n;
   atom_id  atom;
@@ -676,24 +676,23 @@ static void check_dum_constraints(t_params *plist,
   for(i=0; (i<ps->nr); i++)
     for(k=0; k<2; k++) {
       atom = ps->param[i].a[k];
-      if (dummy_type[atom]!=NOTSET) {
-	fprintf(stderr,
-		"ERROR: Cannot have constraint (%u-%u) with dummy atom (%u)\n",
+      if (vsite_type[atom]!=NOTSET) {
+	fprintf(stderr,"ERROR: Cannot have constraint (%u-%u) with virtual site (%u)\n",
 		ps->param[i].AI+1, ps->param[i].AJ+1, atom+1);
 	n++;
       }
     }
   if (n)
-    gmx_fatal(FARGS,"There were %d dummy atoms involved in constraints",n);
+    gmx_fatal(FARGS,"There were %d virtual sites involved in constraints",n);
 }
 
-static void clean_dum_bonds(t_params *plist, t_pindex pindex[], 
-			    int cftype, int dummy_type[])
+static void clean_vsite_bonds(t_params *plist, t_pindex pindex[], 
+			    int cftype, int vsite_type[])
 {
-  int      ftype,i,j,parnr,k,l,m,n,ndum,nOut,kept_i,dumnral,dumtype;
+  int      ftype,i,j,parnr,k,l,m,n,nvsite,nOut,kept_i,vsnral,vsitetype;
   int      nconverted,nremoved;
   atom_id  atom,oatom,constr,at1,at2;
-  atom_id  dumatoms[MAXATOMLIST];
+  atom_id  vsiteatoms[MAXATOMLIST];
   bool     bKeep,bRemove,bUsed,bPresent,bThisFD,bThisOUT,bAllFD,bFirstTwo;
   t_params *ps;
 
@@ -701,7 +700,7 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
     return;
   
   ps = &(plist[cftype]);
-  dumnral=0;
+  vsnral=0;
   kept_i=0;
   nconverted=0;
   nremoved=0;
@@ -710,33 +709,33 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
     bKeep=FALSE;
     bRemove=FALSE;
     bAllFD=TRUE;
-    /* check if all dummies are constructed from the same atoms */
-    ndum=0;
+    /* check if all virtual sites are constructed from the same atoms */
+    nvsite=0;
     if(debug) 
       fprintf(debug,"constr %u %u:",ps->param[i].AI+1,ps->param[i].AJ+1);
     for(k=0; (k<2) && !bKeep && !bRemove; k++) { 
       /* for all atoms in the bond */
       atom = ps->param[i].a[k];
-      if (dummy_type[atom]!=NOTSET) {
+      if (vsite_type[atom]!=NOTSET) {
 	if(debug) {
 	  fprintf(debug," d%d[%d: %d %d %d]",k,atom+1,
 		  plist[pindex[atom].ftype].param[pindex[atom].parnr].AJ+1,
 		  plist[pindex[atom].ftype].param[pindex[atom].parnr].AK+1,
 		  plist[pindex[atom].ftype].param[pindex[atom].parnr].AL+1);
 	}
-	ndum++;
-	bThisFD = ( (pindex[atom].ftype == F_DUMMY3FD ) ||
-		    (pindex[atom].ftype == F_DUMMY3FAD) ||
-		    (pindex[atom].ftype == F_DUMMY4FD ) );
-	bThisOUT= ( (pindex[atom].ftype == F_DUMMY3OUT) &&
+	nvsite++;
+	bThisFD = ( (pindex[atom].ftype == F_VSITE3FD ) ||
+		    (pindex[atom].ftype == F_VSITE3FAD) ||
+		    (pindex[atom].ftype == F_VSITE4FD ) );
+	bThisOUT= ( (pindex[atom].ftype == F_VSITE3OUT) &&
 		    (interaction_function[cftype].flags & IF_CONSTRAINT) );
 	bAllFD = bAllFD && bThisFD;
 	if (bThisFD || bThisOUT) {
 	  if(debug)fprintf(debug," %s",bThisOUT?"out":"fd");
 	  oatom = ps->param[i].a[1-k]; /* the other atom */
-	  if ( dummy_type[oatom]==NOTSET &&
+	  if ( vsite_type[oatom]==NOTSET &&
 	       oatom==plist[pindex[atom].ftype].param[pindex[atom].parnr].AJ ){
-	    /* if the other atom isn't a dummy, and it is AI */
+	    /* if the other atom isn't a vsite, and it is AI */
 	    bRemove=TRUE;
 	    if (bThisOUT)
 	      nOut++;
@@ -744,23 +743,23 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
 	  }
 	}
 	if (!bRemove) {
-	  if (ndum==1) {
-	    /* if this is the first dummy we encounter then
+	  if (nvsite==1) {
+	    /* if this is the first vsite we encounter then
 	       store construction atoms */
-	    dumnral=NRAL(pindex[atom].ftype)-1;
-	    for(m=0; (m<dumnral); m++)
-	      dumatoms[m]=
+	    vsnral=NRAL(pindex[atom].ftype)-1;
+	    for(m=0; (m<vsnral); m++)
+	      vsiteatoms[m]=
 		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
 	  } else {
 	    /* if it is not the first then
-	       check if this dummy is constructed from the same atoms */
-	    if (dumnral == NRAL(pindex[atom].ftype)-1 )
-	      for(m=0; (m<dumnral) && !bKeep; m++) {
+	       check if this vsite is constructed from the same atoms */
+	    if (vsnral == NRAL(pindex[atom].ftype)-1 )
+	      for(m=0; (m<vsnral) && !bKeep; m++) {
 		bPresent=FALSE;
 		constr=
 		  plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-		for(n=0; (n<dumnral) && !bPresent; n++)
-		  if (constr == dumatoms[n])
+		for(n=0; (n<vsnral) && !bPresent; n++)
+		  if (constr == vsiteatoms[n])
 		    bPresent=TRUE;
 		if (!bPresent) {
 		  bKeep=TRUE;
@@ -779,20 +778,20 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
     if (bRemove) 
       bKeep=FALSE;
     else {
-      /* if we have no dummies in this bond, keep it */
-      if (ndum==0) {
-	if (debug)fprintf(debug," no dum");
+      /* if we have no virtual sites in this bond, keep it */
+      if (nvsite==0) {
+	if (debug)fprintf(debug," no vsite");
 	bKeep=TRUE;
       }
     
-      /* check if all non-dummy atoms are used in construction: */
+      /* check if all non-vsite atoms are used in construction: */
       bFirstTwo=TRUE;
       for(k=0; (k<2) && !bKeep; k++) { /* for all atoms in the bond */
 	atom = ps->param[i].a[k];
-	if (dummy_type[atom]==NOTSET) {
+	if (vsite_type[atom]==NOTSET) {
 	  bUsed=FALSE;
-	  for(m=0; (m<dumnral) && !bUsed; m++)
-	    if (atom == dumatoms[m]) {
+	  for(m=0; (m<vsnral) && !bUsed; m++)
+	    if (atom == vsiteatoms[m]) {
 	      bUsed=TRUE;
 	      bFirstTwo = bFirstTwo && m<2;
 	    }
@@ -805,9 +804,9 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
       
       if ( ! ( bAllFD && bFirstTwo ) )
 	/* check if all constructing atoms are constrained together */
-	for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
-	  at1 = dumatoms[m];
-	  at2 = dumatoms[(m+1) % dumnral];
+	for (m=0; m<vsnral && !bKeep; m++) { /* all constr. atoms */
+	  at1 = vsiteatoms[m];
+	  at2 = vsiteatoms[(m+1) % vsnral];
 	  bPresent=FALSE;
 	  for (ftype=0; ftype<F_NRE; ftype++)
 	    if ( interaction_function[ftype].flags & IF_CONSTRAINT )
@@ -842,59 +841,59 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
   }
   
   if (nremoved)
-    fprintf(stderr,"Removed   %4d %15ss with dummy atoms, %5d left\n",
+    fprintf(stderr,"Removed   %4d %15ss with virtual sites, %5d left\n",
 	    nremoved, interaction_function[cftype].longname, kept_i);
   if (nconverted)
-    fprintf(stderr,"Converted %4d %15ss with dummy atoms to connections, %5d left\n",
+    fprintf(stderr,"Converted %4d %15ss with virtual sites to connections, %5d left\n",
 	    nconverted, interaction_function[cftype].longname, kept_i);
   if (nOut)
-    fprintf(stderr,"Warning: removed %d %ss with dummy with %s construction\n"
-	    "         This dummy construction does not guarantee constant "
+    fprintf(stderr,"Warning: removed %d %ss with vsite with %s construction\n"
+	    "         This vsite construction does not guarantee constant "
 	    "bond-length\n"
 	    "         If the constructions were generated by pdb2gmx ignore "
 	    "this warning\n",
 	    nOut, interaction_function[cftype].longname, 
-	    interaction_function[F_DUMMY3OUT].longname );
+	    interaction_function[F_VSITE3OUT].longname );
   ps->nr=kept_i;
 }
 
-static void clean_dum_angles(t_params *plist, t_pindex pindex[], 
-			     int cftype, int dummy_type[])
+static void clean_vsite_angles(t_params *plist, t_pindex pindex[], 
+			       int cftype, int vsite_type[])
 {
-  int      ftype,i,j,parnr,k,l,m,n,ndum,kept_i,dumnral,dumtype;
+  int      ftype,i,j,parnr,k,l,m,n,nvsite,kept_i,vsnral,vsitetype;
   atom_id  atom,constr,at1,at2;
-  atom_id  dumatoms[MAXATOMLIST];
+  atom_id  vsiteatoms[MAXATOMLIST];
   bool     bKeep,bUsed,bPresent,bAll3FAD,bFirstTwo;
   t_params *ps;
   
   ps = &(plist[cftype]);
-  dumnral=0;
+  vsnral=0;
   kept_i=0;
   for(i=0; (i<ps->nr); i++) { /* for all angles in the plist */
     bKeep=FALSE;
     bAll3FAD=TRUE;
-    /* check if all dummies are constructed from the same atoms */
-    ndum=0;
+    /* check if all virtual sites are constructed from the same atoms */
+    nvsite=0;
     for(k=0; (k<3) && !bKeep; k++) { /* for all atoms in the angle */
       atom = ps->param[i].a[k];
-      if (dummy_type[atom]!=NOTSET) {
-	ndum++;
-	bAll3FAD = bAll3FAD && (pindex[atom].ftype == F_DUMMY3FAD);
-	if (ndum==1) {
-	  /* store construction atoms of first dummy */
-	  dumnral=NRAL(pindex[atom].ftype)-1;
-	  for(m=0; (m<dumnral); m++)
-	    dumatoms[m]=
+      if (vsite_type[atom]!=NOTSET) {
+	nvsite++;
+	bAll3FAD = bAll3FAD && (pindex[atom].ftype == F_VSITE3FAD);
+	if (nvsite==1) {
+	  /* store construction atoms of first vsite */
+	  vsnral=NRAL(pindex[atom].ftype)-1;
+	  for(m=0; (m<vsnral); m++)
+	    vsiteatoms[m]=
 	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
 	} else 
-	  /* check if this dummy is constructed from the same atoms */
-	  if (dumnral == NRAL(pindex[atom].ftype)-1 )
-	    for(m=0; (m<dumnral) && !bKeep; m++) {
+	  /* check if this vsite is constructed from the same atoms */
+	  if (vsnral == NRAL(pindex[atom].ftype)-1 )
+	    for(m=0; (m<vsnral) && !bKeep; m++) {
 	      bPresent=FALSE;
 	      constr=
 		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-	      for(n=0; (n<dumnral) && !bPresent; n++)
-		if (constr == dumatoms[n])
+	      for(n=0; (n<vsnral) && !bPresent; n++)
+		if (constr == vsiteatoms[n])
 		  bPresent=TRUE;
 	      if (!bPresent)
 		bKeep=TRUE;
@@ -904,19 +903,19 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
       }
     }
     
-    /* keep all angles with no dummies in them or 
-       with dummies with more than 3 constr. atoms */
-    if ( ndum == 0 && dumnral > 3 )
+    /* keep all angles with no virtual sites in them or 
+       with virtual sites with more than 3 constr. atoms */
+    if ( nvsite == 0 && vsnral > 3 )
       bKeep=TRUE;
     
-    /* check if all non-dummy atoms are used in construction: */
+    /* check if all non-vsite atoms are used in construction: */
     bFirstTwo=TRUE;
     for(k=0; (k<3) && !bKeep; k++) { /* for all atoms in the angle */
       atom = ps->param[i].a[k];
-      if (dummy_type[atom]==NOTSET) {
+      if (vsite_type[atom]==NOTSET) {
 	bUsed=FALSE;
-	for(m=0; (m<dumnral) && !bUsed; m++)
-	  if (atom == dumatoms[m]) {
+	for(m=0; (m<vsnral) && !bUsed; m++)
+	  if (atom == vsiteatoms[m]) {
 	    bUsed=TRUE;
 	    bFirstTwo = bFirstTwo && m<2;
 	  }
@@ -927,9 +926,9 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
     
     if ( ! ( bAll3FAD && bFirstTwo ) )
       /* check if all constructing atoms are constrained together */
-      for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
-	at1 = dumatoms[m];
-	at2 = dumatoms[(m+1) % dumnral];
+      for (m=0; m<vsnral && !bKeep; m++) { /* all constr. atoms */
+	at1 = vsiteatoms[m];
+	at2 = vsiteatoms[(m+1) % vsnral];
 	bPresent=FALSE;
 	for (ftype=0; ftype<F_NRE; ftype++)
 	  if ( interaction_function[ftype].flags & IF_CONSTRAINT )
@@ -952,54 +951,54 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
   }
   
   if (ps->nr != kept_i)
-    fprintf(stderr,"Removed   %4d %15ss with dummy atoms, %5d left\n",
+    fprintf(stderr,"Removed   %4d %15ss with virtual sites, %5d left\n",
 	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
   ps->nr=kept_i;
 }
 
-static void clean_dum_dihs(t_params *plist, t_pindex pindex[], 
-			   int cftype, int dummy_type[])
+static void clean_vsite_dihs(t_params *plist, t_pindex pindex[], 
+			   int cftype, int vsite_type[])
 {
-  int      ftype,i,parnr,k,l,m,n,ndum,kept_i,dumnral;
+  int      ftype,i,parnr,k,l,m,n,nvsite,kept_i,vsnral;
   atom_id  atom,constr;
-  atom_id  dumatoms[3];
+  atom_id  vsiteatoms[3];
   bool     bKeep,bUsed,bPresent;
   t_params *ps;
   
   ps = &(plist[cftype]);
   
-  dumnral=0;
+  vsnral=0;
   kept_i=0;
   for(i=0; (i<ps->nr); i++) { /* for all dihedrals in the plist */
     bKeep=FALSE;
-    /* check if all dummies are constructed from the same atoms */
-    ndum=0;
+    /* check if all virtual sites are constructed from the same atoms */
+    nvsite=0;
     for(k=0; (k<4) && !bKeep; k++) { /* for all atoms in the dihedral */
       atom = ps->param[i].a[k];
-      if (dummy_type[atom]!=NOTSET) {
-	ndum++;
-	if (ndum==1) {
-	  /* store construction atoms of first dummy */
-	  dumnral=NRAL(pindex[atom].ftype)-1;
-	  for(m=0; (m<dumnral); m++)
-	    dumatoms[m]=
+      if (vsite_type[atom]!=NOTSET) {
+	nvsite++;
+	if (nvsite==1) {
+	  /* store construction atoms of first vsite */
+	  vsnral=NRAL(pindex[atom].ftype)-1;
+	  for(m=0; (m<vsnral); m++)
+	    vsiteatoms[m]=
 	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
 	  if (debug) {
-	    fprintf(debug,"dih w. dum: %u %u %u %u\n",
+	    fprintf(debug,"dih w. vsite: %u %u %u %u\n",
 		    ps->param[i].AI+1,ps->param[i].AJ+1,
 		    ps->param[i].AK+1,ps->param[i].AL+1);
-	    fprintf(debug,"dum %u from: %u %u %u\n",
-		    atom+1,dumatoms[0]+1,dumatoms[1]+1,dumatoms[2]+1);
+	    fprintf(debug,"vsite %u from: %u %u %u\n",
+		    atom+1,vsiteatoms[0]+1,vsiteatoms[1]+1,vsiteatoms[2]+1);
 	  }
 	} else 
-	  /* check if this dummy is constructed from the same atoms */
-	  if (dumnral == NRAL(pindex[atom].ftype)-1 )
-	    for(m=0; (m<dumnral) && !bKeep; m++) {
+	  /* check if this vsite is constructed from the same atoms */
+	  if (vsnral == NRAL(pindex[atom].ftype)-1 )
+	    for(m=0; (m<vsnral) && !bKeep; m++) {
 	      bPresent=FALSE;
 	      constr=
 		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-	      for(n=0; (n<dumnral) && !bPresent; n++)
-		if (constr == dumatoms[n])
+	      for(n=0; (n<vsnral) && !bPresent; n++)
+		if (constr == vsiteatoms[n])
 		  bPresent=TRUE;
 	      if (!bPresent)
 		bKeep=TRUE;
@@ -1007,18 +1006,18 @@ static void clean_dum_dihs(t_params *plist, t_pindex pindex[],
       }
     }
     
-    /* keep all dihedrals with no dummies in them */
-    if (ndum==0)
+    /* keep all dihedrals with no virtual sites in them */
+    if (nvsite==0)
       bKeep=TRUE;
     
-    /* check if all atoms in dihedral are either dummies, or used in 
-       construction of dummies. If so, keep it, if not throw away: */
+    /* check if all atoms in dihedral are either virtual sites, or used in 
+       construction of virtual sites. If so, keep it, if not throw away: */
     for(k=0; (k<4) && !bKeep; k++) { /* for all atoms in the dihedral */
       atom = ps->param[i].a[k];
-      if (dummy_type[atom]==NOTSET) {
+      if (vsite_type[atom]==NOTSET) {
 	bUsed=FALSE;
-	for(m=0; (m<dumnral) && !bUsed; m++)
-	  if (atom == dumatoms[m])
+	for(m=0; (m<vsnral) && !bUsed; m++)
+	  if (atom == vsiteatoms[m])
 	    bUsed=TRUE;
 	if (!bUsed) {
 	  bKeep=TRUE;
@@ -1035,41 +1034,41 @@ static void clean_dum_dihs(t_params *plist, t_pindex pindex[],
   }
 
   if (ps->nr != kept_i)
-    fprintf(stderr,"Removed   %4d %15ss with dummy atoms, %5d left\n", 
+    fprintf(stderr,"Removed   %4d %15ss with virtual sites, %5d left\n", 
 	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
   ps->nr=kept_i;
 }
 
-void clean_dum_bondeds(t_params *plist, int natoms, bool bRmDumBds)
+void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
 {
-  int i,k,ndum,ftype,parnr;
-  int *dummy_type;
+  int i,k,nvsite,ftype,parnr;
+  int *vsite_type;
   t_pindex *pindex;
 
   pindex=0; /* avoid warnings */
-  /* make dummy_type array */
-  snew(dummy_type,natoms);
+  /* make vsite_type array */
+  snew(vsite_type,natoms);
   for(i=0; i<natoms; i++)
-    dummy_type[i]=NOTSET;
-  ndum=0;
+    vsite_type[i]=NOTSET;
+  nvsite=0;
   for(ftype=0; ftype<F_NRE; ftype++)
-    if (interaction_function[ftype].flags & IF_DUMMY) {
-      ndum+=plist[ftype].nr;
+    if (interaction_function[ftype].flags & IF_VSITE) {
+      nvsite+=plist[ftype].nr;
       for(i=0; i<plist[ftype].nr; i++)
-	if ( dummy_type[plist[ftype].param[i].AI] == NOTSET)
-	  dummy_type[plist[ftype].param[i].AI]=ftype;
+	if ( vsite_type[plist[ftype].param[i].AI] == NOTSET)
+	  vsite_type[plist[ftype].param[i].AI]=ftype;
 	else
-	  gmx_fatal(FARGS,"multiple dummy constructions for atom %d",
+	  gmx_fatal(FARGS,"multiple vsite constructions for atom %d",
 		      plist[ftype].param[i].AI+1);
     }
   
-  /* the rest only if we have dummies: */
-  if (ndum) {
-    fprintf(stderr,"Cleaning up constraints %swith dummy particles\n",
-	    bRmDumBds?"and constant bonded interactions ":"");
+  /* the rest only if we have virtual sites: */
+  if (nvsite) {
+    fprintf(stderr,"Cleaning up constraints %swith virtual sites\n",
+	    bRmVSiteBds?"and constant bonded interactions ":"");
     snew(pindex,natoms);
     for(ftype=0; ftype<F_NRE; ftype++)
-      if (interaction_function[ftype].flags & IF_DUMMY)
+      if (interaction_function[ftype].flags & IF_VSITE)
 	for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
 	  k=plist[ftype].param[parnr].AI;
 	  pindex[k].ftype=ftype;
@@ -1078,27 +1077,27 @@ void clean_dum_bondeds(t_params *plist, int natoms, bool bRmDumBds)
     
     if (debug)
       for(i=0; i<natoms; i++)
-	fprintf(debug,"atom %d dummy_type %s\n",i, 
-		dummy_type[i]==NOTSET ? "NOTSET" : 
-		interaction_function[dummy_type[i]].name);
+	fprintf(debug,"atom %d vsite_type %s\n",i, 
+		vsite_type[i]==NOTSET ? "NOTSET" : 
+		interaction_function[vsite_type[i]].name);
     
-    /* remove things with dummy atoms */
+    /* remove things with vsite atoms */
     for(ftype=0; ftype<F_NRE; ftype++)
-      if ( ( ( interaction_function[ftype].flags & IF_BOND ) && bRmDumBds ) ||
+      if ( ( ( interaction_function[ftype].flags & IF_BOND ) && bRmVSiteBds ) ||
 	   ( interaction_function[ftype].flags & IF_CONSTRAINT ) ) {
 	if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT) )
-	  clean_dum_bonds (plist, pindex, ftype, dummy_type);
+	  clean_vsite_bonds (plist, pindex, ftype, vsite_type);
 	else if (interaction_function[ftype].flags & IF_ATYPE)
-	  clean_dum_angles(plist, pindex, ftype, dummy_type);
+	  clean_vsite_angles(plist, pindex, ftype, vsite_type);
 	else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
-	  clean_dum_dihs  (plist, pindex, ftype, dummy_type);
+	  clean_vsite_dihs  (plist, pindex, ftype, vsite_type);
       }
-    /* check if we have constraints left with dummy atoms in them */
+    /* check if we have constraints left with virtual sites in them */
     for(ftype=0; ftype<F_NRE; ftype++)
       if (interaction_function[ftype].flags & IF_CONSTRAINT)
-	check_dum_constraints(plist, ftype, dummy_type);
+	check_vsite_constraints(plist, ftype, vsite_type);
     
   }
   sfree(pindex);
-  sfree(dummy_type);
+  sfree(vsite_type);
 }

@@ -53,7 +53,7 @@
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
-#include "dummies.h"
+#include "vsite.h"
 
 /* This	file contains XMDRUN datatypes and function prototypes, grouped
  * neatly according to parts of the functionalisty
@@ -85,7 +85,7 @@ extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 			t_forcerec *fr,
 			char *traj,real t,rvec mu_tot,
 			int natoms,bool *bConverged,
-			bool bDummies,t_comm_dummies *dummycomm,
+			bool bVsites,t_comm_vsites *vsitecomm,
 			FILE *fp_field);
 
 /* GENERAL COUPLING THEORY (GCT) STUFF */

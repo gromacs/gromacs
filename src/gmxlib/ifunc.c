@@ -60,8 +60,8 @@
 #define  def_bondnb(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH | IF_CHEMBOND,(ind),(func)}
 
-#define   def_dummy(str,lstr,nra,nrpa)\
-   {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_GRAPH,       -1, unimplemented}
+#define   def_vsite(str,lstr,nra,nrpa)\
+   {str,lstr,(nra),(nrpa),     0,IF_VSITE | IF_GRAPH,       -1, unimplemented}
    
 #define     def_shk(str,lstr,nra,nrpa,nrpb)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_GRAPH,  -1, unimplemented}
@@ -119,12 +119,12 @@ const t_interaction_function interaction_function[F_NRE]=
   def_shkcb  ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk    ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
   def_shkcb  ("SETTLE",   "Settle",          1, 2, 0                             ),
-  def_dummy  ("DUMMY2",   "Dummy2",          3, 1                                ),
-  def_dummy  ("DUMMY3",   "Dummy3",          4, 2                                ),
-  def_dummy  ("DUMMY3FD", "Dummy3fd",        4, 2                                ),
-  def_dummy  ("DUMMY3FAD","Dummy3fad",       4, 2                                ),
-  def_dummy  ("DUMMY3OUT","Dummy3out",       4, 3                                ),
-  def_dummy  ("DUMMY4FD", "Dummy4fd",        5, 3                                ),
+  def_vsite  ("VSITE2",   "Virtual site 2",  3, 1                                ),
+  def_vsite  ("VSITE3",   "Virtual site 3",  4, 2                                ),
+  def_vsite  ("VSITE3FD", "Virtual site 3fd",4, 2                                ),
+  def_vsite  ("VSITE3FAD","Virtual site 3fad",4, 2                               ),
+  def_vsite  ("VSITE3OUT","Virtual site 3out",4, 3                               ),
+  def_vsite  ("VSITE4FD", "Virtual site 4fd",5, 3                                ),
   def_nofc   ("EQM",      "Quantum En."      ),
   def_nofc   ("EPOT",     "Potential"        ),
   def_nofc   ("EKIN",     "Kinetic En."      ),

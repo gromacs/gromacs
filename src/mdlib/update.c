@@ -113,7 +113,7 @@ static void do_update_md(int start,int homenr,double dt,
         lg             = lamb[gt][d]; 
         vold[n][d]     = v[n][d];
 
-        if((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+        if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
 
           vnrel= lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));  
           /* do not scale the mean velocities u */
@@ -138,7 +138,7 @@ static void do_update_md(int start,int homenr,double dt,
         lg             = lamb[gt][d];
         vold[n][d]     = vn;
 
-        if((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+        if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
           vv             = lg*(vn + f[n][d]*w_dt);
 
           /* do not scale the mean velocities u */
@@ -193,7 +193,7 @@ static void do_update_visc(int start,int homenr,double dt,
         vn             = v[n][d];
         lg             = lamb[gt][d];
 
-        if((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+        if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
           vn              = lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));
           if(d == XX)
             vn           += vc + dt*cosz*cos_accel;
@@ -217,7 +217,7 @@ static void do_update_visc(int start,int homenr,double dt,
         lg             = lamb[gt][d];
         vold[n][d]     = vn;
 
-        if((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+        if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
           if(d == XX) {
             vc           = cosz*vcos;
             /* Do not scale the cosine velocity profile */
@@ -327,7 +327,7 @@ static void do_update_sd(int start,int homenr,
         vn             = v[n][d];
         vold[n][d]     = vn;
       }
-      if((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+      if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
         if(bFirstHalf) {
 
           if(bFirst)
@@ -400,7 +400,7 @@ static void do_update_bd(int start,int homenr,double dt,
     gt = cTC[n];
     for(d=0; (d<DIM); d++) {
       vold[n][d]     = v[n][d];
-      if((ptype[n]!=eptDummy) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
+      if((ptype[n]!=eptVSite) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
         if (friction_coefficient != 0)
           vn = invfr*f[n][d] + rf[gt]*gmx_rng_gaussian_table(gaussrand);
         else

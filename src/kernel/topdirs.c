@@ -104,23 +104,23 @@ int ifunc_index(directive d,int type)
       return F_LJ;
     else
       return F_BHAM;
-  case d_dum2:
-    return F_DUMMY2;
-  case d_dum3:
+  case d_vsites2:
+    return F_VSITE2;
+  case d_vsites3:
     switch (type) {
     case 1:
-      return F_DUMMY3;
+      return F_VSITE3;
     case 2: 
-      return F_DUMMY3FD;
+      return F_VSITE3FD;
     case 3:
-      return F_DUMMY3FAD;
+      return F_VSITE3FAD;
     case 4:
-      return F_DUMMY3OUT;  
+      return F_VSITE3OUT;  
     default:
-      gmx_fatal(FARGS,"Invalid dummies3 type %d",type);
+      gmx_fatal(FARGS,"Invalid vsites3 type %d",type);
     }
-  case d_dum4:
-    return F_DUMMY4FD; 
+  case d_vsites4:
+    return F_VSITE4FD; 
   case d_constraints:
   case d_constrainttypes:
     switch (type) {
@@ -174,9 +174,18 @@ char *dir2str (directive d)
 directive str2dir (char *dstr)
 {
   directive d;
+  char buf[STRLEN],*ptr;
+  
+  /* Hack to be able to read old topologies */
+  if (strncasecmp_min(dstr,"dummies",7) == 0) {
+    sprintf(buf,"virtual_sites%s",dstr+7);
+    ptr = buf;
+  } else {
+    ptr = dstr;
+  }
   
   for (d=(directive)0; (d<d_maxdir); d++)
-    if (strcasecmp_min(dstr,dir2str(d)) == 0)
+    if (strcasecmp_min(ptr,dir2str(d)) == 0)
       return d;
 
   return d_invalid;
@@ -216,9 +225,9 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_nonbond_params]),d_atomtypes,d_none);
     set_nec(&(necessary[d_moleculetype]),d_atomtypes,d_none);
     set_nec(&(necessary[d_atoms]),d_moleculetype,d_none);
-    set_nec(&(necessary[d_dum2]),d_atoms,d_none);
-    set_nec(&(necessary[d_dum3]),d_atoms,d_none);
-    set_nec(&(necessary[d_dum4]),d_atoms,d_none);
+    set_nec(&(necessary[d_vsites2]),d_atoms,d_none);
+    set_nec(&(necessary[d_vsites3]),d_atoms,d_none);
+    set_nec(&(necessary[d_vsites4]),d_atoms,d_none);
     set_nec(&(necessary[d_bonds]),d_atoms,d_none);
     set_nec(&(necessary[d_exclusions]),d_bonds,d_constraints,d_settles,d_none);
     set_nec(&(necessary[d_pairs]),d_atoms,d_none);

@@ -49,7 +49,7 @@
 #include "nrnb.h"
 #include "calcmu.h"
 #include "index.h"
-#include "dummies.h"
+#include "vsite.h"
 #include "update.h"
 #include "ns.h"
 #include "trnio.h"
@@ -106,8 +106,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   t_forcerec *fr;
   t_fcdata   *fcd;
   time_t     start_t=0;
-  bool       bDummies,bParDummies;
-  t_comm_dummies dummycomm;
+  bool       bVsites,bParVsites;
+  t_comm_vsites vsitecomm;
   int        i,m;
   char       *gro;
   
@@ -136,11 +136,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_parts(stdlog,cr,
 	       parm,top,state,&mdatoms,nsb,
 	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0,
-	       &bParDummies,&dummycomm);
+	       &bParVsites,&vsitecomm);
   } else {
     /* Read it up... */
     init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,state,&mdatoms,nsb);
-    bParDummies=FALSE;
+    bParVsites=FALSE;
   }
   if (parm->ir.eI == eiSD) {
     /* Is not read from TPR yet, so we allocate space here */
@@ -185,10 +185,10 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
 	      top->idef.iparams,&(parm->ir),fcd);
 
-  /* check if there are dummies */
-  bDummies=FALSE;
-  for(i=0; (i<F_NRE) && !bDummies; i++)
-    bDummies = ((interaction_function[i].flags & IF_DUMMY) && 
+  /* check if there are vsites */
+  bVsites=FALSE;
+  for(i=0; (i<F_NRE) && !bVsites; i++)
+    bVsites = ((interaction_function[i].flags & IF_VSITE) && 
 		(top->idef.il[i].nr > 0));
 
   /* Initiate forcerecord */
@@ -214,8 +214,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   case eiSD:
   case eiBD:
     start_t=do_md(stdlog,cr,mcr,nfile,fnm,
-		  bVerbose,bCompact,bDummies,
-		  bParDummies ? &dummycomm : NULL,
+		  bVerbose,bCompact,bVsites,
+		  bParVsites ? &vsitecomm : NULL,
 		  nstepout,parm,grps,top,ener,fcd,state,vold,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size,
 		  repl_ex_nst,repl_ex_seed,Flags);
@@ -223,22 +223,22 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   case eiCG:
     start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
 		  state,f,buf,mdatoms,parm->ekin,ener,fcd,
-		  nrnb,bVerbose,bDummies,
-		  bParDummies ? &dummycomm : NULL,
+		  nrnb,bVerbose,bVsites,
+		  bParVsites ? &vsitecomm : NULL,
 		  cr,mcr,graph,fr,box_size);
     break;
   case eiLBFGS:
     start_t=do_lbfgs(stdlog,nfile,fnm,parm,top,grps,nsb,
 		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
-		     nrnb,bVerbose,bDummies,
-		     bParDummies ? &dummycomm : NULL,
+		     nrnb,bVerbose,bVsites,
+		     bParVsites ? &vsitecomm : NULL,
 		     cr,mcr,graph,fr,box_size);
     break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
-		     nrnb,bVerbose,bDummies,
-		     bParDummies ? &dummycomm : NULL,
+		     nrnb,bVerbose,bVsites,
+		     bParVsites ? &vsitecomm : NULL,
 		     cr,mcr,graph,fr,box_size);
     break;
   case eiNM:
@@ -276,7 +276,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
 time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
-	     bool bDummies, t_comm_dummies *dummycomm,
+	     bool bVsites, t_comm_vsites *vsitecomm,
 	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,
 	     real ener[],t_fcdata *fcd,
 	     t_state *state,rvec vold[],rvec vt[],rvec f[],
@@ -536,7 +536,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       copy_mat(boxcopy,state->box);
     }
     
-    if (bDummies) {
+    if (bVsites) {
       if (graph) {
 	/* Following is necessary because the graph may get out of sync
 	 * with the coordinates if we only have every N'th coordinate set
@@ -545,8 +545,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	  mk_mshift(log,graph,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      construct_dummies(log,state->x,&mynrnb,parm->ir.delta_t,state->v,
-			&top->idef,graph,cr,state->box,dummycomm);
+      construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,
+			&top->idef,graph,cr,state->box,vsitecomm);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
@@ -583,7 +583,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
 			 grps,force_vir,
 			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
-			 nsb->natoms,&bConverged,bDummies,dummycomm,
+			 nsb->natoms,&bConverged,bVsites,vsitecomm,
 			 fp_field);
       tcount+=count;
       
@@ -619,21 +619,21 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * the update.
      * for RerunMD t is read from input trajectory
      */
-    if (bDummies) 
-      spread_dummy_f(log,state->x,f,&mynrnb,&top->idef,dummycomm,cr);
+    if (bVsites) 
+      spread_vsite_f(log,state->x,f,&mynrnb,&top->idef,vsitecomm,cr);
       
-    /* Calculation of the virial must be done after dummies!    */
+    /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
     calc_virial(log,START(nsb),HOMENR(nsb),state->x,f,
 		force_vir,fr->vir_el_recip,graph,state->box,&mynrnb,fr);
 		  
-    /* Spread the LR force on dummy particle to the other particles... 
+    /* Spread the LR force on virtual sites to the other particles... 
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
      */
-    if (bDummies && fr->bEwald) 
-      spread_dummy_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
-		     dummycomm,cr);
+    if (bVsites && fr->bEwald) 
+      spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+		     vsitecomm,cr);
     
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 

@@ -100,7 +100,7 @@ static int min_nodeid(int nr,atom_id list[],int hid[])
 static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
 {
   int     i,j,k,type,ftype,nodeid,nratoms,tnr;
-  int     ndum_constr,tmpid;
+  int     nvsite_constr,tmpid;
   t_iatom ai;
   t_sf    sf[MAXNODES];
   
@@ -131,26 +131,26 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
 	gmx_fatal(FARGS,"Settle block crossing node boundaries\n"
 		    "constraint between atoms (%d-%d)",ai,ai+2);
     }
-    else if(interaction_function[ftype].flags & IF_DUMMY) {
-      /* Dummies should be constructed on the home node */
+    else if(interaction_function[ftype].flags & IF_VSITE) {
+      /* Virtual sites should be constructed on the home node */
   
-      if (ftype==F_DUMMY2)
-	ndum_constr=2;
-      else if(ftype==F_DUMMY4FD)
-	ndum_constr=4;
+      if (ftype==F_VSITE2)
+	nvsite_constr=2;
+      else if(ftype==F_VSITE4FD)
+	nvsite_constr=4;
       else
-	ndum_constr=3;
+	nvsite_constr=3;
       
       tmpid=hid[ilist->iatoms[i+1]];
       
-      for(k=2;k<ndum_constr+2;k++) {
+      for(k=2;k<nvsite_constr+2;k++) {
 	if(hid[ilist->iatoms[i+k]]<(tmpid-1) ||
 	   hid[ilist->iatoms[i+k]]>(tmpid+1))
-	  gmx_fatal(FARGS,"Dummy particle %d and its constructing"
+	  gmx_fatal(FARGS,"Virtual site %d and its constructing"
 		      " atoms are not on the same or adjacent\n" 
 		      " nodes. This is necessary to avoid a lot\n"
 		      " of extra communication. The easiest way"
-		      " to ensure this is to place dummies\n"
+		      " to ensure this is to place virtual sites\n"
 		      " close to the constructing atoms.\n"
 		      " Sorry, but you will have to rework your topology!\n",
 		      ilist->iatoms[i+1]);
@@ -629,7 +629,7 @@ void split_top(bool bVerbose,int nnodes,t_topology *top,real
   t_block sblock;
   int     *homeind;
   atom_id *sblinv;
-  int ftype,ndum_constr,nra,nrd;
+  int ftype,nvsite_constr,nra,nrd;
   t_iatom   *ia;
   int minhome,ihome,minidx;
   

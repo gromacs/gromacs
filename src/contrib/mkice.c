@@ -443,7 +443,7 @@ int main(int argc,char *argv[])
     { "-ny",    FALSE, etINT,  {&ny}, "ny" },
     { "-nz",    FALSE, etINT,  {&nz}, "nz" },
     { "-yaw",   FALSE, etBOOL, {&bYaw},
-      "Generate dummies and shell positions" },
+      "Generate virtual sites and shell positions" },
     { "-lj",    FALSE, etBOOL, {&bLJ},
       "Use LJ as well as coulomb for virial calculation" },
     { "-rcut",  FALSE,etREAL,  {&rcut},"Cut-off for virial calculations" },

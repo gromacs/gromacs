@@ -38,7 +38,7 @@
 #endif
 
 enum {
-  eptAtom, eptNucleus, eptShell, eptBond, eptDummy, eptNR
+  eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
 /* The particle type */
  

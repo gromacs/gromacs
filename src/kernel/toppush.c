@@ -147,7 +147,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
     { "N",   eptNucleus }, 
     { "S",   eptShell }, 
     { "B",   eptBond },
-    { "D",   eptDummy }, 
+    { "V",   eptVSite }, 
   };
   
   int    nr,i,nfields,j,pt,nfp0=-1;
@@ -239,6 +239,9 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
   if(strlen(btype)==1 && isdigit(btype[0])) 
      gmx_fatal(FARGS,"Bond atom type names can't be single digits.");
 
+  /* Hack to read old topologies */
+  if (strcasecmp(ptype,"D") == 0)
+    sprintf(ptype,"V");
   for(j=0; (j<eptNR); j++)
     if (strcasecmp(ptype,xl[j].entry) == 0)
       break;
@@ -965,20 +968,20 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   } else if (nread == nral) 
     ftype = ifunc_index(d,1);
   else {
-    /* this is a hack to allow for dummy atoms with swapped parity */
+    /* this is a hack to allow for virtual sites with swapped parity */
     bSwapParity = (aa[nral]<0);
     if (bSwapParity)
       aa[nral] = -aa[nral];
     ftype = ifunc_index(d,aa[nral]);
     if (bSwapParity)
       switch(ftype) {
-      case F_DUMMY3FAD:
-      case F_DUMMY3OUT:
+      case F_VSITE3FAD:
+      case F_VSITE3OUT:
 	break;
       default:
 	gmx_fatal(FARGS,"Negative function types only allowed for %s and %s",
-		    interaction_function[F_DUMMY3FAD].longname,
-		    interaction_function[F_DUMMY3OUT].longname);
+		    interaction_function[F_VSITE3FAD].longname,
+		    interaction_function[F_VSITE3OUT].longname);
       }
   }
   
@@ -1029,6 +1032,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
 		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11]);
+
     if (nread > nrfp) {
       warning_error("Too many parameters");
       nread = nrfp;
@@ -1047,19 +1051,19 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   if (bDef) {
     /* Use defaults */
     nrfpA=interaction_function[ftype].nrfpA;
-    
+
     if (nread > 0 && nread < nrfpA) {
       /* Issue an error, do not use defaults */
       sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",nrfpA);
       warning_error(errbuf);
-    } else if (nread == 0) {
+    } else if (nread == 0 || nread == EOF) {
       if (!bFoundA) {
-	if (interaction_function[ftype].flags & IF_DUMMY) {
+	if (interaction_function[ftype].flags & IF_VSITE) {
 	  /* set them to NOTSET, will be calculated later */
 	  for(j=0; (j<MAXFORCEPARAM); j++)
 	    param.c[j] = NOTSET;
 	  if (bSwapParity)
-	    param.C1 = -1; /* flag to swap parity of dummy construction */
+	    param.C1 = -1; /* flag to swap parity of vsite construction */
 	} else {
 	  sprintf(errbuf,"No default %s types, using zeroes",
 		  interaction_function[ftype].longname);
@@ -1068,10 +1072,10 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       } else
 	if (bSwapParity)
 	  switch(ftype) {
-	  case F_DUMMY3FAD:
+	  case F_VSITE3FAD:
 	    param.C0 = 360-param.C0;
 	    break;
-	  case F_DUMMY3OUT:
+	  case F_VSITE3OUT:
 	    param.C2 = -param.C2;
 	    break;
 	  }

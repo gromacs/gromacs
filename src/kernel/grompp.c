@@ -69,7 +69,7 @@
 #include "gmxfio.h"
 #include "trnio.h"
 #include "tpxio.h"
-#include "dum_parm.h"
+#include "vsite_parm.h"
 #include "txtdump.h"
 #include "calcgrid.h"
 #include "add_par.h"
@@ -350,7 +350,7 @@ static void check_vel(t_atoms *atoms,rvec v[])
   for(i=0; (i<atoms->nr); i++) {
     if ((atoms->atom[i].ptype == eptShell) ||
 	(atoms->atom[i].ptype == eptBond)  ||
-	(atoms->atom[i].ptype == eptDummy))
+	(atoms->atom[i].ptype == eptVSite))
       clear_rvec(v[i]);
   }
 }
@@ -846,12 +846,12 @@ int main (int argc, char *argv[])
     "using less or something like that).[PAR]",
     
     "By default all bonded interactions which have constant energy due to",
-    "dummy atom constructions will be removed. If this constant energy is",
+    "virtual site constructions will be removed. If this constant energy is",
     "not zero, this will result in a shift in the total energy. All bonded",
-    "interactions can be kept by turning off [TT]-rmdumbds[tt]. Additionally,",
+    "interactions can be kept by turning off [TT]-rmvsbds[tt]. Additionally,",
     "all constraints for distances which will be constant anyway because",
-    "of dummy atom constructions will be removed. If any constraints remain",
-    "which involve dummy atoms, a fatal error will result.[PAR]"
+    "of virtual site constructions will be removed. If any constraints remain",
+    "which involve virtual sites, a fatal error will result.[PAR]"
     
     "To verify your run input file, please make notice of all warnings",
     "on the screen, and correct where necessary. Do also look at the contents",
@@ -867,7 +867,7 @@ int main (int argc, char *argv[])
   t_molinfo    msys;
   t_atomtype   atype;
   t_inputrec   *ir;
-  int          natoms,ndum,nc;
+  int          natoms,nvsite,nc;
   int          *forward=NULL;
   t_params     *plist;
   t_state      state;
@@ -895,7 +895,7 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
-  static bool bRmDumBds=TRUE,bSort=FALSE,bCheckPairs=FALSE;
+  static bool bRmVSBds=TRUE,bSort=FALSE,bCheckPairs=FALSE;
   static int  i,nnodes=1,maxwarn=10;
   static real fr_time=-1;
   static char *cap=NULL;
@@ -910,8 +910,8 @@ int main (int argc, char *argv[])
       "Shuffle molecules over nodes" },
     { "-sort",    FALSE, etBOOL, {&bSort},
       "Sort molecules according to X coordinate" },
-    { "-rmdumbds",FALSE, etBOOL, {&bRmDumBds},
-      "Remove constant bonded interactions with dummies" },
+    { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
+      "Remove constant bonded interactions with virtual sites" },
     { "-load",    FALSE, etSTR,  {&cap},
       "Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
@@ -1051,12 +1051,12 @@ int main (int argc, char *argv[])
     gen_posres(&(msys.plist[F_POSRES]),fn,fnB,forward);
   }
   
-  /* set parameters for Dummy construction */
-  ndum=set_dummies(bVerbose, &sys->atoms, atype, msys.plist);
+  /* set parameters for virtual site construction */
+  nvsite=set_vsites(bVerbose, &sys->atoms, atype, msys.plist);
   /* now throw away all obsolete bonds, angles and dihedrals: */
   /* note: constraints are ALWAYS removed */
-  if (ndum)
-    clean_dum_bondeds(msys.plist,sys->atoms.nr,bRmDumBds);
+  if (nvsite)
+    clean_vsite_bondeds(msys.plist,sys->atoms.nr,bRmVSBds);
   
   if (bRenum) 
     atype.nr=renum_atype(plist, sys, &atype, bVerbose);
@@ -1083,13 +1083,13 @@ int main (int argc, char *argv[])
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
 
-  /* set ptype to Dummy for dummy atoms */
-  if (ndum) {
-    set_dummies_ptype(bVerbose,&sys->idef,&sys->atoms);
+  /* set ptype to VSite for virtual sites */
+  if (nvsite) {
+    set_vsites_ptype(bVerbose,&sys->idef,&sys->atoms);
     if (debug)
-      pr_symtab(debug,0,"After dummy",&sys->symtab);
+      pr_symtab(debug,0,"After virtual sites",&sys->symtab);
   }
-  /* Check velocity for dummies and shells */
+  /* Check velocity for virtual sites and shells */
   if (bGenVel) 
     check_vel(&sys->atoms,state.v);
     

@@ -16,10 +16,10 @@ bin_PROGRAMS = \
 grompp_SOURCES = \
 	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
 	convparm.c 	tomorse.c	sorting.c 	splitter.c	\
-	dum_parm.c	readir.c  	add_par.c	topexcl.c	\
+	vsite_parm.c	readir.c  	add_par.c	topexcl.c	\
 	toputil.c	topdirs.c	grompp.c	add_par.h	\
 	splitter.h	topio.h		toputil.h	convparm.h	\
-	sorting.h	topdirs.h	toppush.h	dum_parm.h	\
+	sorting.h	topdirs.h	toppush.h	vsite_parm.h	\
 	readir.h	topcat.h	topexcl.h	topshake.h
 
 tpbconv_SOURCES = \
@@ -30,11 +30,11 @@ tpbconv_SOURCES = \
 pdb2gmx_SOURCES = \
 	hizzie.c	xlate.c		specbond.c	ter_db.c	\
 	h_db.c		genhydro.c     	pdb2top.c 	gen_ad.c 	\
-	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
+	gen_vsite.c	pgutil.c	resall.c	hackblock.c	\
 	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
 	pdb2gmx.c	gen_ad.h	add_par.h	h_db.h		\
 	pdb2top.h	resall.h	toputil.h	xlate.h		\
-	gen_dum.h	hackblock.h	pgutil.h	ter_db.h	\
+	gen_vsite.h	hackblock.h	pgutil.h	ter_db.h	\
 	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
 	topexcl.h
 
@@ -61,10 +61,10 @@ gmxcheck_SOURCES = \
 
 x2top_SOURCES = \
 	toppush.c 	nm2type.c	pdb2top.c 	gen_ad.c 	\
-	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
+	gen_vsite.c	pgutil.c	resall.c	hackblock.c	\
 	add_par.c	topexcl.c	toputil.c	topdirs.c	\
 	x2top.c		add_par.h	gen_ad.h	pdb2top.h	\
-	resall.h	toputil.h	gen_dum.h	hackblock.h	\
+	resall.h	toputil.h	gen_vsite.h	hackblock.h	\
 	pgutil.h	topdirs.h	toppush.h	topexcl.h	\
 	x2top.h
 

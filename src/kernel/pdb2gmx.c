@@ -563,15 +563,15 @@ int main(int argc, char *argv[])
     "the [TT]-o[tt] option when you want to convert a multichain pdb file.",
     "[PAR]",
     
-    "The option [TT]-dummy[tt] removes hydrogen and fast improper dihedral",
+    "The option [TT]-vsite[tt] removes hydrogen and fast improper dihedral",
     "motions. Angular and out-of-plane motions can be removed by changing",
-    "hydrogens into dummy atoms and fixing angles, which fixes their",
+    "hydrogens into virtual sites and fixing angles, which fixes their",
     "position relative to neighboring atoms. Additionally, all atoms in the",
     "aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)",
-    "can be converted into dummy atoms, elminating the fast improper dihedral",
+    "can be converted into virtual sites, elminating the fast improper dihedral",
     "fluctuations in these rings. Note that in this case all other hydrogen",
-    "atoms are also converted to dummy atoms. The mass of all atoms that are",
-    "converted into dummy atoms, is added to the heavy atoms.[PAR]",
+    "atoms are also converted to virtual sites. The mass of all atoms that are",
+    "converted into virtual sites, is added to the heavy atoms.[PAR]",
     "Also slowing down of dihedral motion can be done with [TT]-heavyh[tt]",
     "done by increasing the hydrogen-mass by a factor of 4. This is also",
     "done for water hydrogens to slow down the rotational motion of water.",
@@ -633,7 +633,7 @@ int main(int argc, char *argv[])
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
-  bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
+  bool       bUsed,bVsites=FALSE,bWat,bPrevWat=FALSE,bITP,bVsiteAromatics=FALSE;
   real       mHmult=0;
   bool       bAlldih,HH14,bRemoveDih;
   int        nrexcl;
@@ -657,7 +657,7 @@ int main(int argc, char *argv[])
   static bool bDeuterate=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
-  static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
+  static char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   static char *watstr[] = { NULL, "spc", "spce", "tip3p", "tip4p", "tip5p", "f3c", NULL };
   static char *ff = "select";
   t_pargs pa[] = {
@@ -702,8 +702,8 @@ int main(int argc, char *argv[])
       "Continue when atoms are missing, dangerous" },
     { "-posrefc",FALSE, etREAL, {&posre_fc},
       "Force constant for position restraints" },
-    { "-dummy",  FALSE, etENUM, {dumstr}, 
-      "Convert atoms to dummy atoms" },
+    { "-vsite",  FALSE, etENUM, {vsitestr}, 
+      "Convert atoms to virtual sites" },
     { "-heavyh", FALSE, etBOOL, {&bHeavyH},
       "Make hydrogen atoms heavy" },
     { "-deuterate", FALSE, etBOOL, {&bDeuterate},
@@ -747,22 +747,22 @@ int main(int argc, char *argv[])
   else
     mHmult=1.0;
   
-  switch(dumstr[0][0]) {
+  switch(vsitestr[0][0]) {
   case 'n': /* none */
-    bDummies=FALSE;
-    bDummyAromatics=FALSE;
+    bVsites=FALSE;
+    bVsiteAromatics=FALSE;
     break;
   case 'h': /* hydrogens */
-    bDummies=TRUE;
-    bDummyAromatics=FALSE;
+    bVsites=TRUE;
+    bVsiteAromatics=FALSE;
     break;
   case 'a': /* aromatics */
-    bDummies=TRUE;
-    bDummyAromatics=TRUE;
+    bVsites=TRUE;
+    bVsiteAromatics=TRUE;
     break;
   default:
-    gmx_fatal(FARGS,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
-		__FILE__,__LINE__,dumstr[0]);
+    gmx_fatal(FARGS,"DEATH HORROR in $s (%d): vsitestr[0]='%s'",
+		__FILE__,__LINE__,vsitestr[0]);
   }/* end switch */
   
   /* Open the symbol table */
@@ -1134,7 +1134,7 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
-	    HH14,bAlldih,bRemoveDih,bDummies,bDummyAromatics,forcefield,
+	    HH14,bAlldih,bRemoveDih,bVsites,bVsiteAromatics,forcefield,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist,short_bond_dist,bDeuterate);
     

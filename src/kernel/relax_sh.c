@@ -46,7 +46,7 @@
 #include "mdrun.h"
 #include "xmdrun.h"
 #include "mdatoms.h"
-#include "dummies.h"
+#include "vsite.h"
 #include "network.h"
 #include "names.h"
 #include "constr.h"
@@ -251,7 +251,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
     w_dt = md->invmass[n]*dt;
     
     for (d=0; d<DIM; d++) {
-      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+      if ((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
 	xnold[start+n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
 	xnew[start+n][d] = 2*x[n][d] - x_old[n][d] + f[n][d]*w_dt*dt;
       } else {
@@ -291,7 +291,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 		 t_forcerec *fr,
 		 char *traj,real t,rvec mu_tot,
 		 int natoms,bool *bConverged,
-		 bool bDummies,t_comm_dummies *dummycomm,
+		 bool bVsites,t_comm_vsites *vsitecomm,
 		 FILE *fp_field)
 {
   static bool bFirst=TRUE,bForceInit=FALSE,bNoPredict=FALSE;
@@ -430,12 +430,12 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
 
-    /* Replace Try with Min in the dummies bit. DvdS 18-01-04 */
-    if (bDummies) {
+    /* Replace Try with Min in the vsites bit. DvdS 18-01-04 */
+    if (bVsites) {
       shift_self(graph,state->box,pos[Min]);
       
-      construct_dummies(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
-			graph,cr,state->box,dummycomm);
+      construct_vsites(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
+			graph,cr,state->box,vsitecomm);
       
       unshift_self(graph,state->box,pos[Min]);
     }
@@ -462,20 +462,20 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE,t,fp_field);
-    if (bDummies) 
-      spread_dummy_f(log,pos[Try],force[Try],nrnb,&top->idef,dummycomm,cr);
+    if (bVsites) 
+      spread_vsite_f(log,pos[Try],force[Try],nrnb,&top->idef,vsitecomm,cr);
       
-    /* Calculation of the virial must be done after dummies!    */
+    /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
     /*    calc_virial(log,START(nsb),HOMENR(nsb),pos[Try],force[Try],
 		my_vir[Try],pme_vir[Try],graph,state->box,nrnb,fr,FALSE);
     */	  
-    /* Spread the LR force on dummy particle to the other particles... 
+    /* Spread the LR force on virtual site to the other particles... 
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
      */
-    if (bDummies && fr->bEwald) 
-      spread_dummy_f(log,pos[Try],fr->f_el_recip,nrnb,&top->idef,dummycomm,cr);
+    if (bVsites && fr->bEwald) 
+      spread_vsite_f(log,pos[Try],fr->f_el_recip,nrnb,&top->idef,vsitecomm,cr);
     
     sum_lrforces(force[Try],fr,start,homenr);
     copy_mat(fr->vir_el_recip,vir_el_recip[Try]);

@@ -61,7 +61,7 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 
 #define IF_NULL       0
 #define IF_BOND       1
-#define IF_DUMMY      1<<1
+#define IF_VSITE      1<<1
 #define IF_CONSTRAINT 1<<2
 #define IF_GRAPH      1<<3
 #define IF_CHEMBOND   1<<4

@@ -44,9 +44,9 @@
 #include "smalloc.h"
 #include "fatal.h"
 #include "main.h"
-#include "dummies.h"
+#include "vsite.h"
 
-void create_dummylist(int nindex, int *list,
+void create_vsitelist(int nindex, int *list,
 		      int *targetn, int **listptr)
 {
   int i,j,k,inr;
@@ -81,40 +81,40 @@ void create_dummylist(int nindex, int *list,
 }
   
 
-bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
-			    t_comm_dummies *dummycomm)
+bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
+			    t_comm_vsites *vsitecomm)
 {
   int i,inr,j,k,ftype;
   int minidx,minhome,ihome;
   int nra,nrd,nconstr;
   bool found=FALSE;
   t_iatom   *ia;
-  int *idxprevdum;
-  int *idxnextdum;
+  int *idxprevvsite;
+  int *idxnextvsite;
   int *idxprevconstr;
   int *idxnextconstr;
-  int  nprevdum=0,nnextdum=0;
+  int  nprevvsite=0,nnextvsite=0;
   int  nprevconstr=0,nnextconstr=0;
 
 #define BUFLEN 100
   
-  snew(idxprevdum,BUFLEN);
-  snew(idxnextdum,BUFLEN);
+  snew(idxprevvsite,BUFLEN);
+  snew(idxnextvsite,BUFLEN);
   snew(idxprevconstr,BUFLEN);
   snew(idxnextconstr,BUFLEN);  
 
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_DUMMY) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
       
       for(i=0; (i<nrd); ) {
 	
-	/* The dummy and constructing atoms */
-	if (ftype==F_DUMMY2)
+	/* The vsite and constructing atoms */
+	if (ftype==F_VSITE2)
 	  nconstr=2;
-	else if(ftype==F_DUMMY4FD)
+	else if(ftype==F_VSITE4FD)
 	  nconstr=4;
 	else
 	  nconstr=3;
@@ -129,15 +129,15 @@ bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
           minhome++;
 
 	if(minhome==cr->nodeid) {
-	  /* This is my dummy interaction - but is the dummy local?
+	  /* This is my vsite interaction - but is the vsite local?
 	   * If not, he must be on the next node (error otherwise)
 	   * (but we do account for the cyclic ring structure)
 	   */
 	  if(ia[1]<nsb->index[cr->nodeid] ||
 	     ia[1]>=(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid])) {
-	    if((nnextdum%BUFLEN)==0 && nnextdum>0)
-	      srenew(idxnextdum,nnextdum+BUFLEN);
-	    idxnextdum[nnextdum++]=ia[1];
+	    if((nnextvsite%BUFLEN)==0 && nnextvsite>0)
+	      srenew(idxnextvsite,nnextvsite+BUFLEN);
+	    idxnextvsite[nnextvsite++]=ia[1];
 	    found=TRUE;
 	  }
 	  for(j=2;j<nconstr+2;j++) {
@@ -146,11 +146,11 @@ bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	    while(inr>=(nsb->index[ihome]+nsb->homenr[ihome]))
 	      ihome++;
 	    if( ihome>(cr->nodeid+1))
-	      gmx_fatal(FARGS,"Dummy particle %d and its constructing"
+	      gmx_fatal(FARGS,"Vsite particle %d and its constructing"
 			  " atoms are not on the same or adjacent\n" 
 			  " nodes. This is necessary to avoid a lot\n"
 			  " of extra communication. The easiest way"
-			  " to ensure this is to place dummies\n"
+			  " to ensure this is to place vsites\n"
 			  " close to the constructing atoms.\n"
 			  " Sorry, but you will have to rework your topology!\n",
 			  ia[1]);
@@ -162,12 +162,12 @@ bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	    }
 	  }
 	} else if(minhome==((cr->nodeid-1+cr->nnodes)%cr->nnodes)) {
-	  /* Not our dummy, but we might be involved */
+	  /* Not our vsite, but we might be involved */
 	  if(ia[1]>=nsb->index[cr->nodeid] &&
 	     (ia[1]<(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid]))) {
-	    if((nprevdum%BUFLEN)==0 && nprevdum>0)
-	      srenew(idxprevdum,nprevdum+BUFLEN);
-	    idxprevdum[nprevdum++]=ia[1];
+	    if((nprevvsite%BUFLEN)==0 && nprevvsite>0)
+	      srenew(idxprevvsite,nprevvsite+BUFLEN);
+	    idxprevvsite[nprevvsite++]=ia[1];
 	    found=TRUE;
 	  }
 	  for(j=2;j<nconstr+2;j++) {
@@ -188,17 +188,17 @@ bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
     }
   }
 
-  create_dummylist(nprevdum,idxprevdum,
-		   &(dummycomm->nprevdum),&(dummycomm->idxprevdum));
-  create_dummylist(nnextdum,idxnextdum,
-		   &(dummycomm->nnextdum),&(dummycomm->idxnextdum));
-  create_dummylist(nprevconstr,idxprevconstr,
-		   &(dummycomm->nprevconstr),&(dummycomm->idxprevconstr));
-  create_dummylist(nnextconstr,idxnextconstr,
-		   &(dummycomm->nnextconstr),&(dummycomm->idxnextconstr));
+  create_vsitelist(nprevvsite,idxprevvsite,
+		   &(vsitecomm->nprevvsite),&(vsitecomm->idxprevvsite));
+  create_vsitelist(nnextvsite,idxnextvsite,
+		   &(vsitecomm->nnextvsite),&(vsitecomm->idxnextvsite));
+  create_vsitelist(nprevconstr,idxprevconstr,
+		   &(vsitecomm->nprevconstr),&(vsitecomm->idxprevconstr));
+  create_vsitelist(nnextconstr,idxnextconstr,
+		   &(vsitecomm->nnextconstr),&(vsitecomm->idxnextconstr));
 
-  sfree(idxprevdum);
-  sfree(idxnextdum);
+  sfree(idxprevvsite);
+  sfree(idxnextvsite);
   sfree(idxprevconstr);
   sfree(idxnextconstr);
 
@@ -249,13 +249,13 @@ static void split_idef(FILE *log,t_idef *idef,t_commrec *cr)
 }
 	
 void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr,
-		 t_nsborder *nsb, bool *bParallelDummies,
-		 t_comm_dummies *dummycomm)
+		 t_nsborder *nsb, bool *bParallelVsites,
+		 t_comm_vsites *vsitecomm)
 {
   if (cr->nnodes < 2)
     return;
 
-  *bParallelDummies=setup_parallel_dummies(&(top->idef),cr,nsb,dummycomm);
+  *bParallelVsites=setup_parallel_vsites(&(top->idef),cr,nsb,vsitecomm);
   
   split_idef(log,&top->idef,cr);
 #ifdef DEBUG

@@ -458,7 +458,7 @@ int main(int argc,char *argv[])
     "the program will check whether the bond lengths defined in the tpr",
     "file are indeed correct in the trajectory. If not you may have",
     "non-matching files due to e.g. deshuffling or due to problems with",
-    "dummies. With these flags, gmxcheck provides a quick check for such problems.[PAR]"
+    "virtual sites. With these flags, gmxcheck provides a quick check for such problems.[PAR]"
     "The program can compare run two input ([TT].tpr[tt], [TT].tpb[tt] or",
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",

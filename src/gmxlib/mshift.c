@@ -116,8 +116,8 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 	waterh[2] = ia[1]+2;
 	iap = waterh;
       } else {
-	if (interaction_function[tp].flags & IF_DUMMY)
-	  /* Bond a dummy only to the first constructing atom */
+	if (interaction_function[tp].flags & IF_VSITE)
+	  /* Bond a virtual site only to the first constructing atom */
 	  nbonded = 2;
 	else
 	  nbonded = np;
@@ -192,8 +192,8 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	g->end       = max(g->end,iaa+2);
       }
     } else {
-      if (interaction_function[tp].flags & IF_DUMMY)
-	/* Bond a dummy only to the first constructing atom */
+      if (interaction_function[tp].flags & IF_VSITE)
+	/* Bond a virtual site only to the first constructing atom */
 	nbonded = 2;
       else
 	nbonded = nratoms;

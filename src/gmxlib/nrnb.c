@@ -180,12 +180,12 @@ static const t_nrnb_data nbdata[eNRNB] = {
   { "PShake-InitLD",             "-",            59 },    
   { "PShake-InitMD",             "-",            65 },   
   { "PShake",                    "-",             7 },
-  { "Dummy2",                    "-",            17 },
-  { "Dummy3",                    "-",            28 },
-  { "Dummy3fd",                  "-",            95 },
-  { "Dummy3fad",                 "-",           176 },
-  { "Dummy3out",                 "-",            87 },
-  { "Dummy4fd",                  "-",           110 } 
+  { "Virtual Site 2",            "-",            17 },
+  { "Virtual Site 3",            "-",            28 },
+  { "Virtual Site 3fd",          "-",            95 },
+  { "Virtual Site 3fad",         "-",           176 },
+  { "Virtual Site 3out",         "-",            87 },
+  { "Virtual Site 4fd",          "-",           110 } 
 };
 
 char *innerloop_name(int n)

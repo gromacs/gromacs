@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "dummies.h"
+#include "vsite.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "nrnb.h"
@@ -53,183 +53,183 @@
 static rvec *prevbuf=NULL,*nextbuf=NULL;
 
 /* Routines to send/recieve coordinates and force
- * of constructing atoms and dummies. This is necessary
- * when dummy constructs cross node borders (unavoidable
+ * of constructing atoms and vsites. This is necessary
+ * when vsite constructs cross node borders (unavoidable
  * for e.g. polymers using anisotropic united atoms).
  */
-/* Communication routines for dummies. The coordinates and
+/* Communication routines for vsites. The coordinates and
  * forces are only move on a need-to-know basis, usually only
  * 2-3 atoms per processor. To achieve this small amount of
  * communication, and to limit it to nearest neighbour messages,
- * we demand that dummies are not spread over nonadjacent nodes.
- * Thus, keep your dummies close to your constructing atoms.
+ * we demand that vsites are not spread over nonadjacent nodes.
+ * Thus, keep your vsites close to your constructing atoms.
  * (mdrun & grompp will report an error otherwise)
  */ 
 
 
-static void move_construct_x(t_comm_dummies *dummycomm, rvec x[], t_commrec *cr)
+static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
 {
   static bool bFirst=TRUE;
   int i;
    
   if (bFirst) {
     /* Make the larger than necessary to avoid cache sharing */
-    snew(nextbuf,2*(dummycomm->nnextdum+dummycomm->nnextconstr)+100);
-    snew(prevbuf,2*(dummycomm->nprevdum+dummycomm->nprevconstr)+100);
+    snew(nextbuf,2*(vsitecomm->nnextvsite+vsitecomm->nnextconstr)+100);
+    snew(prevbuf,2*(vsitecomm->nprevvsite+vsitecomm->nprevconstr)+100);
     bFirst=FALSE;
   }
    
-  /* package coords to send left. Dummy coords are needed to create v */
-  for(i=0;i<dummycomm->nprevconstr;i++)
-    copy_rvec(x[dummycomm->idxprevconstr[i]],prevbuf[i]);
-  for(i=0;i<dummycomm->nprevdum;i++)
-    copy_rvec(x[dummycomm->idxprevdum[i]],prevbuf[dummycomm->nprevconstr+i]);
+  /* package coords to send left. Vsite coords are needed to create v */
+  for(i=0;i<vsitecomm->nprevconstr;i++)
+    copy_rvec(x[vsitecomm->idxprevconstr[i]],prevbuf[i]);
+  for(i=0;i<vsitecomm->nprevvsite;i++)
+    copy_rvec(x[vsitecomm->idxprevvsite[i]],prevbuf[vsitecomm->nprevconstr+i]);
   
   /* send them off, and recieve from the right */
-  if(dummycomm->nprevconstr>0 || dummycomm->nprevdum>0)
+  if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
     gmx_tx(cr->left,prevbuf,
-	   sizeof(rvec)*(dummycomm->nprevconstr+dummycomm->nprevdum));
+	   sizeof(rvec)*(vsitecomm->nprevconstr+vsitecomm->nprevvsite));
   
-  if(dummycomm->nnextconstr>0 || dummycomm->nnextdum>0)
+  if(vsitecomm->nnextconstr>0 || vsitecomm->nnextvsite>0)
     gmx_rx(cr->right,nextbuf,
-	   sizeof(rvec)*(dummycomm->nnextconstr+dummycomm->nnextdum));
+	   sizeof(rvec)*(vsitecomm->nnextconstr+vsitecomm->nnextvsite));
   
-  if(dummycomm->nprevconstr>0 || dummycomm->nprevdum>0)
+  if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
     gmx_tx_wait(cr->left);
   
-  if(dummycomm->nnextconstr>0 || dummycomm->nnextdum>0)
+  if(vsitecomm->nnextconstr>0 || vsitecomm->nnextvsite>0)
     gmx_rx_wait(cr->right);
   
   /* Put them where they belong */
-  for(i=0;i<dummycomm->nnextconstr;i++)
-    copy_rvec(nextbuf[i],x[dummycomm->idxnextconstr[i]]);
-  for(i=0;i<dummycomm->nnextdum;i++)
-    copy_rvec(nextbuf[dummycomm->nnextconstr+i],
-	      x[dummycomm->idxnextdum[i]]);
+  for(i=0;i<vsitecomm->nnextconstr;i++)
+    copy_rvec(nextbuf[i],x[vsitecomm->idxnextconstr[i]]);
+  for(i=0;i<vsitecomm->nnextvsite;i++)
+    copy_rvec(nextbuf[vsitecomm->nnextconstr+i],
+	      x[vsitecomm->idxnextvsite[i]]);
 
   /* Now we are ready to do the constructing business ! */
 }
 
 
-static void move_dummy_xv(t_comm_dummies *dummycomm, rvec x[], rvec v[],t_commrec *cr)
+static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec *cr)
 {
   int i;
   int sendsize,recvsize;
 
-  sendsize=sizeof(rvec)*dummycomm->nnextdum;
-  recvsize=sizeof(rvec)*dummycomm->nprevdum;
+  sendsize=sizeof(rvec)*vsitecomm->nnextvsite;
+  recvsize=sizeof(rvec)*vsitecomm->nprevvsite;
 
   if(v!=NULL) {
     sendsize=sendsize*2;
     recvsize=recvsize*2;
   }
 
-  /* Package nonlocal constructed dummies */
-  for(i=0;i<dummycomm->nnextdum;i++)
-    copy_rvec(x[dummycomm->idxnextdum[i]],nextbuf[i]);
+  /* Package nonlocal constructed vsites */
+  for(i=0;i<vsitecomm->nnextvsite;i++)
+    copy_rvec(x[vsitecomm->idxnextvsite[i]],nextbuf[i]);
 
   if(v!=NULL)
-    for(i=0;i<dummycomm->nnextdum;i++)
-      copy_rvec(v[dummycomm->idxnextdum[i]],nextbuf[dummycomm->nnextdum+i]);
+    for(i=0;i<vsitecomm->nnextvsite;i++)
+      copy_rvec(v[vsitecomm->idxnextvsite[i]],nextbuf[vsitecomm->nnextvsite+i]);
   
   /* send them off, and recieve from the right */
-  if(dummycomm->nnextdum>0)
+  if(vsitecomm->nnextvsite>0)
     gmx_tx(cr->right,nextbuf,sendsize);
   
-  if(dummycomm->nprevdum>0)
+  if(vsitecomm->nprevvsite>0)
     gmx_rx(cr->left,prevbuf,recvsize);
   
-  if(dummycomm->nnextdum>0)
+  if(vsitecomm->nnextvsite>0)
     gmx_tx_wait(cr->right);
   
-  if(dummycomm->nprevdum>0)
+  if(vsitecomm->nprevvsite>0)
     gmx_rx_wait(cr->left);
   
   /* Put them where they belong */
-  for(i=0;i<dummycomm->nprevdum;i++)
-    copy_rvec(prevbuf[i],x[dummycomm->idxprevdum[i]]);
+  for(i=0;i<vsitecomm->nprevvsite;i++)
+    copy_rvec(prevbuf[i],x[vsitecomm->idxprevvsite[i]]);
 
   if(v!=NULL)
-    for(i=0;i<dummycomm->nprevdum;i++)
-      copy_rvec(prevbuf[dummycomm->nprevdum+i],v[dummycomm->idxprevdum[i]]);
+    for(i=0;i<vsitecomm->nprevvsite;i++)
+      copy_rvec(prevbuf[vsitecomm->nprevvsite+i],v[vsitecomm->idxprevvsite[i]]);
 
   /* All coordinates are in place on the respective home node now */
 }
 
-static void move_dummy_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
+static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 {
   int i;
 
-  /* package dummy particle forces to send left */
-  for(i=0;i<dummycomm->nprevdum;i++)
-    copy_rvec(f[dummycomm->idxprevdum[i]],prevbuf[i]);
+  /* package vsite particle forces to send left */
+  for(i=0;i<vsitecomm->nprevvsite;i++)
+    copy_rvec(f[vsitecomm->idxprevvsite[i]],prevbuf[i]);
 
   /* off they go! - but only if there is something to send! */
-  if(dummycomm->nprevdum>0)
-    gmx_tx(cr->left,prevbuf,sizeof(rvec)*dummycomm->nprevdum);
+  if(vsitecomm->nprevvsite>0)
+    gmx_tx(cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevvsite);
 
   /* Get our share from the right, if there is anything to have */
-  if(dummycomm->nnextdum>0)
-    gmx_rx(cr->right,nextbuf,sizeof(rvec)*dummycomm->nnextdum);
+  if(vsitecomm->nnextvsite>0)
+    gmx_rx(cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextvsite);
   
-  if(dummycomm->nprevdum>0)
+  if(vsitecomm->nprevvsite>0)
     gmx_tx_wait(cr->left);
   
-  if(dummycomm->nnextdum>0)
+  if(vsitecomm->nnextvsite>0)
     gmx_rx_wait(cr->right);
 
   /* Put them where they belong */
-  for(i=0;i<dummycomm->nnextdum;i++)
-    copy_rvec(nextbuf[i],f[dummycomm->idxnextdum[i]]);
+  for(i=0;i<vsitecomm->nnextvsite;i++)
+    copy_rvec(nextbuf[i],f[vsitecomm->idxnextvsite[i]]);
   
   /* Zero forces on nonlocal constructing atoms.
-   * This is necessary since dummy force spreading is done
+   * This is necessary since vsite force spreading is done
    * after the normal force addition, and we don't want
    * to include them twice.
    * (They have already been added on the home node).
    */
-  for(i=0;i<dummycomm->nnextconstr;i++)
-    clear_rvec(f[dummycomm->idxnextconstr[i]]);
+  for(i=0;i<vsitecomm->nnextconstr;i++)
+    clear_rvec(f[vsitecomm->idxnextconstr[i]]);
 }
 
-static void move_construct_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
+static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 {
   int i;
 
   /* Spread forces to nonlocal constructing atoms.
    */
   /* package forces to send right */
-  for(i=0;i<dummycomm->nnextconstr;i++)
-    copy_rvec(f[dummycomm->idxnextconstr[i]],nextbuf[i]);
+  for(i=0;i<vsitecomm->nnextconstr;i++)
+    copy_rvec(f[vsitecomm->idxnextconstr[i]],nextbuf[i]);
   
   /* send them off, and recieve from the right */
-  if(dummycomm->nnextconstr>0)
-    gmx_tx(cr->right,nextbuf,sizeof(rvec)*dummycomm->nnextconstr);
+  if(vsitecomm->nnextconstr>0)
+    gmx_tx(cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextconstr);
   
-  if(dummycomm->nprevconstr>0)
-    gmx_rx(cr->left,prevbuf,sizeof(rvec)*dummycomm->nprevconstr);
+  if(vsitecomm->nprevconstr>0)
+    gmx_rx(cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevconstr);
   
-  if(dummycomm->nnextconstr>0)
+  if(vsitecomm->nnextconstr>0)
     gmx_tx_wait(cr->right);
 
-  if(dummycomm->nprevconstr>0)
+  if(vsitecomm->nprevconstr>0)
     gmx_rx_wait(cr->left);
   
   /* Add them where they belong */
-  for(i=0;i<dummycomm->nprevconstr;i++)
-    rvec_inc(f[dummycomm->idxprevconstr[i]],prevbuf[i]);
+  for(i=0;i<vsitecomm->nprevconstr;i++)
+    rvec_inc(f[vsitecomm->idxprevconstr[i]],prevbuf[i]);
   
-  /* Zero nonlocal dummies */
-  for(i=0;i<dummycomm->nprevdum;i++)
-    clear_rvec(f[dummycomm->idxprevdum[i]]);
+  /* Zero nonlocal vsites */
+  for(i=0;i<vsitecomm->nprevvsite;i++)
+    clear_rvec(f[vsitecomm->idxprevvsite[i]]);
   
   /* All forces are on the home processor now */  
 }
 
 
-/* Dummy construction routines */
+/* Vsite construction routines */
 
-static void constr_dum2(rvec xi,rvec xj,rvec x,real a)
+static void constr_vsite2(rvec xi,rvec xj,rvec x,real a)
 {
   real b;
   
@@ -244,7 +244,7 @@ static void constr_dum2(rvec xi,rvec xj,rvec x,real a)
   /* TOTAL: 10 flops */
 }
 
-static void constr_dum3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
+static void constr_vsite3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
 {
   real c;
   
@@ -259,7 +259,7 @@ static void constr_dum3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
   /* TOTAL: 17 flops */
 }
 
-static void constr_dum3FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
+static void constr_vsite3FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
 {
   rvec xij,xjk,temp;
   real c;
@@ -285,7 +285,7 @@ static void constr_dum3FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
   /* TOTAL: 34 flops */
 }
 
-static void constr_dum3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
+static void constr_vsite3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
 {
   rvec xij,xjk,xp;
   real a1,b1,c1,invdij;
@@ -311,7 +311,7 @@ static void constr_dum3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b)
   /* TOTAL: 63 flops */
 }
 
-static void constr_dum3OUT(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,real c)
+static void constr_vsite3OUT(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,real c)
 {
   rvec xij,xik,temp;
   
@@ -328,7 +328,7 @@ static void constr_dum3OUT(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,real c)
   /* TOTAL: 33 flops */
 }
 
-static void constr_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
+static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 			  real a,real b,real c)
 {
   rvec xij,xjk,xjl,temp;
@@ -357,14 +357,14 @@ static void constr_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 }
 
 
-void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
+void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
 		       rvec *v,t_idef *idef,t_graph *graph,t_commrec *cr,
-		       matrix box,t_comm_dummies *dummycomm)
+		       matrix box,t_comm_vsites *vsitecomm)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
   int       i,ii,nra,nrd,tp,ftype;
-  t_iatom   adum,ai,aj,ak,al;
+  t_iatom   avsite,ai,aj,ak,al;
   t_iatom   *ia;
   t_iparams *ip;
 
@@ -375,10 +375,10 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
    * only when necessary. This is to make sure the coordinates
    * we move don't end up a box away...
    */
-  if (dummycomm) {
+  if (vsitecomm) {
     if (graph)
       unshift_self(graph,box,x);
-    move_construct_x(dummycomm,x,cr);
+    move_construct_x(vsitecomm,x,cr);
     if (graph)
       shift_self(graph,box,x);
   }
@@ -390,7 +390,7 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
     inv_dt = 1.0;
 
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_DUMMY) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
@@ -398,60 +398,60 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
 	if (ftype != idef->functype[tp]) 
-	  gmx_incons("Function types for dummies wrong");
+	  gmx_incons("Function types for vsites wrong");
 	
-	/* The dummy and constructing atoms */
-	adum = ia[1];
+	/* The vsite and constructing atoms */
+	avsite = ia[1];
 	ai   = ia[2];
 	aj   = ia[3];
 
-	/* Constants for constructing dummies */
-	a1   = ip[tp].dummy.a;
+	/* Constants for constructing vsites */
+	a1   = ip[tp].vsite.a;
 	
 	/* Copy the old position */
-	copy_rvec(x[adum],xd);
+	copy_rvec(x[avsite],xd);
 	
-	/* Construct the dummy depending on type */
+	/* Construct the vsite depending on type */
 	switch (ftype) {
-	case F_DUMMY2:
-	  constr_dum2(x[ai],x[aj],x[adum],a1);
+	case F_VSITE2:
+	  constr_vsite2(x[ai],x[aj],x[avsite],a1);
 	  break;
-	case F_DUMMY3:
+	case F_VSITE3:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  constr_dum3(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  b1 = ip[tp].vsite.b;
+	  constr_vsite3(x[ai],x[aj],x[ak],x[avsite],a1,b1);
 	  break;
-	case F_DUMMY3FD:
+	case F_VSITE3FD:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  constr_dum3FD(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  b1 = ip[tp].vsite.b;
+	  constr_vsite3FD(x[ai],x[aj],x[ak],x[avsite],a1,b1);
 	  break;
-	case F_DUMMY3FAD:
+	case F_VSITE3FAD:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  constr_dum3FAD(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  b1 = ip[tp].vsite.b;
+	  constr_vsite3FAD(x[ai],x[aj],x[ak],x[avsite],a1,b1);
 	  break;
-	case F_DUMMY3OUT:
+	case F_VSITE3OUT:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  c1 = ip[tp].dummy.c;
-	  constr_dum3OUT(x[ai],x[aj],x[ak],x[adum],a1,b1,c1);
+	  b1 = ip[tp].vsite.b;
+	  c1 = ip[tp].vsite.c;
+	  constr_vsite3OUT(x[ai],x[aj],x[ak],x[avsite],a1,b1,c1);
 	  break;
-	case F_DUMMY4FD:
+	case F_VSITE4FD:
 	  ak = ia[4];
 	  al = ia[5];
-	  b1 = ip[tp].dummy.b;
-	  c1 = ip[tp].dummy.c;
-	  constr_dum4FD(x[ai],x[aj],x[ak],x[al],x[adum],a1,b1,c1);
+	  b1 = ip[tp].vsite.b;
+	  c1 = ip[tp].vsite.c;
+	  constr_vsite4FD(x[ai],x[aj],x[ak],x[al],x[avsite],a1,b1,c1);
 	  break;
 	default:
-	  gmx_fatal(FARGS,"No such dummy type %d in %s, line %d",
+	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
 	if (v) {
-	  /* Calculate velocity of dummy... */
-	  rvec_sub(x[adum],xd,vv);
-	  svmul(inv_dt,vv,v[adum]);
+	  /* Calculate velocity of vsite... */
+	  rvec_sub(x[avsite],xd,vv);
+	  svmul(inv_dt,vv,v[avsite]);
 	}
 	/* Increment loop variables */
 	i  += nra+1;
@@ -459,16 +459,16 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
       }
     }
   }
-  if (dummycomm) {
+  if (vsitecomm) {
     if (graph)
       unshift_self(graph,box,x);
-    move_dummy_xv(dummycomm,x,NULL,cr);
+    move_vsite_xv(vsitecomm,x,NULL,cr);
     if (graph)
       shift_self(graph,box,x); /* maybe not necessary */
   }
 }
 
-static void spread_dum2(rvec fi,rvec fj,rvec f,real a)
+static void spread_vsite2(rvec fi,rvec fj,rvec f,real a)
 {
   real fx,fy,fz,b;
   
@@ -489,7 +489,7 @@ static void spread_dum2(rvec fi,rvec fj,rvec f,real a)
   /* TOTAL: 7 flops */
 }
 
-static void spread_dum3(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
+static void spread_vsite3(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
   real fx,fy,fz,c;
   
@@ -513,7 +513,7 @@ static void spread_dum3(rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
   /* TOTAL: 11 flops */
 }
 
-static void spread_dum3FD(rvec xi,rvec xj,rvec xk,
+static void spread_vsite3FD(rvec xi,rvec xj,rvec xk,
 			  rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
   real fx,fy,fz,c,invl,fproj,a1;
@@ -544,7 +544,7 @@ static void spread_dum3FD(rvec xi,rvec xj,rvec xk,
   temp[ZZ]=c*(fz-fproj*xix[ZZ]);
   /* 16 */
   
-  /* c is already calculated in constr_dum3FD
+  /* c is already calculated in constr_vsite3FD
      storing c somewhere will save 26 flops!     */
   
   a1=1-a;
@@ -562,7 +562,7 @@ static void spread_dum3FD(rvec xi,rvec xj,rvec xk,
   /* TOTAL: 61 flops */
 }
 
-static void spread_dum3FAD(rvec xi,rvec xj,rvec xk,
+static void spread_vsite3FAD(rvec xi,rvec xj,rvec xk,
 			   rvec fi,rvec fj,rvec fk,rvec f,real a,real b)
 {
   rvec xij,xjk,xperp,Fpij,Fppp,f1,f2,f3;
@@ -585,7 +585,7 @@ static void spread_dum3FAD(rvec xi,rvec xj,rvec xk,
   b1 = b*invdp;
   /* 45 flops */
   
-  /* a1, b1 and c1 are already calculated in constr_dum3FAD
+  /* a1, b1 and c1 are already calculated in constr_vsite3FAD
      storing them somewhere will save 45 flops!     */
   
   fproj=iprod(xij  ,f)*invdij2;
@@ -617,7 +617,7 @@ static void spread_dum3FAD(rvec xi,rvec xj,rvec xk,
   /* TOTAL: 113 flops */
 }
 
-static void spread_dum3OUT(rvec xi,rvec xj,rvec xk,
+static void spread_vsite3OUT(rvec xi,rvec xj,rvec xk,
 			   rvec fi,rvec fj,rvec fk,rvec f,real a,real b,real c)
 {
   rvec xij,xik,ffj,ffk;
@@ -652,7 +652,7 @@ static void spread_dum3OUT(rvec xi,rvec xj,rvec xk,
   /* TOTAL: 54 flops */
 }
 
-static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
+static void spread_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,
 			  rvec fi,rvec fj,rvec fk,rvec fl,rvec f,
 			  real a,real b,real c)
 {
@@ -685,7 +685,7 @@ static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
   temp[ZZ]=d*(fz-fproj*xix[ZZ]);
   /* 16 */
   
-  /* c is already calculated in constr_dum3FD
+  /* c is already calculated in constr_vsite3FD
      storing c somewhere will save 35 flops!     */
   
   a1=1-a-b;
@@ -706,19 +706,19 @@ static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
   /* TOTAL: 77 flops */
 }
 
-void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
-		    t_comm_dummies *dummycomm,t_commrec *cr)
+void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
+		    t_comm_vsites *vsitecomm,t_commrec *cr)
 {
   real      a1,b1,c1;
   int       i,m,nra,nrd,tp,ftype;
   int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD;
-  t_iatom   adum,ai,aj,ak,al;
+  t_iatom   avsite,ai,aj,ak,al;
   t_iatom   *ia;
   t_iparams *ip;
   
   /* We only move forces here, and they are independent of shifts */
-  if (dummycomm)
-    move_dummy_f(dummycomm,f,cr);
+  if (vsitecomm)
+    move_vsite_f(vsitecomm,f,cr);
 
   ip     = idef->iparams;
 
@@ -730,9 +730,9 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
   nd4FD  = 0;
    
   /* this loop goes backwards to be able to build *
-   * higher type dummies from lower types         */
+   * higher type vsites from lower types         */
   for(ftype=F_NRE-1; (ftype>=0); ftype--) {
-    if (interaction_function[ftype].flags & IF_DUMMY) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
@@ -740,61 +740,61 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
 	if (ftype != idef->functype[tp])
-	  gmx_incons("Functiontypes for dummies wrong");
+	  gmx_incons("Functiontypes for vsites wrong");
 	
-	/* The dummy and constructing atoms */
-	adum = ia[1];
+	/* The vsite and constructing atoms */
+	avsite = ia[1];
 	ai   = ia[2];
 	aj   = ia[3];
 		
 	/* Constants for constructing */
-	a1   = ip[tp].dummy.a; 
+	a1   = ip[tp].vsite.a; 
       
-	/* Construct the dummy depending on type */
+	/* Construct the vsite depending on type */
 	switch (ftype) {
-	case F_DUMMY2:
-	  spread_dum2(f[ai],f[aj],f[adum],a1);
+	case F_VSITE2:
+	  spread_vsite2(f[ai],f[aj],f[avsite],a1);
 	  nd2++;
 	  break;
-	case F_DUMMY3:
+	case F_VSITE3:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  spread_dum3(f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  b1 = ip[tp].vsite.b;
+	  spread_vsite3(f[ai],f[aj],f[ak],f[avsite],a1,b1);
 	  nd3++;
 	  break;
-	case F_DUMMY3FD:
+	case F_VSITE3FD:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  spread_dum3FD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  b1 = ip[tp].vsite.b;
+	  spread_vsite3FD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[avsite],a1,b1);
 	  nd3FD++;
 	  break;
-	case F_DUMMY3FAD:
+	case F_VSITE3FAD:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  spread_dum3FAD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  b1 = ip[tp].vsite.b;
+	  spread_vsite3FAD(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[avsite],a1,b1);
 	  nd3FAD++;
 	  break;
-	case F_DUMMY3OUT:
+	case F_VSITE3OUT:
 	  ak = ia[4];
-	  b1 = ip[tp].dummy.b;
-	  c1 = ip[tp].dummy.c;
-	  spread_dum3OUT(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1,c1);
+	  b1 = ip[tp].vsite.b;
+	  c1 = ip[tp].vsite.c;
+	  spread_vsite3OUT(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[avsite],a1,b1,c1);
 	  nd3OUT++;
 	  break;
-	case F_DUMMY4FD:
+	case F_VSITE4FD:
 	  ak = ia[4];
 	  al = ia[5];
-	  b1 = ip[tp].dummy.b;
-	  c1 = ip[tp].dummy.c;
-	  spread_dum4FD(x[ai],x[aj],x[ak],x[al],
-			f[ai],f[aj],f[ak],f[al],f[adum],a1,b1,c1);
+	  b1 = ip[tp].vsite.b;
+	  c1 = ip[tp].vsite.c;
+	  spread_vsite4FD(x[ai],x[aj],x[ak],x[al],
+			f[ai],f[aj],f[ak],f[al],f[avsite],a1,b1,c1);
 	  nd4FD++;
 	  break;
 	default:
-	  gmx_fatal(FARGS,"No such dummy type %d in %s, line %d",
+	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
-	clear_rvec(f[adum]);
+	clear_rvec(f[avsite]);
 	
 	/* Increment loop variables */
 	i  += nra+1;
@@ -803,15 +803,15 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
     }
   }
   
-  inc_nrnb(nrnb,eNR_DUM2,   nd2   );
-  inc_nrnb(nrnb,eNR_DUM3,   nd3   );
-  inc_nrnb(nrnb,eNR_DUM3FD, nd3FD );
-  inc_nrnb(nrnb,eNR_DUM3FAD,nd3FAD);
-  inc_nrnb(nrnb,eNR_DUM3OUT,nd3OUT);
-  inc_nrnb(nrnb,eNR_DUM4FD, nd4FD );
+  inc_nrnb(nrnb,eNR_VSITE2,   nd2   );
+  inc_nrnb(nrnb,eNR_VSITE3,   nd3   );
+  inc_nrnb(nrnb,eNR_VSITE3FD, nd3FD );
+  inc_nrnb(nrnb,eNR_VSITE3FAD,nd3FAD);
+  inc_nrnb(nrnb,eNR_VSITE3OUT,nd3OUT);
+  inc_nrnb(nrnb,eNR_VSITE4FD, nd4FD );
 
   /* We only move forces here, and they are independent of shifts */
-  if(dummycomm)
-    move_construct_f(dummycomm,f,cr);
+  if(vsitecomm)
+    move_construct_f(vsitecomm,f,cr);
 }
 

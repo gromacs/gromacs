@@ -12,7 +12,7 @@ lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
-	coupling.c	dummies.c	ebin.c		\
+	coupling.c	ebin.c		\
 	edsam.c		ewald.c         fftgrid.c	\
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
@@ -22,8 +22,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	pullio.c	pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	splittop.c	tables.c	tgroup.c	\
-	update.c	vcm.c		wnblist.c	\
-	splittop.h	wnblist.h	\
+	update.c	vcm.c		vsite.c	\
+	wnblist.c	splittop.h	wnblist.h	\
 	pull_internal.h	
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \

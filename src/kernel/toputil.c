@@ -295,13 +295,13 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   case F_SHAKENC:
     f=1;
     break;
-  case F_DUMMY3FD:
+  case F_VSITE3FD:
     f = 1;
     break;
-  case F_DUMMY3FAD:
+  case F_VSITE3FAD:
     f = 2;
     break;
-  case F_DUMMY3OUT:
+  case F_VSITE3OUT:
     f = 3; 
     break;
   default:
