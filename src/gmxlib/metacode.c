@@ -40,7 +40,6 @@ static char *SRCID_metacode_c = "$Id$";
 #include <stdarg.h>
 #include <ctype.h>
 
-static char *SRCID_metacode_c = "";
 #define MAXCODESIZE 1000000
 #define MAXDECL 1000
 #define F77IND 6

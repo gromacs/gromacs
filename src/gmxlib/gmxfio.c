@@ -34,6 +34,7 @@
  * Good ROcking Metal Altar for Chronical Sinners
  */
 static char *SRCID_gmxfio_c = "$Id$";
+
 #include <ctype.h>
 #include "fatal.h"
 #include "macros.h"

@@ -34,6 +34,8 @@
  * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_x86_cpu_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 

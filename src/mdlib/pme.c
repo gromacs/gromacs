@@ -34,6 +34,7 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 static char *SRCID_pme_c = "$Id$";
+
 /* IMPORTANT FOR DEVELOPERS:
  *
  * Triclinic pme stuff isn't entirely trivial, and we've experienced
@@ -56,8 +57,6 @@ static char *SRCID_pme_c = "$Id$";
  * It might seem an overkill, but better safe than sorry.
  * /Erik 001109
  */ 
-
-static char *SRCID_pme_c = "$Id$";
 
 #include <stdio.h>
 #include <math.h>

@@ -38,9 +38,11 @@
 #define _grompp_h
 
 static char *SRCID_grompp_h = "$Id$";
-#include <config.h>
 
-static char *SRCID_grompp_h = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 
 #ifdef HAVE_IDENT
 #ident	"@(#) grompp.h 1.37 2/2/97"

@@ -1,0 +1,565 @@
+# Generated automatically from Makefile.in by configure.
+# Makefile.in generated automatically by automake 1.4d from Makefile.am
+
+# Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
+# Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+SHELL = /bin/sh
+
+srcdir = .
+top_srcdir = ../..
+prefix = /usr/local/gromacs
+exec_prefix = ${prefix}
+
+bindir = ${exec_prefix}/bin/i686-pc-linux-gnu
+sbindir = ${exec_prefix}/sbin
+libexecdir = ${exec_prefix}/libexec
+datadir = ${prefix}/share
+sysconfdir = ${prefix}/etc
+sharedstatedir = ${prefix}/com
+localstatedir = ${prefix}/var
+libdir = ${exec_prefix}/lib/i686-pc-linux-gnu
+infodir = ${prefix}/info
+mandir = ${prefix}/man
+includedir = ${prefix}/include
+oldincludedir = /usr/include
+
+pkgdatadir = $(datadir)/gromacs
+pkglibdir = $(libdir)/gromacs
+pkgincludedir = $(includedir)/gromacs
+
+top_builddir = ../..
+
+ACLOCAL = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run aclocal
+AUTOCONF = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run autoconf
+AUTOMAKE = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run automake
+AUTOHEADER = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run autoheader
+
+INSTALL = /usr/bin/install -c
+INSTALL_PROGRAM = ${INSTALL}
+INSTALL_DATA = ${INSTALL} -m 644
+INSTALL_SCRIPT = ${INSTALL_PROGRAM}
+INSTALL_STRIP_FLAG =
+INSTALL_HEADER = $(INSTALL_DATA)
+transform = s,x,x,
+
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+
+
+host_alias = i686-pc-linux-gnu
+host_triplet = i686-pc-linux-gnu
+AMDEP = 
+AMTAR = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run tar
+AWK = gawk
+AXP_ASM_OBJ = 
+BUILD_CC = cc
+CC = cc
+CPP = cc -E
+DEPDIR = .deps
+F77 = 
+FLIBS = 
+IDENT = /usr/bin/ident
+INNER_C_OBJ = ${inner_c_obj}
+INNER_F77_OBJ = 
+MAKEINFO = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run makeinfo
+MOTIF_OBJ = ${motif_obj}
+MPICC = 
+NASM = /usr/bin/nasm
+NASMFLAGS = -f elf
+PACKAGE = gromacs
+PAR_OBJ = ${libnet_obj}
+RANLIB = ranlib
+SSE_OBJ = ${sse_obj}
+SUFFIX = 
+TDN_OBJ = ${tdn_obj}
+VERSION = 3.0
+X86_ASM_OBJ = ${x86_asm_obj}
+XDR_OBJ = ${xdr_obj}
+_am_include = include
+bindir = ${exec_prefix}/bin/i686-pc-linux-gnu
+install_sh = ./config/install-sh
+libdir = ${exec_prefix}/lib/i686-pc-linux-gnu
+
+#
+# Don't edit - this file is generated automatically from Makefile.am
+#
+
+
+#
+# Don't edit - this file is generated automatically from Makefile.am
+#
+
+# The asm suffix is for intel syntax assembly, and
+# the s suffix for at & t syntax.
+# S suffix files will be preprocessed by cpp, nasm
+# on the other hand can do this directly.
+
+
+SUFFIXES = .asm .S .F
+
+#################
+# We need a second compile command producing executables 
+# that can be run on the local host to make the innerloops.
+# In most cases this is identical to the normal one, but not
+# for cross-compilation. We also need it on parallel machines 
+# where the MPI executables cannot be run outside a batch queue.
+
+# This might be bad - but I don't know any other way to enable
+# us to type make <progname> in subdirs right now
+#AM_CPPFLAGS = -DHAVE_CONFIG_H
+
+BUILD_COMPILE = $(BUILD_CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+
+# This is necessary for VPATH to work, 
+# but it can probably be done in a nicer way...
+INCLUDES =    -I/usr/X11R6/include  -I$(top_srcdir)/src/include
+LDFLAGS =   -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
+LDADD = -lmd -lgmx
+
+# NB: The programs in contrib do not get double/mpi suffixes automatically,
+# to make it easier for new developers to understand this file. If you want
+# to have it, append "" to the program name.
+# These programs are not compiled or installed by default - you will have to 
+# issue "make <program>" and copy the binary to the correct location yourself! 
+# Add new entries in Makefile.am!
+
+EXTRA_PROGRAMS = xmdrun sigeps mk6_n copyrgt mkyaw prfn eanal hrefify mkice \
+                          total hexamer optwat addquote do_shift g_anavel my_dssp anaf \
+                          listquotes
+
+
+xmdrun_SOURCES = xmdrun.c do_gct.c init_sh.c gctio.c glaasje.c ionize.c relax_sh.c
+
+copyrgt_SOURCES = copyrgt.c
+
+sigeps_SOURCES = sigeps.c 
+
+mk6_n_SOURCES = mk6_n.c 
+
+my_dssp_SOURCES = my_dssp.c dsspcore.c
+
+hrefify_SOURCES = hrefify.c
+
+total_SOURCES = total.f
+
+optwat_SOURCES = optwat.c
+
+hexamer_SOURCES = hexamer.c
+
+do_shift_SOURCES = do_shift.c
+
+anaf_SOURCES = anaf.c
+
+mkyaw_SOURCES = mkyaw.c
+
+mkice_SOURCES = mkice.c
+
+prfn_SOURCES = prfn.c
+
+g_anavel_SOURCES = g_anavel.c
+
+addquote_SOURCES = addquote.c
+
+listquotes_SOURCES = listquotes.c
+
+eanal_SOURCES = eanal.o 
+
+# clean things explicitly, since the target names might have changed
+CLEANFILES = ${bin_PROGRAMS}	${EXTRA_PROGRAMS}	\
+		*_mpi *_d *~ \\\#*
+
+subdir = src/contrib
+mkinstalldirs = $(SHELL) $(top_srcdir)/./config/mkinstalldirs
+CONFIG_HEADER = ../../src/include/config.h
+CONFIG_CLEAN_FILES = 
+
+DEFS = -DHAVE_CONFIG_H -I. -I$(srcdir) -I../../src/include
+CPPFLAGS = 
+LIBS =  -L/usr/X11R6/lib -lnsl -lsrfftw -lsfftw -lm  -lXm -lXt  -lSM -lICE -lX11  
+X_CFLAGS =  -I/usr/X11R6/include
+X_LIBS =  -L/usr/X11R6/lib
+X_EXTRA_LIBS = 
+X_PRE_LIBS =  -lSM -lICE
+am_addquote_OBJECTS =  addquote.o
+addquote_OBJECTS =  $(am_addquote_OBJECTS)
+addquote_LDADD = $(LDADD)
+addquote_DEPENDENCIES = 
+addquote_LDFLAGS = 
+am_anaf_OBJECTS =  anaf.o
+anaf_OBJECTS =  $(am_anaf_OBJECTS)
+anaf_LDADD = $(LDADD)
+anaf_DEPENDENCIES = 
+anaf_LDFLAGS = 
+am_copyrgt_OBJECTS =  copyrgt.o
+copyrgt_OBJECTS =  $(am_copyrgt_OBJECTS)
+copyrgt_LDADD = $(LDADD)
+copyrgt_DEPENDENCIES = 
+copyrgt_LDFLAGS = 
+am_do_shift_OBJECTS =  do_shift.o
+do_shift_OBJECTS =  $(am_do_shift_OBJECTS)
+do_shift_LDADD = $(LDADD)
+do_shift_DEPENDENCIES = 
+do_shift_LDFLAGS = 
+am_eanal_OBJECTS =  eanal.o
+eanal_OBJECTS =  $(am_eanal_OBJECTS)
+eanal_LDADD = $(LDADD)
+eanal_DEPENDENCIES = 
+eanal_LDFLAGS = 
+am_g_anavel_OBJECTS =  g_anavel.o
+g_anavel_OBJECTS =  $(am_g_anavel_OBJECTS)
+g_anavel_LDADD = $(LDADD)
+g_anavel_DEPENDENCIES = 
+g_anavel_LDFLAGS = 
+am_hexamer_OBJECTS =  hexamer.o
+hexamer_OBJECTS =  $(am_hexamer_OBJECTS)
+hexamer_LDADD = $(LDADD)
+hexamer_DEPENDENCIES = 
+hexamer_LDFLAGS = 
+am_hrefify_OBJECTS =  hrefify.o
+hrefify_OBJECTS =  $(am_hrefify_OBJECTS)
+hrefify_LDADD = $(LDADD)
+hrefify_DEPENDENCIES = 
+hrefify_LDFLAGS = 
+am_listquotes_OBJECTS =  listquotes.o
+listquotes_OBJECTS =  $(am_listquotes_OBJECTS)
+listquotes_LDADD = $(LDADD)
+listquotes_DEPENDENCIES = 
+listquotes_LDFLAGS = 
+am_mk6_n_OBJECTS =  mk6_n.o
+mk6_n_OBJECTS =  $(am_mk6_n_OBJECTS)
+mk6_n_LDADD = $(LDADD)
+mk6_n_DEPENDENCIES = 
+mk6_n_LDFLAGS = 
+am_mkice_OBJECTS =  mkice.o
+mkice_OBJECTS =  $(am_mkice_OBJECTS)
+mkice_LDADD = $(LDADD)
+mkice_DEPENDENCIES = 
+mkice_LDFLAGS = 
+am_mkyaw_OBJECTS =  mkyaw.o
+mkyaw_OBJECTS =  $(am_mkyaw_OBJECTS)
+mkyaw_LDADD = $(LDADD)
+mkyaw_DEPENDENCIES = 
+mkyaw_LDFLAGS = 
+am_my_dssp_OBJECTS =  my_dssp.o dsspcore.o
+my_dssp_OBJECTS =  $(am_my_dssp_OBJECTS)
+my_dssp_LDADD = $(LDADD)
+my_dssp_DEPENDENCIES = 
+my_dssp_LDFLAGS = 
+am_optwat_OBJECTS =  optwat.o
+optwat_OBJECTS =  $(am_optwat_OBJECTS)
+optwat_LDADD = $(LDADD)
+optwat_DEPENDENCIES = 
+optwat_LDFLAGS = 
+am_prfn_OBJECTS =  prfn.o
+prfn_OBJECTS =  $(am_prfn_OBJECTS)
+prfn_LDADD = $(LDADD)
+prfn_DEPENDENCIES = 
+prfn_LDFLAGS = 
+am_sigeps_OBJECTS =  sigeps.o
+sigeps_OBJECTS =  $(am_sigeps_OBJECTS)
+sigeps_LDADD = $(LDADD)
+sigeps_DEPENDENCIES = 
+sigeps_LDFLAGS = 
+am_total_OBJECTS =  total.o
+total_OBJECTS =  $(am_total_OBJECTS)
+total_LDADD = $(LDADD)
+total_DEPENDENCIES = 
+total_LDFLAGS = 
+am_xmdrun_OBJECTS =  xmdrun.o do_gct.o init_sh.o gctio.o glaasje.o \
+ionize.o relax_sh.o
+xmdrun_OBJECTS =  $(am_xmdrun_OBJECTS)
+xmdrun_LDADD = $(LDADD)
+xmdrun_DEPENDENCIES = 
+xmdrun_LDFLAGS = 
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CFLAGS = -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -malign-double
+F77COMPILE = $(F77) $(AM_FFLAGS) $(FFLAGS)
+FFLAGS = 
+F77LD = $(F77)
+F77LINK = $(F77LD) $(AM_FFLAGS) $(FFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+DIST_SOURCES =  $(addquote_SOURCES) $(anaf_SOURCES) $(copyrgt_SOURCES) \
+$(do_shift_SOURCES) $(eanal_SOURCES) $(g_anavel_SOURCES) \
+$(hexamer_SOURCES) $(hrefify_SOURCES) $(listquotes_SOURCES) \
+$(mk6_n_SOURCES) $(mkice_SOURCES) $(mkyaw_SOURCES) $(my_dssp_SOURCES) \
+$(optwat_SOURCES) $(prfn_SOURCES) $(sigeps_SOURCES) $(total_SOURCES) \
+$(xmdrun_SOURCES)
+depcomp = $(SHELL) $(top_srcdir)/./config/depcomp
+DEP_FILES =  $(DEPDIR)/addquote.Po $(DEPDIR)/anaf.Po \
+$(DEPDIR)/copyrgt.Po $(DEPDIR)/do_gct.Po $(DEPDIR)/do_shift.Po \
+$(DEPDIR)/dsspcore.Po $(DEPDIR)/g_anavel.Po $(DEPDIR)/gctio.Po \
+$(DEPDIR)/glaasje.Po $(DEPDIR)/hexamer.Po $(DEPDIR)/hrefify.Po \
+$(DEPDIR)/init_sh.Po $(DEPDIR)/ionize.Po $(DEPDIR)/listquotes.Po \
+$(DEPDIR)/mk6_n.Po $(DEPDIR)/mkice.Po $(DEPDIR)/mkyaw.Po \
+$(DEPDIR)/my_dssp.Po $(DEPDIR)/optwat.Po $(DEPDIR)/prfn.Po \
+$(DEPDIR)/relax_sh.Po $(DEPDIR)/sigeps.Po $(DEPDIR)/xmdrun.Po
+DIST_COMMON =  README Makefile.am Makefile.in
+
+
+DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+
+GZIP_ENV = --best
+SOURCES = $(addquote_SOURCES) $(anaf_SOURCES) $(copyrgt_SOURCES) $(do_shift_SOURCES) $(eanal_SOURCES) $(g_anavel_SOURCES) $(hexamer_SOURCES) $(hrefify_SOURCES) $(listquotes_SOURCES) $(mk6_n_SOURCES) $(mkice_SOURCES) $(mkyaw_SOURCES) $(my_dssp_SOURCES) $(optwat_SOURCES) $(prfn_SOURCES) $(sigeps_SOURCES) $(total_SOURCES) $(xmdrun_SOURCES)
+OBJECTS = $(am_addquote_OBJECTS) $(am_anaf_OBJECTS) $(am_copyrgt_OBJECTS) $(am_do_shift_OBJECTS) $(am_eanal_OBJECTS) $(am_g_anavel_OBJECTS) $(am_hexamer_OBJECTS) $(am_hrefify_OBJECTS) $(am_listquotes_OBJECTS) $(am_mk6_n_OBJECTS) $(am_mkice_OBJECTS) $(am_mkyaw_OBJECTS) $(am_my_dssp_OBJECTS) $(am_optwat_OBJECTS) $(am_prfn_OBJECTS) $(am_sigeps_OBJECTS) $(am_total_OBJECTS) $(am_xmdrun_OBJECTS)
+
+all: all-am
+.SUFFIXES:
+.SUFFIXES: .asm .S .F .c .f .o
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) $(srcdir)/../Makefile.inc
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu src/contrib/Makefile
+
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= CONFIG_LINKS= $(SHELL) ./config.status
+
+
+mostlyclean-compile:
+	-rm -f *.o core *.core
+
+distclean-compile:
+	-rm -f *.tab.c
+
+addquote: $(addquote_OBJECTS) $(addquote_DEPENDENCIES)
+	@rm -f addquote
+	$(LINK) $(addquote_LDFLAGS) $(addquote_OBJECTS) $(addquote_LDADD) $(LIBS)
+
+anaf: $(anaf_OBJECTS) $(anaf_DEPENDENCIES)
+	@rm -f anaf
+	$(LINK) $(anaf_LDFLAGS) $(anaf_OBJECTS) $(anaf_LDADD) $(LIBS)
+
+copyrgt: $(copyrgt_OBJECTS) $(copyrgt_DEPENDENCIES)
+	@rm -f copyrgt
+	$(LINK) $(copyrgt_LDFLAGS) $(copyrgt_OBJECTS) $(copyrgt_LDADD) $(LIBS)
+
+do_shift: $(do_shift_OBJECTS) $(do_shift_DEPENDENCIES)
+	@rm -f do_shift
+	$(LINK) $(do_shift_LDFLAGS) $(do_shift_OBJECTS) $(do_shift_LDADD) $(LIBS)
+
+eanal: $(eanal_OBJECTS) $(eanal_DEPENDENCIES)
+	@rm -f eanal
+	$(LINK) $(eanal_LDFLAGS) $(eanal_OBJECTS) $(eanal_LDADD) $(LIBS)
+
+g_anavel: $(g_anavel_OBJECTS) $(g_anavel_DEPENDENCIES)
+	@rm -f g_anavel
+	$(LINK) $(g_anavel_LDFLAGS) $(g_anavel_OBJECTS) $(g_anavel_LDADD) $(LIBS)
+
+hexamer: $(hexamer_OBJECTS) $(hexamer_DEPENDENCIES)
+	@rm -f hexamer
+	$(LINK) $(hexamer_LDFLAGS) $(hexamer_OBJECTS) $(hexamer_LDADD) $(LIBS)
+
+hrefify: $(hrefify_OBJECTS) $(hrefify_DEPENDENCIES)
+	@rm -f hrefify
+	$(LINK) $(hrefify_LDFLAGS) $(hrefify_OBJECTS) $(hrefify_LDADD) $(LIBS)
+
+listquotes: $(listquotes_OBJECTS) $(listquotes_DEPENDENCIES)
+	@rm -f listquotes
+	$(LINK) $(listquotes_LDFLAGS) $(listquotes_OBJECTS) $(listquotes_LDADD) $(LIBS)
+
+mk6_n: $(mk6_n_OBJECTS) $(mk6_n_DEPENDENCIES)
+	@rm -f mk6_n
+	$(LINK) $(mk6_n_LDFLAGS) $(mk6_n_OBJECTS) $(mk6_n_LDADD) $(LIBS)
+
+mkice: $(mkice_OBJECTS) $(mkice_DEPENDENCIES)
+	@rm -f mkice
+	$(LINK) $(mkice_LDFLAGS) $(mkice_OBJECTS) $(mkice_LDADD) $(LIBS)
+
+mkyaw: $(mkyaw_OBJECTS) $(mkyaw_DEPENDENCIES)
+	@rm -f mkyaw
+	$(LINK) $(mkyaw_LDFLAGS) $(mkyaw_OBJECTS) $(mkyaw_LDADD) $(LIBS)
+
+my_dssp: $(my_dssp_OBJECTS) $(my_dssp_DEPENDENCIES)
+	@rm -f my_dssp
+	$(LINK) $(my_dssp_LDFLAGS) $(my_dssp_OBJECTS) $(my_dssp_LDADD) $(LIBS)
+
+optwat: $(optwat_OBJECTS) $(optwat_DEPENDENCIES)
+	@rm -f optwat
+	$(LINK) $(optwat_LDFLAGS) $(optwat_OBJECTS) $(optwat_LDADD) $(LIBS)
+
+prfn: $(prfn_OBJECTS) $(prfn_DEPENDENCIES)
+	@rm -f prfn
+	$(LINK) $(prfn_LDFLAGS) $(prfn_OBJECTS) $(prfn_LDADD) $(LIBS)
+
+sigeps: $(sigeps_OBJECTS) $(sigeps_DEPENDENCIES)
+	@rm -f sigeps
+	$(LINK) $(sigeps_LDFLAGS) $(sigeps_OBJECTS) $(sigeps_LDADD) $(LIBS)
+
+total: $(total_OBJECTS) $(total_DEPENDENCIES)
+	@rm -f total
+	$(F77LINK) $(total_LDFLAGS) $(total_OBJECTS) $(total_LDADD) $(LIBS)
+
+xmdrun: $(xmdrun_OBJECTS) $(xmdrun_DEPENDENCIES)
+	@rm -f xmdrun
+	$(LINK) $(xmdrun_LDFLAGS) $(xmdrun_OBJECTS) $(xmdrun_LDADD) $(LIBS)
+.f.o:
+	$(F77COMPILE) -c -o $@ $<
+
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
+	list='$(SOURCES) $(HEADERS) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	mkid -fID $$unique $(LISP)
+
+TAGS: $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+		$(TAGS_FILES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS) $(TAGS_FILES)'; \
+	unique=`for i in $$list; do \
+	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
+	  done | \
+	  $(AWK) '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || etags $(ETAGS_ARGS) $$tags  $$unique $(LISP)
+
+GTAGS:
+	here=`CDPATH=: && cd $(top_builddir) && pwd` \
+	  && cd $(top_srcdir) \
+	  && gtags -i $$here
+
+distclean-tags:
+	-rm -f TAGS ID
+
+include $(DEPDIR)/addquote.Po
+include $(DEPDIR)/anaf.Po
+include $(DEPDIR)/copyrgt.Po
+include $(DEPDIR)/do_gct.Po
+include $(DEPDIR)/do_shift.Po
+include $(DEPDIR)/dsspcore.Po
+include $(DEPDIR)/g_anavel.Po
+include $(DEPDIR)/gctio.Po
+include $(DEPDIR)/glaasje.Po
+include $(DEPDIR)/hexamer.Po
+include $(DEPDIR)/hrefify.Po
+include $(DEPDIR)/init_sh.Po
+include $(DEPDIR)/ionize.Po
+include $(DEPDIR)/listquotes.Po
+include $(DEPDIR)/mk6_n.Po
+include $(DEPDIR)/mkice.Po
+include $(DEPDIR)/mkyaw.Po
+include $(DEPDIR)/my_dssp.Po
+include $(DEPDIR)/optwat.Po
+include $(DEPDIR)/prfn.Po
+include $(DEPDIR)/relax_sh.Po
+include $(DEPDIR)/sigeps.Po
+include $(DEPDIR)/xmdrun.Po
+
+distclean-depend:
+	-rm -rf $(DEPDIR)
+
+CCDEPMODE = depmode=gcc
+
+.c.o:
+	source='$<' object='$@' libtool=no \
+	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' \
+	$(CCDEPMODE) $(depcomp) \
+	$(COMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
+
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+
+distdir: $(DISTFILES)
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  if test -d $$d/$$file; then \
+	    cp -pR $$d/$$file $(distdir) \
+	    || exit 1; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || cp -p $$d/$$file $(distdir)/$$file \
+	    || exit 1; \
+	  fi; \
+	done
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am:
+install-exec: install-exec-am
+
+install-data-am:
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am:
+uninstall: uninstall-am
+all-am: Makefile
+install-strip:
+	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
+installdirs:
+
+
+mostlyclean-generic:
+
+clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
+
+distclean-generic:
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+
+maintainer-clean-generic:
+	@echo "This command is intended for maintainers to use"
+	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f Makefile.in
+clean: clean-am
+
+clean-am: clean-generic mostlyclean-am
+
+distclean: distclean-am
+
+distclean-am: clean-am distclean-compile distclean-depend \
+	distclean-generic distclean-tags
+
+maintainer-clean: maintainer-clean-am
+
+maintainer-clean-am: distclean-am maintainer-clean-generic
+
+mostlyclean: mostlyclean-am
+
+mostlyclean-am: mostlyclean-compile mostlyclean-generic
+
+.PHONY: check check-am clean clean-generic distclean distclean-compile \
+	distclean-depend distclean-generic distclean-tags distdir dvi \
+	dvi-am info info-am install install-am install-data \
+	install-data-am install-exec install-exec-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic tags uninstall uninstall-am
+
+.asm.o:
+	$(NASM) $(NASMFLAGS) $< -o $@
+.S.s:
+	$(CPP) $< > $@
+.F.f:	
+	$(CPP) $< > $@
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:

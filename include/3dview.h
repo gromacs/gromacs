@@ -38,9 +38,13 @@
 #define _3dview_h
 
 static char *SRCID_3dview_h = "$Id$";
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <typedefs.h>
+
 #define WW 3
 
 typedef real vec4[4];

@@ -47,8 +47,6 @@ static char *SRCID_metacode_h = "$Id$";
 #include <stdarg.h>
 #include <types/simple.h>
 
-static char *SRCID_metacode_h = "";
-
 #ifndef FALSE
 #define FALSE 0
 #endif

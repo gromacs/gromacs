@@ -33,7 +33,6 @@
  * And Hey:
  * S  C  A  M  O  R  G
  */
-static char *SRCID_fnbf_c = "$Id$";
  
 static char *SRCID_fnbf_c = "$Id$";
 #ifdef USE_THREADS  

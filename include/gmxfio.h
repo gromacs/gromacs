@@ -37,7 +37,6 @@
 #ifndef _gmxfio_h
 #define _gmxfio_h
 
-static char *SRCID_gmxfio_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

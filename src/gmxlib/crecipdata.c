@@ -34,6 +34,8 @@
  * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
 static char *SRCID_crecipdata_c = "$Id$";
+
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
