@@ -510,7 +510,7 @@ static void do_dip(char *fn,char *topf,
   outaver = xvgropen(out_aver,"Total dipole moment",
 		     "Time (ps)","D");
   if (cosaver)
-    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","cos");
+    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","\f{4}<|cos\f{12}q\f{4}|>");
     
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
