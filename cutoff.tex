@@ -57,6 +57,13 @@ forces and energy are stored separately, and added to short-range forces
 at every time step between successive NS. If {\tt rlist} = 
 max({\tt rcoulomb},{\tt rvdw}) no forces
 are evaluated during neighbor list generation.
+The \normindex{virial} is calculated from the sum of the short- and
+long-range forces.
+This means that the virial can be slightly asymmetrical at non-NS steps.
+In single precision the virial is almost always asymmetrical, because the
+off-diagonal elements are about as large as each element in the sum.
+In most cases this is not really a problem, since the fluctuations in de
+virial can be 2 orders of magnitude larger than the average.
 
 Except for the plain cut-off,
 all of the interaction functions in \tabref{funcparm}
