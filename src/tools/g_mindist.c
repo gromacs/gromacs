@@ -472,10 +472,14 @@ int gmx_mindist(int argc,char *argv[])
   oxfnm  = opt2fn_null("-ox",NFILE,fnm);
   resfnm = opt2fn_null("-or",NFILE,fnm);
   
+  if (!tpsfnm && !ndxfnm)
+    fatal_error(0,"You have to specify either the index file or a tpr file");
+  
   if (bPer) {
     ng = 1;
     fprintf(stderr,"Choose a group for distance calculation\n");
-  } else {
+  } 
+  else {
     if (bMat)
       fprintf(stderr,"You can compute all distances between a number of groups\n"
 	      "How many groups do you want (>= 1) ?\n");

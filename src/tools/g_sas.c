@@ -253,9 +253,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   if (!bDGsol) 
     fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
-  else {
-    atomprop = get_atomprop();
-  }
+  atomprop = get_atomprop();
   
   fprintf(stderr,"Select group for calculation of surface and for output:\n");
   get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nx,&index,&grpname);
