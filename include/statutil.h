@@ -56,6 +56,9 @@ extern char *ShortProgram(void);
  *             Trajectory functions
  ************************************************/
 
+extern int prec2ndec(real prec);
+/* Convert precision in 1/(nm) to number of decimal places */
+
 extern void clear_trxframe(t_trxframe *fr,bool bFirst);
 /* Set all content booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
