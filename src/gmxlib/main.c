@@ -257,12 +257,21 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
       if (argv[i+1]!=NULL)
 	cr->nprocs=atoi(argv[i+1]);
   }
-
+  
 #ifdef USE_MPI
-  cr->pid=mpiio_setup(argc,argv,&cr->nprocs);
+  gmx_parallel = 1;
+#ifdef _SGI_
+  if (getenv("MPI_ENVIRONMENT") == NULL)
+    gmx_parallel = 0;
+#endif
+  if (gmx_parallel)
+    cr->pid=mpiio_setup(argc,argv,&cr->nprocs);
+  else
+    cr->pid=0;
 #else
   cr->pid=0;
   if (cr->nprocs > 1) {
+    gmx_parallel = 1; 
 #ifdef USE_PVM3
     cr->pid=pvmio_setup(argv,cr->nprocs);
 #else
@@ -299,12 +308,11 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 
 #endif
   }
-  
+
   /* Communicate arguments if parallel */
-  if (PAR(cr)) {
-    gmx_parallel = 1;
+  if (PAR(cr))
     comm_args(cr,argc,argv_ptr);
-  }
+
   return cr;
 }
 

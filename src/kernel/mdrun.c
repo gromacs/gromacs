@@ -153,7 +153,8 @@ int main(int argc,char *argv[])
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
 
 #ifdef USE_MPI
-  MPI_Finalize();
+  if (gmx_parallel)
+    MPI_Finalize();
 #endif  
 
   return 0;

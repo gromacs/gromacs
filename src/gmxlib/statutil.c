@@ -529,12 +529,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     write_man(fp,manstr[0],program,ndesc,desc,nfile,fnm,npall,all_pa,
 	      nbugs,bugs,bHidden);
     fclose(fp);
-    exit(0);
   }
   for(i=0; i<npall; i++)
     sfree(all_pa[i].desc);
   sfree(all_pa);
-
+  
   if (!FF(PCA_NOEXIT_ON_ARGS)) {
     if (*argc > 1) {
       for(i=1; (i<*argc); i++) 
@@ -542,6 +541,12 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       fatal_error(0,"Program %s halted",Program());
     }
   } 
-  if (bHelp)
+  if (bHelp || (strcmp(manstr[0],"no") != 0)) {
+#ifdef USE_MPI
+    if (gmx_parallel)
+      gmx_abort(gmx_cpu_id(),gmx_cpu_num(),0);
+#endif
     exit(0);
+  }
 }
+

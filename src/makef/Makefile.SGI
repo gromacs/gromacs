@@ -79,10 +79,6 @@ ifeq ($(USE_SGI_FPE),yes)
 	SYSLIBS += -lfpe
 endif
 
-ifeq ($(USE_MPI),yes)
-	PARALLEL_ONLY_MDRUN = yes
-endif
-
 CCSHAREIT       = $(CC) $(LDFLAGS) -shared -all \
                   -quickstart_info -check_registry /usr/lib/so_locations \
                   -soname $(SONAME) -o $(LIBDIR)/$(SONAME) *.o
