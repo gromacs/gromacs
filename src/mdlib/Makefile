@@ -6,7 +6,7 @@
 #	GROMACS - Groningen Machine for Chemical Simulation
 #	Copyright (c) 1990-1994, Groningen University
 #
-#	Makefile for gmxlib
+#	Makefile for mdlib
 #
 ifeq ($(GMXHOME),)
 all:

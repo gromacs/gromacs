@@ -606,7 +606,8 @@ void force(FILE       *log,     int        step,
   
   /* Call the short range functions all in one go. */
   do_fnbf(log,fr,x,f,md,
-	  grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
+	  fr->bBHAM ? grps->estat.ee[egBHAM] : grps->estat.ee[egLJ],
+	  grps->estat.ee[egCOUL],box_size,nrnb,
 	  lambda,&epot[F_DVDL],FALSE,-1);
   debug_gmx();
   
