@@ -30,6 +30,7 @@ static char *SRCID_prfn_c = "$Id$";
 
 #include "filenm.h"
 #include "futil.h"
+#include "wman.h"
 
 void pr_texdefs(FILE *fp)
 {
@@ -38,14 +39,16 @@ void pr_texdefs(FILE *fp)
   fprintf(fp,"\\begin{table}[p]\n");
   fprintf(fp,"\\begin{tabularx}{\\linewidth}{rlccX}\n");
   fprintf(fp,"\\hline\n");
-  fprintf(fp,"%8s & %5s & %3s & %5s & %s\n",
-	  "Name","Ext.","B/A","Opt.","Description \\\\");
+  fprintf(fp,"%8s & %5s & %4s & %5s & %s\n",
+	  "Def.","","","Def.","\\\\");
+  fprintf(fp,"%8s & %5s & %4s & %5s & %s\n",
+	  "Name","Ext.","Type","Opt.","Description \\\\");
   fprintf(fp,"\\hline\n");
   for(i=0; (i<efNR); i++)
     pr_def(fp,i);
   fprintf(fp,"\\hline\n");
   fprintf(fp,"\\end{tabularx}\n");
-  fprintf(fp,"\\caption{File formats. B=binary, A=ascii.}\n");
+  fprintf(fp,"\\caption{File types: A = ascii, B = binary, P = XDR portable.}\n");
   fprintf(fp,"\\label{Tab:form}\n");
   fprintf(fp,"\\end{table}\n");
 }
