@@ -49,11 +49,21 @@
                    [...]>
 -->
 
+<!-- This file defines the structure of the information necessary make
+     a molecule from simple building blocks (called residues). The
+     algorithm processing a sequence (or pdb file) should follow these
+     steps:
+     1. Do all the modification (moddef)
+     2. Add all the links between residues
+     3. Generate hydrogens
+     4. Generate angle and torsion descriptions                     
+-->
+
 <!ELEMENT macromolecules (residues,macromolecule*)>
 
 <!ELEMENT residues (residue*,linkdef*,moddef*)>
 
-<!ELEMENT residue (ratom+,rbond+,raddh*)>
+<!ELEMENT residue (ratom+,rbond*,rangle*,rimproper*,rdihedral*,raddh*)>
 <!ATTLIST residue
           restype ID #REQUIRED>
 <!-- We can not use ID here for atom names since there is no -->
@@ -66,6 +76,23 @@
 <!ATTLIST rbond
           a1 CDATA #REQUIRED
 	  a2 CDATA #REQUIRED>	  
+<!ELEMENT rangle EMPTY>
+<!ATTLIST rangle
+          a1 CDATA #REQUIRED
+	  a2 CDATA #REQUIRED
+	  a3 CDATA #REQUIRED>	  
+<!ELEMENT rimproper EMPTY>
+<!ATTLIST rimproper
+          a1 CDATA #REQUIRED
+	  a2 CDATA #REQUIRED
+	  a3 CDATA #REQUIRED
+	  a4 CDATA #REQUIRED>
+<!ELEMENT rdihedral EMPTY>
+<!ATTLIST rdihedral
+          a1 CDATA #REQUIRED
+	  a2 CDATA #REQUIRED
+	  a3 CDATA #REQUIRED
+	  a4 CDATA #REQUIRED>
 <!-- Definition of how to add (hydrogen) atoms to molecules  -->
 <!-- using a certain geometry (see GROMACS manual)           -->
 <!ELEMENT raddh EMPTY>
