@@ -43,106 +43,32 @@ static char *SRCID_dum_parm_c = "$Id$";
 #include "names.h"
 #include "fatal.h"
 
-static void default_params(int ftype,t_params bt[],t_atoms *at,t_param *p)
-{
-  int      i,j;
-  bool     bFound;
-  t_param  *pi=NULL;
-
-  bFound=FALSE;
-  for (i=0; ((i < bt[ftype].nr) && !bFound); i++) {
-    pi=&(bt[ftype].param[i]);
-    switch(ftype) {
-    case F_PDIHS:
-    case F_RBDIHS:
-      bFound=((at->atom[p->AJ].type==pi->AI) &&
-	      (at->atom[p->AK].type==pi->AJ));
-      break;
-    case F_IDIHS:
-      bFound=((at->atom[p->AI].type==pi->AI) &&
-	      (at->atom[p->AL].type==pi->AJ));
-      break;
-    default:
-      bFound=TRUE;
-      for (j=0; (j<NRAL(ftype)) && bFound; j++)
-	bFound = (at->atom[p->a[j]].type == pi->a[j]);
-    } /* switch */
-  }
-  if (bFound)
-    for (j=0; (j < interaction_function[ftype].nrfpA); j++)
-      p->c[j] = pi->c[j];
-  else
-    /* if not found, return all NOTSET */
-    for (j=0; (j < interaction_function[ftype].nrfpA); j++)
-      p->c[j] = NOTSET;
-}
-
-typedef struct {
-  t_iatom a[2];
-  real    c;
-} t_mybond;
-
-typedef struct {
-  t_iatom a[3];
-  real    c;
-} t_myang;
-
 typedef struct {
   t_iatom a[4];
   real    c;
-} t_myidih;
+} t_mybonded;
 
-static void enter_bond(int *nrbond, t_mybond **bonds, t_param param, 
-		       int ftype, t_params ptype[], t_atoms *atoms)
+static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds, 
+			 t_param param)
 {
   int j;
-  
-  (*nrbond)++;
-  srenew(*bonds, *nrbond);
+
+  srenew(*bondeds, *nrbonded+1);
   
   /* copy atom numbers */
-  for(j=0; j<2; j++)
-    (*bonds)[*nrbond-1].a[j] = param.a[j];
+  for(j=0; j<nratoms; j++)
+    (*bondeds)[*nrbonded].a[j] = param.a[j];
+  /* copy parameter */
+  (*bondeds)[*nrbonded].c = param.C0;
   
-  /* but if ftype is dummy we don't have the parameters yet */
-  /* get them if they are in the forcefield, otherwise don't bother! */
-  /* NOTE: this only works well for the GROMACS forcefield(s),
-     since default parameters are based on pairs of atomtypes. */
-  if (interaction_function[ftype].flags & IF_DUMMY)
-    default_params(F_BONDS,ptype,atoms,&param);
-  
-  /* copy bondlength */
-  (*bonds)[*nrbond-1].c = param.C0;
-}
-
-static void enter_angle(int *nrang, t_myang **angles, t_param param)
-{
-  int j;
-  
-  (*nrang)++;
-  srenew(*angles, *nrang);
-  
-  for(j=0; j<3; j++)
-    (*angles)[*nrang-1].a[j] = param.a[j];
-  (*angles)[*nrang-1].c = param.C0; /* angle */
-}
-
-static void enter_idih(int *nridih, t_myidih **idihs, t_param param)
-{
-  int j;
-  
-  (*nridih)++;
-  srenew(*idihs, *nridih);
-  for(j=0; j<4; j++)
-    (*idihs)[*nridih-1].a[j] = param.a[j];
-  (*idihs)[*nridih-1].c = param.C0; /* angle */
+  (*nrbonded)++;
 }
 
 static void get_bondeds(int nrat, t_iatom atoms[], 
-			t_params ptype[], t_params plist[], t_atoms *at,
-			int *nrbond, t_mybond **bonds,
-			int *nrang,  t_myang  **angles,
-			int *nridih, t_myidih **idihs )
+			t_params plist[], t_atoms *at,
+			int *nrbond, t_mybonded **bonds,
+			int *nrang,  t_mybonded **angles,
+			int *nridih, t_mybonded **idihs )
 {
   int     i,j,k,ftype;
   int     nra,nrd,tp,nrcheck;
@@ -157,51 +83,43 @@ static void get_bondeds(int nrat, t_iatom atoms[],
     fprintf(debug,"\n");
   }
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_DUMMY)
-      /* this is a dummy, we treat it like a bond */
+    if ( interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+      /* this is a bond or a constraint */
       nrcheck = 2;
+    else if ( interaction_function[ftype].flags & IF_ATYPE )
+      /* this is an angle */
+      nrcheck = 3;
     else {
       switch(ftype) {
-      case F_BONDS:
-      case F_G96BONDS:
-      case F_MORSE:
-      case F_SHAKE:
-	nrcheck = 2;
-	break;
-      case F_ANGLES: 
-      case F_G96ANGLES: 
-	nrcheck = 3;
-	break;
       case F_IDIHS: 
+	/* this is an improper dihedral */
 	nrcheck = 4;
 	break;
       default:
+	/* ignore this */
 	nrcheck = 0;
       } /* case */
     } /* else */
     
     if (nrcheck)
       for(i=0; (i<plist[ftype].nr); i++) {
-	/* now we have something, check if it is between atoms[] */
-	bCheck=TRUE;
-	for(j=0; j<nrcheck && bCheck; j++) {
-	  bCheck=FALSE;
+	/* now we have something, check includes one of atoms[*] */
+	bCheck=FALSE;
+	for(j=0; j<nrcheck && !bCheck; j++)
 	  for(k=0; k<nrat; k++)
 	    bCheck = bCheck || (plist[ftype].param[i].a[j]==atoms[k]);
-	}
 	
 	if (bCheck)
-	  /* use nrcheck to see if we're adding bond, angle or idih */
+	  /* abuse nrcheck to see if we're adding bond, angle or idih */
 	  switch (nrcheck) {
 	  case 2: 
-	    enter_bond (nrbond,bonds, plist[ftype].param[i],
-			ftype,ptype,at);
+	    enter_bonded(nrcheck,nrbond,bonds, plist[ftype].param[i]);
 	    break;
 	  case 3: 
-	    enter_angle(nrang, angles,plist[ftype].param[i]);
+	    enter_bonded(nrcheck,nrang, angles,plist[ftype].param[i]);
 	    break;
 	  case 4: 
-	    enter_idih (nridih,idihs, plist[ftype].param[i]);
+	    enter_bonded(nrcheck,nridih,idihs, plist[ftype].param[i]);
 	    break;
 	  } /* case */
       } /* for i */
@@ -210,9 +128,9 @@ static void get_bondeds(int nrat, t_iatom atoms[],
 
 /* for debug */
 static void print_bad(FILE *fp, 
-		      int nrbond, t_mybond *bonds,
-		      int nrang,  t_myang  *angles,
-		      int nridih, t_myidih *idihs )
+		      int nrbond, t_mybonded *bonds,
+		      int nrang,  t_mybonded *angles,
+		      int nridih, t_mybonded *idihs )
 {
   int i;
   
@@ -261,58 +179,7 @@ static void print_param(FILE *fp, int ftype, int i, t_param *param)
   pass++;
 }
 
-static real get_def_bond_length(t_params plist[], t_atoms *at,
-				t_iatom ai, t_iatom aj)
-{
-  int      i,bb;
-  t_params *bt;
-  real     bondlen;
-
-  bondlen=NOTSET;
-  for(bb=0; (bb < F_NRE) && (bondlen==NOTSET); bb++) {
-    if (interaction_function[bb].flags & IF_BTYPE) {
-      bt = &(plist[bb]);
-      for (i=0; i < bt->nr && (bondlen==NOTSET); i++) {
-	/* check one way only, bt is filled with both */
-	if ( (at->atom[ai].type == bt->param[i].AI) &&
-	     (at->atom[aj].type == bt->param[i].AJ) )
-	  bondlen = bt->param[i].C0;
-      }
-    }
-  }
-  if (bondlen == NOTSET)
-    fatal_error(0,"No default bondlength for atoms %d-%d while "
-		"calculating dummy parameters",ai+1,aj+1);
-  return bondlen;
-}
-
-static real get_def_angle(t_params plist[], t_atoms *at,
-			  t_iatom ai, t_iatom aj, t_iatom ak)
-{
-  int      i,aa;
-  t_params *bt;
-  real     angle;
-  
-  angle=NOTSET;
-  for(aa=0; (aa<F_NRE) && (angle==NOTSET); aa++) {
-    if (interaction_function[aa].flags & IF_ATYPE) {
-      bt = &(plist[aa]);
-      for (i=0; i < bt->nr && (angle==NOTSET); i++) {
-	/* check one way only, bt is filled with both */
-	if ( (at->atom[ai].type == bt->param[i].AI) &&
-	     (at->atom[aj].type == bt->param[i].AJ) &&
-	     (at->atom[ak].type == bt->param[i].AK) )
-	  angle = DEG2RAD*bt->param[i].C0;
-      }
-    }
-  }
-  if (angle==NOTSET)
-    fatal_error(0,"No default angle for atoms %d-%d-%d while "
-		"calculating dummy parameters",ai+1,aj+1,ak+1);
-  return angle;
-}
-
-static real get_bond_length(int nrbond, t_mybond bonds[], 
+static real get_bond_length(int nrbond, t_mybonded bonds[], 
 			    t_iatom ai, t_iatom aj)
 {
   int  i;
@@ -325,11 +192,10 @@ static real get_bond_length(int nrbond, t_mybond bonds[],
 	 ( (ai == bonds[i].AJ) && (aj == bonds[i].AI) ) )
       bondlen = bonds[i].c; /* note: bonds[i].c might be NOTSET */
   }
-  /* no fatal_error here: just return NOTSET if not found */
   return bondlen;
 }
 
-static real get_angle(int nrang, t_myang angles[], 
+static real get_angle(int nrang, t_mybonded angles[], 
 		      t_iatom ai, t_iatom aj, t_iatom ak)
 {
   int  i;
@@ -342,28 +208,14 @@ static real get_angle(int nrang, t_myang angles[],
 	 ( (ai==angles[i].AK) && (aj==angles[i].AJ) && (ak==angles[i].AI) ) )
       angle = DEG2RAD*angles[i].c;
   }
-  /* no fatal_error here: just return NOTSET if not found */
   return angle;
 }
 
-static real get_an_angle(int nrang, t_myang angles[], 
-			 t_params plist[], t_atoms *at,
-			 t_iatom ai, t_iatom aj, t_iatom ak)
-{
-  real angle;
-  
-  angle = get_angle(nrang, angles, ai, aj, ak);
-  if (angle==NOTSET)
-    angle = get_def_angle(plist, at, ai, aj, ak);
-  
-  return angle;
-}
-
-static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
-			       t_param *param, t_atoms *at,
-			       int nrbond, t_mybond *bonds,
-			       int nrang,  t_myang  *angles,
-			       int nridih, t_myidih *idihs )
+static bool calc_dum3_param(t_atomtype *atype,
+			    t_param *param, t_atoms *at,
+			    int nrbond, t_mybonded *bonds,
+			    int nrang,  t_mybonded *angles,
+			    int nridih, t_mybonded *idihs )
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j
@@ -405,7 +257,8 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
     /* get common bonds */
     bMM = get_bond_length(nrbond, bonds, param->AK, param->AL);
     bCM = bjk;
-    bCN = get_def_bond_length(ptype, at, param->AJ, aN);
+    bCN = get_bond_length(nrbond, bonds, param->AJ, aN);
+    bError = bError || (bMM==NOTSET) || (bCN==NOTSET);
     
     /* calculate common things */
     rM  = 0.5*bMM;
@@ -418,8 +271,9 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
       
     } else {
       /* get other bondlengths and angles: */
-      bNH = get_def_bond_length(ptype, at, aN, param->AI);
-      aCNH= get_def_angle(ptype, at, param->AJ, aN, param->AI);
+      bNH = get_bond_length(nrbond, bonds, aN, param->AI);
+      aCNH= get_angle      (nrang, angles, param->AJ, aN, param->AI);
+      bError = bError || (bNH==NOTSET) || (aCNH==NOTSET);
       
       /* calculate */
       dH  = bCN - bNH * cos(aCNH);
@@ -442,10 +296,10 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
   return bError;
 }
 
-static bool calc_dum3fd_param(t_params ptype[], t_param *param, t_atoms *at,
-			      int nrbond, t_mybond *bonds,
-			      int nrang,  t_myang  *angles,
-			      int nridih, t_myidih *idihs )
+static bool calc_dum3fd_param(t_param *param, t_atoms *at,
+			      int nrbond, t_mybonded *bonds,
+			      int nrang,  t_mybonded *angles,
+			      int nridih, t_mybonded *idihs )
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j
@@ -455,14 +309,13 @@ static bool calc_dum3fd_param(t_params ptype[], t_param *param, t_atoms *at,
   bool bError;
   real bij,bjk,bjl,aijk,aijl,rk,rl;
   
-  bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
+  bij = get_bond_length(nrbond, bonds, param->AI, param->AJ);
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
-  aijk= get_an_angle(nrang, angles, ptype, at, 
-		     param->AI, param->AJ, param->AK);
-  aijl= get_an_angle(nrang, angles, ptype, at,
-		     param->AI, param->AJ, param->AL);
-  bError = (bjk==NOTSET) || (bjl==NOTSET);
+  aijk= get_angle      (nrang, angles, param->AI, param->AJ, param->AK);
+  aijl= get_angle      (nrang, angles, param->AI, param->AJ, param->AL);
+  bError = (bij==NOTSET) || (bjk==NOTSET) || (bjl==NOTSET) || 
+    (aijk==NOTSET) || (aijl==NOTSET);
   
   rk = bjk * sin(aijk);
   rl = bjl * sin(aijl);
@@ -475,10 +328,10 @@ static bool calc_dum3fd_param(t_params ptype[], t_param *param, t_atoms *at,
   return bError;
 }
 
-static bool calc_dum3fad_param(t_params ptype[], t_param *param, t_atoms *at,
-			       int nrbond, t_mybond *bonds,
-			       int nrang,  t_myang  *angles,
-			       int nridih, t_myidih *idihs )
+static bool calc_dum3fad_param(t_param *param, t_atoms *at,
+			       int nrbond, t_mybonded *bonds,
+			       int nrang,  t_mybonded *angles,
+			       int nridih, t_mybonded *idihs )
 {
   /* i = dummy atom            |
    * j = 1st bonded heavy atom | i-j
@@ -486,13 +339,14 @@ static bool calc_dum3fad_param(t_params ptype[], t_param *param, t_atoms *at,
    * l = 3d bonded heavy atom  |
    */
 
-  bool bSwapParity;
+  bool bSwapParity,bError;
   real bij,aijk;
   
   bSwapParity = ( param->C1 == -1 );
   
-  bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
-  aijk = get_def_angle(ptype, at, param->AI, param->AJ, param->AK);
+  bij  = get_bond_length(nrbond, bonds, param->AI, param->AJ);
+  aijk = get_angle      (nrang, angles, param->AI, param->AJ, param->AK);
+  bError = (bij==NOTSET) || (aijk==NOTSET);
   
   param->C1 = bij;          /* 'bond'-length for fixed distance dummy */
   param->C0 = RAD2DEG*aijk; /* 'bond'-angle for fixed angle dummy */
@@ -503,15 +357,14 @@ static bool calc_dum3fad_param(t_params ptype[], t_param *param, t_atoms *at,
   if (debug)
     fprintf(debug,"params for dummy3fad %u: %g %g\n",
 	    param->AI+1,param->C0,param->C1);
-  /* if something goes wrong, get_def_angle gives fatal_error */
-  return FALSE;
+  return bError;
 }
 
-static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
+static bool calc_dum3out_param(t_atomtype *atype,
 			       t_param *param, t_atoms *at,
-			       int nrbond, t_mybond *bonds,
-			       int nrang,  t_myang  *angles,
-			       int nridih, t_myidih *idihs )
+			       int nrbond, t_mybonded *bonds,
+			       int nrang,  t_mybonded *angles,
+			       int nridih, t_mybonded *idihs )
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j
@@ -558,9 +411,11 @@ static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
     /* get all bondlengths and angles: */
     bMM = get_bond_length(nrbond, bonds, param->AK, param->AL);
     bCM = bjk;
-    bCN = get_def_bond_length(ptype, at, param->AJ, aN);
-    bNH = get_def_bond_length(ptype, at, aN, param->AI);
-    aCNH= get_def_angle(ptype, at, param->AJ, aN, param->AI);
+    bCN = get_bond_length(nrbond, bonds, param->AJ, aN);
+    bNH = get_bond_length(nrbond, bonds, aN, param->AI);
+    aCNH= get_angle      (nrang, angles, param->AJ, aN, param->AI);
+    bError = bError || 
+      (bMM==NOTSET) || (bCN==NOTSET) || (bNH==NOTSET) || (aCNH==NOTSET);
     
     /* calculate */
     dH  = bCN - bNH * cos(aCNH);
@@ -577,12 +432,12 @@ static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
   } else {
     /* this is the general construction */
     
-    bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
-    aijk= get_an_angle(nrang, angles, ptype, at, 
-		       param->AI, param->AJ, param->AK);
-    aijl= get_an_angle(nrang, angles, ptype, at,
-		       param->AI, param->AJ, param->AL);
-    akjl= get_angle(nrang, angles, param->AK, param->AJ, param->AL);
+    bij = get_bond_length(nrbond, bonds, param->AI, param->AJ);
+    aijk= get_angle      (nrang, angles, param->AI, param->AJ, param->AK);
+    aijl= get_angle      (nrang, angles, param->AI, param->AJ, param->AL);
+    akjl= get_angle      (nrang, angles, param->AK, param->AJ, param->AL);
+    bError = bError || 
+      (bij==NOTSET) || (aijk==NOTSET) || (aijl==NOTSET) || (akjl==NOTSET);
   
     pijk = cos(aijk)*bij;
     pijl = cos(aijl)*bij;
@@ -606,10 +461,10 @@ static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
   return bError;
 }
 
-static bool calc_dum4fd_param(t_params ptype[], t_param *param, t_atoms *at,
-			      int nrbond, t_mybond *bonds,
-			      int nrang,  t_myang  *angles,
-			      int nridih, t_myidih *idihs )
+static bool calc_dum4fd_param(t_param *param, t_atoms *at,
+			      int nrbond, t_mybonded *bonds,
+			      int nrang,  t_mybonded *angles,
+			      int nridih, t_mybonded *idihs )
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j-m
@@ -620,19 +475,18 @@ static bool calc_dum4fd_param(t_params ptype[], t_param *param, t_atoms *at,
   real bij,bjk,bjl,bjm,aijk,aijl,aijm,akjm,akjl;
   real pk,pl,pm,cosakl,cosakm,sinakl,sinakm,cl,cm;
   
-  bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
+  bij = get_bond_length(nrbond, bonds, param->AI, param->AJ);
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
   bjm = get_bond_length(nrbond, bonds, param->AJ, param->AM);
-  aijk= get_an_angle(nrang, angles, ptype, at, 
-		     param->AI, param->AJ, param->AK);
-  aijl= get_an_angle(nrang, angles, ptype, at,
-		     param->AI, param->AJ, param->AL);
-  aijm= get_an_angle(nrang, angles, ptype, at,
-		     param->AI, param->AJ, param->AM);
-  akjm= get_angle(nrang, angles, param->AK, param->AJ, param->AM);
-  akjl= get_angle(nrang, angles, param->AK, param->AJ, param->AL);
-  bError = (bjk==NOTSET) || (bjl==NOTSET) || (bjm==NOTSET);
+  aijk= get_angle      (nrang, angles, param->AI, param->AJ, param->AK);
+  aijl= get_angle      (nrang, angles, param->AI, param->AJ, param->AL);
+  aijm= get_angle      (nrang, angles, param->AI, param->AJ, param->AM);
+  akjm= get_angle      (nrang, angles, param->AK, param->AJ, param->AM);
+  akjl= get_angle      (nrang, angles, param->AK, param->AJ, param->AL);
+  bError = (bij==NOTSET) || (bjk==NOTSET) || (bjl==NOTSET) || (bjm==NOTSET) ||
+    (aijk==NOTSET) || (aijl==NOTSET) || (aijm==NOTSET) || (akjm==NOTSET) || 
+    (akjl==NOTSET);
   
   pk = bjk*sin(aijk);
   pl = bjl*sin(aijl);
@@ -660,14 +514,14 @@ static bool calc_dum4fd_param(t_params ptype[], t_param *param, t_atoms *at,
 }
 
 void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
-		 t_params ptype[], t_params plist[])
+		 t_params plist[])
 {
   int i,j,ftype;
   int nrbond,nrang,nridih,nrset;
   bool bFirst,bSet,bERROR;
-  t_mybond *bonds;
-  t_myang  *angles;
-  t_myidih *idihs;
+  t_mybonded *bonds;
+  t_mybonded *angles;
+  t_mybonded *idihs;
   
   bFirst = TRUE;
   bERROR = TRUE;
@@ -698,14 +552,11 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	  idihs = NULL;
 	  nrset++;
 	  /* now set the dummy parameters: */
-	  get_bondeds(NRAL(ftype),plist[ftype].param[i].a, 
-		      ptype, plist, atoms, 
-		      &nrbond, &bonds, 
-		      &nrang,  &angles, 
-		      &nridih, &idihs);
+	  get_bondeds(NRAL(ftype), plist[ftype].param[i].a, plist, atoms, 
+		      &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
 	  if (debug) {
 	    fprintf(debug, "Found %d bonds, %d angles and %d idihs "
-		    "in dummy atom %u (%s)\n",nrbond,nrang,nridih,
+		    "for dummy atom %u (%s)\n",nrbond,nrang,nridih,
 		    plist[ftype].param[i].AI+1,
 		    interaction_function[ftype].longname);
 	    print_bad(debug, nrbond, bonds, nrang, angles, nridih, idihs);
@@ -713,29 +564,27 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	  switch(ftype) {
 	  case F_DUMMY3: 
 	    bERROR = 
-	      calc_dum3_param(ptype, &atype, 
-			      &(plist[ftype].param[i]), atoms,
+	      calc_dum3_param(&atype, &(plist[ftype].param[i]), atoms,
 			      nrbond, bonds, nrang, angles, nridih, idihs);
 	    break;
 	  case F_DUMMY3FD:
 	    bERROR = 
-	      calc_dum3fd_param(ptype, &(plist[ftype].param[i]), atoms,
+	      calc_dum3fd_param(&(plist[ftype].param[i]), atoms,
 				nrbond, bonds, nrang, angles, nridih, idihs);
 	    break;
 	  case F_DUMMY3FAD:
 	    bERROR = 
-	      calc_dum3fad_param(ptype, &(plist[ftype].param[i]), atoms,
+	      calc_dum3fad_param(&(plist[ftype].param[i]), atoms,
 				 nrbond, bonds, nrang, angles, nridih, idihs);
 	    break;
 	  case F_DUMMY3OUT:
 	    bERROR = 
-	      calc_dum3out_param(ptype, &atype, 
-				 &(plist[ftype].param[i]), atoms,
+	      calc_dum3out_param(&atype, &(plist[ftype].param[i]), atoms,
 				 nrbond, bonds, nrang, angles, nridih, idihs);
 	    break;
 	  case F_DUMMY4FD:
 	    bERROR = 
-	      calc_dum4fd_param(ptype, &(plist[ftype].param[i]), atoms,
+	      calc_dum4fd_param(&(plist[ftype].param[i]), atoms,
 				nrbond, bonds, nrang, angles, nridih, idihs);
 	    break;
 	  default:
@@ -794,4 +643,261 @@ void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms)
     }
   }
   
+}
+
+typedef struct { 
+  int ftype,parnr;
+} t_pindex;
+
+static void clean_dum_bonds(t_params *plist, int cftype, int dummy_type[])
+{
+  int i,j;
+  t_params *psb;
+  
+  psb = &(plist[cftype]);
+  
+  /* remove bonds with dummy atoms */
+  for(i=j=0; (i<psb->nr); i++)
+    if ( (dummy_type[psb->param[i].AI]==NOTSET) && 
+	 (dummy_type[psb->param[i].AJ]==NOTSET) ) {
+      memcpy(&(psb->param[j]),&(psb->param[i]),(size_t)sizeof(psb->param[0]));
+      j++;
+    }
+  i=psb->nr-j;
+  psb->nr=j;
+  
+  if (i>0)
+    fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n",
+	    i, interaction_function[cftype].longname, psb->nr);
+}
+
+static void clean_dum_angles(t_params *plist, t_pindex pindex[], 
+			     int cftype, int dummy_type[])
+{
+  int      ftype,i,j,parnr,k,l,m,n,ndum,kept_i,dumnral,dumtype;
+  atom_id  atom,constr,at1,at2;
+  atom_id  dumatoms[MAXATOMLIST];
+  bool     bKeep,bUsed,bPresent,bAll3FAD,bFirstTwo;
+  t_params *ps;
+  
+  ps = &(plist[cftype]);
+  dumnral=0;
+  kept_i=0;
+  for(i=0; (i<ps->nr); i++) { /* for all angles in the plist */
+    bKeep=FALSE;
+    bAll3FAD=TRUE;
+    /* check if all dummies are constructed from the same atoms */
+    ndum=0;
+    for(k=0; (k<3) && !bKeep; k++) { /* for all atoms in the angle */
+      atom = ps->param[i].a[k];
+      if (dummy_type[atom]!=NOTSET) {
+	ndum++;
+	bAll3FAD = bAll3FAD && (pindex[atom].ftype == F_DUMMY3FAD);
+	if (ndum==1) {
+	  /* store construction atoms of first dummy */
+	  dumnral=NRAL(pindex[atom].ftype)-1;
+	  for(m=0; (m<dumnral); m++)
+	    dumatoms[m]=
+	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	} else 
+	  /* check if this dummy is constructed from the same atoms */
+	  if (dumnral == NRAL(pindex[atom].ftype)-1 )
+	    for(m=0; (m<dumnral) && !bKeep; m++) {
+	      bPresent=FALSE;
+	      constr=
+		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	      for(n=0; (n<dumnral) && !bPresent; n++)
+		if (constr == dumatoms[n])
+		  bPresent=TRUE;
+	      if (!bPresent)
+		bKeep=TRUE;
+	    }
+	  else
+	    bKeep=TRUE;
+      }
+    }
+    
+    /* keep all angles with no dummies in them or 
+       with dummies with more than 3 constr. atoms */
+    if ( ndum == 0 && dumnral > 3 )
+      bKeep=TRUE;
+    
+    /* check if all non-dummy atoms are used in construction: */
+    bFirstTwo=TRUE;
+    for(k=0; (k<3) && !bKeep; k++) { /* for all atoms in the angle */
+      atom = ps->param[i].a[k];
+      if (dummy_type[atom]==NOTSET) {
+	bUsed=FALSE;
+	for(m=0; (m<dumnral) && !bUsed; m++)
+	  if (atom == dumatoms[m]) {
+	    bUsed=TRUE;
+	    bFirstTwo = bFirstTwo && m<2;
+	  }
+	if (!bUsed)
+	  bKeep=TRUE;
+      }
+    }
+    
+    if ( ! ( bAll3FAD && bFirstTwo ) )
+      /* check if all constructing atoms are bound together */
+      for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
+	at1 = dumatoms[m];
+	at2 = dumatoms[(m+1) % dumnral];
+	bPresent=FALSE;
+	for (ftype=0; ftype<F_NRE; ftype++)
+	  if (interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+	    for (j=0; (j<plist[ftype].nr) && !bPresent; j++)
+	      /* all bonds until one matches */
+	      bPresent = ( ( (plist[ftype].param[j].AI == at1) &&
+			     (plist[ftype].param[j].AJ == at2) ) || 
+			   ( (plist[ftype].param[j].AI == at2) &&
+			     (plist[ftype].param[j].AJ == at1) ) );
+	if (!bPresent)
+	  bKeep=TRUE;
+      }
+    
+    if ( bKeep ) {
+      /* now copy the angle to the new array */
+      memcpy(&(ps->param[kept_i]),
+	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      kept_i++;
+    }
+  }
+  
+  if (ps->nr != kept_i)
+    fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n",
+	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
+  ps->nr=kept_i;
+  
+  /* clean up */
+  sfree(pindex);
+}
+
+static void clean_dum_dihs(t_params *plist, t_pindex pindex[], 
+			   int cftype, int dummy_type[])
+{
+  int      ftype,i,parnr,k,l,m,n,ndum,kept_i,dumnral;
+  atom_id  atom,constr;
+  atom_id  dumatoms[3];
+  bool     bKeep,bUsed,bPresent;
+  t_params *ps;
+  
+  ps = &(plist[cftype]);
+  
+  dumnral=0;
+  kept_i=0;
+  for(i=0; (i<ps->nr); i++) { /* for all dihedrals in the plist */
+    bKeep=FALSE;
+    /* check if all dummies are constructed from the same atoms */
+    ndum=0;
+    for(k=0; (k<4) && !bKeep; k++) { /* for all atoms in the dihedral */
+      atom = ps->param[i].a[k];
+      if (dummy_type[atom]!=NOTSET) {
+	ndum++;
+	if (ndum==1) {
+	  /* store construction atoms of first dummy */
+	  dumnral=NRAL(pindex[atom].ftype)-1;
+	  for(m=0; (m<dumnral); m++)
+	    dumatoms[m]=
+	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	  if (debug) {
+	    fprintf(debug,"dih w. dum: %u %u %u %u\n",
+		    ps->param[i].AI+1,ps->param[i].AJ+1,
+		    ps->param[i].AK+1,ps->param[i].AL+1);
+	    fprintf(debug,"dum %u from: %u %u %u\n",
+		    atom+1,dumatoms[0]+1,dumatoms[1]+1,dumatoms[2]+1);
+	  }
+	} else 
+	  /* check if this dummy is constructed from the same atoms */
+	  if (dumnral == NRAL(pindex[atom].ftype)-1 )
+	    for(m=0; (m<dumnral) && !bKeep; m++) {
+	      bPresent=FALSE;
+	      constr=
+		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	      for(n=0; (n<dumnral) && !bPresent; n++)
+		if (constr == dumatoms[n])
+		  bPresent=TRUE;
+	      if (!bPresent)
+		bKeep=TRUE;
+	    }
+      }
+    }
+    
+    /* keep all dihedrals with no dummies in them */
+    if (ndum==0)
+      bKeep=TRUE;
+    
+    /* check if all atoms in dihedral are either dummies, or used in 
+       construction of dummies. If so, keep it, if not throw away: */
+    for(k=0; (k<4) && !bKeep; k++) { /* for all atoms in the dihedral */
+      atom = ps->param[i].a[k];
+      if (dummy_type[atom]==NOTSET) {
+	bUsed=FALSE;
+	for(m=0; (m<dumnral) && !bUsed; m++)
+	  if (atom == dumatoms[m])
+	    bUsed=TRUE;
+	if (!bUsed) {
+	  bKeep=TRUE;
+	  if (debug) fprintf(debug,"unused atom in dih: %u\n",atom+1);
+	}
+      }
+    }
+      
+    if ( bKeep ) {
+      memcpy(&(ps->param[kept_i]),
+	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      kept_i++;
+    }
+  }
+
+  if (ps->nr != kept_i)
+    fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n", 
+	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
+  ps->nr=kept_i;
+  
+  /* clean up */
+  sfree(pindex);
+}
+
+void clean_dum_bad(t_params *plist, int natoms)
+{
+  int i,k,ftype,parnr;
+  int *dummy_type;
+  t_pindex *pindex;
+  
+  /* make dummy_type array */
+  snew(dummy_type,natoms);
+  for(i=0; i<natoms; i++)
+    dummy_type[i]=NOTSET;
+  for(ftype=0; ftype<F_NRE; ftype++)
+    if (interaction_function[ftype].flags & IF_DUMMY)
+      for(i=0; i<plist[ftype].nr; i++)
+	dummy_type[plist[ftype].param[i].AI]=ftype;
+  
+  /* make index into dummy entries of plist: */
+  snew(pindex,natoms);
+  for(ftype=0; ftype<F_NRE; ftype++)
+    if (interaction_function[ftype].flags & IF_DUMMY)
+      for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
+	k=plist[ftype].param[parnr].AI;
+	pindex[k].ftype=ftype;
+	pindex[k].parnr=parnr;
+      }
+  
+  if (debug)
+    for(i=0; i<natoms; i++)
+      fprintf(debug,"atom %d dummy_type %s\n",i, 
+	      dummy_type[i]==NOTSET ? "NOTSET" : 
+	      interaction_function[dummy_type[i]].name);
+  
+  /* remove things with dummy atoms */
+  for(ftype=0; ftype<F_NRE; ftype++)
+    if (interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+      clean_dum_bonds(plist, ftype, dummy_type);
+    else if (interaction_function[ftype].flags & IF_ATYPE)
+      clean_dum_angles(plist, pindex, ftype, dummy_type);
+    else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
+      clean_dum_dihs(plist, pindex, ftype, dummy_type);
+  
+  sfree(dummy_type);
 }

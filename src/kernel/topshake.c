@@ -39,6 +39,7 @@ static char *SRCID_topshake_c = "$Id$";
 #include "toppush.h"
 #include "toputil.h"
 #include "topdirs.h"
+#include "smalloc.h"
 
 static void copy_bond (t_params *pr, int to, int from)
 /* copies an entry in a bond list to another position.
@@ -72,7 +73,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
   t_params     *bonds;
   t_param      p,*bond,*ang;
   real         b_ij,b_jk;
-  int          nb,b,i,j,bb;
+  int          nb,b,i,j,ftype;
   bool         bFound;
 
   switch (nshake) {
@@ -99,9 +100,9 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
    */
   shake=&(plist[F_SHAKE]);
 
-  for(bb = 0; (bb < F_NRE); bb++) {
-    if (interaction_function[bb].flags & IF_BTYPE) {
-      bonds=&(plist[bb]);
+  for(ftype = 0; (ftype < F_NRE); ftype++) {
+    if (interaction_function[ftype].flags & IF_BTYPE) {
+      bonds=&(plist[ftype]);
       
       if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {
 	/* horrible shortcut */
@@ -137,12 +138,13 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
 	      b_jk=bond->C0;
 	      bFound = (b_ij!=0.0) && (b_jk!=0.0);
 	    }
-	  /* apply law of cosines */
 	    if (!bFound)
 	      fatal_error(0,"No bond information for bond %s-%s or %s-%s",
 		      *info[ang->AI],*info[ang->AJ],
 		      *info[ang->AJ],*info[ang->AK]);
-	    p.C0 = sqrt(b_ij*b_ij+b_jk*b_jk-2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0));
+	    /* apply law of cosines */
+	    p.C0 = sqrt( b_ij*b_ij + b_jk*b_jk - 
+			 2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0) );
 	    p.C1 = p.C0;
 #ifdef DEBUG
 	    printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
@@ -159,20 +161,18 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
       }
     }
   }
-  if ((nshake == eshALLANGLES) || (nshake == eshHANGLES))
-    nshake = eshALLBONDS;
   
   /* Add all the bonds with hydrogens to the shake list
    * and remove them from the bond list
    */
-  if ((nshake == eshHBONDS) || (nshake == eshALLBONDS)) {
-    /* horrible shortcut */
-    for (bb=0; (bb < F_NRE); bb++) {
-      if (interaction_function[bb].flags & IF_BTYPE) {
-	pr = &(plist[bb]);
+  if ( (nshake == eshHBONDS)    || (nshake == eshALLBONDS) || 
+       (nshake == eshALLANGLES) || (nshake == eshHANGLES) ) {
+    for (ftype=0; (ftype < F_NRE); ftype++) {
+      if (interaction_function[ftype].flags & IF_BTYPE) {
+	pr = &(plist[ftype]);
 	for (i=0; (i < pr->nr); ) {
-	  if ((nshake == eshALLBONDS) || 
-	      (count_hydrogens (info,2,pr->param[i].a) > 0)) {
+	  if ( (nshake != eshHBONDS) || 
+	       (count_hydrogens (info,2,pr->param[i].a) > 0) ) {
 	    /* append this bond to the shake list */
 	    p.AI = pr->param[i].AI;
 	    p.AJ = pr->param[i].AJ;
@@ -192,4 +192,11 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
       }
     }
   }
+  
+  /* Add all non-connecting shakes to the shake list and throw away
+     the shakenc list */
+  for (i=0; i<plist[F_SHAKENC].nr; i++)
+    push_bondnow(shake, &(plist[F_SHAKENC].param[i]));
+  plist[F_SHAKENC].nr=0;
+  sfree(plist[F_SHAKENC].param);
 }

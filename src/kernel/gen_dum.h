@@ -37,29 +37,11 @@ static char *SRCID_gen_dum_h = "$Id$";
 
 /* stuff for pdb2gmx */
 
-extern void do_dummies(int nrtp, t_restp rtp[], 
-		       t_atomtype *atype, real mHmult, 
+extern void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype, 
 		       t_atoms *at, t_symtab *symtab, rvec *x[], 
-		       t_params plist[], t_params *newbonds,
-		       int *dummy_type[], int *cgnr[],
-		       int fbonds);
-
-extern void do_dum_aromatics(int nrtp, t_restp rtp[], t_atomtype *atype, 
-			     t_atoms *at, t_symtab *symtab, rvec *x[], 
-			     t_params plist[], t_params *newbonds,
-			     int *dummy_type[], int *cgnr[]);
+		       t_params plist[], int *dummy_type[], int *cgnr[], 
+		       real mHmult, bool bDummyAromatics);
 
 extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult);
-
-extern void clean_dum_bonds(t_params *ps, int dummy_type[]);
-
-extern void clean_dum_angles(t_params *ps, int natom, 
-			     t_params *plist, int dummy_type[],
-			     int fbonds);
-
-extern void clean_dum_dihs(t_params *ps, int natom, char dihname[], 
-			   t_params *plist, int dummy_type[]);
-
-extern void do_dum_excl(t_block *excl, bool is_dum[]);
 
 #endif	/* _gen_dum_h */

@@ -35,10 +35,14 @@ static char *SRCID_dum_parm_h = "$Id$";
 #include "grompp.h"
 
 extern void set_dummies(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
-			t_params ptype[], t_params plist[]);
+			t_params plist[]);
 /* set parameters for dummy atoms */
 
 extern void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms);
 /* set ptype to Dummy for dummy atoms */
+
+extern void clean_dum_bad(t_params *ps, int natoms);
+/* remove all bonds, angles and (im)proper diherals that have become 
+   obsolete due to dummy constructions */
 
 #endif	/* _dum_parm_h */
