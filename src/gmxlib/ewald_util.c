@@ -202,7 +202,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
       /* Dipole correction on force  */
       if(bDipoleCorr) 
 	for(j=0;j<DIM;j++)
-	  flr[i][j]+=dipole_coeff*mu_tot[j]*charge[i];
+	  flr[i][j]+=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
   }
 
   /* Global corrections only on master process */
@@ -215,7 +215,8 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     Vcharge=-2.0*vol*vc;
     /* Apply surface dipole correction */
     if(bDipoleCorr)
-      Vdipole=dipole_coeff*(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
+      Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*
+	(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
   }
   
   Vself=ewc*ONE_4PI_EPS0*q2sum/sqrt(M_PI);
