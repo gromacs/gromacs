@@ -36,25 +36,28 @@ static char *SRCID_h_db_h = "$Id$";
 #ident	"@(#) h_db.h 1.10 2/2/97"
 #endif /* HAVE_IDENT */
 #include "sysstuff.h"
-#include "pdb2gmx.h"
+#include "hackblock.h"
 
+/* number of control atoms for each 'add' type */
+extern int ncontrol[];
+  
 /* functions for the h-database */
 
-extern void read_ab(FILE *in,char *fn,t_add_block *ab);
+extern void read_ab(char *line,char *fn,t_hack *ab);
 /* Read one add block */
 
-extern int read_h_db(char *fn,t_addh **ah);
+extern int read_h_db(char *fn,t_hackblock **ah);
 /* Read the database from file */
 
-extern void print_ab(FILE *out,t_add_block *ab);
+extern void print_ab(FILE *out,t_hack *ab);
 /* print one add block */
 
-extern void print_h_db(FILE *out,int nh,t_addh ah[]);
+extern void print_h_db(FILE *out,int nh,t_hackblock ah[]);
 /* Print the database to file */
 
 extern int compaddh(const void *a,const void *b);
 
-extern t_addh *search_h_db(int nh,t_addh ah[],char *key);
+extern t_hackblock *search_h_db(int nh,t_hackblock ah[],char *key);
 /* Search for an entry in the database */
 
 

@@ -32,28 +32,28 @@ static char *SRCID_ifunc_c = "$Id$";
 #include "bondf.h"
 #include "disre.h"
 
-#define def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+#define def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
    
-#define  def_angle(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+#define  def_angle(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_ATYPE,(ind),(func)}
    
-#define   def_bond(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+#define   def_bond(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CONNECT | IF_BTYPE,(ind),(func)}
    
-#define  def_dummy(str,lstr,nra,nrpa)                                        \
+#define  def_dummy(str,lstr,nra,nrpa)\
    {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_CONNECT,     -1, unimplemented}
    
-#define    def_shk(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+#define    def_shk(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT,                  (ind),(func)}
-   
-#define def_shkcon(str,lstr,nra,nrpa,nrpb,ind,func)                          \
+
+#define def_shkcon(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_CONNECT,     (ind),(func)}
    
-#define     def_nb(str,lstr,nra, nrp)                                        \
+#define     def_nb(str,lstr,nra, nrp)\
    {str,lstr,(nra), (nrp),     0,IF_NULL,                    -1,unimplemented}
    
-#define   def_nofc(str,lstr)                                                 \
+#define   def_nofc(str,lstr)\
    {str,lstr,    0,     0,     0,IF_NULL,                    -1,unimplemented}
 
 /* this MUST correspond to the enum in include/types/idef.h */

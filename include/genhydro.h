@@ -33,11 +33,10 @@
 static char *SRCID_genhydro_h = "$Id$";
 
 #include "pdbio.h"
-#include "pdb2gmx.h"
+#include "hackblock.h"
 
-extern int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
-		 t_hackblock *ntdb,t_hackblock *ctdb,
-		 int rN,int rC);
+extern int add_h(t_atoms **pdbaptr, rvec *xptr[], int nah, t_hackblock ah[],
+		 t_hackblock *ntdb, t_hackblock *ctdb, int rN, int rC);
 /* Generate hydrogen atoms and N and C terminal patches.
  * ntdb and ctdb may be NULL, no replacement will be done then.
  * rN is the residue number of the N-terminus,

@@ -33,7 +33,7 @@ static char *SRCID_add_par_c = "$Id$";
 #include "smalloc.h"
 #include "grompp.h"
 #include "toputil.h"
-#include "pdb2gmx.h"
+#include "hackblock.h"
 
 static void clear_atom_list(int i0, atom_id a[])
 {
@@ -171,7 +171,7 @@ void add_dum4_atoms(t_params *ps,int ai,int aj,int ak,int al,int am)
 
 int search_jtype(t_restp *rtp,char *name,bool bNterm)
 {
-  int  j,k,mn,kmax,jmax;
+  int  j,k,kmax,jmax;
   char *rtpname,searchname[12];
   
   strcpy(searchname,name);
@@ -191,8 +191,7 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
       kmax=strlen(searchname);
       break;
     }
-    mn=min((int)strlen(searchname),(int)strlen(rtpname));
-    for(k=0; (k<mn); k++) 
+    for(k=0; k < min(strlen(searchname), strlen(rtpname)); k++) 
       if (searchname[k] != rtpname[k])
 	break;
     if (k > kmax) {

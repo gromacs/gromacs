@@ -51,9 +51,11 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "gen_ad.h"
 #include "filenm.h"
 #include "index.h"
-#include "pdb2gmx.h"
 #include "gen_dum.h"
 #include "add_par.h"
+
+/* this must correspond to enum in pdb2top.h */
+char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
 static bool missing_atoms(t_restp *rp, int resnr,
 			  t_atoms *at, int i0, int i, bool bCTer)
@@ -93,47 +95,54 @@ bool is_int(double x)
   return (fabs(x-ix) < tol);
 }
 
-static void name2type(t_atoms *at,int **cgnr,
-		      t_atomtype *atype,int nrtp,t_restp rtp[])
+static void name2type(t_atoms *at, int **cgnr, t_atomtype *atype, 
+		      t_restp restp[])
 {
   int     i,j,prevresnr,resnr,i0,prevcg,cg,curcg;
   char    *name;
-  t_restp *rp=NULL,*prevrp=NULL;
-  bool    bProt, bNterm=FALSE;
+  bool    bProt, bNterm;
   double  qt;
-
+  
   resnr=-1;
   bProt=FALSE;
+  bNterm=FALSE;
   i0=0;
   snew(*cgnr,at->nr);
   qt=0;
+  prevcg=-NOTSET;
   curcg=0;
   cg=-1;
+  j=NOTSET;
   for(i=0; (i<at->nr); i++) {
     prevresnr=resnr;
     if (at->atom[i].resnr != resnr) {
       resnr=at->atom[i].resnr;
       bProt=is_protein(*(at->resname[resnr]));
       bNterm=bProt && (resnr == 0);
-      prevrp=rp;
-      rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-      if (prevrp)
-	missing_atoms(prevrp,resnr,at,i0,i,
-		      (!bProt && is_protein(prevrp->resname)));
+      if (resnr>0)
+	missing_atoms(&restp[prevresnr],resnr,at,i0,i,
+		      (!bProt && is_protein(restp[prevresnr].resname)));
       i0=i;
     }
     if (at->atom[i].m == 0) {
+      if (debug)
+	fprintf(debug,"atom %d%s: curcg=%d, prevcg=%d, cg=%d\n",
+		i+1,*(at->atomname[i]),curcg,prevcg,
+		j==NOTSET ? NOTSET : restp[resnr].cgnr[j]);
       qt=0;
       prevcg=cg;
       name=*(at->atomname[i]);
-      j=search_jtype(rp,name,bNterm);
-      at->atom[i].type  = rp->atom[j].type;
-      at->atom[i].q     = rp->atom[j].q;
-      at->atom[i].m     = atype->atom[rp->atom[j].type].m;
-      cg = rp->cgnr[j];
+      j=search_jtype(&restp[resnr],name,bNterm);
+      at->atom[i].type = restp[resnr].atom[j].type;
+      at->atom[i].q    = restp[resnr].atom[j].q;
+      at->atom[i].m    = atype->atom[restp[resnr].atom[j].type].m;
+      cg = restp[resnr].cgnr[j];
       if ( (cg != prevcg) || (resnr != prevresnr) )
 	curcg++;
     } else {
+      if (debug)
+	fprintf(debug,"atom %d%s: curcg=%d, qt=%g, is_int=%d\n",
+		i+1,*(at->atomname[i]),curcg,qt,is_int(qt));
       cg=-1;
       if (is_int(qt)) {
 	qt=0;
@@ -146,7 +155,8 @@ static void name2type(t_atoms *at,int **cgnr,
     at->atom[i].qB    = at->atom[i].q;
     at->atom[i].mB    = at->atom[i].m;
   }
-  missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
+  missing_atoms(&restp[resnr],resnr,at,i0,i,
+		(!bProt || is_protein(restp[resnr].resname)));
 }
 
 static void print_top_heavy_H(FILE *out, real mHmult)
@@ -232,10 +242,9 @@ void print_top_mols(FILE *out, char *title,
   }
 }
 
-void write_top(char *ff,FILE *out, char *pr,char *molname,
-	       int nincl, char **incls, int nmol, t_mols *mols,
-	       t_atoms *at,int bts[],t_params plist[],t_block *excl,
-	       t_atomtype *atype,int *cgnr, int nrexcl, real mHmult)
+static void write_top(FILE *out, char *pr,char *molname,
+		      t_atoms *at,int bts[],t_params plist[],t_block *excl,
+		      t_atomtype *atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
 {
   if (at && atype && cgnr) {
@@ -243,7 +252,7 @@ void write_top(char *ff,FILE *out, char *pr,char *molname,
     fprintf(out,"; %-15s %5s\n","Name","nrexcl");
     fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
-    print_atoms(out,atype,at,cgnr);
+    print_atoms(out, atype, at, cgnr);
     print_bondeds(out,at->nr,d_bonds,      F_BONDS,    bts[ebtsBONDS], plist);
     print_bondeds(out,at->nr,d_constraints,F_SHAKE,    0,              plist);
     print_bondeds(out,at->nr,d_constraints,F_SHAKENC,  0,              plist);
@@ -257,8 +266,7 @@ void write_top(char *ff,FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_dum3,       F_DUMMY3OUT,0,              plist);
     print_bondeds(out,at->nr,d_dum4,       F_DUMMY4FD, 0,              plist);
     
-    if (excl)
-      if (excl->nr > 0)
+    if ( excl && excl->nr > 0 )
 	print_excl(out,excl);
     
     if (pr)
@@ -295,141 +303,98 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   }
 }
 
-static void ter2bonds(t_params *ps,
-		      int natoms,t_atom atom[],char **aname[],
-		      int resnr,t_hackblock *tdb)
+static void at2bonds(t_params *psb, t_hackblock *hb,
+		     int natoms, t_atom atom[], char **aname[], 
+		     int nres, rvec x[])
 {
-  int i,j,k;
+  int     resnr,i,j,k;
+  int     ai,aj;
+  real    dist2;
+#define LONG_BOND_DIST2 sqr(0.25)
+#define SHORT_BOND_DIST2 sqr(0.05)
   
-  /* Skip to right residue */
-  for(i=0; ((i<natoms) && (atom[i].resnr != resnr)); i++)
-    ;
-  /* Now only for this residue */
-  for(   ; ((i<natoms) && (atom[i].resnr == resnr)); i++)
-    for(j=0; (j<tdb->nadd); j++)
-      if (strcmp(tdb->ab[j].na[0],*(aname[i])) == 0)
-	if (tdb->ab[j].tp == 9) {         /* COOH terminus */
-	  add_param(ps,i,i+1,NULL,NULL);   /* C-O  */
-	  add_param(ps,i,i+2,NULL,NULL);   /* C-OA */
-	  add_param(ps,i+2,i+3,NULL,NULL);   /* OA-H */
-	} else
-	  for(k=0; (k<tdb->ab[j].nh); k++)
-	    add_param(ps,i,i+k+1,NULL,NULL);
-}
-
-static void ter2idihs(t_params *ps,int nidih,t_idih idih[],
-		      int natoms,t_atom atom[],char **aname[],
-		      int resnr,int ftype)
-{
-  int i,j,k,aa0,a0[4],start;
-  char *atomnm;
-  
-  /* Skip to right residue */
-  start=0;
-  while ((start<natoms) && (atom[start].resnr != resnr)) start++;
-  /* Now only for this residue */
-  for(j=0; (j<nidih); j++) {
-    for(k=0; (k<4); k++) {
-      atomnm=idih[j].ai[k];
-      if ((aa0=search_atom(atomnm,start,natoms,atom,aname)) == -1)
-	fatal_error(0,"Trying to add improper %s %s %s %s to res %d,"
-		    "atom %s not found",
-		    idih[j].ai[0],idih[j].ai[1],idih[j].ai[2],
-		    idih[j].ai[3],resnr+1,idih[j].ai[k]);
-      else {
-	if (atom[aa0].resnr > (resnr+1)) {
-	  fprintf(stderr,"WARNING: improper spans more than 2 residues:\n");
-	  for (i=0; (i<k); i++)
-	    fprintf(stderr,"atom %d %s, res %d\n",
-	    a0[i]+1,*aname[a0[i]],atom[a0[i]].resnr+1);
-	}
-	a0[k] = aa0;
+  fprintf(stderr,"Making bonds...\n");
+  i=0;
+  for(resnr=0; (resnr < nres) && (i<natoms); resnr++) {
+    /* add bonds from list of bonded interactions */
+    for(j=0; j < hb[resnr].rb[ebtsBONDS].nb; j++) {
+      ai=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname);
+      aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname);
+      if ( ai != -1 && aj != -1 ) {
+	dist2 = distance2(x[ai],x[aj]);
+	if (dist2 > LONG_BOND_DIST2 )
+	  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
+		  ai+1,aj+1,sqrt(dist2));
+	else if (dist2 < SHORT_BOND_DIST2 )
+	  fprintf(stderr,"Warning: Short Bond (%d-%d = %g nm)\n",
+		  ai+1,aj+1,sqrt(dist2));
+	add_param(psb,ai,aj,NULL,hb[resnr].rb[ebtsBONDS].b[j].s);
       }
     }
-    if (ftype == F_IDIHS)
-      add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NULL);
-    else {
-      if (a0[1] < a0[2])
-	add_dih_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NOTSET,NULL);
-      else
-	add_dih_param(ps,a0[3],a0[2],a0[1],a0[0],NOTSET,NOTSET,NOTSET,NULL);
-    }
-    ps->param[ps->nr-1].c[MAXFORCEPARAM-1] = 0;
-    ps->param[ps->nr-1].s = strdup(idih[j].s);
-  }
-}
-
-static void at2bonds(t_params *ps,
-		     int nrb,t_resbond rb[],
-		     int natoms,t_atom atom[],char **aname[],
-		     int nres,char **resname[],bool bAlldih,
-		     rvec x[])
-{
-  t_resbond *rb0;
-  int        i,j,k;
-  int        ai,aj;
-  real       dist2;
-#define LONG_BOND_DIST 0.25
-  
-  /* First generate bonds along the heavy atoms */
-  fprintf(stderr,"Making bonds on the heavy atoms...\n");
-  for(i=j=0; ((i<nres) && (j<natoms)); i++) {
-    if ((rb0=search_rb(*(resname[i]),nrb,rb)) != NULL) {
-      for(k=0; (k<rb0->nb); k++) {
-	if (((ai=search_atom(rb0->rbond[k].ai,j,natoms,atom,aname)) != -1) &&
-	    ((aj=search_atom(rb0->rbond[k].aj,j,natoms,atom,aname)) != -1)) {
-	  dist2 = distance2(x[ai],x[aj]);
-	  if (dist2 > sqr(LONG_BOND_DIST) )
-	    fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
-		    ai+1,aj+1,sqrt(dist2));
-	  add_param(ps,ai,aj,rb0->rbond[k].c,rb0->rbond[k].s);
+    /* add bonds from list of hacks (each added atom gets a bond) */
+    while( (i<natoms) && (atom[i].resnr == resnr) ) {
+      for(j=0; j < hb[resnr].nhack; j++)
+	if ( ( hb[resnr].hack[j].tp > 0 ||
+	       hb[resnr].hack[j].oname==NULL ) &&
+	     strcmp(hb[resnr].hack[j].AI,*(aname[i])) == 0 ) {
+	  switch(hb[resnr].hack[j].tp) {
+	  case 9:          /* COOH terminus */
+	    add_param(psb,i,i+1,NULL,NULL);     /* C-O  */
+	    add_param(psb,i,i+2,NULL,NULL);     /* C-OA */
+	    add_param(psb,i+2,i+3,NULL,NULL);   /* OA-H */
+	    break;
+	  default:
+	    for(k=0; (k<hb[resnr].hack[j].nr); k++)
+	      add_param(psb,i,i+k+1,NULL,NULL);
+	  }
 	}
-      }
-    } else
-      fprintf(stderr,"No bond information for residue %d (%s)\n",
-	      i+1,*(resname[i]));
-    while ((j < natoms-1) && (atom[j].resnr == atom[j+1].resnr))
-      j++;
-    j++;
+      i++;
+    }
+    /* we're now at the start of the next residue */
   }
 }
 
 static int pcompar(const void *a, const void *b)
 {
   t_param *pa,*pb;
-  int     id;
+  int     d;
   pa=(t_param *)a;
   pb=(t_param *)b;
   
-  id=pa->a[0]-pb->a[0];
-  if (id == 0)
-    return pa->a[1]-pb->a[1];
-  else
-    return id;
+  d = pa->AI - pb->AI;
+  if (d == 0) {
+    d = pa->AJ - pb->AJ;
+    if (d == 0)
+      /* we'll keep the first bond in the list, 
+	 doing inverse sort will put the bond with the longest string first */
+      d = -strcmp(pa->s, pb->s);
+  }
+  return d;
 }
 
 static void clean_bonds(t_params *ps)
 {
   int     i,j;
-  atom_id ai,aj;
+  atom_id a;
   
   if (ps->nr > 0) {
-    for(i=0; (i<ps->nr); i++) {
-      ai=ps->param[i].AI;
-      aj=ps->param[i].AJ;
-      if (aj < ai) {
-	ps->param[i].AI=aj;
-	ps->param[i].AJ=ai;
+    /* swap atomnumbers in bond if first larger than second: */
+    for(i=0; (i<ps->nr); i++)
+      if ( ps->param[i].AJ < ps->param[i].AI ) {
+	a = ps->param[i].AI;
+	ps->param[i].AI = ps->param[i].AJ;
+	ps->param[i].AJ = a;
       }
-    }
     
     /* Sort bonds */
     qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
     
     /* remove doubles */
     for(i=j=1; (i<ps->nr); i++) {
-      if (pcompar(&(ps->param[i]),&(ps->param[j-1])) != 0) {
-	memcpy(&(ps->param[j]),&(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      if ( ps->param[i].AI != ps->param[j-1].AI ||
+	   ps->param[i].AJ != ps->param[j-1].AJ ) {
+	sfree(ps->param[j].s);
+	ps->param[j] =  ps->param[i];
 	j++;
       }
     }
@@ -461,81 +426,181 @@ void print_sums(t_atoms *atoms, bool bSystem)
   fprintf(stderr,"Total charge%s %.3f e\n",where,qtot);
 }
 
-void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
-	     int nincl, char **incls, int nmol, t_mols *mols,
-	     t_atoms *atoms,rvec **x,
-	     t_atomtype *atype,t_symtab *tab,
-	     int bts[],
-	     int nrb, t_resbond rb[],
-	     int nrtp,t_restp   rtp[],
-	     int nra, t_resang  ra[],
-	     int nrd, t_resdih  rd[],
-	     int nid, t_idihres idi[],
+void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
+			int nrtp, t_restp rtp[], int nres, char **resname[], 
+			t_hackblock *ntdb, t_hackblock *ctdb, int rn, int rc)
+{
+  int i, j, k, l;
+  t_restp *res;
+  char buf[STRLEN];
+  char Hnum[6]="123456";
+  
+  snew(*hb,nres);
+  snew(*restp,nres);
+  /* first the termini */
+  if (rn>=0)
+    copy_t_hackblock(ntdb, &(*hb)[rn]);
+  if (rc>=0)
+    copy_t_hackblock(ctdb, &(*hb)[rc]);
+  
+  /* then the whole rtp */
+  for(i=0; i < nres; i++) {
+    res = search_rtp(*resname[i],nrtp,rtp);
+    copy_t_restp(res, &(*restp)[i]);
+    merge_t_bondeds(res->rb, (*hb)[i].rb);
+  }
+  
+  /* now perform t_hack's on t_restp's,
+     i.e. add's and deletes from termini database will be 
+     added to/removed from residue topology 
+     we'll do this on one big dirty loop, so it won't make easy reading! */
+  for(i=0; i < nres; i++)
+    for(j=0; j < (*hb)[i].nhack; j++)
+      if ( (*hb)[i].hack[j].nr ) {
+	/* find atom in restp */
+	for(l=0; l < (*restp)[i].natom; l++)
+	  if ( ( (*hb)[i].hack[j].oname==NULL && 
+		 strcmp((*hb)[i].hack[j].AI, *(*restp)[i].atomname[l])==0 ) ||
+	       ( (*hb)[i].hack[j].oname!=NULL &&
+		 strcmp((*hb)[i].hack[j].oname,*(*restp)[i].atomname[l])==0 ) )
+	    break;
+	if (l == (*restp)[i].natom) 
+	  fatal_error(0,"atom %s not found in residue %d%s "
+		      "while combining tdb and rtp",
+		      (*hb)[i].hack[j].oname!=NULL ? 
+		      (*hb)[i].hack[j].oname : (*hb)[i].hack[j].AI, 
+		      i+1,*resname[i]);
+	if ( (*hb)[i].hack[j].oname==NULL ) {
+	  /* we're adding: */
+	  if (debug) 
+	    fprintf(debug,"adding atom(s) %s to atom %s in res %d%s in rtp\n",
+		    (*hb)[i].hack[j].nname,
+		    *(*restp)[i].atomname[l], i+1, (*restp)[i].resname);
+	  strcpy(buf, (*hb)[i].hack[j].nname);
+	  buf[strlen(buf)+1]='\0';
+	  if ( (*hb)[i].hack[j].nr > 1 )
+	    buf[strlen(buf)]='-';
+	  /* make space */
+	  (*restp)[i].natom += (*hb)[i].hack[j].nr;
+	  srenew((*restp)[i].atom,     (*restp)[i].natom);
+	  srenew((*restp)[i].atomname, (*restp)[i].natom);
+	  srenew((*restp)[i].cgnr,     (*restp)[i].natom);
+	  /* shift the rest */
+	  for(k=(*restp)[i].natom-1; k > l+(*hb)[i].hack[j].nr; k--) {
+	    (*restp)[i].atom[k] =
+	      (*restp)[i].atom    [k - (*hb)[i].hack[j].nr];
+	    (*restp)[i].atomname[k] =
+	      (*restp)[i].atomname[k - (*hb)[i].hack[j].nr];
+	    (*restp)[i].cgnr[k] =
+	      (*restp)[i].cgnr    [k - (*hb)[i].hack[j].nr];
+	  }
+	  /* now add them */
+	  for(k=0; k < (*hb)[i].hack[j].nr; k++) {
+	    /* set counter in atomname */
+	    if ( (*hb)[i].hack[j].nr > 1 )
+	      buf[strlen(buf)-1]=Hnum[k];
+	    snew( (*restp)[i].atomname[l+1+k], 1);
+	    (*restp)[i].atom     [l+1+k] = *(*hb)[i].hack[j].atom;
+	    *(*restp)[i].atomname[l+1+k] = strdup(buf);
+	    if ( (*hb)[i].hack[j].cgnr != NOTSET )
+	      (*restp)[i].cgnr   [l+1+k] = (*hb)[i].hack[j].cgnr;
+	    else
+	      (*restp)[i].cgnr   [l+1+k] = (*restp)[i].cgnr[l];
+	  }
+	} else /* oname != NULL */
+	  if ( (*hb)[i].hack[j].nname==NULL ) {
+	    /* we're deleting */
+	    if (debug) 
+	      fprintf(debug, "deleting atom %s from res %d%s in rtp\n",
+			       *(*restp)[i].atomname[l], 
+			       i+1,(*restp)[i].resname);
+	    /* shift the rest */
+	    (*restp)[i].natom--;
+	    for(k=l; k < (*restp)[i].natom; k++) {
+	      (*restp)[i].atom    [k] = (*restp)[i].atom    [k+1];
+	      (*restp)[i].atomname[k] = (*restp)[i].atomname[k+1];
+	      (*restp)[i].cgnr    [k] = (*restp)[i].cgnr    [k+1];
+	    }
+	    /* give back space */
+	    srenew((*restp)[i].atom,     (*restp)[i].natom);
+	    srenew((*restp)[i].atomname, (*restp)[i].natom);
+	    srenew((*restp)[i].cgnr,     (*restp)[i].natom);
+	  } else { /* nname != NULL */
+	    /* we're replacing */
+	    if (debug) 
+	      fprintf(debug, "replacing atom %s by %s in res %d%s in rtp\n",
+		      *(*restp)[i].atomname[l], (*hb)[i].hack[j].nname, 
+		      i+1,(*restp)[i].resname);
+	    snew( (*restp)[i].atomname[l], 1);
+	    (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
+	    *(*restp)[i].atomname[l] = strdup((*hb)[i].hack[j].nname);
+	    if ( (*hb)[i].hack[j].cgnr != NOTSET )
+	      (*restp)[i].cgnr   [l] = (*hb)[i].hack[j].cgnr;
+	  }
+      }
+}
+
+void pdb2top(FILE *top_file, char *posre_fn, char *molname,
+	     t_atoms *atoms, rvec **x, t_atomtype *atype, t_symtab *tab,
+	     int bts[], int nrtp, t_restp   rtp[],
 	     t_hackblock *ntdb, t_hackblock *ctdb,
 	     bool bH14, int rn, int rc, bool bAlldih,
 	     bool bDummies, bool bDummyAromatics, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl)
 {
-  t_params plist[F_NRE], terps[F_NRE];
+  t_hackblock *hb;
+  t_restp  *restp;
+  t_params plist[F_NRE];
   t_nextnb nnb;
   int      *cgnr;
   int      *dummy_type;
   int      i;
   
   init_plist(plist);
-  init_plist(terps);
+  
+  /* lookup hackblocks and rtp for all residues */
+  get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resname, 
+		     ntdb, ctdb, rn, rc);
+  /* ideally, now we would not need the rtp itself anymore, but do 
+     everything using the hb and restp arrays. Unfortunately, that 
+     requires some re-thinking of code in gen_dum.c, which I won't 
+     do now :( AF 26-7-99 */
+  
+  if (debug) {
+    print_resall(debug, bts, atoms->nres, restp, atype);
+    dump_hb(debug, atoms->nres, hb);
+  }
   
   /* Make bonds */
-  at2bonds(&(plist[F_BONDS]),
-	   nrb,rb,atoms->nr,atoms->atom,atoms->atomname,
-	   atoms->nres,atoms->resname,bAlldih,*x);
+  at2bonds(&(plist[F_BONDS]), hb, 
+	   atoms->nr, atoms->atom, atoms->atomname, atoms->nres, *x);
   
-  /* Terminal bonds */
-  if (rn>=0)
-    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,rn,ntdb);
-  if (rc>=0)
-    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,rc,ctdb);
+  /* specbonds: disulphide bonds & heme-his */
+  do_ssbonds(&(plist[F_BONDS]),
+	     atoms->nr, atoms->atom, atoms->atomname, nssbonds, ssbonds);
   
-  /* Last the disulphide bonds & heme-his */
-  do_ssbonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,
-	     atoms->atomname,nssbonds,ssbonds);
-  
-  name2type(atoms,&cgnr,atype,nrtp,rtp);
+  name2type(atoms, &cgnr, atype, restp);
   
   /* Cleanup bonds (sort and rm doubles) */ 
   clean_bonds(&(plist[F_BONDS]));
   
-  /* determine which atoms will be dummies and add dummy masses 
-     also renumber atom numbers in plist[0..F_NRE]! */
   snew(dummy_type,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     dummy_type[i]=NOTSET;
   if (bDummies)
+    /* determine which atoms will be dummies and add dummy masses 
+       also renumber atom numbers in plist[0..F_NRE]! */
     do_dummies(nrtp, rtp, atype, atoms, tab, x, plist, 
 	       &dummy_type, &cgnr, mHmult, bDummyAromatics);
   
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles and dihedrals...\n");
-  /* first on termini */
-  if (rn>=0) {
-    ter2idihs(&(plist[F_IDIHS]),ntdb->nidih,ntdb->idih,
-	      atoms->nr,atoms->atom,atoms->atomname,rn,F_IDIHS);
-    ter2idihs(&(terps[F_PDIHS]),ntdb->ndih,ntdb->dih,
-	      atoms->nr,atoms->atom,atoms->atomname,rn,F_PDIHS);
-  }
-  if (rc>=0) {
-    ter2idihs(&(plist[F_IDIHS]),ctdb->nidih,ctdb->idih,
-	      atoms->nr,atoms->atom,atoms->atomname,rc,F_IDIHS);
-    ter2idihs(&(terps[F_PDIHS]),ctdb->ndih,ctdb->dih,
-	      atoms->nr,atoms->atom,atoms->atomname,rc,F_PDIHS);
-  }
-  /* then all others */
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,plist,terps,nrtp,rtp,nra,ra,nrd,rd,nid,idi,bAlldih);
+  gen_pad(&nnb,atoms,bH14,plist,hb,bAlldih);
   done_nnb(&nnb);
-
+  
   /* set mass of all remaining hydrogen atoms */
   if (mHmult != 1.0)
     do_h_mass(&(plist[F_BONDS]),dummy_type,atoms,mHmult);
@@ -557,17 +622,19 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
 	  plist[F_DUMMY4FD].nr );
   
   print_sums(atoms, FALSE);
-
+  
   if (top_file) {
     fprintf(stderr,"Writing topology\n");
-    write_top(ff,top_file,posre_fn,molname,nincl,incls,nmol,mols,
-	      atoms,bts,plist,NULL,atype,cgnr,nrexcl,mHmult);
+    write_top(top_file, posre_fn, molname,
+	      atoms, bts, plist, NULL, atype, cgnr, nrexcl);
   }
-
+  
   /* cleaning up */
+  free_t_hackblock(atoms->nres, &hb);
+  free_t_restp(atoms->nres, &restp);
+    
+  /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
   sfree(cgnr);
-  for (i=0; (i<F_NRE); i++) {
+  for (i=0; (i<F_NRE); i++)
     sfree(plist[i].param);
-    sfree(terps[i].param);
-  }
 }

@@ -36,7 +36,6 @@ static char *SRCID_hizzie_c = "$Id$";
 #include "vec.h"
 #include "physics.h"
 #include "toputil.h"
-#include "pdb2gmx.h"
 #include "pdb2top.h"
 
 static int in_strings(char *key,int nstr,char **str)
@@ -150,7 +149,7 @@ static bool chk_hbonds(int i,t_atoms *pdba, rvec x[],
   return bHB;
 }
 
-void calc_ringh(rvec xattach,rvec xb,rvec xc,rvec xh)
+static void calc_ringh(rvec xattach,rvec xb,rvec xc,rvec xh)
 {
   rvec tab,tac;
   real n;

@@ -1,64 +1,99 @@
-BLOCK_NAME	None
-N_REPLACE	0
-N_ADD		0
-N_IDIH		0
-N_DIH		0
-N_DELETE	0
+[ None ]
 
-BLOCK_NAME	NH3+
-N_REPLACE	2
-N	N	NL	14.0067	0.129
-CA	CA	CH1	13.0190	0.127
-N_ADD		1
+[ NH3+ ]
+; charges inferred from LYSH charges in ffG43b1.rtp
+[ replace ]
+N	N	NL	14.0067	-0.744
+CA	CA	CH1	13.0190	0.000	0
+[ add ]
 3	4	N	CA	C
 	H	H	1.008	0.248
-N_IDIH		0
-N_DIH		1
+[ delete ]
+H
+[ bonds ]
+N	H1	gb_2
+N	H2	gb_2
+N	H3	gb_2
+[ angles ]
+H1	N	H2	ga_9
+H2	N	H3	ga_9
+H3	N	H1	ga_9
+CA	N	H1	ga_10
+CA	N	H2	ga_10
+CA	N	H3	ga_10
+[ dihedrals ]
 H1	N	CA	C	gd_14
-N_DELETE	0
 
-BLOCK_NAME	NH2
-N_REPLACE	1
-N	N	NL	14.0067	-0.83
-N_ADD		1
+[ NH2 ]
+; charges identical to G43a1, because chargegroups are neutral
+[ replace ]
+N	N	NL	14.0067	-0.830
+[ add ]
 2	4	N	CA	C
 	H	H	1.008	0.415
-N_IDIH		0
-N_DIH		1
+[ delete ]
+H
+[ bonds ]
+N	H1	gb_2
+N	H2	gb_2
+[ angles ]
+H1	N	H2	ga_9
+CA	N	H1	ga_10
+CA	N	H2	ga_10
+[ dihedrals ]
 H1	N	CA	C	gd_14
-N_DELETE	0
 
-BLOCK_NAME	PRO-NH2+
-N_REPLACE	1
-N	N	NT	14.0067	0.2
-N_ADD		1
+[ PRO-NH2+ ]
+; charges guessed, in similarity with other differences with G43a1
+[ replace ]
+N	N	NT	14.0067	-0.200
+[ add ]
 2	4	N	CA	C
-	H	H	1.008	0.4
-N_IDIH		0
-N_DIH		1
+	H	H	1.008	0.100
+[ bonds ]
+N	H1	gb_2
+N	H2	gb_2
+[ angles ]
+; we're not sure about these parameters, 
+; they were inferred from the comments in the ffG43a1bon.itp
+H1	N	H2	ga_9
+CA	N	H1	ga_10
+CA	N	H2	ga_10
+CD	N	H1	ga_10
+CD	N	H2	ga_10
+[ dihedrals ]
 H1	N	CA	C	gd_14
-N_DELETE	0
 
-BLOCK_NAME	PRO-NH
-N_REPLACE	1
+[ PRO-NH ]
+; charges identical to G43a1, because chargegroups are neutral
+[ replace ]
 N	N	N	14.0067	-0.28
-N_ADD		1
+[ add ]
 1	4	N	CA	C
 	H	H	1.008	0.28
-N_IDIH		0
-N_DIH		1
-H1	N	CA	C	gd_14
-N_DELETE	0
+[ bonds ]
+N	H	gb_2
+[ angles ]
+CA	N	H	ga_10
+CD	N	H	ga_10
 
-BLOCK_NAME	GLY-NH3+
-N_REPLACE	2
-N	N	NL	14.0067	0.129
-CA	CA	CH2	14.0270	0.127
-N_ADD		1
+[ GLY-NH3+ ]
+; charges inferred from LYSH charges in ffG43b1.rtp
+[ replace ]
+N	N	NL	14.0067	-0.744
+[ add ]
 3	4	N	CA	C
 	H	H	1.008	0.248
-N_IDIH		0
-N_DIH		1
+[ bonds ]
+N	H1	gb_2
+N	H2	gb_2
+N	H3	gb_2
+[ angles ]
+H1	N	H2	ga_9
+H2	N	H3	ga_9
+H3	N	H1	ga_9
+CA	N	H1	ga_10
+CA	N	H2	ga_10
+CA	N	H3	ga_10
+[ dihedrals ]
 H1	N	CA	C	gd_14
-N_DELETE	0
-

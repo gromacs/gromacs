@@ -37,49 +37,21 @@ static char *SRCID_resall_h = "$Id$";
 #endif /* HAVE_IDENT */
 
 #include "typedefs.h"
-#include "pdb2gmx.h"
+#include "hackblock.h"
 #include "grompp.h"
-
-extern int comprb(const void *a,const void *b);
-/* Compare resbond shit */
-
-extern int comprang(const void *a,const void *b);
-/* Compare resangle shit */
-
-extern int comprdih(const void *a,const void *b);
-/* Compare resdihedral shit */
-
-extern t_resbond *search_rb(char *key,int nrb,t_resbond rb[]);
-/* Search in the bond database */
-
-extern t_resang *search_rang(char *key,int nra,t_resang ra[]);
-/* Search in the angle database */
-
-extern t_resdih *search_rdih(char *key,int nrd,t_resdih rd[]);
-/* Search in the dihedral database */
-
-extern int comprtp(const void *a,const void *b);
-/* Compare routine for sorting and searching for t_restp */
 
 extern t_restp *search_rtp(char *key,int nrtp,t_restp rtp[]);
 /* Search for an entry in the rtp database */
 
-extern int icomp(const void *a,const void *b);
-/* Compare routine for sorting and searching for t_idihres */
-
-extern t_idihres *search_idih(char *key,int nrdh,t_idihres ires[]);
-/* Search for a residue in the improper database */
-
 extern t_atomtype *read_atype(char *adb,t_symtab *tab);
+/* read atom type database */
 
-extern int read_resall(char *resdb, int bts[], t_restp **rtp, t_resbond **rb, 
-		       t_resang **ra, t_resdih **rd,
-		       t_idihres **ires, t_atomtype *atype,
-		       t_symtab *tab);
+extern int read_resall(char *resdb, int bts[], t_restp **rtp, 
+		       t_atomtype *atype, t_symtab *tab);
+/* read rtp database */
 
-extern void print_resall(FILE *out, int bts[],
-			 int nrtp, t_restp rtp[], t_resbond rb[],
-			 t_resang ra[], t_resdih rd[],
-			 t_idihres ires[], t_atomtype *atype);
+extern void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[], 
+			 t_atomtype *atype);
+/* write rtp database */
 
 #endif	/* _resall_h */

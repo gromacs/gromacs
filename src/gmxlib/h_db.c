@@ -47,69 +47,70 @@ int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
 
 int compaddh(const void *a,const void *b)
 {
-  t_addh *ah,*bh;
+  t_hackblock *ah,*bh;
 
-  ah=(t_addh *)a;
-  bh=(t_addh *)b;
-  return strcasecmp(ah->resname,bh->resname);
+  ah=(t_hackblock *)a;
+  bh=(t_hackblock *)b;
+  return strcasecmp(ah->name,bh->name);
 }
 
-t_addh *search_hb(char *key,int nh,t_addh ah[])
+void read_ab(char *line,char *fn,t_hack *hack)
 {
-  t_addh ahkey;
-
-  ahkey.resname=key;
-  return (t_addh *)bsearch((void *)&ahkey,ah,nh,
-			   (size_t)sizeof(ahkey),compaddh);
-}
-
-t_addh *search_ter_hb(char *key,int nh,t_addh ah[])
-{
-  t_addh ahkey;
-
-  ahkey.resname=key;
-  return (t_addh *)bsearch((void *)&ahkey,ah,nh,
-			   (size_t)sizeof(ahkey),compaddh);
-}
-
-void read_ab(FILE *in,char *fn,t_add_block *ab)
-{
-  int  i,nh,tp,ncntl;
+  int  i,n,nh,tp,ncntl;
   char buf[80];
-
-  if (fscanf(in,"%d%d",&nh,&tp) != 2)
-    fatal_error(0,"wrong format in input file %s\n",fn);
-  ab->nh=nh;
-  ab->tp=tp;
+  
+  if (sscanf(line,"%d%d%n",&nh,&tp,&n) != 2)
+    fatal_error(0,"wrong format in input file %s on line\n%s\n",fn,line);
+  line+=n;
+  hack->nr=nh;
+  hack->tp=tp;
   ncntl=ncontrol[tp];
-  if (debug) 
-    fprintf(debug,"%s, %d: will read %d elements for type %d\n",
-	    __FILE__,__LINE__,ncntl,tp);
-  for(i=0; (i<ncntl); i++) {
-    if (fscanf(in,"%s",buf) != 1) 
-      fatal_error(0,"%d instead of %d (ncntl) elements found in input file\n",i,ncntl);
-    ab->na[i]=strdup(buf);
+  for(i=0; i<ncntl; i++) {
+    if (sscanf(line,"%s%n",buf,&n) != 1)
+      fatal_error(0,"Expected %d control atoms instead of %d while reading Hydrogen Database %s on line\n%s\n",ncntl,i-1,fn,line);
+    hack->a[i]=strdup(buf);
+    line+=n;
   }
+  for(   ; i<4; i++)
+    hack->a[i]=NULL;
+  hack->oname=NULL;
+  hack->nname=NULL;
+  hack->atom=NULL;
+  hack->cgnr=NOTSET;
+  for(i=0; i<DIM; i++)
+    hack->newx[i]=NOTSET;
 }
 
-int read_h_db(char *fn,t_addh **ah)
+int read_h_db(char *fn,t_hackblock **ah)
 {	
   FILE   *in;
-  char   hfn[256];
-  char   buf[80];
-  int    i,nab,nah=0;
-  t_addh *aah=NULL;
+  char   hfn[STRLEN], line[STRLEN], buf[STRLEN];
+  int    i, n, nab, nah;
+  t_hackblock *aah;
 
   sprintf(hfn,"%s.hdb",fn);
   in=libopen(hfn);
-  while (fscanf(in,"%s",buf) == 1) {
+  if (debug) fprintf(debug,"Hydrogen Database (%s):\n",hfn);
+  nah=0;
+  aah=NULL;
+  while (fgets(line,STRLEN,in)) {
+    sscanf(line,"%s%n",buf,&n);
+    if (debug) fprintf(debug,"%s",buf);
     srenew(aah,++nah);
-    aah[nah-1].resname=strdup(buf);
-    fscanf(in,"%d",&nab);
-    snew(aah[nah-1].ab,nab);
-    aah[nah-1].n_add=nab;
-    for(i=0; (i<nab); i++) 
-      read_ab(in,hfn,&(aah[nah-1].ab[i]));
+    aah[nah-1].name=strdup(buf);
+    sscanf(line+n,"%d",&nab);
+    if (debug) fprintf(debug,"\t%d\n",nab);
+    snew(aah[nah-1].hack,nab);
+    aah[nah-1].nhack=nab;
+    for(i=0; (i<nab); i++) {
+      if (feof(in))
+	fatal_error(0, "Expected %d lines of hydrogens, found only %d "
+		    "while reading Hydrogen Database %s residue %s",
+		    nab, i-1, aah[nah-1].name, hfn);
+      fgets(buf, STRLEN, in);
+      read_ab(buf,hfn,&(aah[nah-1].hack[i]));
+      if (debug) print_ab(debug, &(aah[nah-1].hack[i]));
+    }
   }
   fclose(in);
   
@@ -120,38 +121,39 @@ int read_h_db(char *fn,t_addh **ah)
   return nah;
 }
 
-void print_ab(FILE *out,t_add_block *ab)
+void print_ab(FILE *out,t_hack *hack)
 {
-  int i,ncntl;
+  int i;
 
-  fprintf(out,"\t%d\t%d",ab->nh,ab->tp);
-  ncntl=ncontrol[ab->tp];
-  for(i=0; (i<ncntl); i++)
-    fprintf(out,"\t%s",ab->na[i]);
+  fprintf(out,"%d\t%d",hack->nr,hack->tp);
+  for(i=0; i < ncontrol[hack->tp]; i++)
+    fprintf(out,"\t%s",hack->a[i]);
   fprintf(out,"\n");
 }
 
-void print_h_db(FILE *out,int nh,t_addh ah[])
+void print_h_db(FILE *out,int nh,t_hackblock ah[])
 {
   int i,j;
 
   for(i=0; (i<nh); i++) {
-    fprintf(out,"%s\t%d\n",ah[i].resname,ah[i].n_add);
-    for(j=0; (j<ah[i].n_add); j++)
-      print_ab(out,&(ah[i].ab[j]));
+    fprintf(out,"%s\t%d\n",ah[i].name,ah[i].nhack);
+    for(j=0; (j<ah[i].nhack); j++) {
+      fprintf(out,"\t");
+      print_ab(out,&(ah[i].hack[j]));
+    }
   }
 }
 
-t_addh *search_h_db(int nh,t_addh ah[],char *key)
+t_hackblock *search_h_db(int nh,t_hackblock ah[],char *key)
 {
-  t_addh ahkey,*result;
+  t_hackblock ahkey,*result;
 
   if (nh <= 0)
     return NULL;
-    
-  ahkey.resname=key;
+  
+  ahkey.name=key;
 
-  result=(t_addh *)bsearch(&ahkey,ah,nh,(size_t)sizeof(ah[0]),compaddh);
+  result=(t_hackblock *)bsearch(&ahkey,ah,nh,(size_t)sizeof(ah[0]),compaddh);
   
   return result;
 }

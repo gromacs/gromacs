@@ -37,39 +37,22 @@ static char *SRCID_calch_h = "$Id$";
 #endif /* HAVE_IDENT */
 #include "typedefs.h"
 	
-extern void calc_h_pos(int nht,int nh[],int na[],rvec x[]);
+extern void calc_h_pos(int nht, rvec xa[], rvec xh[]);
 /*
  *    w.f. van gunsteren, groningen, july 1981 
  *
  *    translated to c d. van der spoel groningen jun 1993
  *    added option 5 jan 95
  *
- *    subroutine genh (nht,nh,na,d,alfa,x)                          
- *                                                                  
- *    genh generates cartesian coordinates for hydrogen atoms   
- *    using the coordinates of neighbour atoms.                     
- *                                                                  
- *    nht = 1 : one hydrogen atom (n) is generated, lying in the plane 
- *              of atoms (i,j,k) on the line bisecting angle (j-i-k)
- *              at a distance d from atom i, such that the angles   
- *              (n-i-j) and (n-i-k) are > 90 degrees                
- *        = 2 : one hydrogen atom (n) is generated at a distance d  
- *              from atom i, such that angle (n-i-j)=alfa and dihedral 
- *              (n-i-j-k)=trans                                     
- *        = 3 : two hydrogens (n1,n2) are generated at a distance d 
- *              from atom i, such that angle (n1-i-j)=(n2-i-j)=alfa 
- *              and dihedral (n1-i-j-k)=trans and (n2-i-j-k)=cis    
- *        = 4 : three (n1,n2,n3) or two (n1,n2) hydrogens are generated
- *              at a distance d from atom i, such that angle (n1-i-j)= 
- *              (n2-i-j)=(n3-i-j)=alfa, dihedral (n1-i-j-k)=trans,  
- *              (n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240 degrees  
- *        = 5 : one hydrogen is generated connected to n1, such that it is
- *              tetrahedral configuration with n2,n3 and n4
- *    nh(1.. ) = sequence numbers of the hydrogen atoms that are to be 
- *               generated (see x)                                  
- *               if nht=4 and nh(3)=0, only two hydrogens are generated
- *    na(1..4) = sequence numbers of the atoms i, j and k and l
- *    x(1.. ) = atom cartesian coordinates                          
+ *    subroutine genh (nht,nh,na,d,alfa,x)
+ *
+ *    genh generates cartesian coordinates for hydrogen atoms
+ *    using the coordinates of neighbour atoms.
+ *
+ *    nht      : type of hydrogen attachment (see manual)
+ *    xh(1.. ) : atomic positions of the hydrogen atoms that are to be
+ *               generated
+ *    xa(1..4) : atomic positions of the control atoms i, j and k and l
  *    default bond lengths and angles are defined internally
  */
 

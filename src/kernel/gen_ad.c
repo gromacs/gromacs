@@ -45,7 +45,6 @@ static char *SRCID_gen_ad_c = "$Id$";
 #include "fatal.h"
 #include "pgutil.h"
 #include "resall.h"
-#include "pdb2gmx.h"
 
 typedef bool (*peq)(t_param *p1, t_param *p2);
 
@@ -210,7 +209,7 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
   int      i,j,nral,nrfp;
   t_params *ps;
 
-  ps   = &(plist[ftype]);
+  ps   = &plist[ftype];
   nral = NRAL(ftype);
   nrfp = NRFP(ftype);
   
@@ -226,7 +225,7 @@ static void cppar(t_param p[], int np, t_params plist[], int ftype)
   }
 }
 
-static void cpparam(t_param *dest,t_param *src)
+static void cpparam(t_param *dest, t_param *src)
 {
   int j;
 
@@ -237,16 +236,22 @@ static void cpparam(t_param *dest,t_param *src)
   dest->s=strdup(src->s);
 }
 
-static void set_p(t_param *p,atom_id ai[4],real *c,char *s)
+static void set_p(t_param *p, atom_id ai[4], real *c, char *s)
 {
   int j;
 
   for(j=0; (j<4); j++)
     p->a[j]=ai[j];
   for(j=0; (j<MAXFORCEPARAM); j++)
-    p->c[j]=c[j];
+    if (c)
+      p->c[j]=c[j];
+    else
+      p->c[j]=NOTSET;
   sfree(p->s);
-  p->s=strdup(s);
+  if (s)
+    p->s=strdup(s);
+  else
+    p->s=strdup("");
 }
 
 static int int_comp(const void *a,const void *b)
@@ -300,48 +305,41 @@ static void sort_id(int nr,t_param ps[])
   qsort(ps,nr,(size_t)sizeof(ps[0]),idcomp);
 }
 
-static t_idih *is_imp(t_param *p,t_atoms *atoms,int nrdh,t_idihres idih[])
+static t_rbonded *is_imp(t_param *p,t_atoms *atoms,t_hackblock hb[])
 {
-  int        j,n,pm,start;
+  int        j,n,maxresnr,start;
   atom_id    a0[MAXATOMLIST];
   int        aa0;
   char      *atom;
-  t_idihres *i0;
+  t_rbondeds *idihs;
 
   /* Find the max residue number in this dihedral */
-  pm=0;
-  for(j=0; (j<4); j++)
-    pm=max(pm,atoms->atom[p->a[j]].resnr);
-
+  maxresnr=0;
+  for(j=0; j<4; j++)
+    maxresnr=max(maxresnr,atoms->atom[p->a[j]].resnr);
+  
   /* Now find the start of this residue */
-  for(start=0; (start < atoms->nr); start++)
-    if (atoms->atom[start].resnr == pm)
+  for(start=0; start < atoms->nr; start++)
+    if (atoms->atom[start].resnr == maxresnr)
       break;
 
-  /* See if there are any impropers defined for this residue 
-   * Impropers are always defined backwards (that is only referring
-   * to previous residues, not to the next!)
-   */
-  i0=search_idih(*(atoms->resname[atoms->atom[start].resnr]),nrdh,idih);
-
-  if (i0 != NULL) {
-    for(n=0; (n<i0->nidih); n++) {
-      for(j=0; (j<4); j++) {
-	atom=i0->idih[n].ai[j];
-	aa0=search_atom(atom,start,atoms->nr,atoms->atom,atoms->atomname);
-	if (aa0 == -1) {
-	  if (debug) 
-	    fprintf(debug,"Atom %s not found in res %d (pm=%d)\n",atom,
-		    atoms->atom[start].resnr,pm);
-	  break;
-	}
-	else 
-	  a0[j] = aa0;
-      }
-      if (j==4) /* Not broken out */
-	if (eq_imp(p->a,a0))
-	  return &i0->idih[n];
+  /* See if there are any impropers defined for this residue */
+  idihs = &hb[atoms->atom[start].resnr].rb[ebtsIDIHS];
+  for(n=0; n < idihs->nb; n++) {
+    for(j=0; (j<4); j++) {
+      atom=idihs->b[n].a[j];
+      aa0=search_atom(atom,start,atoms->nr,atoms->atom,atoms->atomname);
+      if (aa0 == -1) {
+	if (debug) 
+	  fprintf(debug,"Atom %s not found in res %d (maxresnr=%d) "
+		  "in is_imp\n",atom,atoms->atom[start].resnr,maxresnr);
+	break;
+      } else 
+	a0[j] = aa0;
     }
+    if (j==4) /* Not broken out */
+      if (eq_imp(p->a,a0))
+	return &idihs->b[n];
   }
   return NULL;
 }
@@ -365,68 +363,64 @@ static int n_hydro(atom_id a[],char ***atomname)
   return nh;
 }
 
-static void pdih2idih(t_param *alldih,int *nalldih,t_param idih[],int *nidih,
-		      t_atoms *atoms,int nrtp,t_restp rtp[],
-		      int nrdh,t_idihres idh[],bool bAlldih)
+static void pdih2idih(t_param *alldih, int *nalldih,t_param idih[],int *nidih,
+		      t_atoms *atoms, t_hackblock hb[],bool bAlldih)
 {
-  t_param   *dih,tmp_param;
-  int       ndih,imp;
-  char      *rname,*a0;
-  t_idihres *i0;
-  t_idih    *idihpar;
+  t_param   *dih;
+  int       ndih;
+  char      *a0;
+  t_rbondeds *idihs;
+  t_rbonded  *hbidih;
   int       i,j,k,l,start,aa0;
   int       *index,nind;
   atom_id   ai[MAXATOMLIST];
-  bool      bIsSet,bKeep;
+  bool      bStop,bIsSet,bKeep;
   int bestl,nh,minh;
-
+  
   /* First add all the impropers from the residue database
    * to the list.
    */
   start=0;
   for(i=0; (i<atoms->nres); i++) {
-    rname=*(atoms->resname[i]);
-    if (search_rtp(rname,nrtp,rtp) == NULL) 
-      fatal_error(0,"Residue %s not in residue database\n",rname);
-    else if ((i0=search_idih(rname,nrdh,idh)) != NULL) {
-      for(j=0; (j<i0->nidih); j++) {
-	for(k=0; (k<4); k++) {
-	  a0=i0->idih[j].ai[k];
-	  aa0=search_atom(a0,start,atoms->nr,atoms->atom,atoms->atomname);
-	  if (aa0 == -1) {
-	    if (debug) 
-	      fprintf(debug,"Atom %s not found in res %d\n",a0,
-		      atoms->atom[start].resnr);
-	    break;
-	  }
-	  else
-	    ai[k]=aa0;
+    idihs=&hb[i].rb[ebtsIDIHS];
+    for(j=0; (j<idihs->nb); j++) {
+      bStop=FALSE;
+      for(k=0; (k<4) && !bStop; k++) {
+	ai[k]=search_atom(idihs->b[j].a[k],start,
+			  atoms->nr,atoms->atom,atoms->atomname);
+	if (ai[k] == -1) {
+	  if (debug) 
+	    fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
+		    idihs->b[j].a[k], k, atoms->atom[start].resnr);
+	  bStop=TRUE;
 	}
-	if (k==4) {
-	  /* Not broken out */
-	  set_p(&(idih[*nidih]),ai,i0->idih[j].c,i0->idih[j].s);
-	  (*nidih)++;
-	}
+      }
+      if (!bStop) {
+	/* Not broken out */
+	set_p(&idih[*nidih],ai,NULL,idihs->b[j].s);
+	(*nidih)++;
       }
     }
     while ((start<atoms->nr) && (atoms->atom[start].resnr==i))
       start++;
   }
-
+  
   if (*nalldih == 0)
     return;
-
+  
   /* Copy the impropers and dihedrals to seperate arrays. */
   snew(dih,*nalldih);
   ndih = 0;
-  for(i=0; i<*nalldih; i++) 
-    if ((idihpar=is_imp(&(alldih[i]),atoms,nrdh,idh))) {
-      set_p(&(idih[*nidih]),alldih[i].a,idihpar->c,idihpar->s);
+  for(i=0; i<*nalldih; i++) {
+    hbidih = is_imp(&alldih[i],atoms,hb);
+    if ( hbidih ) {
+      set_p(&idih[*nidih],alldih[i].a,NULL,hbidih->s);
       (*nidih)++;
     } else {
-      cpparam(&(dih[ndih]),&(alldih[i]));
+      cpparam(&dih[ndih],&alldih[i]);
       ndih++;
     }
+  }
   
   /* Now, because this list still contains the double entries,
    * keep the dihedral with parameters or the first one.
@@ -540,25 +534,18 @@ static void get_atomnames_min(int n,char anm[4][12],
   }
 }
 
-void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
-	     t_params terps[],
-	     int nrtp,t_restp rtp[],
-	     int nra,t_resang ra[],int nrd,t_resdih rd[], 
-	     int nid,t_idihres idihs[],bool bAlldih)
+void gen_pad(t_nextnb *nnb, t_atoms *atoms, bool bH14,
+	     t_params plist[], t_hackblock hb[], bool bAlldih)
 {
   t_param *ang,*dih,*pai,*idih;
-  t_params *tdp;
-  t_resang *i_ra;
-  t_resdih *i_rd;
+  t_rbondeds *hbang, *hbdih;
   char    anm[4][12];
   int     res,minres,maxres;
   int     i,j,j1,k,k1,l,l1,m,n;
   int     maxang,maxdih,maxidih,maxpai;
   int     nang,ndih,npai,nidih,nbd;
   bool    bFound;
-
-  tdp = &(terps[F_PDIHS]);
-
+  
   /* These are the angles, pairs, impropers and dihedrals that we generate
    * from the bonds. The ones that are already there from the rtp file
    * will be retained.
@@ -568,14 +555,12 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   npai    = 0;
   ndih    = 0;
   maxang  = 6*nnb->nr;
-  maxdih  = 24*nnb->nr;
-  maxpai  = maxdih;
-  maxidih = maxdih;
+  maxdih  = maxpai = maxidih = 24*nnb->nr;
   snew(ang, maxang);
   snew(dih, maxdih);
   snew(pai, maxpai);
   snew(idih,maxidih);
-
+  
   /* extract all i-j-k-l neighbours from nnb struct */
   for(i=0; (i<nnb->nr); i++) 
     /* For all particles */
@@ -609,21 +594,21 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 	  res = 2*minres-maxres;
 	  do {
 	    res += maxres-minres;
-	    if ((i_ra=search_rang(*(atoms->resname[res]),nra,ra))) {
-	      for(l=0; (l<i_ra->na); l++) {
-		get_atomnames_min(3,anm,res,atoms,ang[nang].a); 
-		if (strcmp(anm[1],i_ra->rang[l].aj)==0) {
-		  bFound=FALSE;
-		  for (m=0; m<3; m+=2)
-		    bFound=(bFound ||
-			    ((strcmp(anm[m],i_ra->rang[l].ai)==0) &&
-			     (strcmp(anm[2-m],i_ra->rang[l].ak)==0)));
-		  if (bFound) { 
-		    for (m=0; m<MAXFORCEPARAM; m++)
-		      ang[nang].c[m] = i_ra->rang[l].c[m];
-		    sfree(ang[nang].s);
-		    ang[nang].s = strdup(i_ra->rang[l].s);
-		  }
+	    hbang=&hb[res].rb[ebtsANGLES];
+	    for(l=0; (l<hbang->nb); l++) {
+	      get_atomnames_min(3,anm,res,atoms,ang[nang].a); 
+	      if (strcmp(anm[1],hbang->b[l].AJ)==0) {
+		bFound=FALSE;
+		for (m=0; m<3; m+=2)
+		  bFound=(bFound ||
+			  ((strcmp(anm[m],hbang->b[l].AI)==0) &&
+			   (strcmp(anm[2-m],hbang->b[l].AK)==0)));
+		if (bFound) { 
+		  sfree(ang[nang].s);
+		  if (hbang->b[l].s)
+		    ang[nang].s = strdup(hbang->b[l].s);
+		  else
+		    ang[nang].s = strdup("");
 		}
 	      }
 	    }
@@ -647,54 +632,40 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		dih[ndih].AK=j1;
 		dih[ndih].AL=i;
 	      }
-	      bFound = FALSE;
-	      for(m=0; (m<tdp->nr) && !bFound; m++) {
-		bFound = TRUE;
-		for(n=0; n<4; n++)
-		  bFound = bFound && (tdp->param[m].a[n] == dih[ndih].a[n]);
+	      for (m=0; m<MAXFORCEPARAM; m++)
+		dih[ndih].c[m]=NOTSET;
+	      dih[ndih].s=strdup("");
+	      minres = atoms->atom[dih[ndih].a[0]].resnr;
+	      maxres = minres;
+	      for(m=1; m<4; m++) {
+		minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
+		maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
 	      }
-	      if (bFound) {
-		m--;
-		/* Copy parameters from the termini database */
-		for(n=0; n<MAXFORCEPARAM; n++)
-		  dih[ndih].c[n] = tdp->param[m].c[n];
-		dih[ndih].s = strdup(tdp->param[m].s);
-	      } else {
-		for (m=0; m<MAXFORCEPARAM; m++)
-		  dih[ndih].c[m]=NOTSET;
-		dih[ndih].s=strdup("");
-		minres = atoms->atom[dih[ndih].a[0]].resnr;
-		maxres = minres;
-		for(m=1; m<4; m++) {
-		  minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
-		  maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
-		}
-		res = 2*minres-maxres;
-		do {
-		  res += maxres-minres;
-		  if ((i_rd=search_rdih(*(atoms->resname[res]),nrd,rd))) {
-		    for(n=0; (n<i_rd->nd); n++) {
-		      get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
-		      bFound=FALSE;
-		      for (m=0; m<2; m++)
-			bFound=(bFound ||
-				((strcmp(anm[3*m],  i_rd->rdih[n].ai)==0) &&
-				 (strcmp(anm[1+m],  i_rd->rdih[n].aj)==0) &&
-				 (strcmp(anm[2-m],  i_rd->rdih[n].ak)==0) &&
-				 (strcmp(anm[3-3*m],i_rd->rdih[n].al)==0)));
-		      if (bFound) {
-			for (m=0; m<MAXFORCEPARAM-1; m++)
-			  dih[ndih].c[m] = i_rd->rdih[n].c[m];
-			sfree(dih[ndih].s);
-			dih[ndih].s = strdup(i_rd->rdih[n].s);
-			/* Set the last parameter to be able to see
-			   if the dihedral was in the rtp list */
-			dih[ndih].c[MAXFORCEPARAM-1] = 0;
-		      }
-		    }
+	      res = 2*minres-maxres;
+	      do {
+		res += maxres-minres;
+		hbdih=&hb[res].rb[ebtsPDIHS];
+		for(n=0; (n<hbdih->nb); n++) {
+		  get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
+		  bFound=FALSE;
+		  for (m=0; m<2; m++)
+		    bFound=(bFound ||
+			    ((strcmp(anm[3*m],  hbdih->b[n].AI)==0) &&
+			     (strcmp(anm[1+m],  hbdih->b[n].AJ)==0) &&
+			     (strcmp(anm[2-m],  hbdih->b[n].AK)==0) &&
+			     (strcmp(anm[3-3*m],hbdih->b[n].AL)==0)));
+		  if (bFound) {
+		    sfree(dih[ndih].s);
+		    if (hbdih->b[n].s)
+		      dih[ndih].s = strdup(hbdih->b[n].s);
+		    else
+		      dih[ndih].s = strdup("");
+		    /* Set the last parameter to be able to see
+		       if the dihedral was in the rtp list */
+		    dih[ndih].c[MAXFORCEPARAM-1] = 0;
 		  }
-		} while (res < maxres);
-	      }
+		}
+	      } while (res < maxres);
 	      nbd=nb_dist(nnb,i,l1);
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);
@@ -703,6 +674,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		pai[npai].AJ=max(i,l1);
 		pai[npai].C0=NOTSET;
 		pai[npai].C1=NOTSET;
+		sfree(pai[npai].s);
 		pai[npai].s =strdup("");
 		if (bH14 || !(is_hydro(atoms,pai[npai].AI) &&
 			      is_hydro(atoms,pai[npai].AJ)))
@@ -726,7 +698,7 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   /* Sort dihedrals with respect to j-k-i-l (middle atoms first) */
   fprintf(stderr,"before sorting: %d dihedrals\n",ndih);
   qsort(dih,ndih,(size_t)sizeof(dih[0]),dcomp);
-  pdih2idih(dih,&ndih,idih,&nidih,atoms,nrtp,rtp,nid,idihs,bAlldih);
+  pdih2idih(dih,&ndih,idih,&nidih,atoms,hb,bAlldih);
   fprintf(stderr,"after sorting: %d dihedrals\n",ndih);
   
   /* Now the dihedrals are sorted and doubles removed, this has to be done

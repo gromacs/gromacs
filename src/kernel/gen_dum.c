@@ -164,7 +164,7 @@ static void my_add_param(t_params *plist, int ai, int aj, real b)
 
 static void add_dum_atoms(t_params plist[], int dummy_type[], 
 			  int Heavy, int nrHatoms, int Hatoms[], 
-			  int nrheavies, int heavies[], char ***atomname)
+			  int nrheavies, int heavies[])
 {
   int i,j,ftype,other,moreheavy,bb;
   bool bSwapParity;
@@ -498,7 +498,7 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
 static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[], 
 			int nrfound, int *ats)
 {
-  int ndum,i;
+  int ndum;
   real dCGCE,dCEOH,dCGHH,tmp1;
   
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
@@ -944,7 +944,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	/* add dummy parameters to topology, 
 	   also get rid of negative dummy_types */
  	add_dum_atoms(plist, (*dummy_type), Heavy, nrHatoms, Hatoms,
- 		      nrheavies, heavies, at->atomname);
+ 		      nrheavies, heavies);
 	/* transfer mass of dummy atom to Heavy atom */
 	for(j=0; j<nrHatoms; j++) 
 	  if (is_dum((*dummy_type)[Hatoms[j]])) {

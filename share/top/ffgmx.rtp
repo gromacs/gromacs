@@ -2378,35 +2378,35 @@
    CHA   C4D
    CHA   C1A
  [ angles ]
-;   ai    aj    ak            c0      c1
-    NA    FE    NC           180       0
-    NB    FE    ND           180       0
+;   ai    aj    ak     
+    NA    FE    NC     ANG_180_0
+    NB    FE    ND     ANG_180_0
  [ dihedrals ]
-;   ai    aj    ak    al      c0      c1    mult
-    ND    FE    NA   C1A       0       0       2
-    NA    FE    NB   C1B       0       0       2
-    NB    FE    NC   C1C       0       0       2
-    NC    FE    ND   C1D       0       0       2
-    FE    NA   C1A   CHA       0       0       2
-    FE    NA   C4A   C3A       0       0       2
-    FE    NB   C1B   CHB       0       0       2
-    FE    NB   C4B   C3B       0       0       2
-    FE    NC   C1C   CHC       0       0       2
-    FE    NC   C4C   C3C       0       0       2
-    FE    ND   C1D   CHD       0       0       2
-    FE    ND   C4D   CHA       0       0       2
-    NA   C1A   C2A   C3A       0       0       2
-   C1A   C2A   C3A   C4A       0       0       2
-   C2A   C3A   C4A    NA       0       0       2
-    NB   C1B   C2B   C3B       0       0       2
-   C1B   C2B   C3B   C4B       0       0       2
-   C2B   C3B   C4B    NB       0       0       2
-    NC   C1C   C2C   C3C       0       0       2
-   C1C   C2C   C3C   C4C       0       0       2
-   C2C   C3C   C4C    NC       0       0       2
-    ND   C1D   C2D   C3D       0       0       2
-   C1D   C2D   C3D   C4D       0       0       2
-   C2D   C3D   C4D    ND       0       0       2
+;   ai    aj    ak    al      
+    ND    FE    NA   C1A       DIH_0_0_2
+    NA    FE    NB   C1B       DIH_0_0_2
+    NB    FE    NC   C1C       DIH_0_0_2
+    NC    FE    ND   C1D       DIH_0_0_2
+    FE    NA   C1A   CHA       DIH_0_0_2
+    FE    NA   C4A   C3A       DIH_0_0_2
+    FE    NB   C1B   CHB       DIH_0_0_2
+    FE    NB   C4B   C3B       DIH_0_0_2
+    FE    NC   C1C   CHC       DIH_0_0_2
+    FE    NC   C4C   C3C       DIH_0_0_2
+    FE    ND   C1D   CHD       DIH_0_0_2
+    FE    ND   C4D   CHA       DIH_0_0_2
+    NA   C1A   C2A   C3A       DIH_0_0_2
+   C1A   C2A   C3A   C4A       DIH_0_0_2
+   C2A   C3A   C4A    NA       DIH_0_0_2
+    NB   C1B   C2B   C3B       DIH_0_0_2
+   C1B   C2B   C3B   C4B       DIH_0_0_2
+   C2B   C3B   C4B    NB       DIH_0_0_2
+    NC   C1C   C2C   C3C       DIH_0_0_2
+   C1C   C2C   C3C   C4C       DIH_0_0_2
+   C2C   C3C   C4C    NC       DIH_0_0_2
+    ND   C1D   C2D   C3D       DIH_0_0_2
+   C1D   C2D   C3D   C4D       DIH_0_0_2
+   C2D   C3D   C4D    ND       DIH_0_0_2
  [ impropers ]
     FE   C1A   C4A    NA
     FE   C1B   C4B    NB

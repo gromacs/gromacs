@@ -54,8 +54,13 @@ extern void init_nnb(t_nextnb *nnb, int nr, int nrex);
 extern void done_nnb(t_nextnb *nnb);
 /* Cleanup the nnb struct */
 
+#ifdef DEBUG
+#define print_nnb(nnb, s) __print_nnb(nnb, s)
 extern void print_nnb(t_nextnb *nnb, char *s);
 /* Print the nnb struct */
+#else
+#define print_nnb(nnb, s)
+#endif
 
 extern void gen_nnb(t_nextnb *nnb,t_params plist[]);
 /* Generate a t_nextnb structure from bond information. 

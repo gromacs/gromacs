@@ -56,7 +56,9 @@ int bond_sort (const void *a, const void *b)
     return (sa->ai-sb->ai);
 }
 
-static void prints(char *str, int n, sortable *s)
+#ifdef DEBUG
+#define prints(str, n, s) __prints(str, n, s)
+static void __prints(char *str, int n, sortable *s)
 {
   int i;
 
@@ -69,6 +71,9 @@ static void prints(char *str, int n, sortable *s)
     fflush(debug);
   }
 }
+#else
+#define prints(str, n, s)
+#endif
 
 void init_nnb(t_nextnb *nnb, int nr, int nrex)
 {
@@ -110,7 +115,8 @@ void done_nnb (t_nextnb *nnb)
   nnb->nrex = 0;
 }
 
-void print_nnb(t_nextnb *nnb, char *s)
+#ifdef DEBUG
+void __print_nnb(t_nextnb *nnb, char *s)
 {
   int i,j,k;
 
@@ -127,6 +133,7 @@ void print_nnb(t_nextnb *nnb, char *s)
       }
   }
 }
+#endif
 
 void nnb2excl (t_nextnb *nnb, t_block *excl)
 {

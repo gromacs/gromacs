@@ -41,123 +41,148 @@ static char *SRCID_ter_db_c = "$Id$";
 #include "ter_db.h"
 #include "toputil.h"
 
-void check_kw(char *inf,char *x,char *keyw,char *file,int line)
+/* use bonded types definitions in hackblock.h */
+#define ekwRepl ebtsNR+1
+#define ekwAdd  ebtsNR+2
+#define ekwDel  ebtsNR+3
+#define ekwNR   3
+char *kw_names[ekwNR] = {
+  "replace", "add", "delete" 
+};
+
+int find_kw(char *keyw)
 {
-  if (strcasecmp(x,keyw) != 0)
-    fatal_error(0,"Reading Termini Database %s (source %s, line %d) looking for keyword %s, found %s",inf,file,line,keyw,x);
+  int i;
+  
+  for(i=0; i<ebtsNR; i++)
+    if (strcasecmp(btsNames[i],keyw) == 0)
+      return i;
+  for(i=0; i<ekwNR; i++)
+    if (strcasecmp(kw_names[i],keyw) == 0)
+      return ebtsNR + 1 + i;
+  
+  return NOTSET;
 }
 
-#define FATAL() fatal_error(0,"Reading Termini Database (source code line: %d)",__LINE__)
-#define CHECK_KW(x,kw) check_kw(inf,x,kw,__FILE__,__LINE__)
+#define FATAL() fatal_error(0,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(FILE *in,t_atom *a,t_atomtype *atype,char nnew[])
+static void read_atom(char *line, t_atom *a, t_atomtype *atype, 
+		      char nnew[], int *cgnr)
 {
+  int    i, n;
   char   type[12];
-  double m,q;
+  double m, q;
   
-  if (fscanf(in,"%s%s%lf%lf",nnew,type,&m,&q) != 4) FATAL();
+  if ( i=sscanf(line,"%s%s%lf%lf%n", nnew, type, &m, &q, &n) != 4 ) 
+    fatal_error(0,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 4, i, line);
   a->m=m;
   a->q=q;
   a->type=at2type(type,atype);
+  if ( sscanf(line+n,"%d", cgnr) != 1 )
+    *cgnr = NOTSET;
 }
 
 int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
 {
   FILE       *in;
-  char       bname[124],nnew[24],oldnm[24],buf[24],keyw[128],line[STRLEN];
-  char       anm[4][24];
-  t_hackblock *tb=NULL;
-  int        i,j,nb=0;
-
+  char       header[STRLEN],buf[STRLEN],line[STRLEN];
+ t_hackblock *tb;
+  int        i,j,n,ni,kwnr,nb,maxnb,nh;
+  
   in=libopen(inf);
   if (debug)
     fprintf(debug,"Opened %s\n",inf);
-    
-  while (fscanf(in,"%s%s",keyw,bname) == 2) {
-    if (debug) 
-      fprintf(debug,"block name %s\n",bname);
-    CHECK_KW(keyw,"BLOCK_NAME");
-    srenew(tb,nb+1);
-    
-    /* Name of block */
-    tb[nb].bname=strdup(bname);
-    
-    /* Number of replacements */
-    if (fscanf(in,"%s%d",keyw,&(tb[nb].nreplace)) != 2) FATAL();
-    CHECK_KW(keyw,"N_REPLACE");
-
-    if (debug) 
-      fprintf(debug,"N_REPLACE %d\n",tb[nb].nreplace);
-    snew(tb[nb].nm_repl,tb[nb].nreplace);
-    snew(tb[nb].new_nm,tb[nb].nreplace);
-    snew(tb[nb].repl_by,tb[nb].nreplace);
-    for(i=0; (i<tb[nb].nreplace); i++) {
-      if (fscanf(in,"%s",oldnm) != 1) FATAL();
-      tb[nb].nm_repl[i]=strdup(oldnm);
-      read_atom(in,&(tb[nb].repl_by[i]),atype,nnew);
-      tb[nb].new_nm[i]=strdup(nnew);
-    }
-    /* Number of additions */
-    if (fscanf(in,"%s%d",keyw,&(tb[nb].nadd)) != 2) FATAL();
-    CHECK_KW(keyw,"N_ADD");
-    if (debug) 
-      fprintf(debug,"N_ADD %d\n",tb[nb].nadd);
-    snew(tb[nb].ab,tb[nb].nadd);
-    snew(tb[nb].adder,tb[nb].nadd);
-    snew(tb[nb].add_nm,tb[nb].nadd);
-    for(i=0; (i<tb[nb].nadd); i++) {
-      read_ab(in,inf,&(tb[nb].ab[i]));
-      read_atom(in,&(tb[nb].adder[i]),atype,nnew);
-      tb[nb].add_nm[i]=strdup(nnew);
-    }
-    /* Number of impropers */
-    if (fscanf(in,"%s%d",keyw,&(tb[nb].nidih)) != 2) FATAL();
-    CHECK_KW(keyw,"N_IDIH");
-    if (debug) 
-      fprintf(debug,"N_IDIH %d\n",tb[nb].nidih);
-    snew(tb[nb].idih,tb[nb].nidih);
-    for(i=0; (i<tb[nb].nidih); i++) {
-      get_a_line(in,line,STRLEN);
-      buf[0] = '\0';
-      if (sscanf(line,"%s%s%s%s%s",anm[0],anm[1],anm[2],anm[3],buf) < 4)
-	FATAL();
-      for(j=0; (j<4); j++) {
-	tb[nb].idih[i].ai[j]=strdup(anm[j]);
+  
+  tb=NULL;
+  nb=-1;
+  maxnb=0;
+  kwnr=NOTSET;
+  get_a_line(in,line,STRLEN);
+  while (!feof(in)) {
+    if (get_header(line,header)) {
+      /* this is a new block, or a new keyword */
+      kwnr=find_kw(header);
+      
+      if (kwnr == NOTSET) {
+	nb++;
+	/* here starts a new block */
+	if ( nb >= maxnb ) {
+	  maxnb+=100;
+	  srenew(tb,maxnb);
+	}
+	clear_t_hackblock(&tb[nb]);
+	tb[nb].name=strdup(header);
       }
-      tb[nb].idih[i].s = strdup(buf);
+    } else {
+      if (nb < 0)
+	fatal_error(0,"reading termini database: "
+		    "directive expected before line:\n%s\n"
+		    "This might be a file in an old format.",line);
+      /* this is not a header, so it must be data */
+      if (kwnr >= ebtsNR) {
+	/* this is a hack: add/rename/delete atoms */
+	/* make space for hacks */
+	if (tb[nb].nhack >= tb[nb].maxhack) {
+	  tb[nb].maxhack+=10;
+	  srenew(tb[nb].hack, tb[nb].maxhack);
+	}
+	nh=tb[nb].nhack;
+	clear_t_hack(&(tb[nb].hack[nh]));
+	for(i=0; i<4; i++)
+	  tb[nb].hack[nh].a[i]=NULL;
+	tb[nb].nhack++;
+	
+	/* get data */
+	n=0;
+	if ( kwnr==ekwRepl || kwnr==ekwDel ) {
+	  if (sscanf(line, "%s%n", buf, &n) != 1) 
+	    fatal_error(0,"Reading Termini Database: "
+			"expected atom name on line\n%s",line);
+	  tb[nb].hack[nh].oname = strdup(buf);
+	  /* we only replace or delete one atom at a time */
+	  tb[nb].hack[nh].nr = 1;
+	} else if ( kwnr==ekwAdd ) {
+	  read_ab(line, inf, &(tb[nb].hack[nh]));
+	  get_a_line(in, line, STRLEN);
+	} else
+	  fatal_error(0,"unimplemented keyword number %d (%s:%d)",
+		      kwnr,__FILE__,__LINE__);
+	if ( kwnr==ekwRepl || kwnr==ekwAdd ) {
+	  snew(tb[nb].hack[nh].atom, 1);
+	  read_atom(line+n, tb[nb].hack[nh].atom, atype, 
+		    buf, &tb[nb].hack[nh].cgnr);
+	  tb[nb].hack[nh].nname = strdup(buf);
+	}
+      } else if (kwnr >= 0 && kwnr < ebtsNR) {
+	/* this is bonded data: bonds, angles, dihedrals or impropers */
+	srenew(tb[nb].rb[kwnr].b,tb[nb].rb[kwnr].nb+1);
+	n=0;
+	for(j=0; j<btsNiatoms[kwnr]; j++) {
+	  if ( sscanf(line+n, "%s%n", buf, &ni) == 1 )
+	    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = strdup(buf);
+	  else
+	    fatal_error(0,"Reading Termini Database: expected %d atom names (found %d) on line\n%s", btsNiatoms[kwnr], j-1, line);
+	  n+=ni;
+	}
+	for(   ; j<MAXATOMLIST; j++)
+	  tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = NULL;
+	strcpy(buf, "");
+	sscanf(line+n, "%s", buf);
+	tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = strdup(buf);
+	tb[nb].rb[kwnr].nb++;
+      } else
+	fatal_error(0,"Reading Termini Database: Expecting a header at line\n"
+		    "%s",line);
     }
-
-    /* Number of propers */
-    if (fscanf(in,"%s%d",keyw,&(tb[nb].ndih)) != 2) FATAL();
-    CHECK_KW(keyw,"N_DIH");
-    if (debug) 
-      fprintf(debug,"N_DIH %d\n",tb[nb].ndih);
-    snew(tb[nb].dih,tb[nb].ndih);
-    for(i=0; (i<tb[nb].ndih); i++) {
-      get_a_line(in,line,STRLEN);
-      buf[0] = '\0';
-      if (sscanf(line,"%s%s%s%s%s",anm[0],anm[1],anm[2],anm[3],buf) < 4)
-	FATAL();
-      for(j=0; (j<4); j++) {
-	tb[nb].dih[i].ai[j]=strdup(anm[j]);
-      }
-      tb[nb].dih[i].s = strdup(buf);
-    }
-    /* Number of delete atoms! */
-    if (fscanf(in,"%s%d",keyw,&(tb[nb].ndel)) != 2) FATAL();
-    CHECK_KW(keyw,"N_DELETE");
-    if (debug) 
-      fprintf(debug,"N_DELETE %d\n",tb[nb].ndel);
-    snew(tb[nb].nm_del,tb[nb].ndel);
-    for(i=0; (i<tb[nb].ndel); i++) {
-      if (fscanf(in,"%s",nnew) != 1) FATAL();
-      tb[nb].nm_del[i]=strdup(nnew);
-    }
-    nb++;
-  } 
+    get_a_line(in,line,STRLEN);
+  }
+  nb++;
+  srenew(tb,nb);
   
   fclose(in);
-
+  
+  if (debug) print_ter_db(debug, nb, tb, atype);
+  
   *tbptr=tb;
   return nb;
 }
@@ -171,7 +196,7 @@ t_hackblock *choose_ter(int nb,t_hackblock tb[],char *title)
     
   printf("%s\n",title);
   for(i=0; (i<nb); i++) 
-    printf("%2d: %s\n",i,tb[i].bname);
+    printf("%2d: %s\n",i,tb[i].name);
   do {
     fscanf(stdin,"%d",&sel);
   } while ((sel < 0) || (sel >= nb));
@@ -181,41 +206,65 @@ t_hackblock *choose_ter(int nb,t_hackblock tb[],char *title)
 
 static void print_atom(FILE *out,t_atom *a,t_atomtype *atype,char *newnm)
 {
-  fprintf(out,"%6s  %6s  %10e  %10e\n",
+  fprintf(out,"%s\t%s\t%g\t%g\n",
 	  newnm,type2nm(a->type,atype),a->m,a->q);
 }
 
 void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype) 
 {
-  int i,j,k;
+  int i,j,k,bt,nrepl,nadd,ndel;
   
   for(i=0; (i<nb); i++) {
-    fprintf(out,"%s\n",tb[i].bname);
-    fprintf(out,"%d\n",tb[i].nreplace);
-    for(j=0; (j<tb[i].nreplace); j++) {
-      fprintf(out,"%6s  ",tb[i].nm_repl[j]);
-      print_atom(out,&(tb[i].repl_by[j]),atype,tb[i].new_nm[j]);
+    fprintf(out,"[ %s ]\n",tb[i].name);
+    
+    /* first count: */
+    nrepl=0;
+    nadd=0;
+    ndel=0;
+    for(j=0; j<tb[i].nhack; j++) 
+      if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname!=NULL )
+	nrepl++;
+      else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname!=NULL )
+	nadd++;
+      else if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
+	ndel++;
+      else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname==NULL )
+	fatal_error(0,"invalid hack (%s) in termini database",tb[i].name);
+    if (nrepl) {
+      fprintf(out,"[ %s ]\n",kw_names[ekwRepl-ebtsNR-1]);
+      for(j=0; j<tb[i].nhack; j++) 
+	if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname!=NULL ) {
+	  fprintf(out,"%s\t",tb[i].hack[j].oname);
+	  print_atom(out,tb[i].hack[j].atom,atype,tb[i].hack[j].nname);
+	}
     }
-    fprintf(out,"%d\n",tb[i].nadd); 
-    for(j=0; (j<tb[i].nadd); j++) {
-      print_ab(out,&(tb[i].ab[j]));
-      print_atom(out,&(tb[i].adder[j]),atype,tb[i].add_nm[j]);
+    if (nadd) {
+      fprintf(out,"[ %s ]\n",kw_names[ekwAdd-ebtsNR-1]);
+      for(j=0; j<tb[i].nhack; j++) 
+	if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname!=NULL ) {
+	  print_ab(out,&(tb[i].hack[j]));
+	  fprintf(out,"\t");
+	  print_atom(out,tb[i].hack[j].atom,atype,tb[i].hack[j].nname);
+	}
     }
-    fprintf(out,"%d\n",tb[i].nidih);
-    for(j=0; (j<tb[i].nidih); j++) {
-      for(k=0; (k<4); k++) 
-	fprintf(out,"%6s  ",tb[i].idih[j].ai[k]);
-      fprintf(out,"\n");
+    if (ndel) {
+      fprintf(out,"[ %s ]\n",kw_names[ekwDel-ebtsNR-1]);
+      for(j=0; j<tb[i].nhack; j++)
+	if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
+	  fprintf(out,"%s\n",tb[i].hack[j].oname);
     }
-    fprintf(out,"%d\n",tb[i].ndih);
-    for(j=0; (j<tb[i].ndih); j++) {
-      for(k=0; (k<4); k++) 
-	fprintf(out,"%6s  ",tb[i].dih[j].ai[k]);
-      fprintf(out,"\n");
-    }
-    fprintf(out,"%d\n",tb[i].ndel);
-    for(j=0; (j<tb[i].ndel); j++)
-      fprintf(out,"%6s  \n",tb[i].nm_del[j]);
+    for(bt=0; bt<ebtsNR; bt++)
+      if (tb[i].rb[bt].nb) {
+	fprintf(out,"[ %s ]\n", btsNames[bt]);
+	for(j=0; j<tb[i].rb[bt].nb; j++) {
+	  for(k=0; k<btsNiatoms[bt]; k++) 
+	    fprintf(out,"%s%s",k?"\t":"",tb[i].rb[bt].b[j].a[k]);
+	  if ( tb[i].rb[bt].b[j].s )
+	    fprintf(out,"\t%s",tb[i].rb[bt].b[j].s);
+	  fprintf(out,"\n");
+	}
+      }
+    fprintf(out,"\n");
   }
 }
 

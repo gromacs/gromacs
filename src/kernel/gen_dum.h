@@ -33,7 +33,7 @@ static char *SRCID_gen_dum_h = "$Id$";
 
 #include "typedefs.h"
 #include "grompp.h"
-#include "pdb2gmx.h"
+#include "hackblock.h"
 
 /* stuff for pdb2gmx */
 

@@ -36,7 +36,6 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "smalloc.h"
 #include "copyrite.h"
 #include "string2.h"
-#include "pdb2gmx.h"
 #include "confio.h"
 #include "symtab.h"
 #include "vec.h"
@@ -59,9 +58,9 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "xlate.h"
 #include "specbond.h"
 #include "index.h"
+#include "hizzie.h"
 
 #define NREXCL 3
-char *hh[ehisNR]   = { "HISA", "HISB", "HISH", "HIS1" };
 
 static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
 {
@@ -73,7 +72,7 @@ static char *select_res(int nr,int resnr,char *name[],char *expl[],char *title)
   printf("\nType a number:"); fflush(stdout);
 
   if (scanf("%d",&sel) != 1)
-    fatal_error(0,"nswer me for res %s %d!",title,resnr+1);
+    fatal_error(0,"Answer me for res %s %d!",title,resnr+1);
   
   return name[sel];
 }
@@ -248,8 +247,6 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   int *nssbonds,t_ssbond **ssbonds,
 		   real angle,real distance)
 {
-  int i;
-
   /* Rename aromatics, lys, asp and histidine */
   if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE);
   if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE);
@@ -337,13 +334,20 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
     if (j==rptr->natom) {
       if ( ( ( pdba->atom[i].resnr == 0) && (atomnm[0] == 'H') &&
 	     ( (atomnm[1] == '1') || (atomnm[1] == '2') || 
-	       (atomnm[1] == '3') ) ) ||
-	   (strcasecmp(atomnm,"OXT")==0) )
+	       (atomnm[1] == '3') ) ) )
 	j=1;
-      else 
-	fatal_error(0,"Atom %s in residue %s %d not found in database"
-		    " while sorting atoms",atomnm,
-		    rptr->resname,pdba->atom[i].resnr+1);
+      else {
+	char buf[STRLEN];
+	
+	sprintf(buf,"Atom %s in residue %s %d not found in database\n"
+		"             while sorting atoms%n",atomnm,
+		rptr->resname,pdba->atom[i].resnr+1,&i);
+	if ( is_hydrogen(atomnm) )
+	  sprintf(buf+i,". Maybe different protonation state.\n"
+		  "             Remove this hydrogen or choose different "
+		  "protonation state");
+	fatal_error(0,buf);
+      }
     }
     /* make shadow array to be sorted into indexgroup */
     pdbi[i].resnr  = pdba->atom[i].resnr;
@@ -398,9 +402,9 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
   for(i=1; (i < pdba->nr); i++) {
     /* compare 'i' and 'i-1', throw away 'i' if they are identical 
        this is a 'while' because multiple alternate locations can be present */
-    while ( (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
-	    (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) &&
-	    (i < pdba->nr) ) {
+    while ( (i < pdba->nr) &&
+	    (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
+	    (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) ) {
       printf("deleting duplicate atom %4s  %s%4d",
 	     *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
 	     pdba->atom[i].resnr+1);
@@ -414,6 +418,7 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
       }
       printf("\n");
       pdba->nr--;
+      sfree(pdba->atomname[i]);
       for (j=i; j < pdba->nr; j++) {
 	pdba->atom[j]     = pdba->atom[j+1];
 	pdba->atomname[j] = pdba->atomname[j+1];
@@ -438,7 +443,7 @@ static char *choose_ff(void)
   FILE    *in;
   t_fff   *fff;
   int     i,nff,sel;
-  char    *c,buf[256],fn[32];
+  char    *c,buf[STRLEN],fn[32];
   
   in=libopen("FF.dat");
   fgets2(buf,255,in);
@@ -460,7 +465,8 @@ static char *choose_ff(void)
     for(i=0; (i<nff); i++)
       printf("%2d: %s\n",i,fff[i].desc);
     do {
-      scanf("%d",&sel);
+      fgets(buf,STRLEN,stdin);
+      sscanf(buf,"%d",&sel);
     } while ((sel < 0) || (sel >= nff));
   }
   else
@@ -477,7 +483,7 @@ static char *choose_ff(void)
   return fnsel;
 }
 
-void find_nc_ter(int natom,t_atoms *pdba,int *rn,int *rc/*,int ter_type[]*/)
+void find_nc_ter(t_atoms *pdba,int *rn,int *rc)
 {
   int rnr;
   
@@ -598,11 +604,7 @@ int main(int argc, char *argv[])
   int        *swap_index,si;
   int        bts[ebtsNR];
   t_restp    *restp;
-  t_resbond  *rb;
-  t_resang   *ra;
-  t_resdih   *rd;
-  t_idihres  *idih;
-  t_addh     *ah;
+  t_hackblock *ah;
   t_symtab   tab;
   t_atomtype *atype;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN];
@@ -631,7 +633,7 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan = FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bH14= FALSE,bSort=TRUE, bRetainH=FALSE;
+  static bool bH14= FALSE,bSort=TRUE, bRetainH=TRUE;
   static bool bAlldih=FALSE;
   static real angle=135.0,distance=0.3;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
@@ -835,25 +837,16 @@ int main(int argc, char *argv[])
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,&rb,&ra,&rd,&idih,atype,&tab);
+  nrtp=read_resall(ff,bts,&restp,atype,&tab);
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
-    print_resall(fp,bts,nrtp,restp,rb,ra,rd,idih,atype);
+    print_resall(fp,bts,nrtp,restp,atype);
     fclose(fp);
   }
     
   /* read hydrogen database */
-  if (bRetainH) {
-    nah=0;
-    ah=NULL;
-  } else {
-    nah=read_h_db(ff,&ah);
-  }
-  if (debug) {
-    fprintf(debug,"Hydrogen database:\n");
-    print_h_db(debug,nah,ah);
-  }  
-    
+  nah=read_h_db(ff,&ah);
+  
   /* Read Termini database... */
   sprintf(fn,"%s-n.tdb",ff);
   nNtdb=read_ter_db(fn,&ntdb,atype);
@@ -915,7 +908,7 @@ int main(int argc, char *argv[])
       write_sto_conf(fn,title,pdba,x,NULL,box);
     }
     
-    find_nc_ter(natom,pdba,&rN,&rC);
+    find_nc_ter(pdba,&rN,&rC);
     
     if ( (rN<0) || (rC<0) ) {
       printf("No N- or C-terminus found: "
@@ -929,13 +922,13 @@ int main(int argc, char *argv[])
 	  sel_ntdb=&(ntdb[1]);
 	else
 	  sel_ntdb=&(ntdb[3]);
-      printf("N-terminus: %s\n",sel_ntdb->bname);
+      printf("N-terminus: %s\n",sel_ntdb->name);
       
       if ( (rC>=0) && (bTerMan || (nCtdb<2)) )
 	sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
       else
 	sel_ctdb=&(ctdb[1]);
-      printf("C-terminus: %s\n",sel_ctdb->bname);
+      printf("C-terminus: %s\n",sel_ctdb->name);
     }
     
     /* Generate Hydrogen atoms (and termini) in the sequence */
@@ -1002,9 +995,8 @@ int main(int argc, char *argv[])
 	top_file2=itp_file;
       else
 	top_file2=top_file;
-
-    pdb2top(ff,top_file2,posre_fn,molname,nincl,incls,nmol,mols,pdba,
-	    &x,atype,&tab,bts,nrtp,rb,nrtp,restp,nrtp,ra,nrtp,rd,nrtp,idih,
+    
+    pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&tab,bts,nrtp,restp,
 	    sel_ntdb,sel_ctdb,bH14,rN,rC,bAlldih,
 	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL);
     

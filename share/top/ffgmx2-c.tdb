@@ -1,32 +1,23 @@
-BLOCK_NAME	None
-N_REPLACE 	0
-N_ADD		0
-N_IDIH		0
-N_DIH		0
-N_DELETE	0
+[ None ]
 
-BLOCK_NAME	COO-
-N_REPLACE	1
+[ COO- ]
+[ replace ]
 C	C	C	12.011	0.27
-N_ADD		1
+[ add ]
 2	3	C	CA	N
 	O	OM	15.9994	-0.635
-N_IDIH		1
+[ impropers ]
 C	O1	O2	CA
-N_DIH		0
-N_DELETE	1
+[ delete ]
 O
 
-BLOCK_NAME	COOH
-N_REPLACE	2
+[ COOH ]
+[ replace ]
 C	C	C	12.011	0.53
 O	O	OA	15.9994	-0.548
-N_ADD		2
+[ add ]
 1	2	C	CA	N
 	OT	O	15.9994	-0.38
 1	2	O	C	CA
 	HO	HO	1.008	0.398
-N_IDIH		0
-N_DIH		0
-N_DELETE	0
 

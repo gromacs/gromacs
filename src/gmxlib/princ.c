@@ -133,9 +133,9 @@ static void m_op(matrix mat,rvec x)
 
 #define NDIM 4
 
+#ifdef DEBUG
 static void ptrans(char *s,real **inten,real d[],real e[])
 {
-#ifdef DEBUG  
   int  m;
   real n,x,y,z;
   for(m=1; (m<NDIM); m++) {
@@ -147,12 +147,10 @@ static void ptrans(char *s,real **inten,real d[],real e[])
 	    s,x,y,z,sqrt(n),d[m],e[m]);
   }
   fprintf(stderr,"\n");
-#endif
 }
 
 void t_trans(matrix trans,real d[],real **ev)
 {
-#ifdef DEBUG  
   rvec x;
   int  j;
   for(j=0; (j<DIM); j++) {
@@ -162,15 +160,18 @@ void t_trans(matrix trans,real d[],real **ev)
     m_op(trans,x);
     fprintf(stderr,"d[%d]=%g\n",j,d[j+1]);
   }
-#endif
 }
+#endif
 
 void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
 		    matrix trans,rvec d)
 {
   int  i,j,ai,m,nrot;
   real mm,rx,ry,rz;
-  real **inten,dd[NDIM],e[NDIM],tvec[NDIM],**ev;
+  real **inten,dd[NDIM],tvec[NDIM],**ev;
+#ifdef DEBUG
+  real e[NDIM];
+#endif
   real temp;
   
   snew(inten,NDIM);
@@ -178,7 +179,10 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
   for(i=0; (i<NDIM); i++) {
     snew(inten[i],NDIM);
     snew(ev[i],NDIM);
-    dd[i]=e[i]=0.0;
+    dd[i]=0.0;
+#ifdef DEBUG
+    e[i]=0.0;
+#endif
   }
     
   for(i=0; (i<NDIM); i++)
@@ -200,7 +204,9 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
   inten[1][2]=inten[2][1];
   inten[1][3]=inten[3][1];
   inten[2][3]=inten[3][2];
+#ifdef DEBUG
   ptrans("initial",inten,dd,e);
+#endif
   
   for(i=0; (i<DIM); i++) {
     for(m=0; (m<DIM); m++)
@@ -209,7 +215,9 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
 
   /* Call numerical recipe routines */
   pr_jacobi(inten,3,dd,ev,&nrot);
+#ifdef DEBUG
   ptrans("jacobi",ev,dd,e);
+#endif
   
   /* Sort eigenvalues in descending order */
 #define SWAPPER(i) 			\
@@ -224,9 +232,10 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
   SWAPPER(1)
   SWAPPER(2)
   SWAPPER(1)
+#ifdef DEBUG
   ptrans("swap",ev,dd,e);
-  
   t_trans(trans,dd,ev);
+#endif
     
   for(i=0; (i<DIM); i++) {
     d[i]=dd[i+1];

@@ -37,7 +37,7 @@ static char *SRCID_ter_db_h = "$Id$";
 #endif /* HAVE_IDENT */
 
 #include "sysstuff.h"
-#include "pdb2gmx.h"
+#include "hackblock.h"
 
 extern int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype);
 /* Read database for N&C terminal hacking */

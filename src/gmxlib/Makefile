@@ -30,6 +30,7 @@ OBJ		= \
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
 		fnbf.o		gmxfio.o	h_db.o		\
+		hackblock.o					\
 		ifunc.o		index.o		invblock.o	\
 		javaio.o	lutab.o		macros.o	\
 		main.o		maths.o		matio.o		\

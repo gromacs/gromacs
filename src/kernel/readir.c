@@ -742,7 +742,7 @@ void do_index(char *ndx,
   if ((ntau_t != ntcg) || (nref_t != ntcg)) 
     fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and "
 		"%d tau_t values",ntcg,nref_t,ntau_t);
- 
+  
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;
