@@ -550,17 +550,15 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_param *p,
 
 void push_bondnow(t_params *bond, t_param *b)
 {
-  int nr   = bond->nr;
-
   if (debug) {
-    fprintf(debug,"push_bondnow: nr = %d\n",nr);
+    fprintf(debug,"push_bondnow: nr = %d\n",bond->nr);
     fflush(debug);
   }
   /* allocate one position extra */
   pr_alloc (1,bond);
 
   /* fill the arrays */
-  memcpy ((char *)&(bond->param[nr]),(char *)b,(size_t)sizeof(t_param));
+  memcpy ((char *)&(bond->param[bond->nr]),(char *)b,(size_t)sizeof(t_param));
 
   bond->nr++;
 }
@@ -582,7 +580,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  static char *ccformat[6]= {
+  static char *ccformat[MAXFORCEPARAM]= {
     "%lf",
     "%lf%lf",
     "%lf%lf%lf",
@@ -595,21 +593,37 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   double   cc[MAXFORCEPARAM];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB;
-  bool     bFoundA,bFoundB,bDef,bPert;
+  bool     bFoundA,bFoundB,bDef,bPert,bSwapParity;
   
   ftype = ifunc_index(d,1);
   nral  = NRAL(ftype);
+  for(j=0; j<MAXATOMLIST; j++)
+    aa[j]=NOTSET;
   nread = sscanf(line,aaformat[nral-1],
 		 &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
   if (nread < nral) {
     too_few();
     return;
-  }
-  else if (nread == nral) 
+  } else if (nread == nral) 
     ftype = ifunc_index(d,1);
-  else
+  else {
+    /* this is a hack to allow for dummy atoms with swapped parity */
+    bSwapParity = (aa[nral]<0);
+    if (bSwapParity)
+      aa[nral] = -aa[nral];
     ftype = ifunc_index(d,aa[nral]);
-
+    if (bSwapParity)
+      switch(ftype) {
+      case F_DUMMY3FAD:
+      case F_DUMMY3OUT:
+	break;
+      default:
+	fatal_error(0,"Negative function types only allowed for %s and %s",
+		    interaction_function[F_DUMMY3FAD].longname,
+		    interaction_function[F_DUMMY3OUT].longname);
+      }
+  }
+  
   /* Check for double atoms */
   for(i=0; (i<nral); i++)
     for(j=i+1; (j<nral); j++)
@@ -648,10 +662,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     /* Check whether we have to use the defaults */
     if (nread == nrfp)
       bDef = FALSE;
-  }
-  else {
+  } else
     nread = 0;
-  }
   /* nread now holds the number of force parameters read! */
   
   if (bDef) {
@@ -660,24 +672,39 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   
     if (nread < nrfpA) {
       if (!bFoundA) {
-	sprintf(errbuf,"No default %s types, using zeroes",
-		interaction_function[ftype].longname);
-	warning(errbuf);
-      }
-    }
-    else {
+	if (interaction_function[ftype].flags & IF_DUMMY) {
+	  /* set them to NOTSET, will be calculated later */
+	  for(j=0; (j<MAXFORCEPARAM); j++)
+	    param.c[j] = NOTSET;
+	  if (bSwapParity)
+	    param.C1 = -1; /* flag to swap parity of dummy construction */
+	} else {
+	  sprintf(errbuf,"No default %s types, using zeroes",
+		  interaction_function[ftype].longname);
+	  warning(errbuf);
+	}
+      } else
+	if (bSwapParity)
+	  switch(ftype) {
+	  case F_DUMMY3FAD:
+	    param.C0 = 360-param.C0;
+	    break;
+	  case F_DUMMY3OUT:
+	    param.C2 = -param.C2;
+	    break;
+	  }
+    } else {
       /* This implies nread < nrfp, and so perturbed values have not
-       * been read 
-       */
+       * been read */
       if (!bFoundB) {
-	/* implies !bFoundB */
 	/* We only have to issue a warning if these atoms are perturbed! */
 	bPert = FALSE;
 	for(j=0; (j<nral); j++)
 	  bPert = bPert || PERTURBED(at->atom[param.a[j]]);
 	
 	if (bPert) {
-	  sprintf(errbuf,"No default %s types for perturbed atoms, using normal values",interaction_function[ftype].longname);
+	  sprintf(errbuf,"No default %s types for perturbed atoms, "
+		  "using normal values",interaction_function[ftype].longname);
 	  warning(errbuf);
 	}
 	for(j=nrfpA; (j<nrfp); j++)
