@@ -9,7 +9,7 @@
  *
  *            VERSION 2.0
  * 
- * Copyright (c) 1991-1997
+ * Copyright (c) 1991-1999
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
  * 

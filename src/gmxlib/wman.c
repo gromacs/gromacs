@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  * 
  * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
 static char *SRCID_wman_c = "$Id$";
 

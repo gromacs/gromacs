@@ -1,28 +1,36 @@
-/* -*- C -*- */
 /*
- * Copyright (c) 1997-1999 Massachusetts Institute of Technology
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
+ * $Id$
+ * 
+ *       This source code is part of
+ * 
+ *        G   R   O   M   A   C   S
+ * 
+ * GROningen MAchine for Chemical Simulations
+ * 
+ *               VERSION 2.0
+ * 
+ * Copyright (c) 1991-1999
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ * 
+ * Also check out our WWW page:
+ * http://md.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ * 
+ * And Hey:
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-/* fftw.h -- system-wide definitions */
-/* $Id$ */
+#ifndef _fftw_h
+#define _fftw_h
 
-#ifndef FFTW_H
-#define FFTW_H
+static char *SRCID_fftw_h = "$Id$";
 
 #include <stdlib.h>
 #include <stdio.h>

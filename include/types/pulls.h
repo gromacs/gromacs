@@ -1,8 +1,31 @@
-/* It would be more logical to have a t_pullgrp and an array of those
-   for each type of group than a t_pullgrps for each type (pull, dyna 
-   and ref, at the moment) with an array of attributes for each group 
-   in that type. Oh well. PT 
-*/
+/*
+ * $Id$
+ * 
+ *       This source code is part of
+ * 
+ *        G   R   O   M   A   C   S
+ * 
+ * GROningen MAchine for Chemical Simulations
+ * 
+ *               VERSION 2.0
+ * 
+ * Copyright (c) 1991-1999
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ * 
+ * Also check out our WWW page:
+ * http://md.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ * 
+ * And Hey:
+ * Green Red Orange Magenta Azure Cyan Skyblue
+ */
 
 typedef enum {eStart, eAfm, eConstraint, eUmbrella, eTest} t_runtype;
 typedef enum {eCom, eComT0, eDyn, eDynT0} t_reftype;
