@@ -35,6 +35,7 @@ static char *SRCID_pppm_h = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 #include "complex.h"
+#include "fftgrid.h"
 
 extern real do_pppm(FILE *log,       bool bVerbose,
 		    bool bGenerGhat, char *ghatfn,
@@ -55,7 +56,6 @@ extern real do_ewald(FILE *log,       t_inputrec *ir,
  */
  
 extern real do_poisson(FILE *log,       bool bVerbose,
-		       bool bGenerGhat, char *ghatfn,
 		       t_inputrec *ir,  int natoms,
 		       rvec x[],        rvec f[],
 		       real charge[],   rvec box,
