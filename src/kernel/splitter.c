@@ -298,7 +298,7 @@ static void split_blocks(bool bVerbose,int nnodes,
   int      i,ii,ai,b0,b1;
   int      nodeid,last_shk,nbor;
   t_border *border;
-  double   tload;
+  double   tload,tcap;
   
   bool    bSHK;
   atom_id *shknum,*cgsnum;
@@ -313,9 +313,10 @@ static void split_blocks(bool bVerbose,int nnodes,
   border = mk_border(bVerbose,cgs->nra,cgsnum,shknum,&nbor);
 
   tload  = capacity[0]*cgs->nra;
+  tcap   = 1.0;
   nodeid = 0;
   /* Start at bor is 1, to force the first block on the first processor */
-  for(i=1; (i<nbor) && (tload < cgs->nra); i++) {
+  for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
     if(i<(nbor-1)) 
       b1=border[i+1].atom;
     else
@@ -329,14 +330,15 @@ static void split_blocks(bool bVerbose,int nnodes,
       /* Store the atom number here, has to be processed later */
       sblock->multinr[nodeid] = border[i].atom;
       maxatom[nodeid]         = b0;
+      tcap -= capacity[nodeid];
       nodeid++;
       
       /* Recompute target load */
       tload = b0 +
-	(cgs->nra-b0)*nnodes*capacity[nodeid]/(nnodes-nodeid);
+	(cgs->nra-b0)*capacity[nodeid]/tcap;
 
       if (debug)
-	fprintf(debug,"tload now is %g (nodeid %d)\n",tload,nodeid);
+	fprintf(debug,"tload: %g tcap: %g  nodeid: %d\n",tload,tcap,nodeid);
     } 
   }
   /* Now the last one... */
