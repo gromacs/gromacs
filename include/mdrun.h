@@ -46,8 +46,18 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "time.h"
 #include "edsam.h"
 
-/* ROUTINES from mdrun.c and nmrun.c */
+/* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
+		    bool bVerbose,bool bCompact,int stepout,
+		    t_parm *parm,t_groups *grps,
+		    t_topology *top,real ener[],
+		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+		    rvec buf[],t_mdatoms *mdatoms,
+		    t_nsborder *nsb,t_nrnb nrnb[],
+		    t_graph *graph,t_edsamyn *edyn);
+
+/* ROUTINES from nm.c */
+extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,int stepout,
 		    t_parm *parm,t_groups *grps,
 		    t_topology *top,real ener[],
