@@ -490,22 +490,29 @@ void get_ir(char *mdparin,char *mdparout,
     case epcISOTROPIC:
       if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))==1)
 	dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
-      else
-	fatal_error(0,"pressure coupling wrong number of values\n");
+      else {
+	fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
+	nerror++;
+      }
       break;
     case epcSEMIISOTROPIC:
     case epcSURFACETENSION:
       if (sscanf(dumstr[m],"%lf%lf",
 		 &(dumdub[m][XX]),&(dumdub[m][ZZ]))==2) 
 	dumdub[m][YY]=dumdub[m][XX];
-      else
-	fatal_error(0,"pressure coupling wrong number of values\n");
-      break;
+      else {
+	fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
+	nerror++;
+      }
+	break;
     case epcANISOTROPIC:
       if (sscanf(dumstr[m],"%lf%lf%lf%lf%lf%lf",
 		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]),
-		 &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6) 
-	fatal_error(0,"pressure coupling wrong number of values\n");
+		 &(dumdub[m][3]),&(dumdub[m][4]),&(dumdub[m][5]))!=6)
+	{
+	  fprintf(stderr,"ERROR: pressure coupling wrong number of values\n");
+	  nerror++;
+	}
       break;
     default:
       fatal_error(0,"Pressure coupling type %s not implemented yet",
