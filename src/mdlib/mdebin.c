@@ -491,17 +491,25 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
     fr.ndisre     = bDR ? fcd->disres.npr : 0;
     fr.rav        = fcd->disres.rav;
     fr.rt         = fcd->disres.rt;
-    nr[enxOR]     = bOR ? fcd->orires.nr : 0;
-    nr[enxORI]    = (bOR && (fcd->orires.oinsl != fcd->orires.otav)) ? 
-      fcd->orires.nr : 0;
+    /* Optional additional blocks */
+    for(i=0; i<enxNR; i++)
+      nr[i] = 0;
+    if (fcd->orires.nr > 0 && bOR) {
+      diagonalize_orires_tensors(&(fcd->orires));
+      nr[enxOR]     = fcd->orires.nr;
+      block[enxOR]  = fcd->orires.otav;
+      nr[enxORI]    = (fcd->orires.oinsl != fcd->orires.otav) ? 
+	fcd->orires.nr : 0;
+      block[enxORI] = fcd->orires.oinsl;
+      nr[enxORT]    = fcd->orires.nex*12;
+      block[enxORT] = fcd->orires.eig;
+    }
+    fr.nblock = 0;
+    for(i=0; i<enxNR; i++)
+      if (nr[i] > 0)
+	fr.nblock = i+1;
     fr.nr         = nr;
-    block[enxOR]  = fcd->orires.otav;
-    block[enxORI] = fcd->orires.oinsl;
     fr.block      = block;
-    if (fr.nr[enxOR])
-      fr.nblock   = 2;
-    else
-      fr.nblock   = 0;
     if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
       do_enx(fp_ene,&fr);
     break;
@@ -522,7 +530,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 		*(atoms->grpname[atoms->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
   
     if (mode==eprNORMAL && fcd->orires.nr>0)
-      print_orires_log(log,fcd);
+      print_orires_log(log,&(fcd->orires));
 
     fprintf(log,"   Energies %s\n",kjm);
     pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,steps,TRUE);  

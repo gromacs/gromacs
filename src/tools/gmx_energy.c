@@ -104,7 +104,8 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-static void get_orires_parms(char *topnm,int *nor,int **label,real **obs)
+static void get_orires_parms(char *topnm,
+			     int *nor,int *nex,int **label,real **obs)
 {
   t_topology top;
   t_inputrec ir;
@@ -126,12 +127,17 @@ static void get_orires_parms(char *topnm,int *nor,int **label,real **obs)
     fatal_error(0,"No orientation restraints in topology!\n");
   
   *nor = nb/3;
+  *nex = 0;
   snew(*label,*nor);
   snew(*obs,*nor);
   for(i=0; i<nb; i+=3) {
     (*label)[i/3] = ip[iatom[i]].orires.label;
     (*obs)[i/3]   = ip[iatom[i]].orires.obs;
+    if (ip[iatom[i]].orires.ex >= *nex)
+      *nex = ip[iatom[i]].orires.ex+1;
   }
+  fprintf(stderr,"Found %d orientation restraints with %d experiments",
+	  *nor,*nex);
 }
 
 int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
@@ -664,6 +670,10 @@ int gmx_energy(int argc,char *argv[])
     "not ensemble-averaged orientations and deviations instead of",
     "the time and ensemble averages.[PAR]",
 
+    "Option [TT]-oten[tt] plots the eigenvalues of the molecular order",
+    "tensor for each orientation restraint experiment. With option",
+    "[TT]-ovec[tt] also the eigenvectors are plotted.[PAR]",
+
     "With [TT]-fee[tt] an estimate is calculated for the free-energy",
     "difference with an ideal gas state: [BR]",
     "  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln < e^(Upot/kT) >[BR]",
@@ -686,7 +696,7 @@ int gmx_energy(int argc,char *argv[])
     
   };
   static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
-  static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE;
+  static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -712,8 +722,10 @@ int gmx_energy(int argc,char *argv[])
       "Number of degrees of freedom per molecule. Necessary for calculating the heat capacity" },
     { "-fluc", FALSE, etBOOL, {&bFluct},
       "Calculate autocorrelation of energy fluctuations rather than energy itself" },
-    { "-orinst",FALSE,etBOOL, {&bOrinst},
-      "Analyse instantaneous orientation data" } 
+    { "-orinst", FALSE, etBOOL, {&bOrinst},
+      "Analyse instantaneous orientation data" },
+    { "-ovec", FALSE, etBOOL, {&bOvec},
+      "Also plot the eigenvectors with -oten" }
   };
   static char *drleg[] = {
     "Running average",
@@ -725,7 +737,7 @@ int gmx_energy(int argc,char *argv[])
     "Volume",  "Pressure"
   };
   
-  FILE       *out,*fp_pairs=NULL,*fort=NULL,*fodt=NULL;
+  FILE       *out,*fp_pairs=NULL,*fort=NULL,*fodt=NULL,*foten=NULL;
   FILE       **drout;
   int        fp;
   int        timecheck=0;
@@ -735,19 +747,20 @@ int gmx_energy(int argc,char *argv[])
   t_enxframe *frame,*fr=NULL;
   int        cur=0;
 #define NEXT (1-cur)
-  int        nre,teller,teller_disre,oldstep,nor=0,norfr=0,enx_i=0;
+  int        nre,teller,teller_disre,oldstep,nor=0,nex=0,norfr=0,enx_i=0;
   real       oldt;
   real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
   int        *index,*pair,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
-  bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE;
+  bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
   bool       bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,dbl;
   real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
-  char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg, **odtleg;
+  char       **enm=NULL,**enm2=NULL,**leg=NULL,**pairleg,**odtleg,**otenleg;
   char       **nms;
   char       *orinst_sub = "@ subtitle \"instantaneous\"\n";
+  char       buf[256];
   t_filenm   fnm[] = {
     { efENX, "-f",    NULL,      ffREAD  },
     { efENX, "-f2",   NULL,      ffOPTRD },
@@ -757,9 +770,10 @@ int gmx_energy(int argc,char *argv[])
     { efXVG, "-pairs","pairs",   ffOPTWR },
     { efXVG, "-ora",  "orienta", ffOPTWR },
     { efXVG, "-ort",  "orientt", ffOPTWR },
-    { efXVG, "-oda",  "orideva",ffOPTWR },
-    { efXVG, "-odr",  "oridevr",ffOPTWR },
-    { efXVG, "-odt",  "oridevt",ffOPTWR },
+    { efXVG, "-oda",  "orideva", ffOPTWR },
+    { efXVG, "-odr",  "oridevr", ffOPTWR },
+    { efXVG, "-odt",  "oridevt", ffOPTWR },
+    { efXVG, "-oten", "oriten",  ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
     { efXVG, "-vis",  "visco",   ffOPTWR },
     { efXVG, "-ravg", "runavgdf",ffOPTWR }
@@ -782,6 +796,7 @@ int gmx_energy(int argc,char *argv[])
   bODR   = opt2bSet("-odr",NFILE,fnm);
   bODT   = opt2bSet("-odt",NFILE,fnm);
   bORIRE = bORA || bORT || bODA || bODR || bODT;
+  bOTEN  = opt2bSet("-oten",NFILE,fnm);
 
   snew(frame,2);
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
@@ -838,9 +853,10 @@ int gmx_energy(int argc,char *argv[])
       snew(enesum,nset+1);
     time = NULL;
 
+    if (bORIRE || bOTEN)
+      get_orires_parms(ftp2fn(efTPX,NFILE,fnm),&nor,&nex,&or_label,&oobs);
+    
     if (bORIRE) {
-      get_orires_parms(ftp2fn(efTPX,NFILE,fnm),&nor,&or_label,&oobs);
-      
       if (bOrinst)
 	enx_i = enxORI;
       else
@@ -903,6 +919,24 @@ int gmx_energy(int argc,char *argv[])
 	  xvgr_legend(fodt,norsel,odtleg);
 	}
       }
+    }
+    if (bOTEN) {
+      foten=xvgropen(opt2fn("-oten",NFILE,fnm),
+		     "Order tensor","Time (ps)","");
+      snew(otenleg,bOvec ? nex*12 : nex*3);
+      for(i=0; i<nex; i++) {
+	for(j=0; j<3; j++) {
+	  sprintf(buf,"eig%d",j+1);
+	  otenleg[(bOvec ? 12 : 3)*i+j] = strdup(buf);
+	}
+	if (bOvec) {
+	  for(j=0; j<9; j++) {
+	    sprintf(buf,"vec%d%s",j/3+1,j%3==0 ? "x" : (j%3==1 ? "y" : "z"));
+	    otenleg[12*i+3+j] = strdup(buf);
+	  }
+	}
+      }
+      xvgr_legend(foten,bOvec ? nex*12 : nex*3,otenleg);
     }
   }
   else {
@@ -1097,6 +1131,15 @@ int gmx_energy(int argc,char *argv[])
 	    }
 	    norfr++;
 	  }
+	  if (bOTEN && fr->nblock>enxORT) {
+	    if (fr->nr[enxORT] != nex*12)
+	      fatal_error(0,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",fr->nr[enxORT]/12,nex);
+	    fprintf(foten,"  %10f",fr->t);
+	    for(i=0; i<nex; i++)
+	      for(j=0; j<(bOvec?12:3); j++)
+	      	fprintf(foten," %g",fr->block[enxORT][i*12+j]);
+	    fprintf(foten,"\n");
+	  }
 	}
       }
       teller++;
@@ -1145,6 +1188,8 @@ int gmx_energy(int argc,char *argv[])
       fprintf(out,"%5d  %g\n",or_label[i],sqrt(odrms[i]/norfr));
     ffclose(out);
   }
+  if (bOTEN)
+    ffclose(foten);
 
   if (bDisRe) 
     analyse_disre(opt2fn("-viol",NFILE,fnm),
@@ -1169,6 +1214,7 @@ int gmx_energy(int argc,char *argv[])
     do_view(opt2fn_null("-oda",NFILE,fnm),nxy);
     do_view(opt2fn_null("-odr",NFILE,fnm),nxy);
     do_view(opt2fn_null("-odt",NFILE,fnm),nxy);
+    do_view(opt2fn_null("-oten",NFILE,fnm),nxy);
   }
   thanx(stderr);
   

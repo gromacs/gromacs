@@ -172,7 +172,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   /* Orientation restraints */
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,state->x,mdatoms,&(parm->ir),mcr,fcd);
+	      top->idef.iparams,state->x,mdatoms,&(parm->ir),mcr,
+	      &(fcd->orires));
 
   /* Dihedral Restraints */
   init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,

@@ -50,8 +50,8 @@ extern "C" {
 
 extern void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 			rvec *x,t_mdatoms *md,t_inputrec *ir,
-			t_commrec *mcr,t_fcdata *fcd);
-/* Initializes all the orientation restraint stuff in *fcd */
+			t_commrec *mcr,t_oriresdata *od);
+/* Initializes all the orientation restraint stuff in *od */
 
 extern real calc_orires_dev(t_commrec *mcr,
 			    int nfa,t_iatom forceatoms[],t_iparams ip[],
@@ -61,7 +61,14 @@ extern real calc_orires_dev(t_commrec *mcr,
  * Returns the weighted RMS deviation of the orientation restraints.
  */
 
-extern void print_orires_log(FILE *log,t_fcdata *fcd);
+extern void diagonalize_orires_tensors(t_oriresdata *od);
+/*
+ * Diagonalizes the order tensor(s) of the orienation restraints.
+ * For each experiment eig containts first 3 eigenvalues and then
+ * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
+ */
+
+extern void print_orires_log(FILE *log,t_oriresdata *od);
 /* Print order parameter, eigenvalues and eigenvectors to the log file */
 
 extern real orires(int nbonds,t_iatom fa[],t_iparams *fp,

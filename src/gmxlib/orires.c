@@ -49,14 +49,12 @@
 
 void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 		 rvec *xref,t_mdatoms *md,t_inputrec *ir,
-		 t_commrec *mcr,t_fcdata *fcd)
+		 t_commrec *mcr,t_oriresdata *od)
 {
   int  i,j,d,ex,nr,*nr_ex;
   real mtot;
   rvec com;
-  t_oriresdata *od;
-  
-  od = &(fcd->orires);
+
   od->fc  = ir->orires_fc;
   od->nex = 0;
   od->S   = NULL;
@@ -122,6 +120,8 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   snew(od->xref,od->nref);
   snew(od->xtmp,od->nref);
 
+  snew(od->eig,od->nex*12);
+
   /* Determine the reference structure on the master node.
    * Copy it to the other nodes after checking multi compatibility,
    * so we are sure the subsystems match before copying.
@@ -159,27 +159,23 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
   if (mcr) {
     fprintf(log,"  the orientation restraints are ensemble averaged over %d systems\n",mcr->nnodes);
 
-    check_multi_int(log,mcr,fcd->orires.nr,
+    check_multi_int(log,mcr,od->nr,
 		    "the number of orientation restraints");
-    check_multi_int(log,mcr,fcd->orires.nref,
+    check_multi_int(log,mcr,od->nref,
 		    "the number of fit atoms for orientation restraining");
     /* Copy the reference coordinates from the master to the other nodes */
-    gmx_sum(DIM*fcd->orires.nref,fcd->orires.xref[0],mcr);
+    gmx_sum(DIM*od->nref,od->xref[0],mcr);
   }
 
   please_cite(log,"Hess2003");
 }
 
-void print_orires_log(FILE *log,t_fcdata *fcd)
+void diagonalize_orires_tensors(t_oriresdata *od)
 {
-  int           ex,i,j,nrot;
-  bool          bZero;
+  int           ex,i,j,nrot,ord[DIM],t;
   matrix        S,TMP;
-  t_oriresdata  *od;
   static double **M=NULL,*eig,**v;
   
-  od = &(fcd->orires);
-
   if (M == NULL) {
     snew(M,DIM);
     for(i=0; i<DIM; i++)
@@ -199,17 +195,40 @@ void print_orires_log(FILE *log,t_fcdata *fcd)
 	M[i][j] = S[i][j];
     
     jacobi(M,DIM,eig,v,&nrot);
-
-    j=0;
-    for(i=1; i<DIM; i++)
-      if (sqr(eig[i]) > sqr(eig[j]))
-	j=i;
     
+    for(i=0; i<DIM; i++)
+      ord[i] = i;
+    for(i=0; i<DIM; i++)
+      for(j=i+1; j<DIM; j++)
+	if (sqr(eig[ord[j]]) > sqr(eig[ord[i]])) {
+	  t = ord[i];
+	  ord[i] = ord[j];
+	  ord[j] = t;
+	}
+    
+    for(i=0; i<DIM; i++)
+      od->eig[ex*12 + i] = eig[ord[i]];
+    for(i=0; i<DIM; i++)
+      for(j=0; j<DIM; j++)
+	od->eig[ex*12 + 3 + 3*i + j] = v[j][ord[i]];
+  }
+}
+
+void print_orires_log(FILE *log,t_oriresdata *od)
+{
+  int           ex,i;
+
+  diagonalize_orires_tensors(od);
+    
+  for(ex=0; ex<od->nex; ex++) {
     fprintf(log,"  Orientation experiment %d:\n",ex+1);
-    fprintf(log,"    order parameter: %g\n",eig[j]);
+    fprintf(log,"    order parameter: %g\n",od->eig[0]);
     for(i=0; i<DIM; i++)
       fprintf(log,"    eig: %6.3f   %6.3f %6.3f %6.3f\n",
-	      (eig[j] != 0) ? eig[i]/eig[j] : 0,v[XX][i],v[YY][i],v[ZZ][i]);
+	      (od->eig[0] != 0) ? od->eig[i]/od->eig[0] : od->eig[i],
+	      od->eig[DIM+i*DIM+XX],
+	      od->eig[DIM+i*DIM+YY],
+	      od->eig[DIM+i*DIM+ZZ]);
     fprintf(log,"\n");
   }
 }

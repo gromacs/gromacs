@@ -85,6 +85,7 @@ typedef struct {
   real   rmsdev;      /* The weighted (using kfac) RMS deviation            */
   rvec5  *tmp;        /* An array of temporary 5-vectors (nex);             */ 
   real   ***TMP;      /* An array of temporary 5x5 matrices (nex);          */
+  real   *eig;        /* Eigenvalues/vectors, for output only (nex x 12)    */
 } t_oriresdata;
 
 /* Dihedral restraining stuff */
