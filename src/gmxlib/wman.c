@@ -27,7 +27,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_wman_c = "$Id$";
 #include "string2.h"
@@ -42,6 +42,7 @@ static char *SRCID_wman_c = "$Id$";
 #include "strdb.h"
 #include "time.h"
 #include "readinp.h"
+#include "javaio.h"
 
 typedef struct {
   char *search,*replace;
@@ -245,7 +246,7 @@ static void write_texman(FILE *out,char *program,
     for(i=0; (i<nfile); i++)
       fprintf(out,"\\>{\\tt %s} \\'\\> {\\tt %s} \\' %s \\> "
 	      "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
-	      check_tex(fnm[i].opt),check_tex(fnm[i].fn),
+	      check_tex(fnm[i].opt),check_tex(fnm[i].fns[0]),
 	      check_tex(fileopt(fnm[i].flag)),
 	      check_tex(ftp2desc(fnm[i].ftp)));
     fprintf(out,"\\end{tabbing}\\vspace{-4ex}\n");
@@ -304,7 +305,7 @@ static void write_nroffman(FILE *out,
   if (nfile > 0) {
     for(i=0; (i<nfile); i++)
       fprintf(out,".BI \"%s\" \" %s \"\n",fnm[i].opt,
-	      fnm[i].fn);
+	      fnm[i].fns[0]);
   }
   if (npargs > 0) {
     for(i=0; (i<npargs); i++)
@@ -327,7 +328,7 @@ static void write_nroffman(FILE *out,
     fprintf(out,".SH FILES\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
-	      fnm[i].opt,fnm[i].fn,fileopt(fnm[i].flag),
+	      fnm[i].opt,fnm[i].fns[0],fileopt(fnm[i].flag),
 	      check_nroff(ftp2desc(fnm[i].ftp)));
   }
   
@@ -483,7 +484,7 @@ static void write_htmlman(FILE *out,
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
 	      "</TR>\n",
-	      fnm[i].opt,link,fnm[i].fn,fileopt(fnm[i].flag),
+	      fnm[i].opt,link,fnm[i].fns[0],fileopt(fnm[i].flag),
 	      NSR(ftp2desc(fnm[i].ftp)));
     }
     fprintf(out,"</TABLE>\n");
@@ -522,6 +523,8 @@ static void write_htmlman(FILE *out,
   fprintf(out,"<hr>\n<div ALIGN=RIGHT>\n");
   fprintf(out,"<font size=\"-1\"><a href=\"http://www.gromacs.org\">"
 	  "http://www.gromacs.org</a></font><br>\n");
+  fprintf(out,"<font size=\"-1\"><a href=\"mailto:gromacs@gromacs.org\">"
+	  "gromacs@gromacs.org</a></font><br>\n");
   fprintf(out,"</div>\n");
   fprintf(out,"</BODY>\n");
 }
@@ -607,7 +610,7 @@ static void write_bashcompl(FILE *out,
   fprintf(out,"case \"$p\" in\n");
   pr_enums(out,npargs,pa,eshellBASH);
   pr_fopts(out,nfile,fnm,eshellBASH);
-  fprintf(out,"esac; }; \ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
+  fprintf(out,"esac }\ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
 }
 
 void write_man(FILE *out,char *mantp,
@@ -653,6 +656,8 @@ void write_man(FILE *out,char *mantp,
     write_ttyman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs,FALSE);
   if (strcmp(mantp,"html")==0)
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
+  if (strcmp(mantp,"java")==0)
+    write_java(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"completion-zsh")==0)
     write_zshcompl(out,nfile,fnm,npar,par);
   if (strcmp(mantp,"completion-bash")==0)

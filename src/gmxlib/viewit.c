@@ -27,7 +27,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * Glycine aRginine prOline Methionine Alanine Cystine Serine
  */
 static char *SRCID_viewit_c = "$Id$";
 #include <string.h>
@@ -41,7 +41,7 @@ static int can_view_ftp[] = { 0,
   efEPS,           efXPM,         efXVG,          efPDB };
 #define NVIEW asize(can_view_ftp)
 static char* view_program[] = { NULL,
-  "ghostview",    "xv",       "xmgrace",          "xterm -e rasmol" };
+  "ghostview",    "xv",           NULL,           "xterm -e rasmol" };
 
 int can_view(int ftp)
 {
@@ -57,7 +57,7 @@ int can_view(int ftp)
 void do_view(char *fn, char *opts)
 {
 #define N_EXT 3
-  char buf[STRLEN], env[20], ext[N_EXT], *cmd, *defopts=NULL;
+  char buf[STRLEN], env[20], ext[N_EXT], *cmd;
   int ftp, n;
   
   if (bDoView() && fn) {
@@ -68,6 +68,16 @@ void do_view(char *fn, char *opts)
       strncpy(ext, ftp2ext(ftp), N_EXT);
       upstring(ext);
       sprintf(env, "GMX_VIEW_%s", ext);
+      switch(ftp) {
+      case efXVG:
+	if ( ! (cmd=getenv(env)) ) {
+	  if ( getenv("XMGRACE") )
+	    cmd="xmgrace";
+	  else
+	    cmd="xmgr";
+	}
+	break;
+      default:
       if ( (n=can_view(ftp)) ) {
 	if ( ! (cmd=getenv(env)) )
 	  cmd=view_program[n];
@@ -75,15 +85,9 @@ void do_view(char *fn, char *opts)
 	fprintf(stderr,"Don't know how to view file %s",fn);
 	return;
       }
-      /* Add command line option -nxy for xmgrace */
-      if (ftp == efXVG && strcmp(cmd,"xmgrace") == 0)
-	defopts = "-nxy";
+      }
       if ( strlen(cmd) ) {
-	sprintf(buf,"%s %s%s%s%s%s &",
-		cmd,
-		opts ? opts : "",opts ? " " : "",
-		defopts ? defopts : "",defopts ? " " : "",
-		fn);
+	sprintf(buf,"%s %s %s &",cmd,opts ? opts : "",fn);
 	fprintf(stderr,"Executing '%s'\n",buf);
 	system(buf);
       }
@@ -98,5 +102,5 @@ void view_all(int nf, t_filenm fnm[])
   for(i=0; i<nf; i++)
     if ( can_view(fnm[i].ftp) && is_output(&(fnm[i])) && 
 	 ( ! is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
-      do_view(fnm[i].fn, NULL);
+      do_view(fnm[i].fns[0], NULL);
 }

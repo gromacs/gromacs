@@ -7,8 +7,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.1
- * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ *                        VERSION 3.0
+ * 
+ * Copyright (c) 1991-2001
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -24,10 +28,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
- * For more info, check our website at http://www.gromacs.org
+ * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
  * 
  * And Hey:
- * Grunge ROck MAChoS
+ * Giving Russians Opium May Alter Current Situation
  */
 
 #ifndef _filenm_h
@@ -45,9 +49,9 @@ static char *SRCID_filenm_h = "$Id$";
 #ifdef CPLUSPLUS
 extern "C" {
 #endif
-
+  
 #include "futil.h"
-
+  
 void set_default_file_name(char *name);
 /* Set the default file name for all file types to name */
 
@@ -78,13 +82,15 @@ extern void pr_fopts(FILE *fp,int nf,t_filenm tfn[], int shell);
 extern void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 			    bool bKeep);
 /* Parse command line for file names. When bKeep is set args are 
- * not removed from argv.
- */
+ * not removed from argv. */
 
 extern char *opt2fn(char *opt,int nfile,t_filenm fnm[]);
-/* Return the filenm belonging top cmd-line option opt, or NULL when 
- * no such option. 
- */
+/* Return the filename belonging to cmd-line option opt, or NULL when 
+ * no such option. */
+
+extern int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[]);
+/* Return the filenames belonging to cmd-line option opt, or NULL when 
+ * no such option. */
 
 #define opt2FILE(opt,nfile,fnm,mode) ffopen(opt2fn(opt,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
@@ -95,6 +101,10 @@ extern int fn2ftp(char *fn);
 extern char *ftp2fn(int ftp,int nfile,t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found. */
 
+extern int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[]);
+/* Return the number of files for the first option with type ftp
+   and the files in **fns[] (will be allocated), or NULL when none found. */
+  
 extern char *ftp2filter(int ftp);
 /* Return a file extension filter for file type */
 

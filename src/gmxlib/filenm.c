@@ -27,7 +27,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Great Red Owns Many ACres of Sand 
+ * S  C  A  M  O  R  G
  */
 static char *SRCID_filenm_c = "$Id$";
 #include <string.h>
@@ -263,24 +263,31 @@ void pr_def(FILE *fp,int ftp)
 
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 {
-  int  i,j;
+  int  i,j,f;
   char buf[256],*wbuf;
 #define OPTLEN 4
 #define NAMELEN 14
+#define FN_OPT_FORMAT "%4s %14s  %-12s"
   fprintf(fp,"%6s %12s  %-12s  %s\n",
 	  "Option","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
   for(i=0; (i<nf); i++) {
-    sprintf(buf, "%4s %14s  %-12s  %s\n", tfn[i].opt,tfn[i].fn,
-	    fileopt(tfn[i].flag),deffile[tfn[i].ftp].descr);
+    for(f=0; f<tfn[i].nf; f++) {
+      sprintf(buf, "%4s %14s  %-12s", f==0?tfn[i].opt:"", tfn[i].fns[f],
+	      f==0?fileopt(tfn[i].flag):"");
+      if ( f < tfn[i].nf-1 )
+	fprintf(fp, "%s\n", buf);
+    }
+    strcat(buf, deffile[tfn[i].ftp].descr);
     if ( (strlen(tfn[i].opt)>OPTLEN) && 
-	 (strlen(tfn[i].opt)<=((OPTLEN+NAMELEN)-strlen(tfn[i].fn))) ) {
+	 (strlen(tfn[i].opt)<=
+	  ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nf-1]))) ) {
       for(j=strlen(tfn[i].opt); 
 	  j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
 	buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
     }
     wbuf=wrap_lines(buf,80,35);
-    fprintf(fp,"%s",wbuf);
+    fprintf(fp,"%s\n",wbuf);
     sfree(wbuf);
   }
   fprintf(fp,"\n");
@@ -407,6 +414,13 @@ static void set_extension(char *buf,int ftp)
     strcat(buf,df->ext);
 }
 
+static void add_filenm(t_filenm *fnm, char *filenm)
+{
+  srenew(fnm->fns, fnm->nf+1);
+  fnm->fns[fnm->nf] = strdup(filenm);
+  fnm->nf++;
+}
+
 static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
 {
   char buf[256],buf2[256];
@@ -449,7 +463,7 @@ static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
     /* Use the first extension type */
     set_extension(buf,ftps[0]);
 
-  fnm->fn = strdup(buf);
+  add_filenm(fnm, buf);
 }
 
 static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
@@ -486,7 +500,7 @@ static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
       strcpy(buf,deffile[fnm->ftp].defnm);
     set_extension(buf,fnm->ftp);
     
-    fnm->fn=strdup(buf);
+    add_filenm(fnm, buf);
   }
 }
 
@@ -519,15 +533,17 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	  DO_SET(fnm[j]);
 	  bRemove[i]=TRUE;
 	  i++;
-	  if ((i < *argc) && (argv[i][0] != '-')) {
+	  /* check if we are out of arguments for this option */
+	  if ( (i >= *argc) || (argv[i][0] == '-') )
+	    set_filenm(&fnm[j],fnm[j].fn,FALSE);
+	  /* sweep up all file arguments for this option */
+	  while ((i < *argc) && (argv[i][0] != '-')) {
 	    set_filenm(&fnm[j],argv[i],TRUE);
 	    bRemove[i]=TRUE;
 	    i++;
 	  }
-	  else
-	    set_filenm(&fnm[j],fnm[j].fn,FALSE);
 
-	  break;
+	  break; /* jump out of 'j' loop */
 	}
       }
       /* No file found corresponding to option argv[i] */
@@ -555,10 +571,24 @@ char *opt2fn(char *opt,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (strcmp(opt,fnm[i].opt)==0)
-      return fnm[i].fn;
+      return fnm[i].fns[0];
 
   fprintf(stderr,"No option %s\n",opt);
   return NULL;
+}
+
+int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[])
+{
+  int i;
+  
+  for(i=0; (i<nfile); i++)
+    if (strcmp(opt,fnm[i].opt)==0) {
+      *fns = fnm[i].fns;
+      return fnm[i].nf;
+    }
+  
+  fprintf(stderr,"No option %s\n",opt);
+  return 0;
 }
 
 char *ftp2fn(int ftp,int nfile,t_filenm fnm[])
@@ -567,10 +597,24 @@ char *ftp2fn(int ftp,int nfile,t_filenm fnm[])
   
   for(i=0; (i<nfile); i++)
     if (ftp == fnm[i].ftp)
-      return fnm[i].fn;
+      return fnm[i].fns[0];
   
   fprintf(stderr,"ftp2fn: No filetype %s\n",deffile[ftp].ext);
   return NULL;
+}
+
+int ftp2fns(char **fns[], int ftp,int nfile,t_filenm fnm[])
+{
+  int i;
+  
+  for(i=0; (i<nfile); i++)
+    if (ftp == fnm[i].ftp) {
+      *fns = fnm[i].fns;
+      return fnm[i].nf;
+    }
+  
+  fprintf(stderr,"ftp2fn: No filetype %s\n",deffile[ftp].ext);
+  return 0;
 }
 
 bool ftp2bSet(int ftp,int nfile,t_filenm fnm[])
@@ -608,7 +652,7 @@ char *opt2fn_null(char *opt,int nfile,t_filenm fnm[])
       if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))
 	return NULL;
       else
-	return fnm[i].fn;
+	return fnm[i].fns[0];
     }
   fprintf(stderr,"No option %s\n",opt);
   return NULL;
@@ -623,7 +667,7 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
       if (IS_OPT(fnm[i]) && !IS_SET(fnm[i]))
 	return NULL;
       else
-	return fnm[i].fn;
+	return fnm[i].fns[0];
     }
   fprintf(stderr,"ftp2fn: No filetype %s\n",deffile[ftp].ext);
   return NULL;

@@ -27,7 +27,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gyas ROwers Mature At Cryogenic Speed
+ * Great Red Owns Many ACres of Sand 
  */
 static char *SRCID_mgmx_c = "$Id$";
 #include <string.h>
@@ -549,8 +549,8 @@ static windex mk_filedlgs(int parent,int top,int nfile,
     ftp = fnm[i].ftp;
     dx  = (i % 2)*50;
     sprintf(dbuf,"%s [%s]",ftp2desc(ftp),fileopt(fnm[i].flag));
-    if ((fn = strrchr(fnm[i].fn,'/')) == NULL)
-      fn = fnm[i].fn;
+    if ((fn = strrchr(fnm[i].fns[0],'/')) == NULL)
+      fn = fnm[i].fns[0];
     else
       fn++;
     
@@ -591,14 +591,14 @@ static windex mk_filedlgs(int parent,int top,int nfile,
 	XtSetArg(args[narg],XmNlabelString,   char2xms("Browse")); narg++;
 	break;
       case nwcTEXT:
-	XtSetArg(args[narg],XmNvalue,         fnm[i].fn);   narg++;
+	XtSetArg(args[narg],XmNvalue,         fnm[i].fns[0]);   narg++;
 	break;
       }
       www[j] = add_widget(XtCreateWidget(wname[j],wc[j],
 					 get_widget(parent),args,narg),dbuf);
     }
     fnm_index[i] = www[nwcTEXT];
-    set_windex_orignm(www[nwcTEXT],fnm[i].fn);
+    set_windex_orignm(www[nwcTEXT],fnm[i].fns[0]);
     set_widget_ftp(www[nwcFDLG],ftp);
     set_widget_other(www[nwcFDLG],get_widget(www[nwcTEXT]));
     
@@ -1056,8 +1056,8 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
     XtGetValues(www,args,narg);
     sprintf(buf,"%s%s",get_widget_dir(fnm_index[i]),fn);
     XtFree(fn);
-    sfree(fnm[i].fn);
-    fnm[i].fn = strdup(buf);
+    sfree(fnm[i].fns[0]);
+    fnm[i].fns[0] = strdup(buf);
     if (is_optional(&(fnm[i]))) {
       www = get_widget_other(fnm_index[i],FALSE);
       if (www != 0) {
@@ -1070,11 +1070,11 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
       else
 	fatal_error(0,"No toggle button for optional file (option %s)",
 		    fnm[i].opt);
-      if (strcmp(fnm[i].fn,get_windex_orignm(fnm_index[i])) != 0) {
+      if (strcmp(fnm[i].fns[0],get_windex_orignm(fnm_index[i])) != 0) {
 	if (debug) {
 	  fprintf(debug,"File corr. to option %s has been modified from\n"
 		  "'%s' to '%s'\n",fnm[i].opt,
-		  get_windex_orignm(fnm_index[i]),fnm[i].fn);
+		  get_windex_orignm(fnm_index[i]),fnm[i].fns[0]);
 	}
 	fnm[i].flag = fnm[i].flag | ffSET;
       }

@@ -316,6 +316,7 @@ int main(int argc,char *argv[])
   char        *grpname;
 
   t_filenm fnm[] = {
+    { efTRX, "-f",  NULL,     ffRDMULT },
       { efTRX, "-o", "trajout", ffWRITE },
       { efNDX, NULL,  NULL,     ffOPTRD }
   };
@@ -323,7 +324,7 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS|PCA_BE_NICE|PCA_TIME_UNIT,
+  parse_common_args(&argc,argv,PCA_BE_NICE|PCA_TIME_UNIT,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 
@@ -344,11 +345,7 @@ int main(int argc,char *argv[])
   for (i=0; i<prec; i++)
       xtcpr*=10;
   
-  nfile=0;
-      
-  snew(fnms,argc);
-  for(i=1; (i<argc); i++) 
-      fnms[nfile++]=argv[i];
+  nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
   if(!nfile)
       fatal_error(0,"No input files!");

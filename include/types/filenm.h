@@ -1,5 +1,4 @@
 /*
- * $Id$
  * 
  *                This source code is part of
  * 
@@ -7,8 +6,12 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.1
- * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ *                        VERSION 3.0
+ * 
+ * Copyright (c) 1991-2001
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -24,10 +27,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
  * 
- * For more info, check our website at http://www.gromacs.org
+ * Do check out http://www.gromacs.org , or mail us at gromacs@gromacs.org .
  * 
  * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * Good ROcking Metal Altar for Chronical Sinners
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -57,18 +60,22 @@ enum {
 typedef struct {
   int  ftp;		/* File type (see enum above)		*/
   char *opt;		/* Command line option			*/
-  char *fn;		/* File name				*/
-  unsigned long flag;		/* Flag for all kinds of info (see defs)*/
+  char *fn;		/* File name (as set in source code)	*/
+  unsigned long flag;	/* Flag for all kinds of info (see defs)*/
+  int  nf;		/* number of files			*/
+  char **fns;		/* File names				*/
 } t_filenm;
 
-#define ffSET    1<<0
-#define ffREAD   1<<1
-#define ffWRITE  1<<2
-#define ffOPT    1<<3
-#define ffLIB    1<<4
-#define ffRW     (ffREAD  | ffWRITE)
-#define ffOPTRD  (ffREAD  | ffOPT)
-#define ffOPTWR  (ffWRITE | ffOPT)
-#define ffOPTRW  (ffRW    | ffOPT)
-#define ffLIBRD  (ffREAD  | ffLIB)
+#define ffSET	1<<0
+#define ffREAD	1<<1
+#define ffWRITE	1<<2
+#define ffOPT	1<<3
+#define ffLIB	1<<4
+#define ffMULT	1<<5
+#define ffRW	(ffREAD	| ffWRITE)
+#define ffOPTRD	(ffREAD	| ffOPT)
+#define ffOPTWR	(ffWRITE| ffOPT)
+#define ffOPTRW	(ffRW	| ffOPT)
+#define ffLIBRD	(ffREAD	| ffLIB)
 #define ffLIBOPTRD (ffOPTRD | ffLIB)
+#define ffRDMULT   (ffREAD  | ffMULT)
