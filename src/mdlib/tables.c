@@ -30,6 +30,7 @@ static char *SRCID_tables_c = "$Id$";
 
 #include <math.h>
 #include "typedefs.h"
+#include "names.h"
 #include "smalloc.h"
 #include "fatal.h"
 #include "futil.h"
@@ -50,6 +51,10 @@ bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 
 /* Index in the table that says which function to use */
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
+
+#define pow2(x) ((x)*(x))
+#define pow3(x) ((x)*(x)*(x))
+#define pow4(x) ((x)*(x)*(x)*(x))
 			  
 void spline(real x[],real y[],int n,real yp1,real ypn,real y2[])
 {
@@ -180,7 +185,7 @@ void fill_table(int n0,int n,real x[],
   int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
-  real k_rf,rffac2;
+  real k_rf,rffac2,expr;
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
@@ -198,32 +203,33 @@ void fill_table(int n0,int n,real x[],
 	     (tp == etabCOULSwitch));
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
-	     
+
   if (bCoulomb[tp]) {
     r1 = fr->rcoulomb_switch;
     rc = fr->rcoulomb;
-  } else {
+  } 
+  else {
     r1 = fr->rvdw_switch;
     rc = fr->rvdw;
   }
   k_rf   = fr->k_rf;
   rffac2 = k_rf*2.0;
   if (bSwitch)
-    ksw  = 1.0/pow((rc-r1),3.0);
+    ksw  = 1.0/pow3(rc-r1);
   else
     ksw  = 0.0;
   if (bShift) {
-    if (tp==etabShift) 
+    if (tp == etabShift) 
       p=1;
-    else
-      if (tp==etabLJ6Shift) 
-	p=6; 
-      else 
-	p=12;
-    A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc,p+2)*pow(rc-r1,2));
-    B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc,p+2)*pow(rc-r1,3));
-    C = pow(rc,-p)-A/3.0*pow(rc-r1,3)-B/4.0*pow(rc-r1,4);
-    if (tp==etabLJ6Shift) {
+    else if (tp == etabLJ6Shift) 
+      p=6; 
+    else 
+      p=12;
+    
+    A = p * ((p+1)*r1-(p+4)*rc)/(pow(rc,p+2)*pow2(rc-r1));
+    B = -p * ((p+1)*r1-(p+3)*rc)/(pow(rc,p+2)*pow3(rc-r1));
+    C = 1.0/pow(rc,p)-A/3.0*pow(rc-r1,3)-B/4.0*pow4(rc-r1);
+    if (tp == etabLJ6Shift) {
       A=-A;
       B=-B;
       C=-C;
@@ -231,6 +237,7 @@ void fill_table(int n0,int n,real x[],
     A_3=A/3.0;
     B_4=B/4.0;
   }
+  if (debug) { fprintf(debug,"Further\n"); fflush(debug); }
     
 #ifdef DEBSW
   fp=xvgropen("switch.xvg","switch","r","s");
@@ -238,8 +245,8 @@ void fill_table(int n0,int n,real x[],
   for(i=n0; (i<=n); i++) {
     r        = x[i];
     r2       = r*r;
-    r6       = pow(r2,-3.0);
-    r12      = pow(r2,-6.0);
+    r6       = 1.0/(r2*r2*r2);
+    r12      = r6*r6;
     Vtab[i]  = 0.0;
     Ftab[i]  = 0.0;
     Vtab2[i] = 0.0;
@@ -323,10 +330,11 @@ void fill_table(int n0,int n,real x[],
       Ftab2[i] = 6.0/(r2*r2);
       break;
     case etabEXPMIN:
-      Vtab[i]  = exp(-r);
-      Ftab[i]  = exp(-r);
-      Vtab2[i] = exp(-r);
-      Ftab2[i] = exp(-r);
+      expr     = exp(-r);
+      Vtab[i]  = expr;
+      Ftab[i]  = expr;
+      Vtab2[i] = expr;
+      Ftab2[i] = expr;
       break;
     default:
       fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
@@ -363,6 +371,7 @@ void fill_table(int n0,int n,real x[],
     Ftab[i]  /= r;
     Ftab2[i] /= r;
   }
+
 #ifdef DEBSW
   fclose(fp);
 #endif
@@ -370,10 +379,10 @@ void fill_table(int n0,int n,real x[],
 
 void make_tables(t_forcerec *fr,bool bVerbose)
 {
-  char *fns[etiNR]    = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
+  static   char *fns[etiNR] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE     *fp;
   real     x0,y0,yp;
-  int      i,j,k,n0,n,tabsel[etiNR],ntabs;
+  int      i,j,k,n0,n,tabsel[etiNR];
   real     *x,*xnormal,*xexp=NULL,*Vtab,*Vtab2,*Ftab,*Ftab2;
   
 #ifdef DOUBLE
@@ -396,7 +405,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   
   /* Now fill three tables with 
    * Dispersion, Repulsion and Coulomb (David's function)
-   * or Reaction Field, or Plain Coulomb
+   * or Reaction Field, or Plain Coulomb 
    * respectively.
    */
   /* Temp storage */

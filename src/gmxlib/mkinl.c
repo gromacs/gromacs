@@ -1284,7 +1284,7 @@ void finnerloop(char *loopname)
       }
       else {
 	comment("Buckingham");
-	p_state("b",ARR(nbfp,tjA+1));
+	p_state("b",ARR(nbfp,tjA+2));
 	p_state("r1t","b*r1*exptabscale");
 	p_state("n0","r1t");
 	if (bC)
@@ -1293,7 +1293,7 @@ void finnerloop(char *loopname)
 	  p_state("n1","12*n0+1");
 	p_state("eps","r1t-n0");
 	p_state("eps2","eps*eps");
-	p_state("a",ARR(nbfp,tjA));
+	p_state("a",ARR(nbfp,tjA+1));
 	nflop += 4;
 	
 	nflop += fextract("n1+8");
@@ -1332,12 +1332,12 @@ void finnerloop(char *loopname)
       p_state("rinv6","rinv2O*rinv2O*rinv2O");
       sprintf(buf,"ntiA+3*%s",IARR(type,jnr));
       p_state("tjA",buf);
-      sprintf(buf,"r1*%s",ARR(nbfp,tjA+1));
-      p_state("br",buf);
-      sprintf(buf,"exp(-br)*%s",ARR(nbfp,tjA));
-      p_state("vnbexp",buf);
-      sprintf(buf,"rinv6*%s",ARR(nbfp,tjA+2));
+      sprintf(buf,"rinv6*%s",ARR(nbfp,tjA));
       p_state("vnb6",buf);
+      sprintf(buf,"r1*%s",ARR(nbfp,tjA+2));
+      p_state("br",buf);
+      sprintf(buf,"exp(-br)*%s",ARR(nbfp,tjA+1));
+      p_state("vnbexp",buf);
       p_state("vnbtot","vnbtot+vnbexp-vnb6");
       nflop += 13;
     }
