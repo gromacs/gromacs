@@ -612,8 +612,8 @@ int main(int argc, char *argv[])
   t_atomtype *atype;
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
-  char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[256];
-  char       *c,*watres,forcefield[32];
+  char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
+  char       *c,*watres,forcefield[STRLEN];
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
   int        nssbonds;

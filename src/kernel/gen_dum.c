@@ -263,6 +263,8 @@ static void read_dummy_database(char *ff,t_dumconf **pdumconflist, int *ndumconf
   *pdumtoplist=dumtoplist;
   *ndumconf=ndum;
   *ndumtop=ntop;
+  
+  fclose(ddb);
 }
 
 static int nitrogen_is_planar(t_dumconf dumconflist[],int ndumconf,char atomtype[])
@@ -873,8 +875,8 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   srenew(*newatomname,at->nr+*nadd);
   srenew(*newdummy_type,at->nr+*nadd);
   srenew(*newcgnr,at->nr+*nadd);
-  for(j=0; j<NMASS; j++)
-    newatomname[at->nr+*nadd-1-j]=NULL;
+  for(j=0; j<*nadd; j++)
+    (*newatomname)[at->nr+j]=NULL;
   
   /* Dummy masses will be placed at the center-of-mass in each ring. */
 
@@ -1060,7 +1062,8 @@ static int gen_dums_tyr(t_atomtype *atype, rvec *newx[],
   srenew(*newatomname,at->nr+*nadd);
   srenew(*newdummy_type,at->nr+*nadd);
   srenew(*newcgnr,at->nr+*nadd);
-  newatomname[at->nr+*nadd-1]=NULL; 
+  for(j=0; (j<*nadd); j++)
+    (*newatomname)[at->nr+j]=NULL; 
   
   /* Calc the dummy mass initial position */
   rvec_sub(x[ats[atHH]],x[ats[atOH]],r1);
@@ -1329,18 +1332,20 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   int ndumconf,ndumtop;
   bool isN,planarN;
   t_aa_names *aan;
-  t_dumconf *dumconflist; /* pointer to a list of CH3/NH3/NH2 configuration entries.
-			   * See comments in read_dummy_database. It isnt beautiful,
-			   * but it had to be fixed, and I dont even want to try to 
-			   * maintain this part of the code...
-			   */
-  t_dumtop *dumtop;       /* Pointer to a list of geometry (bond/angle) entries for
-			   * residues like PHE, TRP, TYR, HIS, etc., where we need
-			   * to know the geometry to construct dummy aromatics.
-			   * Note that equilibrium geometry isnt necessarily the same
-			   * as the individual bond and angle values given in the
-			   * force field (rings can be strained).
-			   */
+  t_dumconf *dumconflist; 
+  /* pointer to a list of CH3/NH3/NH2 configuration entries.
+   * See comments in read_dummy_database. It isnt beautiful,
+   * but it had to be fixed, and I dont even want to try to 
+   * maintain this part of the code...
+   */
+  t_dumtop *dumtop;       
+  /* Pointer to a list of geometry (bond/angle) entries for
+   * residues like PHE, TRP, TYR, HIS, etc., where we need
+   * to know the geometry to construct dummy aromatics.
+   * Note that equilibrium geometry isnt necessarily the same
+   * as the individual bond and angle values given in the
+   * force field (rings can be strained).
+   */
 
   /* if bDummyAromatics=TRUE do_dummies will specifically convert atoms in 
      PHE, TRP, TYR and HIS to a construction of dummy atoms */
