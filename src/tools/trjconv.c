@@ -59,35 +59,100 @@
 #include "pbc.h"
 #include "viewit.h"
 
-static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],atom_id index[],
-			 rvec xref,matrix box)
+static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
+			     atom_id index[],
+			     rvec xref,matrix box)
 {
-  const real tol=1e-4;
-  bool  bChanged;
-  int   m,j,ai,iter;
-  real  mass,mtot;
-  rvec  dx,xtest,xrm;
+  const   real tol=1e-4;
+  bool    bChanged;
+  int     m,i,j,j0,j1,jj,ai,iter;
+  real    mass,mtot,fac;
+  rvec    dx,xtest,xrm;
+  int     nmol;
+  atom_id *molind,*mola;
+  bool    *bMol,*bTmp;
+  rvec    *m_com,*m_shift,m0;
+  real    *m_mass;
   
+  /* Convert atom index to molecular */
+  nmol   = top->blocks[ebMOLS].nr;
+  molind = top->blocks[ebMOLS].index;
+  mola   = top->blocks[ebMOLS].a;
+  snew(bMol,nmol);
+  snew(m_com,nmol);
+  snew(m_shift,nmol);
+  snew(m_mass,nmol);
+  snew(bTmp,top->atoms.nr);
+  for(i=0; (i<nrefat); i++) {
+    /* Mark all molecules in the index */
+    ai = index[i];
+    bTmp[ai] = TRUE;
+    /* Binary search assuming the molecules are sorted */
+    j0=0;
+    j1=nmol-1;
+    while (j0 < j1) {
+      if (ai < mola[molind[j0+1]]) 
+	j1 = j0;
+      else if (ai >= mola[molind[j1]]) 
+	j0 = j1;
+      else {
+	jj = (j0+j1)/2;
+	if (ai < mola[molind[jj+1]]) 
+	  j1 = jj;
+	else
+	  j0 = jj;
+      }
+    }
+    bMol[j0] = TRUE;
+  }
+  /* Double check whether all atoms in all molecules that are marked are part 
+   * of the cluster. Simultaneously compute the center of mass.
+   */
+  for(i=0; (i<nmol); i++) {
+    for(j=molind[i]; (j<molind[i+1]); j++) {
+      if (bMol[i] && !bTmp[mola[j]])
+	fatal_error(0,"Molecule %d marked for clustering but not atom %d",
+		    i,mola[j]);
+      else if (!bMol[i] && bTmp[mola[j]])
+	fatal_error(0,"Atom %d marked for clustering but not molecule %d",
+		    mola[j],i);
+      else if (bMol[i]) {
+	/* Compute center of mass of molecule */
+	rvec_inc(m_com[i],x[mola[j]]);
+	m_mass[i] += top->atoms.atom[mola[j]].m;
+      }
+    }
+    if (bMol[i]) {
+      /* Normalize center of mass */
+      fac = 1.0/(molind[i+1]-molind[i]);
+      for(m=0; (m<DIM); m++) 
+	m_com[i][m] *= fac;
+    }
+  }
+  sfree(bTmp);
+   
   /* First calculation is incremental */
   clear_rvec(xref);
   mtot = 0;
-  for(m=0; (m<nrefat); m++) {
-    ai   = index[m];
-    mass = top->atoms.atom[ai].m;
-    if ((m > 0) && (mtot > 0)) {
-      svmul(1.0/mtot,xref,xrm);
-      pbc_dx(x[ai],xrm,dx);
-      rvec_add(xrm,dx,xtest);
-      /* xtest is now the image of x[ai] that is closest to xref */
-      for(j=0; (j<DIM); j++)
-	xref[j] += mass*xtest[j];
-      copy_rvec(xtest,x[ai]);
+  for(i=0; (i<nmol); i++) {
+    /* Check whether this molecule is part of the cluster */
+    if (bMol[i]) {
+      mass = m_mass[i];
+      if ((i > 0) && (mtot > 0)) {
+	svmul(1.0/mtot,xref,xrm);
+	pbc_dx(m_com[i],xrm,dx);
+	rvec_add(xrm,dx,xtest);
+	/* xtest is now the image of m_com[i] that is closest to xref */
+	for(j=0; (j<DIM); j++)
+	  xref[j] += mass*xtest[j];
+	rvec_sub(xtest,m_com[i],m_shift[i]);
+      }
+      else {
+	for(j=0; (j<DIM); j++)
+	  xref[j] += mass*m_com[i][j];
+      }
+      mtot += mass;
     }
-    else {
-      for(j=0; (j<DIM); j++)
-	xref[j] += mass*x[ai][j];
-    }
-    mtot += mass;
   }
   svmul(1/mtot,xref,xref);
   for(j=0; (j<DIM); j++) {
@@ -96,23 +161,26 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],atom_id index[]
     while(xref[j] >= box[j][j])
       xref[j] -= box[j][j];
   }
-  /* Now check if any atom is more than half the box from the COM */
+  /* Now check if any molecule is more than half the box from the COM */
   if (box) {
     iter = 0;
     do {
       bChanged = FALSE;
-      for(m=0; (m<nrefat); m++) {
-	ai   = index[m];
-	mass = top->atoms.atom[ai].m/mtot;
-	pbc_dx(x[ai],xref,dx);
-	rvec_add(xref,dx,xtest);
-	for(j=0; (j<DIM); j++)
-	  if (fabs(xtest[j]-x[ai][j]) > tol) {
-	    /* Here we have used the wrong image for contributing to the COM */
-	    xref[j] += mass*(xtest[j]-x[ai][j]);
-	    x[ai][j] = xtest[j];
-	    bChanged = TRUE;
-	  }
+      for(i=0; (i<nmol); i++) {
+	if (bMol[i]) {
+	  mass = m_mass[i]/mtot;
+	  /* Sum com and shift from com */
+	  rvec_add(m_com[i],m_shift[i],m0);
+	  pbc_dx(m0,xref,dx);
+	  rvec_add(xref,dx,xtest);
+	  for(j=0; (j<DIM); j++)
+	    if (fabs(xtest[j]-m0[j]) > tol) {
+	      /* Here we have used the wrong image for contributing to the COM */
+	      xref[j] += mass*(xtest[j]-m0[j]);
+	      m_shift[i][j] = xtest[j]-m_com[i][j];
+	      bChanged = TRUE;
+	    }
+	}
       }
       for(j=0; (j<DIM); j++) {
 	while(xref[j] < 0)
@@ -126,6 +194,17 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],atom_id index[]
       iter++;
     } while (bChanged);
   }
+  /* Now transfer the shift to all atoms in the molecule */
+  for(i=0; (i<nmol); i++) {
+    if (bMol[i]) {
+      for(j=molind[i]; (j<molind[i+1]); j++)
+	rvec_inc(x[mola[j]],m_shift[i]);
+    }
+  }
+  sfree(bMol);
+  sfree(m_com);
+  sfree(m_shift);
+  sfree(m_mass);
 }
 
 static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
