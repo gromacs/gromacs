@@ -57,6 +57,7 @@ static char *SRCID_vec_h = "$Id$";
   vector operations:
   void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
   void rvec_inc(rvec a,rvec b)                     a += b
+  void ivec_inc(ivec a,ivec b)                     a += b
   void rvec_sub(const rvec a,const rvec b,rvec c)  c = a - b
   void rvec_dec(rvec a,rvec b)                     a -= b
   void copy_rvec(const rvec a,rvec b)              b = a (reals)
@@ -237,6 +238,19 @@ static inline void rvec_inc(rvec a,rvec b)
   y=a[YY]+b[YY];
   z=a[ZZ]+b[ZZ];
   
+  a[XX]=x;
+  a[YY]=y;
+  a[ZZ]=z;
+}
+
+static inline void ivec_inc(ivec a,ivec b)
+{
+  int x,y,z;
+
+  x=a[XX]+b[XX];
+  y=a[YY]+b[YY];
+  z=a[ZZ]+b[ZZ];
+
   a[XX]=x;
   a[YY]=y;
   a[ZZ]=z;
