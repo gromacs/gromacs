@@ -817,7 +817,7 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
     for(j=0; (j<hb->a.nra); j++) {
       ia = hb->a.acc[j];
       jj = hb->d.dptr[ia];
-      if ((id != ia) && 
+      if ((id != ia) && (ii != NOTSET) && (jj != NOTSET) &&
 	  (!bTwo || (bTwo && (hb->d.grp[id] != hb->a.grp[ia])))) {
 	if (hb->hbmap[i][j].exist[0] && hb->hbmap[jj][ii].exist[0]) {
 	  for(m=0; (m<hb->max_frames/hb->wordlen); m++)
@@ -835,6 +835,82 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
   fprintf(stderr,"Reduced number of hbonds from %d to %d\n",hb->nrhb,inew);
   fprintf(stderr,"tested %d pairs\n",itest);
   hb->nrhb = inew;
+}
+
+static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
+{
+  FILE *fp;
+  int  *histo;
+  int  i,j,j0,k,m,nh,ihb,ohb,nhydro,ndump=0;
+  int   nframes = hb->nframes;
+  unsigned int **exist;
+  real   x,x1,x2,dx;
+  double sum,integral;
+  
+  snew(exist,hb->maxhydro);
+  snew(histo,nframes+1);
+  /* Total number of hbonds analyzed here */
+  for(i=0; (i<hb->d.nrd); i++) {
+    for(k=0; (k<hb->a.nra); k++) {
+      if (bMerge) {
+	if (hb->hbmap[i][k].exist[0]) {
+	  exist[0] = hb->hbmap[i][k].exist[0];
+	  nhydro   = 1;
+	}
+	else
+	  nhydro = 0;
+      }
+      else {
+	nhydro = 0;
+	for(m=0; (m<hb->maxhydro); m++)
+	  if (hb->hbmap[i][k].exist[m]) {
+	    exist[nhydro++] = hb->hbmap[i][k].exist[m];
+	  }
+      }
+      for(nh=0; (nh<nhydro); nh++) {
+	ohb = 0;
+	j0  = 0;
+	for(j=0; (j<nframes); j++) {
+	  ihb      = is_hb(exist[nh],j);
+	  if (debug && (ndump < 10))
+	    fprintf(debug,"%5d  %5d\n",j,ihb);
+	  if (ihb != ohb) {
+	    if (ihb) {
+	      j0 = j;
+	    }
+	    else {
+	      histo[j-j0]++;
+	    }
+	    ohb = ihb;
+	  }
+	}
+	ndump++;
+      }
+    }
+  }
+  fprintf(stderr,"\n");
+  fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()");
+  j0 = nframes-1;
+  while ((j0 > 0) && (histo[j0] == 0))
+    j0--;
+  sum = 0;
+  for(i=0; (i<=j0); i++)
+    sum+=histo[i];
+  dx       = hb->time[1]-hb->time[0];
+  sum      = dx*sum;
+  integral = 0;
+  x2       = 0;
+  for(i=0; (i<=j0); i++) {
+    x  = hb->time[i]-hb->time[0];
+    x1 = x*histo[i]/sum;
+    fprintf(fp,"%8.3f  %10.3e  %10.3e\n",x,histo[i]/sum,x1);
+    integral += (x1+x2)*0.5;
+    x2 = x1;
+  }
+  fclose(fp);
+  fprintf(stderr,"HB lifetime = %.2f ps\n",integral*dx);
+  sfree(exist);
+  sfree(histo);
 }
 
 static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,bool bDump,bool bMerge)
@@ -855,7 +931,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,bool bDump,bool bMerge)
   snew(rhbex,nframes);
   snew(ct,nframes);
   snew(exist,hb->maxhydro);
-  
+
   /* Loop over hbonds */
   if (bDump) {
     fp = ffopen("debug-ac.xvg","w");
@@ -1003,6 +1079,88 @@ static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
   fprintf(fp,"%10.3e  %6d  %6d\n",t,nbound,nhtot-nbound);
 }
 
+static void dump_hbmap(t_hbdata *hb,
+		       int nfile,t_filenm fnm[],bool bTwo,bool bInsert,
+		       int isize[],int *index[],char *grpnames[],
+		       t_atoms *atoms)
+{
+  FILE *fp,*fplog;
+  int  ddd,hhh,aaa,i,j,k,m,grp;
+  char ds[32],hs[32],as[32];
+  
+  fp = opt2FILE("-hbn",nfile,fnm,"w");
+  if (opt2bSet("-g",nfile,fnm)) {
+    fplog = ffopen(opt2fn("-g",nfile,fnm),"w");
+    fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
+  }
+  else
+    fplog = NULL;
+  for (grp=gr0; grp<=(bTwo?gr1:gr0); grp++) {
+    fprintf(fp,"[ %s ]",grpnames[grp]);
+    for (i=0; i<isize[grp]; i++) {
+      fprintf(fp,(i%15)?" ":"\n");
+      fprintf(fp,"%4u",index[grp][i]+1);
+    }
+    fprintf(fp,"\n");
+    fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
+    for (i=0; (i<hb->d.nrd); i++) {
+      for(j=0; (j<hb->d.nhydro[i]); j++)
+	fprintf(fp,"%4u %4u",hb->d.don[i]+1,
+		hb->d.hydro[i][j]+1);
+      fprintf(fp,"\n");
+    }
+    fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
+    for (i=0; (i<hb->a.nra); i++) {
+      fprintf(fp,(i%15)?" ":"\n");
+      fprintf(fp,"%4u",hb->a.acc[i]+1);
+    }
+    fprintf(fp,"\n");
+  }
+  if (bTwo)
+    fprintf(fp,"[ hbonds_%s-%s ]\n",grpnames[0],grpnames[1]);
+  else
+    fprintf(fp,"[ hbonds_%s ]\n",grpnames[0]);
+  
+  for(i=0; (i<hb->d.nrd); i++) {
+    ddd = hb->d.don[i];
+    for(k=0; (k<hb->a.nra); k++) {
+      aaa = hb->a.acc[k];
+      for(m=0; (m<hb->d.nhydro[i]); m++) {
+	if (hb->hbmap[i][k].bExisted[m]) {
+	  hhh = hb->d.hydro[i][m];
+	  
+	  sprintf(ds,"%s",mkatomname(atoms,ddd));
+	  sprintf(hs,"%s",mkatomname(atoms,hhh));
+	  sprintf(as,"%s",mkatomname(atoms,aaa));
+	  fprintf(fp,"%6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
+	  if (fplog) 
+	    fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
+	}
+      }
+    }
+  }
+  if (bInsert) {
+    if (bTwo)
+      fprintf(fp,"[ insert_%s->%s-%s ]",
+	      grpnames[2],grpnames[0],grpnames[1]);
+    else
+      fprintf(fp,"[ insert_%s->%s ]",grpnames[2],grpnames[0]);
+    j=0;
+    
+    /*	for(i=0; (i<hb->nrhb); i++) {
+	if (hb->hb[i].bInsert) {
+	fprintf(fp,(j%15)?" ":"\n");
+	fprintf(fp,"%4d",i+1);
+	j++;
+	}
+	}*/
+    fprintf(fp,"\n");
+  }
+  fclose(fp);
+  if (fplog)
+    fclose(fplog);
+}
+
 int gmx_hbond(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -1107,8 +1265,9 @@ int gmx_hbond(int argc,char *argv[])
     { efXVG, "-hx",  "hbhelix",ffOPTWR },
     { efNDX, "-hbn", "hbond",  ffOPTWR },
     { efXPM, "-hbm", "hbmap",  ffOPTWR },
-    { efXVG, "-don",  "donor", ffOPTWR },
-    { efXVG, "-dan",  "danum",  ffOPTWR }
+    { efXVG, "-don", "donor",  ffOPTWR },
+    { efXVG, "-dan", "danum",  ffOPTWR },
+    { efXVG, "-life","hblife", ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -1156,7 +1315,8 @@ int gmx_hbond(int argc,char *argv[])
   }
   
   /* Initiate main data structure! */
-  hb = mk_hbdata(opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm),
+  hb = mk_hbdata(opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm) ||
+		 opt2bSet("-life",NFILE,fnm),
 		 opt2bSet("-da",NFILE,fnm),bMerge);
   
   /* get topology */
@@ -1480,6 +1640,9 @@ int gmx_hbond(int argc,char *argv[])
     fprintf(stderr,"Found %d different hydrogen bonds in trajectory\n",
 	    hb->nrhb);
     
+    if (opt2bSet("-hbn",NFILE,fnm)) 
+      dump_hbmap(hb,NFILE,fnm,bTwo,bInsert,isize,index,grpnames,&top.atoms);
+    
     if (bMerge)
       merge_hb(hb,bTwo);
 
@@ -1547,6 +1710,9 @@ int gmx_hbond(int argc,char *argv[])
     if (opt2bSet("-ac",NFILE,fnm))
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,bDump,bMerge);
     
+    if (opt2bSet("-life",NFILE,fnm))
+      do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge);
+    
     if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;
       int id,ia,hh,x,y;
@@ -1594,74 +1760,6 @@ int gmx_hbond(int argc,char *argv[])
       }
     }
     
-    if (opt2bSet("-hbn",NFILE,fnm)) {
-      fp = opt2FILE("-hbn",NFILE,fnm,"w");
-      if (opt2bSet("-g",NFILE,fnm)) {
-	fplog = ffopen(opt2fn("-g",NFILE,fnm),"w");
-	fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
-      }
-      else
-	fplog = NULL;
-      for (grp=gr0; grp<=(bTwo?gr1:gr0); grp++) {
-	fprintf(fp,"[ %s ]",grpnames[grp]);
-	for (i=0; i<isize[grp]; i++) {
-	  fprintf(fp,(i%15)?" ":"\n");
-	  fprintf(fp,"%4u",index[grp][i]+1);
-	}
-	fprintf(fp,"\n");
-	fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
-	for (i=0; (i<hb->d.nrd); i++) {
-	  for(j=0; (j<hb->d.nhydro[i]); j++)
-	    fprintf(fp,"%4u %4u",hb->d.don[i]+1,
-		    hb->d.hydro[i][j]+1);
-	  fprintf(fp,"\n");
-	}
-	fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
-	for (i=0; (i<hb->a.nra); i++) {
-	  fprintf(fp,(i%15)?" ":"\n");
-	  fprintf(fp,"%4u",hb->a.acc[i]+1);
-	}
-	fprintf(fp,"\n");
-      }
-      if (bTwo)
-	fprintf(fp,"[ hbonds_%s-%s ]\n",grpnames[0],grpnames[1]);
-      else
-	fprintf(fp,"[ hbonds_%s ]\n",grpnames[0]);
-      for(i=0; (i<hb->nrhb); i++) {
-	int  ddd,hhh,aaa;
-	char ds[32],hs[32],as[32];
-	
-	/*	ddd = hb->hb[i].d;
-		hhh = hb->hb[i].h;
-	aaa = hb->hb[i].a;
-	sprintf(ds,"%s",mkatomname(&top.atoms,ddd));
-	sprintf(hs,"%s",mkatomname(&top.atoms,hhh));
-	    sprintf(as,"%s",mkatomname(&top.atoms,aaa));
-	    fprintf(fp,"%6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
-	    if (fplog) 
-	    fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
-	*/
-      }
-      if (bInsert) {
-	if (bTwo)
-	  fprintf(fp,"[ insert_%s->%s-%s ]",
-		  grpnames[2],grpnames[0],grpnames[1]);
-	else
-	  fprintf(fp,"[ insert_%s->%s ]",grpnames[2],grpnames[0]);
-	j=0;
-	/*	for(i=0; (i<hb->nrhb); i++) {
-	  if (hb->hb[i].bInsert) {
-	    fprintf(fp,(j%15)?" ":"\n");
-	    fprintf(fp,"%4d",i+1);
-	    j++;
-	  }
-	  }*/
-	fprintf(fp,"\n");
-      }
-      fclose(fp);
-      if (fplog)
-	fclose(fplog);
-    }
     
     if (hb->bDAnr) {
       int  i,j,nleg;
