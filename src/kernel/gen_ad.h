@@ -45,6 +45,6 @@
 
 extern void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14, 
 		    t_params plist[], t_excls excls[], t_hackblock hb[], 
-		    bool bAlldih);
+		    bool bAlldih, bool bRemoveDih);
 
 #endif	/* _gen_ad_h */

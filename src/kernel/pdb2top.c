@@ -624,7 +624,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     t_atoms *atoms, rvec **x, t_atomtype *atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-	     int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,bool remove_dih,
+	     int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,
+	     bool bRemoveDih,
 	     bool bDummies, bool bDummyAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
@@ -650,7 +651,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
      do now :( AF 26-7-99 */
   
   if (debug) {
-    print_resall(debug, bts, atoms->nres, restp, atype,bAlldih,nrexcl);
+    print_resall(debug, bts, atoms->nres, restp, atype,bAlldih,nrexcl,
+		 bH14,bRemoveDih);
     dump_hb(debug, atoms->nres, hb);
   }
   
@@ -691,7 +693,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih);
+  gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih,bRemoveDih);
   done_nnb(&nnb);
   
   /* set mass of all remaining hydrogen atoms */

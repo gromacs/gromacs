@@ -121,20 +121,6 @@ static bool aeq(t_param *p1, t_param *p2)
 
 
 
-static bool deq2(t_param *p1, t_param *p2)
-{
-  /* if bAlldih is true, dihedrals are only equal when
-     ijkl = ijkl or ijkl =lkji*/
-  if (((p1->AI==p2->AI) && (p1->AJ==p2->AJ) &&
-       (p1->AK==p2->AK) && (p1->AL==p2->AL)) ||
-      ((p1->AI==p2->AL) && (p1->AJ==p2->AK) &&
-       (p1->AK==p2->AJ) && (p1->AL==p2->AI)))
-    return TRUE;
-  else
-    return FALSE;
-}
-
-
 static bool deq(t_param *p1, t_param *p2)
 {
   if (((p1->AJ==p2->AJ) && (p1->AK==p2->AK)) ||
@@ -628,7 +614,8 @@ static void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
-	     t_params plist[], t_excls excls[], t_hackblock hb[], bool bAlldih)
+	     t_params plist[], t_excls excls[], t_hackblock hb[], 
+	     bool bAlldih, bool bRemoveDih)
 {
   t_param *ang,*dih,*pai,*idih;
   t_rbondeds *hbang, *hbdih;
@@ -847,7 +834,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
        and when bAlldih is not set remove multiple dihedrals over one bond.
        */
     fprintf(stderr,"Before cleaning: %d dihedrals\n",ndih);
-    clean_dih(dih,&ndih,idih,nidih,atoms,bAlldih);
+    clean_dih(dih,&ndih,idih,nidih,atoms,bAlldih,bRemoveDih);
   }
 
   /* Now we have unique lists of angles and dihedrals 

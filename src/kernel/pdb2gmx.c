@@ -611,7 +611,7 @@ int main(int argc, char *argv[])
   rvec       *pdbx,*x;
   bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
-  bool       bAlldih,HH14,remove_dih;
+  bool       bAlldih,HH14,bRemoveDih;
   int        nrexcl;
 
   t_filenm   fnm[] = { 
@@ -890,10 +890,10 @@ int main(int argc, char *argv[])
   
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl,&HH14,&remove_dih);
+  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl,&HH14,&bRemoveDih);
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
-    print_resall(fp,bts,nrtp,restp,atype,bAlldih,nrexcl);
+    print_resall(fp,bts,nrtp,restp,atype,bAlldih,nrexcl,HH14,bRemoveDih);
     fclose(fp);
   }
     
@@ -1079,7 +1079,7 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
-	    HH14,bAlldih,remove_dih,bDummies,bDummyAromatics,ff,
+	    HH14,bAlldih,bRemoveDih,bDummies,bDummyAromatics,ff,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist,short_bond_dist,bDeuterate);
     

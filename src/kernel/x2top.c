@@ -418,7 +418,8 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
-  static bool bParam = FALSE,bH14 = FALSE,bAllDih = FALSE,bRound = TRUE;
+  static bool bRemoveDih = FALSE;
+  static bool bParam = FALSE,bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
   static bool bPairs = TRUE, bPBC = TRUE;
   static char *molnm = "ICE";
   t_pargs pa[] = {
@@ -430,6 +431,8 @@ int main(int argc, char *argv[])
       "Use 3rd neighbour interactions for hydrogen atoms" },
     { "-alldih", FALSE, etBOOL, {&bAllDih}, 
       "Generate all proper dihedrals" },
+    { "-remdih", FALSE, etBOOL, {&bRemoveDih}, 
+      "Remove dihedrals on the same bond as an improper" },
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
     { "-name",   FALSE, etSTR,  {&molnm},
@@ -497,7 +500,7 @@ int main(int argc, char *argv[])
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,bAllDih);
+  gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,bAllDih,bRemoveDih);
   done_nnb(&nnb);
 
   if (!bPairs)

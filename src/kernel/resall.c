@@ -382,7 +382,8 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 }
 
 void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
-		  t_atomtype *atype, bool bAlldih, int nrexcl, bool HH14, bool bRemoveDih)
+		  t_atomtype *atype, bool bAlldih, int nrexcl, 
+		  bool HH14, bool bRemoveDih)
 {
   int i,bt;
 
