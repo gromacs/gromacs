@@ -758,17 +758,17 @@ Ek	&=&	\half\frac{\ve{p}^2}{\LL m^A + \LAM m^B}	\\
 Note that we can not write the momentum \ve{p} as m\ve{v} since that would result 
 in the sign of $\dvdl{Ek}$ being incorrect~\cite{Gunsteren98a}.
 
-\subsubsection{Contraints}
+\subsubsection{Contsraints}
 \newcommand{\clam}{C_{\lambda}}
 The constraints are formally part of the hamiltonian, and therefore
 they give a contribution to the free energy. In {\gromacs} this can be
 calculated using the \normindex{LINCS} algorithm only.
-If we have a number of contraint equations $g_k$:
+If we have a number of contsraint equations $g_k$:
 \beq
 g_k	=	r_{k} - d_{k}
 \eeq
 where $\ve{r}_k$ is the distance vector between two particles and 
-$d_k$ is the contraint distance between the two particles we can write
+$d_k$ is the contsraint distance between the two particles we can write
 this using a $\LAM$ dependent distance as
 \beq
 g_k 	=	r_{k} - \left(\LL d_{k}^A + \LAM d_k^B\right)
