@@ -2,19 +2,14 @@
 #ifndef _GMX_RANDOM_H_
 #define _GMX_RANDOM_H_
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include <stdio.h>
 #include <types/simple.h>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#define gmx_inline inline
-#else
-#ifdef __GNUC__
-#define gmx_inline __inline
-#else
-#define inline
-#endif
-#endif
 
 
 /*! \brief Abstract datatype for a random number generator
@@ -119,7 +114,7 @@ gmx_rng_destroy(gmx_rng_t rng);
  *		solutions: either use a mutex and lock it before calling
  *              the function, or use a separate RNG handle for each thread.
  */
-gmx_inline unsigned int 
+unsigned int 
 gmx_rng_uniform_uint32(gmx_rng_t rng);
 
 
@@ -141,7 +136,7 @@ gmx_rng_uniform_uint32(gmx_rng_t rng);
  *		solutions: either use a mutex and lock it before calling
  *              the function, or use a separate RNG handle for each thread.
  */
-gmx_inline real
+real
 gmx_rng_uniform_real(gmx_rng_t rng);
 
 
