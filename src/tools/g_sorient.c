@@ -305,7 +305,7 @@ int gmx_sorient(int argc,char *argv[])
   normfac = 1.0/(nrefgrp*nf);
   c1 = 0;
   c2 = 0;
-  fprintf(fp,"%g %g %g\n",0,c1,c2);
+  fprintf(fp,"%g %g %g\n",0.0,c1,c2);
   for(i=0; i<nrbin; i++) {
     c1 += histi1[i]*normfac;
     c2 += histi2[i]*normfac;

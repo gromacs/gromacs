@@ -125,8 +125,9 @@ int find_next_match_atoms_in_res(int *i1,int isize1,atom_id index1[],
 				 int m2,char **atnms2[])
 {
   int dx, dy, dmax, cmp;
-  bool bFW;
+  bool bFW=FALSE;
   
+  dx=dy=0;
   cmp=NOTSET;
   dmax = max(m1-*i1, m2-*i2);
   for(dx=0; dx<dmax && cmp!=0; dx++) {
@@ -169,8 +170,9 @@ int find_next_match_res(int *rnr1, int isize1, int index1[], char **resnms1[],
 			int *rnr2, int isize2, int index2[], char **resnms2[])
 {
   int dx, dy, dmax, cmp, rr1, rr2;
-  bool bFW,bFF;
+  bool bFW=FALSE,bFF=FALSE;
   
+  dx=dy=0;
   rr1 = 0;
   while(rr1<isize1 && *rnr1 != index1[rr1])
     rr1++;

@@ -157,7 +157,7 @@ static void mk_hbmap(t_hbdata *hb,bool bTwo,bool bInsert)
       hb->na += hb->a[gr1]->nra;
     }
   }
-  fprintf(stderr,"Going to allocate %d kb of memory,  and that's only the beginning\n",(hb->nd*hb->na*sizeof(hb->hbmap[0][0]))/1024);
+  fprintf(stderr,"Going to allocate %d kb of memory,  and that's only the beginning\n",(int)((hb->nd*hb->na*sizeof(hb->hbmap[0][0]))/1024.0));
   
   snew(hb->hbmap,hb->nd);
   for(i=0; (i<hb->nd); i++) {

@@ -235,8 +235,8 @@ int main(int argc,char *argv[])
   bool        bCenter=FALSE,bBox;
   t_commrec   *cr;
   t_atoms     atoms,newatoms;
-  t_correct   *corr;
-  rvec        xcm,*xref,*xcenter=NULL;
+  t_correct   *corr=NULL;
+  rvec        xcm,*xref=NULL,*xcenter=NULL;
   matrix      box;
   real        t,lambda,tot_weight;
   int         i,nfit,step,natom;

@@ -769,6 +769,8 @@ int return_atom_type (char *type)
       return i;
   fatal_error(0,"\nError: atom type (%s) not in list (%d types checked)!\n", 
 	      type,i);
+
+  return 0;
 }
 
 double CMSF (int type, double lambda, double sin_theta)

@@ -618,7 +618,8 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    int elegend,real boxx,real boxy,char *m2p,char *m2pout,
 	    int mapoffset)
 {
-  char   *libm2p,buf[256],*legend;
+  char   *libm2p;
+  char buf[256],*legend;
   t_psdata out;
   t_psrec  psrec,*psr;
   int    W,H;
@@ -629,7 +630,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   t_mapping *map1=NULL,*map2=NULL,*leg_map;
   bool   bMap1,bNextMap1,bDiscrete;
   
-  libm2p = m2p ? libfn(m2p) : m2p;
+  libm2p = m2p ? strdup(libfn(m2p)) : m2p;
   get_params(libm2p,m2pout,&psrec);
 
   psr=&psrec;

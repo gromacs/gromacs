@@ -187,7 +187,7 @@ static bool send_coords(t_commrec *cr,int nviol,int nit,int k,
 static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
 		       rvec x[],matrix box,bool bKeep,bool bDone)
 {
-  int        nodeid,natom;
+  int        nodeid=0,natom;
   
   /* Check whether there is something from anyone */
   debug_gmx();

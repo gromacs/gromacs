@@ -383,7 +383,7 @@ int shake_coords(FILE *log,bool bVerbose,
   static rvec *force[2],*xtry[2],*xwr;
   int    nit,nchk,low,oldlow;
   int    i,j,k,l,m,ai,aj,status,nprint;
-  int    nviol[edcNR],nvtot,nswap,nmirror,cons_type;
+  int    nviol[edcNR],nvtot=0,nswap,nmirror,cons_type;
   bool   bShort,bConverged,bNB,bPrint,bLowDev,bExplicit,bMyNB,bLowerOnly;
   bool   bVNow;
   bool   *bViol;
