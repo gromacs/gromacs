@@ -19,7 +19,7 @@ printf 'if ( \$shell == \"/bin/tcsh\" ) then\n' >> $out
 
 foreach i ( $PROGRAMS )
   if ( ( $i != "average" ) && ( $i != "luck" ) ) then
-    $i -quiet -man completion >& /dev/null
+    $i -man completion >& /dev/null
     cat $i.completion >> $out
     \rm $i.completion
   endif
