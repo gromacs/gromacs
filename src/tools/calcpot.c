@@ -218,7 +218,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   t_vcm    *vcm=NULL;
   int      fp_ene,m;
   rvec     box_size;
-  tensor   force_vir,shake_vir;
+  tensor   force_vir,pme_vir,shake_vir;
   
   /* Initiate */
   cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
@@ -229,7 +229,8 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
   init_md(cr,&(parm->ir),parm->box,&t,&t0,&lam,&lam0,&SAfac,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
-	  &mdebin,grps,force_vir,shake_vir,*mdatoms,mutot,&bNEMD,&vcm,nsb);
+	  &mdebin,grps,force_vir,pme_vir,
+	  shake_vir,*mdatoms,mutot,&bNEMD,&vcm,nsb);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
   /* Calculate intramolecular shift vectors to make molecules whole again */
