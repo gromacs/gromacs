@@ -42,37 +42,48 @@ static char *SRCID_g_dist_c = "$Id$";
 #include "fatal.h"
 #include "futil.h"
 #include "gstat.h"
+#include "pbc.h"
 
 void main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_dist calculates the distances between the center of masses of two",
-    "groups defined by the index file"
+    "g_dist can calculate the distance between the centers of mass of two",
+    "groups of atoms as a function of time.[PAR]",
+    "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
+    "closer than a certain distance to the center of mass of group 1."
   };
   
   t_topology *top=NULL;
-  real t,dx,dy,dz;
-  rvec *x=NULL,*v=NULL;
+  real t,cut2,dist2;
+  rvec *x=NULL,*v=NULL,dx;
   matrix box;
   int status;
   int natoms;
 
-  int g,d,i,teller=0;
+  int g,d,i,j,res,teller=0;
   atom_id aid;
 
   int     ngrps;     /* the number of index groups */
-  atom_id **index;   /* the index for the atom numbers */
+  atom_id **index,max;   /* the index for the atom numbers */
   int     *isize;    /* the size of each group */
   char    **grpname; /* the name of each group */
   rvec    *com;
   real    *mass;
-  FILE *fp=NULL;
+  FILE    *fp=NULL;
+  bool    bCutoff;
 
-  
+  static real cut=0;
+
+  static t_pargs pa[] = {
+    { "-dist",      FALSE, etREAL, &cut,
+      "Print all atoms in group 2 closer than dist to the center of mass of group 1" },
+  };
+#define NPA asize(pa)
+
   t_filenm fnm[] = {
-    { efTPX, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
-    { efNDX, NULL, NULL, ffREAD },
+    { efTPX, NULL, NULL, ffREAD },
+    { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, NULL, NULL, ffOPTWR },
   };
 #define NFILE asize(fnm)
@@ -81,17 +92,14 @@ void main(int argc,char *argv[])
   CopyRight(stdout,argv[0]);
 
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   
-
+  bCutoff=opt2parg_bSet("-dist",NPA,pa);
+  cut2=cut*cut;
+  
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
-  
-
-  /* open output file */
-  fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
-		"Distance","Time (ps)","Distance (nm)");
   
   /* read index files */
   ngrps = 2;
@@ -99,18 +107,38 @@ void main(int argc,char *argv[])
   snew(grpname,ngrps);
   snew(index,ngrps);
   snew(isize,ngrps);
-  rd_index(ftp2fn(efNDX,NFILE,fnm),ngrps,isize,index,grpname);
+  get_index(&top->atoms,ftp2fn(efNDX,NFILE,fnm),ngrps,isize,index,grpname);
   
   /* calculate mass */
+  max=0;
   snew(mass,ngrps);
   for(g=0;(g<ngrps);g++) {
     mass[g]=0;
     for(i=0;(i<isize[g]);i++) {
+      if (index[g][i]>max)
+	max=index[g][i];
+      if (index[g][i] >= top->atoms.nr)
+	fatal_error(0,"Atom number %d, item %d of group %d, is larger than number of atoms in the topolgy (%d)\n",index[g][i]+1,i+1,g+1,top->atoms.nr+1);
       mass[g]+=top->atoms.atom[index[g][i]].m;
     }
   }
 
+  if (max>=natoms)
+    fatal_error(0,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
+
+  if (!bCutoff)
+    /* open output file */
+    fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
+		  "Distance","Time (ps)","Distance (nm)");
+  else
+    ngrps=1;
+  
   do {
+    /* initialisation for correct distance calculations */
+    init_pbc(box,FALSE);
+    /* make molecules whole again */
+    rm_pbc(&top->idef,natoms,box,x,x);
+
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
       for(d=0;(d<DIM);d++) {
@@ -122,19 +150,35 @@ void main(int argc,char *argv[])
       }
     }
     
-    /* write to output */
-    fprintf(fp,"%8.3f ",t);
-    for(g=0;(g<ngrps/2);g++) {
-      dx=com[2 * g][XX] - com[2 * g + 1][XX];
-      dy=com[2 * g][YY] - com[2 * g + 1][YY];
-      dz=com[2 * g][ZZ] - com[2 * g + 1][ZZ];
-      fprintf(fp,"%10.5f %10.5f %10.5f %10.5f",
-	      sqrt(sqr(dx)+sqr(dy)+sqr(dz)),dx,dy,dz);
+    if (!bCutoff) {
+      /* write to output */
+      fprintf(fp,"%8.3f ",t);
+      for(g=0;(g<ngrps/2);g++) {
+	pbc_dx(box,com[2*g],com[2*g+1],dx);
+	fprintf(fp,"%10.5f %10.5f %10.5f %10.5f",
+		norm(dx),dx[XX],dx[YY],dx[ZZ]);
+      }
+      fprintf(fp,"\n");
+    } else {
+      for(i=0;(i<isize[1]);i++) { 
+	j=index[1][i];
+	pbc_dx(box,x[j],com[0],dx);
+	dist2 = norm2(dx);
+	if (dist2<cut2) {
+	  res=top->atoms.atom[j].resnr;
+	  printf("\rt: %g  %d %s %d %s  %g (nm)\n",
+		 t,res+1,*top->atoms.resname[res],
+		 j+1,*top->atoms.atomname[j],sqrt(dist2));     
+	} 
+      }
     }
-    fprintf(fp,"\n");
+    
     teller++;
   } while (read_next_x(status,&t,natoms,x,box));
-  fclose(fp);
+
+  if (!bCutoff)
+    fclose(fp);
+
   fprintf(stderr,"\n");
   close_trj(status);
   
