@@ -134,8 +134,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
     reallocate_nblist(nl);
     nl->jindex[0] = 0;
     nl->jindex[1] = 0;
-    if (nl->maxnri > 0)
-      nl->iinr[0] = -1;
+    nl->iinr[0] = -1;
 #ifdef USE_THREADS
     nl->counter = 0;
     snew(nl->mtx,1);
@@ -298,7 +297,7 @@ static gmx_inline void new_i_nblist(t_nblist *nlist,
   }
 
   nri = nlist->nri;
-  
+
   /* Check whether we have to increase the i counter */
   if ((nlist->iinr[nri]  != i_atom) || 
       (nlist->shift[nri] != shift) || 
@@ -859,7 +858,7 @@ static real calc_image_tric(rvec xi,rvec xj,matrix box,
   /* This code assumes that the cut-off is smaller than
    * a half times the smallest diagonal element of the box.
    */
-  const real h15=1.5;
+  const real h25=2.5;
   real dx,dy,dz;
   real r2;
   int  tx,ty,tz;
@@ -870,26 +869,26 @@ static real calc_image_tric(rvec xi,rvec xj,matrix box,
   dx=xj[XX]-xi[XX];
   
   /* Perform NINT operation, using trunc operation, therefore
-   * we first add 1.5 then subtract 1 again
+   * we first add 2.5 then subtract 2 again
    */
-  tz=dz*b_inv[ZZ]+h15;
-  tz--;
+  tz=dz*b_inv[ZZ]+h25;
+  tz-=2;
   dz-=tz*box[ZZ][ZZ];
   dy-=tz*box[ZZ][YY];
   dx-=tz*box[ZZ][XX];
 
-  ty=dy*b_inv[YY]+h15;
-  ty--;
+  ty=dy*b_inv[YY]+h25;
+  ty-=2;
   dy-=ty*box[YY][YY];
   dx-=ty*box[YY][XX];
 
-  tx=dx*b_inv[XX]+h15;
-  tx--;
+  tx=dx*b_inv[XX]+h25;
+  tx-=2;
   dx-=tx*box[XX][XX];
   
   /* Distance squared */
   r2=(dx*dx)+(dy*dy)+(dz*dz);
-  
+
   *shift=XYZ2IS(tx,ty,tz);
 
   return r2;
@@ -1199,10 +1198,13 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   unsigned short  *gid=md->cENER;
   atom_id *i_atoms,*cgsatoms=cgs->a,*cgsindex=cgs->index;
   int     tx,ty,tz,dx,dy,dz,cj;
+#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
+  int zsh_ty,zsh_tx,ysh_tx;
+#endif
   int     dx0,dx1,dy0,dy1,dz0,dz1;
   int     Nx,Ny,Nz,shift=-1,j,nrj,nns,nn=-1;
   real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
-  real    margin_x,margin_y,sh_zx,sh_zy,sh_x;
+  real    margin_x,margin_y;
   int     icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg,icg_naaj,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
   bool    bVDWOnly,bCoulOnly;
@@ -1280,6 +1282,15 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   grid_y     = 1/gridy;
   grid_z     = 1/gridz;
 
+#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
+  zsh_ty = floor(-box[ZZ][YY]/box[YY][YY]+0.5);
+  zsh_tx = floor(-box[ZZ][XX]/box[XX][XX]+0.5);
+  ysh_tx = floor(-box[YY][XX]/box[XX][XX]+0.5);
+  if (zsh_tx!=0 && ysh_tx!=0)
+    /* This could happen due to rounding, when both ratios are 0.5 */
+    ysh_tx = 0;
+#endif
+
   debug_gmx();
   
   /* Loop over charge groups */
@@ -1319,13 +1330,21 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
       get_dx(Nz,gridz,grid_z,rcoul2,ZI,&dz0,&dz1,dcz2);
       if (dz0 > dz1)
 	continue;
+#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
+      for (ty=-1+zsh_ty*tz; ty<=1+zsh_ty*tz; ty++) {
+#else
       for (ty=-1; ty<=1; ty++) {
+#endif
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
 	get_dx(Ny,gridy,grid_y,rcoul2,YI,&dy0,&dy1,dcy2);
 	if (dy0 > dy1)
 	  continue;
+#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
+	for (tx=-1+zsh_tx*tz+ysh_tx*ty; tx<=1+zsh_tx*tz+ysh_tx*ty; tx++) {
+#else
 	for (tx=-1; tx<=1; tx++) {
+#endif
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
 	  get_dx(Nx,gridx,grid_x,rcoul2,XI,&dx0,&dx1,dcx2);

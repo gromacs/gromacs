@@ -57,8 +57,13 @@ char *check_box(matrix box)
 
   if ((box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0))
     ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
-  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX]) ||
+#ifdef ALLOW_OFFDIAG_LT_HALFDIAG 
+  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 2*BOX_MARGIN*box[XX][XX]) ||
+	   (fabs(box[ZZ][YY]) > 2*BOX_MARGIN*box[YY][YY]))
+#else
+  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 2*BOX_MARGIN*box[XX][XX]) ||
 	   (fabs(box[ZZ][YY]) > BOX_MARGIN*box[YY][YY]))
+#endif
     ptr = "Triclinic box is too skewed.";
   else
     ptr = NULL;
@@ -239,9 +244,9 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
   
   n=0;
   
-  for(k = -D_BOX; k <= D_BOX; k++) 
-    for(l = -D_BOX; l <= D_BOX; l++) 
-      for(m = -D_BOX; m <= D_BOX; m++,n++) {
+  for(m = -D_BOX_Z; m <= D_BOX_Z; m++)
+    for(l = -D_BOX_Y; l <= D_BOX_Y; l++) 
+      for(k = -D_BOX_X; k <= D_BOX_X; k++,n++) {
 	test=XYZ2IS(k,l,m);
 	if (n != test) 
 	  fprintf(stdlog,"n=%d, test=%d\n",n,test);

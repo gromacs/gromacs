@@ -27,12 +27,20 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 
-#define D_BOX   1
-#define N_BOX   (2*D_BOX+1)
-#define N_BOX2  (N_BOX*N_BOX)
-#define N_IVEC  (N_BOX*N_BOX*N_BOX)
+#define D_BOX_Z 1
+#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
+#define D_BOX_Y 2
+#define D_BOX_X 2
+#else
+#define D_BOX_Y 1
+#define D_BOX_X 1
+#endif 
+#define N_BOX_Z (2*D_BOX_Z+1)
+#define N_BOX_Y (2*D_BOX_Y+1)
+#define N_BOX_X (2*D_BOX_X+1)
+#define N_IVEC  (N_BOX_Z*N_BOX_Y*N_BOX_X)
 #define CENTRAL (N_IVEC/2)
 #define SHIFTS  N_IVEC
 
-#define XYZ2IS(x,y,z) (N_BOX2*((x)+D_BOX)+N_BOX*((y)+D_BOX)+(z+D_BOX))
+#define XYZ2IS(x,y,z) (N_BOX_X*(N_BOX_Y*((z)+D_BOX_Z)+(y)+D_BOX_Y)+(x)+D_BOX_X)
 #define IVEC2IS(iv)   (XYZ2IS((iv)[XX],(iv)[YY],(iv)[ZZ]))

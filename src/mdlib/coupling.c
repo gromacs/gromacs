@@ -221,34 +221,29 @@ void parinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 }
 
 
+static void correct_box_elem(tensor box,int v,int d)
+{
+  /* correct elem d of vector v with vector d */
+  while (box[v][d] > BOX_MARGIN*box[d][d]) {
+    fprintf(stdlog,"Correcting invalid box:\n");
+    pr_rvecs(stdlog,0,"old box",box,DIM);
+    rvec_dec(box[v],box[d]);
+    pr_rvecs(stdlog,0,"new box",box,DIM);
+  } 
+  while (-box[v][d] > BOX_MARGIN*box[d][d]) {
+    fprintf(stdlog,"Correcting invalid box:\n");
+    pr_rvecs(stdlog,0,"old box",box,DIM);
+    rvec_inc(box[v],box[d]);
+    pr_rvecs(stdlog,0,"new box",box,DIM);
+  }
+}
+
 void correct_box(tensor box)
 {
-  int d;
   /* check if the box still obeys the restrictions, if not, correct it */
-  if (box[ZZ][YY] > BOX_MARGIN*box[YY][YY]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
-    rvec_dec(box[ZZ],box[YY]);
-    pr_rvecs(stdlog,0,"new box",box,DIM);
-  } else if (-box[ZZ][YY] > BOX_MARGIN*box[YY][YY]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
-    rvec_inc(box[ZZ],box[YY]);
-    pr_rvecs(stdlog,0,"new box",box,DIM);
-  }
-  if (fabs(box[YY][XX])+fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
-    if (fabs(box[YY][XX]) > fabs(box[ZZ][XX]))
-      d = YY; 
-    else
-      d = ZZ;
-    if (box[d][XX] > 0)
-      rvec_dec(box[d],box[XX]);
-    else
-      rvec_inc(box[d],box[XX]);
-    pr_rvecs(stdlog,0,"new box",box,DIM);
-  }
+  correct_box_elem(box,ZZ,YY);
+  correct_box_elem(box,ZZ,XX);
+  correct_box_elem(box,YY,XX);
 }
 
 
