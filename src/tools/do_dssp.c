@@ -43,6 +43,7 @@ static char *SRCID_do_dssp_c = "$Id$";
 #include "matio.h"
 #include "rdgroup.h"
 #include "gstat.h"
+#include "tpxio.h"
 
 #ifdef MY_DSSP
 extern void dssp_main(bool bDoAcc, bool bVerbose);
@@ -187,6 +188,54 @@ static void norm_acc(t_atoms *atoms, real av_area[], real norm_av_area[])
   }
 }
 
+void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
+{
+  FILE *fp;
+  t_mapping *map;
+  int s,f,r,*count,ss_count;
+  char **leg;
+  
+  map=mat->map;
+  snew(count,mat->nmap);
+  snew(leg,mat->nmap+1);
+  leg[0]="Structure";
+  for(s=0; s<mat->nmap; s++)
+    leg[s+1]=map[s].desc;
+
+  fp=xvgropen(outfile,"Secondary Structure",
+	      mat->label_x,"Number of Residues");
+  fprintf(fp,"@ subtitle \"Structure = ");
+  for(s=0; s<strlen(ss_string); s++) {
+    if (s)
+      fprintf(fp," + ");
+    for(f=0; f<mat->nmap; f++)
+      if (ss_string[s]==map[f].code.c1)
+	fprintf(fp,map[f].desc);
+  }
+  fprintf(fp,"\"\n");
+  xvgr_legend(fp,mat->nmap+1,leg);
+
+  for(f=0; f<mat->nx; f++) {
+    ss_count=0;
+    for(s=0; s<mat->nmap; s++)
+      count[s]=0;
+    for(r=0; r<mat->ny; r++)
+      count[mat->matrix[f][r]]++;
+    for(s=0; s<mat->nmap; s++) {
+      if (strchr(ss_string,map[s].code.c1))
+	ss_count+=count[s];
+    }
+    fprintf(fp,"%8g %5d",mat->axis_x[f],ss_count);
+    for(s=0; s<mat->nmap; s++)
+      fprintf(fp," %5d",count[s]);
+    fprintf(fp,"\n");
+  }
+
+  fclose(fp);
+  sfree(leg);
+  sfree(count);
+}
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -196,7 +245,7 @@ int main(int argc,char *argv[])
     "do_dssp ", 
 #endif
     "reads a trajectory file and computes the secondary",
-    "structure for each time frame (or every [BB]dt[bb] ps) by",
+    "structure for each time frame (or every [TT]-dt[tt] ps) by",
 #ifdef MY_DSSP
     "using the dssp program.[PAR]",
 #else
@@ -207,22 +256,28 @@ int main(int argc,char *argv[])
     "executable as in: [PAR]",
     "[TT]setenv DSSP /usr/local/bin/dssp[tt][PAR]",
 #endif
-    "Also solvent accessible surface per",
-    "residue is calculated, both in absolute values (A^2) and in",
+    "The structure assignment for each residue and time is written to an",
+    "[TT].xpm[tt] matrix file. This file can be visualized with i.e.",
+    "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
+    "The number of residues with each secondary structure type and the",
+    "total secondary structure ([TT]-sss[tt]) count as a function of time",
+    "are also written to file ([TT]-sc[tt]).[PAR]",
+    "Solvent accessible surface per",
+    "residue can be calculated, both in absolute values (A^2) and in",
     "fractions of the maximal accessible surface of a residue.",
     "The maximal accessible surface is defined as the accessible",
     "surface of a residue in a chain of glycines.[PAR]",
-    "The output of dssp may be visualized, as a table in [BB]LaTeX[bb],",
-    "as an X PixMap or as color postscript using a postprocessing program",
-    "called xpm2ps."
   };
   static real dt=0.0;
   static bool bVerbose;
+  static char *ss_string="HET"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, &bVerbose,
       "Generate miles of useless information" },
     { "-dt", FALSE, etREAL, &dt,
-      "Time interval between frames." }
+      "Time interval between frames" },
+    { "-sss", FALSE, etSTR, &ss_string,
+      "Secondary structures for structure count"}
   };
   
 #ifndef MY_DSSP
@@ -237,7 +292,7 @@ int main(int argc,char *argv[])
 #endif
   FILE       *ss,*acc,*acct;
   char       *leg[] = { "Phobic", "Phylic" };
-  t_topology *top;
+  t_topology top;
   t_atoms    *atoms;
   t_matrix   mat;
   int        nres,nr0,naccr;
@@ -248,10 +303,10 @@ int main(int argc,char *argv[])
   int        gnx;
   char       *grpnm;
   atom_id    *index;
-  rvec       *x;
+  rvec       *xp,*x;
   int        *average_area;
   real       **accr,*av_area, *norm_av_area;
-  char       pdbfile[L_tmpnam],tmpfile[L_tmpnam];
+  char       pdbfile[L_tmpnam],tmpfile[L_tmpnam],title[256];
 #ifdef MY_DSSP
 #define MAXBUF 1000000
   char       inbuf[MAXBUF],outbuf[MAXBUF];
@@ -261,10 +316,11 @@ int main(int argc,char *argv[])
   
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD },
-    { efTPX, NULL,   NULL,      ffREAD },
+    { efTPS, NULL,   NULL,      ffREAD },
     { efNDX, NULL,   NULL,      ffOPTRD },
     { efMAP, "-map", "ss",      ffLIBRD },
     { efXPM, "-o",   "ss",      ffWRITE },
+    { efXVG, "-sc",  "scount",  ffWRITE },
     { efXPM, "-a",   "area",    ffOPTWR },
     { efXVG, "-ta",  "totarea", ffOPTWR },
     { efXVG, "-aa",  "averarea",ffOPTWR }
@@ -286,8 +342,8 @@ int main(int argc,char *argv[])
 	  opt2bSet("-aa",NFILE,fnm));
   printf("Will %sdo accessible surface calc\n",bDoAcc?"":"*NOT* ");
   
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
-  atoms=&(top->atoms);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xp,NULL,box,FALSE);
+  atoms=&(top.atoms);
   check_oo(atoms);
   nres=atoms->nres;
   bPhbres=bPhobics(atoms);
@@ -352,7 +408,7 @@ int main(int argc,char *argv[])
 	for(i=naccr-10; i<naccr; i++)
 	  snew(accr[i],atoms->nres);
       }
-      rm_pbc(&(top->idef),atoms->nr,box,x,x);
+      rm_pbc(&(top.idef),atoms->nr,box,x,x);
 #ifndef MY_DSSP
       tapein=ffopen(pdbfile,"w");
 #endif
@@ -403,9 +459,11 @@ int main(int argc,char *argv[])
     ffclose(acc);
   }
   
-  ss=ffopen(opt2fn("-o",NFILE,fnm),"w");
+  ss=opt2FILE("-o",NFILE,fnm,"w");
   write_xpm_m(ss,mat);
   ffclose(ss);
+
+  analyse_ss(opt2fn("-sc",NFILE,fnm),&mat,ss_string);
   
   for(i=0; (i<atoms->nres); i++)
     av_area[i] = average_area[i]/(real) nframe;
@@ -419,7 +477,9 @@ int main(int argc,char *argv[])
       fprintf(acc,"%5d  %10g %10g\n",i+1,av_area[i], norm_av_area[i]);
     ffclose(acc);
   }
-  
+
+  if (opt2bSet("-sc",NFILE,fnm))
+    xvgr_file(opt2fn("-sc",NFILE,fnm),"-nxy");
   if (opt2bSet("-ta",NFILE,fnm))
     xvgr_file(opt2fn("-ta",NFILE,fnm),"-nxy");
   if (opt2bSet("-aa",NFILE,fnm))
