@@ -18,7 +18,7 @@ SYSDEFS		= -DHAVE_IDENT -DHAVE_STRDUP -DGMX_INVSQRT -DINLINE_GMXCODE  -DFAST_X86
 # because C-compilers are not as good as Fortran compilers
 # 
 # Note for linux users: g77 performs much worse than gcc
-# since we cant use inlmore ine assembly fast truncation - dont use it!
+# since we cant use inline assembly fast truncation - dont use it!
 #
 USEF77		= no
 #
