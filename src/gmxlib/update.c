@@ -951,14 +951,15 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
 	if (do_per_step(step,ir->nstLincsout)) {
 	  fprintf(stdlog,"Step %d\nRel. Constraint Deviation:  Max    between atoms     RMS\n",step);
-	  fprintf(stdlog,"    Before LINCS         %.6f %6d %6d   %.6f\n",p_max,bla1[p_imax],bla2[p_imax],p_rms);
+	  fprintf(stdlog,"    Before LINCS         %.6f %6d %6d   %.6f\n",
+		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 #ifdef USEF77
 	  fconerr(&p_max,&p_rms,&p_imax,xprime,&nc,bla1,bla2,bllen);
 #else
 	  cconerr(&p_max,&p_rms,&p_imax,xprime,nc,bla1,bla2,bllen);
 #endif
 	  fprintf(stdlog,"     After LINCS         %.6f %6d %6d   %.6f\n\n",
-		    p_max,bla1[p_imax],bla2[p_imax],p_rms);
+		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	}
 
 	if (warn > 0) {
@@ -972,8 +973,8 @@ void update(int          natoms, 	/* number of atoms in simulation */
 		  "relative constraint deviation after LINCS:\n"
 		  "max %.6f (between atoms %d and %d) rms %.6f\n\n",
 		  step,
-		  bla1[warn-1],bla2[warn-1],wang,
-		  p_max,bla1[p_imax],bla2[p_imax],p_rms);
+		  bla1[warn-1]+1,bla2[warn-1]+1,wang,
+		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
 	  fprintf(stdlog,"%s",buf);
 	  fprintf(stderr,"%s",buf);
 	}
