@@ -121,9 +121,6 @@ extern bool bDoView(void);
  *         Some command line parsing routines 
  *****************************************************/
 
-extern char *common_args(void);
-/* String with common args, for use in usage routines */
-
 #define PCA_CAN_VIEW       (1<<5)
 #define PCA_CAN_BEGIN      (1<<6)
 #define PCA_CAN_END        (1<<7)
