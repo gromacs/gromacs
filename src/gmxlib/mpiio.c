@@ -114,6 +114,17 @@ void mpiio_rx_wait(int pid)
     fatal_error(0,"MPI_Wait: result=%d",mpi_result);
 }
 
+int mpiio_rx_probe(int pid)
+{
+  MPI_Status  status;
+  int mpi_result,flag=0;
+  
+  if ((mpi_result = MPI_Test(&mpi_req_rx,&flag,&status)) != MPI_SUCCESS)
+    fatal_error(0,"MPI_Test: result=%d",mpi_result);
+    
+  return flag;
+}
+
 void mpiio_rxs(int pid,void *buf,int bufsize)
 {
   MPI_Status stat;

@@ -45,6 +45,9 @@ extern int  mpiio_setup(int *argc,char *argv[],int *nprocs);
 /* If this is the master, spawn some kids. Nprocs is set to the
  * number of processors.
  * Return pid */
+ 
+extern int mpiio_rx_probe(int pid);
+/* Check whether message arrived, if so message is read and return 0 */
 
 extern void mpiio_stat(FILE *fp,char *msg);
 extern int  mpinodenumber(void);
