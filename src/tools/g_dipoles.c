@@ -327,9 +327,14 @@ real calc_eps(real M_diff,real volume,real epsRF,real temp)
   double fac=1.112650021e-59;       /* converts Debye^2 to C^2 m^2 */
 
   A = M_diff*fac/(3*eps_0*volume*NANO*NANO*NANO*BOLTZMANN*temp);
-  
-  teller = 1 + (A*2*epsRF/(2*epsRF+1));
-  noemer = 1 - (A/(2*epsRF+1));
+ 
+  if (epsRF == 0.0) {
+    teller = 1 + A;
+    noemer = 1; 
+  } else { 
+    teller = 1 + (A*2*epsRF/(2*epsRF+1));
+    noemer = 1 - (A/(2*epsRF+1));
+  }
   eps = teller / noemer;
 
   return eps;
@@ -393,8 +398,6 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	   &natoms,NULL,NULL,NULL,top);
   volume = det(box);
   
-  /* top  = read_top(topf); */
-
   if (bMU) {
     fmu = open_enx(mufn,"r");
     do_enxnms(fmu,&nre,&enm);
@@ -418,7 +421,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
   }
   
   if (Vol == -1)
-    printf("Couldn't find the Volume in the energy file, so I will use the box from\n the topology file instead: %g nm^3\n",volume);
+    printf("Using Volume from topology: %g nm^3\n",volume);
 
   /* Correlation stuff */ 
   if (bCorr) {
@@ -625,10 +628,14 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     epsilon = calc_eps(M_diff,volume,epsilonRF,temp);
 
     /* Finite system Kirkwood G-factor */
-    Gk      = M_diff/(gnx*mu*mu);
+    Gk = M_diff/(gnx*mu*mu);
     /* Infinite system Kirkwood G-factor */
-    g_k     = ((2*epsilonRF+epsilon)*(2*epsilon+1)*
+    if (epsilonRF == 0.0) {
+      g_k = ((2*epsilon+1)*Gk/(3*epsilon));
+    } else {
+       g_k = ((2*epsilonRF+epsilon)*(2*epsilon+1)*
 	       Gk/(3*epsilon*(2*epsilonRF+1)));
+    }
 
     /* Write to file < |M|^2 >, < |M| >^2. And the difference between 
      * the two. Here M is sum mu_i. Further write the finite system
@@ -744,12 +751,12 @@ int main(int argc,char *argv[])
     "dipoles using a first order Legendre polynomial of the angle of the",
     "dipole vector and itself a time t later. For this calculation 1001",
     "frames will be used. Further the dielectric constant will be calculated",
-    "using an epsilonRF of 1 (default), temperature of 300 K (default) and",
+    "using an epsilonRF of infinity (default), temperature of 300 K (default) and",
     "an average dipole moment of the molecule of 2.273 (SPC). For the",
     "distribution function a maximum of 5.0 will be used."
   };
   static real mu_max=-1, mu=-1;
-  static real epsilonRF=1.0, temp=300;
+  static real epsilonRF=0.0, temp=300;
   static bool bAverCorr=FALSE,bFA=FALSE;
   static int  nframes = 10;
   t_pargs pa[] = {
@@ -760,7 +767,7 @@ int main(int argc,char *argv[])
     { "-mumax",    FALSE, etREAL, &mu_max,
       "max dipole in Debye (for histrogram)" },
     { "-epsilonRF",    FALSE, etREAL, &epsilonRF,
-      "epsilon of the reaction field used during the simulation (needed for dieclectric constant calculation)" },
+      "epsilon of the reaction field used during the simulation, needed for dieclectric constant calculation. WARNING: 0.0 means infinity (default)" },
     { "-temp",    FALSE, etREAL, &temp,
       "average temperature of the simulation (needed for dielectric constant calculation)" },
     { "-avercorr", FALSE, etBOOL, &bAverCorr,
@@ -802,8 +809,8 @@ int main(int argc,char *argv[])
   }
   fprintf(stderr,"Using %g as mu_max and %g as the dipole moment.\n", 
 	  mu_max, mu);
-  if (epsilonRF == 1.0)
-    fprintf(stderr,"EpsilonRF = 1.0, are you really sure you want this...\n");
+  if (epsilonRF == 0.0)
+    fprintf(stderr,"WARNING: EpsilonRF = 0.0, this really means EpsilonRF = infinity\n");
   
   bMU = (opt2bSet("-enx",NFILE,fnm));
   if (bMU) {
