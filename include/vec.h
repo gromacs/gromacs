@@ -127,7 +127,7 @@ typedef union
 } t_convert;
 
 
-#ifdef SOFTWARE_INVSQRT
+#ifdef SOFTWARE_SQRT
 static inline real invsqrt(float x)
 {
   const real  half=0.5;

@@ -38,6 +38,7 @@ static char *SRCID_libxdrf_c = "$Id$";
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "xdrf.h"
 #include <callf77.h>
 

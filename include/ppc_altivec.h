@@ -56,8 +56,11 @@ static void printvec(vector float v)
 static void set_non_java_mode(void)
 {
   vector unsigned short vsr1,vsr2;
+  vector unsigned int tmp;
+
   vsr1=vec_mfvscr();
-  vsr2=(vector unsigned short)vec_sl(vec_splat_u32(1),vec_splat_u32(16));
+  tmp=vec_sl(vec_splat_u32(1),vec_splat_u32(8));
+  vsr2=(vector unsigned short)vec_sl(tmp,vec_splat_u32(8));
   vsr1=vec_or(vsr1,vsr2);
   vec_mtvscr(vsr1);
 }  
@@ -659,16 +662,6 @@ static inline void load_4_water(float *address1,
   c2a               = vec_perm(tmp2,tmp3,perm);     /* H1ya H1za H2xa H2ya */
   c3a               = vec_perm(tmp3,tmp3,perm);     /* H2za   -   -   - */
 
-
-  perm              = vec_lvsl( 0, address3 );
-  tmp1              = vec_ld(  0, address3 );
-  tmp2              = vec_ld( 16, address3 );
-  tmp3              = vec_ld( 32, address3 );
-  c1c               = vec_perm(tmp1,tmp2,perm);     /*  Oxc  Oyc  Ozc H1xc */
-  c2c               = vec_perm(tmp2,tmp3,perm);     /* H1yc H1zc H2xc H2yc */
-  c3c               = vec_perm(tmp3,tmp3,perm);     /* H2zc   -   -   - */
-
-
   perm              = vec_lvsl( 0, address2 );
   tmp1              = vec_ld(  0, address2 );
   tmp2              = vec_ld( 16, address2 );
@@ -677,6 +670,13 @@ static inline void load_4_water(float *address1,
   c2b               = vec_perm(tmp2,tmp3,perm);     /* H1yb H1zb H2xb H2yb */
   c3b               = vec_perm(tmp3,tmp3,perm);     /* H2zb   -   -   - */
 
+  perm              = vec_lvsl( 0, address3 );
+  tmp1              = vec_ld(  0, address3 );
+  tmp2              = vec_ld( 16, address3 );
+  tmp3              = vec_ld( 32, address3 );
+  c1c               = vec_perm(tmp1,tmp2,perm);     /*  Oxc  Oyc  Ozc H1xc */
+  c2c               = vec_perm(tmp2,tmp3,perm);     /* H1yc H1zc H2xc H2yc */
+  c3c               = vec_perm(tmp3,tmp3,perm);     /* H2zc   -   -   - */
 
   perm              = vec_lvsl( 0, address4 );
   tmp1              = vec_ld(  0, address4 );
@@ -959,14 +959,26 @@ static inline void add_force_to_4_water(float *address1,
 					vector float H2y,
 					vector float H2z)
 {
-  vector float low,medium,high;
-  vector unsigned char perm;
-  vector unsigned int mask,oxFF,ox00;
-  vector float tmp1,tmp2,tmp3,tmp4;
+  vector float low,medium,high,low2,medium2,high2;
+  vector unsigned char perm,perm2;
+  vector unsigned int mask,mask2,oxFF,ox00;
+  vector float tmp1,tmp2,tmp3;
   vector float nul=vec_zero();
 
   oxFF=(vector unsigned int)vec_splat_s32(-1);
   ox00=(vector unsigned int)vec_splat_s32(0);
+  
+  /* We have to be careful here since water molecules will sometimes
+   * be adjacent in memory. When we update the forces on water 1,
+   * we usually read & write back some extra neighboring cells in
+   * the vector. This means we cannot first read all data, update
+   * it and write it out again.
+   *
+   * Instead of doing the molecules one by one, we rely on the
+   * fact that the list will be ordered, so water molecules
+   * 1 & 3 can be done first (they cannot be adjacent), and then
+   * waters 2 & 4.
+   */
 
   tmp1              = vec_mergeh(Ox,Oz);    /*  Oxa  Oza  Oxb  Ozb */
   Ox               = vec_mergel(Ox,Oz);    /*  Oxc  Ozc  Oxd  Ozd */
@@ -974,6 +986,7 @@ static inline void add_force_to_4_water(float *address1,
   Oy               = vec_mergel(Oy,H1x);   /*  Oyc H1xc  Oyd H1xd */
   H1x              = vec_mergeh(H1y,H2x);  /* H1ya H2xa H1yb H2xb */
   H1y              = vec_mergel(H1y,H2x);  /* H1yc H2xc H1yd H2xd */
+
   H2x              = vec_mergeh(H1z,H2y);  /* H1za H2ya H1zb H2yb */
   H1z              = vec_mergel(H1z,H2y);  /* H1zc H2yc H1zd H2yd */
   H2y              = vec_mergeh(H2z,nul);   /* H2za   0  H2zb   0  */
@@ -994,58 +1007,66 @@ static inline void add_force_to_4_water(float *address1,
   
   /* move into position, load and add */  
   perm             = vec_lvsr( 0, (int *) address1 ); 
+  perm2            = vec_lvsr( 0, (int *) address3 );
   low              = vec_ld(  0, address1);
+  low2              = vec_ld(  0, address3);
+ 
   medium           = vec_ld( 16, address1);
+  medium2           = vec_ld( 16, address3);
   high             = vec_ld( 32, address1);
+  high2             = vec_ld( 32, address3);
   mask             = vec_perm(ox00,oxFF,perm);
-  tmp4             = vec_add(vec_perm(nul,tmp2,perm),low);
+  mask2             = vec_perm(ox00,oxFF,perm2);
+
+  low              = vec_add(vec_perm(nul,tmp2,perm),low);
+  low2             = vec_add(vec_perm(nul,tmp1,perm2),low2);
+  
   tmp2             = vec_add(vec_perm(tmp2,Oy,perm),medium);
+  tmp1             = vec_add(vec_perm(tmp1,H2x,perm2),medium2);
+  
   Oy               = vec_add(vec_perm(Oy,H1z,perm),high);
-  vec_st(vec_sel(low,tmp4,mask),  0, address1);
+  H2x              = vec_add(vec_perm(H2x,tmp3,perm2),high2);
+  
+  vec_st(vec_sel(low,low,mask),  0, address1);
+  vec_st(vec_sel(low2,low2,mask2),  0, address3);
+  
   mask        = vec_sld(ox00,mask,12);
+  mask2        = vec_sld(ox00,mask2,12);
+  
   vec_st(tmp2, 16, address1);
+  vec_st(tmp1, 16, address3);
+
   vec_st(vec_sel(Oy,high,mask), 32, address1);
+  vec_st(vec_sel(H2x,high2,mask2), 32, address3);
+
+  /* Finished 1 & 3 - now do 2 & 4 */
 
   perm             = vec_lvsr( 0, (int *) address2 ); 
+  perm2             = vec_lvsr( 0, (int *) address4 ); 
+
   low              = vec_ld(  0, address2);
+  low2              = vec_ld(  0, address4);
   medium           = vec_ld( 16, address2);
+  medium2           = vec_ld( 16, address4);
   high             = vec_ld( 32, address2);
+  high2             = vec_ld( 32, address4);
   mask             = vec_perm(ox00,oxFF,perm);
+  mask2             = vec_perm(ox00,oxFF,perm2);
   H1z              = vec_add(vec_perm(nul,Oz,perm),low);
+  H2x              = vec_add(vec_perm(nul,Ox,perm2),low2);
   Oz               = vec_add(vec_perm(Oz,H1x,perm),medium);
+  Ox               = vec_add(vec_perm(Ox,H1y,perm2),medium2);
   H1x              = vec_add(vec_perm(H1x,H2y,perm),high);
+  H1y              = vec_add(vec_perm(H1y,H2z,perm2),high2);
   vec_st(vec_sel(low,H1z,mask),  0, address2);
+  vec_st(vec_sel(low2,H2x,mask2),  0, address4);
   mask        = vec_sld(ox00,mask,12);
+  mask2        = vec_sld(ox00,mask2,12);
   vec_st(Oz, 16, address2);
-  vec_st(vec_sel(H1x,high,mask), 32, address2);
-
-  perm             = vec_lvsr( 0, (int *) address3 ); 
-  low              = vec_ld(  0, address3);
-  medium           = vec_ld( 16, address3);
-  high             = vec_ld( 32, address3);
-  mask             = vec_perm(ox00,oxFF,perm);
-  H2y              = vec_add(vec_perm(nul,tmp1,perm),low);
-  tmp1             = vec_add(vec_perm(tmp1,H2x,perm),medium);
-  H2x              = vec_add(vec_perm(H2x,tmp3,perm),high);
-  vec_st(vec_sel(low,H2y,mask),  0, address3);
-  mask        = vec_sld(ox00,mask,12);
-  vec_st(tmp1, 16, address3);
-  vec_st(vec_sel(H2x,high,mask), 32, address3);
-
-  perm             = vec_lvsr( 0, (int *) address4 ); 
-  low              = vec_ld(  0, address4);
-  medium           = vec_ld( 16, address4);
-  high             = vec_ld( 32, address4);
-  mask             = vec_perm(ox00,oxFF,perm);
-  H2x              = vec_add(vec_perm(nul,Ox,perm),low);
-  Ox               = vec_add(vec_perm(Ox,H1y,perm),medium);
-  H1y              = vec_add(vec_perm(H1y,H2z,perm),high);
-  vec_st(vec_sel(low,H2x,mask),  0, address4);
-  mask        = vec_sld(ox00,mask,12);
   vec_st(Ox, 16, address4);
-  vec_st(vec_sel(H1y,high,mask), 32, address4);
+  vec_st(vec_sel(H1x,high,mask), 32, address2);
+  vec_st(vec_sel(H1y,high2,mask2), 32, address4);
 }
-
 
 
 static inline void add_force_to_3_water(float *address1,
@@ -3259,6 +3280,114 @@ static inline void do_9_invsqrt(vector float rsq1,
   *rinv9  = vec_madd(tmpA9,tmpB9,lu9);
   /* 36 invsqrt in about 48 cycles due to pipelining ... pretty fast :-) */
 }
+
+
+static inline void zero_highest_element_in_vector(vector float *v)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  
+  *v = (vector float)vec_sel((vector signed int)*v,zero,(vector unsigned int)vec_sld(zero,vec_splat_s32(-1),4));
+}
+
+static inline void zero_highest_2_elements_in_vector(vector float *v)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  
+  *v = (vector float)vec_sel((vector signed int)*v,zero,(vector unsigned int)vec_sld(zero,vec_splat_s32(-1),8));
+}
+
+static inline void zero_highest_3_elements_in_vector(vector float *v)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  
+  *v = (vector float)vec_sel((vector signed int)*v,zero,(vector unsigned int)vec_sld(zero,vec_splat_s32(-1),12));
+}
+
+
+static inline void zero_highest_element_in_3_vectors(vector float *v1,vector float *v2,vector float *v3)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  vector unsigned int mask  = (vector unsigned int)vec_sld(zero,vec_splat_s32(-1),4);
+				     
+  *v1 = (vector float)vec_sel((vector signed int)*v1,zero,mask);
+  *v2 = (vector float)vec_sel((vector signed int)*v2,zero,mask);
+  *v3 = (vector float)vec_sel((vector signed int)*v3,zero,mask);
+}
+
+static inline void zero_highest_2_elements_in_3_vectors(vector float *v1,vector float *v2,vector float *v3)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  vector unsigned int mask  = (vector unsigned int)vec_sld(zero,vec_splat_s32(-1),8);
+				     
+  *v1 = (vector float)vec_sel((vector signed int)*v1,zero,mask);
+  *v2 = (vector float)vec_sel((vector signed int)*v2,zero,mask);
+  *v3 = (vector float)vec_sel((vector signed int)*v3,zero,mask);
+}
+
+static inline void zero_highest_3_elements_in_3_vectors(vector float *v1,vector float *v2,vector float *v3)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  vector unsigned int mask  = (vector unsigned int)vec_sld(zero,vec_splat_s32(-1),12);
+				     
+  *v1 = (vector float)vec_sel((vector signed int)*v1,zero,mask);
+  *v2 = (vector float)vec_sel((vector signed int)*v2,zero,mask);
+  *v3 = (vector float)vec_sel((vector signed int)*v3,zero,mask);
+}
+
+static inline void zero_highest_element_in_9_vectors(vector float *v1,vector float *v2,vector float *v3,
+						     vector float *v4,vector float *v5,vector float *v6,
+						     vector float *v7,vector float *v8,vector float *v9)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  vector unsigned int mask = (vector unsigned int)vec_sld(zero,vec_splat_s32(-1),4);
+				     
+  *v1 = (vector float)vec_sel((vector signed int)*v1,zero,mask);
+  *v2 = (vector float)vec_sel((vector signed int)*v2,zero,mask);
+  *v3 = (vector float)vec_sel((vector signed int)*v3,zero,mask);
+  *v4 = (vector float)vec_sel((vector signed int)*v4,zero,mask);
+  *v5 = (vector float)vec_sel((vector signed int)*v5,zero,mask);
+  *v6 = (vector float)vec_sel((vector signed int)*v6,zero,mask);
+  *v7 = (vector float)vec_sel((vector signed int)*v7,zero,mask);
+  *v8 = (vector float)vec_sel((vector signed int)*v8,zero,mask);
+  *v9 = (vector float)vec_sel((vector signed int)*v9,zero,mask);
+}
+
+static inline void zero_highest_2_elements_in_9_vectors(vector float *v1,vector float *v2,vector float *v3,
+							vector float *v4,vector float *v5,vector float *v6,
+							vector float *v7,vector float *v8,vector float *v9)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  vector unsigned int mask  = (vector unsigned int)vec_sld(zero,vec_splat_s32(-1),8);
+				     
+  *v1 = (vector float)vec_sel((vector signed int)*v1,zero,mask);
+  *v2 = (vector float)vec_sel((vector signed int)*v2,zero,mask);
+  *v3 = (vector float)vec_sel((vector signed int)*v3,zero,mask);
+  *v4 = (vector float)vec_sel((vector signed int)*v4,zero,mask);
+  *v5 = (vector float)vec_sel((vector signed int)*v5,zero,mask);
+  *v6 = (vector float)vec_sel((vector signed int)*v6,zero,mask);
+  *v7 = (vector float)vec_sel((vector signed int)*v7,zero,mask);
+  *v8 = (vector float)vec_sel((vector signed int)*v8,zero,mask);
+  *v9 = (vector float)vec_sel((vector signed int)*v9,zero,mask);
+}
+
+static inline void zero_highest_3_elements_in_9_vectors(vector float *v1,vector float *v2,vector float *v3,
+							vector float *v4,vector float *v5,vector float *v6,
+							vector float *v7,vector float *v8,vector float *v9)
+{
+  vector signed int zero = (vector signed int) vec_zero();
+  vector unsigned int mask  = (vector unsigned int)vec_sld(zero,vec_splat_s32(-1),12);
+				     
+  *v1 = (vector float)vec_sel((vector signed int)*v1,zero,mask);
+  *v2 = (vector float)vec_sel((vector signed int)*v2,zero,mask);
+  *v3 = (vector float)vec_sel((vector signed int)*v3,zero,mask);
+  *v4 = (vector float)vec_sel((vector signed int)*v4,zero,mask);
+  *v5 = (vector float)vec_sel((vector signed int)*v5,zero,mask);
+  *v6 = (vector float)vec_sel((vector signed int)*v6,zero,mask);
+  *v7 = (vector float)vec_sel((vector signed int)*v7,zero,mask);
+  *v8 = (vector float)vec_sel((vector signed int)*v8,zero,mask);
+  *v9 = (vector float)vec_sel((vector signed int)*v9,zero,mask);
+}
+
 
 void inl0100_altivec(int nri,int iinr[],int jindex[],int jjnr[],int shift[],
 		     float shiftvec[],float fshift[],int gid[],float pos[],

@@ -228,7 +228,7 @@ void clincs(rvec *x,rvec *xp,int ncons,
       u0=2.*u1-(tmp0*tmp0+tmp1*tmp1+tmp2*tmp2);
       if (u0 < wfac*u1) *warn=b;	
       if (u0 < 0) u0=0;
-      mvb=blc[b]*(len-sqrt(u0));
+      mvb=blc[b]*(len-u0*invsqrt(u0));
       rhs1[b]=mvb;
       sol[b]=mvb;
     } /* 18*ncons flops */
