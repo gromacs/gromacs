@@ -79,7 +79,7 @@ static char *SRCID_md_c = "$Id$";
 #include "mdrun.h"
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-	     bool bVerbose,bool bCompact,int stepout,
+	     bool bVerbose,bool bCompact,bool bDummies,int stepout,
 	     t_parm *parm,t_groups *grps,
 	     t_topology *top,real ener[],
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -243,9 +243,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
     }
     
-    /* Construct dummy particles */
-    construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
-    
+    if (bDummies) {
+      /* Construct dummy particles */
+      shift_self(graph,fr->shift_vec,x);
+      construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+      unshift_self(graph,fr->shift_vec,x);
+    }
+
     /* Set values for invmass etc. */
     init_mdatoms(mdatoms,lambda,FALSE);
 
@@ -275,9 +279,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (SAfactor < 0) 
 	SAfactor = 0;
     }
-     
-    /* Spread the force on dummy particle to the other particles... */
-    spread_dummy_f(log,x,f,&mynrnb,&top->idef);
+
+    if (bDummies)
+      /* Spread the force on dummy particle to the other particles... */
+      spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
     if (do_per_step(step,parm->ir.nstxout)) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout)) vv=v; else vv=NULL;

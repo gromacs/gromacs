@@ -115,7 +115,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   t_graph    *graph;
   t_mdatoms  *mdatoms;
   time_t     start_t=0;
-
+  bool       bDummies;
+  int        i;
+    
   /* Initiate everything (snew sets to zero!) */
   snew(ener,F_NRE);
   snew(nsb,1);
@@ -180,6 +182,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   /* Distance Restraints */
   init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir));
 
+  /* check if there are dummies */
+  bDummies=FALSE;
+  for(i=0; (i<F_NRE) && !bDummies; i++)
+    bDummies = ((interaction_function[i].flags & IF_DUMMY) && 
+		(top->idef.il[i].nr > 0));
+
   /* Now do whatever the user wants us to do (how flexible...) */
   if (bNM) {
     start_t=do_nm(stdlog,cr,nfile,fnm,
@@ -192,7 +200,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     case eiMD:
     case eiLD:
       start_t=do_md(stdlog,cr,nfile,fnm,
-		    bVerbose,bCompact,nstepout,parm,grps,
+		    bVerbose,bCompact,bDummies,nstepout,parm,grps,
 		    top,ener,x,vold,v,vt,f,buf,
 		    mdatoms,nsb,nrnb,graph,edyn);
       break;
@@ -204,7 +212,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		       x,f,buf,mdatoms,parm->ekin,ener,
-		       nrnb,bVerbose,cr,graph);
+		       nrnb,bVerbose,bDummies,cr,graph);
       break;
     default:
       fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);

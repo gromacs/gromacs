@@ -48,7 +48,7 @@ static char *SRCID_mdrun_h = "$Id$";
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,int stepout,
+		    bool bVerbose,bool bCompact,bool bDummies,int stepout,
 		    t_parm *parm,t_groups *grps,
 		    t_topology *top,real ener[],
 		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
@@ -83,7 +83,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       tensor ekin,real ener[],
 		       t_nrnb nrnb[],
-		       bool bVerbose,t_commrec *cr,
+		       bool bVerbose,bool bDummies,t_commrec *cr,
 		       t_graph *graph);
 /* Do steepest descents EM or something like that! */
 

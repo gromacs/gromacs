@@ -193,7 +193,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
  		tensor ekin,real ener[], 
  		t_nrnb nrnb[], 
- 		bool bVerbose,t_commrec *cr,t_graph *graph) 
+ 		bool bVerbose,bool bDummies,t_commrec *cr,t_graph *graph) 
 { 
   t_forcerec *fr; 
   static char *SD="STEEPEST DESCENTS"; 
@@ -309,8 +309,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	for(m=0;(m<DIM);m++) 
 	  pos[TRY][i][m] = pos[Min][i][m] + step * force[Min][i][m]; 
     
-    /* Construct dummy particles */
-    construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
+    if (bDummies) {
+      /* Construct dummy particles */
+      shift_self(graph,fr->shift_vec,x);
+      construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
+      unshift_self(graph,fr->shift_vec,x);
+    }
     
     /* Calc force & energy on new positions  */
     do_force(log,cr,parm,nsb,force_vir, 
