@@ -115,7 +115,7 @@ int main(int argc,char *argv[])
   
   set_ffvars(tol,epot,npow,bComb,fmax,bLogEps,ratio);
   
-  Flags = (Flags | MD_FFSCAN | MD_XMDRUN);
+  Flags = (Flags | MD_FFSCAN);
 
   mdrunner(cr,NULL,NFILE,fnm,bVerbose,TRUE,0,1,&edyn,Flags);
 

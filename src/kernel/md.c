@@ -383,24 +383,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
     
     if (bDummies) {
-      /* Construct dummy particles. This is parallellized.
-       * If the atoms constructing a dummy are not present
-       * on the local processor we start by fetching them,
-       * and afterwards distribute possible nonlocal 
-       * constructed dummies. (This is checked for during
-       * setup to avoid unnecessary communication).
-       */
-      if(dummycomm) 
-	move_construct_x(dummycomm,x,cr);
-
       shift_self(graph,parm->box,x);
     
-      construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
-
-      unshift_self(graph,parm->box,x);
+      construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef,
+			graph,cr,parm->box,dummycomm);
       
-      if(dummycomm)
-	move_dummy_xv(dummycomm,x,v,cr);
+      unshift_self(graph,parm->box,x);
     }
      
     debug_gmx();
@@ -480,37 +468,21 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(log,step,t,lambda,SAfactor);
     
-    if (bDummies) { 
-      /* Spread the force on dummy particle to the other particles... 
-       * This is parallellized. MPI communication is performed
-       * if the constructing atoms aren't local.
-       */
-      if(dummycomm)
-	move_dummy_f(dummycomm,f,cr);
-
-      spread_dummy_f(log,x,f,&mynrnb,&top->idef);
-
-      if(dummycomm)
-        move_construct_f(dummycomm,f,cr);
-    }    
+    if (bDummies) 
+      spread_dummy_f(log,x,f,&mynrnb,&top->idef,dummycomm,cr);
+      
     /* Calculation of the virial must be done after dummies!    */
     /* Question: Is it correct to do the PME forces after this? */
     calc_virial(log,START(nsb),HOMENR(nsb),x,f,
 		force_vir,pme_vir,graph,parm->box,&mynrnb,fr,FALSE);
 		  
-    if (bDummies && fr->bEwald) { 
-      /* Spread the LR force on dummy particle to the other particles... 
-       * This is parallellized. MPI communication is performed
-       * if the constructing atoms aren't local.
-       */
-      if(dummycomm)
-	move_dummy_f(dummycomm,fr->f_pme,cr);
-
-      spread_dummy_f(log,x,fr->f_pme,&mynrnb,&top->idef);
-
-      if(dummycomm)
-        move_construct_f(dummycomm,fr->f_pme,cr);
-    }    
+    /* Spread the LR force on dummy particle to the other particles... 
+     * This is parallellized. MPI communication is performed
+     * if the constructing atoms aren't local.
+     */
+    if (bDummies && fr->bEwald) 
+      spread_dummy_f(log,x,fr->f_pme,&mynrnb,&top->idef,dummycomm,cr);
+    
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;

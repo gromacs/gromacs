@@ -152,9 +152,9 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
    * models into account. The RDF is calculated as well, almost for free!
    */
   FILE   *fp;
-  char   *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N" };
+  char   *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
   int    i,last;
-  real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav;
+  real   x0,x1,ggg,Gkr,vol_s,rho,gOO,hOO,cosav,ener;
   double fac;
     
   fp=xvgropen(fn,"Distance dependent Gk","r (nm)","G\\sk\\N(r)");
@@ -199,8 +199,10 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
       cosav = gb->elem[i]/gb->count[i];
     else
       cosav = 0;
+    ener = -cosav*ONE_4PI_EPS0/(x1*x1*x1);
     
-    fprintf(fp,"%10.5e %12.5e %12.5e %12.5e %12.5e\n",x1,Gkr,cosav,hOO,gOO);
+    fprintf(fp,"%10.5e %12.5e %12.5e %12.5e %12.5e  %12.5e\n",
+	    x1,Gkr,cosav,hOO,gOO,ener);
     
     /* Swap x0 and x1 */
     x0 = x1;

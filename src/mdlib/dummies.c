@@ -55,8 +55,17 @@ static rvec *prevbuf=NULL,*nextbuf=NULL;
  * when dummy constructs cross node borders (unavoidable
  * for e.g. polymers using anisotropic united atoms).
  */
+/* Communication routines for dummies. The coordinates and
+ * forces are only move on a need-to-know basis, usually only
+ * 2-3 atoms per processor. To achieve this small amount of
+ * communication, and to limit it to nearest neighbour messages,
+ * we demand that dummies are not spread over nonadjacent nodes.
+ * Thus, keep your dummies close to your constructing atoms.
+ * (mdrun & grompp will report an error otherwise)
+ */ 
 
-void move_construct_x(t_comm_dummies *dummycomm, rvec x[], t_commrec *cr)
+
+static void move_construct_x(t_comm_dummies *dummycomm, rvec x[], t_commrec *cr)
 {
   static bool bFirst=TRUE;
   int i;
@@ -100,7 +109,7 @@ void move_construct_x(t_comm_dummies *dummycomm, rvec x[], t_commrec *cr)
 }
 
 
-void move_dummy_xv(t_comm_dummies *dummycomm, rvec x[], rvec v[],t_commrec *cr)
+static void move_dummy_xv(t_comm_dummies *dummycomm, rvec x[], rvec v[],t_commrec *cr)
 {
   int i;
   int sendsize,recvsize;
@@ -145,8 +154,7 @@ void move_dummy_xv(t_comm_dummies *dummycomm, rvec x[], rvec v[],t_commrec *cr)
   /* All coordinates are in place on the respective home node now */
 }
 
-
-void move_dummy_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
+static void move_dummy_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
 {
   int i;
 
@@ -182,8 +190,7 @@ void move_dummy_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
     clear_rvec(f[dummycomm->idxnextconstr[i]]);
 }
 
-
-void move_construct_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
+static void move_construct_f(t_comm_dummies *dummycomm, rvec f[], t_commrec *cr)
 {
   int i;
 
@@ -349,7 +356,8 @@ static void constr_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 
 
 void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
-		       rvec *v,t_idef *idef)
+		       rvec *v,t_idef *idef,t_graph *graph,t_commrec *cr,
+		       matrix box,t_comm_dummies *dummycomm)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
@@ -357,6 +365,19 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   t_iatom   adum,ai,aj,ak,al;
   t_iatom   *ia;
   t_iparams *ip;
+
+  /* Molecules always whole, but I'm not sure whether
+   * the periodicity and shift are guaranteed to be consistent
+   * between different nodes when running e.g. polymers in
+   * parallel. In this special case we thus unshift/shift, but
+   * only when necessary. This is to make sure the coordinates
+   * we move don't end up a box away...
+   */
+  if (dummycomm) {
+    unshift_self(graph,box,x);
+    move_construct_x(dummycomm,x,cr);
+    shift_self(graph,box,x);
+  }
 
   ip     = idef->iparams;
   if (v)
@@ -432,6 +453,11 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 	ia += nra+1;
       }
     }
+  }
+  if (dummycomm) {
+    unshift_self(graph,box,x);
+    move_dummy_xv(dummycomm,x,NULL,cr);
+    shift_self(graph,box,x); /* maybe not necessary */
   }
 }
 
@@ -673,7 +699,8 @@ static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
   /* TOTAL: 77 flops */
 }
 
-void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
+void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
+		    t_comm_dummies *dummycomm,t_commrec *cr)
 {
   real      a1,b1,c1;
   int       i,m,nra,nrd,tp,ftype;
@@ -682,6 +709,10 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
   t_iatom   *ia;
   t_iparams *ip;
   
+  /* We only move forces here, and they are independent of shifts */
+  if (dummycomm)
+    move_dummy_f(dummycomm,f,cr);
+
   ip     = idef->iparams;
 
   nd2    = 0;
@@ -770,5 +801,9 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
   inc_nrnb(nrnb,eNR_DUM3FAD,nd3FAD);
   inc_nrnb(nrnb,eNR_DUM3OUT,nd3OUT);
   inc_nrnb(nrnb,eNR_DUM4FD, nd4FD );
+
+  /* We only move forces here, and they are independent of shifts */
+  if(dummycomm)
+    move_construct_f(dummycomm,f,cr);
 }
 

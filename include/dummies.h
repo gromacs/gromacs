@@ -56,35 +56,16 @@ typedef struct {
   int *idxnextconstr;
 } t_comm_dummies;
 
-/* Communication routines for dummies. The coordinates and
- * forces are only move on a need-to-know basis, usually only
- * 2-3 atoms per processor. To achieve this small amount of
- * communication, and to limit it to nearest neighbour messages,
- * we demand that dummies are not spread over nonadjacent nodes.
- * Thus, keep your dummies close to your constructing atoms.
- * (mdrun & grompp will report an error otherwise)
- */ 
-
-extern void move_construct_x(t_comm_dummies *dummycomm,rvec x[],t_commrec *cr); 
-/* Move coords of nonlocal constructing atoms */
-
-extern void move_dummy_xv(t_comm_dummies *dummycomm,rvec x[],rvec v[],t_commrec *cr);
-/* Send the coordinates and velocity of a constructed dummy to the home node */
-
-extern void move_dummy_f(t_comm_dummies *dummycomm,rvec f[],t_commrec *cr);
-/* Get dummy forces from the home node */
-
-extern void move_construct_f(t_comm_dummies *dummycomm,rvec f[],t_commrec *cr);
-/* Send spreaded forces to nonlocal constructing atoms */
-
-
 extern void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,
-			      real dt,rvec v[],t_idef *idef);
+			      real dt,rvec v[],t_idef *idef,
+			      t_graph *graph,t_commrec *cr,
+			      matrix box,t_comm_dummies *dummycomm);
 /* Create positions of dummy atoms based on surrounding atoms.
  */
  
 extern void spread_dummy_f(FILE *log,rvec x[],rvec f[],
-			   t_nrnb *nrnb,t_idef *idef);
+			   t_nrnb *nrnb,t_idef *idef,
+			   t_comm_dummies *dummycomm,t_commrec *cr);
 /* Spread the force operating on the dummy atoms on the surrounding atoms.
  */
 

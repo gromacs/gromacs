@@ -23,7 +23,7 @@ include_HEADERS = \
 	pme.h       	statusio.h    	viewit.h	calcmu.h    	\
 	fftgrid.h       mdrun.h     	pppm.h      	statutil.h    	\
 	vveclib.h	callf77.h   	fftw_wrapper.h  memdump.h   	\
-	princ.h     	steep.h       	wgms.h		     	\
+	princ.h     	wgms.h		     	\
 	filenm.h        memtab.h    	pull.h      	strdb.h 	\
 	wman.h		comlib.h    	force.h         memtest.h   	\
 	string2.h     	writeps.h	gmxcomplex.h   	\

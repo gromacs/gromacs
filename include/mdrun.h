@@ -81,28 +81,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    t_forcerec *fr,rvec box_size,
 		    unsigned long Flags);
 
-/* ROUTINES from nm.c */
-extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,int stepout,
-		    t_parm *parm,t_groups *grps,
-		    t_topology *top,real ener[],t_fcdata *fcd,
-		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
-		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nsborder *nsb,t_nrnb nrnb[],
-		    t_graph *graph,t_edsamyn *edyn,
-		    t_forcerec *fr,rvec box_size);
-
-/* ROUTINES from steep.c */
-extern real f_norm(t_commrec *cr,
-		   t_grpopts *opts,t_mdatoms *mdatoms,
-		   int start,int end,rvec grad[]);
-/* Calculates norm of force */
-
-extern real f_max(int left,int right,int nnodes,
-		  t_grpopts *opts,t_mdatoms *mdatoms,
-		  int start,int end,rvec grad[],int *nfmax);
-/* Calculates max force */
-
+/* ROUTINES from minimize.c */
 extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_parm *parm,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb,
@@ -113,7 +92,6 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do steepest descents EM or something like that! */
 
-/* ROUTINES from congrad.c */
 extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_parm *parm,t_topology *top,
 		    t_groups *grps,t_nsborder *nsb,
@@ -123,6 +101,17 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_commrec *cr,t_commrec *mcr,
 		    t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do conjugate gradients EM! */
+
+extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
+		    bool bVerbose,bool bCompact,int stepout,
+		    t_parm *parm,t_groups *grps,
+		    t_topology *top,real ener[],t_fcdata *fcd,
+		    rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
+		    rvec buf[],t_mdatoms *mdatoms,
+		    t_nsborder *nsb,t_nrnb nrnb[],
+		    t_graph *graph,t_edsamyn *edyn,
+		    t_forcerec *fr,rvec box_size);
+/* Do normal mode analysis */
 
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);

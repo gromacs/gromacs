@@ -11,21 +11,19 @@ libmd@LIBSUFFIX@_la_LDFLAGS        = -version-info @SHARED_VERSION_INFO@
 lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
 libmd@LIBSUFFIX@_la_SOURCES = \
-	calcmu.c	calcvir.c			\
-	congrad.c	constr.c	coupling.c	\
-	dummies.c	ebin.c		edsam.c		\
-	ewald.c         fftgrid.c	force.c  	\
-	ghat.c		init.c			\
-	mdatom.c	mdebin.c	nm.c		\
+	calcmu.c	calcvir.c	constr.c	\
+	coupling.c	dummies.c	ebin.c		\
+	edsam.c		ewald.c         fftgrid.c	\
+	force.c  	ghat.c		init.c		\
+	mdatom.c	mdebin.c	minimize.c	\
 	ns.c		nsb.c		nsgrid.c	\
 	pme.c		poisson.c	pppm.c		\
 	psgather.c	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	pssolve.c	\
-	psspread.c	shakef.c	\
-	sim_util.c	splittop.c	steep.c		\
-	tables.c	tgroup.c	update.c	\
-	vcm.c		wnblist.c	poisson.h	\
-	splittop.h	wnblist.h
+	psspread.c	shakef.c	sim_util.c	\
+	splittop.c	tables.c	tgroup.c	\
+	update.c	vcm.c		wnblist.c	\
+	poisson.h	splittop.h	wnblist.h
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	csettle.c	clincs.c	\
