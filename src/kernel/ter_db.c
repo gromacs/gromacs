@@ -120,6 +120,18 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
 	tb[nb].idih[i].ai[j]=strdup(buf);
       }
     }
+    /* Number of propers */
+    if (fscanf(in,"%s%d",keyw,&(tb[nb].ndih)) != 2) FATAL();
+    CHECK_KW(keyw,"N_DIH");
+    if (debug) 
+      fprintf(debug,"N_DIH %d\n",tb[nb].ndih);
+    snew(tb[nb].dih,tb[nb].ndih);
+    for(i=0; (i<tb[nb].ndih); i++) {
+      for(j=0; (j<4); j++) {
+	if (fscanf(in,"%s",buf) != 1) FATAL();
+	tb[nb].dih[i].ai[j]=strdup(buf);
+      }
+    }
     /* Number of delete atoms! */
     if (fscanf(in,"%s%d",keyw,&(tb[nb].ndel)) != 2) FATAL();
     CHECK_KW(keyw,"N_DELETE");
@@ -182,6 +194,12 @@ void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype)
     for(j=0; (j<tb[i].nidih); j++) {
       for(k=0; (k<4); k++) 
 	fprintf(out,"%6s  ",tb[i].idih[j].ai[k]);
+      fprintf(out,"\n");
+    }
+    fprintf(out,"%d\n",tb[i].ndih);
+    for(j=0; (j<tb[i].ndih); j++) {
+      for(k=0; (k<4); k++) 
+	fprintf(out,"%6s  ",tb[i].dih[j].ai[k]);
       fprintf(out,"\n");
     }
     fprintf(out,"%d\n",tb[i].ndel);

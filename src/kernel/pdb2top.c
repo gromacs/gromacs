@@ -319,9 +319,9 @@ static void ter2bonds(t_params *ps,
 	    add_param(ps,i,i+k+1,NULL,NULL);
 }
 
-static void ter2idihs(t_params *ps,
+static void ter2idihs(t_params *ps,int nidih,t_idih idih[],
 		      int natoms,t_atom atom[],char **aname[],
-		      int resnr,t_hackblock *tdb)
+		      int resnr,int ftype)
 {
   int i,j,k,aa0,a0[4],start;
   char *atomnm;
@@ -330,15 +330,14 @@ static void ter2idihs(t_params *ps,
   start=0;
   while ((start<natoms) && (atom[start].resnr != resnr)) start++;
   /* Now only for this residue */
-  for(j=0; (j<tdb->nidih); j++) {
+  for(j=0; (j<nidih); j++) {
     for(k=0; (k<4); k++) {
-      atomnm=tdb->idih[j].ai[k];
+      atomnm=idih[j].ai[k];
       if ((aa0=search_atom(atomnm,start,natoms,atom,aname)) == -1)
 	fatal_error(0,"Trying to add improper %s %s %s %s to res %d,"
 		    "atom %s not found",
-		    tdb->idih[j].ai[0],tdb->idih[j].ai[1],tdb->idih[j].ai[2],
-		    tdb->idih[j].ai[3],resnr+1,
-		    tdb->idih[j].ai[k]);
+		    idih[j].ai[0],idih[j].ai[1],idih[j].ai[2],
+		    idih[j].ai[3],resnr+1,idih[j].ai[k]);
       else {
 	if (atom[aa0].resnr > (resnr+1)) {
 	  fprintf(stderr,"WARNING: improper spans more than 2 residues:\n");
@@ -349,7 +348,10 @@ static void ter2idihs(t_params *ps,
 	a0[k] = aa0;
       }
     }
-    add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NULL);
+    if (ftype == F_IDIHS)
+      add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NULL);
+    else
+      add_dih_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NOTSET,NULL);
   }
 }
 
@@ -522,10 +524,18 @@ void pdb2top(char *ff,FILE *top_file,char *posre_fn,char *molname,
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles and dihedrals...\n");
   /* first on termini */
-  if (rn>=0)
-    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,rn,ntdb);
-  if (rc>=0)
-    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,rc,ctdb);
+  if (rn>=0) {
+    ter2idihs(&(plist[F_IDIHS]),ntdb->nidih,ntdb->idih,
+	      atoms->nr,atoms->atom,atoms->atomname,rn,F_IDIHS);
+    ter2idihs(&(plist[F_PDIHS]),ntdb->ndih,ntdb->dih,
+	      atoms->nr,atoms->atom,atoms->atomname,rn,F_PDIHS);
+  }
+  if (rc>=0) {
+    ter2idihs(&(plist[F_IDIHS]),ctdb->nidih,ctdb->idih,
+	      atoms->nr,atoms->atom,atoms->atomname,rc,F_IDIHS);
+    ter2idihs(&(plist[F_PDIHS]),ctdb->ndih,ctdb->dih,
+	      atoms->nr,atoms->atom,atoms->atomname,rc,F_PDIHS);
+  }
   /* then all others */
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
