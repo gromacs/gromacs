@@ -7,7 +7,7 @@ onlinedir = ${datadir}/html/online
 online_DATA = \
   dat.html           g_disre.html      g_sorient.html        ndx.html        \
   dlg.html           g_dist.html       g_tcaf.html           ngmx.html       \
-  do_dssp.html       g_dyndom.html     g_traj.html           nmrun.html      \
+  do_dssp.html       g_dyndom.html     g_traj.html           \
   edi.html           g_enemat.html     g_velacc.html         options.html    \
   editconf.html      g_energy.html     genbox.html           out.html        \
   edo.html           g_gyrate.html     genconf.html          pdb.html        \

@@ -53,7 +53,7 @@ char *GromacsVersion(void);
   
   
 static char *CopyrightText[] = {
-  "Copyright (c) 1991-2001, University of Groningen, The Netherlands"
+  "Copyright (c) 1991-2002, University of Groningen, The Netherlands"
 };
 
 static char *GPLText[] = {

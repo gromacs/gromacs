@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>GROMACS<br>FAQ</h2><font size=-1><A HREF="online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.0<br>
-Mon 23 Jul 2001</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
+Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
  
 <p>If you don't find the solution to your problem here, you could have a look in 
@@ -21,6 +21,7 @@ mailing lists</a>, or subscribe yourself!
 at www.gromacs.org with more advanced and/or technical topics (e.g. automake/autoconf) available under 
 Developer info that you could use, and when all else fails it's
 time to post your question to the mailing lists!</p>
+
 
 
 <h3>Download & Installation</h3>
@@ -37,8 +38,12 @@ do I install it?</A>
 still says it can't find it!</A>
 <li><A HREF="#MPI">How do I compile GROMACS for parallel runs?</A>
 <li><A HREF="#noMPIwrapper">When I enable MPI support for parallel runs, GROMACS
-looks for a special MPI compiler, but we don't use that; can't I add the MPI library
-manually with -lmpi ?</A>
+looks for a special MPI wrapper script like 'mpicc', but we don't use that; is it possible to
+ add the MPI library manually with -lmpi ?</A>
+<li><A HREF="#nomotif">How do I turn off Motif?</A>
+<li><A HREF="#ldpath">Everything compiles fine, but when I try to run a program
+it complains about not finding libXXXX.so.</A>
+<li><A HREF="#osx_zsh">I get an error from the configure script on Mac OS X!</A>
 <li><A HREF="#noclue">It still won't compile and I haven't got a clue what the problem might be...</A>
 <li><A HREF="#relativespeed">How fast is GROMACS compared to other programs?</A>
 <li><A HREF="#speed">Is there any way I can make GROMACS run faster?</A>
@@ -57,6 +62,7 @@ to simulate. What should I do?</A>
 file to a .pdb file?</A> 
 <li><A HREF="#scmis">The <TT>pdb2gmx</TT> program is complaining about long bonds and/or
 missing atoms. What should I do?</A>
+<li><A HREF="#osxcpp">grompp doesn't find the C preprocessor /lib/cpp on OS X!</A>
 </ul><br>
 
 <h3>Simulation</h3>
@@ -68,6 +74,8 @@ missing atoms. What should I do?</A>
 <li><A HREF="#temp">Why do I get very strange temperatures in my simulation?</A>
 <li><A HREF="#simann">Why do I get very strange temperatures in simulated annealing?</A>
 <li><A HREF="#recover">Is there any smart way to continue a run that crashed?</A>
+<li><A HREF="#largefiles">When my trajectory files reach 2GB I get strange error messages,
+or they just disappear. Why?</A>
 </ul><br>
 
 <h3>Analysis</h3>
@@ -133,7 +141,7 @@ If you're impatient you could just unpack the distribution and try<br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt>
  ./configure<br>
  make<br>
@@ -144,16 +152,16 @@ If you're impatient you could just unpack the distribution and try<br><br>
 <br>
 
 The configure script will complain if it doesn't find FFTW, but you will be told what to do.<br><br>
-This setup is new for version 3.0, so there might be some bugs we've missed, though. Don't
-hesitate to post questions to the mailing lists or contact us at 
-<A HREF="mailto:gromacs@gromacs.org">gromacs@gromacs.org</A> if you have problems.<br><br>
+This setup is new from version 3.0, so there might be some bugs we've missed, though. Don't
+hesitate to post questions to the <a href="http://www.gromacs.org/mailing_lists/users.php>mailing lists</a> 
+if you have problems.<br><br>
 
 <li><A NAME="compiler">
 <B>How do I select the compiler and/or flags to use?</B><br><br>
 Select the compiler by setting the CC and/or F77 environment variables before running the
 GROMACS configure script (MPICC for the MPI C compiler). You can also set the corresponding compiler flags with CFLAGS and
 FFLAGS, and the linker flags with LDFLAGS. If you want to add a library at the link stage
-you can add the -llib flags to the LDADD variable, and include directories can be 
+you can add the -llib flags to the LIBS variable, and include directories can be 
 added in the CPPFLAGS variable.<br><br>
 
 <li><A NAME="fftw">
@@ -169,7 +177,7 @@ Configure and install FFTW with the command:<br><br>
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt> ./configure --enable-float<br>
  make<br>
  make install</TT>
@@ -185,7 +193,7 @@ of FFTW (nice to have) with:<br><br>
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt> make distclean<br>
  ./configure<br>
  make<br>
@@ -209,7 +217,7 @@ Specify the header file directory (e.g. /home/erik/fftw/include) as<br><br>
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt> CPPFLAGS="-I/home/erik/fftw/include"</tt>
 <td></td>
 </tr>
@@ -220,7 +228,7 @@ and the location of the libraries (e.g. /home/erik/fftw/lib) in<br><br>
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt> LDFLAGS="-L/home/erik/fftw/lib"</tt>
 <td></td>
 </tr>
@@ -251,13 +259,75 @@ is set. Check the options to the configure script with "./configure --help".
 
 <li><A NAME="noMPIwrapper">
 <B>When I enable MPI support for parallel runs, GROMACS
-looks for a special MPI compiler, but we don't use that; can't I add the MPI library
-manually with -lmpi ?</B><br><br>
-Yes, you can, but don't add it to the compiler name! If you have to provide a flag
-to search the MPI include directory you should add it in the CPPFLAGS variable, and the
-library directory might have to be added in the LDFLAGS variable (check the FFTW section
-for details.) The actual MPI library flag "-lmpi" should be added in the LDADD environment 
-variable, so GROMACS adds this library when linking.<br><br>
+looks for a special MPI wrapper script like 'mpicc', but we don't use that; is it possible to
+ add the MPI library manually with -lmpi ?</B><br><br>
+Sure - no problem, but it might not be entirely obvious if you are new to autoconf scripts.
+Here's how to do it:<br><br>
+To use the MPI library we need the header files (mpi.h) with definitions, and the MPI libraries
+with the actual code (e.g. libmpi.a). If your system uses some special hardware it might
+also be necessary to link with more libraries - ask your system administrator if you have
+any problems. Start by location these headers and libraries on your system, and then add
+them to your environment variables before running the configure script:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+<td WIDTH="90%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<tt>
+setenv CPPFLAGS "-I/path/to/your/mpi/include"<br>
+setenv LDFLAGS "-L/path/to/your/mpi/lib"<br>
+setenv LIBS "-lmpi"<br>
+setenv MPICC "cc"</tt>
+<td></td>
+</tr>
+</table>
+<br>
+(This is valid for tcsh, for bash you should use export instead.) Note that these commands overwrite 
+any previous assignments, so you must add
+all parts you want (you can use $VARIABLE to add the previous value of an environment variable).
+<br>
+Now you should be able to run ./configure --enable-mpi !
+<br><br>
+
+<li><A NAME="nomotif">
+<B>How do I turn off Motif?</b><br><br>
+Just use the flag --without-motif-libraries (or headers).
+If the configure script doesn't find both libraries and headers it will disable motif. This is useful when you have motif on the machine where you compile, but not on all machines you run on.<br><br>
+
+<li><A NAME="ldpath">
+<b>Everything compiles fine, but when I try to run a program
+it complains about not finding libXXXX.so.</b><br><br>
+GROMACS and/or the FFTW package can be compiled with shared libraries. In fact,
+it's the default setup in the Linux RPMs. This means we save space by not linking all the
+routines into each binary, but call the shared library at runtime. Of course, this requires that you can find the library at runtime. For the GROMACS distribution programs we hardcode the location of the GROMACS and FFTW libraries, but if you compile your own programs or move your libraries you must tell the system where to find them! 
+Fortunately, this is quite easy to do. On Linux you can do it permanently for
+all users if you are root, by adding the search path to the file /etc/ld.so.conf. Alternatively, you can add it to the LD_LIBRARY_PATH environment variable:
+<br><br>
+<table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
+<tr NOSAVE>
+<td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
+
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<TT>setenv LD_LIBRARY_PATH "$LD_LIBRARY_PATH:/opt/lib"</TT>
+<td></td>
+</tr>
+</table>
+<br>
+(This is valid for tcsh, for bash you should use export instead.) Ask your
+local sysadm how to add it to your login file so it's done automatically each
+time you log on.
+<br><br>
+
+
+<li><A NAME="osx_zsh">
+<b>I get an error from the configure script on Mac OS X!</B><br><br>
+This is because OS X uses Z shell for /bin/sh. This will hopefully be
+fixed in a future release of automake (it is not caused by Gromacs), but in the
+meantime you can install bash (if you don't already have it) and 
+use the command '/bin/bash ./configure'  (Your bash location might be different from /bin/bash).
+<br><br>
+
+
 
 <li><A NAME="noclue">
 <B>It still won't compile and I haven't got a clue what the problem might be...</B><br><br>
@@ -301,7 +371,7 @@ you should use the Compaq compilers instead of gcc.<br><br>
 You should always use single precision; there are very few cases where you
 actually need double precision, and it's slower.<br><br>
 Investigate the options <TT>-dummy</TT> and <TT>-heavyh</TT> to
-<A HREF="documentation/reference3.0/online/pdb2gmx.html"><TT>pdb2gmx</TT></A> 
+<A HREF="/documentation/reference_3.1/online/pdb2gmx.html"><TT>pdb2gmx</TT></A> 
 which control the constraining of hydrogen atoms and the mass of
 unconstrained hydrogen atoms. This eliminates the highest freqency
 motions in your system, enabling you to increase the timestep without
@@ -350,10 +420,10 @@ still prints fine on paper.<br><br>
 <li><A NAME="PDB">
 <B>OK, I've downloaded a PDB file with a structure I'd like
 to simulate. What should I do?</B><br><br>
-Look at the <A HREF="/documentation/reference3.0/online/flow.html">flowchart</A> for a quick overview. 
+Look at the <A HREF="/documentation/reference_3.1/online/flow.html">flowchart</A> for a quick overview. 
 Start where it says "eiwit.pdb" (this is somewhere at the top). 
 More detailed info can be found in the 
-<A HREF="/documentation/reference3.0/online/getting_started.html">Getting Started</A>
+<A HREF="/documentation/reference_3.1/online/getting_started.html">Getting Started</A>
 section, you can probably start where it says "Ribonuclease S-Peptide".
 <br><br>
 
@@ -367,16 +437,16 @@ have different chain identifiers!<br><br>
 <li><A NAME="convert">
 <B>How do I convert my structure from a .gro, .tpr, or trajectory 
 file to a .pdb file?</B><br><br>
-Any <a href="/documentation/reference3.0/online/files.html">generic structure</a> file,
+Any <a href="/documentation/reference_3.1/online/files.html">generic structure</a> file,
 for instance <TT>.gro</TT>, <TT>.pdb</TT> or <TT>.tpr</TT>, can be
 converted to <TT>.pdb</TT> with 
-<a href="/documentation/reference3.0/online/editconf.html">editconf</a></TT>.  You can view a
+<a href="/documentation/reference_3.1/online/editconf.html">editconf</a></TT>.  You can view a
 <TT>.pdb</TT> file with several programs, for instance <TT>rasmol</TT>. Two generic
 structure files can be fitted with 
-<a href="/documentation/reference3.0/online/g_confrms.html">g_confrms</a></TT>, the two
+<a href="/documentation/reference_3.1/online/g_confrms.html">g_confrms</a></TT>, the two
 superimposed structures can be written to a <TT>.pdb</TT> file.  Any
-<a href="/documentation/reference3.0/online/files.html">generic trajectory</a> format can be
-converted with <a href="/documentation/reference3.0/online/trjconv.html"><TT>trjconv</TT></a>.
+<a href="/documentation/reference_3.1/online/files.html">generic trajectory</a> format can be
+converted with <a href="/documentation/reference_3.1/online/trjconv.html"><TT>trjconv</TT></a>.
 You can dump one frame with <TT>trjconv -dump</TT>, or write a
 <TT>.pdb</TT> with multiple frames using <TT>trjconv -op -app</TT>.
 If multiple structures in a <TT>.pdb</TT> are separated by
@@ -388,14 +458,22 @@ view them.<br><br>
 <B>The <TT>pdb2gmx</TT> program is complaining about long bonds and/or
 missing atoms. What should I do?</B><br><br>
 There are probably atoms missing earlier in the 
-<A HREF="/documentation/reference3.0/online/pdb.html"><TT>.pdb</TT></A> file
-which makes <A HREF="/documentation/reference3.0/online/pdb2gmx.html"><TT>pdb2gmx</TT></A>
+<A HREF="/documentation/reference_3.1/online/pdb.html"><TT>.pdb</TT></A> file
+which makes <A HREF="/documentation/reference_3.1/online/pdb2gmx.html"><TT>pdb2gmx</TT></A>
 go crazy. Check the screen output of <TT>pdb2gmx</TT>, as it
 will tell you which one is missing. Then add the atoms in your pdb file,
 energy minimization will put them in the right place, 
 or fix the side chain with e.g. the 
 <A HREF="http://swift.embl-heidelberg.de/whatif/">WhatIF program</A>.<br><br>
 
+<li><A NAME="osxcpp">
+<B>grompp doesn't find the C preprocessor /lib/cpp on OS X!</B><br><br>
+Yep, that's right. OS X is a real Unix system, but Apple have been moving
+some stuff around. Look for it in /usr/bin or possible a place like
+/usr/libexec/gcc/darwin/ppc/2.95.2/cpp. Since a lot of programs assume
+cpp to be present in /lib it is probably smart to make a link, but you
+can also specify the location with the cpp keyword in your mdp files.
+<br><br>
 
 <li><A NAME="1-4cut">
 <B>What does "1-4 (#,#) interaction not within cut-off" mean?</B><br><br>
@@ -446,20 +524,23 @@ usually result in a large percentage of CPU time being devoted to
 machine with <TT>top</TT> and <TT>osview</TT>).
 
 <LI>You might have all 
-<A HREF="/documentation/reference3.0/online/mdp_opt.html#out"><TT>nst*</TT></A> parameters (see
-your <A HREF="/documentation/reference3.0/online/mdp_opt.html"><TT>.mdp</TT></A> file) set to 0,
+<A HREF="/documentation/reference_3.1/online/mdp_opt.html#out"><TT>nst*</TT></A> parameters (see
+your <A HREF="/documentation/reference_3.1/online/mdp_opt.html"><TT>.mdp</TT></A> file) set to 0,
 this will suppress most output.
 
 <LI>Your disk might be full. Eventually this will lead to
 <TT>mdrun</TT> crashing, but since output is buffered, it might take a
 while for <TT>mdrun</TT> to realize it can't write.
+<li>You are runnning an executable compiled with MPI support (e.g. 
+<a href="http://www.lam-mpi.org">LAM</a>) and did not start the LAM daemon
+(lamboot). See LAM documentation.
 </UL>
 <br><br>
 
 <li><A NAME="temp">
 <b>Why do I get very strange temperatures in my simulation?</b><br><br>
 If you are using simulated annealing 
-(see <A HREF=/documentation/reference3.0/online/mdp_opt.html#sa><TT>.mdp</TT> options</A>), 
+(see <A HREF=/documentation/reference_3.1/online/mdp_opt.html#sa><TT>.mdp</TT> options</A>), 
 check out <A HREF="#simann">the next item</A>. 
 If you are not using simulated annealing, you might have very close contacts or a too large time
 step. This causes inaccurate integration which will usually result in
@@ -472,8 +553,8 @@ short equilibration run with a small(er) time step.  <br><br>
 This probably means that the initial time in your simulation is
 not zero ps. The temperature during simulated annealing is controlled
 by two points on a linear curve: temperature will be zero K at
-<A HREF=/documentation/reference3.0/online/mdp_opt.html#sa><TT>zero_temp_time</TT></A> ps and it
-will be <A HREF=/documentation/reference3.0/online/mdp_opt.html#sa><TT>ref_t</TT></A> K at zero
+<A HREF=/documentation/reference_3.1/online/mdp_opt.html#sa><TT>zero_temp_time</TT></A> ps and it
+will be <A HREF=/documentation/reference_3.1/online/mdp_opt.html#sa><TT>ref_t</TT></A> K at zero
 ps. This means that if you do not start your simulation at zero ps,
 the simulation will not start at <TT>ref_t</TT> K. So if your
 <TT>zero_temp_time</TT> is positive and the starting time for your
@@ -504,23 +585,23 @@ graphs are included to clarify things a bit.<br><br>
 Yes, if the reason for the crash didn't have anything to doe with
 the algorithms, i.e. it was due to a system crash, a full disk, or
  a kill by the queuing system.  Otherwise you'll have to use 
-<TT><a href="/documentation/reference3.0/online/grompp.html">grompp</a></TT>
+<TT><a href="/documentation/reference_3.1/online/grompp.html">grompp</a></TT>
 and change the options.
 
 To really continue a simulation as if nothing had happened, you will
 need coordinates and velocities in full precision (i.e. 
-<TT><a href="/documentation/reference3.0/online/trr.html">.trr</a></TT> format). 
-<TT><a href="/documentation/reference3.0/online/xtc.html">.xtc</a></TT> trajectories are in
+<TT><a href="/documentation/reference_3.1/online/trr.html">.trr</a></TT> format). 
+<TT><a href="/documentation/reference_3.1/online/xtc.html">.xtc</a></TT> trajectories are in
 reduced precision (only 3 decimal places after the decimal point) and
 do not contain velocity information at all. Feed this trajectory and
-your origional <TT><a href="/documentation/reference3.0/online/tpr.html">.tpr</a></TT> file to
-<TT><a href="/documentation/reference3.0/online/tpbconv.html">tpbconv</a></TT> to obtain a new
-<TT><a href="/documentation/reference3.0/online/tpr.html">.tpr</a></TT> file, <EM>be sure</EM>
+your origional <TT><a href="/documentation/reference_3.1/online/tpr.html">.tpr</a></TT> file to
+<TT><a href="/documentation/reference_3.1/online/tpbconv.html">tpbconv</a></TT> to obtain a new
+<TT><a href="/documentation/reference_3.1/online/tpr.html">.tpr</a></TT> file, <EM>be sure</EM>
 to specify the one-but-last frame from your 
-<TT><a href="/documentation/reference3.0/online/trr.html">.trr</a></TT> file, since the very
+<TT><a href="/documentation/reference_3.1/online/trr.html">.trr</a></TT> file, since the very
 last frame is likely to be corrupted due to the crash. With the 
-<TT><a href="/documentation/reference3.0/online/tpr.html">.tpr</a></TT> file 
-<TT><a href="/documentation/reference3.0/online/tpbconv.html">tpbconv</a></TT> produces you can
+<TT><a href="/documentation/reference_3.1/online/tpr.html">.tpr</a></TT> file 
+<TT><a href="/documentation/reference_3.1/online/tpbconv.html">tpbconv</a></TT> produces you can
 restart your simulation.<br><br>
 
 After the continuation run is finished, you will have your simulation
@@ -530,7 +611,7 @@ This can be done as follows (the same command works for xtc-files):<br><br>
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <TT>trjcat -o whole.trr part1.trr part2.trr part3.trr</TT>
 <td></td>
 </tr>
@@ -540,7 +621,7 @@ The energy files can be concatenated in a similar manner:<br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <TT>eneconv -o whole.edr part1.edr part2.edr part3.edr</TT>
 <td></td>
 </tr>
@@ -553,30 +634,46 @@ runs continued with tpbconv and grompp you might have to set the times yourself
 <br><br>
 
 It is of course possible to start a simulation from the coordinates in
-your <a href="/documentation/reference3.0/online/xtc.html">xtc</a> file, but in that case new
+your <a href="/documentation/reference_3.1/online/xtc.html">xtc</a> file, but in that case new
 velocities will have to be generated resulting in a 'kink' in the
 simulation. To prevent this you should write coordinates and
-velocities to a <TT><a href="/documentation/reference3.0/online/trr.html">.trr</a></TT> file
+velocities to a <TT><a href="/documentation/reference_3.1/online/trr.html">.trr</a></TT> file
 during your simulations.  Do this by setting 
-<A HREF=/documentation/reference3.0/online/mdp_opt.html#out><TT>nstxout</TT></a> and 
-<A HREF=/documentation/reference3.0/online/mdp_opt.html#out><TT>nstvout</TT></a> in your 
-<TT><a href="/documentation/reference3.0/online/mdp.html">.mdp</a></TT> file. You don't need
+<A HREF=/documentation/reference_3.1/online/mdp_opt.html#out><TT>nstxout</TT></a> and 
+<A HREF=/documentation/reference_3.1/online/mdp_opt.html#out><TT>nstvout</TT></a> in your 
+<TT><a href="/documentation/reference_3.1/online/mdp.html">.mdp</a></TT> file. You don't need
 these frames very often (every 10 ps or so), but remember that when
-<TT><a href="/documentation/reference3.0/online/mdrun.html">mdrun</a></TT> crashes, everything
+<TT><a href="/documentation/reference_3.1/online/mdrun.html">mdrun</a></TT> crashes, everything
 calculated after the last frame in the <TT><a
-href="/documentation/reference3.0/online/trr.html">.trr</a></TT> file, will have to be
+href="/documentation/reference_3.1/online/trr.html">.trr</a></TT> file, will have to be
 recalculated for a proper continuation.<br><br>
+
+<li><A NAME="largefiles">
+<b>When my trajectory files reach 2GB I get strange error messages,
+or they just disappear. Why?</b><br><br>
+This is a problem with the file system; when the system, or the C library,
+or the compiler, or the NFS implementation (version 2) only uses 32 bits
+for the file pointer you cannot use files larger than 2GB. On most modern
+systems there are special compiler flags you can set to enable 64-bit file
+pointers, but since the autoconf test for this doesn't work we have chosen
+not to include any flags by default, since it can break other things. But
+you can of course try anything if you add your own flags :-)
+<br>
+In any case, it is probably a good idea to try to keep your files
+smaller than 2GB. You never know if you later might need to use it over
+NFS version 2 or on some supercomputer system that doesn't support large
+files yet.<br><br>
 
 
 <li><A NAME="multPDB">
 <b>How do I analyze a PDB file with multiple entries?</b><br><br>
 Assuming your 
-<A HREF="/documentation/reference3.0/online/pdb.html"><TT>.pdb</TT></A> file is
+<A HREF="/documentation/reference_3.1/online/pdb.html"><TT>.pdb</TT></A> file is
 called "<TT>eiwit.pdb</TT>", this is what you would do:<br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <TT>pdb2gmx -f eiwit.pdb -reth -ter -n</TT>
 <td></td>
 </tr>
@@ -584,18 +681,18 @@ called "<TT>eiwit.pdb</TT>", this is what you would do:<br><br>
 <br>
 
 <TT>-reth</TT> lets 
-<A HREF="/documentation/reference3.0/online/pdb2gmx.html"><TT>pdb2gmx</TT></A> keep all
+<A HREF="/documentation/reference_3.1/online/pdb2gmx.html"><TT>pdb2gmx</TT></A> keep all
 hydrogens which are present in your input file. It will also <B>not
 add</B> any missing hydrogens, so your molecules should be
 complete. <TT>-ter</TT> will cause <TT>pdb2gmx</TT> to ask for termini
 types for which you must select 'none' for both C- and N-terminus.
 <TT>-n</TT> tells <TT>pdb2gmx</TT> to generate a 
-<A HREF="/documentation/reference3.0/online/ndx.html"><TT>.ndx</TT></A> file with the atoms
+<A HREF="/documentation/reference_3.1/online/ndx.html"><TT>.ndx</TT></A> file with the atoms
 reordered to the GROMACS standard. <TT>pdb2gmx</TT> now generates a
-topology file (<A HREF="/documentation/reference3.0/online/top.html"><TT>topol.top</TT></A>)
+topology file (<A HREF="/documentation/reference_3.1/online/top.html"><TT>topol.top</TT></A>)
 which exactly corresponds with the molecule(s) in your input file.
 It also writes a coordinate file 
-(<A HREF="/documentation/reference3.0/online/gro.html"><TT>conf.gro</TT></A>).<br><br>
+(<A HREF="/documentation/reference_3.1/online/gro.html"><TT>conf.gro</TT></A>).<br><br>
 
 <P>
 The next step is:
@@ -603,7 +700,7 @@ The next step is:
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt>trjconv -f eiwit.pdb -o eiwit.xtc -n clean -timestep 1 -box 10 -center</tt>
 <td></td>
 </tr>
@@ -611,12 +708,12 @@ The next step is:
 <br>
 
 Yes, <TT>-f eiwit.pdb</TT> works because a <TT>.pdb</TT> is also a
-<A HREF="/documentation/reference3.0/online/files.html">trajectory format</A>
+<A HREF="/documentation/reference_3.1/online/files.html">trajectory format</A>
 in GROMACS. <TT>-ox</TT> sets output to 
-<A HREF="/documentation/reference3.0/online/xtc.html"><TT>.xtc</TT></A>. <TT>-n clean</TT>
-tells <A HREF="/documentation/reference3.0/online/trjconv.html"><TT>trjconv</TT></A> to
+<A HREF="/documentation/reference_3.1/online/xtc.html"><TT>.xtc</TT></A>. <TT>-n clean</TT>
+tells <A HREF="/documentation/reference_3.1/online/trjconv.html"><TT>trjconv</TT></A> to
 use the <TT>clean.ndx</TT> generated by 
-<A HREF="/documentation/reference3.0/online/pdb2gmx.html"><TT>pdb2gmx</TT></A>, so the atom
+<A HREF="/documentation/reference_3.1/online/pdb2gmx.html"><TT>pdb2gmx</TT></A>, so the atom
 ordering in the output (<TT>.xtc</TT>) file will be according to GROMACS
 standards. <TT>-timestep 1</TT> sets the timestep between output frames
 to one, so the structures from the <TT>.pdb</TT> file get numbered 
@@ -638,7 +735,7 @@ A not very exiting but mandatory step is:<br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt>
 grompp -f grompp.mdp -c conf.gro -p topol.top</tt>
 <td></td>
@@ -647,13 +744,13 @@ grompp -f grompp.mdp -c conf.gro -p topol.top</tt>
 <br>
 
 This will generate a run input file 
-(<A HREF="/documentation/reference3.0/online/tpr.html"><TT>topol.tpr</TT></A>) from the 
+(<A HREF="/documentation/reference_3.1/online/tpr.html"><TT>topol.tpr</TT></A>) from the 
 <TT>topol.top</TT> and <TT>conf.gro</TT> you generated with 
 <TT>pdb2gmx</TT>. 
-A <A HREF="/documentation/reference3.0/online/mdp.html">default <TT>grompp.mdp</TT></A> is 
+A <A HREF="/documentation/reference_3.1/online/mdp.html">default <TT>grompp.mdp</TT></A> is 
 available. You can probably use it 'as is', but you might want or need 
 to modify some thing. In any case you are encouraged to 
-<A HREF="/documentation/reference3.0/online/mdp_opt.html">review the description</A> of the 
+<A HREF="/documentation/reference_3.1/online/mdp_opt.html">review the description</A> of the 
 numerous options in the <TT>.mdp</TT> file.
 
 <P>
@@ -662,7 +759,7 @@ structures. Enter:<br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt>
 g_rms -f eiwit.xtc -s topol.tpr -m</tt>
 <td></td>
@@ -671,15 +768,15 @@ g_rms -f eiwit.xtc -s topol.tpr -m</tt>
 <br>
 
 <TT>-f eiwit.xtc</TT> and <TT>-s topol.tpr</TT> are self-explanatory.
-<TT>-m</TT> tells <A HREF="/documentation/reference3.0/online/g_rms.html"><TT>g_rms</TT></A>
+<TT>-m</TT> tells <A HREF="/documentation/reference_3.1/online/g_rms.html"><TT>g_rms</TT></A>
 to output an RMSD matrix in 
-<A HREF="/documentation/reference3.0/online/xpm.html"><TT>.xpm</TT></A> format, which can be
+<A HREF="/documentation/reference_3.1/online/xpm.html"><TT>.xpm</TT></A> format, which can be
 directly viewed with for example <TT>xv</TT>.
 
 <P>
 Of course there are many more analysis tools available. For example
-<A HREF="/documentation/reference3.0/online/ngmx.html"><TT>ngmx</TT></A> a trajectory viewer.
-A list of all tools is available in the <A HREF="/documentation/reference3.0/online.html">online
+<A HREF="/documentation/reference_3.1/online/ngmx.html"><TT>ngmx</TT></A> a trajectory viewer.
+A list of all tools is available in the <A HREF="/documentation/reference_3.1/online.html">online
 manual</A>.
 
 <P>
@@ -691,14 +788,14 @@ Yes, just type:<br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
-<td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
+<td WIDTH="98%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt>g_confrms -f1 file1.xxx -f2 file2.xxx</tt>
 <td></td>
 </tr>
 </table>
 <br>
 g_confrms accepts 
-any <A HREF="/documentation/reference3.0/online/files.html">generic structure format</A> which 
+any <A HREF="/documentation/reference_3.1/online/files.html">generic structure format</A> which 
 for instance can be <TT>.pdb</TT>, <TT>.gro</TT> or <TT>.tpr</TT>.
 The program will ask you to select subgroups of both structures for the
 (non mass weighted) LSQ fit. These subgroups must have the same number of atoms, however the two 
@@ -715,8 +812,8 @@ on top of each other.
 <li><A NAME="group">
 <b>I get tired of having to select the same index group 
 over and over again. Is there a better way to do it?</b><br><br>
-Use <A HREF="/documentation/reference3.0/online/make_ndx.html"><TT>make_ndx</TT></A> to create 
-an <A HREF="/documentation/reference3.0/online/ndx.html"><TT>.ndx</TT></A> file with only one
+Use <A HREF="/documentation/reference_3.1/online/make_ndx.html"><TT>make_ndx</TT></A> to create 
+an <A HREF="/documentation/reference_3.1/online/ndx.html"><TT>.ndx</TT></A> file with only one
 group in it, this is done by typing '<TT>keep #</TT>' in <TT>make_ndx</TT>,
 where '<TT>#</TT>' stands for the one group you want to have. 
 Name the file <TT>index.ndx</TT> (which is the default
@@ -738,31 +835,34 @@ copy the entire contents of the directory you should be able to type
 change the name by editing the Makefile.<br><br>
 
 Now, if you wrote an analysis tool which, in your opinion, adds
-something that is really missing in GROMACS, please 
-<A HREF="mailto:gromacs@gromacs.org">tell us</A> so that all other GROMACS
-users can also benefit from it!
+something that is really missing in GROMACS, please post it on the
+<a href="http://www.gromacs.org/mailing_lists/developers.php">developers 
+mailing list</a> so that all other GROMACS users can also benefit from it!
 <br><br>
 
-<li><A NAME="none">
-<b>My problem isn't mentioned above, and/or none of the solutions seem to work?</b>
-<br><br>
-Check the installation instructions carefully if your problem is related
-to the configuration, building and installation of GROMACS.
-Also try 
-<A HREF="/documentation/reference3.0/online/getting_started.html">"Getting Started"</A> 
-where a guided tour of GROMACS is provided. 
-A quick glance at the <A HREF="/documentation/reference3.0/online/flow.html">flowchart</A>
-will tell you if you missed any essential steps in setting up a run.
-Checking your <A HREF="/documentation/reference3.0/online/mdp.html"><TT>.mdp</TT></A>
-file against our <A HREF="/documentation/reference3.0/online/mdp.html">sample <TT>.mdp</TT>
-file</A> and the <A HREF="/documentation/reference3.0/online/mdp_opt.html">mdp options
+<li><A NAME="none"> <b>My problem isn't mentioned above, and/or none
+of the solutions seem to work?</b> <br><br> Check the installation
+instructions carefully if your problem is related to the
+configuration, building and installation of GROMACS.  Also try <A
+HREF="/documentation/reference_3.1/online/getting_started.html">"Getting
+Started"</A> where a guided tour of GROMACS is provided.  A quick
+glance at the <A
+HREF="/documentation/reference_3.1/online/flow.html">flowchart</A> will
+tell you if you missed any essential steps in setting up a run.
+Checking your <A
+HREF="/documentation/reference_3.1/online/mdp.html"><TT>.mdp</TT></A>
+file against our <A
+HREF="/documentation/reference_3.1/online/mdp.html">sample
+<TT>.mdp</TT> file</A> and the <A
+HREF="/documentation/reference_3.1/online/mdp_opt.html">mdp options
 list</A> might solve a number of potential problems. In general it
-never hurts to read the <A HREF="/documentation/reference3.0/online.html">manual pages</A> of
-all the GROMACS programs you (tried to) use. If all this still leaves
-you with any unanswered questions, <A HREF="mailto:gromacs@gromacs.org">please
-don't hesitate to contact us</A>, or even better - post your question to the mailing lists!
-<br><br>
+never hurts to read the <A
+HREF="/documentation/reference_3.1/online.html">manual pages</A> of all
+the GROMACS programs you (tried to) use. If all this still leaves you
+with any unanswered questions, please post your question to the <a
+href="/mailing_lists/users.php">gmx-users mailing list</a>!  <br><br>
 </ul>
+
 
 <hr>
 <div ALIGN=RIGHT>

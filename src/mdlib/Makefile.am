@@ -24,7 +24,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	splittop.c	tables.c	tgroup.c	\
 	update.c	vcm.c		wnblist.c	\
 	poisson.h	splittop.h	wnblist.h	\
-	pull-internal.h
+	pull_internal.h
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	csettle.c	clincs.c	\

@@ -522,8 +522,6 @@ static void write_htmlman(FILE *out,
   fprintf(out,"<hr>\n<div ALIGN=RIGHT>\n");
   fprintf(out,"<font size=\"-1\"><a href=\"http://www.gromacs.org\">"
 	  "http://www.gromacs.org</a></font><br>\n");
-  fprintf(out,"<font size=\"-1\"><a href=\"mailto:gromacs@gromacs.org\">"
-	  "gromacs@gromacs.org</a></font><br>\n");
   fprintf(out,"</div>\n");
   fprintf(out,"</BODY>\n");
 }

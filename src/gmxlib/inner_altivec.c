@@ -33,6 +33,18 @@ static char *SRCID_inner_altivec_c = "$Id$";
 #include <ppc_altivec.h>
 
 #include<stdio.h>
+
+
+void check_altivec(void)
+{
+  vector unsigned short vsr1,vsr2;
+  vsr1=vec_mfvscr();
+  vsr2=(vector unsigned short)vec_sl(vec_splat_u32(1),vec_splat_u32(16));
+  vsr1=vec_or(vsr1,vsr2);
+  vec_mtvscr(vsr1);
+}
+
+
 void inl0100_altivec(
 	     int nri,
 	     int iinr[],
