@@ -45,17 +45,6 @@ static char *SRCID_confio_h = "$Id$";
 extern "C" {
 #endif
   
-  typedef struct {
-    bool bTitle;
-    bool bTime;
-    bool bAtoms;
-    bool bPos;
-    bool bVel;
-    bool bBox;
-    int  step;
-    real time;
-  } t_g96info;
-  
 extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
@@ -63,11 +52,7 @@ extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 extern void free_t_atoms(t_atoms *atoms);
 /* free all the arrays and set the nr and nres to 0 */
 
-void clear_g96info(t_g96info *info);
-/* set all bools in the info struct to FALSE */
-
-int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
-		  char *title,t_atoms *atoms,rvec *x, rvec *v,matrix box);
+int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr);
 /* read a Gromos96 coordinate or trajectory file,                       *
  * returns the number of atoms                                          *
  * sets what's in the frame in info                                     *  
@@ -76,31 +61,13 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
  * set this to -1 if you want to know the number of atoms in the file   *
  * title, atoms, x, v can all be NULL, in which case they won't be read */
 
-void write_g96_conf(FILE *out,char *title,t_atoms *atoms,
-                    rvec *x,rvec *v,matrix box,
-                    int nindex,atom_id *index);
-/* write a Gromos96 coordinate file *
- * x, v and index can be NULL       */
+void write_g96_conf(FILE *out,t_trxframe *fr,int nindex,atom_id *index);
+/* write a Gromos96 coordinate file or trajectory frame *
+ * index can be NULL                                    */
 
-extern bool gro_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box);
-extern int gro_first_x(FILE *status, real *t, rvec **x, matrix box);
-/* read first/next x frame from gro file */
-
-extern bool gro_next_x_or_v(FILE *status,real *t,int natoms,
-			    rvec x[],rvec *v,matrix box);
-extern int gro_first_x_or_v(FILE *status, real *t, 
-			    rvec **x, rvec **v, matrix box);
+extern bool gro_next_x_or_v(FILE *status,t_trxframe *fr);
+extern int gro_first_x_or_v(FILE *status,t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
-
-extern bool gro_next_v(FILE *status,real *t,int natoms,rvec *v,matrix box);
-extern int gro_first_v(FILE *status, real *t, rvec **v, matrix box);
-/* read first/next v frame from gro file */
-
-extern bool gro_next_x_v(FILE *status,real *t,int natoms,
-			 rvec x[],rvec *v,matrix box);
-extern int gro_first_x_v(FILE *status, real *t, 
-			 rvec **x, rvec **v, matrix box);
-/* read first/next x and v frame from gro file */
 
 extern void write_hconf(FILE *out,char *title,
 			t_atoms *atoms,rvec *x, 

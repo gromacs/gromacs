@@ -55,14 +55,13 @@ int main(int argc,char *argv[])
     "g_velacc computes the velocity autocorrelation function"
   };
 
-  rvec       *v;
+  t_trxframe fr;
   int        gnx;
   atom_id    *index;
   char       *grpname;
   char       title[256];
-  real       t,t0,t1;
-  matrix     box;
-  int        status,natoms,teller,n_alloc,i,tel3;
+  real       t0,t1;
+  int        status,teller,n_alloc,i,tel3;
   real       **c1;
   
 #define NHISTO 360
@@ -90,8 +89,8 @@ int main(int argc,char *argv[])
   for(i=0; (i<gnx); i++)
     c1[i]=NULL;
   
-  natoms=read_first_v(&status,ftp2fn(efTRN,NFILE,fnm),&t,&v,box);
-  t0=t;
+  read_first_frame(&status,ftp2fn(efTRN,NFILE,fnm),&fr,TRX_NEED_V);
+  t0=fr.time;
       
   n_alloc=0;
   teller=0;
@@ -103,17 +102,16 @@ int main(int argc,char *argv[])
     }
     tel3=3*teller;
     for(i=0; (i<gnx); i++) {
-      c1[i][tel3+XX]=v[index[i]][XX];
-      c1[i][tel3+YY]=v[index[i]][YY];
-      c1[i][tel3+ZZ]=v[index[i]][ZZ];
+      c1[i][tel3+XX]=fr.v[index[i]][XX];
+      c1[i][tel3+YY]=fr.v[index[i]][YY];
+      c1[i][tel3+ZZ]=fr.v[index[i]][ZZ];
     }
     
     teller ++;
-  } while (read_next_v(status,&t,natoms,v,box));
-  fprintf(stderr,"\n");
+  } while (read_next_frame(status,&fr));
   close_trj(status);
 
-  t1=t;
+  t1=fr.time;
 
   do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Velocity Autocorrelation Function",
 	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,TRUE);

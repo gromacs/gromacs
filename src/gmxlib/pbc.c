@@ -485,7 +485,7 @@ int *compact_unitcell_edges()
   return edge;
 }
 
-void put_atoms_in_box(int natoms,matrix box,rvec x[])
+void put_atoms_in_box(matrix box,int natoms,rvec x[])
 {
   int i,m,d;
 
@@ -500,7 +500,7 @@ void put_atoms_in_box(int natoms,matrix box,rvec x[])
     }
 }
 
-void put_atoms_in_triclinic_unitcell(int natoms,matrix box,rvec x[])
+void put_atoms_in_triclinic_unitcell(matrix box,int natoms,rvec x[])
 {
   rvec   box_center;
   matrix shift_mat;
@@ -527,7 +527,7 @@ void put_atoms_in_triclinic_unitcell(int natoms,matrix box,rvec x[])
     }
 }
 
-void put_atoms_in_compact_unitcell(int natoms,matrix box,rvec x[])
+void put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[])
 {
   rvec box_center,dx;
   int  i;

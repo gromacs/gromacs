@@ -47,6 +47,7 @@ extern "C" {
 #include "types/symtab.h"
 #include "types/idef.h"
 #include "types/atoms.h"
+#include "types/trx.h"
 #include "types/topology.h"
 #include "types/energy.h"
 #include "types/inputrec.h"

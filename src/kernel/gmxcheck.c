@@ -52,147 +52,102 @@ static char *SRCID_gmxcheck_c = "$Id$";
 #include "confio.h"
 #include "enxio.h"
 
+typedef struct {
+  int bStep;
+  int bTime;
+  int bLambda;
+  int bX;
+  int bV;
+  int bF;
+  int bBox;
+} t_count;
+
 void chk_trj(char *fn)
 {
-  t_trnheader  sh,count;
-  int          idum,j=-1,new_natoms,natoms,step;
+  t_trxframe   fr;
+  t_count      count;
+  int          j=-1,new_natoms,natoms,fpos;
   real         rdum,t,tt,t0,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
-  rvec         *x;
-  matrix       box;
-  size_t       fpos;
-  int          xd;
-  int          status,ftp;
+  int          status;
   
-  ftp    = fn2ftp(fn);
   new_natoms = -1;
   natoms = -1;  
   t      = 0;
   t0     = NOTSET;
-  step   = 0;
-  count.box_size=0;
-  count.vir_size=0;
-  count.pres_size=0;
-  count.x_size=0;
-  count.v_size=0;
-  count.f_size=0;
   
   printf("Checking file %s\n",fn);
-  switch (ftp) {
-  case efTRJ:
-  case efTRR:
-    status = open_trn(fn,"r");
-    j      =  0;
-    t      = -1;
-    old_t2 = -2.0;
-    old_t1 = -1.0;
-    fpos   = 0;
-    while (fread_trnheader(status,&sh,&bOK)) {
-      if (j == 0)
-	fprintf(stderr,"\n# Atoms  %d\n\n",sh.natoms);
-      newline=TRUE;
-      if ((natoms > 0) && (new_natoms != natoms)) {
-	fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",
-		old_t1,natoms,new_natoms);
-	newline=FALSE;
+  
+  j      =  0;
+  t      = -1;
+  old_t2 = -2.0;
+  old_t1 = -1.0;
+  fpos   = 0;
+  
+  count.bStep = 0;
+  count.bTime = 0;
+  count.bLambda = 0;
+  count.bX = 0;
+  count.bV = 0;
+  count.bF = 0;
+  count.bBox = 0;
+
+  read_first_frame(&status,fn,&fr,TRX_READ_X | TRX_READ_V | TRX_READ_F);
+
+  do {
+    if (j == 0)
+      fprintf(stderr,"\n# Atoms  %d\n",fr.natoms);
+    newline=TRUE;
+    if ((natoms > 0) && (new_natoms != natoms)) {
+      fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",
+	      old_t1,natoms,new_natoms);
+      newline=FALSE;
+    }
+    if (j>=2) {
+      if ( fabs((fr.time-old_t1)-(old_t1-old_t2)) > 
+	   0.1*(fabs(fr.time-old_t1)+fabs(old_t1-old_t2)) ) {
+	bShowTimestep=FALSE;
+	fprintf(stderr,"%sTimesteps at t=%g don't match (%g, %g)\n",
+		newline?"\n":"",old_t1,old_t1-old_t2,fr.time-old_t1);
       }
-      if (j>=2) {
-	if ( fabs((sh.t-old_t1)-(old_t1-old_t2)) > 
-	     0.1*(fabs(sh.t-old_t1)+fabs(old_t1-old_t2)) ) {
-	  bShowTimestep=FALSE;
-	  fprintf(stderr,"%sTimesteps at t=%g don't match (%g, %g)\n",
-		  newline?"\n":"",old_t1,old_t1-old_t2,sh.t-old_t1);
-	}
-      }
-      natoms=new_natoms;
-      old_t2=old_t1;
-      old_t1=sh.t;
-      if (t0 == NOTSET) t0=sh.t;
-      fprintf(stderr,"\rframe: %6d, step: %8d, t: %10.3f",j,sh.step,sh.t);
-      if (ftp == efTRJ)
-	fprintf(stderr," byte: %10lu",(unsigned long)fpos);
-      if (j == 0)
-	fprintf(stderr,"\n");
-      if (!fread_htrn(status,&sh,NULL,NULL,NULL,NULL))
-	fprintf(stderr,"\nframe %d at t=%g is incomplete\n",j,sh.t);
-      else {
-	j++;
-	t=sh.t;
-	new_natoms=sh.natoms;
+    }
+    natoms=new_natoms;
+    old_t2=old_t1;
+    old_t1=fr.time;
+    if (t0 == NOTSET) t0=fr.time;
+    if (fpos)
+      fprintf(stderr," byte: %10lu",(unsigned long)fpos);
+    j++;
+    t=fr.time;
+    new_natoms=fr.natoms;
 #define INC(s,n,item) if (s.item != 0) n.item++
-	INC(sh,count,box_size);
-	INC(sh,count,vir_size);
-	INC(sh,count,pres_size);
-	INC(sh,count,x_size);
-	INC(sh,count,v_size);
-	INC(sh,count,f_size);
+    INC(fr,count,bStep);
+    INC(fr,count,bTime);
+    INC(fr,count,bLambda);
+    INC(fr,count,bX);
+    INC(fr,count,bV);
+    INC(fr,count,bF);
+    INC(fr,count,bBox);
 #undef INC
-      }
-      fpos = fio_ftell(status);
-    }
-   fprintf(stderr,"\n"); 
-    if (!bOK)
-      fprintf(stderr,"header of frame %d at t=%g is incomplete\n",j,sh.t);
-    close_trn(status);
-    break;
-  case efXTC:
-    xd = open_xtc(fn,"r");
-    t=-1;
-    if (read_first_xtc(xd,&new_natoms,&step,&tt,box,&x,&prec,&bOK)) {
-      fprintf(stderr,"\n# Atoms  %d,  XTC precision  %g\n\n",new_natoms,prec);
-      j=0;
-      old_t2=-2.0;
-      old_t1=-1.0;
-      do {
-	t=tt;
-	if (j>=2) {
-	  if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
-	       0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {
-	    bShowTimestep=FALSE;
-	    fprintf(stderr,"%sTimesteps at t=%g don't match (%g, %g)\n",
-		    newline?"\n":"",old_t1,old_t1-old_t2,t-old_t1);
-	  }
-	}
-	old_t2=old_t1;
-	old_t1=t;
-	if (t0 == NOTSET) t0=t;
-	fprintf(stderr,"\rframe: %6d, step %8d, t: %10.3f",j,step,t);
-	if (j == 0)
-	  fprintf(stderr,"\n");
-	newline=TRUE;
-	if ((natoms > 0) && (new_natoms != natoms)) {
-	  fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",
-		  old_t1,natoms,new_natoms);
-	  newline=FALSE;
-	}
-	natoms=new_natoms;
-	count.x_size++;
-	count.box_size++;
-	j++;
-      } while (read_next_xtc(xd,&new_natoms,&step,&tt,box,x,&prec,&bOK));
-      close_xtc(xd);
-    }
-    else
-      fprintf(stderr,"Empty file %s\n",fn);
-    fprintf(stderr,"\n");
-    if (!bOK)
-      fprintf(stderr,"frame %d at t=%g is incomplete\n",j,tt);
-    break;
-  default:
-    fatal_error(0,"trajectory file .%s not supported\n",ftp2ext(ftp));
-  }
+    fpos = fio_ftell(status);
+  } while (read_next_frame(status,&fr));
+  
+  fprintf(stderr,"\n");
+
+  close_trj(status);
 
   fprintf(stderr,"\nItem        #frames");
   if (bShowTimestep)
     fprintf(stderr," Timestep (ps)");
   fprintf(stderr,"\n");
 #define PRINTITEM(label,item) fprintf(stderr,"%-10s  %6d",label,count.item); if ((bShowTimestep) && (count.item > 1)) fprintf(stderr,"    %g\n",(t-t0)/(count.item-1)); else fprintf(stderr,"\n")
-  PRINTITEM ( "Box",        box_size );
-  PRINTITEM ( "Virial",     vir_size );
-  PRINTITEM ( "Pressure",   pres_size );
-  PRINTITEM ( "Coords",     x_size );
-  PRINTITEM ( "Velocities", v_size );
-  PRINTITEM ( "Forces",     f_size );
+  PRINTITEM ( "Step",       bStep );
+  PRINTITEM ( "Time",       bTime );
+  PRINTITEM ( "Lambda",     bLambda );
+  PRINTITEM ( "Coords",     bX );
+  PRINTITEM ( "Velocities", bV );
+  PRINTITEM ( "Forces",     bF );
+  PRINTITEM ( "Box",        bBox );
 }  
 
 void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)

@@ -307,26 +307,28 @@ int main(int argc,char *argv[])
   };
       
   FILE         *out=NULL;
-  int          trjout=0;
+  int          trxout=-1;
   int          status,ftp,ftpin,file_nr;
-  rvec         *x,*xn,*xout,*v,*vn,*vout;
+  t_trxframe   fr,frout;
+  int          flags;
+  rvec         *xmem,*vmem;
   rvec         *xp,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
-  matrix       box;
   int          m,i,d,frame,outframe,natoms=0,nout,ncent,nre,step;
 #define SKIP 10
   t_topology   top;
   t_atoms      *atoms=NULL,useatoms;
+  matrix       top_box;
   atom_id      *index,*cindex;
   char         *grpname;
   int          ifit,irms;
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
-  real         t,pt,tshift=0,t0=-1,dt=0.001;
+  real         pt,tshift=0,t0=-1,dt=0.001;
   bool         bPBC,bInBox,bNoJump,bRect,bTric,bComp;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
-  bool         bHaveNextFrame,bHaveX=FALSE,bHaveV=FALSE,bSetBox;
+  bool         bHaveFirstFrame,bHaveNextFrame,bSetBox;
   char         *grpnm;
   char         *top_file,*in_file,*out_file,out_file2[256],*charpt;
   char         top_title[256],title[256],command[256],filemode[5];
@@ -387,12 +389,8 @@ int main(int argc,char *argv[])
     if (bVels) {
       /* check if velocities are possible in input and output files */
       ftpin=fn2ftp(in_file);
-      bVels= ((ftp==efTRR) ||(ftp==efTRJ) || (ftp==efGRO)) 
-	&& ((ftpin==efTRR) ||(ftpin==efTRJ) || (ftpin==efGRO));
-    }
-    if (!bVels) {
-      bHaveX=TRUE;
-      bHaveV=FALSE;
+      bVels= (ftp==efTRR || ftp==efTRJ || ftp==efGRO || ftp==efG96) 
+	&& (ftpin==efTRR || ftpin==efTRJ || ftpin==efGRO || ftp==efG96);
     }
      
     /* skipping */  
@@ -410,7 +408,7 @@ int main(int argc,char *argv[])
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      read_tps_conf(top_file,top_title,&top,&xp,NULL,box,bFit);
+      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bFit);
       atoms=&top.atoms;
       /* top_title is only used for gro and pdb,
        * the header in such a file is top_title t= ...
@@ -441,8 +439,10 @@ int main(int argc,char *argv[])
     }
     else {
       /* no index file, so read natoms from TRX */
-      natoms=read_first_x(&status,in_file,&t,&x,box);
+      read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP);
+      natoms = fr.natoms;
       close_trj(status);
+      sfree(fr.x);
       snew(index,natoms);
       for(i=0;i<natoms;i++)
 	index[i]=i;
@@ -464,7 +464,7 @@ int main(int argc,char *argv[])
       
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
-      rm_pbc(&(top.idef),atoms->nr,box,xp,xp);
+      rm_pbc(&(top.idef),atoms->nr,fr.box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,nout,index,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
@@ -485,301 +485,279 @@ int main(int argc,char *argv[])
       useatoms.nr=nout;
     }
     /* open trj file for reading */
-    if (bVels)
-      natoms=read_first_x_or_v(&status,in_file,&t,&x,&v,box);
-    else
-      natoms=read_first_x     (&status,in_file,&t,&x,   box);
-    if (bSetTime)
-      tshift=tzero-t;
-    else
-      tzero=t;
-    
-    if (natoms == 0)
-      fatal_error(0,"Number of atoms found in file %s",in_file);
+    if (bVels) {
+      if (ftp==efTRR || ftp==efTRJ)
+	flags = TRX_READ_X | TRX_READ_V; 
+      else
+	flags = TRX_NEED_X | TRX_READ_V;
+    } else
+      flags = TRX_NEED_X;
 
-    /* open output for writing */
-    if ((bAppend) && (fexist(out_file))) {
+    bHaveFirstFrame = read_first_frame(&status,in_file,&fr,flags);
+
+    if (bHaveFirstFrame) {
+      natoms = fr.natoms;
+      
+      if (bSetTime)
+	tshift=tzero-fr.time;
+      else
+	tzero=fr.time;
+      
+      /* open output for writing */
+      if ((bAppend) && (fexist(out_file))) {
       strcpy(filemode,"a");
       fprintf(stderr,"APPENDING to existing file %s\n",out_file);
-    } else
-      strcpy(filemode,"w");
-    switch (ftp) {
-    case efXTC:
-      xdr = open_xtc(out_file,filemode);
-      break;
-    case efG87:
-      out=ffopen(out_file,filemode);
-      break;
-    case efTRR:
-    case efTRJ:
-      out=NULL;
-      trjout = open_tpx(out_file,filemode);
-      break;
-    case efGRO:
-    case efG96:
-    case efPDB:
-      if (!bSeparate) 
-	out=ffopen(out_file,filemode);
-      break;
-    }
-    
-    bCopy=FALSE;
-    if (bIndex)
-      /* check if index is meaningful */
-      for(i=0; i<nout; i++) {
-	if (index[i] >= natoms)
+      } else
+	strcpy(filemode,"w");
+      switch (ftp) {
+      case efXTC:
+      case efG87:
+      case efTRR:
+      case efTRJ:
+	out=NULL;
+	trxout = open_trx(out_file,filemode);
+	break;
+      case efGRO:
+      case efG96:
+      case efPDB:
+	if (!bSeparate) 
+	  out=ffopen(out_file,filemode);
+	break;
+      }
+      
+      bCopy=FALSE;
+      if (bIndex)
+	/* check if index is meaningful */
+	for(i=0; i<nout; i++) {
+	  if (index[i] >= natoms)
 	  fatal_error(0,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
-	bCopy = bCopy || (i != index[i]);
-      }
-
-    if (bCopy) {
-      snew(xn,nout);
-      xout=xn;
-      snew(vn,nout);
-      vout=vn;
-    } else {
-      xout=x;
-      vout=v;
-    }
-  
-    if (ftp == efG87)
-      fprintf(out,"Generated by %s. #atoms=%d, %s BOX is stored in "
-	      "this file.\n",Program(),nout,bBox ? "a" : "NO");
-    
-    /* Start the big loop over frames */
-    file_nr  =  0;  
-    frame    =  0;
-    outframe =  0;
-    pt       = -666.0;
-    bDTset   = FALSE;
-    
-    do {
-      /* generate new box */
-      if (bSetBox) {
-	clear_mat(box);
-	for (m=0; m<DIM; m++)
-	  box[m][m] = newbox[m];
+	  bCopy = bCopy || (i != index[i]);
+	}
+      if (bCopy) {
+	snew(xmem,nout);
+	snew(vmem,nout);
       }
       
-      if (bTDump) {
-	/* determine timestep */
-	if (t0 == -1) {
-	  t0=t;
-	} else {
-	  if (!bDTset) {
-	    dt=t-t0;
-	    bDTset=TRUE;
+      if (ftp == efG87)
+	fprintf(out,"Generated by %s. #atoms=%d, %s BOX is stored in "
+		"this file.\n",Program(),nout,bBox ? "a" : "NO");
+    
+      /* Start the big loop over frames */
+      file_nr  =  0;  
+      frame    =  0;
+      outframe =  0;
+      pt       = -666.0;
+      bDTset   = FALSE;
+    
+      do {
+	/* generate new box */
+	if (bSetBox) {
+	  clear_mat(fr.box);
+	  for (m=0; m<DIM; m++)
+	    fr.box[m][m] = newbox[m];
+	}
+	
+	if (bTDump) {
+	  /* determine timestep */
+	  if (t0 == -1) {
+	    t0 = fr.time;
+	  } else {
+	    if (!bDTset) {
+	      dt = fr.time-t0;
+	      bDTset = TRUE;
+	    }
+	  }
+	  bDumpFrame = (fr.time >= tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
+	}
+	
+	/* determine if an atom jumped across the box and reset it if so */
+	if (bNoJump && (bTPS || frame!=0)) {
+	  for(d=0; d<DIM; d++)
+	    hbox[d] = 0.5*fr.box[d][d];
+	  for(i=0; i<natoms; i++)
+	    for(m=DIM-1; m>=0; m--) {
+	      while (fr.x[i][m]-xp[i][m] <= -hbox[m])
+		for(d=0; d<=m; d++)
+		  fr.x[i][d] += fr.box[m][d];
+	      while (fr.x[i][m]-xp[i][m] > hbox[m])
+		for(d=0; d<=m; d++)
+		  fr.x[i][d] -= fr.box[m][d];
+	    }
+	}
+      
+	if (bPFit) {
+	  /* Now modify the coords according to the flags,
+	     for normal fit, this is only done for output frames */
+	  rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
+	
+	  reset_x(ifit,ind_fit,nout,index,fr.x,w_rls);
+	  do_fit(natoms,w_rls,xp,fr.x);
+	}
+      
+	/* store this set of coordinates for future use */
+	if (bPFit || bNoJump) {
+	  for(i=0; (i<natoms); i++) {
+	    copy_rvec(fr.x[i],xp[i]);
+	    rvec_inc(fr.x[i],x_shift);
 	  }
 	}
-	bDumpFrame = (t >= tdump-0.5*dt) && (t <= tdump+0.5*dt);
-      }
       
-      /* determine if an atom jumped across the box and reset it if so */
-      if (bNoJump && (bTPS || frame!=0)) {
-	for(d=0; d<DIM; d++)
-	  hbox[d] = 0.5*box[d][d];
-	for(i=0; i<natoms; i++)
-	  for(m=DIM-1; m>=0; m--) {
-	    while (x[i][m]-xp[i][m] <= -hbox[m])
-	      for(d=0; d<=m; d++)
-		x[i][d] += box[m][d];
-	    while (x[i][m]-xp[i][m] > hbox[m])
-	      for(d=0; d<=m; d++)
-		x[i][d] -= box[m][d];
-	  }
-      }
-      
-      if (bPFit) {
-	/* Now modify the coords according to the flags,
-	   for normal fit, this is only done for output frames */
-	rm_pbc(&(top.idef),natoms,box,x,x);
-	
-	reset_x(ifit,ind_fit,nout,index,x,w_rls);
-	do_fit(natoms,w_rls,xp,x);
-      }
-      
-      /* store this set of coordinates for future use */
-      if (bPFit || bNoJump) {
-	for(i=0; (i<natoms); i++) {
-	  copy_rvec(x[i],xp[i]);
-	  rvec_inc(x[i],x_shift);
+	if ( bCheckDouble && (fr.time<=pt) && !bToldYouOnce ) {
+	  fprintf(stderr,"\nRemoving duplicate frame(s) after t=%g "
+		  "(t=%g, frame %d)\n",pt,fr.time,frame);
+	  bToldYouOnce=TRUE;
 	}
-      }
-      
-      if ( bCheckDouble && (t<=pt) && !bToldYouOnce ) {
-	fprintf(stderr,"\nRemoving duplicate frame(s) after t=%g "
-		"(t=%g, frame %d)\n",pt,t,frame);
-	bToldYouOnce=TRUE;
-      }
 	
-      if ( ( ( !bTDump && (frame % skip_nr == 0) ) || bDumpFrame  ) &&
-	   ( !bCheckDouble || ( bCheckDouble && (t > pt) ) ) ) {
+	if ( ( ( !bTDump && (frame % skip_nr == 0) ) || bDumpFrame  ) &&
+	     ( !bCheckDouble || ( bCheckDouble && (fr.time > pt) ) ) ) {
 	
-	/* remember time from this frame */
-	pt = t; 
+	  /* remember time from this frame */
+	  pt = fr.time; 
 	
-	/* calc new time */
-	if (bTimeStep) 
-	  t=tzero+frame*timestep;
-	else
-	  if (bSetTime)
-	    t=t+tshift;
+	  /* calc new time */
+	  if (bTimeStep) 
+	    fr.time = tzero+frame*timestep;
+	  else
+	    if (bSetTime)
+	      fr.time += tshift;
 
-	if (bTDump)
-	  fprintf(stderr,"\nDumping frame at t= %g\n",t);
+	  if (bTDump)
+	    fprintf(stderr,"\nDumping frame at t= %g\n",fr.time);
 
 	/* check for writing at each delta_t */
-	bDoIt=(delta_t == 0);
-	if (!bDoIt)
-	  bDoIt=bRmod(t-tzero, delta_t);
+	  bDoIt=(delta_t == 0);
+	  if (!bDoIt)
+	    bDoIt=bRmod(fr.time-tzero, delta_t);
 	
-	if (bDoIt || bTDump) {
-	  /* print sometimes */
-	  if (bToldYouOnce) {
-	    bToldYouOnce=FALSE;
-	    fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d\n",
-		    t,outframe);
-	  }
-	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
-	    fprintf(stderr," ->  frame %6d time %8.3f      \r",outframe,t);
+	  if (bDoIt || bTDump) {
+	    /* print sometimes */
+	    if (bToldYouOnce) {
+	      bToldYouOnce=FALSE;
+	      fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d\n",
+		      fr.time,outframe);
+	    }
+	    if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
+	      fprintf(stderr," ->  frame %6d time %8.3f      \r",
+		      outframe,fr.time);
 	  
-	  if (!bPFit) {
-	    /* Now modify the coords according to the flags,
-	       for PFit we did this already! */
+	    if (!bPFit) {
+	      /* Now modify the coords according to the flags,
+		 for PFit we did this already! */
 	    
-	    if (bCenter)
-	      center_x(x,box,nout,index,ncent,cindex);
+	      if (bCenter)
+		center_x(fr.x,fr.box,nout,index,ncent,cindex);
 
-	    if (bInBox) {
-	      if (bRect)
-		put_atoms_in_box(natoms,box,x);
-	      else if (bTric)
-		put_atoms_in_triclinic_unitcell(natoms,box,x);
-	      else if (bComp)
-		put_atoms_in_compact_unitcell(natoms,box,x);
-	    }
-	    
-	    if (bPBC)
-	      rm_pbc(&(top.idef),natoms,box,x,x);
-	  
-	    if (bFit) {
-	      reset_x(ifit,ind_fit,nout,index,x,w_rls);
-	      do_fit(natoms,w_rls,xp,x);
-	      for(i=0; (i<natoms); i++)
-		rvec_inc(x[i],x_shift);
-	    }
-	  }
-	  
-	  if (bCopy) {
-	    for(i=0; (i<nout); i++) {
-	      copy_rvec(x[index[i]],xout[i]);
-	      if (bVels) copy_rvec(v[index[i]],vout[i]);
-	    }
-	  }
-	  
-	  if (opt2parg_bSet("-shift",asize(pa),pa))
-	    for(i=0; (i<nout); i++)
-	      for (d=0; (d<DIM); d++)
-		xout[i][d] += outframe*shift[d];
-	  
-	  if (bVels) {
-	  /* check if we have velocities and/or coordinates,
-	     don't ask me why you can have a frame w/o coords !? */
-	    bHaveV=FALSE;
-	    bHaveX=FALSE;
-	    for (i=0; (i<natoms); i++)
-	      for (d=0; (d<DIM); d++) {
-		bHaveV=bHaveV || v[i][d];
-		bHaveX=bHaveX || x[i][d];
+	      if (bInBox) {
+		if (bRect)
+		  put_atoms_in_box(fr.box,natoms,fr.x);
+		else if (bTric)
+		  put_atoms_in_triclinic_unitcell(fr.box,natoms,fr.x);
+		else if (bComp)
+		  put_atoms_in_compact_unitcell(fr.box,natoms,fr.x);
 	      }
-	  }
-	  
-	  switch(ftp) {
-	  case efTRJ:
-	  case efTRR:
-	    fwrite_trn(trjout,frame,t,0,box,
-		       nout,
-		       bHaveX ? xout : NULL,
-		       bHaveV ? vout : NULL,
-		       NULL);
 	    
-	    break;
-	  case efG87:
-	    write_gms(out,nout,xout,bBox ? box : NULL );
-	    break;
-	  case efXTC:
-	    write_xtc(xdr,nout,frame,t,box,xout,xtcpr);
-	    break;
-	  case efGRO:
-	  case efG96:
-	  case efPDB:
-	    sprintf(title,"Generated by trjconv : %s t= %9.5f",top_title,t);
-	    if (bSeparate) {
-	      sprintf(out_file2,"%d_%s",file_nr,out_file);
-	      out=ffopen(out_file2,"w");
+	      if (bPBC)
+		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
+	  
+	      if (bFit) {
+		reset_x(ifit,ind_fit,nout,index,fr.x,w_rls);
+		do_fit(natoms,w_rls,xp,fr.x);
+		for(i=0; i<natoms; i++)
+		  rvec_inc(fr.x[i],x_shift);
+	      }
 	    }
+	    /* Copy the input trxframe struct to the output trxframe struct */
+	    frout = fr;
+	    frout.natoms = nout;
+	    if (bCopy) {
+	      frout.x = xmem;
+	      frout.v = vmem;
+	      for(i=0; i<nout; i++) {
+		copy_rvec(fr.x[index[i]],frout.x[i]);
+		if (bVels) copy_rvec(fr.v[index[i]],frout.v[i]);
+	      }
+	    }
+	  
+	    if (opt2parg_bSet("-shift",asize(pa),pa))
+	      for(i=0; i<nout; i++)
+		for (d=0; d<DIM; d++)
+		  frout.x[i][d] += outframe*shift[d];
+	  
 	    switch(ftp) {
+	    case efTRJ:
+	    case efTRR:
+	    case efG87:
+	    case efXTC:
+	      write_trxframe(trxout,&frout);
+	      break;
 	    case efGRO:
-	      write_hconf_p(out,title,&useatoms,prec,xout,bHaveV?vout:NULL,box);
-	      break;
-	    case efPDB:
-	      fprintf(out,"REMARK    GENERATED BY TRJCONV\n");
-	      sprintf(title,"%s t= %9.5f",top_title,t);
-	      write_pdbfile(out,title,&useatoms,xout,box,0,TRUE);
-	      break;
 	    case efG96:
-	      if (bSeparate || bTDump)
-		write_g96_conf(out,title,&useatoms,xout,bHaveV?vout:NULL,box,
-			       0,NULL);
-	      else {
-		if (outframe == 0)
-		  fprintf(out,"TITLE\n%s\nEND\n",title);
-		fprintf(out,"TIMESTEP\n%9d%15.9f\nEND\nPOSITIONRED\n",
-			frame,t);
-		for(i=0; i<nout; i++)
-		  fprintf(out,"%15.9f%15.9f%15.9f\n",
-			  xout[i][XX],xout[i][YY],xout[i][ZZ]);
-		fprintf(out,"END\nBOX\n%15.9f%15.9f%15.9f\nEND\n",
-			box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+	    case efPDB:
+	      sprintf(title,"Generated by trjconv : %s t= %9.5f",
+		      top_title,fr.time);
+	      if (bSeparate) {
+		sprintf(out_file2,"%d_%s",file_nr,out_file);
+		out=ffopen(out_file2,"w");
+	      }
+	      switch(ftp) {
+	      case efGRO:
+		write_hconf_p(out,title,&useatoms,prec,
+			      frout.x,fr.bV?frout.v:NULL,fr.box);
+		break;
+	      case efPDB:
+		fprintf(out,"REMARK    GENERATED BY TRJCONV\n");
+		sprintf(title,"%s t= %9.5f",top_title,frout.time);
+		write_pdbfile(out,title,&useatoms,frout.x,fr.box,0,TRUE);
+		break;
+	      case efG96:
+		frout.title = title;
+		if (bSeparate || bTDump) {
+		  fr.bTitle = TRUE;
+		  fr.bAtoms = TRUE;
+		  fr.bStep = FALSE;
+		  fr.bTime = FALSE;
+		} else {
+		  frout.bTitle = (outframe == 0);
+		  frout.bAtoms = FALSE;
+		  frout.bStep = TRUE;
+		  frout.bTime = TRUE;
+		}
+		write_g96_conf(out,&frout,-1,NULL);
+		if (bSeparate) {
+		  ffclose(out);
+		  out = NULL;
+		  file_nr++;
+		}
 	      }
 	      break;
+	    default:
+	      fatal_error(0,"DHE, ftp=%d\n",ftp);
 	    }
-	    if (bSeparate) {
-	      ffclose(out);
-	      out = NULL;
-	      file_nr++;
+	  
+	    /* execute command */
+	    if (bExec) {
+	      char c[255];
+	      sprintf(c,"%s  %d",exec_command,file_nr-1);
+	      /*fprintf(stderr,"Executing '%s'\n",c);*/
+	      system(c);
 	    }
-	    break;
-	  default:
-	    fatal_error(0,"DHE, ftp=%d\n",ftp);
+	    outframe++;
 	  }
-
-	  /* execute command */
-	  if (bExec) {
-	    char c[255];
-	    sprintf(c,"%s  %d",exec_command,file_nr-1);
-	    /*fprintf(stderr,"Executing '%s'\n",c);*/
-	    system(c);
-	  }
-	  outframe++;
 	}
-      }
-      frame++;
-      if (bVels) {
-	bHaveNextFrame=read_next_x_or_v(status,&t,natoms,x,v,box);
-      } else
-	bHaveNextFrame=read_next_x     (status,&t,natoms,x,  box);
-    } while (!bDumpFrame && bHaveNextFrame);
+	frame++;
+	bHaveNextFrame=read_next_frame(status,&fr);
+      } while (!bDumpFrame && bHaveNextFrame);
+    }
     
-    if ( bTDump && !bDumpFrame )
-      fprintf(stderr,"\nWARNING no frame found near specified time (%g), "
-	      "trajectory runs from %g to %g\n",tdump,t0,t);
+    if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
+      fprintf(stderr,"\nWARNING no output, "
+	      "trajectory ended at %g\n",fr.time);
     fprintf(stderr,"\n");
     
     close_trj(status);
-    
-    if (ftp == efXTC)
-      close_xtc(xdr);
+
+    if (trxout >= 0)
+      close_trx(trxout);
     else if (out != NULL)
       fclose(out);
   }

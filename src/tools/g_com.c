@@ -150,20 +150,21 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   static char  *axisX[]={ "Xx", "Xy", "Xz", "Xtot" };
-  
+ 
   /* index stuff */
   int      ngrps;       /* the number of groups */
   int      *isize;      /* the size of each group */
   char     **grpnames;  /* the name of each group */
   atom_id  **index;     /* the index array of each group */
   t_topology top;
+  rvec     *xtop;
+  t_trxframe fr;
+  int      flags;
   int      g;           /* group counter */
   char     format[STRLEN],filename[STRLEN],title[STRLEN];
   FILE     **outX,*outek=NULL;
   int      status,ftpout;
   int      i,j,idum,step,natoms;
-  real     t,rdum;
-  rvec     *x,*v;
   real     *mass;
   rvec     xcm,acm;
   matrix   L;
@@ -185,8 +186,8 @@ int main(int argc,char *argv[])
   }
   
   /* open input files, read topology and index */
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,TRUE);
-  sfree(x);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
+  sfree(xtop);
   
   fprintf(stderr,"How many groups do you want to calc com of ? ");
   scanf("%d",&ngrps);
@@ -200,9 +201,11 @@ int main(int argc,char *argv[])
 	    ngrps,isize,index,grpnames);
   
   if ( bReadV )
-    natoms=read_first_x_or_v(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,&v,box);
+    flags = TRX_READ_X | TRX_READ_V;
   else
-    natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+    flags = TRX_NEED_X;
+  read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
+  natoms = fr.natoms;
   if ( natoms > top.atoms.nr )
     fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top.atoms.nr,natoms);
@@ -229,36 +232,22 @@ int main(int argc,char *argv[])
   }
   if (bReadV)
     outek=xvgropen(opt2fn("-oe",NFILE,fnm),"EK Rot","Time (ps)","E (kJ/mole)");
-
+  
   do {
-    if (bReadV) {
-      bHaveV=FALSE;
-      for (i=0; ((i<natoms) && !bHaveV); i++)
-	for (d=0; ((d<DIM) && !bHaveV); d++)
-	  bHaveV=(v[i][d]!=0);
-      if (bHaveV)
-	fprintf(outek,"%10g  %10g\n",t,calc_ekrot(natoms,mass,x,v));
-    }
+    if (fr.bV)
+      fprintf(outek,"%10g  %10g\n",fr.time,calc_ekrot(natoms,mass,fr.x,fr.v));
  
-    /* IF COORDINATES ARE PRESENT */
-    for(g=0;(g<ngrps);g++) {
-      calc_cm_group(mass,x,xcm,isize[g],index[g]);
-      for (j = 0; j < DIM; j++) {
-	while (xcm[j] < 0) xcm[j]+= box[j][j];
-	while (xcm[j] > box[j][j]) xcm[j]-=box[j][j];
+    if (fr.bX)
+      for(g=0;(g<ngrps);g++) {
+	calc_cm_group(mass,fr.x,xcm,isize[g],index[g]);
+	put_atoms_in_box(fr.box,1,&xcm);
+	fprintf(outX[g],"%10g  %10g  %10g  %10g  %10g\n",
+		fr.time,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
       }
-      fprintf(outX[g],"%10g  %10g  %10g  %10g  %10g\n",
-	      t,xcm[XX],xcm[YY],xcm[ZZ],norm(xcm));
-    }
-    if (bReadV)
-      for(i=0; (i<natoms); i++)
-	for(m=0; (m<DIM); m++)
-	  v[i][m]=-x[i][m];
-  } while ((bReadV && read_next_x_or_v(status,&t,natoms,x,v,box)) ||
-	   (!bReadV && read_next_x(status,&t,natoms,x,box)));
-  sfree(x);
-  if (bReadV)
-    sfree(v);
+  } while (read_next_frame(status,&fr));
+
+  sfree(fr.x);
+  sfree(fr.v);
   sfree(mass);
   
   close_trj(status);

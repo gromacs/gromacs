@@ -377,10 +377,9 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
 			t_topology *sys)
      /* If fr_time == -1 read the last frame available which is complete */
 {
+  t_trxframe  fr;
   int         fp;
-  real        tt;
 
-  tt      = -1;
   fprintf(stderr,
 	  "Reading Coordinates%s and Box size from old trajectory\n",
 	  (!bNeedVel || bGenVel) ? "" : ", Velocities");
@@ -392,27 +391,29 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
     if (bGenVel)
       fprintf(stderr,"Velocities generated: "
 	      "ignoring velocities in input trajectory\n");
-    *natoms = read_first_x(&fp,slog,&tt,x,box);
+    read_first_frame(&fp,slog,&fr,TRX_NEED_X);
   } else
-    *natoms = read_first_x_v(&fp,slog,&tt,x,v,box);
+    read_first_frame(&fp,slog,&fr,TRX_NEED_X | TRX_NEED_V);
   
+  *natoms = fr.natoms;
+
   if(sys->atoms.nr != *natoms)
     fatal_error(0,"Number of atoms in Topology "
 		"is not the same as in Trajectory");
 
-  /* Now scan until the last set of box, x and v (step == 0)
-   * or the ones at step step.
-   * Or only until box and x if gen_vel is set.
-   */
-  while ((!bNeedVel || bGenVel) ?
-	 read_next_x(fp,&tt,*natoms,*x,box):
-	 read_next_x_v(fp,&tt,*natoms,*x,*v,box)) {
-    if ( (fr_time != -1) && (tt >= fr_time) )
-      break;
-  }
-  close_trj(fp);
+  /* Find the appropriate frame */
+  while ((fr_time == -1 || fr.time < fr_time) && read_next_frame(fp,&fr));
   
-  fprintf(stderr,"Using frame at t = %g ps\n",tt);
+  close_trj(fp);
+
+  if (fr.not_ok & FRAME_NOT_OK)
+    fatal_error(0,"Can not start from an incomplete frame");
+
+  *x = fr.x;
+  *v = fr.v;
+  copy_mat(fr.box,box);
+
+  fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
   fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
 }
 

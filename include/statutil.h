@@ -41,7 +41,7 @@ extern "C" {
 #include "filenm.h"
 #include "readinp.h"
 #include "wman.h"
-
+  
 typedef int t_first_x(int *status,char *fn,real *t,rvec **x,matrix box);
 typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
 
@@ -56,8 +56,20 @@ extern char *ShortProgram(void);
  *             Trajectory functions
  ************************************************/
 
+extern void clear_trxframe(t_trxframe *fr,bool bFirst);
+  /* Set all content booleans to FALSE.
+   * When bFirst = TRUE, set natoms=-1, all pointers to NULL
+   *                     and all data to zero.
+   */
+
 extern int nframes_read(void);
   /* Returns the number of frames read from the trajectory */
+
+int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind);
+  /* Write an indexed frame to a TRX file. */
+
+int write_trxframe(int fnum,t_trxframe *fr);
+  /* Write a frame to a TRX file. */
 
 int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v);
@@ -79,6 +91,38 @@ extern int check_times(real t);
  *         1  if t>tend
  */
 
+/* For trxframe.flags, used in trxframe read routines.
+ * When a READ flag is set, the field will be read when present,
+ * but a frame might be returned which does not contain the field.
+ * When a NEED flag is set, frame not containing the field will be skipped.
+ */
+#define TRX_READ_X    (1<<0)
+#define TRX_NEED_X    (1<<1)
+#define TRX_READ_V    (1<<2)
+#define TRX_NEED_V    (1<<3)
+#define TRX_READ_F    (1<<4)
+#define TRX_NEED_F    (1<<5)
+/* Useful for reading natoms from a trajectory without skipping */
+#define TRX_DONT_SKIP (1<<6)
+
+/* For trxframe.not_ok */
+#define FRAME_NOT_OK  (1<<0)
+#define HEADER_NOT_OK (1<<1 | FRAME_NOT_OK)
+
+extern bool read_first_frame(int *status,char *fn,t_trxframe *fr,int flags);
+  /* Read the first frame which is in accordance with flags, which are
+   * defined further up in this file. 
+   * Returns natoms when succeeded, 0 otherwise.
+   * Memory will be allocated for flagged entries.
+   * The flags are copied to fr for subsequent calls to read_next_frame.
+   * Returns TRUE when succeeded, FALSE otherwise.
+   */
+
+extern bool read_next_frame(int status,t_trxframe *fr);
+  /* Reads the next frame which is in accordance with fr->flags.
+   * Returns TRUE when succeeded, FALSE otherwise.
+   */
+
 extern int read_first_x(int *status,char *fn,
 			real *t,rvec **x,matrix box);
 /* These routines read first coordinates and box, and allocates 
@@ -99,35 +143,11 @@ extern void close_trj(int status);
 extern void rewind_trj(int status);
 /* Rewind trj file as opened with read_first_x */
 
-extern int read_first_v(int *status,char *fn,real *t,rvec **v,matrix box);
-/* Same as above, but for velocities */
-
-extern  bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box);
-/* Idem */
-
-extern int read_first_x_v(int *status,char *fn,real *t,rvec **x,rvec **v,matrix box);
-/* Same as above, but for coordinates and velocities */
-  
-extern  bool read_next_x_v(int status,real *t,int natoms,rvec x[],rvec v[],matrix box);
-/* Idem */
-
-extern  bool read_next_x_or_v(int status,real *t,int natoms,rvec x[],rvec v[],matrix box);
-/* Same as above, but for coordinates *AND/OR* velocities */
-
-extern  bool read_first_x_or_v(int *status,char *fn,real *t,rvec **x,rvec **v,matrix box);
-/* Idem */
- 
-extern bool next_e(FILE *status, real *t, t_energy e[]);
-/* Read energy terms from trajectory file */
-
 extern t_topology *read_top(char *fn);
 /* Extract a topology data structure from a topology file */
 
 extern void mk_single_top(t_topology *top);
 /* Make the topology file single processor ready */
-
-extern char *status_title(FILE *status);
-/* Return a title from a topology file */
 
 extern bool bDoView(void);
 /* Return TRUE when user requested viewing of the file */

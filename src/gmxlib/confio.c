@@ -48,34 +48,28 @@ static char *SRCID_confio_c = "$Id$";
 #include "fatal.h"
 #include "copyrite.h"
 #include "filenm.h"
-/*#include "statusio.h"*/
-
-void clear_g96info(t_g96info *info)
-{
-  info->bTitle = FALSE;
-  info->bTime  = FALSE;
-  info->bAtoms = FALSE;
-  info->bPos   = FALSE;
-  info->bVel   = FALSE;
-  info->bBox   = FALSE;
-}
+#include "statutil.h"
 
 #define CHAR_SHIFT 24
 
 static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
-			int nwanted,t_g96info *info,
-			t_atoms *atoms,rvec *x)
+			t_trxframe *fr)
 {
+  t_atoms *atoms;
   bool   bEnd;
-  int    natoms,atnr,resnr,oldres,newres,shift;
+  int    nwanted,natoms,atnr,resnr,oldres,newres,shift;
   char   anm[STRLEN],resnm[STRLEN];
   char   c1,c2;
   double db1,db2,db3;
+  
+  nwanted = fr->natoms;
+
+  atoms = fr->atoms;
 
   natoms = 0;
 
-  if (info->bPos) {
-    if (info->bAtoms)
+  if (fr->bX) {
+    if (fr->bAtoms)
       shift = CHAR_SHIFT;
     else
       shift = 0;
@@ -93,7 +87,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
 		      "Found more coordinates (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
 	if (atoms) {
-	  if (atoms && info->bAtoms &&
+	  if (atoms && fr->bAtoms &&
 	      (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
 	       != 6)) {
 	    if (oldres>=0)
@@ -118,10 +112,10 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
 	  resnr = newres;
 	  atoms->atom[natoms].resnr = resnr-1;
 	}
-	if (x) {
-	  x[natoms][0] = db1;
-	  x[natoms][1] = db2;
-	  x[natoms][2] = db3;
+	if (fr->x) {
+	  fr->x[natoms][0] = db1;
+	  fr->x[natoms][1] = db2;
+	  fr->x[natoms][2] = db3;
 	}
 	natoms++;
       }
@@ -132,17 +126,21 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
 	      natoms,infile,nwanted);
   }
 
+  fr->natoms = natoms;
+
   return natoms;
 }
 
 static int read_g96_vel(char line[],FILE *fp,char *infile,
-			int nwanted,t_g96info *info,rvec *v)
+			t_trxframe *fr)
 {
   bool   bEnd;
-  int    natoms=-1,shift;
+  int    nwanted,natoms=-1,shift;
   double db1,db2,db3;
 
-  if (v && info->bVel) {
+  nwanted = fr->natoms;
+
+  if (fr->v && fr->bV) {
     if (strcmp(line,"VELOCITYRED") == 0)
       shift = 0;
     else
@@ -154,14 +152,14 @@ static int read_g96_vel(char line[],FILE *fp,char *infile,
       if (!bEnd && (line[0] != '#')) {
 	if (sscanf(line+shift,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
 	  fatal_error(0,"Did not find 3 velocities for atom %d in %s",
-			natoms+1,infile);
+		      natoms+1,infile);
 	if ((nwanted != -1) && (natoms >= nwanted))
 	  fatal_error(0,"Found more velocities (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
-	if (v) {
-	  v[natoms][0] = db1;
-	  v[natoms][1] = db2;
-	  v[natoms][2] = db3;
+	if (fr->v) {
+	  fr->v[natoms][0] = db1;
+	  fr->v[natoms][1] = db2;
+	  fr->v[natoms][2] = db3;
 	}
 	natoms++;
       }
@@ -175,19 +173,20 @@ static int read_g96_vel(char line[],FILE *fp,char *infile,
   return natoms;
 }
 
-int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
-		  char *title,t_atoms *atoms,rvec *x, rvec *v,matrix box)
+int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
 {
   static t_symtab *symtab=NULL;
   static char line[STRLEN+1]; /* VERY DIRTY, you can not read two       *
 		               * Gromos96 trajectories at the same time */  
   bool   bAtStart,bTime,bAtoms,bPos,bVel,bBox,bEnd,bFinished;
-  int    natoms;
+  int    nwanted,natoms;
   double db1,db2,db3;
+
+  nwanted = fr->natoms;
 
   bAtStart = (ftell(fp) == 0);
 
-  clear_g96info(info);
+  clear_trxframe(fr,FALSE);
   
   if (!symtab) {
     snew(symtab,1);
@@ -197,10 +196,10 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
   natoms=0;
 
   if (bAtStart) {
-    while ( !info->bTitle && fgets2(line,STRLEN,fp))
-      info->bTitle = (strcmp(line,"TITLE") == 0);
-    if (title)
-      fgets2(title,STRLEN,fp);
+    while ( !fr->bTitle && fgets2(line,STRLEN,fp))
+      fr->bTitle = (strcmp(line,"TITLE") == 0);
+    if (fr->title)
+      fgets2(fr->title,STRLEN,fp);
     bEnd = FALSE;
     while (!bEnd && fgets2(line,STRLEN,fp))
       bEnd = (strcmp(line,"END") == 0);
@@ -219,40 +218,41 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
     bVel   = (strncmp(line,"VELOCITY",8) == 0);
     bBox   = (strcmp(line,"BOX") == 0);
     if (bTime) {
-      if (!info->bTime && !info->bPos) {
-	info->bTime = bTime;
+      if (!fr->bTime && !fr->bX) {
+	fr->bStep = bTime;
+	fr->bTime = bTime;
 	do 
 	  bFinished = (fgets2(line,STRLEN,fp) == NULL);
 	while (!bFinished && (line[0] == '#'));
-	sscanf(line,"%15d%15lf",&(info->step),&db1);
-	info->time = db1;
+	sscanf(line,"%15d%15lf",&(fr->step),&db1);
+	fr->time = db1;
       } else
 	bFinished = TRUE;
     }
     if (bPos) {
-      if (!info->bPos) {
-	info->bAtoms = bAtoms;
-	info->bPos   = bPos;
-	natoms = read_g96_pos(line,symtab,fp,infile,nwanted,info,atoms,x);
+      if (!fr->bX) {
+	fr->bAtoms = bAtoms;
+	fr->bX     = bPos;
+	natoms = read_g96_pos(line,symtab,fp,infile,fr);
       } else
 	bFinished = TRUE;
     }
-    if (v && bVel) {
-      info->bVel = bVel;
-      natoms = read_g96_vel(line,fp,infile,nwanted,info,v);
+    if (fr->v && bVel) {
+      fr->bV = bVel;
+      natoms = read_g96_vel(line,fp,infile,fr);
     }
     if (bBox) {
-      info->bBox = bBox;
-      clear_mat(box);
+      fr->bBox = bBox;
+      clear_mat(fr->box);
       bEnd = FALSE;
       while (!bEnd && fgets2(line,STRLEN,fp)) {
 	bEnd = (strncmp(line,"END",3) == 0);
 	if (!bEnd && (line[0] != '#')) {
 	  if (sscanf(line,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
 	    fatal_error(0,"Found a BOX line, but no box in %s",infile);
-	  box[XX][XX] = db1;
-	  box[YY][YY] = db2;
-	  box[ZZ][ZZ] = db3;
+	  fr->box[XX][XX] = db1;
+	  fr->box[YY][YY] = db2;
+	  fr->box[ZZ][ZZ] = db3;
 	}
       }
       bFinished = TRUE;
@@ -260,51 +260,75 @@ int read_g96_conf(FILE *fp,char *infile,int nwanted,t_g96info *info,
   } while (!bFinished && fgets2(line,STRLEN,fp));
   
   close_symtab(symtab);
+
+  fr->natoms = natoms;
   
   return natoms;
 }
 
-void write_g96_conf(FILE *out,char *title,t_atoms *atoms,
-		    rvec *x,rvec *v,matrix box,
+void write_g96_conf(FILE *out,t_trxframe *fr,
 		    int nindex,atom_id *index)
 {
+  t_atoms *atoms;
   int nout,i,a;
   
+  atoms = fr->atoms;
+
   if (index)
     nout = nindex;
   else
-    nout = atoms->nr; 
+    nout = fr->natoms; 
 
-  fprintf(out,"TITLE\n%s\nEND\n",title);
-  if (x) {
-    fprintf(out,"POSITION\n");
-    for(i=0; i<nout; i++) {
-      if (index)
-	a = index[i];
-      else
-	a = i;
-      fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-	      atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
-	      *atoms->atomname[a],i+1,x[a][XX],x[a][YY],x[a][ZZ]);
+  if (fr->bTitle)
+    fprintf(out,"TITLE\n%s\nEND\n",fr->title);
+  if (fr->bStep || fr->bTime)
+    fprintf(out,"TIMESTEP\n%9d%15.9f\nEND\n",fr->step,fr->time);
+  if (fr->bX) {
+    if (fr->bAtoms) {
+      fprintf(out,"POSITION\n");
+      for(i=0; i<nout; i++) {
+	if (index) a = index[i]; else a = i;
+	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
+		atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
+		*atoms->atomname[a],i+1,
+		fr->x[a][XX],fr->x[a][YY],fr->x[a][ZZ]);
+      }
+    } else {
+      fprintf(out,"POSITIONRED\n");
+      for(i=0; i<nout; i++) {
+	if (index) a = index[i]; else a = i;
+	fprintf(out,"%15.9f%15.9f%15.9f\n",
+		fr->x[a][XX],fr->x[a][YY],fr->x[a][ZZ]);
+      }
     }
     fprintf(out,"END\n");
   }
-  if (v) {
-    fprintf(out,"VELOCITY\n");
-    for(i=0; i<nout; i++) {
-      if (index)
-	a = index[i];
-      else
-	a = i;
-      fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
-	      atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
-	      *atoms->atomname[a],i+1,v[a][XX],v[a][YY],v[a][ZZ]);
+  if (fr->bV) {
+    if (atoms) {
+      fprintf(out,"VELOCITY\n");
+      for(i=0; i<nout; i++) {
+	if (index) a = index[i]; else a = i;
+	fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
+		atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
+		*atoms->atomname[a],i+1,
+		fr->v[a][XX],fr->v[a][YY],fr->v[a][ZZ]);
+      }
+    } else {
+      fprintf(out,"VELOCITYRED\n");
+      for(i=0; i<nout; i++) {
+	if (index) a = index[i]; else a = i;
+	fprintf(out,"%15.9f%15.9f%15.9f\n",
+		fr->v[a][XX],fr->v[a][YY],fr->v[a][ZZ]);
+      }
     }
     fprintf(out,"END\n");
   }
-  fprintf(out,"BOX\n");
-  fprintf(out,"%15.9f%15.9f%15.9f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-  fprintf(out,"END\n");
+  if (fr->bBox) {
+    fprintf(out,"BOX\n");
+    fprintf(out,"%15.9f%15.9f%15.9f\n",
+	    fr->box[XX][XX],fr->box[YY][YY],fr->box[ZZ][ZZ]);
+    fprintf(out,"END\n");
+  }
 }
 
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
@@ -326,7 +350,7 @@ static void get_coordnum (char *infile,int *natoms)
   ffclose (in);
 }
 
-static void get_w_conf(FILE *in, char *infile, char *title,
+static bool get_w_conf(FILE *in, char *infile, char *title,
 		       t_atoms *atoms, rvec x[],rvec *v, matrix box)
 {
   static t_symtab *symtab=NULL;
@@ -337,7 +361,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
   double x1,y1,z1,x2,y2,z2;
   rvec   xmin,xmax;
   int    natoms,i,m,resnr,newres,oldres,prec;
-  bool   bFirst;
+  bool   bFirst,bVel;
   char   *p1,*p2;
   
   newres  = 0;
@@ -362,6 +386,8 @@ static void get_w_conf(FILE *in, char *infile, char *title,
   
   bFirst=TRUE;
   
+  bVel = FALSE;
+
   /* just pray the arrays are big enough */
   for (i=0; (i < natoms) ; i++) {
     if ((fgets2 (line,STRLEN,in)) == NULL) {
@@ -436,6 +462,7 @@ static void get_w_conf(FILE *in, char *infile, char *title,
 	v[i][XX]=x1;
 	v[i][YY]=y1;
 	v[i][ZZ]=z1;
+	bVel = TRUE;
       }
     }
   }
@@ -477,6 +504,8 @@ static void get_w_conf(FILE *in, char *infile, char *title,
     box[ZZ][YY] = z2;
   }
   close_symtab(symtab);
+
+  return bVel;
 }
 
 static void read_whole_conf(char *infile, char *title,
@@ -510,8 +539,7 @@ static void get_conf(FILE *in, char *title, int *natoms,
   sfree(atoms.atomname);
 }
 
-bool gro_next_x_or_v(FILE *status,real *t,int natoms,
-		     rvec x[],rvec *v,matrix box)
+bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
 {
   t_atoms  atoms;
   char   title[STRLEN],*p;
@@ -520,154 +548,59 @@ bool gro_next_x_or_v(FILE *status,real *t,int natoms,
   if (eof(status))
     return FALSE;
 
-  atoms.nr=natoms;
-  snew(atoms.atom,natoms);
-  atoms.nres=natoms;
-  snew(atoms.resname,natoms);
-  snew(atoms.atomname,natoms);
+  atoms.nr=fr->natoms;
+  snew(atoms.atom,fr->natoms);
+  atoms.nres=fr->natoms;
+  snew(atoms.resname,fr->natoms);
+  snew(atoms.atomname,fr->natoms);
   
-  get_w_conf(status,title,title,&atoms,x,v,box);
-  
+  fr->bV = get_w_conf(status,title,title,&atoms,fr->x,fr->v,fr->box);
+  fr->title = title;
+  fr->bTitle = TRUE;
+  fr->bX = TRUE;
+  fr->bBox = TRUE;
+
   sfree(atoms.atom);
   sfree(atoms.resname);
   sfree(atoms.atomname);
 
   if ((p=strstr(title,"t=")) != NULL) {
     p+=2;
-    if (sscanf(p,"%lf",&tt)==1)
-      *t=tt;
-    else
-      *t=0.0;
+    if (sscanf(p,"%lf",&tt)==1) {
+      fr->time = tt;
+      fr->bTime = TRUE;
+    } else {
+      fr->time = 0;
+      fr->bTime = FALSE;
+    }
   }
   
-  if (atoms.nr != natoms)
-    fatal_error(0,"Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)",atoms.nr,natoms);
+  if (atoms.nr != fr->natoms)
+    fatal_error(0,"Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)",atoms.nr,fr->natoms);
   
   return TRUE;
 }
 
-int gro_first_x_or_v(FILE *status, real *t, 
-		     rvec **x, rvec **v, matrix box)
+int gro_first_x_or_v(FILE *status,t_trxframe *fr)
 {
   int natoms;
   char title[STRLEN];
   
-  *t=0.0;
   frewind(status);
-  get_coordnum_fp(status, title, &natoms);
+  get_coordnum_fp(status, title, &fr->natoms);
   frewind(status);
   fprintf(stderr,"Reading frames from gro file '%s'\n",title);
-  if (natoms==0)
+  fr->bTitle = TRUE;
+  fr->title = title;
+  if (fr->natoms==0)
     fatal_error(1,"No coordinates in gro file\n");
-  fprintf(stderr,"No of atoms: %d.\n", natoms);
+  fprintf(stderr,"No of atoms: %d.\n", fr->natoms);
   
-  snew(*x,natoms);
-  snew(*v,natoms);
-  gro_next_x_or_v(status, t, natoms, *x, *v, box);
+  snew(fr->x,fr->natoms);
+  snew(fr->v,fr->natoms);
+  gro_next_x_or_v(status, fr);
   
-  return natoms;
-}
-
-bool gro_next_v(FILE *status,real *t,int natoms,rvec *v,matrix box)
-{
-  int i,d;
-  bool result,vel;
-  rvec *x;
-  
-  snew(x,natoms);
-  do {
-    result = gro_next_x_or_v(status,t,natoms,x,v,box);
-    vel=FALSE;
-    for (i=0; (i<natoms); i++)
-      for (d=0; (d<DIM); d++)
-	vel=vel || v[d][XX];
-  } while(result && !vel);
-  sfree(x);
-  
-  return result;
-}
-
-int gro_first_v(FILE *status, real *t, rvec **v, matrix box)
-{
-  bool result,vel;
-  rvec *x;
-  int i,d,natoms;
-  
-  natoms = gro_first_x_or_v(status,t,&x,v,box);
-  result = natoms;
-  vel=FALSE;
-  for (i=0; (i<natoms); i++)
-    for (d=0; (d<DIM); d++)
-      vel=vel || v[d][XX];
-  while(result && !vel) {
-    result = gro_next_x_or_v(status,t,natoms,x,*v,box);
-    vel=FALSE;
-    for (i=0; (i<natoms); i++)
-      for (d=0; (d<DIM); d++)
-	vel=vel || v[d][XX];
-  }
-  return result;
-}
-
-
-bool gro_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
-{
-  rvec *v;
-  bool result;
-  
-  snew(v,natoms);
-  result = gro_next_x_or_v(status,t,natoms,x,v,box);
-  sfree(v);
-  
-  return result;
-}
-
-int gro_first_x(FILE *status, real *t, rvec **x, matrix box)
-{
-  rvec *v;
-  int result;
-  
-  result = gro_first_x_or_v(status,t,x,&v,box);
-  sfree(v);
-  
-  return result;
-}
-
-bool gro_next_x_v(FILE *status,real *t,int natoms,rvec x[],rvec *v,matrix box)
-{
-  bool result,vel;
-  int i,d;
-    
-  do {
-    result = gro_next_x_or_v(status,t,natoms,x,v,box);
-    vel=FALSE;
-    for (i=0; (i<natoms); i++)
-      for (d=0; (d<DIM); d++)
-	vel=vel || v[d][XX];
-  } while(result && !vel);
-  
-  return result;
-}
-
-int gro_first_x_v(FILE *status, real *t, rvec **x, rvec **v, matrix box)
-{
-  bool result,vel;
-  int  i,d,natoms;
-  
-  natoms = gro_first_x_or_v(status,t,x,v,box);
-  result = natoms;
-  vel=FALSE;
-  for (i=0; (i<natoms); i++)
-    for (d=0; (d<DIM); d++)
-      vel=vel || v[d][XX];
-  while(result && !vel) {
-    result = gro_next_x_or_v(status,t,natoms,*x,*v,box);
-    vel=FALSE;
-    for (i=0; (i<natoms); i++)
-      for (d=0; (d<DIM); d++)
-	vel=vel || v[d][XX];
-  }
-  return result;
+  return fr->natoms;
 }
 
 void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
@@ -896,6 +829,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
 {
   FILE       *out;
   int        ftp;
+  t_trxframe fr;
 
   ftp=fn2ftp(outfile);
   switch (ftp) {
@@ -905,8 +839,21 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
     fclose(out);
     break;
   case efG96:
+    clear_trxframe(&fr,TRUE);
+    fr.bTitle = TRUE;
+    fr.title = title;
+    fr.bAtoms = TRUE;
+    fr.atoms = atoms;
+    fr.bX = TRUE;
+    fr.x = x;
+    if (v) {
+      fr.bV = TRUE;
+      fr.v = v;
+    }
+    fr.bBox = TRUE;
+    copy_mat(box,fr.box);
     out=ffopen(outfile,"w");
-    write_g96_conf(out, title, atoms, x, v, box, nindex, index);
+    write_g96_conf(out, &fr, nindex, index);
     fclose(out);
     break;
   case efPDB:
@@ -931,6 +878,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
 {
   FILE       *out;
   int        ftp;
+  t_trxframe fr;
 
   ftp=fn2ftp(outfile);
   switch (ftp) {
@@ -938,8 +886,21 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
     write_conf(outfile, title, atoms, x, v, box);
     break;
   case efG96:
+    clear_trxframe(&fr,TRUE);
+    fr.bTitle = TRUE;
+    fr.title = title;
+    fr.bAtoms = TRUE;
+    fr.atoms = atoms;
+    fr.bX = TRUE;
+    fr.x = x;
+    if (v) {
+      fr.bV = TRUE;
+      fr.v = v;
+    }
+    fr.bBox = TRUE;
+    copy_mat(box,fr.box);
     out=ffopen(outfile,"w");
-    write_g96_conf(out, title, atoms, x, v, box, -1, NULL);
+    write_g96_conf(out, &fr, -1, NULL);
     fclose(out);
     break;
   case efPDB:
@@ -963,7 +924,7 @@ void get_stx_coordnum(char *infile,int *natoms)
 {
   FILE *in;
   int ftp;
-  t_g96info g96info;
+  t_trxframe fr;
   matrix dumbox;
 
   ftp=fn2ftp(infile);
@@ -973,7 +934,13 @@ void get_stx_coordnum(char *infile,int *natoms)
     break;
   case efG96:
     in=ffopen(infile,"r");
-    *natoms=read_g96_conf(in,infile,-1,&g96info,NULL,NULL,NULL,NULL,dumbox);
+    fr.title = NULL;
+    fr.natoms = -1;
+    fr.atoms = NULL;
+    fr.x = NULL;
+    fr.v = NULL;
+    fr.f = NULL;
+    *natoms=read_g96_conf(in,infile,&fr);
     fclose(in);
     break;
   case efPDB:
@@ -1000,11 +967,11 @@ void get_stx_coordnum(char *infile,int *natoms)
 void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec *v, matrix box)
 {
-  FILE *in;
+  FILE       *in;
   t_topology *top;
-  t_g96info  g96info;
+  t_trxframe fr;
   int        ftp,natoms,i1;
-  real       r1,r2;
+  real       d,r1,r2;
 
   ftp=fn2ftp(infile);
   switch (ftp) {
@@ -1012,10 +979,16 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     read_whole_conf(infile, title, atoms, x, v, box);
     break;
   case efG96:
-    clear_mat(box);
+    fr.title = title;
+    fr.natoms = atoms->nr;
+    fr.atoms = atoms;
+    fr.x = x;
+    fr.v = v;
+    fr.f = NULL;
     in = ffopen(infile,"r");
-    read_g96_conf(in, infile, atoms->nr, &g96info, title, atoms, x, v, box);
+    read_g96_conf(in, infile, &fr);
     fclose(in);
+    copy_mat(fr.box,box);
     break;
   case efPDB:
   case efBRK:
