@@ -338,22 +338,16 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #endif 
     Epot[TRY]=ener[F_EPOT]; 
     
-#ifdef FORCE_CRIT
-#define ACCEPT_STEP (Fsqrt[TRY] < Fsqrt[Min])
-#else
-#define ACCEPT_STEP (Epot[TRY] < Epot[Min])
-#endif
-    
     /* Print it if necessary  */
     if (bVerbose && MASTER(cr)) { 
 #ifdef FORCE_CRIT 
       fprintf(stderr,"Step = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e%c",
-	      count,step,Epot[TRY],Fsqrt[TRY],ACCEPT_STEP?'\n':'\r');
+	      count,step,Epot[TRY],Fsqrt[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r');
 #else 
       fprintf(stderr,"Step = %5d, Dx = %12.5e, E-Pot = %30.20e%c", 
- 	      count,step,Epot[TRY],ACCEPT_STEP?'\n':'\r' ); 
+ 	      count,step,Epot[TRY],(Epot[TRY]<Epot[Min])?'\n':'\r' ); 
 #endif 
-      if ( ACCEPT_STEP ) {
+      if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
 		   force_vir,parm->vir,parm->pres,grps,mu_tot); 
@@ -369,7 +363,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
      * or if we did random steps! 
      */
     
-    if ( (count==0) || ACCEPT_STEP ) {
+    if ( (count==0) || (Epot[TRY] < Epot[Min]) ) {
       steps_accepted++; 
       if (do_per_step(steps_accepted,parm->ir.nstfout)) 
 	ff=force[TRY];  
