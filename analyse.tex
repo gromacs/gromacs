@@ -47,8 +47,9 @@ make_ndx
 mk_angndx
 \end{verbatim}
 In \chref{algorithms} it was explained how {\em groups of
-atoms} can be used in the MD-program.  In most analysis programs an
-index file is necessary too to select groups to work on. Let's
+atoms} can be used in the MD-program.  In most analysis programs groups
+of atoms are needed to work on. Most programs can generate several default
+index groups, but groups can always be read from an index file. Let's
 consider a simulation of a binary mixture of components A and B. When
 we want to calculate the radial distribution function (rdf)
 $g_{AB}(r)$ of A with respect to B, we have to calculate
@@ -69,7 +70,7 @@ specify a series of angles by {\em triples} of {\em atom numbers},
 dihedrals by {\em quadruples} of {\em atom numbers} and bonds or
 vectors (in a molecule) by {\em couples} of {\em atom numbers}. When
 appropriate the type of index file will be specified for the following
-analysis programs.  To help creating such index files ({\tt
+analysis programs.  To help creating such \normindex{index file}s ({\tt
 index.ndx}), there are a couple of programs to generate them, using
 either your input configuration or the topology.  To generate an
 index file consisting of a series of {\em atom numbers} (as in the
