@@ -201,21 +201,24 @@ void get_pdb_coordnum(char *infile,int *natoms)
 
 void print_pdbatoms(FILE *out,int natom,t_pdbatom pdba[],matrix box)
 {
-  int i;
+  int i,resnr;
   char buf[12];
 
   fprintf(out,"HEADER    %s\n",bromacs());
   if (box != NULL) {
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-    fprintf(out,"CRYST1%9.3f%9.3f%9.3f %6.2f%6.2f%6.2f P 1            1\n",
+    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
   }
   for(i=0; (i<natom); i++) {
     sprintf(buf,"%s",pdba[i].resnm);
     buf[3]='\0';
+    resnr=pdba[i].resnr + 1;
+    if (resnr>=10000)
+      resnr = resnr % 10000;
     fprintf(out,pdbformat,
 	    pdbtp[pdba[i].pdbtp],pdba[i].atomnr + 1,pdba[i].atomnm,
-	    buf,pdba[i].chain,pdba[i].resnr + 1,
+	    buf,pdba[i].chain,resnr,
 	    10*pdba[i].x[XX],10*pdba[i].x[YY],10*pdba[i].x[ZZ],
 	    pdba[i].dummy,pdba[i].bfac);
   }
