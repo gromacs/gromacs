@@ -180,7 +180,7 @@ int main(int argc,char *argv[])
     for(i=0; (i<nftype); i++) {
       fprintf(out,"[ %s ]\n",grpnames[i]);
       for(j=0; (j<nr[i]*mult); j++) {
-	fprintf(out,"%d  ",index[i][j]);
+	fprintf(out,"%d  ",index[i][j]+1);
       }
       fprintf(out,"\n");
     }
