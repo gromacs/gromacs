@@ -109,11 +109,43 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   int         type,a1,a2,b2,nr,n1,n2,nc4;
   real        len=0,len1,sign;
   real        im1,im2;
+  int         **at_c,*at_cn,*at_cm;
   
   ncons  = idef->il[F_SHAKE].nr/3;
   *nrtot = 0;
   
   if (ncons > 0) {
+
+    iatom=idef->il[F_SHAKE].iatoms;
+
+    /* Make atom-constraint connection list for temporary use */
+    snew(at_c,md->nr);
+    snew(at_cn,md->nr);
+    snew(at_cm,md->nr);
+
+    for(i=0; i<ncons; i++) {
+      a1=iatom[3*i+1];
+      a2=iatom[3*i+2];
+      if (at_cn[a1] >= at_cm[a1]) {
+	at_cm[a1] += 4;
+	srenew(at_c[a1],at_cm[a1]);
+      }
+      at_c[a1][at_cn[a1]] = i;
+      at_cn[a1]++;
+      if (at_cn[a2] >= at_cm[a2]) {
+	at_cm[a2] += 4;
+	srenew(at_c[a2],at_cm[a2]);
+      }
+      at_c[a2][at_cn[a2]] = i;
+      at_cn[a2]++;
+    }
+    sfree(at_cm);
+    
+    for(i=0; i<ncons; i++) {
+      a1=iatom[3*i+1];
+      a2=iatom[3*i+2];
+      *nrtot += at_cn[a1] + at_cn[a2] - 2;
+    }      
 
     snew(*r,ncons);
     snew(*bla1,ncons);
@@ -127,24 +159,17 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     snew(*lincslam,ncons);
     snew(*bllen0,ncons);
     snew(*ddist,ncons);
+    snew(*blbnb,*nrtot);
+    snew(*blcc,*nrtot);
+    snew(*blm,*nrtot);
     
-    iatom=idef->il[F_SHAKE].iatoms;
-
     /* Make constraint-neighbor list */
     (*blnr)[0] = 0;
     for(i=0; (i<ncons); i++) {
       j=3*i;
       a1=iatom[j+1];
       a2=iatom[j+2];
-      nr=0;
-      for(k=0; (k<ncons); k++) {
-	b1=iatom[3*k+1];
-	b2=iatom[3*k+2];
-	if ((a1==b1 || a1==b2) || (a2==b1 || a2==b2)) 
-	  if (i != k) nr++;
-      }
-      *nrtot += nr;
-      (*blnr)[i+1] = *nrtot;
+      /* (*blnr)[i+1] = (*blnr)[i] + at_cn[a1] + at_cn[a2] - 2; */
       type=iatom[j];
       len =idef->iparams[type].shake.dA;
       len1=idef->iparams[type].shake.dB;
@@ -153,37 +178,30 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       (*bllen)[i]=len;
       (*bllen0)[i]=len;
       (*ddist)[i]=len1-len;
+      im1=md->invmass[a1];
+      im2=md->invmass[a2];
+      (*blc)[i]=invsqrt(im1+im2);
+      /* Construct the constraint connection matrix blbnb */
+      (*blnr)[i+1]=(*blnr)[i];
+      for(k=0; k<at_cn[a1]; k++)
+	if (at_c[a1][k] != i)
+	  (*blbnb)[((*blnr)[i+1])++]=at_c[a1][k];
+      for(k=0; k<at_cn[a2]; k++)
+	if (at_c[a2][k] != i)
+	  (*blbnb)[((*blnr)[i+1])++]=at_c[a2][k];
     }
 
+    sfree(at_cn);
+    for(i=0; i<ncons; i++)
+      sfree(at_c[i]);
+    sfree(at_c);
+    
     fprintf(log,"\nInitializing LINear Constraint Solver\n");
     fprintf(log,"  number of constraints is %d\n",ncons);
     fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n\n",
 	    (real)(*nrtot)/ncons);
     fflush(log);
 
-    snew(*blbnb,*nrtot); 
-    snew(*blcc,*nrtot);
-    snew(*blm,*nrtot); 
-
-    /* Construct the constraint connection matrix blbnb */
-    for(i=0; (i<ncons); i++) {
-      a1=(*bla1)[i];
-      a2=(*bla2)[i];
-      im1=md->invmass[a1];
-      im2=md->invmass[a2];
-      (*blc)[i]=invsqrt(im1+im2);
-      nr=0;
-      for(k=0; (k<ncons); k++) {
-	b1=(*bla1)[k];
-	b2=(*bla2)[k];
-	if ((a1==b1 || a1==b2) || (a2==b1 || a2==b2)) 
-	  if (i != k) {
-	    (*blbnb)[(*blnr)[i]+nr]=k;
-	    nr++;
-	  }
-      }
-    }
-    
     /* Construct the coupling coefficient matrix blcc */
     for(b=0; (b<ncons); b++) {
       i=(*bla1)[b];
