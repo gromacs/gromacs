@@ -47,6 +47,7 @@ static char *SRCID_g_mdmat_c = "$Id$";
 #include "rdgroup.h"
 #include "tpxio.h"
 #include "rmpbc.h"
+#include "pbc.h"
 
 #define FARAWAY 10000
 
@@ -87,11 +88,13 @@ int *res_natm(t_atoms *atoms)
 
 static void calc_mat(int nres, int natoms, int rndx[],
 		     rvec x[], atom_id *index,
-		     real trunc, real **mdmat,int **nmat)
+		     real trunc, real **mdmat,int **nmat,matrix box)
 {
   int i,j,resi,resj;
   real trunc2,r,r2;
   
+  if (box)
+    init_pbc(box);
   trunc2=sqr(trunc);
   for(resi=0; (resi<nres); resi++)
     for(resj=0; (resj<nres); resj++)
@@ -100,7 +103,13 @@ static void calc_mat(int nres, int natoms, int rndx[],
     resi=rndx[i];
     for(j=i+1; (j<natoms); j++) {
       resj=rndx[j];
-      r2=distance2(x[index[i]],x[index[j]]);
+      if (box) {
+	rvec ddx;
+	pbc_dx(x[index[i]],x[index[j]],ddx);
+	r2 = iprod(ddx,ddx);
+      }
+      else
+	r2=distance2(x[index[i]],x[index[j]]);
       if ( r2 < trunc2 ) {
 	nmat[resi][j]++;
 	nmat[resj][i]++;
@@ -249,7 +258,7 @@ int main(int argc,char *argv[])
   do {
     rm_pbc(&top.idef,trxnat,box,x,x);
     nframes++;
-    calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat);
+    calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat,box);
     for (i=0; (i<nres); i++)
       for (j=0; (j<natoms); j++)
 	if (nmat[i][j]) 

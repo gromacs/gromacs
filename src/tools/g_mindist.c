@@ -189,25 +189,94 @@ static void calc_mindist(real MinDist,
   *nd=numd;
 }
 
-void mindist_plot(char *fn,FILE *atm,real mind,
-		  char *dfile,char *nfile,bool bMat,
-		  int ng,atom_id *index[], int gnx[], char *grpn[])
+static void calc_maxdist(real MaxDist,
+			 matrix box, rvec x[], 
+			 int nx1,int nx2,
+			 atom_id index1[], atom_id index2[],
+			 real *md, int *nd,
+			 int *ixmax, int *jxmax)
 {
+  int     i,j,j0=0,j1;
+  int     ix,jx;
+  atom_id *index3;
+  rvec    dx;
+  int     numd=0;
+  real    r2,rmax2,r_2;
+
+  *ixmax = -1;
+  *jxmax = -1;
+  
+/*   real    hb2; */
+/*   hb2=(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]))*0.5; */
+  
+  r_2=sqr(MaxDist);
+
+  /* Must init pbc every step because of pressure coupling */
+  init_pbc(box);
+  if (index2) {
+    j0     = 0;
+    j1     = nx2;
+    index3 = index2;
+  }
+  else {
+    j1     = nx1;
+    index3 = index1;
+  }
+
+  rmax2=0.0;
+
+  for(i=0; (i < nx1); i++) {
+    ix=index1[i];
+    if (!index2)
+      j0=i+1;
+    for(j=j0; (j < j1); j++) {
+      jx=index3[j];
+      if (ix != jx) {
+	pbc_dx(x[ix],x[jx],dx);
+	r2=iprod(dx,dx);
+	if (r2 > rmax2)
+	  rmax2=r2;
+	if (r2 > r_2) {
+	  numd++;
+	  *ixmax=ix;
+	  *jxmax=jx;
+	}
+      }
+    }
+  }
+  *md=sqrt(rmax2);
+  *nd=numd;
+}
+
+void dist_plot(char *fn,FILE *atm,real mmd,
+	       char *dfile,char *nfile,bool bMat,
+	       int ng,atom_id *index[], int gnx[], char *grpn[],
+	       bool bMin)
+{
+  typedef void cd_fn(real,matrix,rvec *,int,int,atom_id *,atom_id *,
+		     real *,int *,int *,int *);
+  
   FILE         *dist,*num;
   char         buf[256];
   char         **leg;
   real         t,md;
   int          nd,status;
   int          i,j,k,natoms;
-  int	       min1,min2;
+  int	       mm1,mm2;
   rvec         *x0;
   matrix       box;
+  cd_fn        *calc_dist;
+  
+  if (bMin)
+    calc_dist = calc_mindist;
+  else
+    calc_dist = calc_maxdist;
   
   if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0)
     fatal_error(0,"Could not read coordinates from statusfile\n");
 
-  sprintf(buf,"Number of Contacts < %g nm",mind);
-  dist=xvgropen(dfile,"Minimum Distance","Time (ps)","Distance (nm)");
+  sprintf(buf,"Number of Contacts %s %g nm",bMin ? "<" : ">",mmd);
+  dist=xvgropen(dfile,"Mmimum Distance","Time (ps)","Distance (nm)");
   num=xvgropen(nfile,buf,"Time (ps)","Number");
 
   if (bMat) {
@@ -246,18 +315,18 @@ void mindist_plot(char *fn,FILE *atm,real mind,
 
     if (bMat) {
       if (ng == 1) {
-	calc_mindist(mind,box,x0,gnx[0],gnx[0],
-		     index[0],index[0],&md,&nd,
-		     &min1,&min2);
+	calc_dist(mmd,box,x0,gnx[0],gnx[0],
+		  index[0],index[0],&md,&nd,
+		  &mm1,&mm2);
 	fprintf(dist,"  %12g",md);
 	fprintf(num,"  %8d",nd);
       }
       else {
 	for(i=0; (i<ng-1); i++) {
 	  for(k=i+1; (k<ng); k++) {
-	    calc_mindist(mind,box,x0,gnx[i],gnx[k],
-			 index[i],index[k],&md,&nd,
-			 &min1,&min2);
+	    calc_dist(mmd,box,x0,gnx[i],gnx[k],
+		      index[i],index[k],&md,&nd,
+		      &mm1,&mm2);
 	    fprintf(dist,"  %12g",md);
 	    fprintf(num,"  %8d",nd);
 	  }
@@ -266,17 +335,17 @@ void mindist_plot(char *fn,FILE *atm,real mind,
     }
     else {    
       for(i=1; (i<ng); i++) {
-	calc_mindist(mind,box,x0,gnx[0],gnx[i],
-		     index[0],index[i],&md,&nd,
-		     &min1,&min2);
+	calc_dist(mmd,box,x0,gnx[0],gnx[i],
+		  index[0],index[i],&md,&nd,
+		  &mm1,&mm2);
 	fprintf(dist,"  %12g",md);
 	fprintf(num,"  %8d",nd);
       }    
     }
     fprintf(dist,"\n");
     fprintf(num,"\n");
-    if (min1 != -1)
-      fprintf(atm,"%12g  %12d  %12d\n",t,min1,min2);
+    if (mm1 != -1)
+      fprintf(atm,"%12g  %12d  %12d\n",t,mm1,mm2);
   } while (read_next_x(status,&t,natoms,x0,box));
   
   close_trj(status);
@@ -303,11 +372,13 @@ int main(int argc,char *argv[])
     "and [TT]g_bond[tt]."
   };
   
-  static bool bMat=FALSE,bPer=FALSE;
+  static bool bMat=FALSE,bPer=FALSE,bMax=FALSE;
   static real mindist=0.6;
   t_pargs pa[] = {
     { "-matrix", FALSE, etBOOL, {&bMat},
       "Calculate half a matrix of group-group distances" },
+    { "-max",    FALSE, etBOOL, {&bMax},
+      "Calculate *maximum* distance instead of minimum" },
     { "-d",      FALSE, etREAL, {&mindist},
       "Distance for contacts" },
     { "-pi",      FALSE, etBOOL, {&bPer},
@@ -387,11 +458,12 @@ int main(int argc,char *argv[])
   if (bPer) {
     periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
 			  &top,gnx[0],index[0]);
-  } else {
+  } 
+  else {
     atm=ftp2FILE(efOUT,NFILE,fnm,"w");
-    mindist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
-		 opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
-		 bMat,ng,index,gnx,grpname);
+    dist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
+	      opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
+	      bMat,ng,index,gnx,grpname,!bMax);
     fclose(atm);
   }
 
