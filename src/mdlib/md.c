@@ -91,9 +91,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Shell stuff */
   int         nshell,count,nconverged=0;
   t_shell     *shells;
-  rvec        *fbuf[2];
-  int         cur=0;
-#define       next (1-cur)
   real        timestep;
   double      tcount=0;
   bool        bDynamicStep,bIonize,bMultiSim,bGlas;
@@ -123,8 +120,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bIonize      = (Flags & MD_IONIZE)   == MD_IONIZE;
   bMultiSim    = (Flags & MD_MULTISIM) == MD_MULTISIM;
   bGlas        = (Flags & MD_GLAS)     == MD_GLAS;
-  snew(fbuf[cur],mdatoms->nr);
-  snew(fbuf[next],mdatoms->nr);
   timestep = parm->ir.delta_t;
 
   /* Check whether we have to do dipole stuff */
@@ -253,6 +248,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     init_mdatoms(mdatoms,lambda,(step==0));
     
+    clear_mat(force_vir);
+    
 #ifdef XMDRUN
     /* Ionize the atoms if necessary */    
     if (bIonize)
@@ -261,7 +258,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Now is the time to relax the shells */
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
-		       x,vold,v,vt,fbuf[next],
+		       x,vold,v,vt,f,
 		       buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
 		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,
 		       &bConverged);
@@ -269,6 +266,21 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bConverged)
       nconverged++;
+
+#else
+
+    /* The coordinates (x) are shifted (to get whole molecules) in do_force
+     * This is parallellized as well, and does communication too. 
+     * Check comments in sim_util.c
+     */
+    do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
+	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
+	     lambda,graph,bNS,FALSE,fr);
+    debug_gmx();
+#ifdef DEBUG
+    pr_rvecs(log,0,"force_vir",force_vir,DIM);
+#endif     
+
 #endif
 
     /* Calculate total (local) dipole moment if necessary. 
@@ -281,30 +293,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 			 gnx,grpindex);
     
     if (bGlas)
-      do_glas(log,START(nsb),HOMENR(nsb),x,fbuf[next],
+      do_glas(log,START(nsb),HOMENR(nsb),x,f,
 	      fr,mdatoms,top->idef.atnr,&parm->ir,ener);
 	         
     if (bTCR && MASTER(cr) && (step == 0)) {
       tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
-      fprintf(log,"Done init_coupling\n"); fflush(log);
+      fprintf(log,"Done init_coupling\n"); 
+      fflush(log);
     }
 #endif
 
-#ifndef XMDRUN
-    /* Calc forces and virial
-     * The coordinates (x) are shifted (to get whole molecules) in do_force
-     * This is parallellized as well, and does communication too. 
-     * Check comments in sim_util.c
-     */
-    clear_mat(force_vir);
-    do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
-	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	     lambda,graph,bNS,FALSE,fr);
-    debug_gmx();
-#ifdef DEBUG
-    pr_rvecs(log,0,"force_vir",force_vir,DIM);
-#endif     
-#endif
 
     /* Now we have the energies and forces corresponding to the 
      * coordinates at time t. We must output all of this before
@@ -330,13 +328,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
-    ff = (do_per_step(step,parm->ir.nstfout)) ?
-#ifdef XMDRUN
-      fbuf[next] : NULL
-#else
-      f : NULL
-#endif
-      ;
+    ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;
     fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
 			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     debug_gmx();
@@ -366,27 +358,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #ifdef XMDRUN
       /* Check magnitude of the forces */
       fmax = f_max(cr->left,cr->right,cr->nprocs,START(nsb),
-		   START(nsb)+HOMENR(nsb),fbuf[next]);
+		   START(nsb)+HOMENR(nsb),f);
       debug_gmx();
       parm->ir.delta_t = timestep;
 #endif
 
       /* This is also parallellized, but check code in update.c */
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	     &(parm->ir),mdatoms,x,graph,
-#ifdef XMDRUN
-	     fbuf[next],
-#else
-	     f,
-#endif
+	     &(parm->ir),mdatoms,x,graph,f,
 	     buf,vold,v,vt,parm->pres,parm->box,
 	     top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
       /* The coordinates (x) were unshifted in update */
-
-#ifdef XMDRUN
-      /* Update index in fbuf etc. */
-      cur = next;
-#endif
 
 #ifdef DEBUG
       pr_rvecs(log,0,"shake_vir",shake_vir,DIM);
@@ -547,7 +529,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
 		  parm->box,parm->vir,parm->pres,
-		  mu_tot,x,fbuf[next],bConverged);
+		  mu_tot,x,f,bConverged);
     debug_gmx();
 #endif
 
