@@ -45,6 +45,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "gstat.h"
 #include "strdb.h"
 #include "rdgroup.h"
+#include "physics.h"
 
 typedef struct {
   char   sanm[12];
@@ -62,6 +63,55 @@ typedef struct {
 static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
 static char *pdbformat=
 "%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
+
+real calc_mass(t_atoms *atoms)
+{
+  char *massdb="atommass.dat";
+  char **mass,**mass_nm,buf[32];
+  real *mass_at;
+  double mm;
+  real tmass;
+  int  nmdb;
+  int i,j,k;
+
+  nmdb = get_lines(massdb,&mass);
+  snew(mass_nm,nmdb);
+  snew(mass_at,nmdb);
+  for(j=k=0; (j<nmdb); j++) {
+    if (sscanf(mass[j],"%s%lf",buf,&mm) != 2)
+      fprintf(stderr,"Error in mass database %s at line %d\n");
+    else {
+      mass_nm[k] = strdup(buf);
+      mass_at[k] = mm;
+      k++;
+    }
+    sfree(mass[j]);
+  }
+  sfree(mass);
+  fprintf(stderr,"Read %d atomic masses from %s\n",k,massdb);
+  nmdb  = k;
+  tmass = 0;
+  for(i=0; (i<atoms->nr); i++) {
+    /* Default mass of a carbon */
+    atoms->atom[i].m = 12.011;
+    for(j=0; (j<nmdb); j++) {
+      if (strcasecmp(mass_nm[j],*atoms->atomname[i]) == 0) {
+	atoms->atom[i].m = mass_at[j];
+	break;
+      }
+    }
+    if (j == nmdb)
+      fprintf(stderr,"No entry in %s for atom %s\n",
+	      massdb,*atoms->atomname[i]);
+    tmass += atoms->atom[i].m;
+  }
+  for(j=0; (j<nmdb); j++)
+    sfree(mass_nm[j]);
+  sfree(mass_nm);
+  sfree(mass_at);
+  
+  return tmass;
+}
 
 void calc_geom(int natom, rvec *pdba, rvec geom_center, rvec min, rvec max)
 {
@@ -267,7 +317,8 @@ int main(int argc, char *argv[])
     "[TT]-cx[tt], [TT]-cy[tt], [TT]-cz[tt] override the center for",
     "one coordinate.[PAR]",
     "Scaling is applied before any of the other operations are",
-    "performed.[PAR]",
+    "performed. Boxes can be scaled to give a certain density (option",
+    "[TT]-rho[tt][PAR]",
     "Groups are selected after all operations have been applied.[PAR]",
     "Periodicity can be removed in a crude manner.",
     "It is important that the box sizes at the bottom of your input file",
@@ -291,6 +342,7 @@ int main(int argc, char *argv[])
   static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE;
   static bool peratom=FALSE,perres=FALSE,bLegend=FALSE;
   static rvec scale={1.0,1.0,1.0},newbox={0.0,0.0,0.0};
+  static real rho=1000.0;
   static rvec center={0.0,0.0,0.0};
   static char *label="A";
   
@@ -313,6 +365,7 @@ int main(int argc, char *argv[])
     { "-sx", FALSE, etREAL, &scale[XX], "Scale factor for x coordinate" },
     { "-sy", FALSE, etREAL, &scale[YY], "Scale factor for y coordinate" },
     { "-sz", FALSE, etREAL, &scale[ZZ], "Scale factor for z coordinate" },
+    { "-rho",FALSE, etREAL, &rho, "Density (g/l) of the output box achieved by scaling" },
     { "-pbc",  FALSE, etBOOL, &bRMPBC, "Remove the periodicity (make molecule whole again)" },
     { "-atom", FALSE, etBOOL, &peratom, "Attach B-factors per atom" },
     { "-res",  FALSE, etBOOL, &perres,  "Attach B-factors per residue" },
@@ -332,7 +385,7 @@ int main(int argc, char *argv[])
   atom_id   *index;
   rvec      *x,*v,gc,min,max,size;
   matrix    box;
-  bool      bSetSizeAll,bSetSize[DIM],bCubic,bDist,bSetCenter[DIM],bScale;
+  bool      bSetSizeAll,bSetSize[DIM],bCubic,bDist,bSetCenter[DIM],bScale,bRho;
   real      xs,ys,zs,xcent,ycent,zcent,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
@@ -359,9 +412,12 @@ int main(int argc, char *argv[])
   bCubic  = opt2parg_bSet("-dc",NPA,pa);
   bDist   = ( bCubic || opt2parg_bSet("-d",NPA,pa) );
   bCenter = ( bCenter || bDist || bSetSizeAll || ANY(bSetCenter) );
-  bScale = ( opt2parg_bSet("-sx",NPA,pa) || 
+  bScale  = ( opt2parg_bSet("-sx",NPA,pa) || 
 	     opt2parg_bSet("-sy",NPA,pa) || 
 	     opt2parg_bSet("-sz",NPA,pa) );
+  bRho    =  opt2parg_bSet("-rho",NPA,pa);
+  bScale  = bScale || bRho;
+  
   /* set newbox size */
   if (bSetSizeAll) {
     for (i=0; (i<DIM); i++)
@@ -395,6 +451,17 @@ int main(int argc, char *argv[])
     
   if ( bScale ) {
     /* scale coordinates and box */
+    if (bRho) {
+      /* Compute scaling constant */
+      real vol,mass,dens;
+      
+      vol = det(box);
+      mass = calc_mass(&atoms);
+      dens = (mass*AMU)/(vol*NANO*NANO*NANO);
+      fprintf(stderr,"Density of input %g (g/l)\n",dens);
+      scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
+      fprintf(stderr,"Scaling all box edges by %g\n",scale[XX]);
+    }
     scale_conf(atoms.nr,x,box,scale);
   
     /* recalc geometrical center and max and min coordinates and size */
