@@ -52,6 +52,7 @@ static char *SRCID_g_chi_c = "$Id$";
 #include "strdb.h"
 #include "xvgr.h"
 #include "pp2shift.h"
+#include "matio.h"
 
 static bool bAllowed(real phi,real psi)
 {
@@ -761,11 +762,16 @@ static FILE *rama_file(char *fn,char *title,char *xaxis,char *yaxis)
 }
 
 static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
-		    bool bViol)
+		    bool bViol,bool bRamOmega)
 {
   FILE *fp,*gp;
+  bool bOm;
   char fn[256];
-  int  i,j,Xi1,Xi2,Phi,Psi;
+  int  i,j,k,Xi1,Xi2,Phi,Psi,Om,nlevels;
+#define NMAT 60
+  real **mat,phi,psi,omega,axis[NMAT],lo,hi;
+  t_rgb rlo = { 1.0, 1.0, 0.0 };
+  t_rgb rhi = { 0.0, 0.0, 1.0 };
   
   for(i=0; (i<nlist); i++) {
     if ((has_dihedral(edPhi,&(dlist[i]))) &&
@@ -773,6 +779,15 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
       sprintf(fn,"ramaPhiPsi%s.xvg",dlist[i].name);
       fp = rama_file(fn,"Ramachandran Plot",
 		     "\\8f\\4 (deg)","\\8y\\4 (deg)");
+      bOm = bRamOmega && has_dihedral(edOmega,&(dlist[i]));
+      if (bOm) {
+	Om = dlist[i].j0[edOmega];
+	snew(mat,NMAT);
+	for(j=0; (j<NMAT); j++) {
+	  snew(mat[j],NMAT);
+	  axis[j] = -180+(360*j)/NMAT;
+	}
+      }
       if (bViol) {
 	sprintf(fn,"violPhiPsi%s.xvg",dlist[i].name);
 	gp = ffopen(fn,"w");
@@ -780,13 +795,48 @@ static void do_rama(int nf,int nlist,t_dlist dlist[],real **dih,
       Phi = dlist[i].j0[edPhi];   
       Psi = dlist[i].j0[edPsi];
       for(j=0; (j<nf); j++) {
-	fprintf(fp,"%10g  %10g\n",RAD2DEG*dih[Phi][j],RAD2DEG*dih[Psi][j]);
+	phi = RAD2DEG*dih[Phi][j];
+	psi = RAD2DEG*dih[Psi][j];
+	fprintf(fp,"%10g  %10g\n",phi,psi);
 	if (bViol)
 	  fprintf(gp,"%d\n",!bAllowed(dih[Phi][j],RAD2DEG*dih[Psi][j]));
+	if (bOm) {
+	  omega = RAD2DEG*dih[Om][j];
+	  mat[phi/6+30][psi/6+30] += omega;
+	}
       }
       if (bViol)
 	fclose(gp);
       fclose(fp);
+      if (bOm) {
+	sprintf(fn,"ramomega%s.xpm",dlist[i].name);
+	fp = ffopen(fn,"r");
+	lo = hi = 0;
+	for(j=0; (j<NMAT); j++)
+	  for(k=0; (k<NMAT); k++) {
+	    mat[j][k] /= nf;
+	    lo=min(mat[j][k],lo);
+	    hi=max(mat[j][k],hi);
+	  }
+	/* Symmetrise */
+	if (fabs(lo) > fabs(hi)) 
+	  hi = -lo;
+	else
+	  lo = -hi;
+	/* Add 180 */
+	for(j=0; (j<NMAT); j++)
+	  for(k=0; (k<NMAT); k++)
+	    mat[j][k] += 180;
+	lo += 180;
+	hi += 180;
+	nlevels = 20;
+	write_xpm(fp,"Omega/Ramachandran Plot","Deg","Phi","Psi",
+		  NMAT,NMAT,axis,axis,mat,lo,hi,rlo,rhi,&nlevels);
+	fclose(fp);
+	for(j=0; (j<NMAT); j++)
+	  sfree(mat[j]);
+	sfree(mat);
+      }
     }
     if ((has_dihedral(edChi1,&(dlist[i]))) &&
 	(has_dihedral(edChi2,&(dlist[i])))) {
@@ -923,7 +973,10 @@ int main(int argc,char *argv[])
     "calculate dihedral autocorrelation functions. The function used",
     "is C(t) = < cos(chi(tau)) cos(chi(tau+t)) >. The use of cosines",
     "rather than angles themselves, resolves the problem of periodicity.",
-    "(Van der Spoel & Berendsen (1997), [BB]Biophys. J. 72[bb], 2032-2041)."
+    "(Van der Spoel & Berendsen (1997), [BB]Biophys. J. 72[bb], 2032-2041).[PAR]",
+    "The option [TT]-r[tt] generates a contour plot of the average omega angle",
+    "as a function of the phi and psi angles, that is, in a Ramachandran plot",
+    "the average omega angle is plotted using color coding."
   };
   
   static char *bugs[] = {
@@ -934,7 +987,7 @@ int main(int argc,char *argv[])
   static bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
   static real bfac_init=-1.0;
   static char *maxchistr[] = { "0", "1", "2", "3",  "4", "5", "6", NULL };
-  static bool bRama=FALSE,bShift=FALSE,bViol=FALSE;
+  static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, &r0,
       "starting residue" },
@@ -956,6 +1009,8 @@ int main(int argc,char *argv[])
       "perform running average over ndeg degrees for histograms" },
     { "-maxchi", FALSE, etENUM, maxchistr,
       "calculate first ndih Chi dihedrals" },
+    { "-ramomega",FALSE,etBOOL, &bRamOmega,
+      "compute average omega as a function of phi/psi and plot it in an xpm plot" },
     { "-bfact", FALSE, etREAL, &bfac_init,
       "bfactor value for pdb file for atoms with no calculated dihedral order parameter"}
   };
@@ -963,7 +1018,7 @@ int main(int argc,char *argv[])
   FILE       *fp,*log;
   char       title[256];
   int        status,natoms,i,j,k,l;
-  bool       bChi;
+  bool       bChi,bRamOmega;
   t_topology top;
   rvec       *x,*xref,*xav;
   real       t,t0,t1,lambda;
@@ -1004,7 +1059,14 @@ int main(int argc,char *argv[])
   bChi = (maxchi > 0);
   
   log=ffopen(ftp2fn(efLOG,NFILE,fnm),"w");
-  
+
+  bRamOmega = opt2bSet("-r",NFILE,fnm);
+  if (bRamOmega) {
+    bOmega = TRUE;
+    bPhi   = TRUE;
+    bPsi   = TRUE;
+  }
+    
   bCorr=(opt2bSet("-c",NFILE,fnm));
   if (bCorr) 
     fprintf(stderr,"Will calculate autocorrelation\n");
@@ -1073,7 +1135,7 @@ int main(int argc,char *argv[])
   
   /* Print ramachandran maps! */
   if (bRama)
-    do_rama(nf,nlist,dlist,dih,bViol);
+    do_rama(nf,nlist,dlist,dih,bViol,bRamOmega);
   
   if (bShift)
     do_pp2shifts(log,nf,nlist,dlist,dih);
