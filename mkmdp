@@ -9,6 +9,9 @@ set HTMLOL	= $HTML/$MANDIR
 set HTMLMDPOPT	= $HTMLOL/mdp_opt.html
 set TEXMDPOPT	= $TEXDIR/mdp_opt.tex
 
+echo "Will convert $HTMLMDPOPT (html format)"
+echo "to $TEXMDPOPT (latex format)"
+
 sed \
 -e 's/<[aA] [^>]*>//g' \
 -e 's/<\/[aA]>//g' \
