@@ -48,6 +48,7 @@ static char *SRCID_g_disre_c = "$Id$";
 #include "mdatoms.h"
 #include "nsb.h"
 #include "tpxio.h"
+#include "init.h"
 
 typedef struct {
   int n;
@@ -260,6 +261,8 @@ int main (int argc,char *argv[])
   snew(xtop,header.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&ntopatoms,xtop,NULL,NULL,&top);
+
+  check_nprocs_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
 
   g   = mk_graph(&top.idef,top.atoms.nr,0);  
   cr  = init_par(&argc,&argv);
