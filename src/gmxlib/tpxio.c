@@ -94,6 +94,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
   int  i,j; 
   bool bDum=TRUE;
 
+  if (file_version != tpx_version) {
+    /* Give a warning about features that are not accessible */
+    fprintf(stderr,"Note: tpx file_version %d, software version %d\n",
+	    file_version,tpx_version);
+  }
+
   if (file_version >= 1) {  
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
@@ -160,7 +166,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       do_int(ir->niter);
     else if (bRead) {
       ir->niter = 25;
-      fprintf(stderr,"Warning: niter not in tpx file, Setting it to %d\n",
+      fprintf(stderr,"Note: niter not in run input file, setting it to %d\n",
 	      ir->niter);
     }
     do_int(ir->eConstrAlg); 
@@ -217,12 +223,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
       ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
   }
-  if (file_version != tpx_version) {
-    /* Give a warning about features that are not accessible */
-    fprintf(stderr,"Warning: tpx file_version %d, software version %d\n",
-	    file_version,tpx_version);
-  }
-  /* set things which are in tpx_version but not in a previos version */
+  /* set things which are in tpx_version but not in a previous version */
 
   /*
   if (file_version < tpx_version) {
