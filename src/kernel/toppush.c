@@ -176,6 +176,9 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct,
   for(j=nfp0; (j<MAXFORCEPARAM); j++)
     c[j]=0.0;
   
+  if(strlen(type)==1 && isdigit(type[0])) 
+     fatal_error(0,"Atom type names can't be single digits.");
+
   for(j=0; (j<eptNR); j++)
     if (strcasecmp(ptype,xl[j].entry) == 0)
       break;
@@ -366,15 +369,12 @@ void push_dihedraltype(directive d,t_params bt[],t_atomtype *at,char *line)
 
   /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
    *
-   * We first check for 4 atoms with the 5th column being an integer 
-   * defining the type. If this isn't the case, we try it with 2 atoms
-   * and the third column defining the dihedral type.
+   * We first check for 2 atoms with the 3th column being an integer 
+   * defining the type. If this isn't the case, we try it with 4 atoms
+   * and the 5th column defining the dihedral type.
    */
   nn=sscanf(line,formal[4],alc[0],alc[1],alc[2],alc[3],alc[4]);
-  if(nn==5 && strlen(alc[4])==1 && isdigit(alc[4][0])) {
-    nral=4;
-    ft    = atoi(alc[nral]);
-  } else if(nn>=3 && strlen(alc[2])==1 && isdigit(alc[2][0])) {
+  if(nn>=3 && strlen(alc[2])==1 && isdigit(alc[2][0])) {
     nral=2;
     ft    = atoi(alc[nral]);
     /* Move atom types around a bit and use '*' for wildcard atoms
@@ -394,6 +394,9 @@ void push_dihedraltype(directive d,t_params bt[],t_atomtype *at,char *line)
       strcpy(alc[1],alc[0]);
       sprintf(alc[0],"*");
     }
+  } else if(nn==5 && strlen(alc[4])==1 && isdigit(alc[4][0])) {
+    nral=4;
+    ft    = atoi(alc[nral]);
   } else {
     sprintf(errbuf,"Incorrect number of atomtypes for dihedral (%d instead of 2 or 4)",nn-1);
     warning(errbuf);
