@@ -331,7 +331,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
     if ( bMin?min1:max1 != -1 )
       if (atm)
 	fprintf(atm,"%12g  %12d  %12d\n",
-		convert_time(t),bMin?min1:max1+1,bMin?min2:max2+1);
+		convert_time(t),1+(bMin ? min1 : max1),1+(bMin ? min2 : max2));
     
     if (trxout>=0) {
       oindex[0]=bMin?min1:max1;
@@ -407,8 +407,9 @@ int gmx_mindist(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_mindist computes the distance between one group and a number of",
-    "other groups.",
-    "Both the minimum distance and the number of contacts within a given",
+    "other groups. Both the minimum distance", 
+    "(between any pair of atoms from the respective groups)",
+    "and the number of contacts within a given",
     "distance are written to two separate output files.",
     "With [TT]-or[tt], minimum distances to each residue in the first",
     "group are determined and plotted as a function of reisdue number.[PAR]",
