@@ -13,6 +13,165 @@ MD run of a protein in a box of water. </P>
 
 <hr>
 <pre>
-<!--#include virtual="/~gmx/online2.0/free.mdp"-->
+; VARIOUS PREPROCESSING OPTIONS = 
+title                    = Yo
+cpp                      = /lib/cpp
+include                  = -I../top
+define                   = 
+
+; RUN CONTROL PARAMETERS = 
+integrator               = md
+; start time and timestep in ps = 
+tinit                    = 0.0
+dt                       = 0.002
+; number of steps and, number of steps for center of mass motion removal = 
+nsteps                   = 500000
+nstcomm                  = 1
+
+; LANGEVIN DYNAMICS OPTIONS = 
+; Temparature, friction coefficient (amu/ps) and random seed = 
+ld_temp                  = 300
+ld_fric                  = 0
+ld_seed                  = 1993
+
+; ENERGY MINIMIZATION OPTIONS = 
+emtol                    = 0.001
+emstep                   = 0.1
+nstcgsteep               = 1000
+
+; OUTPUT CONTROL OPTIONS = 
+; Output frequency for coords (x), velocities (v) and forces (f) = 
+nstxout                  = 5000
+nstvout                  = 5000
+nstfout                  = 0
+; Output frequency for group stuff and for energies (nstprint) = 
+nstgrp                   = 0
+nstprint                 = 250
+; Output frequency for xtc files, and associated precision = 
+nstxtcout                = 250
+xtc_precision            = 1000
+; This selects the subset of atoms for the XTC file. = 
+; Only the first group gets written out, it does not make sense to have = 
+; multiple groups. By  default all atoms will be written = 
+xtc_grps                 = Protein
+; Selection of energy groups = 
+energygrps               = Protein  SOL
+
+; NEIGHBORSEARCHING PARAMETERS = 
+; nblist update frequency = 
+nstlist                  = 10
+; ns algorithm (simple or grid) = 
+ns_type                  = grid
+deltagrid                = 2
+; Box type, rectangular, triclinic, none = 
+box                      = rectangular
+
+; OPTIONS FOR ELECTROSTATICS = 
+; Method for doing electrostatics = 
+eel_type                 = twin-range
+; cut-off lengths        = 
+rshort                   = 0.8
+rlong                    = 1.4
+; Dielectric constant (DC) for twin-range or DC of reaction field = 
+epsilon_r                = 1.0
+; Apply long range dispersion corrections for Energy and Pressure = 
+bLJcorr                  = no
+; Some thingies for future use = 
+niter                    = 100
+gauss_width              = 0.1
+fourier_nx               = 10
+fourier_ny               = 10
+fourier_nz               = 10
+
+; OPTIONS FOR WEAK COUPLING ALGORITHMS = 
+; Temperature coupling   = 
+tcoupl                   = yes
+ntcmemory                = 1
+; Groups to couple separately = 
+tc-grps                  = Protein      SOL
+; Time constant (ps) and reference temperature (K) = 
+tau_t                    = 0.1  0.1
+ref_t                    = 300  300
+; Pressure coupling      = 
+Pcoupl                   = isotropic
+; Memory for running average (steps) = 
+npcmemory                = 1
+; Time constant (ps), compressibility (1/bar) and reference P (bar) = 
+tau_p                    = 1.0
+compress                 = 1e-3
+ref_p                    = 1.0
+
+; SIMULATED ANNEALING CONTROL = 
+annealing                = no
+; Time at which temperature should be zero (ps) = 
+zero_temp_time           = 0
+
+; GENERATE VELOCITIES FOR STARTUP RUN = 
+gen_vel                  = yes
+gen_temp                 = 300
+gen_seed                 = 173529
+
+; OPTIMIZATIONS FOR SOLVENT MODELS = 
+; Type of solvent optimization = 
+watertype                = SOL
+; Number of atoms in solvent model. (Not implemented for non-three atom models) = 
+nwatoms                  = 3
+
+; OPTIONS FOR BONDS     = 
+constraints              = all-bonds
+; Type of constraint solver = 
+shake_type               = Lincs
+; Shake the start configuration (using either shake of lincs) = 
+shake-first              = yes
+; Relative tolerance of shake = 
+tol                      = 0.0001
+; Highest order in the expansion of the constraint coupling matrix = 
+lincs_order              = 4
+; Lincs will write a warning to the stderr if in one step a bond rotates = 
+; over more degrees than = 
+lincs_warnangle          = 30
+; Output frequency of the constraint accuracy = 
+nstLincsout              = 100
+; Convert harmonic bonds to morse potentials = 
+morse                    = no
+
+; NMR refinement stuff  = 
+; Distance restraints type: None, Simple or Ensemble = 
+disre                    = No
+dihre_fc                 = 1000
+disre_fc                 = 1000
+disre_tau                = 1.25
+
+; Free energy control stuff = 
+free_energy              = no
+init_lambda              = 0
+delta_lambda             = 0
+
+; Non-equilibrium MD stuff = 
+acc_grps                 = 
+accelerate               = 
+freezegrps               = 
+freezedim                = 
+
+; Electric fields       = 
+E_x                      = 
+E_xt                     = 
+E_y                      = 
+E_yt                     = 
+E_z                      = 
+E_zt                     = 
+
+; User defined thingies = 
+user1_grps               = 
+user2_grps               = 
+user3_grps               = 
+userint1                 = 0
+userint2                 = 0
+userint3                 = 0
+userint4                 = 0
+userreal1                = 0
+userreal2                = 0
+userreal3                = 0
+userreal4                = 0
 </pre>
 <hr>
