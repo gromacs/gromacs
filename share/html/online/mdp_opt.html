@@ -20,8 +20,8 @@ LaTeX file. If you're not sure about what you're doing, don't do it! -->
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
-<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
-<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
+<li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization, nsatoms)
@@ -393,8 +393,6 @@ Several groups can be coupled seperately, these are specified in the
 <b>tc_grps</b> field seperated by spaces.
 </dl>
 
-<dt><h4>ntcmemory: </b>(1) [steps]</h4>
-<dd>memory for running average to couple to bath
 <dt><h4>tc_grps:</h4>
 <dd>groups to couple separately to temperature bath
 <dt><h4>tau_t: </b>[ps]</h4>
@@ -442,8 +440,6 @@ to have a box with constant height.
 <dd>Not supported yet.
 </dl>
 
-<dt><h4>npcmemory: </b>(1) [steps]</h4>
-<dd>memory for running average to couple
 <dt><h4>tau_p: </b>(1) [ps]</h4>
 <dd>time constant for coupling
 <dt><h4>compressibility: </b>[bar<sup>-1</sup>]</h4>
@@ -765,7 +761,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond2">lincs_order</A><br>
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>
-<A HREF="#pc">npcmemory</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>
 <A HREF="#nmr">nstdisreout</A><br>
@@ -779,7 +774,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
 <A HREF="#nl">ns_type</A><br>
-<A HREF="#tc">ntcmemory</A><br>
 <A HREF="#sol">nsatoms</A><br>
 <A HREF="#el2">optimize_fft</A><br>
 <A HREF="#pc">pcoupl</A><br>

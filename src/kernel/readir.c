@@ -328,8 +328,7 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");
   EETYPE("tcoupl",	ir->btc,        yesno_names, nerror, TRUE);
-  CTYPE ("Memory for running average (steps)");
-  ITYPE ("ntcmemory",   ir->ntcmemory,  1);
+  ir->ntcmemory = 1;
   CTYPE ("Groups to couple separately");
   STYPE ("tc-grps",     tcgrps,         NULL);
   CTYPE ("Time constant (ps) and reference temperature (K)");
@@ -337,8 +336,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("ref-t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
   EETYPE("Pcoupl",	ir->epc,        epcoupl_names, nerror, TRUE);
-  CTYPE ("Memory for running average (steps)");
-  ITYPE ("npcmemory",   ir->npcmemory,  1);
+  ir->npcmemory = 1;
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
