@@ -3973,7 +3973,7 @@
     HZ   HCR   0.140     8
     CX   CH2   0.150     9
     OY    OA  -0.548     9
-    HY1   HO   0.398     9
+    HY    HO   0.398     9
  [ bonds ]
      N     H
      N    CA
