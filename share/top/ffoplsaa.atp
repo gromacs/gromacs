@@ -174,7 +174,9 @@
  opls_290    1.00800  ; H (RNH3+) JPC,90,2174 (1986)
  opls_291   12.01100  ; C in  CH3NH3+      
  opls_292   12.01100  ; C in  RCH2NH3+
+ opls_292B  12.01100  ; CA in GLY-NH3+ N-term.
  opls_293   12.01100  ; C in  R2CHNH3+     
+ opls_293B  12.01100  ; CA in NH3+ N-term, All AA except GLY & PRO
  opls_294   12.01100  ; C in  R3CNH3+      
  opls_295   12.01100  ; AA C-alpha on N-term PRO
  opls_296   12.01100  ; AA:C-delta in N-term PRO NH2+
@@ -643,12 +645,14 @@
  opls_904   12.01100  ; CH3(N) secondary aliphatic amines, H(C) is #911
  opls_905   12.01100  ; CH3(N) tertiary  aliphatic amines, H(C) is #911
  opls_906   12.01100  ; CH2(N) primary   aliphatic amines, H(C) is #911
+ opls_906B  12.01100  ; CA in GLY-NH2 N-terminus
  opls_907   12.01100  ; CH2(N) secondary aliphatic amines, aziridine  C2,C3H
  opls_908   12.01100  ; CH2(N) tertiary  aliphatic amines, H(C) is #911
  opls_909    1.00800  ; H(N)   primary   amines
  opls_910    1.00800  ; H(N)   secondary amines
  opls_911    1.00800  ; H(C) for C bonded to N in amines, diamines (aziridine H2,H3)
  opls_912   12.01100  ; CH     primary isopropyl amine
+ opls_912B  12.01100  ; CA in NH2 N-terminus. All AA except GLY, PRO
  opls_913   12.01100  ; C      primary t-butyl amine
  opls_914   12.01100  ; CH     secondary isopropyl amine
  opls_915   12.01100  ; CH     tertiary  isopropyl amine

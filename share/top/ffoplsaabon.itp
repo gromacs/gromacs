@@ -25,8 +25,7 @@
   C_2   CT      1    0.15220   265443.1   ; 
   C_3   CT      1    0.15220   265443.1   ; 
   C     CT_2    1    0.15220   265443.1   ; AA Calpha
-  C_2   CT_2    1    0.15220   265443.1   ; AA Calpha
-  C_3   CT_2    1    0.15220   265443.1   ; AA Calpha
+  C_3   CT_2    1    0.15220   265443.1   ; AA C-term
   C     N       1    0.13350   410306.4   ; AA
   C_2   N       1    0.13350   410306.4   ; AA
   C_3   N       1    0.13350   410306.4   ; AA
@@ -122,6 +121,7 @@
   CA    NY      1    0.13850   319871.5   ; jtr- neutral Arg; MLL
   CA    NZ      1    0.12610   418680.0   ; jtr- neutral Arg; MLL
   NY    H       1    0.10100   363414.2   ; jtr- neutral Arg; MLL
+  NY    H3      1    0.10100   363414.2   ; jtr- neutral Arg; MLL
   NZ    H       1    0.10100   363414.2   ; jtr- neutral Arg; MLL
   CT    NY      1    0.14480   319871.5   ; jtr- neutral Arg; MLL
   CA    N2      1    0.13400   402770.2   ; ARG
@@ -198,6 +198,7 @@
   CT_3  N       1    0.14490   282190.3   ; Pro CD
   CT    N       1    0.14490   282190.3   ; 
   CT_2  N       1    0.14490   282190.3   ; AA Calpha
+  CT_2  NT      1    0.14480   319871.5   ; -idem-
   CT    NC      1    0.14490   282190.3   ; wj azide
   CY    N       1    0.14490   282190.3   ; wj
   CT    N*      1    0.14750   282190.3   ; 
@@ -207,13 +208,11 @@
   CT_2  N3      1    0.14710   307311.1   ; AA Calpha
   CT_3  N3      1    0.14710   307311.1   ; Pro CD
   CT    OH      1    0.14100   267955.2   ; 
-  CT_2  OH      1    0.14100   267955.2   ; AA Calpha
   CT_4  OH      1    0.14100   267955.2   ; ifluoroethanol
   NT    OH      1    0.14500   267955.2   ; wlj
   NT    OS      1    0.14500   267955.2   ; wlj
   N     OH      1    0.13800   334944.0   ; wlj
   CT    OS      1    0.14100   267955.2   ; 
-  CT_2  OS      1    0.14100   267955.2   ; AA Calpha
   CT    S       1    0.18100   185893.9   ; CYX(OL)
   CY    S       1    0.18100   185893.9   ; wj
   CR    S       1    0.17600   209340.0   ; wlj
@@ -481,6 +480,7 @@
   NC     C      HC      1   122.000    293.076   ; wlj
   NC     C_2    HC      1   122.000    293.076   ; wlj
   CT     C      OH      1   108.000    586.152   ; RCOOH  wlj 2/15/95
+  CT_2   C      OH      1   108.000    586.152   ; 
   CT     C      CT      1   116.000    586.152   ; wlj 7/96
   CT     C_2    CT      1   116.000    586.152   ; wlj 7/96
   CT     C      CA      1   116.000    586.152   ; wlj
@@ -569,6 +569,7 @@
   CT     CS     CW      1   125.000    586.152   ; TRP(OL)
   CT     CT     NT      1   109.470    470.596   ; wlj - MM3 based - JACS 112, 8314 (90)
   C3     CT     NT      1   109.470    470.596   ; wlj - MM3 based - JACS 112, 8314 (90)
+  CT     CT_2   NT      1   109.470    470.596   ;
   C      CA     CA      1   120.000    711.756   ; TYR(OL)
   C_2    CA     CA      1   120.000    711.756   ; TYR(OL)
   C_3    CA     CA      1   120.000    711.756   ; TYR(OL)
@@ -686,10 +687,14 @@
   NY     CA     NY      1   111.800    586.152   ; jtr: neutral ARG
   NZ     CA     NY      1   124.100    586.152   ; jtr: neutral ARG
   CA     NZ     H       1   113.000    293.076   ; jtr: neutral ARG
+  CA     NZ     H3      1   113.000    293.076   ; jtr: neutral ARG
   CA     NY     H       1   112.500    418.680   ; jtr: neutral ARG
+  CA     NY     H3      1   112.500    418.680   ; jtr: neutral ARG
   CA     NY     CT      1   120.500    418.680   ; jtr: neutral ARG
   H      NY     H       1   106.400    365.089   ; jtr: neutral ARG
+  H3     NY     H3      1   106.400    365.089   ; jtr: neutral ARG
   CT     NY     H       1   109.500    293.076   ; jtr: neutral ARG
+  CT     NY     H3      1   109.500    293.076   ; jtr: neutral ARG
   CT     CT     NY      1   111.200    669.888   ; jtr: neutral ARG
   HC     CT     NY      1   109.500    293.076   ; jtr: neutral ARG
   N2     CA     N2      1   120.000    586.152   ; ARG(OL)
@@ -881,6 +886,7 @@
   C_2    CT_2   N3      1   111.200    669.888   ; Amino terminal residues
   C_3    CT_2   N3      1   111.200    669.888   ; Amino terminal residues
   C      CT     NT      1   111.200    669.888   ; wlj
+  C      CT_2   NT      1   111.200    669.888   ; wlj
   C_2    CT     NT      1   111.200    669.888   ; wlj
   C_3    CT     NT      1   111.200    669.888   ; wlj
   CA     CT     N       1   109.700    669.888   ; 
@@ -939,6 +945,7 @@
   HC     CT_2   N3      1   109.500    293.076   ; 
   HC     CT_3   N3      1   109.500    293.076   ; 
   HC     CT     NT      1   109.500    293.076   ; JACS 115, 9620 (93)
+  HC     CT_2   NT      1   109.500    293.076   ; 
   HC     CT     NC      1   109.500    293.076   ; 
   HC     CT     OH      1   109.500    293.076   ; 
   C      CT     OH      1   109.500    418.680   ; 
@@ -1281,7 +1288,6 @@
   CA     S      CT      1   104.200    519.163   ; thioanisole             adjusted from CT-S-CT  rcr HIVRT
 
 
-
 [ dihedraltypes ]
 ;  i    j    k    l   func     coefficients
 ; OPLS Fourier dihedraltypes translated to Gromacs Ryckaert-Bellemans form
@@ -1302,7 +1308,7 @@
   C      N      CY     CY      3     -4.71015   2.92239   1.78776   0.00000   0.00000   0.00000 ; small ring      
   C      N      CY     HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; small ring
   C      N      OH     HO      3    -15.28182  -7.90468  28.05156  -4.86506   0.00000   0.00000 ; hydroxamic acids
-  C      N      CT_3   CT      3     15.71306  31.77781  -3.67182 -43.81905   0.00000   0.00000 ; Phi prime peptides AA
+  C      N      CT_3   CT      3     15.71306  31.77781  -3.67182 -43.81905   0.00000   0.00000 ; Phi prime peptides  AA
   C      N      CT_3   HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; 
   C      N      CT_2   CT      3     15.71306  31.77781  -3.67182 -43.81905   0.00000   0.00000 ; Phi prime peptides AA
   C      N      CT_2   HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; Phi bis peptides AA
@@ -1313,7 +1319,11 @@
   C      CT     CT     CA      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; aldehyde & ketone & acyl halide
   C      CT     CT     CT      3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; butanamide
   C      CT     CT     HC      3     -0.20934  -0.62802   0.00000   0.83736   0.00000   0.00000 ; 
+  C      CT     CT_2   HC      3     -0.15910  -0.47730   0.00000   0.63639   0.00000   0.00000
+  C_3    CT     CT_2   HC      3     -0.15910  -0.47730   0.00000   0.63639   0.00000   0.00000
+  C      CT     CT_2   C       3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ;
   C      CT     NT     H       3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; amine all-atom
+  C      CT_2   NT     H       3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; aa H2N-terminus
   C      CT     OH     HO      3     -0.44380   3.83511   0.72850  -4.11981   0.00000   0.00000 ; 
   C      CT     N3     H3      3      0.72641   2.17923   0.00000  -2.90564   0.00000   0.00000 ; ammonium ion all-atom
   C      NC     OH     HO      3     18.84060  -6.28020 -12.56040   0.00000   0.00000   0.00000 ; oxime B3LYP/6-31G*
@@ -1322,10 +1332,14 @@
   C      OS     CT     CT      3     -2.19807   5.20419   0.52754  -3.53366   0.00000   0.00000 ; esters
   C      OS     CT     HC      3      0.41449   1.24348   0.00000  -1.65797   0.00000   0.00000 ; esters
   C      CT_2   N      C       3    -10.36442 -29.60696  -1.16812  41.13950   0.00000   0.00000 ; Phi peptides AA C(O)-N-Ca-C(O)
+  C_3    CT_2   N      C       3    -10.36442 -29.60696  -1.16812  41.13950   0.00000   0.00000 ; C-term phi.
   C      CT_2   N      H       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptides  H-N-CA-X
   C      CT_2   N      CT_3    3     -5.72754 -18.35074  -5.23769  29.31597   0.00000   0.00000 ; Pro (fit to AM1) CD-N-CA-C, JT-R 2/10/97
+  C_3    CT_2   N      CT_3    3     -5.72754 -18.35074  -5.23769  29.31597   0.00000   0.00000 ; Pro COO- terminus.
+  C      CT     CT     CT_2    3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; GLUH
   C      CT_2   CT     S       3    -16.26990   9.09373   7.17618   0.00000   0.00000   0.00000 ; Chi for Cyx (Cystine)
   C      CT_2   CT     C*      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; aldehyde & ketone
+  C      CT_2   CT     C_3     3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; aldehyde & ketone
   C      CT_2   CT     CA      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; peptide, aldehyde & ketone
   C      CT_2   CT     CT      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; peptide, aldehyde & ketone
   C      CT_2   CT     CV      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; peptide, aldehyde & ketone
@@ -1333,8 +1347,10 @@
   C      CT_2   CT     CX      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; peptide, aldehyde & ketone
   C      CT_2   CT     HC      3     -0.15910  -0.47730   0.00000   0.63639   0.00000   0.00000 ; peptide, aldehyde & ketone
   C      CT_2   CT     OH      3    -15.48697  11.83608   3.65089   0.00000   0.00000   0.00000 ; Chi for Ser & Thr
+  C_3    CT_2   CT     OH      3    -15.48697  11.83608   3.65089   0.00000   0.00000   0.00000 ; C-terminal Chi for Ser & Thr
   C      CT_2   CT     SH      3    -16.26990   9.09373   7.17618   0.00000   0.00000   0.00000 ; Chi for Cys (Cysteine)
   C      CT_2   N3     H3      3      0.72641   2.17923   0.00000  -2.90564   0.00000   0.00000 ; peptides  H-N-CA-C
+  C_3    CT_2   N3     H3      3      0.72641   2.17923   0.00000  -2.90564   0.00000   0.00000 ; Zwitterion AAs
   C      CT_2   N3     CT_3    3     -5.72754 -18.35074  -5.23769  29.31597   0.00000   0.00000 ; 
   C*     CT     CT     HC      3      0.96715   2.90145   0.00000  -3.86860   0.00000   0.00000 ; aromatics
   C*     CT     CT_2   N       3     -0.76618   2.70886   4.02770  -5.97038   0.00000   0.00000 ; Chi-1 peptides AA
@@ -1392,9 +1408,11 @@
   CA     CT     CT     S       3      3.42690  -3.86232   2.59582  -2.16039   0.00000   0.00000 ; sulfide all-atom
   CA     CT     CT     CT      3      2.93076  -1.46538   0.20934  -1.67472   0.00000   0.00000 ; 
   CA     CT     CT     HC      3      0.96715   2.90145   0.00000  -3.86860   0.00000   0.00000 ; ethyl benzene
+  CA     CT     CT_2   HC      3      0.96715   2.90145   0.00000  -3.86860   0.00000   0.00000 ; ethyl benzene
   CA     CT     CT     N3      3      2.09340  -2.09340   0.00000   0.00000   0.00000   0.00000 ; phenethylammonium - JACS 119,12292(97)
   CA     CT     CT     NC      3      5.77569  -2.67327   0.95878  -4.06120   0.00000   0.00000 ; 
   CA     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; amine all-atom 
+  CA     CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; AA H2N-terminus.
   CA     CT     CT     OH      3      2.87633   0.58197   2.09340  -5.55170   0.00000   0.00000 ; from alcohol
   CA     CT     CT     OS      3      2.87633   0.58197   2.09340  -5.55170   0.00000   0.00000 ; alcohols, ethers AA
   CA     CT     CT     C_2     3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; aldehyde & ketone
@@ -1408,7 +1426,9 @@
   CA     N2     CA     N2      3     33.22644   0.00000 -33.22644   0.00000   0.00000   0.00000 ; methylguanidinium ion
   CA     N2     CA     NC      3     33.22644   0.00000 -33.22644   0.00000   0.00000   0.00000 ; 
   CA     N2     CT     CT      3      3.80371  -6.95637  -1.01739   4.17005   0.00000   0.00000 ; ethylguanidinium ion
+  CA     NY     CT     CT      3      3.80371  -6.95637  -1.01739   4.17005   0.00000   0.00000 ; ARGN.
   CA     N2     CT     HC      3      0.37053   1.11160   0.00000  -1.48213   0.00000   0.00000 ; methylguanidinium ion
+  CA     NY     CT     HC      3      0.37053   1.11160   0.00000  -1.48213   0.00000   0.00000 ; ARGN
   CA     NC     CT     CT      3      3.80371  -6.95637  -1.01739   4.17005   0.00000   0.00000 ; 
   CA     NT     CT     HC      3      1.17230   3.51691   0.00000  -4.68922   0.00000   0.00000 ; amine all-atom
   CA     OS     C      O       3     20.93400   0.00000 -20.93400   0.00000   0.00000   0.00000 ; phenyl acetate
@@ -1460,7 +1480,7 @@
   CO     OS     CT     CT      3      1.71659   2.84702   1.04670  -5.61031   0.00000   0.00000 ; 
   CO     OS     CT     HC      3      1.59098   4.77295   0.00000  -6.36394   0.00000   0.00000 ; ethers AA
   C_3    CT     CT     CT      3     -9.08954   9.76362   3.45411  -4.12818   0.00000   0.00000 ; carboxylate ion
-  C_3    CT     CT     HC      3     -0.47102  -1.41305   0.00000   1.88406   0.00000   0.00000 ; carboxylate ion
+  C_3    CT     CT     HC      3     -0.47102  -1.41305   0.00000   1.88406   0.00000   0.00000 ; carboxylate ion      C_3    CT     CT_2   HC      3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000
   C_3    CT_2   CT     CT      3     -9.08954   9.76362   3.45411  -4.12818   0.00000   0.00000 ; carboxylate ion
   C_3    CT_2   CT     HC      3     -0.47102  -1.41305   0.00000   1.88406   0.00000   0.00000 ; carboxylate ion
   C_2    CT     CT     CT      3     -4.23704   7.22642   1.90918  -4.89856   0.00000   0.00000 ; aldehyde & ketone
@@ -1499,6 +1519,7 @@
   CT     C      CT     HC      3      0.57569   1.72706   0.00000  -2.30274   0.00000   0.00000 ; ketone
   CT     C      NC     CT      3     58.61520   0.00000 -58.61520   0.00000   0.00000   0.00000 ; imine 
   CT     C      OH     HO      3     26.16750  -3.14010 -23.02740   0.00000   0.00000   0.00000 ; carboxylic acid - aliphatic 
+  CT_2   C      OH     HO      3     26.16750  -3.14010 -23.02740   0.00000   0.00000   0.00000 ; COOH terminus
   CT     C      OS     CT      3     31.22725  -9.77408 -21.45316   0.00000   0.00000   0.00000 ; esters 
   CT     N      C      O       3     25.49343   0.00000 -25.49343   0.00000   0.00000   0.00000 ; amides  O-C(O)-N-C
   CT     N      C      HC      3     30.30825  -4.81482 -25.49343   0.00000   0.00000   0.00000 ; amides - V1 changed to 2.3
@@ -1522,17 +1543,24 @@
   CT     CT     C      F       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; acyl halide
   CT     CT     C      N       3      4.83575  -7.65766   1.68309   1.13881   0.00000   0.00000 ; propanamide
   CT     CT     C      O       3      4.88181   0.00000  -4.88181   0.00000   0.00000   0.00000 ; propanamide
+  CT_2   CT     C      O       3      4.88181   0.00000  -4.88181   0.00000   0.00000   0.00000 ; Sidechain.
   CT     CT     C      Cl      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; acyl halide
   CT     CT     C      HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; aldehyde
   CT     CT     C      OH      3      5.32142   0.73269  -2.28599  -3.76812   0.00000   0.00000 ; RCOOH acid
+  CT_2   CT     C      OH      3      5.32142   0.73269  -2.28599  -3.76812   0.00000   0.00000 ; RCOOH acid
+  CT     CT_2   C      OH      3      5.32142   0.73269  -2.28599  -3.76812   0.00000   0.00000 ; COOH terminus
   CT     CT     C      OS      3     -1.15765  -3.47295   0.00000   4.63060   0.00000   0.00000 ; esters
   CT     CT     C      O_3     3      2.28599   0.00000  -2.28599   0.00000   0.00000   0.00000 ; RCOOH acid
+  CT_2   CT     C      O_3     3      2.28599   0.00000  -2.28599   0.00000   0.00000   0.00000 ; RCOOH acid
+  CT     CT_2   C      O_3     3      2.28599   0.00000  -2.28599   0.00000   0.00000   0.00000 ; COOH terminus
+  CT_2   CT     C_3    O2      3      2.28599   0.00000  -2.28599   0.00000   0.00000   0.00000 ; COOH terminus
   CT     CT     N      H       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; N-ethylformamide, peptides
   CT     CT     N      CY      3     30.30825  -4.81482 -25.49343   0.00000   0.00000   0.00000 ; small ring amides
   CT     CT     N      SY      3     -3.43318  -3.01031  10.60516  -4.16168   0.00000   0.00000 ; sulfonamide
   CT     CT     S      S       3      2.52045   1.80870   3.50016  -7.82932   0.00000   0.00000 ; disulfide all-atom
   CT     CT     S      CT      3      0.94203   2.31530   2.41160  -5.66893   0.00000   0.00000 ; sulfide all-atom
   CT     CT     C*     CW      3     -1.49469   1.49469   0.00000   0.00000   0.00000   0.00000 ; 3-ethylindole 
+  CT_2   CT     C*     CW      3     -1.49469   1.49469   0.00000   0.00000   0.00000   0.00000 ; TRP Chi-2
   CT     CT     C+     HC      3     -4.18680   0.00000   4.18680   0.00000   0.00000   0.00000 ; carbocation
   CT     CT     CO     HC      3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000 ; acetal                 
   CT     CT     CS     CW      3     -1.49469   1.49469   0.00000   0.00000   0.00000   0.00000 ; 3-ethylindole
@@ -1548,6 +1576,8 @@
   CT     CT     CT     NA      3      5.77569  -2.67327   0.95878  -4.06120   0.00000   0.00000 ; 
   CT     CT     CT     NC      3      5.77569  -2.67327   0.95878  -4.06120   0.00000   0.00000 ; 
   CT     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; amine all-atom
+  CT     CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus.
+  CT     CT     CT     NY      3      5.77569  -2.67327   0.95878  -4.06120   0.00000   0.00000 ; 
   CT     CT     CT     OH      3      2.87633   0.58197   2.09340  -5.55170   0.00000   0.00000 ; alcohols, ethers AA
   CT     CT     CT     OS      3      2.87633   0.58197   2.09340  -5.55170   0.00000   0.00000 ; alcohols, ethers AA
   CT     CT     CT     SH      3      2.78632   0.27842   0.82899  -3.89372   0.00000   0.00000 ; thiol all-atom
@@ -1566,8 +1596,10 @@
   CT     CT     NC     NZ      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; azides
   CT     CT     NO     ON      3      1.67472   0.00000  -1.67472   0.00000   0.00000   0.00000 ; CT-CT-NO-ON  nitroethane
   CT     CT     NT     H       3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; amine all-atom
+  CT     CT_2   NT     H       3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; H2N-terminus
   CT     CT     NT     CT      3      1.78986   3.49388   0.53591  -5.81965   0.00000   0.00000 ; amine all-atom
   CT     CT     NY     H       3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; neutral ARG
+  CT     CT     NY     H3      3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; neutral ARG
   CT     CT     OH     HO      3     -0.44380   3.83511   0.72850  -4.11981   0.00000   0.00000 ; alcohols AA  
   CT     CT_4   OH     HO      3      0.26796  -9.37425   9.10629   0.00000   0.00000   0.00000 ; trifluoroethanol
   CT     CT     OS     CT      3      1.71659   2.84702   1.04670  -5.61031   0.00000   0.00000 ; ethers AA
@@ -1592,6 +1624,8 @@
   CT     CY     CY     HC      3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000 ; small ring  *new* 11/99
   CT     N2     CA     N       3     33.22644   0.00000 -33.22644   0.00000   0.00000   0.00000 ; methylguanidinium ion
   CT     N2     CA     N2      3     33.22644   0.00000 -33.22644   0.00000   0.00000   0.00000 ; methylguanidinium ion
+  CT     NY     CA     NZ      3     33.22644   0.00000 -33.22644   0.00000   0.00000   0.00000 ; ARGN.
+  CT     NY     CA     NY      3     33.22644   0.00000 -33.22644   0.00000   0.00000   0.00000 ; ARGN.
   CT     N3     CT     HC      3      0.63221   1.89662   0.00000  -2.52883   0.00000   0.00000 ; 2ary ammonium
   CT     NC     NZ     NZ      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; azides
   CT     NT     CT     HC      3      1.17230   3.51691   0.00000  -4.68922   0.00000   0.00000 ; amine all-atom
@@ -1635,7 +1669,9 @@
   CT_2   N      CT     HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptide tert. amide 
   CT_2   N      CT_3   HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; 
   CT_2   N      CT_2   HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptide tert. amide
+  CT     CT     C      O2      3      2.28599   0.00000  -2.28599   0.00000   0.00000   0.00000 ; ASP
   CT_2   CT     C      O2      3      2.28599   0.00000  -2.28599   0.00000   0.00000   0.00000 ; ASP
+  CT_2   CT     C      N       3     -9.50404  -6.36812   8.90532   6.96684   0.00000   0.00000 ; ASN
   CT_2   CT     CT     S       3      3.42690  -3.86232   2.59582  -2.16039   0.00000   0.00000 ; MET
   CT_2   CT     CT     HC      3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000 ; hydrocarbon all-atom
   CT_2   CT     CV     CW      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; 
@@ -1709,15 +1745,20 @@
   H      NA     CW     HA      3     12.56040   0.00000 -12.56040   0.00000   0.00000   0.00000 ; chi-4  in TRP
   H      NA     CX     HA      3     13.39776   0.00000 -13.39776   0.00000   0.00000   0.00000 ; chi-4 prime in HIE
   H      NT     CT     HC      3      0.83736   2.51208   0.00000  -3.34944   0.00000   0.00000 ; amine all-atom
+  H      NT     CT_2   HC      3      0.83736   2.51208   0.00000  -3.34944   0.00000   0.00000 ; H2N-terminus
   H      NT     NT     H       3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000 ; generic
   H      NT     OH     HO      3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000 ; generic
   H      NY     CA     NY      3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; neutral ARG
+  H3     NY     CA     NY      3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; neutral ARG
   H      NY     CA     NZ      3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; neutral ARG
+  H3     NY     CA     NZ      3     -1.26860   3.02287   1.74590  -3.50016   0.00000   0.00000 ; neutral ARG
   H3     N2     CA     N2      3     16.32852   0.00000 -16.32852   0.00000   0.00000   0.00000 ; guanidinium ion
   H3     N2     CT     HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; methylguanidinium ion
   H3     N3     CT_3   HC      3      0.54638   1.63913   0.00000  -2.18551   0.00000   0.00000 ; peptides  H-N-CA-HC
   H3     N3     CT_2   HC      3      0.54638   1.63913   0.00000  -2.18551   0.00000   0.00000 ; peptides  H-N-CA-HC
   H3     N3     CT     HC      3      0.54638   1.63913   0.00000  -2.18551   0.00000   0.00000 ; ammonium ion all-atom
+  H3     NY     CT     HC      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; methylguanidinium ion
+  H3     NZ     CA     NY      3     16.32852   0.00000 -16.32852   0.00000   0.00000   0.00000 ; ARGN
   HC     C      C      N       3     -0.62802   1.88406  -1.25604   0.00000   0.00000   0.00000 ; dicarbonyls BMC 8,1881(2000)
   HC     C      C      O       3      0.83736   0.00000  -0.83736   0.00000   0.00000   0.00000 ; dicarbonyls BMC 8,1881(2000)
   HC     C      C      HC      3      1.67472  -1.67472   0.00000   0.00000   0.00000   0.00000 ; dicarbonyls BMC 8,1881(2000)
@@ -1751,6 +1792,8 @@
   HC     CT     CT     N3      3      0.80387   2.41160   0.00000  -3.21546   0.00000   0.00000 ; ammonium ion all-atom
   HC     CT     CT     NO      3     -0.47102  -1.41305   0.00000   1.88406   0.00000   0.00000 ; nitroethane
   HC     CT     CT     NT      3     -4.09888   5.09115   2.96844  -3.96071   0.00000   0.00000 ; amine all-atom
+  HC     CT     CT_2   NT      3     -4.09888   5.09115   2.96844  -3.96071   0.00000   0.00000 ; H2N-terminus
+  HC     CT     CT     NY      3     -1.21836  -3.65508   0.00000   4.87344   0.00000   0.00000 ; ARGN.
   HC     CT     CT     OH      3      0.97971   2.93913   0.00000  -3.91884   0.00000   0.00000 ; alcohols, ethers AA
   HC     CT     CT     OS      3      0.97971   2.93913   0.00000  -3.91884   0.00000   0.00000 ; alcohols, ethers AA
   HC     CT     CT     P+      3      0.62802   1.88406   0.00000  -2.51208   0.00000   0.00000 ; phosphonium ion
@@ -1800,6 +1843,8 @@
   N      C      CT_2   NT      3     10.37070  -6.61096 -10.50049   6.74075   0.00000   0.00000 ; Psi  peptides AA N-CA-C(O)-N
   N      CA     CT     NT      3     19.61306 -21.40501   4.05282  -2.26087   0.00000   0.00000 ; MDDR amine all-atom 
   N      CT     C      O       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptides
+  N      CT_2   C      O_3     3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; COOH terminus
+  N      CT_2   C      OH      3     14.44446 -11.01128  -3.43318   0.00000   0.00000   0.00000 ; COOH terminus, guess from NT
   N      CT     C_3    O2      3      3.43318   0.00000  -3.43318   0.00000   0.00000   0.00000 ; carboxylate ion   
   N      CT_2   C_3    O2      3      3.43318   0.00000  -3.43318   0.00000   0.00000   0.00000 ; carboxylate ion   
   N      CT_2   C      O       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptides  N-CA-C(O)-O
@@ -1807,6 +1852,7 @@
   N      CT_2   CT     OH      3      9.89969  -4.72062   3.68020  -8.85927   0.00000   0.00000 ; Chi for Ser & Thr
   N      CT_2   CT     SH      3      3.41015  -2.80725  -0.36006  -0.24283   0.00000   0.00000 ; Chi for Cys
   N3     CT_2   C      O       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptides  X-CT_2-C(O)-O
+  N3     CT_2   C_3    O2      3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; Zwitterion AAs
   N3     CT_2   CT     S       3      3.41015  -2.80725  -0.36006  -0.24283   0.00000   0.00000 ; Chi for Cyx,  
   N3     CT_2   CT     OH      3      9.89969  -4.72062   3.68020  -8.85927   0.00000   0.00000 ; Chi for Ser & Thr
   N3     CT_2   CT     SH      3      3.41015  -2.80725  -0.36006  -0.24283   0.00000   0.00000 ; Chi for Cys
@@ -1815,6 +1861,10 @@
   NT     CT     C      OH      3     14.44446 -11.01128  -3.43318   0.00000   0.00000   0.00000 ; RCOOH acid
   NT     CT     CT     NT      3     19.61306 -21.40501   4.05282  -2.26087   0.00000   0.00000 ; amine all-atom 
   NT     CT     CT     OH      3     16.74720 -16.74720   0.00000   0.00000   0.00000   0.00000 ; 2-aminoethanol 6-31G* fit - wj
+  NT     CT_2   CT     OH      3     16.74720 -16.74720   0.00000   0.00000   0.00000   0.00000 ; H2N-terminus  
+  NT     CT_2   C      O       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; H2N-terminus
+  NT     CT_2   CT     S       3      3.41015  -2.80725  -0.36006  -0.24283   0.00000   0.00000 ; H2N-terminus
+  NT     CT_2   CT     SH      3      3.41015  -2.80725  -0.36006  -0.24283   0.00000   0.00000 ; H2N-terminus
   O      C      C      O       3     16.74720  -3.34944 -13.39776   0.00000   0.00000   0.00000 ; dicarbonyls BMC 8,1881(2000)
   O      C      N      OH      3     27.64544   0.00000 -27.64544   0.00000   0.00000   0.00000 ; hydroxamic acids
   OH     CT     CT     OH      3     18.97876 -18.97876   0.00000   0.00000   0.00000   0.00000 ; hexopyranoses
@@ -1846,6 +1896,7 @@
   F      CT     CW     X       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; fluoromethyl aromatic
   H      N      CT_2   X       3      0.00000   0.00000   0.00000   0.00000   0.00000   0.00000 ; peptides  H-N-CA-X
   H      N2     CA     X       3      8.49920   0.00000  -8.49920   0.00000   0.00000   0.00000 ; aniline-like
+  H3     NY     CA     X       3      8.49920   0.00000  -8.49920   0.00000   0.00000   0.00000 ; aniline-like (used for ARGN)
   H      N2     CQ     X       3      8.49920   0.00000  -8.49920   0.00000   0.00000   0.00000 ; aniline-like
   H      NA     CB     X       3     13.39776   0.00000 -13.39776   0.00000   0.00000   0.00000 ; 
   H      NA     CR     X       3     13.39776   0.00000 -13.39776   0.00000   0.00000   0.00000 ; 
@@ -1956,7 +2007,6 @@
   C      CT     CT     Cl      3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
   C      CT     CT     CM      3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
   C      CT     CT     CO      3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
-  C      CT     CT     CT_2    3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
   C      CT     CT     C       3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
   C      CT     CT     C_2     3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
   C      CT     CT     CT_3    3     -4.96345   6.29067   1.31047  -2.63768   0.00000   0.00000 ; (From wildcard) butanamide
@@ -2029,16 +2079,22 @@
   CM     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   CT_2   CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   C      CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
+  C      CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus
   C_2    CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   CT_3   CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   CZ     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   C_3    CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
+  C_3    CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus
   CB     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   C*     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
+  C*     CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus
   CR     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   CV     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   CW     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   CX     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
+  CV     CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus
+  CW     CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus
+  CX     CT     CT_2   NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; H2N-terminus
   CS     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   C+     CT     CT     NT      3      3.33688  -1.55330   2.82190  -4.60548   0.00000   0.00000 ; (From wildcard) amine all-atom
   Cl     CT     CT     OH      3      2.87633   0.58197   2.09340  -5.55170   0.00000   0.00000 ; (From wildcard) alcohols, ethers AA
@@ -2359,13 +2415,128 @@
   X      NC     NC     X       3     30.35430   0.00000 -30.35430   0.00000   0.00000   0.00000 ; aromatic ring
   X      OS     S      X       3     30.35430   0.00000 -30.35430   0.00000   0.00000   0.00000 ; aromatic ring with S
   X      CX     CX     X       3     45.00810   0.00000 -45.00810   0.00000   0.00000   0.00000 ; 
-;
-; These are extra dihedrals for some special organic molecules. Since the atom types
+; Residue-specific sidechain dihedrals, and sidechain acids. Use explicitly in rtp or top files.
+; Chi-1 N-C-C-O in SER & THR
+#define dih_SER_THR_chi1_N_C_C_O      9.89969  -4.72062   3.68020  -8.85927   0.00000   0.00000
+
+; Chi-1 CO-C-C-O in SER & THR
+#define dih_SER_THR_chi1_CO_C_C_O   -15.48697  11.83608   3.65089   0.00000   0.00000   0.00000
+
+; Chi-2 C-C-OH-OH in SER & THR
+#define dih_SER_THR_chi2_C_C_OH_HO   -4.16587   6.71563   3.63833  -6.18809   0.00000   0.00000
+
+; Chi-1 N-C-C-S in CYS & CYX
+#define dih_CYS_chi1_N_C_C_S          3.41015  -2.80725  -0.36006  -0.24283   0.00000   0.00000
+
+; Chi-1 CO-C-C-S in CYS & CYX
+#define dih_CYS_chi1_CO_C_C_S       -16.26990   9.09373   7.17618   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in ASN
+#define dih_ASN_chi1_N_C_C_C         -7.02545  16.45831   2.83446 -12.26732   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in ASN
+#define dih_ASN_chi1_C_C_C_CO        -4.52384  -2.18760   6.71144   0.00000   0.00000   0.00000
+
+; Chi-2 C-C-CO-N in ASN
+#define dih_ASN_chi2_C_C_CO_N        -9.50404  -6.36812   8.90532   6.96684   0.00000   0.00000
+
+; Chi-1 N-C-C-C in GLN
+#define dih_GLN_chi1_N_C_C_C          1.92593   2.61256   2.20226  -6.74075   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in GLN
+#define dih_GLN_chi1_C_C_C_CO        -2.13527   5.63543  -3.50016   0.00000   0.00000   0.00000
+
+; Chi-3 C-C-CO-N in GLN
+#define dih_GLN_chi3_C_C_CO_N         6.64445 -10.55911 -10.97360  14.88826   0.00000   0.00000
+
+; Chi-1 N-C-C-C in HIS (HID & HIE)
+#define dih_HIS_chi1_N_C_C_C          1.21417   3.30757  -2.10177  -2.41997   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in HIS (HID & HIE)
+#define dih_HIS_chi1_C_C_C_CO        -3.17150   3.36409  -0.19259   0.00000   0.00000   0.00000
+
+; Chi-2 C-C-C-N in HIS (HID & HIE)
+#define dih_HIS_chi2_C_C_C_N          0.38728   5.53286  -0.05862  -5.86152   0.00000   0.00000
+
+; Chi-1 N-C-C-C in HIP
+#define dih_HIP_chi1_N_C_C_C          2.33414   8.49292   1.46538 -12.29244   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in HIP
+#define dih_HIP_chi1_C_C_C_CO         3.85814  -3.51482  -0.34332   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in LEU
+#define dih_LEU_chi1_N_C_C_C          2.57488   3.50016  -1.10113  -4.97392   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in LEU
+#define dih_LEU_chi1_C_C_C_CO        -0.82271   1.12834  -0.30564   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in VAL
+#define dih_VAL_chi1_N_C_C_C          4.50500   0.78293  -1.60354  -3.68438   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in VAL
+#define dih_VAL_chi1_C_C_C_CO         0.42287   2.70886  -3.13173   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in ILE
+#define dih_ILE_chi1_N_C_C_C         10.62819  -2.26297  -3.99421  -4.37102   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in ILE
+#define dih_ILE_chi1_C_C_C_CO         6.76168  -1.41933  -5.34236   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in MET
+#define dih_MET_chi1_N_C_C_C          3.75347  -3.74091  -0.83317   0.82061   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in MET
+#define dih_MET_chi1_C_C_C_CO        -2.38648  -0.80387   3.19034   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in TRP
+#define dih_TRP_chi1_N_C_C_C         -0.15910   3.29920  -2.35298  -0.78712   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in TRP
+#define dih_TRP_chi1_C_C_C_CO        -4.83157   2.21482   2.61675   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in ASP
+#define dih_ASP_chi1_N_C_C_C         -6.02271   7.58020  -4.01095   2.45346   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in ASP
+#define dih_ASP_chi1_C_C_C_CO         8.68133   4.31031 -12.99164   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in GLU
+#define dih_GLU_chi1_N_C_C_C          8.79856 -11.84236   1.07601   1.96780   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in GLU
+#define dih_GLU_chi1_C_C_C_CO        -5.77778   3.38712   2.39066   0.00000   0.00000   0.00000
+
+; Chi-1 N-C-C-C in LYS
+#define dih_LYS_chi1_N_C_C_C          1.27697   1.16812   0.89598  -3.34107   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in LYS
+#define dih_LYS_chi1_C_C_C_CO        -6.92287   4.67875   2.24412   0.00000   0.00000   0.00000
+
+; Chi-5 C-C-N-H in LYSH
+#define dih_LYS_chi5_C_C_N_H          0.72641   2.17923   0.00000  -2.90564   0.00000   0.00000
+
+; Chi-1 N-C-C-C in ARG
+#define dih_ARG_chi1_N_C_C_C         10.23882   3.52319  -3.98165  -9.78036   0.00000   0.00000
+
+; Chi-1 C-C-C-CO in ARG
+#define dih_ARG_chi1_C_C_C_CO	      5.50146   1.41933  -6.92078   0.00000   0.00000   0.00000
+
+; Sidechain RCOOH acid (GLUH and ASPH), O=C-OH-HO dihedral
+#define dih_sidechain_COOH_O_C_O_H   20.51532   0.00000 -20.51532   0.00000   0.00000   0.00000
+
+; Sidechain RCOOH acid (GLUH and ASPH), CT-C-OH-HO dihedral
+#define dih_sidechain_COOH_C_C_O_H   26.79552  -6.28020 -20.51532   0.00000   0.00000   0.00000
+
+
+
+
+
+; Below are extra dihedrals for some special organic molecules. Since the atom types
 ; are identical to other dihedrals you have to specify them explicitly with a define
 ; if you happen to simulate this type of molecule.
 
 ; CT-C-OH-HO in 1,2-diacid monoanion
-#define opls_diacid_CT_C_OH_HO           27.21420  -6.69888 -20.51532   0.00000   0.00000   0.00000 
+#define dih_diacid_CT_C_OH_HO           27.21420  -6.69888 -20.51532   0.00000   0.00000   0.00000 
 
 ; CT-CT-C-O in 1,2-diacid monoanion
 #define dih_diacid_CT_CT_C_O            -11.93238  -3.55878   7.95492   7.53624   0.00000   0.00000 
@@ -2394,6 +2565,42 @@
 ; HC-C-C-O in dicarbonyls
 #define dih_carbonyls_HC_C_C_O            0.83736   0.00000  -0.83736   0.00000   0.00000   0.00000 
 
+; OH-CT-CT-OH in diols 
+#define dih_diols_OH_CT_CT_OH            19.90405 -19.90405   0.00000   0.00000   0.00000   0.00000
+
+; OH-CT-CT-OH in triols
+#define dih_triols_OH_CT_CT_OH           25.61066 -25.61066   0.00000   0.00000   0.00000   0.00000
+
+; CT-CT-CT-OH in polyols
+#define dih_polyols_CT_CT_CT_OH	 	 -3.24896   3.24896   0.00000   0.00000   0.00000   0.00000
+
+; CT-CT-OH-HO in hexopyranoses
+#define dih_hexopyranoses_CT_CT_OH_HO    -4.32496   0.84573  12.07054  -8.59131   0.00000   0.00000
+
+; CT-CT-CT-O? in hexopyranoses
+#define dih_hexopyranoses_CT_CT_CT_O     -2.79678   2.79678   0.00000   0.00000   0.00000   0.00000
+
+; C-CT-CT-C in dicarboxylic acid
+#define dih_dicarboxylicacid_C_CT_CT_C    0.94203   7.43157   0.00000  -8.37360   0.00000   0.00000
+
+; O-C-OH-HO in dicarboxylic acid
+#define dih_dicarboxylicacid_O_C_OH_HO   23.02740   0.00000 -23.02740   0.00000   0.00000   0.00000
+
+; CT-C-OH-HO in dicarboxylic acid
+#define dih_dicarboxylicacid_CT_C_OH_HO  26.16750  -3.14010 -23.02740   0.00000   0.00000   0.00000
+
+; HC-C-OH-HO in dicarboxylic acid
+#define dih_dicarboxylicacid_HC_C_OH_HO  26.16750  -3.14010 -23.02740   0.00000   0.00000   0.00000
+
+; C-CT-CT-HC in dicarboxylic acid
+#define dih_dicarboxylicacid_C_CT_CT_HC   0.15491   0.46473   0.00000  -0.61965   0.00000   0.00000
+
+; CT-CT-C-O in dicarboxylic acid
+#define dih_dicarboxylicacid_CT_CT_C_O   -4.39614   0.00000   2.30274   2.09340   0.00000   0.00000
+
+; C-CT-C-OH in dicarboxylic acid
+#define dih_dicarboxylicacid_CT_CT_C_OH   5.91176   0.00000  -5.91176   0.00000   0.00000   0.00000
+
 
 
 
@@ -2406,19 +2613,19 @@
 ; The defines are used in ffoplsaa.rtp or directly in your .top ile.
 
 ; O?-C -X -Y improper torsion. C can be C_2 or C_3 too.
-#define opls_improper_O_C_X_Y        180.0     43.96140   2
+#define improper_O_C_X_Y        180.0     43.96140   2
 
 ; X-NO-ON-NO improper torsion.
-#define opls_improper_X_NO_ON_NO     180.0     43.96140   2
+#define improper_X_NO_ON_NO     180.0     43.96140   2
 
 ; N2-X-N2-N2 improper torsion.
-#define opls_improper_N2_X_N2_N2     180.0     43.96140   2
+#define improper_N2_X_N2_N2     180.0     43.96140   2
 
 ; Z -N?-X -Y improper torsion
-#define opls_improper_Z_N_X_Y        180.0      4.18680   2
+#define improper_Z_N_X_Y        180.0      4.18680   2
 
 ; Z -CM-X -Y improper torsion. CM can be C= too.
-#define opls_improper_Z_CM_X_Y       180.0     62.80200   2
+#define improper_Z_CM_X_Y       180.0     62.80200   2
 
 ; Z -CA-X -Y improper torsion. CA is any ring carbon (CA,CB,CN,CV,CW,CR,CK,CQ,CS,C*)
-#define opls_improper_Z_CA_X_Y       180.0      4.60548   2
+#define improper_Z_CA_X_Y       180.0      4.60548   2
