@@ -86,7 +86,7 @@ endif
 CCSHAREIT       = $(CC) $(LDFLAGS) -shared -all \
                   -quickstart_info -check_registry /usr/lib/so_locations \
                   -soname $(SONAME) -o $(LIBDIR)/$(SONAME) *.o
-SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CCSHAREIT) ; $(RM) *.o)
+#SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CCSHAREIT) ; $(RM) *.o)
 LINKSTATIC      = -Bstatic
 LINKDYNAMIC     = -Bdynamic
 RANLIB		= echo
