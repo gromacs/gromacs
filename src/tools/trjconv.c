@@ -55,8 +55,7 @@ static char *SRCID_trjconv_c = "$Id$";
 #include "pbc.h"
 #include "viewit.h"
 
-static void center_x(rvec x[],matrix box,
-		     int n,atom_id index[],int nc,atom_id ci[])
+static void center_x(rvec x[],matrix box,int n,int nc,atom_id ci[])
 {
   int i,m,ai;
   rvec cmin,cmax,box_center,dx;
@@ -77,10 +76,8 @@ static void center_x(rvec x[],matrix box,
     for(m=0; m<DIM; m++)
       dx[m] = box_center[m]-(cmin[m]+cmax[m])*0.5;
       
-    for(i=0; i<n; i++) {
-      ai=index[i];
-      rvec_inc(x[ai],dx);
-    }
+    for(i=0; i<n; i++)
+      rvec_inc(x[i],dx);
   }
 }
 
@@ -467,7 +464,7 @@ int main(int argc,char *argv[])
          store original location (to put structure back) */
       rm_pbc(&(top.idef),atoms->nr,fr.box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
-      reset_x(ifit,ind_fit,nout,index,xp,w_rls);
+      reset_x(ifit,ind_fit,natoms,NULL,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
     } else
       clear_rvec(x_shift);
@@ -607,7 +604,7 @@ int main(int argc,char *argv[])
 	     for normal fit, this is only done for output frames */
 	  rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	
-	  reset_x(ifit,ind_fit,nout,index,fr.x,w_rls);
+	  reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 	  do_fit(natoms,w_rls,xp,fr.x);
 	}
       
@@ -654,7 +651,7 @@ int main(int argc,char *argv[])
 		 for PFit we did this already! */
 	    
 	      if (bCenter)
-		center_x(fr.x,fr.box,nout,index,ncent,cindex);
+		center_x(fr.x,fr.box,natoms,ncent,cindex);
 
 	      if (bInBox) {
 		if (bRect)
@@ -669,7 +666,7 @@ int main(int argc,char *argv[])
 		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	  
 	      if (bFit) {
-		reset_x(ifit,ind_fit,nout,index,fr.x,w_rls);
+		reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 		do_fit(natoms,w_rls,xp,fr.x);
 		for(i=0; i<natoms; i++)
 		  rvec_inc(fr.x[i],x_shift);
