@@ -579,7 +579,7 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
   fprintf(stdout,"CORR:\n");    
   
   nf_int = min(ncorr,(int)(tendfit/dt));
-  sum    = print_and_integrate(debug,ncorr,dt,c1,1);
+  sum    = print_and_integrate(debug,nf_int,dt,c1,1);
   
   fprintf(stdout,"CORR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
 	  0.0,dt*nf_int,sum);
