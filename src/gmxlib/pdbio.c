@@ -338,6 +338,19 @@ bool is_hydrogen(char *nm)
   return FALSE;
 }
 
+bool is_dummymass(char *nm)
+{
+  char buf[30];
+  
+  strcpy(buf,nm);
+  trim(buf);
+  
+  if ((buf[0] == 'M') && isdigit(buf[strlen(buf)-1]))
+    return TRUE;
+      
+  return FALSE;
+}
+
 int read_pdbfile(FILE *in,char *title, 
 		 t_atoms *atoms,rvec x[],matrix box,bool bChange)
 {

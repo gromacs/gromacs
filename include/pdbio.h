@@ -96,4 +96,9 @@ extern void get_pdb_coordnum(FILE *in,int *natoms);
 extern bool is_hydrogen(char *nm);
 /* Return whether atom nm is a hydrogen */
 
+extern bool is_dummymass(char *nm);
+/* Return whether atom nm is a dummy mass.
+ * The first character should be an 'M' the last character should be a digit.
+ */
+
 #endif	/* _pdbio_h */

@@ -187,7 +187,7 @@ void write_posres(char *fn,t_atoms *pdba)
 	  "; %4s%6s%8s%8s%8s\n","atom","type","fx","fy","fz"
 	  );
   for(i=0; (i<pdba->nr); i++) {
-    if (!is_hydrogen(*pdba->atomname[i])) 
+    if (!is_hydrogen(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
       fprintf(fp,"%6d%6d%8.1f%8.1f%8.1f\n",i+1,1,1000.0,1000.0,1000.0);
   }
   ffclose(fp);
