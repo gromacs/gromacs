@@ -59,7 +59,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "gmxfio.h"
 #include "trnio.h"
 #include "tpxio.h"
-#include "dummies.h"
+#include "dum_parm.h"
 
 void check_disre(t_topology *sys)
 {
@@ -387,6 +387,7 @@ static int *new_status(char *topfile,char *confin,
     snew(*x,*natoms);
     snew(*v,*natoms);
     read_stx_conf(confin,opts->title,&dumat,*x,*v,box);
+    free_t_atoms(&dumat);
     
     if (ntab > 0) {
       if (bVerbose)
@@ -419,7 +420,9 @@ static int *new_status(char *topfile,char *confin,
   }
   for(i=0; (i<nrmols); i++)
     done_mi(&(molinfo[i]));
-    
+  sfree(molinfo);
+  sfree(Sims);
+  
   return forward;
 }
 
@@ -744,16 +747,19 @@ int main (int argc, char *argv[])
     gen_posres(&(msys.plist[F_POSRES]),fn);
   }
   
+  /* set parameters for Dummy construction */
+  set_dummies(bVerbose, &sys.atoms, atype, plist, msys.plist);
+  
   if (bRenum) 
-    atype.nr=renum_atype(plist,&sys,atype.nr,ir,bVerbose);
+    atype.nr=renum_atype(plist, &sys, atype.nr, ir, bVerbose);
   
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
-  convert_params(atype.nr,plist,msys.plist,&sys.idef);
-
+  convert_params(atype.nr, plist, msys.plist, &sys.idef);
+  
   /* set ptype to Dummy for dummy atoms */
-  set_dummies_ptype(bVerbose,&sys);
-
+  set_dummies_ptype(bVerbose,&sys.idef,&sys.atoms);
+  
   /* check masses */
   check_mol(&(sys.atoms));
   
@@ -767,7 +773,7 @@ int main (int argc, char *argv[])
 	   forward);
   triple_check(ir,&sys);
   close_symtab(&sys.symtab);
-
+  
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
@@ -776,17 +782,17 @@ int main (int argc, char *argv[])
   }
   /* This is also necessary for setting the multinr arrays */
   split_top(bVerbose,nprocs,&sys);
-
+  
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
-
+  
   write_tpx(ftp2fn(efTPX,NFILE,fnm),
 	    0,ir->init_t,ir->init_lambda,ir,box,
 	    natoms,x,v,NULL,&sys);
-
+  
   print_warn_num();
-	      
+  
   thanx(stdout);
-	       
+  
   return 0;
 }
