@@ -177,12 +177,10 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	  
 	case F_BHAM:
 #ifdef USEF77
-	  f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		  x[0],&nj,typeA,nl_j,
+	  f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,x[0],&nj,typeA,nl_j,
 		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
 #else
-	  c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		 x[0],nj,typeA,nl_j,
+	  c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,x[0],nj,typeA,nl_j,
 		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
 #endif
 	  nr_bham+=nj;
