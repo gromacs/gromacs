@@ -257,55 +257,59 @@ static void insert_ion(real q,int nw,t_nl nl[],bool bSet[],
   }
 }
 
-static void p_xvn(FILE *out,int i,rvec x[],rvec v[])
+static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
 {
-  int m;
+  int r1,r2;
 
-  for(m=0; (m<DIM); m++)
-    fprintf(out,"%8.3f",x[i][m]);
-  for(m=0; (m<DIM); m++)
-    fprintf(out,"%8.4f",v[i][m]);
-  fprintf(out,"\n");
-  fflush(out);
-}
+  at2->atom[a2]=at1->atom[a1];
+  snew(at2->atomname[a2],1);
+  *at2->atomname[a2]=strdup(*at1->atomname[a1]);
+  r1=at1->atom[a1].resnr;
+  if (r == -1)
+    r2=r1;
+  else
+    r2=r;
+  at2->atom[a2].resnr=r2;
+  if (at2->resname[r2] == NULL) {
+    snew(at2->resname[r2],1);
+    *at2->resname[r2]=strdup(*at1->resname[r1]);
+  }
+}  
 
-static void p_atom(FILE *out,int i,t_atoms *atoms,rvec x[],rvec v[],
-		   int anr,int rnr)
-{
-  int resnr;
-
-  resnr=atoms->atom[i].resnr;
-  fprintf(out,"%5d%-5.5s%5.5s%5d",
-	  rnr+1,*(atoms->resname[resnr]),
-	  *(atoms->atomname[i]),anr+1);
-  p_xvn(out,i,x,v);
-}
-
-static void print_nsub(char *outfile,int nion,int w1,int nw,
+static void print_nsub(int nion,int w1,int nw,
 		       int index[],int nSubs[],
 		       char *p_name,char *n_name,
 		       t_topology *top,rvec x[],rvec v[],
-		       matrix box)
+		       t_atoms *new_at, rvec **xn, rvec **vn)
 {
-  FILE        *out;
   t_atoms     *atoms;
   int         i,j,m,ii;
   int         aind,rind;
 
-  out=ffopen(outfile,"w");
   atoms=&(top->atoms);
-  fprintf(out,"%s\n",*top->name);
-  fprintf(out,"%5d\n",atoms->nr-2*nion);
-  for(i=0; (i<w1); i++) 
-    p_atom(out,i,atoms,x,v,i,atoms->atom[i].resnr);
-  
+  init_t_atoms(new_at,atoms->nr-2*nion,FALSE);
+  new_at->nres=atoms->nres;
+  snew(new_at->resname,atoms->nres);
+  snew(*xn,atoms->nr-2*nion);
+  snew(*vn,atoms->nr-2*nion);
+
+  for(i=0; (i<w1); i++) {
+    copy_atom(atoms,i,new_at,i,-1);
+    copy_rvec(x[i],(*xn)[i]);
+    copy_rvec(v[i],(*vn)[i]);
+  }
+
   aind=w1;
   rind=atoms->atom[aind].resnr;
   for(i=0; (i<nw); i++) {
     ii=index[i];
     if (nSubs[ii] == 0) {
-      for(m=0; (m<3); m++) 
-	p_atom(out,ii+m,atoms,x,v,aind++,rind);
+      for(m=0; (m<3); m++) { 
+	copy_atom(atoms,ii+m,new_at,aind,rind);
+	copy_rvec(x[ii+m],(*xn)[aind]);
+	copy_rvec(v[ii+m],(*vn)[aind]);
+	aind++;
+      }
       rind++;
     }
   }
@@ -313,9 +317,13 @@ static void print_nsub(char *outfile,int nion,int w1,int nw,
     ii=index[i];
     if (nSubs[ii] > 0) {
       fprintf(stdout,"Water Molec. %5d has been replaced by %s\n",i,p_name);
-      fprintf(out,"%5d%-5.5s%5.5s%5d",
-	      rind+1,p_name,p_name,aind+1);
-      p_xvn(out,ii,x,v);
+      snew(new_at->atomname[aind],1);
+      *new_at->atomname[aind]=strdup(p_name);
+      new_at->atom[aind].resnr=rind;
+      snew(new_at->resname[rind],1);
+      *new_at->resname[rind]=strdup(p_name);
+      copy_rvec(x[ii],(*xn)[aind]);
+      copy_rvec(v[ii],(*vn)[aind]);
       rind++;
       aind++;
     }
@@ -324,25 +332,23 @@ static void print_nsub(char *outfile,int nion,int w1,int nw,
     ii=index[i];
     if (nSubs[ii] < 0) {
       fprintf(stdout,"Water Molec. %5d has been replaced by %s\n",i,n_name);
-      fprintf(out,"%5d%-5.5s%5.5s%5d",
-	      rind+1,n_name,n_name,aind+1);
-      p_xvn(out,ii,x,v);
+      snew(new_at->atomname[aind],1);
+      *new_at->atomname[aind]=strdup(n_name);
+      new_at->atom[aind].resnr=rind;
+      snew(new_at->resname[rind],1);
+      *new_at->resname[rind]=strdup(n_name);
+      copy_rvec(x[ii],(*xn)[aind]);
+      copy_rvec(v[ii],(*vn)[aind]);
       rind++;
       aind++;
     }
   }
   for(i=aind+2*nion; (i<atoms->nr); i++) {
-    rind=atoms->atom[i].resnr;
-    p_atom(out,i,atoms,x,v,aind++,rind);
+    copy_atom(atoms,i,new_at,aind,-1);
+    copy_rvec(x[i],(*xn)[aind]);
+    copy_rvec(v[i],(*vn)[aind]);
+    aind++;
   }
-  for(i=0; (i<DIM); i++) 
-    fprintf(out,"%10.5f",box[i][i]);
-  for(i=0; (i<DIM); i++)
-    for(j=0; (j<DIM); j++)
-      if (i != j)
-	fprintf(out,"%10.5f",box[i][j]);
-  fprintf(out,"\n");
-  fclose(out);
 }
 
 int main(int argc, char *argv[])
@@ -361,7 +367,8 @@ int main(int argc, char *argv[])
   char        p_name[STRLEN],n_name[STRLEN];
   real        p_q,n_q,rcut;
   t_topology  top;
-  rvec        *x,*v;
+  t_atoms     new_at;
+  rvec        *x,*v,*xn,*vn;
   real        *coulomb;
   real        rlong2;
   matrix      box;
@@ -375,7 +382,7 @@ int main(int argc, char *argv[])
     { efGIP, "-f",  NULL,     ffREAD },
     { efGIP, "-po", "gi-out", ffWRITE },
     { efTPX, NULL,  NULL,     ffREAD },
-    { efGRO, "-o",  NULL,     ffWRITE }
+    { efSTO, "-o",  NULL,     ffWRITE }
   };
 #define NFILE asize(fnm)
   
@@ -411,8 +418,9 @@ int main(int argc, char *argv[])
   } while (p_num+n_num > 0);
   fprintf(stderr,"\n");
 
-  print_nsub(ftp2fn(efGRO,NFILE,fnm),
-	     nion,w1,nw,index,nSubs,p_name,n_name,&top,x,v,box);
+  print_nsub(nion,w1,nw,index,nSubs,p_name,n_name,&top,x,v,&new_at,&xn,&vn);
+
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top.name,&new_at,xn,vn,box);
 
   thanx(stdout);
   
