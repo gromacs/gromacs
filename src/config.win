@@ -76,7 +76,7 @@
 
 #define PACKAGE "gromacs"
 
-#define VERSION "3.1.2"
+#define VERSION "3.1.99"
 /* #undef DOUBLE */
 
 /* This is just the *default* library directory. Before looking here
@@ -84,7 +84,7 @@
  * binary you are running. This is only used by grompp and other programs
  * that create/edit topologies.
  */
-#define GMXLIBDIR "C:\\program\\gromacs\\share\\top"
+#define GMXLIBDIR "C:\\program files\\gromacs\\share\\top"
 
 /* Windows doesnt have SIGUSR, so we use SIGBREAK instead */
 #define SIGUSR1 SIGBREAK
