@@ -100,7 +100,7 @@ typedef struct {
   int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
-  int  nstLincsout;     /* Frequence for output from LINCS              */
+  int  nstLincsout;     /* Frequency for output from LINCS              */
   real ld_temp;         /* Temperature for Langevin Dynamics (LD)       */
   real ld_fric;         /* Friction coefficient for LD (amu / ps)       */
   int  ld_seed;         /* Random seed for LD                           */
