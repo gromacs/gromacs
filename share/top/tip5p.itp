@@ -53,11 +53,11 @@ SOL             2
 
 [ atoms ]
 ; id    at type res nr  residu name     at name         cg nr   charge
-1       OW      1       SOL              OW             1       0
-2       HW      1       SOL             HW1             1       0.241
-3       HW      1       SOL             HW2             1       0.241
-4       OL      1       SOL             OL1             1      -0.241
-5       OL      1       SOL             OL2             1      -0.241
+1       opls_118    1   SOL             OW              1       0
+2       opls_119    1   SOL             HW1             1       0.241
+3       opls_119    1   SOL             HW2             1       0.241
+4       opls_120    1   SOL             OL1             1      -0.241
+5       opls_120    1   SOL             OL2             1      -0.241
 
 [ settles ]
 ; i     funct   doh     dhh
