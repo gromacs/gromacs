@@ -257,6 +257,7 @@ char *insert_mols(char *mol3,int nmol_3,int seed,int ntb,
   snew(atoms_3.resname,atoms_3.nr);
   snew(atoms_3.atomname,atoms_3.nr);
   snew(atoms_3.atom,atoms_3.nr);
+  atoms_3.pdbinfo = NULL;
   snew(x_n,atoms_3.nr);
   snew(v_n,atoms_3.nr);
   snew(title_3,STRLEN);
@@ -348,6 +349,7 @@ void add_solv(char *solv,int ntb,
   snew(atoms_2.resname,atoms_2.nr);
   snew(atoms_2.atomname,atoms_2.nr);
   snew(atoms_2.atom,atoms_2.nr);
+  atoms_2.pdbinfo = NULL;
   fprintf(stderr,"Reading solvent configuration \n");
   read_stx_conf(filename,title_2,&atoms_2,x_2,v_2,box_2);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
@@ -436,6 +438,7 @@ char *read_prot(char *confin,char *indexnm,
   snew(atoms->resname,atoms->nr);
   snew(atoms->atom,atoms->nr);
   snew(atoms->atomname,atoms->nr);
+  atoms->pdbinfo = NULL;
   
   /* read residue number, residue names, atomnames, coordinates etc. */
   fprintf(stderr,"Reading solute configuration \n");

@@ -227,10 +227,12 @@ void orient_mol(t_atoms *atoms,char *indexnm,rvec x[])
   
   if (debug) {
     pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
+    fprintf(stderr,"Det(trans) = %g\n",det(trans));
     
     /* print principal component data */
     fprintf(stderr,"Norm of principal axes before rotation: "
 	    "(%.3f, %.3f, %.3f)\n",angle[XX],angle[YY],angle[ZZ]);
+    fprintf(stderr,"Totmass = %g\n",totmass);
     principal_comp(isize,index,atoms->atom,x,trans,angle);
     rotate_atoms(atoms->nr,simp,x,trans);
     pr_rvecs(stderr,0,"Rot Matrix",trans,DIM);
