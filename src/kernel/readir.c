@@ -148,11 +148,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   /* PRESSURE COUPLING */
   if (ir->epc != epcNO) {
     sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
-    CHECK(ir->epc && (ir->tau_p <= 0));
+    CHECK(ir->tau_p <= 0);
        
     sprintf(err_buf,"compressibility must be > 0 when using pressure" 
 	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
-    CHECK(ir->epc && (ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ]<=0));
+    CHECK(ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0);
     
     sprintf(err_buf,"pressure coupling with PPPM not implemented");
     CHECK(ir->coulombtype == eelPPPM);
