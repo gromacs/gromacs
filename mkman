@@ -28,7 +28,7 @@ cat >! $TEXMAN.tex << EOD
 \chapter{Manual Pages}
 
 {\small
-\input{online/all}
+\input{$MANDIR/all}
 }
 EOD
 echo ""
