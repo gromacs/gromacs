@@ -55,6 +55,7 @@
 #include "strdb.h"
 #include "physics.h"
 #include "atomprop.h"
+#include "pbc.h"
 
 bool is_hb(rvec x[],int id,int ih,int ia,real ccut)
 {
