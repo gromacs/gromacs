@@ -29,7 +29,7 @@
  * And Hey:
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
-
+static char *SRCID_genion_c = "$Id$";
 #include <ctype.h>
 #include "copyrite.h"
 #include "string2.h"
@@ -235,12 +235,13 @@ int main(int argc, char *argv[])
     "Ion names for Gromos96 should include the charge.[PAR]",
     "The potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol).",
-    "The unit of the potential is 0.001 kJ/(mol e).[PAR]",
+    "The unit of the potential is 0.001 kJ/(mol e), the scaling be changed",
+    "with the [TT]-scale[tt] option.[PAR]",
     "For larger ions, e.g. sulfate we recommended to use genbox."
   };
   static int  p_num=0,n_num=0;
   static char *p_name="Na",*n_name="Cl";
-  static real p_q=1,n_q=-1,rmin=0.6;
+  static real p_q=1,n_q=-1,rmin=0.6,scale=0.001;
   static int  seed=1993;
   static bool bRandom=FALSE;
   static t_pargs pa[] = {
@@ -252,7 +253,8 @@ int main(int argc, char *argv[])
     { "-nq",    FALSE, etREAL, {&n_q},   "Charge of the negative ion"    },
     { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
     { "-random",FALSE,etBOOL, {&bRandom},"Use random placement of ions instead of based on potential. The rmin option should still work" },
-    { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" }
+    { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
+    { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for -pot" }
   };
   t_topology  *top;
   t_parm      parm;
@@ -343,7 +345,7 @@ int main(int argc, char *argv[])
 	else
 	  strcpy(buf,ftp2fn(efPDB,NFILE,fnm));
 	for(i=0; (i<top->atoms.nr); i++)
-	    top->atoms.pdbinfo[i].bfac = pot[i]*0.001;
+	    top->atoms.pdbinfo[i].bfac = pot[i]*scale;
 	write_sto_conf(buf,"Potential calculated by genion",
 		       &top->atoms,x,v,box);
 	bPDB = FALSE;
