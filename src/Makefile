@@ -32,9 +32,9 @@ PROGRAMS =	(cd bin/s10; ls; cd ../..)
 all:	dirs oclean
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE); cd ..;)
 ifneq ($(PARALLEL_ONLY_MDRUN),yes)
-ifneq ($(GMXCPU),win)
-	./mkcompl
-endif
+#ifneq ($(GMXCPU),win)
+#	./mkcompl
+#endif
 endif
 
 etags:
