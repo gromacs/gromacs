@@ -1,0 +1,87 @@
+# Linux/x86 w Portland Compiler
+#	@(#) Makefile.lnx 1.8 27 Jun 1996
+#
+#
+#	GROMACS - Groningen Machine for Chemical Simulation
+#	Copyright (c) 1990, 1991, 1992, Groningen University
+#
+#	Makefile for gromacs on a i486 processor (Linux)
+#
+# 	See README file for info
+#
+SYSDEFS		= -D_lnx_ -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRDUP -DUSE_OMP
+
+#
+#	USER MODIFIABLE SECTION
+#
+# If you want to use fortran innerloops set this to yes
+# For most machines this will improve the performance quite a bit
+# because C-compilers are not as good as Fortran compilers
+USEF77		= yes
+#
+# If you want to run in *** P A R A L L E L ***
+# please select either PVM or MPI, check with your local hacker
+# to see what's installed at your site. If you have neither,
+# set both to no. If you select both, something will break!!!
+#
+USE_PVM3	= no
+HOME		= /usr/local
+USE_MPI		= no
+#
+# If you want to use compressed data files set this to yes
+# This uses the xdr libraries of your UNIX system, which is virtually
+# Allways present, because it is necessary for NFS (network file system)
+#
+USE_XDR		= yes
+#
+# Graphics Library
+# Set this on if you have Open GL and the Viewkit library
+# (standard with SGI, available for money elsewhere)
+# This is used in the Open GL trajectory viewer.
+HAVE_GL		= no
+#
+#
+# If you want to use the GMX/Motif user interface (and if you have Motif
+# or lesstif (www.lesstif.org) installed, uncomment this one.
+HAVE_MOTIF	= no
+#
+# Note that these variables are also used in Makefile.std
+# If something does not work, please check out the link command line
+# in that file (e.g. for PVM)
+#
+
+# GNU C compiler + PGI F77 compiler
+PGI		= /homes/werkman/PGI
+MKDEP		= $(CC) -MM
+#CC		= $(HOME)/bin/hcc
+#F77		= $(HOME)/bin/hf77
+#LAMHF77		= $(PGI)/linux86/bin/pgf77
+CC		= $(PGI)/linux86/bin/pgcc
+F77		= $(PGI)/linux86/bin/pgf77
+CFLAGS		= -tp p6 -fast -Minfo=loop -pc 32 
+FFLAGS		= $(CFLAGS) -mp -Mconcur -Mneginfo=loop
+
+# Generic linking stuff
+LDFLAGS		= -mp -v -L$(LIBDIR) -L$(PGI)/linux86/lib -L/usr/local/lib/gcc-lib/i686-pc-linux-gnu/egcs-2.91.66
+LD		= $(CC) $(LDFLAGS) 
+FLD		= $(F77) $(LDFLAGS) 
+CCLD		= $(CCC) $(LDFLAGS)
+
+ifeq ($(HAVE_MOTIF),yes)
+SYSDEFS		+= -DHAVE_MOTIF
+
+XLIBS		= -L/usr/X11R6/lib -lXm -lXt -lX11
+SYSLIBS		= $(XLIBS)  -lm 
+
+else
+XLIBS		= -L/usr/X11R6/lib -lX11 
+SYSLIBS		= -lm
+endif
+SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
+RANLIB		= ranlib
+X11INC		= -I/usr/X11R6/include
+
+
+
+
+
