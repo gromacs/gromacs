@@ -132,29 +132,14 @@ setenv GMXBIN 	\$GMXHOME/bin/\$CPU
 setenv GMXLIB	\$GMXHOME/top
 
 # 
-# If your machine can handle multiple manpaths use this
-# It allows for easy cleanup etc.
-#
-setenv GMXMAN	\$GMXHOME/man
-
-# 
 # Default Graphics Font
 #
 setenv GMXFONT	10x20
 
 #
-# Set the path and manpath
-#
+# Set the path #
 setenv 	PATH 	"\$PATH":"\$GMXBIN"
 #
-# Watch out! If a manpath is set, it may disable other manpages
-# The solution to this is, to add all the system manpath's here
-# as well...
-#
-
-if ( \$?MANPATH ) then
-	 setenv MANPATH	"\$MANPATH":\$GMXMAN
-endif
 
 if ( \$?LD_LIBRARY_PATH ) then
 	 setenv LD_LIBRARY_PATH	"\$LD_LIBRARY_PATH":\$GMXHOME/lib/\$CPU
