@@ -42,11 +42,26 @@ static char *SRCID_init_c = "$Id$";
 #include "splittop.h"
 #include "mdatoms.h"
 #include "mdrun.h"
+#include "statutil.h"
 
 #define BUFSIZE	256
 
 #define NOT_FINISHED(l1,l2) \
   printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
+
+void check_nprocs_top(char *fn,t_topology *top,int nprocs)
+{
+  int i,np=0;
+  
+  for(i=0; (i<MAXPROC); i++)
+    if (top->blocks[ebCGS].multinr[i] != 0)
+      np++;
+      
+  if (np != nprocs)
+    fatal_error(0,"run input file %s was made for %d processors,\n"
+		"             while %s expected it to be for %d processors.",
+		fn,np,ShortProgram(),nprocs);
+}
 
 static char *int_title(char *title,int pid)
 {

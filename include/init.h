@@ -52,6 +52,9 @@ typedef enum
   LIST_LOAD	=0100
 } t_listitem;
 
+extern void check_nprocs_top(char *fn,t_topology *top,int nprocs);
+/* Verify whether this tpr file is for nprocs processors, and quit if not */
+
 extern void init_single(FILE *log,
                         t_parm *parm, char *tpbfile, t_topology *top,
 			rvec **x,rvec **v,t_mdatoms **mdatoms,
@@ -99,15 +102,6 @@ extern void init_parts(FILE *log,t_commrec *cr,
       * returns the number of shifts over the ring to perform to calculate
       * all interactions.
       */
-
-typedef struct
-{
-  t_inputrec 	ir;	/* input rec, see typedefs.h			*/
-  matrix 	box;    /* box dimensions                             	*/
-  tensor        vir;    /* the virial                                   */
-  tensor        pres;   /* the pressure                                 */
-  tensor        ekin;   /* Kinetic energy				*/
-} t_parm;
 
 extern void write_parm(FILE *log,char *title,int pid,t_parm *parm);
 /* Write parm for debugging */
