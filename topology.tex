@@ -287,9 +287,9 @@ These quantities are listed in the coordinate file, {\tt *.gro}
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
 The \normindex{bonded parameters} ({\ie} bonds, angles, improper and proper
-dihedrals) are listed in {\tt ff???bon.itp}. The term {\tt func} can
-be ignored in {\gromacs} {\gmxver}, because for bonds and angles we only use 1
-function, so far. For the dihedral, this is explained after this listing.
+dihedrals) are listed in {\tt ff???bon.itp}. The term {\tt func} is 1 for
+harmonic and 2 for \gromosv{96} bond and angle potentials.
+For the dihedral, this is explained after this listing.
 {\small\begin{verbatim}
 [ bondtypes ]
   ; i    j func        b0          kb
