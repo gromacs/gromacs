@@ -115,7 +115,7 @@ void global_stat(FILE *log,
     where();
     icx   = add_binr(log,rb,DIM*vcm->nr,vcm->group_x[0]);
     where();
-    ici   = add_binr(log,rb,DIM*DIM*vcm->nr,vcm->group_i);
+    ici   = add_binr(log,rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
     where();
   }
   ica   = add_binr(log,rb,1,&(grps->cosacc.mvcos));
@@ -145,7 +145,7 @@ void global_stat(FILE *log,
     where();
     extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
     where();
-    extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i);
+    extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
     where();
   }
   extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
