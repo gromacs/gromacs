@@ -669,7 +669,10 @@ int gmx_rms (int argc,char *argv[])
 	}
       }
     }
-    rmsd_avg /= tel_mat*tel_mat2;
+    if (bFile2)
+      rmsd_avg /= tel_mat*tel_mat2;
+    else
+      rmsd_avg /= tel_mat*(tel_mat - 1)/2;
     if (bMat && (avl > 0)) {
       rmsd_max=0.0;
       rmsd_min=0.0;
