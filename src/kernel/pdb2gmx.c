@@ -219,6 +219,8 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   int *nssbonds,t_ssbond **ssbonds,
 		   real angle,real distance)
 {
+  int i;
+
   /* Rename aromatics, lys and histidine */
   if (bTyrU) rename_pdbres(pdba,"TYR","TYRU",FALSE);
   if (bTrpU) rename_pdbres(pdba,"TRP","TRPU",FALSE);
@@ -229,6 +231,17 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_pdbresint(pdba,"LYS",get_lystp,FALSE);
   
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
+  rename_pdbres(pdba,"CYS","CYSH",FALSE);
+  for(i=0; i<*nssbonds; i++) {
+    if (strcmp(*pdba->resname[(*ssbonds)[i].res1],"CYSH")==0) {
+      sfree(*pdba->resname[(*ssbonds)[i].res1]);
+      *pdba->resname[(*ssbonds)[i].res1]=strdup("CYS");
+    }
+    if (strcmp(*pdba->resname[(*ssbonds)[i].res2],"CYSH")==0) {
+      sfree(*pdba->resname[(*ssbonds)[i].res2]);
+      *pdba->resname[(*ssbonds)[i].res2]=strdup("CYS");
+    }
+  }
   
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
