@@ -15,7 +15,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  g_hbond	g_lifetime	merge_freq	\
 		  genbox 	genconf 	genion		\
 		  make_ndx	average		genpr 		\
-		  trjconv       mk_angndx			\
+		  trjconv       mk_angndx	eneconv		\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
@@ -30,7 +30,6 @@ PROGRAMS	= g_rdf		g_msd		g_dist		\
 		  g_nmeig	g_chi		g_dielectric	\
 		  g_helix	wheel	        		\
                   g_confrms     xpm2ps 
-#?eneconv		\
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
