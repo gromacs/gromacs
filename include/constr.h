@@ -87,11 +87,11 @@ extern bool init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 /* Initialize constraints stuff */
 
 /* C routines for LINCS algorithm */ 
-extern void clincs_proj(rvec *x,rvec *f,rvec *fp,int ncons,
-			int *bla1,int *bla2,int *blnr,int *blbnb,
-			real *blc,real *blcc,real *blm,
-			int nrec,real *invmass,rvec *r,
-			real *vbo,real *vbn,real *vbt);
+extern void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
+		    int *bla1,int *bla2,int *blnr,int *blbnb,
+		    real *blc,real *blcc,real *blm,
+		    int nrec,real *invmass,rvec *r,
+		    real *vbo,real *vbn,real *vbt);
 
 extern void clincs(rvec *x,rvec *xp,int ncons,
 		   int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,

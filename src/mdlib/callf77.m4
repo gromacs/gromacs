@@ -34,17 +34,17 @@ void fshake fshake_args
 
 /* LINCS */
 
-define(`flincs_proj_args',`(real *x,real *f,real *fp,int *nc,int *bla1,int *bla2,int *blnr,int *blbnb,real *blc,real *blcc,real *blm,int *nrec,real *invmass,real *r,real *temp1,real *temp2,real *temp3)')
+define(`flincsp_args',`(real *x,real *f,real *fp,int *nc,int *bla1,int *bla2,int *blnr,int *blbnb,real *blc,real *blcc,real *blm,int *nrec,real *invmass,real *r,real *temp1,real *temp2,real *temp3)')
 
-extern void FUNCTION(forlincs_proj) flincs_proj_args;
+extern void FUNCTION(forlincsp) flincsp_args;
 
-void flincs_proj flincs_proj_args
+void flincsp flincsp_args
 {
 #ifdef USEF77
-  FUNCTION(forlincs_proj)(x,f,fp,nc,bla1,bla2,blnr,blbnb,blc,blcc,
+  FUNCTION(forlincsp)(x,f,fp,nc,bla1,bla2,blnr,blbnb,blc,blcc,
   	blm,nrec,invmass,r,temp1,temp2,temp3);
 #else
-  fatal_error(0,"flincs called (Fortran routine from %s %d)",__FILE__,__LINE__);
+  fatal_error(0,"flincsp called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif
 }
 

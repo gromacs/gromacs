@@ -47,11 +47,11 @@ extern void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,
 		   real invmass[],real tt[],real lambda[],int *error);
 
 /* Fortran routines for LINCS algorithm */ 
-extern void flincs_proj(real *x,real *f,real *fp,int *nc,
-			int *bla1,int *bla2,int *blnr,
-			int *blbnb,real *blc,real *blcc,real *blm,
-			int *nrec,real *invmass,real *r,real *temp1,
-			real *temp2,real *temp3);
+extern void flincsp(real *x,real *f,real *fp,int *nc,
+		    int *bla1,int *bla2,int *blnr,
+		    int *blbnb,real *blc,real *blcc,real *blm,
+		    int *nrec,real *invmass,real *r,real *temp1,
+		    real *temp2,real *temp3);
 
 extern void flincs(real *x,real *xp,int *nc,
 		   int *bla1,int *bla2,int *blnr,

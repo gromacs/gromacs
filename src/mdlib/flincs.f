@@ -1,4 +1,4 @@
-      subroutine forlincs_proj(x,f,fp,ncons,
+      subroutine forlincsp(x,f,fp,ncons,
      $     bla1,bla2,blnr,blbnb,blc,blcc,blm,
      $     nrec,invmass,r,rhs1,rhs2,sol)
 

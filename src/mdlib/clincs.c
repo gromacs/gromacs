@@ -34,11 +34,11 @@ static char *SRCID_clincs_c = "$Id$";
 #include "physics.h"
 #include "vec.h"
 
-void clincs_proj(rvec *x,rvec *f,rvec *fp,int ncons,
-		 int *bla1,int *bla2,int *blnr,int *blbnb,
-		 real *blc,real *blcc,real *blm,
-		 int nrec,real *invmass,rvec *r,
-		 real *rhs1,real *rhs2,real *sol)
+void clincsp(rvec *x,rvec *f,rvec *fp,int ncons,
+	     int *bla1,int *bla2,int *blnr,int *blbnb,
+	     real *blc,real *blcc,real *blm,
+	     int nrec,real *invmass,rvec *r,
+	     real *rhs1,real *rhs2,real *sol)
 {
   int     b,i,j,k,n,it,rec;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  

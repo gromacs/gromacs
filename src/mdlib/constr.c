@@ -274,13 +274,13 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 #endif
     } else {
 #ifdef USEF77
-      flincs_proj(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
-		  blc,blcc,blm,&ir->nProjOrder,
-		  md->invmass,r[0],tmp1,tmp2,tmp3);
+      flincsp(x[0],xprime[0],min_proj[0],&nc,bla1,bla2,blnr,blbnb,
+	      blc,blcc,blm,&ir->nProjOrder,
+	      md->invmass,r[0],tmp1,tmp2,tmp3);
 #else
-      clincs_proj(x,xprime,min_proj,nc,bla1,bla2,blnr,blbnb,
-		  blc,blcc,blm,ir->nProjOrder,
-		  md->invmass,r,tmp1,tmp2,tmp3);
+      clincsp(x,xprime,min_proj,nc,bla1,bla2,blnr,blbnb,
+	      blc,blcc,blm,ir->nProjOrder,
+	      md->invmass,r,tmp1,tmp2,tmp3);
 #endif
     }
 
