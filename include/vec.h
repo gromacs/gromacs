@@ -76,7 +76,7 @@ extern const unsigned int crecipfracttab[];
 typedef union 
 {
   unsigned int bval;
-  real fval;
+  float fval;
 } t_convert;
 
 
