@@ -848,7 +848,7 @@ static real low_angres(int nbonds,
     rvec_dec(fr->fshift[CENTRAL],f_i);
     if (!bZAxis) {
     ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
-    ivec_sub(it,jt,dt);
+    /* ivec_sub(it,jt,dt); */
     t=IVEC2IS(dt);
       rvec_inc(fr->fshift[t],f_k);
       rvec_dec(fr->fshift[CENTRAL],f_k);
