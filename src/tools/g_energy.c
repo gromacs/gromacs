@@ -492,25 +492,21 @@ int main(int argc,char *argv[])
     "from an energy file.",
     "The user is prompted to interactively select the energy terms",
     "she wants.[PAR]",
-    "In the case of distance restraints it is also possible to calculate",
-    "the (sum of) violations as a running time average and instantaneous.",
-    "Pairs can be selected from a (huge) list to calculate",
-    "running averaged and instantaneous pair distances.[PAR]",
+    "When the [TT]-viol[tt] option is set, the time averaged violations",
+    "are plotted and the running time averaged and instantaneous sum of",
+    "violations are recalculated.",
+    "Additionally running time averaged and instantaneous distances between",
+    "selected pairs can be plotted with the [TT]-pairs[tt] option.[PAR]",
     "Average and RMS are calculated with full precision from",
     "the simulation (see printed manual). Drift is calculated",
     "by performing a LSQ fit of the data to a straight line.",
     "Total drift is drift multiplied by total time."
   };
-  static bool bDisRe=FALSE,bDRAll=FALSE;
   static bool bSum=FALSE,bDG=FALSE,bAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
-    { "-rsum", FALSE, etBOOL, &bDisRe,
-      "Recalculate sum of violations (running average and instantaneous) and ensemble av. violations" },
-    { "-rall", FALSE, etBOOL, &bDRAll,
-      "Extract pair distances and ensemble av. violations" },
     { "-dg",   FALSE, etBOOL, &bDG,
       "Do a free energy estimate" },
     { "-temp", FALSE, etREAL, &reftemp,
@@ -543,8 +539,8 @@ int main(int argc,char *argv[])
     "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ", "Temperature",
     "Volume",  "Pressure"
   };
-
-  FILE       *out;
+  
+  FILE       *out,*fp_pairs;
   FILE       **drout;
   int        fp;
   int        ndr;
@@ -560,7 +556,7 @@ int main(int argc,char *argv[])
   real       *bounds,*violaver=NULL;
   int        *index,*pair;
   int        nbounds,npairs;
-  bool       bStarted,bCont,bEDR,bVisco;
+  bool       bDisRe,bDRAll,bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt;
   real       **eneset,*time;
   int        *set,i,j,k,nset,sss,nenergy;
@@ -570,22 +566,24 @@ int main(int argc,char *argv[])
     { efENX, "-f", NULL, ffOPTRD },
     { efTPX, "-s", NULL, ffOPTRD },
     { efXVG, "-o", NULL, ffWRITE },
-    { efXVG, "-v",   "violaver", ffOPTWR },
-    { efXVG, "-corr", "enecorr", ffOPTWR },
+    { efXVG, "-viol", "violaver",  ffOPTWR },
+    { efXVG, "-pairs","pairs",     ffOPTWR },
+    { efXVG, "-corr", "enecorr",   ffOPTWR },
     { efXVG, "-vis",  "visco.xvg", ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
   t_pargs *ppa;
-
+  
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
   ppa    = add_acf_pargs(&npargs,pa);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
-  if (bDRAll)
-    bDisRe=TRUE;
-
+  
+  bDRAll = opt2bSet("-pairs",NFILE,fnm);
+  bDisRe = opt2bSet("-viol",NFILE,fnm) || bDRAll;
+  
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
   
@@ -596,7 +594,7 @@ int main(int argc,char *argv[])
   snew(ee[NEXT],nre);
   snew(oldee,nre);
   nenergy = 0;
-
+  
   bVisco = opt2bSet("-vis",NFILE,fnm);
 
   if (!bDisRe) {
@@ -621,7 +619,7 @@ int main(int argc,char *argv[])
     }
     out=xvgropen(opt2fn("-o",NFILE,fnm),"Gromacs Energies","Time (ps)",
 		 "E (kJ mol\\S-1\\N)");
-
+    
     snew(leg,nset+1);
     for(i=0; (i<nset); i++)
       leg[i]=enm[set[i]];
@@ -631,7 +629,7 @@ int main(int argc,char *argv[])
     }
     else
       xvgr_legend(out,nset,leg);
-      
+    
     snew(eneset,nset+1);
     time = NULL;
   }
@@ -639,14 +637,14 @@ int main(int argc,char *argv[])
     nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&pair,&npairs,
 		       &top,&ir);
     snew(violaver,npairs);
-    if (!bDRAll) {
-      out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
-		   "Time (ps)","nm");
-      xvgr_legend(out,2,drleg);  
-    } else { 
-      out=xvgropen(opt2fn("-o",NFILE,fnm),"Pair Distances",
-		   "Time (ps)","Distance (nm)");
-      fprintf(out,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",ir.dr_tau);
+    out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
+		 "Time (ps)","nm");
+    xvgr_legend(out,2,drleg);  
+    if (bDRAll) { 
+      fp_pairs=xvgropen(opt2fn("-pairs",NFILE,fnm),"Pair Distances",
+			"Time (ps)","Distance (nm)");
+      fprintf(fp_pairs,"@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
+	      ir.dr_tau);
     }
   }
   
@@ -731,7 +729,7 @@ int main(int argc,char *argv[])
 	  snew(leg[2*i+1],32);
 	  sprintf(leg[2*i+1],"i %s",pairleg[set[i]]);
 	}
-	xvgr_legend(out,2*nset,leg);    
+	xvgr_legend(fp_pairs,2*nset,leg);    
       }
       
       /* 
@@ -769,16 +767,17 @@ int main(int argc,char *argv[])
 	    /* Subtract bounds from distances, to calculate violations */
 	    calc_violations(dr.rt,dr.rav,
 			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
-	    
-	    if (bDRAll)
+
+	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
+	    if (bDRAll) {
+	      print_one(fp_pairs,bDp,t[cur]);
 	      for(i=0; (i<nset); i++) {
 		sss=set[i];
-		fprintf(out,"  %8.4f",mypow(dr.rav[sss],minthird));
-		fprintf(out,"  %8.4f",dr.rt[sss]);
+		fprintf(fp_pairs,"  %8.4f",mypow(dr.rav[sss],minthird));
+		fprintf(fp_pairs,"  %8.4f",dr.rt[sss]);
 	      }
-	    else
-	      fprintf(out,"  %8.4f  %8.4f",sumaver,sumt);
-	    fprintf(out,"\n");
+	      fprintf(fp_pairs,"\n");
+	    }
 	    teller_disre++;
 	  }
 	}
@@ -810,9 +809,11 @@ int main(int argc,char *argv[])
   close_enx(fp);
   
   ffclose(out);
+  if (bDRAll)
+    ffclose(fp_pairs);
 
   if (bDisRe) 
-    analyse_disre(opt2fn("-v",NFILE,fnm),
+    analyse_disre(opt2fn("-viol",NFILE,fnm),
 		  teller_disre,violaver,bounds,index,pair,nbounds);
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
