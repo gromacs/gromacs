@@ -1438,14 +1438,20 @@ f_i     &=& - \frac{\partial V}{\partial x_i}
 where ${\bf e}_j$ is the unit vector in direction $j$.
 It should be noted that
 for a usual Normal Mode calculation, it is necessary to completely minimize 
-the energy prior to computation of the Hessian. This should be done
-with conjugate gradient in double precision.
+the energy prior to computation of the Hessian.
+What tolerance is required depends on the type of system,
+but a rough indication is 0.001 kJ mol$^{-1}$.
+This should be done with conjugate gradient in double precision.
 
 A number of {\gromacs} programs are involved in these
-calculations. First {\tt \normindex{nmrun}}, which computes the Hessian,
-and secondly {\tt \normindex{g\_nmeig}} which does the diagonalization and
-sorting of normal modes according to frequencies. Both these programs
-should be run in double precision.
+calculations. First the energy should be minimized using {\tt mdrun}.
+Then {\tt mdrun} computes the Hessian, note that for generating
+the run input file one should use the minimized conformation from
+the full precision trajectory file, as the structure file is not
+accurate enough.
+{\tt \normindex{g\_nmeig}} does the diagonalization and
+the sorting of the normal modes according to their frequencies.
+Both {\tt mdrun} and {\tt g_nmeig} should be run in double precision.
 The normal modes can be analyzed with the program {\tt g\_anaeig}.
 Ensembles of structures at any temperature and for any subset of
 normal modes can be generated with {\tt \normindex{g\_nmens}}.
