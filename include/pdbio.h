@@ -70,6 +70,14 @@ extern void pdb_use_ter(bool bSet);
 extern void write_pdbfile(FILE *out,char *title,
 			  t_atoms *atoms,rvec x[],matrix box,char chain,
 			  bool bEndmodel);
+/* Low level pdb file writing routine.
+ * 
+ *          ONLY FOR SPECIAL PURPOSES,
+ * 
+ *       USE write_sto_conf WHEN YOU CAN.
+ *
+ * override chain-identifiers with chain when chain>0
+ * write ENDMDL when bEndmodel is TRUE */
   
 void hwrite_pdb_conf_indexed(FILE *out,char *title, 
 			     t_atoms *atoms,rvec x[],matrix box,
@@ -79,9 +87,7 @@ void hwrite_pdb_conf_indexed(FILE *out,char *title,
 
 extern void write_pdb_confs(char *outfile,
 			    t_atoms **atoms,rvec *x[],int number);
-
-extern void write_pdb_conf(char *outfile,char *title,
-			   t_atoms *atoms,rvec x[],matrix box);
+/* Write multiple chains to one pdb file */ 
 
 extern int read_pdbfile(FILE *in,char *title,
 			t_atoms *atoms,rvec x[],matrix box,bool bChange);
