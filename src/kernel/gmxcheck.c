@@ -56,9 +56,9 @@ static char *SRCID_gmxcheck_c = "$Id$";
 void chk_trj(char *fn)
 {
   t_trnheader  sh,count;
-  int          idum,j,natoms,step;
+  int          idum,j,new_natoms,natoms,step;
   real         rdum,t,tt,t0,old_t1,old_t2,prec;
-  bool         bShowTimestep=TRUE,bOK;
+  bool         bShowTimestep=TRUE,bOK,newline;
   rvec         *x;
   matrix       box;
   size_t       fpos;
@@ -66,7 +66,8 @@ void chk_trj(char *fn)
   int          status,ftp;
   
   ftp    = fn2ftp(fn);
-  natoms = 0;  
+  new_natoms = -1;
+  natoms = -1;  
   t      = 0;
   t0     = NOTSET;
   step   = 0;
@@ -76,7 +77,7 @@ void chk_trj(char *fn)
   count.x_size=0;
   count.v_size=0;
   count.f_size=0;
-
+  
   printf("Checking file %s\n",fn);
   switch (ftp) {
   case efTRJ:
@@ -88,18 +89,26 @@ void chk_trj(char *fn)
     old_t1 = -1.0;
     fpos   = 0;
     while (fread_trnheader(status,&sh,&bOK)) {
+      newline=TRUE;
+      if ((natoms > 0) && (new_natoms != natoms)) {
+	fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",
+		old_t1,natoms,new_natoms);
+	newline=FALSE;
+      }
       if (j>=2) {
 	if ( fabs((sh.t-old_t1)-(old_t1-old_t2)) > 
 	     0.1*(fabs(sh.t-old_t1)+fabs(old_t1-old_t2)) ) {
 	  bShowTimestep=FALSE;
-	  fprintf(stderr,"\nTimesteps at t=%g don't match (%g, %g)\n",
-		  old_t1,old_t1-old_t2,sh.t-old_t1);
+	  fprintf(stderr,"%sTimesteps at t=%g don't match (%g, %g)\n",
+		  newline?"\n":"",old_t1,old_t1-old_t2,sh.t-old_t1);
 	}
       }
+      natoms=new_natoms;
       old_t2=old_t1;
       old_t1=sh.t;
       if (t0 == NOTSET) t0=sh.t;
-      fprintf(stderr,"\rframe: %6d, t: %10.3f bytes: %10u",j,sh.t,fpos);
+      fprintf(stderr,"\rframe: %6d, step: %6d, t: %10.3f byte: %10u",
+	      j,sh.step,sh.t,fpos);
       if (j == 0)
 	fprintf(stderr,"\n");
       if (!fread_htrn(status,&sh,NULL,NULL,NULL,NULL))
@@ -107,8 +116,8 @@ void chk_trj(char *fn)
       else {
 	j++;
 	t=sh.t;
-	natoms=sh.natoms;
-#define INC(s,n,item) if (s.item  != 0) n.item++
+	new_natoms=sh.natoms;
+#define INC(s,n,item) if (s.item != 0) n.item++
 	INC(sh,count,box_size);
 	INC(sh,count,vir_size);
 	INC(sh,count,pres_size);
@@ -116,7 +125,7 @@ void chk_trj(char *fn)
 	INC(sh,count,v_size);
 	INC(sh,count,f_size);
       }
-      fpos   = fio_ftell(status);
+      fpos = fio_ftell(status);
     }
    fprintf(stderr,"\n"); 
     if (!bOK)
@@ -126,7 +135,7 @@ void chk_trj(char *fn)
   case efXTC:
     xd = open_xtc(fn,"r");
     t=-1;
-    if (read_first_xtc(xd,&natoms,&step,&tt,box,&x,&prec,&bOK)) {
+    if (read_first_xtc(xd,&new_natoms,&step,&tt,box,&x,&prec,&bOK)) {
       fprintf(stderr,"\nXTC precision %g\n\n",prec);
       j=0;
       old_t2=-2.0;
@@ -137,20 +146,27 @@ void chk_trj(char *fn)
 	  if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
 	       0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {
 	    bShowTimestep=FALSE;
-	    fprintf(stderr,"\nTimesteps at t=%g don't match (%g, %g)\n",
-		    old_t1,old_t1-old_t2,t-old_t1);
+	    fprintf(stderr,"%sTimesteps at t=%g don't match (%g, %g)\n",
+		    newline?"\n":"",old_t1,old_t1-old_t2,t-old_t1);
 	  }
 	}
 	old_t2=old_t1;
 	old_t1=t;
 	if (t0 == NOTSET) t0=t;
-	fprintf(stderr,"\rframe: %6d, t: %10.3f",j,t);
+	fprintf(stderr,"\rframe: %6d, step %6d, t: %10.3f",j,step,t);
 	if (j == 0)
 	  fprintf(stderr,"\n");
+	newline=TRUE;
+	if ((natoms > 0) && (new_natoms != natoms)) {
+	  fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",
+		  old_t1,natoms,new_natoms);
+	  newline=FALSE;
+	}
+	natoms=new_natoms;
 	count.x_size++;
 	count.box_size++;
 	j++;
-      } while (read_next_xtc(xd,&natoms,&step,&tt,box,x,&prec,&bOK));
+      } while (read_next_xtc(xd,&new_natoms,&step,&tt,box,x,&prec,&bOK));
       close_xtc(xd);
     }
     else
