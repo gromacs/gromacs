@@ -224,10 +224,9 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   }
 }
 
-static int read_atom(char line[],int type,int natom,
+static int read_atom(t_symtab *symtab,char line[],int type,int natom,
 		     t_atoms *atoms,rvec x[],bool bChange)
 {
-  static t_symtab symtab;
   t_atom *atomn;
   int  j,k;
   char nc='\0';
@@ -239,8 +238,6 @@ static int read_atom(char line[],int type,int natom,
   if (natom>=atoms->nr)
     fatal_error(0,"\nFound more atoms (%d) in pdb file than expected (%d)",
 		natom+1,atoms->nr);
-
-  open_symtab(&symtab);
 
   /* Skip over type */  
   j=6;
@@ -299,13 +296,13 @@ static int read_atom(char line[],int type,int natom,
     else
       newres=atoms->atom[natom-1].resnr+1;
     atoms->nres=newres+1;
-    atoms->resname[newres]=put_symtab(&symtab,resnm);
+    atoms->resname[newres]=put_symtab(symtab,resnm);
   }
   else
     newres=atoms->atom[natom-1].resnr;
   if (bChange)
     gromacs_name(anm); 
-  atoms->atomname[natom]=put_symtab(&symtab,anm);
+  atoms->atomname[natom]=put_symtab(symtab,anm);
   atomn->chain=chain[0];
   atomn->resnr=newres;
   x[natom][XX]=atof(xc)*0.1;
@@ -323,8 +320,6 @@ static int read_atom(char line[],int type,int natom,
   atomn->q = 0.0;
   natom++;
   
-  close_symtab(&symtab);
-
   return natom;
 }
 
@@ -345,6 +340,8 @@ bool is_hydrogen(char *nm)
 int read_pdbfile(FILE *in,char *title, 
 		 t_atoms *atoms,rvec x[],matrix box,bool bChange)
 {
+  static t_symtab symtab;
+  static bool bFirst=TRUE;
   bool bCOMPND,bSimBox;
   char line[STRLEN+1];
   char xc[12],yc[12],zc[12];
@@ -357,6 +354,11 @@ int read_pdbfile(FILE *in,char *title,
   if (box != NULL) 
     clear_mat(box);
 
+  if (bFirst) {
+    open_symtab(&symtab);
+    bFirst=FALSE;
+  }
+
   bCOMPND=FALSE;
   bSimBox=FALSE;
   title[0]='\0';
@@ -367,7 +369,7 @@ int read_pdbfile(FILE *in,char *title,
     switch(line_type) {
     case epdbATOM:
     case epdbHETATM:
-      natom = read_atom(line,line_type,natom,atoms,x,bChange);
+      natom = read_atom(&symtab,line,line_type,natom,atoms,x,bChange);
       break;
       
     case epdbANISOU:
