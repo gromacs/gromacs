@@ -268,7 +268,7 @@ void get_ir(char *mdparin,char *mdparout,
   char      epsbuf[STRLEN];
   t_inpfile *inp;
   char      *tmp;
-  int       i,m,ninp;
+  int       i,m,ninp,ecm_mode;
   char      dummy[STRLEN];
   double    epsje;
   
@@ -290,6 +290,9 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nsteps",      ir->nsteps,     1);
   CTYPE ("number of steps for center of mass motion removal");
   ITYPE ("nstcomm",	ir->nstcomm,	1);
+  CTYPE ("mode center of mass motion removal");
+  EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);
+  CTYPE ("definition of the group for center of mass motion removal");
   STYPE ("comm-grps",   vcm,            NULL);
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
@@ -566,6 +569,20 @@ void get_ir(char *mdparin,char *mdparout,
   }
   fprintf(stderr,"Warning: as of GMX v 2.0 unit of compressibility is truly 1/bar\n");
 
+  switch (ecm_mode) {
+  case ecmNO:
+    ir->nstcomm = 0;
+    break;
+  case ecmLINEAR:
+    sprintf(warn_buf,"mdrun will apply removal of angular momentum when nstcomm < 0");
+    if (ir->nstcomm < 0)
+      warning(NULL);
+    break;
+  case ecmANGULAR:
+    if (ir->nstcomm > 0)
+      ir->nstcomm = -ir->nstcomm;
+    break;
+  }
   sfree(dumstr[0]);
   sfree(dumstr[1]);
 }
@@ -689,9 +706,6 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
   t_iatom *ia;
   int     *nrdf,*na_vcm,na_tot;
   double  *nrdf_vcm,nrdf_uc,n_sub;
-
-  if (nstcomm<0 && atoms->grps[egcVCM].nr>1)
-    fatal_error(0,"Can not remove rotation on more than one group");
 
   /* Calculate nrdf. 
    * First calc 3xnr-atoms for each group

@@ -392,7 +392,7 @@ int main(int argc,char *argv[])
       fprintf(out,"@ legend string %d \"%s\"\n",j++,"Free");
     if (bFree)
       fprintf(out,"@ legend string %d \"%s\"\n",j++,"Diff");
-    fprintf(out,"@TYPE nxy\n");
+    fprintf(out,"@TYPE xy\n");
     fprintf(out,"#%3s","grp");
     for (m=0; (m<egNR+egSP); m++)
       if (egrp_use[m])

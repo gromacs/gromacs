@@ -71,8 +71,7 @@ void _where(char *file,int line)
     bFirst = FALSE;
   } 
 
-  if ( nskip >= 0 ) {
-    
+  if (nskip >= 0) {
     /* Skip the first n occasions, this allows to see where it goes wrong */
     if (nwhere >= nskip) {
       if (stdlog)
@@ -80,9 +79,6 @@ void _where(char *file,int line)
       else
 	fp = stderr;
       fprintf(fp,"WHERE %d, file %s - line %d\n",nwhere,file,line);
-#ifdef _amb_
-      fprintf(fp,"%512s\n","flushed");
-#endif    
     }
     nwhere++;
   }
@@ -322,7 +318,7 @@ void warning(char *s)
   temp[indent] = '\0';
   strcat(temp,s);
   temp2 = wrap_lines(temp,81-indent,indent);
-  fprintf(stderr,"Warning %d [file %s, line %s]:\n%s\n",
+  fprintf(stderr,"WARNING %d [file %s, line %s]:\n%s\n",
 	  nwarn,filenm,linenobuf,temp2);
   sfree(temp);
   sfree(temp2);

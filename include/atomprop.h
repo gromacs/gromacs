@@ -45,3 +45,7 @@ extern real get_mass(char *resnm, char *atomnm);
 extern real get_vdw(char *resnm, char *atomnm, real default_r);
 /* search the vdw radius belonging to residue and atom ,
    note that the longest match is returned */
+   
+extern real get_dgsolv(char *resnm, char *atomnm, real default_s);
+/* search the Delta G solv belonging to residue and atom ,
+   note that the longest match is returned */

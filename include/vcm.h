@@ -49,36 +49,29 @@ static char *SRCID_vcm_h = "$Id$";
 #include "typedefs.h"
 
 typedef struct {
-  int  nr;
-  rvec *group_mvcm;
-  real *group_mass;
-  char **group_name;         /* These two are copies to pointers in */
-  unsigned short *group_id;  /* other structures.                   */
+  int    nr;                   /* Number of groups                    */
+  int    mode;                 /* One of the enums above              */
+  rvec   *group_p;             /* Linear momentum per group           */
+  rvec   *group_v;             /* Linear velocity per group           */
+  rvec   *group_x;             /* Center of mass per group            */
+  rvec   *group_j;             /* Angular momentum per group          */
+  rvec   *group_w;             /* Angular velocity (omega)            */
+  tensor *group_i;             /* Moment of inertia per group         */
+  real   *group_mass;          /* Mass per group                      */
+  char   **group_name;         /* These two are copies to pointers in */
+  unsigned short *group_id;    /* other structures.                   */
 } t_vcm;
 
 t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
 		int start,int homenr,int nstcomm);
 
-extern void calc_vcm(FILE *log,int homenr,int start,
-		     real mass[],rvec v[],rvec vcm);
-
-extern void do_stopcm(FILE *log,int homenr,int start,
-		      rvec v[],rvec mvcm,real tm,real invmass[]);
-
-extern void check_cm(FILE *log,rvec mvcm,real tm);
-
-/* remove global rotation of system by fitting to structure of nstcomm
-   steps ago */
-extern void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], 
-		       real mass[]);
-
 /* Do a per group center of mass things */
-extern void calc_vcm_grp(FILE *log,int homenr,int start,real mass[],rvec v[],
-			 t_vcm *vcm);
+extern void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
+			 rvec x[],rvec v[],t_vcm *vcm);
 
-extern void do_stopcm_grp(FILE *log,int homenr,int start,rvec v[],
-			  t_vcm *vcm,real invmass[]);
+extern void do_stopcm_grp(FILE *fp,int start,int homenr,
+			  rvec x[],rvec v[],t_vcm *vcm);
 
-extern void check_cm_grp(FILE *log,t_vcm *vcm);
+extern void check_cm_grp(FILE *fp,t_vcm *vcm);
 			 
 #endif /* _vcm_h */

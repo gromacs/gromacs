@@ -73,22 +73,6 @@ static RETSIGTYPE signal_handler(int n)
   }
 }
 
-void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
-{
-  if (ir->nstcomm == 0) {
-    *bStopCM  = FALSE;
-    *bStopRot = FALSE;
-  } 
-  else if (ir->nstcomm > 0) {
-    *bStopCM  = do_per_step(step,ir->nstcomm);
-    *bStopRot = FALSE;
-  } 
-  else {
-    *bStopCM  = FALSE;
-    *bStopRot = do_per_step(step,-ir->nstcomm);
-  }
-}
-
 static void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 		    real *lambda,real *lam0,real *SAfactor,
 		    t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
@@ -153,7 +137,7 @@ static void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   /* Set initial values for invmass etc. */
   init_mdatoms(mdatoms,*lambda,TRUE);
 
-  *vcm = init_vcm(stdlog,top,mdatoms,0,mdatoms->nr,ir->nstcomm);
+  *vcm = init_vcm(stdlog,top,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm);
     
   debug_gmx();
 
@@ -179,7 +163,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,
+  bool       bNS,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE;
   tensor     force_vir,pme_vir,shake_vir;
   t_nrnb     mynrnb;
@@ -374,7 +358,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
     
     /* Stop Center of Mass motion */
-    get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
+    bStopCM = do_per_step(step,abs(parm->ir.nstcomm));
 
     /* Copy back starting coordinates in case we're doing a forcefield scan */
     if (bFFscan) {
@@ -558,7 +542,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM && !bFFscan)
-      calc_vcm_grp(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
+      calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
 
     /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
@@ -601,7 +585,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      */
     if (!bNEMD && debug)
       correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),v,
-		   vcm->group_mvcm[0],
+		   vcm->group_p[0],
 		   mdatoms->massT,mdatoms->tmass,parm->ekin);
     
     if ((terminate != 0) && (step < parm->ir.nsteps)) {
@@ -622,21 +606,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
 
     /* Do center of mass motion removal */
-    if (bStopCM) {
+    if (bStopCM && !bFFscan) {
       check_cm_grp(log,vcm);
-      do_stopcm_grp(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->invmass);
+      do_stopcm_grp(log,START(nsb),HOMENR(nsb),x,v,vcm);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
+      calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
+      check_cm_grp(log,vcm);
+      do_stopcm_grp(log,START(nsb),HOMENR(nsb),x,v,vcm);
+      check_cm_grp(log,vcm);
     }
         
-    /* Do fit to remove overall rotation */
-    if (bStopRot) {
-      /* this check is also in grompp.c, if it becomes obsolete here,
-	 also remove it there */
-      if (PAR(cr))
-	  fatal_error(0,"Can not stop rotation about center of mass in a "
-		      "parallel run\n");
-      do_stoprot(log,top->atoms.nr,box_size,x,mdatoms->massT);
-    }
     /* Add force and shake contribution to the virial */
     m_add(force_vir,shake_vir,parm->vir);
   
@@ -775,7 +754,3 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   return start_t;
 }
-
-
-
-

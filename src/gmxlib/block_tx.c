@@ -48,20 +48,13 @@ void _blocktx(int dest,int nelem,int size,void *data)
   
   if ((data==NULL) && (size > 0))
     fatal_error(0,"TX: Null pointer (size=%d)!\n",size);
-#ifdef DEBUG
-#ifdef _amb_
-  if (size > 256000) 
-    fprintf(stdlog,"Trying to send %d bytes!\n",size);
-#endif
-#endif
 
-  for (i=0; i<nelem; i++)
-    {
-      gmx_txs(dest,&size,sizeof(size));
-      if (size > 0)
-	gmx_txs(dest,buf,size);
-      buf+=size;      
-    }
+  for (i=0; i<nelem; i++) {
+    gmx_txs(dest,&size,sizeof(size));
+    if (size > 0)
+      gmx_txs(dest,buf,size);
+    buf+=size;      
+  }
 }
 
 void _blockrx(int src,int nelem,int size,void *data)
@@ -71,22 +64,15 @@ void _blockrx(int src,int nelem,int size,void *data)
   
   if ((data==NULL) && (size > 0))
     fatal_error(0,"RX: Null pointer (size=%d)!\n",size);
-#ifdef DEBUG
-#ifdef _amb_
-  if (size > 256000) 
-    fprintf(stdlog,"Trying to receive %d bytes!\n",size);
-#endif
-#endif
-  for (i=0; i<nelem; i++)
-    {
-      gmx_rxs(src,&len,sizeof(len));
-      if (size!=len)
-        fatal_error(0,"%d: size=%d, len=%d, rx_count=%d\n",
-                    0,size,len,0);
-      if (len > 0)
-	gmx_rxs(src,buf,len);
-      buf+=len;      
-    }
+  for (i=0; i<nelem; i++) {
+    gmx_rxs(src,&len,sizeof(len));
+    if (size!=len)
+      fatal_error(0,"%d: size=%d, len=%d, rx_count=%d\n",
+		  0,size,len,0);
+    if (len > 0)
+      gmx_rxs(src,buf,len);
+    buf+=len;      
+  }
 }
 
 void mv_block(int dest,t_block *block)

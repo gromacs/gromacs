@@ -121,3 +121,8 @@ enum {
   eshellCSH, eshellBASH, eshellZSH, eshellNR
 }; 
 
+/* Center of mass motion selection */
+enum { 
+  ecmNO, ecmLINEAR, ecmANGULAR, ecmNR 
+};
+

@@ -1521,3 +1521,62 @@
    CBA   O1A   O2A   CGA
    CBD   O1D   O2D   CGD
 
+[ OCT ]
+ [ atoms ]
+    C1    C3   0.0     0
+   H11    HC   0.0     0
+   H12    HC   0.0     0
+   H13    HC   0.0     0
+    C2    C2   0.0     1
+   H21    HC   0.0     1
+   H22    HC   0.0     1
+    C3    C2   0.0     2
+   H31    HC   0.0     2
+   H32    HC   0.0     2
+    C4    C2   0.0     3
+   H41    HC   0.0     3
+   H42    HC   0.0     3
+    C5    C2   0.0     4
+   H51    HC   0.0     4
+   H52    HC   0.0     4
+    C6    C2   0.0     5
+   H61    HC   0.0     5
+   H62    HC   0.0     5
+    C7    C2   0.0     6
+   H71    HC   0.0     6
+   H72    HC   0.0     6
+    C8    C2   0.15    7
+   H81    HC   0.0     7
+   H82    HC   0.0     7
+    O9    OA  -0.548   7
+   H10    HO   0.398   7
+   
+ [ bonds ]
+C1	H11
+C1	H12
+C1	H13
+C1	C2
+C2	H21
+C2	H22
+C2	C3
+C3	H31
+C3	H32
+C3	C4
+C4	H41
+C4	H42
+C4	C5
+C5	H51
+C5	H52
+C5	C6
+C6	H61
+C6	H62
+C6	C7
+C7	H71
+C7	H72
+C7	C8
+C8	H81
+C8	H82
+C8	O9
+O9	H10
+
+

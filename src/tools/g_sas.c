@@ -52,6 +52,7 @@ static char *SRCID_g_sas_c = "$Id$";
 #include "pdbio.h"
 #include "confio.h"
 #include "rmpbc.h"
+#include "atomprop.h"
 
 typedef struct {
   atom_id  aa,ab;
@@ -210,10 +211,12 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,int nskip,bool bSave,real minarea,bool bPBC)
+	      real qcut,int nskip,bool bSave,real minarea,bool bPBC,
+	      real dgs_default)
 {
   FILE         *fp,*fp2,*fp3=NULL;
-  char         *legend[] = { "Hydrophobic", "Hydrophilic", "Total" };
+  char         *legend[] = { "Hydrophobic", "Hydrophilic", 
+			     "Total", "D Gsolv" };
   real         t;
   int          status;
   int          i,ii,j,natoms,flag,nsurfacedots;
@@ -223,13 +226,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   bool         *bPhobic;
   bool         bConnelly;
   bool         bAtom,bITP;
-  real         *radius,*area=NULL,*surfacedots=NULL;
+  real         *radius,*dgs_factor,*area=NULL,*surfacedots=NULL;
   real         *atom_area,*atom_area2;
   real         totarea,totvolume,harea,tarea,resarea;
   atom_id      *index;
   int          nx,ires;
   char         *grpname;
-  real         stddev;
+  real         stddev,dgsolv;
 
   bAtom  = opt2bSet("-ao",nfile,fnm);
   bITP   = opt2bSet("-i",nfile,fnm);
@@ -251,10 +254,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   snew(bPhobic,natoms);
   snew(atom_area,natoms); 
   snew(atom_area2,natoms);
-
+  snew(dgs_factor,natoms);
+  
   for(i=0; (i<natoms); i++) {
-    radius[i]  = calc_radius(*(top->atoms.atomname[i])) + solsize;
-    bPhobic[i] = fabs(top->atoms.atom[i].q) <= qcut;
+    radius[i]     = calc_radius(*(top->atoms.atomname[i])) + solsize;
+    dgs_factor[i] = get_dgsolv(*(top->atoms.resname[top->atoms.atom[i].resnr]),
+			       *(top->atoms.atomtype[i]),dgs_default);
+    bPhobic[i]    = fabs(top->atoms.atom[i].q) <= qcut;
   }
 
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
@@ -276,7 +282,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	flag = FLAG_ATOM_AREA;
       
       if (nsc_dclm2(x,radius,nx,index,ndots,flag,&totarea,
-		    &area,&totvolume,&surfacedots,&nsurfacedots,bPBC ? box : NULL))
+		    &area,&totvolume,&surfacedots,&nsurfacedots,
+		    bPBC ? box : NULL))
 	fatal_error(0,"Something wrong in nsc_dclm2");
       
       if (bConnelly)
@@ -284,16 +291,20 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 		      nsurfacedots,surfacedots,x,&(top->atoms),
 		      &(top->symtab),box,bSave);
       
-      harea = 0; tarea = 0;
+      harea  = 0; 
+      tarea  = 0;
+      dgsolv = 0;
       for(i=0; (i<nx); i++) {
 	ii=index[i];
 	atom_area[i] += area[ii];
 	atom_area2[i] += area[ii]*area[ii];
 	tarea += area[ii];
+	dgsolv += area[ii]*dgs_factor[ii];
 	if (bPhobic[ii])
 	  harea += area[ii];
       }
-      fprintf(fp,"%10g  %10g  %10g  %10g\n",t,harea,tarea-harea,tarea);
+      fprintf(fp,"%10g  %10g  %10g  %10g  %10g\n",
+	      t,harea,tarea-harea,tarea,dgsolv);
       
       if (area) 
 	sfree(area);
@@ -370,7 +381,7 @@ int main(int argc,char *argv[])
   static real solsize = 0.14;
   static int  ndots   = 24,nskip=1;
   static real qcut    = 0.2;
-  static real minarea = 0.5;
+  static real minarea = 0.5, dgs_default=0;
   static bool bSave   = TRUE,bPBC=TRUE;
   t_pargs pa[] = {
     { "-solsize", FALSE, etREAL, {&solsize},
@@ -386,7 +397,9 @@ int main(int argc,char *argv[])
     { "-pbc",     FALSE, etBOOL, {&bPBC},
       "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
-      "Output the protein to the connelly pdb file too" }
+      "Output the protein to the connelly pdb file too" },
+    { "-dgs",     FALSE, etREAL, {&dgs_default},
+      "default value for solvation free energy per area (kJ/mol/nm^2)" }
   };
   t_filenm  fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD },
@@ -412,7 +425,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
   
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea,bPBC);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea,bPBC,dgs_default);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn("-ao",NFILE,fnm),"-xydy");

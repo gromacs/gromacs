@@ -70,6 +70,7 @@ void global_stat(FILE *log,
   static t_bin *rb=NULL; 
   static int   *itc;
   int    iterminate,imu,ie,ifv,isv,icm,imass,ica;
+  int    icj=-1,ici=-1,icx=-1;
   int    in[MAXNODES];
   int    inn[egNR];
   int    j;
@@ -105,10 +106,18 @@ void global_stat(FILE *log,
   for(j=0; (j<egNR); j++)
     inn[j]=add_binr(log,rb,grps->estat.nn,grps->estat.ee[j]);
   where();
-  icm   = add_binr(log,rb,DIM*vcm->nr,vcm->group_mvcm[0]);
+  icm   = add_binr(log,rb,DIM*vcm->nr,vcm->group_p[0]);
   where();
   imass = add_binr(log,rb,vcm->nr,vcm->group_mass);
   where();
+  if (vcm->mode == ecmANGULAR) {
+    icj   = add_binr(log,rb,DIM*vcm->nr,vcm->group_j[0]);
+    where();
+    icx   = add_binr(log,rb,DIM*vcm->nr,vcm->group_x[0]);
+    where();
+    ici   = add_binr(log,rb,DIM*DIM*vcm->nr,vcm->group_i);
+    where();
+  }
   ica   = add_binr(log,rb,1,&(grps->cosacc.mvcos));
   where();
   iterminate = add_binr(log,rb,1,terminate);
@@ -127,10 +136,18 @@ void global_stat(FILE *log,
     extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekin[0]);
   for(j=0; (j<egNR); j++)
     extract_binr(rb,inn[j],grps->estat.nn,grps->estat.ee[j]);
-  extract_binr(rb,icm,DIM*vcm->nr,vcm->group_mvcm[0]);
+  extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
   where();
   extract_binr(rb,imass,vcm->nr,vcm->group_mass);
   where();
+  if (vcm->mode == ecmANGULAR) {
+    extract_binr(rb,icj,DIM*vcm->nr,vcm->group_j[0]);
+    where();
+    extract_binr(rb,icx,DIM*vcm->nr,vcm->group_x[0]);
+    where();
+    extract_binr(rb,ici,DIM*DIM*vcm->nr,vcm->group_i);
+    where();
+  }
   extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
   where();
   extract_binr(rb,iterminate,1,terminate);

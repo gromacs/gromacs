@@ -134,3 +134,8 @@ char *esolv_names[esolNR+1] = {
 char *edispc_names[edispcNR+1] = {
   "No", "EnerPres", "Ener", NULL
 };
+
+char *ecm_names[ecmNR+1] = { 
+  "None", "Linear", "Angular", NULL 
+};
+ 

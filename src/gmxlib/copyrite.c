@@ -336,7 +336,12 @@ void please_cite(FILE *fp,char *key)
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
       "J. Mol. Mod.",
-      7, 2001, 306, 317 }
+      7, 2001, 306, 317 },
+    { "Wang2001a",
+      "J. Wang and W. Wang and S. Huo and M. Lee and P. A. Kollman",
+      "Solvation model based on weighted solvent accessible surface area",
+      "J. Phys. Chem. B",
+      105, 2001, 5055, 5067 }
   };
 #define NSTR (int)asize(citedb)
   

@@ -837,15 +837,6 @@ int main (int argc, char *argv[])
   if (bSort && !bShuffle) 
     warning("Can not do sorting without shuffling. Sorting turned off.");
     
-  if ( (nnodes > 1) && (ir->nstcomm < 0) ) {
-    /* this check is also in md.c, if it becomes obsolete here,
-       also remove it there */
-    fprintf(stderr,
-	    "ERROR: removing rotation around center of mass (nstcomm=%d)"
-	    "in a parallel run (np=%d) not implemented\n",ir->nstcomm,nnodes);
-    nerror++;
-  }
-    
   bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
   bGenVel  = (bNeedVel && opts->bGenVel);
 

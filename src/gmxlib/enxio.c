@@ -142,9 +142,11 @@ static bool do_eheader(int fp,t_enxframe *fr,bool *bOK)
   }
   if (tempfix_nr)
     fr->nr[0] = tempfix_nr;
-  else
+  else {
     for(block=0; block<fr->nblock; block++)
-      if (!do_int (fr->nr[block])) *bOK = FALSE;
+      if (!do_int (fr->nr[block])) 
+	*bOK = FALSE;
+  }
   if (!do_int (fr->e_size))  *bOK = FALSE;
   if (!do_int (fr->d_size))  *bOK = FALSE;
   /* Do a dummy int to keep the format compatible with the old code */

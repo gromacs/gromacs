@@ -44,9 +44,7 @@ static char *SRCID_atomprop_c = "$Id$";
 #include "macros.h"
 #include "index.h"
 #include "strdb.h"
-
-#define ATOMMASS "atommass.dat"
-#define VDWRADII "vdwradii.dat"
+#include "copyrite.h"
 
 typedef struct {
   char atomname[10];
@@ -176,7 +174,7 @@ real get_mass(char *resnm, char *atomnm)
     fprintf(stderr,
 	    "WARNING: masses will be determined based on residue and atom names,\n"
 	    "         this can deviate from the real mass of the atom type\n");
-    nmass = read_props(ATOMMASS,&mass,&maxmass);
+    nmass = read_props("atommass.dat",&mass,&maxmass);
     if (debug)
       write_props(debug,nmass,mass);
   }
@@ -199,7 +197,7 @@ real get_vdw(char *resnm, char *atomnm, real default_r)
   static int    maxvdwr;
   
   if (!vdwr) {
-    nvdwr = read_props(VDWRADII,&vdwr,&maxvdwr);
+    nvdwr = read_props("vdwradii.dat",&vdwr,&maxvdwr);
     if (debug)
       write_props(debug,nvdwr,vdwr);
   }
@@ -208,6 +206,36 @@ real get_vdw(char *resnm, char *atomnm, real default_r)
     r=default_r;
     add_prop(r, resnm, atomnm, &nvdwr, &vdwr, &maxvdwr);
     fprintf(stderr,"Van der Waals radius of atom %s %s set to %g\n",
+	    resnm,atomnm,r);
+  }
+  return r;
+}
+
+real get_dgsolv(char *resnm, char *atomnm, real default_s)
+{
+  static t_prop *dgs=NULL;
+  static int    ndgs;
+  static int    maxdgs;
+  real   r;
+  int    i;
+  
+  if (!dgs) {
+    ndgs = read_props("dgsolv.dat",&dgs,&maxdgs);
+    please_cite(stderr,"Wang2001a");
+    /* Convert to MD units */
+    for(i=0; (i<ndgs); i++)
+      dgs[i].prop *= 418.4;
+    
+    if (debug) {
+      fprintf(debug,"Atomic solvation factors in kJ/mol nm^2\n");
+      write_props(debug,ndgs,dgs);
+    }
+  }
+  
+  if ( ! get_prop(&r, resnm, atomnm, ndgs, dgs) ) {
+    r = default_s;
+    add_prop(r, resnm, atomnm, &ndgs, &dgs, &maxdgs);
+    fprintf(stderr,"Solvation factor of atom %s %s set to %g\n",
 	    resnm,atomnm,r);
   }
   return r;

@@ -39,91 +39,9 @@ static char *SRCID_vcm_c = "$Id$";
 #include "vec.h"
 #include "smalloc.h"
 #include "do_fit.h"
+#include "names.h"
+#include "txtdump.h"
  
-void calc_vcm(FILE *log,int homenr,int start,real mass[],rvec v[],rvec vcm)
-{
-  int    i;
-  real   m0;
-  real   x,y,z;
-  
-  /* Calculate */
-  x=y=z=0;
-  for(i=start; (i<start+homenr); i++) {
-    m0=mass[i];
-    x+=m0*v[i][XX];
-    y+=m0*v[i][YY];
-    z+=m0*v[i][ZZ];
-  }
-  vcm[XX]=x;
-  vcm[YY]=y;
-  vcm[ZZ]=z;
-}
-
-void do_stopcm(FILE *log,int homenr,int start,rvec v[],rvec mvcm,
-	       real tm,real invmass[])
-{
-  int  i;
-  rvec vcm;
-  
-  vcm[XX]=mvcm[XX]/tm;
-  vcm[YY]=mvcm[YY]/tm;
-  vcm[ZZ]=mvcm[ZZ]/tm;
-  
-  for(i=start; (i<start+homenr); i++) 
-    if (invmass[i] != 0)
-      rvec_dec(v[i],vcm);
-}
-
-void check_cm(FILE *log,rvec mvcm,real tm)
-{
-  int    m;
-  rvec   vcm;
-  real   ekcm=0,max_vcm=0;
-
-  for(m=0; (m<DIM); m++) {
-    vcm[m]=mvcm[m]/tm;
-    max_vcm=max(max_vcm,fabs(vcm[m]));
-    ekcm+=vcm[m]*vcm[m];
-  }
-  if (max_vcm > 0.1) {
-    ekcm*=0.5*tm;
-    fprintf(log,"Large VCM: (%12.5f,  %12.5f,  %12.5f), ekin-cm: %12.5f\n",
-	    vcm[XX],vcm[YY],vcm[ZZ],ekcm);
-  }
-}
-
-void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], real mass[])
-{
-  static atom_id *index=NULL;
-  static rvec *old_x=NULL;
-  rvec   half_box;
-  int    i;
-  
-  for (i=0; (i<DIM); i++)
-    half_box[i]=box[i]*0.5;
-  if (!index) {
-    snew(index,natoms);
-    for (i=0; (i<natoms); i++)
-      index[i]=i;
-  }
-  
-  /* first center on origin (do_fit does not do this!) */
-  reset_x(natoms,index,natoms,index,x,mass);
-  
-  if (old_x) {
-    /* do least squares fit to previous structure */
-    do_fit(natoms,mass,old_x,x);
-  } else {
-    /* no previous structure, make room to copy this one */
-    snew(old_x, natoms);
-  }
-  /* save structure for next fit and move structure back to center of box */
-  for (i=0; (i<natoms); i++) {
-    copy_rvec(x[i],old_x[i]);
-    rvec_inc(x[i],half_box);
-  }
-}
-
 t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
 		int start,int homenr,int nstcomm)
 {
@@ -132,99 +50,238 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
   
   snew(vcm,1);
   
-  vcm->nr = top->atoms.grps[egcVCM].nr;
-  snew(vcm->group_mvcm,vcm->nr);
-  snew(vcm->group_mass,vcm->nr);
-  snew(vcm->group_name,vcm->nr);
-  vcm->group_id = md->cVCM;
-  
-  if (nstcomm != 0)
+  if (nstcomm < 0)
+    vcm->mode = ecmANGULAR;
+  else if (nstcomm > 0)
+    vcm->mode = ecmLINEAR;
+  else
+    vcm->mode = ecmNO;
+    
+  if (vcm->mode != ecmNO) {
+    vcm->nr = top->atoms.grps[egcVCM].nr;
+    if (vcm->mode == ecmANGULAR) {
+      snew(vcm->group_j,vcm->nr);
+      snew(vcm->group_x,vcm->nr);
+      snew(vcm->group_i,vcm->nr);
+      snew(vcm->group_w,vcm->nr);
+    }
+    snew(vcm->group_p,vcm->nr);
+    snew(vcm->group_v,vcm->nr);
+    snew(vcm->group_mass,vcm->nr);
+    snew(vcm->group_name,vcm->nr);
+    vcm->group_id = md->cVCM;
     for(i=start; (i<start+homenr); i++) {
       g = vcm->group_id[i];
       vcm->group_mass[g] += md->massT[i];
     }
-  
-  /* Copy pointer to group names and print it. */
-  fprintf(fp,"We have the following groups for center of mass motion removal:\n");
-  for(g=0; (g<vcm->nr); g++) {
-    vcm->group_name[g] = *top->atoms.grpname[top->atoms.grps[egcVCM].nm_ind[g]];
-    fprintf(fp,"%3d:  %s, initial mass: %g\n",
-	    g,vcm->group_name[g],vcm->group_mass[g]);
+    
+    /* Copy pointer to group names and print it. */
+    fprintf(fp,"Center of mass motion removal mode is %s\n",ECOM(vcm->mode));
+    fprintf(fp,"We have the following groups for center of"
+	    " mass motion removal:\n");
+    for(g=0; (g<vcm->nr); g++) {
+      vcm->group_name[g] = 
+	*top->atoms.grpname[top->atoms.grps[egcVCM].nm_ind[g]];
+      fprintf(fp,"%3d:  %s, initial mass: %g\n",
+	      g,vcm->group_name[g],vcm->group_mass[g]);
+    }
   }
-  
   return vcm;
 }
 
+static void update_tensor(rvec x,real m0,tensor I)
+{
+  real xy,xz,yz;
+  
+  /* Compute inertia tensor contribution due to this atom */
+  xy         = x[XX]*x[YY]*m0;
+  xz         = x[XX]*x[ZZ]*m0;
+  yz         = x[YY]*x[ZZ]*m0;
+  I[XX][XX] += x[XX]*x[XX]*m0;
+  I[YY][YY] += x[YY]*x[YY]*m0;
+  I[ZZ][ZZ] += x[ZZ]*x[ZZ]*m0;
+  I[XX][YY] += xy;
+  I[YY][XX] += xy;
+  I[XX][ZZ] += xz;
+  I[ZZ][XX] += xz;
+  I[YY][ZZ] += yz;
+  I[ZZ][YY] += yz;
+}
+
 /* Center of mass code for groups */
-void calc_vcm_grp(FILE *log,int homenr,int start,real mass[],rvec v[],
-		  t_vcm *vcm)
+void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
+		  rvec x[],rvec v[],t_vcm *vcm)
 {
-  int    i,g;
-  real   m0;
+  int    i,g,m;
+  real   m0,xx,xy,xz,yy,yz,zz;
+  rvec   j0;
   
-  /* Reset */
-  for(g=0; (g<vcm->nr); g++) {
-    clear_rvec(vcm->group_mvcm[g]);
-    vcm->group_mass[g] = 0;
-  }
-    
-  /* Calculate */
-  for(i=start; (i<start+homenr); i++) {
-    m0 = mass[i];
-    g  = vcm->group_id[i];
-    
-    vcm->group_mass[g]     += m0;
-    vcm->group_mvcm[g][XX] += m0*v[i][XX];
-    vcm->group_mvcm[g][YY] += m0*v[i][YY];
-    vcm->group_mvcm[g][ZZ] += m0*v[i][ZZ];
-  }
-}
-
-void do_stopcm_grp(FILE *log,int homenr,int start,rvec v[],
-		   t_vcm *vcm,real invmass[])
-{
-  int  i,g;
-  rvec *my_vcm;
-  real tm;
-  
-  snew(my_vcm,vcm->nr);
-  for(g=0; (g<vcm->nr); g++) {
-    tm = vcm->group_mass[g];
-    if (tm != 0) {
-      my_vcm[g][XX] = vcm->group_mvcm[g][XX]/tm;
-      my_vcm[g][YY] = vcm->group_mvcm[g][YY]/tm;
-      my_vcm[g][ZZ] = vcm->group_mvcm[g][ZZ]/tm;
+  if (vcm->mode != ecmNO) {
+    for(g=0; (g<vcm->nr); g++) {
+      /* Reset linear momentum */
+      vcm->group_mass[g] = 0;
+      clear_rvec(vcm->group_p[g]);
+      
+      if (vcm->mode == ecmANGULAR) {
+	/* Reset anular momentum */
+	clear_rvec(vcm->group_j[g]);
+	clear_rvec(vcm->group_x[g]);
+	clear_rvec(vcm->group_w[g]);
+	clear_mat(vcm->group_i[g]);
+      }
     }
-    /* Else it's zero anyway */
+    
+    for(i=start; (i<start+homenr); i++) {
+      m0 = mass[i];
+      g  = vcm->group_id[i];
+      
+      /* Calculate linear momentum */
+      vcm->group_mass[g]  += m0;
+      for(m=0; (m<DIM);m++)
+	vcm->group_p[g][m] += m0*v[i][m];
+
+      if (vcm->mode == ecmANGULAR) {
+	/* Calculate angular momentum */
+	oprod(x[i],v[i],j0);
+	
+	for(m=0; (m<DIM); m++) {
+	  vcm->group_j[g][m] += m0*j0[m];
+	  vcm->group_x[g][m] += m0*x[i][m];
+	}
+	/* Update inertia tensor */
+	update_tensor(x[i],m0,vcm->group_i[g]);
+      }
+    }
   }
-  for(i=start; (i<start+homenr); i++) {
-    g = vcm->group_id[i];
-    if (invmass[i] != 0)
-      rvec_dec(v[i],my_vcm[g]);
-  }
-  
-  sfree(my_vcm);
 }
 
-void check_cm_grp(FILE *log,t_vcm *vcm)
+void do_stopcm_grp(FILE *fp,int start,int homenr,rvec x[],rvec v[],
+		   t_vcm *vcm)
 {
-  int  m,g;
-  rvec my_vcm;
-  real ekcm,max_vcm;
+  int  i,g,m;
+  real tm,tm_1;
+  rvec dv,dx;
+  
+  if (vcm->mode != ecmNO) {
+    /* Subtract linear momentum */
+    for(i=start; (i<start+homenr); i++) {
+      g = vcm->group_id[i];
+      rvec_dec(v[i],vcm->group_v[g]);
+    }
+    if (vcm->mode == ecmANGULAR) {
+      /* Subtract angular momentum */
+      for(i=start; (i<start+homenr); i++) {
+	g = vcm->group_id[i];
+	/* Compute the correction to the velocity for each atom */
+	rvec_sub(x[i],vcm->group_x[g],dx);
+	oprod(vcm->group_w[g],dx,dv);
+	rvec_dec(v[i],dv);
+      }
+    }
+  }
+}
 
+static void get_minv(tensor A,tensor B)
+{
+  tensor tmp;
+
+  tmp[XX][XX] =  A[YY][YY] + A[ZZ][ZZ];
+  tmp[YY][XX] = -A[XX][YY];
+  tmp[ZZ][XX] = -A[XX][ZZ];
+  tmp[XX][YY] = -A[XX][YY];
+  tmp[YY][YY] =  A[XX][XX] + A[ZZ][ZZ];
+  tmp[ZZ][YY] = -A[YY][ZZ];
+  tmp[XX][ZZ] = -A[XX][ZZ];
+  tmp[YY][ZZ] = -A[YY][ZZ];
+  tmp[ZZ][ZZ] =  A[XX][XX] + A[YY][YY];
+  m_inv(tmp,B);
+}
+
+void check_cm_grp(FILE *fp,t_vcm *vcm)
+{
+  int    m,g;
+  real   ekcm,ekrot,max_vcm,tm,tm_1;
+  rvec   jcm;
+  tensor Icm,Tcm;
+    
+  /* First analyse the total results */
+  if (vcm->mode != ecmNO) {
+    for(g=0; (g<vcm->nr); g++) {
+      tm = vcm->group_mass[g];
+      if (tm != 0) {
+	tm_1 = 1.0/tm;
+	svmul(tm_1,vcm->group_p[g],vcm->group_v[g]);
+      }
+      /* Else it's zero anyway! */
+    }
+    if (vcm->mode == ecmANGULAR) {
+      for(g=0; (g<vcm->nr); g++) {
+	tm = vcm->group_mass[g];
+	if (tm != 0) {
+	  tm_1 = 1.0/tm;
+	  
+	  /* Compute center of mass for this group */
+	  for(m=0; (m<DIM); m++)
+	    vcm->group_x[g][m] *= tm_1;
+	  
+	  /* Subtract the center of mass contribution to the 
+	   * angular momentum 
+	   */
+ 	  oprod(vcm->group_x[g],vcm->group_v[g],jcm);
+	  for(m=0; (m<DIM); m++)
+	    vcm->group_j[g][m] -= tm*jcm[m];
+	  
+	  /* Subtract the center of mass contribution from the inertia 
+	   * tensor (this is not as trivial as it seems, but due to
+	   * some cancellation we can still do it, even in parallel).
+	   */
+	  clear_mat(Icm);
+	  update_tensor(vcm->group_x[g],tm,Icm);
+	  m_sub(vcm->group_i[g],Icm,vcm->group_i[g]);
+	  
+	  /* Compute angular velocity, using matrix operation 
+	   * Since J = I w
+	   * we have
+	   * w = I^-1 J
+	   */
+	  get_minv(vcm->group_i[g],Icm);
+	  mvmul(Icm,vcm->group_j[g],vcm->group_w[g]);
+	}
+	/* Else it's zero anyway! */
+      }
+    }
+  }
   for(g=0; (g<vcm->nr); g++) {
     ekcm    = 0;
     max_vcm = 0;
     if (vcm->group_mass[g] != 0) {
-      for(m=0; (m<DIM); m++) {
-	my_vcm[m] = vcm->group_mvcm[g][m]/vcm->group_mass[g];
-	max_vcm = max(max_vcm,fabs(my_vcm[m]));
-	ekcm += my_vcm[m]*my_vcm[m];
-      }
-      if (max_vcm > 0.1) {
-	ekcm*=0.5*vcm->group_mass[g];
-	fprintf(log,"Large VCM(group %s): (%12.5f,  %12.5f,  %12.5f), ekin-cm: %12.5f\n",
-		vcm->group_name[g],my_vcm[XX],my_vcm[YY],my_vcm[ZZ],ekcm);
+      for(m=0; (m<DIM); m++) 
+	ekcm += sqr(vcm->group_v[g][m]);
+      ekcm *= 0.5*vcm->group_mass[g];
+      
+      if ((ekcm > 1) || debug)
+	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, ekin-cm: %12.5f\n",
+		vcm->group_name[g],vcm->group_v[g][XX],
+		vcm->group_v[g][YY],vcm->group_v[g][ZZ],ekcm);
+      
+      if (vcm->mode == ecmANGULAR) {
+	ekrot = 0.5*iprod(vcm->group_j[g],vcm->group_w[g]);
+	if ((ekrot > 1) || debug) {
+	  tm    = vcm->group_mass[g];
+	  fprintf(fp,"Group %s with mass %12.5f, Ekrot %12.5f Det(I) = %12.5f\n",
+		  vcm->group_name[g],tm,ekrot,det(vcm->group_i[g]));
+	  fprintf(fp,"  COM: %12.5f  %12.5f  %12.5f\n",
+		  vcm->group_x[g][XX],vcm->group_x[g][YY],vcm->group_x[g][ZZ]);
+	  fprintf(fp,"  P:   %12.5f  %12.5f  %12.5f\n",
+		  vcm->group_p[g][XX],vcm->group_p[g][YY],vcm->group_p[g][ZZ]);
+	  fprintf(fp,"  V:   %12.5f  %12.5f  %12.5f\n",
+		  vcm->group_v[g][XX],vcm->group_v[g][YY],vcm->group_v[g][ZZ]);
+	  fprintf(fp,"  J:   %12.5f  %12.5f  %12.5f\n",
+		  vcm->group_j[g][XX],vcm->group_j[g][YY],vcm->group_j[g][ZZ]);
+	  fprintf(fp,"  w:   %12.5f  %12.5f  %12.5f\n",
+		vcm->group_w[g][XX],vcm->group_w[g][YY],vcm->group_w[g][ZZ]);
+	  pr_rvecs(fp,0,"Inertia tensor",vcm->group_i[g],DIM);
+	}
       }
     }
   }
