@@ -1638,9 +1638,9 @@ The $\lambda$-dependence for the force-field contributions is
 described in section \secref{feia}.
 
 \section{\normindex{Replica exchange}}
-Replica exchange is a method which can be used to speed of
+Replica exchange is a method which can be used to speed up
 the sampling of any type of simulation, especially if
-conformations are seperated by relatively high energy barriers.
+conformations are separated by relatively high energy barriers.
 It involves simulating multiple replicas of the same system
 at different temperatures and randomly exchanging the complete state
 of two replicas at regular intervals with the probability:
@@ -1664,7 +1664,7 @@ exchange for replicas 2 and 3 not only depends on the energies of
 replicas 2 and 3, but also on the energy of replica 1.
 In {\gromacs} this is solved by attempting exchange for all 'odd'
 pairs on 'odd' attempts and for all 'even' pairs on 'even' attempts.
-If we have four replicas: 0, 1, 2 and 3, ordered on temperature
+If we have four replicas: 0, 1, 2 and 3, ordered in temperature
 and we attempt exchange every 1000 steps, pairs 0-1 and 2-3
 will be tried at steps 1000, 3000 etc. and pair 1-2 at steps 2000, 4000 etc.
 
@@ -1684,9 +1684,9 @@ P(1 \leftrightarrow 2)
 Thus for a probability of $e^{-1}\approx 0.37$ with $c=2$
 one should choose $\epsilon$ as $1/\sqrt{N_{df}}$.
 
-Replica exchange is an option of the {\tt mdrun} program.
-Each replica can run on a separate node. But one can also
-run all replicas on a single node when MPI is installed.
+Replica exchange is an option of the {\tt mdrun} program. It will only
+work when MPI is installed, due to the inherent parallellism in the
+algorithm. For efficiency each replica can run on a separate node.
 See the manual page of {\tt mdrun} on how to use it.
 
 
