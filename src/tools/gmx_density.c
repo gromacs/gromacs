@@ -110,10 +110,34 @@ int get_electrons(t_electron **eltab, char *fn)
   return nr;
 }
 
+void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
+{
+  int  i,m;
+  real tmass,mm;
+  rvec com,shift,box_center;
+  
+  tmass = 0;
+  clear_rvec(com);
+  for(i=0; (i<atoms->nr); i++) {
+    mm     = atoms->atom[i].m;
+    tmass += mm;
+    for(m=0; (m<DIM); m++) 
+      com[m] += mm*x0[i][m];
+  }
+  for(m=0; (m<DIM); m++) 
+    com[m] /= tmass;
+  calc_box_center(box,box_center);
+  rvec_sub(box_center,com,shift);
+  shift[axis] -= box_center[axis];
+  
+  for(i=0; (i<atoms->nr); i++) 
+    rvec_dec(x0[i],shift);
+}
+
 void calc_electron_density(char *fn, atom_id **index, int gnx[], 
 			   real ***slDensity, int *nslices, t_topology *top, 
 			   int axis, int nr_grps, real *slWidth, 
-			   t_electron eltab[], int nr)
+			   t_electron eltab[], int nr,bool bCenter)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -158,13 +182,16 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   do {
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
+    if (bCenter)
+      center_coords(&top->atoms,box,x0,axis);
+    
     *slWidth = box[axis][axis]/(*nslices);
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	  z = x0[index[n][i]][axis];
-	  if (z < 0) 
+	  while (z < 0) 
 	    z += box[axis][axis];
-	  if (z > box[axis][axis])
+	  while (z > box[axis][axis])
 	    z -= box[axis][axis];
       
 	  /* determine which slice atom is in */
@@ -212,7 +239,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 void calc_density(char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, 
 		  int axis, int nr_grps, real *slWidth, bool bNumber,
-		  bool bCount)
+		  bool bCount,bool bCenter)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -258,15 +285,18 @@ void calc_density(char *fn, atom_id **index, int gnx[],
   do {
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
+    if (bCenter)
+      center_coords(&top->atoms,box,x0,axis);
+    
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
     
     for (n = 0; n < nr_grps; n++) {      
       for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	z = x0[index[n][i]][axis];
-	if (z < 0) 
+	while (z < 0) 
 	  z += box[axis][axis];
-	if (z > box[axis][axis])
+	while (z > box[axis][axis])
 	  z -= box[axis][axis];
       
 	/* determine which slice atom is in */
@@ -310,11 +340,13 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
 void plot_density(real *slDensity[], char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
-		  bool bElectron, bool bNumber, bool bCount)
+		  bool bElectron, bool bNumber, bool bCount,
+		  bool bSymmetrize)
 {
-  FILE       *den;     /* xvgr file with density   */
-  char       buf[256]; /* for xvgr title */
-  int        slice, n;
+  FILE  *den;     /* xvgr file with density   */
+  char  buf[256]; /* for xvgr title */
+  int   slice, n;
+  real  ddd;
 
   sprintf(buf,"Partial densities");
   if (bElectron)
@@ -328,13 +360,18 @@ void plot_density(real *slDensity[], char *afile, int nslices,
 
   xvgr_legend(den,nr_grps,grpname);
 
-  for (slice = 0; slice < nslices; slice++) { 
+  for (slice = 0; (slice < nslices); slice++) { 
     fprintf(den,"%12g  ", slice * slWidth);
-    for (n = 0; n < nr_grps; n++)
-      if (bNumber)
-	fprintf(den,"   %12g", slDensity[n][slice]/1.66057);
+    for (n = 0; (n < nr_grps); n++) {
+      if (bSymmetrize)
+	ddd = (slDensity[n][slice]+slDensity[n][nslices-slice-1])*0.5;
       else
-	fprintf(den,"   %12g", slDensity[n][slice]);
+	ddd = slDensity[n][slice];
+      if (bNumber)
+	fprintf(den,"   %12g", ddd/1.66057);
+      else
+	fprintf(den,"   %12g", ddd);
+    }
     fprintf(den,"\n");
   }
 
@@ -358,12 +395,14 @@ int gmx_density(int argc,char *argv[])
     "partial charge."
   };
   
-  static bool bNumber=FALSE;                  /* calculate number density   */
-  static bool bElectron=FALSE;                /* calculate electron density */
-  static bool bCount=FALSE;                   /* just count                 */
-  static int  axis = 2;                       /* normal to memb. default z  */
+  static bool bNumber=FALSE;     /* calculate number density   */
+  static bool bElectron=FALSE;   /* calculate electron density */
+  static bool bCount=FALSE;      /* just count                 */
+  static int  axis = 2;          /* normal to memb. default z  */
   static char *axtitle="Z"; 
-  static int  nslices = 10;                    /* nr of slices defined       */
+  static int  nslices = 10;      /* nr of slices defined       */
+  static bool bSymmetrize=FALSE;
+  static bool bCenter=FALSE;
   t_pargs pa[] = {
     { "-d", FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
@@ -374,7 +413,11 @@ int gmx_density(int argc,char *argv[])
     { "-ed",      FALSE, etBOOL, {&bElectron},
       "Calculate electron density instead of mass density" },
     { "-count",   FALSE, etBOOL, {&bCount},
-      "Only count atoms in slices, no densities. Hydrogens are not counted"}
+      "Only count atoms in slices, no densities. Hydrogens are not counted"},
+    { "-symm",    FALSE, etBOOL, {&bSymmetrize},
+      "Symmetrize the density along the axis, with respect to the center. Useful for bilayers." },
+    { "-center",  FALSE, etBOOL, {&bCenter},
+      "Shift the center of mass along the axis to zero. This means if your axis is Z and your box is bX, bY, bZ, the center of mass will be at bX/2, bY/2, 0."}
   };
 
   static char *bugs[] = {
@@ -382,22 +425,23 @@ int gmx_density(int argc,char *argv[])
     "When calculating number densities, atoms with names that start with H are not counted. This may be surprising if you use hydrogens with names like OP3."
   };
   
-  real     **density,                       /* density per slice          */
-    slWidth;                        /* width of one slice         */
-  char      **grpname;            	    /* groupnames                 */
-  int       ngrps = 0,                      /* nr. of groups              */
-    nr_electrons,                   /* nr. electrons              */
-    *ngx;                           /* sizes of groups            */
-  t_topology *top;                	    /* topology 		  */ 
-  atom_id   **index;             	    /* indices for all groups     */
-  t_filenm  fnm[] = {             	    /* files for g_order 	  */
-    { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
-    { efNDX, NULL, NULL,  ffOPTRD },    	    /* index file 		  */
-    { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
-    { efDAT, "-ei", "electrons", ffOPTRD },   /* file with nr. of electrons */
-    { efXVG,"-o","density",ffWRITE }, 	    /* xvgr output file 	  */
+  real **density;        /* density per slice          */
+  real slWidth;          /* width of one slice         */
+  char **grpname;        /* groupnames                 */
+  int  ngrps = 0;        /* nr. of groups              */
+  int  nr_electrons;     /* nr. electrons              */
+  int  *ngx;             /* sizes of groups            */
+  t_electron *el_tab;    /* tabel with nr. of electrons*/
+  t_topology *top;       /* topology 		       */ 
+  atom_id   **index;     /* indices for all groups     */
+  
+  t_filenm  fnm[] = {    /* files for g_density 	  */
+    { efTRX, "-f", NULL,  ffREAD },  
+    { efNDX, NULL, NULL,  ffOPTRD }, 
+    { efTPX, NULL, NULL,  ffREAD },    	    
+    { efDAT, "-ei", "electrons", ffOPTRD }, /* file with nr. of electrons */
+    { efXVG,"-o","density",ffWRITE }, 	    
   };
-  t_electron *el_tab;                       /* tabel with nr. of electrons*/
   
 #define NFILE asize(fnm)
 
@@ -406,6 +450,10 @@ int gmx_density(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 
+  if (bSymmetrize && !bCenter) {
+    fprintf(stderr,"Can not symmetrize without centering. Turning on -center\n");
+    bCenter = TRUE;
+  }
   /* Calculate axis */
   axis = toupper(axtitle[0]) - 'X';
   
@@ -435,13 +483,14 @@ int gmx_density(int argc,char *argv[])
 
     calc_electron_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, 
 			  &nslices, top, axis, ngrps, &slWidth, el_tab, 
-			  nr_electrons);
+			  nr_electrons,bCenter);
   } else
     calc_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, &nslices, top, 
-		 axis, ngrps, &slWidth, bNumber,bCount); 
+		 axis, ngrps, &slWidth, bNumber,bCount,bCenter); 
   
   plot_density(density, opt2fn("-o",NFILE,fnm),
-	       nslices, ngrps, grpname, slWidth, bElectron, bNumber, bCount);
+	       nslices, ngrps, grpname, slWidth, bElectron, bNumber, bCount,
+	       bSymmetrize);
   
   do_view(opt2fn("-o",NFILE,fnm), "-nxy");       /* view xvgr file */
   thanx(stderr);
