@@ -34,11 +34,11 @@ static char *SRCID_mdatoms_h = "$Id$";
 
 #include "typedefs.h"
 
-extern t_mdatoms *atoms2md(t_atoms *atoms,bool bPert);
+extern t_mdatoms *atoms2md(t_atoms *atoms,bool bPert,bool bFree);
 /* This routine copies the atoms->atom struct into a t_mdatoms struct
- * and then frees the atoms->atom struct.
+ * and then frees the atoms->atom struct if bFree is set.
  */
 
-extern void md2atoms(t_mdatoms *md,t_atoms *atoms);
+extern void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree);
 /* And vice versa */
 #endif

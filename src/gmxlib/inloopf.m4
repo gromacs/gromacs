@@ -494,7 +494,7 @@ c
       real        vctot,vnbtot
       real        qq,c6,c12,rsq
       real        r1,r1t,h_1,eps,VV,FF
-      real        Y,F,G,epsH,eGeH,FeGeH,rsq_ref
+      real        Y,F,G,epsH,eGeH,FeGeH
       integer     n0,n1,nn
   
       fX     = 0
@@ -503,7 +503,6 @@ c
       vctot  = 0
       vnbtot = 0
       h_1    = tabscale
-C      rsq_ref= 0.75**2
       
       do k=1,nj
          jnr            = jjnr(k)+1
@@ -513,83 +512,81 @@ C      rsq_ref= 0.75**2
          rijZ           = iz - pos(j3+2)
          
          rsq            = (rijX*rijX)+(rijY*rijY)+(rijZ*rijZ)
-C         if (rsq .lt. rsq_ref) then
-            r1             = sqrt(rsq)	
-            r1t            = r1*tabscale	
-            n0             = r1t	
-            n1             = 12*n0+1
-            eps            = (r1t-n0)
+         r1             = sqrt(rsq)	
+         r1t            = r1*tabscale	
+         n0             = r1t	
+         n1             = 12*n0+1
+         eps            = (r1t-n0)
             
 C     Coulomb
 C     call EXTRACT(n1,VFtab,eps,eps2,VV,FF)
-            nn    = n1
-            Y     = VFtab(nn)
-            F     = VFtab(nn+1)
-            G     = VFtab(nn+2)
-            epsH  = VFtab(nn+3)*eps
-            eGeH  = eps*(G+epsH)
-            FeGeH = F+eGeH
-            
-            VV    = Y+eps*FeGeH
-            FF    = FeGeH+eGeH+epsH
-            
-            qq       = qi*charge(jnr)
-            vijcoul  = qq*VV
-            fijC     = qq*FF
-            vctot    = vctot  + vijcoul
-            
+         nn    = n1
+         Y     = VFtab(nn)
+         F     = VFtab(nn+1)
+         G     = VFtab(nn+2)
+         epsH  = VFtab(nn+3)*eps
+         eGeH  = eps*(G+epsH)
+         FeGeH = F+eGeH
+         
+         VV    = Y+eps*FeGeH
+         FF    = FeGeH+eGeH+epsH
+         
+         qq       = qi*charge(jnr)
+         vijcoul  = qq*VV
+         fijC     = qq*FF
+         vctot    = vctot  + vijcoul
+         
 C     Dispersion 
 C     call EXTRACT(n1+4,VFtab,eps,eps2,VV,FF)
-            nn    = n1+4
-            Y     = VFtab(nn)
-            F     = VFtab(nn+1)
-            G     = VFtab(nn+2)
-            epsH  = VFtab(nn+3)*eps
-            eGeH  = eps*(G+epsH)
-            FeGeH = F+eGeH
-            
-            VV    = Y+eps*FeGeH
-            FF    = FeGeH+eGeH+epsH
-            
-            tj    = 2*type(jnr)+1
-            c6    = nbfp(tj)
-            vnb6  = c6*VV
-            fijD  = c6*FF
+         nn    = n1+4
+         Y     = VFtab(nn)
+         F     = VFtab(nn+1)
+         G     = VFtab(nn+2)
+         epsH  = VFtab(nn+3)*eps
+         eGeH  = eps*(G+epsH)
+         FeGeH = F+eGeH
+         
+         VV    = Y+eps*FeGeH
+         FF    = FeGeH+eGeH+epsH
+         
+         tj    = 2*type(jnr)+1
+         c6    = nbfp(tj)
+         vnb6  = c6*VV
+         fijD  = c6*FF
          
 C     Repulsion 
 C     call EXTRACT(n1+8,VFtab,eps,eps2,VV,FF)
-            nn    = n1+8
-            Y     = VFtab(nn)
-            F     = VFtab(nn+1)
-            G     = VFtab(nn+2)
-            epsH  = VFtab(nn+3)*eps
-            eGeH  = eps*(G+epsH)
-            FeGeH = F+eGeH
-            
-            VV    = Y+eps*FeGeH
-            FF    = FeGeH+eGeH+epsH
-            
-            c12   = nbfp(tj+1)
-            vnb12 = c12*VV
-            fijR  = c12*FF
-            vnbtot= vnbtot + vnb12 + vnb6
-            
+         nn    = n1+8
+         Y     = VFtab(nn)
+         F     = VFtab(nn+1)
+         G     = VFtab(nn+2)
+         epsH  = VFtab(nn+3)*eps
+         eGeH  = eps*(G+epsH)
+         FeGeH = F+eGeH
+         
+         VV    = Y+eps*FeGeH
+         FF    = FeGeH+eGeH+epsH
+         
+         c12   = nbfp(tj+1)
+         vnb12 = c12*VV
+         fijR  = c12*FF
+         vnbtot= vnbtot + vnb12 + vnb6
+         
 C     Total force
-            fijscal        = -(fijD + fijR + fijC)*h_1/r1
-            
-            fjx            = faction(j3)
-            tx             = rijX*fijscal
-            fX             = fX + tx
-            faction(j3)    = fjx - tx
-            fjy            = faction(j3+1)
-            ty             = rijY*fijscal
-            fY             = fY + ty
-            faction(j3+1) = fjy - ty
-            fjz            = faction(j3+2)
-            tz             = rijZ*fijscal
-            fZ             = fZ + tz
-            faction(j3+2) = fjz - tz
-C         end if
+         fijscal        = -(fijD + fijR + fijC)*h_1/r1
+         
+         fjx            = faction(j3)
+         tx             = rijX*fijscal
+         fX             = fX + tx
+         faction(j3)    = fjx - tx
+         fjy            = faction(j3+1)
+         ty             = rijY*fijscal
+         fY             = fY + ty
+         faction(j3+1) = fjy - ty
+         fjz            = faction(j3+2)
+         tz             = rijZ*fijscal
+         fZ             = fZ + tz
+         faction(j3+2) = fjz - tz
       end do
       
       fip(1) = fX
