@@ -631,7 +631,6 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   int      i;
   
   init_plist(plist);
-  snew(excls,atoms->nr);
 
   /* lookup hackblocks and rtp for all residues */
   get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resname, 
@@ -671,6 +670,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   /* Make Angles and Dihedrals */
   fprintf(stderr,"Generating angles and dihedrals...\n");
+  snew(excls,atoms->nr);
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
