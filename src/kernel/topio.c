@@ -114,7 +114,7 @@ void stupid_fill(t_block *grp, int maxf)
   grp->nra=maxf;
 }
 
-static real check_mol(t_atoms *atoms,t_block *cgs)
+real check_mol(t_atoms *atoms)
 {
   char    buf[256];
   int     i,rn,pt;
@@ -129,16 +129,36 @@ static real check_mol(t_atoms *atoms,t_block *cgs)
     /* If the particle is an atom or a nucleus it must have a mass,
      * else, if it is a shell, a dummy or a bondshell it can have mass zero
      */
-    if ((m <= 0.0) && 
-	((pt == eptAtom) || (pt == eptNucleus))) {
+    if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus))) {
       rn=atoms->atom[i].resnr;
       sprintf(buf,"atom %s (Res %s-%d) has mass %g\n",
 	      *(atoms->atomname[i]),*(atoms->resname[rn]),rn,m);
       warning(buf);
-    }
+    } else 
+      if ((m!=0) && (pt == eptDummy)) {
+	rn=atoms->atom[i].resnr;
+	sprintf(buf,"dummy atom %s (Res %s-%d) has non-zero mass %g,"
+		"will be set to zero\n",
+		*(atoms->atomname[i]),*(atoms->resname[rn]),rn,m);
+	warning(buf);
+	atoms->atom[i].m=0;
+      }
   }
   return q;
 }
+
+static real sum_q(t_atoms *atoms)
+{
+  int     i;
+  real    q;
+
+  /* sum charge */
+  q=0.0;
+  for (i=0; (i<atoms->nr); i++)
+    q += atoms->atom[i].q;
+  return q;
+}
+
   
 void preprocess(char *infile,char *outfile,
 		char *cpp,char *define,
@@ -293,16 +313,20 @@ static char **read_topol(char        *infile,
 			 &nb_funct,&comb,genpairs,&fLJ,&fQQ);
 	  if (nscan < 2)
 	    too_few();
-	  else if (nscan < 5) {
-	    bGenPairs = FALSE;
+	  else {
+	    if (nscan >= 3) 
+	      bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
+	    else
+	      bGenPairs = FALSE;
 	    fudgeLJ   = 1.0;
 	    *fudgeQQ  = 1.0;
-	    warning("No 1-4 interaction information");
-	  }
-	  else {
-	    fudgeLJ   = fLJ;
-	    *fudgeQQ  = fQQ;
-	    bGenPairs = (strcasecmp(genpairs,"yes") == 0);
+	    if (bGenPairs) {
+	      if (nscan==5) {
+		fudgeLJ   = fLJ;
+		*fudgeQQ  = fQQ;
+	      } else
+		warning("No 1-4 interaction information");
+	    }
 	  }
 	  nb_funct = ifunc_index(d_nonbond_params,nb_funct);
 	  
@@ -408,7 +432,7 @@ static char **read_topol(char        *infile,
 	  Sims[Nsim].nrcopies=nrcopies;
 	  Nsim++;
 	  if (!mi0->bProcessed) {
-	    qt+=nrcopies*check_mol(&mi0->atoms,&mi0->cgs);
+	    qt+=nrcopies*sum_q(&mi0->atoms);
 	    fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
 		    mi0->nrexcl,pline);
 	    generate_excl(mi0->nrexcl,
