@@ -867,7 +867,9 @@ int main(int argc,char *argv[])
 	      bDTset = TRUE;
 	    }
 	  }
-	  bDumpFrame = (fr.time >= tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
+	  /* This is not very elegant, as one can not dump a frame after
+	   * a timestep with is more than twice as small as the first one. */
+	  bDumpFrame = (fr.time > tdump-0.5*dt) && (fr.time <= tdump+0.5*dt);
 	} else
 	  bDumpFrame = FALSE;
 	
