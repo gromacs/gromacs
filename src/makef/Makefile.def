@@ -8,9 +8,7 @@
 #	Global definitions for gromacs
 #
 ROOT		:=$(GMXHOME)
-ifneq ($(CPU),dos)
 CUR		:=$(shell basename `pwd`)
-endif
 SRCDIR		:=$(ROOT)/src
 MKDIR		:=$(SRCDIR)/makef
 OBJDIR		:=$(ROOT)/obj/$(CPU)
@@ -31,7 +29,11 @@ include		$(MKDIR)/Makefile.$(CPU)
 # System independent definitions
 #
 GET		= ln -s
+ifneq ($(CPU),win)
 RM		= /bin/rm -f
+else
+RM              = rm -f
+endif
 BINMODE		= 775
 LIBMODE		= 664
 INCS		= -I. -I$(SRCDIR)/$(INCDIR) $(X11INC) 
