@@ -2,7 +2,7 @@
 
 if ( $#argv >= 1 ) set GMXHOME = $1
 
-set TEXDIR	= $GMXHOME/doc
+set TEXDIR	= .
 set MANDIR	= online
 set HTML	= $GMXHOME/html
 set HTMLOL	= $HTML/$MANDIR
