@@ -568,21 +568,22 @@ static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
   t_atoms   atoms;
   int       i,na;
   char      title[STRLEN],*time;
+  double    dbl;
 
   init_t_atoms(&atoms,natoms,FALSE);
   na=read_pdbfile(status, title, &atoms, x, box, TRUE);
   if (box[XX][XX] == 0)
     box[XX][XX]=box[YY][YY]=box[ZZ][ZZ]=10;
   time=strstr(title," t= ");
-  if (time)
-    sscanf(time+4,"%g",t);
-  else
+  if (time) {
+    sscanf(time+4,"%lf",&dbl);
+    *t=(real)dbl;
+  } else
     *t=0.0;
   /* free_t_atoms(&atoms); */
   if (na==0) {
     return FALSE;
-  }
-  else { 
+  } else { 
     if (na != natoms)
       fatal_error(0,"Number of atoms in pdb frame %d is %d instead of %d",
 		  frame,na,natoms);
