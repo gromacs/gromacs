@@ -74,7 +74,7 @@ extern void low_do_autocorr(char *fn,char *title,
 			    real dt,unsigned long mode,int nrestart,
 			    bool bAver,bool bFour,bool bNormalize,
 			    bool bVerbose,real tbeginfit,real tendfit,
-			    int nfitparm);
+			    int nfitparm,int nskip);
 /* 
  * do_autocorr calculates autocorrelation functions for many things.
  * It takes a 2 d array containing nitem arrays of length nframes
@@ -124,6 +124,7 @@ extern void low_do_autocorr(char *fn,char *title,
  * bFour      	If set, will use fast fourier transform (FFT) for evaluating
  *            	the ACF
  * bNormalize 	If set, all ACFs will be normalized to start at 0
+ * nskip        Determines whether steps a re skipped in the output 
  */
  
 typedef struct {
@@ -261,7 +262,7 @@ extern void normalize_histo(int npoints,int histo[],real dx,real normhisto[]);
 
 /* Use Levenberg-Marquardt method to fit to a one parameter exponential */
 /* Or: "There is no KILL like OVERKILL", Dr. Ir. D. van der Spoel */
-extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
+extern real do_lmfit(int ndata,real c1[],real sig[],real t0,real dt,real *x,
 		     real begintimefit,real endtimefit,
 		     bool bVerbose,int nfitparm,
 		     real fit[],real fitparms[],char *fix);
@@ -272,7 +273,9 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
 
 extern real print_and_integrate(FILE *fp,int n,real dt,real c[],int nskip);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
- * If fp != NULL output is written to it each nskip steps
+ * If fp != NULL output is written to it
+ * nskip determines whether all elements are written to the output file
+ * (written when i % nskip == 0)
  */
  
 extern int get_acfnout(void);
