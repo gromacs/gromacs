@@ -10,103 +10,120 @@
 #include "fatal.h"
 #include "mdrun.h"
 #include "ns.h"
+#include "txtdump.h"
 
-static void c_tabpot(int inr,real ix,real iy,real iz,real qi,
-		     real pos[],int nj,int type[],int jjnr[],
-		     real charge[],real pot[],
-		     int ntab,real tabscale,real VFtab[])
+void c_tabpot(real tabscale,   real VFtab[],
+	      int  nri,        int  iinr[],
+	      int  shift[],    int  gid[],
+	      int  jindex[],   int  jjnr[],
+	      real pos[],      
+	      real facel,      real charge[],
+	      real pot[],      real shiftvec[])
 {
-  int       k,jnr,j3;
-  real      rijX,rijY,rijZ;
-  real      rsq;
-  real      r1,r1t,poti;
-  real      eps,eps2,Y,F,Fp,Geps,Heps2,VV;
-  int       n0,n1,nnn;
-  
-  poti   = 0;
-  
-  /* See comment in c_coultab (inloopc.c) */
-  for(k=0; (k<nj); k++) {  
-    jnr            = jjnr[k];
-    j3             = 3*jnr;
-    rijX           = ix - pos[j3];
-    rijY           = iy - pos[j3+1];
-    rijZ           = iz - pos[j3+2];
-         
-    rsq            = (rijX*rijX)+(rijY*rijY)+(rijZ*rijZ);
-    r1             = sqrt(rsq);
-    if (r1 < 0.14)
-      fatal_error(0,"Distance between %d and %d = %f\n",inr,jnr,r1);
-    r1t            = r1*tabscale;
-    n0             = r1t;
-    n1             = 12*n0;
-    eps            = (r1t-n0);
-    eps2           = eps*eps;
-        
-#define EXTRACT(nn) { nnn = nn; Y=VFtab[nnn]; F=VFtab[nnn+1]; Geps=VFtab[nnn+2]*eps; Heps2=VFtab[nnn+3]*eps2; Fp=F+Geps+Heps2; VV=Y+eps*Fp; }
+  /* Local variables */
+  const real nul = 0.000000;
 
-    /* Coulomb */
-    EXTRACT(n1)
-    pot[jnr]      += qi*VV;
-    poti          += charge[jnr]*VV;
+  /* Table stuff */
+  const real one = 1.000000;
+  const real two = 2.000000;
+  real r1,r1t,fijC,eps,eps2,Y,F,Fp,Geps,Heps2,VV,FF;
+  int  n0,n1,nnn;
+
+  /* General and coulomb stuff */
+  int  ii,k,n,jnr,ii3,nj0,nj1,is3,j3,ggid;
+  real fxJ,fyJ,fzJ,vctot,fxO,fyO,fzO;
+  real ixO,iyO,izO,dxO,dyO,dzO;
+  real txO,tyO,tzO,vcO,fsO,qO,rsqO,rinv1O,rinv2O;
+  real qqO,qj;
+  real jx,jy,jz,shX,shY,shZ,poti;
+
+  /* Outer loop (over i particles) starts here */
+  for(n=0; (n<nri); n++) {
+
+    /* Unpack shift vector */
+    is3               = 3*shift[n];
+    shX               = shiftvec[is3];
+    shY               = shiftvec[is3+1];
+    shZ               = shiftvec[is3+2];
+
+    /* Unpack I particle */
+    ii                = iinr[n];
+    ii3               = 3*ii;
+
+    /* Local variables for energy */
+    vctot             = nul;
+
+    /* Charge of i particle(s) divided by 4 pi eps0 */
+    qO                = facel*charge[ii];
+
+    /* Bounds for the innerloop */
+    nj0               = jindex[n];
+    nj1               = jindex[n+1];
+
+    /* Compute shifted i position */
+    ixO               = shX + pos[ii3];
+    iyO               = shY + pos[ii3+1];
+    izO               = shZ + pos[ii3+2];
+    poti              = nul;
+    
+    /* Inner loop (over j-particles) starts right here */
+    for(k=nj0; (k<nj1); k++) {
+
+      /* Unpack neighbourlist */
+      jnr               = jjnr[k];
+      j3                = 3*jnr;
+      qj                = facel*charge[jnr];
+      jx                = pos[j3];
+      jy                = pos[j3+1];
+      jz                = pos[j3+2];
+
+      /* First one is for oxygen, with LJ */
+      dxO               = ixO - jx;
+      dyO               = iyO - jy;
+      dzO               = izO - jz;
+      rsqO              = dxO*dxO + dyO*dyO + dzO*dzO;
+
+      /* Doing fast invsqrt */
+      rinv1O            = invsqrt(rsqO);
+
+      /* O block */
+      r1                = one/rinv1O;
+      r1t               = r1*tabscale;
+      n0                = r1t;
+      n1                = 12*n0;
+      eps               = r1t-n0;
+      eps2              = eps*eps;
+      nnn               = n1;
+      Y                 = VFtab[nnn];
+      F                 = VFtab[nnn+1];
+      Geps              = eps*VFtab[nnn+2];
+      Heps2             = eps2*VFtab[nnn+3];
+      Fp                = F+Geps+Heps2;
+      VV                = Y+eps*Fp;
+
+      pot[jnr]         += VV*qO;
+      poti             += VV*qj;
+      
+    }
+    pot[ii] += poti;
   }
-  
-#undef EXTRACT
-  
-  pot[inr] += poti;
-  
 }
 
 static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
 			 rvec x[],t_mdatoms *mdatoms,rvec box_size,real pot[])
 {
-  int      i,gid,nj,inr,nri,k;
-  rvec     r_i,f_ip;
-  real     qi,eps;
   t_nblist *nlist;
-  int      *typeA;
-  real     *chargeA;
-  rvec     *svec;
-  int      nr_inter;
   
-  typeA   = mdatoms->typeA;
-  chargeA = mdatoms->chargeA;
-
-  svec    = fr->shift_vec;
-  eps     = fr->epsfac;
-  
-  nr_inter = 0;
-
-  fatal_error(0,"Potential calculation out of order");
-
-  /*
   if (ftype == F_SR) 
-    nlist=fr->coul;
+    nlist = &fr->nlist_sr[eNL_QQ];
   else
-    nlist=fr->vdw;
+    nlist = &fr->nlist_sr[eNL_VDW];
   
-  for(gid=0; (gid<fr->nn); gid++) {
-    nri  = nlist[gid].nri;
-    nl_i = nlist[gid].nl_i;
-    
-    for (i=0; (i<nri); i++) {
-      inr      = nl_i[i].i_atom;
-      k        = nl_i[i].shift;
-      nj       = nl_i[i].nj;
-      nl_j     = &(nlist[gid].nl_j[nl_i[i].j_index]);
-      if (nl_i[i].bWater)
-	fatal_error(0,"Water interaction found...\n");
-      nr_inter += nj;
-      
-      qi = chargeA[inr]*eps;
-      rvec_add(x[inr],svec[k],r_i);
-      clear_rvec(f_ip);
-      
-      c_tabpot(inr,r_i[XX],r_i[YY],r_i[ZZ],qi,x[0],nj,typeA,nl_j,
-	       chargeA,pot,fr->ntab,fr->tabscale,fr->VFtab);
-    }
-    }*/
-  fprintf(stderr,"There were %d interactions\n",nr_inter);
+  c_tabpot(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,
+	   nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,
+	   x[0],fr->epsfac,mdatoms->chargeA,pot,fr->shift_vec[0]);
+
+  fprintf(stderr,"There were %d interactions\n",nlist->nrj);
 }
 
 void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
@@ -138,7 +155,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,FALSE,
 			   parm->box,box_size,&(top->blocks[ebCGS]),x,
 			   fr->shift_vec,fr->cg_cm);
-  mk_mshift(stdlog,graph,parm->box,x);
+  /* mk_mshift(stdlog,graph,parm->box,x);*/
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
@@ -149,6 +166,10 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     box_size[m] = parm->box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
     pot[i] = 0;
+  if (debug) {
+    pr_rvecs(debug,0,"x",x,mdatoms->nr);
+    pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
+  }
   low_calc_pot(logf,F_SR,fr,x,mdatoms,box_size,pot); 
   low_calc_pot(logf,F_LJ,fr,x,mdatoms,box_size,pot); 
 }
@@ -190,10 +211,18 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   
   /* Turn off watertype optimizations, to ease coding above. */
   parm->ir.solvent_opt = -1;
+
+  /* Turn off twin range if appropriate */
+  parm->ir.rvdw  = parm->ir.rcoulomb;
+  parm->ir.rlist = parm->ir.rcoulomb;
   
   /* Turn off free energy computation */
   parm->ir.bPert = FALSE;
-  
+
+  /* Set vanderwaals to shift, to force tables */
+  parm->ir.vdwtype     = evdwSHIFT;
+  parm->ir.rvdw_switch = 0.0;
+    
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,

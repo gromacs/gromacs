@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
     { "-nn",   FALSE, etSTR,  &n_name,"Name of the negative ion"      },
     { "-nq",   FALSE, etREAL, &n_q,   "Charge of the negative ion"    },
     { "-rmin", FALSE, etREAL, &rcut,  "Minimum distance between ions" },
-    { "-w1",   FALSE, etINT,  &w1,    "First water atom to be cosidered" },
+    { "-w1",   FALSE, etINT,  &w1,    "First water atom to be cosidered (counting from 1)" },
     { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" },
     { "-random",FALSE,etBOOL, &bRandom,"Use random placement of waters instead of based on potential. The rmin option should still work" },
     { "-seed", FALSE, etINT,  &seed,  "Seed for random number generator" }
@@ -259,6 +259,7 @@ int main(int argc, char *argv[])
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
+  
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
   
