@@ -413,7 +413,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("E_z",   	efield_z,	NULL);
   STYPE ("E_zt",	efield_zt,	NULL);
   
-  /* User defined thnigies */
+  /* User defined thingies */
   CCTYPE ("User defined thingies");
   STYPE ("user1_grps",  user1,          NULL);
   STYPE ("user2_grps",  user2,          NULL);
