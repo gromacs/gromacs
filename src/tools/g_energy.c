@@ -320,13 +320,12 @@ static void analyse_ener(bool bCorr,char *corrfn,
       fprintf(stderr,"\n");
     fprintf(stderr,"-------------------------------------------------------------------------------\n");
     
+    /* Initiate locals, only used with -sum */
+    avertot=0;
+    expEtot=0;
     if (bDG) {
       beta = 1.0/(BOLTZ*reftemp);
       snew(deltag,nset);
-      if (bSum) {
-	expEtot=0;
-	avertot=0;
-      }
     }
     for(i=0; (i<nset); i++) {
       iset = set[i];
@@ -344,15 +343,16 @@ static void analyse_ener(bool bCorr,char *corrfn,
       sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
       stddev = sqrt(sigma/k);
       
+      if (bSum) 
+	avertot+=aver;
       if (bDG) {
 	expE = 0;
 	for(j=0; (j<nenergy); j++) {
 	  expE += exp(beta*(eneset[i][j]-aver)/nmol);
 	}
-	if (bSum) {
-	  avertot+=aver;
+	if (bSum) 
 	  expEtot+=expE/nenergy;
-	}
+	
 	deltag[i] = log(expE/nenergy)/beta + aver/nmol;
       }
       if (strstr(leg[i],"Kin") != NULL) 
@@ -384,7 +384,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       fprintf(stderr,"%-24s %10g %10g %10g %10g %10g",
 	      leg[i],pr_aver,pr_stddev,sqrt(fluct2),a,totaldrift);
       if (bDG) 
-	fprintf(stderr,"  %10g  %10s\n",deltag[i],deltag[i]-pr_aver);
+	fprintf(stderr,"  %10g  %10g\n",deltag[i],deltag[i]-pr_aver);
       else
 	fprintf(stderr,"\n");
       if (bFluct) {
