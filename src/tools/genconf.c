@@ -140,27 +140,24 @@ int main(int argc, char *argv[])
   static bool bShuffle = FALSE;
   static bool bSort    = FALSE;
   static bool bRandom  = FALSE;      /* False: no random rotations */
+  static bool bRenum   = FALSE;      /* renumber residues */
   static rvec dist     = {0,0,0};    /* space added between molecules ? */
   static rvec max_rot  = {90,90,90}; /* maximum rotation */
   t_pargs pa[] = {
-    { "-nbox",   FALSE, etRVEC, {&nrbox},  
-      "Number of boxes" },
-    { "-dist",   FALSE, etRVEC, {&dist},   
-      "Distance between boxes" },
+    { "-nbox",   FALSE, etRVEC, {&nrbox},   "Number of boxes" },
+    { "-dist",   FALSE, etRVEC, {&dist},    "Distance between boxes" },
     { "-seed",   FALSE, etINT,  {&seed},   
       "Random generator seed, if 0 generated from the time" },
-    { "-rot",    FALSE, etBOOL, {&bRandom},
-      "Randomly rotate conformations" },
-    { "-shuffle",FALSE, etBOOL, {&bShuffle},
-      "Random shuffling of molecules" },
-    { "-sort",   FALSE, etBOOL, {&bSort},
-      "Sort molecules on X coord" },
+    { "-rot",    FALSE, etBOOL, {&bRandom}, "Randomly rotate conformations" },
+    { "-shuffle",FALSE, etBOOL, {&bShuffle},"Random shuffling of molecules" },
+    { "-sort",   FALSE, etBOOL, {&bSort},   "Sort molecules on X coord" },
     { "-block",  FALSE, etINT,  {&nblock},
       "Divide the box in blocks on this number of cpus" },
     { "-nmolat", FALSE, etINT,  {&nmolat}, 
-      "Number of atoms per molecule, assumed to start from 0. If you set this wrong, it will screw up your system!" },
-    { "-maxrot", FALSE, etRVEC, {&max_rot},
-      "Maximum random rotation" }
+      "Number of atoms per molecule, assumed to start from 0. "
+      "If you set this wrong, it will screw up your system!" },
+    { "-maxrot", FALSE, etRVEC, {&max_rot}, "Maximum random rotation" },
+    { "-renumber",FALSE,etBOOL, {&bRenum},  "Renumber residues" }
   };
   
   CopyRight(stderr,argv[0]);
@@ -231,7 +228,7 @@ int main(int argc, char *argv[])
 		v[ndx+l][m]=v[l][m];
 	      }
 	    }
-	    atoms->atom[ndx+l].resnr=nrdx+atoms->atom[l].resnr;
+	    atoms->atom[ndx+l].resnr=(bRenum ? nrdx:0) + atoms->atom[l].resnr;
 	    atoms->atomname[ndx+l]=atoms->atomname[l];
 	  }
 
