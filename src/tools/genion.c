@@ -310,8 +310,9 @@ int main(int argc, char *argv[])
 	    top->atoms.atom[index[nsa-1]].resnr))
       nsa++;
     if (nwa % nsa)
-      fatal_error(0,"Your solvent group size is not a multiple of %d",nsa);
-	nw = nwa/nsa;
+      fatal_error(0,"Your solvent group size (%d) is not a multiple of %d",
+		  nwa,nsa);
+    nw = nwa/nsa;
     fprintf(stderr,"Number of (%d-atomic) solvent molecules: %d\n",nsa,nw);
 	if (p_num+n_num > nw)
       fatal_error(0,"Not enough solvent for adding ions");
