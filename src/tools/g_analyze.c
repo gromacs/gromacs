@@ -63,7 +63,7 @@ real **read_val(char *fn,bool bHaveT,int nsets_in,
       narg = bHaveT ? 2 : 1;
     n = 0;
     bEndOfSet = FALSE;
-    while (fgets(line0,STRLEN-1,fp) && !bEndOfSet) {
+    while (!bEndOfSet && fgets(line0,STRLEN-1,fp)) {
       line = line0;
       bEndOfSet = (line[0] == '&');
       if ((line[0] != '#') && (line[0] != '@') && !bEndOfSet) {
