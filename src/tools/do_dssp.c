@@ -156,11 +156,11 @@ static void check_oo(t_atoms *atoms)
   }
 }
 
-static void norm_acc(char *surffn, t_atoms *atoms, 
-		     real av_area[], real norm_av_area[])
+static void norm_acc(t_atoms *atoms, real av_area[], real norm_av_area[])
 {
   int i,n,n_surf;
   
+  char surffn[]="surface.dat";
   char **surf_res, **surf_lines;
   double *surf;
   
@@ -235,7 +235,6 @@ int main(int argc,char *argv[])
     { efTPX, NULL,   NULL,      ffREAD },
     { efNDX, NULL,   NULL,      ffOPTRD },
     { efMAP, "-map", "ss",      ffLIBRD },
-    { efDAT, "-sf",  "surface", ffLIBRD },
     { efXPM, "-ss",  "ss",      ffWRITE },
     { efTEX, "-os",  "ss",      ffOPTWR },
     { efOUT, "-oa",  "area",    ffOPTWR },
@@ -336,7 +335,7 @@ int main(int argc,char *argv[])
   for(i=0; (i<atoms->nres); i++)
     av_area[i] = average_area[i]/(real) nframe;
     
-  norm_acc(opt2fn("-sf",NFILE,fnm), atoms, av_area, norm_av_area);
+  norm_acc(atoms, av_area, norm_av_area);
   
   if (opt2bSet("-aa",NFILE,fnm)) {
     acc=xvgropen(opt2fn("-aa",NFILE,fnm),"Average Accessible Area",
