@@ -66,12 +66,19 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 
 void free_t_atoms(t_atoms *atoms)
 {
-  atoms->nr=0;
+  int i;
+
+  for(i=0; i<atoms->nr; i++)
+    sfree(*atoms->atomname[i]);
   sfree(atoms->atomname);
+  for(i=0; i<atoms->nres; i++)
+    sfree(*atoms->resname[i]);
   sfree(atoms->resname);
   sfree(atoms->atom);
   if (atoms->pdbinfo)
     sfree(atoms->pdbinfo);
+  atoms->nr=0; 
+  atoms->nres=0;
 }     
 
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
