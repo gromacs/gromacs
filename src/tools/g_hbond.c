@@ -155,11 +155,11 @@ void search_donors(t_topology *top, int isize, atom_id *index,
       if (func_type == F_SETTLE) {
 	nr1=interaction->iatoms[i+1];
 	
-	if (in_list(nr1,  isize,index) && 
-	    in_list(nr1+1,isize,index) && 
-	    in_list(nr1+2,isize,index) ) {
-	  add_dh(nr1,nr1+1,&max_nr_d,nr_d,d,h);
-	  add_dh(nr1,nr1+2,&max_nr_d,nr_d,d,h);
+	if (in_list(nr1,  isize,index)) {
+	  if (in_list(nr1+1,isize,index))
+	    add_dh(nr1,nr1+1,&max_nr_d,nr_d,d,h);
+	  if (in_list(nr1+2,isize,index))
+	    add_dh(nr1,nr1+2,&max_nr_d,nr_d,d,h);
 	}
       } else if ( interaction_function[func_type].flags & IF_CONNECT ) {
 	for (j=0; j<2; j++) {
