@@ -288,7 +288,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   
   FILE *fp;  
   bool bPrint,bNo_get_pargs;
-  int  i,k,npall;
+  int  i,j,k,npall;
   t_pargs *all_pa;
   t_pargs pca_pa[] = {
     { "-h",    FALSE, etBOOL, &bHelp,     
@@ -329,6 +329,13 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #else
   { 1, 1, 1, 1, 1, 1, 0, 0, 0 };
 #endif
+
+  /* Check for double arguments */
+  for (i=1; (i<*argc); i++)
+    for (j=i+1; (j<*argc); j++)
+      if ( (argv[i][0]=='-') && (argv[j][0]=='-') && 
+           (strcmp(argv[i],argv[j])==0) )
+	fatal_error(0,"Double command line argument %s\n",argv[i]);
   
   /* First do file stuff */
   if (!program)
