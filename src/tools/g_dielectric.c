@@ -321,7 +321,7 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-c",NFILE,fnm),NULL);
   xvgr_file(opt2fn("-d",NFILE,fnm),"-nxy");
 	    
-  thanx(stdout);
+  thanx(stderr);
 
   return 0;
 }

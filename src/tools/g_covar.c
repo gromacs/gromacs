@@ -389,7 +389,7 @@ int main(int argc,char *argv[])
 
   fprintf(stderr,"Wrote the log to %s\n",logfile);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

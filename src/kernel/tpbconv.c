@@ -380,7 +380,7 @@ int main (int argc, char *argv[])
   write_tpx(opt2fn("-o",NFILE,fnm),
 	    0,ir->init_t,ir->init_lambda,ir,box,
 	    natoms,x,v,NULL,&top);
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

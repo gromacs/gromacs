@@ -831,7 +831,7 @@ int main(int argc,char *argv[])
   if (bDoView())
     viewps(ftp2fn(efEPS,NFILE,fnm));
     
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

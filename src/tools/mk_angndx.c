@@ -200,7 +200,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Sorry, maybe later...\n");
   }
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

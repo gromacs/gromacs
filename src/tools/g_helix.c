@@ -375,7 +375,7 @@ int main(int argc,char *argv[])
     xvgr_file(xf[i].filenm,NULL);
   }
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

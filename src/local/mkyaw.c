@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
     write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,box); 
   }
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

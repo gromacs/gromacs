@@ -210,7 +210,7 @@ int main(int argc,char *argv[])
   write_eigenvectors(opt2fn("-v",NFILE,fnm),natoms,hess,FALSE,begin,end,
 		     eWXR_NO,NULL,FALSE,top_x,bM);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

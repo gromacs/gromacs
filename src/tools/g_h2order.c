@@ -293,7 +293,7 @@ int main(int argc,char *argv[])
 	     slWidth);
 
   xvgr_file(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -129,7 +129,7 @@ static void new_windex_row(void)
 static void cancel_callback(Widget w,caddr_t client_data,caddr_t call_data)
 {
   printf("Maybe next time...\n");
-  thanx(stdout);
+  thanx(stderr);
   exit(0);
 }
 

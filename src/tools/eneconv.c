@@ -515,6 +515,6 @@ int main(int argc,char *argv[])
   else
       fprintf(stderr,"Last frame written was at step %d, time %f\n",outstep,outt);
   
-  thanx(stdout);
+  thanx(stderr);
   return 0;
 }

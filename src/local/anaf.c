@@ -155,7 +155,7 @@ int main(int argc,char *argv[])
     list_trn(fn);
   }
   
-  thanx(stdout);
+  thanx(stderr);
 
   return 0;
 }

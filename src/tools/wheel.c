@@ -252,7 +252,7 @@ int main(int argc,char *argv[])
   else
     wheel2(ftp2fn(efEPS,NFILE,fnm),nres,resnm,r0,rot0,title);
     
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

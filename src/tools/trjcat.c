@@ -414,7 +414,7 @@ int main(int argc,char *argv[])
      
   fprintf(stderr,"\nLast frame written was %d, time %f\n",frame,last_ok_t); 
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

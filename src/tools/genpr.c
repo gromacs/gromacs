@@ -109,7 +109,7 @@ int main(int argc,char *argv[])
 	    ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
   fclose(out);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -142,7 +142,7 @@ int main(int argc,char *argv[])
     xvgr_file(opt2fn("-or",NFILE,fnm),"-nxy");
   }
   
-  thanx(stdout);
+  thanx(stderr);
 
   return 0;
 }

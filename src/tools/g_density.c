@@ -428,7 +428,7 @@ int main(int argc,char *argv[])
 	       nslices, ngrps, grpname, slWidth, bElectron, bNumber, bCount);
   
   xvgr_file(opt2fn("-o",NFILE,fnm), NULL);       /* view xvgr file */
-  thanx(stdout);
+  thanx(stderr);
   return 0;
 }
 

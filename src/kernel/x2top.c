@@ -458,7 +458,7 @@ int main(int argc, char *argv[])
     dump_hybridization(debug,atoms,nbonds);
   }
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -1110,7 +1110,7 @@ int main(int argc, char *argv[])
     gen_box(0,atoms->nr,x,box,box_space,FALSE);
   write_sto_conf(ftp2fn(efSTO,NFILE,fnm),title,atoms,x,NULL,box);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

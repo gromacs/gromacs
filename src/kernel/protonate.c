@@ -159,7 +159,7 @@ int main (int argc,char *argv[])
     frame++;
   } while ( bReadMultiple && read_next_frame(status, &fr) );
   
-  thanx(stdout);
+  thanx(stderr);
 
   return 0;
 }

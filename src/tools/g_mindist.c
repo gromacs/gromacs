@@ -362,7 +362,7 @@ int main(int argc,char *argv[])
   if (!bPer)
     xvgr_file(opt2fn("-on",NFILE,fnm),"-nxy");
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -423,7 +423,7 @@ int main (int argc,char *argv[])
   if (devfn)
     xvgr_file(opt2fn("-od",NFILE,fnm),"-nxy");
     
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

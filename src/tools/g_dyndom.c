@@ -183,7 +183,7 @@ int main(int argc,char *argv[])
   }
   close_trx(status);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -635,7 +635,7 @@ int main (int argc,char *argv[])
     xvgr_file(opt2fn("-a",NFILE,fnm),"-graphtype bar");
   xvgr_file(opt2fn("-o",NFILE,fnm),NULL);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -382,7 +382,7 @@ int main(int argc,char *argv[])
   }
   fclose(out);
     
-  thanx(stdout);
+  thanx(stderr);
     
   return 0;
 }

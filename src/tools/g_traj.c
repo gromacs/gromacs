@@ -489,7 +489,7 @@ int main(int argc,char *argv[])
     xvgr_file(opt2fn("-ekr",NFILE,fnm), NULL);
   } 
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -944,7 +944,7 @@ int main (int argc, char *argv[])
   
   print_warn_num();
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -710,7 +710,7 @@ int main(int argc,char *argv[])
 	  atoms.nr,atoms.nres);
   update_top(&atoms,box,NFILE,fnm);
 	  
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -911,7 +911,7 @@ int main(int argc,char *argv[])
 
   write_index(opt2fn("-o",NFILE,fnm),block,gnames);
 
-  thanx(stdout);
+  thanx(stderr);
     
   return 0;
 }

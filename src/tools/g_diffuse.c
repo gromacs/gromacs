@@ -287,7 +287,7 @@ int main(int argc,char *argv[])
   if (bDoView())
     xvgr_file(ftp2fn(efXVG,NFILE,fnm),"-nxy");
 	 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

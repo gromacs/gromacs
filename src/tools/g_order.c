@@ -407,6 +407,6 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
   xvgr_file(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
 
-  thanx(stdout);
+  thanx(stderr);
   return 0;
 }

@@ -173,7 +173,7 @@ int main(int argc,char *argv[])
   close_trj(status);
   close_trx(out);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

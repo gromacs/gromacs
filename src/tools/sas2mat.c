@@ -168,7 +168,7 @@ int main(int argc,char *argv[])
   write_xpm(out,"????","????","Time (ps)","Residue",
 	    nres,nframes,resnr,t,ss,ssmin,ssmax,rlo,rhi,&nlevels);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

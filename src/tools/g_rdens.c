@@ -201,7 +201,7 @@ int main(int argc,char *argv[])
 	   opt2fn("-or",NFILE,fnm),opt2fn("-on",NFILE,fnm), 
 	   width,gnx1,grp1,ind1,ngrps,gnx,grpname,index,top->atoms.atom);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

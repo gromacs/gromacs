@@ -385,7 +385,7 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-oc",NFILE,fnm), NULL);      /* view xvgr file */  
   xvgr_file(opt2fn("-of",NFILE,fnm), NULL);      /* view xvgr file */
 
-  thanx(stdout);
+  thanx(stderr);
   return 0;
 }
 

@@ -657,7 +657,7 @@ int main(int argc,char *argv[])
     
   do_corr(NFILE,fnm,ngroup,&top,bMol,bMW,type,dim_factor,axis,nrestart,dt);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

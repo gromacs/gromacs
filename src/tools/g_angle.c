@@ -304,7 +304,7 @@ int main(int argc,char *argv[])
   if (bAver)
     xvgr_file(opt2fn("-ov",NFILE,fnm),"-nxy");
     
-  thanx(stdout);
+  thanx(stderr);
     
   return 0;
 }

@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
   top->atoms.pdbinfo = NULL;
   write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,NULL,box);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

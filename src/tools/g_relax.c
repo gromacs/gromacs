@@ -567,7 +567,7 @@ int main(int argc,char *argv[])
 	   k,pair,natoms,shifts,
 	   taum,maxdist,w_rls,xp,&(top->idef));
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

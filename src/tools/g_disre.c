@@ -347,7 +347,7 @@ int main (int argc,char *argv[])
   xvgr_file(opt2fn("-ds",NFILE,fnm),NULL);
   xvgr_file(opt2fn("-dm",NFILE,fnm),NULL);
   
-  thanx(stdout);
+  thanx(stderr);
 
 #ifdef USE_MPI
   MPI_Finalize();

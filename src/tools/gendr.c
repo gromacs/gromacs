@@ -254,7 +254,7 @@ int main (int argc,char *argv[])
   fclose(in);
   fclose(out);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -426,7 +426,7 @@ int main(int argc,char *argv[])
     MPI_Finalize();
 #endif
   if (MASTER(cr))
-    thanx(stdout);
+    thanx(stderr);
   
   return 0;  
 }

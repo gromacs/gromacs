@@ -423,7 +423,7 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
   xvgr_file(opt2fn("-ao",NFILE,fnm),"-xydy");
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

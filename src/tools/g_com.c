@@ -257,7 +257,7 @@ int main(int argc,char *argv[])
     fclose(outX[g]);
   }
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

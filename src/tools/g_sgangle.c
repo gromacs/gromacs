@@ -280,7 +280,7 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-od1",NFILE,fnm),NULL);
   xvgr_file(opt2fn("-od2",NFILE,fnm),NULL);
 
-  thanx(stdout);
+  thanx(stderr);
   return 0;
 }
 

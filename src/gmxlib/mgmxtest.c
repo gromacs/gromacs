@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
   fprintf(stderr,"Please enter an integer and press return:");
   scanf("%d",&dummy);
   
-  thanx(stdout);
+  thanx(stderr);
     
   return 0;
 }

@@ -537,7 +537,7 @@ int main(int argc,char *argv[])
   if (fnAArea)  xvgr_file(fnAArea ,NULL);
   if (fnSCount) xvgr_file(fnSCount,NULL);
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -175,7 +175,7 @@ int main(int argc,char *argv[])
   close_trj(status);
   fclose(out);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

@@ -131,7 +131,7 @@ int main(int argc,char *argv[])
   
   xvgr_file(ftp2fn(efXVG,NFILE,fnm),NULL);
 
-  thanx(stdout);  
+  thanx(stderr);  
 	       
   return 0;
 }

@@ -1008,7 +1008,7 @@ int main(int argc,char *argv[])
   if (bCorr)
     xvgr_file(opt2fn("-corr",NFILE,fnm),"-nxy");
     
-  thanx(stdout);
+  thanx(stderr);
     
   return 0;
 }

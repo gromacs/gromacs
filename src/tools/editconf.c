@@ -748,7 +748,7 @@ int main(int argc, char *argv[])
     }  
   }
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

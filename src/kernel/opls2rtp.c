@@ -400,7 +400,7 @@ int main(int argc,char *argv[])
   printf("Number of residues in new rtp file: %d",nwnres);
   print_resall(aa,nwnres,opls_rtp,rb,ra,ires,atype_opls); 
   fclose(aa);
-  thanx(stdout);
+  thanx(stderr);
   
   printf("hallo! Don't Panic!\n");
   

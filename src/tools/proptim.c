@@ -216,7 +216,7 @@ int main(int argc,char *argv[])
   
   proptrj(ftp2fn(efGRO,NFILE,fnm),ftp2fn(efDAT,NFILE,fnm),top,p);    
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

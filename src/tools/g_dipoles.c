@@ -799,7 +799,7 @@ int main(int argc,char *argv[])
   xvgr_file(opt2fn("-d",NFILE,fnm),"-autoscale xy");
   xvgr_file(opt2fn("-c",NFILE,fnm),"-autoscale xy");
 
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

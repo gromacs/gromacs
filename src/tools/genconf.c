@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
   
   write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }

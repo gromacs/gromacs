@@ -278,7 +278,7 @@ int main(int argc,char *argv[])
 	remove(fn[m]);
     }
   }
-  thanx(stdout);
+  thanx(stderr);
     
   return 0;
 }
