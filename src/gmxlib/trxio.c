@@ -53,7 +53,7 @@ static int frame=-666;
 #define PRINTSKIP(t) {frame++; CHECKCOUNT("Skipping",t);}
 #define PRINTREAD(t) {frame++; CHECKCOUNT("Reading",t);}
 #define PRINTLAST(t) { PRINTCOUNT("Last",t); fprintf(stderr,"\n"); }
-#define PRINTINCOMP(t,pt) { PRINTLAST(pt); fprintf(stderr,"WARINING: Incomplete frame: nr %6d time %8.3f\n",frame+1,t); }
+#define PRINTINCOMP(t,pt) { PRINTLAST(pt); fprintf(stderr,"WARNING: Incomplete frame: nr %6d time %8.3f\n",frame+1,t); }
 
 /* Globals for gromos-87 input */
 typedef enum { effXYZ, effXYZBox, effG87, effG87Box, effNR } eFileFormat;
