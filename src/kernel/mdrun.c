@@ -89,16 +89,13 @@ int main(int argc,char *argv[])
     "The options [TT]-pi[tt], [TT]-po[tt], [TT]-pd[tt], [TT]-pn[tt] are used",
     "for potential of mean force calculations and umbrella sampling.",
     "See manual.[PAR]",
-    "When mdrun receives a TERM signal, and nstxout is set, it will",
-    "set nsteps to the next multiple of nstxout after the current step.",
-    "after a second TERM signal, or when nstxout is not set, it will set",
-    "nsteps to the current step plus one. This will cause the run to end",
-    "after the next coordinate frame is written, or after the current step",
-    "has finished, and will write all the usual output.",
-    "When running with MPI, a TERM signal to one of the mdrun processes",
+    "When mdrun receives a TERM signal, it will set nsteps to the current",
+    "step plus one. When mdrun receives a USR1 signal, it will set nsteps",
+    "to the next multiple of nstxout after the current step.",
+    "In both cases all the usual output will be written to file.",
+    "When running with MPI, a signal to one of the mdrun processes",
     "is sufficient, this signal should not be sent to mpirun or",
     "the mdrun process that is the parent of the others."
-    
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {

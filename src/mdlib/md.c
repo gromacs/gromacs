@@ -47,11 +47,18 @@ static char *SRCID_md_c = "$Id$";
 #include "pull.h"
 #include "physics.h"
 
-volatile bool bGotTermSignal = FALSE;
+volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
-static void signal_handler(int n /* to keep the DEC compiler happy */)
+static void signal_handler(int n)
 {
-  bGotTermSignal = TRUE;
+  switch (n) {
+  case SIGTERM:
+    bGotTermSignal = TRUE;
+    break;
+  case SIGUSR1:
+    bGotUsr1Signal = TRUE;
+    break;
+  }
 }
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -96,11 +103,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char        *grpname;
   t_coupl_rec *tcr=NULL;
 #endif
-
-  bool       bGotTermSignalAlready = FALSE;
   
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
+  signal(SIGUSR1,signal_handler);
 
   /* check if "-rerun" is used. */
   bRerunMD = (Flags & MD_RERUN) == MD_RERUN;
@@ -403,6 +409,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (MASTER(cr))
 	fprintf(stderr,"\n\nReceived the TERM signal\n\n");
       bGotTermSignal = FALSE;
+      bGotUsr1Signal = FALSE;
+    } else if (bGotUsr1Signal) {
+      terminate = -1;
+      fprintf(log,"\n\nReceived the USR1 signal\n\n");
+      if (MASTER(cr))
+	fprintf(stderr,"\n\nReceived the USR1 signal\n\n");
+      bGotUsr1Signal = FALSE;
     }
 
     if (PAR(cr)) {
@@ -430,24 +443,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),v,vcm,
 		   mdatoms->massT,mdatoms->tmass,parm->ekin);
     
-    if ((terminate > 0) && (step < parm->ir.nsteps)) {
-      if ( !bGotTermSignalAlready && parm->ir.nstxout)
-	/* this is the first TERM signal and we are writing x to trr, 
+    if ((terminate != 0) && (step < parm->ir.nsteps)) {
+      if (terminate<0 && parm->ir.nstxout)
+	/* this is the USR1 signal and we are writing x to trr, 
 	   stop at next x frame in trr */
 	parm->ir.nsteps = (step / parm->ir.nstxout + 1) * parm->ir.nstxout;
       else
-	/* this is the second TERM signal, or we're not writing x to trr,
-	   so we stop after this step */
 	parm->ir.nsteps = step+1;
       fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
       if (MASTER(cr))
 	fprintf(stderr,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
       /* erase the terminate signal */
       terminate = 0;
-      /* remember that we already had a TERM signal */
-      bGotTermSignalAlready = TRUE;
     }
-
+    
     if (!bRerunMD) {
       /* Do center of mass motion removal */
       if (bStopCM) {
