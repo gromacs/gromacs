@@ -497,4 +497,5 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock)
   }
   sfree(sid);
   done_graph(g);
+  sfree(g);
 }

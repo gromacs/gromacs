@@ -432,6 +432,7 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
     }
     ltrim(copy);
   }
+  sfree(copy);
   return np;
 }
 
@@ -583,26 +584,27 @@ static void decode_cos(char *s,t_cosines *cosine)
   cosine->n=0;
   cosine->a=NULL;
   cosine->phi=NULL;
-  if (strlen(t) == 0) 
-    return;
-  sscanf(t,"%d",&(cosine->n));
-  if (cosine->n <= 0) {
-    cosine->n=0;
-    return;
+  if (strlen(t)) {
+    sscanf(t,"%d",&(cosine->n));
+    if (cosine->n <= 0) {
+      cosine->n=0;
+    } else {
+      snew(cosine->a,cosine->n);
+      snew(cosine->phi,cosine->n);
+      
+      sprintf(format,"%%*d");
+      for(i=0; (i<cosine->n); i++) {
+	strcpy(f1,format);
+	strcat(f1,"%lf%lf");
+	if (sscanf(t,f1,&a,&phi) != 2)
+	  fatal_error(0,"Invalid input for electric field shift: '%s'",t);
+	cosine->a[i]=a;
+	cosine->phi[i]=phi;
+	strcat(format,"%*lf%*lf");
+      }
+    }
   }
-  snew(cosine->a,cosine->n);
-  snew(cosine->phi,cosine->n);
-
-  sprintf(format,"%%*d");
-  for(i=0; (i<cosine->n); i++) {
-    strcpy(f1,format);
-    strcat(f1,"%lf%lf");
-    if (sscanf(t,f1,&a,&phi) != 2)
-      fatal_error(0,"Invalid input for electric field shift: '%s'",t);
-    cosine->a[i]=a;
-    cosine->phi[i]=phi;
-    strcat(format,"%*lf%*lf");
-  }
+  sfree(t);
 }
 
 void do_index(char *ndx,
