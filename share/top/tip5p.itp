@@ -1,4 +1,4 @@
-#ifdef FF_OPLS
+#ifdef _FF_OPLS
 ;
 ; This topology file should work with ffoplsaa.itp
 ;
