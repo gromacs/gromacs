@@ -277,7 +277,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
 
   /* CONSTRAINTS */
-  if(ir->etc==etcNO && ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
+  if(ir->eI==eiMD && ir->etc==etcNO &&
+     ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
     sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n"
 	    "You can safely ignore this if your system doesn't have any LINCS-constrained bonds;\n"
 	    "for water molecules we normally use the analytical SETTLE algorithm instead."); 
