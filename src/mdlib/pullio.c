@@ -99,7 +99,8 @@ void print_constraint(t_pull *pull, int step, real t)
 {
   int i;
 
-  if (step % pull->nSkip) return;
+  /* step < 0 means shakefirst, yuk, yuk */
+  if (step < 0 || step % pull->nSkip) return;
 
   fprintf(pull->out, "%f\t", t);
 
@@ -167,6 +168,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
     pos[MAX_PULL_GROUPS][STRLEN],
     pulldim[STRLEN],pulldim1[STRLEN],condir[STRLEN];
   char DirTemp[MAX_PULL_GROUPS][STRLEN], InitTemp[MAX_PULL_GROUPS][STRLEN];
+  real constr_d0[MAX_PULL_GROUPS],constr_rate[MAX_PULL_GROUPS];
   real AfmRate[MAX_PULL_GROUPS],AfmK[MAX_PULL_GROUPS],UmbCons[MAX_PULL_GROUPS];
 
   int bReverse; int tmpref; int tmprun; 
@@ -236,8 +238,16 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   CCTYPE("CONSTRAINT RUN OPTIONS");
   CTYPE("Direction, default: 0 0 0, no direction");
   STYPE("constraint_direction",        condir, "0.0 0.0 0.0");
+  CTYPE("Constraint distance (nm), default: 0, use starting distance");
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"constraint_distance%d",i+1);
+    RTYPE(buf,              constr_d0[i], 0.0);
+  }
   CTYPE("Rate of chance of the constraint length, in nm/ps");
-  RTYPE("constraint_rate",    pull->constr_rate, 0);
+  for(i=0; i<pull->ngrp; i++) {
+    sprintf(buf,"constraint_rate%d",i+1);
+    RTYPE(buf,              constr_rate[i], 0);
+  }
   CTYPE("Tolerance of constraints, in nm");
   RTYPE("constraint_tolerance",            pull->constr_tol, 1E-6);
 
@@ -310,8 +320,16 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   for(i=0; i<pull->ngrp; i++)
     init_pullgrp(&pull->grp[i],grpbuf[i],wbuf[i],UmbCons[i]);
   
+  if (pull->runtype == eConstraint) {
+    for (i=0; i<pull->ngrp; ++i) {
+      pull->grp[i].constr_d0 = constr_d0[i];
+      pull->grp[i].constr_rate = constr_rate[i];
+    }
+  }
+
   if (pull->runtype == eAfm) {
     for (i=0; i<pull->ngrp; ++i) {
+      pull->grp[i].AfmRate = AfmRate[i];
       pull->grp[i].AfmRate = AfmRate[i];
       pull->grp[i].AfmK = AfmK[i];
       string2dvec(DirTemp[i], pull->grp[i].AfmVec);

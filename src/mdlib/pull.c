@@ -175,11 +175,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
   dvec *rinew;           /* current 'new' position of group i */
   dvec *rjnew;           /* current 'new' position of group j */
   double *direction;       /* direction of dr relative to r_ij  */
-  double refinc,inpr;
+  double d0,refinc,ref,inpr;
   double lambda, rm, mass;
   bool bConverged = FALSE;
   int n=0,i,ii,j,m,max_iter=1000;
-  int ref;
   double q,a,b,c;  /* for solving the quadratic equation, 
 		      see Num. Recipes in C ed 2 p. 184 */
   dvec *dr;              /* correction for group i */
@@ -197,9 +196,6 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
   snew(dr,pull->ngrp);
   snew(rinew,pull->ngrp);
   snew(direction,pull->ngrp);
-
-  /* Calculate the length increase at this time */
-  refinc = pull->constr_rate*step*dt;
 
   /* copy the current unconstraint positions for use in iterations. We 
      iterate until rinew[i] and rjnew[j] obey the constraints. Then
@@ -236,6 +232,9 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
         ref_ij[m]   *= pull->dims[m];
       }
 
+      d0     = pull->grp[i].constr_d0; 
+      refinc = pull->grp[i].constr_rate*step*dt;
+
       if (pull->bDir) {
 	a = 0;
 	b = 0;
@@ -243,17 +242,26 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	  a += unc_ij[m]*pull->dir[m];
 	  b += ref_ij[m]*pull->dir[m];
 	}
+	if (d0 > 0) {
+	  ref = d0 + refinc;
+	} else {
+	  ref = b + refinc;
+	}
 	copy_dvec(pull->dir,r_ij);
 	dsvmul(a,pull->dir,unc_ij);
-	dsvmul(b,pull->dir,ref_ij);
-	lambda = a - (b + refinc);
+	lambda = a - ref;
 	if(pull->bVerbose)
 	  fprintf(stderr,"\nlambda:%e\n",lambda);
       } else {
 	a = diprod(r_ij,r_ij); 
 	b = diprod(unc_ij,r_ij)*2;
-	c = diprod(unc_ij,unc_ij) - sqr(dnorm(ref_ij) + refinc);
-	
+	if (d0 > 0) {
+	  ref = d0 + refinc;
+	} else {
+	  ref = dnorm(ref_ij) + refinc;
+	}
+	c = diprod(unc_ij,unc_ij) - sqr(ref);
+
 	if (b < 0) {
 	  q = -0.5*(b - sqrt(b*b - 4*a*c));
 	  lambda = -q/a;
@@ -291,9 +299,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
         fprintf(stderr,"Direction: %f\n",direction[i]);
         if(pull->bCyl) {
           d_pbc_dx(box,rinew[i],rjnew[i],tmp);
-          d_pbc_dx(box,pull->dyna[i].x_ref,pull->grp[i].x_ref,tmp2);
         } else {
-          d_pbc_dx(box,pull->ref.x_ref,pull->ref.x_ref,tmp2);
           d_pbc_dx(box,rinew[i],rjnew[0],tmp);
         }
         d_pbc_dx(box,dr[i],ref_dr[0],tmp3);
@@ -305,29 +311,23 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 
         if(pull->bCyl)
           fprintf(stderr,
-                  "cur. i:%f %f %f j:%f %f %f d: %f\n"
-                  "ref. i:%f %f %f j:%f %f %f d: %f\n"
-                  "cor. i:%f %f %f j:%f %f %f d: %f\n",
+                  "cur. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n"
+                  "ref.   %8s %8s %8s   %8s %8s %8s d: %8f\n"
+                  "cor. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n",
                   rinew[i][0],rinew[i][1],rinew[i][2], 
                   rjnew[i][0],rjnew[i][1],rjnew[i][2], dnorm(tmp),
-                  pull->grp[i].x_ref[0],pull->grp[i].x_ref[1],
-                  pull->grp[i].x_ref[2],pull->dyna[i].x_ref[0],
-                  pull->dyna[i].x_ref[1],pull->dyna[i].x_ref[2],
-                  dnorm(tmp2),
+                  "","","","","","",ref,
                   dr[i][0],dr[i][1],dr[i][2],
                   ref_dr[0][0],ref_dr[0][1],ref_dr[0][2],
                   dnorm(tmp3));
         else
           fprintf(stderr,
-                  "cur. i:%f %f %f j:%f %f %f d: %f\n"
-                  "ref. i:%f %f %f j:%f %f %f d: %f\n"
-                  "cor. i:%f %f %f j:%f %f %f d: %f\n",
+                  "cur. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n"
+                  "ref.   %8s %8s %8s   %8s %8s %8s d: %8f\n"
+                  "cor. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n",
                   rinew[i][0],rinew[i][1],rinew[i][2], 
                   rjnew[0][0],rjnew[0][1],rjnew[0][2], dnorm(tmp),
-                  pull->grp[i].x_ref[0],pull->grp[i].x_ref[1],
-                  pull->grp[i].x_ref[2],pull->ref.x_ref[0],
-                  pull->ref.x_ref[1],pull->ref.x_ref[2],
-                  dnorm(tmp2),
+		  "","","","","","",ref,
                   dr[i][0],dr[i][1],dr[i][2],
                   ref_dr[0][0],ref_dr[0][1],ref_dr[0][2],
                   dnorm(tmp3));
@@ -363,10 +363,8 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     for(i=0;i<pull->ngrp;i++) {
       if(pull->bCyl) {
         d_pbc_dx(box,rinew[i],rjnew[i],unc_ij);
-        /* d_pbc_dx(box,pull->dyna[i].x_ref,pull->grp[i].x_ref,ref_ij); */
       } else {
         d_pbc_dx(box,rinew[i],rjnew[0],unc_ij);
-        /* d_pbc_dx(box,pull->ref.x_ref,pull->grp[i].x_ref,ref_ij); */
       }
 
       for(m=DIM-1; m>=0; m--) {
@@ -376,11 +374,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	inpr = diprod(unc_ij,pull->dir);
 	dsvmul(inpr,pull->dir,unc_ij);
 	bConverged =
-	  fabs(diprod(unc_ij,pull->dir) - (diprod(ref_ij,pull->dir) + refinc))
-	  < pull->constr_tol;
+	  fabs(diprod(unc_ij,pull->dir) - ref) < pull->constr_tol;
       } else {
 	bConverged =
-	  fabs(dnorm(unc_ij) - (dnorm(ref_ij) + refinc)) < pull->constr_tol;
+	  fabs(dnorm(unc_ij) - ref) < pull->constr_tol;
       }
 
       /* DEBUG */
@@ -388,7 +385,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	if(!bConverged)
 	  fprintf(stderr,"NOT CONVERGED YET: Group %d (%s):"
 		  "d_ref = %f, current d = %f\n",
-		  i,pull->grp[i].name, dnorm(ref_ij),dnorm(unc_ij));
+		  i,pull->grp[i].name,ref,dnorm(unc_ij));
       } /* END DEBUG */
     }
 

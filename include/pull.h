@@ -71,6 +71,8 @@ typedef struct {
   dvec       f;        /* force due to the pulling/constraining */
   dvec       spring;   /* coordinates of the spring (eAfm) */
   dvec       dir;      /* direction of constraint */
+  real       constr_d0;/* reference distance of constraint (nm) */
+  real       constr_rate;/* rate of change of the constraint length (nm/ps) */
   dvec       xtarget;  /* target coordinates for structure generation */
   dvec       *comhist; /* com over the last nhist steps (for running aver) */
   dvec       AfmVec;   /* Vector to pull along for AFM */
@@ -93,7 +95,6 @@ typedef struct {
   dvec       dir;         /* direction */
   real       r;           /* radius of cylinder for dynamic COM */
   real       rc;          /* radius of cylinder including switch length */
-  real       constr_rate; /* rate of change of the constraint length (nm/ps) */
   real       constr_tol;  /* absolute tolerance for constraints in (nm) */
   bool       bPull;       /* true if we're doing any pulling */
   bool       bCyl;        /* true if we're using dynamic ref. groups */
