@@ -618,7 +618,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
       leg_discrete(out,psr->legfontsize,DDD,mat[0].legend,
 		   psr->legfontsize,psr->legfont,nmap1,map1);
     else {
-      if (!diff_maps(nmap1,map1,nmap2,map2))
+      if ((mat2==NULL) || (!diff_maps(nmap1,map1,nmap2,map2)))
 	leg_continuous(out,x0+w/2,w/2,DDD,mat[0].legend,
 		       psr->legfontsize,psr->legfont,nmap1,map1);
       else
