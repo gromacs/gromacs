@@ -136,15 +136,12 @@ static void c_tabpot(real tabscale,   real VFtab[],
   }
 }
 
-static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
+static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
 			 rvec x[],t_mdatoms *mdatoms,real pot[])
 {
   t_nblist *nlist;
   
-  if (ftype == F_SR) 
-    nlist = &fr->nlist_sr[eNL_QQ];
-  else
-    nlist = &fr->nlist_sr[eNL_VDWQQ];
+  nlist = &fr->nlist_sr[nl_type];
   
   c_tabpot(fr->tabscale,fr->VFtab,nlist->nri,nlist->iinr,
 	   nlist->shift,nlist->jindex,nlist->jjnr,
@@ -198,9 +195,11 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
   }
   /* electrostatics from any atom to atoms without LJ */
-  low_calc_pot(logf,F_SR,fr,x,mdatoms,pot);
+  low_calc_pot(logf,eNL_QQ,fr,x,mdatoms,pot);
+    /* electrostatics from any atom to atoms without charge */
+  low_calc_pot(logf,eNL_VDW,fr,x,mdatoms,pot);
   /* electrostatics from any atom to atoms with LJ */
-  low_calc_pot(logf,F_LJ,fr,x,mdatoms,pot); 
+  low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
 }
 
 void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
