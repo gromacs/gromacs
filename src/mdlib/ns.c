@@ -142,17 +142,17 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    */
   int maxlr=max(homenr/20,50);
   
-  init_nblist(&fr->nlist_sr[eNL_VDW],homenr,
+  init_nblist(&fr->nlist_sr[eNL_VDW],(homenr-fr->nWatMol*3),
 	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
-  init_nblist(&fr->nlist_sr[eNL_QQ],homenr,
+  init_nblist(&fr->nlist_sr[eNL_QQ],(homenr-fr->nWatMol*3),
 	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   if (fr->bPert)
     init_nblist(&fr->nlist_sr[eNL_FREE],homenr,
 		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
   if (fr->bWaterOpt) {
-    init_nblist(&fr->nlist_sr[eNL_VDW_WAT],homenr/3,
+    init_nblist(&fr->nlist_sr[eNL_VDW_WAT],fr->nWatMol,
 		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
-    init_nblist(&fr->nlist_sr[eNL_QQ_WAT],homenr/3,
+    init_nblist(&fr->nlist_sr[eNL_QQ_WAT],fr->nWatMol,
 		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
   }
   if (fr->bTwinRange) {
