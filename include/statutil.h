@@ -216,6 +216,12 @@ extern char *sscan(int argc,char *argv[],int *i);
 extern void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
+extern int nenum(char *enumc[]);
+/* returns ordinal number of selected enum from args 
+ * depends on enumc[0] pointing to one of the other elements
+ * array must be terminated by a NULL pointer 
+ */
+
 #ifdef HAVE_MOTIF
 extern void gmx_gui(int *argc,char *argv[],
 		    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],

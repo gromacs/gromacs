@@ -196,6 +196,18 @@ char *sscan(int argc,char *argv[],int *i)
   return argv[++(*i)];
 }
 
+int nenum(char *enumc[])
+{
+  int i;
+  
+  i=1;
+  /* we *can* compare pointers directly here! */
+  while(enumc[i] && enumc[0]!=enumc[i])
+    i++;
+  
+  return i;
+}
+
 static void pdesc(char *desc)
 {
   char *ptr,*nptr;
