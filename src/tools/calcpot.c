@@ -77,6 +77,8 @@ void c_tabpot(real tabscale,   real VFtab[],
       jy                = pos[j3+1];
       jz                = pos[j3+2];
 
+      fprintf(stderr,"%d %d\n",ii,jnr);
+
       /* First one is for oxygen, with LJ */
       dxO               = ixO - jx;
       dyO               = iyO - jy;
@@ -123,7 +125,7 @@ static void low_calc_pot(FILE *log,int ftype,t_forcerec *fr,
 	   nlist->shift,nlist->gid,nlist->jindex,nlist->jjnr,
 	   x[0],fr->epsfac,mdatoms->chargeA,pot,fr->shift_vec[0]);
 
-  fprintf(stderr,"There were %d interactions\n",nlist->nrj);
+  fprintf(log,"There were %d interactions\n",nlist->nrj);
 }
 
 void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
@@ -170,9 +172,9 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     pr_rvecs(debug,0,"x",x,mdatoms->nr);
     pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
   }
-  /* Oxygens only */
+  /* electrostatics from any atom to atoms without LJ */
   low_calc_pot(logf,F_SR,fr,x,mdatoms,box_size,pot);
-  /* The rest */
+  /* electrostatics from any atom to atoms with LJ */
   low_calc_pot(logf,F_LJ,fr,x,mdatoms,box_size,pot); 
 }
 
@@ -203,7 +205,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   init_nrnb(&nrnb);
   init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
   init_md(cr,&(parm->ir),&t,&t0,&lam,&lam0,&SAfac,
-	  &nrnb,&bTYZ,top,nfile,fnm,&traj,&xtc_traj,&fp_ene,
+	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,
 	  &mdebin,grps,vcm,force_vir,shake_vir,*mdatoms);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
 
@@ -217,6 +219,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Turn off twin range if appropriate */
   parm->ir.rvdw  = parm->ir.rcoulomb;
   parm->ir.rlist = parm->ir.rcoulomb;
+  fprintf(stderr,"Will use a coulomb cut-off of %g nm\n",parm->ir.rcoulomb); 
   
   /* Turn off free energy computation */
   parm->ir.bPert = FALSE;
