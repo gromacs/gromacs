@@ -32,6 +32,7 @@ static char *SRCID_rdgroup_c = "$Id$";
 #include "smalloc.h"
 #include "typedefs.h"
 #include "string2.h"
+#include "strdb.h"
 #include "rdgroup.h"
 #include "futil.h"
 #include "fatal.h"
@@ -41,28 +42,63 @@ t_block *init_index(char *gfile, char ***grpname)
 {
   FILE     *in;
   t_block  *b;
-  int      a;
+  int      a,len,maxentries;
   int      i,j,ng;
-  char     name[128];
+  char     line[STRLEN],*pt,str[STRLEN];
 
   in=ffopen(gfile,"r");
   snew(b,1);
-  fscanf(in,"%d%d",&b->nr,&b->nra);
-  snew(b->index,b->nr+1);
-  snew(*grpname,b->nr);
-  b->index[0]=0;
-  snew(b->a,b->nra);
-  for (i=0; (i<b->nr); i++) {
-    fscanf(in,"%s%d",name,&ng);
-    (*grpname)[i]=strdup(name);
-    b->index[i+1]=b->index[i]+ng;
-    if (b->index[i+1] > b->nra)
-      fatal_error(0,"Something wrong in your indexfile at group %s",name);
-    for(j=0; (j<ng); j++) {
-      fscanf(in,"%d",&a);
-      b->a[b->index[i]+j]=a;
+  get_a_line(in,line,STRLEN);
+  if ( line[0]=='[' ) {
+    /* new format */
+    b->nr=0;
+    b->index=NULL;
+    b->a=NULL;
+    *grpname=NULL;
+    maxentries=0;
+    do {
+      if (get_header(line,str)) {
+	b->nr++;
+	srenew(b->index,b->nr+1);
+	srenew(*grpname,b->nr);
+	if (b->nr==1)
+	  b->index[0]=0;
+	b->index[b->nr]=b->index[b->nr-1];
+	(*grpname)[b->nr-1]=strdup(str);
+      } else {
+	pt=line;
+	while (i=sscanf(pt,"%s",str)==1) {
+	  i=b->index[b->nr];
+	  if (i>=maxentries) {
+	    maxentries+=100;
+	    srenew(b->a,maxentries);
+	  }
+	  b->a[i]=atoi(str)-1;
+	  b->index[b->nr]++;
+	  pt=strstr(pt,str)+strlen(str);
+	}
+      }
+    } while (get_a_line(in,line,STRLEN));
+  } 
+  else {
+    /* old format */
+    sscanf(line,"%d%d",&b->nr,&b->nra);
+    snew(b->index,b->nr+1);
+    snew(*grpname,b->nr);
+    b->index[0]=0;
+    snew(b->a,b->nra);
+    for (i=0; (i<b->nr); i++) {
+      fscanf(in,"%s%d",str,&ng);
+      (*grpname)[i]=strdup(str);
+      b->index[i+1]=b->index[i]+ng;
+      if (b->index[i+1] > b->nra)
+	fatal_error(0,"Something wrong in your indexfile at group %s",str);
+      for(j=0; (j<ng); j++) {
+	fscanf(in,"%d",&a);
+	b->a[b->index[i]+j]=a;
+      }
+      /* while (fgetc(in)!='\n'); */
     }
-    /* while (fgetc(in)!='\n'); */
   }
   ffclose(in);
 

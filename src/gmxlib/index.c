@@ -79,11 +79,11 @@ void write_index(char *outf, t_block *b,char **gnames)
   int  i,j,k;
 
   out=ffopen(outf,"w");
-  fprintf(out,"%5d  %5d\n",b->nr,b->nra);
+  /* fprintf(out,"%5d  %5d\n",b->nr,b->nra); */
   for(i=0; (i<b->nr); i++) {
-    fprintf(out,"%s  %5u\n",gnames[i],b->index[i+1]-b->index[i]);
+    fprintf(out,"[ %s ]\n",gnames[i]);
     for(k=0,j=b->index[i]; j<b->index[i+1]; j++,k++) {
-      fprintf(out,"%5u  ",b->a[j]);
+      fprintf(out,"%4u ",b->a[j]+1);
       if ((k % 15) == 14)
 	fprintf(out,"\n");
     }

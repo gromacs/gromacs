@@ -828,8 +828,7 @@ int main(int argc,char *argv[])
     "With the index editor you can select on atom, residue and chain names",
     "and numbers, you can use NOT, AND and OR, you can split groups",
     "into chains, residues or atoms. You can delete and rename groups.[PAR]",
-    "The atom numbering in the index files starts from 0. The atom",
-    "and residue numbering in the editor start from 1."
+    "The atom numbering in the editor and the index file starts at 1."
   };
 
   char     title[STRLEN];
