@@ -170,20 +170,17 @@ int main(int argc,char *argv[])
     "[BB]8.[bb] reduce the number of frames[BR]",
     "[BB]9.[bb] change the timestamps of the frames (e.g. t0 and delta-t)",
     "[PAR]",
-    "Currently six formats are supported for input and output:",
-    "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].pdb[tt] and",
-    "[TT].g87[tt].",
+    "Currently seven formats are supported for input and output:",
+    "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].g96[tt],",
+    "[TT].pdb[tt] and [TT].g87[tt].",
     "The file formats are detected from the file extension.",
-    "For the [TT].pdb[tt] and [TT].gro[tt] files compression may be used",
-    "using the regular UNIX compress command (this assumes the program ",
-    "[TT]compress[tt] to be in your path which might not always be the ",
-    "case). For [TT].gro[tt] and [TT].xtc[tt] files the output precision ",
+    "For [TT].gro[tt] and [TT].xtc[tt] files the output precision ",
     "can be given as a number of ",
     "decimal places. Note that velocities are only supported in ",
-    "[TT].trr[tt], [TT].trj[tt] and [TT].gro[tt] files.[PAR]",
+    "[TT].trr[tt], [TT].trj[tt], [TT].gro[tt] and [TT].g96[tt] files.[PAR]",
     "The option [TT]-app[tt] can be used to",
     "append output to an existing trajectory file.",
-    "No checks are made to ensure integrity",
+    "No checks are performed to ensure integrity",
     "of the resulting combined trajectory file.",
     "[TT].pdb[tt] files with all frames concatenated can be viewed with",
     "[TT]rasmol -nmrpdb[tt].[PAR]",
@@ -203,12 +200,17 @@ int main(int argc,char *argv[])
     "trajectory is generated, which might not be the case when using the",
     "regular fit method, e.g. when your protein undergoes large",
     "conformational transitions.[PAR]",
-    "The option [TT]-removejump[tt] checks if atoms jump across",
-    "the box and then puts them back. This has the effect that all molecules",
-    "will remain whole (providing they were whole in the initial",
+    "The option [TT]-pbc[tt] sets the type of periodic boundary condition",
+    "treatment. [TT]whole[tt] makes broken molecules whole (a run input",
+    "file is required). [TT]-pbc[tt] is changed form [TT]none[tt] to",
+    "[TT]whole[tt] when [TT]-fit[tt] or [TT]-pfit[tt] is set.",
+    "[TT]inbox[tt] puts all the atoms in the box.",
+    "[TT]nojump[tt] checks if atoms jump across the box and then puts",
+    "them back. This has the effect that all molecules",
+    "will remain whole (provided they were whole in the initial",
     "conformation), note that this ensures a continuous trajectory but",
-    "molecules may (probably will) diffuse out of the box. Use",
-    "[TT]-center[tt] to put the system in the center of the box.",
+    "molecules may diffuse out of the box.",
+    "Use [TT]-center[tt] to put the system in the center of the box.",
     "This is especially useful for multimeric proteins, since this",
     "procedure will ensure the subunits stay together in the trajectory",
     "(due to PBC, they might be separated), providing they were together",
@@ -230,10 +232,10 @@ int main(int argc,char *argv[])
     "one specific time from your trajectory.[PAR]"
   };
   
-  static bool  bPBC=FALSE,bNoJump=FALSE,bInBox=FALSE;
+  static char *pbc_opt[] = { NULL, "none", "whole", "inbox", "nojump", NULL };
+
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE;
-  static bool  bCenter=FALSE,bCompress=FALSE;
-  static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
+  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bBox=TRUE;
   static bool  bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1;
@@ -241,23 +243,17 @@ int main(int argc,char *argv[])
   static char  *exec_command=NULL;
 
   t_pargs pa[] = {
-    { "-inbox", FALSE,  etBOOL, &bInBox,
-      "Make sure all atoms are inside box" },
-    { "-pbc", FALSE,  etBOOL, &bPBC,
-      "Make sure molecules are not broken into parts" },
-    { "-removejump",FALSE,  etBOOL, &bNoJump,
-      "Make sure atoms don't jump across the box" },
+    { "-pbc", FALSE,  etENUM, pbc_opt,
+      "PBC treatment" },
     { "-center", FALSE,  etBOOL, &bCenter,
       "Center atoms in box" },
     { "-box", FALSE, etRVEC, &newbox,
       "Size for new cubic box (default: read from input)" },
     { "-shift", FALSE, etRVEC, &shift,
       "All coordinates will be shifted by framenr*shift" },
-    { "-z", FALSE,  etBOOL, &bCompress,
-      "Compress output (for .gro and .pdb files)" },
     { "-fit", FALSE,  etBOOL, &bFit,
-      "Fit molecule to ref structure in .tpx file" },
-    { "-pfit", FALSE,  etBOOL, &bIFit,
+      "Fit molecule to ref structure in the structure file" },
+    { "-pfit", FALSE,  etBOOL, &bPFit,
       "Progressive fit, to the previous fitted structure" },
     { "-prec", FALSE,  etINT,  &prec,
       "Precision for .xtc and .gro writing in number of decimal places" },
@@ -309,6 +305,7 @@ int main(int argc,char *argv[])
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   real         t,pt,tshift,t0=-1,dt=0.001;
+  bool         bPBC,bInBox,bNoJump;
   bool         bSelect,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bToldYouOnce=FALSE;
   bool         bHaveNextFrame,bHaveX,bHaveV,bSetBox;
@@ -340,20 +337,19 @@ int main(int argc,char *argv[])
 #endif
   }
   else {
-    if (bIFit) {
-      bFit=TRUE;
-    }
+    if (bPFit)
+      bFit = TRUE;
     bSetBox   = opt2parg_bSet("-box", asize(pa), pa);
     bSetTime  = opt2parg_bSet("-t0", asize(pa), pa);
     bExec     = opt2parg_bSet("-exec", asize(pa), pa);
     bTimeStep = opt2parg_bSet("-timestep", asize(pa), pa);
     bTDump    = opt2parg_bSet("-dump", asize(pa), pa);
-    bPBC = bPBC || bFit;
-    if (bNoJump && bPBC) {
-      fprintf(stderr,
-	      "WARNING: both -pbc and -removejump specified: ignoring -pbc\n");
-      bPBC=FALSE;
-    }
+    bPBC      = (strcmp(pbc_opt[0],"whole") == 0);
+    bInBox    = (strcmp(pbc_opt[0],"inbox") == 0);
+    bNoJump   = (strcmp(pbc_opt[0],"nojump") == 0);
+    if (bFit && (strcmp(pbc_opt[0],"none") == 0))
+      bPBC = TRUE;
+
     /* prec is in nr of decimal places, xtcprec is a multiplication factor: */
     xtcpr=1;
     for (i=0; i<prec; i++)
@@ -382,10 +378,6 @@ int main(int argc,char *argv[])
 	      "Writing out all frames.\n\n");
       skip_nr = 1;
     } 
-    
-    /* Check whether we really should compress */
-    bCompress = bCompress && 
-      ((ftp == efGRO) || (ftp == efG96) || (ftp == efPDB));
     
     /* Determine whether to read a topology */
     bTPS = (ftp2bSet(efTPS,NFILE,fnm) || 
@@ -558,7 +550,7 @@ int main(int argc,char *argv[])
 	      x[i][d]+=box[d][d];
       }
       
-      if (bIFit) {
+      if (bPFit) {
 	/* Now modify the coords according to the flags,
 	   for normal fit, this is only done for output frames */
 	rm_pbc(&(top.idef),natoms,box,x,x);
@@ -568,7 +560,7 @@ int main(int argc,char *argv[])
       }
       
       /* store this set of coordinates for future use */
-      if (bIFit || bNoJump) {
+      if (bPFit || bNoJump) {
 	for(i=0; (i<natoms); i++) {
 	  copy_rvec(x[i],xp[i]);
 	  rvec_inc(x[i],x_shift);
@@ -612,10 +604,11 @@ int main(int argc,char *argv[])
 	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	    fprintf(stderr," ->  frame %6d time %8.3f",outframe,t);
 	  
-	  if (!bIFit) {
+	  if (!bPFit) {
 	    /* Now modify the coords according to the flags,
-	       for IFit we did this already! */
-	    rm_pbc(&(top.idef),natoms,box,x,x);
+	       for PFit we did this already! */
+	    if (bPBC)
+	      rm_pbc(&(top.idef),natoms,box,x,x);
 	  
 	    if (bFit) {
 	      reset_x(ifit,ind_fit,isize,index,x,w_rls);
@@ -719,16 +712,7 @@ int main(int argc,char *argv[])
 	  default:
 	    fatal_error(0,"DHE, ftp=%d\n",ftp);
 	  }
-	  /* trying to compress file using compress. This is by no means full- 
-	   * proof, but feel free to add searches for environment variables, 
-	   * alternative compressing programs (gzip) and more checks. 
-	   */
-	  if (bCompress) {
-	    sprintf(command,"compress -f %s",out_file);
-	    fprintf(stderr,"\rCompressing %s",out_file);
-	    system(command);
-	  }
-	  
+
 	  /* execute command */
 	  if (bExec) {
 	    char c[255];
