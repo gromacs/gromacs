@@ -40,10 +40,16 @@ static char *SRCID_tables_c = "$Id$";
 #include "network.h"
  
 /* All the possible (implemented) table functions */
-enum { etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
-       etabRF,    etabCOUL, etabEwald, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
-       etabEXPMIN,etabUSER, etabNR };
-       
+enum { 
+  etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
+  etabRF,    etabCOUL, etabEwald, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
+  etabEXPMIN,etabUSER, etabNR 
+};
+static char *tabnm[etabNR] = { 
+  "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
+  "RF",    "COUL", "Ewald", "LJ6Switch", "LJ12Switch","COULSwitch", 
+  "EXPMIN","USER" 
+};
 /* This flag tells whether this is a Coulomb type funtion */
 bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 			  TRUE,  TRUE, TRUE, FALSE, FALSE, TRUE, 
@@ -53,7 +59,7 @@ bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
 
 typedef struct {
-  int  nx,ny;
+  int  nx,nx0,ny;
   real tabscale;
   real **y;
 } t_tabledata;
@@ -177,10 +183,37 @@ static t_tabledata *read_table(FILE *fp,char *fn)
   if (td->ny != 5)
     fatal_error(0,"Trying to read file %s, but no colums = %d, should be 5",
 		fn,td->ny);
+  for(td->nx0=0; (td->nx0 < td->nx); td->nx0++)
+    if (td->y[0][td->nx0] != 0)
+      break;
+  if (td->nx0 == td->nx)
+    fatal_error(0,"All elements in table %s are zero!\n",fn);
   td->tabscale = (td->nx-1)/(td->y[0][td->nx-1] - td->y[0][0]);
-  if (fp) fprintf(fp,
-	  "Read user table %s with %d data points. tabscale = %g points/nm\n",
-	  fn,td->nx,td->tabscale);
+  if (fp) 
+    fprintf(fp,"Read user table %s with %d data points. tabscale = %g points/nm\n",
+	    fn,td->nx,td->tabscale);
+		      
+  return td;
+}
+
+static t_tabledata *init_table(FILE *fp,int n,int nx0,int tabsel,real tabscale)
+{
+  t_tabledata *td;
+  int i;
+  
+  snew(td,1);
+  td->nx  = n;
+  td->nx0 = nx0;
+  td->ny  = 5;
+  td->tabscale = tabscale;
+  snew(td->y,td->ny);
+  for(i=0; (i<td->ny); i++)
+    snew(td->y[i],td->nx);
+  for(i=td->nx0; (i<td->nx); i++)
+    td->y[0][i] = i/tabscale;
+  if (fp) 
+    fprintf(fp,"Generated table with %d data points for %s. tabscale = %g points/nm\n",
+	    td->nx,tabnm[tabsel],td->tabscale);
 		      
   return td;
 }
@@ -196,10 +229,7 @@ static void done_tabledata(t_tabledata *td)
   sfree(td->y);
 }
 
-static void fill_table(int n0,int n,real x[],
-		       real Vtab[],real Vtab2[],
-		       real Ftab[],real Ftab2[],
-		       int tp,t_forcerec *fr)
+static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
 {
   /* Calculate potential and 2nd derivative and Force and
    * second derivative!
@@ -210,7 +240,7 @@ static void fill_table(int n0,int n,real x[],
   int  i,p;
   real r1,rc,r12,r13;
   real r,r2,r6;
-  real expr;
+  real expr,Vtab,Ftab,Vtab2,Ftab2;
   /* Parameters for David's function */
   real A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
@@ -265,15 +295,15 @@ static void fill_table(int n0,int n,real x[],
 #ifdef DEBSW
   fp=xvgropen("switch.xvg","switch","r","s");
 #endif
-  for(i=n0; (i<=n); i++) {
-    r        = x[i];
-    r2       = r*r;
-    r6       = 1.0/(r2*r2*r2);
-    r12      = r6*r6;
-    Vtab[i]  = 0.0;
-    Ftab[i]  = 0.0;
-    Vtab2[i] = 0.0;
-    Ftab2[i] = 0.0;
+  for(i=td->nx0; (i<=td->nx); i++) {
+    r     = td->y[0][i];
+    r2    = r*r;
+    r6    = 1.0/(r2*r2*r2);
+    r12   = r6*r6;
+    Vtab  = 0.0;
+    Ftab  = 0.0;
+    Vtab2 = 0.0;
+    Ftab2 = 0.0;
     if (bSwitch) {
       swi      = (rc-r)*(rc-r)*(rc+2*r-3*r1)*ksw;
       swi1     = 6*(rc-r)*(r1-r)*ksw;
@@ -289,75 +319,75 @@ static void fill_table(int n0,int n,real x[],
     switch (tp) {
     case etabLJ6:
       /* Dispersion */
-      Vtab[i]  = -r6;
-      Ftab[i]  = 6.0*Vtab[i]/r;
-      Vtab2[i] = 7.0*Ftab[i]/r;
-      Ftab2[i] = 8.0*Vtab2[i]/r;
+      Vtab  = -r6;
+      Ftab  = 6.0*Vtab/r;
+      Vtab2 = 7.0*Ftab/r;
+      Ftab2 = 8.0*Vtab2/r;
       break;
     case etabLJ6Switch:
     case etabLJ6Shift:
       /* Dispersion */
       if (r < rc) {      
-	Vtab[i]  = -r6;
-	Ftab[i]  = 6.0*Vtab[i]/r;
-	Vtab2[i] = 7.0*Ftab[i]/r;
-	Ftab2[i] = 8.0*Vtab2[i]/r;
+	Vtab  = -r6;
+	Ftab  = 6.0*Vtab/r;
+	Vtab2 = 7.0*Ftab/r;
+	Ftab2 = 8.0*Vtab2/r;
       }
       break;
     case etabLJ12:
       /* Repulsion */
-      Vtab[i]  = r12;
-      Ftab[i]  = 12.0*Vtab[i]/r;
-      Vtab2[i] = 13.0*Ftab[i]/r;
-      Ftab2[i] = 14.0*Vtab2[i]/r;
+      Vtab  = r12;
+      Ftab  = 12.0*Vtab/r;
+      Vtab2 = 13.0*Ftab/r;
+      Ftab2 = 14.0*Vtab2/r;
       break;
     case etabLJ12Switch:
     case etabLJ12Shift:
       /* Repulsion */
       if (r < rc) {      
-	Vtab[i]  = r12;
-	Ftab[i]  = 12.0*Vtab[i]/r;
-	Vtab2[i] = 13.0*Ftab[i]/r;
-	Ftab2[i] = 14.0*Vtab2[i]/r;
+	Vtab  = r12;
+	Ftab  = 12.0*Vtab/r;
+	Vtab2 = 13.0*Ftab/r;
+	Ftab2 = 14.0*Vtab2/r;
       }  
       break;
     case etabCOUL:
-      Vtab[i]  = 1.0/r;
-      Ftab[i]  = 1.0/r2;
-      Vtab2[i] = 2.0/(r*r2);
-      Ftab2[i] = 6.0/(r2*r2);
+      Vtab  = 1.0/r;
+      Ftab  = 1.0/r2;
+      Vtab2 = 2.0/(r*r2);
+      Ftab2 = 6.0/(r2*r2);
       break;
     case etabCOULSwitch:
     case etabShift:
       if (r < rc) { 
-	Vtab[i]  = 1.0/r;
-	Ftab[i]  = 1.0/r2;
-	Vtab2[i] = 2.0/(r*r2);
-	Ftab2[i] = 6.0/(r2*r2);
+	Vtab  = 1.0/r;
+	Ftab  = 1.0/r2;
+	Vtab2 = 2.0/(r*r2);
+	Ftab2 = 6.0/(r2*r2);
       }
       break;
     case etabEwald:
-      Vtab[i]  = erfc(ewc*r)/r;
-      Ftab[i]  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
-      Vtab2[i] = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
+      Vtab  = erfc(ewc*r)/r;
+      Ftab  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Vtab2 = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
 	  4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
-      Ftab2[i]=6*erfc(ewc*r)/(r2*r2)+
+      Ftab2 = 6*erfc(ewc*r)/(r2*r2)+
 	  12*exp(-(ewc*ewc*r2))*ewc*isp/(r*r2)+
 	  8*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp/r+
 	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
       break;
     case etabRF:
-      Vtab[i]  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
-      Ftab[i]  = 1.0/r2     - 2*fr->k_rf*r;
-      Vtab2[i] = 2.0/(r*r2) + 2*fr->k_rf;
-      Ftab2[i] = 6.0/(r2*r2);
+      Vtab  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
+      Ftab  = 1.0/r2     - 2*fr->k_rf*r;
+      Vtab2 = 2.0/(r*r2) + 2*fr->k_rf;
+      Ftab2 = 6.0/(r2*r2);
       break;
     case etabEXPMIN:
-      expr     = exp(-r);
-      Vtab[i]  = expr;
-      Ftab[i]  = expr;
-      Vtab2[i] = expr;
-      Ftab2[i] = expr;
+      expr  = exp(-r);
+      Vtab  = expr;
+      Ftab  = expr;
+      Vtab2 = expr;
+      Ftab2 = expr;
       break;
     default:
       fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
@@ -366,33 +396,38 @@ static void fill_table(int n0,int n,real x[],
     if (bShift) {
       /* Normal coulomb with cut-off correction for potential */
       if (r < rc) {
-	Vtab[i] -= C;
+	Vtab -= C;
 	/* If in Shifting range add something to it */
 	if (r > r1) {
 	  r12 = (r-r1)*(r-r1);
 	  r13 = (r-r1)*r12;
-	  Vtab[i]  += - A_3*r13 - B_4*r12*r12;
-	  Ftab[i]  +=   A*r12 + B*r13;
-	  Vtab2[i] += - 2.0*A*(r-r1) - 3.0*B*r12;
-	  Ftab2[i] +=   2.0*A + 6.0*B*(r-r1);
+	  Vtab  += - A_3*r13 - B_4*r12*r12;
+	  Ftab  +=   A*r12 + B*r13;
+	  Vtab2 += - 2.0*A*(r-r1) - 3.0*B*r12;
+	  Ftab2 +=   2.0*A + 6.0*B*(r-r1);
 	}
       }
     }
     
     if ((r > r1) && bSwitch) {
-      VtabT     = Vtab[i];
-      VtabT1    = -Ftab[i];
-      VtabT2    = Vtab2[i];
-      VtabT3    = -Ftab2[i];
-      Vtab[i]   = VtabT*swi;
-      Ftab[i]   = -(VtabT1*swi+ VtabT*swi1);
-      Vtab2[i]  = VtabT2*swi + VtabT1*swi1 + VtabT1*swi1 + VtabT*swi2;
-      Ftab2[i]  = -(VtabT3*swi + VtabT2*swi1 + VtabT1*swi2 + VtabT2*swi1 +
+      VtabT     = Vtab;
+      VtabT1    = -Ftab;
+      VtabT2    = Vtab2;
+      VtabT3    = -Ftab2;
+      Vtab   = VtabT*swi;
+      Ftab   = -(VtabT1*swi+ VtabT*swi1);
+      Vtab2  = VtabT2*swi + VtabT1*swi1 + VtabT1*swi1 + VtabT*swi2;
+      Ftab2  = -(VtabT3*swi + VtabT2*swi1 + VtabT1*swi2 + VtabT2*swi1 +
 		    VtabT2*swi1 + VtabT1*swi2 + VtabT1*swi2 + VtabT*swi3);
     }  
 
-    Ftab[i]  /= r;
-    Ftab2[i] /= r;
+    Ftab  /= r;
+    Ftab2 /= r;
+    
+    td->y[1][i] = Vtab;
+    td->y[2][i] = Ftab;
+    td->y[3][i] = Vtab2;
+    td->y[4][i] = Ftab2;
   }
 
 #ifdef DEBSW
@@ -480,33 +515,33 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
   static      char *fns[etiNR] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   FILE        *fp;
   t_tabledata *td[etiNR];
-  real        x0,y0,yp,table_scale[etiNR];
-  int         i,j,k,n0,n,nx,ny,tabsel[etiNR],ntabread;
-  real        *x,*xnormal,*xexp=NULL,*Vtab,*Vtab2,*Ftab,*Ftab2,**y=NULL;
+  real        x0,y0,yp;
+  int         i,j,k,nx0,n,tabsel[etiNR],ntabread;
  
   set_table_type(tabsel,fr);
-  ntabread = 0;
+  
+  fr->tabscale = 0;
+  fr->rtab     = 0;
+  ntabread     = 0;
+  nx0          = 10;
   for(i=0; (i<etiNR); i++) {
     if (tabsel[i] == etabUSER) {
       td[i] = read_table(out,fns[i]);
       ntabread++;
-    }
-    else
-      td[i] = NULL;
-  }
-  if (ntabread > 0) {
-    fr->tabscale = 0;
-    fr->rtab     = 0;
-    for(i=0; (i<etiNR); i++) {
       if (fr->tabscale == 0) {
 	fr->tabscale = td[i]->tabscale;
 	fr->rtab     = td[i]->y[0][td[i]->nx-1];
+	nx0          = td[i]->nx0;
       }
       else if (fr->tabscale != td[i]->tabscale)
 	fatal_error(0,"Tabscale not the same in all tables\n");
       else if (fr->rtab != td[i]->y[0][td[i]->nx-1])
 	fatal_error(0,"Number of points not the same in all tables\n");
+      else if (td[i]->nx0 != nx0)
+	fatal_error(0,"Starting point not the same in all tables\n");
     }
+  }
+  if (ntabread > 0) {
     n = fr->ntab = fr->rtab*fr->tabscale;
   }
   else {
@@ -515,72 +550,35 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
 #else
     fr->tabscale = 500.0;
 #endif
-    n = fr->ntab = fr->rtab*fr->tabscale;
-
+    n   = fr->ntab = fr->rtab*fr->tabscale;
     if (out)
       fprintf(out,"Making tables%s of %g(nm)*%g = %d points\n",
 	      (fr->bcoultab || fr->bvdwtab) ? "" : 
 	      (fr->efep != efepNO) ? " for 1-4 and FEP int.":" for 1-4 int.",
 	      fr->rtab,fr->tabscale,fr->ntab);
   }
-  
   snew(fr->coulvdwtab,12*n+1);
-  snew(xnormal,n+1);
-  
-  n0 = 10;
-  for(i=n0; i<=n; i++)
-    xnormal[i]  = (i/fr->tabscale);
-  
-  /* Now fill three tables with 
-   * Dispersion, Repulsion and Coulomb (David's function)
-   * or Reaction Field, or Plain Coulomb 
-   * respectively.
-   */
-  /* Temp storage */
-  snew(Vtab,n+1);
-  snew(Vtab2,n+1);
-  snew(Ftab,n+1);
-  snew(Ftab2,n+1);
-  
-  if (fr->bBHAM) {
-    snew(xexp,n+1);
-    fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
-    for(i=n0; i<=n; i++)
-      xexp[i]  = (i/fr->tabscale_exp);
-  }
-
   for(k=0; (k<etiNR); k++) {
-    if (tabsel[k] == etabEXPMIN)
-      x = xexp;
-    else
-      x = xnormal;
-    if (tabsel[k] == etabUSER) {
-      user_table(td[k],x,Vtab,Vtab2,Ftab,Ftab2);
+    if (tabsel[k] != etabUSER) {
+      td[k] = init_table(out,n,nx0,tabsel[k],
+			 (tabsel[k] == etabEXPMIN) ? fr->tabscale_exp : fr->tabscale);
+      fill_table(td[k],tabsel[k],fr);
     }
-    else
-      fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel[k],fr);
-    copy2table(n,k*4,12,x,Vtab,Vtab2,fr->coulvdwtab,-1);
-    
+    copy2table(td[k]->nx,k*4,12,td[k]->y[0],td[k]->y[1],td[k]->y[3],fr->coulvdwtab,-1);
+  
     if (bDebugMode() && bVerbose) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 
-      for(i=n0; (i<n); i++) {
+      for(i=td[k]->nx0; (i<td[k]->nx); i++) {
 	for(j=0; (j<4); j++) {
-	  x0=x[i]+0.25*j*(x[i+1]-x[i]);
-	  splint(x,Vtab,Vtab2,n-3,x0,&y0,&yp);
+	  x0=td[k]->y[0][i]+0.25*j*(td[k]->y[0][i+1]-td[k]->y[0][i]);
+	  splint(td[k]->y[0],td[k]->y[1],td[k]->y[3],n-3,x0,&y0,&yp);
 	  fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
 	}
       }
       ffclose(fp);
     }
+    done_tabledata(td[k]);
+    sfree(td[k]);
   }
-  sfree(Vtab);
-  sfree(Vtab2);
-  sfree(Ftab);
-  sfree(Ftab2);
-  sfree(xnormal);
-  if (fr->bBHAM)
-    sfree(xexp);
-  for(i=0; (i<etiNR); i++)
-    sfree(td[i]);
 }
 
