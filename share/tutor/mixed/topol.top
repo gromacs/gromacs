@@ -1,0 +1,10 @@
+#include "ffG43a1.itp"
+#include "methanol.itp"
+#include "spc.itp"
+
+[ system ]
+Pure Methanol - Yummie! (and some water)
+
+[ molecules ]
+Methanol	216
+SOL		216
