@@ -631,7 +631,7 @@ int main (int argc, char *argv[])
     "or membrane/water system) the option is definitely a must.[PAR]",
     
     "A further optimization for parallel systems is the [TT]-sort[tt]",
-    "option which sorts coordinates according to coordinates. This must",
+    "option which sorts molecules according to coordinates. This must",
     "always be used in conjunction with [TT]-shuffle[tt], however",
     "sorting also works when you have only one molecule type.[PAR]", 
         
