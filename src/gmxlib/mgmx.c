@@ -660,9 +660,9 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
   else
     str = wrap_lines(ptr,width,indent);
   
-  while ((ptr = strstr(str,"\n\n")) != 0)
+  /*while ((ptr = strstr(str,"\n\n")) != 0)
     *ptr = ' ';
-  
+    */
   slen = strlen(str);
     
   while (*blen+slen+1 > *maxlen) {
@@ -679,14 +679,27 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
 
 static char *concat_str(int ndesc,char *desc[],int nbugs,char *bugs[])
 {
+  char *descer;
   char *ptr  = NULL;
-  int  i,blen=0,maxlen=0;
+  int  i,blen=0,maxlen=0,dlen,slen;
 
   append_str(&ptr,&blen,&maxlen,"DESCRIPTION:",0);
   if (ndesc == 0) 
     append_str(&ptr,&blen,&maxlen,"none?",0);
-  for(i=0; (i<ndesc); i++)
-    append_str(&ptr,&blen,&maxlen,desc[i],0);
+    
+  dlen   = 0;
+  descer = NULL;
+  for(i=0; (i<ndesc); i++) {
+    slen = strlen(desc[i])+1;
+    srenew(descer,dlen+slen);
+    descer[dlen] = '\0';
+    dlen += slen;
+    strcat(descer,desc[i]);
+    if (i < ndesc-1)
+      strcat(descer," ");
+  }
+  append_str(&ptr,&blen,&maxlen,descer,0);
+  sfree(descer);
   if (nbugs > 0) {
     append_str(&ptr,&blen,&maxlen," ",0);
     append_str(&ptr,&blen,&maxlen,"DIAGNOSTICS:",0);
@@ -715,7 +728,7 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   /* Now create the contents */
   narg   = 0; 
   XtSetArg(args[narg],XmNheight,          480); narg++;
-  XtSetArg(args[narg],XmNwidth,           480); narg++;
+  XtSetArg(args[narg],XmNwidth,           570); narg++;
   XtSetArg(args[narg],XmNeditMode,        XmMULTI_LINE_EDIT); narg++;
   XtSetArg(args[narg],XmNeditable,        FALSE);             narg++;
   XtSetArg(args[narg],XmNvalue,           ptr);               narg++;
