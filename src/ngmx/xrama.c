@@ -264,8 +264,8 @@ static t_app *init_app(t_x11 *x11,int argc,char *argv[])
   x11->RegisterCallback(x11,app->wd.self,x11->root,mainCallBack,app);
   x11->SetInputMask(x11,app->wd.self,StructureNotifyMask);
   hints.flags=0;
-  pm=XCreatePixmapFromBitmapData(x11->disp,x11->root,rama_bits,rama_width,
-				 rama_height,WHITE,BLACK,1);
+  pm=XCreatePixmapFromBitmapData(x11->disp,x11->root,(char *)rama_bits,
+				 rama_width,rama_height,WHITE,BLACK,1);
   XSetStandardProperties(x11->disp,app->wd.self,app->wd.text,
 			 "Rama",pm,argv,argc,&hints);
   x11->RegisterCallback(x11,app->wd.self,x11->root,appCallBack,app);

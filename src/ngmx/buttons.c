@@ -198,7 +198,7 @@ t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,ulong fg,ulong bg)
     }
     /* Rely on the fact that all bitmaps are equal size */
     pm=XCreatePixmapFromBitmapData(x11->disp,x11->root,
-				   data,play_width,play_height,
+				   (char *)data,play_width,play_height,
 				   BLACK,LIGHTGREY,x11->depth);
     vb->b[i].ID=ID;
     vb->b[i].wd.Parent=SendTo;

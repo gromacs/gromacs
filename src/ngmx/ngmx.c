@@ -340,7 +340,7 @@ t_gmx *init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 				    gmx->wd->width,gmx->wd->height,
 				    gmx->wd->bwidth,WHITE,BLACK);
   pm=XCreatePixmapFromBitmapData(x11->disp,x11->root,
-				 gromacs_bits,gromacs_width,
+				 (char *)gromacs_bits,gromacs_width,
 				 gromacs_height,
 				 WHITE,BLACK,1);
   hints.flags=PMinSize;
