@@ -47,12 +47,12 @@ void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
   /* Only the lower octant of the rectangle has been saved,
    * so we must construct the other 7 octants by symmetry operations.
    */
-  for(k=0; (k<=nz/2); k++) {
+  for(i=0; (i<=nx/2); i++) {
+    iip = (nx-i) % nx;
     for(j=0; (j<=ny/2); j++) {
-      kkp = (nz-k) % nz;
       jjp = (ny-j) % ny;
-      for(i=0; (i<=nx/2); i++) {
-	iip = (nx-i) % nx;
+      for(k=0; (k<=nz/2); k++) {
+	kkp = (nz-k) % nz;
 	ggg                 = ghat[i][j][k];
 	ghat[i]  [jjp][k]   = ggg;
 	ghat[i]  [j]  [kkp] = ggg;
@@ -106,11 +106,11 @@ void mk_ghat(FILE *fp,int nx,int ny,int nz,real ***ghat,
 }
 
 real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
-		real *beta,int *porder,real *rshort,real *rlong)
+		rvec beta,int *porder,real *rshort,real *rlong)
 {
   FILE   *in;
   real   ***gh;
-  double gx,gy,gz,alpha,ddd;
+  double gx,gy,gz,alX,alY,alZ,ddd;
   double acut,r1,pval,zval,eref,qopt;
   int    nalias,niter,bSym;
   int    ix,iy,iz,ixmax,iymax,izmax;
@@ -119,21 +119,24 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   fscanf(in,"%d%d%d%lf%lf%lf",&ix,&iy,&iz,&gx,&gy,&gz);
   igrid[XX]=ix, igrid[YY]=iy, igrid[ZZ]=iz;
   gridspace[XX]=gx,  gridspace[YY]=gy,  gridspace[ZZ]=gz;
-  fscanf(in,"%d%d%d%lf%d",&nalias,porder,&niter,&alpha,&bSym);
+  fscanf(in,"%d%d%d%d%lf%lf%lf",&nalias,porder,&niter,&bSym,&alX,&alY,&alZ);
   fscanf(in,"%lf%lf%lf%lf%lf%lf",&acut,&r1,&pval,&zval,&eref,&qopt);
   
   fprintf(log,"\nOpening %s for reading ghat function\n",fn);
   fprintf(log,"gridsize: %10d %10d %10d\n",ix,iy,iz);
   fprintf(log,"spacing:  %10g %10g %10g\n",gx,gy,gz);
-  fprintf(log,"    nalias    porder     niter      beta    bSym\n%10d%10d%10d%10g%10d\n",
-	  nalias,*porder,niter,alpha,bSym);
+  fprintf(log,"    nalias    porder     niter      bSym      beta[X-Z]\n"
+	  "%10d%10d%10d%10d%10g%10g%10g\n",
+	  nalias,*porder,niter,bSym,alX,alY,alZ);
   fprintf(log,"      acut        r1      pval      zval      eref      qopt\n"
 	  "%10g%10g%10g%10g%10g%10g\n",acut,r1,pval,zval,eref,qopt);
   fflush(log);
   
-  *beta   = alpha;
-  *rshort = r1;
-  *rlong  = acut;
+  beta[XX] = alX;
+  beta[YY] = alY;
+  beta[ZZ] = alZ;
+  *rshort  = r1;
+  *rlong   = acut;
   
   gh      = mk_rgrid(ix,iy,iz);
   if (bSym) {

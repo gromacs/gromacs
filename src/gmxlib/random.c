@@ -86,7 +86,6 @@ void low_mspeed(real tempi,int nrdf,int seed,int nat,atom_id a[],
   real boltz,sd;
   real ekin,temp,mass,scal;
 
-  printf("velocities are taken from a maxwellian distribution...\n");
   ig=seed;
   boltz=BOLTZ*tempi*nrdf/((real) (DIM*nat));
   ekin=0.0;
@@ -103,12 +102,18 @@ void low_mspeed(real tempi,int nrdf,int seed,int nat,atom_id a[],
   }
   temp=(2.0*ekin)/(nrdf*BOLTZ);
   if (temp > 0) {
-    printf("initial generated temperature: %12.5e (scaled to: %12.5e)\n",
-	   temp,tempi);
     scal=tempi/temp;
     for(i=0; (i<nat); i++)
       for(m=0; (m<DIM); m++)
 	v[a[i]][m]*=scal;
+  }
+  fprintf(stderr,"Velocities were taken from a Maxwell distribution at %g K\n",
+	  tempi);
+  if (debug) {
+    fprintf(debug,
+	    "Velocities were taken from a Maxwell distribution\n"
+	    "Initial generated temperature: %12.5e (scaled to: %12.5e)\n",
+	    temp,tempi);
   }
 }
 

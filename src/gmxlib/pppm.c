@@ -214,7 +214,6 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
   real pi,fX,fY,fZ,weight;
   int  jxyz,m,jcx,jcy,jcz;
   int  jcx0,jcy0,jcz0;
-  int  h_2,h_1,h1,h2;
   
   pi = 0.0;
   fX = 0.0;
@@ -236,13 +235,10 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
     pi += weight * GR_VALUE(ptr[INDEX(jcx0,jcy0,jcz0)]);
 
     /* Forces */
-    h_2 = INDEX(ixw[jcx-2],jcy0,jcz0);
-    h_1 = INDEX(ixw[jcx-1],jcy0,jcz0);
-    h1  = INDEX(ixw[jcx+1],jcy0,jcz0);
-    h2  = INDEX(ixw[jcx+2],jcy0,jcz0);
-    fX += weight * (c1x*(GR_VALUE(ptr[h_1]) - GR_VALUE(ptr[h1]) ) +
-		    c2x*(GR_VALUE(ptr[h_2]) - GR_VALUE(ptr[h2]) ));
-    
+    fX += weight * ((c1x*(GR_VALUE(ptr[INDEX(ixw[jcx-1],jcy0,jcz0)]) - 
+			  GR_VALUE(ptr[INDEX(ixw[jcx+1],jcy0,jcz0)]) )) +
+		    (c2x*(GR_VALUE(ptr[INDEX(ixw[jcx-2],jcy0,jcz0)]) - 
+			  GR_VALUE(ptr[INDEX(ixw[jcx+2],jcy0,jcz0)]) )));
     fY += weight * ((c1y*(GR_VALUE(ptr[INDEX(jcx0,iyw[jcy-1],jcz0)]) -
 			  GR_VALUE(ptr[INDEX(jcx0,iyw[jcy+1],jcz0)]) ))  +
 		    (c2y*(GR_VALUE(ptr[INDEX(jcx0,iyw[jcy-2],jcz0)]) -
@@ -268,7 +264,7 @@ static real gather_f(FILE *log,bool bVerbose,
   static int  JCXYZ[81];
   int    i,j,k,l,m;
   real   energy;
-  real   w1,weight,fact,rhs,rix,riy,riz,qi,pi;
+  real   w1,weight,rhs,rix,riy,riz,qi,pi;
   ivec   ixyz;
   rvec   invh,c1,c2;
   real   WXYZ[27];
@@ -284,8 +280,6 @@ static real gather_f(FILE *log,bool bVerbose,
   unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
   
   calc_invh(box,nx,ny,nz,invh);
-  
-  fact = 0.125;
   
   for(m=0; (m<DIM); m++) {
     c1[m] = (beta[m]/2.0)*invh[m];
@@ -448,7 +442,7 @@ real do_pppm(FILE *log,       bool bVerbose,
   static  int       porder;
   static  int       niter;
   
-  const     real tol = 1e-6;
+  const     real tol = 1e-5;
   int       i,m;
   real      ctot;
   real      aver,tot,ener,r1,rc;

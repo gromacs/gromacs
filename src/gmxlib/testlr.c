@@ -36,10 +36,10 @@ static char *SRCID_testlr_c = "$Id$";
 #include "macros.h"
 #include "names.h"
 #include "smalloc.h"
+#include "tpxio.h"
 #include "statutil.h"
 #include "writeps.h"
 #include "assert.h"
-#include "plotphi.h"
 #include "copyrite.h"
 #include "xvgr.h"
 #include "minvert.h"
@@ -47,6 +47,7 @@ static char *SRCID_testlr_c = "$Id$";
 #include "readinp.h"
 #include "main.h"
 #include "force.h"
+#include "nrnb.h"
 #include "lrutil.h"
 
 void pr_f(char *fn,int natoms,rvec f[])
@@ -93,13 +94,14 @@ void test_pppm(FILE *log,       bool bVerbose,
     phi[i]+=phi_s[i];
   sprintf(buf,"PPPM-%d+SR",ir->nkx);
   calc_ener(log,buf,FALSE,nmol,atoms->nr,phi,charge,&atoms->excl);
+  strcat(buf,".pdb");
+  write_pqr(buf,atoms,x,phi,0);
 }
 
 void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
 	       t_inputrec *ir,rvec x[],rvec f[],rvec box,real charge[],
 	       real phi_f[],real phi_s[],int nmol,t_commrec *cr)
 {
-  FILE *gt;
   int  i;
   real energy;
   
@@ -111,7 +113,7 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
   plot_phi(opt2fn("-elf",NFILE,fnm),box,atoms->nr,x,phi_f);
   print_phi(opt2fn("-of",NFILE,fnm),atoms->nr,x,phi_f);
   calc_ener(log,"Fourier",FALSE,nmol,atoms->nr,phi_f,charge,&atoms->excl);
-  write_pqr(opt2fn("-pf",NFILE,fnm),atoms,x,phi_f,1.5*box[XX]);
+  write_pqr(opt2fn("-pf",NFILE,fnm),atoms,x,phi_f,0.0/*1.5*box[XX]*/);
   pr_f("four-force",atoms->nr,f);
   
   /* Calc and plot the total potential */
@@ -119,8 +121,6 @@ void test_four(FILE *log,int NFILE,t_filenm fnm[],t_atoms *atoms,
     phi_f[i]+=phi_s[i];
     clear_rvec(f[i]);
   }
-  plot_phi(opt2fn("-etf",NFILE,fnm),box,atoms->nr,x,phi_f);
-  print_phi(opt2fn("-oft",NFILE,fnm),atoms->nr,x,phi_f);
   calc_ener(log,"Fourier+SR",FALSE,nmol,atoms->nr,phi_f,charge,&atoms->excl);
 }
 
@@ -132,26 +132,6 @@ static void print_opts(FILE *fp,t_inputrec *ir,bool bFour)
   if (bFour)
     fprintf(fp,"KVectors: %10d  %10d  %10d\n",ir->nkx,ir->nky,ir->nkz);
   fprintf(fp,"\n");
-}
-
-void read_four(char *fn,int natoms,real phi[])
-{
-  FILE   *in;
-  double a,b,c;
-  int    i;
-  
-  in=ffopen(fn,"r");
-  for(i=0; (i<natoms); i++) {
-    fscanf(in,"%lf%lf%lf",&a,&b,&c);
-    phi[i]=c;
-  }
-  fclose(in);
-}
-
-void Usage(char *p)
-{
-  fprintf(stderr,"Usage: %s [ -nf nx ny nz ] [ -pb maxnit maxdphi ]\n");
-  exit(1);
 }
 
 int main(int argc,char *argv[])
@@ -181,12 +161,13 @@ int main(int argc,char *argv[])
     { efXVG, "-gt",  "gk-tab",   ffOPTWR },
     { efLOG, "-l",   "fptest",   ffWRITE },
     { efXVG, "-gr",  "spread",   ffOPTWR },
-    { efPDB, "-pf",  "pqr-four", ffOPTWR }
+    { efPDB, "-pf",  "pqr-four", ffOPTWR },
+    { efPDB, "-phitot", "pppm-phitot", ffOPTWR }
   };
 #define NFILE asize(fnm)
   FILE         *log;
   t_topology   top;
-  t_tpaheader stath;
+  t_tpxheader  stath;
   t_inputrec   ir;
   t_block      *excl;
   t_forcerec   *fr;
@@ -211,7 +192,7 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   if (nprocs > 1) {
-    cr = init_par(nprocs,argv);
+    cr = init_par(argv);
     open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   }
   else {
@@ -220,10 +201,10 @@ int main(int argc,char *argv[])
   }
   
   /* Read topology and coordinates */
-  read_tpaheader(ftp2fn(efTPX,NFILE,fnm),&stath);
+  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&stath);
   snew(x,stath.natoms);
   snew(f,stath.natoms);
-  read_tpa(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
 	   box,&natoms,x,NULL,NULL,&top);
   excl=&(top.atoms.excl);
   nmol=top.blocks[ebMOLS].nr;

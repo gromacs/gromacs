@@ -88,7 +88,8 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
   t_energy *eg;
   
   if ((index+nener > eb->nener) || (index < 0))
-    fatal_error(0,"Energies out of range: index=%d nener=%d",index,nener);
+    fatal_error(0,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
+		__FILE__,__LINE__,index,nener,eb->nener);
     
   m=step+1;
   invmm=1.0/m;

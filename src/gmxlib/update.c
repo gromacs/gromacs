@@ -50,6 +50,7 @@ static char *SRCID_update_c = "$Id$";
 #include "mshift.h"
 #include "tgroup.h"
 #include "force.h"
+#include "names.h"
 #include "txtdump.h"
 #include "mdrun.h"
 #include "copyrite.h"
@@ -63,7 +64,7 @@ void calc_pres(matrix box,tensor ekin,tensor vir,tensor pres)
   /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. */ 
   /* Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in het */
   /* systeem...       */
-  fac=2.0/det(box);
+  fac=2.0*PRESFAC/det(box);
   for(n=0; (n<DIM); n++)
     for(m=0; (m<DIM); m++)
       pres[n][m]=(ekin[n][m]-vir[n][m])*fac;
@@ -121,23 +122,24 @@ static void do_pcoupl(t_inputrec *ir,tensor pres,
    */
   scalar_pressure = (trace(pres))/3.0;
 
-  if (ir->bpc && (scalar_pressure != 0.0)) {
+  if ((ir->epc != epcNO) && (scalar_pressure != 0.0)) {
     for(m=0; (m<DIM); m++)
       factor[m] = ir->compress[m]*ir->delta_t/ir->tau_p;
     clear_mat(mu);
-    switch (ir->eBox) {
-    case ebtCUBIC:
+    switch (ir->epc) {
+    case epcISOTROPIC:
       for(m=0; (m<DIM); m++)
 	mu[m][m] = 
 	  pow(1.0-factor[m]*(ir->ref_p[m]-scalar_pressure),1.0/3.0);
       break;
-    case ebtRECT:
+    case epcANISOTROPIC:
       for (m=0; (m<DIM); m++)
 	mu[m][m] = pow(1.0-factor[m]*(ir->ref_p[m] - pres[m][m]),1.0/3.0);
       break;
+    case epcTRICLINIC:
     default:
-      fprintf(stderr,"Box Type %d not supported with Pressure coupling\n",
-	      ir->eBox);
+      fprintf(stderr,"Pressure coupling type %s not supported yet\n",
+	      EPCOUPLTYPE(ir->epc));
       exit(1);
     }
 #ifdef DEBUG
@@ -549,9 +551,9 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
   int         nsettle=0;
   int         *owptr=NULL;
 
-  if ((ir->btc) || (ir->bpc))
+  if ((ir->btc) || (ir->epc != epcNO))
     please_cite(log,"Berendsen84a");
-    
+  
   /* Put the oxygen atoms in the owptr array */
   nsettle=idef->il[F_SETTLE].nr/2;
   if (nsettle > 0) {

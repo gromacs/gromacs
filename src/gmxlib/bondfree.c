@@ -704,14 +704,14 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 
     r2    = dist2(x[ai],x[aj]);
     
-    if (r2 >= rlong2) {
-      fprintf(stderr,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,
+    if ((rlong2 > 0) && (r2 >= rlong2)) {
+      fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)ai+1,
 	      x[ai][XX],x[ai][YY],x[ai][ZZ]);
-      fprintf(stderr,"%d %8.3f %8.3f %8.3f\n",(int)aj+1,
+      fprintf(log,"%d %8.3f %8.3f %8.3f\n",(int)aj+1,
 	      x[aj][XX],x[aj][YY],x[aj][ZZ]);
-      fprintf(stderr,"1-4 (%d,%d) interaction not within cut-off! r=%g\n",
+      fprintf(log,"1-4 (%d,%d) interaction not within cut-off! r=%g\n",
 	      (int)ai+1,(int)aj+1,sqrt(r2));
-      exit(1);
+      /* exit(1); */
     }
     
     gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);
@@ -723,7 +723,7 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
     c12A = iparams[itype].lj14.c12A;
     c6B  = iparams[itype].lj14.c6B;
     c12B = iparams[itype].lj14.c12B;
-
+    
     do_one14(x,ai,aj,f,gid,fr->shift_vec[shift],egcoul,egnb,
 	     md->chargeA,md->chargeB,md->typeA,md->typeB,md->bPerturbed,
 	     c6A,c12A,c6B,c12B,r2,g,fr->fshift,lambda,dvdlambda,

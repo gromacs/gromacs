@@ -388,7 +388,7 @@ static bool do_binread(void *item,int nitem,int eio,
     rsize = fread(item,size,nitem,curfio->fp);
   else {
     /* Skip over it if we have a NULL pointer here */
-    fseek(curfio->fp,size*nitem,SEEK_CUR);
+    fseek(curfio->fp,(long) (size*nitem),SEEK_CUR);
     rsize = nitem;
   }
   if ((rsize != nitem) && (curfio->bDebug))

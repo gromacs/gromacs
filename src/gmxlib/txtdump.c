@@ -269,7 +269,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PS("bShakeFirst",BOOL(ir->bShakeFirst));
     PS("btc",BOOL(ir->btc));
     PI("ntcmemory",ir->ntcmemory);
-    PS("bpc",BOOL(ir->bpc));
+    PS("epc",EPCOUPLTYPE(ir->epc));
     PI("npcmemory",ir->npcmemory);
     PR("tau_p",ir->tau_p);
     pr_rvec(fp,indent,"ref_p",ir->ref_p,DIM);

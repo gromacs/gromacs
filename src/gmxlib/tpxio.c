@@ -114,7 +114,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->bShakeFirst); 
     do_int(ir->btc); 
     do_int(ir->ntcmemory); 
-    do_int(ir->bpc); 
+    do_int(ir->epc); 
     do_int(ir->npcmemory); 
     do_real(ir->tau_p); 
     do_rvec(ir->ref_p); 

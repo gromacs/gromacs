@@ -33,10 +33,14 @@ static char *SRCID_ewald_c = "$Id$";
 #include "typedefs.h"
 #include "vec.h"
 #include "complex.h"
+#include "futil.h"
 #include "lrutil.h"
 #include "grids.h"
 #include "pppm.h"
 #include "fatal.h"
+#include "ghat.h"
+
+#define TOL 2e-5
 
 static t_complex Qk(rvec k,int nj,rvec rj[],real qj[])
 /* Return fourier component of discrete charge distribution for all particles
@@ -45,7 +49,6 @@ static t_complex Qk(rvec k,int nj,rvec rj[],real qj[])
 {
   int       i;
   real      ipr;
-  real      tol = 1e-8;
   t_complex c,cqi,cpk;
   
   c = cnul;
@@ -57,10 +60,10 @@ static t_complex Qk(rvec k,int nj,rvec rj[],real qj[])
       c   = cadd(c,cqi);
     }
   }
-  if (fabs(c.re) < tol) 
+  /*if (fabs(c.re) < TOL) 
     c.re = 0;
-  if (fabs(c.im) < tol)
-    c.im = 0;
+    if (fabs(c.im) < TOL)
+    c.im = 0;*/
   
   return c;
 }
@@ -104,6 +107,48 @@ static t_complex phi_k(rvec k,rvec rj,real gk,t_complex qk)
   return cp;
 }
 
+void print_qkgrid(FILE *out,char *title,t_complex ***grid,real factor,
+		  char *pdb,rvec box,int nx,int ny,int nz)
+{
+  static char *pdbformat="%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
+  FILE     *fp;
+  int      i,ix,iy,iz;
+  real     fac=50.0;
+  rvec     boxfac;
+  t_complex g;
+  
+  if (pdb)
+    fp = ffopen(pdb,"w");
+  else
+    fp = out;
+  if (!fp)
+    return;
+
+  boxfac[XX] = fac*box[XX]/nx;
+  boxfac[YY] = fac*box[YY]/ny;
+  boxfac[ZZ] = fac*box[ZZ]/nz;
+  
+  fprintf(fp,"Printing all non-zero complex elements of %s\n",title);
+  for(i=ix=0; (ix<nx); ix++)
+    for(iy=0; (iy<ny); iy++)
+      for(iz=0; (iz<nz); iz++,i++) {
+	g = grid[ix][iy][iz];
+	if (fabs(g.im) > TOL) {
+	  if (pdb) {
+	    fprintf(fp,pdbformat,"ATOM",i,"H","H",' ',
+		    i,ix*boxfac[XX],iy*boxfac[YY],iz*boxfac[ZZ],
+		    1.0,g.im);
+	  } 
+	  else {
+	    fprintf(fp,"%s[%2d][%2d][%2d] = %12.5e + i %12.5e%s\n",
+		    title,ix,iy,iz,g.re*factor,g.im*factor,
+		    (g.im != 0) ? " XXX" : "");
+	  }
+	}
+      }
+  fflush(fp);
+}
+
 real do_ewald(FILE *log,       t_inputrec *ir,
 	      int natoms,      rvec x[],rvec f[],
 	      real charge[],   rvec box,
@@ -144,6 +189,8 @@ real do_ewald(FILE *log,       t_inputrec *ir,
   /* Tabulate charge spread & charge distribution in fourier space */
   mk_qtab(nx,ny,nz,qtab,box,natoms,x,charge);
   
+  print_qkgrid(log,"qk",qtab,1.0,"qkfour.pdb",box,nx,ny,nz);
+    
   /* Now start the actual solution! */
   calc_lll(box,lll);
   
@@ -151,6 +198,7 @@ real do_ewald(FILE *log,       t_inputrec *ir,
   for(i=0; (i<natoms); i++) {
     /* Loop over atoms */
     phitot = cnul;
+    
     /* Electric field vector */
     for(m=0; (m<DIM); m++)
       Ei[m] = cnul;
@@ -159,8 +207,9 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     for(ix=0; (ix < nx); ix++) {
       for(iy=0; (iy < ny); iy++) {
 	for(iz=0; (iz < nz); iz++) {
+	  /* exclude k = (0,0,0) */
 	  if ((ix == 0) && (iy == 0) && (iz == 0))
-	    continue;	  /* exclude k = (0,0,0) */
+	    continue;	  
 	  
 	  calc_k(lll,ix,iy,iz,nx,ny,nz,k);
 
@@ -177,12 +226,21 @@ real do_ewald(FILE *log,       t_inputrec *ir,
       }
     }
     /* Potential at atom i, and energy contribution */
+#ifdef DEBUG
+    fprintf(log,"phi[%3d] = %10.3e + i %10.3e\n",i,phitot.re,phitot.im);
+#endif
     phi[i]  = phitot.re;
     energy += phi[i]*charge[i];
     
     /* Force on the atom */
-    for(m=0; (m<DIM); m++)
+    for(m=0; (m<DIM); m++) {
       f[i][m] = charge[i]*Ei[m].im;
+#ifdef DEBUG
+      if (fabs(Ei[m].re) > 1e-6)
+	fprintf(log,"Ei[%1d] atom %3d = %10.3e + i%10.3e\n",
+		m,i,Ei[m].re,Ei[m].im);
+#endif
+    }
   }
   return energy;
 }

@@ -114,7 +114,7 @@ libxdrf.o:	libxdrf.m4 $(M4FILE)
 		$(RM) libxdrf.c
 
 inloopf.o:	inloopf.m4 
-		$(CC) -E $(SYSDEFS) inloopf.m4 > inloopf.f
+		$(CC) -E $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
 		$(F77) $(FFLAGS) -c inloopf.f
 		$(RM) inloopf.f
 

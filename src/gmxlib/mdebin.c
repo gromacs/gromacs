@@ -192,7 +192,6 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
-  matrix ppres;
   int    i,j,k,kk,m,n,gid;
   real   bs[5];
   real   eee[egNR];
@@ -205,10 +204,7 @@ void upd_mdebin(t_mdebin *md,real tmass,int step,
   add_ebin(md->ebin,md->isvir,9,svir[0],step);
   add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
   add_ebin(md->ebin,md->ivir,9,vir[0],step);
-  for(i=0; (i<DIM); i++)
-    for(j=0; (j<DIM); j++)
-      ppres[i][j]=pres[i][j]*PRESFAC;
-  add_ebin(md->ebin,md->ipres,9,ppres[0],step);
+  add_ebin(md->ebin,md->ipres,9,pres[0],step);
   add_ebin(md->ebin,md->imu,3,mu_tot,step);
   
   if (md->nE > 1) {

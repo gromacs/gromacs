@@ -236,6 +236,7 @@ static int  nwarn       = 0;
 static int  maxwarn     = 10;
 static int  lineno      = 1;
 static char filenm[256] = "\0";
+char   warn_buf[1024];
 
 void init_warning(int maxwarning)
 {
@@ -252,6 +253,8 @@ void set_warning_line(char *s,int line)
 void warning(char *s)
 {
   nwarn++;
+  if (s == NULL)
+    s = warn_buf;
   fprintf(stderr,"Warning %d [file %s, line %d]: %s\n",
 	  nwarn,filenm,lineno,s);
   if (nwarn >= maxwarn) {
@@ -260,13 +263,17 @@ void warning(char *s)
   }
 }
 
+void print_warn_num(void)
+{
+  if (nwarn > 0)
+    fprintf(stderr,"There were %d warnings\n",nwarn);
+}
+
 void _too_few(char *fn,int line)
 {
-  char errbuf[256];
-  
-  sprintf(errbuf,"Too few parameters on line (source file %s, line %d)",
+  sprintf(warn_buf,"Too few parameters on line (source file %s, line %d)",
 	  fn,line);
-  warning(errbuf);
+  warning(NULL);
 }
 
 void _invalid_case(char *fn,int line)

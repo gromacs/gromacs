@@ -38,7 +38,7 @@ char *eblock_names[ebNR+1]=
 
 char *eboxtype_names[ebtNR+1]=
 {
-  "Cubic","Rectangular", NULL
+  "Cubic","Rectangular", "None", NULL
 };
 
 char *ens_names[enNR+1]=
@@ -78,3 +78,6 @@ char *egrp_nm[egNR+1] = {
   "Coul-SR","LJ","Buck", "Coul-LR", "Coul-14", "LJ-14", NULL
 };
 
+char *epcoupl_names[epcNR+1] = {
+  "No", "Isotropic", "Anisotropic", "Triclinic", NULL
+};

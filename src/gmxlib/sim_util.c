@@ -121,7 +121,7 @@ void do_force(FILE *log,t_commrec *cr,
   where();
   
   /* Compute shift vectors every step, because of pressure coupling! */
-  if (parm->ir.bpc)
+  if (parm->ir.epc != epcNO)
     calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   where();
   
@@ -260,15 +260,15 @@ void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
     vol           = det(box);
     rc3           = fr->rshort*fr->rshort*fr->rshort;
     ener[F_LJLR]  = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
-    spres         = 2.0*ener[F_LJLR]/vol;
-    ener[F_PRES]  = (trace(pres)/3.0+spres)*PRESFAC;
+    spres         = 2.0*PRESFAC*ener[F_LJLR]/vol;
+    ener[F_PRES]  = trace(pres)/3.0+spres;
     pres[XX][XX] += spres;
     pres[YY][YY] += spres;
     pres[ZZ][ZZ] += spres;
   }
   else {
     ener[F_LJLR]  = 0.0;
-    ener[F_PRES]  = (trace(pres)/3.0)*PRESFAC;
+    ener[F_PRES]  = trace(pres)/3.0;
   }
   ener[F_EPOT] += ener[F_LJLR];
   ener[F_ETOT] += ener[F_LJLR];

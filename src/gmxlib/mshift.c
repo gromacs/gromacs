@@ -253,6 +253,8 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly)
      * we allocate some more memory, and divide it ourselves.
      * We calculate pointers... (Yuck Yuck)
      */
+    if (debug)
+      fprintf(debug,"MSHIFT: nnodes=%d, maxbond=%d\n",g->nnodes,g->maxbond);
     snew(g->edge,g->nnodes);
     snew(g->edge[0],g->maxbond*g->nnodes);
 
