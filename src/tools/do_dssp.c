@@ -544,10 +544,7 @@ int main(int argc,char *argv[])
     }
   }
 
-  do_view(opt2fn("-o",NFILE,fnm),NULL);
-  do_view(fnSCount,NULL);
-  do_view(fnTArea ,NULL);
-  do_view(fnAArea ,NULL);
+  view_all(NFILE, fnm);
 
   thanx(stderr);
   
