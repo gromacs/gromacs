@@ -33,11 +33,9 @@
 #include "futil.h"
 #include "copyrite.h"
 
-void head(FILE *out)
+void head(FILE *out, char *fn)
 {
   static char *head1[]= {
-    "/*",
-    " *       %""Z% %""M% %""I% %""G%",
     " *",
     " *       This source code is part of",
     " *",
@@ -62,8 +60,22 @@ void head(FILE *out)
 #define NH1 asize(head1)
 #define NCR asize(CopyrightText)
 #define NH2 asize(head2)
-  int i;
+  int i,day,year;
+  char *ts,month[STRLEN];
+  time_t now;
+
+  printf("%s\n",fn);
+  now=time(NULL);
+  ts=ctime(&now);
+  printf("%s",ts);
+  /* ts = "Fri Sep 13 00:00:00 1986\n\0" */
+  sscanf(ts,"%*s %s %d %*s %d",&month,&day,&year);
+  printf("%d\n",day);
+  printf("%s\n",month);
+  printf("%d\n",year);
   
+  fprintf(out,"/*\n");
+  fprintf(out," *       %s %d %s %d\n",fn,day,month,year);
   for(i=0; (i<NH1); i++)
     fprintf(out,"%s\n",head1[i]);
   fprintf(out," *            %s\n",GromacsVersion());
@@ -107,7 +119,7 @@ void cr(char *fn)
       if ((strstr(line,"*/") != NULL) && (!feof(in)))
 	fgets2(line,MAXS,in);
     }
-    head(out);
+    head(out,fn);
     do {
       fprintf(out,"%s\n",line);
     } while (!feof(in) && fgets2(line,MAXS,in));
