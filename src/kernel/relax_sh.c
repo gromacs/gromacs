@@ -68,12 +68,15 @@ static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 }
 
 static void directional_sd(FILE *log,real step,rvec xold[],rvec xnew[],
-			   rvec min_f[],int start,int homenr,real k)
+			   rvec acc_dir[],int start,int homenr,real k)
 {
+  real invk;
   int  i;
   
+  invk = 1.0/k;
+
   for(i=start; i<homenr; i++)
-    do_1pos(xnew[i],xold[i],min_f[i],-k,step);
+    do_1pos(xnew[i],xold[i],acc_dir[i],invk,step);
 }
 
 static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
@@ -167,23 +170,26 @@ static void print_epot(FILE *fp,int mdstep,int count,real step,real epot,
 }
 
 
-static real rms_force(t_commrec *cr,rvec f[],int ns,t_shell s[])
+static real rms_force(t_commrec *cr,rvec f[],int ns,t_shell s[],
+		      int ndir,real sf_dir)
 {
-  int  i,shell;
+  int  i,shell,ntot;
   real df2;
   
-  if (!ns)
+  ntot = ns+ndir;
+
+  if (!ntot)
     return 0;
-  df2=0.0;
-  for(i=0; (i<ns); i++) {
+  df2 = sf_dir;
+  for(i=0; i<ns; i++) {
     shell = s[i].shell;
     df2  += iprod(f[shell],f[shell]);
   }
   if (PAR(cr)) {
     gmx_sum(1,&df2,cr);
-    gmx_sumi(1,&ns,cr);
+    gmx_sumi(1,&ntot,cr);
   }
-  return sqrt(df2/ns);
+  return sqrt(df2/ntot);
 }
 
 static void check_pbc(FILE *fp,rvec x[],int shell)
@@ -215,6 +221,77 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
+static int count_zero_length_constraints(t_idef *idef)
+{
+  int nZeroLen,i;
+
+  nZeroLen = 0;
+
+  for(i=0; i<idef->il[F_SHAKE].nr; i+=3)
+    if (idef->iparams[idef->il[F_SHAKE].iatoms[i]].shake.dA == 0)
+      nZeroLen++;
+  
+  return nZeroLen;
+}
+
+static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
+		      t_mdatoms *md,int start,int end,
+		      rvec *x_old,rvec *x_init,rvec *x,
+		      rvec *f,rvec *acc_dir,matrix box,
+		      real lambda,real *dvdlambda,t_nrnb *nrnb)
+{
+  static rvec *xnold=NULL,*xnew=NULL;
+  double w_dt;
+  int    gf,ga,gt;
+  real   dt,scale;
+  int    n,d; 
+  unsigned short *ptype;
+  rvec   p,dx;
+  
+  if (xnew == NULL) {
+    snew(xnold,end-start);
+    snew(xnew,end-start);
+  }
+    
+  ptype = md->ptype;
+
+  dt = ir->delta_t;
+
+  /* Does NOT work with freeze or acceleration groups (yet) */
+  for (n=start; n<end; n++) {  
+    w_dt = md->invmass[n]*dt;
+    
+    for (d=0; d<DIM; d++) {
+      if ((ptype[n] != eptDummy) && (ptype[n] != eptShell)) {
+	xnold[start+n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
+	xnew[start+n][d] = 2*x[n][d] - x_old[n][d] + f[n][d]*w_dt*dt;
+      } else {
+	xnold[start+n][d] = x[n][d];
+	xnew[start+n][d] = x[n][d];
+      }
+    }
+  }
+  constrain(log,top,ir,step,md,start,end,
+	    x,xnold-start,NULL,box,
+	    lambda,dvdlambda,nrnb,TRUE);
+  constrain(log,top,ir,step,md,start,end,
+	    x,xnew-start,NULL,box,
+	    lambda,dvdlambda,nrnb,TRUE);
+
+  /* Set xnew to minus the acceleration */
+  for (n=start; n<end; n++) {
+    for(d=0; d<DIM; d++)
+      xnew[n-start][d] = -(2*x[n][d]-xnold[n][d]-xnew[n][d])/sqr(dt)
+	- f[n][d]*md->invmass[n];
+    clear_rvec(acc_dir[n]);
+  }
+
+  /* Project the accereration on the old bond directions */
+  constrain(log,top,ir,step,md,start,end,
+	    x_old,xnew,acc_dir,box,
+	    lambda,dvdlambda,nrnb,FALSE); 
+}
+
 int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],
@@ -230,24 +307,33 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2],Estore[F_NRE];
   tensor my_vir[2],vir_last,pme_vir[2];
-  rvec   *min_f_dir=NULL;
+  static rvec *acc_dir=NULL,*x_old=NULL;
+  rvec   dx;
+  real   sf_dir,msfd0;
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
   bool   bDone;
-  int    g;
+  int    g,ndir;
   int    number_steps;
   int    count=0;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
+  int    d;
   int    Min=0;
 #define  Try (1-Min)             /* At start Try = 1 */
+
+  if (fr->k_dirmin != 0)
+    ndir = count_zero_length_constraints(&(top->idef));
+  else
+    ndir = 0;
 
   if (bFirst) {
     /* Allocate local arrays */
     for(i=0; (i<2); i++) {
-      if (nshell > 0)
+      if (nshell+ndir > 0) {
 	snew(pos[i],nsb->natoms);
-      snew(force[i],nsb->natoms);
+	snew(force[i],nsb->natoms);
+      }
     }
     bInit  = (getenv("FORCEINIT") != NULL);
     bFirst = FALSE;
@@ -257,6 +343,18 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   number_steps = parm->ir.niter;
   step0        = 1.0;
 
+  if (ndir) {
+    if (acc_dir == NULL) {
+      snew(acc_dir,homenr);
+      snew(x_old,homenr);
+    }
+    init_pbc(parm->box,FALSE);
+    for(i=0; i<homenr; i++) {
+      for(d=0; d<DIM; d++)
+        x_old[i][d] = x[start+i][d] - v[start+i][d]*parm->ir.delta_t;
+    }
+  }
+  
   /* Do a prediction of the shell positions */
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,
 		 md->massT,bInit || (mdstep == 0));
@@ -269,7 +367,21 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE);
   sum_lrforces(force[Min],fr,start,homenr);
 
-  df[Min]=rms_force(cr,force[Min],nshell,shells);
+  sf_dir = 0;
+  if (ndir) {
+    init_adir(log,top,&(parm->ir),mdstep,md,start,end,
+	      x_old-start,x,x,force[Min],acc_dir-start,
+	      parm->box,lambda,&dum,nrnb);
+
+    for(i=start; i<end; i++)
+      sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
+
+    msfd0 = sqrt(sf_dir/ndir);
+    if (bVerbose)
+      fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/ndir));
+  }
+  
+  df[Min]=rms_force(cr,force[Min],nshell,shells,ndir,sf_dir);
   df[Try]=0;
   if (debug) {
     fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
@@ -282,7 +394,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
   }
 #endif
-  if (nshell > 0) {
+  if (nshell+ndir > 0) {
     /* Copy x to pos[Min] & pos[Try]: during minimization only the
      * shell positions are updated, therefore the other particles must
      * be set here.
@@ -299,7 +411,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   
   step=step0;
   
-  if (bVerbose && MASTER(cr) && (nshell > 0))
+  if (bVerbose && MASTER(cr) && (nshell+ndir > 0))
     print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],FALSE);
 
   if (debug) {
@@ -315,22 +427,21 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   /* First check whether we should do shells, or whether the force is 
    * low enough even without minimization.
    */
-  *bConverged = bDone = (df[Min] < ftol) || (nshell == 0);
+  *bConverged = bDone = (df[Min] < ftol) || (nshell+ndir == 0);
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
+
+    if (ndir) {
+      init_adir(log,top,&(parm->ir),mdstep,md,start,end,
+		x_old-start,x,pos[Min],force[Min],acc_dir-start,
+		parm->box,lambda,&dum,nrnb);
+      
+      directional_sd(log,step,pos[Min],pos[Try],acc_dir-start,start,end,
+		     fr->k_dirmin);
+    }
     
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
-
-    if (fr->k_dirmin) {
-      if (min_f_dir == NULL)
-	snew(min_f_dir,homenr);
-      constrain(log,top,&(parm->ir),mdstep,md,start,end,
-		pos[Min],force[Min],min_f_dir,parm->box,
-		lambda,&dum,nrnb,FALSE);
-      directional_sd(log,step,pos[Min],pos[Try],min_f_dir,start,homenr,
-		     fr->k_dirmin);
-    }
 
     if (debug) {
       pr_rvecs(debug,0,"pos[Try] b4 do_force",pos[Try] + start,homenr);
@@ -343,7 +454,20 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE);
     sum_lrforces(force[Try],fr,start,homenr);
-    df[Try]=rms_force(cr,force[Try],nshell,shells);
+    sf_dir = 0;
+    if (ndir) {
+      init_adir(log,top,&(parm->ir),mdstep,md,start,end,
+		x_old-start,x,pos[Try],force[Try],acc_dir-start,
+		parm->box,lambda,&dum,nrnb);
+
+      for(i=start; i<end; i++)
+	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
+
+      if (bVerbose)
+	fprintf(stderr,"dir. rmsf %g\n",sqrt(sf_dir/ndir));
+    }
+    df[Try]=rms_force(cr,force[Try],nshell,shells,ndir,sf_dir);
+
     if (debug)
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
 
@@ -395,9 +519,19 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     sprintf(cbuf,"myvir step %d",count);
     pr_rvecs(debug,0,cbuf,vir_part,DIM);
   }
-  if (nshell > 0)
+
+  if (nshell+ndir > 0)
     memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
-    
+  if (ndir > 0) {
+    constrain(log,top,&(parm->ir),mdstep,md,start,end,
+	      x-start,x_old-start,NULL,parm->box,
+	      lambda,&dum,nrnb,TRUE);
+    for(i=0; i<homenr; i++) {
+      pbc_dx(x[start+i],x_old[i],dx);
+      svmul(1/parm->ir.delta_t,dx,v[start+i]);
+    }
+  }
+
   return count; 
 }
 
