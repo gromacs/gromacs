@@ -2,9 +2,15 @@
 <TITLE>mdp options</TITLE>
 <BODY>
 
-<!-- Please be very carefull when editing this file: it must be
-automatically parsed by a simple script to produce a corresponding
-LaTeX file. If you're not sure about what you're doing, don't do it! -->
+<!-- 
+
+PLEASE BE VERY CAREFULL WHEN EDITING THIS FILE: IT MUST BE
+AUTOMATICALLY PARSED BY A SIMPLE SCRIPT (doc/mkmdp) TO PRODUCE A
+CORRESPONDING LATEX FILE.
+
+IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
+
+-->
 
 <h1>mdp options</h1>
 
@@ -30,7 +36,7 @@ LaTeX file. If you're not sure about what you're doing, don't do it! -->
 <li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
-<li><A HREF="#free"><b>Free energy</b></A> (free_energy, init_lambda, delta_lambda)
+<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim )
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, user3_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
@@ -77,7 +83,7 @@ topology, this is necessary to make
 <b><A HREF="#run">steepest descent</A></b> to minimize further.
 <dt><b>-DPOSRE</b>
 <dd>Will tell grompp to include posre.itp into your topology, used for
-position restraints.
+<!--Idx-->position restraints<!--EIdx-->.
 </dl>
 </dl>
 
@@ -89,17 +95,19 @@ position restraints.
 <dt><h4>integrator:</h4>
 <dd><dl compact>
 <dt><b>md</b> 
-<dd>A leap-frog algorithm for integrating Newtons equations.
+<dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newtons
+equations.
 <dt><b>steep</b>
-<dd>A steepest descent algorithm for energy minimization.
-The maximum stepsize is <b><A HREF="#em">emstep</A></b> [nm], the tolerance is 
-<b><A HREF="#em">emtol</A></b> [kJ mol<sup>-1</sup> nm<sup>-1</sup>].
+<dd>A <!--Idx-->steepest descent<!--EIdx--> algorithm for energy
+minimization. The maximum stepsize is <b><A HREF="#em">emstep</A></b>
+[nm], the tolerance is <b><A HREF="#em">emtol</A></b> [kJ
+mol<sup>-1</sup> nm<sup>-1</sup>].
 <dt><b>cg</b>
-<dd> A conjugate gradient algorithm for energy minimization,
-the tolerance is <b>emtol</b> [kJ mol<sup>-1</sup> nm<sup>-1</sup>]. 
-CG is more efficient
-when a steepest descent step is done every once in a while,
-this is determined by <b><A HREF="#em">nstcgsteep</A></b>.
+<dd> A <!--Idx-->conjugate gradient<!--EIdx--> algorithm for energy
+minimization, the tolerance is <b>emtol</b> [kJ mol<sup>-1</sup>
+nm<sup>-1</sup>].  CG is more efficient when a steepest descent step
+is done every once in a while, this is determined by 
+<b><A HREF="#em">nstcgsteep</A></b>.
 <dt><b>ld</b>
 <dd> An Euler integrator for position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
@@ -124,7 +132,7 @@ motion removal (should only be used for vacuum simulations)
 
 <A NAME="ld"><br>
 <hr>
-<h3>Langevin dynamics</h3>
+<h3><!--Idx-->Langevin dynamics<!--EIdx--></h3>
 
 <dl>
 <dt><h4>ld_temp: </b>(300) [K]</h4>
@@ -139,7 +147,7 @@ motion removal (should only be used for vacuum simulations)
 
 <A NAME="em"><br>
 <hr>
-<h3>Energy minimization</h3>
+<h3><!--Idx-->Energy minimization<!--EIdx--></h3>
 <dl>
 <dt><h4>emtol: </b>(100.0) [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4>
 <dd>the minimization is converged when the maximum force is smaller than 
@@ -148,7 +156,7 @@ this value
 <dd>initial step-size
 <dt><h4>nstcgsteep: </b>(1000) [steps]</h4>
 <dd>frequency of performing 1 steepest descent step while doing
-conjugate gradient energy minimization.
+<!--Idx-->conjugate gradient<!--EIdx--> energy minimization.
 </dl>
 
 <A NAME="out"><br>
@@ -156,15 +164,15 @@ conjugate gradient energy minimization.
 <h3>Output control</h3>
 <dl>
 <dt><h4>nstxout: </b>(100) [steps]</h4>
-<dd>frequency to write coordinates to output trajectory,
-the last coordinates are always written
+<dd>frequency to write coordinates to output 
+<!--Idx-->trajectory file<!--EIdx-->, the last coordinates are always written
 <dt><h4>nstvout: </b>(100) [steps]</h4>
 <dd>frequency  to write velocities to output trajectory,
 the last velocities are always written
 <dt><h4>nstfout: </b>(0) [steps]</h4>
 <dd>frequency to write forces to output trajectory.
 <dt><h4>nstlog: </b>(100) [steps]</h4>
-<dd>frequency to write energies to log file,
+<dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
 the last energies are always written
 <dt><h4>nstenergy: </b>(100) [steps]</h4>
 <dd>frequency to write energies to energy file,
@@ -177,25 +185,25 @@ the last energies are always written
 <dd>group(s) to write to xtc trajectory, default the whole system is written
 (if <b>nstxtcout</b> is larger than zero)  
 <dt><h4>energygrps:</h4>
-<dd>group(s) to write to energy file
+<dd>group(s) to write to <!--Idx-->energy file<!--EIdx-->
 </dl>
 
 <A NAME="nl"><br>
 <hr>
-<h3>Neighborsearching</h3>
+<h3><!--Idx-->Neighbor searching<!--EIdx--></h3>
 <dl>
 <dt><h4>nstlist: </b>(10) [steps]</h4>
-<dd>frequency to update neighborlist
+<dd>frequency to update <!--Idx-->neighborlist<!--EIdx-->
 
 <dt><h4>ns_type:</h4>
 <dd><dl compact>
 <dt><b>grid</b>
-<dd>Make a grid in the box and only check atoms in neighboring 
-grid cells when constructing a new neighborlist every <b>nstlist</b> steps. 
-The number of grid cells per Coulomb cut-off length is set with 
-<b>deltagrid</b>,
-this number should be 2 for optimal performance.
-In large systems grid search is much faster than simple search. 
+<dd>Make a grid in the box and only check atoms in neighboring grid
+cells when constructing a new neighborlist every <b>nstlist</b> steps.
+The number of grid cells per Coulomb <!--Idx-->cut-off<!--EIdx-->
+length is set with <b>deltagrid</b>, this number should be 2 for
+optimal performance.  In large systems grid search is much faster than
+simple search.
 <dt><b>simple</b>
 <dd>Check every atom in the box when constructing a new neighborlist
 every <b>nstlist</b> steps.
@@ -218,18 +226,18 @@ every <b>nstlist</b> steps.
 
 <A NAME="el"><br>
 <hr>
-<h3>Electrostatics and VdW</h3>
+<h3><!--Idx-->Electrostatics<!--EIdx--> and <!--Idx-->VdW<!--EIdx--></h3>
 <dl>
-<dt><h4>coulombtype:</h4>
+<dt><h4><!--Idx-->coulomb<!--EIdx-->type:</h4>
 <dd><dl compact>
 
-<dt><b>Cut-off</b>
+<dt><b><!--Idx-->Cut-off<!--EIdx--></b>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
 where <b>rlist</b> <tt>&lt=</tt> <b>rvdw</b> <tt>&lt=</tt> <b>rcoulomb</b>.
-The dielectric constant is set with <b>epsilon_r</b>.
+The <!--Idx-->dielectric constant<!--EIdx--> is set with <b>epsilon_r</b>.
 
-<dt><b>Ewald</b>
+<dt><b><!--Idx-->Ewald<!--EIdx--></b>
 <dd>Classical Ewald sum electrostatics. Use e.g. <b>rlist</b>=0.9,
 <b>rvdw</b>=0.9, <b>rcoulomb</b>=0.9. The highest magnitude of
 wavevectors used in reciprocal space is controlled by <b>fourierspacing</b>.
@@ -238,7 +246,7 @@ is controlled by <b>ewald_rtol</b>. NOTE: Ewald scales as O(N<sup>3/2</sup>)) an
 is thus extremely slow for large systems. It is included mainly for
 reference - in most cases PME will perform much better.
 
-<dt><b>PME</b> 
+<dt><b><!--Idx-->PME<!--EIdx--></b> 
 <dd>Fast Particle-Mesh Ewald electrostatics. Direct space is similar
 to the Ewald sum, while the reciprocal part is performed with
 FFTs. Grid dimensions are controlled with <b>fourierspacing</b> and the
@@ -249,7 +257,7 @@ might try 0.15 nm. When running in parallel the interpolation
 parallelizes better than the FFT, so try decreasing grid dimensions
 while increasing interpolation.
 
-<dt><b>PPPM</b>
+<dt><b><!--Idx-->PPPM<!--EIdx--></b>
 <dd>Particle-Particle Particle-Mesh algorithm for long range
 electrostatic interactions.
 Use for example <b>rlist</b><tt>=1.0</tt>, <b>rcoulomb_switch</b><tt>=0.0</TT>,
@@ -271,7 +279,7 @@ The dielectric constant can be set to infinity by setting <b>epsilon_r</b>=0.
 where <b>rcoulomb</b> <tt>&gt=</tt> <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.
 The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
 The ionic strength is computed from the number of charged 
-(i.e. with non zero charge) charge groups.
+(i.e. with non zero charge) <!--Idx-->charge group<!--EIdx-->s.
 The temperature for the GRF potential is set with 
 <b><A HREF="#tc">ref_t</A></b> [K].
 <dt><b>Shift</b>
@@ -302,7 +310,7 @@ important.
 <dd>distance for the Coulomb cut-off
 
 <dt><h4>epsilon_r: </b>(1)</h4>
-<dd>dielectric constant
+<dd><!--Idx-->dielectric constant<!--EIdx-->
 
 <dt><h4>vdwtype:</h4>
 <dd><dl compact>
@@ -311,17 +319,17 @@ important.
 VdW cut-off <b>rvdw</b>,
 where <b>rvdw</b> <tt>&gt=</tt> <b>rlist</b>.
 <dt><b>Shift</b>
-<dd>The LJ (not Buckingham)
-potential is decreased over the whole range and the forces decay smoothly
-to zero between <b>rvdw_switch</b> and <b>rvdw</b>.
-The neighborsearch cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
-<b>rvdw</b> to accommodate for the size of charge groups and diffusion
-between neighborlist updates.
+<dd>The LJ (not Buckingham) potential is decreased over the whole
+range and the forces decay smoothly to zero between <b>rvdw_switch</b>
+and <b>rvdw</b>.  The neighborsearch cut-off <b>rlist</b> should be
+0.1 to 0.3 nm larger than <b>rvdw</b> to accommodate for the size of
+<!--Idx-->charge group<!--EIdx-->s and diffusion between neighborlist
+updates.
 
 <dt><b>User</b>
 <dd><tt>mdrun</tt> will now expect to find two files with user-defined
-functions: <tt>rtab.xvg</tt> for Repulsion, <tt>dtab.xvg</tt> for Dispersion.
-These files should contain 5 columns:
+functions: <tt>rtab.xvg</tt> for Repulsion, <tt>dtab.xvg</tt> for 
+<!--Idx-->Dispersion<!--EIdx-->. These files should contain 5 columns:
 the <tt>x</tt> value, and the function value with its 1<sup>st</sup>
 to 3<sup>rd</sup> derivative. The <tt>x</tt> should run from 0 [nm] to
 <b>rvdw</b><tt>+0.5</tt> [nm], with a spacing of <tt>0.002</tt>
@@ -381,7 +389,7 @@ at start.
 
 <A NAME="tc"><br>
 <hr>
-<h3>Temperature coupling</h3>
+<h3><!--Idx-->Temperature coupling<!--EIdx--></h3>
 
 <dl>
 <dt><h4>tcoupl:</h4>
@@ -405,7 +413,7 @@ Several groups can be coupled seperately, these are specified in the
 
 <A NAME="pc"><br>
 <hr>
-<h3>Pressure coupling</h3>
+<h3><!--Idx-->Pressure coupling<!--EIdx--></h3>
 
 <dl>
 <dt><h4>pcoupl:</h4>
@@ -454,7 +462,7 @@ For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].
 
 <A NAME="sa"><br>
 <hr>
-<h3>Simulated annealing</h3>
+<h3><!--Idx-->Simulated annealing<!--EIdx--></h3>
 
 <dl>
 <dt><h4>annealing:</h4>
@@ -521,7 +529,7 @@ if it is faster.
 <h3>Bonds</h3>
 
 <dl>
-<dt><h4>constraints:</h4>
+<dt><h4><!--Idx-->constraints<!--EIdx-->:</h4>
 <dd><dl compact>
 <dt><b>none</b>
 <dd>No constraints, i.e. bonds are represented by a harmonic or a
@@ -540,7 +548,7 @@ by adding bond-constraints.
 
 <dt><h4>constraint_alg:</h4>
 <dd><dl compact>
-<dt><b>lincs</b>
+<dt><b><!--Idx-->lincs<!--EIdx--></b>
 <dd>LINear Constraint Solver. The accuracy in set with
 <b>lincs_order</b>, which sets the number of matrices in the expansion
 for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
@@ -548,7 +556,7 @@ needed for LD with large timesteps. If a bond rotates more than
 <b>lincs_warnangle</b> [degrees] in one step, 
 a warning will be printed both to the log file and to <TT>stderr</TT>. 
 Lincs should not be used with coupled angle constraints.
-<dt><b>shake</b>
+<dt><b><!--Idx-->shake<!--EIdx--></b>
 <dd>Shake is slower and less stable than Lincs, but does work with 
 angle constraints. 
 The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
@@ -585,13 +593,13 @@ during energy minimization, only one iteration is used in MD.
 
 <A NAME="nmr"><br>
 <hr>
-<h3>NMR refinement</h3>
+<h3><!--Idx-->NMR<!--EIdx--> refinement</h3>
 <dl>
 <dt><h4>disre:</h4>
 <dd><dl compact>
 <dt><b>none</b>
-<dd>no distance restraints (ignore distance restraints information in
-topology file)
+<dd>no <!--Idx-->distance restraints<!--EIdx--> (ignore distance
+restraints information in topology file)
 <dt><b>simple</b>
 <dd>simple (per-molecule) distance restraints
 <dt><b>ensemble</b>
@@ -628,7 +636,7 @@ of all atom pairs involved in restraints to the energy file
 
 <A NAME="free"><br>
 <hr>
-<h3>Free energy</h3>
+<h3><!--Idx-->Free Energy Perturbatrion<!--EIdx--></h3>
 
 <dl>
 <dt><h4>free_energy:</h4>
@@ -649,7 +657,7 @@ per time step is <b>delta_lambda</b>.
 
 <A NAME="neq"><br>
 <hr>
-<h3>Non-equilibrium MD</h3>
+<h3><!--Idx-->Non-equilibrium MD<!--EIdx--></h3>
 
 <dl>
 <dt><h4>acc_grps: </b></h4>
@@ -675,7 +683,7 @@ move in any direction).
 
 <A NAME="ef"><br>
 <hr>
-<h3>Electric fields</h3>
+<h3><!--Idx-->Electric field<!--EIdx-->s</h3>
 
 <dl>
 <dt><h4>E_x ; E_y ; E_z:</h4>
