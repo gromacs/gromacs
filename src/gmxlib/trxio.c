@@ -374,6 +374,7 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
 static int gmx_first_x(int status, real *t, rvec **x, matrix box)
 {
   t_trnheader sh;
+  int  natoms;
   bool bOK;
   
   INITCOUNT;
@@ -386,7 +387,10 @@ static int gmx_first_x(int status, real *t, rvec **x, matrix box)
   }
   if (!bOK) printincomph(sh.t);
 
-  return sh.natoms;
+  /* This is a workaround for a compiler bug. */
+  natoms = sh.natoms;
+  
+  return natoms;
 }
 
 static int gmx_first_x_v(int status, real *t, rvec **x,rvec **v,matrix box)
