@@ -559,7 +559,17 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   for(j=0; (j<md->nr); j++) {
     md->chargeA[j] *= fq[md->typeA[j]];
   }
-  
+  for(i=0; (i<tcr->nQ); i++) {
+    tcq=&(tcr->tcQ[i]);
+    for(j=0; (j<md->nr); j++) {
+      if (md->typeA[j] == tcq->at_i) {
+	tcq->Q = md->chargeA[j];
+	break;
+      }
+    }
+    if (j == md->nr)
+      fatal_error(0,"Coupling type %d not found",tcq->at_i);
+  }  
   for(i=0; (i<tcr->nIP); i++) {
     tip    = &(tcr->tIP[i]);
     type   = tip->type;
