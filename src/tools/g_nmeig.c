@@ -46,38 +46,45 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "gstat.h"
 #include "txtdump.h"
 #include "callf77.h"
+#include "trnio.h"
 
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_nmeig calculates the eigenvectors/values of a (Hessian) matrix."
+    "g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,",
+    "which can be calculated with [TT]nmrun[tt].",
+    "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
+    "The structure is written first with t=0. The eigenvectors",
+    "are written as frames with the eigenvector number as timestamp.",
+    "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
   };
-  static bool bM=FALSE;
+  static bool bM=TRUE;
   static int  begin=1,end=100;
   t_pargs pa[] = {
     { "-m",  FALSE, etBOOL, &bM,
       "Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analyses" },
     { "-first", FALSE, etINT, &begin,     
-      "first eigenvector to write away" },
+      "First eigenvector to write away" },
     { "-last",  FALSE, etINT, &end, 
-      "last eigenvector to write away" }
+      "Last eigenvector to write away" }
   };
-  FILE       *out,*vec;
-  int        status;
-  t_topology *top;
-  rvec       *x;
-  matrix     box;
-  real       t,*hess,*rdum1,*rdum2,rdum;
+  FILE       *out;
+  int        status,trjout;
+  t_topology top;
+  t_inputrec ir;
+  rvec       *top_x,*x;
+  matrix     box,zerobox;
+  real       t,*hess,*rdum1,*rdum2,rdum,mass_fac;
   int        natoms,ndim,count;
-  char       *grpname,*vecnm;
-  int        i,j,k,l,gnx;
+  char       *grpname,title[256];
+  int        i,j,k,l,d,gnx;
   bool       bSuck;
   atom_id    *index;
   t_filenm fnm[] = { 
-    { efMTX, "-f", "hessian", ffREAD }, 
-    { efTPX, NULL, NULL, ffREAD },
-    { efXVG, NULL, "eigval", ffWRITE },
-    { efVEC, "-k", "eigvec", ffWRITE }
+    { efMTX, "-f", "hessian",  ffREAD  }, 
+    { efTPS, NULL, NULL,       ffREAD  },
+    { efXVG, NULL, "eigenval", ffWRITE },
+    { efTRN, "-v", "eigenvec", ffWRITE }
   }; 
 #define NFILE asize(fnm) 
 
@@ -93,10 +100,7 @@ int main(int argc,char *argv[])
   else 
     fprintf(out,"@ subtitle \"of Hessian matrix\"\n");
 
-  top=read_top(ftp2fn(efTPX,NFILE,fnm)); 
-
-  vecnm=ftp2fn(efVEC,NFILE,fnm);
-  vec=(FILE *)ffopen(vecnm,"w");
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&top_x,NULL,box,bM);
 
   /*open Hessian matrix and read first 'line' */
 
@@ -165,10 +169,9 @@ int main(int argc,char *argv[])
     for (i=0; (i<natoms); i++) {
       for (j=0; (j<DIM); j++) {
 	for (k=0; (k<natoms); k++) {
-	  for (l=0; (l<DIM); l++) {
-	    hess[(i*DIM+j)*ndim+k*DIM+l]/=
-	      (sqrt(top->atoms.atom[i].m)*sqrt(top->atoms.atom[k].m));
-	  }
+	  mass_fac=invsqrt(top.atoms.atom[i].m*top.atoms.atom[k].m);
+	  for (l=0; (l<DIM); l++)
+	    hess[(i*DIM+j)*ndim+k*DIM+l]*=mass_fac;
 	}
       }
     }
@@ -202,32 +205,25 @@ int main(int argc,char *argv[])
   }
 
   /* now write the output */
+  if (begin<1)
+    begin=1;
+  if (end>ndim)
+    ndim=end;
+  fprintf (stderr,
+	   "\nWriting structure and eigenvectors %d to %d to %s\n",
+	   begin,end,opt2fn("-v",NFILE,fnm));
 
-  fprintf (stderr,"Writing eigenvalues...\n");
-
-  for (i=0; (i<ndim); i++) {
-    fprintf (out,"%10d %15.6e\n",i+1,rdum1[i]);
+  clear_mat(zerobox);
+  trjout = open_tpx(opt2fn("-v",NFILE,fnm),"w");
+  /* misuse lambda: 0/1 mass weighted analysis no/yes */ 
+  fwrite_trn(trjout,0,0,bM,zerobox,natoms,top_x,NULL,NULL);
+  for(i=begin; i<=end; i++) {
+    for (j=0; j<natoms; j++)
+      for(d=0; d<DIM; d++)
+	x[j][d]=hess[(i-1)*ndim+DIM*j+d];
+    fwrite_trn(trjout,i,(real)i,0,zerobox,natoms,x,NULL,NULL);
   }
-  fclose(out);  
-
-  fprintf (stderr,"Writing eigenvectors %d to %d...\n",begin,end);
-
-  count=0;
-  for (i=begin-1; (i<end); i++) {
-    for (j=0; (j<ndim); j++) {
-      count++;
-      fprintf (vec,"%12.5e",hess[i*ndim+j]);
-      if ((count % 6) == 0)
-	fprintf (vec,"\n");
-    }
-    if ((count % 6) != 0) 
-      fprintf (vec,"\n");
-    count=0;
-  }
-
-  fclose(vec);  
-
-  fprintf(stderr,"\n");
+  close_trn(trjout);
 
   thanx(stdout);
   
