@@ -473,7 +473,11 @@ aromatic rings) or to prevent molecules from flipping over to their
 \beq
 V_{id}(\xi_{ijkl}) = k_{\xi}(\xi_{ijkl}-\xi_0)^2
 \eeq
-This is also a harmonic potential, it is plotted in figure~\ref{fig:imps}.
+This is also a harmonic potential, it is plotted in
+figure~\ref{fig:imps}. Note that, since it is harmonic, periodicity is
+not taken into account, so it is best to define improper dihedrals
+to have a $\xi_0$ as far away from $\pm 180 \degr$ as you can manage.
+
 \begin {figure}
 \centerline{\psfig{figure=plots/f_imps.eps,angle=270,width=8cm}}
 \caption {Improper dihedral potential.}
