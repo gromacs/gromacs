@@ -237,18 +237,16 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     set_comment(interaction_function[ftype].name);
   switch (ftype) {
   case F_ANGLES:
+  case F_G96ANGLES:
+  case F_BONDS:
+  case F_G96BONDS:
+  case F_IDIHS:
     do_harm(iparams,bRead);
     break;
   case F_BHAM:
     do_real(iparams->bham.a);
     do_real(iparams->bham.b);
     do_real(iparams->bham.c);
-    break;
-  case F_BONDS:
-    do_harm(iparams,bRead);
-    break;
-  case F_IDIHS:
-    do_harm(iparams,bRead);
     break;
   case F_MORSE:
     do_real(iparams->morse.b0);
@@ -359,8 +357,18 @@ static void do_idef(t_idef *idef,bool bRead)
   for (i=0; (i<idef->ntypes); i++) 
     do_iparams(idef->functype[i],&idef->iparams[i],bRead);
   
-  for(j=0; (j<F_NRE); j++)
-    do_ilist(&idef->il[j],bRead,interaction_function[j].name);
+  for(j=0; (j<F_NRE); j++) {
+    if ((bRead && (file_version < 6)) && 
+	((j == F_G96ANGLES) || (j == F_G96BONDS))) {
+      fprintf(stderr,"Warning: file_version %d < 6: no GROMOS96 Force field\n"
+	      ,file_version);
+      idef->il[j].nr         = 0;
+      idef->il[j].multinr[0] = 0;
+      idef->il[j].iatoms     = NULL;
+    }
+    else
+      do_ilist(&idef->il[j],bRead,interaction_function[j].name);
+  }
 }
 
 static void do_block(t_block *block,bool bRead)

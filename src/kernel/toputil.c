@@ -232,8 +232,13 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   
   f = 0;
   switch(ftype) {
-  case F_MORSE:
+  case F_G96ANGLES:
+  case F_G96BONDS:
     f = 1;
+    f = 1;
+    break;
+  case F_MORSE:
+    f = 2;
     break;
   case F_PDIHS:
   case F_RBDIHS:

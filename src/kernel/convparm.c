@@ -28,8 +28,10 @@
  */
 static char *SRCID_convparm_c = "$Id$";
 
-#include <sysstuff.h>
+#include <math.h>
+#include "sysstuff.h"
 #include "physics.h"
+#include "vec.h"
 #include "assert.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -50,6 +52,20 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->generic.buf[j]=0.0;
     
   switch (ftype) {
+  case F_G96ANGLES:
+    /* Post processing of input data: store cosine iso angle itself */
+    new->harmonic.rA =cos(old[0]*DEG2RAD);
+    new->harmonic.krA=old[1];
+    new->harmonic.rB =cos(old[2]*DEG2RAD);
+    new->harmonic.krB=old[3];
+    break;
+  case F_G96BONDS:
+    /* Post processing of input data: store square of length itself */
+    new->harmonic.rA =sqr(old[0]);
+    new->harmonic.krA=old[1];
+    new->harmonic.rB =sqr(old[2]);
+    new->harmonic.krB=old[3];
+    break;
   case F_ANGLES:
   case F_BONDS:
   case F_IDIHS:

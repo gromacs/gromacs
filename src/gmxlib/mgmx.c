@@ -507,6 +507,9 @@ static windex mk_filedlgs(int parent,int top,int nfile,
   wc[nwcTEXT]   = xmTextFieldWidgetClass;
   wc[nwcFDLG]   = xmPushButtonWidgetClass;
   
+  /* Make the compiler happy */
+  topw = (Widget) 0;
+  
   snew(wname,NWC);
   wname[nwcLABEL]   = GMXTOGGLE;
   wname[nwcTEXT]    = GMXEDIT;
@@ -602,10 +605,13 @@ static windex mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[],
    * Return the index of the separator (or the last created widget)
    *
    **************************************************************/
-  int    icb,i,npa,dummy,separator,nbool,nedit,nenum,nelem,left,right;
+  int    icb,i,npa,dummy,separator,nbool,nedit,nenum,nelem,left;
   real   bwidth;
   char   buf[132],descbuf[132];
 
+  /* Make the compiler happy */
+  separator = 0;
+  
   /* First round just count booleans and editors */
   nbool = nedit = nenum = 0;
   for(i=0; (i<npargs); i++) {
@@ -937,7 +943,10 @@ static void mk_gui(Widget gmxBase,
 #define NBUT asize(bbb)
   int  sep1,sep2,widg0;
   int  i;
-  
+
+  /* Make the compiler happy */
+  sep1   = 0;
+    
   /* Create the help window */
   helpw  = mk_help(gmxBase,ndesc,desc,nbugs,bugs); 
 

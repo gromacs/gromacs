@@ -57,8 +57,10 @@ static char *SRCID_ifunc_c = "$Id$";
 t_interaction_function interaction_function[F_NRE]=
 {
   def_bond   ("ANGLES",   "Angle",          3, 2, 2,  eNR_ANGLES, angles),
+  def_bond   ("G96ANGLES","G96Angle",       3, 2, 2,  eNR_ANGLES, g96angles),
   def_nb     ("BHAM",     "BuckingHam",     2, 3),
   def_connect("BONDS",    "Bonds",          2, 2, 2,  eNR_BONDS,  bonds),
+  def_connect("G96BONDS", "G96Bonds",       2, 2, 2,  eNR_BONDS,  g96bonds),
   def_connect("MORSE",    "Morse",          2, 3, 0,  eNR_MORSE,  morsebonds),
   def_bond   ("WATERPOL", "Water Pol.",     1, 6, 0,  eNR_WPOL,   water_pol),
   def_bond   ("DISRES",   "Dis. Res",       2, 6, 0,  eNR_DISRES, ta_disres),

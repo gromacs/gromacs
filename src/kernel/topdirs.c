@@ -45,16 +45,22 @@ int ifunc_index(directive d,int type)
     if (type == 1)
       return F_BONDS;
     else if (type == 2)
-      return F_MORSE;
+      return F_G96BONDS;
     else if (type == 3)
-      return F_WPOL;
+      return F_MORSE;
     else
       fatal_error(0,"Invalid bond type %d",type);
+  case d_angles:
+  case d_angletypes:
+    if (type == 1)
+      return F_ANGLES;
+    else if (type == 2)
+      return F_G96ANGLES;
+    else
+      fatal_error(0,"Invalid angle type %d",type);
   case d_pairs:
   case d_pairtypes:
     return F_LJ14;
-  case d_angles:
-  case d_angletypes:
     return F_ANGLES;
   case d_dihedrals:
   case d_dihedraltypes:

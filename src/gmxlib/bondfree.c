@@ -182,33 +182,6 @@ real harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
 }
 
 
-real g96harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
-		 real *V,real *F)
-{
-  const real half=0.5;
-  real  L1,kk,x0,dx,dx2;
-  real  v,f,dvdl;
-  
-  L1    = 1.0-lambda;
-  kk    = L1*kA+lambda*kB;
-  x0    = L1*xA+lambda*xB;
-  
-  dx    = x-x0;
-  dx2   = dx*dx;
-  
-  f     = -kk*dx*2*x;
-  v     = half*kk*dx2;
-  dvdl  = half*(kB-kA)*dx2 + (xA-xB)*kk*dx;
-  
-  *F    = f;
-  *V    = v;
-  
-  return dvdl;
-  
-  /* That was 21 flops */
-}
-
-
 real bonds(FILE *log,int nbonds,
 	   t_iatom forceatoms[],t_iparams forceparams[],
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
@@ -229,7 +202,6 @@ real bonds(FILE *log,int nbonds,
     dr2=iprod(dx,dx);				/*   5		*/
     dr=sqrt(dr2);					/*  10		*/
 
-      
     *dvdlambda += harmonic(forceparams[type].harmonic.krA,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA,
@@ -244,54 +216,6 @@ real bonds(FILE *log,int nbonds,
 #ifdef DEBUG
     if (debug)
       fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
-	      dr,vbond,fbond);
-#endif
-    ki=SHIFT_INDEX(g,ai);
-    kj=SHIFT_INDEX(g,aj);
-    for (m=0; (m<DIM); m++) {			/*  15		*/
-      fij=fbond*dx[m];
-      f[ai][m]+=fij;
-      f[aj][m]-=fij;
-      fr->fshift[ki][m]+=fij;
-      fr->fshift[kj][m]-=fij;
-    }
-  }					/* 44 TOTAL	*/
-  return vtot;
-}
-
-real g96bonds(FILE *log,int nbonds,
-	      t_iatom forceatoms[],t_iparams forceparams[],
-	      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-	      matrix box,real lambda,real *dvdlambda,
-	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
-{
-  int  i,m,ki,kj,ai,aj,type;
-  real dr2,fbond,vbond,fij,vtot;
-  rvec dx;
-
-  vtot = 0.0;
-  for(i=0; (i<nbonds); ) {
-    type = forceatoms[i++];
-    ai   = forceatoms[i++];
-    aj   = forceatoms[i++];
-  
-    pbc_rvec_sub(box,x[ai],x[aj],dx);		/*   3 		*/
-    dr2=iprod(dx,dx);				/*   5		*/
-      
-    *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
-			      forceparams[type].harmonic.krB,
-			      forceparams[type].harmonic.rA,
-			      forceparams[type].harmonic.rB,
-			      dr2,lambda,&vbond,&fbond);
-
-    if (dr2 == 0.0)
-      continue;
-    
-    vtot  += vbond;                             /* 1*/
-    fbond *= invsqrt(dr2);			/*   6		*/
-#ifdef DEBUG
-    if (debug)
-      fprintf(debug,"G96-BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
 	      dr,vbond,fbond);
 #endif
     ki=SHIFT_INDEX(g,ai);
@@ -420,13 +344,11 @@ real water_pol(FILE *log,int nbonds,
 	fprintf(debug,"WPOL: vwpol=%g\n",0.5*iprod(dx,kdx));
 	fprintf(debug,"WPOL: df = (%10g, %10g, %10g)\n",df[XX],df[YY],df[ZZ]);
       }
-#undef DEBUG
 #endif
     }	
   }
   return 0.5*vtot;
 }
-
 
 real bond_angle(FILE *log,matrix box,
 		rvec xi,rvec xj,rvec xk,	/* in  */
@@ -642,8 +564,8 @@ real pdihs(FILE *log,int nbonds,
 	       f,fr,g,x); 				/* 118 		*/
 
 #ifdef DEBUG
-    fprintf(log,"pdih: (%d,%d,%d,%d) ph0=%g, cp=%g, mult=%d, phi=%g\n",
-	    ai,aj,ak,al,ph0,cp,mult,phi);
+    fprintf(log,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
+	    ai,aj,ak,al,cos_phi,phi);
 #endif
   } /* 229 TOTAL 	*/
 
@@ -682,8 +604,8 @@ real idihs(FILE *log,int nbonds,
 	       f,fr,g,x);				/* 118		*/
     /* 208 TOTAL	*/
 #ifdef DEBUG
-    fprintf(log,"idih: (%d,%d,%d,%d) ph0=%g, cp=%g, phi=%g\n",
-	    ai,aj,ak,al,ph0,cp,phi);
+    fprintf(log,"idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
+	    ai,aj,ak,al,cos_phi,phi);
 #endif
   }
   return vtot;
@@ -932,5 +854,154 @@ real do_14(FILE *log,int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	     eps,box,fr->ntab,fr->tabscale,fr->VFtab);
   }
   return 0.0;
+}
+
+/***********************************************************
+ *
+ *   G R O M O S  9 6   F U N C T I O N S
+ *
+ ***********************************************************/
+real g96harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
+		 real *V,real *F)
+{
+  const real half=0.5;
+  real  L1,kk,x0,dx,dx2;
+  real  v,f,dvdl;
+  
+  L1    = 1.0-lambda;
+  kk    = L1*kA+lambda*kB;
+  x0    = L1*xA+lambda*xB;
+  
+  dx    = x-x0;
+  dx2   = dx*dx;
+  
+  f     = -kk*dx;
+  v     = half*kk*dx2;
+  dvdl  = half*(kB-kA)*dx2 + (xA-xB)*kk*dx;
+  
+  *F    = f;
+  *V    = v;
+  
+  return dvdl;
+  
+  /* That was 21 flops */
+}
+
+real g96bonds(FILE *log,int nbonds,
+	      t_iatom forceatoms[],t_iparams forceparams[],
+	      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	      matrix box,real lambda,real *dvdlambda,
+	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  int  i,m,ki,kj,ai,aj,type;
+  real dr2,fbond,vbond,fij,vtot;
+  rvec dx;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+  
+    pbc_rvec_sub(box,x[ai],x[aj],dx);		/*   3 		*/
+    dr2=iprod(dx,dx);				/*   5		*/
+      
+    *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
+			      forceparams[type].harmonic.krB,
+			      forceparams[type].harmonic.rA,
+			      forceparams[type].harmonic.rB,
+			      dr2,lambda,&vbond,&fbond);
+
+    vtot  += vbond;                             /* 1*/
+    fbond *= 2.0;
+#ifdef DEBUG
+    if (debug)
+      fprintf(debug,"G96-BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
+	      sqrt(dr2),vbond,fbond);
+#endif
+    ki=SHIFT_INDEX(g,ai);
+    kj=SHIFT_INDEX(g,aj);
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fij=fbond*dx[m];
+      f[ai][m]+=fij;
+      f[aj][m]-=fij;
+      fr->fshift[ki][m]+=fij;
+      fr->fshift[kj][m]-=fij;
+    }
+  }					/* 44 TOTAL	*/
+  return vtot;
+}
+
+real g96bond_angle(FILE *log,matrix box,
+		   rvec xi,rvec xj,rvec xk,	/* in  */
+		   rvec r_ij,rvec r_kj)		/* out */
+/* Return value is the angle between the bonds i-j and j-k */
+{
+  real costh;
+  
+  pbc_rvec_sub(box,xi,xj,r_ij);			/*  3		*/
+  pbc_rvec_sub(box,xk,xj,r_kj);			/*  3		*/
+
+  costh=cos_angle(r_ij,r_kj);		/* 25		*/
+					/* 41 TOTAL	*/
+  return costh;
+}
+
+real g96angles(FILE *log,int nbonds,
+	       t_iatom forceatoms[],t_iparams forceparams[],
+	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	       matrix box,real lambda,real *dvdlambda,
+	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  int  i,ai,aj,ak,t,type,m;
+  rvec r_ij,r_kj;
+  real cos_theta,dVdt,va,vtot;
+  real rij_1,rij_2,rkj_1,rkj_2,rijrkj_1;
+  rvec f_i,f_j,f_k;
+  
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    
+    cos_theta  = g96bond_angle(log,box,x[ai],x[aj],x[ak],r_ij,r_kj);	
+    
+    *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
+			      forceparams[type].harmonic.krB,
+			      forceparams[type].harmonic.rA,
+			      forceparams[type].harmonic.rB,
+			      cos_theta,lambda,&va,&dVdt);
+    vtot    += va;
+    
+    rij_1    = invsqrt(iprod(r_ij,r_ij));
+    rkj_1    = invsqrt(iprod(r_kj,r_kj));
+    rij_2    = rij_1*rij_1;
+    rkj_2    = rkj_1*rkj_1;
+    rijrkj_1 = rij_1*rkj_1;                     /* 23 */
+    
+#ifdef DEBUG
+    if (debug)
+      fprintf(debug,"G96ANGLES: costheta = %10g  vth = %10g  dV/dct = %10g\n",
+	      cos_theta,va,dVdt);
+#endif
+    for (m=0; (m<DIM); m++) {			/*  42	*/
+      f_i[m]=dVdt*(r_kj[m]*rijrkj_1 - r_ij[m]*rij_2*cos_theta);
+      f_k[m]=dVdt*(r_ij[m]*rijrkj_1 - r_kj[m]*rkj_2*cos_theta);
+      f_j[m]=-f_i[m]-f_k[m];
+      f[ai][m]+=f_i[m];
+      f[aj][m]+=f_j[m];
+      f[ak][m]+=f_k[m];
+    }
+    t = SHIFT_INDEX(g,ai);
+    rvec_inc(fr->fshift[t],f_i);
+    t = SHIFT_INDEX(g,aj);
+    rvec_inc(fr->fshift[t],f_j);
+    t = SHIFT_INDEX(g,ak);
+    rvec_inc(fr->fshift[t],f_k);               /* 9 */
+    /* 163 TOTAL	*/
+  }
+  return vtot;
 }
 

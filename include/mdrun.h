@@ -71,8 +71,8 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
 /* ROUTINES from steep.c */
 extern real f_norm(FILE *log,
-		  int left,int right,int nprocs,
-		  int start,int end,rvec grad[]);
+		   int left,int right,int nprocs,
+		   int start,int end,rvec grad[]);
 /* Calculates norm of force */
 
 extern real f_max(FILE *log,
@@ -84,21 +84,19 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_parm *parm,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb,
 		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       tensor ekin,real ener[],
-		       t_nrnb nrnb[],
+		       tensor ekin,real ener[],t_nrnb nrnb[],
 		       bool bVerbose,bool bDummies,t_commrec *cr,
-		       t_graph *graph,
-		       t_forcerec *fr,rvec box_size);
+		       t_graph *graph,t_forcerec *fr,rvec box_size);
 /* Do steepest descents EM or something like that! */
 
 /* ROUTINES from congrad.c */
 extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
-		       t_parm *parm,t_topology *top,
-		       t_groups *grps,t_nsborder *nsb,
-		       rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       tensor ekin,real ener[],t_nrnb nrnb[],
-		       bool bVerbose,t_commrec *cr,t_graph *graph,t_forcerec *fr,
-		       rvec box_size);
+		    t_parm *parm,t_topology *top,
+		    t_groups *grps,t_nsborder *nsb,
+		    rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
+		    tensor ekin,real ener[],t_nrnb nrnb[],
+		    bool bVerbose,t_commrec *cr,t_graph *graph,t_forcerec *fr,
+		    rvec box_size);
 /* Do conjugate gradients EM! */
 
 /* ROUTINES from runner.c */

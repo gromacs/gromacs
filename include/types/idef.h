@@ -40,8 +40,10 @@ typedef atom_id t_iatom;
    t_interaction_function[F_NRE] in gmxlib/ifunc.c */
 enum {
   F_ANGLES, 
+  F_G96ANGLES, 
   F_BHAM,
   F_BONDS,
+  F_G96BONDS,
   F_MORSE,
   F_WPOL,
   F_DISRES, 

@@ -209,7 +209,7 @@ void do_force(FILE *log,t_commrec *cr,
   if (bNS) {
     put_charge_groups_in_box(log,cg0,cg1,FALSE,
 			     parm->box,box_size,&(top->blocks[ebCGS]),x,
-			     fr->shift_vec,fr->cg_cm);
+			     fr->shift_vec,fr->cg_cm,mdatoms->ptype);
     inc_nrnb(nrnb,eNR_RESETX,homenr);
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
 

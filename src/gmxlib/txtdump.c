@@ -341,6 +341,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   
   switch (ftype) {
   case F_ANGLES:
+  case F_G96ANGLES:
     pr_harm(fp,iparams,"th","ct");
     break;
   case F_BHAM:
@@ -348,6 +349,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->bham.a,iparams->bham.b,iparams->bham.c);
     break;
   case F_BONDS:
+  case F_G96BONDS:
     pr_harm(fp,iparams,"b0","cb");
     break;
   case F_IDIHS:
@@ -429,28 +431,32 @@ static void pr_ilist(FILE *fp,int indent,char *title,
     {  
       indent=pr_title(fp,indent,title);
       (void) pr_indent(fp,indent);
-      fprintf(fp,"multinr:");
-      for (i=0; i<MAXPROC; i++) 
-	(void) fprintf(fp," %d",ilist->multinr[i]);
-      fprintf(fp,"\n");
-      (void) pr_indent(fp,indent);
-      fprintf(fp,"iatoms(%d):\n",ilist->nr);
-      iatoms=ilist->iatoms;
-      for (i=j=0; i<ilist->nr;) {
+      fprintf(fp,"nr: %d\n",ilist->nr);
+      if (ilist->nr > 0) {
+	(void) pr_indent(fp,indent);
+	fprintf(fp,"multinr[division over procesors]:");
+	for (i=0; (i<MAXPROC) && (ilist->multinr[i] > 0); i++) 
+	  (void) fprintf(fp," %d",ilist->multinr[i]);
+	fprintf(fp,"\n");
+	(void) pr_indent(fp,indent);
+	fprintf(fp,"iatoms:\n");
+	iatoms=ilist->iatoms;
+	for (i=j=0; i<ilist->nr;) {
 #ifndef DEBUG
-	(void) pr_indent(fp,indent+INDENT);
-	type=*(iatoms++);
-	ftype=idef->functype[type];
-	(void) fprintf(fp,"%d type=%d (%s)",
-		       j++,type,interaction_function[ftype].name);
-	for (k=0; k<interaction_function[ftype].nratoms; k++)
-	  (void) fprintf(fp," %u",*(iatoms++));
-	(void) fprintf(fp,"\n");
-	i+=1+interaction_function[ftype].nratoms;
+	  (void) pr_indent(fp,indent+INDENT);
+	  type=*(iatoms++);
+	  ftype=idef->functype[type];
+	  (void) fprintf(fp,"%d type=%d (%s)",
+			 j++,type,interaction_function[ftype].name);
+	  for (k=0; k<interaction_function[ftype].nratoms; k++)
+	    (void) fprintf(fp," %u",*(iatoms++));
+	  (void) fprintf(fp,"\n");
+	  i+=1+interaction_function[ftype].nratoms;
 #else
-	fprintf(fp,"%5d%5d\n",i,iatoms[i]);
-	i++;
+	  fprintf(fp,"%5d%5d\n",i,iatoms[i]);
+	  i++;
 #endif
+	}
       }
     }
 }
@@ -487,8 +493,9 @@ static int pr_block_title(FILE *fp,int indent,char *title,t_block *block)
     {
       indent=pr_title(fp,indent,title);
       (void) pr_indent(fp,indent);
-      fprintf(fp,"multinr:");
-      for (i=0; i<MAXPROC; i++) (void) fprintf(fp," %d",block->multinr[i]);
+      fprintf(fp,"multinr[division over procesors]:");
+      for (i=0; (i<MAXPROC) &&(block->multinr[i] > 0); i++) 
+	(void) fprintf(fp," %d",block->multinr[i]);
       fprintf(fp,"\n");
       (void) pr_indent(fp,indent);
       (void) fprintf(fp,"nr=%d\n",block->nr);

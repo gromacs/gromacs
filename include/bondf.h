@@ -91,66 +91,10 @@ extern void do_dih_fup(FILE *log,int i,int j,int k,int l,real ddphi,
  *  Bonded force functions
  *
  *************************************************************************/
-extern real bonds(FILE *log,int nbonds,
-		  t_iatom forceatoms[],t_iparams *forceparams,
-		  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		  matrix box,real lambda,real *dvdlambda,
-		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-		  
-extern real morsebonds(FILE *log,int nbonds,
-		       t_iatom forceatoms[],t_iparams *forceparams,
-		       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		       matrix box,real lambda,real *dvdlambda,
-		       t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-
-extern real water_pol(FILE *log,int nbonds,
-		      t_iatom forceatoms[],t_iparams *forceparams,
-		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		      matrix box,real lambda,real *dvdlambda,
-		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-  
-extern real angles(FILE *log,int nbonds,
-		   t_iatom forceatoms[],t_iparams *forceparams,
-		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		   matrix box,real lambda,real *dvdlambda,
-		   t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-		   
-extern real pdihs(FILE *log,int nbonds,
-		  t_iatom forceatoms[],t_iparams *forceparams,
-		  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		  matrix box,real lambda,real *dvdlambda,
-		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-		  
-extern real idihs(FILE *log,int nbonds,
-		  t_iatom forceatoms[],t_iparams *forceparams,
-		  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		  matrix box,real lambda,real *dvdlambda,
-		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-
-extern real rbdihs(FILE *log,int nbonds,
-		   t_iatom forceatoms[],t_iparams *forceparams,
-		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		   matrix box,real lambda,real *dvdlambda,
-		   t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-
-extern real posres(FILE *log,int nbonds,
-		   t_iatom forceatoms[],t_iparams *forceparams,
-		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		   matrix box,real lambda,real *dvdlambda,
-		   t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-
-extern real do_14(FILE *log,int nbonds,
-		  t_iatom forceatoms[],t_iparams *iparams,
-		  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-		  matrix box,real lambda,real *dvdlambda,
-		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-		  
-extern real unimplemented(FILE *log,int nbonds,
-			  t_iatom forceatoms[],t_iparams *forceparams,
-			  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
-			  matrix box,real lambda,real *dvdlambda,
-			  t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
-
+  extern t_ifunc bonds,g96bonds,morsebonds;
+  extern t_ifunc angles,g96angles;
+  extern t_ifunc pdihs,idihs,rbdihs;
+  extern t_ifunc water_pol,posres,do_14,unimplemented;
 
 #ifdef CPLUSPLUS
 }

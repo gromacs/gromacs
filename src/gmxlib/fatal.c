@@ -178,7 +178,6 @@ void quit_gmx(int fatal_errno,char *msg)
 
 void fatal_error(int fatal_errno,char *fmt,...)
 {
-  FILE    *log;
   va_list ap;
   char    *p,cval,*sval,msg[MSGSIZE];
   char    ibuf[64],ifmt[64];
