@@ -1,11 +1,11 @@
 <!-- GROMACS Data type description (DTD).                         -->
-<!-- David van der Spoel 07/2001                                  -->
+<!-- David van der Spoel 07/2001, 03/2002                         -->
 <!-- The authorative version of this document can be found at     -->
 <!-- http://www.gromacs.org/gromacs3.1.dtd                        -->
 <!-- and also in the library directory of your local GROMACS      -->
 <!-- installation.                                                -->
 
-<!ELEMENT gromacs (inputrec,system,forcefield,masstype*,
+<!ELEMENT gromacs (inputrec,system,forcefield,atomtype*,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
           title     CDATA #REQUIRED>
@@ -21,13 +21,13 @@
 <!-- Output frequency in number of steps -->	  
 <!ELEMENT output EMPTY>
 <!ATTLIST output
-          nstlog    CDATA "1"
-	  nstxout   CDATA "1"
-	  nstvout   CDATA "1"
-	  nstfout   CDATA "0"
-	  nstenergy CDATA "1"
-	  nstxtcout CDATA "1"
-	  xtcprec   CDATA "1000">
+          log           CDATA "1"
+	  x-trr         CDATA "1"
+	  v-trr         CDATA "1"
+	  f-trr         CDATA "0"
+	  energy        CDATA "1"
+	  x-xtc         CDATA "1"
+	  xtc-precision CDATA "1000">
 	    	 
 <!-- Coupling algorithm parameters -->		 
 <!ELEMENT coupling (tcoupling,pcoupling)>
@@ -41,17 +41,17 @@
 <!ELEMENT tcparm EMPTY>
 <!ATTLIST tcparm
           groupname CDATA ""
-	  reftemp   CDATA "300"
-	  tautemp   CDATA "0.1">
+	  t-ref     CDATA "300"
+	  tau-t     CDATA "0.1">
 
 <!-- Pressure coupling -->	  
-<!ELEMENT pcoupling (refpres,compress)>
+<!ELEMENT pcoupling (refpress,compress)>
 <!ATTLIST pcoupling
           algorithm ( None | Berendsen | ParinelloRahman ) "None"
-	  pctype    ( Isotropic | SemiIsotropic | Anisotropic | SurfaceTension ) "Isotropic"
-          taupres   CDATA "1.0">
-<!ELEMENT refpres   (rvec*)>
-<!ELEMENT compress  (rvec*)>
+	  type      ( Isotropic | SemiIsotropic | Anisotropic | SurfaceTension ) "Isotropic"
+          tau-p     CDATA "1.0">
+<!ELEMENT p-ref            (rvec*)>
+<!ELEMENT compressibility  (rvec*)>
 <!-- End of coupling stuff -->
 
 <!ELEMENT cutoff (pmeparm?)>
@@ -61,6 +61,7 @@
 	  rcoulomb    CDATA "1.0"
 	  rcoulswitch CDATA "0.0"
 	  rvdwswitch  CDATA "0.0"
+	  epsilonr    CDATA "1.0"
 	  nstlist     CDATA "1"
 	  nstype      ( Grid | Simple ) "Grid"
 	  domdecomp   ( No | Yes ) "No"
@@ -75,8 +76,8 @@
 	  nkz         CDATA "8"
 	  pmeorder    CDATA "4"
 	  ewaldrtol   CDATA "1e-4"
-	  epssurface  ( NoSurface | Surface ) "NoSurface"
-	  optfft      ( NoOpt | Opt ) "NoOpt">
+	  epssurface  CDATA "0"
+	  optfft      ( No | Yes ) "No">
 	  
 <!-- Description of the simulation system -->	  
 <!ELEMENT system    (composition+,molecule+)>
@@ -97,9 +98,13 @@
           name     CDATA #REQUIRED
 	  type     CDATA #REQUIRED
 	  ptype    ( atom | dummy | shell ) "atom"
-	  charge   CDATA "0"
-	  masstype CDATA #REQUIRED>
+	  charge   CDATA "0">
 
+<!ELEMENT atomtype EMPTY>
+<!ATTLIST atomtype
+          type     CDATA #REQUIRED
+	  mass     CDATA #REQUIRED>
+	  
 <!ELEMENT topology (bonds*,angles*,dihedrals*)>
 
 <!ELEMENT bonds EMPTY>
@@ -213,8 +218,9 @@
 <!ELEMENT forces      (rvec*)>
 <!ELEMENT rvec EMPTY>
 <!ATTLIST rvec 
-          x CDATA #REQUIRED
-          y CDATA #REQUIRED
-          z CDATA #REQUIRED>
+          id CDATA #REQUIRED
+          x  CDATA #REQUIRED
+          y  CDATA #REQUIRED
+          z  CDATA #REQUIRED>
 
 <!-- End of GROMACS DTD -->
