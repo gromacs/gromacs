@@ -77,8 +77,6 @@ void c_tabpot(real tabscale,   real VFtab[],
       jy                = pos[j3+1];
       jz                = pos[j3+2];
 
-      fprintf(stderr,"%d %d\n",ii,jnr);
-
       /* First one is for oxygen, with LJ */
       dxO               = ixO - jx;
       dyO               = iyO - jy;
@@ -219,7 +217,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Turn off twin range if appropriate */
   parm->ir.rvdw  = parm->ir.rcoulomb;
   parm->ir.rlist = parm->ir.rcoulomb;
-  fprintf(stderr,"Will use a coulomb cut-off of %g nm\n",parm->ir.rcoulomb); 
+  fprintf(stderr,"Using a coulomb cut-off of %g nm\n",parm->ir.rcoulomb); 
   
   /* Turn off free energy computation */
   parm->ir.bPert = FALSE;

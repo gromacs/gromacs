@@ -61,11 +61,10 @@ static int *mk_windex(int w1,int nw)
   return index;
 }
 
-static void insert_ion(real q,int *nwater,bool bSet[],real repl_q[],
-		       int index[],
-		       real pot[],rvec x[],matrix box,
-		       char *anm,char *resnm,
-		       t_topology *top,t_mdatoms *mdatoms,
+static void insert_ion(int *nwater,bool bSet[],int repl[],int index[],
+		       real pot[],rvec x[],
+		       int sign,real q,char *ionname,
+		       t_mdatoms *mdatoms,
 		       real rmin,bool bRandom,int *seed)
 {
   int  i,ii,ei,owater,wlast,m,nw;
@@ -109,11 +108,11 @@ static void insert_ion(real q,int *nwater,bool bSet[],real repl_q[],
   if (ei == -1)
     fatal_error(0,"No More replaceable waters!");
   fprintf(stderr,"Replacing water %d (atom %d) with %s\n",
-	  ei,index[ei],resnm);
+	  ei,index[ei],ionname);
   
   /* Replace water charges with ion charge */
   bSet[ei] = TRUE;
-  repl_q[ei] = q;
+  repl[ei] = sign;
   mdatoms->chargeA[index[ei]] = q;
   mdatoms->chargeA[index[ei]+1] = 0;
   mdatoms->chargeA[index[ei]+2] = 0;
@@ -150,11 +149,10 @@ static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
   }
 }  
 
-void sort_ions(int nw,real repl_q[],int index[],t_atoms *atoms,rvec x[],
+void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
 	       char *p_name,char *n_name)
 {
-  int i,j,k,np,nn,starta,startr,npi,nni;
-  real q;
+  int i,j,k,r,np,nn,starta,startr,npi,nni;
   rvec *xt;
   char **pptr,**nptr;
 
@@ -165,13 +163,13 @@ void sort_ions(int nw,real repl_q[],int index[],t_atoms *atoms,rvec x[],
   nn=0;
   j=0;
   for(i=0; i<nw; i++) {
-    q = repl_q[i];
-    if (q == 0)
+    r = repl[i];
+    if (r == 0)
       for(k=0; k<3; k++)
 	copy_rvec(x[index[i]+k],xt[j++]);
-    else if (q>0)
+    else if (r>0)
       np++;
-    else if (q<0)
+    else if (r<0)
       nn++;
   }
 
@@ -190,8 +188,8 @@ void sort_ions(int nw,real repl_q[],int index[],t_atoms *atoms,rvec x[],
     npi = 0;
     nni = 0;
     for(i=0; i<nw; i++) {
-      q = repl_q[i];
-      if (q > 0) {
+      r = repl[i];
+      if (r > 0) {
 	j = starta+npi;
 	k = startr+npi;
 	copy_rvec(x[index[i]],xt[j]);
@@ -199,7 +197,7 @@ void sort_ions(int nw,real repl_q[],int index[],t_atoms *atoms,rvec x[],
 	atoms->atom[j].resnr = k ;
 	atoms->resname[k] = pptr;
 	npi++;
-      } else if (q < 0) {
+      } else if (r < 0) {
 	j = starta+np+nni;
 	k = startr+np+nni;
 	copy_rvec(x[index[i]],xt[j]);
@@ -258,9 +256,9 @@ int main(int argc, char *argv[])
   t_graph     *graph;
   t_forcerec  *fr;
   rvec        *x,*v;
-  real        *pot,*repl_q;
+  real        *pot;
   matrix      box;
-  int         *index;
+  int         *index,*repl;
   bool        *bSet,bPDB;
   int         i;
   t_filenm fnm[] = {
@@ -299,7 +297,7 @@ int main(int argc, char *argv[])
 
   index  = mk_windex(w1,nw);
   snew(bSet,nw);
-  snew(repl_q,nw);
+  snew(repl,nw);
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
@@ -307,18 +305,6 @@ int main(int argc, char *argv[])
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
 
-  /* Calculate potential once only */
-  /*
-  if (!bRandom) {
-    calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,graph,mdatoms,pot);
-    if (bPDB) {
-      for(i=0; (i<top->atoms.nr); i++)
-	top->atoms.pdbinfo[i].bfac = pot[i];
-      write_sto_conf(ftp2fn(efPDB,NFILE,fnm),"Potential calculated by genion",
-		     &top->atoms,x,v,box);
-    }
-  }
-  */
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
@@ -338,19 +324,19 @@ int main(int argc, char *argv[])
       }
     }
     if ((p_num > 0) && (p_num >= n_num))  {
-      insert_ion(p_q,&nw,bSet,repl_q,index,pot,x,box,
-		 p_name,p_name,top,mdatoms,rmin,bRandom,&seed);
+      insert_ion(&nw,bSet,repl,index,pot,x,
+		 1,p_q,p_name,mdatoms,rmin,bRandom,&seed);
       p_num--;
     }
     else if (n_num > 0) {
-      insert_ion(n_q,&nw,bSet,repl_q,index,pot,x,box,
-		 n_name,n_name,top,mdatoms,rmin,bRandom,&seed);
+      insert_ion(&nw,bSet,repl,index,pot,x,
+		 -1,n_q,n_name,mdatoms,rmin,bRandom,&seed);
       n_num--;
     }
   } while (p_num+n_num > 0);
   fprintf(stderr,"\n");
 
-  sort_ions(nw,repl_q,index,&top->atoms,x,p_name,n_name);
+  sort_ions(nw,repl,index,&top->atoms,x,p_name,n_name);
   
   sfree(top->atoms.pdbinfo);
   top->atoms.pdbinfo = NULL;
