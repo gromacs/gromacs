@@ -348,14 +348,14 @@ int main(int argc,char *argv[])
   if (xpmafile) {
     min = 0;
     max = 0;
-    snew(mat2,ndim/3);
-    for (i=0; i<ndim/3; i++)
-      snew(mat2[i],ndim/3);
-    for (j=0; j<ndim/3; j++) {
+    snew(mat2,ndim/DIM);
+    for (i=0; i<ndim/DIM; i++)
+      snew(mat2[i],ndim/DIM);
+    for (j=0; j<ndim/DIM; j++) {
       for (i=0; i<=j; i++) {
 	mat2[j][i] = 0;
 	for(d=0; d<DIM; d++)
-	  mat2[j][i] += mat[ndim*(j+d)+i+d];
+	  mat2[j][i] += mat[ndim*(DIM*j+d)+DIM*i+d];
 	if (mat2[j][i] < min)
 	  min = mat2[j][i];
 	if (mat2[j][j] > max)
@@ -363,8 +363,8 @@ int main(int argc,char *argv[])
 	mat2[i][j] = mat2[j][i];
       }
     }
-    snew(axis,ndim/3);
-    for(i=0; i<ndim/3; i++)
+    snew(axis,ndim/DIM);
+    for(i=0; i<ndim/DIM; i++)
       axis[i] = i+1;
     rlo.r = 0; rlo.g = 0; rlo.b = 1;
     rmi.r = 1; rmi.g = 1; rmi.b = 1;
@@ -372,11 +372,11 @@ int main(int argc,char *argv[])
     out = ffopen(xpmafile,"w");
     nlevels = 80;
     write_xpm3(out,"Covariance",bM ? "u nm^2" : "nm^2",
-	       "atom","atom",ndim/3,ndim/3,axis,axis,
+	       "atom","atom",ndim/DIM,ndim/DIM,axis,axis,
 	       mat2,min,0.0,max,rlo,rmi,rhi,&nlevels);
     fclose(out);
     sfree(axis);
-    for (i=0; i<ndim/3; i++)
+    for (i=0; i<ndim/DIM; i++)
       sfree(mat2[i]);
     sfree(mat2);
   }
