@@ -57,7 +57,7 @@ int nframes_read(void)
   
 static void printcount(char *l,real t)
 {
-  fprintf(stderr,"\r%s frame %6d time %8.3f                     ",l,frame,t);
+  fprintf(stderr,"\r%s frame %6d time %8.3f   ",l,frame,t);
 }
 
 #define CHECKCOUNT(l,t) if ( ((frame % SKIP)==0) || (frame < SKIP)) printcount(l,t)

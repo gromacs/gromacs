@@ -606,7 +606,7 @@ int main(int argc,char *argv[])
 		    t,outframe);
 	  }
 	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
-	    fprintf(stderr," ->  frame %6d time %8.3f",outframe,t);
+	    fprintf(stderr," ->  frame %6d time %8.3f      \r",outframe,t);
 	  
 	  if (!bPFit) {
 	    /* Now modify the coords according to the flags,
