@@ -165,6 +165,46 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   return val;
 }
 
+static real cosine_content(int nhp,int n,real *y)
+     /* Assumes n equidistant points */
+{
+  double fac,cosyint,yyint;
+  int i;
+
+  if (n < 2)
+    return 0;
+  
+  fac = M_PI*nhp/(n-1);
+
+  cosyint = 0;
+  yyint = 0;
+  for(i=0; i<n; i++) {
+    cosyint += cos(fac*i)*y[i];
+    yyint += y[i]*y[i];
+  }
+    
+  return 2*cosyint*cosyint/(n*yyint);
+}
+
+static void plot_coscont(char *ccfile,int n,int nset,real **val)
+{
+  FILE *fp;
+  int  s;
+  real cc;
+  
+  fp = xvgropen(ccfile,"Cosine content","set / half periods","cosine content");
+  
+  for(s=0; s<nset; s++) {
+    cc = cosine_content(s+1,n,val[s]);
+    fprintf(fp," %d %g\n",s+1,cc);
+    fprintf(stdout,"Cosine content of set %d with %.1f periods: %g\n",
+	    s+1,0.5*(s+1),cc);
+  }
+  fprintf(stdout,"\n");
+	    
+  fclose(fp);
+}
+
 void histogram(char *distfile,real binwidth,int n, int nset, real **val)
 {
   FILE *fp;
@@ -443,6 +483,12 @@ int main(int argc,char *argv[])
     "and forth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
+    "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
+    "i/2 periods. The formula is:[BR]"
+    "2 (int0-T y(t) cos(pi t/i) dt)^2 / int0-T y(t) y(t) dt[BR]",
+    "This is useful for principal components obtained from covariance",
+    "analysis, since the principal components of random diffusion are",
+    "pure cosines.[PAR]"
     "Option [TT]-msd[tt] produces the mean square displacement(s).[PAR]",
     "Option [TT]-dist[tt] produces distribution plot(s).[PAR]",
     "Option [TT]-av[tt] produces the average over the sets.",
@@ -469,7 +515,7 @@ int main(int argc,char *argv[])
     "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).",
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
-  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
+  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE;
   static bool bEeFitAc=FALSE;
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
@@ -512,12 +558,13 @@ int main(int argc,char *argv[])
   int      n,nlast,s,nset,i,t=0;
   real     **val,t0,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
-  char     *acfile,*msdfile,*distfile,*avfile,*eefile;
+  char     *acfile,*msdfile,*ccfile,*distfile,*avfile,*eefile;
   
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
     { efXVG, "-ac",   "autocorr", ffOPTWR  },
     { efXVG, "-msd",  "msd",      ffOPTWR  },
+    { efXVG, "-cc",   "coscont",  ffOPTWR  },
     { efXVG, "-dist", "distr",    ffOPTWR  },
     { efXVG, "-av",   "average",  ffOPTWR  },
     { efXVG, "-ee",   "errest",   ffOPTWR  }
@@ -536,6 +583,7 @@ int main(int argc,char *argv[])
 
   acfile   = opt2fn_null("-ac",NFILE,fnm);
   msdfile  = opt2fn_null("-msd",NFILE,fnm);
+  ccfile   = opt2fn_null("-cc",NFILE,fnm);
   distfile = opt2fn_null("-dist",NFILE,fnm);
   avfile   = opt2fn_null("-av",NFILE,fnm);
   eefile   = opt2fn_null("-ee",NFILE,fnm);
@@ -610,6 +658,10 @@ int main(int argc,char *argv[])
     fclose(out);
     fprintf(stderr,"\r%d, time=%g\n",t-1,(t-1)*dt);
     do_view(msdfile, NULL);
+  }
+  if (ccfile) {
+    plot_coscont(ccfile,n,nset,val);
+    do_view(ccfile, NULL);
   }
   
   if (distfile) {
