@@ -95,9 +95,9 @@ static real low_row_energy(int n1,int row,real *mat)
   real n2_1;
   int  i;
   
-  n2_1 = 1.0/(n1*n1);
+  n2_1 = 1.0/n1;
   for(i=0; (i<n1); i++) 
-    re += (sqr(i-row)*n2_1)*mat[i];
+    re += (abs(i-row)*n2_1)*mat[i];
   
   return re;
 }
@@ -114,11 +114,11 @@ static real rows_energy(int n1,real **mat,real *row_e)
   int  i,j;
   
   retot = 0;
-  n2_1 = 1.0/(n1*n1);
+  n2_1 = 1.0/n1;
   for(j=0; (j<n1); j++) {
     re = 0;
     for(i=0; (i<n1); i++) 
-      re += (sqr(i-j)*n2_1)*mat[j][i];
+      re += (abs(i-j)*n2_1)*mat[j][i];
     row_e[j] = re;
     retot += re;
   }
@@ -769,10 +769,12 @@ int main(int argc,char *argv[])
   rhi.r=0.0, rhi.g=0.0, rhi.b=1.0;
   
   /* Write out plot file with RMS matrix */
-  write_xpm(opt2FILE("-o",NFILE,fnm,"w"),"RMS",
-	    "RMS (n)","Confs 1","Confs 2",
+  fp = opt2FILE("-o",NFILE,fnm,"w");
+  write_xpm(fp,"RMS","RMS (n)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
-
+  ffclose(fp);
+  xv_file(opt2fn("-o",NFILE,fnm),NULL);
+  
   if (bLink) 
     /* Now sort the matrix and write it out again */
     gather(nf,rms,rmscut);
@@ -786,7 +788,7 @@ int main(int argc,char *argv[])
     fp = xvgropen(opt2fn("-ev",NFILE,fnm),"Eigenvalues","index","value");
     for(i=0; (i<nf); i++)
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
-    fclose(fp);
+    ffclose(fp);
   }
   else if (bMC) {
     mc_optimize(log,nf,rms,niter,&seed);
@@ -797,10 +799,12 @@ int main(int argc,char *argv[])
   ffclose(log);
   fprintf(stderr,"Energy of the matrix after clustering is %g nm\n",
 	  energy(nf,rms));
-  write_xpm(opt2FILE("-os",NFILE,fnm,"w"),"RMS Sorted",
-	    "RMS (n)","Confs 1","Confs 2",
+  fp = opt2FILE("-os",NFILE,fnm,"w");
+  write_xpm(fp,"RMS Sorted","RMS (n)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
-	    
+  ffclose(fp);
+  xv_file(opt2fn("-os",NFILE,fnm),NULL);	
+    
   /* Thank the user for her patience */  
   thanx(stdout);
   
