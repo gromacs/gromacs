@@ -231,7 +231,8 @@ int main(int argc, char *argv[])
     "the file [TT]ions.itp[tt].",
     "Ion names for Gromos96 should include the charge.[PAR]",
     "The potential can be written as B-factors",
-    "in a pdb file (for visualisation using e.g. rasmol)[PAR]"
+    "in a pdb file (for visualisation using e.g. rasmol).",
+    "The unit of the potential is 0.001 kJ/(mol e).[PAR]",
     "For larger ions, e.g. sulfate we recommended to use genbox."
   };
   static int  p_num=0,n_num=0;
