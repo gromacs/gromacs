@@ -54,6 +54,7 @@
 #include "disre.h"
 #include "orires.h"
 #include "force.h"
+#include "nonbonded.h"
 #include "mdrun.h"
 
 static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
@@ -125,12 +126,12 @@ void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
 	  }
 	} else {
-	  v = do_14(nbonds,idef->il[ftype].iatoms,
-		    idef->iparams,
-		    (const rvec*)x,f,fr->fshift,
-		    pbc_null,g,
-		    lambda,&dvdl,
-		    md,fr,ngrp,egnb,egcoul);
+	  v = do_nonbonded14(nbonds,idef->il[ftype].iatoms,
+			     idef->iparams,
+			     (const rvec*)x,f,fr->fshift,
+			     pbc_null,g,
+			     lambda,&dvdl,
+			     md,fr,ngrp,egnb,egcoul);
 	  if (bSepDVDL) {
 	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,
