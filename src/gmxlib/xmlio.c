@@ -30,11 +30,11 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
+#include <stdlib.h>
+#include "typedefs.h"
 #ifdef HAVE_XML
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include <stdlib.h>
-#include "typedefs.h"
 #include "fatal.h"
 #include "string.h"
 #include "futil.h"

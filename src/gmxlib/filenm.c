@@ -211,6 +211,32 @@ const char *ftp2ext(int ftp)
     return "unknown";
 }
 
+const char *ftp2ext_generic(int ftp)
+{
+  if ((0 <= ftp) && (ftp < efNR)) {
+    switch (ftp) {
+    case efENX:
+      return "enx";
+    case efTRX:
+      return "trx";
+    case efTRN:
+      return "trn";
+    case efSTO:
+      return "sto";
+    case efSTX:
+      return "stx";
+    case efTPX:
+      return "tpx";
+    case efTPS:
+      return "tps";
+    default:
+      return ftp2ext(ftp);
+    }
+  }
+  else
+    return "unknown";
+}
+
 const char *ftp2desc(int ftp)
 {
   if ((0 <= ftp) && (ftp < efNR))

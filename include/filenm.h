@@ -54,6 +54,9 @@ void set_default_file_name(const char *name);
 extern const char *ftp2ext(int ftp);
 /* Return extension for filetype */
 
+  extern const char *ftp2ext_generic(int ftp);
+/* Return extension for filetype, and a generic name for generic types (e.g. trx)*/
+
 extern const char *ftp2desc(int ftp);
 /* Return description for file type */
 

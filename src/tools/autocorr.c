@@ -692,7 +692,7 @@ void low_do_autocorr(char *fn,char *title,
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
   if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
-    printf("Can't combine mode %lu with FFT, turning off FFT\n",mode);
+    fprintf(stderr,"Can't combine mode %lu with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
   if (MODE(eacNormal) && MODE(eacVector)) 
@@ -732,9 +732,8 @@ void low_do_autocorr(char *fn,char *title,
    */
   k = max(1,pow(10,(int)(log(nitem)/log(100))));
   for(i=0; i<nitem; i++) {
-    if (i%k==0 || i==nitem-1)
-      if (bVerbose)
-	fprintf(stderr,"\rThingie %d",i+1);
+    if (bVerbose && ((i%k==0 || i==nitem-1)))
+      fprintf(stderr,"\rThingie %d",i+1);
     
     if (bFour)
       do_four_core(mode,nfour,nframes,nframes,c1[i],csum,ctmp);
@@ -765,7 +764,8 @@ void low_do_autocorr(char *fn,char *title,
       sum = print_and_integrate(fp,nout,dt,c1[0],fit,1);
     } else {
       sum = print_and_integrate(fp,nout,dt,c1[0],NULL,1);
-      printf("Correlation time (integral over corrfn): %g (ps)\n",sum);
+      if (bVerbose)
+	printf("Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
   } else {
     /* Not averaging. Normalize individual ACFs */

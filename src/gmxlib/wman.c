@@ -397,7 +397,7 @@ const char *check_tty(const char *s)
   return repall(s,NSRTTY,sandrTty);
 }
 
-void print_tty_formatted(FILE *out, int nldesc, char **desc)
+void print_tty_formatted(FILE *out, int nldesc, char **desc,int indent)
 {
   char *buf;
   const char *temp;
@@ -417,7 +417,7 @@ void print_tty_formatted(FILE *out, int nldesc, char **desc)
     sfree(temp);
   }
   /* Make lines of at most 79 characters */
-  temp = wrap_lines(buf,80,0);
+  temp = wrap_lines(buf,78-indent,indent);
   fprintf(out,"%s\n",temp);
   sfree(temp);
   sfree(buf);
@@ -440,7 +440,7 @@ static void write_ttyman(FILE *out,
   }
   if (nldesc > 0) {
     fprintf(out,"DESCRIPTION:\n\n");
-    print_tty_formatted(out,nldesc,desc);
+    print_tty_formatted(out,nldesc,desc,0);
   }
   if (nbug > 0) {
     fprintf(out,"\n");
@@ -448,7 +448,7 @@ static void write_ttyman(FILE *out,
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
       strcpy(tmp+2,check_tty(bugs[i]));
-      fprintf(out,"%s\n",wrap_lines(tmp,80,2));
+      fprintf(out,"%s\n",wrap_lines(tmp,76,2));
       sfree(tmp);
     }
   }
@@ -463,10 +463,10 @@ static void write_ttyman(FILE *out,
 
 static const char *check_html(const char *s,char *program, t_linkdata *links)
 {
-  const char *buf;
+  char *buf;
   
-  buf=repall(s,NSRHTML,sandrHTML);
-  buf=html_xref(buf,program,links);
+  buf = repall(s,NSRHTML,sandrHTML);
+  buf = html_xref(buf,program,links);
   
   return buf;
 }
@@ -658,6 +658,90 @@ static void write_bashcompl(FILE *out,
   fprintf(out,"esac }\ncomplete -F _%s_compl %s\n",ShortProgram(),ShortProgram());
 }
 
+static void write_py(FILE *out,char *program,
+		     int nldesc,char **desc,
+		     int nfile,t_filenm *fnm,
+		     int npargs,t_pargs *pa,
+		     int nbug,char **bugs)
+{
+  bool bHidden;
+  char *class = program;
+  char *tmp;
+  int  i,j;
+
+  /* Header stuff */  
+  fprintf(out,"#!/usr/bin/python\n\nfrom GmxDialog import *\n\n");
+  
+  /* Class definition */
+  fprintf(out,"class %s:\n",class);
+  fprintf(out,"    def __init__(self,tk):\n");
+  
+  /* Help text */
+  fprintf(out,"        %s_help = \"\"\"\n",class);
+  fprintf(out,"        DESCRIPTION\n");
+  print_tty_formatted(out,nldesc,desc,8);
+  if (nbug > 0) {
+    fprintf(out,"\n        BUGS and PROBLEMS\n");
+    for(i=0; i<nbug; i++) {
+      snew(tmp,strlen(bugs[i])+3);
+      strcpy(tmp,"* ");
+      strcpy(tmp+2,check_tty(bugs[i]));
+      fprintf(out,"%s\n",wrap_lines(tmp,68,10));
+      sfree(tmp);
+    }
+  }
+  fprintf(out,"        \"\"\"\n\n        # Command line options\n");
+  /* File options */
+  fprintf(out,"        flags = []\n");
+  for(i=0; (i<nfile); i++) 
+    fprintf(out,"        flags.append(pca_file('%s',\"%s\",0,%d))\n",
+	    ftp2ext_generic(fnm[i].ftp),fnm[i].opt ? fnm[i].opt : "k",
+	    is_optional(&(fnm[i])));
+	    
+	    
+  /* Other options */
+  for(i=0; (i<npargs); i++) {
+    switch(pa[i].type) {
+    case etINT:
+      fprintf(out,"        flags.append(pca_int(\"%s\",\"%s\",%d,%d))\n",
+	      pa[i].option,pa[i].desc,*pa[i].u.i,is_hidden(&(pa[i])));
+      break;
+    case etREAL:
+    case etTIME:
+      fprintf(out,"        flags.append(pca_float(\"%s\",\"%s\",%f,%d))\n",
+	      pa[i].option,pa[i].desc,*pa[i].u.r,is_hidden(&(pa[i])));
+      break;
+    case etSTR:
+    case etBOOL:
+      fprintf(out,"        flags.append(pca_bool(\"%s\",\"%s\",%d,%d))\n",
+	      pa[i].option,pa[i].desc,*pa[i].u.b,is_hidden(&(pa[i])));
+      break;
+    case etRVEC:
+      fprintf(stderr,"Sorry, no rvecs yet...\n");
+      break;
+    case etENUM:
+      fprintf(out,"        flags.append(pca_enum(\"%s\",\"%s\",\n",
+	      pa[i].option,pa[i].desc);
+      fprintf(out,"        ['%s'",pa[i].u.c[1]);
+      for(j=2; (pa[i].u.c[j] != NULL); j++)
+	fprintf(out,",'%s'",pa[i].u.c[j]);
+      fprintf(out,"],%d))\n",is_hidden(&(pa[i])));
+    default:
+      break;
+    }
+  }
+    
+  /* Make the dialog box */
+  fprintf(out,"        gmxd = gmx_dialog(tk,\"%s\",flags,%s_help)\n\n",
+	  class,class);
+	  
+  /* Main loop */
+  fprintf(out,"#####################################################\n");
+  fprintf(out,"tk     = Tk()\n");
+  fprintf(out,"my%s = %s(tk)\n",class,class);
+  fprintf(out,"tk.mainloop()\n");
+}
+
 void write_man(FILE *out,char *mantp,
 	       char *program,
 	       int nldesc,char **desc,
@@ -701,6 +785,8 @@ void write_man(FILE *out,char *mantp,
     write_ttyman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs,FALSE);
   if (strcmp(mantp,"html")==0)
     write_htmlman(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
+  if (strcmp(mantp,"py")==0)
+    write_py(out,pr,nldesc,desc,nfile,fnm,npar,par,nbug,bugs);
   if (strcmp(mantp,"completion-zsh")==0)
     write_zshcompl(out,nfile,fnm,npar,par);
   if (strcmp(mantp,"completion-bash")==0)
@@ -711,3 +797,4 @@ void write_man(FILE *out,char *mantp,
   if (!bHidden)
     sfree(par);
 }
+

@@ -272,10 +272,11 @@ char *wrap_lines(const char *buf,int line_width, int indent)
    */
   
   b2=NULL;
-  b2len=strlen(buf)+1;
+  b2len=strlen(buf)+1+indent;
   snew(b2,b2len);
   i0=0;
-  i2=0;
+  for(i2=0; (i2<indent); i2++)
+    b2[i2] = ' ';
   bFirst=TRUE;
   do {
     l2space = -1;
