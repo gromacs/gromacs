@@ -38,7 +38,8 @@ enum {
 };
 
 enum {
-  epcNO, epcISOTROPIC, epcSEMIISOTROPIC, epcANISOTROPIC, epcTRICLINIC, epcNR
+  epcNO, epcISOTROPIC, epcSEMIISOTROPIC, epcANISOTROPIC, epcTRICLINIC,
+  epcSURFACETENSION, epcNR
 };
 
 enum {

@@ -467,6 +467,7 @@ void get_ir(char *mdparin,char *mdparout,
 	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     case epcSEMIISOTROPIC:
+    case epcSURFACETENSION:
       if (sscanf(dumstr[m],"%lf%lf",
 		 &(dumdub[m][XX]),&(dumdub[m][ZZ]))==2) 
 	dumdub[m][YY]=dumdub[m][XX];
