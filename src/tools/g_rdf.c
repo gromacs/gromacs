@@ -353,24 +353,25 @@ static t_xdata *init_xdata(int nx,int ny)
   return data;
 }
 
-static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
+static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
 		       real count[],rvec box,int npixel,real *map[],
 		       t_xdata data[])
 {
   int nx,ny,nz,la2,la12;
   t_fft_c *ptr,*p0;
   int  i,j,k,maxkx,maxky,maxkz,n,ind,ix,iy;
-  real k1,kxy2,kz2,k2,z,k_max,kxy,kxy_max,cos_theta2,ttt;
+  real k1,kxy2,kz2,k2,z,kxy,kxy_max,cos_theta2,ttt,factor;
   rvec lll,kk;
   
-  calc_lll(box,lll);
-  k_max   = nbin/factor;
-  kxy_max = k_max/sqrt(3);
+  /*calc_lll(box,lll);
+    k_max   = nbin/factor;
+    kxy_max = k_max/sqrt(3);*/
   unpack_fftgrid(fftgrid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
   /* This bit copied from pme.c */
   maxkx = (nx+1)/2;
   maxky = (ny+1)/2;
   maxkz = nz/2+1;
+  factor = nbin/k_max;
   for(i=0; (i<nx); i++)
     for(j=0; (j<ny); j++) {
       ind = INDEX(i,j,0);
@@ -379,7 +380,7 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
 	if ((i==0) && (j==0) && (k==0))
 	  continue;
 	z   = sqrt(sqr(p0->re)+sqr(p0->im));
-	calc_k(lll,i,j,k,nx,ny,nz,kk);
+	/*calc_k(lll,i,j,k,nx,ny,nz,kk);*/
 	kxy2 = sqr(kk[XX]) + sqr(kk[YY]);
 	k2   = kxy2+sqr(kk[ZZ]);
 	kxy  = sqrt(kxy2);
@@ -412,11 +413,18 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
     }
 }
 
+typedef struct {
+  char *name;
+  int  nelec;
+} t_element;
+
 static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
 		  char *fnXPM,real grid,real lambda,real distance,
 		  int npixel,int nlevel)
 {
   FILE       *fp;
+  t_element  elem[] = { { "H", 1 }, { "C", 6 }, { "N", 7 }, { "O", 8 }, { "F", 9 }, { "S", 16 } };
+#define NELEM asize(elem)
   int        status;
   char       title[STRLEN],*aname;
   int        natoms,i,j,k,nbin,j0,j1,n,nframes,pme_order;
@@ -463,39 +471,21 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   nelectron = 0;
   for(i=0; (i<isize); i++) {
     aname = *(top.atoms.atomname[index[i]]);
+    fj0 = 1;
     if (top.atoms.atom[i].ptype == eptAtom) {
-      switch (aname[0]) {
-      case 'H':
-	fj0 = 1;
-	break;
-      case 'C':
-	fj0 = 6;
-	break;
-      case 'N':
-	fj0 = 7;
-	break;
-      case 'O':
-	fj0 = 8;
-	break;
-      case 'F':
-	fj0 = 9;
-	break;
-      case 'S':
-	fj0 = 16;
-	break;
-      default:
-	fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",
-		aname);
-	fj0 = 1;
-      }
+      for(j=0; (j<NELEM); j++)
+	if (aname[0] == elem[j].name[0]) {
+	  fj0 = elem[j].nelec;
+	  break;
+	}
+      if (j == NELEM)
+	fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",aname);
     }
-    else
-      fj0 = 0;
     /* Correct for partial charge */
     fj[i] = fj0 - top.atoms.atom[index[i]].q;
     
     nelectron += fj[i];
-
+    
     I0 += sqr(fj[i]);
   }
   if (debug) {
@@ -506,32 +496,23 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
 	      top.atoms.atom[index[i]].q,fj[i]);
   }
 
-  /* Just for efficiency */
-  lambda_1 = 1.0/lambda;
-
   /* Constant for scattering */
   C = sqr(1.0/(ELECTRONMASS_keV*KILO*ELECTRONVOLT*1e7*distance));
   fprintf(stderr,"C is %g\n",C);
-        
+  
   /* This bit is dimensionless */
   nx = ny = nz = 0;
   max_spacing = calc_grid(box,grid,&nx,&ny,&nz,1);	
-  pme_order = max(4,1+(0.2/grid));
-  npixel = max(nx,ny);
-  data   = init_xdata(nx,ny);
+  pme_order   = max(4,1+(0.2/grid));
+  npixel      = max(nx,ny);
+  data        = init_xdata(nx,ny);
   
-  fprintf(stderr,"Largest grid spacing: %g nm, pme_order %d, %dx%d pixel on images\n",
+  fprintf(stderr,"Largest grid spacing: %g nm, pme_order %d, %dx%d pixel on image\n",
 	  max_spacing,pme_order,npixel,npixel);
   init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE);
     
-  /* Determine largest k vector length. Now we change to dimensionless units
-   * by dividing by the wave length of incoming radiation.
-   */
-  for(i=0; (i<DIM); i++)
-    box_size[i] = lambda_1*box[i][i];
-  calc_lll(box_size,lll);
-  calc_k(lll,nx/2,ny/2,nz/2,nx,ny,nz,kk);
-  k_max = 1+norm(kk);
+  /* Determine largest k vector length. */
+  k_max = 1+sqrt(sqr(1+nx/2)+sqr(1+ny/2)+sqr(1+nz/2))/lambda;
 
   /* this is the S(q) array */
   nbin = npixel;
@@ -545,15 +526,12 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
     /* Put the atoms with scattering factor on a grid. Misuses
      * an old routine from the PPPM code.
      */
-    for(i=0; (i<DIM); i++)
-      for(j=0; (j<DIM); j++)
-	box[i][j] *= lambda_1;
     for(j=0; (j<DIM); j++)
       box_size[j] = box[j][j];
     
     /* Scale coordinates to the wavelength */
     for(i=0; (i<isize); i++)
-      svmul(lambda_1,x[index[i]],xndx[i]);
+      copy_rvec(x[index[i]],xndx[i]);
       
     /* put local atoms on grid. */
     fftgrid = spread_on_grid(stdout,isize,pme_order,xndx,fj,box,FALSE);
@@ -562,8 +540,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
     gmxfft3D(fftgrid,FFTW_FORWARD,NULL);  
     
     /* Extract the Sq function and sum it into the average array */
-    factor = nbin/k_max;
-    extract_sq(fftgrid,nbin,factor,count,box_size,npixel,map,data);
+    extract_sq(fftgrid,nbin,k_max,lambda,count,box_size,npixel,map,data);
     
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
@@ -580,7 +557,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
 	  lambda,grid);
   for(i=0; i<nbin; i++) {
-    r = (i+0.5)*factor*2*M_PI*lambda_1;
+    r = (i+0.5)*factor*2*M_PI;
     segvol = 4*M_PI*sqr(r)*factor;
     fprintf(fp,"%10g %10g\n",r,count[i]*yfactor/segvol);
   }
