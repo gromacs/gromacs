@@ -843,25 +843,31 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
   t_tpxheader  header;
   real         t,lambda;
   int          natoms,step,i;
-  bool         bTop;
+  bool         bTop,bXNULL;
 
   bTop=fn2bTPX(infile);
   if (bTop) {
     read_tpxheader(infile,&header);
-    snew(*x,header.natoms);
+    if (x)
+      snew(*x,header.natoms);
     if (v)
       snew(*v,header.natoms);
     read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
-	     *x,(v==NULL) ? NULL : *v,NULL,top);
+	     (x==NULL) ? NULL : *x,(v==NULL) ? NULL : *v,NULL,top);
     strcpy(title,*top->name);
   }
   else {
     get_stx_coordnum(infile,&natoms);
     init_t_atoms(&top->atoms,natoms,FALSE);
+    bXNULL = (x == NULL);
     snew(*x,natoms);
     if (v)
       snew(*v,natoms);
     read_stx_conf(infile,title,&top->atoms,*x,(v==NULL) ? NULL : *v,box);
+    if (bXNULL) {
+      sfree(*x);
+      x = NULL;
+    }
     if (bMass)
       for(i=0; i<natoms; i++)
 	top->atoms.atom[i].m = 
