@@ -37,6 +37,7 @@ static char *SRCID_g_rmsdist_c = "$Id$";
 #include "tpxio.h"
 #include "string2.h"
 #include "vec.h"
+#include "macros.h"
 #include "rdgroup.h"
 #include "pbc.h"
 #include "xvgr.h"
@@ -129,7 +130,7 @@ static void calc_rms(int nind, int nframes,
     for(j=i+1; (j<nind); j++) {
       mean =dtot[i][j]/nframes;   
       mean2=dtot2[i][j]/nframes;  
-      rms=sqrt(mean2-mean*mean);
+      rms=sqrt(max(0,mean2-mean*mean));
       rmsc=rms/mean;
       if (mean > *meanmax) *meanmax=mean;
       if (rms  > *rmsmax ) *rmsmax =rms;
@@ -280,8 +281,11 @@ void main (int argc,char *argv[])
 
   fclose(fp);
   close_trj(status);
-  
+
+  teller = nframes_read();
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
+  fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
+  
   if (scalemax > -1.0) {
     rmsmax=scalemax;
     rmscmax=scalemax;

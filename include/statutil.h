@@ -59,6 +59,8 @@ extern char *ShortProgram(void);
  *             Trajectory functions
  ************************************************/
 
+extern int nframes_read(void);
+  /* Returns the number of frames read from the trajectory */
 
 int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
 	      int step,real time,matrix box,rvec x[],rvec *v);

@@ -50,6 +50,11 @@ static int frame=-666;
 #define SKIP 10
 #define INITCOUNT frame=-1
 
+int nframes_read(void)
+{
+  return frame;
+}
+  
 static void printcount(char *l,real t)
 {
   fprintf(stderr,"\r%s frame %6d time %8.3f   ",l,frame,t);
