@@ -229,7 +229,7 @@ static void write_texman(FILE *out,char *program,
     fprintf(out,"\\begin{tabularx}{\\linewidth}{lllX}\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,"%s & %s & %s & %s \\\\\n",
-	      fnm[i].opt,ftp2defnm(fnm[i].ftp),
+	      fnm[i].opt,fnm[i].fn,
 	      fileopt(fnm[i].flag),check_tex(ftp2desc(fnm[i].ftp)));
     fprintf(out,"\\end{tabularx}\n");
     fprintf(out,"\\end{table}\n");
@@ -280,7 +280,7 @@ static void write_nroffman(FILE *out,
   if (nfile > 0) {
     for(i=0; (i<nfile); i++)
       fprintf(out,".BI \"%s\" \" %s \"\n",fnm[i].opt,
-	      ftp2defnm(fnm[i].ftp));
+	      fnm[i].fn);
   }
   
   /* description */
@@ -295,7 +295,7 @@ static void write_nroffman(FILE *out,
     fprintf(out,".SH FILES\n");
     for(i=0; (i<nfile); i++)
       fprintf(out,".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
-	      fnm[i].opt,ftp2defnm(fnm[i].ftp),fileopt(fnm[i].flag),
+	      fnm[i].opt,fnm[i].fn,fileopt(fnm[i].flag),
 	      check_nroff(ftp2desc(fnm[i].ftp)));
     fprintf(out,"Remember that filenames are not fixed, but \n");
     fprintf(out,"file extensions are.\n");
@@ -426,7 +426,7 @@ static void write_htmlman(FILE *out,
       fprintf(out,"<dt>%s <a href=\"%s.html\">%12s</a> <b>%s</b><dd>%s\n",
 	      fnm[i].opt,
 	      ftp2ext(fnm[i].ftp),
-	      ftp2defnm(fnm[i].ftp),fileopt(fnm[i].flag),
+	      fnm[i].fn,fileopt(fnm[i].flag),
 	      NSR(ftp2desc(fnm[i].ftp)));
     fprintf(out,"</dl>\n");
     fprintf(out,"Remember that filenames are not fixed, but \n");
