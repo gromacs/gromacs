@@ -123,6 +123,7 @@
   NY    H       1    0.10100   363414.2   ; jtr- neutral Arg; MLL
   NY    H3      1    0.10100   363414.2   ; jtr- neutral Arg; MLL
   NZ    H       1    0.10100   363414.2   ; jtr- neutral Arg; MLL
+  NZ    H3      1    0.10100   363414.2   ; jtr- neutral Arg; MLL
   CT    NY      1    0.14480   319871.5   ; jtr- neutral Arg; MLL
   CA    N2      1    0.13400   402770.2   ; ARG
   CQ    N2      1    0.13400   402770.2   ; wlj
