@@ -222,10 +222,6 @@ void pr_def(FILE *fp,int ftp)
   fprintf(fp,"%s \\\\\n",check_tex(df->descr));
 }
 
-void pr_fn(FILE *fp,t_filenm *tfn)
-{
-}
-
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 {
   int  i,j;
@@ -339,60 +335,49 @@ static void set_extension(char *buf,int ftp)
   strcat(buf,df->ext);
 }
 
-void set_grpfnm(t_filenm *fnm,char *name)
+static void set_grpfnm(t_filenm *fnm,char *name)
 {
-  char      buf[256];
-  int       i,ti;
-  bool      bSet;
+  char buf[256];
+  int  i,type;
+  bool bValidExt;
   int  nopts;
   int  *ftps;
   
-  nopts=deffile[fnm->ftp].ntps;
-  ftps=deffile[fnm->ftp].tps;
-  if ( (nopts==0) || (ftps==NULL) )
+  nopts = deffile[fnm->ftp].ntps;
+  ftps  = deffile[fnm->ftp].tps;
+  if ((nopts == 0) || (ftps == NULL))
     fatal_error(0,"DEATH HORROR ERROR in %s:%d",__FILE__,__LINE__);
-  
-  /* First check whether we have a valid filename already */
-  /* ti is the extension type */
-  ti=fn2ftp(name); 
-  
-  for(i=0; (i<nopts); i++) {
-    /* check if it is a trajectory */
-    if (ti == ftps[i]) 
-      break;
-  }
-  if (i != nopts) {
-    /* If it is a trajectory file, return */
-    fnm->fn=strdup(name);
-    
-    return;
-  }
-  bSet=FALSE;
-  if (fnm->flag & ffREAD) { 
-    /* for input-files only: search for filenames in the directory */ 
-    for(i=0; (i<nopts) && !bSet; i++) {
-      ti=ftps[i];
-      if (name) {
+
+  bValidExt = FALSE;
+  if (name) {
+    /* First check whether we have a valid filename already */
+    type = fn2ftp(name);
+    for(i=0; (i<nopts) && !bValidExt; i++)
+      if (type == ftps[i]) {
 	strcpy(buf,name);
-	set_extension(buf,ti);
+	bValidExt = TRUE;
       }
-      else {
-	strcpy(buf,ftp2defnm(ti));
-	set_extension(buf,ti);
+    
+    if (!bValidExt && (fnm->flag & ffREAD)) { 
+      /* for input-files only: search for filenames in the directory */ 
+      for(i=0; (i<nopts) && !bValidExt; i++) {
+	type = ftps[i];
+	strcpy(buf,name);
+	set_extension(buf,type);
+	if (fexist(buf))
+	  bValidExt = TRUE;
       }
-      if (fexist(buf))
-	bSet=TRUE;
     }
-  }
-  if (!bSet) {
-    ti=ftps[0];
-    if (name)
+    if (!bValidExt)
       strcpy(buf,name);
-    else
-      strcpy(buf,ftp2defnm(fnm->ftp));
-    set_extension(buf,ti);
-  }
-  fnm->fn=strdup(buf);
+  } else
+    /* No name given, set the default name */
+    strcpy(buf,ftp2defnm(fnm->ftp));
+
+  if (!bValidExt)
+    /* Use the first extension type */
+    set_extension(buf,ftps[0]);
+  fnm->fn = strdup(buf);
 }
 
 static void set_filenm(t_filenm *fnm,char *name)

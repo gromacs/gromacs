@@ -60,9 +60,6 @@ extern void pr_def(FILE *fp,int ftp);
 extern void pr_defs(FILE *fp);
 /* Print definitions for all filename */
 
-extern void pr_fn(FILE *fp,t_filenm *tfn);
-/* Print one file name and type */
-
 extern void pr_fns(FILE *fp,int nf,t_filenm tfn[]);
 /* Print nf file names and types */
 
