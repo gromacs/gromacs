@@ -44,6 +44,7 @@ enum {
   F_BONDS,
   F_G96BONDS,
   F_MORSE,
+  F_CUBICBONDS,
   F_ANGLES, 
   F_G96ANGLES, 
   F_PDIHS,
@@ -91,6 +92,8 @@ typedef union
    */
   struct {real a,b,c;				} bham;
   struct {real rA,krA,rB,krB;           	} harmonic; 
+  /* No free energy support for cubic bonds */
+  struct {real b0,kb,kcub;                      } cubic; 
   /* No free energy supported for WPOL */ 
   struct {real kx,ky,kz,rOH,rHH,rOD;            } wpol; 
   struct {real c6,c12;				} lj;

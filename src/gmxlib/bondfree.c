@@ -155,6 +155,58 @@ real morsebonds(int nbonds,
   return vtot;
 }
 
+real cubicbonds(int nbonds,
+                t_iatom forceatoms[],t_iparams forceparams[],
+                rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+                matrix box,real lambda,real *dvdl,
+                t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  const real three = 3.0;
+  const real two   = 2.0;
+  real  kb,b0,kcub;
+  real  dr,dr2,dist,kdist,kdist2,fbond,vbond,fij,vtot;
+  rvec  dx;
+  int   i,m,ki,kj,type,ai,aj;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    
+    b0   = forceparams[type].cubic.b0;
+    kb   = forceparams[type].cubic.kb;
+    kcub = forceparams[type].cubic.kcub;
+
+    pbc_rvec_sub(x[ai],x[aj],dx);                   /*   3          */
+    dr2        = iprod(dx,dx);                            /*   5          */
+    
+    if (dr2 == 0.0)
+      continue;
+      
+    dr         = sqrt(dr2);                               /*  10          */
+    dist       = dr-b0;
+    kdist      = kb*dist;
+    kdist2     = kdist*dist;
+    
+    vbond      = kdist2 + kcub*kdist2*dist;
+    fbond      = -(two*kdist + three*kdist2*kcub)/dr;
+
+    vtot      += vbond;       /* 21 */
+    
+    ki=SHIFT_INDEX(g,ai);
+    kj=SHIFT_INDEX(g,aj);
+    for (m=0; (m<DIM); m++) {                          /*  15          */
+      fij=fbond*dx[m];
+      f[ai][m]+=fij;
+      f[aj][m]-=fij;
+      fr->fshift[ki][m]+=fij;
+      fr->fshift[kj][m]-=fij;
+    }
+  }                                           /*  54 TOTAL    */
+  return vtot;
+}
+
 real harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
 	      real *V,real *F)
 {

@@ -48,6 +48,8 @@ int ifunc_index(directive d,int type)
       return F_G96BONDS;
     else if (type == 3)
       return F_MORSE;
+    else if (type == 4)
+      return F_CUBICBONDS;
     else
       fatal_error(0,"Invalid bond type %d",type);
   case d_angles:

@@ -203,6 +203,7 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	  g->end  =max(g->end,  iaa);
 	  if ((tp == F_BONDS) || (tp == F_G96BONDS) || 
 	      (tp == F_MORSE) || (tp == F_SHAKE) ||
+	      (tp == F_CUBICBONDS) ||
 	      (interaction_function[tp].flags & IF_DUMMY))
 	    nbond[iaa]++;
 	}

@@ -78,6 +78,11 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->morse.cb    =old[1];
     new->morse.beta  =old[2];
     break;
+  case F_CUBICBONDS:
+    new->cubic.b0    =old[0];
+    new->cubic.kb    =old[1];
+    new->cubic.kcub  =old[2];
+    break;
   case F_WPOL:
     new->wpol.kx     =old[0];
     new->wpol.ky     =old[1];
