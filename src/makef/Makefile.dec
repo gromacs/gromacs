@@ -36,7 +36,7 @@ FFLAGS		= $(ALLOPT) -speculate all -assume noaccuracy_sensitive
 # Generic linking stuff
 LDFLAGS		= -L$(LIBDIR) -non_shared
 LD		= $(CC)  $(LDFLAGS) 
-OPTLD		= $(CC)  $(LDFLAGS)  -om -O4
+RUNLDOPT	= -om -O4
 FLD		= $(F77) $(LDFLAGS)
 CCLD		= -$(CCC) $(LDFLAGS)
 

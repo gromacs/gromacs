@@ -52,13 +52,13 @@ pdb2gmx:	$(POBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 mdrun:		mdrun.o $(RUNOBJ)
-		$(OPTLD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
+		$(LD) $(RUNLDOPT) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 mk_ghat:	mk_ghat.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 nmrun:		nmrun.o $(RUNOBJ)
-		$(OPTLD) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
+		$(LD) $(RUNLDOPT) -o $@ $^ $(SYSLIBS) $(FFTLIBS) -lm
 
 luck:		luck.o
 		$(LD) $^ -o $@ $(SYSLIBS)  
