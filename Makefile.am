@@ -40,10 +40,11 @@ install-mdrun:
 	(cd $(top_builddir)/src/kernel && $(MAKE) install-mdrun ; exit 0)
 
 links:
-	programs=$(bindir)/* 
-	(cd /usr/local/bin && for i in $(programs); do \
-	   (test ! -f $$i && $(LN_S) $$i . ; exit 0); \
-	done)
+	cd $(bindir) && programs=`ls` && cd /usr/local/bin && \
+	for i in $$programs; do \
+	   (test ! -f $$i && $(LN_S) $(bindir)/$$i . ; exit 0); \
+	done
+
 
 RPMARCH=`rpm --showrc | awk '/^build arch/ {print $$4}'`
 

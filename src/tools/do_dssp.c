@@ -315,11 +315,11 @@ int main(int argc,char *argv[])
     "using the dssp program.[PAR]",
 #else
     "calling the dssp program. If you do not have the dssp program,",
-    "get it. do_dssp assumes that the dssp executable is in",
-    "/home/mdgroup/dssp/dssp. If that is not the case, then you should",
+    "get it. do_dssp assumes that the dssp executable is",
+    "/usr/local/bin/dssp. If this is not the case, then you should",
     "set an environment variable [BB]DSSP[bb] pointing to the dssp",
-    "executable as in: [PAR]",
-    "[TT]setenv DSSP /usr/local/bin/dssp[tt][PAR]",
+    "executable, e.g.: [PAR]",
+    "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
 #endif
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
@@ -440,7 +440,7 @@ int main(int argc,char *argv[])
   setvbuf(tapeout,outbuf,_IOFBF,MAXBUF);
 #else
   if ((dptr=getenv("DSSP")) == NULL)
-    dptr="/home/mdgroup/dssp/dssp";
+    dptr="/usr/local/bin/dssp";
   if (!fexist(dptr))
     fatal_error(0,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
