@@ -49,16 +49,12 @@ typedef struct {
   atom_id blocknr;
 } t_sortblock;
 
-static int pcount=0;
-
 static int pcomp(const void *p1, const void *p2)
 {
   int     db;
   atom_id min1,min2,max1,max2;
   t_sortblock *a1=(t_sortblock *)p1;
   t_sortblock *a2=(t_sortblock *)p2;
-
-  pcount++;
   
   db=a1->blocknr-a2->blocknr;
   
@@ -476,7 +472,6 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
       
       if (debug) {
-	fprintf(debug,"I used %d calls to pcomp\n",pcount);
 	pr_sortblock(debug,"After sorting",ncons,sb);
       }
       

@@ -140,9 +140,9 @@ fi
 
 ### Do software 1/sqrt(x)
 AC_ARG_ENABLE(software-sqrt,     
- [  --disable-software-sqrt       no software 1/sqrt (disabled on sgi,ibm)],,
+ [  --disable-software-sqrt       no software 1/sqrt (disabled on sgi,ibm,ia64)],,
 [case "${host_cpu}-${host_os}" in
-  mips*-irix* | rs6000*-aix* | powerpc*-aix) enable_software_sqrt=no ;;
+  mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_sqrt=no ;;
   *) enable_software_sqrt=yes ;;
 esac])
 if test "$enable_software_sqrt" = "yes"; then

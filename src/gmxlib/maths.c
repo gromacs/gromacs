@@ -84,11 +84,7 @@ real sign(real x,real y)
 
 #ifdef DOUBLE
 
-#ifdef __STDC__
 static const double
-#else
-static double
-#endif
 tiny	    = 1e-300,
 half=  5.00000000000000000000e-01, /* 0x3FE00000, 0x00000000 */
 one =  1.00000000000000000000e+00, /* 0x3FF00000, 0x00000000 */
@@ -163,38 +159,43 @@ sb[]  =  {0.0,3.03380607434824582924e+01, /* 0x403E568B, 0x261D5190 */
   4.74528541206955367215e+02, /* 0x407DA874, 0xE79FE763 */
  -2.24409524465858183362e+01}; /* 0xC03670E2, 0x42712D62 */
 
-
-typedef union
-{
-  double value;
-  struct
-  {
-    erf_u_int32_t msw;
-    erf_u_int32_t lsw;
-  } parts;
-} ieee_double_shape_type;
-
-
-#define GET_HIGH_WORD(i,d)					\
-do {								\
-  ieee_double_shape_type gh_u;					\
-  gh_u.value = (d);						\
-  (i) = gh_u.parts.msw;						\
-} while (0)
-
-
-#define GET_LOW_WORD(i,d)					\
-do {								\
-  ieee_double_shape_type gl_u;					\
-  gl_u.value = (d);						\
-  (i) = gl_u.parts.lsw;						\
-} while (0)
-
 double gmx_erf(double x)
 {
+  
 	erf_int32_t hx,ix,i;
 	double R,S,P,Q,s,y,z,r;
-	GET_HIGH_WORD(hx,x);
+	double test=0.987654321; /* Just a number */
+	int be_fword;
+	unsigned char itest = *((char *)&test);
+
+	/* Possible representations in IEEE double precision: 
+	 * (S=small endian, B=big endian)
+	 * 
+	 * Byte order, Word order, Hex
+	 *     S           S       b8 56 0e 3c dd 9a ef 3f    
+	 *     B           S       3c 0e 56 b8 3f ef 9a dd
+	 *     S           B       dd 9a ef 3f b8 56 0e 3c
+	 *     B           B       3f ef 9a dd 3c 0e 56 b8
+	 */ 
+	
+	if(itest==0xdd || itest==0x3f)
+	  be_fword=1;  /* Big endian word order */
+	else if(itest==0xb8 || itest==0x3c)
+	  be_fword=0;  /* Small endian word order */
+	else { /* Catch strange errors */
+	  printf("Error detecting floating-point word order in gmx_erf().\n");
+	  exit(0);
+	}
+	
+	/* Get the high (most significant) part of a double.
+         * We HAVE to use the constants 0/1 here, or the gcc
+	 * scheduler will get it wrong. (see comments in fdlibm)
+	 */
+	if(be_fword) 
+	  hx=*((int *)&x);
+	else 
+	  hx=*(1+(int *)&x);
+	
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {		/* erf(nan)=nan */
 	    i = ((erf_u_int32_t)hx>>31)<<1;
@@ -263,9 +264,18 @@ double gmx_erf(double x)
 	    R = R1 + s2*R2 + s4*R3 + s6*rb[6];
 	    S = S1 + s2*S2 + s4*S3 + s6*S4;
 	}
+
 	z  = x;
-	SET_LOW_WORD(z,0);
-	r  =  __ieee754_exp(-z*z-0.5625)*__ieee754_exp((z-x)*(z+x)+R/S);
+	/* Set the low (least significant) part of a double.
+	 * We HAVE to use the constants 0/1 here, or the gcc
+	 * scheduler will get it wrong. (see comments in fdlibm)
+	 */
+	if(be_fword) 
+	  *(1+(int *)&z)=0;
+	else 
+	  *((int *)&z)=0;
+	
+	r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
 	if(hx>=0) return one-r/x; else return  r/x-one;
 }
 
@@ -274,7 +284,38 @@ double gmx_erfc(double x)
 {
 	erf_int32_t hx,ix;
 	double R,S,P,Q,s,y,z,r;
-	GET_HIGH_WORD(hx,x);
+	double test=0.987654321; /* Just a number */
+	int be_fword;
+	unsigned char itest = *((char *)&test);
+
+	/* Possible representations in IEEE double precision: 
+	 * (S=small endian, B=big endian)
+	 * 
+	 * Byte order, Word order, Hex
+	 *     S           S       b8 56 0e 3c dd 9a ef 3f    
+	 *     B           S       3c 0e 56 b8 3f ef 9a dd
+	 *     S           B       dd 9a ef 3f b8 56 0e 3c
+	 *     B           B       3f ef 9a dd 3c 0e 56 b8
+	 */ 
+	
+	if(itest==0xdd || itest==0x3f)
+	  be_fword=1;  /* Big endian word order */
+	else if(itest==0xb8 || itest==0x3c)
+	  be_fword=0;  /* Small endian word order */
+	else { /* Catch strange errors */
+	  printf("Error detecting floating-point word order in gmx_erf().\n");
+	  exit(0);
+	}
+	
+	/* Get the high (most significant) part of a double.
+         * We HAVE to use the constants 0/1 here, or the gcc
+	 * scheduler will get it wrong. (see comments in fdlibm)
+	 */
+	if(be_fword) 
+	  hx=*((int *)&x);
+	else 
+	  hx=*(1+(int *)&x);
+
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {			/* erfc(nan)=nan */
 						/* erfc(+-inf)=0,2 */
@@ -350,9 +391,17 @@ double gmx_erfc(double x)
 		S = S1 + s2*S2 + s4*S3 + s6*S4;
 	    }
 	    z  = x;
-	    SET_LOW_WORD(z,0);
-	    r  =  __ieee754_exp(-z*z-0.5625)*
-			__ieee754_exp((z-x)*(z+x)+R/S);
+	
+	    /* Set the low (least significant) part of a double.
+	     * We HAVE to use the constants 0/1 here, or the gcc
+	     * scheduler will get it wrong. (see comments in fdlibm)
+	     */
+	    if(be_fword) 
+	      *(1+(int *)&z)=0;
+	    else 
+	      *((int *)&z)=0;
+
+	    r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
 	    if(hx>0) return r/x; else return two-r/x;
 	} else {
 	    if(hx>0) return tiny*tiny; else return two-tiny;
@@ -363,11 +412,7 @@ double gmx_erfc(double x)
 
 
 
-#ifdef __STDC__
 static const float
-#else
-static float
-#endif
 tiny	    = 1e-30,
 half=  5.0000000000e-01, /* 0x3F000000 */
 one =  1.0000000000e+00, /* 0x3F800000 */
@@ -570,8 +615,7 @@ float gmx_erfc(float x)
 	    }
 	    GET_FLOAT_WORD(ix,x);
 	    SET_FLOAT_WORD(z,ix&0xfffff000);
-	    r  =  exp(-z*z-(float)0.5625)*
-			exp((z-x)*(z+x)+R/S);
+	    r  =  exp(-z*z-(float)0.5625)*exp((z-x)*(z+x)+R/S);
 	    if(hx>0) return r/x; else return two-r/x;
 	} else {
 	    if(hx>0) return tiny*tiny; else return two-tiny;
