@@ -536,7 +536,7 @@ void init_forcerec(FILE *fp,
 		   char       *tabfn,
 		   bool       bNoSolvOpt)
 {
-  int     i,j,m,natoms,ngrp,tabelemsize;
+  int     i,j,m,natoms,ngrp;
   real    q,zsq,nrdf,T;
   rvec    box_size;
   double  rtab;
@@ -571,7 +571,7 @@ void init_forcerec(FILE *fp,
 
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = fr->eeltype==eelPME || fr->eeltype==eelEWALD;
-  fr->bvdwtab    = fr->vdwtype != evdwCUT;
+  fr->bvdwtab    = TRUE; // fr->vdwtype != evdwCUT;
   fr->bRF        = (fr->eeltype==eelRF || fr->eeltype==eelGRF) &&
 		    fr->vdwtype==evdwCUT;
   fr->bcoultab   = (fr->eeltype!=eelCUT && !fr->bRF) || fr->bEwald;
@@ -804,14 +804,13 @@ void init_forcerec(FILE *fp,
   /* Copy the contents of the table to separate coulomb and LJ
    * tables too, to improve cache performance.
    */
-  tabelemsize=fr->bBHAM ? 16 : 12;
   snew(fr->coultab,4*(fr->ntab+1));
-  snew(fr->vdwtab,(tabelemsize-4)*(fr->ntab+1));  
+  snew(fr->vdwtab,8*(fr->ntab+1));  
   for(i=0; i<=fr->ntab; i++) {
     for(j=0; j<4; j++) 
-      fr->coultab[4*i+j]=fr->coulvdwtab[tabelemsize*i+j];
-    for(j=0; j<tabelemsize-4; j++) 
-      fr->vdwtab[(tabelemsize-4)*i+j]=fr->coulvdwtab[tabelemsize*i+4+j];
+      fr->coultab[4*i+j]=fr->coulvdwtab[12*i+j];
+    for(j=0; j<8; j++) 
+      fr->vdwtab[8*i+j]=fr->coulvdwtab[12*i+4+j];
   }
   if (!fr->mno_index)
     check_solvent(fp,top,fr,mdatoms,nsb);
