@@ -48,24 +48,24 @@ static void do_guillot(FILE *fp,int eel,double resolution)
   double f0     = qOd/qO;
   double xi     = 0.015;
   int    i,i0,imax;
-  double r1,r2,r,vc,vc2,vd,vd2,vr,vr2,vrep,vrep2;
+  double z,r2,r,vc,vc2,vd,vd2,vr,vr2,vrep,vrep2;
 
   imax = 3/resolution;
   for(i=0; (i<=imax); i++) {
     r     = i*resolution;
-    /* Avoid very high numbers */
+    /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vrep = vrep2 = 0;
     }
     else {
-      r1    = r/(2.0*xi);
+      z     = r/(2.0*xi);
       r2    = r/(sqrt(2.0*xi));
-      vc    = (1+f0*f0*erf(r1)+2*f0*erf(r2))/r;
-      vc2   = (2*vc/(r*r)) + (f0*f0*erf2(r1) + 2*f0*erf2(r2))/r;
+      vc    = (1+f0*f0*erf(z)+2*f0*erf(r2))/r;
+      vc2   = (2*vc/(r*r)) + (f0*f0*erf2(z) + 2*f0*erf2(r2))/r;
       vd    = -1.0/(r*r*r*r*r*r);
       vd2   = 42.0*vd/(r*r);
-      vrep  = erfc(r1)/r1;
-      vrep2 = (2*vrep/(r1*r1)+(2.0/(r1*r1)+2)*exp(-r1*r1))/sqr(2.0*xi);
+      vrep  = erfc(z)/z;
+      vrep2 = (2*vrep/(z*z)+(2.0/(z*z)+2)*exp(-z*z))/sqr(2.0*xi);
     }
     fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
 	    r,vc,vc2,vd,vd2,vrep,vrep2);
