@@ -393,21 +393,22 @@ static void remove_group(int nr,int nr2,t_block *block,char ***gn)
     nr2=nr;
   
   for(j=0; j<=nr2-nr; j++) {
-    if ((nr<0) || (nr>block->nr))
+    if ((nr<0) || (nr>=block->nr))
       printf("Selected group does not exist: %d\n",nr+j);
     else {
       shift=block->index[nr+1]-block->index[nr];
       for(i=block->index[nr+1]; i<block->nra; i++)
 	block->a[i-shift]=block->a[i];
       
-      for(i=nr+1; i<=block->nr; i++)
+      for(i=nr; i<block->nr; i++)
 	block->index[i]=block->index[i+1]-shift;
       sfree((*gn)[nr]);
-      for(i=nr; i<block->nr; i++)   
+      for(i=nr; i<block->nr-1; i++) {  
 	(*gn)[i]=(*gn)[i+1];
-	block->nr--;
-	block->nra=block->index[block->nr];
-	printf("Removed group %d\n",nr+j);
+      }
+      block->nr--;
+      block->nra=block->index[block->nr];
+      printf("Removed group %d\n",nr+j);
     }
   }
 }
