@@ -283,7 +283,8 @@ int main (int argc,char *argv[])
   memcpy(atoms->atomname,top->atoms.atomname,atoms->nr*sizeof(atoms->atomname[0]));
   memcpy(atoms->resname,top->atoms.resname,atoms->nres*sizeof(atoms->resname[0]));
 
-  mdatoms=atoms2md(&top->atoms,ir->opts.nFreeze,FALSE,FALSE);  
+  mdatoms=atoms2md(&top->atoms,ir->opts.nFreeze,
+		   parm->ir.eI==eiLD,FALSE,FALSE);  
   fr=mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
   calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);

@@ -921,20 +921,11 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
     CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
   }
 
-  if (ir->bPert && ((ir->eConstrAlg == estSHAKE) || (ir->eI == eiLD))) {
-    int npc;
-    npc = count_pert_constraint_types(&sys->idef);
-    if (npc) {
-      if (ir->eConstrAlg == estSHAKE) {
-	set_warning_line(mdparin,-1);
-	sprintf(warn_buf,"Can not calculate the contribution of perturbed constraints to the free energy with SHAKE, use LINCS if you want the free energy");
-	warning(NULL);
-      }
-      if (ir->eI == eiLD) {
-	set_warning_line(mdparin,-1);
-	sprintf(warn_buf,"Can not calculate the contribution of perturbed constraints to the free energy with LD");
-	warning(NULL);
-      }
+  if (ir->bPert && (ir->eConstrAlg == estSHAKE)) {
+    if (count_pert_constraint_types(&sys->idef)) {
+      set_warning_line(mdparin,-1);
+      sprintf(warn_buf,"Can not calculate the contribution of perturbed constraints to the free energy with SHAKE, use LINCS if you want the free energy");
+      warning(NULL);
     }
   }
   

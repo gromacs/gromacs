@@ -34,21 +34,19 @@ static char *SRCID_clincs_c = "$Id$";
 #include "physics.h"
 #include "vec.h"
 
-void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
+void clincs(rvec *x,rvec *xp,int ncons,
 	    int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
 	    real *blc,real *blcc,real *blm,
 	    int nit,int nrec,real *invmass,rvec * r,
 	    real *rhs1,real *rhs2,real *sol,real wangle,int *warn,
 	    real *lambda)
 {
-  int     b,i,j,k,n,b4,it,rec,nr,n1,nc4;
+  int     b,i,j,k,n,it,rec;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
   real    u0,u1,u2,v0,v1,v2;
   real    *tmp;
 
   *warn=0;
-  n1=ncons-ncm;
-  nc4=(cmax-4)*n1;
 
   /* Compute normalized i-j vectors */
   for(b=0;b<ncons;b++) {
@@ -63,74 +61,41 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
     r[b][2]=rlen*tmp2;
   } /* 16 ncons flops */
   
-  for(b=0;b<n1;b++) {
-    b4=4*b;
+  for(b=0;b<ncons;b++) {
     tmp0=r[b][0];
     tmp1=r[b][1];
     tmp2=r[b][2];
     len=bllen[b];
     i=bla1[b];
     j=bla2[b];
-    nr=blnr[b];
-    for(n=0;n<nr;n++) {
-      k=blbnb[b4+n];
-      blm[b4+n]=blcc[b4+n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]);
+    for(n=blnr[b];n<blnr[b+1];n++) {
+      k=blbnb[n];
+      blm[n]=blcc[n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]); 
     } /* 6 nr flops */
     mvb=blc[b]*(tmp0*(xp[i][0]-xp[j][0])+
 		tmp1*(xp[i][1]-xp[j][1])+    
 		tmp2*(xp[i][2]-xp[j][2])-len);
     rhs1[b]=mvb;
     sol[b]=mvb;
-  } /* (6 nr + 10) * n1 flops */
-  
-  for(b=n1;b<ncons;b++) {
-    b4=cmax*b-nc4;
-    tmp0=r[b][0];
-    tmp1=r[b][1];
-    tmp2=r[b][2];
-    len=bllen[b];
-    i=bla1[b];
-    j=bla2[b];
-    nr=blnr[b];
-    for(n=0;n<nr;n++) {
-      k=blbnb[b4+n];
-      blm[b4+n]=blcc[b4+n]*(tmp0*r[k][0]+tmp1*r[k][1]+tmp2*r[k][2]); 
-    } /* 6 nr flops */
-    mvb=blc[b]*(tmp0*(xp[i][0]-xp[j][0])+
-		tmp1*(xp[i][1]-xp[j][1])+    
-		tmp2*(xp[i][2]-xp[j][2])-len);
-    rhs1[b]=mvb;
-    sol[b]=mvb;
-  } /* (6 nr + 10) * (ncons - n1) flops */
-  /* Together: (6 <nr> +10) * ncons flops */
+    /* 8 flops */
+  }
+  /* Together: 24*ncons + 6*nrtot flops */
   
     
   for(rec=0;rec<nrec;rec++) {
-    for(b=0;b<n1;b++) {
-      b4=4*b;
+    for(b=0;b<ncons;b++) {
       mvb=0;
-      for(n=0;n<4;n++) {
-	j=blbnb[b4+n];
-	mvb=mvb+blm[b4+n]*rhs1[j];
-      } /* 8 flops */
-      rhs2[b]=mvb;
-      sol[b]=sol[b]+mvb;
-    } /* 9 * n1 flops */
-    for(b=n1;b<ncons;b++) {
-      b4=cmax*b-nc4;
-      mvb=0;
-      nr=blnr[b];
-      for(n=0;n<nr;n++) {
-	j=blbnb[b4+n];
-	mvb=mvb+blm[b4+n]*rhs1[j];
+      for(n=blnr[b];n<blnr[b+1];n++) {
+	j=blbnb[n];
+	mvb=mvb+blm[n]*rhs1[j];
       }
       rhs2[b]=mvb;
       sol[b]=sol[b]+mvb;
-    } /* 9 * (ncons-n1) flops */
+    }
     tmp=rhs1;
     rhs1=rhs2;
     rhs2=tmp;
-  } /* 9*nrec*ncons flops */
+  } /* nrec*(ncons+2*nrtot) flops */
   
   for(b=0;b<ncons;b++) {
     i=bla1[b];
@@ -181,26 +146,14 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       mvb=blc[b]*(len-sqrt(u0));
       rhs1[b]=mvb;
       sol[b]=mvb;
-    } /* 18 ncons flops */
+    } /* 18*ncons flops */
     
     for(rec=0;rec<nrec;rec++) {
-      for(b=0;b<n1;b++) {
-	b4=4*b;
+      for(b=0;b<ncons;b++) {
 	mvb=0;
-	for(n=0;n<4;n++) {
-	  j=blbnb[b4+n];
-	  mvb=mvb+blm[b4+n]*rhs1[j];
-	}
-	rhs2[b]=mvb;
-	sol[b]=sol[b]+mvb;
-      }
-      for(b=n1;b<ncons;b++) {
-	b4=cmax*b-nc4;
-	mvb=0;
-	nr=blnr[b];
-	for(n=0;n<nr;n++) {
-	  j=blbnb[b4+n];
-	  mvb=mvb+blm[b4+n]*rhs1[j];
+	for(n=blnr[b];n<blnr[b+1];n++) {
+	  j=blbnb[n];
+	  mvb=mvb+blm[n]*rhs1[j];
 	}
 	rhs2[b]=mvb;
 	sol[b]=sol[b]+mvb;
@@ -208,7 +161,7 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       tmp=rhs1;
       rhs1=rhs2;
       rhs2=tmp;
-    } /* 9*ncons*nrec flops */ 
+    } /* nrec*(ncons+2*nrtot) flops */ 
     
     for(b=0;b<ncons;b++) {
       i=bla1[b];
@@ -235,14 +188,14 @@ void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,
       xp[j][2]=v2;
     } /* 17 ncons flops */
   } /* nit*ncons*(35+9*nrec) flops */
-  /* Total: 
-   * 6 * nrtot + ncons * (16 + 10 + 9 nrec + 16 + nit*(35+9nrec) =
-   * 6 * nrtot + ncons * (42 + 9 nrec * (nit+1) + 35 nit) or alternatively
-   * ncons * (6 <nr> + 42 + 9 nrec * (nit+1) + 35 nit) and according to
-   * Berk <nr> =~ 3, such that we get (with nit = nrec = 4)
-   * ncons * (60 + 180 + 140) = 380 * ncons
-   * For Lincs-LD this would be (nrec = 8, nit = 4)
-   * 560 ncons 
+  /* Total:
+   * 24*ncons + 6*nrtot + nrec*(ncons+2*nrtot)
+   * + nit * (18*ncons + nrec*(ncons+2*nrtot) + 17 ncons)
+   *
+   * (24+nrec)*ncons + (6+2*nrec)*nrtot
+   * + nit * ((35+nrec)*ncons + 2*nrec*nrtot)
+   * if nit=1
+   * (59+nrec)*ncons + (6+4*nrec)*nrtot
    */
 }
 

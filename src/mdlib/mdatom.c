@@ -35,7 +35,8 @@ static char *SRCID_mdatom_c = "$Id$";
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *atoms2md(t_atoms *atoms,ivec nFreeze[],bool bPert,bool bFree)
+t_mdatoms *atoms2md(t_atoms *atoms,ivec nFreeze[],
+		    bool bLD,bool bPert,bool bFree)
 {
   int       i,np,g;
   double    tm;
@@ -68,9 +69,15 @@ t_mdatoms *atoms2md(t_atoms *atoms,ivec nFreeze[],bool bPert,bool bFree)
   np=0;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
-    md->massA[i]	= atoms->atom[i].m;
-    md->massB[i]	= atoms->atom[i].mB;
-    md->massT[i]	= atoms->atom[i].m;
+    if (bLD) {
+      md->massA[i]	= 1;
+      md->massB[i]	= 1;
+      md->massT[i]	= 1;
+    } else {
+      md->massA[i]	= atoms->atom[i].m;
+      md->massB[i]	= atoms->atom[i].mB;
+      md->massT[i]	= atoms->atom[i].m;
+    }
     md->chargeA[i]	= atoms->atom[i].q;
     md->chargeB[i]	= atoms->atom[i].qB;
     md->resnr[i]	= atoms->atom[i].resnr;

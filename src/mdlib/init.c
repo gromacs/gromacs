@@ -101,7 +101,8 @@ void init_single(FILE *log,t_parm *parm,
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,
 	   parm->box,&natoms,*x,*v,NULL,top);
   
-  *mdatoms=atoms2md(&top->atoms,parm->ir.opts.nFreeze,parm->ir.bPert,FALSE);
+  *mdatoms=atoms2md(&top->atoms,parm->ir.opts.nFreeze,
+		    parm->ir.eI==eiLD,parm->ir.bPert,FALSE);
   
   pr_inputrec(log,0,"Input Parameters",&parm->ir);
   calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
@@ -181,7 +182,8 @@ void init_parts(FILE *log,t_commrec *cr,
       pr_top(log,0,int_title("topology",cr->pid),top);
     fflush(log);
   }
-  *mdatoms=atoms2md(&(top->atoms),parm->ir.opts.nFreeze,parm->ir.bPert,FALSE);
+  *mdatoms=atoms2md(&(top->atoms),parm->ir.opts.nFreeze,
+		    parm->ir.eI==eiLD,parm->ir.bPert,FALSE);
 }
 
 void write_parm(FILE *log,char *title,int pid,t_parm *parm)

@@ -64,9 +64,8 @@ static void dump_confs(int step,t_atoms *atoms,
 }
 
 static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
-		       t_mdatoms *md,int start,int homenr,
-		       int *nbl,int **sbl,
-		       int *ncm,int *cmax,int *nrtot,
+		       t_mdatoms *md,
+		       int *nrtot,
 		       rvec **r,int **bla1,int **bla2,int **blnr,int **blbnb,
 		       real **bllen,real **blc,real **blcc,real **blm,
 		       real **tmp1,real **tmp2,real **tmp3,
@@ -78,19 +77,17 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   int         ncons;
   int         type,a1,a2,b2,nr,n1,n2,nc4;
   real        len=0,len1,sign;
-  real        im1,im2,imcen;
+  real        im1,im2;
   
   ncons  = idef->il[F_SHAKE].nr/3;
   *nrtot = 0;
   
   if (ncons > 0) {
 
-    /* Make constraint-neighbour list */
-
     snew(*r,ncons);
     snew(*bla1,ncons);
     snew(*bla2,ncons);
-    snew(*blnr,ncons);
+    snew(*blnr,ncons+1);
     snew(*bllen,ncons);
     snew(*blc,ncons);
     snew(*tmp1,ncons);
@@ -102,21 +99,8 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     
     iatom=idef->il[F_SHAKE].iatoms;
 
-    /* Number of coupling of a bond is defined as the number of
-       bonds directly connected to that bond (not to an atom!).
-       The constraint are divided into two groups, the first
-       group consists of bonds with 4 or less couplings, the
-       second group consists of bonds with more than 4 couplings
-       (in proteins most of the bonds have 2 or 4 couplings). 
-       
-       cmax: maximum number of bonds coupled to one bond 
-       ncm:  number of bonds with mor than 4 couplings 
-       */
-
-    *cmax=0;
-    n1=0;
-    n2=ncons-1;
-
+    /* Make constraint-neighbor list */
+    (*blnr)[0] = 0;
     for(i=0; (i<ncons); i++) {
       j=3*i;
       a1=iatom[j+1];
@@ -129,97 +113,73 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	  if (i != k) nr++;
       }
       *nrtot += nr;
-      if (nr > *cmax) *cmax=nr;
+      (*blnr)[i+1] = *nrtot;
       type=iatom[j];
       len =idef->iparams[type].shake.dA;
       len1=idef->iparams[type].shake.dB;
-      if (nr <=4) {
-	(*bla1)[n1]=a1;
-	(*bla2)[n1]=a2;
-	(*bllen)[n1]=len;
-	(*bllen0)[n1]=len;
-	(*ddist)[n1]=len1-len;
-	n1++;
-      }
-      else {
-	(*bla1)[n2]=a1;
-	(*bla2)[n2]=a2;
-	(*bllen)[n2]=len;
-	(*bllen0)[n2]=len;
-	(*ddist)[n2]=len1-len;
-	n2--;
-      }
+      (*bla1)[i]=a1;
+      (*bla2)[i]=a2;
+      (*bllen)[i]=len;
+      (*bllen0)[i]=len;
+      (*ddist)[i]=len1-len;
     }
-    
-    *ncm=ncons-n1;
-    nc4=(*cmax-4)*n1;
 
-    i=4*n1+(*cmax)*(*ncm);
-    snew(*blbnb,i); 
-    snew(*blcc,i);
-    snew(*blm,i); 
+    fprintf(log,"\nInitializing LINear Constraint Solver\n");
+    fprintf(log,"  number of constraint is %d\n",ncons);
+    fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n\n",
+	    (real)(*nrtot)/ncons);
+    fflush(log);
 
+    snew(*blbnb,*nrtot); 
+    snew(*blcc,*nrtot);
+    snew(*blm,*nrtot); 
+
+    /* Construct the constraint connection matrix blbnb */
     for(i=0; (i<ncons); i++) {
       a1=(*bla1)[i];
       a2=(*bla2)[i];
       im1=md->invmass[a1];
       im2=md->invmass[a2];
       (*blc)[i]=invsqrt(im1+im2);
-      /* printf("%d %d %f\n",a1,a2,blist[i].len); */
       nr=0;
-      /* printf("\n%d",i); */
       for(k=0; (k<ncons); k++) {
 	b1=(*bla1)[k];
 	b2=(*bla2)[k];
 	if ((a1==b1 || a1==b2) || (a2==b1 || a2==b2)) 
 	  if (i != k) {
-	    if (i<n1)
-	      (*blbnb)[4*i+nr]=k;
-	    else
-	      (*blbnb)[(*cmax)*i-nc4+nr]=k;
+	    (*blbnb)[(*blnr)[i]+nr]=k;
 	    nr++;
-	    /* printf(" %d",k); */
 	  }
       }
-      (*blnr)[i]=nr;
-      /* printf("\n"); */
     }
-    fprintf(stdlog,"\nInitializing LINear Constraint Solver\n");
-    fprintf(stdlog,"%d constraints\nof which %d with more than 4 neighbours\n",ncons,*ncm);
-    fprintf(stdlog,"maximum number of bonds coupled to one bond is %d\n\n",*cmax);
-    fflush(stdlog);
- 
+    
+    /* Construct the coupling coefficient matrix blcc */
     for(b=0; (b<ncons); b++) {
       i=(*bla1)[b];
       j=(*bla2)[b];
-      nr=(*blnr)[b];
-      if (nr) 
-	for(n=0; (n<nr);n++) {
-	  if (b < n1) 
-	    k=(*blbnb)[4*b+n];
-	  else
-	    k=(*blbnb)[(*cmax)*b-nc4+n];
-	  if (i==(*bla1)[k] || j==(*bla2)[k])
-	    sign=-1;
-	    else
-	    sign=1;
-	  if (i==(*bla1)[k] || i==(*bla2)[k])
-	    cen=i;
-	  else
-	    cen=j;
-	  if (ir->eI==eiMD) {
-	    imcen=md->invmass[cen];
-	    len=sign*imcen*(*blc)[b]*(*blc)[k];
-	  }
-	  if (ir->eI==eiLD) 
-	    len=sign*0.5;
-	  if (b<n1) 
-	    (*blcc)[4*b+n]=len;
-	  else
-	    (*blcc)[(*cmax)*b-nc4+n]=len;
-	}
+      for(n=(*blnr)[b]; (n<(*blnr)[b+1]);n++) {
+	k = (*blbnb)[n];
+	if (i==(*bla1)[k] || j==(*bla2)[k])
+	  sign=-1;
+	else
+	  sign=1;
+	if (i==(*bla1)[k] || i==(*bla2)[k])
+	  cen=i;
+	else
+	  cen=j;
+	(*blcc)[n]=sign*md->invmass[cen]*(*blc)[b]*(*blc)[k];
+      }
     }
-    
+#ifdef DEBUG
+    for(i=0; i<ncons; i++) {
+      fprintf(log,"%d  %d %d  %g  %g  %d\n",i,(*bla1)[i],(*bla2)[i],
+      (*bllen)[i],(*blc)[i],(*blnr)[i+1]-(*blnr)[i]);
+      for(n=(*blnr)[i]; (n<(*blnr)[i+1]);n++) {
+	k = (*blbnb)[n];
+	fprintf(log,"  %d  %g\n",k,(*blcc)[n]);
+      }
+    }
+#endif
   }
 }
 
@@ -234,7 +194,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   static rvec      *r;
   static real      *bllen,*blc,*blcc,*blm,*tmp1,*tmp2,*tmp3,*lincslam,
                    *bllen0,*ddist;
-  static int       nc,ncm,cmax;
+  static int       nc;
 
   char             buf[STRLEN];
   int              i,nit,warn,p_imax,error;
@@ -244,9 +204,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   if (bInit) {
     nc = top->idef.il[F_SHAKE].nr/3;
     init_lincs(stdlog,top,ir,md,
-	       start,homenr,
-	       nbl,sbl,
-	       &ncm,&cmax,&nrtot,
+	       &nrtot,
 	       &r,&bla1,&bla2,&blnr,&blbnb,
 	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
 	       &bllen0,&ddist);
@@ -272,38 +230,25 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     else
       nit = 1;
     
-    if (ir->eI != eiLD) {
 #ifdef USEF77
-      flincs(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,blbnb,
-	     bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
-	     md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
-	     lincslam);
+    flincs(x[0],xprime[0],&nc,bla1,bla2,blnr,blbnb,
+	   bllen,blc,blcc,blm,&nit,&ir->nProjOrder,
+	   md->invmass,r[0],tmp1,tmp2,tmp3,&wang,&warn,
+	   lincslam);
 #else
-      clincs(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,blbnb,
-	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
-	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
+    clincs(x,xprime,nc,bla1,bla2,blnr,blbnb,
+	   bllen,blc,blcc,blm,nit,ir->nProjOrder,
+	   md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
 #endif
-      inc_nrnb(nrnb,eNR_LINCS,nc);
-      if (ir->bPert) {
-	real dvdl=0;
-	
-	for(i=0; (i<nc); i++)
-	  dvdl+=lincslam[i]*dt_2*ddist[i];
-	*dvdlambda+=dvdl;
-      }
-    }
-    
-    if (ir->eI==eiLD) {
-#ifdef USEF77
-      flincsld(x[0],xprime[0],&nc,&ncm,&cmax,bla1,bla2,blnr,
-	       blbnb,bllen,blcc,blm,&nit,&ir->nProjOrder,
-	       r[0],tmp1,tmp2,tmp3,&wang,&warn);
-#else
-      clincsld(x,xprime,nc,ncm,cmax,bla1,bla2,blnr,
-	       blbnb,bllen,blcc,blm,nit,ir->nProjOrder,
-	       r,tmp1,tmp2,tmp3,wang,&warn);
-#endif
-      inc_nrnb(nrnb,eNR_LINCSLD,nc);
+    /* count assuming nit=1 */
+    inc_nrnb(nrnb,eNR_LINCS,nc);
+    inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
+    if (ir->bPert) {
+      real dvdl=0;
+      
+      for(i=0; (i<nc); i++)
+	dvdl+=lincslam[i]*dt_2*ddist[i];
+      *dvdlambda+=dvdl;
     }
     
     if (do_per_step(step,ir->nstLincsout)) {
