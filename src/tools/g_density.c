@@ -342,7 +342,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "Compute partial densities across the box, using an index file. Densities",
-    "in gram/cubic centimeter, number densities or electron densities can be",
+    "in kg/m^3, number densities or electron densities can be",
     "calculated. For electron densities, a file describing the number of",
     "electrons for each type of atom should be provided using [TT]-ei[tt].",
     "It should look like:[BR]",
