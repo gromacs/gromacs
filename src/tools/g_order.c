@@ -71,39 +71,37 @@ static void print_types(atom_id index[], atom_id a[], int ngrps,
 static void check_length(real length, int a, int b)
 {
   if (length > 0.3)
-  {
     fprintf(stderr,"WARNING: distance between atoms %d and "
 	    "%d > 0.3 nm (%f). Index file might be corrupt.\n", 
 	    a, b, length);
-  } 
 }
 
 void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
 		bool bUnsat, t_topology *top, int ngrps, int axis)
-{
-  rvec *x0,          /* coordinates with pbc                    */
-    *x1,             /* coordinates without pbc                 */
-    dist;            /* vector between two atoms                */
-  matrix box;        /* box (3x3)                               */
-  int   status;
-  rvec  cossum,      /* sum of vector angles for three axes      */
-    Sx, Sy, Sz,      /* the three molecular axes                 */
-    tmp1, tmp2,      /* temp. rvecs for calculating dot products */
-    frameorder;      /* order parameters for one frame           */
-  real *slFrameorder; /* order parameter for one frame, per slice */
-  real length,       /* total distance between two atoms         */
-    t,               /* time from trajectory                     */
+{ 
+  rvec *x0,          /* coordinates with pbc                           */
+    *x1,             /* coordinates without pbc                        */
+    dist;            /* vector between two atoms                       */
+  matrix box;        /* box (3x3)                                      */
+  int   status;  
+  rvec  cossum,      /* sum of vector angles for three axes            */
+    Sx, Sy, Sz,      /* the three molecular axes                       */
+    tmp1, tmp2,      /* temp. rvecs for calculating dot products       */
+    frameorder;      /* order parameters for one frame                 */
+  real *slFrameorder; /* order parameter for one frame, per slice      */
+  real length,       /* total distance between two atoms               */
+    t,               /* time from trajectory                           */
     z_ave,z1,z2;     /* average z, used to det. which slice atom is in */
-  int natoms,        /* nr. atoms in trj                         */
-    nr_tails,        /* nr tails, just to check if index file is correct */
-    size=0,          /* nr. of atoms in group. same as nr_tails, normally */  
+  int natoms,        /* nr. atoms in trj                               */
+    nr_tails,        /* nr tails, to check if index file is correct    */
+    size=0,          /* nr. of atoms in group. same as nr_tails        */  
     i,j,m,k,l,teller = 0,
-    slice,           /* current slice number                     */
+    slice,           /* current slice number                           */
     nr_frames = 0,
-    *slCount;        /* nr. of atoms in one slice                */
-   real dbangle = 0, /* angle between double bond and  axis      */
-        sdbangle = 0;/* sum of these angles */
+    *slCount;        /* nr. of atoms in one slice                      */
+   real dbangle = 0, /* angle between double bond and  axis            */ 
+        sdbangle = 0;/* sum of these angles                            */
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) 
     fatal_error(0,"Could not read coordinates from statusfile\n");
@@ -116,8 +114,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
   snew(slFrameorder, nslices);
   snew(x1, natoms);
   
-  if (bSliced)
-  {
+  if (bSliced) {
     *slWidth = box[axis][axis]/nslices;
     fprintf(stderr,"Box divided in %d slices. Initial width of slice: %f\n",
 	    nslices, *slWidth);
@@ -130,13 +127,12 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
   teller = 0; 
 
   /*********** Start processing trajectory ***********/
-  do 
-  {
+  do {
     if (bSliced)
       *slWidth = box[axis][axis]/nslices;
     if ((teller++ % 10) == 0)
        fprintf(stderr,"\rFrame: %d",teller-1); 
-
+    
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x1);
 
     /* Now loop over all groups. There are ngrps groups, the order parameter can
@@ -147,20 +143,17 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
        so for DPPC ngrps = 16 and i runs from 1 to 14, including 14
      */
     
-    for (i = 1; i < ngrps - 1; i++)
-    {
+    for (i = 1; i < ngrps - 1; i++) {
       clear_rvec(frameorder);
       
       size = index[i+1] - index[i];
       if (size != nr_tails)
 	fatal_error(0,"grp %d does not have same number of"
 		" elements as grp 1\n",i); 
-
-      for (j = 0; j < size; j++)
-      {
-
-	if (bUnsat)   /* Using convention for unsaturated carbons */
-	{
+      
+      for (j = 0; j < size; j++) {
+	if (bUnsat) {
+	  /* Using convention for unsaturated carbons */
 	  /* first get Sz, the vector from Cn to Cn+1 */
 	  rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i]+j]], dist); 
 	  length = norm(dist);
@@ -171,14 +164,12 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 	     and axis, because Sz is normalized and the two other components of
 	     the axis on the bilayer are zero */
 	  sdbangle += acos(Sz[axis]);  
-	}
-	else
-	{
+	} else {
 	  /* get vector dist(Cn-1,Cn+1) for tail atoms */
 	  rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i-1]+j]], dist);
 	  length = norm(dist);      /* determine distance between two atoms */
 	  check_length(length, a[index[i-1]+j], a[index[i+1]+j]);
-	
+	  
 	  svmul(1/length, dist, Sz);
 	  /* Sz is now the molecular axis Sz, normalized and all that */
 	}
@@ -197,24 +188,22 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 	/* the square of cosine of the angle between dist and the axis.
 	   Using the innerproduct, but two of the three elements are zero
 	   Determine the sum of the orderparameter of all atoms in group 
-	 */
-	
-	cossum[XX] = sqr(Sx[ZZ]); /* this is allowed, since Sa is normalized */
-	cossum[YY] = sqr(Sy[ZZ]);
-	cossum[ZZ] = sqr(Sz[ZZ]);
+	   */
+	cossum[XX] = sqr(Sx[axis]); /* this is allowed, since Sa is normalized */
+	cossum[YY] = sqr(Sy[axis]);
+	cossum[ZZ] = sqr(Sz[axis]);
 
 	for (m = 0; m < DIM; m++)
           frameorder[m] += 0.5 * (3 * cossum[m] - 1);
-
-	if (bSliced)
-	{
+	
+	if (bSliced) {
 	  /* get average coordinate in box length for slicing,
 	     determine which slice atom is in, increase count for that
 	     slice. slFrameorder and slOrder are reals, not
 	     rvecs. Only the component [axis] of the order tensor is
 	     kept, until I find it necessary to know the others too 
 	   */
-
+	  
 	  z1 = x1[a[index[i-1]+j]][axis]; 
 	  z2 = x1[a[index[i+1]+j]][axis];
 	  z_ave = 0.5 * (z1 + z2);
@@ -232,35 +221,32 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
       
       for (m = 0; m < DIM; m++)
 	(*order)[i][m] += (frameorder[m]/size);
- 
-      for (k = 0; k < nslices; k++)
-      {
-	if (slCount[k])      /* if no elements, nothing has to be added */
-	{
+      
+      for (k = 0; k < nslices; k++) {
+	if (slCount[k]) {     /* if no elements, nothing has to be added */
 	  (*slOrder)[k][i] += slFrameorder[k]/slCount[k];
 	  slFrameorder[k] = 0; slCount[k] = 0;
 	}
-	
       }   /* end loop i, over all groups in indexfile */
     }
     nr_frames++;
-
+    
   } while (read_next_x(status,&t,natoms,x0,box));
   /*********** done with status file **********/
   
   fprintf(stderr,"\nRead trajectory. Printing parameters to file\n");
   
-  for (i = 1; i < ngrps - 1; i++)  /* average over frames */
-  {
+  /* average over frames */
+  for (i = 1; i < ngrps - 1; i++) {
     svmul(1.0/nr_frames, (*order)[i], (*order)[i]);
     fprintf(stderr,"Atom %d Tensor: x=%g , y=%g, z=%g\n",i,(*order)[i][XX],
 	    (*order)[i][YY], (*order)[i][ZZ]);
-    if (bSliced)
-    {
+    if (bSliced) {
       for (k = 0; k < nslices; k++)
 	(*slOrder)[k][i] /= nr_frames;
     }
   }
+
   if (bUnsat)
     fprintf(stderr,"Average angle between double bond and normal: %f\n", 
 	    180*sdbangle/(nr_frames * size*M_PI));
@@ -278,20 +264,18 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
   char       buf[256];               /* for xvgr title */
   real      S;                      /* order parameter averaged over all atoms */
 
-  if (bSzonly)
-  {
+  if (bSzonly) {
     sprintf(buf,"Orderparameters Sz per atom");
     ord = xvgropen(afile,buf,"Atom","S");
     fprintf(stderr,"ngrps = %d, nslices = %d",ngrps, nslices);
 
     sprintf(buf, "Orderparameters per atom per slice");
     slOrd = xvgropen(bfile, buf, "Slice", "S");
-
+    
     for (atom = 1; atom < ngrps - 1; atom++)
       fprintf(ord,"%12d       %12g\n", atom, order[atom][ZZ]);
 
-    for (slice = 0; slice < nslices; slice++)
-    {
+    for (slice = 0; slice < nslices; slice++) {
       S = 0;
       for (atom = 1; atom < ngrps - 1; atom++)
 	S += slOrder[slice][atom];
@@ -304,12 +288,11 @@ void order_plot(rvec order[], real *slOrder[], char *afile, char *bfile,
     sprintf(buf,"Deuterium order parameters");
     slOrd = xvgropen(cfile,buf, "Atom", "Scd");
 
-    for (atom = 1; atom < ngrps - 1; atom++)
-    {
+    for (atom = 1; atom < ngrps - 1; atom++) {
       fprintf(ord,"%12d   %12g   %12g   %12g\n", atom, order[atom][XX],
 	      order[atom][YY], order[atom][ZZ]);
       fprintf(slOrd,"%12d   %12g\n", atom, -1 * (0.6667 * order[atom][XX] + 
-	      0.333 * order[atom][YY]));
+						 0.333 * order[atom][YY]));
     }
     
     fclose(ord);
@@ -331,14 +314,14 @@ int main(int argc,char *argv[])
     "selected, all diagonal elements and the deuterium order parameter is",
     "given."
   };
-  static int  axis = 2,                       /* normal to memb. default z  */
-              nslices = 1;                    /* nr of slices defined       */
-  static char *axtitle="Z"; 
+
+  static int  nslices = 1;                    /* nr of slices defined       */
   static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
   static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
+  static char *normal_axis[] = { NULL, "x", "y", "z", NULL };
   t_pargs pa[] = {
-    { "-d",      FALSE, etSTR, {&axtitle}, 
-      "Take the normal on the membrane in direction X, Y or Z." },
+    { "-d",      FALSE, etENUM, {normal_axis}, 
+      "Direction of the normal on the membrane" },
     { "-sl",     FALSE, etINT, {&nslices},
       "Calculate order parameter as function of boxlength, dividing the box"
       " in #nr slices." },
@@ -354,7 +337,8 @@ int main(int argc,char *argv[])
   real      slWidth = 0.0;                  /* width of a slice           */
   char      **grpname;            	    /* groupnames                 */
   int       ngrps,                          /* nr. of groups              */
-            i;
+            i,
+            axis;                           /* normal axis                */
   t_topology *top;                	    /* topology 		  */ 
   atom_id   *index,             	    /* indices for a              */
             *a;                             /* atom numbers in each group */
@@ -369,45 +353,39 @@ int main(int argc,char *argv[])
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-
-  CopyRight(stderr,argv[0]);
-
-    parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
-		      NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
-  /* Calculate axis */
-  axis = toupper(axtitle[0]) - 'X';
   
-  for (i = 1; i < argc; i++)
-  {
-    if (strcmp(argv[i],"-d") == 0) 
-    {
-      if (i < argc - 1)
-      {
-	axis = (int)(argv[i+1][0] - 'X');
-        i++;
-      }
-    }
-    if (strcmp(argv[i],"-sl") == 0)
-    {
-      if (i < argc -1)
-      {
-	sscanf(argv[i+1],"%d",&nslices);
-	bSliced = TRUE;
-	fprintf(stderr,"Dividing box in %d slices.\n\n", nslices);
-	i++;
-      }
-    }
-    if (strcmp(argv[i],"-szonly") == 0)
-    {
-      bSzonly = TRUE;
-      fprintf(stderr,"Only calculating Sz\n");
-    }
-    if (strcmp(argv[i],"-unsat") == 0)
-    {
-      bUnsat = TRUE;
-      fprintf(stderr,"Taking carbons as unsaturated!\n");
-    }
+  CopyRight(stderr,argv[0]);
+  
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
+
+  /* Calculate axis */
+  if (strcmp(normal_axis[0],"x") == 0) axis = 0;
+  else if (strcmp(normal_axis[0],"y") == 0) axis = 1;
+  else if (strcmp(normal_axis[0],"z") == 0) axis = 2;
+  else fatal_error(0,"Invalid axis, use x, y or z");
+  
+  switch (axis) {
+  case 0:
+    fprintf(stderr,"Taking x axis as normal to the membrane\n");
+    break;
+  case 1:
+    fprintf(stderr,"Taking y axis as normal to the membrane\n");
+    break;
+  case 2:
+    fprintf(stderr,"Taking z axis as normal to the membrane\n");
+    break;
   }
+
+  if (nslices > 1) {
+    bSliced = TRUE;
+    fprintf(stderr,"Dividing box in %d slices.\n\n", nslices);
+  }
+
+  if (bSzonly)
+    fprintf(stderr,"Only calculating Sz\n");
+  if (bUnsat)
+    fprintf(stderr,"Taking carbons as unsaturated!\n");
   
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
   
@@ -423,12 +401,9 @@ int main(int argc,char *argv[])
 	     &slOrder, &slWidth, nslices, bSliced, bUnsat,
 	     top, ngrps, axis); 
 
-  /* fprintf(stderr,"main: order[1] = %f, order[4] = %f\n",order[1],
-order[4]); */ 
-
   order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
 	     opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);
-
+  
   xvgr_file(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
   xvgr_file(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
   xvgr_file(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
