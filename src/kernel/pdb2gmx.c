@@ -395,18 +395,21 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   sfree(pdbi);
 }
 
-static int remove_double_atoms(t_atoms *pdba,rvec x[])
+static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
 {
   int     i,j,oldnatoms;
   
-  printf("Checking for double atoms....\n");
+  printf("Checking for duplicate atoms....\n");
   oldnatoms    = pdba->nr;
   
   /* NOTE: pdba->nr is modified inside the loop */
   for(i=1; (i < pdba->nr); i++) {
-    if ( (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
-	 (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) ) {
-      printf("deleting double atom %4s  %s%4d",
+    /* compare 'i' and 'i-1', throw away 'i' if they are identical 
+       this is a 'while' because multiple alternate locations can be present */
+    while ( (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
+	    (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) &&
+	    (i < pdba->nr) ) {
+      printf("deleting duplicate atom %4s  %s%4d",
 	     *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
 	     pdba->atom[i].resnr+1);
       if (pdba->atom[i].chain && (pdba->atom[i].chain!=' '))
@@ -895,7 +898,7 @@ int main(int argc, char *argv[])
       block = new_block();
       snew(gnames,1);
       sort_pdbatoms(nrtp,restp,natom,&pdba,&x,block,&gnames);
-      natom = remove_double_atoms(pdba,x);
+      natom = remove_duplicate_atoms(pdba,x);
       if (ftp2bSet(efNDX,NFILE,fnm)) {
 	if (!bRetainH)
 	  fprintf(stderr,"WARNING: without the -reth option the generated "
@@ -910,7 +913,7 @@ int main(int argc, char *argv[])
       done_block(block);
     } else 
       fprintf(stderr,"WARNING: "
-	      "without sorting no check for double atoms can be done\n");
+	      "without sorting no check for duplicate atoms can be done\n");
     
     if (debug) {
       if ( chains[chain].chain == '\0' || chains[chain].chain == ' ')
