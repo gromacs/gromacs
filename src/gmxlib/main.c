@@ -162,7 +162,7 @@ static void check_multi_int(FILE *log,t_commrec *mcr,int val,char *name)
 
 void check_multisystem(FILE *log,t_commrec *mcr,t_fcdata *fcd)
 {
-  if (mcr->nnodes) {
+  if (mcr->nnodes > 1) {
     fprintf(log,"Checking the \"multi\" compatibility of the %d subsystems\n",
 	    mcr->nnodes);
     check_multi_int(log,mcr,fcd->disres.npr,
