@@ -38,6 +38,8 @@ static char *SRCID_fatal_c = "$Id$";
 #include "network.h"
 #include "fatal.h"
 #include "macros.h"
+#include "string2.h"
+#include "smalloc.h"
 
 static bool bDebug = FALSE;
 
@@ -260,8 +262,10 @@ void set_warning_line(char *s,int line)
 
 void warning(char *s)
 {
-  char linenobuf[32];
-  
+#define indent 2 
+  char linenobuf[32], *temp, *temp2;
+  int i;
+
   nwarn++;
   if (s == NULL)
     s = warn_buf;
@@ -269,8 +273,16 @@ void warning(char *s)
     sprintf(linenobuf,"%d",lineno);
   else
     strcpy(linenobuf,"unknown");
-  fprintf(stderr,"Warning %d [file %s, line %s]: %s\n",
-	  nwarn,filenm,linenobuf,s);
+  snew(temp,strlen(s)+indent+1);
+  for(i=0; i<indent; i++)
+    temp[i] = ' ';
+  temp[indent] = '\0';
+  strcat(temp,s);
+  temp2 = wrap_lines(temp,81-indent,indent);
+  fprintf(stderr,"Warning %d [file %s, line %s]:\n%s\n",
+	  nwarn,filenm,linenobuf,temp2);
+  sfree(temp);
+  sfree(temp2);
   if (nwarn >= maxwarn) {
     fprintf(stderr,"Too many warnings, %s terminated\n",Program());
     exit(1);
