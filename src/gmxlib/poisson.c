@@ -329,22 +329,22 @@ static void spread_q_poisson(FILE *log,bool bVerbose,
 	/* Calculate nearest grid point, Round */
 	ixyz[m]    = ttt+half;
       }
-      xmin = ixyz[XX] + nx - ncellsx;
-      ymin = ixyz[YY] + ny - ncellsy;
-      zmin = ixyz[ZZ] + nz - ncellsz;
+      xmin = ixyz[XX] - ncellsx;
+      ymin = ixyz[YY] - ncellsy;
+      zmin = ixyz[ZZ] - ncellsz;
       xmax = xmin+min(nx,2*ncellsx+1);
       ymax = ymin+min(ny,2*ncellsy+1);
       zmax = zmin+min(nz,2*ncellsz+1);
       
       for(jx=xmin; (jx<=xmax); jx++) {
-	jcx = nnx[jx];
-	gridpoint[XX] = jcx*h[XX];
+	jcx = nnx[jx+nx];
+	gridpoint[XX] = jx*h[XX];
 	for(jy=ymin; (jy<=ymax); jy++) {
-	  jcy = nny[jy];
-	  gridpoint[YY] = jcy*h[YY];
+	  jcy = nny[jy+ny];
+	  gridpoint[YY] = jy*h[YY];
 	  for(jz=zmin; (jz<=zmax); jz++) {
-	    jcz = nnz[jz]; 
-	    gridpoint[ZZ] = jcz*h[ZZ];
+	    jcz = nnz[jz+nz]; 
+	    gridpoint[ZZ] = jz*h[ZZ];
 	    
 	    rvec_sub(gridpoint,x[i],dx);
 	    r = norm(dx);
