@@ -27,14 +27,28 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	g_rdf.c		g_rms.c		g_rmsdist.c	g_rmsf.c	\
 	g_rotacf.c	g_saltbr.c	g_sas.c		g_sgangle.c	\
 	g_sorient.c 	g_tcaf.c	g_traj.c	g_velacc.c	\
-	g_clustsize.c	g_mdmat.c
+	g_clustsize.c	g_mdmat.c	g_wham.c
+
 
 bin_PROGRAMS = \
 	average		do_dssp		editconf	eneconv		\
 	gmx-ana		genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
-	anadock		cdist		disco           g_wham
+	anadock		cdist		disco           g_wham		\
+	g_analyze	g_anaeig	g_angle	      	g_bond	 	\
+	g_bundle	g_chi	     	g_cluster	g_confrms	\
+	g_covar	     	g_density	g_dielectric	g_dih	  	\
+	g_dipoles	g_disre	   	g_dist	       	g_dyndom	\
+	g_enemat	g_energy	g_lie	        g_filter	\
+	g_gyrate	g_h2order	g_hbond	      	g_helix		\
+	g_mindist	g_msd	     	g_morph	      	g_nmeig	 	\
+	g_nmens	     	g_order	   	g_potential	g_rama	 	\
+	g_rdf	       	g_rms	     	g_rmsdist	g_rmsf	 	\
+	g_rotacf	g_saltbr	g_sas	        g_sgangle	\
+	g_sorient	g_tcaf	    	g_traj	       	g_velacc	\
+	g_clustsize	g_mdmat
+
 
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
@@ -47,7 +61,7 @@ LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 
 gmx-ana.c:	gmx-ana.pl
 		chmod +x gmx-ana.pl
-		./gmx-ana.pl $(bindir)
+		./gmx-ana.pl $(bin_PROGRAMS)
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:

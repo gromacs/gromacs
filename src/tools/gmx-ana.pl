@@ -3,22 +3,9 @@
 # This script installs front-ends corresponding to the *old*
 # program names, that in reality call gmx-ana
 
-$bindir = shift || die("Need argument bindir");
-
-@ppp = ( "analyze",   "anaeig",  "angle",      "bond", 
-	   "bundle",    "chi",     "cluster",    "confrms", 
-	   "covar",     "density", "dielectric", "dih",  
-	   "dipoles",   "disre",   "dist",       "dyndom", 
-	   "enemat",    "energy",  "lie",        "filter", 
-	   "gyrate",    "h2order", "hbond",      "helix", 
-	   "mindist",   "msd",     "morph",      "nmeig", 
-	   "nmens",     "order",   "potential",  "rama", 
-	   "rdf",       "rms",     "rmsdist",    "rmsf", 
-	   "rotacf",    "saltbr",  "sas",        "sgangle", 
-	   "sorient",   "tcaf",    "traj",       "velacc", 
-	   "clustsize", "mdmat" );
-
-@progs = sort @ppp;
+if ($#ARGV < 0) {
+    die ("Usage: gmx-ana.pl programs\n");
+}
 
 $incfile = "gmx-ana.h";
 open(INC,">$incfile") || die ("Can not open $incfile for writing");
@@ -51,25 +38,28 @@ int main(int argc,char *argv[])
 EOF
 
 mkdir("tmp");
-$pcount=0;
-foreach $p ( @progs ) {
-    $oldprog = "$bindir/g_$p";
-    open(PPP,">$oldprog") || die ("Can not open $oldprog for writing");
-    printf (PPP "#!/bin/csh -f\n");
-    printf (PPP "gmx-ana -type $p \$argv\n");
-    close(PPP);
-    chmod(0755,$oldprog);
-    printf (INC "extern int gmx_$p(int argc,char *argv[]);\n\n");
-    printf (ANA "    { \"$p\", gmx_$p }");
-    if ($pcount == $#progs ) {
-	printf (ANA "\n  };\n\n");
-	printf (ANA "#define NAF asize(af)\n");
+$argc = 0;
+foreach $p ( @ARGV ) {
+    $oldprog = $p;
+    if (index($p,"g_") >= 0) {
+	@kkk = split ("g_",$p);
+	$ppp = "gmx_" . $kkk[1];
+	    
+	open(PPP,">$p") || die ("Can not open $p for writing");
+	printf (PPP "#!/bin/csh -f\n");
+	printf (PPP "gmx-ana -type $ppp \$argv\n");
+	close(PPP);
+	chmod(0755,$oldprog);
+	printf (INC "extern int $ppp(int argc,char *argv[]);\n\n");
+	printf (ANA "    { \"$kkk[1]\", $ppp }");
+	if ($argc < $#ARGV) {
+	    printf (ANA ",\n");
+	}
     }
-    else {
-	printf (ANA ",\n");
-    }
-    $pcount++;
+    $argc++;
 }
+printf (ANA "\n  };\n\n");
+printf (ANA "#define NAF asize(af)\n");
 
 printf(INC "#endif\n/* _gmx_ana_h */\n");
 close(INC);

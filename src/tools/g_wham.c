@@ -233,7 +233,7 @@ double calc_z(double * profile,t_UmbrellaWindow * window, int nWindows, double m
 }
 
 
-int main(int argc,char *argv[])
+int gmx_wham(int argc,char *argv[])
 {
   static char *desc[] = {
     "This is an analysis program that implements the Weighted",
