@@ -363,12 +363,9 @@ void init_forcerec(FILE *log,
      * (therefore we have to add half the size of a charge group, plus
      * something to account for diffusion if we have nstlist > 1)
      */
-    for(m=0; (m<DIM); m++) {
+    for(m=0; (m<DIM); m++)
       box_size[m]=box[m][m];
-      if (fr->rlist >= box_size[m]*0.5)
-	fatal_error(0,"Cut-off 'rlist' too large for box. Should be less then %g\n",
-		    box_size[m]*0.5);
-    }
+
     if (fr->phi == NULL)
       snew(fr->phi,mdatoms->nr);
     
@@ -546,11 +543,6 @@ void ns(FILE *log,
       
     bFirst=FALSE;
   }
-    
-  /* Check box-lengths */
-  if (min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ])) < 2.0*fr->rlistlong)
-    fatal_error(0,"Fatal: box (%fx%fx%f) too small for cut-off (%f)!\n",
-		box[XX][XX],box[YY][YY],box[ZZ][ZZ],fr->rlistlong);
     
   if (fr->bTwinRange) 
     fr->nlr=0;

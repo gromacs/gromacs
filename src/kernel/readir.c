@@ -944,15 +944,17 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
 
 void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
 {
-  real bmin;
+  real min_size,rlong;
+  bool bTWIN;
   char *ptr;
-
+  
   ptr = check_box(box);
   if (ptr) {
     fprintf(stderr,
 	    "ERROR: %s\n",ptr);
     (*nerror)++;
   }  
+
   if( (ir->eConstrAlg==estSHAKE) && 
       (mol->plist[F_SHAKE].nr > 0) && 
       (ir->shake_tol <= 0.0) ) {
@@ -960,36 +962,26 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
 	    ir->shake_tol);
     (*nerror)++;
   }
-  bmin=(min(min(box[XX][XX],box[YY][YY]),box[ZZ][ZZ]));
-  if (ir->eBox != ebtNONE) {
-    /* rlist must be less than half the box */
-    if (max(ir->rlist,ir->rcoulomb) > 0.5*bmin) {
-      fprintf(stderr,
-	      "ERROR: rlist (%g) and rcoulomb (%g) must be < half a box (%g,%g,%g)\n",
-	      ir->rlist,ir->rcoulomb,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-      (*nerror)++;
-    }
-    /* box must be large enough for gridsearch */
-    if (ir->ns_type==ensGRID) {
-      int  k;
-      ivec cx;
-      real rlong;
-      bool bTWIN;
 
-      rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
-      bTWIN = (rlong > ir->rlist);
-      for(k=0; (k<DIM); k++)
-	cx[k]=ir->ndelta*box[k][k]/rlong;
-      if ( !( (cx[XX] >= 2*ir->ndelta+1) && 
-	      (cx[YY] >= 2*ir->ndelta+1) && 
-	      (cx[ZZ] >= 2*ir->ndelta+1) ) ) {
-	fprintf(stderr,"ERROR: box too small for grid-search,"
-		" %s must be < box/(2+1/deltagrid)\n"
-		"       increase boxsize or decrease %s or use simple "
-		"neighboursearch.\n",
-		bTWIN ? "rcoulomb":"rlist",bTWIN ? "rcoulomb":"rlist");
-	(*nerror)++;
+  if (ir->eBox != ebtNONE) {
+    rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
+    bTWIN = (rlong > ir->rlist);
+    if (ir->ns_type==ensGRID) {
+      min_size = min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
+      if (sqr(2*rlong) >= min_size) {
+	fprintf(stderr,"ERROR: One of the box vectors is shorter than twice the cut-off length. Increase the box size or decrease %s.\n",
+		bTWIN ? "rcoulomb":"rlist");
+      (*nerror)++;
       }
+    } else {
+      min_size = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+      if (2*rlong >= min_size) {
+	fprintf(stderr,"ERROR: One of the box lengths is smaller than twice the cut-off length. Increase the box size or decrease rlist.");
+	(*nerror)++;
+	if (TRICLINIC(box))
+	  fprintf(stderr,"Grid search might allow larger cut-off's than simple search with triclinic boxes.");
+      }
+      
     }
   }
 }
