@@ -59,7 +59,7 @@ real gauss (real am, real sd, int *ig)
   a = 0;
   for (i=0; (i<12); i++)
     a = a + rando (ig);
-  gval = (a-6.0)*sd/6.0+am;
+  gval = (a-6.0)*sd+am;
 #else
   if (!gliset) {
     do {
@@ -87,7 +87,7 @@ void low_mspeed(real tempi,int nrdf,int seed,int nat,atom_id a[],
   real ekin,temp,mass,scal;
 
   ig=seed;
-  boltz=BOLTZ*tempi*nrdf/((real) (DIM*nat));
+  boltz=BOLTZ*tempi;
   ekin=0.0;
   for (i=0; (i<nat); i++) {
     j=a[i];
@@ -100,9 +100,9 @@ void low_mspeed(real tempi,int nrdf,int seed,int nat,atom_id a[],
       }
     }
   }
-  temp=(2.0*ekin)/(nrdf*BOLTZ);
+  temp=(2.0*ekin)/(nat*DIM*BOLTZ);
   if (temp > 0) {
-    scal=tempi/temp;
+    scal=sqrt(tempi/temp);
     for(i=0; (i<nat); i++)
       for(m=0; (m<DIM); m++)
 	v[a[i]][m]*=scal;
