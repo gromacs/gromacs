@@ -208,6 +208,9 @@ static void read_tables(FILE *fp,char *fn,t_tabledata td[])
   if (ny != nny)
     fatal_error(0,"Trying to read file %s, but nr columns = %d, should be %d",
 		libfn,ny,nny);
+  if (yy[0][0] != 0)
+    fatal_error(0,"The first distance in file %s is %f instead of 0",
+		libfn,yy[0][0]);
   bCont = TRUE;
   for(nx0=0; bCont && (nx0 < nx); nx0++)
     for(k=1; (k<ny); k++)
