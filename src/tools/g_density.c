@@ -75,30 +75,25 @@ int get_electrons(t_electron **eltab, char *fn)
   int nr;            /* number of atomstypes to read */
   int i;
 
-  if ( !(in = fopen(fn,"r")))
-  {
+  if ( !(in = fopen(fn,"r"))) {
     fprintf(stderr,"Couldn't open %s. Exiting.\n",fn);
     exit(1);
   }
 
   fgets(buffer, 255, in);
-  if (sscanf(buffer, "%d", &nr) != 1)
-  {
+  if (sscanf(buffer, "%d", &nr) != 1) {
     fprintf(stderr,"Error: not a reasonable number of atomtypes in datafile\n");
     exit(1);
   }
 
   snew(*eltab,nr);
 
-  for (i=0;i<nr;i++)
-  {
-    if (fgets(buffer, 255, in) == NULL)
-    {
+  for (i=0;i<nr;i++) {
+    if (fgets(buffer, 255, in) == NULL) {
       fprintf(stderr,"Error reading datafile. Check your datafile.\n");
       exit(1);
     }
-    if (sscanf(buffer, "%s = %d", tempname, &tempnr) != 2)
-    {
+    if (sscanf(buffer, "%s = %d", tempname, &tempnr) != 2) {
       fprintf(stderr,"Invalid line in datafile at line %d\n",i+1);
       exit(1);
     }
@@ -135,8 +130,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   real t, 
         z;
 
-  switch(axis)
-  {
+  switch(axis) {
   case 0:
     ax1 = 1; ax2 = 2;
     break;
@@ -165,18 +159,12 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
     snew((*slDensity)[i], *nslices);
   
   /*********** Start processing trajectory ***********/
-  do 
-  {
+  do {
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
     *slWidth = box[axis][axis]/(*nslices);
-    if ((teller++ % 10) == 0)
-      fprintf(stderr,"\rFrame: %d",teller-1); 
-    
-    for (n = 0; n < nr_grps; n++)
-    {      
-      for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */
-	{
+    for (n = 0; n < nr_grps; n++) {      
+      for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	  z = x0[index[n][i]][axis];
 	  if (z < 0) 
 	    z += box[axis][axis];
@@ -217,8 +205,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   fprintf(stderr,"\nRead %d frames from trajectory. Counting electrons\n",
 	  nr_frames-1);
 
-  for (n =0; n < nr_grps; n++)
-  {
+  for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++)
       (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
 	( (nr_frames-1) * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
@@ -246,8 +233,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
         z;
   char *buf;             /* for tmp. keeping atomname */
 
-  switch(axis)
-  {
+  switch(axis) {
   case 0:
     ax1 = 1; ax2 = 2;
     break;
@@ -267,8 +253,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
     exit(1);
   }
   
-  if (! *nslices)
-  {
+  if (! *nslices) {
     *nslices = (int)(box[axis][axis] * 10); /* default value */
     fprintf(stderr,"\nDividing the box in %d slices\n",*nslices);
   }
@@ -278,18 +263,15 @@ void calc_density(char *fn, atom_id **index, int gnx[],
     snew((*slDensity)[i], *nslices);
   
   /*********** Start processing trajectory ***********/
-  do 
-  {
+  do {
     rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
 
     *slWidth = box[axis][axis]/(*nslices);
     if ((teller++ % 10) == 0)
       fprintf(stderr,"\rFrame: %d",teller-1); 
     
-    for (n = 0; n < nr_grps; n++)
-    {      
-      for (i = 0; i < gnx[n]; i++)   /* loop over all atoms in index file */
-      {
+    for (n = 0; n < nr_grps; n++) {      
+      for (i = 0; i < gnx[n]; i++) {   /* loop over all atoms in index file */
 	z = x0[index[n][i]][axis];
 	if (z < 0) 
 	  z += box[axis][axis];
@@ -298,15 +280,13 @@ void calc_density(char *fn, atom_id **index, int gnx[],
       
 	/* determine which slice atom is in */
 	slice = (int)(0.5 + z / (*slWidth)); 
-	if (bNumber || bCount)
-	{
+	if (bNumber || bCount) {
 	  buf = strdup(*(top->atoms.atomname[index[n][i]]));
 	  trim(buf);
 	  if (buf[0] != 'H')
 	    (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
 	  free(buf);
-	}
-	else
+	} else
 	  (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
       }
     }
@@ -324,10 +304,8 @@ void calc_density(char *fn, atom_id **index, int gnx[],
   fprintf(stderr,"\nRead %d frames from trajectory. Calculating density\n",
 	  nr_frames-1);
 
-  for (n =0; n < nr_grps; n++)
-  {
-    for (i = 0; i < *nslices; i++)
-    {
+  for (n =0; n < nr_grps; n++) {
+    for (i = 0; i < *nslices; i++) {
       if (bCount) 
 	(*slDensity)[n][i] = (*slDensity)[n][i]/ (nr_frames-1);
       else
@@ -359,8 +337,7 @@ void plot_density(real *slDensity[], char *afile, int nslices,
 
   xvgr_legend(den,nr_grps,grpname);
 
-  for (slice = 0; slice < nslices; slice++)
-  { 
+  for (slice = 0; slice < nslices; slice++) { 
     fprintf(den,"%12g  ", slice * slWidth);
     for (n = 0; n < nr_grps; n++)
       if (bNumber)
@@ -416,7 +393,7 @@ void main(int argc,char *argv[])
   atom_id   **index;             	    /* indices for all groups     */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
-    { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */
+    { efNDX, NULL, NULL,  ffOPTRD },    	    /* index file 		  */
     { efTPX, NULL, NULL,  ffREAD },    	    /* topology file           	  */
     { efDAT, "-ei", "electrons", ffWRITE },   /* file with nr. of electrons */
     { efXVG,"-o","density",ffWRITE }, 	    /* xvgr output file 	  */
@@ -448,12 +425,10 @@ void main(int argc,char *argv[])
   snew(index,ngrps);
   snew(ngx,ngrps);
  
-  rd_index(ftp2fn(efNDX,NFILE,fnm),ngrps,ngx,index,grpname); 
+  get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),ngrps,ngx,index,grpname); 
 
-  if (bElectron)
-  {
-    if (bCount)
-    {
+  if (bElectron) {
+    if (bCount) {
       fprintf(stderr,"I don't feel like counting electrons. Bye.\n");
       exit(1);
     }
@@ -464,8 +439,7 @@ void main(int argc,char *argv[])
     calc_electron_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, 
 			  &nslices, top, axis, ngrps, &slWidth, el_tab, 
 			  nr_electrons);
-  }
-  else
+  } else
     calc_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, &nslices, top, 
 		 axis, ngrps, &slWidth, bNumber,bCount); 
   
