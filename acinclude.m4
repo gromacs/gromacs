@@ -341,7 +341,11 @@ AC_DEFUN(ACX_CHECK_CC_FLAGS,
 AC_REQUIRE([AC_PROG_CC])
 AC_CACHE_CHECK(whether $CC accepts $1, ac_$2,
 [echo 'void f(){}' > conftest.c
-if test -z "`$CC $1 -c conftest.c 2>&1`"; then
+res=`$CC $1 -c conftest.c 2>&1`
+#
+# The stupid intel compiler echos the filename on stderr...
+# -o "$res" == "conftest.c:"
+if test -z "$res" -o "$res" == "conftest.c:"; then
 	ac_$2=yes
 else
 	ac_$2=no
@@ -705,7 +709,8 @@ case "${host_cpu}-${host_os}" in
 
   *-*)
     # most of these systems (e.g. linux, FreeBSD) use gcc which is treated
-    # further down, but we can at least check if the Portland compilers are used:
+    # further down, but check for some specific compilers.
+    # Portland group compilers:
     if $CC -V 2>  /dev/null | grep ortland > /dev/null 2>&1; then
       case "${host_cpu}" in
 	i586)
@@ -723,6 +728,25 @@ case "${host_cpu}-${host_os}" in
 	xFFLAGS="$xCFLAGS"
       fi	
     fi
+
+    # Intel compilers
+    if $CC -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+      case "${host_cpu}" in
+	i686)
+	  xCFLAGS="-O3 -tpp6 -axK -ip" 
+ 	  ;;
+	ia64)
+	  xCFLAGS="-O3 -ip" 
+ 	  ;;
+      esac
+      xASFLAGS="$xCFLAGS"
+    fi
+    if test "$enable_fortran" = "yes"; then
+      if $F77 -V 2>&1 | grep 'Intel Corporation' > /dev/null 2>&1; then
+	xFFLAGS="$xCFLAGS"
+      fi	
+    fi
+
     ;;
 esac	
 # Phew, end of all those operating systems and processors!			
@@ -737,14 +761,12 @@ if test $ac_cv_prog_gcc = yes; then
     ACX_CHECK_CC_FLAGS(-O6,o6,xCFLAGS="$xCFLAGS -O6",[
 	ACX_CHECK_CC_FLAGS(-O4,o4,xCFLAGS="$xCFLAGS -O4",[
 	    ACX_CHECK_CC_FLAGS(-O3,o3,xCFLAGS="$xCFLAGS -O3")])])
-    xCFLAGS="$xCFLAGS -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused"
+      xCFLAGS="$xCFLAGS -fomit-frame-pointer -finline-functions -Wall -Wno-unused"
     # the portland compiler only knows .s files, and always runs them
     # through cpp. We support this by telling gcc to preprocess .s files.
     xASFLAGS="$xCFLAGS -x assembler-with-cpp"
     # -malign-double for x86 systems
     ACX_CHECK_CC_FLAGS(-malign-double,align_double,xCFLAGS="$xCFLAGS -malign-double")
-    # don't use the separate apple cpp on OS X
-    ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")    
   fi
 fi
   
@@ -768,6 +790,11 @@ if test "$GCC" = "yes"; then
     # i586/i686 cpu flags don't improve speed, thus no need to use them.
     # don't check f77 separately - we assume f77 and gcc are similar	  
     powerpc*)
+        # don't use the separate apple cpp on OS X
+        ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
+        # And try to add -fvec or -faltivec to get altivec extensions!
+        ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
+ 	        ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
       cputype=`(grep cpu /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/ //g') 2> /dev/null`
       is60x=`echo $cputype | egrep "^60[0-9]e?$"`
       if test -n "$is60x"; then
@@ -781,6 +808,12 @@ if test "$GCC" = "yes"; then
       if test -z "$CPU_FLAGS"; then
 	ACX_CHECK_CC_FLAGS(-mpowerpc,m_powerpc,CPU_FLAGS=-mpowerpc)
       fi
+      ;;
+   *)
+        # -funroll-all-loops exposes a bug in altivec-enabled gcc-2.95.3
+        # on powerpc, so we only enable it on other platforms.
+        ACX_CHECK_CC_FLAGS(-funroll-all-loops,funroll_all_loops,xCFLAGS="$xCFLAGS -funroll-all-loops")
+      ;;
    esac
 else
   AM_CONDITIONAL(GNU_CC,false)

@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.0.3, gromacs@gromacs.org)
+AC_INIT(GROMACS, 3.0.99, gromacs@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.0.3)
+AM_INIT_AUTOMAKE(gromacs, 3.0.99)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -78,6 +78,15 @@ AC_ARG_ENABLE(x86_asm,
 case "${host_cpu}" in
    i?86) ;;	
    *) enable_x86_asm=no ;;
+esac
+
+### Altivec on powerpc (motorola)
+AC_ARG_ENABLE(ppc_altivec,
+ [  --disable-ppc-altivec         don't build Altivec loops on PowerPC],,enable_ppc_altivec=yes)
+case "${host_cpu}-${host_vendor}" in
+   ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
+   ppc*-* | powerpc*-*) ;; 
+   *) enable_ppc_altivec=no ;;
 esac
 
 AC_ARG_ENABLE(axp_asm,
@@ -301,6 +310,32 @@ EOF
   fi
 fi
 
+if test "$enable_ppc_altivec" = "yes"; then
+  if test "$enable_float" = "no"; then
+    AC_MSG_WARN([PowerPC Altivec loops can only be used in single precision - disabling])
+    enable_ppc_altivec=no
+  else 
+    AC_MSG_CHECKING([whether the compiler supports altivec extensions])
+    AC_TRY_COMPILE([],[
+#ifndef __VEC__
+choke_me
+#endif
+],[
+    AC_MSG_RESULT([yes])
+    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} inner_altivec.lo"
+    AC_DEFINE([USE_PPC_ALTIVEC],,[Use PowerPC Altivec inner loops])],[
+      AC_MSG_RESULT([no])
+      AC_MSG_WARN([no altivec support found - On G4 and later Motorola PowerPC]
+[CPUs you can get a HUGE performance gain by using an altivec-enabled compiler.]
+[Check out www.altivec.org, or use the development version of gcc-3.1])
+      enable_ppc_altivec=no])
+  fi  
+  # the gcc instruction scheduler destroys our handcoded altivec.
+  if test "$enable_ppc_altivec" = "yes"; then
+    ACX_CHECK_CC_FLAGS(-fno-schedule-insns,fno_schedule_insns,CFLAGS="$CFLAGS -fno-schedule-insns")
+  fi
+fi
+
 if test "$enable_axp_asm" = "yes"; then
   case "${host_cpu}" in
     alpha*) 
@@ -349,7 +384,7 @@ AC_PROG_LN_S
 ############################################################################
 # Checks for libraries.
 ############################################################################
-AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
+#AC_CHECK_LIB(m,sqrt,,AC_MSG_ERROR([No math library found]))
 
 #####
 # IBM provides a MASS library with vectorized and optimized math stuff,
