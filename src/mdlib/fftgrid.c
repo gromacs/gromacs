@@ -218,15 +218,20 @@ void clear_fftgrid(t_fftgrid *grid)
 }
 
 void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
+		    int *nx2,int *ny2,int *nz2,
 		    int *la2,int *la12,bool bReal,t_fft_r **ptr)
 {
   *nx  = grid->nx;
   *ny  = grid->ny;
   *nz  = grid->nz;
+  *nx2 = 2*grid->nx;
+  *ny2 = 2*grid->ny;
+  *nz2 = 2*grid->nz;
   if(bReal) {
     *la2 = grid->la2r;
     *la12= grid->la12r;
-  } else {
+  } 
+  else {
     *la2 = grid->la2c;
     *la12= grid->la12c;
   }

@@ -163,10 +163,10 @@ void spread_q(FILE *log,bool bVerbose,
   int    i,iX,iY,iZ,index;
   int    jx,jy,jz,jcx,jcy,jcz;
   int    nxyz;
-  int    nx,ny,nz,la2,la12;
+  int    nx,ny,nz,nx2,ny2,nz2,la2,la12;
   t_fft_r *ptr;
   
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   
   calc_invh(box,nx,ny,nz,invh);
 
@@ -291,10 +291,10 @@ static real gather_f(FILE *log,bool bVerbose,
   real   c1x,c1y,c1z,c2x,c2y,c2z;
   int    ixw[7],iyw[7],izw[7];
   int    ll;
-  int    nx,ny,nz,la2,la12;
+  int    nx,ny,nz,nx2,ny2,nz2,la2,la12;
   t_fft_r *ptr;
   
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,TRUE,&ptr);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   
   calc_invh(box,nx,ny,nz,invh);
   
@@ -364,12 +364,13 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
 {
   int      i,j,k,index;
   real     gk;
-  int      nx,ny,nz,la2,la12;
+  int      nx,ny,nz,nx2,ny2,nz2,la2,la12;
   t_fft_c  *ptr;
   int      *nTest;
   int jstart,jend;
   
-  unpack_fftgrid(grid,&nx,&ny,&nz,&la2,&la12,FALSE,(t_fft_r **)&ptr);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,
+		 &la2,&la12,FALSE,(t_fft_r **)&ptr);
   snew(nTest,grid->nptr);
   
   if(PAR(cr)) {

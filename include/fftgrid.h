@@ -103,6 +103,7 @@ extern void clear_fftgrid(t_fftgrid *grid);
 /* Set it to zero */
 
 extern void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
+			   int *nx2,int *ny2,int *nz2,
 			   int *la2, int *la12,bool bReal, t_fft_r **ptr);
 
 /* Get the values for the constants into local copies */
