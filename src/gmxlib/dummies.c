@@ -532,6 +532,12 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
   
   ip     = idef->iparams;
 
+  nd2    = 0;
+  nd3    = 0;
+  nd3FD  = 0;
+  nd3FAD = 0;
+  nd3OUT = 0;
+  nd4FD  = 0;
   /* this loop goes backwards to be able to build *
    * higher type dummies from lower types         */
   for(ftype=F_NRE-1; (ftype>=0); ftype--) {
@@ -539,13 +545,7 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
-      nd2    = 0;
-      nd3    = 0;
-      nd3FD  = 0;
-      nd3FAD = 0;
-      nd3OUT = 0;
-      nd4FD  = 0;
- 
+      
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
 	assert(ftype == idef->functype[tp]);
