@@ -96,6 +96,7 @@ convparm.o: $(GMXHOME)/src/include/types/matrix.h
 convparm.o: $(GMXHOME)/src/include/types/edsams.h
 convparm.o: $(GMXHOME)/src/include/types/pulls.h
 convparm.o: $(GMXHOME)/src/include/macros.h
+convparm.o: $(GMXHOME)/src/include/lutab.h
 convparm.o: $(GMXHOME)/src/include/assert.h
 convparm.o: $(GMXHOME)/src/include/smalloc.h
 convparm.o: $(GMXHOME)/src/include/string2.h
@@ -139,6 +140,7 @@ dum_parm.o: $(GMXHOME)/src/include/pdbio.h
 dum_parm.o: $(GMXHOME)/src/include/symtab.h
 dum_parm.o: $(GMXHOME)/src/include/vec.h
 dum_parm.o: $(GMXHOME)/src/include/maths.h
+dum_parm.o: $(GMXHOME)/src/include/lutab.h
 dum_parm.o: $(GMXHOME)/src/include/physics.h
 dum_parm.o: $(GMXHOME)/src/include/index.h
 dum_parm.o: $(GMXHOME)/src/include/names.h
@@ -177,6 +179,7 @@ gen_ad.o: $(GMXHOME)/src/include/string2.h
 gen_ad.o: $(GMXHOME)/src/include/confio.h
 gen_ad.o: $(GMXHOME)/src/include/vec.h
 gen_ad.o: $(GMXHOME)/src/include/maths.h
+gen_ad.o: $(GMXHOME)/src/include/lutab.h
 gen_ad.o: $(GMXHOME)/src/include/pbc.h
 gen_ad.o: $(GMXHOME)/src/include/grompp.h
 gen_ad.o: $(GMXHOME)/src/include/symtab.h
@@ -220,6 +223,7 @@ gen_dum.o: $(GMXHOME)/src/include/symtab.h
 gen_dum.o: $(GMXHOME)/src/include/smalloc.h
 gen_dum.o: $(GMXHOME)/src/include/vec.h
 gen_dum.o: $(GMXHOME)/src/include/maths.h
+gen_dum.o: $(GMXHOME)/src/include/lutab.h
 gen_dum.o: $(GMXHOME)/src/include/physics.h
 gen_dum.o: $(GMXHOME)/src/include/index.h
 gen_dum.o: $(GMXHOME)/src/include/names.h
@@ -270,6 +274,7 @@ gmxcheck.o: $(GMXHOME)/src/include/xtcio.h
 gmxcheck.o: $(GMXHOME)/src/include/atomprop.h
 gmxcheck.o: $(GMXHOME)/src/include/vec.h
 gmxcheck.o: $(GMXHOME)/src/include/maths.h
+gmxcheck.o: $(GMXHOME)/src/include/lutab.h
 gmxcheck.o: $(GMXHOME)/src/include/pbc.h
 gmxcheck.o: $(GMXHOME)/src/include/physics.h
 gmxcheck.o: $(GMXHOME)/src/include/smalloc.h
@@ -320,6 +325,7 @@ gmxdump.o: $(GMXHOME)/src/include/xtcio.h
 gmxdump.o: $(GMXHOME)/src/include/enxio.h
 gmxdump.o: $(GMXHOME)/src/include/assert.h
 gmxdump.o: $(GMXHOME)/src/include/smalloc.h
+gmxdump.o: $(GMXHOME)/src/include/names.h
 gmxdump.o: $(GMXHOME)/src/include/gmxfio.h
 gmxdump.o: $(GMXHOME)/src/include/trnio.h
 grompp.o: $(GMXHOME)/src/include/assert.h
@@ -363,6 +369,7 @@ grompp.o: $(GMXHOME)/src/include/names.h
 grompp.o: $(GMXHOME)/src/include/random.h
 grompp.o: $(GMXHOME)/src/include/vec.h
 grompp.o: $(GMXHOME)/src/include/maths.h
+grompp.o: $(GMXHOME)/src/include/lutab.h
 grompp.o: $(GMXHOME)/src/include/futil.h
 grompp.o: $(GMXHOME)/src/include/statutil.h
 grompp.o: $(GMXHOME)/src/include/filenm.h
@@ -409,6 +416,7 @@ hizzie.o: $(GMXHOME)/src/include/smalloc.h
 hizzie.o: $(GMXHOME)/src/include/vec.h
 hizzie.o: $(GMXHOME)/src/include/maths.h
 hizzie.o: $(GMXHOME)/src/include/macros.h
+hizzie.o: $(GMXHOME)/src/include/lutab.h
 hizzie.o: $(GMXHOME)/src/include/physics.h
 hizzie.o: $(GMXHOME)/src/include/grompp.h
 hizzie.o: $(GMXHOME)/src/include/hackblock.h
@@ -465,6 +473,7 @@ mdrun.o: $(GMXHOME)/src/include/xdrf.h
 mdrun.o: $(GMXHOME)/src/include/pull.h
 mdrun.o: $(GMXHOME)/src/include/vec.h
 mdrun.o: $(GMXHOME)/src/include/maths.h
+mdrun.o: $(GMXHOME)/src/include/lutab.h
 mk_ghat.o: $(GMXHOME)/src/include/copyrite.h
 mk_ghat.o: $(GMXHOME)/src/include/macros.h
 mk_ghat.o: $(GMXHOME)/src/include/typedefs.h
@@ -501,6 +510,7 @@ mk_ghat.o: $(GMXHOME)/src/include/futil.h
 mk_ghat.o: $(GMXHOME)/src/include/xvgr.h
 mk_ghat.o: $(GMXHOME)/src/include/vec.h
 mk_ghat.o: $(GMXHOME)/src/include/maths.h
+mk_ghat.o: $(GMXHOME)/src/include/lutab.h
 mk_ghat.o: $(GMXHOME)/src/include/shift_util.h
 mk_ghat.o: $(GMXHOME)/src/include/complex.h
 mk_ghat.o: $(GMXHOME)/src/include/physics.h
@@ -560,6 +570,7 @@ nm2type.o: $(GMXHOME)/src/include/futil.h
 nm2type.o: $(GMXHOME)/src/include/readinp.h
 nm2type.o: $(GMXHOME)/src/include/wman.h
 nm2type.o: $(GMXHOME)/src/include/vec.h
+nm2type.o: $(GMXHOME)/src/include/lutab.h
 nm2type.o: $(GMXHOME)/src/include/random.h
 nm2type.o: $(GMXHOME)/src/include/3dview.h
 nm2type.o: $(GMXHOME)/src/include/txtdump.h
@@ -695,6 +706,7 @@ pdb2gmx.o: $(GMXHOME)/src/include/symtab.h
 pdb2gmx.o: $(GMXHOME)/src/include/vec.h
 pdb2gmx.o: $(GMXHOME)/src/include/maths.h
 pdb2gmx.o: $(GMXHOME)/src/include/macros.h
+pdb2gmx.o: $(GMXHOME)/src/include/lutab.h
 pdb2gmx.o: $(GMXHOME)/src/include/statutil.h
 pdb2gmx.o: $(GMXHOME)/src/include/filenm.h
 pdb2gmx.o: $(GMXHOME)/src/include/futil.h
@@ -742,6 +754,7 @@ pdb2top.o: $(GMXHOME)/src/include/types/matrix.h
 pdb2top.o: $(GMXHOME)/src/include/types/edsams.h
 pdb2top.o: $(GMXHOME)/src/include/types/pulls.h
 pdb2top.o: $(GMXHOME)/src/include/macros.h
+pdb2top.o: $(GMXHOME)/src/include/lutab.h
 pdb2top.o: $(GMXHOME)/src/include/copyrite.h
 pdb2top.o: $(GMXHOME)/src/include/assert.h
 pdb2top.o: $(GMXHOME)/src/include/smalloc.h
@@ -827,6 +840,7 @@ readir.o: $(GMXHOME)/src/include/network.h
 readir.o: $(GMXHOME)/src/include/main.h
 readir.o: $(GMXHOME)/src/include/vec.h
 readir.o: $(GMXHOME)/src/include/maths.h
+readir.o: $(GMXHOME)/src/include/lutab.h
 resall.o: $(GMXHOME)/src/include/sysstuff.h
 resall.o: $(GMXHOME)/src/include/assert.h
 resall.o: $(GMXHOME)/src/include/string2.h
@@ -935,6 +949,7 @@ specbond.o: $(GMXHOME)/src/include/macros.h
 specbond.o: $(GMXHOME)/src/include/hackblock.h
 specbond.o: $(GMXHOME)/src/include/vec.h
 specbond.o: $(GMXHOME)/src/include/maths.h
+specbond.o: $(GMXHOME)/src/include/lutab.h
 splitter.o: $(GMXHOME)/src/include/sysstuff.h
 splitter.o: $(GMXHOME)/src/include/assert.h
 splitter.o: $(GMXHOME)/src/include/macros.h
@@ -1381,6 +1396,7 @@ tpbconv.o: $(GMXHOME)/src/include/copyrite.h
 tpbconv.o: $(GMXHOME)/src/include/assert.h
 tpbconv.o: $(GMXHOME)/src/include/vec.h
 tpbconv.o: $(GMXHOME)/src/include/maths.h
+tpbconv.o: $(GMXHOME)/src/include/lutab.h
 x2top.o: $(GMXHOME)/src/include/maths.h
 x2top.o: $(GMXHOME)/src/include/typedefs.h
 x2top.o: $(GMXHOME)/src/include/sysstuff.h
@@ -1418,6 +1434,7 @@ x2top.o: $(GMXHOME)/src/include/nrnb.h
 x2top.o: $(GMXHOME)/src/include/pbc.h
 x2top.o: $(GMXHOME)/src/include/string2.h
 x2top.o: $(GMXHOME)/src/include/smalloc.h
+x2top.o: $(GMXHOME)/src/include/strdb.h
 x2top.o: $(GMXHOME)/src/include/confio.h
 x2top.o: $(GMXHOME)/src/include/physics.h
 x2top.o: $(GMXHOME)/src/include/statutil.h
@@ -1426,6 +1443,7 @@ x2top.o: $(GMXHOME)/src/include/futil.h
 x2top.o: $(GMXHOME)/src/include/readinp.h
 x2top.o: $(GMXHOME)/src/include/wman.h
 x2top.o: $(GMXHOME)/src/include/vec.h
+x2top.o: $(GMXHOME)/src/include/lutab.h
 x2top.o: $(GMXHOME)/src/include/random.h
 x2top.o: $(GMXHOME)/src/include/3dview.h
 x2top.o: $(GMXHOME)/src/include/txtdump.h

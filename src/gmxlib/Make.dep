@@ -167,6 +167,7 @@ $(LIB)(bondfree.o): $(GMXHOME)/src/include/types/matrix.h
 $(LIB)(bondfree.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(bondfree.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(bondfree.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(bondfree.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(bondfree.o): $(GMXHOME)/src/include/vveclib.h
 $(LIB)(bondfree.o): $(GMXHOME)/src/include/txtdump.h
 $(LIB)(bondfree.o): $(GMXHOME)/src/include/tpxio.h
@@ -217,6 +218,7 @@ $(LIB)(calch.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(calch.o): $(GMXHOME)/src/include/calch.h
 $(LIB)(calch.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(calch.o): $(GMXHOME)/src/include/vec.h
+$(LIB)(calch.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(calch.o): $(GMXHOME)/src/include/physics.h
 comlib.o: $(GMXHOME)/src/include/comlib.h
 compnl.o: $(GMXHOME)/src/include/ns.h
@@ -290,6 +292,7 @@ $(LIB)(confio.o): $(GMXHOME)/src/include/string2.h
 $(LIB)(confio.o): $(GMXHOME)/src/include/confio.h
 $(LIB)(confio.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(confio.o): $(GMXHOME)/src/include/maths.h
+$(LIB)(confio.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(confio.o): $(GMXHOME)/src/include/symtab.h
 $(LIB)(confio.o): $(GMXHOME)/src/include/assert.h
 $(LIB)(confio.o): $(GMXHOME)/src/include/futil.h
@@ -367,6 +370,7 @@ $(LIB)(disre.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(disre.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(disre.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(disre.o): $(GMXHOME)/src/include/maths.h
+$(LIB)(disre.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(disre.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(disre.o): $(GMXHOME)/src/include/xvgr.h
 $(LIB)(disre.o): $(GMXHOME)/src/include/bondf.h
@@ -447,6 +451,7 @@ $(LIB)(do_fit.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(do_fit.o): $(GMXHOME)/src/include/nrjac.h
 $(LIB)(do_fit.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(do_fit.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(do_fit.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(do_fit.o): $(GMXHOME)/src/include/txtdump.h
 $(LIB)(do_fit.o): $(GMXHOME)/src/include/tpxio.h
 $(LIB)(do_fit.o): $(GMXHOME)/src/include/xdrf.h
@@ -515,8 +520,9 @@ $(LIB)(enxio.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/gmxfio.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/xdrf.h
 $(LIB)(enxio.o): $(GMXHOME)/src/include/enxio.h
-$(LIB)(ewald_util.o): $(GMXHOME)/src/include/typedefs.h
+$(LIB)(ewald_util.o): $(GMXHOME)/src/include/assert.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/sysstuff.h
+$(LIB)(ewald_util.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/types/simple.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/types/enums.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/types/block.h
@@ -547,6 +553,7 @@ $(LIB)(ewald_util.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(ewald_util.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/ewald_util.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(ewald_util.o): $(GMXHOME)/src/include/smalloc.h
@@ -794,6 +801,7 @@ $(LIB)(gbutil.o): $(GMXHOME)/src/include/types/edsams.h
 $(LIB)(gbutil.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(gbutil.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(gbutil.o): $(GMXHOME)/src/include/maths.h
+$(LIB)(gbutil.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(gbutil.o): $(GMXHOME)/src/include/gstat.h
 $(LIB)(gbutil.o): $(GMXHOME)/src/include/statutil.h
 $(LIB)(gbutil.o): $(GMXHOME)/src/include/filenm.h
@@ -841,6 +849,7 @@ $(LIB)(genhydro.o): $(GMXHOME)/src/include/symtab.h
 $(LIB)(genhydro.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(genhydro.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(genhydro.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(genhydro.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(genhydro.o): $(GMXHOME)/src/include/statutil.h
 $(LIB)(genhydro.o): $(GMXHOME)/src/include/filenm.h
 $(LIB)(genhydro.o): $(GMXHOME)/src/include/futil.h
@@ -960,6 +969,7 @@ $(LIB)(hackblock.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(hackblock.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(hackblock.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(hackblock.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(hackblock.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(hackblock.o): $(GMXHOME)/src/include/string2.h
 idtio.o: $(GMXHOME)/src/include/rdklib.h
 idtio.o: $(GMXHOME)/src/include/fatal.h
@@ -1540,6 +1550,7 @@ $(LIB)(mshift.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(mshift.o): $(GMXHOME)/src/include/macros.h
 $(LIB)(mshift.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(mshift.o): $(GMXHOME)/src/include/maths.h
+$(LIB)(mshift.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(mshift.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(mshift.o): $(GMXHOME)/src/include/copyrite.h
 $(LIB)(mshift.o): $(GMXHOME)/src/include/mshift.h
@@ -1584,6 +1595,7 @@ $(LIB)(mvdata.o): $(GMXHOME)/src/include/symtab.h
 $(LIB)(mvdata.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(mvdata.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(mvdata.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(mvdata.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(mvdata.o): $(GMXHOME)/src/include/tgroup.h
 $(LIB)(mvdata.o): $(GMXHOME)/src/include/block_tx.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/sysstuff.h
@@ -1625,6 +1637,7 @@ $(LIB)(mvxvf.o): $(GMXHOME)/src/include/symtab.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(mvxvf.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/tgroup.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/block_tx.h
 $(LIB)(mvxvf.o): $(GMXHOME)/src/include/nrnb.h
@@ -1848,6 +1861,7 @@ $(LIB)(pargs.o): $(GMXHOME)/src/include/string2.h
 $(LIB)(pargs.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(pargs.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(pargs.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(pargs.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/types/simple.h
@@ -1880,6 +1894,7 @@ $(LIB)(pbc.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(pbc.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/main.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/network.h
 $(LIB)(pbc.o): $(GMXHOME)/src/include/pbc.h
@@ -1920,6 +1935,7 @@ $(LIB)(pdbio.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(pdbio.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(pdbio.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(pdbio.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(pdbio.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(pdbio.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(pdbio.o): $(GMXHOME)/src/include/symtab.h
 $(LIB)(pdbio.o): $(GMXHOME)/src/include/assert.h
@@ -1958,6 +1974,7 @@ $(LIB)(princ.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(princ.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(princ.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(princ.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(princ.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(princ.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(princ.o): $(GMXHOME)/src/include/gstat.h
 $(LIB)(princ.o): $(GMXHOME)/src/include/statutil.h
@@ -2062,6 +2079,7 @@ $(LIB)(random.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(random.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(random.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(random.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(random.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(random.o): $(GMXHOME)/src/include/random.h
 $(LIB)(rbin.o): $(GMXHOME)/src/include/typedefs.h
 $(LIB)(rbin.o): $(GMXHOME)/src/include/sysstuff.h
@@ -2275,6 +2293,7 @@ $(LIB)(rmpbc.o): $(GMXHOME)/src/include/rmpbc.h
 $(LIB)(rmpbc.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(rmpbc.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(rmpbc.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(rmpbc.o): $(GMXHOME)/src/include/lutab.h
 sfac.o: $(GMXHOME)/src/include/assert.h
 sfac.o: $(GMXHOME)/src/include/sysstuff.h
 sfac.o: $(GMXHOME)/src/include/typedefs.h
@@ -2378,6 +2397,7 @@ $(LIB)(shift_util.o): $(GMXHOME)/src/include/types/pulls.h
 $(LIB)(shift_util.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(shift_util.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(shift_util.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(shift_util.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(shift_util.o): $(GMXHOME)/src/include/shift_util.h
 $(LIB)(shift_util.o): $(GMXHOME)/src/include/complex.h
 $(LIB)(shift_util.o): $(GMXHOME)/src/include/smalloc.h
@@ -2465,6 +2485,7 @@ $(LIB)(stat.o): $(GMXHOME)/src/include/physics.h
 $(LIB)(stat.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(stat.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(stat.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(stat.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(stat.o): $(GMXHOME)/src/include/mvdata.h
 $(LIB)(stat.o): $(GMXHOME)/src/include/nsb.h
 $(LIB)(stat.o): $(GMXHOME)/src/include/force.h
@@ -2522,6 +2543,7 @@ $(LIB)(statutil.o): $(GMXHOME)/src/include/wman.h
 $(LIB)(statutil.o): $(GMXHOME)/src/include/names.h
 $(LIB)(statutil.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(statutil.o): $(GMXHOME)/src/include/maths.h
+$(LIB)(statutil.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(statutil.o): $(GMXHOME)/src/include/tpxio.h
 $(LIB)(statutil.o): $(GMXHOME)/src/include/xdrf.h
 $(LIB)(statutil.o): $(GMXHOME)/src/include/assert.h
@@ -2715,6 +2737,7 @@ testlr.o: $(GMXHOME)/src/include/types/pulls.h
 testlr.o: $(GMXHOME)/src/include/vec.h
 testlr.o: $(GMXHOME)/src/include/maths.h
 testlr.o: $(GMXHOME)/src/include/macros.h
+testlr.o: $(GMXHOME)/src/include/lutab.h
 testlr.o: $(GMXHOME)/src/include/physics.h
 testlr.o: $(GMXHOME)/src/include/names.h
 testlr.o: $(GMXHOME)/src/include/smalloc.h
@@ -2905,6 +2928,7 @@ $(LIB)(trxio.o): $(GMXHOME)/src/include/names.h
 $(LIB)(trxio.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(trxio.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(trxio.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(trxio.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(trxio.o): $(GMXHOME)/src/include/xtcio.h
 $(LIB)(trxio.o): $(GMXHOME)/src/include/pdbio.h
 $(LIB)(trxio.o): $(GMXHOME)/src/include/symtab.h
@@ -2981,6 +3005,7 @@ $(LIB)(txtdump.o): $(GMXHOME)/src/include/string2.h
 $(LIB)(txtdump.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(txtdump.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(txtdump.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(txtdump.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/assert.h
 $(LIB)(typedefs.o): $(GMXHOME)/src/include/sysstuff.h
@@ -3220,6 +3245,7 @@ $(LIB)(xtcio.o): $(GMXHOME)/src/include/smalloc.h
 $(LIB)(xtcio.o): $(GMXHOME)/src/include/vec.h
 $(LIB)(xtcio.o): $(GMXHOME)/src/include/maths.h
 $(LIB)(xtcio.o): $(GMXHOME)/src/include/macros.h
+$(LIB)(xtcio.o): $(GMXHOME)/src/include/lutab.h
 $(LIB)(xtcio.o): $(GMXHOME)/src/include/futil.h
 $(LIB)(xvgr.o): $(GMXHOME)/src/include/sysstuff.h
 $(LIB)(xvgr.o): $(GMXHOME)/src/include/string2.h

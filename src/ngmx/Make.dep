@@ -313,6 +313,7 @@ manager.o: $(GMXHOME)/src/include/wman.h
 manager.o: $(GMXHOME)/src/include/mshift.h
 manager.o: $(GMXHOME)/src/include/rmpbc.h
 manager.o: $(GMXHOME)/src/include/vec.h
+manager.o: $(GMXHOME)/src/include/lutab.h
 molps.o: $(GMXHOME)/src/include/sysstuff.h
 molps.o: $(GMXHOME)/src/include/smalloc.h
 molps.o: $(GMXHOME)/src/include/macros.h
