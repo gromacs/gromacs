@@ -861,7 +861,7 @@ void flocal(void)
     p_real4("lu");
 #endif /* DECREASE_LATENCY */
 #ifdef DOUBLE
-    p_real("y1");
+    p_real("y1,y2");
 #endif /* DOUBLE */
   }
 #endif /* CINVSQRT */
@@ -957,7 +957,7 @@ void flocal(void)
   }
 #endif /* DECREASE_LATENCY */
   if(!bC && bEwald && !bTab)
-      p_real("cerfc");
+    p_real("cerfc");
 }
 
 void flocal_init(void)
