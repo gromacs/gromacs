@@ -267,7 +267,7 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
   }
   fprintf(out,"%15s  %12s  %12.5f  %6.1f\n\n",
 	  "Total","",mflop,tfrac);
-  if (nodetime > 0 && realtime > 0) {
+  if ((nodetime > 0) && (realtime > 0)) {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
 	    nodetime, realtime, 100.0*nodetime/realtime);
@@ -276,10 +276,12 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
       pr_difftime(out,nodetime);
     }
     if (runtime>0) { /* runtime=0 means calc energies only */
+      mflop = mflop/nodetime;
       fprintf(out,"%12s %10s %10s %10s %10s\n",
-	      "","(Mnbf/s)","(MFlops)","(ps/NODE hour)","(NODE hour/ns)");
+	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
+	      "(ps/NODE hour)","(NODE hour/ns)");
       fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
-	      nbfs/nodetime,mflop/nodetime,
+	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
 	      runtime*3600/nodetime,1000*nodetime/(3600*runtime));
     }
   }
