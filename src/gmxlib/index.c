@@ -248,7 +248,8 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   /* atomnames to be used in constructing index groups: */
   static char *pnoh[]    = { "H" };
   static char *pnodum[]  = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2", 
-			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
+			     "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2",
+			     "MW1",  "MW2" };
   static char *calpha[]  = { "CA" };
   static char *bb[]      = { "N","CA","C" };
   static char *mc[]      = { "N","CA","C","O","O1","O2","OXT" };
