@@ -129,7 +129,7 @@
 
 #define PR_VEC(a)       a[XX],a[YY],a[ZZ]
 
-#ifdef GMX_SOFTWARE_INVSQRT
+#ifdef GMX_SOFTWARE_SQRT
 extern const unsigned int *  gmx_invsqrt_exptab;
 extern const unsigned int *  gmx_invsqrt_fracttab;
 #endif
@@ -142,7 +142,7 @@ typedef union
 } t_convert;
 
 
-#ifdef GMX_SOFTWARE_INVSQRT
+#ifdef GMX_SOFTWARE_SQRT
 static inline real invsqrt(real x)
 {
   const real  half=0.5;
