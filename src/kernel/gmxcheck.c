@@ -436,19 +436,15 @@ int main(int argc,char *argv[])
   if (ftp2bSet(efTRX,NFILE,fnm))
     chk_trj(ftp2fn(efTRX,NFILE,fnm));
   
-  if (opt2bSet("-s1",NFILE,fnm))
-    fn1=opt2fn("-s1",NFILE,fnm);
-  if (opt2bSet("-s2",NFILE,fnm))
-    fn2=opt2fn("-s2",NFILE,fnm);
+  fn1 = opt2fn_null("-s1",NFILE,fnm);
+  fn2 = opt2fn_null("-s2",NFILE,fnm);
   if (fn1 && fn2)
     comp_tpx(fn1,fn2);
   else if (fn1 || fn2)
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
 
-  if (opt2bSet("-e1",NFILE,fnm))
-    fn1=opt2fn("-e1",NFILE,fnm);
-  if (opt2bSet("-e2",NFILE,fnm))
-    fn2=opt2fn("-e2",NFILE,fnm);
+  fn1 = opt2fn_null("-e1",NFILE,fnm);
+  fn2 = opt2fn_null("-e2",NFILE,fnm);
   if (fn1 && fn2)
     comp_enx(fn1,fn2,ftol);
   else if (fn1 || fn2)
