@@ -107,7 +107,7 @@ void chk_trj(char *fn)
       old_t2=old_t1;
       old_t1=sh.t;
       if (t0 == NOTSET) t0=sh.t;
-      fprintf(stderr,"\rframe: %6d, step: %6d, t: %10.3f",j,sh.step,sh.t);
+      fprintf(stderr,"\rframe: %6d, step: %8d, t: %10.3f",j,sh.step,sh.t);
       if (ftp == efTRJ)
 	fprintf(stderr," byte: %10u",fpos);
       if (j == 0)
@@ -154,7 +154,7 @@ void chk_trj(char *fn)
 	old_t2=old_t1;
 	old_t1=t;
 	if (t0 == NOTSET) t0=t;
-	fprintf(stderr,"\rframe: %6d, step %6d, t: %10.3f",j,step,t);
+	fprintf(stderr,"\rframe: %6d, step %8d, t: %10.3f",j,step,t);
 	if (j == 0)
 	  fprintf(stderr,"\n");
 	newline=TRUE;
