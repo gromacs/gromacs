@@ -13,32 +13,59 @@ all:
 	echo "No GROMACS environment, Please source your GMXRC file"
 else
 include		$(GMXHOME)/src/makef/Makefile.def
-#
-# Common object files
-PGOBJ		= add_par.o	toputil.o 	topdirs.o 	topexcl.o
-MDLIBS		= $(LIBDIR)/libgmx.$(GMXCPU).a	\
-		  $(LIBDIR)/libmd.$(GMXCPU).a	\
-		  $(LIBDIR)/libfftw.$(GMXCPU).a
+
+# libraries for mdrun
+MDLIBS	= $(LIBDIR)/libgmx.$(GMXCPU).a	\
+	  $(LIBDIR)/libmd.$(GMXCPU).a	\
+	  $(LIBDIR)/libfftw.$(GMXCPU).a
+
+# some Common Objects:
+# Objects for grompp, pdb2gmx, tpbconv and protonate
+PGTRXOBJ = toputil.o	topdirs.o
+
+# Objects for grompp, pdb2gmx, tpbconv and x2top
+PGTXOBJ	= add_par.o	topexcl.o	$(PGTRXOBJ)
+
+# Objects for pdb2gmx, protonate and x2top
+PRXOBJ	= pgutil.o	resall.o	hackblock.o	$(PGTXOBJ)
+
+# Objects for pdb2gmx and protonate
+PROBJ	= ter_db.o	h_db.o		genhydro.o	$(PRXOBJ)
+
+# Objects for pdb2gmx and x2top
+PXOBJ	= pdb2top.o 	gen_ad.o 	gen_dum.o	$(PRXOBJ)
+
+# Objects for grompp and tpbconv
+GTOBJ	= readir.o	$(PGTROBJ)	$(PGTXOBJ)
+
+# program-specific Objects
 # Objects for grompp
-GOBJ		= \
-		topio.o 	toppush.o 	\
-		topcat.o 	topshake.o 	convparm.o 	\
-		tomorse.o	sorting.o 	splitter.o	\
-		readir.o	dum_parm.o	calcgrid.o	\
-		$(PGOBJ)
+GOBJ	= \
+	topio.o 	toppush.o 	topcat.o 	topshake.o 	\
+	convparm.o 	tomorse.o	sorting.o 	splitter.o	\
+	dum_parm.o	calcgrid.o	$(GTOBJ)
+
 # Objects for pdb2gmx
-POBJ		= \
-		pdb2top.o 	gen_ad.o 	\
-		pgutil.o	resall.o	ter_db.o	\
-		hizzie.o	xlate.o		specbond.o	\
-		gen_dum.o	$(PGOBJ)	
+POBJ	= \
+	hizzie.o	xlate.o		specbond.o	\
+	$(PROBJ)	$(PXOBJ)
+
+# Objects for tpbconv
+TOBJ	= $(GTOBJ)
+
+# Objects for protonate
+ROBJ	= $(PROBJ)	hackblock.o
+
+# Objects for x2top
+XOBJ	= $(PXOBJ) toppush.o nm2type.o
+
 ifneq ($(PARALLEL_ONLY_MDRUN),yes)
-PROGRAMS	= \
-		pdb2gmx 	grompp		tpbconv		\
-		mdrun		nmrun		gmxcheck	\
-		gmxdump		luck		x2top
+PROGRAMS = \
+	pdb2gmx 	protonate	grompp		tpbconv		\
+	mdrun		nmrun		gmxcheck	gmxdump		\
+	luck		x2top
 else
-PROGRAMS	= mdrun
+PROGRAMS = mdrun
 endif
 
 include		$(STDTARGET)
@@ -48,10 +75,13 @@ all:		bin
 grompp:		grompp.o $(GOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-tpbconv:	$(PGOBJ)	tpbconv.o	readir.o
+tpbconv:	tpbconv.o $(TOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 pdb2gmx:	pdb2gmx.o $(POBJ) 
+		$(LD) -o $@ $^ $(SYSLIBS) 
+
+protonate:	protonate.o $(ROBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 mdrun:		mdrun.o $(MDLIBS)
@@ -74,7 +104,7 @@ gmxcheck:	gmxcheck.o	tpbcmp.o
 tpbcmp.o:	tpbcmp.h
 gmxcheck.o:	tpbcmp.h
 
-x2top:		x2top.o	$(POBJ) $(PGOBJ) toppush.o nm2type.o
+x2top:		x2top.o	$(XOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
 
 #

@@ -16,27 +16,21 @@ include		$(GMXHOME)/src/makef/Makefile.def
 
 LIB		=
 ifneq ($(PARALLEL_ONLY_MDRUN),yes)
-PROGRAMS	= average	do_dssp		editconf	\
-		eneconv		g_analyze	g_anaeig	\
-		g_angle		g_bond		g_chi		\
-		g_cluster	\
-		g_confrms	g_covar		g_density	\
-		g_dielectric	g_dih		g_dipoles	\
-		g_disre		g_dist		g_enemat	\
-		g_energy	g_gyrate	g_h2order	\
-		g_hbond		g_helix		g_mdmat		\
-		g_mindist	g_msd		g_morph		\
-		g_nmeig		g_nmens		\
-		g_order		g_potential	g_rama		\
-		g_rdens		g_rdf		g_rms		\
-		g_rmsdist	g_rmsf		g_rotacf	\
-		g_saltbr	g_sas		g_sgangle	\
-		g_traj		g_dyndom	\
-		g_velacc	genbox		genconf		\
-		genion		genpr		\
-		make_ndx	mk_angndx	protonate	\
-		trjcat		trjconv         trjorder	\
-		wheel		xpm2ps
+PROGRAMS = \
+	average		do_dssp		editconf	eneconv		\
+	g_analyze	g_anaeig	g_angle		g_bond		\
+	g_chi		g_cluster	g_confrms	g_covar		\
+	g_density	g_dielectric	g_dih		g_dipoles	\
+	g_disre		g_dist		g_enemat	g_energy	\
+	g_gyrate	g_h2order	g_hbond		g_helix		\
+	g_mdmat		g_mindist	g_msd		g_morph		\
+	g_nmeig		g_nmens		g_order		g_potential	\
+	g_rama		g_rdens		g_rdf		g_rms		\
+	g_rmsdist	g_rmsf		g_rotacf	g_saltbr	\
+	g_sas		g_sgangle	g_traj		g_dyndom	\
+	g_velacc	genbox		genconf		genion		\
+	genpr		make_ndx	mk_angndx	trjcat		\
+	trjconv         trjorder	wheel		xpm2ps
 endif
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
@@ -60,9 +54,6 @@ genconf:	genconf.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 gendr:		gendr.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-protonate:	protonate.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 eneconv:	eneconv.o

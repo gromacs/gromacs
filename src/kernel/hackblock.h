@@ -34,6 +34,7 @@ static char *SRCID_hackblock_h = "$Id$";
 
 #include "typedefs.h"
 #include "pdbio.h"
+#include "grompp.h"
 
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
@@ -85,6 +86,7 @@ typedef struct {
   int     tp;       /* Type of attachment (1..10) */
   char 	  *a[4];    /* Control atoms i,j,k,l	  */
   rvec    newx;     /* calculated new position    */
+  atom_id newi;     /* new atom index number (after additions) */
 } t_hack;
 
 typedef struct {
@@ -95,6 +97,27 @@ typedef struct {
   /* list of bonded interactions to add */
   t_rbondeds rb[ebtsNR];
 } t_hackblock;
+
+/* all libraries and other data to protonate a structure or trajectory */
+typedef struct {
+  bool        bInit; /* true after init; set false by init_t_protonate */
+  /* force field name: */
+  char        FF[10];
+  /* libarary data: */
+  int         *nab;
+  t_hack      **ab;
+  t_hackblock *ah, *ntdb, *ctdb;
+  t_hackblock *sel_ntdb, *sel_ctdb;
+  int         nah;
+  t_symtab    tab;
+  int         *rN, *rC;
+  t_atomtype  *atype;
+  /* protonated topology: */
+  t_atoms     *patoms;
+  /* unprotonated topology: */
+  t_atoms     *upatoms;
+  
+} t_protonate;
 
 extern void free_t_restp(int nrtp, t_restp **rtp);
 extern void free_t_hack(int nh, t_hack **h);
@@ -128,5 +151,8 @@ extern void merge_t_hackblock(t_hackblock *s, t_hackblock *d);
 
 extern void dump_hb(FILE *out, int nres, t_hackblock hb[]);
 /* print out whole datastructure */
+
+extern void init_t_protonate(t_protonate *protonate);
+/* initialize t_protein struct */
 
 #endif	/* _hackblock_h */

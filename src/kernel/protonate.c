@@ -1,0 +1,166 @@
+/*
+ * $Id$
+ * 
+ *       This source code is part of
+ * 
+ *        G   R   O   M   A   C   S
+ * 
+ * GROningen MAchine for Chemical Simulations
+ * 
+ *               VERSION 2.0
+ * 
+ * Copyright (c) 1991-1999
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
+ * University of Groningen, The Netherlands
+ * 
+ * Please refer to:
+ * GROMACS: A message-passing parallel molecular dynamics implementation
+ * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+ * Comp. Phys. Comm. 91, 43-56 (1995)
+ * 
+ * Also check out our WWW page:
+ * http://md.chem.rug.nl/~gmx
+ * or e-mail to:
+ * gromacs@chem.rug.nl
+ * 
+ * And Hey:
+ * Great Red Oystrich Makes All Chemists Sane
+ */
+static char *SRCID_protonate_c = "$Id$";
+
+#include <math.h>
+#include "typedefs.h"
+#include "macros.h"
+#include "copyrite.h"
+#include "smalloc.h"
+#include "statutil.h"
+#include "confio.h"
+#include "genhydro.h"
+#include "tpxio.h"
+#include "rdgroup.h"
+#include "vec.h"
+#include "hackblock.h"
+
+int main (int argc,char *argv[])
+{
+  static char *desc[] = {
+    "[TT]protonate[tt] reads (a) conformation(s) and adds all missing",
+    "hydrogens as defined in [TT]ffgmx2.hdb[tt]. If only [TT]-s[tt] is",
+    "specified, this conformation will be protonated, if also [TT]-f[tt]",
+    "is specified, the conformation(s) will be read from this file",
+    "which can be either a single conformation or a trajectory.",
+    "[PAR]",
+    "If a pdb file is supplied, residue names might not correspond to",
+    "to the GROMACS naming conventions, in which case these residues will",
+    "probably not be properly protonated.",
+    "[PAR]",
+    "If an index file is specified, please note that the atom numbers",
+    "should correspond to the [BB]protonated[bb] state."
+  };
+  
+  char        title[STRLEN+1];  
+  char        *infile;
+  char        *grpnm;
+  t_topology  top;
+  t_atoms     *atoms,*iatoms;
+  t_protonate protdata;
+  atom_id     *index;
+  int         status,out;
+  t_trxframe  fr,frout;
+  rvec        *x,*ix;
+  int         nidx,natoms,natoms_out;
+  matrix      box;
+  int         i,frame,resnr;
+  bool        bReadMultiple;
+  
+  t_filenm fnm[] = {
+    { efTPS, NULL, NULL,         ffREAD  },
+    { efTRX, "-f", NULL,         ffOPTRD },
+    { efNDX, NULL, NULL,         ffOPTRD },
+    { efTRX, "-o", "protonated", ffWRITE }
+  };
+#define NFILE asize(fnm)
+  
+  CopyRight(stderr,argv[0]);
+  parse_common_args(&argc,argv,PCA_CAN_TIME,FALSE,
+		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
+  
+  infile=opt2fn("-s",NFILE,fnm);
+  read_tps_conf(infile,title,&top,&x,NULL,box,FALSE);
+  atoms=&(top.atoms);
+  printf("Select group to process:\n");
+  get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nidx,&index,&grpnm);
+  bReadMultiple = opt2bSet("-f",NFILE,fnm);
+  if (bReadMultiple) {
+    infile = opt2fn("-f",NFILE,fnm);
+    if ( !read_first_frame(&status, infile, &fr, TRX_NEED_X ) )
+      fatal_error(0,"cannot read coordinate file %s",infile);
+    natoms = fr.natoms;
+  } else {
+    clear_trxframe(&fr,TRUE);
+    fr.natoms = atoms->nr;
+    fr.bTitle = TRUE;
+    fr.title  = title;
+    fr.bX     = TRUE;
+    fr.x      = x;
+    fr.bBox   = TRUE;
+    copy_mat(box, fr.box);
+    natoms = fr.natoms;
+  }
+  
+  /* check input */
+  if ( natoms == 0 )
+    fatal_error(0,"no atoms in coordinate file %s",infile);
+  if ( natoms > atoms->nr )
+    fatal_error(0,"topology with %d atoms does not match "
+		"coordinates with %d atoms",atoms->nr,natoms);
+  for(i=0; i<nidx; i++)
+    if (index[i] > natoms)
+      fatal_error(0,"An atom number in group %s is larger than the number of "
+		  "atoms (%d) in the coordinate file %s",grpnm,natoms,infile);
+  
+  /* get indexed copy of atoms */
+  snew(iatoms,1);
+  init_t_atoms(iatoms,nidx,FALSE);
+  snew(iatoms->atom, iatoms->nr);
+  resnr = 0;
+  for(i=0; i<nidx; i++) {
+    iatoms->atom[i] = atoms->atom[index[i]];
+    iatoms->atomname[i] = atoms->atomname[index[i]];
+    if ( i>0 && (atoms->atom[index[i]].resnr!=atoms->atom[index[i-1]].resnr) )
+      resnr++;
+    iatoms->atom[i].resnr = resnr;
+    iatoms->resname[resnr] = atoms->resname[atoms->atom[index[i]].resnr];
+    iatoms->nres = max(iatoms->nres, iatoms->atom[i].resnr+1);
+  }
+  
+  init_t_protonate(&protdata);
+  
+  out = open_trx(opt2fn("-o",NFILE,fnm),"w");
+  snew(ix, nidx);
+  frame=0;
+  do {
+    if (debug) fprintf(debug,"FRAME %d (%d %g)\n",frame,fr.step,fr.time);
+    /* get indexed copy of x */
+    for(i=0; i<nidx; i++)
+      copy_rvec(fr.x[index[i]], ix[i]);
+    /* protonate */
+    natoms_out = protonate(&iatoms, &ix, &protdata);
+    
+    /* setup output frame */
+    frout = fr;
+    frout.natoms = natoms_out;
+    frout.bAtoms = TRUE;
+    frout.atoms  = iatoms;
+    frout.x      = ix;
+    
+    /* write output */
+    write_trxframe(out,&frout);
+    frame++;
+  } while ( bReadMultiple && read_next_frame(status, &fr) );
+  
+  thanx(stdout);
+
+  return 0;
+}
+

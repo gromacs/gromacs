@@ -291,3 +291,7 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
 #undef SA
 }
 
+void init_t_protonate(t_protonate *protonate)
+{
+  protonate->bInit=FALSE;
+}

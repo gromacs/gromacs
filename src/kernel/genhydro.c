@@ -46,14 +46,14 @@ static char *SRCID_genhydro_c = "$Id$";
 #include "calch.h"
 #include "genhydro.h"
 #include "h_db.h"
+#include "ter_db.h"
+#include "resall.h"
 
-static void copy_atom(t_atoms *atoms1,t_atoms *atoms2,rvec x1[],rvec x2[],
-		      int a1,int a2)
+static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
 {
   atoms2->atom[a2] = atoms1->atom[a1];
   snew(atoms2->atomname[a2],1);
   *atoms2->atomname[a2]=strdup(*atoms1->atomname[a1]);
-  copy_rvec(x1[a1],x2[a2]);
 }
 
 int pdbasearch_atom(char *name,int resnr,t_atoms *pdba)
@@ -73,6 +73,28 @@ int pdbasearch_atom(char *name,int resnr,t_atoms *pdba)
   return -1;
 }
 
+void hacksearch_atom(int *ii, int *jj, char *name, int nab[], t_hack *ab[], 
+		     int resnr, t_atoms *pdba)
+{
+  int  i,j;
+  
+  *ii=-1;
+  if (name[0] == '-') {
+    name++;
+    resnr--;
+  }
+  for(i=0; (i<pdba->nr) && (pdba->atom[i].resnr != resnr); i++)
+    ;
+  for(   ; (i<pdba->nr) && (pdba->atom[i].resnr == resnr) && (*ii<0); i++)
+    for(j=0; (j < nab[i]) && (*ii<0); j++)
+      if (ab[i][j].nname && strcmp(name,ab[i][j].nname) == 0) {
+	*ii=i;
+	*jj=j;
+      }
+  
+  return;
+}
+
 void dump_ab(FILE *out,int natom,int nab[], t_hack *ab[], bool bHeader)
 {
   int i,j;
@@ -80,9 +102,9 @@ void dump_ab(FILE *out,int natom,int nab[], t_hack *ab[], bool bHeader)
 #define SS(s) (s)?(s):"-"
   /* dump ab */
   if (bHeader)
-    fprintf(out,"ADDBLOCK (t_hack)\n"
+    fprintf(out,"ADDBLOCK (t_hack) natom=%d\n"
 	    "%4s %2s %-4s %-4s %2s %-4s %-4s %-4s %-4s %1s %s\n",
-	    "atom","nr","old","new","tp","ai","aj","ak","al","a","x");
+	    natom,"atom","nr","old","new","tp","ai","aj","ak","al","a","x");
   for(i=0; i<natom; i++)
     for(j=0; j<nab[i]; j++)
       fprintf(out,"%4d %2d %-4s %-4s %2d %-4s %-4s %-4s %-4s %s %g %g %g\n",
@@ -258,7 +280,7 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 
 static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 {
-  int i, j, m, ia, d, rnr;
+  int i, j, ii, jj, m, ia, d, rnr;
   rvec xa[4]; /* control atoms for calc_h_pos */
   rvec xh[3]; /* hydrogen positions from calc_h_pos */
   
@@ -269,11 +291,17 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
       if (ab[i][j].oname==NULL && ab[i][j].tp > 0) {
 	for(m=0; m<ncontrol[ab[i][j].tp]; m++) {
 	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba);
-	  if (ia < 0)
-	    fatal_error(0,"Atom %s not found in residue %s%d"
-			" while adding hydrogens",
-			ab[i][j].a[m],*pdba->resname[rnr],rnr+1);
-	  copy_rvec(x[ia], xa[m]);
+	  if (ia < 0) {
+	    /* not found in original atoms, might still be in t_hack (ab) */
+	    hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);
+	    if (ii < 0)
+	      fatal_error(0,"Atom %s not found in residue %s%d"
+			  " while adding hydrogens",
+			  ab[i][j].a[m],*pdba->resname[rnr],rnr+1);
+	    else
+	      copy_rvec(ab[ii][jj].newx, xa[m]);
+	  } else
+	    copy_rvec(x[ia], xa[m]);
 	}
 	for(m=0; m<3; m++)
 	  for(d=0; d<DIM; d++)
@@ -289,121 +317,181 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
   }
 }
 
-int add_h(t_atoms **pdbaptr, rvec *xptr[], int nah, t_hackblock ah[],
-	  t_hackblock *ntdb, t_hackblock *ctdb, 
-	  int nterpairs, int *rN, int *rC)
+int add_h(t_atoms **pdbaptr, rvec *xptr[], 
+	  int nah, t_hackblock ah[], t_hackblock *ntdb, t_hackblock *ctdb, 
+	  int nterpairs, int *rN, int *rC, int **nabptr, t_hack ***abptr,
+	  bool bUpdate_pdba, bool bKeep_old_pdba)
 {
   t_atoms     *newpdba,*pdba;
   bool        bSet;
   int         nadd;
-  int         i,newi,j,d,natom;
-  int         *nab;
-  t_hack      **ab;
+  int         i,newi,j,d,natoms;
+  int         *nab=NULL;
+  t_hack      **ab=NULL;
   t_hackblock *hb;
   rvec        *xn;
-
+  bool        bKeep_ab;
+  
   /* set flags for adding hydrogens (accoring to hdb) */
   pdba=*pdbaptr;
-  natom=pdba->nr;
-  /* first get all the hackblocks for each residue: */
-  hb = get_hackblocks(pdba, nah, ah, ntdb, ctdb, nterpairs, rN, rC);
-  if (debug) dump_hb(debug, pdba->nres, hb);
+  natoms=pdba->nr;
   
-  /* expand the hackblocks to atom level */
-  snew(nab,natom);
-  snew(ab,natom);
-  expand_hackblocks(pdba, hb, nab, ab, nterpairs, rN, rC);
-  free_t_hackblock(pdba->nres, &hb);
+  if (nabptr && abptr) {
+    /* the first time these will be pointers to NULL, but we will
+       return in them the completed arrays, which we will get back
+       the second time */
+    nab = *nabptr;
+    ab  = *abptr;
+    bKeep_ab=TRUE;
+    if (debug) fprintf(debug,"pointer to ab found\n");
+  } else
+    bKeep_ab=FALSE;
   
-  if (debug) dump_ab(debug, natom, nab, ab, TRUE);
+  if (nab && ab) {
+    /* WOW, everything was already figured out */
+    bUpdate_pdba = FALSE;
+    if (debug) fprintf(debug,"pointer to non-null ab found\n");
+  } else {
+    /* We'll have to do all the hard work */
+    bUpdate_pdba = TRUE;
+    /* first get all the hackblocks for each residue: */
+    hb = get_hackblocks(pdba, nah, ah, ntdb, ctdb, nterpairs, rN, rC);
+    if (debug) dump_hb(debug, pdba->nres, hb);
+    
+    /* expand the hackblocks to atom level */
+    snew(nab,natoms);
+    snew(ab,natoms);
+    expand_hackblocks(pdba, hb, nab, ab, nterpairs, rN, rC);
+    free_t_hackblock(pdba->nres, &hb);
+  }
+  
+  if (debug) { 
+    fprintf(debug,"before calc_all_pos\n");
+    dump_ab(debug, natoms, nab, ab, TRUE);
+  }
   
   /* Now calc the positions */
   calc_all_pos(pdba, *xptr, nab, ab);
-  
-  /* we don't have to add atoms that are already present in pdba,
-     so we will remove them from the ab (t_hack) */
-  nadd = check_atoms_present(pdba, nab, ab);
-  if (debug) {
-    fprintf(debug, "removed add hacks that were already in pdba:\n");
-    dump_ab(debug, natom, nab, ab, TRUE);
-    fprintf(debug, "will be adding %d atoms\n",nadd);
+
+  if (debug) { 
+    fprintf(debug,"after calc_all_pos\n");
+    dump_ab(debug, natoms, nab, ab, TRUE);
   }
   
-  /* Copy old atoms, making space for new ones */
-  snew(newpdba,1);
-  init_t_atoms(newpdba,natom+nadd,FALSE);
-  newpdba->nres    = pdba->nres;   
-  sfree(newpdba->resname);
-  newpdba->resname = pdba->resname;
-  snew(xn,natom+nadd);
+  if (bUpdate_pdba) {
+    /* we don't have to add atoms that are already present in pdba,
+       so we will remove them from the ab (t_hack) */
+    nadd = check_atoms_present(pdba, nab, ab);
+    if (debug) {
+      fprintf(debug, "removed add hacks that were already in pdba:\n");
+      dump_ab(debug, natoms, nab, ab, TRUE);
+      fprintf(debug, "will be adding %d atoms\n",nadd);
+    }
+    
+    /* Copy old atoms, making space for new ones */
+    snew(newpdba,1);
+    init_t_atoms(newpdba,natoms+nadd,FALSE);
+    newpdba->nres    = pdba->nres;   
+    sfree(newpdba->resname);
+    newpdba->resname = pdba->resname;
+  } else {
+    nadd = 0;
+  }
+  if (debug) fprintf(debug,"snew xn for %d old + %d new atoms %d total)\n",
+		     natoms, nadd, natoms+nadd);
+  snew(xn,natoms+nadd);
   newi=0;
-  for(i=0; (i<natom); i++) {
+  for(i=0; (i<natoms); i++) {
     /* check if this atom wasn't scheduled for deletion */
     if ( nab[i]==0 || ab[i][0].nname!=NULL ) {
-      copy_atom(pdba,newpdba,*xptr,xn,i,newi);
-      if (debug) fprintf(debug,"(%3d) %3d%4s %4s%3d",
-			 i+1,newi+1,*newpdba->atomname[newi],
-			 *newpdba->resname[newpdba->atom[newi].resnr],
-			 newpdba->atom[newi].resnr+1);
+      if (newi >= natoms+nadd) {
+	nadd+=10;
+	srenew(xn,natoms+nadd);
+      }
+      if (debug) fprintf(debug,"(%3d) %3d %4s %4s%3d %3d",
+			 i+1, newi+1, *pdba->atomname[i],
+			 *pdba->resname[pdba->atom[i].resnr],
+			 pdba->atom[i].resnr+1, nab[i]);
+      if (bUpdate_pdba)
+	copy_atom(pdba,i, newpdba,newi);
+      copy_rvec((*xptr)[i],xn[newi]);
       /* process the hacks for this atom */
       for(j=0; j<nab[i]; j++) {
 	if ( ab[i][j].oname==NULL ) { /* add */
 	  newi++;
-	  newpdba->atom[newi].resnr=pdba->atom[i].resnr;
+	  if (newi >= natoms+nadd) {
+	    nadd+=10;
+	    srenew(xn,natoms+nadd);
+	  }
+	  if (bUpdate_pdba)
+	    newpdba->atom[newi].resnr=pdba->atom[i].resnr;
 	  if (debug) fprintf(debug," + %d",newi+1);
 	}
 	if ( ab[i][j].nname!=NULL ) { /* add or replace */
-	  snew(newpdba->atomname[newi],1);
-	  *newpdba->atomname[newi]=strdup(ab[i][j].nname);
-	  if ( ab[i][j].oname!=NULL && ab[i][j].atom ) { /* replace */
-/* 	    newpdba->atom[newi].m    = ab[i][j].atom->m; */
-/* 	    newpdba->atom[newi].q    = ab[i][j].atom->q; */
-/* 	    newpdba->atom[newi].type = ab[i][j].atom->type; */
+	  if (bUpdate_pdba) {
+	    snew(newpdba->atomname[newi],1);
+	    *newpdba->atomname[newi]=strdup(ab[i][j].nname);
+	    if ( ab[i][j].oname!=NULL && ab[i][j].atom ) { /* replace */
+/* 	      newpdba->atom[newi].m    = ab[i][j].atom->m; */
+/* 	      newpdba->atom[newi].q    = ab[i][j].atom->q; */
+/* 	      newpdba->atom[newi].type = ab[i][j].atom->type; */
+	    }
 	  }
 	  bSet=TRUE;
 	  for(d=0; d<DIM; d++)
 	    bSet = bSet && ab[i][j].newx[d]!=NOTSET;
 	  if (bSet)
 	    copy_rvec(ab[i][j].newx, xn[newi]);
-	  if (debug) 
+	  if (bUpdate_pdba && debug) 
 	    fprintf(debug," %s %g %g",*newpdba->atomname[newi],
 		    newpdba->atom[newi].m,newpdba->atom[newi].q);
 	}
       }
-      if (debug) fprintf(debug,"\n");
       newi++;
+      if (debug) fprintf(debug,"\n");
     }
   }
   
-  /* Clean up */
-  for(i=0; i<natom; i++)
-    free_t_hack(nab[i], &ab[i]);
-  sfree(nab);
-  sfree(ab);
-  
-  for(i=0; i < pdba->nr; i++) {
-    sfree(*(pdba->atomname[i]));
-    sfree(pdba->atomname[i]);
+  if ( bKeep_ab ) {
+    *nabptr=nab;
+    *abptr=ab;
+  } else {
+    /* Clean up */
+    for(i=0; i<natoms; i++)
+      free_t_hack(nab[i], &ab[i]);
+    sfree(nab);
+    sfree(ab);
   }
-  sfree(pdba->atomname);
-  sfree(pdba->atom);
-  sfree(pdba->pdbinfo);
-  done_block(&(pdba->excl));
-  sfree(pdba);
+    
+  if ( bUpdate_pdba ) {
+    if ( !bKeep_old_pdba ) {
+      for(i=0; i < natoms; i++) {
+	sfree(*(pdba->atomname[i]));
+	/*       sfree(pdba->atomname[i]); */
+      }
+      sfree(pdba->atomname);
+      sfree(pdba->atom);
+      sfree(pdba->pdbinfo);
+      done_block(&(pdba->excl));
+      sfree(pdba);
+    }
+    *pdbaptr=newpdba;
+  } else
+    nadd = newi-natoms;
   
   sfree(*xptr);
   *xptr=xn;
-  *pdbaptr=newpdba;
   
-  return natom+nadd;
+  return natoms+nadd;
 }
 
 void deprotonate(t_atoms *atoms,rvec *x)
 {
   int  i,j;
   
-  for(i=j=0; (i<atoms->nr); i++) {
-    if (((*atoms->atomname[i])[0] != 'H')) {
+  j=0;
+  for(i=0; i<atoms->nr; i++) {
+    if ( (*atoms->atomname[i])[0] != 'H' ) {
       atoms->atomname[j]=atoms->atomname[i];
       atoms->atom[j]=atoms->atom[i];
       copy_rvec(x[i],x[j]);
@@ -413,17 +501,74 @@ void deprotonate(t_atoms *atoms,rvec *x)
   atoms->nr=j;
 }
 
-void protonate(t_atoms **atoms,rvec **x)
+int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
 {
-  static t_hackblock *ah=NULL;
-  static int      nah;
-  static t_symtab tab;
+#define NTERPAIRS 1
+  t_atoms *atoms;
+  bool    bUpdate_pdba,bKeep_old_pdba;
+  int     nadd;
   
-  if (ah == NULL) {
-    nah=read_h_db("ffgmx2",&ah);
-    open_symtab(&tab); 
+  atoms=NULL;
+  if ( !protdata->bInit ) {
+    if (debug) fprintf(debug,"protonate: Initializing protdata\n");
+    /* set forcefield to use: */
+    strcpy(protdata->FF,"ffgmx2");
+    /* get the databases: */
+    protdata->nah=read_h_db(protdata->FF,&protdata->ah);
+    open_symtab(&protdata->tab); 
+    protdata->atype=read_atype(protdata->FF,&protdata->tab);
+    if(read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype) < 4) 
+      fatal_error(0,"no n-terminus db");
+    if(read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype) < 2) 
+      fatal_error(0,"no c-terminus db");
+    
+    /* set terminus types: -NH3+ (different for Proline) and -COO- */
+    atoms=*atomsptr;
+    if (strncmp(*atoms->resname[atoms->atom[atoms->nr-1].resnr],"PRO",3)==0)
+      protdata->sel_ntdb=&(protdata->ntdb[3]);
+    else
+      protdata->sel_ntdb=&(protdata->ntdb[1]);
+    protdata->sel_ctdb=&(protdata->ctdb[1]);
+  
+    /* set terminal residue numbers: */
+    snew(protdata->rN, NTERPAIRS);
+    snew(protdata->rC, NTERPAIRS);
+    protdata->rN[0]=0;
+    protdata->rC[0]=atoms->atom[atoms->nr-1].resnr;
+    
+    /* keep unprotonated topology: */
+    protdata->upatoms = atoms;
+    /* we don't have these yet: */
+    protdata->patoms = NULL;
+    bUpdate_pdba=TRUE;
+    bKeep_old_pdba=TRUE;
+    
+    /* clear hackblocks: */
+    protdata->nab=NULL;
+    protdata->ab=NULL;
+    
+    /* set flag to show we're initialized: */
+    protdata->bInit=TRUE;
+  } else {
+    if (debug) fprintf(debug,"protonate: using available protdata\n");
+    /* add_h will need the unprotonated topoloy again: */
+    atoms = protdata->upatoms;
+    bUpdate_pdba=FALSE;
+    bKeep_old_pdba=FALSE;
   }
-  deprotonate(*atoms,*x);
   
-  add_h(atoms,x,nah,ah,NULL,NULL,0,NULL,NULL);
+  /* now protonate */
+  nadd = add_h(&atoms, xptr, protdata->nah, protdata->ah,
+	       protdata->sel_ntdb, protdata->sel_ctdb,
+	       NTERPAIRS, protdata->rN, protdata->rC,
+	       &protdata->nab, &protdata->ab, bUpdate_pdba, bKeep_old_pdba);
+  if ( ! protdata->patoms )
+    /* store protonated topology */
+    protdata->patoms = atoms;
+  *atomsptr = protdata->patoms;
+  if (debug) fprintf(debug,"natoms: %d -> %d (nadd=%d)\n",
+		     protdata->upatoms->nr, protdata->patoms->nr, nadd);
+  return nadd;
+#undef NTERPAIRS  
 }
+
