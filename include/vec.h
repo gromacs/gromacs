@@ -35,6 +35,56 @@ static char *SRCID_vec_h = "$Id$";
 #ifdef HAVE_IDENT
 #ident	"@(#) vec.h 1.8 12/16/92"
 #endif /* HAVE_IDENT */
+
+/*
+  collection of in-line ready operations:
+  
+  lookup-table optimized scalar operations:
+  real invsqrt(float x)
+  void vecinvsqrt(real in[],real out[],int n)
+  real recip(float x)
+  void vecrecip(real in[],real out[],int n)
+  real sqr(real x)
+  
+  vector operations:
+  void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
+  void rvec_inc(rvec a,rvec b)                     a += b
+  void rvec_sub(const rvec a,const rvec b,rvec c)  c = a - b
+  void rvec_dec(rvec a,rvec b)                     a -= b
+  void copy_rvec(const rvec a,rvec b)              b = a (reals)
+  void copy_ivec(const ivec a,ivec b)              b = a (integers)
+  void ivec_sub(const ivec a,const ivec b,ivec c)  c = a - b
+  void svmul(real a,rvec v1,rvec v2)               v2 = a * v1
+  void clear_rvec(rvec a)                          a = 0
+  void clear_rvecs(int n,rvec v[])
+  real iprod(rvec a,rvec b)                        = a . b (inner product)
+  real iiprod(ivec a,ivec b)                       = a . b (integers)
+  real norm2(rvec a)                               = | a |^2 ( = x*y*z )
+  real norm(rvec a)                                = | a |
+  void oprod(rvec a,rvec b,rvec c)                 c = a x b (outer product)
+  void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
+  real cos_angle(rvec a,rvec b)
+  real cos_angle_no_table(rvec a,rvec b)
+  real distance2(rvec v1, rvec v2)                 = | v2 - v1 |^2
+  void unitv(rvec src,rvec dest)                   dest = src / |src|
+  void unitv_no_table(rvec src,rvec dest)          dest = src / |src|
+  
+  matrix (3x3) operations:
+  void copy_mat(matrix a,matrix b)                 b = a
+  void clear_mat(matrix a)			   a = 0
+  void mmul(matrix a,matrix b,matrix dest)	   dest = a . b
+  void transpose(matrix src,matrix dest)	   dest = src*
+  void tmmul(matrix a,matrix b,matrix dest)	   dest = a* . b
+  void mtmul(matrix a,matrix b,matrix dest)	   dest = a . b*
+  real det(matrix a)				   = det(a)
+  void m_add(matrix a,matrix b,matrix dest)	   dest = a + b
+  void m_sub(matrix a,matrix b,matrix dest)	   dest = a - b
+  void msmul(matrix m1,real r1,matrix dest)	   dest = r1 * m1
+  void m_inv(matrix src,matrix dest)		   dest = src^-1
+  void mvmul(matrix a,rvec src,rvec dest)	   dest = a . src
+  real trace(matrix m)                             = trace(m)
+*/
+
 #ifdef USE_AXP_ASM
 #include "axp_asm.h"
 #endif
@@ -160,8 +210,6 @@ static gmx_inline void vecinvsqrt(real in[],real out[],int n)
 #endif /* INVSQRT_DONE */
 }
 
-
-
 #ifdef GMX_RECIP
 static gmx_inline real recip(float x)
 {
@@ -233,8 +281,6 @@ static gmx_inline void vecrecip(real in[],real out[],int n)
       out[i]=1.0f/(in[i]);
 #endif /* GMX_RECIP */
 }
-
-
 
 static gmx_inline real sqr(real x)
 {
@@ -579,7 +625,7 @@ static gmx_inline void unitv(rvec src,rvec dest)
 {
   real linv;
   
-  linv=invsqrt(iprod(src,src));
+  linv=invsqrt(norm2(src));
   dest[XX]=linv*src[XX];
   dest[YY]=linv*src[YY];
   dest[ZZ]=linv*src[ZZ];
@@ -589,7 +635,7 @@ static gmx_inline void unitv_no_table(rvec src,rvec dest)
 {
   real linv;
   
-  linv=1.0/sqrt(iprod(src,src));
+  linv=1.0/sqrt(norm2(src));
   dest[XX]=linv*src[XX];
   dest[YY]=linv*src[YY];
   dest[ZZ]=linv*src[ZZ];
