@@ -67,7 +67,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   int         n[eptNR],ns,nsi;
   int         i,j,type,ftype,nra;
   real        qS,alpha;
-  int         aS,aN; /* Shell and nucleus */
+  int         aS,aN=0; /* Shell and nucleus */
   int         bondtypes[] = { F_BONDS, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
 #define NBT asize(bondtypes)
   bool        bS1,bS2;

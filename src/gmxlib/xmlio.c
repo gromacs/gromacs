@@ -488,7 +488,7 @@ void write_xml(char *fn,char *title,t_inputrec *ir,rvec *box,
   xmlNodePtr myroot;
   t_masstype *mt;
   int        i,nmt;
-  char       *libdtdname,*dtdname;
+  const char       *libdtdname,*dtdname;
   
   dtdname    = "gromacs.dtd";
   libdtdname = libfn(dtdname);

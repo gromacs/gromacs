@@ -690,7 +690,7 @@ void pr_idef(FILE *fp,int indent,char *title,t_idef *idef, bool bShowNumbers)
   }
 }
 
-static int pr_block_title(FILE *fp,int indent,char *title,t_block *block)
+static int pr_block_title(FILE *fp,int indent,const char *title,t_block *block)
 {
   int i;
 

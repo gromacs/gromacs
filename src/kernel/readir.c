@@ -231,11 +231,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   }
-  if (EEL_LR(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s rcoulomb must be == rlist",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb != ir->rlist);
-  } else if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH)) {
+  /* Allow rlist>rcoulomb for tabulated long range stuff. This just
+   * means the interaction is zero outside rcoulomb, but it helps to
+   * provide accurate energy conservation.
+   */
+  if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH)) {
     sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
@@ -243,7 +243,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
-  } else {
+  } else if(ir->coulombtype == eelCUT || ir->coulombtype == eelRF) {
     sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
   }

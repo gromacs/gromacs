@@ -176,7 +176,7 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
        * change speed */
       for(d=0;d<DIM;d++)
 	for(n=0;n<=d;n++)
-	  t1[d][n]=winv[d][n]*fac*arel*box[d][n];    
+	  t1[d][n]=winv[0][0]*fac*arel*box[d][n];    
       break;
     case epctSEMIISOTROPIC:
     case epctSURFACETENSION:
