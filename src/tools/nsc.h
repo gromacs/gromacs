@@ -49,11 +49,18 @@ extern int NSC(
   int ,		/* number of dots per fully accessible sphere */
   int ,		/* flag : dots, volume and/or area per atom */
   real * ,	/* 1 output: overall area */
-  real ** ,   /* 2 output: pointer to list of areas per atom */
+  real ** ,     /* 2 output: pointer to list of areas per atom */
   real * ,	/* 3 output: overall volume */
   real ** ,	/* 4 output: pointer to list of surface dots x0, y0, z0, ... */
-  int *		/* 5 output: number of surface dots */
+  int *	        /* 5 output: number of surface dots */
   );
+
+extern int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
+		     int  densit, int mode,
+		     real *value_of_area, real **at_area,
+		     real *value_of_vol,
+		     real **lidots, int *nu_dots,
+		     matrix box);
 
 /* 
     User notes :

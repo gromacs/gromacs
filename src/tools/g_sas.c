@@ -210,9 +210,10 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,int nskip,bool bSave,real minarea)
+	      real qcut,int nskip,bool bSave,real minarea,bool bPBC)
 {
-  FILE         *fp,*fp2=NULL,*fp3=NULL;
+  FILE         *fp,*fp2,*fp3=NULL;
+  char         *legend[] = { "Hydrophobic", "Hydrophilic", "Total" };
   real         t;
   int          status;
   int          i,ii,j,natoms,flag,nsurfacedots;
@@ -221,17 +222,16 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   t_topology   *top;
   bool         *bPhobic;
   bool         bConnelly;
-  bool         bAtom,bIndex,bITP;
+  bool         bAtom,bITP;
   real         *radius,*area=NULL,*surfacedots=NULL;
   real         *atom_area,*atom_area2;
-  real         totarea,totvolume,harea,tarea_ndx,resarea;
+  real         totarea,totvolume,harea,tarea,resarea;
   atom_id      *index;
   int          nx,ires;
   char         *grpname;
   real         stddev;
 
   bAtom  = opt2bSet("-ao",nfile,fnm);
-  bIndex = opt2bSet("-n",nfile,fnm);
   bITP   = opt2bSet("-i",nfile,fnm);
   if (bITP && !bAtom)
     fprintf(stderr,"WARNING: "
@@ -243,16 +243,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
   top=read_top(ftp2fn(efTPX,nfile,fnm));
 
-  if (bAtom) {
-    fprintf(stderr,"Printing out areas per atom\n");
-    fp2=xvgropen(opt2fn("-ao",nfile,fnm),"Area per atom","Atom #",
-	      "Area (nm\\S2\\N)");
-  }
-
-  if (bIndex) {
-    fprintf(stderr,"Using index group to print out atoms\n"); 
-    get_index(&(top->atoms),ftp2fn(efNDX,nfile,fnm),1,&nx,&index,&grpname);
-  }    
+  fprintf(stderr,"Select group for calculation of surface and for output:\n");
+  get_index(&(top->atoms),ftp2fn(efNDX,nfile,fnm),1,&nx,&index,&grpname);
 
   /* Now compute atomic readii including solvent probe size */
   snew(radius,natoms);
@@ -267,6 +259,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
+  xvgr_legend(fp,asize(legend),legend);
   
   j=0;
   do {
@@ -282,35 +275,25 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       else
 	flag = FLAG_ATOM_AREA;
       
-      if (NSC(x[0],radius,natoms,ndots,flag,&totarea,
-	      &area,&totvolume,&surfacedots,&nsurfacedots))
-	fatal_error(0,"Something wrong in NSC");
+      if (nsc_dclm2(x,radius,nx,index,ndots,flag,&totarea,
+		    &area,&totvolume,&surfacedots,&nsurfacedots,bPBC ? box : NULL))
+	fatal_error(0,"Something wrong in nsc_dclm2");
       
       if (bConnelly)
 	connelly_plot(ftp2fn(efPDB,nfile,fnm),
 		      nsurfacedots,surfacedots,x,&(top->atoms),
 		      &(top->symtab),box,bSave);
       
-      harea = 0; tarea_ndx = 0;
-      if (bIndex) {
-	for(i=0; (i<nx); i++) {
-	  ii=index[i];
-	  atom_area[i] += area[ii];
-	  atom_area2[i] += area[ii]*area[ii];
-	  tarea_ndx += area[ii];
-	  if (bPhobic[ii])
-	    harea += area[ii];
-	}
-	fprintf(fp,"%10g  %10g  %10g\n",t,harea,tarea_ndx);
-      } else {
-	for(i=0; (i<natoms); i++) {
-	  atom_area[i] += area[i];
-	  atom_area2[i] += area[i]*area[i];
-	  if (bPhobic[i])
-	    harea += area[i];
-	}
-	fprintf(fp,"%10g  %10g  %10g\n",t,harea,tarea_ndx);
+      harea = 0; tarea = 0;
+      for(i=0; (i<nx); i++) {
+	ii=index[i];
+	atom_area[i] += area[ii];
+	atom_area2[i] += area[ii]*area[ii];
+	tarea += area[ii];
+	if (bPhobic[ii])
+	  harea += area[ii];
       }
+      fprintf(fp,"%10g  %10g  %10g  %10g\n",t,harea,tarea-harea,tarea);
       
       if (area) 
 	sfree(area);
@@ -325,45 +308,46 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   /* if necessary, print areas per atom to file too: */
   if (bAtom) {
-    if (bIndex) {
-      for (i=0;i<nx;i++) 
-	fprintf(fp2,"%d %g %g\n",i+1,atom_area[index[i]]/j,
-		atom_area2[index[i]]/j);
-    } else {
-      fp = xvgropen(opt2fn("-r",nfile,fnm),"Area per residue","Residue",
-		    "Area (nm\\S2\\N)");
-      if (bITP) {
-	fp3 = ftp2FILE(efITP,nfile,fnm,"w");
-	fprintf(fp3,"[ position_restraints ]\n"
-		"#define FCX 1000\n"
-		"#define FCY 1000\n"
-		"#define FCZ 1000\n"
-		"; Atom  Type  fx   fy   fz\n");
+    fprintf(stderr,"Printing out areas per atom\n");
+    fp2=xvgropen(opt2fn("-ao",nfile,fnm),"Area per atom","Atom #",
+		 "Area (nm\\S2\\N)");
+    for (i=0; (i<nx); i++) 
+      fprintf(fp2,"%d %g %g\n",i+1,atom_area[index[i]]/j,
+	      atom_area2[index[i]]/j);
+    fclose(fp2);
+
+    fp = xvgropen(opt2fn("-r",nfile,fnm),"Area per residue","Residue",
+		  "Area (nm\\S2\\N)");
+    if (bITP) {
+      fp3 = ftp2FILE(efITP,nfile,fnm,"w");
+      fprintf(fp3,"[ position_restraints ]\n"
+	      "#define FCX 1000\n"
+	      "#define FCY 1000\n"
+	      "#define FCZ 1000\n"
+	      "; Atom  Type  fx   fy   fz\n");
+    }
+    ires    = top->atoms.atom[0].resnr-1;
+    resarea = 0;
+    for (i=0;i<natoms;i++) {
+      if (top->atoms.atom[i].resnr != ires) {
+	if (i > 0)
+	  fprintf(fp,"%10d  %10g\n",ires,resarea);
+	resarea = 0;
+	ires    = top->atoms.atom[i].resnr;
       }
-      ires    = top->atoms.atom[0].resnr-1;
-      resarea = 0;
-      for (i=0;i<natoms;i++) {
-	if (top->atoms.atom[i].resnr != ires) {
-	  if (i > 0)
-	    fprintf(fp,"%10d  %10g\n",ires,resarea);
-	  resarea = 0;
-	  ires    = top->atoms.atom[i].resnr;
-	}
-	else
-	  resarea += atom_area[i]/j;
+      else
+	resarea += atom_area[i]/j;
 	stddev = atom_area2[i]/j; 
 	if (bITP && (atom_area2[i]/j > minarea))
 	  fprintf(fp3,"%5d   1     FCX  FCX  FCZ\n",i+1);
 	if (stddev > 0) 
 	  stddev = sqrt(stddev);
 	fprintf(fp2,"%d %g %g\n",i+1,atom_area[i]/j,stddev);
-      }
-      fprintf(fp,"%10d  %10g\n",ires,resarea);
-      if (bITP)
-	fclose(fp3);
-      fclose(fp);
     }
-    fclose(fp2);
+    fprintf(fp,"%10d  %10g\n",ires,resarea);
+    if (bITP)
+      fclose(fp3);
+    fclose(fp);
   }
 
   sfree(x);
@@ -372,20 +356,22 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_sas computes hydrophobic and total solvent accessible surface area.",
+    "g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.",
     "As a side effect the Connolly surface can be generated as well in",
     "a pdb file where the nodes are represented as atoms and the vertices",
     "connecting the nearest nodes as CONECT records. The area can be plotted",
     "per atom and per residue as well (option -ao). In combination with",
     "the latter option an [TT]itp[tt] file can be generated (option -i)",
-    "which can be used to restrain surface atoms."
+    "which can be used to restrain surface atoms.[PAR]",
+    "By default, periodic boundary conditions are taken into account,",
+    "this can be turned off using the -pbc option."
   };
 
   static real solsize = 0.14;
   static int  ndots   = 24,nskip=1;
   static real qcut    = 0.2;
   static real minarea = 0.5;
-  static bool bSave   = TRUE;
+  static bool bSave   = TRUE,bPBC=TRUE;
   t_pargs pa[] = {
     { "-solsize", FALSE, etREAL, {&solsize},
 	"Radius of the solvent probe (nm)" },
@@ -397,6 +383,8 @@ int main(int argc,char *argv[])
       "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
     { "-skip",    FALSE, etINT,  {&nskip},
       "Do only every nth frame" },
+    { "-pbc",     FALSE, etBOOL, {&bPBC},
+      "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
       "Output the protein to the connelly pdb file too" }
   };
@@ -424,7 +412,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Ndots too small, setting it to %d\n",ndots);
   }
   
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,nskip,bSave,minarea,bPBC);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn("-ao",NFILE,fnm),"-xydy");
