@@ -310,12 +310,6 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
   if (rC>=0)
     replace_atoms(ctdb,newpdba,rC);
   
-  /* Copy the coordinates for calc position */
-  /*
-  for(i=0; (i<natom+tadd); i++)
-    copy_rvec(newpdba[i].x,xn[i]);
-    */
-
   /* Now calc the positions */
   j=0;
   for(i=0; (i<pdba->nr); i++,j++) {
@@ -340,10 +334,6 @@ int add_h(t_atoms **pdbaptr,rvec **xptr,int nah,t_addh ah[],
       j+=ab[i]->nh;
     }
   }
-  /*
-  for(i=0; (i<natom+tadd); i++)
-    copy_rvec(xn[i],newpdba[i].x);
-    */
 
   /* Clean up */
   sfree(ab);
