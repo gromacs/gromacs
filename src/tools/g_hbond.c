@@ -231,7 +231,7 @@ static void init_grid(bool bBox, rvec box[], real rcut,
   if ( !bBox || (ngrid[XX]<3) || (ngrid[YY]<3) || (ngrid[ZZ]<3) )
     for(i=0; i<DIM; i++)
       ngrid[i]=1;
-  printf("Will do grid-seach on %dx%dx%d grid, rcut=%g\n",
+  printf("\nWill do grid-seach on %dx%dx%d grid, rcut=%g\n",
 	 ngrid[XX],ngrid[YY],ngrid[ZZ],rcut);
   snew(*grid,ngrid[ZZ]);
   for (z=0; z<ngrid[ZZ]; z++) {
@@ -526,55 +526,80 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
 		    real time[])
 {
   FILE *fp;
-  int  i,j,j0;
+  int  i,j,j0,ihb;
   bool bNorm=FALSE;
+  double nhb = 0;
   real *rhbex;
-  real *ct,tail,ct0;
+  real *ct,tail,tail2,dtail,ct0;
+  const real tol = 1e-3;
   int  *nct;
   
   /* build hbexist matrix in reals for autocorr */
-  printf("Will allocate %.2f Mb of memory\n",
-	 nrhb*nframes*sizeof(real)/(1024.0*1024.0));
+  /* Allocate memory for computing ACF (rhbex) and aggregating the ACF (ct) */
   snew(rhbex,nframes);
   snew(ct,nframes);
   snew(nct,nframes);
+
+  /* Loop over hbonds */
   for(i=0; i<nrhb; i++) {
+    fprintf(stderr,"\rACF %d/%d",i+1,nrhb);
     /* First skip until the first frame that a hbond exists */
     j0=0;
-    /* while ((j0 < nframes) && (!is_hb(hbexist[i],j0)))
-       j0++;*/
-    for(j=j0; (j<nframes); j++)
-      rhbex[j-j0]=is_hb(hbexist[i],j);
-      
+    /*while ((j0 < nframes) && (!is_hb(hbexist[i],j0)))
+      j0++;*/
+    for(j=j0; (j<nframes); j++) {
+      ihb         = is_hb(hbexist[i],j);
+      rhbex[j-j0] = ihb;
+      nhb        += ihb; 
+    }
+    /*for(j=nframes-j0; (j<nframes); j++)
+      rhbex[j] = 0;
+    j0 = 0;
+    */
+    /* The autocorrelation function is normalized after summation only */
     low_do_autocorr(NULL,NULL,
 		    nframes-j0,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
-		    TRUE,TRUE,bNorm,FALSE,0,-1,0,1);
+		    FALSE,TRUE,bNorm,FALSE,0,-1,0,1);
     for(j=0; (j<(nframes-j0)/2); j++) {
       ct[j] += rhbex[j];
       nct[j]++;
     }
   }
+  fprintf(stderr,"\n");
   sfree(rhbex);
 
   /* Normalize */
-  for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
+  /*for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
     ct[j] /= nct[j];
-  nframes = j;
+    nframes = j;*/
   ct0 = ct[0];
   for(j=0; (j<nframes); j++)
     ct[j] /= ct0;
   
-  /* Determine final value for normalizing */
-  tail = 0;
-  for(j=nframes/4; (j<nframes/2); j++)
+  /* Determine tail value for normalizing */
+  tail  = 0;
+  tail2 = 0;
+  for(j=nframes/4; (j<nframes/2); j++) {
     tail += ct[j];
-  tail /= (nframes/2 - nframes/4);
-  
-  printf("Tail value is %g\n",tail);
+    tail2 += ct[j]*ct[j];
+  }
+  tail  /= (nframes/2 - nframes/4);
+  tail2 /= (nframes/2 - nframes/4);
+  dtail  = sqrt(tail2-tail*tail);
+
+  /* Check whether the ACF is long enough */
+  if (dtail > tol) {
+    printf("\nWARNING: Correlation function is probably not long enough\n"
+	   "because the standard deviation in the tail of C(t) > %g\n"
+	   "Total number of hbonds found: %g\n"
+	   "Tail value (average C(t) over second half of acf): %g +/- %g\n",
+	   tol,nhb,tail,dtail);
+  }
   fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
-  for(j=0; (j<nframes); j++)
-    fprintf(fp,"%10g  %10g  %10d  %10g\n",time[j]-time[0],ct[j],nct[j],
-	    (ct[j]-tail)/(1-tail));
+  for(j=0; (j<nframes/2); j++)
+    fprintf(fp,"%10g  %10g  %10g\n",time[j]-time[0],
+	    (ct[j]-tail)/(1-tail),ct[j]);
+  
   fclose(fp);
   do_view(fn,NULL);
   sfree(ct);

@@ -369,12 +369,13 @@ void normalize_acf(int nout,real corr[])
   }
 }
 
-void average_acf(int n,int nitem,real **c1)
+void average_acf(bool bVerbose,int n,int nitem,real **c1)
 {
   real c0;
   int  i,j;
   
-  printf("Averaging correlation functions\n");
+  if (bVerbose)
+    printf("Averaging correlation functions\n");
   
   for(j=0; (j<n); j++) {
     c0 = 0;
@@ -698,12 +699,13 @@ void low_do_autocorr(char *fn,char *title,
     fatal_error(0,"Incompatible mode bits: normal and vector (or Legendre)");
     
   /* Print flags and parameters */
-  printf("Will calculate %s of %d thingies for %d frames\n",
-	  title ? title : "autocorrelation",nitem,nframes);
-  printf("bAver = %s, bFour = %s bNormalize= %s\n",
-	  bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
-  printf("mode = %lu, dt = %g, nrestart = %d\n",mode,dt,nrestart);
-  
+  if (bVerbose) {
+    printf("Will calculate %s of %d thingies for %d frames\n",
+	   title ? title : "autocorrelation",nitem,nframes);
+    printf("bAver = %s, bFour = %s bNormalize= %s\n",
+	   bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
+    printf("mode = %lu, dt = %g, nrestart = %d\n",mode,dt,nrestart);
+  }
   if (bFour) {  
     c0 = log((double)nframes)/log(2.0);
     k  = c0;
@@ -731,14 +733,16 @@ void low_do_autocorr(char *fn,char *title,
   k = max(1,pow(10,(int)(log(nitem)/log(100))));
   for(i=0; i<nitem; i++) {
     if (i%k==0 || i==nitem-1)
-      fprintf(stderr,"\rThingie %d",i+1);
+      if (bVerbose)
+	fprintf(stderr,"\rThingie %d",i+1);
     
     if (bFour)
       do_four_core(mode,nfour,nframes,nframes,c1[i],csum,ctmp);
     else 
       do_ac_core(nframes,nout,ctmp,c1[i],nrestart,mode);
   }
-  fprintf(stderr,"\n");
+  if (bVerbose)
+    fprintf(stderr,"\n");
   sfree(ctmp);
   sfree(csum);
   
@@ -750,7 +754,8 @@ void low_do_autocorr(char *fn,char *title,
     fp  = NULL;
   }
   if (bAver) {
-    average_acf(nframes,nitem,c1);
+    if (nitem > 1)
+      average_acf(bVerbose,nframes,nitem,c1);
     
     if (bNormalize)
       normalize_acf(nout,c1[0]);
