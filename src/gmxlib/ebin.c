@@ -38,6 +38,7 @@ static char *SRCID_ebin_c = "$Id$";
 #include "ebin.h"
 #include "main.h"
 #include "maths.h"
+#include "vec.h"
 
 static real rms_ener(t_energy *e,int nsteps)
 {
