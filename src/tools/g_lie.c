@@ -34,6 +34,8 @@
  * GROup of MAchos and Cynical Suckers
  */
 static char *SRCID_g_lie_c = "$Id$";
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include "statutil.h"
@@ -61,6 +63,7 @@ static t_liedata *analyze_names(int nre,char *names[],char *ligand)
 {
   int       i;
   t_liedata *ld;
+  char      self[256];
   
   /* Skip until we come to pressure */
   for(i=0; (i<F_NRE); i++)
@@ -68,9 +71,11 @@ static t_liedata *analyze_names(int nre,char *names[],char *ligand)
       break;
       
   /* Now real analysis: find components of energies */
+  sprintf(self,"%s-%s",ligand,ligand);
   snew(ld,1);
   for( ; (i<nre); i++) {
-    if (strstr(names[i],ligand) != NULL) {
+    if ((strstr(names[i],ligand) != NULL) && 
+	(strstr(names[i],self) == NULL)) {
       if (strstr(names[i],"LJ") != NULL) {
 	ld->nlj++;
 	srenew(ld->lj,ld->nlj);
@@ -119,8 +124,8 @@ int main(int argc,char *argv[])
     "from. One needs an energy file with the following components:",
     "Coul (A-B) LJ-SR (A-B) etc."
   };
-  static real lie_lj=0,lie_qq=0,fac_lj=0.181,fac_qq=0.4;
-  static char *ligand=NULL;
+  static real lie_lj=0,lie_qq=0,fac_lj=0.181,fac_qq=0.5;
+  static char *ligand="none";
   t_pargs pa[] = {
     { "-Elj",  FALSE, etREAL, {&lie_lj},
       "Lennard-Jones interaction between ligand and solvent" },
@@ -136,13 +141,14 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE      *out;
-  int       fp,nre,ndr,step;
+  int       fp,nre,ndr,step,nframes=0,ct=0;
   char      **enm=NULL;
   bool      bCont;
   t_liedata *ld;
   t_energy  *ee;
   real      t,lie;
-  
+  double    lieaver=0,lieav2=0;
+    
   t_filenm fnm[] = { 
     { efENX, "-f",    "ener",     ffREAD   },
     { efXVG, "-o",    "lie",      ffWRITE  }
@@ -150,23 +156,35 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_VIEW,TRUE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
-  
+    
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
   
   ld = analyze_names(nre,enm,ligand);
   snew(ee,nre);
-  out = xvgropen(ftp2fn(efXVG,NFILE,fnm),"LIE free energy estimate","Time (ps)","DGbind (kJ/mol)");
+  out = xvgropen(ftp2fn(efXVG,NFILE,fnm),"LIE free energy estimate",
+		 "Time (ps)","DGbind (kJ/mol)");
   do {
     bCont = do_enx(fp,&t,&step,&nre,ee,&ndr,NULL);
-    lie   = calc_lie(ld,ee,lie_lj,lie_qq,fac_lj,fac_qq);
-    fprintf(out,"%10g  %10g\n",t,lie);
+    ct    = check_times(t,0);
+    if (ct == 0) {
+      lie = calc_lie(ld,ee,lie_lj,lie_qq,fac_lj,fac_qq);
+      lieaver += lie;
+      lieav2  += lie*lie;
+      nframes ++;
+      fprintf(out,"%10g  %10g\n",t,lie);
+    }
   } while (bCont);
   close_enx(fp);
   fclose(out);
-
+  fprintf(stderr,"\n");
+  
+  if (nframes > 0)
+    printf("DGbind = %.3f (%.3f)\n",lieaver/nframes,
+	   sqrt(lieav2/nframes-sqr(lieaver/nframes)));
+  
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
     
   thanx(stderr);
