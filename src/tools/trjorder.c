@@ -85,11 +85,11 @@ int main(int argc,char *argv[])
     "of the first n waters is made, the ordered trajectory can be used",
     "with any Gromacs program to analyze the n closest waters."
   };
-  static int nsa=3,ref_sa=1;
+  static int na=3,ref_a=1;
   t_pargs pa[] = {
-    { "-na", FALSE, etINT, {&nsa},
+    { "-na", FALSE, etINT, {&na},
       "Number of atoms in a molecule" },
-    { "-da", FALSE, etINT, {&ref_sa},
+    { "-da", FALSE, etINT, {&ref_a},
       "Atom used for the distance calculation" }
   };
   int        status,out;
@@ -132,12 +132,12 @@ int main(int argc,char *argv[])
       if (index[i][j] > natoms)
 	fatal_error(0,"An atom number in group %s is larger than the number of atoms in the trajectory");
   
-  if (isize[1] % nsa)
-    fatal_error(0,"Number of atoms in the molecule group (%d) is not a multiple of nsa (%d)",isize[1],nsa);
-  nwat = isize[1]/nsa;
-  if (ref_sa > nsa)
+  if (isize[1] % na)
+    fatal_error(0,"Number of atoms in the molecule group (%d) is not a multiple of na (%d)",isize[1],na);
+  nwat = isize[1]/na;
+  if (ref_a > na)
     fatal_error(0,"The reference atom can not be larger than the number of atoms in a molecule");
-  ref_sa--;
+  ref_a--;
   snew(order,nwat);
   snew(swi,natoms);
   for(i=0; i<natoms; i++)
@@ -149,23 +149,23 @@ int main(int argc,char *argv[])
     init_pbc(box,FALSE);
     
     for(i=0; i<nwat; i++) {
-      sa = index[1][nsa*i];
-      pbc_dx(x[index[0][0]],x[sa+ref_sa],dx);
+      sa = index[1][na*i];
+      pbc_dx(x[index[0][0]],x[sa+ref_a],dx);
       order[i].i = sa;
       order[i].d = norm2(dx); 
     }
     for(j=1; j<isize[0]; j++)
       for(i=0; i<nwat; i++) {
-	sa = index[1][nsa*i];
-	pbc_dx(x[index[0][j]],x[sa+ref_sa],dx);
+	sa = index[1][na*i];
+	pbc_dx(x[index[0][j]],x[sa+ref_a],dx);
 	if (norm2(dx) < order[i].d)
 	  order[i].d = norm2(dx);
       }
 
     qsort(order,nwat,sizeof(*order),ocomp);
     for(i=0; i<nwat; i++)
-      for(j=0; j<nsa; j++)
-	swi[index[1][nsa*i]+j] = order[i].i+j;
+      for(j=0; j<na; j++)
+	swi[index[1][na*i]+j] = order[i].i+j;
 
     write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL);
     
