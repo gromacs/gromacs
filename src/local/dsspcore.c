@@ -1962,7 +1962,8 @@ typedef struct bridge {
 } bridge;
 
 
-Static int noaccFlag,silentFlag;
+static int bVerbose;
+Static int silentFlag;
 Static long nss, nssintra, nssinter, lchain, nbridge;
 Static char6 ssbonds[MAXSS][2];
 Static backbone chain[NMAX + 1];
@@ -2278,19 +2279,21 @@ struct LOC_Checksideatoms *LINK;
       i++;
       continue;
     }
-    printf(" !!! RESIDUE ");
-    Writeresidue(*resinfo);
-    printf(" HAS ILLEGAL SIDECHAIN ATOM NAMED ");
-    for (j = 0; j <= 3; j++)
-      putchar(LINK->LINK->sideatomnames[i - 1][j]);
-    printf(".\n");
-    printf("     THIS ATOM WILL BE IGNORED !!!\n\n");
+    if (bVerbose) {
+      printf(" !!! RESIDUE ");
+      Writeresidue(*resinfo);
+      printf(" HAS ILLEGAL SIDECHAIN ATOM NAMED ");
+      for (j = 0; j <= 3; j++)
+	putchar(LINK->LINK->sideatomnames[i - 1][j]);
+      printf(".\n");
+      printf("     THIS ATOM WILL BE IGNORED !!!\n\n");
+    }
     FORLIM = resinfo->nsideatoms;
     for (j = i + 1; j <= FORLIM; j++) {
       StrCopy(LINK->LINK->sideatomnames[j - 2],
-	     LINK->LINK->sideatomnames[j - 1], sizeof(char4));
+	      LINK->LINK->sideatomnames[j - 1], sizeof(char4));
       VecCopy(LINK->LINK->sidecoordinates[j - 2],
-	     LINK->LINK->sidecoordinates[j - 1]);
+	      LINK->LINK->sidecoordinates[j - 1]);
     }
     resinfo->nsideatoms--;
   }
@@ -2332,24 +2335,26 @@ struct LOC_Inputcoordinates *LINK;
     i = 8;
   if (c == 'W')
     i = 10;
-  if (resinfo->nsideatoms < i) {
+  if ((resinfo->nsideatoms < i) && (bVerbose)) {
+      printf(" !!! RESIDUE ");
+      Writeresidue(*resinfo);
+      printf(" HAS%3ld INSTEAD OF EXPECTED ", resinfo->nsideatoms);
+      printf("%3ld SIDECHAIN ATOMS.\n", i);
+      printf("     CALCULATED SOLVENT ACCESSIBILITY REFERS TO INCOMPLETE "
+	     "SIDECHAIN !!!\n\n");
+    }
+  if (i == -1 || resinfo->nsideatoms <= i)
+    return;
+  if (bVerbose) {
     printf(" !!! RESIDUE ");
     Writeresidue(*resinfo);
     printf(" HAS%3ld INSTEAD OF EXPECTED ", resinfo->nsideatoms);
     printf("%3ld SIDECHAIN ATOMS.\n", i);
-    printf(
-      "     CALCULATED SOLVENT ACCESSIBILITY REFERS TO INCOMPLETE SIDECHAIN !!!\n\n");
+    printf("     LAST SIDECHAIN ATOM NAME IS ");
+    for (j = 0; j <= 3; j++)
+      putchar(LINK->sideatomnames[resinfo->nsideatoms - 1][j]);
+    printf("\n     CALCULATED SOLVENT ACCESSIBILITY INCLUDES EXTRA ATOMS !!!\n\n");
   }
-  if (i == -1 || resinfo->nsideatoms <= i)
-    return;
-  printf(" !!! RESIDUE ");
-  Writeresidue(*resinfo);
-  printf(" HAS%3ld INSTEAD OF EXPECTED ", resinfo->nsideatoms);
-  printf("%3ld SIDECHAIN ATOMS.\n", i);
-  printf("     LAST SIDECHAIN ATOM NAME IS ");
-  for (j = 0; j <= 3; j++)
-    putchar(LINK->sideatomnames[resinfo->nsideatoms - 1][j]);
-  printf("\n     CALCULATED SOLVENT ACCESSIBILITY INCLUDES EXTRA ATOMS !!!\n\n");
 }  /* Checksideatoms */
 
 /***/
@@ -2365,7 +2370,8 @@ struct LOC_Inputcoordinates *LINK;
   complete = !(LINK->nmissing || LINK->camissing || LINK->cmissing ||
 	       LINK->omissing);
   if (!complete &&
-      strncmp(LINK->reszero.aaident, LINK->resinfo.aaident, sizeof(char6))) {
+      strncmp(LINK->reszero.aaident, LINK->resinfo.aaident, sizeof(char6))
+      && bVerbose) {
     printf(" !!! BACKBONE INCOMPLETE FOR RESIDUE ");
     Writeresidue(LINK->resinfo);
     printf("\n     RESIDUE WILL BE IGNORED !!!\n\n");
@@ -2377,16 +2383,17 @@ struct LOC_Inputcoordinates *LINK;
     VecCopy(LINK->resinfo.h, LINK->resinfo.n);
     if (Nochainbreak(*LINK->lchain, *LINK->lchain)) {
       if (Distance(chain[*LINK->lchain].c, LINK->resinfo.n) > BREAKDIST)
-	  /* keep ! at LCHAIN */
-	  {  /* CS Oct 1987 */
-	printf(" !!! EXCESSIVE C TO N DISTANCE ");
-	printf("% .5E>% .5E\n",
-	       Distance(chain[*LINK->lchain].c, LINK->resinfo.n), BREAKDIST);
-	printf("     BEFORE RESIDUE ");
-	Writeresidue(LINK->resinfo);
-	printf(". CHAIN BREAK RESIDUE INSERTED !!!\n\n");
-	(*LINK->lchain)++;
-      }
+	/* keep ! at LCHAIN */
+	/* CS Oct 1987 */
+	if (bVerbose) {
+	  printf(" !!! EXCESSIVE C TO N DISTANCE ");
+	  printf("% .5E>% .5E\n",
+		 Distance(chain[*LINK->lchain].c, LINK->resinfo.n), BREAKDIST);
+	  printf("     BEFORE RESIDUE ");
+	  Writeresidue(LINK->resinfo);
+	  printf(". CHAIN BREAK RESIDUE INSERTED !!!\n\n");
+	  (*LINK->lchain)++;
+	}
     }
     if (Nochainbreak(*LINK->lchain, *LINK->lchain) && LINK->resinfo.aa != 'P') {
       LINK->dco = Distance(chain[*LINK->lchain].c, chain[*LINK->lchain].o);
@@ -2721,7 +2728,7 @@ long *lchain_;
 	}
 	Getresidue(cardinfo.UU.U5.atomname, cardinfo.UU.U5.coordinates, &V);
       }
-      if (cardinfo.UU.U5.residuename == '-') {
+      if ((cardinfo.UU.U5.residuename == '-') && bVerbose) {
 	printf(" !!! RESIDUE ");
 	for (i = 0; i <= 3; i++)
 	  putchar(cardinfo.UU.U5.aaname[i]);
@@ -2731,7 +2738,8 @@ long *lchain_;
 	printf("     RESIDUE WILL BE ");
 	printf("IGNORED !!!\n");
       }
-      if (cardinfo.UU.U5.altloc != 'A' && cardinfo.UU.U5.altloc != ' ') {
+      if ((cardinfo.UU.U5.altloc != 'A' && cardinfo.UU.U5.altloc != ' ') && 
+	  bVerbose) {
 	printf(" !!! IN RESIDUE");
 	for (i = 0; i <= 3; i++)
 	  printf(" %c", cardinfo.UU.U5.aaname[i]);
@@ -2761,31 +2769,33 @@ long *lchain_;
       break;
     }
   } while (!(V.corelimit || finish));
-  if (V.corelimit) {
+  if ((V.corelimit) && bVerbose) {
     printf(" !!! NUMBER OF ATOMS OR RESIDUES EXCEEDS ");
     printf("STORAGE CAPACITY !!!\n");
   }
   if (!Nochainbreak(*V.lchain, *V.lchain))
     (*V.lchain)--;
-  if (V.hatoms > 0) {
+  if ((V.hatoms > 0) && bVerbose) {
     printf(" !!! %12ld HYDROGEN OR DEUTERIUM ATOMS WERE IGNORED\n", V.hatoms);
     printf("     IN THE CALCULATION OF SIDE CHAIN SOLVENT \n");
     printf("     ACCESSIBILITY !!!\n");
   }
-  if (cardhist[0] < 1)
-    printf(" !!! HEADER-CARD MISSING !!!\n");
-  if (cardhist[(long)compndcard - (long)headercard] < 1)
-    printf(" !!! COMPOUND-CARD MISSING !!!\n");
-  if (cardhist[(long)sourcecard - (long)headercard] < 1)
-    printf(" !!! SOURCE-CARD MISSING !!!\n");
-  if (cardhist[(long)authorcard - (long)headercard] < 1)
-    printf(" !!! AUTHOR CARD MISSING !!!\n");
-  if (*V.lchain < 1) {
-    printf(" !!! NO RESIDUE WITH COMPLETE BACKBONE !!!\n");
-    longjmp(_JL99, 1);
+  if (bVerbose) {
+    if (cardhist[0] < 1)
+      printf(" !!! HEADER-CARD MISSING !!!\n");
+    if (cardhist[(long)compndcard - (long)headercard] < 1)
+      printf(" !!! COMPOUND-CARD MISSING !!!\n");
+    if (cardhist[(long)sourcecard - (long)headercard] < 1)
+      printf(" !!! SOURCE-CARD MISSING !!!\n");
+    if (cardhist[(long)authorcard - (long)headercard] < 1)
+      printf(" !!! AUTHOR CARD MISSING !!!\n");
+    if (*V.lchain < 1) {
+      printf(" !!! NO RESIDUE WITH COMPLETE BACKBONE !!!\n");
+      longjmp(_JL99, 1);
+    }
+    if (V.latom == 0)
+      printf(" !!! ALL SIDECHAIN COORDINATES MISSING !!!\n");
   }
-  if (V.latom == 0)
-    printf(" !!! ALL SIDECHAIN COORDINATES MISSING !!!\n");
 }  /* Inputcoordinates */
 
 #undef MAXSIDEATOMS
@@ -2862,14 +2872,15 @@ Static Void Flagssbonds()
 	if (jj > 0)
 	  ssbond = (Distance(sidechain[ii - 1], sidechain[jj - 1]) < SSDIST);
       } while (!(ssbond || j == lchain));
-      if (ssbond & (!Testssbond(i, j))) {
-	printf(" !!! ADDITIONAL SSBOND FOUND BETWEEN ");
-	printf("RESIDUES ");
-	Writeresidue(chain[i]);
-	printf(" AND ");
-	Writeresidue(chain[j]);
-	printf(" !!!\n\n");
-      }
+      if (ssbond & (!Testssbond(i, j))) 
+	if (bVerbose) {
+	  printf(" !!! ADDITIONAL SSBOND FOUND BETWEEN ");
+	  printf("RESIDUES ");
+	  Writeresidue(chain[i]);
+	  printf(" AND ");
+	  Writeresidue(chain[j]);
+	  printf(" !!!\n\n");
+	}
     }
   }
   if (nss > 0) {
@@ -2882,7 +2893,8 @@ Static Void Flagssbonds()
 	  if (chain[j].aa == 'C') {
 	    if (Testssbond(i, j)) {
 	      if (cc == 'z') {
-		printf(" !!! SS-BRIDGE LABEL RESTART AT a !!!\n");
+		if (bVerbose)
+		  printf(" !!! SS-BRIDGE LABEL RESTART AT a !!!\n");
 		cc = '`';
 	      }
 	      cc++;
@@ -2897,7 +2909,7 @@ Static Void Flagssbonds()
 		  jj = chain[j].atompointer + 2;
 		  ii = WITH->atompointer + 2;
 		  d = Distance(sidechain[ii - 1], sidechain[jj - 1]);
-		  if (d > SSDIST) {
+		  if ((d > SSDIST) && bVerbose) {
 		    printf(" !!! SSBOND DISTANCE IS%5.1f BETWEEN RESIDUES", d);
 		    Writeresidue(chain[i]);
 		    printf(" AND ");
@@ -2912,7 +2924,7 @@ Static Void Flagssbonds()
       }
     }
   }
-  if (nss != nssintra + nssinter)
+  if ((nss != nssintra + nssinter) && bVerbose)
     printf(" !!! ERROR IN SSBOND DATA RECORDS !!!\n");
 }  /* Flagssbonds */
 
@@ -2978,11 +2990,13 @@ long i, j;
     hbe = (long)floor(Q / dho - Q / dhc + Q / dnc - Q / dno + 0.5);
   if (hbe > HBLOW)
     return hbe;
-  printf(" !!! CONTACT BETWEEN RESIDUES ");
-  Writeresidue(chain[i]);
-  printf(" AND ");
-  Writeresidue(chain[j]);
-  printf("  TOO CLOSE !!!\n");
+  if (bVerbose) {
+    printf(" !!! CONTACT BETWEEN RESIDUES ");
+    Writeresidue(chain[i]);
+    printf(" AND ");
+    Writeresidue(chain[j]);
+    printf("  TOO CLOSE !!!\n");
+  }
   hbe = HBLOW;
   return hbe;
 }  /* Bondenergy */
@@ -3089,7 +3103,8 @@ bridgetyp b;
       } else {
 	k++;
 	if (k > MAXBRIDGE) {
-	  printf(" !!! BRIDGETABLE OVERFLOW !!!\n");
+	  if (bVerbose)
+	    printf(" !!! BRIDGETABLE OVERFLOW !!!\n");
 	  longjmp(_JL99, 1);
 	}
       }
@@ -3288,7 +3303,8 @@ Local Void Sheet()
   while (*V.ladderset != 0L) {
     ccs++;
     if (ccs > 'z') {
-      printf(" !!! SHEET LABEL RESTART AT A !!!\n");
+      if (bVerbose)
+	printf(" !!! SHEET LABEL RESTART AT A !!!\n");
       ccs = 'A';
     }
     Findsheet(&V);
@@ -3297,7 +3313,8 @@ Local Void Sheet()
       WITH = &bridgetable[i - 1];
       if (P_inset((int)i, V.sheetset) && WITH->from == 0) {
 	if (asci == 90) {
-	  printf(" !!! STRAND LABEL RESTART AT A !!!\n");
+	  if (bVerbose)
+	    printf(" !!! STRAND LABEL RESTART AT A !!!\n");
 	  asci = 64;
 	}
 	asci++;
@@ -3397,7 +3414,8 @@ Local Void Markstrands()
 		       P_addset(P_expset(SET2, 0L), ' '))) |
 	  (!P_setequal(jset[(long)betaj - (long)beta1],
 		       P_addset(P_expset(SET3, 0L), ' '))))
-	printf(" !!! STRAND COLUMN OVERWRITTEN !!!\n");
+	if (bVerbose)
+	  printf(" !!! STRAND COLUMN OVERWRITTEN !!!\n");
       do {
 	WITH = &bridgetable[j - 1];
 	FORLIM1 = WITH->ie;
@@ -3766,7 +3784,8 @@ struct LOC_Liste *LINK;
     return;
   LINK->LINK->nx++;
   if (LINK->LINK->nx > MAXPACK) {
-    printf(" !!! TABLE OVERFLOW IN FLAGACCESS !!!\n");
+    if (bVerbose)
+      printf(" !!! TABLE OVERFLOW IN FLAGACCESS !!!\n");
     longjmp(_JL99, 1);
     return;
   }
@@ -4137,12 +4156,14 @@ void printit()
   printf("             Not to be used for classified research.\n");
 }
 
-void dssp_main()
+void dssp_main(int bDoAcc, int bSetVerbose)
 {
   int tt; /*TIMELOCK*/
   PASCAL_MAIN(0,NULL);
   if (setjmp(_JL99))
     goto _L99;
+  
+  bVerbose=bSetVerbose;
 
   tt=time(0); /*TIMELOCK*/
   
@@ -4150,26 +4171,23 @@ void dssp_main()
   Inputcoordinates(&lchain);
   if (!Nochainbreak(1L, lchain))
     printf(" !!! POLYPEPTIDE CHAIN INTERRUPTED !!!\n");
-  printf("INPUTCOORDINATES DONE%12ld\n", lchain);
+/*   printf("INPUTCOORDINATES DONE%12ld\n", lchain); */
   Flagssbonds();
-  printf("FLAGSSBONDS DONE\n");
+/*   printf("FLAGSSBONDS DONE\n"); */
   Flagchirality();
-  printf("FLAGCHIRALITY DONE\n");
+/*   printf("FLAGCHIRALITY DONE\n"); */
   Flaghydrogenbonds();
-  printf("FLAGHYDROGENBONDS DONE\n");
+/*   printf("FLAGHYDROGENBONDS DONE\n"); */
   Flagbridge();
-  printf("FLAGBRIDGE DONE\n");
+/*   printf("FLAGBRIDGE DONE\n"); */
   Flagturn();
-  printf("FLAGTURN DONE\n");
-  if(noaccFlag==1)    {
-    printf("*ACCESSIBLE SURFACE *NOT* CALCULATED*\n");
-  }
-  else {
+/*   printf("FLAGTURN DONE\n"); */
+  if (bDoAcc) {
     Flagaccess();
-    printf("FLAGACCESS DONE\n");
+/*     printf("FLAGACCESS DONE\n"); */
   }
   Printout();
-  printf("PRINTOUT DONE\n");
+/*   printf("PRINTOUT DONE\n"); */
 _L99:
   /*fclose(tapein);
     fclose(tapeout);*/
