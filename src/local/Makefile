@@ -29,7 +29,7 @@ all:		bin
 
 david:		all	xmdrun	total	do_shift
 
-xmdrun:		xmdrun.o $(XOBJ) calcfdev.o
+xmdrun:		xmdrun.o $(XOBJ) #calcfdev.o
 		$(LD) -o $@ $^ $(RUNSYSLIBS)
 
 copyrgt:	copyrgt.o
@@ -46,7 +46,8 @@ total:		total.o
 		$(FLD) -o $@ $^ $(SYSLIBS)
 optwat:		optwat.o
 		$(LD) -o $@ $^ $(SYSLIBS) -lm
-
+sigeps:		sigeps.o
+		$(LD) -o $@ $^ $(SYSLIBS) -lm
 do_shift:	do_shift.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 testpt:		testpt.o ionize.o
@@ -61,6 +62,8 @@ mkice:		mkice.o
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 g_anavel:	g_anavel.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+eanal:	eanal.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 include	Make.dep
 endif
