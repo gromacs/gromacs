@@ -64,8 +64,8 @@ extern void calc_ener(FILE *fp,char *title,bool bHeader,
 		      int nmol,int natoms,
 		      real phi[],real charge[],t_block *excl);
 
-extern real calc_LRcorrections(FILE *fp,int start,int
-			       natoms,t_forcerec *fr,
+extern real calc_LRcorrections(FILE *fp,t_nsborder *nsb,
+			       t_commrec *cr,t_forcerec *fr,
 			       real charge[],t_block *excl,rvec x[],rvec f[],
 			       bool bOld,rvec box_size,matrix lrvir);
 /* Calculate the self energy and forces
