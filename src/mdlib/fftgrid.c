@@ -6,6 +6,7 @@
 #include "futil.h"
 #include "network.h"
 #include "fftgrid.h"
+#define FFT_WORKSPACE
 
 #ifdef USE_MPI
 static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
@@ -19,7 +20,8 @@ static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 }
 #endif
 
-t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz)
+t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
+		      bool bOptFFT)
 {
   int       flags;
   t_fftgrid *grid;
@@ -29,51 +31,79 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz)
   grid->ny   = ny;
   grid->nz   = nz;
   grid->nxyz = nx*ny*nz;
+#ifdef FFT_WORKSPACE
+  if(bParallel)
+    grid->la2r = (nz/2+1)*2;
+  else
+    grid->la2r = nz;
+#else
+  grid->la2r=(nz/2+1)*2;
+#endif
   
-  grid->la1  = ny;
-  grid->la2  = nz;
-  grid->nptr = nx*ny*nz;
-  grid->la12 = grid->la1*grid->la2;
+  grid->la2c = (nz/2+1);    
+  grid->la12r = ny*grid->la2r;
+  if(bParallel)
+    grid->la12c = nx*grid->la2c;
+  else
+    grid->la12c = ny*grid->la2c;
+  grid->nptr = nx*ny*grid->la2c*2;
   
   if (fp)
     fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
+
+  if(bOptFFT)
+      flags=FFTW_MEASURE;
+  else
+      flags=FFTW_ESTIMATE;
+
   if (bParallel) {
 #ifdef USE_MPI
-    flags        = 0;
     grid->plan_mpi_fw = 
-      fftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_FORWARD,flags);
+	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_REAL_TO_COMPLEX,flags);
     grid->plan_mpi_bw =
-      fftw3d_mpi_create_plan(MPI_COMM_WORLD,ny,nx,nz,FFTW_BACKWARD,flags);
-    fftwnd_mpi_local_sizes(grid->plan_mpi_fw,
-			   &(grid->pfft_fw.local_nx),
-			   &(grid->pfft_fw.local_x_start),
-			   &(grid->pfft_fw.local_ny_after_transpose),
-			   &(grid->pfft_fw.local_y_start_after_transpose),
-			   &(grid->pfft_fw.total_local_size));
-    fftwnd_mpi_local_sizes(grid->plan_mpi_bw,
-			   &(grid->pfft_bw.local_nx),
-			   &(grid->pfft_bw.local_x_start),
-			   &(grid->pfft_bw.local_ny_after_transpose),
-			   &(grid->pfft_bw.local_y_start_after_transpose),
-			   &(grid->pfft_bw.total_local_size));
+	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_COMPLEX_TO_REAL,flags);
+    
+    rfftwnd_mpi_local_sizes(grid->plan_mpi_fw,
+			   &(grid->pfft.local_nx),
+			   &(grid->pfft.local_x_start),
+			   &(grid->pfft.local_ny_after_transpose),
+			   &(grid->pfft.local_y_start_after_transpose),
+			   &(grid->pfft.total_local_size));
 #else
     fatal_error(0,"Parallel FFT supported with MPI only!");
 #endif
   }
   else {
-    flags = FFTW_IN_PLACE;
-    grid->plan_fw = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
-				       FFTW_FORWARD,flags);
-    grid->plan_bw = fftw3d_create_plan(grid->nx,grid->ny,grid->nz,
-				       FFTW_BACKWARD,flags);
+#ifdef FFT_WORKSPACE
+    flags|=FFTW_OUT_OF_PLACE; 
+#else
+    flags|=FFTW_IN_PLACE;
+#endif
+    grid->plan_fw = rfftw3d_create_plan(grid->nx,grid->ny,grid->nz,
+					FFTW_REAL_TO_COMPLEX,flags);
+    grid->plan_bw = rfftw3d_create_plan(grid->nx,grid->ny,grid->nz,
+					FFTW_COMPLEX_TO_REAL,flags);
   }
   snew(grid->ptr,grid->nptr);
+  grid->localptr=NULL;
 #ifdef USE_MPI
   if (bParallel && fp) {
-    print_parfft(fp,"Forward", &grid->pfft_fw);
-    print_parfft(fp,"Backward",&grid->pfft_bw);
-    assert(grid->pfft_fw.total_local_size == grid->pfft_bw.total_local_size);
+    print_parfft(fp,"Plan", &grid->pfft);
   }
+  if(bParallel) {
+      grid->localptr=grid->ptr+grid->la12r*grid->pfft.local_x_start;
+#ifdef FFT_WORKSPACE
+      snew(grid->workspace,grid->pfft.total_local_size);
+#endif
+  }
+#else
+#ifdef FFT_WORKSPACE
+   else
+     snew(grid->workspace,grid->nptr);
+#endif
+#endif
+#ifndef FFT_WORKSPACE
+  grid->workspace=NULL;
 #endif
   return grid;
 }
@@ -84,61 +114,87 @@ void done_fftgrid(t_fftgrid *grid)
     sfree(grid->ptr);
     grid->ptr = NULL;
   }
+  grid->localptr=NULL;
+ 
+  if (grid->workspace) {
+      sfree(grid->workspace);
+      grid->workspace=NULL;
+  }
 }
 
 
 void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir,t_commrec *cr)
 {
-  if (cr && PAR(cr)) {
+  if (cr && PAR(cr) && grid->localptr) {
 #ifdef USE_MPI
     if (dir == FFTW_FORWARD)
-      fftwnd_mpi(grid->plan_mpi_fw,1,(FFTW_COMPLEX *)grid->ptr,
-		 FFTW_TRANSPOSED_ORDER);
+      rfftwnd_mpi(grid->plan_mpi_fw,1,grid->localptr,
+		  grid->workspace,FFTW_TRANSPOSED_ORDER);
     else if (dir == FFTW_BACKWARD)
-      fftwnd_mpi(grid->plan_mpi_bw,1,(FFTW_COMPLEX *)grid->ptr,
-		 FFTW_TRANSPOSED_ORDER);
+      rfftwnd_mpi(grid->plan_mpi_bw,1,grid->localptr,
+		    grid->workspace,FFTW_TRANSPOSED_ORDER);
     else
       fatal_error(0,"Invalid direction for FFT: %d",dir);
 #endif
   }
   else {
+    t_fft_r *tmp;
+    
+#ifdef FFT_WORKSPACE
+    tmp=grid->workspace;
+#else
+    tmp=NULL;
+#endif
     if (dir == FFTW_FORWARD)
-      fftwnd(grid->plan_fw,1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
+	  rfftwnd_one_real_to_complex(grid->plan_fw,grid->ptr,
+				      (fftw_complex *)tmp);
     else if (dir == FFTW_BACKWARD)
-      fftwnd(grid->plan_bw,1,(FFTW_COMPLEX *)grid->ptr,1,0,NULL,0,0);
+	  rfftwnd_one_complex_to_real(grid->plan_bw,(fftw_complex *)grid->ptr,
+				      tmp);
     else
       fatal_error(0,"Invalid direction for FFT: %d",dir);
+#ifdef FFT_WORKSPACE
+      tmp=grid->ptr;
+      grid->ptr=grid->workspace;
+      grid->workspace=tmp;
+#endif
   }
 }
 
 void clear_fftgrid(t_fftgrid *grid)
 {
+    /* clears the whole grid */
   int      i,ngrid;
-  t_fft_tp *ptr;
+  t_fft_r *ptr;
   
   ngrid = grid->nptr;
   ptr   = grid->ptr;
   
   for (i=0; (i<ngrid); i++) {
-    ptr[i].re = ptr[i].im = 0;
+    ptr[i] = 0;
   }
 }
 
 void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
-		    int *la1,int *la2,int *la12,t_fft_tp **ptr)
+		    int *la2,int *la12,bool bReal,t_fft_r **ptr)
 {
   *nx  = grid->nx;
   *ny  = grid->ny;
   *nz  = grid->nz;
-  *la1 = grid->la1;
-  *la2 = grid->la2;
-  *la12= grid->la12;
+  if(bReal) {
+  *la2 = grid->la2r;
+  *la12= grid->la12r;
+  } else {
+  *la2 = grid->la2c;
+  *la12= grid->la12c;
+  }
   *ptr = grid->ptr;
 }
 
 void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
 		   rvec box,bool bReal)
 {
+    /*
 #define PDBTOL -1
   static char *pdbformat="%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
   FILE     *fp;
@@ -146,7 +202,7 @@ void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
   real     fac=50.0,value;
   rvec     boxfac;
   int      nx,ny,nz,la1,la2,la12;
-  t_fft_tp *ptr,g;
+  t_fft_r *ptr,g;
   
   if (pdb)
     fp = ffopen(pdb,"w");
@@ -185,7 +241,7 @@ void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
 	}
       }
   fflush(fp);
-#undef PDBTOL
+  #undef PDBTOL*/
 }
 
 /*****************************************************************
