@@ -698,7 +698,7 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
       printf(" 'q'               : save and quit.\n");
       printf("\n");
       printf(" Examples:\n");
-      printf(" > 2 | 4 & r 3 5\n");
+      printf(" > 2 | 4 & r 3-5\n");
       printf(" will select all atoms from group 2 and 4 which have residue numbers\n 3, 4 or 5\n");
       printf(" > a C* & !a C CA\n");
       printf(" will select all atoms starting with 'C' but not the atoms 'C' and 'CA'\n");  
