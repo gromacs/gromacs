@@ -39,7 +39,7 @@ EXTRA_libgmxXXX_SUFFIX_XXX_a_SOURCES = \
 	mpiio.c		libnet.c	x86_3dnow.asm	f77_wrappers.c  \
 	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
 	widget.c	widget.h	x86_cpuid.asm	axp_asm.S	\
-	x86_sse.asm
+	x86_sse.asm	innerc.c	innerf.f
 
 if USE_FORTRAN
 BUILT_SOURCES = innerf.f
@@ -72,15 +72,9 @@ libgmxXXX_SUFFIX_XXX_a_DEPENDENCIES = \
 # The inner loops
 innerf.f:	mkinl 
 		./mkinl	fortran	
+
 innerc.c:	mkinl
 		./mkinl c
-
-# The innerloop source files will be built in the object directory,
-# so we need special rules to find them there if we are using VPATH
-innerc.o:	innerc.c
-		$(COMPILE) -c -o $@ $<
-innerf.o:	innerf.f
-		$(F77) -c $(AM_FFLAGS) $(FFLAGS) -o $@ $<
 
 noinst_PROGRAMS  = mkinl
 
