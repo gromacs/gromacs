@@ -249,7 +249,7 @@ void put_in_list(FILE *log,t_iparams ip[],int atnr,int nWater,
     /* Create new i_atom for each energy group */
     for(gid=0; (gid<fr->nn); gid++) {
       new_i_nblist(log,&vdw[gid], F_LJ,  i_atom,bWater,shift);
-      new_i_nblist(log,&coul[gid],F_SR,  i_atom,FALSE, shift);
+      new_i_nblist(log,&coul[gid],F_SR,  i_atom,bWater,shift);
       new_i_nblist(log,&free[gid],F_DVDL,i_atom,bWater,shift);
     }
     

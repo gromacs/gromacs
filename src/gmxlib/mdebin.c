@@ -55,7 +55,7 @@ static int  f_nre=0;
 
 t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
 		      bool bLR,bool bLJLR,bool bBHAM,bool b14,bool bFEP,
-		      bool bPcoupl)
+		      bool bPcoupl,bool bDispCorr)
 {
   char *ener_nm[F_NRE];
   static char *vir_nm[] = {
@@ -106,7 +106,9 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
     else if ((i == F_SR) || (i == F_EPOT) || (i == F_ETOT) || (i == F_EKIN) ||
 	     (i == F_TEMP) || (i == F_PRES))
       bEner[i] = TRUE;
-    else 
+    else if ((i == F_DISPCORR) && bDispCorr)
+      bEner[i] = TRUE;
+    else
       bEner[i] = (idef->il[i].nr > 0);
     
     if (bEner[i]) {

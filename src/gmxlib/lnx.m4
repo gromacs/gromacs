@@ -1,12 +1,11 @@
 divert(-1)
 undefine(`len')
 #
-# FORTRAN function names are in upper case
+# append an underscore to FORTRAN function names
 #
-define(`FUNCTION',`translit($1,abcdefghijklmnopqrstuvwxyz,ABCDEFGHIJKLMNOPQRSTUVWXYZ)')
+define(`FUNCTION',`$1_')
 #
 # FORTRAN character strings are passed as follows:
-#   XXX is this right?
 # a pointer to the base of the string is passed in the normal
 # argument list, and the length is passed by value as an extra
 # argument, after all of the other arguments.

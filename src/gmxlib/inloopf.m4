@@ -379,65 +379,6 @@ C
 C****
 C      
 
-      subroutine FORWATER(i0,xw,fudge,pos,nj,type,jjnr,
-     &     charge,nbfp,faction,fw,Vc,Vnb)
-
-      integer*4 i0,nj,type(*),jjnr(*)
-      real      xw(9),fudge
-      real      pos(*),charge(*),nbfp(*)
-      real      faction(*),fw(*),Vc,Vnb
-     
-      real      qO,qH
-      
-      qO   = charge(i0+1)*fudge
-      qH   = charge(i0+2)*fudge
-      
-      call FORLJC(xw(1),xw(2),xw(3),qO,
-     $     pos,nj,type,jjnr,charge,nbfp,
-     $     faction,fw(1),
-     $     Vc,Vnb)
-
-      call FORCOUL(xw(4),xw(5),xw(6),qH,
-     $     pos,nj,jjnr,charge,
-     $     faction,fw(4),
-     $     Vc)
-     
-      call FORCOUL(xw(7),xw(8),xw(9),qH,
-     $     pos,nj,jjnr,charge,
-     $     faction,fw(7),
-     $     Vc)
-      
-      return
-      
-      end
-      
-      subroutine FORWCOUL(i0,xw,fudge,pos,nj,jjnr,
-     &     charge,faction,fw,Vc)
-      
-      integer*4 i0,nj,jjnr(*)
-      real      xw(9),fudge
-      real      pos(*),charge(*)
-      real      faction(*),fw(*),Vc
-      
-      integer*4 m,i3
-      real      qi
-      
-c
-c     Call the coulomb routine three times with the same neighbor list
-c      
-      do m=1,3
-         qi = charge(i0+m)*fudge
-         i3 = 3*m-2
-         call FORCOUL(xw(i3),xw(i3+1),xw(i3+2),qi,
-     $        pos,nj,jjnr,charge,
-     $        faction,fw(i3),
-     $        Vc)
-      end do
-      
-      return
-      
-      end
-      
       subroutine FORFREE(ix,iy,iz,inr,
      &     pos,nj,jjnr,typeA,typeB,fudge,chargeA,chargeB,
      &     nbfpA,nbfpB,faction,fip,Vc,Vnb,lambda,dvdlambda,
@@ -691,17 +632,17 @@ C     Total force
       end
 
       subroutine FORCOULTAB(ix,iy,iz,qi,
-     $     pos,nj,type,jjnr,charge,nbfp,
+     $     pos,nj,jjnr,charge,
      $     faction,fip,
-     $     Vc,Vnb,ntab,tabscale,
+     $     Vc,ntab,tabscale,
      $     VFtab)
       
       implicit none
       
       real      ix,iy,iz,qi
       real      pos(*),charge(*),faction(*),fip(3)
-      integer*4 nj,jjnr(*),type(*),ntab
-      real      Vc,Vnb,nbfp(*),tabscale
+      integer*4 nj,jjnr(*),ntab
+      real      Vc,tabscale
       real      VFtab(*)
       
       integer     k,jnr,j3
@@ -779,3 +720,121 @@ C     Total force
       return
       end
 
+      subroutine FORWATERTAB(i0,xw,fudge,pos,nj,type,jjnr,
+     &     charge,nbfp,faction,fw,Vc,Vnb,ntab,tabscale,VFtab)
+
+      integer*4 i0,nj,type(*),jjnr(*),ntab
+      real      xw(9),fudge,tabscal,VFtab(*)
+      real      pos(*),charge(*),nbfp(*)
+      real      faction(*),fw(*),Vc,Vnb
+     
+      real      qO,qH
+      
+      qO   = charge(i0+1)*fudge
+      qH   = charge(i0+2)*fudge
+      
+      call FORTAB(xw(1),xw(2),xw(3),qO,
+     $     pos,nj,type,jjnr,charge,nbfp,
+     $     faction,fw(1),
+     $     Vc,Vnb,ntab,tabscale,VFtab)
+
+      call FORCOULTAB(xw(4),xw(5),xw(6),qH,
+     $     pos,nj,jjnr,charge,
+     $     faction,fw(4),
+     $     Vc,ntab,tabscale,VFtab)
+     
+      call FORCOULTAB(xw(7),xw(8),xw(9),qH,
+     $     pos,nj,jjnr,charge,
+     $     faction,fw(7),
+     $     Vc,ntab,tabscale,VFtab)
+      
+      return
+      
+      end
+      
+      subroutine FORWCOULTAB(i0,xw,fudge,pos,nj,jjnr,
+     &     charge,faction,fw,Vc,ntab,tabscale,VFtab)
+
+      integer*4 i0,nj,jjnr(*),ntab
+      real      xw(9),fudge,tabscal,VFtab(*)
+      real      pos(*),charge(*)
+      real      faction(*),fw(*),Vc
+     
+      integer*4 m,i3
+      real      qi
+      
+c
+c     Call the coulomb routine three times with the same neighbor list
+c      
+      do m=1,3
+         qi = charge(i0+m)*fudge
+         i3 = 3*m-2
+         call FORCOULTAB(xw(i3),xw(i3+1),xw(i3+2),qi,
+     $        pos,nj,jjnr,charge,
+     $        faction,fw(i3),
+     $        Vc,ntab,tabscale,VFtab)
+      end do
+      
+      return
+      
+      end
+      
+      subroutine FORWATER(i0,xw,fudge,pos,nj,type,jjnr,
+     &     charge,nbfp,faction,fw,Vc,Vnb)
+
+      integer*4 i0,nj,type(*),jjnr(*)
+      real      xw(9),fudge
+      real      pos(*),charge(*),nbfp(*)
+      real      faction(*),fw(*),Vc,Vnb
+     
+      real      qO,qH
+      
+      qO   = charge(i0+1)*fudge
+      qH   = charge(i0+2)*fudge
+      
+      call FORLJC(xw(1),xw(2),xw(3),qO,
+     $     pos,nj,type,jjnr,charge,nbfp,
+     $     faction,fw(1),
+     $     Vc,Vnb)
+
+      call FORCOUL(xw(4),xw(5),xw(6),qH,
+     $     pos,nj,jjnr,charge,
+     $     faction,fw(4),
+     $     Vc)
+     
+      call FORCOUL(xw(7),xw(8),xw(9),qH,
+     $     pos,nj,jjnr,charge,
+     $     faction,fw(7),
+     $     Vc)
+      
+      return
+      
+      end
+      
+      subroutine FORWCOUL(i0,xw,fudge,pos,nj,jjnr,
+     &     charge,faction,fw,Vc)
+      
+      integer*4 i0,nj,jjnr(*)
+      real      xw(9),fudge
+      real      pos(*),charge(*)
+      real      faction(*),fw(*),Vc
+      
+      integer*4 m,i3
+      real      qi
+      
+c
+c     Call the coulomb routine three times with the same neighbor list
+c      
+      do m=1,3
+         qi = charge(i0+m)*fudge
+         i3 = 3*m-2
+         call FORCOUL(xw(i3),xw(i3+1),xw(i3+2),qi,
+     $        pos,nj,jjnr,charge,
+     $        faction,fw(i3),
+     $        Vc)
+      end do
+      
+      return
+      
+      end
+      

@@ -59,6 +59,20 @@ void f77water fw_args
 #endif
 }
 
+define(`fwtab_args',`(int  *i0,real xw[],real *eps,real pos[],int *nj,int type[],int jjnr[],real charge[],real nbfp[],real faction[],real fw[],real *egcoul,real *egnb,int *ntab,real *tabscale,real VFtab[])')
+
+extern void FUNCTION(forwatertab) fwtab_args;
+
+void f77watertab fwtab_args
+{
+#ifdef USEF77
+  FUNCTION(forwatertab)(i0,xw,eps,pos,nj,type,jjnr,charge,nbfp,faction,fw,
+		     egcoul,egnb,ntab,tabscale,VFtab);
+#else
+  fatal_error(0,"f77watertab called (Fortran routine from %s %d)",__FILE__,__LINE__);
+#endif
+}
+
 define(`fwc_args',`(int *i0,real xw[],real *eps,
 	      real pos[],int *nj,int jjnr[],
 	      real charge[],real faction[],real fw[],
@@ -72,6 +86,20 @@ void f77wcoul fwc_args
   FUNCTION(forwcoul)(i0,xw,eps,pos,nj,jjnr,charge,faction,fw,egcoul);
 #else
   fatal_error(0,"f77wcoul called (Fortran routine from %s %d)",__FILE__,__LINE__);
+#endif
+}
+
+define(`fwcoultab_args',`(int  *i0,real xw[],real *eps,real pos[],int *nj,int jjnr[],real charge[],real faction[],real fw[],real *egcoul,int *ntab,real *tabscale,real VFtab[])')
+
+extern void FUNCTION(forwcoultab) fwcoultab_args;
+
+void f77wcoultab fwcoultab_args
+{
+#ifdef USEF77
+  FUNCTION(forwcoultab)(i0,xw,eps,pos,nj,jjnr,charge,faction,fw,
+		     egcoul,ntab,tabscale,VFtab);
+#else
+  fatal_error(0,"f77wcoultab called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif
 }
 
@@ -105,15 +133,15 @@ void f77tab ft_args
 #endif
 }
 
-define(`fct_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,int type[],t_nl_j jjnr[],real charge[],real nbfp[],real faction[],real fip[],real *Vc,real *Vnb,int  *ntab,real *tabscale,real VFtab[])')
+define(`fct_args',`(real *ix,real *iy,real *iz,real *qi,real pos[],int *nj,t_nl_j jjnr[],real charge[],real faction[],real fip[],real *Vc,int  *ntab,real *tabscale,real VFtab[])')
 
 extern void FUNCTION(forcoultab) fct_args;
 
 void f77coultab fct_args
 {
 #ifdef USEF77
-  FUNCTION(forcoultab)(ix,iy,iz,qi,pos,nj,type,jjnr,charge,nbfp,
-		       faction,fip,Vc,Vnb,ntab,tabscale,VFtab);
+  FUNCTION(forcoultab)(ix,iy,iz,qi,pos,nj,jjnr,charge,
+		       faction,fip,Vc,ntab,tabscale,VFtab);
 #else
   fatal_error(0,"f77coultab called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif

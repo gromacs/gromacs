@@ -289,11 +289,8 @@ void init_forcerec(FILE *log,
   fr->rcoulomb        = ir->rcoulomb;
   
   /* Must really support table functions with solvent_opt */
-  if (fr->eeltype == eelCUT)
-    fr->nWater     = ir->solvent_opt;
-  else 
-    fr->nWater     = -1;
-  
+  fr->nWater     = ir->solvent_opt;
+
   /* Parameters for generalized RF */
   fr->zsquare = 0.0;
   fr->temp    = 0.0;

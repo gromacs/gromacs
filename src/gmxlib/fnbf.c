@@ -52,6 +52,7 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	     real egnb[],real egcoul[],rvec box_size,
 	     t_nrnb *nrnb,real lambda,real *dvdlambda,bool bLR)
 {
+  static bool bFirst = TRUE;
   int      i,itpA,itpB,gid,m,nj,inr,iinr,nri,k;
   rvec     r_i,f_ip,fw[3],xw[3];
   real     qi=0,Vnb,Vc,eps;
@@ -62,7 +63,7 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
   real     *chargeA,*chargeB;
   rvec     *svec,*fshift;
   int      nr_ljc,nr_qq,nr_bham,nr_fsum,nr_free;
-  bool     bWater,bTab;
+  bool     bWater,bTab,bWaterTab;
   
   typeA   = mdatoms->typeA;
   chargeA = mdatoms->chargeA;
@@ -86,6 +87,17 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
   default:
     nlist = bLR ? fr->vdw_lr  : fr->vdw;
   }
+
+  /* Some macros for "easy" calling of C and Fortran equivalent routines
+   * without copying the argument list
+   */
+#ifdef USEF77
+#define SCAL(x) &x
+#define FUNC(x) f77##x
+#else
+#define SCAL(x) x
+#define FUNC(x) c_##x
+#endif
   
   for(gid=0; (gid<fr->nn); gid++) {
     if (fr->bMask[gid]) {
@@ -102,8 +114,11 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	itpA     = typeA[inr];
 	bWater   = nl_i[i].bWater;
 	
-	if (bWater && bTab)
-	  fatal_error(0,"Can't have water loop with tables\n");
+	bWaterTab = bWater && bTab;
+	if (bFirst && bWaterTab) {
+	  fprintf(log,"Using water table routines\n");
+	  bFirst = FALSE;
+	}
 	
 	if (bWater) {
 	  for(m=0; (m<3); m++) {
@@ -119,57 +134,38 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	
 	switch (ftype) {
 	case F_SR:
-#ifdef USEF77
 	  if (bTab)
-	    f77coultab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		       x[0],&nj,typeA,nl_j,
-		       chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		       &fr->ntab,&fr->tabscale,fr->VFtab);
+	    FUNC(coultab)(SCAL(r_i[XX]),SCAL(r_i[YY]),SCAL(r_i[ZZ]),SCAL(qi),
+			  x[0],SCAL(nj),nl_j,chargeA,f[0],f_ip,&Vc,
+			  SCAL(fr->ntab),SCAL(fr->tabscale),fr->VFtab);
+	  else if (bWater)
+	    FUNC(wcoul)(SCAL(inr),xw[0],SCAL(eps),x[0],SCAL(nj),nl_j,
+			chargeA,f[0],fw[0],&Vc);
 	  else 
-	    f77coul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		    x[0],&nj,nl_j,
-		  chargeA,f[0],f_ip,&Vc);
-#else
-	  if (bTab) 
-	    c_coultab(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		      x[0],nj,typeA,nl_j,
-		      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		      fr->ntab,fr->tabscale,fr->VFtab);
-	  else
-	    c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		   x[0],nj,nl_j,chargeA,f[0],f_ip,&Vc);
-#endif
+	    FUNC(coul)(SCAL(r_i[XX]),SCAL(r_i[YY]),SCAL(r_i[ZZ]),SCAL(qi),
+		       x[0],SCAL(nj),nl_j,chargeA,f[0],f_ip,&Vc);
+	  
 	  nr_qq+=nj;
 	  break;
 	  
 	case F_LJ:
-#ifdef USEF77
-	  if (bTab) 
-	    f77tab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		   x[0],&nj,typeA,nl_j,
-		   chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		   &fr->ntab,&fr->tabscale,fr->VFtab);
+	  if (bWaterTab) 
+	    FUNC(watertab)(SCAL(inr),xw[0],SCAL(eps),x[0],SCAL(nj),typeA,nl_j,
+			   chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb,
+			   SCAL(fr->ntab),SCAL(fr->tabscale),fr->VFtab);
+	  else if (bTab)
+	    FUNC(tab)(SCAL(r_i[XX]),SCAL(r_i[YY]),SCAL(r_i[ZZ]),SCAL(qi),
+		      x[0],SCAL(nj),typeA,nl_j,
+		      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		      SCAL(fr->ntab),SCAL(fr->tabscale),fr->VFtab);
 	  else if (bWater)
-	    f77water(&inr,xw[0],&eps,x[0],&nj,typeA,nl_j,
-		     chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
+	    FUNC(water)(SCAL(inr),xw[0],SCAL(eps),x[0],SCAL(nj),typeA,nl_j,
+			chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
 	  else
-	    f77ljc(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		   x[0],&nj,typeA,nl_j,
-		   chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#else
-	  if (bTab)
-	    c_tab(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		  x[0],nj,typeA,nl_j,
-		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		  fr->ntab,fr->tabscale,fr->VFtab);
-	  else if (bWater)
-	    c_water(inr,xw[0],eps,x[0],nj,typeA,nl_j,
-		    chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
-	  else
-	    c_ljc(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		  x[0],nj,typeA,nl_j,
-		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#endif
+	    FUNC(ljc)(SCAL(r_i[XX]),SCAL(r_i[YY]),SCAL(r_i[ZZ]),SCAL(qi),
+		      x[0],SCAL(nj),typeA,nl_j,
+		      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+	
 	  nr_ljc+=nj;
 	  if (bWater)
 	    nr_qq+=2*nj;
@@ -181,44 +177,26 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 		      x[0],nj,typeA,nl_j,
 		      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
 		      fr->ntab,fr->tabscale,fr->tabscale_exp,fr->VFtab);
-	  else {
-#ifdef USEF77
-	    f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,x[0],&nj,typeA,nl_j,
-		    chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#else
-	    c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,x[0],nj,typeA,nl_j,
-		   chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#endif
-	  }
+	  else 
+	    FUNC(bham)(SCAL(r_i[XX]),SCAL(r_i[YY]),SCAL(r_i[ZZ]),SCAL(qi),
+		       x[0],SCAL(nj),typeA,nl_j,
+		       chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+	  
 	  nr_bham+=nj;
 	  break;
 	  
 	case F_DVDL:
-	  if (bWater) {
-	    /* Call the free enrgy routine three times with different
-	     * particles (OW, HW1, HW2)
-	     */
-	    for(m=0; (m<3); m++) {
-	      iinr = inr+m;
-	      c_free(xw[m][XX],xw[m][YY],xw[m][ZZ],iinr,
-		     x[0],nj,nl_j,typeA,typeB,eps,
-		     chargeA,chargeB,
-		     fr->nbfp[typeA[iinr]],fr->nbfp[typeB[iinr]],
-		     f[0],fw[m],&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
-		     fr->tabscale,fr->VFtab);
-	      nr_free+=nj;
-	    }
-	  }
-	  else {
-	    itpB     = typeB[inr];
-	    c_free(r_i[XX],r_i[YY],r_i[ZZ],inr,
-		   x[0],nj,nl_j,typeA,typeB,eps,
-		   chargeA,chargeB,
-		   fr->nbfp[itpA],fr->nbfp[itpB],
-		   f[0],f_ip,&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
-		   fr->tabscale,fr->VFtab);
-	    nr_free+=nj;
-	  }
+	  if (bWater) 
+	    fatal_error(0,"Free energy routines called with water flag.");
+	  itpB = typeB[inr];
+	  
+	  c_free(r_i[XX],r_i[YY],r_i[ZZ],inr,
+		 x[0],nj,nl_j,typeA,typeB,eps,
+		 chargeA,chargeB,
+		 fr->nbfp[itpA],fr->nbfp[itpB],
+		 f[0],f_ip,&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
+		 fr->tabscale,fr->VFtab);
+	  nr_free+=nj;
 	  break;
 	  
 	default:
@@ -254,171 +232,7 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
   }
   inc_nrnb(nrnb,eNR_FSUM,nr_fsum);
   inc_nrnb(nrnb,eNR_FREE,nr_free);
+#undef ARG
+#undef FUNC
 }
 
-void fdo_flr(FILE *log,int nri,atom_id i_atoms[],int shift,
-	     int njcg,atom_id jcg[],atom_id index[],atom_id acg[],
-	     rvec x[],real egcoul[],real eglj[],t_mdatoms *md,int ngener,
-	     t_forcerec *fr, bool bOnlyCoulomb)
-{
-#define LR_INC 1024
-  static   t_nl_j   **nlj=NULL;
-  static   int      *nj,*maxnj;
-  atom_id  ip,jp;
-  int      i,j,k,k0,k1,m;
-  rvec     f_ip,r_i,fw[3],xw[3];
-  real     qi,eps;
-  int      igid,jgid,gid,usegid;
-  rvec     *fshift,*flr,*sv;
-  ushort   *cENER;
-  int      *type;
-  real     Vc,Vlj,tx,ty,tz;
-  real     *charge;
-  
-  /* Copy some pointers... */
-  fshift = fr->fshift_lr;
-  flr    = fr->flr;
-  sv     = fr->shift_vec;
-  cENER  = md->cENER;
-  type   = md->typeA;
-  charge = md->chargeA;
-  
-  if (nlj == NULL) {
-    /* Allocate memory for long range */
-    snew(nlj,fr->nn);
-    snew(nj,fr->nn);
-    snew(maxnj,fr->nn);
-  }
-  else {
-    for(j=0; (j<fr->nn); j++)
-      nj[j]=0;
-  }
-
-  /* Dielectric constant */
-  eps  = ONE_4PI_EPS0/sqrt(fr->epsilon_r);
-    
-  /* Fill the buffer with atoms & group numbers */
-  ip   = i_atoms[0];
-  igid = cENER[ip];
-  
-  for(j=0; (j<njcg); j++) {
-    k0=index[jcg[j]];
-    k1=index[jcg[j]+1];
-    for(k=k0; (k<k1); k++) {
-      jp           = acg[k];
-      jgid         = cENER[jp];
-      gid          = GID(igid,jgid,ngener);
-      
-      if (maxnj[gid] <= nj[gid]) {
-	maxnj[gid] += LR_INC;
-	fprintf(log,"Increasing buffer size for LR[%d] to %d\n",
-		gid,maxnj[gid]);
-	srenew(nlj[gid],maxnj[gid]);
-      }
-      
-      nlj[gid][nj[gid]++] = jp;
-    }
-  }
-
-  for (gid=0; (gid<fr->nn); gid++) {
-    Vc     = 0;
-    Vlj    = 0;
-    usegid = gid;
-    
-    if ((type[ip] == fr->nWater) && (nri == 3)) {
-      /* Add shift vector to x[ip] to get proper image */
-      for(m=0; (m<3); m++)
-	rvec_add(x[i_atoms[m]],sv[shift],xw[m]);
-
-      if (bOnlyCoulomb) {
-#ifdef USEF77
-	int iaa;
-	iaa = i_atoms[0];
-	f77wcoul(&iaa,xw[0],&eps,x[0],&nj[gid],nlj[gid],
-		 charge,flr[0],fw[0],&Vc);
-#else
-        c_wcoul(i_atoms[0],xw[0],eps,x[0],nj[gid],nlj[gid],
-		charge,flr[0],fw[0],&Vc);
-#endif
-      } else {
-#ifdef USEF77
-	int iaa;
-        iaa = i_atoms[0];
-	f77water(&iaa,xw[0],&eps,x[0],&nj[gid],type,nlj[gid],
-		 charge,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
-#else
-        c_water(i_atoms[0],xw[0],eps,x[0],nj[gid],type,nlj[gid],
-		charge,fr->nbfp[i_atoms[0]],flr[0],fw[0],&Vc,&Vlj);
-#endif
-      }
-
-      /* Update force for ip particle and corresponding shift */
-      for(j=0; (j<3); j++) {
-	ip=i_atoms[j];
-	
-	tx = fw[j][XX];
-	ty = fw[j][YY];
-	tz = fw[j][ZZ];
-	
-	fshift[shift][XX] += tx;
-	flr[ip][XX]       += tx;
-	fshift[shift][YY] += ty;
-	flr[ip][YY]       += ty;
-	fshift[shift][ZZ] += tz;
-	flr[ip][ZZ]       += tz;
-      }
-    }
-    else { 
-      for(i=0; (i<nri); i++) {
-	ip = i_atoms[i];
-	qi = charge[ip]*eps;
-	
-	/* Add shift vector to x[ip] to get proper image */
-	rvec_add(x[ip],sv[shift],r_i);
-	
-	if (igid != cENER[ip]) {
-	  /* We have multiple energy groups within charge group i.
-	   * However, since we have sorted the neighbourlists according
-	   * to energy group, we just have to recalculate the entry
-	   * in the energy array where this energy contribution is
-	   * going to go.
-	   */
-	  usegid = GID(igid,cENER[nlj[gid][0]],ngener);
-	}
-	/* Reset force vector for particle ip */
-	clear_rvec(f_ip);
-
-	if (bOnlyCoulomb)
-#ifdef USEF77
-	  f77coul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		  x[0],&nj[gid],nlj[gid],
-		  charge,flr[0],f_ip,&Vc);
-#else
-	  c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		 x[0],nj[gid],nlj[gid],
-		 charge,flr[0],f_ip,&Vc);
-#endif
-	else
-#ifdef USEF77
-	  f77ljc(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		 x[0],&nj[gid],type,nlj[gid],
-		 charge,fr->nbfp[type[ip]],flr[0],f_ip,&Vc,&Vlj);
-#else
-	  c_ljc(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		x[0],nj[gid],type,nlj[gid],
-		charge,fr->nbfp[type[ip]],flr[0],f_ip,&Vc,&Vlj);
-#endif
-	/* Update force for ip particle and corresponding shift */
-	for(m=0; (m<DIM); m++) {
-	  tx = f_ip[m];
-	  fshift[shift][m] += tx;
-	  flr[ip][m]       += tx;
-	}
-      }
-    }
-    egcoul[usegid] += Vc;
-    eglj[usegid]   += Vlj;
-  }
-  for(j=0; (j<fr->nn); j++)
-    fr->nlr+=nri*nj[j];
-}

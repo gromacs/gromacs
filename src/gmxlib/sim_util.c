@@ -414,7 +414,8 @@ void calc_dispcorr(FILE *log,bool bDispCorr,t_forcerec *fr,int natoms,
       virial[m][m]  += svir;
     }
     if (bFirst) {
-      fprintf(log,"Long Range LJ corrections: Epot=%10g, Pres=%10g, Vir=%10g\n",
+      fprintf(log,
+	      "Long Range LJ corrections: Epot=%10g, Pres=%10g, Vir=%10g\n",
 	      ener[F_DISPCORR],spres,svir);
       bFirst = FALSE;
     }

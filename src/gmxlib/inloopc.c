@@ -227,11 +227,11 @@ void c_bham(real ix,real iy,real iz,real qi,
   *Vnb    += vnbtot;
 }
 
-void c_water(int i0,real xw[],real fudge,
-	     real pos[],int nj,int type[],t_nl_j jjnr[],
-	     real charge[],real nbfp[],
-	     real faction[],real fw[],
-	     real *Vc,real *Vnb)
+void c_water2(int i0,real xw[],real fudge,
+	      real pos[],int nj,int type[],t_nl_j jjnr[],
+	      real charge[],real nbfp[],
+	      real faction[],real fw[],
+	      real *Vc,real *Vnb)
 {      
   const  real twelve=12.0;
   const  real six=6.0;
@@ -374,10 +374,10 @@ void c_water(int i0,real xw[],real fudge,
   *Vnb    += vnbtot;
 }
 
-void c_wcoul(int i0,real xw[],real fudge,
-	     real pos[],int nj,t_nl_j jjnr[],
-	     real charge[],real faction[],real fw[],
-	     real *Vc)
+void c_wcoul2(int i0,real xw[],real fudge,
+	      real pos[],int nj,t_nl_j jjnr[],
+	      real charge[],real faction[],real fw[],
+	      real *Vc)
 {      
   int    k,jnr,j3;
   real   fxJ,fyJ,fzJ;
@@ -872,9 +872,9 @@ void c_bhamtab(real ix,real iy,real iz,real qi,
 }
 
 void c_coultab(real ix,real iy,real iz,real qi,
-	       real pos[],int nj,int type[],int jjnr[],real charge[],
-	       real nbfp[],real faction[],real fip[],
-	       real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[])
+	       real pos[],int nj,int jjnr[],real charge[],
+	       real faction[],real fip[],
+	       real *Vc,int ntab,real tabscale,real VFtab[])
 {
   int       k,jnr,j3;
   real      fX,fY,fZ;
@@ -882,7 +882,7 @@ void c_coultab(real ix,real iy,real iz,real qi,
   real      vijcoul,fijC,fijscal;
   real      fjx,fjy,fjz;
   real      tx,ty,tz;
-  real      vctot,vnbtot;
+  real      vctot;
   real      qq,rsq;
   real      r1,r1t,h_1;
   real      eps,eps2,Y,F,Fp,Geps,Heps2,two=2.0,VV,FF;
@@ -892,7 +892,6 @@ void c_coultab(real ix,real iy,real iz,real qi,
   fY     = 0;
   fZ     = 0;
   vctot  = 0;
-  vnbtot = 0;
   h_1    = tabscale;
   
   /*
@@ -971,8 +970,6 @@ void c_coultab(real ix,real iy,real iz,real qi,
   fip[YY] = fY;
   fip[ZZ] = fZ;
   *Vc   += vctot;
-  *Vnb  += vnbtot;
-
 }
 
 void c_free(real ix,real iy,real iz,int inr,
@@ -1110,6 +1107,60 @@ void c_free(real ix,real iy,real iz,int inr,
     fprintf(stdlog,"fip[X]: %10g, fip[Y]: %10g, fip[Z]: %10g, Vc: %10g, Vnb: %10g\n",
 	    fip[XX],fip[YY],fip[ZZ],vctot,vnbtot);
     bFirst=FALSE;
+  }
+}
+
+void c_water(int i0,real xw[],real fudge,
+	     real pos[],int nj,int type[],t_nl_j jjnr[],
+	     real charge[],real nbfp[],
+	     real faction[],real fw[],
+	     real *Vc,real *Vnb)
+{
+  c_ljc(xw[0],xw[1],xw[2],charge[i0]*fudge,pos,nj,type,jjnr,charge,nbfp,
+	faction,fw,Vc,Vnb);
+  c_coul(xw[3],xw[4],xw[5],charge[i0+1]*fudge,pos,nj,jjnr,charge,
+	 faction,fw+3,Vc);
+  c_coul(xw[6],xw[7],xw[8],charge[i0+2]*fudge,pos,nj,jjnr,charge,
+	 faction,fw+6,Vc);
+}
+
+void c_wcoul(int i0,real xw[],real fudge,real pos[],int nj,t_nl_j jjnr[],
+	     real charge[],real faction[],real fw[],real *Vc)
+{
+  int m,m3;
+  
+  for(m=0; (m<3); m++) {
+    m3=3*m;
+    c_coul(xw[m3],xw[m3+1],xw[m3+2],charge[i0+m]*fudge,pos,nj,jjnr,charge,
+	   faction,fw+m3,Vc);
+  }
+}
+
+void c_watertab(int i0,real xw[],real fudge,
+		real pos[],int nj,int type[],t_nl_j jjnr[],
+		real charge[],real nbfp[],
+		real faction[],real fw[],
+		real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[])
+{
+  c_tab(xw[0],xw[1],xw[2],charge[i0]*fudge,pos,nj,type,jjnr,charge,nbfp,
+	faction,fw,Vc,Vnb,ntab,tabscale,VFtab);
+  c_coultab(xw[3],xw[4],xw[5],charge[i0+1]*fudge,pos,nj,jjnr,charge,
+	    faction,fw+3,Vc,ntab,tabscale,VFtab);
+  c_coultab(xw[6],xw[7],xw[8],charge[i0+2]*fudge,pos,nj,jjnr,charge,
+	    faction,fw+6,Vc,ntab,tabscale,VFtab);
+}
+
+void c_wcoultab(int i0,real xw[],real fudge,
+		real pos[],int nj,t_nl_j jjnr[],
+		real charge[],real faction[],real fw[],
+		real *Vc,int ntab,real tabscale,real VFtab[])
+{
+  int m,m3;
+  
+  for(m=0; (m<3); m++) {
+    m3 = 3*m;
+    c_coultab(xw[m3],xw[m3+1],xw[m3+2],charge[i0+m]*fudge,pos,nj,jjnr,charge,
+	      faction,fw+m3,Vc,ntab,tabscale,VFtab);
   }
 }
 

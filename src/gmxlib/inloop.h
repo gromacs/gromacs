@@ -64,11 +64,10 @@ extern void c_water(int  i0,real xw[],real eps,
 		    real *Vc,real *Vnb);
 /* Water loop */
 
-extern void c_wcoul(int i0,real xw[],real eps,
+extern void c_wcoul(int  i0,real xw[],real eps,
 		    real pos[],int nj,t_nl_j jjnr[],
-		    real charge[],real faction[],real fw[],
-		    real *Vc);
-/* Water loop with only coulomb (for long range) */
+		    real charge[],real faction[],real fw[],real *Vc);
+/* Water loop including only coulomb */
 
 extern void c_ljcfree(real ix,real iy,real iz,int inr,
 		      real pos[],int nj,t_nl_j jjnr[],
@@ -113,12 +112,24 @@ extern void c_bhamtab(real ix,real iy,real iz,real qi,
 		      real tabscale,real tabscale_bham,real VFtab[]);
 
 extern void c_coultab(real ix,real iy,real iz,real qi,
-		      real pos[],int nj,int type[],int jjnr[],real charge[],
-		      real nbfp[],real faction[],real fip[],
-		      real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[]);
+		      real pos[],int nj,int jjnr[],real charge[],
+		      real faction[],real fip[],
+		      real *Vc,int ntab,real tabscale,real VFtab[]);
 /* These two routines calculate force based on tables.
  * The first does both LJ and Coulomn, while the second only does coulomb.
  * More info in inloopc.c
  */
- 
+extern void c_watertab(int i0,real xw[],real fudge,
+		       real pos[],int nj,int type[],t_nl_j jjnr[],
+		       real charge[],real nbfp[],
+		       real faction[],real fw[],
+		       real *Vc,real *Vnb,int ntab,real tabscale,real VFtab[]);
+/* Water loop including tables */
+
+void c_wcoultab(int i0,real xw[],real fudge,
+		real pos[],int nj,t_nl_j jjnr[],
+		real charge[],real faction[],real fw[],
+		real *Vc,int ntab,real tabscale,real VFtab[]);
+/*  Water loop including only coulomb, but with a table function */
+
 #endif /* _in_loop_h_ */

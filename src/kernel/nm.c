@@ -101,14 +101,15 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fp_ene=-1;
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,
-		     bBHAM,b14,parm->ir.bPert,parm->ir.epc); 
+		     bBHAM,b14,parm->ir.bPert,parm->ir.epc,
+		     parm->ir.bDispCorr);
 
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,0,top->atoms.nr,
                vold,v,vt,&(parm->ir.opts),
                mdatoms,grps,&mynrnb,
 	       lambda,&ener[F_DVDL]);
-               
+  
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,lam0,0,

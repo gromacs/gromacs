@@ -80,8 +80,7 @@ void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot)
 void set_pot_bools(t_inputrec *ir,t_topology *top,
 		   bool *bLR,bool *bLJLR,bool *bBHAM,bool *b14)
 {
-  *bLR   = ((ir->coulombtype==eelCUT && ir->rcoulomb > ir->rlist) ||
-	      (ir->coulombtype==eelPPPM) || (ir->coulombtype==eelPOISSON)); 
+  *bLR   = (ir->rcoulomb > ir->rlist) || EEL_LR(ir->coulombtype);
   *bLJLR = (ir->rvdw > ir->rlist);
   *bBHAM = (top->idef.functype[0]==F_BHAM);
   *b14   = (top->idef.il[F_LJ14].nr > 0);
@@ -193,9 +192,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   
   /* Periodicity stuff */  
   graph=mk_graph(&(top->idef),top->atoms.nr,FALSE);
-#ifdef DEBUG
-  p_graph(stdlog,"graph",graph);
-#endif
+  if (debug)
+    p_graph(debug,"Initial graph",graph);
   
   /* Distance Restraints */
   init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir));
@@ -316,7 +314,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   if (MASTER(cr)) {
     *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
     *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
-			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc);
+			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
+			  ir->bDispCorr);
   }
   else {
     *fp_ene = -1;
