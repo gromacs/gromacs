@@ -483,6 +483,9 @@ static char **read_topol(char        *infile,
     sfree(pline);
     pline=NULL;
   }
+  /* this is not very clean, but fixes core dump on empty system name */
+  if(!title)
+    title=put_symtab(symtab,"");
   if (fabs(qt) > 1e-5) {
     sprintf(errbuf,"System has non-zero total charge: %e\n",qt);
     warning(errbuf);
