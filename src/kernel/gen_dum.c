@@ -570,7 +570,7 @@ void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult)
 void clean_dum_angles(t_params *psa, int natom, 
 		      t_params *plist, int dummy_type[])
 {
-  int      ftype,i,j,parnr,k,l,m,n,ndum,kept_i,dumnral=0,dumtype;
+  int      ftype,i,j,parnr,k,l,m,n,ndum,kept_i,dumnral,dumtype;
   atom_id  atom,constr,at1,at2;
   atom_id  dumatoms[MAXATOMLIST];
   bool     bKeep,bUsed,bPresent,bAll3FAD,bFirstTwo;
@@ -586,6 +586,7 @@ void clean_dum_angles(t_params *psa, int natom,
 	pindex[k].parnr=parnr;
       }
   
+  dumnral=0;
   kept_i=0;
   for(i=0; (i<psa->nr); i++) { /* for all angles in the plist */
     bKeep=FALSE;
