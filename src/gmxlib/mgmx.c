@@ -145,6 +145,92 @@ static void mk_editor(int parent,int top,int left,int right,
 				      get_widget(parent),args,narg),desc);
 }
 
+char **mk_but_array(char *val,int *n)
+{
+  int  i,j,nn;
+  char **but=NULL;
+  char buf[256];
+  bool bCp;
+  
+  nn  = 0;
+  j   = 0;
+  bCp = FALSE;
+  for(i=0; (val[i] != '\0'); i++) {
+    if (!isspace(val[i])) {
+      if (!bCp) {
+	/* New string */
+	bCp = TRUE;
+	j   = 0;
+      }
+      buf[j++] = val[i];
+    }
+    else if (bCp) {
+      bCp = FALSE;
+      buf[j++] = '\0';
+    }
+    srenew(but,nn+1);
+    but[nn] = strdup(buf);
+    nn++;
+  }
+  if (debug) {
+    fprintf(debug,"Found %d elements in '%s'\n",nn,val);
+    for(i=0; (i<nn); i++)
+      fprintf(debug,"Elem[%5d] = %s\n",i,but[i]);
+  }
+  *n = nn;
+  return but;
+}
+
+static void mk_enumerated(int parent,int top,int left,int right,
+			  int *wlabel,int *wtextf,
+			  char *label,char *initial_value,char *desc)
+{
+  int  narg,lab_right,but_left,nbut,i;
+  char **but;
+  
+  /* Create & Position the label */
+  lab_right = left + 0.3*(right-left);
+  but_left  = lab_right + 2;
+  narg = 0;
+  XtSetArg(args[narg],XmNleftAttachment,    XmATTACH_POSITION); narg++;
+  XtSetArg(args[narg],XmNleftPosition,      left);              narg++;
+  if (top == parent) {
+    XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_FORM);     narg++;
+  }
+  else {
+    XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET);   narg++;
+    XtSetArg(args[narg],XmNtopWidget,       get_widget(top));   narg++;
+  }
+  XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
+  *wlabel = add_widget(XtCreateWidget(label,xmLabelWidgetClass,
+				      get_widget(parent),args,narg),desc);
+  
+  /* Create & Position the radiobutton */
+  narg = 0;
+  XtSetArg(args[narg],XmNleftAttachment,    XmATTACH_POSITION); narg++;
+  XtSetArg(args[narg],XmNleftPosition,      but_left);          narg++;
+  XtSetArg(args[narg],XmNrightAttachment,   XmATTACH_POSITION); narg++;
+  XtSetArg(args[narg],XmNrightPosition,     right);             narg++;
+  if (top == parent) {
+    XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_FORM);     narg++;
+  }
+  else {
+    XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_WIDGET);   narg++;
+    XtSetArg(args[narg],XmNtopWidget,       get_widget(top));   narg++;
+  }
+  XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
+  XtSetArg(args[narg],XmNrightAttachment,   XmATTACH_NONE);     narg++;
+  /*XtSetArg(args[narg],XmNvalue,             initial_value);     narg++;*/
+  XtSetArg(args[narg],XmNradioBehavior,     True);              narg++;
+  *wtextf = add_widget(XtCreateWidget(initial_value,xmRowColumnWidgetClass,
+				      get_widget(parent),args,narg),desc);
+  but = mk_but_array(initial_value,&nbut);
+  for(i=0; (i<nbut); i++) {
+    (void) add_widget(XtCreateWidget(but[i],xmPushButtonWidgetClass,
+				     get_widget(*wtextf),NULL,0),but[i]);
+  }
+}
+
 static void mk_buttons(int parent,int top,int nb,t_button bbb[])
 {
   int   i,narg,nw,left,right,bw;
@@ -380,10 +466,18 @@ int mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[])
 	  if (debug)
 	    fprintf(debug,"%s,%d: buf = %s\n",__FILE__,__LINE__,buf);
 	  left = 1+(npa % 2)*50;
-	  mk_editor(parent,topw+4*(npa/2),
-		    left,left+47,
-		    &dummy,&(pa_index[i]),
-		    pa[i].option,buf,descbuf); 
+	  if (pa[i].type == etSTR) {
+	    mk_enumerated(parent,topw+4*(npa/2),
+			  left,left+47,
+			  &dummy,&(pa_index[i]),
+			  pa[i].option,buf,descbuf); 
+	  }
+	  else {
+	    mk_editor(parent,topw+4*(npa/2),
+		      left,left+47,
+		      &dummy,&(pa_index[i]),
+		      pa[i].option,buf,descbuf); 
+	  }
 	  npa ++;
 	}
       }
@@ -413,8 +507,8 @@ void mk_help(Widget parent,int ndesc,char *desc[],int nbugs,char *bugs[])
   narg  = 0;
   XtSetArg(args[narg],XmNautoUnmanage,FALSE);  narg++;
   XtSetArg(args[narg],XmNmessageString,xmstr); narg++;
-  XtSetArg(args[narg],XmNdialogType,XmDIALOG_INFORMATION); narg++;
-  /*XtSetArg(args[narg],XmNdialogTitle,"Gromacs Help"); narg++;*/
+  /*XtSetArg(args[narg],XmNdialogType,XmDIALOG_INFORMATION); narg++;*/
+  /*XtSetArg(args[narg],XmNdialogTitle,char2xms("Gromacs Help")); narg++;*/
   dialog = XmCreateMessageDialog(parent,"Help",args,narg);
   helpw  = add_widget(dialog,NULL);
   XtUnmanageChild(XmMessageBoxGetChild(dialog,XmDIALOG_CANCEL_BUTTON));
@@ -607,7 +701,7 @@ static void leave_callback(Widget www,int *which,caddr_t call_data)
   }
 }
 
-void MyMainLoop(Widget gmxBase,
+void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
 		int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
 {
   int      i,narg;
@@ -620,6 +714,7 @@ void MyMainLoop(Widget gmxBase,
   int      iii;
   
   while (!bDone) {
+    /*XtAppNextEvent(appcontext,&event);*/
     XtNextEvent(&event);
     XtDispatchEvent(&event);
   }
@@ -706,11 +801,14 @@ void gmx_gui(int *argc,char *argv[],
 	     int ndesc,char *desc[],int nbugs,char *bugs[])
 {
   Widget       gmxBase;
+  XtAppContext appcontext;
   
   /* Initialize toolkit and parse command line options. */
   gmxBase = XtInitialize("GROMACS","GROMACS",NULL,0,argc,argv);
+  /*gmxBase = XtVaAppInitialize(&appcontext,"GROMACS",NULL,0,argc,argv,NULL);*/
   mk_gui(gmxBase,nfile,fnm,npargs,pa,ndesc,desc,nbugs,bugs);
   XtRealizeWidget(gmxBase);
-  MyMainLoop(gmxBase,nfile,fnm,npargs,pa);
+  MyMainLoop(appcontext,gmxBase,nfile,fnm,npargs,pa);
 }
+
 
