@@ -507,10 +507,12 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
     if (debug) 
       fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
 	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-    /* Now we have the velocity of center of mass, let's remove it */
-    for(i=start; (i<end); i++) {
-      for(m=0; (m<DIM); m++)
-	state->v[i][m] -= vcm[m];
+    if (parm->ir.nstcomm != 0) {
+      /* Now we have the velocity of center of mass, let's remove it */
+      for(i=start; (i<end); i++) {
+	for(m=0; (m<DIM); m++)
+	  state->v[i][m] -= vcm[m];
+      }
     }
   }
 }
