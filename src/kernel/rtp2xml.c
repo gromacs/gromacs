@@ -64,14 +64,27 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "hizzie.h"
 
 static void dump_res(FILE *fp,int indent,t_restp *restp,int nah,
-		     t_hackblock *ah)
+		     t_hackblock *ah,int nres_long,char **res_long)
 {
   char *rtype[ebtsNR] = { "rbond", "rangle", "rdihedral", "rimproper" };
   int ntype[ebtsNR] = { 2, 3, 4, 4 };
-  int  i,j,k;
+  int  i,j,k,nn;
+  char *tmp,descr[128];
+  
+  descr[0] = '\0';
+  for(nn=0; (nn < nres_long) && (strstr(res_long[nn],restp->resname) == NULL); nn++) 
+    ;
+  if (nn < nres_long) {
+    tmp = res_long[nn] + strlen(restp->resname);
+    while (*tmp && isspace(*tmp)) {
+      tmp++;
+    }
+    if (strlen(tmp) > 0)
+      strcpy(descr,tmp);
+  }
   
   pr_indent(fp,indent);
-  fprintf(fp,"<residue restype=\"%s\">\n",restp->resname);
+  fprintf(fp,"<residue restype=\"%s\" longname=\"%s\">\n",restp->resname,descr);
   indent += 2;
 
   for(i=0; (i<restp->natom); i++) {
@@ -97,10 +110,9 @@ static void dump_res(FILE *fp,int indent,t_restp *restp,int nah,
 	  fprintf(fp,"<raddh hclass=\"aliphatic\"");
 	fprintf(fp," addgeom=\"%d\" addnum=\"%d\"",
 		ah[i].hack[j].tp,ah[i].hack[j].nr);
-	fprintf(fp," addto=\"%s %s %s",ah[i].hack[j].a[0],ah[i].hack[j].a[1],
-		ah[i].hack[j].a[2]);
-	if (ah[i].hack[j].a[3] > 0)
-	  fprintf(fp," %s",ah[i].hack[j].a[3]);
+	fprintf(fp," addto=\"%s",ah[i].hack[j].a[0]);
+	for(k=1; ((k <= 3) && (ah[i].hack[j].a[k] > 0)); k++)
+	  fprintf(fp," %s",ah[i].hack[j].a[k]);
 	fprintf(fp,"\"/>\n");
       }
       break;
@@ -213,13 +225,8 @@ int main(int argc, char *argv[])
   int        chain,nch,maxch,nwaterchain;
   t_pdbchain *pdb_ch;
   t_chain    *chains,*cc;
-  char       pchain,select[STRLEN];
-  int        nincl,nmol;
-  char       **incls;
-  t_mols     *mols;
-  char       **gnames;
-  matrix     box;
-  rvec       box_space;
+  char       **res_long;
+  int        nres_long;
   char       *ff;
   int        i,j,k,l,nrtp;
   int        *swap_index,si;
@@ -242,7 +249,10 @@ int main(int argc, char *argv[])
   CopyRight(stderr,argv[0]);
 	
   ff = strdup("ffgmx2");
-  
+
+  /* Read long residue names */
+  nres_long = get_file("res-long.dat",&res_long);
+    
   /* Read atomtypes... */
   atype=read_atype(ff,&symtab);
     
@@ -258,11 +268,11 @@ int main(int argc, char *argv[])
   nCtdb=read_ter_db(ff,'c',&ctdb,atype);
   
   fp=fopen("residues.xml","w");
-  fprintf(fp,"<?xml version=\"1.0\"?>\n");
-  fprintf(fp,"<!DOCTYPE residues SYSTEM \"residues.dtd\">\n");
+  /* fprintf(fp,"<?xml version=\"1.0\"?>\n");
+     fprintf(fp,"<!DOCTYPE residues SYSTEM \"residues.dtd\">\n"); */
   fprintf(fp,"\n<residues>\n");
   for(i=0; (i<nrtp); i++) {
-    dump_res(fp,2,&(restp[i]),nah,ah);
+    dump_res(fp,2,&(restp[i]),nah,ah,nres_long,res_long);
   }
   do_specbonds(fp,2);
   dump_mods(fp,2,nNtdb,ntdb,atype);
