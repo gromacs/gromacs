@@ -23,7 +23,7 @@ TARCMD  =	tar cvf #/usr/local/bin/tar cvf
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
-all:	dirs
+all:	oclean dirs
 	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
 
 etags:
