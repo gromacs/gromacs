@@ -316,7 +316,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("start time and timestep in ps");
   RTYPE ("tinit",	ir->init_t,	0.0);
   RTYPE ("dt",		ir->delta_t,	0.001);
-  ITYPE ("nsteps",      ir->nsteps,     1);
+  ITYPE ("nsteps",      ir->nsteps,     0);
   CTYPE ("mode for center of mass motion removal");
   EETYPE("comm-mode",   ecm_mode,       ecm_names, nerror, TRUE);
   CTYPE ("number of steps for center of mass motion removal");
