@@ -35,57 +35,22 @@ static char *SRCID_gen_dum_h = "$Id$";
 #include "grompp.h"
 #include "pdb2gmx.h"
 
-typedef real t_dmbp[MAXFORCEPARAM];
+/* stuff for pdb2gmx */
 
-typedef struct {
-  char *mname; /* name of mass */
-  char *mtype; /* type of mass */
-  int  nm;     /* number of mass atoms */
-  int  tp;     /* type of attachment (must be 1 for now) */
-  t_dmbp c;    /* parameters for attachment, depend on type: */
-  /*              1 : dCN, dNH, aCNH, mH */
-} t_dummass; /* parameters for dummy masses */
-
-typedef struct {
-  char *na[4]; /* control atoms i,j,k,l */
-  int  tp;     /* type of dummy (1,2,3) */
-  real a;      /* parameter a */
-  real b;      /* parameter b */
-  real c;      /* parameter c */
-} t_dumdum;  /* parameters for dummy atoms */
-
-typedef struct {
-  char *na[3]; /* control atoms i,j,k */
-  t_dmbp c;    /* bond parameter */
-} t_dumang;  /* parameters for angle constraints */
-
-typedef struct {
-  char *bname; /* atom type to search for */
-  int  nmass;  /* number of masses to add */
-  t_dummass *mass; /* mass data */
-  int  ndum;   /* number of dummies to make */
-  t_dumdum  *dum;  /* dummy data */
-  int  nang;   /* number of angle constraints to add */
-  t_dumang  *ang;  /* angle data */
-} t_dumblock;
-
-extern void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
-		       int nrtp,t_restp rtp[],rvec **x,
-		       int nddb, t_dumblock *ddb, 
-		       bool **is_dummy,real mHmult);
+extern void do_dummies(int nrtp, t_restp rtp[], 
+		       t_atomtype *atype, real mHmult, 
+		       t_atoms *at, t_symtab *symtab, rvec *x[], 
+		       t_params plist[], t_params *newbonds,
+		       int *dummy_type[], int *cgnr[]);
 
 extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult);
 
-extern void clean_dum_angles(t_params *ps, t_params *plist, bool *is_dum);
+extern void clean_dum_bonds(t_params *ps, int dummy_type[]);
+
+extern void clean_dum_angles(t_params *ps, int dummy_type[]);
 
 extern void clean_dum_dihs(t_params *ps, int natom, char dihname[], 
-			   t_params *plist, bool *is_dum);
-
-extern void do_dum_top(t_params *psb, t_params *psd3, t_params *psd3OUT, 
-		       t_params *psd3FD, t_params *psd3FAD, t_params *psda,
-		       int nddb,t_dumblock *ddb,bool is_dum[],
-		       t_atoms *at, t_atomtype *atype, 
-		       int nrtp, t_restp rtp[], real mHmult);
+			   t_params *plist, int dummy_type[]);
 
 extern void do_dum_excl(t_block *excl, bool is_dum[]);
 

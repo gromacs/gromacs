@@ -31,6 +31,7 @@ static char *SRCID_gen_dum_c = "$Id$";
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include "assert.h"
 #include "gen_dum.h"
 #include "smalloc.h"
 #include "resall.h"
@@ -39,293 +40,509 @@ static char *SRCID_gen_dum_c = "$Id$";
 #include "toputil.h"
 #include "physics.h"
 #include "index.h"
+#include "names.h"
 
-void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
-		int nrtp,t_restp rtp[],rvec **x,
-		int nddb, t_dumblock *ddb, bool **is_dummy,real mHmult)
+static void count_bonds(int atom, t_params *psb, char ***atomname, 
+			int *nrbonds, int *nrHatoms, int Hatoms[], int *Heavy,
+			int *nrheavies, int heavies[])
 {
-  int     i,j,k,i0,n,m,l,resnr,add,nadd,ndum;
-  int     na[4];
-  ushort  type,tpM;
-  char    name[STRLEN],dumatnm[STRLEN],bname[STRLEN],*bres;
-  bool    *bProcessed,bWild,bNterm;
-  t_restp *rtpp=NULL;
-
-  if (debug) printf("Searching for atoms to make dumies...\n");
+  int i,heavy,other,nrb,nrH,nrhv;
   
-  bWild=FALSE;
-  snew(bProcessed,at->nr);
-  /* loop over all entries in the .ddb database (atomtypes) */
-  add=0;
-  ndum=0;
-  for (n=0; (n<nddb); n++) {
-    if (debug) fprintf(debug,"processing block %s\n",ddb[n].bname);
-    if (bWild)
-      fatal_error(0,"Found block in .ddb (%s) after wildcard block",
-		  ddb[n].bname);
-    strcpy(bname,ddb[n].bname);
-    bWild=(strcmp(bname,"*")==0);
-    bres=NULL;
-    if (bres=strchr(bname,':')) {
-      bres[0]='\0';
-      bres++;
-      if (debug) fprintf(debug,"atomtype %s residue name %s\n",bname,bres);
-    }
-    resnr=-1;
-    /* loop over all atoms */
-    for(i=0; (i<at->nr); i++) {
-      /* look up this residue in rtp */
-      if (at->atom[i].resnr != resnr) {
-	resnr=at->atom[i].resnr;
-	rtpp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-	bNterm=is_protein(*(at->resname[resnr])) && (resnr == 0);
+  /* find heavy atom bound to this hydrogen */
+  heavy=NOTSET;
+  for(i=0; (i<psb->nr) && (heavy==NOTSET); i++)
+    if (psb->param[i].AI==atom)
+      heavy=psb->param[i].AJ;
+    else if (psb->param[i].AJ==atom)
+      heavy=psb->param[i].AI;
+  if (heavy==NOTSET)
+    fatal_error(0,"unbound hydrogen atom %d",atom+1);
+  /* find all atoms bound to heavy atom */
+  other=NOTSET;
+  nrb=0;
+  nrH=0;
+  nrhv=0;
+  for(i=0; i<psb->nr; i++) {
+    if (psb->param[i].AI==heavy)
+      other=psb->param[i].AJ;
+    else if (psb->param[i].AJ==heavy)
+      other=psb->param[i].AI;
+    if (other!=NOTSET) {
+      nrb++;
+      if (is_hydrogen(*(atomname[other]))) {
+	Hatoms[nrH]=other;
+	nrH++;
+      } else {
+	heavies[nrhv]=other;
+	nrhv++;
       }
-      /* look up type for this atom */
-      if (at->atom[i].m == 0) {
-	j=search_jtype(rtpp,*(at->atomname[i]),bNterm);
-	type = rtpp->atom[j].type;
-      } else
-	type = at->atom[i].type;
-      strcpy(name,type2nm(type,atype));
-      /* check if this atom has not yet been processed 
-       * and if the type matches current .ddb block (bname) */
-      if ( !bProcessed[i] && (bWild || strcmp(name,bname)==0)  && 
-	   ( !bres || (strcmp(*(at->resname[resnr]),bres)==0) ) ) {
-	if (debug) 
-	  fprintf(debug,"Found atom: %s%d %d %s (%s)\n", 
-		  *(at->resname[resnr]),resnr+1,i+1,*(at->atomname[i]),name);
-	/* set marker for dummies */
-	if ( !bWild || 
-	     (strncasecmp(/**/
-			  ddb[n].dum[0].na[0],*(at->atomname[i]),
-			  strlen(ddb[n].dum[0].na[0]))==0)) {
-	  j=i;
-	  m=0;
-	  if (debug) fprintf(debug,"Dummies: ");
-	  while ( (j<at->nr) && (m<ddb[n].ndum) &&
-		  ( (j==i) /* always check typed atom, might be dummy */ ||
-		    is_hydrogen(*(at->atomname[j])) ||
-		    !is_hydrogen(ddb[n].dum[m].na[0]) ) ) {
-	    strcpy(dumatnm,ddb[n].dum[m].na[0]);
-	    if (debug && bProcessed[j]) fprintf(debug,"P%d ",j+1);
-	    if (!bProcessed[j] && 
-		(strncasecmp(dumatnm,*(at->atomname[j]),
-			     strlen(dumatnm))==0) ) {
-	      if (debug) fprintf(debug,"%d:'%s' ",j+1,dumatnm);
-	      bProcessed[j]=TRUE;
-	      (*is_dummy)[j]=TRUE;
-	      ndum++;
-	      m++;
-	    }
-	    j++;
-	  }
- 	  if (debug) fprintf(debug,"\n");
-	  if (m<ddb[n].ndum)
-	    fprintf(stderr,
-		    "Skipped %d dummy atom%s on atom type %s in residue %s%d "
-		    "(probably ok)\n",
-		    ddb[n].ndum-m,(ddb[n].ndum-m==1)?"":"s",
-		    ddb[n].bname,*(at->resname[resnr]),resnr);
-	}
-	
-	/* add masses to this atom */
-	if (!bWild)
-	  for (m=0; (m<ddb[n].nmass); m++) {
-	    /* find type nr for dummy mass */
-	    for(tpM=0; (tpM<atype->nr); tpM++)
-	      if (strcasecmp(ddb[n].mass[m].mtype,
-			     *(atype->atomname[tpM])) == 0)
-		break;
-	    if (tpM == atype->nr)
-	      fatal_error(0,"Atom type %s not found in database "
-			  "while adding dummy masses\n",ddb[n].mass[m].mtype);
-	    nadd = ddb[n].mass[m].nm;
-	    add+=nadd;
-	    at->nr+=nadd;
-	    i0=i;
-	    i+=nadd;
-	    srenew(at->atom,at->nr);
-	    srenew(at->atomname,at->nr);
-	    srenew(*x,at->nr);
-	    srenew(*is_dummy,at->nr);
-	    srenew(bProcessed,at->nr);
-	    for(j=at->nr-1; (j>=i); j--) {
-	      at->atom[j]=at->atom[j-nadd];
-	      at->atomname[j]=at->atomname[j-nadd];
-	      copy_rvec((*x)[j-nadd],(*x)[j]);
-	      (*is_dummy)[j]=(*is_dummy)[j-nadd];
-	      bProcessed[j]=bProcessed[j-nadd];
-	    }
-	    
-	    /* find Mass control atoms */
-	    j=i;
-	    l=0;
-	    while ((j<at->nr) && (l<ddb[n].ndum)) {
-	      if (strncasecmp(
-			      ddb[n].dum[l].na[0],*(at->atomname[j]),
-			      strlen(ddb[n].dum[l].na[0]))==0) {
-		na[l]=j;  /* set control atoms */
-		l++;
-	      }
-	      j++;
-	    }
-	    /* 'ndum' should vary depending on 'mass[m].tp' */
-	    if (l<ddb[n].ndum)
-	      fatal_error(0,"Atom %s not found while adding dummy mass %s "
-			  "(%s)\n",ddb[n].dum[l].na[0],
-			  ddb[n].bname,ddb[n].mass[m].mname);
-	    if (l==3) { /* -NH2 (tetraedical) i.s.o. -NH3+ */
-	      ddb[n].mass[m].tp++;
-	      na[3]=-1;
-	    }
-	    /* now calculate positions of dummy masses */
-	    if (debug) 
-	      fprintf(debug,"Masses (%d): %d (%g) %d (%g) %d (%g) %d (%g)\n",
-		      nadd,
-		      na[0]+1,at->atom[na[0]].m,na[1]+1,at->atom[na[1]].m,
-		      na[2]+1,at->atom[na[2]].m,na[3]+1,at->atom[na[3]].m);
-	    switch (ddb[n].mass[m].tp) {
-	    case 1: {
-	      real mass[4],mHtot,mtot,fact,fact2;
-	      rvec xN,xH[4],xM[2],rpar,rperp,temp;
-	      /* note: xH[0] is not used */
-	      
-	      if (nadd!=2) fatal_error(0,"Can only add 2 (not %d) dummy "
-				       "masses of type 1\n",nadd);
-	      
-	      copy_rvec((*x)[na[0]],xN);
-	      for (l=1; (l<4); l++)
-		copy_rvec((*x)[na[l]],xH[l]);
-	      
-	      /* calc masses */
-	      mtot=0;
-	      for(l=0; (l<4); l++) {
-		if (at->atom[na[l]].m)
-		  mass[l]=at->atom[na[l]].m;
-		else {
-		  bool bNterm;
-		  int  resnr;
-		  /* get mass from rtp */
-		  resnr = at->atom[na[l]].resnr;
-		  bNterm=is_protein(*(at->resname[resnr])) && (resnr==0);
-		  j=search_jtype(rtpp,*(at->atomname[na[l]]),bNterm);
-		  mass[l]=rtpp->atom[j].m;
-		}
-		mtot+=mass[l];
-	      }
-	      if (ddb[n].mass[m].c[3]==NOTSET) { /* c[3] = mH */
-		mHtot=0;
-		for(l=1; (l<4); l++)
-		  mHtot+=mass[l];
-		if (mHmult != 1.0) mHtot*=mHmult;
-		ddb[n].mass[m].c[3]=mHtot/3;
-	      } else {
-		mHtot=3*ddb[n].mass[m].c[3];
-		if (mHmult != 1.0) mHtot*=mHmult;
-	      }
-	      fact2=mHtot/mtot;
-	      fact=sqrt(fact2);
-	      if (debug) fprintf(debug,"Masses: %g %g %g %g\n",
-				 mass[0],mass[1],mass[2],mass[3]);
-	      
-	      /* generate vectors rpar = N->Hcom and rperp = Hcom->H1 */
-	      rvec_add(xH[1],xH[2],rpar); /* rpar = H1 + H2 */
-	      rvec_inc(rpar,xH[3]);       /*           + H3 */
-	      svmul(1.0/3.0,rpar,rpar);   /*        / 3     */
-	      rvec_dec(rpar,xN);          /*        - N     */
-	      rvec_sub(xH[1],xN,rperp); /* rperp = H1 - N   */
-	      rvec_dec(rperp,rpar);     /*            - rpar */
+      other=NOTSET;
+    }
+  }
+  *Heavy   =heavy;
+  *nrbonds =nrb;
+  *nrHatoms=nrH;
+  *nrheavies=nrhv;
+}
 
-	      /* calc mass positions */	      
-	      svmul(fact2,rpar,temp);
-	      for (k=0; (k<2); k++)
-		rvec_add(xN,temp,xM[k]); /* xM = xN + fact2 * rpar */
-	      svmul(fact,rperp,temp);
-	      rvec_inc(xM[0],temp);      /*       +/- fact * rperp */
-	      rvec_dec(xM[1],temp);
-	      
-	      /* copy new positions */
-	      for(k=0; (k<2); k++)
-		copy_rvec(xM[k],(*x)[i0+k]);
-	    }
-	    break;
-	    default:
-	      fatal_error(0,"Invalid dummy mass type (%d) in do_dummies \n",
-			  ddb[n].mass[m].tp);
-	    } /* end switch */
-	    
-	    for(j=i0; (j<i); j++) {
-	      sprintf(name,"%s%c",ddb[n].mass[m].mname,'1'+(j-i0));
-	      at->atomname[j]=put_symtab(symtab,name);
-	      at->atom[j].m=at->atom[j].mB=-1; /* will be calc'ed in pdb2top */
-	      at->atom[j].q=at->atom[j].qB=0.0;
-	      at->atom[j].type=at->atom[j].typeB=tpM;
-	      at->atom[j].ptype=eptAtom;
-	      at->atom[j].resnr=at->atom[i0].resnr;
-	      (*is_dummy)[j]=FALSE;
-	      bProcessed[j]=TRUE;
-	    }
-	  }
-	
-	/* mark atoms in angle constraints as processed */
-	if (!bWild) {
-	  m=0;
-	  j=i;
-	  if (debug) fprintf(debug,"Angle:");
-	  while ( (j<at->nr) && (m<ddb[n].nang) ) {
-	    if (strncasecmp(
-			    ddb[n].ang[m].na[0],*(at->atomname[j]),
-			    strlen(ddb[n].ang[m].na[0]))==0) {
-	      if (debug) fprintf(debug," %s %d",ddb[n].ang[m].na[0],j+1);
-	      bProcessed[j]=TRUE;
-	      m++;
-	    }
-	    j++;
-	  }
-	  if (debug) fprintf(debug,"\n");
-	  if (m<ddb[n].nang)
-	    fatal_error(0,"Found only %d atoms for angle constraints, "
-			"expected %d\n",m,ddb[n].nang);
+static void print_bonds(FILE *fp, int o2n[],
+			int nrHatoms, int Hatoms[], int Heavy,
+			int nrheavies, int heavies[])
+{
+  int i;
+  
+  fprintf(fp,"Found: %d Hatoms: ",nrHatoms);
+  for(i=0; i<nrHatoms; i++)
+    fprintf(fp," %d",o2n[Hatoms[i]]+1);
+  fprintf(fp,"; %d Heavy atoms: %d",nrheavies+1,o2n[Heavy]+1);
+  for(i=0; i<nrheavies; i++)
+    fprintf(fp," %d",o2n[heavies[i]]+1);
+  fprintf(fp,"\n");
+}
+
+static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[])
+{
+  int type;
+  bool bNterm;
+  int  j;
+  t_restp *rtpp;
+  
+  if (at->atom[atom].m)
+    type=at->atom[atom].type;
+  else {
+    /* get type from rtp */
+    rtpp = search_rtp(*(at->resname[at->atom[atom].resnr]),nrtp,rtp);
+    bNterm = is_protein(*(at->resname[at->atom[atom].resnr])) && 
+      (at->atom[atom].resnr == 0);
+    j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
+    type=rtpp->atom[j].type;
+  }
+  return type;
+}
+
+static int nm2type(char *name, t_atomtype *atype)
+{
+  int tp,j;
+  
+  tp=NOTSET;
+  for(j=0; (j < atype->nr) && (tp==NOTSET); j++)
+    if (strcasecmp(name,*(atype->atomname[j])) == 0)
+      tp=j;
+  if (tp==NOTSET)
+    fatal_error(0,"Dummy mass type (%s) not found "
+		"in atom type database",name);
+  return tp;
+}
+
+static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[])
+{
+  real mass;
+  bool bNterm;
+  int  j;
+  t_restp *rtpp;
+  
+  if (at->atom[atom].m)
+    mass=at->atom[atom].m;
+  else {
+    /* get mass from rtp */
+    rtpp = search_rtp(*(at->resname[at->atom[atom].resnr]),nrtp,rtp);
+    bNterm = is_protein(*(at->resname[at->atom[atom].resnr])) && 
+      (at->atom[atom].resnr == 0);
+    j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
+    mass=rtpp->atom[j].m;
+  }
+  return mass;
+}
+
+static void add_dum_param(t_params plist[], t_params *newbonds, 
+			  int dummy_type[], 
+			  int Heavy, int nrHatoms, int Hatoms[], 
+			  int nrheavies, int heavies[], char ***atomname)
+{
+  int i,j,ftype,other,moreheavy;
+  bool bSwapParity;
+  
+  for(i=0; i<nrHatoms; i++) {
+    ftype=dummy_type[Hatoms[i]];
+    bSwapParity = (ftype<0);
+    ftype=abs(ftype);
+    dummy_type[Hatoms[i]]=ftype;
+    switch (ftype) {
+    case F_BONDS:
+      if ( (nrheavies != 1) && (nrHatoms != 1) )
+	fatal_error(0,"cannot make bond in add_dum_param for %d heavy atoms "
+		    "and %d hydrogen atoms",nrheavies,nrHatoms);
+      add_param(newbonds,Hatoms[i],heavies[0],NULL);
+      break;
+    case F_DUMMY3:
+    case F_DUMMY3FD:
+    case F_DUMMY3OUT:
+      if (nrheavies < 2) 
+	fatal_error(0,"Not enough heavy atoms (%d) for %s (min 3)",nrheavies+1,
+		    interaction_function[dummy_type[Hatoms[i]]].name);
+      add_dum3_param(&plist[ftype],Hatoms[i],Heavy,heavies[0],heavies[1],
+		     bSwapParity);
+      break;
+    case F_DUMMY3FAD: {
+      if (nrheavies > 1)
+	moreheavy=heavies[1];
+      else {
+	/* find more heavy atoms */
+	other=moreheavy=NOTSET;
+	for(j=0; (j<plist[F_BONDS].nr) && (moreheavy==NOTSET); j++) {
+	  if (plist[F_BONDS].param[j].AI==heavies[0])
+	    other=plist[F_BONDS].param[j].AJ;
+	  else if (plist[F_BONDS].param[j].AJ==heavies[0])
+	    other=plist[F_BONDS].param[j].AI;
+	  if ( (other != NOTSET) && (other != Heavy) ) 
+	    moreheavy=other;
 	}
-	/* mark atom i as done */
- 	bProcessed[i]=TRUE;
+	if (moreheavy==NOTSET)
+	  fatal_error(0,"Unbound molecule part %d-%d",Heavy+1,Hatoms[0]+1);
+      }
+      add_dum3_param(&plist[ftype],Hatoms[i],Heavy,heavies[0],moreheavy,
+		     bSwapParity);
+      break;
+    }
+    case F_DUMMY4FD: {
+      if (nrheavies < 3) 
+	fatal_error(0,"Not enough heavy atoms (%d) for %s (min 4)",nrheavies+1,
+		    interaction_function[dummy_type[Hatoms[i]]].name);
+      add_dum4_param(&plist[ftype],  
+		     Hatoms[0], Heavy, heavies[0], heavies[1], heavies[2]);
+      break;
+    }
+    default:
+      fatal_error(0,"can't use add_dum_param for interaction function %s",
+		  interaction_function[dummy_type[Hatoms[i]]].name);
+    } /* switch ftype */
+  } /* for i */
+}
+
+static bool is_dum(int dummy_type)
+{
+  switch ( abs(dummy_type) ) {
+  case NOTSET:
+    return FALSE;
+  case F_DUMMY3:
+  case F_DUMMY3FD:
+  case F_DUMMY3OUT:
+  case F_DUMMY3FAD:
+  case F_DUMMY4FD:
+    return TRUE;
+  default:
+    return FALSE;
+  }
+}
+
+void clean_dum_bonds(t_params *psb, int dummy_type[])
+{
+  int i,j;
+  
+  /* remove bonds with dummy atoms */
+  for(i=j=0; (i<psb->nr); i++)
+    if (!is_dum(dummy_type[psb->param[i].AI]) && 
+	!is_dum(dummy_type[psb->param[i].AJ])) {
+      memcpy(&(psb->param[j]),&(psb->param[i]),(size_t)sizeof(psb->param[0]));
+      j++;
+    }
+  i=psb->nr-j;
+  psb->nr=j;
+  
+  if (i>0)
+    fprintf(stderr,"Removed %d bonds to dummy atoms, now %d bonds\n",i,j);
+}
+
+/* this seems overdone, but it is FOOLPROOF!!! */
+static char atomnamesuffix[] = "1234";
+
+void do_dummies(int nrtp, t_restp rtp[], 
+		t_atomtype *atype, real mHmult, 
+		t_atoms *at, t_symtab *symtab, rvec *x[], 
+		t_params plist[], t_params *newbonds, 
+		int *dummy_type[], int *cgnr[])
+{
+  int  ftype,i,j,k,i0,nrbonds,nrHatoms,Heavy,nrheavies,add_shift;
+  int  nral,ndum,nadd,tpM,tpHeavy;
+  int  Hatoms[4],heavies[4];
+  bool bFATAL,bAddDumParam;
+  real mHtot,mtot,fact,fact2;
+  rvec rpar,rperp,temp;
+  char name[10],tpname[10];
+  rvec *newx;
+  int  *o2n,*newdummy_type,*newcgnr;
+  t_atom *newatom;
+  t_params *params;
+  char   ***newatomname;
+  
+  if (debug) {
+    printf("Searching for atoms to make dumies...\n");
+    fprintf(debug,"# # # DUMMIES # # #\n");
+  }
+  
+  ndum=0;
+  nadd=0;
+  /* we need a marker for which atoms whould *not* be renumbered afterwards */
+  add_shift = 10*at->nr;
+  /* make arrays where masses can be inserted into */ 
+  snew(newx,at->nr); 
+  snew(newatom,at->nr);
+  snew(newatomname,at->nr);
+  snew(newdummy_type,at->nr);
+  snew(newcgnr,at->nr);
+  /* make index array to tell where the atoms go to when masses are inse'd */
+  snew(o2n,at->nr);
+  for(i=0; i<at->nr; i++)
+    o2n[i]=i;
+  /* loop over all atoms */
+  for(i=0; (i<at->nr); i++) {
+    /* only process hydrogen atoms which are not already set */
+    if ( ((*dummy_type)[i]==NOTSET) && is_hydrogen(*(at->atomname[i]))) {
+      /* find heavy atom, count #bonds from it and #H atoms bound to it
+	 and return H atom numbers (Hatoms) and heavy atom numbers (heavies) */
+      count_bonds(i, &plist[F_BONDS], at->atomname, 
+		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
+      /* get Heavy atom type */
+      tpHeavy=get_atype(Heavy,at,nrtp,rtp);
+      strcpy(tpname,type2nm(tpHeavy,atype));
+      bFATAL=FALSE;
+      bAddDumParam=TRUE;
+      /* nested if's which check nrHatoms, nrbonds and tpname */
+      if (nrHatoms == 1) {
+	switch(nrbonds) {
+	case 2: /* -O-H */
+	  (*dummy_type)[i]=F_BONDS;
+	  break;
+	case 3: /* =CH-, -NH- or =NH+- */
+	  (*dummy_type)[i]=F_DUMMY3FD;
+	  break;
+	case 4: /* --CH- (tert) */
+	  (*dummy_type)[i]=F_DUMMY4FD;
+	break;
+	default: /* nrbonds != 2, 3 or 4 */
+	  bFATAL=TRUE;
+	}
+	
+      } else if ( (nrHatoms == 2) && (nrbonds == 3) && 
+		  (strcasecmp(tpname,"NL")!=0) ) {
+	/* =CH2 or =NH2 */
+	(*dummy_type)[Hatoms[0]] = F_DUMMY3FAD;
+	(*dummy_type)[Hatoms[1]] =-F_DUMMY3FAD;
+	
+      } else if ( (nrHatoms == 2) && (nrbonds == 4) ) {
+	/* -CH2- */
+	(*dummy_type)[Hatoms[0]] = F_DUMMY3OUT;
+	(*dummy_type)[Hatoms[1]] =-F_DUMMY3OUT;
+	
+      } else if ( ( (nrHatoms == 2) && (nrbonds == 3) && 
+		    (strcasecmp(tpname,"NL")==0) ) || 
+		  ( (nrHatoms == 3) && (nrbonds == 4) ) ) {
+	/* this tells how to set the hydrogen atoms */
+	int  Hat_dum_tp[3]   = { F_DUMMY3, F_DUMMY3OUT, F_DUMMY3OUT };
+	bool Hat_swap_par[3] = { FALSE,    TRUE,        FALSE };
+	
+	bAddDumParam=FALSE; /* we'll do this ourselves! */
+	/* -NH2 (umbrella), -NH3+ or -CH3 */
+	(*dummy_type)[Heavy]       = F_DUMMY3;
+	for (j=0; j<nrHatoms; j++)
+	  (*dummy_type)[Hatoms[j]] = Hat_dum_tp[j];
+	/* get dummy mass type from first char of heavy atom type (N or C) */
+	sprintf(name,"M%cH3",tpname[0]);
+	tpM=nm2type(name,atype);
+	/* make space for 2 masses: shift all atoms starting with 'Heavy' */
+	nadd+=2;
+	srenew(newx,at->nr+nadd);
+	i0=Heavy;
+	if (debug) 
+	  fprintf(stderr,"Inserting 2 dummy masses at %d\n",o2n[i0]+1);
+	for(j=i0; j<at->nr; j++)
+	  o2n[j]=j+nadd;
+	i0+=nadd-2;
+	srenew(newatom,at->nr+nadd);
+	srenew(newatomname,at->nr+nadd);
+	srenew(newdummy_type,at->nr+nadd);
+	srenew(newcgnr,at->nr+nadd);
+	/* calculate starting position for the masses */
+	mHtot=0;
+	/* get atom masses, and set Heavy and Hatoms mass to zero */
+	for(j=0; j<nrHatoms; j++) {
+	  mHtot += get_amass(Hatoms[j],at,nrtp,rtp);
+	  at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
+	}
+	mtot = mHtot + get_amass(Heavy,at,nrtp,rtp);
+	at->atom[Heavy].m = at->atom[Heavy].mB = 0;
+	if (mHmult != 1.0)
+	  mHtot *= mHmult;
+	fact2=mHtot/mtot;
+	fact=sqrt(fact2);
+	/* generate vectors parallel and perpendicular to rotational axis:
+	 * rpar  = Heavy -> Hcom
+	 * rperp = Hcom  -> H1   */
+	clear_rvec(rpar);
+	for(j=0; j<nrHatoms; j++)
+	  rvec_inc(rpar,(*x)[Hatoms[j]]);
+	svmul(1.0/nrHatoms,rpar,rpar); /* rpar = ( H1+H2+H3 ) / 3 */
+	rvec_dec(rpar,(*x)[Heavy]);    /*        - Heavy          */
+	rvec_sub((*x)[Hatoms[0]],(*x)[Heavy],rperp);
+	rvec_dec(rperp,rpar);          /* rperp = H1 - Heavy - rpar */
+	/* calc mass positions */
+	svmul(fact2,rpar,temp);
+	for (j=0; (j<2); j++) /* xM = xN + fact2 * rpar +/- fact * rperp */
+	  rvec_add((*x)[Heavy],temp,newx[i0+j]);
+	svmul(fact,rperp,temp);
+	rvec_inc(newx[i0  ],temp);
+	rvec_dec(newx[i0+1],temp);
+	/* set atom parameters for the masses */
+	for(j=0; (j<2); j++) {
+	  /* make name: "M??#" or "M?#" (? is atomname, # is number) */
+	  name[0]='M';
+	  for(k=0; (*at->atomname[Heavy])[k] && ( k < 2 ); k++ )
+	    name[k+1]=(*at->atomname[Heavy])[k];
+	  name[k+1]=atomnamesuffix[j];
+	  name[k+2]='\0';
+	  newatomname[i0+j]   = put_symtab(symtab,name);
+	  newatom[i0+j].m     = newatom[i0+j].mB    = mtot/2;
+	  newatom[i0+j].q     = newatom[i0+j].qB    = 0.0;
+	  newatom[i0+j].type  = newatom[i0+j].typeB = tpM;
+	  newatom[i0+j].ptype = eptAtom;
+	  newatom[i0+j].resnr = at->atom[Heavy].resnr;
+	  newatom[i0+j].chain = at->atom[Heavy].chain;
+	  newdummy_type[i0+j] = NOTSET;
+	  newcgnr[i0+j]       = (*cgnr)[Heavy];
+	}
+	/* add bonds between dummy masses and to heavies[0] */
+	/* 'add_shift' says which atoms won't be renumbered afterwards */
+	add_param(newbonds, heavies[0],   add_shift+i0,   NULL);
+	add_param(newbonds, heavies[0],   add_shift+i0+1, NULL);
+	add_param(newbonds, add_shift+i0, add_shift+i0+1, NULL);
+	
+	/* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
+	/* note that dummy_type cannot be NOTSET, because we just set it */
+	add_dum3_param  (&plist[(*dummy_type)[Heavy]],
+			 Heavy,     heavies[0], add_shift+i0, add_shift+i0+1, 
+			 FALSE);
+	for(j=0; j<nrHatoms; j++)
+	  add_dum3_param(&plist[(*dummy_type)[Hatoms[j]]],
+			 Hatoms[j], heavies[0], add_shift+i0, add_shift+i0+1, 
+			 Hat_swap_par[j]);
+      } else
+	bFATAL=TRUE;
+      if (bFATAL)
+	fatal_error(0,"Cannot have %d bonds to a heavy atom type %s "
+		    "with %d bound hydrogens atoms",nrbonds,tpname,nrHatoms);
+      if (bAddDumParam) {
+	/* add dummy parameters to topology, 
+	   also get rid of negative dummy_types */
+ 	add_dum_param(plist, newbonds, 
+		      (*dummy_type), Heavy, nrHatoms, Hatoms,
+ 		      nrheavies, heavies, at->atomname);
+	/* transfer mass of dummy atom to Heavy atom */
+	for(j=0; j<nrHatoms; j++) 
+	  if (is_dum((*dummy_type)[Hatoms[j]])) {
+	    at->atom[Heavy].m += at->atom[Hatoms[j]].m;
+	    at->atom[Heavy].mB = at->atom[Heavy].m;
+	    at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
+	  }
+      }
+      ndum+=nrHatoms;
+      if (debug) {
+	fprintf(debug,"atom %d: ",o2n[i]+1);
+	print_bonds(debug,o2n,nrHatoms,Hatoms,Heavy,nrheavies,heavies);
       }
     }
   }
   
-  fprintf(stderr,"Marked %d dummy atoms\n",ndum);
-  fprintf(stderr,"Added %d dummy masses\n",add);
-  if (debug) {
-    fprintf(debug,"%5s%3s %3s %4s %s\n","res","nr","atom","name","dummy");
-    for (i=0; (i<at->nr); i++) 
-      fprintf(debug,"%5s%3d %4d %4s %s\n",
-	      *(at->resname[at->atom[i].resnr]),at->atom[i].resnr+1,i+1,
-	      *(at->atomname[i]),(*is_dummy)[i] ? "dummy atom" : "atom");
+  /* add all original atoms to the new arrays, using o2n index array */
+  for(i=0; i<at->nr; i++) {
+    newatomname[o2n[i]]   = at->atomname[i];
+    newatom[o2n[i]]       = at->atom[i];
+    newdummy_type[o2n[i]] = (*dummy_type)[i];
+    newcgnr[o2n[i]]       = (*cgnr)[i];
+    copy_rvec((*x)[i],newx[o2n[i]]);
+  }
+  /* throw away old atoms */
+  sfree(at->atom);
+  sfree(at->atomname);
+  sfree(*dummy_type);
+  sfree(*cgnr);
+  sfree(*x);
+  /* put in the new ones */
+  at->nr      += nadd;
+  at->atom     = newatom;
+  at->atomname = newatomname;
+  *dummy_type   = newdummy_type;
+  *cgnr         = newcgnr;
+  *x            = newx;
+  if (at->nr > add_shift)
+    fatal_error(0,"Added impossible amount of dummy masses "
+		"(%d on a total of %d atoms)\n",nadd,at->nr-nadd);
+  
+  if (debug)
+    for(i=0; i<at->nr; i++)
+      fprintf(debug,"%4d %4s %4d %4s %6d %-10s\n",i+1,*(at->atomname[i]),
+	      at->atom[i].resnr,*(at->resname[at->atom[i].resnr]),
+	      (*cgnr)[i],
+	      ((*dummy_type)[i]==NOTSET) ? 
+	      "NOTSET" : interaction_function[(*dummy_type)[i]].name);
+  
+  /* now renumber all the interactions, including 'newbonds': */
+  for (ftype=0; ftype<=F_NRE; ftype++) {
+    if (ftype==F_NRE) {
+      params=newbonds;
+      nral=NRAL(F_BONDS);
+    } else {
+      params=&(plist[ftype]);
+      nral=NRAL(ftype);
+    }
+    if (debug)
+      fprintf(debug,"Renumbering %d %s\n", params->nr, 
+	      (ftype==F_NRE)?"New Bonds":interaction_function[ftype].longname);
+    for (i=0; i<params->nr; i++) {
+      for (j=0; j<nral; j++)
+	if (params->param[i].a[j]>=add_shift) {
+	  if (debug) fprintf(debug," [%d -> %d]",params->param[i].a[j],
+			     params->param[i].a[j]-add_shift);
+	  params->param[i].a[j]=params->param[i].a[j]-add_shift;
+	} else {
+	  if (debug) fprintf(debug," [%d -> %d]",params->param[i].a[j],
+			     o2n[params->param[i].a[j]]);
+	  params->param[i].a[j]=o2n[params->param[i].a[j]];
+	}
+      if (debug) fprintf(debug,"\n");
+    }
   }
   
   /* clean up */
-  sfree(bProcessed);
+  sfree(o2n);
+  
+  /* tell the user what we did */
+  fprintf(stderr,"Marked %d dummy atoms\n",ndum);
+  fprintf(stderr,"Added %d dummy masses\n",nadd);
+  fprintf(stderr,"Added %d new bonds\n",newbonds->nr);
 }
 
-void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult)
+void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult)
 {
   int i,j,a;
-
+  
   /* loop over all atoms */
   for (i=0; i<at->nr; i++)
     /* adjust masses if i is hydrogen and not a dummy atom */
-    if ( !is_dum[i] && is_hydrogen(*(at->atomname[i])) ) {
+    if ( !is_dum(dummy_type[i]) && is_hydrogen(*(at->atomname[i])) ) {
       /* find bonded heavy atom */
       a=NOTSET;
       for(j=0; (j<psb->nr) && (a==NOTSET); j++) {
 	/* if other atom is not a dummy, it is the one we want */
-	if ( (psb->param[j].AI==i) && !is_dum[psb->param[j].AJ] )
+	if ( (psb->param[j].AI==i) && 
+	     !is_dum(dummy_type[psb->param[j].AJ]) )
 	  a=psb->param[j].AJ;
-	else if ( (psb->param[j].AJ==i) && !is_dum[psb->param[j].AI] )
+	else if ( (psb->param[j].AJ==i) && 
+		  !is_dum(dummy_type[psb->param[j].AI]) )
 	  a=psb->param[j].AI;
       }
       if (a==NOTSET)
-	fatal_error(0,"Unbound hydrogen atom (%d) found while adjusting mass",i+1);
+	fatal_error(0,"Unbound hydrogen atom (%d) found while adjusting mass",
+		    i+1);
       
       /* adjust mass of i (hydrogen) with mHmult
 	 and correct mass of a (bonded atom) with same amount */
@@ -336,64 +553,65 @@ void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult)
     }
 }
 
-void clean_dum_angles(t_params *ps, t_params *plist, bool *is_dum)
+void clean_dum_angles(t_params *psa, int dummy_type[])
 {
   int i,j,k,ndum;
-
+  
   j=0;
-  for(i=0; (i<ps->nr); i++) {
+  for(i=0; (i<psa->nr); i++) {
     /* count number of dummies in this angle: */
     ndum=0;
     for(k=0; (k<3); k++)
-      if (is_dum[ps->param[i].a[k]])
+      if (is_dum(dummy_type[psa->param[i].a[k]]))
 	ndum++;
     /* if 0 or 1 dummies, keep angle: */
     if ( ndum<2 ) {
-      memcpy(&(ps->param[j]),&(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      memcpy(&(psa->param[j]),&(psa->param[i]),(size_t)sizeof(psa->param[0]));
       j++;
     }
   }
   fprintf(stderr,"Removed %d angles with dummy atoms, now %d angles\n",
-	  ps->nr-j,j);
-  ps->nr=j;
+	  psa->nr-j,j);
+  psa->nr=j;
 }
 
-void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist, 
-		    bool *is_dum)
+void clean_dum_dihs(t_params *psdih, int natom, char dihname[], 
+		    t_params *plist, int dummy_type[])
 {
-  int      ftype,i,j,k,l,m,n,ndum,kept_i;
+  int      ftype,i,parnr,k,l,m,n,ndum,kept_i;
   atom_id  atom,constr;
   atom_id  dumatoms[3];
   bool     keep,used,present;
-  struct { int i,j; } *pindex;
+  struct { int ftype,parnr; } *pindex;
   
   /* make index into dummy entries of plist: */
   snew(pindex,natom);
   for(ftype=0; (ftype<F_NRE); ftype++)
     if (interaction_function[ftype].flags & IF_DUMMY)
-      for (j=0; (j<plist[ftype].nr); j++) {
-	k=plist[ftype].param[j].AI;
-	pindex[k].i=ftype;
-	pindex[k].j=j;
+      for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
+	k=plist[ftype].param[parnr].AI;
+	pindex[k].ftype=ftype;
+	pindex[k].parnr=parnr;
       }
   
   kept_i=0;
-  for(i=0; (i<ps->nr); i++) { /* for all dihedrals in the plist */
+  for(i=0; (i<psdih->nr); i++) { /* for all dihedrals in the plist */
     keep=FALSE;
     /* check if all dummies are constructed from the same atoms */
     ndum=0;
     for(k=0; (k<4) && !keep; k++) { /* for all atoms in the dihedral */
-      atom = ps->param[i].a[k];
-      if (is_dum[atom]) {
+      atom = psdih->param[i].a[k];
+      if (is_dum(dummy_type[atom])) {
 	ndum++;
 	if (ndum==1) {
 	  /* store construction atoms of first dummy */
 	  for(m=1; (m<4); m++)
-	    dumatoms[m-1]=plist[pindex[atom].i].param[pindex[atom].j].a[m];
+	    dumatoms[m-1]=
+	      plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m];
 	  if (debug) {
 	    fprintf(debug,"dih w. dum: %u %u %u %u\n",
-		    ps->param[i].AI+1,ps->param[i].AJ+1,
-		    ps->param[i].AK+1,ps->param[i].AL+1);
+		    psdih->param[i].AI+1,psdih->param[i].AJ+1,
+		    psdih->param[i].AK+1,psdih->param[i].AL+1);
 	    fprintf(debug,"dum %u from: %u %u %u\n",
 		    atom+1,dumatoms[0]+1,dumatoms[1]+1,dumatoms[2]+1);
 	  }
@@ -401,7 +619,7 @@ void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist,
 	  /* check if this dummy is constructed from the same atoms */
 	  for(m=1; (m<4) && !keep; m++) {
 	    present=FALSE;
-	    constr=plist[pindex[atom].i].param[pindex[atom].j].a[m];
+	    constr=plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m];
 	    for(n=0; (n<3) && !present; n++)
 	      if (constr == dumatoms[n])
 		present=TRUE;
@@ -418,8 +636,8 @@ void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist,
     /* check if all atoms in dihedral are either dummies, or used in 
        construction of dummies. If so, keep it, if not throw away: */
     for(k=0; (k<4) && !keep; k++) { /* for all atoms in the dihedral */
-      atom = ps->param[i].a[k];
-      if (!is_dum[atom]) {
+      atom = psdih->param[i].a[k];
+      if (!is_dum(dummy_type[atom])) {
 	used=FALSE;
 	for(m=0; (m<3) && !used; m++)
 	  if (atom == dumatoms[m])
@@ -432,472 +650,22 @@ void clean_dum_dihs(t_params *ps, int natom, char dihname[], t_params *plist,
     }
       
     if ( keep ) {
-      memcpy(&(ps->param[kept_i]),
-	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      memcpy(&(psdih->param[kept_i]),
+	     &(psdih->param[i]),(size_t)sizeof(psdih->param[0]));
       kept_i++;
     }
   }
   
   fprintf(stderr,"Removed %d %s dihedrals with dummy atoms, "
 	  "now %d %s dihedrals\n",
-	  ps->nr-kept_i,dihname,kept_i,dihname);
-  ps->nr=kept_i;
+	  psdih->nr-kept_i,dihname,kept_i,dihname);
+  psdih->nr=kept_i;
   
   /* clean up */
   sfree(pindex);
 }
 
-static int get_bonds(int atom, int excl, 
-		     int na, int **a2, t_params *psb, bool is_dum[])
-{
-  int i,newa,*newa2;
-  
-  /* find bonds belonging to this atom 
-   * which are not a dummy and are not atom excl 
-   */
-  newa2=*a2;
-  for(i=0; (i<psb->nr); i++) {
-    /* check if other atom is not a dummy, it is the one we want */
-    newa=NOTSET;
-    if ( (psb->param[i].AI==atom) && !is_dum[psb->param[i].AJ] )
-      newa=psb->param[i].AJ;
-    else if ( (psb->param[i].AJ==atom) && !is_dum[psb->param[i].AI] )
-      newa=psb->param[i].AI;
-    if ((newa != NOTSET) && (newa!=excl)) {
-      na++;
-      srenew(newa2,na);
-      newa2[na-1]=newa;
-    }
-  }
-  *a2=newa2;
-  return na;
-}
-
-static int check_set(int atom, int ak[4])
-{
-  int k;
-  
-  for (k=0; (k<4) && (atom!=NOTSET); k++)
-    if (atom==ak[k])
-      atom=NOTSET;
-      
-  return atom;
-}
-  
-
-static int get_atom(char *atnm, int incl,
-		    int nms, int *ms, int na2, int *a2, int *na3, int **a3, 
-		    int ak[4],char **aname[])
-{
-  int  i,j,atom,atnmlen;
-  bool bWild;
-  
-  atnmlen=strlen(atnm);
-  bWild=(strcmp(atnm,"*")==0);
-  atom=NOTSET;
-  
-  /* check atom 'incl' */
-  if ( (incl != NOTSET) && 
-       (bWild || strncasecmp(atnm,*(aname[incl]),atnmlen)==0) )
-    atom=check_set(incl, ak);
-  
-  /* search in masses */
-  if (!bWild)
-    for (i=0; (i<nms) && (atom==NOTSET); i++)
-      if (strncasecmp(atnm,*(aname[ms[i]]),atnmlen)==0)
-	atom=check_set(ms[i], ak);
-  
-  /* search in 1st bonded */
-  for (i=0; (i<na2) && (atom==NOTSET); i++)
-    if (bWild || (strncasecmp(atnm,*(aname[a2[i]]),atnmlen)==0) )
-      atom=check_set(a2[i], ak);
-  
-  /* search in 2nd bonded */
-  for (i=0; (i<na2) && (atom==NOTSET); i++)
-    for (j=0; (j<na3[i]) && (atom==NOTSET); j++)
-      if (bWild || (strncasecmp(atnm,*(aname[a3[i][j]]),atnmlen)==0) )
-	atom=check_set(a3[i][j], ak);
-  
-  return atom;
-}
-
-void do_dum_top(t_params *psb, t_params *psd3, t_params *psd3OUT,
-		t_params *psd3FD, t_params *psd3FAD, t_params *psda,
-		int nddb,t_dumblock *ddb,bool is_dum[], t_atoms *at, 
-		t_atomtype *atype, int nrtp, t_restp rtp[], real mHmult)
-{
-  int     i,j,k,l,m,n,resnr;
-  int     ai,aj,ak[4],*ad;
-  int     nmba,naba,nms,*ms,na2,*a2,*na3,**a3;
-  ushort  type;
-  bool    *bProcessed,bWild,bLookH,bNterm;
-  t_restp *rp;
-  char    *bres,bname[STRLEN],dumatnm[STRLEN];
-  t_dmbp  *c;
-
-  bWild=FALSE;
-  nmba=0;
-  naba=0;
-  snew(bProcessed,at->nr);
-  /* add bonds to dummy masses */
-  
-  /* loop over all entries in the .ddb database (atomtypes) */
-  for (n=0; (n<nddb); n++) {
-    if (debug) fprintf(debug,"processing block %s\n",ddb[n].bname);
-    if (bWild)
-      fatal_error(0,"Found block in .ddb (%s) after wildcard block",
-		  ddb[n].bname);
-    strcpy(bname,ddb[n].bname);
-    bWild=(strcmp(bname,"*")==0);
-    bres=NULL;
-    if (bres=strchr(bname,':')) {
-      bres[0]='\0';
-      bres++;
-      if (debug) fprintf(debug,"atomtype %s residue name %s\n",bname,bres);
-    }
-    resnr=-1;
-    /* loop over all atoms */
-    for(i=0; (i<at->nr); i++) {
-      /* look up this residue in rtp */
-      if (at->atom[i].resnr != resnr) {
-	resnr=at->atom[i].resnr;
-	rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-	bNterm=is_protein(*(at->resname[resnr])) && (resnr == 0);
-      }
-      /* look up type for this atom */
-      if (at->atom[i].m == 0) {
-	j=search_jtype(rp,*(at->atomname[i]),bNterm);
-	type = rp->atom[j].type;
-      } else
-	type = at->atom[i].type;
-      /* check if it has not yet been processed 
-       * and if the type matches current .ddb block (bname) */
-      if ( !bProcessed[i] &&
-	   ( bWild || (strcmp(type2nm(type,atype),bname)==0) ) && 
-	   ( !bres || (strcmp(*(at->resname[resnr]),bres)==0) ) ) {
-	if (debug) fprintf(stderr,"Found atom (%s%d %d %s)\n",
-			   *(at->resname[at->atom[i].resnr]),
-			   at->atom[i].resnr+1,i+1,*(at->atomname[i]));
-	bProcessed[i]=TRUE;/* mark this atom */
-	
-	/* find masses (if any) added to atom i */
-	nms=0;
-	for (m=0; (m<ddb[n].nmass); m++)
-	  nms+=ddb[n].mass[m].nm;
-	snew(ms,nms);
-	for (j=0; (j<nms); j++) {
-	  ms[j]=i-nms+j;
-	  bProcessed[ms[j]]=TRUE;/* mark dummy mass */
-	}
-	if (debug && nms) {
-	  fprintf(debug,"Masses from %d (%s):",i+1,*(at->atomname[i]));
-	  for (m=0; (m<nms); m++)
-	    fprintf(debug," %d (%s)",ms[m]+1,*(at->atomname[ms[m]]));
-	  fprintf(debug,"\n");
-	}
-	
-	/* get bonds to non-dummies from atom i */
-	na2=0;
-	a2=NULL;
-	na2=get_bonds(i, NOTSET, na2, &a2, psb, is_dum);
-	if (na2==0)
-	  fprintf(stderr,
-		  "WARNING: atom (%s%d %d %s) has no bonds or "
-		  "only bonds to dummy atoms\n"
-		  "at least one bond to non-dummy atom expected\n",
-		  *(at->resname[at->atom[i].resnr]),at->atom[i].resnr+1,
-		  i+1,*(at->atomname[i]));
-	
-	/* get bonds from these atoms, excluding i */
-	snew(a3,na2);
-	snew(na3,na2);
-	for(j=0; (j<na2); j++) {
-	  na3[j]=get_bonds(a2[j], i, na3[j], &(a3[j]), psb, is_dum);
-	  if (na3[j]==1)
-	    na3[j]=get_bonds(a3[j][0], a2[j], na3[j], &(a3[j]), psb, is_dum);
-	}
-	
-	if (debug) {
-	  fprintf(debug,"Bound to %s%d %d %s (%s):",
-		  *(at->resname[at->atom[i].resnr]),at->atom[i].resnr+1,
-		  i+1,*(at->atomname[i]),ddb[n].bname);
-	  for(j=0; (j<na2); j++) {
-	    fprintf(debug, " %d (", a2[j]+1);
-	    for (k=0; (k<na3[j]); k++) 
-	      fprintf(debug, "%d ", a3[j][k]+1);
-	    fprintf(debug, ")");
-	  }
-	  fprintf(debug, "\n");
-	}
-	
-	j=i;
-	/* find dummy atoms */
-	snew(ad,ddb[n].ndum);
-	for (m=0; (m<ddb[n].ndum); m++) {
-	  ad[m]=NOTSET;
-	  strcpy(dumatnm,ddb[n].dum[m].na[0]);
-	  if (!bWild || 
-	      strncasecmp(dumatnm,*(at->atomname[i]),strlen(dumatnm))==0) {
-	    bLookH=is_hydrogen(ddb[n].dum[m].na[0]);
-	    while ( (j<at->nr) && (ad[m]==NOTSET) && 
-		    (resnr == at->atom[j].resnr) &&
-		    (!bLookH || (j==i) || is_hydrogen(*(at->atomname[j]))) ) {
-	      if (strncasecmp(dumatnm,*(at->atomname[j]),strlen(dumatnm))==0) {
-		bProcessed[j]=TRUE;/* mark dummy atom */
-		ad[m]=j;
-	      }
-	      j++;
-	    }
-	    if (ad[m]==NOTSET)
-	      fprintf(stderr,
-		      "Skipped dummy atom %s on atom type %s in residue %s%d "
-		      "(probably ok)\n",
-		      dumatnm,ddb[n].bname,*(at->resname[resnr]),resnr+1);
-	  }
-	}
-	if (debug) {
-	  fprintf(debug,"Dummies from %d (%s):",i+1,*(at->atomname[i]));
-	  for (m=0; (m<ddb[n].ndum); m++)
-	    if (ad[m]==NOTSET)
-	      fprintf(debug," NOTSET");
-	    else
-	      fprintf(debug," %d (%s)",ad[m]+1,*(at->atomname[ad[m]]));
-	  fprintf(debug,"\n");
-	}
-	
-	/* add bonds to dummy masses and between them */
-	if (!bWild) {
-	  for (m=0; (m<ddb[n].nmass); m++) {
-	    real mtot;
-	    
-	    /* first calc masses */
-	    mtot=0;
-	    for (k=0; (k < ddb[n].ndum); k++)
-	      if (ad[k]!=NOTSET)
-		mtot+=at->atom[ad[k]].m;
-	    
-	    /* find bondlengths */
-	    snew(c,ddb[n].mass[m].nm);
-	    for (k=0; (k < ddb[n].mass[m].nm); k++) {
-	      c[k][1]=500000; /* bond force constant (fictitious: SHAKE) */
-	      for (l=2; (l<MAXFORCEPARAM); l++)
-		c[k][l]=NOTSET;
-	    }
-	    switch(ddb[n].mass[m].tp) {
-	    case 1:{
-	      real mHtot,dpar,dperp,dCN,dNH,aCNH,dCM,dMM,x,y;
-	      
-	      mHtot=3*ddb[n].mass[m].c[3];/* mass of H (calc'ed in pdb2gmx) */
-	      
-	      /* get params */
-	      dCN = ddb[n].mass[m].c[0];
-	      dNH = ddb[n].mass[m].c[1];
-	      aCNH= ddb[n].mass[m].c[2];
-	      
-	      dpar  = dCN - (mHtot/mtot)*dNH*cos(DEG2RAD*aCNH);
-	      dperp =   sqrt(mHtot/mtot)*dNH*sin(DEG2RAD*aCNH);
-	      dCM = sqrt(sqr(dpar)+sqr(dperp));
-	      dMM = 2 * dperp;
-	      
-	      /* loop over bonds goes: C-M, M-M, M-C */
-	      c[0][0]=dCM; /* bondlength */
-	      c[1][0]=dMM; /* bondlength */
-	      
-	      /* now generate parameters for dummy atoms */
-	      ddb[n].dum[0].a=ddb[n].dum[0].b=dCN/(2*dpar);
-	      x=(dCN - dNH*cos(DEG2RAD*aCNH))/(2*dpar);
-	      y=0.5*sqrt(mtot/mHtot);
-	      ddb[n].dum[3].a=x+y;
-	      ddb[n].dum[3].b=x-y;
-	      /* keep x from previous calculation */
-	      y=(dNH*sin(DEG2RAD*aCNH)*sin(DEG2RAD*30))/(2*dperp);
-	      ddb[n].dum[1].a=ddb[n].dum[2].a=x-y;
-	      ddb[n].dum[1].b=ddb[n].dum[2].b=x+y;
-	      ddb[n].dum[1].c=( (dNH*sin(DEG2RAD*aCNH)*cos(DEG2RAD*30))/
-				(2*dpar*dperp) );
-	      ddb[n].dum[2].c=-ddb[n].dum[1].c;
-	    }
-	    break;
-	    default:
-	      fatal_error(0,"Invalid dummy mass type (%d) in do_dum_top\n",
-			  ddb[n].mass[m].tp);
-	    }/* end switch */
-	    
-	    /* make bonds */
-	    ai=a2[0]; /* start with first bound atom */
-	    for (k=0; (k < ddb[n].mass[m].nm); k++) {
-	      at->atom[ms[k]].m=at->atom[ms[k]].mB=mtot/ddb[n].mass[m].nm;
-	      aj=ai; /* we go around the loop */
-	      ai=ms[k];  /* next dummy mass */
-	      add_param(psb,ai,aj,c[k]);
-	      nmba++;
-	    }
-	    /* close loop of bonds */
-	    aj=ai;
-	    ai=a2[0];
-	    add_param(psb,ai,aj,c[0]);
-	    nmba++;
-	    sfree(c);
-	  }
-	}
-	
-	/* add dummy parameters */
-	for (m=0; (m<ddb[n].ndum); m++) {
-	  /* check if first atom found */
-	  if (ad[m]!=NOTSET) {
-	    /* init ak */
-	    ak[0]=ad[m];
-	    for (k=1; (k<4); k++)
-	      ak[k]=NOTSET;
-	    /* find next atoms along bonds */
-	    for (k=1; (k<4); k++) {
-	      ak[k]=get_atom(ddb[n].dum[m].na[k],is_dum[i]?NOTSET:i,
-			     nms,ms,na2,a2,na3,a3,
-			     ak,at->atomname);
-	      if (ak[k]==NOTSET)
-		fatal_error(0,"Atom %u (%s) not found along bonds "
-			    "while adding dummy atoms (%s)\n",
-			    k,ddb[n].dum[m].na[k],ddb[n].bname);
-	    }
-	    
-	    /* if no dummy masses have been added 
-	       add mass of dummy to atom i */
-	    if (ddb[n].nmass == 0) {
-	      if (at->atom[i].m == 0.0)
-		fprintf(stderr,"WARNING: adding mass of dummy atom (%d) to "
-			"massless atom (%d)\n",ak[0],i);
-	      if (ak[0]==i)
-		k=ak[1];
-	      else
-		k=i;
-	      if (debug) fprintf(debug,"adding %g to atom %d %g\n",
-				 at->atom[ak[0]].m,k+1,at->atom[k].m); 
-	      at->atom[k].m +=at->atom[ak[0]].m ;
-	      at->atom[k].mB+=at->atom[ak[0]].mB;
-	    }
-	    
-	    if (debug) {
-	      fprintf(stderr, "Adding dummy: type: %d atom: %d "
-		      "from: %d %d %d param: %g %g",ddb[n].dum[m].tp,
-		      ak[0]+1,ak[1]+1,ak[2]+1,ak[3]+1,
-		      ddb[n].dum[m].a,ddb[n].dum[m].b);
-	      if (ddb[n].dum[m].c != NOTSET)
-		fprintf(stderr," %g\n",ddb[n].dum[m].c);
-	      else
-		fprintf(stderr,"\n");
-	    }
-	    
-	    for (k=0; (k<4); k++)
-	      if (ak[k]==NOTSET)
-		fatal_error(0,"Failed to find all atoms (atom %d missing) "
-			    "in do_dum_top (%s)",k,ddb[n].bname);
-	    
-	    switch(ddb[n].dum[m].tp) {
-	    case 2: /* type 3 */
-	      add_dum3_2_param(psd3,ak[0],ak[1],ak[2],ak[3],
-			     ddb[n].dum[m].a,ddb[n].dum[m].b);
-	      break;
-	    case 3: /* type 3out */
-	      add_dum3_3_param(psd3OUT,ak[0],ak[1],ak[2],ak[3],ddb[n].dum[m].a,
-			     ddb[n].dum[m].b,ddb[n].dum[m].c);
-	      break;
-	    case 4: /* type 3fd */
-	      add_dum3_2_param(psd3FD,ak[0],ak[1],ak[2],ak[3],
-			     ddb[n].dum[m].a,ddb[n].dum[m].b);
-	      break;
-	    case 5: /* type 3fad */
-	      add_dum3_2_param(psd3FAD,ak[0],ak[1],ak[2],ak[3],
-			     ddb[n].dum[m].a,ddb[n].dum[m].b);
-	      break;
-	    default:
-	      fatal_error(0,"Dummy type %d not supported in .ddb\n",
-			  ddb[n].dum[m].tp);
-	    }
-	  }
-	}
-	
-	/* add angle constraint parameters */
-	for (m=0; (m<ddb[n].nang); m++)
-	  if (!bWild || 
-	      strncasecmp(/* this is so emacs doesn't loose track */
-			  ddb[n].ang[m].na[0],*(at->atomname[i]),
-			  strlen(ddb[n].ang[m].na[0]))==0) {
-	    for (k=0; (k<3); k++)
-	      ak[k]=NOTSET;
-	    /* find first atom (will be angle-constrained) */
-	    while ( (j<at->nr) && (ak[0]==NOTSET) ) {
-	      if (strncasecmp(
-			      ddb[n].ang[m].na[0],*(at->atomname[j]),
-			      strlen(ddb[n].ang[m].na[0]))==0) {
-		bProcessed[j]=TRUE;/* mark constrained atom */
-		ak[0]=j;
-	      }
-	      j++;
-	    }
-	    if (ak[0]==NOTSET)
-	      fatal_error(0,"Atom %s not found "
-			  "while adding angle constraints (%s)\n",
-			  ddb[n].ang[m].na[0],ddb[n].bname);
-	    /* find next atoms along bonds */
-	    for (k=1; (k<3); k++) {
-	      ak[k]=get_atom(ddb[n].ang[m].na[k],is_dum[i]?NOTSET:i,
-			     nms,ms,na2,a2,na3,a3,ak,at->atomname);
-	      if (ak[k]==NOTSET)
-		fatal_error(0,"Atom %s not found along bonds "
-			    "while adding angle constraints (%s)\n",
-			    ddb[n].ang[m].na[k],ddb[n].bname);
-	    }
-	    
-	    for (k=0; (k<4); k++)
-	      if (ak[k]==NOTSET)
-		fatal_error(0,"DEATH HORROR ERROR in do_dum_top");
-	    {
-	      real cAngCon[MAXFORCEPARAM];
-	      add_param(psb,ak[0],ak[2],ddb[n].ang[m].c);
-	      naba++;
-	    }
-	    
-	  }
-	sfree(ms);
-	sfree(a2);
-	for(j=0; (j<na2); j++)
-	  sfree(a3[j]);
-	sfree(a3);
-	sfree(na3);
-      }
-    }
-  }
-  
-  if (naba>0)
-    fprintf(stderr,"Added %d bonds to constrain angles, now %d bonds\n",
-	    naba,psb->nr-nmba);
-  if (nmba>0)
-    fprintf(stderr,"Added %d bonds to dummy masses, now %d bonds\n",
-	    nmba,psb->nr);
-  
-  /* remove bonds with dummy atoms */
-  for(i=j=0; (i<psb->nr); i++)
-    if (!is_dum[psb->param[i].AI] && !is_dum[psb->param[i].AJ]) {
-      memcpy(&(psb->param[j]),&(psb->param[i]),(size_t)sizeof(psb->param[0]));
-      j++;
-    }
-  i=psb->nr-j;
-  psb->nr=j;
-  
-  if (i>0)
-    fprintf(stderr,"Removed %d bonds to dummy atoms, now %d bonds\n",i,j);
-  
-  /* set mass of dummy atoms to 0 */
-  for(i=0; (i<at->nr); i++)
-    if (is_dum[i])
-      at->atom[i].m=at->atom[i].mB=0;
-  
-  /* cleaning up */
-  sfree(bProcessed);
-  if (debug) fflush(debug);
-}
-
-void do_dum_excl(t_block *excl, bool is_dum[])
+void do_dum_excl(t_block *excl, int dummy_type[])
 {
   int     i,j,k;
   t_block new_excl;
@@ -910,7 +678,7 @@ void do_dum_excl(t_block *excl, bool is_dum[])
   
   for (i=0; (i < excl->nr); i++) {
     new_excl.index[i]=k;
-    if (is_dum[i]) {
+    if (is_dum(dummy_type[i])) {
       /* make space */
       new_excl.nra += excl->index[i+1] - excl->index[i];
       srenew(new_excl.a, new_excl.nra+1);
@@ -929,4 +697,3 @@ void do_dum_excl(t_block *excl, bool is_dum[])
   /* give back new stuff */
   *excl=new_excl;
 }
-
