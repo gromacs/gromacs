@@ -5,7 +5,7 @@
 <!-- and also in the library directory of your local GROMACS      -->
 <!-- installation.                                                -->
 
-<!ELEMENT gromacs (inputrec,system,forcefield,atomtype*,
+<!ELEMENT gromacs (inputrec,system,forcefield,cell,
                    coordinates,velocities?,forces?)>
 <!ATTLIST gromacs
           title     CDATA #REQUIRED>
@@ -15,19 +15,19 @@
 <!ATTLIST inputrec
           algorithm ( md | steep | cg | bd | sd ) "md"
 	  nsteps    CDATA "1"
-	  init-t    CDATA "0"
-	  delta-t   CDATA "0.002">
+	  init_t    CDATA "0"
+	  delta_t   CDATA "0.002">
 
 <!-- Output frequency in number of steps -->	  
 <!ELEMENT output EMPTY>
 <!ATTLIST output
           log           CDATA "1"
-	  x-trr         CDATA "1"
-	  v-trr         CDATA "1"
-	  f-trr         CDATA "0"
+	  x_trr         CDATA "1"
+	  v_trr         CDATA "1"
+	  f_trr         CDATA "0"
 	  energy        CDATA "1"
-	  x-xtc         CDATA "1"
-	  xtc-precision CDATA "1000">
+	  x_xtc         CDATA "1"
+	  xtc_precision CDATA "1000">
 	    	 
 <!-- Coupling algorithm parameters -->		 
 <!ELEMENT coupling (tcoupling,pcoupling)>
@@ -41,28 +41,28 @@
 <!ELEMENT tcparm EMPTY>
 <!ATTLIST tcparm
           groupname CDATA ""
-	  t-ref     CDATA "300"
-	  tau-t     CDATA "0.1">
+	  t_ref     CDATA "300"
+	  tau_t     CDATA "0.1">
 
 <!-- Pressure coupling -->	  
 <!ELEMENT pcoupling (refpress,compress)>
 <!ATTLIST pcoupling
           algorithm ( None | Berendsen | ParinelloRahman ) "None"
 	  type      ( Isotropic | SemiIsotropic | Anisotropic | SurfaceTension ) "Isotropic"
-          tau-p     CDATA "1.0">
-<!ELEMENT p-ref            (rvec*)>
-<!ELEMENT compressibility  (rvec*)>
+          tau_p     CDATA "1.0">
+<!ELEMENT p_ref            (tensor)>
+<!ELEMENT compressibility  (tensor)>
 <!-- End of coupling stuff -->
 
 <!ELEMENT cutoff (pmeparm?)>
 <!ATTLIST cutoff
-          rlist       CDATA "1.0"
-	  rvdw        CDATA "1.0"
-	  rcoulomb    CDATA "1.0"
-	  rcoulswitch CDATA "0.0"
-	  rvdwswitch  CDATA "0.0"
-	  epsilonr    CDATA "1.0"
-	  nstlist     CDATA "1"
+          rneighbourlist       CDATA "1.0"
+	  rvdw                 CDATA "1.0"
+	  rcoulomb             CDATA "1.0"
+	  rcoulswitch          CDATA "0.0"
+	  rvdwswitch           CDATA "0.0"
+	  relative_permitivity CDATA "1.0"
+	  nstlist              CDATA "1"
 	  nstype      ( Grid | Simple ) "Grid"
 	  domdecomp   ( No | Yes ) "No"
 	  decompdir   ( X | Y | Z ) "Z"
@@ -93,18 +93,15 @@
 <!ATTLIST molecule 
           name   CDATA #REQUIRED>
 
-<!ELEMENT atom  EMPTY>
+<!ELEMENT atom (atomdef,atomdef?)>
 <!ATTLIST atom
+	  ptype    ( atom | dummy | shell ) "atom">
+<!ATTLIST atomdef
           name     CDATA #REQUIRED
 	  type     CDATA #REQUIRED
-	  ptype    ( atom | dummy | shell ) "atom"
-	  charge   CDATA "0">
-
-<!ELEMENT atomtype EMPTY>
-<!ATTLIST atomtype
-          type     CDATA #REQUIRED
+	  charge   CDATA #REQUIRED
 	  mass     CDATA #REQUIRED>
-	  
+
 <!ELEMENT topology (bonds*,angles*,dihedrals*)>
 
 <!ELEMENT bonds EMPTY>
@@ -212,7 +209,8 @@
           name  CDATA #REQUIRED
 	  value CDATA #REQUIRED>
 	  
-<!-- Coordinates and such: this is clear hopefully -->	  
+<!-- Coordinates and such: this is clear hopefully -->
+<!ELEMENT cell        (tensor)>
 <!ELEMENT coordinates (rvec*)>
 <!ELEMENT velocities  (rvec*)>
 <!ELEMENT forces      (rvec*)>
@@ -222,5 +220,18 @@
           x  CDATA #REQUIRED
           y  CDATA #REQUIRED
           z  CDATA #REQUIRED>
+<!ELEMENT tensor EMPTY>
+<!ATTLIST tensor
+          xx  CDATA #REQUIRED
+          yy  CDATA #REQUIRED
+          zz  CDATA #REQUIRED
+	  xy  CDATA "0"
+	  xz  CDATA "0"
+	  yx  CDATA "0"
+	  yz  CDATA "0"
+	  zx  CDATA "0"
+	  zy  CDATA "0">
+	 
+<!ELEMENT tensor EMPTY>
 
 <!-- End of GROMACS DTD -->
