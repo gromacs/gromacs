@@ -231,12 +231,12 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   CCTYPE("AFM OPTIONS");
   CTYPE("pull rate in nm/timestep");
   RTYPE("pullrate",         pull->rate,    0.0);
-  CTYPE("forceconstant in kJ/(mol*nm)");
+  CTYPE("forceconstant in kJ/(mol*nm^2)");
   RTYPE("forceconstant",    pull->k, 0.0);
 
   /* umbrella sampling options */
   CCTYPE("UMBRELLA SAMPLING OPTIONS");
-  CTYPE("Width of umbrella sampling potential (nm)");
+  CTYPE("Width of umbrella sampling potential in kJ/(mol*nm^2)");
   RTYPE("width",            pull->um_width, 0.0);
 
   /* options for making starting structures */
