@@ -496,6 +496,22 @@ static void sort_hb(int *nr_a, t_donor **donors)
 	  }
 }
 
+#define OFFSET(frame) (frame >> 8)
+#define MASK(frame)   (frame % 256)
+
+static void set_hb(unsigned char hbexist[],int frame,bool bValue)
+{
+  if (bValue)
+    hbexist[OFFSET(frame)] |= MASK(frame);
+  else
+    hbexist[OFFSET(frame)] &= !MASK(frame);
+}
+
+static bool is_hb(unsigned char hbexist[],int frame)
+{
+  return (bool) ((hbexist[OFFSET(frame)] & MASK(frame)) != 0);
+}
+
 int gmx_hbond(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -828,7 +844,7 @@ int gmx_hbond(int argc,char *argv[])
       srenew(time,max_nframes);
       if (bHBMap)
 	for (i=0; i<max_nrhb; i++)
-	  srenew(hbexist[i],max_nframes);
+	  srenew(hbexist[i],max_nframes/8);
       if (bDAnr)
 	srenew(danr,max_nframes);
     }
@@ -838,7 +854,7 @@ int gmx_hbond(int argc,char *argv[])
       nhx[nframes][i]=0;
     if (bHBMap)
       for (i=0; i<max_nrhb; i++)
-	hbexist[i][nframes]=HB_NO;
+	set_hb(hbexist[i],nframes,HB_NO);
     if (bDAnr)
       count_da_grid(ngrid, grid, danr[nframes]);
     /* loop over all gridcells (xi,yi,zi)      */
@@ -892,7 +908,8 @@ int gmx_hbond(int argc,char *argv[])
 		      }
 		      if (bHBMap)
 			/* update matrix */
-			hbexist[donors[grp][i].hb[idx].nr][nframes] |= HB_YES;
+			set_hb(hbexist[donors[grp][i].hb[idx].nr],
+			       nframes,HB_YES);
 		      
 		      /* count number of hbonds per frame */
 		      nhb[nframes]++;
@@ -987,10 +1004,10 @@ int gmx_hbond(int argc,char *argv[])
 			  nrhb++;
 			}
 			
+			/* mark insertion in hbond index */
 			if (bHBMap)
-			  /* mark insertion in hbond index */
-			  hbexist[donors[grp][i].hb[idx].nr][nframes] |= 
-			    HB_INS;
+			  set_hb(hbexist[donors[grp][i].hb[idx].nr],
+				 nframes,HB_INS);
 			
 			/* print insertion info to file */
 			fprintf(fpins,
@@ -1092,7 +1109,7 @@ int gmx_hbond(int argc,char *argv[])
       for(i=0; i<nrhb; i++) {
 	snew(rhbex[i],nframes);
 	for(j=0; j<nframes; j++)
-	  rhbex[i][j]=(hbexist[i][j] & HB_YES);
+	  rhbex[i][j]=is_hb(hbexist[i],HB_YES);
       }
       low_do_autocorr(opt2fn("-ac",NFILE,fnm), "Hydrogen Bond Autocorrelation",
 		      nframes,nrhb,-1,rhbex,time[1]-time[0],eacNormal,1,
