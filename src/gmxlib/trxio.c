@@ -46,7 +46,7 @@ static char *SRCID_trxio_c = "$Id$";
 #include "wgms.h"
 
 /* defines for frame counter output */
-static int frame=-666;
+static int frame=NOTSET;
 #define SKIP 10
 #define INITCOUNT frame=-1
 
