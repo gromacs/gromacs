@@ -35,7 +35,6 @@
  */
 static char *SRCID_levenmar_c = "$Id$";
 #include <math.h>
-#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "types/simple.h"
