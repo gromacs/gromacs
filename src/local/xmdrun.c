@@ -684,7 +684,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     clear_mat(shake_vir);
     update(nsb->natoms,START(nsb),HOMENR(nsb),
-	   0,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
+	   step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
            md,x,graph,
            fr->shift_vec,f,buf,vold,v,vt,parm->pres,parm->box,
            top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn);
@@ -750,7 +750,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bTCR)
       do_coupling(log,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr),md,&(top->idef),mu_aver);
+		  &(parm->ir),MASTER(cr),md,&(top->idef),mu_aver,
+		  top->blocks[ebMOLS].nr);
     
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);
