@@ -473,7 +473,7 @@ void xpm_mat(char *outf,
 }
 
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
-	    bool bDiag,bool bTitle,bool bLegend,bool bLegSet,
+	    bool bDiag,bool bTitle,bool bLegend,
 	    real boxx,real boxy,char *m2p,char *m2pout)
 {
   char   buf[256];
@@ -611,7 +611,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
   }
   
-  if ((!bLegSet && psr->legend) || (bLegSet && bLegend)) {
+  if (bLegend) {
     ps_comment(out,"Now it's legend time!");
     if (mat[0].bDiscrete)
       leg_discrete(out,psr->legfontsize,DDD,mat[0].legend,
@@ -631,8 +631,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 }
 
 void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
-	    bool bDiag,bool bTitle,bool bLegend,bool bLegSet,
-	    real boxx,real boxy,
+	    bool bDiag,bool bTitle,bool bLegend,real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout)
 {
   int      i,j,k;
@@ -652,8 +651,7 @@ void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
 
   
   if (epsfile!=NULL)
-    ps_mat(epsfile,nmat,mat,mat2,bDiag,bTitle,bLegend,bLegSet,
-	   boxx,boxy,m2p,m2pout);
+    ps_mat(epsfile,nmat,mat,mat2,bDiag,bTitle,bLegend,boxx,boxy,m2p,m2pout);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag);
 }
@@ -684,7 +682,6 @@ int main(int argc,char *argv[])
 
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
   int       i,nmat,nmat2;
-  bool      bLegSet;
   t_matrix *mat=NULL,*mat2=NULL;
   static bool bTitle=TRUE,bDiag=TRUE,bLegend=TRUE,bTitLab=FALSE;
   static real boxx=0,boxy=0;
@@ -718,7 +715,6 @@ int main(int argc,char *argv[])
     xpmfile=opt2fn("-xpm",NFILE,fnm);
   if ((epsfile==NULL) && (xpmfile==NULL))
     epsfile=ftp2fn(efEPS,NFILE,fnm);
-  bLegSet=opt2parg_bSet("-legend",asize(pa),pa);
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
@@ -743,7 +739,7 @@ int main(int argc,char *argv[])
       strcpy(mat2[i].label_y, mat2[i].title);
   }
 
-  do_mat(nmat,mat,nmat2,mat2,bDiag,bTitle,bLegend,bLegSet,
+  do_mat(nmat,mat,nmat2,mat2,bDiag,bTitle,bLegend,
 	 boxx,boxy,epsfile,xpmfile,
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
   
