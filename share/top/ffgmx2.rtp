@@ -1,3 +1,35 @@
+;
+; $Id$
+; 
+;       This source code is part of
+; 
+;        G   R   O   M   A   C   S
+; 
+; GROningen MAchine for Chemical Simulations
+; 
+;               VERSION 3.0b
+; 
+; Copyright (c) 1991-2001
+; BIOSON Research Institute, Dept. of Biophysical Chemistry
+; University of Groningen, The Netherlands
+; 
+; Please use these references in all publications using GROMACS:
+; GROMACS: A message-passing parallel molecular dynamics implementation
+; H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+; Comp. Phys. Comm. 91, 43-56 (1995)
+; 
+; GROMACS 3.0: A package for molecular simulation and trajectory analysis
+; Erik Lindahl, Berk Hess and David van der Spoel
+; (in preparation, hey it's a beta version anyway)
+; 
+; Also check out our WWW page:
+; http://md.chem.rug.nl/~gmx
+; or e-mail to:
+; gromacs@chem.rug.nl
+; 
+; And Hey:
+; Gyas ROwers Mature At Cryogenic Speed
+;
 [ bondedtypes ]
 ; bonds  angles  dihedrals  impropers
      1       1          1          2
