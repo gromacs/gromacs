@@ -8,8 +8,8 @@ TELLDIRS=	$(LDIRS)
 DDDIRS	=	$(DIRS)	Makefile makef
 FILES   =	NOGMX
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
-DIST	=	$FILES $(foreach DIR,$(DDDIRS),src/$(DIR))
 AUX	=	top tutor
+DIST	=	$(FILES) $(foreach DIR,$(DDDIRS),src/$(DIR)) $(AUX)
 BENCH	=	tests/bench
 TESTS	=	tests/mdrun
 GETIT	=	$(SDIRS)  src/makef
@@ -30,7 +30,7 @@ get:	clean
 
 
 cdist:	clean
-	cd $(GMXHOME); $(TARCMD) $(TDIR)/gmxcore.tar $(TARFLG) $(DIST) $(AUX)
+	cd $(GMXHOME); $(TARCMD) $(TDIR)/gmxcore.tar $(TARFLG) $(DIST)
 	cd $(GMXHOME); $(TARCMD) $(TDIR)/local.tar $(TARFLG) src/$(LOCAL)
 
 bdist:
