@@ -44,6 +44,8 @@ static char *SRCID_ionize_c = "$Id$";
 
 #define PREFIX "IONIZE: "
 
+enum { eionCYL, eionSURF, eionNR };
+
 static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
 #define NENER asize(Energies)
 
@@ -308,7 +310,7 @@ bool khole_decay(FILE *log,t_cross_atom *ca,rvec v,int *seed,real dt,int atom)
 }
 
 void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
-	    rvec v[],matrix box)
+	    rvec x[],rvec v[],matrix box)
 {
   static FILE  *xvg,*ion;
   static char  *leg[] = { "Probability", "Primary Ionization", "Integral over PI", "KHole-Decay", "Integral over KD" };
@@ -320,9 +322,9 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static int   Eindex=-1;
   real r,factor,ndv,E_lost=0,cross_atom,dvz,rrc;
   real pt,ptot,pphot,pcoll[ecollNR],mtot,delta_ekin;
-  real incoh,incoh_abs,sigmaPincoh;
+  real incoh,incoh_abs,sigmaPincoh,hboxx,hboxy,rho2;
   rvec dv,ddv;
-  bool bIonize=FALSE,bKHole,bL;
+  bool bIonize=FALSE,bKHole,bL,bDOIT;
   int  nK,nL;
   char *cc;
   int  i,j,k,kk,m,dq,nkhole;
@@ -331,18 +333,29 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     /* Get parameters for gaussian photon pulse from inputrec */
     t0    = ir->userreal1;  /* Peak of the gaussian pulse            */
     nphot = ir->userreal2;  /* Intensity                             */
-    width = ir->userreal3;  /* Width of the peak                     */
-    rho   = ir->userreal4;  /* Diameter of the focal spot            */
+    width = ir->userreal3;  /* Width of the peak (in time)           */
+    rho   = ir->userreal4;  /* Diameter of the focal spot (nm)       */
     seed  = ir->userint1;   /* Random seed for stochastic ionization */
     ephot = ir->userint2;   /* Energy of the photons                 */
     mode  = ir->userint3;   /* Mode of ionizing                      */
     
     if ((width <= 0) || (nphot <= 0))
       fatal_error(0,"Your parameters for ionization are not set properly\n"
-		  "width = %f,  nphot = %f",width,nphot);
+		  "width (userreal3) = %f,  nphot (userreal2) = %f",
+		  width,nphot);
     
-    imax  = (nphot/(M_PI*sqr(rho/2)))*1e-10*1.0/(width*sqrt(2.0*M_PI));
-
+    if ((mode < 0) || (mode >= eionNR))
+      fatal_error(0,"Ionization mode (userint3)"
+		  " should be in the range 0 .. %d",eionNR-1);
+    
+    switch (mode) {
+    case eionCYL:
+      imax  = (nphot/(M_PI*sqr(rho/2)))*1e-10*1.0/(width*sqrt(2.0*M_PI));
+      break;
+    case eionSURF:
+      imax  = (nphot/(M_PI*sqr(rho/2)))*1e-10*1.0/(width*sqrt(2.0*M_PI));
+      break;
+    }
     if (seed == 0)
       seed = 1993;
     
@@ -401,6 +414,10 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   pt          = imax*ir->delta_t*exp(-0.5*sqr((t-t0)/width));
   dq          = 0;
   nkdecay     = 0;
+
+  hboxx       = 0.5*box[XX][XX];
+  hboxy       = 0.5*box[YY][YY];
+  rho2        = sqr(rho);
   
   /* Width of gaussian for probability of incoherent scattering */
   sigmaPincoh = 1/sqrt(44.0);
@@ -422,7 +439,21 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       fprintf(debug,PREFIX"Ptot = %g, t = %g\n",ptot,t);
     
     /* Check whether to ionize this guy */
-    if ((rando(&seed) < ptot) && (ca[i].n < ca[i].z)) {
+    bDOIT = FALSE;
+    switch (mode) {
+    case eionCYL:
+      bDOIT = (((rando(&seed) < ptot) && (ca[i].n < ca[i].z)) && 
+	       ((sqr(x[i][XX] - hboxx) + sqr(x[i][YY] - hboxy)) < rho2));
+      break;
+    case eionSURF:
+      bDOIT = FALSE;
+      break;
+    default:
+      fatal_error(0,"Unknown ionization mode %d (%s, line %d)",mode,
+		  __FILE__,__LINE__);
+    }
+      
+    if (bDOIT) {
       clear_rvec(dv);
       
       /* The relative probability for a photoellastic event is given by: */
