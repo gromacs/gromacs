@@ -532,7 +532,7 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
   
   ip     = idef->iparams;
   
-  for(ftype=0; (ftype<F_NRE); ftype++) {
+  for(ftype=F_NRE-1; (ftype>=0); ftype--) {
     if (interaction_function[ftype].flags & IF_DUMMY) {
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
