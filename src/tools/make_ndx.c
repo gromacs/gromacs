@@ -642,7 +642,7 @@ static bool parse_entry(char **string,t_atoms *atoms,
       index[i]=index1[i];
     sfree(index1);
     
-    for (i=strlen(gname); i>0; i--)
+    for (i=strlen(gname)+1; i>0; i--)
       gname[i]=gname[i-1];
     gname[0]='!';
     printf("Complemented group: %u atoms\n",*nr);
