@@ -280,8 +280,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
 		       x,vold,v,vt,f,
 		       buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
-		       nshell,shells,fr,traj,t,lambda,nsb->natoms,parm->box,
-		       &bConverged);
+		       nshell,shells,fr,traj,t,lambda,mu_tot,
+		       nsb->natoms,parm->box,&bConverged);
     tcount+=count;
     
     if (bConverged)
