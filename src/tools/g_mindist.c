@@ -209,15 +209,24 @@ void mindist_plot(char *fn,FILE *atm,real mind,
   num=xvgropen(nfile,buf,"Time (ps)","Number");
 
   if (bMat) {
-    snew(leg,(ng*(ng-1))/2);
-    for(i=j=0; (i<ng-1); i++) {
-      for(k=i+1; (k<ng); k++,j++) {
-	sprintf(buf,"%s-%s",grpn[i],grpn[k]);
-	leg[j]=strdup(buf);
+    if (ng == 1) {
+      snew(leg,1);
+      sprintf(buf,"Internal in %s",grpn[0]);
+      leg[0]=strdup(buf);
+      xvgr_legend(dist,0,leg);
+      xvgr_legend(num,0,leg);
+    } 
+    else {
+      snew(leg,(ng*(ng-1))/2);
+      for(i=j=0; (i<ng-1); i++) {
+	for(k=i+1; (k<ng); k++,j++) {
+	  sprintf(buf,"%s-%s",grpn[i],grpn[k]);
+	  leg[j]=strdup(buf);
+	}
       }
+      xvgr_legend(dist,j,leg);
+      xvgr_legend(num,j,leg);
     }
-    xvgr_legend(dist,j,leg);
-    xvgr_legend(num,j,leg);
   }
   else {  
     snew(leg,ng-1);
@@ -234,13 +243,22 @@ void mindist_plot(char *fn,FILE *atm,real mind,
     fprintf(num,"%12g",t);
 
     if (bMat) {
-      for(i=0; (i<ng-1); i++) {
-	for(k=i+1; (k<ng); k++) {
-	  calc_mindist(mind,box,x0,gnx[i],gnx[k],
-		       index[i],index[k],&md,&nd,
-		       &min1,&min2);
-	  fprintf(dist,"  %12g",md);
-	  fprintf(num,"  %8d",nd);
+      if (ng == 1) {
+	calc_mindist(mind,box,x0,gnx[0],gnx[0],
+		     index[0],index[0],&md,&nd,
+		     &min1,&min2);
+	fprintf(dist,"  %12g",md);
+	fprintf(num,"  %8d",nd);
+      }
+      else {
+	for(i=0; (i<ng-1); i++) {
+	  for(k=i+1; (k<ng); k++) {
+	    calc_mindist(mind,box,x0,gnx[i],gnx[k],
+			 index[i],index[k],&md,&nd,
+			 &min1,&min2);
+	    fprintf(dist,"  %12g",md);
+	    fprintf(num,"  %8d",nd);
+	  }
 	}
       }
     }
@@ -299,7 +317,7 @@ int main(int argc,char *argv[])
   matrix     box;
   
   FILE      *atm;
-  int       ng;
+  int       i,ng;
   char      *tps,*ndx,**grpname;
   int       *gnx;
   atom_id   **index;
@@ -326,7 +344,7 @@ int main(int argc,char *argv[])
   } else {
     if (bMat)
       fprintf(stderr,"You can compute all distances between a number of groups\n"
-	      "How many groups do you want (>= 2) ?\n");
+	      "How many groups do you want (>= 1) ?\n");
     else
       fprintf(stderr,"You can compute the distances between a first group\n"
 	      "and a number of other groups.\n"
@@ -336,7 +354,7 @@ int main(int argc,char *argv[])
       scanf("%d",&ng);
       if (!bMat)
 	ng++;
-    } while (ng < 2);
+    } while (ng < 1);
   }
   snew(gnx,ng);
   snew(index,ng);
@@ -346,7 +364,23 @@ int main(int argc,char *argv[])
     read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
   
   get_index(&top.atoms,ndx,ng,gnx,index,grpname);
-  
+
+  if (bMat && (ng == 1)) {
+    ng = gnx[0];
+    printf("Special case: making distance matrix between all atoms in group %s\n",
+	   grpname[0]);
+    srenew(gnx,ng);
+    srenew(index,ng);
+    srenew(grpname,ng);
+    for(i=1; (i<ng); i++) {
+      gnx[i]      = 1;
+      grpname[i]  = grpname[0];
+      snew(index[i],1);
+      index[i][0] = index[0][i]; 
+    }
+    gnx[0] = 1;
+  }
+    
   if (bPer) {
     periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
 			  &top,gnx[0],index[0]);
