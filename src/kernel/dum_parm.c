@@ -44,6 +44,7 @@ static char *SRCID_dum_parm_c = "$Id$";
 #include "index.h"
 #include "names.h"
 #include "fatal.h"
+#include "physics.h"
 
 typedef struct {
   t_iatom a[4];
@@ -485,27 +486,32 @@ static bool calc_dum4fd_param(t_param *param,
     (aijk==NOTSET) || (aijl==NOTSET) || (aijm==NOTSET) || (akjm==NOTSET) || 
     (akjl==NOTSET);
   
-  pk = bjk*sin(aijk);
-  pl = bjl*sin(aijl);
-  pm = bjm*sin(aijm);
-  cosakl = (cos(akjl) - cos(aijk)*cos(aijl)) / (sin(aijk)*sin(aijl));
-  cosakm = (cos(akjm) - cos(aijk)*cos(aijm)) / (sin(aijk)*sin(aijm));
-  if ( cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1 )
-    fatal_error(0,"invalid construction in calc_dum4fd for atom %u: "
-		"cosakl=%g cosakm=%g\n",param->AI+1,cosakl,cosakm);
-  sinakl = sqrt(1-sqr(cosakl));
-  sinakm = sqrt(1-sqr(cosakm));
-  
-  /* note: there is a '+' because of the way the sines are calculated */
-  cl = -pk / ( pl*cosakl - pk + pl*sinakl*(pm*cosakm-pk)/(pm*sinakm) );
-  cm = -pk / ( pm*cosakm - pk + pm*sinakm*(pl*cosakl-pk)/(pl*sinakl) );
-  
-  param->C0 = cl;
-  param->C1 = cm;
-  param->C2 = -bij;
-  if (debug)
-    fprintf(debug,"params for dummy4fd %u: %g %g %g\n",
-	    param->AI+1,param->C0,param->C1,param->C2);
+  if (!bError) {
+    pk = bjk*sin(aijk);
+    pl = bjl*sin(aijl);
+    pm = bjm*sin(aijm);
+    cosakl = (cos(akjl) - cos(aijk)*cos(aijl)) / (sin(aijk)*sin(aijl));
+    cosakm = (cos(akjm) - cos(aijk)*cos(aijm)) / (sin(aijk)*sin(aijm));
+    if ( cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1 ) {
+      fprintf(stderr,"dummy atom %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
+	      param->AI+1,RAD2DEG*aijk,RAD2DEG*aijl,RAD2DEG*aijm);
+      fatal_error(0,"invalid construction in calc_dum4fd for atom %d: "
+		  "cosakl=%f, cosakm=%f\n",param->AI+1,cosakl,cosakm);
+    }
+    sinakl = sqrt(1-sqr(cosakl));
+    sinakm = sqrt(1-sqr(cosakm));
+    
+    /* note: there is a '+' because of the way the sines are calculated */
+    cl = -pk / ( pl*cosakl - pk + pl*sinakl*(pm*cosakm-pk)/(pm*sinakm) );
+    cm = -pk / ( pm*cosakm - pk + pm*sinakm*(pl*cosakl-pk)/(pl*sinakl) );
+    
+    param->C0 = cl;
+    param->C1 = cm;
+    param->C2 = -bij;
+    if (debug)
+      fprintf(debug,"params for dummy4fd %u: %g %g %g\n",
+	      param->AI+1,param->C0,param->C1,param->C2);
+  }
   
   return bError;
 }
