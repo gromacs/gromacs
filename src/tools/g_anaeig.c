@@ -333,8 +333,11 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     matrix  box;
     char    *resnm,*atnm;
     
+    if (noutvec < 3)
+      fatal_error(0,"You have selected less than 3 eigenvectors");  
+
     sprintf(str,"3D proj. of traj. on eigenv. %d, %d and %d",
-	    eignr[outvec[0]]+1,eignr[outvec[1]]+1,eignr[outvec[noutvec-1]]+1);
+	    eignr[outvec[0]]+1,eignr[outvec[1]]+1,eignr[outvec[2]]+1);
     init_t_atoms(&atoms,nframes,FALSE);
     snew(x,nframes);
     atnm=strdup("CA");
@@ -345,7 +348,7 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       atoms.atom[i].resnr=i;
       x[i][XX]=inprod[0][i];
       x[i][YY]=inprod[1][i];
-      x[i][ZZ]=inprod[noutvec-1][i];
+      x[i][ZZ]=inprod[2][i];
     }
     clear_mat(box);
     box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
@@ -530,6 +533,8 @@ int main(int argc,char *argv[])
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
     "[TT]-2d[tt]: calculate a 2d projection of a trajectory on eigenvectors",
     "[TT]-first[tt] and [TT]-last[tt].[PAR]",
+    "[TT]-3d[tt]: calculate a 3d projection of a trajectory on the first",
+    "three selected eigenvectors.[PAR]",
     "[TT]-filt[tt]: filter the trajectory to show only the motion along",
     "eigenvectors [TT]-first[tt] to [TT]-last[tt].[PAR]",
     "[TT]-extr[tt]: calculate the two extreme projections along a trajectory",
