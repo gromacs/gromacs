@@ -937,9 +937,11 @@ the amplitude of the velocity profile and 1/viscosity.</dd>
 <dd>The velocities of deformation for the box elements:
 a(x) b(y) c(z) b(x) c(x) c(y). Each step the box elements
 for which <b>deform</b> is non-zero are calculated as:
-box(t0)+(t-t0)*deform, off-diagonal elements are corrected
+box(ts)+(t-ts)*deform, off-diagonal elements are corrected
 for periodicity. The coordinates are transformed accordingly.
 Frozen degrees of freedom are (purposely) also transformed.
+The time ts is set to t at the first step and at steps at which
+x and v are written to trajectory to ensure exact restarts.
 Deformation can be used together with semiisotropic or anisotropic
 pressure coupling when the appropriate compressibilities are set to zero.
 The diagonal elements can be used to <!--Idx-->strain<!--EIdx--> a solid.

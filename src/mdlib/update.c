@@ -567,49 +567,62 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-static void deform(int start,int homenr,rvec x[],matrix box,
-		   t_inputrec *ir,int step,bool bFirstStep)
+/* Static variables for the deform algorithm */
+static int step_store;
+static matrix box_store;
+
+static void deform_store(matrix box,const t_inputrec *ir,
+			 int step,bool bFirstStep)
 {
-  static matrix box_first;
+  if (bFirstStep ||
+      ir->init_step+step == ir->nsteps ||
+      (do_per_step(step,ir->nstxout)
+       && (do_per_step(step,ir->nstvout) || ir->eI == eiBD))) {
+    /* Store the structure, so we can avoid rounding problems
+     * during slow deformation.
+     * We need to store the structure again at steps from which
+     * exact restarts can be performed.
+     */
+    step_store = step;
+    copy_mat(box,box_store);
+  }
+}
+
+static void deform(int start,int homenr,rvec x[],matrix box,
+		   const t_inputrec *ir,int step)
+{
   matrix new,invbox,mu;
   real   elapsed_time;
   int    i,j;  
 
-  if (bFirstStep) {
-    /* Save the first structure, so we can avoid rounding problems
-     * during slow deformation.
-     */
-    copy_mat(box,box_first);
-  } else {
-    elapsed_time = (step - ir->init_step)*ir->delta_t;
-    copy_mat(box,new);
-    for(i=0; i<DIM; i++)
-      for(j=0; j<DIM; j++)
-	if (ir->deform[i][j] != 0) {
-	  new[i][j] = box_first[i][j] + elapsed_time*ir->deform[i][j];
-	}
-    /* We correct the off-diagonal elements,
-     * which can grow indefinitely during shearing,
-     * so the shifts do not get messed up.
-     */
-    for(i=1; i<DIM; i++) {
-      for(j=i-1; j>=0; j--) {
-	while (new[i][j] - box[i][j] > 0.5*new[j][j])
-	  rvec_dec(new[i],new[j]);
-	while (new[i][j] - box[i][j] < -0.5*new[j][j])
-	  rvec_inc(new[i],new[j]);
+  elapsed_time = (step + 1 - step_store)*ir->delta_t;
+  copy_mat(box,new);
+  for(i=0; i<DIM; i++)
+    for(j=0; j<DIM; j++)
+      if (ir->deform[i][j] != 0) {
+	new[i][j] = box_store[i][j] + elapsed_time*ir->deform[i][j];
       }
+  /* We correct the off-diagonal elements,
+   * which can grow indefinitely during shearing,
+   * so the shifts do not get messed up.
+   */
+  for(i=1; i<DIM; i++) {
+    for(j=i-1; j>=0; j--) {
+      while (new[i][j] - box[i][j] > 0.5*new[j][j])
+	rvec_dec(new[i],new[j]);
+      while (new[i][j] - box[i][j] < -0.5*new[j][j])
+	rvec_inc(new[i],new[j]);
     }
-    m_inv_lowerleft0(box,invbox);
-    copy_mat(new,box);
-    mmul_lowerleft0(box,invbox,mu);
-
-    for(i=start; i<start+homenr; i++) {
-      x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
-      x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
-      x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
-    }
-  }	
+  }
+  m_inv_lowerleft0(box,invbox);
+  copy_mat(new,box);
+  mmul_lowerleft0(box,invbox,mu);
+  
+  for(i=start; i<start+homenr; i++) {
+    x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
+    x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
+    x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
+  }
 }
 
 
@@ -881,6 +894,8 @@ void update(int          natoms,  /* number of atoms in simulation */
 
   if(bDoUpdate) {
     update_grps(start,homenr,grps,&(ir->opts),state->v,md,bNEMD);
+    if (DEFORM(*ir))
+      deform_store(state->box,ir,step,bFirstStep);
     if(ir->epc == epcBERENDSEN) {
       berendsen_pscale(state->pcoupl_mu,state->box,start,homenr,state->x,
 		       md->cFREEZE,nrnb,ir->opts.nFreeze);
@@ -894,7 +909,7 @@ void update(int          natoms,  /* number of atoms in simulation */
           state->box[i][m] += dt*state->boxv[i][m];
     }
     if (DEFORM(*ir))
-      deform(start,homenr,state->x,state->box,ir,step,bFirstStep);
+      deform(start,homenr,state->x,state->box,ir,step);
     where();
   }
 }
