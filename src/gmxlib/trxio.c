@@ -567,6 +567,7 @@ bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box)
     while (fread_trnheader(status,&sh)) {
       bV=sh.v_size;
       fread_htrn(status,&sh,NULL,NULL,bV ? v : NULL,NULL);
+      *t = sh.t;
       if ((check_times(*t)==0) && (bV))
 	return TRUE;
       if (check_times(*t) > 0)
