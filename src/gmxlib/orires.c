@@ -114,10 +114,11 @@ void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
 
   sfree(nr_ex);
 
+  fprintf(log,"  the fit group consists of %d atoms and has total mass %g\n",
+	  od->nref,mtot);
+  
   if (mcr) {
     fprintf(log,"  the orientation restraints are ensemble averaged over %d systems\n",mcr->nnodes);
-    fprintf(log,"  the fit group consists of %d atoms and has total mass %g\n",
-	  od->nref,mtot);
 
     check_multi_int(log,mcr,fcd->orires.nr,
 		    "the number of orientation restraints");
