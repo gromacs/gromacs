@@ -478,7 +478,7 @@ int main(int argc,char *argv[])
 
   FILE     *out;
   int      n,nlast,s,nset,i,t=0;
-  real     **val,t0,dt,tot;
+  real     **val,t0,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
   char     *acfile,*msdfile,*distfile,*avfile,*eefile;
   
@@ -518,39 +518,38 @@ int main(int argc,char *argv[])
 	    d,d);
     n -= d;
     for(s=0; s<nset; s++)
-      for(i=0; i<n; i++)
+      for(i=0; (i<n); i++)
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
 
-  fprintf(stdout,"                                         relative deviation of\n");
-  fprintf(stdout,"                           standard     cumulants from those of\n");
-  fprintf(stdout,"             average       deviation    a Gaussian distribition\n");
-  fprintf(stdout,"                                            cum. 3   cum. 4\n");
+  fprintf(stdout,"                                                  relative deviation of\n");
+  fprintf(stdout,"                       standard                   cumulants from those of\n");
+  fprintf(stdout,"set      average       deviation       error      a Gaussian distribition\n");
+  fprintf(stdout,"                                                      cum. 3   cum. 4\n");
   snew(av,nset);
   snew(sig,nset);
-  for(s=0; s<nset; s++) {
+  for(s=0; (s<nset); s++) {
     cum1 = 0;
     cum2 = 0;
     cum3 = 0;
     cum4 = 0;
-    for(i=0; i<n; i++)
+    for(i=0; (i<n); i++)
       cum1 += val[s][i];
     cum1 /= n;
-    for(i=0; i<n; i++) {
+    for(i=0; (i<n); i++) {
       db = val[s][i]-cum1;
       cum2 += db*db;
       cum3 += db*db*db;
       cum4 += db*db*db*db;
     }
-    cum2 /= n;
-    cum3 /= n;
-    cum4 /= n;
+    cum2  /= n;
+    cum3  /= n;
+    cum4  /= n;
     av[s]  = cum1;
     sig[s] = sqrt(cum2);
-    /* fprintf(stdout,"Average of set %2d: %13.6e  stddev: %12.6e\n",
-	    s+1,av[s],sig); */
-    fprintf(stdout,"Set %3d:  %13.6e   %12.6e      %6.3f   %6.3f\n",
-	    s+1,av[s],sig[s],
+    error  = sqrt(cum2/(n-1));
+    fprintf(stdout,"%3d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
+	    s+1,av[s],sig[s],error,
 	    sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
 	    sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
   }
