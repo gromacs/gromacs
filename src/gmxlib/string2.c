@@ -193,7 +193,8 @@ char *wrap_lines(char *buf,int line_width, int indent)
   i2=0;
   bFirst=TRUE;
   do {
-    for(i=i0; (i<i0+line_width) && (buf[i]); i++) {
+    l2space = -1;
+    for(i=i0; ((i<i0+line_width) || (l2space==-1)) && (buf[i]); i++) {
       b2[i2++] = buf[i];
       if (buf[i] == ' ') {
         lspace = i;
@@ -216,10 +217,13 @@ char *wrap_lines(char *buf,int line_width, int indent)
 	  line_width-=indent;
 	  bFirst=FALSE;
 	}
-	b2len+=indent+1;
-	srenew(b2, b2len);
-	for(j=0; (j<indent); j++)
-	  b2[i2++]=' ';
+	b2len++;
+	if (i==i0+line_width) {
+	  b2len+=indent;
+	  srenew(b2, b2len);
+	  for(j=0; (j<indent); j++)
+	    b2[i2++]=' ';
+	}
       }
     }
   } while (buf[i]);
