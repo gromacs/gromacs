@@ -44,65 +44,61 @@
    for mdrun to interface with the pull code */
 
 typedef enum {
-  eStart, eAfm, eConstraint, eUmbrella, eTest
-} t_runtype;
+  eAfm, eConstraint, eUmbrella, ePullruntypeNR
+} t_pullruntype;
 typedef enum {
   eCom, eComT0, eDyn, eDynT0
-} t_reftype;
+} t_pullreftype;
 
 typedef struct {
-  int        n;         /* number of groups */
-  atom_id    **idx;     /* indices of pull atoms in full coordinate array */
-  real       **weights; /* position depended weight (switch function) */
-  int        *ngx;      /* pull group sizes */
-  char       **grps;    /* pull group names */
-  real       *tmass;    /* total mass of the groups */
-  rvec       **x0;      /* pull group coordinates at t=0 */
-  rvec       **xp;      /* pull group coordinates at previous step */
-  rvec       *x_ref;    /* reference positions */
-  rvec       *x_unc;    /* center of mass before constraining */
-  rvec       *x_con;    /* center of mass, obeying constraints */
-  rvec       *xprev;    /* position of coms in last written structure */
-  rvec       *f;        /* forces due to the pulling/constraining */
-  rvec       *spring;   /* coordinates of the springs (eAfm) */
-  rvec       *dir;      /* direction of constraint */
-  real       *d_ref;    /* reference distance  */
-  rvec       *xtarget;  /* target coordinates for structure generation */
-  rvec       **comhist; /* com over the last nhist steps (for running aver) */
-} t_pullgrps; 
+  atom_id    *idx;     /* indices of pull atoms in full coordinate array */
+  int        nweight;  /* The number of weights read from the param file */
+  real       *weight;  /* weights (use all 1 when nweight==0) */
+  int        ngx;      /* pull group size */
+  char       *name;    /* pull group name */
+  real       wscale;   /* scaling factor for the weights: sum w m/sum w w m */
+  real       tmass;    /* total mass of the group: wscale sum w m */
+  rvec       *x0;      /* pull group coordinates at t=0 */
+  rvec       *xp;      /* pull group coordinates at previous step */
+  dvec       x_ref;    /* reference position */
+  dvec       x_unc;    /* center of mass before constraining */
+  dvec       x_con;    /* center of mass, obeying constraints */
+  dvec       xprev;    /* position of coms in last written structure */
+  dvec       f;        /* force due to the pulling/constraining */
+  dvec       spring;   /* coordinates of the spring (eAfm) */
+  dvec       dir;      /* direction of constraint */
+  dvec       xtarget;  /* target coordinates for structure generation */
+  dvec       *comhist; /* com over the last nhist steps (for running aver) */
+  dvec       AfmVec;   /* Vector to pull along for AFM */
+  real       AfmK;     /* Force constant to use for AFM */
+  real       AfmRate;  /* Pull rate in nm/ps */
+  dvec       AfmInit;  /* Initial sprint posistions for AFM */
+  dvec       UmbPos;   /* center of umbrella potential */
+  real       UmbCons;  /* force constant of umbrella potential */
+} t_pullgrp; 
 
 typedef struct {
-  t_pullgrps dyna;      /* dynamic groups for use with local constraints */
-  t_pullgrps pull;      /* groups to pull/restrain/etc/ */
-  t_pullgrps ref;       /* reference group, reaction force grps */
-  t_runtype  runtype;   /* start, afm, constraint, umbrella, test */
-  t_reftype  reftype;   /* com, com_t0, dynamic, dynamic_t0 */
-  rvec       dims;      /* used to select components for constraint */
-  rvec       coor;      /* reaction coordinate */
-  real       r;         /* radius of cylinder for dynamic COM */
-  real       rc;        /* radius of cylinder including switch length */
-  real       start_k0;  /* starting force constant */
-  real       start_k1;  /* ending force constant */
-  real       k_rate;    /* switch between k0 and k1 over this many steps */
-  int        k_step;    /* current step */
-  real       xlt_incr;  /* write out structure every xlt_incr nm */
-  real       tolerance; /* tolerance for reaching desired coordinates (nm) */
-  real       constr_tol;/* absolute tolerance for constraints in (nm) */
-  bool       bPull;     /* true if we're doing any pulling */
-  bool       bCyl;      /* true if we're using dynamic ref. groups */
-  bool       bReverse;  /* reverse reference direction */
-  FILE       *out;      /* output file for pull data */
-  real       k;         /* force constant for atoms */
-  real       rate;      /* pull rate, in nm/timestep */
-  int        update;    /* update frequency for dynamic grps */
-  int        reflag;    /* running average over reflag steps for com */
-  bool       bVerbose;  /* be loud and noise */
-  rvec       UmbPos[4]; /* center of umbrella potentials */
-  real       UmbCons[4];/* force constant of umbrella potential */
-  int        nSkip;     /* only write output every nSkip steps */
-  bool       bCompress; /* compress output */
-  int        start_nout;/* should we output starting structure? */
-  bool       bFirst;    /* is this the first step for dynamic ref group? */
+  t_pullgrp  ref;         /* reference group, reaction force grps */
+  int        ngrp;        /* number of groups */
+  t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
+  t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
+  t_pullruntype  runtype; /* start, afm, constraint, umbrella, test */
+  t_pullreftype  reftype; /* com, com_t0, dynamic, dynamic_t0 */
+  dvec       dims;        /* used to select components for constraint */
+  int        bDir;        /* use only the direction dir */
+  dvec       dir;         /* direction */
+  real       r;           /* radius of cylinder for dynamic COM */
+  real       rc;          /* radius of cylinder including switch length */
+  real       constr_rate; /* rate of change of the constraint length (nm/ps) */
+  real       constr_tol;  /* absolute tolerance for constraints in (nm) */
+  bool       bPull;       /* true if we're doing any pulling */
+  bool       bCyl;        /* true if we're using dynamic ref. groups */
+  FILE       *out;        /* output file for pull data */
+  int        update;      /* update frequency for dynamic grps */
+  int        reflag;      /* running average over reflag steps for com */
+  bool       AbsoluteRef; /* Reference is in absolute coordinates */
+  bool       bVerbose;    /* be loud and noise */
+  int        nSkip;       /* only write output every nSkip steps */
 } t_pull;
 
 /* main pull routine that controls all the action */

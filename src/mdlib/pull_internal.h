@@ -50,33 +50,35 @@
 #define NINT(x) (x<0?((int)((x)-0.5)):((int)((x)+0.5)))
 #define DEBUG_START fprintf(stderr,"\n\nDEBUG\n");
 #define DEBUG_END   fprintf(stderr,"\nEND DEBUG\n\n");
+  
+/* Not correct for all trilinic boxes !!!
+   Should be as pbc_dx and moved to pbc.c
+*/
+extern void d_pbc_dx(matrix box,const dvec x1, const dvec x2, dvec dx);
+
+extern void put_dvec_in_box(matrix box,dvec v);
 
 /* print to output file for the various types of runs */
-extern void print_umbrella(t_pull *pull, int step);
-extern void print_afm(t_pull *pull, int step);
+extern void print_umbrella(t_pull *pull, int step, real t);
+extern void print_afm(t_pull *pull, int step, real t);
 extern void print_constraint(t_pull *pull,rvec *force,int step,matrix box,
                              int niter);
-extern void print_start(t_pull *pull, int step);
 
 
-/* calculate center of mass of index group, making sure it's inside the box.
-   function returns total mass.  
-*/
-extern real calc_com(rvec x[],       /* coordinates of all atoms in system */ 
-                     int gnx,        /* size of index group */
-                     atom_id *index, /* indices of atoms to be used for com */
+/* calculate center of mass of index group, making sure it's inside the box,
+   stores it in pg->x_unc. */
+extern void calc_com(t_pullgrp *pg,  /* the pull group */
+		     rvec x[],       /* coordinates of all atoms in system */ 
                      t_mdatoms *md,  /* all atoms */
-                     rvec com,       /* calculated center of mass */
                      matrix box);    
 
 
 /* calculate center of mass of all atoms x[], index needed to get the right
-   masses from the atom array. function returns total mass.*/
-extern real calc_com2(rvec x[],       /* coordinates to calc. com from */
-                      int gnx,        /* nr. of atom in group  */
-                      atom_id *index, /* indices of x[] in all atoms */
+   masses from the atom array,
+   stores it in pg->x_unc. */
+extern void calc_com2(t_pullgrp *pg,  /* the pull group */
+		      rvec x[],       /* coordinates to calc. com from */
                       t_mdatoms *md,  /* all atoms */
-                      rvec com,       /* calculated center of mass */
                       matrix box); 
 
 
@@ -91,10 +93,6 @@ extern void correct_t0_pbc(t_pull *pull,
                            t_mdatoms *md,
                            matrix box);
 
-
-/* parse a string for 3 numbers and put them in rvec */
-extern void string2rvec(char *buf,
-                        rvec x);
 
 /* read the parameter file .ppa and write out what was read in */
 extern void read_pullparams(t_pull *pull,

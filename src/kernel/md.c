@@ -336,9 +336,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box,START(nsb), HOMENR(nsb), cr );
-  if (pulldata.bPull && PAR(cr) && pulldata.runtype==eConstraint)
-    fatal_error(0,"Can not do constraint runs in parallel");
+  init_pull(log,nfile,fnm,&pulldata,x,mdatoms,parm->box,
+	    START(nsb),HOMENR(nsb),cr);
     
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
@@ -599,12 +598,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
     clear_mat(shake_vir);
     
-    /* All pulling except constraint type pulling happens before the update, 
-     * Constraint happens in update 
+    /* Afm and Umbrella type pulling happens before the update, 
+     * other types in update 
      */
-    if(pulldata.bPull && !(pulldata.runtype == eConstraint))
+    if (pulldata.bPull && 
+	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
       pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
-           mdatoms->nr,mdatoms, START(nsb), HOMENR(nsb), cr); 
+	   mdatoms->nr,mdatoms,START(nsb),HOMENR(nsb),cr); 
     
     if (bFFscan)
       clear_rvecs(nsb->natoms,buf);

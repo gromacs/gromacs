@@ -46,7 +46,7 @@
 #include "names.h"
 #include "fatal.h"
 #include "macros.h"
-#include "index.h"
+#include "rdgroup.h"
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
@@ -61,100 +61,77 @@
     called by the master node.
 */
 
+#define MAX_PULL_GROUPS 4
 
-void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
-               int nout, real time) 
-{
-  char buf[128],buf2[128];
-  rvec tmp,tmp1,tmp2;
-
-  sprintf(buf,"out_%d.gro",nout);
-  nout++;
-
-  /* calculate the current positions of the center of mass of the grps 
-     printed is pull - reference, so position with respect to reference
-     group 
-  */
-  if(pull->pull.n == 2) {
-    rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
-    rvec_sub(pull->pull.x_unc[1],pull->ref.x_unc[0],tmp2);
-    sprintf(buf2,"grp1:%8.3f%8.3f%8.3f grp2:%8.3f%8.3f%8.3f t:%8.3f",
-            tmp1[0],tmp1[1],tmp1[2],tmp2[0],tmp2[1],tmp2[2],time);
-  } else {
-    rvec_sub(pull->pull.x_unc[0],pull->ref.x_unc[0],tmp1);
-    sprintf(buf2,"grp1:%8.3f%8.3f%8.3f t:%8.3f",
-            tmp1[XX],tmp1[YY],tmp1[ZZ],time);
-  }
-  write_sto_conf(buf,buf2,&top->atoms,x,NULL,box);  
-}
-
-void print_start(t_pull *pull, int step) 
-{
-  int i;
-
-  for(i=0;i<pull->pull.n;i++)
-    fprintf(pull->out,"%d:%d x:%8.3f%8.3f%8.3f\n",
-            step,i,pull->pull.x_unc[i][XX],
-            pull->pull.x_unc[i][YY],pull->pull.x_unc[i][ZZ]);
-}
-
-void print_afm(t_pull *pull, int step)
+void print_afm(t_pull *pull, int step, real t) 
 {
   int i,j;
-  if(step % pull->nSkip) return;
-  for(i=0;i<pull->pull.n;i++) {
-    for(j=0;j<3;++j) {
-      if(pull->dims[j]!=0) {
-        fprintf(pull->out,"%f\t%f\t",pull->pull.x_unc[i][j],pull->pull.spring[i][j]);
+  
+  /* Do we need to do output? */
+  if (step % pull->nSkip) return;
+  
+  /* Print time */
+  fprintf(pull->out, "%f\t", t);
+  
+  /* Print COM of reference group */
+  for(j=0; j<DIM; ++j) {
+    if(pull->dims[j] != 0.0) {
+      fprintf(pull->out, "%f\t", pull->ref.x_unc[j]);
+    }
+  }
+  
+  /* Print out position of pulled groups */
+  for (i=0;i<pull->ngrp;i++) {
+    for (j=0;j<3;++j) {
+      if (pull->dims[j] != 0.0) {
+	fprintf(pull->out,"%f\t%f\t",
+		pull->grp[i].x_unc[j],pull->grp[i].spring[j]);
       }
     }
   }
   fprintf(pull->out,"\n");
-
 }
 
 void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter) 
 {
   int i,ii,m; 
-  rvec tmp,tmp2,tmp3;
+  dvec tmp,tmp2,tmp3;
 
-  if(step % pull->nSkip) return;
-  for(i=0;i<pull->pull.n;i++) {
-    if(pull->bCyl)
-      rvec_sub(pull->pull.x_con[i],pull->dyna.x_con[i],tmp);
+  if (step % pull->nSkip) return;
+  for(i=0;i<pull->ngrp;i++) {
+    if (pull->bCyl)
+      d_pbc_dx(box,pull->grp[i].x_con,pull->dyna[i].x_con,tmp);
     else
-      rvec_sub(pull->pull.x_con[i],pull->ref.x_con[0],tmp);
-    for(m=DIM-1; m>=0; m--) {
-      if(tmp[m] < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
-      if(tmp[m] >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
+      d_pbc_dx(box,pull->grp[i].x_con,pull->ref.x_con,tmp);
+    for(m=0; m<DIM; m++) {
       tmp[m] *= pull->dims[m];
     }
-    if(pull->bVerbose)
-      fprintf(pull->out,"%d:%d ds:%e f:%e n:%d\n", step,i,norm(tmp),
-              pull->pull.f[i][ZZ],niter);
+    if (pull->bVerbose)
+      fprintf(pull->out,"%d:%d ds:%e f:%e n:%d\n", step,i,dnorm(tmp),
+              pull->grp[i].f[ZZ],niter);
     else
-      fprintf(pull->out,"%e ",pull->pull.f[i][ZZ]);
+      fprintf(pull->out,"%e ",pull->grp[i].f[ZZ]);
   }
 
-  if(!pull->bVerbose)
+  if (!pull->bVerbose)
     fprintf(pull->out,"\n");
 
   /* DEBUG */ /* this code doesn't correct for pbc, needs improvement */
-  if(pull->bVerbose) {
-    for(i=0;i<pull->pull.n;i++) {
-      if(pull->bCyl)
+  if (pull->bVerbose) {
+    for(i=0;i<pull->ngrp;i++) {
+      if (pull->bCyl)
         fprintf(pull->out,"eConstraint: step %d. Refgroup = dynamic (%f,%f\n"
                 "Group %d (%s): ref. dist = %8.3f, unconstr. dist = %8.3f"
                 " con. dist = %8.3f f_i = %8.3f\n", step, pull->r,pull->rc,
-                i,pull->pull.grps[i],
-                pull->dyna.x_ref[i][ZZ]-pull->pull.x_ref[i][ZZ],
-                pull->dyna.x_unc[i][ZZ]-pull->pull.x_unc[i][ZZ],
-                pull->dyna.x_con[i][ZZ]-pull->pull.x_con[i][ZZ],
-                pull->pull.f[i][ZZ]);
+                i,pull->grp[i].name,
+                pull->dyna[i].x_ref[ZZ]-pull->grp[i].x_ref[ZZ],
+                pull->dyna[i].x_unc[ZZ]-pull->grp[i].x_unc[ZZ],
+                pull->dyna[i].x_con[ZZ]-pull->grp[i].x_con[ZZ],
+                pull->grp[i].f[ZZ]);
       else {
-        rvec_sub(pull->ref.x_ref[0],pull->pull.x_ref[i],tmp);
-        rvec_sub(pull->ref.x_unc[0],pull->pull.x_unc[i],tmp2);
-        rvec_sub(pull->ref.x_con[0],pull->pull.x_con[i],tmp3);
+        dvec_sub(pull->ref.x_ref,pull->grp[i].x_ref,tmp);
+        dvec_sub(pull->ref.x_unc,pull->grp[i].x_unc,tmp2);
+        dvec_sub(pull->ref.x_con,pull->grp[i].x_con,tmp3);
         fprintf(stderr,"grp %d:ref (%8.3f,%8.3f,%8.3f) unc(%8.3f%8.3f%8.3f\n"
                 "con (%8.3f%8.3f%8.3f)\n",i, tmp[0],tmp[1],tmp[2],
                 tmp2[0],tmp2[1],tmp2[2],tmp3[0],tmp3[1],tmp3[2]);
@@ -164,18 +141,49 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter)
 
 }
 
-void print_umbrella(t_pull *pull, int step) 
+void print_umbrella(t_pull *pull, int step, real t)
 {
   int i,m;
-  if(step % pull->nSkip) return;
-  for(i=0;i<pull->pull.n;++i) {    /* Loop over pulled groups */
-    for(m=0;m<3;++m) {             /* Loop over dimensions */
-      if(pull->dims[m]) {
-        fprintf(pull->out,"%f\t",-pull->pull.spring[i][m]);
+
+  /* Do we need to do any pulling ? */
+  if (step % pull->nSkip) return;
+
+  fprintf(pull->out, "%f\t", t);
+  
+  /* Print deviation of pulled group from desired position */
+  for (i=0; i<pull->ngrp; ++i) {    /* Loop over pulled groups */
+    for (m=0; m<DIM; ++m) {             /* Loop over dimensions */
+      if (pull->dims[m] != 0.0) {
+	fprintf(pull->out,"%f\t",-pull->grp[i].spring[m]);
       }
     }
   }
   fprintf(pull->out,"\n");
+}
+
+static void init_pullgrp(t_pullgrp *pg,char *name,char *wbuf,real UmbCons)
+{
+  double d;
+  int n;
+
+  pg->name = strdup(name);
+  pg->nweight = 0;
+  while (sscanf(wbuf,"%lf %n",&d,&n) == 1) {
+    if (pg->nweight == 0) {
+      snew(pg->weight,1);
+    } else {
+      srenew(pg->weight,pg->nweight+1);
+    }
+    pg->weight[pg->nweight++] = d;
+    wbuf += n;
+  }
+  pg->UmbCons = UmbCons;
+}
+
+static void string2dvec(char buf[], dvec nums)
+{
+  if (sscanf(buf,"%lf%lf%lf",&nums[0],&nums[1],&nums[2]) != 3)
+    fatal_error(0,"Expected three numbers at input line %s",buf);
 }
 
 void read_pullparams(t_pull *pull, char *infile, char *outfile) 
@@ -184,20 +192,18 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   int ninp,i;
   char *tmp;           /* for the input parsing macros */
   char dummy[STRLEN];  /* idem */
-  char grp1buf[STRLEN], grp2buf[STRLEN], grp3buf[STRLEN], grp4buf[STRLEN],
-  grp5buf[STRLEN],
-  bf[4][STRLEN],
-  refdir[4][STRLEN],
-  pos[4][STRLEN],
-  dir[STRLEN];
+  char refbuf[STRLEN],grpbuf[MAX_PULL_GROUPS][STRLEN],
+    refwbuf[STRLEN],wbuf[MAX_PULL_GROUPS][STRLEN],
+    bf[MAX_PULL_GROUPS][STRLEN],
+    pos[MAX_PULL_GROUPS][STRLEN],
+    dims[STRLEN],dir[STRLEN];
+  char DirTemp[MAX_PULL_GROUPS][STRLEN], InitTemp[MAX_PULL_GROUPS][STRLEN];
+  real UmbCons[MAX_PULL_GROUPS];
 
   int bReverse; int tmpref; int tmprun; 
 
-  enum {
-    erunSTART, erunAFM, erunConstraint, erunUmbrella, erunTest, erunNR
-  };
-  static const char *runtypes[erunNR+1] = { 
-    "start", "afm", "constraint", "umbrella", "test", NULL
+  static const char *runtypes[ePullruntypeNR+1] = { 
+    "afm", "constraint", "umbrella", NULL
   };
   enum {
     erefCom, erefComT0, erefDyn, erefDynT0, erefNR
@@ -226,25 +232,27 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   /* general options */
   CTYPE("GENERAL");
   EETYPE("verbose",         pull->bVerbose, verbosetypes, &nerror, TRUE);
-  EETYPE("compress",        pull->bCompress,verbosetypes, &nerror, TRUE);
   ITYPE("Skip steps",       pull->nSkip,1);
-  CTYPE("Runtype: start, afm, constraint, umbrella, test");
+  CTYPE("Runtype: afm, constraint, umbrella");
   EETYPE("runtype",         tmprun, runtypes, &nerror, TRUE);
-  CTYPE("Groups to be pulled");
-  STYPE("group_1",          grp1buf, "");
-  STYPE("group_2",          grp2buf, "");
-  STYPE("group_3",          grp3buf, "");
-  STYPE("group_4",          grp4buf, "");
+  CTYPE("Groups to be pulled and the weights (default all 1)");
+  STYPE("group_1",          grpbuf[0], "");
+  STYPE("weights_1",        wbuf[0],   "");
+  STYPE("group_2",          grpbuf[1], "");
+  STYPE("weights_2",        wbuf[1],   "");
+  STYPE("group_3",          grpbuf[2], "");
+  STYPE("weights_3",        wbuf[2],   "");
+  STYPE("group_4",          grpbuf[3], "");
+  STYPE("weights_4",        wbuf[3],   "");
   CTYPE("The group for the reaction force.");
-  STYPE("reference_group",  grp5buf, "");
+  STYPE("reference_group",  refbuf, "");
+  STYPE("reference_weights", refwbuf, "");
   CTYPE("Ref. type: com, com_t0, dynamic, dynamic_t0");
   EETYPE("reftype",         tmpref, reftypes, &nerror, TRUE);
   CTYPE("Use running average for reflag steps for com calculation");
   ITYPE("reflag",           pull->reflag, 1);
-  CTYPE("Select components for constraint vector. default: z-only");
-  STYPE("direction",        dir, "0.0 0.0 1.0");
-  CTYPE("Direction for start/afm: to_reference, from_reference");
-  EETYPE("reverse",          pull->bReverse, reversetypes, &nerror, TRUE);
+  CTYPE("Select components for the pull vector. default: z-only");
+  STYPE("direction",       dims, "0.0 0.0 1.0");
 
   /* options for dynamic reference groups */
   CTYPE("DYNAMIC REFERENCE GROUP OPTIONS");
@@ -254,50 +262,53 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   RTYPE("rc",   pull->rc,   0.0);
   CTYPE("Update frequency for dynamic reference groups (steps)");
   ITYPE("update",           pull->update, 1);
+    
 
   /* constraint run options */
   CCTYPE("CONSTRAINT RUN OPTIONS");
+  CTYPE("Direction, default: 0 0 0, no direction");
+  STYPE("constraint_direction",        dir, "0.0 0.0 0");
+  CTYPE("Rate of chance of the constraint length, in nm/ps");
+  RTYPE("constraint_rate",    pull->constr_rate, 0);
   CTYPE("Tolerance of constraints, in nm");
   RTYPE("constraint_tolerance",            pull->constr_tol, 1E-6);
 
-  /* options for AFM type pulling simulations */
+   /* options for AFM type pulling simulations */
   CCTYPE("AFM OPTIONS");
-  CTYPE("pull rate in nm/timestep");
-  RTYPE("pullrate",         pull->rate,    0.0);
-  CTYPE("forceconstant in kJ/(mol*nm^2)");
-  RTYPE("forceconstant",    pull->k, 0.0);
-
+  CTYPE("Pull rates in nm/ps");
+  RTYPE("afm_rate1",         pull->grp[0].AfmRate,    0.0);
+  RTYPE("afm_rate2",         pull->grp[1].AfmRate,    0.0);
+  RTYPE("afm_rate3",         pull->grp[2].AfmRate,    0.0);
+  RTYPE("afm_rate4",         pull->grp[3].AfmRate,    0.0);
+  CTYPE("Force constants in kJ/(mol*nm^2)");
+  RTYPE("afm_k1",    pull->grp[0].AfmK, 0.0);
+  RTYPE("afm_k2",    pull->grp[1].AfmK, 0.0);
+  RTYPE("afm_k3",    pull->grp[2].AfmK, 0.0);
+  RTYPE("afm_k4",    pull->grp[3].AfmK, 0.0);
+  CTYPE("Directions");
+  STYPE("afm_dir1",              DirTemp[0], "0.0 0.0 1.0");
+  STYPE("afm_dir2",              DirTemp[1], "0.0 0.0 1.0");
+  STYPE("afm_dir3",              DirTemp[2], "0.0 0.0 1.0");
+  STYPE("afm_dir4",              DirTemp[3], "0.0 0.0 1.0");
+  CTYPE("Initial spring positions");
+  STYPE("afm_init1",              InitTemp[0], "0.0 0.0 0.0");
+  STYPE("afm_init2",              InitTemp[1], "0.0 0.0 0.0");
+  STYPE("afm_init3",              InitTemp[2], "0.0 0.0 0.0");
+  STYPE("afm_init4",              InitTemp[3], "0.0 0.0 0.0");
+  
   /* umbrella sampling options */
   CCTYPE("UMBRELLA SAMPLING OPTIONS");
   CTYPE("Force constants for umbrella sampling in kJ/(mol*nm^2)");
   CTYPE("Centers of umbrella potentials with respect to reference:");
   CTYPE("Ref - Pull.");
-  RTYPE("K1",            pull->UmbCons[0], 0.0);
+  RTYPE("K1",            UmbCons[0], 0.0);
   STYPE("Pos1",pos[0],"0.0 0.0 0.0");
-  RTYPE("K2",            pull->UmbCons[1], 0.0);
+  RTYPE("K2",            UmbCons[1], 0.0);
   STYPE("Pos2",pos[1],"0.0 0.0 0.0");
-  RTYPE("K3",            pull->UmbCons[2], 0.0);
+  RTYPE("K3",            UmbCons[2], 0.0);
   STYPE("Pos3",pos[2],"0.0 0.0 0.0");
-  RTYPE("K4",            pull->UmbCons[3], 0.0);
+  RTYPE("K4",            UmbCons[3], 0.0);
   STYPE("Pos4",pos[3],"0.0 0.0 0.0");
-
-
-  /* options for making starting structures */
-  CCTYPE("STARTING STRUCTURE OPTIONS");
-  CTYPE("Start coord. for making starting struct, rel. to ref. grp.: x y z");
-  STYPE("r0_group1",        bf[0], "");
-  STYPE("r0_group2",        bf[1], "");
-  STYPE("r0_group3",        bf[2], "");
-  STYPE("r0_group4",        bf[3], "");
-  RTYPE("tolerance",        pull->tolerance, 0.05);
-  CTYPE("Initial K (kJ/mol/nm^2)");
-  RTYPE("k0", pull->start_k0, 0.0);
-  CTYPE("Final K (kJ/mol/nm^2)");
-  RTYPE("k1", pull->start_k1, 3500);
-  CTYPE("Switch from K0 to K1 over this many steps");
-  RTYPE("rate", pull->k_rate, 1000);
-  CTYPE("Write out structure every transstep nm");
-  RTYPE("transstep",        pull->xlt_incr, 0.001);
 
   write_inpfile(outfile,ninp,inp);
   for(i=0; (i<ninp); i++) {
@@ -306,60 +317,71 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   }
   sfree(inp);
 
-  pull->runtype = (t_runtype)tmprun;
-  pull->reftype = (t_reftype)tmpref;
+  pull->runtype = (t_pullruntype)tmprun;
+  pull->reftype = (t_pullreftype)tmpref;
 
   /* sort out the groups */
   fprintf(stderr,"Groups: %s %s %s %s %s\n",
-          grp1buf,grp2buf,grp3buf,grp4buf,grp4buf);
+          grpbuf[0],grpbuf[1],grpbuf[2],grpbuf[3],refbuf);
 
-  if(!strcmp(grp1buf,"") || !strcmp(grp5buf,""))
-    fatal_error(0,"Need to specify at least group_1 and reference_group");
-  pull->pull.n = 1;
-  if(strcmp(grp2buf,""))
-    pull->pull.n += 1;
-  if(strcmp(grp3buf,""))
-    pull->pull.n += 1;
-  if(strcmp(grp4buf,""))
-    pull->pull.n += 1;
+  if (!strcmp(refbuf, "")) {
+    if (pull->runtype == eConstraint)
+      fatal_error(0, "Constraint forces require a reference group to be sp
+ecified.\n");
+    pull->AbsoluteRef = TRUE;
+    fprintf(stderr, "Pull code using absolute reference.\n");
+  }
+  
+  if (!strcmp(grpbuf[0],""))
+    fatal_error(0,"Need to specify at least group_1.");
+  pull->ngrp = 1;
+  while (i<MAX_PULL_GROUPS && strcmp(grpbuf[pull->ngrp],""))
+    pull->ngrp++;
+  
+  fprintf(stderr,"Using %d pull groups\n",pull->ngrp);
+  
+  /* Make the pull groups */
+  init_pullgrp(&pull->ref,refbuf,refwbuf,0);
+  snew(pull->grp,pull->ngrp);
+  for(i=0; i<pull->ngrp; i++)
+    init_pullgrp(&pull->grp[i],grpbuf[i],wbuf[i],UmbCons[i]);
 
-  fprintf(stderr,"Using %d pull groups\n",pull->pull.n);
-
-  /* initialize the names of the groups */
-  snew(pull->pull.grps,pull->pull.n);
-  snew(pull->ref.grps,1);
-  pull->pull.grps[0] = (char *)strdup(grp1buf);
-  pull->pull.grps[1] = (char *)strdup(grp2buf);
-  pull->pull.grps[2] = (char *)strdup(grp3buf);
-  pull->pull.grps[3] = (char *)strdup(grp4buf);
-  pull->ref.grps[0]  = (char *)strdup(grp5buf);
-
-  /* Modified 08/11/01 JM
-     if (pull->runtype == eStart) {
-     snew(pull->pull.xtarget,pull->pull.n);
-     string2rvec(bf1,pull->pull.xtarget[0]);
-     if (pull->pull.n == 2)
-     string2rvec(bf2,pull->pull.xtarget[1]);
-     }*/
-  if(pull->runtype == eStart) {
-    snew(pull->pull.xtarget,pull->pull.n);
-    pull->k_step = 0;
-    for(i=0;i<pull->pull.n;++i) {
-      string2rvec(bf[i],pull->pull.xtarget[i]);
+  if (pull->runtype == eAfm) {
+    for (i=0; i<pull->ngrp; ++i) {
+      string2dvec(DirTemp[i], pull->grp[i].AfmVec);
+      string2dvec(InitTemp[i], pull->grp[i].AfmInit);
     }
   }
+
   if(pull->runtype == eUmbrella) {
     if(! (pull->reftype==erefCom || pull->reftype==erefComT0))
       fatal_error(0,"Umbrella sampling currently only works with COM and COM_T0 reftypes");
-    for(i=0;i<pull->pull.n;++i) {
-      string2rvec(pos[i],pull->UmbPos[i]);
+    for(i=0;i<pull->ngrp;++i) {
+      string2dvec(pos[i],pull->grp[i].UmbPos);
     }
   }
   /* End Modification */
 
-  string2rvec(dir,pull->dims);
+  string2dvec(dims,pull->dims);
+  for(i=0; i<DIM; i++)
+    if (pull->dims[i] != 0)
+      pull->dims[i] = 1;
+
   fprintf(stderr,"Using distance components %2.1f %2.1f %2.1f\n",
-          pull->dims[0],pull->dims[1],pull->dims[2]);
+	  pull->dims[0],pull->dims[1],pull->dims[2]);
+
+  string2dvec(dir,pull->dir);
+  if (pull->runtype != eConstraint ||
+      (pull->dir[XX] == 0 && pull->dir[YY] == 0 && pull->dir[ZZ] == 0)) {
+    pull->bDir = FALSE;
+    if (pull->runtype == eConstraint)
+      fprintf(stderr,"Not using directional constraining");
+  } else {
+    pull->bDir = TRUE;
+    dsvmul(1/dnorm(pull->dir),pull->dir,pull->dir);
+    fprintf(stderr,"Using directional constraining %5.2f %5.2f %5.2f\n",
+    pull->dir[XX],pull->dir[YY],pull->dir[ZZ]);
+  }
 
   if(pull->r > 0.001)
     pull->bCyl = TRUE;
@@ -392,19 +414,28 @@ void print_pull_header(t_pull * pull)
 
   fprintf(pull->out,"%d\n",pull->nSkip);
 
-  fprintf(pull->out,"%s\n",pull->ref.grps[0]);
+  fprintf(pull->out,"%s\n",pull->ref.name);
 
-  fprintf(pull->out,"%d\t%d\n",pull->pull.n,dims);
-  for(i=0;i<pull->pull.n;i++) {
-    fprintf(pull->out,"%s\t",pull->pull.grps[i]);
-    for(j=0;j<3;++j) {
-      if(pull->dims[j]!=0.0) {
-        if(pull->runtype==eUmbrella)
-          fprintf(pull->out,"%f\t%f\t",pull->UmbPos[i][j],pull->UmbCons[i]);
-        else if(pull->runtype==eAfm)
-          fprintf(pull->out,"%f\t%f\t",pull->k,pull->rate);
-        else if(pull->runtype==eConstraint)
-          fprintf(pull->out,"%f\t",pull->pull.x_unc[i][j]);
+  fprintf(pull->out,"%d\t%d\n",pull->ngrp,dims);
+  for(i=0;i<pull->ngrp;i++) {
+    fprintf(pull->out,"%s\t",pull->grp[i].name);
+
+    if (pull->runtype == eAfm) {
+      fprintf(pull->out, "%f\t%f\t%f\t%f\t%f",
+	      pull->grp[i].AfmVec[XX],
+	      pull->grp[i].AfmVec[YY],
+	      pull->grp[i].AfmVec[ZZ],
+	      pull->grp[i].AfmRate,
+	      pull->grp[i].AfmK);
+    } else {
+      for (j=0;j<3;++j) {
+	if (pull->dims[j]!=0.0) {
+	  if (pull->runtype==eUmbrella)
+	    fprintf(pull->out,"%f\t%f\t",
+		    pull->grp[i].UmbPos[j],pull->grp[i].UmbCons);
+	  else if (pull->runtype==eConstraint)
+	    fprintf(pull->out,"%f\t",pull->grp[i].x_unc[j]);
+	}
       }
     }
     fprintf(pull->out,"\n");

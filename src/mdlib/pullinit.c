@@ -49,7 +49,7 @@
 #include "names.h"
 #include "fatal.h"
 #include "macros.h"
-#include "index.h"
+#include "rdgroup.h"
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
@@ -57,24 +57,6 @@
 #include "pull_internal.h"
 #include "string.h"
 #include "pbc.h"
-
-static void get_pullmemory(t_pullgrps *pull, int ngrps) 
-{
-  snew(pull->ngx,ngrps);   
-  snew(pull->x_con,ngrps);     
-  snew(pull->xprev,ngrps);
-  snew(pull->tmass,ngrps); 
-  snew(pull->idx,ngrps);      
-  snew(pull->f,ngrps);        
-  snew(pull->spring,ngrps);        
-  snew(pull->dir,ngrps);
-  snew(pull->x_unc,ngrps);   
-  snew(pull->x_ref,ngrps);
-  snew(pull->d_ref,ngrps);
-  snew(pull->x0,ngrps);
-  snew(pull->xp,ngrps);
-  snew(pull->comhist,ngrps);
-}
 
 static void print_info(FILE *log,t_pull *pull) 
 {
@@ -84,9 +66,6 @@ static void print_info(FILE *log,t_pull *pull)
           "**************************************************\n");
 
   switch(pull->runtype) {
-  case eStart:
-    fprintf(log,"RUN TYPE: Generating Starting structures\n");
-    break;
   case eAfm:
     fprintf(log,"RUN TYPE: Afm\n");
     break;
@@ -96,67 +75,33 @@ static void print_info(FILE *log,t_pull *pull)
   case eUmbrella:
     fprintf(log,"RUN TYPE: Umbrella sampling\n");
     break;
-  case eTest:
-    fprintf(log,"RUN TYPE: Test run\n");
-    break;
   default:
     fprintf(log,"RUN TYPE: WARNING! pullinit does not know this runtype\n");
   }
 
-  if(pull->runtype == eConstraint || pull->runtype == eStart || pull->runtype == eUmbrella)
-    switch(pull->reftype) {
-    case eCom: 
-      fprintf(log,"REFERENCE TYPE: center of mass of reference group\n");
-      break;
-    case eComT0:
-      fprintf(log,
-              "REFERENCE TYPE: center of mass of reference group at t=0\n");
-      break;
-    case eDyn:
-      fprintf(log, "REFERENCE TYPE: center of mass of dynamically made groups\n");
-      fprintf(log,"Using dynamic reference groups: r=%8.3f, rc=%8.3f\n",
-              pull->r,pull->rc);
-      break;
-    case eDynT0:
-      fprintf(log,
-              "REFERENCE TYPE: center of mass of dynamically made groups,\n"
-              "based on the positions of its atoms at t=0\n");
-      fprintf(log,"Using dynamic reference groups: r=%8.3f, rc=%8.3f\n",
-              pull->r,pull->rc);
-      break;
-    default:
-      fprintf(log,"REFERENCE TYPE: no clue! What did you do wrong?\n");
-    }
-}
-
-static void get_named_indexgroup(FILE *log,atom_id **target,int *isize,
-                                 char *name,atom_id **index,int ngx[],
-                                 char **grpnames,int ngrps, t_commrec * cr) 
-{
-  int i,j;
-  bool bFound = FALSE;
-  atom_id *tmp = NULL;
-
-  if(MASTER(cr))
-    fprintf(log,"Looking for group %s: ",name);
-
-  for(i=0;i<ngrps;i++) {
-    if(!strcmp(name,grpnames[i])) {
-      /* found the group we're looking for */
-      snew(tmp,ngx[i]);
-      for(j=0;j<ngx[i];j++)
-        tmp[j]=index[i][j];
-      *isize=ngx[i];
-      bFound = TRUE;
-      if(MASTER(cr))
-        fprintf(log,"found group %s: %d elements. First: %d\n",name,ngx[i],
-                tmp[0]);
-    }
+  switch(pull->reftype) {
+  case eCom: 
+    fprintf(log,"REFERENCE TYPE: center of mass of reference group\n");
+    break;
+  case eComT0:
+    fprintf(log,
+	    "REFERENCE TYPE: center of mass of reference group at t=0\n");
+    break;
+  case eDyn:
+    fprintf(log, "REFERENCE TYPE: center of mass of dynamically made groups\n");
+    fprintf(log,"Using dynamic reference groups: r=%8.3f, rc=%8.3f\n",
+	    pull->r,pull->rc);
+    break;
+  case eDynT0:
+    fprintf(log,
+	    "REFERENCE TYPE: center of mass of dynamically made groups,\n"
+	    "based on the positions of its atoms at t=0\n");
+    fprintf(log,"Using dynamic reference groups: r=%8.3f, rc=%8.3f\n",
+	    pull->r,pull->rc);
+    break;
+  default:
+    fprintf(log,"REFERENCE TYPE: no clue! What did you do wrong?\n");
   }
-
-  *target=tmp;
-  if(!bFound)
-    fatal_error(0,"Can't find group %s in the index file",name);
 }
 
 static void read_whole_index(char *indexfile,char ***grpnames,
@@ -211,43 +156,87 @@ static void print_whole_index(char **grpnames, atom_id **index, int *ngx,
   }
 }
 
+static void set_mass(t_pullgrp *pg,t_mdatoms *md)
+{
+  int i;
+  real m,w;
+  double wmass,wwmass;
+  
+  wmass = 0;
+  wwmass = 0;
+  for(i=0; i<pg->ngx; i++) {
+    m = md->massT[pg->idx[i]];
+    if (pg->nweight > 0)
+      w = pg->weight[i];
+    else
+      w = 1;
+    wmass += w*m;
+    wwmass += w*w*m;
+  }
+  pg->wscale = wmass/wwmass;
+  pg->tmass  = pg->wscale*wmass;
+}
+
+static void get_pull_index(FILE *log,t_pullgrp *pgrp,
+			   atom_id **index,int *ngx,char **grpnames,
+			   int totalgrps,t_commrec *cr)
+{
+  int i,j;
+  bool bFound = FALSE;
+
+  if (MASTER(cr))
+    fprintf(log,"Looking for group %s: ",pgrp->name);
+
+  for(i=0;i<totalgrps;i++) {
+    if(strcmp(pgrp->name,grpnames[i]) == 0) {
+      /* found the group we're looking for */
+      snew(pgrp->idx,ngx[i]);
+      for(j=0;j<ngx[i];j++)
+        pgrp->idx[j] = index[i][j];
+      pgrp->ngx = ngx[i];
+      bFound = TRUE;
+      if(MASTER(cr))
+        fprintf(log,"found group %s: %d elements. First: %d\n",
+		pgrp->name,ngx[i],pgrp->idx[0]);
+    }
+  }
+
+  if(!bFound)
+    fatal_error(0,"Can't find group %s in the index file",pgrp->name);
+
+  if (pgrp->nweight > 0 && pgrp->nweight != pgrp->ngx)
+    fatal_error(0,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->ngx);
+}
+
 void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
                t_mdatoms *md, matrix box, int start, int homenr, t_commrec * cr) 
 {
-  int i,j,m,ii;
-  int ngrps;
-  real tm;
-  rvec tmp;
+  int  i,j,m,ii;
+  dvec tmp;
   char **grpnames;
   atom_id **index;
-  int *ngx;
-  int totalgrps;    /* total number of groups in the index file */
+  int  *ngx;
+  int  totalgrps;    /* total number of groups in the index file */
   char buf[256];
 
   /* do we have to do any pulling at all? If not return */
   pull->bPull = opt2bSet("-pi",nfile,fnm);
-  if(!pull->bPull) return;
+  if (!pull->bPull)
+    return;
 
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
-  ngrps = pull->pull.n;
+
+  if (cr->nnodes > 1 && pull->runtype == eConstraint)
+    fatal_error(0,"Can not do constraint force calculation in parallel!\n");
 
   /* Only do I/O if we are the MASTER */
-  if(MASTER(cr)) {
+  if (MASTER(cr)) {
     char * filename = opt2fn("-pd", nfile, fnm); 
 
-    /* Do we need to compress the output? */
-    if(pull->bCompress) {
-      /* Set pdo file to be gzipped */
-      /* This should probably be fixed so that it won't overwrite
-         existing files
-      */
-      sprintf(buf,"/bin/gzip -f -c > %s", filename);
-            if((pull->out = popen(buf,"w"))==NULL)
-        fatal_error(0,"Could not execute %s.",buf);
-    } else {
-      pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
-    }
+    pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
   }
+
+  pull->AbsoluteRef = FALSE;
 
   if(pull->reftype == eDyn || pull->reftype == eDynT0)
     pull->bCyl = TRUE;
@@ -260,10 +249,6 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   if(MASTER(cr)) {
     print_info(log,pull);
   }
-
-  get_pullmemory(&pull->pull,ngrps);
-  get_pullmemory(&pull->dyna,ngrps);
-  get_pullmemory(&pull->ref,1);
 
   /* read the whole index file */
   read_whole_index(opt2fn("-pn",nfile,fnm),&grpnames,&index,&ngx,&totalgrps);
@@ -280,130 +265,123 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 
 
   /* grab the groups that are specified in the param file */
-  for(i=0;i<pull->pull.n;i++)
-    get_named_indexgroup(log,&pull->pull.idx[i],&pull->pull.ngx[i],
-                         pull->pull.grps[i],index,ngx,grpnames,totalgrps,cr);
+  for(i=0;i<pull->ngrp;i++)
+    get_pull_index(log,&pull->grp[i],index,ngx,grpnames,totalgrps,cr);
 
-  get_named_indexgroup(log,&pull->ref.idx[0],&pull->ref.ngx[0],
-                       pull->ref.grps[0],index,ngx,grpnames,totalgrps,cr);
+  if (!pull->AbsoluteRef) {
+    get_pull_index(log,&pull->ref,index,ngx,grpnames,totalgrps,cr);
+    
+    /* get more memory! Don't we love C? */
+    snew(pull->ref.x0,pull->ref.ngx);
+    snew(pull->ref.xp,pull->ref.ngx);
+    snew(pull->ref.comhist,pull->reflag);
+  } else {
+    pull->ref.ngx = 0;
+  }
 
-  /* get more memory! Don't we love C? */
-  snew(pull->ref.x0[0],pull->ref.ngx[0]);
-  snew(pull->ref.xp[0],pull->ref.ngx[0]);
-  snew(pull->ref.comhist[0],pull->reflag);
-  for(i=0;i<pull->pull.n;i++)
-    snew(pull->dyna.comhist[i],pull->reflag);
-
-  for(i=0;i<ngrps;i++) {
-    tm = calc_com(x,pull->pull.ngx[i],pull->pull.idx[i],
-                  md,tmp,box);
-    copy_rvec(tmp,pull->pull.x_con[i]);
-    copy_rvec(tmp,pull->pull.x_unc[i]);
-    copy_rvec(tmp,pull->pull.x_ref[i]);
-    copy_rvec(tmp,pull->pull.spring[i]);
+  for(i=0;i<pull->ngrp;i++) {
+    set_mass(&pull->grp[i],md);
+    calc_com(&pull->grp[i],x,md,box);
+    copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_con);
+    copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_ref);
+    copy_dvec(pull->grp[i].x_unc,pull->grp[i].spring);
     if(MASTER(cr)) {
       fprintf(log,"Initializing pull groups. Mass of group %d: %8.3f\n"
               "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-              i,tm,tmp[XX],tmp[YY],tmp[ZZ]);
+              i,pull->grp[i].tmass,
+	      pull->grp[i].x_ref[XX],
+	      pull->grp[i].x_ref[YY],
+	      pull->grp[i].x_ref[ZZ]);
     }
-    pull->pull.tmass[i] = tm;
   }
 
   /* initialize the reference group, in all cases */
-  tm = calc_com(x,pull->ref.ngx[0],pull->ref.idx[0],md,
-                tmp,box);
-
-  copy_rvec(tmp,pull->ref.x_unc[0]);
-  copy_rvec(tmp,pull->ref.x_con[0]);
-  copy_rvec(tmp,pull->ref.x_ref[0]);
+  if (!pull->AbsoluteRef) {
+    set_mass(&pull->ref,md);
+    calc_com(&pull->ref,x,md,box);
+  } else {
+    for(i=0; i<DIM; i++) 
+      pull->ref.x_unc[i] = 0;
+  }
+  copy_dvec(pull->ref.x_unc,pull->ref.x_con);
+  copy_dvec(pull->ref.x_unc,pull->ref.x_ref);
 
   for(j=0;j<pull->reflag;j++)
-    copy_rvec(pull->ref.x_unc[0],pull->ref.comhist[0][j]);
+    copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
 
   if(MASTER(cr))
     fprintf(log,"Initializing reference group. Mass: %8.3f\n"
             "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-            tm,tmp[XX],tmp[YY],tmp[ZZ]);
+            pull->ref.tmass,
+	    pull->ref.x_ref[XX],
+	    pull->ref.x_ref[YY],
+	    pull->ref.x_ref[ZZ]);
 
   /* keep the initial coordinates for center of mass at t0 */
-  for(j=0;j<pull->ref.ngx[0];j++) {
-    copy_rvec(x[pull->ref.idx[0][j]],pull->ref.x0[0][j]);
-    copy_rvec(x[pull->ref.idx[0][j]],pull->ref.xp[0][j]);
+  for(j=0;j<pull->ref.ngx;j++) {
+    copy_rvec(x[pull->ref.idx[j]],pull->ref.x0[j]);
+    copy_rvec(x[pull->ref.idx[j]],pull->ref.xp[j]);
   }
-  pull->ref.tmass[0] = tm;
-
-  /* Initialize a couple of formerly static vars */
-  pull->start_nout = 0;
-  pull->bFirst = FALSE;
 
   /* if we use dynamic reference groups, do some initialising for them */
   if(pull->bCyl) {
+    if (pull->AbsoluteRef)
+      fatal_error(0, "Dynamic reference groups are not support when using absolute reference!\n");
+
+    snew(pull->dyna,pull->ngrp);
+    for(i=0;i<pull->ngrp;i++) {
+      snew(pull->dyna[i].idx,pull->ref.ngx);    /* more than nessary */
+      snew(pull->dyna[i].weight,pull->ref.ngx);
+      snew(pull->dyna[i].comhist,pull->reflag);
+    }
     make_refgrps(pull,x,md);
-    for(i=0;i<ngrps;i++) {
-      copy_rvec(pull->dyna.x_unc[i],pull->dyna.x_con[i]);
-      copy_rvec(pull->dyna.x_unc[i],pull->dyna.x_ref[i]);
+    for(i=0; i<pull->ngrp; i++) {
+      copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].x_con);
+      copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].x_ref);
 
       /* initialize comhist values for running averages */
       for(j=0;j<pull->reflag;j++)
-        copy_rvec(pull->dyna.x_unc[i],pull->dyna.comhist[i][j]);
+        copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].comhist[j]);
 
       if(MASTER(cr)) {
         fprintf(log,"Initializing dynamic groups. %d atoms. Weighted mass"
                 "for %d:%8.3f\n"
                 "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-                pull->dyna.ngx[i],i,pull->dyna.tmass[i],pull->dyna.x_ref[i][XX],
-                pull->dyna.x_ref[i][YY],pull->dyna.x_ref[i][ZZ]);
+                pull->dyna[i].ngx,i,pull->dyna[i].tmass,pull->dyna[i].x_ref[XX],
+                pull->dyna[i].x_ref[YY],pull->dyna[i].x_ref[ZZ]);
       }
     }
   }
 
   /* set the reference distances and directions, taking into account pbc */
-  for(i=0;i<ngrps;i++) {
-    if(pull->bCyl)
-      rvec_sub(pull->pull.x_ref[i],pull->dyna.x_ref[i],tmp);
-    else
-      rvec_sub(pull->pull.x_ref[i],pull->ref.x_ref[0],tmp);
-    for(m=DIM-1; m>=0; m--) {
-      if(tmp[m] < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
-      if(tmp[m] >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
+  for(i=0; i<pull->ngrp; i++) {
+    if (pull->bDir) {
+      copy_dvec(pull->dir,pull->grp[i].dir);
+    } else {
+      if(pull->bCyl)
+	d_pbc_dx(box,pull->grp[i].x_ref,pull->dyna[i].x_ref,tmp);
+      else
+	d_pbc_dx(box,pull->grp[i].x_ref,pull->ref.x_ref,tmp);
+      
+      /* select elements of direction vector to use for Afm and Start runs */
+      for(m=0; m<DIM; m++)
+	tmp[m] *= pull->dims[m];
+      dsvmul(1/dnorm(tmp),tmp,pull->grp[i].dir);
     }
-
-    /* reference distance for constraint run */
-    pull->pull.d_ref[i] = norm(tmp);
-
-    /* select elements of direction vector to use for Afm and Start runs */
-    for(m=0;m<DIM;m++)
-      tmp[m] = tmp[m] * pull->dims[m];
-    svmul(1/norm(tmp),tmp,pull->pull.dir[i]);
-    if(pull->bReverse)
-      svmul(-1.0,pull->pull.dir[i],pull->pull.dir[i]);
 
     if(MASTER(cr)) {
-      if(pull->runtype == eAfm)
-        fprintf(log,"\nPull rate: %e nm/step. Force constant: %e kJ/(mol nm)",
-                pull->rate,pull->k);
-      if(pull->runtype == eAfm || pull->runtype == eStart)
-        fprintf(log,"\nPull direction: %8.3f %8.3f %8.3f bReverse = %d\n",
-                pull->pull.dir[i][XX],pull->pull.dir[i][YY],
-                pull->pull.dir[i][ZZ],pull->bReverse);
-
-      fprintf(log,"**************************************************\n"
-                  "                      END   PULL INFO                    \n"
-                  "**************************************************\n\n");
+      if (pull->runtype == eAfm)
+	for(m=0; m<pull->ngrp; ++m) {
+	  fprintf(log,"\nPull rate: %e nm/ns. Force constant: %e kJ/(mol nm)",
+		  pull->grp[m].AfmRate,pull->grp[m].AfmK);
+	  
+	  fprintf(log,"\nPull direction: %8.3f %8.3f %8.3f\n",
+		  pull->grp[i].dir[XX],pull->grp[i].dir[YY],
+		  pull->grp[i].dir[ZZ]);
+	}
     }
   }
-  if(MASTER(cr)) {
+
+  if(MASTER(cr))
     print_pull_header(pull);
-  }
 }
-
-
-
-
-
-
-
-
-
-
-

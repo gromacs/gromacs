@@ -45,68 +45,95 @@
 #include "names.h"
 #include "fatal.h"
 #include "macros.h"
-#include "index.h"
+#include "rdgroup.h"
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
+#include "pbc.h"
 #include "pull.h"
 #include "pull_internal.h"
 
-/* calculates center of mass of selection index from all coordines x */
-real calc_com(rvec x[],int gnx,atom_id *index,t_mdatoms *md,
-              rvec com,matrix box)
+void d_pbc_dx(matrix box,const dvec x1, const dvec x2, dvec dx)
+{
+  int m,d;
+  
+  /* Not correct for all trilinic boxes !!!
+     Should be as pbc_dx and moved to pbc.c
+  */
+  dvec_sub(x1,x2,dx);
+  for(m=DIM-1; m>=0; m--) {
+    while (dx[m]   < -0.5*box[m][m])
+      for(d=0; d<DIM; d++)
+	dx[d] += box[m][d];
+    while (dx[m]   >=  0.5*box[m][m]) 
+      for(d=0; d<DIM; d++)
+	dx[d] -= box[m][d];
+  }
+}
+
+void put_dvec_in_box(matrix box, dvec v)
+{
+  int m,d;
+  
+  for(m=DIM-1; m>=0; m--) {
+    while (v[m] < 0)
+      for(d=0; d<DIM; d++)
+	v[d] += box[m][d];
+    while (v[m] >= box[m][m])
+      for(d=0; d<DIM; d++)
+	v[d] -= box[m][d];
+  }
+}
+
+/* calculates center of mass of selection index from all coordinates x */
+void calc_com(t_pullgrp *pg, rvec x[], t_mdatoms *md, matrix box)
 {
   int  i,ii,m;
-  real m0,tm;
+  real wm;
+  dvec com;
 
-  clear_rvec(com);
-  tm=0;
-  for(i=0; (i<gnx); i++) {
-    ii=index[i];
-    m0=md->massT[ii];
-    tm+=m0;
-    for(m=0; (m<DIM); m++)
-      com[m]+=m0*x[ii][m];
+  clear_dvec(com);
+  for(i=0; i<pg->ngx; i++) {
+    ii = pg->idx[i];
+    wm = md->massT[ii];
+    if (pg->nweight > 0)
+      wm *= pg->weight[i];
+    for(m=0; m<DIM; m++)
+      com[m] += wm*x[ii][m];
   }
-  svmul(1/tm,com,com);
-  for(m=DIM-1; m>=0; m--) {
-    if(com[m] < 0        ) rvec_inc(com,box[m]);
-    if(com[m] > box[m][m]) rvec_dec(com,box[m]);
-  }
-
-  return tm;
+  for(m=0; m<DIM; m++)
+    com[m] *= pg->wscale/pg->tmass;
+  put_dvec_in_box(box,com);
+  copy_dvec(com,pg->x_unc);
 }
 
 /* calculates com of all atoms in x[], *index has their index numbers
    to get the masses from atom[] */
-real calc_com2(rvec x[],int gnx,atom_id *index,t_mdatoms *md,rvec com,
-               matrix box)
+void calc_com2(t_pullgrp *pg, rvec x[], t_mdatoms *md, matrix box)
 {
   int  i,ii,m;
-  real m0,tm;
+  real wm;
+  dvec com;
 
-  clear_rvec(com);
-  tm=0;
-  for(i=0; (i<gnx); i++) {
-    ii=index[i];
-    m0=md->massT[ii];
-    tm+=m0;
-    for(m=0; (m<DIM); m++)
-      com[m]+=m0*x[i][m];
+  clear_dvec(com);
+  for(i=0; i<pg->ngx; i++) {
+    ii = pg->idx[i];
+    wm = md->massT[ii];
+    if (pg->nweight > 0)
+      wm *= pg->weight[i];
+    for(m=0; m<DIM; m++)
+      com[m] += wm*x[i][m];
   }
-  svmul(1/tm,com,com);
-  for(m=DIM-1; m>=0; m--) {
-    /* next two lines used to be commented out */
-    if(com[m] < 0        ) rvec_inc(com,box[m]);
-    if(com[m] > box[m][m]) rvec_dec(com,box[m]);
-  }
-  return tm;
+  for(m=0; m<DIM; m++)
+    com[m] *= pg->wscale/pg->tmass;
+  put_dvec_in_box(box,com);
+  copy_dvec(com,pg->x_unc);
 }
 
 void calc_running_com(t_pull *pull) {
   int i,j,n;
-  rvec ave;
-  real tm;
+  dvec ave;
+  double tm;
 
   /* for group i, we have nhist[i] points of history. The maximum nr of points
      is pull->reflag. The array comhist[i][0..nhist[i]-1] has the positions
@@ -118,99 +145,72 @@ void calc_running_com(t_pull *pull) {
 
   if(pull->bCyl) {
     /* act on dyna groups */
-    for(i=0;i<pull->pull.n;i++) {
-      clear_rvec(ave);
+    for(i=0;i<pull->ngrp;i++) {
+      clear_dvec(ave);
       for(j=0;j<(pull->reflag-1);j++) {
-        copy_rvec(pull->dyna.comhist[i][j+1],pull->dyna.comhist[i][j]);
-        rvec_add(ave,pull->dyna.comhist[i][j],ave);
+        copy_dvec(pull->dyna[i].comhist[j+1],pull->dyna[i].comhist[j]);
+        dvec_add(ave,pull->dyna[i].comhist[j],ave);
       }
-      copy_rvec(pull->dyna.x_unc[i],pull->dyna.comhist[i][j]);
-      rvec_add(ave,pull->dyna.x_unc[i],ave);
-      svmul(1.0/pull->reflag,ave,ave); 
+      copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].comhist[j]);
+      dvec_add(ave,pull->dyna[i].x_unc,ave);
+      dsvmul(1.0/pull->reflag,ave,ave); 
 
       /* now ave has the running com for group i, copy it to x_unc[i] */
-      copy_rvec(ave,pull->dyna.x_unc[i]);
+      copy_dvec(ave,pull->dyna[i].x_unc);
 
 #ifdef DEBUG
       if(pull->bVerbose)
         for(n=0;n<pull->reflag;n++)
           fprintf(stderr,"Comhist %d, grp %d: %8.3f%8.3f%8.3f\n",n,i,
-                  pull->dyna.comhist[i][n][XX],
-                  pull->dyna.comhist[i][n][YY],
-                  pull->dyna.comhist[i][n][ZZ]);
+                  pull->dyna[i].comhist[n][XX],
+                  pull->dyna[i].comhist[n][YY],
+                  pull->dyna[i].comhist[n][ZZ]);
 #endif
     }
   } else {
     /* act on ref group */
-    clear_rvec(ave);
+    clear_dvec(ave);
 
     for(j=0;j<(pull->reflag-1);j++) {
-      copy_rvec(pull->ref.comhist[0][j+1],pull->ref.comhist[0][j]);
-      rvec_add(ave,pull->ref.comhist[0][j],ave);
+      copy_dvec(pull->ref.comhist[j+1],pull->ref.comhist[j]);
+      dvec_add(ave,pull->ref.comhist[j],ave);
     }
 
-    copy_rvec(pull->ref.x_unc[0],pull->ref.comhist[0][j]);
-    rvec_add(ave,pull->ref.x_unc[0],ave);
-    svmul(1.0/pull->reflag,ave,ave); 
-    /* now ave has the running com for group i, copy it to x_unc[0] */
-    copy_rvec(ave,pull->ref.x_unc[0]);
+    copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
+    dvec_add(ave,pull->ref.x_unc,ave);
+    dsvmul(1.0/pull->reflag,ave,ave); 
+    /* now ave has the running com for group i, copy it to x_unc */
+    copy_dvec(ave,pull->ref.x_unc);
 
 #ifdef DEBUG
     if(pull->bVerbose)
       for(i=0;i<pull->reflag;i++)
         fprintf(stderr,"Comhist %d: %8.3f%8.3f%8.3f\n",i,
-                pull->ref.comhist[0][i][XX],
-                pull->ref.comhist[0][i][YY],
-                pull->ref.comhist[0][i][ZZ]);
+                pull->ref.comhist[i][XX],
+                pull->ref.comhist[i][YY],
+                pull->ref.comhist[i][ZZ]);
 #endif
   }
 }
 
 void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
   int i,ii,j,m;
-  real tm;
-  rvec com,dx;
+  rvec dx;
 
   /* loop over all atoms in index for group i. Check if they moved
      more than half a box with respect to xp. If so add/subtract a box 
      from x0. Copy x to xp.
    */
-  for(i=0;i<pull->ref.ngx[0];i++) {
-    ii = pull->ref.idx[0][i];
+  for(i=0;i<pull->ref.ngx;i++) {
+    ii = pull->ref.idx[i];
 
     /* correct for jumps across the box */
-    rvec_sub(x[ii],pull->ref.xp[0][i],dx);
-    for(m=DIM-1; m>=0; m--) {
-      if(dx[m] < -0.5*box[m][m]) {
-        rvec_inc(dx,box[m]);
-        if(pull->bVerbose && pull->dims[m])
-          fprintf(stderr,"Jumped +box: nr %d dir: %d old:%8.3f\n",ii,m,
-                  pull->ref.x0[0][i][m]);
-      }
-
-      if(dx[m] >  0.5*box[m][m]) {
-        rvec_dec(dx,box[m]);
-        if(pull->bVerbose && pull->dims[m])
-          fprintf(stderr,"Jumped -box: nr %d dir: %d old:%8.3f\n",ii,m,
-                  pull->ref.x0[0][i][m]);
-      }
-
-      pull->ref.x0[0][i][m] += dx[m];
-      pull->ref.xp[0][i][m]  = x[ii][m];
+    pbc_dx(x[ii],pull->ref.xp[i],dx);
+    for(m=0; m<DIM; m++) {
+      pull->ref.x0[i][m] += dx[m];
+      pull->ref.xp[i][m]  = x[ii][m];
     }
   }
-  tm = calc_com2(pull->ref.x0[0],pull->ref.ngx[0],pull->ref.idx[0],
-                 md,com,box);
-  if(pull->bVerbose)
-    fprintf(stderr,"correct_t0: Group %s: mass:%8.3f com:%8.3f%8.3f%8.3f\n",
-            pull->ref.grps[0],tm,com[0],com[1],com[2]);
-}
-
-void string2rvec(char buf[], rvec nums) {
-  float a,b,c;
-  if(sscanf(buf,"%f%f%f",&a,&b,&c) != 3)
-    fatal_error(0,"Expected three numbers at input line %s",buf);
-  nums[0]=a; nums[1]=b; nums[2]=c;
 }
 
 /* switch function, x between r and w */
@@ -232,19 +232,19 @@ real get_weight(real x, real r, real w) {
   } 
   */
 
-  if(x < r)
+  if (x <= r)
     weight = 1;
-  else if(x > w)
+  else if (x >= w)
     weight = 0;
   else
-    weight = -w/(r-w) + x/(r-w);
+    weight = (w - x)/(w - r);
 
   return weight;
 }
 
-static real get_cylinder_distance(rvec x, rvec com, matrix box) {
+static double get_cylinder_distance(rvec x, dvec com, matrix box) {
   /* Triclinic compatible ??? */
-  real dr, dx, dy, boxx, boxy;
+  double dr, dx, dy, boxx, boxy;
 
   boxx = box[XX][XX];
   boxy = box[YY][YY];
@@ -264,59 +264,50 @@ static real get_cylinder_distance(rvec x, rvec com, matrix box) {
 
 void make_refgrps(t_pull *pull,matrix box,t_mdatoms *md) 
 {
-  int ngrps,i,ii,j,k,m;
+  int i,ii,j,k,m;
 
-  real dr,mass;
-  real truemass;
-  rvec test;
-
-  ngrps = pull->pull.n;
-  if(pull->bFirst) {
-    snew(pull->dyna.ngx,ngrps);
-    snew(pull->dyna.idx,ngrps);
-    snew(pull->dyna.weights,ngrps);
-    for(i=0;i<ngrps;i++) {
-      snew(pull->dyna.idx[i],pull->ref.ngx[0]);    /* more than nessary */
-      snew(pull->dyna.weights[i],pull->ref.ngx[0]);
-    }      
-    pull->bFirst = FALSE;
-  }
+  double dr,mass,wmass,wwmass;
+  dvec test;
+  t_pullgrp *pdyna;
 
   /* loop over all groups to make a reference group for each*/
-  for(i=0;i<ngrps;i++) {
+  for(i=0;i<pull->ngrp;i++) {
+    pdyna = &pull->dyna[i];
     k=0;
-    truemass=0;
-    pull->dyna.tmass[i] = 0;
-    pull->dyna.ngx[i] = 0;
+    wmass = 0;
+    wwmass = 0;
+    pdyna->ngx = 0;
 
     /* loop over all atoms in the main ref group */
-    for(j=0;j<pull->ref.ngx[0];j++) {
-      ii = pull->ref.idx[0][j];
+    for(j=0;j<pull->ref.ngx;j++) {
+      ii = pull->ref.idx[j];
 
       /* get_distance takes pbc into account */
-      dr = get_cylinder_distance(pull->ref.x0[0][j],pull->pull.x_unc[i],box);
+      dr = get_cylinder_distance(pull->ref.x0[j],pull->grp[i].x_unc,box);
 
       if(dr < pull->rc) {
         /* add to index, to sum of COM, to weight array */
         mass = md->massT[ii];
-        truemass += mass;
-        pull->dyna.ngx[i]++;
-        pull->dyna.weights[i][k] = get_weight(dr,pull->r,pull->rc);
-        pull->dyna.idx[i][k] = ii;
+        pdyna->ngx++;
+        pdyna->weight[k] = get_weight(dr,pull->r,pull->rc);
+        pdyna->idx[k] = ii;
         for(m=0;m<DIM;m++)
-          pull->dyna.x_unc[i][m] += mass*pull->dyna.weights[i][k]*
-                                    pull->ref.x0[0][j][m];
-        pull->dyna.tmass[i] += mass*pull->dyna.weights[i][k];
+          pdyna->x_unc[m] += mass*pdyna->weight[k]*pull->ref.x0[j][m];
+        wmass += mass*pdyna->weight[k];
+	wwmass += mass*sqr(pdyna->weight[k]);
         k++;
       }
     }
 
+    pdyna->wscale = wmass/wwmass;
+    pdyna->tmass = pdyna->wscale*wmass;
+
     /* normalize the new 'x_unc' */
-    svmul(1/pull->dyna.tmass[i],pull->dyna.x_unc[i],pull->dyna.x_unc[i]);
+    dsvmul(1/wmass,pdyna->x_unc,pdyna->x_unc);
     if(pull->bVerbose)
-      fprintf(stderr,"Made group %d:%8.3f%8.3f%8.3f wm:%8.3f m:%8.3f\n",
-              i,pull->dyna.x_unc[i][0],pull->dyna.x_unc[i][1],
-              pull->dyna.x_unc[i][2],pull->dyna.tmass[i],truemass);
+      fprintf(stderr,"Made group %d:%8.3f%8.3f%8.3f m:%8.3f\n",
+              i,pdyna->x_unc[0],pdyna->x_unc[1],
+              pdyna->x_unc[2],pdyna->tmass);
   }
 }
 
