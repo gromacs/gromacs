@@ -537,9 +537,7 @@ int main(int argc, char *argv[])
     
     "When using [TT]-reth[tt] to keep all hydrogens from the [TT].pdb[tt]",
     "file, the names of the hydrogens in the [TT].pdb[tt] file [IT]must[it]",
-    "match names in the database files used by pdb2gmx. Except for residues",
-    "Tyr, Trp, Phe, Lys and His, no additional hydrogen atoms will be",
-    "added.[PAR]",
+    "match the names in the database.[PAR]", 
     
     "[TT]-sort[tt] will sort all residues according to the order in the",
     "database, sometimes this is necessary to get charge groups",
@@ -565,7 +563,6 @@ int main(int argc, char *argv[])
     "(heavy) atom so that the total mass of the system remains the same."
   };
   static char *bugs[] = {
-    "Generation of N-terminal hydrogen atoms on OPLS files does not work.",
     "Deuterium (D) is not recognized as a hydrogen and will crash the "
     "program.",
     "It is assumed that atomic coordinates in pdb files are in Angstrom."
