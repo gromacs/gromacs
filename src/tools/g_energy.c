@@ -450,12 +450,12 @@ static void analyse_ener(bool bCorr,char *corrfn,
       /* Do it for shear viscosity */
       strcpy(buf,"Shear Viscosity");
       low_do_autocorr(corrfn,buf,nenergy,3,(nenergy+1)/2,eneset,Dt,
-		      eacNormal,1,TRUE,TRUE,FALSE,FALSE,0.0,0.0,0);
+		      eacNormal,1,TRUE,TRUE,FALSE,FALSE,0.0,0.0,0,1);
 	
       /* Now for bulk viscosity */
       strcpy(buf,"Bulk Viscosity");
       low_do_autocorr(corrfn,buf,nenergy,1,(nenergy+1)/2,&(eneset[11]),Dt,
-		      eacNormal,1,TRUE,TRUE,FALSE,FALSE,0.0,0.0,0);
+		      eacNormal,1,TRUE,TRUE,FALSE,FALSE,0.0,0.0,0,1);
       
       factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
       fp=xvgropen(visfn,buf,"Time (ps)","\\8h\\4 (cp)");
@@ -476,8 +476,10 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	strcpy(buf,"Autocorrelation of Energy Fluctuations");
       else
 	strcpy(buf,"Energy Autocorrelation");
-      do_autocorr(corrfn,buf,nenergy,nset,eneset,(delta_t/nenergy),
-		  eacNormal,FALSE);
+      do_autocorr(corrfn,buf,nenergy,
+		  bSum ? 1                 : nset,
+		  bSum ? &(eneset[nset-1]) : eneset,
+		  (delta_t/nenergy),eacNormal,FALSE);
     }
   }
 }

@@ -605,7 +605,7 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
     fitparm[0]=fitparm[1]=fitparm[2] = 1.0;
     nf_int = min(ncorr,(int)((tStart+1e-4)/dt));
     sum    = print_and_integrate(debug,nf_int,dt,c1,1);
-    tail_corr = do_lmfit(ncorr,c1,sig,dt,NULL,tStart,tendfit,
+    tail_corr = do_lmfit(ncorr,c1,sig,tStart,dt,NULL,tStart,tendfit,
 			 bVerbose,nfitparm,NULL,fitparm,NULL);
     sumtot = sum+tail_corr;
     if (nfitparm == 1)
@@ -624,7 +624,7 @@ void low_do_autocorr(char *fn,char *title,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bFour,bool bNormalize,
 		     bool bVerbose,real tbeginfit,real tendfit,
-		     int nfitparm)
+		     int nfitparm,int nskip)
 {
   FILE    *fp;
   int     i,k,nfour;
@@ -805,7 +805,7 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
   low_do_autocorr(fn,title,nframes,nitem,acf.nout,c1,dt,mode,
 		  acf.nrestart,bAver,acf.bFour,acf.bNormalize,
 		  bDebugMode(),acf.tbeginfit,acf.tendfit,
-		  acf.nfitparm);
+		  acf.nfitparm,acf.nskip);
 }
 
 int get_acfnout(void)

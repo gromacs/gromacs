@@ -1070,7 +1070,7 @@ int main(int argc,char *argv[])
       }
       low_do_autocorr(opt2fn("-ac",NFILE,fnm), "Hydrogen Bond Autocorrelation",
 		      nframes,nrhb,-1,rhbex,time[1]-time[0],eacNormal,1,
-		      TRUE,TRUE,TRUE,FALSE,0,0,0);
+		      TRUE,TRUE,TRUE,FALSE,0,0,0,1);
       for(i=0; i<nrhb; i++)
 	sfree(rhbex[i]);
       sfree(rhbex);
