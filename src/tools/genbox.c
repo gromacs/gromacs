@@ -318,7 +318,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int seed,int ntb,
 void add_solv(char *fn,int ntb,t_atoms *atoms,rvec **x,real **r,matrix box,
 	      real r_distance,int *atoms_added,int *residues_added)
 {
-  int     i,d,n,nmol;
+  int     i,nmol;
   ivec    n_box;
   char    filename[STRLEN];
   char    title_solvt[STRLEN];
