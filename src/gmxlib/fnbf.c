@@ -1139,12 +1139,12 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 				SCAL(fr->tabscale),fr->coulvdw14tab,
 				SCAL(lambda),dvdlambda,md->chargeB,md->typeB);
 #endif
-	  /* Restore old types */
-	  md->typeA[ai] = tiA;
-	  md->typeB[ai] = tiB;
-	  md->typeA[aj] = tjA;
-	  md->typeB[aj] = tjB;
 	}
+	/* Restore old types */
+	md->typeA[ai] = tiA;
+	md->typeB[ai] = tiB;
+	md->typeA[aj] = tjA;
+	md->typeB[aj] = tjB;
       }
       else { 
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
