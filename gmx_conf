@@ -30,12 +30,10 @@ else
 		    if ( $fz == $CORE ) then
 			    echo FATAL, no file $fz.tgz or $fz.taz found
 			    exit
-		    else
-			    echo FATAL, no compressed version of $fz
-    			    exit
 		    endif
 	    endif
     endif
+    end
 endif
 
 echo ""
