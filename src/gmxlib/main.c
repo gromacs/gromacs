@@ -272,7 +272,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     gmx_parallel = 0;
 #endif
   if (gmx_parallel)
-    cr->nodeid=mpiio_setup(argc,argv,&cr->nnodes);
+    cr->nodeid=gmx_setup(argc,argv,&cr->nnodes);
   else
     cr->nodeid=0;
 #else
