@@ -56,6 +56,19 @@ typedef struct {
   int  conf,clust;
 } t_clustid;
 
+t_clustid *new_clustid(int n1)
+{
+  t_clustid *c;
+  int       i;
+  
+  snew(c,n1);
+  for(i=0; (i<n1); i++) {
+    c[i].conf = i;
+    c[i].clust = i;
+  }
+  return c;  
+}
+
 static real **mk_matrix(int nf,bool b1D)
 {
   real **rms;
@@ -127,14 +140,14 @@ static int  nnn=0;
 
 int rcomp(const void *a,const void *b)
 {
-  real **ra,**rb;
+  real *ra,*rb;
   
-  ra = (real **)a;
-  rb = (real **)b;
+  ra = (real *)a;
+  rb = (real *)b;
   
-  if ((*ra)[nnn] < (*rb)[nnn])
+  if ((*ra) < (*rb))
     return -1;
-  else if ((*ra)[nnn] > (*rb)[nnn])
+  else if ((*ra) > (*rb))
     return 1;
     
   return 0;
@@ -207,7 +220,7 @@ void gather(int n1,real **mat,real cutoff)
 {
   t_clustid *c;
   t_dist    *d;
-  int    i,j,k,nn,cid;
+  int    i,j,k,m,nn,cid;
   
   /* First we sort the entries in the RMS matrix */
   nn = ((n1-1)*n1)/2;
@@ -222,11 +235,7 @@ void gather(int n1,real **mat,real cutoff)
   qsort(d,nn,sizeof(d[0]),dcomp);
   
   /* Now we make a cluster index for all of the conformations */
-  snew(c,n1);
-  for(i=0; (i<n1); i++) {
-    c[i].conf = i;
-    c[i].clust = i;
-  }
+  c = new_clustid(n1);
     
   /* Now we check the closest structures, and equalize their cluster
    * numbers 
@@ -265,6 +274,109 @@ void gather(int n1,real **mat,real cutoff)
     
   sfree(c);
   sfree(d);
+}
+
+bool jp_same(int **nnb,int i,int j,int M,int P)
+{
+  bool bIn;
+  int  k,ii,jj,pp;
+  
+  bIn = FALSE;
+  for(k=0; (k<M); k++)
+    bIn = bIn || (nnb[i][k] == j);
+  if (!bIn)
+    return FALSE;
+    
+  bIn = FALSE;
+  for(k=0; (k<M); k++)
+    bIn = bIn || (nnb[j][k] == i);
+  if (!bIn)
+    return FALSE;
+  pp=0;
+  for(ii=0; (ii<M); ii++)
+    for(jj=0; (jj<M); jj++)
+      if (nnb[i][ii] == nnb[j][jj])
+	pp++;
+  return (pp >= P);
+}
+
+void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P)
+{
+  t_dist    *tmp;
+  t_clustid *c;
+  int       **nnb;
+  int       i,j,k,cid;
+  
+  /* First we sort the entries in the RMS matrix row by row.
+   * This gives us the neirest neiughbor list.
+   */
+  snew(nnb,n1);
+  snew(tmp,n1);
+  for(i=0; (i<n1); i++) {
+    snew(nnb[i],M);
+    for(j=0; (j<n1); j++) {
+      tmp[j].j    = j;
+      tmp[j].dist = mat[i][j];
+    }
+    qsort(tmp,n1,sizeof(tmp[0]),dcomp);
+    for(j=k=0; (k<M) && (j<n1); j++)
+      if (tmp[j].j  != i) {
+	nnb[i][k]  = tmp[j].j;
+	k++;
+      }
+  }
+  sfree(tmp);
+  if (log) {
+    fprintf(log,"Neirest neighborlist. M = %d, P = %d\n",M,P);
+    for(i=0; (i<n1); i++) {
+      fprintf(log,"i: %5d nbs:",i);
+      for(j=0; (j<P); j++)
+	fprintf(log,"  %5d[%6.3f]",nnb[i][j],mat[i][nnb[i][j]]);
+      fprintf(log,"\n");
+    }
+  }
+  c = new_clustid(n1);
+  
+  for(i=0; (i<n1); i++) {
+    for(j=0; (j<n1); j++) {
+      if (jp_same(nnb,i,j,M,P)) 
+	c[j].clust = c[i].clust;
+    }
+  }
+  printf("Sorting and renumbering clusters\n");
+  /* Sort on cluster number */
+  qsort(c,n1,sizeof(c[0]),ccomp);
+
+  /* Renumber clusters */
+  cid = c[0].clust;
+  for(k=1; (k<n1); k++) {
+    if (c[k].clust != cid) {
+      cid ++;
+      c[k].clust = cid;
+    }
+    else
+      c[k].clust = c[k-1].clust;
+  }
+  printf("Found %d clusters using Jarvis Patrick algorithm\n",c[n-1].clust);
+  if (log)
+    for(k=0; (k<n1); k++)
+      fprintf(log,"Cluster index for conformation %d: %d\n",
+	      c[k].conf,c[k].clust);
+
+  mcpy = mk_matrix(n1,FALSE);
+  for(i=0; (i<n1); i++) {
+    for(j=0; (j<n1); j++)
+      mcpy[c[i].conf][c[j].conf] = mat[i][j];
+  }
+  for(i=0; (i<n1); i++) {
+    for(j=0; (j<n1); j++)
+      mat[i][j] = mcpy[i][j];
+  }
+    
+  sfree(c);
+  for(i=0; (i<n1); i++)
+    sfree(nnb[i]);
+  sfree(nnb);
 }
 
 rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe)
@@ -359,6 +471,7 @@ int main(int argc,char *argv[])
   static int  nlevels=40,nframes=100,skip=0;
   static real scalemax=-1.0,rmscut=0.1;
   static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE;
+  static int  M=10,P=3;
   t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  &nlevels,
       "Discretize rms in # levels" },
@@ -375,7 +488,11 @@ int main(int argc,char *argv[])
     { "-link",  FALSE, etBOOL, &bLink,
       "Use linkage algorithm for clustering" },
     { "-mem",   FALSE, etBOOL, &bMem,
-      "Read the whole trajectory in memory (can be large...)" }
+      "Read the whole trajectory in memory (can be large...)" },
+    { "-M",     FALSE, etINT,  &M,
+      "Number of neirest neighbours considered for Jarvis-Patrick algorithm" },
+    { "-P",     FALSE, etINT,  &P,
+      "Number of identical neirest neighbors required to form a cluster" }
   };
   t_filenm fnm[] = {
     { efTRX, "-f",    NULL,       ffREAD  },
@@ -391,7 +508,15 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  
+
+  if (M < 2) {
+    fprintf(stderr,"Need at least 1 neighbor + myself (M = %d)\n",M);
+    exit(0);
+  }
+  if (P >= M) {
+    fprintf(stderr,"Number of neighbors required (P) must be less than M\n");
+    exit(0);
+  }
   if (skip < 0)
     fatal_error(0,"skip (%d) should be >= 0. 0 means no skip",skip);
   skip++;
@@ -523,7 +648,7 @@ int main(int argc,char *argv[])
   if (bLink) 
     /* Now sort the matrix and write it out again */
     gather(nf,rms,rmscut);
-  else {
+  else if (bEigen) {
     /* Do a diagonalization */
     snew(eigval,nf);
     /*for(i1=0; (i1<nf); i1++)
@@ -535,6 +660,9 @@ int main(int argc,char *argv[])
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
     fclose(fp);
   }
+  else
+    jarvis_patrick(debug,nf,rms,M,P);
+    
   write_xpm(opt2FILE("-os",NFILE,fnm,"w"),"RMS Sorted",
 	    "RMS (n)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
