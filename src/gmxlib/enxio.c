@@ -87,8 +87,11 @@ static void edr_nms(XDR *xdr,int *nre,char ***nms)
   if (NM == NULL) {
     snew(NM,*nre);
   }
-  for(i=0; (i<*nre); i++) 
-    xdr_string(xdr,&(NM[i]),NM[i] ? strlen(NM[i]) : STRLEN);
+  for(i=0; i<*nre; i++) {
+    if (NM[i])
+      sfree(NM[i]);
+    xdr_string(xdr,&(NM[i]),STRLEN);
+  }
   *nms=NM;
 }
 
