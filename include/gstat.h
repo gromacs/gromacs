@@ -221,7 +221,7 @@ extern void low_do_autocorr(char *fn,char *title,
 			    real dt,unsigned long mode,int nrestart,
 			    bool bFull,bool bAver,bool bFour,bool bNormalize,
 			    char *fitfn,char *fittitle,bool bVerbose,
-			    real tbeginfit,real tendfit,char *acftitle,
+			    real tbeginfit,real tendfit,
 			    int nfitparm);
 /* 
  * do_autocorr calculates autocorrelation functions for many things.
