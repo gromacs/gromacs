@@ -51,7 +51,7 @@
 #include "calcpot.h"
 #include "main.h"
 #include "random.h"
-#include "rdgroup.h"
+#include "index.h"
 
 static void insert_ion(int nsa,int *nwater,
 		       bool bSet[],int repl[],atom_id index[],

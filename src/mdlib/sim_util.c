@@ -316,7 +316,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     pr_rvecs(debug,0,"vir_shifts",vir_part,DIM);
 
   /* Compute forces due to electric field */
-  calc_f_el(log,start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,parm->ir.et,t);
+  calc_f_el(debug,start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,parm->ir.et,t);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range

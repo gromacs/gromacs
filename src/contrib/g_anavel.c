@@ -43,7 +43,7 @@
 #include "copyrite.h"
 #include "xvgr.h"
 #include "string2.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "tpxio.h"
 
 int main(int argc,char *argv[])

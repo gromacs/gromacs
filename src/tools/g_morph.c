@@ -36,7 +36,7 @@
 #include "macros.h"
 #include "copyrite.h"
 #include "xvgr.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "do_fit.h"
 
 static real dointerp(int n,rvec x1[],rvec x2[],rvec xx[],

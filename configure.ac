@@ -47,9 +47,11 @@ if test "$enable_fortran" = "yes"; then
   else
     MDLIB_LIBOBJS="${MDLIB_LIBOBJS} flincsd.lo fsettled.lo fshaked.lo"
   fi
+  GMXANA_LIBOBJS=""
 else
   GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} innerc.lo"
   MDLIB_LIBOBJS="${MDLIB_LIBOBJS} clincs.lo csettle.lo"
+  GMXANA_LIBOBJS=""
 fi
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
@@ -653,6 +655,7 @@ AC_SUBST(AS)
 AC_SUBST(INCLUDES)          # should be automatic, but doesnt seem to be?
 AC_SUBST(GMXLIB_LIBOBJS)
 AC_SUBST(MDLIB_LIBOBJS)
+AC_SUBST(GMXANA_LIBOBJS)
 
 # To tell libraries apart, we use four versions of the name. For instance, libgmx:
 # libgmx		single prec, no mpi.

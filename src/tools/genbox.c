@@ -82,16 +82,18 @@ static bool in_box(matrix box,rvec x)
 	  x[ZZ]>=0.0 && x[ZZ]<=box[ZZ][ZZ] );
 }
 
-static void mk_vdw(t_atoms *a, real rvdw[], real r_distance)
+static void mk_vdw(t_atoms *a,real rvdw[],void*atomprop,
+		   real r_distance)
 {
   int i;
   
   /* initialise van der waals arrays of configuration */
   fprintf(stderr,"Initialising van der waals distances...\n");
   for(i=0; (i < a->nr); i++)
-    rvdw[i]=get_vdw( 
-		    *(a->resname[a->atom[i].resnr]), *(a->atomname[i]),
-		    r_distance);
+    if (!query_atomprop(atomprop,epropVDW,
+			*(a->resname[a->atom[i].resnr]), 
+			*(a->atomname[i]),&(rvdw[i])))
+      rvdw[i] =	r_distance;
 }
 
 typedef struct {
@@ -248,8 +250,8 @@ void rm_res_pbc(t_atoms *atoms, rvec *x, matrix box)
 }
 
 char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
-		  t_atoms *atoms,rvec **x,
-		  real **r,matrix box, real r_distance,real rshell)
+		  t_atoms *atoms,rvec **x,real **r,matrix box,
+		  void *atomprop,real r_distance,real rshell)
 {
   static  char    *title_insrt;
   t_atoms atoms_insrt;
@@ -283,7 +285,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   srenew(atoms_insrt.resname,atoms_insrt.nres);  
     
   /* initialise van der waals arrays of insert molecules */
-  mk_vdw(&atoms_insrt, r_insrt, r_distance);
+  mk_vdw(&atoms_insrt,r_insrt,atomprop,r_distance);
 
   srenew(atoms->resname,(atoms->nres+nmol_insrt));
   srenew(atoms->atomname,(atoms->nr+atoms_insrt.nr*nmol_insrt));
@@ -335,8 +337,8 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
 }
 
 void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
-	      real r_distance,int *atoms_added,int *residues_added,
-	      real rshell)
+	      void *atomprop,real r_distance,int *atoms_added,
+	      int *residues_added,real rshell)
 {
   int     i,nmol;
   ivec    n_box;
@@ -372,7 +374,7 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
   rm_res_pbc(atoms_solvt,x_solvt,box_solvt);
   
   /* initialise van der waals arrays of solvent configuration */
-  mk_vdw(atoms_solvt,r_solvt,r_distance);
+  mk_vdw(atoms_solvt,r_solvt,atomprop,r_distance);
   
   /* calculate the box multiplication factors n_box[0...DIM] */
   nmol=1;
@@ -422,7 +424,7 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
 }
 
 char *read_prot(char *confin,t_atoms *atoms,rvec **x,rvec **v,real **r,
-		matrix box,real r_distance)
+		matrix box,void *atomprop,real r_distance)
 {
   char *title;
   int  natoms;
@@ -443,21 +445,22 @@ char *read_prot(char *confin,t_atoms *atoms,rvec **x,rvec **v,real **r,
 	  title,atoms->nr,atoms->nres);
   
   /* initialise van der waals arrays of configuration 1 */
-  mk_vdw(atoms,*r,r_distance);
+  mk_vdw(atoms,*r,atomprop,r_distance);
   
   return title;
 }
 
-static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[])
+static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
+		       void *atomprop)
 {
 #define TEMP_FILENM "temp.top"
-  FILE *fpin,*fpout;
-  char buf[STRLEN],buf2[STRLEN],*temp,*topinout;
-  int  line;
-  bool bSystem,bMolecules,bSkip;
-  int  i,nsol=0;
+  FILE   *fpin,*fpout;
+  char   buf[STRLEN],buf2[STRLEN],*temp,*topinout;
+  int    line;
+  bool   bSystem,bMolecules,bSkip;
+  int    i,nsol=0;
   double mtot;
-  real vol;
+  real   vol,mm;
   
   for(i=0; (i<atoms->nres); i++) {
     /* calculate number of SOLvent molecules */
@@ -467,9 +470,12 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[])
       nsol++;
   }
   mtot = 0;
-  for(i=0; (i<atoms->nr); i++) 
-    mtot += get_mass(*atoms->resname[atoms->atom[i].resnr],
-		     *atoms->atomname[i]);
+  for(i=0; (i<atoms->nr); i++) {
+    (void) query_atomprop(atomprop,epropMass,
+			  *atoms->resname[atoms->atom[i].resnr],
+			  *atoms->atomname[i],&mm);
+    mtot += mm;
+  }
   
   vol=det(box);
   
@@ -620,7 +626,8 @@ int main(int argc,char *argv[])
   int  bInsert;
   real *r;
   char *title_ins;
-
+  void *atomprop;
+  
   /* protein configuration data */
   char    *title=NULL;
   t_atoms atoms;
@@ -668,7 +675,7 @@ int main(int argc,char *argv[])
   bSol      = opt2bSet("-cs",NFILE,fnm);
   bProt     = opt2bSet("-cp",NFILE,fnm);
   bBox      = opt2parg_bSet("-box",asize(pa),pa);
-  
+     
   /* check input */
   if (bInsert && nmol_ins<=0)
     fatal_error(0,"When specifying inserted molecules (-ci), "
@@ -676,11 +683,14 @@ int main(int argc,char *argv[])
   if (!bProt && !bBox)
     fatal_error(0,"When no solute (-cp) is specified, "
 		"a box size (-box) must be specified");
+
+  atomprop  = get_atomprop();
   
   if (bProt) {
     /*generate a solute configuration */
     conf_prot = opt2fn("-cp",NFILE,fnm);
-    title = read_prot(conf_prot,&atoms,&x,bReadV?&v:NULL,&r,box,r_distance);
+    title = read_prot(conf_prot,&atoms,&x,bReadV?&v:NULL,&r,box,
+		      atomprop,r_distance);
     if (bReadV && !v)
       fprintf(stderr,"Note: no velocities found\n");
     if (atoms.nr == 0) {
@@ -714,14 +724,14 @@ int main(int argc,char *argv[])
      in random orientation at random place */
   if (bInsert) 
     title_ins = insert_mols(opt2fn("-ci",NFILE,fnm),nmol_ins,nmol_try,seed,
-			    &atoms,&x,&r,box,r_distance,r_shell);
+			    &atoms,&x,&r,box,atomprop,r_distance,r_shell);
   else
     title_ins = strdup("Generated by genbox");
   
   /* add solvent */
   if (bSol)
     add_solv(opt2fn("-cs",NFILE,fnm),&atoms,&x,v?&v:NULL,&r,box,
-	     r_distance,&atoms_added,&residues_added,r_shell);
+	     atomprop,r_distance,&atoms_added,&residues_added,r_shell);
 	     
   /* write new configuration 1 to file confout */
   confout = ftp2fn(efSTO,NFILE,fnm);
@@ -736,8 +746,10 @@ int main(int argc,char *argv[])
   /* print size of generated configuration */
   fprintf(stderr,"\nOutput configuration contains %d atoms in %d residues\n",
 	  atoms.nr,atoms.nres);
-  update_top(&atoms,box,NFILE,fnm);
+  update_top(&atoms,box,NFILE,fnm,atomprop);
 	  
+  done_atomprop(&atomprop);
+  
   thanx(stderr);
   
   return 0;

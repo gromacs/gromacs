@@ -30,9 +30,68 @@
  * Getting the Right Output Means no Artefacts in Calculating Stuff
  */
 
+#ifndef _index_h
+#define _index_h
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <typedefs.h>
+
+#ifdef CPLUSPLUS
+extern "C" { 
+#endif
+
+extern void check_index(char *gname,int n,atom_id index[],
+			char *traj,int natoms);
+/* Checks if any index is smaller than zero or larger than natoms,
+ * if so a fatal_error is given with the gname (if gname=NULL, "Index" is used)
+ * and traj (if traj=NULL, "the trajectory" is used).
+ */
+
+t_block *init_index(char *gfile, char ***grpname);
+/* Lower level routine than the next */
+
+void rd_index(char *statfile,int ngrps,int isize[],
+	      atom_id *index[],char *grpnames[]);
+/* Assume the group file is generated, so the
+ * format need not be user-friendly. The format is:
+ * nr of groups, total nr of atoms
+ * for each group: name nr of element, elements
+ * The function opens a file, reads ngrps groups, puts the
+ * sizes in isize, the atom_id s in index and the names of
+ * the groups in grpnames.
+ *
+ * It is also assumed, that when ngrps groups are requested
+ * memory has been allocated for ngrps index arrays, and that
+ * the dimension of the isize and grpnames arrays are ngrps.
+ */
+ 
+void rd_index_nrs(char *statfile,int ngrps,int isize[],
+		  atom_id *index[],char *grpnames[],int grpnr[]);
+/* the same but also reads the number of the selected group*/
+
+void get_index(t_atoms *atoms, char *fnm, int ngrps,
+	       int isize[], atom_id *index[],char *grpnames[]);
+/* Does the same as rd_index, but if the fnm pointer is NULL it
+ * will not read from fnm, but it will make default index groups
+ * for the atoms in *atoms.
+ */ 
+
+typedef struct {
+  int n;
+  char **aa;
+} t_aa_names;
+
+extern t_aa_names *get_aa_names(void);
+/* Read the database in aminoacids.dat */
+
+extern bool is_protein(t_aa_names *aan,char *resnm);
+/* gives true if resnm occurs in aminoacids.dat */
+
+extern void done_aa_names(t_aa_names **aan);
+/* Free memory. Pass address of the pointer youget from get_aa_names */
 
 extern t_block *new_block(void);
 /* allocate new block */
@@ -49,5 +108,11 @@ extern void analyse(t_atoms *atoms,t_block *gb,char ***gn,
  * bASK=FALSE gives default groups.
  */
 
-extern bool is_protein(char *resnm);
-/* gives true if resnm occurs in aminoacids.dat */
+extern int find_group(char s[], int ngrps, char **grpname);
+
+
+#ifdef CPLUSPLUS
+}
+#endif
+
+#endif	/* _index_h */

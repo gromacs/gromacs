@@ -45,7 +45,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 
 #define EPS0 8.85419E-12
 #define ELC 1.60219E-19

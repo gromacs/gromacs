@@ -42,12 +42,11 @@
 #include "statutil.h"
 #include "string2.h"
 #include "strdb.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "gbutil.h"
 #include "strdb.h"
-#include "rdgroup.h"
 #include "physics.h"
 #include "atomprop.h"
 #include "tpxio.h"
@@ -71,7 +70,7 @@ typedef struct {
 } t_simlist;
 static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
 
-real calc_mass(t_atoms *atoms,bool bGetMass)
+real calc_mass(t_atoms *atoms,bool bGetMass,void *atomprop)
 {
   real tmass;
   int i;
@@ -79,11 +78,12 @@ real calc_mass(t_atoms *atoms,bool bGetMass)
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {
     if (bGetMass)
-      atoms->atom[i].m = get_mass(*atoms->resname[atoms->atom[i].resnr], 
-				  *atoms->atomname[i]);
+      (void) query_atomprop(atomprop,epropMass,
+			    *atoms->resname[atoms->atom[i].resnr], 
+			    *atoms->atomname[i],&(atoms->atom[i].m));
     tmass += atoms->atom[i].m;
   }
-
+  
   return tmass;
 }
 
@@ -508,6 +508,7 @@ int main(int argc, char *argv[])
 #define NPA asize(pa)
 
   FILE       *out;
+  void       *atomprop;
   char       *infile,*outfile,title[STRLEN];
   int        outftp,natom,i,j,n_bfac;
   double     *bfac=NULL;
@@ -521,7 +522,7 @@ int main(int argc, char *argv[])
   matrix     box;
   bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
   bool       bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
-  real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d;
+  real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
     { efNDX, "-n", NULL, ffOPTRD },
@@ -552,6 +553,7 @@ int main(int argc, char *argv[])
   infile  = ftp2fn(efSTX,NFILE,fnm);
   outfile = ftp2fn(efSTO,NFILE,fnm);
   outftp  = fn2ftp(outfile);
+  atomprop = get_atomprop();
   if (bMead && bGrasp) {
     fprintf(stderr,"Incompatible options -mead and -grasp. Turning off -grasp\n");
     bGrasp = FALSE;
@@ -583,19 +585,20 @@ int main(int argc, char *argv[])
       fatal_error(0,"Atom numbers don't match (%d vs. %d)",
 		  atoms.nr,top->atoms.nr);
     for(i=0; (i<atoms.nr); i++) {
+      /* Factor of 10 for Angstroms */
+      if (query_atomprop(atomprop,epropVDW,
+			 *top->atoms.resname[top->atoms.atom[i].resnr],
+			 *top->atoms.atomname[i],&vdw))
+	vdw = 10*vdw;
+      else
+	vdw = 10*rvdw;
       if (bMead) {
 	atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
-	/* Factor of 10 for Angstroms */
-	atoms.pdbinfo[i].bfac  = 
-	  10*get_vdw(*top->atoms.resname[top->atoms.atom[i].resnr],
-		     *top->atoms.atomname[i],rvdw);
+	atoms.pdbinfo[i].bfac  = vdw;
       }
       else {
 	/* Factor of 10 for Angstroms */
-	atoms.pdbinfo[i].occup = 
-	  10*get_vdw(*top->atoms.resname[top->atoms.atom[i].resnr],
-		     *top->atoms.atomname[i],rvdw);
-	
+	atoms.pdbinfo[i].occup = vdw;
 	atoms.pdbinfo[i].bfac  = top->atoms.atom[i].q;
       }
     }
@@ -647,7 +650,7 @@ int main(int argc, char *argv[])
   }
   
   if (bRho || bOrient)
-    mass = calc_mass(&atoms,!fn2bTPX(infile));
+    mass = calc_mass(&atoms,!fn2bTPX(infile),atomprop);
   
   if (bOrient) {
     atom_id *index;
@@ -837,6 +840,7 @@ int main(int argc, char *argv[])
       fclose(out);
     }  
   }
+  done_atomprop(&atomprop);
 
   do_view(outfile,NULL);
     

@@ -44,7 +44,7 @@
 #include "pbc.h"
 #include "tpxio.h"
 #include "physics.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "smalloc.h"
 #include "statutil.h"
 #include "string.h"

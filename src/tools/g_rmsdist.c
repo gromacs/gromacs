@@ -43,7 +43,7 @@
 #include "strdb.h"
 #include "vec.h"
 #include "macros.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "pbc.h"
 #include "xvgr.h"
 #include "futil.h"

@@ -37,7 +37,7 @@
 #include "statutil.h"
 #include "string2.h"
 #include "vec.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "pbc.h"
 #include "macros.h"
 #include "gstat.h"

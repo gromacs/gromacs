@@ -401,7 +401,8 @@ static void print_bonds(FILE *fp, int o2n[],
   fprintf(fp,"\n");
 }
 
-static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[])
+static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
+		     t_aa_names *aan)
 {
   int type;
   bool bNterm;
@@ -413,7 +414,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[])
   else {
     /* get type from rtp */
     rtpp = search_rtp(*(at->resname[at->atom[atom].resnr]),nrtp,rtp);
-    bNterm = is_protein(*(at->resname[at->atom[atom].resnr])) && 
+    bNterm = is_protein(aan,*(at->resname[at->atom[atom].resnr])) && 
       (at->atom[atom].resnr == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
     type=rtpp->atom[j].type;
@@ -434,7 +435,8 @@ static int nm2type(char *name, t_atomtype *atype)
   return tp;
 }
 
-static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[])
+static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
+		      t_aa_names *aan)
 {
   real mass;
   bool bNterm;
@@ -446,7 +448,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[])
   else {
     /* get mass from rtp */
     rtpp = search_rtp(*(at->resname[at->atom[atom].resnr]),nrtp,rtp);
-    bNterm = is_protein(*(at->resname[at->atom[atom].resnr])) && 
+    bNterm = is_protein(aan,*(at->resname[at->atom[atom].resnr])) && 
       (at->atom[atom].resnr == 0);
     j=search_jtype(rtpp,*(at->atomname[atom]),bNterm);
     mass=rtpp->atom[j].m;
@@ -1323,6 +1325,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   char *resnm=NULL;
   int ndumconf,ndumtop;
   bool isN,planarN;
+  t_aa_names *aan;
   t_dumconf *dumconflist; /* pointer to a list of CH3/NH3/NH2 configuration entries.
 			   * See comments in read_dummy_database. It isnt beautiful,
 			   * but it had to be fixed, and I dont even want to try to 
@@ -1390,6 +1393,8 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   /* make index to tell which residues were already processed */
   snew(bResProcessed,at->nres);
     
+  aan = get_aa_names();
+    
   /* generate dummy constructions */
   /* loop over all atoms */
   resnr=NOTSET;
@@ -1405,7 +1410,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
      * N-terminus that must be treated first.
      */
     if ( bDummyAromatics && !strcmp(*(at->atomname[i]),"CA") &&
-	 !bResProcessed[resnr] && is_protein(*(at->resname[resnr])) ) {
+	 !bResProcessed[resnr] && is_protein(aan,*(at->resname[resnr])) ) {
       /* mark this residue */
       bResProcessed[resnr]=TRUE;
       /* find out if this residue needs converting */
@@ -1487,7 +1492,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
       strncpy(atomname,*at->atomname[Heavy],9);
-      tpHeavy=get_atype(Heavy,at,nrtp,rtp);
+      tpHeavy=get_atype(Heavy,at,nrtp,rtp,aan);
       strcpy(tpname,type2nm(tpHeavy,atype));
 
       bWARNING=FALSE;
@@ -1551,7 +1556,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  (*dummy_type)[Hatoms[j]] = Hat_dummy_type[j];
 	/* get dummy mass type from first char of heavy atom type (N or C) */
 	
-	strcpy(nexttpname,type2nm(get_atype(heavies[0],at,nrtp,rtp),atype));
+	strcpy(nexttpname,type2nm(get_atype(heavies[0],at,nrtp,rtp,aan),atype));
 	ch=get_dummymass_name(dumconflist,ndumconf,tpname,nexttpname);
 
 	if(ch==NULL) 
@@ -1583,10 +1588,10 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	mHtot=0;
 	/* get atom masses, and set Heavy and Hatoms mass to zero */
 	for(j=0; j<nrHatoms; j++) {
-	  mHtot += get_amass(Hatoms[j],at,nrtp,rtp);
+	  mHtot += get_amass(Hatoms[j],at,nrtp,rtp,aan);
 	  at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
 	}
-	mtot = mHtot + get_amass(Heavy,at,nrtp,rtp);
+	mtot = mHtot + get_amass(Heavy,at,nrtp,rtp,aan);
 	at->atom[Heavy].m = at->atom[Heavy].mB = 0;
 	if (mHmult != 1.0)
 	  mHtot *= mHmult;
@@ -1674,7 +1679,9 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
     } /* if dummy NOTSET & is hydrogen */
     
   } /* for i < at->nr */
-  
+
+  done_aa_names(&aan);
+    
   if (debug) {
     fprintf(debug,"Before inserting new atoms:\n");
     for(i=0; i<at->nr; i++)

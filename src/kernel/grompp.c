@@ -59,7 +59,7 @@
 #include "sortwater.h"
 #include "convparm.h"
 #include "fatal.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "gmxfio.h"
 #include "trnio.h"
 #include "tpxio.h"
@@ -79,17 +79,18 @@ static void write_deshufndx(char *ndx,int *forward,t_atoms *atoms)
 
   /* Now make an inverse shuffle index:
    * this transforms the new order into the original one...
+   * DvdS 07/05/03, fixed long standing +1 bug.
    */
   snew(backward,natoms);
-  for(i=0; i<natoms; i++)
-    backward[forward[i]] = i;
+  for(i=0; (i<natoms); i++)
+    backward[forward[i]] = i+1;
     
   /* Make an index file for deshuffling the atoms */
   out=ffopen(ndx,"w");
   fprintf(out,"[ DeShuffle ]\n");
   bXTC = FALSE;
   j = 0;
-  for(i=0; i<natoms; i++) {
+  for(i=0; (i<natoms); i++) {
     fprintf(out,"  %d",backward[i]);
     j++;
     if (j % 10 == 0)
@@ -101,7 +102,7 @@ static void write_deshufndx(char *ndx,int *forward,t_atoms *atoms)
   if (bXTC) {
     fprintf(out,"[ DeShuffle_xtc ]\n");
     j = 0;
-    for(i=0; i<natoms; i++)
+    for(i=0; (i<natoms); i++)
       if (atoms->atom[backward[i]].grpnr[egcXTC] == 0) {
 	fprintf(out,"  %d",backward[i]);
 	j++;
@@ -1076,7 +1077,8 @@ int main (int argc, char *argv[])
 		&x,&v,box,sys);
   }
   
-  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME)) {
+  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) ||
+      (ir->coulombtype == eelEWALD)) {
     /* Calculate the optimal grid dimensions */
     max_spacing = calc_grid(box,opts->fourierspacing,
 			    &(ir->nkx),&(ir->nky),&(ir->nkz),nnodes);

@@ -38,7 +38,7 @@
 #include "vec.h"
 #include "princ.h"
 #include "confio.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "filenm.h"
 #include "do_fit.h"
 #include "tpxio.h"

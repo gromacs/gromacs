@@ -40,7 +40,7 @@
 #include "gstat.h"
 #include "nrjac.h"
 #include "copyrite.h"
-#include "rdgroup.h"
+#include "index.h"
 
 #define NM2ANG 10
 #define TOLERANCE 1.0E-8

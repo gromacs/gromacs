@@ -43,60 +43,26 @@
 #include "copyrite.h"
 
 typedef struct {
-  char atomname[10];
-  char resname[10];
-  real prop;
+  bool bAvail;
+  real val;
 } t_prop;
 
-static void add_prop(real p, char *resnm, char *atomnm, 
-		     int *nprop, t_prop **props, int *maxprop)
-{
-  if (*nprop >= *maxprop) {
-    *maxprop+=10;
-    srenew(*props,*maxprop);
-  }
-  strcpy((*props)[*nprop].atomname,atomnm);
-  strcpy((*props)[*nprop].resname, resnm);
-  (*props)[*nprop].prop=p;
-  (*nprop)++;
-}
+typedef struct {
+  char   *atomnm;
+  char   *resnm;
+  t_prop p[epropNR];
+} t_props;
 
-static int read_props(char *propdata,t_prop **props,int *maxprop) 
-{
-  FILE   *fp;
-  char   line[STRLEN],resname[10],atomname[10];
-  double pp;
-  int    i;
-  
-  fp=libopen(propdata);
-  *props=NULL;
-  *maxprop = 0;
-  i=0;
-  while(get_a_line(fp,line,STRLEN)) {
-    if (sscanf(line,"%s %s %lf",resname,atomname,&pp)==3)
-      add_prop(pp,resname,atomname,&i,props,maxprop);
-    else
-      if (debug)
-	fprintf(stderr,"ERROR in file %s at line %d\n",propdata,i);
-  }
-  fclose(fp);
-  
-  return i;
-}
-
-static void write_props(FILE *fp,int nprop,t_prop props[]) 
-{
-  int i;
-  
-  for (i=0; (i<nprop); i++) 
-    fprintf(fp,"%10s  %10s  %10g\n",
-	    props[i].resname,props[i].atomname,props[i].prop);
-}
+typedef struct {
+  int        nprop,maxprop;
+  char       *db[epropNR];
+  double     def[epropNR];
+  t_props    *props;
+  t_aa_names *aan;
+} t_atomprop;
 
 /* NOTFOUND should be smallest, others larger in increasing priority */
-#define NOTFOUND -3
-#define WILDCARD NOTFOUND+1
-#define PROTEIN  NOTFOUND+2
+enum { NOTFOUND=-3, WILDCARD, PROTEIN };
 
 /* return number of matching characters, 
    or NOTFOUND if not at least all characters in char *database match */
@@ -113,126 +79,157 @@ static int dbcmp_len(char *search, char *database)
   return i;
 }
 
-static bool get_prop(real *p, char *resname, char *atomnm, 
-		     int nprop, t_prop *props)
+static int get_prop_index(t_atomprop *ap,char *resnm,char *atomnm)
 {
-  int  i,j=0,alen,rlen,malen,mrlen;
-  char *atomname;
+  int  i,j=NOTFOUND,alen,rlen,malen,mrlen;
   
   malen = NOTFOUND;
   mrlen = NOTFOUND;
+  for(i=0; (i<ap->nprop); i++) {
+    if ( (strcmp(ap->props[i].resnm,"*")==0) ||
+	 (strcmp(ap->props[i].resnm,"???")==0) )
+      rlen=WILDCARD;
+    else if ( is_protein(ap->aan,resnm) && 
+	      (strcmp(ap->props[i].resnm,"AAA")==0) )
+      rlen=PROTEIN;
+    else {
+      rlen = dbcmp_len(resnm, ap->props[i].resnm);
+    }
+    alen = dbcmp_len(atomnm, ap->props[i].atomnm);
+    if ( (alen>=malen) && (rlen>=mrlen) ) {
+      malen = alen;
+      mrlen = rlen;
+      j     = i;
+    }
+  }
+  
+  if (debug)
+    fprintf(debug,"search: %4s %4s match: %4s %4s\n",
+	    resnm,atomnm, ap->props[j].resnm, ap->props[j].atomnm);
+  
+  return j;
+}
+
+static void add_prop(t_atomprop *ap,int eprop,char *resnm,char *atomnm,
+		     real p,int line) 
+{
+  int i,j;
+  
+  j = get_prop_index(ap,resnm,atomnm);
+  
+  if (j < 0) {
+    if (ap->nprop >= ap->maxprop) {
+      ap->maxprop+=10;
+      srenew(ap->props,ap->maxprop);
+      for(i=ap->nprop; (i<ap->maxprop); i++) {
+	ap->props[i].atomnm = NULL;
+	ap->props[i].resnm  = NULL;
+	memset(ap->props[i].p,0,epropNR*sizeof(ap->props[i].p[0]));
+      }
+    }
+    
+    ap->props[ap->nprop].atomnm = strdup(atomnm);
+    ap->props[ap->nprop].resnm  = strdup(resnm);
+    j = ap->nprop;
+    ap->nprop++;
+  }
+  if (ap->props[j].p[eprop].bAvail) {
+    if (ap->props[j].p[eprop].val == p)
+      fprintf(stderr,"Warning double identical entries for %s %s %g on line %d in file %s\n",
+	      resnm,atomnm,p,line,ap->db[eprop]);
+    else {
+      fprintf(stderr,"Warning double different entries %s %s %g and %g on line %d in file %s\n"
+	      "Using last entry (%g)\n",
+	      resnm,atomnm,p,ap->props[j].p[eprop].val,line,ap->db[eprop],p);
+      ap->props[j].p[eprop].val    = p;
+    }
+  }
+  else {
+    ap->props[j].p[eprop].bAvail = TRUE;
+    ap->props[j].p[eprop].val    = p;
+  }
+}
+
+static void read_props(t_atomprop *ap,int eprop,double factor)
+{
+  FILE   *fp;
+  char   line[STRLEN],resnm[32],atomnm[32];
+  double pp;
+  int    line_no;
+  
+  fp      = libopen(ap->db[eprop]);
+  line_no = 0;
+  while(get_a_line(fp,line,STRLEN)) {
+    if (sscanf(line,"%s %s %lf",resnm,atomnm,&pp) == 3) {
+      pp *= factor;
+      add_prop(ap,eprop,resnm,atomnm,pp,line_no);
+    }
+    else 
+      fprintf(stderr,"WARNING: Error in file %s at line %d ignored\n",
+	      ap->db[eprop],line_no);
+  }
+  fclose(fp);
+}
+
+void *get_atomprop(void) 
+{
+  char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat" };
+  double fac[epropNR] = { 1.0,    1.0,  418.4 };
+  double def[epropNR] = { 12.011, 0.14, 0.0 };
+
+  t_atomprop *ap;
+  int i;
+  
+  fprintf(stdout,
+	  "WARNING: masses will be determined based on residue and atom names,\n"
+	  "         this can deviate from the real mass of the atom type\n");
+  fprintf(stdout,"In case you use free energy of solvation predictions:\n");
+  please_cite(stdout,"Eisenberg86a");
+  
+  snew(ap,1);
+
+  ap->aan = get_aa_names();
+  for(i=0; (i<epropNR); i++) {
+    ap->db[i] = strdup(fns[i]);
+    ap->def[i] = def[i];
+    read_props(ap,i,fac[i]);
+  }
+    
+  return (void *)ap;
+}
+
+void done_atomprop(void **atomprop)
+{
+  t_atomprop **ap = (t_atomprop **) atomprop;
+}
+
+bool query_atomprop(void *atomprop,int eprop,char *resnm,char *atomnm,
+		    real *value)
+{
+  t_atomprop *ap = (t_atomprop *) atomprop;
+  int  i,j;
+  char *atomname;
   
   if (isdigit(atomnm[0])) {
     /* put digit after atomname */
     snew(atomname,strlen(atomnm)+1);
     for (i=1; (i<strlen(atomnm)); i++)
-      atomname[i-1]=atomnm[i];
-    atomname[i++]=atomnm[0];
-    atomname[i]='\0';
-  } else 
-    atomname=atomnm;
-      
-  for(i=0; (i<nprop); i++) {
-    if ( (strcmp(props[i].resname,"*")==0) ||
-	 (strcmp(props[i].resname,"???")==0) )
-      rlen=WILDCARD;
-    else if ( is_protein(resname) && (strcmp(props[i].resname,"AAA")==0) )
-      rlen=PROTEIN;
-    else {
-      rlen = dbcmp_len(resname, props[i].resname);
-    }
-    alen = dbcmp_len(atomname, props[i].atomname);
-    if ( alen>=malen && rlen>=mrlen ) {
-      malen=alen;
-      mrlen=rlen;
-      *p = props[i].prop;
-      j=i;
-    }
-  }
-  if (debug)
-    fprintf(debug,"search: %4s %4s match: %4s %4s %8g\n",
-	    resname, atomname, props[j].resname, props[j].atomname, *p);
-  
-  return (malen!=NOTFOUND && mrlen!=NOTFOUND);
-}
-#undef NOTFOUND
-#undef WILDCARD
-#undef PROTEIN
+      atomname[i-1] = atomnm[i];
+    atomname[i++] = atomnm[0];
+    atomname[i]   = '\0';
+  } 
+  else 
+    atomname = atomnm;
 
-real get_mass(char *resnm, char *atomnm)
-{
-  real m;
-  static t_prop *mass=NULL;
-  static int    nmass;
-  static int    maxmass;
-  
-  if (!mass) {
-    fprintf(stderr,
-	    "WARNING: masses will be determined based on residue and atom names,\n"
-	    "         this can deviate from the real mass of the atom type\n");
-    nmass = read_props("atommass.dat",&mass,&maxmass);
-    if (debug)
-      write_props(debug,nmass,mass);
-  }
-  
-  if ( ! get_prop(&m, resnm, atomnm, nmass, mass) ) {
-    m=12.0110; /* carbon mass */
-    add_prop(m, resnm, atomnm, &nmass, &mass, &maxmass);
-    fprintf(stderr,"Mass of atom %s %s set to %g\n",
-	    resnm,atomnm,m);
-  }
-  
-  return m;
-}
-
-real get_vdw(char *resnm, char *atomnm, real default_r)
-{
-  real r;
-  static t_prop *vdwr=NULL;
-  static int    nvdwr;
-  static int    maxvdwr;
-  
-  if (!vdwr) {
-    nvdwr = read_props("vdwradii.dat",&vdwr,&maxvdwr);
-    if (debug)
-      write_props(debug,nvdwr,vdwr);
-  }
-  
- if ( ! get_prop(&r, resnm, atomnm, nvdwr, vdwr) ) {
-    r=default_r;
-    add_prop(r, resnm, atomnm, &nvdwr, &vdwr, &maxvdwr);
-    fprintf(stderr,"Van der Waals radius of atom %s %s set to %g\n",
-	    resnm,atomnm,r);
-  }
-  return r;
-}
-
-real get_dgsolv(char *resnm, char *atomnm, real default_s)
-{
-  static t_prop *dgs=NULL;
-  static int    ndgs;
-  static int    maxdgs;
-  real   r;
-  int    i;
-  
-  if (!dgs) {
-    ndgs = read_props("dgsolv.dat",&dgs,&maxdgs);
-    please_cite(stderr,"Eisenberg86a");
-    /* Convert to MD units */
-    for(i=0; (i<ndgs); i++)
-      dgs[i].prop *= 418.4;
+  j = get_prop_index(ap,resnm,atomname);
     
-    if (debug) {
-      fprintf(debug,"Atomic solvation factors in kJ/mol nm^2\n");
-      write_props(debug,ndgs,dgs);
-    }
+  if ((j >= 0)  && (ap->props[j].p[eprop].bAvail)) {
+    *value = ap->props[j].p[eprop].val;
+    return TRUE;
   }
-  
-  if ( ! get_prop(&r, resnm, atomnm, ndgs, dgs) ) {
-    r = default_s;
-    add_prop(r, resnm, atomnm, &ndgs, &dgs, &maxdgs);
-    fprintf(stderr,"Solvation factor of atom %s %s set to %g\n",
-	    resnm,atomnm,r);
+  else {
+    *value = ap->def[eprop];
+    return FALSE;
   }
-  return r;
 }
+

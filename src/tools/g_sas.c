@@ -43,7 +43,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "nsc.h"
 #include "pdbio.h"
 #include "confio.h"
@@ -218,6 +218,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   char         *legend[] = { "Hydrophobic", "Hydrophilic", 
 			     "Total", "D Gsolv" };
   real         t;
+  void         *atomprop=NULL;
   int          status;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *x;
@@ -249,7 +250,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   if (!bDGsol) 
     fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
-    
+  else {
+    atomprop = get_atomprop();
+  }
+  
   fprintf(stderr,"Select group for calculation of surface and for output:\n");
   get_index(&(top->atoms),ftp2fn_null(efNDX,nfile,fnm),1,&nx,&index,&grpname);
 
@@ -302,8 +306,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	nphobic++;
     }
     if (bDGsol)
-      dgs_factor[i] = get_dgsolv(*(atoms->resname[atoms->atom[ii].resnr]),
-				 *(atoms->atomtype[ii]),dgs_default);
+      if (!query_atomprop(atomprop,epropDGsol,
+			  *(atoms->resname[atoms->atom[ii].resnr]),
+			  *(atoms->atomtype[ii]),&(dgs_factor[i])))
+	dgs_factor[i] = dgs_default;
     if (debug)
       fprintf(debug,"Atom %5d %5s-%5s: q= %6.3f, r= %6.3f, dgsol= %6.3f, hydrophobic= %s\n",
 	      ii+1,*(atoms->resname[atoms->atom[ii].resnr]),
@@ -313,6 +319,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   }
   fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
 	  nphobic,nx);
+  
+  done_atomprop(&atomprop);
   
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");

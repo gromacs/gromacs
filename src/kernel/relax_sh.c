@@ -479,9 +479,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       
     /* Calculation of the virial must be done after dummies!    */
     /* Question: Is it correct to do the PME forces after this? */
-    calc_virial(log,START(nsb),HOMENR(nsb),pos[Try],force[Try],
+    /*    calc_virial(log,START(nsb),HOMENR(nsb),pos[Try],force[Try],
 		my_vir[Try],pme_vir[Try],graph,parm->box,nrnb,fr,FALSE);
-		  
+    */	  
     /* Spread the LR force on dummy particle to the other particles... 
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.

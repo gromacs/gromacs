@@ -224,7 +224,7 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
 
 int read_pdball(char *inf, char *outf,char *title,
 		t_atoms *atoms, rvec **x,matrix box, bool bRemoveH,
-		t_symtab *symtab)
+		t_symtab *symtab,t_aa_names *aan)
 /* Read a pdb file. (containing proteins) */
 {
   int       natom,new_natom,i;
@@ -259,7 +259,7 @@ int read_pdball(char *inf, char *outf,char *title,
   rename_pdbres(atoms,"WAT","HOH",FALSE,symtab);
   rename_pdbres(atoms,"HEM","HEME",FALSE,symtab);
 
-  rename_atoms(atoms,symtab);
+  rename_atoms(atoms,symtab,aan);
   
   if (natom == 0)
     return 0;
@@ -467,7 +467,7 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
   return pdba->nr;
 }
 
-void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc)
+void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc,t_aa_names *aan)
 {
   int rnr;
   
@@ -475,9 +475,9 @@ void find_nc_ter(t_atoms *pdba,int r0,int r1,int *rn,int *rc)
   *rc=-1;
 
   for(rnr=r0; rnr<r1; rnr++) {
-    if ((*rn == -1) && (is_protein(*pdba->resname[rnr])))
+    if ((*rn == -1) && (is_protein(aan,*pdba->resname[rnr])))
 	*rn=rnr;
-    if ((*rc != rnr) && (is_protein(*pdba->resname[rnr])))
+    if ((*rc != rnr) && (is_protein(aan,*pdba->resname[rnr])))
       *rc=rnr;
   }
 
@@ -597,6 +597,7 @@ int main(int argc, char *argv[])
   t_hackblock *ah;
   t_symtab   symtab;
   t_atomtype *atype;
+  t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[256];
   char       *c;
@@ -720,10 +721,13 @@ int main(int argc, char *argv[])
   
   /* Open the symbol table */
   open_symtab(&symtab);
-  
+
+  /* Amino acid database */  
+  aan = get_aa_names();
+
   clear_mat(box);
   natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
-		    &pdba_all,&pdbx,box,bRemoveH,&symtab);
+		    &pdba_all,&pdbx,box,bRemoveH,&symtab,aan);
   
   if (natom==0)
     fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -956,7 +960,7 @@ int main(int argc, char *argv[])
     for(i=0; i<cc->nterpairs; i++) {
       cc->chainstart[cc->nterpairs] = pdba->nres;
       find_nc_ter(pdba,cc->chainstart[i],cc->chainstart[i+1],
-		  &(cc->rN[i]),&(cc->rC[i]));    
+		  &(cc->rN[i]),&(cc->rC[i]),aan);    
       
       if ( (cc->rN[i]<0) || (cc->rC[i]<0) ) {
 	printf("No N- or C-terminus found: "
@@ -1096,7 +1100,9 @@ int main(int argc, char *argv[])
   
   print_top_mols(top_file,title,nincl,incls,nmol,mols);
   fclose(top_file);
-  
+
+  done_aa_names(&aan);
+    
   /* now merge all chains back together */
   natom=0;
   nres=0;

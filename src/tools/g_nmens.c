@@ -42,7 +42,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "pdbio.h"
 #include "tpxio.h"
 #include "txtdump.h"

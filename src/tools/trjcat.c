@@ -45,7 +45,7 @@
 #include "pdbio.h"
 #include "confio.h"
 #include "names.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "vec.h"
 #include "xtcio.h"
 #include "do_fit.h"

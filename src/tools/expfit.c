@@ -40,9 +40,9 @@
 #include "gstat.h"
 #include "vec.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 
-int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 4, 7, 3 };
+int  nfp_ffn[effnNR] = { 0, 1, 2, 3, 2, 5, 7, 2 };
 
 char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac", 
 			  "exp5", "exp7", NULL, NULL };
@@ -50,7 +50,7 @@ char *s_ffn[effnNR+2] = { NULL, "none", "exp", "aexp", "exp_exp", "vac",
 
 char *longs_ffn[effnNR] = {
   "no fit",
-  "y = exp(-a1 x)",
+  "y = exp(-x/a1)",
   "y = a2 exp(-x/a1)",
   "y = a2 exp(-x/a1) + (1-a2) exp(-x/a3)",
   "y = exp(-v) (cosh(wv) + 1/w sinh(wv)), v = x/(2 a1), w = sqrt(1 - a2)",
@@ -81,7 +81,7 @@ static void exp_one_parm(real x,real a[],real *y,real dyda[])
 {
   /* Fit to function 
    *
-   * y = exp(-a1 x)
+   * y = exp(-x/a1)
    *
    */
    
@@ -89,7 +89,7 @@ static void exp_one_parm(real x,real a[],real *y,real dyda[])
   
   e1      = exp(-x/a[1]);
   *y      = e1;
-  dyda[1] = x*e1/(a[1]*a[1]);
+  dyda[1] = x*e1/sqr(a[1]);
 }
 
 static void exp_two_parm(real x,real a[],real *y,real dyda[])
@@ -104,7 +104,7 @@ static void exp_two_parm(real x,real a[],real *y,real dyda[])
   
   e1      = exp(-x/a[1]);
   *y      = a[2]*e1;
-  dyda[1] = x*a[2]*e1/(a[1]*a[1]);
+  dyda[1] = x*a[2]*e1/sqr(a[1]);
   dyda[2] = e1;
 }
 
@@ -121,11 +121,9 @@ static void exp_3_parm(real x,real a[],real *y,real dyda[])
   e1      = exp(-x/a[1]);
   e2      = exp(-x/a[3]);
   *y      = a[2]*e1 + (1-a[2])*e2;
-  dyda[1] = x*a[2]*e1/(a[1]*a[1]);
+  dyda[1] = x*a[2]*e1/sqr(a[1]);
   dyda[2] = e1-e2;
-  dyda[3] = x*(1-a[2])*e2/(a[3]*a[3]);
-  /* fprintf(stderr,"exp3: x=%10.3e *y=%10.3e dyda=%10.3e %10.3e %10.3e\n",
-    x,*y,dyda[1],dyda[2],dyda[3]);  */
+  dyda[3] = x*(1-a[2])*e2/sqr(a[3]);
 }
 
 static void exp_5_parm(real x,real a[],real *y,real dyda[])
@@ -147,10 +145,10 @@ static void exp_5_parm(real x,real a[],real *y,real dyda[])
 	    "a = ( %8.3f  %8.3f  %8.3f  %8.3f  %8.3f)\n",
 	    x,*y,a[1],a[2],a[3],a[4],a[5]);
   dyda[1] = e1;
-  dyda[2] = -(x*e1)/sqr(a[2]);
+  dyda[2] = x*e1/sqr(a[2]);
   dyda[3] = e2;
-  dyda[4] = -(x*e2)/sqr(a[4]);
-  /* dyda[5] = 0;*/
+  dyda[4] = x*e2/sqr(a[4]);
+  dyda[5] = 0;
 }
 
 static void exp_7_parm(real x,real a[],real *y,real dyda[])
@@ -169,11 +167,11 @@ static void exp_7_parm(real x,real a[],real *y,real dyda[])
   *y      = a[1]*e1 + a[3]*e2 + a[5]*e3 + a[7];
 
   dyda[1] = e1;
-  dyda[2] = -(x*e1)/sqr(a[2]);
+  dyda[2] = x*e1/sqr(a[2]);
   dyda[3] = e2;
-  dyda[4] = -(x*e2)/sqr(a[4]);
+  dyda[4] = x*e2/sqr(a[4]);
   dyda[5] = e3;
-  dyda[6] = -(x*e3)/sqr(a[6]);
+  dyda[6] = x*e3/sqr(a[6]);
   dyda[7] = 0;
 }
 
@@ -255,7 +253,7 @@ myfitfn mfitfn[effnNR] = {
 
 real fit_function(int eFitFn,real *parm,real x)
 {
-  static real y,dum[4];
+  static real y,dum[8];
 
   mfitfn[eFitFn](x,parm-1,&y,dum);
 

@@ -242,7 +242,8 @@ const char *ftp2defnm(int ftp)
   if ((0 <= ftp) && (ftp < efNR)) {
     sprintf(buf,"%s",deffile[ftp].defnm);
     return buf;
-  } else
+  } 
+  else
     return NULL;
 }
 
@@ -311,17 +312,19 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
       if ( f < tfn[i].nf-1 )
 	fprintf(fp, "%s\n", buf);
     }
-    strcat(buf, deffile[tfn[i].ftp].descr);
-    if ( (strlen(tfn[i].opt)>OPTLEN) && 
-	 (strlen(tfn[i].opt)<=
-	  ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nf-1]))) ) {
-      for(j=strlen(tfn[i].opt); 
-	  j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
-	buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
+    if (tfn[i].nf > 0) {
+      strcat(buf, deffile[tfn[i].ftp].descr);
+      if ( (strlen(tfn[i].opt)>OPTLEN) && 
+	   (strlen(tfn[i].opt)<=
+	    ((OPTLEN+NAMELEN)-strlen(tfn[i].fns[tfn[i].nf-1]))) ) {
+	for(j=strlen(tfn[i].opt); 
+	    j<strlen(buf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
+	  buf[j]=buf[j+strlen(tfn[i].opt)-OPTLEN];
+      }
+      wbuf=wrap_lines(buf,80,35);
+      fprintf(fp,"%s\n",wbuf);
+      sfree(wbuf);
     }
-    wbuf=wrap_lines(buf,80,35);
-    fprintf(fp,"%s\n",wbuf);
-    sfree(wbuf);
   }
   fprintf(fp,"\n");
   fflush(fp);
@@ -575,7 +578,8 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
 	    bRemove[i]=TRUE;
 	    i++;
 	    /* only repeat for 'multiple' file options: */
-	    if ( ! IS_MULT(fnm[j]) ) break;
+	    if ( ! IS_MULT(fnm[j]) ) 
+	      break;
 	  }
 
 	  break; /* jump out of 'j' loop */
@@ -605,10 +609,12 @@ char *opt2fn(char *opt,int nfile,t_filenm fnm[])
   int i;
   
   for(i=0; (i<nfile); i++)
-    if (strcmp(opt,fnm[i].opt)==0)
+    if (strcmp(opt,fnm[i].opt)==0) {
       return fnm[i].fns[0];
+    }
 
   fprintf(stderr,"No option %s\n",opt);
+  
   return NULL;
 }
 

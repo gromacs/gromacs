@@ -35,7 +35,7 @@
 #include "macros.h"
 #include "physics.h"
 #include "vec.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "hxprops.h"
 #include "smalloc.h"
 #include "bondf.h"

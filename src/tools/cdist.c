@@ -40,7 +40,7 @@
 #include "invblock.h"
 #include "futil.h"
 #include "tpxio.h"
-#include "rdgroup.h"
+#include "index.h"
 
 #define NINDEX(ai,aj,natom) (natom*(ai)-((ai)*(ai+1))/2+(aj)-(ai))
 #define INDEX(ai,aj,natom) ((ai) < (aj))?NINDEX((ai),(aj),natom):NINDEX(aj,ai,natom) 

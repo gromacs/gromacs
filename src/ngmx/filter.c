@@ -35,7 +35,7 @@
 #include "futil.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "xdlghi.h"
 #include "dialogs.h"
 #include "index.h"

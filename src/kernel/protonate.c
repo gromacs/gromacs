@@ -38,7 +38,7 @@
 #include "confio.h"
 #include "genhydro.h"
 #include "tpxio.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "vec.h"
 #include "hackblock.h"
 

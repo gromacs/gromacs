@@ -41,7 +41,7 @@
 #include "mdebin.h"
 #include "nrnb.h"
 #include "calcmu.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "dummies.h"
 #include "update.h"
 #include "ns.h"

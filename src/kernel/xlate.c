@@ -105,7 +105,7 @@ static void done_xlatom(int nxlate,t_xlate_atom **xlatom)
   *xlatom = NULL;
 }
 
-void rename_atoms(t_atoms *atoms,t_symtab *symtab)
+void rename_atoms(t_atoms *atoms,t_symtab *symtab,t_aa_names *aan)
 {
   int nxlate,a,i;
   t_xlate_atom *xlatom;
@@ -126,7 +126,7 @@ void rename_atoms(t_atoms *atoms,t_symtab *symtab)
     bRenamed=FALSE;
     for(i=0; (i<nxlate) && !bRenamed; i++) {
       if ((xlatom[i].res == NULL) || (strcasecmp(res,xlatom[i].res) == 0) ||
-	  ((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(res)))
+	  ((strcasecmp("protein",xlatom[i].res) == 0) && is_protein(aan,res)))
 	if (strcasecmp(atombuf,xlatom[i].atom) == 0) {
 	  /* don't free the old atomname, since it might be in the symtab */
 	  strcpy(atombuf,xlatom[i].replace);

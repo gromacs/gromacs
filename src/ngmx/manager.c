@@ -167,6 +167,7 @@ static void hide_label(t_x11 *x11,t_manager *man,int x,int y)
 
 void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
 {
+  void         *atomprop;
   char         buf[256],quote[256];
   t_tpxheader  sh;
   t_atoms      *at;
@@ -204,7 +205,8 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   sprintf(buf,"%s: %s",*man->top.name,cool_quote(quote,255,NULL));
   man->title.text = strdup(buf);
   man->view       = init_view(man->box);
-  at=&(man->top.atoms);
+  at        = &(man->top.atoms);
+  atomprop  = get_atomprop();
   for(i=0; (i<man->natom); i++) {
     char *aname=*(at->atomname[i]);
     int  resnr=at->atom[i].resnr;
@@ -215,9 +217,12 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
     man->bHydro[i]=(toupper(aname[0])=='H');
     if ( man->bHydro[i] )
       man->vdw[i]=0;
-    else
-      man->vdw[i]=get_vdw(*(at->resname[resnr]),aname,0);
+    else if (!query_atomprop(atomprop,epropVDW,
+			     *(at->resname[resnr]),aname,
+			     &(man->vdw[i])))
+      man->vdw[i] = 0;
   }
+  done_atomprop(&atomprop);
   add_bpl(man,&(man->top.idef),bB);
   for(i=0; (i<man->natom); i++)
     if (!bB[i]) 

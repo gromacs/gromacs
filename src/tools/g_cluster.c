@@ -43,7 +43,7 @@
 #include "string2.h"
 #include "vec.h"
 #include "macros.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "random.h"
 #include "pbc.h"
 #include "xvgr.h"

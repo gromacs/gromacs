@@ -44,7 +44,7 @@
 #include "futil.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "smalloc.h"
 #include "fftgrid.h"
 #include "calcgrid.h"

@@ -41,7 +41,7 @@
 #include "tpxio.h"
 #include "string2.h"
 #include "vec.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "pbc.h"
 #include "fatal.h"
 #include "futil.h"
@@ -492,13 +492,13 @@ int gmx_confrms(int argc,char *argv[])
     fprintf(stderr,"%d atomname%s did not match\n",warn,(warn==1) ? "":"s");
   
   if (bFit) {  
-  /* calculate and remove center of mass of structures */
-  calc_rm_cm(isize1, index1, atoms1.nr, x1, xcm1);
-  calc_rm_cm(isize2, index2, atoms2.nr, x2, xcm2);
+    /* calculate and remove center of mass of structures */
+    calc_rm_cm(isize1, index1, atoms1.nr, x1, xcm1);
+    calc_rm_cm(isize2, index2, atoms2.nr, x2, xcm2);
     
     snew(w_rls,atoms2.nr);
     snew(fit_x,atoms2.nr);
-    for(at=0; at<isize1; at++) {
+    for(at=0; (at<isize1); at++) {
       w_rls[index2[at]] = 1.0;
       copy_rvec(x1[index1[at]],fit_x[index2[at]]);
     }
@@ -508,6 +508,7 @@ int gmx_confrms(int argc,char *argv[])
     
     sfree(fit_x);
     sfree(w_rls);
+    w_rls = NULL;
   }
   else {
     clear_rvec(xcm1);
@@ -522,7 +523,7 @@ int gmx_confrms(int argc,char *argv[])
   minmsd  =  1e18;
   snew(msds, isize1);
   for(at=0; at<isize1; at++) {
-    mass = w_rls ? w_rls[index2[at]] : 1;
+    mass = 1;
     for(m=0; m<DIM; m++) {
       msd = sqr(x1[index1[at]][m] - x2[index2[at]][m]);
       rms += msd*mass;

@@ -39,7 +39,7 @@
 #include "futil.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "macros.h"
 #include "fatal.h"
 #include "xvgr.h"

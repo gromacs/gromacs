@@ -49,7 +49,7 @@
 #include "names.h"
 #include "fatal.h"
 #include "macros.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"

@@ -38,7 +38,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "tpxio.h"
 
 static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],atom_id index[],

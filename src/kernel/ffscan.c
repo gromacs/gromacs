@@ -42,7 +42,7 @@
 #include "edsam.h"
 #include "mdrun.h"
 #include "strdb.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "xmdrun.h"
 #include "vec.h"
 

@@ -41,7 +41,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "xvgr.h"
 #include "rmpbc.h"
 #include "tpxio.h"

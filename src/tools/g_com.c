@@ -41,7 +41,7 @@
 #include "copyrite.h"
 #include "xvgr.h"
 #include "string2.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "tpxio.h"
 
 real calc_ekrot(int natoms,real mass[],rvec x[],rvec v[])

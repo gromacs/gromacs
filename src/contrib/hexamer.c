@@ -45,12 +45,11 @@
 #include "statutil.h"
 #include "string2.h"
 #include "strdb.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "gbutil.h"
 #include "strdb.h"
-#include "rdgroup.h"
 #include "physics.h"
 #include "atomprop.h"
 

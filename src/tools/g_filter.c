@@ -39,10 +39,12 @@ static char *SRCID_g_filter_c = "$Id$";
 #include "macros.h"
 #include "vec.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "tpxio.h"
 #include "princ.h"
 #include "do_fit.h"
+#include "copyrite.h"
+#include "rmpbc.h"
 
 int gmx_filter(int argc,char *argv[])
 {
@@ -88,7 +90,7 @@ int gmx_filter(int argc,char *argv[])
   char       title[256],*grpname;
   int        isize;
   atom_id    *index;
-  real       *w_rls;
+  real       *w_rls=NULL;
   int        in,outl,outh;
   int        nffr,i,fr,nat,j,d;
   atom_id    *ind;
@@ -173,11 +175,11 @@ int gmx_filter(int argc,char *argv[])
   if (lowfile)
     outl = open_trx(lowfile,"w");
   else
-    outl = NULL;
+    outl = 0;
   if (highfile)
     outh = open_trx(highfile,"w");
   else
-    outh = NULL;
+    outh = 0;
 
   fr = 0;
   do {

@@ -43,7 +43,7 @@
 #include "xvgr.h"
 #include "txtdump.h"
 #include "gstat.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "random.h"
 #include "names.h"
 #include "physics.h"

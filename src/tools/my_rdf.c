@@ -42,7 +42,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 
 #define RESOLUTION 0.01   /* 0.01 nm resolution */
 #define NR_HIST 200      /* compile histogram of 200 bins (from 0 to 2.0 nm)*/

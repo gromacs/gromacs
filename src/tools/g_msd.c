@@ -40,7 +40,7 @@
 #include "statutil.h"
 #include "maths.h"
 #include "futil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "copyrite.h"
 #include "typedefs.h"
 #include "xvgr.h"

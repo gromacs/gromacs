@@ -40,7 +40,7 @@
 #include "macros.h"
 #include "maths.h"
 #include "physics.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "smalloc.h"
 #include "statutil.h"
 #include "string.h"

@@ -744,13 +744,13 @@ real idihs(int nbonds,
     pA = forceparams[type].harmonic.rA;
     pB = forceparams[type].harmonic.rB;
 
-    phi0 = L1*kA+lambda*kB;
-    kk   = (L1*pA+lambda*pB)*DEG2RAD;
+    kk   = L1*kA+lambda*kB;
+    phi0 = (L1*pA+lambda*pB)*DEG2RAD;
     
     /* dp = (phi-phi0), modulo (-pi,pi) */
     dp = phi-phi0;  
     /* dp cannot be outside (-2*pi,2*pi) */
-    if(dp>=M_PI)
+    if (dp>=M_PI)
       dp -= 2*M_PI;
     else if(dp<-M_PI)
       dp += 2*M_PI;

@@ -40,7 +40,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "vec.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "macros.h"
 #include "fatal.h"
 #include "xvgr.h"

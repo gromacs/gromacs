@@ -374,6 +374,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_int(idum);
     if (file_version >=26)
       do_int(ir->nLincsIter);
+    else if (bRead) {
+      ir->nLincsIter = 1;
+      fprintf(stderr,"Note: nLincsIter not in run input file, setting it to %d\n",
+	      ir->nLincsIter);
+    }
     do_real(ir->bd_temp);
     do_real(ir->bd_fric);
     do_int(ir->ld_seed);
@@ -1165,6 +1170,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
   real         t,lambda;
   int          natoms,step,i,version,generation;
   bool         bTop,bXNULL;
+  void         *ap;
   
   bTop=fn2bTPX(infile);
   if (bTop) {
@@ -1189,11 +1195,15 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
       sfree(*x);
       x = NULL;
     }
-    if (bMass)
-      for(i=0; i<natoms; i++)
-	top->atoms.atom[i].m = 
-	  get_mass(*top->atoms.resname[top->atoms.atom[i].resnr],
-		   *top->atoms.atomname[i]);
+    if (bMass) {
+      ap = get_atomprop();
+      for(i=0; (i<natoms); i++)
+	query_atomprop(ap,epropMass,
+		       *top->atoms.resname[top->atoms.atom[i].resnr],
+		       *top->atoms.atomname[i],
+		       &(top->atoms.atom[i].m));
+      done_atomprop(&ap);
+    }
     top->idef.ntypes=-1;
   }
 

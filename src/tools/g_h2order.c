@@ -44,7 +44,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 
 /****************************************************************************/
 /* This program calculates the ordering of water molecules across a box, as */

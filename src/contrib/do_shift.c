@@ -45,7 +45,7 @@
 #include "fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "pdbio.h"
 
 void cat(FILE *out,char *fn,real t)

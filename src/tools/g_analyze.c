@@ -599,8 +599,9 @@ static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
     break;
   case effnEXP5:
     fitparm[0] = fitparm[2] = 0.5*c1[0];
-    fitparm[1] = 100;
-    fitparm[3] = 400;
+    fitparm[1] = 10;
+    fitparm[3] = 40;
+    fitparm[4] = 0;
     break;
   case effnEXP7:
     fitparm[0] = fitparm[2] = fitparm[4] = 0.33*c1[0];

@@ -43,7 +43,7 @@
 #include "fatal.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "gstat.h"
 #include "tpxio.h"
 

@@ -43,7 +43,7 @@
 #include "fatal.h"
 #include "xvgr.h"
 #include "matio.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "gstat.h"
 #include "tpxio.h"
 #include "viewit.h"

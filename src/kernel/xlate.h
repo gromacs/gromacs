@@ -33,7 +33,8 @@
 #ifndef _xlate_h
 #define _xlate_h
 
+#include "index.h"
 
-extern void rename_atoms(t_atoms *atoms,t_symtab *symtab);
+extern void rename_atoms(t_atoms *atoms,t_symtab *symtab,t_aa_names *aan);
 
 #endif

@@ -34,7 +34,7 @@
 #include "statutil.h"
 #include "smalloc.h"
 #include "copyrite.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "confio.h"
 #include "fatal.h"
 #include "vec.h"

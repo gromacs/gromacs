@@ -31,7 +31,7 @@
  */
 
 #include <math.h>
-#include "rdgroup.h"
+#include "index.h"
 #include "fatal.h"
 #include "string2.h"
 #include "sysstuff.h"
@@ -47,7 +47,6 @@
 #include "futil.h"
 #include "assert.h"
 #include "vec.h"
-#include "rdgroup.h"
 
 static bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {

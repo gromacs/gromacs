@@ -47,7 +47,7 @@
 #include "gstat.h"
 #include "main.h"
 #include "pdbio.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "mdatoms.h"
 #include "nsb.h"
 #include "tpxio.h"

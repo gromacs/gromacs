@@ -41,7 +41,7 @@
 #include "assert.h"
 #include "copyrite.h"
 #include "typedefs.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "index.h"

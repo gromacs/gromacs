@@ -35,7 +35,7 @@
  */
 
 #include "futil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "statutil.h"
 #include "math.h"
 #include "stdio.h"

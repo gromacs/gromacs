@@ -30,7 +30,7 @@ include_HEADERS = \
 	futil.h         metacode.h  	random.h    	struc2.h      	\
 	x86_3dnow.h	gbutil.h         	\
 	rbin.h      	detectcpu.h	tgroup.h	\
-	mshift.h    	rdgroup.h   	symtab.h      	\
+	mshift.h    	symtab.h      	\
 	x86_sse.h	confio.h    	gmxfio.h        	\
 	xdrf.h		constr.h    	\
 	grompp.h        names.h     	readcomp.h  	     	\

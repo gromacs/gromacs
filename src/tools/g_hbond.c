@@ -30,6 +30,7 @@
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
 
+#include <math.h>
 #include "statutil.h"
 #include "copyrite.h"
 #include "sysstuff.h"
@@ -38,7 +39,7 @@
 #include "physics.h"
 #include "macros.h"
 #include "fatal.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "smalloc.h"
 #include "assert.h"
 #include "vec.h"
@@ -47,7 +48,6 @@
 #include "matio.h"
 #include "string2.h"
 #include "pbc.h"
-#include <math.h>
 
 #define max_hx 7
 typedef int t_hx[max_hx];

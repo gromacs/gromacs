@@ -30,18 +30,27 @@
  * Grunge ROck MAChoS
  */
 
+#ifndef _atomprop_h
+#define _atomprop_h
+ 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-extern real get_mass(char *resnm, char *atomnm);
-/* search the mass belonging to residue and atom,
-   note that the longest match is returned */
+#include "index.h"
 
-extern real get_vdw(char *resnm, char *atomnm, real default_r);
-/* search the vdw radius belonging to residue and atom ,
-   note that the longest match is returned */
-   
-extern real get_dgsolv(char *resnm, char *atomnm, real default_s);
-/* search the Delta G solv belonging to residue and atom ,
-   note that the longest match is returned */
+enum { epropMass, epropVDW, epropDGsol, epropNR };
+
+extern void *get_atomprop(void);
+/* Read database files with atomproperties */
+
+extern void done_atomprop(void **atomprop);
+/* Get rid of memory after use */
+
+extern bool query_atomprop(void *atomprop,int eprop,char *resnm,char *atomnm,
+			   real *value);
+/* Extract a value from the database. Returns TRUE on succes,
+ * FALSE otherwise. In the latter case, value is a deafult value.
+ */
+
+#endif

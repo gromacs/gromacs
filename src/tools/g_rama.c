@@ -43,7 +43,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "nrama.h"
 
 static void plot_rama(FILE *out,t_xrama *xr)

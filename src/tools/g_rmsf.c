@@ -39,7 +39,7 @@
 #include "statutil.h"
 #include "string2.h"
 #include "vec.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "pdbio.h"
 #include "tpxio.h"
 #include "pbc.h"

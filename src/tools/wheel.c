@@ -47,7 +47,7 @@
 #include "strdb.h"
 #include "statutil.h"
 #include "pbc.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "gstat.h"
 #include "fatal.h"
 #include "writeps.h"

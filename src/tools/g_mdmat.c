@@ -44,7 +44,7 @@
 #include "smalloc.h"
 #include "matio.h"
 #include "xvgr.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "tpxio.h"
 #include "rmpbc.h"
 #include "pbc.h"

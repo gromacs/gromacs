@@ -158,6 +158,7 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
   bool    bProt, bNterm;
   double  qt;
   int     nmissat;
+  t_aa_names *aan;
   
   nmissat = 0;
 
@@ -171,16 +172,18 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
   curcg=0;
   cg=-1;
   j=NOTSET;
+  aan = get_aa_names();
+  
   for(i=0; (i<at->nr); i++) {
     prevresnr=resnr;
     if (at->atom[i].resnr != resnr) {
       resnr=at->atom[i].resnr;
-      bProt=is_protein(*(at->resname[resnr]));
+      bProt=is_protein(aan,*(at->resname[resnr]));
       bNterm=bProt && (resnr == 0);
       if (resnr>0)
 	nmissat += 
 	  missing_atoms(&restp[prevresnr],prevresnr,at,i0,i,
-			(!bProt && is_protein(restp[prevresnr].resname)));
+			(!bProt && is_protein(aan,restp[prevresnr].resname)));
       i0=i;
     }
     if (at->atom[i].m == 0) {
@@ -215,8 +218,9 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
     at->atom[i].mB    = at->atom[i].m;
   }
   nmissat += missing_atoms(&restp[resnr],resnr,at,i0,i,
-			   (!bProt || is_protein(restp[resnr].resname)));
-
+			   (!bProt || is_protein(aan,restp[resnr].resname)));
+  done_aa_names(&aan);
+			   
   return nmissat;
 }
 

@@ -40,7 +40,7 @@
 #include "confio.h"
 #include "futil.h"
 #include "macros.h"
-#include "rdgroup.h"
+#include "index.h"
 
 int main(int argc,char *argv[])
 {
