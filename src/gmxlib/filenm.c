@@ -157,6 +157,9 @@ static t_deffile deffile[efNR] = {
 
 static char *default_file_name=NULL;
 
+#define NZEXT 2
+char *z_ext[NZEXT] = { ".gz", ".Z" };
+
 void set_default_file_name(char *name)
 {
   int i;
@@ -325,30 +328,15 @@ int fn2ftp(char *fn)
 
 static void set_extension(char *buf,int ftp)
 {
-#define NZEXT 2
-  char *z_ext[NZEXT] = { ".gz", ".Z" };
   int i,len,extlen;
   t_deffile *df;
-  
+
+  /* check if extension is already at end of filename */
   df=&(deffile[ftp]);
   len=strlen(buf);
-  
-  /* check if filename ends in .gz or .Z, if so remove that: */
-  for (i=0; i<NZEXT; i++) {
-    extlen = strlen(z_ext[i]);
-    if (len >= extlen)
-      if (strcasecmp(&(buf[len-extlen]),z_ext[i]) == 0) {
-	buf[len-extlen]='\0';
-	len-=extlen;
-      }
-  }
-  
-  /* check if extension is already at end of filename */
-  if (len >= 4) 
-    if (strcasecmp(&(buf[len-4]),df->ext) == 0) 
-      return;
-  
-  strcat(buf,df->ext);
+  extlen = strlen(df->ext);
+  if ((len <= extlen) || (strcasecmp(&(buf[len-extlen]),df->ext) != 0))
+    strcat(buf,df->ext);
 }
 
 static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
@@ -402,11 +390,25 @@ static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
    * are not already set. An extension is added if not present, if fn = NULL
    * or empty, the default filename is given.
    */
-  char      buf[256];
+  char buf[256];
+  int  i,len,extlen;
 
   if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
     fatal_error(0,"file type out of range (%d)",fnm->ftp);
 
+  if ((fnm->flag & ffREAD) && name && fexist(name)) {
+    /* check if filename ends in .gz or .Z, if so remove that: */
+    len    = strlen(name);
+    for (i=0; i<NZEXT; i++) {
+      extlen = strlen(z_ext[i]);
+      if (len > extlen)
+	if (strcasecmp(name+len-extlen,z_ext[i]) == 0) {
+	  name[len-extlen]='\0';
+	  break;
+	}
+    }
+  }
+  
   if (deffile[fnm->ftp].ntps)
     set_grpfnm(fnm,name,bCanNotOverride);
   else {
