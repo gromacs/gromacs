@@ -365,7 +365,7 @@ static real anal_ee(real *parm,real T,real t)
 
 static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 			   double *av,double *sig,real **val,real dt,
-			   bool bFitAc)
+			   bool bFitAc,bool bSingleExpFit)
 {
   FILE   *fp;
   int    bs,prev_bs,nbs,nb;
@@ -422,24 +422,28 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
     for(i=0; i<nbs; i++)
       fitsig[i] = sqrt(tbs[i]);
 
-    fitparm[0] = 0.002*n*dt;
-    fitparm[1] = 0.95;
-    fitparm[2] = 0.2*n*dt;
-    do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
-    fitparm[3] = 1-fitparm[1];
-    if (fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0 || fitparm[1]>1 
-	|| fitparm[2]>(n-1)*dt) {
-      if (fitparm[2]>(n-1)*dt)
-	fprintf(stdout,
-		"Warning: tau2 is longer than the length of the data (%g)\n"
-		"         the statistics might be bad\n",
-		(n-1)*dt);
-      else
-	fprintf(stdout,"a fitted parameter is negative\n");
-      fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
-	      sig[s]*anal_ee_inf(fitparm,n*dt),
-	      fitparm[1],fitparm[0],fitparm[2]);
-      fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+    if (!bSingleExpFit) {
+      fitparm[0] = 0.002*n*dt;
+      fitparm[1] = 0.95;
+      fitparm[2] = 0.2*n*dt;
+      do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
+      fitparm[3] = 1-fitparm[1];
+    }
+    if (bSingleExpFit || fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0
+	|| fitparm[1]>1 || fitparm[2]>(n-1)*dt) {
+      if (!bSingleExpFit) {
+	if (fitparm[2]>(n-1)*dt)
+	  fprintf(stdout,
+		  "Warning: tau2 is longer than the length of the data (%g)\n"
+		  "         the statistics might be bad\n",
+		  (n-1)*dt);
+	else
+	  fprintf(stdout,"a fitted parameter is negative\n");
+	fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+		sig[s]*anal_ee_inf(fitparm,n*dt),
+		fitparm[1],fitparm[0],fitparm[2]);
+	fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+      }
       fitparm[0] = n*dt*0.002;
       fitparm[1] = 1;
       fitparm[2] = 0;
@@ -560,7 +564,7 @@ int main(int argc,char *argv[])
   };
   static real tb=-1,te=-1,frac=0.5,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE;
-  static bool bEeFitAc=FALSE,bPower=FALSE; 
+  static bool bEESEF=FALSE,bEeFitAc=FALSE,bPower=FALSE; 
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
   /* must correspond to enum avbar* declared at beginning of file */
@@ -592,6 +596,8 @@ int main(int argc,char *argv[])
     { "-resol", FALSE, etINT, {&resol},
       "HIDDENResolution for the block averaging, block size increases with"
     " a factor 2^(1/#)" },
+    { "-eeexpfit", FALSE, etBOOL, {&bEESEF},
+      "HIDDENAlways use a single exponential fit for the error estimate" },
     { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
       "HIDDENAlso plot analytical block average using a autocorrelation fit" },
     { "-power", FALSE, etBOOL, {&bPower},
@@ -715,7 +721,7 @@ int main(int argc,char *argv[])
   if (avfile)
     average(avfile,nenum(avbar_opt),n,nset,val,t0,dt);
   if (eefile)
-    estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc);
+    estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc,bEESEF);
   if (bPower)
     power_fit(n,nset,val,t0,dt);
   if (acfile) {
