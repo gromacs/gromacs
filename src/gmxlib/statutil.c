@@ -156,6 +156,13 @@ real convert_time(real time)
   return time*timefactor;
 }
 
+static real inv_convert_time(real time)
+{
+  INIT_TIME_FACTOR;
+  
+  return time/timefactor;
+}
+
 void convert_times(int n, real *time)
 {
   int i;
@@ -313,9 +320,9 @@ static int add_parg(int npargs,t_pargs **pa,t_pargs *pa_add)
   return npargs+1;
 }
 
-static char *mk_desc(t_pargs *pa)
+static char *mk_desc(t_pargs *pa, char *time_unit)
 {
-  char *newdesc,*ptr;
+  char *newdesc=NULL,*ndesc=NULL,*ptr=NULL;
   int  len,k;
   
   /* First compute length for description */
@@ -330,11 +337,35 @@ static char *mk_desc(t_pargs *pa)
   }
   snew(newdesc,len);
   
+  /* add label for hidden options */
   if (is_hidden(pa)) 
     sprintf(newdesc,"[hidden] %s",ptr+6);
   else
     strcpy(newdesc,pa->desc);
-    
+  
+  /* change '%t' into time_unit */
+#define TUNITLABEL "%t"
+#define NTUNIT strlen(TUNITLABEL)
+  if (pa->type == etTIME) {
+    fprintf(stderr,"%s: desc: '%s'\n",TUNITLABEL,newdesc);
+    while( (ptr=strstr(newdesc,TUNITLABEL)) != NULL ) {
+      ptr[0]='\0';
+      ptr+=NTUNIT;
+      fprintf(stderr,"%s: newdesc: '%s' ptr: '%s' tu: '%s'\n",
+	      TUNITLABEL,newdesc,ptr,time_unit);
+      len+=strlen(time_unit)-NTUNIT;
+      snew(ndesc,len);
+      strcpy(ndesc,newdesc);
+      strcat(ndesc,time_unit);
+      strcat(ndesc,ptr);
+      sfree(newdesc);
+      newdesc=ndesc;
+      ndesc=NULL;
+    }
+  }
+#undef TUNITLABEL
+#undef NTUNIT
+  
   /* Add extra comment for enumerateds */
   if (pa->type == etENUM) {
     strcat(newdesc,": ");
@@ -388,15 +419,15 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
 		       "Set the nicelevel" };
   t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR, {&deffnm}, 
 		       "Set the default filename for all file options" };
-  t_pargs begin_pa  = { "-b",    FALSE, etREAL,  {&tbegin},        
-		       "First frame (ps) to read from trajectory" };
-  t_pargs end_pa    = { "-e",    FALSE, etREAL,  {&tend},        
-		       "Last frame (ps) to read from trajectory" };
-  t_pargs dt_pa     = { "-dt",    FALSE, etREAL, {&tdelta},        
-		       "Only use frame when t MOD dt = first time" };
+  t_pargs begin_pa  = { "-b",    FALSE, etTIME,  {&tbegin},        
+		       "First frame (%t) to read from trajectory" };
+  t_pargs end_pa    = { "-e",    FALSE, etTIME,  {&tend},        
+		       "Last frame (%t) to read from trajectory" };
+  t_pargs dt_pa     = { "-dt",    FALSE, etTIME, {&tdelta},        
+		       "Only use frame when t MOD dt = first time (%t)" };
   t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},     
 		       "View output xvg, xpm, eps and pdb files" };
-  t_pargs time_pa   = { "-time", FALSE, etENUM,  {timestr},
+  t_pargs time_pa   = { "-tu", FALSE, etENUM,  {timestr},
 			"Time unit" };
   
   t_pargs pca_pa[] = {
@@ -458,9 +489,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   if (!program)
     program  = strdup(argv[0]);
 
-  /* Parse the file args */
-  /* parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS)); */
-  
   /* Check ALL the flags ... */
   snew(all_pa,NPCA_PA+npargs);
   for(i=npall=0; (i<NPCA_PA); i++)
@@ -518,6 +546,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     npall = add_parg(npall,&(all_pa),&dt_pa);
   if (FF(PCA_TIME_UNIT))
     npall = add_parg(npall,&(all_pa),&time_pa);
+  else
+    default_time();
   if (FF(PCA_CAN_VIEW))
     npall = add_parg(npall,&(all_pa),&view_pa);
 
@@ -566,9 +596,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
     memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   
-  for(i=0; (i<npall); i++) {
-    all_pa[i].desc = mk_desc(&(all_pa[i]));
-  }
+  for(i=0; (i<npall); i++)
+    all_pa[i].desc = mk_desc(&(all_pa[i]), time_label() );
     
 #ifdef __sgi
 #ifdef USE_SGI_FPE
@@ -601,7 +630,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     nice(nicelevel);
   
 #endif
-
+  
   if (!(FF(PCA_QUIET) || bQuiet )) {
     if (bHelp)
       write_man(stderr,"help",program,ndesc,desc,nfile,fnm,npall,all_pa,
@@ -622,6 +651,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     sfree(all_pa[i].desc);
   sfree(all_pa);
   
+  /* convert time options, must be done after printing! */
+#define pca_convert_time(t) if (t>=0.0) t=inv_convert_time(t)
+  pca_convert_time(tbegin);
+  pca_convert_time(tend);
+  pca_convert_time(tdelta);
+#undef pca_convert_time
+
   if (!FF(PCA_NOEXIT_ON_ARGS)) {
     if (*argc > 1) {
       for(i=1; (i<*argc); i++) 

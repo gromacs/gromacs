@@ -247,15 +247,14 @@ int main(int argc,char *argv[])
   t_pargs pa[] = {
     { "-skip", FALSE,  etINT, {&skip_nr},
       "Only write every nr-th frame" },
-    { "-dt", FALSE,  etREAL, {&delta_t},
-      "Only write frame when t MOD dt = first time" },
-    { "-dump", FALSE, etREAL, {&tdump},
-      "Dump frame nearest specified time" },
-    { "-t0", FALSE,  etREAL, {&tzero},
-      "Starting time for trajectory"
-      "(default: don't change)"},
-    { "-timestep", FALSE,  etREAL, {&timestep},
-      "Change time step between input frames" },
+    { "-dt", FALSE,  etTIME, {&delta_t},
+      "Only write frame when t MOD dt = first time (%t)" },
+    { "-dump", FALSE, etTIME, {&tdump},
+      "Dump frame nearest specified time (%t)" },
+    { "-t0", FALSE,  etTIME, {&tzero},
+      "Starting time (%t) (default: don't change)"},
+    { "-timestep", FALSE,  etTIME, {&timestep},
+      "Change time step between input frames (%t)" },
     { "-pbc", FALSE,  etENUM, {pbc_opt},
       "PBC treatment" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
@@ -277,8 +276,8 @@ int main(int argc,char *argv[])
     { "-force", FALSE, etBOOL, {&bForce},
       "Read and write forces if possible" },
 #ifndef _win_
-    { "-trunc", FALSE, etREAL, {&ttrunc},
-      "Truncate input trj file after this amount of ps" },
+    { "-trunc", FALSE, etTIME, {&ttrunc},
+      "Truncate input trj file after this time (%t)" },
 #endif
     { "-exec", FALSE,  etSTR, {&exec_command},
       "Execute command for every output frame with the frame number "
@@ -328,7 +327,8 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW,
+  parse_common_args(&argc,argv,
+		    PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
 		    TRUE, NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
 

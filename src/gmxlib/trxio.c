@@ -62,7 +62,7 @@ int nframes_read(void)
   
 static void printcount_(char *l,real t)
 {
-  fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,t);
+  fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,convert_time(t));
 }
 
 static void printcount(real t,real t0)

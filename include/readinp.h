@@ -78,9 +78,13 @@ extern int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs);
 /* This last one prints a comment line where you can add some explanation */
 
 /* This structure is used for parsing arguments off the comand line */
-enum { etINT, etREAL, etSTR, etBOOL, etRVEC, etENUM, etNR };
+enum { 
+  etINT, etREAL, etTIME, etSTR,    etBOOL, etRVEC,   etENUM, etNR
+};
 /* names to print in help info */
-static char *argtp[etNR] = { "int", "real", "string", "bool", "vector", "enum" };
+static char *argtp[etNR] = {
+  "int", "real", "time", "string", "bool", "vector", "enum" 
+};
 
 typedef struct {
   char *option;

@@ -81,6 +81,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	case etINT:
 	  *pa[j].u.i = iscan(*argc,argv,&i);
 	  break;
+	case etTIME:
 	case etREAL:
 	  *pa[j].u.r = dscan(*argc,argv,&i);
 	  break;
@@ -224,6 +225,7 @@ char *pa_val(t_pargs *pa)
   case etINT:
     sprintf(buf,"%d",*(pa->u.i));
     break;
+  case etTIME:
   case etREAL:
     sprintf(buf,"%6g",*(pa->u.r));
     break;
