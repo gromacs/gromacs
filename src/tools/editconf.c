@@ -643,7 +643,7 @@ int main(int argc, char *argv[])
     get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpnames);
     
     /* Orient the principal axes along the coordinate axes */
-    orient_princ(&atoms,isize,index,x,bHaveV ? v : NULL);
+    orient_princ(&atoms,isize,index,natom,x,bHaveV ? v : NULL, NULL);
     sfree(index);
     sfree(grpnames);
   }
@@ -659,10 +659,9 @@ int main(int argc, char *argv[])
       fprintf(stderr,"Volume  of input %g (nm^3)\n",vol);
       fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
       fprintf(stderr,"Density of input %g (g/l)\n",dens);
-      if (vol==0.0)
-	fatal_error(0,"Cannot scale density with zero box\n");
-      if (mass==0.0)
-	fatal_error(0,"Cannot scale density with zero mass\n");
+      if (vol==0 || mass==0)
+	fatal_error(0,"Cannot scale density with "
+		    "zero mass (%g) or volume (%g)\n",mass,vol);
       
       scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
       fprintf(stderr,"Scaling all box vectors by %g\n",scale[XX]);
