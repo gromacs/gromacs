@@ -78,7 +78,7 @@ echo "Starting pdb2gmx"
 if ( $?DISPLAY ) then 
 	xterm -title pdb2gmx -sb -e tail +0f output.pdb2gmx &
 endif
-pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& output.pdb2gmx
+echo 0 | pdb2gmx -f ${MOL}.pdb -o ${MOL}.gro -p ${MOL}.top >& output.pdb2gmx
 echo "pdb2gmx finished"
 echo -n "Press <enter>"
 set  ans = $<
@@ -185,7 +185,7 @@ rvdw                =  1.0
 ;
 ;       Energy minimizing stuff
 ;
-emtol               =  3.0
+emtol               =  1000.0
 emstep              =  0.01
 _EOF_
 
