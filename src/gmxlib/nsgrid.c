@@ -126,7 +126,7 @@ void grid_first(FILE *log,t_grid *grid,matrix box,real rlong)
 	grid->nra[i] = 0;
 	grid->index[i] = 0;
       }
-      fprintf(log,"Warning: your box is exploding! (ncells nu %d)\n",ncells);
+      fprintf(log,"WARNING: your box is exploding! (ncells = %d)\n",ncells);
       grid->maxcells = ncells;
     }
     grid->ncells = ncells;
