@@ -105,7 +105,7 @@ static void strip_dssp(char *dsspfile,int nres,
   if (bFirst) {
     sprintf(mat->title,"Secondary structure");
     mat->legend[0]=0;
-    sprintf(mat->label_x,"Time (ps)");
+    sprintf(mat->label_x,"Time (%s)", time_label());
     sprintf(mat->label_y,"Residue");
     mat->bDiscrete=TRUE;
     mat->ny=nr;
@@ -397,8 +397,8 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
-	 	    NFILE,fnm,asize(pa),pa,asize(desc),desc,
+  parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT,
+		    TRUE, NFILE,fnm, asize(pa),pa, asize(desc),desc,
 #ifdef MY_DSSP
 		    0,NULL
 #else
@@ -448,8 +448,9 @@ int main(int argc,char *argv[])
 #endif
   
   if (fnTArea) {
+    sprintf(title, "Time (%s)", time_label());
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
-		  "Time (ps)","Area (nm\\S2\\N)");
+		    title,"Area (nm\\S2\\N)");
     xvgr_legend(fTArea,2,leg);
   } else
     fTArea=NULL;
@@ -470,6 +471,7 @@ int main(int argc,char *argv[])
   accr=NULL;
   naccr=0;
   do {
+    t = convert_time(t);
     if (nframe>=naccr) {
       naccr+=10;
       srenew(accr,naccr);
