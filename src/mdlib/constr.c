@@ -95,7 +95,7 @@ static void dump_confs(int step,t_atoms *atoms,
 }
 
 static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
-		       t_mdatoms *md,
+		       t_mdatoms *md,int start,int homenr,
 		       int *nrtot,
 		       rvec **r,int **bla1,int **bla2,int **blnr,int **blbnb,
 		       real **bllen,real **blc,real **blcc,real **blm,
@@ -119,13 +119,13 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     iatom=idef->il[F_SHAKE].iatoms;
 
     /* Make atom-constraint connection list for temporary use */
-    snew(at_c,md->nr);
-    snew(at_cn,md->nr);
-    snew(at_cm,md->nr);
+    snew(at_c,homenr);
+    snew(at_cn,homenr);
+    snew(at_cm,homenr);
 
     for(i=0; i<ncons; i++) {
-      a1=iatom[3*i+1];
-      a2=iatom[3*i+2];
+      a1=iatom[3*i+1]-start;
+      a2=iatom[3*i+2]-start;
       if (at_cn[a1] >= at_cm[a1]) {
 	at_cm[a1] += 4;
 	srenew(at_c[a1],at_cm[a1]);
@@ -142,8 +142,8 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     sfree(at_cm);
     
     for(i=0; i<ncons; i++) {
-      a1=iatom[3*i+1];
-      a2=iatom[3*i+2];
+      a1=iatom[3*i+1]-start;
+      a2=iatom[3*i+2]-start;
       *nrtot += at_cn[a1] + at_cn[a2] - 2;
     }      
 
@@ -183,12 +183,12 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       (*blc)[i]=invsqrt(im1+im2);
       /* Construct the constraint connection matrix blbnb */
       (*blnr)[i+1]=(*blnr)[i];
-      for(k=0; k<at_cn[a1]; k++)
-	if (at_c[a1][k] != i)
-	  (*blbnb)[((*blnr)[i+1])++]=at_c[a1][k];
-      for(k=0; k<at_cn[a2]; k++)
-	if (at_c[a2][k] != i)
-	  (*blbnb)[((*blnr)[i+1])++]=at_c[a2][k];
+      for(k=0; k<at_cn[a1-start]; k++)
+	if (at_c[a1-start][k] != i)
+	  (*blbnb)[((*blnr)[i+1])++]=at_c[a1-start][k];
+      for(k=0; k<at_cn[a2-start]; k++)
+	if (at_c[a2-start][k] != i)
+	  (*blbnb)[((*blnr)[i+1])++]=at_c[a2-start][k];
     }
 
     sfree(at_cn);
@@ -252,7 +252,7 @@ static void constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 
   if (bInit) {
     nc = top->idef.il[F_SHAKE].nr/3;
-    init_lincs(stdlog,top,ir,md,
+    init_lincs(stdlog,top,ir,md,start,homenr,
 	       &nrtot,
 	       &r,&bla1,&bla2,&blnr,&blbnb,
 	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
