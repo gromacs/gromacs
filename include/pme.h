@@ -39,19 +39,17 @@ static char *SRCID_pme_h = "$Id$";
 
 extern real do_pme(FILE *log,       bool bVerbose,
 		   t_inputrec *ir,
-		    rvec x[],        rvec f[],
-		    real charge[],   rvec box,
-		    real phi[],      t_commrec *cr,
+		   rvec x[],        rvec f[],
+		   real charge[],   rvec box,
+		   t_commrec *cr,
 		   t_nsborder *nsb, t_nrnb *nrnb,
 		   matrix lrvir,real ewaldcoeff);
     
 /* Do a PME calculation for the long range electrostatics. */
 
-extern void sum_qgrid(FILE *log,bool bVerbose,t_commrec *cr,
-		      t_nsborder *nsb,t_fftgrid *grid,bool bForward);
+extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward);
 
-void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,
-	      bool bVerbose,t_inputrec *ir);
+void init_pme(FILE *log,t_commrec *cr,t_nsborder *nsb,t_inputrec *ir);
 
 
 #endif
