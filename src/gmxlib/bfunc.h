@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.6
+ *            VERSION 2.0
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * GRowing Old MAkes el Chrono Sweat
  */
 static char *SRCID_bfunc_h = "$Id$";
 
@@ -34,9 +34,12 @@ static char *SRCID_bfunc_h = "$Id$";
  *	Bcopy/Memcpy patch.
  *
 $Log$
-Revision 1.2  1997/11/27 16:29:42  anton
-Edited by copyrgt -> v1.6; fixed loads of inconsistent formatting of .h files
+Revision 1.3  1997/12/23 11:52:07  anton
+Edited by Copyright -> 2.0
 
+ * Revision 1.2  1997/11/27  16:29:42  anton
+ * Edited by copyrgt -> v1.6; fixed loads of inconsistent formatting of .h files
+ *
  * Revision 1.1.1.1  1997/11/03  16:08:02  spoel
  * Generated_by_makecvs
  *

@@ -1,5 +1,5 @@
 /*
- *       @(#) copyrgt.c 1.12 9/30/97
+ *       $Id$
  *
  *       This source code is part of
  *
@@ -7,12 +7,12 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0b
+ *            VERSION 2.0
  * 
- * Copyright (c) 1990-1997,
- * BIOSON Research Institute, Dept. of Biophysical Chemistry,
+ * Copyright (c) 1991-1997
+ * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- *
+ * 
  * Please refer to:
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
@@ -24,10 +24,13 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Giant Rising Ordinary Mutants for A Clerical Setup
+ * GROup of MAchos and Cynical Suckers
  */
+
 #ifndef _dialogs_h
 #define _dialogs_h
+
+static char *SRCID_dialogs_h = "$Id$";
 
 #include "xdlg.h"
 #include "pulldown.h"

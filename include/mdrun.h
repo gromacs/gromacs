@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.6
+ *            VERSION 2.0
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Good ROcking Metal Altar for Chronical Sinners
  */
 
 #ifndef _mdrun_h

@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 1.6
+ *            VERSION 2.0
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Great Red Owns Many ACres of Sand 
+ * Gnomes, ROck Monsters And Chili Sauce
  */
 
 #ifndef _copyrite_h
@@ -42,7 +42,7 @@ extern "C" {
 
 #include <stdio.h>
   
-#define GromacsVersion() "VERSION 1.6"
+#define GromacsVersion() "VERSION 2.0"
 
 static char *CopyrightText[] = {
   "",
