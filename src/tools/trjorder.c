@@ -85,7 +85,9 @@ int main(int argc,char *argv[])
     "In that case the reference group would be the protein and the group",
     "of molecules would consist of all the water atoms. When an index group",
     "of the first n waters is made, the ordered trajectory can be used",
-    "with any Gromacs program to analyze the n closest waters."
+    "with any Gromacs program to analyze the n closest waters.[PAR]",
+    "If the output file is a pdb file, the distance to the reference target",
+    "will be stored in the B-factor field in order to color with e.g. rasmol."
   };
   static int na=3,ref_a=1;
   t_pargs pa[] = {
@@ -144,7 +146,11 @@ int main(int argc,char *argv[])
   snew(swi,natoms);
   for(i=0; i<natoms; i++)
     swi[i] = i;
-  
+
+  if (!top.atoms.pdbinfo) {
+    fprintf(stderr,"Creating pdbfino records\n");
+    snew(top.atoms.pdbinfo,top.atoms.nr);
+  }
   out=open_trx(opt2fn("-o",NFILE,fnm),"w");
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
@@ -168,7 +174,16 @@ int main(int argc,char *argv[])
     for(i=0; i<nwat; i++)
       for(j=0; j<na; j++)
 	swi[index[1][na*i]+j] = order[i].i+j;
-
+    
+    /* Store the distance as the B-factor */
+    if (top.atoms.pdbinfo) {
+      for(i=0; (i<nwat); i++) {
+	for(j=0; j<na; j++) {
+	  pbc_dx(x[index[0][0]],x[order[i].i+j],dx);
+	  top.atoms.pdbinfo[order[i].i+j].bfac = norm(dx);
+	}
+      }
+    }
     write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL);
     
   } while(read_next_x(status,&t,natoms,x,box));
