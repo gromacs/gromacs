@@ -38,6 +38,7 @@ static char *SRCID_shakef_c = "$Id$";
 #include "nrnb.h"
 #include "update.h"
 #include "copyrite.h"
+#include "callf77.h"
 
 static void pv(FILE *log,char *s,rvec x)
 {
