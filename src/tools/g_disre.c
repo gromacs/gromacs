@@ -136,12 +136,13 @@ void check_viol(FILE *log,
     vvindex[j]=0;
   }
   for(i=0; (i<bonds->nr); ) {
-    type=forceatoms[i++];
+    type=forceatoms[i];
     ftype=functype[type];
     viol=interaction_function[ftype].ifunc(bonds->nr,&forceatoms[i],
 					   &forceparams[type],
 					   x,f,fr,g,box,lam,&dvdl,
 					   NULL,0,NULL,NULL);
+    i++;
     if (viol > 0) {
       nviol++;
       add5(forceparams[type].disres.index,viol);
@@ -220,6 +221,7 @@ int main (int argc,char *argv[])
   char        *grpname;
   char        **leg;
   real        *vvindex=NULL;
+  ivec        *nFreeze;
   t_mdatoms   *mdatoms;
   
   t_filenm fnm[] = {
@@ -284,8 +286,8 @@ int main (int argc,char *argv[])
 	 atoms->nr*sizeof(atoms->atomname[0]));
   memcpy(atoms->resname,top->atoms.resname,
 	 atoms->nres*sizeof(atoms->resname[0]));
-
-  mdatoms = atoms2md(&top->atoms,ir->opts.nFreeze,FALSE,FALSE,FALSE);  
+  snew(nFreeze,1);
+  mdatoms = atoms2md(&top->atoms,nFreeze,FALSE,FALSE,FALSE);  
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
   calc_nsb(&(top->blocks[ebCGS]),1,nsb,0);
