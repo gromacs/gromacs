@@ -156,14 +156,13 @@ int main (int argc,char *argv[])
 #define NFRAME 5000
   int        maxframe=NFRAME,maxframe2=NFRAME;
   real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
-  bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror;
+  bool       bTruncOct,bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
   
   t_topology top;
   t_iatom    *iatom=NULL;
 
   matrix     box;
-  rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,**mat_b=NULL,
-             **mat_b2=NULL,vec;
+  rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,vec1,vec2;
   int        status;
   char       buf[256],buf2[256];
   
@@ -172,13 +171,13 @@ int main (int argc,char *argv[])
   real       rlstot=0,**rls,**rlsm=NULL,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
              **bond_mat=NULL,
              *axis,*axis2,*del_xaxis,*del_yaxis,
-             rmsd_max,rmsd_min,rmsd_avg,bond_max,bond_min,ang,ipr;
+             rmsd_max,rmsd_min,rmsd_avg,bond_max,bond_min,ang;
   real       **rmsdav_mat=NULL,av_tot,weight,weight_tot;
   real       **delta=NULL,delta_max,delta_scalex=0,delta_scaley=0,*delta_tot;
   int        delta_xsize=0,del_lev=100,mx,my,abs_my;
   bool       bA1,bA2,bPrev,bTop,*bInMat=NULL;
-  int        ifit,*irms,ibond=0,*ind_bond=NULL,n_ind_m=0;
-  atom_id    *ind_fit,**ind_rms,*ind_m=NULL,*rev_ind_m,*ind_rms_m=NULL;
+  int        ifit,*irms,ibond=0,*ind_bond1=NULL,*ind_bond2=NULL,n_ind_m=0;
+  atom_id    *ind_fit,**ind_rms,*ind_m=NULL,*rev_ind_m=NULL,*ind_rms_m=NULL;
   char       *gn_fit,**gn_rms;
   t_rgb      rlo,rhi;
   t_filenm fnm[] = {
@@ -261,9 +260,17 @@ int main (int argc,char *argv[])
   if (ifit < 3) 
     fatal_error(0,"Need >= 3 points to fit!\n");
   
-  for(i=0; (i<ifit); i++)
-    w_rls[ind_fit[i]]=top.atoms.atom[ind_fit[i]].m;
-
+  bMass = FALSE;
+  for(i=0; i<ifit; i++) {
+    w_rls[ind_fit[i]] = top.atoms.atom[ind_fit[i]].m;
+    bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
+  }
+  if (!bMass) {
+    fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
+    for(i=0; i<ifit; i++)
+      w_rls[ind_fit[i]] = 1;
+  }
+  
   if (!bMat && !bBond) {
     fprintf(stderr,"How many groups do you want to compare ? ");
     scanf("%d",&nrms);
@@ -286,18 +293,26 @@ int main (int argc,char *argv[])
     snew(rlsnorm,irms[0]);
   }
   snew(rls,nrms);
-  for(j=0; (j<nrms); j++)
+  for(j=0; j<nrms; j++)
     snew(rls[j],maxframe);
   if (bMirror) {
     snew(rlsm,nrms);
-    for(j=0; (j<nrms); j++)
+    for(j=0; j<nrms; j++)
       snew(rlsm[j],maxframe);
   }
   snew(time,maxframe);
-  for(j=0; (j<nrms); j++)
-    for(i=0; (i<irms[j]); i++)
+  for(j=0; j<nrms; j++) {
+    bMass = FALSE;
+    for(i=0; i<irms[j]; i++) {
       w_rms[ind_rms[j][i]]=top.atoms.atom[ind_rms[j][i]].m;
-      
+      bMass = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
+    }
+    if (!bMass) {
+      fprintf(stderr,"All masses in group %d are 0, using masses of 1\n",j);
+      for(i=0; i<irms[j]; i++)
+	w_rms[ind_rms[j][i]] = 1;
+    }
+  }
   /* Prepare reference frame */
   if (bPBC)
     rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
@@ -315,7 +330,7 @@ int main (int argc,char *argv[])
   
   /* read first frame */
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
-  if (bMat || bPrev) {
+  if (bMat || bBond || bPrev) {
     snew(mat_x,NFRAME);
     
     if (bPrev)
@@ -352,33 +367,42 @@ int main (int argc,char *argv[])
       ind_rms_m[i] = rev_ind_m[ind_rms[0][i]];
       w_rms_m[ind_rms_m[i]] = w_rms[ind_rms[0][i]];
     }
-    sfree(rev_ind_m);
     sfree(bInMat);
   }
   
   if (bBond) {
-    iatom=top.idef.il[F_SHAKE].iatoms;
-    ncons=top.idef.il[F_SHAKE].nr/3;
+    ncons = 0;
+    for(k=0; k<F_NRE; k++)
+      if (IS_CHEMBOND(k)) {
+	iatom  = top.idef.il[k].iatoms;
+	ncons += top.idef.il[k].nr/3;
+      }
     fprintf(stderr,"Found %d bonds in topology\n",ncons);
-    snew(ind_bond,ncons);
+    snew(ind_bond1,ncons);
+    snew(ind_bond2,ncons);
     ibond=0;
-    for (i=0;i<ncons;i++) {
-      bA1=FALSE; 
-      bA2=FALSE;
-      for (j=0; j<irms[0]; j++) {
-	if (iatom[3*i+1]==ind_rms[0][j]) bA1=TRUE; 
-	if (iatom[3*i+2]==ind_rms[0][j]) bA2=TRUE;
+    for(k=0; k<F_NRE; k++)
+      if (interaction_function[k].nratoms==2 && 
+	  interaction_function[k].flags & IF_CONNECT) {
+	iatom = top.idef.il[k].iatoms;
+	ncons = top.idef.il[k].nr/3;
+	for (i=0; i<ncons; i++) {
+	  bA1=FALSE; 
+	  bA2=FALSE;
+	  for (j=0; j<irms[0]; j++) {
+	    if (iatom[3*i+1] == ind_rms[0][j]) bA1=TRUE; 
+	    if (iatom[3*i+2] == ind_rms[0][j]) bA2=TRUE;
+	  }
+	  if (bA1 && bA2) {
+	    ind_bond1[ibond] = rev_ind_m[iatom[3*i+1]];
+	    ind_bond2[ibond] = rev_ind_m[iatom[3*i+2]];
+	    ibond++;
+	  }
+	}
       }
-      if (bA1 && bA2) {
-	ind_bond[ibond]=i;
-	ibond++;
-      }
-    }
     fprintf(stderr,"Using %d bonds for bond angle matrix\n",ibond);
     if (ibond==0)
       fatal_error(0,"0 bonds found");
-    snew(mat_b,NFRAME);
-    snew(mat_b2,NFRAME);
   }
   
   /* start looping over frames: */
@@ -398,21 +422,12 @@ int main (int argc,char *argv[])
     
     if (teller % freq == 0) {
       /* keep frame for matrix calculation */
-      if (bMat || bPrev) {
+      if (bMat || bBond || bPrev) {
 	if (tel_mat >= NFRAME) 
 	  srenew(mat_x,tel_mat+1);
 	snew(mat_x[tel_mat],n_ind_m);
 	for (i=0;i<n_ind_m;i++)
 	  copy_rvec(x[ind_m[i]],mat_x[tel_mat][i]);
-      }
-      if (bBond) {
-	if (tel_mat >= NFRAME) srenew(mat_b,tel_mat+1);
-	snew(mat_b[tel_mat],ncons);
-	for(i=0;i<ncons;i++) {
-	  rvec_sub(x[iatom[3*i+2]],x[iatom[3*i+1]],vec);
-	  unitv(vec,vec);
-	  copy_rvec(vec,mat_b[tel_mat][i]);
-	}
       }
       tel_mat++;
     }
@@ -494,15 +509,6 @@ int main (int argc,char *argv[])
 	  for (i=0;i<n_ind_m;i++)
 	    copy_rvec(x[ind_m[i]],mat_x2[tel_mat2][i]);
 	}
-	if (bBond) {
-	  if (tel_mat2 >= NFRAME) srenew(mat_b2,tel_mat2+1);
-	  snew(mat_b2[tel_mat2],ncons);
-	  for(i=0;i<ncons;i++) {
-	    rvec_sub(x[iatom[3*i+2]],x[iatom[3*i+1]],vec);
-	    unitv(vec,vec);
-	    copy_rvec(vec,mat_b2[tel_mat2][i]);
-	  }
-	}
 	tel_mat2++;
       }
       
@@ -517,7 +523,6 @@ int main (int argc,char *argv[])
     close_trj(status);
   } else {
     mat_x2=mat_x;
-    mat_b2=mat_b;
     time2=time;
     tel_mat2=tel_mat;
     freq2=freq;
@@ -595,10 +600,10 @@ int main (int argc,char *argv[])
 	if (bBond) {
 	  if (bFile2 || (i<=j)) {
 	    ang=0.0;
-	    for(m=0;m<ibond;m++) { 
-	      ipr = iprod(mat_b[i][ind_bond[m]],mat_b2[j][ind_bond[m]]);
-	      if (ipr<1.0)
-		ang += acos(ipr);
+	    for(m=0;m<ibond;m++) {
+	      rvec_sub(mat_x[i][ind_bond1[m]],mat_x[i][ind_bond2[m]],vec1);
+	      rvec_sub(mat_x2_j[ind_bond1[m]],mat_x2_j[ind_bond2[m]],vec2);
+	      ang += acos(cos_angle(vec1,vec2));
 	    }
 	    bond_mat[i][j]=ang*180.0/(M_PI*ibond);
 	    if (bond_mat[i][j] > bond_max) bond_max=bond_mat[i][j];
