@@ -63,7 +63,7 @@ void head(FILE *out, char *fn)
   int i;
 
   fprintf(out,"/*\n");
-  fprintf(out," *       $id$\n");
+  fprintf(out," *       $Id$\n");
   for(i=0; (i<NH1); i++)
     fprintf(out,"%s\n",head1[i]);
   fprintf(out," *            %s\n",GromacsVersion());
