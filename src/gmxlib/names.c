@@ -87,3 +87,11 @@ char *epcoupl_names[epcNR+1] = {
 char *edisre_names[edrNR+1] = {
   "No", "Simple", "Ensemble", NULL
 };
+
+char *enbf_names[eNBF_NR+1] = {
+  "", "LJ", "Buckingham", NULL
+};
+
+char *ecomb_names[eCOMB_NR+1] = {
+  "", "Arithmetic", "Geometric", "ArithSigEps", NULL
+};

@@ -88,153 +88,155 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
   }
   
   for(gid=0; (gid<fr->nn); gid++) {
-    nri  = nlist[gid].nri;
-    nl_i = nlist[gid].nl_i;
-    Vnb  = 0;
-    Vc   = 0;
-    
-    for (i=0; (i<nri); i++) {
-      inr      = nl_i[i].i_atom;
-      k        = nl_i[i].shift;
-      nj       = nl_i[i].nj;
-      nl_j     = &(nlist[gid].nl_j[nl_i[i].j_index]);
-      itpA     = typeA[inr];
-      bWater   = nl_i[i].bWater;
+    if (fr->bMask[gid]) {
+      nri  = nlist[gid].nri;
+      nl_i = nlist[gid].nl_i;
+      Vnb  = 0;
+      Vc   = 0;
       
-      if (bWater && bTab)
-	fatal_error(0,"Can't have water loop with tables\n");
+      for (i=0; (i<nri); i++) {
+	inr      = nl_i[i].i_atom;
+	k        = nl_i[i].shift;
+	nj       = nl_i[i].nj;
+	nl_j     = &(nlist[gid].nl_j[nl_i[i].j_index]);
+	itpA     = typeA[inr];
+	bWater   = nl_i[i].bWater;
 	
-      if (bWater) {
-	for(m=0; (m<3); m++) {
-	  rvec_add(x[inr+m],svec[k],xw[m]);
-	  clear_rvec(fw[m]);
-	}
-      }
-      else {
-	qi = chargeA[inr]*eps;
-	rvec_add(x[inr],svec[k],r_i);
-	clear_rvec(f_ip);
-      }
-      
-      switch (ftype) {
-      case F_SR:
-#ifdef USEF77
-	if (bTab)
-	  f77coultab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		     x[0],&nj,typeA,nl_j,
-		     chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		     &fr->ntab,&fr->tabscale,fr->VFtab);
-	else 
-	  f77coul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		  x[0],&nj,nl_j,
-		  chargeA,f[0],f_ip,&Vc);
-#else
-	if (bTab) 
-	  c_coultab(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		    x[0],nj,typeA,nl_j,
-		    chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		    fr->ntab,fr->tabscale,fr->VFtab);
-	else
-	  c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		 x[0],nj,nl_j,chargeA,f[0],f_ip,&Vc);
-#endif
-	nr_qq+=nj;
-	break;
+	if (bWater && bTab)
+	  fatal_error(0,"Can't have water loop with tables\n");
 	
-      case F_LJ:
-#ifdef USEF77
-	if (bTab) 
-	  f77tab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		 x[0],&nj,typeA,nl_j,
-		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		 &fr->ntab,&fr->tabscale,fr->VFtab);
-	else if (bWater)
-	  f77water(&inr,xw[0],&eps,x[0],&nj,typeA,nl_j,
-		   chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
-	else
-	  f77ljc(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		 x[0],&nj,typeA,nl_j,
-		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#else
-	if (bTab)
-	  c_tab(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		x[0],nj,typeA,nl_j,
-		chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
-		fr->ntab,fr->tabscale,fr->VFtab);
-	else if (bWater)
-	  c_water(inr,xw[0],eps,x[0],nj,typeA,nl_j,
-		  chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
-	else
-	  c_ljc(r_i[XX],r_i[YY],r_i[ZZ],qi,
-		x[0],nj,typeA,nl_j,
-		chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#endif
-	nr_ljc+=nj;
-	if (bWater)
-	  nr_qq+=2*nj;
-	break;
-	
-      case F_BHAM:
-#ifdef USEF77
-	f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
-		x[0],&nj,typeA,nl_j,
-		chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#else
-	c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,
-	       x[0],nj,typeA,nl_j,
-	       chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
-#endif
-	nr_bham+=nj;
-	break;
-	
-      case F_DVDL:
 	if (bWater) {
-	  /* Call the free enrgy routine three times with different
-	   * particles (OW, HW1, HW2)
-	   */
 	  for(m=0; (m<3); m++) {
-	    iinr = inr+m;
-	    c_free(xw[m][XX],xw[m][YY],xw[m][ZZ],iinr,
-		   x[0],nj,nl_j,typeA,typeB,eps,
-		   chargeA,chargeB,
-		   fr->nbfp[typeA[iinr]],fr->nbfp[typeB[iinr]],
-		   f[0],fw[m],&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
-		   fr->tabscale,fr->VFtab);
-	    nr_free+=nj;
+	    rvec_add(x[inr+m],svec[k],xw[m]);
+	    clear_rvec(fw[m]);
 	  }
 	}
 	else {
-	  itpB     = typeB[inr];
-	  c_free(r_i[XX],r_i[YY],r_i[ZZ],inr,
-		 x[0],nj,nl_j,typeA,typeB,eps,
-		 chargeA,chargeB,
-		 fr->nbfp[itpA],fr->nbfp[itpB],
-		 f[0],f_ip,&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
-		 fr->tabscale,fr->VFtab);
-	  nr_free+=nj;
+	  qi = chargeA[inr]*eps;
+	  rvec_add(x[inr],svec[k],r_i);
+	  clear_rvec(f_ip);
 	}
-	break;
 	
-      default:
-	fatal_error(0,"Wrong ftype = %d (%s)",
-		    ftype,interaction_function[ftype].longname);
-      }
-      if (bWater) {
-	/* Copy the forces to force array */
-	for(m=0; (m<3); m++) {
-	  rvec_inc(fshift[k],fw[m]);
-	  rvec_inc(f[inr+m],fw[m]);
+	switch (ftype) {
+	case F_SR:
+#ifdef USEF77
+	  if (bTab)
+	    f77coultab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		       x[0],&nj,typeA,nl_j,
+		       chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		       &fr->ntab,&fr->tabscale,fr->VFtab);
+	  else 
+	    f77coul(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		    x[0],&nj,nl_j,
+		  chargeA,f[0],f_ip,&Vc);
+#else
+	  if (bTab) 
+	    c_coultab(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		      x[0],nj,typeA,nl_j,
+		      chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		      fr->ntab,fr->tabscale,fr->VFtab);
+	  else
+	    c_coul(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		   x[0],nj,nl_j,chargeA,f[0],f_ip,&Vc);
+#endif
+	  nr_qq+=nj;
+	  break;
+	  
+	case F_LJ:
+#ifdef USEF77
+	  if (bTab) 
+	    f77tab(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		   x[0],&nj,typeA,nl_j,
+		   chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		   &fr->ntab,&fr->tabscale,fr->VFtab);
+	  else if (bWater)
+	    f77water(&inr,xw[0],&eps,x[0],&nj,typeA,nl_j,
+		     chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
+	  else
+	    f77ljc(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		   x[0],&nj,typeA,nl_j,
+		   chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+#else
+	  if (bTab)
+	    c_tab(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		  x[0],nj,typeA,nl_j,
+		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb,
+		  fr->ntab,fr->tabscale,fr->VFtab);
+	  else if (bWater)
+	    c_water(inr,xw[0],eps,x[0],nj,typeA,nl_j,
+		    chargeA,fr->nbfp[itpA],f[0],fw[0],&Vc,&Vnb);
+	  else
+	    c_ljc(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		  x[0],nj,typeA,nl_j,
+		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+#endif
+	  nr_ljc+=nj;
+	  if (bWater)
+	    nr_qq+=2*nj;
+	  break;
+	  
+	case F_BHAM:
+#ifdef USEF77
+	  f77bham(&r_i[XX],&r_i[YY],&r_i[ZZ],&qi,
+		  x[0],&nj,typeA,nl_j,
+		  chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+#else
+	  c_bham(r_i[XX],r_i[YY],r_i[ZZ],qi,
+		 x[0],nj,typeA,nl_j,
+		 chargeA,fr->nbfp[itpA],f[0],f_ip,&Vc,&Vnb);
+#endif
+	  nr_bham+=nj;
+	  break;
+	  
+	case F_DVDL:
+	  if (bWater) {
+	    /* Call the free enrgy routine three times with different
+	     * particles (OW, HW1, HW2)
+	     */
+	    for(m=0; (m<3); m++) {
+	      iinr = inr+m;
+	      c_free(xw[m][XX],xw[m][YY],xw[m][ZZ],iinr,
+		     x[0],nj,nl_j,typeA,typeB,eps,
+		     chargeA,chargeB,
+		     fr->nbfp[typeA[iinr]],fr->nbfp[typeB[iinr]],
+		     f[0],fw[m],&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
+		     fr->tabscale,fr->VFtab);
+	      nr_free+=nj;
+	    }
+	  }
+	  else {
+	    itpB     = typeB[inr];
+	    c_free(r_i[XX],r_i[YY],r_i[ZZ],inr,
+		   x[0],nj,nl_j,typeA,typeB,eps,
+		   chargeA,chargeB,
+		   fr->nbfp[itpA],fr->nbfp[itpB],
+		   f[0],f_ip,&Vc,&Vnb,lambda,dvdlambda,fr->ntab,
+		   fr->tabscale,fr->VFtab);
+	    nr_free+=nj;
+	  }
+	  break;
+	  
+	default:
+	  fatal_error(0,"Wrong ftype = %d (%s)",
+		      ftype,interaction_function[ftype].longname);
 	}
-	nr_fsum+=18;
+	if (bWater) {
+	  /* Copy the forces to force array */
+	  for(m=0; (m<3); m++) {
+	    rvec_inc(fshift[k],fw[m]);
+	    rvec_inc(f[inr+m],fw[m]);
+	  }
+	  nr_fsum+=18;
+	}
+	else {
+	  rvec_inc(fshift[k],f_ip);
+	  rvec_inc(f[inr],f_ip);
+	  nr_fsum+=6;
+	}
       }
-      else {
-	rvec_inc(fshift[k],f_ip);
-	rvec_inc(f[inr],f_ip);
-	nr_fsum+=6;
-      }
+      egcoul[gid] += Vc;
+      egnb[gid]   += Vnb;
     }
-    egcoul[gid] += Vc;
-    egnb[gid]   += Vnb;
   }
   if (bTab) {
     inc_nrnb(nrnb,eNR_TAB,nr_ljc);

@@ -38,7 +38,6 @@ static char *SRCID_toppush_c = "$Id$";
 #include "smalloc.h"
 #include "macros.h"
 #include "assert.h"
-#include "topdef.h"
 #include "string2.h"
 #include "names.h"
 #include "toputil.h"
@@ -53,8 +52,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
   int   i,j,k,nf;
   int   nr,nrfp;
-  real  c,eps4,sig6;
-  real  *c6,*c12;
+  real  c,eps4,sig6,sigma_ij,eps_ij,bi,bj;
 
   /* Lean mean shortcuts */
   nr   = atype->nr;
@@ -66,7 +64,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
   switch(ftype) {
   case F_LJ:
     switch (comb) {
-    case COMB_GROMOS:
+    case eCOMB_ARITHMETIC:
       /* Gromos rules */
       for(i=k=0; (i<nr); i++)
 	for(j=0; (j<nr); j++,k++)
@@ -76,41 +74,51 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 	  }
       break;
     
-    case COMB_EPSSIG:
+    case eCOMB_GEOMETRIC:
       /* c0 and c1 are epsilon and sigma */
-      
-      /* Create temp storage arrays */
-      snew(c6,nr);
-      snew(c12,nr);
-
-      /* Fill temp arrays */
-      for (i=0; (i < nr); i++) {
-	eps4    = 4.0 * atype->nb[i].C1; 
-	sig6    = pow (atype->nb[i].C0, 6.0);
-	c6[i]   = eps4  * sig6;
-	c12[i]  = c6[i] * sig6;
-      }
-
-      /* Fill the structure */
       for (i=k=0; (i < nr); i++)
 	for (j=0; (j < nr); j++,k++) {
-	  plist->param[k].c[0] = sqrt (c6[i]  * c6[j]);
-	  plist->param[k].c[1] = sqrt (c12[i] * c12[j]);
+	  sigma_ij = (atype->nb[i].C0+atype->nb[j].C0)*0.5;
+	  eps_ij   = sqrt(atype->nb[i].C1*atype->nb[j].C1);
+	  sig6     = pow(sigma_ij,6.0);
+	  
+	  plist->param[k].c[0] = 4*eps_ij*sig6;
+	  plist->param[k].c[1] = 4*eps_ij*sig6*sig6;
 	}
       
-      /* Free temp storage */
-      sfree(c6);
-      sfree(c12);
-
       break;
+    case eCOMB_ARITH_SIG_EPS:
+      /* c0 and c1 are epsilon and sigma */
+      for (i=k=0; (i < nr); i++)
+	for (j=0; (j < nr); j++,k++) {
+	  sigma_ij = sqrt(atype->nb[i].C0*atype->nb[j].C0);
+	  eps_ij   = sqrt(atype->nb[i].C1*atype->nb[j].C1);
+	  sig6     = pow(sigma_ij,6.0);
+	  
+	  plist->param[k].c[0] = 4*eps_ij*sig6;
+	  plist->param[k].c[1] = 4*eps_ij*sig6*sig6;
+	}
+      
+      break;
+    default:
+      fatal_error(0,"No such combination rule %d",comb);
     }
     assert(plist->nr == k);
     break;
     
   case F_BHAM:
-    sprintf(errbuf,
-	    "Buckingham parameters can not be generated automatically\n");
-    warning(errbuf);
+    /* Buckingham rules */
+    for(i=k=0; (i<nr); i++)
+      for(j=0; (j<nr); j++,k++) {
+	plist->param[k].c[0] = sqrt(atype->nb[i].c[0] * atype->nb[j].c[0]);
+	bi = atype->nb[i].c[1];
+	bj = atype->nb[j].c[1];
+	if ((bi == 0) || (bj == 0))
+	  plist->param[k].c[1] = 0;
+	else
+	  plist->param[k].c[1] = 2.0/(1/bi+1/bj);
+	plist->param[k].c[2] = sqrt(atype->nb[i].c[2] * atype->nb[j].c[2]);
+      }
     
     break;
   default:
@@ -120,7 +128,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
   }
 }
 
-void push_at (t_symtab *symtab, t_atomtype *at, char *line)
+void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct)
 {
   typedef struct {
     char *entry;
@@ -134,7 +142,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line)
     { "D",   eptDummy }, 
   };
   
-  int    nr,i,b,j,pt;
+  int    nr,i,b,j,pt,nfp0;
   char   type[STRLEN],ptype[STRLEN];
   double m,q;
   double c[MAXFORCEPARAM];
@@ -142,13 +150,29 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line)
   
   nr = at->nr;
 
-  if (sscanf (line,"%s%lf%lf%s%lf%lf",type,&m,&q,ptype,&c[0],&c[1]) != 6) {
-    too_few();
-    return;
+  switch (nb_funct) {
+  case F_LJ:
+    nfp0 = 2;
+    if (sscanf (line,"%s%lf%lf%s%lf%lf",type,&m,&q,ptype,&c[0],&c[1]) != 6) {
+      too_few();
+      return;
+    }
+    break;
+  case F_BHAM:
+    nfp0 = 3;
+    if (sscanf (line,"%s%lf%lf%s%lf%lf%lf",
+		type,&m,&q,ptype,&c[0],&c[1],&c[2]) != 7) {
+      too_few();
+      return;
+    }
+    break;
+  default:
+    fatal_error(0,"Invalid function type %d in push_at %s %d",nb_funct,
+		__FILE__,__LINE__);
   }
-  for(j=2; (j<MAXFORCEPARAM); j++)
+  for(j=nfp0; (j<MAXFORCEPARAM); j++)
     c[j]=0.0;
-    
+  
   for(j=0; (j<eptNR); j++)
     if (strcasecmp(ptype,xl[j].entry) == 0)
       break;
@@ -181,10 +205,8 @@ void push_at (t_symtab *symtab, t_atomtype *at, char *line)
   at->atom[nr].m = m;
   at->atom[nr].q = q;
   
-  for (i=0; (i<2); i++)
+  for (i=0; (i<MAXFORCEPARAM); i++)
     at->nb[nr].c[i] = c[i];
-  for( ; (i<MAXFORCEPARAM); i++)
-    at->nb[nr].c[i] = 0.0;
 }
 
 static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype)

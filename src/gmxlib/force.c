@@ -377,7 +377,6 @@ void ns(FILE *log,
   static int  nDNL;
   char   *ptr;
   int    i;
-  /*  int    nns; */
   
   if (bFirst) {
     ptr=getenv("DUMP_NL");
@@ -427,27 +426,17 @@ void ns(FILE *log,
   clr_led(NS_LED);
 }
 
-void force(FILE       *log,  
-	   int        step,
-	   t_forcerec *fr,
-	   t_inputrec *ir,
-	   t_idef     *idef,
-	   t_nsborder *nsb,
-	   t_commrec  *cr,
-	   t_nrnb     *nrnb,
-	   t_groups   *grps,
-	   t_mdatoms  *md,
-	   int        ngener,
-	   t_grpopts  *opts,
-	   rvec       x[],
-	   rvec       f[],
-	   tensor     virial,
-	   real       epot[], 
-	   bool       bVerbose,
-	   matrix     box,
-	   real       lambda,
-	   t_graph    *graph,
-	   t_block    *excl)
+void force(FILE       *log,     int        step,
+	   t_forcerec *fr,      t_inputrec *ir,
+	   t_idef     *idef,    t_nsborder *nsb,
+	   t_commrec  *cr,      t_nrnb     *nrnb,
+	   t_groups   *grps,    t_mdatoms  *md,
+	   int        ngener,   t_grpopts  *opts,
+	   rvec       x[],      rvec       f[],
+	   tensor     virial,   real       epot[], 
+	   bool       bVerbose, matrix     box,
+	   real       lambda,   t_graph    *graph,
+	   t_block    *excl,    bool       bNBFonly)
 {
   bool    bBHAM;
   int     i,nit;
@@ -494,24 +483,26 @@ void force(FILE       *log,
   where();
 
   /* Shift the coordinates. Must be done before bonded forces and PPPM, 
-   * but is also necessary
-   * for  shake and update, therefore it can NOT go when no
+   * but is also necessary * for  shake and update, therefore it can NOT go when no
    * bonded forces have to be evaluated.
    */
   if (debug)
     p_graph(debug,"DeBUGGGG",graph);
   
-  shift_self(graph,fr->shift_vec,x);
-  if (debug) {
-    fprintf(debug,"BBBBBBBBBBBBBBBB\n");
-    fprintf(debug,"%5d\n",graph->nnodes);
-    for(i=graph->start; (i<=graph->end); i++)
-      fprintf(debug,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
-	      i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
-    fprintf(debug,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+  /* Check whether we need to do bondeds */
+  if (!bNBFonly) {
+    shift_self(graph,fr->shift_vec,x);
+    if (debug) {
+      fprintf(debug,"BBBBBBBBBBBBBBBB\n");
+      fprintf(debug,"%5d\n",graph->nnodes);
+      for(i=graph->start; (i<=graph->end); i++)
+	fprintf(debug,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
+		i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
+      fprintf(debug,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+    }
+    inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
+    where();
   }
-  inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
-  where();
   
   if (EEL_LR(fr->eeltype)) {
     switch (fr->eeltype) {

@@ -69,7 +69,14 @@ typedef struct {
   t_nblist *vdw;    
   t_nblist *coul;
   t_nblist *free;
-  
+  /* This mask array of length nn determines whether or not this bit of the
+   * neighbourlists should be computed. Usually all these are true of course,
+   * but not when shells are used. During minimisation all the forces that 
+   * include shells are done, then after minimsation is converged the remaining
+   * forces are computed.
+   */
+  bool     *bMask;
+    
   /* Twin Range stuff. */
   bool bTwinRange;
   int  nlr;

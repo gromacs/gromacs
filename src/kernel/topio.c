@@ -47,6 +47,7 @@ static char *SRCID_topio_c = "$Id$";
 #include "txtdump.h"
 #include "physics.h"
 #include "macros.h"
+#include "names.h"
 #include "string2.h"
 #include "symtab.h"
 #include "fatal.h"
@@ -58,7 +59,6 @@ static char *SRCID_topio_c = "$Id$";
 #include "topcat.h"
 #include "topio.h"
 #include "topshake.h"
-#include "topdef.h"
 
 #define CPPMARK  	'#'	/* mark from cpp			*/
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -190,6 +190,36 @@ void preprocess(char *infile,char *outfile,
   }
 }
 
+static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
+{
+  int i;
+  
+  *nb   = -1;
+  for(i=1; (i<eNBF_NR); i++)
+    if (strcasecmp(nb_str,enbf_names[i]) == 0)
+      *nb = i;
+  if (*nb == -1)
+    *nb = atoi(nb_str);
+  if ((*nb < 1) || (*nb >= eNBF_NR)) {
+    sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
+	    nb_str,enbf_names[1]);
+    warning(NULL);
+    *nb = 1;
+  }
+  *comb = -1;
+  for(i=1; (i<eCOMB_NR); i++)
+    if (strcasecmp(comb_str,ecomb_names[i]) == 0)
+      *comb = i;
+  if (*comb == -1)
+    *comb = atoi(comb_str);
+  if ((*comb < 1) || (*comb >= eCOMB_NR)) {
+    sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
+	    comb_str,ecomb_names[1]);
+    warning(NULL);
+    *comb = 1;
+  }
+}
+
 static char **read_topol(char        *infile,
 			 t_symtab    *symtab,
 			 t_atomtype  *atype,
@@ -207,7 +237,7 @@ static char **read_topol(char        *infile,
   bool       nb_flag = FALSE;
   char       *pline,**title=NULL;
   int        curline;
-  char       curfile[STRLEN],line[STRLEN],errbuf[256];
+  char       curfile[STRLEN],line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
   char       *dirstr,*dummy2;
   int        nrcopies,nmol,nblock=0,Nsim=0,nscan;
@@ -309,11 +339,12 @@ static char **read_topol(char        *infile,
 	
 	switch (d) {
 	case d_defaults:
-	  nscan = sscanf(pline,"%d%d%s%lf%lf",
-			 &nb_funct,&comb,genpairs,&fLJ,&fQQ);
+	  nscan = sscanf(pline,"%s%s%s%lf%lf",
+			 nb_str,comb_str,genpairs,&fLJ,&fQQ);
 	  if (nscan < 2)
 	    too_few();
 	  else {
+	    get_nbparm(nb_str,comb_str,&nb_funct,&comb);
 	    if (nscan >= 3) 
 	      bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
 	    else
@@ -333,7 +364,7 @@ static char **read_topol(char        *infile,
 	  break;
 	case d_atomtypes:
 	  nb_flag = TRUE;      /* must generate nbparams   */
-	  push_at(symtab,atype,pline);
+	  push_at(symtab,atype,pline,nb_funct);
 	  break;
 
 #define PUSHBT(nral) push_bt(d,plist,nral,atype,pline)

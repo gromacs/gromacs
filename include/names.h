@@ -54,6 +54,8 @@ extern char *eshake_names[estNR+1];
 extern char *ptype_str[eptNR+1];
 extern char *egrp_nm[egNR+1];
 extern char *edisre_names[edrNR+1];
+extern char *enbf_names[eNBF_NR+1];
+extern char *ecomb_names[eCOMB_NR+1];
 
 #define	UNDEFINED		"UNDEFINED"
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
@@ -68,5 +70,7 @@ extern char *edisre_names[edrNR+1];
 #define EELTYPE(e)     ENUM_NAME(e,eelNR,eel_names)
 #define ESHAKETYPE(e)  ENUM_NAME(e,estNR,eshake_names)
 #define EDISRETYPE(e)  ENUM_NAME(e,edrNR,edisre_names)
+#define ENBFNAME(e)    ENUM_NAME(e,eNBF_NR,enbf_names)
+#define ECOMBNAME(e)   ENUM_NAME(e,eCOMB_NR,ecomb_names)
 
 #endif	/* _names_h */

@@ -63,3 +63,14 @@ enum {
 enum {
   edrNone, edrSimple, edrEnsemble, edrNR
 };
+
+/* Combination rule things */
+enum { 
+  eCOMB_NONE, eCOMB_ARITHMETIC, eCOMB_GEOMETRIC, eCOMB_ARITH_SIG_EPS, eCOMB_NR 
+};
+
+/* NBF selection */
+enum { 
+  eNBF_NONE,  eNBF_LJ, eNBF_BHAM, eNBF_NR 
+};
+

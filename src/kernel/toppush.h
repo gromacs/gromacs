@@ -50,7 +50,7 @@ typedef struct {
 extern void generate_nbparams(int comb,int funct,t_params plist[],
 			      t_atomtype *atype);
 			      
-extern void push_at (t_symtab *symtab, t_atomtype *at, char *line);
+extern void push_at (t_symtab *symtab, t_atomtype *at, char *line,int nb_funct);
 
 extern void push_bt(directive d,t_params bt[], int nral, 
 		    t_atomtype *at, char *line);

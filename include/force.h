@@ -113,7 +113,8 @@ extern void force(FILE *log,
 		  matrix       box,
 		  real         lambda,
 		  t_graph      *graph,
-		  t_block      *excl);
+		  t_block      *excl,
+		  bool         bNBonly);
 /* Call all the force routines */
 
 #endif	/* _force_h */
