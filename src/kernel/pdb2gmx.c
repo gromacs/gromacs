@@ -811,7 +811,7 @@ int main(int argc, char *argv[])
       for(k='A'; (k<='Z') && bUsed; k++) {
 	bUsed=FALSE;
 	for(j=0; j<nch; j++)
-	  bUsed=bUsed || (!pdb_ch[j].bAllWat && (chains[j].chain==k));
+	  bUsed = bUsed || pdb_ch[j].chain==k || chains[j].chain==k;
 	if (!bUsed) {
 	  printf("Gave chain %d chain identifier '%c'\n",i+1,k);
 	  chains[i].chain=k;
