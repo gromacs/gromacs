@@ -587,14 +587,10 @@ int main(int argc,char *argv[])
   if (ngroup < 1)
     fatal_error(0,"Must have at least 1 group (now %d)",ngroup);
 
-  if (opt2bSet("-mol",NFILE,fnm)) {
-    bMol = TRUE;
+  bMol = opt2bSet("-mol",NFILE,fnm);
+  if (bMol) {
     bMW  = TRUE;
     fprintf(stderr,"Calculating diffusion coefficients for molecules.\n");
-  }
-  else {
-    bMol = FALSE;
-    bMW  = FALSE;
   }
 
   if (normtype[0][0]!='n') {
