@@ -74,7 +74,9 @@ bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
     for (i=0;(i<DIM);i++)
       mu[i]=ee[iMu[i]].e;
   }
-  
+ 
+  free(ee);
+ 
   return eof;
 
 /* For backward compatibility 
@@ -549,8 +551,8 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 	  M_av2[m] += dipole[i][m]*dipole[i][m];  /* M^2 per frame */
 	  mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
 	}
+
 	mu_ave += sqrt(mu_mol);                   /* calc. the average mu */
-      
 	if (bQuad) {
 	  clear_rvec(quad_mol);
 	  for(m=0; (m<DIM); m++) {
@@ -615,7 +617,7 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
     if (!bMU)
       volume  = det(box);
     epsilon = calc_eps(M_diff,volume,epsilonRF,temp);
-    
+
     /* Finite system Kirkwood G-factor */
     Gk      = M_diff/(gnx*mu*mu);
     /* Infinite system Kirkwood G-factor */
@@ -668,16 +670,18 @@ static void do_dip(char *fn,char *topf,char *outf,char *outfa,
 		    expfitfn,"Exponential fit to the dipole ACF");
     }
   }
-  fprintf(stderr,"\n\nAverage dipole moment (Debye)\n");
-  fprintf(stderr," Tot= %g\n",  mu_ave/(gnx*teller));
-  if (bQuad) {
-    fprintf(stderr,"Average quadrupole moment (Debye-Ang)\n");
-    fprintf(stderr," XX=  %g  YY=  %g ZZ=  %g norm= %g asymm= %g\n\n",  
-	    quad_ave[XX]/(gnx*teller),
-	    quad_ave[YY]/(gnx*teller),
-	    quad_ave[ZZ]/(gnx*teller),
-	    norm(quad_ave)/(gnx*teller),
-	    (quad_ave[ZZ] - quad_ave[XX])/ quad_ave[YY]);
+  if (!bMU) {
+    fprintf(stderr,"\n\nAverage dipole moment (Debye)\n");
+    fprintf(stderr," Tot= %g\n",  mu_ave/(gnx*teller));
+    if (bQuad) {
+      fprintf(stderr,"Average quadrupole moment (Debye-Ang)\n");
+      fprintf(stderr," XX=  %g  YY=  %g ZZ=  %g norm= %g asymm= %g\n\n",  
+	      quad_ave[XX]/(gnx*teller),
+	      quad_ave[YY]/(gnx*teller),
+	      quad_ave[ZZ]/(gnx*teller),
+	      norm(quad_ave)/(gnx*teller),
+	      (quad_ave[ZZ] - quad_ave[XX])/ quad_ave[YY]);
+    }
   }
   fprintf(stderr,"The following averages for the complete trajectory have been calculated:\n\n");
   fprintf(stderr," Total < M_x > = %g Debye\n", M_XX/teller);
