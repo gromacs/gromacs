@@ -107,8 +107,9 @@ void chk_trj(char *fn)
       old_t2=old_t1;
       old_t1=sh.t;
       if (t0 == NOTSET) t0=sh.t;
-      fprintf(stderr,"\rframe: %6d, step: %6d, t: %10.3f byte: %10u",
-	      j,sh.step,sh.t,fpos);
+      fprintf(stderr,"\rframe: %6d, step: %6d, t: %10.3f",j,sh.step,sh.t);
+      if (ftp == efTRJ)
+	fprintf(stderr," byte: %10u",fpos);
       if (j == 0)
 	fprintf(stderr,"\n");
       if (!fread_htrn(status,&sh,NULL,NULL,NULL,NULL))
