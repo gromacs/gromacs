@@ -153,9 +153,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       
     bLastStep=(step==parm->ir.nsteps);
 
-    /* for rerun MD always do Neighbour Searching */
-    if (bRerunMD) 
-      bNS = TRUE;
+    if (bRerunMD)
+      /* for rerun MD always do Neighbour Searching */
+      bNS = ((parm->ir.nstlist!=0) || (step==0));
     else {
       /* Stop Center of Mass motion */
       get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
