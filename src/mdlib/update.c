@@ -298,7 +298,7 @@ static void do_update_sd(int start,int homenr,
   static rvec *X,*V;
   real   kT;
   int    gf,ga,gt;
-  real   vn,Vmh,Xmh;
+  real   vn=0,Vmh,Xmh;
   real   ism;
   int    n,d;
   unsigned long  jran;
@@ -386,7 +386,7 @@ static void do_update_bd(int start,int homenr,double dt,
   int    gf,gt;
   real   vn;
   static real *rf=NULL;
-  real   rfac,invfr;
+  real   rfac=0,invfr=0;
   int    n,d;
   unsigned long  jran;
   
@@ -618,16 +618,14 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    t_pull       *pulldata,
 	    bool         bNEMD)
 {
-  static char      buf[256];
   static bool      bFirst=TRUE;
   static rvec      *xprime,*x_unc=NULL;
-  static int       ngtc,ngacc,ga;
+  static int       ngtc,ngacc;
   static rvec      *lamb;
   static t_edpar   edpar;
   static bool      bConstraints,bExtended;
-  t_idef           *idef=&(top->idef);
   double           dt;
-  real             dt_1,dt_2,dum,mdt_2;
+  real             dt_1,dt_2,mdt_2;
   int              i,n,m,g,vol;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
@@ -712,6 +710,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	/* Constrain the coordinates xprime */
 	constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
 		  lambda,dvdlambda,nrnb);
+
 	for(n=start; n<start+homenr; n++) {
 	  /* A correction factor eph is needed for the SD constraint force */
 	  mdt_2 = dt_2*md->massT[n]*sdc[md->cTC[n]].eph;
