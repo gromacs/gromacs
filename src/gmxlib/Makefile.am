@@ -66,7 +66,7 @@ EXTRA_DIST 	 =			mkinl_declarations.c	\
 		mkinl.h			mkinl_fortrandata.h	\
 		mkinl.c
 
-BUILD_COMPILE = $(CC_FOR_BUILD) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+BUILD_COMPILE = $(CC_FOR_BUILD) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) 
 
 metacode.o:	metacode.c
 		$(BUILD_COMPILE) -c $(srcdir)/metacode.c
