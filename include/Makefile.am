@@ -23,10 +23,10 @@ include_HEADERS = \
 	pme.h       	statusio.h    	viewit.h	calcmu.h    	\
 	fftgrid.h       mdrun.h     	pppm.h      	statutil.h    	\
 	vveclib.h	callf77.h   	fftw_wrapper.h  memdump.h   	\
-	princ.h     	steep.h       	wgms.h		cm5io.h     	\
+	princ.h     	steep.h       	wgms.h		     	\
 	filenm.h        memtab.h    	pull.h      	strdb.h 	\
 	wman.h		comlib.h    	force.h         memtest.h   	\
-	pvmio.h     	string2.h     	writeps.h	complex.h   	\
+	string2.h     	writeps.h	complex.h   	\
 	futil.h         metacode.h  	random.h    	struc2.h      	\
 	x86_3dnow.h	comtest.h   	gbutil.h        mpiio.h     	\
 	rbin.h      	superb.h      	x86_cpu.h	tgroup.h	\
@@ -38,5 +38,5 @@ include_HEADERS = \
 	readinp.h   	sysstuff.h    	xvgr.h 		delay.h     	\
 	index.h         nhash.h     	renum.h     	systest.h	\
 	disre.h     	init.h          nr.h        	reorder.h   	\
-	tags.h		do_fit.h    	inout.h         nrama.h     	\
+	tags.h		do_fit.h    	nrama.h     	\
 	rmpbc.h     	tgroup.h
