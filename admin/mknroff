@@ -1,0 +1,32 @@
+#!/bin/csh -f
+#
+# This script will generate all manual pages
+# in the current directory. It is recommeded that
+# you run it from the man/man1 subdirectory under
+# your GROMACS source tree. The manual pages will
+# be installed by the "make install" command.
+
+echo "Generating unix manual for GROMACS programs"
+echo "-------------------------------------------"
+
+if ( $#argv < 1 ) then
+  echo "Error: provide the binary directory as first argument."
+  exit
+endif
+
+set GMXBINDIR = $1
+
+set 	dir = $cwd
+
+
+cd $GMXBINDIR
+set PROGRAMS = [a-z]*
+cd $dir
+
+foreach program ( $PROGRAMS )
+if ( -x $GMXBINDIR/$program ) then
+echo -n " $program"
+$GMXBINDIR/$program -man nroff >& /dev/null
+if ( -f $program.nroff ) mv $program.nroff $program.1
+endif
+end
