@@ -881,13 +881,9 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
      */
     if (nstcomm > 0)
       n_sub = 3;
-    else {
-      if (atoms->nr == 2)
-	n_sub = 5;
-      else
-	n_sub = 6;
-    }
-
+    else
+      n_sub = 6;
+    
     for(i=0; i<atoms->grps[egcTC].nr; i++) {
       /* Count the number of atoms of TC group i for every VCM group */
       for(j=0; j<atoms->grps[egcVCM].nr; j++)
@@ -904,8 +900,10 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
       nrdf_uc = opts->nrdf[i];
       opts->nrdf[i] = 0;
       for(j=0; j<atoms->grps[egcVCM].nr; j++)
-	opts->nrdf[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
-	  (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
+	if (nrdf_vcm[j] > n_sub) {
+	  opts->nrdf[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
+	    (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
+	}
     }
   }
   for(i=0; (i<atoms->grps[egcTC].nr); i++) {
