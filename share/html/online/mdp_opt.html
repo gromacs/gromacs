@@ -27,7 +27,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, deltagrid, box, rlist)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, box, rlist)
 <li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, tau_p, compressibility, ref_p)
@@ -36,7 +36,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
-<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda)
+<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, energygrp_excl )
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, user3_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
@@ -193,34 +193,30 @@ the last energies are always written
 <h3><!--Idx-->Neighbor searching<!--EIdx--></h3>
 <dl>
 <dt><h4>nstlist: </b>(10) [steps]</h4>
-<dd>frequency to update <!--Idx-->neighborlist<!--EIdx-->
+<dd>frequency to update the <!--Idx-->neighbor list<!--EIdx--> (and
+the long-range forces, when using twin-range cut-off's)
 
 <dt><h4>ns_type:</h4>
 <dd><dl compact>
 <dt><b>grid</b>
 <dd>Make a grid in the box and only check atoms in neighboring grid
 cells when constructing a new neighbor list every <b>nstlist</b> steps.
-The number of grid cells per Coulomb cut-off
-length is set with <b>deltagrid</b>, this number should be 2 or 3 for
-optimal performance.  In large systems grid search is much faster than
-simple search.
+In large systems grid search is much faster than simple search.
 <dt><b>simple</b>
 <dd>Check every atom in the box when constructing a new neighbor list
 every <b>nstlist</b> steps.
 </dl>
-<dt><h4>deltagrid: </b>(2)</h4>
-<dd>number of grid cells per largest cut-off distance
 
 <dt><h4>box:</h4>
 <dd><dl compact>
 <dt><b>rectangular</b>
-<dd>Selects a rectangular box shape.
+<dd>use periodic boundary conditions
 <dt><b>none</b>
-<dd>Selects no box, for use in vacuum simulations.
+<dd>use no periodic boundary conditions, ignore the box
 </dl>
 
 <dt><h4>rlist: </b>(1) [nm]</h4>
-<dd>cut-off distance for making the neighbor list
+<dd>cut-off distance for the short-range neighbor list
 </dl>
 
 
@@ -645,16 +641,24 @@ of all atom pairs involved in restraints to the energy file
 <dd><dl compact>
 <dt><b>no</b>
 <dd>Only use topology A. 
-<dt><b>yes</b>
+<dt><b>lambda234</b>
 <dd>Change the system from topology A (lambda=0) to topology B (lambda=1)
-and calculate the free energy difference.
-The starting value of lambda is <b>init_lambda</b> the increase
-per time step is <b>delta_lambda</b>.
+and calculate the free energy difference. The non-bonded potentials are
+interpolated with powers of lambda: Coulomb with a power 2, dispersion
+with a power 3, repulsion with a power 4.
+<dt><b>softcore</b>
+<dd>Change the system from topology A (lambda=0) to topology B (lambda=1)
+and calculate the free energy difference. The Coulomb and LJ interactions
+are interpolated via softcore potentials.
+The softcore parameter is <b>sc_alpha</b>.
 </dl>
 <dt><h4>init_lambda: </b>(0)</h4>
 <dd>starting value for lambda
 <dt><h4>delta_lambda: </b>(0)</h4>
 <dd>increase per time step for lambda
+<dt><h4>sc_alpha: </b>(0)</h4>
+<dd>the softcore parameter, a value of 0 results in linear interpolation of
+the Coulomb and LJ interactions.
 </dl>
 
 <A NAME="neq"><br>
@@ -741,7 +745,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#pp">cpp</A><br>
 <A HREF="#pp">define</A><br>
 <A HREF="#free">delta_lambda</A><br>
-<A HREF="#nl">deltagrid</A><br>
 <A HREF="#nmr">disre</A><br>
 <A HREF="#nmr">disre_weighting</A><br>
 <A HREF="#nmr">disre_mixed</A><br>
@@ -802,6 +805,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#el2">rcoulomb</A><br>
 <A HREF="#el2">rvdw_switch</A><br>
 <A HREF="#el2">rvdw</A><br>
+<A HREF="#free">sc_alpha</A><br>
 <A HREF="#bond2">shake_tol</A><br>
 <A HREF="#sol">solvent_optimization</A><br>
 <A HREF="#pc">tau_p</A><br>
