@@ -12,14 +12,12 @@ cshift.o:	cshift.c
 do_dssp.o:	do_dssp.c
 econv.o:	econv.c
 editconf.o:	editconf.c
-edr2ene.o:	edr2ene.c
-ene2edr.o:	ene2edr.c
 expfit.o:	expfit.c
 fcount.o:	fcount.c
 fitahx.o:	fitahx.c
 fitahx.o:	fitahx.h
 fitahx.o:	hxprops.h
-fix_ene.o:	fix_ene.c
+eneconv.o:	eneconv.c
 g_angle.o:	g_angle.c
 g_bldist.o:	g_bldist.c
 g_bond.o:	g_bond.c

@@ -13,12 +13,10 @@ LIB		=
 POBJ		= g_hbond.o dah.o hbond.o list.o parse.o
 PROGRAMS	= g_rdf		g_msd		\
 		  g_hbond	g_lifetime	merge_freq	\
-		  genbox 	genconf 	\
-		  genion	make_ndx	\
-		  ene2edr	average		genpr 		\
-		  trjconv       mk_angndx	fix_ene		\
-		  editconf	protonate	\
-		  gendr		edr2ene		\
+		  genbox 	genconf 	genion		\
+		  make_ndx	average		genpr 		\
+		  trjconv       mk_angndx	eneconv		\
+		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
 		  g_angle	g_dih		\
@@ -50,19 +48,13 @@ gendr:		gendr.o
 protonate:	protonate.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-ene2edr:	ene2edr.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
 editconf:	editconf.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-edr2ene:	edr2ene.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 genion:		genion.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-fix_ene:	fix_ene.o
+eneconv:	eneconv.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 gen_xh:		gen_xh.o
