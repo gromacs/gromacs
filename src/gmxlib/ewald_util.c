@@ -50,8 +50,6 @@
 #include "fftgrid.h"
 #include "writeps.h"
 #include "macros.h"
-#include "xvgr.h"
-
 
 real calc_ewaldcoeff(real rc,real dtol)
 {
@@ -79,20 +77,24 @@ real calc_ewaldcoeff(real rc,real dtol)
 
 
 
-real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
-			real charge[],t_block *excl,rvec x[],
-			matrix box,rvec mu_tot,real qsum, int ewald_geometry,
-			real epsilon_surface,matrix lr_vir)
+real ewald_LRcorrection(FILE *fplog,
+			t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
+			real *chargeA,real *chargeB,
+			t_block *excl,rvec x[],
+			matrix box,rvec mu_tot[],
+			int ewald_geometry,real epsilon_surface,
+			real lambda,real *dvdlambda)
 {
-  real Vself;
-  int     i,i1,i2,j,k,m,iv,jv;
+  int     i,i1,i2,j,k,m,iv,jv,q;
   atom_id *AA;
-  double  q2sum,Vexcl; /* Necessary for precision */
-  real    vc,qi,dr,dr2,rinv,fscal,Vcharge,Vdipole,rinv2,ewc=fr->ewaldcoeff;
-  rvec    df,dx,mutot,dipcorr;
+  double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
+  real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
+  real    VselfA,VselfB=0,Vcharge[2],Vdipole[2],rinv2,ewc=fr->ewaldcoeff;
+  rvec    df,dx,mutot[2],dipcorrA,dipcorrB;
   rvec    *f=fr->f_el_recip;
+  tensor  dxdf;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-  real    dipole_coeff,qq;
+  real    L1,dipole_coeff,qqA,qqB,qqL;
   /*#define TABLES*/
 #ifdef TABLES
   real    tabscale=fr->tabscale;
@@ -104,32 +106,44 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 #endif
   int     start = START(nsb);
   int     end   = start+HOMENR(nsb);
-  
-  AA      = excl->a;
-  Vexcl   = 0;
-  q2sum   = 0; 
-  Vdipole = 0;
-  Vcharge = 0;
+  bool    bFreeEnergy = (fr->efep != efepNO);
+  bool    bFullPBC = (fr->ePBC == epbcFULL);
+
+  AA         = excl->a;
+  Vexcl      = 0;
+  dvdl_excl  = 0;
+  q2sumA     = 0;
+  q2sumB     = 0;
+  Vdipole[0] = 0;
+  Vdipole[1] = 0;
+  Vcharge[0] = 0;
+  Vcharge[1] = 0;
+  L1         = 1.0-lambda;
 
   /* Note that we have to transform back to gromacs units, since
    * mu_tot contains the dipole in debye units (for output).
    */
   for(i=0; (i<DIM); i++) {
-    mutot[i]   = mu_tot[i]*DEBYE2ENM;
-    dipcorr[i] = 0;
+    mutot[0][i] = mu_tot[0][i]*DEBYE2ENM;
+    mutot[1][i] = mu_tot[1][i]*DEBYE2ENM;
+    dipcorrA[i] = 0;
+    dipcorrB[i] = 0;
   }
   dipole_coeff=0;
   switch (ewald_geometry) {
   case eewg3D:
     if (epsilon_surface != 0) {
       dipole_coeff = 2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
-      for(i=0; (i<DIM); i++)
-	dipcorr[i] = 2*dipole_coeff*mutot[i];
+      for(i=0; (i<DIM); i++) {
+	dipcorrA[i] = 2*dipole_coeff*mutot[0][i];
+	dipcorrB[i] = 2*dipole_coeff*mutot[1][i];
+      }
     }
     break;
   case eewg3DC:
     dipole_coeff = 2*M_PI*ONE_4PI_EPS0/vol;
-    dipcorr[ZZ]  = 2*dipole_coeff*mutot[i];
+    dipcorrA[ZZ] = 2*dipole_coeff*mutot[0][ZZ];
+    dipcorrB[ZZ] = 2*dipole_coeff*mutot[1][ZZ];
     break;
   default:
     gmx_incons("Unsupported Ewald geometry");
@@ -137,145 +151,209 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   }
   if (debug) {
     fprintf(debug,"dipcorr = %8.3f  %8.3f  %8.3f\n",
-	    dipcorr[XX],dipcorr[YY],dipcorr[ZZ]);
+	    dipcorrA[XX],dipcorrA[YY],dipcorrA[ZZ]);
     fprintf(debug,"mutot   = %8.3f  %8.3f  %8.3f\n",
-	    mutot[XX],mutot[YY],mutot[ZZ]);
+	    mutot[0][XX],mutot[0][YY],mutot[0][ZZ]);
   }
-  for(i=start; (i<end); i++) {
-    /* Initiate local variables (for this i-particle) to 0 */
-    qi  = charge[i]*ONE_4PI_EPS0;
-    i1  = excl->index[i];
-    i2  = excl->index[i+1];
-    q2sum += charge[i]*charge[i];
-    
-    /* Loop over excluded neighbours */
-    for(j=i1; (j<i2); j++) {
-      k = AA[j];
-      /* 
-       * First we must test whether k <> i, and then, because the
-       * exclusions are all listed twice i->k and k->i we must select
-       * just one of the two.
-       * As a minor optimization we only compute forces when the charges
-       * are non-zero.
-       */
-      if (k > i) {
-	qq = qi*charge[k];
-	if (qq != 0.0) {
-	  dr2 = 0;
-	  rvec_sub(x[i],x[k],dx);
-	  for(m=DIM-1; (m>=0); m--) {
-	    if (dx[m] > 0.5*box[m][m])
-	      rvec_dec(dx,box[m]);
-	    else if (dx[m] < -0.5*box[m][m])
-	      rvec_inc(dx,box[m]);
-	    
-	    dr2  += dx[m]*dx[m];
-	  }
-
-	  /* It might be possible to optimize this slightly 
-	   * when using spc or similar water models:
-	   * Potential could be stored once, at the beginning,
-	   * and forces could use that bonds are constant 
-	   */
-	  /* The Ewald interactions are tabulated. If you 
-	   * remove the tabulation you must replace this
-	   * part too
-	   */
-
-	  rinv              = invsqrt(dr2);
-	  rinv2             = rinv*rinv;
-	  dr                = 1.0/rinv;      
+  clear_mat(dxdf);
+  if (!bFreeEnergy) {
+    for(i=start; (i<end); i++) {
+      /* Initiate local variables (for this i-particle) to 0 */
+      qiA = chargeA[i]*ONE_4PI_EPS0;
+      i1  = excl->index[i];
+      i2  = excl->index[i+1];
+      q2sumA += chargeA[i]*chargeA[i];
+      
+      /* Loop over excluded neighbours */
+      for(j=i1; (j<i2); j++) {
+	k = AA[j];
+	/* 
+	 * First we must test whether k <> i, and then, because the
+	 * exclusions are all listed twice i->k and k->i we must select
+	 * just one of the two.
+	 * As a minor optimization we only compute forces when the charges
+	 * are non-zero.
+	 */
+	if (k > i) {
+	  qqA = qiA*chargeA[k];
+	  if (qqA != 0.0) {
+	    rvec_sub(x[i],x[k],dx);
+	    if (bFullPBC) {
+	      /* Cheap pbc_dx, assume excluded pairs are at short distance. */
+	      for(m=DIM-1; (m>=0); m--) {
+		if (dx[m] > 0.5*box[m][m])
+		  rvec_dec(dx,box[m]);
+		else if (dx[m] < -0.5*box[m][m])
+		  rvec_inc(dx,box[m]);
+	      }
+	    }
+	    dr2               = norm2(dx);
+	    rinv              = invsqrt(dr2);
+	    rinv2             = rinv*rinv;
+	    dr                = 1.0/rinv;      
 #ifdef TABLES
-	  r1t               = tabscale*dr;   
-	  n0                = r1t;
-	  if (n0 < 3)
-	    gmx_fatal(FARGS,"Distance between atoms too short: %f in %s,%d",
-		      dr,__FILE__,__LINE__);
-	  n1                = 12*n0;
-	  eps               = r1t-n0;
-	  eps2              = eps*eps;
-	  nnn               = n1;
-	  Y                 = VFtab[nnn];
-	  F                 = VFtab[nnn+1];
-	  Geps              = eps*VFtab[nnn+2];
-	  Heps2             = eps2*VFtab[nnn+3];
-	  Fp                = F+Geps+Heps2;
-	  VV                = Y+eps*Fp;
-	  FF                = Fp+Geps+2.0*Heps2;
-	  vc                = qq*(rinv-VV);
-	  fijC              = qq*FF;
-	  Vexcl            += vc;
-	  
-	  fscal             = vc*rinv2+fijC*tabscale*rinv;
-	  /* End of tabulated interaction part */
+	    r1t               = tabscale*dr;   
+	    n0                = r1t;
+	    assert(n0 >= 3);
+	    n1                = 12*n0;
+	    eps               = r1t-n0;
+	    eps2              = eps*eps;
+	    nnn               = n1;
+	    Y                 = VFtab[nnn];
+	    F                 = VFtab[nnn+1];
+	    Geps              = eps*VFtab[nnn+2];
+	    Heps2             = eps2*VFtab[nnn+3];
+	    Fp                = F+Geps+Heps2;
+	    VV                = Y+eps*Fp;
+	    FF                = Fp+Geps+2.0*Heps2;
+	    vc                = qqA*(rinv-VV);
+	    fijC              = qqA*FF;
+	    Vexcl            += vc;
+	    
+	    fscal             = vc*rinv2+fijC*tabscale*rinv;
+	    /* End of tabulated interaction part */
 #else
-
-	  /* This is the code you would want instead if not using
-	   * tables: 
-	   */
-	  vc      = qq*erf(ewc*dr)*rinv;
-	  Vexcl  += vc;
-	  fscal   = rinv2*(vc-2.0*qq*ewc*isp*exp(-ewc*ewc*dr2));
+	    
+	    /* This is the code you would want instead if not using
+	     * tables: 
+	     */
+	    vc      = qqA*erf(ewc*dr)*rinv;
+	    Vexcl  += vc;
+	    fscal   = rinv2*(vc-2.0*qqA*ewc*isp*exp(-ewc*ewc*dr2));
 #endif
-	  
-	  /* The force vector is obtained by multiplication with the 
-	   * distance vector 
-	   */
-	  svmul(fscal,dx,df);
-	  if (debug)
-	    fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
-		    dr,fscal,df[XX],df[YY],df[ZZ]);
-	  rvec_inc(f[k],df);
-	  rvec_dec(f[i],df);
-	  for(iv=0; (iv<DIM); iv++)
-	    for(jv=0; (jv<DIM); jv++)
-	      lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];
+	    
+	    /* The force vector is obtained by multiplication with the 
+	     * distance vector 
+	     */
+	    svmul(fscal,dx,df);
+	    if (debug)
+	      fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
+		      dr,fscal,df[XX],df[YY],df[ZZ]);
+	    rvec_inc(f[k],df);
+	    rvec_dec(f[i],df);
+	    for(iv=0; (iv<DIM); iv++)
+	      for(jv=0; (jv<DIM); jv++)
+		dxdf[iv][jv] += dx[iv]*df[jv];
+	  }
 	}
       }
+      /* Dipole correction on force */
+      if (dipole_coeff != 0) {
+	for(j=0; (j<DIM); j++)
+	  f[i][j] -= dipcorrA[j]*chargeA[i];
+      }
     }
-    /* Dipole correction on force */
-    if (dipole_coeff != 0) {
-      for(j=0; (j<DIM); j++)
-	f[i][j] -= dipcorr[j]*charge[i];
-    } 
+  } else {
+    for(i=start; (i<end); i++) {
+      /* Initiate local variables (for this i-particle) to 0 */
+      qiA = chargeA[i]*ONE_4PI_EPS0;
+      qiB = chargeB[i]*ONE_4PI_EPS0;
+      i1  = excl->index[i];
+      i2  = excl->index[i+1];
+      q2sumA += chargeA[i]*chargeA[i];
+      q2sumB += chargeB[i]*chargeB[i];
+      
+      /* Loop over excluded neighbours */
+      for(j=i1; (j<i2); j++) {
+	k = AA[j];
+	if (k > i) {
+	  qqA = qiA*chargeA[k];
+	  qqB = qiB*chargeB[k];
+	  if (qqA != 0.0 || qqB != 0.0) {
+	    rvec_sub(x[i],x[k],dx);
+	    if (bFullPBC) {
+	      /* Cheap pbc_dx, assume excluded pairs are at short distance. */
+	      for(m=DIM-1; (m>=0); m--) {
+		if (dx[m] > 0.5*box[m][m])
+		  rvec_dec(dx,box[m]);
+		else if (dx[m] < -0.5*box[m][m])
+		  rvec_inc(dx,box[m]);
+	      }
+	    }
+	    dr2    = norm2(dx);
+	    rinv   = invsqrt(dr2);
+	    rinv2  = rinv*rinv;
+	    dr     = 1.0/rinv;      
+	    v      = erf(ewc*dr)*rinv;
+	    qqL    = L1*qqA + lambda*qqB;
+	    vc     = qqL*v;
+	    Vexcl += vc;
+	    fscal  = rinv2*(vc-2.0*qqL*ewc*isp*exp(-ewc*ewc*dr2));
+	    svmul(fscal,dx,df);
+	    if (debug)
+	      fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
+		      dr,fscal,df[XX],df[YY],df[ZZ]);
+	    rvec_inc(f[k],df);
+	    rvec_dec(f[i],df);
+	    for(iv=0; (iv<DIM); iv++)
+	      for(jv=0; (jv<DIM); jv++)
+		dxdf[iv][jv] += dx[iv]*df[jv];
+	    dvdl_excl += (qqB - qqA)*v;
+	    }
+	  }
+      }
+      /* Dipole correction on force */
+      if (dipole_coeff != 0) {
+	for(j=0; (j<DIM); j++)
+	  f[i][j] -= L1*dipcorrA[j]*chargeA[i]
+	    + lambda*dipcorrB[j]*chargeB[i];
+      } 
+    }
   }
-  
+  for(iv=0; (iv<DIM); iv++)
+    for(jv=0; (jv<DIM); jv++)
+      fr->vir_el_recip[iv][jv] += 0.5*dxdf[iv][jv];
+      
   /* Global corrections only on master process */
   if (MASTER(cr)) {
-    /* Apply charge correction */
-    /* use vc as a dummy variable */
-    vc = qsum*qsum*M_PI*ONE_4PI_EPS0/(2.0*vol*vol*ewc*ewc);
-    for(iv=0; (iv<DIM); iv++)
-      lr_vir[iv][iv] += vc;
-    Vcharge = -vol*vc;
-    
-    /* Apply surface dipole correction:
-     * correction = dipole_coeff * (dipole)^2
-     */
-    if (dipole_coeff != 0) {
-      if (ewald_geometry == eewg3D) 
-	Vdipole = dipole_coeff*iprod(mutot,mutot);
-      else if (ewald_geometry == eewg3DC) 
-	Vdipole = dipole_coeff*mutot[ZZ]*mutot[ZZ];
+    for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
+      /* Apply charge correction */
+      /* use vc as a dummy variable */
+      vc = fr->qsum[q]*fr->qsum[q]*M_PI*ONE_4PI_EPS0/(2.0*vol*vol*ewc*ewc);
+      for(iv=0; (iv<DIM); iv++)
+	fr->vir_el_recip[iv][iv] +=
+	  (bFreeEnergy ? (q==0 ? L1*vc : lambda*vc) : vc);
+      Vcharge[q] = -vol*vc;
+      
+      /* Apply surface dipole correction:
+       * correction = dipole_coeff * (dipole)^2
+       */
+      if (dipole_coeff != 0) {
+	if (ewald_geometry == eewg3D)
+	  Vdipole[q] = dipole_coeff*iprod(mutot[q],mutot[q]);
+	else if (ewald_geometry == eewg3DC)
+	  Vdipole[q] = dipole_coeff*mutot[q][ZZ]*mutot[q][ZZ];
+      }
     }
+  }    
+  
+  VselfA = ewc*ONE_4PI_EPS0*q2sumA/sqrt(M_PI);
+
+  if (!bFreeEnergy) {
+    enercorr = Vdipole[0] + Vcharge[0] - VselfA - Vexcl;
+  } else {
+    VselfB = ewc*ONE_4PI_EPS0*q2sumB/sqrt(M_PI);
+    enercorr = L1*(Vdipole[0] + Vcharge[0] - VselfA)
+      +  lambda*(Vdipole[1] + Vcharge[1] - VselfB) - Vexcl;
+    *dvdlambda += Vdipole[1] + Vcharge[1] - VselfB
+      - (Vdipole[0] + Vcharge[0] - VselfA) - dvdl_excl;
   }
-  
-  Vself=ewc*ONE_4PI_EPS0*q2sum/sqrt(M_PI);
-  
+
   if (debug) {
     fprintf(debug,"Long Range corrections for Ewald interactions:\n");
     fprintf(debug,"start=%d,natoms=%d\n",start,end-start);
-    fprintf(debug,"q2sum = %g, Vself=%g\n",q2sum, Vself);
+    fprintf(debug,"q2sum = %g, Vself=%g\n",
+	    L1*q2sumA+lambda*q2sumB,L1*VselfA+lambda*VselfB);
     fprintf(debug,"Long Range correction: Vexcl=%g\n",Vexcl);
     if (MASTER(cr)) {
-      fprintf(debug,"Total charge correction: Vcharge=%g\n",Vcharge);
+      fprintf(debug,"Total charge correction: Vcharge=%g\n",
+	      L1*Vcharge[0]+lambda*Vcharge[1]);
       if (epsilon_surface>0)
-	fprintf(debug,"Total dipole correction: Vdipole=%g\n",Vdipole);
+	fprintf(debug,"Total dipole correction: Vdipole=%g\n",
+		L1*Vdipole[0]+lambda*Vdipole[1]);
     }
   }
-
+    
   /* Return the correction to the energy */
-  return (Vdipole+Vcharge-Vself-Vexcl);
+  return enercorr;
 }
-  
-

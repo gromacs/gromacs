@@ -647,7 +647,13 @@ void init_forcerec(FILE *fp,
   
   if (EEL_FULL(fr->eeltype)) {
     if (ir->efep != efepNO) {
-      fprintf(fp,"\nWARNING: With %s the reciprocal part only uses the charges from topology A\n\n",eel_names[fr->eeltype]);
+      if (fr->eeltype== eelEWALD || fr->eeltype==eelPME) {
+	if (fr->sc_alpha != 0)
+	  fprintf(fp,
+		  "\nWARNING: With %s the soft-core is performed on erfc(beta r)/r instead of on 1/r\n\n",eel_names[fr->eeltype]);
+      } else {
+	fprintf(fp,"\nWARNING: With %s the reciprocal part only uses the charges from topology A\n\n",eel_names[fr->eeltype]);
+      }
     }
     snew(fr->f_el_recip,natoms);
   }
@@ -947,14 +953,15 @@ void force(FILE       *fplog,   int        step,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPME:
-      Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,
+      Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
 		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
-		   bGatherOnly);
+		   lambda,&dvdlambda,bGatherOnly);
       PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       break;
     case eelEWALD:
-      Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,
-		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff);
+      Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
+		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff,
+		     lambda,&dvdlambda);
       PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
       break;
     default:
@@ -965,10 +972,10 @@ void force(FILE       *fplog,   int        step,
     epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;
-      Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,md->chargeA,excl,
-				 x,box,mu_tot[0],fr->qsum[0],
+      Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,md->chargeA,md->chargeB,excl,
+				 x,box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
-				 fr->vir_el_recip);
+				 lambda,&dvdlambda);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
       epot[F_DVDL] += dvdlambda;
     } else {

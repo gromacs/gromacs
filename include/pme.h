@@ -51,10 +51,11 @@ typedef real *splinevec[DIM];
 extern real do_pme(FILE *log,       bool bVerbose,
 		   t_inputrec *ir,
 		   rvec x[],        rvec f[],
-		   real charge[],   matrix box,
-		   t_commrec *cr,
+		   real chargeA[],  real chargeB[],
+		   matrix box,      t_commrec *cr,
 		   t_nsborder *nsb, t_nrnb *nrnb,
-		   matrix lrvir,real ewaldcoeff,
+		   matrix lrvir,    real ewaldcoeff,
+		   real lambda,     real *dvdlambda,
 		   bool bGatherOnly);
     
 /* Do a PME calculation for the long range electrostatics. 
@@ -64,16 +65,17 @@ extern real do_pme(FILE *log,       bool bVerbose,
 
 extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward);
 
-extern void init_pme(FILE *log,t_commrec *cr,
-		     int nkx,int nky,int nkz,int pme_order,int homenr,
-		     bool bOptFFT, int ewald_geometry);
+extern t_fftgrid *init_pme(FILE *log,t_commrec *cr,
+			   int nkx,int nky,int nkz,int pme_order,int homenr,
+			   bool bFreeEnergy,bool bOptFFT,int ewald_geometry);
 
 /* Routine for spreading something on a grid. Can be misused for non-PME
  * related things. init_pme must be called before this guy.
  */
-extern t_fftgrid *spread_on_grid(FILE *logfile,   int homenr,
-				 int pme_order,   rvec x[],
-				 real charge[],   matrix box,
-				 bool bGatherOnly);
+extern void spread_on_grid(FILE *logfile,   
+			   t_fftgrid *grid, int homenr,
+			   int pme_order,   rvec x[],
+			   real charge[],   matrix box,      
+			   bool bGatherOnly,bool bHaveSplines);
 
 #endif

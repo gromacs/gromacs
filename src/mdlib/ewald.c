@@ -49,6 +49,7 @@
 #include "fftgrid.h"
 #include "fatal.h"
 #include "physics.h"
+#include "ewald.h"
 
 #define TOL 2e-5
 

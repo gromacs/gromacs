@@ -165,11 +165,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning("Flying ice-cubes: We are not removing center of mass motion in a non-periodic system. You should set nstcomm = -1 (will also stop rotation).");
   }
   
-  if ((EEL_FULL(ir->coulombtype)) && (ir->efep!=efepNO)) {
-    warning("You are using lattice sum electrostatics with free energy integration. "
-	    "This might give wrong results, since the lattice contribution "
-	    "to the free energy not calculated.");
-  }
+  sprintf(err_buf,"Free-energy not implemented for PPPM");
+  CHECK((ir->coulombtype==eelPPPM) && (ir->efep!=efepNO));
   
   sprintf(err_buf,"Domain decomposition can only be used with grid NS");
   CHECK(ir->bDomDecomp && (ir->ns_type == ensSIMPLE));

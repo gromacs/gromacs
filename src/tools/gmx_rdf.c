@@ -646,7 +646,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   
   fprintf(stderr,"Largest grid spacing: %g nm, pme_order %d, %dx%d pixel on image\n",
 	  max_spacing,pme_order,npixel,npixel);
-  init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE,eewg3D);
+  fftgrid = init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE,FALSE,eewg3D);
     
   /* Determine largest k vector length. */
   k_max = 1+sqrt(sqr(1+nx/2)+sqr(1+ny/2)+sqr(1+nz/2));
@@ -671,7 +671,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
       copy_rvec(x[index[i]],xndx[i]);
       
     /* put local atoms on grid. */
-    fftgrid = spread_on_grid(stdout,isize,pme_order,xndx,fj,box,FALSE);
+    spread_on_grid(stdout,fftgrid,isize,pme_order,xndx,fj,box,FALSE,TRUE);
 
     /* FFT the density */
     gmxfft3D(fftgrid,FFTW_FORWARD,NULL);  

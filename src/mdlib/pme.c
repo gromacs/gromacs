@@ -394,9 +394,9 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
 }
 
 void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
-		       ivec idx[],rvec f[],real *charge,splinevec theta,
-		       splinevec dtheta,int nr,int order,
-		       int nnx[],int nny[],int nnz[])
+		       ivec idx[],rvec f[],real *charge,real scale,
+		       splinevec theta,splinevec dtheta,
+		       int nr,int order,int nnx[],int nny[],int nnz[])
 {
   /* sum forces for local particles */  
   int     i,j,k,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
@@ -432,7 +432,7 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
 
 
   for(n=0; (n<nr); n++) {
-    qn     = charge[n];
+    qn      = scale*charge[n];
     fx      = 0.0;
     fy      = 0.0;
     fz      = 0.0;
@@ -651,7 +651,7 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
 }
 
 /* Global variables! Yucky... */
-static    t_fftgrid *grid=NULL;
+static    t_fftgrid *gridA=NULL,*gridB=NULL;
 /*static    int  nx,ny,nz;*/
 static    int  *nnx,*nny,*nnz;
 static    ivec *idx=NULL;
@@ -664,9 +664,9 @@ static    splinevec dtheta;
 static    splinevec bsp_mod;
 
 
-void init_pme(FILE *log,t_commrec *cr,
-	      int nkx,int nky,int nkz,int pme_order,int homenr,
-	      bool bOptFFT,int ewald_geometry)
+t_fftgrid *init_pme(FILE *log,t_commrec *cr,
+		    int nkx,int nky,int nkz,int pme_order,int homenr,
+		    bool bFreeEnergy,bool bOptFFT,int ewald_geometry)
 {
   int i;
   bool bPar;
@@ -711,15 +711,20 @@ void init_pme(FILE *log,t_commrec *cr,
   for(i=0; (i<5*nkz); i++)
     nnz[i] = i % nkz;
 
-  grid=mk_fftgrid(log,bPar,nkx,nky,nkz,bOptFFT);
+  gridA = mk_fftgrid(log,bPar,nkx,nky,nkz,bOptFFT);
+  if (bFreeEnergy)
+    gridB = mk_fftgrid(log,bPar,nkx,nky,nkz,bOptFFT);
 
   make_bspline_moduli(bsp_mod,nkx,nky,nkz,pme_order);   
+
+  return gridA;
 }
 
-t_fftgrid *spread_on_grid(FILE *logfile,   int homenr,
-			  int pme_order,   rvec x[],
-			  real charge[],   matrix box,
-			  bool bGatherOnly)
+void spread_on_grid(FILE *logfile,   
+		    t_fftgrid *grid,  int homenr,
+		    int pme_order,    rvec x[],
+		    real charge[],    matrix box,
+		    bool bGatherOnly, bool bHaveSplines)
 { 
   int nx,ny,nz,nx2,ny2,nz2,la2,la12;
   t_fft_r *ptr;
@@ -727,85 +732,116 @@ t_fftgrid *spread_on_grid(FILE *logfile,   int homenr,
   /* Unpack structure */
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   
-  /* Inverse box */
-  calc_recipbox(box,recipbox); 
-
+  if (!bHaveSplines)
+    /* Inverse box */
+    calc_recipbox(box,recipbox); 
+  
   if (!bGatherOnly) {
-    /* Compute fftgrid index for all atoms, with help of some extra variables */
-    calc_idx(homenr,recipbox,x,fractx,idx,nx,ny,nz,nx2,ny2,nz2,nnx,nny,nnz);
-    
-    /* make local bsplines  */
-    make_bsplines(theta,dtheta,pme_order,nx,ny,nz,fractx,idx,charge,homenr);
-    
+    if (!bHaveSplines) {
+      /* Compute fftgrid index for all atoms, with help of some extra variables */
+      calc_idx(homenr,recipbox,x,fractx,idx,nx,ny,nz,nx2,ny2,nz2,nnx,nny,nnz);
+      
+      /* make local bsplines  */
+      make_bsplines(theta,dtheta,pme_order,nx,ny,nz,fractx,idx,charge,homenr);
+    }    
+
     /* put local atoms on grid. */
     spread_q_bsplines(grid,idx,charge,theta,homenr,pme_order,nnx,nny,nnz);
   }
-  return grid;
 }
 
 real do_pme(FILE *logfile,   bool bVerbose,
 	    t_inputrec *ir,  rvec x[],
-	    rvec f[],        real charge[],
+	    rvec f[],
+	    real *chargeA,   real *chargeB,
 	    matrix box,	     t_commrec *cr,
 	    t_nsborder *nsb, t_nrnb *nrnb,    
 	    matrix vir,      real ewaldcoeff,
+	    real lambda,     real *dvdlambda,
 	    bool bGatherOnly)
 { 
-  static  real energy = 0;
-  int     i,ntot,npme;
+  static  real energy_AB[2] = {0,0};
+  int     q,i,j,ntot,npme;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
+  t_fftgrid *grid=NULL;
   t_fft_r *ptr;
-  real    vol;
-  static  int *orderlist = NULL;
+  real    *homecharge=NULL,vol,energy;
+  matrix  vir_AB[2];
+  bool    bFreeEnergy;
 
-  /* Unpack structure */
-  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
-  
-  /* Spread the charges on a grid */
-  (void) spread_on_grid(logfile,HOMENR(nsb),ir->pme_order,
-			x+START(nsb),charge+START(nsb),box,bGatherOnly);
-  if (!bGatherOnly) {
-    inc_nrnb(nrnb,eNR_SPREADQBSP,
-	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
+  bFreeEnergy = (ir->efep != efepNO);
+
+  for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
+    if (q == 0) {
+      grid = gridA;
+      homecharge = chargeA+START(nsb);
+    } else {
+      grid = gridB;
+      homecharge = chargeB+START(nsb);
+    }
     
+    /* Unpack structure */
+    unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     
-    /* sum contributions to local grid from other nodes */
-    if (PAR(cr))
-      sum_qgrid(cr,nsb,grid,TRUE);
-    if (debug)
-      pr_fftgrid(debug,"qgrid",grid);
- 
-    /* do 3d-fft */ 
-    gmxfft3D(grid,FFTW_FORWARD,cr);
-   
-    /* solve in k-space for our local cells */
-    vol = det(box);
-    energy=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,vir,cr);
-    inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
-    /* do 3d-invfft */
-    gmxfft3D(grid,FFTW_BACKWARD,cr);
+    /* Spread the charges on a grid */
+    spread_on_grid(logfile,grid,HOMENR(nsb),ir->pme_order,
+		   x+START(nsb),homecharge,box,bGatherOnly,
+		   q==0 ? FALSE : TRUE);
     
-    /* distribute local grid to all nodes */
-    if (PAR(cr))
-      sum_qgrid(cr,nsb,grid,FALSE);
-    if (debug)
-      pr_fftgrid(debug,"potential",grid);
+    if (!bGatherOnly) {
+      inc_nrnb(nrnb,eNR_SPREADQBSP,
+	       ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
       
-    ntot  = grid->nxyz;  
-    npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
-    inc_nrnb(nrnb,eNR_FFT,2*npme);
+      /* sum contributions to local grid from other nodes */
+      if (PAR(cr))
+	sum_qgrid(cr,nsb,grid,TRUE);
+      if (debug)
+	pr_fftgrid(debug,"qgrid",grid);
+
+      /* do 3d-fft */ 
+      gmxfft3D(grid,FFTW_FORWARD,cr);
+      
+      /* solve in k-space for our local cells */
+      vol = det(box);
+      energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,
+			     vir_AB[q],cr);
+      inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
+
+      /* do 3d-invfft */
+      gmxfft3D(grid,FFTW_BACKWARD,cr);
+      
+      /* distribute local grid to all nodes */
+      if (PAR(cr))
+	sum_qgrid(cr,nsb,grid,FALSE);
+      if (debug)
+	pr_fftgrid(debug,"potential",grid);
+
+      ntot  = grid->nxyz;  
+      npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
+      inc_nrnb(nrnb,eNR_FFT,2*npme);
+    }
+    /* interpolate forces for our local atoms */
+    gather_f_bsplines(grid,recipbox,idx,f+START(nsb),homecharge,
+		      bFreeEnergy ? (q==0 ? 1.0-lambda : lambda) : 1.0,
+		      theta,dtheta,HOMENR(nsb),ir->pme_order,
+		      nnx,nny,nnz);
+    
+    inc_nrnb(nrnb,eNR_GATHERFBSP,
+	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
   }
-  /* interpolate forces for our local atoms */
-  gather_f_bsplines(grid,recipbox,idx,f+START(nsb),charge+START(nsb),
-		    theta,dtheta,HOMENR(nsb),ir->pme_order,
-		    nnx,nny,nnz);
 
-  inc_nrnb(nrnb,eNR_GATHERFBSP,
-	   ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
+  if (!bFreeEnergy) {
+    energy = energy_AB[0];
+    copy_mat(vir_AB[0],vir);
+  } else {
+    energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+    *dvdlambda += energy_AB[1] - energy_AB[0];
+    for(i=0; i<DIM; i++)
+      for(j=0; j<DIM; j++)
+	vir[i][j] = (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+  }
+  if (debug)
+    fprintf(debug,"PME mesh energy: %g\n",energy);
 
-  return energy;  
+  return energy;
 }
-
-
-
-
