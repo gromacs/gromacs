@@ -47,9 +47,6 @@ typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
 
 /* I/O function types */
 
-extern void usage(char *prog,char *arg);
-/* Error function */
-
 extern char *Program(void);
 /* Return the name of the program */
 extern char *ShortProgram(void);

@@ -99,7 +99,8 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	  if (match!=NOTSET)
 	    pa[j].u.c[0] = pa[j].u.c[match];
 	  else 
-	    fatal_error(0,"Invalid value %s for option %s",ptr,pa[j].option);
+	    fatal_error(0,"Invalid argument %s for option %s",
+			ptr,pa[j].option);
 	  break;
 	case etRVEC:
 	  (*pa[j].u.rv)[0] = dscan(*argc,argv,&i);

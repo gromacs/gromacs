@@ -133,6 +133,12 @@ void mk_single_top(t_topology *top)
  *           P A R S I N G   S T U F F
  *
  *************************************************************/
+
+static void usage(char *type,char *arg)
+{
+  if (arg != NULL)
+    fatal_error(0,"Expected %s argument for option %s\n",type,arg);
+}
  
 int iscan(int argc,char *argv[],int *i)
 {
@@ -140,10 +146,10 @@ int iscan(int argc,char *argv[],int *i)
 
   if (argc > (*i)+1) {
     if (!sscanf(argv[++(*i)],"%d",&var))
-      usage(argv[0],argv[*i]);
+      usage("an integer",argv[*i]);
   }
   else
-    usage(argv[0],argv[*i]);
+    usage("an integer",argv[*i]);
 
   return var;
 }
@@ -154,10 +160,10 @@ double dscan(int argc,char *argv[],int *i)
 
   if (argc > (*i)+1) {
     if (!sscanf(argv[++(*i)],"%lf",&var))
-      usage(argv[0],argv[*i]);
+      usage("a real",argv[*i]);
   }
   else
-    usage(argv[0],argv[*i]);
+    usage("a real",argv[*i]);
 
   return var;
 }
@@ -172,7 +178,7 @@ char *sscan(int argc,char *argv[],int *i)
   if (argc > (*i)+1) 
     return argv[++(*i)];
   else
-    usage(argv[0],argv[*i]);
+    usage("a string",argv[*i]);
 
   return NULL; /* For the compiler! */
 }
@@ -196,12 +202,6 @@ static void pdesc(char *desc)
       pdesc(nptr);
     }
   }
-}
-
-void usage(char *prog,char *arg)
-{
-  if (arg != NULL)
-    fatal_error(0,"Conflicting argument for program %s: %s\n",prog,arg);
 }
 
 bool bDoView(void)
