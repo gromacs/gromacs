@@ -1039,8 +1039,8 @@ m_i {\de^2 \ve{r}_i \over \de t^2} =
 - m_i \xi_i {\de \ve{r}_i \over \de t} + \ve{F}_i(\ve{r}) + \vrond_i
 \eeq 
 where $\xi_i$ is the friction constant $[1/\mbox{ps}]$ and
-$\vrond_i\!(t)$  is a noise process with 
-$\langle \rond_i\!(t) \rond_j\!(t+s) \rangle = 
+$\vrond_i\!\!(t)$  is a noise process with 
+$\langle \rond_i\!\!(t) \rond_j\!\!(t+s) \rangle = 
     2 m_i \xi_i k_B T \delta(s) \delta_{ij}$.
 When $1/\xi_i$ is large compared to the time scales present in the system,
 one could see stochastic dynamics as molecular dynamics with stochastic
@@ -1077,19 +1077,22 @@ This applies to over-damped systems,
 {\ie} systems in which the inertia effects are negligible.
 The equation is:
 \beq
-{\de \ve{r}_i \over \de t} = {\ve{F}_i(\ve{r}) \over \gamma} + \vrond_i
+{\de \ve{r}_i \over \de t} = \frac{1}{\gamma_i} \ve{F}_i(\ve{r}) + \vrond_i
 \eeq 
-where $\gamma$ is the friction coefficient $[\mbox{amu/ps}]$ and
-$\vrond_i\!(t)$  is a noise process with 
-$\langle \rond_i\!(t) \rond_j\!(t+s) \rangle = 
-    2 \delta(s) \delta_{ij} k_B T / \gamma$.
-In {\gromacs} the equations are integrated with a simple, explicit scheme
+where $\gamma_i$ is the friction coefficient $[\mbox{amu/ps}]$ and
+$\vrond_i\!\!(t)$  is a noise process with 
+$\langle \rond_i\!\!(t) \rond_j\!\!(t+s) \rangle = 
+    2 \delta(s) \delta_{ij} k_B T / \gamma_i$.
+In {\gromacs} the equations are integrated with a simple, explicit scheme:
 \beq
-\ve{r}(t+\Delta t) = \ve{r}(t) +
-        {\Delta t \over \gamma} \ve{F}(\ve{r}(t)) 
-        + \sqrt{2 k_B T {\Delta t \over \gamma}}\, \ruis 
+\ve{r}_i(t+\Delta t) = \ve{r}_i(t) +
+        {\Delta t \over \gamma_i} \ve{F}_i(\ve{r}(t)) 
+        + \sqrt{2 k_B T {\Delta t \over \gamma_i}}\, \ruis_i 
 \eeq
-where $\ruis$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
+where $\ruis_i$ is Gaussian distributed noise with $\mu = 0$, $\sigma = 1$.
+The friction coefficients $\gamma_i$ can be chosen the same for all
+particles or as $\gamma_i = m_i/\xi_i$, where the friction constants
+$\xi_i$ can be different for different groups of atoms. 
 Because the system is assumed to be over damped, large time-steps
 can be used. LINCS should be used for the constraints since SHAKE
 will not converge for large atomic displacements.
