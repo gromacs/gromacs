@@ -7,7 +7,7 @@
 #
 Summary: Molecular dynamics package (parallel)
 Name: gromacs-mpi
-Version: 3.0.1
+Version: 3.0
 Release: 1
 Copyright: GPL
 Group: Applications/Science
@@ -42,7 +42,7 @@ you probably want the full source anyway...
 
 %build
 # Call it mdrun_mpi
-./configure --enable-shared --enable-mpi --prefix=%{prefix} --exec-prefix=%{prefix} --program-suffix=_mpi
+./configure --enable-shared --enable-mpi --prefix=%{prefix} --exec-prefix=%{prefix} --program-suffix=_mpi --without-motif-libraries
 make mdrun
 
 %install
@@ -52,9 +52,15 @@ make DESTDIR=${RPM_BUILD_ROOT} install-mdrun
 rm -rf ${RPM_BUILD_ROOT}
 
 %post
+# /etc/ld.so.conf should have been updated by the normal gromacs package.
+# Overwrite the mdrun link - it should point to mdrun_mpi iso mdrun_nompi now!
+(cd ${RPM_INSTALL_PREFIX}/bin && ln -sf mdrun_mpi mdrun)
 
 
 %postun
+# If we removed the gromacs-mpi package, while the non-mpi version is still present,
+# we should restore the mdrun link:
+(cd ${RPM_INSTALL_PREFIX}/bin && test ! -e mdrun && ln -s mdrun_nompi mdrun)
 
 %files 
 %defattr(-,root,root)
