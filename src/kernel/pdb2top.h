@@ -75,6 +75,8 @@ extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    int nssbonds, t_ssbond ssbonds[], int nrexcl, 
 		    real long_bond_dist, real short_bond_dist);
 /* Create a topology ! */
+extern bool is_int(double x);
+/* Returns TRUE when x is integer */
 
 extern void print_sums(t_atoms *atoms, bool bSystem);
 
