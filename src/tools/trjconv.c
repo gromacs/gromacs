@@ -348,6 +348,7 @@ int main(int argc,char *argv[])
   real         xtcpr, lambda,*w_rls;
   matrix       box;
   int          m,i,d,frame,outframe,natoms,nout,nre,step;
+#define SKIP 10
   t_tpxheader  header;
   t_topology   top;
   t_atoms      useatoms;
@@ -633,7 +634,7 @@ int main(int argc,char *argv[])
 	    fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d\n",
 		    t,outframe);
 	  }
-	  if ((outframe % 10) == 0)
+	  if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
 	    fprintf(stderr,"->  frame %6d time %8.3f",outframe,t);
 	 
 	  if (!bIFit) {
@@ -680,13 +681,12 @@ int main(int argc,char *argv[])
 	  /* check if we have velocities and/or coordinates,
 	     don't ask me why you can have a frame w/o coords !? */
 	    bHaveV=FALSE;
-	    for (i=0; (i<natoms); i++)
-	      for (d=0; (d<DIM); d++)
-		bHaveV=bHaveV || v[i][d];
 	    bHaveX=FALSE;
 	    for (i=0; (i<natoms); i++)
-	      for (d=0; (d<DIM); d++)
+	      for (d=0; (d<DIM); d++) {
+		bHaveV=bHaveV || v[i][d];
 		bHaveX=bHaveX || x[i][d];
+	      }
 	  }
 	  
 	  switch(ftp) {
