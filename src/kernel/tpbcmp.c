@@ -331,6 +331,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->nkz",0,ir1->nkz,ir2->nkz);
   cmp_int(fp,"inputrec->pme_order",0,ir1->pme_order,ir2->pme_order);
   cmp_real(fp,"inputrec->ewald_rtol",0,ir1->ewald_rtol,ir2->ewald_rtol,ftol);
+  cmp_int(fp,"inputrec->ewald_geometry",0,ir1->ewald_geometry,ir2->ewald_geometry);
   cmp_real(fp,"inputrec->epsilon_surface",0,ir1->epsilon_surface,ir2->epsilon_surface,ftol);
   cmp_int(fp,"inputrec->bOptFFT",0,ir1->bOptFFT,ir2->bOptFFT);
   cmp_int(fp,"inputrec->bUncStart",0,ir1->bUncStart,ir2->bUncStart);

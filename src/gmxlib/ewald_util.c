@@ -78,7 +78,7 @@ real calc_ewaldcoeff(real rc,real dtol)
 
 real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
-			matrix box,rvec mu_tot,real qsum,
+			matrix box,rvec mu_tot,real qsum, int ewald_geometry,
 			real epsilon_surface,matrix lr_vir)
 {
   static  bool bFirst=TRUE;
@@ -112,8 +112,19 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 
   if(epsilon_surface==0)
     dipole_coeff=0;
-  else
-    dipole_coeff=M_PI*ONE_4PI_EPS0/(1.5*epsilon_surface*vol);
+  else 
+    switch(ewald_geometry) {
+    case eewg3D:
+      dipole_coeff=2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
+      break;
+    case eewg3DC:
+      dipole_coeff=2*M_PI*ONE_4PI_EPS0/vol;
+      break;
+    default:
+      fatal_error(0,"Unsupported Ewald geometry");
+      dipole_coeff=0;
+      break;
+    }
   
   for(i=start; (i<end); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
@@ -209,9 +220,14 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
        * Note that we have to transform back to gromacs units, since
        * mu_tot contains the dipole in debye units (for output).
        */
-      if(epsilon_surface>0) 
-	for(j=0;j<DIM;j++)
-	  f_pme[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
+      if(dipole_coeff!=0) {
+	if(ewald_geometry==eewg3D) {
+	  for(j=0;j<DIM;j++)
+	    f_pme[i][j]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[j]*charge[i];
+	} else if(ewald_geometry==eewg3DC) {
+	    f_pme[i][DIM-1]-=2.0*dipole_coeff*DEBYE2ENM*mu_tot[ZZ]*charge[i];
+	}
+      }
   }
 
   /* Global corrections only on master process */
@@ -228,9 +244,13 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
      * Note that we have to transform back to gromacs units, since
      * mu_tot contains the dipole in debye units (for output).
      */
-    if(epsilon_surface>0) 
-      Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*
-	(mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
+    if(dipole_coeff!=0) {
+      if(ewald_geometry==eewg3D) 
+	Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*
+	  (mu_tot[XX]*mu_tot[XX]+mu_tot[YY]*mu_tot[YY]+mu_tot[ZZ]*mu_tot[ZZ]);
+      else if(ewald_geometry==eewg3DC) 
+	Vdipole=dipole_coeff*DEBYE2ENM*DEBYE2ENM*mu_tot[ZZ]*mu_tot[ZZ];
+    }
   }
   
   Vself=ewc*ONE_4PI_EPS0*q2sum/sqrt(M_PI);

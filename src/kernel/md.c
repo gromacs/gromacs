@@ -185,7 +185,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
   if (fr->eeltype == eelPME)
     init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,parm->ir.pme_order,
-	     HOMENR(nsb),parm->ir.bOptFFT);
+	     HOMENR(nsb),parm->ir.bOptFFT,parm->ir.ewald_geometry);
   
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (parm->ir.eI) {

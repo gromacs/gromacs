@@ -62,6 +62,7 @@ extern char *ei_names[eiNR+1];
 extern char *yesno_names[BOOL_NR+1];
 extern char *bool_names[BOOL_NR+1];
 extern char *eel_names[eelNR+1];
+extern char *eewg_names[eewgNR+1];
 extern char *evdw_names[evdwNR+1];
 extern char *eshake_names[estNR+1];
 extern char *ptype_str[eptNR+1];

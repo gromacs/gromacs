@@ -75,6 +75,7 @@ static char *SRCID_pme_c = "$Id$";
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
+#include "copyrite.h"
 
 #define DFT_TOL 1e-7
 
@@ -670,7 +671,7 @@ static    splinevec bsp_mod;
 
 void init_pme(FILE *log,t_commrec *cr,
 	      int nkx,int nky,int nkz,int pme_order,int homenr,
-	      bool bOptFFT)
+	      bool bOptFFT,int ewald_geometry)
 {
   int i;
   bool bPar;
@@ -679,6 +680,12 @@ void init_pme(FILE *log,t_commrec *cr,
   fatal_error(0,"PME used, but GROMACS was compiled without FFTW support!\n");
 #endif
   fprintf(log,"Will do PME sum in reciprocal space.\n");
+  please_cite(log,"Essman95a");
+
+  if(ewald_geometry==eewg3DC) {
+    fprintf(log,"Using the Ewald3DC correction for systems with a slab geometry.\n");
+    please_cite(log,"In-Chul99a");
+  }
 
   bPar = cr && (cr->nnodes>1);
   if (bPar) {

@@ -78,6 +78,10 @@ char *eel_names[eelNR+1] = {
   "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", NULL
 };
 
+char *eewg_names[eewgNR+1] = {
+  "3d", "3dc", NULL
+};
+
 char *evdw_names[evdwNR+1] = {
   "Cut-off", "Switch", "Shift", "User", NULL
 };

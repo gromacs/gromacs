@@ -65,6 +65,11 @@ enum {
   eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelNR
 };
 
+/* Ewald geometry */
+enum { 
+  eewg3D, eewg3DC, eewgNR
+};
+
 #define EEL_LR(e) ((e == eelPPPM) || (e == eelPOISSON) || (e ==  eelPME) || (e == eelEWALD))
 
 enum {

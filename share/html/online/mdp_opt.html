@@ -35,7 +35,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
-<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
+<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, surface_epsilon, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
@@ -440,6 +440,23 @@ each direction can be overridden by entering a non-zero value for
 <dd>The relative strength of the Ewald-shifted direct potential at the cutoff
 is given by <b>ewald_rtol</b>. Decreasing this will give a more accurate
 direct sum, but then you need more wave vectors for the reciprocal sum.</dd>
+
+<dt><h4>ewald_geometry: (3d)</h4></dt>
+<dd>The geometry to use for Ewald summations. <b>3d</b> means the sum is performed
+in all three dimensions. If your system has a slab geometry in the x-y plane you can 
+try to increase box z dimension and use the <b>3dc</b> geometry. The reciprocal sum
+is still performed in 3d, but a force and potential correction applied in the z 
+dimension to produce a pseudo-2d summation. In the future there might also be a true
+<b>2d</b> option, but this is not working yet.</dd>
+
+
+<dt><h4>surface_epsilon: (0)</h4></dt>
+<dd>This controls the dipole correction to the Ewald summation in 3d. The
+default value of zero means it is turned off. Turn it on by setting it to the value 
+of the relative permittivity of the imaginary surface around your infinite system. Be
+careful - you shouldn't use this if you have free mobile charges in your system. 
+This value does not affect the slab 3DC variant of the long range corrections.</dd>
+
 
 <dt><h4>optimize_fft:</h4></dt>
 <dd><dl compact>
@@ -891,6 +908,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">energygrps</A><br>
 <A HREF="#el2">epsilon_r</A><br>
 <A HREF="#el2">ewald_rtol</A><br>
+<A HREF="#el2">ewald_geometry</A><br>
+<A HREF="#el2">surface_epsilon</A><br>
 <A HREF="#ef">E_x</A><br>
 <A HREF="#ef">E_xt</A><br>
 <A HREF="#ef">E_y</A><br>

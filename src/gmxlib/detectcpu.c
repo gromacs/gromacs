@@ -79,7 +79,7 @@ static void sigill_handler(int n)
  * but make sure we use the result so it is not optimized away.
  * We use the oppurtunity to set the control register to non-java mode.
  */
-static int check_altivec(void)
+static void check_altivec(void)
 {
 #ifdef __VEC__
   vector unsigned short vsr1,vsr2;
@@ -87,10 +87,6 @@ static int check_altivec(void)
   vsr2=(vector unsigned short)vec_sl(vec_splat_u32(1),vec_splat_u32(16));
   vsr1=vec_or(vsr1,vsr2);
   vec_mtvscr(vsr1);
-  
-  return 1;
-#else
-  return 0;
 #endif
 }
 
@@ -107,13 +103,14 @@ static int detect_altivec(FILE *log)
   /* if we got here, its ppc! */
   cpuflags |= PPC_CPU;
 
+#ifdef __VEC__
   if(log)
     fprintf(log,"\nTesting PPC Altivec support...\n");
   success=1;
   signal(SIGILL,sigill_handler);
   setjmp(mainloop); /* return to this point if we get SIGILL */
   if(success)
-    success=check_altivec();
+    check_altivec();
   
   if(success) {
     cpuflags |= PPC_ALTIVEC_SUPPORT;
@@ -124,6 +121,7 @@ static int detect_altivec(FILE *log)
     if(log)
       fprintf(log,"No Altivec support found.\n");
   }
+#endif
   return cpuflags;
 }
 #endif /* PPC_ALTIVEC */

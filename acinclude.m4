@@ -792,9 +792,11 @@ if test "$GCC" = "yes"; then
     powerpc*)
         # don't use the separate apple cpp on OS X
         ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
-        # And try to add -fvec or -faltivec to get altivec extensions!
-        ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
+        if test "$enable_ppc_altivec" = "yes"; then
+          # And try to add -fvec or -faltivec to get altivec extensions!
+          ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
  	        ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
+        fi
       cputype=`(grep cpu /proc/cpuinfo | head -1 | cut -d: -f2 | sed 's/ //g') 2> /dev/null`
       is60x=`echo $cputype | egrep "^60[0-9]e?$"`
       if test -n "$is60x"; then

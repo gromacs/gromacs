@@ -67,7 +67,7 @@ extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForwar
 
 extern void init_pme(FILE *log,t_commrec *cr,
 		     int nkx,int nky,int nkz,int pme_order,int homenr,
-		     bool bOptFFT);
+		     bool bOptFFT, int ewald_geometry);
 
 /* Routine for spreading something on a grid. Can be misused for non-PME
  * related things. init_pme must be called before this guy.

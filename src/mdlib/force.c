@@ -941,8 +941,8 @@ void force(FILE       *fp,     int        step,
     }
     if(fr->bEwald)
       Vcorr =
-	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,box,
-			   mu_tot,qsum,ir->epsilon_surface,lr_vir);
+	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,box,mu_tot,qsum,
+			   ir->ewald_geometry,ir->epsilon_surface,lr_vir);
     else
       Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,TRUE,box,lr_vir);
     epot[F_LR] = Vlr + Vcorr;
