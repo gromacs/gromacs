@@ -258,7 +258,7 @@ extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 			  rvec x[],rvec vold[],rvec buf[],rvec f[],
 			  rvec v[],t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
-			  t_edsamyn *edyn);
+			  t_edsamyn *edyn,t_pull *pulldata);
 			  
 extern void get_cmparm(t_inputrec *ir,int step,bool *bStopCM,bool *bStopRot);
 /* Determine from the input whether or not to stop center of mass motion */

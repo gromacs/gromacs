@@ -41,6 +41,7 @@ static char *SRCID_update_h = "$Id$";
 #include "tgroup.h"
 #include "network.h"
 #include "force.h"
+#include "pull.h"
 
 extern void update(int          natoms,	/* number of atoms in simulation */
 		   int      	 start,
@@ -68,7 +69,8 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   t_nrnb       *nrnb,
 		   bool         bTYZ,
 		   bool         bDoUpdate,
-		   t_edsamyn    *edyn);
+		   t_edsamyn    *edyn,
+		   t_pull      *pull);
      
 extern void calc_ke_part(bool bFirstStep,int start,int homenr,
 			 rvec vold[],rvec v[],rvec vt[],
