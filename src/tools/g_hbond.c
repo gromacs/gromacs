@@ -60,7 +60,8 @@ char *hxtypenames[NRHXTYPES]=
 {"n-n","n-n+1","n-n+2","n-n+3","n-n+4","n-n+5","n-n>6"};
 
 enum { gr0, gr1, grI, grNR };
-
+#define OGRP (gr1-grp)
+  
 static char *grpnames[grNR] = {"0","1","I" };
 
 #define HB_NO 0
@@ -279,17 +280,21 @@ static void add_acc(t_acceptors *a,int ia)
 }
 
 static t_acceptors *search_acceptors(t_topology *top,int isize, 
-				     atom_id *index,bool bNitAcc)
+				     atom_id *index,bool bNitAcc,
+				     bool bContact,bool bDoIt)
 {
   t_acceptors *a;
   int i;
   
   snew(a,1);
   for (i=0; (i<top->atoms.nr); i++) {
-    if ( ( (*top->atoms.atomname[i])[0] == 'O' || 
-	   ( bNitAcc && ( (*top->atoms.atomname[i])[0] == 'N' ) ) ) &&
-	 in_list(i,isize,index) ) {
-      add_acc(a,i);
+    if (bDoIt) {
+      if ((bContact ||
+	   (((*top->atoms.atomname[i])[0] == 'O') || 
+	    (bNitAcc && ((*top->atoms.atomname[i])[0] == 'N')))) &&
+	  in_list(i,isize,index)) {
+	add_acc(a,i);
+      }
     }
   }
   snew(a->aptr,top->atoms.nr);
@@ -353,7 +358,8 @@ static void add_dh(t_donors *ddd,int id,int ih)
   }
 }
 
-static t_donors *search_donors(t_topology *top, int isize, atom_id *index)
+static t_donors *search_donors(t_topology *top, int isize, atom_id *index,
+			       bool bContact,bool bDoIt)
 {
   int        i,j;
   t_functype func_type;
@@ -364,58 +370,65 @@ static t_donors *search_donors(t_topology *top, int isize, atom_id *index)
   
   snew(ddd,1);
   
-  for(func_type=0; (func_type < F_NRE); func_type++) {
-    interaction=&(top->idef.il[func_type]);
-    for(i=0; i < interaction->nr; 
-	i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
-      /* next function */ 
-      assert(func_type == top->idef.functype[interaction->iatoms[i]]);
-      
-      /* check out this functype */
-      if (func_type == F_SETTLE) {
-	nr1=interaction->iatoms[i+1];
+  if (bContact) {
+    if (bDoIt)
+      for(i=0; (i<isize); i++)
+	add_dh(ddd,index[i],-1);
+  }
+  else {
+    for(func_type=0; (func_type < F_NRE); func_type++) {
+      interaction=&(top->idef.il[func_type]);
+      for(i=0; i < interaction->nr; 
+	  i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
+	/* next function */ 
+	assert(func_type == top->idef.functype[interaction->iatoms[i]]);
 	
-	if (in_list(nr1,  isize,index)) {
-	  if (in_list(nr1+1,isize,index))
-	    add_dh(ddd,nr1,nr1+1);
-	  if (in_list(nr1+2,isize,index))
-	    add_dh(ddd,nr1,nr1+2);
-	}
-      } 
-      else if (IS_CHEMBOND(func_type)) {
-	for (j=0; j<2; j++) {
-	  nr1=interaction->iatoms[i+1+j];
-	  nr2=interaction->iatoms[i+2-j];
-	  if ( ( *top->atoms.atomname[nr1][0] == 'H' ) && 
-	       ( ( *top->atoms.atomname[nr2][0] == 'O' ) ||
-		 ( *top->atoms.atomname[nr2][0] == 'N' )) &&
-	       in_list(nr1,isize,index) && in_list(nr2,isize,index))
-	    add_dh(ddd,nr2,nr1);
+	/* check out this functype */
+	if (func_type == F_SETTLE) {
+	  nr1=interaction->iatoms[i+1];
+	  
+	  if (in_list(nr1,  isize,index)) {
+	    if (in_list(nr1+1,isize,index))
+	      add_dh(ddd,nr1,nr1+1);
+	    if (in_list(nr1+2,isize,index))
+	      add_dh(ddd,nr1,nr1+2);
+	  }
+	} 
+	else if (IS_CHEMBOND(func_type)) {
+	  for (j=0; j<2; j++) {
+	    nr1=interaction->iatoms[i+1+j];
+	    nr2=interaction->iatoms[i+2-j];
+	    if ((*top->atoms.atomname[nr1][0] == 'H') && 
+		((*top->atoms.atomname[nr2][0] == 'O') ||
+		 (*top->atoms.atomname[nr2][0] == 'N')) &&
+		in_list(nr1,isize,index) && in_list(nr2,isize,index))
+	      add_dh(ddd,nr2,nr1);
+	  }
 	}
       }
     }
-  }
-  for(func_type=0; func_type < F_NRE; func_type++) {
-    interaction=&top->idef.il[func_type];
-    for(i=0; i < interaction->nr; 
-	i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
-      /* next function */
-      assert(func_type == top->idef.functype[interaction->iatoms[i]]);
-      
-      if ( interaction_function[func_type].flags & IF_DUMMY ) {
-	nr1=interaction->iatoms[i+1];
-	if ( *top->atoms.atomname[nr1][0]  == 'H') {
-	  nr2=nr1-1;
-	  stop=FALSE;
-	  while (!stop && ( *top->atoms.atomname[nr2][0] == 'H'))
-	    if (nr2)
-	      nr2--;
-	    else
-	      stop=TRUE;
-	  if ( !stop && ( ( *top->atoms.atomname[nr2][0] == 'O') ||
-			  ( *top->atoms.atomname[nr2][0] == 'N') ) &&
-	       in_list(nr1,isize,index) && in_list(nr2,isize,index) )
-	    add_dh(ddd,nr2,nr1);
+    for(func_type=0; func_type < F_NRE; func_type++) {
+      interaction=&top->idef.il[func_type];
+      for(i=0; i < interaction->nr; 
+	  i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
+	/* next function */
+	assert(func_type == top->idef.functype[interaction->iatoms[i]]);
+	
+	if ( interaction_function[func_type].flags & IF_DUMMY ) {
+	  nr1=interaction->iatoms[i+1];
+	  if ( *top->atoms.atomname[nr1][0]  == 'H') {
+	    nr2=nr1-1;
+	    stop=FALSE;
+	    while (!stop && ( *top->atoms.atomname[nr2][0] == 'H'))
+	      if (nr2)
+		nr2--;
+	      else
+		stop=TRUE;
+	    if ( !stop && ( ( *top->atoms.atomname[nr2][0] == 'O') ||
+			    ( *top->atoms.atomname[nr2][0] == 'N') ) &&
+		 in_list(nr1,isize,index) && in_list(nr2,isize,index) )
+	      add_dh(ddd,nr2,nr1);
+	  }
 	}
       }
     }
@@ -689,7 +702,8 @@ static bool low_is_hbond(int d,int a,int h,
 static bool is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 		     real rcut, real ccut, 
 		     rvec x[], bool bBox, matrix box,rvec hbox,
-		     real *d_ha, real *ang,bool bDA,int *hhh)
+		     real *d_ha, real *ang,bool bDA,int *hhh,
+		     bool bContact)
 {
   int  h,hh,id,ja;
   rvec r_da;
@@ -708,6 +722,10 @@ static bool is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
   rc2 = rcut*rcut;
   
   if (d2 < rc2) {
+    if (bContact) {
+      *hhh = -1;
+      return TRUE;
+    }
     if (!bDA)
       d2 = 0;
     
@@ -724,56 +742,65 @@ static bool is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
 static void merge_hb(t_hbdata *hb,bool bTwo)
 {
-  int  i,inew,j,ii,jj,m,id,ia,ia0,id0,grp;
-  bool *bIsD,*bIsA;
+  int  i,inew,j,ii,jj,m,id,ia,ia0,id0,grp,ogrp,itest;
+  int  *gNrD,*gNrA;
   
   inew = hb->nrhb;
     
   /* Check whether donors are also acceptors */
   fprintf(stderr,"Merging hbonds with Acceptor and Donor swapped\n");
-  snew(bIsD,hb->na);
-  snew(bIsA,hb->nd);
+  /* In the two arrays below we store the group number+1 (i.e. either
+   * gr0 or gr1). This is necessary in case we have two groups.
+   */
+  snew(gNrD,hb->na);
+  snew(gNrA,hb->nd);
   ia0 = id0 = 0;
   for(grp=gr0; (grp <= bTwo?gr1:gr0); grp++) {
     for(i=0; (i<hb->d[grp]->nrd); i++) {
       id = hb->d[grp]->d[i];
       ia = hb->a[grp]->aptr[id];
-      bIsA[ia0++] = (ia != NOTSET);
+      gNrA[ia0++] = (ia != NOTSET) ? 1+grp : 0;
     }
     for(i=0; (i<hb->a[grp]->nra); i++) {
       ia = hb->a[grp]->acc[i];
       id = hb->d[grp]->dptr[ia];
-      bIsD[id0++] = (id != NOTSET);
+      gNrD[id0++] = (id != NOTSET) ? 1+grp : 0;
     }
   }
   /* Consistency check */
   if ((ia0 != hb->nd) || (id0 != hb->na))
     fatal_error(0,"Unexepected inconsistency: ia0=%d, na=%d, id0=%d, nd=%d (%s,%d)",ia0,hb->na,id0,hb->nd,__FILE__,__LINE__);
     
-  for(i=0; (i<hb->nd); i++) {
-    if (bIsA[i]) {
-      id = hb->d[gr0]->d[i];
-      ii = hb->a[gr0]->aptr[id];
-      for(j=0; (j<hb->na); j++) {
-	if (bIsD[j]) {
-	  ia = hb->a[gr0]->acc[j];
-	  jj = hb->d[gr0]->dptr[ia];
-	  if (id != ia) {
-	    if (hb->hbmap[i][j].exist[0] && hb->hbmap[jj][ii].exist[0]) {
-	      for(m=0; (m<hb->max_frames/hb->wordlen); m++)
-		hb->hbmap[i][j].exist[0][m] |= hb->hbmap[jj][ii].exist[0][m];
-	      sfree(hb->hbmap[jj][ii].exist[0]);
-	      hb->hbmap[jj][ii].exist[0] = NULL;
-	      inew--;
+  itest = 0;
+  for(grp=gr0; (grp <= bTwo?gr1:gr0); grp++) {
+    ogrp = bTwo ? OGRP : grp;
+    for(i=0; (i<hb->nd); i++) {
+      if (gNrA[i] == (1+grp)) {
+	id = hb->d[grp]->d[i];
+	ii = hb->a[grp]->aptr[id];
+	for(j=0; (j<hb->na); j++) {
+	  if (gNrD[j] == (1+ogrp)) {
+	    ia = hb->a[ogrp]->acc[j];
+	    jj = hb->d[ogrp]->dptr[ia];
+	    if (id != ia) {
+	      if (hb->hbmap[i][j].exist[0] && hb->hbmap[jj][ii].exist[0]) {
+		for(m=0; (m<hb->max_frames/hb->wordlen); m++)
+		  hb->hbmap[i][j].exist[0][m] |= hb->hbmap[jj][ii].exist[0][m];
+		sfree(hb->hbmap[jj][ii].exist[0]);
+		hb->hbmap[jj][ii].exist[0] = NULL;
+		inew--;
+	      }
+	      itest++;
 	    }
 	  }
 	}
       }
     }
   }
-  sfree(bIsD);
-  sfree(bIsA);
+  sfree(gNrD);
+  sfree(gNrA);
   fprintf(stderr,"Reduced number of hbonds from %d to %d\n",hb->nrhb,inew);
+  fprintf(stderr,"tested %d pairs\n",itest);
   hb->nrhb = inew;
 }
 
@@ -976,6 +1003,7 @@ int gmx_hbond(int argc,char *argv[])
   
   static real acut=30, abin=1, rcut=0.35, rbin=0.005, rshell=-1,maxnhb=0;
   static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE,bDump=FALSE,bMerge=TRUE;
+  static bool bContact=FALSE;
   /* options */
   t_pargs pa [] = {
     { "-ins",  FALSE,  etBOOL, {&bInsert},
@@ -992,6 +1020,8 @@ int gmx_hbond(int argc,char *argv[])
       "Binwidth distance distribution (nm)" },
     { "-nitacc",FALSE, etBOOL, {&bNitAcc},
       "Regard nitrogen atoms as acceptors" },
+    { "-contact",FALSE,etBOOL, {&bContact},
+      "Do not look for hydrogen bonds, but merely for contacts within the cut-off distance" },
     { "-shell", FALSE, etREAL, {&rshell},
       "when > 0, only calculate hydrogen bonds within # nm shell around "
       "one particle" },
@@ -1019,10 +1049,6 @@ int gmx_hbond(int argc,char *argv[])
     { efXVG, "-dan",  "danum",  ffOPTWR }
   };
 #define NFILE asize(fnm)
-  
-#define NRGRPS 3
-#define OGRP (gr1-grp)
-#define INSGRP 2
   
   char  hbmap [HB_NR]={ ' ',    'o',      '-',       '*' };
   char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
@@ -1058,19 +1084,26 @@ int gmx_hbond(int argc,char *argv[])
 
   /* process input */
   bSelected = opt2bSet("-sel",NFILE,fnm);
-  ccut   = cos(acut*DEG2RAD);
+  ccut = cos(acut*DEG2RAD);
+  
+  if (bContact) {
+    if (bSelected)
+      fatal_error(0,"Can not analyze selected contacts: turn off -sel");
+    if (bInsert)
+      fatal_error(0,"Can not analyze inserted contacts: turn off -ins");
+  }
   
   /* Initiate main data structure! */
-  hb     = mk_hbdata(opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm),
-		     opt2bSet("-da",NFILE,fnm),bMerge);
+  hb = mk_hbdata(opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm),
+		 opt2bSet("-da",NFILE,fnm),bMerge);
   
   /* get topology */
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&i,&t,&t,
 	   &ir,box,&natoms,NULL,NULL,NULL,&top);
   
-  snew(grpnames,NRGRPS);
-  snew(index,NRGRPS);
-  snew(isize,NRGRPS);
+  snew(grpnames,grNR);
+  snew(index,grNR);
+  snew(isize,grNR);
   if (bSelected) {
     /* analyze selected hydrogen bonds */
     fprintf(stderr,"Select group with selected atoms:\n");
@@ -1114,10 +1147,12 @@ int gmx_hbond(int argc,char *argv[])
 	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
 			grpnames[0],grpnames[1]);
     }
+    if (bContact && !bTwo)
+      fatal_error(0,"I need two different groups for a contact analysis");
     if (bTwo)
-      fprintf(stderr,"Calculating hydrogen bonds "
+      fprintf(stderr,"Calculating %s "
 	      "between two groups of %d and %d atoms\n",
-	      isize[0],isize[1]);
+	      bContact ? "contacts" : "hydrogen bonds",isize[0],isize[1]);
     else
       fprintf(stderr,"Calculating hydrogen bonds in one group of %d atoms\n",
 	      isize[0]);
@@ -1125,14 +1160,14 @@ int gmx_hbond(int argc,char *argv[])
   if (bInsert) {
     fprintf(stderr,"Specify group for insertion analysis:\n");
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	      1,&(isize[INSGRP]),&(index[INSGRP]),&(grpnames[INSGRP]));
+	      1,&(isize[grI]),&(index[grI]),&(grpnames[grI]));
     fprintf(stderr,"Checking for overlap...\n");
-    for (i=0; i<isize[INSGRP]; i++)
+    for (i=0; i<isize[grI]; i++)
       for (grp=0; grp<(bTwo?2:1); grp++)
 	for (j=0; j<isize[grp]; j++)
-	  if (index[INSGRP][i] == index[grp][j]) 
+	  if (index[grI][i] == index[grp][j]) 
 	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
-			grpnames[grp],grpnames[INSGRP]);
+			grpnames[grp],grpnames[grI]);
     fpins=ffopen("insert.dat","w");
     fprintf(fpins,"%4s: %15s -> %15s (%7s) - %15s (%7s)\n",
 	    "time","insert","donor","distang","acceptor","distang");
@@ -1143,9 +1178,16 @@ int gmx_hbond(int argc,char *argv[])
     if ( ((i==gr0) && !bSelected ) ||
 	 ((i==gr1) && bTwo ) ||
 	 ((i==grI) && bInsert ) ) {
-      hb->a[i] = search_acceptors(&top,isize[i],index[i],bNitAcc);
-      hb->d[i] = search_donors   (&top,isize[i],index[i]);
-      
+      if (bContact) {
+	hb->a[i] = search_acceptors(&top,isize[i],index[i],bNitAcc,
+				    TRUE,(i==gr0));
+	hb->d[i] = search_donors   (&top,isize[i],index[i],
+				    TRUE,(i==gr1));
+      }
+      else {
+	hb->a[i] = search_acceptors(&top,isize[i],index[i],bNitAcc,FALSE,TRUE);
+	hb->d[i] = search_donors   (&top,isize[i],index[i],FALSE,TRUE);
+      }
       fprintf(stderr,"Found %d donors and %d acceptors in group '%s'\n",
 	      hb->d[i]->nrd,hb->a[i]->nra,grpnames[i]);
     }
@@ -1260,10 +1302,10 @@ int gmx_hbond(int argc,char *argv[])
 		for (aj=0; (aj<jcell->nr); aj++) {
 		  j = jcell->atoms[aj];
 		  
-		  if ( (bSelected && (j == i)) || (!bSelected) ) {
+		  if ((bSelected && (j == i)) || (!bSelected)) {
 		    /* check if this once was a h-bond */
-		    if ( is_hbond(hb,grp,OGRP,i,j,rcut,ccut,x,
-				  bBox,box,hbox,&dist,&ang,bDA,&h) ) {
+		    if (is_hbond(hb,grp,OGRP,i,j,rcut,ccut,x,
+				 bBox,box,hbox,&dist,&ang,bDA,&h,bContact)) {
 		      /* add to index if not already there */
 		      /* Add a hbond */
 		      add_hbond(hb,i,j,h,grp,OGRP,nframes,FALSE,bMerge);
@@ -1301,7 +1343,8 @@ int gmx_hbond(int argc,char *argv[])
 			for (ak=0; (ak<kcell->nr); ak++) {
 			  k=kcell->atoms[ak];
 			  if (is_hbond(hb,grp,grI,i,k,rcut,ccut,x,
-				       bBox,box,hbox,&dist,&ang,bDA,&h) ) {
+				       bBox,box,hbox,&dist,&ang,bDA,&h,
+				       bContact)) {
 			    if (dist < ins_d_dist) {
 			      ins_d=TRUE;
 			      ins_d_dist=dist;
@@ -1320,7 +1363,8 @@ int gmx_hbond(int argc,char *argv[])
 			for (ak=0; ak<kcell->nr; ak++) {
 			  k=kcell->atoms[ak];
 			  if (is_hbond(hb,grI,OGRP,k,j,rcut,ccut,x,
-				       bBox,box,hbox,&dist,&ang,bDA,&h) ) {
+				       bBox,box,hbox,&dist,&ang,bDA,&h,
+				       bContact) ) {
 			    if (dist<ins_a_dist) {
 			      ins_a=TRUE;
 			      ins_a_dist=dist;
@@ -1335,7 +1379,8 @@ int gmx_hbond(int argc,char *argv[])
 		      {
 			if (ins_d && ins_a && 
 			    is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,ccut,x,
-				     bBox,box,hbox,&dist,&ang,bDA,&h)) {
+				     bBox,box,hbox,&dist,&ang,bDA,&h,
+				     bContact)) {
 			  /* add to hbond index if not already there */
 			  add_hbond(hb,ins_d_k,ins_a_k,h,grI,OGRP,
 				    nframes,TRUE,bMerge);
@@ -1388,7 +1433,8 @@ int gmx_hbond(int argc,char *argv[])
       merge_hb(hb,bTwo);
 
     aver_nhb = 0;    
-    fp = xvgropen(opt2fn("-num",NFILE,fnm),"Hydrogen Bonds","Time","Number");
+    fp = xvgropen(opt2fn("-num",NFILE,fnm),bContact ? "Contacts" :
+		  "Hydrogen Bonds","Time","Number");
     for(i=0; (i<nframes); i++) {
       fprintf(fp,"%10g %10d\n",hb->time[i],hb->nhb[i]);
       aver_nhb += hb->nhb[i];
