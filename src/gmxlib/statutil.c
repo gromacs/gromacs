@@ -392,8 +392,12 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   npall = add_parg(npall,&(all_pa),&fpe_pa);
 #endif
 #ifndef NO_NICE
-  if (FF(PCA_SET_NPRI))
-    npri=atoi(getenv("GMXNPRI"));
+  if (FF(PCA_SET_NPRI)) {
+    char *envstr;
+    envstr = getenv("GMXNPRI");
+    if (envstr)
+      npri=atoi(envstr);
+  }
   if (bGUI) {
     if (npri)
       npri_paX.u.c = npristr;
