@@ -154,8 +154,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
     CHECK(ir->compress[XX]+ir->compress[YY]+ir->compress[ZZ] <= 0);
     
-    sprintf(err_buf,"pressure coupling with PPPM not implemented");
+    sprintf(err_buf,"pressure coupling with PPPM not implemented, use PME");
     CHECK(ir->coulombtype == eelPPPM);
+  } else if (ir->coulombtype == eelPPPM) {
+    sprintf(warn_buf,"The pressure with PPPM is incorrect, if you need the pressure use PME");
+    warning(NULL);
   }
   
   /* ELECTROSTATICS */
