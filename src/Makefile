@@ -1,6 +1,8 @@
 #
 # Gromacs Makefile $Id$
 #
+include		$(GMXHOME)/src/makef/Makefile.def
+#
 DIRS	=	gmxlib 	kernel	tools	ngmx	include
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
@@ -8,6 +10,7 @@ TELLDIRS=	$(LDIRS)
 DDDIRS	=	$(DIRS)	Makefile makef
 FILES   =	NOGMX
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
+DIST	=	$(foreach DIR,$(DDDIRS),src/$(DIR))
 AUX	=	top tutor
 DIST	=	$(FILES) $(foreach DIR,$(DDDIRS),src/$(DIR)) $(AUX)
 BENCH	=	tests/bench
@@ -19,7 +22,7 @@ TARFLG  =	--exclude=CVS
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
-all:	
+all:	dirs
 	$(foreach DIR,$(DIRS),cd $(DIR); $(MAKE); cd ..;)
 
 it:	
@@ -43,6 +46,11 @@ tdist:
 
 dist:	cdist	bdist	tdist
 
+
+# rule to make dirs where binaries and libary go:
+dirs:
+	\mkdir -p $(GMXBIN) $(LIBDIR); 
+
 man:
 	./mknroff
 
@@ -54,5 +62,10 @@ clean:
 	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) clean; cd ..;)
 
 copyrgt:
-	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); $(COPYRGT) *.c; $(COPYRGT) *.h; $(COPYRGT) *.cc; cd $(GMXHOME)/src;)
+	$(foreach DIR,$(TELLDIRS),echo $(DIR); cd $(DIR); sccs edit SCCS; $(COPYRGT) *.c; $(COPYRGT) *.h; $(COPYRGT) *.cc; sccs delget -y'Edited by copyrgt' SCCS ; cd $(GMXHOME)/src;)
 
+oclean: 
+	$(foreach dir,$(DIRS),cd $(dir); mkdir $(CPU).o ; mv *.o $(CPU).o ; cd ..;)
+
+oget:   
+	$(foreach dir,$(DIRS),cd $(dir); mv $(CPU).o/*.o . ; cd ..;)
