@@ -415,8 +415,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       ylabel[v]=strdup(str);
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
-    sprintf(str2, "Time (%s)", time_label());
-    write_xvgr_graphs(projfile, noutvec, str, str2,
+    write_xvgr_graphs(projfile, noutvec, str, xvgr_tlabel(),
 		      ylabel, nframes, inprod[noutvec], inprod,
 		      time_factor(), FALSE, bSplit);
   }
@@ -813,7 +812,7 @@ int main(int argc,char *argv[])
 
   snew(sqrtm,natoms);
   if (bM && bDMA1) {
-    proj_unit="amu\\S1/2\\Nnm";
+    proj_unit="u\\S1/2\\Nnm";
     for(i=0; (i<natoms); i++)
       sqrtm[i]=sqrt(atoms->atom[index[i]].m);
   } else {

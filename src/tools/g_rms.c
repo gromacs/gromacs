@@ -152,7 +152,7 @@ int main (int argc,char *argv[])
       "HIDDENAverage over this distance in the RMSD matrix" }
   };
   int        step,nre,natoms,natoms2;
-  int        i,j,k,m,n,teller,teller2,tel_mat,tel_mat2;
+  int        i,j,k,m,teller,teller2,tel_mat,tel_mat2;
 #define NFRAME 5000
   int        maxframe=NFRAME,maxframe2=NFRAME;
   real       t,lambda,*w_rls,*w_rms,tmas,*w_rls_m=NULL,*w_rms_m=NULL;
@@ -165,7 +165,7 @@ int main (int argc,char *argv[])
   rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,**mat_b=NULL,
              **mat_b2=NULL,vec;
   int        status;
-  char       buf[256],buf2[256],timelabel[256];
+  char       buf[256],buf2[256];
   
   int        nrms,ncons=0;
   FILE       *fp;
@@ -251,8 +251,6 @@ int main (int argc,char *argv[])
   /*set box type*/
   init_pbc(box,FALSE);
 
-  sprintf(timelabel, "Time (%s)", time_label());
-  
   if (bFit)
     fprintf(stderr,"Select group for least squares fit\n");
   else
@@ -279,7 +277,8 @@ int main (int argc,char *argv[])
   snew(ind_rms,nrms);
   snew(irms,nrms);
   
-  fprintf(stderr,"Select group%s for comparison\n",(nrms>1) ? "s" : "");
+  fprintf(stderr,"Select group%s for %s\n",
+	  (nrms>1) ? "s" : "",whatname[ewhat]);
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    nrms,irms,ind_rms,gn_rms);
   
@@ -528,8 +527,8 @@ int main (int argc,char *argv[])
     /* calculate RMS matrix */
     fprintf(stderr,"\n");
     if (bMat) {
-      fprintf(stderr,"Building comparison matrix, %dx%d elements\n",
-	      tel_mat,tel_mat2);
+      fprintf(stderr,"Building %s matrix, %dx%d elements\n",
+	      whatname[ewhat],tel_mat,tel_mat2);
       snew(rmsd_mat,tel_mat);
     }
     if (bBond) {
@@ -539,11 +538,13 @@ int main (int argc,char *argv[])
     }
     snew(axis,tel_mat);
     snew(axis2,tel_mat2);
-    rmsd_max=0.0;
-    rmsd_min=1e10;
-    rmsd_avg=0.0;
-    n=0;
-    bond_max=0.0;
+    rmsd_max=0;
+    if (bFile2)
+      rmsd_min=1e10;
+    else
+      rmsd_min=0;
+    rmsd_avg=0;
+    bond_max=0;
     bond_min=1e10;
     for(j=0; j<tel_mat2; j++)
       axis2[j]=time2[freq2*j];
@@ -581,16 +582,14 @@ int main (int argc,char *argv[])
 	} else
 	  mat_x2_j=mat_x2[j];
 	if (bMat) {
-	  if (bFile2 || (i<=j)) {
+	  if (bFile2 || (i<j)) {
 	    rmsd_mat[i][j] =
 	      calc_similar_ind(ewhat!=ewRMSD,irms[0],ind_rms_m,
 			       w_rms_m,mat_x[i],mat_x2_j);
 	    if (rmsd_mat[i][j] > rmsd_max) rmsd_max=rmsd_mat[i][j];
 	    if (rmsd_mat[i][j] < rmsd_min) rmsd_min=rmsd_mat[i][j];
 	    rmsd_avg += rmsd_mat[i][j];
-	    n++;
-	  }
-	  else
+	  } else
 	    rmsd_mat[i][j]=rmsd_mat[j][i];
 	}
 	if (bBond) {
@@ -610,7 +609,7 @@ int main (int argc,char *argv[])
 	}
       }
     }
-    rmsd_avg/=n;
+    rmsd_avg /= tel_mat*tel_mat2;
     if (bMat && (avl > 0)) {
       rmsd_max=0.0;
       rmsd_min=0.0;
@@ -640,8 +639,8 @@ int main (int argc,char *argv[])
     }
 
     if (bMat) {
-      fprintf(stderr,"\nMin. value: %f, Max. value: %f, Avg. value: %f\n",
-	      rmsd_min,rmsd_max,rmsd_avg);
+      fprintf(stderr,"\n%s: Min %f, Max %f, Avg %f\n",
+	      whatname[ewhat],rmsd_min,rmsd_max,rmsd_avg);
       rlo.r = 1; rlo.g = 1; rlo.b = 1;
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       if (rmsd_user_max != -1) rmsd_max=rmsd_user_max;
@@ -651,7 +650,7 @@ int main (int argc,char *argv[])
 		rmsd_min,rmsd_max);
       sprintf(buf,"%s %s matrix",gn_rms[0],whatname[ewhat]);
       write_xpm(opt2FILE("-m",NFILE,fnm,"w"),buf,whatlabel[ewhat],
-		timelabel,timelabel,tel_mat,tel_mat2,axis,axis2,
+		time_label(),time_label(),tel_mat,tel_mat2,axis,axis2,
 		rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
       if (opt2bSet("-dist",NFILE,fnm)) 
@@ -692,7 +691,7 @@ int main (int argc,char *argv[])
 	  del_yaxis[i]=delta_maxy*i/del_lev;
 	sprintf(buf,"%s %s vs. delta t",gn_rms[0],whatname[ewhat]);
 	fp = ffopen("delta.xpm","w");
-	write_xpm(fp,buf,"density",timelabel,whatlabel[ewhat],
+	write_xpm(fp,buf,"density",time_label(),whatlabel[ewhat],
 		  delta_xsize,del_lev+1,del_xaxis,del_yaxis,
 		  delta,0.0,delta_max,rlo,rhi,&nlevels);
 	fclose(fp);
@@ -715,7 +714,7 @@ int main (int argc,char *argv[])
       rhi.r = 0; rhi.g = 0; rhi.b = 0;
       sprintf(buf,"%s av. bond angle deviation",gn_rms[0]);
       write_xpm(opt2FILE("-bm",NFILE,fnm,"w"),buf,"degrees",
-		timelabel,timelabel,tel_mat,tel_mat2,axis,axis2,
+		time_label(),time_label(),tel_mat,tel_mat2,axis,axis2,
 		bond_mat,bond_min,bond_max,rlo,rhi,&nlevels);
     }
   }
@@ -728,7 +727,7 @@ int main (int argc,char *argv[])
   else
     sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
 	    time[prev*freq]-time[0], time_label());
-  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,timelabel,whatxvglabel[ewhat]);
+  fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,xvgr_tlabel(),whatxvglabel[ewhat]);
   if (nrms == 1)
     fprintf(fp,"@ subtitle \"of %s after lsq fit to %s\"\n",gn_rms[0],gn_fit);
   else {
@@ -751,7 +750,7 @@ int main (int argc,char *argv[])
     /* Write the mirror RMSD's to file */
     sprintf(buf,"%s with Mirror",whatxvgname[ewhat]);
     sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
-    fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, timelabel, buf2);
+    fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, xvgr_tlabel(), buf2);
     if (nrms == 1)
       fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
 	      gn_rms[0],gn_fit);

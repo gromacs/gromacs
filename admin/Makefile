@@ -63,7 +63,7 @@ host_alias = @host_alias@
 host_triplet = i686-pc-linux-gnu
 AMTAR = ${SHELL} /tmp_mnt/etc/gromacs/cvs/gmx/config/missing --run tar
 AS = cc
-ASFLAGS =  -x assembler-with-cpp -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -malign-double
+ASFLAGS = -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -x assembler-with-cpp
 AWK = gawk
 CC = cc
 CC_FOR_BUILD = cc
@@ -104,7 +104,7 @@ install_sh = config/install-sh
 
 EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff  mktex 
 
-EXTRA_DIST = gromacs.spec  gromacs-mpi.spec  programs.txt $(EXTRA_SCRIPTS)
+EXTRA_DIST = gromacs.spec  gromacs-mpi.spec  programs.txt README.patches $(EXTRA_SCRIPTS)
 subdir = admin
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/config.h

@@ -256,7 +256,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   if (MASTER(cr)) { 
     /* Print to the screen  */
-    start_t=print_date_and_time(log,cr->nodeid,"Started EM"); 
     sprintf(sbuf,"%s\n   Tolerance         = %12.5g\n",SD,ftol); 
     fprintf(stderr,sbuf);
     fprintf(log,sbuf);
@@ -464,7 +463,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     fprintf(stderr,"Maximum force: %12.5e\n",Fmax[Min]); 
     if (bDone)
-      sprintf(sbuf,"\n%s converged to %g\n",SD,ftol); 
+      sprintf(sbuf,"\n%s converged to %g in %d steps\n",SD,ftol,count); 
     else 
       sprintf(sbuf,"\n%s did not converge in %d steps\n",SD,min(count,nsteps));
     fprintf(stderr,sbuf);
