@@ -121,8 +121,8 @@ void write_pdbfile_indexed(FILE *out,char *title,
       pdbform=pdbformat4;
     else
       pdbform=pdbformat;
-    fprintf(out,pdbform,pdbtp[type],i+1,nm,resnm,ch,resnr,
-	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
+    fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
+    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
   }
   
   fprintf(out,"TER\n");
