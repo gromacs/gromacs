@@ -84,7 +84,7 @@
  * binary you are running. This is only used by grompp and other programs
  * that create/edit topologies.
  */
-#define GMXLIBDIR "C:\\program\\gromacs\\share\\top"
+#define GMXLIBDIR "C:\\program files\\gromacs\\share\\top"
 
 /* Windows doesnt have SIGUSR, so we use SIGBREAK instead */
 #define SIGUSR1 SIGBREAK
