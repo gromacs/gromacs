@@ -721,7 +721,7 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
 	    if(debug)fprintf(debug," D-AI");
 	  }
 	}
-	if (!bRemove)
+	if (!bRemove) {
 	  if (ndum==1) {
 	    /* if this is the first dummy we encounter then
 	       store construction atoms */
@@ -729,7 +729,7 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
 	    for(m=0; (m<dumnral); m++)
 	      dumatoms[m]=
 		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
-	  } else 
+	  } else {
 	    /* if it is not the first then
 	       check if this dummy is constructed from the same atoms */
 	    if (dumnral == NRAL(pindex[atom].ftype)-1 )
@@ -749,6 +749,8 @@ static void clean_dum_bonds(t_params *plist, t_pindex pindex[],
 	      bKeep=TRUE;
 	      if(debug)fprintf(debug," !same#at");
 	    }
+	  }
+	}
       }
     }
     
@@ -1011,7 +1013,8 @@ void clean_dum_bondeds(t_params *plist, int natoms, bool bRmDumBds)
   int i,k,ndum,ftype,parnr;
   int *dummy_type;
   t_pindex *pindex;
-  
+
+  pindex=0; /* avoid warnings */
   /* make dummy_type array */
   snew(dummy_type,natoms);
   for(i=0; i<natoms; i++)
@@ -1050,13 +1053,14 @@ void clean_dum_bondeds(t_params *plist, int natoms, bool bRmDumBds)
     /* remove things with dummy atoms */
     for(ftype=0; ftype<F_NRE; ftype++)
       if ( ( ( interaction_function[ftype].flags & IF_BOND ) && bRmDumBds ) ||
-	   ( interaction_function[ftype].flags & IF_CONSTRAINT ) )
+	   ( interaction_function[ftype].flags & IF_CONSTRAINT ) ) {
 	if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT) )
 	  clean_dum_bonds (plist, pindex, ftype, dummy_type);
 	else if (interaction_function[ftype].flags & IF_ATYPE)
 	  clean_dum_angles(plist, pindex, ftype, dummy_type);
 	else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
 	  clean_dum_dihs  (plist, pindex, ftype, dummy_type);
+      }
     /* check if we have constraints left with dummy atoms in them */
     for(ftype=0; ftype<F_NRE; ftype++)
       if (interaction_function[ftype].flags & IF_CONSTRAINT)
