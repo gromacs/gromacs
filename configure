@@ -6113,7 +6113,6 @@ if test "$enable_hide_table_latency" = "yes"; then
 EOF
 
 fi
-echo "ENVSTUFF: ---$with_mpi_environment---"
 
 if test "$with_mpi_environment" != "no" -a "$enable_mpi" = "yes"; then
 	cat >> confdefs.h <<EOF
@@ -6492,7 +6491,7 @@ if test $ac_cv_prog_gcc = yes; then
   
 
 echo $ac_n "checking whether $CC accepts -malign-double""... $ac_c" 1>&6
-echo "configure:6496: checking whether $CC accepts -malign-double" >&5
+echo "configure:6495: checking whether $CC accepts -malign-double" >&5
 if eval "test \"`echo '$''{'ac_align_double'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6539,7 +6538,7 @@ if test "$GCC" = "yes"; then
 	
 
 echo $ac_n "checking whether $CC accepts -mcpu=$cputype""... $ac_c" 1>&6
-echo "configure:6543: checking whether $CC accepts -mcpu=$cputype" >&5
+echo "configure:6542: checking whether $CC accepts -mcpu=$cputype" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_60x'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6566,7 +6565,7 @@ fi
         
 
 echo $ac_n "checking whether $CC accepts -mcpu=750""... $ac_c" 1>&6
-echo "configure:6570: checking whether $CC accepts -mcpu=750" >&5
+echo "configure:6569: checking whether $CC accepts -mcpu=750" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_750'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6594,7 +6593,7 @@ fi
         
 
 echo $ac_n "checking whether $CC accepts -mcpu=powerpc""... $ac_c" 1>&6
-echo "configure:6598: checking whether $CC accepts -mcpu=powerpc" >&5
+echo "configure:6597: checking whether $CC accepts -mcpu=powerpc" >&5
 if eval "test \"`echo '$''{'ac_m_cpu_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6622,7 +6621,7 @@ fi
 	
 
 echo $ac_n "checking whether $CC accepts -mpowerpc""... $ac_c" 1>&6
-echo "configure:6626: checking whether $CC accepts -mpowerpc" >&5
+echo "configure:6625: checking whether $CC accepts -mpowerpc" >&5
 if eval "test \"`echo '$''{'ac_m_powerpc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6674,7 +6673,7 @@ if test "$ac_test_CFLAGS" != "set"; then
   
 
 echo $ac_n "checking whether $CC accepts ${CFLAGS}""... $ac_c" 1>&6
-echo "configure:6678: checking whether $CC accepts ${CFLAGS}" >&5
+echo "configure:6677: checking whether $CC accepts ${CFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_cflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6724,7 +6723,7 @@ if test "$enable_fortran" = "yes"; then
     
 
 echo $ac_n "checking whether $F77 accepts ${FFLAGS}""... $ac_c" 1>&6
-echo "configure:6728: checking whether $F77 accepts ${FFLAGS}" >&5
+echo "configure:6727: checking whether $F77 accepts ${FFLAGS}" >&5
 if eval "test \"`echo '$''{'ac_guessed_fflags'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
