@@ -8,8 +8,8 @@
 #
 Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
-Version: 3.0
-Release: 1
+Version: 3.0.2
+Release: 2
 Copyright: GPL
 Group: Applications/Science
 Prefix: /usr/local
@@ -39,7 +39,7 @@ gromacs-lammpi.
 Summary: Header files and static libraries for GROMACS
 Group: Applications/Science
 Prefix: %{prefix}
-Requires: fftw-devel >= 2.1.3, gromacs = 3.0-1
+Requires: fftw-devel >= 2.1.3, gromacs = %{version}-%{release}
 %description devel
 This package contains header files, static libraries,
 and a program example for the GROMACS molecular
@@ -62,9 +62,6 @@ make
 
 %install
 make DESTDIR=${RPM_BUILD_ROOT} install
-# Move mdrun to mdrun_nompi - we make a link at post-install script time!
-# If we don't do this we'd get a conflict with the gromacs-mpi package.
-(cd ${RPM_BUILD_ROOT}%{prefix}/bin && mv mdrun mdrun_nompi)
 
 %clean
 rm -rf ${RPM_BUILD_ROOT}
@@ -76,9 +73,6 @@ rm -rf ${RPM_BUILD_ROOT}
 if test -z `grep ${RPM_INSTALL_PREFIX}/lib  /etc/ld.so.conf`; then
      cat >> /etc/ld.so.conf < ${RPM_INSTALL_PREFIX}/lib
 fi
-# Make a link from mdrun_nompi to mdrun - if it doesn't already exist!
-(cd ${RPM_INSTALL_PREFIX}/bin && test ! -e mdrun && ln -s mdrun_nompi mdrun)
-
 # run ldconfig to update the runtime linker database with the new libraries
 # (make sure /sbin is in the $PATH)
 PATH="/sbin:$PATH" ldconfig
@@ -86,8 +80,6 @@ PATH="/sbin:$PATH" ldconfig
 %postun
 # after uninstall, run ldconfig to remove the libs from the linker database
 PATH="/sbin:$PATH" ldconfig
-# and remove the link from mdrun_nompi to mdrun
-(cd ${RPM_INSTALL_PREFIX}/bin && rm -f mdrun)
 
 %files
 %defattr(-,root,root)
