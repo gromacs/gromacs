@@ -1,0 +1,12 @@
+#define _FF_AMBER
+; Amber forcefield converted to Gromacs
+; from file /usr/slocal/amber6/dat/parm98.dat
+; 
+; PARM94 for DNA, RNA and proteins with TIP3P Water. USE SCEE=1.2 in energy progs
+
+[ defaults ]
+;   nbfunc  comb-rule  gen-pairs    fudgeLJ    fudgeQQ
+         1          2         no          1          1
+
+#include "ffambernb.itp"
+#include "ffamberbon.itp"

@@ -1,0 +1,7 @@
+6
+ffgmx	Gromacs Forcefield (see manual)
+ffgmx2	Gromacs Forcefield with all hydrogens (proteins only)
+ffG43a1 GROMOS96 43a1 Forcefield (official distribution)
+ffG43b1 GROMOS96 43b1 Vacuum Forcefield (official distribution)
+ffG43a2 GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)
+ffamber Amber94 Forcefield

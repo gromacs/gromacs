@@ -1,0 +1,3881 @@
+; Amber forcefield converted to Gromacs
+; 
+; from file /usr/slocal/amber6/dat/all_amino94.in
+; 
+; reading database: All-atom
+; 
+; ALANINE 
+; 
+[ ALA ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.034     2 ; -0.1101
+   HA    H1    0.082     3 ; -0.0278
+   CB    CT   -0.182     4 ; -0.2103
+  HB1    HC    0.060     5 ; -0.15
+  HB2    HC    0.060     6 ; -0.0897
+  HB3    HC    0.060     7 ; -0.0294
+    C     C    0.597     8 ; 0.5679
+    O     O   -0.568     9 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB   HB3
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue ALA: 10 atoms, 10 bonds, 10 pdihs, 2 idihs
+
+; GLYCINE 
+; 
+[ GLY ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.025     2 ; -0.169
+  HA1    H1    0.070     3 ; -0.0992
+  HA2    H1    0.070     4 ; -0.0294
+    C     C    0.597     5 ; 0.5679
+    O     O   -0.568     6 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA   HA1
+   CA   HA2
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue GLY: 7 atoms, 7 bonds, 7 pdihs, 2 idihs
+
+; SERINE 
+; 
+[ SER ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.025     2 ; -0.1687
+   HA    H1    0.084     3 ; -0.0844
+   CB    CT    0.212     4 ; 0.1273
+  HB1    H1    0.035     5 ; 0.1625
+  HB2    H1    0.035     6 ; 0.1977
+   OG    OH   -0.655     7 ; -0.4569
+   HG    HO    0.427     8 ; -0.0294
+    C     C    0.597     9 ; 0.5679
+    O     O   -0.568    10 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    OG
+   OG    HG
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue SER: 11 atoms, 11 bonds, 11 pdihs, 2 idihs
+
+; THREONINE 
+; 
+[ THR ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.039     2 ; -0.1827
+   HA    H1    0.101     3 ; -0.082
+   CB    CT    0.365     4 ; 0.2834
+   HB    H1    0.004     5 ; 0.2877
+  CG2    CT   -0.244     6 ; 0.0439
+ HG21    HC    0.064     7 ; 0.1081
+ HG22    HC    0.064     8 ; 0.1723
+ HG23    HC    0.064     9 ; 0.2365
+  OG1    OH   -0.676    10 ; -0.4396
+  HG1    HO    0.410    11 ; -0.0294
+    C     C    0.597    12 ; 0.5679
+    O     O   -0.568    13 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CB   OG1
+  OG1   HG1
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue THR: 14 atoms, 14 bonds, 14 pdihs, 2 idihs
+
+; LEUCINE 
+; 
+[ LEU ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.052     2 ; -0.1956
+   HA    H1    0.092     3 ; -0.1034
+   CB    CT   -0.110     4 ; -0.2136
+  HB1    HC    0.046     5 ; -0.1679
+  HB2    HC    0.046     6 ; -0.1222
+   CG    CT    0.353     7 ; 0.2309
+   HG    HC   -0.036     8 ; 0.1948
+  CD1    CT   -0.412     9 ; -0.2173
+ HD11    HC    0.100    10 ; -0.1173
+ HD12    HC    0.100    11 ; -0.0173
+ HD13    HC    0.100    12 ; 0.0827
+  CD2    CT   -0.412    13 ; -0.3294
+ HD21    HC    0.100    14 ; -0.2294
+ HD22    HC    0.100    15 ; -0.1294
+ HD23    HC    0.100    16 ; -0.0294
+    C     C    0.597    17 ; 0.5679
+    O     O   -0.568    18 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG    HG
+   CG   CD1
+  CD1  HD11
+  CD1  HD12
+  CD1  HD13
+   CG   CD2
+  CD2  HD21
+  CD2  HD22
+  CD2  HD23
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue LEU: 19 atoms, 19 bonds, 19 pdihs, 2 idihs
+
+; ISOLEUCINE 
+; 
+[ ILE ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.060     2 ; -0.2035
+   HA    H1    0.087     3 ; -0.1166
+   CB    CT    0.130     4 ; 0.0137
+   HB    HC    0.019     5 ; 0.0324
+  CG2    CT   -0.320     6 ; -0.288
+ HG21    HC    0.088     7 ; -0.1998
+ HG22    HC    0.088     8 ; -0.1116
+ HG23    HC    0.088     9 ; -0.0234
+  CG1    CT   -0.043    10 ; -0.0664
+ HG11    HC    0.024    11 ; -0.0428
+ HG12    HC    0.024    12 ; -0.0192
+  CD1    CT   -0.066    13 ; -0.0852
+ HD11    HC    0.019    14 ; -0.0666
+ HD12    HC    0.019    15 ; -0.048
+ HD13    HC    0.019    16 ; -0.0294
+    C     C    0.597    17 ; 0.5679
+    O     O   -0.568    18 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CB   CG1
+  CG1  HG11
+  CG1  HG12
+  CG1   CD1
+  CD1  HD11
+  CD1  HD12
+  CD1  HD13
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue ILE: 19 atoms, 19 bonds, 19 pdihs, 2 idihs
+
+; VALINE 
+; 
+[ VAL ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.087     2 ; -0.2313
+   HA    H1    0.097     3 ; -0.1344
+   CB    CT    0.298     4 ; 0.1641
+   HB    HC   -0.030     5 ; 0.1344
+  CG1    CT   -0.319     6 ; -0.1848
+ HG11    HC    0.079     7 ; -0.1057
+ HG12    HC    0.079     8 ; -0.0266
+ HG13    HC    0.079     9 ; 0.0525
+  CG2    CT   -0.319    10 ; -0.2667
+ HG21    HC    0.079    11 ; -0.1876
+ HG22    HC    0.079    12 ; -0.1085
+ HG23    HC    0.079    13 ; -0.0294
+    C     C    0.597    14 ; 0.5679
+    O     O   -0.568    15 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG1
+  CG1  HG11
+  CG1  HG12
+  CG1  HG13
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue VAL: 16 atoms, 16 bonds, 16 pdihs, 2 idihs
+
+; ASPARAGINE 
+; 
+[ ASN ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.014     2 ; -0.1295
+   HA    H1    0.105     3 ; -0.0247
+   CB    CT   -0.204     4 ; -0.2288
+  HB1    HC    0.080     5 ; -0.1491
+  HB2    HC    0.080     6 ; -0.0694
+   CG     C    0.713     7 ; 0.6436
+  OD1     O   -0.593     8 ; 0.0505
+  ND2     N   -0.919     9 ; -0.8686
+ HD21     H    0.420    10 ; -0.449
+ HD22     H    0.420    11 ; -0.0294
+    C     C    0.597    12 ; 0.5679
+    O     O   -0.568    13 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   ND2
+  ND2  HD21
+  ND2  HD22
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CB   ND2    CG   OD1     ai_X__X__C__O_
+   CG  HD21   ND2  HD22     ai_X__X__N__H_
+; end residue ASN: 14 atoms, 14 bonds, 14 pdihs, 4 idihs
+
+; GLUTAMINE 
+; 
+[ GLN ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.003     2 ; -0.1469
+   HA    H1    0.085     3 ; -0.0619
+   CB    CT   -0.004     4 ; -0.0655
+  HB1    HC    0.017     5 ; -0.0484
+  HB2    HC    0.017     6 ; -0.0313
+   CG    CT   -0.065     7 ; -0.0958
+  HG1    HC    0.035     8 ; -0.0606
+  HG2    HC    0.035     9 ; -0.0254
+   CD     C    0.695    10 ; 0.6697
+  OE1     O   -0.609    11 ; 0.0611
+  NE2     N   -0.941    12 ; -0.8796
+ HE21     H    0.425    13 ; -0.4545
+ HE22     H    0.425    14 ; -0.0294
+    C     C    0.597    15 ; 0.5679
+    O     O   -0.568    16 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   NE2
+  NE2  HE21
+  NE2  HE22
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   NE2    CD   OE1     ai_X__X__C__O_
+   CD  HE21   NE2  HE22     ai_X__X__N__H_
+; end residue GLN: 17 atoms, 17 bonds, 17 pdihs, 4 idihs
+
+; ARGININE 
+; 
+[ ARG ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.348     0 ; -0.3479
+    H     H    0.275     1 ; -0.0732
+   CA    CT   -0.264     2 ; -0.3369
+   HA    H1    0.156     3 ; -0.1809
+   CB    CT   -0.001     4 ; -0.1816
+  HB1    HC    0.033     5 ; -0.1489
+  HB2    HC    0.033     6 ; -0.1162
+   CG    CT    0.039     7 ; -0.0772
+  HG1    HC    0.029     8 ; -0.0487
+  HG2    HC    0.029     9 ; -0.0202
+   CD    CT    0.049    10 ; 0.0284
+  HD1    H1    0.069    11 ; 0.0971
+  HD2    H1    0.069    12 ; 0.1658
+   NE    N2   -0.529    13 ; -0.3637
+   HE     H    0.346    14 ; -0.0181
+   CZ    CA    0.808    15 ; 0.7895
+  NH1    N2   -0.863    16 ; -0.0732
+ HH11     H    0.448    17 ; 0.3746
+ HH12     H    0.448    18 ; 0.8224
+  NH2    N2   -0.863    19 ; -0.0403
+ HH21     H    0.448    20 ; 0.4075
+ HH22     H    0.448    21 ; 0.8553
+    C     C    0.734    22 ; 1.5894
+    O     O   -0.589    23 ; 1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    NE
+   NE    HE
+   NE    CZ
+   CZ   NH1
+  NH1  HH11
+  NH1  HH12
+   CZ   NH2
+  NH2  HH21
+  NH2  HH22
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   NE   NH1    CZ   NH2     ai_X__N2_CA_N2
+   CD    CZ    NE    HE     ai_X__X__N2_H_
+   CZ  HH11   NH1  HH12     ai_X__X__N2_H_
+   CZ  HH21   NH2  HH22     ai_X__X__N2_H_
+; end residue ARG: 24 atoms, 24 bonds, 24 pdihs, 6 idihs
+
+; HISTIDINE DELTAH 
+; 
+[ HID ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.019     2 ; -0.125
+   HA    H1    0.088     3 ; -0.0369
+   CB    CT   -0.046     4 ; -0.0831
+  HB1    HC    0.040     5 ; -0.0429
+  HB2    HC    0.040     6 ; -0.0027
+   CG    CC   -0.027     7 ; -0.0293
+  ND1    NA   -0.381     8 ; -0.4104
+  HD1     H    0.365     9 ; -0.0455
+  CE1    CR    0.206    10 ; 0.1602
+  HE1    H5    0.139    11 ; 0.2994
+  NE2    NB   -0.573    12 ; -0.2733
+  CD2    CV    0.129    13 ; -0.1441
+  HD2    H4    0.115    14 ; -0.0294
+    C     C    0.597    15 ; 0.5679
+    O     O   -0.568    16 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   HD1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE1   ND1   HD1     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CV_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NA_CV_CC_CT
+; end residue HID: 17 atoms, 18 bonds, 17 pdihs, 6 idihs
+
+; HISTIDINE EPSILONH 
+; 
+[ HIE ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.058     2 ; -0.2019
+   HA    H1    0.136     3 ; -0.0659
+   CB    CT   -0.007     4 ; -0.0733
+  HB1    HC    0.037     5 ; -0.0366
+  HB2    HC    0.037     6 ; 0.0001
+   CG    CC    0.187     7 ; 0.1869
+  ND1    NB   -0.543     8 ; -0.3563
+  CE1    CR    0.164     9 ; -0.1928
+  HE1    H5    0.143    10 ; -0.0493
+  NE2    NA   -0.280    11 ; -0.3288
+  HE2     H    0.334    12 ; 0.0051
+  CD2    CW   -0.221    13 ; -0.2156
+  HD2    H4    0.186    14 ; -0.0294
+    C     C    0.597    15 ; 0.5679
+    O     O   -0.568    16 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   HE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+  CE1   CD2   NE2   HE2     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CW_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NB_CW_CC_CT
+; end residue HIE: 17 atoms, 18 bonds, 17 pdihs, 6 idihs
+
+; HISTIDINE PLUS 
+; 
+[ HIP ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.348     0 ; -0.3479
+    H     H    0.275     1 ; -0.0732
+   CA    CT   -0.135     2 ; -0.2086
+   HA    H1    0.121     3 ; -0.0874
+   CB    CT   -0.041     4 ; -0.1288
+  HB1    HC    0.081     5 ; -0.0478
+  HB2    HC    0.081     6 ; 0.0332
+   CG    CC   -0.001     7 ; 0.032
+  ND1    NA   -0.151     8 ; -0.1193
+  HD1     H    0.387     9 ; 0.2673
+  CE1    CR   -0.017    10 ; 0.2503
+  HE1    H5    0.268    11 ; 0.5184
+  NE2    NA   -0.172    12 ; 0.3466
+  HE2     H    0.391    13 ; 0.7377
+  CD2    CW   -0.114    14 ; 0.6236
+  HD2    H4    0.232    15 ; 0.8553
+    C     C    0.734    16 ; 1.5894
+    O     O   -0.589    17 ; 1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   HD1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   HE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE1   ND1   HD1     ai_X__X__NA_H_
+  CE1   CD2   NE2   HE2     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CW_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NA_CW_CC_CT
+; end residue HIP: 18 atoms, 19 bonds, 18 pdihs, 7 idihs
+
+; TRYPTOPHAN 
+; 
+[ TRP ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.028     2 ; -0.1713
+   HA    H1    0.112     3 ; -0.059
+   CB    CT   -0.005     4 ; -0.064
+  HB1    HC    0.034     5 ; -0.0301
+  HB2    HC    0.034     6 ; 0.0038
+   CG    C*   -0.141     7 ; -0.1377
+  CD1    CW   -0.164     8 ; -0.3015
+  HD1    H4    0.206     9 ; -0.0953
+  NE1    NA   -0.342    10 ; -0.4371
+  HE1     H    0.341    11 ; -0.0959
+  CE2    CN    0.138    12 ; 0.0421
+  CZ2    CA   -0.260    13 ; -0.218
+  HZ2    HA    0.157    14 ; -0.0608
+  CH2    CA   -0.113    15 ; -0.1742
+  HH2    HA    0.142    16 ; -0.0325
+  CZ3    CA   -0.197    17 ; -0.2297
+  HZ3    HA    0.145    18 ; -0.085
+  CE3    CA   -0.239    19 ; -0.3237
+  HE3    HA    0.170    20 ; -0.1537
+  CD2    CB    0.124    21 ; -0.0294
+    C     C    0.597    22 ; 0.5679
+    O     O   -0.568    23 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   NE1
+  NE1   HE1
+  NE1   CE2
+  CE2   CZ2
+  CZ2   HZ2
+  CZ2   CH2
+  CH2   HH2
+  CH2   CZ3
+  CZ3   HZ3
+  CZ3   CE3
+  CE3   HE3
+  CE3   CD2
+   CA     C
+    C     O
+   CG   CD2
+  CE2   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+  CD1   CE2   NE1   HE1     ai_X__X__NA_H_
+  CE2   CH2   CZ2   HZ2     ai_X__X__CA_HA
+  CZ2   CZ3   CH2   HH2     ai_X__X__CA_HA
+  CH2   CE3   CZ3   HZ3     ai_X__X__CA_HA
+  CZ3   CD2   CE3   HE3     ai_X__X__CA_HA
+   CG   NE1   CD1   HD1     ai_X__X__CW_H4
+  CD1   CD2    CG    CB     ai_CW_CB_C*_CT
+; end residue TRP: 24 atoms, 26 bonds, 24 pdihs, 9 idihs
+
+; PHENYLALANINE 
+; 
+[ PHE ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.002     2 ; -0.1462
+   HA    H1    0.098     3 ; -0.0484
+   CB    CT   -0.034     4 ; -0.0827
+  HB1    HC    0.029     5 ; -0.0532
+  HB2    HC    0.029     6 ; -0.0237
+   CG    CA    0.012     7 ; -0.0119
+  CD1    CA   -0.126     8 ; -0.1375
+  HD1    HA    0.133     9 ; -0.0045
+  CE1    CA   -0.170    10 ; -0.1749
+  HE1    HA    0.143    11 ; -0.0319
+   CZ    CA   -0.107    12 ; -0.1391
+   HZ    HA    0.130    13 ; -0.0094
+  CE2    CA   -0.170    14 ; -0.1798
+  HE2    HA    0.143    15 ; -0.0368
+  CD2    CA   -0.126    16 ; -0.1624
+  HD2    HA    0.133    17 ; -0.0294
+    C     C    0.597    18 ; 0.5679
+    O     O   -0.568    19 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   CE1
+  CE1   HE1
+  CE1    CZ
+   CZ    HZ
+   CZ   CE2
+  CE2   HE2
+  CE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE2   CD2   HD2     ai_X__X__CA_HA
+  CD2    CZ   CE2   HE2     ai_X__X__CA_HA
+  CE1   CE2    CZ    HZ     ai_X__X__CA_HA
+  CD1    CZ   CE1   HE1     ai_X__X__CA_HA
+   CG   CE1   CD1   HD1     ai_X__X__CA_HA
+  CD1   CD2    CG    CB     ai_CA_CA_CA_CT
+; end residue PHE: 20 atoms, 21 bonds, 20 pdihs, 8 idihs
+
+; TYROSINE 
+; 
+[ TYR ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.001     2 ; -0.1452
+   HA    H1    0.088     3 ; -0.0576
+   CB    CT   -0.015     4 ; -0.0728
+  HB1    HC    0.029     5 ; -0.0433
+  HB2    HC    0.029     6 ; -0.0138
+   CG    CA   -0.001     7 ; -0.0149
+  CD1    CA   -0.191     8 ; -0.2055
+  HD1    HA    0.170     9 ; -0.0356
+  CE1    CA   -0.234    10 ; -0.2697
+  HE1    HA    0.166    11 ; -0.1041
+   CZ     C    0.323    12 ; 0.2185
+   OH    OH   -0.558    13 ; -0.3394
+   HH    HO    0.399    14 ; 0.0598
+  CE2    CA   -0.234    15 ; -0.1743
+  HE2    HA    0.166    16 ; -0.0087
+  CD2    CA   -0.191    17 ; -0.1993
+  HD2    HA    0.170    18 ; -0.0294
+    C     C    0.597    19 ; 0.5679
+    O     O   -0.568    20 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   CE1
+  CE1   HE1
+  CE1    CZ
+   CZ    OH
+   OH    HH
+   CZ   CE2
+  CE2   HE2
+  CE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE2   CD2   HD2     ai_X__X__CA_HA
+  CD2    CZ   CE2   HE2     ai_X__X__CA_HA
+  CD1    CZ   CE1   HE1     ai_X__X__CA_HA
+   CG   CE1   CD1   HD1     ai_X__X__CA_HA
+  CD1   CD2    CG    CB     ai_CA_CA_CA_CT
+  CE1   CE2    CZ    OH     ai_CA_CA_C__OH
+; end residue TYR: 21 atoms, 22 bonds, 21 pdihs, 8 idihs
+
+; GLUTAMIC ACID 
+; 
+[ GLU ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.516     0 ; -0.5163
+    H     H    0.294     1 ; -0.2227
+   CA    CT    0.040     2 ; -0.183
+   HA    H1    0.111     3 ; -0.0725
+   CB    CT    0.056     4 ; -0.0165
+  HB1    HC   -0.017     5 ; -0.0338
+  HB2    HC   -0.017     6 ; -0.0511
+   CG    CT    0.014     7 ; -0.0375
+  HG1    HC   -0.043     8 ; -0.08
+  HG2    HC   -0.043     9 ; -0.1225
+   CD     C    0.805    10 ; 0.6829
+  OE1    O2   -0.819    11 ; -0.1359
+  OE2    O2   -0.819    12 ; -0.9547
+    C     C    0.537    13 ; -0.4181
+    O     O   -0.582    14 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   OE2
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   OE1    CD   OE2     ai_X__O2_C__O2
+; end residue GLU: 15 atoms, 15 bonds, 15 pdihs, 3 idihs
+
+; ASPARTIC ACID 
+; 
+[ ASP ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.516     0 ; -0.5163
+    H     H    0.294     1 ; -0.2227
+   CA    CT    0.038     2 ; -0.1846
+   HA    H1    0.088     3 ; -0.0966
+   CB    CT   -0.030     4 ; -0.1269
+  HB1    HC   -0.012     5 ; -0.1391
+  HB2    HC   -0.012     6 ; -0.1513
+   CG     C    0.799     7 ; 0.6481
+  OD1    O2   -0.801     8 ; -0.1533
+  OD2    O2   -0.801     9 ; -0.9547
+    C     C    0.537    10 ; -0.4181
+    O     O   -0.582    11 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   OD2
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CB   OD1    CG   OD2     ai_X__O2_C__O2
+; end residue ASP: 12 atoms, 12 bonds, 12 pdihs, 3 idihs
+
+; LYSINE 
+; 
+[ LYS ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.348     0 ; -0.3479
+    H     H    0.275     1 ; -0.0732
+   CA    CT   -0.240     2 ; -0.3132
+   HA    H1    0.143     3 ; -0.1706
+   CB    CT   -0.009     4 ; -0.18
+  HB1    HC    0.036     5 ; -0.1438
+  HB2    HC    0.036     6 ; -0.1076
+   CG    CT    0.019     7 ; -0.0889
+  HG1    HC    0.010     8 ; -0.0786
+  HG2    HC    0.010     9 ; -0.0683
+   CD    CT   -0.048    10 ; -0.1162
+  HD1    HC    0.062    11 ; -0.0541
+  HD2    HC    0.062    12 ; 0.008
+   CE    CT   -0.014    13 ; -0.0063
+  HE1    HP    0.114    14 ; 0.1072
+  HE2    HP    0.114    15 ; 0.2207
+   NZ    N3   -0.385    16 ; -0.1647
+  HZ1     H    0.340    17 ; 0.1753
+  HZ2     H    0.340    18 ; 0.5153
+  HZ3     H    0.340    19 ; 0.8553
+    C     C    0.734    20 ; 1.5894
+    O     O   -0.589    21 ; 1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    CE
+   CE   HE1
+   CE   HE2
+   CE    NZ
+   NZ   HZ1
+   NZ   HZ2
+   NZ   HZ3
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue LYS: 22 atoms, 22 bonds, 22 pdihs, 2 idihs
+
+; LYSINE neutral
+; 
+[ LYN ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.072     2 ; -0.21586
+   HA    H1    0.099     3 ; -0.11646
+   CB    CT   -0.048     4 ; -0.16491
+  HB1    HC    0.034     5 ; -0.13091
+  HB2    HC    0.034     6 ; -0.09691
+   CG    CT    0.066     7 ; -0.03079
+  HG1    HC    0.010     8 ; -0.02038
+  HG2    HC    0.010     9 ; -0.00997
+   CD    CT   -0.038    10 ; -0.04765
+  HD1    HC    0.012    11 ; -0.0361
+  HD2    HC    0.012    12 ; -0.02455
+   CE    CT    0.326    13 ; 0.30149
+  HE1    HP   -0.034    14 ; 0.26791
+  HE2    HP   -0.034    15 ; 0.23433
+   NZ    N3   -1.036    16 ; -0.80148
+  HZ1     H    0.386    17 ; -0.41544
+  HZ2     H    0.386    18 ; -0.0294
+    C     C    0.597    19 ; 0.5679
+    O     O   -0.568    20 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    CE
+   CE   HE1
+   CE   HE2
+   CE    NZ
+   NZ   HZ1
+   NZ   HZ2
+   CA     C
+    O     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue LYN: 21 atoms, 21 bonds, 21 pdihs, 2 idihs
+
+; PROLINE 
+; 
+[ PRO ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.255     0 ; -0.2548
+   CD    CT    0.019     1 ; -0.2356
+  HD1    H1    0.039     2 ; -0.1965
+  HD2    H1    0.039     3 ; -0.1574
+   CG    CT    0.019     4 ; -0.1385
+  HG1    HC    0.021     5 ; -0.1172
+  HG2    HC    0.021     6 ; -0.0959
+   CB    CT   -0.007     7 ; -0.1029
+  HB1    HC    0.025     8 ; -0.0776
+  HB2    HC    0.025     9 ; -0.0523
+   CA    CT   -0.027    10 ; -0.0789
+   HA    H1    0.064    11 ; -0.0148
+    C     C    0.590    12 ; 0.5748
+    O     O   -0.575    13 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N    CD
+   CD   HD1
+   CD   HD2
+   CD    CG
+   CG   HG1
+   CG   HG2
+   CG    CB
+   CB   HB1
+   CB   HB2
+    N    CA
+   CA    HA
+   CA     C
+    C     O
+   CB    CA
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CG    CD     N    -C     ad_CT_CT_N__C__1
+   CG    CD     N    -C     ad_CT_CT_N__C__2
+   CG    CD     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   -C    CD     N    CA     ai_X__CT_N__CT
+; end residue PRO: 14 atoms, 15 bonds, 14 pdihs, 2 idihs
+
+; CYSTEINE 
+; 
+[ CYS ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.021     2 ; -0.1225
+   HA    H1    0.112     3 ; -0.0101
+   CB    CT   -0.123     4 ; -0.1332
+  HB1    H1    0.111     5 ; -0.022
+  HB2    H1    0.111     6 ; 0.0892
+   SG    SH   -0.312     7 ; -0.2227
+   HG    HS    0.193     8 ; -0.0294
+    C     C    0.597     9 ; 0.5679
+    O     O   -0.568    10 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   SG    HG
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue CYS: 11 atoms, 11 bonds, 11 pdihs, 2 idihs
+
+; CYSTEINE with negative charge
+; 
+[ CYM ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+   H1     H    0.272     1 ; -0.1438
+   CA    CT   -0.035     2 ; -0.1789
+   HA    H1    0.051     3 ; -0.1281
+   CB    CT   -0.241     4 ; -0.3694
+  HB1    H1    0.112     5 ; -0.2572
+  HB2    H1    0.112     6 ; -0.145
+   SG    SH   -0.884     7 ; -1.0294
+    C     C    0.597     8 ; -0.4321
+    O     O   -0.568     9 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N    H1
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N    H1     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue CYM: 10 atoms, 10 bonds, 10 pdihs, 2 idihs
+
+; CYSTINE(S-S BRIDGE) 
+; 
+[ CYX ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.043     2 ; -0.1009
+   HA    H1    0.077     3 ; -0.0243
+   CB    CT   -0.079     4 ; -0.1033
+  HB1    H1    0.091     5 ; -0.0123
+  HB2    H1    0.091     6 ; 0.0787
+   SG     S   -0.108     7 ; -0.0294
+    C     C    0.597     8 ; 0.5679
+    O     O   -0.568     9 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue CYX: 10 atoms, 10 bonds, 10 pdihs, 2 idihs
+
+; METHIONINE 
+; 
+[ MET ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT   -0.024     2 ; -0.1675
+   HA    H1    0.088     3 ; -0.0795
+   CB    CT    0.034     4 ; -0.0453
+  HB1    HC    0.024     5 ; -0.0212
+  HB2    HC    0.024     6 ; 0.0029
+   CG    CT    0.002     7 ; 0.0047
+  HG1    H1    0.044     8 ; 0.0487
+  HG2    H1    0.044     9 ; 0.0927
+   SD     S   -0.274    10 ; -0.181
+   CE    CT   -0.054    11 ; -0.2346
+  HE1    H1    0.068    12 ; -0.1662
+  HE2    H1    0.068    13 ; -0.0978
+  HE3    H1    0.068    14 ; -0.0294
+    C     C    0.597    15 ; 0.5679
+    O     O   -0.568    16 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    SD
+   SD    CE
+   CE   HE1
+   CE   HE2
+   CE   HE3
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue MET: 17 atoms, 17 bonds, 17 pdihs, 2 idihs
+
+;  ACE BEGINNING GROUP 
+; 
+[ ACE ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+  CH3    CT   -0.366     0 ; -0.3662
+   H1    HC    0.112     1 ; -0.2539
+ HH31    HC    0.112     2 ; -0.1416
+ HH32    HC    0.112     3 ; -0.0293
+    C     C    0.597     4 ; 0.5679
+    O     O   -0.568     5 ; 0
+ [ bonds ]
+;  ai    aj
+   H1   CH3
+  CH3  HH31
+  CH3  HH32
+  CH3     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+  CH3   +CA     C     O     ai_X__X__C__O_
+; end residue ACE: 6 atoms, 5 bonds, 6 pdihs, 1 idihs
+
+; N-methyl all atom 
+; 
+[ NME ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+  CH3    CT   -0.149     2 ; -0.2928
+ HH31    H1    0.098     3 ; -0.1952
+ HH32    H1    0.098     4 ; -0.0976
+ HH33    H1    0.098     5 ; -2.77556e-17
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N   CH3
+  CH3  HH31
+  CH3  HH32
+  CH3  HH33
+ [ impropers ]
+;  ai    aj    ak    al
+   -C   CH3     N     H     ai_X__X__N__H_
+; end residue NME: 6 atoms, 6 bonds, 6 pdihs, 1 idihs
+
+;  NH2 ENDING GROUP
+; 
+[ NHE ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.463     0 ; -0.463
+   H1     H    0.232     1 ; -0.2315
+   H2     H    0.232     2 ; 0
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N    H1
+    N    H2
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    H1     N    H2     ai_X__X__N__H_
+; end residue NHE: 3 atoms, 3 bonds, 3 pdihs, 1 idihs
+
+;  WATER, TIP3P MODEL
+; 
+[ HOH ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    O    OW   -0.834     0 ; -0.834
+   H3    HW    0.417     1 ; -0.417
+   H1    HW    0.417     2 ; 0
+ [ bonds ]
+;  ai    aj
+   H3     O
+    O    H1
+   H3    H1
+; end residue HOH: 3 atoms, 3 bonds, 3 pdihs, 0 idihs
+
+; ASP neutral
+; 
+[ ASH ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.034     2 ; -0.1097
+   HA    H1    0.086     3 ; -0.0233
+   CB    CT   -0.032     4 ; -0.0549
+  HB1    HC    0.049     5 ; -0.0061
+  HB2    HC    0.049     6 ; 0.0427
+   CG     C    0.646     7 ; 0.6889
+  OD1     O   -0.555     8 ; 0.1335
+  OD2    OH   -0.638     9 ; -0.5041
+  HD2    HO    0.475    10 ; -0.0294
+    C     C    0.597    11 ; 0.5679
+    O     O   -0.568    12 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   OD2
+  OD2   HD2
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CB   OD1    CG   OD2     ai_CT_O__C__OH
+; end residue ASH: 13 atoms, 13 bonds, 13 pdihs, 3 idihs
+
+; GLU neutral
+; 
+[ GLH ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.416     0 ; -0.4157
+    H     H    0.272     1 ; -0.1438
+   CA    CT    0.015     2 ; -0.1293
+   HA    H1    0.078     3 ; -0.0514
+   CB    CT   -0.007     4 ; -0.0585
+  HB1    HC    0.026     5 ; -0.0329
+  HB2    HC    0.026     6 ; -0.0073
+   CG    CT   -0.017     7 ; -0.0247
+  HG1    HC    0.043     8 ; 0.0183
+  HG2    HC    0.043     9 ; 0.0613
+   CD     C    0.680    10 ; 0.7414
+  OE1     O   -0.584    11 ; 0.1576
+  OE2    OH   -0.651    12 ; -0.4935
+  HE2    HO    0.464    13 ; -0.0294
+    C     C    0.597    14 ; 0.5679
+    O     O   -0.568    15 ; 1.11022e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   OE2
+  OE2   HE2
+   CA     C
+    C     O
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   OE1    CD   OE2     ai_CT_O__C__OH
+; end residue GLH: 16 atoms, 16 bonds, 16 pdihs, 3 idihs
+
+; Sodium Ion
+; 
+[ CIP ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+  NA+    IP    1.000     0 ; 1
+; end residue CIP: 1 atoms, 1 bonds, 1 pdihs, 0 idihs
+
+; Chloride Ion
+; 
+[ CIM ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+  CL-    IM   -1.000     0 ; -1
+; end residue CIM: 1 atoms, 1 bonds, 1 pdihs, 0 idihs
+
+; end of file /usr/slocal/amber6/dat/all_amino94.in
+; from file /usr/slocal/amber6/dat/all_aminoct94.in
+; 
+; reading database: All-atom, COO- terminal
+; 
+; ALANINE COO- ANION 
+; 
+[ ALA-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.175     2 ; -0.2887
+   HA    H1    0.107     3 ; -0.182
+   CB    CT   -0.209     4 ; -0.3913
+  HB1    HC    0.076     5 ; -0.3149
+  HB2    HC    0.076     6 ; -0.2385
+  HB3    HC    0.076     7 ; -0.1621
+    C     C    0.773     8 ; 0.611
+    O    O2   -0.805     9 ; -0.1945
+  OXT    O2   -0.805    10 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB   HB3
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue ALA-C: 11 atoms, 11 bonds, 11 pdihs, 2 idihs
+
+; GLYCINE COO- ANION 
+; 
+[ GLY-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.249     2 ; -0.3633
+  HA1    H1    0.106     3 ; -0.2577
+  HA2    H1    0.106     4 ; -0.1521
+    C     C    0.723     5 ; 0.571
+    O    O2   -0.785     6 ; -0.2145
+  OXT    O2   -0.785     7 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA   HA1
+   CA   HA2
+   CA     C
+    C     O
+    C   OXT
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue GLY-C: 8 atoms, 8 bonds, 8 pdihs, 2 idihs
+
+; SERINE COO- ANION 
+; 
+[ SER-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.272     2 ; -0.3862
+   HA    H1    0.130     3 ; -0.2558
+   CB    CT    0.112     4 ; -0.1435
+  HB1    H1    0.081     5 ; -0.0622
+  HB2    H1    0.081     6 ; 0.0191
+   OG    OH   -0.651     7 ; -0.6323
+   HG    HO    0.447     8 ; -0.1849
+    C     C    0.811     9 ; 0.6264
+    O    O2   -0.813    10 ; -0.1868
+  OXT    O2   -0.813    11 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    OG
+   OG    HG
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue SER-C: 12 atoms, 12 bonds, 12 pdihs, 2 idihs
+
+; THREONINE COO- ANION 
+; 
+[ THR-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.242     2 ; -0.356
+   HA    H1    0.121     3 ; -0.2353
+   CB    CT    0.302     4 ; 0.0672
+   HB    H1    0.008     5 ; 0.075
+  CG2    CT   -0.185     6 ; -0.1103
+ HG21    HC    0.059     7 ; -0.0517
+ HG22    HC    0.059     8 ; 0.0069
+ HG23    HC    0.059     9 ; 0.0655
+  OG1    OH   -0.650    10 ; -0.5841
+  HG1    HO    0.412    11 ; -0.1722
+    C     C    0.781    12 ; 0.6088
+    O    O2   -0.804    13 ; -0.1956
+  OXT    O2   -0.804    14 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CB   OG1
+  OG1   HG1
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue THR-C: 15 atoms, 15 bonds, 15 pdihs, 2 idihs
+
+; LEUCINE COO- ANION 
+; 
+[ LEU-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.285     2 ; -0.3987
+   HA    H1    0.135     3 ; -0.2641
+   CB    CT   -0.247     4 ; -0.511
+  HB1    HC    0.097     5 ; -0.4136
+  HB2    HC    0.097     6 ; -0.3162
+   CG    CT    0.371     7 ; 0.0544
+   HG    HC   -0.037     8 ; 0.017
+  CD1    CT   -0.416     9 ; -0.3993
+ HD11    HC    0.104    10 ; -0.2955
+ HD12    HC    0.104    11 ; -0.1917
+ HD13    HC    0.104    12 ; -0.0879
+  CD2    CT   -0.416    13 ; -0.5042
+ HD21    HC    0.104    14 ; -0.4004
+ HD22    HC    0.104    15 ; -0.2966
+ HD23    HC    0.104    16 ; -0.1928
+    C     C    0.833    17 ; 0.6398
+    O    O2   -0.820    18 ; -0.1801
+  OXT    O2   -0.820    19 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG    HG
+   CG   CD1
+  CD1  HD11
+  CD1  HD12
+  CD1  HD13
+   CG   CD2
+  CD2  HD21
+  CD2  HD22
+  CD2  HD23
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue LEU-C: 20 atoms, 20 bonds, 20 pdihs, 2 idihs
+
+; ISOLEUCINE COO- ANION 
+; 
+[ ILE-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.310     2 ; -0.424
+   HA    H1    0.138     3 ; -0.2865
+   CB    CT    0.036     4 ; -0.2502
+   HB    HC    0.077     5 ; -0.1736
+  CG2    CT   -0.350     6 ; -0.5234
+ HG21    HC    0.102     7 ; -0.4213
+ HG22    HC    0.102     8 ; -0.3192
+ HG23    HC    0.102     9 ; -0.2171
+  CG1    CT   -0.032    10 ; -0.2494
+ HG11    HC    0.032    11 ; -0.2173
+ HG12    HC    0.032    12 ; -0.1852
+  CD1    CT   -0.070    13 ; -0.2551
+ HD11    HC    0.020    14 ; -0.2355
+ HD12    HC    0.020    15 ; -0.2159
+ HD13    HC    0.020    16 ; -0.1963
+    C     C    0.834    17 ; 0.638
+    O    O2   -0.819    18 ; -0.181
+  OXT    O2   -0.819    19 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CB   CG1
+  CG1  HG11
+  CG1  HG12
+  CG1   CD1
+  CD1  HD11
+  CD1  HD12
+  CD1  HD13
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue ILE-C: 20 atoms, 20 bonds, 20 pdihs, 2 idihs
+
+; VALINE COO- ANION 
+; 
+[ VAL-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.344     2 ; -0.4578
+   HA    H1    0.144     3 ; -0.314
+   CB    CT    0.194     4 ; -0.12
+   HB    HC    0.031     5 ; -0.0892
+  CG1    CT   -0.306     6 ; -0.3956
+ HG11    HC    0.084     7 ; -0.312
+ HG12    HC    0.084     8 ; -0.2284
+ HG13    HC    0.084     9 ; -0.1448
+  CG2    CT   -0.306    10 ; -0.4512
+ HG21    HC    0.084    11 ; -0.3676
+ HG22    HC    0.084    12 ; -0.284
+ HG23    HC    0.084    13 ; -0.2004
+    C     C    0.835    14 ; 0.6346
+    O    O2   -0.817    15 ; -0.1827
+  OXT    O2   -0.817    16 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG1
+  CG1  HG11
+  CG1  HG12
+  CG1  HG13
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue VAL-C: 17 atoms, 17 bonds, 17 pdihs, 2 idihs
+
+; ASPARAGINE COO- ANION 
+; 
+[ ASN-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.208     2 ; -0.322
+   HA    H1    0.136     3 ; -0.1862
+   CB    CT   -0.230     4 ; -0.4161
+  HB1    HC    0.102     5 ; -0.3138
+  HB2    HC    0.102     6 ; -0.2115
+   CG     C    0.715     7 ; 0.5038
+  OD1     O   -0.601     8 ; -0.0972
+  ND2     N   -0.908     9 ; -1.0056
+ HD21     H    0.415    10 ; -0.5906
+ HD22     H    0.415    11 ; -0.1756
+    C     C    0.805    12 ; 0.6294
+    O    O2   -0.815    13 ; -0.1853
+  OXT    O2   -0.815    14 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   ND2
+  ND2  HD21
+  ND2  HD22
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CB   ND2    CG   OD1     ai_X__X__C__O_
+   CG  HD21   ND2  HD22     ai_X__X__N__H_
+; end residue ASN-C: 15 atoms, 15 bonds, 15 pdihs, 4 idihs
+
+; GLUTAMINE COO- ANION 
+; 
+[ GLN-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.225     2 ; -0.3388
+   HA    H1    0.123     3 ; -0.2156
+   CB    CT   -0.066     4 ; -0.282
+  HB1    HC    0.045     5 ; -0.2368
+  HB2    HC    0.045     6 ; -0.1916
+   CG    CT   -0.021     7 ; -0.2126
+  HG1    HC    0.020     8 ; -0.1923
+  HG2    HC    0.020     9 ; -0.172
+   CD     C    0.709    10 ; 0.5373
+  OE1     O   -0.610    11 ; -0.0725
+  NE2     N   -0.957    12 ; -1.0299
+ HE21     H    0.430    13 ; -0.5995
+ HE22     H    0.430    14 ; -0.1691
+    C     C    0.777    15 ; 0.6084
+    O    O2   -0.804    16 ; -0.1958
+  OXT    O2   -0.804    17 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   NE2
+  NE2  HE21
+  NE2  HE22
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CG   NE2    CD   OE1     ai_X__X__C__O_
+   CD  HE21   NE2  HE22     ai_X__X__N__H_
+; end residue GLN-C: 18 atoms, 18 bonds, 18 pdihs, 4 idihs
+
+; ARGININE COO- ANION 
+; 
+[ ARG-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.348     0 ; -0.3481
+    H     H    0.276     1 ; -0.0717
+   CA    CT   -0.307     2 ; -0.3785
+   HA    H1    0.145     3 ; -0.2338
+   CB    CT   -0.037     4 ; -0.2712
+  HB1    HC    0.037     5 ; -0.2341
+  HB2    HC    0.037     6 ; -0.197
+   CG    CT    0.074     7 ; -0.1226
+  HG1    HC    0.018     8 ; -0.1041
+  HG2    HC    0.018     9 ; -0.0856
+   CD    CT    0.111    10 ; 0.0258
+  HD1    H1    0.047    11 ; 0.0726
+  HD2    H1    0.047    12 ; 0.1194
+   NE    N2   -0.556    13 ; -0.437
+   HE     H    0.348    14 ; -0.0891
+   CZ    CA    0.837    15 ; 0.7477
+  NH1    N2   -0.874    16 ; -0.126
+ HH11     H    0.449    17 ; 0.3233
+ HH12     H    0.449    18 ; 0.7726
+  NH2    N2   -0.874    19 ; -0.1011
+ HH21     H    0.449    20 ; 0.3482
+ HH22     H    0.449    21 ; 0.7975
+    C     C    0.856    22 ; 1.6532
+    O    O2   -0.827    23 ; 0.8266
+  OXT    O2   -0.827    24 ; -2.22045e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    NE
+   NE    HE
+   NE    CZ
+   CZ   NH1
+  NH1  HH11
+  NH1  HH12
+   CZ   NH2
+  NH2  HH21
+  NH2  HH22
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   NE   NH1    CZ   NH2     ai_X__N2_CA_N2
+   CD    CZ    NE    HE     ai_X__X__N2_H_
+   CZ  HH11   NH1  HH12     ai_X__X__N2_H_
+   CZ  HH21   NH2  HH22     ai_X__X__N2_H_
+; end residue ARG-C: 25 atoms, 25 bonds, 25 pdihs, 6 idihs
+
+; HISTIDINE DELTAH COO- ANION 
+; 
+[ HID-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.174     2 ; -0.2879
+   HA    H1    0.110     3 ; -0.1779
+   CB    CT   -0.105     4 ; -0.2825
+  HB1    HC    0.057     5 ; -0.226
+  HB2    HC    0.057     6 ; -0.1695
+   CG    CC    0.029     7 ; -0.1402
+  ND1    NA   -0.389     8 ; -0.5294
+  HD1     H    0.376     9 ; -0.1539
+  CE1    CR    0.193    10 ; 0.0386
+  HE1    H5    0.142    11 ; 0.1804
+  NE2    NB   -0.563    12 ; -0.3825
+  CD2    CV    0.100    13 ; -0.2824
+  HD2    H4    0.124    14 ; -0.1583
+    C     C    0.761    15 ; 0.6032
+    O    O2   -0.802    16 ; -0.1984
+  OXT    O2   -0.802    17 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   HD1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+    C   OXT
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CG   CE1   ND1   HD1     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CV_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NA_CV_CC_CT
+; end residue HID-C: 18 atoms, 19 bonds, 18 pdihs, 6 idihs
+
+; HISTIDINE EPSILON-H COO- ANION 
+; 
+[ HIE-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.270     2 ; -0.3839
+   HA    H1    0.165     3 ; -0.2189
+   CB    CT   -0.107     4 ; -0.3257
+  HB1    HC    0.062     5 ; -0.2637
+  HB2    HC    0.062     6 ; -0.2017
+   CG    CC    0.272     7 ; 0.0707
+  ND1    NB   -0.552     8 ; -0.481
+  CE1    CR    0.156     9 ; -0.3252
+  HE1    H5    0.145    10 ; -0.1804
+  NE2    NA   -0.267    11 ; -0.4474
+  HE2     H    0.332    12 ; -0.1155
+  CD2    CW   -0.259    13 ; -0.3743
+  HD2    H4    0.196    14 ; -0.1786
+    C     C    0.792    15 ; 0.613
+    O    O2   -0.806    16 ; -0.1935
+  OXT    O2   -0.806    17 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   HE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+    C   OXT
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+  CE1   CD2   NE2   HE2     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CW_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NB_CW_CC_CT
+; end residue HIE-C: 18 atoms, 19 bonds, 18 pdihs, 6 idihs
+
+; HISTIDINE PLUS COO- 
+; 
+[ HIP-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.348     0 ; -0.3481
+    H     H    0.276     1 ; -0.0717
+   CA    CT   -0.144     2 ; -0.2162
+   HA    H1    0.112     3 ; -0.1047
+   CB    CT   -0.080     4 ; -0.1847
+  HB1    HC    0.087     5 ; -0.0979
+  HB2    HC    0.087     6 ; -0.0111
+   CG    CC    0.030     7 ; 0.0187
+  ND1    NA   -0.150     8 ; -0.1314
+  HD1     H    0.388     9 ; 0.2569
+  CE1    CR   -0.025    10 ; 0.2318
+  HE1    H5    0.269    11 ; 0.5012
+  NE2    NA   -0.168    12 ; 0.3329
+  HE2     H    0.391    13 ; 0.7242
+  CD2    CW   -0.126    14 ; 0.5986
+  HD2    H4    0.234    15 ; 0.8322
+    C     C    0.803    16 ; 1.6354
+    O    O2   -0.818    17 ; 0.8177
+  OXT    O2   -0.818    18 ; -2.22045e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   HD1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   HE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+    C   OXT
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CG   CE1   ND1   HD1     ai_X__X__NA_H_
+  CE1   CD2   NE2   HE2     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CW_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NA_CW_CC_CT
+; end residue HIP-C: 19 atoms, 20 bonds, 19 pdihs, 7 idihs
+
+; TRYPTOPHAN COO- ANION 
+; 
+[ TRP-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.208     2 ; -0.3224
+   HA    H1    0.127     3 ; -0.1952
+   CB    CT   -0.074     4 ; -0.2694
+  HB1    HC    0.050     5 ; -0.2197
+  HB2    HC    0.050     6 ; -0.17
+   CG    C*   -0.080     7 ; -0.2496
+  CD1    CW   -0.181     8 ; -0.4304
+  HD1    H4    0.204     9 ; -0.2261
+  NE1    NA   -0.332    10 ; -0.5577
+  HE1     H    0.341    11 ; -0.2164
+  CE2    CN    0.122    12 ; -0.0942
+  CZ2    CA   -0.259    13 ; -0.3536
+  HZ2    HA    0.157    14 ; -0.1969
+  CH2    CA   -0.102    15 ; -0.2989
+  HH2    HA    0.140    16 ; -0.1588
+  CZ3    CA   -0.229    17 ; -0.3875
+  HZ3    HA    0.151    18 ; -0.2368
+  CE3    CA   -0.184    19 ; -0.4205
+  HE3    HA    0.149    20 ; -0.2714
+  CD2    CB    0.108    21 ; -0.1636
+    C     C    0.766    22 ; 0.6022
+    O    O2   -0.801    23 ; -0.1989
+  OXT    O2   -0.801    24 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   NE1
+  NE1   HE1
+  NE1   CE2
+  CE2   CZ2
+  CZ2   HZ2
+  CZ2   CH2
+  CH2   HH2
+  CH2   CZ3
+  CZ3   HZ3
+  CZ3   CE3
+  CE3   HE3
+  CE3   CD2
+   CA     C
+    C     O
+    C   OXT
+   CG   CD2
+  CE2   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+  CD1   CE2   NE1   HE1     ai_X__X__NA_H_
+  CE2   CH2   CZ2   HZ2     ai_X__X__CA_HA
+  CZ2   CZ3   CH2   HH2     ai_X__X__CA_HA
+  CH2   CE3   CZ3   HZ3     ai_X__X__CA_HA
+  CZ3   CD2   CE3   HE3     ai_X__X__CA_HA
+   CG   NE1   CD1   HD1     ai_X__X__CW_H4
+  CD1   CD2    CG    CB     ai_CW_CB_C*_CT
+; end residue TRP-C: 25 atoms, 27 bonds, 25 pdihs, 9 idihs
+
+; PHENYLALANINE COO- ANION 
+; 
+[ PHE-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.182     2 ; -0.2965
+   HA    H1    0.110     3 ; -0.1867
+   CB    CT   -0.096     4 ; -0.2826
+  HB1    HC    0.044     5 ; -0.2383
+  HB2    HC    0.044     6 ; -0.194
+   CG    CA    0.055     7 ; -0.1388
+  CD1    CA   -0.130     8 ; -0.2688
+  HD1    HA    0.141     9 ; -0.128
+  CE1    CA   -0.185    10 ; -0.3127
+  HE1    HA    0.146    11 ; -0.1666
+   CZ    CA   -0.094    12 ; -0.261
+   HZ    HA    0.128    13 ; -0.133
+  CE2    CA   -0.185    14 ; -0.3177
+  HE2    HA    0.146    15 ; -0.1716
+  CD2    CA   -0.130    16 ; -0.3016
+  HD2    HA    0.141    17 ; -0.1608
+    C     C    0.766    18 ; 0.6052
+    O    O2   -0.803    19 ; -0.1974
+  OXT    O2   -0.803    20 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   CE1
+  CE1   HE1
+  CE1    CZ
+   CZ    HZ
+   CZ   CE2
+  CE2   HE2
+  CE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+    C   OXT
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CG   CE2   CD2   HD2     ai_X__X__CA_HA
+  CD2    CZ   CE2   HE2     ai_X__X__CA_HA
+  CE1   CE2    CZ    HZ     ai_X__X__CA_HA
+  CD1    CZ   CE1   HE1     ai_X__X__CA_HA
+   CG   CE1   CD1   HD1     ai_X__X__CA_HA
+  CD1   CD2    CG    CB     ai_CA_CA_CA_CT
+; end residue PHE-C: 21 atoms, 22 bonds, 21 pdihs, 8 idihs
+
+; TYROSINE COO- ANION 
+; 
+[ TYR-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.202     2 ; -0.3155
+   HA    H1    0.109     3 ; -0.2063
+   CB    CT   -0.075     4 ; -0.2815
+  HB1    HC    0.049     5 ; -0.2325
+  HB2    HC    0.049     6 ; -0.1835
+   CG    CA    0.024     7 ; -0.1592
+  CD1    CA   -0.192     8 ; -0.3514
+  HD1    HA    0.178     9 ; -0.1734
+  CE1    CA   -0.246    10 ; -0.4192
+  HE1    HA    0.167    11 ; -0.2519
+   CZ     C    0.340    12 ; 0.0876
+   OH    OH   -0.564    13 ; -0.4767
+   HH    HO    0.402    14 ; -0.075
+  CE2    CA   -0.246    15 ; -0.3208
+  HE2    HA    0.167    16 ; -0.1535
+  CD2    CA   -0.192    17 ; -0.3457
+  HD2    HA    0.178    18 ; -0.1677
+    C     C    0.782    19 ; 0.614
+    O    O2   -0.807    20 ; -0.193
+  OXT    O2   -0.807    21 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   CE1
+  CE1   HE1
+  CE1    CZ
+   CZ    OH
+   OH    HH
+   CZ   CE2
+  CE2   HE2
+  CE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+    C   OXT
+   CG   CD2
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CG   CE2   CD2   HD2     ai_X__X__CA_HA
+  CD2    CZ   CE2   HE2     ai_X__X__CA_HA
+  CD1    CZ   CE1   HE1     ai_X__X__CA_HA
+   CG   CE1   CD1   HD1     ai_X__X__CA_HA
+  CD1   CD2    CG    CB     ai_CA_CA_CA_CT
+  CE1   CE2    CZ    OH     ai_CA_CA_C__OH
+; end residue TYR-C: 22 atoms, 23 bonds, 22 pdihs, 8 idihs
+
+; GLUTAMIC ACID COO- ANION 
+; 
+[ GLU-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.519     0 ; -0.5192
+    H     H    0.305     1 ; -0.2137
+   CA    CT   -0.206     2 ; -0.4196
+   HA    H1    0.140     3 ; -0.2797
+   CB    CT    0.007     4 ; -0.2726
+  HB1    HC   -0.008     5 ; -0.2804
+  HB2    HC   -0.008     6 ; -0.2882
+   CG    CT    0.068     7 ; -0.2207
+  HG1    HC   -0.055     8 ; -0.2755
+  HG2    HC   -0.055     9 ; -0.3303
+   CD     C    0.818    10 ; 0.488
+  OE1    O2   -0.822    11 ; -0.334
+  OE2    O2   -0.822    12 ; -1.156
+    C     C    0.742    13 ; -0.414
+    O    O2   -0.793    14 ; -1.207
+  OXT    O2   -0.793    15 ; -2
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   OE2
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CG   OE1    CD   OE2     ai_X__O2_C__O2
+; end residue GLU-C: 16 atoms, 16 bonds, 16 pdihs, 3 idihs
+
+; ASPARTIC ACID COO- ANION 
+; 
+[ ASP-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.519     0 ; -0.5192
+    H     H    0.305     1 ; -0.2137
+   CA    CT   -0.182     2 ; -0.3954
+   HA    H1    0.105     3 ; -0.2908
+   CB    CT   -0.068     4 ; -0.3585
+  HB1    HC   -0.021     5 ; -0.3797
+  HB2    HC   -0.021     6 ; -0.4009
+   CG     C    0.885     7 ; 0.4842
+  OD1    O2   -0.816     8 ; -0.332
+  OD2    O2   -0.816     9 ; -1.1482
+    C     C    0.726    10 ; -0.4226
+    O    O2   -0.789    11 ; -1.2113
+  OXT    O2   -0.789    12 ; -2
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   OD2
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+   CB   OD1    CG   OD2     ai_X__O2_C__O2
+; end residue ASP-C: 13 atoms, 13 bonds, 13 pdihs, 3 idihs
+
+; LYSINE COO- ANION 
+; 
+[ LYS-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.348     0 ; -0.3481
+    H     H    0.276     1 ; -0.0717
+   CA    CT   -0.290     2 ; -0.362
+   HA    H1    0.144     3 ; -0.2182
+   CB    CT   -0.054     4 ; -0.272
+  HB1    HC    0.048     5 ; -0.2238
+  HB2    HC    0.048     6 ; -0.1756
+   CG    CT    0.023     7 ; -0.1529
+  HG1    HC    0.013     8 ; -0.1395
+  HG2    HC    0.013     9 ; -0.1261
+   CD    CT   -0.039    10 ; -0.1653
+  HD1    HC    0.061    11 ; -0.1042
+  HD2    HC    0.061    12 ; -0.0431
+   CE    CT   -0.018    13 ; -0.0607
+  HE1    HP    0.112    14 ; 0.0514
+  HE2    HP    0.112    15 ; 0.1635
+   NZ    N3   -0.374    16 ; -0.2106
+  HZ1     H    0.337    17 ; 0.1268
+  HZ2     H    0.337    18 ; 0.4642
+  HZ3     H    0.337    19 ; 0.8016
+    C     C    0.849    20 ; 1.6504
+    O    O2   -0.825    21 ; 0.8252
+  OXT    O2   -0.825    22 ; -2.22045e-16
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    CE
+   CE   HE1
+   CE   HE2
+   CE    NZ
+   NZ   HZ1
+   NZ   HZ2
+   NZ   HZ3
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue LYS-C: 23 atoms, 23 bonds, 23 pdihs, 2 idihs
+
+; PROLINE COO- ANION 
+; 
+[ PRO-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.280     0 ; -0.2802
+   CD    CT    0.043     1 ; -0.2368
+  HD1    H1    0.033     2 ; -0.2037
+  HD2    H1    0.033     3 ; -0.1706
+   CG    CT    0.047     4 ; -0.124
+  HG1    HC    0.017     5 ; -0.1068
+  HG2    HC    0.017     6 ; -0.0896
+   CB    CT   -0.054     7 ; -0.1439
+  HB1    HC    0.038     8 ; -0.1058
+  HB2    HC    0.038     9 ; -0.0677
+   CA    CT   -0.134    10 ; -0.2013
+   HA    H1    0.078    11 ; -0.1237
+    C     C    0.663    12 ; 0.5394
+    O    O2   -0.770    13 ; -0.2303
+  OXT    O2   -0.770    14 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N    CD
+   CD   HD1
+   CD   HD2
+   CD    CG
+   CG   HG1
+   CG   HG2
+   CG    CB
+   CB   HB1
+   CB   HB2
+    N    CA
+   CA    HA
+   CA     C
+    C     O
+    C   OXT
+   CA    CB
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CG    CD     N    -C     ad_CT_CT_N__C__1
+   CG    CD     N    -C     ad_CT_CT_N__C__2
+   CG    CD     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   CA   OXT     C     O     ai_X__O2_C__O2
+   -C    CD     N    CA     ai_X__CT_N__CT
+; end residue PRO-C: 15 atoms, 16 bonds, 15 pdihs, 2 idihs
+
+; CYSTEINE COO- ANION 
+; 
+[ CYS-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.164     2 ; -0.2775
+   HA    H1    0.140     3 ; -0.1379
+   CB    CT   -0.200     4 ; -0.3375
+  HB1    H1    0.144     5 ; -0.1938
+  HB2    H1    0.144     6 ; -0.0501
+   SG    SH   -0.310     7 ; -0.3603
+  HS1    HS    0.207     8 ; -0.1535
+    C     C    0.750     9 ; 0.5962
+    O    O2   -0.798    10 ; -0.2019
+  OXT    O2   -0.798    11 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   SG   HS1
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue CYS-C: 12 atoms, 12 bonds, 12 pdihs, 2 idihs
+
+; CYSTINE(S-S BRIDGE) COO- ANION 
+; 
+[ CYX-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.132     2 ; -0.2458
+   HA    H1    0.094     3 ; -0.152
+   CB    CT   -0.194     4 ; -0.3463
+  HB1    H1    0.123     5 ; -0.2235
+  HB2    H1    0.123     6 ; -0.1007
+   SG     S   -0.053     7 ; -0.1536
+    C     C    0.762     8 ; 0.6082
+    O    O2   -0.804     9 ; -0.1959
+  OXT    O2   -0.804    10 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue CYX-C: 11 atoms, 11 bonds, 11 pdihs, 2 idihs
+
+; METHIONINE COO- ANION 
+; 
+[ MET-C ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N     N   -0.382     0 ; -0.3821
+    H     H    0.268     1 ; -0.114
+   CA    CT   -0.260     2 ; -0.3737
+   HA    H1    0.128     3 ; -0.246
+   CB    CT   -0.024     4 ; -0.2696
+  HB1    HC    0.048     5 ; -0.2216
+  HB2    HC    0.048     6 ; -0.1736
+   CG    CT    0.049     7 ; -0.1244
+  HG1    H1    0.032     8 ; -0.0927
+  HG2    H1    0.032     9 ; -0.061
+   SD     S   -0.269    10 ; -0.3302
+   CE    CT   -0.038    11 ; -0.3678
+  HE1    H1    0.062    12 ; -0.3053
+  HE2    H1    0.062    13 ; -0.2428
+  HE3    H1    0.062    14 ; -0.1803
+    C     C    0.801    15 ; 0.621
+    O    O2   -0.810    16 ; -0.1895
+  OXT    O2   -0.810    17 ; -1
+ [ bonds ]
+;  ai    aj
+   -C     N
+    N     H
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    SD
+   SD    CE
+   CE   HE1
+   CE   HE2
+   CE   HE3
+   CA     C
+    C     O
+    C   OXT
+ [ dihedrals ]
+;  ai    aj    ak    al
+   CB    CA     N    -C     ad_CT_CT_N__C__1
+   CB    CA     N    -C     ad_CT_CT_N__C__2
+   CB    CA     N    -C     ad_CT_CT_N__C__3
+ [ impropers ]
+;  ai    aj    ak    al
+   -C    CA     N     H     ai_X__X__N__H_
+   CA   OXT     C     O     ai_X__O2_C__O2
+; end residue MET-C: 18 atoms, 18 bonds, 18 pdihs, 2 idihs
+
+; end of file /usr/slocal/amber6/dat/all_aminoct94.in
+; from file /usr/slocal/amber6/dat/all_aminont94.in
+; 
+; reading database: All-atom, NH3+ terminal
+; 
+; ALANINE 
+; 
+[ ALA-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.141     0 ; 0.1414
+   H1     H    0.200     1 ; 0.3411
+   H2     H    0.200     2 ; 0.5408
+   H3     H    0.200     3 ; 0.7405
+   CA    CT    0.096     4 ; 0.8367
+   HA    HP    0.089     5 ; 0.9256
+   CB    CT   -0.060     6 ; 0.8659
+  HB1    HC    0.030     7 ; 0.8959
+  HB2    HC    0.030     8 ; 0.9259
+  HB3    HC    0.030     9 ; 0.9559
+    C     C    0.616    10 ; 1.5722
+    O     O   -0.572    11 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB   HB3
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue ALA-N: 12 atoms, 11 bonds, 12 pdihs, 1 idihs
+
+; GLYCINE 
+; 
+[ GLY-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.294     0 ; 0.2943
+   H1     H    0.164     1 ; 0.4585
+   H2     H    0.164     2 ; 0.6227
+   H3     H    0.164     3 ; 0.7869
+   CA    CT   -0.010     4 ; 0.7769
+  HA1    HP    0.089     5 ; 0.8664
+  HA2    HP    0.089     6 ; 0.9559
+    C     C    0.616     7 ; 1.5722
+    O     O   -0.572     8 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA   HA1
+   CA   HA2
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue GLY-N: 9 atoms, 8 bonds, 9 pdihs, 1 idihs
+
+; SERINE 
+; 
+[ SER-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.185     0 ; 0.1849
+   H1     H    0.190     1 ; 0.3747
+   H2     H    0.190     2 ; 0.5645
+   H3     H    0.190     3 ; 0.7543
+   CA    CT    0.057     4 ; 0.811
+   HA    HP    0.078     5 ; 0.8892
+   CB    CT    0.260     6 ; 1.1488
+  HB1    H1    0.027     7 ; 1.1761
+  HB2    H1    0.027     8 ; 1.2034
+   OG    OH   -0.671     9 ; 0.532
+   HG    HO    0.424    10 ; 0.9559
+    C     C    0.616    11 ; 1.5722
+    O     O   -0.572    12 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    OG
+   OG    HG
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue SER-N: 13 atoms, 12 bonds, 13 pdihs, 1 idihs
+
+; THREONINE 
+; 
+[ THR-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.181     0 ; 0.1812
+   H1     H    0.193     1 ; 0.3746
+   H2     H    0.193     2 ; 0.568
+   H3     H    0.193     3 ; 0.7614
+   CA    CT    0.003     4 ; 0.7648
+   HA    HP    0.109     5 ; 0.8735
+   CB    CT    0.451     6 ; 1.3249
+   HB    H1   -0.032     7 ; 1.2926
+  CG2    CT   -0.255     8 ; 1.0372
+ HG21    HC    0.063     9 ; 1.0999
+ HG22    HC    0.063    10 ; 1.1626
+ HG23    HC    0.063    11 ; 1.2253
+  OG1    OH   -0.676    12 ; 0.5489
+  HG1    HO    0.407    13 ; 0.9559
+    C     C    0.616    14 ; 1.5722
+    O     O   -0.572    15 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CB   OG1
+  OG1   HG1
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue THR-N: 16 atoms, 15 bonds, 16 pdihs, 1 idihs
+
+; LEUCINE 
+; 
+[ LEU-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.101     0 ; 0.101
+   H1     H    0.215     1 ; 0.3158
+   H2     H    0.215     2 ; 0.5306
+   H3     H    0.215     3 ; 0.7454
+   CA    CT    0.010     4 ; 0.7558
+   HA    HP    0.105     5 ; 0.8611
+   CB    CT   -0.024     6 ; 0.8367
+  HB1    HC    0.026     7 ; 0.8623
+  HB2    HC    0.026     8 ; 0.8879
+   CG    CT    0.342     9 ; 1.23
+   HG    HC   -0.038    10 ; 1.192
+  CD1    CT   -0.411    11 ; 0.7814
+ HD11    HC    0.098    12 ; 0.8794
+ HD12    HC    0.098    13 ; 0.9774
+ HD13    HC    0.098    14 ; 1.0754
+  CD2    CT   -0.410    15 ; 0.665
+ HD21    HC    0.098    16 ; 0.763
+ HD22    HC    0.098    17 ; 0.861
+ HD23    HC    0.098    18 ; 0.959
+    C     C    0.612    19 ; 1.5713
+    O     O   -0.571    20 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG    HG
+   CG   CD1
+  CD1  HD11
+  CD1  HD12
+  CD1  HD13
+   CG   CD2
+  CD2  HD21
+  CD2  HD22
+  CD2  HD23
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue LEU-N: 21 atoms, 20 bonds, 21 pdihs, 1 idihs
+
+; ISOLEUCINE 
+; 
+[ ILE-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.031     0 ; 0.0311
+   H1     H    0.233     1 ; 0.264
+   H2     H    0.233     2 ; 0.4969
+   H3     H    0.233     3 ; 0.7298
+   CA    CT    0.026     4 ; 0.7555
+   HA    HP    0.103     5 ; 0.8586
+   CB    CT    0.189     6 ; 1.0471
+   HB    HC    0.021     7 ; 1.0684
+  CG2    CT   -0.372     8 ; 0.6964
+ HG21    HC    0.095     9 ; 0.7911
+ HG22    HC    0.095    10 ; 0.8858
+ HG23    HC    0.095    11 ; 0.9805
+  CG1    CT   -0.039    12 ; 0.9418
+ HG11    HC    0.020    13 ; 0.9619
+ HG12    HC    0.020    14 ; 0.982
+  CD1    CT   -0.091    15 ; 0.8912
+ HD11    HC    0.023    16 ; 0.9138
+ HD12    HC    0.023    17 ; 0.9364
+ HD13    HC    0.023    18 ; 0.959
+    C     C    0.612    19 ; 1.5713
+    O     O   -0.571    20 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CB   CG1
+  CG1  HG11
+  CG1  HG12
+  CG1   CD1
+  CD1  HD11
+  CD1  HD12
+  CD1  HD13
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue ILE-N: 21 atoms, 20 bonds, 21 pdihs, 1 idihs
+
+; VALINE 
+; 
+[ VAL-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.058     0 ; 0.0577
+   H1     H    0.227     1 ; 0.2849
+   H2     H    0.227     2 ; 0.5121
+   H3     H    0.227     3 ; 0.7393
+   CA    CT   -0.005     4 ; 0.7339
+   HA    HP    0.109     5 ; 0.8432
+   CB    CT    0.320     6 ; 1.1628
+   HB    HC   -0.022     7 ; 1.1407
+  CG1    CT   -0.313     8 ; 0.8278
+ HG11    HC    0.073     9 ; 0.9013
+ HG12    HC    0.073    10 ; 0.9748
+ HG13    HC    0.073    11 ; 1.0483
+  CG2    CT   -0.313    12 ; 0.7354
+ HG21    HC    0.073    13 ; 0.8089
+ HG22    HC    0.073    14 ; 0.8824
+ HG23    HC    0.073    15 ; 0.9559
+    C     C    0.616    16 ; 1.5722
+    O     O   -0.572    17 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB    HB
+   CB   CG1
+  CG1  HG11
+  CG1  HG12
+  CG1  HG13
+   CB   CG2
+  CG2  HG21
+  CG2  HG22
+  CG2  HG23
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue VAL-N: 18 atoms, 17 bonds, 18 pdihs, 1 idihs
+
+; ASPARAGINE 
+; 
+[ ASN-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.180     0 ; 0.1801
+   H1     H    0.192     1 ; 0.3722
+   H2     H    0.192     2 ; 0.5643
+   H3     H    0.192     3 ; 0.7564
+   CA    CT    0.037     4 ; 0.7932
+   HA    HP    0.123     5 ; 0.9163
+   CB    CT   -0.028     6 ; 0.888
+  HB1    HC    0.051     7 ; 0.9395
+  HB2    HC    0.051     8 ; 0.991
+   CG     C    0.583     9 ; 1.5743
+  OD1     O   -0.574    10 ; 0.9999
+  ND2     N   -0.863    11 ; 0.1365
+ HD21     H    0.410    12 ; 0.5462
+ HD22     H    0.410    13 ; 0.9559
+    C     C    0.616    14 ; 1.5722
+    O     O   -0.572    15 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   ND2
+  ND2  HD21
+  ND2  HD22
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CB   ND2    CG   OD1     ai_X__X__C__O_
+   CG  HD21   ND2  HD22     ai_X__X__N__H_
+; end residue ASN-N: 16 atoms, 15 bonds, 16 pdihs, 3 idihs
+
+; GLUTAMINE 
+; 
+[ GLN-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.149     0 ; 0.1493
+   H1     H    0.200     1 ; 0.3489
+   H2     H    0.200     2 ; 0.5485
+   H3     H    0.200     3 ; 0.7481
+   CA    CT    0.054     4 ; 0.8017
+   HA    HP    0.102     5 ; 0.9032
+   CB    CT    0.065     6 ; 0.9683
+  HB1    HC    0.005     7 ; 0.9733
+  HB2    HC    0.005     8 ; 0.9783
+   CG    CT   -0.090     9 ; 0.888
+  HG1    HC    0.033    10 ; 0.9211
+  HG2    HC    0.033    11 ; 0.9542
+   CD     C    0.735    12 ; 1.6896
+  OE1     O   -0.613    13 ; 1.0763
+  NE2     N   -1.003    14 ; 0.0732
+ HE21     H    0.443    15 ; 0.5161
+ HE22     H    0.443    16 ; 0.959
+    C     C    0.612    17 ; 1.5713
+    O     O   -0.571    18 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   NE2
+  NE2  HE21
+  NE2  HE22
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   NE2    CD   OE1     ai_X__X__C__O_
+   CD  HE21   NE2  HE22     ai_X__X__N__H_
+; end residue GLN-N: 19 atoms, 18 bonds, 19 pdihs, 3 idihs
+
+; ARGININE 
+; 
+[ ARG-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.131     0 ; 0.1305
+   H1     H    0.208     1 ; 0.3388
+   H2     H    0.208     2 ; 0.5471
+   H3     H    0.208     3 ; 0.7554
+   CA    CT   -0.022     4 ; 0.7331
+   HA    HP    0.124     5 ; 0.8573
+   CB    CT    0.012     6 ; 0.8691
+  HB1    HC    0.023     7 ; 0.8917
+  HB2    HC    0.023     8 ; 0.9143
+   CG    CT    0.024     9 ; 0.9379
+  HG1    HC    0.031    10 ; 0.9688
+  HG2    HC    0.031    11 ; 0.9997
+   CD    CT    0.093    12 ; 1.0932
+  HD1    H1    0.053    13 ; 1.1459
+  HD2    H1    0.053    14 ; 1.1986
+   NE    N2   -0.565    15 ; 0.6336
+   HE     H    0.359    16 ; 0.9928
+   CZ    CA    0.828    17 ; 1.8209
+  NH1    N2   -0.869    18 ; 0.9516
+ HH11     H    0.449    19 ; 1.401
+ HH12     H    0.449    20 ; 1.8504
+  NH2    N2   -0.869    21 ; 0.9811
+ HH21     H    0.449    22 ; 1.4305
+ HH22     H    0.449    23 ; 1.8799
+    C     C    0.721    24 ; 2.6013
+    O     O   -0.601    25 ; 2
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    NE
+   NE    HE
+   NE    CZ
+   CZ   NH1
+  NH1  HH11
+  NH1  HH12
+   CZ   NH2
+  NH2  HH21
+  NH2  HH22
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   NE   NH1    CZ   NH2     ai_X__N2_CA_N2
+   CD    CZ    NE    HE     ai_X__X__N2_H_
+   CZ  HH11   NH1  HH12     ai_X__X__N2_H_
+   CZ  HH21   NH2  HH22     ai_X__X__N2_H_
+; end residue ARG-N: 26 atoms, 25 bonds, 26 pdihs, 5 idihs
+
+; HISTIDINE DELTAH 
+; 
+[ HID-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.154     0 ; 0.1542
+   H1     H    0.196     1 ; 0.3505
+   H2     H    0.196     2 ; 0.5468
+   H3     H    0.196     3 ; 0.7431
+   CA    CT    0.096     4 ; 0.8395
+   HA    HP    0.096     5 ; 0.9353
+   CB    CT    0.026     6 ; 0.9612
+  HB1    HC    0.021     7 ; 0.9821
+  HB2    HC    0.021     8 ; 1.003
+   CG    CC   -0.040     9 ; 0.9631
+  ND1    NA   -0.382    10 ; 0.5812
+  HD1     H    0.363    11 ; 0.9444
+  CE1    CR    0.213    12 ; 1.1571
+  HE1    H5    0.139    13 ; 1.2956
+  NE2    NB   -0.571    14 ; 0.7245
+  CD2    CV    0.105    15 ; 0.8291
+  HD2    H4    0.130    16 ; 0.959
+    C     C    0.612    17 ; 1.5713
+    O     O   -0.571    18 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   HD1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE1   ND1   HD1     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CV_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NA_CV_CC_CT
+; end residue HID-N: 19 atoms, 19 bonds, 19 pdihs, 5 idihs
+
+; HISTIDINE EPSILONH 
+; 
+[ HIE-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.147     0 ; 0.1472
+   H1     H    0.202     1 ; 0.3488
+   H2     H    0.202     2 ; 0.5504
+   H3     H    0.202     3 ; 0.752
+   CA    CT    0.024     4 ; 0.7756
+   HA    HP    0.138     5 ; 0.9136
+   CB    CT    0.049     6 ; 0.9625
+  HB1    HC    0.022     7 ; 0.9848
+  HB2    HC    0.022     8 ; 1.0071
+   CG    CC    0.174     9 ; 1.1811
+  ND1    NB   -0.558    10 ; 0.6232
+  CE1    CR    0.180    11 ; 0.8036
+  HE1    H5    0.140    12 ; 0.9433
+  NE2    NA   -0.278    13 ; 0.6652
+  HE2     H    0.332    14 ; 0.9976
+  CD2    CW   -0.235    15 ; 0.7627
+  HD2    H4    0.196    16 ; 0.959
+    C     C    0.612    17 ; 1.5713
+    O     O   -0.571    18 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   HE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+  CE1   CD2   NE2   HE2     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CW_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NB_CW_CC_CT
+; end residue HIE-N: 19 atoms, 19 bonds, 19 pdihs, 5 idihs
+
+; HISTIDINE PLUS 
+; 
+[ HIP-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.256     0 ; 0.256
+   H1     H    0.170     1 ; 0.4264
+   H2     H    0.170     2 ; 0.5968
+   H3     H    0.170     3 ; 0.7672
+   CA    CT    0.058     4 ; 0.8253
+   HA    HP    0.105     5 ; 0.93
+   CB    CT    0.048     6 ; 0.9784
+  HB1    HC    0.053     7 ; 1.0315
+  HB2    HC    0.053     8 ; 1.0846
+   CG    CC   -0.024     9 ; 1.061
+  ND1    NA   -0.151    10 ; 0.91
+  HD1     H    0.382    11 ; 1.2921
+  CE1    CR   -0.001    12 ; 1.291
+  HE1    H5    0.265    13 ; 1.5555
+  NE2    NA   -0.174    14 ; 1.3816
+  HE2     H    0.392    15 ; 1.7737
+  CD2    CW   -0.143    16 ; 1.6304
+  HD2    H4    0.249    17 ; 1.8799
+    C     C    0.721    18 ; 2.6013
+    O     O   -0.601    19 ; 2
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   ND1
+  ND1   HD1
+  ND1   CE1
+  CE1   HE1
+  CE1   NE2
+  NE2   HE2
+  NE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE1   ND1   HD1     ai_X__X__NA_H_
+  CE1   CD2   NE2   HE2     ai_X__X__NA_H_
+   CG   NE2   CD2   HD2     ai_X__X__CW_H4
+  ND1   NE2   CE1   HE1     ai_X__X__CR_H5
+  ND1   CD2    CG    CB     ai_NA_CW_CC_CT
+; end residue HIP-N: 20 atoms, 20 bonds, 20 pdihs, 6 idihs
+
+; TRYPTOPHAN 
+; 
+[ TRP-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.191     0 ; 0.1913
+   H1     H    0.189     1 ; 0.3801
+   H2     H    0.189     2 ; 0.5689
+   H3     H    0.189     3 ; 0.7577
+   CA    CT    0.042     4 ; 0.7998
+   HA    HP    0.116     5 ; 0.916
+   CB    CT    0.054     6 ; 0.9703
+  HB1    HC    0.022     7 ; 0.9925
+  HB2    HC    0.022     8 ; 1.0147
+   CG    C*   -0.165     9 ; 0.8493
+  CD1    CW   -0.179    10 ; 0.6705
+  HD1    H4    0.220    11 ; 0.89
+  NE1    NA   -0.344    12 ; 0.5456
+  HE1     H    0.341    13 ; 0.8868
+  CE2    CN    0.158    14 ; 1.0443
+  CZ2    CA   -0.271    15 ; 0.7733
+  HZ2    HA    0.159    16 ; 0.9322
+  CH2    CA   -0.108    17 ; 0.8242
+  HH2    HA    0.141    18 ; 0.9653
+  CZ3    CA   -0.203    19 ; 0.7619
+  HZ3    HA    0.146    20 ; 0.9077
+  CE3    CA   -0.227    21 ; 0.6812
+  HE3    HA    0.165    22 ; 0.8458
+  CD2    CB    0.113    23 ; 0.959
+    C     C    0.612    24 ; 1.5713
+    O     O   -0.571    25 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   NE1
+  NE1   HE1
+  NE1   CE2
+  CE2   CZ2
+  CZ2   HZ2
+  CZ2   CH2
+  CH2   HH2
+  CH2   CZ3
+  CZ3   HZ3
+  CZ3   CE3
+  CE3   HE3
+  CE3   CD2
+   CA     C
+    C     O
+   CG   CD2
+  CE2   CD2
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+  CD1   CE2   NE1   HE1     ai_X__X__NA_H_
+  CE2   CH2   CZ2   HZ2     ai_X__X__CA_HA
+  CZ2   CZ3   CH2   HH2     ai_X__X__CA_HA
+  CH2   CE3   CZ3   HZ3     ai_X__X__CA_HA
+  CZ3   CD2   CE3   HE3     ai_X__X__CA_HA
+   CG   NE1   CD1   HD1     ai_X__X__CW_H4
+  CD1   CD2    CG    CB     ai_CW_CB_C*_CT
+; end residue TRP-N: 26 atoms, 27 bonds, 26 pdihs, 8 idihs
+
+; PHENYLALANINE 
+; 
+[ PHE-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.174     0 ; 0.1737
+   H1     H    0.192     1 ; 0.3658
+   H2     H    0.192     2 ; 0.5579
+   H3     H    0.192     3 ; 0.75
+   CA    CT    0.073     4 ; 0.8233
+   HA    HP    0.104     5 ; 0.9274
+   CB    CT    0.033     6 ; 0.9604
+  HB1    HC    0.010     7 ; 0.9708
+  HB2    HC    0.010     8 ; 0.9812
+   CG    CA    0.003     9 ; 0.9843
+  CD1    CA   -0.139    10 ; 0.8451
+  HD1    HA    0.137    11 ; 0.9825
+  CE1    CA   -0.160    12 ; 0.8223
+  HE1    HA    0.143    13 ; 0.9656
+   CZ    CA   -0.121    14 ; 0.8448
+   HZ    HA    0.133    15 ; 0.9777
+  CE2    CA   -0.160    16 ; 0.8174
+  HE2    HA    0.143    17 ; 0.9607
+  CD2    CA   -0.139    18 ; 0.8216
+  HD2    HA    0.137    19 ; 0.959
+    C     C    0.612    20 ; 1.5713
+    O     O   -0.571    21 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   CE1
+  CE1   HE1
+  CE1    CZ
+   CZ    HZ
+   CZ   CE2
+  CE2   HE2
+  CE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE2   CD2   HD2     ai_X__X__CA_HA
+  CD2    CZ   CE2   HE2     ai_X__X__CA_HA
+  CE1   CE2    CZ    HZ     ai_X__X__CA_HA
+  CD1    CZ   CE1   HE1     ai_X__X__CA_HA
+   CG   CE1   CD1   HD1     ai_X__X__CA_HA
+  CD1   CD2    CG    CB     ai_CA_CA_CA_CT
+; end residue PHE-N: 22 atoms, 22 bonds, 22 pdihs, 7 idihs
+
+; TYROSINE 
+; 
+[ TYR-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.194     0 ; 0.194
+   H1     H    0.187     1 ; 0.3813
+   H2     H    0.187     2 ; 0.5686
+   H3     H    0.187     3 ; 0.7559
+   CA    CT    0.057     4 ; 0.8129
+   HA    HP    0.098     5 ; 0.9112
+   CB    CT    0.066     6 ; 0.9771
+  HB1    HC    0.010     7 ; 0.9873
+  HB2    HC    0.010     8 ; 0.9975
+   CG    CA   -0.021     9 ; 0.977
+  CD1    CA   -0.200    10 ; 0.7768
+  HD1    HA    0.172    11 ; 0.9488
+  CE1    CA   -0.224    12 ; 0.7249
+  HE1    HA    0.165    13 ; 0.8899
+   CZ     C    0.314    14 ; 1.2038
+   OH    OH   -0.558    15 ; 0.646
+   HH    HO    0.400    16 ; 1.0461
+  CE2    CA   -0.224    17 ; 0.8222
+  HE2    HA    0.165    18 ; 0.9872
+  CD2    CA   -0.200    19 ; 0.787
+  HD2    HA    0.172    20 ; 0.959
+    C     C    0.612    21 ; 1.5713
+    O     O   -0.571    22 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   CD1
+  CD1   HD1
+  CD1   CE1
+  CE1   HE1
+  CE1    CZ
+   CZ    OH
+   OH    HH
+   CZ   CE2
+  CE2   HE2
+  CE2   CD2
+  CD2   HD2
+   CA     C
+    C     O
+   CG   CD2
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   CE2   CD2   HD2     ai_X__X__CA_HA
+  CD2    CZ   CE2   HE2     ai_X__X__CA_HA
+  CD1    CZ   CE1   HE1     ai_X__X__CA_HA
+   CG   CE1   CD1   HD1     ai_X__X__CA_HA
+  CD1   CD2    CG    CB     ai_CA_CA_CA_CT
+  CE1   CE2    CZ    OH     ai_CA_CA_C__OH
+; end residue TYR-N: 23 atoms, 23 bonds, 23 pdihs, 7 idihs
+
+; GLUTAMIC ACID 
+; 
+[ GLU-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.002     0 ; 0.0017
+   H1     H    0.239     1 ; 0.2408
+   H2     H    0.239     2 ; 0.4799
+   H3     H    0.239     3 ; 0.719
+   CA    CT    0.059     4 ; 0.7778
+   HA    HP    0.120     5 ; 0.898
+   CB    CT    0.091     6 ; 0.9889
+  HB1    HC   -0.023     7 ; 0.9657
+  HB2    HC   -0.023     8 ; 0.9425
+   CG    CT   -0.024     9 ; 0.9189
+  HG1    HC   -0.032    10 ; 0.8874
+  HG2    HC   -0.032    11 ; 0.8559
+   CD     C    0.809    12 ; 1.6646
+  OE1    O2   -0.819    13 ; 0.8457
+  OE2    O2   -0.819    14 ; 0.0268
+    C     C    0.562    15 ; 0.5889
+    O     O   -0.589    16 ; 2.22045e-16
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   OE1
+   CD   OE2
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CG   OE1    CD   OE2     ai_X__O2_C__O2
+; end residue GLU-N: 17 atoms, 16 bonds, 17 pdihs, 2 idihs
+
+; ASPARTIC ACID 
+; 
+[ ASP-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.078     0 ; 0.0782
+   H1     H    0.220     1 ; 0.2982
+   H2     H    0.220     2 ; 0.5182
+   H3     H    0.220     3 ; 0.7382
+   CA    CT    0.029     4 ; 0.7674
+   HA    HP    0.114     5 ; 0.8815
+   CB    CT   -0.024     6 ; 0.858
+  HB1    HC   -0.017     7 ; 0.8411
+  HB2    HC   -0.017     8 ; 0.8242
+   CG     C    0.819     9 ; 1.6436
+  OD1    O2   -0.808    10 ; 0.8352
+  OD2    O2   -0.808    11 ; 0.0268
+    C     C    0.562    12 ; 0.5889
+    O     O   -0.589    13 ; 0
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   OD1
+   CG   OD2
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+   CB   OD1    CG   OD2     ai_X__O2_C__O2
+; end residue ASP-N: 14 atoms, 13 bonds, 14 pdihs, 2 idihs
+
+; LYSINE 
+; 
+[ LYS-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.097     0 ; 0.0966
+   H1     H    0.216     1 ; 0.3131
+   H2     H    0.216     2 ; 0.5296
+   H3     H    0.216     3 ; 0.7461
+   CA    CT   -0.002     4 ; 0.7446
+   HA    HP    0.118     5 ; 0.8626
+   CB    CT    0.021     6 ; 0.8838
+  HB1    HC    0.028     7 ; 0.9121
+  HB2    HC    0.028     8 ; 0.9404
+   CG    CT   -0.005     9 ; 0.9356
+  HG1    HC    0.012    10 ; 0.9477
+  HG2    HC    0.012    11 ; 0.9598
+   CD    CT   -0.061    12 ; 0.899
+  HD1    HC    0.063    13 ; 0.9623
+  HD2    HC    0.063    14 ; 1.0256
+   CE    CT   -0.018    15 ; 1.0075
+  HE1    HP    0.117    16 ; 1.1246
+  HE2    HP    0.117    17 ; 1.2417
+   NZ    N3   -0.376    18 ; 0.8653
+  HZ1     H    0.338    19 ; 1.2035
+  HZ2     H    0.338    20 ; 1.5417
+  HZ3     H    0.338    21 ; 1.8799
+    C     C    0.721    22 ; 2.6013
+    O     O   -0.601    23 ; 2
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    CD
+   CD   HD1
+   CD   HD2
+   CD    CE
+   CE   HE1
+   CE   HE2
+   CE    NZ
+   NZ   HZ1
+   NZ   HZ2
+   NZ   HZ3
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue LYS-N: 24 atoms, 23 bonds, 24 pdihs, 1 idihs
+
+; PROLINE 
+; 
+[ PRO-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3   -0.202     0 ; -0.202
+   H1     H    0.312     1 ; 0.11
+   H2     H    0.312     2 ; 0.422
+   CD    CT   -0.012     3 ; 0.41
+  HD1    HP    0.100     4 ; 0.51
+  HD2    HP    0.100     5 ; 0.61
+   CG    CT   -0.121     6 ; 0.489
+  HG1    HC    0.100     7 ; 0.589
+  HG2    HC    0.100     8 ; 0.689
+   CB    CT   -0.115     9 ; 0.574
+  HB1    HC    0.100    10 ; 0.674
+  HB2    HC    0.100    11 ; 0.774
+   CA    CT    0.100    12 ; 0.874
+   HA    HP    0.100    13 ; 0.974
+    C     C    0.526    14 ; 1.5
+    O     O   -0.500    15 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    CD
+   CD   HD1
+   CD   HD2
+   CD    CG
+   CG   HG1
+   CG   HG2
+   CG    CB
+   CB   HB1
+   CB   HB2
+    N    CA
+   CA    HA
+   CA     C
+    C     O
+   CB    CA
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue PRO-N: 16 atoms, 16 bonds, 16 pdihs, 1 idihs
+
+; CYSTEINE 
+; 
+[ CYS-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.133     0 ; 0.1325
+   H1     H    0.202     1 ; 0.3348
+   H2     H    0.202     2 ; 0.5371
+   H3     H    0.202     3 ; 0.7394
+   CA    CT    0.093     4 ; 0.8321
+   HA    HP    0.141     5 ; 0.9732
+   CB    CT   -0.119     6 ; 0.8537
+  HB1    H1    0.119     7 ; 0.9725
+  HB2    H1    0.119     8 ; 1.0913
+   SG    SH   -0.330     9 ; 0.7615
+  HS1    HS    0.198    10 ; 0.959
+    C     C    0.612    11 ; 1.5713
+    O     O   -0.571    12 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   SG   HS1
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue CYS-N: 13 atoms, 12 bonds, 13 pdihs, 1 idihs
+
+; CYSTINE(S-S BRIDGE) 
+; 
+[ CYX-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.207     0 ; 0.2069
+   H1     H    0.181     1 ; 0.3884
+   H2     H    0.181     2 ; 0.5699
+   H3     H    0.181     3 ; 0.7514
+   CA    CT    0.105     4 ; 0.8569
+   HA    HP    0.092     5 ; 0.9491
+   CB    CT   -0.028     6 ; 0.9214
+  HB1    H1    0.068     7 ; 0.9894
+  HB2    H1    0.068     8 ; 1.0574
+   SG     S   -0.098     9 ; 0.959
+    C     C    0.612    10 ; 1.5713
+    O     O   -0.571    11 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    SG
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue CYX-N: 12 atoms, 11 bonds, 12 pdihs, 1 idihs
+
+; METHIONINE 
+; 
+[ MET-N ]
+ [ atoms ]
+;name  type   charge    cg ; qtot
+    N    N3    0.159     0 ; 0.1592
+   H1     H    0.198     1 ; 0.3576
+   H2     H    0.198     2 ; 0.556
+   H3     H    0.198     3 ; 0.7544
+   CA    CT    0.022     4 ; 0.7765
+   HA    HP    0.112     5 ; 0.8881
+   CB    CT    0.086     6 ; 0.9746
+  HB1    HC    0.013     7 ; 0.9871
+  HB2    HC    0.013     8 ; 0.9996
+   CG    CT    0.033     9 ; 1.033
+  HG1    H1    0.029    10 ; 1.0622
+  HG2    H1    0.029    11 ; 1.0914
+   SD     S   -0.277    12 ; 0.814
+   CE    CT   -0.034    13 ; 0.7799
+  HE1    H1    0.060    14 ; 0.8396
+  HE2    H1    0.060    15 ; 0.8993
+  HE3    H1    0.060    16 ; 0.959
+    C     C    0.612    17 ; 1.5713
+    O     O   -0.571    18 ; 1
+ [ bonds ]
+;  ai    aj
+    N    H1
+    N    H2
+    N    H3
+    N    CA
+   CA    HA
+   CA    CB
+   CB   HB1
+   CB   HB2
+   CB    CG
+   CG   HG1
+   CG   HG2
+   CG    SD
+   SD    CE
+   CE   HE1
+   CE   HE2
+   CE   HE3
+   CA     C
+    C     O
+ [ impropers ]
+;  ai    aj    ak    al
+   CA    +N     C     O     ai_X__X__C__O_
+; end residue MET-N: 19 atoms, 18 bonds, 19 pdihs, 1 idihs
+
+; end of file /usr/slocal/amber6/dat/all_aminont94.in
+; Found 79 residues

@@ -1,0 +1,111 @@
+; Amber forcefield converted to Gromacs
+; from file /usr/slocal/amber6/dat/parm98.dat
+; 
+; PARM94 for DNA, RNA and proteins with TIP3P Water. USE SCEE=1.2 in energy progs
+; 
+
+; H-bond params not implemented
+; NOTE: all H-bond (10-12) parameters are Zero
+
+; LJ 6-12 equivalent atom symbols
+;  N   NA  N2  N*  NC  NB  N3  NP  NO (9)
+;  C   C*  CA  CB  CC  CN  CM  CK  CQ  CW  CV  CR  CA  CX  CY  CD (16)
+
+; Define LJ 6-12 parameter types:
+#define alj_H        0.06  0.0657328
+#define alj_HO          0          0
+#define alj_HS       0.06  0.0657328
+#define alj_HC     0.1487  0.0657328
+#define alj_H1     0.1387  0.0657328
+#define alj_H2     0.1287  0.0657328
+#define alj_H3     0.1187  0.0657328
+#define alj_HP       0.11  0.0657328
+#define alj_HA     0.1459   0.062802
+#define alj_H4     0.1409   0.062802
+#define alj_H5     0.1359   0.062802
+#define alj_HW          0          0
+#define alj_O     0.16612   0.879228
+#define alj_O2    0.16612   0.879228
+#define alj_OW    0.17683   0.636394
+#define alj_OH     0.1721   0.880903
+#define alj_OS    0.16837   0.711756
+#define alj_CT     0.1908   0.458036
+#define alj_CA     0.1908   0.360065
+#define alj_CM     0.1908   0.360065
+#define alj_C      0.1908   0.360065
+#define alj_N      0.1824   0.711756
+#define alj_S         0.2     1.0467
+#define alj_SH        0.2     1.0467
+#define alj_P        0.21    0.83736
+#define alj_IM      0.247    0.41868
+#define alj_Li     0.1137  0.0766184
+#define alj_IP     0.1868  0.0115974
+#define alj_K      0.2658 0.00137327
+#define alj_Rb     0.2956 0.000711756
+#define alj_Cs     0.3395 0.000337456
+#define alj_I       0.235    1.67472
+#define alj_F       0.175   0.255395
+#define alj_IB        0.5    0.41868
+
+[ atomtypes ]
+;name      mass    q tp sigma/epsilon
+  BR       79.9    0  A alj_BR  ; bromine
+  C       12.01    0  A alj_C   ; sp2 C carbonyl group 
+  CA      12.01    0  A alj_C   ; sp2 C pure aromatic (benzene)
+  CB      12.01    0  A alj_C   ; sp2 aromatic C, 5&6 membered ring junction
+  CC      12.01    0  A alj_C   ; sp2 aromatic C, 5 memb. ring HIS
+  CK      12.01    0  A alj_C   ; sp2 C 5 memb.ring in purines
+  CM      12.01    0  A alj_C   ; sp2 C  pyrimidines in pos. 5 & 6
+  CN      12.01    0  A alj_C   ; sp2 C aromatic 5&6 memb.ring junct.(TRP)
+  CQ      12.01    0  A alj_C   ; sp2 C in 5 mem.ring of purines between 2 N
+  CR      12.01    0  A alj_C   ; sp2 arom as CQ but in HIS
+  CT      12.01    0  A alj_CT  ; sp3 aliphatic C
+  CV      12.01    0  A alj_C   ; sp2 arom. 5 memb.ring w/1 N and 1 H (HIS)
+  CW      12.01    0  A alj_C   ; sp2 arom. 5 memb.ring w/1 N-H and 1 H (HIS)
+  C*      12.01    0  A alj_C   ; sp2 arom. 5 memb.ring w/1 subst. (TRP)
+  C0      40.08    0  A alj_C0  ; calcium
+  F          19    0  A alj_F   ; fluorine
+  H       1.008    0  A alj_H   ; H bonded to nitrogen atoms
+  HC      1.008    0  A alj_HC  ; H aliph. bond. to C without electrwd.group
+  H1      1.008    0  A alj_H1  ; H aliph. bond. to C with 1 electrwd. group
+  H2      1.008    0  A alj_H2  ; H aliph. bond. to C with 2 electrwd.groups
+  H3      1.008    0  A alj_H3  ; H aliph. bond. to C with 3 eletrwd.groups
+  HA      1.008    0  A alj_HA  ; H arom. bond. to C without elctrwd. groups
+  H4      1.008    0  A alj_H4  ; H arom. bond. to C with 1 electrwd. group
+  H5      1.008    0  A alj_H5  ; H arom. bond. to C with 2 electrwd. groups
+  HO      1.008    0  A alj_HO  ; hydroxyl group
+  HS      1.008    0  A alj_HS  ; hydrogen bonded to sulphur
+  HW      1.008    0  A alj_HW  ; H in TIP3P water
+  HP      1.008    0  A alj_HP  ; H bonded to C next to positively charged gr
+  I       126.9    0  A alj_I   ; iodine
+  IM      35.45    0  A alj_IM  ; assumed to be Cl-
+  IP      22.99    0  A alj_IP  ; assumed to be Na+
+  IB        131    0  A alj_IB  ; 'big ion w/ waters' for vacuum (Na+, 6H2O)
+  MG     24.305    0  A alj_MG  ; magnesium
+  N       14.01    0  A alj_N   ; sp2 nitrogen in amide groups
+  NA      14.01    0  A alj_N   ; sp2 N in 5 memb.ring w/H atom (HIS)
+  NB      14.01    0  A alj_N   ; sp2 N in 5 memb.ring w/LP (HIS,ADE,GUA)
+  NC      14.01    0  A alj_N   ; sp2 N in 6 memb.ring w/LP (ADE,GUA)
+  N2      14.01    0  A alj_N   ; sp2 N in amino groups
+  N3      14.01    0  A alj_N   ; sp3 N for charged amino groups (Lys, etc)
+  N*      14.01    0  A alj_N   ; sp2 N 
+  O          16    0  A alj_O   ; carbonyl group oxygen
+  OW         16    0  A alj_OW  ; oxygen in TIP3P water
+  OH         16    0  A alj_OH  ; oxygen in hydroxyl group
+  OS         16    0  A alj_OS  ; ether and ester oxygen
+  O2         16    0  A alj_O2  ; carboxyl and phosphate group oxygen
+  P       30.97    0  A alj_P   ; phosphate
+  S       32.06    0  A alj_S   ; sulphur in disulfide linkage
+  SH      32.06    0  A alj_SH  ; sulphur in cystine
+  CU      63.55    0  A alj_CU  ; copper
+  FE         55    0  A alj_FE  ; iron
+  Li       6.94    0  A alj_Li  ; lithium
+  K        39.1    0  A alj_K   ; potassium
+  Rb      85.47    0  A alj_Rb  ; rubidium
+  Cs     132.91    0  A alj_Cs  ; cesium
+
+; Found:
+; # atoms:           54
+; # H-bonds (10-12): 1
+; # equivalent 6-12: 2
+; # LJ (6-12):       34

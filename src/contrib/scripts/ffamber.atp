@@ -1,0 +1,54 @@
+  BR       79.9 ; bromine
+  C       12.01 ; sp2 C carbonyl group 
+  CA      12.01 ; sp2 C pure aromatic (benzene)
+  CB      12.01 ; sp2 aromatic C, 5&6 membered ring junction
+  CC      12.01 ; sp2 aromatic C, 5 memb. ring HIS
+  CK      12.01 ; sp2 C 5 memb.ring in purines
+  CM      12.01 ; sp2 C  pyrimidines in pos. 5 & 6
+  CN      12.01 ; sp2 C aromatic 5&6 memb.ring junct.(TRP)
+  CQ      12.01 ; sp2 C in 5 mem.ring of purines between 2 N
+  CR      12.01 ; sp2 arom as CQ but in HIS
+  CT      12.01 ; sp3 aliphatic C
+  CV      12.01 ; sp2 arom. 5 memb.ring w/1 N and 1 H (HIS)
+  CW      12.01 ; sp2 arom. 5 memb.ring w/1 N-H and 1 H (HIS)
+  C*      12.01 ; sp2 arom. 5 memb.ring w/1 subst. (TRP)
+  C0      40.08 ; calcium
+  F          19 ; fluorine
+  H       1.008 ; H bonded to nitrogen atoms
+  HC      1.008 ; H aliph. bond. to C without electrwd.group
+  H1      1.008 ; H aliph. bond. to C with 1 electrwd. group
+  H2      1.008 ; H aliph. bond. to C with 2 electrwd.groups
+  H3      1.008 ; H aliph. bond. to C with 3 eletrwd.groups
+  HA      1.008 ; H arom. bond. to C without elctrwd. groups
+  H4      1.008 ; H arom. bond. to C with 1 electrwd. group
+  H5      1.008 ; H arom. bond. to C with 2 electrwd. groups
+  HO      1.008 ; hydroxyl group
+  HS      1.008 ; hydrogen bonded to sulphur
+  HW      1.008 ; H in TIP3P water
+  HP      1.008 ; H bonded to C next to positively charged gr
+  I       126.9 ; iodine
+  IM      35.45 ; assumed to be Cl-
+  IP      22.99 ; assumed to be Na+
+  IB        131 ; 'big ion w/ waters' for vacuum (Na+, 6H2O)
+  MG     24.305 ; magnesium
+  N       14.01 ; sp2 nitrogen in amide groups
+  NA      14.01 ; sp2 N in 5 memb.ring w/H atom (HIS)
+  NB      14.01 ; sp2 N in 5 memb.ring w/LP (HIS,ADE,GUA)
+  NC      14.01 ; sp2 N in 6 memb.ring w/LP (ADE,GUA)
+  N2      14.01 ; sp2 N in amino groups
+  N3      14.01 ; sp3 N for charged amino groups (Lys, etc)
+  N*      14.01 ; sp2 N 
+  O          16 ; carbonyl group oxygen
+  OW         16 ; oxygen in TIP3P water
+  OH         16 ; oxygen in hydroxyl group
+  OS         16 ; ether and ester oxygen
+  O2         16 ; carboxyl and phosphate group oxygen
+  P       30.97 ; phosphate
+  S       32.06 ; sulphur in disulfide linkage
+  SH      32.06 ; sulphur in cystine
+  CU      63.55 ; copper
+  FE         55 ; iron
+  Li       6.94 ; lithium
+  K        39.1 ; potassium
+  Rb      85.47 ; rubidium
+  Cs     132.91 ; cesium
