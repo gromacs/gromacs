@@ -179,7 +179,6 @@ static int select_atomnumbers(char **string,t_atoms *atoms,atom_id n1,
 			      atom_id *nr,atom_id *index,char *gname)
 {
   char    buf[STRLEN];
-  int     j,resnr;
   int     i,up;
 
   *nr=0;
@@ -195,11 +194,11 @@ static int select_atomnumbers(char **string,t_atoms *atoms,atom_id n1,
 	index[*nr]=i;
 	(*nr)++;
       }  
-      printf("Found %u atom%s in range %u-%u\n",*nr,(*nr==1)?"":"s",n1,up);
+      printf("Found %u atom%s in range %u-%d\n",*nr,(*nr==1)?"":"s",n1,up);
       if (n1==up)
 	sprintf(buf,"a_%u",n1);
       else
-	sprintf(buf,"a_%u-%u",n1,up);
+	sprintf(buf,"a_%u-%d",n1,up);
       strcpy(gname,buf);
     }
   }
@@ -245,12 +244,12 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
 	}
       }
     }
-    printf("Found %u atom%s with res.nr. in range %u-%u\n",
+    printf("Found %u atom%s with res.nr. in range %u-%d\n",
 	   *nr,(*nr==1)?"":"s",n1,up);
     if (n1==up)
       sprintf(buf,"r_%u",n1);
     else
-      sprintf(buf,"r_%u-%u",n1,up);
+      sprintf(buf,"r_%u-%d",n1,up);
     strcpy(gname,buf);
   }
   else {
@@ -294,7 +293,9 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
     name[0]=atoms->atom[i].chain;
-    for(j=0; (j<n_names && comp_name(name,names[j])); j++);
+    j=0; 
+    while (j<n_names && comp_name(name,names[j])) 
+      j++;
     if (j<n_names) {
       index[*nr]=i;
       (*nr)++;
@@ -319,7 +320,9 @@ static int select_atomnames(t_atoms *atoms,int n_names,char **names,
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
     name=*(atoms->atomname[i]);
-    for(j=0; (j<n_names && comp_name(name,names[j])); j++);
+    j=0; 
+    while (j<n_names && comp_name(name,names[j])) 
+      j++;
     if (j<n_names) {
       index[*nr]=i;
       (*nr)++;
@@ -343,7 +346,9 @@ static int select_residuenames(t_atoms *atoms,int n_names,char **names,
   *nr=0;
   for(i=0; i<atoms->nr; i++) {
     name=*(atoms->resname[atoms->atom[i].resnr]);
-    for(j=0; (j<n_names && comp_name(name,names[j])); j++);
+    j=0; 
+    while (j<n_names && comp_name(name,names[j])) 
+      j++;
     if (j<n_names) {
       index[*nr]=i;
       (*nr)++;
@@ -623,7 +628,6 @@ static bool parse_entry(char **string,t_atoms *atoms,
 	nr1++;
       }
     }
-    assert(nr1==atoms->nr-*nr);
     *nr=nr1;
     for(i=0; i<nr1; i++) 
       index[i]=index1[i];
@@ -865,11 +869,9 @@ int main(int argc,char *argv[])
   snew(gnames,1);
 
   get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&(atoms.nr));
+  init_t_atoms(&atoms,atoms.nr,TRUE);
   snew(x,atoms.nr);
   snew(v,atoms.nr);
-  snew(atoms.resname,atoms.nr);
-  snew(atoms.atom,atoms.nr);
-  snew(atoms.atomname,atoms.nr);
   fprintf(stderr,"\nReading structure file\n");
   read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,v,box);
 
