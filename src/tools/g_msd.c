@@ -301,7 +301,7 @@ void corr_loop(t_corr *this,char *fn,int gnx[],atom_id *index[],
   fprintf(stderr,"\nUsed %d restart points spaced %g %s over %g %s\n\n", 
 	  this->nrestart, 
 	  convert_time(dt), time_unit(),
-	  convert_time(t), time_unit() );
+	  convert_time(this->time[this->nframes-1]), time_unit() );
   
   close_trj(status);
 }
