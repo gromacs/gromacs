@@ -101,7 +101,7 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
     e[i]=0.0;
 #endif
   }
-    
+  
   for(i=0; (i<NDIM); i++)
     for(m=0; (m<NDIM); m++)
       inten[i][m]=0;
@@ -184,7 +184,7 @@ void rotate_atoms(int gnx,atom_id *index,rvec x[],matrix trans)
   }
 }
 
-real calc_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
+real calc_xcm(rvec x[],int gnx,atom_id *index,t_atom *atom,rvec xcm,
 	      bool bQ)
 {
   int  i,ii,m;
@@ -212,7 +212,7 @@ real calc_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
   return tm;
 }
 
-real sub_xcm(rvec x[],int gnx,atom_id index[],t_atom atom[],rvec xcm,
+real sub_xcm(rvec x[],int gnx,atom_id *index,t_atom atom[],rvec xcm,
 	     bool bQ)
 {
   int  i,ii;
@@ -248,15 +248,18 @@ static void dump_shit(FILE *out,matrix trans,rvec prcomp,real totmass)
 }
 
 
-void orient_princ(t_atoms *atoms,int isize,atom_id *index,rvec x[], rvec *v)
+void orient_princ(t_atoms *atoms,int isize,atom_id *index,
+		  int natoms, rvec x[], rvec *v, rvec *d)
 {
   real    totmass;
-  int     i,m;
+  int     m;
   rvec    xcm,prcomp;
   matrix  trans;
   
-  totmass = sub_xcm(x,atoms->nr,NULL,atoms->atom,xcm,FALSE);
+  totmass = sub_xcm(x,isize,index,atoms->atom,xcm,FALSE);
   principal_comp(isize,index,atoms->atom,x,trans,prcomp);
+  if (d) 
+    copy_rvec(prcomp, *d);
   
   /* Check whether this trans matrix mirrors the molecule */
   if (det(trans) < 0) {
@@ -265,10 +268,10 @@ void orient_princ(t_atoms *atoms,int isize,atom_id *index,rvec x[], rvec *v)
     for(m=0; (m<DIM); m++)
       trans[ZZ][m] = -trans[ZZ][m];
   }  
-  rotate_atoms(atoms->nr,NULL,x,trans);
-  if (v) rotate_atoms(atoms->nr,NULL,v,trans);
+  rotate_atoms(natoms,NULL,x,trans);
+  if (v) rotate_atoms(natoms,NULL,v,trans);
   
-  add_xcm(x,atoms->nr,NULL,xcm);
+  add_xcm(x,natoms,NULL,xcm);
 
   if (debug) dump_shit(stderr,trans,prcomp,totmass);
 }
