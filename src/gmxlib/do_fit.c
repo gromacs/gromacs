@@ -34,6 +34,7 @@ static char *SRCID_do_fit_c = "$Id$";
 #include "nrjac.h"
 #include "vec.h"
 #include "txtdump.h"
+#include "smalloc.h"
 
 #define EPS  1.0e-09
 
@@ -73,7 +74,7 @@ real rmsdev(int natoms,real mass[],rvec x[],rvec xp[])
 void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
 {
   int    c,r,n,j,m,i,irot;
-  double omega[7][7],om[7][7],d[7],xnr,xpc;
+  double **omega=NULL,**om=NULL,d[2*DIM],xnr,xpc;
   matrix vh,vk,R,u;
   /*
   matrix vh,vk,R,vh_d,vk_d,u;
@@ -83,9 +84,18 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   real   max_d;
   rvec   x_old;
 
-  for(i=0;(i<7);i++) {
+  if (omega == NULL) {
+    snew(omega,2*DIM);
+    snew(om,2*DIM);
+    for(i=0; i<2*DIM; i++) {
+      snew(omega[i],2*DIM);
+      snew(om[i],2*DIM);
+    }
+  }
+
+  for(i=0; i<2*DIM; i++) {
     d[i]=0;
-    for(j=0;(j<7);j++) {
+    for(j=0; j<2*DIM; j++) {
       omega[i][j]=0;
       om[i][j]=0;
     }
@@ -107,23 +117,23 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   
   /*construct omega*/
   /*omega is symmetric -> omega==omega' */
-  for(r=0;(r<6);r++)
-    for(c=0;(c<=r);c++)
-      if ((r>=3) && (c<3)) {
-        omega[r+1][c+1]=u[r-3][c];
-        omega[c+1][r+1]=u[r-3][c];
+  for(r=0; r<2*DIM; r++)
+    for(c=0; c<=r; c++)
+      if (r>=DIM && c<DIM) {
+        omega[r][c]=u[r-DIM][c];
+        omega[c][r]=u[r-DIM][c];
       }
       else {
-        omega[r+1][c+1]=0;
-        omega[c+1][r+1]=0;
+        omega[r][c]=0;
+        omega[c][r]=0;
       }
 
   /*determine h and k*/
-  jacobi(omega,6,d,om,&irot);
-  /*real   **omega = input matrix a[1..n][1..n] must be symmetric
+  jacobi(omega,2*DIM,d,om,&irot);
+  /*real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
    *int     natoms = number of rows and columns
-   *real      NULL = d[1]..d[n] are the eigenvalues of a[][]
-   *real       **v = v[1..n][1..n] contains the vectors in columns
+   *real      NULL = d[0]..d[n-1] are the eigenvalues of a[][]
+   *real       **v = v[0..n-1][0..n-1] contains the vectors in columns
    *int      *irot = number of jacobi rotations
    */
 
@@ -134,17 +144,17 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   index=0; /* For the compiler only */
 
   /* Copy only the first two eigenvectors */  
-  for(j=0;(j<2);j++) {
+  for(j=0; j<2; j++) {
     max_d=-1000;
-    for(i=0;(i<6);i++)
-      if (d[i+1]>max_d) {
-        max_d=d[i+1];
+    for(i=0; i<2*DIM; i++)
+      if (d[i]>max_d) {
+        max_d=d[i];
         index=i;
       }
-    d[index+1]=-10000;
-    for(i=0;(i<3);i++) {
-      vh[j][i]=M_SQRT2*om[i+1][index+1];
-      vk[j][i]=M_SQRT2*om[i+4][index+1];
+    d[index]=-10000;
+    for(i=0; i<DIM; i++) {
+      vh[j][i]=M_SQRT2*om[i][index];
+      vk[j][i]=M_SQRT2*om[i+DIM][index];
     }
   }
   /* Calculate the last eigenvector as the outer-product of the first two.
@@ -155,19 +165,19 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   oprod(vk[0],vk[1],vk[2]);
 
   /*determine R*/
-  for(c=0;(c<3);c++)
-    for(r=0;(r<3);r++)
+  for(c=0; c<DIM; c++)
+    for(r=0; r<DIM; r++)
       R[c][r]=vk[0][r]*vh[0][c]+
 	      vk[1][r]*vh[1][c]+
 	      vk[2][r]*vh[2][c];
 
   /*rotate X*/
-  for(j=0;(j<natoms);j++) {
-    for(m=0;(m<3);m++)
+  for(j=0; j<natoms; j++) {
+    for(m=0; m<DIM; m++)
       x_old[m]=x[j][m];
-    for(r=0;(r<3);r++) {
+    for(r=0; r<DIM; r++) {
       x[j][r]=0;
-      for(c=0;(c<3);c++)
+      for(c=0; c<DIM; c++)
         x[j][r]+=R[c][r]*x_old[c];
     }
   }

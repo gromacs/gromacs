@@ -32,6 +32,12 @@
 
 static char *SRCID_nrjac_h = "$Id$";
 
-extern void jacobi(double a[7][7],int n,double d[7],double v[7][7],int *nrot);
-
+extern void jacobi(double **a,int n,double d[],double **v,int *nrot);
+/* 
+ * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
+ * int     natoms = number of rows and columns
+ * real      NULL = d[0]..d[n-1] are the eigenvalues of a[][]
+ * real       **v = v[0..n-1][0..n-1] contains the vectors in columns
+ * int      *irot = number of jacobi rotations
+ */
 #endif

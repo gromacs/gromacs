@@ -32,6 +32,7 @@ static char *SRCID_nrjac_c = "$Id$";
 #include <stdlib.h>
 #include <math.h>
 #include "gstat.h"
+#include "smalloc.h"
 
 /* These routines were taken from NUMERICAL RECIPES */
 
@@ -46,95 +47,82 @@ static void nrerror(char *error_text)
   exit(1);
 }
 
-static void free_vector(double *v,int nl)
-{
-  free((char*)(v+nl-1));
-}
-
-static double *vector(int nl,int nh)
-{
-  double *v;
-  v=(double*)malloc((size_t)((nh-nl+2)*sizeof(double)));
-  if (!v) nrerror("allocation failure in vector()");
-  return v-nl+1;
-}
-
-void jacobi(double a[7][7],int n,double d[7],double v[7][7],int *nrot)
+void jacobi(double **a,int n,double d[],double **v,int *nrot)
 {
   int j,i;
-  int iq_1,ip_1;
+  int iq,ip;
   double tresh,theta,tau,t,sm,s,h,g,c,*b,*z;
 
-  b=vector(1,n);
-  z=vector(1,n);
-  for (ip_1=1;ip_1<=n;ip_1++) {
-    for (iq_1=1;iq_1<=n;iq_1++) v[ip_1][iq_1]=0.0;
-    v[ip_1][ip_1]=1.0;
+  snew(b,n);
+  snew(z,n);
+  for (ip=0; ip<n; ip++) {
+    for (iq=0; iq<n; iq++) v[ip][iq]=0.0;
+    v[ip][ip]=1.0;
   }
-  for (ip_1=1;ip_1<=n;ip_1++) {
-    b[ip_1]=d[ip_1]=a[ip_1][ip_1];
-    z[ip_1]=0.0;
+  for (ip=0; ip<n;ip++) {
+    b[ip]=d[ip]=a[ip][ip];
+    z[ip]=0.0;
   }
   *nrot=0;
-  for (i=1; (i<=50); i++) {
+  for (i=1; i<=50; i++) {
     sm=0.0;
-    for (ip_1=1;ip_1<=n-1;ip_1++) {
-      for (iq_1=ip_1+1;iq_1<=n;iq_1++)
-        sm += fabs(a[ip_1][iq_1]);
+    for (ip=0; ip<n-1; ip++) {
+      for (iq=ip+1; iq<n; iq++)
+        sm += fabs(a[ip][iq]);
     }
     if (sm == 0.0) {
-      free_vector(z,1);
-      free_vector(b,1);
+      sfree(z);
+      sfree(b);
       return;
     }
     if (i < 4)
       tresh=0.2*sm/(n*n);
     else
       tresh=0.0;
-    for (ip_1=1;ip_1<=n-1;ip_1++) {
-      for (iq_1=ip_1+1;iq_1<=n;iq_1++) {
-        g=100.0*fabs(a[ip_1][iq_1]);
-        if (i > 4 && fabs(d[ip_1])+g == fabs(d[ip_1])
-            && fabs(d[iq_1])+g == fabs(d[iq_1]))
-          a[ip_1][iq_1]=0.0;
-        else if (fabs(a[ip_1][iq_1]) > tresh) {
-          h=d[iq_1]-d[ip_1];
+    for (ip=0; ip<n-1; ip++) {
+      for (iq=ip+1; iq<n; iq++) {
+        g=100.0*fabs(a[ip][iq]);
+        if (i > 4 && fabs(d[ip])+g == fabs(d[ip])
+            && fabs(d[iq])+g == fabs(d[iq]))
+          a[ip][iq]=0.0;
+        else if (fabs(a[ip][iq]) > tresh) {
+          h=d[iq]-d[ip];
           if (fabs(h)+g == fabs(h))
-            t=(a[ip_1][iq_1])/h;
+            t=(a[ip][iq])/h;
           else {
-            theta=0.5*h/(a[ip_1][iq_1]);
+            theta=0.5*h/(a[ip][iq]);
             t=1.0/(fabs(theta)+sqrt(1.0+theta*theta));
             if (theta < 0.0) t = -t;
           }
           c=1.0/sqrt(1+t*t);
           s=t*c;
           tau=s/(1.0+c);
-          h=t*a[ip_1][iq_1];
-          z[ip_1] -= h;
-          z[iq_1] += h;
-          d[ip_1] -= h;
-          d[iq_1] += h;
-          a[ip_1][iq_1]=0.0;
-          for (j=1;j<=ip_1-1;j++) {
-            ROTATE(a,j,ip_1,j,iq_1)
+          h=t*a[ip][iq];
+          z[ip] -= h;
+          z[iq] += h;
+          d[ip] -= h;
+          d[iq] += h;
+          a[ip][iq]=0.0;
+          for (j=0; j<ip; j++) {
+            ROTATE(a,j,ip,j,iq)
 	  }
-          for (j=ip_1+1;j<=iq_1-1;j++) {
-            ROTATE(a,ip_1,j,j,iq_1)
+          for (j=ip+1; j<iq; j++) {
+            ROTATE(a,ip,j,j,iq)
             }
-          for (j=iq_1+1;j<=n;j++) {
-            ROTATE(a,ip_1,j,iq_1,j)
+          for (j=iq+1; j<n; j++) {
+            ROTATE(a,ip,j,iq,j)
             }
-          for (j=1;j<=n;j++) {
-            ROTATE(v,j,ip_1,j,iq_1)
+          for (j=0; j<n; j++) {
+            ROTATE(v,j,ip,j,iq)
             }
           ++(*nrot);
         }
       }
     }
-    for (ip_1=1; (ip_1<=n); ip_1++) {
-      b[ip_1] +=  z[ip_1];
-      d[ip_1]  =  b[ip_1];
-      z[ip_1]  =  0.0;
+    for (ip=0; ip<n; ip++) {
+      b[ip] +=  z[ip];
+      d[ip]  =  b[ip];
+      z[ip]  =  0.0;
     }
   }
   nrerror("Too many iterations in routine JACOBI");

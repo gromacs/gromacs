@@ -439,7 +439,7 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
 {
   /* this is a copy of do_fit with some modifications */
   int    c,r,n,j,i,irot;
-  double omega[7][7],om[7][7],d[7],xnr,xpc;
+  double **omega=NULL,**om=NULL,d[6],xnr,xpc;
   matrix vh,vk,u;
   /*
   matrix vh_d,vk_d;
@@ -447,9 +447,18 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
   int    index;
   real   max_d;
 
-  for(i=0;(i<7);i++) {
+  if (omega == NULL) {
+    snew(omega,2*DIM);
+    snew(om,2*DIM);
+    for(i=0; i<2*DIM; i++) {
+      snew(omega[i],2*DIM);
+      snew(om[i],2*DIM);
+    }
+  }
+
+  for(i=0;(i<6);i++) {
     d[i]=0;
-    for(j=0;(j<7);j++) {
+    for(j=0;(j<6);j++) {
       omega[i][j]=0;
       om[i][j]=0;
     }
@@ -472,12 +481,12 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
   for(r=0;(r<6);r++)
     for(c=0;(c<=r);c++)
       if ((r>=3) && (c<3)) {
-        omega[r+1][c+1]=u[r-3][c];
-        omega[c+1][r+1]=u[r-3][c];
+        omega[r][c]=u[r-3][c];
+        omega[c][r]=u[r-3][c];
       }
       else {
-        omega[r+1][c+1]=0;
-        omega[c+1][r+1]=0;
+        omega[r][c]=0;
+        omega[c][r]=0;
       }
 
   /*determine h and k*/
@@ -492,14 +501,14 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R)
   for(j=0;(j<3);j++) {
     max_d=-1000;
     for(i=0;(i<6);i++)
-      if (d[i+1]>max_d) {
-        max_d=d[i+1];
+      if (d[i]>max_d) {
+        max_d=d[i];
         index=i;
       }
-    d[index+1]=-10000;
+    d[index]=-10000;
     for(i=0;(i<3);i++) {
-      vh[j][i]=M_SQRT2*om[i+1][index+1];
-      vk[j][i]=M_SQRT2*om[i+4][index+1];
+      vh[j][i]=M_SQRT2*om[i][index];
+      vk[j][i]=M_SQRT2*om[i+DIM][index];
     }
   }
 

@@ -36,6 +36,9 @@ static char *SRCID_g_multipoles_c = "$Id$";
 #include "physics.h"
 #include "vec.h"
 #include "gstat.h"
+#include "nrjac.h"
+#include "copyrite.h"
+#include "rdgroup.h"
 
 #define NM2ANG 10
 #define TOLERANCE 1.0E-8
@@ -43,15 +46,13 @@ static char *SRCID_g_multipoles_c = "$Id$";
 #define e2d(x) ENM2DEBYE*(x)
 #define delta(a,b) (( a == b ) ? 1.0 : 0.0)
 
-#define NDIM 4          /* We will be using a numerical recipes routine */
+#define NDIM 3          /* We will be using a numerical recipes routine */
 
 static char dim[DIM+1] = "XYZ";
 
 typedef real        	tensor3[DIM][DIM][DIM];      /* 3 rank tensor */
 typedef real        	tensor4[DIM][DIM][DIM][DIM]; /* 4 rank tensor */
 
-
-void pr_jacobi(real **a,int n,real d[],real **v,int *nrot);
 
 void pr_coord(int k0,int k1,atom_id index[],rvec x[],char *msg) 
 {
@@ -423,7 +424,7 @@ void principal_comp_mol(int k0,int k1,atom_id index[],t_atom atom[],rvec x[],
 {
   int  i,j,ai,m,nrot;
   real mm,rx,ry,rz;
-  real **inten,dd[NDIM],e[NDIM],tvec[NDIM],**ev;
+  double **inten,dd[NDIM],tvec[NDIM],**ev;
   real temp;
   
   snew(inten,NDIM);
@@ -431,7 +432,7 @@ void principal_comp_mol(int k0,int k1,atom_id index[],t_atom atom[],rvec x[],
   for(i=0; (i<NDIM); i++) {
     snew(inten[i],NDIM);
     snew(ev[i],NDIM);
-    dd[i]=e[i]=0.0;
+    dd[i]=0.0;
   }
     
   for(i=0; (i<NDIM); i++)
@@ -444,19 +445,19 @@ void principal_comp_mol(int k0,int k1,atom_id index[],t_atom atom[],rvec x[],
     rx=x[ai][XX];
     ry=x[ai][YY];
     rz=x[ai][ZZ];
-    inten[1][1]+=mm*(sqr(ry)+sqr(rz));
-    inten[2][2]+=mm*(sqr(rx)+sqr(rz));
-    inten[3][3]+=mm*(sqr(rx)+sqr(ry));
-    inten[2][1]-=mm*(ry*rx);
-    inten[3][1]-=mm*(rx*rz);
-    inten[3][2]-=mm*(rz*ry);
+    inten[0][0]+=mm*(sqr(ry)+sqr(rz));
+    inten[1][1]+=mm*(sqr(rx)+sqr(rz));
+    inten[2][2]+=mm*(sqr(rx)+sqr(ry));
+    inten[1][0]-=mm*(ry*rx);
+    inten[2][0]-=mm*(rx*rz);
+    inten[2][1]-=mm*(rz*ry);
   }
+  inten[0][1]=inten[1][0];
+  inten[0][2]=inten[2][0];
   inten[1][2]=inten[2][1];
-  inten[1][3]=inten[3][1];
-  inten[2][3]=inten[3][2];
   
   /* Call numerical recipe routines */
-  pr_jacobi(inten,3,dd,ev,&nrot);
+  jacobi(inten,3,dd,ev,&nrot);
   
   /* Sort eigenvalues in descending order */
 #define SWAPPER(i) 			\
@@ -468,14 +469,14 @@ void principal_comp_mol(int k0,int k1,atom_id index[],t_atom atom[],rvec x[],
     dd[i+1]=temp;			\
     for(j=0; (j<NDIM); j++) ev[j][i+1]=tvec[j];			\
   }
+  SWAPPER(0)
   SWAPPER(1)
-  SWAPPER(2)
-  SWAPPER(1)
+  SWAPPER(0)
       
   for(i=0; (i<DIM); i++) {
-    d[i]=dd[i+1];
+    d[i]=dd[i];
     for(m=0; (m<DIM); m++)
-      trans[i][m]=ev[1+m][1+i];
+      trans[i][m]=ev[m][i];
   }
     
   for(i=0; (i<NDIM); i++) {
@@ -496,14 +497,13 @@ void rot_mol_to_std_orient(int k0,int k1,atom_id index[],t_atom atom[],
 			   rvec x[],matrix trans)
 {
   int  i;
-  real tm;
   rvec xcm,xcq,d;
   matrix r_mat;
 
   clear_rvec(xcm);
 
   /* Compute the center of mass of the molecule and make it the origin */
-  tm=calc_xcm_mol(k0,k1,index,atom,x,xcm);
+  calc_xcm_mol(k0,k1,index,atom,x,xcm);
   
   /* Compute the inertia moment tensor of a molecule */
   principal_comp_mol(k0,k1,index,atom,x,trans,d);
@@ -608,11 +608,11 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   int        natoms,status;
   real       t;
   matrix     box;
-  real       t0,t1,tm,tq;
+  real       t0,t1,tq;
   int        teller;
   bool       bCont;
 
-  rvec       *x,*x_s,*m1;
+  rvec       *x,*m1;
   tensor     *m2;
   tensor3    *m3;
   tensor4    *m4;
@@ -624,7 +624,6 @@ void do_multipoles(char *trjfn,char *topfn,char *molndxfn,bool bFull)
   mols = &(top->blocks[ebMOLS]);
 
   natoms  = read_first_x(&status,trjfn,&t,&x,box);
-  snew(x_s,natoms);
   snew(m1,gnx);
   snew(m2,gnx);
   snew(m3,gnx);
@@ -715,4 +714,6 @@ int main(int argc,char *argv[])
 
   do_multipoles(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 		ftp2fn(efNDX,NFILE,fnm),bFull);
+
+  return 0;
 }

@@ -47,7 +47,7 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #include "physics.h"
 #include "calcmu.h"
 #include "enxio.h"
-
+#include "nrjac.h"
 
 #define MAXBIN 200 
 #define enm2Debye 48.0321
@@ -55,8 +55,6 @@ static char *SRCID_g_dipoles_c = "$Id$";
 #define SPEED_OF_LIGHT  2.9979245800e+10
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
 #define CM2D  SPEED_OF_LIGHT*1.0e+19    /* Coulomb meter to Debye */
-
-void pr_jacobi(real **a,int n,real d[],real **v,int *nrot);
 
 bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
 		      real *t,int step,int nre)
@@ -96,7 +94,7 @@ void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
   }
 }
 
-#define NDIM 4          /* We will be using a numerical recipes routine */
+#define NDIM 3          /* We will be using a numerical recipes routine */
 
 void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
 {
@@ -107,8 +105,8 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
   rvec xmass;
   real rcom_m,rcom_n;
   tensor quadrupole;
-  real **inten;
-  real dd[NDIM],**ev,tmp;
+  double **inten;
+  double dd[NDIM],**ev,tmp;
 
   snew(inten,NDIM);
   snew(ev,NDIM);
@@ -157,7 +155,7 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
     for(m=0; (m<DIM); m++) {
       for(n=0; (n<DIM); n++) {  
 	quadrupole[m][n]+=0.5*q*(3.0*r[m]*r[n] - r2*delta(m,n))*EANG2CM*CM2D;
-	inten[m+1][n+1]=quadrupole[m][n];
+	inten[m][n]=quadrupole[m][n];
       }
     }
   }
@@ -167,7 +165,7 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
 
   /* We've got the quadrupole tensor, now diagonalize the sucker */
   
-  pr_jacobi(inten,3,dd,ev,&niter);
+  jacobi(inten,3,dd,ev,&niter);
 
   /* Sort the eigenvalues, for water we know that the order is as follows:
    *
@@ -182,13 +180,13 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
     dd[i]=dd[i+1];			\
     dd[i+1]=tmp;			\
   }
+  SWAP(0);
   SWAP(1);
-  SWAP(2);
-  SWAP(1);
+  SWAP(0);
 
-  quad[0]=dd[3];  /* yy */
-  quad[1]=dd[1];  /* zz */
-  quad[2]=dd[2];  /* xx */
+  quad[0]=dd[2];  /* yy */
+  quad[1]=dd[0];  /* zz */
+  quad[2]=dd[1];  /* xx */
 
 #ifdef DEBUG
   pr_rvec(stdout,0,"Quadrupole",quad,DIM);

@@ -32,91 +32,7 @@ static char *SRCID_princ_c = "$Id$";
 #include "vec.h"
 #include "smalloc.h"
 #include "gstat.h"
-
-#define ROTATE(a,i,j,k,l) g=a[i][j];h=a[k][l];a[i][j]=g-s*(h+g*tau);\
-	a[k][l]=h+s*(g-h*tau);
-
-void pr_jacobi(real **a,int n,real d[],real **v,int *nrot)
-{
-  int j,iq,ip,i;
-  real tresh,theta,tau,t,sm,s,h,g,c,*b,*z;
-  
-  snew(b,n+1);
-  snew(z,n+1);
-  for (ip=1;ip<=n;ip++) {
-    for (iq=1;iq<=n;iq++) v[ip][iq]=0.0;
-    v[ip][ip]=1.0;
-  }
-  for (ip=1;ip<=n;ip++) {
-    b[ip]=d[ip]=a[ip][ip];
-    z[ip]=0.0;
-  }
-  *nrot=0;
-  for (i=1;i<=50;i++) {
-    sm=0.0;
-    for (ip=1;ip<=n-1;ip++) {
-      for (iq=ip+1;iq<=n;iq++)
-	sm += fabs(a[ip][iq]);
-    }
-    if (sm == 0.0) {
-      sfree(z);
-      sfree(b);
-      return;
-    }
-    if (i < 4)
-      tresh=0.2*sm/(n*n);
-    else
-      tresh=0.0;
-    for (ip=1;ip<=n-1;ip++) {
-      for (iq=ip+1;iq<=n;iq++) {
-	g=100.0*fabs(a[ip][iq]);
-	if (i > 4 && fabs(d[ip])+g == fabs(d[ip])
-	    && fabs(d[iq])+g == fabs(d[iq]))
-	  a[ip][iq]=0.0;
-	else if (fabs(a[ip][iq]) > tresh) {
-	  h=d[iq]-d[ip];
-	  if (fabs(h)+g == fabs(h))
-	    t=(a[ip][iq])/h;
-	  else {
-	    theta=0.5*h/(a[ip][iq]);
-	    t=1.0/(fabs(theta)+sqrt(1.0+theta*theta));
-	    if (theta < 0.0) t = -t;
-	  }
-	  c=1.0/sqrt(1+t*t);
-	  s=t*c;
-	  tau=s/(1.0+c);
-	  h=t*a[ip][iq];
-	  z[ip] -= h;
-	  z[iq] += h;
-	  d[ip] -= h;
-	  d[iq] += h;
-	  a[ip][iq]=0.0;
-	  for (j=1;j<=ip-1;j++) {
-	    ROTATE(a,j,ip,j,iq)
-	      }
-	  for (j=ip+1;j<=iq-1;j++) {
-	    ROTATE(a,ip,j,j,iq)
-	      }
-	  for (j=iq+1;j<=n;j++) {
-	    ROTATE(a,ip,j,iq,j)
-	      }
-	  for (j=1;j<=n;j++) {
-	    ROTATE(v,j,ip,j,iq)
-	      }
-	  ++(*nrot);
-	}
-      }
-    }
-    for (ip=1;ip<=n;ip++) {
-      b[ip] += z[ip];
-      d[ip]=b[ip];
-      z[ip]=0.0;
-    }
-  }
-  fatal_error(0,"Too many iterations in routine JACOBI");
-}
-
-#undef ROTATE
+#include "nrjac.h"
 
 static void m_op(matrix mat,rvec x)
 {
@@ -168,7 +84,7 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
 {
   int  i,j,ai,m,nrot;
   real mm,rx,ry,rz;
-  real **inten,dd[NDIM],tvec[NDIM],**ev;
+  double **inten,dd[NDIM],tvec[NDIM],**ev;
 #ifdef DEBUG
   real e[NDIM];
 #endif
@@ -194,27 +110,27 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
     rx=x[ai][XX];
     ry=x[ai][YY];
     rz=x[ai][ZZ];
-    inten[1][1]+=mm*(sqr(ry)+sqr(rz));
-    inten[2][2]+=mm*(sqr(rx)+sqr(rz));
-    inten[3][3]+=mm*(sqr(rx)+sqr(ry));
-    inten[2][1]-=mm*(ry*rx);
-    inten[3][1]-=mm*(rx*rz);
-    inten[3][2]-=mm*(rz*ry);
+    inten[0][0]+=mm*(sqr(ry)+sqr(rz));
+    inten[1][1]+=mm*(sqr(rx)+sqr(rz));
+    inten[2][2]+=mm*(sqr(rx)+sqr(ry));
+    inten[1][0]-=mm*(ry*rx);
+    inten[2][0]-=mm*(rx*rz);
+    inten[2][1]-=mm*(rz*ry);
   }
+  inten[0][1]=inten[1][0];
+  inten[0][2]=inten[2][0];
   inten[1][2]=inten[2][1];
-  inten[1][3]=inten[3][1];
-  inten[2][3]=inten[3][2];
 #ifdef DEBUG
   ptrans("initial",inten,dd,e);
 #endif
   
   for(i=0; (i<DIM); i++) {
     for(m=0; (m<DIM); m++)
-      trans[i][m]=inten[1+i][1+m];
+      trans[i][m]=inten[i][m];
   }
 
   /* Call numerical recipe routines */
-  pr_jacobi(inten,3,dd,ev,&nrot);
+  jacobi(inten,3,dd,ev,&nrot);
 #ifdef DEBUG
   ptrans("jacobi",ev,dd,e);
 #endif
@@ -229,18 +145,18 @@ void principal_comp(int n,atom_id index[],t_atom atom[],rvec x[],
     dd[i+1]=temp;			\
     for(j=0; (j<NDIM); j++) ev[j][i+1]=tvec[j];			\
   }
+  SWAPPER(0)
   SWAPPER(1)
-  SWAPPER(2)
-  SWAPPER(1)
+  SWAPPER(0)
 #ifdef DEBUG
   ptrans("swap",ev,dd,e);
   t_trans(trans,dd,ev);
 #endif
     
   for(i=0; (i<DIM); i++) {
-    d[i]=dd[i+1];
+    d[i]=dd[i];
     for(m=0; (m<DIM); m++)
-      trans[i][m]=ev[1+m][1+i];
+      trans[i][m]=ev[m][i];
   }
     
   for(i=0; (i<NDIM); i++) {
