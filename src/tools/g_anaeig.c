@@ -43,6 +43,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "pdbio.h"
+#include "confio.h"
 #include "trnio.h"
 #include "matio.h"
 #include "mshift.h"
@@ -72,7 +73,7 @@ void write_xvgr_graphs(char *file,int ngraphs,
       min=min-0.1*(max-min);
     max=max+0.1*(max-min);
     fprintf(out,"@ with g%d\n@ g%d on\n",ngraphs-1-g,ngraphs-1-g);
-    fprintf(out,"@g%d autoscale type AUTO\n",ngraphs-1-g);
+    fprintf(out,"@ g%d autoscale type AUTO\n",ngraphs-1-g);
     if (g==0) 
       fprintf(out,"@ title \"%s\"\n",title);
     if (g==ngraphs-1)
@@ -88,6 +89,18 @@ void write_xvgr_graphs(char *file,int ngraphs,
     fprintf(out,"@ view ymin %g\n",0.15+(ngraphs-1-g)*0.7/ngraphs);
     fprintf(out,"@ view ymax %g\n",0.15+(ngraphs-g)*0.7/ngraphs);
     fprintf(out,"@ yaxis  label \"%s\"\n",ylabel[g]);
+    fprintf(out,"@ xaxis tick major 20\n");
+    fprintf(out,"@ xaxis tick minor 10\n");
+    fprintf(out,"@ xaxis ticklabel start type spec\n");
+    fprintf(out,"@ xaxis ticklabel start %g\n",(x[0]>0) ?
+	    (int)(x[0]/20+0.99)*20.0 : (int)(min/20)*20.0);
+    fprintf(out,"@ yaxis tick major 0.2\n");
+    fprintf(out,"@ yaxis tick minor 0.1\n");
+    fprintf(out,"@ yaxis ticklabel start type spec\n");
+    fprintf(out,"@ yaxis ticklabel start %g\n",(min>0) ? 
+	    (int)(min/0.2+0.99)*0.2 : (int)(min/0.2)*0.2);
+    if ((min<0) && (max>0))
+      fprintf(out,"@ zeroxaxis bar on\n");
     for(i=0; i<n; i++) 
       fprintf(out,"%10.4f %10.5f\n",x[i],y[g][i]);
     fprintf(out,"&\n");
@@ -151,7 +164,7 @@ void overlap(char *outfile,int natoms,
     fprintf(stderr,"%d ",outvec[i]+1);
   fprintf(stderr,"\n");
 
-  out=xvgropen(outfile,"Cumulative inner-products",
+  out=xvgropen(outfile,"Subspace overlap",
 	       "Eigenvectors of trajectory 2","Overlap");
   fprintf(out,"@ subtitle \"using %d eigenvectors of trajectory 1\"\n",
 	  noutvec);
@@ -170,8 +183,8 @@ void overlap(char *outfile,int natoms,
   fclose(out);
 }
 
-void project(char *trajfile,char *projfile,
-	     char *twodplotfile,char *filterfile,int skip,
+void project(char *trajfile,int ntopatoms,t_topology *top,matrix topbox,
+	     char *projfile,char *twodplotfile,char *filterfile,int skip,
 	     char *extremefile,real extreme,int nextr,
 	     t_atoms *atoms,int natoms,atom_id *index,
 	     int nref,rvec *xref,int nfit,atom_id *ifit,real *w_rls,
@@ -180,86 +193,87 @@ void project(char *trajfile,char *projfile,
 	     int noutvec,int *outvec)
 {
   FILE    *xvgrout;
-  int     status,out,nat,i,j,d,v,vec,nframes,snew_size,min,max,frame;
+  int     status,out,nat,i,j,d,v,vec,nframes,snew_size,imin,imax,frame;
   atom_id *all_at;
-  matrix  box,zerobox;
-  rvec    *xread,*x,tmp;
-  real    t,inp,**inprod;
+  matrix  box;
+  rvec    *xread,*x;
+  real    t,inp,**inprod,min,max;
   char    str[STRLEN],str2[STRLEN],**ylabel;
-
-  clear_mat(zerobox);
 
   snew(x,natoms);
   snew(all_at,natoms);
   for(i=0; (i<natoms); i++)
     all_at[i]=i;
-  
-  snew(inprod,noutvec+1);
 
-  for(i=0; (i<natoms); i++)
-    all_at[i]=i; 
-  if (filterfile) {
-    fprintf(stderr,"Writing a filtered trajectory to %s using eigenvectors\n",
-	    filterfile);
-    for(i=0; i<noutvec; i++)
-      fprintf(stderr,"%d ",outvec[i]+1);
-    fprintf(stderr,"\n");
-    out=open_trx(filterfile,"w");
-  }
-  snew_size=0;
-  nframes=0;
-  nat=read_first_x(&status,trajfile,&t,&xread,box);
-  snew(all_at,nat);
-  do {
-    if (nframes>=snew_size) {
-      snew_size+=100;
-      for(i=0; i<noutvec+1; i++)
-	srenew(inprod[i],snew_size);
-    }
-    inprod[noutvec][nframes]=t;
-    /* calculate x: a fitted struture of the selected atoms */
-    if (nref==-1) {
-      for (i=0; i<natoms; i++)
-	copy_rvec(xread[index[i]],x[i]);
-      reset_x(natoms,all_at,natoms,all_at,x,mass);
-      do_fit(natoms,mass,xav,x);
-    } 
-    else {
-      reset_x(nfit,ifit,nat,all_at,xread,w_rls);
-      do_fit(nat,w_rls,xref,xread);
-      for (i=0; i<natoms; i++)
-	copy_rvec(xread[index[i]],x[i]);
-    }
-
-    clear_rvec(tmp);
-    for (i=0; i<natoms; i++)
-      rvec_inc(tmp,x[i]);
-
-    for(v=0; v<noutvec; v++) {
-      vec=outvec[v];
-      /* calculate (mass-weighted) projection */
-      inp=0;
-      for (i=0; i<natoms; i++)
-	inp+=(eigvec[vec][i][0]*(x[i][0]-xav[i][0])+
-              eigvec[vec][i][1]*(x[i][1]-xav[i][1])+
-	      eigvec[vec][i][2]*(x[i][2]-xav[i][2]))*sqrtm[i];
-      inprod[v][nframes]=inp;
-      if (filterfile && (nframes % skip == 0)) 
-	for(i=0; i<natoms; i++)
-	  for(d=0; d<DIM; d++)
-	    xread[index[i]][d] = xav[i][d]+
-	      inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
-    }
-    if (filterfile && (nframes % skip == 0)) 
-      write_trx(out,natoms,index,atoms,0,t,zerobox,xread,NULL);
+  if (trajfile) {
+    snew(inprod,noutvec+1);
     
-    nframes++;
-  } while (read_next_x(status,&t,nat,xread,box));
-  close_trj(status);
-  if (filterfile)
-    close_trx(out);
-  sfree(x);
+    for(i=0; (i<natoms); i++)
+      all_at[i]=i; 
+    if (filterfile) {
+      fprintf(stderr,"Writing a filtered trajectory to %s using eigenvectors\n",
+	      filterfile);
+      for(i=0; i<noutvec; i++)
+	fprintf(stderr,"%d ",outvec[i]+1);
+      fprintf(stderr,"\n");
+      out=open_trx(filterfile,"w");
+    }
+    snew_size=0;
+    nframes=0;
+    nat=read_first_x(&status,trajfile,&t,&xread,box);
+    do {
+      if (top)
+	rm_pbc(&(top->idef),nat,box,xread,xread);
+      if (nframes>=snew_size) {
+	snew_size+=100;
+	for(i=0; i<noutvec+1; i++)
+	  srenew(inprod[i],snew_size);
+      }
+      inprod[noutvec][nframes]=t;
+      /* calculate x: a fitted struture of the selected atoms */
+      if (nref==-1) {
+	for (i=0; i<natoms; i++)
+	  copy_rvec(xread[index[i]],x[i]);
+	reset_x(natoms,all_at,natoms,all_at,x,mass);
+	do_fit(natoms,mass,xref,x);
+      } 
+      else {
+	reset_x(nfit,ifit,nat,all_at,xread,w_rls);
+	do_fit(nat,w_rls,xref,xread);
+	for (i=0; i<natoms; i++)
+	  copy_rvec(xread[index[i]],x[i]);
+      }
+
+      for(v=0; v<noutvec; v++) {
+	vec=outvec[v];
+	/* calculate (mass-weighted) projection */
+	inp=0;
+	for (i=0; i<natoms; i++) {
+	  inp+=(eigvec[vec][i][0]*(x[i][0]-xav[i][0])+
+	  eigvec[vec][i][1]*(x[i][1]-xav[i][1])+
+	  eigvec[vec][i][2]*(x[i][2]-xav[i][2]))*sqrtm[i];
+	}
+	inprod[v][nframes]=inp;
+	if (filterfile && (nframes % skip == 0)) 
+	  for(i=0; i<natoms; i++)
+	    for(d=0; d<DIM; d++)
+	      xread[index[i]][d] = xav[i][d]+
+		inprod[v][nframes]*eigvec[outvec[v]][i][d]/sqrtm[i];
+      }
+      if (filterfile && (nframes % skip == 0)) 
+	write_trx(out,natoms,index,atoms,0,t,box,xread,NULL);
+      
+      nframes++;
+    } while (read_next_x(status,&t,nat,xread,box));
+    close_trj(status);
+     sfree(x);
+     if (filterfile)
+       close_trx(out);
+  }
+  else
+    snew(xread,ntopatoms);
   
+
   if (projfile) {
     snew(ylabel,noutvec);
     for(v=0; v<noutvec; v++) {
@@ -280,35 +294,38 @@ void project(char *trajfile,char *projfile,
   }
   if (extremefile) {
     if (extreme==0) {
-      min=inprod[0][0];
-      max=inprod[0][0];
+      imin=0;
+      imax=0;
       for(i=0; i<nframes; i++) {
-	if (inprod[0][i]<inprod[0][min])
-	  min=i;
-	if (inprod[0][i]>inprod[0][max])
-	  max=i;
+	if (inprod[0][i]<inprod[0][imin])
+	  imin=i;
+	if (inprod[0][i]>inprod[0][imax])
+	  imax=i;
       }
+      min=inprod[0][imin];
+      max=inprod[0][imax];
       fprintf(stderr,"\nMinimum along eigenvector %d is %g at t=%g\n",
-	      eignr[outvec[0]]+1,inprod[0][min],inprod[noutvec][min]); 
+	      eignr[outvec[0]]+1,min,inprod[noutvec][imin]); 
       fprintf(stderr,"Maximum along eigenvector %d is %g at t=%g\n",
-	      eignr[outvec[0]]+1,inprod[0][max],inprod[noutvec][max]); 
+	      eignr[outvec[0]]+1,max,inprod[noutvec][imax]); 
     }
     else {
       min=-extreme;
       max=+extreme;
     }
+    fprintf(stderr,"\nWriting %d frames between the extremes to %s\n",
+	    nextr,extremefile);
     out=open_trx(extremefile,"w");
     for(frame=0; frame<nextr; frame++) {
       if ((extreme==0) && (nextr<=3))
 	for(i=0; i<natoms; i++)
 	  atoms->atom[index[i]].chain='A'+frame;
       for(i=0; i<natoms; i++)
-	for(d=0; d<DIM; d++)
-	  xread[index[i]][d] = xav[i][d]+
-	    (inprod[0][min]*(nextr-frame-1)+inprod[0][max]*frame)/(nextr-1)
-	    *eigvec[outvec[0]][i][d]/sqrtm[i];
-      write_trx(out,natoms,index,atoms,0,inprod[noutvec][j],
-		zerobox,xread,NULL);
+	for(d=0; d<DIM; d++) 
+	  xread[index[i]][d] = 
+	    (xav[i][d] + (min*(nextr-frame-1)+max*frame)/(nextr-1)
+	    *eigvec[outvec[0]][i][d]/sqrtm[i]);
+      write_trx(out,natoms,index,atoms,0,frame,topbox,xread,NULL);
     }
     close_trx(out);
   }
@@ -340,48 +357,61 @@ void components(char *outfile,int natoms,real *sqrtm,
   }
   write_xvgr_graphs(outfile,noutvec,"Eigenvector components","Atom number",
 		    ylabel,natoms,x,y,TRUE);
+  fprintf(stderr,"\n");
 }
 
-void read_eigenvectors(char *file,int *natoms,rvec **xref,rvec **xav,
+void read_eigenvectors(char *file,int *natoms,rvec **xref,bool *bDMR,
+		       rvec **xav,bool *bDMA,
 		       int *nvec, int **eignr, rvec ***eigvec)
 {
+  t_trnheader head;
   int status,i,snew_size;
   rvec *x;
   matrix box;
-  real t;
+  bool bOK;
+
+  *bDMR=FALSE;
 
   /* read (reference (t=-1) and) average (t=0) structure */
-  *natoms=read_first_x(&status,file,&t,xav,box);
-  if ((t>=-1.1) && (t<=-0.9)) {
+  status=open_trn(file,"r");
+  fread_trnheader(status,&head,&bOK);
+  *natoms=head.natoms;
+  snew(*xav,*natoms);
+  fread_htrn(status,&head,box,*xav,NULL,NULL);
+  if ((head.t>=-1.1) && (head.t<=-0.9)) {
     snew(*xref,*natoms);
     for(i=0; i<*natoms; i++)
       copy_rvec((*xav)[i],(*xref)[i]);
-    fprintf(stderr,"\nRead reference structure with %d atoms from %s\n",
-	    *natoms,file);
-    read_next_x(status,&t,*natoms,*xav,box);
+    *bDMR = (head.lambda > 0.5);
+    fprintf(stderr,"Read %smass weighted reference structure with %d atoms from %s\n",
+	    *bDMR ? "" : "non ",*natoms,file);
+    fread_trnheader(status,&head,&bOK);
+    fread_htrn(status,&head,box,*xav,NULL,NULL);
   }
   else
     *xref=NULL;
-  if ((t<=-0.01) || (t>=0.01))
-    fatal_error(0,"\n%s does not start with t=0, which should be the average "
+  *bDMA = (head.lambda > 0.5);
+  if ((head.t<=-0.01) || (head.t>=0.01))
+    fatal_error(0,"%s does not start with t=0, which should be the average "
 		"structure. This might not be a eigenvector file.",file);
-  fprintf(stderr,"\nRead average structure with %d atoms from %s\n",
-	  *natoms,file);
+  fprintf(stderr,"Read %smass weighted average structure with %d atoms from %s\n",
+	  *bDMA ? "" : "non ",*natoms,file);
   
   snew(x,*natoms);
   snew_size=0;
   *nvec=0;
-  while (read_next_x(status,&t,*natoms,x,box)) {
+  while (fread_trnheader(status,&head,&bOK)) {
+    fread_htrn(status,&head,box,x,NULL,NULL);
     if (*nvec >= snew_size) {
       snew_size+=10;
       srenew(*eignr,snew_size);
       srenew(*eigvec,snew_size);
     }
-    i=(int)(t+0.01);
-    if ((t-i<=-0.01) || (t-i>=0.01))
-      fatal_error(0,"\n%s contains a frame with non-integer time (%f), this "
+    i=(int)(head.t+0.01);
+    if ((head.t-i<=-0.01) || (head.t-i>=0.01))
+      fatal_error(0,"%s contains a frame with non-integer time (%f), this "
 		  "time should be an eigenvector index. "
-		  "This might not be a eigenvector file.",file,t);
+		  "This might not be a eigenvector file.",file,head.t);
     (*eignr)[*nvec]=i-1;
     snew((*eigvec)[*nvec],*natoms);
     for(i=0; i<*natoms; i++)
@@ -398,7 +428,12 @@ int main(int argc,char *argv[])
     "[TT]g_anaeig[tt] analyzes eigenvectors of a covariance matrix which",
     "can be calculated with [TT]g_covar[tt].",
     "All structures are fitted to the structure in the eigenvector file,",
-    "if present, otherwise to the structure in the run input file.[PAR]",
+    "if present, otherwise to the structure in the generic structure file.",
+    "When no run input file is supplied, pbc will not be taken into",
+    "account.",  
+    "Most analyses are done on eigenvectors [TT]-first[tt] to [TT]-last[tt],",
+    "but when [TT]-first[tt] is set to -1 you will be prompted for a",
+    "selection.[PAR]",
     "[TT]-comp[tt]: plot eigenvector components per atom of eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
     "[TT]-proj[tt]: calculate projections of a trajectory on eigenvectors",
@@ -408,22 +443,21 @@ int main(int argc,char *argv[])
     "[TT]-filt[tt]: filter the trajectory to show only the motion along",
     "eigenvectors [TT]-first[tt] to [TT]-last[tt].[PAR]",
     "[TT]-extr[tt]: calculate the two extreme projections along a trajectory",
-    "on the average structure and interpolate between them. The eigenvector",
-    "is specified with [TT]-first[tt].[PAR]",
-    "[TT]-over[tt]: calculate the cumulative overlap (inner-products)",
-    "of the eigenvectors in file [TT]-v2[tt] with eigenvectors",
-    "[TT]-first[tt] to [TT]-last[tt].[PAR]",
+    "on the average structure and interpolate between them, or set your own",
+    "extremes with [TT]-max[tt]. The eigenvector",
+    "is specified with [TT]-first[tt]. Chain identifiers will be added when",
+    "writing a [TT].pdb[tt] file with two or three strcutures",
+    "(you can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
+    "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
+    "file [TT]-v2[tt] with eigenvectors [TT]-first[tt] to [TT]-last[tt].[PAR]",
     "[TT]-inpr[tt]: calculate a matrix of inner-products between two sets",
     "of eigenvectors."
   };
-  static bool bM=TRUE;
   static int  first=1,last=10,skip=1,nextr=2;
   static real max=0.0;
   t_pargs pa[] = {
-    { "-m",  FALSE, etBOOL, &bM,
-      "mass weighted eigenvectors"},
     { "-first", FALSE, etINT, &first,     
-      "first eigenvector for analysis" },
+      "first eigenvector for analysis (-1 is select)" },
     { "-last",  FALSE, etINT, &last, 
       "last eigenvector for analysis (-1 is till the last)" },
      { "-skip",  FALSE, etINT, &skip,
@@ -440,25 +474,26 @@ int main(int argc,char *argv[])
   t_topology   top;
   t_idef       *idef;
   int        nref1,nref2;
-  rvec       *xref1,*xref2;
+  rvec       *xtop,*xref1,*xref2;
+  bool       bDMR1,bDMA1,bDMR2,bDMA2;
   int        nvec1,nvec2,*eignr1=NULL,*eignr2=NULL;
   rvec       *x,*xread,*xav1,*xav2,**eigvec1=NULL,**eigvec2=NULL;
-  matrix     box;
+  matrix     topbox;
   real       xid,*mass,*sqrtm,avsqrtm,*w_rls,t,lambda;
   int        natoms,ntopatoms,step;
-  char       *grpname,*indexfile;
+  char       *grpname,*indexfile,title[STRLEN];
   int        i,j,d;
   int        nout,*iout,noutvec,*outvec,nfit;
   atom_id    *index,*ifit;
-  char       *Vec2File,*CompFile,*ProjOnVecFile,*TwoDPlotFile;
+  char       *Vec2File,*stxfile,*CompFile,*ProjOnVecFile,*TwoDPlotFile;
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
-  bool       bIndex,bTop,bVec2,bProj,bFit,bFirstToLast;
+  bool       bM,bIndex,bSTX,bTop,bVec2,bProj,bFit,bFirstToLast,bTraj;
   t_filenm fnm[] = { 
-    { efTRN, "-v", "eigvec", ffREAD },
-    { efTRN, "-v2", "eigvec2", ffOPTRD },
+    { efTRN, "-v", "eigenvec", ffREAD },
+    { efTRN, "-v2", "eigenvec2", ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD }, 
-    { efTPX, NULL, NULL, ffOPTRD },
+    { efSTX, "-s", "topol.tpr", ffOPTRD },
     { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, "-comp", "eigcomp", ffOPTWR },
     { efXVG, "-proj", "proj", ffOPTWR },
@@ -477,6 +512,7 @@ int main(int argc,char *argv[])
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
+  stxfile         = ftp2fn(efSTX,NFILE,fnm); 
   CompFile        = opt2fn_null("-comp",NFILE,fnm);
   ProjOnVecFile   = opt2fn_null("-proj",NFILE,fnm);
   TwoDPlotFile    = opt2fn_null("-2d",NFILE,fnm);
@@ -484,19 +520,24 @@ int main(int argc,char *argv[])
   ExtremeFile     = opt2fn_null("-extr",NFILE,fnm);
   OverlapFile     = opt2fn_null("-over",NFILE,fnm);
   InpMatFile      = ftp2fn_null(efXPM,NFILE,fnm);
+  bTop   = (fn2ftp(stxfile)==efTPR) || (fn2ftp(stxfile)==efTPB) ||
+    (fn2ftp(stxfile)==efTPA);
   bProj  = ProjOnVecFile || FilterFile || ExtremeFile || TwoDPlotFile;
   bFirstToLast    = CompFile || ProjOnVecFile || FilterFile || OverlapFile;
   bVec2  = Vec2File || OverlapFile || InpMatFile;
-  bM     = bM && (CompFile || bProj);
+  bM     = CompFile || bProj;
+  bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
+    || TwoDPlotFile;
   bFit   = bProj;
   bIndex = bM || bProj;
-  bTop   = ftp2bSet(efTPX,NFILE,fnm) || bM || bFit ||
+  bSTX   = ftp2bSet(efSTX,NFILE,fnm) || bM || bFit ||
     FilterFile  || (bIndex && indexfile);
 
-  read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&xref1,&xav1,
+  read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&xref1,&bDMR1,&xav1,&bDMA1,
 		    &nvec1,&eignr1,&eigvec1);
   if (bVec2) {
-    read_eigenvectors(Vec2File,&i,&xref2,&xav2,&nvec2,&eignr2,&eigvec2);
+    read_eigenvectors(Vec2File,&i,&xref2,&bDMR2,&xav2,&bDMA2,
+		      &nvec2,&eignr2,&eigvec2);
     if (i!=natoms)
       fatal_error(0,"Dimensions in the eigenvector files don't match");
   }
@@ -510,24 +551,48 @@ int main(int argc,char *argv[])
   nfit=0;
   ifit=NULL;
   w_rls=NULL;
-  if (bTop) {
-    read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
-    ntopatoms=header.natoms;
-    snew(xref1,ntopatoms);
-    read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,
-	   &ntopatoms,xref1,NULL,NULL,&top);
+  if (bSTX) {
+    if (bTop) {
+      read_tpxheader(stxfile,&header);
+      ntopatoms=header.natoms;
+      snew(xtop,ntopatoms);
+      read_tpx(stxfile,&step,&t,&lambda,&ir,topbox,
+	       &ntopatoms,xtop,NULL,NULL,&top);
+      rm_pbc(&(top.idef),ntopatoms,topbox,xtop,xtop);
+    } else {
+      if (bM && bDMA1)
+	fatal_error(0,"need a run input file for mass weighted analysis");
+      if (bFit && bDMR1)
+        fatal_error(0,"need a run input file for mass weighted fit");
+      bTop = FALSE;
+      bM = FALSE;
+      get_stx_coordnum(stxfile,&ntopatoms);
+      init_t_atoms(&top.atoms,ntopatoms,FALSE);
+      snew(xtop,ntopatoms);
+      read_stx_conf(stxfile,title,&top.atoms,xtop,NULL,topbox);
+      fprintf(stderr,"\nNote: will do a non mass weighted fit\n");
+    }
+    if (xref1==NULL) {
+      snew(xref1,ntopatoms);
+      for(i=0; i<ntopatoms; i++)
+	copy_rvec(xtop[i],xref1[i]);
+    }
     if (nref1==0) {
       nref1=ntopatoms;
       printf("\nNote: the structure in %s should be the same\n"
-               "      as the one used for the fit in g_covar\n",
-	     ftp2fn(efTPX,NFILE,fnm));
+               "      as the one used for the fit in g_covar\n",stxfile);
       printf("\nSelect the index group that was used for the least squares fit in g_covar\n",natoms);
       get_index(&top.atoms,indexfile,1,&nfit,&ifit,&grpname);
       snew(w_rls,ntopatoms);
-      for(i=0; (i<nfit); i++)
-	w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
     }
+    for(i=0; (i<nfit); i++)
+      if (bTop && ((nref1==0) || bDMR1))
+	w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
+      else
+	w_rls[ifit[i]]=1.0;
   }
+    else
+      bTop=FALSE;
 
   if (bIndex) {
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
@@ -540,7 +605,7 @@ int main(int argc,char *argv[])
 
   snew(mass,natoms);
   snew(sqrtm,natoms);
-  if (bM) {
+  if (bM && bDMA1) {
     avsqrtm=0;
     for(i=0; (i<natoms); i++) {
       mass[i]=top.atoms.atom[index[i]].m;
@@ -555,7 +620,7 @@ int main(int argc,char *argv[])
       mass[i]=1.0;
       sqrtm[i]=1.0;
     }
-
+  
   if (bVec2) {
     t=0;
     for(i=0; (i<natoms); i++)
@@ -567,18 +632,32 @@ int main(int argc,char *argv[])
   
   if (last==-1)
     last=natoms*DIM;
-  if (bFirstToLast) {
-    /* make an index from first to last */
-    nout=last-first+1;
-    snew(iout,nout);
-    for(i=0; i<nout; i++)
-      iout[i]=first-1+i;
-  } 
+  if (first>-1) {
+    if (bFirstToLast) {
+      /* make an index from first to last */
+      nout=last-first+1;
+      snew(iout,nout);
+      for(i=0; i<nout; i++)
+	iout[i]=first-1+i;
+    } 
+    else {
+      nout=2;
+      snew(iout,nout);
+      iout[0]=first-1;
+      iout[1]=last-1;
+    }
+  }
   else {
-    nout=2;
-    snew(iout,nout);
-    iout[0]=first-1;
-    iout[1]=last-1;
+    printf("Select eigenvectors for output, end your selection with 0\n");
+    nout=-1;
+    iout=NULL;
+    do {
+      nout++;
+      srenew(iout,nout+1);
+      scanf("%d",&iout[nout]);
+      iout[nout]--;
+    } while (iout[nout]>=0);
+    printf("\n");
   }
   /* make an index of the eigenvectors which are present */
   snew(outvec,nout);
@@ -597,7 +676,9 @@ int main(int argc,char *argv[])
     components(CompFile,natoms,sqrtm,nvec1,eignr1,eigvec1,noutvec,outvec);
 
   if (bProj)
-    project(opt2fn("-f",NFILE,fnm),ProjOnVecFile,TwoDPlotFile,FilterFile,skip,
+    project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
+	    ntopatoms,bTop ? &top : NULL,topbox,
+	    ProjOnVecFile,TwoDPlotFile,FilterFile,skip,
 	    ExtremeFile,max,nextr,&(top.atoms),natoms,index,
 	    nref1,xref1,nfit,ifit,w_rls,
 	    mass,sqrtm,xav1,nvec1,eignr1,eigvec1,noutvec,outvec);

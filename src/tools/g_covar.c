@@ -54,7 +54,12 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "[TT]g_covar[tt] calculates and diagonalizes the (mass weighted)",
     "covariance matrix.",
-    "All structures are fitted to the structure in the run input file.[PAR]",
+    "All structures are fitted to the structure in the generic structure",
+    "file. When this is not a run input file, both the fit and the",
+    "covariance analysis will be non mass weighted and pbc will not be",
+    "taken into account. When the fit and analysis groups are identical",
+    "and the analysis is non mass weighted, the fit will also be non mass",
+    "weighted, unless -nomwa is used.[PAR]",
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "When the same atoms are used for the fit and the covariance analysis,",
     "the reference structure is written first with t=-1.",
@@ -62,11 +67,11 @@ int main(int argc,char *argv[])
     "are written as frames with the eigenvector number as timestamp.",
     "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
   };
-  static bool bM=TRUE;
+  static bool bM=FALSE;
   static int  begin=1,end=-1;
   t_pargs pa[] = {
-    { "-m",  FALSE, etBOOL, &bM,
-      "Calculate mass weighted eigenvectors"},
+    { "-mwa",  FALSE, etBOOL, &bM,
+      "Mass weighted covariance analysis"},
     { "-first", FALSE, etINT, &begin,     
       "first eigenvector to write away" },
     { "-last",  FALSE, etINT, &end, 
@@ -77,22 +82,22 @@ int main(int argc,char *argv[])
   t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
-  t_idef       *idef;
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
-  real       t,*mat,dev,*rdum1,*rdum2,rdum,avmass,inv_nframes;
+  real       t,*mat,dev,trace,*rdum1,*rdum2,rdum,avmass,inv_nframes;
   real       xid,*mass,*w_rls,lambda;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
-  char       *grpname,*infile;
+  char       *grpname,*stxfile,*infile,str[STRLEN];
   int        i,j,k,l,d,d2,nfit;
   atom_id    *index,*all_at,*ifit;
+  bool       bTop,bDiffMass1,bDiffMass2;
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
-    { efTPX, NULL, NULL, ffREAD },
+    { efSTX, "-s", "topol.tpr", ffREAD },
     { efNDX, NULL, NULL, ffOPTRD },
-    { efXVG, NULL, "eigval", ffWRITE },
-    { efTRN, "-v", "eigvec", ffWRITE },
+    { efXVG, NULL, "eigenval", ffWRITE },
+    { efTRN, "-v", "eigenvec", ffWRITE },
     { efSTO, "-av", "average.pdb", ffWRITE }
   }; 
 #define NFILE asize(fnm) 
@@ -102,20 +107,28 @@ int main(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   clear_mat(zerobox);
-  /*
-    if (bM)
-    fprintf(out,"@ subtitle \"of mass weighted Hessian matrix\"\n");
-    else 
-    fprintf(out,"@ subtitle \"of Hessian matrix\"\n");
-    */
-  read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header);
 
-  ntopatoms=header.natoms;
-  snew(xref,ntopatoms);
+  stxfile=ftp2fn(efSTX,NFILE,fnm);
 
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,box,
-	   &ntopatoms,xref,NULL,NULL,&top);
-
+  bTop = (fn2ftp(stxfile)==efTPR) || (fn2ftp(stxfile)==efTPB) || 
+    (fn2ftp(stxfile)==efTPA);
+  if (bTop) {
+    read_tpxheader(stxfile,&header);
+    
+    ntopatoms=header.natoms;
+    snew(xref,ntopatoms);
+    
+    read_tpx(stxfile,&step,&t,&lambda,&ir,box,
+	     &ntopatoms,xref,NULL,NULL,&top);
+  }
+  else {
+    bM = FALSE;
+    get_stx_coordnum(stxfile,&ntopatoms);
+    init_t_atoms(&top.atoms,ntopatoms,FALSE);
+    snew(xref,ntopatoms);
+    read_stx_conf(stxfile,str,&top.atoms,xref,NULL,box);
+    fprintf(stderr,"Note: will do a non mass weighted fit\n");
+  }
   printf("\nChoose a group for the least squares fit\n"); 
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 	    &nfit,&ifit,&grpname);
@@ -126,19 +139,50 @@ int main(int argc,char *argv[])
   if (nfit < 3) 
     fatal_error(0,"Need >= 3 points to fit!\n");
 
+  bDiffMass1=FALSE;
   snew(w_rls,ntopatoms);
   for(i=0; (i<nfit); i++)
-    w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
-
+    if (bTop) {
+      w_rls[ifit[i]]=top.atoms.atom[ifit[i]].m;
+      if (i)
+        bDiffMass1 = bDiffMass1 || (w_rls[ifit[i]]!=w_rls[ifit[i-1]]);
+    }
+    else
+      w_rls[ifit[i]]=1.0;
+  
+  bDiffMass2=FALSE;
   snew(mass,natoms);
   for(i=0; (i<natoms); i++)
-    if (bM)
+    if (bM) {
       mass[i]=top.atoms.atom[index[i]].m;
+      if (i)
+	bDiffMass2 = bDiffMass2 || (mass[i]!=mass[i-1]);
+    }
     else
       mass[i]=1.0;
+  
+  if (bDiffMass1 && !bDiffMass2 && !opt2parg_bSet("-mwa",asize(pa),pa)) {
+    bDiffMass1 = natoms != nfit;
+    i=0;
+    for (i=0; (i<natoms) && !bDiffMass1; i++)
+      bDiffMass1 = index[i] != ifit[i];
+    if (!bDiffMass1) {
+      fprintf(stderr,"\nNote: the fit and analysis group are identical, while the fit is mass weighted\n"
+	               "      and the analysis is not. Making the fit non mass weighted.\n"
+	               "      If you don't want this, run again with -nomwa.\n\n");
+      for(i=0; (i<nfit); i++)
+	w_rls[ifit[i]]=1.0;
+    }
+  }
+
+  snew(all_at,top.atoms.nr);
+  for(i=0; (i<top.atoms.nr); i++)
+    all_at[i]=i;
 
   /* Prepare reference frame */
-  reset_x(nfit,ifit,nfit,ifit,xref,w_rls);
+  if (bTop)
+    rm_pbc(&(top.idef),top.atoms.nr,box,xref,xref);
+  reset_x(nfit,ifit,top.atoms.nr,all_at,xref,w_rls);
 
   infile=opt2fn("-f",NFILE,fnm);
 
@@ -148,15 +192,14 @@ int main(int argc,char *argv[])
   snew(mat,ndim*ndim);
 
   fprintf(stderr,"Constructing covariance matrix (%dx%d)...\n",ndim,ndim);
-  
+
   nframes=0;
   nat=read_first_x(&status,infile,&t,&xread,box);
-  snew(all_at,nat);
-  for(i=0; (i<nat); i++)
-    all_at[i]=i;
   do {
     nframes++;
-    /* calculate x: a fitted struture of the selected atoms */ 
+    /* calculate x: a fitted struture of the selected atoms */
+    if (bTop)
+      rm_pbc(&(top.idef),nat,box,xread,xread);
     reset_x(nfit,ifit,nat,all_at,xread,w_rls);
     do_fit(nat,w_rls,xref,xread);
     for (i=0; i<natoms; i++)
@@ -172,7 +215,7 @@ int main(int argc,char *argv[])
 	for (j=0; j<natoms; j++) {
 	  l=k+DIM*j;
 	  for(d2=0; d2<DIM; d2++)
-	    mat[l+d2] += (double)(xid*x[j][d2]);
+	    mat[l+d2] += xid*x[j][d2];
 	}
       }
     }
@@ -184,13 +227,14 @@ int main(int argc,char *argv[])
   avmass=0;
   for (i=0; i<natoms; i++) {
     svmul(inv_nframes,xav[i],xav[i]);
-    avmass+=mass[i];
     mass[i]=sqrt(mass[i]);
+    avmass+=mass[i];
     copy_rvec(xav[i],xread[index[i]]);
   }
+
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
 			   &(top.atoms),xread,NULL,NULL,natoms,index);
-  avmass=natoms/avmass;
+  avmass=sqr(natoms/avmass);
   for (i=0; i<natoms; i++) 
     for (j=0; j<natoms; j++) 
       for (d=0; d<DIM; d++) {
@@ -199,6 +243,10 @@ int main(int argc,char *argv[])
 	  mat[k+d2]=(mat[k+d2]*inv_nframes-xav[i][d]*xav[j][d2])
 	    *mass[i]*mass[j]*avmass;
       }
+  trace=0;
+  for(i=0; i<ndim; i++)
+    trace+=mat[i*ndim+i];
+  fprintf(stderr,"\nTrace of the covariance matrix: %g nm^2\n",trace);
 
   /* check if matrix is approximately symmetric */
   for (i=0; (i<ndim); i++) {
@@ -224,7 +272,7 @@ int main(int argc,char *argv[])
 	  
   /* call diagonalization routine. Tested only fortran double precision */
 
-  fprintf(stderr,"Diagonalizing...\n");
+  fprintf(stderr,"\nDiagonalizing...\n");
   fflush(stderr);
 
   snew(rdum1,ndim);
@@ -243,7 +291,8 @@ int main(int argc,char *argv[])
   fprintf (stderr,"Writing eigenvalues to %s\n",ftp2fn(efXVG,NFILE,fnm));
 
   out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
-                 "Eigenvalues","Eigenvector index","Eigenvalue");  
+	       "Eigenvalues of the covariance matrix",
+	       "Eigenvector index","(nm\\S2\\N)");  
 
   for (i=0; (i<ndim); i++) {
     fprintf (out,"%10d %15.6e\n",i+1,rdum1[ndim-1-i]);
@@ -258,9 +307,12 @@ int main(int argc,char *argv[])
 	   begin,end,opt2fn("-v",NFILE,fnm));
 
   trjout = open_tpx(opt2fn("-v",NFILE,fnm),"w");
-  if (nfit==natoms)
-    fwrite_trn(trjout,-1,-1,0,zerobox,natoms,xref,NULL,NULL);
-  fwrite_trn(trjout,0,0,0,zerobox,natoms,xav,NULL,NULL);
+  if (nfit==natoms) {
+    for(i=0; i<nfit; i++)
+      copy_rvec(xref[ifit[i]],x[i]);
+    fwrite_trn(trjout,-1,-1,bDiffMass1 ? 1 : 0,zerobox,natoms,x,NULL,NULL);
+  }
+  fwrite_trn(trjout,0,0,bDiffMass2 ? 1 : 0,zerobox,natoms,xav,NULL,NULL);
   for(i=begin; i<=end; i++) {
     for (j=0; j<natoms; j++)
       for(d=0; d<DIM; d++)
@@ -274,3 +326,8 @@ int main(int argc,char *argv[])
   return 0;
 }
   
+
+
+
+
+
