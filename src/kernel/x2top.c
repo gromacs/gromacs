@@ -256,6 +256,8 @@ void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound,
       c[0] = ((int)(c[0] + 3600)) % 360;
       if (c[0] > 180)
 	c[0] -= 360;
+      /* To put the minimum at the current angle rather than the maximum */
+      c[0] += 180; 
     }
     for(j=0; (j<nrfp); j++) {
       plist->param[i].c[j]      = c[j];
