@@ -28,7 +28,7 @@ TARCMD  =	tar cvf
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS =	(cd bin/s10; ls; cd ../..)
 
-all:	oclean dirs
+all:	dirs oclean
 	$(foreach dir,$(SRCDIRS),cd $(dir); $(MAKE); cd ..;)
 ifneq ($(PARALLEL),yes)
 	./mkcompl
@@ -44,11 +44,11 @@ dist:	oclean
 	cd $(GMXHOME); $(TARCMD) $(TARDIR)/gmxcore.tar $(TARFLG) $(DIST)
 	cd $(GMXHOME); $(TARCMD) $(TARDIR)/local.tar $(TARFLG) src/$(LOCALDIRS)
 
+basic:	dirs oclean
+	$(foreach dir,$(BASIC),cd $(dir); $(MAKE); cd ..;)
 # rule to make dirs where binaries and libary go:
 dirs:
 	\mkdir -p $(BINDIR) $(LIBDIR); 
-basic:
-	$(foreach dir,$(BASIC),cd $(dir); $(MAKE); cd ..;)
 man:
 	./mknroff
 html:
