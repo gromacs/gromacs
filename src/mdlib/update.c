@@ -611,7 +611,7 @@ void update(int          natoms,  /* number of atoms in simulation */
     bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARRINELLORAHMAN);
 
     if(edyn->bEdsam)
-      init_edsam(stdlog,top,md,start,homenr,state->x,state->box,
+      init_edsam(stdlog,top,md,start,homenr,cr,state->x,state->box,
                  edyn,&edpar);
 
     /* Initiate random number generator for stochastic and brownian dynamic integrators */
@@ -768,7 +768,7 @@ void update(int          natoms,  /* number of atoms in simulation */
 
     /* apply Essential Dynamics constraints when required */
     if(edyn->bEdsam)
-      do_edsam(stdlog,top,ir,step,md,start,homenr,xprime,state->x,
+      do_edsam(stdlog,top,ir,step,md,start,homenr,cr,xprime,state->x,
                x_unc,force,state->box,edyn,&edpar,bDoUpdate);
 
     /* apply pull constraints when required. Act on xprime, the SHAKED

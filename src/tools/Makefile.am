@@ -36,7 +36,7 @@ bin_PROGRAMS = \
 	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
-	anadock		cdist		disco           		\
+	anadock		cdist		disco           make_edi	\
 	g_analyze   	g_anaeig    	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
 	g_covar     	g_density   	g_dih       	g_dielectric 	\
@@ -57,7 +57,6 @@ genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
 cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
 disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
 anadock_SOURCES	     =  anadock.c  
-
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la

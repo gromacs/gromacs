@@ -59,8 +59,10 @@
 
 #define EPS  1.0e-09
 
-void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn)
+void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn,t_commrec *cr)
 {
+  if(!MASTER(cr))
+    return;
   fprintf(stderr,"ED sampling will be performed!\n");
   edyn->bEdsam=TRUE;
   edyn->edinam=ftp2fn(efEDI,nfile,fnm);
@@ -68,7 +70,7 @@ void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn)
 }
 
 void init_edsam(FILE *log,t_topology *top,
-	   t_mdatoms *md,int start,int homenr,
+		t_mdatoms *md,int start,int homenr,t_commrec *cr,
 	   rvec x[],matrix box, 
 	   t_edsamyn *edyn,t_edpar *edi)
 {
@@ -77,93 +79,47 @@ void init_edsam(FILE *log,t_topology *top,
   real rmsd;
   matrix rotmat;
 
-  fprintf(log,"Initialising ED sampling\n\n");
-  
+  if(!MASTER(cr))
+    return;
+
   /* first read the input. All input is stored in edi */
   read_edi(edyn,edi,top->atoms.nr);
 
-  /* here for initialisation */
-
-  /* evaluate masses */
   ned=edi->ned;
+  if (start+homenr<ned)
+    fatal_error(0,"ED sampling currently only works in parallel when all atoms\n"
+		"involved in ED constraints are on the master processor - sorry.");
+  
+  fprintf(log,"Initialising ED sampling: start=%d homenr=%d ned=%d\n\n",start,
+	  homenr,ned);
+  
+  /* evaluate masses */
+
   edi->tmass=0.0;
-  if (edi->selmas) {
-    edi->nmass=edi->npro;
-    snew(edi->mass,edi->nmass);
-    snew(edi->masnrs,edi->nmass);
-    snew(refmasnrs,edi->nmass);
-    for(i=0; (i < edi->nmass); i++) {
+  edi->nmass=edi->sref.nr;
+  snew(edi->mass,edi->nmass);
+  snew(edi->masnrs,edi->nmass);
+  snew(refmasnrs,edi->nmass);
+  for(i=0; (i < edi->nmass); i++) {
+    if (edi->selmas) {
       edi->mass[i]=top->atoms.atom[edi->sref.anrs[i]].m;
-      edi->masnrs[i]=i;
-      refmasnrs[i]=i;
-      edi->tmass+=edi->mass[i];
-    }
-  }
-  else {
-    edi->nmass=edi->sav.nr;
-    snew(edi->mass,edi->nmass);
-    snew(edi->masnrs,edi->nmass);
-    snew(refmasnrs,edi->nmass);
-    for(i=0; (i < edi->nmass); i++) {
+    } else {
       edi->mass[i]=1.0;
-      edi->masnrs[i]=edi->sav.anrs[i];
-      for(j=0; (j < edi->sref.nr); j++) {
-	if (edi->sref.anrs[j] == edi->sav.anrs[i])
-	  refmasnrs[i]=j;
-      }
-      edi->tmass+=edi->mass[i];
     }
+    edi->masnrs[i]=edi->sref.anrs[i];
+    refmasnrs[i]=i;
+    edi->tmass+=edi->mass[i];
   }
-
+  
   /* mark atoms that are to be used for rotational fit */
-  edi->nfit=0;
-  for(i=0; (i < ned); i++) {
-    if (strcmp(*top->atoms.atomname[i],"CA") == 0) 
-      edi->nfit++;
-  }
-  fprintf(log,"%d CA atoms found\n", edi->nfit);
-  if (edi->nfit == 0) {
-    edi->nfit = edi->sav.nr;
-    snew(edi->fitnrs,edi->nfit);
-    for(i=0; (i < edi->nfit); i++) {
-      edi->fitnrs[i] = edi->sav.anrs[i];
-    }
-  }
-  else {
-    snew(edi->fitnrs,edi->nfit);
-    j = 0;
-    for(i=0; (i < ned); i++) {
-      if (strcmp(*top->atoms.atomname[i],"CA") == 0) {
-	edi->fitnrs[j] = i;
-	/*fprintf(stderr,"Found CA at position %d\n",i);*/
-	j++;
-      }
-    }
-  }
-
+  edi->nfit = edi->sref.nr;
+  snew(edi->fitnrs,edi->nfit);
+  for(i=0; (i < edi->nfit); i++) 
+    edi->fitnrs[i] = edi->sref.anrs[i];
+  
   /* put reference structure in origin */
   put_in_origin(edi->sref.nr,edi->sref.x,edi->nmass,refmasnrs,edi->mass,
 		edi->tmass);
-
-  /* reduce the reference structure */
-  snew(xdum,edi->nfit);
-  j=0;
-  for(i=0; (i < edi->sref.nr); i++) {
-    if (j < edi->nfit) {
-      if (edi->sref.anrs[i] == edi->fitnrs[j]) {
-	copy_rvec(edi->sref.x[i],xdum[j]);
-	j++;
-      }
-    }
-  }
-  if (j != edi->nfit) fatal_error(0,"Counted %d, should be %d in init_edsam",
-				  j,edi->nfit);
-  edi->sref.nr=edi->nfit;
-  sfree(edi->sref.x);
-  snew(edi->sref.x,edi->nfit);
-  for(i=0; (i < edi->nfit); i++)
-    copy_rvec(xdum[i],edi->sref.x[i]);
-  sfree(xdum);
 
   /* remove pbc */
   snew(xdum,top->atoms.nr);
@@ -182,15 +138,19 @@ void init_edsam(FILE *log,t_topology *top,
 
   /* process target structure, if required */
   if (edi->star.nr > 0) {
+    snew(transvec,ned);
     rmsd=fitit(ned,edi->star.x,edi,transvec,rotmat);
     projectx(edi,edi->star.x,&edi->vecs.radcon);
+    sfree(transvec);
   }
 
   /* process structure that will serve as origin of expansion circle */
   if (edi->sori.nr > 0) {
+    snew(transvec,ned);
     rmsd=fitit(ned,edi->sori.x,edi,transvec,rotmat);
     projectx(edi,edi->sori.x,&edi->vecs.radacc);
     projectx(edi,edi->sori.x,&edi->vecs.radfix);
+    sfree(transvec);
   }
   else {
     projectx(edi,xdum,&edi->vecs.radacc);
@@ -258,6 +218,13 @@ void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms)
 
   /* Nr of essdyn atoms */
   edi->ned=read_edint(in);
+  /* npro and ned are obsolete from now on. They're still read from the
+   * .edi file to maintain the original .edi file format 
+   */
+  edi->ned=edi->sref.anrs[edi->sref.nr-1]+1;
+  if (edi->sav.anrs[edi->sav.nr-1] > edi->ned)
+    edi->ned=edi->sav.anrs[edi->sav.nr-1]+1;
+  /* fprintf(stderr,"Nr of atoms for ED sampling buffer: %d\n",edi->ned);*/
 
   /* eigenvectors */
   read_edvecs(in,edi->sav.nr,&edi->vecs);
@@ -269,11 +236,15 @@ void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms)
     snew(xdum,edi->star.nr);
     read_edx(in,edi->star.nr,edi->star.anrs,xdum);
     snew(edi->star.x,edi->ned);
-    j=0;
+    
+    for(j=0; (j < edi->star.nr); j++) 
+      if (edi->star.anrs[j] < 0 || edi->star.anrs[j] > edi->ned)
+	fatal_error(0,"ED sampling target index out of bounds: %d\n",edi->star.anrs[j]);
     for(i=0; (i < edi->ned); i++) {
-      if (edi->star.anrs[j] == i) {
-	copy_rvec(xdum[j],edi->star.x[i]);
-	j++;
+      for(j=0; (j < edi->star.nr); j++) {
+	if (edi->star.anrs[j] == i) {
+	  copy_rvec(xdum[j],edi->star.x[i]);
+	}
       }
     }
     sfree(xdum);
@@ -286,11 +257,15 @@ void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms)
     snew(xdum,edi->sori.nr);
     read_edx(in,edi->sori.nr,edi->sori.anrs,xdum);
     snew(edi->sori.x,edi->ned);
-    j=0;
+
+    for(j=0; (j < edi->sori.nr); j++) 
+      if (edi->sori.anrs[j] < 0 || edi->sori.anrs[j] > edi->ned)
+	fatal_error(0,"ED sampling origin index out of bounds: %d\n",edi->sori.anrs[j]);
     for(i=0; (i < edi->ned); i++) {
-      if (edi->sori.anrs[j] == i) {
-	copy_rvec(xdum[j],edi->sori.x[i]);
-	j++;
+      for(j=0; (j < edi->sori.nr); j++) {
+	if (edi->sori.anrs[j] == i) {
+	  copy_rvec(xdum[j],edi->sori.x[i]);
+	}
       }
     }
     sfree(xdum);
@@ -392,9 +367,9 @@ void scan_edvec(FILE *in,int nr,rvec *vec)
   for(i=0; (i < nr); i++) {
     fgets2 (line,STRLEN,in);
     sscanf (line,"%le%le%le",&x,&y,&z);
-    vec[i][0]=x;
-    vec[i][1]=y;
-    vec[i][2]=z;
+    vec[i][XX]=x;
+    vec[i][YY]=y;
+    vec[i][ZZ]=z;
   }
 }
 	  
@@ -648,7 +623,7 @@ real calc_radius(t_eigvec *vec)
 }
 
 void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
-	      t_mdatoms *md,int start,int homenr,
+	      t_mdatoms *md,int start,int homenr, t_commrec *cr,
               rvec x[],rvec xold[],rvec x_unc[],rvec force[],matrix box,
 	      t_edsamyn *edyn,t_edpar *edi,bool bHave_force)
 {
@@ -662,6 +637,9 @@ void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
   real dt_1 = 1.0/dt;
   real dt_2 = 1.0/(dt*dt);
 
+  if(!MASTER(cr))
+    return;
+  
   /* initialise radacc radius for slope criterion */
   if (bFirst) {
     oldrad=calc_radius(&edi->vecs.radacc);
@@ -980,11 +958,11 @@ void do_write_proj(FILE *out,t_eigvec *vec,char *mode)
   
   for (i=0;(i<vec->neig);i++) {
     if (strcmp(mode,"x") == 0)
-      fprintf(out,"%f ",vec->xproj[i]);
+      fprintf(out,"%e ",vec->xproj[i]);
     else if (strcmp(mode,"v") == 0)
-      fprintf(out,"%f ",vec->vproj[i]);
+      fprintf(out,"%e ",vec->vproj[i]);
     else if (strcmp(mode,"f") == 0)
-      fprintf(out,"%f ",vec->fproj[i]);
+      fprintf(out,"%e ",vec->fproj[i]);
   }
   if (vec->neig > 0) fprintf(out,"\n");
 }
