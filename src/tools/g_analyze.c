@@ -173,6 +173,60 @@ void average(char *avfile,char **avbar_opt,
   fclose(fp);
 }
 
+void estimate_error(char *eefile,int resol,int n,int nset,
+		    real *av,real **val,real dt)
+{
+  FILE *fp;
+  int log2max,rlog2,bs,prev_bs,nb;
+  int s,i,j;
+  real blav,var;
+  char **leg;
+
+  log2max = (int)(log(n)/log(2));
+
+  snew(leg,nset);
+  for(s=0; s<nset; s++) {
+    snew(leg[s],STRLEN);
+    sprintf(leg[s],"av %f",av[s]);
+  }
+
+  fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
+  fprintf(fp,
+	  "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
+	  n*dt,n);
+  xvgr_legend(fp,nset,leg);
+  for(s=0; s<nset; s++)
+    sfree(leg[s]);
+  sfree(leg);
+
+  for(s=0; s<nset; s++) {
+    prev_bs = 0;
+    for(rlog2=resol*log2max; rlog2>=2*resol; rlog2--) {
+      bs = n*pow(0.5,(real)rlog2/(real)resol);
+      if (bs != prev_bs) {
+	nb = 0;
+	i = 0;
+	var = 0;
+	while (i+bs <= n) {
+	  blav=0;
+	  for (j=0; j<bs; j++) {
+	    blav += val[s][i];
+	  i++;
+	  }
+	  var += sqr(av[s] - blav/bs);
+	  nb++;
+	}
+	fprintf(fp," %g %g\n",bs*dt,sqrt(var/(nb*(nb-1))));
+      }
+      prev_bs = bs;
+    }
+    if (s < nset)
+      fprintf(fp,"&\n");
+  }
+
+  fclose(fp);
+}
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -189,11 +243,18 @@ int main(int argc,char *argv[])
     "Option [TT]-msd[tt] produces the mean square displacement(s).[PAR]",
     "Option [TT]-dist[tt] produces distribution plot(s).[PAR]",
     "Option [TT]-av[tt] produces the average over the sets,",
-    "optionally with error bars ([TT]-errbar[tt]).",
+    "optionally with error bars ([TT]-errbar[tt]).[PAR]",
+    "Option [TT]-ee[tt] produces error estimates using block averaging.",
+    "A set is divided in a number of blocks and averages are calculated for",
+    "each block. The error for the total average is calculated from the",
+    "variance between the block averages. These errors are plotted as a",
+    "function of the block size. For a good error estimate the block size",
+    "should be at least as large as the correlation time, but possibly much",
+    "larger.[PAR]"
   };
   static real frac=0.5,binwidth=0.1;
-  static bool bHaveT=TRUE,bDer=FALSE,bAverCorr=FALSE;
-  static int  nsets_in=1,d=1;
+  static bool bHaveT=TRUE,bDer=FALSE,bSubAv=FALSE,bAverCorr=FALSE;
+  static int  nsets_in=1,d=1,resol=4;
 
   static char *avbar_opt[] = { NULL, "none", "stddev", "error", NULL };
 
@@ -210,6 +271,11 @@ int main(int argc,char *argv[])
       "Binwidth for the distribution" },
     { "-errbar", FALSE, etENUM, {&avbar_opt},
       "Error bars for the average" },
+    { "-resol", FALSE, etINT, {&resol},
+      "HIDDENResolution for the block averaging, block size increases with"
+    " a factor 2^(1/#)" },
+    { "-subav", FALSE, etBOOL, {&bSubAv},
+      "Subtract the average before autocorrelating" },
     { "-oneacf", FALSE, etBOOL, {&bAverCorr},
       "Calculate one ACF over all sets" }
   };
@@ -217,15 +283,16 @@ int main(int argc,char *argv[])
 
   FILE     *out;
   int      n,nlast,s,nset,i,t;
-  real     **val,t0,dt,tot;
-  char     *acfile,*msdfile,*distfile,*avfile;
+  real     **val,t0,dt,tot,*av;
+  char     *acfile,*msdfile,*distfile,*avfile,*eefile;
   
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
-    { efXVG, "-ac",   "autocorr", ffWRITE  },
+    { efXVG, "-ac",   "autocorr", ffOPTWR  },
     { efXVG, "-msd",  "msd",      ffOPTWR  },
     { efXVG, "-dist", "distr",    ffOPTWR  },
-    { efXVG, "-av",   "average",  ffOPTWR  }
+    { efXVG, "-av",   "average",  ffOPTWR  },
+    { efXVG, "-ee",   "errest",   ffOPTWR  }
   }; 
 #define NFILE asize(fnm) 
 
@@ -239,11 +306,12 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,TRUE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL); 
 
-  acfile = opt2fn_null("-ac",NFILE,fnm);
-  msdfile = opt2fn_null("-msd",NFILE,fnm);
+  acfile   = opt2fn_null("-ac",NFILE,fnm);
+  msdfile  = opt2fn_null("-msd",NFILE,fnm);
   distfile = opt2fn_null("-dist",NFILE,fnm);
-  avfile = opt2fn_null("-av",NFILE,fnm);
-  if (!acfile && !msdfile && !distfile && !avfile) {
+  avfile   = opt2fn_null("-av",NFILE,fnm);
+  eefile   = opt2fn_null("-ee",NFILE,fnm);
+  if (!acfile && !msdfile && !distfile && !avfile && !eefile) {
     fprintf(stderr,"Please use one of the output file options\n");
     exit(0);
   }
@@ -258,6 +326,14 @@ int main(int argc,char *argv[])
       for(i=0; i<n; i++)
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }	
+
+  snew(av,nset);
+  for(s=0; s<nset; s++) {
+    for(i=0; i<n; i++)
+      av[s] += val[s][i];
+    av[s] /= n;
+    fprintf(stderr,"Average of set %d: %g\n",s+1,av[s]); 
+  }
 
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",
@@ -285,10 +361,18 @@ int main(int argc,char *argv[])
   
   if (avfile)
     average(avfile,avbar_opt,n,nset,val,t0,dt);
-  
-  if (acfile)
+
+  if (eefile)
+    estimate_error(eefile,resol,n,nset,av,val,dt);
+
+  if (acfile) {
+    if (bSubAv) 
+      for(s=0; s<nset; s++)
+	for(i=0; i<n; i++)
+	  val[s][i] -= av[s];
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
 		eacNormal,bAverCorr,NULL,NULL);
+  }
 
   return 0;
 }
