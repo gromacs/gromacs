@@ -52,32 +52,32 @@ bool bDebugMode(void)
 
 void _where(char *file,int line)
 {
-  static int where =-1;
-  static int nw    = 1;
+  static bool bFirst = TRUE;
+  static int  nskip  = -1;
+  static int  nwhere =  0;
   FILE *fp;
+  char *temp; 
   
-  if ( where == -1 ) {
-    char *temp; 
+  if ( bFirst ) {
     if ((temp=getenv("WHERE")) != NULL)
-      where = atoi(temp);
+      nskip = atoi(temp);
+    bFirst = FALSE;
   } 
 
-  if ( where != -1 ) {
+  if ( nskip >= 0 ) {
     
     /* Skip the first n occasions, this allows to see where it goes wrong */
-    if (where > 1) 
-      where--;
-    else {
+    if (nwhere >= nskip) {
       if (stdlog)
 	fp = stdlog;
       else
 	fp = stderr;
-      fprintf(fp,"WHERE %d, file %s - line %d\n",nw,file,line);
+      fprintf(fp,"WHERE %d, file %s - line %d\n",nwhere,file,line);
 #ifdef _amb_
       fprintf(fp,"%512s\n","flushed");
 #endif    
     }
-    nw++;
+    nwhere++;
   }
 }
 
