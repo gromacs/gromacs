@@ -533,7 +533,7 @@ static int search_string(char *s,int ng,char *gn[])
 static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 			 t_block *block,char *gnames[],
 			 int gtype,char *title,int restnm,
-			 int *forward,bool bVerbose)
+			 int *forward,bool bOneGroup,bool bVerbose)
 {
   ushort *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
@@ -569,7 +569,10 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 		    aj,title,gid,ognr);
       else {
 	/* Store the group number in buffer */
-	cbuf[aj] = i;
+	if (bOneGroup)
+	  cbuf[aj] = 0;
+	else
+	  cbuf[aj] = i;
 	ntot++;
       }
     }
@@ -577,11 +580,16 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   
   /* Now check whether we have done all atoms */
   if (ntot != atoms->nr) {
-    if (bVerbose)
-      fprintf(stderr,"Making dummy/rest group for %s containing %d elements\n",
-	      title,atoms->nr-ntot);
-    /* Add group name "rest" */
-    i = groups->nr;
+    if (bOneGroup)
+      i = 1;
+    else {
+      if (bVerbose)
+	fprintf(stderr,
+		"Making dummy/rest group for %s containing %d elements\n",
+		title,atoms->nr-ntot);
+      /* Add group name "rest" */
+      i = groups->nr;
+    }
     groups->nm_ind[groups->nr++] = restnm;
     
     /* Assign the rest name to all atoms not currently assigned to a group */
@@ -591,7 +599,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
     }
   }
   /*  if (forward != NULL) {
-    for(j=0; (j<atoms->nr); j++) 
+      for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[forward[j]];
   }
   else*/ {
@@ -741,7 +749,7 @@ void do_index(char *ndx,
 		"%d tau_t values",ntcg,nref_t,ntau_t);
  
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;
   ir->opts.ngtc=nr;
   snew(ir->opts.nrdf,nr);
@@ -769,7 +777,7 @@ void do_index(char *ndx,
     fatal_error(0,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,"Acceleration",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
@@ -787,7 +795,7 @@ void do_index(char *ndx,
     fatal_error(0,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
   do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,"Freeze",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
   snew(ir->opts.nFreeze,nr);
@@ -806,22 +814,22 @@ void do_index(char *ndx,
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,"Energy",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcENER].nr;
   ir->opts.ngener=nr;
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,"User1",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,"User2",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(user3,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser3,"User3",
-	       restnm,forward,bVerbose);
+	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,"xtc_grps",
-	       restnm,forward,bVerbose);
+	       restnm,forward,TRUE,bVerbose);
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {
       fprintf(stderr,"%-16s has %d element(s):",gtypes[i],atoms->grps[i].nr); 
