@@ -146,8 +146,9 @@ static int enter_params(t_idef *idef, t_functype ftype,
   }
   else
     type=idef->ntypes;
-  fprintf(stderr,"\rcopying new to idef->iparams[%d] (ntypes=%d)",
-	  type,idef->ntypes);
+  if (debug)
+    fprintf(debug,"copying new to idef->iparams[%d] (ntypes=%d)\n",
+	    type,idef->ntypes);
   memcpy(&idef->iparams[type],&new,(size_t)sizeof(new));
   
   idef->ntypes++;
@@ -187,8 +188,9 @@ static void enter_function(t_params *p,t_functype ftype,
       *maxtypes += 1000;
       srenew(idef->functype,*maxtypes);
       srenew(idef->iparams, *maxtypes);
-      fprintf(stderr,"srenewed idef->functype and idef->iparams to %d\n",
-	      *maxtypes);
+      if (debug) 
+	fprintf(debug,"%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
+		__FILE__,__LINE__,*maxtypes);
     }
     type = enter_params(idef,ftype,nrfp,p->param[k].c,*maxtypes,start,bNB);
     if (!bNB)
@@ -231,7 +233,9 @@ void convert_params(int atnr,t_params nbtypes[],
 	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_SHAKE)))
       enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE);
   }
-  fprintf(stderr,"There are %d functypes in idef\n",idef->ntypes);
+  if (debug)
+    fprintf(debug,"%s, line %d: There are %d functypes in idef\n",
+	    __FILE__,__LINE__,idef->ntypes);
   for(j=0; (j<F_NRE); j++) {
     for (i=0; (i<MAXPROC); i++) 
       idef->il[j].multinr[i]=idef->il[j].nr;

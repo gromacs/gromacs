@@ -393,8 +393,8 @@ static char **read_topol(char        *infile,
 	  Nsim++;
 	  if (!mi0->bProcessed) {
 	    qt+=nrcopies*check_mol(&mi0->atoms,&mi0->cgs);
-	    printf("excluding %d bonded neighbours for %s\n",
-		   mi0->nrexcl,pline);
+	    fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
+		    mi0->nrexcl,pline);
 	    generate_excl(mi0->nrexcl,
 			  mi0->atoms.nr,
 			  mi0->plist,

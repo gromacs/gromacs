@@ -74,27 +74,42 @@ void init_ir(t_inputrec *ir, t_gromppopts *opts)
 void check_ir(t_inputrec *ir, t_gromppopts *opts)
 /* Check internal consistency */
 {
-  char buf[STRLEN];
   bool bStop=FALSE;
 
-#define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
+#define BS(b,s,val) if (b) fprintf(stderr,s,val), bStop=TRUE
   BS(((ir->tol <= 0.0) && (opts->nshake > 0)),
-     "tol must be > 0 instead of %10.5e while using shake\n",ir->tol)
+     "tol must be > 0 instead of %10.5e while using shake\n",ir->tol);
   BS(((ir->ndelta < 1) && (ir->ns_type==ensGRID)),
      "when you use ndelta=%d the neighbour search will be done\n"
      "on one grid cell, and take much longer than the simple method\n",
-     ir->ndelta)
+     ir->ndelta);
   BS((ir->epsilon_r <= 0),"Epsilon-R must be > 0 instead of %e\n",
-     ir->epsilon_r)
-  BS((ir->bpc && (ir->tau_p <= 0)),
-     "tau_p must be > 0 instead of %10.5e\n",ir->tau_p)
+     ir->epsilon_r);
+  BS((ir->epc && (ir->tau_p <= 0)),
+     "tau_p must be > 0 instead of %10.5e\n",ir->tau_p);
+  if ((ir->rshort == 0.0) && (ir->rlong == 0.0)) {
+    if (ir->eBox != ebtNONE) {
+      fprintf(stderr,"Can not have cut-off to zero (=infinite) with periodic\n"
+	      "boundary conditions. Either set the box type to %s, or increase\n"
+	      "the cut-off radii\n",eboxtype_names[ebtNONE]);
+      bStop = TRUE;
+    }
+  }
+  if ((ir->epc == epcTRICLINIC) && (ir->eBox != ebtTRICLINIC)) {
+    fprintf(stderr,"%s pressure coupling does not make sense without %s box\n"
+	    "resetting presure coupling to %s\n",
+	    epcoupl_names[epcTRICLINIC],eboxtype_names[ebtTRICLINIC],
+	    epcoupl_names[epcISOTROPIC]);
+    ir->epc = epcISOTROPIC;
+  }
   if ((ir->eeltype == eelSHIFT) || (ir->eeltype == eelSWITCH)) {
     if (ir->rshort >= ir->rlong) {
       fprintf(stderr,"rlong (%g) must be longer than rshort (%g) "
 	      "when using %s\n",ir->rlong,ir->rshort,eel_names[ir->eeltype]);
       bStop=TRUE;
     }
-  } else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
+  } 
+  else if ((ir->eeltype == eelRF) || (ir->eeltype == eelGRF)) {
     if (ir->rlong != ir->rshort) {
       fprintf(stderr,
 	      "WARNING: specifying different rlong (%g) and rshort (%g) "
@@ -103,16 +118,19 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts)
       ir->rlong=ir->rshort;
     }
     if (ir->epsilon_r == 1.0) {
-      sprintf(buf,"Using epsilon_r = 1.0 with %s does not make sense",
+      sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
 	      eel_names[eelRF]);
-      warning(buf);
+      warning(NULL);
       ir->eeltype = eelTWIN; 
     }
   } else
     BS((ir->rshort > ir->rlong),
-       "rshort (%g) must be <= rlong\n",ir->rshort)
-  if (ir->delta_t > 0.005)
-    fprintf(stderr,"time step > 0.005! (%10.5e)\n",ir->delta_t);
+       "rshort (%g) must be <= rlong\n",ir->rshort);
+       
+  if (ir->delta_t > 0.005) {
+    sprintf(warn_buf,"time step > 0.005! (%10.5e)\n",ir->delta_t);
+    warning(NULL);
+  }
   if (bStop) {
     fprintf(stderr,"program terminated\n");
     exit(1);
@@ -232,7 +250,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("tau_t",	tau_t,		NULL);
   STYPE ("ref_t",	ref_t,		NULL);
   CTYPE ("Pressure coupling");
-  ETYPE ("Pcoupl",	ir->bpc,        yesno_names);
+  ETYPE ("Pcoupl",	ir->epc,        epcoupl_names);
   CTYPE ("Memory for running average (steps)");
   ITYPE ("npcmemory",   ir->npcmemory,  1);
   CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
@@ -328,25 +346,31 @@ void get_ir(char *mdparin,char *mdparout,
   for(m=0; (m<2); m++) {
     for(i=0; (i<DIM); i++)
       dumdub[m][i]=0.0;
-    if (ir->bpc)
-      switch (ir->eBox) {
-      case ebtCUBIC:
-	if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))==1)
-	  dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
-	else
-	  fprintf(stderr,"Warning: pressure coupling not enough vals\n");
-	break;
-      default:
-	if (sscanf(dumstr[m],"%lf%lf%lf",
-		   &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]))!=3) 
-	  fprintf(stderr,"Warning: pressure coupling not enough vals\n");
-	break;
-      }
+    switch (ir->epc) {
+    case epcNO:
+      break;
+    case epcISOTROPIC:
+      if (sscanf(dumstr[m],"%lf",&(dumdub[m][XX]))==1)
+	dumdub[m][YY]=dumdub[m][ZZ]=dumdub[m][XX];
+      else
+	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
+      break;
+    case epcANISOTROPIC:
+      if (sscanf(dumstr[m],"%lf%lf%lf",
+		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]))!=3) 
+	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
+      break;
+    default:
+      fprintf(stderr,"Pressure coupling type %s not implemented yet\n",
+	      epcoupl_names[ir->epc]);
+      exit(1);
+    }
   }
   for(i=0; (i<DIM); i++) {
-    ir->ref_p[i]=dumdub[1][i]/PRESFAC;
-    ir->compress[i]=dumdub[0][i];
+    ir->ref_p[i]    = dumdub[1][i];
+    ir->compress[i] = dumdub[0][i];
   }
+  fprintf(stderr,"Warning: as of GMX v 1.7 unit of compressibility is truly 1/bar\n");
   sfree(dumstr[0]);
   sfree(dumstr[1]);
 }

@@ -253,7 +253,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CII(eBox);
   CIB(bShakeFirst);
   CIB(btc);
-  CIB(bpc);
+  CII(epc);
   CII(ntcmemory);
   CII(npcmemory);
   CIR(tau_p);

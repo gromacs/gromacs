@@ -104,9 +104,11 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
   /* rlong must be less than half the box */
   bmin=min(box[XX][XX],box[YY][YY]);
   bmin=0.5*(min(bmin,box[ZZ][ZZ]));
-  BS((ir->rlong > bmin),
-     "rlong (%10.5e) must be < half a box\n",ir->rlong)
-  
+  if (ir->rlong > bmin) {
+     fprintf(stderr,"rlong (%10.5e) must be < half a box (%10.5e)\n",
+	     ir->rlong,bmin);
+     bStop = TRUE;
+  }
   if (bStop) {
     fprintf(stderr,"program terminated\n");
     exit(1);
@@ -420,7 +422,8 @@ static int search_array(int *n,int map[],int key)
       break;
   
   if (i == *n) {
-    fprintf(stderr,"\ratomtype %d",*n);
+    if (debug)
+      fprintf(debug,"Renumbering atomtype %d to %d",key,*n);
     map[(*n)++]=key;
   }
   return i;
@@ -444,14 +447,14 @@ static int renum_atype(t_params plist[],t_topology *top,
     top->atoms.atom[i].typeB=
       search_array(&nat,map,top->atoms.atom[i].typeB);
   }
-  fprintf(stderr,"\n");
   
   if (ir->watertype != -1) {
     for(j=0; (j<nat); j++)
       if (map[j] == ir->watertype)
 	ir->watertype=j;
-    if (bVerbose)
-      fprintf(stderr,"changing watertype to %d\n",ir->watertype);
+    if (debug)
+      fprintf(debug,"Renumbering watertype (atomtype for OW) to %d\n",
+	      ir->watertype);
   }
     
   /* Renumber nlist */
@@ -522,7 +525,15 @@ int main (int argc, char *argv[])
     "bonds. For this option to work you need an extra file in your $GMXLIB",
     "with dissociation energy. Use the -debug option to get more information",
     "on the workings of this option (look for MORSE in the grompp.log file",
-    "using less or something like that)."
+    "using less or something like that).[PAR]",
+    "To verify your binary topology file, please make notice of all warnings",
+    "on the screen, and correct where necessary. Do also look at the contents",
+    "of the mdout.mdp file, this contains comment lines, as well as the input",
+    "that [TT]grompp[tt] has read. If in doubt you can start grompp",
+    "with the [TT]-debug[tt] option which will give you more information",
+    "in a file called grompp.log (along with real debug info). Finally, you",
+    "can see the contents of [TT].tpr[tt] file with the [TT]gmxdump[tt]",
+    "program."
   };
   static char *bugs[] = {
     "shuffling is sometimes buggy when used on systems when the number of"
@@ -660,7 +671,9 @@ int main (int argc, char *argv[])
   write_tpx(ftp2fn(efTPX,NFILE,fnm),
 	    0,ir->init_t,ir->init_lambda,ir,box,
 	    natoms,x,v,NULL,&sys);
-  
+
+  print_warn_num();
+	      
   thanx(stdout);
 	       
   return 0;

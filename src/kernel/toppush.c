@@ -784,8 +784,8 @@ void merge_excl(t_block *excl, t_block2 *b2)
     fatal_error(0,"DEATH HORROR: b2->nr = %d, while excl->nr = %d",
 		b2->nr,excl->nr);
   }
-  else
-    printf("Entering merge_excl\n");
+  else if (debug)
+    fprintf(debug,"Entering merge_excl\n");
 
   /* First copy all entries from excl to b2 */
   b_to_b2(excl,b2);
