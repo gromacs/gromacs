@@ -102,9 +102,9 @@ static void init_nblist(t_nblist *nl,int homenr,int il_code)
 static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
 			      bool bTab,bool bWater,bool bEwald)
 {
-    /* lot of redundancy here,
-     * since we cant have RF and EWALD simultaneously...
-     */
+  /* lot of redundancy here,
+   * since we cant have RF and EWALD simultaneously...
+   */
 
   int inloop[64] = { 
     eNR_LJC,        eNR_QQ,         eNR_BHAM,       eNR_QQ,
@@ -135,19 +135,26 @@ static unsigned int nbf_index(bool bCoul,bool bRF,bool bBham,
 
 void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 {
-  /* Make this tunable! (does not seem to be a big difference though) */
+  /* Make this tunable! (does not seem to be a big difference though) 
+   * This parameter determines the number of i particles in a long range 
+   * neighbourlist. Too few means many function calls, too many means
+   * cache trashing.
+   */
   int maxlr=max(homenr/20,50);
   
   init_nblist(&fr->nlist_sr[eNL_VDW],homenr,
 	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
   init_nblist(&fr->nlist_sr[eNL_QQ],homenr,
 	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
-  init_nblist(&fr->nlist_sr[eNL_FREE],homenr,
-	      fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
-  init_nblist(&fr->nlist_sr[eNL_VDW_WAT],homenr,
-	      nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
-  init_nblist(&fr->nlist_sr[eNL_QQ_WAT],homenr,
-	      nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+  if (fr->bPert)
+    init_nblist(&fr->nlist_sr[eNL_FREE],homenr,
+		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
+  if (fr->bWaterOpt) {
+    init_nblist(&fr->nlist_sr[eNL_VDW_WAT],homenr/3,
+		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+    init_nblist(&fr->nlist_sr[eNL_QQ_WAT],homenr/3,
+		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+  }
   if (fr->bTwinRange) {
     fprintf(log,"Allocating space for long range neighbour list of %d atoms\n",
 	    maxlr);
@@ -155,12 +162,15 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
     init_nblist(&fr->nlist_lr[eNL_QQ],maxlr,
 		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,FALSE,fr->bEwald));
-    init_nblist(&fr->nlist_lr[eNL_FREE],maxlr,
-		fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
-    init_nblist(&fr->nlist_lr[eNL_VDW_WAT],maxlr,
-		nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
-    init_nblist(&fr->nlist_lr[eNL_QQ_WAT],maxlr,
-		nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+    if (fr->bPert)
+      init_nblist(&fr->nlist_lr[eNL_FREE],maxlr,
+		  fr->bBHAM ? eNR_BHAM_FREE : eNR_LJC_FREE);
+    if (fr->bWaterOpt) {
+      init_nblist(&fr->nlist_lr[eNL_VDW_WAT],maxlr,
+		  nbf_index(FALSE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+      init_nblist(&fr->nlist_lr[eNL_QQ_WAT],maxlr,
+		  nbf_index(TRUE,fr->bRF,fr->bBHAM,fr->bTab,TRUE,fr->bEwald));
+    }
   }
 }
 
