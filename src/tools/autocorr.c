@@ -257,9 +257,11 @@ static void do_ac_core(int nframes,int nlag,
     nrestart = 1;
     nstart   = nframes;
   }
-  else if (nrestart < 1) {
-    fprintf(stderr,"WARNING: setting number of restarts to 1\n");
-    nrestart = 1;
+  else {
+    if (nrestart < 1) {
+      fprintf(stderr,"WARNING: setting number of restarts to 1\n");
+      nrestart = 1;
+    }
     nstart   = nframes - nlag;
   }
   if (debug)
