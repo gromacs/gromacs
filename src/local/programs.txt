@@ -80,6 +80,7 @@ g_saltbr|computes salt bridges
 g_sas|computes solvent accessible surface area
 g_order|computes the order parameter per atom for carbon tails
 g_sgangle|computes the angle and distance between two groups
+g_sorient|analyzes solvent orientation around solutes
 g_disre|analyzes distance restraints
 END
 

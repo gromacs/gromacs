@@ -50,6 +50,7 @@ g_rotacf
 g_saltbr
 g_sas
 g_sgangle
+g_sorient
 g_traj
 g_velacc
 genbox

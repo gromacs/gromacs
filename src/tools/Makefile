@@ -21,13 +21,14 @@ PROGRAMS = \
 	g_analyze	g_anaeig	g_angle		g_bond		\
 	g_chi		g_cluster	g_confrms	g_covar		\
 	g_density	g_dielectric	g_dih		g_dipoles	\
-	g_disre		g_dist		g_enemat	g_energy	\
+	g_disre		g_dist		g_dyndom	\
+	g_enemat	g_energy	\
 	g_gyrate	g_h2order	g_hbond		g_helix		\
 	g_mdmat		g_mindist	g_msd		g_morph		\
 	g_nmeig		g_nmens		g_order		g_potential	\
 	g_rama		g_rdens		g_rdf		g_rms		\
 	g_rmsdist	g_rmsf		g_rotacf	g_saltbr	\
-	g_sas		g_sgangle	g_traj		g_dyndom	\
+	g_sas		g_sgangle	g_sorient 	g_traj		\
 	g_velacc	genbox		genconf		genion		\
 	genpr		make_ndx	mk_angndx	trjcat		\
 	trjconv         trjorder	wheel		xpm2ps
@@ -159,6 +160,9 @@ g_rama:		g_rama.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_sgangle:	g_sgangle.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+g_sorient:	g_sorient.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_order:	g_order.o
