@@ -1049,7 +1049,6 @@ int main(int argc,char *argv[])
     { efPDB, "-p",  "order",  ffOPTWR },
     { efXVG, "-jc", "Jcoupling", ffWRITE },
     { efXVG, "-c",  "dihcorr",ffOPTWR },
-    { efTEX, "-t",  "trans",  ffWRITE },
     { efLOG, "-g",  "chi",    ffWRITE }
   };
 #define NFILE asize(fnm)
