@@ -41,13 +41,13 @@ nm. (Note that $h$ is $s^{-1}$).
 
 The algorithm goes a little something like this:
 \begin{enumerate}
-\item	Calc distance vector (\ve{r}$_{ij}$) and distance r$_{ij}$
+\item	Calculate distance vector (\ve{r}$_{ij}$) and distance r$_{ij}$
 \item	Multiply r$_{ij}$ by $s$ and truncate to an integer value $n_0$
 	to get a table index
 \item	Calculate fractional component ($\epsilon$ = $s$r$_{ij} - n_0$) 
 	and $\epsilon^2$ 
-\item	Do the interpolation to calc the potential $V$ and the the scalar force $f$
-\item	Calc the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
+\item	Do the interpolation to calculate the potential $V$ and the the scalar force $f$
+\item	Calculate the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
 \end{enumerate}
 
 The tables are stored as y$_i$, F$_i$, G$_i$, H$_i$ in the order
@@ -98,10 +98,10 @@ you run in single precision, or 0.0005 when you run in double
 precision.  This and other functions contain a singularity at x=0, but
 since atoms are normally not closer to each other than 0.1 nm, the
 function value at x=0 is not important.  In this context r$_c$ denotes
-the single cut-off denoted by the variables rshort and rlong (see
-above). These variables should be the same (but need not be 1.0) and
-consistent with the table data.  The neighborsearching algorithm will
-search all atom-pairs within a distance rlong and compute the
-interactions using your potential functions.
+the single cut-off denoted by the variables {\tt rshort} and {\tt
+rlong} (see above). These variables should be the same (but need not
+be 1.0) and consistent with the table data.  The neighbor-searching
+algorithm will search all atom-pairs within a distance {\tt rlong} and
+compute the interactions using your potential functions.
 
 This mechanism allows the user to use their own preferred programming language,

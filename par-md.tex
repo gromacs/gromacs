@@ -1,30 +1,30 @@
 \section{Parallel Molecular Dynamics}
 In this chapter we describe some details of the \normindex{parallel MD}  
 algorithm used 
-in {\gromacs}. This also includes some other information on neighborsearching and
+in {\gromacs}. This also includes some other information on neighbor searching and
 a side excursion to parallel sorting.
 Please note the following which we use throughout this chapter:\\
 {\bf definition:} {\natom}: Number of particles, {\nproc} number of processors.\\
-{\gromacs} employs two different grids: the neighborsearching grid ({\nsgrid})
+{\gromacs} employs two different grids: the neighbor searching grid ({\nsgrid})
 and the charge/potential grid ({\fftgrid}), as will be described below.
 To maximize the confusion, 
 these two grids are mapped onto a grid of processors when {\gromacs} runs on a 
 parallel computer.
 
 \subsection{Domain decomposition}
-Modern day parallel computers, such as an \normindex{IBM SP/2} or a
-\normindex{Cray T3E} consist of relatively
-small numbers of relatively fast scalar processors (typically 8 to 256).
-The communication channels that are available in hardware on these machine are
-not directly visible for the programmer, a software layer (like \normindex{MPI} or 
+Modern day parallel computers, such as an IBM SP/2 or a Cray T3E
+consist of relatively small numbers of relatively fast scalar
+processors (typically 8 to 256).  The communication channels that are
+available in hardware on these machine are not directly visible for
+the programmer, a software layer (like \normindex{MPI} or
 \normindex{PVM}) hides this, and makes communication from all processors to all
 others possible. In contrast, in the {\gromacs} hardware~\cite{Berendsen95a}
-only communication in a ring was available, i.e. each processor could communicate
+only communication in a ring was available, {\ie} each processor could communicate
 with its direct neighbors only.
 
 It seems logical to map the computational box of an MD simulation system 
 to a 3D grid of 
-processors (e.g. 4x4x4 for a 64 processor system). This ensures that most 
+processors ({\eg} 4x4x4 for a 64 processor system). This ensures that most 
 interactions that are local in space can be computed with information from 
 neighboring processors only. However, this means that there have to be
 communication channels in 3 dimensions too, which is not necessarily the case.
@@ -37,7 +37,7 @@ for the computational box. Each processor gets a slab of this box in the
 X-dimension.
 For the communication between processors this has two main advantages:
 \begin{enumerate}
-\item	Simplicity of coding. Communication can only be to two neigbours
+\item	Simplicity of coding. Communication can only be to two neighbors
 	(called {\em left} and {\em right} in {\gromacs}).
 \item	Communication can usually be done in large chunks, which makes it
 	more efficient on most hardware platforms.
@@ -48,7 +48,7 @@ Bonds, angles and dihedrals are guaranteed to have the corresponding particles
 close in space.
 
 
-\subsection{Domain decomposition for nonbonded forces}
+\subsection{Domain decomposition for non-bonded forces}
 For large parallel computers, domain decomposition is preferable over particle
 decomposition, since it is easier to do load balancing. Without load balancing
 the scaling of the code is rather poor...
@@ -57,7 +57,7 @@ is equal to the number of processors. There are multiple ways of dividing the bo
 over processors, but since the {\gromacs} code assumes
 a ring topology for the processors, it is logical to cut the system in slabs in
 just one dimension, the X dimension. 
-The algorithm for neighborsearching then becomes:
+The algorithm for neighbor searching then becomes:
 \begin{enumerate}
 \item	Make a list of charge group indices sorted on (increasing) X coordinate
 	(\figref{parsort}).
@@ -66,7 +66,7 @@ The algorithm for neighborsearching then becomes:
 \item	Divide this list into slabs, such that each slab has the same number of
 	charge groups
 \item	Put the particles corresponding to the local slab on a 3D {\nsgrid} as 
-	desribed above (\secref{nsgrid})
+	described above (\secref{nsgrid})
 \item	Communicate the {\nsgrid} to neighboring processors (not necessarily to all
 	processors). The amount of neighboring {\nsgrid} cells (N$_{gx}$) to 
 	communicate is determined by the cut-off length $r_c$ according to
@@ -74,8 +74,8 @@ The algorithm for neighborsearching then becomes:
 	N_{gx}	~=~	\frac{r_c \nproc}{l_x}   
 	\eeq
 	where $l_x$ is the box length in the slabbing direction. 
-\item	On each processor compute the neighborlist for all charge groups in
-	its slab using the normal grid neighborsearching.
+\item	On each processor compute the neighbor list for all charge groups in
+	its slab using the normal grid neighbor-searching.
 \end{enumerate}
 
 \begin{figure}
@@ -84,11 +84,12 @@ The algorithm for neighborsearching then becomes:
 \label{fig:parsort}
 \end{figure}
 
-For homogeneous system, this is close to an optimal load balancing, without 
-actually doing load balancing. For inhomogeneous system, such as membranes, or 
-interfaces, the dimension for slabbing must be chosen such that it is perpendicular
-to the interface; in this fashion each processor has ``a little bit of everything''.
-The {\gromacs} utility program \normindex{editconf} has an option to rotate a whole
+For homogeneous system, this is close to an optimal load balancing,
+without actually doing load balancing. For inhomogeneous system, such
+as membranes, or interfaces, the dimension for slabbing must be chosen
+such that it is perpendicular to the interface; in this fashion each
+processor has ``a little bit of everything''.  The {\gromacs} utility
+program {\tt editconf} has an option to rotate a whole
 computational box.
 
 The following observations are important here:
@@ -99,18 +100,18 @@ The following observations are important here:
 \item	Velocities are kept on the ``home processor'' for each particle,
 	where the integration of Newton's equations is done.
 \item	Fixed interaction lists (bonds, angles etc.) are kept each
-	on a single processor.
-	Since all processors have all coordinates, it does not matter where
-	interactions are calculated.
-	The division is actually done by the {\gromacs} preprocessor 
-	(\normindex{grompp}) and care is taken that, as far as possible,
-	every processor gets the same number of bonded interactions.
+	on a single processor.  Since all processors have all
+	coordinates, it does not matter where interactions are
+	calculated.  The division is actually done by the {\gromacs}
+	preprocessor {\tt grompp} and care is taken that, as far as
+	possible, every processor gets the same number of bonded
+	interactions.
 \end{itemize}
 
 In all, this makes for a mixed particle decomposition/domain decomposition scheme
-for paralellization of the MD code. The communication costs are four times higher
+for parallelization of the MD code. The communication costs are four times higher
 than for the simple particle decomposition method described in \secref{par}
-(the whole coordinate and force array are communicated accross the whole ring,
+(the whole coordinate and force array are communicated across the whole ring,
 rather than half the array over half the ring).
 However, for large numbers of processors the improved load balancing 
 compensates this easily.
@@ -124,7 +125,7 @@ parallelized:
 \begin{enumerate}
 \item	Spreading charges on the {\fftgrid} to obtain the charge 
 	distribution $\rho(\ve{r})$.
-	This bit involves the following substeps:
+	This bit involves the following sub-steps:
 	\begin{enumerate}
 	\item[{\bf a.}] put particle in the box
 	\item[{\bf b.}] find the {\fftgrid} cell in which the particle resides
@@ -156,26 +157,26 @@ parallelized:
 	smaller than or equal to that real number.
 	
 \item	Doing the Fourier transform of the charge distribution $\rho(\ve{r})$ 
-	in parallel to obtain $\hat{\rho}(\ve{k})$. This is done using the
-	FFTW library ({\tt http://lcs.theory.mit.edu/\~{ }fftw}) 
-	which employs the MPI library for message passing 
-	programs (note that there are also \normindex{shared memory} versions of the
-	FFTW code).\\
-	This FFT algorithm actually use slabs as well (good thinking!).
-	Each processor does 2D FFTS on its slab, and then the whole {\fftgrid}
-	is transposed {\em in place} (i.e. without using extra memory).
-	This means that after the FFT the X and Y components are swapped.
-	To complete the FFT, this swapping should be undone in principle
-	(by transposing back).
-	Happily the FFTW code has an option to omit this,
+	in parallel to obtain $\hat{\rho}(\ve{k})$. This is done using
+	the FFTW library ({\tt http://lcs.theory.mit.edu/\~{ }fftw})
+	which employs the MPI library for message passing programs
+	(note that there are also \normindex{shared memory} versions
+	of the FFTW code).\\
+	This FFT algorithm actually use slabs as well (good
+	thinking!).  Each processor does 2D FFTS on its slab, and then
+	the whole {\fftgrid} is transposed {\em in place}
+	({\ie} without using extra memory).  This means that after the
+	FFT the X and Y components are swapped.  To complete the FFT,
+	this swapping should be undone in principle (by transposing
+	back).  Happily the FFTW code has an option to omit this,
 	which we use in the next step.
-\item	Convolute $\hat{\rho}(\ve{k})$ with the fourier transform of the
+\item	Convolute $\hat{\rho}(\ve{k})$ with the Fourier transform of the
 	charge spread function $\hat{g}(\ve{k})$ (which we have tabulated before)
 	to obtain the potential $\hat{\phi}(k)$. 
 	As an optimization, we store the $\hat{g}(\ve{k})$  in transposed form
 	as well, matching the transposed form of $\hat{\rho}(\ve{k})$
 	which we get from the FFTW routine. After this step we have the 
-	potential $\hat{\phi}(k)$ in fourier space, but still on the transposed
+	potential $\hat{\phi}(k)$ in Fourier space, but still on the transposed
 	{\fftgrid}.
 \item	Do an inverse transform of $\hat{\phi}(k)$ to obtain
 	${\phi}(\ve{r})$. Since the algorithm must do a transpose of the data
@@ -183,7 +184,7 @@ parallelized:
 	potential in real space.
 \item	Interpolate the potential ${\phi}(\ve{r})$ in real space at the particle
 	positions to obtain forces and energy. For this bit the same considerations
-	towards parallellism hold as for the charge spreading. However in this
+	towards parallelism hold as for the charge spreading. However in this
 	case more neighboring grid cells are needed, such that we need
 	the following set of {\fftgrid} slabs in the $x$ direction:
 	\beq
@@ -191,21 +192,21 @@ parallelized:
 	\eeq
 
 \end{enumerate}
-The algorithm as scetched above requires communication for spreading the charges,
-for the FFTW forward and backward, and for interpolating the forces.
-The {\gromacs} bits of the program use only left and right communication, i.e.
-using two communication channels. The FFTW routines actually use other forms
-of communication as well, and these routines are coded with MPI routines for
-message passing. This implies that {\gromacs} can only perform the PPPM algorithm
-on parallel computers computers that support MPI. However, 
-most \normindex{shared memory}
-computers, such as the \normindex{SGI Origin} 
-also support MPI using the shared memory for communication.
+The algorithm as sketched above requires communication for spreading
+the charges, for the FFTW forward and backward, and for interpolating
+the forces.  The {\gromacs} bits of the program use only left and
+right communication, {\ie}  using two communication channels. The FFTW
+routines actually use other forms of communication as well, and these
+routines are coded with MPI routines for message passing. This implies
+that {\gromacs} can only perform the PPPM algorithm on parallel
+computers computers that support MPI. However, most \normindex{shared
+memory} computers, such as the SGI Origin also support MPI using the
+shared memory for communication.
 
 \subsection{Parallel sorting}
 \label{sec:parsort}
 For the domain decomposition bit of {\gromacs} it is necessary to sort the 
-coordinates (or rather the index to coordinates) every time a neighborlist is made.
+coordinates (or rather the index to coordinates) every time a neighbor list is made.
 If we use brute force, and sort all coordinates on each processor (which is 
 technically possible since we have all the coordinates), then this sorting procedure
 will take a constant time (proportional to {\natom}$^2\log${\natom}, 
@@ -214,14 +215,14 @@ better, if we assume that particles diffuse only slowly.
 A parallel sorting algorithm can be conceived as follows: \\
 At the first step of the simulation
 \begin{enumerate}
-\item	Do a full sort of all indices using e.g. the  quicksort algorithm that is
+\item	Do a full sort of all indices using {\eg} the  quick-sort algorithm that is
 	built-in in the standard C-library
 \item	Divide the sorted array into slabs (as described above see 
 	\figref{parsort}).
 \end{enumerate}
 At subsequent steps of the simulation:
 \begin{enumerate}
-\item	Send the indices for each processor to the preceeding processor (if
+\item	Send the indices for each processor to the preceding processor (if
 	not processor 0) and to the next processor (if not {\nproc}-1). The 
 	communication associated with this operation is proportional to
 	2{\natom}/{\nproc}.

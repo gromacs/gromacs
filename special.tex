@@ -53,15 +53,15 @@ All modifications described in this section can be performed using the
 options exist to increase hydrogen masses, dummify all hydrogen atoms
 or also dummify all aromatic residues. Note that when all hydrogen
 atoms are dummified, also those inside the aromatic residues will be
-dummified, i.e. hydrogens in the aromatic residues are treated
+dummified, {\ie} hydrogens in the aromatic residues are treated
 differently depending on the treatment of the aromatic residues.
 
 Parameters for the dummy constructions for the hydrogen atoms are
-inferred from the forcefield parameters ({\em vis}. bondlengths and
+inferred from the forcefield parameters ({\em vis}. bond lengths and
 angles) directly by {\tt \normindex{grompp}} while processing the
 topology file.  The constructions for the aromatic residues are based
-on the bondlengths and angles for the geometry as described in the
-forcefiels, but these parameters are hard-coded into {\tt
+on the bond lengths and angles for the geometry as described in the
+forcefields, but these parameters are hard-coded into {\tt
 \normindex{pdb2gmx}} due to the complex nature of the construction
 needed for a whole aromatic group.
 
@@ -85,11 +85,11 @@ fixed angle and distance; {\sf D}: construction for amine groups
 
 The goal of defining hydrogen atoms as dummy atoms is to remove all
 high-frequency degrees of freedom from them. In some cases not all
-degrees of freedom of a hydrogen atom should be removed, e.g. in the
+degrees of freedom of a hydrogen atom should be removed, {\eg} in the
 case of hydroxyl or amine groups the rotational freedom of the
 hydrogen atom(s) should be preserved. Care should be taken that no
 unwanted correlations are introduced by the construction of dummy
-atoms, e.g. bond-angle vibration between the constructing atoms could
+atoms, {\eg} bond-angle vibration between the constructing atoms could
 translate into hydrogen bond-length vibration. Additionally, since
 dummy atoms are by definition mass-less, in order to preserve total
 system mass, the mass of each hydrogen atom that is treated as dummy
@@ -159,7 +159,7 @@ tryptophane; {\sf D}: histidine.}
 
 \subsection{Out-of-plane vibrations in aromatic groups}
 \label{sec:dummyaro}
-The planar arrangements in the sidechains of the aromatic residues
+The planar arrangements in the side chains of the aromatic residues
 lends itself perfectly for a dummy-atom construction, giving a
 perfectly planar group without the inherently instable constraints
 that are necessary to keep normal atoms in a plane. The basic approach
@@ -203,7 +203,7 @@ preserved. See \figref{dumhydro}D.
 
 \section{Running with \normindex{PVM}.}
 If you have a parallel computer, it may be equipped with PVM (Parallel
-Virtual Machines, see also chapter~\ref{ch:algorithms}), otherwise,
+Virtual Machines, see also \chref{algorithms}), otherwise,
 have your system administrator install it. The package is public
 domain software and supports virtually every commercially available
 computer, such as an SGI Power Challenge, Paragon {\intel} box,
@@ -212,7 +212,7 @@ cluster of workstations.
 
 The {\gromacs} software can work with the PVM library, but only
 on computers with the same processor, it is not possible to mix
-eg. Sparc and MIPS chips. We will assume
+{\eg} Sparc and MIPS chips. We will assume
 here that the software is installed with PVM. A sample PVM session
 is described below.
 
@@ -243,14 +243,14 @@ pvm>quit
 pvmd still running.
 %
 \end{verbatim}
-Now you can use {\gromacs} with pvm. You just have to add the option
+Now you can use {\gromacs} with PVM. You just have to add the option
 {\tt -N 3} to your {\tt grompp} and {\tt mdrun} command lines. Since the
 remotely running mdruns will start from your home directory, give a full 
-path for the log file, eg.:\\
+path for the log file, {\eg}:\\
 {\tt -g /data/pulp/wallace/speptide/md}.
 
-PVM jobs can be stopped within the pvm command line utility with
-{\tt kill process}. All pvms can be terminated with the {\tt halt} command.
+PVM jobs can be stopped within the PVM command line utility with
+{\tt kill process}. All PVM's can be terminated with the {\tt halt} command.
 
 \section{Running with \normindex{MPI}}
 If you have installed the MPI (Message Passing Interface) on your computer(s)

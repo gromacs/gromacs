@@ -35,7 +35,7 @@ is the notation commonly used. If you encounter an error, let us know.
 vicinity of unity for most relevant molecular quantities. Let us call
 them {\em MD units}. The basic units in this system are nm, ps, K,
 electron charge (e) and atomic mass unit (u), see
-Table~\ref{tab:basicunits}.
+\tabref{basicunits}.
 \begin{table}
 \centerline{
 \begin{tabular}{|l|c|l|}
@@ -60,7 +60,7 @@ accuracy.}
 \end{table}
 
 Consistent with these units are a set of derived units, given in
-Table~\ref{tab:derivedunits}.
+\tabref{derivedunits}.
 \begin{table}
 \centerline{
 \begin{tabular}{|l|c|l|}
@@ -88,7 +88,7 @@ electric field	& $E$	   & kJ~mol$^{-1}$~nm$^{-1}$~e$^{-1} =
 
 The {\bf electric conversion factor} $f=\frac{1}{4 \pi
 \varepsilon_o}=138.935\,485(9)$ kJ~mol$^{-1}$~nm~e$^{-2}$. It relates
-the mechanical quantites to the electrical quantities as in
+the mechanical quantities to the electrical quantities as in
 \beq
  V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
 \eeq
@@ -104,7 +104,7 @@ $f$ in expressions that evaluate $\Phi$ and $\ve{E}$:
 \ve{E}(\ve{r}) = f \sum_j q_j \frac{(\ve{r}-\ve{r}_j)}{|\ve{r}-\ve{r}_j|^3}
 \eea
 With these definitions $q\Phi$ is an energy and $q\ve{E}$ is a
-force. The units are those given in table~\ref{tab:derivedunits}:
+force. The units are those given in \tabref{derivedunits}:
 about 10 mV for potential. Thus the potential of an electronic charge
 at a distance of 1 nm equals $f \approx 140$ units $\approx
 1.4$~V. (exact value: 1.439965 V)
@@ -121,7 +121,7 @@ careful rescaling of charges may still yield consistency, it is clear
 that such confusions must be rigidly avoided.
   
 In terms of the MD units the usual physical constants take on
-different values, see Table~\ref{tab:consts}. All quantities are per mol rather than per
+different values, see \tabref{consts}. All quantities are per mol rather than per
 molecule. There is no distinction between Boltzmann's constant $k$ and
 the gas constant $R$: their value is
 $0.008\,314\,51$~kJ~mol$^{-1}$~K$^{-1}$.
@@ -146,7 +146,7 @@ $c$	& velocity of light	& $299\,792.458$~nm/ps \\
 
 \section{Reduced units}
 When simulating Lennard-Jones (LJ) systems it might be advantageous to
-use reduced units ({\em i.e.}, setting
+use reduced units ({\em {\ie}}, setting
 $\epsilon_{ii}=\sigma_{ii}=m_i=k_B=1$ for one type of atoms). This is
 possible. When specifying the input in reduced units, the output will
 also be in reduced units. There is one exception: the {\em
@@ -157,7 +157,7 @@ reduced temperature. A {\gromacs} temperature $T=1$ means a reduced
 temperature of 0.008\ldots units; if a reduced temperature of 1 is
 required, the {\gromacs} temperature should be 120.2717.
 
-In table~\ref{tab:reduced} quantities are given for LJ potentials:
+In \tabref{reduced} quantities are given for LJ potentials:
 \beq
 V_{LJ} = 4\epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^{6} \right]
 \eeq

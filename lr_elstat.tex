@@ -1,14 +1,14 @@
-\section{Longe Range Electrostatics}
+\section{Long Range Electrostatics}
 \label{sec:lr_elstat}
-\subsection{\normindex{Ewald summation}}
+\subsection{\normindex{Ewald sum}mation}
 \label{sec:ewald}
 The total electrostatic energy of $N$ particles and the periodic
-images are given by
+images\index{periodic boundary conditions} are given by
 \begin{equation}
 V=\frac{f}{2}\sum_{n_x}\sum_{n_y}
 \sum_{n_{z}*} \sum_{i}^{N} \sum_{j}^{N} 
 \frac{q_i q_j}{{\bf r}_{ij,{\bf n}}}.
-\label{totalcoulomb}
+\label{eqn:totalcoulomb}
 \end{equation}
 $(n_x,n_y,n_z)={\bf n}$ is the box index vector, and the star indicates that
 terms with $i=j$ should be omitted when $(n_x,n_y,n_z)=(0,0,0)$. The
@@ -18,9 +18,9 @@ very slow.
 
 Ewald summation was first introduced as a method to calculate
 long-range interactions of the periodic images in
-crystals~\cite{Ewald21}. The idea is to convert the single slowly converging
-sum \ref{totalcoulomb} into two fast converging terms and a constant
-term:
+crystals~\cite{Ewald21}. The idea is to convert the single slowly
+converging sum \eqnref{totalcoulomb} into two fast converging terms
+and a constant term:
 \begin{eqnarray}
 V &=& V_{dir} + V_{rec} + V_{0} \\[0.5ex]
 V_{dir} &=& \frac{f}{2} \sum_{i,j}^{N} 
@@ -35,18 +35,17 @@ V_{0} &=& -\frac{f \beta}{\sqrt{\pi}}\sum_{i}^{N} q_i^2,
 where $\beta$ is a parameter that determines the relative weight of the
 direct and reciprocal sums and ${\bf m}=(m_x,m_y,m_z)$.
 In this way we can use a short cut-off (of the order of $1$~nm) in the direct space sum and a
-short cut-off in the reciprocal space sum (e.g. 10 wavevectors in each 
+short cut-off in the reciprocal space sum ({\eg} 10 wave vectors in each 
 direction). Unfortunately, the computational cost of the reciprocal
 part of the sum increases as $N^2$
 (or $N^{3/2}$ with a slightly better algorithm) and it is therefore not 
 realistic to use for any large systems.
 
 \subsubsection{Using Ewald}
-Don't use \normindex{Ewald} unless you are absolutely sure this is
-what you want - for almost all cases the \normindex{PME} method below
-will perform much better.  If you still want to employ classical Ewald
-summation enter this in your {\tt .mdp} file, if the side of your box
-is about $3$~nm:
+Don't use Ewald unless you are absolutely sure this is what you want -
+for almost all cases the PME method below will perform much better.
+If you still want to employ classical Ewald summation enter this in
+your {\tt .mdp} file, if the side of your box is about $3$~nm:
 \begin{verbatim}
 eeltype         = Ewald
 rvdw            = 0.9
@@ -55,22 +54,21 @@ rcoulomb        = 0.9
 fourierspacing  = 0.6
 ewald_rtol      = 1e-5
 \end{verbatim}
-The fourierspacing parameter times the box dimensions 
-determines the highest magnitude of wavevectors
-$m_x,m_y,m_z$ to use in each direction. With a 3~nm cubic box this example
-would use $11$ wavectors (from $-5$ to $5$) in each direction.
-The ewald\_rtol parameter is the relative
-strength of the electrostatic interaction at the cut-off. Decreasing
-this gives you a more accurate direct sum, but a less accurate
-reciprocal sum. 
+The {\tt fourierspacing} parameter times the box dimensions determines
+the highest magnitude of wave vectors $m_x,m_y,m_z$ to use in each
+direction. With a 3~nm cubic box this example would use $11$ wave vectors
+(from $-5$ to $5$) in each direction.  The {\tt ewald\_rtol} parameter
+is the relative strength of the electrostatic interaction at the
+cut-off. Decreasing this gives you a more accurate direct sum, but a
+less accurate reciprocal sum.
  
 \subsection{\normindex{PME}}
 \label{sec:pme}
 Particle-mesh Ewald is a method proposed by Tom
 Darden~\cite{Darden93,Essmann95} to improve the performance of the
-reciprocal sum. Instead of directly summing wavevectors, the charges
+reciprocal sum. Instead of directly summing wave vectors, the charges
 are assigned to a grid using cardinal B-spline interpolation. This
-grid is then fourier transformed with a 3D FFT algorithm and the
+grid is then Fourier transformed with a 3D FFT algorithm and the
 reciprocal energy term obtained by a single sum over the grid in
 k-space.
 
@@ -95,22 +93,23 @@ fourierspacing  = 0.12
 pme_order       = 4
 ewald_rtol      = 1e-5
 \end{verbatim}
-In this case the fourierspacing parameter determines the maximum spacing for the
-FFT grid and pme\_order controls the interpolation
-order. Using 4th order (cubic) interpolation and this spacing 
-should give electrostatic energies accurate to about $5\cdot10^{-3}$. Since
-the Lennard-Jones energies are not this accurate it might even be possible 
-to increase this spacing slightly.
+In this case the {\tt fourierspacing} parameter determines the maximum
+spacing for the FFT grid and {\tt pme\_order} controls the
+interpolation order. Using 4th order (cubic) interpolation and this
+spacing should give electrostatic energies accurate to about
+$5\cdot10^{-3}$. Since the Lennard-Jones energies are not this
+accurate it might even be possible to increase this spacing slightly.
 
 Pressure scaling works with PME, but be aware of the fact that
 anisotropic scaling can introduce artificial ordering in some systems.
 
 \subsection{\normindex{PPPM}}
 \label{sec:pppm}
-The Particle-Particle Particle-Mesh methods of Hockney \& Eastwood
-can also be applied in {\gromacs} for the treatment of longe range 
-electrostatic interactions~\cite{Hockney81,Darden93,Luty95a}. 
-With this algorithm the charges of all particles are spread over a grid of dimensions
+The \seeindex{Particle-Particle Particle-Mesh}{PPPM} methods of
+Hockney \& Eastwood can also be applied in {\gromacs} for the
+treatment of long range electrostatic
+interactions~\cite{Hockney81,Darden93,Luty95a}.  With this algorithm
+the charges of all particles are spread over a grid of dimensions
 ($n_x$,$n_y$,$n_z$) using a weighting function called the
 triangle-shaped charged distribution:
 \beq
@@ -130,13 +129,13 @@ W(\xi)  &=& \left\{
 where $\xi$ (is x, y or z) is the distance to a grid point in the corresponding
 dimension. Only the 27 closest grid points need to be taken into account for each charge.
 
-Then, this charge distribution is fourier transformed using a 3D inverse FFT 
+Then, this charge distribution is Fourier transformed using a 3D inverse FFT 
 routine.
-In fourier space a convolution with function $\hat{G}$ is performed:
+In Fourier space a convolution with function $\hat{G}$ is performed:
 \beq
 \hat{G}(k)      ~=~     \frac{\hat{g}(k)}{\epsilon_0 k^2}
 \eeq
-where $\hat{g}$ is the fourier transform of the charge spread function
+where $\hat{g}$ is the Fourier transform of the charge spread function
 g(r). This yield the long range potential $\hat{\phi}(k)$ on the mesh, which
 can be transformed using a forward FFT routine into the real space potential.
 Finally the potential and forces are retrieved using interpolation~\cite{Luty95a}.
@@ -144,12 +143,11 @@ Finally the potential and forces are retrieved using interpolation~\cite{Luty95a
 % note - this accuracy is just a rough estimate...
 %
 It is not easy to calculate the full long-range virial tensor with
-\normindex{PPPM}, but it is possible to obtain the trace. This means
-that the sum of the pressure components is correct (and therefore the
-isotropic pressure) but not necessarily the individual pressure
-components!
+PPPM, but it is possible to obtain the trace. This means that the sum
+of the pressure components is correct (and therefore the isotropic
+pressure) but not necessarily the individual pressure components!
 
-\subsubsection{Using \normindex{PPPM}}
+\subsubsection{Using PPPM}
 To use the PPPM algorithm in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
 \begin{verbatim}
@@ -162,12 +160,11 @@ fourierspacing  = 0.075
 \end{verbatim}
 For details on the switch parameters see the section on modified
 long-range interactions in this manual. When using PPPM we recommend
-to take at most 0.075 nm per gridpoint (e.g. 20 gridpoints for 1.5
-nm).  PPPM does not provide the same accuracy as
-\normindex{PME} but is faster in most cases. PPPM
-can not be used with pressure coupling.
+to take at most 0.075 nm per gridpoint ({\eg} 20 gridpoints for 1.5
+nm).  PPPM does not provide the same accuracy as PME but is faster in
+most cases. PPPM can not be used with pressure coupling.
 
-\subsection{Optimizing fourier transforms}
+\subsection{Optimizing Fourier transforms}
 To get the best possible performance you should try to avoid large
 prime numbers for grid dimensions.
 The FFT code used in {\gromacs} is
@@ -188,7 +185,7 @@ in your {\tt .mdp} file.
 When running in parallel the grid must be communicated several times
 and thus hurting scaling performance. With PME you can improve this
 by increasing grid spacing while simultaneously increasing the
-interpolation to e.g. 6th order. 
+interpolation to {\eg} 6th order. 
 Since the interpolation is entirely local a this will
 improve the scaling in most cases.
 

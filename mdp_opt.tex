@@ -11,7 +11,7 @@ simulation. Edit it to suit your specific needs and desires.
 \subsection{Preprocessing}
 \begin{description}
 \item[{\bf title:}]\mbox{}\\
-this is reduntant, so you can type anything you want
+this is redundant, so you can type anything you want
 \item[{\bf cpp: }(/lib/cpp)]\mbox{}\\
 your preprocessor
 \item[{\bf include:}]\mbox{}\\
@@ -38,11 +38,11 @@ Will tell grompp to include posre.itp into your topology, used for
 \item[{\bf integrator:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf md} ]\mbox{}\\
-A \normindex{leap-frog} algorithm for integrating Newtons
+A \normindex{leap-frog} algorithm for integrating Newton's
 equations.
 \item[{\bf steep}]\mbox{}\\
 A \normindex{steepest descent} algorithm for energy
-minimization. The maximum stepsize is {\bf emstep}
+minimization. The maximum step size is {\bf emstep}
 [nm], the tolerance is {\bf emtol} [kJ
 mol$^{-1}$ nm$^{-1}$].
 \item[{\bf cg}]\mbox{}\\
@@ -93,7 +93,7 @@ this value
 initial step-size
 \item[{\bf nstcgsteep: }(1000) {[steps]}]\mbox{}\\
 frequency of performing 1 steepest descent step while doing
-\normindex{conjugate gradient} energy minimization.
+conjugate gradient energy minimization.
 \end{description}
 
 \subsection{Output control}
@@ -120,7 +120,7 @@ precision to write to xtc trajectory
 group(s) to write to xtc trajectory, default the whole system is written
 (if {\bf nstxtcout} is larger than zero)  
 \item[{\bf energygrps:}]\mbox{}\\
-group(s) to write to \normindex{energy file}
+group(s) to write to energy file
 \end{description}
 
 \subsection{\normindex{Neighbor searching}}
@@ -131,13 +131,13 @@ frequency to update \normindex{neighborlist}
 \vspace{-2ex}\begin{description}
 \item[{\bf grid}]\mbox{}\\
 Make a grid in the box and only check atoms in neighboring grid
-cells when constructing a new neighborlist every {\bf nstlist} steps.
-The number of grid cells per Coulomb \normindex{cut-off}
+cells when constructing a new neighbor list every {\bf nstlist} steps.
+The number of grid cells per Coulomb cut-off
 length is set with {\bf deltagrid}, this number should be 2 for
 optimal performance.  In large systems grid search is much faster than
 simple search.
 \item[{\bf simple}]\mbox{}\\
-Check every atom in the box when constructing a new neighborlist
+Check every atom in the box when constructing a new neighbor list
 every {\bf nstlist} steps.
 \end{description}
 \item[{\bf deltagrid: }(2)]\mbox{}\\
@@ -153,19 +153,20 @@ Selects no box, for use in vacuum simulations.
 cut-off distance for making the neighbor list
 \end{description}
 
-\subsection{\normindex{Electrostatics} and \normindex{VdW}}
+\subsection{\normindex{Electrostatics} and VdW}
 \begin{description}
-\item[{\bf \normindex{coulomb}type:}]\mbox{}\\
+\item[{\bf coulombtype:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
-\item[\normindex{Cut-off}]\mbox{}\\
+\item[{\bf Cut-off}]\mbox{}\\
 Twin range cut-off's with neighborlist cut-off {\bf rlist} and 
 Coulomb cut-off {\bf rcoulomb},
 where {\bf rlist} {\tt $<$} {\bf rvdw} {\tt $<$} {\bf rcoulomb}.
-The \normindex{dielectric constant} is set with {\bf epsilon\_r}.
-\item[\normindex{Ewald}]\mbox{}\\
-Classical Ewald sum electrostatics. Use e.g. {\bf rlist}=0.9,
+The dielectric constant is set with {\bf epsilon\_r}.
+\item[{\bf Ewald}]\mbox{}\\
+Classical \normindex{Ewald sum} electrostatics.
+Use {\eg} {\bf rlist}=0.9,
 {\bf rvdw}=0.9, {\bf rcoulomb}=0.9. The highest magnitude of
-wavevectors used in reciprocal space is controlled by {\bf fourierspacing}.
+wave vectors used in reciprocal space is controlled by {\bf fourierspacing}.
 The relative accuracy of direct/reciprocal space
 is controlled by {\bf ewald\_rtol}. NOTE: Ewald scales as O(N$^{3/2}$)) and
 is thus extremely slow for large systems. It is included mainly for
@@ -190,7 +191,7 @@ dimensions are controlled by {\bf fourierspacing}.
 Reasonable grid spacing for PPPM is 0.05-0.1 nm.
 See {\tt Shift} for the details of the particle-particle potential.
 NOTE: the pressure in incorrect when using PPPM.
-\item[{\bf Reaction-Field}]\mbox{}\\
+\item[\normindex{Reaction-Field}]\mbox{}\\
 Reaction field with Coulomb cut-off {\bf rcoulomb},
 where {\bf rcoulomb} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
 The dielectric constant beyond the cut-off is {\bf epsilon\_r}.
@@ -200,16 +201,16 @@ Generalized reaction field with Coulomb cut-off {\bf rcoulomb},
 where {\bf rcoulomb} {\tt $>$} {\bf rvdw} {\tt $>$} {\bf rlist}.
 The dielectric constant beyond the cut-off is {\bf epsilon\_r}.
 The ionic strength is computed from the number of charged 
-(i.e. with non zero charge) \normindex{charge group}s.
+({\ie} with non zero charge) \normindex{charge group}s.
 The temperature for the GRF potential is set with 
 {\bf ref\_t} [K].
 \item[{\bf Shift}]\mbox{}\\
 The Coulomb
 potential is decreased over the whole range and the forces decay smoothly
 to zero between {\bf rcoulomb\_switch} and {\bf rcoulomb}.
-The neighborsearch cut-off {\bf rlist} should be 0.1 to 0.3 nm larger than
+The neighbor search cut-off {\bf rlist} should be 0.1 to 0.3 nm larger than
 {\bf rcoulomb} to accommodate for the size of charge groups and diffusion
-between neighborlist updates.
+between neighbor list updates.
 \item[{\bf User}]\mbox{}\\
 Specify {\bf rshort} and {\bf rlong} to the same value, {\tt mdrun}
 will now expect to find a file {\tt ctab.xvg} with user-defined functions.
@@ -224,26 +225,26 @@ important.
 \item[{\bf rcoulomb\_switch: }(0) {[nm]}]\mbox{}\\
 where to start switching the Coulomb potential
 \item[{\bf rcoulomb: }(1) {[nm]}]\mbox{}\\
-distance for the Coulomb cut-off
+distance for the Coulomb \normindex{cut-off}
 \item[{\bf epsilon\_r: }(1)]\mbox{}\\
 \normindex{dielectric constant}
 \item[{\bf vdwtype:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf Cut-off}]\mbox{}\\
-Twin range cut-off's with neighborlist cut-off {\bf rlist} and 
+Twin range cut-off's with neighbor list cut-off {\bf rlist} and 
 VdW cut-off {\bf rvdw},
 where {\bf rvdw} {\tt $>$} {\bf rlist}.
 \item[{\bf Shift}]\mbox{}\\
 The LJ (not Buckingham) potential is decreased over the whole
 range and the forces decay smoothly to zero between {\bf rvdw\_switch}
-and {\bf rvdw}.  The neighborsearch cut-off {\bf rlist} should be
+and {\bf rvdw}.  The neighbor search cut-off {\bf rlist} should be
 0.1 to 0.3 nm larger than {\bf rvdw} to accommodate for the size of
-\normindex{charge group}s and diffusion between neighborlist
+charge groups and diffusion between neighbor list
 updates.
 \item[{\bf User}]\mbox{}\\
 {\tt mdrun} will now expect to find two files with user-defined
 functions: {\tt rtab.xvg} for Repulsion, {\tt dtab.xvg} for 
-\normindex{Dispersion}. These files should contain 5 columns:
+Dispersion. These files should contain 5 columns:
 the {\tt x} value, and the function value with its 1$^{st}$
 to 3$^{rd}$ derivative. The {\tt x} should run from 0 [nm] to
 {\bf rvdw}{\tt +0.5} [nm], with a spacing of {\tt 0.002}
@@ -255,22 +256,23 @@ corresponds to the cut-off in the user-defined function.
 \item[{\bf rvdw\_switch: }(0) {[nm]}]\mbox{}\\
 where to start switching the LJ potential
 \item[{\bf rvdw: }(1) {[nm]}]\mbox{}\\
-distance for the LJ or Buckingham cut-off
+distance for the LJ or Buckingham \normindex{cut-off}
 \item[{\bf bDispCorr:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
 don't apply any correction
 \item[{\bf yes}]\mbox{}\\
-apply long range dispersion corrections for Energy and Pressure
+apply long range \normindex{dispersion correction}s for Energy
+and Pressure
 \end{description}
 \item[{\bf fourierspacing: }(0.12) {[nm]}]\mbox{}\\
 The maximum grid spacing for the FFT grid when using PPPM or PME.
 For ordinary Ewald the spacing times the box dimensions determines the
 highest magnitude to use in each direction. In all cases
-each direction can be overriden by entering a non-zero value for
+each direction can be overridden by entering a non-zero value for
 {\bf fourier\_n*}. 
 \item[{\bf fourier\_nx }(0){\bf  ; fourier\_ny }(0){\bf  ; fourier\_nz: }(0)]\mbox{}\\
-Highest magnitude of wavevectors in reciprocal space when using Ewald.
+Highest magnitude of wave vectors in reciprocal space when using Ewald.
 Grid size when using PPPM or PME. These values override
 {\bf fourierspacing} per direction. The best choice is powers of
 2, 3, 5 and 7. Avoid large primes.
@@ -280,7 +282,7 @@ Interpolation order for PME. 4 equals cubic interpolation. You might try
 \item[{\bf ewald\_rtol }(1e-5)]\mbox{}\\
 The relative strength of the Ewald-shifted direct potential at the cutoff
 is given by {\bf ewald\_rtol}. Decreasing this will give a more accurate
-direct sum, but then you need more wavevectors for the reciprocal sum.
+direct sum, but then you need more wave vectors for the reciprocal sum.
 \item[{\bf optimize\_fft:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf no}]\mbox{}\\
@@ -301,8 +303,8 @@ No temperature coupling.
 \item[{\bf yes}]\mbox{}\\
 Temperature coupling with a Berendsen-thermostat to a bath with
 temperature {\bf ref\_t} [K], with time constant {\bf tau\_t} [ps].
-Several groups can be coupled seperately, these are specified in the
-{\bf tc\_grps} field seperated by spaces.
+Several groups can be coupled separately, these are specified in the
+{\bf tc\_grps} field separated by spaces.
 \end{description}
 \item[{\bf tc\_grps:}]\mbox{}\\
 groups to couple separately to temperature bath
@@ -333,7 +335,7 @@ Idem, but 3 values are needed for x, y and z directions respectively.
 Beware that isotropic scaling can lead to extreme deformation
 of the simulation box.
 \item[{\bf surface-tension}]\mbox{}\\
-Surface tension couling for surfaces parallel to the xy-plane.
+Surface tension coupling for surfaces parallel to the xy-plane.
 Uses normal pressure coupling for the z-direction, while the surface tension
 is coupled to the x/y dimensions of the box.
 The first {\bf ref\_p} value is the reference surface tension times
@@ -367,9 +369,9 @@ Simulated annealing to 0 [K] at time {\bf zero\_temp\_time} (ps).
 Reference temperature for the Berendsen-thermostat is
 {\bf ref\_t} x (1 - time / {\bf zero\_temp\_time}),
 time constant is {\bf tau\_t} [ps]. Note that the reference temperature
-will not go below 0 [K], i.e. after {\bf zero\_temp\_time} (if it is positive) 
+will not go below 0 [K], {\ie} after {\bf zero\_temp\_time} (if it is positive) 
 the reference temperature will be 0 [K]. Negative {\bf zero\_temp\_time} 
-results in heating, which will go on indefenitely.
+results in heating, which will go on indefinitely.
 \end{description}
 \item[{\bf zero\_temp\_time: }(0) {[ps]}]\mbox{}\\
 time at which temperature will be zero (can be negative). Temperature
@@ -377,7 +379,7 @@ during the run can be seen as a straight line going through
 T={\bf ref\_t} [K] at t=0 [ps], and 
 T=0 [K] at t={\bf zero\_temp\_time} [ps]. Look in our 
 FAQ for a schematic 
-graph of temperature vs. time.
+graph of temperature versus time.
 \end{description}
 
 \subsection{Velocity generation}
@@ -416,8 +418,8 @@ if it is faster.
 \item[{\bf \normindex{constraints}:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
 \item[{\bf none}]\mbox{}\\
-No constraints, i.e. bonds are represented by a harmonic or a
-morse potential (depending on the setting of {\bf morse}) and angles
+No constraints, {\ie} bonds are represented by a harmonic or a
+Morse potential (depending on the setting of {\bf morse}) and angles
 by a harmonic potential.
 \item[{\bf hbonds}]\mbox{}\\
 Only constrain the bonds with H-atoms.
@@ -435,7 +437,7 @@ Constrain all bonds and constrain all angles by adding bond-constraints.
 LINear Constraint Solver. The accuracy in set with
 {\bf lincs\_order}, which sets the number of matrices in the expansion
 for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
-needed for LD with large timesteps. If a bond rotates more than
+needed for LD with large time-steps. If a bond rotates more than
 {\bf lincs\_warnangle} [degrees] in one step, 
 a warning will be printed both to the log file and to {\tt stderr}. 
 Lincs should not be used with coupled angle constraints.
@@ -467,11 +469,11 @@ frequency to output constraint accuracy in log file
 \item[{\bf no}]\mbox{}\\
 bonds are represented by a harmonic potential
 \item[{\bf yes}]\mbox{}\\
-bonds are represented by a morse potential
+bonds are represented by a Morse potential
 \end{description}
 \end{description}
 
-\subsection{\normindex{NMR} refinement}
+\subsection{\normindex{NMR refinement}}
 \begin{description}
 \item[{\bf disre:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -511,7 +513,7 @@ of all atom pairs involved in restraints to the energy file
 (can make the energy file very large)
 \end{description}
 
-\subsection{\normindex{Free Energy Perturbatrion}}
+\subsection{\normindex{Free Energy Perturbation}}
 \begin{description}
 \item[{\bf free\_energy:}]\mbox{}\\
 \vspace{-2ex}\begin{description}
@@ -526,28 +528,28 @@ per time step is {\bf delta\_lambda}.
 \item[{\bf init\_lambda: }(0)]\mbox{}\\
 starting value for lambda
 \item[{\bf delta\_lambda: }(0)]\mbox{}\\
-increase per timestep for lambda
+increase per time step for lambda
 \end{description}
 
 \subsection{\normindex{Non-equilibrium MD}}
 \begin{description}
 \item[{\bf acc\_grps: }]\mbox{}\\
-groups for constant acceleration (e.g.: {\tt Protein Sol})
+groups for constant acceleration ({\eg}: {\tt Protein Sol})
 all atoms in groups Protein and Sol will experience constant acceleration
 as specified in the {\bf accelerate} line
 \item[{\bf accelerate: }(0) {[nm ps$^{-2}$]}]\mbox{}\\
 acceleration for {\bf acc\_grps}; x, y and z for each group
-(e.g. {\tt 0.1 0.0 0.0 -0.1 0.0 0.0} means that first group has constant 
+({\eg} {\tt 0.1 0.0 0.0 -0.1 0.0 0.0} means that first group has constant 
 acceleration of 0.1 nm ps$^{-2}$ in X direction, second group the 
 opposite).
 \item[{\bf freezegrps: }]\mbox{}\\
-Groups that are to be frozen (i.e. their X, Y, and/or Z position will
-not be updated; e.g. {\tt Lipid SOL}). {\bf freezedim} specifies for
+Groups that are to be frozen ({\ie} their X, Y, and/or Z position will
+not be updated; {\eg} {\tt Lipid SOL}). {\bf freezedim} specifies for
 which dimension the freezing applies.
 \item[{\bf freezedim: }]\mbox{}\\
 dimensions for which groups in {\bf freezegrps} should be frozen, 
 specify {\tt Y} or {\tt N} for X, Y and Z and for each group
-(e.g. {\tt Y Y N N N N} means that particles in the first group 
+({\eg} {\tt Y Y N N N N} means that particles in the first group 
 can move only in Z direction. The particles in the second group can 
 move in any direction).
 \end{description}

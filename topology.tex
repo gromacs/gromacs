@@ -3,12 +3,12 @@
 \section{Introduction}
 {\gromacs} must know on which atoms and combinations of atoms the
 various contributions to the potential functions (see
-chapter~\ref{ch:ff}) must act. It must
+\chref{ff}) must act. It must
 also know what \normindex{parameters} must be applied to the various
 functions. All this is described in the {\em \normindex{topology}} file
 \verb'*.top', which lists the {\em constant attributes} of each atom.
 There are many more atom types than elements, but only atom types
-present in biological systems are parametrized in the force field,
+present in biological systems are parameterized in the force field,
 plus some metals, ions and silicon. The bonded and special
 interactions are determined by fixed lists that are included in the
 topology file. Certain non-bonded interactions must be excluded (first
@@ -23,15 +23,15 @@ change them if needed.
 
 {\bf Note:} if you have constructed your own {\tt *.top}, please
 send a copy plus description to:
-\centerline{\bf gromacs@chem.rug.nl}
+\centerline{\email}
 
 so we can extend our topology database and prevent {\gromacs} users
 from ``inventing the wheel twice''. This also applies for {\em new
 force field parameters} that were originally not included in the
 {\gromacs} force field.
 
-The files are grouped per forcefield type (named e.g. {\tt gmx} for
-the GROMACS forcefield or {\tt G43a1} for the GROMOS96
+The files are grouped per forcefield type (named {\eg} {\tt gmx} for
+the {\gromacs} forcefield or {\tt G43a1} for the GROMOS96
 forcefield). All files for one forcefield have names beginning with
 {\tt ff???} where {\tt ???} stands for the forcefield name.
 
@@ -39,7 +39,7 @@ forcefield). All files for one forcefield have names beginning with
 \label{sec:parttype}
 
 In {\gromacs} there are 5 types of \normindex{particles}, see
-Table~\ref{ta:ptype}. Only regular atoms and dummy particles are used
+\tabref{ptype}. Only regular atoms and dummy particles are used
 in {\gromacs}, nuclei, shells and bond shells are necessary for
 polarizable forcefields, which we don't yet have.
 
@@ -58,7 +58,7 @@ Particle	& Symbol	\\
 \end{tabular}
 }
 \caption{Particle types in {\gromacs}}
-\label{ta:ptype}
+\label{tab:ptype}
 \end{table}
 
 \subsection{Atom types}
@@ -121,7 +121,7 @@ Atomic detail is used except for hydrogen atoms bound to (aliphatic)
 carbon atoms, which are treated as {\em \normindex{united atoms}}. No
 special \normindex{hydrogen-bond} term is included.
 
-The last 10 atomtypes are extra atomtypes with respect to the \gromosv{87}
+The last 10 atom types are extra atom types with respect to the \gromosv{87}
 force field~\cite{biomos}: 
 \begin{itemize}
 \item F was taken from ref.~\cite{Buuren93a}, 
@@ -134,7 +134,7 @@ force field~\cite{biomos}:
 sure you use the references in your publications as mentioned above.}
 
 {\bf Note:} {\gromacs} makes use of the atom types as a name, {\em
-not} as a number (as e.g. in {\gromos}).
+not} as a number (as {\eg} in {\gromos}).
 
 %\subsection{Nucleus}
 %{\em Necessary for \normindex{polarisability}, not implemented yet.}
@@ -150,14 +150,14 @@ not} as a number (as e.g. in {\gromos}).
 Some \normindex{force field}s use \normindex{dummy atom}s 
 (\normindex{virtual site}s that are constructed
 from real atoms) on which certain interaction functions are located
-(e.g. on benzene rings, to reproduce the correct
+({\eg} on benzene rings, to reproduce the correct
 \normindex{quadrupole}). This is described in~\secref{dummy}.
 
-To make dummy atoms in your system, you should include a section 
-\verb'[~dummies?~]' in your topology file, where the `\verb|?|' stands for
-the number constructing atoms for the dummy atom. This will be
-`\verb|2|' for type 2, `\verb|3|' for types 3, 3fd, 3fad and 3out and
-`\verb|4|' for type 4fd (the different types are explained
+To make dummy atoms in your system, you should include a section
+{\tt [~dummies?~]} in your topology file, where the `{\tt ?}' stands
+for the number constructing atoms for the dummy atom. This will be
+`{\tt 2}' for type 2, `{\tt 3}' for types 3, 3fd, 3fad and 3out and
+`{\tt 4}' for type 4fd (the different types are explained
 in~\secref{dummy}).
 
 Parameters for type 2 should look like this:
@@ -218,20 +218,18 @@ atom.
 \section{Parameter files}
 \label{sec:paramfiles}
 \subsection{Atoms}
-A number of {\em static} properties are assigned to the atom types in the 
-{\gromacs} force field: Type, Mass, Charge, $\epsilon$ and $\sigma$
-(see Table~\ref{tab:statprop}
-The mass is listed in {\tt ff???.atp} (see~\ref{subsec:atomtype}), 
-whereas the charge is listed
-in {\tt ff???.rtp} (.rtp = {\bf r}esidue {\bf t}opology {\bf
-p}arameter file, see~\ref{subsec:rtp}). 
-This implies that the charges are only defined
-in the \normindex{building block}s 
-of amino acids or user defined building blocks.
-When generating a topology ({\tt *.top}) using the {\tt \normindex{pdb2gmx}} 
-program the information from these files is combined.
+A number of {\em static} properties are assigned to the atom types in
+the {\gromacs} force field: Type, Mass, Charge, $\epsilon$ and
+$\sigma$ (see \tabref{statprop} The mass is listed in {\tt ff???.atp}
+(see~\ssecref{atomtype}), whereas the charge is listed in {\tt
+ff???.rtp} (.rtp = {\bf r}esidue {\bf t}opology {\bf p}arameter file,
+see~\ssecref{rtp}).  This implies that the charges are only defined in
+the \normindex{building block}s of amino acids or user defined
+building blocks.  When generating a topology ({\tt *.top}) using the
+{\tt \normindex{pdb2gmx}} program the information from these files is
+combined.
  
-\begin{table}[h]
+\begin{table}
 \centerline{
 \begin{tabular}{|l|c|c|}
 \dline
@@ -245,7 +243,7 @@ sigma		& $\sigma$	& nm		\\
 \dline
 \end{tabular}
 }
-\caption{Static atomtype properties in {\gromacs}}
+\caption{Static atom type properties in {\gromacs}}
 \label{tab:statprop}
 \end{table}
 
@@ -255,11 +253,11 @@ The following {\em dynamic} quantities are associated with an atom
 \item	Velocity {\bf v}
 \end{itemize}
 These quantities are listed in the coordinate file, {\tt *.gro}
-(see section File format,~\ref{subsec:grofile}).
+(see section File format,~\ssecref{grofile}).
 
 \subsection{Bonded parameters}
 \label{subsec:bondparam}
-The \normindex{bonded parameter}s (ie. bonds, angles, improper and proper
+The \normindex{bonded parameter}s ({\ie} bonds, angles, improper and proper
 dihedrals) are listed in {\tt ff???bon.itp}. The term {\tt func} can
 be ignored in {\gromacs} {\gmxver}, because for bonds and angles we only use 1
 function, so far. For the dihedral, this is explained after this listing.
@@ -327,7 +325,7 @@ this new atom type in {\tt ff???.atp} as well.
 \label{subsec:nbpar}
 The non-bonded parameters consist of the Van der Waals parameters
 $A$ and $C$, as listed in {\tt ff???nb.itp}, where {\tt ptype} is the
-particle type (see Table~\ref{ta:ptype}):
+particle type (see \tabref{ptype}):
 {\small\begin{verbatim}
 [ atomtypes ]
 ;name        mass      charge   ptype            c6           c12
@@ -374,12 +372,19 @@ This is useful if you want to use for example the
 We note however, that is not yet possible to use this in {\gromacs} {\gmxver}.
 
 \subsection{Exclusions and 1-4 interaction}
-The \normindex{exclusions} (first and second neighbors) are generated by
-{\tt pdb2gmx} so no worries on that point.
+The \normindex{exclusions}) for bonded particles are generated by {\tt
+grompp} for neighboring atoms up to a certain number of bonds away, as
+defined in the {\tt [~moleculetype~]} section in the topology file
+(see \ssecref{topfile}). Particles are considered bonded when they are
+connected by bonds ({\tt [~bonds~]} type 1 or 2) or constraints ({\tt
+[~constraints~]} type 1). There is a second constraints type ({\tt
+[~constraints~]} type 2) which is not considered a bonded
+interaction\index{constraint no connect}.
 
-The \normindex{1-4 interactions} are also listed for the 47 atom types in
-{\tt ff???nb.itp} under [~pairtypes~]. It is possible to change them there
-of course, or add new parameters for different/new atom types.
+The \normindex{1-4 interactions} are also listed for the 47 atom types
+in {\tt ff???nb.itp} under {\tt [~pairtypes~]}. It is possible to
+change them there of course, or add new parameters for different/new
+atom types.
 
 \subsection{Residue database}
 \label{subsec:rtp}
@@ -390,12 +395,12 @@ the residue file contains information (bonds, charge, charge groups
 and improper dihedrals) for a frequently used building block. It is
 better {\em not} to change this file because it is standard input for
 {\tt pdb2gmx}, but if changes are needed make them in the
-{\tt *.top} file (see section Topology file, ~\ref{subsec:topfile}). 
+{\tt *.top} file (see section Topology file,~\ssecref{topfile}). 
 However, in the {\tt ff???.rtp} file the user can define a new
 \normindex{building block} or molecule: see for example 2,2,2-trifluoroethanol
 (TFE) or {\em n}-decane (C10). But when defining new molecules
 (non-protein) it is preferable to create a {\tt *.itp}
-file. This will be discussed in a next section (section~\ref{subsec:molitp}).
+file. This will be discussed in a next section (section~\ssecref{molitp}).
 
 The file {\tt ff???.rtp} is only used by {\tt pdb2gmx}.
 As mentioned before, the only extra information this
@@ -458,15 +463,15 @@ charge group codes denote the charge group numbers. Atoms in the same
 charge group should always be below each other. When using the
 hydrogen database with {\tt pdb2gmx} for adding missing hydrogens, the
 atom names defined in the {\tt .rtp} entry should correspond exactly
-to the naming convention used in the hydrogen database, see
-\ref{subsec:hdb}. The atom names in the bonded interaction can be
+to the naming convention used in the hydrogen database,
+see~\ssecref{hdb}. The atom names in the bonded interaction can be
 preceded by a minus or a plus, indicating that the atom is in the
 preceding or following residue respectively.  Parameters can be added
 to bonds, angles, dihedrals and impropers, these parameters override
 the standard parameters in the {\tt .itp} files.  This should only be
 used in special cases. Instead of parameters, a string can be added
 for each bonded interaction, this is used in \gromos{96} {\tt .rtp}
-files. These strings are copied to the topolgy file and can be
+files. These strings are copied to the topology file and can be
 replaced by force field parameters by the C-preprocessor in {\tt
 grompp} using {\tt \#define} statements.
 
@@ -490,8 +495,8 @@ replaced by an 'H'. If more then one hydrogen atom is connected to the
 same atom, a number will be added to the end of the hydrogen atom
 name. For example, adding two hydrogen atoms to {\tt ND2} (in
 asparagine), the hydrogen atoms will be named {\tt HD21} and {\tt
-HD22}. This is important since atom naming in the {\tt .rtp} file (see
-\ref{subsec:rtp}) must be the same. The format of the hydrogen
+HD22}. This is important since atom naming in the {\tt .rtp} file
+(see~\ssecref{rtp}) must be the same. The format of the hydrogen
 database is as follows:
 %
 {\small\begin{verbatim}
@@ -514,29 +519,29 @@ we see:
 \item The number of H atoms added
 \item The way of adding H atoms, can be any of
 \begin{enumerate}
-\item[1]{\em one planar hydrogen, e.g. rings or peptide bond}\\
+\item[1]{\em one planar hydrogen, {\eg} rings or peptide bond}\\
 one hydrogen atom (n) is generated, lying in the plane of atoms
 (i,j,k) on the line bisecting angle (j-i-k) at a distance of 0.1 nm
 from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90
 degrees
-\item[2]{\em one single hydrogen, e.g. hydroxyl}\\
+\item[2]{\em one single hydrogen, {\eg} hydroxyl}\\
 one hydrogen atom (n) is generated at a distance of 0.1 nm from atom
 i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans
-\item[3]{\em two planar hydrogens, e.g. -NH{$_2$}}\\
+\item[3]{\em two planar hydrogens, {\eg} -NH{$_2$}}\\
 two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
 i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
 (n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
 IUPAC standards~\cite{iupac70}
-\item[4]{\em two or three tetrahedral hydrogens, e.g. -CH{$_3$}}\\
+\item[4]{\em two or three tetrahedral hydrogens, {\eg} -CH{$_3$}}\\
 three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a distance
 of 0.1 nm from atom i, such that angle
 (n1-i-j)=(n2-i-j)=(n3-i-j)=109.5, dihedral (n1-i-j-k)=trans,
 (n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240 degrees
-\item[5]{\em one tetrahedral hydrogen, e.g. C{$_3$}CH}\\
+\item[5]{\em one tetrahedral hydrogen, {\eg} C{$_3$}CH}\\
 one hydrogen atom (n1) is generated at a distance of 0.1 nm from atom
 i in tetrahedral conformation such that angle
 (n1-i-j)=(n1-i-k)=(n1-i-l)=109.5 degrees
-\item[6]{\em two tetrahedral hydrogens, e.g. C-CH{$_2$}-C}\\
+\item[6]{\em two tetrahedral hydrogens, {\eg} C-CH{$_2$}-C}\\
 two hydrogen atoms (n1,n2) are generated at a distance of 0.1 nm from
 atom i in tetrahedral conformation on the plane bissecting angle i-j-k
 with angle (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.5
@@ -581,7 +586,7 @@ termini that can be added to a molecule. In this example {\tt
 [~None~]} is the first block, corresponding to a terminus that leaves
 the molecule as it is; {\tt [~COO-~]} is the second terminus type,
 corresponding to changing the terminal carbon atom into a deprotonated
-carboxyl group. Blocknames cannot be any of the following: {\tt
+carboxyl group. Block names cannot be any of the following: {\tt
 replace}, {\tt add}, {\tt delete}, {\tt bonds}, {\tt angles}, {\tt
 dihedrals}, {\tt impropers}; this would interfere with the parameters
 of the block, and would probably also be very confusing to human
@@ -604,41 +609,38 @@ entered with the following fields:
 add new atoms. For each (group of) added atom(s), a two-line entry is
 necessary. The first line contains the same fields as an entry in the
 hydrogen database (number of atoms, type of addition, control atoms,
-see \ref{subsec:rtp}), but the possible types of addition are extended
+see~\ssecref{rtp}), but the possible types of addition are extended
 by two more, specifically for C-terminal additions:
 \begin{enumerate}
 \item[8]{\em two carboxyl oxygens, -COO{$^-$}}\\
 two oxygens (n1,n2) are generated according to rule 3, at a distance
 of 0.136 nm from atom i and an angle (n1-i-j)=(n2-i-j)=117 degrees
 \item[9]{\em carboxyl oxygens and hydrogen, -COOH}\\
-two oxygens (n1,n2) are generatd according to rule 3, at distances of
+two oxygens (n1,n2) are generated according to rule 3, at distances of
 0.123 nm and 0.125 nm from atom i for n1 and n2 resp. and angles
 (n1-i-j)=121 and (n2-i-j)=115 degrees. One hydrogen (n') is generated
 around n2 according to rule 2, where n-i-j and n-i-j-k should be read
 as n'-n2-i and n'-n2-i-j resp.
 \end{enumerate}
 After this line another line follows which specifies the details of
-the added atom(s), in the same way as for replacing atoms, i.e.: 
+the added atom(s), in the same way as for replacing atoms, {\ie}: 
 \begin{itemize}
 \item atom name
 \item atom type
 \item mass
 \item charge
 \end{itemize}
-Like in the hydrogen database (see \ref{subsec:rtp}), when more then
+Like in the hydrogen database (see~\ssecref{rtp}), when more then
 one atom is connected to an existing one, a number will be appended to
 the end of the atom name.
 \item {\tt [~delete~]}\\
 delete existing atoms. One atom name per line.
 \item {\tt [~bonds~]}, {\tt [~angles~]}, {\tt [~dihedrals~]} and {\tt [~impropers~]}\\
 add additional bonded parameters. The format is identical to that used
-in the {\tt ff???bon.itp}, see~\ref{subsec:bondparam}.
+in the {\tt ff???.rtp}, see~\ssecref{rtp}.
 \end{itemize}
 
 \section{File formats}
-% move these figures so they end up on facing pages 
-% (first figure on even page)
-\input{topolfig.tex}
 \subsection{\normindex{Topology file}}
 \label{subsec:topfile}
 The topology file is built following the {\gromacs} specification for a
@@ -652,12 +654,12 @@ Description of the file layout:
 \item directives are surrounded by {\tt [} and {\tt ]}
 \item the topology consists of three levels:
 \begin{itemize}
-\item the parameter level (see Table~\ref{ta:topfile1})
+\item the parameter level (see \tabref{topfile1})
 \item the molecule level, which should contain one or more molecule
-      definitions (see Table~\ref{ta:topfile2})
+      definitions (see \tabref{topfile2})
 \item the system level: {\tt [~system~]}, {\tt [~molecules~]}
 \end{itemize}
-\item items should be seperated by spaces or tabs, not commas
+\item items should be separated by spaces or tabs, not commas
 \item atoms in molecules should be numbered consecutively starting at 1
 \item the file is parsed once only which implies that no forward
       references can be treated: items must be defined before they
@@ -778,17 +780,18 @@ Urea in Water
 Urea             1
 SOL              1000
 \end{verbatim}}
+
 Here follows the explanatory text.
 
 {\bf {\tt [~defaults~]} :}
 \begin{itemize}
 \item non-bond type = 1 (Lennard-Jones) or 2 (Buckingham)\\
-{\bf note:} when using the buckingham potential no combination rule can
+{\bf note:} when using the Buckingham potential no combination rule can
 be used, and a full interaction matrix must be provided under the 
 {\tt nonbond\_params} section.
 \item combination rule = 1 (based on Van der Waals) or 2 (based on
 $\sigma$ and $\epsilon$)
-\item generate pairs = no (get 1-4 interactions from pairlist) or yes
+\item generate pairs = no (get 1-4 interactions from pair list) or yes
 (generate 1-4 interactions from normal Lennard-Jones parameters using
 FudgeLJ and FudgeQQ)
 \item FudgeLJ = factor to change Lennard-Jones 1-4 interactions
@@ -797,18 +800,23 @@ FudgeLJ and FudgeQQ)
 {\bf note:} FudgeLJ and FudgeQQ only need to be specified when
 generate pairs is set to 'yes'.
 
+% move these figures so they end up on facing pages 
+% (first figure on even page)
+\input{topolfig}
+
 {\bf {\tt \#include "ffgmx.itp"} :} this includes the bonded and
 non-bonded {\gromacs} parameters, the {\tt gmx} in {\tt ffgmx} will be
 replaced by the name of the forcefield you are actually using.
 
-{\bf {\tt [~moleculetype~]} :} defines the name of your molecule in this
-{\tt *.top} and nrexcl = 3 stands for excluding 3 bonded atoms
+{\bf {\tt [~moleculetype~]} :} defines the name of your molecule in
+this {\tt *.top} and nrexcl = 3 stands for excluding non-bonded
+interactions between atoms that are no further than 3 bonds away.
 
-{\bf {\tt [~atoms~]} :} defines the molecule, where {\tt nr} and {\tt type}
-are fixed, the rest is user defined. So {\tt atom} can be named as you
-like, {\tt cgnr} made larger or smaller (but beware of the fact that
-the total charge of a charge group should be zero!), and charges can
-be changed here too.
+{\bf {\tt [~atoms~]} :} defines the molecule, where {\tt nr} and {\tt
+type} are fixed, the rest is user defined. So {\tt atom} can be named
+as you like, {\tt cgnr} made larger or smaller (if possible, the total
+charge of a charge group should be zero), and charges can be changed
+here too.
 
 {\bf {\tt [~bonds~]} :} no comment.
 
@@ -819,7 +827,7 @@ be changed here too.
 {\bf {\tt [~dihedrals~]} :} in this case there are 9 proper dihedrals
 (funct = 1), 3 improper (funct = 2) and no Ryckaert-Bellemans type
 dihedrals. If you want to include Ryckaert-Bellemans type dihedrals
-in a topology, do the following (in case of e.g. decane):
+in a topology, do the following (in case of {\eg} decane):
 \begin{verbatim}
 [ dihedrals ]
 ;  ai    aj    ak    al funct           c0           c1           c2
@@ -830,14 +838,14 @@ and do not forget to {\em erase the 1-4 interaction}
 in {\tt [~pairs~]}!!
 
 {\bf {\tt [~position\_restraints~]} :} harmonically restrain particles
-to reference positions (section~\ref{sec:posre}). 
+to reference positions (\secref{posre}). 
 The reference positions are read from a 
 separate coordinate file by \normindex{grompp}.
 
 {\bf {\tt [~distance\_restraints~]} :} put restraints on the distance 
 between particles, usually based on experimental data from NMR experiments
 (NOE data). The form of the potential function is determined by the
-parameters given below (see section~\ref{sec:disre}).
+parameters given below (see \secref{disre}).
 
 {\bf {\tt \#include "spc.itp"} :} includes a topology file that was already
 constructed (see next section, molecule.itp).
@@ -986,7 +994,7 @@ way to make use of the {\tt \#ifdef} option is as follows:
 \end{verbatim}
 }
 Also in this example is the option {\tt \#ifdef BONDS}, which results
-in \normindex{constraints} instead of normal bonds.
+in constraints instead of normal bonds.
 
 \subsection{Coordinate file}
 \label{subsec:grofile}
@@ -1003,7 +1011,7 @@ MD of 2 waters, reformat step, PA aug-91
     2WATER  HW3    6   1.326   0.120   0.568  1.9427 -0.8216 -0.0244
    1.82060   1.82060   1.82060
 \end{verbatim}}
-This format is fixed, ie. all columns are in a fixed position. If you
+This format is fixed, {\ie} all columns are in a fixed position. If you
 want to read such a file in your own program without using the
 {\gromacs} libraries you can use the following formats:
 

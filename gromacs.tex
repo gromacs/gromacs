@@ -1,5 +1,5 @@
 \documentclass[11pt,dvips]{book}
-\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort}
+\usepackage{here,picins,fancy,epsfig,array,tabularx,makeidx,a4,citesort,multicol}
 %\setpapersize{USletter}
 \makeindex
 \input{macros}
@@ -20,9 +20,11 @@
 \newcommand{\eqnref}[1]{eqn.~\ref{eqn:#1}}
 \newcommand{\eqnsref}[2]{eqns.~\ref{eqn:#1} and \ref{eqn:#2}}
 \newcommand{\secref}[1]{sec.~\ref{sec:#1}}
+\newcommand{\ssecref}[1]{\ref{subsec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\appref}[1]{Appendix~\ref{app:#1}}
 \newcommand{\wwwpage}{http://md.chem.rug.nl/\raisebox{-0.8ex}{\~{ }}gmx}
+\newcommand{\email}{{\tt gromacs@chem.rug.nl}}
 % NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
 \newcommand{\undercons}{\centerline{\em Note: this section is still under construction}}
 \setlength{\headwidth}{\textwidth}
@@ -38,16 +40,32 @@
 %
 \thispagestyle{empty}
 \begin{center}
-{\Large\bf\underline {Groningen Machine for Chemical Simulations}}      \\[1cm]
+{\Large
+\begin{tabular}{c}
+\hline
+{\bf Groningen Machine for Chemical Simulations}\\
+\hline
+\end{tabular}
+}
 
-{\LARGE\bf GROMACS USER MANUAL}                         \\[1cm]
-{\LARGE\bf Version \gmxver}                             \\[1cm]
+\vspace{1cm}
+
+{\LARGE
+\begin{tabular}{c}
+				\\
+{\bf GROMACS USER MANUAL}	\\
+				\\
+{\bf Version \gmxver}		\\
+				\\
+\end{tabular}
+}
 \end{center}
-
+\vspace{1cm}
 \centerline{\psfig {figure=plots/warning.eps,width=1.8cm,angle=-80}}
-
+\vspace{1cm}
 \centerline{\psfig {figure=plots/pla.eps,width=\ntw}}
-\centerline{\em Phospholipase A2 ready to attack a lecithin monolayer.}
+\centerline{\em Phospholipase A2 ready to attack a lecithin \quad
+\quad mono layer. \quad ~}
 
 \newpage
 \thispagestyle{empty}
@@ -144,8 +162,7 @@ or, if you use BibTeX, you can directly copy the following:
 Please do also cite the original {\gromacs} paper~\cite{Berendsen95a}.
 
 
-Any comment is welcome, please send it by e-mail to
-{\tt gromacs@chem.rug.nl}. 
+Any comment is welcome, please send it by e-mail to {\email}
 \medskip
 
 Groningen, \today
@@ -160,8 +177,8 @@ Fax: 31-50-634800
 
 \newpage
 \subsection*{Online Manual}
-If you  have access to a WWW browser such as NCSA \normindex{mosaic}
-or \normindex{Netscape} please look up our HTML page: \\
+If you  have access to a WWW browser such as NCSA mosaic
+or Netscape please look up our HTML page: \\
 {\bf \wwwpage}.
 
 \subsection*{Violated Copyrights}
@@ -181,7 +198,7 @@ HyperChem & is a trademark of AutoDesk inc.\\
 
 \vspace{0.5cm}
 
-The figure on frontpage was made with Molscript~\cite{Kraulis91}.
+The figure on front page was made with Molscript~\cite{Kraulis91}.
 
 %
 %       C O N T E N T S

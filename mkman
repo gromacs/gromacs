@@ -24,6 +24,9 @@ foreach prog ( $PROGRAMS )
     $PROG -quiet -man tex >& /dev/null
     endif
     if ( -f $prog.tex ) then
+      grep -v "Use dialog box GUI to edit command line options" $prog.tex >! mkman_temp.tex
+      grep -v "Set non blocking priority" mkman_temp.tex >! $prog.tex
+      \rm mkman_temp.tex
       echo "\\input{"$MANDIR"/"$prog"}" >> $INDEX
     endif
   endif

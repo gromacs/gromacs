@@ -1,20 +1,20 @@
 \section{Computation of the 1.0/sqrt function.}
 \label{sec:sqrt}
 \subsection{Introduction.}
-The {\gromacs} project started with the development of a 
-$1/\sqrt{x}$ processor which calculates
+The {\gromacs} project started with the development of a $1/\sqrt{x}$
+processor which calculates
 \begin{equation}
 Y(x) = \frac{1}{ \sqrt{x} }
 \end{equation}
 As the project continued, the {\intel} processor was used to implement
-{\gromacs}, which now turned into almost a full software project.
-The $1/\sqrt{x}$ processor was implemented using a Newton-Raphson iteration 
-scheme for one step. For this it needed lookup tables to provide the initial 
-approximation. The $1/\sqrt{x}$ function makes it possible to use two almost 
-independent tables for the exponent seed and the fraction seed with the IEEE 
-floating point representation.
+{\gromacs}, which now turned into almost a full software project.  The
+$1/\sqrt{x}$ processor was implemented using a Newton-Raphson
+iteration scheme for one step. For this it needed lookup tables to
+provide the initial approximation. The $1/\sqrt{x}$ function makes it
+possible to use two almost independent tables for the exponent seed
+and the fraction seed with the IEEE floating point representation.
 
-\subsection{Calculation of the SQRT function ...}
+\subsection{General}
 According to~\cite{Bekker87} the $1/\sqrt{x}$ can be calculated using
 the Newton-Raphson iteration scheme. The inverse function is
 \begin{equation}
@@ -27,13 +27,13 @@ Y(a) = q
 the equation
 \begin{equation}
 X(q) - a = 0
-\label{eq:inversef}
+\label{eqn:inversef}
 \end{equation}
 can now be solved using Newton-Raphson. An iteration is performed by
 calculating
 \begin{equation}
 y_{n+1} = y_{n} - \frac{f(y_{n})}{f'(y_{n})}
-\label{eq:nr}
+\label{eqn:nr}
 \end{equation}
 The absolute error $\varepsilon$, in this approximation is defined by
 \begin{equation}
@@ -43,15 +43,15 @@ using Taylor series expansion to estimate the error results in
 \begin{equation}
 \varepsilon _{n+1} = - \frac{\varepsilon _{n}^{2}}{2}
                        \frac{ f''(y_{n})}{f'(y_{n})}
-\label{eq:taylor}
+\label{eqn:taylor}
 \end{equation}
 according to~\cite{Bekker87} equation (3.2). This is an estimation of the
 absolute error.
 
-\subsection{... applied to floating point numbers}
+\subsection{Applied to floating point numbers}
 Floating point numbers in IEEE 32 bit single precision format have a nearly
 constant relative error of $\Delta x / x = 2^{-24}$. As seen earlier in the
-Taylor series expansion equation (\ref{eq:taylor}), the error in every
+Taylor series expansion equation (\eqnref{taylor}), the error in every
 iteration step is absolute and in general dependent of $y$. If the error is
 expressed as a relative error $\varepsilon_{r}$ the following holds
 \begin{equation}
@@ -67,7 +67,7 @@ to $-3/2$) so the relative error $\varepsilon _{r_{n}}$ is independent of $y$.
 \begin{equation}
 \varepsilon _{{r}_{n+1}} =
 \frac{3}{2} (\varepsilon_{r_{n}})^{2}
-\label{eq:epsr}
+\label{eqn:epsr}
 \end{equation}
 
 The conclusion of this is that the function $1/\sqrt{x}$ can be
@@ -95,7 +95,7 @@ The first requirement states that the result of $1/\sqrt{x}$ may have a
 relative error $\varepsilon_{r}$ equal to the $\varepsilon_{r}$ of a IEEE 32
 bit single precision floating point number. From this the $1/\sqrt{x}$
 of the initial approximation can be derived, rewriting the definition of
-the relative error for succeeding steps, equation (\ref{eq:epsr})
+the relative error for succeeding steps, equation (\eqnref{epsr})
 \begin{equation}
 \frac{\varepsilon_{n}}{y} =
 \sqrt{\varepsilon_ {r_{n+1}} \frac{2f'}{yf''}}
@@ -103,7 +103,7 @@ the relative error for succeeding steps, equation (\ref{eq:epsr})
 So for the lookup table the needed accuracy is
 \begin{equation}
 \frac{\Delta Y}{Y} = \sqrt{\frac{2}{3} 2^{-24}}
-\label{eq:accy}
+\label{eqn:accy}
 \end{equation}
 which defines the width of the table that must be $\geq 13$ bit.
 
@@ -129,7 +129,7 @@ lookup table follows from
 \begin{equation}
 \frac{\Delta x}{x} = -2 \frac{\Delta Y}{Y}
 \end{equation}
-so, using the floating point accuracy, equation (\ref{eq:accy})
+so, using the floating point accuracy, equation (\eqnref{accy})
 \begin{equation}
 \frac{\Delta x}{x} = -2 \sqrt{\frac{2}{3} 2^{-24}}
 \end{equation}
@@ -147,11 +147,11 @@ property that the exponent is independent of the fraction. This becomes clear
 if the floating point representation is used. Define
 \begin{equation}
 x \equiv (-1)^{S}(2^{E-127})(1.F)
-\label{eq:fpdef}
+\label{eqn:fpdef}
 \end{equation}
-see fig. (\ref{fig:ieee}) where $0 \leq S \leq 1$, $0 \leq E \leq 255$,
-$1 \leq 1.F < 2$ and $S$, $E$, $F$ integer (normalisation conditions). 
-The sign bit ($S$) can be ommitted because $1/\sqrt{x}$ is only defined 
+see \figref{ieee} where $0 \leq S \leq 1$, $0 \leq E \leq 255$,
+$1 \leq 1.F < 2$ and $S$, $E$, $F$ integer (normalization conditions). 
+The sign bit ($S$) can be omitted because $1/\sqrt{x}$ is only defined 
 for $x > 0$. The $1/\sqrt{x}$ function applied to $x$ results in
 \begin{equation}
 y(x) = \frac{1}{\sqrt{x}}
@@ -163,7 +163,7 @@ y(x) = \frac{1}{\sqrt{(2^{E-127})(1.F)}}
 this can be rewritten as
 \begin{equation}
 y(x) = (2^{E-127})^{-1/2}(1.F)^{-1/2}
-\label{eq:yx}
+\label{eqn:yx}
 \end{equation}
 Define
 \begin{equation}
@@ -173,24 +173,24 @@ Define
 1.F'\equiv (1.F)^{-1/2}
 \end{equation}
 then $\frac{1}{\sqrt{2}} < 1.F' \leq 1$ holds, so the condition
-$1 \leq 1.F' < 2$ which is essential for normalised real representation is
+$1 \leq 1.F' < 2$ which is essential for normalized real representation is
 not valid anymore. By introducing an extra term this can be corrected.
 Rewrite the $1/\sqrt{x}$ function applied to floating point numbers, equation
-(\ref{eq:yx}) as
+(\eqnref{yx}) as
 \begin{equation}
 y(x) = (2^{\frac{127-E}{2}-1}) (2(1.F)^{-1/2})
 \end{equation}
 and
 \begin{equation}
 (2^{E'-127}) \equiv (2^{\frac{127-E}{2}-1})
-\label{eq:exp}
+\label{eqn:exp}
 \end{equation}
 \begin{equation}
 1.F'\equiv 2(1.F)^{-1/2}
-\label{eq:frac}
+\label{eqn:frac}
 \end{equation}
 then $\sqrt{2} < 1.F \leq 2$ holds. This is not the exact valid range as
-defined for normalised floating point numbers in equation (\ref{eq:fpdef}). 
+defined for normalized floating point numbers in equation (\eqnref{fpdef}). 
 The value $2$  causes the problem. By mapping this value on the nearest
 representation $< 2$ this can be solved. The small error that is introduced
 by this approximation is within the allowable range. 
@@ -198,13 +198,13 @@ by this approximation is within the allowable range.
 The integer representation of the exponent is the next problem. Calculating
 $(2^{\frac{127-E}{2}-1})$ introduces a fractional result if $(127-E) = odd$.
 This is again easily accounted for by splitting up the calculation into an
-odd and an even part. For $(127-E) = even$ $E'$ in equation (\ref{eq:exp})
+odd and an even part. For $(127-E) = even$ $E'$ in equation (\eqnref{exp})
 can be exactly calculated in integer arithmetic as a function of $E$.
 \begin{equation}
 E' = \frac{127-E}{2} + 126
 \end{equation}
 
-For $(127-E) = odd$ equation (\ref{eq:yx}) can be rewritten as
+For $(127-E) = odd$ equation (\eqnref{yx}) can be rewritten as
 \begin{equation}
 y(x) = (2^{\frac{127-E-1}{2}})(\frac{1.F}{2})^{-1/2}
 \end{equation}
@@ -219,10 +219,10 @@ mentioned, so the exponent does not need an extra correction.
 The conclusions from this are:
 \begin{itemize}
 \item The fraction and exponent lookup table are independent. The fraction
-lookuptable exists of two tables (odd and even exponent) so the odd/even
+lookup table exists of two tables (odd and even exponent) so the odd/even
 information of the exponent (lsb bit) has to be used to select the right
 table.
-\item The exponent table is an 256 x 8 bit table, initialised for $odd$
+\item The exponent table is an 256 x 8 bit table, initialized for $odd$
 and $even$.% as specified before
 \end{itemize}
 
@@ -231,12 +231,12 @@ The lookup tables can be generated by a small C program, which uses
 floating point numbers and operations with IEEE 32 bit single precision format.
 Note that because of the $odd$/$even$ information that is needed, the
 fraction table is twice the size earlier specified (13 bit i.s.o. 12 bit).
-%Fig. (\ref{fig:expgen}) in the appendix shows how to fill the exponent table,
-%fig. (\ref{fig:fractgen}) shows how to fill the fraction table.
+%\figref{expgen} in the appendix shows how to fill the exponent table,
+%\figref{fractgen} shows how to fill the fraction table.
 
-The function according to equation (\ref{eq:nr}) has to be implemented. 
+The function according to equation (\eqnref{nr}) has to be implemented. 
 Applied to the $1/\sqrt{x}$ function, equation 
-(\ref{eq:inversef}) leads to
+(\eqnref{inversef}) leads to
 \begin{equation}
 f = a - \frac{1}{y^{2}}
 \end{equation}
@@ -254,6 +254,6 @@ y_{n+1} = \frac{y_{n}}{2} (3 - a y^{2}_{n})
 \end{equation}
 Where $y_{0}$ can be found in the lookup tables, and $y_{1}$ gives the result
 to the maximum accuracy. 
-%In fig. (\ref{fig:as_implementation}) the assembler implementation is given. 
+%In \figref{as_implementation}) the assembler implementation is given. 
 It is clear that only one iteration extra (in double 
-precision) is needed for a double precicion result.
+precision) is needed for a double precision result.

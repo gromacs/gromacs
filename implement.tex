@@ -6,19 +6,19 @@ that would otherwise be hard to understand.
 
 \section{Optimizations}
 Here we describe some of the optimizations used in {\gromacs}, apart
-from parallellism. One of these, the implementation of the 
-1.0/sqrt(x) function is treated separately in section~\ref{sec:sqrt}.
+from parallelism. One of these, the implementation of the 
+1.0/sqrt(x) function is treated separately in \secref{sqrt}.
 The most important other optimizations are described below.
 
 \subsection{Inner Loop for Water}
-In {\gromacs} a special inner loop that calculates nonbonded
+In {\gromacs} a special inner loop that calculates non-bonded
 interactions for a water molecule with something else is 
 implemented. This loop assumes that the water model is like
-SPC~\cite{Berendsen81}, i.e.:
+SPC~\cite{Berendsen81}, {\ie}:
 \begin{enumerate}
 \item	The first atom is oxygen, the other two are hydrogens
-\item	The first atom has lennard-jones (Section~\ref{sec:lj}) and 
-	coulomb (Section~\ref{sec:coul}) interactions, the other
+\item	The first atom has Lennard-Jones (\secref{lj}) and 
+	coulomb (\secref{coul}) interactions, the other
 	two only have coulomb.
 \end{enumerate}
 
@@ -71,7 +71,7 @@ that is generated it does not need to shaken (nor stirred).
 
 \subsection{Fortran Code}
 Unfortunately, \normindex{Fortran} compilers are still better than C-compilers;
-for most machines anyway. For some machines (e.g. SGI Power Challenge)
+for most machines anyway. For some machines ({\eg} SGI Power Challenge)
 the difference may be up to a factor of 3, in the case of vector
 computers this may be even worse. Therefore, some of the routines
 that take up a lot of computer time have been translated into Fortran.

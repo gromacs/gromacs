@@ -3,22 +3,21 @@
 \chapter{Long range corrections}
 \label{ch:lrcorr}
 \section{Dispersion}
-In this section we derive long range corrections due to the use of
-a cut-off for Lennard Jones interactions. 
-We assume that the cut-off is so long that the repulsion term
-can safely be neglected, and therefore only the dispersion term is
-taken into account. Due to the nature of the dispersion interaction,
-energy and pressure corrections both are negative. While
-the energy correction is usually small, it may be important for
-free energy calculations. The pressure correction in contrast is 
-very large and can not be neglected. Although it is in principle
-possible to parametrize a force field such that the pressure is
-close to 1 bar even without correction, such a method makes the
-parametrization dependent on the cut-off and is therefore
-undesirable. Please note that it is not consistent to use the long range
-correction to the dispersion without using either a reaction field
-method or a proper long range electrostatics method such as Ewald
-summation or PPPM.
+In this section we derive long range corrections due to the use of a
+cut-off for Lennard Jones interactions.  We assume that the cut-off is
+so long that the repulsion term can safely be neglected, and therefore
+only the dispersion term is taken into account. Due to the nature of
+the dispersion interaction, energy and pressure corrections both are
+negative. While the energy correction is usually small, it may be
+important for free energy calculations. The pressure correction in
+contrast is very large and can not be neglected. Although it is in
+principle possible to parameterize a force field such that the pressure
+is close to 1 bar even without correction, such a method makes the
+parameterization dependent on the cut-off and is therefore
+undesirable. Please note that it is not consistent to use the long
+range correction to the dispersion without using either a
+\normindex{reaction field} method or a proper long range
+electrostatics method such as Ewald summation or PPPM.
 
 \subsection{Energy}
 \label{sec:ecorr}
@@ -63,16 +62,16 @@ V_{lr}	&=&	-\frac{2}{3}N\rho\pi \avcsix r_c^{-3}
 A special form of a non-homogeneous system in this respect,
 is a pure liquid in which the atoms have different $C_6$ values.
 In practice this definition encompasses almost every molecule,
-except monatomic molecules and symmetric molecules like $N_2$ or $O_2$.
+except mono-atomic molecules and symmetric molecules like $N_2$ or $O_2$.
 Therefore we always have to determine the average dispersion constant
 $\avcsix$ in simulations.
 
-In the case of inhomogenous simulation systems, e.g. a system with a
+In the case of inhomogeneous simulation systems, {\eg} a system with a
 lipid interface, the energy correction can be applied if 
 $\avcsix$ for both components is comparable.
 
 \subsection{Virial and pressure}
-The scalar virial of the system due to the disperion interaction between
+The scalar virial of the system due to the dispersion interaction between
 two particles $i$ and $j$ is given by:
 \beq
 \Xi	~=~	-\rvij \cdot \Fvij ~=~	6 C_6 \rij^{-6}

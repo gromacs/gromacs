@@ -14,7 +14,8 @@ Here it is shown how it is possible to extract the virial calculation
 from the inner loop and also how the pressure is calculated in {\gromacs}.
 
 \subsection{Virial.}
-In a periodic system the (Periodic Boundary Conditions) PBC must be taken into account for the virial:
+In a system with \normindex{Periodic Boundary Conditions}, the
+periodicity must be taken into account for the virial:
 \beq
 \Xi~=~-\half~\sum_{i < j}^{N}~\rnij\otimes\Fvij
 \eeq
@@ -52,7 +53,7 @@ In these formulae we introduced
 \Fvi&~=~&\sum_{j=1}^N~\Fvij					\\
 \Fvj&~=~&\sum_{i=1}^N~\Fvji
 \eea
-which is the total force on $i$ resp. $j$. Because we use Newtons third law
+which is the total force on $i$ resp. $j$. Because we use Newton's third law
 \beq
 \Fvij~=~-\Fvji
 \eeq
@@ -84,7 +85,7 @@ as edges.
 \end{enumerate}
 Using this algorithm we can 
 \begin{itemize}
-\item	optimise the bonded force calculation as well as shake
+\item	optimize the bonded force calculation as well as shake
 \item	calculate the virial from the bonded forces
 	in the single sum way again
 \end{itemize}

@@ -7,7 +7,7 @@
 \section{Formulae for averaging}
 {\bf Note:} this section was taken from ref~\cite{Gunsteren94a}.
 
-When analysing a MD trajectory averages $\left<x\right>$ and fluctuations
+When analyzing a MD trajectory averages $\left<x\right>$ and fluctuations
 \beq
  \left<(\Delta x)^2\right>^{\half} ~=~ \left<[x-\left<x\right>]^2\right>^{\half}
 \label{eqn:var0}
@@ -97,7 +97,7 @@ to simplify checking of code and equations later on.
 
 \subsection{Part of a Simulation}
 It is not uncommon to perform a simulation where the first part,
-e.g. 100 ps, is taken as \normindex{equilibration}. However, the
+{\eg} 100 ps, is taken as \normindex{equilibration}. However, the
 averages and fluctuations as printed in the \normindex{log file}
 are computed over the whole simulation. The equilibration time,
 which is now part of the simulation, may in such a case invalidate the
@@ -126,7 +126,7 @@ X_{1,p-1}	&=&	X_{1,p} - x_p	\\
 \eea
 
 \subsection{Combining two simulations}
-Another frequently occuring problem is, that the fluctuations of two simulations
+Another frequently occurring problem is, that the fluctuations of two simulations
 must be combined. Consider the following example: we have two simulations
 (A) of $n$ and (B) of $m$ steps, in which the second simulation is a 
 continuation of the first. However, the second simulation starts numbering from 1
@@ -176,7 +176,7 @@ to obtain:
 if we check this by inserting $m=1$ we get back \eqnref{simplevar0}
 
 \subsection{Summing energy terms}
-The \normindex{g\_energy} program can also sum energy terms into one, e.g. 
+The \normindex{g\_energy} program can also sum energy terms into one, {\eg} 
 potential + kinetic = total. For the partial averages this is again easy
 if we have $S$ energy components $s$:
 \beq
@@ -225,9 +225,9 @@ which gives
 \beq
 -2\sum_{s=1}^S \left[X_{m,n}^s \sum_{s'=s+1}^S \sum_{i=m}^n x_i^{s'}\,+\,\sum_{i=m}^n x_i^s \sum_{s'=s+1}^S x_i^{s'}\right] ~=~\Delta\sigma 
 \eeq
-Since we need all datapoints $i$ to evaluate this, in general this is not possible.
-We can then make an estimate of $\sigma_{m,n}^S$ using only the datapoints that 
-are available using the lefthand side of \eqnref{sigmaterms}. While the average can
+Since we need all data points $i$ to evaluate this, in general this is not possible.
+We can then make an estimate of $\sigma_{m,n}^S$ using only the data points that 
+are available using the left hand side of \eqnref{sigmaterms}. While the average can
 be computed using all time steps in the simulation, the accuracy of the
 fluctuations is thus limited by the frequency with which energies are saved.
 Since this can be easily done with a program such as \normindex{xmgr} this is not 
