@@ -64,7 +64,7 @@ static void default_params(int ftype,t_params bt[],t_atoms *at,t_param *p)
       break;
     default:
       bFound=TRUE;
-      for (j=0; j<NRAL(ftype) && bFound; j++)
+      for (j=0; (j<NRAL(ftype)) && bFound; j++)
 	bFound = (at->atom[p->a[j]].type == pi->a[j]);
     } /* switch */
   }
@@ -105,8 +105,15 @@ static void enter_bond(int *nrbond, t_mybond **bonds, t_param param,
     (*bonds)[*nrbond-1].a[j] = param.a[j];
   
   /* but if ftype is dummy we don't have the parameters yet */
-  if (interaction_function[ftype].flags & IF_DUMMY)
+  if (interaction_function[ftype].flags & IF_DUMMY) {
     default_params(F_BONDS,ptype,atoms,&param);
+    if (param.C0 == NOTSET)
+      default_params(F_G96BONDS,ptype,atoms,&param);
+    if (param.C0 == NOTSET)
+      default_params(F_MORSE,ptype,atoms,&param);
+    if (param.C0 == NOTSET)
+      fatal_error(0,"No default bond length for dummy %d",*nrbond-1);
+  }
   
   /* copy bondlength */
   (*bonds)[*nrbond-1].c = param.C0;
@@ -157,13 +164,16 @@ static void get_bondeds(int nrat, t_iatom atoms[],
     if (interaction_function[ftype].flags & IF_DUMMY)
       /* this is a dummy, we treat it like a bond */
       nrcheck = 2;
-    else
+    else {
       switch(ftype) {
       case F_BONDS:
+      case F_G96BONDS:
+      case F_MORSE:
       case F_SHAKE:
 	nrcheck = 2;
 	break;
       case F_ANGLES: 
+      case F_G96ANGLES: 
 	nrcheck = 3;
 	break;
       case F_IDIHS: 
@@ -172,9 +182,10 @@ static void get_bondeds(int nrat, t_iatom atoms[],
       default:
 	nrcheck = 0;
       } /* case */
+    } /* else */
     
     if (nrcheck)
-      for(i=0; i<plist[ftype].nr; i++) {
+      for(i=0; (i<plist[ftype].nr); i++) {
 	/* now we have something, check if it is between atoms[] */
 	bCheck=TRUE;
 	for(j=0; j<nrcheck && bCheck; j++) {
@@ -186,12 +197,15 @@ static void get_bondeds(int nrat, t_iatom atoms[],
 	if (bCheck)
 	  /* use nrcheck to see if we're adding bond, angle or idih */
 	  switch (nrcheck) {
-	  case 2: enter_bond (nrbond,bonds, plist[ftype].param[i],
-			      ftype,ptype,at);
-	  break;
-	  case 3: enter_angle(nrang, angles,plist[ftype].param[i]);
+	  case 2: 
+	    enter_bond (nrbond,bonds, plist[ftype].param[i],
+			ftype,ptype,at);
 	    break;
-	  case 4: enter_idih (nridih,idihs, plist[ftype].param[i]);
+	  case 3: 
+	    enter_angle(nrang, angles,plist[ftype].param[i]);
+	    break;
+	  case 4: 
+	    enter_idih (nridih,idihs, plist[ftype].param[i]);
 	    break;
 	  } /* case */
       } /* for i */
@@ -251,38 +265,50 @@ static void print_param(FILE *fp, int ftype, int i, t_param *param)
   pass++;
 }
 
-static real get_def_bond_length(t_params *bt, t_atoms *at,
+static real get_def_bond_length(t_params plist[], t_atoms *at,
 				t_iatom ai, t_iatom aj)
 {
-  int  i;
-  real bondlen;
+  int  bondtypes[] = { F_BONDS, F_G96BONDS, F_MORSE };
+#define NBONDTYPES asize(bondtypes)
+  int      i,bb;
+  t_params *bt;
+  real     bondlen;
 
   bondlen=NOTSET;
-  for (i=0; i < bt->nr && (bondlen==NOTSET); i++) {
-    /* check one way only, bt is filled with both */
-    if ( (at->atom[ai].type == bt->param[i].AI) &&
-	 (at->atom[aj].type == bt->param[i].AJ) )
-      bondlen = bt->param[i].C0;
+  for(bb=0; (bb<NBONDTYPES) && (bondlen==NOTSET); bb++) {
+    bt = &(plist[bondtypes[bb]]);
+    for (i=0; i < bt->nr && (bondlen==NOTSET); i++) {
+      /* check one way only, bt is filled with both */
+      if ( (at->atom[ai].type == bt->param[i].AI) &&
+	   (at->atom[aj].type == bt->param[i].AJ) )
+	bondlen = bt->param[i].C0;
+    }
   }
-  if (bondlen==NOTSET)
+  if (bondlen == NOTSET)
     fatal_error(0,"No default bondlength for atoms %d-%d while "
 		"calculating dummy parameters",ai+1,aj+1);
   return bondlen;
 }
 
-static real get_def_angle(t_params *bt, t_atoms *at,
+static real get_def_angle(t_params plist[], t_atoms *at,
 			  t_iatom ai, t_iatom aj, t_iatom ak)
 {
-  int  i;
-  real angle;
+  int  angtypes[] = { F_ANGLES, F_G96ANGLES };
+#define NANGTYPES asize(angtypes)
+  int      i,aa;
+  t_params *bt;
+  real     angle;
   
   angle=NOTSET;
-  for (i=0; i < bt->nr && (angle==NOTSET); i++) {
-    /* check one way only, bt is filled with both */
-    if ( (at->atom[ai].type == bt->param[i].AI) &&
-	 (at->atom[aj].type == bt->param[i].AJ) &&
+  for(aa=0; (aa<NANGTYPES) && (angle==NOTSET); aa++) {
+    bt = &(plist[angtypes[aa]]);
+    for (i=0; i < bt->nr && (angle==NOTSET); i++) {
+      /* check one way only, bt is filled with both */
+      if ( (at->atom[ai].type == bt->param[i].AI) &&
+	   (at->atom[aj].type == bt->param[i].AJ) &&
 	 (at->atom[ak].type == bt->param[i].AK) )
-      angle = DEG2RAD*bt->param[i].C0;
+	angle = DEG2RAD*bt->param[i].C0;
+    }
   }
   if (angle==NOTSET)
     fatal_error(0,"No default angle for atoms %d-%d-%d while "
@@ -325,14 +351,14 @@ static real get_angle(int nrang, t_myang angles[],
 }
 
 static real get_an_angle(int nrang, t_myang angles[], 
-			 t_params *bt, t_atoms *at,
+			 t_params plist[], t_atoms *at,
 			 t_iatom ai, t_iatom aj, t_iatom ak)
 {
   real angle;
   
   angle = get_angle(nrang, angles, ai, aj, ak);
   if (angle==NOTSET)
-    angle = get_def_angle(bt, at, ai, aj, ak);
+    angle = get_def_angle(plist, at, ai, aj, ak);
   
   return angle;
 }
@@ -384,7 +410,7 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
     /* get common bonds */
     bMM = get_bond_length(nrbond, bonds, param->AK, param->AL);
     bCM = bjk;
-    bCN = get_def_bond_length(&ptype[F_BONDS], at, param->AJ, aN);
+    bCN = get_def_bond_length(ptype, at, param->AJ, aN);
     
     /* calculate common things */
     rM  = 0.5*bMM;
@@ -397,8 +423,8 @@ static bool calc_dum3_param(t_params ptype[], t_atomtype *atype,
       
     } else {
       /* get other bondlengths and angles: */
-      bNH = get_def_bond_length(&ptype[F_BONDS], at, aN, param->AI);
-      aCNH= get_def_angle(&ptype[F_ANGLES], at, param->AJ, aN, param->AI);
+      bNH = get_def_bond_length(ptype, at, aN, param->AI);
+      aCNH= get_def_angle(ptype, at, param->AJ, aN, param->AI);
       
       /* calculate */
       dH  = bCN - bNH * cos(aCNH);
@@ -434,12 +460,12 @@ static bool calc_dum3fd_param(t_params ptype[], t_param *param, t_atoms *at,
   bool bError;
   real bij,bjk,bjl,aijk,aijl,rk,rl;
   
-  bij = get_def_bond_length(&ptype[F_BONDS], at, param->AI, param->AJ);
+  bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
-  aijk= get_an_angle(nrang, angles, &ptype[F_ANGLES], at, 
+  aijk= get_an_angle(nrang, angles, ptype, at, 
 		     param->AI, param->AJ, param->AK);
-  aijl= get_an_angle(nrang, angles, &ptype[F_ANGLES], at,
+  aijl= get_an_angle(nrang, angles, ptype, at,
 		     param->AI, param->AJ, param->AL);
   bError = (bjk==NOTSET) || (bjl==NOTSET);
   
@@ -470,8 +496,8 @@ static bool calc_dum3fad_param(t_params ptype[], t_param *param, t_atoms *at,
   
   bSwapParity = ( param->C1 == -1 );
   
-  bij = get_def_bond_length(&ptype[F_BONDS], at, param->AI, param->AJ);
-  aijk = get_def_angle(&ptype[F_ANGLES], at, param->AI, param->AJ, param->AK);
+  bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
+  aijk = get_def_angle(ptype, at, param->AI, param->AJ, param->AK);
   
   param->C1 = bij;          /* 'bond'-length for fixed distance dummy */
   param->C0 = RAD2DEG*aijk; /* 'bond'-angle for fixed angle dummy */
@@ -538,9 +564,9 @@ static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
     /* get all bondlengths and angles: */
     bMM = get_bond_length(nrbond, bonds, param->AK, param->AL);
     bCM = bjk;
-    bCN = get_def_bond_length(&ptype[F_BONDS], at, param->AJ, aN);
-    bNH = get_def_bond_length(&ptype[F_BONDS], at, aN, param->AI);
-    aCNH= get_def_angle(&ptype[F_ANGLES], at, param->AJ, aN, param->AI);
+    bCN = get_def_bond_length(ptype, at, param->AJ, aN);
+    bNH = get_def_bond_length(ptype, at, aN, param->AI);
+    aCNH= get_def_angle(ptype, at, param->AJ, aN, param->AI);
     
     /* calculate */
     dH  = bCN - bNH * cos(aCNH);
@@ -557,10 +583,10 @@ static bool calc_dum3out_param(t_params ptype[], t_atomtype *atype,
   } else {
     /* this is the general construction */
     
-    bij = get_def_bond_length(&ptype[F_BONDS], at, param->AI, param->AJ);
-    aijk= get_an_angle(nrang, angles, &ptype[F_ANGLES], at, 
+    bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
+    aijk= get_an_angle(nrang, angles, ptype, at, 
 		       param->AI, param->AJ, param->AK);
-    aijl= get_an_angle(nrang, angles, &ptype[F_ANGLES], at,
+    aijl= get_an_angle(nrang, angles, ptype, at,
 		       param->AI, param->AJ, param->AL);
     akjl= get_angle(nrang, angles, param->AK, param->AJ, param->AL);
   
@@ -600,15 +626,15 @@ static bool calc_dum4fd_param(t_params ptype[], t_param *param, t_atoms *at,
   real bij,bjk,bjl,bjm,aijk,aijl,aijm,akjm,akjl;
   real pk,pl,pm,cosakl,cosakm,sinakl,sinakm,cl,cm;
   
-  bij = get_def_bond_length(&ptype[F_BONDS], at, param->AI, param->AJ);
+  bij = get_def_bond_length(ptype, at, param->AI, param->AJ);
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
   bjm = get_bond_length(nrbond, bonds, param->AJ, param->AM);
-  aijk= get_an_angle(nrang, angles, &ptype[F_ANGLES], at, 
+  aijk= get_an_angle(nrang, angles, ptype, at, 
 		     param->AI, param->AJ, param->AK);
-  aijl= get_an_angle(nrang, angles, &ptype[F_ANGLES], at,
+  aijl= get_an_angle(nrang, angles, ptype, at,
 		     param->AI, param->AJ, param->AL);
-  aijm= get_an_angle(nrang, angles, &ptype[F_ANGLES], at,
+  aijm= get_an_angle(nrang, angles, ptype, at,
 		     param->AI, param->AJ, param->AM);
   akjm= get_angle(nrang, angles, param->AK, param->AJ, param->AM);
   akjl= get_angle(nrang, angles, param->AK, param->AJ, param->AL);

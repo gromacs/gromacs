@@ -41,14 +41,16 @@ extern void do_dummies(int nrtp, t_restp rtp[],
 		       t_atomtype *atype, real mHmult, 
 		       t_atoms *at, t_symtab *symtab, rvec *x[], 
 		       t_params plist[], t_params *newbonds,
-		       int *dummy_type[], int *cgnr[]);
+		       int *dummy_type[], int *cgnr[],
+		       int fbonds);
 
 extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult);
 
 extern void clean_dum_bonds(t_params *ps, int dummy_type[]);
 
 extern void clean_dum_angles(t_params *ps, int natom, 
-			     t_params *plist, int dummy_type[]);
+			     t_params *plist, int dummy_type[],
+			     int fbonds);
 
 extern void clean_dum_dihs(t_params *ps, int natom, char dihname[], 
 			   t_params *plist, int dummy_type[]);

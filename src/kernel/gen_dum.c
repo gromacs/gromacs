@@ -157,9 +157,10 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[])
 static void add_dum_param(t_params plist[], t_params *newbonds, 
 			  int dummy_type[], 
 			  int Heavy, int nrHatoms, int Hatoms[], 
-			  int nrheavies, int heavies[], char ***atomname)
+			  int nrheavies, int heavies[], char ***atomname,
+			  int fbond)
 {
-  int i,j,ftype,other,moreheavy;
+  int i,j,ftype,other,moreheavy,bb;
   bool bSwapParity;
   
   for(i=0; i<nrHatoms; i++) {
@@ -167,55 +168,57 @@ static void add_dum_param(t_params plist[], t_params *newbonds,
     bSwapParity = (ftype<0);
     ftype=abs(ftype);
     dummy_type[Hatoms[i]]=ftype;
-    switch (ftype) {
-    case F_BONDS:
+    if (ftype == fbond) {
       if ( (nrheavies != 1) && (nrHatoms != 1) )
 	fatal_error(0,"cannot make bond in add_dum_param for %d heavy atoms "
 		    "and %d hydrogen atoms",nrheavies,nrHatoms);
       add_param(newbonds,Hatoms[i],heavies[0],NULL,NULL);
-      break;
-    case F_DUMMY3:
-    case F_DUMMY3FD:
-    case F_DUMMY3OUT:
-      if (nrheavies < 2) 
-	fatal_error(0,"Not enough heavy atoms (%d) for %s (min 3)",nrheavies+1,
+    }
+    else {
+      switch (ftype) {
+      case F_DUMMY3:
+      case F_DUMMY3FD:
+      case F_DUMMY3OUT:
+	if (nrheavies < 2) 
+	  fatal_error(0,"Not enough heavy atoms (%d) for %s (min 3)",nrheavies+1,
 		    interaction_function[dummy_type[Hatoms[i]]].name);
-      add_dum3_param(&plist[ftype],Hatoms[i],Heavy,heavies[0],heavies[1],
-		     bSwapParity);
-      break;
-    case F_DUMMY3FAD: {
-      if (nrheavies > 1)
-	moreheavy=heavies[1];
-      else {
-	/* find more heavy atoms */
-	other=moreheavy=NOTSET;
-	for(j=0; (j<plist[F_BONDS].nr) && (moreheavy==NOTSET); j++) {
-	  if (plist[F_BONDS].param[j].AI==heavies[0])
-	    other=plist[F_BONDS].param[j].AJ;
-	  else if (plist[F_BONDS].param[j].AJ==heavies[0])
-	    other=plist[F_BONDS].param[j].AI;
-	  if ( (other != NOTSET) && (other != Heavy) ) 
-	    moreheavy=other;
+	add_dum3_param(&plist[ftype],Hatoms[i],Heavy,heavies[0],heavies[1],
+		       bSwapParity);
+	break;
+      case F_DUMMY3FAD: {
+	if (nrheavies > 1)
+	  moreheavy=heavies[1];
+	else {
+	  /* find more heavy atoms */
+	  other=moreheavy=NOTSET;
+	  for(j=0; (j<plist[fbond].nr) && (moreheavy==NOTSET); j++) {
+	    if (plist[fbond].param[j].AI==heavies[0])
+	      other=plist[fbond].param[j].AJ;
+	    else if (plist[fbond].param[j].AJ==heavies[0])
+	      other=plist[fbond].param[j].AI;
+	    if ( (other != NOTSET) && (other != Heavy) ) 
+	      moreheavy=other;
+	  }
+	  if (moreheavy==NOTSET)
+	    fatal_error(0,"Unbound molecule part %d-%d",Heavy+1,Hatoms[0]+1);
 	}
-	if (moreheavy==NOTSET)
-	  fatal_error(0,"Unbound molecule part %d-%d",Heavy+1,Hatoms[0]+1);
+	add_dum3_param(&plist[ftype],Hatoms[i],Heavy,heavies[0],moreheavy,
+		       bSwapParity);
+	break;
       }
-      add_dum3_param(&plist[ftype],Hatoms[i],Heavy,heavies[0],moreheavy,
-		     bSwapParity);
-      break;
-    }
-    case F_DUMMY4FD: {
-      if (nrheavies < 3) 
-	fatal_error(0,"Not enough heavy atoms (%d) for %s (min 4)",nrheavies+1,
+      case F_DUMMY4FD: {
+	if (nrheavies < 3) 
+	  fatal_error(0,"Not enough heavy atoms (%d) for %s (min 4)",nrheavies+1,
+		      interaction_function[dummy_type[Hatoms[i]]].name);
+	add_dum4_param(&plist[ftype],  
+		       Hatoms[0], Heavy, heavies[0], heavies[1], heavies[2]);
+	break;
+      }
+      default:
+	fatal_error(0,"can't use add_dum_param for interaction function %s",
 		    interaction_function[dummy_type[Hatoms[i]]].name);
-      add_dum4_param(&plist[ftype],  
-		     Hatoms[0], Heavy, heavies[0], heavies[1], heavies[2]);
-      break;
-    }
-    default:
-      fatal_error(0,"can't use add_dum_param for interaction function %s",
-		  interaction_function[dummy_type[Hatoms[i]]].name);
-    } /* switch ftype */
+      } /* switch ftype */
+    } /* else */
   } /* for i */
 }
 
@@ -260,11 +263,12 @@ void do_dummies(int nrtp, t_restp rtp[],
 		t_atomtype *atype, real mHmult, 
 		t_atoms *at, t_symtab *symtab, rvec *x[], 
 		t_params plist[], t_params *newbonds, 
-		int *dummy_type[], int *cgnr[])
+		int *dummy_type[], int *cgnr[],
+		int fbonds)
 {
   int  ftype,i,j,k,i0,nrbonds,nrHatoms,Heavy,nrheavies,add_shift;
   int  nral,ndum,nadd,tpM,tpHeavy;
-  int  Hatoms[4],heavies[4];
+  int  Hatoms[4],heavies[4],bb;
   bool bWARNING,bAddDumParam,bFirstWater;
   real mHtot,mtot,fact,fact2;
   rvec rpar,rperp,temp;
@@ -301,7 +305,7 @@ void do_dummies(int nrtp, t_restp rtp[],
     if ( ((*dummy_type)[i]==NOTSET) && is_hydrogen(*(at->atomname[i]))) {
       /* find heavy atom, count #bonds from it and #H atoms bound to it
 	 and return H atom numbers (Hatoms) and heavy atom numbers (heavies) */
-      count_bonds(i, &plist[F_BONDS], at->atomname, 
+      count_bonds(i, &plist[fbonds], at->atomname, 
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
       tpHeavy=get_atype(Heavy,at,nrtp,rtp);
@@ -312,14 +316,15 @@ void do_dummies(int nrtp, t_restp rtp[],
       if (nrHatoms == 1) {
 	switch(nrbonds) {
 	case 2: /* -O-H */
-	  (*dummy_type)[i]=F_BONDS;
+	  /* Bond type is set to be either G96BONDS or BONDS in pdb2top */
+	  (*dummy_type)[i]=fbonds;
 	  break;
 	case 3: /* =CH-, -NH- or =NH+- */
 	  (*dummy_type)[i]=F_DUMMY3FD;
 	  break;
 	case 4: /* --CH- (tert) */
 	  (*dummy_type)[i]=F_DUMMY4FD;
-	break;
+	  break;
 	default: /* nrbonds != 2, 3 or 4 */
 	  bWARNING=TRUE;
 	}
@@ -448,7 +453,7 @@ void do_dummies(int nrtp, t_restp rtp[],
 	   also get rid of negative dummy_types */
  	add_dum_param(plist, newbonds, 
 		      (*dummy_type), Heavy, nrHatoms, Hatoms,
- 		      nrheavies, heavies, at->atomname);
+ 		      nrheavies, heavies, at->atomname,fbonds);
 	/* transfer mass of dummy atom to Heavy atom */
 	for(j=0; j<nrHatoms; j++) 
 	  if (is_dum((*dummy_type)[Hatoms[j]])) {
@@ -503,7 +508,7 @@ void do_dummies(int nrtp, t_restp rtp[],
     /* this is so we don't have to write the same code for newbonds */
     if (ftype==F_NRE) {
       params=newbonds;
-      nral=NRAL(F_BONDS);
+      nral=NRAL(fbonds);
     } else {
       params=&(plist[ftype]);
       nral=NRAL(ftype);
@@ -568,7 +573,8 @@ void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult)
 }
 
 void clean_dum_angles(t_params *psa, int natom, 
-		      t_params *plist, int dummy_type[])
+		      t_params *plist, int dummy_type[],
+		      int fbonds)
 {
   int      ftype,i,j,parnr,k,l,m,n,ndum,kept_i,dumnral,dumtype;
   atom_id  atom,constr,at1,at2;
@@ -649,12 +655,12 @@ void clean_dum_angles(t_params *psa, int natom,
 	at1 = dumatoms[m];
 	at2 = dumatoms[(m+1) % dumnral];
 	bPresent=FALSE;
-	for (parnr=0; parnr<plist[F_BONDS].nr && !bPresent; parnr++)
+	for (parnr=0; (parnr<plist[fbonds].nr) && !bPresent; parnr++)
 	  /* all bonds until one matches */
-	  bPresent = ( ( (plist[F_BONDS].param[parnr].AI == at1) &&
-			 (plist[F_BONDS].param[parnr].AJ == at2) ) || 
-		       ( (plist[F_BONDS].param[parnr].AI == at2) &&
-			 (plist[F_BONDS].param[parnr].AJ == at1) ) );
+	  bPresent = ( ( (plist[fbonds].param[parnr].AI == at1) &&
+			 (plist[fbonds].param[parnr].AJ == at2) ) || 
+		       ( (plist[fbonds].param[parnr].AI == at2) &&
+			 (plist[fbonds].param[parnr].AJ == at1) ) );
 	if (!bPresent)
 	  bKeep=TRUE;
       }
