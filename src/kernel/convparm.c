@@ -111,15 +111,12 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_CONNBONDS:
     break;
   case F_POLARIZATION:
-    new->harmonic.rA = old[0];
-    new->harmonic.rB = old[0];
-    new->harmonic.krA= old[1];
-    new->harmonic.krB= old[1];
+    new->polarize.alpha = old[0];
     break;
   case F_WATER_POL:
-    new->wpol.kx     =old[0];
-    new->wpol.ky     =old[1];
-    new->wpol.kz     =old[2];
+    new->wpol.al_x   =old[0];
+    new->wpol.al_y   =old[1];
+    new->wpol.al_z   =old[2];
     new->wpol.rOH    =old[3];
     new->wpol.rHH    =old[4];
     new->wpol.rOD    =old[5];

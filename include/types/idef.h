@@ -122,7 +122,8 @@ typedef union
   struct {real r1e,r2e,krr;                                } cross_bb;
   struct {real r1e,r2e,r3e,krt;                            } cross_ba;
   struct {real theta,ktheta,r13,kUB;                       } u_b;
-  struct {real kx,ky,kz,rOH,rHH,rOD;                       } wpol;
+  struct {real alpha;                                      } polarize;
+  struct {real al_x,al_y,al_z,rOH,rHH,rOD;                 } wpol;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
   /* Proper dihedrals can not have different multiplicity when

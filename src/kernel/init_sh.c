@@ -38,6 +38,7 @@
 #include "smalloc.h"
 #include "assert.h"
 #include "names.h"
+#include "vec.h"
 	
 static void pr_shell(FILE *log,int ns,t_shell s[])
 {
@@ -64,10 +65,14 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   int         *shell_index;
   int         n[eptNR],ns,nsi;
   int         i,j,type,ftype,nra;
-  int         pt1,pt2,a1,a2;
+  real        qS,alpha;
+  int         aS,aN; /* Shell and nucleus */
+  int         bondtypes[] = { F_BONDS, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
+#define NBT asize(bondtypes)
   bool        bS1,bS2;
   t_iatom     *ia;
 
+  /* Count number of shells, and find their indices */
   for(i=0; (i<eptNR); i++)
     n[i]=0;
   snew(shell_index,homenr);
@@ -78,8 +83,10 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       shell_index[i-start] = nsi++;
   }
   if (nsi != n[eptShell])
-    fatal_error(0,"Your number of shells %d is not equal to the number of shells %d",nsi,n[eptShell]);
-  
+    fatal_error(0,"Your number of shells %d is not equal to the number of shells %d",
+		nsi,n[eptShell]);
+
+  /* Print the number of each particle type */  
   for(i=0; (i<eptNR); i++)
     if (n[i]!=0)
       fprintf(log,"There are: %d %s\n",n[i],ptype_str[i]);
@@ -102,134 +109,88 @@ t_shell *init_shells(FILE *log,int start,int homenr,
     
     /* Now fill the structures */
     ns=0;
-    ia=idef->il[F_BONDS].iatoms;
-    for(i=0; (i<idef->il[F_BONDS].nr); ) {
-      type  = ia[0];
-      ftype = idef->functype[type];
-      nra   = interaction_function[ftype].nratoms;
-      
-      /* Check whether we have a bond */
-      
-      if (md->ptype[ia[1]] == eptShell) {
-	a1 = ia[1];
-	a2 = ia[2];
-      }
-      else if (md->ptype[ia[2]] == eptShell) {
-	a1 = ia[2];
-	a2 = ia[1];
-      }
-      else {
-	i  += nra+1;
+    for(j=0; (j<NBT); j++) {
+      ia=idef->il[bondtypes[j]].iatoms;
+      for(i=0; (i<idef->il[bondtypes[j]].nr); ) {
+	type  = ia[0];
+	ftype = idef->functype[type];
+	nra   = interaction_function[ftype].nratoms;
+	
+	/* Check whether we have a bond with a shell */
+	aS = NO_ATID;
+	
+	switch (bondtypes[j]) {
+	case F_BONDS:
+	case F_CUBICBONDS:
+	case F_POLARIZATION:
+	  if (md->ptype[ia[1]] == eptShell) {
+	    aS = ia[1];
+	    aN = ia[2];
+	  }
+	  else if (md->ptype[ia[2]] == eptShell) {
+	    aS = ia[2];
+	    aN = ia[1];
+	  }
+	  break;
+	case F_WATER_POL:
+	  aN    = ia[4];  /* Dummy */
+	  aS    = ia[5];  /* Shell */
+	  break;
+	default:
+	  fatal_error(0,"Death Horror: %s, %d",__FILE__,__LINE__);
+	}
+
+	if (aS != NO_ATID) {	  
+	  qS = md->chargeT[aS];
+	  
+	  /* Check whether one of the particles is a shell... */
+	  nsi = shell_index[aS-start];
+	  if ((nsi < 0) || (nsi >= *nshell))
+	    fatal_error(0,"nsi is %d should be within 0 - %d. aS = %d",
+			nsi,*nshell,aS);
+	  if (shell[nsi].shell == NO_ATID) {
+	    shell[nsi].shell = aS;
+	    ns ++;
+	  }
+	  else if (shell[nsi].shell != aS)
+	    fatal_error(0,"Weird stuff in %s, %d",__FILE__,__LINE__);
+	  
+	  if      (shell[nsi].nucl1 == NO_ATID)
+	    shell[nsi].nucl1 = aN;
+	  else if (shell[nsi].nucl2 == NO_ATID)
+	    shell[nsi].nucl2 = aN;
+	  else if (shell[nsi].nucl3 == NO_ATID)
+	    shell[nsi].nucl3 = aN;
+	  else {
+	    pr_shell(log,ns,shell);
+	    fatal_error(0,"Can not handle more than three bonds per shell\n");
+	  }
+	  switch (bondtypes[j]) {
+	  case F_BONDS:
+	    shell[nsi].k    += idef->iparams[type].harmonic.krA;
+	    break;
+	  case F_CUBICBONDS:
+	    shell[nsi].k    += idef->iparams[type].cubic.kb;
+	    break;
+	  case F_POLARIZATION:
+	    shell[nsi].k    += sqr(qS)/idef->iparams[type].polarize.alpha;
+	  break;
+	  case F_WATER_POL:
+	    alpha          = (idef->iparams[type].wpol.al_x+
+			      idef->iparams[type].wpol.al_y+
+			      idef->iparams[type].wpol.al_z)/3.0;
+	    shell[nsi].k  += sqr(qS)/alpha;
+	    break;
+	  default:
+	    fatal_error(0,"Death Horror: %s, %d",__FILE__,__LINE__);
+	  }
+	  shell[nsi].nnucl++;
+	}
 	ia += nra+1;
-	continue;
-      }
-      /* Check whether one of the particles is a shell... */
-      nsi = shell_index[a1-start];
-      if ((nsi < 0) || (nsi >= *nshell))
-	fatal_error(0,"nsi is %d should be within 0 - %d. a1 = %d",
-		    nsi,*nshell,a1);
-      if (shell[nsi].shell == NO_ATID) {
-	shell[nsi].shell = a1;
-	ns ++;
-      }
-      else if (shell[nsi].shell != a1)
-	fatal_error(0,"What is this?");
-      
-      if      (shell[nsi].nucl1 == NO_ATID)
-	shell[nsi].nucl1 = a2;
-      else if (shell[nsi].nucl2 == NO_ATID)
-	shell[nsi].nucl2 = a2;
-      else if (shell[nsi].nucl3 == NO_ATID)
-	shell[nsi].nucl3 = a2;
-      else {
-	pr_shell(log,ns,shell);
-	fatal_error(0,"Can not handle more than three bonds per shell\n");
-      }
-      shell[nsi].k    += idef->iparams[type].harmonic.krA;
-      shell[nsi].nnucl++;
-      
-      ia += nra+1;
-      i  += nra+1;
-    }
-    ia=idef->il[F_CUBICBONDS].iatoms;
-    for(i=0; (i<idef->il[F_CUBICBONDS].nr); ) {
-      type  = ia[0];
-      ftype = idef->functype[type];
-      nra   = interaction_function[ftype].nratoms;
-      
-      /* Check whether we have a bond */
-      
-      if (md->ptype[ia[1]] == eptShell) {
-	a1 = ia[1];
-	a2 = ia[2];
-      }
-      else if (md->ptype[ia[2]] == eptShell) {
-	a1 = ia[2];
-	a2 = ia[1];
-      }
-      else {
 	i  += nra+1;
-	ia += nra+1;
-	continue;
       }
-      /* Check whether one of the particles is a shell... */
-      nsi = shell_index[a1-start];
-      if ((nsi < 0) || (nsi >= *nshell))
-	fatal_error(0,"nsi is %d should be within 0 - %d. a1 = %d",
-		    nsi,*nshell,a1);
-      if (shell[nsi].shell == NO_ATID) {
-	shell[nsi].shell = a1;
-	ns ++;
-      }
-      else if (shell[nsi].shell != a1)
-	fatal_error(0,"What is this?");
-      
-      if      (shell[nsi].nucl1 == NO_ATID)
-	shell[nsi].nucl1 = a2;
-      else if (shell[nsi].nucl2 == NO_ATID)
-	shell[nsi].nucl2 = a2;
-      else if (shell[nsi].nucl3 == NO_ATID)
-	shell[nsi].nucl3 = a2;
-      else {
-	pr_shell(log,ns,shell);
-	fatal_error(0,"Can not handle more than three bonds per shell\n");
-      }
-      shell[nsi].k    += idef->iparams[type].cubic.kb;
-      shell[nsi].nnucl++;
-      
-      ia += nra+1;
-      i  += nra+1;
     }
-    ia = idef->il[F_WATER_POL].iatoms;
-    for(i=0; (i<idef->il[F_WATER_POL].nr); ) {
-      type  = ia[0];
-      ftype = idef->functype[type];
-      nra   = interaction_function[ftype].nratoms;
-      
-      a1    = ia[1]+4;  /* Shell */
-      a2    = ia[1]+3;  /* Dummy */
-      
-      /* Check whether one of the particles is a shell... */
-      nsi = shell_index[a1-start];
-      if ((nsi < 0) || (nsi >= *nshell))
-	fatal_error(0,"nsi is %d should be within 0 - %d. a1 = %d",
-		    nsi,*nshell,a1);
-      if (shell[nsi].shell == NO_ATID) {
-	shell[nsi].shell = a1;
-	ns ++;
-      }
-      else if (shell[nsi].shell != a1)
-	fatal_error(0,"What is this? shell=%d, a1=%d",shell[nsi].shell,a1);
-      
-      shell[nsi].nucl1 = a2;
-      shell[nsi].k     = (idef->iparams[type].wpol.kx+
-			  idef->iparams[type].wpol.ky+
-			  idef->iparams[type].wpol.kz)/3.0;
-      shell[nsi].nnucl++;
-      
-      ia += nra+1;
-      i  += nra+1;
-    }
+
     /* Verify whether it's all correct */
     if (ns != *nshell)
       fatal_error(0,"Something weird with shells. They may not be bonded to something");
@@ -240,7 +201,6 @@ t_shell *init_shells(FILE *log,int start,int homenr,
     if (debug)
       pr_shell(debug,ns,shell);
   }
-  if (*nshell > 0)  fatal_error(0,"Shell code temporarily out of order!");
   
   return shell;
 }

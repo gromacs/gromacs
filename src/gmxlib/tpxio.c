@@ -553,7 +553,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_IDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
-  case F_POLARIZATION:
     do_harm(iparams,bRead);
     break;
   case F_CROSS_BOND_BONDS:
@@ -590,10 +589,13 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_CONNBONDS:
     break;
+  case F_POLARIZATION:
+    do_real(iparams->polarize.alpha);
+    break;
   case F_WATER_POL:
-    do_real(iparams->wpol.kx);
-    do_real(iparams->wpol.ky);
-    do_real(iparams->wpol.kz);
+    do_real(iparams->wpol.al_x);
+    do_real(iparams->wpol.al_y);
+    do_real(iparams->wpol.al_z);
     do_real(iparams->wpol.rOH);
     do_real(iparams->wpol.rHH);
     do_real(iparams->wpol.rOD);

@@ -71,6 +71,8 @@ int ifunc_index(directive d,int type)
       return F_CROSS_BOND_BONDS;
     else if (type == 4)
       return F_CROSS_BOND_ANGLES;
+    else if (type == 5)
+      return F_UREY_BRADLEY;
     else
       fatal_error(0,"Invalid angle type %d",type);
   case d_pairs:
@@ -132,21 +134,14 @@ int ifunc_index(directive d,int type)
     case 1:
       return F_POSRES;
     case 2:
-      fprintf(stderr,"WARNING: Water polarization should now be listed under "
-	      "[ polarization ]\n");
-      return F_WATER_POL;
+      fatal_error(0,"Water polarization should now be listed under [ water_polarization ]\n");
     default:
       fatal_error(0,"Invalid position restraint type %d",type);
     }
   case d_polarization:
-    switch (type) {
-    case 1:
-      return F_POLARIZATION;
-    case 2:
-      return F_WATER_POL;
-    default:
-      fatal_error(0,"Invalid polarization type %d",type);
-    }
+    return F_POLARIZATION;
+  case d_water_polarization:
+    return F_WATER_POL;
   case d_angle_restraints:
     return F_ANGRES;
   case d_angle_restraints_z:
@@ -226,6 +221,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_pairs]),d_atoms,d_none);
     set_nec(&(necessary[d_angles]),d_atoms,d_none);
     set_nec(&(necessary[d_polarization]),d_atoms,d_none);
+    set_nec(&(necessary[d_water_polarization]),d_atoms,d_none);
     set_nec(&(necessary[d_dihedrals]),d_atoms,d_none);
     set_nec(&(necessary[d_constraints]),d_atoms,d_none);
     set_nec(&(necessary[d_settles]),d_atoms,d_none);

@@ -335,6 +335,52 @@ real bonds(int nbonds,
   return vtot;
 }
 
+real polarize(int nbonds,
+	      t_iatom forceatoms[],t_iparams forceparams[],
+	      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	      matrix box,real lambda,real *dvdlambda,
+	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+	      t_fcdata *fcd)
+{
+  int  i,m,ki,ai,aj,type;
+  real dr,dr2,fbond,vbond,fij,vtot,ksh;
+  rvec dx;
+  ivec dt;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ksh  = sqr(md->chargeT[aj])/forceparams[type].polarize.alpha;
+  
+    ki   = pbc_rvec_sub(x[ai],x[aj],dx);	/*   3 		*/
+    dr2  = iprod(dx,dx);			/*   5		*/
+    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+
+    *dvdlambda += harmonic(ksh,ksh,0,0,dr,lambda,&vbond,&fbond);  /*  19  */
+
+    if (dr2 == 0.0)
+      continue;
+    
+    vtot  += vbond;/* 1*/
+    fbond *= invsqrt(dr2);			/*   6		*/
+
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki=IVEC2IS(dt);
+    }
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fij=fbond*dx[m];
+      f[ai][m]+=fij;
+      f[aj][m]-=fij;
+      fr->fshift[ki][m]+=fij;
+      fr->fshift[CENTRAL][m]-=fij;
+    }
+  }					/* 59 TOTAL	*/
+  return vtot;
+}
+
 real water_pol(int nbonds,
 	       t_iatom forceatoms[],t_iparams forceparams[],
 	       rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
@@ -346,21 +392,23 @@ real water_pol(int nbonds,
    * a shell connected to a dummy with spring constant that differ in the
    * three spatial dimensions in the molecular frame.
    */
-  int  i,m,aO,aH1,aH2,aD,aS,type;
+  int  i,m,aO,aH1,aH2,aD,aS,type,type0;
   rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx,proj;
 #ifdef DEBUG
   rvec df;
 #endif
-  real vtot,fij,r_HH,r_OD,r_nW,tx,ty,tz;
+  real vtot,fij,r_HH,r_OD,r_nW,tx,ty,tz,qS;
   
   vtot = 0.0;
   if (nbonds > 0) {
-    type   = forceatoms[0];
-    kk[XX] = forceparams[type].wpol.kx;
-    kk[YY] = forceparams[type].wpol.ky;
-    kk[ZZ] = forceparams[type].wpol.kz;
-    r_HH   = 1.0/forceparams[type].wpol.rHH;
-    r_OD   = 1.0/forceparams[type].wpol.rOD;
+    type0  = forceatoms[0];
+    aS     = forceatoms[i+5];
+    qS     = md->chargeT[aS];
+    kk[XX] = sqr(qS)/forceparams[type0].wpol.al_x;
+    kk[YY] = sqr(qS)/forceparams[type0].wpol.al_y;
+    kk[ZZ] = sqr(qS)/forceparams[type0].wpol.al_z;
+    r_HH   = 1.0/forceparams[type0].wpol.rHH;
+    r_OD   = 1.0/forceparams[type0].wpol.rOD;
     if (debug) {
       fprintf(debug,"WPOL: kk  = %10.3f        %10.3f        %10.3f\n",
 	      kk[XX],kk[YY],kk[ZZ]);
@@ -369,13 +417,16 @@ real water_pol(int nbonds,
 	      forceparams[type].wpol.rHH,
 	      forceparams[type].wpol.rOD);
     }
-    for(i=0; (i<nbonds); ) {
-      type = forceatoms[i++];
-      aO   = forceatoms[i++];
-      aH1  = aO+1;
-      aH2  = aO+2;
-      aD   = aO+3;
-      aS   = aO+4;
+    for(i=0; (i<nbonds); i+=6) {
+      type = forceatoms[i];
+      if (type != type0)
+	fatal_error(0,"Sorry, type = %d, type0 = %d, file = %s, line = %d",
+		    type,type0,__FILE__,__LINE__);
+      aO   = forceatoms[i+1];
+      aH1  = forceatoms[i+2];
+      aH2  = forceatoms[i+3];
+      aD   = forceatoms[i+4];
+      aS   = forceatoms[i+5];
       
       /* Compute vectors describing the water frame */
       rvec_sub(x[aH1],x[aO], dOH1);

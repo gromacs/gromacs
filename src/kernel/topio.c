@@ -434,9 +434,6 @@ static char **read_topol(char        *infile,
 	  push_dihedraltype(d,plist,batype->atomname,batype->nr,pline);
 	  break;
 #undef PUSHBT
-	case d_polarization:
-	  fprintf(stderr,"WARNING: Reading polarization not yet implemented.\n");
-	  break;
 	case d_nonbond_params:
 	  push_nbt(d,nbparam,atype,pline,nb_funct);
 	  break;
@@ -502,9 +499,10 @@ static char **read_topol(char        *infile,
 	case d_orientation_restraints:
 	case d_dihedral_restraints:
 	case d_dihedrals:
+	case d_polarization:
+	case d_water_polarization:
 	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,bGenPairs);
 	  break;
-
 	case d_exclusions:
 	  if (!block2[nmol-1].nr)
 	    init_block2(&(block2[nmol-1]),mi0->atoms.nr);

@@ -104,7 +104,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
   extern t_ifunc bonds,g96bonds,morsebonds,cubicbonds;
   extern t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley;
   extern t_ifunc pdihs,idihs,rbdihs;
-  extern t_ifunc water_pol,posres,angres,angresz,do_14,unimplemented;
+  extern t_ifunc polarize,water_pol,posres,angres,angresz,do_14,unimplemented;
 
 #ifdef CPLUSPLUS
 }
