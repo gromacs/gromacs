@@ -84,7 +84,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   tensor force_vir,shake_vir;
   int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
-  FILE   *fp_dvdl;
   int    i,m,start,end,niti;
   /* not used */
   real   terminate=0;
