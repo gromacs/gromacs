@@ -383,7 +383,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     parm->ir.delta_t = timestep;
     
     update(nsb->natoms,START(nsb),HOMENR(nsb),
-	   step,lambda,&ener[F_DVDL],&(parm->ir),FALSE,
+	   step,lambda,&ener[F_DVDL],&(parm->ir),
 	   mdatoms,x,graph,
 	   fr->shift_vec,fbuf[next],buf,vold,v,vt,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata);
@@ -443,7 +443,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   step,parm->ir.ntcmemory);
     
     /* Calculate pressure ! */
-    calc_pres(parm->box,parm->ekin,parm->vir,parm->pres,
+    calc_pres(parm->ir.eBox,parm->box,parm->ekin,parm->vir,parm->pres,
 	      EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */

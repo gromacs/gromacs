@@ -111,7 +111,8 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	a2 = ia[1];
       }
       else {
-	i += nra+1;
+	i  += nra+1;
+	ia += nra+1;
 	continue;
       }
       /* Check whether one of the particles is a shell... */

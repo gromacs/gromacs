@@ -49,7 +49,8 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
   }
 }
 
-static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,int ns,t_shell s[],
+static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
+			   int ns,t_shell s[],
 			   real mass[],bool bInit)
 {
   int  i,m,s1,n1,n2,n3;
@@ -146,11 +147,14 @@ static real rms_force(rvec f[],int ns,t_shell s[])
 
 static void check_pbc(FILE *fp,rvec x[],int shell)
 {
-  int m;
+  int m,now;
   
+  now = shell-4;
   for(m=0; (m<DIM); m++)
-    if (fabs(x[shell][m]-x[shell-3][m]) > 0.3)
-      pr_rvecs(fp,0,"SHELL-X",x+(4*(shell / 4)),4);
+    if (fabs(x[shell][m]-x[now][m]) > 0.3) {
+      pr_rvecs(fp,0,"SHELL-X",x+now,5);
+      break;
+    }
 }
 
 static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
@@ -245,7 +249,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   step0        = 1.0;
 
   /* Do a prediction of the shell positions */
-  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
+  predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,
+		 md->massT,(mdstep == 0));
    
   /* Calculate the forces first time around */
   if (bOptim)
