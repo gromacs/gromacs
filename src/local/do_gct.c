@@ -216,46 +216,7 @@ static void pr_dev(real t,real dev[eoNR],t_commrec *cr,int nfile,t_filenm fnm[])
   fflush(fp);
 }
 
-static void upd_nbfplj(FILE *log,t_coupl_LJ *tclj,
-		       real **nbfp,int ati,int atj,int atnr,real f6,real f12)
-{
-  int n;
-  
-  /* update the nonbonded force parameters */
-  if (atj != -1) {
-    C6 (nbfp,ati,atj) *= f6;
-    C12(nbfp,ati,atj) *= f12;
-    C6 (nbfp,atj,ati) *= f6;
-    C12(nbfp,atj,ati) *= f12;
-    
-    /* Save for printing */
-    tclj->c6  = C6(nbfp,ati,atj);
-    tclj->c12 = C12(nbfp,ati,atj);
-  }
-  else {
-    /* To implement *GEOMETRIC* mixing rules, the factors on the force
-     * constants must be rooted first. This way the parameters
-     * on the diagonal will be multiplied by the full constant.
-     */
-    f6  = sqrt(f6);
-    f12 = sqrt(f12);
-    
-    if (debug)
-      fprintf(debug,"Updating LJ-FF for %d entries, f6=%g, f12=%g\n",atnr,f6,f12);
-    
-    for(n=0; (n<atnr); n++) {
-      C6 (nbfp,ati,n) *= f6;
-      C12(nbfp,ati,n) *= f12;
-      C6 (nbfp,n,ati) *= f6;
-      C12(nbfp,n,ati) *= f12;
-    }
-    /* Save diagonal elements for printing */
-    tclj->c6  = C6 (nbfp,ati,ati);
-    tclj->c12 = C12(nbfp,ati,ati);
-  }
-}
-
-static void upd_nbfplj2(FILE *log,real **nbfp,int atnr,real f6[],real f12[])
+static void upd_nbfplj(FILE *log,real **nbfp,int atnr,real f6[],real f12[])
 {
   int n,m,k;
   
@@ -268,7 +229,8 @@ static void upd_nbfplj2(FILE *log,real **nbfp,int atnr,real f6[],real f12[])
   }
 }
 
-static void upd_nbfpbu2(FILE *log,real **nbfp,int atnr,real fa[],real fb[],real fc[])
+static void upd_nbfpbu(FILE *log,real **nbfp,int atnr,
+			real fa[],real fb[],real fc[])
 {
   int n,m,k;
   
@@ -279,53 +241,6 @@ static void upd_nbfpbu2(FILE *log,real **nbfp,int atnr,real fa[],real fb[],real 
       (nbfp)[n][3*m+1] *= fb[k];
       (nbfp)[n][3*m+2] *= fc[k];
     }
-  }
-}
-
-static void upd_nbfpbu(FILE *log,t_coupl_BU *tcbu,
-		       real **nbfp,int ati,int atj,int atnr,
-		       real fa,real fb,real fc)
-{
-  int n;
-  
-  /* update the nonbonded force parameters */
-  if (atj != -1) {
-    (nbfp)[(ati)][3*(atj)]   *= fa;
-    (nbfp)[(ati)][3*(atj)+1] *= fb;
-    (nbfp)[(ati)][3*(atj)+2] *= fc;
-    (nbfp)[(atj)][3*(ati)]   *= fa;
-    (nbfp)[(atj)][3*(ati)+1] *= fb;
-    (nbfp)[(atj)][3*(ati)+2] *= fc;
-    
-    /* Save for printing */
-    tcbu->a = (nbfp)[(ati)][3*(atj)];
-    tcbu->b = (nbfp)[(ati)][3*(atj)+1];
-    tcbu->c = (nbfp)[(ati)][3*(atj)+2];
-  }
-  else {
-    /* To implement *GEOMETRIC* mixing rules, the factors on the force
-     * constants must be rooted first. This way the parameters
-     * on the diagonal will be multiplied by the full constant.
-     */
-    fa  = sqrt(fa);
-    fb  = sqrt(fb);
-    fc  = sqrt(fc);
-    if (debug)
-      fprintf(debug,"Updating Buck-FF for %d entries, fa=%g, fb=%g, fc=%g\n",
-	      atnr,fa,fb,fc);
-    
-    for(n=0; (n<atnr); n++) {
-      (nbfp)[(ati)][3*(n)]   *= fa;
-      (nbfp)[(ati)][3*(n)+1] *= fb;
-      (nbfp)[(ati)][3*(n)+2] *= fc;
-      (nbfp)[(n)][3*(ati)]   *= fa;
-      (nbfp)[(n)][3*(ati)+1] *= fb;
-      (nbfp)[(n)][3*(ati)+2] *= fc;
-    }
-    /* Save diagonal elements for printing */
-    tcbu->a = (nbfp)[(ati)][3*(ati)];
-    tcbu->b = (nbfp)[(ati)][3*(ati)+1];
-    tcbu->c = (nbfp)[(ati)][3*(ati)+2];
   }
 }
 
@@ -370,6 +285,26 @@ void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
 #undef FMAX
 }
 
+real calc_deviation(real xav,real xt,real x0)
+{
+  real dev;
+  
+  /* This may prevent overshooting in GCT coupling... */
+  if (xav > x0) {
+    if (xt > x0)
+      dev = max(x0-xav,x0-xt);
+    else
+      dev = 0;
+  }
+  else {
+    if (xt < x0)
+      dev = min(x0-xav,x0-xt);
+    else
+      dev = 0;
+  }
+  return dev;
+}
+
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
@@ -385,7 +320,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   static bool bFirst = TRUE;
   
   int         i,j,ati,atj,atnr2,type,ftype;
-  real        deviation[eoNR];
+  real        deviation[eoNR],prdev[eoNR],epot0;
   real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind,Epol,Eintern;
   bool        bTest,bPrint;
   t_coupl_LJ  *tclj;
@@ -442,29 +377,32 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   if (bPrint)
     pr_ff(tcr,t,idef,ener,cr,nfile,fnm);
   
-  /* Calculate the deviation of average value from the target value */
-  deviation[eoPres] = tcr->pres0 - tcr->pres;
 
-  /* if dipole != 0.0 assume we want to use polarization corrected coupling */
+  /* If dipole != 0.0 assume we want to use polarization corrected coupling */
   if ((tcr->dipole) != 0.0) {
     mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
   
     Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
 
-    deviation[eoEpot] = (tcr->epot0 - Epol)*nmols - tcr->epot;
+    epot0 = (tcr->epot0 - Epol)*nmols;
     if (debug) {
       fprintf(debug,"mu_ind: %g (%g D) mu_aver: %g (%g D)\n",
 	      mu_ind,mu_ind*enm2Debye,mu_aver,mu_aver*enm2Debye);
-      fprintf(debug,"Eref %g Epol %g Erunav %g Dev %g Eact %g\n",
-	      (tcr->epot0)*nmols, Epol*nmols, tcr->epot,
-	      deviation[eoEpot],ener[F_EPOT]);
+      fprintf(debug,"Eref %g Epol %g Erunav %g Eact %g\n",
+	      (tcr->epot0)*nmols, Epol*nmols, tcr->epot,ener[F_EPOT]);
     }
   }
   else 
-    deviation[eoEpot] = tcr->epot0*nmols - tcr->epot;
+    epot0 = tcr->epot0*nmols;
+
+  /* Calculate the deviation of average value from the target value */
+  deviation[eoPres] = calc_deviation(tcr->pres,ener[F_PRES],tcr->pres0);
+  deviation[eoEpot] = calc_deviation(tcr->epot,Eintern,     epot0);
+  prdev[eoPres] = tcr->pres0 - ener[F_PRES];
+  prdev[eoEpot] = epot0      - Eintern;
   
   if (bPrint)
-    pr_dev(t,deviation,cr,nfile,fnm);
+    pr_dev(t,prdev,cr,nfile,fnm);
   
   /* First set all factors to 1 */
   for(i=0; (i<atnr2); i++) {
@@ -492,17 +430,12 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
       set_factor_matrix(idef->atnr,f12,sqrt(ff12),ati,atj);
       
-      /*f6  = min(max(f6, FMIN),FMAX);
-	f12 = min(max(f12,FMIN),FMAX);
-	
-	  upd_nbfplj(log,tclj,fr->nbfp,ati,atj,idef->atnr,f6,f12);
-      */
     }
     if (PAR(cr)) {
       gprod(cr,atnr2,f6);
       gprod(cr,atnr2,f12);
     }
-    upd_nbfplj2(log,fr->nbfp,idef->atnr,f6,f12);
+    upd_nbfplj(log,fr->nbfp,idef->atnr,f6,f12);
     
     /* Copy for printing */
     for(i=0; (i<tcr->nLJ); i++) {
@@ -529,18 +462,13 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       set_factor_matrix(idef->atnr,fa,sqrt(ffa),ati,atj);
       set_factor_matrix(idef->atnr,fa,sqrt(ffb),ati,atj);
       set_factor_matrix(idef->atnr,fc,sqrt(ffc),ati,atj);
-      /*fa  = min(max(fa, FMIN),FMAX);
-	fb  = min(max(fb, FMIN),FMAX);
-	fc  = min(max(fc, FMIN),FMAX);
-	upd_nbfpbu(log,tcbu,fr->nbfp,ati,atj,idef->atnr,fa,fb,fc);
-      */
     }
     if (PAR(cr)) {
       gprod(cr,atnr2,fa);
       gprod(cr,atnr2,fb);
       gprod(cr,atnr2,fc);
     }
-    upd_nbfpbu2(log,fr->nbfp,idef->atnr,fa,fb,fc);
+    upd_nbfpbu(log,fr->nbfp,idef->atnr,fa,fb,fc);
   }
   
   for(i=0; (i<tcr->nQ); i++) {
