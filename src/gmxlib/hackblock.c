@@ -32,6 +32,7 @@ static char *SRCID_hackblock_c = "$Id$";
 #include "hackblock.h"
 #include "smalloc.h"
 #include "vec.h"
+#include "string2.h"
 
 /* these MUST correspond to the enum in hackblock.h */
 char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers" };
