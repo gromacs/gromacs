@@ -53,3 +53,5 @@ typedef struct {
 
 #define START(nsb)  ((nsb)->index[(nsb)->pid])
 #define HOMENR(nsb) ((nsb)->homenr[(nsb)->pid])
+#define CG0(nsb)    (((nsb)->pid == 0) ? 0 : (nsb)->cgload[(nsb)->pid-1])
+#define CG1(nsb)    ((nsb)->cgload[(nsb)->pid])
