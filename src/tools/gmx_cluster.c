@@ -588,73 +588,61 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
   return xx;
 }
 
-static int plot_clusters(int nf, real **mat, real val, t_clusters *clust,
-			 int nlevels, int keepfree, int minstruct)
+static int plot_clusters(int nf, real **mat, t_clusters *clust,
+			 int nlevels, int minstruct)
 {
-  int i,j,v,ncluster,ci;
+  int i,j,ncluster,ci;
   int *cl_id,*nstruct,*strind;
     
-  ncluster = nlevels;
-  if (minstruct > 1) {
-    snew(cl_id,nf);
-    snew(nstruct,nf);
-    snew(strind,nf);
-    for(i=0; i<nf; i++) {
-      strind[i] = 0;
-      cl_id[i]  = clust->cl[i];
-      nstruct[cl_id[i]]++;
+  snew(cl_id,nf);
+  snew(nstruct,nf);
+  snew(strind,nf);
+  for(i=0; i<nf; i++) {
+    strind[i] = 0;
+    cl_id[i]  = clust->cl[i];
+    nstruct[cl_id[i]]++;
+  }
+  ncluster = 0;
+  for(i=0; i<nf; i++) {
+    if (nstruct[i] >= minstruct) {
+      ncluster++;
+      for(j=0; (j<nf); j++)
+	if (cl_id[j] == i)
+	  strind[j] = ncluster;
     }
-    ncluster = 0;
-    for(i=0; i<nf; i++) {
-      if (nstruct[i] >= minstruct) {
-	ncluster++;
-	for(j=0; (j<nf); j++)
-	  if (cl_id[j] == i)
-	    strind[j] = ncluster;
-      }
-    }
-    ncluster++;
-    fprintf(stderr,"There are %d clusters with at least %d conformations\n",
+  }
+  ncluster++;
+  fprintf(stderr,"There are %d clusters with at least %d conformations\n",
 	    ncluster,minstruct);
-	    
-    for(i=0; (i<nf); i++) {
-      ci = cl_id[i];
-      for(j=0; j<i; j++)
-	if ((ci == cl_id[j]) && (nstruct[ci] >= minstruct)) {
-	  /* color different clusters with different colors, as long as
-	     we don't run out of colors */
-	  mat[i][j] = strind[i];
-	} 
-	else
-	  mat[i][j] = 0;
-    }
-    sfree(strind);
-    sfree(nstruct);
-    sfree(cl_id);
+  
+  for(i=0; (i<nf); i++) {
+    ci = cl_id[i];
+    for(j=0; j<i; j++)
+      if ((ci == cl_id[j]) && (nstruct[ci] >= minstruct)) {
+	/* color different clusters with different colors, as long as
+	   we don't run out of colors */
+	mat[i][j] = strind[i];
+      } 
+      else
+	mat[i][j] = 0;
   }
-  else {
-    for(i=0; i<nf; i++) {
-      for(j=0; j<i; j++)
-	if (clust->cl[i] == clust->cl[j]) {
-	  /* color different clusters with different colors, as long as
-	     we don't run out of colors */
-	  v = nlevels - clust->cl[i];
-	  /* don't use some of the colors, otherwise it gets too light */
-	  if (keepfree>=nlevels)
-	    v = nlevels;
-	  else if ( keepfree<0 )
-	    v = max(v, nlevels/(-keepfree));
-	  else if ( keepfree>0 )
-	    v = max(v, keepfree);
-	  else 
-	    v = 1;
-	  /* sadly, we have to convert to real now */
-	  mat[i][j] = val*v/(real)(nlevels-1);
-	} else
-	  mat[i][j] = 0;
-    }
-  }
+  sfree(strind);
+  sfree(nstruct);
+  sfree(cl_id);
+
   return ncluster;
+}
+
+static void mark_clusters(int nf, real **mat, real val, t_clusters *clust)
+{
+  int i,j,v;
+  
+  for(i=0; i<nf; i++)
+    for(j=0; j<i; j++)
+      if (clust->cl[i] == clust->cl[j])
+	mat[i][j] = val;
+      else
+	mat[i][j] = 0;
 }
 
 static char *parse_filename(char *fn, int maxnr)
@@ -994,7 +982,10 @@ int gmx_cluster(int argc,char *argv[])
     "Two output files are always written:[BR]",
     "[TT]-o[tt] writes the RMSD values in the upper left half of the matrix",
     "and a graphical depiction of the clusters in the lower right half",
-    "(depends on [TT]-max[tt] and [TT]-keepfree[tt]).[BR]",
+    "When [TT]-minstruct[tt] = 1 the graphical depiction is black",
+    "when two structures are in the same cluster.",
+    "When [TT]-minstruct[tt] > 1 different colors will be used for each",
+    "cluster.[BR]",
     "[TT]-g[tt] writes information on the options used and a detailed list",
     "of all clusters and their members.[PAR]",
     
@@ -1034,7 +1025,7 @@ int gmx_cluster(int argc,char *argv[])
   char     buf[STRLEN],buf1[80],title[STRLEN];
   bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj,bWriteDist;
 
-  int method,ncluster;  
+  int method,ncluster=0;  
   static char *methodname[] = { 
     NULL, "linkage", "jarvis-patrick","monte-carlo", 
     "diagonalization", "gromos", NULL
@@ -1046,7 +1037,7 @@ int gmx_cluster(int argc,char *argv[])
   static t_rgb rhi_top = { 0.0, 0.0, 0.0 };
   static t_rgb rlo_bot = { 1.0, 1.0, 1.0 };
   static t_rgb rhi_bot = { 0.0, 0.0, 1.0 };
-  static int  nlevels=40,keepfree=-4,skip=1;
+  static int  nlevels=40,skip=1;
   static real scalemax=-1.0,rmsdcut=0.1,rmsmin=0.0;
   static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
   static int  niter=10000,seed=1993,write_ncl=0,write_nst=1,minstruct=1;
@@ -1057,9 +1048,6 @@ int gmx_cluster(int argc,char *argv[])
       "Use RMSD of distances instead of RMS deviation" },
     { "-nlevels",FALSE,etINT,  {&nlevels},
       "Discretize RMSD matrix in # levels" },
-    { "-keepfree",FALSE,etINT, {&keepfree},
-      "if >0 # levels not to use when coloring clusters; "
-      "if <0 nlevels/-keepfree+1 levels will not be used"},
     { "-cutoff",FALSE, etREAL, {&rmsdcut},
       "RMSD cut-off (nm) for two structures to be neighbor" },
     { "-fit",   FALSE, etBOOL, {&bFit},
@@ -1366,8 +1354,11 @@ int gmx_cluster(int argc,char *argv[])
 	    mat_energy(rms));
   
   if (bAnalyze) {
-    ncluster = plot_clusters(nf,rms->mat,rms->maxrms,&clust,nlevels,
-			     keepfree,minstruct);
+    if (minstruct > 1) {
+      ncluster = plot_clusters(nf,rms->mat,&clust,nlevels,minstruct);
+    } else {
+      mark_clusters(nf,rms->mat,rms->maxrms,&clust);
+    }
     init_t_atoms(&useatoms,isize,FALSE);
     snew(usextps, isize);
     useatoms.resname=top.atoms.resname;
@@ -1388,8 +1379,6 @@ int gmx_cluster(int argc,char *argv[])
 		     bAverage, write_ncl, write_nst, rmsmin, bFit, log,
 		     rlo_bot,rhi_bot);
   }
-  else
-    ncluster = nlevels;
   ffclose(log);
   
   if (bBinary && !bAnalyze)
@@ -1410,10 +1399,16 @@ int gmx_cluster(int argc,char *argv[])
     sprintf(buf,"Time (%s)",time_unit());
     sprintf(title,"RMS%sDeviation / Cluster Index",
  	    bRMSdist ? " Distance " : " ");
-    write_xpm_split(fp,title,"RMSD (nm)",buf,buf,
-		    nf,nf,time,time,rms->mat,0.0,rms->maxrms,&nlevels,
-		    rlo_top,rhi_top,0.0,(real) ncluster,
-		    &ncluster,TRUE,rlo_bot,rhi_bot);
+    if (minstruct > 1) {
+      write_xpm_split(fp,title,"RMSD (nm)",buf,buf,
+		      nf,nf,time,time,rms->mat,0.0,rms->maxrms,&nlevels,
+		      rlo_top,rhi_top,0.0,(real) ncluster,
+		      &ncluster,TRUE,rlo_bot,rhi_bot);
+    } else {
+      write_xpm(fp,title,"RMSD (nm)",buf,buf,
+		nf,nf,time,time,rms->mat,0.0,rms->maxrms,
+		rlo_top,rhi_top,&nlevels);
+    }
   }
   fprintf(stderr,"\n");
   ffclose(fp);
