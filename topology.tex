@@ -622,26 +622,29 @@ between these atoms will be excluded.
 \label{subsec:hdb}
 The \swapindex{hydrogen}{database} is stored in {\tt ff???.hdb}. It
 contains information for the {\tt pdb2gmx} program on how to connect
-hydrogen atoms to existing atoms. Hydrogen atoms are named after the
-atom they are connected to: the first letter of the atom name is
-replaced by an 'H'. If more then one hydrogen atom is connected to the
-same atom, a number will be added to the end of the hydrogen atom
-name. For example, adding two hydrogen atoms to {\tt ND2} (in
-asparagine), the hydrogen atoms will be named {\tt HD21} and {\tt
-HD22}. This is important since atom naming in the {\tt .rtp} file
-(see~\ssecref{rtp}) must be the same. The format of the hydrogen
-database is as follows:
+hydrogen atoms to existing atoms. In versions of the database before
+{\gromacs} 3.3, hydrogen atoms were named after the atom they are
+connected to: the first letter of the atom name ws replaced by an
+'H'. In the versions from 3.3 onwards, the H atom has to be listed explicitly,
+because the old behaviour was protein-specific and hence could not
+be generalized to other molecules.
+If more then one hydrogen atom is connected to the same atom, a
+number will be added to the end of the hydrogen atom name. For
+example, adding two hydrogen atoms to {\tt ND2} (in asparagine), the
+hydrogen atoms will be named {\tt HD21} and {\tt HD22}. This is
+important since atom naming in the {\tt .rtp} file (see~\ssecref{rtp})
+must be the same. The format of the hydrogen database is as follows:
 %
 {\small\begin{verbatim}
 ; res   # additions
-        # H add type    i       j       k
+        # H add type    H       i       j       k
 ALA     1
-        1       1       N       -C      CA
+        1       1       H       N       -C      CA
 ARG     4
-        1       2       N       CA      C
-        1       1       NE      CD      CZ
-        2       3       NH1     CZ      NE
-        2       3       NH2     CZ      NE
+        1       2       H       N       CA      C
+        1       1       HE      NE      CD      CZ
+        2       3       HH1     NH1     CZ      NE
+        2       3       HH2     NH2     CZ      NE
 \end{verbatim}
 }
 
@@ -687,12 +690,27 @@ with angle (n-i-n2)=(n1-i-j)=(n1-i-k)=109.5
 two hydrogens are generated around atom i according to
 SPC~\cite{Berendsen81} water geometry. The symmetry axis will
 alternate between three coordinate axes in both directions
+
+\item[10]{\em three water ``hydrogens''}\\
+two hydrogens are generated around atom i according to
+SPC~\cite{Berendsen81} water geometry. The symmetry axis will
+alternate between three coordinate axes in both directions. In addition
+an extra particle is generated on the position of the oxygen. This is for
+use with four-atom water models such as TIP4P~\cite{Jorgensen83}
+
+\item[10]{\em four water ``hydrogens''}\\
+Same as above, except that two  additional
+particles are generated on the position of the oxygen. This is for
+use with five-atom water models such as TIP5P~\cite{Mahoney2000a}
 \end{enumerate}
+
+\item
+The name of the new H atom
 
 \item
 Three or four control atoms (i,j,k,l), where the first always is the
 atom to which the H atoms are connected. The other two or three depend
-on the code selected.
+on the code selected (for water there is only one control atom).
 \end{itemize}
 
 \subsection{Termini database}
@@ -711,8 +729,8 @@ bonded interactions should be added. The format of the is as follows
 [ replace ]
 C       C       C       12.011  0.27
 [ add ]
-2       8       C       CA      N
-        O       OM      15.9994 -0.635
+2       8       O       C       CA      N
+        OM      15.9994 -0.635
 [ delete ]
 O
 [ impropers ]
@@ -748,7 +766,8 @@ entered with the following fields:
 \item {\tt [~add~]} \\
 add new atoms. For each (group of) added atom(s), a two-line entry is
 necessary. The first line contains the same fields as an entry in the
-hydrogen database (number of atoms, type of addition, control atoms,
+hydrogen database (name of the new atom, 
+number of atoms, type of addition, control atoms,
 see~\ssecref{hdb}), but the possible types of addition are extended
 by two more, specifically for C-terminal additions:
 \begin{enumerate}
@@ -765,14 +784,15 @@ as n'-n2-i and n'-n2-i-j resp.
 After this line another line follows which specifies the details of
 the added atom(s), in the same way as for replacing atoms, {\ie}: 
 \begin{itemize}
-\item atom name
 \item atom type
 \item mass
 \item charge
 \end{itemize}
 Like in the hydrogen database (see~\ssecref{rtp}), when more then
 one atom is connected to an existing one, a number will be appended to
-the end of the atom name.
+the end of the atom name. Note that, like in the hydrogen database the
+atom name is now on the same line as the control atoms, whereas it was
+at the beginning of the second line prior to {\gromacs} version 3.3.
 \item {\tt [~delete~]}\\
 delete existing atoms. One atom name per line.
 \item {\tt [~bonds~]}, {\tt [~angles~]}, {\tt [~dihedrals~]} and {\tt [~impropers~]}\\
