@@ -500,11 +500,11 @@ void do_dummies(int nrtp, t_restp rtp[],
     for (i=0; i<params->nr; i++) {
       for (j=0; j<nral; j++)
 	if (params->param[i].a[j]>=add_shift) {
-	  if (debug) fprintf(debug," [%d -> %d]",params->param[i].a[j],
+	  if (debug) fprintf(debug," [%u -> %u]",params->param[i].a[j],
 			     params->param[i].a[j]-add_shift);
 	  params->param[i].a[j]=params->param[i].a[j]-add_shift;
 	} else {
-	  if (debug) fprintf(debug," [%d -> %d]",params->param[i].a[j],
+	  if (debug) fprintf(debug," [%u -> %d]",params->param[i].a[j],
 			     o2n[params->param[i].a[j]]);
 	  params->param[i].a[j]=o2n[params->param[i].a[j]];
 	}
