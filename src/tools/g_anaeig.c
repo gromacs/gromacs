@@ -48,7 +48,8 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "matio.h"
 #include "mshift.h"
 #include "xvgr.h"
-#include "gstat.h"
+#include "do_fit.h"
+#include "rmpbc.h"
 #include "txtdump.h"
 
 char *proj_unit;

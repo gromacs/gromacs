@@ -42,7 +42,8 @@ static char *SRCID_g_rama_c = "$Id$";
 #include "futil.h"
 #include "statutil.h"
 #include "rdgroup.h"
-#include "gstat.h"
+#include "nrama.h"
+#include "lutab.h"
 
 static void plot_rama(FILE *out,t_xrama *xr)
 {

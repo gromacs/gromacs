@@ -45,7 +45,7 @@ static char *SRCID_edsam_c = "$Id$";
 #include "update.h"
 #include "physics.h"
 #include "rmpbc.h"
-#include "gstat.h"
+#include "nrjac.h"
 #include "edsam.h"
 
 #define EPS  1.0e-09

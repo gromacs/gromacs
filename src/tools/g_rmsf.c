@@ -43,7 +43,9 @@ static char *SRCID_g_rmsf_c = "$Id$";
 #include "pbc.h"
 #include "fatal.h"
 #include "futil.h"
-#include "gstat.h"
+#include "do_fit.h"
+#include "princ.h"
+#include "rmpbc.h"
 #include "confio.h"
 
 static int calc_xav(bool bAverX,

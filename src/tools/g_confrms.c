@@ -51,7 +51,7 @@ static char *SRCID_g_confrms_c = "$Id$";
 #include "confio.h"
 #include "pdbio.h"
 #include "txtdump.h"
-#include "gstat.h"
+#include "do_fit.h"
 
 #define EPS  1.0e-09
 

@@ -43,7 +43,8 @@ static char *SRCID_g_gyrate_c = "$Id$";
 #include "rdgroup.h"
 #include "mshift.h"
 #include "xvgr.h"
-#include "gstat.h"
+#include "princ.h"
+#include "rmpbc.h"
 #include "txtdump.h"
 #include "tpxio.h"
 

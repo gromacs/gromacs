@@ -41,7 +41,9 @@ static char *SRCID_g_rms_c = "$Id$";
 #include "pbc.h"
 #include "fatal.h"
 #include "futil.h"
-#include "gstat.h"
+#include "princ.h"
+#include "rmpbc.h"
+#include "do_fit.h"
 #include "matio.h"
 #include "tpxio.h"
 

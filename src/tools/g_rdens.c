@@ -35,7 +35,7 @@ static char *SRCID_g_rdens_c = "$Id$";
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "gstat.h"
+#include "princ.h"
 #include "vec.h"
 #include "xvgr.h"
 #include "copyrite.h"

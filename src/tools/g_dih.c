@@ -35,7 +35,7 @@ static char *SRCID_g_dih_c = "$Id$";
 #include "futil.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "gstat.h"
+#include "nrama.h"
 #include "physics.h"
 #include "macros.h"
 #include "xvgr.h"

@@ -43,7 +43,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "rdgroup.h"
 #include "vec.h"
 #include "typedefs.h"
-#include "gstat.h"
+#include "gbutil.h"
 #include "strdb.h"
 #include "rdgroup.h"
 #include "physics.h"

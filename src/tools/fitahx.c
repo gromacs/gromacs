@@ -30,7 +30,7 @@ static char *SRCID_fitahx_c = "$Id$";
 
 #include "fitahx.h"
 #include "vec.h"
-#include "gstat.h"
+#include "do_fit.h"
 #include "smalloc.h"
 	
 static void my_calc_xcm(int nbb,atom_id bbind[],rvec x[],rvec xcm)

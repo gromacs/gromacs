@@ -53,7 +53,7 @@ static char *SRCID_pdb2gmx_c = "$Id$";
 #include "pdb2top.h"
 #include "ter_db.h"
 #include "strdb.h"
-#include "gstat.h"
+#include "gbutil.h"
 #include "genhydro.h"
 #include "readinp.h"
 #include "xlate.h"
