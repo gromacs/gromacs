@@ -275,8 +275,12 @@ void init_forcerec(FILE *log,
   fr->ndelta     = ir->ndelta;
   fr->rlist      = ir->rlist;
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
+  fr->eeltype    = ir->coulombtype;
+  fr->vdwtype    = ir->vdwtype;
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
   fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
+  fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
+  
 #define MAX_14_DIST 1.0
   /* Shell to account for the maximum chargegroup radius (2*0.2 nm) *
    * and diffusion during nstlist steps (0.2 nm)                    */
@@ -291,7 +295,6 @@ void init_forcerec(FILE *log,
   fr->Dimension  = ir->decomp_dir;
   
   /* Electrostatics */
-  fr->eeltype    = ir->coulombtype;
   fr->epsilon_r  = ir->epsilon_r;
   fr->fudgeQQ    = ir->fudgeQQ;
   fr->rcoulomb_switch = ir->rcoulomb_switch;
@@ -391,7 +394,6 @@ void init_forcerec(FILE *log,
   }
 
   /* Van der Waals stuff */
-  fr->vdwtype     = ir->vdwtype;
   fr->rvdw        = ir->rvdw;
   fr->rvdw_switch = ir->rvdw_switch;
   if ((fr->vdwtype != evdwCUT) && !fr->bBHAM) {
@@ -568,8 +570,8 @@ void force(FILE       *log,     int        step,
   where();
 
   /* Shift the coordinates. Must be done before bonded forces and PPPM, 
-   * but is also necessary for SHAKE and update, therefore it can NOT go when no
-   * bonded forces have to be evaluated.
+   * but is also necessary for SHAKE and update, therefore it can NOT 
+   * go when no bonded forces have to be evaluated.
    */
   if (debug)
     p_graph(debug,"DeBUGGGG",graph);
