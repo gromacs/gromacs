@@ -678,7 +678,7 @@ int main(int argc,char *argv[])
     "If the colour",
     "coding and legend labels of both matrices are identical, only",
     "one legend will be output, else two separate legends are output.[PAR]",
-    "[BB]-label[bb] shows the title string in the Y-label position",
+    "[BB]-ytitle[bb] shows the title string in the Y-label position",
     "(alongside the Y-axes) and suppresses the title in the normal",
     "position (above the matrix/matrices).[PAR]"
   };
@@ -691,7 +691,7 @@ int main(int argc,char *argv[])
   static real boxx=0,boxy=0;
   t_pargs pa[] = {
     { "-title",  FALSE, etBOOL, &bTitle, "show title" },
-    { "-label",  FALSE, etBOOL, &bTitLab,"show title in Y-label position"},
+    { "-ytitle",  FALSE, etBOOL, &bTitLab,"show title in Y-label position"},
     { "-legend", FALSE, etBOOL, &bLegend,"show legend" },
     { "-diag",   FALSE, etBOOL, &bDiag,  "plot diagonal" },
     { "-bx",     FALSE, etREAL, &boxx,
