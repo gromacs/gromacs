@@ -53,7 +53,8 @@ void file_header(void)
       fortran_invsqrt();
     if(arch.gmx_recip) 
       fortran_invsqrt();
-    init_block_data();
+    if(arch.gmx_invsqrt || arch.gmx_recip)
+      init_block_data();
   } 
 
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
