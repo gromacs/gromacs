@@ -589,14 +589,14 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose,char *fn)
       nx = fr->ntab = fr->rtab*fr->tabscale;
     }
   }
+  if (fr->bBHAM)
+    fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
+
   /* Each table type (e.g. coul,lj6,lj12) requires four 
-   * numbers per datapoint. The exponential Buckingham table
-   * requires an extra one for accuracy. Since we still have
-   * the coulomb and dispersion, there will be four table
-   * types with four elements each when we use Buckingham.
+   * numbers per datapoint.
    */
 
-  snew(fr->coulvdwtab,( fr->bBHAM ? 16 :12 )*(nx+1)+1);
+  snew(fr->coulvdwtab,12*(nx+1)+1);
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
       init_table(out,nx,nx0,tabsel[k],
