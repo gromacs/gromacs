@@ -130,13 +130,27 @@ static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "Generate ions in the positions of water molecules. To avoid",
-    "clustering of ions it is advisable to set rexcl (the radius around",
+    "genion calculates the electrostatic potential on all atoms, using",
+    "normal GROMACS particle based methods (in contrast to other methods",
+    "based on solving the Poisson-Boltzmann equation).",
+    "If specified in the [TT]tpr[tt] file, a reaction field or",
+    "generalized reaction field can be used, check out the manual of",
+    "grompp for more information. The potential can be written as B-factors"
+    "in a pdb file (for visualisation using e.g. rasmol)[PAR]",
+    "When the potential has been calculated, ions can be generated",
+    "at the positions of water molecules. This can be used to simulate",
+    "a solution with a given ionic strength, or to neutralize the simulation",
+    "system which is necessary when using e.g. the PPPM electrostatics",
+    "method in the simulation. Note that PPPM can not be used in the",
+    "genion program[PAR]",
+    "To avoid",
+    "clustering of ions it is advisable to set rmin (the radius around",
     "an ion in which no other ion will be placed) to a value high enough",
     "to allow solvent around the ion (> 0.6 nm)."
   };
   static char *bugs[] = {
-    "Only monatomic ions can be used. For larger ions, e.g. sulfate we recommended to use genbox."
+    "Only monatomic ions can be used. For larger ions, e.g. sulfate we recommended to use genbox.",
+    "The rmin option is currently out of order"
   };
   static int  p_num=0,n_num=0,nw=0,w1=1;
   static char *p_name="Na",*n_name="Cl";
@@ -153,7 +167,6 @@ int main(int argc, char *argv[])
     { "-nw",   FALSE, etINT,  &nw,    "Number of water molecules" }
   };
   t_topology  *top;
-  t_atoms     new_at;
   t_parm      parm;
   t_commrec   cr;
   t_mdatoms   *mdatoms;
@@ -161,7 +174,7 @@ int main(int argc, char *argv[])
   t_groups    grps;
   t_graph     *graph;
   t_forcerec  *fr;
-  rvec        *x,*v,*xn,*vn;
+  rvec        *x,*v;
   real        *pot;
   matrix      box;
   int         *index;

@@ -182,6 +182,33 @@ real harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
 }
 
 
+real g96harmonic(real kA,real kB,real xA,real xB,real x,real lambda,
+		 real *V,real *F)
+{
+  const real half=0.5;
+  real  L1,kk,x0,dx,dx2;
+  real  v,f,dvdl;
+  
+  L1    = 1.0-lambda;
+  kk    = L1*kA+lambda*kB;
+  x0    = L1*xA+lambda*xB;
+  
+  dx    = x-x0;
+  dx2   = dx*dx;
+  
+  f     = -kk*dx*2*x;
+  v     = half*kk*dx2;
+  dvdl  = half*(kB-kA)*dx2 + (xA-xB)*kk*dx;
+  
+  *F    = f;
+  *V    = v;
+  
+  return dvdl;
+  
+  /* That was 21 flops */
+}
+
+
 real bonds(FILE *log,int nbonds,
 	   t_iatom forceatoms[],t_iparams forceparams[],
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
@@ -217,6 +244,54 @@ real bonds(FILE *log,int nbonds,
 #ifdef DEBUG
     if (debug)
       fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
+	      dr,vbond,fbond);
+#endif
+    ki=SHIFT_INDEX(g,ai);
+    kj=SHIFT_INDEX(g,aj);
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fij=fbond*dx[m];
+      f[ai][m]+=fij;
+      f[aj][m]-=fij;
+      fr->fshift[ki][m]+=fij;
+      fr->fshift[kj][m]-=fij;
+    }
+  }					/* 44 TOTAL	*/
+  return vtot;
+}
+
+real g96bonds(FILE *log,int nbonds,
+	      t_iatom forceatoms[],t_iparams forceparams[],
+	      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+	      matrix box,real lambda,real *dvdlambda,
+	      t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
+{
+  int  i,m,ki,kj,ai,aj,type;
+  real dr2,fbond,vbond,fij,vtot;
+  rvec dx;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+  
+    pbc_rvec_sub(box,x[ai],x[aj],dx);		/*   3 		*/
+    dr2=iprod(dx,dx);				/*   5		*/
+      
+    *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
+			      forceparams[type].harmonic.krB,
+			      forceparams[type].harmonic.rA,
+			      forceparams[type].harmonic.rB,
+			      dr2,lambda,&vbond,&fbond);
+
+    if (dr2 == 0.0)
+      continue;
+    
+    vtot  += vbond;                             /* 1*/
+    fbond *= invsqrt(dr2);			/*   6		*/
+#ifdef DEBUG
+    if (debug)
+      fprintf(debug,"G96-BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
 	      dr,vbond,fbond);
 #endif
     ki=SHIFT_INDEX(g,ai);
