@@ -15,11 +15,11 @@ PROGRAMS	= g_rdf		g_msd		g_dist	\
 		  g_hbond	g_lifetime	merge_freq	\
 		  genbox 	genconf 	genion		\
 		  make_ndx	average		genpr 		\
-		  trjconv       mk_angndx	eneconv		\
+		  trjconv       mk_angndx	\
 		  editconf	protonate	gendr		\
 		  g_rms		g_rama		g_disre		\
 		  g_gyrate	g_mindist	g_sgangle	\
-		  g_angle	g_dih		ipgro		\
+		  g_angle	g_dih		\
 		  g_bond	g_dipoles	\
 		  g_mdmat	g_energy	g_sas		\
 		  do_dssp	sas2mat         g_rmsdist	\
@@ -29,7 +29,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist	\
 		  g_velacc	g_rotacf	g_enemat	\
 		  g_nmeig	g_chi		g_dielectric	\
 		  g_helix	waterins	wheel	        \
-                  g_confrms     xpm2ps
+                  g_confrms     xpm2ps 
 
 ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
@@ -48,13 +48,10 @@ gendr:		gendr.o
 protonate:	protonate.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-editconf:	editconf.o
+eneconv:	eneconv.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 genion:		genion.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
-
-eneconv:	eneconv.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 gen_xh:		gen_xh.o
@@ -114,6 +111,12 @@ trjconv:	trjconv.o
 g_rmsdist:	g_rmsdist.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+g_diffuse:	g_diffuse.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+editconf:	editconf.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 g_energy:	g_energy.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
@@ -126,7 +129,7 @@ g_disre:	g_disre.o
 g_gyrate:	g_gyrate.o  
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_chi:		g_chi.o		anadih.o	$(ACOBJ)
+g_chi:		g_chi.o		anadih.o	pp2shift.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_velacc:	g_velacc.o	$(ACOBJ)
@@ -218,10 +221,6 @@ g_dist:         g_dist.o
 ipgro:          ipgro.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
-
-#
-#	OLD STUFF
-#
 my_rdf:         my_rdf.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 

@@ -8,6 +8,7 @@
 #	Definitions dependent on CPU but general enough to put here...
 #
 
+GET	=	ln -s
 ifeq ($(USEF77),yes)
 SYSDEFS		+= -DUSEF77
 endif
@@ -55,8 +56,6 @@ endif
 dep:
 	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v include  |  sed sx./xx > Make.dep
 	
-#	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v usr  |  sed sx./xx | sed sx$(GMXHOME)/src/includex\\\$$\(GMXHOME\)/src/includex > Make.dep
-
 clean:
 		$(RM) $(PROGRAMS) *.o *.l *~ *.bak \#*\# 
 
@@ -79,6 +78,9 @@ clean:
 		$(F77) $(FFLAGS) -s $<
 
 .f.o:
+		$(F77) $(FFLAGS) -c $<
+
+.f90.o:
 		$(F77) $(FFLAGS) -c $<
 
 .c.s:

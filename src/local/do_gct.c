@@ -282,13 +282,18 @@ real run_aver(real old,real cur,int step,int nmem)
 
 void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
-		 t_mdatoms *md,t_idef *idef)
+		 t_mdatoms *md,t_idef *idef,real mu_aver)
 {
 #define FMIN 0.95
 #define FMAX 1.05
-  int        i,j,ati,atj,type,ftype,nmem;
+
+#define enm2Debye 48.0321
+#define d2e(x) (x)/enm2Debye
+#define enm2kjmol(x) (x)*0.0143952 /* = 2.0*4.0*M_PI*EPSILON0 */
+
+  int        i,j,ati,atj,type,ftype,nmem,nmol;
   real       deviation[eoNR];
-  real       f6,f12,fa,fb,fc,fq,factor,dt;
+  real       f6,f12,fa,fb,fc,fq,factor,dt,mu_ind,Epol;
   bool       bTest,bPrint;
   t_coupl_LJ *tclj;
   t_coupl_BU *tcbu;
@@ -297,12 +302,19 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
   
   bPrint = do_per_step(step,ir->nstprint);
   dt     = ir->delta_t;
-  
+  nmol   = ir->userint3; /* Should contain the number of molecules */
+
   /* Use a memory of nmem steps, so we actually couple to the
    * average observable over the last nmem steps. This may help
    * in avoiding local minima in parameter space.
    */
   nmem=ir->userint2;
+
+  if (step == 0) {
+    tcr->pres=ener[F_PRES];
+    tcr->epot=ener[F_EPOT];
+  }
+
   tcr->pres=run_aver(tcr->pres,ener[F_PRES],step,nmem);
   tcr->epot=run_aver(tcr->epot,ener[F_EPOT],step,nmem);
   
@@ -311,7 +323,25 @@ void do_coupling(FILE *log,t_coupl_rec *tcr,real t,int step,real ener[],
   
   /* Calculate the deviation of average value from the target value */
   deviation[eoPres] = tcr->pres0 - tcr->pres;
-  deviation[eoEpot] = tcr->epot0 - tcr->epot;
+
+  /* if dipole != 0.0 assume we want to use polarization corrected coupling */
+  if ((tcr->dipole) != 0.0) {
+    mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
+    /* Epol = mu_ind*mu_ind/(2.0*(tcr->polarizability)*4.0*M_PI*EPSILON0); */
+    Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
+
+    deviation[eoEpot] = (tcr->epot0)*nmol - Epol*nmol - tcr->epot;
+    /*
+    fprintf(stderr,":  %g %g %g %g %g \n",mu_ind,mu_aver, d2e(tcr->dipole),
+	    d2e((2.27 - tcr->dipole)),(2.27 - tcr->dipole)
+	   );
+    fprintf(stderr,"Eref %g Epol %g Erunav %g Dev %g Eact %g\n",
+	    (tcr->epot0)*nmol, Epol*nmol, tcr->epot,
+	    deviation[eoEpot],ener[F_EPOT]);
+	    */
+  }
+  else 
+    deviation[eoEpot] = (tcr->epot0)*nmol - tcr->epot;
   
   /* Start coupling only after we have the correct average over 
    * nmem points.

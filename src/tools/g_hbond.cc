@@ -63,7 +63,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_hbond is a program which computes hydrogen bonds from a ",
-    "trajectroy file (trj), binary topology file (tpb), and index ", 
+    "trajectroy file (trj), binary topology file (tpx), and index ", 
     "file (ndx) ",
     "[PAR][BB]Input:[bb][BR] ",
     "For the analysis you can specify one group of atoms. Then only ",
@@ -168,7 +168,7 @@ int main(int argc,char *argv[])
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,    ffREAD },
     { efNDX, NULL,   NULL,    ffREAD },
-    { efTPB, NULL,   NULL,    ffREAD },
+    { efTPX, NULL,   NULL,    ffREAD },
     { efOUT, "-o","hbond",    ffWRITE }
   };
 #define NFILE asize(fnm)
@@ -184,7 +184,7 @@ int main(int argc,char *argv[])
   
   /* initialise topology */
   top = (t_topology *)malloc(sizeof(t_topology));
-  init_topology(ftp2fn(efTPB,NFILE,fnm));
+  init_topology(ftp2fn(efTPX,NFILE,fnm));
 
   /* initialise search array dah */
   init_dah(&dah,nr_dah,ftp2fn(efNDX,NFILE,fnm),ftp2fn(efTRX,NFILE,fnm));

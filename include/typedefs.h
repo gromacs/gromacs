@@ -67,6 +67,18 @@ extern "C" {
 #include "types/matrix.h"
 #include "types/edsams.h"
 
+/* Functions to initiate and delete structures */
+extern void init_block(t_block *block);
+extern void init_atom (t_atoms *at);
+extern void init_top (t_topology *top);
+extern void init_inputrec(t_inputrec *ir);
+extern void done_block(t_block *block);
+extern void done_atom (t_atoms *at);
+extern void done_symtab(t_symtab *symtab);
+extern void done_top(t_topology *top);
+extern void done_inputrec(t_inputrec *ir);
+/* These functions defined in gmxlib/typedefs.c */
+
 #ifdef CPLUSPLUS
 }
 #endif

@@ -77,6 +77,9 @@ extern void write_hconf(FILE *out,char *title,
 			t_atoms *atoms,rvec *x, 
 			rvec *v,matrix box);
 			
+extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int pr,
+			  rvec *x,rvec *v,matrix box);
+			
 extern void write_hconf_indexed(FILE *out,char *title,t_atoms *atoms,
 				int nx,atom_id index[],
 				rvec *x,rvec *v,matrix box);

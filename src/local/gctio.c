@@ -41,7 +41,7 @@ static char *SRCID_gctio_c = "$Id$";
 #include "readinp.h"
 #include "filenm.h"
 
-char *eoNames[eoNR] = { "Pres", "Epot" };
+char *eoNames[eoNR] = { "Pres", "Epot", "Polarizability", "Dipole" };
 
 static int Name2eo(char *s)
 {
@@ -192,6 +192,9 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	  eoNames[eoPres],tcr->pres0);
   fprintf(fp,"%-12s = %12g  ; Reference potential energy\n",
 	  eoNames[eoEpot],tcr->epot0);
+  fprintf(fp,"%-12s = %12g  ; Polarizability used for the Epot correction\n",
+	  eoNames[eoPolarizability],tcr->polarizability);
+  fprintf(fp,"%-12s = %12g  ; Gas phase dipole moment used for the Epot correction\n", eoNames[eoDipole],tcr->dipole);
   fprintf(fp,"\n; Q-Coupling   %6s  %12s\n","type","xi");
   for(i=0; (i<tcr->nQ); i++) {
     fprintf(fp,"%-8s = %8s  %6d  %12g\n",
@@ -265,11 +268,11 @@ static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s)
     fatal_error(0,"Invalid observable for LJ coupling: %s",buf);
   }
   (*tcLJ)[j].at_i   = ati;
-    (*tcLJ)[j].at_j   = atj;
-    (*tcLJ)[j].xi_6   = xi6;
-    (*tcLJ)[j].xi_12  = xi12;
+  (*tcLJ)[j].at_j   = atj;
+  (*tcLJ)[j].xi_6   = xi6;
+  (*tcLJ)[j].xi_12  = xi12;
   
-    return FALSE;
+  return FALSE;
 }
 
 static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s)
@@ -391,6 +394,8 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   inp=read_inpfile(fn,&ninp);
   RTYPE (eoNames[eoPres],	tcr->pres0,	1.0);
   RTYPE (eoNames[eoEpot],	tcr->epot0,	0.0);
+  RTYPE (eoNames[eoPolarizability],	tcr->polarizability,	0.0);
+  RTYPE (eoNames[eoDipole],	tcr->dipole,	0.0);
   
   tcr->tcLJ=NULL;
   tcr->tcBU=NULL;

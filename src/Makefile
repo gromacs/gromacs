@@ -3,7 +3,7 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.def
 #
-DIRS	=	gmxlib 	kernel	tools	ngmx	include
+DIRS	=	include	gmxlib 	kernel	tools	ngmx
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
 TELLDIRS=	$(LDIRS)
@@ -17,8 +17,8 @@ BENCH	=	tests/bench
 TESTS	=	tests/mdrun
 GETIT	=	$(SDIRS)  src/makef
 TDIR	=	$(GMXHOME)
-TARCMD  =	/usr/local/freeware/bin/tar cvf 
-TARFLG  =	--exclude=CVS
+TARCMD  =	tar cvf #/usr/local/freeware/bin/tar cvf 
+TARFLG  =	#--exclude=CVS
 COPYRGT	=	$(GMXHOME)/src/local/copyrgt
 PROGRAMS=	(cd bin/s10; ls; cd ../..)
 
@@ -47,11 +47,10 @@ dist:	cdist	bdist	tdist
 dirs:
 	\mkdir -p $(BINDIR) $(LIBDIR); 
 
-html:
-	./mkhtml
-
 man:
 	./mknroff
+html:
+	./mkhtml
 
 clean:
 	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) clean; cd ..;)

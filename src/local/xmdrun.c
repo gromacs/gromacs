@@ -67,6 +67,8 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "rdgroup.h"
 #include "glaasje.h"
 #include "edsam.h"
+#include "calcmu.h"
+#include "ionize.h"
 
 void Etcoupl(bool bTC,t_grpopts *opts,t_groups *grps,real dt,real SAfactor,
 	     int step,int nmem)
@@ -401,12 +403,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_forcerec *fr;
   t_mdebin   *mdebin;
-  FILE       *ene;
+  FILE       *ene,*fmu;
   int        step,nre,k,n,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bTYZ,bLR,bBHAM,b14;
+  bool       bNS,bStopCM,bTYZ,bLR,bBHAM,b14,bMU;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   real       etmp[F_NRE];
@@ -415,10 +417,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *xtc_traj; /* compressed trajectory filename */
   int        nDLB;
   int        i,m;
-  rvec       box_size,vcm;
+  rvec       box_size,vcm,mu_tot;
   t_coupl_rec *tcr;
   rvec       *xx,*vv,*ff;  
   bool       bTCR;
+  real       mu_aver,mu_aver2;
+  int        gnx;
+  atom_id    *grpindex;
+  char       *grpname;
 
   /* Shell stuff */
   int         nas;
@@ -439,6 +445,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   tcount       = 0;
   
   where();
+
+  /* check if "-mu" is used */
+  bMU = opt2bSet("-mu",nfile,fnm);
+  if ((bMU) && MASTER(cr))
+    fmu = opt2FILE("-mu",nfile,fnm,"w");
+
+  rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
 
   /* Check Environment variables */
   bTCR=ftp2bSet(efGCT,nfile,fnm);
@@ -505,7 +518,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   calc_ke_part(TRUE,0,top->atoms.nr,
                vold,v,vt,&(parm->ir.opts),
                md,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
-  
+  /* Compute initial EKin for all.. dit zat er in gmx151 nog wel in???? 
+  clear_mat(force_vir);
+  clear_mat(shake_vir);
+  calc_ke_part(TRUE,0,top->atoms.nr,
+               vold,v,vt,&(parm->ir.opts),
+               md,grps,&mynrnb,
+	       lambda,&ener[F_DVDLKIN]);
+  if (PAR(cr)) 
+    global_stat(log,cr,ener,force_vir,shake_vir,
+		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm);
+  clear_rvec(vcm);
+  */
+
   /* Calculate Temperature coupling parameters lambda */
   ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
   Etcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
@@ -520,8 +545,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   start_t=print_date_and_time(log,cr->pid,strbuf);
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
-    printf("starting shell_md '%s'\n%d steps, %8.1f ps.\n\n",*(top->name),
-	   parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
+    printf("starting %s '%s'\n%d steps, %8.1f ps.\n\n",Program(),
+	   *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
   }
 
   /***********************************************************
@@ -533,11 +558,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Stop Center of Mass motion */
     bStopCM=do_per_step(step,parm->ir.nstcomm);
 
+    ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir);
+
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
 
     /* Construct dummy particles */
     construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
+
+    /* ??? Or should this be after relax_shells ??? */
+    /* Calculate total dipole moment of the simulation box and the average
+       dipole moment of the molecules */    
+
+    mu_aver=calc_mu(cr,nsb,x,md->chargeA,mu_tot,top,md,gnx,grpindex);
+    
+    if (bMU && MASTER(cr))
+      write_mu(fmu,mu_tot,parm->box);
     
     /* Now is the time to relax the shells */
     count=relax_shells(ene,log,cr,bVerbose,step,parm,
@@ -646,7 +682,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bTCR)
       do_coupling(log,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr),md,&(top->idef));
+		  &(parm->ir),MASTER(cr),md,&(top->idef),mu_aver);
     
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps);
@@ -715,6 +751,8 @@ int main(int argc,char *argv[])
     { efGCT, "-jo", "bam",    FALSE },
     { efENE, "-e", "ener",    ffWRITE },
     { efLOG, "-g", "md",      ffWRITE },
+    { efDAT, "-mu", "dipole", ffOPTWR },
+    { efNDX, "-n", "mols",    ffREAD }
   };
 #define NFILE asize(fnm)
   t_edsamyn edyn;
@@ -736,7 +774,7 @@ int main(int argc,char *argv[])
   
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
-    please_cite(stdlog,eCITEGMX);
+    please_cite(stdlog,"Berendsen95a");
   }
 
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);

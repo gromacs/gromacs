@@ -38,6 +38,7 @@ static char *SRCID_mdebin_h = "$Id$";
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "ebin.h"
+#include "enxio.h"
 
 typedef struct {
   t_ebin *ebin;
@@ -46,7 +47,7 @@ typedef struct {
   int    *igrp;
 } t_mdebin;
 
-extern t_mdebin *init_mdebin(FILE *ene,t_groups *grps,t_atoms *atoms,
+extern t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
 			     bool bLR,bool bBHAM,bool b14);
 /* Initiate MD energy bin and write header to energy file. */
 
@@ -59,7 +60,7 @@ extern void upd_mdebin(t_mdebin *md,real tmass,int step,
 		       tensor pres,
 		       t_groups *grps);
      
-extern void print_ebin(FILE *ene,FILE *log,int steps,real time,real lamb,
+extern void print_ebin(int fp_ene,FILE *log,int steps,real time,real lamb,
 		       real SAfactor,int mode,bool bCompact,
 		       t_mdebin *md,t_groups *grps,t_atoms *atoms);
 

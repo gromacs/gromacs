@@ -30,6 +30,7 @@ include		$(MKDIR)/Makefile.$(CPU)
 #
 # System independent definitions
 #
+GET		= ln -s
 RM		= /bin/rm -f
 BINMODE		= 775
 LIBMODE		= 664

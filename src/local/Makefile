@@ -37,7 +37,5 @@ total:		total.o
 do_shift:	do_shift.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-runner.c:	$(GMXHOME)/src/kernel/SCCS/s.runner.c
-		$(GET) $^
 
 include	Make.dep

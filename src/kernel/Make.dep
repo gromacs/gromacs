@@ -42,7 +42,7 @@ idih_db.o:	topexcl.h
 idih_db.o:	topio.h
 idih_db.o:	readir.h
 luck.o:	luck.c
-mdrun.o:	mdrun.c
+mdrun.o:	mdrun.c	
 mk_ghat.o:	mk_ghat.c
 nmrun.o:	nmrun.c
 opls2rtp.o:	opls2rtp.c

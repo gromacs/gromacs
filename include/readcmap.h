@@ -49,6 +49,9 @@ extern void read2cmap(char *fn,
 		      t_mapping **map1,int *n1,t_mapping **map2,int *n2);
 /* Read 2 mapping tables from fn */
 
+extern int getcmap(FILE *in,char *fn,t_mapping **map);
+/* I don't know what this means... */
+
 extern void printcmap(FILE *out,int n,t_mapping map[]);
 /* print mapping table to out */
 

@@ -43,7 +43,6 @@ static char *SRCID_corrutil_cc = "$Id$";
 #include "rdgroup.h"
 #include "copyrite.h"
 #include "typedefs.h"
-#include "statusio.h"
 #include "corrutil.h"
 #include "xvgr.h"
 
@@ -166,7 +165,6 @@ void c_corr::print(char *fn,char *title,char *yaxis,bool bXvgr)
   int  i,j;
   real aa,bb,da,db,err_fac;
   
-  fprintf(stderr,"new print\n");
   err_fac=sqrt(2.0/3.0*sqrt(M_PI));
   normalise();
   out=xvgropen(fn,title,"Time (ps)",yaxis);

@@ -28,12 +28,13 @@
  */
 enum {
   efMDP, efGBP, efGCP, efGIP, efGDP, efWDP, efGCT, efGPP,
-  efTRX, efTRJ, efXTC, efG87, efASC,
-  efENE, efEDR, efDRS,
-  efGRO, efPDB, efBRK, efENT, efSTX, efXDR,
+  efTRX, efTRR, efTRJ, efXTC, efG87, efASC,
+  efENX, efEDR, efENE,
+  efSTX, efGRO, efPDB, efBRK, efENT, efXDR,
   efLOG, efXVG, efOUT,
   efNDX, 
-  efTOP, efITP, efTPB, efRMT, 
+  efTOP, efITP,
+  efTPX, efTPR,  efTPA, efTPB,
   efTEX, efRTP, efATP, efHDB,
   efDAT, efDLG, 
   efGLD,
@@ -63,4 +64,4 @@ typedef struct {
 #define ffOPTRW  (ffRW    | ffOPT)
 #define ffLIB    16
 #define ffLIBRD  (ffREAD  | ffLIB)
-#define ffLIBOPTRD (ffREAD | ffOPT | ffLIB)
+#define ffLIBOPTRD (ffOPTRD | ffLIB)

@@ -46,7 +46,6 @@ static char *SRCID_update_c = "$Id$";
 #include "confio.h"
 #include "update.h"
 #include "random.h"
-#include "rwtop.h"
 #include "futil.h"
 #include "mshift.h"
 #include "tgroup.h"
@@ -558,7 +557,7 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
   int         *owptr=NULL;
 
   if ((ir->btc) || (ir->bpc))
-    please_cite(log,eCITEBATH);
+    please_cite(log,"Berendsen84");
     
   /* Put the oxygen atoms in the owptr array */
   nsettle=idef->il[F_SETTLE].nr/2;
@@ -577,7 +576,7 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
     }
     sfree(idef->il[F_SETTLE].iatoms);
     
-    please_cite(log,eCITESETTLE);
+    please_cite(log,"Miyamoto92");
   }
   
   ncons=idef->il[F_SHAKE].nr/3;
@@ -654,7 +653,7 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
     sfree(sb);
     sfree(inv_sblock);
     
-    please_cite(log,eCITESHAKE);
+    please_cite(log,"Ryckaert77");
   }
   
   /* Copy pointers */

@@ -48,6 +48,9 @@ extern bool fexist(char *fname);
 extern bool eof(FILE *fp);
 /* Return TRUE on end-of-file, FALSE otherwise */
 
+extern bool is_pipe(FILE *fp);
+/* Check whether the file (opened by ffopen) is a pipe */
+
 extern char *backup_fn(char *file);
 /* Return a backup name for file (name with # before and after) */
 

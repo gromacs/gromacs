@@ -32,7 +32,7 @@
 
 static char *SRCID_tpbcmp_h = "$Id$";
 
-extern void comp_tpb(char *fn1,char *fn2);
+extern void comp_tpx(char *fn1,char *fn2);
 /* Compare two binary topology files */
 
 #endif

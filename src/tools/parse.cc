@@ -39,6 +39,7 @@ static char *SRCID_parse_cc = "$Id$";
 #include "parse.h"
 #include "typedefs.h"
 #include "statutil.h"
+#include "tpxio.h"
 #include "physics.h"
 #include "sysstuff.h"
 #include "pbc.h"
@@ -58,21 +59,17 @@ static char *SRCID_parse_cc = "$Id$";
  
 void init_topology(char *topology)
 {
-  t_statheader header;
+  t_tpxheader  header;
   int          step,nre;
   real         t,lambda;
   t_inputrec   ir;
   int          natoms;
 
-  read_status_header(topology,&header);
+  read_tpxheader(topology,&header);
   x = (rvec *)malloc(header.natoms*sizeof(rvec));
 
-  read_status(topology,
-              &step,&t,&lambda,&ir,
-              box,NULL,NULL,
-              &natoms,
-              x,NULL,NULL,&nre,NULL,
-              top);
+  read_tpx(topology,&step,&t,&lambda,&ir,
+	   box,&natoms,x,NULL,NULL,top);
 
   init_pbc(box,FALSE);
 }

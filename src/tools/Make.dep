@@ -21,7 +21,7 @@ eneconv.o:	eneconv.c
 g_angle.o:	g_angle.c
 g_bldist.o:	g_bldist.c
 g_bond.o:	g_bond.c
-g_chi.o:	g_chi.c
+g_chi.o:	g_chi.c	pp2shift.h
 g_close.o:	g_close.c
 g_com.o:	g_com.c
 g_confrms.o:	g_confrms.c

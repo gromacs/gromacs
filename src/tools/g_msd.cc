@@ -42,7 +42,6 @@ static char *SRCID_g_msd_cc = "$Id$";
 #include "copyrite.h"
 #include "typedefs.h"
 #include "xvgr.h"
-#include "statusio.h"
 #include "corrutil.h"
 
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion 
@@ -422,7 +421,7 @@ int main(int argc,char *argv[])
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL,  ffREAD },
     { efNDX, NULL, NULL,  ffREAD },
-    { efTPB, NULL, NULL,  ffREAD },
+    { efTPX, NULL, NULL,  ffREAD },
     { efXVG, NULL, NULL,  ffWRITE },
     { efXVG, "-m", "mol", ffOPTWR },
     { efXVG, "-d", "diff",ffOPTWR }
@@ -458,7 +457,7 @@ int main(int argc,char *argv[])
     }
   }
   
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
   if (opt2bSet("-m",NFILE,fnm)) {
     c_msd_mol cm(top,ngroup,nrframes);
@@ -469,7 +468,7 @@ int main(int argc,char *argv[])
   else {
     /* MSD class */
     if (bMW) {
-      top=read_top(ftp2fn(efTPB,NFILE,fnm));
+      top=read_top(ftp2fn(efTPX,NFILE,fnm));
       do_corr(NFILE,fnm,new c_msd_m(top,ngroup,nrframes),ngroup);
     }
     else {
@@ -480,8 +479,3 @@ int main(int argc,char *argv[])
   
   return 0;
 }
-
-
-
-
-

@@ -84,7 +84,7 @@ extern void put_port(int value);
       * state.
       */
 
-extern int get_port();
+extern int get_port(void);
      /*
       * Hardware is write only, so a copy is actually read from. The correct
       * state is only returned when all led addressing is done via this
@@ -98,7 +98,7 @@ extern void put_leds(int value);
       * Write value into the led port, does not affect the boot rom bit.
       */
 
-extern int get_leds();
+extern int get_leds(void);
      /*
       * Returns the status of the leds only.
       */

@@ -79,7 +79,7 @@ int main(int argc,char *argv[])
   t_block    *excl,*block;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,   ffREAD },
-    { efTPB, NULL, NULL,   ffREAD },
+    { efTPX, NULL, NULL,   ffREAD },
     { efNDX, NULL, NULL,   ffREAD },
     { efXVG, NULL, NULL,   ffWRITE },
     { efXVG, "-oa","angular", ffOPTWR }
@@ -100,7 +100,7 @@ int main(int argc,char *argv[])
     }
   }
    
-  top=read_top(ftp2fn(efTPB,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm));
   mk_single_top(top);
   excl=&(top->atoms.excl);
   status=ftp2fn(efTRX,NFILE,fnm);

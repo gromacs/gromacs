@@ -39,18 +39,17 @@ static char *SRCID_assert_h = "$Id$";
 #include <ctype.h>
 #include "sysstuff.h"
 
-#ifdef NDEBUG
-#define assert(EX)	((void)0)
-#else
+#ifdef assert
+#undef assert
+#endif
 
-#define assert(EX)  if ((EX) != 0); \
-  else  \
-    do { \
-      fprintf(stderr,"Assertion failed for \"%s\" in file %s," \
-      	      " line %d\n",#EX, __FILE__, __LINE__); \
-      fprintf(stderr,"dump core ? (y/n):"); fflush(stderr); \
-      if (toupper(getc(stdin))=='Y') \
-         (void) abort(); else exit(-1); \
-    } while (0)
-#endif	/* NDEBUG */
+#define assert(EXPRESSION)  \
+  if (!(EXPRESSION)) { \
+    fprintf(stderr,"Assertion failed for \"%s\" in file %s, " \
+	    "line %d\ndump core ? (y/n):",#EXPRESSION, __FILE__, __LINE__); \
+    fflush(stderr); \
+    if (toupper(getc(stdin))=='Y') \
+      (void) abort(); else exit(-1); \
+  } else
+
 #endif	/* _assert_h */

@@ -32,6 +32,7 @@
 
 static char *SRCID_complex_h = "$Id$";
 
+#include <math.h>
 #include "typedefs.h"
 
 typedef struct {

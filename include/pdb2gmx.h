@@ -126,5 +126,7 @@ extern real distance(rvec a,rvec b);
 extern void set_histp(int natom,t_pdbatom pdba[],real angle,real distance);
 /* calculate HIStidine protonation state */
 
+extern bool is_prot(char *key);
+/* Return whether the residue key is a protein residue */
 
 #endif	/* _pdb2gmx_h */
