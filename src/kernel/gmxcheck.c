@@ -64,20 +64,30 @@ typedef struct {
   int bBox;
 } t_count;
 
+typedef struct {
+  float bStep;
+  float bTime;
+  float bLambda;
+  float bX;
+  float bV;
+  float bF;
+  float bBox;
+} t_fr_time;
+
 void chk_trj(char *fn)
 {
   t_trxframe   fr;
   t_count      count;
+  t_fr_time    first,last;
   int          j=-1,new_natoms,natoms;
   off_t        fpos;
-  real         rdum,t,tt,t0,old_t1,old_t2,prec;
+  real         rdum,t,tt,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   int          status;
   
   new_natoms = -1;
   natoms = -1;  
   t      = 0;
-  t0     = NOTSET;
   
   printf("Checking file %s\n",fn);
   
@@ -94,6 +104,22 @@ void chk_trj(char *fn)
   count.bV = 0;
   count.bF = 0;
   count.bBox = 0;
+
+  first.bStep = 0;
+  first.bTime = 0;
+  first.bLambda = 0;
+  first.bX = 0;
+  first.bV = 0;
+  first.bF = 0;
+  first.bBox = 0;
+
+  last.bStep = 0;
+  last.bTime = 0;
+  last.bLambda = 0;
+  last.bX = 0;
+  last.bV = 0;
+  last.bF = 0;
+  last.bBox = 0;
 
   read_first_frame(&status,fn,&fr,TRX_READ_X | TRX_READ_V | TRX_READ_F);
 
@@ -120,20 +146,19 @@ void chk_trj(char *fn)
     natoms=new_natoms;
     old_t2=old_t1;
     old_t1=fr.time;
-    if (t0 == NOTSET) t0=fr.time;
     if (fpos && (j<10 || j%10==0))
       fprintf(stderr," byte: %10lu",(unsigned long)fpos);
     j++;
     t=fr.time;
     new_natoms=fr.natoms;
-#define INC(s,n,item) if (s.item != 0) n.item++
-    INC(fr,count,bStep);
-    INC(fr,count,bTime);
-    INC(fr,count,bLambda);
-    INC(fr,count,bX);
-    INC(fr,count,bV);
-    INC(fr,count,bF);
-    INC(fr,count,bBox);
+#define INC(s,n,f,l,item) if (s.item != 0) { if (n.item==0) { first.item = fr.time; } last.item = fr.time; n.item++; }
+    INC(fr,count,first,last,bStep);
+    INC(fr,count,first,last,bTime);
+    INC(fr,count,first,last,bLambda);
+    INC(fr,count,first,last,bX);
+    INC(fr,count,first,last,bV);
+    INC(fr,count,first,last,bF);
+    INC(fr,count,first,last,bBox);
 #undef INC
     fpos = fio_ftell(status);
   } while (read_next_frame(status,&fr));
@@ -146,7 +171,7 @@ void chk_trj(char *fn)
   if (bShowTimestep)
     fprintf(stderr," Timestep (ps)");
   fprintf(stderr,"\n");
-#define PRINTITEM(label,item) fprintf(stderr,"%-10s  %6d",label,count.item); if ((bShowTimestep) && (count.item > 1)) fprintf(stderr,"    %g\n",(t-t0)/(count.item-1)); else fprintf(stderr,"\n")
+#define PRINTITEM(label,item) fprintf(stderr,"%-10s  %6d",label,count.item); if ((bShowTimestep) && (count.item > 1)) fprintf(stderr,"    %g\n",(last.item-first.item)/(count.item-1)); else fprintf(stderr,"\n")
   PRINTITEM ( "Step",       bStep );
   PRINTITEM ( "Time",       bTime );
   PRINTITEM ( "Lambda",     bLambda );
