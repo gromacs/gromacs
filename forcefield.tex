@@ -1643,139 +1643,142 @@ forms of the non-bonded interactions.}
 \newcommand{\Fj}{\ve{F}_j'}
 \newcommand{\Fk}{\ve{F}_k'}
 \newcommand{\Fl}{\ve{F}_l'}
-\newcommand{\Fdum}{\ve{F}_{d}}
+\newcommand{\Fvis}{\ve{F}_{d}}
 \newcommand{\rvik}{\ve{r}_{ik}}
 \newcommand{\rvid}{\ve{r}_{id}}
 \newcommand{\rvjk}{\ve{r}_{jk}}
 \newcommand{\rvjl}{\ve{r}_{jl}}
 
-\section{Dummy atoms.}
-\label{sec:dummy}
-\swapindex{Dummy}{atom}s can be used in {\gromacs} in a number of ways. 
-We write the position of the dummy particle $\ve{r}_d$ as a function of
+\section{Virtual interaction-sites}
+\label{sec:virtual_sites}
+\index{virtual interaction-sites}
+Virtual interaction-sites (called \seeindex{dummy atoms}{virtual interaction-sites} in {\gromacs} versions before 3.3)
+can be used in {\gromacs} in a number of ways. 
+We write the position of the virtual site $\ve{r}_v$ as a function of
 the positions of other particles \ve{r}$_i$: $\ve{r}_d =
-f(\ve{r}_1..\ve{r}_n)$. The dummy, which may carry charge, or can be
+f(\ve{r}_1..\ve{r}_n)$. The virtual site, which may carry charge, or can be
 involved in other interactions can now be used in the force
-calculation.  The force acting on the dummy particle must be
-redistributed over the atoms in a consistent way. A good way to do
-this can be found in ref.~\cite{Berendsen84b}.  We can write the
-potential energy as
+calculation.  The force acting on the virtual site must be
+redistributed over the particles with mass in a consistent way.
+A good way to do this can be found in ref.~\cite{Berendsen84b}.
+We can write the potential energy as
 \beq
-V = V(\ve{r}_d,\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
+V = V(\ve{r}_v,\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
 \eeq
 The force on the particle $i$ is then
 \beq
 \ve{F}_i = -\frac{\partial V^*}{\partial \ve{r}_i} 
          = -\frac{\partial V}{\partial \ve{r}_i} - 
-            \frac{\partial \ve{r}_d}{\partial \ve{r}_i}
-            \frac{\partial V}{\partial \ve{r}_d} 
+            \frac{\partial \ve{r}_v}{\partial \ve{r}_i}
+            \frac{\partial V}{\partial \ve{r}_v} 
          = \ve{F}_i^{direct} + \Fi
 \eeq
 the first term of which is the normal force. 
-The second term is the force on particle $i$ due to the dummy particle, which
+The second term is the force on particle $i$ due to the virtual site, which
 can be written in tensor notation:
 \newcommand{\partd}[2]{\displaystyle\frac{\partial #1}{\partial #2_i}}
 \beq
 \Fi = \left[\begin{array}{ccc}
-\partd{x_d}{x} & \partd{y_d}{x} & \partd{z_d}{x}        \\[1ex]
-\partd{x_d}{y} & \partd{y_d}{y} & \partd{z_d}{y}        \\[1ex]
-\partd{x_d}{z} & \partd{y_d}{z} & \partd{z_d}{z}
-\end{array}\right]\Fdum
-\label{eqn:fdum}
+\partd{x_v}{x} & \partd{y_v}{x} & \partd{z_v}{x}        \\[1ex]
+\partd{x_v}{y} & \partd{y_v}{y} & \partd{z_v}{y}        \\[1ex]
+\partd{x_v}{z} & \partd{y_v}{z} & \partd{z_v}{z}
+\end{array}\right]\Fvis
+\label{eqn:fvsite}
 \eeq
-where $\Fdum$ is the force on the dummy particle and $x_d$, $y_d$ and
-$z_d$ are the coordinates of the dummy particle. In this way the total
+where $\Fvis$ is the force on the virtual site and $x_v$, $y_v$ and
+$z_v$ are the coordinates of the virtual site. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
 
 As a further note, the computation of the \normindex{virial}
-(\eqnref{Xi}) is non-trivial when dummy atoms are used. Since the
+(\eqnref{Xi}) is non-trivial when virtual sites are used. Since the
 virial involves a summation over all the atoms (rather than virtual
-particles) the forces most be redistributed from the dummies to the
-atoms (using ~\eqnref{fdum}) {\em before} computation of the
+sites) the forces most be redistributed from the virtual sites to the
+atoms (using ~\eqnref{fvsite}) {\em before} computation of the
 virial. In some special cases where the forces on the atoms can be
-written as a linear combination of the forces on the dummies (types 2
+written as a linear combination of the forces on the virtual sites (types 2
 and 3 below) there is no difference between computing the virial
 before and after the redistribution of forces.  However, in the
 general case redistribution should be done first.
 
 \begin{figure}
 \centerline{\includegraphics[width=15cm]{plots/dummies}}
-\caption[Dummy atom construction.]{The six different types of dummy
-atom construction in \protect{\gromacs}. The constructing atoms are
-shown as black circles, the dummy atoms in grey.}
-\label{fig:dummies}
+\caption[Virtual site construction.]{The six different types of virtual
+site construction in \protect{\gromacs}. The constructing atoms are
+shown as black circles, the virutal sites in grey.}
+\label{fig:vsites}
 \end{figure}
 
-There are six ways to construct dummies from surrounding atoms in
+There are six ways to construct virtual sites from surrounding atoms in
 {\gromacs}, which we classify by the number of constructing
-atoms. Note that all dummy types mentioned can be constructed from
+atoms. Note that all site types mentioned can be constructed from
 types 3fd (normalized, in-plane) and 3out (non-normalized, out of
 plane). However, the amount of computation involved increases sharply
 along this list, so we strongly recommended using the first adequate
-dummy type that will be sufficient for a certain purpose.
-\figref{dummies} gives an overview of the available dummy constructions.
+virtual site type that will be sufficient for a certain purpose.
+\figref{vsites} gives an overview of the available virtual site constructions.
 
 \begin{itemize}
 \item[{\bf\sf 2.}]As a linear combination of two atoms
-        (\figref{dummies} 2):
+        (\figref{vsites} 2):
 \beq
-        \ve{r}_d ~=~ \ve{r}_i + a \rvij
+        \ve{r}_v ~=~ \ve{r}_i + a \rvij
 \eeq
-        In this case the dummy is on the line through atoms $i$ and
+        In this case the virtual site is on the line through atoms $i$ and
         $j$. The force on particles $i$ and $j$ due to the force on
-        the dummy can be computed as:
+        the virtual site can be computed as:
 \beq
         \begin{array}{lcr}
-        \Fi &=& (1-a)\Fdum      \\
-        \Fj &=& a\,\Fdum        \\
+        \Fi &=& (1-a)\Fvis      \\
+        \Fj &=& a\,\Fvis        \\
         \end{array}
 \eeq
 
 \item[{\bf\sf 3.}]As a linear combination of three atoms
-        (\figref{dummies} 3):
+        (\figref{vsites} 3):
 \beq
-        \ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik
+        \ve{r}_v ~=~ \ve{r}_i + a \rvij + b \rvik
 \eeq
-        In this case the dummy is in the plane of the other three particles.
-        The force on particles $i$, $j$ and $k$ due to the force on the dummy
-        can be computed as:
+        In this case the virtual site is in the plane of the other three
+	particles.
+        The force on particles $i$, $j$ and $k$ due to the force on the virtual
+        site can be computed as:
 \beq
         \begin{array}{lcr}
-        \Fi &=& (1-a-b)\Fdum    \\
-        \Fj &=& a\,\Fdum        \\
-        \Fk &=& b\,\Fdum        \\
+        \Fi &=& (1-a-b)\Fvis    \\
+        \Fj &=& a\,\Fvis        \\
+        \Fk &=& b\,\Fvis        \\
         \end{array}
 \eeq
 
 \item[{\bf\sf 3fd.}]In the plane of three atoms, with a fixed distance
-        (\figref{dummies} 3fd):
+        (\figref{vsites} 3fd):
 \beq
-        \ve{r}_d ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
+        \ve{r}_v ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
                                      {| \rvij + a \rvjk |}      
 \eeq
-        In this case the dummy is in the plane of the other three
+        In this case the virtual site is in the plane of the other three
         particles at a distance of $|b|$ from $i$.
-        The force on particles $i$, $j$ and $k$ due to the force on the dummy
-        can be computed as:
+        The force on particles $i$, $j$ and $k$ due to the force on the virtual
+        site can be computed as:
 \beq
         \begin{array}{lcr}
-        \Fi &=& \displaystyle \Fdum - \gamma ( \Fdum - \ve{p} ) \\[1ex]
-        \Fj &=& \displaystyle (1-a)\gamma (\Fdum - \ve{p})      \\[1ex]
-        \Fk &=& \displaystyle a \gamma (\Fdum - \ve{p})         \\
+        \Fi &=& \displaystyle \Fvis - \gamma ( \Fvis - \ve{p} ) \\[1ex]
+        \Fj &=& \displaystyle (1-a)\gamma (\Fvis - \ve{p})      \\[1ex]
+        \Fk &=& \displaystyle a \gamma (\Fvis - \ve{p})         \\
         \end{array}
         ~\mbox{~ where~ }~
         \begin{array}{c}
 \displaystyle \gamma = \frac{b}{| \rvij + a \rvjk |} \\[2ex]
-\displaystyle \ve{p} = \frac{ \rvid \cdot \Fdum }
+\displaystyle \ve{p} = \frac{ \rvid \cdot \Fvis }
                       { \rvid \cdot \rvid } \rvid
         \end{array}
 \eeq
 
 \item[{\bf\sf 3fad.}]In the plane of three atoms, with a fixed angle and
-        distance (\figref{dummies} 3fad):
+        distance (\figref{vsites} 3fad):
 \beq
-\label{eqn:dum2fad-F}
-         \ve{r}_d ~=~ \ve{r}_i +
+\label{eqn:vsite2fad-F}
+         \ve{r}_v ~=~ \ve{r}_i +
                     d \cos \theta \frac{\rvij}{|\rvij|} +
                     d \sin \theta \frac{\ve{r}_\perp}{|\ve{r}_\perp|}
         ~\mbox{~ where~ }~
@@ -1784,19 +1787,19 @@ dummy type that will be sufficient for a certain purpose.
                              { \rvij \cdot \rvij }
                          \rvij
 \eeq
-        In this case the dummy is in the plane of the other three
+        In this case the virtual site is in the plane of the other three
         particles at a distance of $|d|$ from $i$ at an angle of
         $\alpha$ with $\rvij$. Atom $k$ defines the plane and the
         direction of the angle. Note that in this case $b$ and
         $\alpha$ must be specified, instead of $a$ and $b$ (see also
-        \secref{dummytop}). The force on particles $i$, $j$ and $k$
-        due to the force on the dummy can be computed as (with
-        $\ve{r}_\perp$ as defined in \eqnref{dum2fad-F}):
+        \secref{vsitetop}). The force on particles $i$, $j$ and $k$
+        due to the force on the virtual site can be computed as (with
+        $\ve{r}_\perp$ as defined in \eqnref{vsite2fad-F}):
 \newcommand{\dfrac}{\displaystyle\frac}
 \beq
 \begin{array}{c}
         \begin{array}{lclllll}
-        \Fi &=& \Fdum &-& 
+        \Fi &=& \Fvis &-& 
                 \dfrac{d \cos \theta}{|\rvij|} \ve{F}_1 &+&
                 \dfrac{d \sin \theta}{|\ve{r}_\perp|} \left( 
                 \dfrac{ \rvij \cdot \rvjk }
@@ -1813,29 +1816,29 @@ dummy type that will be sufficient for a certain purpose.
                 \dfrac{d \sin \theta}{|\ve{r}_\perp|} \ve{F}_2  \\[3ex]
         \end{array}                                             \\[5ex]
         \mbox{where ~}
-        \ve{F}_1 = \Fdum -
-                  \dfrac{ \rvij \cdot \Fdum }
+        \ve{F}_1 = \Fvis -
+                  \dfrac{ \rvij \cdot \Fvis }
                         { \rvij \cdot \rvij } \rvij
         \mbox{\,, ~}
         \ve{F}_2 = \ve{F}_1 -
-                  \dfrac{ \ve{r}_\perp \cdot \Fdum }
+                  \dfrac{ \ve{r}_\perp \cdot \Fvis }
                         { \ve{r}_\perp \cdot \ve{r}_\perp } \ve{r}_\perp
         \mbox{~and ~}
-        \ve{F}_3 = \dfrac{ \rvij \cdot \Fdum }
+        \ve{F}_3 = \dfrac{ \rvij \cdot \Fvis }
                          { \rvij \cdot \rvij } \ve{r}_\perp
 \end{array}
 \eeq
 
 \item[{\bf\sf 3out.}]As a non-linear combination of three atoms, out of plane
-        (\figref{dummies} 3out):
+        (\figref{vsites} 3out):
 \beq
-        \ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik +
+        \ve{r}_v ~=~ \ve{r}_i + a \rvij + b \rvik +
                 c (\rvij \times \rvik)
 \eeq
-        This enables the construction of dummies out of the plane of the
+        This enables the construction of virtual sites out of the plane of the
         other atoms.
-        The force on particles $i,j$ and $k$ due to the force on the dummy
-        can be computed as:
+        The force on particles $i,j$ and $k$ due to the force on the virtual
+        site can be computed as:
 \beq
 \begin{array}{lcl}
 \vspace{4mm}
@@ -1843,37 +1846,37 @@ dummy type that will be sufficient for a certain purpose.
  a              &  -c\,z_{ik}   & c\,y_{ik}     \\[0.5ex]
  c\,z_{ik}      &   a           & -c\,x_{ik}    \\[0.5ex]
 -c\,y_{ik}      &   c\,x_{ik}   & a
-\end{array}\right]\Fdum                                 \\
+\end{array}\right]\Fvis                                 \\
 \vspace{4mm}
 \Fk &=& \left[\begin{array}{ccc}
  b              &   c\,z_{ij}   & -c\,y_{ij}    \\[0.5ex]
 -c\,z_{ij}      &   b           & c\,x_{ij}     \\[0.5ex]
  c\,y_{ij}      &  -c\,x_{ij}   & b
-\end{array}\right]\Fdum                                 \\
-\Fi &=& \Fdum - \Fj - \Fk
+\end{array}\right]\Fvis                                 \\
+\Fi &=& \Fvis - \Fj - \Fk
 \end{array}
 \eeq
 
 \item[{\bf\sf 4fd.}]From four atoms, with a fixed distance
-        (\figref{dummies} 4fd):
+        (\figref{vsites} 4fd):
 \beq
-        \ve{r}_d ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
+        \ve{r}_v ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
                                      {| \rvij + a \rvjk + b \rvjl|}     
 \eeq
-        In this case the dummy is at a distance of $|c|$ from $i$.
+        In this case the virtual site is at a distance of $|c|$ from $i$.
         The force on particles $i$, $j$, $k$ and $l$ due to the force 
-        on the dummy can be computed as:
+        on the virtual site can be computed as:
 \beq
         \begin{array}{lcr}
-        \Fi &=& \displaystyle \Fdum - \gamma ( \Fdum - \ve{p} ) \\[1ex]
-        \Fj &=& \displaystyle (1-a-b)\gamma (\Fdum - \ve{p})    \\[1ex]
-        \Fk &=& \displaystyle a \gamma (\Fdum - \ve{p})         \\[1ex]
-        \Fl &=& \displaystyle b \gamma (\Fdum - \ve{p})         \\
+        \Fi &=& \displaystyle \Fvis - \gamma ( \Fvis - \ve{p} ) \\[1ex]
+        \Fj &=& \displaystyle (1-a-b)\gamma (\Fvis - \ve{p})    \\[1ex]
+        \Fk &=& \displaystyle a \gamma (\Fvis - \ve{p})         \\[1ex]
+        \Fl &=& \displaystyle b \gamma (\Fvis - \ve{p})         \\
         \end{array}
         ~\mbox{~ where~ }~
         \begin{array}{c}
 \displaystyle \gamma = \frac{c}{| \rvij + a \rvjk + b \rvjl |} \\[2ex]
-\displaystyle \ve{p} = \frac{ \rvid \cdot \Fdum }
+\displaystyle \ve{p} = \frac{ \rvid \cdot \Fvis }
                       { \rvid \cdot \rvid } \rvid
         \end{array}
 \eeq

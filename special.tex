@@ -506,11 +506,11 @@ period 13~fs the next shortest periods are around 20~fs, which will
 allow a maximum time step of about 4~fs
 
 Removing the bond-angle degrees of freedom from hydrogen atoms can
-best be done by defining them as \swapindex{dummy}{atom}s instead of
-normal atoms. Where a normal atoms is connected to the molecule with
-bonds, angles and dihedrals, a dummy atom's position is calculated
+best be done by defining them as \normindex{virtual interaction-sites}
+instead of normal atoms. Where a normal atoms is connected to the molecule
+with bonds, angles and dihedrals, a virtual site's position is calculated
 from the position of three nearby heavy atoms in a predefined manner
-(see also \secref{dummy}). For the hydrogens in water and in
+(see also \secref{virtual_sites}). For the hydrogens in water and in
 hydroxyl, sulfhydryl or amine groups, no degrees of freedom can be
 removed, because rotational freedom should be preserved. The only
 other option available to slow down these motions, is to increase the
@@ -519,28 +519,28 @@ heavy atom. This will increase the moment of inertia of the water
 molecules and the hydroxyl, sulfhydryl or amine groups, without
 affecting the equilibrium properties of the system and without
 affecting the dynamical properties too much. These constructions will
-shortly be described in \secref{dummyhydro} and have previously
+shortly be described in \secref{vsitehydro} and have previously
 been described in full detail~\cite{feenstra99}.
 
-Using both dummy atoms and \swapindex{modified}{mass}es, the next
+Using both virtual sites and \swapindex{modified}{mass}es, the next
 bottleneck is likely to be formed by the improper dihedrals (which are
 used to preserve planarity or chirality of molecular groups) and the
 peptide dihedrals. The peptide dihedral cannot be changed without
 affecting the physical behavior of the protein. The improper dihedrals
 that preserve planarity, mostly deal with aromatic residues. Bonds,
 angles and dihedrals in these residues can also be replaced with
-somewhat elaborate dummy atom constructions, as will be described in
-\secref{dummyaro}~\cite{feenstra01}.
+somewhat elaborate virtual site constructions, as will be described in
+\secref{vsitearo}~\cite{feenstra01}.
 
 All modifications described in this section can be performed using the
 {\gromacs} topology building tool {\tt \normindex{pdb2gmx}}. Separate
-options exist to increase hydrogen masses, dummify all hydrogen atoms
-or also dummify all aromatic residues. Note that when all hydrogen
-atoms are dummified, also those inside the aromatic residues will be
-dummified, {\ie} hydrogens in the aromatic residues are treated
+options exist to increase hydrogen masses, virtualize all hydrogen atoms
+or also virtualize all aromatic residues. Note that when all hydrogen
+atoms are virtualized, also those inside the aromatic residues will be
+virtualized, {\ie} hydrogens in the aromatic residues are treated
 differently depending on the treatment of the aromatic residues.
 
-Parameters for the dummy constructions for the hydrogen atoms are
+Parameters for the virtual site constructions for the hydrogen atoms are
 inferred from the forcefield parameters ({\em vis}. bond lengths and
 angles) directly by {\tt \normindex{grompp}} while processing the
 topology file.  The constructions for the aromatic residues are based
@@ -550,37 +550,37 @@ forcefields, but these parameters are hard-coded into {\tt
 needed for a whole aromatic group.
 
 \subsection{Hydrogen bond-angle vibrations}
-\label{sec:dummyhydro}
-\subsubsection{Construction of Dummy Atoms} %%%%%%%%%%%%%%%%%%%%%%%%%
+\label{sec:vsitehydro}
+\subsubsection{Construction of virtual sites} %%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
 \centerline{\includegraphics[width=11cm]{plots/dumtypes}}
-\caption[Dummy atom constructions for hydrogen atoms.]{The different
-types of dummy atom constructions used for hydrogen atoms. The atoms
-used in the construction of the dummy atom(s) are depicted as black
-circles, dummy atoms as grey ones. Hydrogens are smaller than heavy
+\caption[Virtual site constructions for hydrogen atoms.]{The different
+types of virtual site constructions used for hydrogen atoms. The atoms
+used in the construction of the virtual site(s) are depicted as black
+circles, virtual sites as grey ones. Hydrogens are smaller than heavy
 atoms. {\sf A}: fixed bond angle, note that here the hydrogen is not a
-dummy atom; {\sf B}: in the plane of three atoms, with fixed distance;
+virtual site; {\sf B}: in the plane of three atoms, with fixed distance;
 {\sf C}: in the plane of three atoms, with fixed angle and distance;
 {\sf D}: construction for amine groups ({\amine} or {\aminep}), see
 text for details.}
-\label{fig:dumhydro}
+\label{fig:vsitehydro}
 \end{figure}
 
-The goal of defining hydrogen atoms as dummy atoms is to remove all
+The goal of defining hydrogen atoms as virtual sites is to remove all
 high-frequency degrees of freedom from them. In some cases not all
 degrees of freedom of a hydrogen atom should be removed, {\eg} in the
 case of hydroxyl or amine groups the rotational freedom of the
 hydrogen atom(s) should be preserved. Care should be taken that no
-unwanted correlations are introduced by the construction of dummy
-atoms, {\eg} bond-angle vibration between the constructing atoms could
+unwanted correlations are introduced by the construction of virtual
+sites, {\eg} bond-angle vibration between the constructing atoms could
 translate into hydrogen bond-length vibration. Additionally, since
-dummy atoms are by definition massless, in order to preserve total
-system mass, the mass of each hydrogen atom that is treated as dummy
-atom should be added to the bonded heavy atom.
+virtual sites are by definition massless, in order to preserve total
+system mass, the mass of each hydrogen atom that is treated as virtual
+site should be added to the bonded heavy atom.
 
 Taking into account these considerations, the hydrogen atoms in a
 protein naturally fall into several categories, each requiring a
-different approach (see also \figref{dumhydro}).
+different approach (see also \figref{vsitehydro}).
 
 \begin{itemize}
 
@@ -588,10 +588,10 @@ different approach (see also \figref{dumhydro}).
 hydrogen:\/} The only internal degree of freedom in a hydroxyl group
 that can be constrained is the bending of the {\sf C-O-H} angle. This
 angle is fixed by defining an additional bond of appropriate length,
-see \figref{dumhydro}A. This removes the high frequency angle bending,
+see \figref{vsitehydro}A. This removes the high frequency angle bending,
 but leaves the dihedral rotational freedom. The same goes for a
 sulfhydryl group. Note that in these cases the hydrogen is not treated
-as a dummy atom.
+as a virtual site.
 
 \item{\em single amine or amide ({\amines}) and aromatic hydrogens
 ({\sf -CH-}):\/} The position of these hydrogens cannot be constructed
@@ -599,7 +599,7 @@ from a linear combination of bond vectors, because of the flexibility
 of the angle between the heavy atoms. Instead, the hydrogen atom is
 positioned at a fixed distance from the bonded heavy atom on a line
 going through the bonded heavy atom and a point on the line through
-both second bonded atoms, see \figref{dumhydro}B.
+both second bonded atoms, see \figref{vsitehydro}B.
 
 \item{\em planar amine ({\amine}) hydrogens:\/} The method used for
 the single amide hydrogen is not well suited for planar amine groups,
@@ -607,11 +607,11 @@ because no suitable two heavy atoms can be found to define the
 direction of the hydrogen atoms. Instead, the hydrogen is constructed
 at a fixed distance from the nitrogen atom, with a fixed angle to the
 carbon atom, in the plane defined by one of the other heavy atoms, see
-\figref{dumhydro}C.
+\figref{vsitehydro}C.
 
 \item{\em amine group (umbrella {\amine} or {\aminep}) hydrogens:\/}
-Amine hydrogens with rotational freedom cannot be constructed as dummy
-atoms from the heavy atoms they are connected to, since this would
+Amine hydrogens with rotational freedom cannot be constructed as virtual
+sites from the heavy atoms they are connected to, since this would
 result in loss of the rotational freedom of the amine group. To
 preserve the rotational freedom while removing the hydrogen bond-angle
 degrees of freedom, two ``dummy masses'' are constructed with the same
@@ -623,31 +623,31 @@ triangle. From these three particles the positions of the nitrogen and
 hydrogen atoms are constructed as linear combinations of the two
 carbon-mass vectors and their outer product, resulting in an amine
 group with rotational freedom intact, but without other internal
-degrees of freedom. See \figref{dumhydro}D.
+degrees of freedom. See \figref{vsitehydro}D.
 
 \end{itemize}
 
 \begin{figure}
 \centerline{\includegraphics[width=15cm]{plots/dumaro}}
-\caption[Dummy atom constructions for aromatic residues.]{The
-different types of dummy atom constructions used for aromatic
-residues. The atoms used in the construction of the dummy atom(s) are
-depicted as black circles, dummy atoms as grey ones. Hydrogens are
+\caption[Virtual site constructions for aromatic residues.]{The
+different types of virtual site constructions used for aromatic
+residues. The atoms used in the construction of the virtual site(s) are
+depicted as black circles, virtual sites as grey ones. Hydrogens are
 smaller than heavy atoms. {\sf A}: phenylalanine; {\sf B}: tyrosine
-(note that the hydroxyl hydrogen is {\em not} a dummy atom); {\sf C}:
+(note that the hydroxyl hydrogen is {\em not} a virtual site); {\sf C}:
 tryptophane; {\sf D}: histidine.}
-\label{fig:dumaro}
+\label{fig:vistearo}
 \end{figure}
 
 \subsection{Out-of-plane vibrations in aromatic groups}
-\label{sec:dummyaro}
+\label{sec:vsitearo}
 The planar arrangements in the side chains of the aromatic residues
-lends itself perfectly to a dummy-atom construction, giving a
+lends itself perfectly to a virtual-site construction, giving a
 perfectly planar group without the inherently instable constraints
 that are necessary to keep normal atoms in a plane. The basic approach
 is to define three atoms or dummy masses with constraints between them
-to fix the geometry and create the rest of the atoms as simple dummy
-type 3 atoms (see \secref{dummy}) from these three. Each of
+to fix the geometry and create the rest of the atoms as simple virtual
+sites type (see \secref{virtual_sites}) from these three. Each of
 the aromatic residues require a different approach:
 
 \begin{itemize}
@@ -655,7 +655,7 @@ the aromatic residues require a different approach:
 \item{\em Phenylalanine:\/} {\sf C}$_\gamma$, {\sf C}$_{{\epsilon}1}$
 and {\sf C}$_{{\epsilon}2}$ are kept as normal atoms, but with each a
 mass of one third the total mass of the phenyl group. See
-\figref{dumhydro}A.
+\figref{vsitehydro}A.
 
 \item{\em Tyrosine:\/} The ring is treated identical to the
 phenylalanine ring. Additionally, constraints are defined between {\sf
@@ -665,8 +665,8 @@ for the ring and one with {\sf O}$_{\eta}$) in a plane, but due to the
 larger moments of inertia this construction will be much more
 stable. The bond angle in the hydroxyl group will be constrained by a
 constraint between {\sf C}$_\gamma$ and {\sf H}$_{\eta}$, note that
-the hydrogen is not treated as a dummy atom. See
-\figref{dumhydro}B.
+the hydrogen is not treated as a virtual site. See
+\figref{vsitehydro}B.
 
 \item{\em Tryptophane:\/} {\sf C}$_\beta$ is kept as a normal atom
 and two dummy masses are created at the center of mass of each of the
@@ -674,12 +674,12 @@ rings, each with a mass equal to the total mass of the respective ring
 ({\sf C}$_{{\delta}2}$ and {\sf C}$_{{\epsilon}2}$ are each
 counted half for each ring). This keeps the overall center of mass and
 the moment of inertia almost (but not quite) equal to what it was. See
-\figref{dumhydro}C.
+\figref{vsitehydro}C.
 
 \item{\em Histidine:\/} {\sf C}$_\gamma$, {\sf C}$_{{\epsilon}1}$
 and {\sf N}$_{{\epsilon}2}$ are kept as normal atoms, but with masses
 redistributed such that the center of mass of the ring is
-preserved. See \figref{dumhydro}D.
+preserved. See \figref{vsitehydro}D.
 
 \end{itemize}
 

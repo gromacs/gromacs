@@ -64,7 +64,7 @@ to the force field archive!
 \label{sec:parttype}
 
 In {\gromacs} there are 5 types of \normindex{particle}s, see
-\tabref{ptype}. Only regular atoms and dummy particles are used
+\tabref{ptype}. Only regular atoms and virtual interaction-sites are used
 in {\gromacs}; shells are necessary for
 polarizable models like the Shell-Water models~\cite{Maaren2001a}.
 
@@ -76,7 +76,7 @@ Particle        		& Symbol        \\
 \hline
 \seeindex{atom}{particle}s      & A   \\
 \seeindex{shell}{particle}s     & S   \\
-\seeindex{dummie}{particle}s	& D   \\
+\normindex{virtual interaction-sites}	& V (or D)   \\
 \dline
 \end{tabular}
 }
@@ -168,74 +168,77 @@ not} as a number (as {\eg} in {\gromos}).
 %\subsection{Bond shell}
 %{\em Necessary for polarisability, not implemented yet.}
 
-\subsection{Dummy atoms}
-\label{sec:dummytop}
-Some force fields use \swapindex{dummy}{atom}s 
-(\normindex{virtual site}s that are constructed
-from real atoms) on which certain interactions are located
+\subsection{Virtual sites}
+\label{sec:vsitetop}
+Some force fields use \normindex{virtual interaction-sites}
+(interaction sites that are constructed from other particle postions)
+on which certain interactions are located
 ({\eg} on benzene rings, to reproduce the correct
-\normindex{quadrupole}). This is described in~\secref{dummy}.
+\normindex{quadrupole}). This is described in~\secref{virtual_sites}.
 
-To make dummy atoms in your system, you should include a section
-{\tt [~dummies?~]} in your topology file, where the `{\tt ?}' stands
-for the number constructing atoms for the dummy atom. This will be
+To make virtual sites in your system, you should include a section
+{\tt [~virtual\_sites?~]} (for backward compatibility the old name
+{\tt [~dummies?~]} can also be used) in your topology file,
+where the `{\tt ?}' stands
+for the number constructing particles for the virtual site. This will be
 `{\tt 2}' for type 2, `{\tt 3}' for types 3, 3fd, 3fad and 3out and
 `{\tt 4}' for type 4fd (the different types are explained
-in~\secref{dummy}).
+in~\secref{virtual_sites}).
 
 Parameters for type 2 should look like this:
 {\small\begin{verbatim}
-[ dummies2 ] 
-; Dummy from        funct  a 
+[ virtual_sites2 ] 
+; Site  from        funct  a 
 5       1     2     1      0.7439756
 \end{verbatim}}
 
 for type 3 like this:
 {\small\begin{verbatim}
-[ dummies3 ]
-; Dummy from               funct   a          b
+[ virtual_sites3 ]
+; Site  from               funct   a          b
 5       1     2     3      1       0.7439756  0.128012
 \end{verbatim}}
 
 for type 3fd like this:
 {\small\begin{verbatim}
-[ dummies3 ]
-; Dummy from               funct   a          d
+[ virtual_sites3 ]
+; Site  from               funct   a          d
 5       1     2     3      2       0.5        -0.105
 \end{verbatim}}
 
 for type 3fad like this:
 {\small\begin{verbatim}
-[ dummies3 ]
-; Dummy from               funct   theta      d
+[ virtual_sites3 ]
+; Site  from               funct   theta      d
 5       1     2     3      3       120        0.5
 \end{verbatim}}
 
 for type 3out like this:
 {\small\begin{verbatim}
-[ dummies3 ]
-; Dummy from               funct   a          b          c
+[ virtual_sites3 ]
+; Site  from               funct   a          b          c
 5       1     2     3      4       -0.4       -0.4       6.9281
 \end{verbatim}}
 
 for type 4fd like this:
 {\small\begin{verbatim}
-[ dummies4 ]
-; Dummy from                      funct   a          b          d
+[ virtual_sites4 ]
+; Site  from                      funct   a          b          d
 5       1     2     3     4       1       0.33333    0.33333    -0.105
 \end{verbatim}}
 
-This will result in the construction of a dummy `atom', number 5
-(first column `{\tt Dummy}'), based on the positions of 1 and 2 or 1,
+This will result in the construction of a virtual site, number 5
+(first column `{\tt Site}'), based on the positions of 1 and 2 or 1,
 2 and 3 or 1, 2, 3 and 4 (next two, three or four columns
 `{\tt from}') following the rules determined by the function number
 (next column `{\tt funct}') with the parameters specified (last one,
 two or three columns `{\tt a b} . .').
 
-Note that any bonds defined between dummy atoms and/or normal atoms
-will be removed by {\tt grompp} after the exclusions have been
-generated. This way, exclusions will not be affected by an atom being
-defined as dummy atom or not, but by the bonding configuration of the
+Note that if any constant bonded interactions defined between
+virtual sites and/or normal atoms will be removed by {\tt grompp},
+this happens after the exclusions have been generated.
+This way, exclusions will not be affected by an atom being
+defined as virtual site or not, but by the bonding configuration of the
 atom.
 
 \section{Parameter files}
@@ -493,7 +496,7 @@ The section {\tt [ settles ]} defines the first atom of the watery molecule.
 The settle funct is always one, and the distance between O-H and H-H distances
 must be given. Note that the algorithm can also be used
 for TIP3P and TIP4P~\cite{Jorgensen83}.
-TIP3P just has another geometry. TIP4P has a dummy atom, but since 
+TIP3P just has another geometry. TIP4P has a virtual site, but since 
 that is generated it does not need to be shaken (nor stirred).
 
 \section{\normindex{Database}s}
@@ -885,12 +888,12 @@ RB dihedral	& {\tt dihedrals}	& 4 & 3	& C$_0$, C$_1$, C$_2$, C$_3$, C$_4$, C$_5$
 constraint	& {\tt constraints}$^{(d)}$& 2 & 1	& b$_0$ (nm) 				& X	\\
 constr. n.c.    & {\tt constraints}	& 2 & 2	& b$_0$ (nm) 				& X	\\
 settle		& {\tt settles}		& 3 & 1	& d$_{\mbox{\sc oh}}$, d$_{\mbox{\sc hh}}$ (nm) 		& 	\\
-dummy2		& {\tt dummies2}	& 3 & 1	& a ()					& 	\\
-dummy3		& {\tt dummies3}	& 4 & 1	& a, b ()				& 	\\
-dummy3fd	& {\tt dummies3}	& 4 & 2	& a (); d (nm)				& 	\\
-dummy3fad	& {\tt dummies3}	& 4 & 3	& $\theta$ (deg); d (nm) 		& 	\\
-dummy3out	& {\tt dummies3}	& 4 & 4	& a, b (); c (nm$^{-1}$) 		& 	\\
-dummy4fd	& {\tt dummies4}	& 5 & 1	& a, b (); d (nm);	   		& 	\\
+vsite2		& {\tt virtual\_sites2}	& 3 & 1	& a ()					& 	\\
+vsite3		& {\tt virtual\_sites3}	& 4 & 1	& a, b ()				& 	\\
+vsite3fd	& {\tt virtual\_sites3}	& 4 & 2	& a (); d (nm)				& 	\\
+vsite3fad	& {\tt virtual\_sites3}	& 4 & 3	& $\theta$ (deg); d (nm) 		& 	\\
+vsite3out	& {\tt virtual\_sites3}	& 4 & 4	& a, b (); c (nm$^{-1}$) 		& 	\\
+vsite4fd	& {\tt virtual\_sites4}	& 5 & 1	& a, b (); d (nm);	   		& 	\\
 position res.	& {\small\tt position\_restraints}	& 1 & 1	& k$_{x}$, k$_{y}$, k$_{z}$ (\kJmolnm{-2}) & X	\\
 %wpol	& {\tt position\_restraints}	& 1 & 2	& ???	& 	\\
 distance res.	& {\small\tt distance\_restraints}	& 2 & 1	& type; label; low, up$_1$, up$_2$ (nm); & \\
