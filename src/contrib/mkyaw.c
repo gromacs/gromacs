@@ -40,7 +40,6 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include "config.h"
 #include "assert.h"
 #include "pdbio.h"
 #include "confio.h"

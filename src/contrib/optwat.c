@@ -38,7 +38,6 @@
 #endif
 
 #include <string.h>
-#include "config.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
