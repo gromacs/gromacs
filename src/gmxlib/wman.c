@@ -223,7 +223,6 @@ static void write_texman(FILE *out,char *program,
 
   fprintf(out,"\\newpage\n");
   fprintf(out,"\\section{%s.}\n",check_tex(program));
-  fprintf(out,"{\\bf %s\\\\%s}\n\n",GromacsVersion(),mydate());
   
   if (nldesc > 0) {
     fprintf(out,"\\subsubsection*{Description.}\n");
