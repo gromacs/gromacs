@@ -531,14 +531,15 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 
 static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
 		       real phi,real lambda,real *V,real *F)
-     /* equivalent to dopdihs, except for a minus sign  */
+     /* similar to dopdihs, except for a minus sign  *
+      * and a different treatment of mult/phi0       */
 {
   real v,dvdl,mdphi,v1,sdphi,ddphi;
   real L1   = 1.0-lambda;
   real ph0  = DEG2RAD*(L1*phiA+lambda*phiB);
   real cp   = L1*cpA + lambda*cpB;
   
-  mdphi = mult*phi-ph0;
+  mdphi = mult*(phi-ph0);
   sdphi = sin(mdphi);
   ddphi = cp*mult*sdphi;
   v1    = 1.0-cos(mdphi);
