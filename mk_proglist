@@ -1,0 +1,47 @@
+#!/bin/csh -f
+
+echo "The mk_proglist script converts programs.txt to the"
+echo "Latex file proglist.tex file for inclusion in the manual."
+echo "Copy the programs.txt file from the admin directory in"
+echo "the GROMACS source, place it in your manual directory"
+echo "and run mk_proglist when you have added programs."
+echo ""
+
+
+set TEXIDX	= proglist.tex
+set PROGFILE	= programs.txt
+
+if (! -f $PROGFILE ) then 
+  echo "Error: Can't find programs.txt in the current directory."
+  echo "Either copy it from the admin directory of the GROMACS"
+  echo "source code, or just touch the filename and create a version"
+  echo "of the manual without the program descriptions."
+  exit 1
+endif
+
+echo "generating latex page $TEXIDX"
+
+if ( -f $TEXIDX ) \rm $TEXIDX
+touch $TEXIDX
+
+echo "\\begin{description}" >> $TEXIDX
+awk -F '|' -v longest="mk\\_angndx" '{\
+  gsub("_","\\_",$0);\
+  gsub("%","\\%",$0);\
+  if (NF) {\
+    if ( $1 == "LONGEST" ) {\
+      longest = $2;\
+    } else if ( $1 == "HEAD" ) {\
+      printf("\\item {\\large\\bf %s}\n",$2);\
+      printf("\\vspace{-2ex}\\begin{tabbing}\n");\
+      printf("{\\bf %s} \\= \\kill\n",longest);\
+    } else if ( $1 == "END" ) {\
+      printf("\\end{tabbing}\\vspace{-2ex}\n\n");\
+    } else {\
+      printf("{\\bf %s} \\> %s \\\\\n",$1,$2);\
+    }\
+  }\
+}' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
+echo "\\end{description}" >> $TEXIDX
+
+#last line
