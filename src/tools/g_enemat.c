@@ -128,7 +128,7 @@ int main(int argc,char *argv[])
   t_rgb      rlo,rhi,rmid;
   real       emax,emid,emin;
   real       ***emat,**etot,*groupnr;
-  double     beta,expE,**e,*eaver,*efree=NULL;
+  double     beta,expE,**e,*eaver,*efree=NULL,edum;
   char       label[234];
   char       **ereflines,**erefres=NULL;
   real       *eref=NULL,*edif=NULL;
@@ -294,7 +294,8 @@ int main(int argc,char *argv[])
 	snew(erefres, neref);
 	for(i=0; (i<neref); i++) {
 	  snew(erefres[i], 5);
-	  sscanf(ereflines[i],"%s %f",erefres[i],&eref[i]);
+	  sscanf(ereflines[i],"%s %lf",erefres[i],&edum);
+	  eref[i] = edum;
 	}
       }
       snew(eaver,ngroups);
