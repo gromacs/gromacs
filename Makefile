@@ -16,16 +16,21 @@ DVIPS	=	dvips
 LOCAL	=	$(GMXHOME)/src/local
 HTML	=	$(GMXHOME)/html
 
-FILES = algorithms	analyse		averages	cutoff		\
-	defunits	files		forcefield	gromacs		\
-	ieee		implement	install		intro		\
-	lr-corr		lr_elstat	macros		mdp_opt		\
-	par-md		proglist	progman		programs	\
-	special		sqrt		tables		topolfig	\
-	topology	virial
+TEXFS = algorithms	analyse		averages	cutoff		\
+	defunits	files		forcefield	ieee		\
+	implement	install		intro		lr-corr		\
+	lr_elstat	macros		mdp_opt		par-md		\
+	proglist	progman		programs	special		\
+	sqrt		tables		topolfig	topology	\
+	virial
 
-AUXFILES = $(foreach FILE,$(FILES), $(FILE).aux)
-TEXFILES = $(foreach FILE,$(FILES), $(FILE).tex)
+AUXFS = algorithms	analyse		averages	defunits	\
+	forcefield	implement	install		intro		\
+	lr-corr		par-md		progman		programs	\
+	special		tables		topology	
+
+AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
+TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
 
 all:		gromacs.ps
 
@@ -65,7 +70,7 @@ man:		./mkman
 progman.tex:	
 		$(TOUCH) progman.tex
 
-mdp_opt.tex:	./mkmdp $(HTML)/progman.html
+mdp_opt.tex:	./mkmdp
 		./mkmdp $(GMXHOME)
 
 proglist.tex:	$(LOCAL)/mkonline $(LOCAL)/programs.txt
