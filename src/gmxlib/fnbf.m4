@@ -54,15 +54,14 @@ static char *SRCID_fnbf_c = "$Id$";
 #include "inner.h"
 #include "nrnb.h"
 #include "smalloc.h"
-#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE) 
 #include "x86cpu.h"
-#endif
+
 
 #ifdef USE_VECTOR
 static real *fbuf=NULL;
 #endif	
 
-
+int x86cpu = X86_NOTCHECKED;
 
 void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
 	     rvec x[],rvec f[],t_mdatoms *mdatoms,
@@ -74,14 +73,13 @@ void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
   real     *fshift;
   int      i,i0,i1,nrnb_ind,sz;
   bool     bWater;
-#if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
-  static int x86cpu=-1;
-#endif
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_RECIP)
 static int buflen=0;
 static real *drbuf=NULL;
 static real *buf1=NULL;
 static real *buf2=NULL;
+static real *_buf1=NULL;
+static real *_buf2=NULL;
 #endif
 
 #ifdef USE_VECTOR
@@ -93,14 +91,17 @@ static real *buf2=NULL;
   if (buflen==0) {
     buflen=VECTORIZATION_BUFLENGTH;
     snew(drbuf,3*buflen);
-    snew(buf1,buflen);
-    snew(buf2,buflen);
+    snew(_buf1,buflen+31);
+    snew(_buf2,buflen+31);
+    /* use cache aligned buffer pointers */
+    buf1=(real *) ( ( (unsigned long int)_buf1 + 31 ) & (~0x1f) );	 
+    buf2=(real *) ( ( (unsigned long int)_buf2 + 31 ) & (~0x1f) );	 
     fprintf(log,"Using buffers of length %d for innerloop vectorization.\n",buflen);
   }
 #endif
 
 #if (defined USE_SSE_AND_3DNOW && defined _lnx_ && !defined DOUBLE)
- if(x86cpu==-1) 
+ if(x86cpu==X86_NOTCHECKED) 
 	x86cpu=check_x86cpu(log);
 #endif
   if (eNL >= 0) {
@@ -140,8 +141,11 @@ static real *buf2=NULL;
                     "you should consider disabling innerloop vectorization.\n\n",buflen,sz+100);
 	buflen=(sz+100); /* use some extra size to avoid reallocating next step */
     	srenew(drbuf,3*buflen);
-    	srenew(buf1,buflen);
-    	srenew(buf2,buflen);
+    	srenew(_buf1,buflen+31);
+    	srenew(_buf2,buflen+31);
+        /* use cache aligned buffer pointers */
+        buf1=(real *) ( ( (unsigned long int)_buf1 + 31 ) & (~0x1f) );	 
+        buf2=(real *) ( ( (unsigned long int)_buf2 + 31 ) & (~0x1f) );	 
       }	
 #endif 	    
 
@@ -151,9 +155,13 @@ static real *buf2=NULL;
  */
 
 define(`COMMON_ARGS',`SCAL(nlist->nri),nlist->iinr,nlist->jindex,nlist->jjnr,nlist->`shift',fr->shift_vec[0],fshift,nlist->gid ,x[0],f[0] ifdef(`USE_VECTOR',`,fbuf') ifdef(`USE_THREADS',`,SCAL(cr->threadid),SCAL(cr->nthreads),&(nlist->count),nlist->mtx')')
-define(`REC_BUF',`ifdef(`VECTORIZE_RECIP',`,drbuf,buf1 ifdef(`USE_VECTOR',`,buf2')')')
+define(`REC_BUF',`ifdef(`VECTORIZE_RECIP',`,drbuf,buf1 ifdef(`USE_VECTOR',`,buf2')') ifdef(`USE_VECTOR',`,buf2')')
 define(`INVSQRT_BUF1',`ifdef(`VECTORIZE_INVSQRT',`,drbuf,buf1 ifdef(`USE_VECTOR',`,buf2')')')
 define(`INVSQRT_BUF2',`ifdef(`VECTORIZE_INVSQRT',`ifdef(`USE_VECTOR',`',`,buf2')')')      
+define(`INVSQRT_W_BUF1',`ifdef(`VECTORIZE_INVSQRT_W',`,drbuf,buf1 ifdef(`USE_VECTOR',`,buf2')')')
+define(`INVSQRT_W_BUF2',`ifdef(`VECTORIZE_INVSQRT_W',`ifdef(`USE_VECTOR',`',`,buf2')')')      
+define(`INVSQRT_WW_BUF1',`ifdef(`VECTORIZE_INVSQRT_WW',`,drbuf,buf1 ifdef(`USE_VECTOR',`,buf2')')')
+define(`INVSQRT_WW_BUF2',`ifdef(`VECTORIZE_INVSQRT_WW',`ifdef(`USE_VECTOR',`',`,buf2')')')      
 define(`LJ_ARGS',`,mdatoms->typeA, SCAL(fr->ntype),fr->nbfp,egnb')
 define(`COUL_ARGS',`,mdatoms->chargeA, SCAL(fr->epsfac),egcoul')
 define(`SOFTCORE_LJARGS',`,mdatoms->typeA, SCAL(fr->ntype),fr->nbfp')
@@ -211,10 +219,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl1010)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS SOLMN_ARGS);
  	break;
 	case eNR_INL1020:
-	  FUNC(inl1020)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS);
+	  FUNC(inl1020)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1030:
-	  FUNC(inl1030)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS);
+	  FUNC(inl1030)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS);
 	break;
 	case eNR_INL1100:
 	  FUNC(inl1100)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
@@ -223,10 +231,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl1110)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL1120:
-	  FUNC(inl1120)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
+	  FUNC(inl1120)(COMMON_ARGS INVSQRT_W_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1130:
-	  FUNC(inl1130)(COMMON_ARGS INVSQRT_BUF1 COUL_ARGS LJ_ARGS);
+	  FUNC(inl1130)(COMMON_ARGS INVSQRT_WW_BUF1 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1200:
 	  FUNC(inl1200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS);
@@ -235,10 +243,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl1210)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL1220:
-	  FUNC(inl1220)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS);
+	  FUNC(inl1220)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1230:
-	  FUNC(inl1230)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS);
+	  FUNC(inl1230)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS);
 	break;
 	case eNR_INL1300:
 	  FUNC(inl1300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS);
@@ -247,10 +255,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl1310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL1320:
-	  FUNC(inl1320)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS);
+	  FUNC(inl1320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS);
 	break;
 	case eNR_INL1330:
-	  FUNC(inl1330)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS);
+	  FUNC(inl1330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS);
 	break;
 	case eNR_INL1400:
 	  FUNC(inl1400)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
@@ -259,10 +267,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl1410)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL1420:
-	  FUNC(inl1420)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
+	  FUNC(inl1420)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL1430:
-	  FUNC(inl1430)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
+	  FUNC(inl1430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL2000:
 	  FUNC(inl2000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
@@ -271,10 +279,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl2010)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2020:
-	  FUNC(inl2020)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
+	  FUNC(inl2020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2030:
-	  FUNC(inl2030)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS);
+	  FUNC(inl2030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS);
 	break;
 	case eNR_INL2100:
 	  FUNC(inl2100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
@@ -283,10 +291,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl2110)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2120:
-	  FUNC(inl2120)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	  FUNC(inl2120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2130:
-	  FUNC(inl2130)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	  FUNC(inl2130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2200:
 	  FUNC(inl2200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
@@ -295,10 +303,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl2210)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2220:
-	  FUNC(inl2220)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	  FUNC(inl2220)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2230:
-	  FUNC(inl2230)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
+	  FUNC(inl2230)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS);
 	break;
 	case eNR_INL2300:
 	  FUNC(inl2300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS);
@@ -307,10 +315,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl2310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2320:
-	  FUNC(inl2320)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS);
+	  FUNC(inl2320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS);
 	break;
 	case eNR_INL2330:
-	  FUNC(inl2330)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS);
+	  FUNC(inl2330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS);
 	break;
 	case eNR_INL2400:
 	  FUNC(inl2400)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
@@ -319,10 +327,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl2410)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL2420:
-	  FUNC(inl2420)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
+	  FUNC(inl2420)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL2430:
-	  FUNC(inl2430)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
+	  FUNC(inl2430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS RF_ARGS LJ_ARGS LJTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL3000:
 	  FUNC(inl3000)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
@@ -337,10 +345,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3010)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3020:
-	  FUNC(inl3020)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
+	  FUNC(inl3020)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3030:
-	  FUNC(inl3030)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS COULTAB_ARGS);
+	  FUNC(inl3030)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3100:
 	  FUNC(inl3100)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
@@ -349,10 +357,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3110)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3120:
-	  FUNC(inl3120)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	  FUNC(inl3120)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3130:
-	  FUNC(inl3130)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	  FUNC(inl3130)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3200:
 	  FUNC(inl3200)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
@@ -361,10 +369,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3210)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3220:
-	  FUNC(inl3220)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	  FUNC(inl3220)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3230:
-	  FUNC(inl3230)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
+	  FUNC(inl3230)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS COULTAB_ARGS);
 	break;
 	case eNR_INL3300:
 	  FUNC(inl3300)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
@@ -379,10 +387,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3310)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3320:
-	  FUNC(inl3320)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+	  FUNC(inl3320)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3330:
-	  FUNC(inl3330)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
+	  FUNC(inl3330)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS);
 	break;
 	case eNR_INL3400:
 	  FUNC(inl3400)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
@@ -397,10 +405,10 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  FUNC(inl3410)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS SOLMN_ARGS);
 	break;
 	case eNR_INL3420:
-	  FUNC(inl3420)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
+	  FUNC(inl3420)(COMMON_ARGS INVSQRT_W_BUF1 INVSQRT_W_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INL3430:
-	  FUNC(inl3430)(COMMON_ARGS INVSQRT_BUF1 INVSQRT_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
+	  FUNC(inl3430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INLNONE:
 	fatal_error(0,"nrnb_ind is \"NONE\", bad selection made in ns.c");
@@ -413,17 +421,46 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
         inc_nrnb(nrnb,eNR_INL_IATOM,3*nlist->nri);
       else if(nlist->solvent==esolWATERWATER)
         inc_nrnb(nrnb,eNR_INL_IATOM,9*nlist->nri);
-      else if(nlist->solvent==esolMNO)
-	/* should be different for vdwc, coul and vdw loops */
-        inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[0]*nlist->nri);
-      else		
-        inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nri);	
-      	
-      if(nlist->solvent==esolMNO)
-	/* should be different for vdwc, coul and vdw loops */ 
-        inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[0]*nlist->nrj);
-      else		
-        inc_nrnb(nrnb,nrnb_ind,nlist->nrj);
+      else if(nlist->solvent!=esolMNO)
+       inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nri);
+
+
+      if(nlist->solvent==esolMNO) {
+	switch(nrnb_ind) {
+	  case eNR_INL1110:
+	  case eNR_INL1210:
+	  case eNR_INL1310:
+	  case eNR_INL1410:
+	  case eNR_INL2110:
+	  case eNR_INL2210:
+	  case eNR_INL2310:
+	  case eNR_INL2410:
+	  case eNR_INL3110:
+	  case eNR_INL3210:
+	  case eNR_INL3310:
+	  case eNR_INL3410:
+	  /* vdwc loops */
+	    inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[0]*nlist->nri);
+	    inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[0]*nlist->nrj);
+          break;
+	  case eNR_INL1010:
+	  case eNR_INL2010:
+	  case eNR_INL3010:
+	  /* coul loops */
+	    inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[1]*nlist->nri);
+	    inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[1]*nlist->nrj);
+          break;
+	  case eNR_INL0110:
+	  case eNR_INL0210:
+	  case eNR_INL0310:
+	  case eNR_INL0410:
+	  /* vdw loops */
+	    inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[2]*nlist->nri);
+	    inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[2]*nlist->nrj);
+          break;
+	}	
+      } else 
+        inc_nrnb(nrnb,nrnb_ind,nlist->nrj);	
     }
   }
 }

@@ -56,18 +56,10 @@ void call_vectorized_routines()
 #else 
     /* this is a vanilla GMX routine, suitable for most chips w/o hardware sqrt.
      * It is quite fast though - about 18 clocks on intel! */
-    if(arch.gmx_invsqrt)
-      code( bC ? "vecinvsqrt(buf1,%s,m);" : "call vecinvsqrt(buf1,%s,m)",
-	    OVERWRITE_RSQ ? "buf1" : "buf2" );
-    else {
-      /* on some architectures, though, the compiler can 
-       * link with appropriate libs if only the code is easily recognized
-       * as vectorizable. Do a simple loop over the vector:
-       */
-      start_loop("n", bC ? "0" : "1" ,"m");
-      assign(OVERWRITE_RSQ ? ARRAY(buf1,n) : ARRAY(buf2,n) , "1.0/sqrt(%s)",ARRAY(buf1,n));
-      end_loop();
-    }
+
+    code( bC ? "vecinvsqrt(buf1,%s,m);" : "call vecinvsqrt(buf1,%s,m)",
+	  OVERWRITE_RSQ ? "buf1" : "buf2" );
+ 
 #endif
   } else if(loop.vectorize_recip) {
       /* Only do this if we didnt do invsqrt. If we did,
@@ -89,10 +81,9 @@ void call_vectorized_routines()
 	 * vectorizable.
 	 */
     vector_pragma();
-    start_loop("n", bC ? "0" : "1" ,"m");
-    assign(OVERWRITE_RSQ ? ARRAY(buf1,n) : ARRAY(buf2,n),
-	   "1.0/%s",ARRAY(buf1,n));
-    end_loop();
+    code( bC ? "vecrecip(buf1,%s,m);" : "call vecrecip(buf1,%s,m)",
+	  OVERWRITE_RSQ ? "buf1" : "buf2" );
+   
 #endif
   }
 }
@@ -161,17 +152,8 @@ int calc_rinv_and_rinvsq()
   if(!DO_VECTORIZE && !opt.delay_invsqrt) {
     if(loop.invsqrt)
       nflop += calc_invsqrt();
-    else if(loop.recip) {
-      for(j=1;j<=loop.nj;j++)
-	for(i=1;i<=loop.ni;i++)
-	  assign("rinvsq%d", "1.0/rsq%d",i*10+j,i*10+j);
-      if(loop.sol==SOL_WATER)
-	nflop=3;
-      else if(loop.sol==SOL_WATERWATER)
-	nflop=9;
-      else
-	nflop=1;
-    }
+    else if(loop.recip) 
+      nflop += calc_recip();
   }
   return nflop;
 }

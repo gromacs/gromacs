@@ -55,7 +55,7 @@ void start_vectorized_calcdist_loop(void)
   case THREAD_MUTEX:
     newline();
     code( bC ? "while(nn0<nn1) {" : "do while(nn0.le.nn1)");
-    IND += 2;
+   IND += 2;
     assign("m", bC ? "0" : "1");
     assign("m3", bC ? "0" : "1");
     start_loop("n","nn0","nn1");
@@ -140,7 +140,9 @@ void unpack_outer_indices(bool calcdist)
     assign("shX",ARRAY(shiftvec,is3));
     assign("shY",ARRAY(shiftvec,is3+1));
     assign("shZ",ARRAY(shiftvec,is3+2));
-    
+  }
+
+  if(calcdist || DO_VECTORIZE) {
     assign("ii", bC ? "%s" : "%s+1",ARRAY(iinr,n));
     assign("ii3", bC ? "3*ii" : "3*ii-2");
   }
@@ -404,15 +406,28 @@ void outer_loop()
       assign("ii3", bC ? "3*ii" : "3*ii-2");
     }
     start_loop("s", bC ? "nscoul" : "nscoul+1" , "nstot" );
+    
     coulsave=loop.coul;
     loop.coul=COUL_NO;
+    loop.invsqrt=
+      (loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
+      (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r));
+    loop.recip=!loop.invsqrt;
+
     nflop += unpack_outer_data(dodist,doforce);
     inner_loop(dodist,doforce);
     nflop += update_outer_data();
+    
     loop.coul=coulsave;
+    loop.invsqrt=
+      (loop.coul && (loop.coul_needs_rinv || loop.coul_needs_r)) ||
+      (loop.vdw && (loop.vdw_needs_rinv || loop.vdw_needs_r));
+    loop.recip=!loop.invsqrt;
+    
     increment("ii","1");
     increment("ii3","3");
     end_loop();
+
   }
   
   if(arch.threads==THREAD_MUTEX)

@@ -8,17 +8,15 @@ void unpack_inner_data(bool calcdist,bool calcforce)
     
     comment("Update indices");
 
-    if(DO_PREFETCH_X) {
+    if(DO_PREFETCH_X && !DO_VECTORIZE) {
       assign("jnr","nextjnr");
-      assign("nextjnr","%s%s", ARRAY(jjnr,k), bC ? "" : "+1");
 	
       if(calcdist) {
 	assign("j3","nextj3");
-	assign("nextj3", bC ? "3*nextjnr" : "3*nextjnr-2");
       } else if(calcforce)  /* only force, no need for j prefetch? */
 	assign("j3", bC ? "3*jnr" : "3*jnr-2");
 
-    } else { /* no prefetch */
+    } else { /* no prefetch, or vectorized */
       assign("jnr", "%s%s", ARRAY(jjnr,k), bC ? "" : "+1");
       assign("j3",bC ? "3*jnr" : "3*jnr-2");
     }
@@ -29,75 +27,50 @@ void unpack_inner_data(bool calcdist,bool calcforce)
 }
 
 
-void move_coord(bool calcdist, bool calcforce)
+
+void move_coords(void)
 {
   int j;
-  
-  comment("Moving prefetched coords to present ones");
 
-  if(calcdist) 
-    for(j=1;j<=loop.nj;j++) {
-      assign("jx%d","nextjx%d",j,j);
-      assign("jy%d","nextjy%d",j,j);
-      assign("jz%d","nextjz%d",j,j);
-    }
-
-  if(loop.sol!=SOL_WATERWATER) {
-    if(calcforce) {
-      if(loop.coul) {
-	assign("jqA","nextjqA");
-	if(loop.free)
-	  assign("jqB","nextjqB");
-      }
-      if(loop.vdw || DO_SOFTCORE) {
-	assign("tpA","nexttpA");
-	if(loop.free)
-	  assign("tpB","nexttpB");
-      }
-    }
+  /* move prefetched coords into real ones */
+  for(j=1;j<=loop.nj;j++) {
+    assign("jx%d","nextjx%d",j,j);
+    assign("jy%d","nextjy%d",j,j);
+    assign("jz%d","nextjz%d",j,j);
   }
-  
 }
 
 
-void fetch_coord(bool calcdist, bool calcforce)
+void fetch_coord(bool bPrefetch)
 {
-    int j,offset;
-    char jjname[16]; /* (next)j3 */
-    char jname[16];  /* (next)jnr */
-    
-    if(DO_PREFETCH_X) 
-      move_coord(calcdist,calcforce);    
-   
-    comment("Fetching coordinates, charge and type");
+  int j,offset;
 
+  comment("Fetching coordinates");
+  
+  if(DO_VECTORIZE && bPrefetch) {
+    /* update indices */
+    assign("nextjnr","%s%s", ARRAY(jjnr,nj0), bC ? "" : "+1");
+      assign("nextj3", bC ? "3*nextjnr" : "3*nextjnr-2");  
+    
+      move_coords();
+      /* get new coords */
+      for(j=1;j<=loop.nj;j++) {
+	offset=3*(j-1);
+	assign("nextjx%d",_array("pos", "j3+%d",offset),j);
+	assign("nextjy%d",_array("pos", "j3+%d",offset+1),j);
+	assign("nextjz%d",_array("pos", "j3+%d",offset+2),j);
+      }
+      
+  } else {
+    if(bPrefetch)
+      assign("nextj3","3*nextjnr");
     for(j=1;j<=loop.nj;j++) {
-      
       offset=3*(j-1);
-      
-      sprintf(jjname,"%sj3", DO_PREFETCH_X ? "next" : "");
-      sprintf(jname,"%sjnr", DO_PREFETCH_X ? "next" : ""); 
-
-      if(calcdist) {
-	assign( DO_PREFETCH_X ? "nextjx%d" : "jx%d",_array("pos","%s+%d",jjname,offset),j);
-	assign( DO_PREFETCH_X ? "nextjy%d" : "jy%d",_array("pos","%s+%d",jjname,offset+1),j);
-	assign( DO_PREFETCH_X ? "nextjz%d" : "jz%d",_array("pos","%s+%d",jjname,offset+2),j);
-      }
-      
+      assign("jx%d",_array("pos", bPrefetch ? "nextj3+%d" : "j3+%d",offset),j);
+      assign("jy%d",_array("pos", bPrefetch ? "nextj3+%d" : "j3+%d",offset+1),j);
+      assign("jz%d",_array("pos", bPrefetch ? "nextj3+%d" : "j3+%d",offset+2),j);
     }
-    
-    if(calcforce && loop.sol!=SOL_WATERWATER) {
-      if(loop.coul) {	
-	assign( DO_PREFETCH_X ? "nextjqA" : "jqA", _array("charge",jname),j);
-	if(loop.free)
-	  assign( DO_PREFETCH_X ? "nextjqB" : "jqB", _array("chargeB",jname), j);
-      }
-      if(loop.vdw || DO_SOFTCORE) {
-	assign( DO_PREFETCH_X ? "nexttpA" : "tpA", _array("type",jname), j);
-	if(loop.free)
-	  assign( DO_PREFETCH_X ? "nexttpB" : "tpB", _array("typeB",jname), j);
-      }
-    }
+  }
 }
 	
 
@@ -144,60 +117,60 @@ void unpack_vector_machine_forces(bool calcdist,bool calcforce)
 }
 
 
-void prefetch_first_data(bool calcdist,bool calcforce) 
+void prefetch_first_coord() 
 {
   int j;
   char buf[50];  
  
   comment("Prefetch first round of x data");
   
-  assign("nextjnr","%s%s", ARRAY(jjnr,nj0), bC ? "" : "+1");
-
-  if(calcdist) {
-      assign("nextj3", bC ? "3*nextjnr" : "3*nextjnr-2");  
-      for(j=1;j<=loop.nj;j++) {
-	assign("nextjx%d",_array("pos","nextj3+%d",3*(j-1)),j);
-	assign("nextjy%d",_array("pos","nextj3+%d",3*(j-1)+1),j);
-	assign("nextjz%d",_array("pos","nextj3+%d",3*(j-1)+2),j);
-      }
-  }
-  
-  if(calcforce && loop.sol!=SOL_WATERWATER) {
-    if(loop.coul) {
-      assign("nextjqA",ARRAY(charge,nextjnr));
-      if(loop.free)
-	assign("nextjqB",ARRAY(chargeB,nextjnr));	    
+  /* When using prefetching of coordinates in the vectorized loop
+   * we need the dummy storage variables nextjx, etc.
+   */
+  if(DO_VECTORIZE) {
+    assign("jnr","%s%s", ARRAY(jjnr,nj0), bC ? "" : "+1");
+    assign("j3", bC ? "3*jnr" : "3*jnr-2");  
+    for(j=1;j<=loop.nj;j++) {
+      assign("nextjx%d", _array("pos","j3+%d",3*(j-1)),j);
+      assign("nextjy%d", _array("pos","j3+%d",3*(j-1)+1),j);
+      assign("nextjz%d", _array("pos","j3+%d",3*(j-1)+2),j);
     }
-    if(loop.vdw || DO_SOFTCORE) {
-      assign("nexttpA", ARRAY(type,nextjnr));
-      if(loop.free)
-	assign("nexttpB", ARRAY(typeB,nextjnr));	      
+  } else {
+    assign("nextjnr","%s%s", ARRAY(jjnr,nj0), bC ? "" : "+1");
+    assign("nextj3", bC ? "3*nextjnr" : "3*nextjnr-2");  
+    for(j=1;j<=loop.nj;j++) {
+      assign("jx%d",_array("pos","nextj3+%d",3*(j-1)),j);
+      assign("jy%d",_array("pos","nextj3+%d",3*(j-1)+1),j);
+      assign("jz%d",_array("pos","nextj3+%d",3*(j-1)+2),j);
     }
   }
 }
 
 
-void last_inner_iteration(bool calcdist, bool calcforce)
+void last_inner_iteration(bool calcdist,bool calcforce)
 {
     int i;
 
     if(DO_PREFETCH_X) {
       comment("Treat the last round of prefetched data outside the loop");
-      if(calcforce) {	
+      if(!DO_VECTORIZE) {	
 	assign("jnr","nextjnr");
 	assign("j3", calcdist ? "nextj3" : "3*jnr");
-      }
-      
-      move_coord(calcdist,calcforce);
-      if(calcdist)
+      } 
+
+      if(calcdist) {
+	if(DO_VECTORIZE)
+	  move_coords();
 	calc_dist();
-      
+      }
+
       if(calcforce) {
+	calc_rinv_and_rinvsq();
+
 	if(DO_PREFETCH_F) 
 	  prefetch_forces();
-	
-	calc_rinv_and_rinvsq();
-	calc_interactions();
+
+	calc_interactions(FALSE);
       }
     }
 }
@@ -213,28 +186,37 @@ void inner_loop(bool calcdist, bool calcforce)
   
   comment("Inner loop (over j-particles) starts right here");
   
-  if(DO_PREFETCH_X)
-    prefetch_first_data(calcdist,calcforce);
+  if(DO_PREFETCH_X && calcdist)
+    prefetch_first_coord();
   
   vector_pragma();
   
-  start_loop("k","nj0","nj1");
+  start_loop("k", (DO_PREFETCH_X && calcdist) ? "nj0+1" : "nj0" , "nj1");
   
   unpack_inner_data(calcdist,calcforce);
 
-  /* this also fetches charge and LJ parameters */
-  fetch_coord(calcdist,calcforce);
+  if((!DO_PREFETCH_X || DO_VECTORIZE) && calcdist)
+    fetch_coord(DO_PREFETCH_X);
   
+  /* non-vectorized coordinate prefetching is issued from 
+   * calc_interactions() in mkinl_interactions.c due to 
+   * timing optimization.
+   */
+
   if(calcdist)
     nflop += calc_dist(); 
   
   if(calcforce) { 
-    if(DO_PREFETCH_F) 
-      prefetch_forces();
     
     nflop += calc_rinv_and_rinvsq();
     
-    nflop += calc_interactions();
+    if(DO_PREFETCH_F) 
+      prefetch_forces();
+
+    if(DO_PREFETCH_X && calcdist)
+      assign("nextjnr","%s%s", ARRAY(jjnr,k), bC ? "" : "+1");
+
+    nflop += calc_interactions(calcdist && DO_PREFETCH_X);
     
     /* Only print vanilla loop count */
     if(!DO_VECTORIZE && !DO_PREFETCH_X && !arch.sse_and_3dnow && !arch.vector) {
@@ -244,5 +226,6 @@ void inner_loop(bool calcdist, bool calcforce)
   }
   end_loop();
 
-  last_inner_iteration(calcdist,calcforce);
+  if(DO_PREFETCH_X && calcdist)
+    last_inner_iteration(calcdist,calcforce);
 }

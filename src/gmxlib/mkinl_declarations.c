@@ -3,6 +3,32 @@ static char *SRCID_mkinl_declarations_c = "";
 #include "mkinl.h"
 #include <string.h>
 
+
+void init_block_data(void) 
+{
+  /* block to initialize the table data - write directly to file */
+  fprintf(output,"%sblock data\n",indent());
+  fprintf(output,"%sinteger*4 I\n",indent());
+
+  if(arch.gmx_invsqrt) 
+    fprintf(output,"%scommon /finvsqrtdata/ finvsqrtexptab(256),finvsqrtfracttab(4096)",indent());
+  if(arch.gmx_recip) 
+    fprintf(output,"%scommon /frecipdata/ frecipexptab(256),frecipfracttab(4096)",indent());
+  
+  if(arch.gmx_invsqrt)
+    fprintf(output,"%sinteger*4 finvsqrtexptab,finvsqrtfracttab\n",indent());
+  if(arch.gmx_recip)
+    fprintf(output,"%sinteger*4 frecipexptab,frecipfracttab\n",indent());
+
+  if(arch.gmx_invsqrt)
+    fprintf(output,"%sinclude 'finvsqrtdata.inc'\n",indent());   
+  if(arch.gmx_recip)
+    fprintf(output,"%sinclude 'frecipdata.inc'\n",indent());   
+  
+  fprintf(output,"%send\n\n\n",indent());
+}
+
+
 void file_header(void)
 { 
   edit_warning("mkinl");
@@ -18,14 +44,18 @@ void file_header(void)
 	    "#include \"axp_asm.h\"\n"
 #endif
 	    "#include <vec.h>\n");
-  } else if(arch.gmx_invsqrt) {
+  } else {
     /* Write some full fortran functions, performing the
      * invsqrt and reciprocal
      * Corresponding c table routines are found in vec.h
      */
+    if(arch.gmx_invsqrt) 
       fortran_invsqrt();
-      fortran_vecinvsqrt();
-  }
+    if(arch.gmx_recip) 
+      fortran_invsqrt();
+    init_block_data();
+  } 
+
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
   /* This is a very fast inline assembly truncation routine
    * The slow step an most x86 chips is to store and restore
@@ -35,7 +65,7 @@ void file_header(void)
    * But beware, dont try to do any roundings in the loop!
    */
   if(bC)
-    fprintf(output,"\n\n#define x86trunc(a,b) asm(\"fld %%1\nfistpl %%0\n\" : \"=m\" (*&b) : \"f\" (a));\n\n");
+    fprintf(output,"\n\n#define x86trunc(a,b) asm(\"fld %%1 ; fistpl %%0\" : \"=m\" (*&b) : \"f\" (a));\n\n");
 #endif
 }
 
@@ -444,12 +474,6 @@ void func_localvars()
   /* j charges and types */
     declare_real("jqA");
     declare_real("jqB");
-    declare_real("nextjqA");
-    declare_real("nextjqB");
-    declare_real("tpA");
-    declare_real("tpB");
-    declare_real("nexttpA");
-    declare_real("nexttpB");
   
   /* i-j vectorial distance */  
   for(i=1;i<=loop.ni;i++)
@@ -521,6 +545,8 @@ void func_localvars()
 
   if(DO_INLINE_INVSQRT)
     invsqrt_vars();
+  if(DO_INLINE_RECIP)
+    recip_vars();
 }
 
 
@@ -594,9 +620,9 @@ void func_init_vars()
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
   /* store cw */
   if(bC && DO_TAB) {
-    strcat(codebuffer,"asm(\"fnstcw %0\" : \"=m\" (*&x86_cwsave));\n");
+    strcat(codebuffer,"asm(\"fnstcw %%0\" : \"=m\" (*&x86_cwsave));\n");
     strcat(codebuffer,"x86_cw = x86_cwsave | 3072;\n");
-    strcat(codebuffer,"asm(\"fldcw %0\" : : \"m\" (*&x86_cw));\n");
+    strcat(codebuffer,"asm(\"fldcw %%0\" : : \"m\" (*&x86_cw));\n");
   }
 #endif
   newline(); 

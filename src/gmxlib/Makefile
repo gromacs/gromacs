@@ -30,8 +30,8 @@ OBJ		= \
 	copyrite.o	disre.o		do_fit.o	enxio.o		\
 	ewald_util.o	fatal.o		ffscanf.o	filenm.o	\
 	futil.o		gbutil.o	fnbf.o		gmxfio.o	\
-	ifunc.o		index.o		cinvsqrtdata.o	\
-	invblock.o	javaio.o	macros.o	\
+	ifunc.o		index.o		cinvsqrtdata.o	crecipdata.o    \
+	invblock.o	javaio.o	macros.o	                \
 	main.o		maths.o		matio.o		memdump.o	\
 	mshift.o	mvdata.o	mvxvf.o		names.o		\
 	network.o	nrama.o		nrjac.o		nrnb.o		\
@@ -47,7 +47,7 @@ OBJ		= \
 MKINL_OBJ = \
 	mkinl.o	        	mkinl_declarations.o	mkinl_outerloop.o \
 	mkinl_innerloop.o   	mkinl_calcdist.o	mkinl_invsqrt.o \
-	mkinl_interactions.o	metacode.o 
+	mkinl_recip.o           mkinl_interactions.o	metacode.o 
 
 ifeq ($(USEF77),yes)
 OBJ		+= innerf.o
@@ -70,7 +70,7 @@ endif
 
 ifneq (,$(findstring USE_SSE_AND_3DNOW,$(SYSDEFS)))
 ifeq ($(GMXCPU),lnx)
-OBJ 		+= x86cpu.o x86cpu_asm.o
+OBJ 		+= x86cpu.o x86asm.o
 endif
 endif
 
@@ -170,11 +170,11 @@ $(LIB)(fnbf.o):		fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF)
 fnbf.c:			fnbf.m4 inner.m4 $(M4MAC) $(M4FILE) $(CPUMAKEF) 
 			 $(M4) $(SYSDEFS) $(M4FILE) $(M4MAC) fnbf.m4 > fnbf.c 
 
-x86cpu_asm.o:		x86cpu_asm.s
+x86asm.o:		x86asm.s
 ifeq ($(GMXCPU),win)
-			nasm -f win32 -o x86cpu_asm.o x86cpu_asm.s
+			nasm -f win32 -o x86asm.o x86asm.s
 else
-			nasm -f elf -o x86cpu_asm.o x86cpu_asm.s
+			nasm -f elf -o x86asm.o x86asm.s
 endif
 
 axp_asm.o:		axp_asm.S
@@ -209,9 +209,11 @@ mkinl_calcdist.o:	mkinl_calcdist.c  $(CPUMAKEF)
 mkinl_invsqrt.o:	mkinl_invsqrt.c $(CPUMAKEF)
 			$(CC_MKINL) -c mkinl_invsqrt.c
 
+mkinl_recip.o:		mkinl_recip.c $(CPUMAKEF)
+			$(CC_MKINL) -c mkinl_recip.c
+
 mkinl_interactions.o:	mkinl_interactions.c  $(CPUMAKEF)
 			$(CC_MKINL) -c mkinl_interactions.c
-
 
 metacode.o:		metacode.c $(CPUMAKEF)
 			$(CC_MKINL) -c metacode.c

@@ -23,14 +23,15 @@ static char *SRCID_mkinl_h = "";
 #define DO_TAB         (DO_COULTAB || DO_VDWTAB)
 #define DO_BHAM        ((loop.vdw==VDW_BHAM) || (loop.vdw==VDW_BHAMTAB))
 
-#define DO_PREFETCH_X  (opt.prefetch_x==PRE_MOST || \
-		         (opt.prefetch_x==PRE_MORE && \
-                          (loop.sol==SOL_NO || loop.sol==SOL_MNO || loop.sol==SOL_WATER)) || \
-		         (opt.prefetch_x==PRE_YES && loop.sol==SOL_NO))
-#define DO_PREFETCH_F  (opt.prefetch_f==PRE_MOST || \
-		         (opt.prefetch_f==PRE_MORE && \
-			  (loop.sol==SOL_NO || loop.sol==SOL_MNO || loop.sol==SOL_WATER)) || \
-		         (opt.prefetch_f==PRE_YES && loop.sol==SOL_NO))
+#define DO_PREFETCH_X  (opt.prefetch_x==YES_WW || \
+		         (opt.prefetch_x==YES_W && \
+                          (loop.sol!=SOL_WATERWATER)) || \
+		         (opt.prefetch_x==YES && !DO_WATER))
+#define DO_PREFETCH_F  (opt.prefetch_f==YES_WW || \
+		         (opt.prefetch_f==YES_W && \
+			  (loop.sol!=SOL_WATERWATER)) || \
+		         (opt.prefetch_f==YES && !DO_WATER))
+
 #define DO_SOL         (loop.sol==SOL_MNO) /* non-water solvent optimzations */
 #define DO_WATER       (loop.sol==SOL_WATER || loop.sol==SOL_WATERWATER)
 #define DO_SOFTCORE    (loop.free==FREE_SOFTCORE)
@@ -40,7 +41,8 @@ static char *SRCID_mkinl_h = "";
 /* For pure LJ-only loops we can save some cycles by just calculating the
  * reciprocal. In all other cases we need to do the invsqrt
  */
-#define DO_INLINE_INVSQRT     (loop.invsqrt && !loop.vectorize_invsqrt && opt.inline_invsqrt)
+#define DO_INLINE_INVSQRT   (loop.invsqrt && !loop.vectorize_invsqrt && opt.inline_gmxcode)
+#define DO_INLINE_RECIP     (loop.recip && !loop.vectorize_recip && opt.inline_gmxcode)
 #define OVERWRITE_RSQ  (!arch.vector && !loop.vdw_needs_r && !loop.vdw_needs_rsq && \
                         !loop.coul_needs_r && !loop.coul_needs_rsq)
 			/* Can we overwrite the vectorization array
@@ -100,16 +102,16 @@ typedef enum {
 
 
 typedef enum {
-  PRE_NO,
-  PRE_YES,         /* prefetch only non-solvent loops            */
-  PRE_MORE,        /* prefetch single solvent or water loops too */
-  PRE_MOST         /* prefetch everywhere                        */
-} prefetch_t;
-
+  NO,
+  YES,           /* prefetch only non-solvent loops            */
+  YES_W,         /* prefetch single solvent or water loops too */
+  YES_WW         /* prefetch everywhere                        */
+} waterbool_t;
 
 /* Global structure determining architectural options */
 typedef struct {
   bool     gmx_invsqrt;    /* Use gmx software routines? */
+  bool     gmx_recip;    
   thread_t threads;
   bool     sse_and_3dnow;
   bool     simplewater;
@@ -120,16 +122,16 @@ typedef struct {
 
 /* Global structure determining optimization options */
 typedef struct {
-  bool         inline_invsqrt;            /* Inline gmx software routines */
-  prefetch_t   prefetch_x;       
-  prefetch_t   prefetch_f;
+  bool         inline_gmxcode;            /* Inline gmx software routines */
+  waterbool_t  prefetch_x;       
+  waterbool_t  prefetch_f;
   bool         decrease_square_latency;   /* Try to hide latencies */ 
   bool         decrease_lookup_latency;   
   bool         delay_invsqrt;
   /* Dont try to hide latency for (hardware) invsqrt or reciprocal
    * by calculating the before we need them. 
    */
-  bool         vectorize_invsqrt;         /* vectorize distance calculation when possible */
+  waterbool_t  vectorize_invsqrt;         /* vectorize distance calculation when possible */
   bool         vectorize_recip;
 } opt_t;
 
@@ -209,6 +211,9 @@ void inner_loop(bool calcdist, bool calcforce);
 int calc_invsqrt(void);
 void invsqrt_vars(void);
 void fortran_invsqrt(void);
+int calc_recip(void);
+void recip_vars(void);
+void fortran_recip(void);
 void fortran_vecinvsqrt(void);
 void fortran_vecsqrt(void);
 
@@ -221,20 +226,18 @@ void close_stripmine_loop(void);
 
 void call_vectorized_routines(void);
 
-int calc_interactions(void);
+int calc_interactions(bool prefetchx);
 
 int calc_dist(void);
 int calc_rinv_and_rinvsq(void);
 
 int calc_rsquare(char *atom1, char *atom2);
 
-void move_coord(bool calcdist, bool calcforce);
-
 void prefetch_forces(void);
 
 void unpack_inner_data(bool calcdist, bool calcforce);
 
-void fetch_coord(bool calcdist, bool calcforce);
+void fetch_coord(bool bPrefetch);
 
 int update_inner_forces(int i,int j);
 

@@ -6,12 +6,10 @@ char forcebuf[255];
 char tabforcebuf[255];
 
 
-int update_inner_forces(int i,int j)
+int calc_scalar_force(int i,int j)
 {
   int ij = 10*i+j;
   int nflop = 0;
-  int m,jidxnr,offset;
-  char src[25],dest[25];
 
   /* calculate scalar force */
   if(!DO_SOFTCORE) {
@@ -31,7 +29,18 @@ int update_inner_forces(int i,int j)
       /* only non-table interactions */
       assign("fs%d","(%s)*rinvsq%d",ij,forcebuf,ij); /* 1-1 flops */
   }
-  
+  return nflop;
+}
+
+
+int update_inner_forces(int i,int j)
+{
+  int ij = 10*i+j;
+  int nflop = 0;
+  int m,jidxnr,offset;
+  char src[25],dest[25];
+
+
   comment("Convert scalar force to cartesian coords");
   if(DO_VECTORIZE && !DO_PREFETCH_X) {
     assign("tx%d","%s*fs%d",ij,ARRAY(drbuf,m3),ij);
@@ -79,7 +88,7 @@ int table_index(char *rin)
 {
     assign("rt",rin);
 #if (defined __GNUC__ && defined _lnx_ && defined FAST_X86TRUNC)
-    if(bC)
+    if(bC) 
       code("x86trunc(rt,n0);");
     else
 #endif
@@ -118,8 +127,8 @@ static int assign_chargeproduct(int i,int j,char *qq)
   int nflop = 0;
 
   if(loop.free==FREE_LAMBDA) {
-    assign("qqA","iqA*jqA");
-    assign("qqB","iqB*jqB");
+    assign("qqA","iqA*charge[jnr]");
+    assign("qqB","iqB*chargeB[jnr]");
     sprintf(qq,"qqq");
     nflop+=2;
   } else if(loop.free==FREE_SOFTCORE) {
@@ -128,7 +137,7 @@ static int assign_chargeproduct(int i,int j,char *qq)
   } else {
     switch(loop.sol) {
     case SOL_WATER:
-      assign("qq","%s*jqA", arch.simplewater ? "iqA" : ((i==1) ? "qO" : "qH"));
+      assign("qq","%s*charge[jnr]", arch.simplewater ? "iqA" : ((i==1) ? "qO" : "qH"));
       nflop += 1;
       sprintf(qq,"qq");
       break;
@@ -145,7 +154,7 @@ static int assign_chargeproduct(int i,int j,char *qq)
       }
       break;
     default:
-      assign("qq","iqA*jqA"); 
+      assign("qq","iqA*charge[jnr]"); 
       nflop += 1;
       sprintf(qq,"qq");
     }
@@ -164,8 +173,8 @@ int do_softcore(int i, int j)
     
     comment("Tabulated Softcore free energy interactions");    
 
-    assign("tjA","ntiA+%d*tpA%s", N_VDWPARAM, bC ? "" : "+1");
-    assign("tjB","ntiB+%d*tpB%s", N_VDWPARAM, bC ? "" : "+1");
+    assign("tjA","ntiA+%d*%s%s", N_VDWPARAM, ARRAY(type,jnr) , bC ? "" : "+1");
+    assign("tjB","ntiB+%d*%s%s", N_VDWPARAM, ARRAY(typeB,jnr) , bC ? "" : "+1");
     assign("c6a",ARRAY(nbfp,tjA));
     assign("c6b",ARRAY(nbfp,tjB));
     assign( DO_BHAM ? "cexp1a" : "c12a",ARRAY(nbfp,tjA+1));
@@ -222,7 +231,7 @@ int do_softcore(int i, int j)
     
     if(DO_COULTAB) {
       comment("Coulomb table");
-      assign("qqA","iqA*jqA");
+      assign("qqA","iqA*charge[jnr]");
       nflop += extract_table("n1");
       assign("VVCa","qqA*VV");
       assign("FFCa","qqA*tabscale*FF");
@@ -257,7 +266,7 @@ int do_softcore(int i, int j)
     assign("n1","%d*n0%s",table_element_size, bC ? "" : "+1");
     if(DO_COULTAB) {
       comment("Coulomb table");
-      assign("qqB","iqB*jqB");
+      assign("qqB","iqB*chargeB[jnr]");
       nflop += extract_table("n1");
       assign("VVCb","qqB*VV");
       assign("FFCb","qqB*tabscale*FF");
@@ -294,9 +303,8 @@ int do_softcore(int i, int j)
       add_to_buffer(fabuf,"FFCa");
       add_to_buffer(fbbuf,"FFCb");
       assign("vcoul","lambda*VVCb+L1*VVCa");
-      increment("vctot","vcoul");
       add_to_buffer(dvdlbuf,"VVCb-VVCa");
-      nflop += 7;
+      nflop += 6;
     }
     if(DO_VDWTAB) {		
       increment("vnbtot","lambda*(VVDb+VVRb)+L1*(VVDa+VVRa)");
@@ -341,21 +349,20 @@ int do_table(int i,int j)
     nflop += extract_table("n1");
     assign("vcoul","%s*VV",qq);
     assign("fijC","%s*FF",qq);
-    increment("vctot","vcoul");
     if(loop.free) {
       increment("dvdl","two*(lambda*qqB - L1*qqA)*VV",j,j);
       nflop += 7;
     }
     add_to_buffer(f1buf,"fijC");
-    nflop += 4;
+    nflop += 3;
   }
   /* only do VDW for the first atom in water interactions */
   if(DO_VDWTAB && 
      (!DO_WATER || (loop.sol==SOL_WATER && i==1) || (i==1 && j==1))) {
     /* first determine nonbonded parameters */
     if(loop.free) {
-      assign("tjA","ntiA+%d*tpA%s", N_VDWPARAM, bC ? "" : "+1");
-      assign("tjB","ntiB+%d*tpB%s", N_VDWPARAM, bC ? "" : "+1");
+      assign("tjA","ntiA+%d*%s%s", N_VDWPARAM, ARRAY(type,jnr) , bC ? "" : "+1");
+      assign("tjB","ntiB+%d*%s%s", N_VDWPARAM, ARRAY(typeB,jnr) , bC ? "" : "+1");
       assign("c6a",ARRAY(nbfp,tjA));
       assign("c6b",ARRAY(nbfp,tjB));
       assign("c6","L13*c6a + lam3*c6b");
@@ -370,7 +377,7 @@ int do_table(int i,int j)
 	nflop += 3;
       }
     } else if(loop.sol!=SOL_WATERWATER) {
-      assign("tjA","ntiA+2*tpA%s", bC ? "" : "+1");
+      assign("tjA","ntiA+2*%s%s", ARRAY(type,jnr) , bC ? "" : "+1");
       assign("c6",ARRAY(nbfp,tjA));
       assign( DO_BHAM ? "cexp1" : "c12",ARRAY(nbfp,tjA+1));
       if(DO_BHAM) 
@@ -467,8 +474,7 @@ int do_coul(int i, int j)
      */
     add_to_buffer(forcebuf,"vcoul");
 
-    increment("vctot","vcoul");
-    nflop += 3;
+    nflop += 2;
     return nflop;
 }
 
@@ -493,10 +499,8 @@ int do_rf(int i, int j)
      */
     sprintf(buf,"%s*(rinv%d-two*krsq)",qq,ij);
     add_to_buffer(forcebuf,buf);
-    
-    increment("vctot","vcoul");
 
-    nflop += 8;
+    nflop += 7;
     return nflop;
 }
 
@@ -515,7 +519,7 @@ int do_lj(int i, int j)
       assign("vnb6","c6*rinvsix");
       assign("vnb12","c12*rinvsix*rinvsix");
     } else {
-      assign("tjA","ntiA+2*tpA%s", bC ? "" : "+1");
+      assign("tjA","ntiA+2*%s%s", ARRAY(type,jnr) , bC ? "" : "+1");
       assign("vnb6","rinvsix*%s",ARRAY(nbfp,tjA));
       assign("vnb12","rinvsix*rinvsix*%s",ARRAY(nbfp,tjA+1));
     }
@@ -543,7 +547,7 @@ int do_bham(int i, int j)
     /* fortran indices start at one, instead of 0 for C.
      * And there are three nb parameters for buckingham
      */
-    assign("tjA","ntiA+3*tpA%s", bC ? "" : "+1");
+    assign("tjA","ntiA+3*%s%s", ARRAY(type,jnr) , bC ? "" : "+1");
     assign("vnb6","rinvsix*%s",ARRAY(nbfp,tjA));
     assign("br","r%d*%s",ij,ARRAY(nbfp,tjA+2));
     assign("vnbexp","exp(-br)*%s",ARRAY(nbfp,tjA+1));
@@ -554,7 +558,7 @@ int do_bham(int i, int j)
 }
 
 
-int calc_interactions()
+int calc_interactions(bool prefetchx)
 {
   /* Remember to set need_invsqrt, need_reciprocal and need_exp 
    * to the correct needs for your new interaction already 
@@ -624,20 +628,6 @@ int calc_interactions()
 	nflop++;
       }
       /* which interactions should we call ? */
-      switch(loop.coul) {
-      case COUL_NORMAL:
-	nflop += do_coul(i,j);
-	break;
-      case COUL_RF:
-	nflop += do_rf(i,j);
-	break;
-      case COUL_TAB:
-	nflop += DO_SOFTCORE ? do_softcore(i,j) : do_table(i,j);
-	break;
-      default:
-	comment("No coulomb interaction");	  
-	break;
-      }
       if(do_vdw) 
 	switch(loop.vdw) {
 	case VDW_LJ:
@@ -648,16 +638,46 @@ int calc_interactions()
 	  break;
 	case VDW_TAB:
 	case VDW_BHAMTAB:
-	  if(!DO_COULTAB) 
-	    nflop += DO_SOFTCORE ? do_softcore(i,j) : do_table(i,j);
-	  /* VDW table was done simultaneous with
-	   * coulomb if the latter was tabulated.
-	   */
+	  nflop += DO_SOFTCORE ? do_softcore(i,j) : do_table(i,j);
 	  break;
 	default:
 	  comment("No nonbonded interaction");
 	  break;
 	}
+      
+      switch(loop.coul) {
+      case COUL_NORMAL:
+	nflop += do_coul(i,j);
+	break;
+      case COUL_RF:
+	nflop += do_rf(i,j);
+	break;
+      case COUL_TAB:
+	if(!(do_vdw && DO_VDWTAB))
+	  nflop += DO_SOFTCORE ? do_softcore(i,j) : do_table(i,j);
+	/* coul table was done simultaneous with
+	 * vdw if the latter was tabulated.
+	 */
+	break;
+      default:
+	comment("No coulomb interaction");	  
+	break;
+      }
+      /* The total coulomb energy is incremented after calculating
+       * the scalar force to hide a flop.
+       */
+
+      /* Prefetch next round of coordinates if this is the last interaction */
+      if((i==loop.ni && j==loop.nj) && prefetchx) 
+	fetch_coord(TRUE);
+
+      nflop += calc_scalar_force(i,j);
+
+      if(loop.coul) {
+	increment("vctot","vcoul");
+	nflop ++;
+      }
+      
       nflop += update_inner_forces(i,j);
     }       
   return nflop;

@@ -325,6 +325,22 @@ void declare_real(char *name)
   ndecl++;
 }
 
+void declare_real4(char *name)
+{
+
+  if (bC)
+    strcpy(decl_list[ndecl].typename,"float");
+  else
+    sprintf(decl_list[ndecl].typename,"real*4");
+
+  strcpy(decl_list[ndecl].name,name);
+  
+  decl_list[ndecl].breferenced=TRUE;
+  decl_list[ndecl].bvector=FALSE;
+  decl_list[ndecl].bconst=FALSE;
+  ndecl++;
+}
+
 void declare_real_vector(char *name)
 {
 
@@ -365,6 +381,22 @@ void declare_const_real(char *name,double val)
   decl_list[ndecl].bvector=FALSE; /* cant have const vectors */
   decl_list[ndecl].bconst=TRUE;
   sprintf(decl_list[ndecl].constval,"%f",val);
+  ndecl++;
+}
+
+void declare_const_int(char *name,int val)
+{
+  if (bC)
+    strcpy(decl_list[ndecl].typename,"const int");
+  else
+    sprintf(decl_list[ndecl].typename,"integer*4");
+
+  strcpy(decl_list[ndecl].name,name);
+  
+  decl_list[ndecl].breferenced=TRUE;
+  decl_list[ndecl].bvector=FALSE; /* cant have const vectors */
+  decl_list[ndecl].bconst=TRUE;
+  sprintf(decl_list[ndecl].constval,"%d",val);
   ndecl++;
 }
 

@@ -3,6 +3,8 @@
 #include <setjmp.h>
 #include "x86cpu.h"
 
+
+
 static jmp_buf mainloop;
 static int success=1;
 
@@ -81,7 +83,7 @@ int check_x86cpu(FILE *log)
     else if(cpu3DNow)
       fprintf(log,"CPU supports extended 3DNow, but your OS doesn't.\n");
     fprintf(log,"Using normal Gromacs innerloops.\n\n");
-    return X86_NORMAL;
   }
+  return X86_NOOPT; 
 }
 

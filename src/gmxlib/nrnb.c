@@ -44,83 +44,84 @@ typedef struct {
   int  flop;
 } t_nrnb_data;
 
+
 static t_nrnb_data nbdata[eNRNB] = {
   { "LJ",                              31 }, /* inl0100 */
-  { "LJ(S)",                           31 }, /* inl0110 */
+  { "LJ(S)",                           31 }, /* inl0110 */  
   { "Buckingham",                      36 }, /* inl0200 */
-  { "Buckingham(S)",                   36 }, /* inl0210 */
+  { "Buckingham(S)",                   36 }, /* inl0210 */  
   { "LJ(T)",                           52 }, /* inl0300 */
-  { "LJ(T)(S)",                        52 }, /* inl0310 */
+  { "LJ(T)(S)",                        52 }, /* inl0310 */  
   { "FreeEner LJ(T)",                  65 }, /* inl0301 */
   { "Softcore LJ(T)",                 118 }, /* inl0302 */
   { "Buckingham(T)",                   57 }, /* inl0400 */
-  { "Buckingham(T)(S)",                57 }, /* inl0410 */
+  { "Buckingham(T)(S)",                57 }, /* inl0410 */  
   { "FreeEner Bham(T)",                89 }, /* inl0401 */
   { "Softcore Bham(T)",               128 }, /* inl0402 */
   { "Coulomb",                         27 }, /* inl1000 */
-  { "Coulomb(S)",                      37 }, /* inl1010 */
+  { "Coulomb(S)",                      27 }, /* inl1010 */
   { "Coulomb(W)",                      81 }, /* inl1020 */
   { "Coulomb(WW)",                    234 }, /* inl1030 */
   { "LJ + Coulomb",                    38 }, /* inl1100 */
-  { "LJ + Coul(S)",                    41 }, /* inl1110 */
+  { "LJ + Coul(S)",                    38 }, /* inl1110 */
   { "LJ + Coul(W)",                    92 }, /* inl1120 */
   { "LJ + Coul(WW)",                  245 }, /* inl1130 */
   { "Buckingham + Coul",               40 }, /* inl1200 */
-  { "Bham + Coul(S)",                  42 }, /* inl1210 */
+  { "Bham + Coul(S)",                  40 }, /* inl1210 */
   { "Bham + Coul(W)",                  94 }, /* inl1220 */
   { "Bham + Coul(WW)",                247 }, /* inl1230 */
   { "LJ(T) + Coul ",                   58 }, /* inl1300 */
-  { "LJ(T) + Coul(S)",                 48 }, /* inl1310 */
+  { "LJ(T) + Coul(S)",                 58 }, /* inl1310 */
   { "LJ(T) + Coul(W)",                112 }, /* inl1320 */
   { "LJ(T) + Coul(WW)",               265 }, /* inl1330 */
   { "Bham(T) + Coul ",                 63 }, /* inl1400 */
-  { "Bham(T) + Coul(S)",               49 }, /* inl1410 */
+  { "Bham(T) + Coul(S)",               63 }, /* inl1410 */
   { "Bham(T) + Coul(W)",              117 }, /* inl1420 */
   { "Bham(T) + Coul(WW)",             270 }, /* inl1430 */
   { "RF Coul",                         32 }, /* inl2000 */
-  { "RF Coul(S)",                      42 }, /* inl2010 */
+  { "RF Coul(S)",                      32 }, /* inl2010 */
   { "RF Coul(W)",                      96 }, /* inl2020 */
   { "RF Coul(WW)",                    279 }, /* inl2030 */
   { "LJ + RF Coul",                    43 }, /* inl2100 */
-  { "LJ + RF Coul(S)",                 46 }, /* inl2110 */
+  { "LJ + RF Coul(S)",                 43 }, /* inl2110 */
   { "LJ + RF Coul(W)",                107 }, /* inl2120 */
   { "LJ + RF Coul(WW)",               290 }, /* inl2130 */
   { "Bham + RF Coul",                  45 }, /* inl2200 */
-  { "Bham + RF Coul(S)",               47 }, /* inl2210 */
+  { "Bham + RF Coul(S)",               45 }, /* inl2210 */
   { "Bham + RF Coul(W)",              109 }, /* inl2220 */
   { "Bham + RF Coul(WW)",             292 }, /* inl2230 */
   { "LJ(T) + RF Coul",                 63 }, /* inl2300 */
-  { "LJ(T) + RF Coul(S)",              53 }, /* inl2310 */
+  { "LJ(T) + RF Coul(S)",              63 }, /* inl2310 */
   { "LJ(T) + RF Coul(W)",             127 }, /* inl2320 */
   { "LJ(T) + RF Coul(WW)",            310 }, /* inl2330 */
   { "Bham(T) + RF",                    68 }, /* inl2400 */
-  { "Bham(T) + RF(S)",                 54 }, /* inl2410 */
+  { "Bham(T) + RF(S)",                 68 }, /* inl2410 */
   { "Bham(T) + RF(W)",                132 }, /* inl2420 */
   { "Bham(T) + RF(WW)",               310 }, /* inl2430 */
   { "Coulomb(T)",                      41 }, /* inl3000 */
   { "FreeEner Coul(T)",                54 }, /* inl3001 */
   { "Softcore Coul(T)",                99 }, /* inl3002 */
-  { "Coulomb(T)(S)",                   51 }, /* inl3010 */
+  { "Coulomb(T)(S)",                   99 }, /* inl3010 */
   { "Coulomb(T)(W)",                  123 }, /* inl3020 */
   { "Coulomb(T)(WW)",                 360 }, /* inl3030 */
   { "LJ + Coulomb(T)",                 54 }, /* inl3100 */
-  { "LJ + Coulomb(T)(S)",              56 }, /* inl3110 */
+  { "LJ + Coulomb(T)(S)",              54 }, /* inl3110 */
   { "LJ + Coulomb(T)(W)",             136 }, /* inl3120 */
   { "LJ + Coulomb(T)(WW)",            373 }, /* inl3130 */
   { "Bham + Coul(T)",                  55 }, /* inl3200 */
-  { "Bham + Coul(T)(S)",               56 }, /* inl3210 */
+  { "Bham + Coul(T)(S)",               55 }, /* inl3210 */
   { "Bham + Coul(T)(W)",              137 }, /* inl3220 */
   { "Bham + Coul(T)(WW)",             374 }, /* inl3230 */
   { "LJ(T) + Coul(T)",                 67 }, /* inl3300 */
   { "Free LJ(T)+Coul(T)",              92 }, /* inl3301 */
   { "SC LJ(T)+Coul(T)",               151 }, /* inl3302 */
-  { "LJ(T) + Coul(T)(S)",              60 }, /* inl3310 */
+  { "LJ(T) + Coul(T)(S)",             151 }, /* inl3310 */
   { "LJ(T) + Coul(T)(W)",             149 }, /* inl3320 */
   { "LJ(T) + Coul(T)(WW)",            386 }, /* inl3330 */
   { "LJ(T) + Coul(T)",                 71 }, /* inl3400 */
   { "Free Bham(T)+Coul(T)",           116 }, /* inl3401 */
   { "SC Bham(T)+Coul(T)",             161 }, /* inl3402 */
-  { "Bham(T) + Coul(T)(S)",            61 }, /* inl3410 */
+  { "Bham(T) + Coul(T)(S)",           161 }, /* inl3410 */
   { "Bham(T) + Coul(T,W)",            153 }, /* inl3420 */
   { "Bham(T) + Coul(T,WW)",           390 }, /* inl3430 */
   { "Innerloop-Iatom",                 10 },
