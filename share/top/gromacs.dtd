@@ -1,4 +1,5 @@
 <!-- GROMACS Data type description (DTD).                         -->
+<!-- $Id$                                                         -->
 <!-- David van der Spoel 07/2001, 03/2002                         -->
 <!-- The authorative version of this document can be found at     -->
 <!-- http://www.gromacs.org/gromacs3.1.dtd                        -->
@@ -232,6 +233,4 @@
 	  zx  CDATA "0"
 	  zy  CDATA "0">
 	 
-<!ELEMENT tensor EMPTY>
-
 <!-- End of GROMACS DTD -->
