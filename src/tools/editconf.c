@@ -456,6 +456,11 @@ int main(int argc, char *argv[])
     "[PAR]",
     "Finally with option [TT]-label[tt] editconf can add a chain identifier",
     "to a pdb file, which can be useful for analysis with e.g. rasmol."
+    "[PAR]",
+    "To convert a truncated octrahedron file produced by a package which uses",
+    "a cubic box with the corners cut off (such as Gromos) use:[BR]",
+    "[TT]editconf -f <infile> -rotate 0 -45 -35.264 -bt o -box <veclen> -o <outfile>[tt][BR]",
+    "where [TT]veclen[tt] is the size of the cubic box times sqrt(3)/2."
   };
   static char *bugs[] = {
     "For complex molecules, the periodicity removal routine may break down, "
