@@ -174,11 +174,16 @@ void preprocess(char *infile,char *outfile,
     bFirst=FALSE;
   }
 
-  /* build the command line. Second output name is not supported anymore
-   * it seems, so we use redirection instead
+  /* build the command line. Second output name is not supported 
+   * on OS X it seems, so we use redirection instead in that case.
    */
+#ifdef __APPLE__
   sprintf(command,"%s %s -I%s %s %s > %s",
 	  cpp,include,libdir,define,infile,outfile);
+#else
+  sprintf(command,"%s %s -I%s %s %s > %s",
+	  cpp,include,libdir,define,infile,outfile);
+#endif
   
   if (debug)
     fprintf(debug,"Command line for cpp:\n\t%s\n",command);
