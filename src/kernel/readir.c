@@ -804,6 +804,7 @@ void do_index(char *ndx,
     atoms->grpname[i]=put_symtab(symtab,gnames[i]);
   atoms->grpname[i]=put_symtab(symtab,"rest");
   restnm=i;
+  srenew(gnames,grps->nr+1);
   gnames[restnm]=*(atoms->grpname[i]);
   atoms->ngrpname=grps->nr+1;
   
