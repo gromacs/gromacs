@@ -82,7 +82,7 @@ int main(int argc,char *argv[])
   int        status,isize;
   atom_id    *index;
   char       *grpname;
-  real       maxang=0,Jc,S2;
+  real       maxang=0,Jc,S2,norm_fac;
   unsigned long mode;
   int        nframes,maxangstat=0,mult,*angstat;
   int        i,j,total,nangles,natoms,nat2,first,last,angind;
@@ -269,9 +269,10 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Order parameter S^2 = %g\n",S2);
   }
   out=xvgropen(opt2fn("-od",NFILE,fnm),title,"Degrees","");
+  norm_fac=1.0/(nangles*nframes*maxang/maxangstat);
   for(i=first; (i<=last); i++) 
-    fprintf(out,"%10g  %10d\n",
-	    ((i*maxang)/maxangstat)+180.0-maxang,angstat[i]);
+    fprintf(out,"%10g  %10f\n",
+	    ((i*maxang)/maxangstat)+180.0-maxang,angstat[i]*norm_fac);
   
   fclose(out);
 
