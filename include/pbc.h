@@ -154,7 +154,7 @@ extern "C" {
    * as calculated by calc_box_center.
    */
   
-  extern void set_gmx_full_pbc(FILE *fp);
+  extern void set_gmx_full_pbc();
   /* Turn on full PBS calculation in the GROMACS bonded routines */
   
 #ifdef CPLUSPLUS
