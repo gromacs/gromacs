@@ -111,8 +111,7 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
       svmul(0.5,h1,center1);  /* center is geometric mean */
       break;
     default:          /* group 1 does none of the above */
-      fprintf(stderr,"Error. Something wrong with contents of index file.\n");
-      exit(1);
+      fatal_error(0,"Something wrong with contents of index file.\n");
     }
 
   switch(gnx2)
@@ -126,8 +125,7 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
       svmul(0.5,h2,center2);  /* center is geometric mean */
       break;
     default:         /* group 2 does none of the above */
-      fprintf(stderr,"Error. Something wrong with contents of index file.\n");
-      exit(1);
+      fatal_error(0,"Something wrong with contents of index file.\n");
     }
   
   *angle = cos_angle(normal1,normal2);
@@ -151,12 +149,6 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
     *distance1 = 0; *distance2 = 0;
   } 
 
-  /*  fprintf(stderr,"normal1 = (%f, %f, %f)\nnormal2 = (%f, %f, %f)\n",
-   *	  normal1[0],normal1[1],normal1[2],normal2[0],normal2[1],normal2[2]);
-   * fprintf(stderr,"center1 = (%f,%f,%f)\ncenter2 = (%f,%f,%f)\n",
-   *	  center1[0],center1[1],center1[2],center2[0],center2[1],center2[2]);
-   * fprintf(stderr,"cos = %f, distance = %f\n",*angle,*distance);
-   */
 }
 
 void sgangle_plot(char *fn,char *afile,char *bfile, 
@@ -181,10 +173,8 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
   matrix     box;        
   char       buf[256];   /* for xvgr title */
 
-  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) {
-    fprintf(stderr,"Could not read coordinates from statusfile\n");
-    exit(1);
-  }
+  if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
+    fatal_error(0,"Could not read coordinates from statusfile\n");
 
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
   sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");
