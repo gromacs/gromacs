@@ -362,7 +362,12 @@ int main(int argc,char *argv[])
     "[BB]7.[bb] reduce the number of frames[BR]",
     "[BB]8.[bb] change the timestamps of the frames ",
     "([TT]-t0[tt] and [TT]-timestep[tt])",
-    "[PAR]",
+    "[BB]9.[bb] cut the trajectory in small subtrajectories according",
+    "to information in an index file. This allows subsequent analysis of",
+    "the subtrajectories that could, for example be the result of a",
+    "cluster analysis. Use option [TT]-sub[tt].",
+    "This assumes that the entries in the index file are frame numbers and",
+    "dumps each group in the index file to a separate trajectory file.[PAR]",
     "The program [TT]trjcat[tt] can concatenate multiple trajectory files.",
     "[PAR]",
     "Currently seven formats are supported for input and output:",
@@ -543,14 +548,17 @@ int main(int argc,char *argv[])
   char         *grpnm;
   int          *frindex,nrfri;
   char         *frname;
-  int          ifit,irms;
+  int          ifit,irms,my_clust;
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
+  t_cluster_ndx *clust;
+  int          *clust_status;
   real         tshift=0,t0=-1,dt=0.001,prec;
   bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
+  bool         bSubTraj=FALSE;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
   char         *outf_base=NULL,*outf_ext=NULL;
   char         top_title[256],title[256],command[256],filemode[5];
@@ -559,11 +567,12 @@ int main(int argc,char *argv[])
   char         *warn;
 
   t_filenm fnm[] = {
-    { efTRX, "-f",  NULL, ffREAD },
-    { efTRX, "-o", "trajout", ffWRITE },
-    { efTPS, NULL,  NULL, ffOPTRD },
-    { efNDX, NULL,  NULL, ffOPTRD },
-    { efNDX, "-fr", "frames", ffOPTRD }
+    { efTRX, "-f",   NULL,      ffREAD  },
+    { efTRX, "-o",   "trajout", ffWRITE },
+    { efTPS, NULL,   NULL,      ffOPTRD },
+    { efNDX, NULL,   NULL,      ffOPTRD },
+    { efNDX, "-fr",  "frames",  ffOPTRD },
+    { efNDX, "-sub", "cluster", ffOPTRD }
   };
 #define NFILE asize(fnm)
   
@@ -641,7 +650,8 @@ int main(int argc,char *argv[])
       prec *= 10;
     
     bIndex=ftp2bSet(efNDX,NFILE,fnm);
-    
+
+        
     /* Determine output type */ 
     out_file=opt2fn("-o",NFILE,fnm);
     ftp=fn2ftp(out_file);
@@ -661,6 +671,30 @@ int main(int argc,char *argv[])
       outf_base[outf_ext - out_file] = '\0';
     }
 
+    bSubTraj = opt2bSet("-sub",NFILE,fnm);
+    if (bSubTraj) {
+      if ((ftp != efXTC) && (ftp != efTRN))
+	gmx_fatal(FARGS,"Can only use the sub option with output file types "
+		  "xtc and trr");
+      clust = cluster_index(opt2fn("-sub",NFILE,fnm));
+      
+      /* Check for number of files disabled, as FOPEN_MAX is not the correct
+       * number to check for. In my linux box it is only 16.
+       */
+      if (0 && (clust->clust->nr > FOPEN_MAX-4))
+	gmx_fatal(FARGS,"Can not open enough (%d) files to write all the"
+		  " trajectories.\ntry splitting the index file in %d parts.\n"
+		  "FOPEN_MAX = %d",
+		  clust->clust->nr,1+clust->clust->nr/FOPEN_MAX,FOPEN_MAX);
+      
+      snew(clust_status,clust->clust->nr);
+      for(i=0; (i<clust->clust->nr); i++) {
+	char buf[STRLEN];
+	sprintf(buf,"%s.%s",clust->grpname[i],ftp2ext(ftp));
+	clust_status[i] = open_trx(buf,"w");
+      }
+      bSeparate = bSplit = FALSE;
+    }
     /* skipping */  
     if (skip_nr <= 0) {
     } 
@@ -804,13 +838,13 @@ int main(int argc,char *argv[])
       case efTRR:
       case efTRJ:
 	out=NULL;
-	if ( split_t == 0 )
+	if (( split_t == 0 ) && !bSubTraj)
 	  trxout = open_trx(out_file,filemode);
 	break;
       case efGRO:
       case efG96:
       case efPDB:
-	if ( !bSeparate && split_t == 0 )
+	if (( !bSeparate && split_t == 0 ) && !bSubTraj)
 	  out=ffopen(out_file,filemode);
 	break;
       }
@@ -839,13 +873,20 @@ int main(int argc,char *argv[])
       model_nr = -1;
       bDTset   = FALSE;
     
+      /* Main loop over frames */
       do {
 	if (!fr.bStep) {
 	  /* set the step */
 	  fr.step = newstep;
 	  newstep++;
 	}
-	  
+	if (bSubTraj) {
+	  if (frame >= clust->clust->nra)
+	    gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");
+	  my_clust = clust->inv_clust[frame];
+	  range_check(my_clust,0,clust->clust->nr);
+	}
+	
 	if (bSetBox) {
 	  /* generate new box */
 	  clear_mat(fr.box);
@@ -1014,7 +1055,10 @@ int main(int argc,char *argv[])
 		  close_trx(trxout);
 		trxout = open_trx(out_file2,filemode);
 	      }
-	      write_trxframe(trxout,&frout);
+	      if (bSubTraj)
+		write_trxframe(clust_status[my_clust],&frout);
+	      else
+		write_trxframe(trxout,&frout);
 	      break;
 	    case efGRO:
 	    case efG96:

@@ -61,7 +61,6 @@
 #include "tpxio.h"
 #include "init.h"
 #include "names.h"
-#include "invblock.h"
 
 typedef struct {
   int n;
@@ -453,9 +452,8 @@ int gmx_disre(int argc,char *argv[])
   bool        bPDB;
   int         isize;
   atom_id     *index=NULL,*ind_fit=NULL;
-  char        *grpname,**clust_grpname=NULL;
-  t_block     *clust=NULL;
-  atom_id     *inv_clust;
+  char        *grpname;
+  t_cluster_ndx *clust;
   t_dr_result dr,*dr_clust;
   char        **leg;
   real        *vvindex=NULL,*w_rls=NULL;
@@ -537,15 +535,10 @@ int gmx_disre(int argc,char *argv[])
   
   init_dr_res(&dr,fcd->disres.nr);
   if (opt2bSet("-c",NFILE,fnm)) {
-    clust     = init_index(opt2fn("-c",NFILE,fnm),&clust_grpname);
-    for(i=0; (i<clust->nra); i++)
-      range_check(clust->a[i],0,clust->nra);
-    inv_clust=make_invblock(clust,clust->nra);
-    snew(dr_clust,clust->nr);
-    for(i=0; (i<clust->nr); i++)
+    clust = cluster_index(opt2fn("-c",NFILE,fnm));
+    snew(dr_clust,clust->clust->nr);
+    for(i=0; (i<clust->clust->nr); i++)
       init_dr_res(&dr_clust[i],fcd->disres.nr);
-    fprintf(stdlog,"There are %d clusters containing %d structures\n",
-	    clust->nr,clust->nra);
   }
   else {	
     out =xvgropen(opt2fn("-ds",NFILE,fnm),
@@ -585,10 +578,10 @@ int gmx_disre(int argc,char *argv[])
       set_pbc(&pbc,box);
     
     if (clust) {
-      if (j>=clust->nra)
+      if (j >= clust->clust->nra)
 	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file\n");
-      int my_clust = inv_clust[j];
-      range_check(my_clust,0,clust->nr);
+      int my_clust = clust->inv_clust[j];
+      range_check(my_clust,0,clust->clust->nr);
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
 		 x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,
@@ -629,8 +622,8 @@ int gmx_disre(int argc,char *argv[])
   close_trj(status);
   if (clust) {
     dump_clust_stats(stdlog,fcd->disres.nr,&(top.idef.il[F_DISRES]),
-		     top.idef.iparams,clust,dr_clust,clust_grpname,
-		     isize,index);
+		     top.idef.iparams,clust->clust,dr_clust,
+		     clust->grpname,isize,index);
   }
   else {
     dump_stats(stdlog,j,fcd->disres.nr,&(top.idef.il[F_DISRES]),
