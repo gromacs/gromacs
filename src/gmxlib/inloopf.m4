@@ -160,7 +160,7 @@ C
       vctot = 0
       
 cray compiler directive ignore vector dependencies      
-c$dir ivdep
+cdir$ ivdep
 
       do k=1,nj
          jnr         = jjnr(k)+1
@@ -236,7 +236,7 @@ c$dir ivdep
       vnbtot = 0
       
 cray compiler directive ignore vector dependencies      
-c$dir ivdep
+cdir$ ivdep
       do k=1,nj
          jnr   = jjnr(k)+1
          j3    = 3*jnr-2
