@@ -111,15 +111,6 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
     rvec_inc(f[i],flr[i]);
 }
 
-static void reset_forces(rvec f[],t_forcerec *fr,int natoms)
-{
-  if (fr->eeltype == eelPPPM || fr->eeltype == eelPME
-      || fr->eeltype==eelEWALD) 
-    clear_rvecs(natoms,fr->flr);
-  clear_rvecs(natoms,f);
-  clear_rvecs(SHIFTS,fr->fshift);
-}
-
 static void reset_energies(t_grpopts *opts,t_groups *grp,
 			   t_forcerec *fr,bool bNS,real epot[])
 {
@@ -192,8 +183,8 @@ void do_force(FILE *log,t_commrec *cr,
   pid    = cr->pid;
   start  = START(nsb);
   homenr = HOMENR(nsb);
-  cg0    = (pid == 0) ? 0 : nsb->cgload[pid-1];
-  cg1    = nsb->cgload[pid];
+  cg0    = CG0(nsb);
+  cg1    = CG1(nsb);
   
   update_forcerec(log,fr,parm->box);
 
@@ -207,17 +198,19 @@ void do_force(FILE *log,t_commrec *cr,
 			       parm->box,box_size,&(top->blocks[ebCGS]),x,
 			       fr->shift_vec,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
-      inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
-      
-      if (PAR(cr))
-	move_cgcm(log,cr,fr->cg_cm,nsb->cgload);
-#ifdef DEBUG
-      if (debug)
-	pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
-#endif
     }
   }
+  else if (bNS)
+    calc_cgcm(log,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
   
+  if (bNS) {
+    inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
+    if (PAR(cr))
+      move_cgcm(log,cr,fr->cg_cm,nsb->workload);
+    if (debug)
+      pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
+  }
+    
   /* Communicate coordinates if necessary */
   if (PAR(cr)) 
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
@@ -244,18 +237,25 @@ void do_force(FILE *log,t_commrec *cr,
   }
   
   /* Reset forces or copy them from long range forces */
-  reset_forces(f,fr,nsb->natoms);
-  
+  /* Need only be done for local atoms */
+  if (fr->eeltype == eelPPPM || 
+      fr->eeltype == eelPME || 
+      fr->eeltype == eelEWALD) 
+    clear_rvecs(homenr,fr->flr+start);
+  clear_rvecs(nsb->natoms,f);
+  clear_rvecs(SHIFTS,fr->fshift);
+
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,lr_vir);
+	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
   
   /* Compute forces due to electric field */
-  calc_f_el(START(nsb),HOMENR(nsb),mdatoms->chargeT,f,parm->ir.ex);
+  calc_f_el(start,homenr,mdatoms->chargeT,f,parm->ir.ex);
   
 #ifdef DEBUG
   if (bNS)
@@ -266,11 +266,22 @@ void do_force(FILE *log,t_commrec *cr,
   clear_mat(vir_part);
   calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift,vir_part,cr);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+  
   if (bNS && fr->bTwinRange) {
     /* The long-range virial from surrounding boxes */
     clear_mat(lr_vir);
     calc_vir(log,SHIFTS,fr->shift_vec,fr->fshift_lr,lr_vir,cr);
-    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+
+    /* Communicate the long range forces, once only! */
+    if (PAR(cr))
+      move_f(log,cr->left,cr->right,fr->flr,buf,nsb,nrnb);
+      
+    /* Now that we have the long range forces gathered on all processors,
+     * we only need to consider the local contribution to virial etc.
+     * The long range virial from long range forces 
+     */
+    f_calc_vir(log,start,start+homenr,x,fr->flr,lr_vir,cr,graph,fr->shift_vec);
+    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS+homenr);
   }
 #ifdef DEBUG
   if (debug) {
@@ -279,40 +290,40 @@ void do_force(FILE *log,t_commrec *cr,
   }
 #endif
 
-  /* If we do PPPM the long range forces should not be taken into account
-   * for computation of the virial. Rather a special formula
-   * due to Neumann is used (implemented in calc_pres, coupling.c)
-   */
-  /* This also applies to PME/Ewald, but in this case the virial is 
-   * calculated directly in the routine and added to the total vir 
+  /* When using PME/Ewald we compute the long range virial (lr_vir) there.
+   * otherwise we do it based on long range forces from twin range
+   * cut-off based calculation (or not at all).
    */
   
-  /* PARALLELLISE THIS BITCH */
-  if (debug) {
-    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
-    pr_rvecs(debug,0,"lr_vir  ",lr_vir,DIM);
-  }
-  /* Calculate short-range virial */
-  f_calc_vir(log,0,nsb->natoms,x,f,vir_part,cr,graph,fr->shift_vec);
+  /* Communicate the forces */
+  if (PAR(cr))
+    move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
+    
+  /* Now it is time for the short range virial. At this timepoint vir_part
+   * already contains the virial from surrounding boxes.
+   * Calculate partial virial, for local atoms only, based on short range. 
+   * Total virial is computed in global_stat, called from do_md 
+   */
+  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
-  if (bNS && fr->bTwinRange) {
-    /* Calculate long-range virial */
-    f_calc_vir(log,0,nsb->natoms,x,fr->flr,lr_vir,cr,graph,fr->shift_vec);
-    inc_nrnb(nrnb,eNR_VIRIAL,homenr);
-  }
-  if ((fr->bTwinRange) || (fr->eeltype == eelPPPM) ||
-      (fr->eeltype == eelPME) || (fr->eeltype == eelEWALD)) {
+  
+  if ((fr->eeltype == eelPPPM) ||
+      (fr->eeltype == eelPME)  ||
+      (fr->eeltype == eelEWALD) || 
+      (fr->bTwinRange)) {
+    /* Now add the forces from the PME calculation. Since this only produces
+     * forces on the local atoms, this can be safely done after the
+     * communication step. The same goes for the virial.
+     */
     sum_forces(start,start+homenr,f,fr->flr);
     if (fr->eeltype != eelPPPM) /* PPPM virial sucks */
       for(i=0; (i<DIM); i++) 
 	for(j=0; (j<DIM); j++) 
 	  vir_part[i][j]+=lr_vir[i][j];
   }
+  
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
-  if (PAR(cr))
-    /* Communicate the forces */
-    move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
 }
 
 #ifdef NO_CLOCK 
