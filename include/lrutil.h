@@ -70,6 +70,9 @@ extern real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
  * No PBC is taken into account!
  */
 
+extern void calc_weights(int nx,int ny,int nz,
+			 rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[]);
+
 static void calc_lll(rvec box,rvec lll)
 {
   lll[XX] = 2.0*M_PI/box[XX];
