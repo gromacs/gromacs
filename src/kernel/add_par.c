@@ -105,7 +105,7 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
   
   /* Do a best match comparison */
   /* for protein N-terminus, rename H1, H2 and H3 to H */
-  if ( bNterm && (searchname[0] == 'H') && (searchname[2] == '\0') &&
+  if ( bNterm && (strlen(searchname)==2) && (searchname[0] == 'H') && 
        ( (searchname[1] == '1') || (searchname[1] == '2') || 
 	 (searchname[1] == '3') ) )
     searchname[1]='\0';
