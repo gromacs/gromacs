@@ -685,16 +685,16 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	   atoms->nres,atoms->resname,bAlldih,x);
   
   /* Terminal bonds */
-  if (rn>0)
+  if (rn>=0)
     ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
 	      rn,ntdb);
-  if (rc>0)
+  if (rc>=0)
     ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
 	      rc,ctdb);
-  if (rn>0)
+  if (rn>=0)
     ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
 	      rn,ntdb);
-  if (rc>0)
+  if (rc>=0)
     ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
 	      rc,ctdb);
   
