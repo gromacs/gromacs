@@ -239,11 +239,11 @@ static void do_ac_core(int nf2,int nframes,real corr[],real c1[],int nrestart,
 
   if (bFull) {
     if (nrestart != 1) 
-      fprintf(stderr,"Warning setting number of restarts to 1 for Full ACF\n");
+      fprintf(stderr,"WARNING: setting number of restarts to 1 for Full ACF\n");
     nrestart=1;
   }
   else if (nrestart < 1) {
-    fprintf(stderr,"Warning setting number of restarts to 1\n");
+    fprintf(stderr,"WARNING: setting number of restarts to 1\n");
     nrestart = 1;
   }
   
@@ -388,19 +388,21 @@ void low_do_autocorr(char *fn,char *title,
 		     int nframes,int nitem,real **c1,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bFull,bool bAver,bool bFour,bool bNormalize,
-		     char *fitfn,char *fittitle,bool bVerbose, 
-		     real tbeginfit,real tendfit,char *acftitle,
+		     char *fitfn,char *fittitle,bool bVerbose,
+		     real tbeginfit,real tendfit,
 		     int nfitparm)
 {
   FILE *fp,*dbg;
   const real sqrtsqrt15=sqrt(sqrt(1.5));
   int  i,j,j3,m,m1,k,nf2,nfour;
   fftreal *cfour,*csum;
-  bool bDebug=FALSE;
+  bool bDebug;
   char buf[256];
   real *ctmp,*rij,*sig;
   real fitparm[3],fit[3];
   real dc,c0,sum,sumtot,rnorm,fac;
+  
+  bDebug=bDebugMode();
   
   if (bFull || bFour)
     nf2=nframes;
@@ -655,7 +657,6 @@ void low_do_autocorr(char *fn,char *title,
       int  nf_int;
       
       fprintf(stderr,"CORR:\n");    
-      fprintf(stderr,"CORR: This is '%s'\n",acftitle);
 
       nf_int = min(nf2,(int)(tendfit/dt));
       sum    = integrate(fp,nf2,dt,c1[0]);
@@ -720,9 +721,8 @@ void low_do_autocorr(char *fn,char *title,
 typedef struct {
   unsigned long mode;
   int  nrestart,nlag,P,nfitparm;
-  bool bFull,bFour,bNormalize,bVerbose;
+  bool bFull,bFour,bNormalize;
   real tbeginfit,tendfit;
-  char *acftitle;
 } t_acf;
 
 static bool  bACFinit = FALSE;
@@ -749,10 +749,6 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
       "Time where to begin the exponential fit of the correlation function" },
     { "-endfit",   FALSE, etREAL, &acf.tendfit,
       "Time where to end the exponential fit of the correlation function" },
-    { "-acfverbose", FALSE, etBOOL, &acf.bVerbose,
-      "Produce more output on screen!\n" },
-    { "-title",    FALSE,  etSTR, &acf.acftitle,
-      "Title for ACF output" }
    };
 #define NPA asize(acfpa)
   t_pargs *ppa;
@@ -773,10 +769,8 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
   acf.bFull      = FALSE;
   acf.bFour      = TRUE;
   acf.bNormalize = TRUE;
-  acf.bVerbose   = FALSE;
   acf.tbeginfit  = 0.0;
   acf.tendfit    = 0.0;
-  acf.acftitle=strdup("Here you could have printed YOUR ACF title");
   
   bACFinit = TRUE;
     
@@ -807,10 +801,6 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
   
   low_do_autocorr(fn,title,nframes,nitem,c1,dt,mode,
 		  acf.nrestart,acf.bFull,bAver,acf.bFour,acf.bNormalize,
-		  fitfn,fittitle,acf.bVerbose,acf.tbeginfit,acf.tendfit,
-		  acf.acftitle,acf.nfitparm);
+		  fitfn,fittitle,bDebugMode(),acf.tbeginfit,acf.tendfit,
+		  acf.nfitparm);
 }
-
-
-
-

@@ -436,13 +436,13 @@ static void analyse_ener(bool bCorr,char *corrfn,
       strcpy(buf,"Shear Viscosity");
       low_do_autocorr(corrfn,buf,nenergy,3,eneset,Dt,
 		      eacNormal,1,FALSE,TRUE,TRUE,FALSE,
-		      "shear-fit.xvg","fitting",FALSE,0.0,0.0,buf,0);
+		      "shear-fit.xvg","fitting",FALSE,0.0,0.0,0);
 	
       /* Now for bulk viscosity */
       strcpy(buf,"Bulk Viscosity");
       low_do_autocorr(corrfn,buf,nenergy,1,&(eneset[11]),Dt,
 		      eacNormal,1,FALSE,TRUE,TRUE,FALSE,
-		      "bulk-fit.xvg","fitting",FALSE,0.0,0.0,buf,0);
+		      "bulk-fit.xvg","fitting",FALSE,0.0,0.0,0);
       
       factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
       fp=xvgropen(visfn,buf,"Time (ps)","\\8h\\4 (cp)");
