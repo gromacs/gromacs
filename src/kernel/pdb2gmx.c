@@ -171,14 +171,15 @@ static void rename_pdbresint(t_atoms *pdba,char *oldnm,
   }
 }
 
-static void check_occupancy(t_atoms *atoms)
+static void check_occupancy(t_atoms *atoms,char *filename)
 {
-  int i;
+  int i,ftp;
   int nzero=0;
   int nnotone=0;
   
-  if (!atoms->pdbinfo)
-    fprintf(stderr,"WARNING: no pdb information fields in atoms\n");
+  ftp = fn2ftp(filename);
+  if (!atoms->pdbinfo || ((ftp != efPDB) && (ftp != efBRK) && (ftp != efENT)))
+    fprintf(stderr,"No pdb information fields in atoms\n");
   else {
     for(i=0; (i<atoms->nr); i++) {
       if (atoms->pdbinfo[i].occup == 0)
@@ -187,11 +188,11 @@ static void check_occupancy(t_atoms *atoms)
 	nnotone++;
     }
     if (nzero == atoms->nr)
-      fprintf(stderr,"WARNING: all occupancy fields zero. This is probably not an X-Ray structure\n");
+      fprintf(stderr,"All occupancy fields zero. This is probably not an X-Ray structure\n");
     else if ((nzero > 0) || (nnotone > 0))
       fprintf(stderr,
 	      "WARNING: there were %d atoms with zero occupancy and %d atoms"
-	      " with\n         occupancy less than one (out of %d atoms)."
+	      " with\n         occupancy unequal to one (out of %d atoms)."
 	      " Check your pdb file.\n",nzero,nnotone,atoms->nr);
   }
 }
@@ -815,7 +816,7 @@ int main(int argc, char *argv[])
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
   
-  check_occupancy(&pdba_all);
+  check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm));
   
   ff=choose_ff();
   printf("Using %s force field\n",ff);
