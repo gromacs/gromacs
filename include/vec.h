@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GROwing Monsters And Cloning Shrimps
+ * Gnomes, ROck Monsters And Chili Sauce
  */
 
 #ifndef _vec_h
@@ -42,29 +42,33 @@ static char *SRCID_vec_h = "$Id$";
 #include "macros.h"
 #include "fatal.h"
 
-#ifndef DOUBLE
-#ifdef C_INVSQRT
+#ifdef CINVSQRT
 #include "lutab.h"
-static float invsqrt(float x)
+static real invsqrt(float x)
 {
-  const float half=0.5;
-  const float three=3.0;
+  const real  half=0.5;
+  const real  three=3.0;
   t_convert   result,bit_pattern;
   word        exp,fract;
-  float       y,lu;
+  float       lu;
+  real        y,y2;
   
   bit_pattern.fval=x;
-  exp=EXP_ADDR(bit_pattern.bval);
-  fract=FRACT_ADDR(bit_pattern.bval);
+  exp   = EXP_ADDR(bit_pattern.bval);
+  fract = FRACT_ADDR(bit_pattern.bval);
   result.bval=lookup_table.exp_seed[exp] | lookup_table.fract_seed[fract];
-  lu=result.fval;
+  lu    = result.fval;
   
   y=(half*lu*(three-((x*lu)*lu)));
-
-  return y;			/* 5 TOTAL 	*/
+#ifdef DOUBLE
+  y2=(half*y*(three-((x*y)*y)));
+  
+  return y2;                    /* 10 Flops */
+#else
+  return y;			/* 5  Flops */
+#endif
 }
 #define INVSQRT_DONE
-#endif
 #endif
 
 #ifndef INVSQRT_DONE

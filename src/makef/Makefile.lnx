@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT
 
 # GNU C compiler
 CC		= gcc

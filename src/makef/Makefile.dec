@@ -9,7 +9,7 @@
 #
 # 	See README file for info
 #
-SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DC_INVSQRT -DFINVSQRT # -DDOUBLE 
+SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT -DFINVSQRT
 
 # Dec C compilers
 ALLOPT		= -fast -O5 -inline all -tune host -math_library fast -non_shared -unroll 2 -arch host -pipeline
