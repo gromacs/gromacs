@@ -147,12 +147,9 @@
  |	frans van hoesel hoesel@chem.rug.nl
 */	
 
-
 #include <limits.h>
 #include <malloc.h>
 #include <math.h>
-#include <rpc/rpc.h>
-#include <rpc/xdr.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "xdrf.h"

@@ -41,6 +41,10 @@ static char *SRCID_xdrf_h = "$Id$";
 #undef TRUE
 #endif
 #endif
+#ifdef _pgi_
+typedef long long int int64_t;
+#endif
+
 #include <rpc/rpc.h>
 #include <rpc/xdr.h>
 #else
