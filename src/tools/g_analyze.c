@@ -511,25 +511,32 @@ int main(int argc,char *argv[])
     "All lines starting with # and @ are skipped.",
     "All analyses can also be done for the derivative of a set",
     "(option [TT]-d[tt]).[PAR]",
+    
     "g_analyze always shows the average and standard deviation of each",
     "set. For each set it also shows the relative deviation of the third",
     "and forth cumulant from those of a Gaussian distribution with the same",
     "standard deviation.[PAR]",
+    
     "Option [TT]-ac[tt] produces the autocorrelation function(s).[PAR]",
+    
     "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
     "i/2 periods. The formula is:[BR]"
     "2 (int0-T y(t) cos(pi t/i) dt)^2 / int0-T y(t) y(t) dt[BR]",
     "This is useful for principal components obtained from covariance",
     "analysis, since the principal components of random diffusion are",
-    "pure cosines.[PAR]"
+    "pure cosines.[PAR]",
+    
     "Option [TT]-msd[tt] produces the mean square displacement(s).[PAR]",
+    
     "Option [TT]-dist[tt] produces distribution plot(s).[PAR]",
+    
     "Option [TT]-av[tt] produces the average over the sets.",
     "Error bars can be added with the option [TT]-errbar[tt].",
     "The errorbars can represent the standard deviation, the error",
     "(assuming the points are independent) or the interval containing",
     "90% of the points, by discarding 5% of the points at the top and",
     "the bottom.[PAR]",
+    
     "Option [TT]-ee[tt] produces error estimates using block averaging.",
     "A set is divided in a number of blocks and averages are calculated for",
     "each block. The error for the total average is calculated from",
@@ -546,6 +553,7 @@ int main(int argc,char *argv[])
     "average.",
     "When the actual block average is very close to the analytical curve,",
     "the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).[PAR]",
+    
     "Option [TT]-power[tt] fits the data to b t^a, which is accomplished",
     "by fitting to a t + b on log-log scale. All points after the first",
     "zero or negative value are ignored."
@@ -698,28 +706,18 @@ int main(int argc,char *argv[])
     }
     fclose(out);
     fprintf(stderr,"\r%d, time=%g\n",t-1,(t-1)*dt);
-    do_view(msdfile, NULL);
   }
-  if (ccfile) {
+  if (ccfile)
     plot_coscont(ccfile,n,nset,val);
-    do_view(ccfile, NULL);
-  }
   
-  if (distfile) {
+  if (distfile)
     histogram(distfile,binwidth,n,nset,val);
-    do_view(distfile, NULL);
-  }
-  if (avfile) {
+  if (avfile)
     average(avfile,nenum(avbar_opt),n,nset,val,t0,dt);
-    do_view(avfile, NULL);
-  }
-  if (eefile) {
+  if (eefile)
     estimate_error(eefile,nb_min,resol,n,nset,av,sig,val,dt,bEeFitAc);
-    do_view(eefile, NULL);
-  }
-  if (bPower) {
+  if (bPower)
     power_fit(n,nset,val,t0,dt);
-  }
   if (acfile) {
     if (bSubAv) 
       for(s=0; s<nset; s++)
@@ -727,9 +725,10 @@ int main(int argc,char *argv[])
 	  val[s][i] -= av[s];
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
 		eacNormal,bAverCorr);
-    do_view(acfile, NULL);
   }
-
+  
+  view_all(NFILE, fnm);
+  
   thanx(stderr);
 
   return 0;
