@@ -54,6 +54,8 @@ static char *SRCID_force_c = "$Id$";
 #include "lrutil.h"
 #include "pppm.h"
 #include "poisson.h"
+#include "ewald.h"
+#include "pme.h"
 #include "copyrite.h"
 
 t_forcerec *mk_forcerec(void)
@@ -282,6 +284,7 @@ void init_forcerec(FILE *log,
   fr->eeltype    = ir->coulombtype;
   fr->vdwtype    = ir->vdwtype;
   fr->bTwinRange = (fr->rlistlong > fr->rlist);
+  fr->bEwald     = ((fr->eeltype == eelPME) || (fr->eeltype == eelEWALD));
   fr->bTab       = ((fr->eeltype != eelCUT) || (fr->vdwtype != evdwCUT));
   fr->bRF        = (((fr->eeltype == eelRF) || (fr->eeltype == eelGRF)) &&
 		    (fr->vdwtype == evdwCUT));
@@ -298,6 +301,10 @@ void init_forcerec(FILE *log,
   else
     fr->rtab = MAX_14_DIST;
 
+  if(fr->bEwald)
+      fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
+  /* Tables are used for direct ewald sum */
+  
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;
   fr->Dimension  = ir->decomp_dir;
@@ -532,7 +539,8 @@ void force(FILE       *log,     int        step,
 	   real       epot[], 
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
-	   t_block    *excl,    bool       bNBFonly)
+	   t_block    *excl,    bool       bNBFonly,
+	   matrix lr_vir)
 {
   int     i,nit;
   bool    bDoEpot;
@@ -592,17 +600,25 @@ void force(FILE       *log,     int        step,
       Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,
 		       box_size,fr->phi,cr,nrnb,&nit,TRUE);
       break;
+    case eelPME:
+	Vlr = do_pme(log,FALSE,ir,x,fr->flr,md->chargeA,
+		     box_size,fr->phi,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+	break;
+    case eelEWALD:
+	Vlr = do_ewald(log,FALSE,ir,x,fr->flr,md->chargeA,
+		       box_size,fr->phi,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+	break;
     default:
       Vlr = 0;
       fatal_error(0,"No such electrostatics method implemented %s",
 		  eel_names[fr->eeltype]);
     }
     
-    Vself = calc_LRcorrections(log,0,md->nr,fr->rcoulomb_switch,fr->rcoulomb,
-			       md->chargeA,excl,x,f,TRUE);
+    Vself = calc_LRcorrections(log,START(nsb),HOMENR(nsb),fr,
+			       md->chargeA,excl,x,f,TRUE,box_size);
     epot[F_LR] = Vlr - Vself;
     if (debug)
-      fprintf(debug,"Vpppm = %g, Vself = %g, Vlr = %g\n",
+      fprintf(debug,"Vlr = %g, Vself = %g, Vlr_corr = %g\n",
 	      Vlr,Vself,epot[F_LR]);
   }
   debug_gmx();
