@@ -204,7 +204,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
 }
 
-void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
+void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 		  t_parm *parm,t_commrec *cr,
 		  t_graph **graph,t_mdatoms **mdatoms,
 		  t_nsborder *nsb,t_groups *grps,
@@ -226,7 +226,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate */
   cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
   cr->nthreads = 1 ; cr->threadid = 0;
-  open_log(ftp2fn(efLOG,nfile,fnm),cr);
+  open_log(log,cr);
 
   if (parm->ir.efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
@@ -235,7 +235,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,state,mdatoms,nsb);
+  init_single(stdlog,parm,tpx,top,state,mdatoms,nsb);
   init_md(cr,&(parm->ir),state->box,&t,&t0,&lam,&lam0,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
 	  &mdebin,grps,force_vir,pme_vir,
@@ -261,7 +261,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,box,FALSE,opt2fn("-table",nfile,fnm),TRUE);
+		nsb,box,FALSE,table,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)

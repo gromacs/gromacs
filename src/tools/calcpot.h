@@ -30,8 +30,8 @@
  * Gromacs Runs One Microsecond At Cannonball Speeds
  */
 	
-extern void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
-			 t_parm *parm,t_commrec *cr,
+extern void init_calcpot(char *log,char *tpx,char *table,
+			 t_topology *top,t_parm *parm,t_commrec *cr,
 			 t_graph **graph,t_mdatoms **mdatoms,
 			 t_nsborder *nsb,t_groups *grps,
 			 t_forcerec **fr,real **coulomb,

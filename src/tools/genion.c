@@ -299,7 +299,8 @@ int main(int argc, char *argv[])
   nsb.nodeid=0;
 
   snew(top,1);
-  init_calcpot(NFILE,fnm,top,&parm,&cr,
+  init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
+	       opt2fn("-table",NFILE,fnm),top,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box,&x);
 
   if ((p_num == 0) && (n_num == 0)) {
