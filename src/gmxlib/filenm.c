@@ -296,7 +296,7 @@ void pr_def(FILE *fp,int ftp)
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 {
   int  i,j,f;
-  char buf[256],*wbuf;
+  char buf[256],*wbuf,opt_buf[32];
 #define OPTLEN 4
 #define NAMELEN 14
 #define FN_OPT_FORMAT "%4s %14s  %-12s"
@@ -304,9 +304,10 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 	  "Option","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
   for(i=0; (i<nf); i++) {
-    for(f=0; f<tfn[i].nf; f++) {
-      sprintf(buf, "%4s %14s  %-12s", f==0?tfn[i].opt:"", tfn[i].fns[f],
-	      f==0?fileopt(tfn[i].flag,buf,255):"");
+    for(f=0; (f<tfn[i].nf); f++) {
+      sprintf(buf, "%4s %14s  %-12s",
+	      (f==0) ? tfn[i].opt : "",tfn[i].fns[f],
+	      (f==0) ? fileopt(tfn[i].flag,opt_buf,32) : "");
       if ( f < tfn[i].nf-1 )
 	fprintf(fp, "%s\n", buf);
     }
