@@ -73,23 +73,33 @@
 	  addnum   CDATA #REQUIRED
 	  addto    CDATA #REQUIRED>
 	  
-<!-- Define a covalent link between two residues (prev and next) -->
+<!-- Define a covalent link between two residues, given in restyp -->
+<!-- and the atoms are given as well (atomprev and atomnext)      -->
+<!-- A reference distance between the atoms does also have to be  -->
+<!-- given in nm (but that does not have to be used).             -->
 <!ELEMENT linkdef EMPTY>
 <!ATTLIST linkdef
-          linktype ID    #REQUIRED
-	  atomprev CDATA #REQUIRED
-          atomnext CDATA #REQUIRED>
+          linktype ID     #REQUIRED
+	  restype  IDREFS #REQUIRED
+	  atomprev CDATA  #REQUIRED
+          atomnext CDATA  #REQUIRED
+	  refdist  CDATA  #REQUIRED>
 
 <!-- Description of termini, etc. or maybe other modifications too -->
 <!-- It is important that the implementation deletes first, and    -->
 <!-- adds atoms afterwards                                         --> 
-<!ELEMENT moddef (moddelete*,modadd*)>
+<!ELEMENT moddef (moddelete*,modadd*,modrepl*)>
 <!ATTLIST moddef
           modtype ID    #REQUIRED>
 <!ELEMENT moddelete EMPTY>
 <!ATTLIST moddelete
           delname CDATA #REQUIRED>
+<!ELEMENT modreplace EMPTY>
+<!ATTLIST modreplace
+          oldname CDATA #REQUIRED
+          newname CDATA #REQUIRED>
 <!ELEMENT modadd EMPTY>
 <!ATTLIST modadd
           addname CDATA #REQUIRED
           addbond CDATA #REQUIRED>
+

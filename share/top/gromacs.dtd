@@ -183,7 +183,7 @@
           molname ID #REQUIRED>
 
 <!-- There should one or two atoms (the latter in case of free energy -->
-<!-- perturbation calculations.                                       -->
+<!-- perturbation (FEP) calculations).                                -->
 <!ELEMENT atoms (atom+)>
 <!ATTLIST atoms
 	  ptype    ( atom | dummy | shell ) "atom">
@@ -197,26 +197,26 @@
 
 <!ELEMENT bonds (bond*)>
 <!ELEMENT bond EMPTY>
-<!-- IDREFS should refer to *two* atoms -->
+<!-- aname should refer to *two* atoms -->
+<!-- harmonic-type should refer to one or two types (in case of FEP) -->
 <!ATTLIST bond
-          aname IDREFS #REQUIRED
-	  typeA CDATA  #REQUIRED
-	  typeB CDATA  #IMPLIED>
+          aname         IDREFS #REQUIRED
+	  harmonic-type IDREFS #REQUIRED>
 
 <!ELEMENT angles (angle*)>
 <!ELEMENT angle EMPTY>
-<!-- IDREFS should refer to *three* atoms -->
+<!-- aname should refer to *three* atoms -->
+<!-- harmonic-type should refer to one or two types (in case of FEP) -->
 <!ATTLIST angle
-          aname IDREFS #REQUIRED
-	  typeA CDATA  #REQUIRED
-	  typeB CDATA  #IMPLIED>		    
+          aname         IDREFS #REQUIRED
+	  harmonic-type IDREFS #REQUIRED>
 		    
 <!ELEMENT dihedrals EMPTY>
-<!-- IDREFS should refer to *four* atoms -->
+<!-- aname should refer to *four* atoms -->
+<!-- proper-type should refer to one or two types (in case of FEP) -->
 <!ATTLIST dihedrals
-          aname IDREFS #REQUIRED
-	  typeA CDATA  #REQUIRED
-	  typeB CDATA  #IMPLIED>		    
+          aname       IDREFS #REQUIRED
+	  proper-type IDREFS #REQUIRED>
 
 <!ELEMENT forcefield (nonbonded*,bonded*,special*)>
 <!ELEMENT nonbonded (lennardjones | buckingham)>
@@ -248,25 +248,29 @@
 <!ELEMENT bondtype (harmonic | g96bond | morse)>
 <!ELEMENT harmonic EMPTY>	  
 <!ATTLIST harmonic
-          a0 CDATA #REQUIRED
-	  ka CDATA #REQUIRED>
+          harmonic-type ID    #REQUIRED
+          a0            CDATA #REQUIRED
+	  ka            CDATA #REQUIRED>
 <!ELEMENT g96bond EMPTY>
 <!ATTLIST g96bond
-          b0 CDATA #REQUIRED
-	  kb CDATA #REQUIRED>
+          g96bond-type  ID    #REQUIRED
+          b0            CDATA #REQUIRED
+	  kb            CDATA #REQUIRED>
 <!ELEMENT morse EMPTY>
 <!ATTLIST morse
-          b0 CDATA #REQUIRED
-	  cb CDATA #REQUIRED
-	  D  CDATA #REQUIRED>
+          morse-type    ID    #REQUIRED
+          b0            CDATA #REQUIRED
+	  cb            CDATA #REQUIRED
+	  D             CDATA #REQUIRED>
 <!-- End of bondtypes -->
 
 <!-- A few different angle types, and I may have forgotten some -->
 <!ELEMENT angletype (harmonic | g96angle)>
 <!ELEMENT g96angle EMPTY>
 <!ATTLIST g96angle
-          ct0 CDATA #REQUIRED
-	  kct CDATA #REQUIRED>
+          harmonic-type ID    #REQUIRED
+          ct0           CDATA #REQUIRED
+	  kct           CDATA #REQUIRED>
 <!-- End of angletypes -->
 
 <!-- A number of different types are available for dihedrals -->	 
