@@ -153,7 +153,7 @@ static t_dist *read_dist(FILE *log,char *fn,int natom,real weight[])
   FILE   *fp;
   char   buf[BLEN+1];
   int    i,ai,aj,www,ndist;
-  real   lb,ub,len;
+  double lb,ub,len;
   t_dist *d;
   
   fprintf(log,"Going to read %s\n",fn);

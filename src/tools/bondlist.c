@@ -69,7 +69,8 @@ void read_O_dist(void)
   FILE     *fp;
   char     buf[BLEN+1],buf_ai[9],buf_aj[9],junk1[15],junk2[15];
   int      nres = 0;
-  real     dist,junk3;
+  double   dist;
+  real     junk3;
 
   fp = libopen(fn);
   fprintf(stderr,"Going to read %s\n",fn);
