@@ -105,18 +105,34 @@ void test_poisson(FILE *log,       bool bVerbose,
 		  rvec x[],        rvec f[],
 		  real charge[],   rvec box,
 		  real phi[],      real phi_s[],
-		  int nmol,        t_commrec *cr)
+		  int nmol,        t_commrec *cr,
+		  bool bFour,      rvec f_four[],
+		  real phi_f[])
 {
   char buf[256];
   real ener;
+  rvec beta;
   int  i;
   t_nrnb nrnb;
   
   init_nrnb(&nrnb);
   
   /* First time only setup is done! */
-  ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
-  ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+  if (bFour) {
+    for(i=0; (i<atoms->nr); i++)
+      phi_f[i] -= phi_s[i];
+    ener = do_optimize_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,
+			       box,phi,cr,&nrnb,f_four,phi_f,beta);
+    ener = do_optimize_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,
+			       phi,cr,&nrnb,f_four,phi_f,beta);
+    for(i=0; (i<atoms->nr); i++)
+      phi_f[i] += phi_s[i];
+  }
+  else {
+    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+    ener = do_poisson(log,bVerbose,ir,atoms->nr,x,f,charge,box,phi,cr,&nrnb);
+  }
+    
   fprintf(log,"Vpoisson = %g\n",ener);
   
   sprintf(buf,"POISSON-%d.pdb",ir->nkx);
@@ -315,17 +331,19 @@ int main(int argc,char *argv[])
   if (bPoisson)
     test_poisson(log,bVerbose,
 		 &(top.atoms),&ir,x,f_pois,charge,box_size,phi_pois,
-		 phi_s,nmol,cr);
+		 phi_s,nmol,cr,bFour,f_four,phi_f);
 	        
   if (bPPPM && bFour) 
-    analyse_diff(log,top.atoms.nr,f_four,f_pppm,phi_f,phi_p3m,phi_s,
+    analyse_diff(log,"PPPM",
+		 top.atoms.nr,f_four,f_pppm,phi_f,phi_p3m,phi_s,
 		 opt2fn("-fcorr",NFILE,fnm),
 		 opt2fn("-pcorr",NFILE,fnm),
 		 opt2fn("-ftotcorr",NFILE,fnm),
 		 opt2fn("-ptotcorr",NFILE,fnm));
   
   if (bPoisson && bFour) 
-    analyse_diff(log,top.atoms.nr,f_four,f_pois,phi_f,phi_pois,phi_s,
+    analyse_diff(log,"PPPM",
+		 top.atoms.nr,f_four,f_pois,phi_f,phi_pois,phi_s,
 		 opt2fn("-fcorr",NFILE,fnm),
 		 opt2fn("-pcorr",NFILE,fnm),
 		 opt2fn("-ftotcorr",NFILE,fnm),
