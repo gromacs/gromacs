@@ -9,7 +9,7 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
-	protonate	luck		gmxdump		rtp2xml		\
+	protonate	luck		gmxdump				\
 	gmxcheck  	x2top		ffscan
 
 

@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
   bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
   int        nrexcl;
-  bool       bAlldih;
+  bool       bAlldih,bH14,bRemoveDih;
 
   CopyRight(stderr,argv[0]);
 	
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
     
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl);
+  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl,&bH14,&bRemoveDih);
   
   /* read hydrogen database */
   nah=read_h_db(ff,&ah);
