@@ -46,6 +46,6 @@ awk -F '|' -v longest="mk\\_angndx" '{\
     }\
   }\
 }' $PROGFILE | sed -e 's/e\.g\./{\\eg}/g' >> $TEXIDX
-echo "\end{description}" >> $TEXIDX
+echo "\\end{description}" >> $TEXIDX
 
 #last line
