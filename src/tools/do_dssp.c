@@ -124,7 +124,7 @@ static void strip_dssp(char *dsspfile,int nres,
   c.c2=0;
   for(i=0; i<nr; i++) {
     c.c1=ssbuf[i];
-    mat->matrix[frame][i]=searchcmap(mat->nmap,mat->map,c);
+    mat->matrix[frame][i] = max(0,searchcmap(mat->nmap,mat->map,c));
   }
   frame++;
   mat->nx=frame;
