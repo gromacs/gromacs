@@ -35,13 +35,13 @@ static char *SRCID_gbutil_c = "$Id$";
 #include "gstat.h"
 #include "pbc.h"
 
-static real dist2(rvec x,rvec y,matrix box)
+real dist2(rvec x,rvec y,matrix box)
 {
   rvec dx;
   
-  pbc_dx(x,y,dx);
+  pbc_dx(box,x,y,dx);
   
-  return norm2(dx);
+  return iprod(dx,dx);
 }
 
 real distance_to_z(rvec x)
@@ -85,51 +85,51 @@ int in_box(int NTB,matrix box,rvec x)
 
 void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma)
 {
-  int  i,m;
+  int  i;
   rvec x_old,v_old;
   
   for (i=0; (i<natom); i++) { 
     /*copy x[i] to x_old*/
-    for(m=0;(m<DIM);m++) {
-      x_old[m]=x[i][m];
-      v_old[m]=v[i][m];
-    }
+    copy_rvec(x[i],x_old);
+    if (v)
+      copy_rvec(v[i],v_old);
     
     /*calculate new x[i] by rotation alfa around the x-axis*/
     x[i][XX]=x_old[XX];
-    v[i][XX]=v_old[XX];
     x[i][YY]=x_old[YY]*cos(alfa)+x_old[ZZ]*sin(alfa);
-    v[i][YY]=v_old[YY]*cos(alfa)+v_old[ZZ]*sin(alfa);
     x[i][ZZ]=x_old[ZZ]*cos(alfa)-x_old[YY]*sin(alfa);
-    v[i][ZZ]=v_old[ZZ]*cos(alfa)-v_old[YY]*sin(alfa);
-    
-    /*copy x[i] to x_old*/ 
-    for(m=0;(m<DIM);m++) {
-      x_old[m]=x[i][m];
-      v_old[m]=v[i][m];
+    if (v) {
+      v[i][XX]=v_old[XX];
+      v[i][YY]=v_old[YY]*cos(alfa)+v_old[ZZ]*sin(alfa);
+      v[i][ZZ]=v_old[ZZ]*cos(alfa)-v_old[YY]*sin(alfa);
     }
-    
+    /*copy x[i] to x_old*/
+    copy_rvec(x[i],x_old);
+    if (v)
+      copy_rvec(v[i],v_old);
+
     /*calculate new x[i] by rotation beta around the y-axis*/
     x[i][XX]=x_old[XX]*cos(beta)-x_old[ZZ]*sin(beta);
     x[i][YY]=x_old[YY];
     x[i][ZZ]=x_old[XX]*sin(beta)+x_old[ZZ]*cos(beta);
-    v[i][XX]=v_old[XX]*cos(beta)-v_old[ZZ]*sin(beta);
-    v[i][YY]=v_old[YY];
-    v[i][ZZ]=v_old[XX]*sin(beta)+v_old[ZZ]*cos(beta);
-    
-    /*copy x[i] to x_old*/
-    for(m=0;(m<DIM);m++) {
-      x_old[m]=x[i][m];
-      v_old[m]=v[i][m];
+    if (v) {
+      v[i][XX]=v_old[XX]*cos(beta)-v_old[ZZ]*sin(beta);
+      v[i][YY]=v_old[YY];
+      v[i][ZZ]=v_old[XX]*sin(beta)+v_old[ZZ]*cos(beta);
     }
+    copy_rvec(x[i],x_old);
+    if (v)
+      copy_rvec(v[i],v_old);
     
     /*calculate new x[i] by rotation gamma around the z-axis*/
     x[i][XX]=x_old[XX]*cos(gamma)+x_old[YY]*sin(gamma);
     x[i][YY]=x_old[YY]*cos(gamma)-x_old[XX]*sin(gamma);
     x[i][ZZ]=x_old[ZZ];
-    v[i][XX]=v_old[XX]*cos(gamma)+v_old[YY]*sin(gamma);
-    v[i][YY]=v_old[YY]*cos(gamma)-v_old[XX]*sin(gamma);
-    v[i][ZZ]=v_old[ZZ];
+    if (v) {
+      v[i][XX]=v_old[XX]*cos(gamma)+v_old[YY]*sin(gamma);
+      v[i][YY]=v_old[YY]*cos(gamma)-v_old[XX]*sin(gamma);
+      v[i][ZZ]=v_old[ZZ];
+    }
   }
 }/*rotate_conf()*/
 
