@@ -5,12 +5,12 @@ AIB     1
 ALA 	1
 	1	1	N	-C	CA
 ARG 	4
-	1	2	N	CA	C
+	1	1	N	-C	CA
 	1	1	NE	CD	CZ
 	2	3	NH1	CZ	NE
 	2	3	NH2	CZ	NE
 ARGN    4
-        1       2       N       CA      C
+        1       1       N       -C      CA
         1       1       NE      CD      CZ
         1       2       NH1     CZ      NE
         2       3       NH2     CZ      NE
