@@ -28,7 +28,7 @@ CFLAGS		+= -I$(PVM_ROOT)/include
 CCFLAGS		+= -I$(PVM_ROOT)/include
 endif
 
-FFTLIBS		= -lfftw.$(CPU)
+FFTLIBS		= -lfftw.$(GMXCPU)
 
 EXECUTABLES = $(foreach FILE, $(PROGRAMS), $(FILE)$(EXTENSION))
 

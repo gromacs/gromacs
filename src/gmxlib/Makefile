@@ -10,8 +10,8 @@
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
-M4FILE		= $(CPU).m4
-LIB		= $(GMXHOME)/lib/$(CPU)/libgmx.$(CPU).a
+M4FILE		= $(GMXCPU).m4
+LIB		= $(GMXHOME)/lib/$(GMXCPU)/libgmx.$(GMXCPU).a
 OBJ		= 	\
 		3dview.o	block_tx.o	bondfree.o	\
 		buffer.o	calch.o		calcmu.o	\
@@ -67,25 +67,25 @@ endif
 EXEC_GENTAB	= gentab
 
 # Some CPU dependencies...
-ifeq ($(CPU),860)
+ifeq ($(GMXCPU),860)
 OBJ		+= idtio.o inout.o delay.o  \
 		   comlib.o semlib.o synclib.o  led.o 
 EXEC_GENTAB	= (setenv SPC_POLL 1000000 ; s860 -w 1 gentab)
 
 else
 
-ifeq ($(CPU),cm5)
+ifeq ($(GMXCPU),cm5)
 OBJ		+= libsys.o cm5io.o
 else
-ifeq ($(CPU),amb)
+ifeq ($(GMXCPU),amb)
 OBJ		+= ambio.o 	ambaled.o	delay.o
 EXEC_GENTAB	= ambasrv -c 0 gentab
 else
-ifeq ($(CPU),am8)
+ifeq ($(GMXCPU),am8)
 OBJ		+= ambio.o 	delay.o 	ambaled.o
 EXEC_GENTAB	= ambasrv -c 0 gentab
 else
-ifeq ($(CPU),a23)
+ifeq ($(GMXCPU),a23)
 OBJ		+= ambio.o 	delay.o 	ambaled.o
 EXEC_GENTAB	= ambasrv -c 0 gentab
 else
@@ -128,13 +128,6 @@ inloopf.o:	inloopf.m4
 		$(CC) -E $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
 		$(F77) $(FFLAGS) -c inloopf.f
 		$(RM) inloopf.f
-
-libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o	#xdrf.o
-		$(AR) $@ $^
-		$(RANLIB) $@
-		$(RM) $(LIBDIR)/$@
-		-chmod $(LIBMODE) $@
-		mv $@ $(LIBDIR)
 
 prfn:		prfn.o
 		$(LD) -o $@ $^ $(SYSLIBS)

@@ -10,20 +10,14 @@
 include		$(GMXHOME)/src/Makefile.def
 #
 SHELL		=/bin/csh
-CPUMAKEF	=Makefile.$(CPU)
+CPUMAKEF	=Makefile.$(GMXCPU)
 OBJMAKEF	=Makefile.obj
 GROMTAZ		=gromacs.taz
 SRCDIRS		= $(GROMLIB) $(notdir $(INCDIR))
 EXCLUDE		=core ',*' '*log*' '*~' '\#*\#' '*.o'
 IGNORE		=\( $(foreach EXCL,$(EXCLUDE),\( \! -name $(EXCL) \) )
-TAZFILES	=Makefile Makefile.def Makefile.std Makefile.obj \
-		 $(foreach CPU,$(CPUS),Makefile.$(CPU)) \
-                 $(foreach DIR,$(SRCDIRS),`find $(DIR) $(IGNORE) -print `)
 
 obj:	$(ROOT)/obj/Makefile
-
-taz:	source
-	tar -cf - $(TAZFILES) | compress -c > $(GROMTAZ)
 
 template:
 	echo "#" > $(CPUMAKEF)
@@ -33,7 +27,7 @@ template:
 	echo "#	GROMACS - Groningen Machine for Chemical Simulation" >> $(CPUMAKEF)
 	echo "#	Copyright (c) 1990, 1991, 1992, Groningen University" >> $(CPUMAKEF)
 	echo "#" >> $(CPUMAKEF)
-	echo "#	Makefile for gromacs on a" $(CPU) "processor" >> $(CPUMAKEF)
+	echo "#	Makefile for gromacs on a" $(GMXCPU) "processor" >> $(CPUMAKEF)
 	echo "#" >> $(CPUMAKEF)
 	echo "# compiler, linker & archiver" >> $(CPUMAKEF)
 	echo "#" >> $(CPUMAKEF)

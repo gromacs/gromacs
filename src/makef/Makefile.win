@@ -27,9 +27,9 @@ LD		= $(CC) $(LDFLAGS)
 FLD		= $(F77) $(LDFLAGS) 
 CCLD		= $(CCC) $(LDFLAGS)
 
-SYSLIBS		= -lgmx.$(CPU) -lm
+SYSLIBS		= -lgmx.$(GMXCPU) -lm
 XLIBS		= -lX11 -L/usr/lib/X11 -L/usr/X11R6/lib
-SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(CPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(CPU).so -o $(LIBDIR)/$(LIBRARY).$(CPU).so *.o; $(RM) *.o)
+SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(GMXCPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(GMXCPU).so -o $(LIBDIR)/$(LIBRARY).$(GMXCPU).so *.o; $(RM) *.o)
 RANLIB		= ranlib
 #X11INC		= -I/usr/include/X11
 

@@ -10,7 +10,7 @@
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Empty library
-LIB		= $(LIBDIR)/libmd.$(CPU).a
+LIB		= $(LIBDIR)/libmd.$(GMXCPU).a
 # Objects for mdrun and nmrun
 RUNOBJ		= runner.o 	md.o		steep.o 	\
 		  congrad.o	nm.o	
@@ -29,8 +29,8 @@ POBJ		= pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
 		  gen_dum.o	add_par.o	$(PGOBJ)	
 
 #
-ifneq ($(CPU),amb)
-ifneq ($(CPU),860)
+ifneq ($(GMXCPU),amb)
+ifneq ($(GMXCPU),860)
 PROGRAMS	= pdb2gmx 	grompp		tpbconv		\
 		  nmrun		gmxcheck	luck	mk_ghat
 endif
@@ -104,7 +104,7 @@ ebin:		ebin.o
 align:		align.o
 		$(LD) $^  $(SYSLIBS) -o $@ 
 
-ifeq ($(CPU),amb)
+ifeq ($(GMXCPU),amb)
 tgroup.o:	tgroup.c
 		$(CCCCC) $^
 steep.o:	steep.c
@@ -113,7 +113,7 @@ mvxvf.o:	mvxvf.c
 		$(CCCCC) $^
 endif
 
-ifeq ($(CPU),am8)
+ifeq ($(GMXCPU),am8)
 tgroup.o:	tgroup.c
 		$(CCCCC) $^
 steep.o:	steep.c

@@ -120,22 +120,22 @@ setenv GMXHOME	$PATHPREFIX
 #
 # If you support multiple machines then it's useful to 
 # have a switch statement here, which, depending on hostname
-# point to the proper directories, and sets the CPU variable
+# point to the proper directories, and sets the GMXCPU variable
 # 
 # For easy updating, it is also recommended to put you local
 # stuff in the GMXRC.local file
-# Don't forget the CPU variable
+# Don't forget the GMXCPU variable
 #
 setenv	LOCAL_RC	\$GMXHOME/GMXRC.local
 if ( -f \$LOCAL_RC ) then
 	source	\$LOCAL_RC
 else
 # Here are some defaults, if you have one machine, edit these
-	setenv	CPU	$cpu
+	setenv	GMXCPU	$cpu
 endif
 
 # Some directories that live below the root
-setenv GMXBIN 	\$GMXHOME/bin/\$CPU
+setenv GMXBIN 	\$GMXHOME/bin/\$GMXCPU
 setenv GMXLIB	\$GMXHOME/top
 
 # 
@@ -149,9 +149,9 @@ setenv 	PATH 	"\$PATH":"\$GMXBIN"
 #
 
 if ( \$?LD_LIBRARY_PATH ) then
-	 setenv LD_LIBRARY_PATH	"\$LD_LIBRARY_PATH":\$GMXHOME/lib/\$CPU
+	 setenv LD_LIBRARY_PATH	"\$LD_LIBRARY_PATH":\$GMXHOME/lib/\$GMXCPU
 else
-	 setenv LD_LIBRARY_PATH	\$GMXHOME/lib/\$CPU
+	 setenv LD_LIBRARY_PATH	\$GMXHOME/lib/\$GMXCPU
 endif
 
 # Now finally, if you consider our Cool Quotes to be offensive

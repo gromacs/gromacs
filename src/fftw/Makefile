@@ -7,7 +7,7 @@
 #
 include		$(GMXHOME)/src/makef/Makefile.def
 #
-LIB	= $(GMXHOME)/lib/$(CPU)/libfftw.$(CPU).a
+LIB	= $(GMXHOME)/lib/$(GMXCPU)/libfftw.$(GMXCPU).a
 SOLIB	=
 # Or, on primitive systems with 8.3 filenames:
 NOTW_PREFIX=fn_

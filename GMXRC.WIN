@@ -6,10 +6,10 @@
 export GMXHOME=/gmx
 
 #
-export CPU=win	
+export GMXCPU=win	
 
 # Some directories that live below the root
-export GMXBIN=$GMXHOME/bin/$CPU
+export GMXBIN=$GMXHOME/bin/$GMXCPU
 export GMXLIB=$GMXHOME/top
 
 # Default Graphics Font for ngmx

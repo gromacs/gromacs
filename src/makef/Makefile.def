@@ -11,26 +11,26 @@ ROOT		:=$(GMXHOME)
 CUR		:=$(shell basename `pwd`)
 SRCDIR		:=$(ROOT)/src
 MKDIR		:=$(SRCDIR)/makef
-OBJDIR		:=$(ROOT)/obj/$(CPU)
-LIBDIR		:=$(ROOT)/lib/$(CPU)
-BINDIR		:=$(ROOT)/bin/$(CPU)
+OBJDIR		:=$(ROOT)/obj/$(GMXCPU)
+LIBDIR		:=$(ROOT)/lib/$(GMXCPU)
+BINDIR		:=$(ROOT)/bin/$(GMXCPU)
 INCDIR		:=include
-LIB		:=$(LIBDIR)/libgmx.$(CPU).a
-SONAME		:=libgmx.$(CPU).so
+LIB		:=$(LIBDIR)/libgmx.$(GMXCPU).a
+SONAME		:=libgmx.$(GMXCPU).so
 SOLIB		:=$(LIBDIR)/$(SONAME)
-LINKLIB		:=-lgmx.$(CPU)
+LINKLIB		:=-lgmx.$(GMXCPU)
 STDTARGET	:=$(MKDIR)/Makefile.std
 SHAREIT		:=echo
 MKDEP		:= $(CC) -M
 #
 # Machine dependent stuff
 #
-include		$(MKDIR)/Makefile.$(CPU)
+include		$(MKDIR)/Makefile.$(GMXCPU)
 #
 # System independent definitions
 #
 GET		= ln -s
-ifneq ($(CPU),win)
+ifneq ($(GMXCPU),win)
 RM		= /bin/rm -f
 else
 RM              = rm -f
@@ -38,6 +38,6 @@ endif
 BINMODE		= 755
 LIBMODE		= 644
 INCS		= -I. -I$(SRCDIR)/$(INCDIR) $(X11INC) 
-ADDFLAGS	= -D_$(CPU)_ $(DEFS) $(SYSDEFS) $(INCS)
+ADDFLAGS	= -D_$(GMXCPU)_ $(DEFS) $(SYSDEFS) $(INCS)
 C-FLAGS		= $(CFLAGS)  $(ADDFLAGS)
 CC-FLAGS	= $(CCFLAGS) $(ADDFLAGS) -DCPLUSPLUS 

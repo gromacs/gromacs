@@ -24,7 +24,7 @@ LDFLAGS		= -L$(LIBDIR)
 LD		= $(CC)  $(LDFLAGS) 
 CCLD		= $(CCC) $(LDFLAGS)
 
-SYSLIBS		= -lgmx.$(CPU) -lm
+SYSLIBS		= -lgmx.$(GMXCPU) -lm
 XLIBS		= $(SYSLIBS) -lX11
 ARFLAGS		= q
 RANLIB		= echo

@@ -26,7 +26,7 @@ FFLAGS		= -O2
 #CCFLAGS	= -Wall -O3
 
 # Generic linking stuff
-LDFLAGS		= -lgmx.$(CPU) -L$(LIBDIR)
+LDFLAGS		= -lgmx.$(GMXCPU) -L$(LIBDIR)
 LD		= $(CC)  $(LDFLAGS) 
 CCLD		= $(CCC) $(LDFLAGS)
 

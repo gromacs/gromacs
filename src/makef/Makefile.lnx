@@ -69,13 +69,13 @@ endif
 
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
-XLIBS		= -lgmx.$(CPU) -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
+XLIBS		= -lgmx.$(GMXCPU) -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
 SYSLIBS		= $(XLIBS)
 else
-SYSLIBS		= -lgmx.$(CPU) -lm
+SYSLIBS		= -lgmx.$(GMXCPU) -lm
 XLIBS		= -L/usr/X11R6/lib -lX11 $(SYSLIBS)
 endif
-SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(CPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(CPU).so -o $(LIBDIR)/$(LIBRARY).$(CPU).so *.o; $(RM) *.o)
+SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(GMXCPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(GMXCPU).so -o $(LIBDIR)/$(LIBRARY).$(GMXCPU).so *.o; $(RM) *.o)
 RANLIB		= ranlib
 X11INC		= -I/usr/X11R6/include
 
