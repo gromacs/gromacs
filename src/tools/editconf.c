@@ -390,8 +390,8 @@ int main(int argc, char *argv[])
   rvec_sub(max, min, size);
   printf("size      : %6.3f %6.3f %6.3f\n", size[XX], size[YY], size[ZZ]);
   printf("center    : %6.3f %6.3f %6.3f\n", gc[XX], gc[YY], gc[ZZ]);
-  printf("box       : %6.3f %6.3f %6.3f\n", 
-	 box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
+  printf("box       : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
+	 box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
     
   if ( bScale ) {
     /* scale coordinates and box */
@@ -456,15 +456,17 @@ int main(int argc, char *argv[])
 
   /* center molecule on 'center' */
   if (bCenter)
-    center_conf(natom, x,center,gc);
+    center_conf(natom,x,center,gc);
     
   /* print some */
-  if (bCenter || bScale || bOrient || bRotate)
+  if (bCenter || bScale || bOrient || bRotate) {
+    calc_geom(natom, x, gc, min, max);
     printf("new center: %6.3f %6.3f %6.3f\n", 
 	   gc[XX],gc[YY],gc[ZZ]);
-  if ( bScale || bDist || bSetSize )
-    printf("new box   : %6.3f %6.3f %6.3f\n", 
-	   box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
+  }
+  if ( bOrient || bScale || bDist || bSetSize )
+    printf("new box   : %6.3f %6.3f %6.3f  (%.3f nm^3)\n", 
+	   box[XX][XX], box[YY][YY], box[ZZ][ZZ], det(box));
   
   if (opt2bSet("-n",NFILE,fnm) || bNDEF) {
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
