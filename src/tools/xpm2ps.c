@@ -590,10 +590,10 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	bNextMap1=(!mat2 || (x<=nexty));
 	  /* TRUE:  upper left  -> map1 */
 	  /* FALSE: lower right -> map2 */
-	if ((bDiag) || (x!=nexty))
-	  nextcol=mat[i].matrix[x][nexty];
-	else
+	if ((nexty==mat[i].ny) || (!bDiag && (x==nexty)))
 	  nextcol = -1;
+	else
+	  nextcol=mat[i].matrix[x][nexty];
 	if ( (nexty==mat[i].ny) || (col!=nextcol) || (bMap1!=bNextMap1) ) {
 	  if (col >= 0)
 	    if (bMap1)
