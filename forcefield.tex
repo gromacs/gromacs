@@ -2,8 +2,9 @@
 \label{ch:ff}
 A \normindex{force field} is built up from two distinct components:
 \begin{itemize}
-\item The set of equations (called the {\em \normindex{potential function}s})
-used to generate the potential energies and their derivatives, the forces. 
+\item The set of equations (called the {\em \normindex{potential
+function}s}) used to generate the potential energies and their
+derivatives, the forces.
 \item The parameters used in this set of equations
 \end{itemize}
 Within one set of equations various sets of parameters can be
@@ -12,18 +13,17 @@ parameters form a consistent set. It is in general dangerous to make
 {\em ad hoc} changes in a subset of parameters, because the various
 contributions to the total force are usually interdependent.
 
-In {\gromacs} {\gmxver} the force field is based on 
+In {\gromacs} {\gmxver} the force field is based on
 \normindex{GROMOS}-87~\cite{biomos},
-with a small modification concerning the interaction between water-oxygens
-and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10 extra
-atomtypes~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. 
-However, the user is free
-to make her own modifications (beware!).  This will be explained
-in details in chapter~\ref{ch:top}, which deals with the {\bf
-Topology}.\\ To accomodate the potential functions used in some
-popular force fields, {\gromacs} offers a choice of functions, both
-for non-bonded interaction and for dihedral interactions. They are
-described in the appropriate subsections.
+with a small modification concerning the interaction between
+water-oxygens and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10
+extra atomtypes~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
+However, the user is free to make her own modifications (beware!).
+This will be explained in details in chapter~\ref{ch:top}, which deals
+with the {\bf Topology}.\\ To accomodate the potential functions used
+in some popular force fields, {\gromacs} offers a choice of functions,
+both for non-bonded interaction and for dihedral interactions. They
+are described in the appropriate subsections.
 
 \section{Potentials}
 The potential functions can be subdivided into three parts
@@ -31,7 +31,7 @@ The potential functions can be subdivided into three parts
 \item	{\em Non-bonded}: Lennard-Jones or Buckingham, and Coulomb or
 modified Coulomb. The non-bonded interactions are computed on the
 basis of a neighbour list (a list of non-bonded atoms within a certain
-radius), in which exclusions are already removed.  
+radius), in which exclusions are already removed.
 \item	{\em Bonded}: covalent bond-stretching, angle-bending,
 improper dihedrals, and proper dihedrals. These are computed on the
 basis of fixed lists. 
@@ -129,9 +129,10 @@ V_c(\rij) = f \frac{q_i q_j}{\epsr \rij}
 where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see Chapter~\ref{ch:defunits})
 \begin {figure}[ht]
 \centerline{\psfig {figure=plots/vcrf.eps,width=8cm}}
-\caption{The Coulomb interaction (for particles with equal signed charge) with
-and without reaction field. In the latter case $\epsrf$ was 78, and $r_c$ was 0.9 nm. The dot-dashed line is the same as the dashed line, except for
-a constant.}
+\caption{The Coulomb interaction (for particles with equal signed
+charge) with and without reaction field. In the latter case $\epsrf$
+was 78, and $r_c$ was 0.9 nm. The dot-dashed line is the same as the
+dashed line, except for a constant.}
 \label{fig:coul}
 \end {figure}
 
@@ -146,10 +147,9 @@ may be set in the in the input for {\tt grompp}.
 
 \subsection{Coulomb interaction with reaction field}
 \label{sec:coulrf}
-The coulomb interaction can be modified for homogeneous systems,
-by assuming a constant dielectric environment beyond the cut-off $r_c$ with a
-dielectric constant of {$\epsrf$}.
-The interaction then reads:
+The coulomb interaction can be modified for homogeneous systems, by
+assuming a constant dielectric environment beyond the cut-off $r_c$
+with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
 V_{crf}	~=~	f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
 \eeq
@@ -218,7 +218,8 @@ acting on particle $i$ by particle $j$ as
 \beq
 \ve{F}_i = f F(r_{ij}) q_i q_j \frac{\ve{r}_{ij}}{r_{ij}}
 \eeq
-For pure Coulombic interaction $F(r)=F_c(r)=\frac{1}{r^2}$. The shifted force $F_s(r)$ can generally be written as:
+For pure Coulombic interaction $F(r)=F_c(r)=\frac{1}{r^2}$. The
+shifted force $F_s(r)$ can generally be written as:
 \bea
 F_s(r)~=&~F_c(r)		& r < r_1	\\
 F_s(r)~=&~F_c(r)+S(r)	& r_1 \le r < r_c	\\
@@ -293,10 +294,12 @@ to force atoms to remain in a plane or to prevent transition to a
 configuration of opposite chirality (a mirror image).  
 
 \subsection{Bond stretching}
-The \normindex{bond stretching} between two covalently bonded atoms $i$ and $j$ is represented by a harmonic potential
+The \normindex{bond stretching} between two covalently bonded atoms
+$i$ and $j$ is represented by a harmonic potential
 \begin {figure}[ht]
 \centerline{\raisebox{-1.8cm}{\psfig{figure=plots/bstretch.eps,angle=270,width=5cm}}\psfig{figure=plots/f_bond.eps,angle=270,width=7cm}}
-\caption{Principle of the Bond stretch potential (left), and Bond Stretching Potential (right)}
+\caption{Principle of the Bond stretch potential (left), and Bond
+Stretching Potential (right)}
 \label{fig:bstretch1}
 \end {figure}
 
@@ -311,8 +314,11 @@ with the force
 \subsection{Morse potential bond stretching}
 %\author{F.P.X. Everdij}
 %
-For some systems that require an anharmonic bond stretching potential, the Morse potential between two atoms {\it i} and {\it j} is available in GROMACS. This potential differs from the harmonic potential in having and asymmetric potential well and a zero force at infinite distance
-The functional form is:
+For some systems that require an anharmonic bond stretching potential,
+the Morse potential between two atoms {\it i} and {\it j} is available
+in GROMACS. This potential differs from the harmonic potential in
+having an asymmetric potential well and a zero force at infinite
+distance The functional form is:
 \beq
 \displaystyle V_{morse} (r_{ij}) = D_{ij} [1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))]^2,
 \eeq
@@ -323,8 +329,13 @@ and the corresponding force is:
 \displaystyle \: & \: &[1 - exp(-\beta_{ij}(r_{ij}-b_{ij}))] \frac{\displaystyle {\bf r}_{ij}}{\displaystyle r_{ij}},
 \end{array}
 \eeq
-where \( \displaystyle D_{ij} \) is the depth of the well in kJ/mole, \( \displaystyle \beta_{ij} \) defines the steepness of the well (in nm\(^{-1} \)), and \( \displaystyle b_{ij} \) is the equilibrium distance in nm.
-The steepness parameter \( \displaystyle \beta_{ij} \) can be expressed in terms of the reduced mass of the atoms {\it i} and {\it j}, the fundamental vibration frequency \( \displaystyle \omega_{ij} \) and the well depth \( \displaystyle D_{ij} \):
+where \( \displaystyle D_{ij} \) is the depth of the well in kJ/mole,
+\( \displaystyle \beta_{ij} \) defines the steepness of the well (in
+nm\(^{-1} \)), and \( \displaystyle b_{ij} \) is the equilibrium
+distance in nm.  The steepness parameter \( \displaystyle \beta_{ij}
+\) can be expressed in terms of the reduced mass of the atoms {\it i}
+and {\it j}, the fundamental vibration frequency \( \displaystyle
+\omega_{ij} \) and the well depth \( \displaystyle D_{ij} \):
 \beq
 \displaystyle \beta_{ij}= \omega_{ij} \sqrt{\frac{\mu_{ij}}{2 D_{ij}}}
 \eeq
@@ -892,7 +903,6 @@ There are three ways to construct dummies from surrounding atoms in {\gromacs}:
 	other atoms.
 	The force on particles $i,j$ and $k$ due to the force on the dummy
 	can be computed as:
-\undercons
 \beq
 \ve{F}_j^{distr} = \left[\begin{array}{ccc}
  a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[4mm]
