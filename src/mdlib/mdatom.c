@@ -61,7 +61,6 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   snew(md->invmass,md->nr);
   snew(md->chargeA,md->nr);
   snew(md->chargeB,md->nr);
-  snew(md->chargeT,md->nr);
   snew(md->resnr,md->nr);
   snew(md->typeA,md->nr);
   snew(md->typeB,md->nr);
@@ -153,7 +152,6 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
   snew(atoms->atom,md->nr);
   for(i=0; (i<md->nr); i++) {
     atoms->atom[i].m                = md->massT[i];
-    atoms->atom[i].q                = md->chargeT[i];
     atoms->atom[i].resnr            = md->resnr[i];
     atoms->atom[i].type             = md->typeA[i];
     atoms->atom[i].ptype            = md->ptype[i];
@@ -176,7 +174,6 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
     sfree(md->invmass);
     sfree(md->chargeA);
     sfree(md->chargeB);
-    sfree(md->chargeT);
     sfree(md->resnr);
     sfree(md->typeA);
     sfree(md->typeB);
@@ -206,7 +203,6 @@ void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst)
       md->massT[i]=L1*md->massA[i]+lambda*md->massB[i];
       if (md->invmass[i] > 1.1*ALMOST_ZERO)
 	md->invmass[i]=1.0/md->massT[i];
-      md->chargeT[i]=L1*md->chargeA[i]+lambda*md->chargeB[i];
     }
   }
 }

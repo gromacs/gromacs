@@ -129,8 +129,8 @@ extern void force(FILE *log,
 		  t_block      *excl,
 		  bool         bNBonly,
 		  matrix       lr_vir,
-		  rvec         mu_tot,
-		  real         qsum,
+		  rvec         mu_tot[2],
+		  real         qsum[],
 		  bool         bGatherOnly);
 /* Call all the force routines */
 

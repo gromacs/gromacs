@@ -606,11 +606,13 @@ void init_forcerec(FILE *fp,
   fr->temp    = 0.0;
   
   if (fr->eeltype == eelGRF) {
+    if (ir->efep != efepNO)
+      fprintf(fp,"\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
       q = 0;
       for(j=cgs->index[i]; (j<cgs->index[i+1]); j++)
-	q+=mdatoms->chargeT[cgs->a[j]];
+	q+=mdatoms->chargeA[cgs->a[j]];
       if (q != 0.0)
 	/* Changed from square to fabs 990314 DvdS 
 	 * Does not make a difference for monovalent ions, but doe for 
@@ -660,6 +662,8 @@ void init_forcerec(FILE *fp,
   }
   
   if (EEL_LR(fr->eeltype)) {
+    if (ir->efep != efepNO)
+      fprintf(fp,"\nWARNING: With %s the long-range part only uses the charges from topology A\n\n",eel_names[fr->eeltype]);
     snew(fr->f_pme,natoms);
   }
   
@@ -909,8 +913,8 @@ void force(FILE       *fp,     int        step,
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
 	   t_block    *excl,    bool       bNBFonly,
-	   matrix lr_vir,       rvec       mu_tot,
-	   real       qsum,     bool       bGatherOnly)
+	   matrix lr_vir,       rvec       mu_tot[],
+	   real       qsum[],   bool       bGatherOnly)
 {
   int     i,nit;
   bool    bDoEpot;
@@ -960,15 +964,15 @@ void force(FILE       *fp,     int        step,
   if (EEL_LR(fr->eeltype)) {
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeT,
+      Vlr = do_pppm(fp,FALSE,x,fr->f_pme,md->chargeA,
 		    box_size,fr->phi,cr,nsb,nrnb);
       break;
     case eelPME:
-      Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeT,
+      Vlr = do_pme(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
 		   box,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff,bGatherOnly);
       break;
     case eelEWALD:
-      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeT,
+      Vlr = do_ewald(fp,FALSE,ir,x,fr->f_pme,md->chargeA,
 		     box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
       break;
     default:
@@ -978,10 +982,12 @@ void force(FILE       *fp,     int        step,
     }
     if(fr->bEwald)
       Vcorr =
-	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,box,mu_tot,qsum,
+	ewald_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,
+			   x,box,mu_tot[0],qsum[0],
 			   ir->ewald_geometry,ir->epsilon_surface,lr_vir);
     else
-      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeT,excl,x,TRUE,box,lr_vir);
+      Vcorr = shift_LRcorrection(fp,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,
+				 lr_vir);
     epot[F_LR] = Vlr + Vcorr;
     if (debug)
       fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",

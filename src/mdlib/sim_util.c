@@ -214,8 +214,9 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   static real dvdl_lr = 0;
   int    cg0,cg1,i,j;
   int    start,homenr;
-  static real mu_and_q[DIM+1]; 
-  real   qsum;
+  static real mu_and_q[2*(DIM+1)]; 
+  rvec   mu_tot_AB[2];
+  real   qsum_AB[2];
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
@@ -227,7 +228,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Calculate total (local) dipole moment in a temporary common array. 
    * This makes it possible to sum them over nodes faster.
    */
-  calc_mu_and_q(nsb,x,mdatoms->chargeT,mu_and_q,mu_and_q+DIM);
+  calc_mu_and_q(nsb,x,mdatoms->chargeA,mdatoms->chargeB,parm->ir.efep!=efepNO,
+		mu_and_q,mu_and_q+DIM,mu_and_q+DIM+1,mu_and_q+DIM+1+DIM);
 
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
@@ -257,11 +259,18 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Communicate coordinates and sum dipole and net charge if necessary */
   if (PAR(cr)) {
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
-    gmx_sum(DIM+1,mu_and_q,cr);
+    gmx_sum(2*(DIM+1),mu_and_q,cr);
   }
-  for(i=0;i<DIM;i++)
-    mu_tot[i]=mu_and_q[i];
-  qsum=mu_and_q[DIM];
+  for(i=0; i<2; i++) {
+    for(j=0;j<DIM;j++)
+      mu_tot_AB[i][j]=mu_and_q[i*(DIM+1)+j];
+    qsum_AB[i]=mu_and_q[i*(DIM+1)+DIM];
+  }
+  if (fr->efep == efepNO)
+    copy_rvec(mu_tot_AB[0],mu_tot);
+  else
+    for(j=0; j<DIM; j++)
+      mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
   
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
@@ -303,7 +312,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,pme_vir,mu_tot,qsum,bGatherOnly);
+	bNBFonly,pme_vir,mu_tot_AB,qsum_AB,bGatherOnly);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -323,7 +332,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 
   /* Compute forces due to electric field */
   calc_f_el(MASTER(cr) ? field : NULL,
-	    start,homenr,mdatoms->chargeT,x,f,parm->ir.ex,parm->ir.et,t);
+	    start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
 
   /* When using PME/Ewald we compute the long range virial (pme_vir) there.
    * otherwise we do it based on long range forces from twin range

@@ -147,7 +147,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	}
 
 	if (aS != NO_ATID) {	  
-	  qS = md->chargeT[aS];
+	  qS = md->chargeA[aS];
 	  
 	  /* Check whether one of the particles is a shell... */
 	  nsi = shell_index[aS-start];
@@ -179,10 +179,14 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	    shell[nsi].k    += idef->iparams[type].cubic.kb;
 	    break;
 	  case F_POLARIZATION:
+	    if (qS != md->chargeB[aS])
+	      fatal_error(0,"polarize can not be used with qA != qB");
 	    shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
 	      idef->iparams[type].polarize.alpha;
 	  break;
 	  case F_WATER_POL:
+	    if (qS != md->chargeB[aS])
+	      fatal_error(0,"water_pol can not be used with qA != qB");
 	    alpha          = (idef->iparams[type].wpol.al_x+
 			      idef->iparams[type].wpol.al_y+
 			      idef->iparams[type].wpol.al_z)/3.0;

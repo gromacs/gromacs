@@ -48,7 +48,9 @@
 #include "nsb.h"
 #include "main.h"
 
-void calc_mu_and_q(t_nsborder *nsb,rvec x[],real q[],rvec mu,real *qsum)
+void calc_mu_and_q(t_nsborder *nsb,rvec x[],real q[],real qB[],
+		   bool bFreeEnergy,
+		   rvec mu,real *qsum,rvec mu_B,real *qsum_B)
 {
   int i,start,end,m;
   /* temporary double prec. to maintain precision */
@@ -72,6 +74,23 @@ void calc_mu_and_q(t_nsborder *nsb,rvec x[],real q[],rvec mu,real *qsum)
     mu[m] = tmpmu[m] * ENM2DEBYE;
 
   *qsum=tmpq;
+  
+  tmpq=0;
+  for(m=0;m<DIM;m++)
+    tmpmu[m]=0;
+  
+  if (bFreeEnergy) {
+    for(i=start; (i<end); i++) {
+      for(m=0; (m<DIM); m++) {
+	tmpmu[m] += qB[i]*x[i][m];
+      }
+      tmpq+=qB[i];
+    }
+  }
+  for(m=0; (m<DIM); m++)
+    mu_B[m] = tmpmu[m] * ENM2DEBYE;
+
+  *qsum_B = tmpq;
 }
 
 bool read_mu(FILE *fp,rvec mu,real *vol)
