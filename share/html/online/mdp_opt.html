@@ -290,12 +290,17 @@ Several groups can be coupled seperately, these are specified in the
 The compressibility and reference pressure are set with
 <b>compressibility</b> [1/bar] and <b>ref_p</b> [bar], one
 value is needed.
+<dt><b>semiisotropic</b>
+<dd>Pressure coupling which is isotropic in the x and y direction,
+but different in the z direction.
+This can be useful for membrane simulations.
+2 values are needed for x/y and z directions respectively.
 <dt><b>anisotropic</b>
 <dd>Idem, but 3 values are needed for x, y and z directions respectively.
 Beware that isotropic scaling can lead to extreme deformation
 of the simulation box.
 <dt><b>triclinic</b>
-<dd>Idem, but ?? values are needed . . .
+<dd>Not supported yet.
 </dl>
 
 <dt><h4>npcmemory: </b>(1) [steps]</h4>

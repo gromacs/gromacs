@@ -376,6 +376,13 @@ void get_ir(char *mdparin,char *mdparout,
       else
 	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
       break;
+    case epcSEMIISOTROPIC:
+      if (sscanf(dumstr[m],"%lf%lf",
+		 &(dumdub[m][XX]),&(dumdub[m][ZZ]))==2) 
+	dumdub[m][YY]=dumdub[m][XX];
+      else
+	fprintf(stderr,"Warning: pressure coupling not enough vals\n");
+      break;
     case epcANISOTROPIC:
       if (sscanf(dumstr[m],"%lf%lf%lf",
 		 &(dumdub[m][XX]),&(dumdub[m][YY]),&(dumdub[m][ZZ]))!=3) 

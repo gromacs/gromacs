@@ -101,15 +101,17 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
   BS((ir->shake_tol <= 0.0) && (ncons > 0),
      "shake_tol must be > 0 instead of %10.5e when using shake\n",
      ir->shake_tol);
-     
-  /* rlong must be less than half the box */
-  bmin=min(box[XX][XX],box[YY][YY]);
-  bmin=0.5*(min(bmin,box[ZZ][ZZ]));
-  if (ir->rlong > bmin) {
-     fprintf(stderr,
-	     "rlong (%10.5e) must be < half a box (%10.5e,%10.5e,%10.5e)\n",
-	     ir->rlong,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-     bStop = TRUE;
+  
+  if (ir->eBox != ebtNONE) {
+    /* rlong must be less than half the box */
+    bmin=min(box[XX][XX],box[YY][YY]);
+    bmin=0.5*(min(bmin,box[ZZ][ZZ]));
+    if (ir->rlong > bmin) {
+      fprintf(stderr,
+	      "rlong (%10.5e) must be < half a box (%10.5e,%10.5e,%10.5e)\n",
+	      ir->rlong,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+      bStop = TRUE;
+    }
   }
   if (bStop) {
     fprintf(stderr,"program terminated\n");
