@@ -46,7 +46,10 @@ static double erf1(double x)
   return (2/sqrt(M_PI))*exp(-x*x);
 }
 
-static void do_guillot(FILE *fp,int eel,double resolution)
+static double lo_do_guillot(double r,
+			    double *vc,double *vc2,
+			    double *vd,double *vd2,
+			    double *vr,double *vr2)
 {
   double qO     = -0.888;
   double qOd    = 0.226;
@@ -54,32 +57,60 @@ static void do_guillot(FILE *fp,int eel,double resolution)
   double xi     = 0.15;
   double xir    = 0.0615;
   double sqpi   = sqrt(M_PI);
+  double r1,r2,z;
+  
+  r1    = r/(2*xi);
+  r2    = r/(sqrt(2)*xi);
+  *vc   = (1+sqr(f0)*erf(r1) + 2*f0*erf(r2))/r;
+  *vc2  = ((2/sqr(r))*(*vc -
+		       sqr(f0)*erf1(r1)/(2*xi) -
+		       4*f0*erf1(r2)/sqrt(2)*xi) + 
+	   (1/r)*(sqr(f0/(2.0*xi))*erf2(r1) + (2*f0/sqr(xi)))*erf2(r2));
+  *vd   = -1.0/(r*r*r*r*r*r);
+  *vd2  = 42.0*(*vd)/(r*r);
+  z     = r/(2.0*xir);
+  *vr   = erfc(z)/z;
+  *vr2  = (sqpi*(*vr)/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*sqr(xir));
+}
+
+static void do_guillot(FILE *fp,int eel,double resolution)
+{
   int    i,i0,imax;
-  double z,r,r1,r2,vc,vc2,vd,vd2,vr,vr2,vrep,vrep2;
+  double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;
   for(i=0; (i<=imax); i++) {
     r     = i*resolution;
     /* Avoid very large numbers */
     if (r < 0.04) {
-      vc = vc2 = vd = vd2 = vrep = vrep2 = 0;
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+    }
+    else 
+      lo_do_guillot(r,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+    fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    r,vc,vc2,vd,vd2,vr,vr2);
+  }
+}
+
+static void do_maaren(FILE *fp,int eel,double resolution,int npow)
+{
+  int    i,i0,imax;
+  double r,vc,vc2,vd,vd2,vr,vr2;
+
+  imax = 3/resolution;
+  for(i=0; (i<=imax); i++) {
+    r     = i*resolution;
+    /* Avoid very large numbers */
+    if (r < 0.04) {
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
     }
     else {
-      r1    = r/(2*xi);
-      r2    = r/(sqrt(2)*xi);
-      vc    = (1+sqr(f0)*erf(r1) + 2*f0*erf(r2))/r;
-      vc2   = ((2/sqr(r))*(vc -
-			   sqr(f0)*erf1(r1)/(2*xi) -
-			   4*f0*erf1(r2)/sqrt(2)*xi) + 
-	       (1/r)*(sqr(f0/(2.0*xi))*erf2(r1) + (2*f0/sqr(xi)))*erf2(r2));
-      vd    = -1.0/(r*r*r*r*r*r);
-      vd2   = 42.0*vd/(r*r);
-      z     = r/(2.0*xir);
-      vrep  = erfc(z)/z;
-      vrep2 = (sqpi*vrep/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*sqr(xir));
+      lo_do_guillot(r,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      vr  =  pow(r,-1.0*npow);
+      vr2 = (npow+1.0)*(npow)*vr/sqr(r); 
     }
     fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
-	    r,vc,vc2,vd,vd2,vrep,vrep2);
+	    r,vc,vc2,vd,vd2,vr,vr2);
   }
 }
 
@@ -101,7 +132,7 @@ int main(int argc,char *argv[])
     { "-resol",  FALSE, etREAL, {&resolution},
       "Resolution of the table (nm)" },
     { "-n",      FALSE, etINT,  {&npow},
-      "Power for the repulsion potential (only with model n61)" }
+      "Power for the repulsion potential (with model n61 or maaren)" }
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
@@ -137,10 +168,12 @@ int main(int argc,char *argv[])
   case mGuillot:
     do_guillot(fp,eel,resolution);
     break;
+  case mMaaren:
+    do_maaren(fp,eel,resolution,npow);
+    break;
   case mN61:
     do_n61(fp,eel,resolution,npow);
     break;
-  case mMaaren:
   default:
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);
   }  
