@@ -277,10 +277,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * per group! Parallelized
        */
       if (grps->cosacc.cos_accel == 0)
-	calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+	calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
 		     mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
       else
-	calc_ke_part_visc(TRUE,START(nsb),HOMENR(nsb),
+	calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),
 			  parm->box,x,vold,v,vt,&(parm->ir.opts),
 			  mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
       debug_gmx();
