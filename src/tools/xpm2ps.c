@@ -501,6 +501,8 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     nmap2=mat2[0].nmap;
     map2=mat2[0].map;
   }
+  if ( (mat[0].legend[0]==0) && (psr->legtype!=elOff) )
+    strcpy(mat[0].legend, psr->leglabel);
 
   bTitle = bTitle && mat[nmat-1].title[0];
   psr->bTitle = bTitle;
