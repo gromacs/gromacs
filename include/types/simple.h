@@ -78,7 +78,7 @@ typedef int     	atom_id;	/* To indicate an atoms id         */
 #define NO_ATID		(atom_id)(~0)	/* Use this to indicate invalid atid */
 
   /* Check whether we already have a real type! */
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
 #ifndef HAVE_REAL
 typedef double   	real;
 #define HAVE_REAL

@@ -38,9 +38,8 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
-#ifdef USE_THREADS
-#include <pthread.h>
-#endif
+#include <gmx_thread.h>
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +60,7 @@ static void log_action(int bMal,char *what,char *file,int line,
   if (!bMal)
     bytes=-bytes;
   
-#ifdef USE_THREADS
+#ifdef GMX_THREAD_PTHREAD
   pthread_mutex_lock(&gmx_logfile_mtx);
 #endif
 
@@ -73,7 +72,7 @@ static void log_action(int bMal,char *what,char *file,int line,
     fprintf(stdlog,"%30s:%6d kb (%7d kb) [%s, line %d, nelem %d, size %d]\n",
 	    what ? what : NN,bytes,btot/1024,
 	    file ? file : NN,line,nelem,size);
-#ifdef USE_THREADS
+#ifdef GMX_THREAD_PTHREAD
   pthread_mutex_unlock(&gmx_logfile_mtx);
 #endif
 }

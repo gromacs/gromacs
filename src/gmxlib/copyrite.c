@@ -37,9 +37,9 @@
 #include <config.h>
 #endif
 
-#ifdef USE_THREADS
-#include <pthread.h>
-#endif
+
+#include <gmx_thread.h>
+
 /* This file is completely threadsafe - keep it that way! */
 
 #include <string.h>
@@ -258,7 +258,7 @@ void CopyRight(FILE *out,char *szProgram)
   fprintf(out,"\n");
 
   sprintf(buf,"%s",Program());
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
   strcat(buf," (double precision)");
 #endif
   ster_print(out,buf);

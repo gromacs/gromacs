@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#include <ctype.h>
+
 #include "sysstuff.h"
 #include "string2.h"
 #include "vec.h"

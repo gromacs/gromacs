@@ -3,20 +3,27 @@
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
 
+SUBDIRS = nonbonded
+
 AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 lib_LTLIBRARIES = libgmx@LIBSUFFIX@.la
 
-libgmx@LIBSUFFIX@_la_LIBADD = @GMXLIB_LIBOBJS@
-libgmx@LIBSUFFIX@_la_DEPENDENCIES = @GMXLIB_LIBOBJS@
+#
+# Use a utility library for all the nonbonded kernels and wrapper routines.
+#
+libgmx@LIBSUFFIX@_la_LIBADD = @GMXLIB_LIBOBJS@ nonbonded/libnonbonded.la
+libgmx@LIBSUFFIX@_la_DEPENDENCIES = @GMXLIB_LIBOBJS@ nonbonded/libnonbonded.la
+#
+#
 libgmx@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	block_tx.c	bondfree.c	\
-	calcgrid.c	calch.c		inner.h			\
+	calcgrid.c	calch.c		\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
 	enxio.c		ewald_util.c	fatal.c		ffscanf.c	\
-	filenm.c	futil.c		gbutil.c	fnbf.c		\
+	filenm.c	futil.c		gbutil.c	\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	\
 	main.c		maths.c		matio.c			\
@@ -30,67 +37,13 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	detectcpu.c	libxdrf.c	vec.c		xmlio.h		\
+	libxdrf.c	xmlio.h		\
 	dihres.c	xmlio.c		gmx_random_gausstable.h
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
-	x86_sse.s	x86_sse2.s	x86_3dnow.s  	inner_altivec.c \
-	mgmx.c		widget.c	widget.h	x86_cpuid.s	\
-	axp_asm.s	f77_wrappers.c	gmx_system_xdr.c
+	mgmx.c		widget.c	widget.h	\
+	gmx_system_xdr.c
 
-nodist_EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = innerf.f innerc.c
-
-
-# Compaq are fscking around with their compiler... some versions require
-# .s and some .S. It's checked by configure. COMPAQ: FIX YOUR COMPILER!
-if AXP_ASM_CAPITAL_S
-axp_asm.lo: $(srcdir)/axp_asm.s
-	ln -sf $(srcdir)/axp_asm.s axp_asm.S
-	$(LTASCOMPILE) -c axp_asm.S
-endif
-
-# The inner loops are made with our program and not included in the dist.
-innerf.f: mkinl 
-	./mkinl	fortran	
-innerc.c: mkinl
-	./mkinl c
-
-
-# mkinl is special - cant use a noinst_PROGRAMS target, since it might have 
-# to be compiled with a non-MPI compiler whose files can be executed directly:
-
-EXTRA_DIST 	 =			mkinl_declarations.c	\
-		mkinl_outerloop.c	mkinl_innerloop.c	\
-		mkinl_invsqrt.c		mkinl_calcdist.c	\
-		mkinl_interactions.c	metacode.c		\
-		mkinl.h			mkinl_fortrandata.h	\
-		mkinl.c
-
-BUILD_COMPILE = $(CC_FOR_BUILD) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) 
-
-metacode.o:	metacode.c
-		$(BUILD_COMPILE) -c $(srcdir)/metacode.c
-mkinl.o:	mkinl.c
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl.c
-mkinl_declarations.o: mkinl_declarations.c
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_declarations.c
-mkinl_outerloop.o: mkinl_outerloop.c
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_outerloop.c
-mkinl_innerloop.o: mkinl_innerloop.c	
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_innerloop.c
-mkinl_calcdist.o: mkinl_calcdist.c	
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_calcdist.c	
-mkinl_invsqrt.o: mkinl_invsqrt.c
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_invsqrt.c
-mkinl_interactions.o: mkinl_interactions.c
-		$(BUILD_COMPILE) -c $(srcdir)/mkinl_interactions.c
-
-MKINL_OBJ	= \
-		mkinl.o mkinl_declarations.o mkinl_outerloop.o mkinl_innerloop.o \
-		mkinl_calcdist.o mkinl_invsqrt.o mkinl_interactions.o metacode.o
-
-mkinl:		$(MKINL_OBJ)
-		$(BUILD_COMPILE) -o $@ $(MKINL_OBJ)
 
 # link the mpi library to non-mpi names if the latter are not present after install
 #install-exec-hook:

@@ -90,7 +90,7 @@ real sign(real x,real y)
 #endif
 
 
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
 
 static const double
 tiny	    = 1e-300,

@@ -267,7 +267,7 @@ void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
 #else
   int tx_tag = 0,rx_tag = 0;
   MPI_Status stat;
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
 #define mpi_type MPI_DOUBLE
 #else
 #define mpi_type MPI_FLOAT

@@ -43,7 +43,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "xdrf.h"
-#include <callf77.h>
 
 
 
@@ -54,7 +53,7 @@ static char xdrmodes[MAXID];
 static unsigned int cnt;
 
 
-#ifdef USE_FORTRAN
+#ifdef GMX_FORTRAN
 
 typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
 
@@ -108,7 +107,7 @@ F77_FUNC(xdrfchar,XDRFCHAR)(int *xdrid, char *cp, int *ret)
 }
 
 void
-F77_FUNC(xdrfdouble,XDRFDOUBLE)(int *xdrid, double *dp, int *ret)
+F77_FUNC(xdrfdouble,XDRFGMX_DOUBLE)(int *xdrid, double *dp, int *ret)
 {
 	*ret = xdr_double(xdridptr[*xdrid], dp);
 	cnt += sizeof(double);
@@ -273,7 +272,7 @@ F77_FUNC(xdrfopen,XDRFOPEN)(int *xdrid, char *fp_ptr, char *mode_ptr,
 	else 
 		*ret = 1;	
 }
-#endif /* USE_FORTRAN */
+#endif /* GMX_FORTRAN */
 
 /*___________________________________________________________________________
  |
