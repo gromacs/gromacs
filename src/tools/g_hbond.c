@@ -523,7 +523,8 @@ int main(int argc,char *argv[])
     "all solvent atoms involved in insertion.[BR]",
     "[TT]-hbm[tt]:  existence matrix for all hydrogen bonds over all",
     "frames, this also contains information on solvent insertion",
-    "into hydrogen bonds.[BR]",
+    "into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
+    "index file.[BR]",
     "[TT]-da[tt]: write out the number of donors and acceptors analyzed for",
     "each timeframe. This is especially usefull when using [TT]-shell[tt]."
   };
@@ -1201,7 +1202,7 @@ int main(int argc,char *argv[])
     fclose(fp);
   }
   
-  thanx(stdout);
+  thanx(stderr);
   
   return 0;
 }
