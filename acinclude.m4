@@ -612,15 +612,9 @@ case "${host_cpu}-${host_os}" in
     fi
     xLDFLAGS="-woff 84"
 
-    # Normally we want -n32 for performance, but in some
-    # rare cases it should be possible to override it in the flags.
-    # So, if it is set in the user-provided stuff we shouldn't
-    # add -n32 here!
-    if echo "$CFLAGS $FFLAGS $LDFLAGS" | grep "\-o32" > /dev/null 2>&1; then
-      IRIXOBJFLAG="";
-    else
-      IRIXOBJFLAG="-n32";
-    fi
+    # I have removed -n32 from the flags since it causes too many problems.
+    # New SGIs should use the right objects automatically, and it's not
+    # worth the hassle for 5-10 year old machines...  
 
     case "${gmxcpu}" in
       r12000*)
