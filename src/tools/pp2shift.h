@@ -34,6 +34,7 @@ static char *SRCID_pp2shift_h = "$Id$";
 
 #include "typedefs.h"
 	
+/* must correspond with 'leg' g_chi.c:727 */
 enum { edPhi=0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
 
 #define NHISTO 360

@@ -722,18 +722,23 @@ static void order_params(FILE *log,
   int  nh[edMax];
   int  i,Dih,Xi;
   real S2Max, S2Min;
+
+  /* must correspond with enum in pp2shift.h:38 */  
+  char *leg[edMax] = { "S2Min","S2Max","Phi","Psi","Omega", "Chi1", "Chi2", "Chi3", "Chi4", "Chi5", "Chi6" };
+#define NLEG asize(leg) 
   
   /* Print order parameters */
   fp=xvgropen(fn,"Dihedral Order Parameters","Residue","S2");
+  xvgr_legend(out,NONCHI+maxchi,leg);
   
   for (Dih=0; (Dih<edMax); Dih++)
     nh[Dih]=0;
   
-  fprintf(fp,"%5s  ","#Res.");
-  fprintf(fp,"%10s  %10s  ","S2Min","S2Max");
-  fprintf(fp,"%10s  %10s  ","Phi","Psi");
+  fprintf(fp,"%5s ","#Res.");
+  fprintf(fp,"%10s %10s ","S2Min","S2Max");
+  fprintf(fp,"%10s %10s %10s ","Phi","Psi","Omega");
   for (Xi=1; (Xi<=maxchi); Xi++)
-    fprintf(fp,"%8s%2d  ","Xi",Xi);
+    fprintf(fp,"%8s%2d ","Chi",Xi);
   fprintf(fp,"%12s\n","Res. Name");
   
   for(i=0; (i<nlist); i++) {
@@ -749,10 +754,10 @@ static void order_params(FILE *log,
       if (dlist[i].S2[Dih] > 0.8)
 	nh[Dih]++;
     }
-    fprintf(fp,"%5d  ",dlist[i].resnr);
-    fprintf(fp,"%10.3f  %10.3f  ",S2Min,S2Max);
+    fprintf(fp,"%5d ",dlist[i].resnr);
+    fprintf(fp,"%10.3f %10.3f ",S2Min,S2Max);
     for (Dih=0; (Dih<NONCHI+maxchi); Dih++)
-      fprintf(fp,"%10.3f  ",dlist[i].S2[Dih]);
+      fprintf(fp,"%10.3f ",dlist[i].S2[Dih]);
     fprintf(fp,"%12s\n",dlist[i].name);
   }
   ffclose(fp);
