@@ -25,7 +25,8 @@
  * possible without a lot of support and optimization suggestions 
  * from John Worley at Hewlett-Packard.
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 
 #define	zero	r0	/* permanent zero					*/
@@ -613,7 +614,7 @@ innerLoop:
 	{	.mfi	
 	(pPipe[0])	ldfs	JY = [posPtr], 4
 	(pPipe[5])	fnma.s	FActX[5] = FScalar[1], DX[5], FActX[5]
-			nop	0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 			nop	0x0
@@ -631,7 +632,7 @@ innerLoop:
 	(pPipe[2])	frsqrta RInv[0], p0 = RSqr[1]
 			nop	0x0
 	} ;;
-//	INNER LOOP 5
+//	INNER LOOP 6
 	{	.mfi	
 	(pPipe[0])	ldfs	FActX[0] = [FActPtr[0]], 4
 	(pPipe[3])	fmpy	RInvU[0] = RInv[1], RInvErr[1]
@@ -649,7 +650,7 @@ innerLoop:
 			nop	0x0
 	}
 	{	.mfi
-			nop	0x0
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[4])	fmpy 	VCoul	= QQ, RInv[2]
 			nop	0x0
 	} ;;
@@ -671,9 +672,9 @@ innerLoop:
 			nop	0x0
 	}
 	{	.mfi
-			nop	0x0
+                nop     0x0
 	(pPipe[2])	fmpy	RInvErr[0] = RInv[0], RSqr[1]
-			nop	0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	} ;;
 //	INNER LOOP 10
 	{	.mfi		

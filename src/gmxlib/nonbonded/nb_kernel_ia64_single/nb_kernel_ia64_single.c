@@ -27,6 +27,7 @@
 * We can only have one routine in each file due to a bug
 * in the intel assembler program...
 */
+#include "ia64_cpuid.h"
 #include "nb_kernel010_ia64_single.h"
 #include "nb_kernel010nf_ia64_single.h"
 #include "nb_kernel030_ia64_single.h"
@@ -135,12 +136,60 @@ kernellist_ia64_single[eNR_NBKERNEL_NR] =
 void
 nb_kernel_setup_ia64_single(FILE *log,nb_kernel_t **list)
 {
+    unsigned char cpu_family;
+    unsigned char cpu_revision;
+    unsigned char cpu_model;
+    
+    union 
+    {
+        unsigned long long i;
+        unsigned char      c[8];
+    } 
+    conv;
+
     int i;
     nb_kernel_t *p;
-        
-	if(log)
-        fprintf(log,"Using single precision ia64 assembly kernels.");
-	
+    
+    
+    /* 
+     * The assembly nonbonded kernels will work on all current ia64    
+     * implementations, but the software pipelining will be very slow
+     * on Merced (Itanium1) due to the longer latencies. Check what we have...
+     */
+    if(log)
+        fprintf(log,"Testing ia64 CPU family...");
+
+    conv.i=ia64_cpuid(3);
+    
+    cpu_family   = conv.c[3];
+    cpu_model    = conv.c[2];
+    cpu_revision = conv.c[1];    
+     
+    switch(cpu_family)
+    {
+        case 0x07:
+            if(log)
+            {
+                fprintf(log,"Itanium 1\n");
+                fprintf(log,"Assembly kernels would be slow with Itanium 1 latencies - disabling.\n");
+            }
+            return;
+            break;
+        case 0x1f:
+            if(log)
+                fprintf(log,"Itanium 2\n");
+            break;
+        default:
+            if(log)
+                fprintf(log,
+                        "Unknown Itanium\n"
+						"You might want to test the speed without assembly kernels\n"
+                        "by setting the NOASSEMBLYLOOPS environment variable.\n");
+            break;
+    }
+
+    fprintf(log,"Using single precision ia64 assembly kernels.");
+
     for(i=0;i<eNR_NBKERNEL_NR;i++)
     {
         p = kernellist_ia64_single[i];

@@ -25,7 +25,8 @@
  * possible without a lot of support and optimization suggestions 
  * from John Worley at Hewlett-Packard.
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 
 #define	zero	r0	/* permanent zero					*/
@@ -408,7 +409,7 @@ nb_kernel200nf_ia64_double:
 	{	.mfi
 		ld8			InnerIter = [argPtr]
 		fnorm			Facel = Facel
-		nop			0x0
+		mov         Ninner = 0
 	} ;;
 //  18 bundles used for init - still aligned.
 
@@ -629,7 +630,7 @@ innerLoop_nf:
 	{	.mfi	
 	(pPipe[0])	ldfd	JY = [posPtr], 8
 	(pPipe[4])	fma		RInvT[0] = RInvErr[1], f3_8, fHALF
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0
@@ -649,7 +650,7 @@ innerLoop_nf:
 	} ;;
 //	INNER LOOP 6
 	{	.mfi	
-				nop		0x0
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[2])	fma		RSqr[0] = DY[2], DY[2], RSqr[0]
 				nop		0x0
 	}
@@ -662,7 +663,7 @@ innerLoop_nf:
 	{	.mfi									
 				nop		0x0
 	(pPipe[3])	fmpy	RInvErr[0] = RInv[0], RSqr[1]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0

@@ -30,7 +30,8 @@
 /* Each thread locks a counter and grabs a couple of neighborlists.
  * Available sizes for this chunk: 1,2,4,8, or 16 
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 //	ia64 General Register definitions:	
 #define	zero	r0	/* permanent zero					*/
@@ -733,7 +734,7 @@ innerLoop_nf:
 	{	.mfi									
 	(pPipe[3])	ldfd	C6[0] = [TypeJ[3]], 8			
 	(pPipe[1])	fma		RSqr[0] = DY[1], DY[1], RSqr[0]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0
@@ -758,7 +759,7 @@ innerLoop_nf:
 				nop		0x0
 	}
 	{	.mfi
-				nop		0x0
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[6])	fma     Rep_Y[2] = eps[2], Rep_F[2], Rep_Y[2]
 				nop		0x0
 	} ;;
@@ -771,7 +772,7 @@ innerLoop_nf:
 	{	.mfi
 				nop		0x0
 	(pPipe[2])	fmpy	RInvU[0] = RInv[1], RInvErr[0]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	} ;;
 
 //	INNER LOOP 13

@@ -29,7 +29,8 @@
 /* Each thread locks a counter and grabs a couple of neighborlists.
  * Available sizes for this chunk: 1,2,4,8, or 16 
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 #define	zero	r0	/* permanent zero					*/
 #define	gp		r1	/* global data pointer				*/
@@ -729,7 +730,7 @@ innerLoop:
 	{	.mfi
 				nop		0x0
 	(pPipe[3])	fadd	VNBTotal = VNBTotal, C12[2]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	} ;;
 //	INNER LOOP 7
 	{	.mfi									
@@ -749,7 +750,7 @@ innerLoop:
 				nop		0x0
 	}
 	{	.mfi
-				nop		0x0	
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[2])	fmpy	Charge[2] = IQ, Charge[2]
 				nop		0x0
 	} ;;
@@ -784,7 +785,7 @@ innerLoop:
 	{	.mfi
 				nop		0x0
 	(pPipe[2])	fcvt.fx.trunc n0[0] = RT[0]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	} ;;
 //	INNER LOOP 12
 	{	.mfi									

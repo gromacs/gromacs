@@ -29,7 +29,8 @@
 /* Each thread locks a counter and grabs a couple of neighborlists.
  * Available sizes for this chunk: 1,2,4,8, or 16 
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 #define	zero	r0	/* permanent zero					*/
 #define	gp		r1	/* global data pointer				*/
@@ -433,7 +434,7 @@ nb_kernel110nf_ia64_single:
 	{	.mfi
 		ld8			InnerIter = [argPtr]
 		nop			0x0
-		nop			0x0
+		mov         Ninner = 0
 	} ;;
 //  22 bundles used for init - still aligned.
 
@@ -690,7 +691,7 @@ innerLoop_nf:
 	{	.mfi									
 	(pPipe[0])	ldfs	JZ = [posPtr], 4
 	(pPipe[2])	fma		RSqr[0] = DY[2], DY[2], RSqr[0]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0
@@ -715,7 +716,7 @@ innerLoop_nf:
 				nop		0x0
 	}
 	{	.mfi
-				nop		0x0
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[3])	fmpy	RInvErr[0] = RInv[0], RSqr[1]
 				nop		0x0
 	} ;;
@@ -734,7 +735,7 @@ innerLoop_nf:
 	{	.mfi									
 	(pPipe[0])	ld4 	TypeJ[0] = [TypeJ[0]]
 	(pPipe[2])	fma		RSqr[0] = DZ[2], DZ[2], RSqr[0]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0

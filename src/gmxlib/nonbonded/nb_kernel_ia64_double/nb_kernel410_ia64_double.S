@@ -19,7 +19,6 @@
 #include <config.h>
 #endif
 
-
 /*
  * The ia64-assembly Gromacs inner loops would not have been
  * possible without a lot of support, tutoring and optimization 
@@ -29,7 +28,8 @@
 /* Each thread locks a counter and grabs a couple of neighborlists.
  * Available sizes for this chunk: 1,2,4,8, or 16 
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 #define	zero	r0	/* permanent zero					*/
 #define	gp		r1	/* global data pointer				*/
@@ -740,7 +740,7 @@ innerLoop:
 	{	.mfi
 				nop		0x0
 	(pPipe[2])	fnma	RInvErr[1] = RInv[1], RInvErr[1], fOne
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	} ;;
 //	INNER LOOP 8
 	{	.mfi									
@@ -760,7 +760,7 @@ innerLoop:
 				nop		0x0
 	}
 	{	.mfi
-				nop		0x0
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[3])	fmpy	C12[1] = C12[1], RInv6[1]
 				nop		0x0
 	} ;;
@@ -768,7 +768,7 @@ innerLoop:
 	{	.mfi									
 	(pPipe[2])	ldfd	FActY[0] = [FActPtr[2]], 8
 	(pPipe[5])	fnma	FActX[3] = FScalar[2], DX[5], FActX[3]	
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0

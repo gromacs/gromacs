@@ -29,7 +29,8 @@
 /* Each thread locks a counter and grabs a couple of neighborlists.
  * Available sizes for this chunk: 1,2,4,8, or 16 
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 #define	zero	r0	/* permanent zero					*/
 #define	gp		r1	/* global data pointer				*/
@@ -511,8 +512,8 @@ outerLoop_nf:
 //	OUTER PROLOGUE 1
 	{	.mfi						
 		nop 		0x0
-		nop		0x0
-		sub		Ninner = Ninner, NJ0
+		nop		    0x0
+        nop         0x0
 	}
 	{	.mmf
 		ldfs		shX = [shiftVPtr], 4
@@ -523,7 +524,7 @@ outerLoop_nf:
 	{	.mmi
 		setf.sig	f32 = NTI
 		ldfs		shY = [shiftVPtr], 4
-		add		Ninner = Ninner, NJ1
+		nop         0x0
 	}
 	{	.mii
 		ldfs		PosY = [posPtr], 4
@@ -620,7 +621,7 @@ innerLoop_nf:
 	{	.mfi
 	(pPipe[0])	shladd	posPtr = jnr3, 2, POSITION
 	(pPipe[5])	fma		RInv2Err[1] = RInv2Err[1], RInv2Err[1], RInv2Err[1]
-			nop		0x0
+    (pPipe[0])  add     Ninner = 1, Ninner
 	} ;;
 //	INNER LOOP 3
 	{	.mfi									
@@ -649,7 +650,7 @@ innerLoop_nf:
 	{	.mfi									
 	(pPipe[0])	ldfs	JZ = [posPtr], 4
 	(pPipe[4])	fnma	RInv2Err[0] = RInv2[0], RSqr[2], fOne
-				nop		0x0
+    (pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0
@@ -669,7 +670,7 @@ innerLoop_nf:
 	} ;;
 //	INNER LOOP 7
 	{	.mfi									
-				nop		0x0
+    (pJJNR)     lfetch.nta  [jjnrPtr]
 	(pPipe[6])	fmpy	RInv6[0] = RInv6[0], RInv2[2]
 				nop		0x0
 	}
@@ -682,7 +683,7 @@ innerLoop_nf:
 	{	.mfi	
 	(pPipe[2])	ldfs	C12[0] = [TypeJ[2]]
 	(pPipe[7])	fma		VNBTotal = C12[5], RInv6[1], VNBTotal
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfb
 				nop		0x0

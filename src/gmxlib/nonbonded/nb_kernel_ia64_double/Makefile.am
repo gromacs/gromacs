@@ -32,5 +32,6 @@ libnb_kernel_ia64_double_la_SOURCES = \
 	nb_kernel400nf_ia64_double.S	nb_kernel400nf_ia64_double.h	\
 	nb_kernel410nf_ia64_double.S	nb_kernel410nf_ia64_double.h	\
 	nb_kernel430nf_ia64_double.S	nb_kernel430nf_ia64_double.h	\
+	ia64_cpuid.S			ia64_cpuid.h			\
 	nb_kernel_ia64_double.c		nb_kernel_ia64_double.h
 

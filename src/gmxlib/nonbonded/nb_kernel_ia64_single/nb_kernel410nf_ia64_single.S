@@ -29,7 +29,8 @@
 /* Each thread locks a counter and grabs a couple of neighborlists.
  * Available sizes for this chunk: 1,2,4,8, or 16 
  */
-#define THREAD_CHUNK_SIZE 8
+#define THREAD_CHUNK_SIZE       8
+#define JJNR_PREFETCH_DISTANCE  128
 
 #define	zero	r0	/* permanent zero					*/
 #define	gp		r1	/* global data pointer				*/
@@ -728,7 +729,7 @@ innerLoop_nf:
 	{	.mfi									
 	(pPipe[0])	ldfs	isaJ[0] = [isaPtr]
 	(pPipe[3])	fmpy	RT[1] = RT[1], RInv[1]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0
@@ -753,7 +754,7 @@ innerLoop_nf:
 				nop		0x0
 	}
 	{	.mfi
-				nop		0x0	
+	(pJJNR)     lfetch.nta  [jjnrPtr]
 				nop		0x0
 				nop		0x0
 	} ;;
@@ -772,7 +773,7 @@ innerLoop_nf:
 	{	.mfi									
 	(pPipe[0])	ldfs	Charge[0] = [chargePtr]						
 	(pPipe[3])	fcvt.fx.trunc n0[0] = RT[1]
-				nop		0x0
+	(pJJNR)     add     jjnrPtr = -JJNR_PREFETCH_DISTANCE, jjnrPtr
 	}
 	{	.mfi
 				nop		0x0
