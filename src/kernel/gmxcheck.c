@@ -390,6 +390,7 @@ void chk_enx(char *fn)
 
 }
 
+
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -409,11 +410,13 @@ int main(int argc,char *argv[])
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied."
   };
   t_filenm fnm[] = {
-    { efTRX, "-f", NULL, ffOPTRD },
+    { efTRX, "-f",  NULL, ffOPTRD },
     { efTPX, "-s1", "top1", ffOPTRD },
     { efTPX, "-s2", "top2", ffOPTRD },
-    { efTPS, "-c", NULL, ffOPTRD },
-    { efENX, "-e", NULL, ffOPTRD }
+    { efTPS, "-c",  NULL, ffOPTRD },
+    { efENX, "-e",  NULL, ffOPTRD },
+    { efENX, "-e1", "ener1", ffOPTRD },
+    { efENX, "-e2", "ener2", ffOPTRD }
   };
 #define NFILE asize(fnm)
   char *fn1=NULL,*fn2=NULL;
@@ -421,13 +424,16 @@ int main(int argc,char *argv[])
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
   static real bon_hi=0.7;
+  static real ftol=0;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, &vdw_fac,
       "Fraction of sum of VdW radii used as warning cutoff" },
     { "-bonlo",  FALSE, etREAL, &bon_lo,
       "Min. fract. of sum of VdW radii for bonded atoms" },
     { "-bonhi",  FALSE, etREAL, &bon_hi,
-      "Max. fract. of sum of VdW radii for bonded atoms" }
+      "Max. fract. of sum of VdW radii for bonded atoms" },
+    { "-tol",    FALSE, etREAL, &ftol,
+      "Tolerance for difference between energy terms when comparing energy files" }
   };
 
   CopyRight(stdout,argv[0]);
@@ -445,7 +451,16 @@ int main(int argc,char *argv[])
     comp_tpx(fn1,fn2);
   else if (fn1 || fn2)
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
-  
+
+  if (opt2bSet("-e1",NFILE,fnm))
+    fn1=opt2fn("-e1",NFILE,fnm);
+  if (opt2bSet("-e2",NFILE,fnm))
+    fn2=opt2fn("-e2",NFILE,fnm);
+  if (fn1 && fn2)
+    comp_enx(fn1,fn2,ftol);
+  else if (fn1 || fn2)
+    fprintf(stderr,"Please give me TWO energy (.edr/.ene) files!\n");
+
   if (ftp2bSet(efTPS,NFILE,fnm))
     chk_tps(ftp2fn(efTPS,NFILE,fnm), vdw_fac, bon_lo, bon_hi);
   

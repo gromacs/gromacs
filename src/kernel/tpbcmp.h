@@ -35,4 +35,7 @@ static char *SRCID_tpbcmp_h = "$Id$";
 extern void comp_tpx(char *fn1,char *fn2);
 /* Compare two binary topology files */
 
+extern void comp_enx(char *fn1,char *fn2,real ftol);
+/* Compare two binary energy files */
+
 #endif

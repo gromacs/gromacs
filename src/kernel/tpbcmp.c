@@ -28,6 +28,7 @@
  */
 static char *SRCID_tpbcmp_c = "$Id$";
 
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include "main.h"
@@ -40,6 +41,7 @@ static char *SRCID_tpbcmp_c = "$Id$";
 #include "fatal.h"
 #include "names.h"
 #include "tpxio.h"
+#include "enxio.h"
 
 static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
 {
@@ -332,4 +334,84 @@ void comp_tpx(char *fn1,char *fn2)
   cmp_rvecs(stdout,"box",DIM,box[0],box[1]);
   cmp_rvecs(stdout,"x",natoms,xx[0],xx[1]);
   cmp_rvecs(stdout,"v",natoms,vv[0],vv[1]);
+}
+
+static void cmp_energies(FILE *fp,int frame1,int frame2,int nre,
+			 t_energy e1[],t_energy e2[],char *enm1[],char *enm2[],
+			 real ftol)
+{
+  int  i;
+  
+  for(i=0; (i<nre); i++)
+    if (fabs(e1[i].e - e2[i].e) > ftol)
+      fprintf(fp,"%-15s  frame %3d:  %12g,  frame %3d: %12g\n",
+	      enm1[i],frame1,e1[i].e,frame2,e2[i].e);
+}
+
+void comp_enx(char *fn1,char *fn2,real ftol)
+{
+  int       in1,in2,nre,nre1,nre2,frame1,frame2,ndr1,ndr2;
+  int       i;
+  char      **enm1=NULL,**enm2=NULL;
+  t_energy  *ee1,*ee2;
+  t_drblock dr1,dr2;
+  bool      b1,b2;
+  real      t1,t2;
+  
+  fprintf(stdout,"Comparing energy file %s and %s\n\n",fn1,fn2);
+
+  in1 = open_enx(fn1,"r");
+  in2 = open_enx(fn2,"r");
+  do_enxnms(in1,&nre1,&enm1);
+  do_enxnms(in2,&nre2,&enm2);
+  if (nre1 != nre2) {
+    fprintf(stdout,"%s: nre=%d, %s: nre=%d\n",fn1,nre1,fn2,nre2);
+    return;
+  }
+  nre = nre1;
+  fprintf(stdout,"There are %d terms in the energy files\n\n",nre);
+  
+  for(i=0; (i<nre); i++) {
+    if (strcmp(enm1[i],enm2[i]) != 0)
+      fprintf(stdout,"%s: %16s - %s: %16s\n",fn1,enm1[i],fn2,enm2[i]);
+  }
+  
+  snew(ee1,nre);
+  snew(ee2,nre);
+  do { 
+    b1 = do_enx(in1,&t1,&frame1,&nre1,ee1,&ndr1,&dr1);
+    b2 = do_enx(in2,&t2,&frame2,&nre2,ee2,&ndr2,&dr2);
+    if (b1 && !b2)
+      fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn2,fn1);
+    else if (!b1 && b2) 
+      fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn1,fn2);
+    else if (!b1 && !b2)
+      fprintf(stdout,"\nFiles read succesfully\n");
+    else {
+      cmp_real(stdout,"t",-1,t1,t2);
+      cmp_int(stdout,"frame",-1,frame1,frame2);
+      cmp_int(stdout,"nre",-1,nre1,nre2);
+      cmp_int(stdout,"ndr",-1,ndr1,ndr2);
+
+      if (nre1 != nre) {
+	fprintf(stdout,
+		"file %s internally inconsistent: nre changed from %d to %d\n",
+		fn1,nre,nre1);
+	break;
+      }
+      if (nre2 != nre) {
+	fprintf(stdout,
+		"file %s internally inconsistent: nre changed from %d to %d\n",
+		fn2,nre,nre2);
+	break;
+      }
+      cmp_energies(stdout,frame1,frame2,nre,ee1,ee2,enm1,enm2,ftol);
+      /*if ((ndr1 == ndr2) && (ndr1 > 0))
+	cmp_disres(stdout,frame1,frame2,ndr1,dr1,dr2);*/
+    }
+  } while (b1 && b2);
+    
+  close_enx(in1);
+  close_enx(in2);
+
 }
