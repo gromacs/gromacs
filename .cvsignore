@@ -1,0 +1,5 @@
+bin
+lib
+obj
+Makefile.in
+include
