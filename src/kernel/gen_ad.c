@@ -191,7 +191,11 @@ static void rm2par(t_param p[], int *np, peq eq)
 		"a[0] %d a[1] %d a[2] %d a[3] %d\n",
 		p[i].a[0],p[i].a[1],p[i].a[2],p[i].a[3]);
       p[i].s = strdup(""); 
-    } else {
+    } else if (index[i] > i) {
+      /* Copy the string only if it comes from somewhere else 
+       * otherwise we will end up copying a random (newly freed) pointer.
+       * Since the index is sorted we only have to test for index[i] > i.
+       */ 
       sfree(p[i].s);
       p[i].s = strdup(p[index[i]].s);
     }
