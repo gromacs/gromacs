@@ -84,18 +84,11 @@ static void set_margin(t_atoms *atoms, rvec *x, real *r)
   fprintf(stderr,"box_margin = %g\n",box_margin);
 }
 
-static bool in_box_plus_margin(rvec x,matrix box)
+static bool outside_box_minus_margin2(rvec x,matrix box)
 {
-  return ( (x[XX]>=-box_margin) && (x[XX]<=box[XX][XX]+box_margin) &&
-	   (x[YY]>=-box_margin) && (x[YY]<=box[YY][YY]+box_margin) &&
-	   (x[ZZ]>=-box_margin) && (x[ZZ]<=box[ZZ][ZZ]+box_margin) );
-}
-
-static bool outside_box_minus_margin(rvec x,matrix box)
-{
-  return ( (x[XX]<box_margin) || (x[XX]>box[XX][XX]-box_margin) ||
-	   (x[YY]<box_margin) || (x[YY]>box[YY][YY]-box_margin) ||
-	   (x[ZZ]<box_margin) || (x[ZZ]>box[ZZ][ZZ]-box_margin) );
+  return ( (x[XX]<2*box_margin) || (x[XX]>box[XX][XX]-2*box_margin) ||
+	   (x[YY]<2*box_margin) || (x[YY]>box[YY][YY]-2*box_margin) ||
+	   (x[ZZ]<2*box_margin) || (x[ZZ]>box[ZZ][ZZ]-2*box_margin) );
 }
 
 static bool outside_box_plus_margin(rvec x,matrix box)
@@ -387,8 +380,8 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	    (bSolSol  && 
 	     (is1 >= 0) && (!remove[is1]) &&   /* is1 is solvent */
 	     (is2 >= 0) && (!remove[is2]) &&   /* is2 is solvent */
-	     (outside_box_minus_margin(x_solvt[is1],box)) && /* is1 on edge */
-	     (outside_box_minus_margin(x_solvt[is2],box)) && /* is2 on edge */
+	     (outside_box_minus_margin2(x_solvt[is1],box)) && /* is1 on edge */
+	     (outside_box_minus_margin2(x_solvt[is2],box)) && /* is2 on edge */
 	     (atoms_solvt->atom[is1].resnr !=  /* Not the same residue */
 	      atoms_solvt->atom[is2].resnr))) {
 		
@@ -472,10 +465,14 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	   (atoms_solvt->atom[i].resnr != atoms_solvt->atom[prev].resnr) ) {
 	nresadd ++;
 	atoms->nres++;
+	/* calculate shift of the solvent molecule using the first atom */
+	copy_rvec(x_solvt[i],dx);
+	put_atoms_in_box(box,1,&dx);
+	rvec_dec(dx,x_solvt[i]);
       }
       atoms->nr++;
       atoms->atomname[atoms->nr-1] = atoms_solvt->atomname[i];
-      copy_rvec(x_solvt[i],x_prot[atoms->nr-1]);
+      rvec_add(x_solvt[i],dx,x_prot[atoms->nr-1]);
       (*r)[atoms->nr-1]   = r_solvt[i];
       atoms->atom[atoms->nr-1].resnr = atoms->nres-1;
       atoms->resname[atoms->nres-1] =
