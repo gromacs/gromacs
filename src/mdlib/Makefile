@@ -20,8 +20,7 @@ LIB		= $(LIBDIR)/libmd.$(GMXCPU).a
 SONAME		= libmd.$(GMXCPU).so
 OBJ		= \
 		calcmu.o	calcvir.o	callf77.o	\
-		clincs.o	clincsld.o	congrad.o	\
-		constr.o	\
+		clincs.o	congrad.o	constr.o	\
 		coupling.o	csettle.o	cshake.o	\
 		dummies.o	ebin.o		edsam.o		\
 		ewald.o         fftgrid.o	force.o  	\
@@ -39,8 +38,7 @@ OBJ		= \
                 pullio.o
 
 ifeq ($(USEF77),yes)
-OBJ		+= fshake.o	fsettle.o	\
-		   flincs.o	flincsld.o
+OBJ		+= fshake.o	fsettle.o	flincs.o
 endif
 
 #
