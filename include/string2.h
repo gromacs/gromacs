@@ -54,32 +54,32 @@ extern "C" {
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
 
-int continuing(char *s);
+extern int continuing(char *s);
 
-char *fgets2(char *s, int n, FILE *stream);
+extern char *fgets2(char *s, int n, FILE *stream);
 
-void strip_comment (char *line);
+extern void strip_comment (char *line);
 
-int break_line (char *line,
-		char *variable,
-		char *value);
+extern int break_line (char *line,
+		       char *variable,
+		       char *value);
 
-int upcase (int ch);
+extern void upstring (char *str);
 
-void ltrim (char *str);
+extern void ltrim (char *str);
 
-void rtrim (char *str);
+extern void rtrim (char *str);
 
-void trim (char *str);
+extern void trim (char *str);
 
-void nice_header (FILE *out,char *fn);
+extern void nice_header (FILE *out,char *fn);
 
-int gmx_strcasecmp(const char *str1, const char *str2);
+extern int gmx_strcasecmp(const char *str1, const char *str2);
 /* This funny version of strcasecmp, is not only case-insensitive,
- * but does also return 0 when '-' and '_' are compared.
+ * but also ignores '-' and '_'.
  */
 
-char *gmx_strdup(const char *src);
+extern char *gmx_strdup(const char *src);
 
 #ifndef HAVE_STRCASECMP
 #define strcasecmp gmx_strcasecmp

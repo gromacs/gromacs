@@ -84,19 +84,12 @@ void strip_comment (char *line)
     (*c) = 0;
 }
 
-int upcase (int ch)
-{
-  if ((ch >= 'a') && (ch <= 'z'))
-    return ch+'A'-'a';
-  else return ch;
-}
-
 void upstring (char *str)
 {
   int i;
 
   for (i=0; (i < (int)strlen(str)); i++) 
-    str[i] = upcase(str[i]);
+    str[i] = toupper(str[i]);
 }
 
 void ltrim (char *str)
