@@ -300,7 +300,8 @@ static int select_chainnames(t_atoms *atoms,int n_names,char **names,
       (*nr)++;
     }
   }
-  printf("Found %u atom%s with chain identifier%s",*nr,(*nr==1)?"":"s");
+  printf("Found %u atom%s with chain identifier%s",
+	 *nr,(*nr==1)?"":"s",(n_names==1)?"":"s");
   for(j=0; (j<n_names); j++)
     printf(" %s",names[j]);
   printf("\n");
