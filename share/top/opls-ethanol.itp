@@ -1,0 +1,86 @@
+;
+; Ethanol, Jorgensen et al. JACS 118 pp. 11225 (1996)
+;
+[ moleculetype ]
+; name  nrexcl
+ETH	3
+
+[ atoms ]
+;   nr    type   resnr  residu    atom    cgnr        charge          mass
+     1       opls_157       1     ETH       C       1	-0.18	 
+     2       opls_156       1     ETH       H       1	0.06	
+     3       opls_156       1     ETH       H       1	0.06	
+     4       opls_156       1     ETH       H       1	0.06	
+     5       opls_157       1     ETH       C       2	0.145	 
+     6       opls_156       1     ETH       H       2	0.06
+     7       opls_156       1     ETH       H       2	0.06	
+     8       opls_154       1     ETH      OA       2	-0.683 
+     9       opls_155       1     ETH      HO       2	0.418
+   
+[ bonds ]
+;  ai    aj funct           c0           c1
+ 1	5	1
+ 3	1	1
+ 4	1	1
+ 2	1	1
+ 7	5	1
+ 6	5	1
+ 8      5       1
+ 9      8	1
+
+ [ pairs ]
+ ; i	j	func
+ 2	6
+ 2	7
+ 2	8
+ 3	6
+ 3	7
+ 3	8
+ 4	6
+ 4	7
+ 4	8
+ 1	9
+ 6	9
+ 7	9
+
+[ angles ]
+;  ai    aj    ak funct           c0        c1
+; H3
+ 2	1	5	1
+ 3	1	5 	1 
+ 4	1	5	1
+;
+ 4      1       3 	1
+ 4	1	2	1
+;
+ 3	1	2	1
+;
+ 1	5	7	1
+ 1	5	6	1
+ 1	5	8	1
+;
+ 5	8	9	1
+; 
+ 6	5	7	1
+ 6	5	8	1
+;
+ 7	5	8	1
+
+;
+[ dihedrals ]
+ 2      1       5      6	3
+ 3      1       5      6	3
+ 4      1       5      6	3
+ 2      1       5      7	3
+ 3      1       5      7	3
+ 4      1       5      7	3
+ 2      1       5      8	3
+ 3      1       5      8	3
+ 4      1       5      8	3
+ 1	5	8      9	3
+ 6	5	8      9	3
+ 7	5	8      9	3
+
+
+
+

@@ -1,0 +1,47 @@
+;
+; Methanol, Jorgensen et al. JACS 118 pp. 11225 (1996)
+;
+[ moleculetype ]
+; name  nrexcl
+MET	3
+
+[ atoms ]
+;   nr    type   resnr  residu    atom    cgnr        charge          mass
+     1       opls_157       1     MET        C       1	0.145	 
+     2       opls_156       1     MET        H       1	0.04	
+     3       opls_156       1     MET        H       1	0.04	
+     4       opls_156       1     MET        H       1	0.04	
+     5       opls_154       1     MET       OA       1	-0.683 
+     6       opls_155       1     MET       HO       1	0.418
+   
+[ bonds ]
+;  ai    aj funct           c0           c1
+1	2	1
+1	3	1
+1	4	1 
+1	5	1
+5	6	1
+ 
+[ pairs ]
+; i	j	funct
+2	6
+3	6
+4	6
+
+[ angles ]
+;  ai    aj    ak funct           c0        c1
+; H3
+ 2	1	5	1
+ 3	1	5 	1 
+ 4	1	5	1
+ 4      1       3 	1
+ 4	1	2	1
+ 3	1	2	1
+ 1	5	6	1
+ 
+;
+[ dihedrals ]
+2	1	5	6	3
+3	1	5	6	3
+4	1	5	6	3
+
