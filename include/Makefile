@@ -8,8 +8,10 @@
 #	Makefile for the Gromacs include file directory
 #
 all:
-		echo "Hello from include directory"
+
 dep:
-		echo "No dep in include dir"
+
 clean:
-		$(RM) *~ #*# 
+	$(RM) *~ #*# 
+
+oclean:	clean
