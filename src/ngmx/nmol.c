@@ -92,7 +92,8 @@ void set_def (t_molwin *mw,matrix box)
 {
   mw->bShowHydrogen=TRUE;
   mw->bond_type=eBFat;
-  mw->boxtype=TRICLINIC(box) ? esbTri : esbRect;
+  mw->boxtype=esbRect;
+  mw->realbox=TRICLINIC(box) ? esbTri : esbRect;
 }
 
 t_molwin *init_mw(t_x11 *x11,Window Parent,
@@ -141,8 +142,13 @@ void set_box_type (t_x11 *x11,t_molwin *mw,int bt)
 { 
   fprintf(stderr,"mw->boxtype = %d, bt = %d\n",mw->boxtype,bt);
   if (bt != mw->boxtype) {
-    mw->boxtype = bt;
-    ExposeWin(x11->disp,mw->wd.self);
+    if ((((bt == esbTrunc) || (bt == esbTri)) &&
+	 (mw->realbox == esbTri)) || (bt == esbNone)) {
+      mw->boxtype = bt;
+      ExposeWin(x11->disp,mw->wd.self);
+    }
+    else
+      fprintf(stderr,"Can not change rectangular box to triclinic or truncated octahedron\n");
   }
 }
 
@@ -502,14 +508,22 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
     }
   }
   else {
-    for(i=0; (i<DIM); i++)
+    if (boxtype == esbRect)
       for(j=0; (j<DIM); j++)
-	box_center[j] -= 0.5*box[i][j];
+	box_center[j] -= 0.5*box[j][j];
+    else
+      for(i=0; (i<DIM); i++)
+	for(j=0; (j<DIM); j++)
+	  box_center[j] -= 0.5*box[i][j];
     for (i=0; (i<8); i++) {
       clear_rvec(corner[i]);
       for (j=0; (j<DIM); j++) {
-	for (k=0; (k<DIM); k++)
-	  corner[i][k] += rect_tri[i][j]*box[j][k];
+	if (boxtype == esbTri) {
+	  for (k=0; (k<DIM); k++)
+	    corner[i][k] += rect_tri[i][j]*box[j][k];
+	}
+	else
+	  corner[i][j] = rect_tri[i][j]*box[j][j];
       }
       rvec_inc(corner[i],box_center);
       m4_op(view->proj,corner[i],x4);
