@@ -243,6 +243,12 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     f=1;
     bDih=TRUE;
     break;
+  case F_DUMMY2FD:
+    f = 1;
+    break;
+  case F_DUMMY2FAD:
+    f = 2;
+    break;
   default:
     bDih=FALSE;
   }
@@ -266,7 +272,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   
   fprintf (out," funct");
   for (j=0; (j<nrfp); j++)
-    fprintf (out," %11c%1d",'c',j);
+    fprintf (out," %12c%1d",'c',j);
   fprintf (out,"\n");
   
   /* print bondtypes */
@@ -276,11 +282,10 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
 	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[j]]));
     else 
       for(j=0; (j<2); j++)
-	fprintf (out,"%5s ",
-		 *(at->atomname[bt->param[i].a[dihp[f][j]]]));
+	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[dihp[f][j]]]));
     fprintf (out,"%5d ",f+1);
     for (j=0; (j<nrfp && (bConsts || (bt->param[i].c[j] != NOTSET))); j++)
-      fprintf (out,"%12e ",bt->param[i].c[j]);
+      fprintf (out,"%13.6e ",bt->param[i].c[j]);
     
     fprintf (out,"\n");
   }
@@ -310,18 +315,28 @@ void print_block (FILE *out, char *szName,
 void print_excl(FILE *out, t_block *excl)
 {
   int     i;
+  bool    have_excl;
   atom_id j;
   
-  fprintf (out,"[ %s ]\n",dir2str(d_exclusions));
-  fprintf (out,"; %4s    %s\n","i","excluded from i");
-  for (i=0; (i < excl->nr); i++) {
-    fprintf (out,"%6d",i+1);
-    for (j=excl->index[i]; (j < excl->index[i+1]); j++)
-      fprintf (out,"%5u",excl->a[j]+1);
+  have_excl=FALSE;
+  if (excl->nr)
+    for (i=0; (i < excl->nr) && !have_excl; i++)
+      if (excl->index[i] != excl->index[i+1])
+	have_excl=TRUE;
+  
+  if (have_excl) {
+    fprintf (out,"[ %s ]\n",dir2str(d_exclusions));
+    fprintf (out,"; %4s    %s\n","i","excluded from i");
+    for (i=0; (i < excl->nr); i++)
+      if (excl->index[i] != excl->index[i+1]) {
+	fprintf (out,"%6d",i+1);
+	for (j=excl->index[i]; (j < excl->index[i+1]); j++)
+	  fprintf (out,"%5u",excl->a[j]+1);
+	fprintf (out,"\n");
+      }
     fprintf (out,"\n");
+    fflush(out);
   }
-  fprintf (out,"\n");
-  fflush(out);
 }
 
 void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs)
@@ -385,22 +400,22 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs)
 void print_bonds(FILE *out,int natoms,directive d,
 		 int ftype,t_params plist[],bool bConsts)
 {
-  t_symtab   dumtab;
-  t_atomtype dumatype;
+  t_symtab   stab;
+  t_atomtype atype;
   int i;
 
-  snew(dumatype.atom,natoms);
-  snew(dumatype.atomname,natoms);
-  open_symtab(&dumtab);
+  snew(atype.atom,natoms);
+  snew(atype.atomname,natoms);
+  open_symtab(&stab);
   for (i=0; (i < natoms); i++) {
     char buf[12];
     sprintf(buf,"%4d",(i+1));
-    dumatype.atomname[i]=put_symtab(&dumtab,buf);
+    atype.atomname[i]=put_symtab(&stab,buf);
   }
-  print_bt(out,d,&dumatype,ftype,plist,bConsts,TRUE);
+  print_bt(out,d,&atype,ftype,plist,bConsts,TRUE);
     
-  done_symtab(&dumtab);
-  sfree(dumatype.atom);
-  sfree(dumatype.atomname);
+  done_symtab(&stab);
+  sfree(atype.atom);
+  sfree(atype.atomname);
 }
 
