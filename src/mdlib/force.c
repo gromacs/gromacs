@@ -292,15 +292,6 @@ void init_forcerec(FILE *log,
     fr->bTab = FALSE;
   fprintf(log,"Table routines are used: %s\n",bool_names[fr->bTab]);
   
-#define MAX_14_DIST 1.0
-  /* Shell to account for the maximum chargegroup radius (2*0.2 nm) *
-   * and diffusion during nstlist steps (0.2 nm)                    */
-#define TAB_EXT 0.6
-  if (fr->bTab)
-    fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
-  else
-    fr->rtab = MAX_14_DIST;
-
   if(fr->bEwald)
       fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
   /* Tables are used for direct ewald sum */
@@ -438,20 +429,29 @@ void init_forcerec(FILE *log,
    * tables. This should be done in tables.c, instead of this
    * ugly hack, but it works for now...
    */
-  
-  if(EEL_LR(fr->eeltype) && fr->bTab) {
-      /* fake the forcerec so make_tables thinks it should
-       * just create the nonshifted version 
+
+#define MAX_14_DIST 1.0
+  /* Shell to account for the maximum chargegroup radius (2*0.2 nm) *
+   * and diffusion during nstlist steps (0.2 nm)                    */
+#define TAB_EXT 0.6
+
+  if (fr->bTab) {
+    if(EEL_LR(fr->eeltype)) {
+      /* generate extra tables for 1-4 interactions only
+       * fake the forcerec so make_tables thinks it should
+       * just create the non shifted version 
        */
       fr->bTab=FALSE;
       fr->rtab=MAX_14_DIST;
       make_tables(fr,MASTER(cr));
       fr->bTab=TRUE;
-      fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
       fr->VFtab14=fr->VFtab;
       fr->VFtab=NULL;
-  }
-/* make tables for ordinary interactions */
+    }
+    fr->rtab = max(fr->rlistlong+TAB_EXT,MAX_14_DIST);
+  } else
+    fr->rtab = MAX_14_DIST;
+  /* make tables for ordinary interactions */
   make_tables(fr,MASTER(cr));
   if(!(EEL_LR(fr->eeltype) && fr->bTab))
       fr->VFtab14=fr->VFtab;
