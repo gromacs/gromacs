@@ -671,9 +671,6 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Reading position restraint coords from %s\n",fn);
   gen_posres(&(msys.plist[F_POSRES]),fn);
   
-  if (msys.plist[F_POSRES].nr > 0)
-    fatal_error(0,"No position restraint file given!\n");
-
   if (bRenum) 
     atype.nr=renum_atype(plist,&sys,atype.nr,ir,bVerbose);
   
