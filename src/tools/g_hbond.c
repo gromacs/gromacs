@@ -49,6 +49,7 @@ static char *SRCID_g_hbond_c = "$Id$";
 #include "matio.h"
 #include "lutab.h"
 #include "string2.h"
+#include "pbc.h"
 #include <math.h>
 
 #define max_hx 7
@@ -208,11 +209,11 @@ void init_grid(bool bBox, matrix box, real rcut,
   if (debug) 
     fprintf(debug,"Will do grid-seach on %dx%dx%d grid\n",
 	    ngrid[XX],ngrid[YY],ngrid[ZZ]);
-  snew(*grid,ngrid[XX]);
-  for (x=0; x<ngrid[XX]; x++) {
-    snew((*grid)[x],ngrid[YY]);
+  snew(*grid,ngrid[ZZ]);
+  for (z=0; z<ngrid[ZZ]; z++) {
+    snew((*grid)[z],ngrid[YY]);
     for (y=0; y<ngrid[YY]; y++)
-      snew((*grid)[x][y],ngrid[ZZ]);
+      snew((*grid)[z][y],ngrid[XX]);
   }
 }
 
@@ -243,12 +244,15 @@ void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
     } else
       invdelta[m]=0;
   }
+  grididx[XX]=0;
+  grididx[YY]=0;
+  grididx[ZZ]=0;
   for(gr=0; gr<grNR; gr++) {
     /* resetting atom counts */
-    for (xi=0; xi<ngrid[XX]; xi++)
+    for (zi=0; zi<ngrid[ZZ]; zi++)
       for (yi=0; yi<ngrid[YY]; yi++)
-	for (zi=0; zi<ngrid[ZZ]; zi++)
-	  grid[xi][yi][zi][gr].nr=0;
+	for (xi=0; xi<ngrid[XX]; xi++)
+	  grid[zi][yi][xi][gr].nr=0;
     if (debug)
       fprintf(debug,"Putting %d %s atoms into grid\n",nr[gr],grpnames[gr]);
     /* put atoms in grid cells */
@@ -257,35 +261,34 @@ void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
       /* if bDoRshell=FALSE then bInShell=TRUE always */
       if ( bDoRshell ) {
 	bInShell=TRUE;
-	for(m=0; (m<DIM) && bInShell; m++) {
-	  dshell[m] = x[a[gr][i]][m] - xshell[m];
-	  if (bBox)
-	    if ( dshell[m] < -hbox[m] ) 
-	      dshell[m] += 2*hbox[m];
+	rvec_sub(x[a[gr][i]],xshell,dshell);
+	if (bBox) 
+	  for(m=DIM-1; m>=0 && bInShell; m--) {
+	    if ( dshell[m] < -hbox[m] )
+	      rvec_inc(dshell,box[m]);
 	    else if ( dshell[m] >= hbox[m] ) 
 	      dshell[m] -= 2*hbox[m];
-	  /* if we're outside the cube, we're outside the sphere also! */
-	  if ( (dshell[m]>rshell) || (-dshell[m]>rshell) )
-	    bInShell=FALSE;
-	}
+	    /* if we're outside the cube, we're outside the sphere also! */
+	    if ( (dshell[m]>rshell) || (-dshell[m]>rshell) )
+	      bInShell=FALSE;
+	  }
 	/* if we're inside the cube, check if we're inside the sphere */
 	if (bInShell)
 	  bInShell = norm2(dshell) < rshell2;
       }
       if ( bInShell ) {
-	for(m=0; m<DIM; m++) {
-	  /* put atom in the box */
-	  if (bBox) {
+	if (bBox) 
+	  for(m=DIM-1; m>=0; m--) {
+	    /* put atom in the box */
 	    while( x[a[gr][i]][m] < 0 ) 
-	      x[a[gr][i]][m] += box[m][m];
+	      rvec_inc(x[a[gr][i]],box[m]);
 	    while( x[a[gr][i]][m] >= box[m][m] ) 
-	      x[a[gr][i]][m] -= box[m][m];
+	      rvec_dec(x[a[gr][i]],box[m]);
+	    /* get grid index of atom */
+	    grididx[m]=x[a[gr][i]][m]*invdelta[m];
 	  }
-	  /* get grid index of atom */
-	  grididx[m]=x[a[gr][i]][m]*invdelta[m];
-	}
 	/* add atom to grid cell */
-	newgrid=&(grid[grididx[XX]][grididx[YY]][grididx[ZZ]][gr]);
+	newgrid=&(grid[grididx[ZZ]][grididx[YY]][grididx[XX]][gr]);
 	if (newgrid->nr >= newgrid->maxnr) {
 	  newgrid->maxnr+=10;
 	  srenew(newgrid->atoms, newgrid->maxnr);
@@ -303,23 +306,34 @@ void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
   
   for(gr=0; gr<grNR; gr++) {
     danr[gr]=0;
-    for (xi=0; xi<ngrid[XX]; xi++)
+    for (zi=0; zi<ngrid[ZZ]; zi++)
       for (yi=0; yi<ngrid[YY]; yi++)
-	for (zi=0; zi<ngrid[ZZ]; zi++)
-	  danr[gr] += grid[xi][yi][zi][gr].nr;
+	for (xi=0; xi<ngrid[XX]; xi++)
+	  danr[gr] += grid[zi][yi][xi][gr].nr;
   }
 }
 
-#define B(n,x)((n!=1)?(x-1):x)
-#define E(n,x)((n!=1)?(x+1):x)
+/* The grid loop.
+ * Without a box, the grid is 1x1x1, so all loops are 1 long.
+ * With a rectangular box (bTric==FALSE) all loops are 3 long.
+ * With a triclinic box all loops are 3 long, except when a cell is
+ * located next to one of the box edges which is not parallel to the
+ * x/y-plane, in that case all cells in a line or layer are searched.
+ * This could be implemented slightly more efficient, but the code
+ * would get much more complicated.
+ */
+#define B(n,x,bTric,bEdge) ((n==1) ? x : bTric&&(bEdge) ? 0   : (x-1))
+#define E(n,x,bTric,bEdge) ((n==1) ? x : bTric&&(bEdge) ? n-1 : (x+1))
 #define GRIDMOD(j,n) (j+n)%(n)
-#define LOOPGRIDINNER(x,y,z,xx,yy,zz,xo,yo,zo,n)\
-     for(xx=B(n[XX],xo); xx<=E(n[XX],xo); xx++) {\
-       x=GRIDMOD(xx,n[XX]);\
-       for(yy=B(n[YY],yo); yy<=E(n[YY],yo); yy++) {\
+#define LOOPGRIDINNER(x,y,z,xx,yy,zz,xo,yo,zo,n,bTric)\
+     for(zz=B(n[ZZ],zo,bTric,FALSE); zz<=E(n[ZZ],zo,bTric,FALSE); zz++) {\
+       z=GRIDMOD(zz,n[ZZ]);\
+       for(yy=B(n[YY],yo,bTric,z==0||z==n[ZZ]-1); \
+	  yy<=E(n[YY],yo,bTric,z==0||z==n[ZZ]-1); yy++) {\
 	 y=GRIDMOD(yy,n[YY]);\
-	 for(zz=B(n[ZZ],zo); zz<=E(n[ZZ],zo); zz++) {\
-	   z=GRIDMOD(zz,n[ZZ]);
+	 for(xx=B(n[XX],xo,bTric,y==0||y==n[YY]-1||z==0||z==n[ZZ]-1); \
+	     xx<=E(n[XX],xo,bTric,y==0||y==n[YY]-1||z==0||z==n[ZZ]-1); xx++) {\
+	   x=GRIDMOD(xx,n[XX]);
 #define ENDLOOPGRIDINNER\
 	 }\
        }\
@@ -338,13 +352,13 @@ void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
       for (y=0; y<ngrid[YY]; y++) {
 	for (x=0; x<ngrid[XX]; x++) {
 	  fprintf(fp,"%3d",grid[x][y][z][gr].nr);
-	  sum[gr]+=grid[x][y][z][gr].nr;
+	  sum[gr]+=grid[z][y][x][gr].nr;
 	}
 	fprintf(fp," | ");
 	if ( (z+1) < ngrid[ZZ] )
 	  for (x=0; x<ngrid[XX]; x++) {
-	    fprintf(fp,"%3d",grid[x][y][z+1][gr].nr);
-	    sum[gr]+=grid[x][y][z+1][gr].nr;
+	    fprintf(fp,"%3d",grid[z+1][y][x][gr].nr);
+	    sum[gr]+=grid[z+1][y][x][gr].nr;
 	  }
 	fprintf(fp,"\n");
       }
@@ -361,14 +375,14 @@ void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
  */
 void free_grid(ivec ngrid, t_gridcell ****grid)
 {
-  int x,y,z,i;
+  int y,z;
   t_gridcell ***g = *grid;
   
-  for (x=0; x<ngrid[XX]; x++) {
+  for (z=0; z<ngrid[ZZ]; z++) {
     for (y=0; y<ngrid[YY]; y++) {
-      sfree(g[x][y]);
+      sfree(g[z][y]);
     }
-    sfree(g[x]);
+    sfree(g[z]);
   }
   sfree(g);
   g=NULL;
@@ -376,19 +390,19 @@ void free_grid(ivec ngrid, t_gridcell ****grid)
 
 bool is_hbond(atom_id d, atom_id h, atom_id a, 
 	      real rcut, real ccut, 
-	      rvec x[], bool bBox, rvec hbox, real *d_ha, real *ang)
+	      rvec x[], bool bBox, matrix box,rvec hbox, real *d_ha, real *ang)
 {
   rvec r_dh,r_ha;
   real d_ha2,ca;
   int m;
   
-  for(m=0; m<DIM; m++) {
-    r_ha[m] = x[a][m] - x[h][m];
+  rvec_sub(x[a],x[h],r_ha);
+  for(m=DIM-1; m>=0; m--) {
     if (bBox) {
-      if ( r_ha[m] < -hbox[m] ) 
-	r_ha[m] += 2*hbox[m];
+      if ( r_ha[m] < -hbox[m] )
+	rvec_inc(r_ha,box[m]);
       else if ( r_ha[m] >= hbox[m] )
-	r_ha[m] -= 2*hbox[m];
+	rvec_dec(r_ha,box[m]);
     }
     if ( (r_ha[m]>rcut) || (-r_ha[m]>rcut) )
       return FALSE;
@@ -397,11 +411,11 @@ bool is_hbond(atom_id d, atom_id h, atom_id a,
   if ( d_ha2 <= rcut*rcut ) {
     rvec_sub(x[h],x[d],r_dh);
     if (bBox)
-      for(m=0; m<DIM; m++) {
+      for(m=DIM-1; m>=0; m--) {
 	if ( r_dh[m] < -hbox[m] )
-	  r_dh[m] += 2*hbox[m];
+	  rvec_inc(r_dh,box[m]);
 	else if ( r_dh[m] >= hbox[m] )
-	  r_dh[m] -= 2*hbox[m];
+	  rvec_dec(r_dh,box[m]);
       }
     ca = cos_angle(r_dh,r_ha);
     /* if angle is smaller, cos is larger */
@@ -519,19 +533,19 @@ int main(int argc,char *argv[])
   /* options */
   t_pargs pa [] = {
     { "-ins",  FALSE, etBOOL, {&bInsert},
-      "analyze solvent insertion" },
+      "Analyze solvent insertion" },
     { "-a",    FALSE, etREAL, {&acut},
-      "cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
+      "Cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
     { "-r",    FALSE, etREAL, {&rcut},
-      "cutoff radius (nm, Hydrogen - Acceptor)" },
+      "Cutoff radius (nm, Hydrogen - Acceptor)" },
     { "-abin", FALSE, etREAL, {&abin},
-      "binwidth angle distribution (degrees)" },
+      "Binwidth angle distribution (degrees)" },
     { "-rbin", FALSE, etREAL, {&rbin},
-      "binwidth distance distribution (nm)" },
+      "Binwidth distance distribution (nm)" },
     { "-nitacc",FALSE,etBOOL, {&bNitAcc},
-      "regard nitrogen atoms as acceptors" },
+      "Regard nitrogen atoms as acceptors" },
     { "-shell", FALSE,etREAL, {&rshell},
-      "only calculate hydrogen bonds within shell around one particle" }
+      "Only calculate hydrogen bonds within shell around one particle" }
   };
 
   t_filenm fnm[] = {
@@ -581,7 +595,7 @@ int main(int argc,char *argv[])
   int     xi,yi,zi,ai;
   int     xj,yj,zj,aj,xjj,yjj,zjj;
   int     xk,yk,zk,ak,xkk,ykk,zkk;
-  bool    bSelected,bStop,bTwo,bHBMap,new,was,bBox,bDAnr;
+  bool    bSelected,bStop,bTwo,bHBMap,new,was,bBox,bTric,bDAnr;
   bool    *insert=NULL;
   int     nr_a[grNR];
   atom_id *a[grNR];
@@ -775,6 +789,7 @@ int main(int argc,char *argv[])
   if (bInsert)
     snew(insert,natoms);
   do {
+    bTric = bBox && TRICLINIC(box);
     build_grid(nr_a,a, x,x[shatom], bBox,box,hbox, rcut, rshell, ngrid,grid);
     if (debug)
       dump_grid(debug, ngrid, grid);
@@ -806,7 +821,7 @@ int main(int argc,char *argv[])
 	for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	  /* loop over groups gr0 (always) and gr1 (if necessary) */
 	  for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC) {
-	    icell=&grid[xi][yi][zi][grp+grH];
+	    icell=&grid[zi][yi][xi][grp+grH];
 	    /* loop over all hydrogen atoms from group (grp) 
 	     * in this gridcell (icell) 
 	     */
@@ -814,8 +829,8 @@ int main(int argc,char *argv[])
 	      i=icell->atoms[ai];
 	      /* loop over all adjacent gridcells (xj,yj,zj) */
 	      /* This is a macro!!! */
-	      LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid) {
-		jcell=&grid[xj][yj][zj][OGRP+grA];
+	      LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid,bTric) {
+		jcell=&grid[zj][yj][xj][OGRP+grA];
 		/* loop over acceptor atoms from other group (OGRP) 
 		 * in this adjacent gridcell (jcell) 
 		 */
@@ -828,7 +843,7 @@ int main(int argc,char *argv[])
 		      if (j == donors[grp][i].hb[k].a)
 			idx=k;
 		    if ( is_hbond(a[ grp+grD][i],a[ grp+grH][i],a[OGRP+grA][j],
-				  rcut,ccut,x,bBox,hbox,&dist,&ang) ) {
+				  rcut,ccut,x,bBox,box,hbox,&dist,&ang) ) {
 		      /* add to index if not already there */
 		      if (idx==NOTSET) {
 			if (donors[grp][i].nrhb>=donors[grp][i].maxnr) {
@@ -879,8 +894,8 @@ int main(int argc,char *argv[])
 		      ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
 		      
 		      /* loop over gridcells adjacent to i (xk,yk,zk) */
-		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid) {
-			kcell=&grid[xk][yk][zk][grIA];
+		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid,bTric){
+			kcell=&grid[zk][yk][xk][grIA];
 			/* loop over acceptor atoms from ins group 
 			   in this adjacent gridcell (kcell) */
 			for (ak=0; ak<kcell->nr; ak++) {
@@ -888,7 +903,7 @@ int main(int argc,char *argv[])
 			  if (is_hbond(a[grp+grD][i],
 				       a[grp+grH][i],
 				       a[   grIA][k],
-				       rcut,ccut,x,bBox,hbox,&dist,&ang))
+				       rcut,ccut,x,bBox,box,hbox,&dist,&ang))
 			    if (dist<ins_d_dist) {
 			      ins_d=TRUE;
 			      ins_d_dist=dist;
@@ -899,8 +914,8 @@ int main(int argc,char *argv[])
 		      }
 		      ENDLOOPGRIDINNER;
 		      /* loop over gridcells adjacent to j (xk,yk,zk) */
-		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid) {
-			kcell=&grid[xk][yk][zk][grIH];
+		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid,bTric){
+			kcell=&grid[zk][yk][xk][grIH];
 			/* loop over hydrogen atoms from ins group 
 			   in this adjacent gridcell (kcell) */
 			for (ak=0; ak<kcell->nr; ak++) {
@@ -908,7 +923,7 @@ int main(int argc,char *argv[])
 			  if (is_hbond(a[    grID][k],
 				       a[    grIH][k],
 				       a[OGRP+grA][j],
-				       rcut,ccut,x,bBox,hbox,&dist,&ang))
+				       rcut,ccut,x,bBox,box,hbox,&dist,&ang))
 			    if (dist<ins_a_dist) {
 			      ins_a=TRUE;
 			      ins_a_dist=dist;
