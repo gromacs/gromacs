@@ -336,7 +336,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     if (*type == 'w' || *type == 'W') {
       type = "w+b";
       lmode = XDR_ENCODE;
-    } else if (*type == 'a' || *type == "A") {
+    } else if (*type == 'a' || *type == 'A') {
       type = "a+b";
       lmode = XDR_ENCODE;
     } else {
