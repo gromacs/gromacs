@@ -407,7 +407,7 @@ int main(int argc,char *argv[])
   int        in,out=0;
   t_enxframe *fr,*fro;
   t_energy   *lastee,*startee;
-  int        laststep,startstep,noutfr;
+  int        laststep,startstep,startstep_file=0,noutfr;
   int        nre,nremax,this_nre,nfile,i,j,kkk,nset,*set=NULL;
   real       t=0; 
   char       **fnms;
@@ -507,6 +507,7 @@ int main(int argc,char *argv[])
     while((t<(settime[i+1]-GMX_REAL_EPS)) &&
 	  do_enx(in,fr)) {
       if(bNewFile) {
+	startstep_file = fr->step;
 	tadjust = settime[i] - fr->t;	  
 	if(cont_type[i+1]==TIME_LAST) {
 	  settime[i+1]   = readtime[i+1]-readtime[i]+settime[i];
@@ -514,6 +515,7 @@ int main(int argc,char *argv[])
 	}
 	bNewFile = FALSE;
       }
+      fro->step = laststep + fr->step - startstep_file;
       t = tadjust + fr->t;
 
       bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
@@ -529,13 +531,12 @@ int main(int argc,char *argv[])
       if (t >= begin-GMX_REAL_EPS) {
 	if (bFirst) {
 	  bFirst = FALSE;
+	  startstep = fr->step;	
 	  if /*(startee != NULL)*/ (begin > 0)
 	    copy_ee(fr->ener,startee,nre);
-	  startstep = fr->step;		
 	}
 	update_ee(lastee,laststep,startee,startstep,
-		  fr->ener,fr->step,fro->ener,nre);
-	fro->step = laststep + fr->step - startstep;
+		  fr->ener,fro->step,fro->ener,nre);
       }	  
       
       /* determine if we should write it */
@@ -569,14 +570,14 @@ int main(int argc,char *argv[])
     }
     /* copy statistics to old */
     if (lastee != NULL) {
-	update_last_ee(lastee,laststep,fr->ener,fr->step,nre);
-	laststep += fr->step;
+	update_last_ee(lastee,laststep,fr->ener,fro->step,nre);
+	laststep = fro->step;
 	/* remove the last frame from statistics since gromacs2.0 
 	 * repeats it in the next file 
 	 */
 	remove_last_eeframe(lastee,laststep,fr->ener,nre);
 	/* the old part now has (laststep) values, and the new (step+1) */
-	printf("laststep=%d step=%d\n",laststep,fr->step);
+	printf("laststep=%d step=%d\n",laststep,fro->step);
     }
     
     /* set the next time from the last in previous file */
