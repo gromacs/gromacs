@@ -204,6 +204,45 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
       }
 }
 
+void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
+	       rvec pos[],rvec cg_cm[])
+{
+  int  icg,ai,k,k0,k1,d;
+  rvec cg;
+  real nrcg,inv_ncg;
+  atom_id *cga,*cgindex;
+  
+#ifdef DEBUG
+  fprintf(log,"Calculating centre of geometry for charge groups %d to %d\n",
+	  cg0,cg1);
+#endif
+  cga     = cgs->a;
+  cgindex = cgs->index;
+  
+  /* Compute the center of geometry for all charge groups */
+  for(icg=cg0; (icg<cg1); icg++) {
+    k0      = cgindex[icg];
+    k1      = cgindex[icg+1];
+    nrcg    = k1-k0;
+    if (nrcg == 1) {
+      ai = cga[k0];
+      copy_rvec(pos[ai],cg_cm[icg]);
+    }
+    else {
+      inv_ncg = 1.0/nrcg;
+      
+      clear_rvec(cg);
+      for(k=k0; (k<k1); k++)  {
+	ai     = cga[k];
+	for(d=0; (d<DIM); d++)
+	  cg[d] += pos[ai][d];
+      }
+      for(d=0; (d<DIM); d++)
+	cg_cm[icg][d] = inv_ncg*cg[d];
+    }
+  }
+}
+
 void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 			      matrix box,rvec box_size,t_block *cgs,
 			      rvec pos[],rvec shift_vec[],rvec cg_cm[])

@@ -95,10 +95,16 @@ extern void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],
  * that is, every second entry, EXCEPT the central box.
  */
 
-extern void 
-  put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
-			    matrix box,rvec box_size,t_block *cgs,
-			    rvec pos[],rvec shift_vec[],rvec cg_cm[]);
+extern void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
+		      rvec pos[],rvec cg_cm[]);
+/* Routine to compute centers of geometry of charge groups. No periodicity
+ * is used.
+ */
+   
+extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
+				      matrix box,rvec box_size,t_block *cgs,
+				      rvec pos[],rvec shift_vec[],
+				      rvec cg_cm[]);
 			    
 /* This routine puts charge groups in the periodic box, keeping them
  * together. When bTruncOct==TRUE a truncated octahedron
