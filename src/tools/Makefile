@@ -200,7 +200,7 @@ mkice:		mkice.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rdf:		g_rdf.o 	do_rdf.o	rdfn.o	rdfang.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+		$(CCLD) -o $@ $^ $(SYSLIBS)
 
 g_msd:		g_msd.o	lsq.o
 		$(CCLD) -o $@ $^ $(SYSLIBS)
