@@ -551,6 +551,9 @@ int calc_naaj(int icg,int cgtot)
 static real calc_image_tric(rvec xi,rvec xj,matrix box,
 			    rvec b_inv,int *shift)
 {
+  /* This code assumes that the cut-off is smaller than
+   * a half times the smallest diagonal element of the box.
+   */
   const real h15=1.5;
   real dx,dy,dz;
   real r2;
