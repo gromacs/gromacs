@@ -67,20 +67,18 @@ force field). All files for one force field have names beginning with
 
 In {\gromacs} there are 5 types of \normindex{particle}s, see
 \tabref{ptype}. Only regular atoms and dummy particles are used
-in {\gromacs}, nuclei, shells and bond shells are necessary for
-polarizable force fields, which we don't yet have.
+in {\gromacs}; shells are necessary for
+polarizable models like the Shell-Water models~\cite{Maaren2001a}.
 
 \begin{table}
 \centerline{
 \begin{tabular}{|l|c|}
 \dline
-Particle        & Symbol        \\
+Particle        		& Symbol        \\
 \hline
 \seeindex{atom}{particle}s      & A   \\
-\seeindex{nucleus}{particle}s   & N   \\
 \seeindex{shell}{particle}s     & S   \\
-\seeindex{bond shell}{particle}s& B   \\
-\seeindex{dummy}{particle}s     & D   \\
+\seeindex{dummie}{particle}s	& D   \\
 \dline
 \end{tabular}
 }
@@ -153,12 +151,12 @@ force field~\cite{biomos}:
 \begin{itemize}
 \item F was taken from ref.~\cite{Buuren93a}, 
 \item CP2 and CP3 from ref.~\cite{Buuren93b} and references cited therein, 
-\item CR5, CR6 and HCR from ref.~\cite{King93}
+\item CR5, CR6 and HCR from ref.~\cite{Spoel96c}
 \item OWT3 from ref.~\cite{Jorgensen83}
 \item SD, OD and CD from ref.~\cite{Liu95}
 \end{itemize}
-{\bf Therefore, if you use the {\gromacs} force field as it is, make
-sure you use the references in your publications as mentioned above.}
+{\bf Therefore, if you use the {\gromacs} force field as it is, be
+sure to include these references in your publications.}
 
 {\bf Note:} {\gromacs} makes use of the atom types as a name, {\em
 not} as a number (as {\eg} in {\gromos}).
@@ -333,7 +331,7 @@ $C_1$ & $=$ & $ 12.16$ & $C_3$ & $=$ & $~-3.06$ & $C_5$ & $=$ & $-31.5 $ \\
 \end{tabular}
 \end{center}
 
-({\bf Note:} The use of this potential implies exclusions of LJ-interactions
+({\bf Note:} The use of this potential implies the exclusion of LJ interactions
 between the first and the last atom of the dihedral, and $\psi$ is defined
 according to the '\swapindex{polymer}{convention}' ($\psi_{trans}=0$)).
 
@@ -446,7 +444,7 @@ Constraints are defined in the {\tt [~constraints~]} section.
 The format is two atom numbers followed by the function type,
 which can be 1 or 2 and the constraint distance.
 The only difference between the two types is that type 1 is used
-for generating exclusions and while type 2 is not (see \ssecref{excl}).
+for generating exclusions and type 2 is not (see \ssecref{excl}).
 The distances are constrained using the LINCS or the SHAKE algorithm,
 which can be selected in the {\tt *.mdp} file.
 Both types of constraints can be perturbed in free-energy calculations
@@ -479,9 +477,9 @@ SOL             1
 2       1       3
 3       1       2
 \end{verbatim}
-The section {\tt [ settles ]} defines the first atom of the watery molecule,
-the settle funct is always one, and the distance between O and H, and distance
-between both H atoms must be given. Note that the algorithm can also be used
+The section {\tt [ settles ]} defines the first atom of the watery molecule.
+The settle funct is always one, and the distance between O-H and H-H distances
+must be given. Note that the algorithm can also be used
 for TIP3P and TIP4P~\cite{Jorgensen83}.
 TIP3P just has another geometry. TIP4P has a dummy atom, but since 
 that is generated it does not need to be shaken (nor stirred).
@@ -502,7 +500,7 @@ However, in the {\tt ff???.rtp} file the user can define a new
 \normindex{building block} or molecule: see for example 2,2,2-trifluoroethanol
 (TFE) or {\em n}-decane (C10). But when defining new molecules
 (non-protein) it is preferable to create a {\tt *.itp}
-file. This will be discussed in a next section (section~\ssecref{molitp}).
+file. This will be discussed in section~\ssecref{molitp}.
 
 The file {\tt ff???.rtp} is only used by {\tt pdb2gmx}.
 As mentioned before, the only extra information this
@@ -513,7 +511,7 @@ file). Some proteins contain residues that are not standard, but are
 listed in the coordinate file. You have to construct a building block
 for this ``strange'' residue, otherwise you will not obtain a
 {\tt *.top} file. This also holds for molecules in the
-coordinate file like phosphate or sulphate ions.
+coordinate file such as phosphate or sulphate ions.
 The residue database is constructed in the following way:
 {\small\begin{verbatim}
 [ bondedtypes ]  ; mandatory
@@ -580,7 +578,7 @@ files. These strings are copied to the topology file and can be
 replaced by force field parameters by the C-preprocessor in {\tt
 grompp} using {\tt \#define} statements.
 
-{\tt pdb2gmx} automatically generates all angles, this means that for the
+{\tt pdb2gmx} automatically generates all angles. This means that for the
 {\gromacs} force field
 the {\tt [~angles~]} field is only useful for overriding {\tt .itp}
 parameters. For the {\gromosv{96}} force field the interaction number
@@ -592,13 +590,13 @@ no other dihedrals will be generated for the bonds corresponding to the
 specified  dihedrals. It is possible to put more than one dihedral on a
 rotatable bond. 
 
-{\tt pdb2gmx} sets the number exclusions to 3, which
+{\tt pdb2gmx} sets the number of exclusions to 3, which
 means that interactions between atoms connected by at most 3 bonds are
 excluded. Pair interactions are generated for all pairs of atoms which are
-seperated by 3 bonds (except pairs of hydrogens).
+separated by 3 bonds (except pairs of hydrogens).
 When more interactions need to be excluded, or some pair interactions should
 not be generated, an {\tt [~exclusions~]} field can be added, followed by
-pairs of atom names on seperate lines. All non-bonded and pair interactions
+pairs of atom names on separate lines. All non-bonded and pair interactions
 between these atoms will be excluded.
 
 \subsection{Hydrogen database}
@@ -637,35 +635,41 @@ we see:
 \begin{enumerate}
 \item[1]{\em one planar hydrogen, {\eg} rings or peptide bond}\\
 one hydrogen atom (n) is generated, lying in the plane of atoms
-(i,j,k) on the line bisecting angle (j-i-k) at a distance of 0.1 nm
-from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90
-degrees
+(i,j,k) on the plane bisecting angle (j-i-k) at a distance of 0.1 nm
+from atom i, such that the angles (n-i-j) and (n-i-k) are $>$ 90$^{\rm o}$
+
 \item[2]{\em one single hydrogen, {\eg} hydroxyl}\\
 one hydrogen atom (n) is generated at a distance of 0.1 nm from atom
 i, such that angle (n-i-j)=109.5 degrees and dihedral (n-i-j-k)=trans
+
 \item[3]{\em two planar hydrogens, {\eg} -NH{$_2$}}\\
 two hydrogens (n1,n2) are generated at a distance of 0.1 nm from atom
 i, such that angle (n1-i-j)=(n2-i-j)=120 degrees and dihedral
 (n1-i-j-k)=cis and (n2-i-j-k)=trans, such that names are according to
 IUPAC standards~\cite{iupac70}
+
 \item[4]{\em two or three tetrahedral hydrogens, {\eg} -CH{$_3$}}\\
 three (n1,n2,n3) or two (n1,n2) hydrogens are generated at a distance
 of 0.1 nm from atom i, such that angle
-(n1-i-j)=(n2-i-j)=(n3-i-j)=109.5, dihedral (n1-i-j-k)=trans,
+(n1-i-j)=(n2-i-j)=(n3-i-j)=109.47$^{\rm o}$, dihedral (n1-i-j-k)=trans,
 (n2-i-j-k)=trans+120 and (n3-i-j-k)=trans+240 degrees
+
 \item[5]{\em one tetrahedral hydrogen, {\eg} C{$_3$}CH}\\
-one hydrogen atom (n1) is generated at a distance of 0.1 nm from atom
+one hydrogen atom (n$\prime$) is generated at a distance of 0.1 nm from atom
 i in tetrahedral conformation such that angle
-(n1-i-j)=(n1-i-k)=(n1-i-l)=109.5 degrees
+(n$\prime$-i-j)=(n$\prime$-i-k)=(n$\prime$-i-l)=109.47$^{\rm o}$
+
 \item[6]{\em two tetrahedral hydrogens, {\eg} C-CH{$_2$}-C}\\
 two hydrogen atoms (n1,n2) are generated at a distance of 0.1 nm from
 atom i in tetrahedral conformation on the plane bissecting angle i-j-k
-with angle (n1-i-n2)=(n1-i-j)=(n1-i-k)=109.5
+with angle (n-i-n2)=(n1-i-j)=(n1-i-k)=109.5
+
 \item[7]{\em two water hydrogens}\\
 two hydrogens are generated around atom i according to
 SPC~\cite{Berendsen81} water geometry. The symmetry axis will
 alternate between three coordinate axes in both directions
 \end{enumerate}
+
 \item
 Three or four control atoms (i,j,k,l), where the first always is the
 atom to which the H atoms are connected. The other two or three depend
@@ -1001,7 +1005,7 @@ Urea         3
  
 [ position_restraints ]
 ; you wouldn't normally use this for a molecule like Urea,
-; but it's here for didactical purposes
+; but we include it here for didactic purposes
 ; ai   funct    fc
    1     1     1000    1000    1000 ; Restrain to a point
    2     1     1000       0    1000 ; Restrain to a line (Y-axis)
@@ -1096,7 +1100,7 @@ molecules. The molecule type SOL is defined in the {\tt spc.itp} file.
 
 \subsection{Molecule.itp file}
 \label{subsec:molitp}
-If you construct a topology file you will use more often (like a water
+If you construct a topology file you will use frequently (like a water
 molecule, {\tt spc.itp}) it is better to make a {\tt molecule.itp}
 file, which only lists the information of the molecule: 
 {\small\begin{verbatim}
@@ -1371,7 +1375,7 @@ want to read such a file in your own program without using the
 
 {\bf C-format:} \verb'"%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"'
 
-Or to be more precise, with title etc., it looks like this:
+Or to be more precise, with title {\em etc.} it looks like this:
 \begin{verbatim}
   "%s\n", Title
   "%5d\n", natoms

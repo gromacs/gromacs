@@ -27,7 +27,8 @@
 % Giving Russians Opium May Alter Current Situation
 %
 
-\section{\swapindex{Tabulated}{function}s}
+\chapter{\swapindex{Tabulated}{function}s}
+\section{Cubic splines for potentials}
 In some of the inner loops of {\gromacs} lookup tables are used 
 for computation of potential and forces. 
 The tables are interpolated using a cubic
@@ -81,11 +82,58 @@ The algorithm goes a little something like this:
 
 The tables are stored internally as y$_i$, F$_i$, G$_i$, H$_i$ in the order
 coulomb, dispersion, repulsion.
-In total there are 12 values in each table entry.
-Note that table lookup is significantly {\em slower} than computation
-of the most simple Lennard-Jones and Coulomb interaction. However, it
-is much faster than the shifted coulomb function used in
-conjunction with the PPPM method. Finally it is much easier to modify
-a table for the potential (and get a graphical representation of it)
-than to modify the inner loops of the MD program.
+In total there are 12 values in each table entry. However, as evident from 
+\eqnref{spline}, only two values ($y$ and $y''$) are necessary to determine each of the repulsion,
+dispersion and Coulomb potentials; from these $y_i$, $F_i$, $G_i$ and
+$H_i$ can be determined.  Hence the {\gromacs} user only has to
+specify $y$ and $y''$, for each of these, leading to a total of six
+functions to be specified in the input to the {\tt mdrun} program.
+
+Note that table lookup is significantly {\em
+slower} than computation of the most simple Lennard-Jones and Coulomb
+interaction. However, it is much faster than the shifted coulomb
+function used in conjunction with the PPPM method. Finally it is much
+easier to modify a table for the potential (and get a graphical
+representation of it) than to modify the inner loops of the MD
+program.
+
+\section{User specified potential functions}
+You can also use your own \swapindex{potential}{function}s 
+without editing the {\gromacs} code. 
+The potential function should be according to the following equation
+\beq
+V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 g(r_{ij}) + C_{12} h(r_{ij})
+\eeq
+with f,g,h user defined functions. Note that if g(r) represents a
+normal dispersion interaction, g(r) should be $<$ 0. C$_6$, C$_{12}$
+and the charges are read from the topology. Also note that combination
+rules are only supported for Lennard Jones and Buckingham, and that
+your tables should match the parameters in the binary topology.
+
+When you add the following lines in your {\tt .mdp} file:
+\begin{verbatim}
+rlist           = 1.0
+coulombtype     = User
+rcoulomb        = 1.0
+vdwtype         = User
+rvdw            = 1.0
+\end{verbatim}
+the MD program will read a single file (the name can be changed with
+option {\tt -table}) with seven columns of table lookup data in the
+order: x, f(x), f''(x), g(x), g''(x), h(x), h''(x).  The x should run
+from 0 to r$_c$+0.5, with a spacing of 0.002 nm when you run in single
+precision, or 0.0005 when you run in double precision.  In this
+context r$_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
+{\tt rcoulomb} (see above). These variables need not be the same (and
+need not be 1.0 either).  Some functions used for potentials contain a
+singularity at x = 0, but since atoms are normally not closer to each
+other than 0.1 nm, the function value at x = 0 is not important and
+the tables can be started at e.g. 0.02 nm.  Finally, it is also
+possible to combine a standard Coulomb with a modified LJ potential
+(or vice versa). One then specifies e.g. coulombtype = Cut-off or
+coulombtype = PME, combined with vdwtype = User.  The table file must
+always contain the 7 columns however, and meaningful data (i.e. not
+zeroes) must be entered in all columns.  A number of pre-built table
+files can be found in the GMXLIB directory, for 6-8, 6-9, 6-10, 6-11, 6-12
+Lennard Jones potentials combined with a normal Coulomb.
 

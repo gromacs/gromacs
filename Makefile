@@ -19,18 +19,18 @@ PRFN    =       prfn
 COPYRGT	=	copyrgt
 OPTIONS =       options
 
-TEXFS = algorithms	analyse		averages			\
-	defunits	files		forcefield			\
-	implement	install		intro		lr-corr		\
-	macros		mdp_opt		\
-	proglist	progman		programs	special		\
-	sqrt		tables		topology	\
-	virial
+TEXFS = algorithms	analyse		averages	\
+	defunits	files		forcefield	\
+	implement	install		intro		\
+	lr-corr		macros		mdp_opt		\
+	proglist	progman		programs	\
+	special		tables		topology	
 
-AUXFS = algorithms	analyse		averages	defunits	\
-	forcefield	implement	install		intro		\
-	lr-corr		progman		programs	special		\
-	topology	
+AUXFS = algorithms	analyse		averages	\
+	defunits	forcefield	implement	\
+	install		intro		lr-corr		\
+	progman		programs	special		\
+	tables		topology	
 
 AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)

@@ -209,7 +209,7 @@ part of the reference group (see above).
 With dynamic reference groups, the cylinder can be smoothly switched
 so that atoms that fall between {\tt r} and {\tt rc} are weighted
 linearly from 1 to 0 going from {\tt r} to {\tt rc}. As reasonable
-initial values we suggest {\tt r = 1.0} and {\tt rc = 1.5} but this
+initial values we suggest {\tt r = 1.0} and {\tt rc = 1.5}, but this
 will depend strongly on the exact system of interest.
 
 \item[\tt update                   = 1]\mbox{}\\
@@ -313,7 +313,7 @@ period 13~fs the next shortest periods are around 20~fs, which will
 allow a maximum time step of about 4~fs
 
 Removing the bond-angle degrees of freedom from hydrogen atoms can
-best be done by defining them as \swapindex{dummy}{atom}s in stead of
+best be done by defining them as \swapindex{dummy}{atom}s instead of
 normal atoms. Where a normal atoms is connected to the molecule with
 bonds, angles and dihedrals, a dummy atom's position is calculated
 from the position of three nearby heavy atoms in a predefined manner
@@ -381,13 +381,13 @@ hydrogen atom(s) should be preserved. Care should be taken that no
 unwanted correlations are introduced by the construction of dummy
 atoms, {\eg} bond-angle vibration between the constructing atoms could
 translate into hydrogen bond-length vibration. Additionally, since
-dummy atoms are by definition mass-less, in order to preserve total
+dummy atoms are by definition massless, in order to preserve total
 system mass, the mass of each hydrogen atom that is treated as dummy
 atom should be added to the bonded heavy atom.
 
 Taking into account these considerations, the hydrogen atoms in a
 protein naturally fall into several categories, each requiring a
-different approach, see also \figref{dumhydro}:
+different approach (see also \figref{dumhydro}).
 
 \begin{itemize}
 
@@ -403,7 +403,7 @@ as a dummy atom.
 \item{\em single amine or amide ({\amines}) and aromatic hydrogens
 ({\sf -CH-}):\/} The position of these hydrogens cannot be constructed
 from a linear combination of bond vectors, because of the flexibility
-of the angle between the heavy atoms. In stead, the hydrogen atom is
+of the angle between the heavy atoms. Instead, the hydrogen atom is
 positioned at a fixed distance from the bonded heavy atom on a line
 going through the bonded heavy atom and a point on the line through
 both second bonded atoms, see \figref{dumhydro}B.
@@ -411,7 +411,7 @@ both second bonded atoms, see \figref{dumhydro}B.
 \item{\em planar amine ({\amine}) hydrogens:\/} The method used for
 the single amide hydrogen is not well suited for planar amine groups,
 because no suitable two heavy atoms can be found to define the
-direction of the hydrogen atoms. In stead, the hydrogen is constructed
+direction of the hydrogen atoms. Instead, the hydrogen is constructed
 at a fixed distance from the nitrogen atom, with a fixed angle to the
 carbon atom, in the plane defined by one of the other heavy atoms, see
 \figref{dumhydro}C.
@@ -449,7 +449,7 @@ tryptophane; {\sf D}: histidine.}
 \subsection{Out-of-plane vibrations in aromatic groups}
 \label{sec:dummyaro}
 The planar arrangements in the side chains of the aromatic residues
-lends itself perfectly for a dummy-atom construction, giving a
+lends itself perfectly to a dummy-atom construction, giving a
 perfectly planar group without the inherently instable constraints
 that are necessary to keep normal atoms in a plane. The basic approach
 is to define three atoms or dummy masses with constraints between them
@@ -496,7 +496,7 @@ The shear viscosity is a property of liquid which can be determined easily
 by experiment. It is useful for parameterizing the forcefield,
 because it is a kinetic property, while most other properties
 which are used for parameterization are thermodynamic.
-The viscosity is also an important property, since it is of influence on
+The viscosity is also an important property, since it influences
 the rates of conformational changes of molecules solvated in the liquid.
 
 The viscosity can be calculated from an equilibrium simulation using
@@ -548,12 +548,12 @@ In the simulation $V$ is defined as:
 V = \frac{\displaystyle \sum_{i=1}^N m_i v_{i,x} 2 \cos\left(\frac{2\pi z}{l_z}\right)}
          {\displaystyle \sum_{i=1}^N m_i}
 \eeq
-The generated velocity profile is not coupled to the heat bath, also
+The generated velocity profile is not coupled to the heat bath, moreover
 the velocity profile is excluded from the kinetic energy.
 One would like $V$ to be as large as possible to get good statistics.
 However the shear rate should not be so high that the system gets too far
 from equilibrium. The maximum shear rate occurs where the cosine is zero,
-the rate is:
+the rate being:
 \beq
 \mbox{sh}_{\max} =  \max_z \left| \frac{\partial v_x(z)}{\partial z} \right|
 = A \frac{\rho}{\eta} \frac{l_z}{2\pi}
@@ -593,47 +593,6 @@ correlation time of the liquid.
 Two quantities are written to the energy file, along with their averages
 and fluctuations: $V$ and $1/\eta$ as obtained from (\ref{visc}).
 
-\section{User specified potential functions}
-You can also use your own \swapindex{potential}{function}s 
-without editing the {\gromacs} code. 
-The potential function should be according to the following equation
-\beq
-V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 g(r_{ij}) + C_{12} h(r_{ij})
-\eeq
-with f,g,h user defined functions. Note that if g(r) represents a
-normal dispersion interaction, g(r) should be $<$ 0. C$_6$, C$_{12}$
-and the charges are read from the topology. Also note that combination
-rules are only supported for Lennard Jones and Buckingham, and that
-your tables should match the parameters in the binary topology.
-
-When you add the following lines in your {\tt .mdp} file:
-\begin{verbatim}
-rlist           = 1.0
-coulombtype     = User
-rcoulomb        = 1.0
-vdwtype         = User
-rvdw            = 1.0
-\end{verbatim}
-the MD program will read a single file (name can be changed with
-option {\tt -table}) with seven columns of table lookup data in the
-order: x, f(x), f''(x), g(x), g''(x), h(x), h''(x).  The x should run
-from 0 to r$_c$+0.5, with a spacing of 0.002 nm when you run in single
-precision, or 0.0005 when you run in double precision.  In this
-context r$_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
-{\tt rcoulomb} (see above). These variables need not be the same (and
-need not be 1.0 either).  Some functions used for potentials contain a
-singularity at x = 0, but since atoms are normally not closer to each
-other than 0.1 nm, the function value at x = 0 is not important and
-the tables can be started at e.g. 0.02 nm.  Finally, it is also
-possible to combine a standard Coulomb with a modified LJ potential
-(or vice versa). One then specifies e.g. coulombtype = Cut-off or
-coulombtype = PME, combined with vdwtype = User.  The table file must
-always contain the 7 columns however, and meaningful data (i.e. not
-zeroes) must be entered in all columns.  A number of pre-built table
-files can be found in the GMXLIB directory, for 6-8, 6-9, 6-10, 6-11, 6-12
-Lennard Jones potentials combined with a normal Coulomb.
-
-
 \section{Running {\gromacs} in parallel}
 If you have installed the MPI (Message Passing Interface) on your computer(s)
 you can compile {\gromacs} with this library to run simulations in parallel. 
@@ -666,7 +625,6 @@ Check your local manuals (or online manual) for exact details
 of your MPI implementation.
 
 If you are interested in programming MPI yourself, you can find
-manuals and reference litterature on the web at
-\href{http:://www.mcs.anl.gov/mpi/index.html}{www.mcs.anl.gov/mpi/index.html}.
+manuals and reference literature on the internet.
 
 
