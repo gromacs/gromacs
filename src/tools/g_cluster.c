@@ -89,7 +89,7 @@ static real **mk_matrix(int nf,bool b1D)
   return rms;
 }
 
-static real row_energy(int n1,int row,real **mat)
+static real low_row_energy(int n1,int row,real *mat)
 {
   real re = 0;
   real n2_1;
@@ -97,9 +97,14 @@ static real row_energy(int n1,int row,real **mat)
   
   n2_1 = 1.0/(n1*n1);
   for(i=0; (i<n1); i++) 
-    re += (sqr(i-row)*n2_1)*mat[row][i];
+    re += (sqr(i-row)*n2_1)*mat[i];
   
   return re;
+}
+
+static real row_energy(int n1,int row,real **mat)
+{
+  return low_row_energy(n1,row,mat[row]);
 }
 
 static real rows_energy(int n1,real **mat,real *row_e)
@@ -117,7 +122,7 @@ static real rows_energy(int n1,real **mat,real *row_e)
     row_e[j] = re;
     retot += re;
   }
-  return retot;
+  return retot/n1;
 }
 
 static real energy(int n1,real **mat)
@@ -138,34 +143,64 @@ void pr_energy(FILE *fp,real e)
 
 void swap_mat(int n1,real **mat,int isw,int jsw)
 {
-  real *tmp;
+  real *tmp,ttt;
+  int  i;
   
   /* Swap rows */
   tmp      = mat[isw];
   mat[isw] = mat[jsw];
   mat[jsw] = tmp;
   /* Swap columns, take into account that rows have been swapped already */
+  for(i=0; (i<n1); i++) {
+    ttt         = mat[i][isw];
+    mat[i][isw] = mat[i][jsw];
+    mat[i][jsw] = ttt;
+  }
 }
 
-void mc_optimize(int n1,real **mat,int maxiter,real tol,int *seed)
+void mc_optimize(FILE *log,int n1,real **mat,int maxiter,int *seed)
 {
-  real e[2],*erow;
+  real e[2],ei,ej,*erow;
+  real kT = 2.5;
   int  cur=0;
 #define next 1-cur
   int  i,isw,jsw;
   
-  fprintf(stderr,"Doing Monte Carlo clustering\n");
   snew(erow,n1);
+  fprintf(stderr,"Doing Monte Carlo clustering\n");
+  if (getenv("TESTMC")) {
+    e[cur] = rows_energy(n1,mat,erow);
+    pr_energy(log,e[cur]);
+    fprintf(log,"Doing 1000 random swaps\n");
+    for(i=0; (i<1000); i++) {
+      isw = n1*rando(seed);
+      jsw = n1*rando(seed);
+      swap_mat(n1,mat,isw,jsw);
+    }
+  }
   e[cur] = rows_energy(n1,mat,erow);
-  pr_energy(stderr,e[cur]);
+  pr_energy(log,e[cur]);
   for(i=0; (i<maxiter); i++) {
     do {
       isw = n1*rando(seed);
       jsw = n1*rando(seed);
     } while ((isw == jsw) || (isw >= n1) || (jsw >= n1));
-    /* Now try swapping rows */
-    swap_mat(n1,mat,isw,jsw);
+    ei = low_row_energy(n1,isw,mat[jsw]);
+    ej = low_row_energy(n1,jsw,mat[isw]);
     
+    e[next] = e[cur] + (ei+ej-erow[isw]-erow[jsw])/n1;
+    
+    if ((e[next] > e[cur])) 
+      /* || (exp(-(e[next]-e[cur])/kT) > rando(seed))) */
+       {
+      /* Now swapping rows */
+      swap_mat(n1,mat,isw,jsw);
+      erow[isw] = ei;
+      erow[jsw] = ej;
+      cur = next;
+      fprintf(log,"Iter: %d Swapped %4d and %4d ",i,isw,jsw);
+      pr_energy(log,e[cur]);
+    }
   }
 }
 
@@ -529,7 +564,7 @@ int main(int argc,char *argv[])
     "NMR averaged distances (1/r^3 and 1/r^6 averaging)."
   };
   
-  FILE         *fp;
+  FILE         *fp,*log;
   int          natom,i1,i2,i1s,i2s,i,teller,nf,nrms;
   real         t,t1,t2;
 
@@ -551,7 +586,8 @@ int main(int argc,char *argv[])
   
   static int  nlevels=40,nframes=100,skip=0;
   static real scalemax=-1.0,rmscut=0.1;
-  static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE;
+  static bool bEigen=FALSE,bMem=TRUE,bLink=FALSE,bMC=TRUE;
+  static int  niter=1000,seed=1993;
   static int  M=10,P=3;
   t_pargs pa[] = {
     { "-nlevels",   FALSE, etINT,  &nlevels,
@@ -573,9 +609,16 @@ int main(int argc,char *argv[])
     { "-M",     FALSE, etINT,  &M,
       "Number of neirest neighbours considered for Jarvis-Patrick algorithm" },
     { "-P",     FALSE, etINT,  &P,
-      "Number of identical neirest neighbors required to form a cluster" }
+      "Number of identical neirest neighbors required to form a cluster" },
+    { "-mc",    FALSE, etBOOL, &bMC,
+      "Do a Monte Carlo clustering algorithm" },
+    { "-seed",  FALSE, etINT,  &seed,
+      "Random number seed for Monte Carlo clustering algorithm" },
+    { "-niter", FALSE, etINT,  &niter,
+      "Number of iterations for MC" }
   };
   t_filenm fnm[] = {
+    { efLOG, "-g",    "cluster",  ffWRITE },
     { efTRX, "-f",    NULL,       ffREAD  },
     { efTPS, "-s",    NULL,       ffREAD  },
     { efNDX, NULL,    NULL,       ffOPTRD },
@@ -630,6 +673,9 @@ int main(int argc,char *argv[])
   /*set box type*/
   init_pbc(box,FALSE);
 
+  /* Open log file */
+  log = ftp2FILE(efLOG,NFILE,fnm,"w");
+  
   /* Loop over first coordinate file */
   fn = opt2fn("-f",NFILE,fnm);
   
@@ -742,15 +788,18 @@ int main(int argc,char *argv[])
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
     fclose(fp);
   }
-  else {
-    jarvis_patrick(debug,nf,rms,M,P);
-    fprintf(stderr,"Energy of the matrix is %g nm\n",
-	    energy(nf,rms));
+  else if (bMC) {
+    mc_optimize(log,nf,rms,niter,&seed);
   }
+  else {
+    jarvis_patrick(log,nf,rms,M,P);
+  }
+  ffclose(log);
+  fprintf(stderr,"Energy of the matrix after clustering is %g nm\n",
+	  energy(nf,rms));
   write_xpm(opt2FILE("-os",NFILE,fnm,"w"),"RMS Sorted",
 	    "RMS (n)","Confs 1","Confs 2",
 	    nf,nf,resnr,resnr,rms,0.0,maxrms,rlo,rhi,&nlevels);
-
 	    
   /* Thank the user for her patience */  
   thanx(stdout);
