@@ -171,11 +171,11 @@ static void init_table(FILE *fp,int n,int nx0,int tabsel,
   td->nx0 = nx0;
   td->tabscale = tabscale;
   if (bAlloc) {
-    snew(td->x,td->nx);
-    snew(td->v,td->nx);
-    snew(td->v2,td->nx);
+    snew(td->x,td->nx+1);
+    snew(td->v,td->nx+1);
+    snew(td->v2,td->nx+1);
   }
-  for(i=td->nx0; (i<td->nx); i++)
+  for(i=td->nx0; (i<=td->nx); i++)
     td->x[i] = i/tabscale;
 }
 
@@ -191,7 +191,7 @@ static void read_tables(FILE *fp,char *fn,t_tabledata td[])
   libfn = low_libfn(fn,TRUE);
   nx  = read_xvg(libfn,&yy,&ny);
   if (ny != nny)
-    fatal_error(0,"Trying to read file %s, but no colums = %d, should be %d",
+    fatal_error(0,"Trying to read file %s, but nr columns = %d, should be %d",
 		libfn,ny,nny);
   bCont = TRUE;
   for(nx0=0; bCont && (nx0 < nx); nx0++)
