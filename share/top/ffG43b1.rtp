@@ -6,7 +6,7 @@
 ; Col 5: Generate all dihedrals if 1, only heavy atoms of 0.
 ; Col 6: Number of excluded neighbors for nonbonded interactions
 ; Col 7: Generate 1,4 interactions between pairs of hydrogens if 1
-; Col 8: Remove impropers over the same bond as a proper if it is 1
+; Col 8: Remove propers over the same bond as an improper if it is 1
 ; bonds  angles  dihedrals  impropers all_dihedrals nrexcl HH14 RemoveDih
      2      2          1          2        0         3      0     1
 
