@@ -71,11 +71,16 @@ static void printcount_(char *l,real t)
   fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,convert_time(t));
 }
 
-static void printcount(real t,real t0)
+static void printcount2(real t,real t0,real tpf,real tppf)
 {
   __frame++;
   if (__frame % SKIP == 0 || __frame < SKIP)
-    printcount_(check_times(t,t0) < 0 ? "Skipping frame": "Reading frame",t);
+    printcount_(check_times2(t,t0,tpf,tppf) < 0 ? "Skipping frame": "Reading frame",t);
+}
+
+static void printcount(real t)
+{
+  printcount2(t,t,t,t);
 }
 
 static void printlast(real t)
@@ -126,6 +131,8 @@ void clear_trxframe(t_trxframe *fr,bool bFirst)
     fr->flags  = 0;
     fr->natoms = -1;
     fr->t0     = 0;
+    fr->tpf    = 0;
+    fr->tppf   = 0;
     fr->title  = NULL;
     fr->step   = 0;
     fr->time   = 0;
@@ -475,7 +482,7 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
   while ((tbegin >= 0) && (*t < tbegin)) {
     if (!do_read_xyz(status,natoms,x,box))
       return FALSE;
-    printcount(*t,*t);
+    printcount(*t);
     *t+=DT;
     pt=*t;
   }
@@ -484,7 +491,7 @@ static bool xyz_next_x(FILE *status, real *t, int natoms, rvec x[], matrix box)
       printlast(*t);
       return FALSE;
     }
-    printcount(*t,*t);
+    printcount(*t);
     pt=*t;
     *t+=DT;
     return TRUE;
@@ -594,6 +601,8 @@ bool read_next_frame(int status,t_trxframe *fr)
 
   do {
     clear_trxframe(fr,FALSE);
+    fr->tppf = fr->tpf;
+    fr->tpf  = fr->time;
     
     switch (fio_getftp(status)) {
     case efTRJ:
@@ -637,14 +646,14 @@ bool read_next_frame(int status,t_trxframe *fr)
 		      (fr->flags & TRX_NEED_F && !fr->bF));
       bSkip = FALSE;
       if (!bMissingData) {
-	ct=check_times(fr->time,fr->t0);
+	ct=check_times2(fr->time,fr->t0,fr->tpf,fr->tppf);
 	if (ct == 0 || (fr->flags & TRX_DONT_SKIP && ct<0)) {
-	  printcount(fr->time,fr->t0);
+	  printcount2(fr->time,fr->t0,fr->tpf,fr->tppf);
 	  init_pbc(fr->box,FALSE);  
 	} else if (ct > 0)
 	  bRet = FALSE;
 	else {
-	  printcount(fr->time,fr->t0);
+	  printcount2(fr->time,fr->t0,fr->tpf,fr->tppf);
 	  bSkip = TRUE;
 	}
       }
@@ -695,7 +704,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
       fr->bTime = TRUE;
       fr->bX    = TRUE;
       fr->bBox  = TRUE;
-      printcount(fr->time,fr->time);
+      printcount(fr->time);
     }
     bFirst = FALSE;
     break;
@@ -708,18 +717,18 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     fr->bTime = TRUE;
     fr->bX    = TRUE;
     fr->bBox  = TRUE;
-    printcount(fr->time,fr->time);
+    printcount(fr->time);
     bFirst = FALSE;
     break;
   case efPDB:
     pdb_first_x(fio_getfp(fp),fr);
     if (fr->natoms)
-      printcount(fr->time,fr->time);
+      printcount(fr->time);
     bFirst = FALSE;
     break;
   case efGRO:
     if (gro_first_x_or_v(fio_getfp(fp),fr))
-      printcount(fr->time,fr->time);
+      printcount(fr->time);
     bFirst = FALSE;
     break;
   default:
@@ -728,7 +737,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
   }
   
   if (bFirst || 
-      (!(fr->flags & TRX_DONT_SKIP) && (check_times(fr->time,fr->time) < 0)))
+      (!(fr->flags & TRX_DONT_SKIP) && (check_times(fr->time) < 0)))
     /* Read a frame when no frame was read or the first was skipped */
     if (!read_next_frame(*status,fr))
       return FALSE;
