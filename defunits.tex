@@ -3,7 +3,7 @@
 \section{Notation}
 The following conventions for mathematical typesetting 
 are used throughout this document:
-\begin{table}[H]
+
 \centerline{
 \begin{tabular}{|l|l|c|}
 \dline
@@ -14,13 +14,11 @@ Vector Length	&	Italic		& $r_i$		\\
 \dline
 \end{tabular}
 }
-\caption{Notation}
-\label{tab:notation}
-\end{table}
+
 We define the {\em lowercase} subscripts 
 $i$, $j$, $k$ and $l$ to denote particles:
-$\rvi$ is the {\em position vector} of particle $i$, and using the 
-notation from Table~\ref{tab:notation}:
+$\rvi$ is the {\em position vector} of particle $i$, and using this 
+notation:
 \bea
 \rvij	=	\rvi-\rvj	\\
 \rij	=	| \rvij |
@@ -32,7 +30,12 @@ The force on particle $i$ is denoted by $\ve{F}_i$ and
 
 
 \section{MD units}
-{\gromacs} uses a consistent set of units that produce values in the vicinity of unity for most relevant molecular quantities. Let us call them {\em MD units}. The basic units in this system are nm, ps, K, electron charge (e) and atomic mass unit (u): \begin{table}[H]
+{\gromacs} uses a consistent set of units that produce values in the
+vicinity of unity for most relevant molecular quantities. Let us call
+them {\em MD units}. The basic units in this system are nm, ps, K,
+electron charge (e) and atomic mass unit (u), see
+Table~\ref{tab:basicunits}.
+\begin{table}
 \centerline{
 \begin{tabular}{|l|c|l|}
 \dline
@@ -49,11 +52,14 @@ temperature	&  T		&  K  				\\
 \dline
 \end{tabular}
 }
-\caption{Basic units used in gromacs. Numbers in parentheses give accuracy.}
+\caption{Basic units used in gromacs. Numbers in parentheses give
+accuracy.}
+\label{tab:basicunits}
 \end{table}
 
-Consistent with these units are:
-\begin{table}[H]
+Consistent with these units are a set of derived units, given in
+Table~\ref{tab:derivedunits}.
+\begin{table}
 \centerline{
 \begin{tabular}{|l|c|l|}
 \dline
@@ -79,26 +85,48 @@ electric field		& $E$		&   kJ~mol$^{-1}$~nm$^{-1}$~e$^{-1}$ =\\
 \label{tab:derivedunits}
 \end{table}
 
-The {\bf electric conversion factor} $f=\frac{1}{4 \pi \varepsilon_o}$ that relates the mechanical quantites to the electrical quantities as in
+The {\bf electric conversion factor} $f=\frac{1}{4 \pi \varepsilon_o}$
+that relates the mechanical quantites to the electrical quantities as
+in
 \beq
  V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
 \eeq
 \centerline { equals:\ \ 
 \fbox{$f=138.935\,485(9)$ kJ~mol$^{-1}$~nm~e$^{-2}$} }
 
-Electric potentials $\Phi$ and electric fields $\ve{E}$ are intermediate quantities in the calculation of energies and forces. They do not occur inside {\gromacs}. If they are used in evaluations, there is a choice of equations and related units. We recommend strongly to follow the usual practice to include the factor $f$ in expressions that evaluate $\Phi$ and $\ve{E}$:
+Electric potentials $\Phi$ and electric fields $\ve{E}$ are
+intermediate quantities in the calculation of energies and
+forces. They do not occur inside {\gromacs}. If they are used in
+evaluations, there is a choice of equations and related units. We
+recommend strongly to follow the usual practice to include the factor
+$f$ in expressions that evaluate $\Phi$ and $\ve{E}$:
 \bea
 \Phi(\ve{r}) = f \sum_j \frac{q_j}{|\ve{r}-\ve{r}_j|} 	\\
 \ve{E}(\ve{r}) = f \sum_j q_j \frac{(\ve{r}-\ve{r}_j)}{|\ve{r}-\ve{r}_j|^3}
 \eea
-With these definitions $q\Phi$ is an energy and $q\ve{E}$ is a force. The units
-are those given in table~\ref{tab:derivedunits}: about 10 mV for potential. Thus the potential of an electronic charge at a distance of 1 nm equals $f \approx 140$ units $\approx 1.4$~V. (exact value: 1.439965 V) 
+With these definitions $q\Phi$ is an energy and $q\ve{E}$ is a
+force. The units are those given in table~\ref{tab:derivedunits}:
+about 10 mV for potential. Thus the potential of an electronic charge
+at a distance of 1 nm equals $f \approx 140$ units $\approx
+1.4$~V. (exact value: 1.439965 V)
 
-Note that these units are mutually consistent; changing any of the units is 
-likely to produce inconsistencies and is therefore {\em strongly discouraged\/}! In particular: if \AA \ are used instead of nm, the unit of time changes to 0.1 ps. If the kcal/mol (= 4.184 kJ/mol) is used instead of kJ/mol for energy, the unit of time becomes 0.488882 ps and the unit of temperature changes to 4.184 K. But in both cases all electrical energies go wrong, because they will still be computed in kJ/mol, expecting nm as the unit of length. Although careful rescaling of charges may still yield consistency, it is clear that such confusions must be rigidly avoided.
+Note that these units are mutually consistent; changing any of the
+units is likely to produce inconsistencies and is therefore {\em
+strongly discouraged\/}! In particular: if \AA \ are used instead of
+nm, the unit of time changes to 0.1 ps. If the kcal/mol (= 4.184
+kJ/mol) is used instead of kJ/mol for energy, the unit of time becomes
+0.488882 ps and the unit of temperature changes to 4.184 K. But in
+both cases all electrical energies go wrong, because they will still
+be computed in kJ/mol, expecting nm as the unit of length. Although
+careful rescaling of charges may still yield consistency, it is clear
+that such confusions must be rigidly avoided.
   
-In terms of the MD units the usual physical constants take on different values. All quantities are per mol rather than per molecule. There is no distinction between Boltzmann's constant $k$ and the gas constant $R$: their value is $0.008\,314\,51$~kJ~mol$^{-1}$~K$^{-1}$.
-\begin{table}[H]
+In terms of the MD units the usual physical constants take on
+different values, see Table~\ref{tab:consts}. All quantities are per mol rather than per
+molecule. There is no distinction between Boltzmann's constant $k$ and
+the gas constant $R$: their value is
+$0.008\,314\,51$~kJ~mol$^{-1}$~K$^{-1}$.
+\begin{table}
 \centerline{
 \begin{tabular}{|c|l|l|}
 \dline
@@ -114,18 +142,28 @@ $c$	& velocity of light	& $299\,792.458$~nm/ps \\
 \end{tabular}
 }
 \caption{Some Physical Constants}
+\label{tab:consts}
 \end{table}
 
 \section{Reduced units}
-When simulating Lennard-Jones (LJ) systems it might be advantageous to use reduced units ({\em i.e.}, setting $\epsilon_{ii}=\sigma_{ii}=m_i=k_B=1$ for one type of atoms). This is possible. When specifying the input in reduced units, the output will also be in reduced units. There is one exception: the {\em temperature}, which is expressed in $0.008\,314\,51$ reduced units. This is a consequence of the use of Boltzmann's constant in the evaluation of temperature in the code. Thus not $T$, but $k_BT$ is the reduced temperature. A {\gromacs} temperature $T=1$ means a reduced temperature of 0.008\ldots units; if a reduced temperature of 1 is required, the {\gromacs} temperature should be 120.2717. 
+When simulating Lennard-Jones (LJ) systems it might be advantageous to
+use reduced units ({\em i.e.}, setting
+$\epsilon_{ii}=\sigma_{ii}=m_i=k_B=1$ for one type of atoms). This is
+possible. When specifying the input in reduced units, the output will
+also be in reduced units. There is one exception: the {\em
+temperature}, which is expressed in $0.008\,314\,51$ reduced
+units. This is a consequence of the use of Boltzmann's constant in the
+evaluation of temperature in the code. Thus not $T$, but $k_BT$ is the
+reduced temperature. A {\gromacs} temperature $T=1$ means a reduced
+temperature of 0.008\ldots units; if a reduced temperature of 1 is
+required, the {\gromacs} temperature should be 120.2717.
 
 In table~\ref{tab:reduced} quantities are given for LJ potentials:
 \beq
 V_{LJ} = 4\epsilon \left[ \left(\frac{\sigma}{r}\right)^{12} - \left(\frac{\sigma}{r}\right)^{6} \right]
 \eeq
 
-
-\begin{table}[H]
+\begin{table}
 \centerline{
 \begin{tabular}{|l|c|l|}
 \dline

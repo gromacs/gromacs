@@ -20,7 +20,7 @@ searching is done using a grid. All particles are put on a grid
 with the smallest spacing  $>=$ 0.5 cut-off in each of the directions.
 We have depicted the computational box, divided into grid-cells in 
 Figure~\ref{fig:nsgrid}.
-\begin{figure}[ht]
+\begin{figure}
 \centerline{\psfig{figure=plots/nsgrid.eps,width=6cm}}
 \caption{The computational box in two dimensions, divided into grid-cells with three particles, $i$, $j$ and $k$. Each grid-cell is of size $>=$ 0.5 cut-off.}
 \label{fig:nsgrid}
@@ -74,7 +74,7 @@ The algorithm for neighboursearching then becomes:
 	its slab using the normal grid neighboursearching.
 \end{enumerate}
 
-\begin{figure}[h]
+\begin{figure}
 \centerline{\psfig{figure=plots/parsort.eps,width=10cm}}
 \caption{Index in the coordinate array. The division in slabs is indicated by dashed lines. Note that sorting can be done on X,Y or Z.}
 \label{fig:parsort}

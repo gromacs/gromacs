@@ -127,7 +127,7 @@ F_{ij}	~=~	-F_{ji}
 This implies that there is half a matrix of interactions (without diagonal, 
 a particle does not interact with itself) to consider 
 (Figure~\ref{Fig:int_mat}).
-\begin {figure}[ht]
+\begin {figure}
 \centerline{\psfig {figure=int_mat.eps,width=10cm}}
 \caption {The interaction matrix (left) and the same using action=-reaction (right).}
 \label{Fig:int_mat}
@@ -142,7 +142,7 @@ do the update on, the {\em home} particles. The number of interactions
 per particle is dependent on the {\em total number} $N$ of particles
 (see Figure~\ref{Fig:decomp}) and on the {\em particle number} $i$.
 The exact formulae are given in Table~\ref{Tab:decomp}
-\begin{table}[H]
+\begin{table}
 \caption{The number of $j$ particles per $i$ particle is a function of the total number of particles $N$ and particle number $i$. Note that the / operator implies integer division, ie. with truncation.}
 \label{Tab:decomp}
 \centerline{
@@ -159,14 +159,14 @@ N mod 4 = 0 & N/2	& N/2 - 1	& N/2 - 1	& N/2 		\\
 }
 \end{table}
 
-\begin {figure}[ht]
+\begin {figure}
 \centerline{\psfig {figure=decomp.eps,width=\linewidth,angle=270}}
 \caption {The number of $j$-particles an $i$-particle interacts with depends on the {\em total} number of particles and on the {\em particle number}.}
 \label{Fig:decomp}
 \end {figure}
 
 A flow chart of the algorithm is given in Figure~\ref{Fig:mdpar}.
-\begin {figure}[ht]
+\begin {figure}
 \centerline{\psfig {figure=mdpar.eps,width=6cm}}
 \caption {The (Parallel) MD algorithm. If the steps marked * are left out we have the sequential algorithm again.}
 \label{Fig:mdpar}
@@ -214,7 +214,7 @@ void communicate_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])
 The data flow around the ring is visualised in Figure~\ref{Fig:ring}. 
 Note that because of the ring topology each processor automatically 
 gets the proper particles to interact with.
-\begin {figure}[ht]
+\begin {figure}
 \centerline{\psfig {figure=ring.eps,width=6cm}}
 \caption {Data flow in a ring of processors.}
 \label{Fig:ring}
@@ -222,7 +222,7 @@ gets the proper particles to interact with.
 
 %\section {Shake}
 
-%\begin {figure}[H]
+%\begin {figure}
 %\centerline{\psfig {figure=shake.eps,height=15cm,width=8cm}}
 %\caption {The Parallel Shake algorithm.}
 %\label{fig:pshake}

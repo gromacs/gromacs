@@ -64,22 +64,26 @@ call in uppercase as well.
 
 Here is a list of the functions that have a Fortran equivalent:
 \begin{table}[h]
-\caption{List of C functions and their Fortran equivalent, plus the source files. The 8 refers to double precision version of the same routine. In C it is not necessary to use a special version of the code due to the ue of {\tt typedef}.}
+\caption{List of C functions and their Fortran equivalent, plus the
+source files. Note that the Fortan and C source files are both
+generated from one {\tt .m4} file. The 8 refers to double precision
+version of the same routine. In C it is not necessary to use a special
+version of the code due to the ue of {\tt typedef}.}
 \centerline{
 \begin{tabularx}{\linewidth}{|ll|ll|X|}
 \dline
-C	&	Source		&	Fortran	& Source	& Purpose \\
+C	& Source	& Fortran	& Source	& Purpose \\
 \hline
-c\_coul	&	inloopc.c	&	fcoul	& inloopf.f	& Coulomb interaction \\
-c\_ljc	&	inloopc.c	&	fljc	& inloopf.f	& Lennard-Jones and Coulomb interaction\\
-c\_coul	&	inloopc.c	&	fcoul8& inloopf.f	& Coulomb\\
-c\_ljc	&	inloopc.c	&	fljc8	& inloopf.f	& LJ+Coulomb\\
-c\_water&	inloopc.c	&	fwater& inloopf.f	& Water Loop\\
+c\_coul	& inloopc.c	& fcoul		& inloopf.f	& Coulomb interaction \\
+c\_ljc	& inloopc.c	& fljc		& inloopf.f	& Lennard-Jones and Coulomb interaction\\
+c\_coul	& inloopc.c	& fcoul8	& inloopf.f	& Coulomb\\
+c\_ljc	& inloopc.c	& fljc8		& inloopf.f	& LJ+Coulomb\\
+c\_water& inloopc.c	& fwater	& inloopf.f	& Water Loop\\
 \hline
-cshake	&	shakef.c	&	fshake	& fshake.f	& Shake\\
-cshake	&	shakef.c	&	fshake8	& fshake.f	& Shake\\
-csettle	&	csettle.c	&	fsettle	& fsettle.f	& Settle\\
-csettle	&	csettle.c	&	fsettle8& fsettle.f	& Settle\\
+cshake	& shakef.c	& fshake	& fshake.f	& Shake\\
+cshake	& shakef.c	& fshake8	& fshake.f	& Shake\\
+csettle	& csettle.c	& fsettle	& fsettle.f	& Settle\\
+csettle	& csettle.c	& fsettle8	& fsettle.f	& Settle\\
 \dline
 \end{tabularx}
 }

@@ -33,13 +33,14 @@ force field parameters} that were originally not included in the
 
 \section{Particle type}
 \label{sec:parttype}
-In {\gromacs} there are 4 types of \normindex{particles} 
-(only the first type is used in {\gromacs} {\gmxver}, 
-the others are reserved for future versions),
-which are listed in \verb'ffgmxbon.itp' ({\bf f}orce {\bf f}ield
-{\gromacs} {\bf bon}ded and .itp stands for {\em include topology
-parameter file}):    
-\begin{table}[H]
+
+In {\gromacs} there are 4 types of \normindex{particles}.  Only the
+first type is used in {\gromacs} {\gmxver}, the others are reserved
+for future versions. which are listed in \verb'ffgmxbon.itp' ({\bf
+f}orce {\bf f}ield {\gromacs} {\bf bon}ded and .itp stands for {\em
+include topology parameter file}). See Table~\ref{ta:ptype}.
+
+\begin{table}
 \centerline{
 \begin{tabular}{|l|c|}
 \dline
@@ -204,9 +205,20 @@ added manually.
 \section{Parameter files}
 \label{sec:paramfiles}
 \subsection{Atoms}
-The following {\em static} properties are assigned to the atom types in the 
-{\gromacs} force field
-\begin{table}[H]
+A number of {\em static} properties are assigned to the atom types in the 
+{\gromacs} force field: Type, Mass, Charge, $\epsilon$ and $\sigma$
+(see Table~\ref{tab:statprop}
+The mass is listed in \verb'ffgmx.atp' (see~\ref{subsec:atomtype}), 
+whereas the charge is listed
+in \verb'ffgmx.rtp' (.rtp = {\bf r}esidue {\bf t}opology {\bf
+p}arameter file, see~\ref{subsec:rtp}). 
+This implies that the charges are only defined
+in the \normindex{building block}s 
+of amino acids or user defined building blocks.
+When generating a topology ({\tt *.top}) using the {\tt \normindex{pdb2gmx}} 
+program the information from these files is combined.
+ 
+\begin{table}
 \centerline{
 \begin{tabular}{|l|c|c|}
 \dline
@@ -221,17 +233,9 @@ sigma                   & $\sigma$      & nm            \\
 \end{tabular}
 }
 \caption{Static atomtype properties in Gromacs}
+\label{tab:statprop}
 \end{table}
-The mass is listed in \verb'ffgmx.atp' (see~\ref{subsec:atomtype}), 
-whereas the charge is listed
-in \verb'ffgmx.rtp' (.rtp = {\bf r}esidue {\bf t}opology {\bf
-p}arameter file, see~\ref{subsec:rtp}). 
-This implies that the charges are only defined
-in the \normindex{building block}s 
-of amino acids or user defined building blocks.
-When generating a topology ({\tt *.top}) using the {\tt \normindex{pdb2gmx}} 
-program the information from these files is combined.
- 
+
 The following {\em dynamic} quantities are associated with an atom
 \begin{itemize}
 \item	Position {\bf x}
@@ -282,18 +286,15 @@ Also in this file are the \normindex{Ryckaert-Bellemans}~\cite{Ryckaert78}
 parameters for
 the CP2-CP2 dihedrals in alkanes or alkane tails with the following
 constants:
-\begin{table}[H]
-\centerline{
-\begin{tabular}{lr}
-$C_0=9.28$ &  kJ/mole   \\
-$C_1=12.16$ &  kJ/mole  \\
-$C_2=-13.12$ &  kJ/mole \\
-$C_3=-3.06$ &  kJ/mole  \\
-$C_4=26.24$ &  kJ/mole  \\
-$C_5=-31.5$ &  kJ/mole  \\
+
+\begin{center}
+(kJ/mol)\\
+\begin{tabular}{llrllrllr}
+$C_0$ & $=$ & $~ 9.28$ & $C_2$ & $=$ & $-13.12$ & $C_4$ & $=$ & $ 26.24$ \\
+$C_1$ & $=$ & $ 12.16$ & $C_3$ & $=$ & $~-3.06$ & $C_5$ & $=$ & $-31.5 $ \\
 \end{tabular}
-}
-\end{table}
+\end{center}
+
 ({\bf Note:} The use of this potential implies exclusions of LJ-interactions
 between the first and the last atom of the dihedral, and $\psi$ is defined
 according to the '\normindex{polymer convention}' ($\psi_{trans}=0$)).
@@ -456,8 +457,8 @@ removed or changed and which (improper) dihedral angles should be
 added.
 
 A sample piece of the {\tt ffgmx.hdb} file is enclosed below (the
-table headers are included for explanation purposes).
-\begin{table}[ht]
+table headers are included for explanation purposes):
+\centerline{
 \begin{tabular}{lllllll}
 residue        & \#additions        &        &                &                &     
    \\
@@ -473,8 +474,7 @@ ALA 	& 2	& 	&	&	&	&	\\
 	& 1	& 1	& N	& -C	& CA	&	\\
 	& 1	& 5	& CA	& N	& C	& CB
 \end{tabular}
-\caption{Hydrogen database.}
-\end{table}
+}
 
 On the first line we see the residue name (ARG) and the number of additions.
 On each subsequent line we then see 

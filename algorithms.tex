@@ -41,7 +41,7 @@ simulate  non-periodic systems, as liquids or solutions, the
 periodicity by  itself causes errors. The errors can be evaluated by
 comparing various system sizes; they are expected to be less severe than
 the errors resulting from an unnatural boundary with vacuum.
-\begin {figure}[H]
+\begin {figure}
 \centerline{\psfig {figure=plots/pbc.eps,width=8cm,angle=270}}
 \caption {Periodic boundary conditions in two dimensions.}
 \label{fig:pbc}
@@ -138,9 +138,7 @@ In principle up to 256 groups could be defined, but that would lead to
 256$\times$256 items! Better use this concept sparingly.  
 \end{description}
 The use of groups in analysis programs is described in
-chapter~\ref{ch:analysis}
-
-
+chapter~\ref{ch:analysis}.
 
 \section{Molecular Dynamics}
 \label{sec:MD}
@@ -149,8 +147,8 @@ MD or  EM run requires as input a set of initial coordinates and -
 optionally - initial velocities of all particles involved. This
 chapter does not describe how these are obtained; for the setup of an
 actual MD run check the online manual at {\wwwpage}.
+\begin{figure}
 \begin{center}
-\begin{figure}[H]
 \addtolength{\fboxsep}{0.5cm}
 \begin{shadowenv}[12cm]
 {\large \bf THE GLOBAL MD ALGORITHM}
@@ -187,8 +185,8 @@ write positions, velocities, energies, temperature, pressure, etc. \\
 \end{shadowenv}
 \caption{The global MD algorithm}
 \label{fig:global}
-\end{figure}
 \end{center}
+\end{figure}
 
 \subsection{Initial conditions}
 \subsubsection*{Topology and force field}
@@ -218,7 +216,7 @@ given absolute temperature $T$:
 p(v_i) = \sqrt{\frac{m_i}{2 \pi kT}}\exp(-\frac{m_i v_i^2}{2kT})
 \eeq
 where $k$ is Boltzmann's constant (see Chapter~\ref{ch:defunits}).
-\begin{figure}[H]
+\begin{figure}
 \centerline{\psfig{figure=plots/maxwell.eps,angle=270,width=8cm}}
 \caption{A Maxwellian distribution, generated from random numbers.}
 \label{fig:maxwell}
@@ -408,7 +406,7 @@ with other time integration algorithms.
 The \myindex{equations of motion} are modified for temperature coupling
  and pressure coupling, and extended to include the conservation of
 constraints, all of which are described below.
-\begin {figure}[H]
+\begin {figure}
 \centerline{\psfig {figure=plots/leapfrog.eps,width=8cm}}
 \caption[The Leap-Frog integration method.]{The Leap-Frog integration method. The algorithm is called
 Leap-Frog  (Haasje Over), because r and v are leaping
@@ -514,8 +512,8 @@ satisfactory.
 The complete algorithm for the update of velocities and coordinates is
 given in figure~\ref{fig:complete-update}. The SHAKE algorithm of step
 4 is explained below. 
+\begin{figure}
 \begin{center}
-\begin{figure}[H]
 \addtolength{\fboxsep}{0.5cm}
 \begin{shadowenv}[12cm]
 {\large \bf THE UPDATE ALGORITHM}
@@ -523,12 +521,12 @@ given in figure~\ref{fig:complete-update}. The SHAKE algorithm of step
 Given:\\
 Positions $\ve{r}$ of all atoms at time $t$ \\
 Velocities $\ve{v}$ of all atoms at time $t-\hDt$ \\
-Accelerations $\ve{F}/m$ on all atoms at time $t$. Forces are computed
-disregarding any constraints \\
+Accelerations $\ve{F}/m$ on all atoms at time $t$.\\
+(Forces are computed disregarding any constraints)\\
 Total kinetic energy and virial \\
 $\Downarrow$ \\
-{\bf 1.} Compute the scaling factors $\lambda$ and $\mu$ according
-eqs~\ref{eq:lambda} and \ref{eq:mu}\\   
+{\bf 1.} Compute the scaling factors $\lambda$ and $\mu$\\
+according to eqs~\ref{eq:lambda} and \ref{eq:mu}\\   
 $\Downarrow$ \\
 {\bf 2.} Update and scale velocities: $\ve{v}' =  \lambda (\ve{v} +
 \ve{a} \Delta t)$ \\
@@ -536,7 +534,7 @@ $\Downarrow$ \\
 {\bf 3.} Compute new unconstrained coordinates: $\ve{r}' = \ve{r} + \ve{v}'
 \Delta t$ \\
 $\Downarrow$ \\
-{\bf 4.} Apply SHAKE to coordinates: SHAKE($\ve{r}^{'} \rightarrow  \ve{r}'';
+{\bf 4.} Apply constraint algorithm to coordinates: constrain($\ve{r}^{'} \rightarrow  \ve{r}'';
 \,  \ve{r}$) \\
 $\Downarrow$ \\
 {\bf 5.} Correct velocities for constraints: $\ve{v} = (\ve{r}'' -
@@ -547,9 +545,8 @@ $\Downarrow$ \\
 \end{shadowenv}
 \caption{The MD update algorithm}
 \label{fig:complete-update}
-\end{figure}
 \end{center}
-
+\end{figure}
 
 \gromacs has a provision to ''freeze''  (prevent motion of) selected
 particles, which must be defined as a 'freeze group'. This is implemented
@@ -656,7 +653,7 @@ applied for the lengthening of the bonds due to rotation.
 The numerics for the first step and the second step are very similar. 
 A complete derivation of the algorithm can be found in \cite{Hess97}.
 Only a short description of the first step is given here.
-\begin{figure}[h]
+\begin{figure}
 \centerline{\psfig{figure=plots/lincs.eps,height=50mm}}
 \caption{
 \label{lincs_fig}Schematic picture showing the three position updates needed 
@@ -678,12 +675,13 @@ of the constraints.
 The following equation shows how the new constrained coordinates 
 $\ve{r}_{n+1}$ are related to the unconstrained coordinates
 $\ve{r}_{n+1}^{unc}$
-\[
-\ve{r}_{n+1}=(\ve{I}-\Tm_n \ve{B}_n) \ve{r}_{n+1}^{unc} + \Tm_n \lenc=
-\]
 \fs{m0}
+\begin{array}{c}
+  \ve{r}_{n+1}=(\ve{I}-\Tm_n \ve{B}_n) \ve{r}_{n+1}^{unc} + \Tm_n \lenc=  
+  \\[2mm]
   \ve{r}_{n+1}^{unc} - 
 \iM \Bm_n (\Bm_n \iM \Bm_n^T)^{-1} (\Bm_n \ve{r}_{n+1}^{unc} - \lenc) 
+\end{array}
 \fe
 where $\Tm = \iM \Bm^T (\Bm \iM \Bm^T)^{-1}$.
 The derivation of this equation from \ref{c1} and \ref{c2} can be found
@@ -705,13 +703,13 @@ introduced which is the inverse square root of
 the diagonal of $\Bm_n \iM \Bm_n^T$.
 This matrix is used to convert the diagonal elements 
 of the coupling matrix to one
-\[
-(\Bm_n \iM \Bm_n^T)^{-1}
-= \Sm \Sm^{-1} (\Bm_n \iM \Bm_n^T)^{-1} \Sm^{-1} \Sm
-\]
 \fs{m2}
+\begin{array}{c}
+(\Bm_n \iM \Bm_n^T)^{-1}
+= \Sm \Sm^{-1} (\Bm_n \iM \Bm_n^T)^{-1} \Sm^{-1} \Sm  \\[2mm]
 = \Sm (\Sm \Bm_n \iM \Bm_n^T \Sm)^{-1} \Sm =
   \Sm (\ve{I} - \ve{A}_n)^{-1} \Sm
+\end{array}
 \fe
 The matrix $\ve{A}_n$ is symmetric and sparse and has zeros on the diagonal.
 Thus a simple trick can be used to calculate the inverse
@@ -764,8 +762,8 @@ lower frequencies.
 A more detailed flow sheet of the MD algorithm is given in
 fig.~\ref{fig:flowdetail}. 
 
+\begin{figure}
 \begin{center}
-\begin{figure}[H]
 \addtolength{\fboxsep}{0.5cm}
 \begin{shadowenv}[12cm]
 {\large \bf THE MD ALGORITHM}
@@ -795,8 +793,8 @@ update configuration \\
 \end{shadowenv}
 \caption{the MD algorithm}
 \label{fig:flowdetail}
-\end{figure}
 \end{center}  
+\end{figure}
 
 \section{Simulated Annealing}
 \label{sec:SA}
@@ -828,7 +826,7 @@ always be slightly higher than 0 K.
 \newcommand{\ruis}{\ve{r}^G}
 \label{sec:LD}
 The Position Langevin Dynamics algorithm is implemented in {\gromacs} is 
-(note: NOT Velocity Langevin Dynamics). 
+(note: NOT {\em Velocity} Langevin Dynamics). 
 This applies to overdamped systems, 
 i.e. systems in which the inertia effects are negligible.
 The equations are
@@ -942,7 +940,7 @@ to an enzyme {\bf E} and to a mutated enzyme {\bf E'}.
 It is not feasible with computer simulations to perform a docking
 calculation for such a large complex, or even releasing the inhibitor from
 the enzyme in a reasonable amount of computer time with reasonable accuracy.
-However, if we consider the free energy cycle in (\figref{free}{\bf A})
+However, if we consider the free energy cycle in (\figref{free}A)
 we can write
 \beq
 \Delta G_1 - \Delta G_2	=	\Delta G_3 - \Delta G_4
@@ -950,14 +948,14 @@ we can write
 \eeq
 If we are interested in the left-hand term we can equally well compute
 the right-hand term.
-\begin{figure}[h]
+\begin{figure}
 \centerline{\psfig{figure=plots/free1.eps,width=6cm,angle=270}\hspace{2cm}\psfig{figure=plots/free2.eps,width=6cm,angle=270}}
 \caption{Free energy cycles. {\bf A:} to calculate $\Delta G_{12}$ or the free energy difference between the binding of inhibitor {\bf I} to enzymes {\bf E} respectively {\bf E'}. {\bf B:} to calculate $\Delta G_{12}$ which is the free energy difference for binding of inhibitors {\bf I} respectively {\bf I'} to enzyme {\bf E}.}
 \label{fig:free}
 \end{figure}
 
 If we want to compute the difference in free energy of binding of two
-inhibitors {\bf I} and {\bf I'} to an enzyme {\bf E} (\figref{free}{\bf B})
+inhibitors {\bf I} and {\bf I'} to an enzyme {\bf E} (\figref{free}B)
 we can again use \eqnref{ddg} to compute the desired property.
 
 \subsection{ED sampling}
@@ -1115,7 +1113,7 @@ F_{ij}	~=~	-F_{ji}
 This implies that there is half a matrix of interactions (without diagonal, 
 a particle does not interact with itself) to consider 
 (Figure~\ref{Fig:int_mat}).
-\begin {figure}[H]
+\begin {figure}
 \centerline{\psfig{figure=plots/int_mat.eps,width=10cm}}
 \caption {The interaction matrix (left) and the same using action=-reaction (right).}
 \label{Fig:int_mat}
@@ -1130,7 +1128,7 @@ do the update on, the {\em home} particles. The number of interactions
 per particle is dependent on the {\em total number} $N$ of particles
 (see Figure~\ref{Fig:decomp}) and on the {\em particle number} $i$.
 The exact formulae are given in Table~\ref{Tab:decomp}
-\begin{table}[H]
+\begin{table}
 \caption{The number of $j$ particles per $i$ particle is a function of the total number of particles $N$ and particle number $i$. Note that the / operator implies integer division, ie. with truncation.}
 \captspace
 \label{Tab:decomp}
@@ -1148,14 +1146,14 @@ N mod 4 = 0 & N/2	& N/2 - 1	& N/2 - 1	& N/2 	\B	\\
 }
 \end{table}
 
-\begin {figure}[H]
+\begin {figure}
 \centerline{\psfig {figure=plots/decomp.eps,width=\linewidth}}
 \caption[Interaction matrices for different $N$.]{Interaction matrices for different $N$. The number of $j$-particles an $i$-particle interacts with depends on the {\em total} number of particles and on the {\em particle number}.}
 \label{Fig:decomp}
 \end {figure}
 
 A flow chart of the algorithm is given in Figure~\ref{Fig:mdpar}.
-\begin {figure}[H]
+\begin {figure}
 \centerline{\psfig {figure=plots/mdpar.eps,width=6cm}}
 \caption {The (Parallel) MD algorithm. If the steps marked * are left out we have the sequential algorithm again.}
 \label{Fig:mdpar}
@@ -1203,7 +1201,7 @@ void communicate_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])
 The data flow around the ring is visualised in Figure~\ref{Fig:ring}. 
 Note that because of the ring topology each processor automatically 
 gets the proper particles to interact with.
-\begin {figure}[H]
+\begin {figure}
 \centerline{\psfig {figure=plots/ring.eps,width=6cm}}
 \caption {Data flow in a ring of processors.}
 \label{Fig:ring}
@@ -1211,7 +1209,7 @@ gets the proper particles to interact with.
 
 %\section {Shake}
 
-%\begin {figure}[H]
+%\begin {figure}
 %\centerline{\psfig {figure=plots/shake.eps,height=15cm,width=8cm}}
 %\caption {The Parallel Shake algorithm.}
 %\label{fig:pshake}

@@ -69,7 +69,7 @@ molecule numbers.
 ngmx
 \end{verbatim}
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/ngmxdump.eps,width=8cm,angle=90}}}
 \caption{A hard-copy of {\tt ngmx} showing a box of water.}
@@ -127,7 +127,7 @@ $<\rho_B>_{local}$ the particle density of type $B$ averaged over all
 spheres around particles $A$ with radius $r_{max}$ 
 (see fig.~\ref{fig:rdfex}C). 
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/rdf.eps,width=7cm,angle=270}}}
 \caption[Definition of slices in {\tt g\_rdf}.]{Definition of slices in {\tt g\_rdf}: A. $g_{AB}(r)$. B. $g_{AB}(r,\theta)$. The slices are coloured grey. C. Normalization $<\rho_B>_{local}$. D. Normalization $<\rho_B>_{local,\:\theta }$. Normalization volumes are coloured grey.}
@@ -142,7 +142,7 @@ see fig.~\ref{fig:rdfex}A) and makes a histogram in stead of the
 $\delta$-function. An example of the rdf of Oxygen-Oxygen 
 in SPC-water~\cite{Berendsen81} is given in fig.~\ref{fig:rdf}.
 %
-\begin{figure}[bhtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/rdfO_O.eps,width=7cm,angle=270}}}
 \caption{$g_{OO}(r)$ for Oxygen-Oxygen of SPC-water.}
@@ -313,7 +313,7 @@ studying lateral diffusion on interfaces.
 An example of the mean square displacement of SPC-water is given in
 fig.~\ref{fig:msdwater}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/msdwater.eps,width=6.5cm,angle=270}}}
 \caption{Mean Square Displacement of SPC-water.}
@@ -357,7 +357,7 @@ For the dihedral angles you can use eighter the ``biochemical convention''
 ($\phi = 0 \equiv cis$) or ``polymer convention'' ($\phi = 0 \equiv trans$), 
 see fig~\ref{fig:dih_def}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/dih_def.eps,width=3.5cm,angle=270}}}
 \caption{Dihedral conventions: A. ``Biochemical convention''. B. ``Polymer convention''.}
@@ -370,7 +370,7 @@ a plane or
 two planes (defined by 2, resp. 3 atoms inside your molecule, see 
 fig.~\ref{fig:sgangle}A, B, C), use the program {\tt g\_sgangle}. 
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/sgangle.eps,width=6.5cm,angle=270}}}
 \caption[Options of {\tt g\_sgangle}.]{Options of {\tt g\_sgangle}: A. Angle between 2 vectors. B. Angle between a vector and the normal of a plane. C. Angle between two planes. D. Distance between the geometrical centres of 2 planes. E. Distances between a vector and the centre of a plane.}
@@ -436,7 +436,7 @@ The output is a symmetrical matrix of smallest distances
 between all residues. To visualize this matrix, you can convert it with 
 {\tt mat2ps} into a Postscript picture, see fig.~\ref{fig:mdmat}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 \psfig {figure=plots/distm.eps,width=6.5cm}}
 \caption{A minimum distance matrix for a peptide~\protect\cite{Spoel96b}.}
@@ -509,7 +509,7 @@ r &\leq& 3.5 \AA \nonumber\\
 \alpha &\leq& 60^o \nonumber
 \eea
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{\psfig{figure=plots/hbond.eps,width=2.5cm,angle=270}}
 \caption{Geometrical Hydrogen bond criterion.}
 \label{fig:hbond}
@@ -612,7 +612,7 @@ possible H-bonds:
 It is also possible to analyse the insertion of solvent molecules (eg. water) 
 in specific hydrogen bonds (eg. $\alpha$-helices), see fig.~\ref{fig:insert}
  %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/hbond_insert.eps,width=5cm,angle=270}}}
 \caption[Insertion of water in $\alpha$-helix.]{Insertion of water in $\alpha$-helix. (1) Normal H-bond between two residues. (2) H-bonding bridge via a water molecule.}
@@ -669,10 +669,10 @@ an interface for the commercial program {\tt dssp}~\cite{Kabsch83}. For
 further information, see the {\tt dssp}-manual. A tyical output plot of 
 {\tt do\_dssp} is given in fig.~\ref{fig:dssp}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 \psfig {figure=plots/dssp.eps,width=12cm}}
-\caption{Analysis of the secondary structure elements of a small protein in time.}
+\caption{Analysis of the secondary structure elements of a peptide in time.}
 \label{fig:dssp}
 \end{figure}
 %
@@ -682,7 +682,7 @@ One other important analysis of proteins is the so called
 This is the projection of the structure on the two dihedral angles $\phi$ and 
 $\psi$ of the protein backbone, see fig.~\ref{fig:phipsi}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 \psfig {figure=plots/phipsi.eps,width=5cm}}
 \caption{Definition of the dihedral angles $\phi$ and $\psi$ of the protein backbone.}
@@ -692,7 +692,7 @@ $\psi$ of the protein backbone, see fig.~\ref{fig:phipsi}.
 To evaluate this Ramachandran plot you can use the program {\tt g\_rama}. 
 A typical output is given in fig.~\ref{fig:rama}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{
 {\psfig {figure=plots/rama.eps,width=9cm,angle=270}}}
 \caption{Ramachandran plot of a small protein.}
@@ -711,7 +711,7 @@ of your peptide, to see whether a peptide is amphipatic. This can be done
 using the {\tt wheel} program. Two examples are 
 plotted in fig.~\ref{fig:wheel}.
 %
-\begin{figure}[hbtp]
+\begin{figure}
 \centerline{\psfig{figure=plots/hpr-wheel.eps,width=\htw}}
 \caption{Helical wheel projection of the N-terminal helix of HPr.}
 \label{fig:wheel}

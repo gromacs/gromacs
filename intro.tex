@@ -141,9 +141,9 @@ higher than, say, 100 cm$^{-1}$ are suspect of misbehaviour in
 classical simulations. This means that practically all bond and
 bond-angle vibrations are suspect, and even hydrogen-bonded motions as
 translational or librational H-bond vibrations are beyond the
-classical limit (see Table~\ref{tab:vibrations}) What can we do?
+classical limit (see Table~\ref{tab:vibrations}). What can we do?
 
-\begin{table}[H]
+\begin{table}
 \begin{center} 
 \begin{tabular}{|l|l|l|}
 \hline
@@ -164,13 +164,13 @@ O-H$\cdots$O    &  stretch   &  50--200 \\
 \end{table}
 
 Well, apart from real quantumdynamical simulations, we can do either
-of two things: \\ 
- (a) If we perform MD simulations using harmonic oscillators for
-bonds, we should make corrections to the total internal energy $U =
-E_{kin} + E_{pot}$ and specific heat $C_V$ (and to entropy $S$ and
-free energy $A$ or $G$ if those are calculated). The corrections to
-the energy and specific heat of a one-dimensional oscillator with
-frequency $\nu$ are:~\cite{McQuarrie76}
+of two things: \\ (a) If we perform MD simulations using harmonic
+oscillators for bonds, we should make corrections to the total
+internal energy $U = E_{kin} + E_{pot}$ and specific heat $C_V$ (and
+to entropy $S$ and free energy $A$ or $G$ if those are
+calculated). The corrections to the energy and specific heat of a
+one-dimensional oscillator with frequency $\nu$
+are:~\cite{McQuarrie76}
 \beq
  U^{QM} = U^{cl} +kT \left( \half x - 1 + \frac{x}{e^x-1} \right)
 \eeq
@@ -197,11 +197,12 @@ In MD we use a {\em \underline {conservative}} force field that is a
 function of the positions of atoms only.  This means that the
 electronic motions are not considered: the electrons are supposed to
 adjust their dynamics infinitely fast when the atomic positions change
-(the {\em \myindex{Born-Oppenheimer}} approximation), and remain in their ground
-state. This is really allright, almost always. But of course, electron
-transfer processes and electronically excited states can not be
-treated. Neither can chemical reactions be treated properly, but there
-are other reasons to shy away from reactions for the time being.    
+(the {\em \myindex{Born-Oppenheimer}} approximation), and remain in
+their ground state. This is really allright, almost always. But of
+course, electron transfer processes and electronically excited states
+can not be treated. Neither can chemical reactions be treated
+properly, but there are other reasons to shy away from reactions for
+the time being.
 
 {\bf Force fields are approximate}
 \myindex{Force field}s provide the forces. They are not really a part of the
@@ -218,7 +219,7 @@ biomacromolecules in aqueous solution!
 
 {\bf The force field is pair-additive} 
 This means that all {\em non-bonded} forces result from the sum of
-non-bonded pair interactions. Non-pairadditive  interactions, the most
+non-bonded pair interactions. Non-pairadditive interactions, the most
 important example of which is interaction through atomic
 polarizability, are represented by {\em effective pair
 potentials}. Only average non-pairadditive contributions are
@@ -232,7 +233,7 @@ should. For example, real liquid alkanes have a dielectric constant of
 slightly more than 2, which reduce the long-range electrostatic
 interaction between (partial) charges. Thus the simulations will
 exaggerate the long-range Coulombic terms. Luckily, the next item
-compensates this effect a bit. 
+compensates this effect a bit.
 
 {\bf Long-range interactions are cut-off}
 In this version {\gromacs} uses a cut-off radius for the Coulomb
@@ -243,7 +244,7 @@ size. That is still pretty big for large systems, and trouble is only
 expected for systems containing charged particles. But then real bad
 things may happen, like accumulation of charges at the cut-off
 boundary or very wrong energies! This problem is being worked on, and
-it will improve. 
+it will improve.
 
 {\bf Boundary conditions are unnatural}
 Since system size is small (even 10,000 particles is small), a cluster
@@ -255,13 +256,13 @@ remains. This item is mentioned in the last place because it is the
 least evil of all. For large systems the errors are small, but for
 small systems with a lot of internal spatial correlation, the periodic
 boundaries may enhance internal correlation. In that case, beware and
-test the influence of system size.  
+test the influence of system size.
 
 \section{Energy Minimization and Search Methods}
 
 As mentioned in Section~\ref{sec:Compchem}, in many cases energy
 minimization is required. {\gromacs} provides a simple form of local
-energy minimization, the {\em steepest descent} method. 
+energy minimization, the {\em steepest descent} method.
 
 The potential energy function of a (macro)molecular system is a very
 complex landscape (or {\em hypersurface}) in a large number of
@@ -275,7 +276,7 @@ translation and rotation (for an isolated molecule) have zero
 eigenvalues. In between the local minima there are {\em saddle
 points}, where the Hessian matrix has only one negative
 eigenvalue. These points are the mountain passes through which the
-system can migrate from one local minimum to another.  
+system can migrate from one local minimum to another.
 
 Knowledge of all local minima, including the global one, and of all
 saddle points would enable us to describe the relevant structures and
@@ -311,7 +312,8 @@ potentials~\cite{Nilges88}), but always take care to restore the
 correct functions slowly. The best search method that allows rather
 drastic structural changes is to allow excursions into
 four-dimensional space~\cite{Schaik93}, but this requires some extra
-programming beyond the standard capabilities of {\gromacs}. \\
+programming beyond the standard capabilities of {\gromacs}.
+
 Three possible energy minimization methods are:
 \begin{itemize}
 \item 	Those that require only function evaluations. Examples are the 
@@ -337,19 +339,16 @@ Three possible energy minimization methods are:
 \end{itemize}
 
 
-The {\em steepest descent} method, available in {\gromacs}, is of the 
-second class. It simply takes a step in the direction of the negative 
-gradient (hence in the direction of the force), without any consideration 
-of the history built up in previous steps. The step size is adjusted such 
-that the search is fast but the motion is always downhill. This is a simple 
-and sturdy, but somewhat stupid, method: its convergence can be quite slow, 
-especially in the vicinity of the local minimum! The more clever and 
-efficient {\em conjugate gradient method} (see e.g. \cite{Zimmerman91}) 
-uses gradient information from previous steps and will be found in future 
-versions of {\gromacs}.
-
-
-
-
-
-
+The {\em steepest descent} method, available in {\gromacs}, is of the
+second class. It simply takes a step in the direction of the negative
+gradient (hence in the direction of the force), without any
+consideration of the history built up in previous steps. The step size
+is adjusted such that the search is fast but the motion is always
+downhill. This is a simple and sturdy, but somewhat stupid, method:
+its convergence can be quite slow, especially in the vicinity of the
+local minimum! The faster converging {\em conjugate gradient method}
+(see e.g. \cite{Zimmerman91}) uses gradient information from previous
+steps. In general, steepest descents will bring you close to the
+nearest local minimum very quickly, while conjugate gradients brings
+you {\em very} close to the local minimum, but performs worse far away
+from the minimum.
