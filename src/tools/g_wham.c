@@ -251,8 +251,9 @@ int main(int argc,char *argv[])
   };
   
   t_filenm fnm[] = {
-    { efXVG, "-o", "profile", ffWRITE },     	/* output file for profile */
-    { efXVG, "-hist","histo", ffWRITE}		/* output file for histograms */
+    { efPDO, "-f", NULL,      ffRDMULT },/* series of pdo files as input */
+    { efXVG, "-o", "profile", ffWRITE }, /* output file for profile */
+    { efXVG, "-hist","histo", ffWRITE}	 /* output file for histograms */
   };
   
   int i,j,k,l; 
@@ -260,6 +261,7 @@ int main(int argc,char *argv[])
   t_UmbrellaWindow * window=NULL;
   double *profile;
   bool flag=FALSE;
+  char **fnms;
   
 #define NFILE asize(fnm)
 
@@ -268,41 +270,42 @@ int main(int argc,char *argv[])
 
   /* This is the routine responsible for adding default options,
    * calling the X/motif interface, etc. */
-  parse_common_args(&argc,argv,PCA_CAN_VIEW|PCA_NOEXIT_ON_ARGS,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-		    
-  /* Check to see what we get for command line arguments */
-  if(argc<2) fatal_error(0,"You need to specify a series of pdo files as input");
-  for(i=1;i<argc;++i) {
-    if(!fexist(argv[i]))
-      fatal_error(0,"Unable to open file %s.",argv[i]);
-  }
-
+  
+  nfile = ftp2fns(&fnms,efPDO,NFILE,fnm);
+  
+  if(!nfile) 
+    fatal_error(0,"No input files");
+  
+  for(i=0;i<nfile;++i)
+    if(!fexist(fnms[i]))
+      fatal_error(0,"Unable to open file %s.",fnms[i]);
+  
   /* Now we need to process the files */
 			
   if(!noprof) {
     min=1e20;
     max=-1e20;
   }
-  else {
-    snew(window,argc-1);
-  }
+  else
+    snew(window,nfile);
 	
   /* Loop over all files */
-  for(i=1;i<argc;++i) {
+  for(i=0;i<nfile;++i) {
     /* read in the headers */
     FILE  * file;
     char Buffer[256];
     char * Path=NULL;
 		
     if(!(Path=getenv("GMX_PATH_GZIP")))
-      sprintf(Buffer,"/bin/gunzip -c < %s",argv[i]);
+      sprintf(Buffer,"/bin/gunzip -c < %s",fnms[i]);
     else
-      sprintf(Buffer,"%s/gunzip -c < %s",Path,argv[i]);
+      sprintf(Buffer,"%s/gunzip -c < %s",Path,fnms[i]);
 
     if((file=popen(Buffer,"r"))==NULL)
-      fatal_error(0,"Unable to open file %s",argv[i]);
-    printf("Opening file %s.\n",argv[i]);
+      fatal_error(0,"Unable to open file %s",fnms[i]);
+    printf("Opening file %s.\n",fnms[i]);
     read_umbrella_header(file,&header);
 		
     if(!noprof) {				/* We only want to calculate the min and max */
@@ -346,7 +349,7 @@ int main(int argc,char *argv[])
     /* Do output here */
     for(l=0;l<bins;++l) {
       fprintf(histout,"%e\t",(double)(l+0.5)/bins*(max-min)+min);
-      for(i=1;i<argc;++i) {
+      for(i=0;i<nfile;++i) {
 	for(j=0;j<window[i-1].nPull;++j) {
 	  fprintf(histout,"%e\t",window[i-1].Histo[j][l]);
 	}
@@ -357,10 +360,10 @@ int main(int argc,char *argv[])
   
     /* Calculate profile */
     snew(profile,bins);
-	
+    
     do {
-      calc_profile(profile,window,argc-1,min,max);
-      conv=calc_z(profile, window, argc-1, min, max);
+      calc_profile(profile,window,nfile,min,max);
+      conv=calc_z(profile, window,nfile, min, max);
       if(! (iterations%100)) {
 	printf("Iteration %d. Converged to %f.\n", iterations, conv);
       }
