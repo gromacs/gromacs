@@ -257,8 +257,12 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_pdbres(pdba,"LYS","LYSH",FALSE);
   if (bAspMan) 
     rename_pdbresint(pdba,"ASP",get_asptp,FALSE);
+  else
+    rename_pdbres(pdba,"ASPH","ASP",FALSE);
   if (bGluMan) 
     rename_pdbresint(pdba,"GLU",get_glutp,FALSE);
+  else
+    rename_pdbres(pdba,"GLUH","GLU",FALSE);
 
   *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
   rename_pdbres(pdba,"CYS","CYSH",FALSE);
