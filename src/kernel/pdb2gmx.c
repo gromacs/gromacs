@@ -207,7 +207,8 @@ int read_pdball(char *inf, char *outf,char *title,
   if (natom == 0)
     return 0;
 
-  write_sto_conf(outf,title,atoms,*x,NULL,box);
+  if (outf)
+    write_sto_conf(outf,title,atoms,*x,NULL,box);
  
   return natom;
 }
@@ -442,20 +443,20 @@ int main(int argc, char *argv[])
     "NZ) or LYSH (three protons), for HIS the proton can be either on ND1",
     "(HISA), on NE2 (HISB) or on both (HISH). By default these selections",
     "are done automatically.[PAR]",
-    "During processing the atoms will be reorderd according to Gromacs",
-    "conventions. With -n an index file can be generated that contains",
+    "During processing the atoms will be reordered according to Gromacs",
+    "conventions.",
+    "With [TT]-n[tt] an index file can be generated that contains",
     "one group reordered in the same way. This allows you to convert a",
-    "GROMOS trajectory and coordinate file to GROMACS. There is one",
+    "Gromos trajectory and coordinate file to Gromos. There is one",
     "limitation: reordering is done after the hydrogens are stripped",
     "from the input and before new hydrogens are added. This means that",
     "if you have hydrogens in your input file, you [BB]must[bb] select",
-    "the -reth option to obtain a usefull index file."
+    "the [TT]-reth[tt] option to obtain a useful index file."
   };
   static char *bugs[] = {
     "Generation of N-terminal hydrogen atoms on OPLS files does not work",
     "Deuterium (D) is not recognized as a hydrogen and will crash the program.",
-    "It is assumed that atomic coordinates pdb files are allways in "
-    "Angstrom.",
+    "It is assumed that atomic coordinates in pdb files are in Angstrom.",
     "The program should be able to select the protonation on pH, and also "
     "should allow for selection of ASPH instead of ASP.",
   };
@@ -503,12 +504,11 @@ int main(int argc, char *argv[])
   bool       bTopWritten;
   t_filenm   fnm[] = { 
     { efPDB, "-f", NULL,    ffREAD  },
-    { efPDB, "-q", "clean", ffWRITE },
-    { efPDB, "-op", "pdbout",ffWRITE },
-    { efGRO, "-o", NULL,    ffWRITE },
-    { efNDX, "-n", "clean", ffOPTWR },
+    { efSTO, "-o", "conf",  ffWRITE },
     { efTOP, NULL, NULL,    ffWRITE },
-    { efITP, "-i", "posre", ffWRITE }
+    { efITP, "-i", "posre", ffWRITE },
+    { efNDX, "-n", "clean", ffOPTWR },
+    { efPDB, "-q", "clean", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -571,7 +571,7 @@ int main(int argc, char *argv[])
   }
   
   clear_mat(box);
-  natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn("-q",NFILE,fnm),title,
+  natom=read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
 		    &pdba_all,&pdbx,box,bRetainH);
   
   if (natom==0)
@@ -898,8 +898,7 @@ int main(int argc, char *argv[])
   clear_rvec(box_space);
   if (box[0][0] == 0) 
     gen_box(0,atoms->nr,x,box,box_space,FALSE);
-  write_conf(ftp2fn(efGRO,NFILE,fnm),title,atoms,x,NULL,box);
-  write_sto_conf(opt2fn("-op",NFILE,fnm),title,atoms,x,NULL,box);
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),title,atoms,x,NULL,box);
 
   thanx(stdout);
   
