@@ -38,33 +38,83 @@ static char *SRCID_addconf_c = "$Id$";
 #include "txtdump.h"
 #include "pbc.h"
 
-#define MARGIN 0.2
+static real box_margin;
+
+real max_dist(rvec *x, real *r, int start, int end)
+{
+  real maxd;
+  int i,j;
+  
+  maxd=0;
+  for(i=start; i<end; i++)
+    for(j=i+1; j<end; j++)
+      maxd=max(maxd,sqrt(distance2(x[i],x[j]))+0.5*(r[i]+r[j]));
+  
+  return 0.5*maxd;
+}
+
+void set_margin(t_atoms *atoms, rvec *x, real *r)
+{
+  int i,d,start;
+/*   char *resname; */
+
+  box_margin=0;
+  
+  start=0;
+  for(i=0; i < atoms->nr; i++) {
+    if ( (i+1 == atoms->nr) || 
+	 (atoms->atom[i+1].resnr != atoms->atom[i].resnr) ) {
+      d=max_dist(x,r,start,i+1);
+      if (debug && d>box_margin)
+	fprintf(debug,"getting margin from %s: %g\n",
+		*(atoms->resname[atoms->atom[i].resnr]),box_margin);
+      box_margin=max(box_margin,d);
+      start=i+1;
+    }
+  }
+}
+
+
 bool in_box_plus_margin(rvec x,matrix box)
 {
-  return ( ( (x[0]>=-MARGIN) && (x[0]<=box[0][0]+MARGIN) ) &&
-	   ( (x[1]>=-MARGIN) && (x[1]<=box[1][1]+MARGIN) ) &&
-	   ( (x[2]>=-MARGIN) && (x[2]<=box[2][2]+MARGIN) ) );
+  return ( x[XX]>=-box_margin && x[XX]<=box[XX][XX]+box_margin &&
+	   x[YY]>=-box_margin && x[YY]<=box[YY][YY]+box_margin &&
+	   x[ZZ]>=-box_margin && x[ZZ]<=box[ZZ][ZZ]+box_margin );
 }
 
 bool outside_box_minus_margin(rvec x,matrix box)
 {
-  return ( ( (x[0]<MARGIN) && (x[0]>box[0][0]-MARGIN) ) &&
-	   ( (x[1]<MARGIN) && (x[1]>box[1][1]-MARGIN) ) &&
-	   ( (x[2]<MARGIN) && (x[2]>box[2][2]-MARGIN) ) );
+  return ( x[XX]<box_margin || x[XX]>box[XX][XX]-box_margin ||
+	   x[YY]<box_margin || x[YY]>box[YY][YY]-box_margin ||
+	   x[ZZ]<box_margin || x[ZZ]>box[ZZ][ZZ]-box_margin );
 }
 
-void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
-	      int NTB,matrix box_1,
-	      t_atoms *atoms_2,rvec *x_2,rvec *v_2,real *r_2,
+int mark_remove_res(int at, bool *remove, int natoms, t_atom *atom)
+{
+  int resnr;
+  
+  resnr = atom[at].resnr;
+  while( (at > 0) && (resnr==atom[at-1].resnr) )
+    at--;
+  while( (at < natoms) && (resnr==atom[at].resnr) ) {
+    remove[at]=TRUE;
+    at++;
+  }
+  
+  return at;
+}
+
+void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,
+	      int NTB, matrix box,
+	      t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
 	      bool bVerbose)
 {
   int  i,j,m,prev,resnr,nresadd,d,k;
   int  *atom_flag;
   rvec dx;
-  bool bRemove;
   bool *remove;
-  
-  if (atoms_2->nr <= 0) {
+
+  if (atoms_solvt->nr <= 0) {
     fprintf(stderr,"WARNING: Nothing to add\n");
     return;
   }
@@ -72,83 +122,89 @@ void add_conf(t_atoms *atoms_1,rvec *x_1,rvec *v_1,real *r_1,
   if (bVerbose)
     fprintf(stderr,"Calculating Overlap...\n");
   
-  snew(remove,atoms_2->nr);
-  init_pbc(box_1,FALSE);
+  snew(remove,atoms_solvt->nr);
+  init_pbc(box,FALSE);
+  
+  /* set margin around box edges to largest solvent dimension */
+  set_margin(atoms_solvt,x_solvt,r_solvt);
+  
+  /* remove atoms that are far outside the box */
+  for(i=0; i<atoms_solvt->nr ;i++)
+    if ( !in_box_plus_margin(x_solvt[i],box) )
+      i=mark_remove_res(i,remove,atoms_solvt->nr,atoms_solvt->atom);
   
   /* check solvent with solute */
-  for(i=0;(i<atoms_1->nr);i++) {
-    if ( bVerbose && ( (i<10) || ((i+1)%10) || (i>atoms_1->nr-10) ) )
-      fprintf(stderr,"\r%d out of %d atoms checked",i+1,atoms_1->nr);
-    for(j=0;(j<atoms_2->nr);j++) 
+  for(i=0; i<atoms->nr; i++) {
+    if ( bVerbose && ( (i<10) || ((i+1)%10) || (i>atoms->nr-10) ) )
+      fprintf(stderr,"\r%d out of %d atoms checked",i+1,atoms->nr);
+    for(j=0; j<atoms_solvt->nr; j++) 
       /* only check solvent that hasn't been marked for removal already */
       if (!remove[j]) {
-	pbc_dx(x_1[i],x_2[j],dx);
-	remove[j] = norm2(dx) < sqr(r_1[i] + r_2[j]);
-	if (remove[j]) {	
-	  resnr=atoms_2->atom[j].resnr;
-	  while( (j > 0) && (resnr==atoms_2->atom[j-1].resnr) )
-	    j--;
-	  for( ; (j < atoms_2->nr) && (resnr==atoms_2->atom[j].resnr); j++)
-	    remove[j]=TRUE;
-	}
+	pbc_dx((*x)[i],x_solvt[j],dx);
+	if ( norm2(dx) < sqr((*r)[i] + r_solvt[j]) )
+	  j=mark_remove_res(j,remove,atoms_solvt->nr,atoms_solvt->atom);
       }
+  }
+  if (bVerbose)
+    fprintf(stderr,"\n");
+  
+  /* check solvent with itself */
+  for(i=0; i<atoms_solvt->nr ;i++) {
+    if ( bVerbose && ( (i<10) || !((i+1)%10) || (i>atoms_solvt->nr-10) ) )
+      fprintf(stderr,"\rchecking atom %d out of %d",i+1,atoms_solvt->nr);
+    
+    /* check only atoms that haven't been marked for removal already and
+       are close to the box edges */
+    if ( !remove[i] && outside_box_minus_margin(x_solvt[i],box) )
+      /* check with other border atoms, 
+	 only if not already removed and two different molecules (resnr) */
+      for(j=i+1; (j<atoms_solvt->nr) && !remove[i]; j++)
+	if ( !remove[j] && 
+	     atoms_solvt->atom[i].resnr != atoms_solvt->atom[j].resnr &&
+	     outside_box_minus_margin(x_solvt[j],box) ) {
+	  pbc_dx(x_solvt[i],x_solvt[j],dx);
+	  if ( norm2(dx) < sqr(r_solvt[i] + r_solvt[j]) )
+	    j=mark_remove_res(j,remove,atoms_solvt->nr,atoms_solvt->atom);
+	}
   }
   if (bVerbose)
     fprintf(stderr,"\n");
 
-  /* check solvent with itself */
-  for(i=0;(i<atoms_2->nr);i++) {
-    if ( bVerbose && ( (i<10) || !((i+1)%10) || (i>atoms_2->nr-10) ) )
-      fprintf(stderr,"\rchecking atom %d out of %d",i+1,atoms_2->nr);
-    
-    /* remove atoms that are too far away */
-    remove[i] = !in_box_plus_margin(x_2[i],box_1);
-    
-    /* check only the atoms that are in the border */
-    if ( !remove[i] && outside_box_minus_margin(x_2[i],box_1) )
-      /* check with other border atoms, 
-	 only if not already removed and two different molecules (resnr) */
-      for(j=0; (j<atoms_2->nr) && !remove[i]; j++)
-	if ( !remove[j] && 
-	     atoms_2->atom[i].resnr != atoms_2->atom[j].resnr &&
-	     in_box_plus_margin(x_2[j],box_1) && 
-	     outside_box_minus_margin(x_2[j],box_1) ) {
-	  pbc_dx(x_2[i],x_2[j],dx);
-	  remove[i] = norm2(dx) < sqr(r_2[i] + r_2[j]);
-	}
-    
-    if ( remove[i] ) {
-      k=i;
-      while( (k>=0) && (atoms_2->atom[k].resnr==atoms_2->atom[i].resnr) )
-	k--;
-      for(; (k < atoms_2->nr) && 
-	    (atoms_2->atom[k].resnr==atoms_2->atom[i].resnr); k++)
-	remove[k] = TRUE;
-    }
+  /* count how many atoms will be added and make space */
+  j=0;
+  for (i=0; (i<atoms_solvt->nr); i++)
+    if (!remove[i])
+      j++;
+  if (bSrenew) {
+    srenew(atoms->resname,  atoms->nres+atoms_solvt->nres);
+    srenew(atoms->atomname, atoms->nr+j);
+    srenew(atoms->atom,     atoms->nr+j);
+    srenew(*x,              atoms->nr+j);
+    srenew(*r,              atoms->nr+j);
   }
-  if (bVerbose)
-    fprintf(stderr,"\n");
   
-  /* add the selected atoms_2 to atoms_1 */
+  /* add the selected atoms_solvt to atoms */
   prev=NOTSET;
   nresadd=0;
-  for (i=0; (i<atoms_2->nr); i++)
+  for (i=0; (i<atoms_solvt->nr); i++)
     if (!remove[i]) {
       if ( (prev==NOTSET) || 
-	   (atoms_2->atom[i].resnr != atoms_2->atom[prev].resnr) ) {
+	   (atoms_solvt->atom[i].resnr != atoms_solvt->atom[prev].resnr) ) {
 	nresadd ++;
-	atoms_1->nres++;
+	atoms->nres++;
       }
-      atoms_1->nr++;
-      atoms_1->atomname[atoms_1->nr-1] = atoms_2->atomname[i];
-      copy_rvec(x_2[i],x_1[atoms_1->nr-1]);
-      copy_rvec(v_2[i],v_1[atoms_1->nr-1]);
-      r_1[atoms_1->nr-1]   =r_2[i];
-      atoms_1->atom[atoms_1->nr-1].resnr=atoms_1->nres-1;
-      atoms_1->resname[atoms_1->nres-1]=
-	atoms_2->resname[atoms_2->atom[i].resnr];
+      atoms->nr++;
+      atoms->atomname[atoms->nr-1] = atoms_solvt->atomname[i];
+      copy_rvec(x_solvt[i],(*x)[atoms->nr-1]);
+      (*r)[atoms->nr-1]   = r_solvt[i];
+      atoms->atom[atoms->nr-1].resnr = atoms->nres-1;
+      atoms->resname[atoms->nres-1] =
+	atoms_solvt->resname[atoms_solvt->atom[i].resnr];
       prev=i;
     }
+  if (bSrenew)
+    srenew(atoms->resname,  atoms->nres+nresadd);
+  
   if (bVerbose)
     fprintf(stderr,"Added %d molecules\n",nresadd);
   
