@@ -91,47 +91,40 @@ than to modify the inner loops of the MD program.
 
 \subsection{Your own potential function}
 You can also use your own \swapindex{potential}{function}s 
-without editing the {\gromacs}
-code. When you add the following lines in your {\tt .mdp} file:
+without editing the {\gromacs} code. 
+The potential function should be according to the following equation
+\beq
+V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 g(r_{ij}) + C_{12} h(r_{ij})
+\eeq
+with f,g,h user defined functions. Note that if g(r) represents 
+a normal dispersion interaction, g(r) should be $<$ 0. C$_6$, C$_{12}$ and the 
+charges are read from the topology. Also note that combination rules are
+only supported for Lennard Jones and Buckingham, and that your tables should
+match the parameters in the binary topology.
+
+When you add the following lines in your {\tt .mdp} file:
 \begin{verbatim}
-electrostatics	= User
-rshort          = 1.0
-rlong           = 1.0
+rlist           = 1.0
+coulombtype	= User
+rcoulomb        = 1.0
+vdwtype         = User
+rvdw            = 1.0
 \end{verbatim}
-the MD program will expect to find three files with five columns of table 
-lookup data according to \tabref{usertab}. 
-
-\begin{table}
-\centerline{
-\begin{tabular}{|l|l|lllll|}
-\dline
-File name	& Function	&\multicolumn{5}{c|}{Columns}	\\
-\hline
-rtab.xvg	& Repulsion	&&&&&\\
-dtab.xvg	& Dispersion	& x	& f(x)	& -f$^{(1)}$(x) & f$^{(2)}$(x) & -f$^{(3)}$(x)\\
-ctab.xvg	& Coulomb	&&&&&\\
-\dline
-\end{tabular}
-}
-\caption[User specified potential function data.]{User specified
-potential function data. f$^{(n)}$(x) denotes the n$^{th}$  derivative
-of f(x) with respect to x.}
-\label{tab:usertab}
-\end{table}
-
-As an example for the normal dispersion interaction the file would contain:\\
-\centerline{\begin{tabular}{lllll}
-x &-x$^{-6}$  &-6x$^{-7}$ & -42x$^{-8}$ &-336x$^{-9}$\\
-\end{tabular}}\\
+the MD program will read a single file (name can be changed with option
+{\tt -table}) with seven columns of table 
+lookup data in the order: x, f(x), f''(x), g(x), g''(x), h(x), h''(x).
 The x should run from 0 to r$_c$+0.5, with a spacing of 0.002 nm when
 you run in single precision, or 0.0005 when you run in double
-precision.  This and other functions contain a singularity at x=0, but
+precision.  This and other functions contain a singularity at x = 0, but
 since atoms are normally not closer to each other than 0.1 nm, the
-function value at x=0 is not important.  In this context r$_c$ denotes
-the single cut-off denoted by the variables {\tt rshort} and {\tt
-rlong} (see above). These variables should be the same (but need not
-be 1.0) and consistent with the table data.  The neighbor-searching
-algorithm will search all atom-pairs within a distance {\tt rlong} and
-compute the interactions using your potential functions.
+function value at x = 0 is not important and the tables can be started at
+e.g. 0.02 nm.  In this context r$_c$ denotes
+the cut-off denoted by the variables {\tt rvdw} and {\tt
+rcoulomb} (see above). These variables should be the same (but need not
+be 1.0) and consistent with the table data.  Finally, it is also possible
+to combine a standard Coulomb with a modified LJ potential. One then specifies
+e.g. coulombtype = Cut-off or coulombtype = PME, combined with vdwtype = User.
+The table file must always contain the 7 columns however.
+
 
 This mechanism allows the user to use their own preferred programming language,
