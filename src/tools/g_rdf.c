@@ -68,7 +68,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,*rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
-  real       *inv_segvol;
+  real       *inv_segvol,vol,vol_sum;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box;
   int        *npairs;
@@ -85,7 +85,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       excl=&(top.atoms.excl);
   }
   snew(grpname,2);
-  fprintf(stderr,"Select groups for RDF computation:\n");
+  fprintf(stderr,"\nSelect groups for RDF computation:\n");
   if (fnTPS)
     get_index(&top.atoms,fnNDX,2,isize,index,grpname);
   else
@@ -167,10 +167,14 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 
   snew(x_i1,isize[1]);
   nframes = 0;
+  vol_sum = 0;
   do {
     /* Must init pbc every step because of pressure coupling */
     init_pbc(box,FALSE);
     rm_pbc(&top.idef,natoms,box,x,x);
+    
+    vol = det(box);
+    vol_sum += vol;
     
     if (bCM) {
       /* calculate centre of mass */
@@ -216,6 +220,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   sfree(x);
   
+  /* Average volume */
+  vol = vol_sum/nframes;
+  
   /* Calculate volume of sphere segments */
   snew(inv_segvol,nbin);
   prev_spherevol=0;
@@ -254,13 +261,14 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   ffclose(fp);
   
   do_view(fnRDF,NULL);
-  
+
+  /* h(Q) function: fourier transform of rdf */  
   if (fnHQ) {
-    int nhq = 201;
+    int nhq = 401;
     real *hq,*integrand,Q,rho;
     
     /* Get a better number density later! */
-    rho = isize[1]/det(box);
+    rho = isize[1]/vol;
     snew(hq,nhq);
     snew(integrand,nrdf);
     for(i=0; (i<nhq); i++) {
@@ -357,7 +365,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   
   bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
 
-  fprintf(stderr,"Select group for structure factor computation:\n");
+  fprintf(stderr,"\nSelect group for structure factor computation:\n");
   get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
   if (isize < top.atoms.nr)
     snew(xndx,isize);
@@ -456,15 +464,16 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   sfree(x);
 
   /* Normalize it ?? */  
-
   factor  = k_max*grid/(nbin);
   yfactor = nelectron*(1.0/nframes)*(1.0/fftgrid->nxyz);
   fp=xvgropen(fnSQ,"Structure Factor","q (/nm)","S(q)");
   for(i=0; i<nbin; i++)
     fprintf(fp,"%10g %10g\n", (i+0.5)*factor,count[i]*yfactor);
   ffclose(fp);
-
+  
   do_view(fnSQ,NULL);
+  
+  done_fftgrid(fftgrid);
 }
 
 int main(int argc,char *argv[])
