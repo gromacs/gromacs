@@ -175,8 +175,8 @@ int gmx_densmap(int argc,char *argv[])
     if (nz == 0)
       nz = (int)(box[ZZ][ZZ]/bin + 0.5);
   } else {
-    nx = (int)(ceil(2*amax/bin));
-    nradial = (int)(ceil(rmax/bin));
+    nx = (int)(2*amax/bin + 0.5);
+    nradial = (int)(rmax/bin + 0.5);
     invspa = nx/(2*amax);
     invspz = nradial/rmax;
     if (bMirror)
