@@ -16,6 +16,7 @@
 #include "index.h"
 #include "confio.h"
 #include "pull.h"
+#include "string.h"
 
 void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
 	       int nout, real time) 
