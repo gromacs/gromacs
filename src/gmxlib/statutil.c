@@ -188,7 +188,7 @@ void default_time(void)
 
 static void set_default_time_unit(char *select)
 {
-  int i;
+  int i,j;
   
   i=1;
   while(timestr[i] && strcmp(timestr[i], select)!=0)
