@@ -339,7 +339,6 @@ int main (int argc,char *argv[])
 
     teller++;
     if (teller >= maxframe) {
-      fprintf(stderr,"\nGoing to realloc memory\n");
       maxframe +=NFRAME;
       srenew(time,maxframe);
       for(j=0; (j<nrms); j++) 
@@ -393,7 +392,6 @@ int main (int argc,char *argv[])
 
       teller2++;
       if (teller2 >= maxframe2) {
-	fprintf(stderr,"\nGoing to realloc memory\n");
 	maxframe2 +=NFRAME;
 	srenew(time2,maxframe2);
       }
