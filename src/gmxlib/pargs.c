@@ -222,7 +222,7 @@ char *pa_val(t_pargs *pa)
     sprintf(buf,"%6g",*(pa->u.r));
     break;
   case etBOOL:
-    sprintf(buf,"%6s",bool_names[*(pa->u.b)]);
+    sprintf(buf,"%6s",*(pa->u.b) ? "yes" : "no");
     break;
   case etSTR:
     if (*(pa->u.c))
