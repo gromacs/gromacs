@@ -58,6 +58,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "mdebin.h"
 #include "vcm.h"
 #include "dummies.h"
+#include "pull.h"
 
 #define MD_MULTISIM  (1<<0)
 #define MD_GLAS      (1<<1)

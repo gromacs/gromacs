@@ -49,7 +49,7 @@ static char *SRCID_pullutil_c = "$Id$";
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
-#include "pull.h"
+#include "pull-internal.h"
 
 /* calculates center of mass of selection index from all coordines x */
 real calc_com(rvec x[],int gnx,atom_id *index,t_mdatoms *md,

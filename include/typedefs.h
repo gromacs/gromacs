@@ -77,7 +77,6 @@ extern "C" {
 #include <types/parm.h>
 #include <types/matrix.h>
 #include <types/edsams.h>
-#include <types/pulls.h>
 
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c 

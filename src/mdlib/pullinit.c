@@ -51,7 +51,7 @@ static char *SRCID_pullinit_c = "$Id$";
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
-#include "pull.h"
+#include "pull-internal.h"
 #include "string.h"
 #include "pbc.h"
 

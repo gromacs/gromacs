@@ -46,7 +46,7 @@ static char *SRCID_pull_c = "$Id$";
 #include "filenm.h"
 #include "string.h"
 #include "smalloc.h"
-#include "pull.h"
+#include "pull-internal.h"
 
 /* check if we're close enough to the target position */
 static bool check_convergence(t_pull *pull) {

@@ -50,7 +50,7 @@ static char *SRCID_pullio_c = "$Id$";
 #include "symtab.h"
 #include "index.h"
 #include "confio.h"
-#include "pull.h"
+#include "pull-internal.h"
 #include "string.h"
 
 void dump_conf(t_pull *pull,rvec x[],matrix box,t_topology *top, 
