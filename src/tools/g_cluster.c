@@ -610,7 +610,7 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       sprintf(buf1,"%5s","");
       sprintf(buf2,"%5s","");
     }
-    sprintf(buf,"%3d | %3d%s | %6f%s |",
+    sprintf(buf,"%3d | %3d%s | %6g%s |",
 	    cl,nstr,buf1,time[midstr],buf2);
     fprintf(stderr,buf);
     fprintf(log,buf);
@@ -620,8 +620,8 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       else
 	buf[0] = '\0';
       i1 = structure[i];
-      fprintf(stderr,"%s %6f",buf,time[i1]);
-      fprintf(log,"%s %6f",buf,time[i1]);
+      fprintf(stderr,"%s %6g",buf,time[i1]);
+      fprintf(log,"%s %6g",buf,time[i1]);
     }
     fprintf(stderr,"\n");
     fprintf(log,"\n");
