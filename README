@@ -1,9 +1,11 @@
 
                Welcome to the official version of GROMACS!
 
-Starting with version 3.0, a lot of things have changed. Not only is the 
-code significantly faster, but we also have a completely new installation
-process and license the package under the GPL (see the COPYING file).
+There are no significant changes to the installation or use between version 
+3.1 and 3.0, so if you're already used to 3.0 you can just go ahead and update.
+A lot of things changed with version 3.0, though. Not only is the code 
+significantly faster, but we also introduced a completely new installation
+process and licensed the package under the GPL (see the COPYING file).
 
 If you are familiar with unix, it should be fairly trivial to compile and
 install GROMACS. Installation instructions are available in the INSTALL file,

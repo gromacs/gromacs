@@ -256,7 +256,7 @@ fi
 # fail on platforms where MPI executables can only be run through a batchqueue.
 
 if test "$enable_mpi" = "yes"; then
-  AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)	
+  AC_CHECK_PROGS(MPICC, mpxlc mpicc mpcc hcc, $CC)
 # now change the normal cc to the MPI one - see the comment above.
   CC=$MPICC
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
@@ -266,8 +266,8 @@ if test "$enable_mpi" = "yes"; then
 fi
 
 if test "$enable_fortran" = "yes"; then
-  AC_F77_LIBRARY_LDFLAGS  
-  AC_F77_WRAPPERS 
+  AC_F77_LIBRARY_LDFLAGS
+  AC_F77_WRAPPERS
 fi
 
 AC_PROG_CPP
@@ -584,6 +584,15 @@ AC_C_INLINE
 
 
 
+case "${host_cpu}" in
+   i?86) 
+      # disable x86trunc if inlined assembly doesnt work 
+      AC_MSG_CHECKING(if the C compiler supports inline assembly)
+      AC_TRY_LINK([],[float f;int i; asm("fld %1\nfistpl %0\n" : "=m" (*&i) : "f" (f));],[AC_MSG_RESULT(yes)
+AC_DEFINE(USE_X86TRUNC,,[Disable inline assembly truncation for x86 cpu])],[AC_MSG_RESULT(no)])
+        ;;	
+   *) enable_x86_asm=no ;;
+esac
 
 
 

@@ -122,7 +122,7 @@ int update_inner_forces(int i,int j)
 int table_index(char *rin)
 {
     assign("rt",rin);
-#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && !defined DISABLE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && defined USE_X86TRUNC)
     if(bC) 
       code("x86trunc(rt,n0);");
     else
