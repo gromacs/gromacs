@@ -588,7 +588,7 @@ static bool get_dx(int cx,int Nx,int tx,int delta,int *dx0,int *dx1)
  *
  ****************************************************/
 
-static gmx_inline void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
+static void do_longrange(FILE *log,t_topology *top,t_forcerec *fr,
 				    int ngener,t_mdatoms *md,int icg,int nlr,
 				    atom_id lr[],t_excl bexcl[],int shift,
 				    rvec x[],rvec box_size,t_nrnb *nrnb,
