@@ -16,7 +16,7 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  random.o 	pbc.o  		wnblist.o 	\
 		  bondfree.o 	nrnb.o 		maths.o   	\
 		  nsb.o		mshift.o	ifunc.o		\
-		  fnbf.o	inloopc.o			\
+		  fnbf.o	inloopc.o	typedefs.o	\
 		  disre.o	init.o 		stat.o 		\
 		  mvdata.o	steep.o		sim_util.o	\
 		  update.o 	tgroup.o	dummies.o	\
@@ -25,18 +25,17 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  mdebin.o	splittop.o	mdatom.o	\
 		  shakef.o	cshake.o	csettle.o	\
 		  clincs.o	clincsld.o	calcmu.o	\
-		  binio.o 	rwtop.o  	filenm.o 	\
-		  statusio.o 	txtdump.o 	tconf.o		\
-		  confio.o 	sheader.o 	rdgroup.o 	\
+		  filenm.o 	txtdump.o 	\
+		  confio.o 	rdgroup.o 	\
 		  names.o 	statutil.o	vdw.o		\
-		  xvgr.o	readinp.o	enerio.o	\
+		  xvgr.o	readinp.o	\
 		  wman.o	replace.o	pdbio.o  	\
 		  xtcio.o	trxio.o		xdrd.o		\
 		  h_db.o	genhydro.o	pargs.o		\
 		  fatal.o 	copyrite.o 	memdump.o 	\
 		  smalloc.o 	string2.o 	gbutil.o	\
 		  macros.o 	ffscanf.o 	futil.o 	\
-		  memtab.o 	symtab.o 	invblock.o 	\
+		  symtab.o 	invblock.o 	\
 		  strdb.o 	3dview.o 	rando.o		\
 		  buffer.o	main.o		network.o 	\
 		  nrama.o	do_fit.o	writeps.o	\
@@ -45,8 +44,10 @@ OBJ		= force.o 	ns.o 		grid.o     	\
 		  lrutil.o	four1.o		fourn.o		\
 		  grids.o	ghat.o		tables.o	\
 		  edsam.o	congrad.o	javaio.o        \
-		  index.o       readcmap.o\
-
+		  index.o       readcmap.o	\
+		  gmxfio.o	trnio.o		tpxio.o		\
+		  enxio.o
+		  
 ifeq ($(USEF77),yes)
 OBJ		+= inloopf.o	fshake.o	fsettle.o	\
 		   flincs.o	flincsld.o	doconv.o	\
@@ -108,10 +109,15 @@ testfft:	testfft.o
 testtab:	testtab.o	tables.o	lrutil.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 libxdrf.o:	libxdrf.m4 $(M4FILE)
-		$(RM) libxdrf.c
+#		$(RM) libxdrf.c
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
 		$(CC) $(C-FLAGS) -c libxdrf.c
 		$(RM) libxdrf.c
+
+inloopf.o:	inloopf.m4 
+		$(CC) -E $(SYSDEFS) inloopf.m4 > inloopf.f
+		$(F77) $(FFLAGS) -c inloopf.f
+		$(RM) inloopf.f
 
 libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o
 		$(AR) $@ $^
@@ -131,3 +137,4 @@ lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 include	Make.dep
+
