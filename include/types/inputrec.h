@@ -112,9 +112,9 @@ typedef struct {
   int  eConstrAlg;      /* Type of constraint algorithm                 */
   int  nProjOrder;      /* Order of the LINCS Projection Algorithm      */
   real LincsWarnAngle;  /* If bond rotates more than %g degrees, warn   */
-  real ld_temp;         /* Temperature for Langevin Dynamics (LD)       */
-  real ld_fric;         /* Friction coefficient for LD (amu / ps)       */
-  int  ld_seed;         /* Random seed for LD                           */
+  real bd_temp;         /* Temperature for Brownian Dynamics (BD)       */
+  real bd_fric;         /* Friction coefficient for BD (amu / ps)       */
+  int  ld_seed;         /* Random seed for SD and BD                    */
   real cos_accel;       /* Acceleration for viscosity calculation       */
   int  userint1;        /* User determined parameters                   */
   int  userint2;

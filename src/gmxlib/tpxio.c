@@ -241,8 +241,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->LincsWarnAngle);
     if (file_version <= 14)
       do_int(idum);
-    do_real(ir->ld_temp);
-    do_real(ir->ld_fric);
+    do_real(ir->bd_temp);
+    do_real(ir->bd_fric);
     do_int(ir->ld_seed);
     if (file_version >= 14)
       do_real(ir->cos_accel);

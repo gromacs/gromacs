@@ -222,7 +222,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     switch (parm->ir.eI) {
     case eiMD:
     case eiSD:
-    case eiLD:
+    case eiBD:
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,bDummies,nstepout,parm,grps,
 		    top,ener,x,vold,v,vt,f,buf,
@@ -257,7 +257,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
       /* if rerunMD, don't write last frame again */
       finish_run(stdlog,cr,gro,nsb,top,parm,
 		 nrnb,nodetime,realtime,parm->ir.nsteps,
-		 parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiLD);
+		 parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiBD);
     }
   }
   /* Does what it says */  

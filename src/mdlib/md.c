@@ -151,7 +151,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
   /* Compute initial EKin for all.. */
   if (grps->cosacc.cos_accel == 0)
-    calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+    calc_ke_part(TRUE,parm->ir.eI==eiSD,
+		 START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
 		 mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
   else
     calc_ke_part_visc(TRUE,START(nsb),HOMENR(nsb),
@@ -246,7 +247,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	    clear_rvec(v[i]);
 	if (bRerunWarnNoV) {
 	  fprintf(stderr,"\nWARNING: Some frames do not contain velocities.\n"
-		  "         Ekin, temperature and pressure are incorrect.\n"
+		  "         Ekin, temperature and pressure are incorrect,\n"
+		  "         the virial will be incorrect when contraints are present.\n"
 		  "\n");
 	  bRerunWarnNoV = FALSE;
 	}
@@ -422,7 +424,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
     debug_gmx();
     if (grps->cosacc.cos_accel == 0)
-      calc_ke_part(FALSE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
+      calc_ke_part(FALSE,parm->ir.eI==eiSD,
+		   START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
 		   mdatoms,grps,&mynrnb,lambda,&ener[F_DVDLKIN]);
     else
       calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),

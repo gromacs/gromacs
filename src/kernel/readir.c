@@ -286,8 +286,8 @@ void get_ir(char *mdparin,char *mdparout,
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
   CTYPE ("Temperature, friction coefficient (amu/ps) and random seed");
-  RTYPE ("ld-temp",     ir->ld_temp,    300.0);
-  RTYPE ("ld-fric",     ir->ld_fric,    0.0);
+  RTYPE ("bd-temp",     ir->bd_temp,    300.0);
+  RTYPE ("bd-fric",     ir->bd_fric,    0.0);
   ITYPE ("ld-seed",     ir->ld_seed,    1993);
   
   /* Em stuff */
@@ -862,6 +862,8 @@ void do_index(char *ndx,
     fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and "
 		"%d tau_t values",ntcg,nref_t,ntau_t);  
 
+  if (ir->eI == eiSD)
+    ir->etc = etcNO;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,"T-Coupling",
 	       restnm,forward,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;

@@ -56,48 +56,31 @@ static char *SRCID_update_c = "$Id$";
 #include "edsam.h"
 #include "pull.h"
 
+typedef struct {
+  real gdt;
+  real eph;
+  real emh;
+  real em;
+  real b;
+  real c;
+  real d;
+} t_sdconst;
 
+/* constants for a (bad) random number generator */
+const unsigned long im = 0xffff;
+const unsigned long ia = 1093;
+const unsigned long ic = 18257;
+const real inv_im      = 1.0/(0xffff);
 
-static void calc_g(rvec x_unc,rvec x_cons,rvec g,double mdt_2)
-{
-  int d;
-  
-  for(d=0; (d<DIM);d++) 
-    g[d]=(x_cons[d]-x_unc[d])*mdt_2;
-}
+static t_sdconst *sdc;
 
-static void do_shake_corr(rvec xold,rvec x,rvec v,double dt_1)
-{
-  int    d;
-
-  for(d=0; (d<DIM);d++) 
-    v[d]=((double) x[d]-(double) xold[d])*dt_1;
-}
-
-static void do_both(rvec xold,rvec x_unc,rvec x,rvec g,
-		    rvec v,real mdt_2,real dt_1)
-{
-  real xx,yy,zz;
-
-  xx=x[XX];
-  yy=x[YY];
-  zz=x[ZZ];
-  g[XX]=(xx-x_unc[XX])*mdt_2;
-  g[YY]=(yy-x_unc[YY])*mdt_2;
-  g[ZZ]=(zz-x_unc[ZZ])*mdt_2;
-  v[XX]=(xx-xold [XX])*dt_1;
-  v[YY]=(yy-xold [YY])*dt_1;
-  v[ZZ]=(zz-xold [ZZ])*dt_1;
-}
-
-
-static void do_update(int start,int homenr,double dt,
-		      rvec lamb[],t_grp_acc *gstat,t_grp_tcstat *tcstat,
-		      rvec accel[],ivec nFreeze[],real invmass[],
-		      unsigned short ptype[],unsigned short cFREEZE[],
-		      unsigned short cACC[],unsigned short cTC[],
-		      rvec x[],rvec xprime[],rvec v[],rvec vold[],
-		      rvec f[],matrix M,bool bExtended)
+static void do_update_md(int start,int homenr,double dt,
+			 rvec lamb[],t_grp_acc *gstat,t_grp_tcstat *tcstat,
+			 rvec accel[],ivec nFreeze[],real invmass[],
+			 unsigned short ptype[],unsigned short cFREEZE[],
+			 unsigned short cACC[],unsigned short cTC[],
+			 rvec x[],rvec xprime[],rvec v[],rvec vold[],
+			 rvec f[],matrix M,bool bExtended)
 {
   double imass,w_dt;
   int    gf,ga,gt;
@@ -177,13 +160,11 @@ static void do_update_visc(int start,int homenr,double dt,
   int    gt;
   real   vn,vc;
   real   lg,xi,vv;
-  real   fac,cosz,mvcos;
+  real   fac,cosz;
   rvec   vrel;
   int    n,d;
   
   fac = 2*M_PI/(box[ZZ][ZZ]);
-
-  mvcos = 0;
 
   if(bExtended) {
     /* Update with coupling to extended ensembles, used for
@@ -250,97 +231,154 @@ static void do_update_visc(int start,int homenr,double dt,
   }
 }
 
+static real fgauss(unsigned long *jran)
+{
+  static real sqrt3 = 1.7320508075688772;
+  real jr;
+
+  *jran = (*jran*ia+ic) & im;
+  jr = (real)*jran;
+  *jran = (*jran*ia+ic) & im;
+  jr += (real)*jran;
+  *jran = (*jran*ia+ic) & im;
+  jr += (real)*jran;
+  *jran = (*jran*ia+ic) & im;
+  jr += (real)*jran;
+  
+  return sqrt3*(jr*inv_im-2);
+}
+
+static void calc_sd_consts(int ngtc,real tau_t[],real dt)
+{
+  int  n;
+  real y;
+
+  snew(sdc,ngtc);
+
+  for(n=0; n<ngtc; n++) {
+    sdc[n].gdt = dt/tau_t[n];
+    sdc[n].eph = exp(sdc[n].gdt/2);
+    sdc[n].emh = exp(-sdc[n].gdt/2);
+    sdc[n].em  = exp(-sdc[n].gdt);
+    if (sdc[n].gdt >= 0.1) {
+      sdc[n].b = sdc[n].gdt*(sqr(sdc[n].eph)-1) - 4*sqr(sdc[n].eph-1);
+      sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
+      sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
+    } else {
+      y = sdc[n].gdt/2;
+      /* Sixth order expansions for small y */
+      sdc[n].b = y*y*y*y*(1.0/3.0+y*(1.0/3.0+y*17.0/90.0));
+      sdc[n].c = y*y*y*(2.0/3.0+y*(-1.0/2.0+y*(7.0/30.0-y/12.0)));
+      sdc[n].d = y*y*(-1.0+y*y*(-1.0/12.0-y*y/360.0));
+    }
+    if (debug)
+      fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
+	      n,sdc[n].b,sdc[n].c,sdc[n].d);
+  }
+}
 
 static void do_update_sd(int start,int homenr,double dt,
 			 rvec accel[],ivec nFreeze[],
-			 real mass[],real invmass[],unsigned short ptype[],
+			 real invmass[],unsigned short ptype[],
 			 unsigned short cFREEZE[],unsigned short cACC[],
 			 unsigned short cTC[],real SAfactor,
 			 rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
 			 int ngtc,real tau_t[],real ref_t[],
-			 int *seed)
+			 int *seed, bool bFirstHalf)
 {
-  const unsigned long im = 0xffff;
-  const unsigned long ia = 1093;
-  const unsigned long ic = 18257;
-  unsigned long  jran;
-  static real *v_fac=NULL,*f_fac,*r_fac,*rhalf;
-  real   gamma_dt;
-  double w_dt;
-  int    gf,ga,gt;
-  real   vn,vv;
-  real   sqrtm,frand;
-  int    n,d;
-  real   jr;
-  
-  if (v_fac == NULL) {
-    snew(v_fac,ngtc);
-    snew(f_fac,ngtc);
-    snew(r_fac,ngtc);
-    snew(rhalf,ngtc);
-  }
+  typedef struct {
+    real V;
+    real X;
+    real Yv;
+    real Yx;
+  } t_sd_sigmas;
 
-  for(n=0; n<ngtc; n++) {
-    /* The friction coefficient gammma = 1/opts->tau_t[n] */
-    gamma_dt = dt/tau_t[n];
-    v_fac[n] = exp(-gamma_dt);
-    f_fac[n] = (1-v_fac[n])/gamma_dt;
-    /* The variance of the stochastic force in one step is:
-     * 2 k_b T m gamma/dt 
-     * The mass is encounted for later, since this differs per atom.
-     * Approximate a Gaussian with 4 uniform (-0.5,0.5) distributions.
-     * The factor 3 corrects the variance.
-     */
-    r_fac[n] = sqrt(3.0 * 2.0*BOLTZ*SAfactor*ref_t[n]/(tau_t[n]*dt));
-    rhalf[n] = 2*r_fac[n];
-    r_fac[n] /= (real)im;
+  static bool bFirst = TRUE;
+  static t_sd_sigmas *sig=NULL;
+  static rvec *X,*V;
+  real   kT;
+  int    gf,ga,gt;
+  real   vn,Vmh,Xmh;
+  real   ism;
+  int    n,d;
+  unsigned long  jran;
+  
+  if (sig == NULL) {
+    snew(sig,ngtc);
+    snew(X,homenr);
+    snew(V,homenr);
+  }
+  
+  if (bFirstHalf) {
+    for(n=0; n<ngtc; n++) {
+      kT = BOLTZ*SAfactor*ref_t[n];
+      /* The mass is encounted for later, since this differs per atom */
+      sig[n].V  = sqrt(kT*(1-sdc[n].em));
+      sig[n].X  = sqrt(kT*sqr(tau_t[n])*sdc[n].c);
+      sig[n].Yv = sqrt(kT*sdc[n].b/sdc[n].c);
+      sig[n].Yx = sqrt(kT*sqr(tau_t[n])*sdc[n].b/(1-sdc[n].em));
+    }
   }
 
   jran = (unsigned long)((real)im*rando(seed));
 
   for (n=start; n<start+homenr; n++) {  
-    w_dt  = invmass[n]*dt;
-    sqrtm = sqrt(mass[n]);
-    gf    = cFREEZE[n];
-    ga    = cACC[n];
-    gt    = cTC[n];
+    ism = sqrt(invmass[n]);
+    gf  = cFREEZE[n];
+    ga  = cACC[n];
+    gt  = cTC[n];
     
     for (d=0; d<DIM; d++) {
-      vn             = v[n][d];
-      vold[n][d]     = vn;
-      
+      if (bFirstHalf) {
+	vn             = v[n][d];
+	vold[n][d]     = vn;
+      }
       if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-	jran = (jran*ia+ic) & im;
-	jr = (real)jran;
-	jran = (jran*ia+ic) & im;
-	jr += (real)jran;
-	jran = (jran*ia+ic) & im;
-	jr += (real)jran;
-	jran = (jran*ia+ic) & im;
-	jr += (real)jran;
-	
-	frand          = sqrtm*(r_fac[gt]*jr - rhalf[gt]);
-	
-	vv             = v_fac[gt]*vn + f_fac[gt]*(f[n][d] + frand)*w_dt;
-	
-	v[n][d]        = vv + accel[ga][d]*dt;
-	xprime[n][d]   = x[n][d]+v[n][d]*dt;
+	if (bFirstHalf) {
+
+	  if (bFirst)
+	    X[n-start][d] = ism*sig[gt].X*fgauss(&jran);
+	  
+	  Vmh = X[n-start][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
+	    + ism*sig[gt].Yv*fgauss(&jran);
+	  V[n-start][d] = ism*sig[gt].V*fgauss(&jran);
+	  
+	  v[n][d] = vn*sdc[gt].em 
+	    + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
+	    + V[n-start][d] - sdc[gt].em*Vmh;
+	    
+	  xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh); 
+  
+	} else {
+	  
+	  /* Correct the velocties for the constraints */
+	  v[n][d] = 
+	    (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
+
+	  Xmh = V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1) 
+	    + ism*sig[gt].Yx*fgauss(&jran);
+	  X[n-start][d] = ism*sig[gt].X*fgauss(&jran);
+	  
+	  xprime[n][d] += X[n-start][d] - Xmh;
+	  
+	}
       } else {
-	v[n][d]        = 0.0;
-	xprime[n][d]   = x[n][d];
+	if (bFirstHalf) {
+	  v[n][d]        = 0.0;
+	  xprime[n][d]   = x[n][d];
+	}
       }
     }
   }
+  
+  bFirst = FALSE;
 }
 
-static void do_update_ld(int start,int homenr,double dt,
+static void do_update_bd(int start,int homenr,double dt,
 			 ivec nFreeze[],unsigned short ptype[],unsigned short cFREEZE[],
 			 rvec x[],rvec xprime[],rvec v[],rvec vold[],
 			 rvec f[],real temp, real fr, int *seed)
 {
-  const unsigned long im = 0xffff;
-  const unsigned long ia = 1093;
-  const unsigned long ic = 18257;
   int    gf;
   real   vn,vv;
   real   rfac,invfr,rhalf,jr;
@@ -414,14 +452,14 @@ static void dump_it_all(FILE *fp,char *title,
 #endif
 }
 
-void calc_ke_part(bool bFirstStep,int start,int homenr,
+void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
 		  rvec vold[],rvec v[],rvec vt[],
 		  t_grpopts *opts,t_mdatoms *md,t_groups *grps,
 		  t_nrnb *nrnb,real lambda,real *dvdlambda)
 {
   int          g,d,n,ga,gt;
   rvec         v_corrt;
-  real         hm,vvt,vct;
+  real         hsqrt2,fac,hm,vvt,vct;
   t_grp_tcstat *tcstat=grps->tcstat;
   t_grp_acc    *grpstat=grps->grpstat;
   real         dvdl;
@@ -450,14 +488,21 @@ void calc_ke_part(bool bFirstStep,int start,int homenr,
     }
   }
 
+  hsqrt2 = 0.5*sqrt(2.0);
   dvdl = 0;
   for(n=start; (n<start+homenr); n++) {  
     ga   = md->cACC[n];
     gt   = md->cTC[n];
     hm   = 0.5*md->massT[n];
-    
+
+    if (bSD)
+      /* Scale up the average to compensate for the friction */
+      fac = (0.5 - hsqrt2)*sdc[gt].em + hsqrt2;
+    else
+      fac = 0.5;
+
     for(d=0; (d<DIM); d++) {
-      vvt        = 0.5*(v[n][d]+vold[n][d]);
+      vvt        = fac*(v[n][d]+vold[n][d]);
       vt[n][d]   = vvt;
       vct        = vvt - grpstat[ga].ut[d];
       v_corrt[d] = vct;
@@ -489,7 +534,7 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
 		       t_grpopts *opts,t_mdatoms *md,t_groups *grps,
 		       t_nrnb *nrnb,real lambda,real *dvdlambda)
 {
-  int          g,d,n,ga,gt;
+  int          g,d,n,gt;
   rvec         v_corrt;
   real         hm,vvt;
   t_grp_tcstat *tcstat=grps->tcstat;
@@ -509,7 +554,6 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
   mvcos = 0;
   dvdl = 0;
   for(n=start; n<start+homenr; n++) {  
-    ga   = md->cACC[n];
     gt   = md->cTC[n];
     hm   = 0.5*md->massT[n];
     
@@ -578,7 +622,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
   static bool      bConstraints,bExtended;
   t_idef           *idef=&(top->idef);
   double           dt;
-  real             dt_1,dt_2;
+  real             dt_1,dt_2,dum,mdt_2;
   int              i,n,m,g,vol;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
@@ -603,6 +647,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
        
     snew(lamb,ngtc);
 
+    if (ir->eI == eiSD)
+      calc_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
+    
     /* done with initializing */
     bFirst=FALSE;
   }
@@ -638,27 +685,49 @@ void update(int          natoms, 	/* number of atoms in simulation */
     if (ir->eI==eiMD) {
       if (grps->cosacc.cos_accel == 0)
 	/* use normal version of update */
-	do_update(start,homenr,dt,lamb,grps->grpstat,grps->tcstat,
-		  ir->opts.acc,ir->opts.nFreeze,md->invmass,md->ptype,
-		  md->cFREEZE,md->cACC,md->cTC,x,xprime,v,vold,force,M,
-		  bExtended);
+	do_update_md(start,homenr,dt,lamb,grps->grpstat,grps->tcstat,
+		     ir->opts.acc,ir->opts.nFreeze,md->invmass,md->ptype,
+		     md->cFREEZE,md->cACC,md->cTC,x,xprime,v,vold,force,M,
+		     bExtended);
       else
 	do_update_visc(start,homenr,dt,lamb,md->invmass,grps->tcstat,
 		       md->ptype,md->cTC,x,xprime,v,vold,force,M,
 		       parm->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
-    } else if (ir->eI==eiSD)
+    } else if (ir->eI==eiSD) {
+      /* The SD update is done in 2 parts, because an extra constraint step
+       * is needed 
+       */
       do_update_sd(start,homenr,dt,
 		   ir->opts.acc,ir->opts.nFreeze,
-		   md->massT,md->invmass,md->ptype,
+		   md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,SAfactor,
 		   x,xprime,v,vold,force,
 		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
-		   &ir->ld_seed);
-    else if (ir->eI==eiLD) 
-      do_update_ld(start,homenr,dt,
+		   &ir->ld_seed,TRUE);
+      if (bConstraints) {
+	for(n=start; n<start+homenr; n++)
+	  copy_rvec(xprime[n],x_unc[n-start]);
+	/* Constrain the coordinates xprime */
+	constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
+		  lambda,dvdlambda,nrnb);
+	for(n=start; n<start+homenr; n++) {
+	  mdt_2 = dt_2*md->massT[n];
+	  for(i=0; i<DIM; i++)
+	    delta_f[n][i] = (xprime[n][i] - x_unc[n-start][i])*mdt_2;
+	}
+      }
+      do_update_sd(start,homenr,dt,
+		   ir->opts.acc,ir->opts.nFreeze,
+		   md->invmass,md->ptype,
+		   md->cFREEZE,md->cACC,md->cTC,SAfactor,
+		   x,xprime,v,vold,force,
+		   ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
+		   &ir->ld_seed,FALSE);
+    } else if (ir->eI==eiBD) 
+      do_update_bd(start,homenr,dt,
 		   ir->opts.nFreeze,md->ptype,md->cFREEZE,
 		   x,xprime,v,vold,force,
-		   ir->ld_temp,ir->ld_fric,&ir->ld_seed);
+		   ir->bd_temp,ir->bd_fric,&ir->ld_seed);
     else
       fatal_error(0,"Don't know how to update coordinates");
     
@@ -688,50 +757,65 @@ void update(int          natoms, 	/* number of atoms in simulation */
    */
   if (bConstraints) {
     /* Copy Unconstrained X to temp array */
-      for(n=start; (n<start+homenr); n++)
-	copy_rvec(xprime[n],x_unc[n-start]);
-      
-      /* Constrain the coordinates xprime */
-      constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
-		lambda,dvdlambda,nrnb);
-      
-      where();
-      
-      dump_it_all(stdlog,"After Shake",natoms,x,xprime,v,vold,force);
-      
-      /* apply Essential Dynamics constraints when required */
-      if (edyn->bEdsam)
-	do_edsam(stdlog,top,ir,step,md,start,homenr,xprime,x,
-		 x_unc,force,parm->box,edyn,&edpar,bDoUpdate);
-      
-      /* apply pull constraints when required. Act on xprime, the SHAKED
-	 coordinates.  Don't do anything to f */
-      if (pulldata->bPull && pulldata->runtype != eAfm && 
-	  pulldata->runtype != eUmbrella &&
-	  pulldata->runtype != eTest) 
-	pull(pulldata,xprime,force,parm->box,top,dt,step,homenr,md); 
-      
-      where();      
-      
-      if (bDoUpdate) {
-	real mdt_2;
-	
-	for(n=start; (n<start+homenr); n++) {
+    for(n=start; n<start+homenr; n++)
+      copy_rvec(xprime[n],x_unc[n-start]);
+    
+    /* Constrain the coordinates xprime */
+    constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,parm->box,
+	      lambda,dvdlambda,nrnb);
+    
+    where();
+    
+    dump_it_all(stdlog,"After Shake",natoms,x,xprime,v,vold,force);
+    
+    /* apply Essential Dynamics constraints when required */
+    if (edyn->bEdsam)
+      do_edsam(stdlog,top,ir,step,md,start,homenr,xprime,x,
+	       x_unc,force,parm->box,edyn,&edpar,bDoUpdate);
+    
+    /* apply pull constraints when required. Act on xprime, the SHAKED
+       coordinates.  Don't do anything to f */
+    if (pulldata->bPull && pulldata->runtype != eAfm && 
+	pulldata->runtype != eUmbrella &&
+	pulldata->runtype != eTest) 
+      pull(pulldata,xprime,force,parm->box,top,dt,step,homenr,md); 
+    
+    where();      
+    
+    if (bDoUpdate) {
+      if (ir->eI != eiSD) {
+	/* The constraint virial and the velocities are incorrect for BD */
+	for(n=start; n<start+homenr; n++) {
 	  mdt_2 = dt_2*md->massT[n];
-	  do_both(x[n],x_unc[n-start],xprime[n],delta_f[n],
-		  v[n],mdt_2,dt_1);
+	  for(i=0; i<DIM; i++) {
+	    delta_f[n][i] = (xprime[n][i] - x_unc[n-start][i])*mdt_2;
+	    /* recalculate the velocities from the old and new positions */
+	    v[n][i]       = (xprime[n][i] - x[n][i])*dt_1;
+	  }
 	}
 	where();
-	
-	inc_nrnb(nrnb,eNR_SHAKE_V,homenr);
-	dump_it_all(stdlog,"After Shake-V",natoms,x,xprime,v,vold,force);
-	where();
+      } else
+	/* SD, so increase delta_f with the second constraint contribution */
+	for(n=start; n<start+homenr; n++) {
+	  mdt_2 = dt_2*md->massT[n];
+	  for(i=0; i<DIM; i++)
+	    delta_f[n][i] += (xprime[n][i] - x_unc[n-start][i])*mdt_2;
+	}
+      
+      inc_nrnb(nrnb,eNR_SHAKE_V,homenr);
+      dump_it_all(stdlog,"After Shake-V",natoms,x,xprime,v,vold,force);
+      where();
+      
+      /*
+      for(n=start; n<start+homenr; n++)
+	printf("%d %g %g %g\n",n,delta_f[n][0],delta_f[n][1],delta_f[n][2]);
+	*/
 
-	/* Calculate virial due to shake (for this node) */
-	calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
-	inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
-	where();
-      }  
+      /* Calculate virial due to constraints (for this node) */
+      calc_vir(stdlog,homenr,&(x[start]),&(delta_f[start]),vir_part,cr);
+      inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
+      where();
+    }  
   }
   
   /* We must always unshift here, also if we did not shake

@@ -326,8 +326,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   cmp_int(fp,"inputrec->eConstrAlg",0,ir1->eConstrAlg,ir2->eConstrAlg);
   cmp_int(fp,"inputrec->nProjOrder",0,ir1->nProjOrder,ir2->nProjOrder);
   cmp_real(fp,"inputrec->LincsWarnAngle",0,ir1->LincsWarnAngle,ir2->LincsWarnAngle);
-  cmp_real(fp,"inputrec->ld_temp",0,ir1->ld_temp,ir2->ld_temp);
-  cmp_real(fp,"inputrec->ld_fric",0,ir1->ld_fric,ir2->ld_fric);
+  cmp_real(fp,"inputrec->bd_temp",0,ir1->bd_temp,ir2->bd_temp);
+  cmp_real(fp,"inputrec->bd_fric",0,ir1->bd_fric,ir2->bd_fric);
   cmp_int(fp,"inputrec->ld_seed",0,ir1->ld_seed,ir2->ld_seed);
   cmp_real(fp,"inputrec->cos_accel",0,ir1->cos_accel,ir2->cos_accel);
   cmp_int(fp,"inputrec->userint1",0,ir1->userint1,ir2->userint1);

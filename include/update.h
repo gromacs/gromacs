@@ -70,7 +70,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   t_pull       *pulldata,
 		   bool         bNEMD);
      
-extern void calc_ke_part(bool bFirstStep,int start,int homenr,
+extern void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
 			 rvec vold[],rvec v[],rvec vt[],
 			 t_grpopts *opts,t_mdatoms *md,
 			 t_groups *grps,t_nrnb *nrnb,
@@ -78,6 +78,9 @@ extern void calc_ke_part(bool bFirstStep,int start,int homenr,
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
+ * The velocity a the whole step is obtained by averaging
+ * the velocities of minus and plus a half step,
+ * in case of Stochastic Dynamics a correction is applied.
  * The tensor is
  *
  * Ekin = SUM(i) 0.5 m[i] v[i] (x) v[i]

@@ -101,7 +101,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     parm->ir.bDispCorr,TRICLINIC(parm->ir.compress),(parm->ir.etc==etcNOSEHOOVER),cr);
 
   /* Compute initial EKin for all.. */
-  calc_ke_part(TRUE,0,top->atoms.nr,
+  calc_ke_part(TRUE,FALSE,0,top->atoms.nr,
                vold,v,vt,&(parm->ir.opts),
                mdatoms,grps,&mynrnb,
 	       lambda,&ener[F_DVDL]);

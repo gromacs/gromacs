@@ -24,7 +24,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <P>
 <li><A HREF="#pp"><b>preprocessing</b></A> (title, warnings, cpp, include, define)
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, nstcomm, comm_grps)
-<li><A HREF="#ld"><b>langevin dynamics</b></A> (ld_temp, ld_fric, ld_seed)
+<li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_temp, bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
@@ -107,12 +107,20 @@ minimization, the tolerance is <b>emtol</b> [kJ mol<sup>-1</sup>
 nm<sup>-1</sup>].  CG is more efficient when a steepest descent step
 is done every once in a while, this is determined by 
 <b><A HREF="#em">nstcgsteep</A></b>.
-<dt><b>ld</b>
-<dd> An Euler integrator for position Langevin dynamics, the
+<dt><b>sd</b>
+<dd> A leap-frog stochastic dynamics integrator. The temperature for
+one or more groups of atoms (<b><A HREF="#tc">tcgrps</A></b>)
+is set with <b><A HREF="#tc">ref_t</A></b>,
+the inverse friction constant for each group is set with
+<b><A HREF="#tc">tau_t</A></b>. The parameter <b><A HREF="#tc">tcoupl</A></b>
+is ignored.
+The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.
+<dt><b>bd</b>
+<dd> An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
-(<b><A HREF="#ld">ld_fric</A></b> [amu ps<sup>-1</sup>])
-plus random thermal noise (<b><A HREF="#ld">ld_temp</A></b> [K]). 
-The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>
+(<b><A HREF="#ld">bd_fric</A></b> [amu ps<sup>-1</sup>])
+plus random thermal noise (<b><A HREF="#ld">bd_temp</A></b> [K]). 
+The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.
 </dl>
 
 <dt><h4>tinit: </b>(0) [ps]</h4>
@@ -137,9 +145,9 @@ rotation removal can only be done on the whole system
 <h3><!--Idx-->Langevin dynamics<!--EIdx--></h3>
 
 <dl>
-<dt><h4>ld_temp: </b>(300) [K]</h4>
+<dt><h4>bd_temp: </b>(300) [K]</h4>
 <dd>temperature in ld run (controls thermal noise level)
-<dt><h4>ld_fric: </b>(0) [amu ps<sup>-1</sup>]</h4>
+<dt><h4>bd_fric: </b>(0) [amu ps<sup>-1</sup>]</h4>
 <dd>ld friction coefficient
 <dt><h4>ld_seed: </b>(1993) [integer]</h4>
 <dd>used to initialize random generator for thermal noise,
@@ -763,6 +771,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#neq">acc_grps</A><br>
 <A HREF="#neq">accelerate</A><br>
 <A HREF="#sa">annealing</A><br>
+<A HREF="#ld">bd_fric</A><br>
+<A HREF="#ld">bd_temp</A><br>
 <A HREF="#el2">bDispCorr</A><br>
 <A HREF="#run">comm_grps</A><br>
 <A HREF="#pc">compressibility</A><br>
@@ -804,9 +814,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#pp">include</A><br>
 <A HREF="#free">init_lambda</A><br>
 <A HREF="#run">integrator</A><br>
-<A HREF="#ld">ld_fric</A><br>
 <A HREF="#ld">ld_seed</A><br>
-<A HREF="#ld">ld_temp</A><br>
 <A HREF="#bond2">lincs_order</A><br>
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>

@@ -50,7 +50,7 @@ char *ens_names[enNR+1]=
 
 char *ei_names[eiNR+1]=
 { 
-  "md", "steep", "cg", "ld", "sd", NULL 
+  "md", "steep", "cg", "bd", "sd", NULL 
 };
 
 char *bool_names[BOOL_NR+1]=
