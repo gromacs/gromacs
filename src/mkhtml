@@ -61,6 +61,6 @@ cat >> $INDEX << EOM
 EOM
 
 echo ""
-echo "New html pages in $HTML (file:/$INDEX)"
+echo "New html pages in $HTML (file:$INDEX)"
 
 #last line
