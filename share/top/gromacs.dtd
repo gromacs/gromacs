@@ -57,9 +57,9 @@
 <!-- Units -->
 <!ELEMENT units EMPTY>
 <!ATTLIST units
-          length      ( nm | angstrom ) "nm"
+          length      ( nm | Angstrom ) "nm"
 	  time        ( fs | ps | ns | us ) "ps"
-	  temperature ( kelvin | celsius | fahrenheit ) "kelvin"
+	  temperature ( Kelvin | Celsius | Fahrenheit ) "Kelvin"
 	  energy      ( kJ | kcal ) "kJ"
 	  angle       ( degree | radian ) "degree">
 
@@ -75,10 +75,10 @@
 <!ELEMENT output EMPTY>
 <!ATTLIST output
           log           CDATA "1"
+	  energy        CDATA "1"
 	  x-trr         CDATA "1"
 	  v-trr         CDATA "1"
 	  f-trr         CDATA "0"
-	  energy        CDATA "1"
 	  xtc           CDATA "1"
 	  xtc-precision CDATA "1000">
 	    	 
@@ -133,18 +133,24 @@
 	  optfft      ( No | Yes ) "No">
 	  
 <!-- Description of the simulation system -->	  
-<!ELEMENT system    (molecules+)>
-	  
+<!ELEMENT system (compound+,molecule+)>
+
+<!-- What do have in the system today ? -->
+<!ELEMENT compound EMPTY>
+<!ATTLIST compound
+          molname IDREF #REQUIRED
+	  number  CDATA #REQUIRED>
+	  	  
 <!-- Description of a molecule holds the list of atoms, the topology  -->
-<!-- which means the connectivity. One attribute, the name            -->
+<!-- which means the connectivity. One attribute, the molname         -->
 <!-- At least one atom is necessary, topology is optional (ions etc.) -->
-<!ELEMENT molecules (molecule+)>
 <!ELEMENT molecule (atoms+,topology?)>
 <!ATTLIST molecule 
-          name   CDATA #REQUIRED
-	  number CDATA #REQUIRED>
+          molname ID #REQUIRED>
 
-<!ELEMENT atoms (atom*)>
+<!-- There should one or two atoms (the latter in case of free energy -->
+<!-- perturbation calculations.                                       -->
+<!ELEMENT atoms (atom+)>
 <!ATTLIST atoms
 	  ptype    ( atom | dummy | shell ) "atom">
 <!ELEMENT atom EMPTY>	  
@@ -180,6 +186,9 @@
 
 <!ELEMENT forcefield (nonbonded*,bonded*,special*)>
 <!ELEMENT nonbonded (lennardjones | buckingham)>
+<!ATTLIST nonbonded
+          combinationrule ( arithmetic | geometric | epsilon-sigma ) "geometric">
+
 <!ELEMENT lennardjones EMPTY>
 <!-- IDREFS is referring to *two* atomtypes -->
 <!ATTLIST lennardjones
