@@ -57,6 +57,9 @@
 ***H*O*C*E***********************************************************/
 
 /* Adopted for use in GROMACS by David van der Spoel, Oct 2001 */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

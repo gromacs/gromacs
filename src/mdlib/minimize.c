@@ -33,6 +33,10 @@
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <string.h>
 #include <time.h>
 #include <math.h>

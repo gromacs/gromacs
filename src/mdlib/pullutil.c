@@ -33,6 +33,11 @@
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
 #include <stdlib.h>
 #include "sysstuff.h"
 #include "princ.h"

@@ -33,6 +33,10 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include "sysstuff.h"
 #include "smalloc.h"

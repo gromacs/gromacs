@@ -33,9 +33,14 @@
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
-#ifdef USE_THREADS
-#include <pthread.h> /* must come first */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+#ifdef USE_THREADS
+#include <pthread.h> 
+#endif
+
 #include <math.h>
 #include <string.h>
 #include "sysstuff.h"

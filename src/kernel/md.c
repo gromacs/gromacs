@@ -33,6 +33,10 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <signal.h>
 #include <stdlib.h>
 #include "typedefs.h"

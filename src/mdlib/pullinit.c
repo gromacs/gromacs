@@ -34,6 +34,9 @@
  * GROwing Monsters And Cloning Shrimps
  */
 /* This file is threadsafe - keep it that way */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <string.h>
 #include "princ.h"

@@ -34,6 +34,9 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 /* This file is completely threadsafe - keep it that way! */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <string.h>
 #include "string2.h"

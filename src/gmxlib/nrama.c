@@ -1,4 +1,4 @@
-/*
+\/*
  * $Id$
  * 
  *                This source code is part of
@@ -33,6 +33,10 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <math.h>
 #include "assert.h"
 #include "sysstuff.h"

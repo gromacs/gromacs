@@ -29,7 +29,10 @@
  * And Hey:
  * Great Red Owns Many ACres of Sand 
  */
-static char *SRCID_inner_altivec_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <ppc_altivec.h>
 
 #include<stdio.h>
