@@ -27,6 +27,7 @@ PROGRAMS	= g_rdf		g_msd		g_dist		\
                   g_saltbr	g_rmsf		g_coord         \
                   g_h2order     g_com		g_rdens		\
 		  g_velacc	g_rotacf	g_enemat	\
+		  g_covar       g_anaeig	\
 		  g_nmeig	g_chi		g_dielectric	\
 		  g_helix	wheel	        		\
                   g_confrms     xpm2ps 
@@ -199,6 +200,19 @@ ql77.o:		ql77.c
 g_nmeig:        g_nmeig.o ql77.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 endif
+g_nmeig.o:	g_nmeig.c
+
+ifeq ($(USEF77),yes)
+g_covar:          g_covar.o
+	        $(LD) -o  $@ $^ $(SYSLIBS)
+else
+ql77.o:		ql77.c
+g_covar:          g_covar.o ql77.o
+	        $(LD) -o  $@ $^ $(SYSLIBS)
+endif
+
+g_anaeig:       g_anaeig.o
+	        $(LD) -o  $@ $^ $(SYSLIBS)
 
 g_dist:         g_dist.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
