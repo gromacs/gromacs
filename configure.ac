@@ -533,6 +533,13 @@ else
   AM_CONDITIONAL(USE_X11,false)
 fi
 
+#########
+# Check for libxml2, but it is optional, so dont stop
+# if it isnt there.
+AC_CHECK_LIB(xml2,main)
+
+
+
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
 # and we need -L/usr/ucblib to find libucb... (stupid OS)

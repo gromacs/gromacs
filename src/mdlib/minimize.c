@@ -441,13 +441,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     if(stepsize<=0)	  
       stepsize = parm->ir.em_stepsize/pnorm;
     
-    /* Call it a day if the slope of the search gradient is negligible */
-    if(fabs(pnorm)<sqrt(GMX_REAL_EPS)) {
-      converged = TRUE;
-      break;
-    }
-    
-    
     /* 
      * Double check the value of the derivative in the search direction.
      * If it is positive it must be due to the old information in the
