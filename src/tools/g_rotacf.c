@@ -68,11 +68,13 @@ int main(int argc,char *argv[])
 
     ""
   };
-  static bool bVec    = FALSE;
+  static bool bVec    = FALSE,bAver=TRUE;
 
   t_pargs pa[] = {
     { "-d",   FALSE, etBOOL, {&bVec},
-      "Use index doublets (vectors) for correlation function instead of triplets (planes)" }
+      "Use index doublets (vectors) for correlation function instead of triplets (planes)" },
+    { "-aver",FALSE, etBOOL, {&bAver},
+      "Average over molecules" }
   };
 
   int        status,isize;
@@ -180,7 +182,7 @@ int main(int argc,char *argv[])
     mode = eacVector;
     
     do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Rotational Correlation Function",
-		teller,nvec,c1,dt,mode,TRUE);
+		teller,nvec,c1,dt,mode,bAver);
   }
 
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
