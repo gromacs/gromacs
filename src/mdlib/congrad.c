@@ -388,7 +388,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fmax=f_max(log,cr->left,cr->right,nsb->nprocs,start,end,f);
     fprintf(stderr,"Maximum force: %12.5e\n",fmax);
     if (bDone) {
-      fprintf(stderr,"\n%s converged to %8.6f \n",CG,ftol);
+      fprintf(stderr,"\n%s converged to %8.6f in %d steps\n",CG,ftol,count-1);
       fprintf(log,"%s converged to %8.6f \n",CG,ftol);
     }
     else {
