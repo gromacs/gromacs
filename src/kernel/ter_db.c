@@ -82,13 +82,14 @@ static void read_atom(char *line, t_atom *a, t_atomtype *atype,
     *cgnr = NOTSET;
 }
 
-int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
+int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
 {
   FILE       *in;
-  char       header[STRLEN],buf[STRLEN],line[STRLEN];
+  char       inf[STRLEN],header[STRLEN],buf[STRLEN],line[STRLEN];
  t_hackblock *tb;
   int        i,j,n,ni,kwnr,nb,maxnb,nh;
   
+  sprintf(inf,"%s-%c.tdb",FF,ter);
   in=libopen(inf);
   if (debug)
     fprintf(debug,"Opened %s\n",inf);

@@ -38,8 +38,10 @@ static char *SRCID_ter_db_h = "$Id$";
 
 #include "sysstuff.h"
 #include "hackblock.h"
+#include "grompp.h"
 
-extern int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype);
+extern int read_ter_db(char *FF,char ter,
+		       t_hackblock **tbptr,t_atomtype *atype);
 /* Read database for N&C terminal hacking */
 
 extern t_hackblock *choose_ter(int nb,t_hackblock tb[],char *title);

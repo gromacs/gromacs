@@ -883,10 +883,8 @@ int main(int argc, char *argv[])
   nah=read_h_db(ff,&ah);
   
   /* Read Termini database... */
-  sprintf(fn,"%s-n.tdb",ff);
-  nNtdb=read_ter_db(fn,&ntdb,atype);
-  sprintf(fn,"%s-c.tdb",ff);
-  nCtdb=read_ter_db(fn,&ctdb,atype);
+  nNtdb=read_ter_db(ff,'n',&ntdb,atype);
+  nCtdb=read_ter_db(ff,'c',&ctdb,atype);
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
   top_file=ffopen(top_fn,"w");
@@ -960,7 +958,7 @@ int main(int argc, char *argv[])
 	  sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
 	  else
 	    if (strncmp(*pdba->resname[pdba->atom[cc->rN[i]].resnr],"PRO",3))
-	    sel_ntdb=&(ntdb[1]);
+	      sel_ntdb=&(ntdb[1]);
 	    else
 	      sel_ntdb=&(ntdb[3]);
 	printf("N-terminus: %s\n",sel_ntdb->name);
@@ -974,7 +972,8 @@ int main(int argc, char *argv[])
     }
 
     /* Generate Hydrogen atoms (and termini) in the sequence */
-    natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,cc->nterpairs,cc->rN,cc->rC);
+    natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,
+		cc->nterpairs,cc->rN,cc->rC,NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
     if (debug) write_pdbfile(debug,title,pdba,x,box,0,TRUE);
