@@ -301,19 +301,21 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   *bTYZ=getenv("TYZ") != NULL;
   set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
   
-  /* Filenames */
-  *traj     = ftp2fn(efTRN,nfile,fnm);
-  *xtc_traj = ftp2fn(efXTC,nfile,fnm);
+  if (nfile != -1) {
+    /* Filenames */
+    *traj     = ftp2fn(efTRN,nfile,fnm);
+    *xtc_traj = ftp2fn(efXTC,nfile,fnm);
 
-  if (MASTER(cr)) {
-    *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
-    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
-			  bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
-			  ir->bDispCorr);
-  }
-  else {
-    *fp_ene = -1;
-    *mdebin = NULL;
+    if (MASTER(cr)) {
+      *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+      *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
+			    bLR,bLJLR,bBHAM,b14,ir->bPert,ir->epc,
+			    ir->bDispCorr);
+    }
+    else {
+      *fp_ene = -1;
+      *mdebin = NULL;
+    }
   }
   
   /* Initiate variables */  

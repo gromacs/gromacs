@@ -264,13 +264,10 @@ int main(int argc, char *argv[])
   bool        *bSet,bPDB;
   int         i;
   t_filenm fnm[] = {
-    { efTPX, NULL,  NULL,     ffREAD  },
-    { efSTO, "-o",  NULL,     ffWRITE },
-    { efLOG, "-g",  "genion", ffWRITE },
-    { efPDB, "-q",  "pot",   ffOPTWR },
-    { efXTC, "-x",  "ctraj",  ffOPTRD },
-    { efTRN, "-t",  "traj",   ffOPTRD },
-    { efENX, "-e",  "ener",   ffOPTRD }
+    { efTPX, NULL,  NULL,      ffREAD  },
+    { efSTO, "-o",  NULL,      ffWRITE },
+    { efLOG, "-g",  "genion",  ffWRITE },
+    { efPDB, "-pot",  "pot",     ffOPTWR }
   };
 #define NFILE asize(fnm)
   
