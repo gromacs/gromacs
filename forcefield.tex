@@ -540,6 +540,23 @@ to the force constants in the harmonic form $k^{\theta,harm}$
 k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
 \eeq
 
+\subsection{Urey-Bradley potential}
+\label{sec:urey-bradley}
+The bond \swapindex{Urey-Bradley angle}{vibration} between a triplet
+of atoms $i$ - $j$ - $k$ is represented by a harmonic potential on the
+angle $\tijk$ and a harmonic correction term on the distance between
+the atoms $i$ and $k$. Although this can be easily written as a simple
+sum of two terms, it is convenient to have it as a single entry in the
+topology file and in the output as a separate energy term. It is used mainly
+in the CHARMm force field~\cite{BBrooks83}. The energy is given by:
+
+\beq
+V_a(\tijk) = \half k^{\theta}_{ijk}(\tijk-\tijk^0)^2 + \half k^{UB}_{ijk}(r_{ik}-r_{ik}^0)^2
+\eeq
+
+The force equations can be deduced from sections~\ref{sec:bondpot}
+and~\ref{sec:anglepot}.
+
 \subsection{Bond-Bond cross term}
 The bond-bond cross term for three particles $i, j, k$ forming bonds
 $i-j$ and $k-j$ is given by~\cite{Lawrence2003a}:
