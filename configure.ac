@@ -258,9 +258,6 @@ if test "$enable_mpi" = "yes"; then
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
     AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(USE_MPI,,[Make a parallel version of GROMACS using MPI])
-  GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} mpiio.lo"
-else
-  GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} libnet.lo" 
 fi
 
 if test "$enable_fortran" = "yes"; then
