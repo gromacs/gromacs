@@ -39,12 +39,12 @@ static char *SRCID_tables_c = "$Id$";
  
 /* All the possible (implemented) table functions */
 enum { etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
-       etabRF,    etabCOUL, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
+       etabRF,    etabCOUL, etabEwald, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
        etabEXPMIN,etabUSER, etabNR };
        
 /* This flag tells whether this is a Coulomb type funtion */
 bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
-			  TRUE,  TRUE,  FALSE, FALSE, TRUE, 
+			  TRUE,  TRUE, TRUE, FALSE, FALSE, TRUE, 
 			  FALSE, FALSE }; 
 
 /* Index in the table that says which function to use */
@@ -190,6 +190,8 @@ void fill_table(int n0,int n,real x[],
   real VtabT1;  
   real VtabT2; 
   real VtabT3;
+  real ewc=fr->ewaldcoeff;
+  real isp= 0.564189583547756;
    
   bSwitch = ((tp == etabLJ6Switch)    || (tp == etabLJ12Switch)    || 
 	     (tp == etabCOULSwitch));
@@ -303,6 +305,16 @@ void fill_table(int n0,int n,real x[],
 	Ftab2[i] = 6.0/(r2*r2);
       }
       break;
+    case etabEwald:
+      Vtab[i]  = erfc(ewc*r)/r;
+      Ftab[i]  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
+      Vtab2[i] = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
+	  4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
+      Ftab2[i]=6*erfc(ewc*r)/(r2*r2)+
+	  12*exp(-(ewc*ewc*r2))*ewc*isp/(r*r2)+
+	  8*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp/r+
+	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
+      break;
     case etabRF:
       Vtab[i]  = 1.0/r      + k_rf*r2;
       Ftab[i]  = 1.0/r2     - rffac2*r;
@@ -415,6 +427,10 @@ void make_tables(t_forcerec *fr,bool bVerbose)
     else
       tabsel[etiCOUL] = etabCOUL;
     break;
+  case eelEWALD:
+  case eelPME:
+      tabsel[etiCOUL] = etabEwald;
+      break;
   case eelRF:
   case eelGRF:
     tabsel[etiCOUL] = etabRF;
@@ -472,6 +488,7 @@ void make_tables(t_forcerec *fr,bool bVerbose)
     
     if (bDebugMode()) {
       fp=xvgropen(fns[k],fns[k],"r","V"); 
+      fp=fopen("tabell.xvg","w");
       for(i=n0; (i<n); i++) {
 	for(j=0; (j<4); j++) {
 	  x0=x[i]+0.25*j*(x[i+1]-x[i]);
