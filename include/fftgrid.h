@@ -50,7 +50,7 @@ extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,
 extern void done_fftgrid(t_fftgrid *grid);
 /* And throw it away again */
 
-extern void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir,t_commrec *cr);
+extern void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr);
 /* Do the FFT, direction may be either 
  * FFTW_FORWARD (sign -1) for real -> complex transform 
  * FFTW_BACKWARD (sign 1) for complex -> real transform
@@ -64,13 +64,7 @@ extern void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
 
 /* Get the values for the constants into local copies */
 
-extern void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,
-			  real factor,char *pdb,rvec box,bool bReal);
-/* Print the fftgrid to either the out FILE, or if pdb != NULL, to a file
- * named pdb. All atoms are multiplied by factor. If bReal then the
- * real component is printed, otherwise the imaginary component (pdb only)
- * to the out file, both are printed (if complex at all)
- */
+
 
 
 /************************************************************************
