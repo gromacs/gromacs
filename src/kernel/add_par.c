@@ -34,6 +34,22 @@ static char *SRCID_add_par_c = "$Id$";
 #include "grompp.h"
 #include "pdb2gmx.h"
 
+static void clear_atom_list(int i0, atom_id a[])
+{
+  int i;
+  
+  for (i=i0; i < MAXATOMLIST; i++)
+    a[i]=-1;
+}
+
+static void clear_force_param(int i0, real c[])
+{
+  int i;
+  
+  for (i=i0; i < MAXFORCEPARAM; i++)
+    c[i]=NOTSET;
+}
+
 void add_param(t_params *ps,int ai,int aj, real *c)
 {
   int i;
@@ -43,13 +59,11 @@ void add_param(t_params *ps,int ai,int aj, real *c)
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=-1;
-  ps->param[ps->nr-1].AL=-1;
+  clear_atom_list(2, ps->param[ps->nr-1].a);
   if (c==NULL) 
-    for(i=0; (i<MAXFORCEPARAM); i++)
-      ps->param[ps->nr-1].c[i]=NOTSET;
+    clear_force_param(0, ps->param[ps->nr-1].c);
   else
-    for(i=0; (i<MAXFORCEPARAM); i++)
+    for(i=0; (i < MAXFORCEPARAM); i++)
       ps->param[ps->nr-1].c[i]=c[i];
 }
 
@@ -60,41 +74,45 @@ void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,real c0, real c1)
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
   ps->param[ps->nr-1].AL=al;
+  clear_atom_list  (4, ps->param[ps->nr-1].a);
   ps->param[ps->nr-1].C0=c0;
   ps->param[ps->nr-1].C1=c1;
+  clear_force_param(2, ps->param[ps->nr-1].c);
 }
 
-void add_dum2_2_param(t_params *ps,int ai,int aj,int ak,real a)
+void add_dum2_param(t_params *ps,int ai,int aj,int ak)
 {
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].C0=a;
+  clear_atom_list  (3, ps->param[ps->nr-1].a);
+  clear_force_param(0, ps->param[ps->nr-1].c);
 }
 
-void add_dum3_2_param(t_params *ps,int ai,int aj,int ak,int al,real a, real b)
-{
-  srenew(ps->param,++ps->nr);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  ps->param[ps->nr-1].C0=a;
-  ps->param[ps->nr-1].C1=b;
-}
-
-void add_dum3_3_param(t_params *ps,int ai,int aj,int ak,int al,
-		      real a, real b, real c)
+void add_dum3_param(t_params *ps,int ai,int aj,int ak,int al, bool bSwapParity)
 {
   srenew(ps->param,++ps->nr);
   ps->param[ps->nr-1].AI=ai;
   ps->param[ps->nr-1].AJ=aj;
   ps->param[ps->nr-1].AK=ak;
   ps->param[ps->nr-1].AL=al;
-  ps->param[ps->nr-1].C0=a;
-  ps->param[ps->nr-1].C1=b;
-  ps->param[ps->nr-1].C2=c;
+  clear_atom_list  (4, ps->param[ps->nr-1].a);
+  clear_force_param(0, ps->param[ps->nr-1].c);
+  if (bSwapParity)
+    ps->param[ps->nr-1].C1=-1;
+}
+
+void add_dum4_param(t_params *ps,int ai,int aj,int ak,int al,int am)
+{
+  srenew(ps->param,++ps->nr);
+  ps->param[ps->nr-1].AI=ai;
+  ps->param[ps->nr-1].AJ=aj;
+  ps->param[ps->nr-1].AK=ak;
+  ps->param[ps->nr-1].AL=al;
+  ps->param[ps->nr-1].AM=am;
+  clear_atom_list  (5, ps->param[ps->nr-1].a);
+  clear_force_param(0, ps->param[ps->nr-1].c);
 }
 
 int search_jtype(t_restp *rtp,char *name,bool bNterm)
