@@ -49,19 +49,20 @@ extern "C" {
 #include <stdarg.h>
 #include <errno.h>
   
-extern void _where(char *file,int line);
+extern void _where(const char *file,int line);
 #define where() _where(__FILE__,__LINE__)
 /* Prints filename and line to stdlog and only on amba memvail */
   
-extern void _set_fatal_tmp_file(char *fn, char *file, int line);
+extern void _set_fatal_tmp_file(const char *fn, const char *file, int line);
 #define set_fatal_tmp_file(fn) _set_fatal_tmp_file(fn,__FILE__,__LINE__)
 /* set filename to be removed when fatal_error is called */
 
-extern void _unset_fatal_tmp_file(char *fn, char *file, int line);
+extern void _unset_fatal_tmp_file(const char *fn, const char *file, int line);
 #define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn,__FILE__,__LINE__)
 /* unsets filename to be removed */
 
-  extern void gmx_fatal(int fatal_errno,char *file,int line,char *fmt,...);
+  extern void gmx_fatal(int fatal_errno,const char *file,int line,
+			const char *fmt,...);
 #define FARGS 0,__FILE__,__LINE__
 /*
  * Routine gmx_fatal prints 
@@ -98,7 +99,7 @@ extern char *get_warning_file(void);
 extern char warn_buf[1024];
 /* Warning buffer of 1024 bytes, which can be used to print messages to */
 
-extern void warning(char *s);
+extern void warning(const char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn (local) is incremented.
@@ -118,15 +119,17 @@ extern void check_warning_error(int f_errno,char *file,int line);
 extern void print_warn_num(void);
 /* Print the total number of warnings, if larger than 0 */
   
-extern void _too_few(char *fn,int line);
+extern void _too_few(const char *fn,int line);
 #define too_few() _too_few(__FILE__,__LINE__)
 /* Issue a warning stating 'Too few parameters' */
   
-extern void _invalid_case(char *fn,int line);
+extern void _invalid_case(const char *fn,int line);
 #define invalid_case() _invalid_case(__FILE__,__LINE__)
 /* Issue a warning stating 'Invalid case in switch' */
   
-extern void _unexpected_eof(char *fn,int line,char *srcfn,int srcline);
+extern void _unexpected_eof(const char *fn,int line,
+			    const char *srcfn,int srcline);
+
 #define unexpected_eof(fn,line) _unexpected_eof(fn,line,__FILE__,__LINE__)
   
 /* 
@@ -137,7 +140,7 @@ extern void _unexpected_eof(char *fn,int line,char *srcfn,int srcline);
  */
 extern FILE *debug;
   
-void init_debug (char *dbgfile);
+void init_debug (const char *dbgfile);
   
 extern bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */
@@ -149,21 +152,22 @@ extern void doexceptions(void);
 
   /* If msg == NULL, then warn_buf will be printed instead.
    */
-  extern void _range_check(int n,int n_min,int n_max,char *var,
-			   char *file,int line);
+  extern void _range_check(int n,int n_min,int n_max,const char *var,
+			   const char *file,int line);
 #define range_check(n,n_min,n_max) _range_check(n,n_min,n_max,#n,__FILE__,__LINE__)
   /* Range check will terminate with an error message if not
    * n E [ n_min, n_max >
    * That is n_min is inclusive but not n_max.
    */
 
-  extern char *gmx_strerror(char *key);
+  extern char *gmx_strerror(const char *key);
   /* Return error message corresponding to the key.
    * Maybe a multi-line message.
    * The messages are stored in src/gmxlib/fatal.c
    */
   
-  extern void _gmx_error(char *key,char *msg,char *file,int line);
+  extern void _gmx_error(const char *key,const char *msg,
+			 const char *file,int line);
 #define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
   /* Error msg of type key is generated and the program is 
    * terminated unless and error handle is set (see below)
@@ -181,7 +185,7 @@ extern void doexceptions(void);
 #define gmx_mem(msg)    gmx_error("mem",msg)
 #define gmx_open(fn)    gmx_error("open",fn) 
   
-  extern void set_gmx_error_handler(void (*func)(char *msg));
+  extern void set_gmx_error_handler(void (*func)(const char *msg));
   /* An error function will be called that terminates the program 
    * with a fatal error, unless you override it with another function.
    * i.e.:
