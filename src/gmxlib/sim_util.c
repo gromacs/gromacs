@@ -111,16 +111,10 @@ static void reset_forces(bool bNS,rvec f[],t_forcerec *fr,int natoms)
   int i;
   
   if (fr->bTwinRange) {
-    if (bNS) {
-      clear_rvecs(natoms,fr->flr);
-      clear_rvecs(SHIFTS,fr->fshift_lr);
-    }
-    else {
-      for(i=0; (i<natoms); i++)
-	copy_rvec(fr->flr[i],f[i]);
-      for(i=0; (i<SHIFTS); i++)
-	copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
-    } 
+    for(i=0; (i<natoms); i++)
+      copy_rvec(fr->flr[i],f[i]);
+    for(i=0; (i<SHIFTS); i++)
+      copy_rvec(fr->fshift_lr[i],fr->fshift[i]);
   }
   else {
     if (fr->eeltype == eelPPPM) 
@@ -136,26 +130,19 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
   const real zero=0.0;
   int   i,j;
   
-  /* First reset all energy components but the Long Range */
+  /* First reset all energy components but the Long Range, except in
+   * some special cases.
+   */
   for(i=0; (i<egNR); i++)
-    if (i != egLR)
+    if ((i != egLR) || (fr->bTwinRange && bNS) || (!fr->bTwinRange))
       for(j=0; (j<grp->estat.nn); j++)
 	grp->estat.ee[i][j]=0.0;
-
-  /* If method of long range is twin range and we do neighboursearching,
-   * or if the method is PPPM
-   */
-  if ((fr->bTwinRange && bNS) || (fr->eeltype == eelPPPM)) {
-    for(i=0; (i<grp->estat.nn); i++) 
-      grp->estat.ee[egLR][i]=0.0;
-  }
-	
+  
   /* Normal potential energy components */
   for(i=0; (i<=F_EPOT); i++)
     epot[i] = zero;
   epot[F_DVDL]    = zero;
   epot[F_DVDLKIN] = zero;
-
 }
 
 void do_force(FILE *log,t_commrec *cr,
@@ -204,21 +191,28 @@ void do_force(FILE *log,t_commrec *cr,
     move_x(log,cr->left,cr->right,x,nsb,nrnb);
   where();
   
-  /* Reset the forces and the enrgies */
-  reset_forces(bNS,f,fr,nsb->natoms);
+  /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
-  where();
   
   if (bNS) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
     mk_mshift(log,graph,parm->box,x);
 
+    /* Reset long range forces if necessary */
+    if (fr->bTwinRange) {
+      clear_rvecs(nsb->natoms,fr->flr);
+      clear_rvecs(SHIFTS,fr->fshift_lr);
+    }
     /* Do the actual neighbour searching and if twin range electrostatics
      * also do the calculation of long range forces and energies.
      */
     ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
        cr,nrnb,nsb,step);
   }
+  
+  /* Reset forces or copy them from long range forces */
+  reset_forces(bNS,f,fr,nsb->natoms);
+  where();
   
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
