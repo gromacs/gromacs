@@ -547,6 +547,7 @@ void rms_dist(char *fn,int nf,real **mat,real maxrms)
     fprintf(fp,"%10g  %10d\n",i/fac,histo[i]);
   fclose(fp);
   sfree(histo);
+  xvgr_file(fn,NULL);
 }
 
 int main(int argc,char *argv[])
@@ -623,7 +624,7 @@ int main(int argc,char *argv[])
     { efTPS, "-s",    NULL,       ffREAD  },
     { efNDX, NULL,    NULL,       ffOPTRD },
     { efXPM, "-o",   "rmsd",      ffWRITE },
-    { efXPM, "-os",  "rmsd-mat",  ffWRITE },
+    { efXPM, "-os",  "rmsd-clust",ffWRITE },
     { efXVG, "-ev",  "rms-eig",   ffWRITE },
     { efXVG, "-dist","rms-dist",  ffWRITE }
   };
@@ -789,6 +790,7 @@ int main(int argc,char *argv[])
     for(i=0; (i<nf); i++)
       fprintf(fp,"%10d  %10g\n",i,eigval[i]);
     ffclose(fp);
+    xvgr_file(opt2fn("-ev",NFILE,fnm),NULL);
   }
   else if (bMC) {
     mc_optimize(log,nf,rms,niter,&seed);
