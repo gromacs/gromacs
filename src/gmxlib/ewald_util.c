@@ -46,18 +46,6 @@ static char *SRCID_ewald_util_c = "$Id$";
 #include "macros.h"
 #include "xvgr.h"
 
-#define rdtscll(val) \
-     __asm__ __volatile__("rdtsc" : "=A" (val))
-
-
-static inline unsigned long long get_cycles (void)
-{
-	unsigned long long ret;
-
-	rdtscll(ret);
-	return ret;
-}
-
 
 real calc_ewaldcoeff(real rc,real dtol)
 {

@@ -77,7 +77,8 @@ void vecinvsqrt(real in[],real out[],int n)
   const real  three=3.0;
   t_convert   result,bit_pattern;
   unsigned int exp,fract;
-  float       lu,x;
+  float       lu;
+  real        x;
 #ifdef DOUBLE
   real        y;
 #endif
