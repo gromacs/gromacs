@@ -76,7 +76,11 @@ void calc_bonds(FILE *log,t_commrec *cr,t_idef *idef,
 #endif
   }
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_BOND) {
+    if (interaction_function[ftype].flags & IF_BOND
+#ifdef USE_CUBICBONDS
+	  && ftype!=F_CONNBONDS
+#endif	
+) {
       nbonds=idef->il[ftype].nr;
       if (nbonds > 0) {
 	epot[ftype]+=

@@ -50,6 +50,7 @@ enum {
   F_MORSE,
 #ifdef USE_CUBICBONDS
   F_CUBICBONDS,
+  F_CONNBONDS,
 #endif
   F_ANGLES, 
   F_G96ANGLES, 

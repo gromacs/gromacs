@@ -84,6 +84,8 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->cubic.kb    =old[1];
     new->cubic.kcub  =old[2];
     break;
+  case F_CONNBONDS:
+    break;
 #endif
   case F_WPOL:
     new->wpol.kx     =old[0];

@@ -111,6 +111,7 @@ static void add_bpl(t_manager *man,t_idef *idef,bool bB[])
   add_bonds(man,idef->functype,&idef->il[F_MORSE],bB);
 #ifdef USE_CUBICBONDS
   add_bonds(man,idef->functype,&idef->il[F_CUBICBONDS],bB);
+  add_bonds(man,idef->functype,&idef->il[F_CONNBONDS],bB);
 #endif
   add_bonds(man,idef->functype,&idef->il[F_SHAKE],bB);
   add_bonds(man,idef->functype,&idef->il[F_SETTLE],bB);

@@ -51,6 +51,8 @@ int ifunc_index(directive d,int type)
 #ifdef USE_CUBICBONDS
     else if (type == 4)
       return F_CUBICBONDS;
+    else if (type == 5)
+      return F_CONNBONDS;
 #endif
     else
       fatal_error(0,"Invalid bond type %d",type);

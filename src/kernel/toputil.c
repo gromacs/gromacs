@@ -237,6 +237,9 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   case F_CUBICBONDS:
     f = 3;
     break;
+  case F_CONNBONDS:
+    f = 4;
+    break;
 #endif
   case F_PDIHS:
   case F_RBDIHS:

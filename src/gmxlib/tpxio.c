@@ -356,6 +356,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_real(iparams->cubic.kb);
     do_real(iparams->cubic.kcub);
     break;
+  case F_CONNBONDS:
+    break;
 #endif
   case F_WPOL:
     do_real(iparams->wpol.kx);

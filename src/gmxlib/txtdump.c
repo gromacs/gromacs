@@ -427,6 +427,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"b0=%15.8e, kb=%15.8e, kcub=%15.8e\n",
 	    iparams->cubic.b0,iparams->cubic.kb,iparams->cubic.kcub);
     break;
+  case F_CONNBONDS:
+    fprintf(fp,"\n");
+    break;
 #endif
   case F_WPOL:
     fprintf(fp,"kx=%15.8e, ky=%15.8e, kz=%15.8e, rOH=%9.6f, rHH=%9.6f, rOD=%9.6f\n",
