@@ -198,7 +198,7 @@ void overlap(char *outfile,int natoms,
 
 void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	     char *projfile,char *twodplotfile,char *filterfile,int skip,
-	     char *extremefile,real extreme,int nextr,
+	     char *extremefile,bool bExtrAll,real extreme,int nextr,
 	     t_atoms *atoms,int natoms,atom_id *index,
 	     rvec *xref,int nfit,atom_id *ifit,real *w_rls,
 	     real *sqrtm,rvec *xav,
@@ -206,15 +206,18 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
 	     int noutvec,int *outvec)
 {
   FILE    *xvgrout;
-  int     status,out,nat,i,j,d,v,vec,nfr,nframes,snew_size,imin,imax,frame;
+  int     status,out,nat,i,j,d,v,vec,nfr,nframes,snew_size,frame;
+  int     *imin,*imax;
   atom_id *all_at;
   matrix  box;
   rvec    *xread,*x;
   real    t,inp,**inprod,min,max;
-  char    str[STRLEN],str2[STRLEN],**ylabel;
-
+  char    str[STRLEN],str2[STRLEN],**ylabel,*c;
+  
   snew(x,natoms);
-
+  
+  if (!bExtrAll)
+    noutvec=1;
   if (trajfile) {
     snew(inprod,noutvec+1);
     
@@ -308,40 +311,56 @@ void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
   }
   if (extremefile) {
     if (extreme==0) {
-      imin=0;
-      imax=0;
-      for(i=0; i<nframes; i++) {
-	if (inprod[0][i]<inprod[0][imin])
-	  imin=i;
-	if (inprod[0][i]>inprod[0][imax])
-	  imax=i;
+      fprintf(stderr,"%11s %17s %17s\n","eigenvector","Minimum","Maximum");
+      fprintf(stderr,
+	      "%11s %10s %10s %10s %10s\n","","value","time","value","time");
+      snew(imin,noutvec);
+      snew(imax,noutvec);
+      for(v=0; v<noutvec; v++) {
+	for(i=0; i<nframes; i++) {
+	  if (inprod[v][i]<inprod[v][imin[v]])
+	    imin[v]=i;
+	  if (inprod[v][i]>inprod[v][imax[v]])
+	    imax[v]=i;
+	}
+	min=inprod[v][imin[v]];
+	max=inprod[v][imax[v]];
+	fprintf(stderr,"%7d     %10.6f %10.1f %10.6f %10.1f\n",
+		eignr[outvec[v]]+1,
+		min,inprod[noutvec][imin[v]],max,inprod[noutvec][imax[v]]); 
       }
-      min=inprod[0][imin];
-      max=inprod[0][imax];
-      fprintf(stderr,"\nMinimum along eigenvector %d is %g at t=%g\n",
-	      eignr[outvec[0]]+1,min,inprod[noutvec][imin]); 
-      fprintf(stderr,"Maximum along eigenvector %d is %g at t=%g\n",
-	      eignr[outvec[0]]+1,max,inprod[noutvec][imax]); 
     }
     else {
       min=-extreme;
       max=+extreme;
     }
-    fprintf(stderr,"\nWriting %d frames between the extremes to %s\n",
-	    nextr,extremefile);
-    out=open_trx(extremefile,"w");
-    for(frame=0; frame<nextr; frame++) {
-      if ((extreme==0) && (nextr<=3))
+    /* build format string for filename: */
+    strcpy(str,extremefile);/* copy filename */
+    c=strrchr(str,'.'); /* find where extention begins */
+    strcpy(str2,c); /* get extention */
+    sprintf(c,"%%d%s",str2); /* append '%s' and extention to filename */
+    for(v=0; v<noutvec; v++) {
+      /* make filename using format string */
+      if (noutvec==1)
+	strcpy(str2,extremefile);
+      else
+	sprintf(str2,str,eignr[outvec[v]]+1);
+      fprintf(stderr,"Writing %d frames between the extremes to %s\n",
+	      nextr,str2);
+      out=open_trx(str2,"w");
+      for(frame=0; frame<nextr; frame++) {
+	if ((extreme==0) && (nextr<=3))
+	  for(i=0; i<natoms; i++)
+	    atoms->atom[index[i]].chain='A'+frame;
 	for(i=0; i<natoms; i++)
-	  atoms->atom[index[i]].chain='A'+frame;
-      for(i=0; i<natoms; i++)
-	for(d=0; d<DIM; d++) 
-	  xread[index[i]][d] = 
-	    (xav[i][d] + (min*(nextr-frame-1)+max*frame)/(nextr-1)
-	    *eigvec[outvec[0]][i][d]/sqrtm[i]);
-      write_trx(out,natoms,index,atoms,0,frame,topbox,xread,NULL);
+	  for(d=0; d<DIM; d++) 
+	    xread[index[i]][d] = 
+	      (xav[i][d] + (min*(nextr-frame-1)+max*frame)/(nextr-1)
+	      *eigvec[outvec[v]][i][d]/sqrtm[i]);
+	write_trx(out,natoms,index,atoms,0,frame,topbox,xread,NULL);
+      }
+      close_trx(out);
     }
-    close_trx(out);
   }
   fprintf(stderr,"\n");
 }
@@ -459,7 +478,9 @@ int main(int argc,char *argv[])
     "[TT]-extr[tt]: calculate the two extreme projections along a trajectory",
     "on the average structure and interpolate [TT]-nframes[tt] frames between",
     "them, or set your own extremes with [TT]-max[tt]. The eigenvector",
-    "is specified with [TT]-first[tt]. Chain identifiers will be added when",
+    "[TT]-first[tt] will be written unless [TT]-first[tt] and [TT}-last[tt]",
+    "are explicitly set, in which case all eigenvectors will be written.",
+    "Chain identifiers will be added when",
     "writing a [TT].pdb[tt] file with two or three strcutures",
     "(you can use [TT]rasmol -nmrpdb[tt] to view such a pdb file).[PAR]",
     "[TT]-over[tt]: calculate the subspace overlap of the eigenvectors in",
@@ -482,6 +503,8 @@ int main(int argc,char *argv[])
     { "-nframes",  FALSE, etINT, &nextr, 
       "Number of frames for the extremes output" }
   };
+#define NPA asize(pa)
+  
   FILE       *out;
   int        status,trjout;
   t_topology top;
@@ -500,7 +523,7 @@ int main(int argc,char *argv[])
   char       *Vec2File,*topfile,*CompFile,*ProjOnVecFile,*TwoDPlotFile;
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
-  bool       bM,bIndex,bTPS,bTop,bVec2,bProj,bFirstToLast,bTraj;
+  bool       bM,bIndex,bTPS,bTop,bVec2,bProj,bFirstToLast,bExtremeAll,bTraj;
   t_filenm fnm[] = { 
     { efTRN, "-v",    "eigenvec",    ffREAD  },
     { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
@@ -519,7 +542,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_TIME,TRUE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
+		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
 
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
@@ -534,7 +557,10 @@ int main(int argc,char *argv[])
   InpMatFile      = ftp2fn_null(efXPM,NFILE,fnm);
   bTop   = fn2bTPX(topfile);
   bProj  = ProjOnVecFile || FilterFile || ExtremeFile || TwoDPlotFile;
-  bFirstToLast    = CompFile || ProjOnVecFile || FilterFile || OverlapFile;
+  bExtremeAll  = 
+    opt2parg_bSet("-first",NPA,pa) && opt2parg_bSet("-last",NPA,pa);
+  bFirstToLast = CompFile || ProjOnVecFile || FilterFile || OverlapFile || 
+    ( ExtremeFile && bExtremeAll );
   bVec2  = Vec2File || OverlapFile || InpMatFile;
   bM     = CompFile || bProj;
   bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
@@ -646,8 +672,8 @@ int main(int argc,char *argv[])
       snew(iout,nout);
       for(i=0; i<nout; i++)
 	iout[i]=first-1+i;
-    } 
-    else {
+    } else {
+      /* make an index of first and last */
       nout=2;
       snew(iout,nout);
       iout[0]=first-1;
@@ -678,18 +704,22 @@ int main(int argc,char *argv[])
       noutvec++;
     }
   }
-
+  fprintf(stderr,"%d eigenvectors selected for output:",noutvec);
+  for(j=0; j<noutvec; j++)
+    fprintf(stderr," %d",eignr1[outvec[j]]+1);
+  fprintf(stderr,"\n");
+  
   if (CompFile)
     components(CompFile,natoms,sqrtm,nvec1,eignr1,eigvec1,noutvec,outvec);
-
+  
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
 	    bTop ? &top : NULL,topbox,xtop,
 	    ProjOnVecFile,TwoDPlotFile,FilterFile,skip,
-	    ExtremeFile,max,nextr,atoms,natoms,index,
+	    ExtremeFile,bExtremeAll,max,nextr,atoms,natoms,index,
 	    xref1,nfit,ifit,w_rls,
 	    sqrtm,xav1,nvec1,eignr1,eigvec1,noutvec,outvec);
-
+  
   if (OverlapFile)
     overlap(OverlapFile,natoms,
 	    nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
@@ -697,7 +727,7 @@ int main(int argc,char *argv[])
   if (InpMatFile)
     inprod_matrix(InpMatFile,natoms,
 		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2);
-    
+  
   return 0;
 }
   
