@@ -11,7 +11,7 @@ if ( -f $out) then
 endif
 touch $out
 
-cd $GMXBIN
+cd $GMXHOME/bin/$GMXCPU
 set PROGRAMS = [a-z]*
 cd $dir
 
