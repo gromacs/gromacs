@@ -346,13 +346,10 @@ static char *mk_desc(t_pargs *pa, char *time_unit)
   /* change '%t' into time_unit */
 #define TUNITLABEL "%t"
 #define NTUNIT strlen(TUNITLABEL)
-  if (pa->type == etTIME) {
-    fprintf(stderr,"%s: desc: '%s'\n",TUNITLABEL,newdesc);
+  if (pa->type == etTIME)
     while( (ptr=strstr(newdesc,TUNITLABEL)) != NULL ) {
       ptr[0]='\0';
       ptr+=NTUNIT;
-      fprintf(stderr,"%s: newdesc: '%s' ptr: '%s' tu: '%s'\n",
-	      TUNITLABEL,newdesc,ptr,time_unit);
       len+=strlen(time_unit)-NTUNIT;
       snew(ndesc,len);
       strcpy(ndesc,newdesc);
@@ -362,7 +359,6 @@ static char *mk_desc(t_pargs *pa, char *time_unit)
       newdesc=ndesc;
       ndesc=NULL;
     }
-  }
 #undef TUNITLABEL
 #undef NTUNIT
   
