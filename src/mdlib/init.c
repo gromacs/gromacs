@@ -100,7 +100,8 @@ void init_single(FILE *log,t_parm *parm,
   
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,
 	   parm->box,&natoms,*x,*v,NULL,top);
-  
+  check_nprocs_top(tpxfile,top,1);
+
   *mdatoms=atoms2md(&top->atoms,parm->ir.opts.nFreeze,
 		    parm->ir.eI==eiLD,parm->ir.bPert,FALSE);
   
@@ -124,6 +125,7 @@ void distribute_parts(int left,int right,int pid,int nprocs,t_parm *parm,
   snew(v,tpx.natoms);
   read_tpx(tpxfile,&step,&t,&lambda,&parm->ir,parm->box,
 	   &natoms,x,v,NULL,&top);
+  check_nprocs_top(tpxfile,&top,nprocs);
   
   calc_nsb(&(top.blocks[ebCGS]),nprocs,&nsb,nstDlb);
   mv_data(left,right,parm,&nsb,&top,x,v);

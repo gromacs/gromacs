@@ -399,3 +399,17 @@ void doexceptions(void)
 }
 #endif
 #endif
+
+void check_nprocs_top(char *fn,t_topology *top,int nprocs)
+{
+  int i,np=0;
+  
+  for(i=0; (i<MAXPROC); i++)
+    if (top->blocks[ebCGS].multinr[i] != 0)
+      np++;
+      
+  if (np != nprocs)
+    fatal_error(0,"tpxfile %s was made for %d processors,\n"
+		"             while %s expected it to be for %d processors.",
+		fn,np,ShortProgram(),nprocs);
+}

@@ -122,6 +122,9 @@ extern bool bDebugMode(void);
 extern void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif
+
+extern void check_nprocs_top(char *fn,t_topology *top,int nprocs);
+/* Verify whether this tpr file is for nprocs processors, and quit if not */
   
 #ifdef CPLUSPLUS
 	   }
