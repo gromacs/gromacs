@@ -207,6 +207,8 @@ int main (int argc,char *argv[])
   real         count=0;
   rvec         xcm;
 
+  char         *leg[2] = { "MD", "X-Ray" };
+
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL,     ffREAD  },
     { efTPS, NULL,  NULL,     ffREAD  },
@@ -360,6 +362,7 @@ int main (int argc,char *argv[])
     bfac = 8.0*M_PI*M_PI/3.0*100;
     fp   = xvgropen(ftp2fn(efXVG,NFILE,fnm),"B-Factors",
 		    label,"(A\\b\\S\\So\\N\\S2\\N)");
+    xvgr_legend(fp,2,leg);
     for(i=0;(i<isize);i++) {
       if (!bRes || i+1==isize ||
 	  top.atoms.atom[index[i]].resnr!=top.atoms.atom[index[i+1]].resnr) {
