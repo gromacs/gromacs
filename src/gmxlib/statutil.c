@@ -331,7 +331,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   static bool bDebug=FALSE;
   
   FILE *fp;  
-  bool *bKeep,bPrint,bAction;
+  bool *bKeep,bPrint,bNo_get_pargs;
   int  i,k,b,npall;
   t_pargs *all_pa;
   int      nall_pa;
@@ -375,7 +375,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Now other options */
   uFlags  = Flags;
   bPrint  = (Flags & PCA_SILENT)   != PCA_SILENT;
-  bAction = (Flags & PCA_NOACTION) != PCA_NOACTION;
+  bNo_get_pargs = (Flags & PCA_NOGET_PARGS) != PCA_NOGET_PARGS;
   
   /* Check ALL the flags ... */
   if (bNice)
@@ -395,13 +395,13 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   for(i=0; (i<npargs); i++,npall++)
     memcpy(&(all_pa[npall]),&(pa[i]),sizeof(pa[i]));
   
-  if (bAction) {
-    /* Parse the file args */
-    parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
-    
-    /* Now parse the other options */
-    get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
-    
+  /* Parse the file args */
+  parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
+
+  /* Now parse the other options */
+  get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
+
+  if (bNo_get_pargs) {  
     /* Now copy the results back... */
     for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
       memcpy(&(pa[i]),&(all_pa[k]),sizeof(pa[i]));
@@ -447,7 +447,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
     print_pargs(stdout,npall,all_pa);
   }
 
-  if ((mantp != 0) && bAction) {
+  if (mantp != 0) {
     fp=man_file(program,mantp);
     write_man(fp,mantp,program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
     fclose(fp);
