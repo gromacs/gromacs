@@ -205,7 +205,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     
   bDone=((nshell == 0) || (df[Min] < ftol));
   bMinSet=FALSE;
-  for(count=1; 
+  for(count=1; (step > 0.5) &&
       !(bDone || ((number_steps > 0) && (count>=number_steps))); count++) {
     
     /* New positions, Steepest descent */
@@ -277,7 +277,6 @@ int relax_shells2(FILE *log,t_commrec *cr,
   static bool bFirst=TRUE;
   static rvec *pos[3],*force[3];
   static real step;
-#define NEPOT asize(Epot)
   real   ftol,s1,s2,eold,step0;
   rvec   EEE,abc,rmsF;
   matrix SSS = { { 0, 0, 1 }, { 1, 1, 1}, { 0, 1, 0 }};
@@ -292,7 +291,7 @@ int relax_shells2(FILE *log,t_commrec *cr,
 #define  Try1 ((Min+1) % 3)
 #define  Try2 ((Min+2) % 3)
 
-   if (bFirst) {
+  if (bFirst) {
     /* Allocate local arrays */
     for(i=0; (i<3); i++) {
       snew(pos[i],nsb->natoms);
@@ -301,10 +300,10 @@ int relax_shells2(FILE *log,t_commrec *cr,
     bFirst=FALSE;
   }
   
-  ftol  = parm->ir.em_tol;
-  number_steps=parm->ir.niter;
-  step0 = 1.0;   
-  step  = step0;
+  ftol         = parm->ir.em_tol;
+  number_steps = parm->ir.niter;
+  step0        = 1.0;   
+  step         = step0;
   
   /* Do a prediction of the shell positions */
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells);
@@ -321,7 +320,7 @@ int relax_shells2(FILE *log,t_commrec *cr,
    * shell positions are updated, therefore the other particles must
    * be set here.
    */
-  memcpy(pos[Min],x,nsb->natoms*sizeof(x[0]));
+  memcpy(pos[Min], x,nsb->natoms*sizeof(x[0]));
   memcpy(pos[Try1],x,nsb->natoms*sizeof(x[0]));
   memcpy(pos[Try2],x,nsb->natoms*sizeof(x[0]));
   for(i=0; (i<nsb->natoms); i++) {
@@ -332,16 +331,16 @@ int relax_shells2(FILE *log,t_commrec *cr,
   sum_epot(&(parm->ir.opts),grps,ener);
   EEE[0] = ener[F_EPOT];
   
-#ifdef DEBUG
   if (bVerbose && MASTER(cr))
-    print_epot("",mdstep,0,step,Epot[Min],df[Min]);
-  fprintf(stderr,"%17s: %14.10e\n",
-	  interaction_function[F_EKIN].longname, ener[F_EKIN]);
-  fprintf(stderr,"%17s: %14.10e\n",
-	  interaction_function[F_EPOT].longname, ener[F_EPOT]);
-  fprintf(stderr,"%17s: %14.10e\n",
-      interaction_function[F_ETOT].longname, ener[F_ETOT]);
-#endif
+    print_epot("",mdstep,0,step,EEE[0],rmsF[Min]);
+  if (debug) {
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_EKIN].longname, ener[F_EKIN]);
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_EPOT].longname, ener[F_EPOT]);
+    fprintf(debug,"%17s: %14.10e\n",
+	    interaction_function[F_ETOT].longname, ener[F_ETOT]);
+  }
       
   bDone=((nshell == 0) || (rmsF[0] < ftol));
   bMinSet=FALSE;
@@ -366,7 +365,7 @@ int relax_shells2(FILE *log,t_commrec *cr,
 	     top,grps,pos[Try1],v,force[Try1],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr);
     count++;
-    rmsF[1]=rms_force(force[Try1],nshell,shells);
+    rmsF[Try1]=rms_force(force[Try1],nshell,shells);
 #ifdef DEBUGHARD
     pr_rvecs(log,0,"F na do_force",&(force[Try1][start]),homenr);
 #endif
@@ -376,11 +375,23 @@ int relax_shells2(FILE *log,t_commrec *cr,
     EEE[1] = ener[F_EPOT];
     
     if (bVerbose && MASTER(cr))
-      print_epot("",mdstep,count,step,EEE[1],rmsF[1]);
-    bDone=(rmsF[1] < ftol);
+      print_epot("",mdstep,count,step,EEE[1],rmsF[Try1]);
+    bDone=(rmsF[Try1] < ftol);
     
-    /* NOW! Do line mimization */
-    EEE[2] = rmsF[0];
+    /* NOW! Do line mimization *
+     * Assume the energy is a quadratic function of the stepsize x:
+     * a x^2 + b x + c = E
+     * We try to solve the following equations:
+     * a x^2 + b x + c = E[0] (x = 0)
+     * a x^2 + b x + c = E[1] (x = 1)
+     * 2 a x + b       = F[1] (x = 1)
+     * This we can write as a matrix equation:
+     *
+     * ( 0  0  1 ) a   E[0]
+     * ( 1  1  1 ) b = E[1]
+     * ( 0  2  1 ) c   F[1]
+     */
+    EEE[2] = rmsF[Min]*sqrt(nshell*1.0);
     
     m_inv(SSS,Sinv);
     mvmul(Sinv,EEE,abc);
@@ -411,13 +422,13 @@ int relax_shells2(FILE *log,t_commrec *cr,
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(parm->ir.opts),grps,ener);
     
-    eold    = EEE[0];
+    eold      = EEE[0];
     EEE[0]  = ener[F_EPOT];
-    rmsF[0] = rms_force(force[Try2],nshell,shells);
-    bDone   = (rmsF[0] < ftol);
+    rmsF[Min] = rms_force(force[Try2],nshell,shells);
+    bDone     = (rmsF[Min] < ftol);
       
     if (bVerbose && MASTER(cr)) {
-      print_epot("",mdstep,count,step,EEE[0],rmsF[0]);
+      print_epot("",mdstep,count,step,EEE[0],rmsF[Min]);
       fprintf(stderr,"DE1=%10g, DE0= %10g\n",eold-EEE[1],eold-EEE[0]);
     }
     step = step0;
@@ -427,8 +438,8 @@ int relax_shells2(FILE *log,t_commrec *cr,
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
   
   /* Parallelise this one! */
-  memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
-  memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
+  memcpy(x,pos[Min],nsb->natoms*sizeof(x[Min]));
+  memcpy(f,force[Min],nsb->natoms*sizeof(f[Min]));
 #ifdef DEBUGHARD
   pr_rvecs(log,0,"X na do_relax",&(x[start]),homenr);
   pr_rvecs(log,0,"F na do_relax",&(f[start]),homenr);
