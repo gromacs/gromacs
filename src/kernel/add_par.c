@@ -216,11 +216,11 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
   }
   if (jmax == -1)
     gmx_fatal(FARGS,"Atom %s not found in rtp database in residue %s",
-		searchname,rtp->resname);
+	      searchname,rtp->resname);
   if (kmax != strlen(searchname))
     gmx_fatal(FARGS,"Atom %s not found in rtp database in residue %s, "
-		"it looks a bit like %s",
-		searchname,rtp->resname,*(rtp->atomname[jmax]));
+	      "it looks a bit like %s",
+	      searchname,rtp->resname,*(rtp->atomname[jmax]));
   return jmax;
 }
 

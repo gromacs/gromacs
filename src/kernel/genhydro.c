@@ -58,6 +58,7 @@
 #include "ter_db.h"
 #include "resall.h"
 #include "pgutil.h"
+#include "network.h"
 
 static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
 {
@@ -335,7 +336,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
   rvec        *xn;
   bool        bKeep_ab;
   
-  /* set flags for adding hydrogens (accoring to hdb) */
+  /* set flags for adding hydrogens (according to hdb) */
   pdba=*pdbaptr;
   natoms=pdba->nr;
   
@@ -406,10 +407,14 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
   newi=0;
   for(i=0; (i<natoms); i++) {
     /* check if this atom wasn't scheduled for deletion */
-    if ( nab[i]==0 || ab[i][0].nname!=NULL ) {
+    if ( nab[i]==0 || (ab[i][0].nname != NULL) ) {
       if (newi >= natoms+nadd) {
+	/*gmx_fatal(FARGS,"Not enough space for adding atoms");*/
 	nadd+=10;
 	srenew(xn,natoms+nadd);
+	srenew(newpdba->atom,natoms+nadd);
+	srenew(newpdba->atomname,natoms+nadd);
+	debug_gmx();
       }
       if (debug) fprintf(debug,"(%3d) %3d %4s %4s%3d %3d",
 			 i+1, newi+1, *pdba->atomname[i],
@@ -423,11 +428,16 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
 	if ( ab[i][j].oname==NULL ) { /* add */
 	  newi++;
 	  if (newi >= natoms+nadd) {
+	    /* gmx_fatal(FARGS,"Not enough space for adding atoms");*/
 	    nadd+=10;
 	    srenew(xn,natoms+nadd);
+	    srenew(newpdba->atom,natoms+nadd);
+	    srenew(newpdba->atomname,natoms+nadd);
+	    debug_gmx();
 	  }
-	  if (bUpdate_pdba)
+	  if (bUpdate_pdba) {
 	    newpdba->atom[newi].resnr=pdba->atom[i].resnr;
+	  }
 	  if (debug) fprintf(debug," + %d",newi+1);
 	}
 	if ( ab[i][j].nname!=NULL ) { /* add or replace */
@@ -454,6 +464,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
       if (debug) fprintf(debug,"\n");
     }
   }
+  newpdba->nr = newi;
   
   if ( bKeep_ab ) {
     *nabptr=nab;
@@ -485,7 +496,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
   sfree(*xptr);
   *xptr=xn;
   
-  return natoms+nadd;
+  return newpdba->nr;
 }
 
 void deprotonate(t_atoms *atoms,rvec *x)

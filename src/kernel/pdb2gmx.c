@@ -178,7 +178,7 @@ static void rename_pdbresint(t_atoms *pdba,char *oldnm,
   }
 }
 
-static void check_occupancy(t_atoms *atoms,char *filename)
+static void check_occupancy(t_atoms *atoms,char *filename,bool bVerbose)
 {
   int i,ftp;
   int nzero=0;
@@ -189,10 +189,18 @@ static void check_occupancy(t_atoms *atoms,char *filename)
     fprintf(stderr,"No occupancies in %s\n",filename);
   else {
     for(i=0; (i<atoms->nr); i++) {
-      if (atoms->pdbinfo[i].occup == 0)
-	nzero++;
-      else if (atoms->pdbinfo[i].occup != 1)
-	nnotone++;
+      if (atoms->pdbinfo[i].occup != 1) {
+	if (bVerbose)
+	  fprintf(stderr,"Occupancy for atom %s%d-%s is %f rather than 1\n",
+		  *atoms->resname[atoms->atom[i].resnr],
+		  atoms->atom[i].resnr+1,
+		  *atoms->atomname[i],
+		  atoms->pdbinfo[i].occup);
+	if (atoms->pdbinfo[i].occup == 0) 
+	  nzero++;
+	else 
+	  nnotone++;
+      }
     }
     if (nzero == atoms->nr)
       fprintf(stderr,"All occupancy fields zero. This is probably not an X-Ray structure\n");
@@ -281,8 +289,7 @@ int read_pdball(char *inf, char *outf,char *title,
 void process_chain(t_atoms *pdba, rvec *x, 
 		   bool bTrpU,bool bPheU,bool bTyrU,
 		   bool bLysMan,bool bAspMan,bool bGluMan,
-		   bool bHisMan,bool bCysMan,
-		   int *nssbonds,t_ssbond **ssbonds,
+		   bool bHisMan,
 		   real angle,real distance,t_symtab *symtab)
 {
   /* Rename aromatics, lys, asp and histidine */
@@ -304,8 +311,6 @@ void process_chain(t_atoms *pdba, rvec *x,
 
   /* Make sure we don't have things like CYS? */ 
   rename_pdbres(pdba,"CYS","CYS",FALSE,symtab);
-  *nssbonds=mk_specbonds(pdba,x,bCysMan,ssbonds);
-  rename_pdbres(pdba,"CYS","CYSH",TRUE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
@@ -430,13 +435,13 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   sfree(pdbi);
 }
 
-static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
+static int remove_duplicate_atoms(t_atoms *pdba,rvec x[],bool bVerbose)
 {
-  int     i,j,oldnatoms;
+  int     i,j,oldnatoms,ndel;
   
   printf("Checking for duplicate atoms....\n");
   oldnatoms    = pdba->nr;
-  
+  ndel = 0;
   /* NOTE: pdba->nr is modified inside the loop */
   for(i=1; (i < pdba->nr); i++) {
     /* compare 'i' and 'i-1', throw away 'i' if they are identical 
@@ -444,18 +449,21 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
     while ( (i < pdba->nr) &&
 	    (pdba->atom[i-1].resnr == pdba->atom[i].resnr) &&
 	    (strcmp(*pdba->atomname[i-1],*pdba->atomname[i])==0) ) {
-      printf("deleting duplicate atom %4s  %s%4d",
-	     *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
-	     pdba->atom[i].resnr+1);
-      if (pdba->atom[i].chain && (pdba->atom[i].chain!=' '))
-	printf(" ch %c", pdba->atom[i].chain);
-      if (pdba->pdbinfo) {
-	if (pdba->pdbinfo[i].atomnr)
-	  printf("  pdb nr %4d",pdba->pdbinfo[i].atomnr);
-	if (pdba->pdbinfo[i].altloc && (pdba->pdbinfo[i].altloc!=' '))
-	  printf("  altloc %c",pdba->pdbinfo[i].altloc);
+      ndel++;
+      if (bVerbose) {
+	printf("deleting duplicate atom %4s  %s%4d",
+	       *pdba->atomname[i], *pdba->resname[pdba->atom[i].resnr], 
+	       pdba->atom[i].resnr+1);
+	if (pdba->atom[i].chain && (pdba->atom[i].chain!=' '))
+	  printf(" ch %c", pdba->atom[i].chain);
+	if (pdba->pdbinfo) {
+	  if (pdba->pdbinfo[i].atomnr)
+	    printf("  pdb nr %4d",pdba->pdbinfo[i].atomnr);
+	  if (pdba->pdbinfo[i].altloc && (pdba->pdbinfo[i].altloc!=' '))
+	    printf("  altloc %c",pdba->pdbinfo[i].altloc);
+	}
+	printf("\n");
       }
-      printf("\n");
       pdba->nr--;
       sfree(pdba->atomname[i]);
       for (j=i; j < pdba->nr; j++) {
@@ -470,7 +478,7 @@ static int remove_duplicate_atoms(t_atoms *pdba,rvec x[])
     }
   }
   if (pdba->nr != oldnatoms)
-    printf("Now there are %d atoms\n",pdba->nr);
+    printf("Now there are %d atoms. Deleted %d duplicates.\n",pdba->nr,ndel);
   
   return pdba->nr;
 }
@@ -654,7 +662,7 @@ int main(int argc, char *argv[])
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bSort=TRUE, bMissing=FALSE, bRemoveH=TRUE;
-  static bool bDeuterate=FALSE;
+  static bool bDeuterate=FALSE,bVerbose=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *vsitestr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
@@ -700,6 +708,8 @@ int main(int argc, char *argv[])
       "Ignore hydrogen atoms that are in the pdb file" },
     { "-missing",FALSE, etBOOL, {&bMissing}, 
       "Continue when atoms are missing, dangerous" },
+    { "-v",      FALSE, etBOOL, {&bVerbose}, 
+      "Be slightly more verbose in messages" },
     { "-posrefc",FALSE, etREAL, {&posre_fc},
       "Force constant for position restraints" },
     { "-vsite",  FALSE, etENUM, {vsitestr}, 
@@ -937,7 +947,7 @@ int main(int argc, char *argv[])
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
   
-  check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm));
+  check_occupancy(&pdba_all,opt2fn("-f",NFILE,fnm),bVerbose);
   
   /* Read atomtypes... */
   atype=read_atype(forcefield,&symtab);
@@ -985,13 +995,14 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
 
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bCysMan,&nssbonds,&ssbonds,angle,distance,&symtab);
+		  bHisMan,angle,distance,&symtab);
 		  
     if (bSort) {
       block = new_block();
       snew(gnames,1);
+      rename_pdbres(pdba,"CYS","CYSH",TRUE,&symtab);
       sort_pdbatoms(nrtp,restp,natom,&pdba,&x,block,&gnames);
-      natom = remove_duplicate_atoms(pdba,x);
+      natom = remove_duplicate_atoms(pdba,x,bVerbose);
       if (ftp2bSet(efNDX,NFILE,fnm)) {
 	if (bRemoveH)
 	  fprintf(stderr,"WARNING: with the -remh option the generated "
@@ -1008,6 +1019,11 @@ int main(int argc, char *argv[])
       fprintf(stderr,"WARNING: "
 	      "without sorting no check for duplicate atoms can be done\n");
     
+    /* Check for disulphides and other special bonds */
+    rename_pdbres(pdba,"CYSH","CYS",TRUE,&symtab);
+    nssbonds=mk_specbonds(pdba,x,bCysMan,&ssbonds);
+    rename_pdbres(pdba,"CYS","CYSH",TRUE,&symtab);
+		  
     if (debug) {
       if ( cc->chain == '\0' || cc->chain == ' ')
 	sprintf(fn,"chain.pdb");
