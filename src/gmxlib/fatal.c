@@ -33,6 +33,7 @@ static char *SRCID_fatal_c = "$Id$";
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
+#include "futil.h"
 #include "statutil.h"
 #include "main.h"
 #include "network.h"
