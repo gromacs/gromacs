@@ -238,9 +238,13 @@ real water_pol(FILE *log,int nbonds,
 	       matrix box,real lambda,real *dvdlambda,
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
+  /* This routine implements anisotropic polarizibility for water, through
+   * a shell connected to a dummy with spring constant that differ in the
+   * three spatial dimensions in the molecular frame.
+   */
   int  i,m,ki,kj,aO,aH1,aH2,aD,aS,type;
   rvec dOH1,dOH2,dHH,dOD,dDS,nW,kk,dx,kdx;
-  real vtot,fij,r_HH,r_OH,r_OD,r_nW;
+  real vtot,fij,r_HH,r_OH,r_OD,r_nW,tx,ty,tz;
   
   vtot = 0.0;
   if (nbonds > 0) {
@@ -283,6 +287,7 @@ real water_pol(FILE *log,int nbonds,
       dx[YY] = iprod(dDS,dHH);
       dx[ZZ] = iprod(dDS,dOD);
       
+#ifdef DEBUG
       if (debug) {
 	fprintf(debug,"WPOL: dx2=%10g  dy2=%10g  dz2=%10g  sum=%10g  dDS^2=%10g\n",
 		sqr(dx[XX]),sqr(dx[YY]),sqr(dx[ZZ]),sqr(dx[XX])+sqr(dx[YY])+sqr(dx[ZZ]),iprod(dDS,dDS));
@@ -293,14 +298,20 @@ real water_pol(FILE *log,int nbonds,
 	fprintf(debug,"WPOL: dDSx=%10g, dDSy=%10g, dDSz=%10g\n",
 		dDS[XX],dDS[YY],dDS[ZZ]);
       }
+#endif
       
       /* Now compute the forces and energy */
       kdx[XX] = -kk[XX]*dx[XX];
       kdx[YY] = -kk[YY]*dx[YY];
       kdx[ZZ] = -kk[ZZ]*dx[ZZ];
       for(m=0; (m<DIM); m++) {
-	fij       = nW[m]*kdx[XX]+dHH[m]*kdx[YY]+dOD[m]*kdx[ZZ];
-	vtot     += kk[m]*sqr(dx[m]);
+	/* This is a tensor operation but written out for speed */
+	tx        =  nW[m]*kdx[XX];
+	ty        = dHH[m]*kdx[YY];
+	tz        = dOD[m]*kdx[ZZ];
+	fij       = tx+ty+tz;
+	vtot     += 0.5*(tx*dx[XX]+ty*dx[YY]+tz*dx[ZZ]);
+
 	f[aS][m] += fij;
 	f[aD][m] -= fij;
       }
