@@ -48,20 +48,10 @@ static char *SRCID_genion_c = "$Id$";
 #include "calcpot.h"
 #include "main.h"
 #include "random.h"
+#include "rdgroup.h"
 
-static int *mk_windex(int w1,int nw)
-{
-  int *index;
-  int i;
-
-  snew(index,nw);
-  for(i=0; (i<nw); i++)
-    index[i]=w1+3*i;
-  
-  return index;
-}
-
-static void insert_ion(int *nwater,bool bSet[],int repl[],int index[],
+static void insert_ion(int nsa,int *nwater,
+		       bool bSet[],int repl[],atom_id index[],
 		       real pot[],rvec x[],
 		       int sign,real q,char *ionname,
 		       t_mdatoms *mdatoms,
@@ -71,7 +61,7 @@ static void insert_ion(int *nwater,bool bSet[],int repl[],int index[],
   real extr_e,poti,rmin2;
   rvec xei,dx;
   bool bSub=FALSE;
-  int  maxrand,natoms;
+  int  maxrand;
   
   ei=-1;
   nw = *nwater;
@@ -86,8 +76,8 @@ static void insert_ion(int *nwater,bool bSet[],int repl[],int index[],
     extr_e = 0;
     for(i=0; (i<nw); i++) {
       if (!bSet[i]) {
-	ii=index[i];
-	poti=pot[ii];
+	ii=index[nsa*i];
+	poti=pot[nsa*ii];
 	if (q > 0) {
 	  if ((poti <= extr_e) || !bSub) {
 	    extr_e = poti;
@@ -108,21 +98,21 @@ static void insert_ion(int *nwater,bool bSet[],int repl[],int index[],
   if (ei == -1)
     fatal_error(0,"No More replaceable waters!");
   fprintf(stderr,"Replacing water %d (atom %d) with %s\n",
-	  ei,index[ei],ionname);
+	  ei,index[nsa*ei],ionname);
   
   /* Replace water charges with ion charge */
   bSet[ei] = TRUE;
   repl[ei] = sign;
-  mdatoms->chargeA[index[ei]] = q;
-  mdatoms->chargeA[index[ei]+1] = 0;
-  mdatoms->chargeA[index[ei]+2] = 0;
+  mdatoms->chargeA[index[nsa*ei]] = q;
+  mdatoms->chargeA[index[nsa*ei+1]] = 0;
+  mdatoms->chargeA[index[nsa*ei+2]] = 0;
 
   /* Mark all waters within rmin as unavailable for substitution */
   if (rmin > 0) {
     rmin2=rmin*rmin;
     for(i=0; (i<nw); i++) {
       if (!bSet[i]) {
-	pbc_dx(x[index[ei]],x[index[i]],dx);
+	pbc_dx(x[index[nsa*ei]],x[index[nsa*i]],dx);
 	if (iprod(dx,dx) < rmin2)
 	  bSet[i] = TRUE;
       }
@@ -149,7 +139,8 @@ static void copy_atom(t_atoms *at1,int a1,t_atoms *at2,int a2,int r)
   }
 }  
 
-void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
+void sort_ions(int nsa,int nw,int repl[],atom_id index[],
+	       t_atoms *atoms,rvec x[],
 	       char *p_name,char *n_name)
 {
   int i,j,k,r,np,nn,starta,startr,npi,nni;
@@ -165,8 +156,8 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
   for(i=0; i<nw; i++) {
     r = repl[i];
     if (r == 0)
-      for(k=0; k<3; k++)
-	copy_rvec(x[index[i]+k],xt[j++]);
+      for(k=0; k<nsa; k++)
+	copy_rvec(x[index[nsa*i+k]],xt[j++]);
     else if (r>0)
       np++;
     else if (r<0)
@@ -175,7 +166,7 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
 
   if (np+nn > 0) {
     /* Put the positive and negative ions at the end */
-    starta = index[nw - np - nn];
+    starta = index[nsa*(nw - np - nn)];
     startr = atoms->atom[starta].resnr;
 
     if (np) {
@@ -193,7 +184,7 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
       if (r > 0) {
 	j = starta+npi;
 	k = startr+npi;
-	copy_rvec(x[index[i]],xt[j]);
+	copy_rvec(x[index[nsa*i]],xt[j]);
 	atoms->atomname[j] = pptr;
 	atoms->atom[j].resnr = k ;
 	atoms->resname[k] = pptr;
@@ -201,52 +192,63 @@ void sort_ions(int nw,int repl[],int index[],t_atoms *atoms,rvec x[],
       } else if (r < 0) {
 	j = starta+np+nni;
 	k = startr+np+nni;
-	copy_rvec(x[index[i]],xt[j]);
+	copy_rvec(x[index[nsa*i]],xt[j]);
 	atoms->atomname[j] = nptr;
 	atoms->atom[j].resnr = k;
 	atoms->resname[k] = nptr;
 	nni++;
       }
     }
+    for(i=index[nsa*nw-1]+1; i<atoms->nr; i++) {
+      j = i-2*(np+nn);
+      atoms->atomname[j] = atoms->atomname[i];
+      atoms->atom[j] = atoms->atom[i];
+      copy_rvec(x[i],xt[j]);
+    }
     atoms->nr -= 2*(np+nn);
+
+    /* Copy the new positions back */
+    for(i=index[0]; i<atoms->nr; i++)
+      copy_rvec(xt[i],x[i]);
+    sfree(xt);
   }
-  /* Copy the new positions back */
-  for(i=index[0]; i<atoms->nr; i++)
-    copy_rvec(xt[i],x[i]);
-  sfree(xt);
 }
 
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
-    "genion replaces water molecules by monoatomic ions. Ions can be placed",
-    "at the water oxygen positions with the most favorable electrostatic",
+    "genion replaces solvent molecules by monoatomic ions at",
+    "the position of the first atoms  with the most favorable electrostatic",
     "potential or at random. The potential is calculated on all atoms, using",
     "normal GROMACS particle based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
     "The potential is recalculated after every ion insertion.",
     "If specified in the run input file, a reaction field or shift function",
-    "can be used. The potential can be written as B-factors",
+    "can be used.",
+    "The group of solvent molecules should be continuous and all molecules",
+    "should have the same number of atoms.",
+    "The user should add the ion molecules to the topology file and include",
+    "the file [TT]ions.itp[tt]. Note that the ion names are different in the",
+    "Gromacs and Gromos96 forcefields.[PAR]",
+    "The potential can be written as B-factors",
     "in a pdb file (for visualisation using e.g. rasmol)[PAR]"
     "For larger ions, e.g. sulfate we recommended to use genbox."
   };
-  static int  p_num=0,n_num=0,nw=0,w1=1;
+  static int  p_num=0,n_num=0;
   static char *p_name="Na",*n_name="Cl";
   static real p_q=1,n_q=-1,rmin=0.6;
   static int  seed=1993;
   static bool bRandom=FALSE;
   static t_pargs pa[] = {
-    { "-p",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
-    { "-pn",   FALSE, etSTR,  {&p_name},"Name of the positive ion"      },
-    { "-pq",   FALSE, etREAL, {&p_q},   "Charge of the positive ion"    },
-    { "-n",    FALSE, etINT,  {&n_num}, "Number of negative ions"       },
-    { "-nn",   FALSE, etSTR,  {&n_name},"Name of the negative ion"      },
-    { "-nq",   FALSE, etREAL, {&n_q},   "Charge of the negative ion"    },
-    { "-rmin", FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
-    { "-w1",   FALSE, etINT,  {&w1},    "First water atom to be cosidered (counting from 1)" },
-    { "-nw",   FALSE, etINT,  {&nw},    "Number of water molecules" },
+    { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
+    { "-pname", FALSE, etSTR,  {&p_name},"Name of the positive ion"      },
+    { "-pq",    FALSE, etREAL, {&p_q},   "Charge of the positive ion"    },
+    { "-nn",    FALSE, etINT,  {&n_num}, "Number of negative ions"       },
+    { "-nname", FALSE, etSTR,  {&n_name},"Name of the negative ion"      },
+    { "-nq",    FALSE, etREAL, {&n_q},   "Charge of the negative ion"    },
+    { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
     { "-random",FALSE,etBOOL, {&bRandom},"Use random placement of ions instead of based on potential. The rmin option should still work" },
-    { "-seed", FALSE, etINT,  {&seed},  "Seed for random number generator" }
+    { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" }
   };
   t_topology  *top;
   t_parm      parm;
@@ -259,14 +261,17 @@ int main(int argc, char *argv[])
   rvec        *x,*v;
   real        *pot;
   matrix      box;
-  int         *index,*repl;
+  int         *repl;
+  atom_id     *index;
+  char        *grpname;
   bool        *bSet,bPDB;
-  int         i;
+  int         i,nw,nwa,nsa;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,      ffREAD  },
+    { efNDX, NULL,  NULL,      ffOPTRD },
     { efSTO, "-o",  NULL,      ffWRITE },
     { efLOG, "-g",  "genion",  ffWRITE },
-    { efPDB, "-pot",  "pot",     ffOPTWR }
+    { efPDB, "-pot", "pot",    ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -280,28 +285,39 @@ int main(int argc, char *argv[])
   }
     
   /* Check input for something sensible */
-  if (p_num+n_num<0)
-    fatal_error(0,"No ions to add");
-  w1--;
-  if (nw <= 0) {
-#define NOWAT "No water molecules in your system."
-    if ((p_num != 0) || (n_num != 0))
-      fatal_error(0,NOWAT" Can not generate ions");
-    else if (!bPDB)
-      fatal_error(0,NOWAT" And you don't want to know the potential either?");
-    else
-      fprintf(stderr,NOWAT"Will calculate potential anyway\n");
-  }
-  else 
-    fprintf(stderr,"First water atom: %d  Number of water molecules: %d\n",
-	    w1+1,nw);
+  if ((p_num<0) || (n_num<0))
+    fatal_error(0,"Negative number of ions to add?");
 
-  index  = mk_windex(w1,nw);
-  snew(bSet,nw);
-  snew(repl,nw);
   snew(top,1);
   init_calcpot(NFILE,fnm,top,&x,&parm,&cr,
 	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box);
+
+  if ((p_num == 0) && (n_num == 0)) {
+    if (!bPDB) {
+      fprintf(stderr,"No ions to add and no potential to calculate.\n");
+      exit(0);
+    }
+    nw = 0;
+  } else {
+    get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
+    for(i=1; i<nwa; i++)
+      if (index[i] != index[i-1]+1)
+	fatal_error(0,"The solvent group is not continuous: index[%d]=%d, "
+		    "index[%d]=%d",i,index[i-1]+1,i+1,index[i]+1);
+    nsa = 1;
+    while ((nsa<nwa) &&
+	   (top->atoms.atom[index[nsa]].resnr ==
+	    top->atoms.atom[index[nsa-1]].resnr))
+      nsa++;
+    if (nwa % nsa)
+      fatal_error(0,"Your solvent group size is not a multiple of %d",nsa);
+	nw = nwa/nsa;
+    fprintf(stderr,"Number of (%d-atomic) solvent molecules: %d\n",nsa,nw);
+	if (p_num+n_num > nw)
+      fatal_error(0,"Not enough solvent for adding ions");
+  }
+  snew(bSet,nw);
+  snew(repl,nw);
   
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
@@ -325,19 +341,20 @@ int main(int argc, char *argv[])
       }
     }
     if ((p_num > 0) && (p_num >= n_num))  {
-      insert_ion(&nw,bSet,repl,index,pot,x,
+      insert_ion(nsa,&nw,bSet,repl,index,pot,x,
 		 1,p_q,p_name,mdatoms,rmin,bRandom,&seed);
       p_num--;
     }
     else if (n_num > 0) {
-      insert_ion(&nw,bSet,repl,index,pot,x,
+      insert_ion(nsa,&nw,bSet,repl,index,pot,x,
 		 -1,n_q,n_name,mdatoms,rmin,bRandom,&seed);
       n_num--;
     }
   } while (p_num+n_num > 0);
   fprintf(stderr,"\n");
 
-  sort_ions(nw,repl,index,&top->atoms,x,p_name,n_name);
+  if (nw)
+    sort_ions(nsa,nw,repl,index,&top->atoms,x,p_name,n_name);
   
   sfree(top->atoms.pdbinfo);
   top->atoms.pdbinfo = NULL;
