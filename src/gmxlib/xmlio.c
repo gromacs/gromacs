@@ -35,7 +35,7 @@
  */
 #include <stdlib.h>
 #include "typedefs.h"
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include "fatal.h"

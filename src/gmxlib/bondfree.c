@@ -550,6 +550,84 @@ real angles(int nbonds,
   return vtot;
 }
 
+real urey_bradley(int nbonds,
+		  t_iatom forceatoms[],t_iparams forceparams[],
+		  rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+		  matrix box,real lambda,real *dvdlambda,
+		  t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		  t_fcdata *fcd)
+{
+  int  i,ai,aj,ak,t1,t2,type;
+  rvec r_ij,r_kj;
+  real cos_theta,theta,dVdt,va,vtot;
+  ivec jt,dt_ij,dt_kj;
+  
+  fatal_error(0,"Not implemented yet");
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    
+    theta  = bond_angle(box,x[ai],x[aj],x[ak],
+			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
+  
+    *dvdlambda += harmonic(forceparams[type].harmonic.krA,
+			   forceparams[type].harmonic.krB,
+			   forceparams[type].harmonic.rA*DEG2RAD,
+			   forceparams[type].harmonic.rB*DEG2RAD,
+			   theta,lambda,&va,&dVdt);  /*  21  */
+    vtot += va;
+    
+    {
+      int  m;
+      real snt,st,sth;
+      real cik,cii,ckk;
+      real nrkj2,nrij2;
+      rvec f_i,f_j,f_k;
+      
+      snt=sin(theta);				/*  10		*/
+      if (fabs(snt) < 1e-12)
+	snt=1e-12;
+      st  = dVdt/snt;				/*  10		*/
+      sth = st*cos_theta;			/*   1		*/
+#ifdef DEBUG
+      if (debug)
+	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+		theta*RAD2DEG,va,dVdt);
+#endif
+      nrkj2=iprod(r_kj,r_kj);			/*   5		*/
+      nrij2=iprod(r_ij,r_ij);
+      
+      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cii=sth/nrij2;				/*  10		*/
+      ckk=sth/nrkj2;				/*  10		*/
+      
+      for (m=0; (m<DIM); m++) {			/*  39		*/
+	f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
+	f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
+	f_j[m]=-f_i[m]-f_k[m];
+	f[ai][m]+=f_i[m];
+	f[aj][m]+=f_j[m];
+	f[ak][m]+=f_k[m];
+      }
+      if (g) {
+	copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+	t1=IVEC2IS(dt_ij);
+	t2=IVEC2IS(dt_kj);
+      }
+      rvec_inc(fr->fshift[t1],f_i);
+      rvec_inc(fr->fshift[CENTRAL],f_j);
+      rvec_inc(fr->fshift[t2],f_k);
+    }                                           /* 168 TOTAL	*/
+  }
+  return vtot;
+}
+
 real dih_angle(matrix box,
 	       rvec xi,rvec xj,rvec xk,rvec xl,
 	       rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n,

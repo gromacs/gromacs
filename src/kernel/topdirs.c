@@ -129,12 +129,23 @@ int ifunc_index(directive d,int type)
     return F_SETTLE;
   case d_position_restraints:
     switch (type) {
-    case 1: 
+    case 1:
       return F_POSRES;
     case 2:
-      return F_WPOL;
+      fprintf(stderr,"WARNING: Water polarization should now be listed under "
+	      "[ polarization ]\n");
+      return F_WATER_POL;
     default:
       fatal_error(0,"Invalid position restraint type %d",type);
+    }
+  case d_polarization:
+    switch (type) {
+    case 1:
+      return F_POLARIZATION;
+    case 2:
+      return F_WATER_POL;
+    default:
+      fatal_error(0,"Invalid polarization type %d",type);
     }
   case d_angle_restraints:
     return F_ANGRES;
@@ -214,6 +225,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_exclusions]),d_bonds,d_constraints,d_settles,d_none);
     set_nec(&(necessary[d_pairs]),d_atoms,d_none);
     set_nec(&(necessary[d_angles]),d_atoms,d_none);
+    set_nec(&(necessary[d_polarization]),d_atoms,d_none);
     set_nec(&(necessary[d_dihedrals]),d_atoms,d_none);
     set_nec(&(necessary[d_constraints]),d_atoms,d_none);
     set_nec(&(necessary[d_settles]),d_atoms,d_none);

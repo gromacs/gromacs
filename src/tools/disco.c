@@ -50,6 +50,9 @@
 #include "xvgr.h"
 #include "main.h"
 #include "network.h"
+#ifdef USE_MPI
+#include "mpi.h"
+#endif
 
 void rand_box(bool bUserBox,
 	      matrix box,rvec boxsize,int nres,bool bCubic,int *seed)

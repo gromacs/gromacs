@@ -47,7 +47,7 @@ enum {
   efNDX, 
   efTOP, efITP,
   efTPX, efTPS, efTPR, efTPA, efTPB, 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   efXML,
 #endif
   efTEX, efRTP, efATP, efHDB,

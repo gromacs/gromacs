@@ -477,6 +477,9 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_G96ANGLES:
     pr_harm(fp,iparams,"th","ct");
     break;
+  case F_POLARIZATION:
+    pr_harm(fp,iparams,"r","k");
+    break;
   case F_CROSS_BOND_BONDS:
     fprintf(fp,"r1e=%15.8e, r2e=%15.8e, krr=%15.8e\n",
 	    iparams->cross_bb.r1e,iparams->cross_bb.r2e,
@@ -486,6 +489,10 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"r1e=%15.8e, r1e=%15.8e, r3e=%15.8e, krt=%15.8e\n",
 	    iparams->cross_ba.r1e,iparams->cross_ba.r2e,
 	    iparams->cross_ba.r3e,iparams->cross_ba.krt);
+    break;
+  case F_UREY_BRADLEY:
+    fprintf(fp,"theta=%15.8e, ktheta=%15.8e, r13=%15.8e, kUB=%15.8e\n",
+	    iparams->u_b.theta,iparams->u_b.ktheta,iparams->u_b.r13,iparams->u_b.kUB);
     break;
   case F_BHAM:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
@@ -510,7 +517,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_CONNBONDS:
     fprintf(fp,"\n");
     break;
-  case F_WPOL:
+  case F_WATER_POL:
     fprintf(fp,"kx=%15.8e, ky=%15.8e, kz=%15.8e, rOH=%9.6f, rHH=%9.6f, rOD=%9.6f\n",
 	    iparams->wpol.kx,iparams->wpol.ky,iparams->wpol.kz,
 	    iparams->wpol.rOH,iparams->wpol.rHH,iparams->wpol.rOD);

@@ -62,6 +62,7 @@ enum {
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
   F_CROSS_BOND_ANGLES,
+  F_UREY_BRADLEY,
   F_PDIHS,
   F_RBDIHS, 
   F_FOURDIHS,
@@ -75,7 +76,8 @@ enum {
   F_DISPCORR,
   F_SR,
   F_LR,
-  F_WPOL,
+  F_POLARIZATION,
+  F_WATER_POL,
   F_POSRES,
   F_DISRES,
   F_DISRESVIOL,
@@ -119,6 +121,7 @@ typedef union
   struct {real b0,kb,kcub;                                 } cubic;
   struct {real r1e,r2e,krr;                                } cross_bb;
   struct {real r1e,r2e,r3e,krt;                            } cross_ba;
+  struct {real theta,ktheta,r13,kUB;                       } u_b;
   struct {real kx,ky,kz,rOH,rHH,rOD;                       } wpol;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;

@@ -434,7 +434,9 @@ static char **read_topol(char        *infile,
 	  push_dihedraltype(d,plist,batype->atomname,batype->nr,pline);
 	  break;
 #undef PUSHBT
-
+	case d_polarization:
+	  fprintf(stderr,"WARNING: Reading polarization not yet implemented.\n");
+	  break;
 	case d_nonbond_params:
 	  push_nbt(d,nbparam,atype,pline,nb_funct);
 	  break;

@@ -200,8 +200,8 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       ia += nra+1;
       i  += nra+1;
     }
-    ia = idef->il[F_WPOL].iatoms;
-    for(i=0; (i<idef->il[F_WPOL].nr); ) {
+    ia = idef->il[F_WATER_POL].iatoms;
+    for(i=0; (i<idef->il[F_WATER_POL].nr); ) {
       type  = ia[0];
       ftype = idef->functype[type];
       nra   = interaction_function[ftype].nratoms;
@@ -240,6 +240,8 @@ t_shell *init_shells(FILE *log,int start,int homenr,
     if (debug)
       pr_shell(debug,ns,shell);
   }
+  if (*nshell > 0)  fatal_error(0,"Shell code temporarily out of order!");
+  
   return shell;
 }
 

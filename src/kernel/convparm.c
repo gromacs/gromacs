@@ -83,6 +83,12 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->cross_ba.r3e=old[2];
     new->cross_ba.krt=old[3];
     break;
+  case F_UREY_BRADLEY:
+    new->u_b.theta=old[0];
+    new->u_b.ktheta=old[1];
+    new->u_b.r13=old[2];
+    new->u_b.kUB=old[3];
+    break;
   case F_ANGLES:
   case F_BONDS:
   case F_HARMONIC:
@@ -104,7 +110,13 @@ static void assign_param(t_functype ftype,t_iparams *new,
     break;
   case F_CONNBONDS:
     break;
-  case F_WPOL:
+  case F_POLARIZATION:
+    new->harmonic.rA = old[0];
+    new->harmonic.rB = old[0];
+    new->harmonic.krA= old[1];
+    new->harmonic.krB= old[1];
+    break;
+  case F_WATER_POL:
     new->wpol.kx     =old[0];
     new->wpol.ky     =old[1];
     new->wpol.kz     =old[2];

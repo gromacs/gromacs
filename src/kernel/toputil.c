@@ -254,6 +254,8 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   f = 0;
   switch(ftype) {
   case F_G96ANGLES:
+    f = 1;
+    break;
   case F_G96BONDS:
     f = 1;
     break;
@@ -271,6 +273,12 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     break;
   case F_CROSS_BOND_ANGLES:
     f = 2;
+    break;
+  case F_CROSS_BOND_BONDS:
+    f = 3;
+    break;
+  case F_UREY_BRADLEY:
+    f = 4;
     break;
   case F_PDIHS:
   case F_RBDIHS:

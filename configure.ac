@@ -537,7 +537,8 @@ fi
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
 AC_CHECK_LIB(xml2,main)
-
+# This should really only be done when the library is found. Doesn't hurt though.
+INCLUDES="$INCLUDES -I/usr/include/libxml2"
 
 
 #### 

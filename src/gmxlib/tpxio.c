@@ -59,12 +59,12 @@
 #include "atomprop.h"
 #include "copyrite.h"
 #include "vec.h"
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
 #include "xmlio.h"
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 30;
+static const int tpx_version = 31;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -108,7 +108,9 @@ static const t_ftupd ftupd[] = {
   { 26, F_DIHRES       },
   { 26, F_DIHRESVIOL   },
   { 29, F_CROSS_BOND_BONDS },
-  { 29, F_CROSS_BOND_ANGLES }
+  { 29, F_CROSS_BOND_ANGLES },
+  { 30, F_UREY_BRADLEY },
+  { 30, F_POLARIZATION }
 };
 #define NFTUPD asize(ftupd)
 
@@ -527,6 +529,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_IDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
+  case F_POLARIZATION:
     do_harm(iparams,bRead);
     break;
   case F_CROSS_BOND_BONDS:
@@ -539,6 +542,12 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->cross_ba.r2e);
     do_real(iparams->cross_ba.r3e);
     do_real(iparams->cross_ba.krt);
+    break;
+  case F_UREY_BRADLEY:
+    do_real(iparams->u_b.theta);
+    do_real(iparams->u_b.ktheta);
+    do_real(iparams->u_b.r13);
+    do_real(iparams->u_b.kUB);
     break;
   case F_BHAM:
     do_real(iparams->bham.a);
@@ -557,7 +566,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_CONNBONDS:
     break;
-  case F_WPOL:
+  case F_WATER_POL:
     do_real(iparams->wpol.kx);
     do_real(iparams->wpol.ky);
     do_real(iparams->wpol.kz);
@@ -1156,7 +1165,7 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
 {
   int fp;
 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   if (fn2ftp(fn) == efXML) {
     fatal_error(0,"read_tpxheader called with filename %s",fn);
   }
@@ -1165,7 +1174,7 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
     fp = open_tpx(fn,"r");
     do_tpxheader(fp,TRUE,tpx,TopOnlyOK,file_version,file_generation);
     close_tpx(fp);
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   }
 #endif
 }
@@ -1175,7 +1184,7 @@ void write_tpx_state(char *fn,int step,real t,
 {
   int fp;
 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   if (fn2ftp(fn) == efXML)
     write_xml(fn,*top->name,ir,state->box,state->natoms,
 	      state->x,state->v,NULL,1,&top->atoms,&top->idef);
@@ -1184,7 +1193,7 @@ void write_tpx_state(char *fn,int step,real t,
     fp = open_tpx(fn,"w");
     do_tpx(fp,FALSE,&step,&t,ir,state,NULL,top,FALSE);
     close_tpx(fp);
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   }
 #endif
 }
@@ -1206,7 +1215,7 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
   int fp;
   t_state state;
 
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   if (fn2ftp(fn) == efXML) {
     int  i;
     rvec *xx=NULL,*vv=NULL,*ff=NULL;
@@ -1234,7 +1243,7 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
     state.x = NULL;
     state.v = NULL;
     done_state(&state);
-#ifdef HAVE_XML
+#ifdef HAVE_LIBXML2
   }
 #endif
 }
