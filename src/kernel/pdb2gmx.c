@@ -207,7 +207,7 @@ static void check_occupancy(t_atoms *atoms,char *filename)
   }
 }
 
-void write_posres(char *fn,t_atoms *pdba)
+void write_posres(char *fn,t_atoms *pdba,real fc)
 {
   FILE *fp;
   int  i;
@@ -224,7 +224,7 @@ void write_posres(char *fn,t_atoms *pdba)
 	  );
   for(i=0; (i<pdba->nr); i++) {
     if (!is_hydrogen(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
-      fprintf(fp,"%6d%6d%8.1f%8.1f%8.1f\n",i+1,1,1000.0,1000.0,1000.0);
+      fprintf(fp,"%6d%6d  %g  %g  %g\n",i+1,1,fc,fc,fc);
   }
   ffclose(fp);
 }
@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
   t_hackblock *ah;
   t_symtab   symtab;
   t_atomtype *atype;
-  char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN];
+  char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN];
   char       *c;
   int        nah,nNtdb,nCtdb;
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
   static bool bH14=FALSE, bSort=TRUE, bRemoveH=FALSE;
   static bool bAlldih=FALSE;
   static bool bDeuterate=FALSE;
-  static real angle=135.0, distance=0.3;
+  static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
   static char *dumstr[] = { NULL, "none", "hydrogens", "aromatics", NULL };
   t_pargs pa[] = {
@@ -668,6 +668,8 @@ int main(int argc, char *argv[])
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
       "Maximum donor-acceptor distance for a H-bond (nm)" },
+    { "-posrefc",FALSE, etREAL, {&posre_fc},
+      "Force constant for position restraints" },
     { "-una",    FALSE, etBOOL, {&bUnA}, 
       "Select aromatic rings with united CH atoms on Phenylalanine, "
       "Tryptophane and Tyrosine" },
@@ -691,6 +693,7 @@ int main(int argc, char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    0,NULL);
+		    
   if (bInter) {
     /* if anything changes here, also change description of -inter */
     bCysMan = TRUE;
@@ -1025,6 +1028,12 @@ int main(int argc, char *argv[])
 	sprintf(c,".itp");
       else
 	sprintf(c,"_%c.itp",cc->chain);
+      if (strcmp(itp_fn,posre_fn) == 0) {
+	strcpy(buf_fn,posre_fn);
+	c  = strrchr(buf_fn,'.');
+	*c = '\0';
+	sprintf(posre_fn,"%s_pr.itp",buf_fn);
+      }
       
       nincl++;
       srenew(incls,nincl);
@@ -1060,7 +1069,7 @@ int main(int argc, char *argv[])
 	    long_bond_dist, short_bond_dist,bDeuterate);
     
     if (!cc->bAllWat)
-      write_posres(posre_fn,pdba);
+      write_posres(posre_fn,pdba,posre_fc);
 
     if (bITP)
       fclose(itp_file);

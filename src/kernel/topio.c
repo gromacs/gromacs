@@ -156,35 +156,30 @@ void preprocess(char *infile,char *outfile,
 		char *cpp,char *define,
 		char *include)
 {
+  static char libdir[1024];
+  static bool bFirst=TRUE;
   char *lib;
   char command[2048];
   int  error;
-  static char libdir[1024];
-  static int  bFirst=1;
 
-  if(bFirst) {
+  if (bFirst) {
     lib=getenv("GMXLIB");
-    if(lib!=NULL) {
+    if (lib!=NULL) {
       strcpy(libdir,lib);
-    } else {
+    } 
+    else {
       if(!get_libdir(libdir))
 	strcpy(libdir,GMXLIBDIR);
     }
-    bFirst=0;
+    bFirst=FALSE;
   }
 
-  /* build the command line 
-   * Mac OS X doesn't support a second output filename
-   * (although the docs say so), so we use redirection instead
+  /* build the command line. Second output name is not supported anymore
+   * it seems, so we use redirection instead
    */
-#ifdef __APPLE__
   sprintf(command,"%s %s -I%s %s %s > %s",
 	  cpp,include,libdir,define,infile,outfile);
-#else
-  sprintf(command,"%s %s -I%s %s %s %s",
-	    cpp,include,libdir,define,infile,outfile);
-#endif
-
+  
   if (debug)
     fprintf(debug,"Command line for cpp:\n\t%s\n",command);
 
