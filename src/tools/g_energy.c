@@ -285,7 +285,7 @@ static void einstein_visco(char *fn,char *fni,int nsets,int nframes,real **sum,
 }
 
 static void analyse_ener(bool bCorr,char *corrfn,
-			 bool bGibbs,bool bSum,bool bFluct,
+			 bool bFee,bool bSum,bool bFluct,
 			 bool bVisco,char *visfn,int  nmol,int ndf,
 			 int  oldstep,real oldt,int step,real t,
 			 real time[], real reftemp,
@@ -299,7 +299,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real Dt,a,b,aver,avertot,stddev,delta_t,sigma,totaldrift;
   real xxx,integral,intBulk;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
-  double beta=0,expE,expEtot,*gibbs=NULL;
+  double beta=0,expE,expEtot,*fee=NULL;
   int  nsteps,iset;
   real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,VarT=-1;
   int  i,j,m,k;
@@ -322,8 +322,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
     
     fprintf(stdout,"%-24s %10s %10s %10s %10s %10s",
 	    "Energy","Average","RMSD","Fluct.","Drift","Tot-Drift");
-    if (bGibbs)
-      fprintf(stdout,"  %10s\n","-ln<e^(E/kT)>*kT");
+    if (bFee)
+      fprintf(stdout,"  %10s\n","-kT ln<e^(E/kT)>");
     else
       fprintf(stdout,"\n");
     fprintf(stdout,"-------------------------------------------------------------------------------\n");
@@ -331,9 +331,9 @@ static void analyse_ener(bool bCorr,char *corrfn,
     /* Initiate locals, only used with -sum */
     avertot=0;
     expEtot=0;
-    if (bGibbs) {
+    if (bFee) {
       beta = 1.0/(BOLTZ*reftemp);
-      snew(gibbs,nset);
+      snew(fee,nset);
     }
     for(i=0; (i<nset); i++) {
       iset = set[i];
@@ -355,7 +355,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       
       if (bSum) 
 	avertot+=aver;
-      if (bGibbs) {
+      if (bFee) {
 	expE = 0;
 	for(j=0; (j<nenergy); j++) {
 	  expE += exp(beta*(eneset[i][j]-aver)/nmol);
@@ -363,7 +363,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	if (bSum) 
 	  expEtot+=expE/nenergy;
 	
-	gibbs[i] = log(expE/nenergy)/beta + aver/nmol;
+	fee[i] = log(expE/nenergy)/beta + aver/nmol;
       }
       if (strstr(leg[i],"empera") != NULL) {
 	VarT = sqr(stddev);
@@ -391,8 +391,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	fluct2 = 0;
       fprintf(stdout,"%-24s %10g %10g %10g %10g %10g",
 	      leg[i],pr_aver,pr_stddev,sqrt(fluct2),a,totaldrift);
-      if (bGibbs) 
-	fprintf(stdout,"  %10g\n",gibbs[i]);
+      if (bFee) 
+	fprintf(stdout,"  %10g\n",fee[i]);
       else
 	fprintf(stdout,"\n");
       if (bFluct) {
@@ -404,7 +404,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       fprintf(stdout,"%-24s %10g %10s %10s %10s %10s",
 	      "Total",avertot/nmol,"--","--","--","--");
       /* pr_aver,pr_stddev,a,totaldrift */
-      if (bGibbs) 
+      if (bFee) 
 	fprintf(stdout,"  %10g  %10g\n",
 		log(expEtot)/beta + avertot/nmol,log(expEtot)/beta);
       else
@@ -498,7 +498,8 @@ void fec(char *ene2fn, char *runavgfn,
 	 real reftemp, int nset, int set[], char *leg[], 
 	 int nenergy, real **eneset, real time[])
 {
-  char *ravgleg[] = { "\\8D\\4E", "<e\\S\\8D\\4E/kT\\N>\\s0-t\\N" };
+  char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
+		      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   int  enx;
   int  nre,ndr,timecheck,step,nenergy2,maxenergy;
@@ -560,7 +561,7 @@ void fec(char *ene2fn, char *runavgfn,
   fp=NULL;
   if (runavgfn) {
     fp=xvgropen(runavgfn,"Running average free energy difference",
-		"Time (ps)","\\8D\\4G (kJ/mol)");
+		"Time (ps)","\\8D\\4E (kJ/mol)");
     xvgr_legend(fp,asize(ravgleg),ravgleg);
   }
   fprintf(stdout,"\n%-24s %10s\n",
@@ -603,28 +604,30 @@ int main(int argc,char *argv[])
     "a LSQ fit of the data to a straight line. Total drift is drift",
     "multiplied by total time.[PAR]",
     
-    "With [TT]-G[tt] a Gibbs free energy estimate is calculated using",
+    "With [TT]-fee[tt] a free energy estimate is calculated using",
     "the formula: G = -ln < e ^ (E/kT) > * kT, where k is Boltzmann's",
-    "constant, T is set by [TT]-Gtemp[tt] and the average is over the",
+    "constant, T is set by [TT]-fetemp[tt] and the average is over the",
     "ensemble (or time in a trajectory). Note that this is in principle",
     "only correct when averaging over the whole (Boltzmann) ensemble",
     "and using the potential energy. This also allows for an entropy",
     "estimate using G = H - T S, where H is the enthalpy (H = U + p V)",
     "and S entropy.[PAR]",
     
-    "When a second energy file is specified ([TT]-e2[tt]), a free energy",
-    "difference is calculated dG = -kT ln < e ^ -(EB-EA)/kT >A ,",
-    "or with EA and EB the energies from the first and second energy",
-    "files, and the average over the ensemble A."
+    "When a second energy file is specified ([TT]-f2[tt]), a free energy",
+    "difference is calculated dF = -kT ln < e ^ -(EB-EA)/kT >A ,",
+    "where EA and EB are the energies from the first and second energy",
+    "files, and the average is over the ensemble A. [BB]NOTE[bb] that",
+    "the energies must both be calculated from the same trajectory."
+    
   };
-  static bool bSum=FALSE,bGibbs=FALSE,bAll=FALSE,bFluct=FALSE;
+  static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
   static bool bDp=FALSE,bMutot=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
-    { "-G",   FALSE, etBOOL,  {&bGibbs},
+    { "-fee",   FALSE, etBOOL,  {&bFee},
       "Do a free energy estimate" },
-    { "-Gtemp", FALSE, etREAL,{&reftemp},
+    { "-fetemp", FALSE, etREAL,{&reftemp},
       "Reference temperature for free energy calculation" },
     { "-zero", FALSE, etREAL, {&ezero},
       "Subtract a zero-point energy" },
@@ -678,7 +681,7 @@ int main(int argc,char *argv[])
   char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg;
   char       **nms;
   t_filenm   fnm[] = {
-    { efENX, "-f",    NULL,      ffOPTRD },
+    { efENX, "-f",    NULL,      ffREAD  },
     { efENX, "-f2",   NULL,      ffOPTRD },
     { efTPX, "-s",    NULL,      ffOPTRD },
     { efXVG, "-o",    "energy",  ffWRITE },
@@ -686,7 +689,7 @@ int main(int argc,char *argv[])
     { efXVG, "-pairs","pairs",   ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
     { efXVG, "-vis",  "visco",   ffOPTWR },
-    { efXVG, "-ravg", "runavgdg",ffOPTWR }
+    { efXVG, "-ravg", "runavgdf",ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -947,7 +950,7 @@ int main(int argc,char *argv[])
 		  teller_disre,violaver,bounds,index,pair,nbounds);
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
-		 bGibbs,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
+		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
 		 oldee,ee[cur],nset,set,nenergy,eneset,enesum,leg,Vaver);
   if (opt2bSet("-f2",NFILE,fnm))
