@@ -1,3 +1,4 @@
+#!gmake
 #
 #	$Id$
 #
@@ -7,6 +8,10 @@
 #
 #	Makefile for gmxlib
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 M4 		= m4
@@ -160,3 +165,4 @@ calcrf:		calcrf.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep
+endif

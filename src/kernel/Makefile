@@ -1,3 +1,4 @@
+#!gmake
 #
 #	@(#) Makefile 1.112 4/15/97
 #
@@ -7,6 +8,10 @@
 #
 # 	Makefile for Gromacs kernel
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 # MD library
@@ -138,3 +143,4 @@ testcomp:	testcomp.o libdump.a
 #		$(CC) CFLAGS=$(LOWOPT) -c topcat.c
 
 include	Make.dep
+endif

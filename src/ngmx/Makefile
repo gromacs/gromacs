@@ -1,6 +1,11 @@
+#!gmake
 #
 # Makefile for ngmx library
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include 	$(GMXHOME)/src/makef/Makefile.def
 
 XOBJ	=	xutil.o		xmb.o		x11.o		\
@@ -36,3 +41,4 @@ showcol:	showcol.o $(XOBJ)
 		$(LD) -o $@ $^	$(SLIBS)
 
 include	Make.dep
+endif

@@ -1,6 +1,11 @@
+#!gmake
 #
 # Gromacs Makefile $Id$
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 ifneq ($(USE_XWIN),no)
@@ -55,3 +60,4 @@ copyrgt:
 
 oclean: 
 	$(foreach dir,$(DIRS),cd $(dir); $(MAKE) oclean; cd ..;)
+endif

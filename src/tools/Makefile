@@ -1,3 +1,4 @@
+#!gmake
 #
 #	@(#) Makefile 1.44 11/3/97
 #
@@ -7,6 +8,10 @@
 #
 # 	Makefile for tools
 
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/makef/Makefile.def
 
 LIB		=
@@ -32,6 +37,9 @@ ACOBJ	=	autocorr.o	expfit.o	polynomials.o	\
 		levenmar.o
 
 include		$(STDTARGET)
+
+movebin:
+	mv $(EXECUTABLES) $(BINDIR)
 
 genbox:		genbox.o	addconf.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
@@ -223,3 +231,4 @@ g_multipoles:	g_multipoles.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 include	Make.dep
+endif

@@ -1,3 +1,4 @@
+#!gmake
 #
 #	@(#) Makefile 1.154 07/24/97
 #
@@ -5,6 +6,10 @@
 #	GROMACS - Groningen Machine for Chemical Simulation
 #	Makefile for libfftw
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/makef/Makefile.def
 #
 LIB	= $(LIBDIR)/libfftw.$(GMXCPU).a
@@ -72,4 +77,4 @@ time_fftwnd_mpi:	time_fftwnd_mpi.o	$(OBJ)
 endif
 
 include Make.dep
-
+endif

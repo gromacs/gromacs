@@ -1,3 +1,4 @@
+#!gmake
 #
 #	@(#) Makefile 1.25 11/19/95
 #
@@ -7,6 +8,10 @@
 #
 #	Makefile for gromacs
 #
+ifeq ($(GMXHOME),)
+all:
+	echo "No GROMACS environment, Please source your GMXRC file"
+else
 include		$(GMXHOME)/src/Makefile.def
 #
 SHELL		=/bin/csh
@@ -41,3 +46,4 @@ template:
 
 .DEFAULT:	
 	$(MAKE) -f $(OBJMAKEF) OBJDIR=$(SRCDIR) $@
+endif
