@@ -252,7 +252,7 @@ int main(int argc,char *argv[])
       "Starting time for trajectory"
       "(default: don't change)"},
     { "-timestep", FALSE,  etREAL, {&timestep},
-      "Change time step between output frames" },
+      "Change time step between input frames" },
     { "-pbc", FALSE,  etENUM, {pbc_opt},
       "PBC treatment" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
@@ -587,7 +587,7 @@ int main(int argc,char *argv[])
 	  
 	  /* calc new time */
 	  if (bTimeStep) 
-	    fr.time = tzero+outframe*timestep;
+	    fr.time = tzero+frame*timestep;
 	  else
 	    if (bSetTime)
 	      fr.time += tshift;
