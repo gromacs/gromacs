@@ -231,7 +231,7 @@ char *indent(void)
 
 void fortran_splitline(char *line)
 {
-  char tmpbuf[1024],linebuf[100];
+  char tmpbuf[1024],linebuf[1000];
   int i,j,maxlen;
   
   maxlen=strlen(line);
@@ -528,7 +528,7 @@ void vector_pragma(void)
 
 char *_array(char *a, char *idx, ...)
 {
-  char arrtmp[100],idxtmp[100],tmp[100];
+  char arrtmp[1000],idxtmp[1000],tmp[1000];
   va_list ap;
   int d;
   char *s,c;
@@ -655,7 +655,7 @@ void _p_state(char *left,char *right,char *symb)
 
 void assign(char *left,char *right, ...)
 {
-  char ltmp[100],rtmp[100],tmp[100];
+  char ltmp[1000],rtmp[1000],tmp[1000];
   va_list ap;
   int d;
   double f;
@@ -732,7 +732,7 @@ void assign(char *left,char *right, ...)
 
 void increment(char *left,char *right, ...)
 {
-  char ltmp[100],rtmp[100],tmp[100];
+  char ltmp[1000],rtmp[1000],tmp[1000];
   va_list ap;
   int d;
   double f;
@@ -813,7 +813,7 @@ void increment(char *left,char *right, ...)
 
 void decrement(char *left,char *right, ...)
 {
-  char ltmp[100],rtmp[100],tmp[100];
+  char ltmp[1000],rtmp[1000],tmp[1000];
   va_list ap;
   int d;
   double f;
@@ -894,7 +894,7 @@ void decrement(char *left,char *right, ...)
 
 void add(char *left,char *r1,char *r2, ...)
 {
-  char ltmp[100],rtmp[100],tmp[100];
+  char ltmp[1000],rtmp[1000],tmp[1000];
   va_list ap;
   int d;
   double f;
@@ -1002,7 +1002,7 @@ void add(char *left,char *r1,char *r2, ...)
 
 void subtract(char *left,char *r1,char *r2, ...)
 {
-  char ltmp[100],rtmp[100],tmp[100];
+  char ltmp[1000],rtmp[1000],tmp[1000];
   va_list ap;
   int d;
   double f;
@@ -1111,7 +1111,7 @@ void subtract(char *left,char *r1,char *r2, ...)
 
 void multiply(char *left,char *r1,char *r2, ...)
 {
-  char ltmp[100],rtmp[100],tmp[100];
+  char ltmp[1000],rtmp[1000],tmp[1000];
   va_list ap;
   int d;
   double f;
