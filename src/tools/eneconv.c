@@ -43,7 +43,9 @@ static char *SRCID_eneconv_c = "$Id$";
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
 #define TIME_LAST     2
-
+#ifndef FLT_MAX
+#define FLT_MAX 1e36
+#endif
 
 bool bRmod(double a,double b)
 {
