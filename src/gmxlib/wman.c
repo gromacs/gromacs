@@ -1,15 +1,15 @@
 /*
- *       $Id$
- *
- *       This source code is part of
- *
- *        G   R   O   M   A   C   S
- *
- * GROningen MAchine for Chemical Simulations
- *
- *            VERSION 2.0
+ * $Id$
  * 
- * Copyright (c) 1991-1997
+ *       This source code is part of
+ * 
+ *        G   R   O   M   A   C   S
+ * 
+ * GROningen MAchine for Chemical Simulations
+ * 
+ *               VERSION 2.0
+ * 
+ * Copyright (c) 1991-1999
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
  * 
@@ -17,14 +17,14 @@
  * GROMACS: A message-passing parallel molecular dynamics implementation
  * H.J.C. Berendsen, D. van der Spoel and R. van Drunen
  * Comp. Phys. Comm. 91, 43-56 (1995)
- *
+ * 
  * Also check out our WWW page:
- * http://rugmd0.chem.rug.nl/~gmx
+ * http://md.chem.rug.nl/~gmx
  * or e-mail to:
  * gromacs@chem.rug.nl
- *
+ * 
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * GROningen Mixture of Alchemy and Childrens' Stories
  */
 static char *SRCID_wman_c = "$Id$";
 
@@ -279,12 +279,16 @@ static void write_nroffman(FILE *out,
 			   int nbug,char **bugs)
 
 {
-  int i; /* counter */
-
-  fprintf(out,".TH %s 1 \"15 apr 2012\"\n",program);
+  int i,slen; /* counter */
+  char buf[128];
+  
+  sprintf(buf,"%s",mydate());
+  slen=strlen(buf);
+  buf[slen-1] = '\0';
+  fprintf(out,".TH %s 1 \"manpage generated @ %s\"\n",program,buf);
   fprintf(out,".SH NAME\n");
   fprintf(out,"%s\n",program);
-  fprintf(out,".B %s\n.B%s\n",GromacsVersion(),mydate());
+  fprintf(out,".B %s\n",GromacsVersion());
   
   fprintf(out,".SH SYNOPSIS\n");
   fprintf(out,"\\f3%s\\fP\n",program);
