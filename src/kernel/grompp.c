@@ -59,6 +59,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "gmxfio.h"
 #include "trnio.h"
 #include "tpxio.h"
+#include "dummies.h"
 
 static void triple_check(t_inputrec *ir,t_topology *sys)
 {
@@ -673,6 +674,12 @@ int main (int argc, char *argv[])
     fprintf(stderr,"converting bonded parameters...\n");
   convert_params(atype.nr,plist,msys.plist,&sys.idef);
 
+  /* set ptype to Dummy for dummy atoms */
+  set_dummies_ptype(bVerbose,&sys);
+
+  /* check masses */
+  check_mol(&(sys.atoms));
+  
   /* Now build the shakeblocks from the shakes */
   gen_sblocks(bVerbose,sys.atoms.nr,&(sys.idef),&(sys.blocks[ebSBLOCKS]));
   
