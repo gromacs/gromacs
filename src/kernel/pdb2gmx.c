@@ -611,7 +611,7 @@ int main(int argc, char *argv[])
   rvec       *pdbx,*x;
   bool       bUsed,bDummies=FALSE,bWat,bPrevWat=FALSE,bITP,bDummyAromatics=FALSE;
   real       mHmult=0;
-  bool       bAlldih;
+  bool       bAlldih,HH14,remove_dih;
   int        nrexcl;
 
   t_filenm   fnm[] = { 
@@ -629,7 +629,7 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
-  static bool bH14=FALSE, bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
+  static bool bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE;
   static real angle=135.0, distance=0.3,posre_fc=1000;
   static real long_bond_dist=0.25, short_bond_dist=0.05;
@@ -666,8 +666,6 @@ int main(int argc, char *argv[])
       "Tryptophane and Tyrosine" },
     { "-sort",   FALSE, etBOOL, {&bSort}, 
       "HIDDENSort the residues according to database, turning this off is dangerous as charge groups might be broken in parts" },
-    { "-H14",    FALSE, etBOOL, {&bH14}, 
-      "Use 1-4 interactions between hydrogen atoms" },
     { "-ignh",   FALSE, etBOOL, {&bRemoveH}, 
       "Ignore hydrogen atoms that are in the pdb file" },
     { "-missing",   FALSE, etBOOL, {&bMissing}, 
@@ -889,7 +887,7 @@ int main(int argc, char *argv[])
   
   /* read residue database */
   printf("Reading residue database... (%s)\n",ff);
-  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl);
+  nrtp=read_resall(ff,bts,&restp,atype,&symtab,&bAlldih,&nrexcl,&HH14,&remove_dih);
   if (bNewRTP) {
     fp=ffopen("new.rtp","w");
     print_resall(fp,bts,nrtp,restp,atype,bAlldih,nrexcl);
@@ -1078,7 +1076,7 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
-	    bH14,bAlldih,bDummies,bDummyAromatics,ff,
+	    HH14,bAlldih,remove_dih,bDummies,bDummyAromatics,ff,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist,short_bond_dist,bDeuterate);
     

@@ -214,6 +214,13 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  bParDummies ? &dummycomm : NULL,
 		  cr,mcr,graph,fr,box_size);
     break;
+  case eiLBFGS:
+    start_t=do_lbfgs(stdlog,nfile,fnm,parm,top,grps,nsb,
+		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
+		     nrnb,bVerbose,bDummies,
+		     bParDummies ? &dummycomm : NULL,
+		     cr,mcr,graph,fr,box_size);
+    break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		     state,f,buf,mdatoms,parm->ekin,ener,fcd,

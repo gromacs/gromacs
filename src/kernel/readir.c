@@ -244,7 +244,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   } else {
-    sprintf(err_buf,"rcoulomb must be >= rlist");
+    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
   }
 
@@ -269,7 +269,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
   } else {
-    sprintf(err_buf,"rvdw must be >= rlist");
+    sprintf(err_buf,"With vdwtype = %s,rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
   if((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) ||
@@ -279,16 +279,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning(NULL);
     }
 
-  /* CONSTRAINTS */
-  if(ir->eI==eiMD && ir->etc==etcNO &&
-     ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
-    sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n"
-	    "You can safely ignore this if your system doesn't have any LINCS-constrained bonds;\n"
-	    "for water molecules we normally use the analytical SETTLE algorithm instead."); 
+  if(ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)) {
+    sprintf(warn_buf,"For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
     warning(NULL);
   }
-  if(((ir->eI == eiSteep) || (ir->eI == eiCG)) && (ir->nLincsIter<4)) {
-    sprintf(warn_buf,"For energy minimization with constraints, lincs_iter should be 4 to 8.");
+
+  if(ir->eI == eiLBFGS && ir->nbfgscorr<=0) {
+    sprintf(warn_buf,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
     warning(NULL);
   }
 }
@@ -370,7 +367,7 @@ void get_ir(char *mdparin,char *mdparout,
   /* Em stuff */
   CCTYPE ("ENERGY MINIMIZATION OPTIONS");
   CTYPE ("Force tolerance and initial step-size");
-  RTYPE ("emtol",       ir->em_tol,     100.0);
+  RTYPE ("emtol",       ir->em_tol,     10.0);
   RTYPE ("emstep",      ir->em_stepsize,0.01);
   CTYPE ("Max number of iterations in relax_shells");
   ITYPE ("niter",       ir->niter,      20);
@@ -378,7 +375,8 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("fcstep",      ir->fc_stepsize, 0);
   CTYPE ("Frequency of steepest descents steps when doing CG");
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
-  
+  ITYPE ("nbfgscorr",   ir->nbfgscorr,  10); 
+
   /* Output options */
   CCTYPE ("OUTPUT CONTROL OPTIONS");
   CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
@@ -1354,6 +1352,22 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
 	    ir->shake_tol);
     (*nerror)++;
+  }
+
+  if( (ir->eConstrAlg==estLINCS) && mol->plist[F_SHAKE].nr>0) {
+    /* If we have Lincs constraints: */
+    if(ir->eI==eiMD && ir->etc==etcNO &&
+       ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
+      sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n"
+	      "You can safely ignore this if your system doesn't have any LINCS-constrained bonds;\n"
+	      "for water molecules we normally use the analytical SETTLE algorithm instead."); 
+      warning(NULL);
+    }
+    
+    if((ir->eI == eiSteep) && (ir->nLincsIter<4)) {
+      sprintf(warn_buf,"For minimization with LINCS constraints, lincs_iter should be 4 to 8.");
+      warning(NULL);
+    }
   }
 
   if (ir->ePBC != epbcNONE) {

@@ -90,24 +90,60 @@ static int dcomp(const void *d1, const void *d2)
   
   p1=(t_param *)d1;
   p2=(t_param *)d2;
+  /* First sort by J & K (the two central) atoms */
   if ((dc=(p1->AJ-p2->AJ))!=0)
     return dc;
   else if ((dc=(p1->AK-p2->AK))!=0)
     return dc;
+  /* Then make sure to put rtp dihedrals before generated ones */
+  else if (p1->c[MAXFORCEPARAM-1]==0 && p2->c[MAXFORCEPARAM-1]==NOTSET)
+    return -1;
+  else if (p1->c[MAXFORCEPARAM-1]==NOTSET && p2->c[MAXFORCEPARAM-1]==0)
+    return 1;
+  /* Finally, sort by I and J (two outer) atoms */
   else if ((dc=(p1->AI-p2->AI))!=0)
     return dc;
   else
     return (p1->AL-p2->AL);
 }
 
+
+static bool aeq(t_param *p1, t_param *p2)
+{
+  if (p1->AJ!=p2->AJ)
+    return FALSE;
+  else if (((p1->AI==p2->AI) && (p1->AK==p2->AK)) ||
+           ((p1->AI==p2->AK) && (p1->AK==p2->AI)))
+    return TRUE;
+  else
+    return FALSE;
+}
+
+
+
+static bool deq2(t_param *p1, t_param *p2)
+{
+  /* if bAlldih is true, dihedrals are only equal when
+     ijkl = ijkl or ijkl =lkji*/
+  if (((p1->AI==p2->AI) && (p1->AJ==p2->AJ) &&
+       (p1->AK==p2->AK) && (p1->AL==p2->AL)) ||
+      ((p1->AI==p2->AL) && (p1->AJ==p2->AK) &&
+       (p1->AK==p2->AJ) && (p1->AL==p2->AI)))
+    return TRUE;
+  else
+    return FALSE;
+}
+
+
 static bool deq(t_param *p1, t_param *p2)
 {
   if (((p1->AJ==p2->AJ) && (p1->AK==p2->AK)) ||
       ((p1->AJ==p2->AK) && (p1->AK==p2->AJ)))
     return TRUE;
-  else 
+  else
     return FALSE;
 }
+
 
 static bool remove_dih(t_param *p, int i, int np)
      /* check if dihedral p[i] should be removed */
@@ -335,7 +371,7 @@ static int n_hydro(atom_id a[],char ***atomname)
 }
 
 static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
-		      t_atoms *atoms,bool bAlldih)
+		      t_atoms *atoms,bool bAlldih, bool bRemoveDih)
 {
   int  i,j,k,l;
   int  *index,nind;
@@ -366,7 +402,7 @@ static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
   for(i=0; i<nind; i++) {
     bIsSet = (dih[index[i]].c[MAXFORCEPARAM-1] != NOTSET);
     bKeep = TRUE;
-    if (!bIsSet)
+    if (!bIsSet && bRemoveDih)
       /* remove the dihedral if there is an improper on the same bond */
       for(j=0; (j<nidih) && bKeep; j++)
 	bKeep = !deq(&dih[index[i]],&idih[j]);
