@@ -229,10 +229,10 @@ static void write_texman(FILE *out,char *program,
   if (nfile > 0) {
     fprintf(out,"\n{\\normalsize \\bf Files}\n");
     fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
-    fprintf(out,"~~~~~~~~~~ \\= ~~~~~~~~~~~~~~~~~~~~~ \\= "
-	    "~~~~~~~~~~~~~~~~~~~~~ \\= \\kill\n");
+    fprintf(out,"{\\tt ~~~~~~~} \\= {\\tt ~~~~~~~~~~~~~~} \\= "
+	    "~~~~~~~~~~~~~~~~~~~~~~ \\= \\kill\n");
     for(i=0; (i<nfile); i++)
-      fprintf(out,"%s \\> %s \\> %s \\> "
+      fprintf(out,"\\>{\\tt %s} \\'\\> {\\tt %s} \\' %s \\> "
 	      "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
 	      check_tex(fnm[i].opt),check_tex(fnm[i].fn),
 	      check_tex(fileopt(fnm[i].flag)),
@@ -242,11 +242,11 @@ static void write_texman(FILE *out,char *program,
   if (npargs > 0) {
     fprintf(out,"\n{\\normalsize \\bf Other options}\n");
     fprintf(out,"\\vspace{-2ex}\\begin{tabbing}\n");
-    fprintf(out,"~~~~~~~~~~~~~~~~~ \\= ~~~~~~~~~ \\= "
-	    "~~~~~~~~~~ \\= \\kill\n");
+    fprintf(out,"{\\tt ~~~~~~~~~} \\= vector \\= "
+	    "{\\tt ~~~~~~~~} \\= \\kill\n");
     for(i=0; (i<npargs); i++) {
-      fprintf(out,"%s \\> %s \\> %s \\> "
-	      "\\parbox[t]{0.65\\linewidth}{%s}\\\\\n",
+      fprintf(out,"\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
+	      "\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
 	      check_tex(pa[i].option),argtp[pa[i].type],
 	      check_tex(pa_val(&(pa[i]))),
 	      check_tex(pa[i].desc));
@@ -257,7 +257,7 @@ static void write_texman(FILE *out,char *program,
     fprintf(out,"\n{\\normalsize \\bf Diagnostics}\n");
     fprintf(out,"\\begin{itemize}\n");
     for(i=0; (i<nbug); i++)
-      fprintf(out,"\\item\t%s\n",check_tex(bugs[i]));
+      fprintf(out,"\\item %s\n",check_tex(bugs[i]));
     fprintf(out,"\\end{itemize}\n");
   }
 /*   fprintf(out,"\n\\newpage\n"); */
@@ -438,7 +438,7 @@ static void write_htmlman(FILE *out,
 	strcpy(link,"files");
       fprintf(out,
 	      "<TR>"
-	      "<TD ALIGN=RIGHT> <b>%s</b> </TD>"
+	      "<TD ALIGN=RIGHT> <b><tt>%s</tt></b> </TD>"
 	      "<TD ALIGN=RIGHT> <a href=\"%s.html\">%12s</a> </TD>"
 	      "<TD> %s </TD>"
 	      "<TD> %s </TD>"
@@ -462,12 +462,12 @@ static void write_htmlman(FILE *out,
     for(i=0; (i<npargs); i++)
       fprintf(out,
 	      "<TR>"
-	      "<TD ALIGN=RIGHT> <b>%s%s</b> </TD>"
+	      "<TD ALIGN=RIGHT> <b><tt>%s%s</tt></b> </TD>"
 	      "<TD ALIGN=RIGHT> %s </TD>"
-	      "<TD ALIGN=RIGHT> <i>%s</i> </TD>"
+	      "<TD ALIGN=RIGHT> <tt>%s</tt> </TD>"
 	      "<TD> %s </TD>"
 	      "</TD>\n",
-	      (pa[i].type == etBOOL)?"-</b>[no]<b>":"-",pa[i].option+1,
+	      (pa[i].type == etBOOL)?"-[no]":"-",pa[i].option+1,
 	      argtp[pa[i].type],pa_val(&(pa[i])),NSR(pa[i].desc));
     fprintf(out,"</TABLE>\n");
   }
