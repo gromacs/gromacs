@@ -98,9 +98,7 @@ static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol)
 #define BS(b,s,val) if (b) { fprintf(stderr,s,val); bStop=TRUE; }
   ncons=mol->plist[F_SHAKE].nr+mol->plist[F_SETTLE].nr;
   BS((ir->tol <= 0.0) && (ncons > 0),
-     "tol must be > 0 instead of %10.5e when using shake\n",ir->tol)
-  BS((ir->eI != eiMD) && (ir->eI != eiLD) && (ncons > 0),
-     "can only use SHAKE or SETTLE in MD (not %s) simulation\n",EI(ir->eI))
+     "tol must be > 0 instead of %10.5e when using shake\n",ir->tol);
      
   /* rlong must be less than half the box */
   bmin=min(box[XX][XX],box[YY][YY]);
@@ -259,6 +257,19 @@ static int *shuffle_xv(char *ndx,
   return forward;
 }
 
+int rm_disre(int nrmols,t_molinfo mols[])
+{
+  int  i,n;
+  
+  n=0;
+  /* For all the molecule types */
+  for(i=0; (i<nrmols); i++) {
+    n+=mols[i].plist[F_DISRES].nr;
+    mols[i].plist[F_DISRES].nr=0;
+  }
+  return n;
+}
+
 static int *new_status(char *topfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bVerbose,int *natoms,
@@ -294,6 +305,12 @@ static int *new_status(char *topfile,char *confin,
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
 
+  if (opts->eDisre==edrNone) {
+    i=rm_disre(nrmols,molinfo);
+    if (bVerbose && i)
+      fprintf(stderr,"removed %d distance restraints\n",i);
+  }
+  
   topcat(msys,nrmols,molinfo,ntab,tab,Nsim,Sims,bEnsemble);
   
   /* Copy structures from msys to sys */
@@ -522,7 +539,8 @@ int main (int argc, char *argv[])
     "from the cpp. Command line options to the c-preprocessor can be given",
     "in the [TT].mdp[tt] file. See your local manual (man cpp).[PAR]",
     "When using position restraints a file with restraint coordinates",
-    "should be supplied with [TT]-r[tt].[PAR]",
+    "can be supplied with [TT]-r[tt], otherwise constraining will be done",
+    "relative to the conformation from the [TT]-c[tt] option.[PAR]",
     "Starting coordinates can be read from trajectory with [TT]-t[tt].",
     "The last frame with coordinates and velocities will be read,",
     "unless the [TT]-time[tt] option is used.[PAR]",
@@ -556,6 +574,7 @@ int main (int argc, char *argv[])
   t_params     *plist;
   rvec         *x=NULL,*v=NULL;
   matrix       box;
+  char         fn[STRLEN];
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,    ffREAD  },
     { efMDP, "-po", "mdout", ffWRITE },
@@ -569,25 +588,20 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bEnsemble=FALSE;
-  static bool bMorse=FALSE;
+  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
   static int  nprocs=1,maxwarn=10;
   static real time=-1;
   t_pargs pa[] = {
     { "-np",      FALSE, etINT,  &nprocs,
 	"Generate statusfile for # processors" },
-    { "-time",    FALSE, etREAL,  &time,
+    { "-time",    FALSE, etREAL, &time,
 	"Take frame at or first after this time." },
     { "-v",       FALSE, etBOOL, &bVerbose,
 	"Be loud and noisy" },
-    { "-R",       FALSE, etBOOL, &bRenum,
-	"Renumber atomtypes and minimize number of atomtypes" },
+    { "-renum",   FALSE, etBOOL, &bRenum,
+	"HIDDENRenumber atomtypes and minimize number of atomtypes" },
     { "-shuffle", FALSE, etBOOL, &bShuffle,
 	"Shuffle molecules over processors (only with N > 1)" },
-    { "-ensemble",FALSE, etBOOL, &bEnsemble, 
-	"Perform ensemble averaging over distance restraints" },
-    { "-morse",   FALSE, etBOOL, &bMorse,
-	"Convert the harmonic bonds in your topology to morse potentials." },
     { "-maxwarn", FALSE, etINT,  &maxwarn,
 	"Number of warnings after which input processing stops" }
   };
@@ -609,13 +623,9 @@ int main (int argc, char *argv[])
   else 
     fatal_error(0,"invalid number of processors %d\n",nprocs);
     
-  if (bShuffle && bEnsemble) {
-    printf("Can not shuffle and do ensemble averaging, turning off shuffle\n");
-    bShuffle=FALSE;
-  }
   if (bShuffle && opt2bSet("-r",NFILE,fnm)) {
-    fprintf(stderr,"Can not shuffle and do position restraints\n"
-	    "Shuffling turned off\n");
+    fprintf(stderr,"Can not shuffle and do position restraints, "
+	    "turning off shuffle\n");
     bShuffle=FALSE;
   }
 	       
@@ -629,6 +639,11 @@ int main (int argc, char *argv[])
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts);
 
+  if (bShuffle && (opts->eDisre==edrEnsemble)) {
+    fprintf(stderr,"Can not shuffle and do ensemble averaging, "
+	    "turning off shuffle\n");
+    bShuffle=FALSE;
+  }
   
   snew(plist,F_NRE);
   init_plist(plist);
@@ -636,17 +651,19 @@ int main (int argc, char *argv[])
   forward=new_status(ftp2fn(efTOP,NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bVerbose,&natoms,
 		     &x,&v,box,&atype,&sys,&msys,plist,
-		     bShuffle ? nprocs : 1,bEnsemble,bMorse);
-  if (opt2bSet("-r",NFILE,fnm)) {
-    if (bVerbose)
-      fprintf(stderr,"Reading position restraint coords from %s\n",
-	      opt2fn("-r",NFILE,fnm));
-    gen_posres(&(msys.plist[F_POSRES]),opt2fn("-r",NFILE,fnm));
-  }
-  else {
-    if (msys.plist[F_POSRES].nr > 0)
-      fatal_error(0,"No position restraint file given!\n");
-  }
+		     bShuffle ? nprocs : 1,
+		     (opts->eDisre==edrEnsemble),opts->bMorse);
+  if (opt2bSet("-r",NFILE,fnm))
+    sprintf(fn,opt2fn("-r",NFILE,fnm));
+  else
+    sprintf(fn,opt2fn("-c",NFILE,fnm));
+  
+  if (bVerbose)
+    fprintf(stderr,"Reading position restraint coords from %s\n",fn);
+  gen_posres(&(msys.plist[F_POSRES]),fn);
+  
+  if (msys.plist[F_POSRES].nr > 0)
+    fatal_error(0,"No position restraint file given!\n");
 
   if (bRenum) 
     atype.nr=renum_atype(plist,&sys,atype.nr,ir,bVerbose);
