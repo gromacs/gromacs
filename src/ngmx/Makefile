@@ -21,9 +21,6 @@ SLIBS	=	$(XLIBS) $(SYSLIBS)
 
 include 	$(STDTARGET)
 
-$(GMXHOME)/src/makef/Makefile.def:
-	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
-
 ngmx:		ngmx.o $(XOBJ)
 		$(LD) -o $@ $^  $(SLIBS) 
 
@@ -44,6 +41,9 @@ scrollw:	scrollw.o $(XOBJ)
 
 showcol:	showcol.o $(XOBJ)
 		$(LD) -o $@ $^	$(SLIBS)
+
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 
 include	Make.dep
 endif

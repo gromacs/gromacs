@@ -25,9 +25,6 @@ endif
 include		$(STDTARGET)
 #
 
-$(GMXHOME)/src/makef/Makefile.def:
-	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
-
 all:		bin
 
 david:		all	xmdrun	total	do_shift
@@ -69,5 +66,8 @@ g_anavel:	g_anavel.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 eanal:	eanal.o
 		$(LD) -o $@ $^ $(SYSLIBS)
+
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 include	Make.dep
 endif

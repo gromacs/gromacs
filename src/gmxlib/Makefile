@@ -41,8 +41,8 @@ OBJ		= \
 	sortwater.o	smalloc.o	stat.o		statutil.o	\
 	strdb.o		string2.o	symtab.o	tpxio.o		\
 	trnio.o		trxio.o		txtdump.o	typedefs.o	\
-	wgms.o		wman.o		writeps.o	xdrd.o		\
-	xtcio.o		xvgr.o
+	viewit.o	wgms.o		wman.o		writeps.o	\
+	xdrd.o		xtcio.o		xvgr.o
 
 ifeq ($(USEF77),yes)
 OBJ		+= innerf.o
@@ -77,9 +77,6 @@ endif
 #
 include		$(STDTARGET)
 #
-
-$(GMXHOME)/src/makef/Makefile.def:
-	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 
 $(XTCLIB)(libxdrf.o):	libxdrf.m4 $(M4FILE)
 		$(M4) $(M4FILE) libxdrf.m4 > libxdrf.c
@@ -188,5 +185,9 @@ innerc.c:		mkinl inner.m4 Makefile $(CPUMAKEF)
 
 tst:			tst.o
 			$(FLD) -o tst tst.o $(SYSLIBS)
+
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
+
 include	Make.dep
 endif

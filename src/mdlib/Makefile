@@ -44,9 +44,6 @@ endif
 include		$(STDTARGET)
 #
 
-$(GMXHOME)/src/makef/Makefile.def:
-	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
-
 # This is to force rebuild when the Makefile.CPU has changed
 $(LIB)(update.o):	$(CPUMAKEF)
 $(LIB)(ns.o):		$(CPUMAKEF)
@@ -58,6 +55,9 @@ $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(RM) callf77.c callf77.o
 timefft:	timefft.o
 		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
+
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 include	Make.dep
 endif
 

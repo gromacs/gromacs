@@ -22,9 +22,6 @@ SRCDIRS		= $(GROMLIB) $(notdir $(INCDIR))
 EXCLUDE		=core ',*' '*log*' '*~' '\#*\#' '*.o'
 IGNORE		=\( $(foreach EXCL,$(EXCLUDE),\( \! -name $(EXCL) \) )
 
-$(GMXHOME)/src/makef/Makefile.def:
-	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
-
 obj:	$(ROOT)/obj/Makefile
 
 template:
@@ -49,4 +46,7 @@ template:
 
 .DEFAULT:	
 	$(MAKE) -f $(OBJMAKEF) OBJDIR=$(SRCDIR) $@
+
+$(GMXHOME)/src/makef/Makefile.def:
+	echo "Wrong GROMACS environment, Please source GMXRC in this source tree"
 endif
