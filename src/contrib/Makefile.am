@@ -22,7 +22,7 @@ my_dssp_SOURCES 	= my_dssp.c dsspcore.c
 
 total_SOURCES		= total.f
 
-ehole_SOURCES		= ehole.c ehdata.c
+ehole_SOURCES		= ehole.c ehdata.c ehanal.c
 
 CLEANFILES   = 	*~ \\\#*
 

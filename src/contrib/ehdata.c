@@ -20,9 +20,9 @@ typedef struct {
 } t_pq_inel;
 
 typedef struct {
-  int  nener,n2Ddata;     /* Number of entries in the table      */
-  real *ener;            /* Energy values                       */
-  real **prob,**data;   /* Probability and data (energy loss) */
+  int  nener,n2Ddata;       /* Number of entries in the table      */
+  real *ener;               /* Energy values                       */
+  real **prob,**data;       /* Probability and data (energy loss)  */
 } t_p2Ddata;
 
 static int realcomp(const void *a,const void *b)
@@ -74,7 +74,7 @@ static t_p2Ddata *read_p2Ddata(char *fn,int nener,int n2Ddata)
       p2Ddata->prob[i][j] = p;
       p2Ddata->data[i][j] = o;
     }
-    /* There is some noise on the data data, take it away by sorting,
+    /* There is some noise on the data, take it away by sorting,
      * because otherwise binary search does not work.
      * This is equivalent to shifting in the data slightly along the X-axis
      * but better than linear search with the "real" data.
@@ -195,27 +195,27 @@ real get_omega(real ekin,int *seed,FILE *fp)
 real get_theta_el(real ekin,int *seed,FILE *fp)
 {
   static t_p2Ddata *p2Ddata = NULL;
-  real r,the;
+  real r,theta;
   int  eindex,tindex;
   
   if (p2Ddata == NULL) 
     p2Ddata = read_p2Ddata("proeldds.dat",1200,101);
   
-  /* Get energy index by binary search */
-  eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener);
-  
   /* Start with random number */
   r = rando(seed);
+    
+  /* Get energy index by binary search */
+  eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener);
   
   /* Do binary search in the energy table */
   tindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex]);
   
-  the = p2Ddata->data[eindex][tindex];
+  theta = p2Ddata->data[eindex][tindex];
   
   if (fp) 
-    fprintf(fp,"%8.3f  %8.3f\n",the,r);
+    fprintf(fp,"%8.3f  %8.3f\n",theta,r);
   
-  return the;
+  return theta;
 }
 
 real get_q_inel(real ekin,real omega,int *seed,FILE *fp)
@@ -294,7 +294,7 @@ real cross_el(real ekin)
   
   /* Read data at first call, convert A^2 to nm^2  */
   if (cross == NULL) {
-    real rho    = 3.0; /* g/cm^3 */
+    real rho    = 3.51; /* g/cm^3 */
     real factor = (rho/12.011)*AVOGADRO*1e-14*NANO;
     read_cross("totpeldds.dat",nel,&ener,&cross,factor);
   }
