@@ -183,14 +183,14 @@ g_rdens:        g_rdens.o
 g_nmeig:        g_nmeig.o ql77.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
+g_nmens:	g_nmens.o
+		$(LD) -o  $@ $^ $(SYSLIBS)
+
 g_covar:        g_covar.o ql77.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
 g_anaeig:       g_anaeig.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
-
-g_ensemble:	g_ensemble.o
-		$(LD) -o  $@ $^ $(SYSLIBS)
 
 g_dist:         g_dist.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)

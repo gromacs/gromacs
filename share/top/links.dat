@@ -35,6 +35,7 @@ g_mdmat
 g_mindist
 g_msd
 g_nmeig
+g_nmens
 g_order
 g_potential
 g_rama

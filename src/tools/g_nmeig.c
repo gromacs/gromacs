@@ -56,7 +56,9 @@ int main(int argc,char *argv[])
     "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
     "The structure is written first with t=0. The eigenvectors",
     "are written as frames with the eigenvector number as timestamp.",
-    "The eigenvectors can be analyzed with [TT]g_anaeig[tt]."
+    "The eigenvectors can be analyzed with [TT]g_anaeig[tt].",
+    "An ensemble of structures can be generated from the eigenvectors with",
+    "[TT]g_nmens[tt]."
   };
   static bool bM=TRUE;
   static int  begin=1,end=100;
