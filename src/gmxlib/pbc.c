@@ -72,7 +72,7 @@ char *check_box(matrix box)
   return ptr;
 }
 
-void init_pbc(matrix box,bool bTruncOct)
+void init_pbc(matrix box,bool bNotUsed)
 {
   static int nalloc=0;
   int  i,j,k,d;
@@ -235,11 +235,11 @@ bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
   return TRUE;
 }
 
-void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
+void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bNotUsed)
 {
   int k,l,m,d,n,test;
   
-  init_pbc(box,bTruncOct);
+  init_pbc(box,bNotUsed);
   for (m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
   
@@ -295,7 +295,7 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
   }
 }
 
-void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
+void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bNotUsed,
 			      matrix box,rvec box_size,t_block *cgs,
 			      rvec pos[],rvec cg_cm[])
 			      

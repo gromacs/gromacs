@@ -56,10 +56,8 @@ extern char *check_box(matrix box);
  * Otherwise is returns a string with the problem.
  */
 
-extern void init_pbc(matrix box,bool bTruncOct);
-/* Initiate the periodic boundary conditions. Set bTruncOct to
- * TRUE when using a truncated octahedron box.
- */
+extern void init_pbc(matrix box,bool bNotUsed);
+/* Initiate the periodic boundary conditions. */
 
 extern void pbc_dx(const rvec x1, const rvec x2, rvec dx);
 /* Calculate the correct distance vector from x1 and x2 and put it in
@@ -97,7 +95,7 @@ extern bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
  */
 
 extern void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],
-			bool bTruncOct);
+			bool bNotUsed);
 /* This routine calculates ths shift vectors necessary to use the
  * ns routine. Note that for the truncated octahedron case too many
  * shift vectors can be calculated: The ones for which exactly
@@ -115,15 +113,13 @@ extern void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
  * is used.
  */
    
-extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
+extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bNotUsed,
 				      matrix box,rvec box_size,t_block *cgs,
 				      rvec pos[],
 				      rvec cg_cm[]);
 			    
 /* This routine puts charge groups in the periodic box, keeping them
- * together. When bTruncOct==TRUE a truncated octahedron
- * box is used. There are no checks: the first element of the box matrix
- * is taken to be the box edge.
+ * together.
  */
 
 extern void calc_box_center(matrix box,rvec box_center);
