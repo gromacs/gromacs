@@ -82,10 +82,6 @@ typedef struct {
   int *nb;
 } t_nnb;
   
-/* Set colors for plotting: white = zero RMS, black = maximum */
-t_rgb rlo = { 1.0, 1.0, 1.0 };
-t_rgb rhi = { 0.0, 0.0, 0.0 };
-  
 void pr_energy(FILE *fp,real e)
 {
   fprintf(fp,"Energy: %8.4f\n",e);  
@@ -583,31 +579,73 @@ rvec **read_whole_trj(char *fn,int isize,atom_id index[],int skip,int *nframe,
   return xx;
 }
 
-static void plot_clusters(int nf, real **mat, real val, t_clusters *clust,
-			  int nlevels, int keepfree)
+static int plot_clusters(int nf, real **mat, real val, t_clusters *clust,
+			 int nlevels, int keepfree, int minstruct)
 {
-  int i,j,v;
-  
-  for(i=0; i<nf; i++) {
-    for(j=0; j<i; j++)
-      if (clust->cl[i] == clust->cl[j]) {
-	/* color different clusters with different colors, as long as
-	   we don't run out of colors */
-	v = nlevels - clust->cl[i];
-	/* don't use some of the colors, otherwise it gets too light */
-	if (keepfree>=nlevels)
-	  v = nlevels;
-	else if ( keepfree<0 )
-	  v = max(v, nlevels/(-keepfree));
-	else if ( keepfree>0 )
-	  v = max(v, keepfree);
-	else 
-	  v = 1;
-	/* sadly, we have to convert to real now */
-	mat[i][j] = val*v/(real)(nlevels-1);
-      } else
-	mat[i][j] = 0;
+  int i,j,v,ncluster,ci;
+  int *cl_id,*nstruct,*strind;
+    
+  ncluster = nlevels;
+  if (minstruct > 1) {
+    snew(cl_id,nf);
+    snew(nstruct,nf);
+    snew(strind,nf);
+    for(i=0; i<nf; i++) {
+      strind[i] = 0;
+      cl_id[i]  = clust->cl[i];
+      nstruct[cl_id[i]]++;
+    }
+    ncluster = 0;
+    for(i=0; i<nf; i++) {
+      if (nstruct[i] >= minstruct) {
+	ncluster++;
+	for(j=0; (j<nf); j++)
+	  if (cl_id[j] == i)
+	    strind[j] = ncluster;
+      }
+    }
+    ncluster++;
+    fprintf(stderr,"There are %d clusters with at least %d conformations\n",
+	    ncluster,minstruct);
+	    
+    for(i=0; (i<nf); i++) {
+      ci = cl_id[i];
+      for(j=0; j<i; j++)
+	if ((ci == cl_id[j]) && (nstruct[ci] >= minstruct)) {
+	  /* color different clusters with different colors, as long as
+	     we don't run out of colors */
+	  mat[i][j] = strind[i];
+	} 
+	else
+	  mat[i][j] = 0;
+    }
+    sfree(strind);
+    sfree(nstruct);
+    sfree(cl_id);
   }
+  else {
+    for(i=0; i<nf; i++) {
+      for(j=0; j<i; j++)
+	if (clust->cl[i] == clust->cl[j]) {
+	  /* color different clusters with different colors, as long as
+	     we don't run out of colors */
+	  v = nlevels - clust->cl[i];
+	  /* don't use some of the colors, otherwise it gets too light */
+	  if (keepfree>=nlevels)
+	    v = nlevels;
+	  else if ( keepfree<0 )
+	    v = max(v, nlevels/(-keepfree));
+	  else if ( keepfree>0 )
+	    v = max(v, keepfree);
+	  else 
+	    v = 1;
+	  /* sadly, we have to convert to real now */
+	  mat[i][j] = val*v/(real)(nlevels-1);
+	} else
+	  mat[i][j] = 0;
+    }
+  }
+  return ncluster;
 }
 
 static char *parse_filename(char *fn, int maxnr)
@@ -639,7 +677,8 @@ static char *parse_filename(char *fn, int maxnr)
 }
 
 static void ana_trans(t_clusters *clust, int nf, 
-		      char *transfn, char *ntransfn, FILE *log)
+		      char *transfn, char *ntransfn, FILE *log,
+		      t_rgb rlo,t_rgb rhi)
 {
   FILE *fp;
   real **trans,*axis;
@@ -696,7 +735,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     char *trxfn, char *sizefn, char *transfn, 
 			     char *ntransfn, char *clustidfn, bool bAverage, 
 			     int write_ncl, int write_nst, real rmsmin,bool bFit,
-			     FILE *log)
+			     FILE *log,t_rgb rlo,t_rgb rhi)
 {
   FILE *fp=NULL;
   char buf[STRLEN],buf1[40],buf2[40],buf3[40],*trxsfn;
@@ -748,7 +787,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
   }
   
   if (transfn || ntransfn) 
-    ana_trans(clust, nf, transfn, ntransfn, log);
+    ana_trans(clust, nf, transfn, ntransfn, log,rlo,rhi);
   
   if (clustidfn) {
     fp=xvgropen(clustidfn,"Clusters",xvgr_tlabel(),"Cluster #");
@@ -972,25 +1011,30 @@ int main(int argc,char *argv[])
   t_topology   top;
   t_atoms      useatoms;
   t_matrix     *readmat;
-  
+
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass=NULL;
-  char     buf[STRLEN],buf1[80];
+  char     buf[STRLEN],buf1[80],title[STRLEN];
   bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj,bWriteDist;
 
-  int method;  
+  int method,ncluster;  
   static char *methodname[] = { 
     NULL, "linkage", "jarvis-patrick","monte-carlo", 
     "diagonalization", "gromos", NULL
   };
   enum { m_null, m_linkage, m_jarvis_patrick, 
 	 m_monte_carlo, m_diagonalize, m_gromos, m_nr };
+  /* Set colors for plotting: white = zero RMS, black = maximum */
+  static t_rgb rlo_top = { 1.0, 1.0, 1.0 };
+  static t_rgb rhi_top = { 0.0, 0.0, 0.0 };
+  static t_rgb rlo_bot = { 1.0, 1.0, 1.0 };
+  static t_rgb rhi_bot = { 0.0, 0.0, 1.0 };
   static int  nlevels=40,keepfree=-4,skip=1;
   static real scalemax=-1.0,rmsdcut=0.1,rmsmin=0.0;
   static bool bRMSdist=FALSE,bBinary=FALSE,bAverage=FALSE,bFit=TRUE;
-  static int  niter=10000,seed=1993,write_ncl=0,write_nst=1;
+  static int  niter=10000,seed=1993,write_ncl=0,write_nst=1,minstruct=1;
   static real kT=1e-3;
   static int  M=10,P=3;
   t_pargs pa[] = {
@@ -1019,6 +1063,8 @@ int main(int argc,char *argv[])
       "minimum rms difference with rest of cluster for writing structures" },
     { "-method",FALSE, etENUM, {methodname},
       "Method for cluster determination" },
+    { "-minstruct", FALSE, etINT, {&minstruct},
+      "Minimum number of structures in cluster for coloring in the xpm file" },
     { "-binary",FALSE, etBOOL, {&bBinary},
       "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off "
       "is given by -cutoff" },
@@ -1305,7 +1351,8 @@ int main(int argc,char *argv[])
 	    mat_energy(rms));
   
   if (bAnalyze) {
-    plot_clusters(nf,rms->mat,rms->maxrms,&clust,nlevels,keepfree);
+    ncluster = plot_clusters(nf,rms->mat,rms->maxrms,&clust,nlevels,
+			     keepfree,minstruct);
     init_t_atoms(&useatoms,isize,FALSE);
     snew(usextps, isize);
     useatoms.resname=top.atoms.resname;
@@ -1323,8 +1370,11 @@ int main(int argc,char *argv[])
 		     opt2fn_null("-tr",NFILE,fnm),
 		     opt2fn_null("-ntr",NFILE,fnm),
 		     opt2fn_null("-clid",NFILE,fnm),
-		     bAverage, write_ncl, write_nst, rmsmin, bFit, log);
+		     bAverage, write_ncl, write_nst, rmsmin, bFit, log,
+		     rlo_bot,rhi_bot);
   }
+  else
+    ncluster = nlevels;
   ffclose(log);
   
   if (bBinary && !bAnalyze)
@@ -1339,11 +1389,16 @@ int main(int argc,char *argv[])
   if (bReadMat) {
     write_xpm(fp,readmat[0].title,readmat[0].legend,readmat[0].label_x,
 	      readmat[0].label_y,nf,nf,readmat[0].axis_x,readmat[0].axis_y,
-	      rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
-  } else {
-    write_xpm(fp,bRMSdist ? "RMS Distance Deviation" : "RMS Deviation",
-	      "RMSD (nm)",buf,buf,
-	      nf,nf,time,time,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
+	      rms->mat,0.0,rms->maxrms,rlo_top,rhi_top,&nlevels);
+  } 
+  else {
+    sprintf(buf,"Time (%s)",time_unit());
+    sprintf(title,"RMS%sDeviation / Cluster Index",
+ 	    bRMSdist ? " Distance " : " ");
+    write_xpm_split(fp,title,"RMSD (nm)",buf,buf,
+		    nf,nf,time,time,rms->mat,0.0,rms->maxrms,&nlevels,
+		    rlo_top,rhi_top,0.0,(real) ncluster,
+		    &ncluster,TRUE,rlo_bot,rhi_bot);
   }
   fprintf(stderr,"\n");
   ffclose(fp);

@@ -190,7 +190,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
     else
       Ext[m] = 0;
   }
-  if (fp &&debug) 
+  if (fp) 
     fprintf(fp,"%10g  %10g  %10g  %10g #EFIELD\n",t,
 	    Ext[XX]/FIELDFAC,Ext[YY]/FIELDFAC,Ext[ZZ]/FIELDFAC);
 }
@@ -490,6 +490,7 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 		   matrix box,tensor pres,tensor virial,real ener[])
 {
   static bool bFirst=TRUE;
+  double dnatoms;
   real vol,rc3,spres,svir;
   int  m;
   
@@ -501,7 +502,8 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
     /* Forget the (small) effect of the shift on the LJ energy *
      * when fr->bLJShift = TRUE                                */  
     rc3              = fr->rvdw*fr->rvdw*fr->rvdw;
-    ener[F_DISPCORR] = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
+    dnatoms          = natoms;
+    ener[F_DISPCORR] = -2.0*dnatoms*dnatoms*M_PI*fr->avcsix/(3.0*vol*rc3);
     if (eDispCorr == edispcEnerPres) {
       spres            = 2.0*ener[F_DISPCORR]*PRESFAC/vol;
       svir             = -6.0*ener[F_DISPCORR];

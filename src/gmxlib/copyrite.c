@@ -389,6 +389,11 @@ void please_cite(FILE *fp,char *key)
       "The Double Cube Lattice Method: Efficient Approaches to Numerical Integration of Surface Area and Volume and to Dot Surface Contouring of Molecular Assemblies",
       "J. Comp. Chem.",
       16, 1995, 273, 284 },
+    { "Hetenyi2002b",
+      "Csaba Hetenyi and David van der Spoel",
+      "Efficient docking of peptides to proteins without prior knowledge of the binding site.",
+      "Prot. Sci.",
+      11, 2002, 1729, 1737 }
   };
 #define NSTR (int)asize(citedb)
   

@@ -396,8 +396,7 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
     }
     else if ((is_aj[XX] != g->ishift[aj][XX]) ||
 	     (is_aj[YY] != g->ishift[aj][YY]) ||
-	     (is_aj[ZZ] != g->ishift[aj][ZZ]))
-	     {
+	     (is_aj[ZZ] != g->ishift[aj][ZZ])) {
       (*nerror)++;
     }
   }

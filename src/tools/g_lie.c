@@ -129,7 +129,7 @@ int main(int argc,char *argv[])
       "Coulomb interaction between ligand and solvent" },
     { "-Clj",  FALSE, etREAL, {&fac_lj},
       "Factor in the LIE equation for Lennard-Jones component of energy" },
-    { "-Cqq",  FALSE, etREAL, {&lie_qq},
+    { "-Cqq",  FALSE, etREAL, {&fac_qq},
       "Factor in the LIE equation for Coulomb component of energy" },
     { "-ligand",  FALSE, etSTR, {&ligand},
       "Name of the ligand in the energy file" }

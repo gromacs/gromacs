@@ -210,7 +210,8 @@ void leg_discrete(t_psdata ps,real x0,real y0,char *label,
 
 void leg_continuous(t_psdata ps,real x0,real x,real y0,char *label,
 		    real fontsize,char *font,
-		    int nmap,t_mapping map[])
+		    int nmap,t_mapping map[],
+		    int mapoffset)
 {
   int   i;
   real  xx0;
@@ -219,26 +220,27 @@ void leg_continuous(t_psdata ps,real x0,real x,real y0,char *label,
   boxyh=fontsize;
   if (x<8*fontsize)
     x=8*fontsize;
-  boxxh=(real)x/(real)nmap;
+  boxxh=(real)x/(real)(nmap-mapoffset);
   if (boxxh>fontsize)
     boxxh=fontsize;
   
   /* LANDSCAPE */
-  xx0=x0-(nmap*boxxh)/2.0;
+  xx0=x0-((nmap-mapoffset)*boxxh)/2.0;
   
-  for(i=0; (i<nmap); i++) {
-    ps_rgb(ps,&(map[i].rgb));
+  for(i=0; (i<nmap-mapoffset); i++) {
+    ps_rgb(ps,&(map[i+mapoffset].rgb));
     ps_fillbox(ps,xx0+i*boxxh,y0,xx0+(i+1)*boxxh,y0+boxyh);
   }
   ps_strfont(ps,font,fontsize);
   ps_rgb(ps,BLACK);
-  ps_box(ps,xx0,y0,xx0+nmap*boxxh,y0+boxyh);
+  ps_box(ps,xx0,y0,xx0+(nmap-mapoffset)*boxxh,y0+boxyh);
   
   yhh=y0+boxyh+3*DDD;
   ps_ctext(ps,xx0+boxxh/2,yhh,map[0].desc,eXCenter);
   if ((int)strlen(label) > 0)
     ps_ctext(ps,x0,yhh,label,eXCenter);
-  ps_ctext(ps,xx0+(nmap*boxxh)-boxxh/2,yhh,map[nmap-1].desc,eXCenter);
+  ps_ctext(ps,xx0+((nmap-mapoffset)*boxxh)
+	   - boxxh/2,yhh,map[nmap-1].desc,eXCenter);
 }
 
 void leg_bicontinuous(t_psdata ps,real x0,real x,real y0,char *label1,char *label2,
@@ -253,8 +255,8 @@ void leg_bicontinuous(t_psdata ps,real x0,real x,real y0,char *label1,char *labe
   xx2=x0+(x1/2.0)+fontsize;/* center of legend 2 */
   x1-=fontsize/2;/* adjust width */
   x2-=fontsize/2;/* adjust width */
-  leg_continuous(ps,xx1,x1,y0,label1,fontsize,font,nmap1,map1);
-  leg_continuous(ps,xx2,x2,y0,label2,fontsize,font,nmap2,map2);
+  leg_continuous(ps,xx1,x1,y0,label1,fontsize,font,nmap1,map1,0);
+  leg_continuous(ps,xx2,x2,y0,label2,fontsize,font,nmap2,map2,0);
 }
 
 static real box_height(t_matrix *mat,t_psrec *psr)
@@ -610,7 +612,8 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
 void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 	    bool bFrame,bool bDiag,bool bFirstDiag,
 	    bool bTitle,bool bTitleOnce,bool bYonce,
-	    int elegend,real boxx,real boxy,char *m2p,char *m2pout)
+	    int elegend,real boxx,real boxy,char *m2p,char *m2pout,
+	    int mapoffset)
 {
   char   *libm2p,buf[256],*legend;
   t_psdata out;
@@ -780,7 +783,8 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     else {
       if ( elegend!=elBoth )
 	leg_continuous(out,x0+w/2,w/2,DDD,legend,
-		       psr->legfontsize,psr->legfont,leg_nmap,leg_map);
+		       psr->legfontsize,psr->legfont,leg_nmap,leg_map,
+		       mapoffset);
       else
 	leg_bicontinuous(out,x0+w/2,w,DDD,mat[0].legend,mat2[0].legend,
 			 psr->legfontsize,psr->legfont,nmap1,map1,nmap2,map2);
@@ -928,7 +932,8 @@ void write_combined_matrix(int ecombine, char *fn,
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
 	    bool bFrame,bool bZeroLine,bool bDiag,bool bFirstDiag,bool bTitle,
 	    bool bTitleOnce,bool bYonce,int elegend,real boxx,real boxy,
-	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,int skip)
+	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,int skip,
+	    int mapoffset)
 {
   int      i,j,k;
 
@@ -955,7 +960,7 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   
   if (epsfile!=NULL)
     ps_mat(epsfile,nmat,mat,mat2,bFrame,bDiag,bFirstDiag,
-	   bTitle,bTitleOnce,bYonce,elegend,boxx,boxy,m2p,m2pout);
+	   bTitle,bTitleOnce,bYonce,elegend,boxx,boxy,m2p,m2pout,mapoffset);
   if (xpmfile!=NULL)
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
 }
@@ -1077,7 +1082,7 @@ int main(int argc,char *argv[])
   /* MUST correspond to enum ecXxx as defined at top of file */
   static char *combine[] = {
     NULL, "halves", "add", "sub", "mult", "div", NULL };
-  static int skip=1;
+  static int skip=1,mapoffset=0;
   t_pargs pa[] = {
     { "-frame",   FALSE, etBOOL, {&bFrame},
       "Display frame, ticks, labels, title and legend" },
@@ -1096,7 +1101,9 @@ int main(int argc,char *argv[])
     { "-skip",    FALSE, etINT,  {&skip},
       "only write out every nr-th row and column" },
     { "-zeroline",FALSE, etBOOL, {&bZeroLine},
-      "insert line in xpm matrix where axis label is zero"}
+      "insert line in xpm matrix where axis label is zero"},
+    { "-legoffset", FALSE, etINT, {&mapoffset},
+      "Skip first N colors from xpm file for the legend" }
   };
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
@@ -1194,7 +1201,8 @@ int main(int argc,char *argv[])
     do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
 	   bTitle,bTitleOnce,bYonce,
 	   elegend, boxx,boxy,epsfile,xpmfile,
-	   opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip);
+	   opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip,
+	   mapoffset);
   
   view_all(NFILE, fnm);
     

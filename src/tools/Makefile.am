@@ -32,6 +32,7 @@ AUTOCORR_SRC         = 	autocorr.c expfit.c polynomials.c levenmar.c
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
 g_analyze_SOURCES    = 	g_analyze.c $(AUTOCORR_SRC)
+g_gyrate_SOURCES    = 	g_gyrate.c $(AUTOCORR_SRC)
 g_anaeig_SOURCES     = 	g_anaeig.c eigio.c
 g_angle_SOURCES      = 	g_angle.c anadih.c  dlist.c $(AUTOCORR_SRC)
 g_bond_SOURCES       = 	g_bond.c lsq.c

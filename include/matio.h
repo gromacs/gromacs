@@ -78,6 +78,21 @@ extern void write_xpm3(FILE *out,
 /* See write_xpm.
  * Writes a colormap varying as rlo -> rmid -> rhi.
  */
+extern void write_xpm_split(FILE *out,
+			    char *title,char *legend,char *label_x,char *label_y,
+			    int n_x,int n_y,real axis_x[],real axis_y[],
+			    real *matrix[],
+			    real lo_top,real hi_top,int *nlevel_top,
+			    t_rgb rlo_top,t_rgb rhi_top,
+			    real lo_bot,real hi_bot,int *nlevel_bot,
+			    bool bDiscreteColor,
+			    t_rgb rlo_bot,t_rgb rhi_bot);
+/* See write_xpm.
+ * Writes a colormap with separate above and below diagonal colormaps.
+ * If bDiscrete then a colormap with 16 fixed colors is used, first  of
+ * which is white.
+ */
+			    
 
 extern void write_xpm(FILE *out,
 		      char *title,char *legend,char *label_x,char *label_y,

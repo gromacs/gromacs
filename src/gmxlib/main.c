@@ -201,7 +201,7 @@ void open_log(char *lognm,t_commrec *cr)
       debug_gmx();
       
       gmx_txs(cr->right,&len,sizeof(len));
-      snew(lognm,len);
+      snew(lognm,len+8);
       gmx_rxs(cr->left,lognm,len);
       gmx_txs(cr->right,lognm,len);
     }

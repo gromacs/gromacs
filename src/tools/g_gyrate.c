@@ -49,17 +49,20 @@
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "tpxio.h"
+#include "gstat.h"
 
 real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
-	       rvec gvec,rvec d,bool bQ,bool bRot)
+	       rvec gvec,rvec d,bool bQ,bool bRot,bool bMOI,matrix trans)
 {
   int    i,ii,m;
-  real   gyro,dx2,m0;
-  matrix trans;
+  real   gyro,dx2,m0,Itot;
   rvec   comp;
 
   if (bRot) {
     principal_comp(gnx,index,atom,x,trans,d);
+    Itot = norm(d);
+    if (bMOI)
+      return Itot;
     for(m=0; (m<DIM); m++)
       d[m]=sqrt(d[m]/tm);
 #ifdef DEBUG
@@ -83,7 +86,7 @@ real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
   
   for(m=0; (m<DIM); m++)
     gvec[m]=sqrt((gyro-comp[m])/tm);
-    
+  
   return sqrt(gyro/tm);
 }
 
@@ -94,72 +97,99 @@ int main(int argc,char *argv[])
     "and the radii of gyration about the x, y and z axes,"
     "as a function of time. The atoms are explicitly mass weighted."
   };
-  static bool bQ=FALSE,bRot=FALSE;
+  static bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
   t_pargs pa[] = {
     { "-q", FALSE, etBOOL, {&bQ},
       "Use absolute value of the charge of an atom as weighting factor instead of mass" },
     { "-p", FALSE, etBOOL, {&bRot},
-      "Calculate the radii of gyration about the principal axes." }
+      "Calculate the radii of gyration about the principal axes." },
+    { "-moi", FALSE, etBOOL, {&bMOI},
+      "Calculate the moments of inertia (defined by  the principal axes)." }
   };
   FILE       *out;
   int        status;
   t_topology top;
   rvec       *x,*x_s;
   rvec       xcm,gvec;
+  matrix     box,trans;
+  real       **moi_trans=NULL;
+  int        max_moi=0,delta_moi=100;
   rvec       d;         /* eigenvalues of inertia tensor */
-  matrix     box;
-  real       t,tm,gyro;
+  real       t,t0,tm,gyro;
   int        natoms;
   char       *grpname,title[256];
-  int        i,j,gnx;
+  int        i,j,m,gnx;
   atom_id    *index;
-  char       *leg[] = { "Rg", "RgX", "RgY", "RgZ" }; 
+  char       *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
+  char       *legI[] = { "Itot", "I1", "I2", "I3" }; 
 #define NLEG asize(leg) 
-  t_filenm fnm[] = { 
-    { efTRX, "-f", NULL, ffREAD }, 
-    { efTPS, NULL, NULL, ffREAD }, 
-    { efXVG, NULL, "gyrate", ffWRITE }, 
-    { efNDX, NULL, NULL, ffOPTRD } 
+  t_filenm fnm[] = {
+    { efTRX, "-f",   NULL,       ffREAD }, 
+    { efTPS, NULL,   NULL,       ffREAD }, 
+    { efXVG, NULL,   "gyrate",   ffWRITE }, 
+    { efXVG, "-acf", "moi-acf",  ffOPTWR }, 
+    { efNDX, NULL,   NULL,       ffOPTRD } 
   }; 
 #define NFILE asize(fnm) 
+  int     npargs;
+  t_pargs *ppa;
+  
+  CopyRight(stderr,argv[0]);
+  npargs = asize(pa);
+  ppa    = add_acf_pargs(&npargs,pa);
 
-  CopyRight(stderr,argv[0]); 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
-  clear_rvec(d); 
-
-  for(i=1; (i<argc); i++) { 
-    if (strcmp(argv[i],"-q") == 0) { 
-      bQ=TRUE; 
-      fprintf(stderr,"Will print radius normalised by charge\n"); 
-    } 
-    else if (strcmp(argv[i],"-r") == 0) { 
-      bRot=TRUE; 
-      fprintf(stderr,"Will rotate system along principal axes\n"); 
-    }
-  } 
+		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL); 
+  clear_rvec(d);
+  bRot = bRot || bMOI;
+  if (bRot) {
+    printf("Will rotate system along principal axes\n"); 
+    snew(moi_trans,DIM);
+  }
+  if (bMOI) {
+    printf("Will print moments of inertia\n");
+    bQ = FALSE;
+  }
+  if (bQ) 
+    printf("Will print radius normalised by charge\n"); 
+    
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,TRUE);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   snew(x_s,natoms); 
 
-  j=0; 
+  j  = 0; 
+  t0 = t;
   if (bQ) 
     out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
 		 "Radius of Charge","Time (ps)","Rg (nm)"); 
+  else if (bMOI)
+    out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
+		 "Moments of inertia","Time (ps)","I (a.m.u. nm\\S2\\N)"); 
   else 
     out=xvgropen(ftp2fn(efXVG,NFILE,fnm), 
 		 "Radius of gyration","Time (ps)","Rg (nm)"); 
-  if (bRot) 
-    fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
-  xvgr_legend(out,NLEG,leg);
+  if (bMOI) 
+    xvgr_legend(out,NLEG,legI);
+  else {
+    if (bRot)
+      fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
+    xvgr_legend(out,NLEG,leg);
+  }
   do {
     rm_pbc(&top.idef,natoms,box,x,x_s);
     tm=sub_xcm(x_s,gnx,index,top.atoms.atom,xcm,bQ);
-    gyro=calc_gyro(x_s,gnx,index,top.atoms.atom,tm,gvec,d,bQ,bRot);    
-
+    gyro=calc_gyro(x_s,gnx,index,top.atoms.atom,tm,gvec,d,bQ,bRot,bMOI,trans);
+    
     if (bRot) {
+      if (j >= max_moi) {
+	max_moi += delta_moi;
+	for(m=0; (m<DIM); m++)
+	  srenew(moi_trans[m],max_moi*DIM);
+      }
+      for(m=0; (m<DIM); m++)
+	copy_rvec(trans[m],moi_trans[m]+DIM*j);
       fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",
 	      t,gyro,d[XX],d[YY],d[ZZ]); }
     else {
@@ -171,6 +201,15 @@ int main(int argc,char *argv[])
   
   fclose(out);
 
+  if (bRot) {
+    int mode = eacVector;
+  
+    do_autocorr(opt2fn("-acf",NFILE,fnm),
+		"Moment of inertia vector ACF",
+		j,3,moi_trans,(t-t0)/j,mode,FALSE);
+    do_view(opt2fn("-acf",NFILE,fnm),"-nxy");
+  }
+  
   do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
   
   thanx(stderr);

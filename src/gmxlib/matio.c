@@ -39,6 +39,7 @@
 #include "fatal.h"
 #include "matio.h"
 #include "statutil.h"
+#include "assert.h"
 
 #define round(a) (int)(a+0.5)
 
@@ -553,6 +554,90 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
   }
 }
 
+static void pr_simple_cmap(FILE *out,real lo,real hi,int nlevel,t_rgb rlo,
+			   t_rgb rhi,int i0)
+{
+  int    i;
+  real   r,g,b,fac;
+
+  for(i=0; (i<nlevel); i++) {
+    fac = (i+1.0)/(nlevel);
+    r   = rlo.r+fac*(rhi.r-rlo.r);
+    g   = rlo.g+fac*(rhi.g-rlo.g);
+    b   = rlo.b+fac*(rhi.b-rlo.b);
+    fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
+	    mapper[(i+i0) % NMAP],
+	    (nlevel <= NMAP) ? ' ' : mapper[(i+i0)/NMAP],
+	    (unsigned int)round(255*r),
+	    (unsigned int)round(255*g),
+	    (unsigned int)round(255*b),
+	    lo+fac*(hi-lo));
+  }
+}
+     
+static void pr_discrete_cmap(FILE *out,int *nlevel,int i0)
+{
+  t_rgb  rgbd[16] = {
+    { 1.0, 1.0, 1.0 }, /* white */
+    { 1.0, 0.0, 0.0 }, /* red */
+    { 1.0, 1.0, 0.0 }, /* yellow */
+    { 0.0, 0.0, 1.0 }, /* blue */
+    { 0.0, 1.0, 0.0 }, /* green */
+    { 1.0, 0.0, 1.0 }, /* purple */
+    { 1.0, 0.4, 0.0 }, /* orange */
+    { 0.0, 1.0, 1.0 }, /* cyan */
+    { 1.0, 0.4, 0.4 }, /* pink */
+    { 1.0, 1.0, 0.0 }, /* yellow */
+    { 0.4, 0.4, 1.0 }, /* lightblue */
+    { 0.4, 1.0, 0.4 }, /* lightgreen */
+    { 1.0, 0.4, 1.0 }, /* lightpurple */
+    { 1.0, 0.7, 0.4 }, /* lightorange */
+    { 0.4, 1.0, 1.0 }, /* lightcyan */
+    { 0.0, 0.0, 0.0 }  /* black */
+  };
+  
+  int    i,n;
+  
+  *nlevel = min(16,*nlevel);
+  n = *nlevel;
+  for(i=0; (i<n); i++) {
+    fprintf(out,"\"%c%c c #%02X%02X%02X \" /* \"%3d\" */,\n",
+	    mapper[(i+i0) % NMAP],
+	    (n <= NMAP) ? ' ' : mapper[(i+i0)/NMAP],
+	    (unsigned int)round(255*rgbd[i].r),
+	    (unsigned int)round(255*rgbd[i].g),
+	    (unsigned int)round(255*rgbd[i].b),
+	    i);
+  }
+}
+     
+
+
+void write_xpm_map_split(FILE *out,int n_x,int n_y,
+			 int *nlevel_top,real lo_top,real hi_top,
+			 t_rgb rlo_top,t_rgb rhi_top,
+			 bool bDiscreteColor,
+			 int *nlevel_bot,real lo_bot,real hi_bot,
+			 t_rgb rlo_bot,t_rgb rhi_bot)
+{
+  int    i,ntot;
+  real   r,g,b,fac;
+
+  ntot = *nlevel_top + *nlevel_bot;
+  if (ntot > NMAP) 
+    fatal_error(0,"Warning, too many levels (%d) in matrix",ntot);
+  
+  fprintf(out,"static char *gromacs_xpm[] = {\n");
+  fprintf(out,"\"%d %d   %d %d\",\n",n_x,n_y,ntot,1);
+
+  if (bDiscreteColor) 
+    pr_discrete_cmap(out,nlevel_bot,0);
+  else
+    pr_simple_cmap(out,lo_bot,hi_bot,*nlevel_bot,rlo_bot,rhi_bot,0);
+    
+  pr_simple_cmap(out,lo_top,hi_top,*nlevel_top,rlo_top,rhi_top,*nlevel_bot);
+}
+
 
 void write_xpm_map(FILE *out,int n_x, int n_y,int *nlevels,real lo,real hi,
 		   t_rgb rlo,t_rgb rhi)
@@ -669,6 +754,43 @@ void write_xpm_data3(FILE *out,int n_x,int n_y,real **matrix,
   }
 }
 
+void write_xpm_data_split(FILE *out,int n_x,int n_y,real **matrix, 
+			  real lo_top,real hi_top,int nlevel_top,
+			  real lo_bot,real hi_bot,int nlevel_bot)
+{
+  int  i,j,c;
+  real invlev_top,invlev_bot;
+
+  invlev_top=(nlevel_top-1)/(hi_top-lo_top);
+  invlev_bot=(nlevel_bot-1)/(hi_bot-lo_bot);
+  
+  for(j=n_y-1; (j>=0); j--) {
+    if(j % (1+n_y/100)==0) 
+      fprintf(stderr,"%3d%%\b\b\b\b",(100*(n_y-j))/n_y);
+    fprintf(out,"\"");
+    for(i=0; (i<n_x); i++) {
+      if (i < j) {
+	c = nlevel_bot+round((matrix[i][j]-lo_top)*invlev_top);
+	if ((c < nlevel_bot) || (c >= nlevel_bot+nlevel_top)) 
+	  fatal_error(0,"Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f",i,j,c,nlevel_bot,nlevel_top,matrix[i][j]);
+      }
+      else if (i > j) {
+	c = round((matrix[i][j]-lo_bot)*invlev_bot);
+	if ((c < 0) || (c >= nlevel_bot+nlevel_bot))
+	  fatal_error(0,"Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f",i,j,c,nlevel_bot,nlevel_top,matrix[i][j]);
+      }
+      else
+	c = nlevel_bot;
+      
+      fprintf(out,"%c",mapper[c]);
+    }
+    if (j > 0)
+      fprintf(out,"\",\n");
+    else
+      fprintf(out,"\"\n");
+  }
+}
+
 void write_xpm_m(FILE *out, t_matrix m)
 {
   /* Writes a t_matrix struct to .xpm file */ 
@@ -728,6 +850,36 @@ void write_xpm3(FILE *out,
   write_xpm_axis(out,"x",n_x,axis_x);
   write_xpm_axis(out,"y",n_y,axis_y);
   write_xpm_data3(out,n_x,n_y,matrix,lo,mid,hi,*nlevels);
+}
+
+void write_xpm_split(FILE *out,
+		     char *title,char *legend,char *label_x,char *label_y,
+		     int n_x,int n_y,real axis_x[],real axis_y[],
+		     real *matrix[],
+		     real lo_top,real hi_top,int *nlevel_top,
+		     t_rgb rlo_top,t_rgb rhi_top,
+		     real lo_bot,real hi_bot,int *nlevel_bot,
+		     bool bDiscreteColor,
+		     t_rgb rlo_bot,t_rgb rhi_bot)
+{
+  /* See write_xpm.
+   * Writes a colormap varying as rlo -> rmid -> rhi.
+   */
+
+  if (hi_top <= lo_top) 
+    fatal_error(0,"hi_top (%g) <= lo_top (%g)",hi_top,lo_top);
+  if (hi_bot <= lo_bot) 
+    fatal_error(0,"hi_bot (%g) <= lo_bot (%g)",hi_bot,lo_bot);
+  if (bDiscreteColor && (*nlevel_bot >= 16)) 
+    fatal_error(0,"Can not plot more than 16 discrete colors");
+    
+  write_xpm_header(out,title,legend,label_x,label_y,FALSE);
+  write_xpm_map_split(out,n_x,n_y,nlevel_top,lo_top,hi_top,rlo_top,rhi_top,
+		      bDiscreteColor,nlevel_bot,lo_bot,hi_bot,rlo_bot,rhi_bot);
+  write_xpm_axis(out,"x",n_x,axis_x);
+  write_xpm_axis(out,"y",n_y,axis_y);
+  write_xpm_data_split(out,n_x,n_y,matrix,lo_top,hi_top,*nlevel_top,
+		       lo_bot,hi_bot,*nlevel_bot);
 }
 
 void write_xpm(FILE *out,
