@@ -194,7 +194,7 @@ void do_force(FILE *log,t_commrec *cr,
     if (parm->ir.epc != epcNO)
       calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
     
-    if (bNS) { 
+    if (bNS || parm->ir.eI==eiSteep || parm->ir.eI==eiCG) { 
       put_charge_groups_in_box(log,cg0,cg1,FALSE,
 			       parm->box,box_size,&(top->blocks[ebCGS]),x,
 			       fr->cg_cm);

@@ -139,18 +139,20 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Max number of steps */
   number_steps=parm->ir.nsteps;
 
-  if (bDummies) {
-    /* Construct dummy particles */
-    shift_self(graph,parm->box,x); 
+  if (fr->ePBC != epbcNONE)
+    /* Remove periodicity */
+    do_pbc_first(log,parm,box_size,fr,graph,x);
+  
+  if (bDummies)
     construct_dummies(log,x,&(nrnb[cr->pid]),1,NULL,&top->idef);
-    unshift_self(graph,parm->box,x);
-  }
 
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
+  /* do_force always puts the charge groups in the box and shifts again
+   * We do not unshift, so molecules are always whole in congrad.c
+   */
   do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->pid]),top,grps,
 	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr);
-  unshift_self(graph,parm->box,x);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
@@ -237,19 +239,17 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       }
       bNS = ((parm->ir.nstlist > 0) || (count==0));
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
-      if (bDummies) {
-	/* Construct dummy particles */
-	shift_self(graph,parm->box,xprime);
+      if (bDummies)
 	construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
-	unshift_self(graph,parm->box,xprime);
-      }
       
       /* Calc force & energy on new trial position  */
+      /* do_force always puts the charge groups in the box and shifts again
+       * We do not unshift, so molecules are always whole in congrad.c
+       */
       do_force(log,cr,parm,nsb,force_vir,
 	       count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr);
-      unshift_self(graph,parm->box,xprime);
       
       /* Spread the force on dummy particle to the other particles... */
       spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
@@ -312,19 +312,17 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       }
     }
 
-    if (bDummies) {
-      /* Construct dummy particles */
-      shift_self(graph,parm->box,xprime);
+    if (bDummies)
       construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
-      unshift_self(graph,parm->box,xprime);
-    }
     
     /* new energy, forces */
+    /* do_force always puts the charge groups in the box and shifts again
+     * We do not unshift, so molecules are always whole in congrad.c
+     */
     do_force(log,cr,parm,nsb,force_vir,
 	     count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr);
-    unshift_self(graph,parm->box,xprime);
     
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 

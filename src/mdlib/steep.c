@@ -176,8 +176,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   ir = &(parm->ir);
 
   clear_rvec(mu_tot);
-  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE); 
-  
+  calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
+   
   vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0; 
   
   /* Print to log file  */
@@ -217,6 +217,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   if (bConstrain)
     snew(xcf,nsb->natoms); 
 
+  if (fr->ePBC != epbcNONE)
+    /* Remove periodicity */
+    do_pbc_first(log,parm,box_size,fr,graph,x);
+
   /* Copy coord vectors to our temp array  */
   for(i=0; (i<nsb->natoms); i++) { 
     copy_rvec(x[i],pos[Min][i]); 
@@ -254,7 +258,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   bAbort=FALSE;
   while( !bDone && !bAbort ) {
     bAbort = (nsteps > 0) && (count==nsteps);
-    
+
     /* set new coordinates, except for first step */
     if (count>0)
       for(i=start; i<end; i++) {
@@ -266,9 +270,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	    pos[TRY][i][m] = pos[Min][i][m] + stepsize * force[Min][i][m]; 
       }
 
-    if (bConstrain || bDummies)
-      shift_self(graph,parm->box,pos[TRY]);
-    
     if (bConstrain) {
       dvdlambda=0;
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
@@ -276,18 +277,16 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     }
 
     if (bDummies)
-      /* Construct dummy particles */
       construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
 
-    if (bConstrain || bDummies) 
-      unshift_self(graph,parm->box,pos[TRY]);
-    
     /* Calc force & energy on new positions  */
+    /* do_force always puts the charge groups in the box and shifts again
+     * We do not unshift, so molecules are always whole in steep.c
+     */
     do_force(log,cr,parm,nsb,force_vir, 
  	     count,&(nrnb[cr->pid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
  	     lambda,graph,bNS,FALSE,fr); 
-    unshift_self(graph,parm->box,pos[TRY]);
 
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);
@@ -314,7 +313,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	for(m=0;(m<DIM);m++) 
 	  force[TRY][i][m] = (xcf[i][m] - pos[TRY][i][m])/constepsize;
     }
-    
+
     /* Clear stuff again  */
     clear_mat(force_vir); 
     clear_mat(shake_vir); 
