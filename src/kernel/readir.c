@@ -626,11 +626,12 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   sfree(cbuf);
 }
 
-static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts)
+static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
+		      int nstcomm)
 {
   int     ai,aj,i,g,gi,gj;
   t_iatom *ia;
-  real    *ndf;
+  real    nrdf_tot,fac;
 
   /* Calculate nrdf. 
    * First calc 3xnr-atoms for each group
@@ -639,17 +640,15 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts)
    * one degree of freedom and finally division by two.
    *
    * Only atoms and nuclei contribute to the degrees of freedom...
-   *
-   * Subtract 3 for each group, since nrdf is only used for temperature
-   * calculation and the center of mass motion of each group is
-   * subtracted from the kinetic energy and is not temperature coupled.
    */
-  snew(ndf,atoms->grps[egcTC].nr);
+  for(i=0; (i<atoms->grps[egcTC].nr); i++)
+    opts->nrdf[i] = 0;
+
   for(i=0; (i<atoms->nr); i++) {
     if ((atoms->atom[i].ptype == eptAtom) ||
 	(atoms->atom[i].ptype == eptNucleus)) {
       g=atoms->atom[i].grpnr[egcTC];
-      ndf[g]+=3;
+      opts->nrdf[g]+=3;
     }
   }
   ia=idef->il[F_SHAKE].iatoms;
@@ -658,8 +657,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts)
     aj=ia[2];
     gi=atoms->atom[ai].grpnr[egcTC];
     gj=atoms->atom[aj].grpnr[egcTC];
-    ndf[gi]-=0.5;
-    ndf[gj]-=0.5;
+    opts->nrdf[gi]-=0.5;
+    opts->nrdf[gj]-=0.5;
     ia+=3;
     i+=3;
   }
@@ -667,14 +666,26 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts)
   for(i=0; (i<idef->il[F_SETTLE].nr); ) {
     ai=ia[1];
     gi=atoms->atom[ai].grpnr[egcTC];
-    ndf[gi]-=3;
+    opts->nrdf[gi]-=3;
     ia+=2;
     i+=2;
   }
-  for(i=0; (i<atoms->grps[egcTC].nr); i++)
-    opts->nrdf[i]=ndf[i]-3;
-    
-  sfree(ndf);
+
+  if (nstcomm != 0) {
+    /* Subtract 3 from the total number of degrees of freedom
+     * when com translation is removed and 6 when rotation is
+     * removed as well.
+     */
+    nrdf_tot = 0;
+    for(i=0; (i<atoms->grps[egcTC].nr); i++)
+      nrdf_tot += opts->nrdf[i];
+    if (nstcomm > 0)
+      fac = (nrdf_tot-3)/nrdf_tot;
+    else
+      fac = (nrdf_tot-6)/nrdf_tot;
+    for(i=0; (i<atoms->grps[egcTC].nr); i++)
+      opts->nrdf[i] *= fac;
+  }
 }
 
 static void decode_cos(char *s,t_cosines *cosine)
@@ -784,7 +795,7 @@ void do_index(char *ndx,
 	fatal_error(0,"ref_t for group %d negative",i);
     }
   }
-  calc_nrdf(atoms,idef,&(ir->opts));
+  calc_nrdf(atoms,idef,&(ir->opts),ir->nstcomm);
   
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);
