@@ -344,6 +344,10 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
  * of fix is set. 
  */
 
+  extern real evaluate_integral(int n,real dx,real y[],real dy[],
+				real aver_start,real *stddev);
+  /* Integrate data in y, and, if given, use dy as weighting */
+
 extern real print_and_integrate(FILE *fp,int n,real dt,
 				real c[],real *fit,int nskip);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
