@@ -746,7 +746,7 @@ fi
 
 if test "$enable_shared" = "yes"; then
   echo ""
-  echo "* To save space, you might want to use shared libraries. 
+  echo "* To save space, you might want to use shared libraries."
   echo "  This should work on almost any platform, but since there are"
   echo "  a few exceptions (MPI builds on aix) it is not used by default."
   echo "  Turn it on with --enable-shared."
