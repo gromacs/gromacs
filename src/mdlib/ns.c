@@ -704,13 +704,18 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       
       /* Create new i_atom for each energy group */
       if (!bCoulOnly && !bVDWOnly) 
-	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,NULL);
+	new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,
+		     bMNO ? &(fr->mno_index[icg*3]) : NULL);
       if (!bCoulOnly)   
-	new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid,NULL);
+	new_i_nblist(vdw,bLR ? F_LR : F_SR,i_atom,shift,gid,
+		     bMNO ? &(fr->mno_index[icg*3]) : NULL);
       if (!bVDWOnly) 
-	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,NULL);
+	new_i_nblist(coul,bLR ? F_LR : F_SR,i_atom,shift,gid,
+		     bMNO ? &(fr->mno_index[icg*3]) : NULL);
+      new_i_nblist(vdw_free,F_DVDL,i_atom,shift,gid,NULL);
+      new_i_nblist(coul_free,F_DVDL,i_atom,shift,gid,NULL);
       new_i_nblist(vdwc_free,F_DVDL,i_atom,shift,gid,NULL);
-      
+
       if (!(bVDWOnly || qi==0) || !(bCoulOnly || !bHaveLJ[type[i_atom]])) {
 	/* Loop over the j charge groups */
 	for(j=0; (j<nj); j++) {
