@@ -337,7 +337,7 @@ static void set_extension(char *buf,int ftp)
 
 static void set_grpfnm(t_filenm *fnm,char *name)
 {
-  char buf[256];
+  char buf[256],buf2[256];
   int  i,type;
   bool bValidExt;
   int  nopts;
@@ -350,33 +350,33 @@ static void set_grpfnm(t_filenm *fnm,char *name)
 
   bValidExt = FALSE;
   if (name) {
+    strcpy(buf,name);
     /* First check whether we have a valid filename already */
     type = fn2ftp(name);
     for(i=0; (i<nopts) && !bValidExt; i++)
-      if (type == ftps[i]) {
-	strcpy(buf,name);
+      if (type == ftps[i])
 	bValidExt = TRUE;
-      }
-    
-    if (!bValidExt && (fnm->flag & ffREAD)) { 
-      /* for input-files only: search for filenames in the directory */ 
-      for(i=0; (i<nopts) && !bValidExt; i++) {
-	type = ftps[i];
-	strcpy(buf,name);
-	set_extension(buf,type);
-	if (fexist(buf))
-	  bValidExt = TRUE;
-      }
-    }
-    if (!bValidExt)
-      strcpy(buf,name);
   } else
     /* No name given, set the default name */
     strcpy(buf,ftp2defnm(fnm->ftp));
+  
+  if (!bValidExt && (fnm->flag & ffREAD)) { 
+    /* for input-files only: search for filenames in the directory */ 
+    for(i=0; (i<nopts) && !bValidExt; i++) {
+      type = ftps[i];
+      strcpy(buf2,buf);
+      set_extension(buf2,type);
+      if (fexist(buf2)) {
+	bValidExt = TRUE;
+	strcpy(buf,buf2);
+      }
+    }
+  }
 
   if (!bValidExt)
     /* Use the first extension type */
     set_extension(buf,ftps[0]);
+
   fnm->fn = strdup(buf);
 }
 
