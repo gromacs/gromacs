@@ -17,7 +17,7 @@ bool newres(int i,t_atom atom[])
 
 t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
 		     int ngrow,bool bExplicit,bool bChiral,bool bPep,
-		     bool bDump,real lowdev)
+		     bool bDump,real lowdev,bool bLowerOnly)
 {
   t_correct *c;
   
@@ -34,6 +34,7 @@ t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
   c->maxdist    = 0;
   c->ndist      = 0;
   c->ngrow      = ngrow;
+  c->bLowerOnly = bLowerOnly;
   
   return c;
 }

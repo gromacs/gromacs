@@ -226,7 +226,8 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),*mdatoms,parm->box,FALSE);
+		&(top->blocks[ebCGS]),&(top->idef),*mdatoms,
+		nsb,parm->box,FALSE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)

@@ -174,8 +174,9 @@ char *gmx_strdup(const char *src)
 {
   char *dest;
 
-  if ((dest=(char *)malloc((size_t)(strlen(src)+1))) != NULL)
-    strcpy(dest,src);
+  snew(dest,strlen(src)+1);
+  strcpy(dest,src);
+  
   return dest;
 }
 
