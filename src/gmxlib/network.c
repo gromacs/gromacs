@@ -178,6 +178,18 @@ void gmx_rxs(int nodeid,void *buf,int bufsize)
 #endif
 }
 
+bool gmx_mpi_initialized(void)
+{
+  int n;
+#ifndef GMX_MPI
+  return 0;
+#else
+  MPI_Initialized(&n);
+  
+  return n;
+#endif
+}
+
 int gmx_setup(int *argc,char **argv,int *nnodes)
 {
 #ifndef GMX_MPI

@@ -639,7 +639,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   if (bDebug) {
     char buf[256];
 
-    if (gmx_node_num() > 1)
+    if (gmx_mpi_initialized())
       sprintf(buf,"%s%d.log",ShortProgram(),gmx_node_id());
     else
       sprintf(buf,"%s.log",ShortProgram());
