@@ -112,28 +112,29 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   Vdipole = 0;
   Vcharge = 0;
 
-  if (epsilon_surface == 0)
-    dipole_coeff=0;
-  else { 
-    switch (ewald_geometry) {
-    case eewg3D:
-      dipole_coeff = 2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
-      break;
-    case eewg3DC:
-      dipole_coeff = 2*M_PI*ONE_4PI_EPS0/vol;
-      break;
-    default:
-      fatal_error(0,"Unsupported Ewald geometry");
-      dipole_coeff=0;
-      break;
-    }
-  }
   /* Note that we have to transform back to gromacs units, since
    * mu_tot contains the dipole in debye units (for output).
    */
   for(i=0; (i<DIM); i++) {
     mutot[i]   = mu_tot[i]*DEBYE2ENM;
-    dipcorr[i] = 2.0*dipole_coeff*mutot[i];
+    dipcorr[i] = 0;
+  }
+  dipole_coeff=0;
+  switch (ewald_geometry) {
+  case eewg3D:
+    if (epsilon_surface != 0) {
+      dipole_coeff = 2*M_PI*ONE_4PI_EPS0/((2*epsilon_surface+1)*vol);
+      for(i=0; (i<DIM); i++)
+	dipcorr[i] = 2*dipole_coeff*mutot[i];
+    }
+    break;
+  case eewg3DC:
+    dipole_coeff = 2*M_PI*ONE_4PI_EPS0/vol;
+    dipcorr[ZZ]  = 2*dipole_coeff*mutot[i];
+    break;
+  default:
+    fatal_error(0,"Unsupported Ewald geometry");
+    break;
   }
   if (debug) {
     fprintf(debug,"dipcorr = %8.3f  %8.3f  %8.3f\n",
@@ -233,14 +234,9 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     }
     /* Dipole correction on force */
     if (dipole_coeff != 0) {
-      if (ewald_geometry == eewg3D) {
-	for(j=0; (j<DIM); j++)
-	  f[i][j] -= dipcorr[j]*charge[i];
-      } 
-      else if (ewald_geometry == eewg3DC) {
-	f[i][ZZ] -= dipcorr[ZZ]*charge[i];
-      }
-    }
+      for(j=0; (j<DIM); j++)
+	f[i][j] -= dipcorr[j]*charge[i];
+    } 
   }
   
   /* Global corrections only on master process */
