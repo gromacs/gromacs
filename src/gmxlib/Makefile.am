@@ -71,6 +71,9 @@ libgmxXXX_SUFFIX_XXX_a_DEPENDENCIES = \
 # The inner loops
 innerf.f:	mkinl 
 		./mkinl	fortran	
+		cp $(srcdir)/finvsqrtdata.inc .
+		cp $(srcdir)/frecipdata.inc .
+
 innerc.c:	mkinl
 		./mkinl c
 
