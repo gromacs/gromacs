@@ -1,0 +1,62 @@
+This directory contains Altivec implementations for some
+of the most important Gromacs nonbonded functions.
+
+Altivec is really a special set of machine code instructions to
+work on several (4) floating-point numbers in a single register,
+but Apple, Motorola & IBM provide a set of non-ANSI C language
+wrappers for the instructions. This way we can define special
+variables containing 4 floating point numbers and let the compiler
+take care of saving/restoring registers. 
+
+That's the theory - in practice the compiler isn't always very good
+at saving/restoring things efficiently, so for some of the most 
+important loops I have reverted back to only using ~30 variables
+and placing them all in registers. Unfortunately this means that
+the names (e.g v2) don't have any special meaning, and they are reused.
+
+Just as for SSE, there are special sections to take care of the
+remaining odd elements when neighborlists are not a multiple of 4.
+When changing this code you might have to be careful and zero the
+unused elements; if the first three positions are valid but the 4th
+NaN (not a number), the energy would be NaN if we add them!
+
+
+The following loops have been implemented in Altivec:
+(There are also non-force versions in each file)
+
+nb010_altivec (No Coul, VdW=Lennard-Jones, no water optimization)
+nb030_altivec (No Coul, VdW=Table, no water optimization)
+nb100_altivec (Coul=Normal, No VdW, no water optimization)
+nb101_altivec (Coul=Normal, No VdW, water=SPC/TIP3P-other atom)
+nb102_altivec (Coul=Normal, No VdW, water=SPC/TIP3P-SPC/TIP3P)
+nb103_altivec (Coul=Normal, No VdW, water=TIP4P-other atom)
+nb104_altivec (Coul=Normal, No VdW, water=TIP4P-TIP4P)
+nb111_altivec (Coul=Normal, VdW=L-J, water=SPC/TIP3P-other atom)
+nb112_altivec (Coul=Normal, VdW=L-J, water=SPC/TIP3P-SPC/TIP3P)
+nb113_altivec (Coul=Normal, VdW=L-J, water=TIP4P-other atom)
+nb114_altivec (Coul=Normal, VdW=L-J, water=TIP4P-TIP4P)
+nb201_altivec (Coul=RF, No VdW, water=SPC/TIP3P-other atom)
+nb202_altivec (Coul=RF, No VdW, water=SPC/TIP3P-SPC/TIP3P)
+nb203_altivec (Coul=RF, No VdW, water=TIP4P-other atom)
+nb204_altivec (Coul=RF, No VdW, water=TIP4P-TIP4P)
+nb211_altivec (Coul=RF, VdW=L-J, water=SPC/TIP3P-other atom)
+nb212_altivec (Coul=RF, VdW=L-J, water=SPC/TIP3P-SPC/TIP3P)
+nb213_altivec (Coul=RF, VdW=L-J, water=TIP4P-other atom)
+nb214_altivec (Coul=RF, VdW=L-J, water=TIP4P-TIP4P)
+nb301_altivec (Coul=Table, No VdW, water=SPC/TIP3P-other atom)
+nb302_altivec (Coul=Table, No VdW, water=SPC/TIP3P-SPC/TIP3P)
+nb303_altivec (Coul=Table, No VdW, water=TIP4P-other atom)
+nb304_altivec (Coul=Table, No VdW, water=TIP4P-TIP4P)
+nb311_altivec (Coul=Table, VdW=L-J, water=SPC/TIP3P-other atom)
+nb312_altivec (Coul=Table, VdW=L-J, water=SPC/TIP3P-SPC/TIP3P)
+nb313_altivec (Coul=Table, VdW=L-J, water=TIP4P-other atom)
+nb314_altivec (Coul=Table, VdW=L-J, water=TIP4P-TIP4P)
+nb331_altivec (Coul=Table, VdW=Table, water=SPC/TIP3P-other atom)
+nb332_altivec (Coul=Table, VdW=Table, water=SPC/TIP3P-SPC/TIP3P)
+nb333_altivec (Coul=Table, VdW=Table, water=TIP4P-other atom)
+nb334_altivec (Coul=Table, VdW=Table, water=TIP4P-TIP4P)
+nb400_altivec (Coul=GB, No VdW, no water optimization)
+nb410_altivec (Coul=GB, VdW=L-J, no water optimization)
+nb430_altivec (Coul=GB, VdW=Table, no water optimization)
+
+
