@@ -78,7 +78,7 @@ int main(int argc,char *argv[])
     { efTPX, NULL, NULL,      ffREAD },
     { efTRN, "-o", NULL,      ffWRITE },
     { efXTC, "-x", NULL,      ffOPTWR },
-    { efGRO, "-c", "confout", ffWRITE },
+    { efSTO, "-c", "confout", ffWRITE },
     { efENX, "-e", "ener",    ffWRITE },
     { efLOG, "-g", "md",      ffWRITE },
     { efTRX, "-rerun", "rerun", ffOPTRD },

@@ -97,7 +97,7 @@ void finish_run(FILE *log,t_commrec *cr,
       pr_load(log,nsb->nprocs,nrnb);
     
     fprintf(stderr,"writing final coordinates...\n");
-    write_conf(confout,*top->name, &(top->atoms),x,v,parm->box);
+    write_sto_conf(confout,*top->name, &(top->atoms),x,v,parm->box);
   }
 }
 
@@ -241,7 +241,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     
     /* Finish up, write some stuff */
     { 
-      char *gro=ftp2fn(efGRO,nfile,fnm);
+      char *gro=ftp2fn(efSTO,nfile,fnm);
       
       /* if rerunMD, don't write last frame again */
       finish_run(stdlog,cr,gro,nsb,top,parm,
