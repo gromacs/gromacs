@@ -119,16 +119,19 @@ The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.
 <dd> An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 
 (<b><A HREF="#ld">bd_fric</A></b> [amu ps<sup>-1</sup>])
-plus random thermal noise (<b><A HREF="#ld">bd_temp</A></b> [K]). 
+plus random thermal noise (<b><A HREF="#ld">bd_temp</A></b> [K]).
+When <b><A HREF="#ld">bd_fric</A></b>=0, the friction coefficient for each
+particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>, as for the
+integrator <tt>sd</tt>.
 The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.
 </dl>
 
 <dt><h4>tinit: </b>(0) [ps]</h4>
-<dd>starting time for your run (only makes sense for integrators <b>md</b>,
-<b>sd</b> and <b>bd</b>)
+<dd>starting time for your run (only makes sense for integrators <tt>md</tt>,
+<tt>sd</tt> and <tt>bd</tt>)
 <dt><h4>dt: </b>(0.001) [ps]</h4>
-<dd>time step for integration (only makes sense for integrators <b>md</b>,
-<b>sd</b> and <b>bd</b>)
+<dd>time step for integration (only makes sense for integrators <tt>md</tt>,
+<tt>sd</tt> and <tt>bd</tt>)
 <dt><h4>nsteps: </b>(1)</h4>
 <dd>maximum number of steps to integrate
 <dt><h4>nstcomm: </b>(1) [steps]</h4>
@@ -146,13 +149,16 @@ rotation removal can only be done on the whole system
 
 <dl>
 <dt><h4>bd_temp: </b>(300) [K]</h4>
-<dd>temperature in Brownian dynamics run (controls thermal noise level)
+<dd>temperature in Brownian dynamics run (controls thermal noise level).
+When <b>bd_fric</b>=0, <b><A HREF="#tc">ref_t</A></b> is used instead.
 <dt><h4>bd_fric: </b>(0) [amu ps<sup>-1</sup>]</h4>
-<dd>Brownian dynamics friction coefficient
+<dd>Brownian dynamics friction coefficient.
+When <b>bd_fric</b>=0, the friction coefficient for each
+particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.
 <dt><h4>ld_seed: </b>(1993) [integer]</h4>
 <dd>used to initialize random generator for thermal noise
-for stochastic and Brownian dynamics,
-when <b>ld_seed</b> is set to -1, the seed is calculated as
+for stochastic and Brownian dynamics.
+When <b>ld_seed</b> is set to -1, the seed is calculated as
 <tt>(time() + getpid()) % 1000000</tt>
 </dl>
 
