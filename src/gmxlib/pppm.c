@@ -45,24 +45,12 @@ static char *SRCID_pppm_c = "$Id$";
 #include "pppm.h"
 #include "lrutil.h"
 #include "mdrun.h"
-#include "nr.h"
-
-#ifdef USEF77
-DECLAREF77(doconv) (int *n,real grid[],real gk[]);
-#endif
-
-#define INDEX(i,j,k,la1,la2)  ((k*la1*la2)+(j*la1)+i)
+#include "fftgrid.h"
 
 #define llim  (-1)
 #define ulim   (1)
 #define llim2 (-3)
 #define ulim2  (3)
-
-void rlft3f_(real *a,real *b,int *c,int *d,int *e,int *f)
-{
-  fprintf(stderr,"Just called rlft3f_!\n");
-  exit(1);
-}
 
 static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
 {
@@ -76,7 +64,10 @@ static void calc_weights(rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
   const  real half=0.5;
   tensor wxyz;
   real   abc,ttt,bhh,fact;
-  int    i,j,k,l,m;
+#ifdef DEBUG
+  real   wtot;
+#endif
+  int    j,k,m;
   real   Wx,Wy,Wzx,Wzy,Wzz;
   
   fact = 0.125;
@@ -112,6 +103,17 @@ static void calc_weights(rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
       WXYZ[m+2] = Wy*Wzz;
     }
   }
+#ifdef DEBUG
+  wtot = 0;
+  for(j=0; (j<27); j++)
+    wtot+=WXYZ[j];
+  fprintf(stderr,"wtot = %g\n",wtot);
+#endif
+#ifdef HACK
+  for(j=0; (j<27); j++)
+    WXYZ[j] = 0;
+  WXYZ[13] = 1.0;
+#endif
 }
 	
 static void calc_nxyz(int nx,int ny,int nz,
@@ -132,20 +134,21 @@ static void calc_nxyz(int nx,int ny,int nz,
 	
 static void spread_q(FILE *log,bool bVerbose,
 		     int natoms,rvec x[],real charge[],rvec box,
-		     int nx,int ny,int nz,int la1,int la2,
-		     real ***grid,t_nrnb *nrnb)
+		     t_fftgrid *grid,t_nrnb *nrnb)
 {
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;
-  int    i,j,k,m,indX,indY;
   rvec   invh;
-  real   qi,rix,riy,riz;
+  real   qi,qt,qwt;
   real   WXYZ[27];
-  real   *gptr;
   ivec   ixyz;
-  int    iX,iY,iZ,index;
+  int    i,iX,iY,iZ,index;
   int    jx,jy,jz,jcx,jcy,jcz;
   int    nxyz;
+  int    nx,ny,nz,la1,la2,la12;
+  t_fft_tp *ptr;
+  
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
   
   calc_invh(box,nx,ny,nz,invh);
 
@@ -159,7 +162,6 @@ static void spread_q(FILE *log,bool bVerbose,
     bFirst = FALSE;
   }
 
-  gptr=grid[0][0];
   for(i=0; (i<natoms); i++) {
     qi=charge[i];
 
@@ -174,28 +176,30 @@ static void spread_q(FILE *log,bool bVerbose,
       iX  = ixyz[XX] + nx;
       iY  = ixyz[YY] + ny;
       iZ  = ixyz[ZZ] + nz;
-      
+
+      qt=0;
       nxyz = 0;
       for(jx=-1; (jx<=1); jx++) {
 	jcx = nnx[iX + jx];
 	for(jy=-1; (jy<=1); jy++) {
 	  jcy = nny[iY + jy];
 	  for(jz=-1; (jz<=1); jz++,nxyz++) {
-	    jcz = nnz[iZ + jz];
-#ifdef USE_SGI_FFT
-	    index=INDEX(jcx,jcy,jcz,la1,la2);
-	    gptr[index] += qi*WXYZ[nxyz];
+	    jcz   = nnz[iZ + jz];
+	    index = INDEX(jcx,jcy,jcz);
+	    qwt   = qi*WXYZ[nxyz];
+	    GR_INC(ptr[index],qwt);
 #ifdef DEBUG
+	    qt   += qwt;
 	    if (bVerbose)
-	      fprintf(log,"spread %4d %2d %2d %2d  %10.3e\n",
-		      index,jcx,jcy,jcz,grid[0][0][index]);
-#endif
-#else
-	    grid[jcx][jcy][jcz] += qi*WXYZ[nxyz];
+	      fprintf(log,"spread %4d %2d %2d %2d  %10.3e, weight=%10.3e\n",
+		      index,jcx,jcy,jcz,GR_VALUE(ptr[index]),WXYZ[nxyz]);
 #endif
 	  }
 	}
       }
+#ifdef DEBUG
+      fprintf(log,"q[%3d] = %6.3f, qwt = %6.3f\n",i,qi,qt);
+#endif
     }
   }
   inc_nrnb(nrnb,eNR_SPREADQ,9*natoms);
@@ -203,20 +207,19 @@ static void spread_q(FILE *log,bool bVerbose,
 }
 
 real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
-		  int la1,int la2,
+		  int la1,int la2,int la12,
 		  real c1x,real c1y,real c1z,real c2x,real c2y,real c2z,
-		  real qi,rvec f,real ***grid)
+		  real qi,rvec f,t_fft_tp ptr[])
 {
-  real *gptr;
   real pi,fX,fY,fZ,weight;
   int  jxyz,m,jcx,jcy,jcz;
   int  jcx0,jcy0,jcz0;
+  int  h_2,h_1,h1,h2;
   
-  pi  = 0.0;
-  fX  = 0.0;
-  fY  = 0.0;
-  fZ  = 0.0;
-  gptr = grid[0][0];
+  pi = 0.0;
+  fX = 0.0;
+  fY = 0.0;
+  fZ = 0.0;
   
   /* Now loop over 27 surrounding vectors */      
   for(jxyz=m=0; (jxyz < 27); jxyz++,m+=3) {
@@ -230,40 +233,24 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
     jcz0   = izw[jcz];
 
     /* Electrostatic Potential ! */
-#ifdef USE_SGI_FFT
-    pi += weight * gptr[INDEX(jcx0,jcy0,jcz0,la1,la2)];
-#else
-    pi += weight * grid[jcx0][jcy0][jcz0];
-#endif
+    pi += weight * GR_VALUE(ptr[INDEX(jcx0,jcy0,jcz0)]);
 
     /* Forces */
-#ifdef USE_SGI_FFT
-    fX += weight * ((c1x*( gptr[INDEX(ixw[jcx-1],jcy0,jcz0,la1,la2)] -
-			   gptr[INDEX(ixw[jcx+1],jcy0,jcz0,la1,la2)] ))  +
-		    (c2x*( gptr[INDEX(ixw[jcx-2],jcy0,jcz0,la1,la2)] -
-			   gptr[INDEX(ixw[jcx+2],jcy0,jcz0,la1,la2)] )));
-    fY += weight * ((c1y*( gptr[INDEX(jcx0,iyw[jcy-1],jcz0,la1,la2)] -
-			   gptr[INDEX(jcx0,iyw[jcy+1],jcz0,la1,la2)] ))  +
-		    (c2y*( gptr[INDEX(jcx0,iyw[jcy-2],jcz0,la1,la2)] -
-			   gptr[INDEX(jcx0,iyw[jcy+2],jcz0,la1,la2)] )));
-    fZ += weight * ((c1z*( gptr[INDEX(jcx0,jcy0,izw[jcz-1],la1,la2)] -
-			   gptr[INDEX(jcx0,jcy0,izw[jcz+1],la1,la2)] ))  +
-		    (c2z*( gptr[INDEX(jcx0,jcy0,izw[jcz-2],la1,la2)] -
-			   gptr[INDEX(jcx0,jcy0,izw[jcz+2],la1,la2)] )));
-#else
-    fX += weight * ((c1x*( grid[ixw[jcx-1]][jcy0][jcz0] -
-			   grid[ixw[jcx+1]][jcy0][jcz0] ))  +
-		    (c2x*( grid[ixw[jcx-2]][jcy0][jcz0] -
-			   grid[ixw[jcx+2]][jcy0][jcz0] )));
-    fY += weight * ((c1y*( grid[jcx0][iyw[jcy-1]][jcz0] -
-			   grid[jcx0][iyw[jcy+1]][jcz0] ))  +
-		    (c2y*( grid[jcx0][iyw[jcy-2]][jcz0] -
-			   grid[jcx0][iyw[jcy+2]][jcz0] )));
-    fZ += weight * ((c1z*( grid[jcx0][jcy0][izw[jcz-1]] -
-			   grid[jcx0][jcy0][izw[jcz+1]] ))  +
-		    (c2z*( grid[jcx0][jcy0][izw[jcz-2]] -
-			   grid[jcx0][jcy0][izw[jcz+2]] )));
-#endif
+    h_2 = INDEX(ixw[jcx-2],jcy0,jcz0);
+    h_1 = INDEX(ixw[jcx-1],jcy0,jcz0);
+    h1  = INDEX(ixw[jcx+1],jcy0,jcz0);
+    h2  = INDEX(ixw[jcx+2],jcy0,jcz0);
+    fX += weight * (c1x*(GR_VALUE(ptr[h_1]) - GR_VALUE(ptr[h1]) ) +
+		    c2x*(GR_VALUE(ptr[h_2]) - GR_VALUE(ptr[h2]) ));
+    
+    fY += weight * ((c1y*(GR_VALUE(ptr[INDEX(jcx0,iyw[jcy-1],jcz0)]) -
+			  GR_VALUE(ptr[INDEX(jcx0,iyw[jcy+1],jcz0)]) ))  +
+		    (c2y*(GR_VALUE(ptr[INDEX(jcx0,iyw[jcy-2],jcz0)]) -
+			  GR_VALUE(ptr[INDEX(jcx0,iyw[jcy+2],jcz0)]) )));
+    fZ += weight * ((c1z*(GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz-1])]) -
+			  GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz+1])]) ))  +
+		    (c2z*(GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz-2])]) -
+			  GR_VALUE(ptr[INDEX(jcx0,jcy0,izw[jcz+2])]) )));
   }
   f[XX] += qi*fX;
   f[YY] += qi*fY;
@@ -274,9 +261,7 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
 
 static real gather_f(FILE *log,bool bVerbose,
 		     int natoms,rvec x[],rvec f[],real charge[],rvec box,
-		     int nx,int ny,int nz,int la1,int la2,real pot[],
-		     real ***grid,real beta,
-		     t_nrnb *nrnb)
+		     real pot[],t_fftgrid *grid,rvec beta,t_nrnb *nrnb)
 {
   static bool bFirst=TRUE;
   static int  *nnx,*nny,*nnz;
@@ -293,15 +278,18 @@ static real gather_f(FILE *log,bool bVerbose,
   int    jcx_2,jcx_1,jcx0,jcx1,jcx2;
   int    jcy_2,jcy_1,jcy0,jcy1,jcy2;
   int    jcz_2,jcz_1,jcz0,jcz1,jcz2;
-  int    jxyz;
-    
+  int    jxyz,nx,ny,nz,la1,la2,la12;
+  t_fft_tp *ptr;
+  
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
+  
   calc_invh(box,nx,ny,nz,invh);
   
   fact = 0.125;
   
   for(m=0; (m<DIM); m++) {
-    c1[m] = (beta/2.0)*invh[m];
-    c2[m] = ((1.0-beta)/4.0)*invh[m];
+    c1[m] = (beta[m]/2.0)*invh[m];
+    c2[m] = ((1.0-beta[m])/4.0)*invh[m];
   }
   c1x = c1[XX];
   c1y = c1[YY];
@@ -313,7 +301,7 @@ static real gather_f(FILE *log,bool bVerbose,
   if (bFirst) {
     fprintf(log,"Gathering Forces using Triangle Shaped on %dx%dx%d grid\n",
 	    nx,ny,nz);
-    fprintf(log,"beta = %10g\n",beta);
+    fprintf(log,"beta = %10g,%10g,%10g\n",beta[XX],beta[YY],beta[ZZ]);
     fprintf(log,"c1   = %10g,%10g,%10g\n",c1[XX],c1[YY],c1[ZZ]);
     fprintf(log,"c2   = %10g,%10g,%10g\n",c2[XX],c2[YY],c2[ZZ]);
     fprintf(log,"invh = %10g,%10g,%10g\n",invh[XX],invh[YY],invh[ZZ]);
@@ -346,9 +334,9 @@ static real gather_f(FILE *log,bool bVerbose,
     }
     
     qi      = charge[i];
-    pi      = gather_inner(JCXYZ,WXYZ,ixw,iyw,izw,la1,la2,
+    pi      = gather_inner(JCXYZ,WXYZ,ixw,iyw,izw,la1,la2,la12,
 			   c1x,c1y,c1z,c2x,c2y,c2z,
-			   qi,f[i],grid);
+			   qi,f[i],ptr);
     
     energy += pi*qi;
     pot[i]  = pi;
@@ -360,127 +348,86 @@ static real gather_f(FILE *log,bool bVerbose,
   return energy*0.5;
 }
 
-void convolution(FILE *fp,bool bVerbose,
-		 int nx,int ny,int nz,int la1,int la2,
-		 real ***grid,real ***ghat)
+void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat)
 {
-  int  i,i0,i1,j,k,index;
-  real gk,fac;
+  int      i,i0,i1,j,k,index;
+  real     gk;
+  int      nx,ny,nz,la1,la2,la12;
+  t_fft_tp *ptr;
+  int      *nTest;
   
-  fac=1.0;
-  for(k=0; (k<nz); k++) {
-    for(j=0; (j<ny); j++) {
-      for(i=0; (i<=nx/2); i++) {
-	gk    = fac*ghat[i][j][k];
-	index = INDEX(2*i,j,k,la1,la2);
-	grid[0][0][index] *= gk;
-#ifdef DEBUG
-	if (bVerbose)
-	  fprintf(fp,"convol %4d %2d %2d %2d  %10.3e  %10.3e\n",
-		  index,i,j,k,gk,grid[0][0][index]);
+  unpack_fftgrid(grid,&nx,&ny,&nz,&la1,&la2,&la12,&ptr);
+  
+  snew(nTest,grid->nptr);
+  /* CHECK THIS.... */
+#ifdef USE_SGI_FFT
+  for(i=0; (i<nx/2); i++) {
+#else
+  for(i=0; (i<nx); i++) {
 #endif
-	index = index+1;
-	grid[0][0][index] *= gk;
-#ifdef DEBUG
-	if (bVerbose)
-	  fprintf(fp,"convol %4d %2d %2d %2d  %10.3e  %10.3e\n",
-		  index,i,j,k,gk,grid[0][0][index]);
+    for(j=0; (j<ny); j++) {
+      for(k=0; (k<nz); k++) {
+#ifdef USE_SGI_FFT
+	gk    = ghat[k][j][i];
+	index = INDEX(2*i,j,k);
+	ptr[index] *= gk;
+	nTest[index]++;
+	/* fprintf(fp,"SGI: index = %d\n",index); */
+	index = INDEX(2*i+1,j,k);
+	ptr[index] *= gk;
+	nTest[index]++;
+	/* fprintf(fp,"SGI: index = %d\n",index); */
+#else
+	gk    = ghat[i][j][k];
+	index = INDEX(i,j,k);
+	ptr[index].re *= gk;
+	ptr[index].im *= gk;
+	nTest[index]++;
 #endif
       }
     }
   }
-}
-
-void printit(FILE *fp,
-	     char *s,int nx,int ny,int nz,int la1,int la2,real arr[],
-	     real factor)
-{
-  int i,j,k;
-
-  for(k=0; (k<nz); k++)
+  for(i=0; (i<nx); i++) {
     for(j=0; (j<ny); j++) {
-      fprintf(fp,"%7s[%2d][%2d](index=%4d) = ",s,k,j,INDEX(0,j,k,la1,la2));
-      for(i=0; (i<nx); i++)
-	fprintf(fp,"  %8.1e",factor*arr[INDEX(i,j,k,la1,la2)]);
-      fprintf(fp,"\n");
+      for(k=0; (k<nz); k++) {
+	index = INDEX(i,j,k);
+	if (nTest[index] != 1)
+	  fprintf(fp,"Index %d sucks, set %d times\n",index,nTest[index]);
+      }
     }
+  }
+  sfree(nTest);
 }
 
 void solve_pppm(FILE *fp,t_commrec *cr,
-		real ***grid,real ***ghat,rvec box,
-		int nx,int ny,int nz,int la1,int la2,
+		t_fftgrid *grid,real ***ghat,rvec box,
 		bool bVerbose,t_nrnb *nrnb)
 {
-  static    bool bFirst=TRUE;
-#ifdef USE_SGI_FFT
-#include <fft.h>
-  static    real *coeff;
-#else
-  static    real *speq;
-#endif
-  real      *cptr,*gptr,*fqqq,fg,fac;
-  int       ntot,i,j,k,m,n,sign;
-  int       npppm;
+  int  ntot,npppm;
   
-  ntot    = nx*ny*nz;
-  cptr    = grid[0][0];
-  gptr    = ghat[0][0];
+  if (bVerbose) 
+    print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);
+  
+  gmxfft3D(fp,bVerbose,grid,FFTW_FORWARD);
   
   if (bVerbose) {
-    printit(fp,"b4",nx,ny,1,la1,la2,grid[0][0],1.0);
-    print_rgrid_pdb("q-spread.pdb",nx,ny,nz,grid);
-    fprintf(stderr,"Doing forward 3D-FFT\n");
-  }
-  if (bFirst) {
-#ifdef USE_SGI_FFT
-    fprintf(fp,"Going to use SGI optimized FFT routines.\n");
-#ifdef DOUBLE
-    coeff  = dzfft3dui(nx,ny,nz,NULL);
-#else
-    coeff  = scfft3dui(nx,ny,nz,NULL);
-#endif
-#else
-    snew(speq,ny*nz);
-#endif
-    bFirst = FALSE;
-  }
-#ifdef USE_SGI_FFT
-#ifdef DOUBLE
-  dzfft3du(1,nx,ny,nz,cptr,la1,la2,coeff);
-#else
-  scfft3du(1,nx,ny,nz,cptr,la1,la2,coeff);
-#endif
-#else
-  sign = 1;
-  /*rlft3f_(cptr,speq,&nx,&ny,&nz,&sign);*/
-#endif
-  if (bVerbose) {
-    (void) print_rgrid(fp,"Qk",nx,ny,nz,grid);
-    printit(fp,"fft",la1,ny,1,la1,la2,grid[0][0],1.0);
+    print_fftgrid(fp,"Q-k",grid,1.0,"qk-re.pdb",box,TRUE);
+    print_fftgrid(fp,"Q-k",grid,1.0,"qk-im.pdb",box,FALSE);
     fprintf(stderr,"Doing convolution\n");
   }
   
-  convolution(fp,bVerbose,nx,ny,nz,la1,la2,grid,ghat);
-
+  convolution(fp,bVerbose,grid,ghat); 
+  
   if (bVerbose) 
-    fprintf(stderr,"Doing backward 3D-FFT\n");
+    print_fftgrid(fp,"Convolution",grid,1.0,
+		  "convolute.pdb",box,TRUE);
   
-#ifdef USE_SGI_FFT
-#ifdef DOUBLE
-  zdfft3du(-1,nx,ny,nz,cptr,la1,la2,coeff);
-#else
-  csfft3du(-1,nx,ny,nz,cptr,la1,la2,coeff);
-#endif
-#else
-  sign = -1;
-  /*rlft3f_(cptr,speq,&nx,&ny,&nz,&sign);*/
-#endif
+  gmxfft3D(fp,bVerbose,grid,FFTW_BACKWARD);
   
-  if (bVerbose) {
-    printit(fp,"after",nx,ny,1,la1,la2,grid[0][0],1.0/(nx*ny*nz));
-    print_rgrid_pdb("phi.pdb",nx,ny,nz,grid);
-  }
+  if (bVerbose) 
+    print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);
   
+  ntot  = grid->nxyz;  
   npppm = ntot*log((real)ntot)/log(2.0);
   inc_nrnb(nrnb,eNR_FFT,2*npppm);
   inc_nrnb(nrnb,eNR_CONV,ntot);
@@ -496,10 +443,9 @@ real do_pppm(FILE *log,       bool bVerbose,
 {
   static  bool bFirst = TRUE;
   static  real      ***ghat;
-  static  real      ***grid;
-  static  real      beta;
-  static  int       porder,nx,ny,nz,la1,la2;
-  
+  static  t_fftgrid *grid;
+  static  rvec      beta;
+  static  int       porder;
   static  int       niter;
   
   const     real tol = 1e-6;
@@ -511,9 +457,9 @@ real do_pppm(FILE *log,       bool bVerbose,
   
   ener = 0.0;
   
-  fatal_error(0,"PPPM not debugged yet.");
-
   if (bFirst) {
+    int nx,ny,nz;
+    
     if (cr != NULL) {
       if (cr->nprocs > 1)
 	fatal_error(0,"No parallel PPPM yet...");
@@ -521,7 +467,7 @@ real do_pppm(FILE *log,       bool bVerbose,
     niter = ir->niter;
     if (bGenerGhat) {    
       fprintf(log,"Generating Ghat function\n");
-      beta   = 4.0/3.0;
+      beta[XX]=beta[YY]=beta[ZZ]= 4.0/3.0;
       porder = 2;
       nx     = ir->nkx;
       ny     = ir->nky;
@@ -531,7 +477,7 @@ real do_pppm(FILE *log,       bool bVerbose,
     }
     else {
       fprintf(stderr,"Reading Ghat function from %s\n",ghatfn);
-      ghat = rd_ghat(log,ghatfn,grids,spacing,&beta,&porder,&r1,&rc);
+      ghat = rd_ghat(log,ghatfn,grids,spacing,beta,&porder,&r1,&rc);
       
       /* Check whether cut-offs correspond */
       if ((fabs(r1-ir->rshort) > tol) || (fabs(rc-ir->rlong) > tol)) {
@@ -566,19 +512,8 @@ real do_pppm(FILE *log,       bool bVerbose,
     if (porder != 2)
       fatal_error(0,"porder = %d, should be 2 in %s",porder,ghatfn);
     
-    if (bVerbose) 
-      print_rgrid(log,"ghat",nx,ny,nz,ghat);
-#ifdef USE_SGI_FFT
-    if (nx != nz) {
-      fprintf(stderr,"You can't use SGI optimized FFT routines when the number of grid points is not the same in X and Z directions. Sorry\n");
-      exit(1);
-    }
-    grid = mk_rgrid(nz,ny,nx+2);
-    la1  = nx+2;
-    la2  = ny;
-#else
-    grid = mk_rgrid(nx,ny,nz);
-#endif  
+    grid = mk_fftgrid(nx,ny,nz);
+
     bFirst = FALSE;
   }
   else {
@@ -589,128 +524,20 @@ real do_pppm(FILE *log,       bool bVerbose,
     /* Now start the actual PPPM procedure.
      * First step: spreading the charges over the grid.
      */
-    /* Make the grid empty */	
-    clear_rgrid(nx,ny,nz,grid);
+    /* Make the grid empty */
+    clear_fftgrid(grid);
 
-    spread_q(log,bVerbose,natoms,x,charge,box,nx,ny,nz,la1,la2,grid,nrnb);
-    
-    if (bVerbose) {
-      ctot = print_rgrid(log,"qqq-spread(P3M)",nx,ny,nz,grid);
-      aver = ctot/(nx*ny*nz);
-      fprintf(log,"qqqtot = %10.3e, qqqav = %10.3e\n",ctot,aver);
-    }
+    spread_q(log,bVerbose,natoms,x,charge,box,grid,nrnb);
     
     /* Second step: solving the poisson equation in Fourier space */
-    solve_pppm(log,NULL,grid,ghat,box,nx,ny,nz,la1,la2,bVerbose,nrnb);
-    
-    if (bVerbose) {
-      ctot = print_rgrid(log,"phi",nx,ny,nz,grid);
-      aver = ctot/(nx*ny*nz);
-      fprintf(log,"phitot = %10.3e, phiav = %10.3e\n",ctot,aver);
-    }
+    solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
     
     /* Third and last step: gather the forces, energies and potential
      * from the grid.
      */
-    ener=gather_f(log,bVerbose,natoms,x,f,charge,box,nx,ny,nz,la1,la2,phi,
-		  grid,beta,nrnb);
+    ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
   }
   
   return ener;
-}
-
-void transpose(FILE *log,t_commrec *cr,real *fqqq,int nx,int ny,int nz,
-	       bool bForward)
-{
-  real ***tmp;
-  int  i,j,k,n,nf,nt,ntot;
-  
-  tmp=mk_rgrid(nx,ny,nz*2);
-    
-  n=1;
-  for(i=1; (i<=nx); i++)
-    for(j=1; (j<=ny); j++)
-      for(k=1; (k<=2*nz); k++,n++)
-	tmp[i][j][k] = fqqq[n];
-	
-  n=1;
-  for(i=1; (i<=nx); i++)
-    for(j=1; (j<=ny); j++) {
-      if (bForward) 
-	for(k=1; (k<=nz); k++) {
-	  fqqq[n++] = tmp[nz-k+1][j][2*i-1];
-	  fqqq[n++] = tmp[nz-k+1][j][2*i];
-	}
-      else
-	for(k=1; (k<=nz); k++) {
-	  fqqq[n++] = tmp[k][j][2*(nx-i)+1];
-	  fqqq[n++] = tmp[k][j][2*(nx-i)+2];
-	}
-    }
-  free_rgrid(tmp,nx,ny);
-}
-
-void do_par_solve(FILE *log,t_commrec *cr,
-		  real *fqqq,real ***ghat,rvec box,
-		  int nx,int ny,int nz,bool bVerbose)
-{
-  real fac;
-  int  ntot,i,j,k,m,n,ndim[4];
-  
-  ndim[0]=0;
-  ndim[1]=ny;
-  ndim[2]=nz;
-  ntot=ny*nz*2;
-  
-  fprintf(stderr,"Doing %d forward 2D-FFTs\n",nx);
-  
-  for(i=0; (i<nx); i++) 
-    fourn(fqqq+ntot*i,ndim,2,1);
-  
-  if (1) {
-  }
-  else {
-    fprintf(stderr,"Doing forward transpose\n");
-    transpose(log,cr,fqqq,nx,ny,nz,TRUE);
-    
-    /*
-      fprintf(stderr,"Doing %d forward 1D-FFTs\n",ntot);
-    for(i=1; (i<nx); i++) {
-      for(j=1; (j<ny); j++) {
-	four1(fqqq+((i-1)*nx+j-1)*ny,nz,1);
-      }
-    }
-    
-    fprintf(stderr,"Doing convolution on transposed\n");
-    
-    n=1;
-    for(i=0; (i<nx); i++) {
-      for(j=0; (j<ny); j++) {
-	for(k=0; (k<nz); k++) {
-	  fac        = ghat[nz-k-1][j][i];
-	  fqqq[n]   *= fac;
-	  fqqq[n+1] *= fac;
-	  n+=2;
-	}
-      }
-    }
-    fprintf(stderr,"Doing %d backward 1D-FFTs\n",ntot);
-    for(i=1; (i<nx); i++) {
-      for(j=1; (j<ny); j++) {
-	four1(fqqq+((i-1)*nx+j-1)*ny,nz,-11);
-      }
-    }
-    */
-    fprintf(stderr,"Doing backward transpose\n");
-    transpose(log,cr,fqqq,nx,ny,nz,FALSE);
-  }
-  
-  fprintf(stderr,"Doing %d backward 2D-FFTs\n",nx);
-  for(i=0; (i<nx); i++) 
-    fourn(fqqq+ntot*i,ndim,2,-1);
-  ntot=nx*ny*nz*2;
-  fac=2.0/(ntot);
-  for(i=0; (i<=ntot); i++)
-    fqqq[i]*=fac;
 }
 
