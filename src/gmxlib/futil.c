@@ -43,6 +43,7 @@ static char *SRCID_futil_c = "$Id$";
 #include "fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
+
  
 /* Native windows uses backslash path separators.
  * Cygwin and everybody else in the world use slash.
@@ -56,6 +57,7 @@ static char *SRCID_futil_c = "$Id$";
 #define DIR_SEPARATOR '/'
 #define PATH_SEPARATOR ":"
 #endif
+
 
 typedef struct t_pstack {
   FILE   *fp;
@@ -222,19 +224,42 @@ bool eof(FILE *fp)
 
 char *backup_fn(char *file)
 {
-  int         i;
-  char        *ptr;
+  /* Use a reasonably low value for countmax; we might
+   * generate 4-5 files in each round, and we dont
+   * want to hit directory limits of 1024 or 2048 files.
+   */
+#define COUNTMAX 128
+  int         i,count=1;
+  char        *directory,*fn;
   static char buf[256];
   
-  for(i=strlen(file)-1; ((i > 0) && (file[i] != DIR_SEPARATOR)); i--);
+  for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
+    ;
+  /* Must check whether i > 0, i.e. whether there is a directory
+   * in the file name. In that case we overwrite the / sign with
+   * a '\0' to end the directory string .
+   */
   if (i > 0) {
-    ptr=strdup(file);
-    ptr[i]='\0';
-    sprintf(buf,"%s%c#%s#",ptr,DIR_SEPARATOR,ptr+i+1);
-    sfree(ptr);
+    directory    = strdup(file);
+    directory[i] = '\0';
+    fn           = strdup(file+i+1);
   }
-  else
-    sprintf(buf,"#%s#",file);
+  else {
+    directory    = strdup(".");
+    fn           = strdup(file);
+  }
+  do {
+    sprintf(buf,"%s/#%s.%d#",directory,fn,count);
+    count++;
+  } while ((count < COUNTMAX) && fexist(buf));
+  
+  /* Arbitrarily bail out */
+  if (count == COUNTMAX) 
+    fatal_error(0,"Won't make more than %d backups of %s for you",
+		COUNTMAX,fn);
+  
+  sfree(directory);
+  sfree(fn);
   
   return buf;
 }
@@ -256,7 +281,7 @@ FILE *ffopen(char *file,char *mode)
   }
   where();
   
-  bRead= (mode[0]=='r');
+  bRead= mode[0]=='r';
   strcpy(buf,file);
   if (fexist(buf) || !bRead) {
     if ((ff=fopen(buf,mode))==NULL)
@@ -336,11 +361,12 @@ bool search_subdirs(char *parent, char *libdir)
   return found;
 }
 
+
 /* Check if the program name begins with "/" on unix/cygwin, or
  * with "\" or "X:\" on windows. If not, the program name
  * is relative to the current directory.
  */
-bool filename_is_absolute(char *name)
+static bool filename_is_absolute(char *name)
 {
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
   return ((name[0] == DIR_SEPARATOR) || ((strlen(name)>3) && strncmp(name+1,":\\",2)));
@@ -356,7 +382,7 @@ bool get_libdir(char *libdir)
   char buf[512];
   char full_path[512];
   char test_file[512];
-  char system_path[4096];
+  char system_path[512];
   char *dir,*ptr,*s;
   bool found=FALSE;
   int i;
@@ -374,16 +400,16 @@ bool get_libdir(char *libdir)
 
   /* Only do the smart search part if we got a real name */
   if (bin_name && strcmp(bin_name,"GROMACS")) {
-    
+  
     if (!strchr(bin_name,DIR_SEPARATOR)) {
- 
-      /* No slash (or backslash on windows) in name means it must be in the path - search it! */
+      /* No slash or backslash in name means it must be in the path - search it! */
       s=getenv("PATH");
-   
+
       /* Add the local dir since it is not in the path on windows */
       getcwd(system_path,sizeof(system_path)-1);
       strcat(system_path,PATH_SEPARATOR);
-      strcat(system_path,s);
+      if (s != NULL)
+	strcat(system_path,s);
       s=system_path;
       found=FALSE;
       while (!found && (dir=strtok(s,PATH_SEPARATOR))!=NULL) {
@@ -393,7 +419,7 @@ bool get_libdir(char *libdir)
       }
       if (!found)
 	return FALSE;
-    } else if(!filename_is_absolute(bin_name)) {
+    } else if (!filename_is_absolute(bin_name)) {
       /* name contains directory separators, but 
        * it does not start at the root, i.e.
        * name is relative to the current dir 
@@ -419,12 +445,8 @@ bool get_libdir(char *libdir)
     }
 #endif
     
-    /* Remove the executable name from the full path name - 
-     * it always contains at least one slash now 
-     */
-    
+    /* Remove the executable name - it always contains at least one slash */
     *(strrchr(full_path,DIR_SEPARATOR)+1)='\0';
-
     /* Now we have the full path to the gromacs executable.
      * Use it to find the library dir. 
      */
@@ -498,6 +520,9 @@ char *low_libfn(char *file, bool bFatal)
     
   return ret;
 }
+
+
+
 
 FILE *low_libopen(char *file,bool bFatal)
 {
