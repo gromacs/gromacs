@@ -88,6 +88,8 @@ void chk_trj(char *fn)
     old_t1 = -1.0;
     fpos   = 0;
     while (fread_trnheader(status,&sh,&bOK)) {
+      if (j == 0)
+	fprintf(stderr,"\n# Atoms  %d\n\n",sh.natoms);
       newline=TRUE;
       if ((natoms > 0) && (new_natoms != natoms)) {
 	fprintf(stderr,"\nNumber of atoms at t=%g don't match (%d, %d)\n",
@@ -137,7 +139,7 @@ void chk_trj(char *fn)
     xd = open_xtc(fn,"r");
     t=-1;
     if (read_first_xtc(xd,&new_natoms,&step,&tt,box,&x,&prec,&bOK)) {
-      fprintf(stderr,"\nXTC precision %g\n\n",prec);
+      fprintf(stderr,"\n# Atoms  %d,  XTC precision  %g\n\n",new_natoms,prec);
       j=0;
       old_t2=-2.0;
       old_t1=-1.0;
@@ -174,14 +176,12 @@ void chk_trj(char *fn)
       fprintf(stderr,"Empty file %s\n",fn);
     fprintf(stderr,"\n");
     if (!bOK)
-	fprintf(stderr,"frame %d at t=%g is incomplete\n",j,tt);
+      fprintf(stderr,"frame %d at t=%g is incomplete\n",j,tt);
     break;
   default:
     fatal_error(0,"trajectory file .%s not supported\n",ftp2ext(ftp));
   }
 
-  fprintf(stderr,"\n\n# Atoms     %d\n",natoms);
-  
   fprintf(stderr,"\nItem        #frames");
   if (bShowTimestep)
     fprintf(stderr," Timestep (ps)");
