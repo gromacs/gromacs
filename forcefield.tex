@@ -203,8 +203,8 @@ different species. In the limit of zero ionic strength ($\kappa$ = 0)
 eqns.~\ref{eqn:kgrf} and ~\ref{eqn:cgrf} reduce to the simple forms
 of eqns.~\ref{eqn:krf} and ~\ref{eqn:crf} respectively.
 
-\subsection{Modified long-range interactions}
-In the {\gromacs} force field the long-range forces can be modified by
+\subsection{Modified non-bonded interactions}
+In the {\gromacs} force field the non-bonded potentials can be modified by
 a shift function. The purpose of this is to replace the truncated
 forces by forces that are continuous and have continuous derivatives
 at the \normindex{cut-off} radius. With such forces the time-step integration
@@ -314,10 +314,10 @@ the long-range interactions, the short-range coulomb potential must also
 be modified, similar to the switch function above. In this case the 
 short range potential is given by
 \beq
-V(r) = f \frac{{\mathrm erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
+V(r) = f \frac{\mbox{erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
 \eeq
 where $\beta$ is a parameter that determines the relative weight 
-between the direct space sum and the reciprocal space sum and erfc(x) is
+between the direct space sum and the reciprocal space sum and erfc$(x)$ is
 the complementary error function. For further 
 details on long-range electrostatics, see section \ref{sec:lr_elstat}.
 
