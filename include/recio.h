@@ -184,6 +184,7 @@ do { \
       block##io(fp,(ir).dihr_fc); \
       block##io(fp,(ir).em_stepsize); \
       block##io(fp,(ir).em_tol); \
+      block##io(fp,(ir).nstcgsteep); \
       block##io(fp,(ir).eShakeType); \
       block##io(fp,(ir).nProjOrder); \
       block##io(fp,(ir).LincsWarnAngle); \

@@ -95,6 +95,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->nstlist); 
     do_int(ir->ndelta); 
     do_int(ir->nstcomm); 
+    do_int(ir->nstcgsteep); 
     do_int(ir->nstprint); 
     do_int(ir->nstxout); 
     do_int(ir->nstvout); 

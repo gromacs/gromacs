@@ -85,7 +85,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   rvec   mu_tot;
   time_t start_t;
   tensor force_vir,shake_vir;
-  int    number_steps,naccept=0,nstcg=parm->ir.userint1;
+  int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
   int    i,m,start,end,niti;
 

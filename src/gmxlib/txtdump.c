@@ -292,6 +292,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("dr_tau",ir->dr_tau);
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);
+    PI("nstcgsteep",ir->nstcgsteep);
     PS("shake_type",ESHAKETYPE(ir->eShakeType));
     PR("shake-tol",ir->tol);
     PI("lincs_order",ir->nProjOrder);
