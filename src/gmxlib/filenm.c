@@ -47,6 +47,47 @@ static char *SRCID_filenm_c = "$Id$";
 
 enum { eftASC, eftBIN, eftXDR, eftGEN, eftNR };
 
+/* To support multiple file types with one general (eg TRX) we have 
+ * these arrays.
+ */
+static    int trxs[]={
+#ifdef USE_XDR 
+  efXTC, efTRR, 
+#endif
+  efTRJ, efGRO, efPDB, efG87 };
+#define NTRXS asize(trxs)
+
+static    int trns[]={ 
+#ifdef USE_XDR
+  efTRR, 
+#endif
+  efTRJ };
+#define NTRNS asize(trns)
+
+static    int stos[]={ efGRO, efPDB, efBRK, efENT};
+#define NSTOS asize(stos)
+
+static    int stxs[]={ efGRO, efPDB, efBRK, efENT,
+#ifdef USE_XDR 
+		       efTPR, 
+#endif 
+		       efTPB, efTPA };
+#define NSTXS asize(stxs)
+
+static    int enxs[]={ 
+#ifdef USE_XDR
+  efEDR, 
+#endif
+  efENE };
+#define NENXS asize(enxs)
+
+static    int tpxs[]={ 
+#ifdef USE_XDR
+  efTPR, 
+#endif
+  efTPB, efTPA };
+#define NTPXS asize(tpxs)
+
 typedef struct {
   int  ftype;
   char *ext;
@@ -307,69 +348,31 @@ void set_grpfnm(t_filenm *fnm,char *name,int nopts,int ftps[])
 
 static void set_trxnm(t_filenm *fnm,char *name)
 {
-  static    int trxs[]={
-#ifdef USE_XDR 
-    efXTC, efTRR, 
-#endif
-    efTRJ, efGRO, efPDB, efG87 };
-#define NTRXS asize(trxs)
-
   set_grpfnm(fnm,name,NTRXS,trxs);
 }
 
 static void set_trnnm(t_filenm *fnm,char *name)
 {
-  static    int trns[]={ 
-#ifdef USE_XDR
-    efTRR, 
-#endif
-    efTRJ };
-#define NTRNS asize(trns)
-
   set_grpfnm(fnm,name,NTRNS,trns);
 }
 
 static void set_stonm(t_filenm *fnm,char *name)
 {
-  static    int stos[]={ efGRO, efPDB, efBRK, efENT};
-#define NSTOS asize(stos)
-  
   set_grpfnm(fnm,name,NSTOS,stos);
 }
 
 static void set_stxnm(t_filenm *fnm,char *name)
 {
-  static    int stxs[]={ efGRO, efPDB, efBRK, efENT,
-#ifdef USE_XDR 
-			 efTPR, 
-#endif 
-			 efTPB, efTPA };
-#define NSTXS asize(stxs)
-  
   set_grpfnm(fnm,name,NSTXS,stxs);
 }
 
 static void set_enxnm(t_filenm *fnm,char *name)
 {
-  static    int enxs[]={ 
-#ifdef USE_XDR
-    efEDR, 
-#endif
-    efENE };
-#define ENTXS asize(enxs)
-  
-  set_grpfnm(fnm,name,ENTXS,enxs);
+  set_grpfnm(fnm,name,NENXS,enxs);
 }
 
 static void set_tpxnm(t_filenm *fnm,char *name)
 {
-  static    int tpxs[]={ 
-#ifdef USE_XDR
-    efTPR, 
-#endif
-    efTPB, efTPA };
-#define NTPXS asize(tpxs)
-  
   set_grpfnm(fnm,name,NTPXS,tpxs);
 }
 
@@ -555,3 +558,49 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   return NULL;
 }
 
+static void add_filters(char *filter,int *n,int nf,int ftp[])
+{
+  char buf[8];
+  int  i;
+  
+  for(i=0; (i<nf); i++) {
+    sprintf(buf,"*%s",ftp2ext(ftp[i]));
+    if (*n > 0)
+      strcat(filter,",");
+    strcat(filter,buf);
+    (*n) ++;
+  }
+}
+
+char *ftp2filter(int ftp)
+{
+  int    n;
+  static char filter[128];
+
+  filter[0] = '\0';  
+  n         = 0;
+  switch (ftp) {
+  case efENX:
+    add_filters(filter,&n,NENXS,enxs);
+    break;
+  case efTRX:
+    add_filters(filter,&n,NTRXS,trxs);
+    break;
+  case efTRN:
+    add_filters(filter,&n,NTRNS,trns);
+    break;
+  case efSTO:
+    add_filters(filter,&n,NSTOS,stos);
+    break;
+  case efSTX:
+    add_filters(filter,&n,NSTXS,stxs);
+    break;
+  case efTPX:
+    add_filters(filter,&n,NTPXS,tpxs);
+    break;
+  default:
+    sprintf(filter,"*%s",ftp2ext(ftp));
+    break;
+  }
+  return filter;
+}

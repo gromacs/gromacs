@@ -86,6 +86,9 @@ extern int fn2ftp(char *fn);
 extern char *ftp2fn(int ftp,int nfile,t_filenm fnm[]);
 /* Return the first file name with type ftp, or NULL when none found. */
 
+extern char *ftp2filter(int ftp);
+/* Return a file extension filter for file type */
+
 #define ftp2FILE(ftp,nfile,fnm,mode) ffopen(ftp2fn(ftp,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
