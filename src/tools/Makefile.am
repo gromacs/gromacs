@@ -22,7 +22,8 @@ bin_PROGRAMS = \
 	g_sorient 	g_tcaf		g_traj		g_velacc	\
 	g_clustsize	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
-	trjorder	wheel		xpm2ps		genion
+	trjorder	wheel		xpm2ps		genion		\
+	anadock		cdist		disco
 
 
 AUTOCORR_SRC         = 	autocorr.c expfit.c polynomials.c levenmar.c
@@ -54,6 +55,9 @@ g_tcaf_SOURCES       = 	g_tcaf.c $(AUTOCORR_SRC)
 g_velacc_SOURCES     = 	g_velacc.c $(AUTOCORR_SRC)
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
 genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
+cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c dlist.c
+disco_SOURCES        =  disco.c correct.c discopar.c dtools.c
+anadock_SOURCES	     =  anadock.c lsq.c
 
 CLEANFILES   = 	*~ \\\#*
 
