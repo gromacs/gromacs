@@ -758,7 +758,7 @@ Because of the time averaging we can no longer speak of a distance restraint
 potential.
 
 This way an atom can satisfy two incompatible distance restraints 
-{\em on average} by moving between two protons. 
+{\em on average} by moving between two positions. 
 An example would be an amino-acid sidechain which is rotating around
 its $\chi$ dihedral angle, thereby coming close to various other groups.
 Such a mobile side chain may give rise to multiple NOEs, which can not be
@@ -866,8 +866,8 @@ An extra requirement for treating restraints together, is that
 the restraints should be on successive lines, without any
 other intervening restraint.
 The {\tt type'} column will usually be 1, but can be set to 2 to
-obtain a distance restraint which will never be time averaged, this
-can be useful for restraining hydrogen bonds.
+obtain a distance restraint which will never be time and ensemble averaged,
+this can be useful for restraining hydrogen bonds.
 The columns {\tt low}, {\tt up1} and {\tt up2}
 hold the values of $r_0$, $r_1$ and $r_2$ from ~\eqnref{disre}.
 In some cases in can be useful to have different force constants for
