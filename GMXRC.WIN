@@ -3,28 +3,23 @@
 #
 
 # This should be your Gromacs directory, edit if necessary
-GMXHOME=/gmx
-export GMXHOME
+export GMXHOME=/gmx
 
 #
-CPU=win
-export CPU	
+export CPU=win	
 
 # Some directories that live below the root
-GMXBIN=$GMXHOME/bin/$CPU
-GMXLIB=$GMXHOME/top
-export GMXLIB
+export GMXBIN=$GMXHOME/bin/$CPU
+export GMXLIB=$GMXHOME/top
 
 # Default Graphics Font for ngmx
-GMXFONT=10x20
-export GMXFONT
+export GMXFONT=10x20
 
 # Set the path
-PATH="$PATH":"$GMXBIN"
+export PATH="$PATH":"$GMXBIN"
 
 # Now finally, if you consider our Cool Quotes to be offensive
 # you might consider commenting out the following line:
-IAMCOOL=YES
-export IAMCOOL
+export IAMCOOL=YES
 
 # end of script
