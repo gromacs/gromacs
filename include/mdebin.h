@@ -49,7 +49,7 @@ typedef struct {
 
 extern t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,
 			     t_idef *idef,bool bLR,bool BLJLR,bool bBHAM,
-			     bool b14,bool bFEP,bool bPcoupl);
+			     bool b14,bool bFEP,bool bPcoupl,bool bDispCorr);
 /* Initiate MD energy bin and write header to energy file. */
 
 extern void upd_mdebin(t_mdebin *md,real tmass,int step,
