@@ -306,7 +306,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("rotates over more degrees than");
   RTYPE ("lincs_warnangle", ir->LincsWarnAngle, 30.0);
   CTYPE ("Output frequency of the Lincs accuracy");
-  ITYPE ("nstLincsout",	ir->nstLincsout,100);
+  ITYPE ("nstLincsout",	ir->nstLincsout,1000);
   CTYPE ("Convert harmonic bonds to morse potentials");
   EETYPE("morse",       opts->bMorse,yesno_names, nerror, TRUE);
   
