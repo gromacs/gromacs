@@ -195,7 +195,7 @@ int main(int argc,char *argv[])
   if (bMultiSim && PAR(cr))
     mcr = init_multisystem(cr,NFILE,fnm);
   else
-    mcr = cr;
+    mcr = NULL;
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
