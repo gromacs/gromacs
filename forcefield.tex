@@ -747,17 +747,20 @@ A multiplicity ($n$) of 2 is useful when you do not want to distinguish
 between parallel and anti-parallel vectors.
 
 
-\subsection{Distance restraints}
+\subsection{\swapindex{Distance}{restraint}s}
 \label{sec:disre}
-\swapindex{Distance}{restraint}s 
+Distance restraints 
 add a penalty to the potential when the distance between specified
 pairs of atoms exceeds a threshold value. They are normally used to
 impose experimental restraints, as from experiments in nuclear
 magnetic resonance (NMR), on the motion of the system. Thus MD can be
 used for structure refinement using NMR data\index{nmr
-refinement}\index{refinement,nmr}. The potential form is quadratic
-below a specified lower
-bound and between two specified upper bounds and linear beyond the
+refinement}\index{refinement,nmr}.
+If one just wants to the restrain the distance between two particles
+using a harmonic potential one should use {\tt [ bonds ]}
+type 6 (see \ssecref{excl}).
+The potential form for distance restraints is quadratic below a specified
+lower bound and between two specified upper bounds and linear beyond the
 largest bound (see \figref{dist}).
 \beq
 V_{dr}(r_{ij}) ~=~ \left\{
@@ -942,9 +945,13 @@ Some parameters for NMR refinement can be specified in the
 \item[{\tt disre}: type of distance restraining.]
         The {\tt disre} variable sets the type of distance restraint.
         {\tt no/simple} turns the distance restraints off/on.
-        When multiple proteins or peptides are used
-        in the simulation, ensemble averaging 
+        When multiple proteins or peptides are present in one 
+        simulation box, ensemble averaging 
         can be turned on by setting {\tt disre = ensemble}.
+	Normally one would perform ensemble averaging over multiple
+	subsystems, each in a separate box, using {\tt mdrun -multi};
+	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
+	coordiates and/or velocities.
 \item[{\tt disre\_weighting}: force-weighting in restraints with
          multiple pairs.]
         By default, the force due to the distance restraint is distributed equally
@@ -974,6 +981,254 @@ Some parameters for NMR refinement can be specified in the
         instantaneous distances of all atom pairs involved in
         distance restraints are written to the energy file.
 \end{description}
+
+\newcommand{\SSS}{\mathbf{S}}
+\newcommand{\DD}{\mathbf{D}}
+\newcommand{\RR}{\mathbf{R}}
+
+\subsection{\swapindex{Orientation}{restraint}s}
+\label{sec:orire}
+\subsubsection{Theory}
+In an NMR experiment orientations of vectors can measured when a 
+molecule does not tumble completely isotropically in the solvent.
+Two examples of such orientation measurements are
+residual \normindex{dipolar couplings}
+(between two nuclei) or chemical shift anisotropies.
+An observable for a vector $\ve{r}_i$ can be written as follows:
+\beq
+\delta_i = \frac{2}{3} \mbox{tr}(\SSS\DD_i)
+\eeq
+where $\SSS$ is the dimensionless order tensor of the molecule.
+The tensor $\DD_i$ is given by:
+\beq
+\label{orient_def}
+\DD_i = \frac{c_i}{\|\ve{r}_i\|^\alpha} \left(
+%\begin{array}{lll}
+%3 r_x r_x - \ve{r}\cdot\ve{r} & 3 r_x r_y & 3 r_x r_z \\
+%3 r_x r_y                     & 3 r_y r_y - \ve{r}\cdot\ve{r} & 3yz \\
+%3 r_x r_z                     & 3 r_y r_z & 3 r_z r_z - \ve{r}\cdot\ve{r}
+%\end{array} \right)
+\begin{array}{lll}
+3 x x - 1 & 3 x y     & 3 x z     \\
+3 x y     & 3 y y - 1 & 3 y z     \\
+3 x z     & 3 y z     & 3 z z - 1 \\
+\end{array} \right)
+\eeq
+\beq
+\mbox{with:} \quad 
+x=\frac{r_{i,x}}{\|\ve{r}_i\|}, \quad
+y=\frac{r_{i,y}}{\|\ve{r}_i\|}, \quad 
+z=\frac{r_{i,z}}{\|\ve{r}_i\|}
+\eeq
+For a dipolar coupling $\ve{r}_i$ is the vector connecting the two
+nuclei, $\alpha=3$ and the constant $c_i$ is given by:
+\beq
+c_i = \frac{\mu_0}{4\pi} \gamma_1^i \gamma_2^i \frac{\hbar}{4\pi}
+\eeq
+where $\gamma_1^i$ and $\gamma_2^i$ are the gyromagnetic ratios of the
+two nuclei.
+
+The order tensor is symmetric and has trace zero. Using a rotation matrix
+$\mathbf{T}$ it can be transformed into the following form:
+\beq
+\mathbf{T}^T \SSS \mathbf{T} = s \left( \begin{array}{ccc}
+-\frac{1}{2}(1-\eta) & 0                    & 0 \\
+0                    & -\frac{1}{2}(1+\eta) & 0 \\
+0                    & 0                    & 1
+\end{array} \right)
+\eeq
+where $-1 \leq s \leq 1$ and $0 \leq \eta \leq 1$.
+$s$ is called the order parameter and $\eta$ the asymmetry of the
+order tensor $\SSS$. When the molecule tumbles isotropically in the
+solvent $s$ is zero and no orientational effects can be observed
+as all $\delta_i$ are zero.
+
+%\newpage
+
+\subsubsection{Calculating orientations in a simulation}
+For reasons which are explained below, the $\DD$ matrices are calculated
+which respect to a reference orientation of the molecule. The orientation
+is defined by a rotation matrix $\RR$ which is needed to least-squares fit
+the current coordinates of a selected set of atoms onto
+a reference conformation. The reference conformation is the starting
+conformation of the simulation. In case of ensemble averaging, which will
+be treated later, the structure is taken from the first subsystem.
+The calculated $\DD_i^c$ matrix is given by:
+\begin{equation}
+\label{D_rot}
+\DD_i^c(t) = \RR(t) \DD_i(t) \RR^T(t)
+\end{equation}
+The calculated orientation for vector $i$ is given by:
+\beq
+\delta^c_i(t) = \frac{2}{3} \mbox{tr}(\SSS(t)\DD_i^c(t))
+\eeq
+The order tensor $\SSS(t)$ is usually unknown.
+A reasonable choice for the order tensor is the tensor
+which minimizes the (weighted) mean square difference between the calculated
+and the observed orientations:
+\begin{equation}
+\label{S_msd}
+MSD(t) = \left(\sum_{i=1}^N w_i\right)^{-1} \sum_{i=1}^N w_i (\delta_i^c (t) -\delta_i^{exp})^2
+\end{equation}
+
+\subsubsection{Time averaging}
+Since the tensors $\DD_i$ fluctuate rapidly in time, much faster than can
+be observed in experiment, they should be time averaged in the simulation.
+However, in a simulation the time as well as the number of copies of
+a molecule is limited. Usually one can not obtain a converged average
+of the $\DD_i$ tensors over all orientations of the molecule.
+If one assumes that the average orientations of the $\ve{r}_i$ vectors
+within the molecule converge much faster than the tumbling time of
+the molecule, the tensor can be averaged in an axis system which
+rotates with the molecule, as expressed by equation~(\ref{D_rot}).
+The time averaged tensors are calculated
+using an exponentially decaying memory function:
+\beq
+\DD^a_i(t) = \frac{\displaystyle
+\int_{u=t_0}^t \DD^c_i(u) \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+}{\displaystyle
+\int_{u=t_0}^t \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+}
+\eeq
+Assuming that the order tensor $\SSS$ fluctuates slower than the
+$\DD_i$, the time averaged orientation can be calculated as:
+\beq
+\delta_i^a(t) = \frac{2}{3} \mbox{tr}(\SSS(t) \DD_i^a(t))
+\eeq
+where the order tensor $\SSS(t)$ is calculated using expression~(\ref{S_msd})
+with $\delta_i^c(t)$ replaced by $\delta_i^a(t)$.
+
+\subsubsection{Restraining}
+The simulated structure can be restrained by applying a force proportional
+to the difference between the calculated and the experimental orientations.
+When no time averaging is applied a proper potential can be defined as:
+\beq
+V = \frac{1}{2} k \sum_{i=1}^N w_i (\delta_i^c (t) -\delta_i^{exp})^2
+\eeq
+The forces are given by minus the gradient of $V$.
+The force $\ve{f}\!_i$ working on vector $\ve{r}_i$ is:
+\begin{eqnarray*}
+\ve{f}\!_i(t) 
+& = & - \frac{\mbox{d} V}{\mbox{d}\ve{r}_i} \\
+& = & -k w_i (\delta_i^c (t) -\delta_i^{exp}) \frac{\mbox{d} \delta_i (t)}{\mbox{d}\ve{r}_i} \\
+& = & -k w_i (\delta_i^c (t) -\delta_i^{exp})
+\frac{2 c_i}{\|\ve{r}\|^{2+\alpha}} \left(2 \RR^T \SSS \RR \ve{r}_i - \frac{2+\alpha}{\|\ve{r}\|^2} \mbox{tr}(\RR^T \SSS \RR \ve{r}_i \ve{r}_i^T) \ve{r}_i \right)
+\end{eqnarray*}
+
+\subsubsection{Ensemble averaging}
+Ensemble averaging can be applied by simulating a system of $M$ subsystems
+which each contain an identical set of orientation restraints. The systems only
+interact via the orientation restraint potential which is defined as:
+\beq
+V = M \frac{1}{2} k \sum_{i=1}^N w_i 
+\langle \delta_i^c (t) -\delta_i^{exp} \rangle^2
+\eeq
+The force on vector $\ve{r}_{i,m}$ in subsystem $m$ is given by:
+\beq
+\ve{f}\!_{i,m}(t) = - \frac{\mbox{d} V}{\mbox{d}\ve{r}_{i,m}} =
+-k w_i \langle \delta_i^c (t) -\delta_i^{exp} \rangle \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\ve{r}_{i,m}} \\
+\eeq 
+
+\subsubsection{Time averaging}
+When using time averaging it is not possible to define a potential.
+We can still define a quantity which gives a rough idea of the energy
+stored in the restraints:
+\beq
+V = M \frac{1}{2} k^a \sum_{i=1}^N w_i 
+\langle \delta_i^a (t) -\delta_i^{exp} \rangle^2
+\eeq
+The force constant $k_a$ is switched on slowly to compensate for the
+lack of history at times close to $t_0$. It is exactly proportional
+to the amount of average which has been accumulated:
+\beq
+k^a =
+ k \, \frac{1}{\tau}\int_{u=t_0}^t \exp\left(-\frac{t-u}{\tau}\right)\mbox{d} u
+\eeq
+What really matters is the definition of the force. It is chosen to
+be proportional to the square root of the product of the time averaged
+and the instantaneous deviation.
+Using only the time averaged deviation induces large oscillations.
+The force is given by:
+\beq
+\ve{f}\!_{i,m}(t) =
+%\left\{ \begin{array}{ll}
+%0 & \mbox{for} \quad \langle \delta_i^a (t) -\delta_i^{exp} \rangle \langle \delta_i (t) -\delta_i^{exp} \rangle \leq 0 \\
+%... & \mbox{for} \quad \langle \delta_i^a (t) -\delta_i^{exp} \rangle \langle \delta_i (t) -\delta_i^{exp} \rangle > 0 
+%\end{array}
+%\right.
+\left\{ \begin{array}{ll}
+0 & \quad \mbox{for} \quad a\, b \leq 0 \\
+\displaystyle
+k^a w_i \frac{a}{|a|} \sqrt{a\, b} \, \frac{\mbox{d} \delta_{i,m}^c (t)}{\mbox{d}\ve{r}_{i,m}}
+& \quad \mbox{for} \quad a\, b > 0 
+\end{array}
+\right.
+\eeq
+\begin{eqnarray*}
+a &=& \langle \delta_i^a (t) -\delta_i^{exp} \rangle \\
+b &=& \langle \delta_i^c (t) -\delta_i^{exp} \rangle
+\end{eqnarray*}
+
+\subsubsection{Using orientation restraints}
+Orientation restraints can be added to a molecule definition in
+the topology in the section {\tt [ orientation\_restraints ]}.
+Here we give an example section containing five N-H residual dipolar
+coupling restraints:
+\begin{verbatim}
+[ orientation_restraints ]
+; ai   aj type exp. label alpha   const.    obs.  weight 
+;                                Hz nm^3      Hz    1/Hz
+  31   32    1    1     3     3    6.083   -6.73     1.0
+  43   44    1    1     4     3    6.083   -7.87     1.0
+  55   56    1    1     5     3    6.083   -7.13     1.0
+  65   66    1    1     6     3    6.083   -2.57     1.0
+  73   74    1    1     7     3    6.083   -2.10     1.0
+\end{verbatim}
+The unit of the observable is Hz, but one can choose any other unit.
+In columns {\tt
+ai} and {\tt aj} you find the atom numbers of the particles to be
+restrained. The {\tt type} column should always be 1.
+The {\tt exp.} column denotes the experiment number, this starts
+numbering at 1. The label should be a unique number larger than zero
+for each restraint. The {\tt alpha} column contains the power $\alpha$ 
+which is used in equation~(\ref{orient_def}) to calculate the orientation.
+The {\tt const.} column contains the constant $c_i$ used in the same
+equation. The constant should have the unit of the observable times
+nm$^\alpha$. The column {\tt obs.} contains the observable, in any
+unit you like. The last column contains the weights $w_i$, the unit
+should be the inverse unit of the observable.
+
+ Some parameters for orientation restraints can be specified in the
+{\tt grompp.mdp} file:
+\begin{description}
+\item[{\tt orire}: use orientation restraining.]
+        {\tt no/yes} turns the distance restraints off/on.
+	Ensemble averaging can be performed using {\tt mdrun -multi},
+	which simulates multiple subsystems in separate boxes;
+	supply {\tt topol0.tpr}, {\tt topol1.tpr}, ... with different
+	coordiates and/or velocities.
+\item[{\tt orire\_fc}: force constant $k$ for orientation restraints.] 
+	When set to zero one obtain the calculated orientation without
+	affecting the simulation.
+\item[{\tt orire\_tau}: time constant $\tau$ for restraints.] 
+        Set {\tt orire\_tau = 10} for a time constant of
+        10 ps. Time averaging can be turned off by setting {\tt orire\_tau}
+        to 0.
+\item[{\tt orire\_fitgrp}: the fit group for the restraints.]
+	This group of atoms is used to determine the rotation $\RR$
+	of the system with respect to the reference orientation.
+	The reference orientation is the starting conformation of
+	the first subsystem. For a protein {\tt backbone} should be
+        a reasonable choice.	
+\item[{\tt nstorireout}: orientation output frequency.]
+        Determines how often the orientations for all restraints
+        are written to the energy file.
+	When using time and/or ensemble averaging, the time and ensemble
+	averaged orientations as well as the instantaneous non-ensemble
+	averaged orientations are written to the energy file.
+	These can be analyzed using {\tt g\_energy}.
+\end{description}
+
 
 \section{\normindex{Free energy interactions}}
 \label{sec:feia}
