@@ -589,7 +589,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  static char *ccformat[MAXFORCEPARAM]= {
+  static char *ccformat[MAXFORCEPARAM+1]= {
+    "",
     "%lf",
     "%lf%lf",
     "%lf%lf%lf",
@@ -663,7 +664,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   nrfp  = NRFP(ftype);
   if (nread > nral) {  
     strcpy(format,asformat[nral-1]);
-    strcat(format,ccformat[nrfp-1]);
+    strcat(format,ccformat[nrfp]);
     
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5]);
     if (nread > nrfp) {
