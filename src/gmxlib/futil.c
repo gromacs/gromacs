@@ -318,9 +318,11 @@ FILE *low_libopen(char *file,bool bFatal)
 
   if (fn==NULL) {
     ff=NULL;
-  }
-  else
+  } else {
+    if (bFatal)
+      fprintf(stderr,"Opening library file %s\n",fn);
     ff=fopen(fn,"r");
+  }
 
   return ff;
 }
