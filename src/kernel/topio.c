@@ -173,8 +173,11 @@ void preprocess(char *infile,char *outfile,
     bFirst=0;
   }
 
-  /* build the command line */
-  sprintf(command,"%s %s -I%s %s %s %s",
+  /* build the command line 
+   * Mac OS X doesn't support a second output filename
+   * (although the docs say so), so we use redirection instead
+   */
+  sprintf(command,"%s %s -I%s %s %s > %s",
 	    cpp,include,libdir,define,infile,outfile);
 
   if (debug)
