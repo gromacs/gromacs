@@ -123,7 +123,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
   static t_nrnb      nrnb;
   static rvec        *f,*buf;
   tensor      force_vir,shake_vir;
-  real        ener[F_NRE],qsmall;
+  real        ener[F_NRE],qsmall,lam=0,dum=0;
   rvec        vcm,box_size;
   int         i,j,m,atnr2,fp_ene;
 
@@ -156,7 +156,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
    */
   
   ns(logf,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,cr,
-     &nrnb,nsb,0);
+     &nrnb,nsb,0,lam,&dum);
   for(m=0; (m<DIM); m++)
     box_size[m] = parm->box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
