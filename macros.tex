@@ -5,95 +5,43 @@
   % Example: \ve{F}
 \newcommand{\de}{\mbox{d}} 
   % defines a straight d for derivatives.
-\newcommand{\intel}{Intel {\em i}\hspace{2pt}860}
-\newcommand{\host}{AST {\em i}\hspace{2pt}486}
-\newcommand{\convex}{Convex C-210}
-\newcommand{\gromacs}{{\sl GROMACS}}
-\newcommand{\gromosv}[1]{{\sl GROMOS-#1}}
-\newcommand{\gromos}{{\sl GROMOS}}
+\newcommand{\intel}{Intel {\em i\/}860}
+\newcommand{\gromacs}{{\sl GROMACS\/}}
+\newcommand{\gromosv}[1]{{\sl GROMOS-#1\/}}
+\newcommand{\gromos}{{\sl GROMOS\/}}
 \newcommand{\dline}{\hline\hline}
 \newcommand{\etal}{{\em et al.}}
 \newcommand{\beq}{\begin{equation}}
 \newcommand{\eeq}{\end{equation}}
 \newcommand{\bea}{\begin{eqnarray}}
 \newcommand{\eea}{\end{eqnarray}}
-\newcommand{\myitem}{\item}
-\newcommand{\promda}{{\bf promda}}
-\newcommand{\stdin}{{\bf input}}
-\newcommand{\stdout}{{\bf output}}
-\newcommand{\confin}{{\bf confin.dat}}
-\newcommand{\confout}{{\bf confout.dat}}
-\newcommand{\rdf}{{\bf rdf.dat}}
-\newcommand{\traj}{{\bf traj.dat}}
-\newcommand{\Etot}{{E_{tot}}}
-\newcommand{\Epot}{{E_{pot}}}
-\newcommand{\Ekin}{{E_{kin}~}}
-\newcommand{\DEtot}{{\Delta E_{tot}~}}
-\newcommand{\DEpot}{{\Delta E_{pot}~}}
-\newcommand{\DEkin}{{\Delta E_{kin}~}}
 \newcommand{\Dt}{{\Delta t}}
-\newcommand{\Dx}{{\Delta x}}
 \newcommand{\hDt}{{\frac {\Delta t}{2}}}
-\newcommand{\ptot}{\ve{p}_{tot}}
 \newcommand{\half}{\frac{1}{2}}
-\newcommand{\Dw}{\Delta \omega}
-\newcommand{\eoer}{\epsilon_0\epsilon_r}
-\newcommand{\mui}{{\bf \mu}_i}
-\newcommand{\muj}{{\bf \mu}_j}
 \newcommand{\rvi}{\ve{r}_i}
 \newcommand{\rvj}{\ve{r}_j}
 \newcommand{\rvk}{\ve{r}_k}
 \newcommand{\rij}{r_{ij}}
 \newcommand{\rvij}{\ve{r}_{ij}}
 \newcommand{\rnorm}{\frac{\rvij}{\rij}}
-\newcommand{\rcm}{\ve{r}_{cm}}
 \newcommand{\Fvi}{\ve{F}_i}
 \newcommand{\Fvj}{\ve{F}_j}
 \newcommand{\Fvk}{\ve{F}_k}
 \newcommand{\Fvij}{\ve{F}_{ij}}
 \newcommand{\Fvji}{\ve{F}_{ji}}
-\newcommand{\Ivg}{\ve{I}^g}
-\newcommand{\Jvg}{\ve{J}^g}
 \newcommand{\vvi}{\ve{v}_i}
-\newcommand{\omv}{\ve{\omega}}
 \newcommand{\al}{\alpha}
 \newcommand{\be}{\beta}
 \newcommand{\ab}{\alpha\beta}
 \newcommand{\rnij}{\ve{r}_{ij}^n}
 \newcommand{\rni}{\ve{r}_i^n}
-\newcommand{\comline}[1]{\\ \\ {\tt \% #1} \\ \\}
 \newcommand{\hdt}{\frac{\Delta t}{2}}
 \newcommand{\type}[1]{\\ {\tt \% #1}\\}
-\newcommand{\ttline}[1]{\\ {\tt #1}\\}
-\newcommand{\TILDE}{$\bf \tilde{~}$}
-\newcommand{\option}[1]{[ {\tt #1} ] option}
-\newcommand{\fextra}[2]{{\bf Extra files read:}    \\ #1. \\ 
-			{\bf Extra files written:} \\ #2. \\}
 \newcommand{\NI}{{\em Not implemented yet... (sorry)}}
 \newcommand{\normindex}[1]{#1\lowercase{\index{#1}}}
 \newcommand{\myindex}[1]{\normindex{#1}}
 \newcommand{\boldindex}[1]{#1\index{#1@\textbf{#1}}}
 \newcommand{\seeindex}[2]{#1\index{#1|see{\lowercase{#2}}}}
-
-% Shitty definition for nice captions (small and slanted).
-% also 1 cm on each side less wide.
-
-%\makeatletter
-
-%\def\caption{\refstepcounter\@captype \@dblarg{\@caption\@captype}}
-%\long\def\@caption#1[#2]#3{\par\addcontentsline{\csname
-% ext@#1\endcsname}{#1}{\protect\numberline{\csname
-%the#1\endcsname}{\ignorespaces #2}}
-%\begingroup
-%   \@parboxrestore
-%   \addtolength{\rightskip}{.5cm}
-%   \addtolength{\leftskip}{.5cm}
-%   \small
-%   \sl
-%   \@makecaption{\csname fnum@#1\endcsname}{\ignorespaces #3}\par
-%\endgroup}
-
-%\makeatother
 
 % Commands for correct spacing in tables
 % 	TeX and TUG News, Vol.2, No.3, p10, 1993. 
