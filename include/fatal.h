@@ -60,9 +60,10 @@ extern void fatal_error(int fatal_errno,char *fmt,...);
  *
  * followed by the string specified by fmt and supplied parameters. If 
  * errno is 0, only the message and arguments are printed. If errno is 
- * a legal system errno, a perror like message is printed after the first 
- * message. The format of fmt is that like printf etc, only %d, %x, %c, %f 
- * and %s are allowed as format specifiers.
+ * a legal system errno or -1, a perror like message is printed after the
+ * first message, if errno is -1, the last system errno will be used.
+ * The format of fmt is that like printf etc, only %d, %x, %c, %f and %s
+ * are allowed as format specifiers.
  */
 
 /* This include must not be moved upwards, to prevent compilation problems */  

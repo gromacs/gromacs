@@ -138,7 +138,8 @@ void quit_gmx(int fatal_errno,char *msg)
     fprintf(stderr,"%s\n",msg);
   }
   else {
-    errno=fatal_errno;
+    if (fatal_errno != -1)
+      errno=fatal_errno;
     perror(msg);
   }
   

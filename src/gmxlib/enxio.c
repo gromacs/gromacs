@@ -212,11 +212,15 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     fatal_error(0,"Can't handle user blocks");
   }
   if (!bOK) {
-    fprintf(stderr,"\rLast frame read %d                     ",framenr-1);
-    fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
-	    framenr,*t);
-    return FALSE;
+    if (bRead) {
+      fprintf(stderr,"\rLast frame read %d                     ",framenr-1);
+      fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
+	      framenr,*t);
+    } else 
+      fatal_error(-1,"could not write energies");
+    return FALSE; 
   }
+  
   return TRUE;
 }
 
