@@ -398,6 +398,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     fprintf(log,PREFIX"Electron_mass: %10.3e(keV) Atomic_mass: %10.3e(keV)\n"
 	    "Speed_of_light: %10.3e(nm/ps)\n",
 	    ELECTRONMASS_keV,ATOMICMASS_keV,SPEEDOFLIGHT);
+    fprintf(log,PREFIX"Interval between shots: %d fs\n",interval);
     fprintf(log,PREFIX"Eindex = %d\n",Eindex);
     fprintf(log,PREFIX"Total charge on system: %g e. Total mass: %g u\n",
 	    ztot,mtot);
