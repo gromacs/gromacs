@@ -380,7 +380,7 @@ static void spread_dum2FAD(rvec xi,rvec xj,rvec xk,
   fk[ZZ]+=ck*fz;
   /* 9 Flops */
   
-  /* TOTAL: 38 flops */
+  /* TOTAL: 68 flops */
 }
 
 static void spread_dum3(rvec xi,rvec xj,rvec xk,

@@ -86,10 +86,11 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "PShake-InitLD", 59, 177 },    
   { "PShake-InitMD", 65, 195 },   
   { "PShake",         7,  25 },
-  { "Dummy1",        15,  70 },
-  { "Dummy2",        24,  80 },
-  { "Dummy2fd",      70, 250 }, /* 250 is a wild guess */
-  { "Dummy3",        81, 300 },
+  { "Dummy1",        17,  70 },
+  { "Dummy2",        28,  80 },
+  { "Dummy2fd",      73, 250 }, /* 250 is a wild guess */
+  { "Dummy2fad",    131, 250 }, /* 250 is a wild guess */
+  { "Dummy3",        87, 300 },
 };
 
 void init_nrnb(t_nrnb *nrnb)
