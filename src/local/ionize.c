@@ -11,7 +11,7 @@
 #include "ionize.h"
 #include "names.h"
 #include "futil.h"
-#include "ion_data.h"
+#include "id2.h"
 
 #define PREFIX "IONIZE: "
 
@@ -30,6 +30,7 @@ void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
 t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
 			    char **atomname[],int Eindex)
 {
+  int elem_index[] = { 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4 };
   t_cross_atom *ca;
   int  *elemcnt;
   char *cc;
@@ -43,7 +44,7 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
     ca[i].n = 0;
     ca[i].k = 0;
     cc = *(atomname[i]);
-    for(j=1; (j<NELEM); j++)
+    for(j=0; (j<NELEM); j++)
       if (strncmp(cc,element[j].name,strlen(element[j].name)) == 0) {
 	ca[i].z = element[j].nel;
 	break;
@@ -53,8 +54,8 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
 		  *atomname[i]);
     elemcnt[j]++;
 
-    ca[i].sigPh = element[ca[i].z].cross[Eindex].photo;
-    ca[i].sigIn = element[ca[i].z].cross[Eindex].incoh;
+    ca[i].sigPh = element[elem_index[ca[i].z]].cross[Eindex].photo;
+    ca[i].sigIn = element[elem_index[ca[i].z]].cross[Eindex].incoh;
     ca[i].fj    = 0.95;
     switch (ca[i].z) {
     case 6:
@@ -75,7 +76,7 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
   }
   
   fprintf(log,PREFIX"You have the following elements in your system (%d atoms):\n"PREFIX,md->nr);
-  for(j=1; (j<NELEM); j++)
+  for(j=0; (j<NELEM); j++)
     if (elemcnt[j] > 0)
       fprintf(log,"  %s: %d",element[j].name,elemcnt[j]);
   fprintf(log," atoms\n");
@@ -273,7 +274,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static int   seed,total,ephot;
   static t_cross_atom *ca;
   static int   Eindex=-1;
-  static int   Energies[] = { 6, 8, 10, 15, 20 };
+  static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
 #define NENER asize(Energies)
   real r,factor,ndv,E_lost,cross_atom,dvz,rrc;
   real pt,ptot,pphot,pcoll[ecollNR];
@@ -351,13 +352,14 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   for(i=0; (i<md->nr); i++) {
     /* Loop over collision types */
     bKHole = FALSE;
-    for(k=0; (k<ecollNR); k++) {
-      /* Determine cross section */
-      cross_atom = cross(k,&(ca[i]));
-      pcoll[k] = pt*cross_atom;
-    }
+    for(k=0; (k<ecollNR); k++) 
+      /* Determine cross section for this collision type */
+      pcoll[k]= pt*cross(k,&(ca[i]));
+    
     /* Total probability of ionisation */
     ptot = 1 - (1-pcoll[ecollPHOTO])*(1-pcoll[ecollINELASTIC]);
+    if (debug) 
+      fprintf(debug,PREFIX"Ptot = %g, t = %g\n",ptot,t);
     
     /* Check whether to ionize this guy */
     if ((rando(&seed) < ptot) && (ca[i].n < ca[i].z)) {

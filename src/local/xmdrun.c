@@ -532,7 +532,7 @@ int main(int argc,char *argv[])
   bVerbose    = bVerbose && MASTER(cr);
   edyn.bEdsam = FALSE;
   
-  debug_par();
+  debug_gmx();
 
   Flags = PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS;
   if (MASTER(cr)) 
@@ -540,21 +540,21 @@ int main(int argc,char *argv[])
   else
     Flags |= PCA_QUIET;
     
-  debug_par();
+  debug_gmx();
   parse_common_args(&argc,argv,Flags,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  debug_par();
+  debug_gmx();
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
-  debug_par();
+  debug_gmx();
   
   if (bMultiSim && PAR(cr)) {
     cr = init_msim(cr,NFILE,fnm);
   }
     
-  debug_par();  
+  debug_gmx();  
   
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
