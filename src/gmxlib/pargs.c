@@ -36,6 +36,7 @@ static char *SRCID_pargs_c = "$Id$";
 #include "readinp.h"
 #include "smalloc.h"
 #include "names.h"
+#include "string2.h"
 
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 {
@@ -172,10 +173,10 @@ char *pa_val(t_pargs *pa)
     sprintf(buf,"%d",*(pa->u.i));
     break;
   case etREAL:
-    sprintf(buf,"%8g",*(pa->u.r));
+    sprintf(buf,"%6g",*(pa->u.r));
     break;
   case etBOOL:
-    sprintf(buf,"%8s",bool_names[*(pa->u.b)]);
+    sprintf(buf,"%6s",bool_names[*(pa->u.b)]);
     break;
   case etSTR:
     if (*(pa->u.c))
@@ -192,7 +193,8 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 {
   static char *argtp[etNR] = { "int", "real", "string", "bool" };
   bool bShowHidden;
-  char buf[32],*ptr,*desc;
+  char buf[32],buf2[256];
+  char *ptr,*desc,*wdesc;
   int  i,j;
   
   /* Cannot call opt2parg_bSet here, because it crashes when the option
@@ -204,16 +206,13 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
       bShowHidden = TRUE;
   
   if (npargs > 0) {
-    fprintf(fp,"%14s  %6s  %8s  %s\n","Opt","Type","Value","Description");
+    fprintf(fp,"%12s %6s %6s  %s\n","Opt","Type","Value","Description");
     fprintf(fp,"------------------------------------------------------\n");
     for(i=0; (i<npargs); i++) {
       ptr   = strstr(pa[i].desc,"HIDDEN");
       if (bShowHidden && ptr) {
-	desc = strdup(ptr);
-	for(j=0; (ptr[j+6] != '\0'); j++) {
-	  desc[j]=ptr[j+6];
-	}
-	desc[j]='\0';
+	snew(desc,strlen(ptr)+4);
+	sprintf(desc,"[hidden] %s",ptr+6);
       }
       else
 	desc=strdup(pa[i].desc);
@@ -223,8 +222,10 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	  sprintf(buf,"-[no]%s",pa[i].option+1);
 	else
 	  strcpy(buf,pa[i].option);
-	fprintf(fp,"%14s  %6s  %8s  %s\n",buf,argtp[pa[i].type],
+	sprintf(buf2,"%12s %6s %6s  %s\n",buf,argtp[pa[i].type],
 		pa_val(&(pa[i])),desc);
+	wdesc=wrap_lines(buf2,80,28);
+	fprintf(fp,wdesc);
       }
       sfree(desc);
     }
