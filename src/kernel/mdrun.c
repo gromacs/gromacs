@@ -132,7 +132,7 @@ int main(int argc,char *argv[])
     { efEDI, "-ei",     "sam",      ffOPTRD },
     { efEDO, "-eo",     "sam",      ffOPTWR },
     { efGCT, "-j",      "wham",     ffOPTRD },
-    { efGCT, "-jo",     "bam",      ffOPTRD },
+    { efGCT, "-jo",     "bam",      ffOPTWR },
     { efXVG, "-ffout",  "gct",      ffOPTWR },
     { efXVG, "-devout", "deviatie", ffOPTWR },
     { efXVG, "-runav",  "runaver",  ffOPTWR },
