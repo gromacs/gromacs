@@ -510,7 +510,7 @@ int main(int argc,char *argv[])
     "[TT]-hbm[tt]:  existence matrix for all hydrogen bonds over all",
     "frames, this also contains information on solvent insertion",
     "into hydrogen bonds.[BR]",
-    "[TT}-da[tt]: write out the number of donors and acceptors analyzed for",
+    "[TT]-da[tt]: write out the number of donors and acceptors analyzed for",
     "each timeframe. This is especially usefull when using [TT]-shell[tt]."
   };
   
