@@ -126,6 +126,7 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
+  static bool bLateVir     = TRUE;
 #ifdef XMDRUN
   static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
@@ -149,6 +150,8 @@ int main(int argc,char *argv[])
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
 #endif
+    { "-latevir", FALSE, etBOOL,{&bLateVir},
+      "[HIDDEN]Calculate virial late in the algorithm" },
     { "-dlb",     FALSE, etINT, {&nDLB},
       "HIDDENUse dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, {&nstepout},
@@ -185,6 +188,8 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
+  Flags = Flags | (bLateVir ? MD_LATEVIR : 0);
+    
 #ifdef XMDRUN
   Flags = (Flags | 
 	   (bIonize   ? MD_IONIZE   : 0) |
