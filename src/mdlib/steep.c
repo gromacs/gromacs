@@ -287,7 +287,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     do_force(log,cr,parm,nsb,force_vir, 
  	     count,&(nrnb[cr->nodeid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
- 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot); 
+ 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,FALSE); 
 
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),&top->idef);
