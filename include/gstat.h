@@ -270,9 +270,9 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
  * If x == NULL, the timestep dt will be used to create a time axis.
  */
 
-extern real print_and_integrate(FILE *fp,int n,real dt,real c[]);
+extern real print_and_integrate(FILE *fp,int n,real dt,real c[],int nskip);
 /* Integrate the data in c[] from 0 to n using trapezium rule.
- * If fp != NULL output is written to it
+ * If fp != NULL output is written to it each nskip steps
  */
  
 extern int get_acfnout(void);

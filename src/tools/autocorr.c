@@ -227,7 +227,7 @@ static void low_do_four_core(int nfour,int nframes,real c1[],fftreal cfour[],
   
   if (bPadding) {
     aver /= nframes;
-    /* fprintf(stderr,"aver = %g\n",aver); */
+    /* fprintf(stdout,"aver = %g\n",aver); */
     for(i=0; (i<nframes); i++)
       cfour[i] -= aver;
   }
@@ -254,7 +254,7 @@ static void do_ac_core(int nframes,int nout,
   rvec    xj,xk,rr;
 
   if (nrestart < 1) {
-    fprintf(stderr,"WARNING: setting number of restarts to 1\n");
+    fprintf(stdout,"WARNING: setting number of restarts to 1\n");
     nrestart = 1;
   }
   if (debug)
@@ -292,7 +292,7 @@ static void do_ac_core(int nframes,int nout,
 	cth=cos_angle(xj,xk);
 	
 	if (cth-1.0 > 1.0e-15) {
-	  fprintf(stderr,"j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n",
+	  fprintf(stdout,"j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n",
 		  j,k,xj[XX],xj[YY],xj[ZZ],xk[XX],xk[YY],xk[ZZ]);
 	}
 	
@@ -360,7 +360,7 @@ void average_acf(int n,int nitem,real **c1)
   real c0;
   int  i,j;
   
-  fprintf(stderr,"Averaging correlation functions\n");
+  fprintf(stdout,"Averaging correlation functions\n");
   
   for(j=0; (j<n); j++) {
     c0 = 0;
@@ -403,7 +403,7 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[],int nskip)
   sum = 0.0;
   for(j=0; (j<n); j++) {
     c0 = c[j];
-    if (fp && ((j % nskip) == 0))
+    if (fp && (nskip == 0 || j % nskip == 0))
       fprintf(fp,"%10.3f  %10.5f\n",j*dt,c0);
     if (j > 0)
       sum+=dt*(c0+c[j-1]);
@@ -576,24 +576,24 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
   real    tStart,tail_corr,sum,sumtot,*sig;
   int     j,jmax,nf_int;
   
-  fprintf(stderr,"CORR:\n");    
+  fprintf(stdout,"CORR:\n");    
   
   nf_int = min(ncorr,(int)(tendfit/dt));
   sum    = print_and_integrate(debug,ncorr,dt,c1,1);
   
-  fprintf(stderr,"CORR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
+  fprintf(stdout,"CORR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
 	  0.0,dt*nf_int,sum);
-  fprintf(stderr,"CORR: Relaxation times are computed as fit to an exponential:\n");
+  fprintf(stdout,"CORR: Relaxation times are computed as fit to an exponential:\n");
   if (nfitparm == 1) 
-    fprintf(stderr,"CORR:    Exp[-t/tau_slope]\n");
+    fprintf(stdout,"CORR:    Exp[-t/tau_slope]\n");
   else if (nfitparm == 2)
-    fprintf(stderr,"CORR:    A Exp[-t/tau_slope]\n");
+    fprintf(stdout,"CORR:    A Exp[-t/tau_slope]\n");
   else 
     fatal_error(0,"nparm not set to 1 or 2, %s %d",__FILE__,__LINE__);
-  fprintf(stderr,"CORR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",tbeginfit,min(ncorr*dt,tendfit));
+  fprintf(stdout,"CORR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",tbeginfit,min(ncorr*dt,tendfit));
     
   tStart = 0;
-  fprintf(stderr,"CORR:%12s%12s%12s%12s%12s%12s\n",
+  fprintf(stdout,"CORR:%12s%12s%12s%12s%12s%12s\n",
 	  "Integral to","Value","Tail Value","Sum (ps)","Tau (ps)",
 	  (nfitparm > 1) ? "A" : "");
   if (tbeginfit > 0)
@@ -609,10 +609,10 @@ void fit_acf(int ncorr,int nfitparm,bool bVerbose,
 			 bVerbose,nfitparm,NULL,fitparm,NULL);
     sumtot = sum+tail_corr;
     if (nfitparm == 1)
-      fprintf(stderr,"CORR:%12.5e%12.5e%12.5e%12.5e%12.5e\n",
+      fprintf(stdout,"CORR:%12.5e%12.5e%12.5e%12.5e%12.5e\n",
 	      tStart,sum,tail_corr,sumtot,fitparm[0]);
     else
-      fprintf(stderr,"CORR:%12.5e%12.5e%12.5e%12.5e%12.5e%12.5e\n",
+      fprintf(stdout,"CORR:%12.5e%12.5e%12.5e%12.5e%12.5e%12.5e\n",
 	      tStart,sum,tail_corr,sumtot,fitparm[0],fitparm[1]);
     tStart += tbeginfit;
     sfree(sig);
@@ -624,7 +624,7 @@ void low_do_autocorr(char *fn,char *title,
 		     real dt,unsigned long mode,int nrestart,
 		     bool bAver,bool bFour,bool bNormalize,
 		     bool bVerbose,real tbeginfit,real tendfit,
-		     int nfitparm,int nskip)
+		     int nfitparm)
 {
   FILE    *fp;
   int     i,k,nfour;
@@ -643,18 +643,18 @@ void low_do_autocorr(char *fn,char *title,
     fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
   if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
-    fprintf(stderr,"Can't combine mode %lu with FFT, turning off FFT\n",mode);
+    fprintf(stdout,"Can't combine mode %lu with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
   if (MODE(eacNormal) && MODE(eacVector)) 
     fatal_error(0,"Incompatible mode bits: normal and vector (or Legendre)");
     
   /* Print flags and parameters */
-  fprintf(stderr,"Will calculate %s of %d thingies for %d frames\n",
+  fprintf(stdout,"Will calculate %s of %d thingies for %d frames\n",
 	  title,nitem,nframes);
-  fprintf(stderr,"bAver = %s, bFour = %s bNormalize= %s\n",
+  fprintf(stdout,"bAver = %s, bFour = %s bNormalize= %s\n",
 	  bool_names[bAver],bool_names[bFour],bool_names[bNormalize]);
-  fprintf(stderr,"mode = %lu, dt = %g, nrestart = %d\n",mode,dt,nrestart);
+  fprintf(stdout,"mode = %lu, dt = %g, nrestart = %d\n",mode,dt,nrestart);
   
   if (bFour) {  
     c0 = log((double)nframes)/log(2.0);
@@ -705,7 +705,7 @@ void low_do_autocorr(char *fn,char *title,
       (void)print_and_integrate(fp,nout,dt,c1[0],1);
     } else {
       sum = print_and_integrate(fp,nout,dt,c1[0],1);
-      fprintf(stderr,"Correlation time (integral over corrfn): %g (ps)\n",sum);
+      fprintf(stdout,"Correlation time (integral over corrfn): %g (ps)\n",sum);
     }
   }
   else {
@@ -715,10 +715,10 @@ void low_do_autocorr(char *fn,char *title,
 	normalize_acf(nout,c1[i]);
       if (tbeginfit < tendfit) {
 	fit_acf(nout,nfitparm,bVerbose,tbeginfit,tendfit,dt,c1[i]);
-	(void)print_and_integrate(fp,nout,dt,c1[0],1);
+	(void)print_and_integrate(fp,nout,dt,c1[i],1);
       } else {
 	sum = print_and_integrate(fp,nout,dt,c1[i],1);
-	fprintf(stderr,"CORRelation time (integral over corrfn %d): %g (ps)\n",
+	fprintf(stdout,"CORRelation time (integral over corrfn %d): %g (ps)\n",
 		i,sum);
       }
     }
@@ -781,7 +781,7 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 		 real dt,unsigned long mode,bool bAver)
 {
   if (!bACFinit) {
-    fprintf(stderr,"ACF data structures have not been initialised. Call add_acf_pargs\n");
+    fprintf(stdout,"ACF data structures have not been initialised. Call add_acf_pargs\n");
   }
 
   /* Handle enumerated types */
@@ -805,7 +805,7 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
   low_do_autocorr(fn,title,nframes,nitem,acf.nout,c1,dt,mode,
 		  acf.nrestart,bAver,acf.bFour,acf.bNormalize,
 		  bDebugMode(),acf.tbeginfit,acf.tendfit,
-		  acf.nfitparm,acf.nskip);
+		  acf.nfitparm);
 }
 
 int get_acfnout(void)
