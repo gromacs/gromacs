@@ -89,7 +89,7 @@ bool in_list(atom_id selection,int isize,atom_id *index)
   bool bFound;
   
   bFound=FALSE;
-  for(i=0;(i<isize) && !bFound;i++)
+  for(i=0; (i<isize) && !bFound; i++)
     if(selection == index[i])
       bFound=TRUE;
   
@@ -99,11 +99,11 @@ bool in_list(atom_id selection,int isize,atom_id *index)
 void add_acc(int i, int *max_nr,int *nr,atom_id **a)
 {
   (*nr)++;
-  if ((*nr) > (*max_nr)) {
+  if ( *nr > *max_nr ) {
     (*max_nr)+=10;
-    srenew((*a),(*max_nr));
+    srenew(*a,*max_nr);
   }
-  (*a)[(*nr)-1]=i;
+  (*a)[*nr-1]=i;
 }
 
 void search_acceptors(t_topology *top, int isize, atom_id *index,
@@ -112,29 +112,28 @@ void search_acceptors(t_topology *top, int isize, atom_id *index,
   int i,max_nr_a;
   
   max_nr_a=*nr_a;
-  for (i=0;(i<top->atoms.nr);i++)
-    if (*top->atoms.atomname[i][0] == 'O' || 
-	(bNitAcc && (*top->atoms.atomname[i][0] == 'N')))
-      if (in_list(i,isize,index))
-	add_acc(i,&max_nr_a,nr_a,a);
-  /* DvdS: this is done in add_acc allready */
-  /*srenew((*a),(*nr_a));*/
+  for (i=0; i<top->atoms.nr; i++)
+    if ( ( *top->atoms.atomname[i][0] == 'O' || 
+	   ( bNitAcc && ( *top->atoms.atomname[i][0] == 'N' ) ) ) &&
+	 in_list(i,isize,index) )
+      add_acc(i,&max_nr_a,nr_a,a);
+  srenew(*a,*nr_a);
 }
 
 void add_dh(int id, int ih, int *max_nr,int *nr,atom_id **d,atom_id **h)
 {
   (*nr)++;
-  if ((*nr) > (*max_nr)) {
+  if ( *nr > *max_nr ) {
     (*max_nr)+=10;
-    srenew((*d),(*max_nr));
-    srenew((*h),(*max_nr));
+    srenew(*d,*max_nr);
+    srenew(*h,*max_nr);
   }
-  (*d)[(*nr)-1]=id;
-  (*h)[(*nr)-1]=ih;
+  (*d)[*nr-1]=id;
+  (*h)[*nr-1]=ih;
 }
 
 void search_donors(t_topology *top, int isize, atom_id *index,
-		   int *nr_d, atom_id **d, atom_id **h, bool bDumConn)
+		   int *nr_d, atom_id **d, atom_id **h)
 {
   int i,j,max_nr_d;
   t_functype func_type;
@@ -143,10 +142,9 @@ void search_donors(t_topology *top, int isize, atom_id *index,
   bool stop;
   
   max_nr_d=*nr_d;
-  for(func_type=0; (func_type < F_NRE); func_type++) {
+  for(func_type=0; func_type < F_NRE; func_type++) {
     interaction=&top->idef.il[func_type];
-    for(i=0; (i<interaction->nr); 
-	i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
+    for(i=0; i < interaction->nr; i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
       assert(func_type == top->idef.functype[interaction->iatoms[i]]);
       
       /* check out this functype */
@@ -163,34 +161,32 @@ void search_donors(t_topology *top, int isize, atom_id *index,
 	for (j=0; j<2; j++) {
 	  nr1=interaction->iatoms[i+1+j];
 	  nr2=interaction->iatoms[i+2-j];
-	  if ( ((*top->atoms.atomname[nr1][0]) == 'H') && 
-	       ( (*top->atoms.atomname[nr2][0] == 'O') ||
-		 (*top->atoms.atomname[nr2][0] == 'N')) &&
+	  if ( ( *top->atoms.atomname[nr1][0] == 'H' ) && 
+	       ( ( *top->atoms.atomname[nr2][0] == 'O' ) ||
+		 ( *top->atoms.atomname[nr2][0] == 'N' )) &&
 	       in_list(nr1,isize,index) && in_list(nr2,isize,index))
 	    add_dh(nr2,nr1,&max_nr_d,nr_d,d,h);
 	}
-      } else if ( bDumConn &&
-		  (interaction_function[func_type].flags & IF_DUMMY) ) {
+      } else if ( interaction_function[func_type].flags & IF_DUMMY ) {
 	nr1=interaction->iatoms[i+1];
-	if ((*top->atoms.atomname[nr1][0]) == 'H') {
+	if ( *top->atoms.atomname[nr1][0]  == 'H') {
 	  nr2=nr1-1;
 	  stop=FALSE;
-	  while (!stop && ((*top->atoms.atomname[nr2][0]) == 'H'))
+	  while (!stop && ( *top->atoms.atomname[nr2][0] == 'H'))
 	    if (nr2)
 	      nr2--;
 	    else
 	      stop=TRUE;
-	  if ( !stop && ( (*top->atoms.atomname[nr2][0] == 'O') ||
-			  (*top->atoms.atomname[nr2][0] == 'N') ) &&
+	  if ( !stop && ( ( *top->atoms.atomname[nr2][0] == 'O') ||
+			  ( *top->atoms.atomname[nr2][0] == 'N') ) &&
 	       in_list(nr1,isize,index) && in_list(nr2,isize,index) )
 	    add_dh(nr2,nr1,&max_nr_d,nr_d,d,h);
 	}
       }
     }
   }
-  /* DvdS double srenew may cause damage! */
-  /*srenew((*d),(*nr_d));
-    srenew((*h),(*nr_d));*/
+  srenew(*d,*nr_d);
+  srenew(*h,*nr_d);
 }
 
 void init_grid(bool bBox, matrix box, real rcut, 
@@ -243,6 +239,8 @@ void build_grid(int *nr, atom_id **a, rvec x[],
       for (yi=0; yi<ngrid[YY]; yi++)
 	for (zi=0; zi<ngrid[ZZ]; zi++)
 	  grid[xi][yi][zi][gr].nr=0;
+    if (debug)
+      fprintf(debug,"Putting %d %s atoms into grid\n",nr[gr],grpnames[gr]);
     /* put atoms in grid cells */
     for(i=0; i<nr[gr]; i++) {
       for(m=0; m<DIM; m++) {
@@ -286,12 +284,13 @@ void build_grid(int *nr, atom_id **a, rvec x[],
 
 void dump_grid(FILE *fp, ivec ngrid, t_gridcell ****grid)
 {
+  char *grpnames[grNR] = {"0D","0H","0A","1D","1H","1A","iD","iH","iA"};
   int gr,x,y,z,sum[grNR];
   
   fprintf(fp,"grid %dx%dx%d\n",ngrid[XX],ngrid[YY],ngrid[ZZ]);
   for (gr=0; gr<grNR; gr++) {
     sum[gr]=0;
-    fprintf(fp,"GROUP %d\n",gr);
+    fprintf(fp,"GROUP %d (%s)\n",gr,grpnames[gr]);
     for (z=0; z<ngrid[ZZ]; z+=2) {
       fprintf(fp,"Z=%d,%d\n",z,z+1);
       for (y=0; y<ngrid[YY]; y++) {
@@ -318,12 +317,15 @@ void dump_grid(FILE *fp, ivec ngrid, t_gridcell ****grid)
 /* New GMX record! 5 * in a row. Congratulations! */
 void free_grid(ivec ngrid, t_gridcell *****grid)
 {
-  int x,y,z;
+  int x,y,z,i;
   
   for (x=0; x<ngrid[XX]; x++) {
     for (y=0; y<ngrid[YY]; y++) {
-      for (z=0; z<ngrid[ZZ]; z++)
+      for (z=0; z<ngrid[ZZ]; z++) {
+	for (i=0; i<grNR; i++)
+	  sfree((*grid)[x][y][z][i].atoms);
 	sfree((*grid)[x][y][z]);
+      }
       sfree((*grid)[x][y]);
     }
     sfree((*grid)[x]);
@@ -333,38 +335,37 @@ void free_grid(ivec ngrid, t_gridcell *****grid)
 
 bool is_hbond(atom_id d, atom_id h, atom_id a, 
 	      real rcut, real ccut, 
-	      rvec x[], bool bBox, rvec hbox, real *d_da, real *ang)
+	      rvec x[], bool bBox, rvec hbox, real *d_ha, real *ang)
 {
-  rvec r_da,r_dh;
-  real d_da2,ca;
+  rvec r_dh,r_ha;
+  real d_ha2,ca;
   int m;
   
   for(m=0; m<DIM; m++) {
-    r_da[m]=x[d][m]-x[a][m];
+    r_ha[m] = x[a][m] - x[h][m];
     if (bBox) {
-      if (r_da[m]<-hbox[m]) 
-	r_da[m]+=2*hbox[m];
-      else if (r_da[m]>=hbox[m]) 
-	r_da[m]-=2*hbox[m];
+      if ( r_ha[m] < -hbox[m] ) 
+	r_ha[m] += 2*hbox[m];
+      else if ( r_ha[m] >= hbox[m] )
+	r_ha[m] -= 2*hbox[m];
     }
-    if ( (r_da[m]>rcut) || (-r_da[m]>rcut) )
+    if ( (r_ha[m]>rcut) || (-r_ha[m]>rcut) )
       return FALSE;
   }
-  d_da2 = iprod(r_da,r_da);
-  if ( d_da2 <= rcut*rcut ) {
-    rvec_sub(x[d],x[h],r_dh);
-    for(m=0; m<DIM; m++) {
-      if (bBox) {
-	if (r_dh[m]<-hbox[m]) 
-	  r_dh[m]+=2*hbox[m];
-	else if (r_dh[m]>=hbox[m]) 
-	  r_dh[m]-=2*hbox[m];
+  d_ha2 = iprod(r_ha,r_ha);
+  if ( d_ha2 <= rcut*rcut ) {
+    rvec_sub(x[h],x[d],r_dh);
+    if (bBox)
+      for(m=0; m<DIM; m++) {
+	if ( r_dh[m] < -hbox[m] )
+	  r_dh[m] += 2*hbox[m];
+	else if ( r_dh[m] >= hbox[m] )
+	  r_dh[m] -= 2*hbox[m];
       }
-    }
-    ca = cos_angle(r_da,r_dh);
+    ca = cos_angle(r_dh,r_ha);
     /* if angle is smaller, cos is larger */
     if ( ca>=ccut ) {
-      *d_da = sqrt(d_da2);
+      *d_ha = sqrt(d_ha2);
       *ang = acos(ca);
       return TRUE;
     }
@@ -418,8 +419,12 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",
-    "determined based on cutoffs for the angle Hydrogen - Donor - Acceptor",
-    "(zero is optimum) and the distance Donor - Acceptor.[PAR]",
+    "determined based on cutoffs for the angle Donor - Hydrogen - Acceptor",
+    "(zero is extended) and the distance Hydrogen - Acceptor.",
+    "OH and NH groups are regarded as donors, O is an acceptor always,",
+    "N is an acceptor by default, but this can be switched using",
+    "[TT]-nitacc[tt]. Dummy hydrogen atoms are assumed to be connected",
+    "to the first preceding non-hydrogen atom.[PAR]",
     "You need to specify two groups for analysis, which must be either",
     "identical or non-overlapping. All hydrogen bonds between the two",
     "groups are analyzed.[PAR]",
@@ -430,11 +435,11 @@ int main(int argc,char *argv[])
     "[ selected ][BR]",
     "     20    21    24[BR]",
     "     25    26    29[BR]",
-    "      0     3     6[BR]",
+    "      1     3     6[BR]",
     "[tt][BR]",
-    "(Note that the triplets need not be on separate lines.)",
-    "Each atom triplet specifies a hydrogen bond to be analyzed.",
-    "Note that no check is made for the types of atoms.[PAR]",
+    "Note that the triplets need not be on separate lines.",
+    "Each atom triplet specifies a hydrogen bond to be analyzed,",
+    "note also that no check is made for the types of atoms.[PAR]",
     "[TT]-ins[tt] turns on computing solvent insertion into hydrogen bonds.",
     "In this case an additional group must be selected, specifying the",
     "solvent molecules.[PAR]",
@@ -459,24 +464,22 @@ int main(int argc,char *argv[])
     "into hydrogen bonds.[BR]",
   };
   
-  static real acut=60, abin=1, rcut=0.35, rbin=0.005;
-  static bool bNitAcc=TRUE,bDumConn=TRUE,bInsert=FALSE;
+  static real acut=60, abin=1, rcut=0.25, rbin=0.005;
+  static bool bNitAcc=TRUE,bInsert=FALSE;
   /* options */
   t_pargs pa [] = {
     { "-ins",  FALSE, etBOOL, &bInsert,
       "analyze solvent insertion" },
     { "-a",    FALSE, etREAL, &acut,
-      "cutoff angle (degrees, Hydrogen - Donor - Acceptor)" },
+      "cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
     { "-r",    FALSE, etREAL, &rcut,
-      "cutoff radius (nm, Donor - Acceptor)" },
+      "cutoff radius (nm, Hydrogen - Acceptor)" },
     { "-abin", FALSE, etREAL, &abin,
       "binwidth angle distribution (degrees)" },
     { "-rbin", FALSE, etREAL, &rbin,
       "binwidth distance distribution (nm)" },
     { "-nitacc",FALSE,etBOOL, &bNitAcc,
-      "regard nitrogen atoms as acceptors" },
-    { "-dumconn",FALSE,etBOOL, &bDumConn,
-      "dummy atoms bond to first preceding heavy atom" }
+      "regard nitrogen atoms as acceptors" }
   };
 
   t_filenm fnm[] = {
@@ -499,7 +502,7 @@ int main(int argc,char *argv[])
   
 #define NRGRPS 3
 #define OGRP (gr1-grp)
-#define INSGRP grI/grINC
+#define INSGRP 2
   
 #define HB_NO 0
 #define HB_YES 1<<0
@@ -508,7 +511,7 @@ int main(int argc,char *argv[])
 #define HB_NR (1<<2)
   char  hbmap [HB_NR]={ ' ',    'o',      '-',       '*' };
   char *hbdesc[HB_NR]={ "None", "Present", "Inserted", "Present & Inserted" };
-  t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},  {0,0,1},   {1,0,1} };
+  t_rgb hbrgb [HB_NR]={ {1,1,1},{1,0,0},   {0,0,1},    {1,0,1} };
   
   int     status;
   t_topology top;
@@ -525,7 +528,7 @@ int main(int argc,char *argv[])
   int     xi,yi,zi,ai;
   int     xj,yj,zj,aj,xjj,yjj,zjj;
   int     xk,yk,zk,ak,xkk,ykk,zkk;
-  bool    bSelected,bStop,bTwo,new,was,bBox;
+  bool    bSelected,bStop,bTwo,bHBMap,new,was,bBox;
   bool    *insert;
   int     nr_a[grNR];
   atom_id *a[grNR];
@@ -547,12 +550,19 @@ int main(int argc,char *argv[])
   init_lookup_table(stdout);
 
   /* process input */
+  bHBMap = opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm);
   bSelected = opt2bSet("-sel",NFILE,fnm);
   ccut = cos(acut*DEG2RAD);
   
   /* get topology */
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&i,&t,&t,
 	   &ir,box,&natoms,NULL,NULL,NULL,&top);
+  
+  /* initialize h-bond atom groups: */
+  for (i=gr0; i<grNR; i+=grINC) {
+    nr_a[i+grD] = nr_a[i+grH] = nr_a[i+grA] = 0;
+    a[i+grD]    = a[i+grH]    = a[i+grA]    = NULL;
+  }
   
   if (bSelected) {
     /* analyze selected hydrogen bonds */
@@ -590,8 +600,8 @@ int main(int argc,char *argv[])
       bTwo=(index[0][i] != index[1][i]);
     if (bTwo) {
       fprintf(stderr,"Checking for overlap...\n");
-      for (i=0; (i<isize[0]); i++)
-	for (j=0; (j<isize[1]); j++)
+      for (i=0; i<isize[0]; i++)
+	for (j=0; j<isize[1]; j++)
 	  if (index[0][i] == index[1][j]) 
 	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
 			grpnames[0],grpnames[1]);
@@ -609,9 +619,9 @@ int main(int argc,char *argv[])
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	      1,&(isize[INSGRP]),&(index[INSGRP]),&(grpnames[INSGRP]));
     fprintf(stderr,"Checking for overlap...\n");
-    for (i=0; (i<isize[INSGRP]); i++)
+    for (i=0; i<isize[INSGRP]; i++)
       for (grp=0; grp<(bTwo?2:1); grp++)
-	for (j=0; (j<isize[grp]); j++)
+	for (j=0; j<isize[grp]; j++)
 	  if (index[INSGRP][i] == index[grp][j]) 
 	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
 			grpnames[grp],grpnames[INSGRP]);
@@ -621,29 +631,29 @@ int main(int argc,char *argv[])
   }
   
   /* search donors and acceptors in groups */
-  for (i=gr0; i<grNR; i+=grINC) 
+  for (i=gr0; i<grNR; i+=grINC)
     if ( ((i==gr0) && !bSelected ) ||
 	 ((i==gr1) && bTwo ) ||
 	 ((i==grI) && bInsert ) ) {
-      nr_a[i+grD]=nr_a[i+grA]=0;
-      a[i+grD]=a[i+grH]=a[i+grA]=NULL;
-      search_acceptors(&top,isize[i/grINC],index[i/grINC],
-		       &nr_a[i+grA],&a[i+grA],bNitAcc);
-      search_donors(&top,isize[i/grINC],index[i/grINC],
-		    &nr_a[i+grD],&a[i+grD],&a[i+grH],bDumConn);
+      search_acceptors(&top, isize[i/grINC], index[i/grINC],
+		       &nr_a[i+grA], &a[i+grA], bNitAcc);
+      search_donors   (&top, isize[i/grINC], index[i/grINC],
+		       &nr_a[i+grH], &a[i+grD], &a[i+grH]);
+      nr_a[i+grD] = nr_a[i+grH];
       fprintf(stderr,"Found %d donors and %d acceptors in group '%s'\n",
-	      nr_a[i+grD],nr_a[i+grA],grpnames[i/grINC]);
-      snew(donors[i+grD],natoms/*DvdS nr_a[i+grD]*/);
-      sort_dha(nr_a[i+grD],a[i+grD],a[i+grH],nr_a[i+grA],a[i+grA]);
+	      nr_a[i+grD], nr_a[i+grA], grpnames[i/grINC]);
+      snew(donors[i+grD], nr_a[i+grD] );
+      sort_dha(nr_a[i+grD], a[i+grD], a[i+grH], nr_a[i+grA], a[i+grA]);
     }
   if (bSelected)
-    snew(donors[gr0D],nr_a[gr0D]);
-  if (!bTwo)
+    snew(donors[gr0D], nr_a[gr0D]);
+  if (!bTwo) {
     for(i=0; i<grINC; i++) {
-      nr_a[gr1+i]=nr_a[gr0+i];
-      a[gr1+i]=a[gr0+i];
-      donors[gr1+i]=donors[gr0+i];
+      nr_a[gr1+i]   = nr_a[gr0+i];
+      a[gr1+i]      = a[gr0+i];
     }
+    donors[gr1D] = donors[gr0D];
+  }
   
   /* check input */
   bStop=FALSE;
@@ -694,20 +704,24 @@ int main(int argc,char *argv[])
     snew(insert,natoms);
   do {
     build_grid(nr_a, a, x, bBox, box, hbox, rcut, ngrid, grid);
+    if (debug)
+      dump_grid(debug, ngrid, grid);
     if (nframes >= max_nframes) {
       max_nframes += FRINC;
       srenew(nhb,max_nframes);
       srenew(nhx,max_nframes);
       srenew(time,max_nframes);
-      for (i=0; i<max_nrhb; i++)
-	srenew(hbexist[i],max_nframes);
+      if (bHBMap)
+	for (i=0; i<max_nrhb; i++)
+	  srenew(hbexist[i],max_nframes);
     }
     time[nframes] = t;
     nhb[nframes]  = 0;
     for (i=0; i<max_hx; i++)
       nhx[nframes][i]=0;
-    for (i=0; i<max_nrhb; i++)
-      hbexist[i][nframes]=HB_NO;
+    if (bHBMap)
+      for (i=0; i<max_nrhb; i++)
+	hbexist[i][nframes]=HB_NO;
     
     /* loop over all gridcells (xi,yi,zi)      */
     /* Removed confusing macro, DvdS 27/12/98  */
@@ -716,8 +730,8 @@ int main(int argc,char *argv[])
 	for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	  /* loop over groups gr0 (always) and gr1 (if necessary) */
 	  for (grp=gr0; grp<=(bTwo?gr1:gr0); grp+=grINC) {
-	    icell=&grid[xi][yi][zi][grp+grD];
-	    /* loop over all donor atoms from group (grp) 
+	    icell=&grid[xi][yi][zi][grp+grH];
+	    /* loop over all hydrogen atoms from group (grp) 
 	     * in this gridcell (icell) 
 	     */
 	    for (ai=0; ai<icell->nr; ai++) {
@@ -750,7 +764,7 @@ int main(int argc,char *argv[])
 			donors[grp][i].hb[donors[grp][i].nrhb].nr=nrhb;
 			idx = donors[grp][i].nrhb;
 			donors[grp][i].nrhb++;
-			if (nrhb >= max_nrhb) {
+			if (bHBMap && (nrhb >= max_nrhb) ) {
 			  max_nrhb+=HBINC;
 			  srenew(hbexist,max_nrhb);
 			  for (l=max_nrhb-HBINC; l<max_nrhb; l++)
@@ -758,8 +772,9 @@ int main(int argc,char *argv[])
 			}
 			nrhb++;
 		      }
-		      /* update matrix */
-		      hbexist[donors[grp][i].hb[idx].nr][nframes] |= HB_YES;
+		      if (bHBMap)
+			/* update matrix */
+			hbexist[donors[grp][i].hb[idx].nr][nframes] |= HB_YES;
 		      
 		      /* count number of hbonds per frame */
 		      nhb[nframes]++;
@@ -809,8 +824,8 @@ int main(int argc,char *argv[])
 		      ENDLOOPGRIDINNER;
 		      /* loop over gridcells adjacent to j (xk,yk,zk) */
 		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid) {
-			kcell=&grid[xk][yk][zk][grID];
-			/* loop over donor atoms from ins group 
+			kcell=&grid[xk][yk][zk][grIH];
+			/* loop over hydrogen atoms from ins group 
 			   in this adjacent gridcell (kcell) */
 			for (ak=0; ak<kcell->nr; ak++) {
 			  k=kcell->atoms[ak];
@@ -845,7 +860,7 @@ int main(int argc,char *argv[])
 			  donors[grp][i].hb[donors[grp][i].nrhb].nr=nrhb;
 			  idx=donors[grp][i].nrhb;
 			  donors[grp][i].nrhb++;
-			  if (nrhb>=max_nrhb) {
+			  if (bHBMap && (nrhb>=max_nrhb) ) {
 			    max_nrhb+=HBINC;
 			    srenew(hbexist,max_nrhb);
 			    for (l=max_nrhb-HBINC; l<max_nrhb; l++)
@@ -854,8 +869,10 @@ int main(int argc,char *argv[])
 			  nrhb++;
 			}
 			
-			/* mark insertion in hbond index */
-			hbexist[donors[grp][i].hb[idx].nr][nframes] |= HB_INS;
+			if (bHBMap)
+			  /* mark insertion in hbond index */
+			  hbexist[donors[grp][i].hb[idx].nr][nframes] |= 
+			    HB_INS;
 			
 			/* print insertion info to file */
 			fprintf(fpins,
@@ -884,7 +901,7 @@ int main(int argc,char *argv[])
 	      ENDLOOPGRIDINNER;
 	    } /* for ai  */
 	  } /* for grp */
-	} /* LOOPGRIDOUTER */
+	} /* for xi,yi,zi */
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
   
@@ -915,7 +932,8 @@ int main(int argc,char *argv[])
 	sum+=rdist[i];
       
       fp = xvgropen(opt2fn("-dist",NFILE,fnm),
-		    "Hydrogen Bond Distribution","Distance (nm)","");
+		    "Hydrogen Bond Distribution",
+		    "Hydrogen - Acceptor Distance (nm)","");
       for(i=0; i<nrbin; i++)
 	fprintf(fp,"%10g %10g\n",(i+0.5)*rbin,rdist[i]/(rbin*(real)sum));
       fclose(fp);
@@ -929,7 +947,8 @@ int main(int argc,char *argv[])
 	sum+=adist[i];
       
       fp = xvgropen(opt2fn("-ang",NFILE,fnm),
-		    "Hydrogen Bond Distribution","Angle (\\SO\\N)","");
+		    "Hydrogen Bond Distribution",
+		    "Donor - Hydrogen - Acceptor Angle (\\SO\\N)","");
       for(i=0; i<nabin; i++)
 	fprintf(fp,"%10g %10g\n",(i+0.5)*abin,adist[i]/(abin*(real)sum));
       fclose(fp);
@@ -1004,6 +1023,7 @@ int main(int argc,char *argv[])
       fclose(fp);
       for(x=0; x<mat.nx; x++)
 	sfree(mat.matrix[x]);
+      sfree(mat.axis_y);
       sfree(mat.matrix);
       sfree(mat.map);
     }
