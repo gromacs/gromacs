@@ -52,7 +52,6 @@ typedef struct {
 
   /* VdW stuff */
   real rvdw_switch,rvdw;
-  bool bLJshift;
   real bham_b_max;
   real tabscale_exp;
 
