@@ -505,7 +505,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
   static rvec *x_s = NULL;
 
   if (!x_s)
-    snew(x_s,natoms);
+    snew(x_s,md->nr); /* can't rely on natoms */
 
   /* copy x to temp array x_s. We assume all molecules are whole already */
   for (i=0;i<natoms;i++) 

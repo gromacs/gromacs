@@ -116,8 +116,8 @@ static void get_named_indexgroup(FILE *log,atom_id **target,int *isize,
     fatal_error(0,"Can't find group %s in the index file",name);
 }
 
-static void read_whole_index(char *indexfile,char ***grpnames,atom_id ***index,
-			      int **ngx,int *totalgrps)
+static void read_whole_index(char *indexfile,char ***grpnames,
+			     atom_id ***index, int **ngx,int *totalgrps)
 {
   t_block *grps;
   char    **gnames;
@@ -133,7 +133,8 @@ static void read_whole_index(char *indexfile,char ***grpnames,atom_id ***index,
   *totalgrps = grps->nr;
   snew(*index,grps->nr);
   snew(*grpnames,grps->nr);
-  snew(*ngx,grps->nr);
+  snew((*ngx),grps->nr); 
+  /* memory leak, can't free ngx anymore. 4bytes/group */
 
   for(i=0; (i<*totalgrps); i++) {
     (*grpnames)[i]=strdup(gnames[i]);
@@ -142,10 +143,16 @@ static void read_whole_index(char *indexfile,char ***grpnames,atom_id ***index,
     for(j=0; (j<(*ngx)[i]); j++)
       (*index)[i][j]=grps->a[grps->index[i]+j];
   }
+
+  for(i=0; (i<grps->nr); i++)
+    sfree(gnames[i]);
+  sfree(gnames);
+  done_block(grps);
+  sfree(grps);
 }
 
-static void print_whole_index(char **grpnames, atom_id **index, int *ngx, int
-			      ngrps) 
+static void print_whole_index(char **grpnames, atom_id **index, int *ngx, 
+			      int ngrps) 
 {
   int i,j;
   FILE *tmp;
@@ -201,14 +208,13 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   /* read the whole index file */
   read_whole_index(opt2fn("-n",nfile,fnm),&grpnames,&index,&ngx,&totalgrps);
   
-  /* DEBUG */
   if (pull->bVerbose) {
     fprintf(stderr,"read_whole_index: %d groups total\n",totalgrps);
     for(i=0;i<totalgrps;i++) 
       fprintf(stderr,"group %i (%s) %d elements\n",
 	      i,grpnames[i],ngx[i]);
     /*    print_whole_index(grpnames,index,ngx,totalgrps); */
-  } /* END DEBUG */
+  } 
   
   /* grab the groups that are specified in the param file */
   for (i=0;i<pull->pull.n;i++) 
@@ -216,7 +222,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 			 pull->pull.grps[i],index,ngx,grpnames,totalgrps) ;
   get_named_indexgroup(log,&pull->ref.idx[0],&pull->ref.ngx[0],
 		       pull->ref.grps[0],index,ngx,grpnames,totalgrps);
-  
+
   /* get more memory! Don't we love C? */
   snew(pull->ref.x0[0],pull->ref.ngx[0]);
   snew(pull->ref.xp[0],pull->ref.ngx[0]);
@@ -313,5 +319,8 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
 	  "                      END   PULL INFO                    \n"
 	  "**************************************************\n\n");
 }
+
+
+
 
 

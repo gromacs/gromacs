@@ -61,7 +61,7 @@ void print_afm(t_pull *pull, int step)
   for (i=0;i<pull->pull.n;i++)
     if (pull->bVerbose) 
       fprintf(pull->out,
-	      "%d: f:%8.3f s:%8.3f\n",i,pull->pull.f[i][ZZ],
+	      "%d:%d: f:%8.3f s:%8.3f\n",step,i,pull->pull.f[i][ZZ],
 	      pull->pull.spring[i][ZZ]);
     else
       fprintf(pull->out,"%8.3f\n",pull->pull.f[i][ZZ]);
@@ -137,33 +137,53 @@ void print_umbrella(t_pull *pull, int step)
 void read_pullparams(t_pull *pull, char *infile) 
 {
   t_inpfile *inp;
-  int ninp;
+  int ninp,i;
   char *tmp;           /* for the input parsing macros */
   char dummy[STRLEN];  /* idem */
   char grp1buf[STRLEN], grp2buf[STRLEN], grp3buf[STRLEN], 
-    bf1[STRLEN], bf2[STRLEN], dir[STRLEN], refdir1[STRLEN],refdir2[STRLEN];
-  int bReverse; 
+       bf1[STRLEN], bf2[STRLEN], dir[STRLEN], 
+       refdir1[STRLEN],refdir2[STRLEN];
+
+  int bReverse; int tmpref; int tmprun; 
+
+  enum {erunSTART, erunAFM, erunConstraint, erunUmbrella, erunTest, erunNR};
+  static char *runtypes[erunNR+1] = { 
+    "start", "afm", "constraint", "umbrella", "test", NULL
+  };
+  enum {erefCom, erefComT0, erefDyn, erefDynT0, erefNR};
+  static char *reftypes[erefNR+1] = {
+    "com", "com_t0", "dynamic", "dynamic_t0", NULL
+  };
+  enum {ereverseTO_REF, ereverseFROM_REF, ereverseNR};
+  static char *reversetypes[ereverseNR+1] = {
+    "to_reference", "from_reference", NULL
+  };
+  int nerror = 0;
 
   /* read input parameter file */
   fprintf(stderr,"Reading parameter file %s\n",infile);
   inp=read_inpfile(infile,&ninp);
+
+  /* general options */
   CTYPE("GENERAL");
   ITYPE("verbose",          pull->bVerbose, 0);
-  CTYPE("Runtype: 0=start 1:afm 2:constraint 3:umbrella 4:test");
-  ITYPE("runtype",          pull->runtype, 1);
+  CTYPE("Runtype: start, afm, constraint, umbrella, test");
+  EETYPE("runtype",         tmprun, runtypes, &nerror, TRUE);
   CTYPE("Groups to be pulled");
   STYPE("group_1",          grp1buf, "");
   STYPE("group_2",          grp2buf, "");
   CTYPE("The group for the reaction force.");
   STYPE("reference_group",  grp3buf, "");
-  CTYPE("Ref. type 0: com 1: com at t0 2: dynamic 3: dynamic at t0");
-  ITYPE("reftype",          pull->reftype, 0);
+  CTYPE("Ref. type: com, com_t0, dynamic, dynamic_t0");
+  EETYPE("reftype",         tmpref, reftypes, &nerror, TRUE);
   CTYPE("Use running average for reflag steps for com calculation");
   ITYPE("reflag",           pull->reflag, 1);
   CTYPE("Select components for constraint vector. default: z-only");
   STYPE("direction",        dir, "0.0 0.0 1.0");
-  CTYPE("Reverse direction for start/afm to towards reference group 0/1");
-  ITYPE("reverse",          pull->bReverse, 0);
+  CTYPE("Direction for start/afm: to_reference, from_reference");
+  EETYPE("reverse",          pull->bReverse, reversetypes, &nerror, TRUE);
+
+  /* options for dynamic reference groups */
   CTYPE("DYNAMIC REFERENCE GROUP OPTIONS");
   CTYPE("Cylinder radius for dynamic reaction force groups (nm)");
   RTYPE("r",                pull->r, 0.0);
@@ -171,14 +191,20 @@ void read_pullparams(t_pull *pull, char *infile)
   RTYPE("rc",   pull->rc,   0.0);
   CTYPE("Update frequency for dynamic reference groups (steps)");
   ITYPE("update",           pull->update, 1);
+
+  /* options for AFM type pulling simulations */
   CCTYPE("AFM OPTIONS");
   CTYPE("pull rate in nm/timestep");
   RTYPE("pullrate",         pull->rate,    0.0);
   CTYPE("forceconstant in kJ/(mol*nm)");
   RTYPE("forceconstant",    pull->k, 0.0);
+
+  /* umbrella sampling options */
   CCTYPE("UMBRELLA SAMPLING OPTIONS");
   CTYPE("Width of umbrella sampling potential (nm)");
   RTYPE("width",            pull->um_width, 0.0);
+
+  /* options for making starting structures */
   CCTYPE("STARTING STRUCTURE OPTIONS");
   CTYPE("Start coord. for making starting struct, rel. to ref. grp.: x y z");
   STYPE("r0_group1",        bf1, "");
@@ -196,7 +222,16 @@ void read_pullparams(t_pull *pull, char *infile)
   CTYPE("Write out structure every ndegr degrees, transstep nm");
   ITYPE("ndegr",            pull->rot_incr, 0);
   RTYPE("transstep",        pull->xlt_incr, 0.001);
+
   write_inpfile("params.out",ninp,inp);
+  for (i=0; (i<ninp); i++) {
+    sfree(inp[i].name);
+    sfree(inp[i].value);
+  }
+  sfree(inp);
+
+  pull->runtype = (t_runtype)tmprun;
+  pull->reftype = (t_reftype)tmpref;
 
   /* sort out the groups */
   fprintf(stderr,"Groups: %s %s %s\n",grp1buf,grp2buf,grp3buf);

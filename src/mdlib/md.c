@@ -233,7 +233,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (pulldata.bPull && 
 	  (pulldata.runtype == eAfm || pulldata.runtype == eUmbrella ||
 	   pulldata.runtype == eTest))
-	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,natoms,mdatoms); 
+	pull(&pulldata,x,f,parm->box,top,parm->ir.delta_t,step,
+	     natoms,mdatoms); 
 
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 	     &(parm->ir),FALSE,mdatoms,x,graph,
