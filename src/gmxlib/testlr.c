@@ -314,7 +314,7 @@ int main(int argc,char *argv[])
   calc_shifts(box,box_size,fr->shift_vec,FALSE);
 
   /* Periodicity stuff */  
-  graph = mk_graph(&(top.idef),top.atoms.nr,FALSE);
+  graph = mk_graph(&(top.idef),top.atoms.nr,FALSE,FALSE);
   shift_self(graph,fr->shift_vec,x);
 
   calc_LRcorrections(log,0,natoms,ir.rcoulomb_switch,

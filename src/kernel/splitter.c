@@ -214,77 +214,88 @@ typedef struct {
 
 void set_bor(t_border *b,int atom,int ic,int is)
 {
+  if (debug)
+    fprintf(debug,"border @ atom %5d [ ic = %5d,  is = %5d ]\n",atom,ic,is);
   b->atom = atom;
   b->ic   = ic;
   b->is   = is;
 }
 
-t_border *mk_border(bool bVerbose,int nprocs,t_block *cgs,
-		    t_block *shakes,int *nb)
+static bool is_bor(atom_id ai[],int i)
 {
-  int i,ic,is,nbor,ac,as,as0;
-  t_border *border;
-  
-  nbor = 1+max(cgs->nr,shakes->nr);
-  if ((shakes->nr > 0) && (bVerbose)) {
-    fprintf(stderr,
-	    "Going to use the WINKELHAAK Algorithm to split over %d cpus\n",
-	    nprocs);
-    fprintf(stderr,"There are %d possible border locations\n",nbor);
-  }
-  snew(border,nbor);
-  nbor = 0;
-  ic   = 0;
-  is   = 0;
-  while ((ic < cgs->nr) || (is < shakes->nr)) {
-    ac  = (ic == cgs->nr) ? cgs->nra : cgs->a[cgs->index[ic]];
-    as  = (is == shakes->nr) ? shakes->nra : shakes->a[shakes->index[is]];
-    as0 = (is == 0) ? 0 : (shakes->a[shakes->index[is]-1]); 
-    if (debug)
-      fprintf(debug,"mk_border: is=%6d ic=%6d as0=%6d as=%6d ac=%6d\n",
- 	      is,ic,as0,as,ac);
-    if (ac == as) {
-      set_bor(&border[nbor],ac,ic,is);
-      nbor++;
-      ic++;
-      if (as < shakes->nra)
-	is++;
-    } 
-    else if ((ac >  as) && (as == shakes->nra)) {
-      set_bor(&border[nbor],ac,ic,is);
-      nbor++;
-      ic++;
-    } 
-    else if ((ac <  as) && (ac > as0)) {
-      set_bor(&border[nbor],ac,ic,is);
-      nbor++;
-      ic++;
-    } 
-    else if (ac < as) 
-      ic++;
-    else
-      is++;
-  }
-  set_bor(&border[nbor],cgs->nra,ic,is);
-  nbor++;
-  
-  *nb = nbor;
+  return ((ai[i] != ai[i-1]) || ((ai[i] == NO_ATID) && (ai[i-1] == NO_ATID)));
+}
+
+t_border *mk_border(bool bVerbose,int natom,atom_id *invcgs,
+		    atom_id *invshk,int *nb)
+{
+  t_border *bor;
+  atom_id  *sbor,*cbor;
+  int      i,j,is,ic,ns,nc,nbor;
 
   if (debug) {
-    fprintf(debug,"There are %d actual border entries\n",nbor);
+    for(i=0; (i<natom); i++) {
+      fprintf(debug,"atom: %6d  cgindex: %6d  shkindex: %6d\n",
+	      i,invcgs[i],invshk[i]);
+    }
+  }
+    
+  snew(sbor,natom+1);
+  snew(cbor,natom+1);
+  ns = nc = 1;
+  for(i=1; (i<natom); i++) {
+    if (is_bor(invcgs,i)) 
+      cbor[nc++] = i;
+    if (is_bor(invshk,i)) 
+      sbor[ns++] = i;
+  }
+  sbor[ns] = 0;
+  cbor[nc] = 0;
+  fprintf(stderr,"There are %d charge group borders and %d shake borders\n",
+	  nc,ns);
+  snew(bor,max(nc,ns));
+  ic = is = nbor = 0;
+  while ((ic < nc) || (is < ns)) {
+    if (sbor[is] == cbor[ic]) {
+      set_bor(&(bor[nbor]),cbor[ic],ic,is);
+      nbor++;
+      if (ic < nc) ic++;
+      if (is < ns) is++;
+    }
+    else if (cbor[ic] > sbor[is]) {
+      if (is == ns) {
+	set_bor(&(bor[nbor]),cbor[ic],ic,is);
+	nbor++;
+	if (ic < nc) ic++;
+      }
+      else if (is < ns) 
+	is++;
+    }
+    else if (ic < nc)
+      ic++;
+    else
+      fatal_error(0,"Can't happen is=%d, ic=%d (%s, %d)",
+		  is,ic,__FILE__,__LINE__);
+  }
+  fprintf(stderr,"There are %d total borders\n",nbor);
+
+  if (debug) {
+    fprintf(debug,"There are %d actual bor entries\n",nbor);
     for(i=0; (i<nbor); i++) 
-      fprintf(debug,"border[%5d] = atom: %d  ic: %d  is: %d\n",i,
-	      border[i].atom,border[i].ic,border[i].is);
+      fprintf(debug,"bor[%5d] = atom: %d  ic: %d  is: %d\n",i,
+	      bor[i].atom,bor[i].ic,bor[i].is);
   }
   
-  return border;
+  *nb = nbor;
+  
+  return bor;
 }
 
 static void split_blocks(bool bVerbose,int nprocs,
-			 t_block *cgs,t_block *shakes)
+			 t_block *cgs,t_block *sblock)
 {
   int      maxatom[MAXPROC];
-  int      i,ai,sbl,b0,b1;
+  int      i,ai,b0,b1;
   int      pid,last_shk,nbor;
   t_border *border;
   double   load,tload;
@@ -294,18 +305,16 @@ static void split_blocks(bool bVerbose,int nprocs,
   
   if (debug) {
     pr_block(debug,0,"cgs",cgs);
-    pr_block(debug,0,"shakes",shakes);
+    pr_block(debug,0,"sblock",sblock);
   }
 
-  shknum = make_invblock(shakes,cgs->nra+1);
+  shknum = make_invblock(sblock,cgs->nra+1);
   cgsnum = make_invblock(cgs,cgs->nra+1);
-  border = mk_border(bVerbose,nprocs,cgs,shakes,&nbor);
+  border = mk_border(bVerbose,cgs->nra,cgsnum,shknum,&nbor);
 
-  load  = (double)cgs->nra / (double)nprocs;  
-  tload = load;
-
-  pid      = 0;
-  sbl      = 0;
+  load   = (double)cgs->nra / (double)nprocs;  
+  tload  = load;
+  pid    = 0;
   for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
     if(i<(nbor-1)) 
       b1=border[i+1].atom;
@@ -317,17 +326,19 @@ static void split_blocks(bool bVerbose,int nprocs,
     if (fabs(b0-tload)<fabs(b1-tload)) {
       /* New pid time */
       cgs->multinr[pid]    = border[i].ic;
-      shakes->multinr[pid] = border[i].is;
-      maxatom[pid] = b0;
+      /* Store the atom number here, has to be processed later */
+      sblock->multinr[pid] = border[i].atom;
+      maxatom[pid]         = b0;
       pid++;
       tload += load;
     } 
   }
   /* Now the last one... */
   while (pid < nprocs) {
-    cgs->multinr[pid]=cgs->nr;
-    shakes->multinr[pid]=shakes->nr;
-    maxatom[pid]=cgs->nra;
+    cgs->multinr[pid]    = cgs->nr;
+    /* Store atom number, see above */
+    sblock->multinr[pid] = cgs->nra;
+    maxatom[pid]         = cgs->nra;
     pid++;
   }
   if (pid != nprocs) {
@@ -355,31 +366,6 @@ static void def_mnr(int nr,int mnr[])
   for (i=0; (i<MAXPROC); i++) 
     mnr[i]=0;
   mnr[0]=nr;
-}
-
-void split_top(bool bVerbose,int nprocs,t_topology *top)
-{
-  int j;
-  int *homeind;
-  
-  if ((bVerbose) && (nprocs>1))
-    fprintf(stderr,"splitting topology...\n");
-  
-  for(j=0; (j<F_NRE); j++)  
-    def_mnr(top->idef.il[j].nr,top->idef.il[j].multinr);
-  def_mnr(top->atoms.excl.nr,top->atoms.excl.multinr);
-
-  for (j=0; j<ebNR; j++) 
-    def_mnr(top->blocks[j].nr,top->blocks[j].multinr);
-
-  if (nprocs > 1) {
-    split_blocks(bVerbose,nprocs,
-		 &(top->blocks[ebCGS]),&(top->blocks[ebSBLOCKS]));
-    homeind=home_index(nprocs,&(top->blocks[ebCGS]));
-    for(j=0; (j<F_NRE); j++)
-      split_force2(nprocs,homeind,&top->idef,&top->idef.il[j]);
-    sfree(homeind);
-  }
 }
 
 typedef struct {
@@ -523,14 +509,15 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
   return nblock;
 }
 
-void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock)
+void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
+		 bool bSettle)
 {
   t_graph *g;
   int     i,j,k;
   t_sid   *sid;
   int     isid,nsid;
   
-  g=mk_graph(idef,natoms,TRUE);
+  g=mk_graph(idef,natoms,TRUE,bSettle);
   if (bVerbose && debug)
     p_graph(debug,"Graaf Dracula",g);
   snew(sid,natoms);
@@ -578,3 +565,49 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock)
   done_graph(g);
   sfree(g);
 }
+
+void split_top(bool bVerbose,int nprocs,t_topology *top)
+{
+  int     j,k,mj,atom,maxatom;
+  t_block sblock;
+  int     *homeind,*sblinv;
+  
+  if ((bVerbose) && (nprocs>1))
+    fprintf(stderr,"splitting topology...\n");
+  
+  for(j=0; (j<F_NRE); j++)  
+    def_mnr(top->idef.il[j].nr,top->idef.il[j].multinr);
+  def_mnr(top->atoms.excl.nr,top->atoms.excl.multinr);
+
+  for (j=0; j<ebNR; j++) 
+    def_mnr(top->blocks[j].nr,top->blocks[j].multinr);
+
+  if (nprocs > 1) {
+    /* Make a special shake block that includes settles */
+    init_block(&sblock);
+    gen_sblocks(bVerbose,top->atoms.nr,&top->idef,&sblock,TRUE);
+
+    split_blocks(bVerbose,nprocs,&(top->blocks[ebCGS]),&sblock);
+    
+    /* Now transform atom numbers to real inverted shake blocks */
+    sblinv = make_invblock(&(top->blocks[ebSBLOCKS]),top->atoms.nr+1);
+    for(j=0; (j<MAXPROC); j++) {
+      atom = sblock.multinr[j];
+      mj   = NO_ATID;
+      for(k=(j == 0) ? 0 : sblock.multinr[j-1]; (k<atom); k++)
+	mj = max(mj,sblinv[k]);
+      if (mj == NO_ATID) 
+	mj = (j == 0) ? -1 : top->blocks[ebSBLOCKS].multinr[j-1]-1;
+      
+      top->blocks[ebSBLOCKS].multinr[j] = mj+1;
+    }
+    sfree(sblinv);
+    
+    homeind=home_index(nprocs,&(top->blocks[ebCGS]));
+    for(j=0; (j<F_NRE); j++)
+      split_force2(nprocs,homeind,&top->idef,&top->idef.il[j]);
+    sfree(homeind);
+    done_block(&sblock);
+  }
+}
+

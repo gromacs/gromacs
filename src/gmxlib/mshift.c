@@ -97,7 +97,7 @@ static void add_gbond(t_graph *g,t_iatom ia[],int np)
 static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 		      int natoms,bool bAll)
 {
-  t_iatom *ia;
+  t_iatom *ia,waterh[3];
   t_iatom tp;
   int     i,j,np,nbonded;
   int     end;
@@ -125,6 +125,14 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 	nbonded = np;
       if (bAll) {
 	add_gbond(g,&(ia[1]),nbonded);
+	if (tp == F_SETTLE) {
+	  if (debug)
+	    fprintf(debug,"Adding settles to graph");
+	  waterh[0] = ia[1];
+	  waterh[1] = ia[1]+1;
+	  waterh[2] = ia[1]+2;
+	  add_gbond(g,waterh,3);
+	}
       } else {
 	/* Check whether all atoms are bonded now! */
 	for(j=0; (j<np); j++)
@@ -228,7 +236,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
   g->maxbond=nnb+6;
 }
 
-t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly)
+t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 {
   t_graph *g;
   int     i;
@@ -275,6 +283,8 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly)
     else {
       /* This is a special thing used in grompp to generate shake-blocks */
       mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),natoms,TRUE);
+      if (bSettle)
+	mk_igraph(g,idef->functype,&(idef->il[F_SETTLE]),natoms,TRUE);
     }
     g->nbound=0;
     for(i=0; (i<g->nnodes); i++)
@@ -637,7 +647,7 @@ void main(int argc,char *argv[])
 	      box,NULL,NULL,&idum,x,NULL,NULL,&idum,NULL,&top);
 
   fprintf(stderr,"Making Graph Structure...\n");
-  g=mk_graph(&(top.idef),top.atoms.nr,pid);
+  g=mk_graph(&(top.idef),top.atoms.nr,FALSE,FALSE);
 
   out=ffopen(targ.outfile,"w");
 

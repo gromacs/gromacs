@@ -33,5 +33,8 @@ extern void split_top(bool bVerbose,int nprocs,t_topology *top);
  * and shake blocks.
  */
 
-extern void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock);
-/* Generate shake blocks from the constraint list */
+extern void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
+			bool bSettle);
+/* Generate shake blocks from the constraint list. Set bSettle to yes for shake
+ * blocks including settles. You normally do not want this.
+ */
