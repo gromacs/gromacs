@@ -50,7 +50,7 @@
 
 typedef struct {
   int   id;		/* Identification 		*/
-  int   x,xold;
+  float x,xold;
   float v;		/* Position and velocity	*/
   float vwanted;	/* Wants to drive at this speed	*/
   float acc;		/* Acceleration			*/
@@ -66,6 +66,7 @@ typedef struct {
   int   metres;		/* Road length			*/
   float dt;		/* Time step			*/
   float min_dist;	/* Min distance cars can come	*/
+  int   sleep;          /* How long to sleep in between updates */
 } t_input;
 
 static char *Driving[]      = { "Start","Stop"   };
@@ -76,7 +77,7 @@ static char *but_name[NBUT] = { "Quit", "Start", "Fog"  };
 typedef struct {
   int       ncars;
   t_car     *cars;
-  t_input   *ir;
+  t_input   ir;
   int       step;
   bool      bDriving;	/* Are we driving ?		*/
   bool      bFog;		/* Is it foggy ?		*/
@@ -85,43 +86,34 @@ typedef struct {
   t_windata but[NBUT];
 } t_xhighway;
 
-int read_cars(t_x11 *x11,char *fn,t_car **cars)
+int read_input(t_x11 *x11,char *fn,t_car **cars,t_input *ir)
 {
   FILE   *in;
   int    i,n;
   char   buf[100],b2[100];
   t_car  *c;
-
+  
   in=ffopen(fn,"r");
-  fscanf(in,"%d",&n);
+  if (fscanf(in,"%d %d %f %f  %d",
+	     &ir->nlane,&ir->metres,&ir->dt,&ir->min_dist,&ir->sleep) != 5)
+    gmx_fatal(FARGS,"Not enough parameters in %s line 1",fn);
+  if (fscanf(in,"%d",&n) != 1)
+    gmx_fatal(FARGS,"Not enough parameters in %s line 2",fn);
   snew(*cars,n);
 
   for(i=0; (i<n); i++) {
     c=&((*cars)[i]);
     c->id=i;
     c->lane=0;
-    fscanf(in,"%d %f %f %f %f %s %s",
-	   &(c->x),&(c->v),&(c->vwanted),&(c->acc),&(c->brake),buf,b2);
+    if (fscanf(in,"%f %f %f %f %f %s %s",&(c->x),&(c->v),&(c->vwanted),
+	       &(c->acc),&(c->brake),buf,b2) != 7)
+      gmx_fatal(FARGS,"Not enough parameters in %s line %d",fn,3+i);
     x11->GetNamedColor(x11,buf,&(c->col));
     x11->GetNamedColor(x11,b2,&(c->roof));
   }
   fclose(in);
 
   return n;
-}
-
-t_input *read_input(char *fn)
-{
-  FILE    *in;
-  t_input *ir;
-
-  snew(ir,1);
-  in=ffopen(fn,"r");
-
-  fscanf(in,"%d %d %f %f",&ir->nlane,&ir->metres,&ir->dt,&ir->min_dist);
-
-  fclose(in);
-  return ir;
 }
 
 static float get_dist(int ncars,t_car cars[],int which,bool bFog,
@@ -217,6 +209,7 @@ void simulate(t_x11 *x11,t_xhighway *xhw,
   }
   /* Detect Crashes */
   /* Plot */
+  usleep(xhw->ir.sleep);
   ExposeWin(x11->disp,xhw->win.self);
 }
 
@@ -304,7 +297,7 @@ static bool xhwCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   win = &(xhw->win); 
 
   if (nyy == 0) {
-    nyy=2*xhw->ir->nlane+1;
+    nyy=2*xhw->ir.nlane+1;
     snew(yy,nyy);
   }
   for(i=0; (i<nyy); i++) 
@@ -313,7 +306,7 @@ static bool xhwCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   switch (event->type) {
   case Expose: {
     if (wd == win->self) {
-      sx=(float)win->width  / xhw->ir->metres;
+      sx=(float)win->width  / xhw->ir.metres;
       
       XClearWindow(x11->disp,win->self);
       XSetForeground(x11->disp,x11->gc,WHITE);
@@ -324,12 +317,12 @@ static bool xhwCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
       for(i=0; (i<xhw->ncars); i++) {
 	t_car *car=&(xhw->cars[i]);
 	int   w1=car->x*sx;
-	int   h1=yy[1+2*(xhw->ir->nlane-1-car->lane)];
+	int   h1=yy[1+2*(xhw->ir.nlane-1-car->lane)];
 
 	draw_car(x11->disp,win->self,x11->gc,car,w1,h1);
       }
       if (xhw->bDriving)
-	simulate(x11,xhw,xhw->ncars,xhw->cars,xhw->ir);
+	simulate(x11,xhw,xhw->ncars,xhw->cars,&xhw->ir);
     }
     break;
   }
@@ -427,17 +420,15 @@ static bool butCallBack(struct t_x11 *x11,XEvent *event, Window wd, void *data)
   return FALSE;
 }
 
-t_xhighway *GetXHW(t_x11 *x11,char *infile,char *carfile)
+t_xhighway *GetXHW(t_x11 *x11,char *infile)
 {
   t_xhighway *xhw;
   int        i,h,dh,w;
 
   snew(xhw,1);
-
-  xhw->ir=read_input(infile);
-  xhw->ncars=read_cars(x11,carfile,&(xhw->cars));
+  xhw->ncars=read_input(x11,infile,&(xhw->cars),&xhw->ir);
   
-  h=xhw->ir->nlane*40;
+  h=xhw->ir.nlane*40;
   dh=20;
   w=752;
   InitWin(&xhw->main,0,0,w,h+dh+7,1,Program());
@@ -486,13 +477,12 @@ int main(int argc,char *argv[])
   t_x11      *x11;
   t_xhighway *xhw;
   t_filenm fnm[] = {
-    { efDAT, "-f", "highway", ffREAD },
-    { efDAT, "-a", "auto",    ffREAD }
+    { efDAT, "-f", "highway", ffREAD }
   };
 #define NFILE asize(fnm)
 
   CopyRight(stdout,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_TIME,NFILE,fnm,
+  parse_common_args(&argc,argv,0,NFILE,fnm,
 		    0,NULL,asize(desc),desc,0,NULL);
   
   if ((x11=GetX11(&argc,argv))==NULL) {
@@ -500,8 +490,8 @@ int main(int argc,char *argv[])
 	    "Check your DISPLAY environment variable\n");
     exit(1);
   }
-  xhw=GetXHW(x11,opt2fn("-f",NFILE,fnm),opt2fn("-a",NFILE,fnm));
-
+  xhw=GetXHW(x11,opt2fn("-f",NFILE,fnm));
+  
   XMapWindow(x11->disp,xhw->main.self);
   XMapSubwindows(x11->disp,xhw->main.self);
   x11->MainLoop(x11);
