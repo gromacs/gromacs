@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#include "transpose_mpi.h"
+#include <fftw_mpi.h>
 
 typedef TRANSPOSE_EL_TYPE TOMS_el_type;
 
