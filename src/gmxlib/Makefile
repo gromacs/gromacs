@@ -24,6 +24,8 @@ XTCLIB		= $(LIBDIR)/libxtcf.a
 MKDEP_PRE	= $(MAKE) fnbf.c
 MKDEP_POST	= $(RM) fnbf.c
 SONAME		= libgmx.$(GMXCPU).so
+TMPFILES        = mkinl   callf77.c libxdrf.c axp_asm.s \
+		  inner.h innerf.f innerc.c fnbf.c callf77A.c 
 OBJ		= \
 	3dview.o	atomprop.o	block_tx.o	bondfree.o	\
 	buffer.o	calch.o		callf77A.o	confio.o	\
@@ -194,7 +196,6 @@ endif
 axp_asm.o:		axp_asm.S
 			$(CC) -E axp_asm.S > axp_asm.s
 			$(CC) -c axp_asm.s -o axp_asm.o
-			$(RM) axp_asm.s
 
 ifeq ($(CC_MKINL),)
 CC_MKINL	= $(CC) $(C-FLAGS)
