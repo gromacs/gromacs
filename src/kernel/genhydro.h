@@ -42,16 +42,17 @@ static char *SRCID_genhydro_h = "$Id$";
 #include "hackblock.h"
 
 extern int add_h(t_atoms **pdbaptr, rvec *xptr[], 
-		 int nah, t_hackblock ah[], 
-		 t_hackblock *ntdb, t_hackblock *ctdb, 
-		 int nterpairs, int *rN, int *rC, 
+		 int nah, t_hackblock ah[],
+		 int nterpairs,
+		 t_hackblock **ntdb, t_hackblock **ctdb, 
+		 int *rN, int *rC, 
 		 int **nabptr, t_hack ***abptr,
 		 bool bUpdate_pdba, bool bKeep_old_pdba);
 /* Generate hydrogen atoms and N and C terminal patches.
- * ntdb and ctdb may be NULL, no replacement will be done then.
  * int nterpairs is the number of termini pairs in the molecule
- * rN is the residue number of the N-terminus,
- * rC is the residue number of the C-terminus
+ * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.
+ * rN[i] is the residue number of the N-terminus of chain i,
+ * rC[i] is the residue number of the C-terminus of chain i
  * if nabptr && abptrb, the hack array will be returned in them to be used
  * a second time
  * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged

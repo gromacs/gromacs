@@ -118,8 +118,9 @@ void dump_ab(FILE *out,int natom,int nab[], t_hack *ab[], bool bHeader)
 }
 
 static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
-				   t_hackblock *ntdb, t_hackblock *ctdb, 
-				   int nterpairs, int *rN, int *rC)
+				   int nterpairs,
+				   t_hackblock **ntdb, t_hackblock **ctdb, 
+				   int *rN, int *rC)
 {
   int i,rnr;
   t_hackblock *hb,*ahptr;
@@ -128,8 +129,8 @@ static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
   snew(hb,pdba->nres);
   /* first the termini */
   for(i=0; i<nterpairs; i++) {
-    copy_t_hackblock(ntdb, &hb[rN[i]]);
-    merge_t_hackblock(ctdb, &hb[rC[i]]);
+    copy_t_hackblock(ntdb[i], &hb[rN[i]]);
+    merge_t_hackblock(ctdb[i], &hb[rC[i]]);
   }
   /* then the whole hdb */
   for(rnr=0; rnr < pdba->nres; rnr++) {
@@ -318,8 +319,9 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 }
 
 int add_h(t_atoms **pdbaptr, rvec *xptr[], 
-	  int nah, t_hackblock ah[], t_hackblock *ntdb, t_hackblock *ctdb, 
-	  int nterpairs, int *rN, int *rC, int **nabptr, t_hack ***abptr,
+	  int nah, t_hackblock ah[],
+	  int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb, 
+	  int *rN, int *rC, int **nabptr, t_hack ***abptr,
 	  bool bUpdate_pdba, bool bKeep_old_pdba)
 {
   t_atoms     *newpdba=NULL,*pdba=NULL;
@@ -355,7 +357,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
     /* We'll have to do all the hard work */
     bUpdate_pdba = TRUE;
     /* first get all the hackblocks for each residue: */
-    hb = get_hackblocks(pdba, nah, ah, ntdb, ctdb, nterpairs, rN, rC);
+    hb = get_hackblocks(pdba, nah, ah, nterpairs, ntdb, ctdb, rN, rC);
     if (debug) dump_hb(debug, pdba->nres, hb);
     
     /* expand the hackblocks to atom level */
@@ -524,11 +526,13 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     
     /* set terminus types: -NH3+ (different for Proline) and -COO- */
     atoms=*atomsptr;
+    snew(protdata->sel_ntdb, NTERPAIRS);
+    snew(protdata->sel_ctdb, NTERPAIRS);
     if (strncmp(*atoms->resname[atoms->atom[atoms->nr-1].resnr],"PRO",3)==0)
-      protdata->sel_ntdb=&(protdata->ntdb[3]);
+      protdata->sel_ntdb[0]=&(protdata->ntdb[3]);
     else
-      protdata->sel_ntdb=&(protdata->ntdb[1]);
-    protdata->sel_ctdb=&(protdata->ctdb[1]);
+      protdata->sel_ntdb[0]=&(protdata->ntdb[1]);
+    protdata->sel_ctdb[0]=&(protdata->ctdb[1]);
   
     /* set terminal residue numbers: */
     snew(protdata->rN, NTERPAIRS);
@@ -559,8 +563,8 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
   
   /* now protonate */
   nadd = add_h(&atoms, xptr, protdata->nah, protdata->ah,
-	       protdata->sel_ntdb, protdata->sel_ctdb,
-	       NTERPAIRS, protdata->rN, protdata->rC,
+	       NTERPAIRS, protdata->sel_ntdb, protdata->sel_ctdb,
+	       protdata->rN, protdata->rC,
 	       &protdata->nab, &protdata->ab, bUpdate_pdba, bKeep_old_pdba);
   if ( ! protdata->patoms )
     /* store protonated topology */

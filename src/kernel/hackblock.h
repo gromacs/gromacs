@@ -113,7 +113,7 @@ typedef struct {
   int         *nab;
   t_hack      **ab;
   t_hackblock *ah, *ntdb, *ctdb;
-  t_hackblock *sel_ntdb, *sel_ctdb;
+  t_hackblock **sel_ntdb, **sel_ctdb;
   int         nah;
   t_symtab    tab;
   int         *rN, *rC;

@@ -485,8 +485,8 @@ void print_sums(t_atoms *atoms, bool bSystem)
 
 void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp, 
 			int nrtp, t_restp rtp[], int nres, char **resname[], 
-			t_hackblock *ntdb, t_hackblock *ctdb,
-			int nterpairs, int *rn, int *rc)
+			int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
+			int *rn, int *rc)
 {
   int i, j, k, l;
   t_restp *res;
@@ -499,9 +499,9 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
   /* first the termini */
   for(i=0; i<nterpairs; i++) {
     if (rn[i]>=0)
-      copy_t_hackblock(ntdb, &(*hb)[rn[i]]);
+      copy_t_hackblock(ntdb[i], &(*hb)[rn[i]]);
     if (rc[i]>=0)
-      merge_t_hackblock(ctdb, &(*hb)[rc[i]]);
+      merge_t_hackblock(ctdb[i], &(*hb)[rc[i]]);
   }  
 
   /* then the whole rtp */
@@ -610,8 +610,8 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     t_atoms *atoms, rvec **x, t_atomtype *atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
-	     t_hackblock *ntdb, t_hackblock *ctdb,
-	     bool bH14, int nterpairs, int *rn, int *rc, bool bAlldih,
+	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
+	     int *rn, int *rc, bool bH14, bool bAlldih,
 	     bool bDummies, bool bDummyAromatics, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
@@ -630,7 +630,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
   /* lookup hackblocks and rtp for all residues */
   get_hackblocks_rtp(&hb, &restp, nrtp, rtp, atoms->nres, atoms->resname, 
-		     ntdb, ctdb, nterpairs, rn, rc);
+		     nterpairs, ntdb, ctdb, rn, rc);
   /* ideally, now we would not need the rtp itself anymore, but do 
      everything using the hb and restp arrays. Unfortunately, that 
      requires some re-thinking of code in gen_dum.c, which I won't 

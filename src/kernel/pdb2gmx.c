@@ -580,6 +580,8 @@ int main(int argc, char *argv[])
     bool bAllWat;
     int nterpairs;
     int *chainstart;
+    t_hackblock **ntdb;
+    t_hackblock **ctdb;
     int *rN;
     int *rC;
     t_atoms *pdba;
@@ -613,7 +615,7 @@ int main(int argc, char *argv[])
   char       molname[STRLEN],title[STRLEN];
   char       *c;
   int        nah,nNtdb,nCtdb;
-  t_hackblock *ntdb,*ctdb,*sel_ntdb=NULL,*sel_ctdb=NULL;
+  t_hackblock *ntdb,*ctdb;
   int        nssbonds;
   t_ssbond   *ssbonds;
   rvec       *pdbx,*x;
@@ -823,6 +825,8 @@ int main(int argc, char *argv[])
     chains[i].bAllWat = pdb_ch[si].bAllWat;
     chains[i].nterpairs = pdb_ch[si].nterpairs;
     chains[i].chainstart = pdb_ch[si].chainstart;
+    snew(chains[i].ntdb,pdb_ch[si].nterpairs);
+    snew(chains[i].ctdb,pdb_ch[si].nterpairs);
     snew(chains[i].rN,pdb_ch[si].nterpairs);
     snew(chains[i].rC,pdb_ch[si].nterpairs);
     /* check for empty chain identifiers */
@@ -975,25 +979,26 @@ int main(int argc, char *argv[])
       } else {
 	/* set termini */
 	if ( (cc->rN[i]>=0) && (bTerMan || (nNtdb<4)) )
-	  sel_ntdb=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
+	  cc->ntdb[i]=choose_ter(nNtdb,ntdb,"Select N-terminus type (start)");
 	  else
 	    if (strncmp(*pdba->resname[pdba->atom[cc->rN[i]].resnr],"PRO",3))
-	      sel_ntdb=&(ntdb[1]);
+	      cc->ntdb[i] = &(ntdb[1]);
 	    else
-	      sel_ntdb=&(ntdb[3]);
-	printf("N-terminus: %s\n",sel_ntdb->name);
+	      cc->ntdb[i] = &(ntdb[3]);
+	printf("N-terminus: %s\n",(cc->ntdb[i])->name);
 	
 	if ( (cc->rC[i]>=0) && (bTerMan || (nCtdb<2)) )
-	  sel_ctdb=choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
+	   cc->ctdb[i] = choose_ter(nCtdb,ctdb,"Select C-terminus type (end)");
 	else
-	  sel_ctdb=&(ctdb[1]);
-	printf("C-terminus: %s\n",sel_ctdb->name);
+	  cc->ctdb[i] = &(ctdb[1]);
+	printf("C-terminus: %s\n",(cc->ctdb[i])->name);
       }
     }
 
     /* Generate Hydrogen atoms (and termini) in the sequence */
-    natom=add_h(&pdba,&x,nah,ah,sel_ntdb,sel_ctdb,
-		cc->nterpairs,cc->rN,cc->rC,NULL,NULL,TRUE,FALSE);
+    natom=add_h(&pdba,&x,nah,ah,
+		cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,
+		NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
     if (debug) write_pdbfile(debug,title,pdba,x,box,0,0);
@@ -1064,7 +1069,7 @@ int main(int argc, char *argv[])
 	top_file2=top_file;
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
-	    sel_ntdb,sel_ctdb,bH14,cc->nterpairs,cc->rN,cc->rC,bAlldih,
+	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bH14,bAlldih,
 	    bDummies,bDummyAromatics,mHmult,nssbonds,ssbonds,NREXCL, 
 	    long_bond_dist, short_bond_dist,bDeuterate);
     

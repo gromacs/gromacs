@@ -58,10 +58,42 @@ static char *SRCID_x2top_c = "$Id$";
 #include "vec.h"
 #include "x2top.h"
 
-int get_atype(char *nm)
-{
-  char atp[6] = "HCNOSX";
+char atp[6] = "HCNOSX";
 #define NATP asize(atp)
+
+real blen[NATP][NATP] = { 
+  {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
+  {  0.108, 0.15,  0.14,  0.14, 0.16, 0.14 },
+  {  0.105, 0.14,  0.14,  0.14, 0.16, 0.14 },
+  {  0.10,  0.14,  0.14,  0.14, 0.17, 0.14 },
+  {  0.10,  0.16,  0.16,  0.17, 0.20, 0.17 },
+  {  0.10,  0.14,  0.14,  0.14, 0.17, 0.17 }
+};
+
+#define MARGIN_FAC 1.1
+
+static real set_x_blen(real scale)
+{
+  real maxlen;
+  int  i,j;
+
+  for(i=0; i<NATP-1; i++) {
+    blen[NATP-1][i] *= scale;
+    blen[i][NATP-1] *= scale;
+  }
+  blen[NATP-1][NATP-1] *= scale;
+  
+  maxlen = 0;
+  for(i=0; i<NATP; i++)
+    for(j=0; j<NATP; j++)
+      if (blen[i][j] > maxlen)
+	maxlen = blen[i][j];
+  
+  return maxlen*MARGIN_FAC;
+}
+
+static int get_atype(char *nm)
+{
   int i,aai=NATP-1;
 
   for(i=0; (i<NATP-1); i++) {
@@ -73,16 +105,8 @@ int get_atype(char *nm)
   return aai;
 }
 
-bool is_bond(int aai,int aaj,real len2)
+static bool is_bond(int aai,int aaj,real len2)
 {
-  real blen[6][6] = { 
-    {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
-    {  0.108, 0.15,  0.14,  0.14, 0.16, 0.15 },
-    {  0.105, 0.14,  0.14,  0.14, 0.16, 0.15 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.16 },
-    {  0.10,  0.16,  0.16,  0.17, 0.20, 0.20 },
-    {  0.10,  0.15,  0.15,  0.16, 0.20, 0.20 }
-  };
   bool bIsBond;
   real bl;
     
@@ -92,7 +116,8 @@ bool is_bond(int aai,int aaj,real len2)
     /* There is a bond when the deviation from ideal length is less than
      * 10 %
      */
-    bl = blen[aai][aaj]*1.1;
+    bl = blen[aai][aaj]*MARGIN_FAC;
+    
     bIsBond = (len2 < bl*bl);
   }
 #ifdef DEBUG
@@ -123,14 +148,14 @@ real get_amass(char *aname,int nmass,char **nm2mass)
 }
 
 void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
-	      bool bPBC,matrix box)
+	      real cutoff,bool bPBC,matrix box)
 {
   t_param b;
   t_atom  *atom;
   char    **nm2mass=NULL,buf[128];
   int     i,j,aai,nmass;
   rvec    dx;
-  real    dx2;
+  real    dx2,c2;
   
   for(i=0; (i<MAXATOMLIST); i++)
     b.a[i] = -1;
@@ -145,6 +170,7 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
     atom[i].type = get_atype(*atoms->atomname[i]);
     atom[i].m    = get_amass(*atoms->atomname[i],nmass,nm2mass);
   }
+  c2 = sqr(cutoff);
   if (bPBC)
     init_pbc(box);
   for(i=0; (i<atoms->nr); i++) {
@@ -157,21 +183,18 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
       else
 	rvec_sub(x[i],x[j],dx);
       
-      if ((dx[XX] < 0.25) && (dx[YY] < 0.25) && (dx[ZZ] < 0.25)) {
-	dx2 = iprod(dx,dx);
-	
-	if (is_bond(aai,atom[j].type,dx2)) {
-	  b.AI = i;
-	  b.AJ = j;
-	  b.C0 = sqrt(dx2);
-	  push_bondnow (bond,&b);
-	  nbond[i]++;
-	  nbond[j]++;
-	}
+      dx2 = iprod(dx,dx);
+      if ((dx2 < c2) && (is_bond(aai,atom[j].type,dx2))) {
+	b.AI = i;
+	b.AJ = j;
+	b.C0 = sqrt(dx2);
+	push_bondnow (bond,&b);
+	nbond[i]++;
+	nbond[j]++;
       }
     }
   }
-  fprintf(stderr,"\n");
+  fprintf(stderr,"\ratom %d\n",i);
 }
 
 int *set_cgnr(t_atoms *atoms)
@@ -243,27 +266,32 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
 }
 
 void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound,
-			bool bDih)
+			bool bDih,bool bParam)
 {
   int    i,j;
   double cc;
   char   buf[32];
   
   for(i=0; (i<plist->nr); i++) {
-    if (bRound) {
-      sprintf(buf,"%.2e",plist->param[i].c[0]);
-      sscanf(buf,"%lf",&cc);
-      c[0] = cc;
-    }
-    else 
-      c[0] = plist->param[i].c[0];
-    if (bDih) {
-      c[0] *= c[2];
-      c[0] = ((int)(c[0] + 3600)) % 360;
-      if (c[0] > 180)
-	c[0] -= 360;
-      /* To put the minimum at the current angle rather than the maximum */
-      c[0] += 180; 
+    if (!bParam)
+      for(j=0; j<nrfp; j++)
+	c[j] = NOTSET;
+    else {
+      if (bRound) {
+	sprintf(buf,"%.2e",plist->param[i].c[0]);
+	sscanf(buf,"%lf",&cc);
+	c[0] = cc;
+      }
+      else 
+	c[0] = plist->param[i].c[0];
+      if (bDih) {
+	c[0] *= c[2];
+	c[0] = ((int)(c[0] + 3600)) % 360;
+	if (c[0] > 180)
+	  c[0] -= 360;
+	/* To put the minimum at the current angle rather than the maximum */
+	c[0] += 180; 
+      }
     }
     for(j=0; (j<nrfp); j++) {
       plist->param[i].c[j]      = c[j];
@@ -273,19 +301,20 @@ void lo_set_force_const(t_params *plist,real c[],int nrfp,bool bRound,
   }
 }
 
-void set_force_const(t_params plist[],real kb,real kt,real kp,bool bRound)
+void set_force_const(t_params plist[],real kb,real kt,real kp,bool bRound,
+		     bool bParam)
 {
   int i;
   real c[MAXFORCEPARAM];
   
   c[0] = 0;
   c[1] = kb;
-  lo_set_force_const(&plist[F_BONDS],c,2,bRound,FALSE);
+  lo_set_force_const(&plist[F_BONDS],c,2,bRound,FALSE,bParam);
   c[1] = kt;
-  lo_set_force_const(&plist[F_ANGLES],c,2,bRound,FALSE);
+  lo_set_force_const(&plist[F_ANGLES],c,2,bRound,FALSE,bParam);
   c[1] = kp;
   c[2] = 3;
-  lo_set_force_const(&plist[F_PDIHS],c,3,bRound,TRUE);
+  lo_set_force_const(&plist[F_PDIHS],c,3,bRound,TRUE,bParam);
 }
 
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
@@ -345,7 +374,12 @@ int main(int argc, char *argv[])
     "The program assumes all hydrogens are present when defining",
     "the hybridization from the atom name and the number of bonds.",
     "The program can also make an rtp entry, which you can then add",
-    "to the rtp database."
+    "to the rtp database.[PAR]",
+    "When [TT]-param[tt] is set, equilibrium distances and angles",
+    "and force constants will be printed in the topology for all",
+    "interactions. The equilibrium distances and angles are taken",
+    "from the input coordinates, the force constant are set with",
+    "command line options."
   };
   static char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
@@ -372,6 +406,7 @@ int main(int argc, char *argv[])
   int        nres;         /* number of molecules? */
   int        i,j,k,l,m;
   bool       bRTP,bTOP;
+  real       cutoff;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
@@ -379,32 +414,36 @@ int main(int argc, char *argv[])
     { efRTP, "-r", "out",  ffOPTWR }
   };
 #define NFILE asize(fnm)
-  static real kb    = 4e5,kt = 400,kp = 5;
+  static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
-  static bool bH14  = FALSE,bAllDih = FALSE,bRound = TRUE,bPairs = TRUE;
-  static bool bPBC  = TRUE;
+  static bool bParam = FALSE,bH14 = FALSE,bAllDih = FALSE,bRound = TRUE;
+  static bool bPairs = TRUE, bPBC = TRUE;
   static char *molnm = "ICE";
   t_pargs pa[] = {
-    { "-kb",    FALSE, etREAL, {&kb},
-      "Bonded force constant (kJ/mol/nm^2)" },
-    { "-kt",    FALSE, etREAL, {&kt},
-      "Angle force constant (kJ/mol/rad^2)" },
-    { "-kp",    FALSE, etREAL, {&kp},
-      "Dihedral angle force constant (kJ/mol/rad^2)" },
+    { "-scale", FALSE, etREAL, {&scale},
+      "Scaling factor for bonds with unknown atom types relative to atom type O" },
     { "-nexcl", FALSE, etINT,  {&nexcl},
       "Number of exclusions" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
     { "-alldih", FALSE, etBOOL, {&bAllDih}, 
       "Generate all proper dihedrals" },
-    { "-round",  FALSE, etBOOL, {&bRound},
-      "Round off measured values" },
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
     { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions. Please set the GMXFULLPBC environment variable as well." }
+      "Use periodic boundary conditions. Please set the GMXFULLPBC environment variable as well." },
+    { "-param", FALSE, etBOOL, {&bParam},
+      "Print parameters in the output" },
+    { "-round",  FALSE, etBOOL, {&bRound},
+      "Round off measured values" },
+    { "-kb",    FALSE, etREAL, {&kb},
+      "Bonded force constant (kJ/mol/nm^2)" },
+    { "-kt",    FALSE, etREAL, {&kt},
+      "Angle force constant (kJ/mol/rad^2)" },
+    { "-kp",    FALSE, etREAL, {&kp},
+      "Dihedral angle force constant (kJ/mol/rad^2)" }
   };
   
   CopyRight(stdout,argv[0]);
@@ -415,6 +454,8 @@ int main(int argc, char *argv[])
   bTOP = opt2bSet("-o",NFILE,fnm);
   if (!bRTP && !bTOP)
     fatal_error(0,"Specify at least one output file");
+
+  cutoff = set_x_blen(scale);
 
   if (bPBC)
     set_gmx_full_pbc(stdout);
@@ -440,7 +481,7 @@ int main(int argc, char *argv[])
   snew(nbonds,atoms->nr);
   
   printf("Generating bonds from distances...\n");
-  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,ff,bPBC,box);
+  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,ff,cutoff,bPBC,box);
 
   nm2t = rd_nm2type(ff,&nnm);
   printf("There are %d name to type translations\n",nnm);
@@ -467,7 +508,7 @@ int main(int argc, char *argv[])
 
   calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x,bPBC,box);
   
-  set_force_const(plist,kb,kt,kp,bRound);
+  set_force_const(plist,kb,kt,kp,bRound,bParam);
 
   cgnr = set_cgnr(atoms);
 
