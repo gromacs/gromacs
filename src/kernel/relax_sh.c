@@ -335,7 +335,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     bFirst = FALSE;
   }
 
-  bInit        = bForceInit || (mdstep == 0);
+  bInit        = bForceInit || ((mdstep == 0) && !parm->ir.bUncStart);
   ftol         = parm->ir.em_tol;
   number_steps = parm->ir.niter;
   step0        = 1.0;
