@@ -367,9 +367,12 @@ int main(int argc,char *argv[])
     "has seen its periodic image during a simulation. Only one shift in",
     "each direction is considered, giving a total of 26 shifts.",
     "It also plots the maximum distance within the group and the lengths",
-    "of the three box vectors. This option is very slow.[PAR]",
+    "of the three box vectors.[PAR]",
     "Other programs that calculate distances are [TT]g_dist[tt]",
     "and [TT]g_bond[tt]."
+  };
+  static char *bugs[] = {
+    "The [TT]-pi[tt] option is very slow."
   };
   
   static bool bMat=FALSE,bPer=FALSE,bMax=FALSE;
@@ -407,7 +410,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
 
   tps = ftp2fn_null(efTPS,NFILE,fnm);
   ndx = ftp2fn_null(efNDX,NFILE,fnm);
@@ -458,8 +461,7 @@ int main(int argc,char *argv[])
   if (bPer) {
     periodic_mindist_plot(ftp2fn(efTRX,NFILE,fnm),opt2fn("-od",NFILE,fnm),
 			  &top,gnx[0],index[0]);
-  } 
-  else {
+  } else {
     atm=ftp2FILE(efOUT,NFILE,fnm,"w");
     dist_plot(ftp2fn(efTRX,NFILE,fnm),atm,mindist,
 	      opt2fn("-od",NFILE,fnm),opt2fn("-on",NFILE,fnm),
