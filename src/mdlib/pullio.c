@@ -407,49 +407,51 @@ void print_pull_header(t_pull * pull)
 {
   /* print header information */
   int i,j;
-  int dims=0;
-
-
-  for(i=0;i<3;++i) {
-    if(pull->dims[i]!=0) ++dims;
-  }
 
   if(pull->runtype==eUmbrella)
-    fprintf(pull->out,"UMBRELLA\t3.0\n");
+    fprintf(pull->out,"# UMBRELLA\t3.0\n");
   else if(pull->runtype==eAfm)
-    fprintf(pull->out,"AFM\t3.0\n");
+    fprintf(pull->out,"# AFM\t3.0\n");
   else if(pull->runtype==eConstraint)
-    fprintf(pull->out,"CONSTRAINT\t3.0\n");
+    fprintf(pull->out,"# CONSTRAINT\t3.0\n");
 
+  fprintf(pull->out,"# Component selection:");
   for(i=0;i<3;++i) {
-    fprintf(pull->out,"%d\t",pull->dims[i]);
+    fprintf(pull->out," %d",pull->dims[i]);
   }
   fprintf(pull->out,"\n");
 
-  fprintf(pull->out,"%d\n",pull->nSkip);
+  fprintf(pull->out,"# nSkip %d\n",pull->nSkip);
 
-  fprintf(pull->out,"%s\n",pull->ref.name);
+  fprintf(pull->out,"# Ref. Group '%s'\n",pull->ref.name);
 
-  fprintf(pull->out,"%d\t%d\n",pull->ngrp,dims);
+  fprintf(pull->out,"# Nr. of pull groups %d\n",pull->ngrp);
   for(i=0;i<pull->ngrp;i++) {
-    fprintf(pull->out,"%s\t",pull->grp[i].name);
+    fprintf(pull->out,"# Group %d '%s'",i+1,pull->grp[i].name);
 
     if (pull->runtype == eAfm) {
-      fprintf(pull->out, "%f\t%f\t%f\t%f\t%f",
+      fprintf(pull->out, "  afmVec %f %f %f  AfmRate %f  AfmK %f",
 	      pull->grp[i].AfmVec[XX],
 	      pull->grp[i].AfmVec[YY],
 	      pull->grp[i].AfmVec[ZZ],
 	      pull->grp[i].AfmRate,
 	      pull->grp[i].AfmK);
-    } else {
+    } else if (pull->runtype == eUmbrella) {
+      fprintf(pull->out,"  Umb. Pos.");
       for (j=0;j<3;++j) {
-	if (pull->dims[j]!=0.0) {
-	  if (pull->runtype==eUmbrella)
-	    fprintf(pull->out,"%f\t%f\t",
-		    pull->grp[i].UmbPos[j],pull->grp[i].UmbCons);
-	  else if (pull->runtype==eConstraint)
-	    fprintf(pull->out,"%f\t",pull->grp[i].x_unc[j]);
-	}
+	if (pull->dims[j] != 0)
+	  fprintf(pull->out," %f",pull->grp[i].UmbPos[j]);
+      }
+      fprintf(pull->out,"  Umb. Cons.");
+      for (j=0;j<3;++j) {
+	if (pull->dims[j] != 0)
+	  fprintf(pull->out," %f",pull->grp[i].UmbCons);
+      }
+    } else if (pull->runtype == eConstraint) {
+      fprintf(pull->out,"  Pos.");
+      for (j=0;j<3;++j) {
+	if (pull->dims[j] != 0)
+	  fprintf(pull->out," %f",pull->grp[i].x_unc[j]);
       }
     }
     fprintf(pull->out,"\n");
