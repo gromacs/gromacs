@@ -49,12 +49,37 @@ static char *SRCID_g_bond_c = "$Id$";
 #include "statutil.h"
 #include "rdgroup.h"
 #include "gstat.h"
+#include "tpxio.h"
 
-void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
-	      real blen,real tol,bool bAver)
+static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
+{
+  char **leg;
+  int  i;
+
+  snew(leg,gnx/2);
+  for(i=0; i<gnx; i+=2) {
+    snew(leg[i/2],256);
+    sprintf(leg[i/2],"%s %s%d - %s %s%d",
+	    *(atoms->atomname[index[i]]),
+	    *(atoms->resname[atoms->atom[index[i]].resnr]),
+            atoms->atom[index[i]].resnr+1,
+	    *(atoms->atomname[index[i+1]]),
+	    *(atoms->resname[atoms->atom[index[i+1]].resnr]),
+            atoms->atom[index[i+1]].resnr+1);
+  }
+  xvgr_legend(fp,gnx/2,leg);
+  for(i=0; i<gnx/2; i++)
+    sfree(leg[i]);
+  sfree(leg);
+}
+
+static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
+		     int gnx,atom_id index[],
+		     real blen,real tol,bool bAver,
+		     t_topology *top)
 {
 #define MAXTAB 1000
-  FILE   *out;
+  FILE   *out,*outd=NULL;
   int    *btab=NULL;
   real   b0=0,b1,db=0;
   real   bond;
@@ -82,13 +107,22 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
   init_pbc(box);
   if (natoms == 0) 
     fatal_error(0,"No atoms in trajectory!");
+
+  if (fdist) {
+    outd = xvgropen(fdist,"Distances","Time (ps)","Distance (nm)");
+    make_dist_leg(outd,gnx,index,&(top->atoms));
+  }
     
   nframes=0;
   do {
+    if (fdist)
+      fprintf(outd," %8.4f",t);
     nframes++; /* count frames */
     for(i=0; (i<gnx); i+=2) {
       pbc_dx(x[index[i]],x[index[i+1]],dx);
       bond   = norm(dx);
+      if (fdist)
+	fprintf(outd," %.3f",bond);
       if (bAver) {
 	add_lsq(&b_one,t,bond);
 	if (db == 0) {
@@ -117,8 +151,13 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
 	add_lsq(&(b_all[i/2]),t,bond);
       }
     }
+    if (fdist)
+      fprintf(outd,"\n");
   } while (read_next_x(status,&t,natoms,x,box));
   close_trj(status);
+
+  if (fdist)
+    ffclose(outd);
   
   /*
     mean = mean / counter;
@@ -138,7 +177,7 @@ void do_bonds(FILE *log,char *fn,char *outf,int gnx,atom_id index[],
     printf("Standard deviation of the mean        : %g\n",
 	    error_lsq(&b_one));
 	    
-    out=xvgropen(outf,"Bond Stretching Distribution",
+    out=xvgropen(fbond,"Bond Stretching Distribution",
 		 "Bond Length (nm)","");
     
     for(i0=0;      ((i0 < MAXTAB) && (btab[i0]==0)); i0++)
@@ -174,7 +213,11 @@ int main(int argc,char *argv[])
     "i2-j2 thru in-jn.[PAR]",
     "[TT]-tol[tt] gives the half-width of the distribution as a fraction",
     "of the bondlength ([TT]-blen[tt]). That means, for a bond of 0.2",
-    "a tol of 0.1 gives a distribution from 0.18 to 0.22"
+    "a tol of 0.1 gives a distribution from 0.18 to 0.22.[PAR]",
+    "Option [TT]-d[tt] plots all the distances as a function of time.",
+    "This requires a structure file for the atom and residue names in",
+    "the output."
+    
   };
   static char *bugs[] = {
     "It should be possible to get bond information from the topology."
@@ -190,14 +233,21 @@ int main(int argc,char *argv[])
       "Sum up distributions" }
   };
   FILE      *fp;
-  char      *grpname;
+  char      *grpname,*fdist;
   int       gnx;
   atom_id   *index;
+  char      title[STRLEN];
+  t_topology top;
+  rvec      *x;
+  matrix    box;
+
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffREAD  },
     { efNDX, NULL, NULL, ffREAD  },
-    { efXVG, NULL, "bonds", ffWRITE },
-    { efLOG, NULL, "bonds", ffOPTWR }
+    { efTPS, NULL, NULL, ffOPTRD },
+    { efXVG, "-o", "bonds", ffWRITE },
+    { efLOG, NULL, "bonds", ffOPTWR },
+    { efXVG, "-d", "distance", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -205,6 +255,10 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE ,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   
+  fdist = opt2fn_null("-d",NFILE,fnm);
+  if (fdist)
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
   if ( !even(gnx) )
     fprintf(stderr,"WARNING: odd number of atoms (%d) in group!\n",gnx);
@@ -215,10 +269,11 @@ int main(int argc,char *argv[])
   else
     fp = NULL;
   
-  do_bonds(fp,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efXVG,NFILE,fnm),gnx,index,
-	   blen,tol,bAver);
+  do_bonds(fp,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),fdist,gnx,index,
+	   blen,tol,bAver,&top);
 
-  do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
+  do_view(opt2fn("-o",NFILE,fnm),NULL);
+  do_view(opt2fn_null("-d",NFILE,fnm),NULL);
     
   thanx(stderr);
   

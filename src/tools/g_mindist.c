@@ -302,8 +302,9 @@ int main(int argc,char *argv[])
     "has seen its periodic image during a simulation. Only one shift in",
     "each direction is considered, giving a total of 26 shifts.",
     "It also plots the maximum distance within the group and the lengths",
-    "of the three box vectors.",
-    "This option is very slow."
+    "of the three box vectors. This option is very slow.[PAR]",
+    "Other programs that calculate distances are [TT]g_dist[tt]",
+    "and [TT]g_bond[tt]."
   };
   
   static bool bMat=FALSE,bPer=FALSE;

@@ -57,7 +57,9 @@ int main(int argc,char *argv[])
     "groups of atoms as a function of time. The total distance and its",
     "x, y and z components are plotted.[PAR]",
     "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
-    "closer than a certain distance to the center of mass of group 1."
+    "closer than a certain distance to the center of mass of group 1.[PAR]",
+    "Other programs that calculate distances are [TT]g_mindist[tt]",
+    "and [TT]g_bond[tt]."
   };
   
   t_topology *top=NULL;
