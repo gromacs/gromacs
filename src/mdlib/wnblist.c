@@ -47,13 +47,15 @@
 #include "fatal.h"
 #include "macros.h"
 #include "futil.h"
+#include "names.h"
 
 #define header "Neighborlist:"
 
 static void write_nblist(FILE *out,t_nblist *nblist)
 {
   int i,j,j0,k,i_atom,jid,nj;
-  fprintf(out,"il_code: %d solvent: %d\n",nblist->il_code,nblist->solvent);
+  fprintf(out,"il_code: %d solvent: %s\n",nblist->il_code,
+	  esolv_names[nblist->solvent]);
   
   fprintf(out,"nri: %d  nrj: %d\n",nblist->nri,nblist->nrj);
   for(i=0; i<nblist->nri; i++) {
@@ -69,8 +71,8 @@ static void write_nblist(FILE *out,t_nblist *nblist)
 int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
 {
   bool bNL;
-  char buf[256],b1[32],b2[32];
-  int  i,ii,j,nnbl,full,icmp,nri,il_code,solv;
+  char buf[256],b1[32],b2[32],solv[256];
+  int  i,ii,j,nnbl,full,icmp,nri,il_code;
   int  iatom,nrj,nj,shift,gid,nargs,njtot=0;
   
   do {
@@ -79,9 +81,9 @@ int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
   } while (strstr(buf,header) == NULL);
   
   do {
-    if ((nargs = fscanf(in,"%*s%d%*s%d",&il_code,&solv)) != 2)
+    if ((nargs = fscanf(in,"%*s%d%*s%s",&il_code,solv)) != 2)
       return njtot;
-    /* gmx_fatal(FARGS,"Can not read il_code or sol (nargs=%d)",nargs);*/
+    /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
     if ((nargs = fscanf(in,"%*s%d%*s%d",&nri,&nrj)) != 2)
       gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
     for(ii=0; (ii<nri); ii++) {
@@ -92,8 +94,7 @@ int read_nblist(FILE *in,FILE *log,int **mat,int natoms)
        * matrix elements.
        */
       shift+=1; 
-      if ((iatom < 0) || (iatom >= natoms))
-	gmx_fatal(FARGS,"iatom = %d (max %d)\n",iatom,natoms);
+      range_check(iatom,0,natoms);
       nrj+=nj;
       for(i=0; (i<nj); i++) {
 	if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
