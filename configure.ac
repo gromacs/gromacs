@@ -780,7 +780,7 @@ CCASFLAGS=$CFLAGS
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
 
-AC_CONFIG_FILES([ Makefile src/Makefile src/gmxlib/Makefile include/Makefile include/types/Makefile src/mdlib/Makefile src/kernel/Makefile src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile share/tutor/nmr2/Makefile share/tutor/water/Makefile share/tutor/speptide/Makefile share/template/Makefile share/top/Makefile share/html/Makefile share/html/images/Makefile share/html/online/Makefile man/Makefile man/man1/Makefile ])
+AC_CONFIG_FILES([ Makefile src/Makefile src/gmxlib/Makefile include/Makefile include/types/Makefile src/mdlib/Makefile src/kernel/Makefile src/tools/Makefile src/ngmx/Makefile src/contrib/Makefile scripts/Makefile admin/Makefile share/Makefile share/tutor/Makefile share/tutor/gmxdemo/Makefile share/tutor/nmr1/Makefile share/tutor/nmr2/Makefile share/tutor/water/Makefile share/tutor/mixed/Makefile share/tutor/methanol/Makefile share/tutor/speptide/Makefile share/template/Makefile share/top/Makefile share/html/Makefile share/html/images/Makefile share/html/online/Makefile man/Makefile man/man1/Makefile ])
 
 AC_OUTPUT
 

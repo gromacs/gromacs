@@ -34,7 +34,7 @@ online_DATA = \
   g_dipoles.html     g_sgangle.html    mtx.html              xvg.html        \
   style.css		\
   water.html	gmxdemo.html	speptide.html	yourown.html \
-  methanol.html
+  methanol.html	mixed.html
 
 
 EXTRA_DIST = ${online_DATA}

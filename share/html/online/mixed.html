@@ -1,6 +1,6 @@
 <HTML>
 <HEAD>
-<TITLE>Getting started - Methanol</TITLE>
+<TITLE>Getting started - Methanol+Water</TITLE>
 <LINK rel=stylesheet href="style.css" type="text/css">
 <BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
 <TABLE WIDTH="98%" NOBORDER >
@@ -8,32 +8,36 @@
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
-<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>Getting started - Methanol</h2>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>Getting started - Methanol+Water</h2>
 <font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 </TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.1<br>
 Wed 27 Feb 2002</B></td></tr></TABLE>
 <HR>
 
-<P><H2><A NAME="water">Methanol</A></H2>
-Now you are going to simulate 216 molecules of methanol
-in a cubic box. In this example the GROMACS
-software team already generated most of the neccesary input
-files. The files needed in this example are:
-<ul>
-<LI> Initial structure of a box of 216 methanol molecules (<TT><a href="gro.html">.gro</a></TT>)</li>
+<P><H2>Methanol+Water</A></H2>
 
-<LI> Topology file of methanol (<tt><a href="top.html">.top</a></tt>)</li>
+Now you are going to simulate 216 molecules of methanol and 216
+molecules of water in a rectangular box (of 4.72 x 2.36 x 2.36 nm). 
+The molecules are completely demixed in the start conformation.
+In this example the GROMACS software team already generated most of
+the necessary input files. The files needed in this example are:
+</p>
+<ul>
+<LI> Initial structure of a box of 216 methanol + 216 water molecules (<TT><a href="gro.html">.gro</a></TT>)</li>
+
+<LI> Topology file of methanol and water(<tt><a href="top.html">.top</a></tt>)</li>
 <LI> Molecular Dynamics parameter file (<TT><a href="mdp_opt.html">.mdp</a></TT>)</li>
 </ul>
+
 <P>
-Change your directory to <tt>tutor/methanol </tt>:   
+Change your directory to <tt>tutor/mixed </tt>:   
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> cd tutor/methanol</tt>
+<tt> cd tutor/mixed</tt>
 <td></td>
 </tr>
 </table>
@@ -250,7 +254,7 @@ computes the diffusion constant D for you.
 </ol>
 
 <hr>
-<a href="speptide.html">Go to the next step</a>.
+<a href="speptide.html"><H3>Go to the next step</h3></a>
 <hr>
 
 </BODY>

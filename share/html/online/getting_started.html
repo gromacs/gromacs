@@ -40,12 +40,12 @@ More info can be found in the
 <br><hr><br>
 
 <a name="start"><H2>Introduction</A></H2>
-
+<p>
 In this chapter we assume the reader is familiar with Molecular
 Dynamics and familiar with Unix, including the use of a text editor
 such as <tt>emacs</tt> or <tt>vi</tt>. We furthermore assume the
 software is installed properly on your system. When you see a line
-like<p>
+like</p>
 
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
@@ -64,6 +64,7 @@ you are supposed to type the contents of that line on your computer.
 <p>
 In order to check whether you have access to the GROMACS software, please
 start by entering the command:
+</p>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
@@ -79,39 +80,41 @@ This command should return a cool quote like:
 <pre>
 "Whatever Happened to Pong ?" (F. Black)
 </pre>
-If this in contrast returns the phrase
+
+If this, in contrast, returns the phrase
 <pre>
 luck: command not found.
 </pre>
 
-then you have to verify where your version of GROMACS is installed.  In
-the default case, the binaries are located in
-'/usr/local/gromacs/&lt;arch&gt;/bin', where &lt;arch&gt; 
-is the architecture of
-your computer. However, you can ask 
-your local system administrator for more information.
-If we assume that GROMACS is installed in <tt>/home/user/gromacs</tt>
-and your machine architecture is <tt>sgi</tt> you would find the
-executables (programs) in <tt>/home/user/gromacs/sgi/bin</tt>.
-To be able to access the programs without problems, you will have
-to edit the login file for your shell. If you use the C shell, this
-file is called <TT>.cshrc</TT> or <TT>.tcshrc</TT>, and it is located in
-your home directory. Add a line like:
+then you have to verify where your version of GROMACS is installed.
+
+In the default case, the binaries are located in
+'/usr/local/gromacs/&lt;arch&gt;/bin', where &lt;arch&gt; is the
+architecture of your computer. However, you can ask your local system
+administrator for more information.  If we assume that GROMACS is
+installed in directory <tt>XXX</tt> and your machine architecture is
+<tt>sgi</tt> you would find the executables (programs) in
+<tt>XXX/sgi/bin</tt>.  To be able to access the programs without
+problems, you will have to edit the login file for your shell. If you
+use the C shell, this file is called <TT>.cshrc</TT> or
+<TT>.tcshrc</TT>, and it is located in your home directory. Add a line
+like:
+
 <br><br>
 <table BORDER=0 CELLSPACING=0 CELLPADDING=8 COLS=3 WIDTH="100%" NOSAVE >
 <tr NOSAVE>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 <tt> 
-setenv PATH "/home/user/gromacs/&lt;arch&gt;/bin:${PATH}".
+setenv PATH "XXX/&lt;arch&gt;/bin:${PATH}".
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
-Issue this command at the prompt too, or
-log off and on again to automatically get the environment.
-<P>
+
+Issue this command at the prompt too, or log off and on again to
+automatically get the environment.
 
 <P><H3><A NAME="examples">Examples</A></H3>
 Before starting the examples, you have to copy all the neccesary
@@ -136,13 +139,13 @@ then copy the examples: <br><br>
 <td WIDTH="2%" NOSAVE><font color="#000000"></font></td>
 <td WIDTH="80%" BGCOLOR="#000066" NOSAVE><font color="#FFFFFF">
 
-<tt> cp -r /home/user/gromacs/share/tutor .
+<tt> cp -r XXX/share/tutor .
 </tt>
 <td></td>
 </tr>
 </table>
 <br>
-(NOTE: include the "<TT>.</TT>")<br>
+(NOTE: include the "<TT>.</TT>", and replace <tt>XXX</tt> by the real directory)<br>
 If that directory doesn't exist you could look for the files
 in <tt>/usr/local/share/gromacs/tutor</tt>, or ask your local GROMACS expert.
 <br> You now have a subdirectory
@@ -180,17 +183,21 @@ You are encouraged to look up the different programs and
 file formats in <a href="../online.html">
 the online manual</a> while you are browsing through the examples.</p>
 
-<a href="gmxdemo.html">Go to the next step</a>.
+<b>While going through the tutorial you will find questions 
+(<font color="red">in a red font</font>). Try to answer them, to increase
+your understanding of molecular simulation.</b>
+
+<a href="gmxdemo.html"><h3>Go to the next step</h3></a>
 
 <br><hr><br>
 
-<P><H2><A NAME="info">More Info</A></h2>
+<H2><A NAME="info">More Info</A></h2>
 
 <P>
 More info can be found in the 
 <A HREF="flow.html">flowchart</A> 
 (for a quick overview) and the 
-<A HREF="../gmxfaq.html">GMX FAQ</A>.
+<A HREF="../gmxfaq.html">GROMACS FAQ (Frequently asked questions)</A>.
 </P>
 
 <br><hr><br>
