@@ -49,6 +49,7 @@ static char *SRCID_editconf_c = "$Id$";
 #include "physics.h"
 #include "atomprop.h"
 #include "addconf.h"
+#include "tpxio.h"
 
 typedef struct {
   char   sanm[12];
@@ -67,15 +68,16 @@ static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
 static char *pdbformat=
 "%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
 
-real calc_mass(t_atoms *atoms)
+real calc_mass(t_atoms *atoms,bool bGetMass)
 {
   real tmass;
   int i;
 
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {
-    atoms->atom[i].m = get_mass(*atoms->resname[atoms->atom[i].resnr], 
-				*atoms->atomname[i]);
+    if (bGetMass)
+      atoms->atom[i].m = get_mass(*atoms->resname[atoms->atom[i].resnr], 
+				  *atoms->atomname[i]);
     tmass += atoms->atom[i].m;
   }
 
@@ -429,7 +431,7 @@ int main(int argc, char *argv[])
       real vol,mass,dens;
       
       vol = det(box);
-      mass = calc_mass(&atoms);
+      mass = calc_mass(&atoms,!fn2bTPX(infile));
       dens = (mass*AMU)/(vol*NANO*NANO*NANO);
       fprintf(stderr,"Volume  of input %g (nm3)\n",vol);
       fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
