@@ -35,6 +35,7 @@ static char *SRCID_nm_c = "$Id$";
 #include "vcm.h"
 #include "mdebin.h"
 #include "nrnb.h"
+#include "vcm.h"
 #include "calcmu.h"
 #include "dummies.h"
 #include "pppm.h"
@@ -59,7 +60,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   int        i,m;
-  rvec       vcm,mu_tot;
+  rvec       mu_tot;
+  t_vcm      *vcm;
   rvec       *xx,*vv,*ff;
   
   /* added with respect to mdrun */
@@ -120,10 +122,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             top->atoms.nr);
   }
 
-  clear_rvec(vcm);
+  vcm = init_vcm(stdlog,top,mdatoms);  
   
   /* Call do_force once to make pairlist */
-  
   clear_mat(force_vir);
     
   bNS=TRUE;

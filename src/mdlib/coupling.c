@@ -375,9 +375,7 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,
     reft=opts->ref_t[i]*SAfactor;
     if (reft < 0)
       reft=0;
-  }
 
-  for(i=0; (i<opts->ngtc); i++) {    
     T = grps->tcstat[i].T;
     
     if (T != 0.0) {

@@ -36,6 +36,7 @@ static char *SRCID_congrad_c = "$Id$";
 #include "network.h"
 #include "confio.h"
 #include "copyrite.h"
+#include "vcm.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"
@@ -75,7 +76,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   real   step0,lambda,ftol,fmax,testf,zet,w,smin;
   rvec   *p,*f,*xprime,*xx,*ff;
   real   EpotA=0.0,EpotB=0.0,a=0.0,b,beta=0.0,gpa,gpb;
-  real   vcm[4],fnorm,pnorm,fnorm_old;
+  real   fnorm,pnorm,fnorm_old;
+  t_vcm      *vcm;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
   bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14,bRand,brerun;
@@ -97,8 +99,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   
-  vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0;
-  
+  vcm = init_vcm(stdlog,top,mdatoms);
+    
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Conjugate Gradients");
   

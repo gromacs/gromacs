@@ -118,5 +118,109 @@ void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], real mass[])
   }
 }
 
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md)
+{
+  t_vcm *vcm;
+  int i,g;
+  
+  snew(vcm,1);
+  
+  vcm->nr = top->atoms.grps[egcVCM].nr;
+  snew(vcm->group_mvcm,vcm->nr);
+  snew(vcm->group_mass,vcm->nr);
+  snew(vcm->group_name,vcm->nr);
+  vcm->group_id = md->cU1;
+  
+  /* Not parallel... */
+  for(i=0; (i<md->nr); i++) {
+    g = vcm->group_id[i];
+    vcm->group_mass[g] += md->massT[i];
+  }
+  
+  /* Copy pointer to group names and print it. */
+  fprintf(fp,"We have the following groups for center of mass motion removal:\n");
+  for(g=0; (g<vcm->nr); g++) {
+    vcm->group_name[g] = *top->atoms.grpname[top->atoms.grps[egcVCM].nm_ind[g]];
+    fprintf(fp,"%3d:  %s, initial mass: %g\n",
+	    g,vcm->group_name[g],vcm->group_mass[g]);
+  }
+  
+  return vcm;
+}
+
+/* Center of mass code for groups */
+void calc_vcm_grp(FILE *log,int homenr,int start,real mass[],rvec v[],
+		  t_vcm *vcm)
+{
+  int    i,g;
+  real   m0;
+  
+  /* Reset */
+  for(g=0; (g<vcm->nr); g++) {
+    clear_rvec(vcm->group_mvcm[g]);
+    vcm->group_mass[g] = 0;
+  }
+    
+  /* Calculate */
+  for(i=start; (i<start+homenr); i++) {
+    m0 = mass[i];
+    g  = vcm->group_id[i];
+    
+    vcm->group_mass[g]     += m0;
+    vcm->group_mvcm[g][XX] += m0*v[i][XX];
+    vcm->group_mvcm[g][YY] += m0*v[i][YY];
+    vcm->group_mvcm[g][ZZ] += m0*v[i][ZZ];
+  }
+}
+
+void do_stopcm_grp(FILE *log,int homenr,int start,rvec v[],
+		   t_vcm *vcm,real invmass[])
+{
+  int  i,g;
+  rvec *my_vcm;
+  real tm;
+  
+  snew(my_vcm,vcm->nr);
+  for(g=0; (g<vcm->nr); g++) {
+    tm = vcm->group_mass[g];
+    if (tm != 0) {
+      my_vcm[g][XX] = vcm->group_mvcm[g][XX]/tm;
+      my_vcm[g][YY] = vcm->group_mvcm[g][YY]/tm;
+      my_vcm[g][ZZ] = vcm->group_mvcm[g][ZZ]/tm;
+    }
+    /* Else it's zero anyway */
+  }
+  for(i=start; (i<start+homenr); i++) {
+    g = vcm->group_id[i];
+    if (invmass[i] != 0)
+      rvec_dec(v[i],my_vcm[g]);
+  }
+  
+  sfree(my_vcm);
+}
+
+void check_cm_grp(FILE *log,t_vcm *vcm)
+{
+  int  m,g;
+  rvec my_vcm;
+  real ekcm,max_vcm;
+
+  for(g=0; (g<vcm->nr); g++) {
+    ekcm    = 0;
+    max_vcm = 0;
+    if (vcm->group_mass[g] != 0) {
+      for(m=0; (m<DIM); m++) {
+	my_vcm[m] = vcm->group_mvcm[g][m]/vcm->group_mass[g];
+	max_vcm = max(max_vcm,fabs(my_vcm[m]));
+	ekcm += my_vcm[m]*my_vcm[m];
+      }
+      if (max_vcm > 0.1) {
+	ekcm*=0.5*vcm->group_mass[g];
+	fprintf(log,"Large VCM(group %s): (%12.5f,  %12.5f,  %12.5f), ekin-cm: %12.5f\n",
+		vcm->group_name[g],my_vcm[XX],my_vcm[YY],my_vcm[ZZ],ekcm);
+      }
+    }
+  }
+}
 
 

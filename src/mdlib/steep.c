@@ -149,10 +149,11 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   rvec   *xx,*ff; 
   real   Fmax[2]; 
   real   Epot[2]; 
-  real   vcm[4],fnorm,ustep,dvdlambda; 
+  real   ustep,dvdlambda;
+  t_vcm      *vcm;
   int        fp_ene; 
   t_mdebin   *mdebin; 
-  t_nrnb mynrnb; 
+  t_nrnb     mynrnb; 
   t_inputrec *ir;
   bool   bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
   time_t start_t; 
@@ -178,8 +179,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   clear_rvec(mu_tot);
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
    
-  vcm[0]=vcm[1]=vcm[2]=vcm[3]=0.0; 
-  
   /* Print to log file  */
   start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents"); 
   
@@ -200,6 +199,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   
   /* Set some booleans for the epot routines  */
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
+  
+  vcm = init_vcm(stdlog,top,mdatoms);
   
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),bLR,bLJLR,

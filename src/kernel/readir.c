@@ -60,7 +60,7 @@ static char *SRCID_readir_c = "$Id$";
 
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
-  energy[STRLEN],user1[STRLEN],user2[STRLEN],user3[STRLEN],xtc_grps[STRLEN],
+  energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   egexcl[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
@@ -451,7 +451,7 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("User defined thingies");
   STYPE ("user1-grps",  user1,          NULL);
   STYPE ("user2-grps",  user2,          NULL);
-  STYPE ("user3-grps",  user3,          NULL);
+  STYPE ("vcm-grps",    vcm,            NULL);
   ITYPE ("userint1",    ir->userint1,   0);
   ITYPE ("userint2",    ir->userint2,   0);
   ITYPE ("userint3",    ir->userint3,   0);
@@ -912,8 +912,8 @@ void do_index(char *ndx,
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,"User2",
 	       restnm,forward,FALSE,bVerbose);
-  nuser=str_nelem(user3,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser3,"User3",
+  nuser=str_nelem(vcm,MAXPTR,ptr1);
+  do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,"VCM",
 	       restnm,forward,FALSE,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,"xtc_grps",

@@ -79,10 +79,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
-  int        i,m;
-  rvec       vcm,mu_tot;
+  int        i,m,status;
+  rvec       mu_tot;
   rvec       *xx,*vv,*ff;
-  int        status;
+  t_vcm      *vcm;
   t_trxframe rerun_fr;
   t_pull     pulldata; /* for pull code */
   /* A boolean (disguised as a real) to terminate mdrun */  
@@ -110,9 +110,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* check if "-rerun" is used. */
   bRerunMD = (Flags & MD_RERUN) == MD_RERUN;
   /* Initial values */
-  init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
-	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD);
+  init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,
+	  &mynrnb,&bTYZ,top,
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,
+	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm);
   debug_gmx();
   
 #ifdef XMDRUN
@@ -161,7 +162,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
-  clear_rvec(vcm);
   debug_gmx();
   
   /* Calculate Temperature coupling parameters lambda */
@@ -424,7 +424,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)
-      calc_vcm(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
+      calc_vcm_grp(log,HOMENR(nsb),START(nsb),mdatoms->massT,v,vcm);
 
     /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
@@ -466,7 +466,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * since that would require extra communication.
      */
     if (!bNEMD && debug)
-      correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),v,vcm,
+      correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),v,
+		   vcm->group_mvcm[0],
 		   mdatoms->massT,mdatoms->tmass,parm->ekin);
     
     if ((terminate != 0) && (step < parm->ir.nsteps)) {
@@ -488,10 +489,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Do center of mass motion removal */
     if (bStopCM) {
-      check_cm(log,vcm,mdatoms->tmass);
-      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,
-		mdatoms->tmass,mdatoms->invmass);
-	inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
+      check_cm_grp(log,vcm);
+      do_stopcm_grp(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->invmass);
+      inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
     }
     
     /* Do fit to remove overall rotation */
