@@ -34,6 +34,10 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 static char *SRCID_libxdrf_c = "$Id$";
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <limits.h>
 #include <malloc.h>
 #include <math.h>
@@ -42,18 +46,102 @@ static char *SRCID_libxdrf_c = "$Id$";
 #include "xdrf.h"
 #include <callf77.h>
 
-int ftocstr(char *, int, char *, int);
-int ctofstr(char *, int, char *);
-
 #define MAXID 20
 static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
 
+#ifndef USE_XDR
+int xdropen(XDR *xdrs, const char *filename, const char *type)
+{
+  fatal_error(0,"xdropen called, but GROMACS compiled without XDR support");
+  
+  return 0;
+}
+
+int xdrclose(XDR *xdrs) 
+{
+  fatal_error(0,"xdrclose called, but GROMACS compiled without XDR support");
+  
+  return 0;
+}
+
+int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) 
+{
+  fatal_error(0,"xdr3dfcoord called, but GROMACS compiled without XDR support");
+  
+  return 0;
+}
+
+bool_t	xdr_int(XDR *xdr, int *i)
+{
+  fatal_error(0,"xdr_int called, but GROMACS compiled without XDR support");
+  
+  return (bool_t) 0;
+}
+
+bool_t	xdr_float(XDR *xdr, float *f)
+{
+  fatal_error(0,"xdr_float called, but GROMACS compiled without XDR support");
+  
+  return (bool_t) 0;
+}
+   
+bool_t	xdr_double(XDR *xdr, double *d)
+{
+  fatal_error(0,"xdr_double called, but GROMACS compiled without XDR support");
+  
+  return (bool_t) 0;
+}
+
+bool_t xdr_string(XDR *xdr,char **s,int size)
+{
+  fatal_error(0,"xdr_string called, but GROMACS compiled without XDR support");
+  
+  return (bool_t) 0;
+}
+
+#else /* we have xdr support */
+
 #ifdef USE_FORTRAN
 
 typedef void (* F77_FUNC(xdrfproc,XDRFPROC))(int *, void *, int *);
+
+int ftocstr(char *ds, int dl, char *ss, int sl)
+    /* dst, src ptrs */
+    /* dst max len */
+    /* src len */
+{
+    char *p;
+
+    p = ss + sl;
+    while ( --p >= ss && *p == ' ' );
+    sl = p - ss + 1;
+    dl--;
+    ds[0] = 0;
+    if (sl > dl)
+      return 1;
+    while (sl--)
+      (*ds++ = *ss++);
+    *ds = '\0';
+    return 0;
+}
+
+
+int ctofstr(char *ds, int dl, char *ss)
+     /* dest space */
+     /* max dest length */
+     /* src string (0-term) */
+{
+    while (dl && *ss) {
+	*ds++ = *ss++;
+	dl--;
+    }
+    while (dl--)
+	*ds++ = ' ';
+    return 0;
+}
 
 void
 F77_FUNC(xdrfbool,XDRFBOOL)(int *xdrid, int *pb, int *ret) 
@@ -1079,5 +1167,5 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     return 1;
 }
 
-
+#endif 
    

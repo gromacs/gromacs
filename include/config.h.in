@@ -75,8 +75,44 @@
 /* Version number of package */
 #undef VERSION
 
-/* Include Alpha AXP assembly for vectorized sqrt/invsqrt */
-#undef USE_AXP_ASM
+/* Compile in double precision */
+#undef DOUBLE
+
+/* Use Fortran for innerloops and some other core stuff */
+#undef USE_FORTRAN
+
+/* If defined, only start MPI runs when this variable is set */
+#undef CHECK_MPI_ENV
+
+/* Turn off the automatic nicing of GROMACS */
+#undef NO_NICE
+
+/* Optimize for a vector architecture */
+#undef USE_VECTOR
+
+/* Expand the water loops to three inner loops */
+#undef SIMPLEWATER
+
+/* Don't use special loops for water-water interactions */
+#undef DISABLE_WATERWATER_LOOPS
+
+/* Use the GROMACS software 1/x */
+#undef SOFTWARE_RECIP
+
+/* Use the GROMACS software 1/sqrt(x) */
+#undef SOFTWARE_SQRT
+
+/* Vectorize the reciprocal calculation */
+#undef VECTORIZE_RECIP
+
+/* Try to get coordinates to cache before using them */
+#undef DECREASE_SQUARE_LATENCY
+
+/* Try to get table data to cache before using it */
+#undef DECREASE_LOOKUP_LATENCY
+
+/* Make a parallel version of GROMACS using MPI */
+#undef USE_MPI
 
 /* call f77 with lowercase, no underscore */
 #undef F77_NAME_LOWERCASE
@@ -96,8 +132,8 @@
 /* Does this machine have the ident command */
 #undef HAVE_IDENT
 
-/* Use the vectorized routines in IBM MASS library */
-#undef USE_IBM_MASS
+/* Use vectorized routines in the IBM MASS library */
+#undef HAVE_LIBMASSV_ANY
 
 /* Use the d prefix on fftw includes */
 #undef FFTW_NAME_DFFTW
@@ -105,53 +141,14 @@
 /* Use the s prefix on fftw includes */
 #undef FFTW_NAME_SFFTW
 
-/* Dont use any prefixing on fftw includes */
+/* Dont use any prefix on fftw includes */
 #undef FFTW_NAME_FFTW
+
+/* Define if using the dmalloc debugging malloc package */
+#undef WITH_DMALLOC
 
 /* Use motif/lesstif libraries */
 #undef HAVE_MOTIF
-
-/* Make a parallel version of GROMACS using MPI */
-#undef USE_MPI
-
-/* Optimize for a vector architecture */
-#undef USE_VECTOR
-
-/* Use Fortran for innerloops and some other core stuff */
-#undef USE_FORTRAN
-
-/* Compile in double precision */
-#undef DOUBLE
-
-/* Expand the water loops to three inner loops */
-#undef SIMPLEWATER
-
-/* Don't use special loops for all-water interactions */
-#undef DISABLE_WATERWATER_LOOPS
-
-/* Turn off the automatic nicing of gromacs */
-#undef NO_NICE
-
-/* Use x86 assembly loops */
-#undef USE_SSE
-
-/* Use xdr routines to make trajectories portable */
-#undef USE_XDR
-
-/* Use the GROMACS software 1/sqrt(x) */
-#undef SOFTWARE_SQRT
-
-/* Use the GROMACS software 1/x */
-#undef SOFTWARE_RECIP
-
-/* Try to get coordinates to cache before using them */
-#undef DECREASE_SQUARE_LATENCY
-
-/* Try to get table data to cache before using it */
-#undef DECREASE_LOOKUP_LATENCY
-
-/* If defined, only start MPI runs when this variable is set */
-#undef CHECK_MPI_ENV
 
 /* Vectorize 1/sqrt(x) in normal loops */
 #undef VECTORIZE_INVSQRT
@@ -188,10 +185,4 @@
 
 /* Prefetch coordinates in water-water loops */
 #undef PREFETCH_F_WW
-
-/* Vectorize the reciprocal calculation */
-#undef VECTORIZE_RECIP
-
-/* Default topology file location */
-#undef GMXLIBDIR
 

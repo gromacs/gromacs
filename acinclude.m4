@@ -5,16 +5,18 @@
 # including the possible prefixing with s or d to determine precision.
 # Arg 1 is the fftw header/library name to check for, without 
 # prefix or anything else (e.g. rfftw_mpi for real MPI transforms)
-# Arg 2 is the floating point size we want (real=4, double=8)
+# Arg 2 is the value of $enable_float, i.e. yes/no for precision=4/8.
 AC_DEFUN(ACX_CHECK_FFTW,
 [
 if test -z "$ac_fftw_firstname"; then
 
-if test "$2" = "8"; then
+if test "$2" = "no"; then
   prec="double"
+  realsize=8
   fftwcheckprefix=d
 else
   prec="single"
+  realsize=4
   fftwcheckprefix=s
 fi
 
@@ -33,7 +35,7 @@ AC_MSG_RESULT(no))
 if test -n "$fftwname"; then
 # we cannot run the code since an MPI program might not be allowed on a login node of a supercomputer
 AC_TRY_COMPILE([#include <$fftwname.h>],
-[int _array_ [1 - 2 * !((sizeof(fftw_real)) == $2)]; ],
+[int _array_ [1 - 2 * !((sizeof(fftw_real)) == $realsize)]; ],
 ok="yes",ok="no")
 fi
 
@@ -60,7 +62,7 @@ AC_MSG_ERROR([Cannot find any $prec precision $fftwname.h or $xfftwname.h]
 [/usr/local/include and /usr/local/lib by default.]
 [You can find information at www.gromacs.org, or in the INSTALL file.])
 ])
-AC_TRY_COMPILE([#include <$xfftwname.h>],[int _array_ [1 - 2 * !((sizeof(fftw_real)) == $2)];],
+AC_TRY_COMPILE([#include <$xfftwname.h>],[int _array_ [1 - 2 * !((sizeof(fftw_real)) == $realsize)];],
 [
 fftwname=$xfftwname 
 usedprefix=$fftwcheckprefix
@@ -770,7 +772,7 @@ fi
 CPU_FLAGS=""
 
 if test "$GCC" = "yes"; then
-  AM_CONDITIONAL(GNU_CC,true)
+  ASFLAGS="$(ASFLAGS) -x assembler-with-cpp"
   # try to guess correct CPU flags, at least for linux
   case "${host_cpu}" in
     # i586/i686 cpu flags don't improve speed, thus no need to use them.

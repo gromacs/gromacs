@@ -1,23 +1,15 @@
 ## Process this file with automake to produce Makefile.in
-#
-# Don't edit - this file is generated automatically from Makefile.am
-#
+# Note: Makefile is automatically generated from Makefile.in by the configure
+# script, and Makefile.in is generated from Makefile.am by automake.
+INCLUDES = -I$(top_srcdir)/include
+AM_CPPFLAGS = -DGMXLIBDIR=\"$(datadir)/top\"
 
-# This is necessary for VPATH to work, 
-# but it can probably be done in a nicer way...
-INCLUDES = @INCLUDES@ -I$(top_srcdir)/include
+libmd@LIBSUFFIX@_la_LIBADD         = @MDLIB_LIBOBJS@	
+libmd@LIBSUFFIX@_la_DEPENDENCIES   = @MDLIB_LIBOBJS@	
 
-# Dependencies and extra objects should come before the target definition
-libmdXXX_SUFFIX_XXX_la_LIBADD         = @MDLIB_COND_OBJ@	
-libmdXXX_SUFFIX_XXX_la_DEPENDENCIES   = @MDLIB_COND_OBJ@	
+lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
-
-
-# Finally, the library definition
-
-lib_LTLIBRARIES = libmdXXX_SUFFIX_XXX.la
-
-libmdXXX_SUFFIX_XXX_la_SOURCES = \
+libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c			\
 	congrad.c	constr.c	coupling.c	\
 	dummies.c	ebin.c		edsam.c		\
@@ -34,13 +26,19 @@ libmdXXX_SUFFIX_XXX_la_SOURCES = \
 	vcm.c		wnblist.c	poisson.h	\
 	splittop.h	wnblist.h
 
-EXTRA_libmdXXX_SUFFIX_XXX_la_SOURCES = \
+EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	cshake.c	csettle.c	clincs.c	\
 	fshake.f	fsettle.f	flincs.f	\
 	fshaked.f	fsettled.f	flincsd.f
 
-# clean things explicitly, since the target names might have changed
-CLEANFILES     = ${lib_LIBRARIES} *_d.a *_mpi.a *~ \\\#*
 
+# link the mpi library to non-mpi names if the latter are not present
+install-exec-hook:
+	if test `echo @LIBSUFFIX@|grep _mpi`; then \
+	  mpi="libgmx@LIBSUFFIX@"; nompi=`echo $(mpi)|sed ,_mpi,,`; \
+	  (cd $(libdir) && test -e $(mpi).a -a ! -e $(nompi).a && $(LN_S) $(mpi).a $(nompi).a); \
+	  (cd $(libdir) && test -e $(mpi).so -a ! -e $(nompi).so && $(LN_S) $(mpi).so $(nompi).so); \
+	fi
 
-
+# clean all libtool libraries, since the target names might have changed
+CLEANFILES     = *.la *~ \\\#*

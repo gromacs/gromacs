@@ -1,20 +1,17 @@
 ## Process this file with automake to produce Makefile.in
-#
-# Note that Makefile is generated automatically from Makefile.in,
-# which is automatically generated from Makefile.am
+# Note: Makefile is automatically generated from Makefile.in by the configure
+# script, and Makefile.in is generated from Makefile.am by automake.
 
+INCLUDES = -I$(top_srcdir)/include
+AM_CPPFLAGS = -DGMXLIBDIR=\"$(datadir)/top\"
 
-# 
-# This is necessary for VPATH builds (and thus distcheck) to work, 
-# but it can probably be included in a nicer way...
-INCLUDES = @INCLUDES@ -I$(top_srcdir)/include
+lib_LTLIBRARIES = libgmx@LIBSUFFIX@.la
 
-# produce the gmx library
-#
+libgmx@LIBSUFFIX@_la_LIBADD = @GMXLIB_LIBOBJS@
+libgmx@LIBSUFFIX@_la_DEPENDENCIES = @GMXLIB_LIBOBJS@
+libgmx@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
-lib_LTLIBRARIES = libgmxXXX_SUFFIX_XXX.la
-
-libgmxXXX_SUFFIX_XXX_la_SOURCES = \
+libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	block_tx.c	bondfree.c	\
 	buffer.c	calcgrid.c	calch.c		inner.h		\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
@@ -33,59 +30,38 @@ libgmxXXX_SUFFIX_XXX_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	x86_cpu.c	
+	x86_cpu.c	libxdrf.c	
 
-EXTRA_libgmxXXX_SUFFIX_XXX_la_SOURCES = \
-	mpiio.c		libnet.c	x86_3dnow.S	f77_wrappers.c  \
-	libxdrf.c	ftocstr.c	dumxdrf.c	mgmx.c		\
-	widget.c	widget.h	x86_cpuid.S	axp_asm.s	\
-	x86_sse.S	
+EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
+	mpiio.c		libnet.c	x86_sse.S	x86_3dnow.S  	\
+	mgmx.c		widget.c	widget.h	x86_cpuid.S	\
+	axp_asm.s	f77_wrappers.c	
 
-if USE_FORTRAN
-BUILT_SOURCES = innerf.f
-else
-BUILT_SOURCES = innerc.c
-endif
-
-#
-# NB: The contents of GMXLIB_COND_OBJ is defined in
-#     the main configure.in script file
-#
-
-libgmxXXX_SUFFIX_XXX_la_LIBADD = @GMXLIB_COND_OBJ@	
-libgmxXXX_SUFFIX_XXX_la_DEPENDENCIES = @GMXLIB_COND_OBJ@	
-libgmxXXX_SUFFIX_XXX_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
-
+#if FORTRAN
+#BUILT_SOURCES = innerf.f
+#else
+#BUILT_SOURCES = innerc.c
+#endif
 
 
 # The inner loops
 innerf.f:	mkinl 
 		./mkinl	fortran	
-
 innerc.c:	mkinl
 		./mkinl c
 
-# The compaq compiler is really stupid and thinks a .S file is some
-# kind of object. Instead it preprocesses the .s files.
-# To make this work with both gcc and the compaq compilers, we
-# do a workaround to make gcc preprocess the .s file instead:
 
-if GNU_CC
-axp_asm.lo:	axp_asm.s
-	$(COMPILE) -x assembler-with-cpp -c $(srcdir)/axp_asm.s
-endif
+# mkinl is special - cant use a noinst_PROGRAMS target, since it might have 
+# to be compiled with a non-MPI compiler whose files can be executed directly:
 
-# Mkinl is special - we cant use a noinst_PROGRAMS target, since it
-# might have to be compiled with a special non-MPI compiler whose files
-# can be executed on the build machine (i.e., not for the target host):
+EXTRA_DIST 	 =			mkinl_declarations.c	\
+		mkinl_outerloop.c	mkinl_innerloop.c	\
+		mkinl_invsqrt.c		mkinl_calcdist.c	\
+		mkinl_recip.c		mkinl_interactions.c	\
+		metacode.c		mkinl.h			\
+		mkinl_fortrandata.h	mkinl.c
 
-EXTRA_DIST 	 = \
-	mkinl.c			mkinl_declarations.c	mkinl_outerloop.c  \
-	mkinl_innerloop.c	mkinl_calcdist.c	mkinl_invsqrt.c	   \
-	mkinl_recip.c		mkinl_interactions.c	metacode.c	   \
-	mkinl.h			mkinl_fortrandata.h
-
-BUILD_COMPILE = $(BUILD_CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+BUILD_COMPILE = $(CC_FOR_BUILD) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 
 metacode.o:	metacode.c
 		$(BUILD_COMPILE) -c $(srcdir)/metacode.c
@@ -114,8 +90,16 @@ MKINL_OBJ	= \
 mkinl:		$(MKINL_OBJ)
 		$(BUILD_COMPILE) -o $@ $(MKINL_OBJ)
 
-# clean things explicitly, since the target names might have changed
-CLEANFILES     = ${lib_LTLIBRARIES} *_d.la *_mpi.la *~ \\\#* innerc.c innerf.f mkinl
+# link the mpi library to non-mpi names if the latter are not present
+install-exec-hook:
+	if test `echo @LIBSUFFIX@|grep _mpi`; then \
+          mpi="libgmx@LIBSUFFIX@"; nompi=`echo $(mpi)|sed ,_mpi,,`"; \
+	  (cd $(libdir) && test -e $(mpi).a -a ! -e $(nompi).a && $(LN_S) $(mpi).a $(nompi).a); \
+	  (cd $(libdir) && test -e $(mpi).so -a ! -e $(nompi).so && $(LN_S) $(mpi).so $(nompi).so); \
+	fi
+
+# clean all libtool libraries, since the target names might have changed
+CLEANFILES     = *.la *~ \\\#* innerc.c innerf.f mkinl
 
 
 

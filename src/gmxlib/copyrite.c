@@ -196,6 +196,8 @@ char *cool_quote(void)
 void CopyRight(FILE *out,char *szProgram)
 {
 #define NCR (int)asize(CopyrightText)
+#define NGPL (int)asize(GPLText)
+
   char buf[256];
   char *ptr;
   
@@ -212,9 +214,12 @@ void CopyRight(FILE *out,char *szProgram)
   fprintf(out,"\n");
   
   for(i=0; (i<NCR); i++) 
-    fprintf(out,"  %s\n",CopyrightText[i]);
+    sp_print(out,CopyrightText[i]);
+  for(i=0; (i<NGPL); i++)
+    sp_print(out,GPLText[i]);
 
-  
+  fprintf(out,"\n");
+
   sprintf(buf,"%s",szProgram);
 #ifdef DOUBLE
   strcat(buf," (double precision)");

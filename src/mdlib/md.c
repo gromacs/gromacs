@@ -57,7 +57,7 @@ static char *SRCID_md_c = "$Id$";
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
-static void signal_handler(int n)
+static RETSIGTYPE signal_handler(int n)
 {
   switch (n) {
   case SIGTERM:

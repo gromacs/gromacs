@@ -69,8 +69,8 @@ void call_vectorized_routines()
      * otherwise we can gain some speed by writing back to the
      * same array buf1
      */
-#ifdef USE_IBM_MASS
-    /* IBM provide special fast single and double routines in their MASS libraries */
+#ifdef HAVE_LIBMASSV_ANY
+    /* IBM provide special fast single and double routines in their vectorized MASS libraries */
 #ifdef DOUBLE
     code( bC ? "vrsqrt(%s,buf1,&m);" : "call vrsqrt(%s,buf1,m)",
 	  OVERWRITE_RSQ ? "buf1" : "buf2" );	  
@@ -101,8 +101,8 @@ void call_vectorized_routines()
        * it is probably faster to square the value when
        * we use it.
        */
-#if defined(USE_IBM_MASS)
-    /* IBM stuff again. They provide a nice reciprocal */
+#ifdef HAVE_LIBMASSV_ANY
+    /* IBM stuff again. They provide a nice vectorized reciprocal, too */
 #ifdef DOUBLE
     code( bC ? "vrec(%s,buf1,&m);" : "call vrec(%s,buf1,m)",
 	  OVERWRITE_RSQ ? "buf1" : "buf2" );

@@ -51,24 +51,23 @@ extern "C" {
 #endif
   
 #include <stdio.h>
-
+  
 /* Has to be a function, so we can get version number from autoconf */   
 char *GromacsVersion();
   
   
 static char *CopyrightText[] = {
-  "",
-  "Copyright (c) 1991-2001",
-  "Dept. of Biophysical Chemistry, University of Groningen, The Netherlands",
-  "For additional resources, check out http://www.gromacs.org"
-  ""
-  "This program is free software; you can redistribute it and/or"
-  "modify it under the terms of the GNU General Public License"
-  "as published by the Free Software Foundation; either version 2"
-  "of the License, or (at your option) any later version."
-  ""
+  "Copyright (c) 1991-2001, University of Groningen, The Netherlands"
 };
-  
+
+static char *GPLText[] = {
+  "This program is free software; you can redistribute it and/or",
+  "modify it under the terms of the GNU General Public License",
+  "as published by the Free Software Foundation; either version 2",
+  "of the License, or (at your option) any later version."
+};
+
+
 extern void pr_difftime(FILE *out,double dt);
 
 void CopyRight(FILE *out,char *szProgram);

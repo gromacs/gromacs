@@ -8,19 +8,31 @@ templatedir = ${datadir}/template
 # we don't build this, it's meant for the user to play with.
 # Since a Makefile is used for the installation, we call the
 # template makefile Template.mak, and rename it to Makefile when installing.
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+CPPFLAGS = @CPPFLAGS@
+CFLAGS = @CFLAGS@
+CC = @CC@
 
-template_DATA = template.c README
+template_DATA = template.c README Makefile.@host@
+EXTRA_DIST = template.c README Template.mak
 
-EXTRA_DIST = Template.mak.in ${template_DATA}
+#BUILT_SOURCES = Makefile.@host@
+
+Makefile.@host@: Template.mak Makefile 
+	cat $< | sed 's,@libdir\@,$(libdir),' | \
+	sed 's,@LDFLAGS\@,$(LDFLAGS),' | \
+	sed 's,@LIBS\@,$(LIBS),' | \
+	sed 's,@CPPFLAGS\@,$(CPPFLAGS),' | \
+	sed 's,@CFLAGS\@,$(CFLAGS),' | \
+	sed 's,@CC\@,$(CC),' | \
+	sed 's,@includedir\@,$(includedir),' | \
+	sed 's,@host\@,@host@,' >$@
 
 install-data-hook:
-	$(mkinstalldirs) $(DESTDIR)$(templatedir)
-	echo "$(INSTALL_DATA) Template.mak $(DESTDIR)$(templatedir)/Makefile"; \
-	$(INSTALL_DATA) Template.mak $(DESTDIR)$(templatedir)/Makefile; 
+	(cd $(DESTDIR)$(templatedir) && test ! -e Makefile && $(LN_S) Makefile.@host@ Makefile)
 
-
-CLEANFILES = *~ \\\#* *.ene *.hat *.tr? *.xtc *.edr *.ene *.xvg core *.log mdout.mdp *.tp? mon.out confout.gro deshuf.ndx output.* *.gz *.ps *.dat *.g87 *~ \\\#*
-
+CLEANFILES = *~ \\\#* 
 
 
 

@@ -101,7 +101,7 @@ void file_header(void)
   if(bC)
     fprintf(output,"\n\n#define x86trunc(a,b) asm(\"fld %%1 ; fistpl %%0\" : \"=m\" (*&b) : \"f\" (a));\n\n");
 #endif
-#ifdef USE_IBM_MASS
+#ifdef HAVE_LIBMASSV_ANY
   if(bC)
     fprintf(output,
 	    "void vsrec(float *, float *, int *);\n"

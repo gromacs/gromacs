@@ -419,13 +419,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bExcept=FALSE,bGUI=FALSE,bDebug=FALSE;
   static char *deffnm=NULL;
-  
+     
   FILE *fp;  
   bool bPrint,bExit;
   int  i,j,k,npall;
   char *ptr,*newdesc;
   char *envstr;
-  
+
   t_pargs *all_pa=NULL;
   
   t_pargs motif_pa  = { "-X",    FALSE, etBOOL,  {&bGUI},
@@ -509,8 +509,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,bool bNice,
     bQuiet = TRUE;
 #endif
   
-  if (!program)
-    program  = strdup(argv[0]);
+  /* When you run a dynamically linked program before installing
+   * it, libtool uses wrapper scripts and prefixes the name with "lt-".
+   * Until libtool is fixed to set argv[0] right, rip away the prefix:
+   */
+  if(strlen(argv[0])>3 && !strncmp(argv[0],"lt-",3)) 
+    program = strdup(argv[0]+3);
+  else
+    program = strdup(argv[0]);
 
   /* Check ALL the flags ... */
   snew(all_pa,NPCA_PA+npargs);

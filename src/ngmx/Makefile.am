@@ -1,23 +1,18 @@
 ## Process this file with automake to produce Makefile.in
-#
-# Don't edit - this file is generated automatically from Makefile.am
-#
+# Note: Makefile is automatically generated from Makefile.in by the configure
+# script, and Makefile.in is generated from Makefile.am by automake.
+INCLUDES = -I$(top_srcdir)/include
+AM_CPPFLAGS = -DGMXLIBDIR=\"$(datadir)/top\"
+LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
-# This is necessary for VPATH to work, 
-# but it can probably be done in a nicer way...
-INCLUDES = @INCLUDES@ -I$(top_srcdir)/include
-LDFLAGS = @LDFLAGS@ -L${top_builddir}/src/gmxlib -L${top_builddir}/src/mdlib 
-LDADD = ../gmxlib/libgmxXXX_SUFFIX_XXX.la ../mdlib/libmdXXX_SUFFIX_XXX.la
+# Ngmx requires X11 - nothing is built if it doesn't exist
 
-# Ngmx requires X - nothing is built if it doesn't exist
+if USE_X11
 
-if USE_X11 
+bin_PROGRAMS     = ngmx xrama highway
+EXTRA_PROGRAMS   = gmxlogo dlg scrollw showcol
 
-bin_PROGRAMS     = 	ngmxXXX_SUFFIX_XXX  	xramaXXX_SUFFIX_XXX	\
-			highwayXXX_SUFFIX_XXX
-
-EXTRA_PROGRAMS   = 	gmxlogoXXX_SUFFIX_XXX  dlgXXX_SUFFIX_XXX 	\
-			scrollwXXX_SUFFIX_XXX showcolXXX_SUFFIX_XXX
+endif
 
 XSRC	=	xutil.c		xmb.c		x11.c		\
 		xdlghi.c   	fgrid.c    	xdlgitem.c 	\
@@ -30,27 +25,19 @@ XSRC	=	xutil.c		xmb.c		x11.c		\
 		xdlg.h		xdlgitem.h	xutil.h		\
 		buttons.h	fgrid.h		manager.h	\
 		nener.h		nload.h		popup.h		\
-		x11.h		xdlghi.h	xmb.h		\
-		alert.bm	gromacs.bm	play.bm		\
-		rewind.bm	stop_ani.bm	ff.bm		\
-		info.bm		rama.bm		stop.bm
+		x11.h		xdlghi.h	xmb.h		
 
-ngmxXXX_SUFFIX_XXX_SOURCES    = ngmx.c $(XSRC)
+EXTRA_DIST = 	alert.bm 	gromacs.bm 	play.bm 	\
+		rewind.bm 	stop_ani.bm 	ff.bm 		\
+		info.bm 	rama.bm 	stop.bm
 
-xramaXXX_SUFFIX_XXX_SOURCES   = xrama.c $(XSRC)
 
-highwayXXX_SUFFIX_XXX_SOURCES = highway.c $(XSRC) 
+ngmx_SOURCES    = ngmx.c $(XSRC)
+xrama_SOURCES   = xrama.c $(XSRC)
+highway_SOURCES = highway.c $(XSRC) 
+gmxlogo_SOURCES = gmxlogo.c logo.c $(XSRC)
+dlg_SOURCES     = dlg.c $(XSRC)
+scrollw_SOURCES = scrollw.c $(XSRC)
+showcol_SOURCES = showcol.c $(XSRC)
 
-gmxlogoXXX_SUFFIX_XXX_SOURCES = gmxlogo.c logo.c $(XSRC)
-
-dlgXXX_SUFFIX_XXX_SOURCES     = dlg.c $(XSRC)
-
-scrollwXXX_SUFFIX_XXX_SOURCES = scrollw.c $(XSRC)
-
-showcolXXX_SUFFIX_XXX_SOURCES = showcol.c $(XSRC)
-
-endif
-
-# clean things explicitly, since the target names might have changed
-CLEANFILES   = 	${bin_PROGRAMS}	${EXTRA_PROGRAMS}	\
-		*_mpi *_d *~ \\\#*
+CLEANFILES   = 	*~ \\\#*
