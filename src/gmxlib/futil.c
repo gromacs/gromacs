@@ -531,11 +531,11 @@ const char *low_libfn(const char *file, bool bFatal)
     }
     ret=buf;
     if (bFatal && !found) {
-      if(env_is_set) 
+      if (env_is_set) 
 	gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
       else
 	gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
-		    "(You can set the directories to search with the GMXLIB path variable.)\n",file);
+		    "(You can set the directories to search with the GMXLIB path variable)",file);
     }
   }
     
