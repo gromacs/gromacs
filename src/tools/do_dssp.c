@@ -421,9 +421,9 @@ int main(int argc,char *argv[])
 #ifdef MY_DSSP
   /* Open all files read-write */
   tapein=ffopen(pdbfile,"w+");
-  setvbuf(tapein,inbuf,MAXBUF,_IOFBF);
+  setvbuf(tapein,inbuf,_IOFBF,MAXBUF);
   tapeout=ffopen(tmpfile,"w+");
-  setvbuf(tapeout,outbuf,MAXBUF,_IOFBF);
+  setvbuf(tapeout,outbuf,_IOFBF,MAXBUF);
 #else
   if ((dptr=getenv("DSSP")) == NULL)
     dptr="/home/mdgroup/dssp/dssp";
@@ -467,7 +467,7 @@ int main(int argc,char *argv[])
 	for(i=naccr-10; i<naccr; i++)
 	  snew(accr[i],atoms->nres);
       }
-      rm_pbc(&(top.idef),atoms->nr,box,x,x);
+      rm_pbc(&(top.idef),natoms,box,x,x);
 #ifndef MY_DSSP
       tapein=ffopen(pdbfile,"w");
 #endif
