@@ -653,6 +653,14 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	warning(errbuf);
       }
   }
+  if (ftype == F_SETTLE)
+    if (aa[0]+2 > at->nr)
+      fatal_error(0,"[ file %s, line %d ]:\n"
+		  "             Atom index (%d) in %s out of bounds (1-%d)\n"
+		  "             Settle works on atoms %d, %d and %d",
+		  get_warning_file(),get_warning_line(),
+		  aa[0],dir2str(d),at->nr,
+		  aa[0],aa[0]+1,aa[0]+2);
   
   /* default force parameters  */
   for(j=0; (j<MAXATOMLIST); j++)
