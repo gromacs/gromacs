@@ -52,17 +52,21 @@
 enum { 
   etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
   etabRF,    etabCOUL, etabEwald, etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
+  etabLJ6Encad, etabLJ12Encad, etabCOULEncad,  
   etabEXPMIN,etabUSER, etabNR 
 };
+
 static const char *tabnm[etabNR] = { 
   "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
   "RF",    "COUL", "Ewald", "LJ6Switch", "LJ12Switch","COULSwitch", 
+  "LJ6-Encad shift", "LJ12-Encad shift", "COUL-Encad shift",  
   "EXPMIN","USER" 
 };
 
 /* This flag tells whether this is a Coulomb type funtion */
 bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 			  TRUE,  TRUE, TRUE, FALSE, FALSE, TRUE, 
+              FALSE, FALSE, TRUE,
 			  FALSE, FALSE }; 
 
 /* Index in the table that says which function to use */
@@ -270,7 +274,7 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
 #endif
   int  i,p;
   double r1,rc,r12,r13;
-  double r,r2,r6;
+  double r,r2,r6,rc6;
   double expr,Vtab,Ftab,Vtab2,Ftab2;
   /* Parameters for David's function */
   double A=0,B=0,C=0,A_3=0,B_4=0;
@@ -362,6 +366,10 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
 #ifdef DEBUG_SWITCH
     fprintf(fp,"%10g  %10g  %10g  %10g\n",r,swi,swi1,swi2);
 #endif
+    
+	rc6 = rc*rc*rc;
+	rc6 = 1.0/(rc6*rc6);
+    
     switch (tp) {
     case etabLJ6:
       /* Dispersion */
@@ -397,6 +405,32 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
 	Ftab2 = 14.0*Vtab2/r;
       }  
       break;
+	case etabLJ6Encad:
+        if(r < rc) {
+            Vtab  = -(r6-6.0*(rc-r)*rc6/rc-rc6);
+            Ftab  = -(6.0*r6/r-6.0*rc6/rc);
+            Vtab2 = -(42.0*r6/r2);
+            Ftab2 = 8.0*Vtab2/r;
+        } else { /* r>rc */ 
+            Vtab  = 0;
+            Ftab  = 0;
+            Vtab2 = 0;
+            Ftab2 = 0;
+        } 
+        break;
+    case etabLJ12Encad:
+        if(r < rc) {
+            Vtab  = r12-12.0*(rc-r)*rc6*rc6/rc-1.0*rc6*rc6;
+            Ftab  = 12.0*r12/r-12.0*rc6*rc6/rc;
+            Vtab2 = 12.0*13.0*r12/r2;
+            Ftab2 = 14.0*Vtab2/r;	
+        } else { /* r>rc */ 
+            Vtab  = 0;
+            Ftab  = 0;
+            Vtab2 = 0;
+            Ftab2 = 0;
+        } 
+        break;        
     case etabCOUL:
       Vtab  = 1.0/r;
       Ftab  = 1.0/r2;
@@ -435,6 +469,19 @@ static void fill_table(t_tabledata *td,int tp,t_forcerec *fr)
       Vtab2 = expr;
       Ftab2 = expr;
       break;
+    case etabCOULEncad:
+        if(r < rc) {
+            Vtab  = 1.0/r-(rc-r)/(rc*rc)-1.0/rc;
+            Ftab  = 1.0/r2-1.0/(rc*rc);
+            Vtab2 = 2.0/(r*r2);
+            Ftab2 = 6.0/(r2*r2); 	
+        } else { /* r>rc */ 
+            Vtab  = 0;
+            Ftab  = 0;
+            Vtab2 = 0;
+            Ftab2 = 0;
+        } 
+        break;
     default:
       fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
 		  tp,__FILE__,__LINE__);
@@ -513,6 +560,9 @@ static void set_table_type(int tabsel[],t_forcerec *fr)
   case eelUSER:
     tabsel[etiCOUL] = etabUSER;
     break;
+  case eelENCADSHIFT:
+      tabsel[etiCOUL] = etabCOULEncad;
+      break;      
   default:
     fatal_error(0,"Invalid eeltype %d in %s line %d",fr->eeltype,
 		__FILE__,__LINE__);
@@ -541,6 +591,10 @@ static void set_table_type(int tabsel[],t_forcerec *fr)
       tabsel[etiLJ6]  = etabLJ6;
       tabsel[etiLJ12] = etabLJ12;
       break;
+    case evdwENCADSHIFT:
+        tabsel[etiLJ6]  = etabLJ6Encad;
+        tabsel[etiLJ12] = etabLJ12Encad;
+        break;
     default:
       fatal_error(0,"Invalid vdwtype %d in %s line %d",fr->vdwtype,
 		  __FILE__,__LINE__);
