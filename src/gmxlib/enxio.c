@@ -100,6 +100,20 @@ void close_enx(int fp)
   fio_close(fp);
 }
 
+static bool empty_file(char *fn)
+{
+  FILE *fp;
+  char dum;
+  bool bEmpty;
+  
+  fp = ffopen(fn,"r");
+  fread(&dum,sizeof(dum),1,fp);
+  bEmpty = feof(fp);
+  fclose(fp);
+
+  return bEmpty;
+}
+
 static int framenr;
 
 int open_enx(char *fn,char *mode)
@@ -135,10 +149,15 @@ int open_enx(char *fn,char *mode)
       if (((eh->e_size && (eh->nre == nre) && (nre*4*sizeof(double) == eh->e_size)) ||
 	   (eh->d_size && (eh->ndisre*sizeof(double)*2+sizeof(int) == eh->d_size))))
 	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
-      else
-	fatal_error(0,"Energy file %s not recognized, maybe different CPU?",fn);
+      else {
+	if (empty_file(fn))
+	  fatal_error(0,"File %s is empty",fn);
+	else
+	  fatal_error(0,"Energy file %s not recognized, maybe different CPU?",
+		      fn);
+      }
       for(i=0; (i<nre); i++)
-	sfree(nm[i]);
+	  sfree(nm[i]);
       sfree(nm);
     }
     sfree(eh);

@@ -424,6 +424,9 @@ int main(int argc,char *argv[])
       nout=natoms; 
     }
     
+    if (natoms == 0)
+      fatal_error(0,"No atoms found in file %s",in_file);
+
     /* if xp was not snew-ed before, do it now */
     if (!xp)
       snew(xp, natoms);
