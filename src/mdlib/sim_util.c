@@ -602,7 +602,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   /* Initial values */
   *t = *t0       = ir->init_t;
   if (ir->efep != efepNO) {
-    *lambda = *lam0 = ir->init_lambda;
+    *lam0 = ir->init_lambda;
+    *lambda = *lam0 + ir->init_step*ir->delta_lambda;
   }
   else {
     *lambda = *lam0   = 0.0;
