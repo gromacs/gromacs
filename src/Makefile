@@ -49,7 +49,7 @@ dist:	cdist	bdist	tdist
 
 # rule to make dirs where binaries and libary go:
 dirs:
-	\mkdir -p $(GMXBIN) $(LIBDIR); 
+	\mkdir -p $(BINDIR) $(LIBDIR); 
 
 man:
 	./mknroff
