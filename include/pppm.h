@@ -63,15 +63,8 @@ extern real do_opt_pppm(FILE *log,       bool bVerbose,
  * the grid should be initiated beforehand.
  */
 
+void calc_invh(rvec box,int nx,int ny,int nz,rvec invh);
 		    
-extern real do_ewald(FILE *log,       t_inputrec *ir,
-		     int natoms,      rvec x[],rvec f[],
-		     real charge[],   rvec box,
-		     real phi[],      t_commrec *cr,
-		     bool bOld);
-/* Do an Ewald summation on a fixed grid as given in inputrec.
- * The spread function is David's function, rather than a gaussian.
- */
  
 #endif
 
