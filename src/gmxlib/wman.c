@@ -344,7 +344,7 @@ void print_tty_formatted(FILE *out, int nldesc, char *desc[])
     sfree(temp);
   }
   /* Make lines of at most 79 characters */
-  temp = wrap_lines(buf,79,0);
+  temp = wrap_lines(buf,80,0);
   fprintf(out,"%s\n",temp);
   sfree(temp);
   sfree(buf);

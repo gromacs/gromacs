@@ -205,6 +205,8 @@ char *wrap_lines(char *buf,int line_width, int indent)
         lspace = i;
 	l2space = i2-1;
       }
+      if (buf[i]=='\n') 
+	i0=i+1;
     }
     if (buf[i]) {
       b2[l2space] = '\n';
