@@ -354,7 +354,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
       md->typeA[ai] = 0;
       md->typeB[ai] = 1;
       md->typeA[aj] = 2;
-      md->typeB[aj] = 2;
+      md->typeB[aj] = 3;
       
       /* Set nonbonded params */
       C6(nbfp,4,0,2)  = iparams[itype].lj14.c6A;
