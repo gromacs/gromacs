@@ -47,5 +47,5 @@
 int 
 main(int argc,char *argv[]) 
 {
-  return gmx_editconf(argc,argv);
+  return gmx_genion(argc,argv);
 }
