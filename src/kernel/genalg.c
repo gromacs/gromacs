@@ -1,46 +1,35 @@
-/***************************************************************
-**                                                            **
-**        D I F F E R E N T I A L     E V O L U T I O N       **
-**                                                            **
-** Program: de.c                                              **
-** Version: 3.6                                               **
-**                                                            **
-** Authors: Dr. Rainer Storn                                  **
-**          c/o ICSI, 1947 Center Street, Suite 600           **
-**          Berkeley, CA 94707                                **
-**          Tel.:   510-642-4274 (extension 192)              **
-**          Fax.:   510-643-7684                              **
-**          E-mail: storn@icsi.berkeley.edu                   **
-**          WWW: http://http.icsi.berkeley.edu/~storn/        **
-**          on leave from                                     **
-**          Siemens AG, ZFE T SN 2, Otto-Hahn Ring 6          **
-**          D-81739 Muenchen, Germany                         **
-**          Tel:    636-40502                                 **
-**          Fax:    636-44577                                 **
-**          E-mail: rainer.storn@zfe.siemens.de               **
-**                                                            **
-**          Kenneth Price                                     **
-**          836 Owl Circle                                    **
-**          Vacaville, CA 95687                               **
-**          E-mail: kprice@solano.community.net               ** 
-**                                                            **
-** This program implements some variants of Differential      **
-** Evolution (DE) as described in part in the techreport      **
-** tr-95-012.ps of ICSI. You can get this report either via   **
-** ftp.icsi.berkeley.edu/pub/techreports/1995/tr-95-012.ps.Z  **
-** or via WWW: http://http.icsi.berkeley.edu/~storn/litera.html*
-** A more extended version of tr-95-012.ps is submitted for   **
-** publication in the Journal Evolutionary Computation.       ** 
-**                                                            **
-** You may use this program for any purpose, give it to any   **
-** person or change it according to your needs as long as you **
-** are referring to Rainer Storn and Ken Price as the origi-  **
-** nators of the the DE idea.                                 **
-** If you have questions concerning DE feel free to contact   **
-** us. We also will be happy to know about your experiences   **
-** with DE and your suggestions of improvement.               **
-**                                                            **
-***************************************************************/
+/*
+ * $Id$
+ * 
+ *                This source code is part of
+ * 
+ *                 G   R   O   M   A   C   S
+ * 
+ *          GROningen MAchine for Chemical Simulations
+ * 
+ *                        VERSION 3.1
+ * Copyright (c) 1991-2001, University of Groningen, The Netherlands
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
+ * 
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the papers on the package - you can find them in the top README file.
+ * 
+ * For more info, check our website at http://www.gromacs.org
+ * 
+ * And Hey:
+ * GROningen Mixture of Alchemy and Childrens' Stories
+ */
+static char *SRCID_genalg_c = "$Id$";
 /**H*O*C**************************************************************
 **                                                                  **
 ** No.!Version! Date ! Request !    Modification           ! Author **
