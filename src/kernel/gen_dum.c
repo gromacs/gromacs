@@ -37,6 +37,7 @@ static char *SRCID_gen_dum_c = "$Id$";
 #include "vec.h"
 #include "toputil.h"
 #include "physics.h"
+#include "index.h"
 
 void do_dummies(t_atoms *at,t_atomtype *atype,t_symtab *symtab,
 		int nrtp,t_restp rtp[],rvec **x,
