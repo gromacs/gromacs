@@ -145,9 +145,6 @@ void mindist_plot(char *fn,FILE *atm,real mind,
   }    
   j=0;
   do {
-    if ((j++ % 10) == 0)
-      fprintf(stderr,"\rframe: %5d",j-1);
-      
     fprintf(dist,"%12g",t);
     fprintf(num,"%12g",t);
 
@@ -177,7 +174,6 @@ void mindist_plot(char *fn,FILE *atm,real mind,
       fprintf(atm,"%12g  %12d  %12d\n",t,min1,min2);
   } while (read_next_x(status,&t,natoms,x0,box));
   
-  fprintf(stderr,"\n");
   close_trj(status);
   fclose(dist);
   fclose(num);
