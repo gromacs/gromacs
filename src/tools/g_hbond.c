@@ -413,7 +413,7 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
   g=NULL;
 }
 
-static pbc_correct(rvec dx,matrix box,rvec hbox)
+static void pbc_correct(rvec dx,matrix box,rvec hbox)
 {
   int m;
   
@@ -524,12 +524,12 @@ static bool is_hb(unsigned int hbexist[],int frame)
 }
 
 static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
-		    real time[],real aver_nhb)
+		    real time[],real aver_nhb,bool bDump)
 {
   FILE *fp;
   int  i,j,ihb,nnn;
   bool bNorm=FALSE;
-  double nhb = 0;
+  double nhb = 0,dt;
   real *rhbex;
   real *ct,tail,tail2,dtail,ct0,subtract;
   const real tol = 1e-3;
@@ -540,17 +540,18 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   snew(ct,nframes);
 
   /* Loop over hbonds */
-  fp = ffopen("debug-ac.xvg","w");
-  for(j=0; (j<nframes); j++) {
-    fprintf(fp,"%5d",j);
-    for(i=nrhb/2; i<min(nrhb/2+40,nrhb); i++) {
-      ihb      = is_hb(hbexist[i],j);
-      fprintf(fp,"  %3d",ihb);
+  if (bDump) {
+    fp = ffopen("debug-ac.xvg","w");
+    for(j=0; (j<nframes); j++) {
+      fprintf(fp,"%10g",time[j]);
+      for(i=0; i<min(1000,nrhb); i++) {
+	ihb      = is_hb(hbexist[i],j);
+	fprintf(fp,"  %3d",ihb);
+      }
+      fprintf(fp,"\n");
     }
-    fprintf(fp,"\n");
+    ffclose(fp);
   }
-  ffclose(fp);
-  
   for(i=0; (i<nrhb); i++) {
     if ((((i+1) % 10) == 0) || (i==nrhb-1))
       fprintf(stderr,"\rACF %d/%d",i+1,nrhb);
@@ -562,12 +563,12 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
       nnn     += ihb;
     }
     /* Subtract average value */
-    /*subtract = aver_nhb;
-    subtract = nnn/((real)nframes);
-    subtract = 0;
+    /* subtract = 0; */
+    subtract = aver_nhb;
+    /* subtract = nnn/((real)nframes);*/
     for(j=0; (j<nframes); j++)
       rhbex[j] -= subtract;
-    */
+    
     /* The autocorrelation function is normalized after summation only */
     low_do_autocorr(NULL,NULL,
 		    nframes,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
@@ -604,7 +605,8 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   }
   fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
   for(j=0; (j<nframes/2); j++)
-    fprintf(fp,"%10g  %10g\n",time[j]-time[0],(ct[j]-tail)/(1-tail));
+    fprintf(fp,"%10g  %10g  %10g\n",
+	    time[j]-time[0],(ct[j]-tail)/(1-tail),ct[j]);
   
   fclose(fp);
   do_view(fn,NULL);
@@ -670,27 +672,31 @@ int gmx_hbond(int argc,char *argv[])
     "each timeframe. This is especially usefull when using [TT]-shell[tt]."
   };
   
-  static real acut=30, abin=1, rcut=0.35, rbin=0.005, rshell=-1;
-  static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE;
+  static real acut=30, abin=1, rcut=0.35, rbin=0.005, rshell=-1,maxnhb=0;
+  static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE,bDump=FALSE;
   /* options */
   t_pargs pa [] = {
-    { "-ins",  FALSE, etBOOL, {&bInsert},
+    { "-ins",  FALSE,  etBOOL, {&bInsert},
       "Analyze solvent insertion" },
-    { "-a",    FALSE, etREAL, {&acut},
+    { "-a",    FALSE,  etREAL, {&acut},
       "Cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
-    { "-r",    FALSE, etREAL, {&rcut},
+    { "-r",    FALSE,  etREAL, {&rcut},
       "Cutoff radius (nm, X - Acceptor, see next option)" },
-    { "-da",   FALSE, etBOOL, {&bDA},
+    { "-da",   FALSE,  etBOOL, {&bDA},
       "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
-    { "-abin", FALSE, etREAL, {&abin},
+    { "-abin", FALSE,  etREAL, {&abin},
       "Binwidth angle distribution (degrees)" },
-    { "-rbin", FALSE, etREAL, {&rbin},
+    { "-rbin", FALSE,  etREAL, {&rbin},
       "Binwidth distance distribution (nm)" },
-    { "-nitacc",FALSE,etBOOL, {&bNitAcc},
+    { "-nitacc",FALSE, etBOOL, {&bNitAcc},
       "Regard nitrogen atoms as acceptors" },
-    { "-shell", FALSE,etREAL, {&rshell},
+    { "-shell", FALSE, etREAL, {&rshell},
       "when > 0, only calculate hydrogen bonds within # nm shell around "
-      "one particle" }
+      "one particle" },
+    { "-dump",  FALSE, etBOOL, {&bDump},
+      "Dump all hydrogen bond ACFs (maximum 1000) in a single xvg file for debugging" },
+    { "-max_hb",FALSE, etREAL, {&maxnhb},
+      "Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly" }
   };
 
   t_filenm fnm[] = {
@@ -1209,15 +1215,19 @@ int gmx_hbond(int argc,char *argv[])
     }
     
     /* Compute maximum possible number of different hbonds */
-    if (bTwo) 
-      max_nhb = nr_a[gr0H]*nr_a[gr1A] + nr_a[gr0A]*nr_a[gr1H];
-    else 
-      max_nhb = nr_a[gr0H]*nr_a[gr0A];
-    printf("Average number of hbonds per timeframe %.2f out of %g possible\n",
+    if (maxnhb > 0)
+      max_nhb = maxnhb;
+    else {
+      if (bTwo) 
+	max_nhb = 0.5*(nr_a[gr0D]*nr_a[gr1A] + nr_a[gr0A]*nr_a[gr1D]);
+      else 
+	max_nhb = 0.5*(nr_a[gr0D]*nr_a[gr0A]);
+    }
+    printf("Average number of hbonds per timeframe %.3f out of %g possible\n",
 	   aver_nhb,max_nhb);
     if (opt2bSet("-ac",NFILE,fnm))
       do_hbac(opt2fn("-ac",NFILE,fnm),hbexist,nrhb,nframes,time,
-	      aver_nhb/max_nhb);
+	      aver_nhb/max_nhb,bDump);
     
     if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;

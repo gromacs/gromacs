@@ -269,7 +269,12 @@ int main(int argc,char *argv[])
       "of each file. The input files are taken from the command line, ",
       "such that a command like [TT]trjcat -o fixed.trr *.trr[tt] should do ",
       "the trick. Using [TT]-cat[tt] you can simply paste several files ",
-      "together without removal of frames with identical time stamps."
+      "together without removal of frames with identical time stamps.[PAR]",
+      "One important option is inferred when the output file is amongst the",
+      "input files. In that case that particular file will be appended to",
+      "which implies you do not need to store double the amount of data.",
+      "Obviously the file to append to has to be the one with lowest starting",
+      "time since one can only append at the end of a file."
   };
   static bool  bVels=TRUE;
   static int   prec=3;
@@ -306,10 +311,10 @@ int main(int argc,char *argv[])
   rvec        *x,*v;
   real        xtcpr,t_corr;
   t_trxframe  fr,frout;
-  char        **fnms;
+  char        **fnms,*in_file,*out_file;
+  int         n_append;
   int         trxout=-1;
   bool        bNewFile,bIndex,bWrite;
-  char        *in_file,*out_file;
   int         flags,earliersteps,nfile,*cont_type,last_ok_step;
   real        *readtime,*settime;
   real        first_time=0,lasttime=NOTSET,last_ok_t=-1,timestep;
@@ -351,7 +356,7 @@ int main(int argc,char *argv[])
   
   if(!nfile)
       fatal_error(0,"No input files!");
-  
+
   timestep = get_timestep(fnms[0]);
   snew(readtime,nfile+1);
   scan_trj_files(fnms,nfile,readtime,imax);
@@ -360,8 +365,24 @@ int main(int argc,char *argv[])
   snew(cont_type,nfile+1);
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);
   
+  /* Check whether the output file is amongst the input files 
+   * This has to be done after sorting etc.
+   */
+  out_file = opt2fn("-o",NFILE,fnm);
+  n_append = -1;
+  for(i=0; ((i<nfile) && (n_append==-1)); i++) {
+    if (strcmp(fnms[i],out_file) == 0) {
+      n_append = i;
+    }
+  }
+  if (n_append == 0)
+    fprintf(stderr,"Will append to %s rather than creating a new file\n",
+	    out_file);
+  else if (n_append != -1)
+    fatal_error(0,"Can only append to the first file which is %s (not %s)",
+		fnms[0],out_file);
+		
   earliersteps=0;    
-  out_file=opt2fn("-o",NFILE,fnm);
   
   /* Not checking input format, could be dangerous :-) */
   /* Not checking output format, equally dangerous :-) */
@@ -376,21 +397,35 @@ int main(int argc,char *argv[])
   t_corr=0;
      
   timestep=NOTSET;
-     
+
+  if (n_append == -1)
+    trxout = open_trx(out_file,"w");
+  else {
+    /* Read file to find what is the last frame in it */
+    if (!read_first_frame(&status,out_file,&fr,flags))
+      fatal_error(0,"Reading first frame from %s",out_file);
+    while (read_next_frame(status,&fr))
+      ;
+    close_trj(status);
+    lasttime = fr.time;
+    bKeepLast = TRUE;
+    trxout = open_trx(out_file,"a");
+  }    
   /* Lets stitch up some files */
-  for(i=0;i<nfile;i++) {
-      /* Open next file */
-  
-    /* we might not be able to read a timestep from the first file,
-       so until we get a timestep, it is NOTSET */
-    if ( timestep==NOTSET )
-      timestep = get_timestep(fnms[i]);
+  for(i=0; (i<nfile); i++) {
+    /* Open next file */
     
+    if (i != n_append) {
+      /* we might not be able to read a timestep from the first file,
+	 so until we get a timestep, it is NOTSET */
+      if ( timestep==NOTSET )
+	timestep = get_timestep(fnms[i]);
+      
       read_first_frame(&status,fnms[i],&fr,flags);
-    if(!fr.bTime) {
-      fr.time=0;
-      fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
-    }
+      if(!fr.bTime) {
+	fr.time=0;
+	fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
+      }
       
       if(cont_type[i]==TIME_EXPLICIT)
 	t_corr=settime[i]-fr.time;
@@ -404,9 +439,7 @@ int main(int argc,char *argv[])
        */
       
       bNewFile=TRUE;
-      if(i==0)
-	  trxout = open_trx(out_file,"w");
-	  
+      
       printf("\nlasttime %g\n", lasttime);
       
       do {
@@ -444,16 +477,16 @@ int main(int argc,char *argv[])
 	      bNewFile=FALSE;
 	    }
 	    
-	      if (bIndex)
-		write_trxframe_indexed(trxout,&frout,isize,index);
-	      else
-		write_trxframe(trxout,&frout);
+	    if (bIndex)
+	      write_trxframe_indexed(trxout,&frout,isize,index);
+	    else
+	      write_trxframe(trxout,&frout);
 	    if ( ((frame % 10) == 0) || (frame < 10) )
 	      fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
 		      frame_out,convert_time(frout.time),time_unit());
 	  }
 	}
-      } while( bWrite && read_next_frame(status,&fr));
+      } while( read_next_frame(status,&fr));
       
       close_trj(status);
       
@@ -461,14 +494,14 @@ int main(int argc,char *argv[])
       
       /* set the next time from the last frame in previous file */
       if(cont_type[i+1]==TIME_CONTINUE) {
-      begin=frout.time;
-      if (timestep!=NOTSET)
-	begin += 0.5*timestep;
+	begin=frout.time;
+	if (timestep!=NOTSET)
+	  begin += 0.5*timestep;
 	settime[i+1]=frout.time;
 	cont_type[i+1]=TIME_EXPLICIT;	  
       }
       else if(cont_type[i+1]==TIME_LAST)
-      begin=frout.time;
+	begin=frout.time;
       if (timestep!=NOTSET)
 	begin += 0.5*timestep;
       /* Or, if the time in the next part should be changed by the
@@ -484,6 +517,7 @@ int main(int argc,char *argv[])
 		  "spacing than the rest,\n"
 		  "might be a gap or overlap that couldn't be corrected "
 		  "automatically.\n",convert_time(frout.time),time_unit());
+    }
   }
   if (trxout >= 0)
     close_trx(trxout);
