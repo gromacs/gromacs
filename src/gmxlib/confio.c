@@ -506,30 +506,8 @@ void write_conf(char *outfile, char *title, t_atoms *atoms,
 {
   write_conf_p(outfile, title, atoms, 3, x, v, box);
 }
-
-void read_pdb_conf(char *infile,char *title, 
-		   t_atoms *atoms,rvec x[],matrix box)
-{
-  FILE      *in;
-  t_symtab  tab;
-  t_pdbatom *pdba=NULL;
-  rvec      *xx=NULL;
-  int       i,natom;
-  
-  in    = ffopen(infile,"r");
-  natom = read_pdbatoms(in,title,&pdba,box,FALSE);
-  ffclose(in);
-
-  open_symtab(&tab);  
-  pdb2atoms(natom,pdba,atoms,&xx,&tab);
-  close_symtab(&tab);
-  for(i=0; (i<natom); i++)
-    copy_rvec(xx[i],x[i]);
-  sfree(xx);
-  sfree(pdba);
-}
-
-void change_name(char *name)
+/*
+static void change_name(char *name)
 {
   int i,length;
   char temp;
@@ -552,70 +530,32 @@ void change_name(char *name)
     strcpy(name,"OXT");
   }
 }
-    
-void write_pdb_conf(char *outfile,char *title,
-		    t_atoms *atoms,rvec x[],matrix box,bool bChange)
+
+extern void write_pdb_conf(char *outfile,char *title,
+			   t_atoms *atoms,rvec x[],matrix box,
+			   bool bChange)
 {
-  char resnm[6],nm[6],chain;
-  int  i,resnr;
   FILE *out;
-
   out=ffopen(outfile,"w");
-
-  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
-  if (box) {
-    fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
-	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
-  }
-  for (i=0; (i<atoms->nr); i++) {
-    resnr=atoms->atom[i].resnr;
-    strcpy(resnm,*atoms->resname[resnr]);
-    strcpy(nm,*atoms->atomname[i]);
-    if (bChange)
-      change_name(nm);
-    resnr++;
-    if (resnr>=10000)
-      resnr = resnr % 10000;
-    if (atoms->chain)
-      chain=atoms->chain[i];
-    else
-      chain=' ';
-    if (strlen(nm)==4)
-      fprintf(out,"ATOM  %5d %-4.4s %3.3s %c%4d    ",i+1,nm,resnm,chain,resnr);
-    else
-      fprintf(out,"ATOM  %5d  %-4.4s%3.3s %c%4d    ",i+1,nm,resnm,chain,resnr);
-    fprintf(out,"%8.3f%8.3f%8.3f  1.00  0.00\n",10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
-  }
-  fprintf(out,"TER\n");
-  ffclose(out);
+  write_pdbfile(out,title,atoms,x,box,TRUE,bChange);
+  fclose(out);
 }
-
+    
 void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
 {
-  char resnm[6],nm[6];
-  int  i,resnr;
   FILE *out;
   int n;
-  char chain;
+  char chain,str[STRLEN];
+
   out=ffopen(outfile,"w");
   
   for(n=0;(n<number);n++) {
     chain='A'+n;
     fprintf(stderr,"writing chain %c\n",chain);
-    for (i=0; (i<atoms[n]->nr); i++) {
-      resnr=atoms[n]->atom[i].resnr;
-      strcpy(resnm,*atoms[n]->resname[resnr]);
-      strcpy(nm,*atoms[n]->atomname[i]);
-      change_name(nm);
-      if (strlen(nm)==4)
-	fprintf(out,"ATOM  %5d %-4.4s %3.3s %c%4d    ",i+1,nm,resnm,chain,resnr+1);
-      else
-	fprintf(out,"ATOM  %5d  %-4.4s%3.3s %c%4d    ",i+1,nm,resnm,chain,resnr+1);
-      fprintf(out,"%8.3f%8.3f%8.3f  1.00  0.00\n",10*x[n][i][XX],10*x[n][i][YY],10*x[n][i][ZZ]);
-    }
-    fprintf(out,"TER\n");
+    sprintf(str,"Chain %c",chain);
+    write_pdbfile(out,str,atoms[n],x[n],NULL,chain,(n==number-1),TRUE);
   }
+
   ffclose(out);
 }
 
@@ -662,7 +602,7 @@ void write_pdb_conf_indexed(char *outfile,char *title,
   fflush(out);
   ffclose(out);
 }
-
+*/
 
 void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,
 		    rvec x[],rvec v[],matrix box)
@@ -789,7 +729,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
-    write_pdb_conf(outfile, title, atoms, x, box, FALSE);
+    write_pdb_conf(outfile, title, atoms, x, box);
     break;
   case efTPR:
   case efTPB:
@@ -844,7 +784,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
-    read_pdb_conf(infile, title, atoms, x, box);
+    read_pdb_conf(infile, title, atoms, x, box, TRUE);
     break;
   case efTPR:
   case efTPB:

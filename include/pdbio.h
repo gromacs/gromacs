@@ -67,15 +67,41 @@ typedef struct {
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
 
-extern int read_pdbatoms(FILE *in,char *title,
-			 t_pdbatom **pdbaptr,matrix box,bool bFilterH);
+/*
+void write_pdbfile_indexed(FILE *out,char *title,
+			   t_atoms *atoms,rvec x[],matrix box,char chain,
+			   bool bEndmodel,
+			   atom_id nindex, atom_id *index);
+			   */
+
+extern void write_pdbfile(FILE *out,char *title,
+			  t_atoms *atoms,rvec x[],matrix box,char chain,
+			  bool bEndmodel);
+  
+void hwrite_pdb_conf_indexed(FILE *out,char *title, 
+			     t_atoms *atoms,rvec x[],matrix box,
+			     atom_id nindex,atom_id index[]);
+/* Write a pdb file to FILE *out
+ * Use an index to only write out selected atoms. */
+
+extern void write_pdb_confs(char *outfile,
+			    t_atoms **atoms,rvec *x[],int number);
+
+extern void write_pdb_conf(char *outfile,char *title,
+			   t_atoms *atoms,rvec x[],matrix box);
+
+extern int read_pdbfile(FILE *in,char *title,
+			t_atoms *atoms,rvec x[],matrix box,bool bChange);
+/* Function returns number of atoms found. */
+
+extern void read_pdb_conf(char *infile,char *title, 
+			  t_atoms *atoms,rvec x[],matrix box,bool bChange);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * The pdbaptr will point to an array of pdb atoms on return.
- * Function returns number of atoms found.
  * atomnm and resnama still contain the spaces from the
  * pdb file. 
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
- * It is possible to filter out hydrogen atoms (set bFilterH)
+ * Change atom names according to protein conventions if wanted
  */
 
 extern void get_pdb_coordnum(char *infile,int *natoms);

@@ -46,6 +46,7 @@ static char *pdbtp[epdbNR]={
 };
 
 static char *pdbformat="%6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
+static char *pdbformat4="%6s%5d %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
 /* This is THE format */
 static char *anisouformat="%6s%5d %-4.4s %3.3s %c%4d  %-6d%-6d%-6d%-6d%-6d%-6d  %3s%-2s%2s\n";
 static bool bTER=FALSE;
@@ -55,6 +56,130 @@ static bool bTER=FALSE;
 void pdb_use_ter(bool bSet)
 {
   bTER=bSet;
+}
+
+static void change_name(char *name)
+{
+  int i,length;
+  char temp;
+  bool bH;
+  length=strlen(name);
+  if (isdigit(name[length-1])&&isdigit(name[length-2])) {
+    bH=FALSE;
+    for (i=0;(i<length);i++)
+      if (name[i] == 'H') 
+        bH=TRUE;
+    if (bH) {
+      temp=name[length-1]; 
+      for(i=length-1;(i>0);i--)
+	name[i]=name[i-1];
+      name[0]=temp;
+    }
+  }
+  else {
+    if(strcmp(name,"O2")==0)
+    strcpy(name,"OXT");
+  }
+}
+
+void write_pdbfile_indexed(FILE *out,char *title,
+			   t_atoms *atoms,rvec x[],matrix box,char chain,
+			   bool bEndmodel,
+			   atom_id nindex, atom_id index[])
+{
+  char resnm[6],nm[6],ch,*pdbform;
+  atom_id i,ii;
+  int  resnr,type;
+  real occup;
+
+  fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
+  if (box) {
+    fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
+    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
+	    10*box[XX][XX],10*box[YY][YY],10*box[ZZ][ZZ],90.0,90.0,90.0);
+  }
+  for (ii=0; ii<nindex; ii++) {
+    i=index[ii];
+    resnr=atoms->atom[i].resnr;
+    strcpy(resnm,*atoms->resname[resnr]);
+    strcpy(nm,*atoms->atomname[i]);
+    resnr++;
+    if (resnr>=10000)
+      resnr = resnr % 10000;
+    if (chain)
+      ch=chain;
+    else
+      if (atoms->atom[i].chain)
+	ch=atoms->atom[i].chain;
+      else
+	  ch=' ';
+    occup=atoms->atom[i].occup;
+    if (occup==0.0)
+      occup=1.0;
+    if (strlen(nm)==4)
+      pdbform=pdbformat4;
+    else
+      pdbform=pdbformat;
+    if (atoms->pdbinfo != NULL)
+      type=atoms->pdbinfo[i].type;
+    else
+      type=0;
+    fprintf(out,pdbform,
+	    pdbtp[type],i+1,nm,resnm,ch,resnr,
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,atoms->atom[i].bfac);
+  }
+  
+  fprintf(out,"TER\n");
+  if (bEndmodel && !bTER)
+    fprintf(out,"ENDMDL\n");
+}
+
+void write_pdbfile(FILE *out,char *title,
+		   t_atoms *atoms,rvec x[],matrix box,char chain,
+		   bool bEndmodel)
+{
+  atom_id i,*index;
+
+  snew(index,atoms->nr);
+  for(i=0; i<atoms->nr; i++)
+    index[i]=i;
+  write_pdbfile_indexed(out,title,atoms,x,box,chain,bEndmodel,
+			atoms->nr,index);
+  sfree(index);
+}
+
+void hwrite_pdb_conf_indexed(FILE *out,char *title, 
+			     t_atoms *atoms,rvec x[],matrix box,
+			     atom_id nindex,atom_id index[])
+{
+  write_pdbfile_indexed(out,title,atoms,x,box,0,TRUE,nindex,index);
+}
+
+void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],int number)
+{
+  FILE *out;
+  int n;
+  char chain,str[STRLEN];
+
+  out=ffopen(outfile,"w");
+  
+  for(n=0;(n<number);n++) {
+    chain='A'+n;
+    fprintf(stderr,"writing chain %c\n",chain);
+    sprintf(str,"Chain %c",chain);
+    write_pdbfile(out,str,atoms[n],x[n],NULL,chain,(n==number-1));
+  }
+
+  ffclose(out);
+}
+
+extern void write_pdb_conf(char *outfile,char *title,
+			   t_atoms *atoms,rvec x[],matrix box)
+{
+  FILE *out;
+  out=ffopen(outfile,"w");
+  write_pdbfile(out,title,atoms,x,box,0,TRUE);
+  fclose(out);
 }
 
 int line2type(char *line)
@@ -73,7 +198,7 @@ int line2type(char *line)
   return k;
 }
 
-static void read_anisou(char line[],int natom,t_pdbatom pdba[])
+static void read_anisou(char line[],int natom,t_atoms *atoms)
 {
   int  i,j,k,atomnr;
   char nc='\0';
@@ -91,31 +216,40 @@ static void read_anisou(char line[],int natom,t_pdbatom pdba[])
   /* Search backwards for number and name only */
   atomnr = atoi(anr);
   for(i=natom-1; (i>=0); i--)
-    if ((strcmp(anm,pdba[i].atomnm) == 0) && (atomnr == pdba[i].atomnr))
+    if ((strcmp(anm,*(atoms->atomname[i])) == 0) && 
+	(atomnr == atoms->pdbinfo[i].atomnr))
       break;
   if (i < 0)
     fprintf(stderr,"Skipping ANISOU record (atom %s %d not found)\n",
 	    anm,atomnr);
   else {
     if (sscanf(line+29,"%d%d%d%d%d%d",
-	       &pdba[i].uij[U11],&pdba[i].uij[U22],&pdba[i].uij[U33],
-	       &pdba[i].uij[U12],&pdba[i].uij[U13],&pdba[i].uij[U23]) == 6) {
-      pdba[i].bAnisotropic = TRUE;
+	       &atoms->pdbinfo[i].uij[U11],&atoms->pdbinfo[i].uij[U22],
+	       &atoms->pdbinfo[i].uij[U33],&atoms->pdbinfo[i].uij[U12],
+	       &atoms->pdbinfo[i].uij[U13],&atoms->pdbinfo[i].uij[U23])
+	         == 6) {
+      atoms->pdbinfo[i].bAnisotropic = TRUE;
     }
     else {
       fprintf(stderr,"Invalid ANISOU record for atom %d\n",i);
-      pdba[i].bAnisotropic = FALSE;
+      atoms->pdbinfo[i].bAnisotropic = FALSE;
     }     
   }
 }
 
-static int read_atom(char line[],int natom,int *maxpdba,
-		     t_pdbatom **pdba,bool bFilterH)
+static int read_atom(char line[],int natom,
+		     t_atoms *atoms,rvec x[],bool bChange)
 {
+  static t_symtab symtab;
+  t_atom *atomn;
   int  j,k;
   char nc='\0';
   char anr[12],anm[12],resnm[12],chain[12],resnr[12];
-  char xc[12],yc[12],zc[12],dumc[12],bfac[12],pdbresnr[12];
+  char xc[12],yc[12],zc[12],occup[12],bfac[12],pdbresnr[12];
+  static int oldres;
+  int  resnri,newres;
+
+  open_symtab(&symtab);
 
   /* Skip over type */  
   j=6;
@@ -151,41 +285,47 @@ static int read_atom(char line[],int natom,int *maxpdba,
   zc[k]=nc;
   
   /* Weight */
-  for(k=0; (k<6); k++,j++) dumc[k]=line[j];
-  dumc[k]=nc;
+  for(k=0; (k<6); k++,j++) occup[k]=line[j];
+  occup[k]=nc;
   
   /* B-Factor */
   for(k=0; (k<6); k++,j++) bfac[k]=line[j];
   bfac[k]=nc;
-  
-  /* Should we filter out the hydrogens ? */
-  if (bFilterH && (is_hydrogen(anm)))
-    return natom;
-  
-  if (natom >= *maxpdba) {
-    *maxpdba+=256;
-    srenew(*pdba,*maxpdba);
-    /* Clear new entries! */
-    for(k=natom; (k<*maxpdba); k++)
-      memset(&((*pdba)[k]),0,(size_t)sizeof((*pdba)[k]));
+
+  atomn=&(atoms->atom[natom]);
+  if (atoms->pdbinfo != NULL) {
+    atoms->pdbinfo[natom].type=j;
+    atoms->pdbinfo[natom].atomnr=atoi(anr);
+    strcpy(atoms->pdbinfo[natom].pdbresnr,pdbresnr);
   }
-  (*pdba)[natom].pdbtp=j;
-  (*pdba)[natom].atomnr=atoi(anr);
-  strcpy((*pdba)[natom].atomnm,anm);
-  strcpy((*pdba)[natom].resnm,resnm);
-  strcpy((*pdba)[natom].pdbresnr,pdbresnr);
-  (*pdba)[natom].chain=chain[0];
-  (*pdba)[natom].resnr=atoi(resnr);
-  (*pdba)[natom].x[XX]=atof(xc)*0.1;
-  (*pdba)[natom].x[YY]=atof(yc)*0.1;
-  (*pdba)[natom].x[ZZ]=atof(zc)*0.1;
-  (*pdba)[natom].bfac=atof(bfac);
-  (*pdba)[natom].dummy=atof(dumc);
-  (*pdba)[natom].m = 0.0;
-  (*pdba)[natom].q = 0.0;
-  (*pdba)[natom].type = 0;
+  resnri=atoi(resnr);
+  if ((natom==0) || (resnri != oldres)) {
+    oldres=resnri;
+    if (natom==0)
+      newres=0;
+    else
+      newres=atoms->atom[natom-1].resnr+1;
+    atoms->nres=newres+1;
+    atoms->resname[newres]=put_symtab(&symtab,resnm);
+  }
+  else
+    newres=atoms->atom[natom-1].resnr;
+  if (bChange)
+    change_name(anm); 
+  atoms->atomname[natom]=put_symtab(&symtab,anm);
+  atomn->chain=chain[0];
+  atomn->resnr=newres;
+  x[natom][XX]=atof(xc)*0.1;
+  x[natom][YY]=atof(yc)*0.1;
+  x[natom][ZZ]=atof(zc)*0.1;
+  atomn->bfac=atof(bfac);
+  atomn->occup=atof(occup);
+  atomn->m = 0.0;
+  atomn->q = 0.0;
   natom++;
   
+  close_symtab(&symtab);
+
   return natom;
 }
 
@@ -203,11 +343,9 @@ bool is_hydrogen(char *nm)
   return FALSE;
 }
 
-int read_pdbatoms(FILE *in,char *title, 
-		  t_pdbatom **pdbaptr,matrix box,bool bFilterH)
+int read_pdbfile(FILE *in,char *title, 
+		 t_atoms *atoms,rvec x[],matrix box,bool bChange)
 {
-  t_pdbatom *pdba=NULL;
-  int  maxpdba=0;
   bool bCOMPND,bSimBox;
   char line[STRLEN+1];
   char xc[12],yc[12],zc[12];
@@ -229,11 +367,12 @@ int read_pdbatoms(FILE *in,char *title,
     switch(line_type) {
     case epdbATOM:
     case epdbHETATM:
-      natom = read_atom(line,natom,&maxpdba,&pdba,bFilterH);
+      natom = read_atom(line,natom,atoms,x,bChange);
       break;
       
     case epdbANISOU:
-      read_anisou(line,natom,pdba);
+      if (atoms->pdbinfo != NULL)
+	read_anisou(line,natom,atoms);
       break;
 
     case epdbCRYST1:      
@@ -298,7 +437,6 @@ int read_pdbatoms(FILE *in,char *title,
       break;
     }
   }
-  *pdbaptr=pdba;
   
   return natom;
 }
@@ -315,13 +453,20 @@ void get_pdb_coordnum(char *infile,int *natoms)
     if ( ( bTER && (strncmp(line,"TER",3) == 0)) ||
 	 (!bTER && (strncmp(line,"ENDMDL",6) == 0)) ) 
       break;
-    for(j=0; (j<epdbNR); j++)
-      if (strncmp(line,pdbtp[j],6) == 0) {
-	(*natoms)++;
-	break;
-      }
+    if ((strncmp(line,"ATOM  ",6) == 0) || (strncmp(line,"HETATM",6) == 0))
+      (*natoms)++;
   }
   ffclose (in);
+}
+
+void read_pdb_conf(char *infile,char *title, 
+		   t_atoms *atoms,rvec x[],matrix box,bool bChange)
+{
+  FILE      *in;
+  
+  in = ffopen(infile,"r");
+  read_pdbfile(in,title,atoms,x,box,bChange);
+  ffclose(in);
 }
 
 void print_pdbatoms(FILE *out,char *title, 
@@ -460,7 +605,7 @@ t_pdbatom *atoms2pdba(t_atoms *atoms,rvec x[])
     strcpy(pdba[i].atomnm,*(atoms->atomname[i]));
     strcpy(pdba[i].resnm,*(atoms->resname[pdba[i].resnr]));
     if (atoms->chain)
-      pdba[i].chain=atoms->chain[i];
+      pdba[i].chain=atoms->atom[i].chain;
     else
       pdba[i].chain=' ';
     pdba[i].m=atoms->atom[i].m;

@@ -93,26 +93,6 @@ extern void write_conf(char *outfile,char *title,t_atoms *atoms,
 		       rvec *x,rvec *v,matrix box);
 /* For three write_conf routines, if v == NULL, it is not written */
 
-extern void write_pdb_conf(char *outfile,char *title,
-			   t_atoms *atoms,rvec x[],matrix box,
-			   bool bChange);
-/* Change atom names according to protein conventions if wanted */
-
-extern void write_pdb_confs(char *outfile,t_atoms **atoms,rvec *x[],
-			    int number);
-
-extern void hwrite_pdb_conf_indexed(FILE *out,char *title,
-				    t_atoms *atoms,rvec x[],matrix box, 
-				    int gnx,atom_id index[]);
-extern void write_pdb_conf_indexed(char *outfile,char *title,
-				   t_atoms *atoms,rvec x[],matrix box,
-				   int gnx,atom_id index[]);
-/* Write a pdb file to either FILE *out or first open the file outfile
- * Use an index to only write out selected atoms. */
- 
-extern void read_pdb_conf(char *infile,char *title,
-			  t_atoms *atoms, rvec x[], matrix box);
-		   
 extern void write_xdr_conf(char *outfile,char *title,t_atoms *atoms,rvec x[],rvec v[],matrix box);
 
 extern void read_xdr_coordnum(char *infile,int *natoms);
