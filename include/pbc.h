@@ -42,6 +42,9 @@ static char *SRCID_pbc_h = "$Id$";
 extern "C" { 
 #endif
 
+#define BOX_MARGIN 1.001
+/* margin factor for checking if the box is too skewed */
+
 #define TRICLINIC(box) (box[YY][XX]!=0 || box[ZZ][XX]!=0 || box[ZZ][YY]!=0)
 
 #define NTRICIMG 14

@@ -675,6 +675,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
       do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,
 		ir->opts.nFreeze);
     where();
+     /* (un)shifting should NOT be done after this,
+     * since the box vectors might have changed
+     */
   }
 }
 

@@ -202,9 +202,34 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
       box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
     }
 
-    ptr = check_box(box);
-    if (ptr)
-      fatal_error(0,ptr);
+    /* check if the box still obeys the restrictions, if not, correct it */
+    if (box[ZZ][YY] > BOX_MARGIN*box[YY][YY]) {
+      fprintf(stdlog,0,"Correcting invalid box:\n");
+      pr_rvecs(stdlog,0,"old box",box,DIM);
+      rvec_dec(box[ZZ],box[YY]);
+      pr_rvecs(stdlog,0,"new box",box,DIM);
+    } else if (-box[ZZ][YY] > BOX_MARGIN*box[YY][YY]) {
+      fprintf(stdlog,0,"Correcting invalid box:\n");
+      pr_rvecs(stdlog,0,"old box",box,DIM);
+      rvec_inc(box[ZZ],box[YY]);
+      pr_rvecs(stdlog,0,"new box",box,DIM);
+    }
+    if (fabs(box[YY][XX])+fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX]) {
+      fprintf(stdlog,0,"Correcting invalid box:\n");
+      pr_rvecs(stdlog,0,"old box",box,DIM);
+      if (fabs(box[YY][XX]) > fabs(box[ZZ][XX]))
+	d = YY; 
+      else
+	d = ZZ;
+      if (box[d][XX] > 0)
+	rvec_dec(box[d],box[XX]);
+      else
+	rvec_inc(box[d],box[XX]);
+      pr_rvecs(stdlog,0,"new box",box,DIM);
+    }
+    /* (un)shifting should NOT be done after this,
+     * since the box vectors might have changed
+     */
 
     inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
   }

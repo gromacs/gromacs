@@ -57,8 +57,8 @@ char *check_box(matrix box)
 
   if ((box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0))
     ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
-  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 1.001*box[XX][XX]) ||
-	   (fabs(box[ZZ][YY]) > 1.001*box[YY][YY]))
+  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX]) ||
+	   (fabs(box[ZZ][YY]) > BOX_MARGIN*box[YY][YY]))
     ptr = "Triclinic box is too skewed.";
   else
     ptr = NULL;
