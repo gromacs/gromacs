@@ -236,7 +236,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("rlong",	ir->rlong,	1.0);
   CTYPE ("Dielectric constant (DC) for twin-range or DC of reaction field");
   RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
-  CTYPE ("Shift the LJ potential (not used with Twin-Range and User)");
+  CTYPE ("Shift the LJ potential (not used with Twin-Range)");
   EETYPE("bLJshift",    ir->bLJshift,    yesno_names, nerror, TRUE);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("bLJcorr",     ir->bLJcorr,    yesno_names, nerror, TRUE);
