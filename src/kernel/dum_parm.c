@@ -112,7 +112,8 @@ static void enter_bond(int *nrbond, t_mybond **bonds, t_param param,
     if (param.C0 == NOTSET)
       default_params(F_MORSE,ptype,atoms,&param);
     if (param.C0 == NOTSET)
-      fatal_error(0,"No default bond length for dummy %d",*nrbond-1);
+      fatal_error(0,"No default bond length for bond with dummy: %d - %d",
+		  param.a[0]+1,param.a[1]+1);
   }
   
   /* copy bondlength */
