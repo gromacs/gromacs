@@ -51,6 +51,7 @@ static char *SRCID_mkice_c = "$Id$";
 #define DCONS 0.117265878
 
 static char *watname[] = { "OW ", "HW1", "HW2", "DW", "SW" };
+static char *diamname[] = { "C1", "H2", "H3", "H4", "H5", "H2", "H3", "H4", "H5" };
 static real qspc[]     = { -0.82, 0.41, 0.41 };
 static real qyaw[]     = { 1.24588, 0.62134, 0.62134, 0.0, -2.48856 };
 static real spc_lj[3][6] = {
@@ -135,6 +136,105 @@ void unitcell(rvec x[],rvec box,bool bYaw,real odist)
     
   printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
   printf("Dipole:    %10.5f  %10.5f  %10.5f (e nm)\n",dip[XX],dip[YY],dip[ZZ]);
+}
+
+void unitcell_d(rvec x[],rvec box,real odist)
+{
+  rvec cc[8] = {
+    { 0,   0,         0 }, /* C1 */
+    { cx, cy,       -cz }, /* C2 */
+    { cx, cy+cy2,     0 }, /* C3 */
+    { 0,  2*cy+cy2, -cz }, /* C4 */
+    { 0,   0,         1 }, /* C5 */
+    { cx, cy,      1+cz }, /* C6 */
+    { cx, cy+cy2,     1 }, /* C7 */
+    { 0,  2*cy+cy2,1+cz }, /* C8 */
+  };
+  rvec hh[4] = {
+    { 0,   0,         1  }, /* H relative to C */
+    { cx,  cy,       -cz },
+    { cx, -cy,       -cz }, 
+    {-cy2,  0,       -cz }
+  };
+  int  i,iin,iout,j,m;
+  rvec tmp,t2,dip;
+  
+  clear_rvec(dip);
+  for(i=0; (i<8); i++) {
+    iin  = i;
+    iout = i;
+    svmul(odist,cc[iin],x[iout]);
+  }  
+  box[XX] = 2*cx;
+  box[YY] = 2*(cy2+cy);
+  box[ZZ] = 2*(1+cz);
+  for(i=0; (i<DIM); i++)
+    box[i] *= odist;
+    
+  printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
+}
+
+static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab)
+{
+  typedef struct {
+    int n,aa[4];
+  } t_bbb;
+  
+  int   i,ib,j,k,nh=0,nunsat=0,nrm=0;
+  t_bbb *bbb;
+  bool  *bRemove;
+  rvec  dx;
+  real  dx2,od2,b2;
+  
+  od2 = odist*odist+1e-5;
+  b2  = od2;
+  
+  snew(bbb,a->nr);
+  for(i=0; (i<a->nr); i++) {
+    for(j=i+1; (j<a->nr); j++) {
+      rvec_sub(x[i],x[j],dx);
+      if (iprod(dx,dx) <= od2) {
+	bbb[i].aa[bbb[i].n++] = j;
+	bbb[j].aa[bbb[j].n++] = i;
+      }
+    }
+  }
+  if (debug) 
+#define PRB(nn) (bbb[(i)].n >= (nn)) ? bbb[i].aa[nn-1] : -1
+    for(i=0; (i<a->nr); i++)
+      fprintf(debug,"bonds from %3d:  %d %d %d %d\n",
+	      i,PRB(1),PRB(2),PRB(3),PRB(4));
+#undef PRB
+  do {
+    nrm = 0;
+    for(i=0; (i<a->nr); i++) {
+      if (bbb[i].n < 2) {
+	for(k=0; (k<bbb[i].n); k++) {
+	  ib = bbb[i].aa[k];
+	  for(j=0; (j<bbb[ib].n); j++)
+	    if (bbb[ib].aa[j] == i)
+	      break;
+	  if (j == bbb[ib].n)
+	    fatal_error(0,"Bond inconsistency (%d not in list of %d)!\n",i,ib);
+	  for( ; (j<bbb[ib].n-1); j++)
+	    bbb[ib].aa[j] = bbb[ib].aa[j+1];
+	  bbb[ib].n--;
+	  nrm++;
+	}
+	bbb[i].n = 0;
+      }
+    }
+  } while (nrm > 0);
+  
+  for(i=j=0; (i<a->nr); i++) {
+    if (bbb[i].n >= 3) {
+      copy_rvec(x[i],x[j]);
+      j++;
+    }
+  }
+  fprintf(stderr,"Kicking out %d carbon atoms (out of %d)\n",
+	  a->nr-j,2*a->nr/3);
+  a->nr = j;
 }
 
 static real calc_ener(real c6,real c12,rvec dx,tensor vir)
@@ -261,7 +361,7 @@ int main(int argc,char *argv[])
     "and all oxygens are tetrahedrally coordinated."
   };
   static int nx=1,ny=1,nz=1;
-  static bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE;
+  static bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE,bDiamond=FALSE;
   static real rcut=0.3,odist=0.274;
   t_pargs pa[] = {
     { "-nx",    FALSE, etINT,  {&nx}, "nx" },
@@ -274,6 +374,7 @@ int main(int argc,char *argv[])
     { "-rcut",  FALSE,etREAL,  {&rcut},"Cut-off for virial calculations" },
     { "-full",  FALSE,etBOOL,  {&bFull},"Full virial output" },
     { "-odist", FALSE, etREAL, {&odist}, "Distance between oxygens" },
+    { "-diamond",FALSE,etBOOL, {&bDiamond}, "Make a diamond instaed" },
     { "-series",FALSE, etBOOL, {&bSeries}, 
       "Do a series of virial calculations with different cut-off (from 0.3 up till the specified one)" }
   };
@@ -301,7 +402,12 @@ int main(int argc,char *argv[])
 	    yesno_names[bLJ],rcut);
   }
 
-  natmol = bYaw ? 5 : 3;
+  if (bYaw)
+    natmol = 5;
+  else if (bDiamond)
+    natmol = 1;
+  else
+    natmol = 3;
   natom = natmol*8;
   nmax = natom*nx*ny*nz;
   snew(xx,nmax);
@@ -313,7 +419,8 @@ int main(int argc,char *argv[])
     pdba->pdbinfo[n].type   = epdbATOM;
     pdba->pdbinfo[n].atomnr = n;
     pdba->atom[n].resnr     = n/natmol;
-    pdba->atomname[n] = put_symtab(&symtab,watname[(n % natmol)]);
+    pdba->atomname[n] = put_symtab(&symtab,
+				   bDiamond ? diamname[(n % natmol)] : watname[(n % natmol)]);
     pdba->resname[n] = put_symtab(&symtab,"SOL");
 
     sprintf(pdba->pdbinfo[n].pdbresnr,"%d",n);
@@ -321,7 +428,10 @@ int main(int argc,char *argv[])
   }
   
   /* Generate the unit cell */
-  unitcell(xx,box,bYaw,odist);
+  if (bDiamond)
+    unitcell_d(xx,box,odist);
+  else
+    unitcell(xx,box,bYaw,odist);
   if (debug) {
     clear_mat(boxje);
     boxje[XX][XX] = box[XX];
@@ -350,7 +460,7 @@ int main(int argc,char *argv[])
   printf("Crystal:   %10.5f  %10.5f  %10.5f\n",
 	 nx*box[XX],ny*box[YY],nz*box[ZZ]);
   
-  if (debug) {
+  if (debug && !bDiamond) {
     if (bSeries)
       for(i=3; (i<=10*rcut); i++) {
 	fprintf(debug,"This is with rcut = %g\n",i*0.1);
@@ -361,6 +471,10 @@ int main(int argc,char *argv[])
       virial(debug,bFull,nmax/natmol,xx,boxje,
 	     rcut,bYaw,bYaw ? qyaw : qspc,bLJ);
   }
+  
+  if (bDiamond) 
+    mk_diamond(pdba,xx,odist,&symtab);
+  
   write_sto_conf(ftp2fn(efPDB,NFILE,fnm),
 		 "Ice Ih crystal generated by mkice",pdba,xx,NULL,boxje);
 		 
