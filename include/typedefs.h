@@ -69,11 +69,11 @@ extern "C" {
 #include <types/nsgrid.h>
 #include <types/commrec.h>
 #include <types/forcerec.h>
+#include <types/fcdata.h>
 #include <types/mdatom.h>
 #include <types/ifunc.h>
 #include <types/filenm.h>
 #include <types/group.h>
-#include <types/drblock.h>
 #include <types/parm.h>
 #include <types/matrix.h>
 #include <types/edsams.h>

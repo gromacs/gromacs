@@ -22,6 +22,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	main.c		maths.c		matio.c		memdump.c	\
 	mshift.c	mvdata.c	mvxvf.c		names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
+	orires.c	\
 	pargs.c		pbc.c		pdbio.c		princ.c		\
 	rando.c		random.c	rbin.c		rdgroup.c	\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\

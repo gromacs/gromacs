@@ -101,10 +101,10 @@ static void do_update_md(int start,int homenr,double dt,
      */
     for (n=start; n<start+homenr; n++) {  
       imass = invmass[n];
-      gf    = cFREEZE[n];
-      ga    = cACC[n];
-      gt    = cTC[n];
-      xi    = tcstat[gt].xi;
+      gf   = cFREEZE[n];
+      ga   = cACC[n];
+      gt   = cTC[n];
+      xi   = tcstat[gt].xi;
       
       rvec_sub(v[n],gstat[ga].uold,vrel);
 
@@ -113,19 +113,18 @@ static void do_update_md(int start,int homenr,double dt,
 	vold[n][d]     = v[n][d];
 	
 	if ((ptype[n] != eptDummy) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-	  vnrel          = lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));  
+	  
+	  vnrel= lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));  
 	  /* do not scale the mean velocities u */
 	  vn             = gstat[ga].uold[d] + accel[ga][d]*dt + vnrel; 
 	  v[n][d]        = vn;
 	  xprime[n][d]   = x[n][d]+vn*dt;
-	} 
-	else
+	} else
 	  xprime[n][d]   = x[n][d];
       }
     }
     
-  } 
-  else {
+  } else {
     /* Classic version of update, used with berendsen coupling */
     for (n=start; n<start+homenr; n++) {  
       w_dt = invmass[n]*dt;
@@ -578,7 +577,9 @@ void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-bool update(int          natoms, 	/* number of atoms in simulation */
+
+
+void update(int          natoms, 	/* number of atoms in simulation */
 	    int      	 start,
 	    int          homenr,	/* number of home particles 	*/
 	    int          step,
@@ -611,7 +612,6 @@ bool update(int          natoms, 	/* number of atoms in simulation */
   static rvec      *lamb;
   static t_edpar   edpar;
   static bool      bHaveConstr,bExtended;
-  bool             bOK;
   double           dt;
   real             dt_1,dt_2,mdt_2;
   int              i,n,m,g;
@@ -646,7 +646,6 @@ bool update(int          natoms, 	/* number of atoms in simulation */
   dt   = ir->delta_t;
   dt_1 = 1.0/dt;
   dt_2 = 1.0/(dt*dt);
-  bOK  = TRUE;
 
   for(i=0; i<ngtc; i++) {
     real l=grps->tcstat[i].lambda;
@@ -697,8 +696,8 @@ bool update(int          natoms, 	/* number of atoms in simulation */
 	for(n=start; n<start+homenr; n++)
 	  copy_rvec(xprime[n],x_unc[n-start]);
 	/* Constrain the coordinates xprime */
-	bOK = constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,NULL,
-			parm->box,lambda,dvdlambda,nrnb,TRUE);
+	constrain(stdlog,top,ir,step,md,start,homenr,x,xprime,NULL,
+		  parm->box,lambda,dvdlambda,nrnb,TRUE);
 
 	for(n=start; n<start+homenr; n++) {
 	  /* A correction factor eph is needed for the SD constraint force */
@@ -749,7 +748,6 @@ bool update(int          natoms, 	/* number of atoms in simulation */
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-   
   if (bHaveConstr) {
     if (ir->eI != eiSD)
       /* Copy Unconstrained X to temp array */
@@ -840,7 +838,6 @@ bool update(int          natoms, 	/* number of atoms in simulation */
     }
     where();
   }
-  return bOK;
 }
 
   

@@ -694,11 +694,11 @@ restraints information in topology file)
 </dl>
 <dt><h4>disre_weighting:</h4>
 <dd><dl compact>
-<dt><b>equal</b>
-<dd>divide the restraint force equally over all atom pairs in the restraint
 <dt><b>conservative</b>
 <dd>the forces are the derivative of the restraint potential,
 this results in an r<sup>-7</sup> weighting of the atom pairs
+<dt><b>equal</b>
+<dd>divide the restraint force equally over all atom pairs in the restraint
 </dl>
 <dt><h4>disre_mixed:</h4>
 <dd><dl compact>
@@ -719,6 +719,16 @@ square root of the time averaged violation times the instantaneous violation
 <dd><p>frequency to write the running time averaged and instantaneous distances
 of all atom pairs involved in restraints to the energy file
 (can make the energy file very large)
+</dl>
+
+<dt><h4>orire_fc: </b>(0) [kJ mol]</h4>
+<dd><p>force constant for orientation restraints, which is multiplied by a
+(possibly) different factor for each restraint
+<dt><h4>orire_tau: </b>(0) [ps]</h4>
+<dd><p>time constant for orientation restraints running average
+<dt><h4>nstorireout: </b>(100) [steps]</h4>
+<dd><p>frequency to write the running time averaged orientations
+for all restraints to the energy file (can make the energy file very large)
 </dl>
 
 <A NAME="free"><br>

@@ -113,6 +113,9 @@ typedef struct {
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
   real dr_tau;		/* time constant for memory function in disres 	*/
+  real orires_fc;	/* force constant for orientational restraints  */
+  real orires_tau;	/* time constant for memory function in orires 	*/
+  int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
   real em_stepsize;	/* The stepsize for updating			*/
   real em_tol;		/* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */

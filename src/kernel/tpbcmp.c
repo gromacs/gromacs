@@ -368,6 +368,9 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->bDisreMixed",0,ir1->bDisreMixed,ir2->bDisreMixed);
   cmp_int(fp,"inputrec->nstdisreout",0,ir1->nstdisreout,ir2->nstdisreout);
   cmp_real(fp,"inputrec->dr_tau",0,ir1->dr_tau,ir2->dr_tau,ftol);
+  cmp_real(fp,"inputrec->orires_fc",0,ir1->orires_fc,ir2->orires_fc,ftol);
+  cmp_real(fp,"inputrec->orires_tau",0,ir1->orires_tau,ir2->orires_tau,ftol);
+  cmp_int(fp,"inputrec->nstorireout",0,ir1->nstorireout,ir2->nstorireout);
   cmp_real(fp,"inputrec->em_stepsize",0,ir1->em_stepsize,ir2->em_stepsize,ftol);
   cmp_real(fp,"inputrec->em_tol",0,ir1->em_tol,ir2->em_tol,ftol);
   cmp_int(fp,"inputrec->niter",0,ir1->niter,ir2->niter);
@@ -502,13 +505,11 @@ static void cmp_energies(FILE *fp,int step1,int step2,int nre,
 
 void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
 {
-  int       in1,in2,nre,nre1,nre2,step1,step2,ndr1,ndr2;
-  int       i,maxener;
-  char      **enm1=NULL,**enm2=NULL;
-  t_energy  *ee1,*ee2;
-  t_drblock dr1,dr2;
-  bool      b1,b2;
-  real      t1,t2;
+  int        in1,in2,nre,nre1,nre2,block;
+  int        i,maxener;
+  char       **enm1=NULL,**enm2=NULL,buf[256];
+  t_enxframe *fr1,*fr2;
+  bool       b1,b2,bNotCmp,bWarn=FALSE;
   
   fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
 
@@ -534,11 +535,11 @@ void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
   fprintf(stdout,"There are %d terms to compare in the energy files\n\n",
 	  maxener);
   
-  snew(ee1,nre);
-  snew(ee2,nre);
+  snew(fr1,1);
+  snew(fr2,1);
   do { 
-    b1 = do_enx(in1,&t1,&step1,&nre1,ee1,&ndr1,&dr1);
-    b2 = do_enx(in2,&t2,&step2,&nre2,ee2,&ndr2,&dr2);
+    b1 = do_enx(in1,fr1);
+    b2 = do_enx(in2,fr2);
     if (b1 && !b2)
       fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn2,fn1);
     else if (!b1 && b2) 
@@ -546,26 +547,40 @@ void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
     else if (!b1 && !b2)
       fprintf(stdout,"\nFiles read succesfully\n");
     else {
-      cmp_real(stdout,"t",-1,t1,t2,ftol);
-      cmp_int(stdout,"step",-1,step1,step2);
-      cmp_int(stdout,"nre",-1,nre1,nre2);
-      cmp_int(stdout,"ndr",-1,ndr1,ndr2);
+      bNotCmp = fr1->ndisre>0 || fr2->ndisre>0;
+      cmp_real(stdout,"t",-1,fr1->t,fr2->t,ftol);
+      cmp_int(stdout,"step",-1,fr1->step,fr2->step);
+      cmp_int(stdout,"nre",-1,fr1->nre,fr2->nre);
+      cmp_int(stdout,"ndisre",-1,fr1->ndisre,fr2->ndisre);
+      cmp_int(stdout,"nblock",-1,fr1->nblock,fr2->nblock);
+      if (fr1->nblock == fr2->nblock)
+	for(block=0; block<fr1->nblock; block++) {
+	  sprintf(buf,"nr[%2d]",block);
+	  cmp_int(stdout,buf,-1,fr1->nr[block],fr2->nr[block]);
+	  bNotCmp = bNotCmp || fr1->nr[block]>0 || fr2->nr[block]>0;
+	}
+      
+      if (fr1->nre != nre) {
+	fprintf(stdout,
+		"file %s internally inconsistent: nre changed from %d to %d\n",
+		fn1,nre,fr1->nre);
+	break;
+      }
+      if (fr2->nre != nre) {
+	fprintf(stdout,
+		"file %s internally inconsistent: nre changed from %d to %d\n",
+		fn2,nre,fr2->nre);
+	break;
+      }
+      if (bNotCmp && !bWarn) {
+	fprintf(stdout,"\nWARNING: will not compare distance restraint and block data\n");
+	bWarn = TRUE;
+      }
 
-      if (nre1 != nre) {
-	fprintf(stdout,
-		"file %s internally inconsistent: nre changed from %d to %d\n",
-		fn1,nre,nre1);
-	break;
-      }
-      if (nre2 != nre) {
-	fprintf(stdout,
-		"file %s internally inconsistent: nre changed from %d to %d\n",
-		fn2,nre,nre2);
-	break;
-      }
       if (nre < maxener)
 	maxener = nre;
-      cmp_energies(stdout,step1,step2,nre,ee1,ee2,enm1,enm2,ftol,maxener);
+      cmp_energies(stdout,fr1->step,fr1->step,nre,fr1->ener,fr2->ener,
+		   enm1,enm2,ftol,maxener);
       /*if ((ndr1 == ndr2) && (ndr1 > 0))
 	cmp_disres(stdout,step1,step2,ndr1,dr1,dr2);*/
     }
@@ -573,5 +588,9 @@ void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
     
   close_enx(in1);
   close_enx(in2);
-
+  
+  free_enxframe(fr2);
+  sfree(fr2);
+  free_enxframe(fr1);
+  sfree(fr1);
 }

@@ -137,33 +137,35 @@ static int scan_ene_files(char **fnms, int nfiles,
 			  real *readtime, real *timestep, int *nremax)
 {
   /* Check number of energy terms and start time of all files */
-  int f,i,in,nre,nremin=0,ndr,nresav=0,step;
-  real t1,t2;
-  char      **enm=NULL,inputstring[STRLEN];
-  t_drblock dr;
-  t_energy  *ee=NULL;
+  int        f,i,in,nre,nremin=0,nresav=0;
+  real       t1,t2;
+  char       **enm=NULL,inputstring[STRLEN];
+  t_enxframe *fr;
   
+  snew(fr,1);
+
   for(f=0; f<nfiles; f++) {
     in = open_enx(fnms[f],"r");
     do_enxnms(in,&nre,&enm);
-    snew(ee,nre);
 
     if (f == 0) {
       nresav  = nre;
       nremin  = nre;
       *nremax = nre;
-      do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
-      do_enx(in,&t2,&step,&nre,ee,&ndr,&dr);
+      do_enx(in,fr);
+      t1 = fr->t;
+      do_enx(in,fr);
+      t2 = fr->t;
       *timestep=t2-t1;
-	readtime[f]=t1;
-	close_enx(in);
+      readtime[f]=t1;
+      close_enx(in);
     } else {
-      nremin  = min(nremin,nre);
-      *nremax = max(*nremax,nre);
+      nremin  = min(nremin,fr->nre);
+      *nremax = max(*nremax,fr->nre);
       if (nre != nresav) {
 	fprintf(stderr,
 		"Energy files don't match, different number of energies:\n"
-		" %s: %d\n %s: %d\n",fnms[f-1],nresav,fnms[f],nre);
+		" %s: %d\n %s: %d\n",fnms[f-1],nresav,fnms[f],fr->nre);
 	fprintf(stderr,
 		"\nContinue conversion using only the first %d terms (n/y)?\n"
 		"(you should be sure that the energy terms match)\n",nremin);
@@ -172,10 +174,10 @@ static int scan_ene_files(char **fnms, int nfiles,
 	  fprintf(stderr,"Will not convert\n");
 	  exit(0);
 	}
-	nresav = nre;
+	nresav = fr->nre;
       }
-      do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
-      readtime[f]=t1;
+      do_enx(in,fr);
+      readtime[f] = fr->t;
       close_enx(in);
     }
     fprintf(stderr,"\n");
@@ -183,8 +185,11 @@ static int scan_ene_files(char **fnms, int nfiles,
       sfree(enm[i]);
     sfree(enm);
     enm = NULL;
-    sfree(ee);
   }
+
+  free_enxframe(fr);
+  sfree(fr);
+
   return nremin;
 }
 
@@ -396,19 +401,19 @@ int main(int argc,char *argv[])
   static char *bugs[] = {
     "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
   };
-  int       in,out=0;
-  t_energy  *ee,*lastee,*outee,*startee;
-  int       step,laststep,outstep,startstep,noutfr;
-  int       nre,nremax,this_nre,nfile,i,j,kkk,ndr,nset,*set=NULL;
-  real      t=0,outt=-1; 
-  char      **fnms;
-  char      **enm=NULL;
-  t_drblock dr;
-  real      *readtime,*settime,timestep,t1,tadjust;
-  char      inputstring[STRLEN],*chptr;
-  bool      ok;
-  int       *cont_type;
-  bool      bNewFile,bFirst,bNewOutput;
+  int        in,out=0;
+  t_enxframe *fr,*fro;
+  t_energy   *lastee,*startee;
+  int        laststep,startstep,noutfr;
+  int        nre,nremax,this_nre,nfile,i,j,kkk,nset,*set=NULL;
+  real       t=0; 
+  char       **fnms;
+  char       **enm=NULL;
+  real       *readtime,*settime,timestep,t1,tadjust;
+  char       inputstring[STRLEN],*chptr;
+  bool       ok;
+  int        *cont_type;
+  bool       bNewFile,bFirst,bNewOutput;
   
   t_filenm fnm[] = {
     { efENX, "-f", NULL,    ffREAD  },
@@ -448,10 +453,8 @@ int main(int argc,char *argv[])
   tadjust=0;
   snew(fnms,argc);
   nfile=0;
-  outstep=laststep=startstep=0;
+  laststep=startstep=0;
   
-  dr.ndr = 0;
-
   for(i=1; (i<argc); i++)
     fnms[nfile++]=argv[i];
   if(nfile==0)
@@ -472,8 +475,11 @@ int main(int argc,char *argv[])
   nre=scan_ene_files(fnms,nfile,readtime,&timestep,&nremax);   
   edit_files(fnms,nfile,readtime,settime,cont_type,bSetTime,bSort);     
 
-  snew(ee,nremax);
-  snew(outee,nremax);
+  snew(fr,1);
+  snew(fro,1);
+  fro->t = -1;
+  fro->nre = nre;
+  snew(fro->ener,nremax);
 
   if(nfile>1)
     snew(lastee,nremax);
@@ -504,84 +510,93 @@ int main(int argc,char *argv[])
     
     /* start reading from the next file */
     while((t<(settime[i+1]-GMX_REAL_EPS)) &&
-	  do_enx(in,&t1,&step,&this_nre,ee,&ndr,&dr)) {
+	  do_enx(in,fr)) {
       if(bNewFile) {
-	tadjust=settime[i]-t1;	  
+	tadjust = settime[i] - fr->t;	  
 	if(cont_type[i+1]==TIME_LAST) {
-	  settime[i+1]=readtime[i+1]-readtime[i]+settime[i];
-	  cont_type[i+1]=TIME_EXPLICIT;
+	  settime[i+1]   = readtime[i+1]-readtime[i]+settime[i];
+	  cont_type[i+1] = TIME_EXPLICIT;
 	}
-	bNewFile=FALSE;
+	bNewFile = FALSE;
       }
-      t=tadjust+t1;
+      t = tadjust + fr->t;
 
       bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
 		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
 		(t < settime[i+1]-GMX_REAL_EPS));
 		
       if (bError)      
-	if((end > 0) && (t>(end+GMX_REAL_EPS))) {
-	  i=nfile;
+	if ((end > 0) && (t > end+GMX_REAL_EPS)) {
+	  i = nfile;
 	  break;
 	}
       
-      if (t >= (begin-GMX_REAL_EPS)) {
-	if((bFirst)) {
-	  bFirst=FALSE;
-	  if(startee!=NULL)
-	    copy_ee(ee,startee,nre);
-	  startstep=step;		
+      if (t >= begin-GMX_REAL_EPS) {
+	if (bFirst) {
+	  bFirst = FALSE;
+	  if (startee != NULL)
+	    copy_ee(fr->ener,startee,nre);
+	  startstep = fr->step;		
 	}
-	update_ee(lastee,laststep,startee,startstep,ee,step,outee,nre);
-	outstep=laststep+step-startstep;
+	update_ee(lastee,laststep,startee,startstep,
+		  fr->ener,fr->step,fro->ener,nre);
+	fro->step = laststep + fr->step - startstep;
       }	  
       
       /* determine if we should write it */
       if (bWrite && (delta_t==0 || bRmod(t-toffset,delta_t))) {
-	outt=t;
+	fro->t = t;
 	if(bNewOutput) {
 	  bNewOutput=FALSE;
 	  fprintf(stderr,"\nContinue writing frames from t=%g, step=%d\n",
-		  t,outstep);
+		  t,fro->step);
 	}
 	if (scalefac != 1) {
-	  for(kkk=0; (kkk<nset); kkk++) {
-	    outee[set[kkk]].e    *= scalefac;
-	    outee[set[kkk]].eav  *= scalefac;
-	    outee[set[kkk]].esum *= scalefac;
+	  for(kkk=0; kkk<nset; kkk++) {
+	    fro->ener[set[kkk]].e    *= scalefac;
+	    fro->ener[set[kkk]].eav  *= scalefac;
+	    fro->ener[set[kkk]].esum *= scalefac;
 	  }
 	}
-	do_enx(out,&outt,&outstep,&nre,outee,&ndr,&dr);
+	/* Copy restraint stuff */
+	fro->ndisre = fr->ndisre;
+	fro->rav    = fr->rav;
+	fro->rt     = fr->rt;
+	fro->nblock = fr->nblock;
+	fro->nr     = fr->nr;
+	fro->block  = fr->block;
+	
+	do_enx(out,fro);
 	if (noutfr % 10 == 0)
-	  fprintf(stderr,"Writing frame time %g    ",outt);
+	  fprintf(stderr,"Writing frame time %g    ",fro->t);
 	noutfr++;
       }
     }
     /* copy statistics to old */
-    if(lastee!=NULL) {
-	update_last_ee(lastee,laststep,ee,step,nre);
-	laststep+=step;
+    if (lastee != NULL) {
+	update_last_ee(lastee,laststep,fr->ener,fr->step,nre);
+	laststep += fr->step;
 	/* remove the last frame from statistics since gromacs2.0 
 	 * repeats it in the next file 
 	 */
-	remove_last_eeframe(lastee,laststep,ee,nre);
+	remove_last_eeframe(lastee,laststep,fr->ener,nre);
 	/* the old part now has (laststep) values, and the new (step+1) */
-	printf("laststep=%d step=%d\n",laststep,step);
+	printf("laststep=%d step=%d\n",laststep,fr->step);
     }
     
     /* set the next time from the last in previous file */
-    if(cont_type[i+1]==TIME_CONTINUE) {
-	settime[i+1]=outt;
+    if (cont_type[i+1]==TIME_CONTINUE) {
+	settime[i+1] = fro->t;
 	/* in this case we have already written the last frame of
 	 * previous file, so update begin to avoid doubling it
 	 * with the start of the next file
 	 */
-	begin=outt+0.5*timestep;
+	begin = fro->t+0.5*timestep;
 	/* cont_type[i+1]==TIME_EXPLICIT; */
     }
     
-    if((outt<end) && (i<(nfile-1)) &&
-       (outt<(settime[i+1]-1.5*timestep))) 
+    if ((fro->t < end) && (i < nfile-1) &&
+	(fro->t < settime[i+1]-1.5*timestep)) 
       fprintf(stderr,
 	      "\nWARNING: There might be a gap around t=%g\n",t);
     
@@ -597,7 +612,8 @@ int main(int argc,char *argv[])
   if (noutfr == 0)
     fprintf(stderr,"No frames written.\n");
   else {
-    fprintf(stderr,"Last frame written was at step %d, time %f\n",outstep,outt);
+    fprintf(stderr,"Last frame written was at step %d, time %f\n",
+	    fro->step,fro->t);
     fprintf(stderr,"Wrote %d frames\n",noutfr);
   }
 

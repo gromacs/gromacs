@@ -235,7 +235,6 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   case F_G96ANGLES:
   case F_G96BONDS:
     f = 1;
-    f = 1;
     break;
   case F_MORSE:
     f = 2;

@@ -151,21 +151,21 @@ void check_viol(FILE *log,
     do
       n += 1+nat;
     while ((i+n < bonds->nr) && 
-	   (forceparams[forceatoms[i+n]].disres.index ==
-	    forceparams[forceatoms[i]].disres.index));
+	   (forceparams[forceatoms[i+n]].disres.label ==
+	    forceparams[forceatoms[i]].disres.label));
 
     viol=interaction_function[ftype].ifunc(n,&forceatoms[i],
 					   forceparams,
 					   x,f,fr,g,box,lam,&dvdl,
-					   NULL,0,NULL,NULL);
+					   NULL,0,NULL,NULL,NULL);
     if (viol > 0) {
       nviol++;
-      add5(forceparams[type].disres.index,viol);
+      add5(forceparams[type].disres.label,viol);
       if (viol > mviol) 
 	mviol=viol;
       tviol+=viol;
       for(j=0; (j<isize); j++) {
-	if (index[j] == forceparams[type].disres.index)
+	if (index[j] == forceparams[type].disres.label)
 	  vvindex[j]=viol;
 	}
     }
@@ -196,7 +196,7 @@ void patch_viol(t_ilist *bonds,t_iparams forceparams[],
     type=forceatoms[i++];
     ftype=functype[type];
     if (ftype == F_DISRES)
-      forceparams[ftype].disres.index=j++;
+      forceparams[ftype].disres.label=j++;
     nat=interaction_function[ftype].nratoms;
     i+=nat;
   }
@@ -226,6 +226,7 @@ int main (int argc,char *argv[])
   rvec        *xtop;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
+  t_fcdata    *fcd;
   t_nrnb      nrnb;
   t_nsborder  *nsb;
   t_commrec   *cr;
@@ -286,8 +287,9 @@ int main (int argc,char *argv[])
   else 
     isize=0;
   
+  snew(fcd,1);
   ir.dr_tau=0.0;
-  init_disres(stdlog,top.idef.il[F_DISRES].nr,&ir);
+  init_disres(stdlog,top.idef.il[F_DISRES].nr,&ir,fcd);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
@@ -316,6 +318,7 @@ int main (int argc,char *argv[])
   calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0);
   init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,FALSE);
   init_nrnb(&nrnb);
+  snew(fcd,1);
   j=0;
   do {
     rm_pbc(&top.idef,natoms,box,x,x);

@@ -53,18 +53,17 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-void init_disres(FILE *log,int nbonds,t_inputrec *ir);
-/* Initiate local variables, must be called once, nbonds is the number 
+void init_disres(FILE *log,int nbonds,t_inputrec *ir,t_fcdata *fcd);
+/* Initiate *fcd data, must be called once, nbonds is the number 
  * of iatoms in the ilist of the idef struct
  */
 
 extern real ta_disres(int nbonds,t_iatom fa[],t_iparams *fp,
 		      rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 		      matrix box,real lambda,real *dvdlambda,
-		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[]);
+		      t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		      t_fcdata *fcd);
 /* Do the actual calculation */
-
-extern t_drblock *get_drblock(void);
 
 #ifdef CPLUSPLUS
 }

@@ -366,6 +366,9 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("dr_fc",ir->dr_fc);
     PR("dr_tau",ir->dr_tau);
     PR("nstdisreout",ir->nstdisreout);
+    PR("orires_fc",ir->orires_fc);
+    PR("orires_tau",ir->orires_tau);
+    PR("nstorireout",ir->nstorireout);
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);
     PI("niter",ir->niter);
@@ -461,10 +464,15 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->pdihs.mult);
     break;
   case F_DISRES:
-    fprintf(fp,"index=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
-	    iparams->disres.index,iparams->disres.type,
+    fprintf(fp,"label=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)\n",
+	    iparams->disres.label,iparams->disres.type,
 	    iparams->disres.low,iparams->disres.up1,
-	    iparams->disres.up2,iparams->disres.fac);
+	    iparams->disres.up2,iparams->disres.kfac);
+    break;
+  case F_ORIRES:
+    fprintf(fp,"ex=%4d, label=%d, pow=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)\n",
+	    iparams->orires.ex,iparams->orires.label,iparams->orires.pow,
+	    iparams->orires.c,iparams->orires.obs,iparams->orires.kfac);
     break;
   case F_POSRES:
     fprintf(fp,"pos0=(%15.8e,%15.8e,%15.8e), fc=(%15.8e,%15.8e,%15.8e)\n",

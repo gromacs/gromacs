@@ -527,7 +527,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
 {
   FILE *out;
-  real *c1,*sig,*fitparm;
+  real *c1=NULL,*sig=NULL,*fitparm;
   real dt=0,tendfit,tbeginfit,integral;
   int  i,efitfn,nparm;
   
@@ -759,46 +759,46 @@ int main(int argc,char *argv[])
       for(i=0; (i<n); i++)
 	val[s][i] = (val[s][i+d]-val[s][i])/(d*dt);
   }
+
   if (fitfile) {
     do_fit(fitfile,nset,n,t,val);
   }
-  else {
-    printf("                                      std. dev.    relative deviation of\n");
-    printf("                       standard       ---------   cumulants from those of\n");
-    printf("set      average       deviation      sqrt(n-1)   a Gaussian distribition\n");
-    printf("                                                      cum. 3   cum. 4\n");
-    snew(av,nset);
-    snew(sig,nset);
-    for(s=0; (s<nset); s++) {
-      cum1 = 0;
-      cum2 = 0;
-      cum3 = 0;
-      cum4 = 0;
-      for(i=0; (i<n); i++)
-	cum1 += val[s][i];
-      cum1 /= n;
-      for(i=0; (i<n); i++) {
-	db = val[s][i]-cum1;
-	cum2 += db*db;
-	cum3 += db*db*db;
-	cum4 += db*db*db*db;
-      }
-      cum2  /= n;
-      cum3  /= n;
-      cum4  /= n;
-      av[s]  = cum1;
-      sig[s] = sqrt(cum2);
-      if (n > 1)
-	error = sqrt(cum2/(n-1));
+
+  printf("                                      std. dev.    relative deviation of\n");
+  printf("                       standard       ---------   cumulants from those of\n");
+  printf("set      average       deviation      sqrt(n-1)   a Gaussian distribition\n");
+  printf("                                                      cum. 3   cum. 4\n");
+  snew(av,nset);
+  snew(sig,nset);
+  for(s=0; (s<nset); s++) {
+    cum1 = 0;
+    cum2 = 0;
+    cum3 = 0;
+    cum4 = 0;
+    for(i=0; (i<n); i++)
+      cum1 += val[s][i];
+    cum1 /= n;
+    for(i=0; (i<n); i++) {
+      db = val[s][i]-cum1;
+      cum2 += db*db;
+      cum3 += db*db*db;
+      cum4 += db*db*db*db;
+    }
+    cum2  /= n;
+    cum3  /= n;
+    cum4  /= n;
+    av[s]  = cum1;
+    sig[s] = sqrt(cum2);
+    if (n > 1)
+      error = sqrt(cum2/(n-1));
     else
       error = 0;
-      printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
-	     s+1,av[s],sig[s],error,
-	     sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
-	     sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
-    }
-    printf("\n");
+    printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
+	   s+1,av[s],sig[s],error,
+	   sig[s] ? cum3/(sig[s]*sig[s]*sig[s]*sqrt(8/M_PI)) : 0,
+	   sig[s] ? cum4/(sig[s]*sig[s]*sig[s]*sig[s]*3)-1 : 0); 
   }
+  printf("\n");
   
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",

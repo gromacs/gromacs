@@ -49,7 +49,7 @@ char *epbc_names[epbcNR+1]=
   "xyz", "no", NULL
 };
 
-char *ens_names[enNR+1]=
+char *ens_names[ensNR+1]=
 {
   "Grid","Simple", NULL
 };
@@ -107,7 +107,7 @@ char *edisre_names[edrNR+1] = {
 };
 
 char *edisreweighting_names[edrwNR+1] = {
-  "Equal", "Conservative", NULL
+  "Conservative", "Equal", NULL
 };
 
 char *enbf_names[eNBF_NR+1] = {

@@ -57,7 +57,7 @@ extern char *epbc_names[epbcNR+1];
 extern char *etcoupl_names[etcNR+1];
 extern char *epcoupl_names[epcNR+1];
 extern char *epcoupltype_names[epctNR+1];
-extern char *ens_names[enNR+1];
+extern char *ens_names[ensNR+1];
 extern char *ei_names[eiNR+1];
 extern char *yesno_names[BOOL_NR+1];
 extern char *bool_names[BOOL_NR+1];
@@ -79,7 +79,7 @@ extern char *edispc_names[edispcNR+1];
 #define ENUM_NAME(e,max,names)	((((e)<0)||((e)>=(max)))?UNDEFINED:(names)[e])
 
 #define BOOL(e)        ENUM_NAME(e,BOOL_NR,bool_names)
-#define ENS(e)         ENUM_NAME(e,enNR,ens_names)
+#define ENS(e)         ENUM_NAME(e,ensNR,ens_names)
 #define EI(e)          ENUM_NAME(e,eiNR,ei_names)
 #define EPBC(e)        ENUM_NAME(e,epbcNR,epbc_names)
 #define ETCOUPLTYPE(e) ENUM_NAME(e,etcNR,etcoupl_names)

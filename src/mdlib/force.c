@@ -853,7 +853,7 @@ void force(FILE       *fp,     int        step,
 	   t_groups   *grps,    t_mdatoms  *md,
 	   int        ngener,   t_grpopts  *opts,
 	   rvec       x[],      rvec       f[],
-	   real       epot[], 
+	   real       epot[],   t_fcdata   *fcd,
 	   bool       bVerbose, matrix     box,
 	   real       lambda,   t_graph    *graph,
 	   t_block    *excl,    bool       bNBFonly,
@@ -957,9 +957,10 @@ void force(FILE       *fp,     int        step,
   debug_gmx();
   
   if (!bNBFonly) {
-    calc_bonds(fp,cr,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
+    calc_bonds(fp,cr,
+	       idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
-	       step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
+	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
   }
   if (debug) 

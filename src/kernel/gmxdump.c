@@ -253,13 +253,12 @@ void list_trx(char *fn,bool bAltLayout,bool bXVG)
 
 void list_ene(char *fn)
 {
-  int       in,ndr;
-  bool      bCont;
-  t_energy  *ener;
-  t_drblock drblock;
-  int       i,nre,nre2,step;
-  real      t,rav,minthird;
-  char      **enm=NULL;
+  int        in,ndr;
+  bool       bCont;
+  t_enxframe *fr;
+  int        i,nre,b;
+  real       rav,minthird;
+  char       **enm=NULL;
 
   printf("gmxdump: %s\n",fn);
   in = open_enx(fn,"r");
@@ -269,38 +268,41 @@ void list_ene(char *fn)
   for(i=0; (i<nre); i++) 
     printf("%5d  %s\n",i,enm[i]);
     
-  drblock.ndr=0;
   minthird=-1.0/3.0;
-  snew(ener,nre);
+  snew(fr,1);
   do {
-    bCont=do_enx(in,&t,&step,&nre2,ener,&ndr,&drblock);
-    assert(nre2==nre);
+    bCont=do_enx(in,fr);
+    assert(fr->nre==nre);
     
     if (bCont) {
-      printf("\n%24s  %12.5e  %12s  %12d\n","time:",t,"step:",step);
+      printf("\n%24s  %12.5e  %12s  %12d\n","time:",
+	     fr->t,"step:",fr->step);
       printf("%24s  %12s  %12s  %12s\n",
 	     "Component","Energy","Av. Energy","Sum Energy");
       for(i=0; (i<nre); i++) 
 	printf("%24s  %12.5e  %12.5e  %12.5e\n",
-	       enm[i],ener[i].e,ener[i].eav,ener[i].esum);
-      if (ndr > 0) {
-	printf("Restraint %8s  %8s\n","r(t)","< r >");
-	for(i=0; (i<drblock.ndr); i++) {
-	  rav=pow(drblock.rav[i],minthird);
-	  printf("%8d  %8.4f  %8.4f\n",i,drblock.rt[i],rav);
+	       enm[i],fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
+      if (fr->ndisre > 0) {
+	printf("Distance restraint %8s  %8s\n","r(t)","< r >");
+	for(i=0; i<fr->ndisre; i++) {
+	  rav=pow(fr->rav[i],minthird);
+	  printf("%17d  %8.4f  %8.4f\n",i,fr->rt[i],rav);
 	}
       }
+      for(b=0; b<fr->nblock; b++)
+	if (fr->nr[b] > 0) {
+	  printf("Block data %2d (%4d elm.) %8s\n",b,fr->nr[b],"value");
+	  for(i=0; i<fr->nr[b]; i++)
+	    printf("%24d  %8.4f\n",i,fr->block[b][i]);
+	}
     }
   } while (bCont);
   
   close_enx(in);
-  
-  sfree(ener);
+
+  free_enxframe(fr);
+  sfree(fr);
   sfree(enm);
-  if (drblock.ndr) {
-    sfree(drblock.rav);
-    sfree(drblock.rt);
-  }
 }
 
 int main(int argc,char *argv[])

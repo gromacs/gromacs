@@ -63,20 +63,68 @@ external "C" {
 #include "typedefs.h"
 #include "xdrf.h"
   
+  /* 
+   * Index for the additional blocks in the energy file.
+   * Blocks can be added without sacrificing backward and forward
+   * compatibility of the energy files.
+   */
+  enum {
+    enxOR,   /* Time averaged data for orientation restraints      */
+    enxORI,  /* Instantaneous data for orientation restraints      */
+    enxNR    /* Total number of extra blocks in the current code,
+              * note that the enxio code can read files written by
+	      * future code which contain more blocks.
+	      */
+  };
+
+  typedef struct {
+    real     t;	       /* Timestamp of this frame		           */
+    int      step;     /* MD step				           */
+    int      nre;      /* Number of energies			           */
+    int      ndisre;   /* Number of distance restraints	                   */
+    int      nblock;   /* Number of following energy blocks                */
+    int      *nr;      /* Number of things in additional blocks (nblock)   */
+    int      e_size;   /* Size (in bytes) of energies		           */
+    int      d_size;   /* Size (in bytes) of disre blocks	           */
+    int      nr_alloc; /* Allocated size of nr and block                   */
+    int      e_alloc;  /* Allocated size (in elements) of ener             */
+    int      d_alloc;  /* Allocated size (in elements) of rav and rt       */
+    int      *b_alloc; /* Allocated size (in elements) of each block       */
+    t_energy *ener;    /* The energies                                     */
+    real     *rav;     /* Time averaged data for distance restraints       */
+    real     *rt;      /* Instantaneous data for distance restraints       */
+    real     **block;  /* Additional energy blocks ( nblock x b_alloc[b])  */
+  } t_enxframe;
+
+  /* 
+   * An energy file is read like this:
+   *
+   * int fp;
+   * t_enxframe *fr;
+   *
+   * fp = open_enx(...);
+   * do_enxnms(fp,...);
+   * snew(fr,1);
+   * while (do_enx(fp,fr)) {
+   * ...
+   * }
+   * free_enxframe(fr);
+   * sfree(fr);
+   */
+  
   /* New energy reading and writing interface */
+  extern void free_enxframe(t_enxframe *fr);
+  /* Frees all allocated memory in fr */
+
   extern int open_enx(char *fn,char *mode);
   
   extern void close_enx(int fp_ene);
   
   extern void do_enxnms(int fp_ene,int *nre,char ***nms);
   
-  extern bool do_enx(int fp_ene,real *t,int *step,int *nre,
-		     t_energy ener[],int *ndr,t_drblock *drblock);
-  
-  
+  extern bool do_enx(int fp_ene,t_enxframe *fr);
+  /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-
- 
 #ifdef CPLUSPLUS
 }
 #endif

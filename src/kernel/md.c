@@ -166,7 +166,8 @@ static void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,bool bDummies, t_comm_dummies *dummycomm,
-	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,real ener[],
+	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,
+	     real ener[],t_fcdata *fcd,
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size,
@@ -431,7 +432,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	update_forcefield(nfile,fnm,fr);
       
       /* Now is the time to relax the shells */
-      count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
+      count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,fcd,
 			 x,vold,v,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
 			 grps,force_vir,pme_vir,(nshell_tot > 0),
 			 nshell,shells,fr,traj,t,lambda,mu_tot,
@@ -447,7 +448,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * Check comments in sim_util.c
        */
       do_force(log,cr,parm,nsb,force_vir,pme_vir,step,&mynrnb,
-	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
+	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     }
    
@@ -566,7 +567,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       clear_rvecs(nsb->natoms,buf);
       
     /* This is also parallellized, but check code in update.c */
-    bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
+    /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL], */
+    bOK = TRUE;
+    update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
 		 parm,SAfactor,mdatoms,x,graph,f,buf,vold,vt,v,
 		 top,grps,shake_vir,cr,&mynrnb,bTYZ,TRUE,edyn,&pulldata,bNEMD);
     if (!bOK && !bFFscan)
@@ -744,18 +747,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Output stuff */
     if (MASTER(cr) && !bFFscan) {
-      bool do_ene,do_dr;
+      bool do_ene,do_dr,do_or;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot,
 		 (parm->ir.etc==etcNOSEHOOVER));
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
-      if (top->idef.il[F_DISRES].nr)
-	do_dr = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
-      else
-	do_dr = FALSE; 
-      print_ebin(fp_ene,do_ene,do_dr,do_log?log:NULL,step,t,
-		 eprNORMAL,bCompact,mdebin,&(top->atoms));
+      do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
+      do_or  = do_per_step(step,parm->ir.nstorireout) || bLastStep;
+      print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?log:NULL,step,t,
+		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms));
       if (bVerbose)
 	fflush(log);
     }
@@ -801,10 +802,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     sfree(ct);
   }
   if (MASTER(cr)) {
-    print_ebin(fp_ene,FALSE,FALSE,log,step,t,
-	       eprAVER,FALSE,mdebin,&(top->atoms));
-    print_ebin(fp_ene,FALSE,FALSE,log,step,t,
-	       eprRMS,FALSE,mdebin,&(top->atoms));
+    print_ebin(fp_ene,FALSE,FALSE,FALSE,log,step,t,
+	       eprAVER,FALSE,mdebin,fcd,&(top->atoms));
+    print_ebin(fp_ene,FALSE,FALSE,FALSE,log,step,t,
+	       eprRMS,FALSE,mdebin,fcd,&(top->atoms));
     close_enx(fp_ene);
     if (!bRerunMD && parm->ir.nstxtcout)
       close_xtc_traj();

@@ -37,7 +37,8 @@ include_HEADERS = \
 	xtcio.h		copyrite.h  	gstat.h         network.h   	\
 	readinp.h   	sysstuff.h    	xvgr.h 		delay.h     	\
 	index.h         nhash.h     	renum.h     	systest.h	\
-	disre.h     	init.h          nr.h        	reorder.h   	\
+	disre.h     	orires.h	\
+	init.h          nr.h        	reorder.h   	\
 	tags.h		do_fit.h    	nrama.h     	\
 	rmpbc.h     	tgroup.h        ppc_altivec.h
 

@@ -208,25 +208,22 @@ void print_gkrbin(char *fn,t_gkrbin *gb,
   ffclose(fp);
 }
 
-bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,
-		      real *t,int step,int nre)
+bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,real *t,
+		      int nre,t_enxframe *fr)
 {
-  static   t_energy *ee = NULL;  
-  int      i,nnre,ndr;
+  int      i;
   bool     bCont;
 
-  if (ee == NULL)
-    snew(ee,nre);
-
-  bCont = do_enx(fmu,t,&step,&nnre,ee,&ndr,NULL);
-  if (nnre != nre) 
-    fprintf(stderr,"Something strange: expected %d entries in energy file at step %d\n(time %g) but found %d entries\n",nre,step,*t,nnre);
+  bCont = do_enx(fmu,fr);
+  if (fr->nre != nre) 
+    fprintf(stderr,"Something strange: expected %d entries in energy file at step %d\n(time %g) but found %d entries\n",nre,fr->step,fr->t,fr->nre);
   
   if (bCont) {
     if (Vol != -1)          /* we've got Volume in the energy file */
-      *vol = ee[Vol].e;
-    for (i=0; (i<DIM); i++)
-      mu[i]=ee[iMu[i]].e;
+      *vol = fr->ener[Vol].e;
+    for (i=0; i<DIM; i++)
+      mu[i] = fr->ener[iMu[i]].e;
+    *t = fr->t;
   }
   
   return bCont;
@@ -407,6 +404,7 @@ static void do_dip(char *fn,char *topf,
   FILE       *outdd,*outmtot,*outaver,*outeps;
   rvec       *x,*dipole=NULL,mu_t,M_av,M_av2,quad;
   t_gkrbin   *gkrbin;
+  t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0;
   char       **enm=NULL;
   real       rcut=0;
@@ -508,12 +506,13 @@ static void do_dip(char *fn,char *topf,
   else
     xvgr_legend(outeps,NLEGEPS,leg_eps);
     
+  snew(fr,1);
   clear_rvec(mu_t);
   teller = 0;
   /* Read the first frame from energy or traj file */
   if (bMU)
     do {
-      bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
+      bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr);
       if (bCont) {  
 	timecheck=check_times(t);
 	if (timecheck < 0)
@@ -679,7 +678,7 @@ static void do_dip(char *fn,char *topf,
     }
     
     if (bMU)
-      bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,teller,nre); 
+      bCont = read_mu_from_enx(fmu,iVol,iMu,mu_t,&volume,&t,nre,fr); 
     else
       bCont = read_next_x(status,&t,natom,x,box);
     /*bCont = bCont && (check_times(t) == 0);*/

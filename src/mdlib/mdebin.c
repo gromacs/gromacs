@@ -47,6 +47,7 @@ static char *SRCID_mdebin_c = "$Id$";
 #include "main.h"
 #include "network.h"
 #include "names.h"
+#include "orires.h"
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE };
 
@@ -134,6 +135,10 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
       bEner[i] = TRUE;
     else if ((i == F_DISPCORR) && bDispCorr)
       bEner[i] = TRUE;
+    else if (i == F_DISRESVIOL)
+      bEner[i] = (idef->il[F_DISRES].nr > 0);
+    else if (i == F_ORIRESVIOL)
+      bEner[i] = (idef->il[F_ORIRES].nr > 0);
     else
       bEner[i] = (idef->il[i].nr > 0);
   }
@@ -407,26 +412,39 @@ void print_ebin_header(FILE *log,int steps,real time,real lamb,real SAfactor)
 	  "Step","Time","Lambda","Annealing",steps,time,lamb,SAfactor);
 }
 
-void print_ebin(int fp_ene,bool bEne,bool bDR,
+void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		FILE *log,int steps,real time,int mode,bool bCompact,
-		t_mdebin *md,t_atoms *atoms)
+		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms)
 {
   static char **grpnms=NULL;
   static char *kjm="(kJ/mol)";
-  t_drblock *drblock;
-  char buf[246];
-  int i,j,n,ni,nj;
-  static int zero=0;
-
-  drblock=get_drblock();
-  if (drblock->ndr == 0)
-    drblock=NULL;
+  char        buf[246];
+  int         i,j,n,ni,nj,ndr,nor;
+  int         nr[enxNR];
+  real        *block[enxNR];
+  t_enxframe  fr;
 
   switch (mode) {
   case eprNORMAL:
-    if (bEne || bDR)
-      do_enx(fp_ene,&time,&steps,(bEne) ? &md->ebin->nener : &zero,
-	     md->ebin->e,&drblock->ndr,bDR ? drblock : NULL);
+    fr.t          = time;
+    fr.step       = steps;
+    fr.nre        = (bEne) ? md->ebin->nener : 0;
+    fr.ener       = md->ebin->e;
+    fr.ndisre     = bDR ? fcd->disres.npr : 0;
+    fr.rav        = fcd->disres.rav;
+    fr.rt         = fcd->disres.rt;
+    nr[enxOR]     = bOR ? fcd->orires.nr : 0;
+    nr[enxORI]    = (bOR && fcd->orires.edt>0) ? fcd->orires.nr : 0;
+    fr.nr         = nr;
+    block[enxOR]  = fcd->orires.otav;
+    block[enxORI] = fcd->orires.oins;
+    fr.block      = block;
+    if (fr.nr[enxOR])
+      fr.nblock   = 2;
+    else
+      fr.nblock   = 0;
+    if (fr.nre || fr.ndisre || fr.nr[enxOR] || fr.nr[enxORI])
+      do_enx(fp_ene,&fr);
     break;
   case eprAVER:
     if (log) pprint(log,"A V E R A G E S");
@@ -439,6 +457,9 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,
   }
   
   if (log) {
+    if (fcd->orires.nr)
+      print_orires_log(log,fcd);
+
     fprintf(log,"   Energies %s\n",kjm);
     pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,steps,TRUE);  
     fprintf(log,"\n");

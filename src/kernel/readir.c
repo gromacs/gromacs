@@ -428,7 +428,7 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE("NMR refinement stuff");
   CTYPE ("Distance restraints type: No, Simple or Ensemble");
   EETYPE("disre",       opts->eDisre,   edisre_names, nerror, TRUE);
-  CTYPE ("Force weighting of pairs in one distance restraint: Equal or Conservative");
+  CTYPE ("Force weighting of pairs in one distance restraint: Conservative or Equal");
   EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);
   CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
   EETYPE("disre-mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
@@ -436,7 +436,12 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("disre-tau",	ir->dr_tau,	0.0);
   CTYPE ("Output frequency for pair distances to energy file");
   ITYPE ("nstdisreout", ir->nstdisreout, 100);
-  
+  CTYPE ("Orientation restraints force constant and tau for time averaging");
+  RTYPE ("orire-fc",	ir->orires_fc,	0.0);
+  RTYPE ("orire-tau",	ir->orires_tau,	0.0);
+  CTYPE ("Output frequency for trace(SD) to energy file");
+  ITYPE ("nstorireout", ir->nstorireout, 100);
+
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
   EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
@@ -1063,22 +1068,22 @@ void do_index(char *ndx,
   t_functype *functype;
   t_iparams  *ip;
   int i,ndouble,ftype;
-  int index,old_index;
+  int label,old_label;
   
   if (sys->idef.il[F_DISRES].nr) {
     functype  = sys->idef.functype;
     ip        = sys->idef.iparams;
     ndouble   = 0;
-    old_index = -1;
+    old_label = -1;
     for(i=0; i<sys->idef.ntypes; i++) {
       ftype = functype[i];
       if (ftype == F_DISRES) {
-	index = ip[i].disres.index;
-	if (index == old_index) {
-	  fprintf(stderr,"Distance restraint index %d occurs twice\n",index);
+	label = ip[i].disres.label;
+	if (label == old_label) {
+	  fprintf(stderr,"Distance restraint index %d occurs twice\n",label);
 	  ndouble++;
 	}
-	old_index = index;
+	old_label = label;
       }
     }
     if (ndouble>0)

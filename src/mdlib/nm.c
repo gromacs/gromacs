@@ -51,7 +51,7 @@ static char *SRCID_nm_c = "$Id$";
 time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,int stepout,
 	     t_parm *parm,t_groups *grps,
-	     t_topology *top,real ener[],
+	     t_topology *top,real ener[],t_fcdata *fcd,
 	     rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nsborder *nsb,t_nrnb nrnb[],
@@ -126,7 +126,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
   bNS=TRUE;
   do_force(log,cr,parm,nsb,force_vir,pme_vir,0,&mynrnb,
-	   top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
+	   top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
   bNS=FALSE;
   if (bBox)
@@ -167,7 +167,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       clear_mat(force_vir);
 
       do_force(log,cr,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),&mynrnb,
-	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
+	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
@@ -184,7 +184,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       clear_mat(force_vir);
       
       do_force(log,cr,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,&mynrnb,
-	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
+	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
@@ -220,10 +220,10 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   lambda=lam0+step*parm->ir.delta_lambda;
   
   if (MASTER(cr)) {
-    print_ebin(-1,FALSE,FALSE,log,step,t,eprAVER,
-	       FALSE,mdebin,&(top->atoms));
-    print_ebin(-1,FALSE,FALSE,log,step,t,eprRMS,
-	       FALSE,mdebin,&(top->atoms));
+    print_ebin(-1,FALSE,FALSE,FALSE,log,step,t,eprAVER,
+	       FALSE,mdebin,fcd,&(top->atoms));
+    print_ebin(-1,FALSE,FALSE,FALSE,log,step,t,eprRMS,
+	       FALSE,mdebin,fcd,&(top->atoms));
   }
   
   /* Construct dummy particles, for last output frame */

@@ -120,14 +120,13 @@ int main(int argc,char *argv[])
   int        in;
   FILE       *out;
   int        timecheck=0;
-  t_energy   *ee;
-  t_drblock  dr;
-  int        teller=0,nre,step;
-  real       t,sum;
+  t_enxframe *fr;
+  int        teller=0;
+  real       sum;
   bool       bCont,bRef;
   bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
-  int        *set,i,j,k,prevk,m=0,n,nset,nenergy,ndr;
+  int        *set,i,j,k,prevk,m=0,n,nre,nset,nenergy;
   char       **enm,**groups;
   char       groupname[255],fn[255];
   int        ngroups;
@@ -171,7 +170,6 @@ int main(int argc,char *argv[])
   bCutmax=opt2parg_bSet("-max",asize(pa),pa);
   bCutmin=opt2parg_bSet("-min",asize(pa),pa);
 
-  snew(ee,nre);
   nenergy = 0;
 
   /* Read groupnames from input file and construct selection of 
@@ -210,36 +208,30 @@ int main(int argc,char *argv[])
   fprintf(stderr,"Will select half-matrix of energies with %d elements\n",n);
 
   /* Start reading energy frames */  
-  step     = 0;
-  t        = 0;
+  snew(fr,1);
   do {
     do {
-      bCont=do_enx(in,&t,&step,&nre,ee,&ndr,&dr);
-      if (bCont) {
-	timecheck=check_times(t);
-	
-	/* It is necessary for statistics to start counting from 1 */
-	step += 1; 
-      }
-      
+      bCont=do_enx(in,fr);
+      if (bCont)
+	timecheck=check_times(fr->t);
     } while (bCont && (timecheck < 0));
     
     if (timecheck == 0) {
 #define DONTSKIP(cnt) (skip) ? ((cnt % skip) == 0) : TRUE
       
       if (bCont) {
-	fprintf(stderr,"\rRead frame: %d, Time: %.3f",teller,t);
+	fprintf(stderr,"\rRead frame: %d, Time: %.3f",teller,fr->t);
 	
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
 	  for(i=0; (i<=nset); i++)
 	    srenew(eneset[i],nenergy+1000);
 	}
-	time[nenergy] = t;
+	time[nenergy] = fr->t;
 	sum=0;
 	for(i=0; (i<nset); i++) {
-	  eneset[i][nenergy] = ee[set[i]].e;
-	  sum+=ee[set[i]].e;
+	  eneset[i][nenergy] = fr->ener[set[i]].e;
+	  sum += fr->ener[set[i]].e;
 	}
 	if (bSum) 
 	  eneset[nset][nenergy] = sum;

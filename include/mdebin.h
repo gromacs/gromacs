@@ -77,10 +77,10 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 extern void print_ebin_header(FILE *log,int steps,real time,
 			      real lamb,real SAfactor);
 
-extern void print_ebin(int fp_ene,bool bEne,bool bDR,
+extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		       FILE *log,int steps,real time,
 		       int mode,bool bCompact,
-		       t_mdebin *md,t_atoms *atoms);
+		       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms);
 
 #endif	/* _mdebin_h */
 

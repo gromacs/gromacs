@@ -141,12 +141,12 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE      *out;
-  int       fp,nre,ndr,step,nframes=0,ct=0;
+  int       fp,nre,nframes=0,ct=0;
   char      **enm=NULL;
   bool      bCont;
   t_liedata *ld;
-  t_energy  *ee;
-  real      t,lie;
+  t_enxframe *fr;
+  real      lie;
   double    lieaver=0,lieav2=0;
     
   t_filenm fnm[] = { 
@@ -163,18 +163,18 @@ int main(int argc,char *argv[])
   do_enxnms(fp,&nre,&enm);
   
   ld = analyze_names(nre,enm,ligand);
-  snew(ee,nre);
+  snew(fr,1);
   out = xvgropen(ftp2fn(efXVG,NFILE,fnm),"LIE free energy estimate",
 		 "Time (ps)","DGbind (kJ/mol)");
   do {
-    bCont = do_enx(fp,&t,&step,&nre,ee,&ndr,NULL);
-    ct    = check_times(t);
+    bCont = do_enx(fp,fr);
+    ct    = check_times(fr->t);
     if (ct == 0) {
-      lie = calc_lie(ld,ee,lie_lj,lie_qq,fac_lj,fac_qq);
+      lie = calc_lie(ld,fr->ener,lie_lj,lie_qq,fac_lj,fac_qq);
       lieaver += lie;
       lieav2  += lie*lie;
       nframes ++;
-      fprintf(out,"%10g  %10g\n",t,lie);
+      fprintf(out,"%10g  %10g\n",fr->t,lie);
     }
   } while (bCont);
   close_enx(fp);

@@ -59,7 +59,28 @@ static int tpx_version = 22;
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
 static int file_version = 0;
- 
+
+/* Struct used to maintain tpx compatibility when function types are added */
+typedef struct {
+  int fvnr; /* file version number in which the function type first appeared */
+  int ftype; /* function type */
+} t_ftupd;
+
+/* 
+ *The entries should be ordered in:
+ * 1. ascending file version number
+ * 2. ascending function type number
+ */
+t_ftupd ftupd[] = {
+  { 20, F_CUBICBONDS },
+  { 20, F_CONNBONDS  },
+  { 20, F_HARMONIC   },
+  { 20, F_EQM,       },
+  { 22, F_DISRESVIOL },
+  { 22, F_ORIRES     },
+  { 22, F_ORIRESVIOL }
+};
+#define NFTUPD asize(ftupd)
 
 void _do_section(int fp,int key,bool bRead,char *src,int line)
 {
@@ -233,10 +254,21 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     else
       ir->sc_sigma = 0.3;
     do_int(ir->eDisreWeighting); 
+    if (file_version < 22) {
+      if (ir->eDisreWeighting == 0)
+	ir->eDisreWeighting = edrwEqual;
+      else
+	ir->eDisreWeighting = edrwConservative;
+    }
     do_int(ir->bDisreMixed); 
     do_real(ir->dr_fc); 
     do_real(ir->dr_tau); 
     do_int(ir->nstdisreout);
+    if (file_version >= 22) {
+      do_real(ir->orires_fc);
+      do_real(ir->orires_tau);
+      do_int(ir->nstorireout);
+    }
     do_real(ir->em_stepsize); 
     do_real(ir->em_tol); 
     if (file_version >= 22) 
@@ -395,12 +427,20 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead)
     do_int (iparams->pdihs.mult);
     break;
   case F_DISRES:
-    do_int (iparams->disres.index);
+    do_int (iparams->disres.label);
     do_int (iparams->disres.type);
     do_real(iparams->disres.low);
     do_real(iparams->disres.up1);
     do_real(iparams->disres.up2);
-    do_real(iparams->disres.fac);
+    do_real(iparams->disres.kfac);
+    break;
+  case F_ORIRES:
+    do_int (iparams->orires.ex);
+    do_int (iparams->orires.label);
+    do_int (iparams->orires.pow);
+    do_real(iparams->orires.c);
+    do_real(iparams->orires.obs);
+    do_real(iparams->orires.kfac);
     break;
   case F_POSRES:
     do_rvec(iparams->posres.pos0);
@@ -459,8 +499,8 @@ static void do_ilist(t_ilist *ilist,bool bRead,char *name)
 
 static void do_idef(t_idef *idef,bool bRead)
 {
-  int i,j;
-  bool bDum=TRUE;
+  int i,j,k;
+  bool bDum=TRUE,bClear;
   
   do_int(idef->atnr);
   do_int(idef->nodeid);
@@ -472,24 +512,26 @@ static void do_idef(t_idef *idef,bool bRead)
   ndo_int(idef->functype,idef->ntypes,bDum);
   
   for (i=0; (i<idef->ntypes); i++) {
-    if (bRead && (file_version <= 19) 
-	&& (idef->functype[i] >= F_CUBICBONDS)) {
-      idef->functype[i] += 3;
-      if (idef->functype[i] >= F_EQM)
-	idef->functype[i] += 1;
-    }
+    if (bRead)
+      for (k=0; k<NFTUPD; k++)
+	if ((file_version < ftupd[k].fvnr) && 
+	    (idef->functype[i] >= ftupd[k].ftype))
+	  idef->functype[i] += 1;
     do_iparams(idef->functype[i],&idef->iparams[i],bRead);
-  }  
+  }
 
   for(j=0; (j<F_NRE); j++) {
-    if (bRead && (file_version <= 19)
-	&& (j==F_CUBICBONDS || j==F_CONNBONDS || j==F_HARMONIC || j==F_EQM)) {
-      idef->il[j].nr         = 0;
+    bClear = FALSE;
+    if (bRead)
+      for (k=0; k<NFTUPD; k++)
+	if ((file_version < ftupd[k].fvnr) && (j == ftupd[k].ftype))
+	  bClear = TRUE;
+    if (bClear) {
+      idef->il[j].nr = 0;
       for(i=0; i<MAXNODES; i++)
 	idef->il[j].multinr[i] = 0;
-      idef->il[j].iatoms     = NULL;
-    }
-    else
+      idef->il[j].iatoms = NULL;
+    } else
       do_ilist(&idef->il[j],bRead,interaction_function[j].name);
   }
 }

@@ -37,6 +37,7 @@ static char *SRCID_ifunc_c = "$Id$";
 #include "typedefs.h"
 #include "bondf.h"
 #include "disre.h"
+#include "orires.h"
 
 #define def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
@@ -89,7 +90,10 @@ t_interaction_function interaction_function[F_NRE]=
   def_nofc   ("LR",       "Coulomb (LR)"     ),
   def_bonded ("WATERPOL", "Water Pol.",      1, 6, 0,  eNR_WPOL,   water_pol),
   def_bonded ("POSRES",   "Position Rest.",  1, 3, 0,  eNR_POSRES, posres   ),
-  def_bonded ("DISRES",   "Dis. Res",        2, 6, 0,  eNR_DISRES, ta_disres),
+  def_bonded ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres),
+  def_nofc   ("DRVIOL",   "D. R. Viol. (nm)" ),    
+  def_bonded ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires   ),
+  def_nofc   ("ORVIOL",   "Ori. R. Viol."    ),  
   def_bonded ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres   ),
   def_bonded ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz  ),
   def_shkcon ("CONSTR",   "Constraint",      2, 1, 1   ),

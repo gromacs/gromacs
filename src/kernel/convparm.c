@@ -133,12 +133,22 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->posres.pos0[ZZ] = old[5];
     break;
   case F_DISRES:
-    new->disres.index=old[0];
-    new->disres.type=old[1];
-    new->disres.low=old[2];
-    new->disres.up1=old[3];
-    new->disres.up2=old[4];
-    new->disres.fac=old[5];
+    new->disres.label = old[0];
+    new->disres.type  = old[1];
+    new->disres.low   = old[2];
+    new->disres.up1   = old[3];
+    new->disres.up2   = old[4];
+    new->disres.kfac  = old[5];
+    break;
+  case F_ORIRES:
+    if (old[0] < 0)
+      fatal_error(0,"Found experiment number for orientation restraints which is smaller than 1 (%d)",old[0]);
+    new->orires.ex    = old[0] - 1;
+    new->orires.label = old[1];
+    new->orires.pow   = old[2];
+    new->orires.c     = old[3];
+    new->orires.obs   = old[4];
+    new->orires.kfac  = old[5];
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) 

@@ -100,6 +100,36 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
+static void get_orires_parms(char *topnm,int *nor,int **label,real **obs)
+{
+  t_topology top;
+  t_inputrec ir;
+  t_iparams  *ip;
+  int        natoms,i;
+  t_iatom    *iatom;
+  real       t;
+  int        nb;
+  matrix     box;
+
+  read_tpx(topnm,&i,&t,&t,&ir,box,&natoms,NULL,NULL,NULL,&top);
+
+  ip       = top.idef.iparams;
+  iatom    = top.idef.il[F_ORIRES].iatoms;
+  
+  /* Count how many distance restraint there are... */
+  nb = top.idef.il[F_ORIRES].nr;
+  if (nb == 0)
+    fatal_error(0,"No orientation restraints in topology!\n");
+  
+  *nor = nb/3;
+  snew(*label,*nor);
+  snew(*obs,*nor);
+  for(i=0; i<nb; i+=3) {
+    (*label)[i/3] = ip[iatom[i]].orires.label;
+    (*obs)[i/3]   = ip[iatom[i]].orires.obs;
+  }
+}
+
 int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
 	       t_topology *top,t_inputrec *ir)
 {
@@ -110,7 +140,7 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   t_iatom    *iatom;
   real       *b,t;
   int        *ind,*pair;
-  int        nb,index1;
+  int        nb,label1;
   matrix     box;
 
   read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,top);
@@ -133,25 +163,26 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   for(i=0; (i<top->idef.ntypes); i++) {
     ftype = functype[i];
     if (ftype == F_DISRES) {
-      index1 = ip[i].disres.index;
+
+      label1 = ip[i].disres.label;
       b[nb]   = ip[i].disres.up1;
-      ind[nb] = index1;
+      ind[nb] = label1;
       nb++;
     }
   }
   *bounds = b;
   
   /* Fill the index array */
-  index1  = -1;
+  label1  = -1;
   disres  = &(top->idef.il[F_DISRES]);
   iatom   = disres->iatoms;
   for(i=j=k=0; (i<disres->nr); ) {
     type  = iatom[i];
     ftype = top->idef.functype[type];
     natom = interaction_function[ftype].nratoms+1;
-    if (index1 != top->idef.iparams[type].disres.index) {
+    if (label1 != top->idef.iparams[type].disres.label) {
       pair[j] = k;
-      index1  = top->idef.iparams[type].disres.index; 
+      label1  = top->idef.iparams[type].disres.label; 
       j ++;
     }
     k++;
@@ -312,7 +343,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   bool bIsEner;
   char buf[256];
 
-  nsteps  = step - oldstep;
+  nsteps  = step - oldstep + 1;
 #ifdef DEBUG
   fprintf(stderr,"oldstep: %d, oldt: %g, step: %d, t: %g, nenergy: %d\n",
 	  oldstep,oldt,step,t,nenergy);
@@ -513,23 +544,24 @@ void fec(char *ene2fn, char *runavgfn,
 		      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
   FILE *fp;
   int  enx;
-  int  nre,ndr,timecheck,step,nenergy2,maxenergy;
+  int  nre,timecheck,step,nenergy2,maxenergy;
   int  i,j;
   char **enm;
   bool bCont;
   real t, aver, beta;
   real **eneset2;
   double dE, sum;
-  t_drblock dr;
-  t_energy *ee;
+  t_enxframe *fr;
+  t_energy   *ee;
   
   /* read second energy file */
-  enm=NULL;
+  snew(fr,1);
+  enm = NULL;
   enx = open_enx(ene2fn,"r");
-  do_enxnms(enx,&nre,&enm);
+  do_enxnms(enx,&(fr->nre),&enm);
   
   snew(eneset2,nset+1);
-  snew(ee,nre);
+  snew(ee,fr->nre);
   nenergy2=0;
   maxenergy=0;
   timecheck=0;
@@ -538,26 +570,27 @@ void fec(char *ene2fn, char *runavgfn,
      * or when this has been found it reads just one energy frame
      */
     do {
-      bCont = do_enx(enx,&t,&step,&nre,ee,&ndr,&dr);
+      bCont = do_enx(enx,fr);
+      /* bCont = do_enx(enx,&t,&step,&nre,ee,&ndr,&dr); */
       
       if (bCont)
-	timecheck = check_times(t);
+	timecheck = check_times(fr->t);
       
     } while (bCont && (timecheck < 0));
     
     /* Store energies for analysis afterwards... */
     if ((timecheck == 0) && bCont) {
-      if ( nre > 0 ) {
+      if (fr->nre > 0) {
 	if ( nenergy2 >= maxenergy ) {
-	  maxenergy+=1000;
-	  for(i=0; (i<=nset); i++)
+	  maxenergy += 1000;
+	  for(i=0; i<=nset; i++)
 	    srenew(eneset2[i],maxenergy);
 	}
-	if ( t != time[nenergy2] )
+	if (fr->t != time[nenergy2])
 	  fprintf(stderr,"\nWARNING time mismatch %g!=%g at frame %d\n",
-		  t, time[nenergy2], step);
-	for(i=0; (i<nset); i++)
-	  eneset2[i][nenergy2] = ee[set[i]].e;
+		  fr->t, time[nenergy2], fr->step);
+	for(i=0; i<nset; i++)
+	  eneset2[i][nenergy2] = fr->ener[set[i]].e;
 	nenergy2++;
       }
     }
@@ -594,6 +627,7 @@ void fec(char *ene2fn, char *runavgfn,
     fprintf(stdout,"%-24s %10g\n",leg[i],aver);
   }
   if(fp) ffclose(fp);
+  sfree(fr);
 }
 
 int main(int argc,char *argv[])
@@ -604,17 +638,29 @@ int main(int argc,char *argv[])
     "data from an energy file. The user is prompted to interactively",
     "select the energy terms she wants.[PAR]",
     
-    "When the [TT]-viol[tt] option is set, the time averaged",
-    "violations are plotted and the running time-averaged and",
-    "instantaneous sum of violations are recalculated. Additionally",
-    "running time-averaged and instantaneous distances between",
-    "selected pairs can be plotted with the [TT]-pairs[tt] option.[PAR]",
-    
     "Average and RMSD are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a LSQ fit of the data to a straight line. Total drift is drift",
     "multiplied by total time.[PAR]",
     
+    "When the [TT]-viol[tt] option is set, the time averaged",
+    "violations are plotted and the running time-averaged and",
+    "instantaneous sum of violations are recalculated. Additionally",
+    "running time-averaged and instantaneous distances between",
+    "selected pairs can be plotted with the [TT]-pairs[tt] option.[PAR]",
+
+    "Options [TT]-ora[tt], [TT]-ort[tt], [TT]-ova[tt], [TT]-ovr[tt] and",
+    "[TT]-ovt[tt] are used for analyzing orientation restraint data.",
+    "The first two options plot the orientation, the last three the",
+    "violations of the restraints. The options that end on an a plot",
+    "the average over time as a function of restraint. The options that",
+    "end on a t prompt the user for restraint label numbers and plot",
+    "the data as a function of time. Option [TT]-ovr[tt] plots the RMS",
+    "violation as a function of restraint.",
+    "When the run used time averaged orientation restraints,",
+    "option [TT]-orinst[tt] can be used to analyse the instantaneous",
+    "orientations and violations instead of the time averages.[PAR]",
+
     "With [TT]-fee[tt] a free energy estimate is calculated using",
     "the formula: G = -ln < e ^ (E/kT) > * kT, where k is Boltzmann's",
     "constant, T is set by [TT]-fetemp[tt] and the average is over the",
@@ -632,7 +678,7 @@ int main(int argc,char *argv[])
     
   };
   static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
-  static bool bDp=FALSE,bMutot=FALSE;
+  static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
   t_pargs pa[] = {
@@ -657,7 +703,9 @@ int main(int argc,char *argv[])
     { "-ndf",  FALSE, etINT,  {&ndf},
       "Number of degrees of freedom per molecule. Necessary for calculating the heat capacity" },
     { "-fluc", FALSE, etBOOL, {&bFluct},
-      "Calculate autocorrelation of energy fluctuations rather than energy itself" }
+      "Calculate autocorrelation of energy fluctuations rather than energy itself" },
+    { "-orinst",FALSE,etBOOL, {&bOrinst},
+      "Analyse instantaneous orientation data" } 
   };
   static char *drleg[] = {
     "Running average",
@@ -669,28 +717,29 @@ int main(int argc,char *argv[])
     "Volume",  "Pressure"
   };
   
-  FILE       *out,*fp_pairs=NULL;
+  FILE       *out,*fp_pairs=NULL,*fort=NULL,*fovt=NULL;
   FILE       **drout;
   int        fp;
-  int        ndr;
   int        timecheck=0;
   t_topology top;
   t_inputrec ir;
   t_energy   *oldee,**ee;
-  t_drblock  dr;
-  int        teller,teller_disre,nre,nre2,step[2],oldstep;
-  real       t[2],oldt;
+  t_enxframe *frame,*fr=NULL;
   int        cur=0;
 #define NEXT (1-cur)
-  real       *bounds,*violaver=NULL;
-  int        *index,*pair;
+  int        nre,teller,teller_disre,oldstep,nor=0,norfr=0,enx_i=0;
+  real       oldt;
+  real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*ovrms=NULL;
+  int        *index,*pair,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
-  bool       bDisRe,bDRAll,bStarted,bCont,bEDR,bVisco;
+  bool       bDisRe,bDRAll,bORA,bORT,bOVA,bOVR,bOVT,bORIRE;
+  bool       bStarted,bCont,bEDR,bVisco;
   double     sum,sumaver,sumt,dbl;
   real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
-  char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg;
+  char       **enm=NULL, **enm2=NULL, **leg=NULL, **pairleg, **ovtleg;
   char       **nms;
+  char       *orinst_sub = "@ subtitle \"instantaneous\"\n";
   t_filenm   fnm[] = {
     { efENX, "-f",    NULL,      ffREAD  },
     { efENX, "-f2",   NULL,      ffOPTRD },
@@ -698,6 +747,11 @@ int main(int argc,char *argv[])
     { efXVG, "-o",    "energy",  ffWRITE },
     { efXVG, "-viol", "violaver",ffOPTWR },
     { efXVG, "-pairs","pairs",   ffOPTWR },
+    { efXVG, "-ora",  "orienta", ffOPTWR },
+    { efXVG, "-ort",  "orientt", ffOPTWR },
+    { efXVG, "-ova",  "oriviola",ffOPTWR },
+    { efXVG, "-ovr",  "oriviolr",ffOPTWR },
+    { efXVG, "-ovt",  "oriviolt",ffOPTWR },
     { efXVG, "-corr", "enecorr", ffOPTWR },
     { efXVG, "-vis",  "visco",   ffOPTWR },
     { efXVG, "-ravg", "runavgdf",ffOPTWR }
@@ -714,15 +768,18 @@ int main(int argc,char *argv[])
   
   bDRAll = opt2bSet("-pairs",NFILE,fnm);
   bDisRe = opt2bSet("-viol",NFILE,fnm) || bDRAll;
-  
+  bORA   = opt2bSet("-ora",NFILE,fnm);
+  bORT   = opt2bSet("-ort",NFILE,fnm);
+  bOVA   = opt2bSet("-ova",NFILE,fnm);
+  bOVR   = opt2bSet("-ovr",NFILE,fnm);
+  bOVT   = opt2bSet("-ovt",NFILE,fnm);
+  bORIRE = bORA || bORT || bOVA || bOVR || bOVT;
+
+  snew(frame,2);
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);
-  
+
   /* Initiate energies and set them to zero */
-  dr.ndr=0;  
-  snew(ee,2);
-  snew(ee[cur],nre);
-  snew(ee[NEXT],nre);
   snew(oldee,nre);
   nenergy = 0;
   Vaver = -1;
@@ -734,8 +791,8 @@ int main(int argc,char *argv[])
       nset=asize(setnm);
       snew(set,nset);
       /* This is nasty code... To extract Pres tensor, Volume and Temperature */
-      for(j=0; (j<nset); j++) {
-	for(i=0; (i<nre); i++) {
+      for(j=0; j<nset; j++) {
+	for(i=0; i<nre; i++) {
 	  if (strstr(enm[i],setnm[j])) {
 	    set[j]=i;
 	    break;
@@ -771,6 +828,64 @@ int main(int argc,char *argv[])
     if (bVisco)
       snew(enesum,nset+1);
     time = NULL;
+
+    if (bORIRE) {
+      get_orires_parms(ftp2fn(efTPX,NFILE,fnm),&nor,&or_label,&oobs);
+      
+      if (bOrinst)
+	enx_i = enxORI;
+      else
+	enx_i = enxOR;
+
+      if (bORA || bOVA)
+	snew(orient,nor);
+      if (bOVR)
+	snew(ovrms,nor);
+      if (bORT || bOVT) {
+	fprintf(stderr,"Select the orientation restraint labels you want\n");
+	fprintf(stderr,"End your selection with 0\n");
+	j = -1;
+	orsel = NULL;
+	do {
+	  j++;
+	  srenew(orsel,j+1);
+	  scanf("%d",&(orsel[j]));
+	} while (orsel[j] > 0);
+	norsel=0;
+	for(i=0; i<j; i++) {
+	  for(k=0; k<nor; k++)
+	    if (or_label[k] == orsel[i]) {
+	      orsel[norsel] = k;
+	      norsel++;
+	      break;
+	  }
+	  if (k == nor)
+	    fprintf(stderr,"Orientation restraint label %d not found\n",
+		    orsel[i]);
+	}
+	snew(ovtleg,norsel);
+	for(i=0; i<norsel; i++) {
+	  snew(ovtleg[i],256);
+	  sprintf(ovtleg[i],"%d",or_label[orsel[i]]);
+	}
+	if (bORT) {
+	  fort=xvgropen(opt2fn("-ort",NFILE,fnm),
+			"Calculated orientations",
+			"Time (ps)","");
+	  if (bOrinst)
+	    fprintf(fort,"%s",orinst_sub);
+	  xvgr_legend(fort,norsel,ovtleg);
+	}
+	if (bOVT) {
+	  fovt=xvgropen(opt2fn("-ovt",NFILE,fnm),
+			"Orientation restraint violations",
+			"Time (ps)","");
+	  if (bOrinst)
+	    fprintf(fovt,"%s",orinst_sub);
+	  xvgr_legend(fovt,norsel,ovtleg);
+	}
+      }
+    }
   }
   else {
     nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&pair,&npairs,
@@ -790,8 +905,6 @@ int main(int argc,char *argv[])
   /* Initiate counters */
   teller       = 0;
   teller_disre = 0;
-  step[cur]    = 0;
-  t[cur]       = 0;
   oldstep      = -1;
   oldt         = 0;
   do {
@@ -799,21 +912,20 @@ int main(int argc,char *argv[])
      * or when this has been found it reads just one energy frame
      */
     do {
-      bCont = do_enx(fp,&(t[NEXT]),&(step[NEXT]),&nre,ee[NEXT],&ndr,&dr);
+      bCont = do_enx(fp,&(frame[NEXT]));
       
       if (bCont)
-	timecheck = check_times(t[NEXT]);
+	timecheck = check_times(frame[NEXT].t);
       
     } while (bCont && (timecheck < 0));
     
     if ((timecheck == 0) && bCont) {
-      if (nre > 0) {
-	/* 
-	 * Only copy the values we just read, if we are within the time bounds
-	 * It is necessary for statistics to start counting from 1 
-	 */
+      /* We read a valid frame, so we can use it */
+      fr = &(frame[NEXT]);
+      
+      if (fr->nre > 0) {
+	/* The frame contains energies, so update cur */
 	cur  = NEXT;
-	step[cur]++;
 	
 	if (oldstep == -1) {
 	  /* 
@@ -821,17 +933,18 @@ int main(int argc,char *argv[])
 	   * Since step is incremented after reading, it is always >= 1,
 	   * therefore this will be executed only once.
 	   */
-	  oldstep = step[cur] - 1;
-	  oldt    = t[cur];
+	  oldstep = fr->step;
+	  oldt    = fr->t;
 	  /* 
 	   * If we did not start at the first step, oldstep will be > 0
 	   * and we must initiate the data in the array. Otherwise it remains 0
 	   */
 	  if (oldstep > 0)
-	    for(i=0; (i<nre); i++) {
-	      oldee[i].esum = ee[cur][i].esum - ee[cur][i].e;
-	      oldee[i].eav  = ee[cur][i].eav  - 
-		(sqr(oldee[i].esum - oldstep*ee[cur][i].e)/(oldstep*step[cur]));
+	    for(i=0; i<fr->nre; i++) {
+	      oldee[i].esum = fr->ener[i].esum - fr->ener[i].e;
+	      oldee[i].eav  = fr->ener[i].eav  - 
+		(sqr(oldee[i].esum - oldstep*fr->ener[i].e)/
+		 (oldstep*(fr->step+1)));
 	    }
 	}
       }
@@ -839,28 +952,28 @@ int main(int argc,char *argv[])
        * Define distance restraint legends. Can only be done after
        * the first frame has been read... (Then we know how many there are)
        */
-      if (bDisRe && bDRAll && !leg && (ndr > 0)) {
+      if (bDisRe && bDRAll && !leg && (fr->ndisre > 0)) {
 	t_iatom   *fa;
 	t_iparams *ip;
 	
 	fa = top.idef.il[F_DISRES].iatoms; 
 	ip = top.idef.iparams;
 
-	if (ndr != top.idef.il[F_DISRES].nr/3)
+	if (fr->ndisre != top.idef.il[F_DISRES].nr/3)
 	  fatal_error(0,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-		      ndr,top.idef.il[F_DISRES].nr/3);
+		      fr->ndisre,top.idef.il[F_DISRES].nr/3);
 	
-	snew(pairleg,dr.ndr);
-	for(i=0; (i<dr.ndr); i++) {
+	snew(pairleg,fr->ndisre);
+	for(i=0; i<fr->ndisre; i++) {
 	  snew(pairleg[i],30);
 	  j=fa[3*i+1];
 	  k=fa[3*i+2];
 	  sprintf(pairleg[i],"%d %s %d %s (%d)",
 		  top.atoms.atom[j].resnr+1,*top.atoms.atomname[j],
 		  top.atoms.atom[k].resnr+1,*top.atoms.atomname[k],
-		  ip[fa[3*i]].disres.index);
+		  ip[fa[3*i]].disres.label);
 	}
-	set=select_it(dr.ndr,pairleg,&nset);
+	set=select_it(fr->ndisre,pairleg,&nset);
 	snew(leg,2*nset);
 	for(i=0; (i<nset); i++) {
 	  snew(leg[2*i],32);
@@ -874,7 +987,7 @@ int main(int argc,char *argv[])
       /* 
        * Store energies for analysis afterwards... 
        */
-      if (!bDisRe && (nre > 0)) {
+      if (!bDisRe && (fr->nre > 0)) {
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
 	  for(i=0; (i<=nset); i++) {
@@ -883,13 +996,13 @@ int main(int argc,char *argv[])
 	      srenew(enesum[i],nenergy+1000);
 	  }
 	}
-	time[nenergy] = t[cur];
+	time[nenergy] = fr->t;
 	sum=0;
 	  for(i=0; (i<nset); i++) {
-	    eneset[i][nenergy] = ee[cur][set[i]].e;
-	    sum += ee[cur][set[i]].e;
+	    eneset[i][nenergy] = fr->ener[set[i]].e;
+	    sum += fr->ener[set[i]].e;
 	    if (bVisco)
-	      enesum[i][nenergy] = ee[cur][set[i]].esum;
+	      enesum[i][nenergy] = fr->ener[set[i]].esum;
 	  }
 	if (bSum) 
 	  eneset[nset][nenergy] = sum;
@@ -903,22 +1016,22 @@ int main(int argc,char *argv[])
 	  /*******************************************
 	   * D I S T A N C E   R E S T R A I N T S  
 	   *******************************************/
-	  if (ndr > 0) {
-	    print_one(out,bDp,t[cur]);
+	  if (fr->ndisre > 0) {
+	    print_one(out,bDp,fr->t);
 	    if (violaver == NULL)
-	      snew(violaver,dr.ndr);
+	      snew(violaver,fr->ndisre);
 	    
 	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(dr.rt,dr.rav,
+	    calc_violations(fr->rt,fr->rav,
 			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
 
 	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
 	    if (bDRAll) {
-	      print_one(fp_pairs,bDp,t[cur]);
+	      print_one(fp_pairs,bDp,fr->t);
 	      for(i=0; (i<nset); i++) {
 		sss=set[i];
-		fprintf(fp_pairs,"  %8.4f",mypow(dr.rav[sss],minthird));
-		fprintf(fp_pairs,"  %8.4f",dr.rt[sss]);
+		fprintf(fp_pairs,"  %8.4f",mypow(fr->rav[sss],minthird));
+		fprintf(fp_pairs,"  %8.4f",fr->rt[sss]);
 	      }
 	      fprintf(fp_pairs,"\n");
 	    }
@@ -929,19 +1042,42 @@ int main(int argc,char *argv[])
 	 * E N E R G I E S
 	 *******************************************/
 	else {
-	  if (nre > 0) {
-	    print_one(out,bDp,t[cur]);
+	  if (fr->nre > 0) {
+	    print_one(out,bDp,fr->t);
 	    if (bSum) 
 	      print_one(out,bDp,(eneset[nset][nenergy-1])/nmol-ezero);
 	    else if ((nset == 1) && bAll) {
-	      print_one(out,bDp,ee[cur][set[0]].e);
-	      print_one(out,bDp,ee[cur][set[0]].esum);
-	      print_one(out,bDp,ee[cur][set[0]].eav);
+	      print_one(out,bDp,fr->ener[set[0]].e);
+	      print_one(out,bDp,fr->ener[set[0]].esum);
+	      print_one(out,bDp,fr->ener[set[0]].eav);
 	    }
 	    else for(i=0; (i<nset); i++)
-	      print_one(out,bDp,(ee[cur][set[i]].e)/nmol-ezero);
+	      print_one(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
 
 	    fprintf(out,"\n");
+	  }
+	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
+	    if (fr->nr[enx_i] != nor)
+	      fatal_error(0,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)",fr->nr[enx_i],nor);
+	    if (bORA || bOVA)
+	      for(i=0; i<nor; i++)
+		orient[i] += fr->block[enx_i][i];
+	    if (bOVR)
+	      for(i=0; i<nor; i++)
+		ovrms[i] += sqr(fr->block[enx_i][i]-oobs[i]);
+	    if (bORT) {
+	      fprintf(fort,"  %10f",fr->t);
+	      for(i=0; i<norsel; i++)
+		fprintf(fort," %g",fr->block[enx_i][orsel[i]]); 
+	      fprintf(fort,"\n");
+	    }
+	    if (bOVT) {
+	      fprintf(fovt,"  %10f",fr->t);
+	      for(i=0; i<norsel; i++)
+		fprintf(fovt," %g",fr->block[enx_i][orsel[i]]-oobs[orsel[i]]); 
+	      fprintf(fovt,"\n");
+	    }
+	    norfr++;
 	  }
 	}
       }
@@ -953,8 +1089,44 @@ int main(int argc,char *argv[])
   close_enx(fp);
   
   ffclose(out);
+
   if (bDRAll)
     ffclose(fp_pairs);
+
+  if (bORT)
+    ffclose(fort);
+  if (bOVT)
+    ffclose(fovt);
+  if (bORA) {
+    out = xvgropen(opt2fn("-ora",NFILE,fnm),
+		   "Average calculated orientations",
+		   "Restraint label","");
+    if (bOrinst)
+      fprintf(out,"%s",orinst_sub);
+    for(i=0; i<nor; i++)
+      fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr);
+    ffclose(out);
+  }
+  if (bOVA) {
+    out = xvgropen(opt2fn("-ova",NFILE,fnm),
+		   "Average restraint violations",
+		   "Restraint label","");
+    if (bOrinst)
+      fprintf(out,"%s",orinst_sub);
+    for(i=0; i<nor; i++)
+      fprintf(out,"%5d  %g\n",or_label[i],orient[i]/norfr-oobs[i]);
+    ffclose(out);
+  }
+  if (bOVR) {
+    out = xvgropen(opt2fn("-ovr",NFILE,fnm),
+		   "RMS orientation restraint violations",
+		   "Restraint label","");
+    if (bOrinst)
+      fprintf(out,"%s",orinst_sub);
+    for(i=0; i<nor; i++)
+      fprintf(out,"%5d  %g\n",or_label[i],sqrt(ovrms[i]/norfr));
+    ffclose(out);
+  }
 
   if (bDisRe) 
     analyse_disre(opt2fn("-viol",NFILE,fnm),
@@ -962,16 +1134,21 @@ int main(int argc,char *argv[])
   else 
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
-		 nmol,ndf,oldstep,oldt,step[cur],t[cur],time,reftemp,
-		 oldee,ee[cur],nset,set,nenergy,eneset,enesum,leg,Vaver,
-		 ezero);
+		 nmol,ndf,oldstep,oldt,frame[cur].step,frame[cur].t,
+		 time,reftemp,oldee,frame[cur].ener,
+		 nset,set,nenergy,eneset,enesum,leg,Vaver,ezero);
   if (opt2bSet("-f2",NFILE,fnm))
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
 	reftemp, nset, set, leg, nenergy, eneset, time );
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-ravg",NFILE,fnm),NULL);
-    
+  do_view(opt2fn_null("-ora",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-ort",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-ova",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-ovr",NFILE,fnm),"-nxy");
+  do_view(opt2fn_null("-ovt",NFILE,fnm),"-nxy");
+
   thanx(stderr);
   
   return 0;

@@ -117,6 +117,7 @@ typedef enum {
   d_angle_restraints,
   d_angle_restraints_z,
   d_distance_restraints,
+  d_orientation_restraints,
   d_maxdir,
   d_invalid,
   d_none
@@ -150,6 +151,7 @@ static char *ds[d_maxdir+1] = {
   "angle_restraints",
   "angle_restraints_z",
   "distance_restraints",
+  "orientation_restraints",
   "invalid"
   };
 

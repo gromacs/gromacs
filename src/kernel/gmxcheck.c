@@ -312,38 +312,39 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 
 void chk_enx(char *fn)
 {
-  int       in,nre,frame,fnr,ndr;
-  char      **enm=NULL;
-  t_energy  *ee=NULL;
-  t_drblock dr;
-  bool      bShowTStep;
-  real      t,t0,old_t1,old_t2;
+  int        in,nre,fnr,ndr;
+  char       **enm=NULL;
+  t_enxframe *fr;
+  bool       bShowTStep;
+  real       t0,old_t1,old_t2;
   
   fprintf(stderr,"Checking energy file %s\n\n",fn);
 
   in = open_enx(fn,"r");
   do_enxnms(in,&nre,&enm);
   fprintf(stderr,"%d groups in energy file",nre);
+  snew(fr,1);
   old_t2=-2.0;
   old_t1=-1.0;
   fnr=0;
   t0=NOTSET;
   bShowTStep=TRUE;
-  snew(ee,nre);
-  while (do_enx(in,&t,&frame,&nre,ee,&ndr,&dr)) {
+
+  while (do_enx(in,fr)) {
     if (fnr>=2) {
-      if ( fabs((t-old_t1)-(old_t1-old_t2)) > 
-	   0.1*(fabs(t-old_t1)+fabs(old_t1-old_t2)) ) {
+      if ( fabs((fr->t-old_t1)-(old_t1-old_t2)) > 
+	   0.1*(fabs(fr->t-old_t1)+fabs(old_t1-old_t2)) ) {
 	bShowTStep=FALSE;
 	fprintf(stderr,"\nTimesteps at t=%g don't match (%g, %g)\n",
-		old_t1,old_t1-old_t2,t-old_t1);
+		old_t1,old_t1-old_t2,fr->t-old_t1);
       }
     }
     old_t2=old_t1;
-    old_t1=t;
-    if (t0 == NOTSET) t0=t;
+    old_t1=fr->t;
+    if (t0 == NOTSET) t0=fr->t;
     if (fnr == 0)
-      fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f\n",frame,fnr,t);
+      fprintf(stderr,"\rframe: %6d (index %6d), t: %10.3f\n",
+	      fr->step,fnr,fr->t);
     fnr++;
   }
   fprintf(stderr,"\n\nFound %d frames",fnr);
@@ -351,6 +352,8 @@ void chk_enx(char *fn)
     fprintf(stderr," with a timestep of %g ps",(old_t1-t0)/(fnr-1));
   fprintf(stderr,".\n");
 
+  free_enxframe(fr);
+  sfree(fr);
 }
 
 

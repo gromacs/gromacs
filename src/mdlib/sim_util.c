@@ -56,6 +56,7 @@ static char *SRCID_sim_util_c = "$Id$";
 #include "pme.h"
 #include "pppm.h"
 #include "disre.h"
+#include "orires.h"
 #include "network.h"
 #include "calcmu.h"
 #include "constr.h"
@@ -187,7 +188,7 @@ void do_force(FILE *log,t_commrec *cr,
 	      t_parm *parm,t_nsborder *nsb,tensor vir_part,tensor pme_vir,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      rvec x[],rvec v[],rvec f[],rvec buf[],
-	      t_mdatoms *mdatoms,real ener[],bool bVerbose,
+	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
 	      bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
 	      bool bGatherOnly)
@@ -284,7 +285,7 @@ void do_force(FILE *log,t_commrec *cr,
   /* Compute the forces */    
   force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
-	x,f,ener,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
+	x,f,ener,fcd,bVerbose,parm->box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,pme_vir,mu_tot,qsum,bGatherOnly);
 	
   /* Take long range contribution to free energy into account */
@@ -585,6 +586,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   t_graph    *graph;
   t_mdatoms  *mdatoms;
   t_forcerec *fr;
+  t_fcdata   *fcd;
   time_t     start_t=0;
   bool       bDummies,bParDummies;
   t_comm_dummies dummycomm;
@@ -593,6 +595,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   
   /* Initiate everything (snew sets to zero!) */
   snew(ener,F_NRE);
+  snew(fcd,1);
   snew(nsb,1);
   snew(top,1);
   snew(grps,1);
@@ -643,7 +646,11 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     p_graph(debug,"Initial graph",graph);
   
   /* Distance Restraints */
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir));
+  init_disres(stdlog,top->idef.il[F_DISRES].nr,&(parm->ir),fcd);
+
+  /* Orientation restraints */
+  init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
+	      top->idef.iparams,&(parm->ir),fcd);
 
   /* check if there are dummies */
   bDummies=FALSE;
@@ -675,19 +682,19 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
     start_t=do_md(stdlog,cr,nfile,fnm,
 		  bVerbose,bCompact,bDummies,
 		  bParDummies ? &dummycomm : NULL,
-		  nstepout,parm,grps,top,ener,x,vold,v,vt,f,buf,
+		  nstepout,parm,grps,top,ener,fcd,x,vold,v,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size,Flags);
     break;
   case eiCG:
     start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
-		  x,f,buf,mdatoms,parm->ekin,ener,
+		  x,f,buf,mdatoms,parm->ekin,ener,fcd,
 		  nrnb,bVerbose,bDummies,
 		  bParDummies ? &dummycomm : NULL,
 		  cr,graph,fr,box_size);
     break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
-		     x,f,buf,mdatoms,parm->ekin,ener,
+		     x,f,buf,mdatoms,parm->ekin,ener,fcd,
 		     nrnb,bVerbose,bDummies,
 		     bParDummies ? &dummycomm : NULL,
 		     cr,graph,fr,box_size);
@@ -695,7 +702,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   case eiNM:
     start_t=do_nm(stdlog,cr,nfile,fnm,
 		  bVerbose,bCompact,nstepout,parm,grps,
-		  top,ener,x,vold,v,vt,f,buf,
+		  top,ener,fcd,x,vold,v,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
   default:
     fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);

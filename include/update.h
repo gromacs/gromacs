@@ -53,7 +53,7 @@ static char *SRCID_update_h = "$Id$";
 #include "force.h"
 #include "pull.h"
 
-extern bool update(int          natoms,	/* number of atoms in simulation */
+extern void update(int          natoms,	/* number of atoms in simulation */
 		   int      	start,
 		   int          homenr,	/* number of home particles 	*/
 		   int          step,

@@ -152,6 +152,7 @@ static t_nrnb_data nbdata[eNRNB] = {
   { "Impropers",                      208 },
   { "RB-Dihedrals",                   247 },
   { "Dist. Restr.",                   200 },
+  { "Orient. Restr.",                 200 },
   { "Pos. Restr.",                     50 },
   { "Angle Restr.",                   191 },
   { "Angle Restr. Z",                 164 },
@@ -305,7 +306,7 @@ char *nrnb_str(int enr)
 
 static int    force_index[]={ 
   eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER, 
-  eNR_RB,     eNR_DISRES,  eNR_POSRES,
+  eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
   eNR_NS,     eNR_INL_IATOM
 };
 #define NFORCE_INDEX asize(force_index)

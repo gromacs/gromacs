@@ -33,12 +33,51 @@
  * And Hey:
  * Good ROcking Metal Altar for Chronical Sinners
  */
+
+#ifndef _orires_h
+#define _orires_h
+
+static char *SRCID_orires_h = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-typedef struct {
-  int  ndr;
-  real *rav;
-  real *rt;
-} t_drblock;
+#ifdef HAVE_IDENT
+#ident	"@(#) disre.h 1.13 2/2/97"
+#endif /* HAVE_IDENT */
+
+#ifdef CPLUSPLUS
+extern "C" {
+#endif
+
+#include "sysstuff.h"
+#include "typedefs.h"
+
+extern void init_orires(FILE *log,int nfa,t_iatom forceatoms[],t_iparams ip[],
+			t_inputrec *ir,t_fcdata *fcd);
+/* Initializes all the orientation restraint stuff in *fcd */
+
+extern real calc_orires_viol(t_commrec *cr,
+			     int nfa,t_iatom forceatoms[],t_iparams ip[],
+			     rvec x[],t_forcerec *fr,t_fcdata *fcd);
+/* 
+ * Calculates the time averaged D matrices, the S matrix for each
+ * experiment and the violations.
+ * Returns the weighted RMS violation of the orientation restraints.
+ */
+
+extern void print_orires_log(FILE *log,t_fcdata *fcd);
+/* Print order parameter, eigenvalues and eigenvectors to the log file */
+
+extern real orires(int nbonds,t_iatom fa[],t_iparams *fp,
+		   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
+		   matrix box,real lambda,real *dvdlambda,
+		   t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		   t_fcdata *fcd);
+/* Does only the orientation restraint force calculation */
+
+#ifdef CPLUSPLUS
+}
+#endif
+
+#endif	/* _orires_h */

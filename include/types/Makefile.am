@@ -10,5 +10,5 @@ includetypes_HEADERS = \
 	energy.h  	graph.h     	inputrec.h  	nblist.h 	\
 	nsgrid.h    	symtab.h	commrec.h  	enums.h   	\
 	group.h     	ishift.h    	nbslist.h  	parm.h		\
-	topology.h	drblock.h  	filenm.h  	idef.h 		\
+	topology.h	fcdata.h  	filenm.h  	idef.h 		\
 	matrix.h    	nrnb.h     	pulls.h     	trx.h

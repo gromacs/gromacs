@@ -72,7 +72,7 @@ enum {
 };
 
 enum { 
-  ensGRID, ensSIMPLE, enNR
+  ensGRID, ensSIMPLE, ensNR
 };
 
 enum {
@@ -88,7 +88,7 @@ enum {
 };
 
 enum {
-  edrwEqual, edrwConservative, edrwNR
+  edrwConservative, edrwEqual, edrwNR
 };
 
 /* Combination rule things */

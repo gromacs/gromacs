@@ -73,6 +73,9 @@ enum {
   F_WPOL,
   F_POSRES,
   F_DISRES,
+  F_DISRESVIOL,
+  F_ORIRES,
+  F_ORIRESVIOL,
   F_ANGRES,
   F_ANGRESZ,
   F_SHAKE,
@@ -126,7 +129,8 @@ typedef union
   struct {real pos0[DIM],fc[DIM];	        } posres;
   struct {real rbc[NR_RBDIHS];			} rbdihs;
   struct {real a,b,c,d,e,f;                     } dummy;   
-  struct {real low,up1,up2,fac;int type,index;  } disres; 
+  struct {real low,up1,up2,kfac;int type,label; } disres; 
+  struct {int  ex,pow,label; real c,obs,kfac;   } orires;
   struct {real buf[MAXFORCEPARAM];		} generic; /* Conversion */
 } t_iparams;
 

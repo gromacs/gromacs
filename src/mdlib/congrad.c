@@ -74,7 +74,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_parm *parm,t_topology *top,
 	     t_groups *grps,t_nsborder *nsb,
 	     rvec x[],rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-	     tensor ekin,real ener[],t_nrnb nrnb[],
+	     tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 	     bool bVerbose,bool bDummies,t_comm_dummies *dummycomm,
 	     t_commrec *cr,t_graph *graph,
 	     t_forcerec *fr,rvec box_size)
@@ -188,7 +188,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(log,cr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),top,grps,
-	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
+	   x,buf,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
   where();
 
@@ -226,8 +226,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       (parm->ir.etc==etcNOSEHOOVER));
     
     print_ebin_header(log,count,count,lambda,0.0);
-    print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
-	       TRUE,mdebin,&(top->atoms));
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,log,count,count,eprNORMAL,
+	       TRUE,mdebin,fcd,&(top->atoms));
   }
   where();
   
@@ -313,7 +313,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
        */
       do_force(log,cr,parm,nsb,force_vir,pme_vir,
 	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
-	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
+	       buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       
       /* Spread the force on dummy particle to the other particles... */
@@ -417,7 +417,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
      */
     do_force(log,cr,parm,nsb,force_vir,pme_vir,
 	     count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
-	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
+	     buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     
     /* Spread the force on dummy particle to the other particles... */
@@ -474,8 +474,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		 (parm->ir.etc==etcNOSEHOOVER));
       /* Print the energies allways when we should be verbose */
       print_ebin_header(log,count,count,lambda,0.0);
-      print_ebin(fp_ene,TRUE,FALSE,log,count,count,eprNORMAL,
-		 TRUE,mdebin,&(top->atoms));
+      print_ebin(fp_ene,TRUE,FALSE,FALSE,log,count,count,eprNORMAL,
+		 TRUE,mdebin,fcd,&(top->atoms));
     }
     
     /* Stop when the maximum force lies below tolerance */
