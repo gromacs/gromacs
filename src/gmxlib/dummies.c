@@ -53,7 +53,7 @@ static void constr_dum2(rvec xa,rvec xb,rvec xc,rvec x,real a,real b,real c)
   /* 15 Flops */
 }
 
-static void constr_dum3(rvec x1,rvec x2,rvec x3,rvec x,real a,real b)
+static void constr_dum3(rvec x1,rvec x2,rvec x3,rvec x,real a,real b,real c)
 {
   rvec x21,x31,temp;
   int  m;
@@ -64,8 +64,8 @@ static void constr_dum3(rvec x1,rvec x2,rvec x3,rvec x,real a,real b)
   /* 15 Flops */
   
   for(m=0; (m<DIM); m++) 
-    x[m]=x1[m]+a*(x21[m]+x31[m])+b*temp[m];
-  /* 15 Flops */
+    x[m]=x1[m]+a*x21[m]+b*x31[m]+c*temp[m];
+  /* 18 Flops */
 }
 
 void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
@@ -115,7 +115,8 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 	  break;
 	case F_DUMMY3:
 	  ak = ia[4];
-	  constr_dum3(x[ai],x[aj],x[ak],x[adum],a1,b1);
+	  c1 = ip[tp].dummy.c;
+	  constr_dum3(x[ai],x[aj],x[ak],x[adum],a1,b1,c1);
 	  break;
 	default:
 	  fatal_error(0,"No such dummy type %d in %s, line %d",
@@ -170,34 +171,29 @@ static void spread_dum2(rvec fa,rvec fb,rvec fc,rvec f,real a,real b,real c)
 }
 
 static void spread_dum3(rvec x1,rvec x2,rvec x3,
-			rvec fa,rvec fb,rvec fc,rvec f,real a,real b)
+			rvec fa,rvec fb,rvec fc,rvec f,real a,real b,real c)
 {
   rvec x21,x31,ffb,ffc;
-  real afx,afy,afz;
-  real bfx,bfy,bfz;
+  real cfx,cfy,cfz;
   int  m;
   
   rvec_sub(x2,x1,x21);
   rvec_sub(x3,x1,x31);
   /* 6 Flops */
     
-  afx=a*f[XX];
-  afy=a*f[YY];
-  afz=a*f[ZZ];
+  cfx=c*f[XX];
+  cfy=c*f[YY];
+  cfz=c*f[ZZ];
+  /* 3 Flops */
   
-  bfx=b*f[XX];
-  bfy=b*f[YY];
-  bfz=b*f[ZZ];
-  /* 6 Flops */
+  ffb[XX] =  a*f[XX]     - x31[ZZ]*cfy + x31[YY]*cfz;
+  ffb[YY] =  x31[ZZ]*cfx + a*f[YY]     - x31[XX]*cfz;
+  ffb[ZZ] = -x31[YY]*cfx + x31[XX]*cfy + a*f[ZZ];
   
-  ffb[XX] =  afx         - x31[ZZ]*bfy + x31[YY]*bfz;
-  ffb[YY] =  x31[ZZ]*bfx + afy         - x31[XX]*bfz;
-  ffb[ZZ] = -x31[YY]*bfx + x31[XX]*bfy + afz;
-  
-  ffc[XX] =  afx         + x21[ZZ]*bfy - x21[YY]*bfz;
-  ffc[YY] = -x21[ZZ]*bfx + afy         + x21[XX]*bfz;
-  ffc[ZZ] =  x21[YY]*bfx - x21[XX]*bfy + afz;
-  /* 24 Flops */
+  ffc[XX] =  b*f[XX]     + x21[ZZ]*cfy - x21[YY]*cfz;
+  ffc[YY] = -x21[ZZ]*cfx + b*f[YY]     + x21[XX]*cfz;
+  ffc[ZZ] =  x21[YY]*cfx - x21[XX]*cfy + b*f[ZZ];
+  /* 30 Flops */
     
   for(m=0; (m<DIM); m++) {
     fb[m]+=ffb[m];
@@ -254,7 +250,8 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef)
 	  break;
 	case F_DUMMY3:
 	  ak = ia[4];
-	  spread_dum3(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1);
+	  c1 = ip[tp].dummy.c;
+	  spread_dum3(x[ai],x[aj],x[ak],f[ai],f[aj],f[ak],f[adum],a1,b1,c1);
 	  nd3++;
 	  break;
 	default:
