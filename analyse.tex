@@ -48,18 +48,15 @@ example of $g_{AB}$) use {\tt make\_ndx}. To generate an index-file
 with angles or dihedrals, use {\tt mk\_angndx}. Of course you can also
 make them by hand. The general format is presented here:
 \begin{verbatim}
- 3    24
-group_1   3    0     1     2
-group_2   6    3     4     5     6     7     8
-group_3  15    9    10    11    12    13    14    15    16    17    
-18    19    20    21    22    23
+[ Oxygen ]
+   1       4       7 
+[ Hydrogen ]
+   2       3       5       6
+   8       9
 \end{verbatim}
-On the first line the number of groups (3) and the total number of elements 
-in the file (3+6+15=24) are given. Then all groups are given. 
-(It is not necessary to write each group at {\em one} line. The routine that 
-reads the index-file just skips line returns.) First the group-name is 
-written, followed by the number of elements in that group and the atom or 
-molecule numbers.
+First the group name is written between square brackets.
+The following atom numbers may spread out over as many lines as you like.
+The atom numbering starts from 1. 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Looking at your trajectory
 %
@@ -88,16 +85,14 @@ Postscript format, see fig.~\ref{fig:ngmxdump}.
 \label{sec:genprop}
 \begin{verbatim}
 g_ener
-g_pvd
 g_com
 \end{verbatim}
-To analyse some or all {\em energies} in your simulation in time, use the 
-program {\tt g\_ener}. You can choose interactively from a list a set 
+To analyse {\em energies} or other properties, such as {\em total pressure,
+pressure tensor, density, box-volume} and {\em box-sizes}
+in your simulation in time, use the program {\tt g\_ener}.
+You can choose interactively from a list a set 
 of energies, like potential, kinetic or total energy. Individual 
 contributions, like Lennard-Jones or dihedral energies, can be printed as well.
-
-Other properties, such as {\em total pressure, pressure tensor, density, 
-box-volume} and {\em box-sizes} can be monitored by the program {\tt g\_pvd}.  
 
 The {\em centre-of-mass velocity}, defined as
 \beq
@@ -400,7 +395,7 @@ g_gyrate
 g_sgangle
 g_mindist
 g_mdmat
-mat2ps
+xpm2ps
 \end{verbatim}
 To have a rough measure for the compactness of a structure, you can calculate 
 the {\em radius of gyration} with the program {\tt g\_gyrate} as follows:
@@ -433,8 +428,11 @@ the program {\tt g\_mdmat}. This minimum distance between two residues
 A$_i$ and A$_j$ is defined as the smallest distance between any pair of 
 atoms (i $\in$ A$_i$, j $\in$ A$_j$).
 The output is a symmetrical matrix of smallest distances 
-between all residues. To visualize this matrix, you can convert it with 
-{\tt mat2ps} into a Postscript picture, see fig.~\ref{fig:mdmat}.
+between all residues.
+To visualize this matrix, you can use a program such as {\tt xv}.
+If you want to view the axes and legend or if you want to print
+the matrix, you can convert it with 
+{\tt xpm2ps} into a Postscript picture, see fig.~\ref{fig:mdmat}.
 %
 \begin{figure}
 \centerline{
@@ -453,15 +451,14 @@ in the structure, and e.g. forming of salt bridges.
 \label{sec:rmsd}
 \begin{verbatim}
 g_rms
-g_rms_mat
-g_run_rms
+g_rmsdist
 \end{verbatim}
-The {\em root mean square deviation} (RMSD) of certain atoms in a molecule
+The {\em root mean square deviation} ($RMSD$) of certain atoms in a molecule
 with respect to a reference structure can be calculated with the program 
 {\tt g\_rms} by least-square fitting the structure to the reference structure
-and subsequently calculating the RMSD (eq.~\ref{eq:rmsd}).
+($t_2 = 0$) and subsequently calculating the $RMSD$ (eq.~\ref{eq:rmsd}).
 \beq
-RMSD(t)	~=~ \left[\frac{1}{N} \sum_{i=1}^N ({\bf r}_i(t)-{\bf r}_i(0))^2 \right]^{\frac{1}{2}}
+RMSD(t_1,t_2) ~=~ \left[\frac{1}{N} \sum_{i=1}^N ({\bf r}_i(t_1)-{\bf r}_i(t_2))^2 \right]^{\frac{1}{2}}
 \label{eq:rmsd}
 \eeq
 where ${\bf r}_i(t)$ is the position of atom $i$ at time $t$.
@@ -470,8 +467,17 @@ of the $RMSD$; eg.: a protein is usually fitted on the backbone atoms
 (N,C$_{\alpha}$,C), but the $RMSD$ can be computed of the backbone
 or of the whole protein.
 
+Instead of comparing the structures to the initial structure at time $t=0$ 
+(so for example a crystal structure), one can also calculate eq.~\ref{eq:rmsd} 
+with a structure at time $t_2=t_1-\tau$.
+This gives some insight in the mobility as a function of $\tau$.
+Also a matrix can be made with the $RMSD$ as a function of $t_1$ and $t_2$,
+this gives a nice graphical impression of a trajectory.
+If there are transitions in a trajectory, they will clearly show up in
+such a matrix.
+
 Alternatively the $RMSD$ can be computed using a fit-free method with the 
-program {\tt g\_rms\_mat}:
+program {\tt g\_rmsdist}:
 \beq
 RMSD(t)	~=~	\left[\frac{1}{N^2}\sum_{i=1}^N	\sum_{j=1}^N	({\bf r}_{ij}(t)-{\bf r}_{ij}(0))^2\right]^{\frac{1}{2}}
 \label{eq:rmsdff}
@@ -479,15 +485,6 @@ RMSD(t)	~=~	\left[\frac{1}{N^2}\sum_{i=1}^N	\sum_{j=1}^N	({\bf r}_{ij}(t)-{\bf r
 where the {\em distance} {\bf r}$_{ij}$ between atoms at time $t$ 
 is compared with the distance between the same atoms at time $0$.
 
-In stead of comparing the structures to the initial structure at time $t=0$ 
-(so for example a cristal structure), one can also calculate eq.~\ref{eq:rmsd} 
-using a timeshift $\tau$:
-\beq
-RMSD(t;\tau) ~=~ \left[\frac{1}{N} \sum_{i=1}^N ({\bf r}_i(t)-{\bf r}_i(t-\tau))^2 \right]^{\frac{1}{2}}
-\label{eq:rmdstau}
-\eeq
-so comparing to a least-square structure at $t-\tau$. This gives some insight 
-in the mobility as a function of $\tau$. Use the program {\tt g\_run\_rms}.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 %
