@@ -83,7 +83,7 @@ static char *SRCID_physics_h = "$Id$";
 #define PRESFAC           (16.6054)             /* bar / pressure unity */
 #define ENM2DEBYE         48.0321               /* Convert electron nm  *
 						 * to debye             */
-
+#define DEBYE2ENM         0.02081941
 /* to convert from a acceleration in (e V)/(amu nm) */
 /* FIELDFAC is also Faraday's constant and E_CHARGE/(1e6 AMU) */
 #define FIELDFAC          (FARADAY/KILO)
