@@ -131,23 +131,34 @@ static void send_init(FILE *fp,
   }
 }
 
-static void send_coords(t_commrec *cr,int nviol,int nit,int k,
-			int natom,rvec x[],matrix box)
+static bool send_coords(t_commrec *cr,int nviol,int nit,int k,
+			int natom,rvec x[],matrix box,bool bKeep)
 {
+  bool bDone;
+
   debug_gmx();
   gmx_tx(0,record(cr->pid));
   gmx_tx_wait(0);
   
-  gmx_txs(0,record(nviol));
-  gmx_txs(0,record(nit));
-  gmx_txs(0,record(k));
-  gmx_txs(0,record(natom));
-  gmx_txs(0,array(x,natom));
-  gmx_txs(0,array(box,DIM));
+  gmx_rxs(0,record(bDone));
+  if (!bDone) {
+    debug_gmx();
+    gmx_txs(0,record(nviol));
+    gmx_txs(0,record(nit));
+    gmx_txs(0,record(k));
+    if (bKeep || (nviol == 0)) {
+      gmx_txs(0,record(natom));
+      gmx_txs(0,array(x,natom));
+      gmx_txs(0,array(box,DIM));
+    }
+  }
+  debug_gmx();
+  
+  return bDone;
 }
 
 static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
-		       rvec x[],matrix box)
+		       rvec x[],matrix box,bool bKeep,bool bDone)
 {
   int        pid,natom;
   
@@ -162,13 +173,18 @@ static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
   if ((pid >= cr->nprocs) || (pid <= 0))
     fatal_error(0,"Reading data from pid %d",pid);
       
-  gmx_rxs(pid,record(*nviol));
-  gmx_rxs(pid,record(*nit));
-  gmx_rxs(pid,record(*k));
-  gmx_rxs(pid,record(natom));
-  gmx_rxs(pid,array(x,natom));
-  gmx_rxs(pid,array(box,DIM));
-  
+  gmx_txs(pid,record(bDone));
+      
+  if (!bDone) {
+    gmx_rxs(pid,record(*nviol));
+    gmx_rxs(pid,record(*nit));
+    gmx_rxs(pid,record(*k));
+    if (bKeep || (*nviol == 0)) {
+      gmx_rxs(pid,record(natom));
+      gmx_rxs(pid,array(x,natom));
+      gmx_rxs(pid,array(box,DIM));
+    }
+  }
   return pid;
 }
 
@@ -176,7 +192,7 @@ void disco_slave(t_commrec *cr,FILE *fp)
 {
   t_correct *c;
   int       seed,nit,natom,nres,k,nviol;
-  bool      bKeep;
+  bool      bKeep,bDone;
   matrix    box;
   rvec      boxsize;
   rvec      *x,*xref,*xcenter;
@@ -194,7 +210,8 @@ void disco_slave(t_commrec *cr,FILE *fp)
   fprintf(fp,"Random seed   = %d\n",seed);
   
   snew(x,natom);
-  for(k=0; (TRUE); k++) {
+  bDone = FALSE;
+  for(k=0; (!bDone); k++) {
     /* Generate random box*/
     debug_gmx();
     rand_box(c->bBox,box,boxsize,nres,c->bCubic,&seed);
@@ -208,8 +225,7 @@ void disco_slave(t_commrec *cr,FILE *fp)
     nviol = shake_coords(fp,FALSE,k,natom,xref,x,&seed,box,c,&nit);
     
     debug_gmx();
-    if ((nviol == 0) || bKeep)
-      send_coords(cr,nviol,nit,k,natom,x,box);
+    bDone = send_coords(cr,nviol,nit,k,natom,x,box,bKeep);
   }
 }
 
@@ -262,17 +278,20 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
   ntry  = 0;
   tnit  = 0;
   debug_gmx();
-  for(k=0; (k<nstruct); k++) {
-    pid        = recv_coords(cr,&nviol,&nit,&kpid,x,box);
+  for(k=0; (k<nstruct); ) {
+    pid        = recv_coords(cr,&nviol,&nit,&kpid,x,box,keepfn,FALSE);
     bConverged = (nviol == 0);
     tnit      += nit;
+    ntry++;
     
-    if (bConverged)
+    if (bConverged) 
       nconvdist[nit]++;
     
     /*nvtest = quick_check(bVerbose ? fp : NULL,natom,x,box,c);*/
-    fprintf(stderr,"Structure %3d from CPU %3d had %8d violations"
-	    " after %5d iterations \n",kpid,pid,nviol,nit);
+    if ((k % 20) == 0)
+      fprintf(stderr,"%8s%6s%6s%8s%6s\n",
+	      "Struct","CPU","Str","nviol","niter");
+    fprintf(stderr,"%8d%6d%6d%8d%6d\n",k,pid,kpid,nviol,nit);
     
     if (bConverged || keepfn) {
       center_in_box(natom,x,wrbox,x);
@@ -286,7 +305,7 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
       
       k++;
     }
-    if (bPrintViol) {
+    if (bPrintViol && 0) {
       /* Print structure coloured by the violations */
       if (!atoms->pdbinfo)
 	snew(atoms->pdbinfo,natom);
@@ -298,6 +317,9 @@ void disco_master(t_commrec *cr,FILE *fp,char *outfn,char *keepfn,t_correct *c,
       ffclose(gp);
     }
   }
+  for(k=1; (k<cr->nprocs); k++)
+    pid = recv_coords(cr,&nviol,&nit,&kpid,x,box,keepfn,TRUE);
+
   close_trx(status);
   if (keepfn)
     close_trx(kstatus);

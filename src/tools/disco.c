@@ -418,7 +418,10 @@ int main(int argc,char *argv[])
 	     boxsize);
   }
   ffclose(stdlog);
-      
+#ifdef USE_MPI
+  if (PAR(cr))
+    MPI_Finalize();
+#endif
   if (MASTER(cr))
     thanx(stdout);
   
