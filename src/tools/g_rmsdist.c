@@ -267,7 +267,7 @@ static int analyze_noe_equivalent(char *eq_fn,
 	    /* skip matching atom */
 	    i=j;
 	  }
-	} while ( bEquiv );
+	} while ( bEquiv && i<isize-1 );
       } else 
 	bEquiv=FALSE;
       if (!bEquiv) {
