@@ -209,8 +209,13 @@ char *fileopt(unsigned long flag)
     strcpy(buf,"Output");
   else
     strcpy(buf,"Dunno");
-  if ((flag & ffOPT) == ffOPT)
-    strcat(buf,", Opt.");
+  if ((flag & ffOPT) == ffOPT) {
+    strcat(buf,", Opt");
+    if ((flag & ffSET) == ffSET) 
+      strcat(buf,"!");
+    else
+      strcat(buf,".");
+  }
   if ((flag & ffLIB) == ffLIB)
     strcat(buf,", Lib.");
     
