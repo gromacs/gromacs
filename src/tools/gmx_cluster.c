@@ -843,7 +843,10 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
       r = 0;
       if (nstr > 1) {
 	for(i=0; i<nstr; i++)
-	  r += rmsd[structure[i1]][structure[i]];
+	  if (i < i1)
+	    r += rmsd[structure[i]][structure[i1]];
+	  else
+	    r += rmsd[structure[i1]][structure[i]];
 	r /= (nstr - 1);
       }
       if ( r < midrmsd ) {
@@ -957,7 +960,7 @@ int gmx_cluster(int argc,char *argv[])
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     
-    "full linkage: add a structure to a cluster when its distance to any",
+    "single linkage: add a structure to a cluster when its distance to any",
     "element of the cluster is less than [TT]cutoff[tt].[PAR]",
     
     "Jarvis Patrick: add a structure to a cluster when this structure",
@@ -978,7 +981,7 @@ int gmx_cluster(int argc,char *argv[])
     "structures in pool.[PAR]",
     
     "When the clustering algorithm assigns each structure to exactly one",
-    "cluster (full linkage, Jarvis Patrick and gromos) and a trajectory",
+    "cluster (single linkage, Jarvis Patrick and gromos) and a trajectory",
     "file is supplied, the structure with",
     "the smallest average distance to the others or the average structure",
     "or all structures for each cluster will be written to a trajectory",
