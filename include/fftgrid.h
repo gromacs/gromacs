@@ -6,20 +6,6 @@
 #include "fftw.h"
 #include "complex.h"
 
-#ifdef USE_SGI_FFT
-
-/* Use SGI optimized routines */
-
-#include <fft.h>
-typedef real      t_fft_tp;
-#define GR_ASSIGN(gr,val)        gr=val
-#define GR_INC(gr,val)           gr+=val
-#define GR_MULT(gr,val)          gr*=val
-#define GR_VALUE(gr)             gr
-#define INDEX(i,j,k)             ((i)+(j)*la1+(k)*la12)
-
-#else
-
 /* Use FFTW */
 
 typedef t_complex t_fft_tp;
@@ -28,8 +14,6 @@ typedef t_complex t_fft_tp;
 #define GR_MULT(gr,val)          gr.re*=val
 #define GR_VALUE(gr)             gr.re
 #define INDEX(i,j,k)             ((i)*la12+(j)*la2+k)
-
-#endif
 
 typedef struct {
   t_fft_tp *ptr;
