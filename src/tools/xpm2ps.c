@@ -97,7 +97,7 @@ void get_params(char *mpin,t_psrec *psr)
   RTYPE("legendfontsize",	psr->legfontsize, 14.0);
   RTYPE("xbox",         	psr->xboxsize,    2.0);
   RTYPE("ybox",         	psr->yboxsize,    2.0);
-  RTYPE("boxspacing",           psr->boxspacing,  20.0);
+  RTYPE("matrixspacing",        psr->boxspacing,  20.0);
   RTYPE("xoffset",              psr->xoffs,       0.0);
   RTYPE("yoffset",              psr->yoffs,       0.0);
   ITYPE("x-major",      	psr->X.major,     20);
