@@ -692,13 +692,11 @@ void do_index(char *ndx,
   snew(ir->opts.nFreeze,nr);
   for(i=k=0; (i<nfreeze); i++)
     for(j=0; (j<DIM); j++,k++) {
-      ir->opts.nFreeze[i][j] = ((strcasecmp(ptr1[k],"Y")==0) ||
-				(strcasecmp(ptr1[k],"YES")==0));
+      ir->opts.nFreeze[i][j]=(strncasecmp(ptr1[k],"Y",1)==0);
       if (!ir->opts.nFreeze[i][j]) {
-	if ((strcasecmp(ptr1[k],"N") != 0) &&
-	    (strcasecmp(ptr1[k],"NO") != 0))
-	  fprintf(stderr,"Please use Y(ES) or N(O) for freezedim only (not %s)\n",
-		  ptr1[k]);
+	if (strncasecmp(ptr1[k],"N",1) != 0)
+	  fprintf(stderr,"Please use Y(ES) or N(O) for freezedim only "
+		  "(not %s)\n", ptr1[k]);
       }
     }
   for( ; (i<nr); i++)
@@ -744,4 +742,3 @@ void do_index(char *ndx,
   done_block(grps);
   sfree(grps);
 }
-
