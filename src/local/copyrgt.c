@@ -63,7 +63,8 @@ void head(FILE *out, char *fn)
   int i;
 
   fprintf(out,"/*\n");
-  fprintf(out," *       $Id$\n");
+  /* NOTE: the "" are to mislead CVS so it will not replace by version info */
+  fprintf(out," *       $""Id""$\n");
   for(i=0; (i<NH1); i++)
     fprintf(out,"%s\n",head1[i]);
   fprintf(out," *            %s\n",GromacsVersion());
@@ -73,7 +74,8 @@ void head(FILE *out, char *fn)
     fprintf(out,"%s\n",head2[i]);
 
   fprintf(out," * %s\n */\n",bromacs());
-  fprintf(out,"static *char SRCID = \"$Id$\"\n");
+  /* NOTE: the "" are to mislead CVS so it will not replace by version info */
+  fprintf(out,"static char *SRCID = \"$""Id""$\"\n");
 }
 
 void cr(char *fn)
