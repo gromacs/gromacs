@@ -149,22 +149,20 @@ int calc_dist()
   comment("Calculate distance vector"); 
 
   for(i=1;i<=loop.ni;i++)
-    for(j=1;j<=loop.nj;j++) {
-      /* first calculate dr */
-      for(m='x'; (m<='z'); m++) { 
-	subtract("d%c%d%d","i%c%d","j%c%d",m,i,j,m,i,m,j);
-	nflop ++;
-	if(DO_VECTORIZE && DO_FORCE) {
-	  assign(ARRAY(drbuf,m3),"d%c%d%d",m,i,j);
-	  increment("m3","1");
-	}
+      for(j=1;j<=loop.nj;j++) {
+          /* first calculate dr */
+          for(m='x'; (m<='z'); m++) { 
+              subtract("d%c%d%d","i%c%d","j%c%d",m,i,j,m,i,m,j);
+              nflop ++;
+              if(DO_VECTORIZE && DO_FORCE) {
+                  assign(ARRAY(drbuf,m3),"d%c%d%d",m,i,j);
+                  increment("m3","1");
+              }
+          }
+          nflop += calc_rsq(i,j);
       }
-      nflop += calc_rsq(i,j);
-      if(DO_VECTORIZE) /* calc square separately later, but we  */
-	increment("m","1"); /* need to know the number of items      */
-    }
-  
-  return nflop;
+
+   return nflop;
 }
 
 

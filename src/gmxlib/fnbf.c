@@ -203,14 +203,20 @@ static real *_buf2=NULL;
  
 
 #ifdef USE_LOCAL_BUFFERS
-  if (buflen==0) {
+  if (buflen==0) 
+  {
     buflen=VECTORIZATION_BUFLENGTH;
     snew(drbuf,3*buflen);
     snew(_buf1,buflen+31);
     snew(_buf2,buflen+31);
-    /* use cache aligned buffer pointers */
+    /* use cache aligned buffer pointers when we might call SSE/Altivec */
+#if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2 || defined USE_PPC_ALTIVEC)
     buf1=(real *) ( ( (unsigned long int)_buf1 + 31 ) & (~0x1f) );	 
     buf2=(real *) ( ( (unsigned long int)_buf2 + 31 ) & (~0x1f) );	 
+#else
+    buf1 = _buf1;
+    buf2 = _buf2;
+#endif
     fprintf(fplog,"Using buffers of length %d for innerloop vectorization.\n",buflen);
   }
 #endif
@@ -258,9 +264,14 @@ static real *_buf2=NULL;
     	srenew(drbuf,3*buflen);
     	srenew(_buf1,buflen+31);
     	srenew(_buf2,buflen+31);
-        /* make cache aligned buffer pointers */
+        /* use cache aligned buffer pointers when we might call SSE/Altivec */
+#if (defined USE_X86_SSE_AND_3DNOW || defined USE_X86_SSE2 || defined USE_PPC_ALTIVEC)
         buf1=(real *) ( ( (unsigned long int)_buf1 + 31 ) & (~0x1f) );	 
         buf2=(real *) ( ( (unsigned long int)_buf2 + 31 ) & (~0x1f) );	 
+#else
+        buf1 = _buf1;
+        buf2 = _buf2;
+#endif
       }	
 #endif
 
