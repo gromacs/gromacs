@@ -480,9 +480,9 @@ static void spread_dum4FD(rvec xi,rvec xj,rvec xk,rvec xl,
   /* 9 flops */
   
   /* xix goes from i to point x on the plane jkl */  
-  xix[XX]=xij[XX]+a*xjk[XX]+b*xjk[XX];
-  xix[YY]=xij[YY]+a*xjk[YY]+b*xjk[YY];
-  xix[ZZ]=xij[ZZ]+a*xjk[ZZ]+b*xjk[ZZ];
+  xix[XX]=xij[XX]+a*xjk[XX]+b*xjl[XX];
+  xix[YY]=xij[YY]+a*xjk[YY]+b*xjl[YY];
+  xix[ZZ]=xij[ZZ]+a*xjk[ZZ]+b*xjl[ZZ];
   /* 12 flops */
   
   invl=invsqrt(iprod(xix,xix));
