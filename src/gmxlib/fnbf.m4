@@ -415,11 +415,15 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
         inc_nrnb(nrnb,eNR_INL_IATOM,9*nlist->nri);
       else if(nlist->solvent==esolMNO) 
         inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nsatoms[0]*nlist->nri);
-	/* use size of first solvent as approximation qfor all molecules */
+	/* use size of first solvent as approximation for all molecules */
       else		
         inc_nrnb(nrnb,eNR_INL_IATOM,nlist->nri);	
       	
-      inc_nrnb(nrnb,nrnb_ind,nlist->nrj);
+      if(nlist->solvent==esolMNO) 
+        inc_nrnb(nrnb,nrnb_ind,nlist->nsatoms[0]*nlist->nrj);
+	/* use size of first solvent as approximation for all molecules */
+      else		
+        inc_nrnb(nrnb,nrnb_ind,nlist->nrj);
     }
   }
 }
