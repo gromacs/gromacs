@@ -885,27 +885,27 @@ There are three ways to construct dummies from surrounding atoms in {\gromacs}:
 
 \item	As a non-linear combination of three atoms:
 \beq
-	\ve{r} ~=~ \ve{r}_i + a (\ve{r}_{ij} ~+~ \ve{r}_{ik}) +
-		b (\ve{r}_{ij} ~\times~ \ve{r}_{ik})
+	\ve{r} ~=~ \ve{r}_i + a \ve{r}_{ij} + b \ve{r}_{ik} +
+		c (\ve{r}_{ij} ~\times~ \ve{r}_{ik})
 \eeq
 	this enables the construction of dummies out of the plane of the
 	other atoms.
 	The force on particles $i,j$ and $k$ due to the force on the dummy
 	can be computed as:
-
+\undercons
 \beq
 \ve{F}_j^{distr} = \left[\begin{array}{ccc}
- a 		&  -b\,z_{ik}	& b\,y_{ik}	\\[4mm]
- b\,z_{ik} 	&   a 		& -b\,x_{ik}	\\[4mm]
--b\,y_{ik} 	&   b\,x_{ik} 	& a
+ a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[4mm]
+ c\,z_{ik} 	&   a 		& -c\,x_{ik}	\\[4mm]
+-c\,y_{ik} 	&   c\,x_{ik} 	& a
 \end{array}\right]\ve{F}
 \eeq
 
 \beq
 \ve{F}_k^{distr} = \left[\begin{array}{ccc}
- a 		&   b\,z_{ij}	& -b\,y_{ij}	\\[4mm]
--b\,z_{ij} 	&   a 		& b\,x_{ij}	\\[4mm]
- b\,y_{ij} 	&  -b\,x_{ij} 	& a
+ b 		&   c\,z_{ij}	& -c\,y_{ij}	\\[4mm]
+-c\,z_{ij} 	&   b 		& c\,x_{ij}	\\[4mm]
+ c\,y_{ij} 	&  -c\,x_{ij} 	& b
 \end{array}\right]\ve{F}
 \eeq
 
