@@ -1,0 +1,16 @@
+This directory contains single-precision Gromacs
+loops where the innermost loops have been modulo-scheduled
+for the Itanium2 (4 cycle FP latency). For this reason they
+should NOT be used on Merced (Itanium1) - they might even
+be slower than C code in that case due to all the stalls.
+
+On McKinley they achieve over 90% of the peak floating point
+performance of the machine when running real neighborlists
+and small size systems. The only reason why it is not 98-100%
+is that there are always empty slots in the software pipeline
+at the start and end of each inner loop.
+If Intel ever increases the FP latencies, the innermost loop
+might need rescheduling.
+
+
+
