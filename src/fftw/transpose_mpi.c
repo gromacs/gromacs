@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,27 +22,16 @@
 
 #include <mpi.h>
 
-#include "transpose_mpi.h"
+#include <fftw_mpi.h>
 
+#include "sched.h"
 #include "TOMS_transpose.h"
+
+/**************************************************************************/
 
 static int transpose_mpi_get_block_size(int n, int n_pes)
 {
-     if (n_pes > n)
-	  n_pes = n;
-
      return((n + n_pes - 1) / n_pes);
-}
-
-static int gcd(int a, int b)
-{
-	int r;
-	do {
-		r = a % b;
-		a = b;
-		b = r;
-	} while (r != 0);
-	return a;
 }
 
 void transpose_mpi_get_local_size(int n, int my_pe, int n_pes,
@@ -50,90 +39,64 @@ void transpose_mpi_get_local_size(int n, int my_pe, int n_pes,
 {
      int block_size;
 
-     if (n_pes > n)
-	  n_pes = n;
-
      block_size = transpose_mpi_get_block_size(n,n_pes);
-     *local_start = my_pe * block_size;
+     n_pes = (n + block_size - 1) / block_size;
 
-     if (*local_start >= n)
+     if (my_pe >= n_pes) {
 	  *local_n = 0;
-     else if (*local_start + block_size >= n)
+	  *local_start = 0;
+     }
+     else {
+	  *local_start = my_pe * block_size;
+	  if (my_pe == n_pes - 1)
 	  *local_n = n - *local_start;
      else
 	  *local_n = block_size;
+     }
 }
+
+#define MAX2(a,b) ((a) > (b) ? (a) : (b))
 
 int transpose_mpi_get_local_storage_size(int nx, int ny,
 					 int my_pe, int n_pes)
 {
      int local_nx, local_ny, local_x_start, local_y_start;
 
-     /* bug fix 3/26/98: force all processors to use the maximum
-	local storage (the storage used by process 0).  Otherwise,
-	the pad_blocks routine would go past the end of the array
-	in some cases (e.g. 5x24 on 4 processors) 
-	-- this is a quick hack, but oh well */
-     my_pe = 0;
-
      transpose_mpi_get_local_size(nx,my_pe,n_pes,&local_nx,&local_x_start);
      transpose_mpi_get_local_size(ny,my_pe,n_pes,&local_ny,&local_y_start);
 
-     if (local_nx*ny > nx*local_ny)
-	  return (local_nx*ny);
-     else
-	  return (nx*local_ny);
+     return MAX2(1, MAX2(local_nx*ny, nx*local_ny));
 }
 
-static int sort_block_compare(int src_pe, int dest_pe1, int dest_pe2)
+static int gcd(int a, int b)
 {
-     int xor1,xor2;
-
-     xor1 = src_pe ^ dest_pe1;
-     xor2 = src_pe ^ dest_pe2;
-     if (xor1 > xor2)
-	  return 1;
-     else if (xor1 < xor2)
-	  return -1;
-     else
-	  return 0;
+        int r;
+        do {
+                r = a % b;
+                a = b;
+                b = r;
+        } while (r != 0);
+        return a;
 }
 
-static void sort_block_dests(int my_pe,
-			     transpose_mpi_block_dest *block_dest,
-			     int num_blocks)
-{
-     transpose_mpi_block_dest swap;
-     int i,j;
-
-     /* Do a simple N^2 sort of the blocks: */
-     for (i = 0; i < num_blocks-1; ++i)
-	  for (j = i+1; j < num_blocks; ++j)
-	       if (sort_block_compare(my_pe,
-				      block_dest[i].dest_pe,
-				      block_dest[j].dest_pe) > 0) {
-		    swap = block_dest[i];
-		    block_dest[i] = block_dest[j];
-		    block_dest[j] = swap;
-	       }
-}
-
-#define WHICH_PE(dest_i,i_block_size) ((dest_i)/(i_block_size))
+/**************************************************************************/
 
 transpose_mpi_plan transpose_mpi_create_plan(int nx, int ny,
 					     MPI_Comm transpose_comm)
 {
      transpose_mpi_plan p;
-     int my_pe, n_pes;
+     int my_pe, n_pes, pe;
      int x_block_size, local_nx, local_x_start;
      int y_block_size, local_ny, local_y_start;
-     transpose_mpi_block_dest *block_dest = 0;
-     int block, block_size = 0, num_blocks = 0;
-     int block_size_padded = 0;
-     int *perm_block_dest = 0;
+     transpose_mpi_exchange *exchange = 0;
+     int step, send_block_size = 0, recv_block_size = 0, num_steps = 0;
+     int **sched, sched_npes, sched_sortpe, sched_sort_ascending = 0;
+     int *perm_block_dest = NULL;
      int num_perm_blocks = 0, perm_block_size = 0, perm_block;
-     int move_size;
-     char *move = 0;
+     char *move = NULL;
+     int move_size = 0;
+     int *send_block_sizes = 0, *send_block_offsets = 0;
+     int *recv_block_sizes = 0, *recv_block_offsets = 0;
      MPI_Comm comm;
 
      /* create a new "clone" communicator so that transpose
@@ -143,121 +106,142 @@ transpose_mpi_plan transpose_mpi_create_plan(int nx, int ny,
      MPI_Comm_rank(comm,&my_pe);
      MPI_Comm_size(comm,&n_pes);
 
+     /* work space for in-place transpose routine: */
+     move_size = (nx + ny) / 2;
+     move = (char *) fftw_malloc(sizeof(char) * move_size);
+
      x_block_size = transpose_mpi_get_block_size(nx,n_pes);
      transpose_mpi_get_local_size(nx,my_pe,n_pes,&local_nx,&local_x_start);
      y_block_size = transpose_mpi_get_block_size(ny,n_pes);
      transpose_mpi_get_local_size(ny,my_pe,n_pes,&local_ny,&local_y_start);
 
-     if (local_nx > 0 || local_ny > 0) {
-
+     /* allocate pre-computed post-transpose permutation: */
      perm_block_size = gcd(nx,x_block_size);
      num_perm_blocks = (nx / perm_block_size) * local_ny;
-     {
-	  int tmp = (local_nx / perm_block_size) * ny;
-	  if (tmp > num_perm_blocks)
-	       num_perm_blocks = tmp;
-     }
-
-     perm_block_dest = (int *) malloc(sizeof(int) * num_perm_blocks);
-     if (!perm_block_dest)
-	  return 0;
-
+     perm_block_dest = (int *) fftw_malloc(sizeof(int) * num_perm_blocks);
      for (perm_block = 0; perm_block < num_perm_blocks; ++perm_block)
 	  perm_block_dest[perm_block] = num_perm_blocks; 
 
-     block_size = local_nx * y_block_size;
+     /* allocate block sizes/offsets arrays for out-of-place transpose: */
+     send_block_sizes = (int *) fftw_malloc(n_pes * sizeof(int));
+     send_block_offsets = (int *) fftw_malloc(n_pes * sizeof(int));
+     recv_block_sizes = (int *) fftw_malloc(n_pes * sizeof(int));
+     recv_block_offsets = (int *) fftw_malloc(n_pes * sizeof(int));
+     for (step = 0; step < n_pes; ++step)
+	  send_block_sizes[step] = send_block_offsets[step] =
+	       recv_block_sizes[step] = recv_block_offsets[step] = 0;
 
-     num_blocks = n_pes;
+     if (local_nx > 0 || local_ny > 0) {
 
-     block_dest = (transpose_mpi_block_dest *)
-	  malloc(num_blocks * sizeof(transpose_mpi_block_dest));
-     if (!block_dest) {
-	  free(perm_block_dest);
+     sched_npes = n_pes;
+     sched_sortpe = -1;
+     for (pe = 0; pe < n_pes; ++pe) {
+	  int pe_nx, pe_x_start, pe_ny, pe_y_start;
+
+	  transpose_mpi_get_local_size(nx,pe,n_pes,
+				       &pe_nx,&pe_x_start);
+	  transpose_mpi_get_local_size(ny,pe,n_pes,
+				       &pe_ny,&pe_y_start);
+
+	  if (pe_nx == 0 && pe_ny == 0) {
+	       sched_npes = pe;
+	       break;
+	  }
+	  else if (pe_nx * y_block_size != pe_ny * x_block_size
+		   && pe_nx != 0 && pe_ny != 0) {
+	       if (sched_sortpe != -1)
+		    fftw_mpi_die("BUG: More than one PE needs sorting!\n");
+	       sched_sortpe = pe;
+	       sched_sort_ascending = 
+		    pe_nx * y_block_size > pe_ny * x_block_size;
+	  }
+     }
+
+     sched = make_comm_schedule(sched_npes);
+     if (!sched) {
+	  MPI_Comm_free(&comm);
 	  return 0;
      }
 
-     if (local_nx < x_block_size && block_size < local_ny * x_block_size)
-	  block_size_padded = local_ny * x_block_size;
-     else
-	  block_size_padded = block_size;
+     if (sched_sortpe != -1) {
+	  sort_comm_schedule(sched,sched_npes,sched_sortpe);
+	  if (!sched_sort_ascending)
+	       invert_comm_schedule(sched,sched_npes);
+     }
 
-     for (block = 0; block < num_blocks; ++block) {
-	  int block_x, block_y, block_new_x, block_new_y;
-	  int num_perm_blocks_received, num_perm_rows_received;
+     send_block_size = local_nx * y_block_size;
+     recv_block_size = local_ny * x_block_size;
+
+     num_steps = sched_npes;
+
+     exchange = (transpose_mpi_exchange *)
+	  fftw_malloc(num_steps * sizeof(transpose_mpi_exchange));
+     if (!exchange) {
+	  free_comm_schedule(sched,sched_npes);
+	  MPI_Comm_free(&comm);
+	  return 0;
+     }
+
+     for (step = 0; step < sched_npes; ++step) {
 	  int dest_pe;
+	  int dest_nx, dest_x_start;
+	  int dest_ny, dest_y_start;
+	  int num_perm_blocks_received, num_perm_rows_received;
 	  
-	  block_x = local_x_start;
-	  block_y = block * y_block_size;
+	  exchange[step].dest_pe = dest_pe =
+	       exchange[step].block_num = sched[my_pe][step];
 
-	  block_dest[block].block_num = block;
-
-	  if (block_y >= ny)
-	       block_dest[block].send_size = 0;
-	  else if (block_y + y_block_size >= ny) /* the last block */
-	       block_dest[block].send_size = local_nx*ny - block*block_size;
-	  else
-	       block_dest[block].send_size = block_size;
-
-	  dest_pe = block;
-
-	  if (dest_pe == my_pe) {
-	       block_dest[block].dest_pe = dest_pe;
-	       block_dest[block].recv_size = 
-		    block_dest[block].send_size;
-	       block_new_x = block_x;
-	       block_new_y = block_y;
-	  }
-	  else {
-	       int dest_nx, dest_x_start;
+	  if (exchange[step].block_num == -1)
+	       fftw_mpi_die("BUG: schedule ended too early.\n");
 
 	       transpose_mpi_get_local_size(nx,dest_pe,n_pes,
 					    &dest_nx,&dest_x_start);
+	  transpose_mpi_get_local_size(ny,dest_pe,n_pes,
+				       &dest_ny,&dest_y_start);
 	       
-	       block_dest[block].dest_pe = dest_pe;
-	       block_new_x = dest_x_start;
-	       block_new_y = local_y_start;
-	       block_dest[block].recv_size = dest_nx * local_ny;
-	  }
+	  exchange[step].send_size = local_nx * dest_ny;
+	  exchange[step].recv_size = dest_nx * local_ny;
 	  
-	  if (block_dest[block].recv_size > 0) {
-	       num_perm_blocks_received = block_dest[block].recv_size /
-		    perm_block_size;
+	  send_block_sizes[dest_pe] = exchange[step].send_size;
+	  send_block_offsets[dest_pe] = dest_pe * send_block_size;
+	  recv_block_sizes[dest_pe] = exchange[step].recv_size;
+	  recv_block_offsets[dest_pe] = dest_pe * recv_block_size;
+
+	  /* Precompute the post-transpose permutation (ugh): */
+          if (exchange[step].recv_size > 0) {
+               num_perm_blocks_received =
+		    exchange[step].recv_size / perm_block_size;
 	       num_perm_rows_received = num_perm_blocks_received / local_ny;
 
 	       for (perm_block = 0; perm_block < num_perm_blocks_received;
 		    ++perm_block) {
 		    int old_block, new_block;
 		    
-		    old_block = perm_block + 
-			 block * (block_size_padded / perm_block_size);
+                    old_block = perm_block + exchange[step].block_num *
+                         (recv_block_size / perm_block_size);
 		    new_block = perm_block % num_perm_rows_received +
-			 block_new_x / perm_block_size +
-			 (block_new_y - local_y_start + 
-			  perm_block / num_perm_rows_received) 
+                         dest_x_start / perm_block_size +
+                         (perm_block / num_perm_rows_received)
 			 * (nx / perm_block_size);
 		    
+		    if (old_block >= num_perm_blocks ||
+			new_block >= num_perm_blocks)
+			 fftw_mpi_die("bad block index in permutation!");
+
 		    perm_block_dest[old_block] = new_block;
 	       }
 	  }
      }
 
-     sort_block_dests(my_pe,block_dest,num_blocks);
+     free_comm_schedule(sched,sched_npes);
 
-     move_size = (local_nx + ny)/ 2;
-     move = (char *) malloc(move_size*sizeof(char));
-     if (!move) {
-          free(block_dest);
-          free(perm_block_dest);
-          return 0;
-     }
+     } /* if (local_nx > 0 || local_ny > 0) */
 
-     }
-
-     p = (transpose_mpi_plan) malloc(sizeof(transpose_mpi_plan_struct));
+     p = (transpose_mpi_plan) 
+	  fftw_malloc(sizeof(transpose_mpi_plan_struct));
      if (!p) {
-          free(block_dest);
-	  free(perm_block_dest);
-	  free(move);
+          fftw_free(exchange);
+	  MPI_Comm_free(&comm);
 	  return 0;
      }
 
@@ -267,36 +251,76 @@ transpose_mpi_plan transpose_mpi_create_plan(int nx, int ny,
 
      p->my_pe = my_pe; p->n_pes = n_pes;
 
-     p->block_dest = block_dest;
-     p->block_size = block_size;
-     p->block_size_padded = block_size_padded;
-     p->num_blocks = num_blocks;
+     p->exchange = exchange;
+     p->send_block_size = send_block_size;
+     p->recv_block_size = recv_block_size;
+     p->num_steps = num_steps;
 
      p->perm_block_dest = perm_block_dest;
      p->num_perm_blocks = num_perm_blocks;
      p->perm_block_size = perm_block_size;
 
-     p->move_size = move_size;
      p->move = move;
+     p->move_size = move_size;
+
+     p->send_block_sizes = send_block_sizes;
+     p->send_block_offsets = send_block_offsets;
+     p->recv_block_sizes = recv_block_sizes;
+     p->recv_block_offsets = recv_block_offsets;
+
+     p->all_blocks_equal = send_block_size * n_pes * n_pes == nx * ny &&
+	                   recv_block_size * n_pes * n_pes == nx * ny;
+     if (p->all_blocks_equal)
+	  for (step = 0; step < n_pes; ++step)
+	       if (send_block_sizes[step] != send_block_size ||
+		   recv_block_sizes[step] != recv_block_size) {
+		    p->all_blocks_equal = 0;
+		    break;
+	       }
+     if (nx % n_pes == 0 && ny % n_pes == 0 && !p->all_blocks_equal)
+	  fftw_mpi_die("n_pes divided dimensions but blocks are unequal!");
+
+     /* Set the type constant for passing to the MPI routines;
+	here, we assume that TRANSPOSE_EL_TYPE is one of the
+	floating-point types. */
+     if (sizeof(TRANSPOSE_EL_TYPE) == sizeof(double))
+	  p->el_type = MPI_DOUBLE;
+     else if (sizeof(TRANSPOSE_EL_TYPE) == sizeof(float))
+	  p->el_type = MPI_FLOAT;
+     else
+	  fftw_mpi_die("Unknown TRANSPOSE_EL_TYPE!\n");
 
      return p;
 }
 
+/**************************************************************************/
+
 void transpose_mpi_destroy_plan(transpose_mpi_plan p)
 {
      if (p) {
-	  if (p->block_dest)
-	       free(p->block_dest);
+	  if (p->exchange)
+	       fftw_free(p->exchange);
 	  if (p->perm_block_dest)
-	       free(p->perm_block_dest);
+               fftw_free(p->perm_block_dest);
 	  if (p->move)
-	    free(p->move);
+	       fftw_free(p->move);
+	  if (p->send_block_sizes)
+	       fftw_free(p->send_block_sizes);
+	  if (p->send_block_offsets)
+	       fftw_free(p->send_block_offsets);
+	  if (p->recv_block_sizes)
+	       fftw_free(p->recv_block_sizes);
+	  if (p->recv_block_offsets)
+	       fftw_free(p->recv_block_offsets);
           MPI_Comm_free(&p->comm);
-	  free(p);
+	  fftw_free(p);
      }
 }
 
-static void exchange_elements(TRANSPOSE_EL_TYPE *buf1, TRANSPOSE_EL_TYPE *buf2, int n)
+/**************************************************************************/
+
+static void exchange_elements(TRANSPOSE_EL_TYPE *buf1,
+			      TRANSPOSE_EL_TYPE *buf2, int n)
 {
      int i;
      TRANSPOSE_EL_TYPE t0,t1,t2,t3;
@@ -333,7 +357,7 @@ static void do_permutation(TRANSPOSE_EL_TYPE *data,
 	the cycles around and *changing* the perm_block_dest array
 	to reflect the permutations that have already been performed.
 	At the end of this routine, we change the perm_block_dest
-	array back to its original state. */
+        array back to its original state. (ugh) */
 
      for (start_block = 0; start_block < num_perm_blocks; ++start_block) {
 	  int cur_block = start_block;
@@ -353,163 +377,267 @@ static void do_permutation(TRANSPOSE_EL_TYPE *data,
 	       perm_block_dest[cur_block] = -1 - new_block;
      }
 
-     /* reset the permutation array: */
+     /* reset the permutation array (ugh): */
      for (start_block = 0; start_block < num_perm_blocks; ++start_block)
 	  perm_block_dest[start_block] = -1 - perm_block_dest[start_block];
 }
 
-static void move_elements_forward(TRANSPOSE_EL_TYPE *buf1, TRANSPOSE_EL_TYPE *buf2, int n)
+TRANSPOSE_EL_TYPE *transpose_allocate_send_buf(transpose_mpi_plan p,
+					       int el_size)
 {
-     int i;
+     TRANSPOSE_EL_TYPE *send_buf = 0;
 
-     for (i = 0; i < (n & 3); ++i)
-	  buf2[n-1-i] = buf1[n-1-i];
-     for (i=n-1-i; i >= 0; i -= 4) {
-	  buf2[i] = buf1[i];
-	  buf2[i-1] = buf1[i-1];
-	  buf2[i-2] = buf1[i-2];
-	  buf2[i-3] = buf1[i-3];
+     /* allocate the send buffer: */
+     if (p->send_block_size > 0) {
+          send_buf = (TRANSPOSE_EL_TYPE *)
+               fftw_malloc(p->send_block_size * el_size
+                                * sizeof(TRANSPOSE_EL_TYPE));
+          if (!send_buf)
+               fftw_mpi_die("Out of memory!\n");
      }
+
+     return send_buf;
 }
 
-static void pad_blocks(TRANSPOSE_EL_TYPE *data, int block_size, int total_size, int shift)
+void transpose_in_place_local(transpose_mpi_plan p,
+			      int el_size, TRANSPOSE_EL_TYPE *local_data,
+			      transpose_in_place_which which)
 {
-     int num_blocks = total_size / block_size;
-     int last_block_size = total_size % block_size;
-     int block;
+     switch (which) {
+	 case BEFORE_TRANSPOSE:
+	      if (el_size == 1)
+		   TOMS_transpose_2d(local_data,
+				     p->local_nx, p->ny,
+				     p->move, p->move_size);
+	      else
+		   TOMS_transpose_2d_arbitrary(local_data,
+					       p->local_nx, p->ny,
+					       el_size,
+					       p->move, p->move_size);
+	      break;
+	 case AFTER_TRANSPOSE:
+	      do_permutation(local_data, p->perm_block_dest,
+			     p->num_perm_blocks, p->perm_block_size * el_size);
+	      break;
+     }
+}			      
 
-     if (last_block_size != 0)
-	  move_elements_forward(data+block_size*num_blocks,
-			       data+block_size*num_blocks+shift*num_blocks,
-			       last_block_size);
-     for (block = num_blocks - 1; block > 0; --block)
-	  move_elements_forward(data+block_size*block,
-			       data+block_size*block+shift*block,
-			       block_size);
-}
+/**************************************************************************/
 
-void transpose_mpi(transpose_mpi_plan p, TRANSPOSE_EL_TYPE *local_data, int el_size)
+static void local_transpose_copy(TRANSPOSE_EL_TYPE *src, 
+				 TRANSPOSE_EL_TYPE *dest,
+				 int el_size, int nx, int ny)
 {
-     int my_pe, n_pes;
-     int nx, ny, local_nx, local_ny;
-     transpose_mpi_block_dest *block_dest;
-     int block_size, num_blocks, block, blk_num;
-     int block_size_padded;
-     int *perm_block_dest, num_perm_blocks, perm_block_size;
-     MPI_Comm comm;
-     TRANSPOSE_EL_TYPE *send_buf;
+     int x, y;
 
-     my_pe = p->my_pe;
-     n_pes = p->n_pes;
-     nx = p->nx;
-     ny = p->ny;
-     local_nx = p->local_nx;
-     local_ny = p->local_ny;
-
-     if (local_nx > 0 || local_ny > 0) {
-
-     block_dest = p->block_dest;
-     block_size = p->block_size;
-     block_size_padded = p->block_size_padded;
-     num_blocks = p->num_blocks;
-     perm_block_dest = p->perm_block_dest;
-     num_perm_blocks = p->num_perm_blocks;
-     perm_block_size = p->perm_block_size;
-     comm = p->comm;
-
-     /* first, transpose the local data: */
-
-     if (local_nx > 0) {
 	  if (el_size == 1)
-	       TOMS_transpose_2d(local_data,local_nx,ny,p->move,p->move_size);
+	  for (x = 0; x < nx; ++x)
+	       for (y = 0; y < ny; ++y)
+		    dest[y * nx + x] = src[x * ny + y];
+     else if (el_size == 2)
+	  for (x = 0; x < nx; ++x)
+	       for (y = 0; y < ny; ++y) {
+		    dest[y * (2 * nx) + 2*x]     = src[x * (2 * ny) + 2*y];
+		    dest[y * (2 * nx) + 2*x + 1] = src[x * (2 * ny) + 2*y + 1];
+	       }
 	  else
-	       TOMS_transpose_2d_arbitrary(local_data,local_nx,ny,el_size,
-					   p->move,p->move_size);
+	  for (x = 0; x < nx; ++x)
+	       for (y = 0; y < ny; ++y)
+		    memcpy(&dest[y * (el_size*nx) + (el_size*x)],
+			   &src[x * (el_size*ny) + (el_size*y)],
+			   el_size * sizeof(TRANSPOSE_EL_TYPE));
+
+}
+
+/* Out-of-place version of transpose_mpi (or rather, in place using
+   a scratch array): */
+static void transpose_mpi_out_of_place(transpose_mpi_plan p, int el_size,
+				       TRANSPOSE_EL_TYPE *local_data,
+				       TRANSPOSE_EL_TYPE *work)
+{
+     local_transpose_copy(local_data, work, el_size, p->local_nx, p->ny);
+
+     if (p->all_blocks_equal)
+	  MPI_Alltoall(work, p->send_block_size * el_size, p->el_type,
+		       local_data, p->recv_block_size * el_size, p->el_type,
+		       p->comm);
+     else {
+	  int i, n_pes = p->n_pes;
+
+	  for (i = 0; i < n_pes; ++i) {
+	       p->send_block_sizes[i] *= el_size;
+	       p->recv_block_sizes[i] *= el_size;
+	       p->send_block_offsets[i] *= el_size;
+	       p->recv_block_offsets[i] *= el_size;
+     }
+	  MPI_Alltoallv(work, p->send_block_sizes, p->send_block_offsets,
+			p->el_type,
+			local_data, p->recv_block_sizes, p->recv_block_offsets,
+			p->el_type,
+			p->comm);
+	  for (i = 0; i < n_pes; ++i) {
+	       p->send_block_sizes[i] /= el_size;
+	       p->recv_block_sizes[i] /= el_size;
+	       p->send_block_offsets[i] /= el_size;
+	       p->recv_block_offsets[i] /= el_size;
+	  }
      }
 
-     /* on last PE, may need to add padding in between blocks */
-     if (block_size != block_size_padded && block_size > 0) {
-	  int shift_size = block_size_padded - block_size;
+     do_permutation(local_data, p->perm_block_dest, p->num_perm_blocks,
+		    p->perm_block_size * el_size);
+}
 
-	  pad_blocks(local_data,
-		     block_size*el_size,
-		     local_nx*ny*el_size,
-		     shift_size*el_size);
-     }
+/**************************************************************************/
 
-     /* now, exchange the blocks between processors*/
+void transpose_mpi(transpose_mpi_plan p, int el_size,
+		   TRANSPOSE_EL_TYPE *local_data,
+		   TRANSPOSE_EL_TYPE *work)
+{
+     /* if local_data and work are both NULL, we have no way of knowing
+	whether we should use in-place or out-of-place transpose routine;
+	if we guess wrong, MPI_Alltoall will block.  We prevent this
+	by making sure that transpose_mpi_get_local_storage_size returns
+	at least 1. */
+     if (!local_data && !work)
+	  fftw_mpi_die("local_data and work are both NULL!");
 
-     send_buf = 0;
-     
-     for (block = 0; block < num_blocks; ++block)
-	  if (block_dest[block].dest_pe != my_pe) {
-	       MPI_Status status;
+     if (work)
+	  transpose_mpi_out_of_place(p, el_size, local_data, work);
+     else if (p->local_nx > 0 || p->local_ny > 0) {
+	  int step;
+	  TRANSPOSE_EL_TYPE *send_buf = transpose_allocate_send_buf(p,el_size);
+
+	  transpose_in_place_local(p, el_size, local_data, BEFORE_TRANSPOSE);
+
+	  for (step = 0; step < p->num_steps; ++step) {
+               transpose_finish_exchange_step(p, step - 1);
 	       
-	       blk_num = block_dest[block].block_num;
+               transpose_start_exchange_step(p, el_size, local_data,
+                                             send_buf, step, TRANSPOSE_SYNC);
+     }
 
-	       if (block_dest[block].send_size > 0 &&
-		   block_dest[block].send_size == block_dest[block].recv_size)
-		    MPI_Sendrecv_replace(local_data + 
-					 el_size*block_size_padded*blk_num,
-				    block_dest[block].send_size * el_size,
-				    MPI_TRANSPOSE_EL_TYPE_CONSTANT,
-				    block_dest[block].dest_pe, blk_num,
-				    block_dest[block].dest_pe, MPI_ANY_TAG,
-				    comm,
-				    &status);
-	       else if (block_dest[block].send_size > 0 &&
-			block_dest[block].recv_size == 0)
-		    MPI_Send(local_data +
-			     el_size*block_size_padded*blk_num,
-			     block_dest[block].send_size * el_size,
-			     MPI_TRANSPOSE_EL_TYPE_CONSTANT,
-			     block_dest[block].dest_pe, blk_num,
-			     comm);
-	       else if (block_dest[block].send_size == 0 &&
-			block_dest[block].recv_size > 0)
-		    MPI_Recv(local_data +
-			     el_size*block_size_padded*blk_num,
-			     block_dest[block].recv_size * el_size,
-			     MPI_TRANSPOSE_EL_TYPE_CONSTANT,
-			     block_dest[block].dest_pe, MPI_ANY_TAG,
-			     comm,
-			     &status);
-	       else if (block_dest[block].send_size > 0 &&
-			block_dest[block].recv_size > 0) {
-		    if (send_buf == 0)
-			 send_buf = (TRANSPOSE_EL_TYPE *)
-			      malloc(block_dest[block].send_size * 
-				     el_size * sizeof(TRANSPOSE_EL_TYPE));
+	  transpose_finish_exchange_step(p, step - 1);
 
-		    memcpy(send_buf,local_data + 
-			   el_size*block_size_padded*blk_num,
-			   block_dest[block].send_size * el_size *
+	  transpose_in_place_local(p, el_size, local_data, AFTER_TRANSPOSE);
+     
+	  if (send_buf)
+	       fftw_free(send_buf);
+     } /* if (local_nx > 0 || local_ny > 0) */
+}
+	       
+/**************************************************************************/
+
+/* non-blocking routines for overlapping communication and computation: */
+
+#define USE_SYNCHRONOUS_ISEND 1
+#if USE_SYNCHRONOUS_ISEND
+#define ISEND MPI_Issend
+#else
+#define ISEND MPI_Isend
+#endif
+
+void transpose_get_send_block(transpose_mpi_plan p, int step,
+			      int *block_y_start, int *block_ny)
+{
+     if (p->local_nx > 0) {
+	  *block_y_start = 
+	       p->send_block_size / p->local_nx * p->exchange[step].block_num;
+	  *block_ny = p->exchange[step].send_size / p->local_nx;
+     }
+     else {
+	  *block_y_start = 0;
+	  *block_ny = 0;
+     }
+}
+
+void transpose_start_exchange_step(transpose_mpi_plan p,
+				   int el_size,
+				   TRANSPOSE_EL_TYPE *local_data,
+				   TRANSPOSE_EL_TYPE *send_buf,
+				   int step,
+				   transpose_sync_type sync_type)
+{
+     if (p->local_nx > 0 || p->local_ny > 0) {
+	  transpose_mpi_exchange *exchange = p->exchange;
+	  int block = exchange[step].block_num;
+	  int send_block_size = p->send_block_size;
+	  int recv_block_size = p->recv_block_size;
+	  
+          if (exchange[step].dest_pe != p->my_pe) {
+
+	       /* first, copy to send buffer: */
+	       if (exchange[step].send_size > 0)
+		    memcpy(send_buf,
+			   local_data + el_size*send_block_size*block,
+			   el_size * exchange[step].send_size *
 			   sizeof(TRANSPOSE_EL_TYPE));
+				 
+#define DO_ISEND  \
+               if (exchange[step].send_size > 0) {  \
+			 ISEND(send_buf, \
+			       exchange[step].send_size * el_size, \
+			       p->el_type, \
+			       exchange[step].dest_pe, 0, \
+			       p->comm, \
+			       &p->request[0]); \
+	       }
+ 
+	       p->request[0] = MPI_REQUEST_NULL;
+	       p->request[1] = MPI_REQUEST_NULL;
+
+	       if (sync_type == TRANSPOSE_ASYNC) {
+		    /* Note that we impose an ordering on the sends and
+		       receives (lower pe sends first) so that we won't
+		       have deadlock if Isend & Irecv are blocking in some
+		       MPI implementation: */
+	  
+		    if (p->my_pe < exchange[step].dest_pe)
+			 DO_ISEND;
+		    
+		    if (exchange[step].recv_size > 0) {
+			 MPI_Irecv(local_data + el_size*recv_block_size*block,
+				   exchange[step].recv_size * el_size,
+				   p->el_type,
+				   exchange[step].dest_pe, MPI_ANY_TAG,
+				   p->comm,
+				   &p->request[1]);
+	       }
+	       
+		    if (p->my_pe > exchange[step].dest_pe)
+			 DO_ISEND;
+	  }
+	       else /* (sync_type == TRANSPOSE_SYNC) */ {
+		    MPI_Status status;
 
 		    MPI_Sendrecv(send_buf,
-				 block_dest[block].send_size * el_size,
-				 MPI_TRANSPOSE_EL_TYPE_CONSTANT,
-				 block_dest[block].dest_pe, blk_num,
+				 exchange[step].send_size * el_size,
+				 p->el_type,
+				 exchange[step].dest_pe, 0,
 
-				 local_data + 
-				 el_size*block_size_padded*blk_num,
-				 block_dest[block].recv_size * el_size,
-                                 MPI_TRANSPOSE_EL_TYPE_CONSTANT,
-                                 block_dest[block].dest_pe, MPI_ANY_TAG,
+				 local_data + el_size*recv_block_size*block,
+				 exchange[step].recv_size * el_size,
+				 p->el_type,
+				 exchange[step].dest_pe, MPI_ANY_TAG,
 
-				 comm,
-				 &status);
-				 
+				 p->comm, &status);
 	       }
 	  }
+	  else if (exchange[step].recv_size > 0 &&
+		   recv_block_size != send_block_size)
+	       memmove(local_data + el_size*recv_block_size*block,
+		       local_data + el_size*send_block_size*block,
+		       exchange[step].recv_size * el_size *
+		       sizeof(TRANSPOSE_EL_TYPE));
+     }
+}
 
-     if (send_buf)
-	  free(send_buf);
+void transpose_finish_exchange_step(transpose_mpi_plan p, int step)
+{
+     if ((p->local_nx > 0 || p->local_ny > 0) && step >= 0
+	 && p->exchange[step].dest_pe != p->my_pe) {
+	  MPI_Status status[2];
 
-     if (local_ny > 0)
-	  do_permutation(local_data,perm_block_dest,num_perm_blocks,
-			 perm_block_size*el_size);
-
+	  MPI_Waitall(2,p->request,status);
      }
 }
 

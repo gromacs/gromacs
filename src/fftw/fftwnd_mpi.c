@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,7 @@
 
 #include <mpi.h>
 
-#include "transpose_mpi.h"
-#include "fftwnd_mpi.h"
+#include <fftw_mpi.h>
 
 /***************************** Plan Creation ****************************/
 
@@ -36,12 +35,16 @@ fftwnd_mpi_plan fftwnd_mpi_create_plan(MPI_Comm comm,
     if (rank < 2)
 	return 0;
 
-    p = (fftwnd_mpi_plan) fftw_malloc(sizeof(fftwnd_mpi_aux_data));
+    p = (fftwnd_mpi_plan) fftw_malloc(sizeof(fftwnd_mpi_plan_data));
+    p->p_fft_x = 0;
     p->p_fft = 0;
     p->p_transpose = 0;
     p->p_transpose_inv = 0;
+    p->work = 0;
 
-    p->p_fft = fftwnd_create_plan(rank, n, dir, flags | FFTW_IN_PLACE);
+    p->p_fft_x = fftw_create_plan(n[0], dir, flags | FFTW_IN_PLACE);
+
+    p->p_fft = fftwnd_create_plan(rank - 1, n + 1, dir, flags | FFTW_IN_PLACE);
     if (!p->p_fft)
 	fftwnd_mpi_destroy_plan(p);
 
@@ -52,6 +55,9 @@ fftwnd_mpi_plan fftwnd_mpi_create_plan(MPI_Comm comm,
     p->p_transpose_inv = transpose_mpi_create_plan(n[1], n[0], comm);
     if (!p->p_transpose_inv)
 	fftwnd_mpi_destroy_plan(p);
+
+    if (n[0] > p->p_fft->nwork)
+	 p->work = (fftw_complex *) fftw_malloc(n[0] * sizeof(fftw_complex));
 
     return p;
 }
@@ -86,14 +92,29 @@ fftwnd_mpi_plan fftw3d_mpi_create_plan(MPI_Comm comm,
 void fftwnd_mpi_destroy_plan(fftwnd_mpi_plan p)
 {
     if (p) {
+	if (p->p_fft_x)
+	    fftw_destroy_plan(p->p_fft_x);
 	if (p->p_fft)
 	    fftwnd_destroy_plan(p->p_fft);
 	if (p->p_transpose)
 	    transpose_mpi_destroy_plan(p->p_transpose);
 	if (p->p_transpose_inv)
 	    transpose_mpi_destroy_plan(p->p_transpose_inv);
+	if (p->work)
+	     fftw_free(p->work);
 	fftw_free(p);
     }
+}
+
+void fftw_mpi_die(const char *error_string)
+{
+     int my_pe;
+
+     MPI_Comm_rank(MPI_COMM_WORLD, &my_pe);
+
+     fprintf(stderr, "fftw process %d: %s", my_pe, error_string);
+
+     MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
 }
 
 /********************* Getting Local Size ***********************/
@@ -122,71 +143,76 @@ void fftwnd_mpi_local_sizes(fftwnd_mpi_plan p,
 						 p->p_transpose->my_pe,
 						 p->p_transpose->n_pes);
 
-	*total_local_size *= p->p_fft->n_after[1];
+	*total_local_size *= p->p_fft->n_after[0];
     }
 }
 
 /******************** Computing the Transform *******************/
 
-void fftwnd_mpi(fftwnd_mpi_plan p, int n_fields, fftw_complex * local_data,
+void fftwnd_mpi(fftwnd_mpi_plan p,
+		int n_fields, fftw_complex *local_data, fftw_complex *work,
 		fftwnd_mpi_output_order output_order)
 {
-    int fft_iter;
-    int j, i;
-    fftw_plan *plans;
-    int *n, *n_before, *n_after;
-    int nb, nx, ny, local_nx, local_ny;
-    fftw_complex *work;
-    int rank;
+     int el_size = (sizeof(fftw_complex) / sizeof(TRANSPOSE_EL_TYPE))
+	           * n_fields * p->p_fft->n_after[0];
 
     if (n_fields <= 0)
 	return;
 
-    plans = p->p_fft->plans;
-    n = p->p_fft->n;
-    n_before = p->p_fft->n_before;
-    n_after = p->p_fft->n_after;
-    work = p->p_fft->work;
-    rank = p->p_fft->rank;
-    nx = n[0];
-    ny = n[1];
-    local_nx = p->p_transpose->local_nx;
-    local_ny = p->p_transpose->local_ny;
+     /* First, transform dimensions after the first, which are
+	local to this process: */
 
-    for (fft_iter = 0; fft_iter < n_fields; ++fft_iter) {
-	/* do last dimension: */
-	nb = (n_before[rank - 1] / nx) * local_nx;
-	fftw(plans[rank - 1], nb,
-	     local_data + fft_iter, n_fields, n[rank - 1] * n_fields,
-	     work, 1, 0);
+     {
+	  int local_nx = p->p_transpose->local_nx;
+	  int n_after_x = p->p_fft->n[0] * p->p_fft->n_after[0];
 
-	/* do other dimensions, except for first: */
-	for (j = 1; j < rank - 1; ++j) {
-	    nb = (n_before[j] / nx) * local_nx;
-	    for (i = 0; i < nb; ++i)
-		fftw(plans[j], n_after[j],
-		local_data + fft_iter + i * n_fields * n[j] * n_after[j],
-		     n_fields * n_after[j], n_fields,
-		     work, 1, 0);
+	  if (n_fields > 1) {
+	       fftwnd_plan p_fft = p->p_fft;
+	       int fft_iter;
+	       for (fft_iter = 0; fft_iter < local_nx; ++fft_iter)
+		    fftwnd(p_fft, n_fields,
+			   local_data + (n_after_x * n_fields) * fft_iter,
+			   n_fields, 1,
+			   NULL, 0, 0);
 	}
+	  else
+	       fftwnd(p->p_fft, local_nx,
+		      local_data, 1, n_after_x, NULL, 0, 0);
     }
 
-    /* transpose the first two indices: */
-    transpose_mpi(p->p_transpose, (fftw_real *) local_data,
-		  2 * n_fields * n_after[1]);
+     /* Second, transpose the first dimension with the second dimension
+	to bring the x dimension local to this process: */
 
-    for (fft_iter = 0; fft_iter < n_fields; ++fft_iter) {
-	/* do first dimension: */
-	nb = local_ny;
-	for (i = 0; i < nb; ++i)
-	    fftw(plans[0], n_after[1],
-		 local_data + fft_iter + i * n_fields * n[0] * n_after[1],
-		 n_fields * n_after[1], n_fields,
-		 work, 1, 0);
+     transpose_mpi(p->p_transpose, el_size, 
+		   (TRANSPOSE_EL_TYPE *) local_data,
+		   (TRANSPOSE_EL_TYPE *) work);
+
+     /* Third, transform the x dimension, which is now local and contiguous: */
+     
+     n_fields *= p->p_fft->n_after[0]; /* dimensions after y 
+					  no longer need be considered
+					  separately from n_fields */
+     {
+	  int local_ny = p->p_transpose->local_ny;
+	  int nx = p->p_fft_x->n;
+	  fftw_complex *work_1d = p->work ? p->work : p->p_fft->work;
+
+	  if (n_fields > 1) {
+	       fftw_plan p_fft_x = p->p_fft_x;
+	       int fft_iter;
+	       for (fft_iter = 0; fft_iter < local_ny; ++fft_iter)
+		    fftw(p_fft_x, n_fields,
+			 local_data + (nx * n_fields) * fft_iter, n_fields, 1,
+			 work_1d, 1, 0);
+	  }
+	  else
+	       fftw(p->p_fft_x, local_ny,
+		    local_data, 1, nx, work_1d, 1, 0);
     }
 
     /* transpose back, if desired: */
     if (output_order == FFTW_NORMAL_ORDER)
-	transpose_mpi(p->p_transpose_inv, (fftw_real *) local_data,
-		      2 * n_fields * n_after[1]);
+	  transpose_mpi(p->p_transpose_inv, el_size,
+			(TRANSPOSE_EL_TYPE *) local_data,
+			(TRANSPOSE_EL_TYPE *) work);
 }

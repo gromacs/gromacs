@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,10 @@ static fftw_complex *fftw_compute_twiddle(int n, const fftw_codelet_desc *d)
 	       istart = 0;
 	       m_alloc = m;
 	  } else if (d->type == FFTW_HC2HC) {
-	       m = m / 2 + 1;
+	       /*
+		* This is tricky, do not change lightly.
+		*/
+	       m = (m + 1) / 2;
 	       m_alloc = m - 1;
 	       istart = 1;
 	  } else {

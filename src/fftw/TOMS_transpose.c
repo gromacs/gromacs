@@ -1,4 +1,23 @@
 /*
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
+
+/*
  * TOMS Transpose.  Revised version of algorithm 380.
  * 
  * These routines do in-place transposes of arrays.
@@ -16,10 +35,6 @@
 
 static int TOMS_gcd(int a, int b);
 
-short TOMS_transpose_2d(TOMS_el_type * a,
-			int nx, int ny,
-			char *move,
-			int move_size)
 /*
  * "a" is a 1D array of length ny*nx which constains the nx x ny matrix to be
  * transposed.  "a" is stored in C order (last index varies fastest).  move
@@ -33,6 +48,11 @@ short TOMS_transpose_2d(TOMS_el_type * a,
  * 
  * Note: move[i] will stay zero for fixed points.
  */
+
+short TOMS_transpose_2d(TOMS_el_type * a,
+			int nx, int ny,
+			char *move,
+			int move_size)
 {
 	int             i, j, im, mn;
 	TOMS_el_type    b, c, d;
@@ -141,11 +161,6 @@ short TOMS_transpose_2d(TOMS_el_type * a,
 	return 0;
 }
 
-short TOMS_transpose_2d_arbitrary(TOMS_el_type * a,
-				  int nx, int ny,
-				  int el_size,
-				  char *move,
-				  int move_size)
 /*
  * "a" is a 1D array of length ny*nx which constains the nx x ny matrix to be
  * transposed.  "a" is stored in C order (last index varies fastest).  move
@@ -163,6 +178,11 @@ short TOMS_transpose_2d_arbitrary(TOMS_el_type * a,
  * 
  * Note: move[i] will stay zero for fixed points.
  */
+short TOMS_transpose_2d_arbitrary(TOMS_el_type * a,
+				  int nx, int ny,
+				  int el_size,
+				  char *move,
+				  int move_size)
 {
 	int             i, j, im, mn;
 	TOMS_el_type   *b, *c, *d;

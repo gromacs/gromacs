@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ void fftw_twiddle_generic(fftw_complex *A, const fftw_complex *W,
 		    r0 += rt * rw - it * iw;
 		    i0 += rt * iw + it * rw;
 		    l0 += l1;
-		    if (l0 > n)
+		    if (l0 >= n)
 			 l0 -= n;
 	       }
 	       c_re(*kp) = r0;
@@ -88,7 +88,7 @@ void fftwi_twiddle_generic(fftw_complex *A, const fftw_complex *W,
 		    r0 += rt * rw + it * iw;
 		    i0 += it * rw - rt * iw;
 		    l0 += l1;
-		    if (l0 > n)
+		    if (l0 >= n)
 			 l0 -= n;
 	       }
 	       c_re(*kp) = r0;

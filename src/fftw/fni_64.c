@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 
 /* This file was automatically generated --- DO NOT EDIT */
-/* Generated on Mon Sep 28 17:16:59 EDT 1998 */
+/* Generated on Tue May 18 13:54:58 EDT 1999 */
 
 #include <fftw-int.h>
 #include <fftw.h>
@@ -2443,7 +2443,7 @@ fftw_codelet_desc fftwi_no_twiddle_64_desc =
      64,
      FFTW_BACKWARD,
      FFTW_NOTW,
-     1033,
+     1420,
      0,
      (const int *) 0,
 };

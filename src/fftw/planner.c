@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,9 @@
 extern fftw_generic_codelet fftw_twiddle_generic;
 extern fftw_generic_codelet fftwi_twiddle_generic;
 extern fftw_codelet_desc *fftw_config[];
+
+/* undocumented debugging hook */
+void (*fftw_plan_hook)(fftw_plan plan) = (void (*)(fftw_plan)) 0;
 
 static void init_test_array(fftw_complex *arr, int stride, int n)
 {
@@ -115,6 +118,15 @@ static void compute_cost(fftw_plan plan,
      }
 }
 
+static void run_plan_hooks(fftw_plan p)
+{
+     if (fftw_plan_hook && p) {
+	  fftw_complete_twiddle(p->root, p->n);
+	  fftw_plan_hook(p);
+     }
+}
+
+
 /* macrology */
 #define FOR_ALL_CODELETS(p) \
    fftw_codelet_desc **__q, *p;                         \
@@ -162,6 +174,7 @@ static fftw_plan planner_wisdom(fftw_plan *table, int n,
 			 best = fftw_make_plan(n, dir, node, flags,
 					       p->type, p->signature);
 			 fftw_use_plan(best);
+			 run_plan_hooks(best);
 			 return best;
 		    }
 	       }
@@ -182,6 +195,7 @@ static fftw_plan planner_wisdom(fftw_plan *table, int n,
 			 best = fftw_make_plan(n, dir, node, flags,
 					       p->type, p->signature);
 			 fftw_use_plan(best);
+			 run_plan_hooks(best);
 			 fftw_destroy_plan_internal(r);
 			 return best;
 		    }
@@ -219,6 +233,7 @@ static fftw_plan planner_normal(fftw_plan *table, int n, fftw_direction dir,
 						  p->type, p->signature);
 			 fftw_use_plan(newplan);
 			 compute_cost(newplan, in, istride, out, ostride);
+			 run_plan_hooks(newplan);
 			 best = fftw_pick_better(newplan, best);
 		    }
 	       }
@@ -241,6 +256,7 @@ static fftw_plan planner_normal(fftw_plan *table, int n, fftw_direction dir,
 			 fftw_use_plan(newplan);
 			 fftw_destroy_plan_internal(r);
 			 compute_cost(newplan, in, istride, out, ostride);
+			 run_plan_hooks(newplan);
 			 best = fftw_pick_better(newplan, best);
 		    }
 	       }
@@ -292,6 +308,7 @@ static fftw_plan planner_normal(fftw_plan *table, int n, fftw_direction dir,
 	       newplan = fftw_make_plan(n, dir, node, flags, FFTW_RADER, 0);
 	       fftw_use_plan(newplan);
 	       compute_cost(newplan, in, istride, out, ostride);
+	       run_plan_hooks(newplan);
 	       best = fftw_pick_better(newplan, best);
 
 	       if (size < 100) {	/*
@@ -305,6 +322,7 @@ static fftw_plan planner_normal(fftw_plan *table, int n, fftw_direction dir,
 					     FFTW_GENERIC, 0);
 		    fftw_use_plan(newplan);
 		    compute_cost(newplan, in, istride, out, ostride);
+		    run_plan_hooks(newplan);
 		    best = fftw_pick_better(newplan, best);
 	       }
 	       fftw_destroy_plan_internal(r);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997,1998 Massachusetts Institute of Technology
+ * Copyright (c) 1997-1999 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,9 +35,9 @@
 #include <malloc.h>
 #endif
 
-void *(*fftw_malloc_hook) (size_t n) = (void *(*)(size_t n)) 0;
-void (*fftw_free_hook) (void *p) = (void (*)(void *p)) 0;
-void (*fftw_die_hook) (const char *error_string) = (void (*)(const char *)) 0;
+fftw_malloc_type_function fftw_malloc_hook = 0;
+fftw_free_type_function fftw_free_hook = 0;
+fftw_die_type_function fftw_die_hook = 0;
 
 /**********************************************************
  *   DEBUGGING CODE
@@ -73,13 +73,6 @@ void *fftw_malloc(size_t n)
      char *p;
      int i;
 
-     WHEN_VERBOSE( {
-		  printf("FFTW_MALLOC %d\n", n);
-		  fflush(stdout);
-		  })
-	 if (n == 0)
-	  fftw_die("Tried to allocate a block of zero size!\n");
-
      fftw_malloc_total += n;
 
      if (fftw_malloc_total > fftw_malloc_max)
@@ -106,11 +99,12 @@ void *fftw_malloc(size_t n)
 
 void fftw_free(void *p)
 {
-     char *q = ((char *) p) - TWOINTS;
+     char *q;
 
      if (!p)
-	  fftw_die("fftw_free: tried to free NULL pointer!\n");
+	  return;
 
+     q = ((char *) p) - TWOINTS;
      if (!q)
 	  fftw_die("fftw_free: tried to free NULL+TWOINTS pointer!\n");
 
@@ -123,8 +117,7 @@ void fftw_free(void *p)
 		       printf("FFTW_FREE %d\n", n);
 		       fflush(stdout);
 		       })
-	      if (n == 0)
-	       fftw_die("Tried to free a freed pointer!\n");
+
 	  *((int *) q) = 0;	/* set to zero to detect duplicate free's */
 
 	  if (magic != MAGIC)
