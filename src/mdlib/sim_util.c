@@ -569,4 +569,78 @@ void finish_run(FILE *log,t_commrec *cr,char *confout,
   }
 }
 
+void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
+	     real *lambda,real *lam0,real *SAfactor,
+	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+	     int nfile,t_filenm fnm[],char **traj,
+	     char **xtc_traj,int *fp_ene,
+	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
+	     tensor force_vir,tensor pme_vir,
+	     tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+	     bool *bNEMD,t_vcm **vcm,t_nsborder *nsb)
+{
+  bool bBHAM,b14,bLR,bLJLR;
+  int  i;
+  
+  /* Initial values */
+  *t = *t0       = ir->init_t;
+  if (ir->efep != efepNO) {
+    *lambda = *lam0 = ir->init_lambda;
+  }
+  else {
+    *lambda = *lam0   = 0.0;
+  } 
+  if (ir->bSimAnn) {
+    *SAfactor = 1.0 - *t0/ir->zero_temp_time;
+    if (*SAfactor < 0) 
+      *SAfactor = 0;
+  } else
+    *SAfactor     = 1.0;
+    
+  init_nrnb(mynrnb);
+  
+  /* Check Environment variables & other booleans */
+  *bTYZ=getenv("TYZ") != NULL;
+  set_pot_bools(ir,top,&bLR,&bLJLR,&bBHAM,&b14);
+  
+  if (nfile != -1) {
+    /* Filenames */
+    *traj     = ftp2fn(efTRN,nfile,fnm);
+    *xtc_traj = ftp2fn(efXTC,nfile,fnm);
+    
+    if (MASTER(cr)) {
+      *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+      if ((fp_dgdl != NULL) && ir->efep!=efepNO)
+	*fp_dgdl =
+	  xvgropen(opt2fn("-dgdl",nfile,fnm),
+		   "dG/d\\8l\\4","Time (ps)",
+		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
+    } else
+      *fp_ene = -1;
+
+    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),
+			  bLR,bLJLR,bBHAM,b14,ir->efep!=efepNO,ir->epc,
+			  ir->eDispCorr,(TRICLINIC(ir->compress) || TRICLINIC(box)),
+			  (ir->etc==etcNOSEHOOVER),cr);
+  }
+  
+  /* Initiate variables */  
+  clear_mat(force_vir);
+  clear_mat(pme_vir);
+  clear_mat(shake_vir);
+  clear_rvec(mu_tot);
+  
+  /* Set initial values for invmass etc. */
+  init_mdatoms(mdatoms,*lambda,TRUE);
+
+  *vcm = init_vcm(stdlog,top,cr,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm);
+    
+  debug_gmx();
+
+  *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
+
+  if (ir->eI == eiSD)
+    init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
+
+}
 

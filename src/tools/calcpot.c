@@ -181,8 +181,8 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
   if (parm->ir.epc != epcNO)
-      calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
-  put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,FALSE,
+    calc_shifts(parm->box,box_size,fr->shift_vec);
+  put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
 			   parm->box,box_size,&(top->blocks[ebCGS]),x,
 			   fr->cg_cm);
   /* mk_mshift(stdlog,graph,parm->box,x);*/

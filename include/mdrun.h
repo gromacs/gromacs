@@ -281,5 +281,16 @@ extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		     int nDlb,int nstepout,t_edsamyn *edyn,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
+
+extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
+		    real *lambda,real *lam0,real *SAfactor,
+		    t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+		    int nfile,t_filenm fnm[],char **traj,
+		    char **xtc_traj,int *fp_ene,
+		    FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
+		    tensor force_vir,tensor pme_vir,
+		    tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+		    bool *bNEMD,t_vcm **vcm,t_nsborder *nsb);
+/* Routine in sim_util.c */
 		     
 #endif	/* _mdrun_h */

@@ -341,7 +341,12 @@ void please_cite(FILE *fp,char *key)
       "J. Wang and W. Wang and S. Huo and M. Lee and P. A. Kollman",
       "Solvation model based on weighted solvent accessible surface area",
       "J. Phys. Chem. B",
-      105, 2001, 5055, 5067 }
+      105, 2001, 5055, 5067 },
+    { "Eisenberg86a",
+      "D. Eisenberg and A. D. McLachlan",
+      "Solvation energy in protein folding and binding",
+      "Nature",
+      319, 1986, 199, 203 }
   };
 #define NSTR (int)asize(citedb)
   

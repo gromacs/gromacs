@@ -221,7 +221,7 @@ real get_dgsolv(char *resnm, char *atomnm, real default_s)
   
   if (!dgs) {
     ndgs = read_props("dgsolv.dat",&dgs,&maxdgs);
-    please_cite(stderr,"Wang2001a");
+    please_cite(stderr,"Eisenberg86a");
     /* Convert to MD units */
     for(i=0; (i<ndgs); i++)
       dgs[i].prop *= 418.4;

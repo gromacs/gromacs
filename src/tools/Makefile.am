@@ -22,7 +22,7 @@ bin_PROGRAMS = \
 	g_sorient 	g_tcaf		g_traj		g_velacc	\
 	g_clustsize	genbox		genconf		genpr		\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
-	trjorder	wheel		xpm2ps
+	trjorder	wheel		xpm2ps		genion
 
 
 AUTOCORR_SRC         = 	autocorr.c expfit.c polynomials.c levenmar.c
@@ -53,7 +53,7 @@ g_sas_SOURCES        = 	g_sas.c nsc.c nsc.h
 g_tcaf_SOURCES       = 	g_tcaf.c $(AUTOCORR_SRC)
 g_velacc_SOURCES     = 	g_velacc.c $(AUTOCORR_SRC)
 genbox_SOURCES       = 	genbox.c addconf.c addconf.h
-#genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
+genion_SOURCES       = 	genion.c calcpot.c calcpot.h edittop.c
 
 CLEANFILES   = 	*~ \\\#*
 
