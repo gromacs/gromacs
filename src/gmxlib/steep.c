@@ -402,7 +402,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Print it if necessary  */
 #ifdef FORCE_CRIT 
     if ((bVerbose || (Fsqrt[Try] < Fsqrt[Min])) && MASTER(cr)) { 
-      fprintf(stderr,"\rStep = %5d, Dx = %12.5e, Epot = %30.20e rmsF = %30.20e\n", 
+      fprintf(stderr,"\rStep = %5d, Dx = %12.5e, Epot = %12.5e rmsF = %12.5e\n", 
  	      count,step,Epot[Try],Fsqrt[Try]); 
       /* Store the new (lower) energies  */
       upd_mdebin(mdebin,mdatoms->tmass,count,ener,parm->box,shake_vir, 
