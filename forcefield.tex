@@ -309,6 +309,19 @@ see also fig~\ref{fig:shift}.
 \label{fig:shift}
 \end{figure}
 
+\subsection{Modified short-range interactions with Ewald summation}
+When Ewald summation or particle-mesh Ewald is used to calculate
+the long-range interactions, the short-range coulomb potential must also
+be modified, similar to the switch function above. In this case the 
+short range potential is given by
+\beq
+V(r) = f \frac{{\mathrm erfc}(\beta r_{ij})}{r_{ij}} q_i q_j,
+\eeq
+where $\beta$ is a parameter that determines the relative weight 
+between the direct space sum and the reciprocal space sum and erfc(x) is
+the complementary error function. For further 
+details on long-range electrostatics, see section \ref{sec:lr_elstat}.
+
 
 \subsection{Bonded interactions}
 Bonded interactions are based on a fixed list of atoms. They are not
