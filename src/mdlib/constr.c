@@ -586,7 +586,8 @@ int count_constraints(t_topology *top,t_commrec *cr)
   int nc;
   
   nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_SHAKE].nr/3;
-  gmx_sumi(1,&nc,cr);
+  if (PAR(cr))
+    gmx_sumi(1,&nc,cr);
   
   return nc;
 }
