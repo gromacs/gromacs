@@ -3,12 +3,12 @@
 #######################################################################
 
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.1.4, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.1.5_pre1, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.1.4)
+AM_INIT_AUTOMAKE(gromacs, 3.1.5_pre1)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
@@ -361,10 +361,6 @@ choke_me
 [Check out www.altivec.org, or use the development version of gcc-3.1])
       enable_ppc_altivec=no])
   fi  
-  # the gcc instruction scheduler destroys our handcoded altivec.
-  if test "$enable_ppc_altivec" = "yes"; then
-    ACX_CHECK_CC_FLAGS(-fno-schedule-insns,fno_schedule_insns,CFLAGS="$CFLAGS -fno-schedule-insns")
-  fi
 fi
 
 if test "$enable_axp_asm" = "yes"; then
