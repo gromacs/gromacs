@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<!DOCTYPE residues SYSTEM "/home/spoel/wd/gmx/share/top/residues.dtd">
+
+<residues>
+  <residue restype="ALA">
+    <ratom name="N"/>
+    <ratom name="H"/>
+    <ratom name="CA"/>
+    <ratom name="HA"/>
+    <ratom name="CB"/>
+    <ratom name="HB1"/>
+    <ratom name="HB2"/>
+    <ratom name="HB3"/>
+    <ratom name="C"/>
+    <ratom name="O"/>
+    <rbond a1="N"  a2="H"/>
+    <rbond a1="N"  a2="CA"/>
+    <rbond a1="CA" a2="HA"/>
+    <rbond a1="CA" a2="CB"/>
+    <rbond a1="CB" a2="HB1"/>
+    <rbond a1="CB" a2="HB2"/>
+    <rbond a1="CB" a2="HB2"/>
+    <rbond a1="CA" a2="C"/>
+    <rbond a1="C"  a2="O"/>
+  </residue>
+
+  <residue restype="GLY">
+    <ratom name="N"/>
+    <ratom name="H"/>
+    <ratom name="CA"/>
+    <ratom name="HA1"/>
+    <ratom name="HA2"/>
+    <ratom name="C"/>
+    <ratom name="O"/>
+    <rbond a1="N"  a2="H"/>
+    <rbond a1="N"  a2="CA"/>
+    <rbond a1="CA" a2="HA1"/>
+    <rbond a1="CA" a2="HA2"/>
+    <rbond a1="CA" a2="C"/>
+    <rbond a1="C"  a2="O"/>
+  </residue>
+  
+  <linkdef linktype="peptide"    atomprev="C"  atomnext="N"/>
+  <linkdef linktype="disulphide" atomprev="SG" atomnext="SG"/>
+  
+  <moddef modtype="NH2">
+    <moddelete delname="H" />
+    <moddelete delname="H1" />
+    <moddelete delname="H2" />
+    <moddelete delname="H3" />
+    <modadd addname="H1" addbond="N"/>
+    <modadd addname="H2" addbond="N"/>
+  </moddef>
+  
+  <moddef modtype="NH3">
+    <moddelete delname="H" />
+    <moddelete delname="H1" />
+    <moddelete delname="H2" />
+    <moddelete delname="H3" />
+    <modadd addname="H1" addbond="N"/>
+    <modadd addname="H2" addbond="N"/>
+    <modadd addname="H3" addbond="N"/>
+  </moddef>
+  
+  <moddef modtype="LysNMet">
+    <moddelete delname="HZ1" />
+    <moddelete delname="HZ2" />
+    <moddelete delname="HZ3" />
+    <modadd addname="CZ1" addbond="NE"/>
+    <modadd addname="CZ2" addbond="NE"/>
+    <modadd addname="CZ3" addbond="NE"/>
+    <modadd addname="HZ11" addbond="CZ1"/>
+    <modadd addname="HZ12" addbond="CZ1"/>
+    <modadd addname="HZ13" addbond="CZ1"/>
+    <modadd addname="HZ21" addbond="CZ2"/>
+    <modadd addname="HZ22" addbond="CZ2"/>
+    <modadd addname="HZ23" addbond="CZ2"/>
+    <modadd addname="HZ31" addbond="CZ3"/>
+    <modadd addname="HZ32" addbond="CZ3"/>
+    <modadd addname="HZ33" addbond="CZ3"/>
+  </moddef>
+  
+  <moddef modtype="COO-">
+    <moddelete delname="O" />
+    <moddelete delname="O1" />
+    <moddelete delname="O2" />
+    <moddelete delname="OT" />
+    <moddelete delname="HT" />
+    <modadd addname="O1" addbond="C"/>
+    <modadd addname="O2" addbond="C"/>
+  </moddef>
+
+  <moddef modtype="COOH">
+    <moddelete delname="O" />
+    <moddelete delname="O1" />
+    <moddelete delname="O2" />
+    <moddelete delname="OT" />
+    <moddelete delname="HT" />
+    <modadd addname="OT1" addbond="C"/>
+    <modadd addname="OT2" addbond="C"/>
+    <modadd addname="HO" addbond="OT1"/>
+  </moddef>
+</residues>
+
