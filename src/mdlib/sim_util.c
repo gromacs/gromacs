@@ -518,8 +518,7 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       eners[i] = 0;
       virs[i]  = 0;
     }
-    if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT
-	|| fr->vdwtype == evdwUSER) {
+    if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT)) {
       if (fr->rvdw_switch == 0)
 	gmx_fatal(FARGS,"With dispersion correction rvdw-switch can not be zero "
 		    "for vdw-type = %s",evdw_names[fr->vdwtype]);
@@ -533,16 +532,10 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       rc9  = rc3*rc3*rc3;
 
       vdwtab = fr->vdwtab;
-      if (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwUSER) {
+      if (fr->vdwtype == evdwSHIFT) {
 	/* Determine the constant energy shift below rvdw_switch */
 	fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - vdwtab[8*ri0];
 	fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - vdwtab[8*ri0 + 4];
-	if (fr->vdwtype == evdwUSER)
-	  fprintf(log,
-		  "WARNING: using dispersion correction with user tables\n"
-		  "         assuming that the missing dispersion from 0\n"
-		  "         to rvdw-switch = %f is constant at %f nm^-6\n",
-		  fr->rvdw_switch,fr->enershiftsix);
       }
       /* Add the constant part from 0 to rvdw_switch.
        * This integration from 0 to rvdw_switch overcounts the number
@@ -608,7 +601,10 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       eners[1] +=  4.0*M_PI/(9.0*rc9);
       virs[0]  +=  8.0*M_PI/rc3;
       virs[1]  += -16.0*M_PI/(3.0*rc9);
-    } else if (fr->vdwtype == evdwCUT) {
+    } 
+    else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER)) {
+      if (fr->vdwtype == evdwUSER)
+	fprintf(log,"WARNING: using dispersion correction with user tables\n");
       rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
       rc9  = rc3*rc3*rc3;
       eners[0] += -4.0*M_PI/(3.0*rc3);
