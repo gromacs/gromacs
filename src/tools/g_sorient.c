@@ -112,7 +112,7 @@ void main(int argc,char *argv[])
   rmax2 = sqr(rmax);
   rcut  = 0.45*min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
   rcut2 = sqr(rcut);
-  rbinw = 0.02;
+  rbinw = 0.025;
   invbw = 1/rbinw;
   
   ntot = 0;
@@ -181,29 +181,29 @@ void main(int argc,char *argv[])
   sfree(x);
   close_trj(status);
   
-  nav     = (real)ntot/(isize[0]*nf);
-  normfac = nbin/(M_PI/2*nav);
+  nav     = (real)ntot/(nrefgrp*nf);
+  normfac = nbin/(ntot*M_PI/2);
   
   fprintf(stderr,"Average number of molecules between %g and %g nm is %.1f\n",
 	  rmin,rmax,nav);
-
+  
   sprintf(str,"Solvent orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-o",NFILE,fnm), 
-		 str,"Angle","Number"); 
+	      str,"Angle","Number"); 
   fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
   for(i=0; i<nbin; i++) {
     r = 90*2*(i+0.5)/nbin;
-    fprintf(fp,"%g %g %g\n",r,normfac*hist1[i]/(isize[0]*nf),sin(M_PI*r/180));
-    }
+    fprintf(fp,"%g %g %g\n",r,normfac*hist1[i],sin(M_PI*r/180));
+  }
   fclose(fp);
   
   sprintf(str,"Solvent normal orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-no",NFILE,fnm), 
-		 str,"Angle","Number");
+	      str,"Angle","Number");
   fprintf(fp,"@ subtitle \"average shell size %.1f molecules\"\n",nav);
   for(i=0; i<nbin; i++) {
     r = 90*(i+0.5)/nbin;
-    fprintf(fp,"%g %g %g\n",r,normfac*hist2[i]/(isize[0]*nf),sin(M_PI*r/180));
+    fprintf(fp,"%g %g %g\n",r,normfac*hist2[i],sin(M_PI*r/180));
   }
   fclose(fp);
 
