@@ -175,6 +175,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_mdebin   *mdebin;
   int        fp_ene=-1,fp_trn=-1,step,count;
+  FILE       *fp_dgdl=NULL;
   double     tcount;
   time_t     start_t;
   rvec       *fbuf[2];
@@ -205,7 +206,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initial values */
   init_md(cr,&parm->ir,&t,&t0,&lambda,&lam0,&SAfactor,&mynrnb,&bTYZ,top,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&mdebin,grps,vcm,
+	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,vcm,
 	  force_vir,shake_vir,mdatoms);
 
   bDynamicStep = FALSE;
@@ -473,7 +474,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if ( MASTER(cr) ) {
       bool do_ene,do_dr,do_log;
       
-      upd_mdebin(mdebin,mdatoms->tmass,step,ener,parm->box,shake_vir,
+      upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       debug_gmx();
       
@@ -547,19 +548,19 @@ int main(int argc,char *argv[])
   static bool bVerbose=FALSE,bCompact=TRUE;
   static int  nprocs=1,nDLB=0,nstepout=10;
   static t_pargs pa[] = {
-    { "-np",      FALSE, etINT, &nprocs,
+    { "-np",      FALSE, etINT, {&nprocs},
       "Number of processors, must be the same as used for grompp. THIS SHOULD BE THE FIRST ARGUMENT ON THE COMMAND LINE FOR MPI" },
-    { "-v",       FALSE, etBOOL,&bVerbose,  "Verbose mode" },
-    { "-multi",   FALSE, etBOOL,&bMultiSim, "Do multiple simulations in parallel (only with -np > 1)" },
-    { "-compact", FALSE, etBOOL,&bCompact,
+    { "-v",       FALSE, etBOOL,{&bVerbose},  "Verbose mode" },
+    { "-multi",   FALSE, etBOOL,{&bMultiSim}, "Do multiple simulations in parallel (only with -np > 1)" },
+    { "-compact", FALSE, etBOOL,{&bCompact},
       "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
-    { "-dlb",     FALSE, etINT, &nDLB,
+    { "-dlb",     FALSE, etINT, {&nDLB},
       "Use dynamic load balancing every ... step. BUGGY do not use" },
-    { "-stepout", FALSE, etINT, &nstepout,
+    { "-stepout", FALSE, etINT, {&nstepout},
       "Frequency of writing the remaining runtime" },
-    { "-glas",    FALSE, etBOOL,&bGlas,
+    { "-glas",    FALSE, etBOOL,{&bGlas},
       "Do glass simulation with special long range corrections" },
-    { "-ionize",  FALSE, etBOOL,&bIonize,
+    { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" }
   };
 
