@@ -365,7 +365,7 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("comm-grps",   vcm,            NULL);
   
   CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
-  CTYPE ("Temperature, friction coefficient (amu/ps) and random seed");
+  CTYPE ("Friction coefficient (amu/ps) and random seed");
   RTYPE ("bd-fric",     ir->bd_fric,    0.0);
   ITYPE ("ld-seed",     ir->ld_seed,    1993);
   
