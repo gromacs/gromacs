@@ -566,7 +566,7 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
   fprintf(stderr,buf);
   fprintf(log,buf);
   for(cl=1; cl<=clust->ncl; cl++) {
-    for(i=0; i<natom;i++)
+    for(i=0; i<isize;i++)
       clear_rvec(xav[i]);
     nstr=0;
     for(i1=0; i1<nf; i1++)
