@@ -71,10 +71,10 @@ FFTLIBS		= -lfftw.$(GMXCPU)
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
 XLIBS		= -L/usr/X11R6/lib -lXm -lXt -lX11
-SYSLIBS		= $(XLIBS) $(FFTLIBS) -lm
+SYSLIBS		= $(XLIBS) -lm
 else
 XLIBS		= -L/usr/X11R6/lib -lX11 
-SYSLIBS		=  $(FFTLIBS) -lm
+SYSLIBS		=  -lm
 endif
 SHAREIT		= (cd $(LIBDIR); ar x $(LIB); $(CC) $(LDFLAGS) -shared -Wl,-soname,$(SONAME) -o $(LIBDIR)/$(SONAME) *.o; $(RM) *.o)
 RANLIB		= ranlib
