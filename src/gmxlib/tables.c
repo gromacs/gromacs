@@ -338,10 +338,8 @@ void make_tables(t_forcerec *fr,bool bVerbose)
   int  normtab[3] = { etabCOUL,   etabLJ6,   etabLJ12 };
   int  swtab[3]   = { etabCOULsw, etabLJ6sw, etabLJ12sw  };
   FILE     *fp;
-  real     x0,y0,y1,yp,yp2;
-  int      i,i6,j,k,n0,n,tabsel;
-  real     r,r11,r12,r13,rinv1,rinv2,rinv6;
-  real     vijcoul,fijcoul;
+  real     x0,y0,yp;
+  int      i,j,k,n0,n,tabsel;
   real     *x,*Vtab,*Vtab2,*Ftab,*Ftab2;
   
 #ifdef DOUBLE

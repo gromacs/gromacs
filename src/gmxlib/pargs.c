@@ -251,7 +251,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
   bool bShowHidden;
   char buf[32],buf2[256];
   char *wdesc;
-  int  i,j,k;
+  int  i,j;
   
   /* Cannot call opt2parg_bSet here, because it crashes when the option
    * is not in the list (mdrun)

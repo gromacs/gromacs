@@ -215,7 +215,7 @@ static void leave_callback(Widget www,int *which,caddr_t call_data)
 static void mk_desc_handlers(void)
 {
   Widget www;
-  int    i,narg;
+  int    i;
   
   for(i=0; (i<nwidget()); i++) {
     if (have_windex_desc(i)) {
@@ -740,7 +740,7 @@ static char *concat_str(char *dtitle,int ndesc,char *desc[],
   char *descer;
   char *ptr  = NULL;
   char *buf;
-  int  i,blen=0,maxlen=0,dlen,slen;
+  int  i,blen=0,maxlen=0,dlen;
 
   append_str(&ptr,&blen,&maxlen,dtitle,0);
   buf=strdup(dtitle);
@@ -936,7 +936,7 @@ static void mk_gui(Widget gmxBase,
   };
 #define NBUT asize(bbb)
   int  sep1,sep2,widg0;
-  int  i,narg;
+  int  i;
   
   /* Create the help window */
   helpw  = mk_help(gmxBase,ndesc,desc,nbugs,bugs); 

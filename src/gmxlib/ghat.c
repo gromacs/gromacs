@@ -170,7 +170,6 @@ void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat)
 {
   FILE *fp;
   int  ii,jj,kk;
-  real rx,ry,rz;
   real k1;
   rvec k,lll;
   

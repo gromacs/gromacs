@@ -17,11 +17,11 @@ int solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
   static int  *nnx,*nny,*nnz;
   static real fac,dx_2,dy_2,dz_2,fac_1,omega;
   real   deviation,val_ijk,epsrho;
-  real   dx2,dy2,dz2,residual,sum,xi,aver;
+  real   dx2,dy2,dz2,residual,sum,xi;
   int    nit;
-  int    i,ix,jy,j,kz,k,i_1,i1,j_1,j1,k_1,k1;
+  int    i,j,k,i_1,i1,j_1,j1,k_1,k1;
   int    nx,ny,nz;
-  real   ***pot_ptr,***rho_ptr,*potz_ptr,*rhoz_ptr;
+  real   ***pot_ptr,***rho_ptr;
   
   unpack_PSgrid(pot,&nx,&ny,&nz,&pot_ptr);
   unpack_PSgrid(rho,&nx,&ny,&nz,&rho_ptr);
@@ -54,7 +54,6 @@ int solve_poisson(FILE *log,t_PSgrid *pot,t_PSgrid *rho,
   }
 
   /* Solve by simple averaging */
-  aver = 0;
   nit  = 0;
   do {
     deviation = 0.0;

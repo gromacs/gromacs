@@ -42,7 +42,7 @@ t_block *init_index(char *gfile, char ***grpname)
 {
   FILE     *in;
   t_block  *b;
-  int      a,len,maxentries;
+  int      a,maxentries;
   int      i,j,ng;
   char     line[STRLEN],*pt,str[STRLEN];
 

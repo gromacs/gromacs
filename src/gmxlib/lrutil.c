@@ -202,14 +202,13 @@ real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,rvec box,
 	    real phi[],t_block *excl,rvec f_sr[],bool bOld)
 {
   int  i,j,k,m,ni,i1,i2;
-  real pp,r2,R,R_1,R_2,r12,rc2;
+  real pp,r2,R,R_1,R_2,rc2;
   real qi,qj,vsr,eps,fscal;
   rvec dx;
   
   vsr = 0.0;
   eps = ONE_4PI_EPS0;
   rc2 = rc*rc;
-  r12 = r1*r1;
   ni=0;
   for(i=0; (i<nj-1); i++) {
     qi=charge[i];
@@ -284,7 +283,7 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
   int    i,i1,i2,j,k,m;
   unsigned int *AA;
   real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl;
-  rvec   df,dx,hbox;
+  rvec   df,dx;
   
   if (bFirst) {
     qq =0;  
@@ -299,10 +298,6 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
   
   AA = excl->a;
   
-  /*
-    for(m=0; (m<DIM); m++)
-    hbox[m] = box[m]*0.5;
-  */
   Vexcl = 0;
   for(i=start; (i<natoms); i++) {
     /* Initiate local variables (for this i-particle) to 0 */
@@ -327,10 +322,6 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
 	  dr2 = 0;
 	  for(m=0; (m<DIM); m++) {
 	    ddd = x[i][m] - x[k][m];
-	    /*if (ddd < -hbox[m])
-	      ddd += box[m];
-	    else if (ddd >= hbox[m])
-	    ddd -= box[m];*/
 	    dx[m] = ddd;
 	    dr2  += ddd*ddd;
 	  }
@@ -563,9 +554,7 @@ real analyse_diff(FILE *log,char *label,
 {
   int  i,m;
   FILE *fp,*gp;
-  char buf[120];
   real f2sum=0,p2sum=0;
-  real ftot2sum=0,ptot2sum=0;
   real df,fmax,dp,pmax,rmsf;
   
   fmax = fabs(ffour[0][0]-fpppm[0][0]);

@@ -139,11 +139,8 @@ real do_poisson(FILE *log,       bool bVerbose,
   static  rvec      beta;
   
   const     real tol = 1e-2;
-  int       i,m;
-  real      ctot;
-  real      aver,tot,ener;
-  ivec      grids;
-  rvec      spacing;
+  int       m;
+  real      ener;
   
   ener = 0.0;
   
@@ -222,10 +219,7 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
   const     real tol = 1e-2;
   int       i,m,bx,by,bz;
   char      buf[128];
-  real      ctot;
-  real      aver,tot,ener;
-  ivec      grids;
-  rvec      spacing;
+  real      ener;
   
   ener = 0.0;
   

@@ -24,16 +24,14 @@ void spread_q_poisson(FILE *log,bool bVerbose,bool bCoulomb,
   static int  *nnx,*nny,*nnz,NCELLS,MAXCELLS;
   static ivec *cells=NULL;
   rvec   invh,h;
-  real   qi,qt,qwt,dx2,dy2,dz2,r2,xi,yi,zi,sf,dr,hx,hy,hz;
+  real   qi,dx2,dy2,dz2,r2,xi,yi,zi,sf,hx,hy,hz;
   real   A,B;
-  rvec   gridpoint,dx;
-  real   WXYZ[27],bhh,r,half=0.5,rc2,inveps0;
+  real   bhh,r,half=0.5,rc2,inveps0;
   ivec   ixyz;
-  int    i,j,k,iX,iY,iZ,index,ttt,m,n,nr;
+  int    i,j,k,iX,iY,iZ,ttt,m,n;
   int    jx,jy,jz,jcx,jcy,jcz;
-  int    nxyz,ncellsx,ncellsy,ncellsz;
+  int    ncellsx,ncellsy,ncellsz;
   int    nx,ny,nz;
-  int    xmin,xmax,ymin,ymax,zmin,zmax;
   real   ***rho;
   
   unpack_PSgrid(grid,&nx,&ny,&nz,&rho);

@@ -461,7 +461,7 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
     fatal_error(0,"Lo: %f, Mid: %f, Hi: %f\n",lo,mid,hi);
 
   fprintf(out,"static char * gv_xpm[] = {\n");
-  fprintf(out,"\"%d %d   %d %u\",\n",
+  fprintf(out,"\"%d %d   %d %d\",\n",
 	  n_x,n_y,*nlevels,(*nlevels <= NMAP) ? 1 : 2);
 
   nmid = ((mid-lo)/(hi-lo))*(*nlevels-1);
