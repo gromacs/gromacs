@@ -58,7 +58,24 @@ void pdb_use_ter(bool bSet)
   bTER=bSet;
 }
 
-static void change_name(char *name)
+static void gromacs_name(char *name)
+{
+  int i,length;
+  char temp;
+
+  length=strlen(name);
+  if (isdigit(name[0])) {
+    temp=name[0]; 
+    for(i=1; i<length; i++)
+      name[i-1]=name[i];
+    name[length-1]=temp;
+  }
+  if(strcmp(name,"OXT")==0)
+    strcpy(name,"O2");
+}
+
+/*
+static void pdb_name(char *name)
 {
   int i,length;
   char temp;
@@ -81,6 +98,7 @@ static void change_name(char *name)
     strcpy(name,"OXT");
   }
 }
+*/
 
 void write_pdbfile_indexed(FILE *out,char *title,
 			   t_atoms *atoms,rvec x[],matrix box,char chain,
@@ -90,7 +108,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
   char resnm[6],nm[6],ch,*pdbform;
   atom_id i,ii;
   int  resnr,type;
-  real occup;
+  real occup,bfac;
 
   fprintf(out,"HEADER    %s\n",title[0]?title:bromacs());
   if (box) {
@@ -113,20 +131,24 @@ void write_pdbfile_indexed(FILE *out,char *title,
 	ch=atoms->atom[i].chain;
       else
 	  ch=' ';
-    occup=atoms->atom[i].occup;
-    if (occup==0.0)
+    if (atoms->pdbinfo) {
+      type=atoms->pdbinfo[i].type;
+      occup=atoms->pdbinfo[i].occup;
+      bfac=atoms->pdbinfo[i].bfac;
+      if (occup==0.0)
+	occup=1.0;
+    }
+    else {
+      type=0;
       occup=1.0;
+      bfac=0.0;
+    }
     if (strlen(nm)==4)
       pdbform=pdbformat4;
     else
       pdbform=pdbformat;
-    if (atoms->pdbinfo != NULL)
-      type=atoms->pdbinfo[i].type;
-    else
-      type=0;
-    fprintf(out,pdbform,
-	    pdbtp[type],i+1,nm,resnm,ch,resnr,
-	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,atoms->atom[i].bfac);
+    fprintf(out,pdbform,pdbtp[type],i+1,nm,resnm,ch,resnr,
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
   }
   
   fprintf(out,"TER\n");
@@ -237,7 +259,7 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   }
 }
 
-static int read_atom(char line[],int natom,
+static int read_atom(char line[],int type,int natom,
 		     t_atoms *atoms,rvec x[],bool bChange)
 {
   static t_symtab symtab;
@@ -249,19 +271,26 @@ static int read_atom(char line[],int natom,
   static int oldres;
   int  resnri,newres;
 
+  if (natom>=atoms->nr)
+    fatal_error(0,"\nFound more atoms (%d) in pdb file than expected (%d)",
+		natom+1,atoms->nr);
+
   open_symtab(&symtab);
 
   /* Skip over type */  
   j=6;
   for(k=0; (k<5); k++,j++) anr[k]=line[j];
   anr[k]=nc;
+  trim(anr);
   j++;
   for(k=0; (k<4); k++,j++) anm[k]=line[j];
   anm[k]=nc;
+  trim(anm);
   j++;
   for(k=0; (k<4); k++,j++) 
     resnm[k]=line[j];
   resnm[k]=nc;
+  trim(resnm);
 
   for(k=0; (k<1); k++,j++)
     chain[k]=line[j];
@@ -272,9 +301,11 @@ static int read_atom(char line[],int natom,
     pdbresnr[k]=line[j];
   }
   resnr[k]=nc;
+  trim(resnr);
   for( ;(k<8); k++,j++)
     pdbresnr[k]=line[j];
   pdbresnr[k]=nc;
+  trim(pdbresnr);
 
   /* X,Y,Z Coordinate */
   for(k=0; (k<8); k++,j++) xc[k]=line[j];
@@ -293,11 +324,6 @@ static int read_atom(char line[],int natom,
   bfac[k]=nc;
 
   atomn=&(atoms->atom[natom]);
-  if (atoms->pdbinfo != NULL) {
-    atoms->pdbinfo[natom].type=j;
-    atoms->pdbinfo[natom].atomnr=atoi(anr);
-    strcpy(atoms->pdbinfo[natom].pdbresnr,pdbresnr);
-  }
   resnri=atoi(resnr);
   if ((natom==0) || (resnri != oldres)) {
     oldres=resnri;
@@ -311,15 +337,20 @@ static int read_atom(char line[],int natom,
   else
     newres=atoms->atom[natom-1].resnr;
   if (bChange)
-    change_name(anm); 
+    gromacs_name(anm); 
   atoms->atomname[natom]=put_symtab(&symtab,anm);
   atomn->chain=chain[0];
   atomn->resnr=newres;
   x[natom][XX]=atof(xc)*0.1;
   x[natom][YY]=atof(yc)*0.1;
   x[natom][ZZ]=atof(zc)*0.1;
-  atomn->bfac=atof(bfac);
-  atomn->occup=atof(occup);
+  if (atoms->pdbinfo) {
+    atoms->pdbinfo[natom].type=type;
+    atoms->pdbinfo[natom].atomnr=atoi(anr);
+    strcpy(atoms->pdbinfo[natom].pdbresnr,pdbresnr);
+    atoms->pdbinfo[natom].bfac=atof(bfac);
+    atoms->pdbinfo[natom].occup=atof(occup);
+  }
   atomn->m = 0.0;
   atomn->q = 0.0;
   natom++;
@@ -353,6 +384,7 @@ int read_pdbfile(FILE *in,char *title,
   char *c,*d;
   int  natom;
   int  j,k;
+  bool bStop=FALSE;
 
   if (box != NULL) 
     clear_mat(box);
@@ -361,13 +393,13 @@ int read_pdbfile(FILE *in,char *title,
   bSimBox=FALSE;
   title[0]='\0';
   natom=0;
-  while (fgets2(line,STRLEN,in) != NULL) {
+  while (!bStop && (fgets2(line,STRLEN,in) != NULL)) {
     line_type = line2type(line);
     
     switch(line_type) {
     case epdbATOM:
     case epdbHETATM:
-      natom = read_atom(line,natom,atoms,x,bChange);
+      natom = read_atom(line,line_type,natom,atoms,x,bChange);
       break;
       
     case epdbANISOU:
@@ -376,12 +408,13 @@ int read_pdbfile(FILE *in,char *title,
       break;
 
     case epdbCRYST1:      
-      if (!box[0][0] && bSimBox) {
-	sscanf(line,"%*s%s%s%s",xc,yc,zc);
-	box[XX][XX] = atof(xc)*0.1;
-	box[YY][YY] = atof(yc)*0.1;
-	box[ZZ][ZZ] = atof(zc)*0.1;
-	
+      if (bSimBox) {
+	if (box) {
+	  sscanf(line,"%*s%s%s%s",xc,yc,zc);
+	  box[XX][XX] = atof(xc)*0.1;
+	  box[YY][YY] = atof(yc)*0.1;
+	  box[ZZ][ZZ] = atof(zc)*0.1;
+	}	
 	bSimBox = FALSE;
       } else 
 	fprintf(stderr,"WARNING: ignoring data in CRYST1 entry "
@@ -395,7 +428,7 @@ int read_pdbfile(FILE *in,char *title,
       while (c && (c[0]!=' ')) c++;
       while (c && (c[0]==' ')) c++;
       /* truncate after title */
-      d=strstr(c,"   ");
+      d=strstr(c,"      ");
       if (d) {
 	d[0]='\0';
       }
@@ -432,7 +465,12 @@ int read_pdbfile(FILE *in,char *title,
       break;
       
     case epdbTER:
+      if (bTER)
+	bStop=TRUE;
+      break;
     case epdbENDMDL:
+      bStop=TRUE;
+      break;
     default:
       break;
     }
@@ -441,13 +479,10 @@ int read_pdbfile(FILE *in,char *title,
   return natom;
 }
 
-void get_pdb_coordnum(char *infile,int *natoms)
+void get_pdb_coordnum(FILE *in,int *natoms)
 {
-  FILE *in;
   char line[STRLEN];
-  int  j;
    
-  in=ffopen(infile,"r");
   *natoms=0;
   while (fgets2(line,STRLEN,in)) {
     if ( ( bTER && (strncmp(line,"TER",3) == 0)) ||
@@ -456,7 +491,6 @@ void get_pdb_coordnum(char *infile,int *natoms)
     if ((strncmp(line,"ATOM  ",6) == 0) || (strncmp(line,"HETATM",6) == 0))
       (*natoms)++;
   }
-  ffclose (in);
 }
 
 void read_pdb_conf(char *infile,char *title, 
@@ -568,7 +602,6 @@ void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
   snew(atoms->atom,natom);
   snew(atoms->atomname,natom);
   snew(atoms->resname,nres);
-  snew(atoms->chain,natom);
   snew(*x,natom);
   for(i=0; (i<natom); i++) {
     if (pdba[i].resnr != rnr) {
@@ -576,7 +609,7 @@ void pdb2atoms(int natom,t_pdbatom pdba[],t_atoms *atoms,rvec **x,
       atoms->resname[rnr]=put_symtab(symtab,pdba[i].resnm);
     }
     atoms->atom[i].resnr=pdba[i].resnr;
-    atoms->chain[i]=pdba[i].chain;
+    atoms->atom[i].chain=pdba[i].chain;
     atoms->atom[i].m=pdba[i].m;
     atoms->atom[i].q=pdba[i].q;
     atoms->atom[i].type=pdba[i].type;
@@ -604,7 +637,7 @@ t_pdbatom *atoms2pdba(t_atoms *atoms,rvec x[])
     sprintf(pdba[i].pdbresnr,"%d",atoms->atom[i].resnr);
     strcpy(pdba[i].atomnm,*(atoms->atomname[i]));
     strcpy(pdba[i].resnm,*(atoms->resname[pdba[i].resnr]));
-    if (atoms->chain)
+    if (atoms->atom[i].chain)
       pdba[i].chain=atoms->atom[i].chain;
     else
       pdba[i].chain=' ';

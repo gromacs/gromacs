@@ -50,6 +50,30 @@ static char *SRCID_confio_c = "$Id$";
 #include "filenm.h"
 #include "statusio.h"
 
+
+void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
+{
+  atoms->nr=natoms;
+  atoms->nres=0;
+  snew(atoms->atomname,natoms);
+  snew(atoms->resname,natoms);
+  snew(atoms->atom,natoms);
+  if (bPdbinfo)
+    snew(atoms->pdbinfo,natoms);
+  else
+    atoms->pdbinfo=NULL;
+}
+
+void free_t_atoms(t_atoms *atoms)
+{
+  atoms->nr=0;
+  sfree(atoms->atomname);
+  sfree(atoms->resname);
+  sfree(atoms->atom);
+  if (atoms->pdbinfo)
+    sfree(atoms->pdbinfo);
+}     
+
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
 {
   char line[STRLEN+1];
@@ -717,9 +741,7 @@ void read_xdr_conf(char *infile,char *title,t_atoms *atoms,rvec x[],rvec v[],mat
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
 		   rvec x[],rvec v[], matrix box)
 {
-  t_topology *top;
-  int        ftp,natoms,i1;
-  real       r1,r2;
+  int        ftp;
 
   ftp=fn2ftp(outfile);
   switch (ftp) {
@@ -741,19 +763,22 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   }
 }
 
-void get_stx_coordnum (char *infile,int *natoms)
+void get_stx_coordnum(char *infile,int *natoms)
 {
+  FILE *in;
   int ftp;
 
   ftp=fn2ftp(infile);
   switch (ftp) {
   case efGRO:
-    get_coordnum (infile, natoms);
+    get_coordnum(infile, natoms);
     break;
   case efPDB:
   case efBRK:
   case efENT:
-    get_pdb_coordnum (infile, natoms);
+    in=ffopen(infile,"r");
+    get_pdb_coordnum(in, natoms);
+    fclose(in);
     break;
   case efTPA:
   case efTPB:

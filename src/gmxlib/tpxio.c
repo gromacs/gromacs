@@ -453,24 +453,23 @@ static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
 {
   int m,a,a0,a1;
   char c,chain;
-#define CHAIN_MIN 15
+#define CHAIN_MIN_ATOMS 15
 
-  snew(atoms->chain,atoms->nr);
   chain='A';
   for(m=0; m<mols->nr; m++) {
     a0=mols->index[m];
     a1=mols->index[m+1];
-    if ((a1-a0 >= CHAIN_MIN) && (chain <= 'Z')) {
+    if ((a1-a0 >= CHAIN_MIN_ATOMS) && (chain <= 'Z')) {
       c=chain;
       chain++;
     } else
       c=' ';
     for(a=a0; a<a1; a++)
-      atoms->chain[mols->a[a]]=c;  
+      atoms->atom[mols->a[a]].chain=c;  
   }
   if (chain == 'B')
     for(a=0; a<atoms->nr; a++)
-      atoms->chain[a]=' ';
+      atoms->atom[a].chain=' ';
 }
   
 static void do_top(t_topology *top,bool bRead)

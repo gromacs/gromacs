@@ -374,54 +374,51 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 
 static bool pdb_next_x(FILE *status,real *t,int natoms,rvec x[],matrix box)
 {
-  t_pdbatom *pdb;
-  int       i;
-  char      title[STRLEN];
+  t_atoms   atoms;
+  int       i,na;
+  char      title[STRLEN],*time;
 
-  *t=0.0;  
-  natoms = read_pdbatoms(status, title, &pdb, box, FALSE);
+  init_t_atoms(&atoms,natoms,FALSE);
+  na=read_pdbfile(status, title, &atoms, x, box, TRUE);
+  if (box[XX][XX] == 0)
+    box[XX][XX]=box[YY][YY]=box[ZZ][ZZ]=10;
+  /*
   fprintf(stderr,"\rRead frame %6d",frame++);
-  
-  for(i=0; (i<natoms); i++)
-    copy_rvec(pdb[i].x, x[i]);
-    
-  sfree(pdb);
-
-  if (natoms==0) {
+  */
+  time=strstr(title," t= ");
+  if (time)
+    sscanf(time+4,"%g",t);
+  else
+    *t=0.0;
+  free_t_atoms(&atoms);
+  if (na==0) {
     return FALSE;
   }
   else { 
+    if (na != natoms)
+      fatal_error(0,"Number of atoms in pdb frame %d is %d instead of %d",
+		  frame,na,natoms);
     return TRUE;
   }
 }
 
 static int pdb_first_x(FILE *status, real *t, rvec **x, matrix box)
 {
-  t_pdbatom *pdb;
-  int i, natoms;
-  char      title[STRLEN];
+  int   i, natoms;
+  char  title[STRLEN];
   
   INITCOUNT;
   
   *t=0.0;
   fprintf(stderr,"Reading frames from pdb file.\n");
   frewind(status);
-  natoms = read_pdbatoms(status, title, &pdb, box, FALSE);
-  fprintf(stderr,"No of atoms: %d.\n", natoms);
-
-  if (box[XX][XX] == 0)
-    box[XX][XX]=box[YY][YY]=box[ZZ][ZZ]=10;
-    
-  if (natoms==0) {
-    fprintf(stderr,"No coordinates in pdb file\n");
-    exit(1);
-  }
-  else {
-    snew(*x,natoms);
-    for(i=0; (i<natoms); i++)
-      copy_rvec(pdb[i].x, (*x)[i] );
-  }
-  sfree(pdb);
+  get_pdb_coordnum(status, &natoms);
+  fprintf(stderr,"Nr of atoms: %d.\n", natoms);
+  if (natoms==0)
+    fatal_error(0,"No coordinates in pdb file\n");
+  frewind(status);
+  snew(*x,natoms);
+  pdb_next_x(status, t, natoms, *x, box);
 
   return natoms;
 }
@@ -499,7 +496,14 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
     PRINTLAST(pt)
     return FALSE;
   case efPDB:
-    return pdb_next_x(fio_getfp(status),t,natoms,x,box);
+    pt=*t;
+    if (pdb_next_x(fio_getfp(status),t,natoms,x,box)) {
+      PRINTREAD(*t)
+      return TRUE;
+    } else {
+      PRINTLAST(pt)
+      return FALSE;
+    }
   case efGRO:
     pt=*t;
     if (gro_next_x(fio_getfp(status),t,natoms,x,box)) {

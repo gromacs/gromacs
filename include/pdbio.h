@@ -67,13 +67,6 @@ typedef struct {
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' of 'ENDMDL' (default, bSet=FALSE) */
 
-/*
-void write_pdbfile_indexed(FILE *out,char *title,
-			   t_atoms *atoms,rvec x[],matrix box,char chain,
-			   bool bEndmodel,
-			   atom_id nindex, atom_id *index);
-			   */
-
 extern void write_pdbfile(FILE *out,char *title,
 			  t_atoms *atoms,rvec x[],matrix box,char chain,
 			  bool bEndmodel);
@@ -104,7 +97,7 @@ extern void read_pdb_conf(char *infile,char *title,
  * Change atom names according to protein conventions if wanted
  */
 
-extern void get_pdb_coordnum(char *infile,int *natoms);
+extern void get_pdb_coordnum(FILE *in,int *natoms);
 /* Read a pdb file and count the ATOM and HETATM fields. */
 
 extern bool is_hydrogen(char *nm);

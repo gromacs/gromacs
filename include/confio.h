@@ -45,6 +45,13 @@ static char *SRCID_confio_h = "$Id$";
 extern "C" {
 #endif
 
+extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
+/* allocate memory for the arrays, set nr to natoms and nres to 0
+ * set pdbinfo to NULL or allocate memory for it */  
+
+extern void free_t_atoms(t_atoms *atoms);
+/* free all the arrays and set the nr and nres to 0 */
+
 extern void get_coordnum(char *infile, int *natoms);
 
 extern void read_whole_conf(char *infile, char *title,t_atoms *atoms, 
