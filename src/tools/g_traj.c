@@ -255,9 +255,11 @@ int main(int argc,char *argv[])
     "When [TT]-mol[tt] is set, the numbers in the index file are",
     "interpreted as molecule numbers and the same procedure as with",
     "[TT]-com[tt] is used for each molecule.[PAR]",
-    "Option [TT]-ot[tt] plots the temperature of each group.",
+    "Option [TT]-ot[tt] plots the temperature of each group,",
+    "provided velocities are present in the trajectory file."
     "This implies [TT]-com[tt].[PAR]",
-    "Option [TT]-ekr[tt] plots the rotational kinetic energy of each group.",
+    "Option [TT]-ekr[tt] plots the rotational kinetic energy of each group,", 
+    "provided velocities are present in the trajectory file.",
     "This implies [TT]-com[tt]."
   };
   static bool bMol=FALSE,bCom=FALSE,bNoJump=FALSE;
@@ -471,31 +473,17 @@ int main(int argc,char *argv[])
 
   /* clean up a bit */
   close_trj(status);
-  if (bOX) {
-    fclose(outx);
-    do_view(opt2fn("-ox",NFILE,fnm), NULL);
-  }
-  if (bOV) {
-    fclose(outv);
-    do_view(opt2fn("-ov",NFILE,fnm), NULL);
-  }
-  if (bOF) {
-    fclose(outf);
-    do_view(opt2fn("-of",NFILE,fnm), NULL);
-  }
-  if (bOB) {
-    fclose(outb);
-    do_view(opt2fn("-ob",NFILE,fnm), NULL);
-  }
-  if (bOT) {
-    fclose(outt);
-    do_view(opt2fn("-ot",NFILE,fnm), NULL);
-  }
-  if (bEKR) {
-    fclose(outekr);
-    do_view(opt2fn("-ekr",NFILE,fnm), NULL);
-  } 
+  
+  if (bOX) fclose(outx);
+  if (bOV) fclose(outv);
+  if (bOF) fclose(outf);
+  if (bOB) fclose(outb);
+  if (bOT) fclose(outt);
+  if (bEKR) fclose(outekr);
 
+  /* view it */
+  view_all(NFILE, fnm);
+  
   thanx(stderr);
   
   return 0;
