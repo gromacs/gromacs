@@ -115,7 +115,7 @@ static int dbcmp_len(char *search, char *database)
 static bool get_prop(real *p, char *resname, char *atomnm, 
 		     int nprop, t_prop *props)
 {
-  int  i,j,alen,rlen,malen,mrlen;
+  int  i,j=0,alen,rlen,malen,mrlen;
   char *atomname;
   
   malen = NOTFOUND;

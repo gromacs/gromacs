@@ -414,12 +414,13 @@ int read_pdbfile(FILE *in,char *title,
 	  while ( (d[-1]==';') && d>c)  d--;
 	  d[0]='\0';
 	}
-	if (strlen(c)>0)
+	if (strlen(c) > 0) {
 	  if (bCOMPND) {
 	    strcat(title,"; ");
 	    strcat(title,c);
 	  } else
 	    strcpy(title,c);
+	}
 	bCOMPND=TRUE;
       } 
       break;

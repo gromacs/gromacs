@@ -550,12 +550,12 @@ char *ftp2fn_null(int ftp,int nfile,t_filenm fnm[])
   int i;
   
   for(i=0; (i<nfile); i++)
-    if (ftp == fnm[i].ftp)
+    if (ftp == fnm[i].ftp) {
       if (is_opt(fnm[i]) && !is_set(fnm[i]))
 	return NULL;
       else
 	return fnm[i].fn;
-  
+    }
   fprintf(stderr,"ftp2fn: No filetype %s\n",deffile[ftp].ext);
   return NULL;
 }

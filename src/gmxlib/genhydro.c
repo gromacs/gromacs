@@ -72,13 +72,13 @@ static int hack_residue(int resnr,t_atoms *pdba,t_add_block *ab[],
   int i,j,nadd,natom;
   
   nadd=0;
-  if (debug)
+  if (debug) {
     if (tb)
       fprintf(debug,"Hacking %d atoms of %s into residue %d\n",
 	      tb->nadd,HackName[type],resnr);
     else
       fprintf(debug,"Not hacking %s into residue %d\n",HackName[type],resnr);
-  
+  }
   natom=pdba->nr;
   
   if (tb == NULL)
@@ -119,14 +119,14 @@ static void hack_atoms(t_hackblock *tdb,int index,
   int j;
   char buf[STRLEN];
 
-  if (debug)
+  if (debug) {
     if (tdb)
       printf("Replacing atoms %d-%d (addition %d)\n",
 	     j0,j0+nadd-1,index);
     else
       printf("Not replacing atoms (%d-%d addition %d)\n",
 	     j0,j0+nadd-1,index);
-  
+  }
   if (tdb == NULL)
     return;
   

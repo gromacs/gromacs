@@ -230,11 +230,12 @@ char *pa_val(t_pargs *pa)
     sprintf(buf,"%6s",*(pa->u.b) ? "yes" : "no");
     break;
   case etSTR:
-    if (*(pa->u.c))
+    if (*(pa->u.c)) {
       if (strlen(*(pa->u.c)) >= 256)
 	fatal_error(0,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));
+    }
     break;
   case etENUM:
     strcpy(buf,pa->u.c[0]);
