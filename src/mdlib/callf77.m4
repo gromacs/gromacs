@@ -19,14 +19,14 @@ void fsettle fsettle_args
 #endif
 }
 
-define(`fshake_args',`(atom_id iatom[],int *ncon,int *nit,int *maxnit,real dist2[],real xp[],real rij[],real m2[],real invmass[],real tt[],int *error)')
+define(`fshake_args',`(atom_id iatom[],int *ncon,int *nit,int *maxnit,real dist2[],real xp[],real rij[],real m2[],real invmass[],real tt[],real lambda[],int *error)')
 
 extern void FUNCTION(forshake) fshake_args;
 
 void fshake fshake_args
 {
 #ifdef USEF77
-  FUNCTION(forshake)(iatom,ncon,nit,maxnit,dist2,xp,rij,m2,invmass,tt,error);
+  FUNCTION(forshake)(iatom,ncon,nit,maxnit,dist2,xp,rij,m2,invmass,tt,lambda,error);
 #else
   fatal_error(0,"fshake called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif

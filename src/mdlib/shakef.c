@@ -55,7 +55,7 @@ int shakef(FILE *log,
 	   int natoms,real invmass[],int ncon,
 	   t_iparams ip[],t_iatom *iatom,
 	   real tol,rvec x[],rvec xp[],
-	   real omega)
+	   real omega,real lambda[])
 {
   /*
    *
@@ -216,6 +216,7 @@ int shakef(FILE *log,
       }
       
       acor=(omega*diff)/(rrpr*(invmass[i]+invmass[j])*2.0);
+      lambda[ll] += acor;
       for(m=0; (m<DIM); m++) {
 	xh      = xij[m]*acor;
 	xpi[m] += xh*invmass[i];
@@ -241,7 +242,7 @@ int shakef(FILE *log,
 int vec_shakef(FILE *log,
 	       int natoms,real invmass[],int ncon,
 	       t_iparams ip[],t_iatom *iatom,
-	       real tol,rvec x[],rvec xp[])
+	       real tol,rvec x[],rvec xp[],real lambda[])
 {
   static  rvec *rij=NULL;
   static  real *M2=NULL,*tt=NULL,*dist2=NULL;
@@ -283,7 +284,8 @@ int vec_shakef(FILE *log,
 
   /* We have a FORTRAN shake now! */  
 #ifdef USEF77
-  fshake(iatom,&ncon,&nit,&maxnit,dist2,xp[0],rij[0],M2,invmass,tt,&error);
+  fshake(iatom,&ncon,&nit,&maxnit,dist2,xp[0],rij[0],M2,invmass,tt,lambda,
+	 &error);
 #else
   /* And a c shake also ! */
   cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,invmass,tt,&error);
@@ -330,7 +332,7 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 
 int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	    t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-	    t_nrnb *nrnb)
+	    t_nrnb *nrnb,real *dvdlambda)
 {
   static  bool bFirst=TRUE;
   static  bool bSafe;
@@ -340,46 +342,64 @@ int bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   static  real delta=0.1;
   static  real omega=1.0;
   static  int  gamma=1000000;
+  static  real *lambda;
   
   t_iatom *iatoms;
-  int     i,n0,blen;
+  real    *lam,dt_2,dvdl;
+  int     i,n0,ncons,blen,type;
   int     tnit=0,trij=0;
   
 #ifdef DEBUG
   fprintf(log,"nblocks=%d, sblock[0]=%d\n",nblocks,sblock[0]);
 #endif
+  ncons=idef->il[F_SHAKE].nr/3;
   if (bFirst) {
     bSafe=(getenv("NOVECSHAKE") != NULL);
     bSOR=(getenv("NOSOR") == NULL);
     if (bSOR) 
       please_cite(log,"Barth95a");
+    snew(lambda,ncons);
     bFirst=FALSE;
   }
+  for(i=0; i<ncons; i++)
+    lambda[i] =0;
   
-  iatoms=&(idef->il[F_SHAKE].iatoms[sblock[0]]);
+  iatoms = &(idef->il[F_SHAKE].iatoms[sblock[0]]);
+  lam    = lambda;
   for(i=0; (i<nblocks); ) {
     blen=(sblock[i+1]-sblock[i]);
     blen/=3;
-
+    
     if (bSafe)
       n0=shakef(log,natoms,invmass,blen,idef->iparams,
-		iatoms,ir->shake_tol,x_s,xp,omega);
+		iatoms,ir->shake_tol,x_s,xp,omega,lam);
     else
       n0=vec_shakef(log,natoms,invmass,blen,idef->iparams,
-		    iatoms,ir->shake_tol,x_s,xp);
+		    iatoms,ir->shake_tol,x_s,xp,lam);
     
 #ifdef DEBUGSHAKE
-    check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
+	check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif
-
+    
     if (n0==0) {
       check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
       return -1;
     }
-    tnit+=n0*blen;
-    trij+=blen;
-    iatoms+=3*blen;	/* Increment pointer! */
+    tnit   += n0*blen;
+    trij   += blen;
+    iatoms += 3*blen;	/* Increment pointer! */
+    lam    += blen;
     i++;
+  }
+  if (ir->bPert) {
+    dt_2 = 1/sqr(ir->delta_t);
+    dvdl = 0;
+    for(i=0; i<ncons; i++) {
+      type = idef->il[F_SHAKE].iatoms[3*i];
+      dvdl += lambda[i]*dt_2*
+	(idef->iparams[type].shake.dB-idef->iparams[type].shake.dA);
+    }
+    *dvdlambda += dvdl;
   }
 #ifdef DEBUG
   fprintf(log,"tnit: %5d  omega: %10.5f\n",tnit,omega);

@@ -898,19 +898,6 @@ static void check_disre(t_topology *sys)
   }
 }
 
-int count_pert_constraint_types(t_idef *idef)
-{
-  int count,i;
-
-  count = 0;
-  for (i=0; i<idef->ntypes; i++)
-    if ((idef->functype[i] == F_SHAKE) &&
-	(idef->iparams[i].shake.dB != idef->iparams[i].shake.dA))
-      count++;
-
-  return count;
-}
-
 void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
 {
   char err_buf[256];
@@ -931,14 +918,6 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
     CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
   }
 
-  if (ir->bPert && (ir->eConstrAlg == estSHAKE)) {
-    if (count_pert_constraint_types(&sys->idef)) {
-      set_warning_line(mdparin,-1);
-      sprintf(warn_buf,"Can not calculate the contribution of perturbed constraints to the free energy with SHAKE, use LINCS if you want the free energy");
-      warning(NULL);
-    }
-  }
-  
   clear_rvec(acc);
   snew(mgrp,sys->atoms.grps[egcACC].nr);
   for(i=0; (i<sys->atoms.nr); i++) 

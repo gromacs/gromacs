@@ -38,7 +38,8 @@ extern int bshakef(FILE *log,		/* Log file			*/
 		   matrix box,		/* The box			*/
 		   rvec x_s[],		/* Coords before update		*/
 		   rvec xp[],		/* Output coords		*/
-		   t_nrnb *nrnb);        /* Performance measure          */
+		   t_nrnb *nrnb,        /* Performance measure          */
+		   real *dvdlambda);    /* FEP force                    */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 

@@ -44,7 +44,7 @@ extern void fsettle(int *nshake,int owptr[],
 		     
 extern void fshake(atom_id iatom[],int *ncon,int *nit,int *maxnit,
 		   real dist2[],real xp[],real rij[],real m2[],
-		   real invmass[],real tt[],int *error);
+		   real invmass[],real tt[],real lambda[],int *error);
 
 /* Fortran routines for LINCS algorithm */ 
 extern void flincs(real *x,real *xp,int *nc,

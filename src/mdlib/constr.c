@@ -454,9 +454,9 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       where();
       
       if (ir->eConstrAlg == estSHAKE) {
-	ncons=bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
-		      ir,box,x,xprime,nrnb);
-	if (ncons == -1) {
+	error=bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
+		      ir,box,x,xprime,nrnb,dvdlambda);
+	if (error == -1) {
 	  dump_confs(step,&(top->atoms),x,xprime,box);
 	  fprintf(stdlog,"SHAKE ERROR at step %d\n",step);
 	  fatal_error(0,"SHAKE ERROR at step %d\n",step);
