@@ -206,8 +206,8 @@ int main(int argc,char *argv[])
   t_filenm  fnm[] = {
     { efTRX, "-f", NULL,  ffREAD },
     { efNDX, NULL, NULL,  ffREAD },
-    { efXVG, "-od","dist",ffWRITE },
-    { efXVG, "-on","num", ffWRITE },
+    { efXVG, "-od","mindist",ffWRITE },
+    { efXVG, "-on","numcont", ffWRITE },
     { efOUT, "-o","atm-pair", ffWRITE }
   };
 #define NFILE asize(fnm)
