@@ -250,8 +250,8 @@ real rand_theta_incoh(int Eindex,int *seed)
   static bool bFirst = TRUE;
   static real **intp;
   static int  i,j,cur=1;
-  real theta,sum,rrr,dx;
-  real g[NENER],y[2];
+  real   rrr,dx;
+  real   y[2];
   
   dx = 90.0/(real)NINTP;
   if (bFirst) {
@@ -394,8 +394,7 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
 		 t_mdatoms *md,t_electron_db *edb)
 {
   rvec dv;
-  real ndv,factor;
-  int  m;
+  real factor;
   
   if ((ca->vAuger < 0) || (recoil[ca->z].tau == 0)) {
     dump_ca(stderr,ca,ion,__FILE__,__LINE__);
@@ -487,13 +486,12 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static t_cross_atom *ca;
   static int   Eindex=-1;
     
-  real r,factor,ndv,E_lost=0,cross_atom,dvz,rrc;
+  real factor,E_lost=0;
   real pt,ptot,pphot,pcoll[ecollNR],tmax;
-  real incoh,incoh_abs,sigmaPincoh,hboxx,hboxy,rho2;
+  real sigmaPincoh,hboxx,hboxy,rho2;
   rvec dv,ddv;
   bool bIonize=FALSE,bKHole,bL,bDOIT;
-  char *cc;
-  int  i,j,k,kk,m,nK,nL,dq,nkh,nkdecay,elmin_type;
+  int  i,k,kk,m,nK,nL,dq,nkh,nkdecay;
   int  *nionize,*nkhole,*ndecay,nbuf[2];
   
   if (bFirst) {
@@ -689,7 +687,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	break;
       }
       case ecollINELASTIC: {
-	real theta,phi,Ebind,Eelec;
+	real theta,Ebind,Eelec;
 	
 	if (bL)
 	  Ebind = (ca[i].n+1)*recoil[ca[i].z].E_L;
