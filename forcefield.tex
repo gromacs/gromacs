@@ -316,6 +316,7 @@ to force atoms to remain in a plane or to prevent transition to a
 configuration of opposite chirality (a mirror image).  
 
 \subsection{Bond stretching}
+\label{sec:harmbond}
 The \normindex{bond stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential
 \begin {figure}
@@ -332,6 +333,28 @@ see also fig~\ref{fig:bstretch1}, with the force
 \beq
 \ve{F}_i(\rvij)	= k^b_{ij}(\rij-b_{ij}) \rnorm
 \eeq
+
+\subsection{Fourth power bond stretching}
+In the GROMOS96 force field~\cite{gromos96} the covalent bond potential
+is written for reasons of computational efficiency as:
+\beq
+V_b~(\rij) = \frac{1}{4}k^b_{ij}\left(\rij^2-b_{ij}^2\right)^2
+\eeq
+the corresponding  force is:
+\beq
+\ve{F}_i(\rvij) = k^b_{ij}(\rij^2-b_{ij}^2)~\rvij
+\eeq
+The force constants for this form of the potential is related to the usual
+harmonic force constant $k^{b,harm}$ (\secref{harmbond}) as
+\beq
+2 k^b b_{ij}^2 = k^{b,harm}
+\eeq
+The force constants are mostly derived from the harmonic ones used in 
+GROMOS87~\cite{biomos}. Although this form is computationally more efficient
+(because no square root has to be evaluated), it is conceptually more
+complex. One particular disadvantage is that since the form is not harmonic,
+the average energy of a single bond is not equal to $\half kT$ as it is for 
+the normal harmonic potential.
 
 \subsection{Morse potential bond stretching}
 %\author{F.P.X. Everdij}
@@ -386,8 +409,10 @@ one recovers the harmonic bond stretching potential.
 \end {figure}
 
 \subsection{Bond angle vibration}
+\label{sec:harmangle}
+\newcommand{\tijk}{\theta_{ijk}}
 The bond \normindex{angle vibration} between a triplet of atoms $i$ - $j$ - $k$
-is also represented by a harmonic potential on the angle $\theta_{ijk}$
+is also represented by a harmonic potential on the angle $\tijk$
 \begin {figure}
 \centerline{\raisebox{-1.5cm}{\psfig {figure=plots/angle.eps,angle=270,width=5cm}}\psfig {figure=plots/f_angle.eps,angle=270,width=7cm}}
 \caption {Principle of the angle vibration (left) and bond angle potential (right).}
@@ -395,7 +420,7 @@ is also represented by a harmonic potential on the angle $\theta_{ijk}$
 \end {figure}
 
 \beq
-V_a(\theta_{ijk}) = \half k^{\theta}_{ijk}(\theta_{ijk}-\theta^0_{ijk})^2
+V_a(\tijk) = \half k^{\theta}_{ijk}(\tijk-\tijk^0)^2
 \eeq
 As the bond-angle vibration is represented by a harmonic potential the
 form is the same as the bond stretching (Figure~\ref{fig:bstretch1}).
@@ -403,14 +428,32 @@ form is the same as the bond stretching (Figure~\ref{fig:bstretch1}).
 The force equations are given by the chain rule:
 \beq
 \begin{array}{l}
-\Fvi	~=~ -\displaystyle\frac{d V_a(\theta_{ijk})}{d \rvi}	\\
-\Fvk	~=~ -\displaystyle\frac{d V_a(\theta_{ijk})}{d \rvk}	\\
+\Fvi	~=~ -\displaystyle\frac{d V_a(\tijk)}{d \rvi}	\\
+\Fvk	~=~ -\displaystyle\frac{d V_a(\tijk)}{d \rvk}	\\
 \Fvj	~=~ -\Fvi-\Fvk
 \end{array}
 ~ \mbox{ ~ where ~ } ~
- \theta_{ijk} = \arccos \frac{(\rvij \cdot \ve{r}_{kj})}{r_{ij}r_{kj}}
+ \tijk = \arccos \frac{(\rvij \cdot \ve{r}_{kj})}{r_{ij}r_{kj}}
 \eeq
 The numbering $i,j,k$ is in sequence of covalently bonded atoms, with $j$ denoting the middle atom (see figure~\ref{fig:angle}).
+
+\subsection{Cos angle vibration}
+In the GROMOS96 force field a simplified function is used to represent angle
+vibrations:
+\beq
+V_a(\tijk) = \half k^{\theta}_{ijk}\left(\cos(\tijk) - \cos(\tijk^0)\right)^2
+\eeq
+where 
+\beq
+\cos(\tijk) = \frac{\rvij\cdot\ve{r}_{kj}}{\rij r_{kj}}
+\eeq
+The corresponding force can be derived by partial differentation with respect
+to the atomic positions. The force constants in this function are related
+to the force constants in the harmonic form $k^{\theta,harm}$
+(\secref{harmangle}) by:
+\beq
+k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
+\eeq
 
 %% new commands %%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\rvkj}{{\bf r}_{kj}}
