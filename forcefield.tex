@@ -135,10 +135,12 @@ see also fig~\ref{fig:coul}, where $f = \frac{1}{4\pi \varepsilon_0} =
 138.935\,485$ (see Chapter~\ref{ch:defunits})
 \begin {figure}
 \centerline{\psfig {figure=plots/vcrf.eps,width=8cm}}
-\caption{The Coulomb interaction (for particles with equal signed
-charge) with and without reaction field. In the latter case $\epsrf$
-was 78, and $r_c$ was 0.9 nm. The dot-dashed line is the same as the
-dashed line, except for a constant.}
+\caption[The Coulomb interaction (for particles with equal signed
+charge) with and without reaction field.]{The Coulomb interaction (for
+particles with equal signed charge) with and without reaction
+field. In the latter case $\epsrf$ was 78, and $r_c$ was 0.9 nm. The
+dot-dashed line is the same as the dashed line, except for a
+constant.}
 \label{fig:coul}
 \end {figure}
 
@@ -594,31 +596,39 @@ system. Thus MD can be used for \normindex{structure refinement}  using
 potential form is quadratic between two specified distances and linear
 beyond the largest distance (see figure~\ref{fig:dist}).
 \beq
-\begin{array}{rcl}
-V_{dr}(r_{ij})~=~&~0 \hspace{4cm}                  & r_{ij} < r_0         \\
-	\:     =~&~\half k_{dr}(r_{ij}-r_0)^2	   & r_0 \le r_{ij} < r_1 \\
-	\:     =~&~\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0) & r_{ij} \ge r_1
+V_{dr}(r_{ij}) ~=~ \left\{
+\begin{array}{lcllllll}
+0		&\mbox{for}& 	 &     & r_{ij} & < & r_0	\\[1.5ex]
+\half k_{dr}(r_{ij}-r_0)^2	
+		&\mbox{for}& r_0 & \le & r_{ij} & < & r_1	\\[1.5ex]
+\half k_{dr}(r_1-r_0)(2r_{ij}-r_1-r_0)	
+		&\mbox{for}& r_1 & \le & r_{ij} &   &
+\end{array}\right.
 \label{eqn:disre}
-\end{array}
 \eeq
+
 \begin {figure}
 \centerline{\psfig {figure=plots/f_dr.eps,angle=270,width=8cm}}
 \caption {Distance Restraint potential}
 \label{fig:dist}
 \end {figure}
+
 The forces are
 \beq
-\begin{array}{rcl}
-\ve{F}_i~=~&~0 \hspace{4cm}  & r_{ij} < r_0         \\
- \: = ~&-~k_{dr}(r_{ij}-r_0)\frac{\rvij}{r_{ij}} & r_0 \le r_{ij} < r_1\\
- \: = ~&-~k_{dr}(r_1-r_0)\frac{\rvij}{r_{ij}}    & r_{ij} \ge r_1	
-\end{array}
+\ve{F}_i~=~ \left\{
+\begin{array}{lcllllll}
+0		&\mbox{for}& 	 &     & r_{ij} & < & r_0	\\[1.5ex]
+-k_{dr}(r_{ij}-r_0)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}& r_0 & \le & r_{ij} & < & r_1	\\[1.5ex]
+-k_{dr}(r_1-r_0)\frac{\rvij}{r_{ij}}	
+		&\mbox{for}& r_1 & \le & r_{ij} &   &
+\end{array} \right.
 \eeq
 The above formulae have been improved by introducing the
 {\em time averaged} distance restraint~\cite{Torda89} where the distance
 $r_{ij}$ is replaced by a time average:
 \beq
-\bar{r}_{ij} = < r_{ij}^{-3} >^{-1/3}
+\bar{r}_{ij} ~=~ < r_{ij}^{-3} >^{-1/3}
 \label{eqn:rav}
 \eeq
 This way an atom can satisfy two incompatible distance restraints 
@@ -708,7 +718,7 @@ of the particles.
 \beq
 \begin{array}{rcl}
 G	&~=~&	-1/\beta \ln \left[\int \exp(-\beta V(q)) dq \int \exp(-\beta K(p)) dp  \right] \\
-\mbox{or} \\
+& \mbox{or} \\
 G	&~=~&	\left< K(p) \right>	-1/\beta \ln 
 \end{array}
 \eeq
@@ -721,17 +731,21 @@ The example given here is for the bond potential which is harmonic
 in {\gromacs}. However,  these equations apply to the angle potential
 and the improper dihedral potential as well.
 \bea
-V_b		&=&\half(\LL k_b^A + \LAM k_b^B) (b - \LL b_0^A - \LAM b_0^B)^2	\\
-\dvdl{V_b}	&=&\half(k_b^B-k_b^A)\cdot\nonumber \\
-		&&\left[b - \LL b_0^A + \LAM b_0^B)^2 + (b_0^A-b_0^B) (b - \LL b_0^A -\LAM b_0^B)\right]
+V_b	&=&\half(\LL k_b^A + 
+		\LAM k_b^B) (b - \LL b_0^A - \LAM b_0^B)^2	\\
+\dvdl{V_b}&=&\half(k_b^B-k_b^A)
+		\left[b - \LL b_0^A + \LAM b_0^B)^2 + 
+		      (b_0^A-b_0^B) (b - \LL b_0^A -\LAM b_0^B)\right]
+		\nonumber\\
 \eea
 
 \subsubsection{Proper dihedrals}
 For the proper dihedrals, the equations are somewhat more complicated:
 \bea
-V_d	&=&(\LL k_d^A + \LAM k_d^B) ( 1+ \cos(n_{\phi} \phi - (\LL \phi_0^A + \LAM \phi_0^B))	\\
-\dvdl{V_d}&=&(k_d^B-k_d^A) \nonumber\\
-	&& \biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_0^A + \LAM \phi_0^B])-\nonumber\\
+V_d	&=&(\LL k_d^A + \LAM k_d^B) 
+	( 1+ \cos(n_{\phi} \phi - (\LL \phi_0^A + \LAM \phi_0^B)) \\
+\dvdl{V_d}&=&(k_d^B-k_d^A) 
+		\biggl[ 1+ \cos(n_{\phi} \phi- [\LL \phi_0^A + \LAM \phi_0^B])-\nonumber\\
 	&&(\LL k_d^A + \LAM k_d^B) (\phi_0^A - \phi_0^B) 
 	\sin(n_{\phi}\phi - [\LL \phi_0^A + \LAM \phi_0^B]\biggr]
 \eea
@@ -752,9 +766,9 @@ where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see Chapter~\ref{ch:def
 The coulomb interaction including a reaction field, between two particles 
 of which the charge varies with $\LAM$ is:
 \bea
-V_c 	&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\nonumber\\
-	&~& \left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]	\\
-\dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\nonumber\\
+V_c 	&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
+	\left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]	\\
+\dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\cdot\nonumber\\
 	&~&\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
 			(q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
 \eea
@@ -902,158 +916,197 @@ of the Hydrogens and so induce a large dipole moment over the system.
 Therefore we have to keep groups of atoms with total charge
 0 together, the so-called {\em charge groups}.
 
+\newcommand{\Fi}{\ve{F}_i'}
+\newcommand{\Fj}{\ve{F}_j'}
+\newcommand{\Fk}{\ve{F}_k'}
+\newcommand{\Fdum}{\ve{F}_{d}}
+\newcommand{\rvik}{\ve{r}_{ik}}
+\newcommand{\rvid}{\ve{r}_{id}}
+\newcommand{\rvjk}{\ve{r}_{jk}}
+
 \section{Dummy atoms.}
 \label{sec:dummy}
 \normindex{Dummy atom}s can be used in {\gromacs} in a number of ways. 
-We write the position of the dummy particle \ve{r} as a function of
-the positions of other particles \ve{r}$_i$:
-$\ve{r}	=	f(\ve{r}_1..\ve{r}_n)$. The dummy, which may carry
-charge, or can be involved in other interactions can now be used
-in the force calculation. 
-The force acting on the dummy particle must be redistributed over the atoms
-in a consistent way. A good way to do this 
-can be found in ref.~\cite{Berendsen84b}.
-We can write the potential energy as
+We write the position of the dummy particle $\ve{r}_d$ as a function of
+the positions of other particles \ve{r}$_i$: $\ve{r}_d =
+f(\ve{r}_1..\ve{r}_n)$. The dummy, which may carry charge, or can be
+involved in other interactions can now be used in the force
+calculation.  The force acting on the dummy particle must be
+redistributed over the atoms in a consistent way. A good way to do
+this can be found in ref.~\cite{Berendsen84b}.  We can write the
+potential energy as
 \beq
-V = V(\ve{r},\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
+V = V(\ve{r}_d,\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
 \eeq
 The force on the particle $i$ is then
 \beq
-\ve{F}_i = -\frac{\partial V^*}{\partial \ve{r}_i} = -\frac{\partial V}{\partial \ve{r}_i} - \frac{\partial V}{\partial \ve{r}}\frac{\partial \ve{r}}{\partial \ve{r}_i} = \ve{F}_i^{direct} + \ve{F}_i^{distr}
+\ve{F}_i = -\frac{\partial V^*}{\partial \ve{r}_i} 
+	 = -\frac{\partial V}{\partial \ve{r}_i} - 
+	    \frac{\partial \ve{r}_d}{\partial \ve{r}_i}
+	    \frac{\partial V}{\partial \ve{r}_d} 
+	 = \ve{F}_i^{direct} + \Fi
 \eeq
 the first term of which is the normal force. 
 The second term is the force on particle $i$ due to the dummy particle, which
-can be conveniently rewritten in tensor notation:
-\newcommand{\mymac}[2]{\displaystyle\frac{\partial #1}{\partial #2_i}}
+can be written in tensor notation:
+\newcommand{\partd}[2]{\displaystyle\frac{\partial #1}{\partial #2_i}}
 \beq
-\ve{F}_i^{distr} = \left[\begin{array}{ccc}
-\mymac{x}{x} & \mymac{y}{x} & \mymac{z}{x}	\\[4mm]
-\mymac{x}{y} & \mymac{y}{y} & \mymac{z}{y}	\\[4mm]
-\mymac{x}{z} & \mymac{y}{z} & \mymac{z}{z}
-\end{array}\right]\ve{F}
+\Fi = \left[\begin{array}{ccc}
+\partd{x_d}{x} & \partd{y_d}{x} & \partd{z_d}{x}	\\[1ex]
+\partd{x_d}{y} & \partd{y_d}{y} & \partd{z_d}{y}	\\[1ex]
+\partd{x_d}{z} & \partd{y_d}{z} & \partd{z_d}{z}
+\end{array}\right]\Fdum
 \eeq
-where \ve{F} is the force on the dummy particle. In this way the total
+where $\Fdum$ is the force on the dummy particle and $x_d$, $y_d$ and
+$z_d$ are the coordinates of the dummy particle. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
 
-There are three ways to construct dummies from surrounding atoms in
-{\gromacs}. Notethat all possible dummies could be constructed from
-types 2$''$ (normalized, in-plane) and 3 (non-normalized, out of
+\begin {figure}
+\centerline{\psfig{figure=plots/dummies.eps,width=13cm}}
+\caption{The five different types of dummy construction in \protect\gromacs.}
+\label{fig:dummies}
+\end {figure}
+
+There are five ways to construct dummies from surrounding atoms in
+{\gromacs}. Note that all dummies types mentioned can be constructed
+from types 2$''$ (normalized, in-plane) and 3 (non-normalized, out of
 plane). However, the amount of computation involved increases sharply
 along this list, so it is strongly recommended to always use the first
-dummy type that will be sufficient for a certain purpose.
+dummy type that will be sufficient for a certain purpose. An overview
+of the dummy constructions is given in fig.~\ref{fig:dummies}.
 
 \begin{itemize}
 \item[1.]As a linear combination of two atoms:
 \beq
-	\ve{r} ~=~ \ve{r}_i + a \rvij
+	\ve{r}_d ~=~ \ve{r}_i + a \rvij
 \eeq
 	in this case the dummy is on the line through atoms $i$ and
 	$j$. The force on particles $i$ and $j$ due to the force on
 	the dummy can be computed as:
 \beq
-	\begin{array}{l}
-	\ve{F}_i ~=~	(1-a)\ve{F}	\\
-	\ve{F}_j ~=~	a\ve{F}		\\
+	\begin{array}{lcr}
+	\Fi &=&	(1-a)\Fdum	\\
+	\Fj &=&	a\,\Fdum	\\
 	\end{array}
 \eeq
 
 \item[2.]As a linear combination of three atoms:
 \beq
-	\ve{r} ~=~ \ve{r}_i + a \rvij + b \ve{r}_{ik}
+	\ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik
 \eeq
 	in this case the dummy is always in the plane of the other three
 	particles.
 	The force on particles $i$, $j$ and $k$ due to the force on the dummy
 	can be computed as:
 \beq
-	\begin{array}{l}
-	\ve{F}_i ~=~	(1-a-b)\ve{F}	\\
-	\ve{F}_j ~=~	a\ve{F} 	\\
-	\ve{F}_k ~=~	b\ve{F} 	\\
+	\begin{array}{lcr}
+	\Fi &=&	(1-a-b)\Fdum	\\
+	\Fj &=&	a\,\Fdum 	\\
+	\Fk &=&	b\,\Fdum 	\\
 	\end{array}
 \eeq
 
 \item[2$'$.]In the plane of three atoms, with a fixed distance:
 \beq
-	\ve{r} ~=~ \ve{r}_i + b \frac{  \rvij + a \ve{r}_{jk}  }
-				     {| \rvij + a \ve{r}_{jk} |}	
+	\ve{r}_d ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
+				     {| \rvij + a \rvjk |}	
 \eeq
 	in this case the dummy is in the plane of the other three
 	particles at a distance of $b$ from $i$.
 	The force on particles $i$, $j$ and $k$ due to the force on the dummy
 	can be computed as:
 \beq
-	\begin{array}{l}
-\displaystyle	\ve{F}_i ~=~	(1-(1+a)\frac{b}{\ell}) \ve{F}		\\
-\displaystyle	\ve{F}_j ~=~	\frac{b}{\ell} \ve{F}	\\ 
-\displaystyle	\ve{F}_k ~=~	a \frac{b}{\ell} \ve{F} 		\\
+	\begin{array}{lcr}
+	\Fi &=&	\displaystyle \Fdum - \gamma ( \Fdum - \ve{p} )	\\[1ex]
+	\Fj &=&	\displaystyle (1-a)\gamma (\Fdum - \ve{p})	\\[1ex]
+	\Fk &=&	\displaystyle a \gamma (\Fdum - \ve{p}) 	\\
 	\end{array}
 	~\mbox{~ where~ }~
-	\ell = | \rvij + a \ve{r}_{jk} |
+	\begin{array}{c}
+\displaystyle \gamma = \frac{b}{| \rvij + a \rvjk |} \\[2ex]
+\displaystyle \ve{p} = \frac{ \rvid \cdot \Fdum }
+		      { \rvid \cdot \rvid } \rvid
+	\end{array}
 \eeq
 
 \item[2$''$.]In the plane of three atoms, with a fixed angle and distance:
 \beq
-	 \ve{r} ~=~ \ve{r}_i +
+\label{eqn:dum2fad-F}
+	 \ve{r}_d ~=~ \ve{r}_i +
 	 	    d \cos \theta \frac{\rvij}{|\rvij|} +
 		    d \sin \theta \frac{\ve{r}_\perp}{|\ve{r}_\perp|}
 	~\mbox{~ where~ }~
-	\ve{r}_\perp ~=~ \ve{r}_{jk} - 
-			\frac{ \rvij \cdot \ve{r}_{jk} }
+	\ve{r}_\perp ~=~ \rvjk - 
+			\frac{ \rvij \cdot \rvjk }
 			     { \rvij \cdot \rvij }
 			 \rvij
 \eeq
 	in this case the dummy is in the plane of the other three
 	particles at a distance of $d$ from $i$ at an angle of
-	$\theta$ with $\rvij$. Note that in this case $d$ and
-	$\theta$ must be specified in stead of $a$ and $b$ (see also
-	~\secref{dummytop}). The force on particles $i$, $j$ and $k$
-	due to the force on the dummy can be computed as:
+	$\alpha$ with $\rvij$. Atom $k$ defines the plane and the
+	direction of the angle. Note that in this case $b$ and
+	$\alpha$ must be specified in stead of $a$ and $b$ (see also
+	\secref{dummytop}). The force on particles $i$, $j$ and $k$
+	due to the force on the dummy can be computed as (with
+	$\ve{r}_\perp$ as defined in \eqnref{dum2fad-F}):
+\newcommand{\dfrac}{\displaystyle\frac}
 \beq
-	\begin{array}{l}
-\vspace{4mm}
-\displaystyle	\ve{F}_i ~=~ \left( 1 -
-			\frac{d \cos \theta}{|\rvij|} +
-			\frac{d \sin \theta}{|\ve{r}_\perp|}
-			\frac{ \rvij \cdot \ve{r}_{jk} }
-			     { \rvij \cdot \rvij } 
-			     \right) \ve{F}	\\
-\vspace{4mm}
-\displaystyle	\ve{F}_j ~=~ \left(
-				\frac{d \cos \theta}{|\rvij|} -
-			\left( 1 + \frac{ \rvij \cdot \ve{r}_{jk} }
-				        { \rvij \cdot \rvij }
-			\right)
-			\frac{d \sin \theta}{|\ve{r}_\perp|} 
-			     \right) \ve{F}	\\
-\displaystyle	\ve{F}_k ~=~ \frac{d \sin \theta}{|\ve{r}_\perp|} \ve{F}\\
-	\end{array}
+\begin{array}{c}
+	\begin{array}{lclllll}
+	\Fi &=& \Fdum &-& 
+		\dfrac{b \cos \alpha}{|\rvij|} \ve{F}_1 &+&
+		\dfrac{b \sin \alpha}{|\ve{r}_\perp|} \left( 
+		\dfrac{ \rvij \cdot \rvjk }
+		     { \rvij \cdot \rvij } \ve{F}_2	+
+		\ve{F}_3 \right)				\\[3ex]
+	\Fj &=& &&
+		\dfrac{b \cos \alpha}{|\rvij|} \ve{F}_1 &-&
+		\dfrac{b \sin \alpha}{|\ve{r}_\perp|} \left(
+		 \ve{F}_2 + 
+		 \dfrac{ \rvij \cdot \rvjk }
+			{ \rvij \cdot \rvij } \ve{F}_2 +
+		\ve{F}_3 \right)				\\[3ex]
+	\Fk &=& && &&
+		\dfrac{b \sin \alpha}{|\ve{r}_\perp|} \ve{F}_2	\\[3ex]
+	\end{array}						\\[5ex]
+	\mbox{where ~}
+	\ve{F}_1 = \Fdum -
+	 	  \dfrac{ \rvij \cdot \Fdum }
+		      	{ \rvij \cdot \rvij } \rvij
+	\mbox{\,, ~}
+	\ve{F}_2 = \ve{F}_1 -
+		  \dfrac{ \ve{r}_\perp \cdot \Fdum }
+			{ \ve{r}_\perp \cdot \ve{r}_\perp } \ve{r}_\perp
+	\mbox{~and ~}
+	\ve{F}_3 = \dfrac{ \rvij \cdot \Fdum }
+			 { \rvij \cdot \rvij } \ve{r}_\perp
+\end{array}
 \eeq
 
 \item[3.]As a non-linear combination of three atoms, out of plane:
 \beq
-	\ve{r} ~=~ \ve{r}_i + a \rvij + b \ve{r}_{ik} +
-		c (\rvij \times \ve{r}_{ik})
+	\ve{r}_d ~=~ \ve{r}_i + a \rvij + b \rvik +
+		c (\rvij \times \rvik)
 \eeq
 	this enables the construction of dummies out of the plane of the
 	other atoms.
 	The force on particles $i,j$ and $k$ due to the force on the dummy
 	can be computed as:
 \beq
-\begin{array}{l}
+\begin{array}{lcl}
 \vspace{4mm}
-\ve{F}_j^{distr} = \left[\begin{array}{ccc}
- a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[2mm]
- c\,z_{ik} 	&   a 		& -c\,x_{ik}	\\[2mm]
+\Fj &=& \left[\begin{array}{ccc}
+ a 		&  -c\,z_{ik}	& c\,y_{ik}	\\[0.5ex]
+ c\,z_{ik} 	&   a 		& -c\,x_{ik}	\\[0.5ex]
 -c\,y_{ik} 	&   c\,x_{ik} 	& a
-\end{array}\right]\ve{F}					\\
+\end{array}\right]\Fdum					\\
 \vspace{4mm}
-\ve{F}_k^{distr} = \left[\begin{array}{ccc}
- b 		&   c\,z_{ij}	& -c\,y_{ij}	\\[2mm]
--c\,z_{ij} 	&   b 		& c\,x_{ij}	\\[2mm]
+\Fk &=& \left[\begin{array}{ccc}
+ b 		&   c\,z_{ij}	& -c\,y_{ij}	\\[0.5ex]
+-c\,z_{ij} 	&   b 		& c\,x_{ij}	\\[0.5ex]
  c\,y_{ij} 	&  -c\,x_{ij} 	& b
-\end{array}\right]\ve{F}					\\
-\ve{F}_i^{distr} = \ve{F} - \ve{F}_j^{distr} - \ve{F}_k^{distr}
+\end{array}\right]\Fdum					\\
+\Fi &=& \Fdum - \Fj - \Fk
 \end{array}
 \eeq
 
