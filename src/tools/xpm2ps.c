@@ -75,6 +75,7 @@ typedef struct {
   char      leg2label[STRLEN];
   real      xboxsize;
   real      yboxsize;
+  real      boxspacing;
   t_axisdef X,Y;
 } t_psrec;
 
@@ -96,6 +97,7 @@ void get_params(char *mpin,t_psrec *psr)
   RTYPE("legendfontsize",	psr->legfontsize, 14.0);
   RTYPE("xbox",         	psr->xboxsize,    2.0);
   RTYPE("ybox",         	psr->yboxsize,    2.0);
+  RTYPE("boxspacing",           psr->boxspacing,  20.0);
   RTYPE("xoffset",              psr->xoffs,       0.0);
   RTYPE("yoffset",              psr->yoffs,       0.0);
   ITYPE("x-major",      	psr->X.major,     20);
@@ -229,7 +231,7 @@ static int box_height(t_matrix *mat,t_psrec *psr)
 
 static int box_dh(t_psrec *psr)
 {
-  return 3*psr->Y.majorticklen;
+  return psr->boxspacing;
 }
 
 static int box_dh_top(t_psrec *psr)
@@ -242,6 +244,16 @@ static int box_dh_top(t_psrec *psr)
     dh=0;
 
   return  dh;
+}
+
+static bool box_do_all_x_maj_ticks(t_psrec *psr)
+{
+  return (psr->boxspacing>(1.5*psr->X.majorticklen));
+}
+
+static bool box_do_all_x_min_ticks(t_psrec *psr)
+{
+  return (psr->boxspacing>(1.5*psr->X.minorticklen));
 }
 
 static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
@@ -281,9 +293,11 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
     for(x=0; (x<mat[i].nx); x++) {
       xx=xx00+(x+0.7)*psr->xboxsize;
       /*
-      itx=mat[i].axis_x[0];
-      */
-      if ((x % psr->X.major == psr->X.offset) || (psr->X.first && (x==0))) {
+	itx=mat[i].axis_x[0];
+	*/
+      if ( ( (x % psr->X.major == psr->X.offset) || 
+	     (psr->X.first && (x==0))) &&
+	   ( (i == 0) || box_do_all_x_maj_ticks(psr) ) ) {
 	/* Longer tick marks */
 	ps_line (out,xx,yy00,xx,yy00-psr->X.majorticklen);
 	/* Plot label on lowest graph only */
@@ -291,10 +305,13 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 	  ps_ctext(out,xx,
 		   yy00-DDD-psr->X.majorticklen-psr->X.tickfontsize*0.8,
 		   xtick[x],eXCenter);
-      }
-      else if ((x-psr->X.offset) % psr->X.minor == 0) {
+      } else if ( ( (x-psr->X.offset) % psr->X.minor == 0) &&
+		( (i == 0) || box_do_all_x_min_ticks(psr) ) ){
 	/* Shorter tick marks */
 	ps_line(out,xx,yy00,xx,yy00-psr->X.minorticklen);
+      } else if (x % psr->X.major == psr->X.offset) {
+	/* Even shorter marks, only each X.offset */
+	ps_line(out,xx,yy00,xx,yy00-(psr->boxspacing/2));
       }
     }
     ps_strfont(out,psr->Y.tickfont,psr->Y.tickfontsize);
@@ -622,18 +639,19 @@ int main(int argc,char *argv[])
   };
 
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
-  int       nmat,nmat2;
+  int       i,nmat,nmat2;
   bool      bLegSet;
   t_matrix *mat=NULL,*mat2=NULL;
-  static bool bTitle=TRUE,bDiag=TRUE,bLegend=TRUE;
+  static bool bTitle=TRUE,bDiag=TRUE,bLegend=TRUE,bTitLab=FALSE;
   static real boxx=0,boxy=0;
   t_pargs pa[] = {
-    { "-title", FALSE, etBOOL, &bTitle,"show title" },
+    { "-title",  FALSE, etBOOL, &bTitle, "show title" },
+    { "-label",  FALSE, etBOOL, &bTitLab,"show title in Y-label position"},
     { "-legend", FALSE, etBOOL, &bLegend,"show legend" },
-    { "-diag", FALSE, etBOOL, &bDiag,"plot diagonal" },
-    { "-bx", FALSE, etREAL, &boxx,
+    { "-diag",   FALSE, etBOOL, &bDiag,  "plot diagonal" },
+    { "-bx",     FALSE, etREAL, &boxx,
       "box x-size (also y-size when -by is not set)"},
-    { "-by", FALSE, etREAL, &boxy,"box y-size"}
+    { "-by",     FALSE, etREAL, &boxy,   "box y-size"}
   };
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
@@ -671,6 +689,13 @@ int main(int argc,char *argv[])
   }
   else {
     nmat2=0;
+  }
+  if (bTitLab) {
+    bTitle=FALSE; /* don't print title on two places at once */
+    for (i=0; (i<nmat); i++)
+      strcpy(mat[i].label_y, mat[i].title);
+    for (i=0; (i<nmat2); i++)
+      strcpy(mat2[i].label_y, mat2[i].title);
   }
 
   do_mat(nmat,mat,nmat2,mat2,bDiag,bTitle,bLegend,bLegSet,
