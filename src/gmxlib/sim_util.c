@@ -273,23 +273,26 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 }
 
 void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
-		 matrix box,tensor pres,real ener[])
+		 matrix box,tensor pres,tensor virial,real ener[])
 {
   static bool bFirst=TRUE;
-  real vol,rc3,spres;
+  real vol,rc3,spres,svir;
+  int  m;
   
   if (bLJcorr) {
     vol           = det(box);
     rc3           = fr->rshort*fr->rshort*fr->rshort;
     ener[F_LJLR]  = -2.0*natoms*natoms*M_PI*fr->avcsix/(3.0*vol*rc3);
     spres         = 2.0*ener[F_LJLR]*PRESFAC/vol;
+    svir          = -6.0*ener[F_LJLR];
     ener[F_PRES]  = trace(pres)/3.0+spres;
-    pres[XX][XX] += spres;
-    pres[YY][YY] += spres;
-    pres[ZZ][ZZ] += spres;
+    for(m=0; (m<DIM); m++) {
+      pres[m][m]    += spres;
+      virial[m][m]  += svir;
+    }
     if (bFirst) {
-      fprintf(log,"Long Range LJ corrections: Epot=%10g, Pres=%10g\n",
-	      ener[F_LJLR],spres);
+      fprintf(log,"Long Range LJ corrections: Epot=%10g, Pres=%10g, Vir=%10g\n",
+	      ener[F_LJLR],spres,svir);
       bFirst = FALSE;
     }
   }

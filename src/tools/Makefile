@@ -279,6 +279,9 @@ g_hbond.o: water.h
 g_sas:		g_sas.o	nsc.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
+g_multipoles:	g_multipoles.o
+		$(LD) -o $@ $^ $(SYSLIBS)
+
 html_luck:	html_luck.o
 		$(LD) -Bstatic -o $@ $^ $(SYSLIBS)
 include	Make.dep

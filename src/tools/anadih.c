@@ -228,6 +228,13 @@ static void calc_angles(FILE *log,matrix box,
   for(i=ix=0; (ix<n3); i++,ix+=3) 
     ang[i]=bond_angle(log,box,x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
 		      r_ij,r_kj,&costh);
+  if (debug) {
+    fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
+	    ang[0],costh,index[0],index[1],index[2]);
+    pr_rvec(debug,0,"rij",r_ij,DIM);
+    pr_rvec(debug,0,"rkj",r_kj,DIM);
+    pr_rvecs(debug,0,"box",box,DIM);
+  }
 }
 
 static real calc_fraction(real angles[], int nangles)
@@ -333,13 +340,20 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
   rvec       *x,*x_s;
   int        cur=0;
 #define prev (1-cur)
+<<<<<<< anadih.c
+
+#ifdef CINVSQRT
+  init_lookup_table(stdout);
+#endif  
+=======
   
   init_lookup_table(stdout);
   
+>>>>>>> 1.4
   /* Read topology */    
-  top=read_top(tpb_fn);
-  natoms=top->atoms.nr;
-  nat2=read_first_x(&status,trj_fn,&t,&x,box);
+  top    = read_top(tpb_fn);
+  natoms = top->atoms.nr;
+  nat2   = read_first_x(&status,trj_fn,&t,&x,box);
   
   /* Check for consistency of topology and trajectory */
   if (natoms > nat2) 

@@ -33,6 +33,14 @@
 static char *SRCID_xdrf_h = "$Id$";
 
 #ifdef USE_XDR
+#ifdef _lnx_
+#ifdef FALSE
+#undef FALSE
+#endif
+#ifdef TRUE
+#undef TRUE
+#endif
+#endif
 #include <rpc/rpc.h>
 #include <rpc/xdr.h>
 #else

@@ -167,6 +167,7 @@ static void analyse_msd(char *xvg,char *grpname,
     D2        /= nstart;
     DeltaD = sqrt(D2 - sqr(D[nstart]));
     fprintf(stderr,"Dav = %.2f, RMS = %.2f\n",D[nstart],DeltaD);
+    fprintf(fp,"# Dav = %.2f, RMS = %.2f nstart = %d\n",D[nstart],DeltaD,nstart);
   
     sprintf(buf,"D\\sav\\N = %.2f",D[nstart]);
     leg[0] = strdup(buf);

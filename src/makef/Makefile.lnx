@@ -11,27 +11,6 @@
 #
 SYSDEFS		= -DHAVE_IDENT -DHAVE_ULONG -DCINVSQRT
 
-# GNU C compiler
-CC		= gcc
-CCC		= gcc
-F77		= g77
-CFLAGS		= -O3 -ffast-math -m486 -fPIC  #  Assume Intel 486 for now 
-CCFLAGS		= $(CFLAGS)
-FFLAGS		= -fPIC
-
-# Generic linking stuff
-LDFLAGS		= -L$(LIBDIR) 
-LD		= $(CC) $(LDFLAGS) 
-FLD		= $(F77) $(LDFLAGS) 
-CCLD		= $(CCC) $(LDFLAGS)
-
-SYSLIBS		= -lgmx.$(CPU) -lm
-XLIBS		= -lX11 -L/usr/lib/X11 -L/usr/X11R6/lib
-AR		= ar ruv
-SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(CPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(CPU).so -o $(LIBDIR)/$(LIBRARY).$(CPU).so *.o; $(RM) *.o)
-RANLIB		= ranlib
-X11INC		= -I/usr/include/X11
-
 #
 #	USER MODIFIABLE SECTION
 #
@@ -45,7 +24,7 @@ USEF77		= no
 # to see what's installed at your site. If you have neither,
 # set both to no. If you select both, something will break!!!
 #
-USE_PVM3	= no
+USE_PVM3	= yes
 USE_MPI		= no
 #
 # If you want to use compressed data files set this to yes
@@ -60,8 +39,40 @@ USE_XDR		= yes
 # This is used in the Open GL trajectory viewer.
 HAVE_GL		= no
 #
+#
+# If you want to use the GMX/Motif user interface (and if you have Motif
+# or lesstif (www.lesstif.org) installed, uncomment this one.
+HAVE_MOTIF	= yes
+#
 # Note that these variables are also used in Makefile.std
 # If something does not work, please check out the link command line
 # in that file (e.g. for PVM)
 #
+
+# GNU C compiler
+CC		= gcc
+CCC		= gcc
+F77		= g77
+CFLAGS		= -O3 -ffast-math -m486 -fPIC  #  Assume Intel 486 for now 
+CCFLAGS		= $(CFLAGS)
+FFLAGS		= -fPIC
+
+# Generic linking stuff
+LDFLAGS		= -L$(LIBDIR) 
+LD		= $(CC) $(LDFLAGS) 
+FLD		= $(F77) $(LDFLAGS) 
+CCLD		= $(CCC) $(LDFLAGS)
+
+ifeq ($(HAVE_MOTIF),yes)
+SYSDEFS		+= -DHAVE_MOTIF
+XLIBS		= -lgmx.$(CPU) -L/usr/X11R6/lib -lXm -lXt -lX11  -lm
+SYSLIBS		= $(XLIBS)
+else
+SYSLIBS		= -lgmx.$(CPU) -lm
+XLIBS		= -L/usr/X11R6/lib -lX11 $(SYSLIBS)
+endif
+AR		= ar ruv
+SHAREIT		= #(cd $(LIBDIR); ar x $(LIBRARY).$(CPU).a; $(CC) $(LDFLAGS) -shared -Wl,-soname,$(LIBRARY).$(CPU).so -o $(LIBDIR)/$(LIBRARY).$(CPU).so *.o; $(RM) *.o)
+RANLIB		= ranlib
+X11INC		= -I/usr/X11R6/include
 

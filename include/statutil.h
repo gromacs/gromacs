@@ -153,6 +153,15 @@ extern char *sscan(int argc,char *argv[],int *i);
 extern void vscan(int argc,char *argv[],int *i,rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
+#ifdef HAVE_MOTIF
+extern void gmx_gui(int *argc,char *argv[],
+		    int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
+		    int ndesc,char *desc[],int nbugs,char *bugs[]);
+  /* This function plops up a Motif dialog box in which the command-line options
+   * can be changed.
+   */
+#endif
+
 extern void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 			      int nfile,t_filenm fnm[],int npargs,t_pargs pa[],
 			      int ndesc,char *desc[],int nbugs,char *bugs[]);

@@ -281,8 +281,11 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #ifdef _SGI_
   static int  npri=0;
 #ifdef USE_SGI_FPE
-    static bool bExcept=FALSE;
+  static bool bExcept=FALSE;
 #endif
+#endif
+#ifdef HAVE_MOTIF
+  static bool bGUI;  
 #endif
   static bool bDebug=FALSE;
   
@@ -311,6 +314,10 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       "HIDDENTurn on exception handling" },
 #endif
 #endif
+#ifdef HAVE_MOTIF
+    { "-X",    FALSE, etBOOL, &bGUI,
+      "Use dialog box GUI to edit command line options" },
+#endif
     { "-b",    FALSE, etREAL, &tbegin,        
       "First frame (ps) to read from trajectory" },
     { "-e",    FALSE, etREAL, &tend,        
@@ -320,6 +327,17 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   };
 #define NPCA_PA asize(pca_pa)
   bool bFlags[NPCA_PA] = 
+#ifdef HAVE_MOTIF
+#ifdef _SGI_
+#ifdef USE_SGI_FPE
+  { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
+#else
+  { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
+#endif
+#else
+  { 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
+#endif
+#else
 #ifdef _SGI_
 #ifdef USE_SGI_FPE
   { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0 };
@@ -328,6 +346,7 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
 #endif
 #else
   { 1, 1, 1, 1, 1, 1, 0, 0, 0 };
+#endif
 #endif
 
   /* Check for double arguments */
@@ -367,14 +386,38 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
   /* Parse the file args */
   parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
 
+#ifdef HAVE_MOTIF
+  /* Default value for GUI can be set with environment variable */
+  bGUI = (getenv("GMXMOTIF") != NULL);
+#endif
+  
   /* Now parse the other options */
   get_pargs(argc,argv,npall,all_pa,FF(PCA_KEEP_ARGS));
 
+  /* Open the debug file */
+  if (bDebug) {
+    char buf[256];
+    
+    sprintf(buf,"%s.log",ShortProgram());
+    init_debug(buf);
+    fprintf(debug,"%s (this file) opened in file %s, line %d\n",
+	    buf,__FILE__,__LINE__);
+  }
+
+#ifdef HAVE_MOTIF
+  /* Now we have parsed the command line arguments. If the use wants it
+   * we can now plop up a GUI dialog box to edit options.
+   */
+  if (bGUI)
+    gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
+#endif
+    
   if (bNo_get_pargs) {  
     /* Now copy the results back... */
     for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
       memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
   }
+  
 #ifdef _SGI_
 #ifdef USE_SGI_FPE
   /* Install exception handler if necessary */
@@ -398,15 +441,6 @@ void parse_common_args(int *argc,char *argv[],ulong Flags,bool bNice,
       nice(nicelevel);
 #endif
 
-  if (bDebug) {
-    char buf[256];
-    
-    sprintf(buf,"%s.log",ShortProgram());
-    init_debug(buf);
-    fprintf(debug,"%s (this file) opened in file %s, line %d\n",
-	    buf,__FILE__,__LINE__);
-  }
-  
   if (!(FF(PCA_QUIET) || bQuiet )) {
     if (bHelp)
       write_man(stdout,eotHelp,program,ndesc,desc,nfile,fnm,npall,all_pa,

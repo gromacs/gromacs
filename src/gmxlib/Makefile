@@ -53,6 +53,9 @@ ifeq ($(USEF77),yes)
 OBJ		+= inloopf.o	fshake.o	fsettle.o	\
 		   flincs.o	flincsld.o	fql77.o
 endif
+ifeq ($(HAVE_MOTIF),yes)
+OBJ		+= mgmx.o widget.o
+endif
 
 ifeq ($(USE_XDR),yes)
 OBJ 		+= libxdrf.o ftocstr.o
@@ -127,7 +130,7 @@ inloopf.o:	inloopf.m4
 		$(F77) $(FFLAGS) -c inloopf.f
 		$(RM) inloopf.f
 
-libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o
+libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o	xdrf.o
 		$(AR) $@ $^
 		$(RANLIB) $@
 		$(RM) $(LIBDIR)/$@
@@ -154,6 +157,8 @@ lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
+mgmxtest:	mgmxtest.o 	mgmx.o	widget.o
+		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep
 

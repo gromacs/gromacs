@@ -98,6 +98,9 @@ c
 
       subroutine readxtc(xd,natoms,step,time,box,x,prec,ret)
 
+      integer xd,natoms,step,mode,ret
+      real    box(9),time,prec
+      
       call xtcio(xd,natoms,step,time,box,x,prec,1,ret)
       
       return 
@@ -105,6 +108,9 @@ c
 
       subroutine writextc(xd,natoms,step,time,box,x,prec,ret)
 
+      integer xd,natoms,step,mode,ret
+      real    box(9),time,prec
+      
       call xtcio(xd,natoms,step,time,box,x,prec,0,ret)
       
       return 

@@ -30,7 +30,6 @@
 extern "C" {
 #endif
 
-
 #ifndef FALSE
 #define FALSE   0
 #endif

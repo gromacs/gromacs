@@ -42,6 +42,7 @@ static char *SRCID_do_gct_c = "$Id$";
 #include "filenm.h"
 #include "mdrun.h"
 #include "update.h"
+#include "vec.h"
 
 t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 			   t_commrec *cr,t_forcerec *fr,
@@ -89,8 +90,8 @@ char *mk_gct_nm(char *fn,int ftp,int ati,int atj)
   return buf;
 }
 
-static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[],t_commrec *cr,
-		  int nfile,t_filenm fnm[])
+static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[],real Virial,
+		  t_commrec *cr,int nfile,t_filenm fnm[])
 {
   static FILE *prop;
   static FILE **out=NULL;
@@ -99,15 +100,20 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[],t_commrec 
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
   char        buf[256];
-  char        *leg[] = { "C12", "C6" };
+  char        *leg[] =  { "C12", "C6" };
   char        *bleg[] = { "A", "B", "C" };
   char        *pleg[] = { "RA-Pres", "Pres", "RA-Epot", "Epot" };
+  char        *vleg[] = { "RA-Vir", "Vir", "RA-Epot", "Epot" };
   int         i,index;
   
   if ((prop == NULL) && (out == NULL) && (qq == NULL) && (ip == NULL)) {
     prop=xvgropen(opt2fn("-runav",nfile,fnm),
 		  "Properties and Running Averages","Time (ps)","");
-    xvgr_legend(prop,asize(pleg),pleg);
+    if (tcr->bVirial)
+      xvgr_legend(prop,asize(vleg),vleg);
+    else
+      xvgr_legend(prop,asize(pleg),pleg);
+      
     if (tcr->nLJ) {
       snew(out,tcr->nLJ);
       for(i=0; (i<tcr->nLJ); i++) {
@@ -163,8 +169,13 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[],t_commrec 
       fflush(ip[i]);
     }
   }
-  fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e\n",
-	  time,tcr->pres,ener[F_PRES],tcr->epot,Ecouple(tcr,ener));
+  if (tcr->bVirial)
+    fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    time,tcr->vir,Virial,tcr->epot,Ecouple(tcr,ener));
+  else
+    fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    time,tcr->pres,ener[F_PRES],tcr->epot,Ecouple(tcr,ener));
+  
   fflush(prop);
   for(i=0; (i<tcr->nLJ); i++) {
     tclj=&(tcr->tcLJ[i]);
@@ -203,16 +214,18 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,real ener[],t_commrec 
   }
 }
 
-static void pr_dev(real t,real dev[eoNR],t_commrec *cr,int nfile,t_filenm fnm[])
+static void pr_dev(bool bVirial,
+		   real t,real dev[eoNR],t_commrec *cr,int nfile,t_filenm fnm[])
 {
   static FILE *fp=NULL;
   int    i;
   
   if (!fp) {
     fp=xvgropen(opt2fn("-devout",nfile,fnm),
-		"Deviations from target value","Pres","Epot");
+		"Deviations from target value",
+		bVirial ? "Vir" : "Pres","Epot");
   }
-  fprintf(fp,"%12.5e  %12.5e\n",dev[eoPres],dev[eoEpot]);
+  fprintf(fp,"%12.5e  %12.5e\n",bVirial ? dev[eoVir] : dev[eoPres],dev[eoEpot]);
   fflush(fp);
 }
 
@@ -309,7 +322,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
 		 t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
-		 t_commrec *cr)
+		 t_commrec *cr,matrix box,tensor virial)
 {
 
 #define enm2Debye 48.0321
@@ -321,7 +334,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   
   int         i,j,ati,atj,atnr2,type,ftype;
   real        deviation[eoNR],prdev[eoNR],epot0;
-  real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind,Epol,Eintern;
+  real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind,Epol,Eintern,Virial;
   bool        bTest,bPrint;
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
@@ -341,6 +354,24 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     snew(fc, atnr2);
     snew(fq, idef->atnr);
     bFirst = FALSE;
+    
+    if (tcr->bVirial) {
+      int  nrdf = 0;
+      real TTT  = 0;
+      real Vol  = det(box);
+      
+      for(i=0; (i<ir->opts.ngtc); i++) {
+	nrdf += ir->opts.nrdf[i];
+	TTT  += ir->opts.nrdf[i]*ir->opts.ref_t[i];
+      }
+      TTT /= nrdf;
+      
+      /* Calculate reference virial from reference temperature and pressure */
+      tcr->vir0 = 0.5*BOLTZ*nrdf*TTT - (3.0/2.0)*Vol*tcr->pres0;
+      
+      fprintf(log,"DOGCT: TTT = %g, nrdf = %d, vir0 = %g,  Vol = %g\n",
+	      TTT,nrdf,tcr->vir0,Vol);
+    }
   }
   
   bPrint = do_per_step(step,ir->nstprint);
@@ -351,6 +382,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    */
   if (step == 0) {
     tcr->pres = tcr->pres0;
+    tcr->vir  = tcr->vir0;
     if ((tcr->dipole) != 0.0) {
       mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
       Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
@@ -366,6 +398,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    * if you want this.
    */
   Eintern = Ecouple(tcr,ener);
+  Virial  = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
   
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
@@ -373,15 +406,15 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    */
   tcr->pres = run_aver(tcr->pres,ener[F_PRES],step,tcr->nmemory);
   tcr->epot = run_aver(tcr->epot,Eintern,     step,tcr->nmemory);
+  tcr->vir  = run_aver(tcr->vir, Virial,      step,tcr->nmemory);
   
   if (bPrint)
-    pr_ff(tcr,t,idef,ener,cr,nfile,fnm);
-  
+    pr_ff(tcr,t,idef,ener,Virial,cr,nfile,fnm);
 
   /* If dipole != 0.0 assume we want to use polarization corrected coupling */
   if ((tcr->dipole) != 0.0) {
     mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
-  
+    
     Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
 
     epot0 = (tcr->epot0 - Epol)*nmols;
@@ -396,13 +429,16 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     epot0 = tcr->epot0*nmols;
 
   /* Calculate the deviation of average value from the target value */
-  deviation[eoPres] = calc_deviation(tcr->pres,ener[F_PRES],tcr->pres0);
-  deviation[eoEpot] = calc_deviation(tcr->epot,Eintern,     epot0);
-  prdev[eoPres] = tcr->pres0 - ener[F_PRES];
-  prdev[eoEpot] = epot0      - Eintern;
+  deviation[eoPres]   = calc_deviation(tcr->pres,ener[F_PRES],tcr->pres0);
+  deviation[eoEpot]   = calc_deviation(tcr->epot,Eintern,     epot0);
+  deviation[eoVir]    = calc_deviation(tcr->vir, Virial,      tcr->vir0);
+
+  prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
+  prdev[eoEpot]   = epot0      - Eintern;
+  prdev[eoVir]    = tcr->vir0  - Virial;
   
   if (bPrint)
-    pr_dev(t,prdev,cr,nfile,fnm);
+    pr_dev(tcr->bVirial,t,prdev,cr,nfile,fnm);
   
   /* First set all factors to 1 */
   for(i=0; (i<atnr2); i++) {

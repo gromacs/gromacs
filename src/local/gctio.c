@@ -43,7 +43,8 @@ static char *SRCID_gctio_c = "$Id$";
 #include "names.h"
 
 char *eoNames[eoNR] = { 
-  "Pres", "Epot", "Polarizability", "Dipole", "Memory", "UseEinter"
+  "Pres", "Epot", "Vir", 
+  "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial"
 };
 
 static int Name2eo(char *s)
@@ -210,6 +211,8 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	  eoNames[eoMemory],tcr->nmemory);
   fprintf(fp,"%-15s = %12s  ; Use intermolecular Epot only (LJ+Coul)\n",
 	  eoNames[eoInter],yesno_names[tcr->bInter]);
+  fprintf(fp,"%-15s = %12s  ; Use virial iso pressure\n",
+	  eoNames[eoUseVirial],yesno_names[tcr->bVirial]);
 	  
   fprintf(fp,"\n; Q-Coupling   %6s  %12s\n","type","xi");
   for(i=0; (i<tcr->nQ); i++) {
@@ -414,6 +417,7 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   RTYPE (eoNames[eoDipole],	tcr->dipole,	0.0);
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
   ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
+  ETYPE (eoNames[eoUseVirial],  tcr->bVirial,   yesno_names);
   
   tcr->tcLJ=NULL;
   tcr->tcBU=NULL;

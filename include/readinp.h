@@ -93,6 +93,9 @@ extern void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],
  * If !bKeepArgs, the command line arguments are removed from the command line
  */
 
+extern bool is_hidden(t_pargs *pa);
+/* Return TRUE when the option is a secret one */
+
 extern char *pa_val(t_pargs *pa);
 /* Return a pointer to a static buffer containing the value of pa */
 

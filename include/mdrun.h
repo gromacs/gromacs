@@ -230,6 +230,6 @@ extern void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
 			  t_edsamyn *edyn);
 			  
 extern void calc_ljcorr(FILE *log,bool bLJcorr,t_forcerec *fr,int natoms,
-			matrix box,tensor pres,real ener[]);
+			matrix box,tensor pres,tensor virial,real ener[]);
 
 #endif	/* _mdrun_h */

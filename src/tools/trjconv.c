@@ -236,7 +236,7 @@ int main(int argc,char *argv[])
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
   static rvec  newbox = {0,0,0};
   static real  xshift=0.0;
-  static char  *exec_command;
+  static char  *exec_command=NULL;
   
   t_pargs pa[] = {
     { "-inbox", FALSE,  etBOOL, &bInBox,

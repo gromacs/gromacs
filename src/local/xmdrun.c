@@ -801,12 +801,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bTCR)
       set_avcsix(log,fr,&top->idef,md);
     calc_ljcorr(log,parm->ir.bLJcorr,
-		fr,md->nr,parm->box,parm->pres,ener);
+		fr,md->nr,parm->box,parm->pres,parm->vir,ener);
     
     if (bTCR)
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
 		  &(parm->ir),MASTER(cr) || bMultiSim,md,&(top->idef),mu_aver,
-		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr);
+		  top->blocks[ebMOLS].nr,bMultiSim ? cr_msim : cr,
+		  parm->box,parm->vir);
     
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);

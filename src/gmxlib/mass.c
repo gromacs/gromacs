@@ -98,7 +98,7 @@ real get_mass(char *resnm, char *atomnm)
     strcpy(atomname,atomnm);
       
   for(i=0; (i<nmass); i++)
-    if ((strcmp(mass[i].resname,"???")==0) ||
+    if ((strcmp(mass[i].resname,"*")==0) ||
 	( (strncmp(mass[i].resname,resnm,3)==0) ) ||
 	( (strcmp(mass[i].resname,"AAA")==0) && is_protein(resnm) )) {
       len=min((int) strlen(atomname),(int) strlen(mass[i].atomname));

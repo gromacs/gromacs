@@ -597,7 +597,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,real *lambda,
       do_inputrec(ir,bRead);
     else {
       init_inputrec(&dum_ir);
-      do_inputrec(&dum_ir,bRead);
+      do_inputrec  (&dum_ir,bRead);
       done_inputrec(&dum_ir);
     }
   }

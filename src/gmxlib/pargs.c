@@ -39,6 +39,11 @@ static char *SRCID_pargs_c = "$Id$";
 #include "string2.h"
 #include "vec.h"
 
+bool is_hidden(t_pargs *pa)
+{
+  return (strstr(pa->desc,"HIDDEN") != NULL);
+}
+
 void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 {
   int  i,j;
@@ -208,9 +213,9 @@ char *pa_val(t_pargs *pa)
 
 void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 {
-  bool bShowHidden;
+  bool bShowHidden,bIsHidden;
   char buf[32],buf2[256];
-  char *ptr,*desc,*wdesc;
+  char *desc,*wdesc,*ptr;
   int  i,j;
   
   /* Cannot call opt2parg_bSet here, because it crashes when the option
@@ -227,14 +232,15 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
     fprintf(fp,"%12s %6s %6s  %s\n","Option","Type","Value","Description");
     fprintf(fp,"------------------------------------------------------\n");
     for(i=0; (i<npargs); i++) {
-      ptr   = strstr(pa[i].desc,"HIDDEN");
-      if (bShowHidden && ptr) {
+      bIsHidden = is_hidden(&(pa[i]));
+      if (bShowHidden && bIsHidden) {
+	ptr = strstr(pa[i].desc,"HIDDEN");
 	snew(desc,strlen(ptr)+4);
 	sprintf(desc,"[hidden] %s",ptr+6);
       } else
 	desc=strdup(pa[i].desc);
 	
-      if (bShowHidden || (ptr == NULL)) {
+      if (bShowHidden || !bIsHidden) {
 	if (pa[i].type == etBOOL)
 	  sprintf(buf,"-[no]%s",pa[i].option+1);
 	else

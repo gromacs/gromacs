@@ -37,7 +37,8 @@ static char *SRCID_do_gct_h = "$Id$";
 #include "filenm.h"
 #include "network.h"
 
-enum { eoPres, eoEpot, eoPolarizability, eoDipole, eoMemory, eoInter, eoNR };
+enum { eoPres, eoEpot, eoVir, eoPolarizability, eoDipole, 
+       eoMemory, eoInter, eoUseVirial, eoNR };
 extern char *eoNames[eoNR];
 
 typedef struct {
@@ -73,6 +74,7 @@ typedef struct {
 
 typedef struct {
   real       pres0,pres;
+  real       vir0,vir;
   real       epot0,epot;
   int        nLJ,nBU,nQ,nIP;
   t_coupl_LJ *tcLJ;
@@ -83,6 +85,7 @@ typedef struct {
   real       dipole;
   int        nmemory;
   bool       bInter;
+  bool       bVirial;
 } t_coupl_rec;
 
 extern void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef);
@@ -102,6 +105,6 @@ extern void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 			t_coupl_rec *tcr,real t,int step,real ener[],
 			t_forcerec *fr,t_inputrec *ir,bool bMaster,
 			t_mdatoms *md,t_idef *idef,real mu_aver,int nmols,
-			t_commrec *cr);
+			t_commrec *cr,matrix box,tensor virial);
 		     
 #endif
