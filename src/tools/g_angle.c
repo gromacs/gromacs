@@ -60,9 +60,9 @@ int main(int argc,char *argv[])
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash."
   };
-  static char *opt=NULL;
-  static bool bALL=FALSE,bFour=TRUE,bNumber=FALSE;
-  static int  resolution=5,nrestart=1;
+  static char *opt;
+  static bool bALL=FALSE,bChandler=FALSE;
+  static int  resolution=5;
   static int  nframes = 10;
   t_pargs pa[] = {
     { "-type", FALSE, etSTR, &opt,
@@ -73,12 +73,8 @@ int main(int argc,char *argv[])
       "The number of points per degree in the distribution" },
     { "-nframes",   FALSE, etINT,  &nframes,
       "Number of frames in your trajectory" },
-    { "-nrestart", FALSE, etINT, &nrestart,
-      "Without FFT this is the number of points for calculation of ACF, when set to 1 all points are taken into account" },
-    { "-number", FALSE,  etBOOL, &bNumber,
+    { "-chandler", FALSE,  etBOOL, &bChandler,
       "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
-    { "-fft",    FALSE,  etBOOL, &bFour,
-      "Use FFT for correlation function" }
   };
   static char *bugs[] = {
     "Counting transitions only works for dihedrals with multiplicity 3"
@@ -162,7 +158,7 @@ int main(int argc,char *argv[])
   bTrans=opt2bSet("-ot",NFILE,fnm);
   bFrac=opt2bSet("-of",NFILE,fnm);
 
-  if (bNumber && !bCorr)
+  if (bChandler && !bCorr)
     bCorr=TRUE;
     
   if (bFrac && bRb==FALSE) {
@@ -240,7 +236,7 @@ int main(int argc,char *argv[])
       fprintf(stderr,"Not enough frames for correlation function\n");
     else {
       
-      if (bNumber) {
+      if (bChandler) {
 	real dval,sixty=DEG2RAD*60;
 	bool bTest;
 
@@ -257,7 +253,7 @@ int main(int argc,char *argv[])
 	      dih[i][j] = -tfrac;
 	  }
       }
-      if (bNumber)
+      if (bChandler)
 	mode = eacNormal;
       else
 	mode = eacCos;
