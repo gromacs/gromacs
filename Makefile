@@ -12,6 +12,11 @@ DVIPS	=	dvips
 
 all:		gromacs.ps
 
+dvi:		gromacs.dvi
+
+booklet:	all
+		pstops "4:-3L@.7(21cm,0)+0L@.7(21cm,14.85cm),1L@.7(21cm,0)+-2L@.7(21cm,14.85cm)" gromacs.ps booklet.ps
+
 gromacs.aux:	
 		$(TEX) gromacs
 
