@@ -163,7 +163,7 @@ void swap_mat(t_mat *m)
   done_mat(&tmp);
 }
 
-void low_rms_dist(char *fn,real maxrms,int nn,real **mat)
+void low_rmsd_dist(char *fn,real maxrms,int nn,real **mat)
 {
   FILE   *fp;
   int    i,j,*histo;
@@ -183,9 +183,9 @@ void low_rms_dist(char *fn,real maxrms,int nn,real **mat)
   xvgr_file(fn,NULL);
 }
 
-void rms_distribution(char *fn,t_mat *rms)
+void rmsd_distribution(char *fn,t_mat *rms)
 {
-  low_rms_dist(fn,rms->maxrms,rms->nn,rms->mat);
+  low_rmsd_dist(fn,rms->maxrms,rms->nn,rms->mat);
 }
 
 t_clustid *new_clustid(int n1)

@@ -268,7 +268,7 @@ void gather(FILE *log,t_mat *m,real cutoff,t_clusters *clust)
   int       i,j,k,nn,cid,n1,diff;
   bool      bChange;
   
-  /* First we sort the entries in the RMS matrix */
+  /* First we sort the entries in the RMSD matrix */
   n1 = m->nn;
   nn = ((n1-1)*n1)/2;
   snew(d,nn);
@@ -366,7 +366,7 @@ bool jp_same(int **nnb,int i,int j,int P)
 }
 
 static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
-			   real rmscut,t_clusters *clust)
+			   real rmsdcut,t_clusters *clust)
 {
   t_dist    *tmp;
   t_clustid *c;
@@ -374,7 +374,7 @@ static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
   int       i,j,k,cid,diff,max;
   bool      bChange;
 
-  /* First we sort the entries in the RMS matrix row by row.
+  /* First we sort the entries in the RMSD matrix row by row.
    * This gives us the nearest neighbor list.
    */
   snew(nnb,n1);
@@ -395,10 +395,10 @@ static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
 	}
       nnb[i][M] = -1;
     } else {
-      /* Put all neighbors nearer than rmscut in the list */
+      /* Put all neighbors nearer than rmsdcut in the list */
       max=0;
       k=0;
-      for(j=0; (j<n1) && (mat[i][tmp[j].j] < rmscut); j++)
+      for(j=0; (j<n1) && (mat[i][tmp[j].j] < rmsdcut); j++)
 	if (tmp[j].j != i) {
 	  if (k >= max) {
 	    max += 10;
@@ -540,20 +540,24 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
 			     t_atoms *atoms,int natom,
 			     int isize,atom_id *index,atom_id *alli,
 			     rvec **xx,real *time,real *mass,
-			     rvec *xtps,char *trxfn,FILE *log)
+			     rvec *xtps,char *trxfn,bool bAv,FILE *log)
 {
   FILE *fp;
+  char buf[STRLEN],buf1[20],buf2[20];
   int  trxout;
-  int  i,i1,i2,cl,nstr,*structure,first;
-  real r;
+  int  i,i1,i2,cl,nstr,*structure,first,midstr;
+  real r,clrmsd,midrmsd;
   rvec *xtpsi,*xav,*xnatom;
   matrix zerobox;
 
   clear_mat(zerobox);
-  
-  fprintf(stderr,"\nFound %d clusters:\n",clust->ncl);
-  fprintf(log,"\nFound %d clusters:\n",clust->ncl);
 
+  sprintf(buf,"\nFound %d clusters\n"
+	  "\nWriting %s structure for each cluster to %s\n",
+	  clust->ncl,bAv ? "average" : "middle",trxfn);
+  fprintf(stderr,buf);
+  fprintf(log,buf);
+  
   /* Prepare a reference structure for the orientation of the clusters  */
   snew(xtpsi,isize);
   for(i=0; i<isize; i++)
@@ -565,8 +569,9 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
   snew(xav,isize);
   snew(xnatom,natom);
   snew(structure,nf);
-  fprintf(stderr,"%3s %3s %4s","cl.","#st","rmsd");
-  fprintf(log,"%3s %3s %4s","cl.","#st","rmsd");
+  sprintf(buf,"\n%3s %3s %4s %6s %4s\n","cl.","#st","rmsd","middle","rmsd");
+  fprintf(stderr,buf);
+  fprintf(log,buf);
   for(cl=1; cl<=clust->ncl; cl++) {
     for(i=0; i<natom;i++)
       clear_rvec(xav[i]);
@@ -575,34 +580,73 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       if (clust->cl[i1] == cl) {
 	structure[nstr] = i1;
 	nstr++;
-	reset_x(isize,alli,isize,alli,xx[i1],mass);
-	if (nstr == 1)
-	  first = i1;
-	else
-	  do_fit(isize,mass,xx[first],xx[i1]);
-	for(i=0; i<isize; i++)
-	  rvec_inc(xav[i],xx[i1][i]);
+	if (bAv) {
+	  reset_x(isize,alli,isize,alli,xx[i1],mass);
+	  if (nstr == 1)
+	    first = i1;
+	  else
+	    do_fit(isize,mass,xx[first],xx[i1]);
+	  for(i=0; i<isize; i++)
+	    rvec_inc(xav[i],xx[i1][i]);
+	}
       }
-    r = 0;
-    for(i1=0; i1<nstr; i1++)
-      for(i=i1+1; i<nstr; i++)
-	r += rmsd[structure[i1]][structure[i]];
-    r /= 0.5*nstr*(nstr+1);
-    fprintf(stderr,"%3d %3d %4.2f :",cl,nstr,r);
-    fprintf(log,"%3d %3d %4.2f :",cl,nstr,r);
-    for(i1=0; i1<nf; i1++)
-      if (clust->cl[i1] == cl) {
-	fprintf(stderr," %g",time[i1]);
-	fprintf(log," %g",time[i1]);
+    clrmsd = 0;
+    midstr = 0;
+    midrmsd = 10000;
+    for(i1=0; i1<nstr; i1++) {
+      r = 0;
+      if (nstr > 1) {
+	for(i=0; i<nstr; i++)
+	  r += rmsd[structure[i1]][structure[i]];
+	r /= (nstr - 1);
       }
+      if (r < midrmsd) {
+	midstr = structure[i1];
+	midrmsd = r;
+      }
+      clrmsd += r;
+    }
+    clrmsd /= nstr;
+    if (nstr > 1) {
+      sprintf(buf1,"%5.3f",clrmsd);
+      if (buf1[0] == '0')
+	buf1[0] = ' ';
+      sprintf(buf2,"%5.3f",midrmsd);
+      if (buf2[0] == '0')
+	buf2[0] = ' ';
+    } else {
+      sprintf(buf1,"%5s","");
+      sprintf(buf2,"%5s","");
+    }
+    sprintf(buf,"%3d %3d%s %6.f%s:",
+	    cl,nstr,buf1,time[midstr],buf2);
+    fprintf(stderr,buf);
+    fprintf(log,buf);
+    for(i=0; i<nstr; i++) {
+      if ((i % 8 == 0) && i)
+	sprintf(buf,"\n%25s","");
+      else
+	buf[0] = '\0';
+      i1 = structure[i];
+      fprintf(stderr,"%s %6.f",buf,time[i1]);
+      fprintf(log,"%s %6.f",buf,time[i1]);
+    }
     fprintf(stderr,"\n");
     fprintf(log,"\n");
-
+    
     /* Dump the average structure for this cluster */
+    if (bAv) {
+      r = 1.0/nstr;
+      for(i=0; i<isize; i++)
+	svmul(r,xav[i],xav[i]);
+    } else {
+      for(i=0; i<isize; i++)
+	copy_rvec(xx[midstr][i],xav[i]);
+      reset_x(isize,alli,isize,alli,xav,mass);
+    }
     do_fit(isize,mass,xtpsi,xav);
-    r = 1.0/nstr;
     for(i=0; i<isize; i++)
-      svmul(r,xav[i],xnatom[index[i]]);
+      copy_rvec(xav[i],xnatom[index[i]]);
     r = cl;
     write_trx(trxout,isize,index,atoms,0,r,zerobox,xnatom,NULL);
   }
@@ -621,17 +665,18 @@ int main(int argc,char *argv[])
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     "full linkage: add a structure to a cluster when its distance to any",
-    "element of the cluster is less than [TT]rmscut[tt].[PAR]",
+    "element of the cluster is less than [TT]cutoff[tt].[PAR]",
     "Jarvis Patrick: add a structure to a cluster when this structure",
     "and a structure in the cluster have each other as neighbors and",
     "they have a least [TT]P[tt] neighbors in common. The neighbors",
     "of a structure are the M closest structures or all structures within",
-    "[TT]rmscut[tt].[PAR]",
+    "[TT]cutoff[tt].[PAR]",
     "Monte Carlo: reorder the RMSD matrix using Monte Carlo.[PAR]",
     "diagonalization: diagonalize the RMSD matrix.[PAR]"
     "When unique cluster assignments can be determined (full linkage and",
-    "Jarvis Patrick), the average structure for each cluster will be",
-    "written to a trajectory file."
+    "Jarvis Patrick), the structure with the smallest average distance to",
+    "the others or the average structure for each cluster will be written",
+    "to a trajectory file."
   };
   
   FILE         *fp,*log;
@@ -659,28 +704,30 @@ int main(int argc,char *argv[])
   static char *method[] = { NULL, "linkage", "jarvis-patrick","monte-carlo",
 			    "diagonalization", NULL };
   static int  nlevels=40,skip=1;
-  static real scalemax=-1.0,rmscut=0.1;
-  static bool bRMSdist=FALSE,bBinary=FALSE;
+  static real scalemax=-1.0,rmsdcut=0.1;
+  static bool bRMSdist=FALSE,bBinary=FALSE,bAv=FALSE;
   static int  niter=10000,seed=1993;
   static real kT=1e-3;
   static int  M=10,P=3;
   t_pargs pa[] = {
-    { "-dist",FALSE, etBOOL, &bRMSdist,
+    { "-dista",FALSE, etBOOL, &bRMSdist,
       "Use RMSD of distances instead of RMS deviation" },
     { "-nlevels",   FALSE, etINT,  &nlevels,
-      "Discretize rms in # levels" },
-    { "-rmscut", FALSE, etREAL, &rmscut,
-      "RMS cut-off (nm) for two structures to be similar" },
+      "Discretize RMSD matrix in # levels" },
+    { "-cutoff", FALSE, etREAL, &rmsdcut,
+      "RMSD cut-off (nm) for two structures to be similar" },
     { "-max",   FALSE, etREAL, &scalemax,
       "Maximum level in matrices" },
     { "-skip",  FALSE, etINT, &skip,
       "Only analyze every nr-th frame" },
+    { "-av",  FALSE, etBOOL, &bAv,
+      "Write average iso middle structure for each cluster" },
     { "-method",FALSE, etENUM, method,
       "Method for cluster determination" },
     { "-binary",FALSE, etBOOL, &bBinary,
-      "Treat the RMS matrix as consisting of 0 and 1, where the cut-off is given by the value you put in for rms-cut" },
+      "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by the value you put in for rms-cut" },
     { "-M",     FALSE, etINT,  &M,
-      "Number of nearest neighbours considered for Jarvis-Patrick algorithm, 0 is use rmscut" },
+      "Number of nearest neighbours considered for Jarvis-Patrick algorithm, 0 is use cutoff" },
     { "-P",     FALSE, etINT,  &P,
       "Number of identical nearest neighbors required to form a cluster" },
     { "-seed",  FALSE, etINT,  &seed,
@@ -691,14 +738,14 @@ int main(int argc,char *argv[])
       "Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps)" }
   };
   t_filenm fnm[] = {
-    { efTRX, "-f",    NULL,       ffREAD  },
-    { efTPS, "-s",    NULL,       ffREAD  },
-    { efNDX, NULL,    NULL,       ffOPTRD },
-    { efXPM, "-o",   "rmsd-clust",ffWRITE },
-    { efLOG, "-g",    "cluster",  ffWRITE },
-    { efXVG, "-dist","rms-dist",  ffWRITE },
-    { efXVG, "-ev",  "rms-eig",   ffOPTWR },
-    { efTRX, "-av",  "clusters.pdb",  ffOPTWR }
+    { efTRX, "-f",     NULL,        ffREAD  },
+    { efTPS, "-s",     NULL,        ffREAD  },
+    { efNDX, NULL,     NULL,        ffOPTRD },
+    { efXPM, "-o",    "rmsd-clust", ffWRITE },
+    { efLOG, "-g",    "cluster",    ffWRITE },
+    { efXVG, "-dist", "rmsd-dist",  ffWRITE },
+    { efXVG, "-ev",   "rmsd-eig",   ffOPTWR },
+    { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -714,8 +761,8 @@ int main(int argc,char *argv[])
   if ((M<0) || (M == 1))
     fatal_error(0,"M (%d) must be 0 or larger than 1",M);
   if (M < 2)
-    fprintf(stderr,"Will use rmscut (%g) for determining the neighbors\n",
-	    rmscut);
+    fprintf(stderr,"Will use RMSD cutoff (%g) for determining the neighbors\n",
+	    rmsdcut);
   else if (P >= M)
     fatal_error(0,"Number of neighbors required (P) must be less than M");
   if (skip < 1)
@@ -799,20 +846,20 @@ int main(int argc,char *argv[])
   fprintf(stderr,"Using %s for clustering\n",method[0]);
   fprintf(log,"Using %s for clustering\n",method[0]);
 
-  /* Plot the rms distribution */
-  rms_distribution(opt2fn("-dist",NFILE,fnm),rms);
+  /* Plot the rmsd distribution */
+  rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
  
   snew(rmsmat,nf);
   for(i1=0; (i1 < nf); i1++) {
     snew(rmsmat[i1],nf);
-    for(i2=i1; (i2 < nf); i2++)
+    for(i2=0; (i2 < nf); i2++)
       rmsmat[i1][i2] = rms->mat[i1][i2];
   }
 
   if (bBinary) {
     for(i1=0; (i1 < nf); i1++) 
       for(i2=0; (i2 < nf); i2++)
-	if (rms->mat[i1][i2] < rmscut)
+	if (rms->mat[i1][i2] < rmsdcut)
 	  rms->mat[i1][i2] = 0;
 	else
 	  rms->mat[i1][i2] = 1;
@@ -821,7 +868,7 @@ int main(int argc,char *argv[])
   snew(clust.cl,nf);
   if (m_linkage) 
     /* Now sort the matrix and write it out again */
-    gather(log,rms,rmscut,&clust);
+    gather(log,rms,rmsdcut,&clust);
   else if (m_diagonalize) {
     /* Do a diagonalization */
     snew(eigval,nf);
@@ -838,7 +885,7 @@ int main(int argc,char *argv[])
   else if (m_monte_carlo)
     mc_optimize(log,rms,niter,&seed,kT);
   else if (m_jarvis_patrick)
-    jarvis_patrick(log,rms->nn,rms->mat,M,P,rmscut,&clust);
+    jarvis_patrick(log,rms->nn,rms->mat,M,P,rmsdcut,&clust);
   else
     fatal_error(0,"unknown method \"%s\"",method[0]);
 
@@ -857,7 +904,7 @@ int main(int argc,char *argv[])
   if (bAnalyze) {
     plot_clusters(nf,rms->mat,rms->maxrms,&clust);
     analyze_clusters(nf,&clust,rmsmat,&(top.atoms),natom,isize,index,alli,
-		     xx,time,mass,xtps,opt2fn("-av",NFILE,fnm),log);
+		     xx,time,mass,xtps,opt2fn("-cl",NFILE,fnm),bAv,log);
   }
   ffclose(log);
   

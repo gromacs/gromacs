@@ -143,7 +143,7 @@ int main (int argc,char *argv[])
     { efNDX, NULL,  NULL,    ffOPTRD },
     { efXVG, NULL,  "rmsd",  ffWRITE },
     { efXVG, "-a",  "avgrp", ffOPTWR },
-    { efXVG, "-dist","rms-dist", ffOPTWR },
+    { efXVG, "-dist","rmsd-dist", ffOPTWR },
     { efXPM, "-m",  "rmsd",  ffOPTWR },
     { efDAT, "-bin","rmsd",  ffOPTWR },
     { efXPM, "-bm", "bond",  ffOPTWR }
@@ -528,7 +528,7 @@ int main (int argc,char *argv[])
 		   rmsd_mat,rmsd_min,rmsd_max,rlo,rhi,&nlevels);
       /* Print the distribution of RMSD values */
       if (opt2bSet("-dist",NFILE,fnm)) 
-	low_rms_dist(opt2fn("-dist",NFILE,fnm),tel_mat,rmsd_max,rmsd_mat);
+	low_rmsd_dist(opt2fn("-dist",NFILE,fnm),tel_mat,rmsd_max,rmsd_mat);
 		     
       if (bDelta) {
 	snew(delta_tot,delta_xsize);
