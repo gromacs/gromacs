@@ -430,10 +430,12 @@ void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
   sfree(aid);
 
   /* Non-Protein */
+  /*
   aid=mk_aid(atoms,restp,etProt,&nra,FALSE);
   if ((nra > 0) && (nra < atoms->nr))
     add_grp(gb,gn,nra,aid,"Non-Protein"); 
   sfree(aid);
+  */
 
   /* DNA */
   aid=mk_aid(atoms,restp,etDNA,&nra,TRUE);
