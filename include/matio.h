@@ -59,6 +59,12 @@ extern void writecmap(char *fn,int n,t_mapping map[]);
 extern int read_xpm_matrix(char *fnm, t_matrix **matrix);
 /* Reads a number of matrices from .xpm file fnm and returns this number */
 
+extern int matrix2real(t_matrix *matrix, real ***mat);
+/* Converts an integer matrix in a t_matrix struct to a matrix of reals
+ * mat is snewed by matrix2real
+ * Returns 0 when something went wrong
+ */
+
 extern void write_xpm_m(FILE *out, t_matrix m);
 /* Writes a t_matrix struct to .xpm file */ 
 

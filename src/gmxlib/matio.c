@@ -380,6 +380,34 @@ int read_xpm_matrix(char *fnm,t_matrix **matrix)
   return nmat;
 }
 
+bool matrix2real(t_matrix *matrix, real ***mat)
+{
+  t_mapping *map;
+  real *rmap;
+  int i,j,nmap;
+  
+  nmap=matrix->nmap;
+  map=matrix->map;
+  snew(rmap,nmap);
+  
+  for(i=0; i<nmap; i++)
+    if ((map[i].desc==NULL) || (sscanf(map[i].desc,"%g",&(rmap[i]))!=1)) {
+      fprintf(stderr,"Could not convert matrix to reals,\ncolor map entry %d has a non-real description: \"%s\"\n",map[i].desc);
+      return FALSE;
+    }
+  
+  snew(*mat,matrix->nx);
+  for(i=0; i<matrix->nx; i++) {
+    snew((*mat)[i],matrix->ny);
+    for(j=0; j<matrix->ny; j++) 
+      (*mat)[i][j]=rmap[matrix->matrix[i][j]];
+  }
+  
+  fprintf(stderr,"Converted a matrix with %d levels to reals\n",nmap);
+
+  return TRUE;
+}
+
 void write_xpm_header(FILE *out,
 		      char *title,char *legend,char *label_x,char *label_y,
 		      bool bDiscrete)
