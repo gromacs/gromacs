@@ -33,6 +33,7 @@ static char *SRCID_dum_parm_c = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -40,7 +41,6 @@ static char *SRCID_dum_parm_c = "$Id$";
 #include "dum_parm.h"
 #include "smalloc.h"
 #include "resall.h"
-#include "string2.h"
 #include "add_par.h"
 #include "vec.h"
 #include "toputil.h"
@@ -48,6 +48,8 @@ static char *SRCID_dum_parm_c = "$Id$";
 #include "index.h"
 #include "names.h"
 #include "fatal.h"
+#include "string2.h"
+#include "physics.h"
 
 typedef struct {
   t_iatom a[4];
@@ -229,8 +231,8 @@ static bool calc_dum3_param(t_atomtype *atype,
   
   bool bXH3,bError;
   real bjk,bjl,a=-1,b=-1;
-  /* check if this is part of a NH3 or CH3 group,
-   * i.e. if atom k and l are dummy masses (MNH3 or MCH3) */
+  /* check if this is part of a NH3 , NH2-umbrella or CH3 group,
+   * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
   if (debug) {
     int i;
     for (i=0; i<4; i++)
@@ -239,16 +241,16 @@ static bool calc_dum3_param(t_atomtype *atype,
     fprintf(debug,"\n");
   }
   bXH3 = 
-    ( (strcasecmp(type2nm(at->atom[param->AK].type,atype),"MNH3")==0) &&
-      (strcasecmp(type2nm(at->atom[param->AL].type,atype),"MNH3")==0) ) ||
-    ( (strcasecmp(type2nm(at->atom[param->AK].type,atype),"MCH3")==0) &&
-      (strcasecmp(type2nm(at->atom[param->AL].type,atype),"MCH3")==0) );
+    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MNH",3)==0) &&
+      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
+    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
+      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MCH3",4)==0) );
   
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
   bError = (bjk==NOTSET) || (bjl==NOTSET);
   if (bXH3) {
-    /* now we get some XH3 group specific construction */
+    /* now we get some XH2/XH3 group specific construction */
     /* note: we call the heavy atom 'C' and the X atom 'N' */
     real bMM,bCM,bCN,bNH,aCNH,dH,rH,dM,rM;
     int aN;
@@ -256,7 +258,7 @@ static bool calc_dum3_param(t_atomtype *atype,
     /* check if bonds from heavy atom (j) to dummy masses (k,l) are equal: */
     bError = bError || (bjk!=bjl);
     
-    /* the X atom (C or N) in the XH3 group is the first after the masses: */
+    /* the X atom (C or N) in the XH2/XH3 group is the first after the masses: */
     aN = max(param->AK,param->AL)+1;
     
     /* get common bonds */
@@ -377,8 +379,8 @@ static bool calc_dum3out_param(t_atomtype *atype,
   bool bXH3,bError,bSwapParity;
   real bij,bjk,bjl,aijk,aijl,akjl,pijk,pijl,a,b,c;
   
-  /* check if this is part of a NH3 or CH3 group,
-   * i.e. if atom k and l are dummy masses (MNH3 or MCH3) */
+  /* check if this is part of a NH2-umbrella, NH3 or CH3 group,
+   * i.e. if atom k and l are dummy masses (MNH* or MCH3*) */
   if (debug) {
     int i;
     for (i=0; i<4; i++)
@@ -387,10 +389,10 @@ static bool calc_dum3out_param(t_atomtype *atype,
     fprintf(debug,"\n");
   }
   bXH3 = 
-    ( (strcasecmp(type2nm(at->atom[param->AK].type,atype),"MNH3")==0) &&
-      (strcasecmp(type2nm(at->atom[param->AL].type,atype),"MNH3")==0) ) ||
-    ( (strcasecmp(type2nm(at->atom[param->AK].type,atype),"MCH3")==0) &&
-      (strcasecmp(type2nm(at->atom[param->AL].type,atype),"MCH3")==0) );
+    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MNH",3)==0) &&
+      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
+    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
+      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MCH3",4)==0) );
   
   /* check if construction parity must be swapped */  
   bSwapParity = ( param->C1 == -1 );
@@ -489,27 +491,32 @@ static bool calc_dum4fd_param(t_param *param,
     (aijk==NOTSET) || (aijl==NOTSET) || (aijm==NOTSET) || (akjm==NOTSET) || 
     (akjl==NOTSET);
   
-  pk = bjk*sin(aijk);
-  pl = bjl*sin(aijl);
-  pm = bjm*sin(aijm);
-  cosakl = (cos(akjl) - cos(aijk)*cos(aijl)) / (sin(aijk)*sin(aijl));
-  cosakm = (cos(akjm) - cos(aijk)*cos(aijm)) / (sin(aijk)*sin(aijm));
-  if ( cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1 )
-    fatal_error(0,"invalid construction in calc_dum4fd for atom %u: "
-		"cosakl=%g cosakm=%g\n",param->AI+1,cosakl,cosakm);
-  sinakl = sqrt(1-sqr(cosakl));
-  sinakm = sqrt(1-sqr(cosakm));
-  
-  /* note: there is a '+' because of the way the sines are calculated */
-  cl = -pk / ( pl*cosakl - pk + pl*sinakl*(pm*cosakm-pk)/(pm*sinakm) );
-  cm = -pk / ( pm*cosakm - pk + pm*sinakm*(pl*cosakl-pk)/(pl*sinakl) );
-  
-  param->C0 = cl;
-  param->C1 = cm;
-  param->C2 = -bij;
-  if (debug)
-    fprintf(debug,"params for dummy4fd %u: %g %g %g\n",
-	    param->AI+1,param->C0,param->C1,param->C2);
+  if (!bError) {
+    pk = bjk*sin(aijk);
+    pl = bjl*sin(aijl);
+    pm = bjm*sin(aijm);
+    cosakl = (cos(akjl) - cos(aijk)*cos(aijl)) / (sin(aijk)*sin(aijl));
+    cosakm = (cos(akjm) - cos(aijk)*cos(aijm)) / (sin(aijk)*sin(aijm));
+    if ( cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1 ) {
+      fprintf(stderr,"dummy atom %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
+	      param->AI+1,RAD2DEG*aijk,RAD2DEG*aijl,RAD2DEG*aijm);
+      fatal_error(0,"invalid construction in calc_dum4fd for atom %d: "
+		  "cosakl=%f, cosakm=%f\n",param->AI+1,cosakl,cosakm);
+    }
+    sinakl = sqrt(1-sqr(cosakl));
+    sinakm = sqrt(1-sqr(cosakm));
+    
+    /* note: there is a '+' because of the way the sines are calculated */
+    cl = -pk / ( pl*cosakl - pk + pl*sinakl*(pm*cosakm-pk)/(pm*sinakm) );
+    cm = -pk / ( pm*cosakm - pk + pm*sinakm*(pl*cosakl-pk)/(pl*sinakl) );
+    
+    param->C0 = cl;
+    param->C1 = cm;
+    param->C2 = -bij;
+    if (debug)
+      fprintf(debug,"params for dummy4fd %u: %g %g %g\n",
+	      param->AI+1,param->C0,param->C1,param->C2);
+  }
   
   return bError;
 }

@@ -33,10 +33,10 @@ static char *SRCID_gen_dum_c = "$Id$";
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include "string2.h"
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "string2.h"
 #include "assert.h"
 #include "gen_dum.h"
 #include "smalloc.h"
@@ -47,6 +47,301 @@ static char *SRCID_gen_dum_c = "$Id$";
 #include "physics.h"
 #include "index.h"
 #include "names.h"
+#include "futil.h"
+
+#define MAXNAME 32
+#define OPENDIR  	'['	/* starting sign for directive		*/
+#define CLOSEDIR 	']'	/* ending sign for directive		*/
+
+typedef struct {
+  char   atomtype[MAXNAME];      /* Type for the XH3/XH2 atom */
+  bool   isplanar;               /* If true, the atomtype above and the three connected
+				  * ones are in a planar geometry. The two next entries
+				  * are undefined in that case 
+				  */
+  int    nhydrogens;             /* number of connected hydrogens */
+  char   nextheavytype[MAXNAME]; /* Type for the heavy atom bonded to XH2/XH3 */
+  char   dummymass[MAXNAME];     /* The type of MNH* or MCH3* dummy mass to use */
+} t_dumconf;
+
+
+/* Structure to represent average bond and angles values in dummy aromatic
+ * residues. Note that these are NOT necessarily the bonds and angles from the
+ * forcefield; many forcefields (like Amber, OPLS) have some inherent strain in
+ * 5-rings (i.e. the sum of angles is !=540, but impropers keep it planar)
+ */
+typedef struct {
+  char resname[MAXNAME];
+  int nbonds;
+  int nangles;
+  struct {
+    char   atom1[MAXNAME];
+    char   atom2[MAXNAME];
+    float  value;
+  } *bond; /* list of bonds */
+  struct {
+    char   atom1[MAXNAME];
+    char   atom2[MAXNAME];
+    char   atom3[MAXNAME];
+    float  value;
+  } *angle; /* list of angles */
+} t_dumtop;
+
+
+enum { DDB_CH3, DDB_NH3, DDB_NH2, DDB_PHE, DDB_TYR, 
+       DDB_TRP, DDB_HISA, DDB_HISB, DDB_HISH , DDB_DIR_NR };
+
+typedef char t_dirname[STRLEN];
+
+static t_dirname ddb_dirnames[DDB_DIR_NR] = {
+  "CH3",
+  "NH3",
+  "NH2",
+  "PHE",
+  "TYR",
+  "TRP",
+  "HISA",
+  "HISB",
+  "HISH"
+};
+
+static int ddb_name2dir(char *name) 
+{
+  /* Translate a directive name to the number of the directive.
+   * HID/HIE/HIP names are translated to the ones we use in Gromacs.
+   */
+
+  int i,index;
+
+  index=-1;
+
+  for(i=0;i<DDB_DIR_NR && index<0;i++)
+    if(!strcasecmp(name,ddb_dirnames[i]))
+      index=i;
+  
+  return index;
+}
+
+
+static void read_dummy_database(char *ff,t_dumconf **pdumconflist, int *ndumconf,
+				t_dumtop **pdumtoplist, int *ndumtop)
+{
+  /* This routine is a quick hack to fix the problem with hardcoded atomtypes
+   * and aromatic dummy parameters by reading them from a ff???.ddb file.
+   *
+   * The file can contain sections [ NH3 ], [ CH3 ], [ NH2 ], and ring residue names.
+   * For the NH3 and CH3 section each line has three fields. The first is the atomtype 
+   * (nb: not bonded type) of the N/C atom to be replaced, the second field is
+   * the type of the next heavy atom it is bonded to, and the third field the type
+   * of dummy mass that will be used for this group. 
+   * 
+   * If the NH2 group planar (sp2 N) a different dummy construct is used, so in this
+   * case the second field should just be the word planar.
+   */
+
+  FILE *ddb;
+  char ddbname[STRLEN];
+  char dirstr[STRLEN];
+  char pline[STRLEN];
+  int i,j,n,k,ndum,ntop,curdir,prevdir;
+  t_dumconf *dumconflist;
+  t_dumtop *dumtoplist;
+  char *ch;
+  char s1[MAXNAME],s2[MAXNAME],s3[MAXNAME],s4[MAXNAME];
+
+  sprintf(ddbname,"%s.ddb",ff);
+  ddb = libopen(ddbname);
+
+  ndum = 0;
+  ntop = 0;
+  curdir=-1;
+  
+  snew(dumconflist,1);
+  snew(dumtoplist,1);
+
+  while(fgets2(pline,STRLEN-2,ddb) != NULL) {
+    strip_comment(pline);
+    trim(pline);
+    if(strlen(pline)>0) {
+      if(pline[0] == OPENDIR ) {
+	strncpy(dirstr,pline+1,STRLEN-2);
+	if ((ch = strchr (dirstr,CLOSEDIR)) != NULL)
+	  (*ch) = 0;
+	trim (dirstr);
+
+	if(!strcasecmp(dirstr,"HID"))
+	  sprintf(dirstr,"HISA");
+	else if(!strcasecmp(dirstr,"HIE"))
+	  sprintf(dirstr,"HISB");
+	else if(!strcasecmp(dirstr,"HIP"))
+	  sprintf(dirstr,"HISH");
+
+	curdir=ddb_name2dir(dirstr);
+	if(curdir<0)
+	  fatal_error(0,"Invalid directive %s in dummy database %s.ddb\n",dirstr,ff);
+      } else {
+	switch(curdir) {
+	case -1:
+	  fatal_error(0,"First entry in dummy database must be a directive.\n");
+	  break;
+	case DDB_CH3:
+	case DDB_NH3:
+	case DDB_NH2:
+	  n = sscanf(pline,"%s%s%s",s1,s2,s3);
+	  if(n<3 && !strcasecmp(s2,"planar")) {
+	    srenew(dumconflist,ndum+1);
+	    strncpy(dumconflist[ndum].atomtype,s1,MAXNAME-1);
+	    dumconflist[ndum].isplanar=TRUE;
+	    dumconflist[ndum].nextheavytype[0]=0;
+	    dumconflist[ndum].dummymass[0]=0;
+	    dumconflist[ndum].nhydrogens=2;
+	    ndum++;
+	  } else if(n==3) {
+	    srenew(dumconflist,(ndum+1));
+	    strncpy(dumconflist[ndum].atomtype,s1,MAXNAME-1);
+	    dumconflist[ndum].isplanar=FALSE;
+	    strncpy(dumconflist[ndum].nextheavytype,s2,MAXNAME-1);
+	    strncpy(dumconflist[ndum].dummymass,s3,MAXNAME-1);
+	    if(curdir==DDB_NH2)
+	      dumconflist[ndum].nhydrogens=2;
+	    else
+	      dumconflist[ndum].nhydrogens=3;
+	    ndum++;
+	  } else {
+	    fatal_error(0,"Not enough directives in dummy database line: %s\n",pline);
+	  }
+	  break;
+	case DDB_PHE:
+	case DDB_TYR:
+	case DDB_TRP:
+	case DDB_HISA:
+	case DDB_HISB:
+	case DDB_HISH:
+	  i=0;
+	  while((i<ntop) && strcasecmp(dirstr,dumtoplist[i].resname))
+	    i++;
+	  /* Allocate a new topology entry if this is a new residue */
+	  if(i==ntop) {
+	    srenew(dumtoplist,ntop+1);	    
+	    ntop++; /* i still points to current dummy topology entry */
+	    strncpy(dumtoplist[i].resname,dirstr,MAXNAME-1);
+	    dumtoplist[i].nbonds=dumtoplist[i].nangles=0;
+	    snew(dumtoplist[i].bond,1);
+	    snew(dumtoplist[i].angle,1);
+	  }
+	  n = sscanf(pline,"%s%s%s%s",s1,s2,s3,s4);
+	  if(n==3) {
+	    /* bond */
+	    k=dumtoplist[i].nbonds++;
+	    srenew(dumtoplist[i].bond,k+1);
+	    strncpy(dumtoplist[i].bond[k].atom1,s1,MAXNAME-1);
+	    strncpy(dumtoplist[i].bond[k].atom2,s2,MAXNAME-1);
+	    dumtoplist[i].bond[k].value=strtod(s3,NULL);
+	  } else if (n==4) {
+	    /* angle */
+	    k=dumtoplist[i].nangles++;
+	    srenew(dumtoplist[i].angle,k+1);
+	    strncpy(dumtoplist[i].angle[k].atom1,s1,MAXNAME-1);
+	    strncpy(dumtoplist[i].angle[k].atom2,s2,MAXNAME-1);
+	    strncpy(dumtoplist[i].angle[k].atom3,s3,MAXNAME-1);
+	    dumtoplist[i].angle[k].value=strtod(s4,NULL);
+	  } else 
+	    fatal_error(0,"Need 3 or 4 values to specify bond/angle values in %s.ddb: %s\n",ff,pline);
+	  
+	  break;
+	default:
+	  fatal_error(0,"Didnt find a case for directive %s in read_dummy_database\n",dirstr);
+	}
+      }
+    }
+  }
+
+  *pdumconflist=dumconflist;
+  *pdumtoplist=dumtoplist;
+  *ndumconf=ndum;
+  *ndumtop=ntop;
+}
+
+static int nitrogen_is_planar(t_dumconf dumconflist[],int ndumconf,char atomtype[])
+{
+  /* Return 1 if atomtype exists in database list and is planar, 0 if not,
+   * and -1 if not found.
+   */
+  int i,res;
+  bool found=FALSE;
+  for(i=0;i<ndumconf && !found;i++) {
+    found=(!strcasecmp(dumconflist[i].atomtype,atomtype) && (dumconflist[i].nhydrogens==2));
+  }
+  if(found)
+    res=(dumconflist[i-1].isplanar==TRUE);
+  else
+    res=-1;
+
+  return res;
+}
+  
+static char *get_dummymass_name(t_dumconf dumconflist[],int ndumconf,char atom[], char nextheavy[])
+{
+  /* Return the dummy mass name if found, or NULL if not set in ddb database */
+  int i;
+  bool found=FALSE;
+  for(i=0;i<ndumconf && !found;i++) {
+    found=(!strcasecmp(dumconflist[i].atomtype,atom) &&
+	   !strcasecmp(dumconflist[i].nextheavytype,nextheavy));
+  }
+  if(found)
+    return dumconflist[i-1].dummymass;
+  else
+    return NULL;
+}
+  
+
+
+static real get_ddb_bond(t_dumtop *dumtop, int ndumtop, char res[], char atom1[], char atom2[])
+{
+  int i,j;
+  
+  i=0;
+  while(i<ndumtop && strcasecmp(res,dumtop[i].resname))
+    i++;
+  if(i==ndumtop)
+    fatal_error(0,"No dummy information for residue %s found in dummy database.\n",res);
+  j=0;
+  while(j<dumtop[i].nbonds && 
+	( strcmp(atom1,dumtop[i].bond[j].atom1) || strcmp(atom2,dumtop[i].bond[j].atom2)) &&
+	( strcmp(atom2,dumtop[i].bond[j].atom1) || strcmp(atom1,dumtop[i].bond[j].atom2)))
+    j++;
+  if(j==dumtop[i].nbonds)
+    fatal_error(0,"Couldnt find bond %s-%s for residue %s in dummy database.\n",atom1,atom2,res);
+  
+  return dumtop[i].bond[j].value;
+}
+      
+
+static real get_ddb_angle(t_dumtop *dumtop, int ndumtop, char res[], char atom1[], char atom2[], char atom3[])
+{
+  int i,j;
+  
+  i=0;
+  while(i<ndumtop && strcasecmp(res,dumtop[i].resname))
+    i++;
+  if(i==ndumtop)
+    fatal_error(0,"No dummy information for residue %s found in dummy database.\n",res);
+  j=0;
+  while(j<dumtop[i].nangles && 
+	( strcmp(atom1,dumtop[i].angle[j].atom1) || 
+	  strcmp(atom2,dumtop[i].angle[j].atom2) || 
+	  strcmp(atom3,dumtop[i].angle[j].atom3)) &&
+	( strcmp(atom3,dumtop[i].angle[j].atom1) || 
+	  strcmp(atom2,dumtop[i].angle[j].atom2) || 
+	  strcmp(atom1,dumtop[i].angle[j].atom3)))
+    j++;
+  if(j==dumtop[i].nangles)
+    fatal_error(0,"Couldnt find angle %s-%s-%s for residue %s in dummy database.\n",atom1,atom2,atom3,res);
+  
+  return dumtop[i].angle[j].value;
+}
+      
 
 static void count_bonds(int atom, t_params *psb, char ***atomname, 
 			int *nrbonds, int *nrHatoms, int Hatoms[], int *Heavy,
@@ -234,23 +529,8 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
   } /* for i */
 }
 
-/* some things used by gen_dums_*
-   these are the default GROMACS bondlengths and angles for aromatic 
-   ring systems, which are also identical to the GROMOS numbers.
-   Probably these should be in a nice file for easy editing. */
-#define bR6 0.139
-#define bR5 0.133
-#define bCC 0.139
-#define bCO 0.136
-#define bCH 0.108
-#define bNH 0.100
-#define bOH 0.100
-/* it does not make sense to change these angles: */
-#define aR6  (DEG2RAD*120)
-#define aR6H (M_PI-0.5*aR6)
-#define aR5  (DEG2RAD*108)
-#define aR5H (M_PI-0.5*aR5)
-#define aCOH (DEG2RAD*109.5)
+#define ANGLE_6RING (DEG2RAD*120)
+
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
 #define cosrule(b,c,alpha) ( sqr(b) + sqr(c) - 2*b*c*cos(alpha) )
@@ -258,23 +538,26 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
 #define acosrule(a,b,c) ( (sqr(b)+sqr(c)-sqr(a))/(2*b*c) )
 
 static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[], 
-			  int nrfound, int *ats, bool bDoZ)
+			  int nrfound, int *ats, real bond_cc, real bond_ch,
+			  real xcom, real ycom, bool bDoZ)
 {
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
   enum { atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2, 
 	 atCZ, atHZ, atNR };
   
   int i,ndum;
-  real a,b,dCGCE,tmp1,tmp2,mtot;
-  /* CG, CE1 and CE2 stay and each get 1/3 of the total mass, 
-     rest gets dummified */
+   real a,b,dCGCE,tmp1,tmp2,mtot,mG,mrest;
+   real xCG,yCG,xCE1,yCE1,xCE2,yCE2;
+  /* CG, CE1 and CE2 stay and each get a part of the total mass, 
+   * so the c-o-m stays the same.
+   */
 
   if (bDoZ) {
     assert(atNR == nrfound);
   }
 
   /* constraints between CG, CE1 and CE2: */
-  dCGCE = sqrt( cosrule(bR6,bR6,aR6) );
+  dCGCE = sqrt( cosrule(bond_cc,bond_cc,ANGLE_6RING) );
   my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE1],dCGCE);
   my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE2],dCGCE);
   my_add_param(&(plist[F_SHAKENC]),ats[atCE1],ats[atCE2],dCGCE);
@@ -282,7 +565,7 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
   /* rest will be dummy3 */
   mtot=0;
   ndum=0;
-  for(i=0; i<atNR; i++) {
+  for(i=0; i<  (bDoZ ? atNR : atHZ) ; i++) {
     mtot+=at->atom[ats[i]].m;
     if ( i!=atCG && i!=atCE1 && i!=atCE2 && (bDoZ || (i!=atHZ && i!=atCZ) ) ) {
       at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
@@ -290,15 +573,27 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
       ndum++;
     }
   }
-  at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = 
-    at->atom[ats[atCE1]].m = at->atom[ats[atCE1]].mB = 
-    at->atom[ats[atCE2]].m = at->atom[ats[atCE2]].mB = mtot / 3;
+  /* Distribute mass so center-of-mass stays the same. 
+   * The center-of-mass in the call is defined with x=0 at
+   * the CE1-CE2 bond and y=0 at the line from CG to the middle of CE1-CE2 bond.
+   */
+  xCG=-bond_cc+bond_cc*cos(ANGLE_6RING);
+  yCG=0;
+  xCE1=0;
+  yCE1=bond_cc*sin(0.5*ANGLE_6RING);
+  xCE2=0;
+  yCE2=-bond_cc*sin(0.5*ANGLE_6RING);  
+  
+  mG = at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = xcom*mtot/xCG;
+  mrest=mtot-mG;
+  at->atom[ats[atCE1]].m = at->atom[ats[atCE1]].mB = 
+    at->atom[ats[atCE2]].m = at->atom[ats[atCE2]].mB = mrest / 2;
   
   /* dummy3 construction: r_d = r_i + a r_ij + b r_ik */
-  tmp1 = dCGCE*sin(DEG2RAD*60);
-  tmp2 = bR6*cos(0.5*aR6) + tmp1;
+  tmp1 = dCGCE*sin(ANGLE_6RING*0.5);
+  tmp2 = bond_cc*cos(0.5*ANGLE_6RING) + tmp1;
   tmp1 *= 2;
-  a = b = - bCH / tmp1;
+  a = b = - bond_ch / tmp1;
   /* HE1 and HE2: */
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atHE1],ats[atCE1],ats[atCE2],ats[atCG], a,b);
@@ -314,7 +609,7 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atCZ], ats[atCG], ats[atCE1],ats[atCE2],a,b);
   /* HD1, HD2 and HZ: */
-  a = b = ( bCH + tmp2 ) / tmp1;
+  a = b = ( bond_ch + tmp2 ) / tmp1;
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atHD1],ats[atCE2],ats[atCE1],ats[atCG], a,b);
   add_dum3_param(&plist[F_DUMMY3],
@@ -327,17 +622,83 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
 }
 
 static int gen_dums_phe(t_atoms *at, int *dummy_type[], t_params plist[], 
-			 int nrfound, int *ats)
+			 int nrfound, int *ats, t_dumtop *dumtop, int ndumtop)
 {
-  return gen_dums_6ring(at, dummy_type, plist, nrfound, ats, TRUE);
+  real bond_cc,bond_ch;
+  real xcom,ycom,mtot;
+  int i;
+  /* these MUST correspond to the atnms array in do_dum_aromatics! */
+  enum { atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2, 
+	 atCZ, atHZ, atNR };
+  real x[atNR],y[atNR];
+  /* Aromatic rings have 6-fold symmetry, so we only need one bond length.
+   * (angle is always 120 degrees).
+   */   
+  bond_cc=get_ddb_bond(dumtop,ndumtop,"PHE","CD1","CE1");
+  bond_ch=get_ddb_bond(dumtop,ndumtop,"PHE","CD1","HD1");
+  
+  x[atCG]=-bond_cc+bond_cc*cos(ANGLE_6RING);
+  y[atCG]=0;
+  x[atCD1]=-bond_cc;
+  y[atCD1]=bond_cc*sin(0.5*ANGLE_6RING);
+  x[atHD1]=x[atCD1]+bond_ch*cos(ANGLE_6RING);
+  y[atHD1]=y[atCD1]+bond_ch*sin(ANGLE_6RING);
+  x[atCE1]=0;
+  y[atCE1]=y[atCD1];
+  x[atHE1]=x[atCE1]-bond_ch*cos(ANGLE_6RING);
+  y[atHE1]=y[atCE1]+bond_ch*sin(ANGLE_6RING);
+  x[atCD2]=x[atCD1];
+  y[atCD2]=-y[atCD1];
+  x[atHD2]=x[atHD1];
+  y[atHD2]=-y[atHD1];
+  x[atCE2]=x[atCE1];
+  y[atCE2]=-y[atCE1];
+  x[atHE2]=x[atHE1];
+  y[atHE2]=-y[atHE1];
+  x[atCZ]=bond_cc*cos(0.5*ANGLE_6RING);
+  y[atCZ]=0;
+  x[atHZ]=x[atCZ]+bond_ch;
+  y[atHZ]=0;
+
+  xcom=ycom=mtot=0;
+  for(i=0;i<atNR;i++) {
+    xcom+=x[i]*at->atom[ats[i]].m;
+    ycom+=y[i]*at->atom[ats[i]].m;
+    mtot+=at->atom[ats[i]].m;
+  }
+  xcom/=mtot;
+  ycom/=mtot;
+
+  return gen_dums_6ring(at, dummy_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, ycom, TRUE);
 }
+
+static void calc_dummy3_param(real xd,real yd,real xi,real yi,real xj,real yj,
+			      real xk, real yk, real *a, real *b)
+{
+  /* determine parameters by solving the equation system, since we know the
+   * dummy coordinates here.
+   */
+  real dx_ij,dx_ik,dy_ij,dy_ik;
+  real b_ij,b_ik;
+
+  dx_ij=xj-xi;
+  dy_ij=yj-yi;
+  dx_ik=xk-xi;
+  dy_ik=yk-yi;
+  b_ij=sqrt(dx_ij*dx_ij+dy_ij*dy_ij);
+  b_ik=sqrt(dx_ik*dx_ik+dy_ik*dy_ik);
+
+  *a = ( (xd-xi)*dy_ik - dx_ik*(yd-yi) ) / (dx_ij*dy_ik - dx_ik*dy_ij);
+  *b = ( yd - yi - (*a)*dy_ij ) / dy_ik;
+}
+
 
 static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
 			t_atom *newatom[], char ***newatomname[], 
 			int *o2n[], int *newdummy_type[], int *newcgnr[],
 			t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
 			t_atoms *at, int *dummy_type[], t_params plist[], 
-			int nrfound, int *ats, int add_shift)
+			int nrfound, int *ats, int add_shift, t_dumtop *dumtop, int ndumtop)
 {
 #define NMASS 2
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
@@ -351,27 +712,145 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
     {   0,     0,     0,     0,   0.5,     0,     0,   0.5,     1,     1,
         1,     1,     1,     1,     1,     1 }
   };
-  /* flag which sets atoms to positive or negative y-axis: */
-  int py[atNR] = {
-        1,     1,     1,     1,     1,    -1,    -1,    -1,     1,     1,
-       -1,    -1,     1,     1,    -1,    -1
-  };
-  real xi[atNR],yi[atNR],xM[NMASS];
+ 
+  real xi[atNR],yi[atNR];
+  real xcom[NMASS],ycom[NMASS],I,alpha;
+  real lineA,lineB,dist;
+  real b_CD2_CE2,b_NE1_CE2,b_CG_CD2,b_CH2_HH2,b_CE2_CZ2;
+  real b_NE1_HE1,b_CD2_CE3,b_CE3_CZ3,b_CB_CG;
+  real b_CZ2_CH2,b_CZ2_HZ2,b_CD1_HD1,b_CE3_HE3;
+  real b_CG_CD1,b_CZ3_HZ3;
+  real a_NE1_CE2_CD2,a_CE2_CD2_CG,a_CB_CG_CD2,a_CE2_CD2_CE3;
+  real a_CB_CG_CD1,a_CD2_CG_CD1,a_CE2_CZ2_HZ2,a_CZ2_CH2_HH2;
+  real a_CD2_CE2_CZ2,a_CD2_CE3_CZ3,a_CE3_CZ3_HZ3,a_CG_CD1_HD1;
+  real a_CE2_CZ2_CH2,a_HE1_NE1_CE2,a_CD2_CE3_HE3;
+  real xM[NMASS];
   int  atM[NMASS],tpM,i,i0,j,ndum;
-  real mwtot,mtot,mM[NMASS],xcom,dCBM1,dCBM2,dM1M2;
+  real mwtot,mtot,mM[NMASS],dCBM1,dCBM2,dM1M2;
   real a,b,c[MAXFORCEPARAM];
-  rvec rx,rcom,temp;
+  rvec r_ij,r_ik,t1,t2;
   char name[10];
-    
-  /* keep CB and generate two dummy masses (one in each ring) on the
-     symmetry axis (line through CD1 and middle of CZ3-CH bond) such that
-     center of mass (COM) remains the same and the dummy mass for the
-     five-ring is perpendicularly placed to the CG atom. This results
-     in a somewhat larger moment of inertia, but gives two perpendicular
-     construction vectors for the dummy atoms which makes calculating
-     the dummy constructions easier. */
-  
+
   assert(atNR == nrfound);
+  /* Get geometry from database */
+  b_CD2_CE2=get_ddb_bond(dumtop,ndumtop,"TRP","CD2","CE2");
+  b_NE1_CE2=get_ddb_bond(dumtop,ndumtop,"TRP","NE1","CE2");
+  b_CG_CD1=get_ddb_bond(dumtop,ndumtop,"TRP","CG","CD1");
+  b_CG_CD2=get_ddb_bond(dumtop,ndumtop,"TRP","CG","CD2");
+  b_CB_CG=get_ddb_bond(dumtop,ndumtop,"TRP","CB","CG");
+  b_CE2_CZ2=get_ddb_bond(dumtop,ndumtop,"TRP","CE2","CZ2");
+  b_CD2_CE3=get_ddb_bond(dumtop,ndumtop,"TRP","CD2","CE3");
+  b_CE3_CZ3=get_ddb_bond(dumtop,ndumtop,"TRP","CE3","CZ3");
+  b_CZ2_CH2=get_ddb_bond(dumtop,ndumtop,"TRP","CZ2","CH2");
+
+  b_CD1_HD1=get_ddb_bond(dumtop,ndumtop,"TRP","CD1","HD1");
+  b_CZ2_HZ2=get_ddb_bond(dumtop,ndumtop,"TRP","CZ2","HZ2");
+  b_NE1_HE1=get_ddb_bond(dumtop,ndumtop,"TRP","NE1","HE1");
+  b_CH2_HH2=get_ddb_bond(dumtop,ndumtop,"TRP","CH2","HH2");
+  b_CE3_HE3=get_ddb_bond(dumtop,ndumtop,"TRP","CE3","HE3");
+  b_CZ3_HZ3=get_ddb_bond(dumtop,ndumtop,"TRP","CZ3","HZ3");
+
+  a_NE1_CE2_CD2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","NE1","CE2","CD2");
+  a_CE2_CD2_CG=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CE2","CD2","CG");
+  a_CB_CG_CD2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CB","CG","CD2");
+  a_CD2_CG_CD1=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CD2","CG","CD1");
+  a_CB_CG_CD1=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CB","CG","CD1");
+ 
+  a_CE2_CD2_CE3=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CE2","CD2","CE3");
+  a_CD2_CE2_CZ2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CD2","CE2","CZ2");
+  a_CD2_CE3_CZ3=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CD2","CE3","CZ3");
+  a_CE3_CZ3_HZ3=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CE3","CZ3","HZ3");
+  a_CZ2_CH2_HH2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CZ2","CH2","HH2");
+  a_CE2_CZ2_HZ2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CE2","CZ2","HZ2");
+  a_CE2_CZ2_CH2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CE2","CZ2","CH2");
+  a_CG_CD1_HD1=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CG","CD1","HD1");
+  a_HE1_NE1_CE2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","HE1","NE1","CE2");
+  a_CD2_CE3_HE3=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TRP","CD2","CE3","HE3");
+ 
+  /* Calculate local coordinates.
+   * y-axis (x=0) is the bond CD2-CE2.
+   * x-axis (y=0) is perpendicular to the bond CD2-CE2 and
+   * intersects the middle of the bond.
+   */
+  xi[atCD2]=0;
+  yi[atCD2]=-0.5*b_CD2_CE2;
+  
+  xi[atCE2]=0;
+  yi[atCE2]=0.5*b_CD2_CE2;
+
+  xi[atNE1]=-b_NE1_CE2*sin(a_NE1_CE2_CD2);
+  yi[atNE1]=yi[atCE2]-b_NE1_CE2*cos(a_NE1_CE2_CD2);
+
+  xi[atCG]=-b_CG_CD2*sin(a_CE2_CD2_CG);
+  yi[atCG]=yi[atCD2]+b_CG_CD2*cos(a_CE2_CD2_CG);
+
+  alpha = a_CE2_CD2_CG + M_PI - a_CB_CG_CD2;
+  xi[atCB]=xi[atCG]-b_CB_CG*sin(alpha);
+  yi[atCB]=yi[atCG]+b_CB_CG*cos(alpha);
+
+  alpha = a_CE2_CD2_CG + a_CD2_CG_CD1 - M_PI;
+  xi[atCD1]=xi[atCG]-b_CG_CD1*sin(alpha);
+  yi[atCD1]=yi[atCG]+b_CG_CD1*cos(alpha);
+
+  xi[atCE3]=b_CD2_CE3*sin(a_CE2_CD2_CE3);
+  yi[atCE3]=yi[atCD2]+b_CD2_CE3*cos(a_CE2_CD2_CE3);
+
+  xi[atCZ2]=b_CE2_CZ2*sin(a_CD2_CE2_CZ2);
+  yi[atCZ2]=yi[atCE2]-b_CE2_CZ2*cos(a_CD2_CE2_CZ2);
+
+  alpha = a_CE2_CD2_CE3 + a_CD2_CE3_CZ3 - M_PI;
+  xi[atCZ3]=xi[atCE3]+b_CE3_CZ3*sin(alpha);
+  yi[atCZ3]=yi[atCE3]+b_CE3_CZ3*cos(alpha);
+
+  alpha = a_CD2_CE2_CZ2 + a_CE2_CZ2_CH2 - M_PI;
+  xi[atCH2]=xi[atCZ2]+b_CZ2_CH2*sin(alpha);
+  yi[atCH2]=yi[atCZ2]-b_CZ2_CH2*cos(alpha);
+
+  /* hydrogens */
+  alpha = a_CE2_CD2_CG + a_CD2_CG_CD1 - a_CG_CD1_HD1;
+  xi[atHD1]=xi[atCD1]-b_CD1_HD1*sin(alpha);
+  yi[atHD1]=yi[atCD1]+b_CD1_HD1*cos(alpha);
+
+  alpha = a_NE1_CE2_CD2 + M_PI - a_HE1_NE1_CE2;
+  xi[atHE1]=xi[atNE1]-b_NE1_HE1*sin(alpha);
+  yi[atHE1]=yi[atNE1]-b_NE1_HE1*cos(alpha);
+  
+  alpha = a_CE2_CD2_CE3 + M_PI - a_CD2_CE3_HE3;
+  xi[atHE3]=xi[atCE3]+b_CE3_HE3*sin(alpha);
+  yi[atHE3]=yi[atCE3]+b_CE3_HE3*cos(alpha);
+
+  alpha = a_CD2_CE2_CZ2 + M_PI - a_CE2_CZ2_HZ2;
+  xi[atHZ2]=xi[atCZ2]+b_CZ2_HZ2*sin(alpha);
+  yi[atHZ2]=yi[atCZ2]-b_CZ2_HZ2*cos(alpha);
+
+  alpha = a_CD2_CE2_CZ2 + a_CE2_CZ2_CH2 - a_CZ2_CH2_HH2;
+  xi[atHZ3]=xi[atCZ3]+b_CZ3_HZ3*sin(alpha);
+  yi[atHZ3]=yi[atCZ3]+b_CZ3_HZ3*cos(alpha);
+
+  alpha = a_CE2_CD2_CE3 + a_CD2_CE3_CZ3 - a_CE3_CZ3_HZ3;
+  xi[atHH2]=xi[atCH2]+b_CH2_HH2*sin(alpha);
+  yi[atHH2]=yi[atCH2]-b_CH2_HH2*cos(alpha);
+
+  /* Determine coeff. for the line CB-CG */
+  lineA=(yi[atCB]-yi[atCG])/(xi[atCB]-xi[atCG]);
+  lineB=yi[atCG]-lineA*xi[atCG];
+  
+  /* Calculate masses for each ring and put it on the dummy masses */
+  for(j=0; j<NMASS; j++)
+    mM[j]=xcom[j]=ycom[j]=0;
+  for(i=0; i<atNR; i++) {
+    if (i!=atCB) {
+      for(j=0; j<NMASS; j++) {
+	 mM[j] += mw[j][i] * at->atom[ats[i]].m;
+	 xcom[j] += xi[i] * mw[j][i] * at->atom[ats[i]].m;
+	 ycom[j] += yi[i] * mw[j][i] * at->atom[ats[i]].m;
+      }  
+    }
+  }
+  for(j=0; j<NMASS; j++) {
+    xcom[j]/=mM[j];
+    ycom[j]/=mM[j];
+  }
   
   /* get dummy mass type */
   tpM=nm2type("MW",atype);
@@ -380,7 +859,7 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   for(j=0; j<NMASS; j++)
     atM[j]=i0+*nadd+j;
   if (debug)
-    fprintf(stderr,"Inserting %d dummy masses at %d\n",NMASS,(*o2n)[i0]+1);
+     fprintf(stderr,"Inserting %d dummy masses at %d\n",NMASS,(*o2n)[i0]+1);
   *nadd+=NMASS;
   for(j=i0; j<at->nr; j++)
     (*o2n)[j]=j+*nadd;
@@ -390,73 +869,31 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   srenew(*newdummy_type,at->nr+*nadd);
   srenew(*newcgnr,at->nr+*nadd);
   for(j=0; j<NMASS; j++)
-    newatomname[at->nr+*nadd-1-j]=NULL;
+    newatomname[at->nr+*nadd-1-j]=NULL; 
   
-  /* calculate the relative positions of all atoms (along symmetry axis): */
-  /* take x=0 at CD2/CE2: */
-  xi[atCD2] = xi[atCE2]   = 0;
-  /* first 5-ring: */
-  xi[atCG]  = xi[atNE1]   = xi[atCD2] - sin(aR5)*bR5;
-  xi[atHE1]               = xi[atNE1] - sin(aR5H-aR5)*bNH;
-  xi[atCB]                = xi[atCG]  - sin(aR5H-aR5)*bCC;
-  xi[atCD1]               = xi[atNE1] - sin(2*aR5-M_PI)*bR5;
-  xi[atHD1]               = xi[atCD1] - bCH;
-  /* then 6-ring: */
-  xi[atCE3] = xi[atHE3] = 
-    xi[atCZ2] = xi[atHZ2] = xi[atCD2] + sin(aR6)*bR6;
-  xi[atCZ3] = xi[atCH2]   = xi[atCE3] + sin(2*aR6-M_PI)*bR6;
-  xi[atHZ3] = xi[atHH2]   = xi[atCZ3] + sin(aR6H+M_PI-2*aR6)*bCH;
-  /* also position perp. to symmetry axis: */
-  yi[atCD1] = yi[atHD1]   = 0;
-  yi[atCG]  = yi[atNE1]   = sin(0.5*aR5)*bR5;
-  yi[atCB]                = yi[atCG]  + cos(aR5H-aR5)*bCC;
-  yi[atHE1]               = yi[atNE1] + cos(aR5H-aR5)*bNH;
-  yi[atCD2] = yi[atCE2] = 
-    yi[atCZ3] = yi[atCH2] = 0.5*bR6;
-  yi[atCE3] = yi[atCZ2]   = yi[atCD2] - cos(aR6)*bR6;
-  yi[atHE3] = yi[atHZ2]   = yi[atCE3] + cos(aR6H-aR6)*bCH;
-  yi[atHZ3] = yi[atHH2]   = yi[atCZ3] - cos(aR6)*bCH;
-  /* now introduce positive or negative y: */
-  for(i=0; i<atNR; i++)
-    yi[i]*=py[i];
+  /* Dummy masses will be placed at the center-of-mass in each ring. */
+
+  /* calc initial position for dummy masses in real (non-local) coordinates.
+   * Cheat by using the routine to calculate dummy parameters. It is
+   * much easier when we have the coordinates expressed in terms of
+   * CB, CG, CD2.
+   */
+  rvec_sub(x[ats[atCB]],x[ats[atCG]],r_ij);
+  rvec_sub(x[ats[atCD2]],x[ats[atCG]],r_ik);
+  calc_dummy3_param(xcom[0],ycom[0],xi[atCG],yi[atCG],xi[atCB],yi[atCB],
+		    xi[atCD2],yi[atCD2],&a,&b);
+  svmul(a,r_ij,t1);
+  svmul(b,r_ik,t2);
+  rvec_add(t1,t2,t1);
+  rvec_add(t1,x[ats[atCG]],(*newx)[atM[0]]);
   
-  /* first get COM: */
-  xcom=0;
-  for(j=0; j<NMASS; j++)
-    mM[j]=0;
-  for(i=0; i<atNR; i++)
-    if (i!=atCB) {
-      for(j=0; j<NMASS; j++)
-	mM[j] += mw[j][i] * at->atom[ats[i]].m;
-      xcom += at->atom[ats[i]].m * xi[i];
-    }
-  mtot=0;
-  for(j=0; j<NMASS; j++)
-    mtot += mM[j];
-  xcom /= mtot;
-  /* redefine coordinates to get zero at COM: */
-  for(i=0; i<atNR; i++)
-    xi[i] -= xcom;
-  /* now we set M1 at the same 'x' as CB: */
-  xM[0] = xi[atCB];
-  /* then set M2 so that com is conserved (mM1 * xM1 + mM2 * xM2 = 0): */
-  xM[1] = - mM[0] * xM[0] / mM[1];
-  
-  /* make a unitvector that defines our symmetry axis: */
-  rvec_sub(x[ats[atCZ3]],x[ats[atCD2]],rx);
-  unitv(rx,rx);        /* rx = ( CZ3 - CD2 ) / | CZ3 - CD2 | */
-  /* make vector that points to origin (= COM): */
-  rvec_add(x[ats[atCE2]],x[ats[atCD2]],rcom);
-  svmul(HALF,rcom,rcom);
-  svmul(xcom,rx,temp);
-  rvec_inc(rcom,temp); /* rcom = 0.5 * ( CE2 + CD2 ) + xcom * rx */
-  
-  /* calc initial position for dummy masses: */
-  for(j=0; j<NMASS; j++) {
-    svmul(xM[j],rx,temp);
-    rvec_add(rcom,temp,(*newx)[atM[j]]); /* rM = rcom + xM * rx */
-  }
-  
+  calc_dummy3_param(xcom[1],ycom[1],xi[atCG],yi[atCG],xi[atCB],yi[atCB],
+		    xi[atCD2],yi[atCD2],&a,&b);
+  svmul(a,r_ij,t1);
+  svmul(b,r_ik,t2);
+  rvec_add(t1,t2,t1);
+  rvec_add(t1,x[ats[atCG]],(*newx)[atM[1]]);
+
   /* set parameters for the masses */
   for(j=0; j<NMASS; j++) {
     sprintf(name,"MW%d",j+1);
@@ -476,9 +913,9 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
 
   /* constraints between CB, M1 and M2 */
   /* 'add_shift' says which atoms won't be renumbered afterwards */
-  dCBM1 = yi[atCB];
-  dM1M2 = xM[1]-xM[0];
-  dCBM2 = sqrt( sqr(dCBM1) + sqr(dM1M2) );
+  dCBM1 = sqrt( sqr(xcom[0]-xi[atCB]) + sqr(ycom[0]-yi[atCB]) );
+  dM1M2 = sqrt( sqr(xcom[0]-xcom[1]) + sqr(ycom[0]-ycom[1]) );
+  dCBM2 = sqrt( sqr(xcom[1]-xi[atCB]) + sqr(ycom[1]-yi[atCB]) );
   my_add_param(&(plist[F_SHAKENC]), ats[atCB],        add_shift+atM[0], dCBM1);
   my_add_param(&(plist[F_SHAKENC]), ats[atCB],        add_shift+atM[1], dCBM2);
   my_add_param(&(plist[F_SHAKENC]), add_shift+atM[0], add_shift+atM[1], dM1M2);
@@ -493,50 +930,94 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
     }
   
   /* now define all dummies from M1, M2, CB, ie:
-     r_d = r_M1 + a r_M!M2 + b r_M1_CB */
+     r_d = r_M1 + a r_M1_M2 + b r_M1_CB */
   for(i=0; i<atNR; i++)
-    if ( (*dummy_type)[ats[i]] == F_DUMMY3 )
+    if ( (*dummy_type)[ats[i]] == F_DUMMY3 ) {
+      calc_dummy3_param(xi[i],yi[i],xcom[0],ycom[0],xcom[1],ycom[1],xi[atCB],yi[atCB],&a,&b);
       add_dum3_param(&plist[F_DUMMY3],
-		     ats[i],add_shift+atM[0],add_shift+atM[1],ats[atCB],
-		     (xi[i]-xM[0])/dM1M2,yi[i]/dCBM1);
-  
+		     ats[i],add_shift+atM[0],add_shift+atM[1],ats[atCB],a,b);
+    }
   return ndum;
 #undef NMASS
 }
 
 static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[], 
-			int nrfound, int *ats)
+			int nrfound, int *ats, t_dumtop *dumtop, int ndumtop)
 {
-  int ndum;
+  int ndum,i;
   real dCGCE,dCEOH,dCGHH,tmp1,a,b;
-  
+  real bond_cc,bond_ch,bond_co,bond_oh,angle_coh;
+  real xcom,ycom,mtot;
+
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
   enum { atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2, 
 	 atCZ, atOH, atHH, atNR };
+  real x[atNR],y[atNR];
   /* CG, CE1, CE2 (as in general 6-ring) and OH and HH stay, 
      rest gets dummified.
      Now we have two linked triangles with one improper keeping them flat */
   assert(atNR == nrfound);
 
+  /* Aromatic rings have 6-fold symmetry, so we only need one bond length
+   * for the ring part (angle is always 120 degrees).
+   */
+  bond_cc=get_ddb_bond(dumtop,ndumtop,"TYR","CD1","CE1");
+  bond_ch=get_ddb_bond(dumtop,ndumtop,"TYR","CD1","HD1");
+  bond_co=get_ddb_bond(dumtop,ndumtop,"TYR","CZ","OH");
+  bond_oh=get_ddb_bond(dumtop,ndumtop,"TYR","OH","HH");
+  angle_coh=DEG2RAD*get_ddb_angle(dumtop,ndumtop,"TYR","CZ","OH","HH");
+  
+  x[atCG]=-bond_cc+bond_cc*cos(ANGLE_6RING);
+  y[atCG]=0;
+  x[atCD1]=-bond_cc;
+  y[atCD1]=bond_cc*sin(0.5*ANGLE_6RING);
+  x[atHD1]=x[atCD1]+bond_ch*cos(ANGLE_6RING);
+  y[atHD1]=y[atCD1]+bond_ch*sin(ANGLE_6RING);
+  x[atCE1]=0;
+  y[atCE1]=y[atCD1];
+  x[atHE1]=x[atCE1]-bond_ch*cos(ANGLE_6RING);
+  y[atHE1]=y[atCE1]+bond_ch*sin(ANGLE_6RING);
+  x[atCD2]=x[atCD1];
+  y[atCD2]=-y[atCD1];
+  x[atHD2]=x[atHD1];
+  y[atHD2]=-y[atHD1];
+  x[atCE2]=x[atCE1];
+  y[atCE2]=-y[atCE1];
+  x[atHE2]=x[atHE1];
+  y[atHE2]=-y[atHE1];
+  x[atCZ]=bond_cc*cos(0.5*ANGLE_6RING);
+  y[atCZ]=0;
+  x[atOH]=x[atCZ]+bond_co;
+  y[atOH]=0;
+
+  xcom=ycom=mtot=0;
+  for(i=0;i<atOH;i++) {
+    xcom+=x[i]*at->atom[ats[i]].m;
+    ycom+=y[i]*at->atom[ats[i]].m;
+    mtot+=at->atom[ats[i]].m;
+  }
+  xcom/=mtot;
+  ycom/=mtot;
+
   /* first do 6 ring as default, 
      except CZ (we'll do that different) and HZ (we don't have that): */
-  ndum = gen_dums_6ring(at, dummy_type, plist, nrfound, ats, FALSE);
+  ndum = gen_dums_6ring(at, dummy_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, ycom, FALSE);
   
   /* then construct CZ from the 2nd triangle */
   /* dummy3 construction: r_d = r_i + a r_ij + b r_ik */
-  a = b = 0.5 * bCO / ( bCO - bR6*cos(aR6) );
+  a = b = 0.5 * bond_co / ( bond_co - bond_cc*cos(ANGLE_6RING) );
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atCZ],ats[atOH],ats[atCE1],ats[atCE2],a,b);
   at->atom[ats[atCZ]].m = at->atom[ats[atCZ]].mB = 0;
   
   /* constraints between CE1, CE2 and OH */
-  dCGCE = sqrt( cosrule(bR6,bR6,aR6) );
-  dCEOH = sqrt( cosrule(bR6,bCO,aR6) );
+  dCGCE = sqrt( cosrule(bond_cc,bond_cc,ANGLE_6RING) );
+  dCEOH = sqrt( cosrule(bond_cc,bond_co,ANGLE_6RING) );
   my_add_param(&(plist[F_SHAKENC]),ats[atCE1],ats[atOH],dCEOH);
   my_add_param(&(plist[F_SHAKENC]),ats[atCE2],ats[atOH],dCEOH);
   /* assume we also want the COH angle constrained: */
-  tmp1 = bR6*cos(0.5*aR6) + dCGCE*sin(DEG2RAD*60) + bCO;
-  dCGHH = sqrt( cosrule(tmp1,bOH,aCOH) );
+  tmp1 = bond_cc*cos(0.5*ANGLE_6RING) + dCGCE*sin(ANGLE_6RING*0.5) + bond_co;
+  dCGHH = sqrt( cosrule(tmp1,bond_oh,angle_coh) );
   (*dummy_type)[ats[atHH]]=F_SHAKE;
   my_add_param(&(plist[F_SHAKENC]),ats[atCG],ats[atHH],dCGHH);
   
@@ -544,90 +1025,196 @@ static int gen_dums_tyr(t_atoms *at, int *dummy_type[], t_params plist[],
 }
       
 static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[], 
-			int nrfound, int *ats)
+			int nrfound, int *ats, t_dumtop *dumtop, int ndumtop)
 {
   int ndum,i;
-  real a,b,alpha,dGE,dCENE,mtot;
-  real xCG, yE, mE, mG;
-  real xG, xD, yD, xE, xHD, yHD, xHE, yHE;
-  
+  real a,b,alpha,dCGCE1,dCGNE2;
+  real sinalpha,cosalpha;
+  real xcom,ycom,mtot;
+  real mG,mrest,mCE1,mNE2;
+  real b_CG_ND1,b_ND1_CE1,b_CE1_NE2,b_CG_CD2,b_CD2_NE2;
+  real b_ND1_HD1,b_NE2_HE2,b_CE1_HE1,b_CD2_HD2;
+  real a_CG_ND1_CE1,a_CG_CD2_NE2,a_ND1_CE1_NE2,a_CE1_NE2_CD2;
+  real a_NE2_CE1_HE1,a_NE2_CD2_HD2,a_CE1_ND1_HD1,a_CE1_NE2_HE2;
+  char resname[10];
+
   /* these MUST correspond to the atnms array in do_dum_aromatics! */
   enum { atCG, atND1, atHD1, atCD2, atHD2, atCE1, atHE1, atNE2, atHE2, atNR };
+  real x[atNR],y[atNR];
+
   /* CG, CE1 and NE2 stay, each gets part of the total mass,
      rest gets dummified */
   /* check number of atoms, 3 hydrogens may be missing: */
   assert( nrfound >= atNR-3 || nrfound <= atNR );
+
+  /* avoid warnings about uninitialized variables */
+  b_ND1_HD1=b_NE2_HE2=b_CE1_HE1=b_CD2_HD2=a_NE2_CE1_HE1=
+    a_NE2_CD2_HD2=a_CE1_ND1_HD1=a_CE1_NE2_HE2=0;
+
+  if(ats[atHD1]!=NOTSET) {
+    if(ats[atHE2]!=NOTSET) 
+      sprintf(resname,"HISH");
+    else 
+      sprintf(resname,"HISA");
+  } else {
+    sprintf(resname,"HISB");
+  }
   
+  /* Get geometry from database */
+  b_CG_ND1=get_ddb_bond(dumtop,ndumtop,resname,"CG","ND1");
+  b_ND1_CE1=get_ddb_bond(dumtop,ndumtop,resname,"ND1","CE1");
+  b_CE1_NE2=get_ddb_bond(dumtop,ndumtop,resname,"CE1","NE2");
+  b_CG_CD2 =get_ddb_bond(dumtop,ndumtop,resname,"CG","CD2");
+  b_CD2_NE2=get_ddb_bond(dumtop,ndumtop,resname,"CD2","NE2");
+  a_CG_ND1_CE1=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"CG","ND1","CE1");
+  a_CG_CD2_NE2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"CG","CD2","NE2");
+  a_ND1_CE1_NE2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"ND1","CE1","NE2");
+  a_CE1_NE2_CD2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"CE1","NE2","CD2");
+
+  if(ats[atHD1]!=NOTSET) {
+    b_ND1_HD1=get_ddb_bond(dumtop,ndumtop,resname,"ND1","HD1");
+    a_CE1_ND1_HD1=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"CE1","ND1","HD1");
+  }
+  if(ats[atHE2]!=NOTSET) {
+    b_NE2_HE2=get_ddb_bond(dumtop,ndumtop,resname,"NE2","HE2");
+    a_CE1_NE2_HE2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"CE1","NE2","HE2");
+  }
+  if(ats[atHD2]!=NOTSET) {
+    b_CD2_HD2=get_ddb_bond(dumtop,ndumtop,resname,"CD2","HD2");
+    a_NE2_CD2_HD2=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"NE2","CD2","HD2");
+  }
+  if(ats[atHE1]!=NOTSET) {
+    b_CE1_HE1=get_ddb_bond(dumtop,ndumtop,resname,"CE1","HE1");
+    a_NE2_CE1_HE1=DEG2RAD*get_ddb_angle(dumtop,ndumtop,resname,"NE2","CE1","HE1");
+  }
+
   /* constraints between CG, CE1 and NE1 */
-  dGE   = sqrt( cosrule(bR5,bR5,aR5) );
-  dCENE = bR5;
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE1],dGE);
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atNE2],dGE);
-  /* we already have a constraint CE-NE, so we don't add it again */
+  dCGCE1   = sqrt( cosrule(b_CG_ND1,b_ND1_CE1,a_CG_ND1_CE1) );
+  dCGNE2   = sqrt( cosrule(b_CG_CD2,b_CD2_NE2,a_CG_CD2_NE2) );
+
+  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE1],dCGCE1);
+  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atNE2],dCGNE2);
+  /* we already have a constraint CE1-NE2, so we don't add it again */
   
-  /* rest will be dummy3 */
-  mtot=0;
+  /* calculate the positions in a local frame of reference. 
+   * The x-axis is the line from CG that makes a right angle
+   * with the bond CE1-NE2, and the y-axis the bond CE1-NE2.
+   */
+  /* First calculate the x-axis intersection with y-axis (=yCE1).
+   * Get cos(angle CG-CE1-NE2) :
+   */
+  cosalpha=acosrule(dCGNE2,dCGCE1,b_CE1_NE2);
+  x[atCE1] = 0;
+  y[atCE1] = cosalpha*dCGCE1;
+  x[atNE2] = 0;
+  y[atNE2] = y[atCE1]-b_CE1_NE2;
+  sinalpha=sqrt(1-cosalpha*cosalpha);
+  x[atCG]  = - sinalpha*dCGCE1;
+  y[atCG]  = 0;
+  
+  /* calculate ND1 and CD2 positions from CE1 and NE2 */
+
+  x[atND1] = -b_ND1_CE1*sin(a_ND1_CE1_NE2);
+  y[atND1] = y[atCE1]-b_ND1_CE1*cos(a_ND1_CE1_NE2);
+
+  x[atCD2] = -b_CD2_NE2*sin(a_CE1_NE2_CD2);
+  y[atCD2] = y[atNE2]+b_CD2_NE2*cos(a_CE1_NE2_CD2);
+
+  /* And finally the hydrogen positions */
+  if(ats[atHE1]!=NOTSET) {  
+    x[atHE1] = x[atCE1] + b_CE1_HE1*sin(a_NE2_CE1_HE1);
+    y[atHE1] = y[atCE1] - b_CE1_HE1*cos(a_NE2_CE1_HE1);
+  }
+  /* HD2 - first get (ccw) angle from (positive) y-axis */
+  if(ats[atHD2]!=NOTSET) {  
+    alpha = a_CE1_NE2_CD2 + M_PI - a_NE2_CD2_HD2;
+    x[atHD2] = x[atCD2] - b_CD2_HD2*sin(alpha);
+    y[atHD2] = y[atCD2] + b_CD2_HD2*cos(alpha);
+  }
+  if(ats[atHD1]!=NOTSET) {
+    /* HD1 - first get (cw) angle from (positive) y-axis */
+    alpha = a_ND1_CE1_NE2 + M_PI - a_CE1_ND1_HD1;
+    x[atHD1] = x[atND1] - b_ND1_HD1*sin(alpha);
+    y[atHD1] = y[atND1] - b_ND1_HD1*cos(alpha);
+  }
+  if(ats[atHE2]!=NOTSET) {
+    x[atHE2] = x[atNE2] + b_NE2_HE2*sin(a_CE1_NE2_HE2);
+    y[atHE2] = y[atNE2] + b_NE2_HE2*cos(a_CE1_NE2_HE2);
+  }
+  /* Have all coordinates now */
+  
+  /* calc center-of-mass; keep atoms CG, CE1, NE2 and
+   * set the rest to dummy3
+   */
+  mtot=xcom=ycom=0;
   ndum=0;
   for(i=0; i<atNR; i++) 
     if (ats[i]!=NOTSET) {
       mtot+=at->atom[ats[i]].m;
+      xcom+=x[i]*at->atom[ats[i]].m;
+      ycom+=y[i]*at->atom[ats[i]].m;
       if (i!=atCG && i!=atCE1 && i!=atNE2) {
 	at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
 	(*dummy_type)[ats[i]]=F_DUMMY3;
 	ndum++;
       }
-    }
+    } 
   assert(ndum+3 == nrfound);
+
+  xcom/=mtot;
+  ycom/=mtot;
   
   /* distribute mass so that com stays the same */
-  xG = bR5 * sin(0.5*aR5) / sin(aR5);
-  xE = xG * sin(0.5*aR5);
-  mE = mtot * xG / ( 2 * ( xG + xE ) );
-  mG = mtot - 2 * mE;
+  mG = xcom*mtot/x[atCG];
+  mrest = mtot-mG;
+  mCE1 = (ycom-y[atNE2])*mrest/(y[atCE1]-y[atNE2]);
+  mNE2 = mrest-mCE1;
+  
   at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = mG;
-  at->atom[ats[atCE1]].m = at->atom[ats[atCE1]].mB = 
-    at->atom[ats[atNE2]].m = at->atom[ats[atNE2]].mB = mE;
+  at->atom[ats[atCE1]].m = at->atom[ats[atCE1]].mB = mCE1;
+  at->atom[ats[atNE2]].m = at->atom[ats[atNE2]].mB = mNE2;
   
-  /* these we need for all the atoms: */
-  alpha = acos( acosrule(dGE,dGE,dCENE) ); /* angle CG-NE2-CE1 */
-  /* we define 'x' and 'y' perp to the three construction vectors: */
-  xCG = sin(alpha)*dGE;   /* perp to r_CE1-NE2 */
-  yE  = sin(alpha)*dCENE; /* perp to r_CG-CE1 or r_CG_NE2 */
-  
-  /* HE2 */
-  yHE = sin(M_2PI-alpha-aR5H)*bNH;
-  xHE = sin(aR5H)*bNH;
-  a = - yHE / yE;
-  b = - xHE / xCG;
-  if (ats[atHE1]!=NOTSET)
+  /* HE1 */
+  if (ats[atHE1]!=NOTSET) {
+    calc_dummy3_param(x[atHE1],y[atHE1],x[atCE1],y[atCE1],x[atNE2],y[atNE2],
+		      x[atCG],y[atCG],&a,&b);
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atHE1],ats[atCE1],ats[atNE2],ats[atCG],a,b);
-  if (ats[atHE2]!=NOTSET)
+  }
+  /* HE2 */
+  if (ats[atHE2]!=NOTSET) {
+    calc_dummy3_param(x[atHE2],y[atHE2],x[atNE2],y[atNE2],x[atCE1],y[atCE1],
+		      x[atCG],y[atCG],&a,&b);
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atHE2],ats[atNE2],ats[atCE1],ats[atCG],a,b);
+  }
   
-  /* ND1, CD2 */
-  xD = sin(aR5)*bR5;
-  yD = yE + sin(alpha+aR5-M_PI)*bR5;
-  a = yD / yE;
-  b = xD / xCG;
+  /* ND1 */
+  calc_dummy3_param(x[atND1],y[atND1],x[atNE2],y[atNE2],x[atCE1],y[atCE1],
+		    x[atCG],y[atCG],&a,&b);
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atND1],ats[atNE2],ats[atCE1],ats[atCG],a,b);
+  
+  /* CD2 */
+  calc_dummy3_param(x[atCD2],y[atCD2],x[atCE1],y[atCE1],x[atNE2],y[atNE2],
+		    x[atCG],y[atCG],&a,&b);
   add_dum3_param(&plist[F_DUMMY3],
 		 ats[atCD2],ats[atCE1],ats[atNE2],ats[atCG],a,b);
   
   /* HD1 */
-  xHD = xD + sin(aR5H-aR5)*bNH;
-  yHD = yD + sin(alpha+aR5-aR5H)*bNH;
-  a = yHD / yE;
-  b = xHD / xCG;
-  if (ats[atHD1]!=NOTSET)
+  if (ats[atHD1]!=NOTSET) {
+    calc_dummy3_param(x[atHD1],y[atHD1],x[atNE2],y[atNE2],x[atCE1],y[atCE1],
+		      x[atCG],y[atCG],&a,&b);
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atHD1],ats[atNE2],ats[atCE1],ats[atCG],a,b);
-  if (ats[atHD2]!=NOTSET)
+  }
+  /* HD2 */
+  if (ats[atHD2]!=NOTSET) {
+    calc_dummy3_param(x[atHD2],y[atHD2],x[atCE1],y[atCE1],x[atNE2],y[atNE2],
+		      x[atCG],y[atCG],&a,&b);
     add_dum3_param(&plist[F_DUMMY3],
 		   ats[atHD2],ats[atCE1],ats[atNE2],ats[atCG],a,b);
-  
+  }  
   return ndum;
 }
 
@@ -647,13 +1234,12 @@ static bool is_dum(int dummy_type)
   }
 }
 
-/* this seems overdone, but it is FOOLPROOF!!! */
 static char atomnamesuffix[] = "1234";
 
 void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype, 
 		t_atoms *at, t_symtab *symtab, rvec *x[], 
 		t_params plist[], int *dummy_type[], int *cgnr[], 
-		real mHmult, bool bDummyAromatics)
+		real mHmult, bool bDummyAromatics, char *ff)
 {
 #define MAXATOMSPERRESIDUE 16
   int  i,j,k,i0,ni0,whatres,resnr,add_shift,ftype,ndum,nadd;
@@ -663,18 +1249,33 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   bool *bResProcessed;
   real mHtot,mtot,fact,fact2;
   rvec rpar,rperp,temp;
-  char name[10],tpname[10];
+  char name[10],atomname[32],tpname[32],nexttpname[32],*ch;
   rvec *newx;
   int  *o2n,*newdummy_type,*newcgnr,ats[MAXATOMSPERRESIDUE];
   t_atom *newatom;
   t_params *params;
   char ***newatomname;
   char *resnm=NULL;
-  
+  int ndumconf,ndumtop;
+  bool isN,planarN;
+  t_dumconf *dumconflist; /* pointer to a list of CH3/NH3/NH2 configuration entries.
+			   * See comments in read_dummy_database. It isnt beautiful,
+			   * but it had to be fixed, and I dont even want to try to 
+			   * maintain this part of the code...
+			   */
+  t_dumtop *dumtop;       /* Pointer to a list of geometry (bond/angle) entries for
+			   * residues like PHE, TRP, TYR, HIS, etc., where we need
+			   * to know the geometry to construct dummy aromatics.
+			   * Note that equilibrium geometry isnt necessarily the same
+			   * as the individual bond and angle values given in the
+			   * force field (rings can be strained).
+			   */
+
   /* if bDummyAromatics=TRUE do_dummies will specifically convert atoms in 
      PHE, TRP, TYR and HIS to a construction of dummy atoms */
   enum                    { resPHE, resTRP, resTYR, resHIS, resNR };
   char *resnms[resNR]   = {   "PHE",  "TRP",  "TYR",  "HIS" };
+  /* HIS can be known as HISH, HIS1, HISA, etc. too */
   bool bPartial[resNR]  = {  FALSE,  FALSE,  FALSE,   TRUE  };
   /* the atnms for every residue MUST correspond to the enums in the 
      gen_dums_* (one for each residue) routines! */
@@ -703,6 +1304,8 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
     printf("Searching for atoms to make dumies...\n");
     fprintf(debug,"# # # DUMMIES # # #\n");
   }
+
+  read_dummy_database(ff,&dumconflist,&ndumconf,&dumtop,&ndumtop);
   
   bFirstWater=TRUE;
   ndum=0;
@@ -715,7 +1318,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   snew(newatomname,at->nr);
   snew(newdummy_type,at->nr);
   snew(newcgnr,at->nr);
-  /* make index array to tell where the atoms go to when masses are inse'd */
+  /* make index array to tell where the atoms go to when masses are inserted */
   snew(o2n,at->nr);
   for(i=0; i<at->nr; i++)
     o2n[i]=i;
@@ -732,7 +1335,11 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
     }
     /* first check for aromatics to dummify */
     /* don't waste our effort on DNA, water etc. */
-    if ( bDummyAromatics && 
+    /* Only do the dummy aromatic stuff when we reach the 
+     * CA atom, since there might be an X2/X3 group on the
+     * N-terminus that must be treated first.
+     */
+    if ( bDummyAromatics && !strcmp(*(at->atomname[i]),"CA") &&
 	 !bResProcessed[resnr] && is_protein(*(at->resname[resnr])) ) {
       /* mark this residue */
       bResProcessed[resnr]=TRUE;
@@ -776,21 +1383,21 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
       switch (whatres) {
       case resPHE: 
 	if (debug) fprintf(stderr,"PHE at %d\n",o2n[ats[0]]+1);
-	ndum+=gen_dums_phe(at, dummy_type, plist, nrfound, ats);
+	ndum+=gen_dums_phe(at, dummy_type, plist, nrfound, ats, dumtop, ndumtop);
 	break;
       case resTRP: 
 	if (debug) fprintf(stderr,"TRP at %d\n",o2n[ats[0]]+1);
 	ndum+=gen_dums_trp(atype, &newx, &newatom, &newatomname, &o2n, 
 			   &newdummy_type, &newcgnr, symtab, &nadd, *x, cgnr,
-			   at, dummy_type, plist, nrfound, ats, add_shift);
+			   at, dummy_type, plist, nrfound, ats, add_shift, dumtop, ndumtop);
 	break;
       case resTYR: 
 	if (debug) fprintf(stderr,"TYR at %d\n",o2n[ats[0]]+1);
-	ndum+=gen_dums_tyr(at, dummy_type, plist, nrfound, ats);
+	ndum+=gen_dums_tyr(at, dummy_type, plist, nrfound, ats, dumtop, ndumtop);
 	break;
       case resHIS: 
 	if (debug) fprintf(stderr,"HIS at %d\n",o2n[ats[0]]+1);
-	ndum+=gen_dums_his(at, dummy_type, plist, nrfound, ats);
+	ndum+=gen_dums_his(at, dummy_type, plist, nrfound, ats, dumtop, ndumtop);
 	break;
       case NOTSET:
 	/* this means this residue won't be processed */
@@ -812,11 +1419,13 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
       count_bonds(i, &plist[F_BONDS], at->atomname, 
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
+      strncpy(atomname,*at->atomname[Heavy],9);
       tpHeavy=get_atype(Heavy,at,nrtp,rtp);
       strcpy(tpname,type2nm(tpHeavy,atype));
+
       bWARNING=FALSE;
       bAddDumParam=TRUE;
-      /* nested if's which check nrHatoms, nrbonds and tpname */
+      /* nested if's which check nrHatoms, nrbonds and atomname */
       if (nrHatoms == 1) {
 	switch(nrbonds) {
 	case 2: /* -O-H */
@@ -832,7 +1441,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  bWARNING=TRUE;
 	}
       } else if ( (nrHatoms == 2) && (nrbonds == 2) && 
-		  (strcasecmp(tpname,"OW")==0) ) {
+		  (strncasecmp(atomname,"OW",2)==0) ) {
 	bAddDumParam=FALSE; /* this is water: skip these hydrogens */
 	if (bFirstWater) {
 	  bFirstWater=FALSE;
@@ -840,32 +1449,49 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	    fprintf(debug,
 		    "Not converting hydrogens in water to dummy atoms\n");
 	}
-      } else if ( (nrHatoms == 2) && (nrbonds == 3) && 
-		  (strcasecmp(tpname,"NL")!=0) ) {
-	/* =CH2 or =NH2 */
-	(*dummy_type)[Hatoms[0]] = F_DUMMY3FAD;
-	(*dummy_type)[Hatoms[1]] =-F_DUMMY3FAD;
-	
       } else if ( (nrHatoms == 2) && (nrbonds == 4) ) {
-	/* -CH2- */
+	/* -CH2- , -NH2+- */
 	(*dummy_type)[Hatoms[0]] = F_DUMMY3OUT;
 	(*dummy_type)[Hatoms[1]] =-F_DUMMY3OUT;
-	
-      } else if ( ( (nrHatoms == 2) && (nrbonds == 3) && 
-		    (strcasecmp(tpname,"NL")==0) ) || 
-		  ( (nrHatoms == 3) && (nrbonds == 4) ) ) {
-	/* this tells how to set the hydrogen atoms */
+      } else {
+	/* 2 or 3 hydrogen atom, with 3 or 4 bonds in total to the heavy atom.
+	 * If it is a nitrogen, first check if it is planar.
+	 */
+	isN=planarN=FALSE;
+	if((nrHatoms == 2) && (atomname[0]=='N')) {
+	  isN=TRUE;
+	  j=nitrogen_is_planar(dumconflist,ndumconf,tpname);
+	  if(j<0) 
+	    fatal_error(0,"No dummy database NH2 entry for type %s\n",tpname);
+	  planarN=(j==1);
+	}
+	if ( (nrHatoms == 2) && (nrbonds == 3) && ( !isN || planarN ) ) {
+	  /* =CH2 or, if it is a nitrogen NH2, it is a planar one */
+	  (*dummy_type)[Hatoms[0]] = F_DUMMY3FAD;
+	  (*dummy_type)[Hatoms[1]] =-F_DUMMY3FAD;
+	} else if ( ( (nrHatoms == 2) && (nrbonds == 3) && 
+		      ( isN && !planarN ) ) || 
+		    ( (nrHatoms == 3) && (nrbonds == 4) ) ) {
+	  /* CH3, NH3 or non-planar NH2 group */
 	int  Hat_dummy_type[3] = { F_DUMMY3, F_DUMMY3OUT, F_DUMMY3OUT };
 	bool Hat_SwapParity[3] = { FALSE,    TRUE,        FALSE };
 	
-	if (debug) fprintf(stderr,"-XH3 group at %d\n",i+1);
+	if (debug) fprintf(stderr,"-XH3 or nonplanar NH2 group at %d\n",i+1);
 	bAddDumParam=FALSE; /* we'll do this ourselves! */
 	/* -NH2 (umbrella), -NH3+ or -CH3 */
 	(*dummy_type)[Heavy]       = F_DUMMY3;
 	for (j=0; j<nrHatoms; j++)
 	  (*dummy_type)[Hatoms[j]] = Hat_dummy_type[j];
 	/* get dummy mass type from first char of heavy atom type (N or C) */
-	sprintf(name,"M%cH3",tpname[0]);
+	
+	strcpy(nexttpname,type2nm(get_atype(heavies[0],at,nrtp,rtp),atype));
+	ch=get_dummymass_name(dumconflist,ndumconf,tpname,nexttpname);
+
+	if(ch==NULL) 
+	  fatal_error(0,"Cant find dummy mass (in %s.ddb) for type %s bonded to type %s. Add it to the database!\n",ff,tpname,nexttpname);
+	else
+	  strcpy(name,ch);
+
 	tpM=nm2type(name,atype);
 	/* make space for 2 masses: shift all atoms starting with 'Heavy' */
 #define NMASS 2
@@ -875,15 +1501,17 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  fprintf(stderr,"Inserting %d dummy masses at %d\n",NMASS,o2n[i0]+1);
 	nadd+=NMASS;
 	for(j=i0; j<at->nr; j++)
-	  o2n[j]=j+nadd;
+	  o2n[j]=j+nadd; 
+
 	srenew(newx,at->nr+nadd);
 	srenew(newatom,at->nr+nadd);
 	srenew(newatomname,at->nr+nadd);
 	srenew(newdummy_type,at->nr+nadd);
 	srenew(newcgnr,at->nr+nadd);
+
 	for(j=0; j<NMASS; j++)
 	  newatomname[at->nr+nadd-1-j]=NULL;
-	
+
 	/* calculate starting position for the masses */
 	mHtot=0;
 	/* get atom masses, and set Heavy and Hatoms mass to zero */
@@ -948,12 +1576,13 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 			 Hatoms[j], heavies[0], add_shift+ni0, add_shift+ni0+1,
 			 Hat_SwapParity[j]);
 #undef NMASS
-      } else
-	bWARNING=TRUE;
+	} else
+	  bWARNING=TRUE;
+      }
       if (bWARNING)
 	fprintf(stderr,
 		"Warning: cannot convert atom %d %s (bound to a heavy atom "
-		"type %s with \n"
+		"%s with \n"
 		"         %d bonds and %d bound hydrogens atoms) to dummy "
 		"atom\n",
 		i+1,*(at->atomname[i]),tpname,nrbonds,nrHatoms);
@@ -1075,7 +1704,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   fprintf(stderr,"Added %d dummy masses\n",nadd);
   fprintf(stderr,"Added %d new constraints\n",plist[F_SHAKENC].nr);
 }
-
+  
 void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult,
 	       bool bDeuterate)
 {

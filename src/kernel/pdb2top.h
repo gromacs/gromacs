@@ -73,7 +73,7 @@ extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    int nrtp, t_restp rtp[],
 		    int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
 		    int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,
-		    bool bDummies, bool bDummyAromatics, real mHmult,
+		    bool bDummies, bool bDummyAromatics, char *ff, real mHmult,
 		    int nssbonds, t_ssbond ssbonds[], int nrexcl, 
 		    real long_bond_dist, real short_bond_dist,
 		    bool bDeuterate);

@@ -43,7 +43,7 @@ static char *SRCID_gen_dum_h = "$Id$";
 extern void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype, 
 		       t_atoms *at, t_symtab *symtab, rvec *x[], 
 		       t_params plist[], int *dummy_type[], int *cgnr[], 
-		       real mHmult, bool bDummyAromatics);
+		       real mHmult, bool bDummyAromatics, char *ff);
 
 extern void do_h_mass(t_params *psb, bool is_dum[], t_atoms *at, real mHmult,
 		      bool bDeuterate);

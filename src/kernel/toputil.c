@@ -388,7 +388,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
   
   as=dir2str(d_atoms);
   fprintf(out,"[ %s ]\n",as);
-  fprintf(out,"; %4s %6s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
+  fprintf(out,"; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
 	  "nr","type","resnr","residue","atom","cgnr","charge","mass","typeB","chargeB","massB");
     
   qtot  = 0;
@@ -404,7 +404,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
       if ((itype < 0) || (itype > atype->nr))
 	fatal_error(0,"itype = %d, i= %d in print_atoms",itype,i);
 	
-      fprintf(out,"%6d %6s %6d %6s %6s %6d %10g %10g",
+      fprintf(out,"%6d %10s %6d %6s %6s %6d %10g %10g",
 	      i+1,*(atype->atomname[itype]),
 	      at->atom[i].resnr+1,  
 	      *(at->resname[at->atom[i].resnr]),

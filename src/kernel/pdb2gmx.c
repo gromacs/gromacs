@@ -1069,7 +1069,7 @@ int main(int argc, char *argv[])
     
     pdb2top(top_file2,posre_fn,molname,pdba,&x,atype,&symtab,bts,nrtp,restp,
 	    cc->nterpairs,cc->ntdb,cc->ctdb,cc->rN,cc->rC,bMissing,
-	    bH14,bAlldih,bDummies,bDummyAromatics,
+	    bH14,bAlldih,bDummies,bDummyAromatics,ff,
 	    mHmult,nssbonds,ssbonds,nrexcl, 
 	    long_bond_dist, short_bond_dist,bDeuterate);
     
