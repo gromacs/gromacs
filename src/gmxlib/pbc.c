@@ -200,7 +200,7 @@ void set_pbc(t_pbc *pbc,matrix box)
 
 int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
-  int  i,j;
+  int  i,j,is;
   rvec dx_start,try;
   real d2min,d2try;
   ivec ishift,ishift_start;
@@ -256,8 +256,10 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     gmx_fatal(FARGS,"Internal error in pbx_dx, set_pbc has not been called");
     break;
   }
-
-  return IVEC2IS(ishift);
+  is = IVEC2IS(ishift);
+  if (debug)
+    range_check(is,0,SHIFTS);
+  return is; 
 }
 
 bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)
