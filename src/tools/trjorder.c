@@ -196,8 +196,7 @@ int main(int argc,char *argv[])
     if (top.atoms.pdbinfo) {
       for(i=0; (i<nwat); i++) {
 	for(j=0; (j<na); j++) {
-	  pbc_dx(x[order[i].ref],x[order[i].i+j],dx);
-	  top.atoms.pdbinfo[order[i].i+j].bfac = norm(dx);
+	  top.atoms.pdbinfo[order[i].i+j].bfac = sqrt(order[i].d);
 	}
       }
     }
