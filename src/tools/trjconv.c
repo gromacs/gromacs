@@ -773,7 +773,7 @@ int main(int argc,char *argv[])
     
     if ( bTDump && !bDumpFrame )
       fprintf(stderr,"\nWARNING no frame found near specified time (%g), "
-	      "trajectory ended at %g\n",tdump,t);
+	      "trajectory runs from %g to %g\n",tdump,t0,t);
     fprintf(stderr,"\n");
     
     close_trj(status);
