@@ -7,7 +7,7 @@ SHELL	=	/bin/csh
 CHMOD	=	chmod 664
 TEX	=	latex
 BIB	=	bibtex
-IDX	=	makeindex -s flush.ist
+IDX	=	makeindex -s hfill.ist
 DVIPS	=	dvips
 
 AUXFILES = 	algorithms.aux	analyse.aux	averages.aux	\
