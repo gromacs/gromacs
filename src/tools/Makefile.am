@@ -22,6 +22,7 @@ bin_PROGRAMS = \
 	g_dipolesXXX_SUFFIX_XXX		g_disreXXX_SUFFIX_XXX		\
 	g_distXXX_SUFFIX_XXX		g_dyndomXXX_SUFFIX_XXX		\
 	g_enematXXX_SUFFIX_XXX		g_energyXXX_SUFFIX_XXX		\
+	g_lieXXX_SUFFIX_XXX						\
 	g_gyrateXXX_SUFFIX_XXX		g_h2orderXXX_SUFFIX_XXX		\
 	g_hbondXXX_SUFFIX_XXX		g_helixXXX_SUFFIX_XXX		\
 	g_mdmatXXX_SUFFIX_XXX		g_mindistXXX_SUFFIX_XXX		\
@@ -92,6 +93,8 @@ g_dyndomXXX_SUFFIX_XXX_SOURCES     =    g_dyndom.c
 g_enematXXX_SUFFIX_XXX_SOURCES     =    g_enemat.c
 
 g_energyXXX_SUFFIX_XXX_SOURCES     = 	g_energy.c  	$(AUTOCORR_SRC)
+
+g_lieXXX_SUFFIX_XXX_SOURCES        = 	g_lie.c
 
 g_gyrateXXX_SUFFIX_XXX_SOURCES     =    g_gyrate.c
 
