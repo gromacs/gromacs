@@ -157,29 +157,6 @@ void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
   sfree(v);
 }
 
-static void count_ones(FILE *log,t_commrec *cr)
-{
-#define NMAX 6
-  int i;
-  int n[NMAX];
-  
-  where();  
-  fprintf(log,"Topology loaded succesfully\n"); fflush(log);
-  for(i=0; (i<NMAX); i++)
-    n[i]=i;
-  gmx_sumi(6,n,cr);
-  for(i=0; (i<NMAX); i++) {
-    if (n[i] != (i*cr->nnodes)) {
-      fprintf(log,"Error in count_ones: n[%d] = %d, should be %d\n",
-	      i,n[i],i*cr->nnodes);
-      fflush(log);
-    }
-  }
-  fprintf(log,"Completed confidence test\n"); fflush(log);
-  where();
-#undef NMAX
-}
-
 void init_parts(FILE *log,t_commrec *cr,
 		t_parm *parm,t_topology *top,
 		rvec **x,rvec **v,t_mdatoms **mdatoms,
@@ -189,9 +166,6 @@ void init_parts(FILE *log,t_commrec *cr,
   ld_data(cr->left,cr->right,parm,nsb,top,x,v);
   if (cr->nodeid != 0)
     mv_data(cr->left,cr->right,parm,nsb,top,*x,*v);
-#ifdef _amb_
-  count_ones(log,cr);
-#endif
 
   /* Make sure the random seeds are different on each node */
   parm->ir.ld_seed += cr->nodeid;
