@@ -17,7 +17,7 @@ LOCAL	=	$(GMXHOME)/src/local
 HTML	=	$(GMXHOME)/html
 
 FILES = intro		defunits	algorithms	par-md		\
-	forcefield	lr_elstat	topology	special		\
+	forcefield	topology	special		\
 	programs	analyse		install		implement	\
 	tables		lr-corr		averages	progman
 
@@ -50,13 +50,11 @@ gromacs.ind:	gromacs.aux
 		$(IDX) gromacs
 
 gromacs.dvi:	gromacs.aux	gromacs.bbl	gromacs.ind
-		$(TEX) gromacs
 
 gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
 
 %.aux:		%.tex
-		$(TEX) gromacs
 
 prog:		mdp_opt.tex proglist.tex
 
