@@ -177,6 +177,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   int       i;
   t_eheader eh;
   bool      bRead,bOK,bOK1;
+  real      tmp;
 
   bOK = TRUE;
   bRead = fio_getread(fp);
@@ -186,7 +187,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
     eh.nre    = *nre;
     eh.ndisre = drblock ? (drblock->ndr) : 0;
     eh.nuser  = 0;
-    eh.e_size = (*nre)*sizeof(ener[0]);
+    eh.e_size = (*nre)*sizeof(ener[0].e)*4;
     eh.d_size = eh.ndisre ? 
       (drblock->ndr*(sizeof(drblock->rav[0])+sizeof(drblock->rt[0]))) : 0;
     eh.u_size = 0;
@@ -204,7 +205,7 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   }
   if (bRead) {
     if ( ( framenr<10 ) || ( framenr%10 == 0) ) 
-      fprintf(stderr,"\rReading frame %6d time %8.3f           ",framenr,*t);
+      fprintf(stderr,"\rReading frame %6d time %8.3f           ",framenr,eh.t);
     framenr++;
   }
   *t    = eh.t;
@@ -212,8 +213,14 @@ bool do_enx(int fp,real *t,int *step,int *nre,t_energy ener[],
   *nre  = eh.nre;
   for(i=0; (i<*nre); i++) {
     bOK = bOK && do_real(ener[i].e);
-    bOK = bOK && do_real(ener[i].eav);
-    bOK = bOK && do_real(ener[i].esum);
+    tmp=ener[i].eav;
+    if((tmp/(*step+1))<GMX_REAL_EPS)
+      tmp=0;
+    bOK = bOK && do_real(tmp);
+    ener[i].eav=tmp;
+    tmp=ener[i].esum;
+    bOK = bOK && do_real(tmp);
+    ener[i].esum=tmp;
     bOK = bOK && do_real(ener[i].e2sum);
   }
   if (eh.ndisre) {
