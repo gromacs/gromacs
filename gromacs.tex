@@ -13,7 +13,7 @@
 \newcommand{\ttw}{4.33cm}  % 1/3 of the textwidth
 \newcommand{\htw}{7.5cm}  % 1/2 of the textwidth
 \newcommand{\ntw}{13cm} % 0.9 of the textwidth
-\newcommand{\gmxver}{1.6}
+\newcommand{\gmxver}{2.0}
 \newcommand{\figref}[1]{Fig.~\ref{fig:#1}}
 \newcommand{\figsref}[2]{Figs.~\ref{fig:#1} and ~\ref{fig:#2}}
 \newcommand{\tabref}[1]{Table~\ref{tab:#1}}
@@ -22,6 +22,7 @@
 \newcommand{\secref}[1]{sec.~\ref{sec:#1}}
 \newcommand{\chref}[1]{chapter~\ref{ch:#1}}
 \newcommand{\wwwpage}{\bf http://rugmd0.chem.rug.nl/$\sim$gmx}
+% NOTE: \wwwpage is explicitly included in the 'verbatim' citing instructions!
 \newcommand{\undercons}{\centerline{\em Note: this section is still under construction}}
 \setlength{\headwidth}{\textwidth}
 \setlength{\headheight}{1.0cm}
@@ -73,13 +74,14 @@
 \begin{center}
 {\LARGE\bf GROMACS USER MANUAL}				\\[1cm]
 {\large\bf 
-David van der Spoel \\ 
-Aldert R. van Buuren 	\\ 
-Emile Apol 		\\ 
-Pieter J. Meulenhoff 	\\ 
+David van der Spoel 	\\
+Aldert R. van Buuren 	\\
+Emile Apol 		\\
+Pieter J. Meulenhoff 	\\
 D. Peter Tieleman	\\
-Alfons L.T.M. Sijbers 	\\ 
+Alfons L.T.M. Sijbers 	\\
 Berk A. Hess		\\
+K. Anton Feenstra	\\
 Rudi van Drunen 	\\
 Herman J.C. Berendsen}
 \end{center}
@@ -106,14 +108,14 @@ Fax: 31-50-634800	\\
 
 \newpage
 \section*{Preface \& Disclaimer.}
-This manual is not complete and has no pretention to be complete, 
-due to lack of time of the contributors.
-It is meant as a source of information and references for the {\gromacs} user.
-It contains the background background physics of MD simulations and
-are still being worked on which in some cases means that the information is
-not correct. Some of the programs that are described in the online manual
-pages are not in the standard distribution, and therefore some of the
-file types that are listed in the appendix are obsolete.
+This manual is not complete and has no pretention to be complete, due
+to lack of time of the contributors. It is meant as a source of
+information and references for the {\gromacs} user.  It contains the
+background physics of MD simulations and is still being worked on
+which in some cases means that the information is not correct. Some of
+the programs that are described in the online manual pages are not in
+the standard distribution, and therefore some of the file types that
+are listed in the appendix are obsolete.
 
 When \boldindex{citing} this document in any scientific publication
 please refer to it as:	\\
@@ -122,10 +124,10 @@ please refer to it as:	\\
   title =        "Gromacs {U}ser {M}anual version 2.0",
   author =       "David van der Spoel and Aldert R. van Buuren and Emile
                  Apol and Pieter J. Meulenhoff and D. Peter Tieleman and
-                 Alfons L. T. M. Sij\-bers and Berk Hess and Rudi van Drunen and
-                 Herman J. C. Berendsen",
+                 Alfons L. T. M. Sij\-bers and Berk Hess and K. Anton
+                 Feenstra and Rudi van Drunen and Herman J. C. Berendsen",
   address =      "Nij\-enborgh 4, 9747 AG Groningen, The Netherlands.
-                 Internet: {\wwwpage}",
+                 Internet: http://rugmd0.chem.rug.nl/~gmx",
   year =         "1997"
 }
 \end{verbatim}
