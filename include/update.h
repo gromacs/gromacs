@@ -127,6 +127,17 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],int *nerror);
 /* Regular iterative shake */
 
+extern void constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
+		      t_mdatoms *md,int start,int homenr,
+		      rvec *x,rvec *xprime,matrix box,
+		      real lambda,real *dvdlambda,t_nrnb *nrnb);
+/* Constrain coordinates xprime using the directions in x,
+ * init_constraints must have be called once, before calling constrain      
+ */
+
+extern bool init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
+			     t_mdatoms *md,int start,int homenr);
+/* Initialize constraints stuff */
 
 /* C routines for LINCS algorithm */ 
 extern void clincs(rvec *x,rvec *xp,int ncons,int ncm,int cmax,

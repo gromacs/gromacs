@@ -35,7 +35,7 @@ static char *SRCID_edsam_h = "$Id$";
 extern void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn);
 extern void init_edsam(FILE *log,t_topology *top,
 	   t_mdatoms *md,int start,int homenr,
-	   int *nbl,int **sbl,rvec x[],matrix box, 
+	   rvec x[],matrix box, 
 	   t_edsamyn *edyn,t_edpar *edi);
 extern void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms);
 extern int  read_edint(FILE *file);
@@ -56,7 +56,7 @@ extern void projectx(t_edpar *edi,rvec *x,t_eigvec *vec);
 extern real do_projectx(t_edpar *edi,rvec *x,rvec *vec);
 extern real calc_radius(t_eigvec *vec);
 extern void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
-		     t_mdatoms *md,int start,int homenr,int *nbl,int **sbl,
+		     t_mdatoms *md,int start,int homenr,
                      rvec x[],rvec xold[],rvec x_unc[],rvec f[],matrix box,
                      t_edsamyn *edyn,t_edpar *edi,bool bHave_force);
 extern void rmfit(int ned,rvec *x,rvec *transvec,matrix rotmat);

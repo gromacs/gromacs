@@ -60,7 +60,7 @@ void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn)
 
 void init_edsam(FILE *log,t_topology *top,
 	   t_mdatoms *md,int start,int homenr,
-	   int *nbl,int **sbl,rvec x[],matrix box, 
+	   rvec x[],matrix box, 
 	   t_edsamyn *edyn,t_edpar *edi)
 {
   int i,j,ned,*refmasnrs;
@@ -630,7 +630,7 @@ real calc_radius(t_eigvec *vec)
 }
 
 void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
-	      t_mdatoms *md,int start,int homenr,int *nbl,int **sbl,
+	      t_mdatoms *md,int start,int homenr,
               rvec x[],rvec xold[],rvec x_unc[],rvec force[],matrix box,
 	      t_edsamyn *edyn,t_edpar *edi,bool bHave_force)
 {
