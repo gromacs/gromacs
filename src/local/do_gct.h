@@ -38,7 +38,8 @@ static char *SRCID_do_gct_h = "$Id$";
 #include "network.h"
 
 enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,
-       eoPolarizability, eoDipole, 
+       eoObsNR,
+       eoPolarizability=eoObsNR, eoDipole, 
        eoMemory, eoInter, eoUseVirial,  eoNR };
 extern char *eoNames[eoNR];
 
@@ -74,12 +75,15 @@ typedef struct {
 } t_coupl_iparams;
 
 typedef struct {
-  real       force0,force,fx0,fx,fy0,fy,fz0,fz;
+  real       act_value[eoObsNR];
+  real       av_value [eoObsNR];
+  real       ref_value[eoObsNR];
+  /*real       force0,force,fx0,fx,fy0,fy,fz0,fz;
   real       pres0,pres;
   real       vir0,vir;
   real       epot0,epot;
   real       dist0,dist;
-  real       mu0,mu;
+  real       mu0,mu;*/
   int        nLJ,nBU,nQ,nIP;
   t_coupl_LJ *tcLJ;
   t_coupl_BU *tcBU;

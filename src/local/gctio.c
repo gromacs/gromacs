@@ -67,8 +67,7 @@ static char *NoYes[] = { "No", "Yes" };
 	
 static void send_tcr(int dest,t_coupl_rec *tcr)
 {
-  blocktx(dest,tcr->pres0);
-  blocktx(dest,tcr->epot0);
+  nblocktx(dest,eoObsNR,tcr->ref_value);
   blocktx(dest,tcr->nLJ);
   nblocktx(dest,tcr->nLJ,tcr->tcLJ);
   blocktx(dest,tcr->nBU);
@@ -79,8 +78,7 @@ static void send_tcr(int dest,t_coupl_rec *tcr)
 
 static void rec_tcr(int src,t_coupl_rec *tcr)
 {
-  blockrx(src,tcr->pres0);
-  blockrx(src,tcr->epot0);
+  nblockrx(src,eoObsNR,tcr->ref_value);
   
   blockrx(src,tcr->nLJ);
   snew(tcr->tcLJ,tcr->nLJ);
@@ -200,21 +198,21 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
   fp=ffopen(fn,"w");
   nice_header(fp,fn);
   fprintf(fp,"%-15s = %12g  ; Reference pressure for coupling\n",
-	  eoNames[eoPres],tcr->pres0);
+	  eoNames[eoPres],tcr->ref_value[eoPres]);
   fprintf(fp,"%-15s = %12g  ; Reference potential energy\n",
-	  eoNames[eoEpot],tcr->epot0);
+	  eoNames[eoEpot],tcr->ref_value[eoEpot]);
   fprintf(fp,"%-15s = %12g  ; Reference distance\n",
-	  eoNames[eoDist],tcr->dist0);
+	  eoNames[eoDist],tcr->ref_value[eoDist]);
   fprintf(fp,"%-15s = %12g  ; Reference dipole\n",
-	  eoNames[eoMu],tcr->mu0);
+	  eoNames[eoMu],tcr->ref_value[eoMu]);
   fprintf(fp,"%-15s = %12g  ; Reference force\n",
-	  eoNames[eoMu],tcr->force0);
+	  eoNames[eoMu],tcr->ref_value[eoForce]);
   fprintf(fp,"%-15s = %12g  ; Reference force in X dir\n",
-	  eoNames[eoFx],tcr->fx0);
+	  eoNames[eoFx],tcr->ref_value[eoFx]);
   fprintf(fp,"%-15s = %12g  ; Reference force in Y dir\n",
-	  eoNames[eoFy],tcr->fy0);
+	  eoNames[eoFy],tcr->ref_value[eoFy]);
   fprintf(fp,"%-15s = %12g  ; Reference force in Z dir\n",
-	  eoNames[eoFz],tcr->fz0);
+	  eoNames[eoFz],tcr->ref_value[eoFz]);
   fprintf(fp,"%-15s = %12g  ; Polarizability used for the Epot correction\n",
 	  eoNames[eoPolarizability],tcr->polarizability);
   fprintf(fp,"%-15s = %12g  ; Gas phase dipole moment used for Epot correction\n", 
@@ -423,16 +421,9 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   bool      bWrong;
   
   inp=read_inpfile(fn,&ninp);
-  RTYPE (eoNames[eoPres],	tcr->pres0,	1.0);
-  RTYPE (eoNames[eoEpot],	tcr->epot0,	0.0);
-  RTYPE (eoNames[eoMu],         tcr->mu0,       0.0);
-  RTYPE (eoNames[eoDist],       tcr->dist0,     0.0);
-  RTYPE (eoNames[eoPolarizability],	tcr->polarizability,	0.0);
-  RTYPE (eoNames[eoDipole],	tcr->dipole,	0.0);
-  RTYPE (eoNames[eoForce],      tcr->force,     0.0);
-  RTYPE (eoNames[eoFx],         tcr->fx0,       0.0);
-  RTYPE (eoNames[eoFy],         tcr->fy0,       0.0);
-  RTYPE (eoNames[eoFz],         tcr->fz0,       0.0);
+  for(i=0; (i<eoObsNR); i++)
+    RTYPE (eoNames[i],	tcr->ref_value[i],	0.0);
+  
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
   ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
   ETYPE (eoNames[eoUseVirial],  tcr->bVirial,   yesno_names);

@@ -389,7 +389,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bStopCM) {
       check_cm(log,vcm,mdatoms->tmass);
-      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->tmass);
+      do_stopcm(log,HOMENR(nsb),START(nsb),v,vcm,mdatoms->tmass,mdatoms->invmass);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
     }
     

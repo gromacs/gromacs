@@ -93,7 +93,6 @@ char *mk_gct_nm(char *fn,int ftp,int ati,int atj)
 }
 
 static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
-		  real ener[],real Virial,real mu,
 		  t_commrec *cr,int nfile,t_filenm fnm[])
 {
   static FILE *prop;
@@ -105,17 +104,22 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   char        buf[256];
   char        *leg[] =  { "C12", "C6" };
   char        *bleg[] = { "A", "B", "C" };
-  char        *pleg[] = { "RA-Pres", "Pres", "RA-Epot", "Epot", "Mu", "Ra-Mu" };
-  char        *vleg[] = { "RA-Vir", "Vir", "RA-Epot", "Epot", "Mu", "Ra-Mu" };
+  char        **raleg;
   int         i,index;
   
   if ((prop == NULL) && (out == NULL) && (qq == NULL) && (ip == NULL)) {
     prop=xvgropen(opt2fn("-runav",nfile,fnm),
 		  "Properties and Running Averages","Time (ps)","");
-    if (tcr->bVirial)
-      xvgr_legend(prop,asize(vleg),vleg);
-    else
-      xvgr_legend(prop,asize(pleg),pleg);
+    snew(raleg,2*eoObsNR);
+    for(i=0; (i<eoObsNR); i++) {
+      raleg[i] = strdup(eoNames[i]);
+      sprintf(buf,"RA-%s",eoNames[i]);
+      raleg[eoObsNR+i] = strdup(buf);
+    }
+    xvgr_legend(prop,2*eoObsNR,raleg);
+    for(i=0; (i<2*eoObsNR); i++) 
+      sfree(raleg[i]);
+    sfree(raleg);
       
     if (tcr->nLJ) {
       snew(out,tcr->nLJ);
@@ -171,17 +175,16 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 	      interaction_function[idef->functype[index]].longname);
       fflush(ip[i]);
     }
-  }
-  if (tcr->bVirial)
-    fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e\n",
-	    time,tcr->vir,Virial,tcr->epot,Ecouple(tcr,ener),
-	    tcr->mu,mu);
-  else
-    fprintf(prop,"%10g  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e\n",
-	    time,tcr->pres,ener[F_PRES],tcr->epot,Ecouple(tcr,ener),
-	    tcr->mu,mu);
-  
+    }
+    /* Write properties to file */
+  fprintf(prop,"%10.3f",time);
+  for(i=0; (i<eoObsNR); i++)
+    fprintf(prop,"  %10.3e",tcr->act_value[i]);
+  for(i=0; (i<eoObsNR); i++)
+    fprintf(prop,"  %10.3e",tcr->av_value[i]);
+  fprintf(prop,"\n");
   fflush(prop);
+  
   for(i=0; (i<tcr->nLJ); i++) {
     tclj=&(tcr->tcLJ[i]);
     if (tclj->bPrint) {
@@ -219,18 +222,20 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   }
 }
 
-static void pr_dev(bool bVirial,
-		   real t,real dev[eoNR],t_commrec *cr,int nfile,t_filenm fnm[])
+static void pr_dev(real t,real dev[eoObsNR],t_commrec *cr,int nfile,t_filenm fnm[])
 {
   static FILE *fp=NULL;
   int    i;
   
   if (!fp) {
     fp=xvgropen(opt2fn("-devout",nfile,fnm),
-		"Deviations from target value",
-		bVirial ? "Vir" : "Pres","Epot");
+		"Deviations from target value","Time (ps)","");
+    xvgr_legend(fp,eoObsNR,eoNames);
   }
-  fprintf(fp,"%12.5e  %12.5e  %12.5e\n",t,bVirial ? dev[eoVir] : dev[eoPres],dev[eoEpot]);
+  fprintf(fp,"%10.3f",t);
+  for(i=0; (i<eoObsNR); i++)
+    fprintf(fp,"  %10.3e",dev[i]);
+  fprintf(fp,"\n");
   fflush(fp);
 }
 
@@ -351,6 +356,12 @@ static real calc_dist(FILE *log,rvec x[])
     return 0.0;
 }
 
+void set_act_value(t_coupl_rec *tcr,int index,real val,int step)
+{
+  tcr->act_value[index] = val;
+  tcr->av_value[index]  = run_aver(tcr->av_value[index],val,step,tcr->nmemory);
+}
+
 void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_coupl_rec *tcr,real t,int step,real ener[],
 		 t_forcerec *fr,t_inputrec *ir,bool bMaster,
@@ -358,7 +369,6 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 		 t_commrec *cr,matrix box,tensor virial,rvec mu_tot,
 		 rvec x[],rvec f[])
 {
-
 #define enm2Debye 48.0321
 #define d2e(x) (x)/enm2Debye
 #define enm2kjmol(x) (x)*0.0143952 /* = 2.0*4.0*M_PI*EPSILON0 */
@@ -367,7 +377,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   static bool bFirst = TRUE;
   
   int         i,j,ati,atj,atnr2,type,ftype;
-  real        deviation[eoNR],prdev[eoNR],epot0,dist,rmsf;
+  real        deviation[eoObsNR],prdev[eoObsNR],epot0,dist,rmsf;
   real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind;
   real        Epol,Eintern,Virial,muabs,xiH,xiS,xi6,xi12;
   rvec        fmol[2];
@@ -403,10 +413,11 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       TTT /= nrdf;
       
       /* Calculate reference virial from reference temperature and pressure */
-      tcr->vir0 = 0.5*BOLTZ*nrdf*TTT - (3.0/2.0)*Vol*tcr->pres0;
+      tcr->ref_value[eoVir] = 0.5*BOLTZ*nrdf*TTT - (3.0/2.0)*
+	Vol*tcr->ref_value[eoPres];
       
       fprintf(log,"DOGCT: TTT = %g, nrdf = %d, vir0 = %g,  Vol = %g\n",
-	      TTT,nrdf,tcr->vir0,Vol);
+	      TTT,nrdf,tcr->ref_value[eoVir],Vol);
     }
   }
   
@@ -417,18 +428,13 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    * coupling slowly.
    */
   if (step == 0) {
-    tcr->pres = tcr->pres0;
-    tcr->vir  = tcr->vir0;
-    tcr->dist = tcr->dist0;
-    tcr->force= tcr->force0;
-    tcr->mu   = tcr->mu0;
+    for(i=0; (i<eoObsNR); i++)
+      tcr->av_value[i] = tcr->ref_value[i];
     if ((tcr->dipole) != 0.0) {
       mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
-      Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
-      tcr->epot = (tcr->epot0-Epol)*nmols;
+      Epol   = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
+      tcr->av_value[eoEpot] -= Epol;
     }
-    else
-      tcr->epot = tcr->epot0*nmols;
   }
 
   /* We want to optimize the LJ params, usually to the Vaporization energy 
@@ -438,7 +444,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    */
   dist      = calc_dist(log,x);
   muabs     = norm(mu_tot);
-  Eintern   = Ecouple(tcr,ener);
+  Eintern   = Ecouple(tcr,ener)/nmols;
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
   calc_force(md->nr,f,fmol);
   
@@ -446,55 +452,47 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
    * average observable over the last tcr->nmemory steps. This may help
    * in avoiding local minima in parameter space.
    */
-  tcr->pres = run_aver(tcr->pres,ener[F_PRES],step,tcr->nmemory);
-  tcr->epot = run_aver(tcr->epot,Eintern,     step,tcr->nmemory);
-  tcr->vir  = run_aver(tcr->vir, Virial,      step,tcr->nmemory);
-  tcr->mu   = run_aver(tcr->mu,muabs,         step,tcr->nmemory);
-  tcr->dist = run_aver(tcr->dist,dist,        step,tcr->nmemory);
-  tcr->fx   = run_aver(tcr->fx,  fmol[0][XX], step,tcr->nmemory);
-  tcr->fy   = run_aver(tcr->fy,  fmol[0][YY], step,tcr->nmemory);
-  tcr->fz   = run_aver(tcr->fz,  fmol[0][ZZ], step,tcr->nmemory);
+  set_act_value(tcr,eoPres, ener[F_PRES],step);
+  set_act_value(tcr,eoEpot, Eintern,     step);
+  set_act_value(tcr,eoVir,  Virial,      step);
+  set_act_value(tcr,eoDist, dist,        step);
+  set_act_value(tcr,eoMu,   muabs,       step);
+  set_act_value(tcr,eoFx,   fmol[0][XX], step);
+  set_act_value(tcr,eoFy,   fmol[0][YY], step);
+  set_act_value(tcr,eoFz,   fmol[0][ZZ], step);
   
-  if (bPrint)
-    pr_ff(tcr,t,idef,ener,Virial,muabs,cr,nfile,fnm);
-
+  epot0 = tcr->ref_value[eoEpot];
   /* If dipole != 0.0 assume we want to use polarization corrected coupling */
   if ((tcr->dipole) != 0.0) {
     mu_ind = mu_aver - d2e(tcr->dipole); /* in e nm */
     
     Epol = mu_ind*mu_ind/(enm2kjmol(tcr->polarizability));
-
-    epot0 = (tcr->epot0 - Epol)*nmols;
+    
+    epot0 -= Epol;
     if (debug) {
       fprintf(debug,"mu_ind: %g (%g D) mu_aver: %g (%g D)\n",
 	      mu_ind,mu_ind*enm2Debye,mu_aver,mu_aver*enm2Debye);
       fprintf(debug,"Eref %g Epol %g Erunav %g Eact %g\n",
-	      (tcr->epot0)*nmols, Epol*nmols, tcr->epot,ener[F_EPOT]);
+	      tcr->ref_value[eoEpot],Epol,tcr->av_value[eoEpot],
+	      tcr->act_value[eoEpot]);
     }
   }
-  else 
-    epot0 = tcr->epot0*nmols;
+
+  if (bPrint)
+    pr_ff(tcr,t,idef,cr,nfile,fnm);
 
   /* Calculate the deviation of average value from the target value */
-  deviation[eoPres]   = calc_deviation(tcr->pres, ener[F_PRES],tcr->pres0);
-  deviation[eoEpot]   = calc_deviation(tcr->epot, Eintern,     epot0);
-  deviation[eoVir]    = calc_deviation(tcr->vir,  Virial,      tcr->vir0);
-  deviation[eoDist]   = calc_deviation(tcr->dist, dist,        tcr->dist0);
-  deviation[eoMu]     = calc_deviation(tcr->mu,   muabs,       tcr->mu0);
-  deviation[eoFx]     = calc_deviation(tcr->fx,   fmol[0][XX], tcr->fx0);
-  deviation[eoFy]     = calc_deviation(tcr->fy,   fmol[0][YY], tcr->fy0);
-  deviation[eoFz]     = calc_deviation(tcr->fz,   fmol[0][ZZ], tcr->fz0);
-  /*calc_f_dev(md->nr,md->chargeA,x,f,idef,&xiH,&xiS);*/
-  
-  prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
-  prdev[eoEpot]   = epot0      - Eintern;
-  prdev[eoVir]    = tcr->vir0  - Virial;
-  prdev[eoMu]     = tcr->mu0   - muabs;
-  prdev[eoDist]   = tcr->dist0 - dist;
-  prdev[eoForce]  = tcr->force0- rmsf;
+  for(i=0; (i<eoObsNR); i++) {
+    deviation[i] = calc_deviation(tcr->av_value[i],tcr->act_value[i],
+				  tcr->ref_value[i]);
+    prdev[i]     = tcr->ref_value[i] - tcr->act_value[i];
+  }
+  deviation[eoEpot] = calc_deviation(tcr->av_value[eoEpot],tcr->act_value[eoEpot],
+				     epot0);
+  prdev[eoEpot]     = epot0 - tcr->act_value[eoEpot];
   
   if (bPrint)
-    pr_dev(tcr->bVirial,t,prdev,cr,nfile,fnm);
+    pr_dev(t,prdev,cr,nfile,fnm);
   
   /* First set all factors to 1 */
   for(i=0; (i<atnr2); i++) {
