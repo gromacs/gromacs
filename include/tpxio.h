@@ -117,7 +117,7 @@ extern bool read_tps_conf(char *infile,char *title,t_topology *top,
 			  rvec **x,rvec **v,matrix box,bool bMass);
 /* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
  * memory for atoms, x and v will be allocated.  
- * Return TRUE if a topology was read. 
+ * Return TRUE if a complete topology was read. 
  * If infile is a TPX file read the whole top,
  * else if bMass=TRUE, read the masses into top.atoms from the mass database.
  */
