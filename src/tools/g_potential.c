@@ -195,10 +195,10 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
   
   if (bSpherical)
     fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential"
-	    "in spherical coordinates\n", nr_frames-1);
+	    "in spherical coordinates\n", nr_frames);
   else
     fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential\n",
-	    nr_frames-1);
+	    nr_frames);
 
   for (n =0; n < nr_grps; n++)
   {
@@ -216,14 +216,14 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
 	}
 	else
 	{
-	  (*slCharge)[n][i] = (*slCharge)[n][i] / ((nr_frames-1) * slVolume);
+	  (*slCharge)[n][i] = (*slCharge)[n][i] / (nr_frames * slVolume);
 	}
       }
       else
       {
 	/* get charge per volume */
 	(*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices) /
-	  ((nr_frames-1) * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+	  (nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
       }
     }
     /* Now we have charge densities */

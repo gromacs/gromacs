@@ -80,7 +80,7 @@ int get_electrons(t_electron **eltab, char *fn)
 
   fgets(buffer, 255, in);
   if (sscanf(buffer, "%d", &nr) != 1)
-    fatal_error(0,"not a reasonable number of atomtypes in datafile\n");
+    fatal_error(0,"Invalid number of atomtypes in datafile\n");
 
   snew(*eltab,nr);
 
@@ -185,17 +185,17 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   /*********** done with status file **********/
   close_trj(status);
   
-/* slDensity now contains the total number of electrons per slice, summed over all
-   frames. Now divide by nr_frames and volume of slice 
+/* slDensity now contains the total number of electrons per slice, summed 
+   over all frames. Now divide by nr_frames and volume of slice 
 */
 
   fprintf(stderr,"\nRead %d frames from trajectory. Counting electrons\n",
-	  nr_frames-1);
+	  nr_frames);
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++)
       (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
-	( (nr_frames-1) * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+	( nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
   }
 
   sfree(x0);  /* free memory used by coordinate array */
@@ -285,15 +285,15 @@ void calc_density(char *fn, atom_id **index, int gnx[],
      */
   
   fprintf(stderr,"\nRead %d frames from trajectory. Calculating density\n",
-	  nr_frames-1);
+	  nr_frames);
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
       if (bCount) 
-	(*slDensity)[n][i] = (*slDensity)[n][i]/ (nr_frames-1);
+	(*slDensity)[n][i] = (*slDensity)[n][i]/nr_frames;
       else
 	(*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) * 1.66057 /
-	( (nr_frames-1) * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+	(nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
     }
   }
 
