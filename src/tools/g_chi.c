@@ -994,7 +994,7 @@ int main(int argc,char *argv[])
   static bool bAll=FALSE;
   static bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
   static real bfac_init=-1.0;
-  static char *maxchistr[] = { "0", "1", "2", "3",  "4", "5", "6", NULL };
+  static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, &r0,

@@ -43,8 +43,6 @@ static char *SRCID_g_angle_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 
-#define MAX_FRAMES 10000 /* slightly arbitrary. */
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -61,7 +59,7 @@ int main(int argc,char *argv[])
     "atom-triples for angles or atom-quadruplets for dihedrals.",
     "If this is not the case, the program will crash."
   };
-  static char *opt[] = { "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
+  static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
   static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE;
   static real binwidth=1;
   t_pargs pa[] = {

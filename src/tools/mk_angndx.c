@@ -112,12 +112,12 @@ int main(int argc,char *argv[])
     "angle distributions etc. It uses a run input file ([TT].tpx[tt]) for the",
     "definitions of the angles, dihedrals etc."
   };
-  static char *opt[] = { "angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
+  static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, opt,
       "Type of angle" }
   };
-      
+  
   FILE       *out;
   t_topology *top;
   int        i,j,nftype,nang;

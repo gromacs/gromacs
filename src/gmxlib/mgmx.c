@@ -364,7 +364,7 @@ static void mk_enumerated(int parent,int top,int left,
   set_parent(pd,get_widget(ww[nwcBUTTON]));
   set_widget_other(pd,get_widget(ww[nwcTOGGLE]));
   
-  for(i=0; (but[i] != NULL); i++) {
+  for(i=1; (but[i] != NULL); i++) {
     sprintf(buf,"%s = %s",desc,but[i]);
     narg = 0;
     XtSetArg(args[narg],XmNlabelString,char2xms(but[i])); narg++;

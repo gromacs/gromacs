@@ -739,8 +739,8 @@ void low_do_autocorr(char *fn,char *title,
   
 }
 
-static char *Leg[]   = { "0", "1", "2", "3", NULL };
-static char *Nparm[] = { "1", "2", NULL };
+static char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
+static char *Nparm[] = { NULL, "1", "2", NULL };
 
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {

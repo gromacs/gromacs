@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
   static real rho=1000.0;
   static rvec center={0.0,0.0,0.0};
   static char *label="A";
-  static char  *cRotate[] = { "X", "Y", "Z", NULL };  
+  static char  *cRotate[] = { NULL, "X", "Y", "Z", NULL };  
   t_pargs pa[] = {
     { "-ndef", FALSE, etBOOL, &bNDEF, 
       "Choose output from default index groups" },    
