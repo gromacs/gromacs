@@ -170,69 +170,6 @@ void chk_trj(char *fn)
   PRINTITEM ( "Forces",     f_size );
 }  
 
-void chk_ndx(char *fn)
-{
-  FILE *in;
-  char buf[256];
-  int ngrp,nelem,nitem,nat,ng_cnt,na_cnt;
-  int nLab;
-
-  fprintf(stderr,"Checking index file %s\n",fn);
-  in=ffopen(fn,"r");
-  
-  if (fscanf(in,"%d%d",&ngrp,&nat) != 2) {
-    fprintf(stderr,"Couldn't read NGRP or NAT in file %s\n",fn);
-    exit(1);
-  }
-  nLab=2;
-  ng_cnt=0,na_cnt=0;
-  fprintf(stderr,"There should be %d groups containing %d atoms in total\n",
-	  ngrp,nat);
-  while (fscanf(in,"%s",buf) == 1) {
-    if (nLab == 2) {
-      fprintf(stderr,"Group %4d: %16s",ng_cnt,buf);
-      ng_cnt++;
-      nLab--;
-    }
-    else if (nLab == 1) {
-      fprintf(stderr,"  Nelem: %16s\n",buf);
-      if (sscanf(buf,"%d",&nelem) != 1) {
-	fprintf(stderr,"\nERROR in indexfile %s\n",fn);
-	fprintf(stderr,"Couldn't find proper NATOMS in buf '%s'\n",buf);
-	fprintf(stderr,"May be you have entered too many atoms in the previous group\n\n");
-	ffclose(in);
-	return;
-      }
-      nLab--;
-    }
-    else {
-      if (sscanf(buf,"%d",&nitem) != 1) {
-	fprintf(stderr,"\nERROR in indexfile %s\n",fn);
-	fprintf(stderr,"Couldn't find proper ATOM in buf '%s'\n",buf);
-	fprintf(stderr,"You should have entered %d more atom(s) for the previous group\n\n",nelem);
-	ffclose(in);
-	return;
-      }
-      nelem--;
-      na_cnt++;
-      if (nelem == 0)
-	nLab=2;
-    }
-  }
-  fprintf(stderr,"\nFound %6d groups, ",ng_cnt);
-  if (ng_cnt != ngrp)
-    fprintf(stderr,"should be %6d\n",ngrp);
-  else
-    fprintf(stderr,"as it should be.\n");
-  fprintf(stderr,"Found %6d atoms,  ",na_cnt);
-  if (na_cnt != nat)
-    fprintf(stderr,"should be %6d\n",nat);
-  else
-    fprintf(stderr,"as it should be.\n");
-  
-  ffclose(in);
-}
-
 void chk_stx(char *fn)
 {
   int       natom,i,j,k,nvdw;
@@ -434,8 +371,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
-    "[TT].xtc[tt]), an index file ([TT].ndx[tt]) or an energy file",
-    "([TT].ene[tt] or [TT].edr[tt])",
+    "[TT].xtc[tt]) or an energy file ([TT].ene[tt] or [TT].edr[tt])",
     "and prints out useful information about them.[PAR]",
     "For a coordinate file (generic structure file, e.g. [TT].gro[tt]) ",
     "gmxcheck will check for presence of coordinates, velocities and box",
@@ -449,7 +385,6 @@ int main(int argc,char *argv[])
   };
   t_filenm fnm[] = {
     { efTRX, "-f", NULL, ffOPTRD },
-    { efNDX, "-n", NULL, ffOPTRD },
     { efTPX, "-s1", "top1", ffOPTRD },
     { efTPX, "-s2", "top2", ffOPTRD },
     { efSTX, "-c", NULL, ffOPTRD },
@@ -464,9 +399,6 @@ int main(int argc,char *argv[])
   
   if (ftp2bSet(efTRX,NFILE,fnm))
     chk_trj(ftp2fn(efTRX,NFILE,fnm));
-  
-  if (ftp2bSet(efNDX,NFILE,fnm))
-    chk_ndx(ftp2fn(efNDX,NFILE,fnm));
   
   if (opt2bSet("-s1",NFILE,fnm))
     fn1=opt2fn("-s1",NFILE,fnm);
