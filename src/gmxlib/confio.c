@@ -585,14 +585,14 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr)
   char title[STRLEN];
   
   frewind(status);
+  fprintf(stderr,"Reading frames from gro file");
   get_coordnum_fp(status, title, &fr->natoms);
   frewind(status);
-  fprintf(stderr,"Reading frames from gro file '%s'\n",title);
+  fprintf(stderr," '%s', %d atoms.\n",title, fr->natoms));
   fr->bTitle = TRUE;
   fr->title = title;
   if (fr->natoms==0)
     fatal_error(1,"No coordinates in gro file\n");
-  fprintf(stderr,"No of atoms: %d.\n", fr->natoms);
   
   snew(fr->x,fr->natoms);
   snew(fr->v,fr->natoms);
