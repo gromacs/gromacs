@@ -21,8 +21,8 @@
  * executed by multiple threads.
  */
 
-#include "mknb_common.h"
-#include "mknb_metacode.h"
+#include <mknb_common.h>
+#include <mknb_metacode.h>
 
 #include <string.h>
 #include <stdlib.h>

@@ -17,7 +17,7 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
-#include "mknb_common.h"
+#include <mknb_common.h>
 
 /* This file just contains the global variables for make_nb_kernels,
  * as defined in mknb_common.h. Global variables are B*A*D, but all the 

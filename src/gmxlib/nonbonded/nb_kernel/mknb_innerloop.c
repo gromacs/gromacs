@@ -22,9 +22,9 @@
  * executed by multiple threads.
  */
 
-#include "mknb_common.h"
-#include "mknb_interactions.h"
-#include "mknb_metacode.h"
+#include <mknb_common.h>
+#include <mknb_interactions.h>
+#include <mknb_metacode.h>
 
 int
 software_invsqrt(char *rsq, char *rinv)

@@ -22,7 +22,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include "mknb_metacode.h"
+#include <mknb_metacode.h>
 
 /* This file is NOT threadsafe, but it is only used to create
  * the nonbonded loops during the build process, so it will never be
