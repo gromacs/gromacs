@@ -265,8 +265,11 @@ void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
   epot[F_LJ]   = sum_v(grps->estat.nn,grps->estat.ee[egLJ]);
   epot[F_LJ14] = (sum_v(grps->estat.nn,grps->estat.ee[egCOUL14])+
 		  sum_v(grps->estat.nn,grps->estat.ee[egLJ14]));
-  epot[F_LR]   = sum_v(grps->estat.nn,grps->estat.ee[egLR]);
-  epot[F_LJLR] = sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
+  epot[F_LR]   += sum_v(grps->estat.nn,grps->estat.ee[egLR]);
+  epot[F_LJLR] += sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
+/* lattice part of LR doesnt belong to any group
+ * and has been added earlier
+ */
   epot[F_BHAM] = sum_v(grps->estat.nn,grps->estat.ee[egBHAM]);
   epot[F_EPOT] = sum_v(F_EPOT,epot);
 }
