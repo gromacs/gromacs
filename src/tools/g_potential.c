@@ -36,6 +36,7 @@ static char *SRCID_g_potential_c = "$Id$";
 #include "smalloc.h"
 #include "macros.h"
 #include "princ.h"
+#include "rmpbc.h"
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"

@@ -36,6 +36,7 @@ static char *SRCID_g_helix_c = "$Id$";
 #include "fitahx.h"
 #include "futil.h"
 #include "gstat.h"
+#include "wgms.h"
 #include "hxprops.h"
 #include "macros.h"
 #include "maths.h"
