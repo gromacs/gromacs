@@ -57,32 +57,6 @@ static char *SRCID_update_c = "$Id$";
 #include "edsam.h"
 #include "callf77.h"
 
-static void shake_error(t_mdatoms *md,
-			t_atoms *atoms,int start,int homenr,
-			rvec x[],rvec xp[],
-			rvec v[],rvec f[],
-			matrix box)
-{
-  int  i,rnr;
-  rvec fcp;
-
-  clear_rvec(fcp);
-  fprintf(stderr,"SHAKE ERROR\n");
-  fprintf(stdlog,"Res# Resnm  Anm Atm#%8s%8s%8s%8s%8s%8s%8s%8s%8s%8s%8s%8s\n",
-	  "Xold","Yold","Zold","Xnew","Ynew","ZNew",
-	  "VX","VY","VZ","FX","FY","FZ");
-  for(i=start; (i<start+homenr); i++) {
-    rnr=md->resnr[i];
-    if (f)
-      copy_rvec(f[i],fcp);
-    fprintf(stdlog,"%5d%5s%5s%5d%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f\n",
-	    rnr+1,*atoms->resname[rnr],*atoms->atomname[i],i+1,
-	    x[i][XX],x[i][YY],x[i][ZZ],xp[i][XX],xp[i][YY],xp[i][ZZ],
-	    v[i][XX],v[i][YY],v[i][ZZ],fcp[XX],fcp[YY],fcp[ZZ]);
-  }
-  fflush(stdlog);
-}
-
 static void calc_g(rvec x_unc,rvec x_cons,rvec g,double mdt_2)
 {
   int d;
@@ -470,7 +444,8 @@ void init_update(FILE *log,t_topology *top,t_inputrec *ir,
 	fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
       for(j=0; (j<=nblocks); j++)
 	fprintf(log,"sblock[%3d]=%5d\n",j,(int) sblock[j]);
-      exit(1);
+      fatal_error(0,"DEATH HORROR: "
+		  "top->blocks[ebSBLOCKS] does not match idef->il[F_SHAKE]");
     }
     sfree(sb);
     sfree(inv_sblock);
@@ -915,8 +890,9 @@ void update(int          natoms, 	/* number of atoms in simulation */
 
       
       if (ncons == -1) {
-	shake_error(md,&(top->atoms),start,homenr,x,xprime,v,force,box);
-	exit(1);
+	dump_confs(step,&(top->atoms),x,xprime,box);
+	fprintf(stdlog,"SHAKE ERROR at step %d\n",step);
+	fatal_error(0,"SHAKE ERROR at step %d\n",step);
       }
       
       dump_it_all(stdlog,"After Shake",natoms,x,xprime,v,vold,force);
