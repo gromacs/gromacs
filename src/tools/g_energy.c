@@ -290,7 +290,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   /* Check out the printed manual for equations! */
   real Dt,a,b,aver,avertot,stddev,delta_t,sigma,totaldrift;
   real xxx,integral,intBulk;
-  real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev;
+  real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta,expE,expEtot,*deltag;
   int  nsteps,iset;
   real x1m,x1mk,VarE=-1,Temp=-1,Pres=-1,VarV=-1,Vaver=-1,VarT=-1;
@@ -312,13 +312,13 @@ static void analyse_ener(bool bCorr,char *corrfn,
     fprintf(stderr,"\nStatistics over %d steps [ %.4f thru %.4f ps ], %d data sets\n\n",
 	    nsteps,oldt,t,nset);
     
-    fprintf(stderr,"%-35s  %10s  %10s  %10s  %10s",
-	    "Energy","Average","RMS","Drift","Tot-Drift");
+    fprintf(stderr,"%-24s %10s %10s %10s %10s %10s",
+	    "Energy","Average","RMS","Fluct.","Drift","Tot-Drift");
     if (bDG)
       fprintf(stderr,"  %10s  %10s\n","-Ln<e^(b E)>/b","Entropy");
     else
       fprintf(stderr,"\n");
-    fprintf(stderr,"-------------------------------------------------------------------\n");
+    fprintf(stderr,"-------------------------------------------------------------------------------\n");
     
     if (bDG) {
       beta = 1.0/(BOLTZ*reftemp);
@@ -377,9 +377,12 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	pr_stddev = stddev;
       }
       lsq_y_ax_b(nenergy,time,eneset[i],&a,&b);
-      totaldrift = a * delta_t;
-      fprintf(stderr,"%-35s  %10g  %10g  %10g  %10g",
-	      leg[i],pr_aver,pr_stddev,a,totaldrift);
+      totaldrift = a * delta_t * (nsteps+1)/nsteps;
+      fluct2 = sqr(pr_stddev) - sqr(totaldrift)/12;
+      if (fluct2 < 0)
+	fluct2 = 0;
+      fprintf(stderr,"%-24s %10g %10g %10g %10g %10g",
+	      leg[i],pr_aver,pr_stddev,sqrt(fluct2),a,totaldrift);
       if (bDG) 
 	fprintf(stderr,"  %10g  %10s\n",deltag[i],deltag[i]-pr_aver);
       else
@@ -390,8 +393,8 @@ static void analyse_ener(bool bCorr,char *corrfn,
       }
     }
     if (bSum) {
-      fprintf(stderr,"%-35s  %10g  %10s  %10s  %10s",
-	      "Total",avertot/nmol,"--","--","--");
+      fprintf(stderr,"%-24s %10g %10s %10s %10s %10s",
+	      "Total",avertot/nmol,"--","--","--","--");
       /* pr_aver,pr_stddev,a,totaldrift */
       if (bDG) 
 	fprintf(stderr,"  %10g  %10g\n",
