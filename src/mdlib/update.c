@@ -36,7 +36,6 @@ static char *SRCID_update_c = "$Id$";
 #include "smalloc.h"
 #include "typedefs.h"
 #include "nrnb.h"
-#include "led.h"
 #include "physics.h"
 #include "macros.h"
 #include "vveclib.h"
@@ -317,8 +316,6 @@ void update(int          natoms, 	/* number of atoms in simulation */
   real             dt_1,dt_2;
   int              i,n,m,g;
 
-  set_led(UPDATE_LED);
-
   if (bFirst) {
     bConstraints = init_constraints(stdlog,top,ir,md,
 				    start,homenr);
@@ -493,6 +490,4 @@ void update(int          natoms, 	/* number of atoms in simulation */
     do_pcoupl(ir,step,pressure,box,start,homenr,x,md->cFREEZE,nrnb,freezefac);
     where();
   }
-
-  clr_led(UPDATE_LED);
 }

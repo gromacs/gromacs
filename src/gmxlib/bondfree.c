@@ -45,7 +45,6 @@ static char *SRCID_bondfree_c = "$Id$";
 #include "mshift.h"
 #include "main.h"
 #include "disre.h"
-#include "led.h"
 
 static bool bPBC=FALSE;
 

@@ -34,7 +34,6 @@ static char *SRCID_main_c = "$Id$";
 #include <limits.h>
 #include "smalloc.h"
 #include "fatal.h"
-#include "led.h"
 #include "network.h"
 #include "main.h"
 #include "macros.h"

@@ -31,7 +31,6 @@ static char *SRCID_mvxvf_c = "$Id$";
 #include <sysstuff.h>
 #include <string.h>
 #include "typedefs.h"
-#include "led.h"
 #include "main.h"
 #include "assert.h"
 #include "mvdata.h"

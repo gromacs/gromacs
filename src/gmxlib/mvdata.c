@@ -31,7 +31,6 @@ static char *SRCID_mvdata_c = "$Id$";
 #include <sysstuff.h>
 #include <string.h>
 #include "typedefs.h"
-#include "led.h"
 #include "main.h"
 #include "assert.h"
 #include "mvdata.h"
@@ -207,7 +206,6 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
 {
   int i;
   
-  put_led(COMM_LED,TRUE);
   ld_parm(left,parm);
   if (debug) fprintf(stdlog,"after ld_parm");
   ld_nsb(left,nsb);
@@ -227,7 +225,6 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
   snew(*v,top->atoms.nr);
   ld_vectors(left,*x,*v);
   if (debug) fprintf(stdlog,"after ld_vectors");
-  put_led(COMM_LED,FALSE);
 }
 
 static void mv_grpopts(int dest,t_grpopts *g)

@@ -170,10 +170,6 @@ extern void gmx_sumd(int nr,double r[],t_commrec *cr);
  *
  ******************************************************/
 
-#ifdef USE_IDT
-#include "idtio.h"
-#endif
-
 #ifdef USE_CM5
 #include "cm5io.h"
 #endif
@@ -184,10 +180,6 @@ extern void gmx_sumd(int nr,double r[],t_commrec *cr);
 
 #ifdef USE_MPI
 #include "mpiio.h"
-#endif
-
-#ifdef USE_AMB
-#include "ambio.h"
 #endif
 
 /********************************************************

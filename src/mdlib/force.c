@@ -34,7 +34,6 @@ static char *SRCID_force_c = "$Id$";
 #include "macros.h"
 #include "smalloc.h"
 #include "assert.h"
-#include "led.h"
 #include "physics.h"
 #include "macros.h"
 #include "vec.h"
@@ -500,7 +499,6 @@ void ns(FILE *log,
     fatal_error(0,"Fatal: box (%fx%fx%f) too small for cut-off (%f)!\n",
 		box[XX][XX],box[YY][YY],box[ZZ][ZZ],fr->rlistlong);
     
-  set_led(NS_LED);
   if (fr->bTwinRange) 
     fr->nlr=0;
 
@@ -526,8 +524,6 @@ void ns(FILE *log,
 	     */
   if (nDNL > 0)
     dump_nblist(log,fr,nDNL);
-  
-  clr_led(NS_LED);
 }
 
 void force(FILE       *log,     int        step,
@@ -548,8 +544,6 @@ void force(FILE       *log,     int        step,
   rvec    box_size;
   real    Vlr,Vself=0;
   
-  set_led(FORCE_LED);
-
   /* Reset box */
   for(i=0; (i<DIM); i++)
     box_size[i]=box[i][i];
@@ -642,6 +636,4 @@ void force(FILE       *log,     int        step,
   for(i=0; (i<F_EPOT); i++)
     if (i != F_DISRES)
       epot[F_EPOT]+=epot[i];
-  
-  clr_led(FORCE_LED);
 }

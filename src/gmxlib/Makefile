@@ -63,42 +63,17 @@ else
 OBJ		+= dumxdrf.o
 endif
 
-EXEC_GENTAB	= gentab
-
 # Some CPU dependencies...
-ifeq ($(GMXCPU),860)
-OBJ		+= idtio.o inout.o delay.o  \
-		   comlib.o semlib.o synclib.o  led.o 
-EXEC_GENTAB	= (setenv SPC_POLL 1000000 ; s860 -w 1 gentab)
-
-else
-
 ifeq ($(GMXCPU),cm5)
-OBJ		+= libsys.o cm5io.o
-else
-ifeq ($(GMXCPU),amb)
-OBJ		+= ambio.o 	ambaled.o	delay.o
-EXEC_GENTAB	= ambasrv -c 0 gentab
-else
-ifeq ($(GMXCPU),am8)
-OBJ		+= ambio.o 	delay.o 	ambaled.o
-EXEC_GENTAB	= ambasrv -c 0 gentab
-else
-ifeq ($(GMXCPU),a23)
-OBJ		+= ambio.o 	delay.o 	ambaled.o
-EXEC_GENTAB	= ambasrv -c 0 gentab
+OBJ		+= cm5io.o
 else
 ifeq ($(USE_PVM3),yes)
-OBJ		+= libsys.o 	pvmio.o 
+OBJ		+= pvmio.o 
 else
 ifeq ($(USE_MPI),yes)
-OBJ		+= libsys.o 	mpiio.o
+OBJ		+= mpiio.o
 else
-OBJ		+= libsys.o	libnet.o
-endif
-endif
-endif
-endif
+OBJ		+= libnet.o
 endif
 endif
 endif
@@ -146,9 +121,6 @@ optghat:	optghat.o	ewald.o	\
 		nrutil.o	powell.o	linmin.o	\
 		brent.o		f1dim.o		mnbrak.o
 		$(LD) -o $@ $^  $(SYSLIBS) $(FFTLIBS)
-
-gentab:		gentab.o
-		$(LD) -o $@ $^  $(SYSLIBS) 
 
 lfft:		lfft.o
 		$(LD) -o $@ $^ $(SYSLIBS)

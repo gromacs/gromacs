@@ -121,7 +121,6 @@ static char *SRCID_idtio_c = "$Id$";
 #include <rdklib.h>
 #include "fatal.h"
 #include "delay.h"
-#include "led.h"
 #include "network.h"
 #include "inout.h"
 #include "idtio.h"

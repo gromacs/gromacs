@@ -33,7 +33,6 @@ static char *SRCID_runner_c = "$Id$";
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "string2.h"
-#include "led.h"
 #include "network.h"
 #include "confio.h"
 #include "copyrite.h"
