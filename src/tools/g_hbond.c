@@ -34,6 +34,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "sysstuff.h"
+#include "txtdump.h"
 #include "futil.h"
 #include "tpxio.h"
 #include "physics.h"
@@ -218,21 +219,20 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
   srenew(*h,*nr_d);
 }
 
-static void init_grid(bool bBox, matrix box, real rcut, 
+static void init_grid(bool bBox, rvec box[], real rcut, 
 		      ivec ngrid, t_gridcell ****grid)
 {
   int i,x,y,z;
   
   if (bBox)
     for(i=0; i<DIM; i++)
-      ngrid[i]=box[i][i]/(1.2*rcut);
+      ngrid[i]=(box[i][i]/(1.2*rcut));
   
   if ( !bBox || (ngrid[XX]<3) || (ngrid[YY]<3) || (ngrid[ZZ]<3) )
     for(i=0; i<DIM; i++)
       ngrid[i]=1;
-  if (debug) 
-    fprintf(debug,"Will do grid-seach on %dx%dx%d grid\n",
-	    ngrid[XX],ngrid[YY],ngrid[ZZ]);
+  printf("Will do grid-seach on %dx%dx%d grid, rcut=%g\n",
+	 ngrid[XX],ngrid[YY],ngrid[ZZ],rcut);
   snew(*grid,ngrid[ZZ]);
   for (z=0; z<ngrid[ZZ]; z++) {
     snew((*grid)[z],ngrid[YY]);
@@ -527,26 +527,28 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
 {
   FILE *fp;
   int  i,j,j0;
+  bool bNorm=FALSE;
   real *rhbex;
-  real *ct,tail;
+  real *ct,tail,ct0;
   int  *nct;
   
   /* build hbexist matrix in reals for autocorr */
-  fprintf(stderr,"Will allocate %.2f Mb of memory\n",
-	  nrhb*nframes*sizeof(real)/(1024.0*1024.0));
+  printf("Will allocate %.2f Mb of memory\n",
+	 nrhb*nframes*sizeof(real)/(1024.0*1024.0));
   snew(rhbex,nframes);
   snew(ct,nframes);
   snew(nct,nframes);
   for(i=0; i<nrhb; i++) {
+    /* First skip until the first frame that a hbond exists */
     j0=0;
     /* while ((j0 < nframes) && (!is_hb(hbexist[i],j0)))
-       j0++; */
+       j0++;*/
     for(j=j0; (j<nframes); j++)
       rhbex[j-j0]=is_hb(hbexist[i],j);
       
     low_do_autocorr(NULL,NULL,
 		    nframes-j0,1,-1,&rhbex,time[1]-time[0],eacNormal,1,
-		    TRUE,TRUE,TRUE,FALSE,0,-1,0,1);
+		    TRUE,TRUE,bNorm,FALSE,0,-1,0,1);
     for(j=0; (j<(nframes-j0)/2); j++) {
       ct[j] += rhbex[j];
       nct[j]++;
@@ -558,6 +560,9 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   for(j=0; ((j<nframes/2) && (nct[j] > 0)); j++)
     ct[j] /= nct[j];
   nframes = j;
+  ct0 = ct[0];
+  for(j=0; (j<nframes); j++)
+    ct[j] /= ct0;
   
   /* Determine final value for normalizing */
   tail = 0;
@@ -568,8 +573,8 @@ static void do_hbac(char *fn,unsigned int **hbexist,int nrhb,int nframes,
   printf("Tail value is %g\n",tail);
   fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
   for(j=0; (j<nframes); j++)
-    fprintf(fp,"%10g  %10g  %10d\n",time[j]-time[0],ct[j],nct[j]);
-  /*(ct[j]-tail)/(nrhb-tail));*/
+    fprintf(fp,"%10g  %10g  %10d  %10g\n",time[j]-time[0],ct[j],nct[j],
+	    (ct[j]-tail)/(1-tail));
   fclose(fp);
   do_view(fn,NULL);
   sfree(ct);
