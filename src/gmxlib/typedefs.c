@@ -116,20 +116,35 @@ void done_inputrec(t_inputrec *ir)
   if (ir->opts.nFreeze) sfree(ir->opts.nFreeze);
 }
 
-t_atoms *new_atoms(int natoms)
+void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 {
-  t_atoms *a;
-  
-  /* Allocate and set everything to 0 or NULL */
-  snew(a,1);
-
-  /* Allocate space for natoms */
-  snew(a->atom,     natoms);
-  snew(a->pdbinfo,  natoms);
-  snew(a->atomname, natoms);
-  snew(a->resname,  natoms);
-
-  init_block(&a->excl);
-      
-  return a;
+  atoms->nr=natoms;
+  atoms->nres=0;
+  snew(atoms->atomname,natoms);
+  snew(atoms->resname,natoms);
+  snew(atoms->atom,natoms);
+  if (bPdbinfo)
+    snew(atoms->pdbinfo,natoms);
+  else
+    atoms->pdbinfo=NULL;
+  init_block(&atoms->excl);
 }
+
+void free_t_atoms(t_atoms *atoms)
+{
+  int i;
+
+  for(i=0; i<atoms->nr; i++)
+    sfree(*atoms->atomname[i]);
+  sfree(atoms->atomname);
+  for(i=0; i<atoms->nres; i++)
+    sfree(*atoms->resname[i]);
+  sfree(atoms->resname);
+  sfree(atoms->atom);
+  if (atoms->pdbinfo)
+    sfree(atoms->pdbinfo);
+  atoms->nr=0; 
+  atoms->nres=0;
+  done_block(&atoms->excl);
+}     
+

@@ -50,37 +50,6 @@ static char *SRCID_confio_c = "$Id$";
 #include "filenm.h"
 #include "statusio.h"
 
-
-void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
-{
-  atoms->nr=natoms;
-  atoms->nres=0;
-  snew(atoms->atomname,natoms);
-  snew(atoms->resname,natoms);
-  snew(atoms->atom,natoms);
-  if (bPdbinfo)
-    snew(atoms->pdbinfo,natoms);
-  else
-    atoms->pdbinfo=NULL;
-}
-
-void free_t_atoms(t_atoms *atoms)
-{
-  int i;
-
-  for(i=0; i<atoms->nr; i++)
-    sfree(*atoms->atomname[i]);
-  sfree(atoms->atomname);
-  for(i=0; i<atoms->nres; i++)
-    sfree(*atoms->resname[i]);
-  sfree(atoms->resname);
-  sfree(atoms->atom);
-  if (atoms->pdbinfo)
-    sfree(atoms->pdbinfo);
-  atoms->nr=0; 
-  atoms->nres=0;
-}     
-
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
 {
   char line[STRLEN+1];
