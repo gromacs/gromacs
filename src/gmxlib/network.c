@@ -81,6 +81,7 @@ void def_reset_idle(void)
 
 void def_sumd(int nr,double r[],t_commrec *cr)
 {
+  /*#define TEST_MPI_SUM*/
 #ifdef TEST_MPI_SUM
   static double *buf;
   static int nalloc=0;
