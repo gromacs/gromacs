@@ -52,6 +52,9 @@ basic:	dirs oclean
 # rule to make dirs where binaries and libary go:
 dirs:
 	\mkdir -p $(BINDIR) $(LIBDIR); 
+
+doc:	man	html
+
 man:
 	./mknroff
 html:

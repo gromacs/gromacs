@@ -1,5 +1,8 @@
 #!/bin/csh -f
 
+echo "Generating html manual for GROMACS programs"
+echo "-------------------------------------------"
+
 setenv VER 	2.0
 setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
@@ -61,6 +64,8 @@ cat >> $INDEX << EOM
 EOM
 
 echo ""
-echo "New html pages in $HTML (file:$INDEX)"
+echo ""
+echo "New html pages in $HTML"
+echo "file:$INDEX"
 
 #last line

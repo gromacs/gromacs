@@ -329,7 +329,7 @@ static void write_nroffman(FILE *out,
 		check_nroff(pa[i].option+1),
 		pa_val(&(pa[i])),check_nroff(pa[i].desc));
       else
-	fprintf(out,".BI \"%s\"  \" %s\" \"%s\" \n %s\n\n",
+	fprintf(out,".BI \"%s\"  \" %s\" \" %s\" \n %s\n\n",
 		check_nroff(pa[i].option),argtp[pa[i].type],
 		pa_val(&(pa[i])),check_nroff(pa[i].desc));
     }

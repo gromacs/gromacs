@@ -1,16 +1,24 @@
-#!/bin/csh
+#!/bin/csh -f
+
+echo "Generating unix manual for GROMACS programs"
+echo "-------------------------------------------"
 
 set 	wd = $cwd
 cd $GMXHOME
-if ( ! -f man ) mkdir man
+if ( ! -d man ) mkdir man
 cd man
-if ( ! -f man1 ) mkdir man1
+if ( ! -d man1 ) mkdir man1
 
-cd 	$GMXHOME/bin/$CPU
+cd 	$GMXHOME/bin/$GMXCPU
 foreach i ( * )
 if ( -x $i ) then
-$i -man 3
-if ( -f $i.1 ) mv $i.1 $GMXHOME/man/man1
+echo -n " $i"
+$i -man nroff >& /dev/null
+if ( -f $i.nroff ) mv $i.nroff $GMXHOME/man/man1/$i.1
 endif
 end
 
+echo " "
+echo " "
+echo "Unix manual entries ready. If you have sourced GMXRC you should"
+echo "be able to type for example 'man grompp' to see the manual entry for grompp"

@@ -151,6 +151,11 @@ if ( \$?LD_LIBRARY_PATH ) then
 else
 	 setenv LD_LIBRARY_PATH	\$GMXHOME/lib/\$GMXCPU
 endif
+if ( \$?MANPATH ) then
+	setenv 	MANPATH		"\$MANPATH":\$GMXHOME/man
+else
+	setenv  MANPATH         /usr/man:\$GMXHOME/man  
+endif
 
 # Now finally, if you consider our Cool Quotes to be offensive
 # you might consider commenting out the following line:
@@ -163,4 +168,4 @@ EOD
 
 echo	'Done, it is compile time now.'
 echo	'Source GMXRC and read instructions in'
-echo	'http://rugmd4.chem.rug.nl/~gmx/readme2.0.html'
+echo	'http://md.chem.rug.nl/~gmx/readme2.0.html'
