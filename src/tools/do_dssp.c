@@ -162,7 +162,8 @@ static void check_oo(t_atoms *atoms)
   }
 }
 
-static void norm_acc(t_atoms *atoms, real av_area[], real norm_av_area[])
+static void norm_acc(t_atoms *atoms, int nres, 
+		     real av_area[], real norm_av_area[])
 {
   int i,n,n_surf;
   
@@ -178,13 +179,70 @@ static void norm_acc(t_atoms *atoms, real av_area[], real norm_av_area[])
     sscanf(surf_lines[i],"%s %lf",surf_res[i],&surf[i]);
   }
   
-  for(i=0; (i<atoms->nres); i++) {
+  for(i=0; (i<nres); i++) {
     n = search_str(n_surf,surf_res,*atoms->resname[i]);
     if ( n != -1)
       norm_av_area[i] = av_area[i] / surf[n];
     else 
       fprintf(stderr,"Residue %s not found in surface database (%s)\n",
 	      *atoms->resname[i],surffn);
+  }
+}
+
+void prune_ss_legend(t_matrix *mat)
+{
+  bool *present;
+  int  *newnum;
+  int i,r,f,newnmap;
+  t_mapping *newmap;
+  
+  snew(present,mat->nmap);
+  snew(newnum,mat->nmap);
+
+  for(f=0; f<mat->nx; f++)
+    for(r=0; r<mat->ny; r++)
+      present[mat->matrix[f][r]]=TRUE;
+      
+  newnmap=0;
+  newmap=NULL;
+  for (i=0; i<mat->nmap; i++) {
+    newnum[i]=-1;
+    if (present[i]) {
+      newnum[i]=newnmap;
+      newnmap++;
+      srenew(newmap,newnmap);
+      newmap[newnmap-1]=mat->map[i];
+    }
+  }
+  if (newnmap!=mat->nmap) {
+    mat->nmap=newnmap;
+    mat->map=newmap;
+    for(f=0; f<mat->nx; f++)
+      for(r=0; r<mat->ny; r++)
+	mat->matrix[f][r]=newnum[mat->matrix[f][r]];
+  }
+}
+
+void write_sas_mat(char *fn,real **accr,int nframe,int nres,t_matrix *mat)
+{
+  real lo,hi;
+  int i,j,nlev;
+  t_rgb rlo={1,1,1}, rhi={0,0,0};
+  FILE *fp;
+  
+  if(fn) {
+    hi=lo=accr[0][0];
+    for(i=0; i<nframe; i++)
+      for(j=0; j<nres; j++) {
+	lo=min(lo,accr[i][j]);
+	hi=max(hi,accr[i][j]);
+      }
+    fp=ffopen(fn,"w");
+    nlev=hi-lo+1;
+    write_xpm(fp,"Solvent Accessible Surface","Surface (A^2)",
+	      "Time","Residue Index",nframe,nres,
+	      mat->axis_x,mat->axis_y,accr,lo,hi,rlo,rhi,&nlev);
+    ffclose(fp);
   }
 }
 
@@ -201,12 +259,12 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
   leg[0]="Structure";
   for(s=0; s<mat->nmap; s++)
     leg[s+1]=map[s].desc;
-
+  
   fp=xvgropen(outfile,"Secondary Structure",
 	      mat->label_x,"Number of Residues");
   fprintf(fp,"@ subtitle \"Structure = ");
   for(s=0; s<strlen(ss_string); s++) {
-    if (s)
+    if (s>0)
       fprintf(fp," + ");
     for(f=0; f<mat->nmap; f++)
       if (ss_string[s]==map[f].code.c1)
@@ -214,7 +272,7 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
   }
   fprintf(fp,"\"\n");
   xvgr_legend(fp,mat->nmap+1,leg);
-
+  
   for(f=0; f<mat->nx; f++) {
     ss_count=0;
     for(s=0; s<mat->nmap; s++)
@@ -230,7 +288,7 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
       fprintf(fp," %5d",count[s]);
     fprintf(fp,"\n");
   }
-
+  
   fclose(fp);
   sfree(leg);
   sfree(count);
@@ -244,8 +302,8 @@ int main(int argc,char *argv[])
 #else
     "do_dssp ", 
 #endif
-    "reads a trajectory file and computes the secondary",
-    "structure for each time frame (or every [TT]-dt[tt] ps) by",
+    "reads a trajectory file and computes the secondary structure for",
+    "each time frame (or every [TT]-dt[tt] ps) by",
 #ifdef MY_DSSP
     "using the dssp program.[PAR]",
 #else
@@ -260,13 +318,12 @@ int main(int argc,char *argv[])
     "[TT].xpm[tt] matrix file. This file can be visualized with i.e.",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
     "The number of residues with each secondary structure type and the",
-    "total secondary structure ([TT]-sss[tt]) count as a function of time",
-    "are also written to file ([TT]-sc[tt]).[PAR]",
-    "Solvent accessible surface per",
-    "residue can be calculated, both in absolute values (A^2) and in",
-    "fractions of the maximal accessible surface of a residue.",
-    "The maximal accessible surface is defined as the accessible",
-    "surface of a residue in a chain of glycines.[PAR]",
+    "total secondary structure ([TT]-sss[tt]) count as a function of",
+    "time are also written to file ([TT]-sc[tt]).[PAR]",
+    "Solvent accessible surface per residue can be calculated, both in",
+    "absolute values (A^2) and in fractions of the maximal accessible",
+    "surface of a residue. The maximal accessible surface is defined as",
+    "the accessible surface of a residue in a chain of glycines.[PAR]",
   };
   static real dt=0.0;
   static bool bVerbose;
@@ -291,6 +348,7 @@ int main(int argc,char *argv[])
   FILE       *tapein;
 #endif
   FILE       *ss,*acc,*acct;
+  char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
   char       *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   t_atoms    *atoms;
@@ -336,16 +394,16 @@ int main(int argc,char *argv[])
 		    asize(bugs),bugs
 #endif
 		    );
-		    
-  bDoAcc=(opt2bSet("-a", NFILE,fnm) || 
-	  opt2bSet("-ta",NFILE,fnm) || 
-	  opt2bSet("-aa",NFILE,fnm));
+  fnSCount= opt2fn("-sc",NFILE,fnm);
+  fnArea  = opt2fn_null("-a", NFILE,fnm);
+  fnTArea = opt2fn_null("-ta",NFILE,fnm);
+  fnAArea = opt2fn_null("-aa",NFILE,fnm);
+  bDoAcc=(fnArea || fnTArea || fnAArea);
   printf("Will %sdo accessible surface calc\n",bDoAcc?"":"*NOT* ");
   
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
-  nres=atoms->nres;
   bPhbres=bPhobics(atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpnm);
@@ -379,8 +437,8 @@ int main(int argc,char *argv[])
     fprintf(stderr,"dssp cmd='%s'\n",dssp);
 #endif
   
-  if (opt2bSet("-ta",NFILE,fnm)) {
-    acct=xvgropen(opt2fn("-ta",NFILE,fnm),"Solvent Accessible Surface Area",
+  if (fnTArea) {
+    acct=xvgropen(fnTArea,"Solvent Accessible Surface Area",
 		  "Time (ps)","Area (nm\\S2\\N)");
     xvgr_legend(acct,2,leg);
   } else
@@ -391,8 +449,10 @@ int main(int argc,char *argv[])
 		   opt2fn("-map",NFILE,fnm),&(mat.map));
   
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
-  if (natoms != atoms->nr) 
-    fatal_error(0,"Trajectory does not match topology!");
+  if (natoms > atoms->nr) 
+    fatal_error(0,"\nTrajectory does not match topology!");
+  if (gnx > natoms)
+    fatal_error(0,"\nTrajectory does not match selected group!");
   
   snew(average_area,atoms->nres+10);
   snew(av_area,atoms->nres+10);
@@ -439,51 +499,32 @@ int main(int argc,char *argv[])
   if (acct)
     ffclose(acct);
   
-  if (opt2bSet("-a",NFILE,fnm)) {
-    real lo,hi;
-    int nlev;
-    t_rgb rlo={1,1,1}, /* white */
-	  rhi={0,0,0}; /* black */
-    
-    hi=lo=accr[0][0];
-    for(i=0; i<nframe; i++)
-      for(j=0; j<atoms->nres; j++) {
-	lo=min(lo,accr[i][j]);
-	hi=max(hi,accr[i][j]);
-      }
-    acc=opt2FILE("-a",NFILE,fnm,"w");
-    nlev=hi-lo+1;
-    write_xpm(acc,"Solvent Accessible Surface","Surface (A^2)",
-	      "Time","Residue Index",nframe,atoms->nres,
-	      mat.axis_x,mat.axis_y,accr,lo,hi,rlo,rhi,&nlev);
-    ffclose(acc);
-  }
+  write_sas_mat(fnArea,accr,nframe,nres,&mat);
+  
+  prune_ss_legend(&mat);
   
   ss=opt2FILE("-o",NFILE,fnm,"w");
   write_xpm_m(ss,mat);
   ffclose(ss);
-
-  analyse_ss(opt2fn("-sc",NFILE,fnm),&mat,ss_string);
+  
+  analyse_ss(fnSCount,&mat,ss_string);
   
   for(i=0; (i<atoms->nres); i++)
     av_area[i] = average_area[i]/(real) nframe;
     
-  norm_acc(atoms, av_area, norm_av_area);
+  norm_acc(atoms, nres, av_area, norm_av_area);
   
-  if (opt2bSet("-aa",NFILE,fnm)) {
-    acc=xvgropen(opt2fn("-aa",NFILE,fnm),"Average Accessible Area",
+  if (fnAArea) {
+    acc=xvgropen(fnAArea,"Average Accessible Area",
 		 "Residue","A\\S2");
-    for(i=0; (i<atoms->nres); i++)
+    for(i=0; (i<nres); i++)
       fprintf(acc,"%5d  %10g %10g\n",i+1,av_area[i], norm_av_area[i]);
     ffclose(acc);
   }
 
-  if (opt2bSet("-sc",NFILE,fnm))
-    xvgr_file(opt2fn("-sc",NFILE,fnm),"-nxy");
-  if (opt2bSet("-ta",NFILE,fnm))
-    xvgr_file(opt2fn("-ta",NFILE,fnm),"-nxy");
-  if (opt2bSet("-aa",NFILE,fnm))
-    xvgr_file(opt2fn("-aa",NFILE,fnm),NULL);
+  if (fnSCount) xvgr_file(fnSCount,NULL);
+  if (fnTArea)  xvgr_file(fnTArea ,NULL);
+  if (fnAArea)  xvgr_file(fnAArea ,NULL);
   
   thanx(stdout);
   
