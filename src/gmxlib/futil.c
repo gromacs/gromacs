@@ -222,7 +222,7 @@ char *backup_fn(char *file)
 FILE *ffopen(char *file,char *mode)
 {
   FILE *ff=NULL;
-  char buf[256],*bf,*bufsize,*ptr;
+  char buf[256],*bf,*bufsize=0,*ptr;
   bool bRead;
   int  bs;
   
