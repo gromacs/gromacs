@@ -44,6 +44,7 @@ static char *SRCID_md_c = "$Id$";
 #include "network.h"
 #include "sim_util.h"
 #include "pull.h"
+#include "physics.h"
 
 volatile bool bGotTermSignal = FALSE;
 
@@ -173,7 +174,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Set values for invmass etc. */
     init_mdatoms(mdatoms,lambda,(step==0));
 
-    /* Calculate total dipole moment if necessary */    
+    /* Calculate total (local) dipole moment if necessary */    
     calc_mu(nsb,x,mdatoms->chargeT,mu_tot);
     
     /* Calc forces and virial
@@ -318,9 +319,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       tcoupl(parm->ir.btc,&(parm->ir.opts),grps,parm->ir.delta_t,SAfactor,
 	     step,parm->ir.ntcmemory);
     
-      /* Calculate pressure ! */
+      /* Calculate pressure and apply LR correction if PPPM is used */
       calc_pres(fr->eBox,parm->box,parm->ekin,parm->vir,parm->pres,
-		EEL_LR(fr->eeltype) ? ener[F_LR] : 0.0);
+		(fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     }
     
     /* Calculate long range corrections to pressure and energy */
