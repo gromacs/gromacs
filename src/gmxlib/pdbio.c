@@ -197,7 +197,10 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   for(k=0; (k<4); k++,j++) anm[k]=line[j];
   anm[k]=nc;
   j++;
-
+  
+  /* Strip off spaces */
+  trim(anm);
+  
   /* Search backwards for number and name only */
   atomnr = atoi(anr);
   for(i=natom-1; (i>=0); i--)
