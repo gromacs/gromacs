@@ -92,7 +92,10 @@ typedef struct {
 /* MUST correspond to char *legend[] in main() */
 enum { elSel, elBoth, elFirst, elSecond, elNone, elNR };
 
-void get_params(char *mpin,char *mpout,t_psrec *psr)
+/* MUST correspond to char *combine[] in main() */
+enum { ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR };
+
+  void get_params(char *mpin,char *mpout,t_psrec *psr)
 {
   static char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
   /* this must correspond to t_rgb *linecolors[] below */
@@ -150,8 +153,10 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
     write_inpfile(mpout,ninp,inp);
 }
 
-t_rgb black={ 0.0, 0.0, 0.0 };
-t_rgb white={ 1.0, 1.0, 1.0 };
+t_rgb black = { 0, 0, 0 };
+t_rgb white = { 1, 1, 1 };
+t_rgb red   = { 1, 0, 0 };
+t_rgb blue  = { 0, 0, 1 };
 #define BLACK (&black)
 /* this must correspond to *colors[] in get_params */
 t_rgb *linecolors[] = { NULL, &black, &white, NULL };
@@ -480,70 +485,83 @@ static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
   *dh=dhh;
 }
 
+int add_maps(t_mapping **newmap, 
+	     int nmap1, t_mapping map1[], int nmap2, t_mapping map2[])
+{
+  static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?"; 
+#define NMAP strlen(mapper)
+  int       nmap,j,k;
+  t_mapping *map;
+  
+  nmap=nmap1+nmap2;
+  if (nmap > NMAP*NMAP) 
+    fatal_error(0,"Not enough symbols to merge the two colormaps\n");
+  printf("Combining colormaps of %d and %d elements into one of %d elements\n",
+	 nmap1, nmap2, nmap);
+  snew(map,nmap);
+  for(j=0; j<nmap1; j++) {
+    map[j].code.c1=mapper[j % NMAP];
+    if (nmap > NMAP)
+      map[j].code.c2=mapper[j/NMAP];
+    map[j].rgb.r = map1[j].rgb.r;
+    map[j].rgb.g = map1[j].rgb.g;
+    map[j].rgb.b = map1[j].rgb.b;
+    map[j].desc  = map1[j].desc;
+  }
+  for(j=0; j<nmap2; j++) {
+    k=j+nmap1;
+    map[k].code.c1=mapper[k % NMAP];
+    if (nmap > NMAP)
+      map[k].code.c2=mapper[k/NMAP];
+    map[k].rgb.r = map2[j].rgb.r;
+    map[k].rgb.g = map2[j].rgb.g;
+    map[k].rgb.b = map2[j].rgb.b;
+    map[k].desc  = map2[j].desc;
+  }
+  
+  *newmap = map;
+  return nmap;
+}
+
 void xpm_mat(char *outf,
 	     int nmat,t_matrix *mat,t_matrix *mat2,bool bDiag,bool bFirstDiag)
 {
   FILE   *out;
   char   buf[100];
   int    i,j,k,x,y,col;
-  static char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?"; 
-#define NMAP strlen(mapper)
-  int       nmap,nmap1,nmap2;
-  t_mapping *map;
-
-   out=ffopen(outf,"w");
-   
-   for(i=0; i<nmat; i++) {
-     if (!mat2 || !diff_maps(mat[i].nmap,mat[i].map,mat2[i].nmap,mat2[i].map))
-       write_xpm_m(out,mat[0]);
-     else {
-       nmap1=mat[i].nmap;
-       nmap2=mat2[i].nmap;
-       nmap=nmap1+nmap2;
-       snew(map,nmap);
-       if (nmap > NMAP*NMAP) 
-	 fatal_error(0,"Not enough symbols to merge the two colormaps\n");
-       for(j=0; j<nmap1; j++) {
-	 map[j].code.c1=mapper[j % NMAP];
-	 if (nmap > NMAP)
-	   map[j].code.c2=mapper[j/NMAP];
-	 map[j].rgb.r=mat[i].map[j].rgb.r;
-	 map[j].rgb.g=mat[i].map[j].rgb.g;
-	 map[j].rgb.b=mat[i].map[j].rgb.b;
-	 map[j].desc=mat[i].map[j].desc;
-       }
-       for(j=0; j<nmap2; j++) {
-	 k=j+nmap1;
-	 map[k].code.c1=mapper[k % NMAP];
-	 if (nmap > NMAP)
-	   map[k].code.c2=mapper[k/NMAP];
-	 map[k].rgb.r=mat2[i].map[j].rgb.r;
-	 map[k].rgb.g=mat2[i].map[j].rgb.g;
-	 map[k].rgb.b=mat2[i].map[j].rgb.b;
-	 map[k].desc=mat2[i].map[j].desc;
-       }
-       for(x=0; (x<mat[i].nx); x++) {
-	 for(y=0; (y<mat[i].nx); y++) {
-	   if ((x<y) || ((x==y) && bFirstDiag)) /* upper left  -> map1 */
-	     col=mat[i].matrix[x][y];
-	   else /* lower right -> map2 */
-	     col=nmap1+mat[i].matrix[x][y];
-	   if ((bDiag) || (x!=y))
-	     mat[i].matrix[x][y]=col;
-	   else
-	     mat[i].matrix[x][y]=0;
-	 }
-       }
-       mat[i].nmap=nmap;
-       mat[i].map=map;
-       if (mat2 && (strcmp(mat[i].title,mat2[i].title) != 0))
-	 sprintf(mat[i].title,"%s / %s",mat[i].title,mat2[i].title);
-       if (mat2 && (strcmp(mat[i].legend,mat2[i].legend) != 0))
-	 sprintf(mat[i].legend,"%s / %s",mat[i].legend,mat2[i].legend); 
-       write_xpm_m(out,mat[i]);
-       }
-   }
-   fclose(out);
+  int    nmap;
+  t_mapping *map=NULL;
+  
+  out=ffopen(outf,"w");
+  
+  for(i=0; i<nmat; i++) {
+    if (!mat2 || !diff_maps(mat[i].nmap,mat[i].map,mat2[i].nmap,mat2[i].map))
+      write_xpm_m(out,mat[0]);
+    else {
+      nmap = add_maps(&map, mat[i].nmap,mat[i].map, mat2[i].nmap,mat2[i].map);
+      for(x=0; (x<mat[i].nx); x++) {
+	for(y=0; (y<mat[i].nx); y++) {
+	  if ((x<y) || ((x==y) && bFirstDiag)) /* upper left  -> map1 */
+	    col=mat[i].matrix[x][y];
+	  else /* lower right -> map2 */
+	    col=mat[i].nmap+mat[i].matrix[x][y];
+	  if ((bDiag) || (x!=y))
+	    mat[i].matrix[x][y]=col;
+	  else
+	    mat[i].matrix[x][y]=0;
+	}
+      }
+      sfree(mat[i].map);
+      mat[i].nmap=nmap;
+      mat[i].map=map;
+      if (mat2 && (strcmp(mat[i].title,mat2[i].title) != 0))
+	sprintf(mat[i].title,"%s / %s",mat[i].title,mat2[i].title);
+      if (mat2 && (strcmp(mat[i].legend,mat2[i].legend) != 0))
+	sprintf(mat[i].legend,"%s / %s",mat[i].legend,mat2[i].legend); 
+      write_xpm_m(out,mat[i]);
+    }
+  }
+  fclose(out);
 }
 
 static void tick_spacing(int n, real axis[], real offset, char axisnm, 
@@ -851,26 +869,72 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
     }
 }
 
+void write_combined_matrix(int ecombine, char *fn,
+			   int nmat, t_matrix *mat1, t_matrix *mat2)
+{
+  int i, j, k, nlevels;
+  t_mapping *map=NULL;
+  FILE *out;
+  real **rmat1, **rmat2;
+  real rhi, rlo;
+  
+  out = ffopen(fn, "w");
+  for(k=0; k<nmat; k++) {
+    if ( mat2[k].nx!=mat1[k].nx || mat2[k].ny!=mat1[k].ny )
+      fatal_error(0,"Size of frame %d in 1st (%dx%d) and 2nd matrix (%dx%d) do"
+		  " not match.\n",k,mat1[k].nx,mat1[k].ny,mat2[k].nx,mat2[k].ny);
+    printf("Combining two %dx%d matrices\n",mat1[k].nx,mat1[k].ny);
+    rmat1 = matrix2real(&mat1[k], NULL);
+    rmat2 = matrix2real(&mat2[k], NULL);
+    rlo=1e38;
+    rhi=-1e38;
+    for(j=0; j<mat1[k].ny; j++)
+      for(i=0; i<mat1[k].nx; i++) {
+	switch (ecombine) {
+	case ecAdd:  rmat1[i][j] += rmat2[i][j]; break;
+	case ecSub:  rmat1[i][j] -= rmat2[i][j]; break;
+	case ecMult: rmat1[i][j] *= rmat2[i][j]; break;
+	case ecDiv:  rmat1[i][j] /= rmat2[i][j]; break;
+	default:
+	  fatal_error(0,"No such combination rule %d for matrices",ecombine);
+	}
+	rlo = min(rlo, rmat1[i][j]);
+	rhi = max(rhi, rmat1[i][j]);
+      }
+    nlevels = mat1[k].nmap+mat2[k].nmap;
+    if (rhi==rlo)
+      fprintf(stderr,
+	      "combination results in uniform matrix (%g), no output\n",rhi);
+    else if (rlo>=0 || rhi<=0)
+      write_xpm(out, mat1[k].title, mat1[k].legend, 
+		mat1[k].label_x, mat1[k].label_y,
+		mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
+		rmat1, rlo, rhi, rhi<=0?red:white, rhi<=0?white:blue, 
+		&nlevels);
+    else 
+      write_xpm3(out, mat1[k].title, mat1[k].legend, 
+		 mat1[k].label_x, mat1[k].label_y,
+		 mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
+		 rmat1, rlo, 0, rhi, red, white, blue, &nlevels);
+  }
+  fclose(out);
+}
+
 void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
 	    bool bFrame,bool bZeroLine,bool bDiag,bool bFirstDiag,bool bTitle,
 	    bool bTitleOnce,bool bYonce,int elegend,real boxx,real boxy,
 	    char *epsfile,char *xpmfile,char *m2p,char *m2pout,int skip)
 {
-  int      i,j,k,copy_start;
+  int      i,j,k;
 
   if (mat2) {
     for (k=0; (k<nmat); k++) {
       if ((mat2[k].nx!=mat[k].nx) || (mat2[k].ny!=mat[k].ny)) 
 	fatal_error(0,"WAKE UP!! Size of frame %d in 2nd matrix file (%dx%d) does not match size of 1st matrix (%dx%d) or the other way around.\n",
 		    k,mat2[k].nx,mat2[k].ny,mat[k].nx,mat[k].ny);
-      for (j=0; (j<mat[k].ny); j++) {
-	if (bFirstDiag)
-	  copy_start = j+1;
-	else
-	  copy_start = j;
-	for (i=copy_start; (i<mat[k].nx); i++)
+      for (j=0; (j<mat[k].ny); j++)
+	for (i=bFirstDiag?j+1:j; (i<mat[k].nx); i++)
 	  mat[k].matrix[i][j]=mat2[k].matrix[i][j];
-      }
     }
   }
   for(i=0; (i<nmat); i++) 
@@ -891,44 +955,69 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
     xpm_mat(xpmfile,nmat,mat,mat2,bDiag,bFirstDiag);
 }
 
-void rainbow_map(bool bBlue, int nmat, t_matrix mat[])
+void gradient_map(rvec grad, int nmap, t_mapping map[])
 {
-  t_mapping *map;
-  int m,i;
+  int i;
+  real c;
+  
+  for(i=0; i<nmap; i++) {
+    c = i/(nmap-1.0);
+    map[i].rgb.r = 1-c*(1-grad[XX]);
+    map[i].rgb.g = 1-c*(1-grad[YY]);
+    map[i].rgb.b = 1-c*(1-grad[ZZ]);
+  }
+}
+  
+void gradient_mat(rvec grad, int nmat, t_matrix mat[])
+{
+  int m;
+  
+  for(m=0; m<nmat; m++)
+    gradient_map(grad, mat[m].nmap, mat[m].map);
+}
+
+void rainbow_map(bool bBlue, int nmap, t_mapping map[])
+{
+  int i;
   real c,r,g,b;
 
-  for(m=0; m<nmat; m++) {
-    map = mat[m].map;
-    for(i=0; i<mat[m].nmap; i++) {
-      c = (map[i].rgb.r + map[i].rgb.g + map[i].rgb.b)/3;
-      if (c > 1)
-	  c = 1;
-      if (bBlue)
-	c = 1 - c;
-      if (c <= 0.25) { /* 0-0.25 */
-	r = 0;
-	g = pow(4*c,0.666);
-	b = 1;
-      } else if (c <= 0.5) { /* 0.25-0.5 */
-	r = 0;
-	g = 1;
-	b = pow(2-4*c,0.666);
-      } else if (c <= 0.75) { /* 0.5-0.75 */
-	r = pow(4*c-2,0.666);
-	g = 1;
-	b = 0;
-      } else { /* 0.75-1 */
-	r = 1;
-	g = pow(4-4*c,0.666);
-	b = 0;
-      }
-      map[i].rgb.r = r;
-      map[i].rgb.g = g;
-      map[i].rgb.b = b;
+  for(i=0; i<nmap; i++) {
+    c = (map[i].rgb.r + map[i].rgb.g + map[i].rgb.b)/3;
+    if (c > 1)
+      c = 1;
+    if (bBlue)
+      c = 1 - c;
+    if (c <= 0.25) { /* 0-0.25 */
+      r = 0;
+      g = pow(4*c,0.666);
+      b = 1;
+    } else if (c <= 0.5) { /* 0.25-0.5 */
+      r = 0;
+      g = 1;
+      b = pow(2-4*c,0.666);
+    } else if (c <= 0.75) { /* 0.5-0.75 */
+      r = pow(4*c-2,0.666);
+      g = 1;
+      b = 0;
+    } else { /* 0.75-1 */
+      r = 1;
+      g = pow(4-4*c,0.666);
+      b = 0;
     }
+    map[i].rgb.r = r;
+    map[i].rgb.g = g;
+    map[i].rgb.b = b;
   }
 }
 
+void rainbow_mat(bool bBlue, int nmat, t_matrix mat[])
+{
+  int m;
+  
+  for(m=0; m<nmat; m++)
+    rainbow_map(bBlue, mat[m].nmap, mat[m].map);
+}
+  
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -949,7 +1038,10 @@ int main(int argc,char *argv[])
     "half of the second one ([TT]-f2[tt]). The diagonal will contain",
     "values from the matrix file selected with [TT]-diag[tt].",
     "Plotting of the diagonal values can be suppressed altogether by",
-    "setting [TT]-diag[tt] to [TT]none[tt].[PAR]",
+    "setting [TT]-diag[tt] to [TT]none[tt]. With ",
+    "[TT]-combine[tt] an alternative operation can be selected to combine",
+    "the matrices. In this case, a new color map will be generated with",
+    "a red gradient for negative numbers and a blue for positive.[PAR]",
     "If the color coding and legend labels of both matrices are identical,",
     "only one legend will be displayed, else two separate legends are",
     "displayed.[PAR]",
@@ -963,11 +1055,12 @@ int main(int argc,char *argv[])
   };
 
   char      *fn,*epsfile=NULL,*xpmfile=NULL;
-  int       i,nmat,nmat2,etitle,elegend,ediag,erainbow;
+  int       i,nmat,nmat2,etitle,elegend,ediag,erainbow,ecombine;
   t_matrix *mat=NULL,*mat2=NULL;
-  bool      bTitle,bTitleOnce,bDiag,bFirstDiag;
-  static bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE;
+  bool      bTitle,bTitleOnce,bDiag,bFirstDiag,bGrad;
+  static bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE,bAdd=FALSE;
   static real boxx=0,boxy=0;
+  static rvec grad={0,0,0};
   enum                    { etSel, etTop, etOnce, etYlabel, etNone, etNR };
   static char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
   /* MUST correspond to enum elXxx as defined at top of file */
@@ -976,6 +1069,9 @@ int main(int argc,char *argv[])
   static char *diag[]    = { NULL, "first", "second", "none", NULL };
   enum                    { erSel, erNo, erBlue, erRed, erNR };
   static char *rainbow[] = { NULL, "no", "blue", "red", NULL };
+  /* MUST correspond to enum ecXxx as defined at top of file */
+  static char *combine[] = {
+    NULL, "halves", "add", "sub", "mult", "div", NULL };
   static int skip=1;
   t_pargs pa[] = {
     { "-frame",   FALSE, etBOOL, {&bFrame},
@@ -984,11 +1080,14 @@ int main(int argc,char *argv[])
     { "-yonce",   FALSE, etBOOL, {&bYonce}, "Show y-label only once" },
     { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
     { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
+    { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
     { "-bx",      FALSE, etREAL, {&boxx},
       "Box x-size (also y-size when -by is not set)" },
     { "-by",      FALSE, etREAL, {&boxy},   "Box y-size" },
     { "-rainbow", FALSE, etENUM, {rainbow},
       "Rainbow colors, convert white to" },
+    { "-gradient",FALSE, etRVEC, {&grad},
+      "Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}" },
     { "-skip",    FALSE, etINT,  {&skip},
       "only write out every nr-th row and column" },
     { "-zeroline",FALSE, etBOOL, {&bZeroLine},
@@ -1013,34 +1112,53 @@ int main(int argc,char *argv[])
   elegend  = nenum(legend);
   ediag    = nenum(diag);
   erainbow = nenum(rainbow);
+  ecombine = nenum(combine);
+  bGrad    = opt2parg_bSet("-gradient",asize(pa),pa);
+  for(i=0; i<DIM; i++)
+    if (grad[i] < 0 || grad[i] > 1)
+      fatal_error(0, "RGB value %g out of range (0.0-1.0)", grad[i]);
   if (!bFrame) {
     etitle = etNone;
     elegend = elNone;
   }
 
-  if (ftp2bSet(efEPS,NFILE,fnm))
-    epsfile=ftp2fn(efEPS,NFILE,fnm);
-  if (opt2bSet("-xpm",NFILE,fnm))
-    xpmfile=opt2fn("-xpm",NFILE,fnm);
-  if ((epsfile==NULL) && (xpmfile==NULL))
-    epsfile=ftp2fn(efEPS,NFILE,fnm);
-
+  epsfile=ftp2fn_null(efEPS,NFILE,fnm);
+  xpmfile=opt2fn_null("-xpm",NFILE,fnm);
+  if ( epsfile==NULL && xpmfile==NULL )
+    if (ecombine!=ecHalves)
+      xpmfile=opt2fn("-xpm",NFILE,fnm);
+    else
+      epsfile=ftp2fn(efEPS,NFILE,fnm);
+  
+  if (ecombine!=ecHalves && epsfile) {
+    fprintf(stderr,
+	    "WARNING: can only write result of arithmetic combination "
+	    "of two matrices to .xpm file\n"
+	    "         file %s will not be written\n", epsfile);
+    epsfile = NULL;
+  }
+  
   bDiag      = ediag!=edNone;
   bFirstDiag = ediag!=edSecond;
   
   fn=opt2fn("-f",NFILE,fnm);
   nmat=read_xpm_matrix(fn,&mat);
   fprintf(stderr,"There are %d matrices in %s\n",nmat,fn);
-  if (opt2bSet("-f2",NFILE,fnm)) {
-    fn=opt2fn("-f2",NFILE,fnm);
+  fn=opt2fn_null("-f2",NFILE,fnm);
+  if (fn) {
     nmat2=read_xpm_matrix(fn,&mat2);
     fprintf(stderr,"There are %d matrices in %s\n",nmat2,fn);
     if (nmat != nmat2) {
       fprintf(stderr,"Different number of matrices, using the smallest number.\n");
       nmat=nmat2=min(nmat,nmat2);
     }
-  }
-  else {
+  } else {
+    if (ecombine!=ecHalves)
+      fprintf(stderr,
+	      "WARNING: arithmetic matrix combination selected (-combine), "
+	      "but no second matrix (-f2) supplied\n"
+	      "         no matrix combination will be performed\n");
+    ecombine=0;
     nmat2=0;
   }
   bTitle     = etitle==etTop;
@@ -1052,22 +1170,29 @@ int main(int argc,char *argv[])
 	strcpy(mat2[i].label_y, mat2[i].title);
     }
   }
-  if (erainbow!=erNo) {
-    rainbow_map(erainbow==erBlue,nmat,mat);
+  if (bGrad) {
+    gradient_mat(grad,nmat,mat);
     if (mat2)
-      rainbow_map(erainbow==erBlue,nmat2,mat2);
+      gradient_mat(grad,nmat2,mat2);
+  }
+  if (erainbow!=erNo) {
+    rainbow_mat(erainbow==erBlue,nmat,mat);
+    if (mat2)
+      rainbow_mat(erainbow==erBlue,nmat2,mat2);
   }
 
   if ((mat2 == NULL) && (elegend!=elNone))
     elegend = elFirst;
-
-  do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
-	 bTitle,bTitleOnce,bYonce,
-	 elegend, boxx,boxy,epsfile,xpmfile,
-	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip);
   
-  do_view(ftp2fn_null(efEPS,NFILE,fnm),NULL);
-  do_view(opt2fn_null("-xpm",NFILE,fnm),NULL);
+  if (ecombine!=ecHalves)
+    write_combined_matrix(ecombine, xpmfile, nmat, mat, mat2);
+  else
+    do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
+	   bTitle,bTitleOnce,bYonce,
+	   elegend, boxx,boxy,epsfile,xpmfile,
+	   opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm), skip);
+  
+  view_all(NFILE, fnm);
     
   thanx(stderr);
   
