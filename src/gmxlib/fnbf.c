@@ -942,66 +942,22 @@ static real *_buf2=NULL;
   }
 }
 
-static real dist2(rvec x,rvec y)
-{
-  rvec dx;
-  
-  rvec_sub(x,y,dx);
-  
-  return iprod(dx,dx);
-}
-
-static real *mk_14parm(int ntype,int nbonds,t_iatom iatoms[],
-		       t_iparams *iparams,int type[])
-{
-  /* This routine fills a matrix with interaction parameters for
-   * 1-4 interaction. It is assumed that these are atomtype dependent
-   * only... (but this is checked for...)
-   */
-  real *nbfp,c6sav,c12sav;
-  int  i,ip,ti,tj;
-  
-  snew(nbfp,2*ntype*ntype);
-  for(i=0; (i<nbonds); i+= 3) {
-    ip = iatoms[i];
-    ti = type[iatoms[i+1]];
-    tj = type[iatoms[i+2]];
-    c6sav  = C6(nbfp,ntype,ti,tj);
-    c12sav = C12(nbfp,ntype,ti,tj);
-    C6(nbfp,ntype,ti,tj)  = iparams[ip].lj14.c6A;
-    C12(nbfp,ntype,ti,tj) = iparams[ip].lj14.c12A;
-    if ((c6sav != 0) || (c12sav != 0)) {
-      if ((c6sav  !=  C6(nbfp,ntype,ti,tj)) || 
-	  (c12sav != C12(nbfp,ntype,ti,tj))) {
-	fatal_error(0,"Force field inconsistency: 1-4 interaction parameters "
-		    "for atoms %d-%d not the same as for other atoms "
-		    "with the same atom type",iatoms[i+1],iatoms[i+2]);
-      }
-    }
-  }
-	
-
-
-  return nbfp;
-}
-
-
-
 real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	   rvec x[],rvec f[],t_forcerec *fr,t_graph *g,
 	   matrix box,real lambda,real *dvdlambda,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-  static    real *nbfp14=NULL;
   static    bool bWarn=FALSE;
   bool      bFullPBC;
   real      eps,r2,rtab2;
-  rvec      fi,fj,dx;
+  rvec      dx,x14[2],f14[2];
   int       ai,aj,itype;
   t_iatom   *ia0,*iatom;
+  int       typeA[2]={0,0},typeB[2]={0,1};
+  real      chargeA[2],chargeB[2];
   int       gid,shift_vir,shift_f;
   int       j_index[] = { 0, 1 };
-  int       i1=1,i2=2,i0;
+  int       i0=0,i1=1,i2=2;
   ivec      dt;
 #ifdef USE_VECTOR
   if (fbuf == NULL)
@@ -1016,11 +972,6 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     cpu_capabilities=detect_cpu(NULL);
 #endif
 
-  if (nbfp14 == NULL) {
-    nbfp14 = mk_14parm(fr->ntype,nbonds,iatoms,iparams,md->typeA);
-    if (debug)
-      pr_rvec(debug,0,"nbfp14",nbfp14,sqr(fr->ntype),TRUE);
-  }
   /* Full periodic boundary conditions ? */
   bFullPBC = (fr->ePBC == epbcFULL);
   
@@ -1036,27 +987,16 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     ai    = iatom[1];
     aj    = iatom[2];
     
-    if (bFullPBC) {
-      /* Apply full periodic boundary conditions */
-      shift_f   = pbc_dx(x[ai],x[aj],dx);
-      shift_vir = CENTRAL;
-      r2 = iprod(dx,dx);
-    }
-    else {
-      /* Use graph based algorithm */
-      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
-      shift_vir = IVEC2IS(dt);	
-      shift_f   = CENTRAL;
+    if (!bFullPBC) {
+      /* This is a bonded interaction, atoms are in the same box */
+      shift_f = CENTRAL;
       r2 = distance2(x[ai],x[aj]);
+    } else {
+      /* Apply full periodic boundary conditions */
+      shift_f = pbc_dx(x[ai],x[aj],dx);
+      r2 = norm2(dx);
     }
-    copy_rvec(f[ai],fi);
-    copy_rvec(f[aj],fj);
 
-    /* We do not check if the neighbourlists fit in the buffer here, 
-     * since I can't imagine
-     * a particle having so many 1-4 interactions :-) /EL 
-     */
-    
     if (r2 >= rtab2) {
       if (!bWarn) {
         fprintf(stderr,"Warning: 1-4 interaction between %d and %d "
@@ -1072,7 +1012,13 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 		(int)ai+1,(int)aj+1,sqrt(r2));
     }
     else {
+      chargeA[0] = md->chargeA[ai];
+      chargeA[1] = md->chargeA[aj];
       gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);
+      copy_rvec(x[ai],x14[0]);
+      copy_rvec(x[aj],x14[1]);
+      clear_rvec(f14[0]);
+      clear_rvec(f14[1]);
 #ifdef DEBUG
       fprintf(debug,"LJ14: grp-i=%2d, grp-j=%2d, ngrp=%2d, GID=%d\n",
 	      md->cENER[ai],md->cENER[aj],ngrp,gid);
@@ -1082,104 +1028,95 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	  (md->bPerturbed[ai] || md->bPerturbed[aj] ||
 	   iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
 	   iparams[itype].lj14.c12A != iparams[itype].lj14.c12B)) {
-	int  tiA,tiB,tjA,tjB;
-	real nbfp[8];
 	
-	/* Save old types */
-	tiA = md->typeA[ai];
-	tiB = md->typeB[ai];
-	tjA = md->typeA[aj];
-	tjB = md->typeB[aj];
-	md->typeA[ai] = 0;
-	md->typeB[ai] = 1;
-	md->typeA[aj] = 0;
-	md->typeB[aj] = 1;
-	
-	/* Set nonbonded params */
-	C6(nbfp,2,0,0)  = iparams[itype].lj14.c6A;
-	C6(nbfp,2,1,1)  = iparams[itype].lj14.c6B;
-	C12(nbfp,2,0,0) = iparams[itype].lj14.c12A;
-	C12(nbfp,2,1,1) = iparams[itype].lj14.c12B;
-     	
+	chargeB[0] = md->chargeB[ai];
+	chargeB[1] = md->chargeB[aj];
+	/* We pass &(iparams[itype].lj14.c6A) as LJ parameter matrix
+	 * to the innerloops.
+	 * Here we use that the LJ-14 parameters are stored in iparams
+	 * as c6A,c12A,c6B,c12B, which are referenced correctly
+	 * in the innerloops if we assign type combinations 0-0 and 0-1
+	 * to atom pair ai-aj in topologies A and B respectively.
+	 */
 #undef COMMON_ARGS
-#define COMMON_ARGS SCAL(i1),&ai,j_index,&aj,&shift_f,fr->shift_vec[0],fr->fshift[0],&gid,x[0],f[0]
+#define COMMON_ARGS SCAL(i1),&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fr->fshift[0],&gid,x14[0],f14[0]
 	
 	if (fr->sc_alpha>0) {
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
 	  /* special version without some optimizations */
 	  FUNC(inl3302n,INL3302N)(COMMON_ARGS FBUF_ARG, 
-				  md->chargeA,SCAL(eps),egcoul,
-				  md->typeA,SCAL(i2),nbfp,egnb,
+				  chargeA,SCAL(eps),egcoul,typeA,SCAL(i2),
+				  &(iparams[itype].lj14.c6A),egnb,
 				  SCAL(fr->tab14.scale),fr->tab14.tab,
-				  SCAL(lambda),dvdlambda,md->chargeB,
-				  md->typeB,SCAL(fr->sc_alpha),
-				  SCAL(fr->sc_sigma6));
+				  SCAL(lambda),dvdlambda,chargeB,typeB,
+				  SCAL(fr->sc_alpha),SCAL(fr->sc_sigma6));
 #else
 	  /* use normal innerloop */
 	  FUNC(inl3302,INL3302)(COMMON_ARGS FBUF_ARG, 
-				md->chargeA,SCAL(eps),egcoul,
-				md->typeA,SCAL(i2),nbfp,egnb,
+				chargeA,SCAL(eps),egcoul,typeA,SCAL(i2),
+				&(iparams[itype].lj14.c6A),egnb,
 				SCAL(fr->tab14.scale),fr->tab14.tab,
-				SCAL(lambda),dvdlambda,md->chargeB,
-				md->typeB,SCAL(fr->sc_alpha),
-				SCAL(fr->sc_sigma6));
+				SCAL(lambda),dvdlambda,chargeB,typeB,
+				SCAL(fr->sc_alpha),SCAL(fr->sc_sigma6));
 #endif
 	}
 	else {
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
 	  /* special version without some optimizations */
 	  FUNC(inl3301n,INL3301N)(COMMON_ARGS FBUF_ARG, 
-				  md->chargeA,SCAL(eps),egcoul,
-				  md->typeA,SCAL(i2),nbfp,egnb,
+				  chargeA,SCAL(eps),egcoul,typeA,SCAL(i2),
+				  &(iparams[itype].lj14.c6A),egnb,
 				  SCAL(fr->tab14.scale),fr->tab14.tab,
-				  SCAL(lambda),dvdlambda,md->chargeB,
-				  md->typeB);
+				  SCAL(lambda),dvdlambda,chargeB,typeB);
 #else	
 	  /* use normal innerloop */
 	  FUNC(inl3301,INL3301)(COMMON_ARGS FBUF_ARG, 
-				md->chargeA,SCAL(eps),egcoul,
-				md->typeA,SCAL(i2),nbfp,egnb,
+				chargeA,SCAL(eps),egcoul,typeA,SCAL(i2),
+				&(iparams[itype].lj14.c6A),egnb,
 				SCAL(fr->tab14.scale),fr->tab14.tab,
-				SCAL(lambda),dvdlambda,md->chargeB,md->typeB);
+				SCAL(lambda),dvdlambda,chargeB,typeB);
 #endif
 	}
-	/* Restore old types */
-	md->typeA[ai] = tiA;
-	md->typeB[ai] = tiB;
-	md->typeA[aj] = tjA;
-	md->typeB[aj] = tjB;
       }
       else { 
+
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_INVSQRT_S || defined VECTORIZE_INVSQRT_W || defined VECTORIZE_INVSQRT_WW || defined USE_THREADS)
 	/* special version without some optimizations */
 	FUNC(inl3300n,INL3300N)(COMMON_ARGS FBUF_ARG 
-				,md->chargeA,SCAL(eps),egcoul,md->typeA,SCAL(fr->ntype),
-				nbfp14,egnb,SCAL(fr->tab14.scale),fr->tab14.tab);
+				,chargeA,SCAL(eps),egcoul,typeA,SCAL(i1),
+				&(iparams[itype].lj14.c6A),egnb,
+				SCAL(fr->tab14.scale),fr->tab14.tab);
 #else	
 #if (defined USE_X86_SSE_AND_3DNOW && !defined DOUBLE)
 	if (cpu_capabilities & X86_3DNOW_SUPPORT) {
-	  inl3300_3dnow(i1,&ai,j_index,&aj,&shift_f,fr->shift_vec[0],fr->fshift[0],
+	  inl3300_3dnow(i1,&i0,j_index,&i1,&shift_f,fr->shift_vec[0],fr->fshift[0],
 			&gid ,x[0],f[0] FBUF_ARG
-			,md->chargeA,eps,egcoul,md->typeA,fr->ntype,
-			nbfp14,egnb,fr->tab14.scale,fr->tab14.tab);
+			,chargeA,eps,egcoul,typeA,i1,
+			&(iparams[itype].lj14.c6A),egnb,
+			fr->tab14.scale,fr->tab14.tab);
 	}
 	/* NOTE: special constructions with else inside ifdef */
 	else 
 #endif /* 3dnow */
 	  /* use normal innerloop */
 	  FUNC(inl3300,INL3300)(COMMON_ARGS FBUF_ARG  
-				,md->chargeA,SCAL(eps),egcoul,md->typeA,
-				SCAL(fr->ntype),nbfp14,egnb,
+				,chargeA,SCAL(eps),egcoul,typeA,SCAL(i1),
+				&(iparams[itype].lj14.c6A),egnb,
 				SCAL(fr->tab14.scale),fr->tab14.tab);
 #endif
       }
-      /* Now determine the 1-4 force in order to add it to the fshift array 
-       * Actually we are first computing minus the force.
-       */
-      
-      rvec_sub(f[ai],fi,fi);
-      rvec_inc(fr->fshift[shift_vir],fi);
-      rvec_dec(fr->fshift[CENTRAL],fi);
+
+      /* Add the forces */
+      rvec_inc(f[ai],f14[0]);
+      rvec_dec(f[aj],f14[0]);
+
+      if (g) {
+	/* Correct the shift forces using the graph */
+	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
+	shift_vir = IVEC2IS(dt);
+	rvec_inc(fr->fshift[shift_vir],f14[0]);
+	rvec_dec(fr->fshift[CENTRAL],f14[0]);
+      }
     }
   }
   return 0.0;
