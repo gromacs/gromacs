@@ -35,13 +35,13 @@
 #include "complex.h"
 #include "grids.h"
 #include "mdrun.h"
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #include <fft.h>
 #endif
 
 void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
 {
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #ifdef DOUBLE
   static    zomplex   *coeff;
 #else
@@ -63,7 +63,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
   cptr    = grid[0][0];
   fqqq    = &(grid[0][0][0].re);
   
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
   if (bFirst) {
     fprintf(fp,"Going to use SGI optimized FFT routines.\n");
 #ifdef DOUBLE
@@ -84,7 +84,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
   fourn(fqqq-1,ndim,3,1);
 #endif
   
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #ifdef DOUBLE
   zfft3d(-1,nx,ny,nz,(zomplex *)cptr,la1,la2,coeff);
 #else
@@ -97,7 +97,7 @@ void testfft(FILE *fp,t_complex ***grid,int nx,int ny,int nz,bool bFirst)
 
 void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,bool bFirst)
 {
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #ifdef DOUBLE
   static    double *coeff;
 #else
@@ -119,7 +119,7 @@ void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,bool bFirst)
   cptr    = grid[0][0];
   fqqq    = &(grid[0][0][0]);
   
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
   if (bFirst) {
     fprintf(fp,"Going to use SGI optimized FFT routines.\n");
 #ifdef DOUBLE
@@ -143,7 +143,7 @@ void testrft(FILE *fp,real ***grid,int nx,int ny,int nz,bool bFirst)
 
   job = -1;
   
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #ifdef DOUBLE
   zdfft3d(job,nx,ny,nz,cptr,la1,la2,coeff);
 #else

@@ -179,7 +179,7 @@ static void spread_q(FILE *log,bool bVerbose,
 	  jcy = nny[iY + jy];
 	  for(jz=-1; (jz<=1); jz++,nxyz++) {
 	    jcz = nnz[iZ + jz];
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 	    index=INDEX(jcx,jcy,jcz,la1,la2);
 	    gptr[index] += qi*WXYZ[nxyz];
 #ifdef DEBUG
@@ -227,14 +227,14 @@ real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
     jcz0   = izw[jcz];
 
     /* Electrostatic Potential ! */
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
     pi += weight * gptr[INDEX(jcx0,jcy0,jcz0,la1,la2)];
 #else
     pi += weight * grid[jcx0][jcy0][jcz0];
 #endif
 
     /* Forces */
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
     fX += weight * ((c1x*( gptr[INDEX(ixw[jcx-1],jcy0,jcz0,la1,la2)] -
 			   gptr[INDEX(ixw[jcx+1],jcy0,jcz0,la1,la2)] ))  +
 		    (c2x*( gptr[INDEX(ixw[jcx-2],jcy0,jcz0,la1,la2)] -
@@ -409,7 +409,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
 		bool bVerbose,t_nrnb *nrnb)
 {
   static    bool bFirst=TRUE;
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #include <fft.h>
   static    real *coeff;
 #else
@@ -429,7 +429,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
     fprintf(stderr,"Doing forward 3D-FFT\n");
   }
   if (bFirst) {
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
     fprintf(fp,"Going to use SGI optimized FFT routines.\n");
 #ifdef DOUBLE
     coeff  = dzfft3dui(nx,ny,nz,NULL);
@@ -441,7 +441,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
 #endif
     bFirst = FALSE;
   }
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #ifdef DOUBLE
   dzfft3du(1,nx,ny,nz,cptr,la1,la2,coeff);
 #else
@@ -462,7 +462,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   if (bVerbose) 
     fprintf(stderr,"Doing backward 3D-FFT\n");
   
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
 #ifdef DOUBLE
   zdfft3du(-1,nx,ny,nz,cptr,la1,la2,coeff);
 #else
@@ -565,7 +565,7 @@ real do_pppm(FILE *log,       bool bVerbose,
     
     if (bVerbose) 
       print_rgrid(log,"ghat",nx,ny,nz,ghat);
-#ifdef _SGI_
+#ifdef USE_SGI_FFT
     if (nx != nz) {
       fprintf(stderr,"You can't use SGI optimized FFT routines when the number of grid points is not the same in X and Z directions. Sorry\n");
       exit(1);
