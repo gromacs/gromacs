@@ -308,8 +308,15 @@ atom_id *make_chi_ind(int nl,t_dlist dl[],int *ndih)
   return id;
 }
 
-void print_one(char *base,char *name,char *title,
-	       int nf,real time[],real data[])
+int bin(real chi,int mult)
+{
+  mult=3;
+
+  return (int) (chi*mult/360.0);
+}
+
+static void print_one(char *base,char *name,char *title,
+		      int nf,real time[],real data[])
 {
   FILE *fp;
   char buf[256],t2[256];
@@ -324,13 +331,6 @@ void print_one(char *base,char *name,char *title,
   ffclose(fp);
 }
 
-int bin(real chi,int mult)
-{
-  mult=3;
-
-  return (int) (chi*mult/360.0);
-}
-
 static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
 		       int nlist,t_dlist dlist[],real time[],int maxchi,
 		       bool bPhi,bool bPsi,bool bChi)
@@ -343,18 +343,14 @@ static void do_dihcorr(char *fn,int nf,int ndih,real **dih,real dt,
   /* Dump em all */
   j=0;
   for(i=0; (i<nlist); i++) {
-    if (dlist[i].atm.Cn[Xi+3] != -1) {
-      if (bPhi)
-	print_one("corrphi",dlist[i].name,"Phi ACF for",nf/2,time,dih[j]);
-      j++;
-    }
+    if (bPhi)
+      print_one("corrphi",dlist[i].name,"Phi ACF for",nf/2,time,dih[j]);
+    j++;
   }
   for(i=0; (i<nlist); i++) {
-    if (dlist[i].atm.Cn[Xi+3] != -1) {
-      if (bPsi)
-	print_one("corrpsi",dlist[i].name,"Psi ACF for",nf/2,time,dih[j]);
-      j++;
-    }
+    if (bPsi)
+      print_one("corrpsi",dlist[i].name,"Psi ACF for",nf/2,time,dih[j]);
+    j++;
   }
   for(Xi=0; (Xi<maxchi); Xi++) {
     sprintf(name1, "corrchi%d", Xi+1);
@@ -396,6 +392,39 @@ static void dump_em_all(int nlist,t_dlist dlist[],int nf,real time[],
   fprintf(stderr,"\n");
 }
 
+static void reset_one(real dih[],int nf,real phase)
+{
+  int j;
+  
+  for(j=0; (j<nf); j++) {
+    dih[j] += phase;
+    while(dih[j] < -M_PI)
+      dih[j] += 2*M_PI;
+    while(dih[j] >= M_PI)
+      dih[j] -= 2*M_PI;
+  }
+}
+
+static void reset_em_all(int nlist,t_dlist dlist[],int nf,
+			 real **dih,int maxchi,bool bPhi,bool bPsi,bool bChi)
+{
+  int  i,j,Xi;
+  
+  /* Reset em all */
+  j=0;
+  for(i=0; (i<nlist); i++)
+    reset_one(dih[j++],nf,M_PI);
+  for(i=0; (i<nlist); i++)
+    reset_one(dih[j++],nf,M_PI);
+  for(Xi=0; (Xi<maxchi); Xi++)
+    for(i=0; (i<nlist); i++)
+      if (dlist[i].atm.Cn[Xi+3] != -1) {
+	reset_one(dih[j],nf,0);
+	j++;
+      }
+  fprintf(stderr,"j after resetting = %d\n",j);
+}
+
 static void histogramming(FILE *log,int naa,char **aa,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
@@ -416,13 +445,12 @@ static void histogramming(FILE *log,int naa,char **aa,
 #define NJC (asize(kkkphi)+asize(kkkpsi)+asize(kkkchi1))
   
   FILE *fp;
-  char buf[256];
   real S2;
   real *normhisto;
   real **Jc;
   int  ***his_aa,**his_aa1,*histmp;
   int  i,j,k,Dih;
-  char name[256];
+  char hisfile[256],title[256];
   
   snew(his_aa,edMax);
   for(Dih=0; (Dih<edMax); Dih++) {
@@ -509,18 +537,22 @@ static void histogramming(FILE *log,int naa,char **aa,
 	   (bPsi && (Dih==edPsi)) ||
 	   (bChi && (Dih>=edChi1)))) {
 	normalize_histo(NHISTO,his_aa[Dih][i],(360.0/NHISTO),normhisto);
-	if (Dih==0) {
-	  sprintf(buf,"phi%s.xvg",aa[i]);
-	  sprintf(name,"\\8f\\4 Distribution for %s",aa[i]);
-	} else if (Dih==1) {
-	  sprintf(buf,"psi%s.xvg",aa[i]);
-	  sprintf(name,"\\8y\\4 Distribution for %s",aa[i]);
-	} else {
-	  sprintf(buf,"chi%d%s.xvg",Dih-NONCHI+1,aa[i]);
-	  sprintf(name,"\\8c\\4\\s%d\\N Distribution for %s",
+	
+	switch (Dih) {
+	case edPhi:
+	  sprintf(hisfile,"histo-phi%s.xvg",aa[i]);
+	  sprintf(title,"\\8f\\4 Distribution for %s",aa[i]);
+	  break;
+	case edPsi:
+	  sprintf(hisfile,"histo-psi%s.xvg",aa[i]);
+	  sprintf(title,"\\8y\\4 Distribution for %s",aa[i]);
+	  break;
+	default:
+	  sprintf(hisfile,"histo-chi%d%s.xvg",Dih-NONCHI+1,aa[i]);
+	  sprintf(title,"\\8c\\4\\s%d\\N Distribution for %s",
 		  Dih-NONCHI+1,aa[i]);
 	}
-	fp=xvgropen(buf,name,"Degrees","");
+	fp=xvgropen(hisfile,title,"Degrees","");
 	fprintf(fp,"@ with g0\n");
 	xvgr_world(fp,-180,0,180,0.1);
 	fprintf(fp,"@ xaxis tick on\n");
@@ -733,7 +765,7 @@ int main(int argc,char *argv[])
   static bool bAll=FALSE;
   static bool bPhi=FALSE,bPsi=FALSE,bChi=FALSE;
   static real bfac_init=-1.0;
-  static bool bRama=FALSE;
+  static bool bRama=FALSE,bShift=FALSE;
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, &r0,
       "starting residue" },
@@ -749,6 +781,8 @@ int main(int argc,char *argv[])
       "Output separate files for every dihedral." },
     { "-nframes", FALSE, etINT, &nf,
       "Number of frames in your trajectory" },
+    { "-shift", FALSE, etBOOL, &bShift,
+	"Compute chemical shifts from Phi/Psi angles" },
     { "-run", FALSE, etINT, &ndeg,
       "perform running average over ndeg degrees for histograms" },
     { "-maxchi", FALSE, etINT, &maxchi,
@@ -782,7 +816,6 @@ int main(int argc,char *argv[])
     { efPDB, "-p",  "order",  ffOPTWR },
     { efXVG, "-jc", "Jcoupling", ffWRITE },
     { efXVG, "-c",  "dihcorr",ffOPTWR },
-    { efDAT, "-d",  "shifts", ffOPTWR },
     { efTEX, "-t",  "trans",  ffWRITE },
     { efLOG, "-g",  "chi",    ffWRITE }
   };
@@ -856,15 +889,8 @@ int main(int argc,char *argv[])
     
   dt=(time[nf-1]-time[0])/(nf-1);
   
-  /* put angles in -M_PI to M_PI ! */
-  for(i=0; (i<ndih); i++) {
-    for(j=0; (j<nf); j++) {
-      while (dih[i][j] < -M_PI)
-	dih[i][j] += 2*M_PI;
-      while (dih[i][j] > M_PI)
-	dih[i][j] -= 2*M_PI;
-    }
-  }
+  /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi */
+  reset_em_all(nlist,dlist,nf,dih,maxchi,bPhi,bPsi,bChi);
   
   if (bAll)
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi);
@@ -877,19 +903,21 @@ int main(int argc,char *argv[])
 	       opt2bSet("-p",NFILE,fnm),ftp2fn(efPDB,NFILE,fnm),bfac_init,
 	       &top,x,bPhi,bPsi,bChi);
   
-  if (bCorr)
-    do_dihcorr(opt2fn("-c",NFILE,fnm),nf,ndih,dih,dt,nlist,dlist,time,
-	       maxchi,bPhi,bPsi,bChi);
-
   /* Print ramachandran maps! */
   if (bRama)
     do_rama(nf,nlist,dlist,dih);
   
-  if (opt2bSet("-d",NFILE,fnm))
-    do_pp2shifts(opt2fn("-d",NFILE,fnm),nf,nlist,dlist,dih);
+  if (bShift)
+    do_pp2shifts(log,nf,nlist,dlist,dih);
   
   pr_dlist(log,nlist,dlist);  
   ffclose(log);
+  
+  /* Correlation comes last because it fucks up the angles */
+  if (bCorr)
+    do_dihcorr(opt2fn("-c",NFILE,fnm),nf,ndih,dih,dt,nlist,dlist,time,
+	       maxchi,bPhi,bPsi,bChi);
+
   
   xvgr_file(opt2fn("-o",NFILE,fnm),"-nxy");
   xvgr_file(opt2fn("-jc",NFILE,fnm),"-nxy");

@@ -22,7 +22,7 @@ typedef struct {
   real S2[edMax];
 } t_dlist;
 
-extern void do_pp2shifts(char *fn,int nframes,
+extern void do_pp2shifts(FILE *fp,int nframes,
 			 int nlist,t_dlist dlist[],real **dih);
 
 extern bool has_dihedral(int Dih,t_dlist *dl);

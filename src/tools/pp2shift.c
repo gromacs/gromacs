@@ -136,10 +136,8 @@ static void done_shifts(t_shiftdata *sd)
   sfree(sd);
 }
 
-void do_pp2shifts(char *fn,int nf,
-		  int nlist,t_dlist dlist[],real **dih)
+void do_pp2shifts(FILE *fp,int nf,int nlist,t_dlist dlist[],real **dih)
 {
-  FILE        *fp;
   t_shiftdata *ca_sd,*co_sd,*ha_sd,*cb_sd;
   int         i,j,Xi1,Xi2,Phi,Psi;
   real        phi,psi;
@@ -151,7 +149,6 @@ void do_pp2shifts(char *fn,int nf,
   ha_sd = read_shifts("ha-shift.dat");
   co_sd = read_shifts("co-shift.dat");
   
-  fp = ffopen(fn,"w");  
   fprintf(fp,"%12s  %10s  %10s  %10s  %10s\n",
 	  "Residue","delta Ca","delta Ha","delta CO","delta Cb");
   for(i=0; (i<nlist); i++) {
@@ -173,6 +170,5 @@ void do_pp2shifts(char *fn,int nf,
 	      dlist[i].name,ca/nf,ha/nf,co/nf,cb/nf);
     }
   }
-  ffclose(fp);
 }
 
