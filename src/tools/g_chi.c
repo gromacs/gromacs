@@ -66,12 +66,16 @@ void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt)
     fprintf(fp,"Residue %s\n",dl[i].name);
     fprintf(fp," Angle [  AI,  AJ,  AK,  AL]  #tr/ns  S^2D  \n"
 	       "--------------------------------------------\n");
-    fprintf(fp,"   Phi [%4d,%4d,%4d,%4d]",dl[i].atm.H,dl[i].atm.N,
-	    dl[i].atm.Cn[1],dl[i].atm.C);
+    fprintf(fp,"   Phi [%4d,%4d,%4d,%4d]",
+	    (dl[i].atm.H == -1) ? dl[i].atm.minC : dl[i].atm.H,
+	    dl[i].atm.N,dl[i].atm.Cn[1],dl[i].atm.C);
     pr_props(fp,&dl[i],edPhi,dt);
     fprintf(fp,"   Psi [%4d,%4d,%4d,%4d]",dl[i].atm.N,dl[i].atm.Cn[1],
 	    dl[i].atm.C,dl[i].atm.O);
     pr_props(fp,&dl[i],edPsi,dt);
+    fprintf(fp," Omega [%4d,%4d,%4d,%4d]",dl[i].atm.minO,dl[i].atm.minC,
+	    dl[i].atm.N,dl[i].atm.Cn[1]);
+    pr_props(fp,&dl[i],edOmega,dt);
     for(Xi=0; Xi<MAXCHI; Xi++)
       if (dl[i].atm.Cn[Xi+3] != -1) {
 	fprintf(fp,"   Chi%d[%4d,%4d,%4d,%4d]",Xi,dl[i].atm.Cn[Xi],
@@ -95,6 +99,9 @@ bool has_dihedral(int Dih,t_dlist *dl)
   case edPsi:
     b = (BBB(N) && BBB(Cn[1]) && BBB(C) && BBB(O));
     break;
+  case edOmega:
+    b = (BBB(minO) && BBB(minC) && BBB(N) && BBB(Cn[1]));
+    break;
   case edChi1:
   case edChi2:
   case edChi3:
@@ -117,14 +124,14 @@ t_dlist *mk_dlist(FILE *log,
 		  int r0,int naa,char **aa)
 {
   int     ires,i,j,k;
-  t_dihatms atm;
+  t_dihatms atm,prev;
   int     nl=0,nc[edMax],ndih;
   bool    bDih;
   char    *thisres;
   t_dlist *dl;
   
   snew(dl,atoms->nres+1);
-  
+  prev.C = -1;
   for(i=0; (i<edMax); i++)
     nc[i]=0;
   ires = -1;
@@ -133,12 +140,12 @@ t_dlist *mk_dlist(FILE *log,
     ires=atoms->atom[i].resnr;
     
     /* Initiate all atom numbers to -1 */
-    atm.H=atm.N=atm.C=atm.O=-1;
+    atm.minC=atm.H=atm.N=atm.C=atm.O=-1;
     for(j=0; (j<MAXCHI+3); j++)
       atm.Cn[j]=-1;
       
     /* Look for atoms in this residue */
-    while ( (atoms->atom[i].resnr==ires) && (i<atoms->nr) ) {
+    while ((i<atoms->nr) && (atoms->atom[i].resnr == ires)) {
       if ((strcmp(*(atoms->atomname[i]),"H") == 0) ||
 	  (strcmp(*(atoms->atomname[i]),"H1") == 0) )
 	atm.H=i;
@@ -181,11 +188,18 @@ t_dlist *mk_dlist(FILE *log,
     /* Special case for Pro, has no H */
     if (strcmp(*(atoms->resname[ires]),"PRO") == 0) 
       atm.H=atm.Cn[4];
+    /* Carbon from previous residue */
+    if (prev.C != -1)
+      atm.minC = prev.C;
+    if (prev.O != -1)
+      atm.minO = prev.O;
+    prev = atm;
+      
     thisres=*(atoms->resname[ires]);	
     
     /* Check how many dihedrals we have */
     if ((atm.N != -1) && (atm.Cn[1] != -1) && (atm.C != -1) &&
-	(atm.O != -1) && (atm.H != -1)) {
+      (atm.O != -1) && ((atm.H != -1) || (atm.minC != -1))) {
       dl[nl].resnr     = ires+1;
       dl[nl].atm       = atm;
       dl[nl].atm.Cn[0] = atm.N;
@@ -207,6 +221,8 @@ t_dlist *mk_dlist(FILE *log,
 	  }
 	}
       }
+      if ((atm.minC != -1) && (atm.minO != -1))
+	nc[6]++;
       for(k=0; (k<naa); k++) {
 	if (strcasecmp(aa[k],thisres) == 0)
 	  break;
@@ -291,7 +307,10 @@ atom_id *make_chi_ind(int nl,t_dlist dl[],int *ndih)
   n=0;
   for(i=0; (i<nl); i++) { /* Phi */
     dl[i].j0[edPhi] = n/4;
-    id[n++]=dl[i].atm.H;
+    if (dl[i].atm.H == -1)
+      id[n++]=dl[i].atm.minC;
+    else
+      id[n++]=dl[i].atm.H;
     id[n++]=dl[i].atm.N;
     id[n++]=dl[i].atm.Cn[1];
     id[n++]=dl[i].atm.C;
@@ -302,6 +321,15 @@ atom_id *make_chi_ind(int nl,t_dlist dl[],int *ndih)
     id[n++]=dl[i].atm.Cn[1];
     id[n++]=dl[i].atm.C;
     id[n++]=dl[i].atm.O;
+  }
+  for(i=0; (i<nl); i++) { /* Omega */
+    if (has_dihedral(edOmega,&(dl[i]))) {
+      dl[i].j0[edOmega] = n/4;
+      id[n++]=dl[i].atm.minO;
+      id[n++]=dl[i].atm.minC;
+      id[n++]=dl[i].atm.N;
+      id[n++]=dl[i].atm.Cn[1];
+    }
   }
   for(Xi=0; (Xi<MAXCHI); Xi++) { /* Chi# */
     for(i=0; (i<nl); i++) {
@@ -423,10 +451,20 @@ static void reset_em_all(int nlist,t_dlist dlist[],int nf,
   
   /* Reset em all */
   j=0;
+  /* Phi */
+  for(i=0; (i<nlist); i++)
+    if (dlist[i].atm.H == -1)
+      reset_one(dih[j++],nf,0);
+    else
+      reset_one(dih[j++],nf,M_PI);
+  /* Psi */
   for(i=0; (i<nlist); i++)
     reset_one(dih[j++],nf,M_PI);
+  /* Omega */
   for(i=0; (i<nlist); i++)
-    reset_one(dih[j++],nf,M_PI);
+    if (has_dihedral(edOmega,&dlist[i]))
+      reset_one(dih[j++],nf,0);
+  /* Chi 1 thru maxchi */
   for(Xi=0; (Xi<maxchi); Xi++)
     for(i=0; (i<nlist); i++)
       if (dlist[i].atm.Cn[Xi+3] != -1) {
@@ -439,7 +477,7 @@ static void reset_em_all(int nlist,t_dlist dlist[],int nf,
 static void histogramming(FILE *log,int naa,char **aa,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
-			  bool bPhi,bool bPsi,bool bChi)
+			  bool bPhi,bool bPsi,bool bOmega,bool bChi)
 {
   t_karplus kkkphi[] = {
     { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0 },
@@ -482,9 +520,11 @@ static void histogramming(FILE *log,int naa,char **aa,
   j=0;
   for (Dih=0; (Dih<NONCHI+maxchi); Dih++) {    
     for(i=0; (i<nlist); i++) {
-      if ((Dih<NONCHI) || (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)) {
-	make_histo(log,nf,dih[j],NHISTO,histmp,-M_PI,M_PI);
-
+      if (((Dih  < edOmega) ) ||
+	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
+	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
+      	make_histo(log,nf,dih[j],NHISTO,histmp,-M_PI,M_PI);
+	
 	switch (Dih) {
 	case edPhi:
 	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKPHI,kkkphi,&S2);
@@ -498,9 +538,11 @@ static void histogramming(FILE *log,int naa,char **aa,
 	  for(m=0; (m<NKKKPSI); m++)
 	    Jc[i][NKKKPHI+m] = kkkpsi[m].Jc;
 	  break;
+	case edOmega:
+	    calc_distribution_props(NHISTO,histmp,-M_PI,0,NULL,&S2);
+	  break;
 	case edChi1:
 	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKCHI,kkkchi1,&S2);
-	  
 	  for(m=0; (m<NKKKCHI); m++)
 	    Jc[i][NKKKPHI+NKKKPSI+m] = kkkchi1[m].Jc;
 	  break;
@@ -549,6 +591,7 @@ static void histogramming(FILE *log,int naa,char **aa,
       if ((j < NHISTO) &&
 	  ((bPhi && (Dih==edPhi)) ||
 	   (bPsi && (Dih==edPsi)) ||
+	   (bOmega &&(Dih==edOmega)) ||
 	   (bChi && (Dih>=edChi1)))) {
 	normalize_histo(NHISTO,his_aa[Dih][i],(360.0/NHISTO),normhisto);
 	
@@ -560,6 +603,10 @@ static void histogramming(FILE *log,int naa,char **aa,
 	case edPsi:
 	  sprintf(hisfile,"histo-psi%s.xvg",aa[i]);
 	  sprintf(title,"\\8y\\4 Distribution for %s",aa[i]);
+	  break;
+	case edOmega:
+	  sprintf(hisfile,"histo-omega%s.xvg",aa[i]);
+	  sprintf(title,"\\8w\\4 Distribution for %s",aa[i]);
 	  break;
 	default:
 	  sprintf(hisfile,"histo-chi%d%s.xvg",Dih-NONCHI+1,aa[i]);
@@ -679,8 +726,10 @@ static void order_params(FILE *log,
     S2Min=10;
     for (Dih=0; (Dih<NONCHI+maxchi); Dih++) {
       if (dlist[i].S2[Dih]!=0) {
-	if (dlist[i].S2[Dih]>S2Max) S2Max=dlist[i].S2[Dih];
-	if (dlist[i].S2[Dih]<S2Min) S2Min=dlist[i].S2[Dih];
+	if (dlist[i].S2[Dih] > S2Max) 
+	  S2Max=dlist[i].S2[Dih];
+	if (dlist[i].S2[Dih] < S2Min) 
+	  S2Min=dlist[i].S2[Dih];
       }
       if (dlist[i].S2[Dih] > 0.8)
 	nh[Dih]++;
@@ -772,7 +821,7 @@ int main(int argc,char *argv[])
   };
   static int  r0=1,ndeg=1,maxchi=2;
   static bool bAll=FALSE;
-  static bool bPhi=FALSE,bPsi=FALSE,bChi=FALSE;
+  static bool bPhi=FALSE,bPsi=FALSE,bChi=FALSE,bOmega=FALSE;
   static real bfac_init=-1.0;
   static bool bRama=FALSE,bShift=FALSE;
   t_pargs pa[] = {
@@ -784,6 +833,8 @@ int main(int argc,char *argv[])
       "Output for Psi dihedral angles" },
     { "-chi",  FALSE, etBOOL, &bChi,
       "Output for Chi dihedral angles" },
+    { "-omega",FALSE, etBOOL, &bOmega,  
+      "Output for Omega dihedrals (peptide bonds)" },
     { "-rama", FALSE, etBOOL, &bRama,
       "Generate Phi/Psi and Chi1/Chi2 ramachandran plots" },
     { "-all",  FALSE, etBOOL, &bAll,
@@ -897,7 +948,7 @@ int main(int argc,char *argv[])
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi);
   
   /* Histogramming & J coupling constants */
-  histogramming(log,naa,aa,nf,maxchi,dih,nlist,dlist,bPhi,bPsi,bChi);
+  histogramming(log,naa,aa,nf,maxchi,dih,nlist,dlist,bPhi,bPsi,bOmega,bChi);
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,
@@ -911,7 +962,7 @@ int main(int argc,char *argv[])
   if (bShift)
     do_pp2shifts(log,nf,nlist,dlist,dih);
   
-  pr_dlist(log,nlist,dlist,time[nf]-time[0]);
+  pr_dlist(log,nlist,dlist,time[nf-1]-time[0]);
   ffclose(log);
   
   /* Correlation comes last because it fucks up the angles */
