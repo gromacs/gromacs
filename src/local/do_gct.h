@@ -37,7 +37,7 @@ static char *SRCID_do_gct_h = "$Id$";
 #include "filenm.h"
 #include "network.h"
 
-enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce,
+enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,
        eoPolarizability, eoDipole, 
        eoMemory, eoInter, eoUseVirial,  eoNR };
 extern char *eoNames[eoNR];
@@ -74,7 +74,7 @@ typedef struct {
 } t_coupl_iparams;
 
 typedef struct {
-  real       force0,force;
+  real       force0,force,fx0,fx,fy0,fy,fz0,fz;
   real       pres0,pres;
   real       vir0,vir;
   real       epot0,epot;
@@ -105,7 +105,8 @@ extern t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
 				  t_commrec *cr,t_forcerec *fr,t_mdatoms *md,
 				  t_idef *idef);
 				  
-/* Maple generated C code for optimization of LJ params */
+extern void calc_force(int natom,rvec f[],rvec fff[]);
+
 extern void calc_f_dev(int natoms,real charge[],rvec x[],rvec f[],
 		       t_idef *idef,real *xiH,real *xiS);
 

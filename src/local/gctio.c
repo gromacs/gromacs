@@ -43,7 +43,7 @@ static char *SRCID_gctio_c = "$Id$";
 #include "names.h"
 
 char *eoNames[eoNR] = { 
-  "Pres", "Epot", "Vir", "Dist", "Mu", "Force",
+  "Pres", "Epot", "Vir", "Dist", "Mu", "Force", "Fx", "Fy", "Fz",
   "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial"
 };
 
@@ -209,6 +209,12 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	  eoNames[eoMu],tcr->mu0);
   fprintf(fp,"%-15s = %12g  ; Reference force\n",
 	  eoNames[eoMu],tcr->force0);
+  fprintf(fp,"%-15s = %12g  ; Reference force in X dir\n",
+	  eoNames[eoFx],tcr->fx0);
+  fprintf(fp,"%-15s = %12g  ; Reference force in Y dir\n",
+	  eoNames[eoFy],tcr->fy0);
+  fprintf(fp,"%-15s = %12g  ; Reference force in Z dir\n",
+	  eoNames[eoFz],tcr->fz0);
   fprintf(fp,"%-15s = %12g  ; Polarizability used for the Epot correction\n",
 	  eoNames[eoPolarizability],tcr->polarizability);
   fprintf(fp,"%-15s = %12g  ; Gas phase dipole moment used for Epot correction\n", 
@@ -424,6 +430,9 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   RTYPE (eoNames[eoPolarizability],	tcr->polarizability,	0.0);
   RTYPE (eoNames[eoDipole],	tcr->dipole,	0.0);
   RTYPE (eoNames[eoForce],      tcr->force,     0.0);
+  RTYPE (eoNames[eoFx],         tcr->fx0,       0.0);
+  RTYPE (eoNames[eoFy],         tcr->fy0,       0.0);
+  RTYPE (eoNames[eoFz],         tcr->fz0,       0.0);
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
   ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
   ETYPE (eoNames[eoUseVirial],  tcr->bVirial,   yesno_names);

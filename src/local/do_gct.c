@@ -288,9 +288,7 @@ void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
 #define FMAX 1.05
   int i;
 
-  fprintf(stdlog,"fmult before: %g",fmult);
   fmult = min(FMAX,max(FMIN,fmult));  
-  fprintf(stdlog,", after: %g\n",fmult);
   if (atj != -1) {
     f[ntypes*ati+atj] *= fmult;
     f[ntypes*atj+ati] *= fmult;
@@ -372,6 +370,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   real        deviation[eoNR],prdev[eoNR],epot0,dist,rmsf;
   real        ff6,ff12,ffa,ffb,ffc,ffq,factor,dt,mu_ind;
   real        Epol,Eintern,Virial,muabs,xiH,xiS,xi6,xi12;
+  rvec        fmol[2];
   bool        bTest,bPrint;
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
@@ -441,9 +440,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   muabs     = norm(mu_tot);
   Eintern   = Ecouple(tcr,ener);
   Virial    = virial[XX][XX]+virial[YY][YY]+virial[ZZ][ZZ];
-
-  /*if (bPrint)
-    calc_force(md->nr,f);*/
+  calc_force(md->nr,f,fmol);
   
   /* Use a memory of tcr->nmemory steps, so we actually couple to the
    * average observable over the last tcr->nmemory steps. This may help
@@ -452,8 +449,11 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   tcr->pres = run_aver(tcr->pres,ener[F_PRES],step,tcr->nmemory);
   tcr->epot = run_aver(tcr->epot,Eintern,     step,tcr->nmemory);
   tcr->vir  = run_aver(tcr->vir, Virial,      step,tcr->nmemory);
-  tcr->mu   = run_aver(tcr->mu,muabs,step,tcr->nmemory);
-  tcr->dist = run_aver(tcr->dist,dist,step,tcr->nmemory);
+  tcr->mu   = run_aver(tcr->mu,muabs,         step,tcr->nmemory);
+  tcr->dist = run_aver(tcr->dist,dist,        step,tcr->nmemory);
+  tcr->fx   = run_aver(tcr->fx,  fmol[0][XX], step,tcr->nmemory);
+  tcr->fy   = run_aver(tcr->fy,  fmol[0][YY], step,tcr->nmemory);
+  tcr->fz   = run_aver(tcr->fz,  fmol[0][ZZ], step,tcr->nmemory);
   
   if (bPrint)
     pr_ff(tcr,t,idef,ener,Virial,muabs,cr,nfile,fnm);
@@ -481,6 +481,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   deviation[eoVir]    = calc_deviation(tcr->vir,  Virial,      tcr->vir0);
   deviation[eoDist]   = calc_deviation(tcr->dist, dist,        tcr->dist0);
   deviation[eoMu]     = calc_deviation(tcr->mu,   muabs,       tcr->mu0);
+  deviation[eoFx]     = calc_deviation(tcr->fx,   fmol[0][XX], tcr->fx0);
+  deviation[eoFy]     = calc_deviation(tcr->fy,   fmol[0][YY], tcr->fy0);
+  deviation[eoFz]     = calc_deviation(tcr->fz,   fmol[0][ZZ], tcr->fz0);
   calc_f_dev(md->nr,md->chargeA,x,f,idef,&xiH,&xiS);
   
   prdev[eoPres]   = tcr->pres0 - ener[F_PRES];
@@ -510,7 +513,8 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       ff6 = ff12 = 1.0;	
       
       if (tclj->eObs == eoForce) {
-	fprintf(log,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
+	if (debug)
+	  fprintf(debug,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
 	if (ati == 1) {
 	  /* Hydrogen */
 	  ff12 += xiH; 
@@ -523,8 +527,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 	  fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",__FILE__,__LINE__);
       }
       else {
-	fprintf(log,"tcr->tcLJ[%d].xi_12 = %g deviation = %g\n",i,
-		tclj->xi_12,deviation[tclj->eObs]);
+	if (debug)
+	  fprintf(debug,"tcr->tcLJ[%d].xi_6 = %g, xi_12 = %g deviation = %g\n",i,
+		  tclj->xi_6,tclj->xi_12,deviation[tclj->eObs]);
 	factor=deviation[tclj->eObs];
 	
 	xi6  = tclj->xi_6;

@@ -205,8 +205,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr);
   df[Min]=rms_force(force[Min],nshell,shells);
-
-  pr_rvecs(log,0,"force0",force[Min],md->nr);
+  
+  if (debug)
+    pr_rvecs(debug,0,"force0",force[Min],md->nr);
   calc_f_dev(md->nr,md->chargeA,x,force[Min],&top->idef,&xiH,&xiS);
   fprintf(log,"xiH = %e, xiS = %e\n",xiH,xiS);
   
