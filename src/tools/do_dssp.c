@@ -52,7 +52,7 @@ extern FILE *tapein, *tapeout;
 		       
 static void strip_dssp(char *dsspfile,int nres,
 		       bool bPhobres[],real t,real dt,
-		       real *acc,FILE *acct,
+		       real *acc,FILE *fTArea,
 		       t_matrix *mat,int average_area[])
 {
   static bool bFirst=TRUE;
@@ -126,8 +126,8 @@ static void strip_dssp(char *dsspfile,int nres,
   frame++;
   mat->nx=frame;
   
-  if (acct)
-    fprintf(acct,"%10g  %10g  %10g\n",t,0.01*iaccb,0.01*iaccf);
+  if (fTArea)
+    fprintf(fTArea,"%10g  %10g  %10g\n",t,0.01*iaccb,0.01*iaccf);
 #ifndef MY_DSSP
   fclose(tapeout);
 #endif
@@ -347,14 +347,14 @@ int main(int argc,char *argv[])
 #ifndef MY_DSSP
   FILE       *tapein;
 #endif
-  FILE       *ss,*acc,*acct;
+  FILE       *ss,*acc,*fTArea;
   char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
   char       *leg[] = { "Phobic", "Phylic" };
   t_topology top;
   t_atoms    *atoms;
   t_matrix   mat;
   int        nres,nr0,naccr;
-  bool       *bPhbres,bDoAcc;
+  bool       *bPhbres,bDoAccSurf;
   real       t,nt;
   int        i,j,natoms,nframe=0;
   matrix     box;
@@ -398,8 +398,8 @@ int main(int argc,char *argv[])
   fnArea  = opt2fn_null("-a", NFILE,fnm);
   fnTArea = opt2fn_null("-ta",NFILE,fnm);
   fnAArea = opt2fn_null("-aa",NFILE,fnm);
-  bDoAcc=(fnArea || fnTArea || fnAArea);
-  printf("Will %sdo accessible surface calc\n",bDoAcc?"":"*NOT* ");
+  bDoAccSurf=(fnArea || fnTArea || fnAArea);
+  printf("Will %sdo accessible surface calc\n",bDoAccSurf?"":"*NOT* ");
   
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
@@ -432,17 +432,17 @@ int main(int argc,char *argv[])
     fatal_error(0,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
   sprintf(dssp,"%s %s %s %s > /dev/null %s",
-	  dptr,bDoAcc?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
+	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
   if (bVerbose)
     fprintf(stderr,"dssp cmd='%s'\n",dssp);
 #endif
   
   if (fnTArea) {
-    acct=xvgropen(fnTArea,"Solvent Accessible Surface Area",
+    fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
 		  "Time (ps)","Area (nm\\S2\\N)");
-    xvgr_legend(acct,2,leg);
+    xvgr_legend(fTArea,2,leg);
   } else
-    acct=NULL;
+    fTArea=NULL;
   
   mat.map=NULL;
   mat.nmap=getcmap(libopen(opt2fn("-map",NFILE,fnm)),
@@ -475,7 +475,7 @@ int main(int argc,char *argv[])
       hwrite_pdb_conf_indexed(tapein,NULL,atoms,x,box,gnx,index);
 #ifdef MY_DSSP
       rewind(tapein);
-      dssp_main(bDoAcc,bVerbose);
+      dssp_main(bDoAccSurf,bVerbose);
       rewind(tapein);
       rewind(tapeout);
 #else
@@ -483,7 +483,7 @@ int main(int argc,char *argv[])
       system(dssp);
 #endif
       strip_dssp(tmpfile,nres,bPhbres,t,dt,
-		 accr[nframe],acct,&mat,average_area);
+		 accr[nframe],fTArea,&mat,average_area);
 #ifdef MY_DSSP
       rewind(tapeout);
 #else
@@ -496,10 +496,8 @@ int main(int argc,char *argv[])
   } while(read_next_x(status,&t,natoms,x,box));
   fprintf(stderr,"\n");
   close_trj(status);
-  if (acct)
-    ffclose(acct);
-  
-  write_sas_mat(fnArea,accr,nframe,nres,&mat);
+  if (fTArea)
+    ffclose(fTArea);
   
   prune_ss_legend(&mat);
   
@@ -508,24 +506,28 @@ int main(int argc,char *argv[])
   ffclose(ss);
   
   analyse_ss(fnSCount,&mat,ss_string);
-  
-  for(i=0; (i<atoms->nres); i++)
-    av_area[i] = average_area[i]/(real) nframe;
-    
-  norm_acc(atoms, nres, av_area, norm_av_area);
-  
-  if (fnAArea) {
-    acc=xvgropen(fnAArea,"Average Accessible Area",
-		 "Residue","A\\S2");
-    for(i=0; (i<nres); i++)
-      fprintf(acc,"%5d  %10g %10g\n",i+1,av_area[i], norm_av_area[i]);
-    ffclose(acc);
-  }
 
-  if (fnSCount) xvgr_file(fnSCount,NULL);
+  if (bDoAccSurf) {
+    write_sas_mat(fnArea,accr,nframe,nres,&mat);
+  
+    for(i=0; i<atoms->nres; i++)
+      av_area[i] = (average_area[i] / (real)nframe);
+    
+    norm_acc(atoms, nres, av_area, norm_av_area);
+    
+    if (fnAArea) {
+      acc=xvgropen(fnAArea,"Average Accessible Area",
+		   "Residue","A\\S2");
+      for(i=0; (i<nres); i++)
+	fprintf(acc,"%5d  %10g %10g\n",i+1,av_area[i], norm_av_area[i]);
+      ffclose(acc);
+    }
+  }
+      
   if (fnTArea)  xvgr_file(fnTArea ,NULL);
   if (fnAArea)  xvgr_file(fnAArea ,NULL);
-  
+  if (fnSCount) xvgr_file(fnSCount,NULL);
+
   thanx(stdout);
   
   return 0;
