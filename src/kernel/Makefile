@@ -13,32 +13,34 @@ include		$(GMXHOME)/src/makef/Makefile.def
 LIB		= $(LIBDIR)/libmd.$(GMXCPU).a
 SONAME		= $(LIBDIR)/libmd.$(GMXCPU).so
 # Objects for mdrun and nmrun
-OBJ		= runner.o 	md.o		steep.o 	\
-		  congrad.o	nm.o	
+OBJ		= \
+		runner.o 	md.o		steep.o 	\
+		congrad.o	nm.o	
 # Common object files
-PGOBJ		= toputil.o 	topdirs.o 	topexcl.o	
+PGOBJ		= toputil.o 	topdirs.o 	topexcl.o
 # Objects for grompp
-GOBJ		= grompp.o	topio.o 	toppush.o 	\
-		  topcat.o 	topshake.o 	convparm.o 	\
-		  tomorse.o	sorting.o 	splitter.o	\
-		  readir.o	$(PGOBJ)
+GOBJ		= \
+		grompp.o	topio.o 	toppush.o 	\
+		topcat.o 	topshake.o 	convparm.o 	\
+		tomorse.o	sorting.o 	splitter.o	\
+		readir.o	dum_parm.o	$(PGOBJ)
 # Objects for pdb2gmx
-POBJ		= pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
-		  pgutil.o	resall.o	ter_db.o	\
-		  hizzie.o	xlate.o		specbond.o	\
-		  gen_dum.o	add_par.o	$(PGOBJ)	
+POBJ		= \
+		pdb2gmx.o	pdb2top.o 	gen_ad.o 	\
+		pgutil.o	resall.o	ter_db.o	\
+		hizzie.o	xlate.o		specbond.o	\
+		add_par.o	gen_dum.o	$(PGOBJ)	
 
-#
 ifneq ($(GMXCPU),amb)
 ifneq ($(GMXCPU),860)
-PROGRAMS	= pdb2gmx 	grompp		tpbconv		\
-		  nmrun		gmxcheck	luck
+PROGRAMS	= \
+		pdb2gmx 	grompp		tpbconv		\
+		nmrun		gmxcheck	luck
 endif
 endif
 PROGRAMS	+= mdrun	gmxdump
-#
+
 include		$(STDTARGET)
-#
 
 all:		bin
 
