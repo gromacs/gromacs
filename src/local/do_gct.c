@@ -570,8 +570,12 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     /* Copy for printing */
     for(i=0; (i<tcr->nLJ); i++) {
       tclj=&(tcr->tcLJ[i]);
-      tclj->c6  =  C6(fr->nbfp,tclj->at_i,tclj->at_i);
-      tclj->c12 = C12(fr->nbfp,tclj->at_i,tclj->at_i);
+      ati = tclj->at_i;
+      atj = tclj->at_j;
+      if (atj == -1) 
+	atj = ati;
+      tclj->c6  =  C6(fr->nbfp,ati,atj);
+      tclj->c12 = C12(fr->nbfp,ati,atj);
     }
   }
   else {
@@ -597,9 +601,13 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 #define BUCK_C(nbfp,ai,aj) (nbfp[ai][3*aj+2])
     for(i=0; (i<tcr->nBU); i++) {
       tcbu=&(tcr->tcBU[i]);
-      tcbu->a = BUCK_A(fr->nbfp,tcbu->at_i,tcbu->at_i);
-      tcbu->b = BUCK_B(fr->nbfp,tcbu->at_i,tcbu->at_i);
-      tcbu->c = BUCK_C(fr->nbfp,tcbu->at_i,tcbu->at_i);
+      ati = tcbu->at_i;
+      atj = tcbu->at_j;
+      if (atj == -1) 
+	atj = ati;
+      tcbu->a = BUCK_A(fr->nbfp,ati,atj);
+      tcbu->b = BUCK_B(fr->nbfp,ati,atj);
+      tcbu->c = BUCK_C(fr->nbfp,ati,atj);
       if (debug)
 	fprintf(debug,"buck (type=%d) = %e, %e, %e\n",
 		tcbu->at_i,tcbu->a,tcbu->b,tcbu->c);

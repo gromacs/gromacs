@@ -206,7 +206,7 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
   fprintf(fp,"%-15s = %12g  ; Reference dipole\n",
 	  eoNames[eoMu],tcr->ref_value[eoMu]);
   fprintf(fp,"%-15s = %12g  ; Reference force\n",
-	  eoNames[eoMu],tcr->ref_value[eoForce]);
+	  eoNames[eoForce],tcr->ref_value[eoForce]);
   fprintf(fp,"%-15s = %12g  ; Reference force in X dir\n",
 	  eoNames[eoFx],tcr->ref_value[eoFx]);
   fprintf(fp,"%-15s = %12g  ; Reference force in Y dir\n",
