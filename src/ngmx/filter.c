@@ -38,9 +38,10 @@ static char *SRCID_filter_c = "$Id$";
 #include "dialogs.h"
 #include "index.h"
 
-t_filter *init_filter(t_atoms *atoms, char *fn)
+t_filter *init_filter(t_atoms *atoms, char *fn, int natom_trx)
 {
   t_filter *f;
+  int      g,i;
 
   snew(f,1);
   if (fn != NULL)
@@ -49,7 +50,12 @@ t_filter *init_filter(t_atoms *atoms, char *fn)
     snew(f->grps,1);
     snew(f->grps->index,1);
     analyse(atoms,f->grps,&f->grpnames,FALSE,FALSE);
-  } 
+  }
+  snew(f->bDisable,f->grps->nr);
+  for(g=0; g<f->grps->nr; g++)
+    for(i=f->grps->index[g]; i<f->grps->index[g+1] && !f->bDisable[g]; i++)
+      f->bDisable[g] = (f->grps->a[i] >= natom_trx);
+  
   snew(f->bShow,f->grps->nr);
 
   return f;
@@ -119,8 +125,12 @@ t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
   for(k=j=0,x0=1; (j<ncol); j++,x0+=len+1) {
     fprintf(tmp,"group \"%s-%d\" %d 1 %d %d {\n",title,j+1,x0,len,ht-5);
     for(i=0; (i<nrow) && (k<gmx->filter->grps->nr); i++,k++)
-      fprintf(tmp,"checkbox \"%s\" \"%d\" %s %s %s\n",
-	      gmx->filter->grpnames[k],k,dummy,dummy,dummy);
+      if (!gmx->filter->bDisable[k])
+	fprintf(tmp,"checkbox \"%s\" \"%d\" %s %s %s\n",
+		gmx->filter->grpnames[k],k,dummy,dummy,dummy);
+      else
+	fprintf(tmp,"statictext { \"  %s\" } \"%d\" %s %s %s\n",
+		gmx->filter->grpnames[k],k,dummy,dummy,dummy);
     fprintf(tmp,"}\n\n");
   }
   fprintf(tmp,"simple 1 %d %d 2 {\n",ht-3,tlen-2);

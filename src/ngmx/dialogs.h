@@ -100,7 +100,7 @@ extern void done_dlgs(t_gmx *gmx);
 
 extern void edit_file(char *fn);
 
-extern t_filter *init_filter(t_atoms *atoms, char *fn);
+extern t_filter *init_filter(t_atoms *atoms, char *fn, int natom_trx);
 
 extern t_dlg *select_filter(t_x11 *x11,t_gmx *gmx);
 

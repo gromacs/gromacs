@@ -335,16 +335,22 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   t_gmx                *gmx;
   XSizeHints           hints;
   int                  w0,h0;
-  int                  step,natom,nre;
+  int                  step,natom,nre,natom_trx;
   real                 t,lambda;
   t_topology           top;
   matrix               box;
-  
+  t_trxframe           fr;
+  int                  status;
+
   snew(gmx,1);
   snew(gmx->wd,1);
 
   read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
 	   &natom,NULL,NULL,NULL,&top);
+
+  read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_DONT_SKIP);
+  close_trx(status);
+  natom_trx = fr.natoms;
 	   
   /* Creates a simple window */
   w0=DisplayWidth(x11->disp,x11->screen)-132;
@@ -388,7 +394,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 
   /* Dialogs & Filters */
 
-  gmx->filter=init_filter(&(top.atoms),ftp2fn_null(efNDX,nfile,fnm));
+  gmx->filter=init_filter(&(top.atoms),ftp2fn_null(efNDX,nfile,fnm),
+			  natom_trx);
   
   init_dlgs(x11,gmx);
 

@@ -73,6 +73,7 @@ typedef struct {
 typedef struct {
   t_block *grps;		/* Blocks with atom numbers		*/
   char    **grpnames;		/* The names of the groups		*/
+  bool    *bDisable;            /* Group indexes out of natoms in TRX   */
   bool    *bShow;		/* Show a group ?			*/
 } t_filter;
 
