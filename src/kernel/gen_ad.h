@@ -42,6 +42,7 @@ static char *SRCID_gen_ad_h = "$Id$";
 #include "resall.h"
 
 extern void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
+		    t_params terps[],
 		    int nrtp,t_restp rtp[],
 		    int nra,t_resang ra[],
 		    int nrd,t_resdih rd[],

@@ -545,11 +545,13 @@ static void get_atomnames_min(int n,char anm[4][12],
 }
 
 void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
+	     t_params terps[],
 	     int nrtp,t_restp rtp[],
 	     int nra,t_resang ra[],int nrd,t_resdih rd[], 
 	     int nid,t_idihres idihs[],bool bAlldih)
 {
   t_param *ang,*dih,*pai,*idih;
+  t_params *tdp;
   t_resang *i_ra;
   t_resdih *i_rd;
   char    anm[4][12];
@@ -559,13 +561,14 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
   int     nang,ndih,npai,nidih,nbd;
   bool    bFound;
 
+  tdp = &(terps[F_PDIHS]);
+
   /* These are the angles, pairs, impropers and dihedrals that we generate
    * from the bonds. The ones that are already there from the rtp file
    * will be retained.
    */
   nang    = 0;
   nidih   = 0;
-  ndih    = 0;
   npai    = 0;
   maxang  = 6*nnb->nr;
   maxdih  = 24*nnb->nr;
@@ -647,40 +650,54 @@ void gen_pad(t_nextnb *nnb,t_atoms *atoms,bool bH14,t_params plist[],
 		dih[ndih].AK=j1;
 		dih[ndih].AL=i;
 	      }
-	      for (m=0; m<MAXFORCEPARAM; m++)
-		dih[ndih].c[m]=NOTSET;
-	      dih[ndih].s=strdup("");
-	      minres = atoms->atom[dih[ndih].a[0]].resnr;
-	      maxres = minres;
-	      for(m=1; m<4; m++) {
-		minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
-		maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
+	      bFound = FALSE;
+	      for(m=0; (m<tdp->nr) && !bFound; m++) {
+		bFound = TRUE;
+		for(n=0; n<4; n++)
+		  bFound = bFound && (tdp->param[m].a[n] == dih[ndih].a[n]);
 	      }
-	      res = 2*minres-maxres;
-	      do {
-		res += maxres-minres;
-		if ((i_rd=search_rdih(*(atoms->resname[res]),nrd,rd))) {
-		  for(n=0; (n<i_rd->nd); n++) {
-		    get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
-		    bFound=FALSE;
-		    for (m=0; m<2; m++)
-		      bFound=(bFound ||
-			      ((strcmp(anm[3*m],  i_rd->rdih[n].ai)==0) &&
-			       (strcmp(anm[1+m],  i_rd->rdih[n].aj)==0) &&
-			       (strcmp(anm[2-m],  i_rd->rdih[n].ak)==0) &&
-			       (strcmp(anm[3-3*m],i_rd->rdih[n].al)==0)));
-		    if (bFound) {
-		      for (m=0; m<MAXFORCEPARAM-1; m++)
-			dih[ndih].c[m] = i_rd->rdih[n].c[m];
-		      sfree(dih[ndih].s);
-		      dih[ndih].s = strdup(i_rd->rdih[n].s);
-		      /* Set the last parameter to be able to see
-			 if the dihedral was in the rtp list */
-		      dih[ndih].c[MAXFORCEPARAM-1] = 0;
+	      if (bFound) {
+		m--;
+		/* Copy parameters from the termini database */
+		for(n=0; n<MAXFORCEPARAM; n++)
+		  dih[ndih].c[n] = tdp->param[m].c[n];
+		dih[ndih].s = strdup(tdp->param[m].s);
+	      } else {
+		for (m=0; m<MAXFORCEPARAM; m++)
+		  dih[ndih].c[m]=NOTSET;
+		dih[ndih].s=strdup("");
+		minres = atoms->atom[dih[ndih].a[0]].resnr;
+		maxres = minres;
+		for(m=1; m<4; m++) {
+		  minres = min(minres,atoms->atom[dih[ndih].a[m]].resnr);
+		  maxres = max(maxres,atoms->atom[dih[ndih].a[m]].resnr);
+		}
+		res = 2*minres-maxres;
+		do {
+		  res += maxres-minres;
+		  if ((i_rd=search_rdih(*(atoms->resname[res]),nrd,rd))) {
+		    for(n=0; (n<i_rd->nd); n++) {
+		      get_atomnames_min(4,anm,res,atoms,dih[ndih].a);
+		      bFound=FALSE;
+		      for (m=0; m<2; m++)
+			bFound=(bFound ||
+				((strcmp(anm[3*m],  i_rd->rdih[n].ai)==0) &&
+				 (strcmp(anm[1+m],  i_rd->rdih[n].aj)==0) &&
+				 (strcmp(anm[2-m],  i_rd->rdih[n].ak)==0) &&
+				 (strcmp(anm[3-3*m],i_rd->rdih[n].al)==0)));
+		      if (bFound) {
+			for (m=0; m<MAXFORCEPARAM-1; m++)
+			  dih[ndih].c[m] = i_rd->rdih[n].c[m];
+			sfree(dih[ndih].s);
+			dih[ndih].s = strdup(i_rd->rdih[n].s);
+			/* Set the last parameter to be able to see
+			   if the dihedral was in the rtp list */
+			dih[ndih].c[MAXFORCEPARAM-1] = 0;
+		      }
 		    }
 		  }
-		}
-	      } while (res < maxres);
+		} while (res < maxres);
+	      }
 	      nbd=nb_dist(nnb,i,l1);
 	      if (debug)
 		fprintf(debug,"Distance (%d-%d) = %d\n",i+1,l1+1,nbd);

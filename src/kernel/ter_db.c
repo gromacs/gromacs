@@ -63,7 +63,8 @@ static void read_atom(FILE *in,t_atom *a,t_atomtype *atype,char nnew[])
 int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
 {
   FILE       *in;
-  char       bname[124],nnew[24],oldnm[24],buf[24],keyw[128];
+  char       bname[124],nnew[24],oldnm[24],buf[24],keyw[128],line[STRLEN];
+  char       anm[4][24];
   t_hackblock *tb=NULL;
   int        i,j,nb=0;
 
@@ -115,11 +116,16 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
       fprintf(debug,"N_IDIH %d\n",tb[nb].nidih);
     snew(tb[nb].idih,tb[nb].nidih);
     for(i=0; (i<tb[nb].nidih); i++) {
+      get_a_line(in,line,STRLEN);
+      buf[0] = '\0';
+      if (sscanf(line,"%s%s%s%s%s",anm[0],anm[1],anm[2],anm[3],buf) < 4)
+	FATAL();
       for(j=0; (j<4); j++) {
-	if (fscanf(in,"%s",buf) != 1) FATAL();
-	tb[nb].idih[i].ai[j]=strdup(buf);
+	tb[nb].idih[i].ai[j]=strdup(anm[j]);
       }
+      tb[nb].idih[i].s = strdup(buf);
     }
+
     /* Number of propers */
     if (fscanf(in,"%s%d",keyw,&(tb[nb].ndih)) != 2) FATAL();
     CHECK_KW(keyw,"N_DIH");
@@ -127,10 +133,14 @@ int read_ter_db(char *inf,t_hackblock **tbptr,t_atomtype *atype)
       fprintf(debug,"N_DIH %d\n",tb[nb].ndih);
     snew(tb[nb].dih,tb[nb].ndih);
     for(i=0; (i<tb[nb].ndih); i++) {
+      get_a_line(in,line,STRLEN);
+      buf[0] = '\0';
+      if (sscanf(line,"%s%s%s%s%s",anm[0],anm[1],anm[2],anm[3],buf) < 4)
+	FATAL();
       for(j=0; (j<4); j++) {
-	if (fscanf(in,"%s",buf) != 1) FATAL();
-	tb[nb].dih[i].ai[j]=strdup(buf);
+	tb[nb].dih[i].ai[j]=strdup(anm[j]);
       }
+      tb[nb].dih[i].s = strdup(buf);
     }
     /* Number of delete atoms! */
     if (fscanf(in,"%s%d",keyw,&(tb[nb].ndel)) != 2) FATAL();

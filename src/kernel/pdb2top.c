@@ -344,8 +344,14 @@ static void ter2idihs(t_params *ps,int nidih,t_idih idih[],
     }
     if (ftype == F_IDIHS)
       add_imp_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NULL);
-    else
-      add_dih_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NOTSET,NULL);
+    else {
+      if (a0[1] < a0[2])
+	add_dih_param(ps,a0[0],a0[1],a0[2],a0[3],NOTSET,NOTSET,NOTSET,NULL);
+      else
+	add_dih_param(ps,a0[3],a0[2],a0[1],a0[0],NOTSET,NOTSET,NOTSET,NULL);
+    }
+    ps->param[ps->nr-1].c[MAXFORCEPARAM-1] = 0;
+    ps->param[ps->nr-1].s = strdup(idih[j].s);
   }
 }
 
@@ -467,7 +473,7 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
 	     bool bDummies, bool bDummyAromatics, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl)
 {
-  t_params plist[F_NRE], newbonds;
+  t_params plist[F_NRE], terps[F_NRE], newbonds;
   t_nextnb nnb;
   bool     bG96;
   int      *cgnr;
@@ -476,6 +482,7 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
   int      i;
   
   init_plist(plist);
+  init_plist(terps);
   newbonds.nr=0;
   newbonds.param=NULL;
   
@@ -518,20 +525,20 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
   if (rn>=0) {
     ter2idihs(&(plist[F_IDIHS]),ntdb->nidih,ntdb->idih,
 	      atoms->nr,atoms->atom,atoms->atomname,rn,F_IDIHS);
-    ter2idihs(&(plist[F_PDIHS]),ntdb->ndih,ntdb->dih,
+    ter2idihs(&(terps[F_PDIHS]),ntdb->ndih,ntdb->dih,
 	      atoms->nr,atoms->atom,atoms->atomname,rn,F_PDIHS);
   }
   if (rc>=0) {
     ter2idihs(&(plist[F_IDIHS]),ctdb->nidih,ctdb->idih,
 	      atoms->nr,atoms->atom,atoms->atomname,rc,F_IDIHS);
-    ter2idihs(&(plist[F_PDIHS]),ctdb->ndih,ctdb->dih,
+    ter2idihs(&(terps[F_PDIHS]),ctdb->ndih,ctdb->dih,
 	      atoms->nr,atoms->atom,atoms->atomname,rc,F_PDIHS);
   }
   /* then all others */
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,plist,nrtp,rtp,nra,ra,nrd,rd,nid,idi,bAlldih);
+  gen_pad(&nnb,atoms,bH14,plist,terps,nrtp,rtp,nra,ra,nrd,rd,nid,idi,bAlldih);
   done_nnb(&nnb);
 
   /* Initiate the exclusion block, must also be done when no dummies are
@@ -597,6 +604,8 @@ void pdb2top(char *ff, FILE *top_file, char *posre_fn, char *molname,
   /* cleaning up */
   sfree(cgnr);
   done_block(&excl);
-  for (i=0; (i<F_NRE); i++)
+  for (i=0; (i<F_NRE); i++) {
     sfree(plist[i].param);
+    sfree(terps[i].param);
+  }
 }
