@@ -80,6 +80,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	  index = src->param[i].c[0];
 	  type  = src->param[i].c[1];
 	  if ((type == 2) && (j>0)) {
+	    /* Don't ensemble average type' 2 distance restraints */
 	    max_index++;
 	    index = max_index;
 	  }
@@ -87,8 +88,13 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	  dest->param[l].c[1] = type;
 	  for(m=0; (m<2); m++)
 	    dest->param[l].c[m] = src->param[i].c[m];
-	  for(m=2; (m<nrfp-1); m++)
-	    dest->param[l].c[m] = src->param[i].c[m]*fac;
+	  if (type==2)
+	    for(m=2; (m<nrfp-1); m++)
+	      dest->param[l].c[m] = src->param[i].c[m];
+	  else
+	    /* Scale the bounds for ensemble averaged distance restraints */
+	    for(m=2; (m<nrfp-1); m++)
+	      dest->param[l].c[m] = src->param[i].c[m]*fac;
 	  /* do not change the factor for the force-constant */
 	  dest->param[l].c[nrfp-1] = src->param[i].c[nrfp-1];
 	  for (m=0; (m<nral); m++)
