@@ -84,4 +84,6 @@ extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,t_block *cgs);
 extern void print_bonds(FILE *out,int natoms,directive d,
 			int ftype,t_params plist[],bool bConsts);
 
+extern void print_excl(FILE *out, t_block *excl);
+
 #endif	/* _toputil_h */
