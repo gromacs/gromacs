@@ -49,6 +49,7 @@ static char *SRCID_g_confrms_c = "$Id$";
 #include "fatal.h"
 #include "futil.h"
 #include "confio.h"
+#include "pdbio.h"
 #include "txtdump.h"
 #include "gstat.h"
 
