@@ -291,7 +291,7 @@ void please_cite(FILE *fp,char *key)
       16, 1995, 1192, 1209 },
     { "Essman95a",
       "U. Essman, L. Perela, M. L. Berkowitz, T. Darden, H. Lee and L. G. Pedersen ",
-      "{A smooth particle mesh Ewald method",
+      "A smooth particle mesh Ewald method",
       "J. Chem. Phys.",
       103, 1995, 8577, 8592 },
     { "Torda89a",
