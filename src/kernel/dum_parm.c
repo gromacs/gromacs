@@ -644,13 +644,12 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 {
   int i,j,ftype;
   int nrbond,nrang,nridih,nrset;
-  bool bSet,bERROR=TRUE;
+  bool bFirst,bSet,bERROR;
   t_mybond *bonds;
   t_myang  *angles;
   t_myidih *idihs;
   
-  if (bVerbose)
-    fprintf(stderr,"Calculating parameters for dummy atoms\n");
+  bERROR=TRUE;
   if (debug)
     fprintf(debug, "\nCalculating parameters for dummy atoms\n");  
   for(ftype=0; (ftype<F_NRE); ftype++)
@@ -662,12 +661,16 @@ void set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	for(j=0; j<NRFP(ftype) && bSet; j++)
 	  bSet = plist[ftype].param[i].c[j]!=NOTSET;
 
-	
 	if (debug) {
 	  fprintf(debug,"bSet=%s ",bool_names[bSet]);
 	  print_param(debug,ftype,i,&plist[ftype].param[i]);
 	}
 	if (!bSet) {
+	  if (bVerbose && bFirst) {
+	    fprintf(stderr,"Calculating parameters for dummy atoms\n");
+	    bFirst=FALSE;
+	  }
+	  
 	  nrbond=nrang=nridih=0;
 	  bonds = NULL;
 	  angles= NULL;
