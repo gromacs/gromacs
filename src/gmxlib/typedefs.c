@@ -114,7 +114,7 @@ void stupid_fill(t_block *grp,int natom,bool bOneIndexGroup)
       grp->index[i]=i;
     grp->nr=natom;
   }
-  grp->multinr[0] = natom-1;
+  grp->multinr[0] = natom;
 }
 
 void done_block(t_block *block)
