@@ -228,17 +228,3 @@ void fillbuf(void)
   fatal_error(0,"fillbuf called (Fortran routine from %s %d)",__FILE__,__LINE__);
 #endif
 }
-
-/* Matrix diagonalization routine in FORTRAN */ 
-define(`fql77_args',`(int *n,real *x, real *d, real *e, int *nmax)')
-extern void FUNCTION(forql77) fql77_args;
-
-void fql77 fql77_args
-{
-#ifdef USEF77
-  FUNCTION(forql77)(n,x,d,e,nmax);
-#else
-  fatal_error(0,"fql77 called (Fortran routine from %s %d)",__FILE__,__LINE__);
-#endif
-}
-
