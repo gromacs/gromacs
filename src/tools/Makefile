@@ -25,7 +25,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_disre		g_dist		g_enemat	\
 		g_energy	g_gyrate	g_h2order	\
 		g_hbond		g_helix		g_mdmat		\
-		g_mindist	g_msd		\
+		g_mindist	g_msd		g_morph		\
 		g_nmeig		g_nmens		\
 		g_order		g_potential	g_rama		\
 		g_rdens		g_rdf		g_rms		\
@@ -242,6 +242,9 @@ g_multipoles:	g_multipoles.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_analyze:	g_analyze.o $(ACOBJ)
+		$(LD) -o $@ $^ $(SYSLIBS)
+
+g_morph:	g_morph.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 include	Make.dep
