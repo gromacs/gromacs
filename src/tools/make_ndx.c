@@ -520,6 +520,7 @@ static bool parse_entry(char **string,t_atoms *atoms,
     if (parse_int(string,&sel_nr1)) {
       parse_int(string,&sel_nr2);
       select_numbers(atoms,sel_nr1,sel_nr2,nr,index,gname,FALSE);
+      bRet=TRUE;
     } 
     else if (parse_names(string,&n_names,names)) {
       select_names(atoms,n_names,names,nr,index,FALSE);
@@ -532,6 +533,7 @@ static bool parse_entry(char **string,t_atoms *atoms,
     if (parse_int(string,&sel_nr1)) {
       parse_int(string,&sel_nr2);
       select_numbers(atoms,sel_nr1,sel_nr2,nr,index,gname,TRUE);
+      bRet=TRUE;
     } 
     else if (parse_names(string,&n_names,names)) {
       select_names(atoms,n_names,names,nr,index,TRUE);
@@ -690,36 +692,37 @@ static void edit_index(t_atoms *atoms,rvec *x,t_block *block, char ***gn)
     } else if (string[0] != 'q') {
       nr1=-1;
       nr2=-1;
-      if (parse_entry(&string,atoms,block,gn,&nr1,index1,gname1)) {
-	while (string[0]==' ')
-	  string++;
-	
-	bAnd=FALSE;
-	bOr=FALSE;
-	if (string[0]=='&')
-	  bAnd=TRUE;
-	else if (string[0]=='|')
-	  bOr=TRUE;
-	
-	if (!bAnd && !bOr) {
-	  nr=nr1;
-	  for(i=0; i<nr; i++)
-	    index[i]=index1[i];
-	  strcpy(gname,gname1);
-	}
-	else {
-	  string++;
-	  if (parse_entry(&string,atoms,block,gn,&nr2,index2,gname2)) {
-	    if (bOr) {
-	      or_groups(nr1,index1,nr2,index2,&nr,index);
-	      sprintf(gname,"%s_%s",gname1,gname2);
-	    }
-	    else {
-	      and_groups(nr1,index1,nr2,index2,&nr,index);
-	      sprintf(gname,"%s_&_%s",gname1,gname2);
+      if (parse_entry(&string,atoms,block,gn,&nr,index,gname)) {
+	do {
+	  while (string[0]==' ')
+	    string++;
+	  
+	  bAnd=FALSE;
+	  bOr=FALSE;
+	  if (string[0]=='&')
+	    bAnd=TRUE;
+	  else if (string[0]=='|')
+	    bOr=TRUE;
+	  
+	  if (bAnd || bOr) {
+	    string++;
+	    nr1=nr;
+	    for(i=0; i<nr; i++)
+	      index1[i]=index[i];
+	    strcpy(gname1,gname);
+	    string++;
+	    if (parse_entry(&string,atoms,block,gn,&nr2,index2,gname2)) {
+	      if (bOr) {
+		or_groups(nr1,index1,nr2,index2,&nr,index);
+		sprintf(gname,"%s_%s",gname1,gname2);
+	      }
+	      else {
+		and_groups(nr1,index1,nr2,index2,&nr,index);
+		sprintf(gname,"%s_&_%s",gname1,gname2);
+	      }
 	    }
 	  }
-	}
+	} while (bAnd || bOr);
       }
       while(string[0]==' ')
 	string++;
