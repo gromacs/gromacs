@@ -3,7 +3,7 @@
 <h1>gro file format</h1>
 
 <p>Files with the gro file extension contain a molecular structure in
-gromos format. gro files can be used as trajectory by simply
+Gromos87 format. gro files can be used as trajectory by simply
 concatenating files. An attempt will be made to read a time value from
 the title string in each frame, which should be preceded by
 '<TT>t=</TT>', as in the sample below.</p>
@@ -27,7 +27,7 @@ Lines contain the following information (top to bottom):
 <li>number of atoms (free format integer)
 <li>one line for each atom (fixed format, see below)
 <li>box vectors (free format, space separated reals), values: v1(x) v2(y) v3(z) v1(y) v1(z) v2(x) v2(z) v3(x) v3(y),
-the last 6 values may be ommitted (they will be set to zero).
+the last 6 values may be omitted (they will be set to zero).
 Gromacs only supports boxes with v1(y)=v1(z)=v2(z)=0.
 
  
@@ -38,7 +38,7 @@ position. Optionally (for now only yet with trjconv) you can write gro
 files with any number of decimal places, the format will then be
 <tt>n+5</tt> positions with <tt>n</tt> decimal places (<tt>n+1</tt>
 for velocities) in stead of <tt>8</tt> with <tt>3</tt> (with
-<tt>4</tt> for velicities). Upon reading, the precision will be
+<tt>4</tt> for velocities). Upon reading, the precision will be
 inferred from the distance between the decimal points (which will be
 <tt>n+5</tt>). Columns contain the following information (from left to
 right):
