@@ -276,11 +276,11 @@ int main(int argc,char *argv[])
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-#ifndef USE_MPI
+#ifndef GMX_MPI
   if (nnodes > 1) 
     gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
 #endif
-#ifndef USE_THREADS
+#ifndef GMX_THREADS
   if(nthreads > 1)
     gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif
