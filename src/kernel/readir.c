@@ -108,14 +108,22 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	 (ir->eConstrAlg == estSHAKE)));
      
      
-  /* NEIGHBOURSEARCHING */
+  /* VACUUM STUFF */
+  if (ir->ePBC == epbcNONE) {
+    ir->epc = epcNO;
 
-  if (ir->ePBC == epbcNONE && ir->ns_type != ensSIMPLE) {
-    sprintf(warn_buf,"Can only use nstype=%s with pbc=%s, setting nstype "
-	    "to %s\n",
-	    ens_names[ensSIMPLE],epbc_names[epbcNONE],ens_names[ensSIMPLE]);
-    warning(NULL);
-    ir->ns_type = ensSIMPLE;
+    if (ir->ns_type != ensSIMPLE) {
+      sprintf(warn_buf,"Can only use nstype=%s with pbc=%s, setting nstype "
+	      "to %s\n",
+	      ens_names[ensSIMPLE],epbc_names[epbcNONE],ens_names[ensSIMPLE]);
+      warning(NULL);
+      ir->ns_type = ensSIMPLE;
+    }
+    if (ir->bDispCorr) {
+      warning("Can not have long-range dispersion correction without PBC,"
+	      " turned off.");
+      ir->bDispCorr = FALSE;
+    }
   }
 
   if (ir->rlist == 0.0) {
@@ -128,13 +136,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	  (ir->ePBC     != epbcNONE) || 
 	  (ir->rcoulomb != 0.0)      || (ir->rvdw != 0.0));
   }
-  
-  if ((ir->ePBC == epbcNONE) && (ir->bDispCorr)) {
-    warning("Can not have long-range dispersion correction without PBC,"
-	    " turned off.");
-    ir->bDispCorr = FALSE;
-  }
-  
+
+  /* COMM STUFF */
   if ((ir->ePBC != epbcNONE) && (ir->nstcomm < 0))
     warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
     
