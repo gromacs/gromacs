@@ -163,7 +163,7 @@ fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 mgmxtest:	mgmxtest.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
-compnl:		compnl.o	wnblist.o
+compnl:		compnl.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep
