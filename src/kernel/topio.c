@@ -190,7 +190,7 @@ void preprocess(char *infile,char *outfile,
     printf("Tried to execute: '%s'\n",command); 
     printf("The '%s' command is defined in the .mdp file\n",cpp);
     if (error<0)
-      exit(1);
+      fatal_error(0,"cpp failed");
   }
 }
 
@@ -259,10 +259,8 @@ static char **read_topol(char        *infile,
   real       qt=0; /* total charge */
 
   /* open input and output file */
-  if ((in = fopen(infile,"r")) == NULL) {
-    perror (infile);
-    exit(1);
-  }
+  if ((in = fopen(infile,"r")) == NULL)
+    fatal_error(0,"Could not open %s",infile);
 
   /* some local variables */
   DS_Init(&DS);			/* directive stack			*/

@@ -439,11 +439,9 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
       fprintf(stderr,"double-checking input for internal consistency...\n");
     double_check(ir,box,msys,&nerror);
   }
-  if (nerror) {
-    fprintf(stderr,"%d error%s, program terminated\n",
-	    nerror,nerror==1 ? "" : "s");
-    exit(1);
-  }
+  if (nerror)
+    fatal_error(0,"%d error%s, program terminated",
+		nerror,nerror==1 ? "" : "s");
 
   if (bGenVel) {
     real *mass;
@@ -492,11 +490,9 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real time,
   } else
     *natoms = read_first_x_v(&fp,slog,&tt,x,v,box);
   
-  if(sys->atoms.nr != *natoms) {
-    fprintf(stderr,
-	    "Number of atoms in Topology is not the same as in Trajectory\n");
-    exit(0);
-  }
+  if(sys->atoms.nr != *natoms)
+    fatal_error(0,"Number of atoms in Topology "
+		"is not the same as in Trajectory");
 
   /* Now scan until the last set of box, x and v (step == 0)
    * or the ones at step step.

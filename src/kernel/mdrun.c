@@ -137,8 +137,6 @@ int main(int argc,char *argv[])
   MPI_Finalize();
 #endif  
 
-  exit(0);
-  
   return 0;
 }
 

@@ -138,12 +138,10 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
 	      bFound = (b_ij!=0.0) && (b_jk!=0.0);
 	    }
 	  /* apply law of cosines */
-	    if (!bFound) {
-	      fprintf(stderr,"No bond information for bond %s-%s or %s-%s\n",
+	    if (!bFound)
+	      fatal_error(0,"No bond information for bond %s-%s or %s-%s",
 		      *info[ang->AI],*info[ang->AJ],
 		      *info[ang->AJ],*info[ang->AK]);
-	      exit(1);
-	    }
 	    p.C0 = sqrt(b_ij*b_ij+b_jk*b_jk-2.0*b_ij*b_jk*cos(DEG2RAD*ang->C0));
 	    p.C1 = p.C0;
 #ifdef DEBUG

@@ -480,9 +480,8 @@ void get_ir(char *mdparin,char *mdparout,
 	fprintf(stderr,"pressure coupling not enough values\n");
       break;
     default:
-      fprintf(stderr,"Pressure coupling type %s not implemented yet\n",
-	      epcoupl_names[ir->epc]);
-      exit(1);
+      fatal_error(0,"Pressure coupling type %s not implemented yet",
+		  epcoupl_names[ir->epc]);
     }
   }
   for(i=0; (i<DIM); i++) {

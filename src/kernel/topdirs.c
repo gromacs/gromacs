@@ -110,9 +110,8 @@ int ifunc_index(directive d,int type)
   case d_distance_restraints:
     return F_DISRES;
   default:
-    fprintf(stderr,"DON'T ever call 'ifunc_index' again with directive %s\n",
-	    dir2str(d));
-    exit(1);
+    fatal_error(0,"DON'T ever call 'ifunc_index' again with directive %s",
+		dir2str(d));
   }
   return -1;
 }
