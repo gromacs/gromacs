@@ -195,7 +195,7 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
   bool bShowHidden;
   char buf[32],buf2[256];
   char *ptr,*desc,*wdesc;
-  int  i;
+  int  i,j;
   
   /* Cannot call opt2parg_bSet here, because it crashes when the option
    * is not in the list (mdrun)
@@ -206,6 +206,8 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
       bShowHidden = TRUE;
   
   if (npargs > 0) {
+#define OPTLEN 12
+#define TYPELEN 6
     fprintf(fp,"%12s %6s %6s  %s\n","Opt","Type","Value","Description");
     fprintf(fp,"------------------------------------------------------\n");
     for(i=0; (i<npargs); i++) {
@@ -225,6 +227,17 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
 	sprintf(buf2,"%12s %6s %6s  %s\n",buf,argtp[pa[i].type],
 		pa_val(&(pa[i])),desc);
 	wdesc=wrap_lines(buf2,80,28);
+	if (strlen(buf)>((OPTLEN+TYPELEN)-strlen(argtp[pa[i].type]))) {
+	  wdesc[strlen(buf)]='\n';
+	  srenew(wdesc,strlen(wdesc)+1+OPTLEN);
+	  for(j=strlen(wdesc); j>strlen(buf); j--)
+	    wdesc[j+OPTLEN+1]=wdesc[j];
+	  for(j=0; j<OPTLEN+1; j++)
+	    wdesc[strlen(buf)+1+j]=' ';
+	} else if (strlen(buf)>OPTLEN) {
+	  for(j=strlen(buf); j<strlen(wdesc)-(strlen(buf)-OPTLEN)+1; j++)
+	    wdesc[j]=wdesc[j+strlen(buf)-OPTLEN];
+	}
 	fprintf(fp,wdesc);
       }
       sfree(desc);

@@ -164,9 +164,10 @@ void pr_fn(FILE *fp,t_filenm *tfn)
 
 void pr_fns(FILE *fp,int nf,t_filenm tfn[])
 {
-  int  i;
+  int  i,j;
   char buf[256],*wbuf;
-
+#define OPTLEN 4
+#define NAMELEN 14
   fprintf(fp,"%4s %14s  %-12s  %s\n",
 	  "Opt","Filename","Type","Description");
   fprintf(fp,"------------------------------------------------------------\n");
@@ -174,6 +175,12 @@ void pr_fns(FILE *fp,int nf,t_filenm tfn[])
     sprintf(buf, "%4s %14s  %-12s  %s\n", tfn[i].opt,tfn[i].fn,
 	    fileopt(tfn[i].flag),deffile[tfn[i].ftp].descr);
     wbuf=wrap_lines(buf,80,35);
+    if ( (strlen(tfn[i].opt)>OPTLEN) && 
+	 (strlen(tfn[i].opt)<=((OPTLEN+NAMELEN)-strlen(tfn[i].fn))) ) {
+      for(j=strlen(tfn[i].opt); 
+	  j<strlen(wbuf)-(strlen(tfn[i].opt)-OPTLEN)+1; j++)
+	wbuf[j]=wbuf[j+strlen(tfn[i].opt)-OPTLEN];
+    }
     fprintf(fp,wbuf);
     sfree(wbuf);
   }
