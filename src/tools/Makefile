@@ -35,7 +35,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_velacc	genbox		genconf		\
 		gendr		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
-		trjconv		trjcat          trjorder	\
+		trjconv		          trjorder	\
 		wheel		xpm2ps
 endif
 
@@ -53,7 +53,7 @@ disco:		disco.o dlist.o dtools.o correct.o
 cdist:		cdist.o bondlist.o smooth.o residues.o virtual.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
 
-genbox:		genbox.o	addconf.o
+genbox:		genbox.o	addconf.o	
 		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 
 genconf:	genconf.o	sortwater.o
@@ -96,7 +96,7 @@ g_rmsdist:	g_rmsdist.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 editconf:	editconf.o	addconf.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+		$(LD) $(RUNLDOPT) -o $@ $^ $(RUNSYSLIBS)
 
 g_energy:	g_energy.o	$(ACOBJ)
 		$(LD) -o $@ $^ $(SYSLIBS)

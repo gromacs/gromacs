@@ -362,7 +362,9 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,real **r,matrix box,
   /* calculate the box multiplication factors n_box[0...DIM] */
   nmol=1;
   for (i=0; (i < DIM);i++) {
-    n_box[i]=(int)(box[i][i]/box_solvt[i][i])+1;
+    n_box[i] = 1;
+    while (n_box[i]*box_solvt[i][i] < box[i][i])
+      n_box[i]++;
     nmol*=n_box[i];
   }
   fprintf(stderr,"Will generate new solvent configuration of %dx%dx%d boxes\n",

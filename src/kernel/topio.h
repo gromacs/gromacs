@@ -45,8 +45,6 @@ typedef struct {
   int nrcopies;
 } t_simsystem;
 
-extern void stupid_fill(t_block *grp, int maxf);
-
 extern real check_mol(t_atoms *atoms);
 /* Check mass and charge */
 
