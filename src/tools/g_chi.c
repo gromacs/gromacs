@@ -314,7 +314,7 @@ static void reset_one(real dih[],int nf,real phase)
   }
 }
 
-static void reset_em_all(int nlist,t_dlist dlist[],int nf,
+static int reset_em_all(int nlist,t_dlist dlist[],int nf,
 			 real **dih,int maxchi)
 {
   int  i,j,Xi;
@@ -341,7 +341,8 @@ static void reset_em_all(int nlist,t_dlist dlist[],int nf,
 	reset_one(dih[j],nf,0);
 	j++;
       }
-  fprintf(stderr,"j after resetting = %d\n",j);
+  fprintf(stderr,"j after resetting (nr. active dihedrals) = %d\n",j);
+  return j ; 
 }
 
 static void histogramming(FILE *log,int nbin, int naa,char **aa,
@@ -960,10 +961,16 @@ int main(int argc,char *argv[])
     "(argument [TT]-rt[tt]), and the 3J couplings (argument [TT]-jc[tt]), ", 
     "can also be written to .xvg files.[PAR]", 
 
-    "with [TT]-chi_prod[tt], a cumulative rotamer, e.g.", 
-    "1+9(chi1-1)+3(chi2-1)+(chi3-1) (if there are 3 3-fold dihedrals)", 
-    "is calculated and written to chiproduct(RESIDUE)(nresnr).xvg ", 
-    "and histo-chiproduct(RESIDUE)(nresnr).xvg files.[PAR]", 
+    "If [TT]-chi_prod[tt] is set (and maxchi > 0), cumulative rotamers, e.g.", 
+    "1+9(chi1-1)+3(chi2-1)+(chi3-1) (if the residue has three 3-fold ", 
+    "dihedrals and maxchi >= 3)", 
+    "are calculated. As before, if any dihedral is not in the core region,", 
+    "the rotamer is taken to be 0. The occupancies of these cumulative ",
+    "rotamers (starting with rotamer 0) are written to the file", 
+    "that is the argument of [TT]-cp[tt], and if the [TT]-all[tt] flag", 
+    "is given, the rotamers as functions of time", 
+    "are written to chiproduct(RESIDUE)(nresnr).xvg ", 
+    "and their occupancies to histo-chiproduct(RESIDUE)(nresnr).xvg.[PAR]", 
 
     "The option [TT]-r[tt] generates a contour plot of the average omega angle",
     "as a function of the phi and psi angles, that is, in a Ramachandran plot",
@@ -974,6 +981,7 @@ int main(int argc,char *argv[])
   static char *bugs[] = {
     "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
     "Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like g_rama.", 
+    "-r0 option does not work properly", 
     "Rotamers with multiplicity 2 are printed in chi.log as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0" 
   };
 
@@ -984,7 +992,7 @@ int main(int argc,char *argv[])
   static real bfac_init=-1.0,bfac_max=0;
   static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
-  static bool bNormHisto=TRUE,bChiProduct=FALSE,bRAD=FALSE;
+  static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE;
   static real core_frac=0.5 ;  
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, {&r0},
@@ -1019,6 +1027,8 @@ int main(int argc,char *argv[])
       "B-factor value for pdb file for atoms with no calculated dihedral order parameter"},
     { "-chi_prod",FALSE,etBOOL, {&bChiProduct},
       "compute a single cumulative rotamer for each residue"},
+    { "-HChi",FALSE,etBOOL, {&bHChi},
+      "Include dihedrals to sidechain hydrogens"}, 
     { "-bmax",  FALSE, etREAL, {&bfac_max},
       "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax <= 0 means no limit." }
   };
@@ -1036,7 +1046,7 @@ int main(int argc,char *argv[])
   real       dt=0, traj_t_ns;
 
   atom_id    isize,*index;
-  int        ndih,nf;
+  int        ndih,nactdih,nf;
   real       **dih,*trans_frac,*aver_angle,*time;
   int        i,j,**chi_lookup,*xity; 
   
@@ -1052,7 +1062,8 @@ int main(int argc,char *argv[])
     /* add two more arguments copying from g_angle */ 
     { efXVG, "-ot", "dihtrans", ffOPTWR }, 
     { efXVG, "-oh", "trhisto",  ffOPTWR },
-    { efXVG, "-rt", "restrans",  ffOPTWR }  
+    { efXVG, "-rt", "restrans",  ffOPTWR }, 
+    { efXVG, "-cp", "chiprodhisto",  ffOPTWR }  
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -1111,7 +1122,7 @@ int main(int argc,char *argv[])
   fprintf(log,"Title: %s\n",title);
   
   naa=get_strings("aminoacids.dat",&aa);
-  dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,maxchi,r0,naa,aa);
+  dlist=mk_dlist(log,&atoms,&nlist,bPhi,bPsi,bChi,bHChi,maxchi,r0,naa,aa);
   fprintf(stderr,"%d residues with dihedrals found\n", nlist);
   
   if (nlist == 0) 
@@ -1136,8 +1147,10 @@ int main(int argc,char *argv[])
     
   }
 
-  /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi */
-  reset_em_all(nlist,dlist,nf,dih,maxchi);
+  /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi 
+  * pass nactdih instead of ndih to low_ana_dih_trans and get_chi_product_traj
+  * to prevent accessing off end of arrays when maxchi < 5 or 6. */ 
+  nactdih = reset_em_all(nlist,dlist,nf,dih,maxchi);
   
   if (bAll)
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega,bRAD);
@@ -1149,12 +1162,6 @@ int main(int argc,char *argv[])
 		bDo_jc,opt2fn("-jc",NFILE,fnm));
 
   /* transitions 
-   * void ana_dih_trans(char *fn_trans,char *fn_histo, int maxchi, 
-   *		   real **dih, int nlist, t_dlist dlist[], int nframes,
-   *		   int nangles, char *grpname,real t0,real dt,bool bRb)
-   *
-   *   I'm guessing *time for t0, - should be arg for -b ? 
-   *	   added dlist to passed stuff 
    *
    * added multiplicity */ 
 
@@ -1176,7 +1183,7 @@ int main(int argc,char *argv[])
 
   low_ana_dih_trans(bDo_ot, opt2fn("-ot",NFILE,fnm),
 		    bDo_oh, opt2fn("-oh",NFILE,fnm),maxchi, 
-		    dih, nlist, dlist, nf, ndih, grpname, xity, 
+		    dih, nlist, dlist, nf, nactdih, grpname, xity, 
 		    *time,  dt, FALSE, core_frac) ; 
 
   /* Order parameters */  
@@ -1202,15 +1209,16 @@ int main(int argc,char *argv[])
 		      &atoms,x,box,bPhi,bPsi,bChi,traj_t_ns); 
   
   /* chi_product trajectories (ie one "rotamer number" for each residue) */
-  if (bChiProduct) {
+  if (bChiProduct && bChi ) {
     snew(chi_lookup,nlist) ;
     for (i=0;i<nlist;i++)
       snew(chi_lookup[i], maxchi) ; 
     mk_chi_lookup(chi_lookup, maxchi, dih, nlist, dlist); 
     
-    get_chi_product_traj(dih,nf,ndih,nlist,
+    get_chi_product_traj(dih,nf,nactdih,nlist,
 			 maxchi,dlist,time,chi_lookup,xity,
-			 FALSE,bNormHisto, core_frac); 
+			 FALSE,bNormHisto, core_frac,bAll,
+			 opt2fn("-cp",NFILE,fnm)); 
 
     for (i=0;i<nlist;i++)
       sfree(chi_lookup[i]); 

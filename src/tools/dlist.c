@@ -37,8 +37,8 @@ static char *SRCID_dlist_c = "$Id$";
 	
 t_dlist *mk_dlist(FILE *log, 
 		  t_atoms *atoms, int *nlist,
-		  bool bPhi, bool bPsi, bool bChi, int maxchi,
-		  int r0,int naa,char **aa)
+		  bool bPhi, bool bPsi, bool bChi, bool bHChi,
+		  int maxchi,int r0,int naa,char **aa)
 {
   int     ires,i,j,k,ii;
   t_dihatms atm,prev;
@@ -46,7 +46,7 @@ t_dlist *mk_dlist(FILE *log,
   bool    bDih;
   char    *thisres;
   t_dlist *dl;
-  
+ 
   snew(dl,atoms->nres+1);
   prev.C = prev.O = -1;
   for(i=0; (i<edMax); i++)
@@ -88,9 +88,11 @@ t_dlist *mk_dlist(FILE *log,
 	       (strcmp(*(atoms->atomname[i]),"CD1") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"SD") == 0)  ||
 	       (strcmp(*(atoms->atomname[i]),"OD1") == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"ND1") == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"HG")  == 0) ||
-	       (strcmp(*(atoms->atomname[i]),"HG1")  == 0))
+	       (strcmp(*(atoms->atomname[i]),"ND1") == 0))
+	atm.Cn[4]=i;
+      /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */
+      else if (bHChi && ((strcmp(*(atoms->atomname[i]),"HG")  == 0) ||
+	       (strcmp(*(atoms->atomname[i]),"HG1")  == 0)) )
 	atm.Cn[4]=i;
       else if ((strcmp(*(atoms->atomname[i]),"CE") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"CE1") == 0) ||
@@ -100,7 +102,8 @@ t_dlist *mk_dlist(FILE *log,
       else if ((strcmp(*(atoms->atomname[i]),"CZ") == 0) ||
 	       (strcmp(*(atoms->atomname[i]),"NZ") == 0))
 	atm.Cn[6]=i;
-      else if (strcmp(*(atoms->atomname[i]),"NH1") == 0)
+      /* HChi flag here too */ 
+      else if (bHChi && (strcmp(*(atoms->atomname[i]),"NH1") == 0))
 	atm.Cn[7]=i;
       i++;
     }

@@ -32,7 +32,6 @@
 static char *SRCID_anadih_c = "$Id$";
 #include <math.h>
 #include <stdio.h>
-#include <string.h>
 #include "physics.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -274,7 +273,7 @@ void low_ana_dih_trans(bool bTrans, char *fn_trans,
 }
 
 void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
-			     int nlist, t_dlist dlist[]) 
+		    int nlist, t_dlist dlist[]) 
 {
   /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
    * and store in xity[j] 
@@ -326,7 +325,8 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 		    int nlist, t_dlist dlist[]) 
 {
 
-  /* by grs. should rewrite everything to use this. 
+  /* by grs. should rewrite everything to use this. (but haven't, 
+   * and at mmt only used in get_chi_product_traj
    * returns the dihed number given the residue number (from-0) 
    * and chi (from-0) nr. -1 for chi undefined for that res (eg gly, ala..)*/ 
 
@@ -356,15 +356,16 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 			   int maxchi, t_dlist dlist[], real time[], 
 			   int **lookup, int *xity,bool bRb, bool bNormalize,
-			   real core_frac) 
+			   real core_frac, bool bAll, char *fnall) 
 {
-  bool bRotZero, bHaveChi=FALSE; 
-  int  accum=-1, index, i,j,k,Xi,n,b ; 
+
+  bool bRotZero, bHaveChi; 
+  int  accum, index, i,j,k,Xi,n,b ; 
   real *chi_prtrj; 
   int  *chi_prhist; 
   int  nbin ; 
-  FILE *fp ;
-  char hisfile[256],histitle[256]; 
+  FILE *fp, *fpall ;
+  char hisfile[256],histitle[256], *namept; 
 
   int  (*calc_bin)(real,int,real);  
   
@@ -378,8 +379,25 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
 
   snew(chi_prtrj, nframes) ;   
 
+  /* file for info on all residues */ 
+  if (bNormalize)
+    fpall=xvgropen(fnall,"Cumulative Rotamers","Residue","Probability");
+  else 
+    fpall=xvgropen(fnall,"Cumulative Rotamers","Residue","# Counts");
+
   for(i=0; (i<nlist); i++) {
+
+    /* get nbin, the nr. of cumulative rotamers that need to be considered */ 
     nbin = 1 ; 
+    for (Xi = 0 ; Xi < maxchi ; Xi ++ ) {
+      index = lookup[i][Xi] ; /* chi_(Xi+1) of res i (-1 if off end) */ 
+      if ( index >= 0 ) {
+	n = xity[index]; 
+	nbin = n*nbin ; 
+      }
+    }
+    nbin += 1 ; /* for the "zero rotamer", outside the core region */
+
     for (j=0; (j<nframes); j++) {
 
       bRotZero = FALSE ; 
@@ -415,31 +433,55 @@ void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
       }
     }
     if (bHaveChi){
-      print_one("chiproduct", dlist[i].name, "chi product for",
-		"cumulative rotamer", nframes,time,chi_prtrj); 
-      /* make a histogram too */ 
+
+      if (bAll) {
+	/* print cuml rotamer vs time */ 
+	print_one("chiproduct", dlist[i].name, "chi product for",
+		  "cumulative rotamer", nframes,time,chi_prtrj); 
+      }
+
+      /* make a histogram pf culm. rotamer occupancy too */ 
       snew(chi_prhist, nbin) ; 
       make_histo(NULL,nframes,chi_prtrj,nbin,chi_prhist,0,nbin); 
-      sprintf(hisfile,"histo-chiprod%s.xvg",dlist[i].name);
-      sprintf(histitle,"cumulative rotamer distribution for %s",dlist[i].name);
-      fp=xvgropen(hisfile,histitle,"number","");
-      fprintf(fp,"@ xaxis tick on\n");
-      fprintf(fp,"@ xaxis tick major 1\n");
-      fprintf(fp,"@ type xy\n");
+      if (bAll) {
+	sprintf(hisfile,"histo-chiprod%s.xvg",dlist[i].name);
+	sprintf(histitle,"cumulative rotamer distribution for %s",dlist[i].name);
+	fprintf(stderr,"  and %s  ",hisfile);
+	fp=xvgropen(hisfile,histitle,"number","");
+	fprintf(fp,"@ xaxis tick on\n");
+	fprintf(fp,"@ xaxis tick major 1\n");
+	fprintf(fp,"@ type xy\n");
+	for(k=0; (k<nbin); k++) {
+	  if (bNormalize)
+	    fprintf(fp,"%5d  %10g\n",k,(1.0*chi_prhist[k])/nframes); 
+	  else
+	    fprintf(fp,"%5d  %10d\n",k,chi_prhist[k]);
+	}
+	fprintf(fp,"&\n");
+	ffclose(fp);
+      }
+
+      /* and finally print out occupancies to a single file */
+      /* get the gmx from-1 res nr by setting a ptr to the number part 
+       * of dlist[i].name - potential bug for 4-letter res names... */
+      namept = dlist[i].name + 3 ;  
+      fprintf(fpall, "%5s ", namept);
       for(k=0; (k<nbin); k++) {
 	if (bNormalize)
-	  fprintf(fp,"%5d  %10g\n",k,(1.0*chi_prhist[k])/nframes); 
+	  fprintf(fpall,"  %10g",(1.0*chi_prhist[k])/nframes); 
 	else
-	  fprintf(fp,"%5d  %10d\n",k,chi_prhist[k]);
+	  fprintf(fpall,"  %10d",chi_prhist[k]);
       }
-      fprintf(fp,"&\n");
-      ffclose(fp);
+      fprintf(fpall, "\n") ; 
+
       sfree(chi_prhist); 
       /* histogram done */ 
     }
   }     
 
   sfree(chi_prtrj); 
+  ffclose(fpall); 
+  fprintf(stderr,"\n") ; 
 
 }
 
