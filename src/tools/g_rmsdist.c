@@ -87,6 +87,27 @@ static void calc_dist_tot(int nind,atom_id index[], rvec x[],
   }
 }
 
+static void calc_nmr(int nind, int nframes, real **dtot1_3, real **dtot1_6,
+		     real *max1_3, real *max1_6)
+{
+  int     i,j;
+  real    temp1_3,temp1_6;
+
+
+  for(i=0; (i<nind-1); i++) {
+    for(j=i+1; (j<nind); j++) {
+      temp1_3 = pow(dtot1_3[i][j]/nframes,-1.0/3.0);
+      temp1_6 = pow(dtot1_6[i][j]/nframes,-1.0/6.0);
+      if (temp1_3 > *max1_3) *max1_3 = temp1_3;
+      if (temp1_6 > *max1_6) *max1_6 = temp1_6;
+      dtot1_3[i][j] = temp1_3;
+      dtot1_6[i][j] = temp1_6;
+      dtot1_3[j][i] = temp1_3;
+      dtot1_6[j][i] = temp1_6;
+    }
+  }
+}
+
 static void calc_rms(int nind, int nframes, 
 		     real **dtot, real **dtot2, 
 		     real **rmsmat,  real *rmsmax,
@@ -137,8 +158,6 @@ real rms_diff(int isize,real **d,real **d_r)
   return sqrt(r2);
 }
 
-void cluster
-
 void main (int argc,char *argv[])
 {
   static char *desc[] = {
@@ -166,10 +185,12 @@ void main (int argc,char *argv[])
   atom_id  *index;
   char     *grpname;
   real     **d_r,**d,**dtot,**dtot2,**mean,**rms,**rmsc,*resnr;
+  real     **dtot1_3,**dtot1_6;
   real     rmsnow,meanmax,rmsmax,rmscmax;
   real     max1_3,max1_6;
   t_rgb    rlo,rhi;
   char     buf[255];
+  bool bRMS, bScale, bMean, bNMR3, bNMR6;
   
   static int  nlevels=40;
   static real scalemax=-1.0;
@@ -180,9 +201,15 @@ void main (int argc,char *argv[])
       "Maximum level in matrices" }
   };
   t_filenm fnm[] = {
-    { efTRX, "-f1",   NULL,       ffREAD },
-    { efTRX, "-f2",   NULL,       ffOPTRD },
-    { efNDX, NULL,   NULL,       ffOPTRD }
+    { efTRX, "-f",   NULL,       ffREAD },
+    { efTPS, NULL,   NULL,       ffREAD },
+    { efNDX, NULL,   NULL,       ffOPTRD },
+    { efXVG, NULL,   "distrmsd",  ffWRITE },
+    { efXPM, "-rms", "rmsdist",  ffOPTWR },
+    { efXPM, "-scl", "rmsscale", ffOPTWR },
+    { efXPM, "-mean","rmsmean",  ffOPTWR },
+    { efXPM, "-nmr3","nmr3",     ffOPTWR },
+    { efXPM, "-nmr6","nmr6",     ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -190,13 +217,25 @@ void main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
+  bRMS  =opt2bSet("-rms", NFILE,fnm);
+  bScale=opt2bSet("-scl", NFILE,fnm);
+  bMean =opt2bSet("-mean",NFILE,fnm);
+  bNMR3 =opt2bSet("-nmr3",NFILE,fnm);
+  bNMR6 =opt2bSet("-nmr6",NFILE,fnm);
+  
   /* don't read mass-database as masses (and top) are not used */
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&x,NULL,box,FALSE);
+  
   get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	    1,&isize,&index,&grpname);
   
   snew(d,isize);
   snew(dtot,isize);
   snew(dtot2,isize);
+  if (bNMR3 || bNMR6) {
+    snew(dtot1_3,isize);
+    snew(dtot1_6,isize);
+  }
   snew(mean,isize);
   snew(rms,isize);
   snew(rmsc,isize);
