@@ -231,7 +231,7 @@ static int read_atom(char line[],int type,int natom,
   t_atom *atomn;
   int  j,k;
   char nc='\0';
-  char anr[12],anm[12],resnm[12],chain[12],resnr[12];
+  char anr[12],anm[12],altloc,resnm[12],chain[12],resnr[12];
   char xc[12],yc[12],zc[12],occup[12],bfac[12],pdbresnr[12];
   static char oldresnm[12],oldresnr[12];
   int  newres;
@@ -251,6 +251,7 @@ static int read_atom(char line[],int type,int natom,
   for(k=0; (k<4); k++,j++) anm[k]=line[j];
   anm[k]=nc;
   trim(anm);
+  altloc=line[j];
   j++;
   for(k=0; (k<4); k++,j++) 
     resnm[k]=line[j];
@@ -313,6 +314,7 @@ static int read_atom(char line[],int type,int natom,
   if (atoms->pdbinfo) {
     atoms->pdbinfo[natom].type=type;
     atoms->pdbinfo[natom].atomnr=atoi(anr);
+    atoms->pdbinfo[natom].altloc=altloc;
     strcpy(atoms->pdbinfo[natom].pdbresnr,pdbresnr);
     atoms->pdbinfo[natom].bfac=atof(bfac);
     atoms->pdbinfo[natom].occup=atof(occup);
