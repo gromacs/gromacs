@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
   rvec    *x,*xx,*v;        /* coordinates? */
   real    t;
   vec4    *xrot,*vrot;  
-  matrix  box;          /* box length matrix */
+  matrix  box,boxx;          /* box length matrix */
   rvec    shift;         
   int     natoms;       /* number of atoms in one molecule  */
   int     nres;         /* number of molecules? */
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
   nres=atoms->nres;                /* nr of residues in one element? */
 
   if (bTRX) {
-    if (!read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,box))
+    if (!read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,boxx))
       fatal_error(0,"No atoms in trajectory %s",ftp2fn(efTRX,NFILE,fnm));
   }
   
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 	ndx=(i*ny*nz+j*nz+k)*natoms;
 	nrdx=(i*ny*nz+j*nz+k)*nres;
 	
-	if (ndx > 0) {
+	if ((ndx > 0) || (bTRX)) {
 
 	  /* Random rotation on input coords */
 	  if (bRandom)
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
 	  for(l=0; (l<nres); l++)
 	    atoms->resname[nrdx+l]=atoms->resname[l];
 	  if (bTRX)
-	    if (!read_next_x(status,&t,natoms,xx,box) && 
+	    if (!read_next_x(status,&t,natoms,xx,boxx) && 
 		((i+1)*(j+1)*(k+1) < vol))
 	      fatal_error(0,"Not enough frames in trajectory");
 	}
