@@ -64,8 +64,10 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "g_hbond is a program which computes hydrogen bonds from a ",
     "trajectroy file (trj), run input file (tpx), and index ", 
-    "file (ndx) ",
-    "[PAR][BB]Input:[bb][BR] ",
+    "file (ndx). Hydrogen bonds are determined based on a cutoff ",
+    "angle for the angle Hydrogen - Donor - Acceptor (zero is optimum)",
+    "and a cutoff distance for the distance Donor - Acceptor.[PAR]",
+    "[BB]Input:[bb][BR] ",
     "For the analysis you can specify one group of atoms. Then only ",
     "the hydrogen bonds inside this group are monitored. You can also ",
     "specify two or more groups. In that case g_hbond only computes ",
@@ -141,8 +143,8 @@ int main(int argc,char *argv[])
     "[TT]minus - no hydrogen bond, but inserted hydrogen bond exists[tt][BR]",
     "[TT]plus  - hydrogen bond exists, and inserted hydrogen bond exists[tt][BR]",
     "[PAR][TT]insert_n.xvg[tt][BR]",
-    "This file is only generated when analysing inserted hydrogen bonds. This ",
-    "file contains the following data for hydrogen bond [IT]n[it]:[BR]",
+    "This file is only generated when analysing inserted hydrogen bonds.",
+    "This file contains the following data for hydrogen bond [TT]n[tt]:[BR]",
     "[TT] Col. Description[tt][BR]",
     "[TT] 1    Time[tt][BR]",
     "[TT] 2    Distance between donor and acceptor (nm)[tt][BR]",
@@ -154,9 +156,9 @@ int main(int argc,char *argv[])
   /* options */
   t_pargs pa [] = {
     { "-a", FALSE, etREAL, &alfcut,
-      "cutoff angle (degrees). If angle Hydrogen - Donor - Acceptor is smaller than angle it is taken into account otherwise it is disregarded." },
+      "cutoff angle (degrees, Hydrogen - Donor - Acceptor)" },
     { "-r", FALSE, etREAL, &rcut,
-      "cutoff radius (default 0.35 nm). If distance Donor - Acceptor is smaller than distance it is taken into account." }
+      "cutoff radius (nm, Donor - Acceptor)" }
   }; 
   
   Hbond      **dah=NULL;
