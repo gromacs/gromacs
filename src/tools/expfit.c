@@ -285,8 +285,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
 
   int  i,j,nfitpnts;
   real integral,ttt;
-  real *parm,*dparm;
-  real AA=0,tau1=0,tau2=0,srAA=0,srtau1,srtau2=0;  
+  real parm[4],dparm[4];
   real *x,*y,*dy;
   real ftol = 1e-4;
 
@@ -319,56 +318,39 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       j++;
     }
   }
+  parm[0]=1.0;
+  parm[1]=1.0;
+  parm[2]=1.0;
   nfitpnts=j;
   if (j < nfp_ffn[eFitFn]) {
     fprintf(stderr,"Not enough data points for fitting!\n");
     integral = 0;
-  }
-  else {
-    snew(parm,4);
-    snew(dparm,4);
-
-    parm[0]=parm[1]=parm[2] = 1.0;
+  } else {
     if (fitparms)
       for(i=0; i<nfp_ffn[eFitFn]; i++)
 	parm[i]=fitparms[i];
     
     lmfit_exp(nfitpnts,x,y,dy,ftol,parm,dparm,bVerbose,eFitFn,fix);
     
-    tau1 = parm[0];
-    srtau1 = dparm[0];
-    if (nfp_ffn[eFitFn] > 1) {
-      AA = parm[1];
-      srAA = dparm[1];
-    }
-    else 
-      AA = 1.0;
-    if (nfp_ffn[eFitFn] > 2) {
-      tau2 = parm[2];
-      srtau2 = dparm[2];
-    }
-    else
-      tau2 = 0.0;
-    
-    /* Compute the integral from begintimefit
-     */
-    integral=(tau1*myexp(begintimefit,AA,  tau1) +
-	      tau2*myexp(begintimefit,1-AA,tau2));
+    /* Compute the integral from begintimefit */
+    integral=(parm[0]*myexp(begintimefit,parm[1],  parm[0]) +
+	      parm[2]*myexp(begintimefit,1-parm[1],parm[2]));
     
     /* Generate THE output */
     if (bVerbose) {
       fprintf(stderr,"FIT: # points used in fit is: %d\n",nfitpnts);
       fprintf(stderr,"FIT: %21s%21s%21s\n",
-	      "   A      ","tau1 (ps)    ","tau2 (ps)     ");
+	      "parm0     ","parm1 (ps)   ","parm2 (ps)    ");
       fprintf(stderr,"FIT: ------------------------------------------------------------\n");
       fprintf(stderr,"FIT: %8.3g +/- %8.3g%9.4g +/- %8.3g%8.3g +/- %8.3g\n",
-	      AA,srAA,tau1,srtau1,tau2,srtau2);
+	      parm[0],dparm[0],parm[1],dparm[1],parm[2],dparm[2]);
       fprintf(stderr,"FIT: Integral (calc with fitted function) from %g ps to inf. is: %g\n",
 	      begintimefit,integral);
       
       sprintf(buf,"test%d.xvg",nfitpnts);
       fp = xvgropen(buf,"C(t) + Fit to C(t)","Time (ps)","C(t)");
-      fprintf(fp,"# AA = %g, tau1 = %g, tau2 = %g\n",AA,tau1,tau2);
+      fprintf(fp,"# parm0 = %g, parm1 = %g, parm2 = %g\n",
+	      parm[0],parm[1],parm[2]);
       for(j=0; j<nfitpnts; j++) {
 	ttt = x0 ? x0[j] : dt*j;
 	fprintf(fp,"%10.5e  %10.5e  %10.5e\n",
@@ -376,13 +358,11 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       }
       fclose(fp);
     }
-
-    sfree(dparm);
   }
   
-  fitparms[0]=tau1;
-  fitparms[1]=AA;
-  fitparms[2]=tau2; 
+  fitparms[0]=parm[0];
+  fitparms[1]=parm[1];
+  fitparms[2]=parm[2]; 
 
   sfree(x);
   sfree(y);
