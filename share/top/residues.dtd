@@ -51,7 +51,7 @@
 
 <!ELEMENT residues (residue*,linkdef*,moddef*)>
 
-<!ELEMENT residue (ratom+,rbond+)>
+<!ELEMENT residue (ratom+,rbond+,raddh*)>
 <!ATTLIST residue
           restype ID #REQUIRED>
 <!-- We can not use ID here for atom names since there is no -->
@@ -64,7 +64,15 @@
 <!ATTLIST rbond
           a1 CDATA #REQUIRED
 	  a2 CDATA #REQUIRED>	  
-
+<!-- Definition of how to add (hydrogen) atoms to molecules  -->
+<!-- using a certain geometry (see GROMACS manual)           -->
+<!ELEMENT raddh EMPTY>
+<!ATTLIST raddh
+          hclass   ( polar | aliphatic ) "polar"
+	  addgeom  CDATA #REQUIRED
+	  addnum   CDATA #REQUIRED
+	  addto    CDATA #REQUIRED>
+	  
 <!-- Define a covalent link between two residues (prev and next) -->
 <!ELEMENT linkdef EMPTY>
 <!ATTLIST linkdef

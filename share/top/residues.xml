@@ -22,6 +22,9 @@
     <rbond a1="CB" a2="HB2"/>
     <rbond a1="CA" a2="C"/>
     <rbond a1="C"  a2="O"/>
+    <raddh hclass="polar"     addgeom="1" addnum="1" addto="N -C CA" />
+    <raddh hclass="aliphatic" addgeom="5" addnum="1" addto="CA N C CB" />
+    <raddh hclass="aliphatic" addgeom="4" addnum="3" addto="CB CA N" />
   </residue>
 
   <residue restype="GLY">
@@ -38,6 +41,8 @@
     <rbond a1="CA" a2="HA2"/>
     <rbond a1="CA" a2="C"/>
     <rbond a1="C"  a2="O"/>
+    <raddh hclass="polar"     addgeom="1" addnum="1" addto="N -C CA" />
+    <raddh hclass="aliphatic" addgeom="6" addnum="2" addto="CA C N" />
   </residue>
   
   <linkdef linktype="peptide"    atomprev="C"  atomnext="N"/>
