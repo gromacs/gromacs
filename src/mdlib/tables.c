@@ -640,7 +640,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   }
   if (bGenTab) {
     if (!bReadTab) {
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
       table.scale = 2000.0;
 #else
       table.scale = 500.0;

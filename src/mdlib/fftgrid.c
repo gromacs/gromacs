@@ -89,7 +89,7 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
     grid->la12c = ny*grid->la2c;
   grid->nptr = nx*ny*grid->la2c*2;
 
-#ifndef WITHOUT_FFTW  
+#ifndef GMX_WITHOUT_FFTW  
   if (fp)
     fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
 
@@ -189,7 +189,7 @@ void done_fftgrid(t_fftgrid *grid)
 
 void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
-#ifdef WITHOUT_FFTW
+#ifdef GMX_WITHOUT_FFTW
   gmx_fatal(FARGS,"gmxfft3D called, but GROMACS was compiled without FFTW!\n");
 #else /* have fftw */
   if (cr && PAR(cr) && grid->localptr) {

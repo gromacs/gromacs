@@ -110,7 +110,7 @@ void calc_idx(int natoms,matrix recipbox,
   int  *idxptr,tix,tiy,tiz;
   real *xptr,tx,ty,tz;
   real rxx,ryx,ryy,rzx,rzy,rzz;
-#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && defined USE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined GMX_DOUBLE && defined USE_X86TRUNC)
   int x86_cw,x86_cwsave;
 
   asm("fnstcw %0" : "=m" (*&x86_cwsave));
@@ -135,7 +135,7 @@ void calc_idx(int natoms,matrix recipbox,
     ty = ny2 + ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy );
     tz = nz2 + nz * (                                   xptr[ZZ] * rzz );
     
-#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && defined USE_X86TRUNC)
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined GMX_DOUBLE && defined USE_X86TRUNC)
     x86trunc(tx,tix);
     x86trunc(ty,tiy);
     x86trunc(tz,tiz);
@@ -158,7 +158,7 @@ void calc_idx(int natoms,matrix recipbox,
     range_check(idxptr[ZZ],0,nz);
 #endif
   }  
-#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && defined USE_X86TRUNC)  
+#if (defined __GNUC__ && (defined i386 || defined __386__) && !defined GMX_DOUBLE && defined USE_X86TRUNC)  
   asm("fldcw %0" : : "m" (*&x86_cwsave));
 #endif
 
@@ -172,7 +172,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   static int localsize;
   static int maxproc;
 
-#if (defined USE_MPI && ! defined WITHOUT_FFTW)
+#if (defined USE_MPI && ! defined GMX_WITHOUT_FFTW)
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
@@ -306,7 +306,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
   maxkz = nz/2+1;
     
   if (bPar) { /* transpose X & Y and only sum local cells */
-#if (defined USE_MPI && !defined WITHOUT_FFTW)
+#if (defined USE_MPI && !defined GMX_WITHOUT_FFTW)
     kystart = grid->pfft.local_y_start_after_transpose;
     kyend   = kystart+grid->pfft.local_ny_after_transpose;
     if (debug)
@@ -671,7 +671,7 @@ t_fftgrid *init_pme(FILE *log,t_commrec *cr,
   int i;
   bool bPar;
 
-#ifdef WITHOUT_FFTW
+#ifdef GMX_WITHOUT_FFTW
   gmx_fatal(FARGS,"PME used, but GROMACS was compiled without FFTW support!\n");
 #endif
   fprintf(log,"Will do PME sum in reciprocal space.\n");

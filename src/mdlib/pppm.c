@@ -379,7 +379,7 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
   snew(nTest,grid->nptr);
   
   if(PAR(cr)) {
-#if (defined USE_MPI && !defined WITHOUT_FFTW)
+#if (defined USE_MPI && !defined GMX_WITHOUT_FFTW)
     jstart=grid->pfft.local_y_start_after_transpose;
     jend=jstart+grid->pfft.local_ny_after_transpose;
 
@@ -481,7 +481,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   const real tol = 1e-5;
   rvec  spacing;
 
-#ifdef WITHOUT_FFTW
+#ifdef GMX_WITHOUT_FFTW
   gmx_fatal(FARGS,"PPPM used, but GROMACS was compiled without FFTW support!\n");
 #endif
 

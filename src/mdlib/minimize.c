@@ -102,7 +102,7 @@ static void print_converged(FILE *fp,const char *alg,real ftol,int count,bool bD
   else 
     fprintf(fp,"\n%s did not converge to Fmax < %g in %d steps.\n",alg,ftol,count);
 
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
   fprintf(fp,"Potential Energy  = %21.14e\n",epot); 
   fprintf(fp,"Maximum force     = %21.14e on atom %d\n",fmax,nfmax+1); 
   fprintf(fp,"Norm of force     = %21.14e\n",fnorm); 
@@ -1487,7 +1487,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   time_t start_t; 
   tensor force_vir,shake_vir; 
   rvec   mu_tot;
-#ifdef DOUBLE 
+#ifdef GMX_DOUBLE 
   real   min_k = 1e-24;
 #else
   real   min_k = 1e-16;
@@ -1708,7 +1708,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     stepsize=ustep/Fmax[Min];
     
     /* Check if stepsize is too small, with 1 nm as a characteristic length */
-#ifdef DOUBLE
+#ifdef GMX_DOUBLE
     if (ustep < 1e-12) {
 #else
     if (ustep < 1e-6) {
@@ -1786,7 +1786,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* end nmrun differences */
 
-#ifndef DOUBLE
+#ifndef GMX_DOUBLE
   fprintf(stderr,
 	  "WARNING: This version of GROMACS has been compiled in single precision,\n"
 	  "         which is usually not accurate enough for normal mode analysis.\n"
