@@ -10,19 +10,19 @@ BIB	=	bibtex
 IDX	=	makeindex
 DVIPS	=	dvips
 
-all:		gromacs.dvi
+all:		gromacs.ps
 
 gromacs.aux:	
 		$(TEX) gromacs
 
-gromacs.blg:	gromacs.aux
+gromacs.bbl:	gromacs.aux
 		$(BIB) gromacs
 		$(TEX) gromacs
 
 gromacs.idx:	gromacs.aux
 		$(IDX) gromacs
 
-gromacs.dvi:	gromacs.aux	gromacs.blg	gromacs.idx
+gromacs.dvi:	gromacs.aux	gromacs.bbl	gromacs.idx
 		$(TEX) gromacs
 
 gromacs.ps:	gromacs.dvi
