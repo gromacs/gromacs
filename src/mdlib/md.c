@@ -79,13 +79,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (parm->ir.eBox != ebtNONE)
     do_pbc_first(log,parm,box_size,fr,graph,x);
   debug_gmx();
+
+  /* Initialize pull code */
+  init_pull(log,nfile,fnm,&pulldata,x,top,box_size); 
   
   if (!parm->ir.bUncStart) 
     do_shakefirst(log,bTYZ,lambda,ener,parm,nsb,mdatoms,x,vold,buf,f,v,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
-
-  /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,x,top,box_size); 
     
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,START(nsb),HOMENR(nsb),vold,v,vt,&(parm->ir.opts),
