@@ -38,7 +38,7 @@
 #include "vec.h"
 #include "smalloc.h"
 
-void ql77 (int n,double *x,double *d)
+void ql77 (int n,real *x,real *d)
      /*c
        c     matrix diagonalization routine
        c
@@ -65,12 +65,12 @@ void ql77 (int n,double *x,double *d)
        */
 {
   int i,j,k,l,ni;
-  double *e,h,g,f,b,s,p,r,c,absp;
-  double totwork,work;
+  real *e,h,g,f,b,s,p,r,c,absp;
+  real totwork,work;
 
 #define pr_pr(a,b,c) fprintf(stderr,"\rreduction: %g%%  accumulation:  %g%%  accumulation: %g%%",a,b,c)
 
-  const double eps=7.e-14,tol=1.e-30;
+  const real eps=7.e-14,tol=1.e-30;
 
   snew(e,n);
 

@@ -117,8 +117,8 @@ void average_residues(real f[],int isize,atom_id index[],real w_rls[],
 
 void print_dir(FILE *fp,real *Uaver)
 {
-  double eigvec[DIM*DIM];
-  double eigval[DIM];
+  real eigvec[DIM*DIM];
+  rvec eigval;
   int d,m;
 
   fprintf(fp,"MSF     X         Y         Z\n");

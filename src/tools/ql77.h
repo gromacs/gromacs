@@ -33,7 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
-extern void ql77 (int n,double *x,double *d);
+extern void ql77 (int n,real *x,real *d);
 /* Determine the eigenvalues d[n] and eigenvectors   *
  * of the symmetric n x n matrix x. The eigenvectors *
  * are stored  in x as x[i+n*v], where v is the      *
