@@ -110,6 +110,13 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
     if ((ia[1] < natoms) &&
 	(interaction_function[tp].flags & 
 	 (IF_BOND | IF_CONSTRAINT | IF_DUMMY))) {
+      if (ia[np] >= natoms)
+	fatal_error(0,"Molecule in topology has atom numbers below and "
+		    "above natoms (%d).\n"
+		    "You are probably trying to use a trajectory which does "
+		    "not match the first %d atoms of the run input file.\n"
+		    "You can make a matching run input file with tpbconv.",
+		    natoms,natoms);
       if (interaction_function[tp].flags & IF_DUMMY)
 	/* Bond a dummy only to the first constructing atom */
 	nbonded = 2;
