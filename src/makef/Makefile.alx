@@ -12,7 +12,7 @@
 #
 # The default is to use gnu compilers. Uncomment the next line if you have
 # the faster dec/compaq compilers.
-#COMPAQ_COMPILERS = yes
+COMPAQ_COMPILERS = yes
 
 SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRCASECMP -DHAVE_STRDUP
 
@@ -22,9 +22,9 @@ SYSDEFS		= -DHAVE_ULONG -DCINVSQRT -DFINVSQRT -DHAVE_STRCASECMP -DHAVE_STRDUP
 # If you want to use fortran innerloops set this to yes
 # For most machines this will improve the performance quite a bit
 # because C-compilers are not as good as Fortran compilers
-# Note that eartly versions of gnu f77 for alpha/linux were very slow -
+# Note that early versions of gnu f77 for alpha/linux were very slow -
 # if you are running gcc prior to egcs or gcc<2.95 you are better
-# of not using f77. 
+# off not using f77. 
 # (We definitely recommend you to upgrade, or better, use compaq/dec compilers)
 USEF77		= yes
 #
