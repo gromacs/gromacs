@@ -239,7 +239,7 @@ int main (int argc, char *argv[])
   int          fp;
   t_tpxheader  tpx;
   t_trnheader head;
-  int          i,natoms,frame,step,run_step;
+  int          i,natoms,frame,step,run_step,nsteps_org;
   real         run_t,run_lambda;
   bool         bOK,bFrame,bTime,bSel;
   t_topology   top;
@@ -259,12 +259,14 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static real start_t = -1.0, extend_t = 0.0;
+  static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
   static t_pargs pa[] = {
     { "-time", FALSE, etREAL, {&start_t}, 
       "Continue from frame at this time (ps) instead of the last frame" },
     { "-extend", FALSE, etREAL, {&extend_t}, 
       "Extend runtime by this amount (ps)" },
+    { "-until", FALSE, etREAL, {&until_t}, 
+      "Extend runtime until this ending time (ps)" },
   };
   int nerror = 0;
   
@@ -348,38 +350,54 @@ int main (int argc, char *argv[])
 	    ftp2fn(efTPX,NFILE,fnm));
   }
 
-  ir->nsteps     -= run_step;
+  /* Determine total number of steps remaining */
   if (extend_t) {
-    i = ir->nsteps;
-    ir->nsteps     += (int)(extend_t/ir->delta_t + 0.5);
-    fprintf(stderr,
-	    "Extending remaining runtime of %g ps by %g ps (now %d steps)\n",
-	    i*ir->delta_t, extend_t, ir->nsteps);
+    ir->nsteps = ir->nsteps - run_step + (int)(extend_t/ir->delta_t + 0.5);
+    printf("Extending remaining runtime of by %g ps (now %d steps)\n",
+	   extend_t,ir->nsteps);
   }
-  ir->init_t      = run_t;
-  ir->init_lambda = run_lambda;
-  
-  if (!ftp2bSet(efTRN,NFILE,fnm)) {
-    get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
-	      &gnx,&index,&grpname);
-    bSel=(gnx!=natoms);
-    for (i=0; ((i<gnx) && (!bSel)); i++)
-      bSel = (i!=index[i]);
-    if (bSel) {
-      fprintf(stderr,"Will write subset %s of original tpx containg %d "
-	      "atoms\n",grpname,gnx);
-      reduce_topology_x(gnx,index,&top,x,v);
-      natoms = gnx;
-    } 
-    else
-      fprintf(stderr,"Will write full tpx file (no selection)\n");
-  }    
-  
-  fprintf(stderr,"Writing statusfile with starting time %g and %d steps...\n",
-	  ir->init_t,ir->nsteps);
-  write_tpx(opt2fn("-o",NFILE,fnm),
-	    0,ir->init_t,ir->init_lambda,ir,box,
-	    natoms,x,v,NULL,&top);
+  else if (until_t) {
+    ir->nsteps = (int)((until_t-ir->init_t)/ir->delta_t + 0.5) - run_step;
+    printf("Extending remaining runtime until %g ps (now %d steps)\n",
+	   until_t,ir->nsteps);
+  }
+  else {
+    ir->nsteps -= run_step; 
+    /* Print message */
+    printf("%d steps (%g ps) remaining from first run.\n",
+	   ir->nsteps,ir->nsteps*ir->delta_t);
+	  
+  }
+  if (ir->nsteps > 0) {
+
+    ir->init_t      = run_t;
+    ir->init_lambda = run_lambda;
+    
+    if (!ftp2bSet(efTRN,NFILE,fnm)) {
+      get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
+		&gnx,&index,&grpname);
+      bSel=(gnx!=natoms);
+      for (i=0; ((i<gnx) && (!bSel)); i++)
+	bSel = (i!=index[i]);
+      if (bSel) {
+	fprintf(stderr,"Will write subset %s of original tpx containg %d "
+		"atoms\n",grpname,gnx);
+	reduce_topology_x(gnx,index,&top,x,v);
+	natoms = gnx;
+      } 
+      else
+	fprintf(stderr,"Will write full tpx file (no selection)\n");
+    }    
+    
+    fprintf(stderr,"Writing statusfile with starting time %g and %d steps...\n",
+	    ir->init_t,ir->nsteps);
+    write_tpx(opt2fn("-o",NFILE,fnm),
+	      0,ir->init_t,ir->init_lambda,ir,box,
+	      natoms,x,v,NULL,&top);
+  }
+  else
+    printf("You've simulated long enough. Not writing tpr file\n");
+	      
   thanx(stderr);
   
   return 0;
