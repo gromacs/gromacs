@@ -635,7 +635,7 @@ void low_do_autocorr(char *fn,char *title,
   real    dc,c0,sum,rnorm,fac;
  
   /* Check flags and parameters */ 
-  nout = get_acfnout();
+  /*  nout = get_acfnout();*/
   if (nout == -1)
     nout = acf.nout = (nframes+1)/2;
   else if (nout > nframes)
