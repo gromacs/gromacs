@@ -326,4 +326,3 @@ void comp_tpx(char *fn1,char *fn2)
   cmp_rvecs(stdout,"x",natoms,xx[0],xx[1]);
   cmp_rvecs(stdout,"v",natoms,vv[0],vv[1]);
 }
-
