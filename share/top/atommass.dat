@@ -19,6 +19,14 @@
 ; 'AAA' matches any protein residue name
 ; all hydrogen masses for proteins are added to the heavy atoms
 AAA H    0.0
+; set all dummy masses to zero: the masses are now in the atoms
+AAA MN1  0.0
+AAA MN2  0.0
+LYS MNZ1 0.0
+LYS MNZ2 0.0
+LYSH MNZ1 0.0
+LYSH MNZ2 0.0
+TYR MW   0.0
 ; This is for the N-terminus (H1 is summed into the N)
 AAA H2   1.008
 AAA H3   1.008
