@@ -595,8 +595,8 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
   ndum=0;
   for(i=0; i<atNR; i++) {
     mtot+=at->atom[ats[i]].m;
-    at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
     if (i!=atCG && i!=atCE1 && i!=atCE2 && (bDoHZ || i!=atHZ) ) {
+      at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
       (*dummy_type)[ats[i]]=F_DUMMY3;
       ndum++;
     }
