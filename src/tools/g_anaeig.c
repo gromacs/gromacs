@@ -68,22 +68,33 @@ static real tick_spacing(real range,int minticks)
   return sp;
 }
 
-static void write_xvgr_graphs(char *file,int ngraphs,
-			      char *title,char *xlabel,char **ylabel,
-			      int n,real *x, real **y,
-			      real scale_x,bool bZero, bool bSplit)
+static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
+			      char *title, char *subtitle,
+			      char *xlabel, char **ylabel,
+			      int n, real *x, real **y, real ***sy,
+			      real scale_x, bool bZero, bool bSplit)
 {
   FILE *out;
-  int g,i;
+  int g,s,i;
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
   for(g=0; g<ngraphs; g++) {
-    min=y[g][0];
-    max=y[g][0];
-    for(i=0; i<n; i++) {
-      if (y[g][i]<min) min=y[g][i];
-      if (y[g][i]>max) max=y[g][i];
+    if (y) {
+      min=y[g][0];
+      max=y[g][0];
+      for(i=0; i<n; i++) {
+	if (y[g][i]<min) min=y[g][i];
+	if (y[g][i]>max) max=y[g][i];
+      }
+    } else {
+      min=sy[g][0][0];
+      max=sy[g][0][0];
+      for(s=0; s<nsetspergraph; s++) 
+	for(i=0; i<n; i++) {
+	  if (sy[g][s][i]<min) min=sy[g][s][i];
+	  if (sy[g][s][i]>max) max=sy[g][s][i];
+	}
     }
     if (bZero)
       min=0;
@@ -94,8 +105,11 @@ static void write_xvgr_graphs(char *file,int ngraphs,
     ysp=tick_spacing(max-min,3);
     fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
     fprintf(out,"@ g%d autoscale type AUTO\n",g);
-    if (g==0)
+    if (g==0) {
       fprintf(out,"@ title \"%s\"\n",title);
+      if (subtitle)
+	fprintf(out,"@ subtitle \"%s\"\n",subtitle);
+    }
     if (g==ngraphs-1)
       fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
     else 
@@ -121,12 +135,14 @@ static void write_xvgr_graphs(char *file,int ngraphs,
       fprintf(out,"@ zeroxaxis bar on\n");
       fprintf(out,"@ zeroxaxis bar linestyle 3\n");
     }
-    for(i=0; i<n; i++) {
-      if ( bSplit && i>0 && abs(x[i])<1e-5 )
-	fprintf(out,"&\n");
-      fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y[g][i]);
+    for(s=0; s<nsetspergraph; s++) {
+      for(i=0; i<n; i++) {
+	if ( bSplit && i>0 && abs(x[i])<1e-5 )
+	  fprintf(out,"&\n");
+	fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y ? y[g][i] : sy[g][s][i]);
+      }
+      fprintf(out,"&\n");
     }
-    fprintf(out,"&\n");
   }
   fclose(out);
 }
@@ -411,8 +427,8 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
       ylabel[v]=strdup(str);
     }
     sprintf(str,"projection on eigenvectors (%s)",proj_unit);
-    write_xvgr_graphs(projfile, noutvec, str, xvgr_tlabel(),
-		      ylabel, nframes, inprod[noutvec], inprod,
+    write_xvgr_graphs(projfile, noutvec, 1, str, NULL, xvgr_tlabel(),
+		      ylabel, nframes, inprod[noutvec], inprod, NULL,
 		      time_factor(), FALSE, bSplit);
   }
   
@@ -557,15 +573,15 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
   fprintf(stderr,"\n");
 }
 
-static void components(char *outfile,int natoms,real *sqrtm,
+static void components(char *outfile,int natoms,
 		       int *eignr,rvec **eigvec,
 		       int noutvec,int *outvec)
 {
-  int g,v,i;
-  real *x,**y;
+  int g,s,v,i;
+  real *x,***y;
   char str[STRLEN],**ylabel;
 
-  fprintf(stderr,"Writing atom displacements to %s\n",outfile);
+  fprintf(stderr,"Writing eigenvector components to %s\n",outfile);
 
   snew(ylabel,noutvec);
   snew(y,noutvec);
@@ -576,12 +592,58 @@ static void components(char *outfile,int natoms,real *sqrtm,
     v=outvec[g];
     sprintf(str,"vec %d",eignr[v]+1);
     ylabel[g]=strdup(str);
+    snew(y[g],4);
+    for(s=0; s<4; s++) {
+      snew(y[g][s],natoms);
+    }
+    for(i=0; i<natoms; i++) {
+      y[g][0][i] = norm(eigvec[v][i]);
+      for(s=0; s<3; s++)
+	y[g][s+1][i] = eigvec[v][i][s];
+    }
+  }
+  write_xvgr_graphs(outfile,noutvec,4,"Eigenvector components",
+		    "black: total, red: x, green: y, blue: z",
+		    "Atom number",ylabel,
+		    natoms,x,NULL,y,1,FALSE,FALSE);
+  fprintf(stderr,"\n");
+}
+
+static void rmsf(char *outfile,int natoms,real *sqrtm,
+		 int *eignr,rvec **eigvec,
+		 int noutvec,int *outvec,
+		 char *EigFile)
+{
+  int  neig,nrow,g,v,i;
+  real **eigval,*x,**y;
+  char str[STRLEN],**ylabel;
+  
+  neig = read_xvg(EigFile,&eigval,&nrow);
+  fprintf(stderr,"Read %d eigenvalues\n",neig);
+  for(i=0; i<neig; i++)
+    if (eigval[1][i] < 0)
+      eigval[1][i] = 0;
+
+  fprintf(stderr,"Writing rmsf to %s\n",outfile);
+
+  snew(ylabel,noutvec);
+  snew(y,noutvec);
+  snew(x,natoms);
+  for(i=0; i<natoms; i++)
+    x[i]=i+1;
+  for(g=0; g<noutvec; g++) {
+    v=outvec[g];
+    if (eignr[v] >= neig)
+      fatal_error(0,"Selected vector %d is larger than the number of eigenvalues (%d)",eignr[v]+1,neig);
+    sprintf(str,"vec %d",eignr[v]+1);
+    ylabel[g]=strdup(str);
     snew(y[g],natoms);
     for(i=0; i<natoms; i++)
-      y[g][i] = norm(eigvec[v][i])/sqrtm[i];
+      y[g][i] = sqrt(eigval[1][eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
   }
-  write_xvgr_graphs(outfile,noutvec,"Atom displacements","Atom number",
-		    ylabel,natoms,x,y,1,TRUE,FALSE);
+  write_xvgr_graphs(outfile,noutvec,1,"RMS fluctuation (nm) ",NULL,
+		    "Atom number",ylabel,
+		    natoms,x,y,NULL,1,TRUE,FALSE);
   fprintf(stderr,"\n");
 }
 
@@ -599,9 +661,12 @@ int gmx_anaeig(int argc,char *argv[])
     "are performed on eigenvectors [TT]-first[tt] to [TT]-last[tt], but when",
     "[TT]-first[tt] is set to -1 you will be prompted for a selection.[PAR]",
     
-    "[TT]-disp[tt]: plot all atom displacements of eigenvectors",
+    "[TT]-comp[tt]: plot the vector components per atom of eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].[PAR]",
     
+    "[TT]-rmsf[tt]: plot the RMS fluctuation per atom of eigenvectors",
+    "[TT]-first[tt] to [TT]-last[tt] (requires [TT]-eig[tt]).[PAR]",
+
     "[TT]-proj[tt]: calculate projections of a trajectory on eigenvectors",
     "[TT]-first[tt] to [TT]-last[tt].",
     "The projections of a trajectory on the eigenvectors of its",
@@ -642,7 +707,7 @@ int gmx_anaeig(int argc,char *argv[])
     "of both files will be used unless [TT]-first[tt] and [TT]-last[tt]",
     "have been set explicitly.[PAR]",
     
-    "When [TT]-v[tt], [TT]-eig1[tt], [TT]-v2[tt] and [TT]-eig2[tt] are given,",
+    "When [TT]-v[tt], [TT]-eig[tt], [TT]-v2[tt] and [TT]-eig2[tt] are given,",
     "a single number for the overlap between the covariance matrices is",
     "generated. The formulas are:[BR]",
     "        difference = sqrt(tr((sqrt(M1) - sqrt(M2))^2))[BR]",
@@ -690,8 +755,8 @@ int gmx_anaeig(int argc,char *argv[])
   int        nout,*iout,noutvec,*outvec,nfit;
   atom_id    *index,*ifit;
   char       *Vec2File,*topfile;
-  char       *Eig1File,*Eig2File;
-  char       *CompFile,*ProjOnVecFile;
+  char       *EigFile,*Eig2File;
+  char       *CompFile,*RmsfFile,*ProjOnVecFile;
   char       *TwoDPlotFile,*ThreeDPlotFile;
   char       *FilterFile,*ExtremeFile;
   char       *OverlapFile,*InpMatFile;
@@ -704,9 +769,10 @@ int gmx_anaeig(int argc,char *argv[])
     { efTRX, "-f",    NULL,          ffOPTRD }, 
     { efTPS, NULL,    NULL,          ffOPTRD },
     { efNDX, NULL,    NULL,          ffOPTRD },
-    { efXVG, "-eig1", "eigenval1",   ffOPTRD },
+    { efXVG, "-eig", "eigenval",     ffOPTRD },
     { efXVG, "-eig2", "eigenval2",   ffOPTRD },
-    { efXVG, "-disp", "eigdisp",     ffOPTWR },
+    { efXVG, "-comp", "eigcomp",     ffOPTWR },
+    { efXVG, "-rmsf", "eigrmsf",     ffOPTWR },
     { efXVG, "-proj", "proj",        ffOPTWR },
     { efXVG, "-2d",   "2dproj",      ffOPTWR },
     { efSTO, "-3d",   "3dproj.pdb",  ffOPTWR },
@@ -725,9 +791,10 @@ int gmx_anaeig(int argc,char *argv[])
 
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
   topfile         = ftp2fn(efTPS,NFILE,fnm); 
-  Eig1File        = opt2fn_null("-eig1",NFILE,fnm);
+  EigFile         = opt2fn("-eig",NFILE,fnm);
   Eig2File        = opt2fn_null("-eig2",NFILE,fnm);
-  CompFile        = opt2fn_null("-disp",NFILE,fnm);
+  CompFile        = opt2fn_null("-comp",NFILE,fnm);
+  RmsfFile        = opt2fn_null("-rmsf",NFILE,fnm);
   ProjOnVecFile   = opt2fn_null("-proj",NFILE,fnm);
   TwoDPlotFile    = opt2fn_null("-2d",NFILE,fnm);
   ThreeDPlotFile  = opt2fn_null("-3d",NFILE,fnm);
@@ -740,16 +807,16 @@ int gmx_anaeig(int argc,char *argv[])
     || FilterFile || ExtremeFile;
   bFirstLastSet  = 
     opt2parg_bSet("-first",NPA,pa) && opt2parg_bSet("-last",NPA,pa);
-  bFirstToLast = CompFile || ProjOnVecFile || FilterFile || OverlapFile || 
-    ((ExtremeFile || InpMatFile) && bFirstLastSet);
+  bFirstToLast = CompFile || RmsfFile || ProjOnVecFile || FilterFile ||
+    OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
   bVec2  = Vec2File || OverlapFile || InpMatFile;
-  bM     = CompFile || bProj;
+  bM     = RmsfFile || bProj;
   bTraj  = ProjOnVecFile || FilterFile || (ExtremeFile && (max==0))
     || TwoDPlotFile || ThreeDPlotFile;
   bIndex = bM || bProj;
   bTPS   = ftp2bSet(efTPS,NFILE,fnm) || bM || bTraj ||
     FilterFile  || (bIndex && indexfile);
-  bCompare = Vec2File && Eig1File && Eig2File;
+  bCompare = Vec2File && Eig2File;
   bPDB3D = fn2ftp(ThreeDPlotFile)==efPDB;
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
@@ -908,8 +975,11 @@ int gmx_anaeig(int argc,char *argv[])
   fprintf(stderr,"\n");
   
   if (CompFile)
-    components(CompFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec);
-  
+    components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec);
+
+  if (RmsfFile)
+    rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,EigFile);
+
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
 	    bTop ? &top : NULL,topbox,xtop,
@@ -928,7 +998,7 @@ int gmx_anaeig(int argc,char *argv[])
 		  bFirstLastSet,noutvec,outvec);
 
   if (bCompare)
-    compare(natoms,nvec1,eigvec1,nvec2,eigvec2,Eig1File,Eig2File);
+    compare(natoms,nvec1,eigvec1,nvec2,eigvec2,EigFile,Eig2File);
 
   if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare)
     fprintf(stderr,"\nIf you want some output,"
