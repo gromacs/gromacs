@@ -388,17 +388,14 @@ and computed according to the \swapindex{combination}{rule}s :
 \beq
 	C_{ij} = (C_{ii}C_{jj})^{\frac{1}{2}}
 \eeq
-It is also possible to use the combination rules based on the
-Lennard-Jones parameters $\epsilon$ and $\sigma$ with : 
+It is also possible to use the combination rules where the $\sigma$'s are
+averaged:
 \beq
  	\sigma_{ij} = \frac{1}{2}(\sigma_{ii}+\sigma_{jj})
 \eeq
 \beq
  	\epsilon_{ij}=\sqrt{\epsilon_{ii} \epsilon_{jj}}
 \eeq
-This is useful if you want to use for example the
-\normindex{OPLS}~\cite{Jorgensen88} force field.
-We note however, that is not yet possible to use this in {\gromacs} {\gmxver}.
 
 \subsection{Exclusions and 1-4 interaction}
 \label{subsec:excl}
@@ -830,8 +827,12 @@ Here follows the explanatory text.
 {\bf note:} when using the Buckingham potential no combination rule can
 be used, and a full interaction matrix must be provided under the 
 {\tt nonbond\_params} section.
-\item combination rule = 1 (based on Van der Waals) or 2 (based on
-$\sigma$ and $\epsilon$)
+\item combination rule = 
+1 (supply $C^{(6)}$ and $C^{(12)}$,
+$\sigma_{ij}=\sqrt{\sigma_i\sigma_j}$),
+2 (supply $\sigma$ and $\epsilon$,
+$\sigma_{ij}=\frac{1}{2}(\sigma_i+\sigma_j)$) or
+3 (supply $\sigma$ and $\epsilon$, $\sigma_{ij}=\sqrt{\sigma_i\sigma_j}$)
 \item generate pairs = no (get 1-4 interactions from pair list) or yes
 (generate 1-4 interactions from normal Lennard-Jones parameters using
 FudgeLJ and FudgeQQ)
