@@ -485,7 +485,6 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   char  buf[STRLEN];
   bool  bDouble;
   int   i,precision;
-  bool  bTerm;
  
   fio_select(fp);
   fio_setdebug(fp,bDebugMode());
@@ -493,22 +492,19 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   /* NEW! XDR tpb file */
   if (bRead) {
     do_string(buf);
-    bTerm=FALSE;
-    for (i=0; (i<STRLEN); i++)
-      bTerm=(bTerm || (buf[i]=='\0'));
-    if (!bTerm)
-      fatal_error(0,"Unsupported Version: expected %s, "
-		  "found VERSION before 2.0\n",GromacsVersion());
+    if (strncmp(buf,"VERSION",7) != 0)
+      fatal_error(0,"Unsupported version,\n%s was generated "
+		  "with a GROMACS version before 2.0\n", fio_getname(fp));
     do_int(precision);
     bDouble = (precision == sizeof(double));
     fio_setprecision(fp,bDouble);
-    
+    /*
     if (strcmp(buf,GromacsVersion()) != 0)
       fprintf(stderr,"Version mismatch: expected %s, found %s\n",
 	      GromacsVersion(),buf);
-    else 
-      fprintf(stderr,"Reading file %s, %s (%s precision)\n",
-	      fio_getname(fp),buf,bDouble ? "double" : "single");
+	      */
+    fprintf(stderr,"Reading file %s, %s (%s precision)\n",
+	    fio_getname(fp),buf,bDouble ? "double" : "single");
   }
   else {
     do_string(GromacsVersion());
@@ -520,8 +516,8 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx)
   }
   
   do_int (file_version);
-  if (file_version < tpx_version)
-    fprintf(stderr,"Reading tpx file version %d with %d code. "
+  if (file_version != tpx_version)
+    fprintf(stderr,"Reading tpx file version %d with version %d code. "
 	    "Some options may not work\n",file_version,tpx_version);
     
   do_section(eitemHEADER,bRead);
