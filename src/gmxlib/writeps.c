@@ -119,9 +119,43 @@ void ps_rgb(FILE *ps,t_rgb *rgb)
   ps_color(ps,rgb->r,rgb->g,rgb->b);
 }
 
+static real gen_ybox=0;
+
+void ps_init_rgb_nbox(FILE *ps,real xbox, real ybox)
+{
+  gen_ybox=ybox;
+  fprintf(ps,"/by {def currentpoint "
+	  "%g y r %g %g r %g y neg r %g %g r f y add moveto} bind def\n",
+	  0,xbox,0,0,-xbox,0);
+  /* macro bn is used in ps_rgb_nbox to draw rectangular boxes */
+}
+
+void ps_rgb_nbox(FILE *ps,t_rgb *rgb,real n)
+{
+  int i;
+  
+  if ( n>2 ) {
+    ps_rgb(ps,rgb);
+    fprintf(ps,"/y %g by\n",n*gen_ybox);
+    /* macro by is defined in ps_init_rgb_nbox */
+  } else
+    for (i=0; (i<n); i++)
+      ps_rgb_box(ps, rgb);
+  
+}
+
+void ps_init_rgb_box(FILE *ps,real xbox, real ybox)
+{
+  fprintf(ps,"/b {currentpoint "
+	  "%g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
+	  0,ybox,xbox,0,0,-ybox,-xbox,0,ybox);
+  /* macro b is used in search_col to define macro B */
+}
+
 void ps_rgb_box(FILE *ps,t_rgb *rgb)
 {
   fprintf(ps,"B%d\n",search_col(ps,rgb->r,rgb->g,rgb->b));
+  /* macro B is defined in search_col from macro b */
 }
 
 void ps_lineto(FILE *ps,real x,real y)
