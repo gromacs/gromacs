@@ -69,7 +69,7 @@ char *ptype_str[eptNR+1] = {
 
 char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
-  "PME", "PPPM", "Poisson", "Switch", "Shift", "User", NULL
+  "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", NULL
 };
 
 char *evdw_names[evdwNR+1] = {
