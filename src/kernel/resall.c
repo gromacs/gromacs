@@ -390,7 +390,7 @@ void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
   /* print all the ebtsNR type numbers */
   fprintf(out,"[ bondedtypes ]\n");
   fprintf(out,"; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
-  fprintf(out," %5d  %6d  %9d  %9d  %14d  %14d\n\n",bts[0],bts[1],bts[2],bts[3],bAlldih,nrexcl,HH14,bRemoveDih);
+  fprintf(out," %5d  %6d  %9d  %9d  %14d  %14d %14d %14d\n\n",bts[0],bts[1],bts[2],bts[3],bAlldih,nrexcl,HH14,bRemoveDih);
 
   for(i=0; i<nrtp; i++) {
     if (rtp[i].natom > 0) {
