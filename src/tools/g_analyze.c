@@ -44,6 +44,9 @@ static char *SRCID_g_analyze_c = "$Id$";
 #include "gstat.h"
 #include "xvgr.h"
 
+/* must correspond to char *avbar_opt[] declared in main() */
+enum { avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR };
+
 static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 		       int nsets_in,int *nset,int *nval,real *t0,real *dt,
 		       int linelen)
@@ -253,22 +256,19 @@ static int real_comp(const void *a,const void *b)
     return 0;
 }
 
-static void average(char *avfile,char **avbar_opt,
+static void average(char *avfile,int avbar_opt,
 		    int n, int nset,real **val,real t0,real dt)
 {
   FILE   *fp;
   int    i,s,edge=0;
   double av,var,err;
   real   *tmp=NULL;
-  char   c;
   
-  c = avbar_opt[0][0];
-
   fp = ffopen(avfile,"w");
-  if ((c == 'e') && (nset == 1))
-    c = 'n';
-  if (c != 'n') {
-    if (c == '9') {
+  if ((avbar_opt == avbarERROR) && (nset == 1))
+    avbar_opt = avbarNONE;
+  if (avbar_opt != avbarNONE) {
+    if (avbar_opt == avbar90) {
       snew(tmp,nset);
       fprintf(fp,"@TYPE xydydy\n");
       edge = (int)(nset*0.05+0.5);
@@ -285,8 +285,8 @@ static void average(char *avfile,char **avbar_opt,
     av /= nset;
     fprintf(fp," %g %g",t0+dt*i,av);
     var = 0;
-    if (c != 'n') {
-      if (c == '9') {
+    if (avbar_opt != avbarNONE) {
+      if (avbar_opt == avbar90) {
 	for(s=0; s<nset; s++)
 	  tmp[s] = val[s][i];
 	qsort(tmp,nset,sizeof(tmp[0]),real_comp);
@@ -294,7 +294,7 @@ static void average(char *avfile,char **avbar_opt,
       } else {
 	for(s=0; s<nset; s++)
 	  var += sqr(val[s][i]-av);
-	if (c == 's')
+	if (avbar_opt == avbarSTDDEV)
 	  err = sqrt(var/nset);
 	else
 	  err = sqrt(var/(nset*(nset-1)));
@@ -305,7 +305,7 @@ static void average(char *avfile,char **avbar_opt,
   }
   fclose(fp);
   
-  if (c == '9')
+  if (avbar_opt == avbar90)
     sfree(tmp);
 }
 static real anal_ee_inf(real *parm,real T)
@@ -519,7 +519,10 @@ int main(int argc,char *argv[])
   static bool bEeFitAc=FALSE;
   static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
 
-  static char *avbar_opt[] = { NULL, "none", "stddev", "error", "90", NULL };
+  /* must correspond to enum avbar* declared at beginning of file */
+  static char *avbar_opt[avbarNR+1] = { 
+    NULL, "none", "stddev", "error", "90", NULL
+  };
 
   t_pargs pa[] = {
     { "-linelen", FALSE, etINT, {&linelen},
@@ -640,7 +643,7 @@ int main(int argc,char *argv[])
 
   if (msdfile) {
     out=xvgropen(msdfile,"Mean square displacement",
-		 "time (ps)","MSD (nm\\S2\\N)");
+		 "time","MSD (nm\\S2\\N)");
     nlast = (int)(n*frac);
     for(s=0; s<nset; s++) {
       for(t=0; t<=nlast; t++) {
@@ -669,7 +672,7 @@ int main(int argc,char *argv[])
     do_view(distfile, NULL);
   }
   if (avfile) {
-    average(avfile,avbar_opt,n,nset,val,t0,dt);
+    average(avfile,nenum(avbar_opt),n,nset,val,t0,dt);
     do_view(avfile, NULL);
   }
   if (eefile) {
