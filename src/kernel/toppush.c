@@ -381,24 +381,12 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  const char *formlf[MAXFORCEPARAM] = {
-    "%lf",
-    "%lf%lf",
-    "%lf%lf%lf",
-    "%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-  };
+  const char *formlf = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
   int      i,ft,ftype,nn,nrfp;
   char     f1[STRLEN];
   char     alc[MAXATOMLIST+1][20];
-  double   c[MAXFORCEPARAM];
+  /* One force parameter more, so we can check if we read too many */
+  double   c[MAXFORCEPARAM+1];
   t_param  p;
   char  errbuf[256];
 
@@ -414,9 +402,15 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
   strcpy(f1,formnl[nral]);
-  strcat(f1,formlf[nrfp-1]);
-  if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11])) 
+  strcat(f1,formlf);
+  if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11],&c[12])) 
       != nrfp) {
+    if (nn < interaction_function[ftype].nrfpA) {
+      warning_error("Not enough parameters");
+    } else if (nn > interaction_function[ftype].nrfpA && nn < nrfp) {
+      warning_error("Too many parameters or not enough parameters for topology B");
+    } else if (nn > nrfp)
+      warning_error("Too many parameters");
     for( ; (nn<nrfp); nn++)
       c[nn] = 0.0;
   }
@@ -684,7 +678,7 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   int 		nr,ptype;
   int 		resnumber,cgnumber,atomnr,type,typeB,nscan;
   char 		id[STRLEN],ctype[STRLEN],ctypeB[STRLEN],
-       		resname[STRLEN],name[STRLEN];
+       		resname[STRLEN],name[STRLEN],check[STRLEN];
   double        m,q,mb,qb;
   real          m0,q0,mB,qB;
 
@@ -709,8 +703,8 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   mB    = m0;
   
   /* Optional parameters */
-  nscan=sscanf(line,"%*s%*s%*s%*s%*s%*s%lf%lf%s%lf%lf",
-	       &q,&m,ctypeB,&qb,&mb);
+  nscan=sscanf(line,"%*s%*s%*s%*s%*s%*s%lf%lf%s%lf%lf%s",
+	       &q,&m,ctypeB,&qb,&mb,check);
   
   /* Nasty switch that falls thru all the way down! */
   if (nscan > 0) {
@@ -723,8 +717,11 @@ void push_atom(t_symtab *symtab,t_block *cgs,
 	mB = atype->atom[typeB].m;
 	if (nscan > 3) {
 	  qB = qb;
-	  if (nscan > 4)
+	  if (nscan > 4) {
 	    mB = mb;
+	    if (nscan > 5)
+	      warning_error("Too many parameters");
+	  }
 	}
       }
     }
@@ -933,24 +930,11 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s",
     "%*s%*s%*s%*s%*s%*s"
   };
-  const char *ccformat[MAXFORCEPARAM+1]= {
-    "",
-    "%lf",
-    "%lf%lf",
-    "%lf%lf%lf",
-    "%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-    "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
-  };
+  const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
   int      nr,i,j,nrfp,nrfpA,nral,nread,ftype;
   char     format[STRLEN];
-  double   cc[MAXFORCEPARAM];
+  /* One force parameter more, so we can check if we read too many */
+  double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB;
   bool     bFoundA,bFoundB,bDef,bPert,bSwapParity=FALSE;
@@ -1028,10 +1012,10 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   nrfp  = NRFP(ftype);
   if (nread > nral) {  
     strcpy(format,asformat[nral-1]);
-    strcat(format,ccformat[nrfp]);
+    strcat(format,ccformat);
     
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
-		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11]);
+		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11],&cc[12]);
 
     if (nread > nrfp) {
       warning_error("Too many parameters");
