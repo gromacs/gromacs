@@ -201,9 +201,6 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
 	nspec++;
       }
     }
-    srenew(specp,nspec);
-    srenew(sgp,nspec);
-    
     /* distance matrix d[nspec][nspec] */
     snew(d,nspec);
     for(i=0; (i<nspec); i++)
@@ -242,7 +239,7 @@ int mk_specbonds(t_atoms *pdba,rvec x[],bool bInteractive,
     }
     i=j=0;
     
-    snew(bonds,nspec/2);
+    snew(bonds,nspec);
   
     for(i=0; (i<nspec); i++) {
       ai = sgp[i];
