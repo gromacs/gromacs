@@ -154,9 +154,11 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 {
   atoms->nr=natoms;
   atoms->nres=0;
+  atoms->ngrpname=0;
   snew(atoms->atomname,natoms);
   snew(atoms->resname,natoms);
   snew(atoms->atom,natoms);
+  snew(atoms->grpname,natoms);
   if (bPdbinfo)
     snew(atoms->pdbinfo,natoms);
   else

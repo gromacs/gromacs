@@ -47,8 +47,8 @@ static char *pdbtp[epdbNR]={
   "COMPND", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
 };
 
-static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
-static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n";
+static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f";
+static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f";
 static bool bTER=FALSE;
 #define REMARK_SIM_BOX "REMARK    THIS IS A SIMULATION BOX"
 
@@ -79,7 +79,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
 			   bool bEndmodel,
 			   atom_id nindex, atom_id index[])
 {
-  char resnm[6],nm[6],ch,*pdbform;
+  char resnm[6],nm[6],ch,pdbform[128];
   atom_id i,ii;
   int  resnr,type;
   real occup,bfac;
@@ -132,11 +132,17 @@ void write_pdbfile_indexed(FILE *out,char *title,
       bfac=0.0;
     }
     if (strlen(nm)==4)
-      pdbform=pdbformat4;
+      strcpy(pdbform,pdbformat4);
     else
-      pdbform=pdbformat;
+      strcpy(pdbform,pdbformat);
+      
+    if (fabs(100*bfac - gmx_nint(100*bfac)) > 1e-2)
+      strcat(pdbform,"%7.3f\n");
+    else
+      strcat(pdbform,"%6.2f\n");
+      
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
-    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
   }
   
   fprintf(out,"TER\n");

@@ -968,11 +968,16 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
 		   rvec x[],rvec *v, matrix box)
 {
   FILE       *in;
+  char       buf[256];
   t_topology *top;
   t_trxframe fr;
-  int        ftp,natoms,i1;
+  int        i,ftp,natoms,i1;
   real       d,r1,r2;
 
+  if (atoms->atom == NULL) {
+    sprintf(buf,"Uninitialized array atom in %s, %d",__FILE__,__LINE__);
+    fatal_error(0,buf);
+  }
   ftp=fn2ftp(infile);
   switch (ftp) {
   case efGRO:
@@ -999,9 +1004,45 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efTPB:
   case efTPA: 
     snew(top,1);
-    read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
+    read_tpx(infile,&i1,&r1,&r2,NULL,box,i1,x,v,NULL,top);
+    
     strcpy(title,*(top->name));
-    *atoms=top->atoms;
+    /* Scalars */
+    atoms->nr       = top->atoms.nr;
+    atoms->nres     = top->atoms.nres;
+    atoms->ngrpname = top->atoms.ngrpname;
+    
+    /* Arrays */
+    if (!atoms->atom)
+      snew(atoms->atom,atoms->nr);
+    if (!atoms->atomname)
+      snew(atoms->atomname,atoms->nr);
+    for(i=0; (i<atoms->nr); i++) {
+      atoms->atom[i]     = top->atoms.atom[i];
+      atoms->atomname[i] = top->atoms.atomname[i];
+    }
+    
+    if (!atoms->resname)
+      snew(atoms->resname,atoms->nres);
+    for(i=0; (i<atoms->nres); i++) 
+      atoms->resname[i] = top->atoms.resname[i];
+    
+    if (!atoms->grpname)
+      snew(atoms->grpname,atoms->ngrpname);
+    for(i=0; (i<atoms->ngrpname); i++) 
+      atoms->grpname[i] = top->atoms.grpname[i];
+      
+    for(i=0; (i<egcNR); i++) {
+      atoms->grps[i].nr = top->atoms.grps[i].nr;
+      if (atoms->grps[i].nr > 0) {
+	snew(atoms->grps[i].nm_ind,atoms->grps[i].nr);
+	memcpy(atoms->grps[i].nm_ind,top->atoms.grps[i].nm_ind,
+	       atoms->grps[i].nr*sizeof(atoms->grps[i].nm_ind[0]));
+      }
+    }
+      
+    /* Ignore exclusions */
+    
     break;
   default:
     fatal_error(0,"Not supported in read_stx_conf: %s",infile);
