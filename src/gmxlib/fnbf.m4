@@ -121,6 +121,7 @@ define(`LJC_ARGS',`SCAL(fr->ntype),mdatoms->typeA,fr->nbfp,egnb')
 define(`BHAM_ARGS',`LJC_ARGS')
 define(`FEP_ARGS',`mdatoms->chargeB,mdatoms->typeB,SCAL(lambda),dvdlambda')
 define(`RF_ARGS',`SCAL(fr->k_rf)')
+define(`EWALD_ARGS',`SCAL(fr->ewaldcoeff)')
 define(`TAB_ARGS',`SCAL(fr->tabscale),fr->VFtab')
 define(`BHTAB_ARGS',`SCAL(fr->tabscale_exp)')
 ifdef(`USEVECTOR',`define(`ALL_ARGS',`fbuf,SCAL(nlist->nri),nlist->iinr,nlist->`shift',nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,SCAL(fr->epsfac),mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]')',`define(`ALL_ARGS',`SCAL(nlist->nri),nlist->iinr,nlist->`shift',nlist->gid,nlist->jindex,nlist->jjnr,x[0],fshift,SCAL(fr->epsfac),mdatoms->chargeA,f[0],egcoul,fr->shift_vec[0]')')
@@ -129,13 +130,22 @@ ifdef(`USEVECTOR',`define(`ALL_ARGS',`fbuf,SCAL(nlist->nri),nlist->iinr,nlist->`
       case eNR_LJC:
 	FUNC(ljc)(LJC_ARGS,ALL_ARGS);
 	break;
+      case eNR_LJC_EW:
+        FUNC(ljcewald)(LJC_ARGS,EWALD_ARGS,ALL_ARGS);
+        break;
       case eNR_QQ:
 	FUNC(coul)(ALL_ARGS);
 	break;
+      case eNR_QQ_EW:
+        FUNC(coulewald)(EWALD_ARGS,ALL_ARGS);
+        break;
       case eNR_BHAM:
 	FUNC(bham)(BHAM_ARGS,ALL_ARGS);
 	break;
-      case eNR_LJCRF:
+      case eNR_BHAM_EW:
+        FUNC(bhamewald)(BHAM_ARGS,EWALD_ARGS,ALL_ARGS);
+        break;
+       case eNR_LJCRF:
 	FUNC(ljcrf)(LJC_ARGS,RF_ARGS,ALL_ARGS);
 	break;
       case eNR_QQRF:
@@ -153,15 +163,24 @@ ifdef(`USEVECTOR',`define(`ALL_ARGS',`fbuf,SCAL(nlist->nri),nlist->iinr,nlist->`
       case eNR_LJC_WAT:
 	FUNC(ljcwater)(LJC_ARGS,ALL_ARGS);
 	break;
+      case eNR_LJC_WAT_EW:
+        FUNC(ljcwaterewald)(LJC_ARGS,EWALD_ARGS,ALL_ARGS);
+        break;
       case eNR_BHAMTAB:
 	FUNC(bhamtab)(BHAM_ARGS,TAB_ARGS,BHTAB_ARGS,ALL_ARGS);
 	break;
       case eNR_QQ_WAT:
 	FUNC(coulwater)(ALL_ARGS);
 	break;
+      case eNR_QQ_WAT_EW:
+        FUNC(coulwaterewald)(EWALD_ARGS,ALL_ARGS);
+        break;
       case eNR_BHAM_WAT:
 	FUNC(bhamwater)(BHAM_ARGS,ALL_ARGS);
 	break;
+      case eNR_BHAM_WAT_EW:
+        FUNC(bhamwaterewald)(BHAM_ARGS,EWALD_ARGS,ALL_ARGS);
+        break;
       case eNR_LJCRF_WAT: 
 	FUNC(ljcrfwater)(LJC_ARGS,RF_ARGS,ALL_ARGS);
 	break;
