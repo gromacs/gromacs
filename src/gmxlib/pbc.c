@@ -532,23 +532,37 @@ void put_atoms_in_box(matrix box,int natoms,rvec x[])
 
 void put_atoms_in_triclinic_unitcell(matrix box,int natoms,rvec x[])
 {
-  rvec   box_center;
-  matrix shift_mat;
-  real   shift;
+  rvec   box_center,shift_center;
+  real   shm01,shm02,shm12,shift;
   int    i,m,d;
   
   calc_box_center(box,box_center);
+  
+  /* The product of matrix shm with a coordinate gives the shift vector
+     which is required determine the periodic cell position */
+  shm01 = box[1][0]/box[1][1];
+  shm02 = (box[1][1]*box[2][0] - box[2][1]*box[1][0])/(box[1][1]*box[2][2]);
+  shm12 = box[2][1]/box[2][2];
 
-  for(m=DIM-1; m>=0; m--)
-    for(d=m+1; d<DIM; d++)
-      shift_mat[d][m] = box[d][m]/box[d][d];
+  clear_rvec(shift_center);
+  for(d=0; d<DIM; d++)
+    rvec_inc(shift_center,box[d]);
+  svmul(0.5,shift_center,shift_center);
+  rvec_sub(box_center,shift_center,shift_center);
+
+  shift_center[0] = shm01*shift_center[1] + shm02*shift_center[2];
+  shift_center[1] = shm12*shift_center[2];
+  shift_center[2] = 0;
 
   for(i=0; (i<natoms); i++)
     for(m=DIM-1; m>=0; m--) {
-      shift=0;
-      for(d=m+1; d<DIM; d++)
-	shift += (x[i][d]-box_center[d])*shift_mat[d][m];
-      while (x[i][m]-shift < 0) 
+      shift = shift_center[m];
+      if (m == 0) {
+	shift += shm01*x[i][1] + shm02*x[i][2];
+      } else if (m == 1) {
+	shift += shm12*x[i][2];
+      }
+      while (x[i][m]-shift < 0)
 	for(d=0; d<=m; d++)
 	  x[i][d] += box[m][d];
       while (x[i][m]-shift >= box[m][m])
