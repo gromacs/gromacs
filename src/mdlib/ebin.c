@@ -104,18 +104,10 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
     /* Value for this component */
     e      = ener[i];
     
-    /* Get old values from previous step */
-    sum    = eg[i].esum;
-    sigma  = eg[i].eav;
-    
-    /* First update sigma, then the sum */
-    sigma += sqr(sum - m*e)*invmm;
-    sum   += e;
-    
-    /* Store new values */
+    /* first update sigma, then sum */
     eg[i].e    = e;
-    eg[i].esum = sum;
-    eg[i].eav  = sigma;
+    eg[i].eav  += sqr(eg[i].esum - m*e)*invmm;;
+    eg[i].esum += e;
   }
 }
 
