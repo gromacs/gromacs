@@ -428,7 +428,12 @@ int gmx_disre(int argc,char *argv[])
 
   check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
 
-  g   = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);  
+  if (ir.ePBC == epbcFULL) {
+    set_gmx_full_pbc();
+    g = NULL;
+  }
+  else
+    g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);  
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
@@ -484,8 +489,11 @@ int gmx_disre(int argc,char *argv[])
   init_nrnb(&nrnb);
   j=0;
   do {
-    rm_pbc(&top.idef,natoms,box,x,x);
-
+    if (ir.ePBC == epbcXYZ)
+      rm_pbc(&top.idef,natoms,box,x,x);
+    else
+      init_pbc(box);
+    
     check_viol(stdlog,cr,
 	       &(top.idef.il[F_DISRES]),
 	       top.idef.iparams,top.idef.functype,
