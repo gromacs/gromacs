@@ -27,6 +27,7 @@
  * GRowing Old MAkes el Chrono Sweat
  */
 static char *SRCID_bondlist_c = "$Id$";
+#include "cdist.h"
 
 typedef struct list {
   char *residue;

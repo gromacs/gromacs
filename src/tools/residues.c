@@ -28,6 +28,8 @@
  */
 static char *SRCID_residues_c = "$Id$";
 
+#include "cdist.h"
+
 /**********************************************************
  *
  *     A R G A N I N E

@@ -110,4 +110,3 @@ extern void check_dist(FILE *log,t_correct *c);
 extern void check_final(FILE *log,t_correct *c,rvec x[]);
 /* Check structure for distances */
 
-#endif
