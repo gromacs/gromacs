@@ -62,6 +62,9 @@ gromacs.dvi:	bib+idx		gromacs.aux
 gromacs.ps:	gromacs.dvi
 		dvips -M -o $@ $^
 
+letter.ps:	gromacs.dvi
+		dvips -M -t Letter -O 0cm,-1cm -o $@ $^
+
 %.aux:		%.tex
 
 prog:		mdp_opt.tex proglist.tex
