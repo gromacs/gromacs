@@ -294,7 +294,7 @@ int main(int argc,char *argv[])
   rvec         *xmem,*vmem;
   rvec         *xp,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
-  int          m,i,d,frame,outframe,natoms=0,nout,ncent,nre,step;
+  int          m,i,d,frame,outframe,natoms=0,nout,ncent,nre,newstep=0;
 #define SKIP 10
   t_topology   top;
   t_atoms      *atoms=NULL,useatoms;
@@ -531,8 +531,14 @@ int main(int argc,char *argv[])
       bDTset   = FALSE;
     
       do {
-	/* generate new box */
+	if (!fr.bStep) {
+	  /* set the step */
+	  newstep++;
+	  fr.step = newstep;
+	}
+	  
 	if (bSetBox) {
+	  /* generate new box */
 	  clear_mat(fr.box);
 	  for (m=0; m<DIM; m++)
 	    fr.box[m][m] = newbox[m];
