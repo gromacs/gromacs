@@ -34,11 +34,15 @@ EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:
-	if test `echo @LIBSUFFIX@|grep _mpi`; then \
-	  mpi="libgmx@LIBSUFFIX@"; nompi=`echo $(mpi)|sed ,_mpi,,`; \
-	  (cd $(libdir) && test -e $(mpi).a -a ! -e $(nompi).a && $(LN_S) $(mpi).a $(nompi).a); \
-	  (cd $(libdir) && test -e $(mpi).so -a ! -e $(nompi).so && $(LN_S) $(mpi).so $(nompi).so); \
-	fi
+	libname="libmd@LIBSUFFIX@"; nompi="`echo $$libname | sed -e 's,_mpi,,'`";
+	if test `echo $$libname|grep _mpi`; then \
+	(cd $(libdir) && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a); \
+	  (cd $(libdir) && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so);\
+	fi;
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*
+
+
+
+
