@@ -40,10 +40,11 @@ static char *SRCID_g_mdmat_c = "$Id$";
 #include "futil.h"
 #include "fatal.h"
 #include "smalloc.h"
-#include "pbc.h"
 #include "matio.h"
 #include "xvgr.h"
 #include "rdgroup.h"
+#include "tpxio.h"
+#include "rmpbc.h"
 
 #define FARAWAY 10000
 
@@ -82,25 +83,12 @@ int *res_natm(t_atoms *atoms)
   return natm;
 }
 
-static void pr_mat(FILE *out,int it,int nres,real **mat,real truncate)
-{
-  int   i,j;
-  
-  for(i=0; (i<nres); i++) {
-    for(j=0; (j<nres); j++) {
-      fprintf(out,"%8.2f  ",min(truncate,mat[i][j]));
-    }
-    fprintf(out,"\n");
-  }
-}
-
 static void calc_mat(int nres, int natoms, int rndx[],
 		     rvec x[], atom_id *index,
-		     real trunc, matrix box, real **mdmat,int **nmat)
+		     real trunc, real **mdmat,int **nmat)
 {
   int i,j,resi,resj;
   real trunc2,r,r2;
-  rvec dx;
   
   trunc2=sqr(trunc);
   for(resi=0; (resi<nres); resi++)
@@ -110,8 +98,7 @@ static void calc_mat(int nres, int natoms, int rndx[],
     resi=rndx[i];
     for(j=i+1; (j<natoms); j++) {
       resj=rndx[j];
-      pbc_dx(x[index[i]],x[index[j]],dx);
-      r2=iprod(dx,dx);
+      r2=distance2(x[index[i]],x[index[j]]);
       if ( r2 < trunc2 ) {
 	nmat[resi][j]++;
 	nmat[resj][i]++;
@@ -161,20 +148,18 @@ int main(int argc,char *argv[])
   };
   static real truncate=1.5,dt=0.0;
   static bool bAtom=FALSE;
-  static int  r0=1,nlevels=20;
+  static int  nlevels=40;
   t_pargs pa[] = { 
     { "-t",   FALSE, etREAL, &truncate,
       "trunc distance" },
     { "-nlevels",   FALSE, etINT,  &nlevels,
       "Discretize distance in # levels" },
     { "-dt",  FALSE, etREAL, &dt,
-      "Time interval between frames from the trajectory" },
-    { "-r0",  FALSE, etINT,  &r0,
-      "Starting resnr for output" }
+      "Only analyze a frame each dt picoseconds" }
   };
   t_filenm   fnm[] = {
     { efTRX, "-f",  NULL, ffREAD },
-    { efTPX, NULL,  NULL, ffREAD },
+    { efTPS, NULL,  NULL, ffREAD },
     { efNDX, NULL,  NULL, ffOPTRD },
     { efXPM, "-mean", "dm", ffWRITE },
     { efXPM, "-frames", "dmf", ffOPTWR },
@@ -183,18 +168,18 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   FILE       *out=NULL,*fp;
-  t_topology *top;
+  t_topology top;
   t_atoms    useatoms;
   int        isize;
   atom_id    *index;
   char       *grpname;
   int        *rndx,*natm;
   
-  int        i,j,status,nres,natoms,nframes,it,teller,dumnat;
+  int        i,j,status,nres,natoms,nframes,it,teller,trxnat;
   int        nr0;
   bool       bCalcN,bFrames;
   real       t,t0,ratio;
-  char       label[234];
+  char       title[256],label[234];
   t_rgb      rlo,rhi;
   rvec       *x;
   real       **mdmat,*resnr,**totmdmat;
@@ -215,20 +200,20 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Will calculate number of different contacts\n");
   fprintf(stderr,"Time interval between frames is %g ps\n",dt);
     
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
   
   fprintf(stderr,"Select group for analysis\n");
-  get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
+  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   
-  natoms=isize; /* top->atoms.nr; */
+  natoms=isize;
   snew(useatoms.atom,natoms);
   snew(useatoms.atomname,natoms);
     
   useatoms.nres=0;
-  useatoms.resname=top->atoms.resname;
+  useatoms.resname=top.atoms.resname;
   for(i=0;(i<isize);i++) {
-    useatoms.atomname[i]=top->atoms.atomname[index[i]];
-    useatoms.atom[i].resnr=top->atoms.atom[index[i]].resnr;
+    useatoms.atomname[i]=top.atoms.atomname[index[i]];
+    useatoms.atom[i].resnr=top.atoms.atom[index[i]].resnr;
     useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
   }
   useatoms.nr=isize;
@@ -248,27 +233,28 @@ int main(int argc,char *argv[])
     snew(mdmat[i],nres);
     snew(nmat[i],natoms);
     snew(totnmat[i],natoms);
-    resnr[i]=r0+i;
+    resnr[i]=i+1;
   }
   snew(totmdmat,nres);
   for(i=0; (i<nres); i++)
     snew(totmdmat[i],nres);
   
-  dumnat=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
-  init_pbc(box,FALSE);
+  trxnat=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   teller=0;
   nframes=0;
   
-  rlo.r=0.0, rlo.g=0.0, rlo.b=0.0;
-  rhi.r=1.0, rhi.g=1.0, rhi.b=1.0;
+  rlo.r=1.0, rlo.g=1.0, rlo.b=1.0;
+  rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
-  t0=0;
+  t0=t;
   do {
+    teller++;
+    rm_pbc(&top.idef,trxnat,box,x,x);
     if (t >= t0) {
       nframes++;
-      calc_mat(nres,natoms,rndx,x,index,truncate,box,mdmat,nmat);
+      calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat);
       for (i=0; (i<nres); i++)
 	for (j=0; (j<natoms); j++)
 	  if (nmat[i][j]) 
@@ -283,7 +269,7 @@ int main(int argc,char *argv[])
       }
       t0+=dt;
     }
-  } while (read_next_x(status,&t,dumnat,x,box));
+  } while (read_next_x(status,&t,trxnat,x,box));
   fprintf(stderr,"\n");
   close_trj(status);
   if (bFrames)
@@ -323,7 +309,6 @@ int main(int argc,char *argv[])
     }
     fclose(fp);
   }
-  fclose(out);
     
   thanx(stdout);
     
