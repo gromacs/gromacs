@@ -50,24 +50,26 @@ typedef struct {
 typedef struct {
   int         maxnit,nbcheck,nstprint,nstranlist,ngrow;
   bool        bExplicit,bChiral,bPep,bDump,bLowerOnly,bRanlistFirst;
+  bool        bCubic,bBox,bCenter;
   real        lodev;
-  int         maxdist,ndist;
+  int         maxdist,ndist,npep,nimp;
   int         *ip,*tag;
   t_dist      *d;
-  int         npep,nimp;
   t_quadruple *pepbond,*imp;
-  real        *omega,*idih;
+  real        *omega,*idih,*weight;
   bool        *bViol;
 } t_correct;
 
 extern t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
 			    int ngrow,bool bExplicit,bool bChiral,bool bPep,
 			    bool bDump,real lowdev,bool bLowerOnly,
-			    bool bRanlistFirst);
+			    bool bRanlistFirst,bool bCubic,bool bBox,bool bCenter);
 /* Initiate the data structure and set some of the parameters */
 
-extern void make_tags(t_correct *c,int natom);
-/* Make tags (indices) for optimizationof shaking */
+extern void init_corr2(t_correct *c,int natom);
+/* Make tags (indices) for optimization of shaking and 
+ * initiate a number of other arrays.
+ */
 
 extern bool shake_coords(FILE *log,bool bVerbose,int nstruct,
 			 int natom,rvec xref[],rvec x[],int *seed,
@@ -86,11 +88,11 @@ extern void define_peptide_bonds(FILE *log,t_atoms *atoms,t_correct *c);
 extern void define_impropers(FILE *log,t_atoms *atoms,t_correct *c);
 /* Fill the improper structure */
 
-extern void define_dist(FILE *log,t_topology *top,t_correct *c,real weight[]);
-/* Fill the normal distance restraints */
-
-extern void read_dist(FILE *log,char *fn,int natom,t_correct *c,real weight[]);
+extern void read_dist(FILE *log,char *fn,int natom,t_correct *c);
 /* Read distances from a dist.dat file produced by cdist */
+
+extern void pr_conv_stat(FILE *fp,int ntry,int nconv,double tnit);
+/* Statistics */
 
 extern void pr_corr(FILE *log,t_correct *c);
 /* Print parameters from the corr structure */
@@ -101,13 +103,30 @@ extern void pr_distances(FILE *fp,t_correct *c);
 extern void center_in_box(int natom,rvec xin[],matrix box,rvec xout[]);
 /* Center the coordinates in the box. xin and xout may be the same array */
 
-extern void measure_dist(FILE *log,int natom,rvec x[],t_correct *c,
-			 real weight[],real cutoff);
-/* Measure the distances from the structure */
-
 extern void check_dist(FILE *log,t_correct *c);
 /* Check internal consistency of the distances */
 
 extern void check_final(FILE *log,t_correct *c,rvec x[]);
 /* Check structure for distances */
+
+extern void rand_coords(int natom,rvec x[],rvec xref[],real weight[],
+			bool bCenter,rvec xcenter[],rvec box,int *seed);
+/* Generate random coordinates */
+
+extern void rand_box(bool bUserBox,
+		     matrix box,rvec boxsize,int nres,bool bCubic,int *seed);
+/* Generate random box */
+
+extern void disco_slave(t_commrec *cr,FILE *log);
+/* Slave process for parallel disco */
+
+extern void disco_master(t_commrec *cr,FILE *log,char *outfn,char *keepfn,t_correct *c,
+			 bool bVerbose,t_atoms *atoms,
+			 rvec xref[],rvec xcenter[],
+			 int nstruct,int *seed,
+			 bool bFit,int nfit,atom_id fit_ind[],
+			 bool bPrintViol,char *violfn,rvec boxsize);
+/* Master process for parallel disco */
+
+
 

@@ -47,7 +47,7 @@ bool newres(int i,t_atom atom[])
 t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
 		     int ngrow,bool bExplicit,bool bChiral,bool bPep,
 		     bool bDump,real lowdev,bool bLowerOnly,
-		     bool bRanlistFirst)
+		     bool bRanlistFirst,bool bCubic,bool bBox,bool bCenter)
 {
   t_correct *c;
   
@@ -66,6 +66,9 @@ t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
   c->ngrow         = ngrow;
   c->bLowerOnly    = bLowerOnly;
   c->bRanlistFirst = bRanlistFirst;
+  c->bCubic        = bCubic;
+  c->bBox          = bBox;
+  c->bCenter       = bCenter;
 
   if (bRanlistFirst) {
     if (nstranlist != 0) {
@@ -77,7 +80,7 @@ t_correct *init_corr(int maxnit,int nstprint,int nbcheck,int nstranlist,
   return c;
 }
 
-void make_tags(t_correct *c,int natom)
+void init_corr2(t_correct *c,int natom)
 {
   int i,n,ai;
   
@@ -85,13 +88,24 @@ void make_tags(t_correct *c,int natom)
     fatal_error(0,"Can not make tags without distances. %s, %d",
 		__FILE__,__LINE__);
 		
-  /* First sort the distances */
+  /* Initiate the ip index */
+  snew(c->ip,c->ndist);
+
+  /* Init boolean array */
+  snew(c->bViol,natom);
+  
+  /* Initiate omega array */
+  snew(c->omega,c->npep);
+
+  /* Initiate improper array */
+  srenew(c->idih,c->nimp+1);
   
   /* Now make the tags */
   snew(c->tag,natom+1);
   ai = c->d[0].ai;
   n  = 0;
   for(i=0; (i<c->ndist); i++) {
+    c->ip[i] = i;
     if (c->d[i].ai != ai) {
       /* New tag starts here, but skip over possible missing atoms */
       while ((n < natom) && (n<c->d[i].ai)) {
@@ -123,7 +137,7 @@ void center_in_box(int natom,rvec xin[],matrix box,rvec xout[])
   int  i,m;
   rvec xcm,dx;
   
-  /* Dump the optimization trajectory to an xtc file */
+  /* Dump the optimization trajectory to an xtc file  */
   /* Put the whole thing in the center of the box 1st */
   clear_rvec(xcm);
   for(i=0; (i<natom); i++) {
@@ -150,7 +164,6 @@ void define_peptide_bonds(FILE *log,t_atoms *atoms,t_correct *c)
 
   npep  = 0;
   snew(c->pepbond,nlist);
-  snew(c->omega,nlist);
   for(i=0; (i<nlist); i++) {
     if (has_dihedral(edOmega,&dlist[i])) {
       c->pepbond[npep].ai = dlist[i].atm.minC;
@@ -224,7 +237,6 @@ void define_impropers(FILE *log,t_atoms *atoms,t_correct *c)
 	  aa[l] = find_atom(atoms,i,j,id[k].aa[l]);
 	if ((aa[0] != -1) && (aa[1] != -1) && (aa[2] != -1) && (aa[3] != -1)) {
 	  srenew(c->imp,nimp+1);
-	  srenew(c->idih,nimp+1);
 	  c->imp[nimp].ai = aa[0];
 	  c->imp[nimp].aj = aa[1];
 	  c->imp[nimp].ak = aa[2];
@@ -287,7 +299,6 @@ void add_dist(t_correct *c,int ai,int aj,real lb,real ideal,real ub,real w[])
     if (n == c->maxdist) {
       c->maxdist += 100;
       srenew(c->d,c->maxdist);
-      srenew(c->ip,c->maxdist);
     }
     c->d[n].ai = ai;
     c->d[n].aj = aj;
@@ -300,62 +311,11 @@ void add_dist(t_correct *c,int ai,int aj,real lb,real ideal,real ub,real w[])
     c->d[n].lb = lb;
     c->d[n].ub = ub;
     c->d[n].wi = w[ai]/(w[ai]+w[aj]);
-    c->ip[n] = n;
     c->ndist++;
   }
 }
 
-void define_dist(FILE *log,t_topology *top,t_correct *c,real weight[])
-{ 
-  int  i,k,nra,ndist;
-  int  ai,aj,tp,ftype;
-  real lb=0,ub=0,b0;
-  
-  c->ndist = 0;
-  c->d     = NULL;
-  c->ip    = NULL;
-  snew(c->bViol,top->atoms.nr);
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if ((interaction_function[ftype].flags & IF_BOND) ||
-	(ftype == F_DISRES)) {
-      nra   = interaction_function[ftype].nratoms+1;
-      
-      ndist = top->idef.il[ftype].nr/nra;
-  
-      for(i=k=0; (i<ndist); i++,k+=nra) {
-	tp = top->idef.il[ftype].iatoms[k];
-	ai = top->idef.il[ftype].iatoms[k+1];
-	aj = top->idef.il[ftype].iatoms[k+2];
-	b0 = 0;
-	switch (ftype) {
-	case F_DISRES:
-	  lb = top->idef.iparams[tp].disres.low;
-	  ub = top->idef.iparams[tp].disres.up1;
-	  break;
-	case F_SHAKE:
-	  b0 = top->idef.iparams[tp].shake.dA;
-	  break;
-	case F_BONDS:
-	case F_G96BONDS:
-	  b0 = top->idef.iparams[tp].harmonic.rA;
-	  break;
-	case F_MORSE:
-	  b0 = top->idef.iparams[tp].morse.b0;
-	  break;
-	}
-	if (b0 != 0.0) {
-	  lb = b0*0.98;
-	  ub = b0*1.02;
-	}
-	/* CHECK THIS! */
-	b0 = (lb + ub)*0.5;
-	add_dist(c,ai,aj,lb,b0,ub,weight);
-      }
-    }
-  }
-}
-
-void read_dist(FILE *log,char *fn,int natom,t_correct *c,real weight[])
+void read_dist(FILE *log,char *fn,int natom,t_correct *c)
 {
   FILE   *fp;
   char   buf[256];
@@ -366,8 +326,6 @@ void read_dist(FILE *log,char *fn,int natom,t_correct *c,real weight[])
   for(i=0; (i<edcNR); i++)
     nnn[i] = 0;
     
-  snew(c->bViol,natom);
-  
   fp = ffopen(fn,"r");
   while (fgets(buf,255,fp)) {
     nline ++;
@@ -375,7 +333,7 @@ void read_dist(FILE *log,char *fn,int natom,t_correct *c,real weight[])
       if (sscanf(buf,"%d%d%lf%lf%lf",&ai,&aj,&ideal,&lb,&ub) != 5)
 	fprintf(stderr,"Error in %s, line %d\n",fn,nline);
       else {
-	add_dist(c,ai-1,aj-1,lb*0.1,ideal*0.1,ub*0.1,weight);
+	add_dist(c,ai-1,aj-1,lb*0.1,ideal*0.1,ub*0.1,c->weight);
 	nnn[c->d[c->ndist-1].cons_type]++;
       }
     }
@@ -427,24 +385,6 @@ void pr_corr(FILE *log,t_correct *c)
   fprintf(log,"nimp       = %d\n",c->nimp);
   fprintf(log,"lowdev     = %g\n",c->lodev);
   fflush(log);
-}
-
-void measure_dist(FILE *log,int natom,rvec x[],t_correct *c,real weight[],
-		  real cutoff)
-{
-  int    ai,aj;
-  rvec   dx;
-  real   ideal;
-  
-  snew(c->bViol,natom);
-
-  for(ai=0; (ai<natom); ai++)
-    for(aj=ai+1; (aj<natom); aj++) {
-      rvec_sub(x[ai],x[aj],dx);
-      ideal = 10.0*norm(dx);
-      if ((ideal < cutoff)  || (cutoff == 0))
-	add_dist(c,ai,aj,ideal*0.98,ideal,ideal*1.02,weight);
-    }
 }
 
 void check_dist(FILE *log,t_correct *c)
