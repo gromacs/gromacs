@@ -565,8 +565,8 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 	fprintf(log,"\n");
       }
       if (md->nTC > 1) {
-	pr_ebin(log,md->ebin,md->itc,2*md->nTC,4,mode,steps,TRUE);
-      fprintf(log,"\n");
+	pr_ebin(log,md->ebin,md->itemp,md->nTC,4,mode,steps,TRUE);
+	fprintf(log,"\n");
       }
       if (md->nU > 1) {
 	fprintf(log,"%15s   %12s   %12s   %12s\n",
