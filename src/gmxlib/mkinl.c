@@ -1053,19 +1053,19 @@ void finnerloop(char *loopname)
     if (bRF) {
       comment("Reaction field stuff");
       p_state("krsqO","krf*rsqO");
-      p_state("vcO","qqO*(rinv1O-krsqO)");
+      p_state("vcO","qqO*(rinv1O+krsqO)");
       nflop += 3;
       if (bLJC) {
 	p_state("fsO",
-		"(twelve*vnb12-six*vnb6+qqO*(rinv1O+two*krsqO))*rinv2O");
+		"(twelve*vnb12-six*vnb6+qqO*(rinv1O-two*krsqO))*rinv2O");
 	nflop += 8;
       }
       else if (bBHAM) {
-	p_state("fsO","(br*vnbexp-six*vnb6+qqO*(rinv1O+two*krsqO))*rinv2O");
+	p_state("fsO","(br*vnbexp-six*vnb6+qqO*(rinv1O-two*krsqO))*rinv2O");
 	nflop += 8;
       }
       else {
-	p_state("fsO","qqO*(rinv1O+two*krsqO)*rinv2O");
+	p_state("fsO","qqO*(rinv1O-two*krsqO)*rinv2O");
 	nflop += 4;
       }
     }
@@ -1169,8 +1169,8 @@ void finnerloop(char *loopname)
       if (bRF) {
 	comment("Reaction field");
 	p_state("krsqH1","krf*rsqH1");
-	p_state("vcH1","qqH*(rinv1H1-krsqH1)");
-	p_state("fsH1","qqH*(rinv1H1+two*krsqH1)*rinv2H1");
+	p_state("vcH1","qqH*(rinv1H1+krsqH1)");
+	p_state("fsH1","qqH*(rinv1H1-two*krsqH1)*rinv2H1");
 	nflop += 7;
       }
       else {
@@ -1224,8 +1224,8 @@ void finnerloop(char *loopname)
       if (bRF) {
 	comment("Reaction field");
 	p_state("krsqH2","krf*rsqH2");
-	p_state("vcH2","qqH*(rinv1H2-krsqH2)");
-	p_state("fsH2","qqH*(rinv1H2+two*krsqH2)*rinv2H2");
+	p_state("vcH2","qqH*(rinv1H2+krsqH2)");
+	p_state("fsH2","qqH*(rinv1H2-two*krsqH2)*rinv2H2");
 	nflop += 7;
       }
       else {
