@@ -85,6 +85,7 @@ awk -F '|' -v mandir=$MANDIR '{\
     }\
   }\
 }' $PROGFILE >> $HTMLIDX
+echo "<p>" >> $HTMLIDX
 echo "<IMG SRC=gif/rainbow.gif WIDTH=100% HEIGHT=7>" >> $HTMLIDX
 echo "<p>" >> $HTMLIDX
 echo "</BODY>" >> $HTMLIDX
