@@ -396,7 +396,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
   EETYPE("disre-mixed", ir->bDisreMixed, yesno_names, nerror, TRUE);
   RTYPE ("disre-fc",	ir->dr_fc,	1000.0);
-  RTYPE ("disre-tau",	ir->dr_tau,	10.0);
+  RTYPE ("disre-tau",	ir->dr_tau,	0.0);
   CTYPE ("Output frequency for pair distances to energy file");
   ITYPE ("nstdisreout", ir->nstdisreout, 100);
   
