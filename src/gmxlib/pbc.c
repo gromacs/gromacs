@@ -213,7 +213,7 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 {
   int  icg,ai,k,k0,k1,m;
   real dx,dy,dz,cgx,cgy,cgz,nrcg,inv_ncg;
-  real bx,by,bz,hbx,hby,hbz,tx,ty,tz;
+  real bx,by,bz,tx,ty,tz;
   real binv_x,binv_y,binv_z;
   atom_id *cga,*cgindex;
   
@@ -225,9 +225,6 @@ void put_atoms_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
   bx      = box[XX][XX];
   by      = box[YY][YY];
   bz      = box[ZZ][ZZ];
-  hbx     = 0.5*bx;
-  hby     = 0.5*by;
-  hbz     = 0.5*bz;
   binv_x  = 1.0/bx;
   binv_y  = 1.0/by;
   binv_z  = 1.0/bz;
