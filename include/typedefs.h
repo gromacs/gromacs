@@ -76,7 +76,6 @@ extern void init_top (t_topology *top);
 extern void init_inputrec(t_inputrec *ir);
 extern void done_block(t_block *block);
 extern void done_atom (t_atoms *at);
-extern void done_symtab(t_symtab *symtab);
 extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
 

@@ -69,26 +69,6 @@ void done_atom (t_atoms *at)
   sfree(at->atomname);
 }
 
-void done_symtab(t_symtab *symtab)
-{
-  int i;
-  t_symbuf *symbuf,*freeptr;
-  
-  close_symtab(symtab);
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL) {
-    for (i=0; (i<symbuf->bufsize)&&(i<symtab->nr); i++)
-      sfree(symbuf->buf[i]);
-    symtab->nr-=i;
-    sfree(symbuf->buf);
-    freeptr=symbuf;
-    symbuf=symbuf->next;
-    sfree(freeptr);
-  }
-  symtab->symbuf=NULL;
-  assert(symtab->nr==0);
-}
-
 void done_top(t_topology *top)
 {
   int i;
