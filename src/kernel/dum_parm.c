@@ -65,7 +65,7 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
 }
 
 static void get_bondeds(int nrat, t_iatom atoms[], 
-			t_params plist[], t_atoms *at,
+			t_params plist[],
 			int *nrbond, t_mybonded **bonds,
 			int *nrang,  t_mybonded **angles,
 			int *nridih, t_mybonded **idihs )
@@ -214,8 +214,7 @@ static real get_angle(int nrang, t_mybonded angles[],
 static bool calc_dum3_param(t_atomtype *atype,
 			    t_param *param, t_atoms *at,
 			    int nrbond, t_mybonded *bonds,
-			    int nrang,  t_mybonded *angles,
-			    int nridih, t_mybonded *idihs )
+			    int nrang,  t_mybonded *angles )
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j
@@ -296,10 +295,9 @@ static bool calc_dum3_param(t_atomtype *atype,
   return bError;
 }
 
-static bool calc_dum3fd_param(t_param *param, t_atoms *at,
+static bool calc_dum3fd_param(t_param *param,
 			      int nrbond, t_mybonded *bonds,
-			      int nrang,  t_mybonded *angles,
-			      int nridih, t_mybonded *idihs )
+			      int nrang,  t_mybonded *angles)
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j
@@ -328,10 +326,9 @@ static bool calc_dum3fd_param(t_param *param, t_atoms *at,
   return bError;
 }
 
-static bool calc_dum3fad_param(t_param *param, t_atoms *at,
+static bool calc_dum3fad_param(t_param *param,
 			       int nrbond, t_mybonded *bonds,
-			       int nrang,  t_mybonded *angles,
-			       int nridih, t_mybonded *idihs )
+			       int nrang,  t_mybonded *angles)
 {
   /* i = dummy atom            |
    * j = 1st bonded heavy atom | i-j
@@ -363,8 +360,7 @@ static bool calc_dum3fad_param(t_param *param, t_atoms *at,
 static bool calc_dum3out_param(t_atomtype *atype,
 			       t_param *param, t_atoms *at,
 			       int nrbond, t_mybonded *bonds,
-			       int nrang,  t_mybonded *angles,
-			       int nridih, t_mybonded *idihs )
+			       int nrang,  t_mybonded *angles)
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j
@@ -461,10 +457,9 @@ static bool calc_dum3out_param(t_atomtype *atype,
   return bError;
 }
 
-static bool calc_dum4fd_param(t_param *param, t_atoms *at,
+static bool calc_dum4fd_param(t_param *param,
 			      int nrbond, t_mybonded *bonds,
-			      int nrang,  t_mybonded *angles,
-			      int nridih, t_mybonded *idihs )
+			      int nrang,  t_mybonded *angles)
 {
   /* i = dummy atom            |    ,k
    * j = 1st bonded heavy atom | i-j-m
@@ -554,7 +549,7 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	  idihs = NULL;
 	  nrset++;
 	  /* now set the dummy parameters: */
-	  get_bondeds(NRAL(ftype), plist[ftype].param[i].a, plist, atoms, 
+	  get_bondeds(NRAL(ftype), plist[ftype].param[i].a, plist, 
 		      &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
 	  if (debug) {
 	    fprintf(debug, "Found %d bonds, %d angles and %d idihs "
@@ -567,27 +562,27 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	  case F_DUMMY3: 
 	    bERROR = 
 	      calc_dum3_param(&atype, &(plist[ftype].param[i]), atoms,
-			      nrbond, bonds, nrang, angles, nridih, idihs);
+			      nrbond, bonds, nrang, angles);
 	    break;
 	  case F_DUMMY3FD:
 	    bERROR = 
-	      calc_dum3fd_param(&(plist[ftype].param[i]), atoms,
-				nrbond, bonds, nrang, angles, nridih, idihs);
+	      calc_dum3fd_param(&(plist[ftype].param[i]),
+				nrbond, bonds, nrang, angles);
 	    break;
 	  case F_DUMMY3FAD:
 	    bERROR = 
-	      calc_dum3fad_param(&(plist[ftype].param[i]), atoms,
-				 nrbond, bonds, nrang, angles, nridih, idihs);
+	      calc_dum3fad_param(&(plist[ftype].param[i]),
+				 nrbond, bonds, nrang, angles);
 	    break;
 	  case F_DUMMY3OUT:
 	    bERROR = 
 	      calc_dum3out_param(&atype, &(plist[ftype].param[i]), atoms,
-				 nrbond, bonds, nrang, angles, nridih, idihs);
+				 nrbond, bonds, nrang, angles);
 	    break;
 	  case F_DUMMY4FD:
 	    bERROR = 
-	      calc_dum4fd_param(&(plist[ftype].param[i]), atoms,
-				nrbond, bonds, nrang, angles, nridih, idihs);
+	      calc_dum4fd_param(&(plist[ftype].param[i]), 
+				nrbond, bonds, nrang, angles);
 	    break;
 	  default:
 	    fatal_error(0,"Automatic parameter generation not supported "
@@ -653,26 +648,174 @@ typedef struct {
   int ftype,parnr;
 } t_pindex;
 
-static void clean_dum_bonds(t_params *plist, int cftype, int dummy_type[])
+static void check_dum_constraints(t_params *plist, 
+				  int cftype, int dummy_type[])
 {
-  int i,j;
-  t_params *psb;
+  int      i,k,n;
+  atom_id  atom;
+  t_params *ps;
   
-  psb = &(plist[cftype]);
-  
-  /* remove bonds with dummy atoms */
-  for(i=j=0; (i<psb->nr); i++)
-    if ( (dummy_type[psb->param[i].AI]==NOTSET) && 
-	 (dummy_type[psb->param[i].AJ]==NOTSET) ) {
-      memcpy(&(psb->param[j]),&(psb->param[i]),(size_t)sizeof(psb->param[0]));
-      j++;
+  n=0;
+  ps = &(plist[cftype]);
+  for(i=0; (i<ps->nr); i++)
+    for(k=0; k<2; k++) {
+      atom = ps->param[i].a[k];
+      if (dummy_type[atom]!=NOTSET) {
+	fprintf(stderr,
+		"ERROR: Cannot have constraint (%u-%u) with dummy atom (%u)\n",
+		ps->param[i].AI+1, ps->param[i].AJ+1, atom+1);
+	n++;
+      }
     }
-  i=psb->nr-j;
-  psb->nr=j;
+  if (n)
+    fatal_error(0,"There were %d dummy atoms involved in constraints",n);
+}
+
+static void clean_dum_bonds(t_params *plist, t_pindex pindex[], 
+			    int cftype, int dummy_type[])
+{
+  int      ftype,i,j,parnr,k,l,m,n,ndum,nOut,kept_i,dumnral,dumtype;
+  atom_id  atom,oatom,constr,at1,at2;
+  atom_id  dumatoms[MAXATOMLIST];
+  bool     bKeep,bRemove,bUsed,bPresent,bThisFD,bThisOUT,bAllFD,bFirstTwo;
+  t_params *ps;
   
-  if (i>0)
+  ps = &(plist[cftype]);
+  dumnral=0;
+  kept_i=0;
+  nOut=0;
+  for(i=0; (i<ps->nr); i++) { /* for all bonds in the plist */
+    bKeep=FALSE;
+    bRemove=FALSE;
+    bAllFD=TRUE;
+    /* check if all dummies are constructed from the same atoms */
+    ndum=0;
+    if(debug) 
+      fprintf(debug,"constr %u %u:",ps->param[i].AI+1,ps->param[i].AJ+1);
+    for(k=0; (k<2) && !bKeep && !bRemove; k++) { 
+      /* for all atoms in the bond */
+      atom = ps->param[i].a[k];
+      if (dummy_type[atom]!=NOTSET) {
+	if(debug) {
+	  fprintf(debug," d%d[%d: %d %d %d]",k,atom+1,
+		  plist[pindex[atom].ftype].param[pindex[atom].parnr].AJ+1,
+		  plist[pindex[atom].ftype].param[pindex[atom].parnr].AK+1,
+		  plist[pindex[atom].ftype].param[pindex[atom].parnr].AL+1);
+	}
+	ndum++;
+	bThisFD = ( (pindex[atom].ftype == F_DUMMY3FD ) ||
+		    (pindex[atom].ftype == F_DUMMY3FAD) ||
+		    (pindex[atom].ftype == F_DUMMY4FD ) );
+	bThisOUT= ( (pindex[atom].ftype == F_DUMMY3OUT) &&
+		    (interaction_function[cftype].flags & IF_CONSTRAINT) );
+	bAllFD = bAllFD && bThisFD;
+	if (bThisFD || bThisOUT) {
+	  if(debug)fprintf(debug," %s",bThisOUT?"out":"fd");
+	  oatom = ps->param[i].a[1-k]; /* the other atom */
+	  if ( dummy_type[oatom]==NOTSET &&
+	       oatom==plist[pindex[atom].ftype].param[pindex[atom].parnr].AJ ){
+	    /* if the other atom isn't a dummy, and it is AI */
+	    bRemove=TRUE;
+	    if (bThisOUT)
+	      nOut++;
+	    if(debug)fprintf(debug," D-AI");
+	  }
+	}
+	if (!bRemove)
+	  if (ndum==1) {
+	    /* if this is the first dummy we encounter then
+	       store construction atoms */
+	    dumnral=NRAL(pindex[atom].ftype)-1;
+	    for(m=0; (m<dumnral); m++)
+	      dumatoms[m]=
+		plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+	  } else 
+	    /* if it is not the first then
+	       check if this dummy is constructed from the same atoms */
+	    if (dumnral == NRAL(pindex[atom].ftype)-1 )
+	      for(m=0; (m<dumnral) && !bKeep; m++) {
+		bPresent=FALSE;
+		constr=
+		  plist[pindex[atom].ftype].param[pindex[atom].parnr].a[m+1];
+		for(n=0; (n<dumnral) && !bPresent; n++)
+		  if (constr == dumatoms[n])
+		    bPresent=TRUE;
+		if (!bPresent) {
+		  bKeep=TRUE;
+		  if(debug)fprintf(debug," !present");
+		}
+	      }
+	    else {
+	      bKeep=TRUE;
+	      if(debug)fprintf(debug," !same#at");
+	    }
+      }
+    }
+    
+    if (bRemove) 
+      bKeep=FALSE;
+    else {
+      /* check if all non-dummy atoms are used in construction: */
+      bFirstTwo=TRUE;
+      for(k=0; (k<2) && !bKeep; k++) { /* for all atoms in the bond */
+	atom = ps->param[i].a[k];
+	if (dummy_type[atom]==NOTSET) {
+	  bUsed=FALSE;
+	  for(m=0; (m<dumnral) && !bUsed; m++)
+	    if (atom == dumatoms[m]) {
+	      bUsed=TRUE;
+	      bFirstTwo = bFirstTwo && m<2;
+	    }
+	  if (!bUsed) {
+	    bKeep=TRUE;
+	    if(debug)fprintf(debug," !used");
+	  }
+	}
+      }
+      
+      if ( ! ( bAllFD && bFirstTwo ) )
+	/* check if all constructing atoms are constrained together */
+	for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
+	  at1 = dumatoms[m];
+	  at2 = dumatoms[(m+1) % dumnral];
+	  bPresent=FALSE;
+	  for (ftype=0; ftype<F_NRE; ftype++)
+	    if ( interaction_function[ftype].flags & IF_CONSTRAINT )
+	      for (j=0; (j<plist[ftype].nr) && !bPresent; j++)
+		/* all constraints until one matches */
+		bPresent = ( ( (plist[ftype].param[j].AI == at1) &&
+			       (plist[ftype].param[j].AJ == at2) ) || 
+			     ( (plist[ftype].param[j].AI == at2) &&
+			       (plist[ftype].param[j].AJ == at1) ) );
+	  if (!bPresent) {
+	    bKeep=TRUE;
+	    if(debug)fprintf(debug," !bonded");
+	  }
+	}
+    }
+    
+    if ( bKeep ) {
+      if(debug)fprintf(debug," keeping");
+      /* now copy the bond to the new array */
+      memcpy(&(ps->param[kept_i]),
+	     &(ps->param[i]),(size_t)sizeof(ps->param[0]));
+      kept_i++;
+    }
+    if(debug)fprintf(debug,"\n");
+  }
+  
+  if (ps->nr != kept_i)
     fprintf(stderr,"Removed %4d %15ss with dummy atoms, %5d left\n",
-	    i, interaction_function[cftype].longname, psb->nr);
+	    ps->nr-kept_i, interaction_function[cftype].longname, kept_i);
+  if (nOut)
+    fprintf(stderr,"Warning: removed %d %ss with dummy with %s construction\n"
+	    "         This dummy construction does not guarantee constant "
+	    "bond-length\n"
+	    "         If the constructions were generated by pdb2gmx ignore "
+	    "this warning\n",
+	    nOut, interaction_function[cftype].longname, 
+	    interaction_function[F_DUMMY3OUT].longname );
+  ps->nr=kept_i;
 }
 
 static void clean_dum_angles(t_params *plist, t_pindex pindex[], 
@@ -743,15 +886,15 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
     }
     
     if ( ! ( bAll3FAD && bFirstTwo ) )
-      /* check if all constructing atoms are bound together */
+      /* check if all constructing atoms are constrained together */
       for (m=0; m<dumnral && !bKeep; m++) { /* all constr. atoms */
 	at1 = dumatoms[m];
 	at2 = dumatoms[(m+1) % dumnral];
 	bPresent=FALSE;
 	for (ftype=0; ftype<F_NRE; ftype++)
-	  if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
+	  if ( interaction_function[ftype].flags & IF_CONSTRAINT )
 	    for (j=0; (j<plist[ftype].nr) && !bPresent; j++)
-	      /* all bonds until one matches */
+	      /* all constraints until one matches */
 	      bPresent = ( ( (plist[ftype].param[j].AI == at1) &&
 			     (plist[ftype].param[j].AJ == at2) ) || 
 			   ( (plist[ftype].param[j].AI == at2) &&
@@ -857,7 +1000,7 @@ static void clean_dum_dihs(t_params *plist, t_pindex pindex[],
   ps->nr=kept_i;
 }
 
-void clean_dum_bad(t_params *plist, int natoms)
+void clean_dum_bondeds(t_params *plist, int natoms, bool bRmDumBds)
 {
   int i,k,ndum,ftype,parnr;
   int *dummy_type;
@@ -881,7 +1024,8 @@ void clean_dum_bad(t_params *plist, int natoms)
   
   /* the rest only if we have dummies: */
   if (ndum) {
-    /* make index into dummy entries of plist: */
+    fprintf(stderr,"Cleaning up constraints %swith dummy particles\n",
+	    bRmDumBds?"and constant bonded interactions ":"");
     snew(pindex,natoms);
     for(ftype=0; ftype<F_NRE; ftype++)
       if (interaction_function[ftype].flags & IF_DUMMY)
@@ -899,12 +1043,19 @@ void clean_dum_bad(t_params *plist, int natoms)
     
     /* remove things with dummy atoms */
     for(ftype=0; ftype<F_NRE; ftype++)
-      if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
-	clean_dum_bonds(plist, ftype, dummy_type);
-      else if (interaction_function[ftype].flags & IF_ATYPE)
-	clean_dum_angles(plist, pindex, ftype, dummy_type);
-      else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
-	clean_dum_dihs(plist, pindex, ftype, dummy_type);
+      if ( ( ( interaction_function[ftype].flags & IF_BOND ) && bRmDumBds ) ||
+	   ( interaction_function[ftype].flags & IF_CONSTRAINT ) )
+	if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT) )
+	  clean_dum_bonds (plist, pindex, ftype, dummy_type);
+	else if (interaction_function[ftype].flags & IF_ATYPE)
+	  clean_dum_angles(plist, pindex, ftype, dummy_type);
+	else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
+	  clean_dum_dihs  (plist, pindex, ftype, dummy_type);
+    /* check if we have constraints left with dummy atoms in them */
+    for(ftype=0; ftype<F_NRE; ftype++)
+      if (interaction_function[ftype].flags & IF_CONSTRAINT)
+	check_dum_constraints(plist, ftype, dummy_type);
+    
   }
   sfree(pindex);
   sfree(dummy_type);

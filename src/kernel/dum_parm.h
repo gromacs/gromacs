@@ -41,8 +41,8 @@ extern int set_dummies(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
 extern void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms);
 /* set ptype to Dummy for dummy atoms */
 
-extern void clean_dum_bad(t_params *ps, int natoms);
-/* remove all bonds, angles and (im)proper diherals that have become 
-   obsolete due to dummy constructions */
+extern void clean_dum_bondeds(t_params *ps, int natoms, bool bRmDumBds);
+/* remove all bonded interaction (bonds, angles and diherals) that
+   have become obsolete due to dummy atom constructions */
 
 #endif	/* _dum_parm_h */

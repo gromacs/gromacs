@@ -62,7 +62,7 @@ static char *SRCID_grompp_c = "$Id$";
 #include "dum_parm.h"
 #include "txtdump.h"
 
-void check_solvent(bool bVerbose,int nmol,t_molinfo msys[],
+void check_solvent(bool bVerbose,t_molinfo msys[],
 		   int Nsim,t_simsystem Sims[],t_inputrec *ir,char *SolventOpt)
 {
   int i,wmol,nwt;
@@ -271,7 +271,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
 		    plist,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
   
-  check_solvent(bVerbose,nrmols,molinfo,Nsim,Sims,ir,opts->SolventOpt);
+  check_solvent(bVerbose,molinfo,Nsim,Sims,ir,opts->SolventOpt);
   
   ntab = 0;
   tab  = NULL;
@@ -360,8 +360,6 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
 			t_inputrec *ir,int *natoms,
 			rvec **x,rvec **v,matrix box,
-			int *nre,
-			t_energy **e,
 			t_topology *sys)
      /* If fr_time == -1 read the last frame available which is complete */
 {
@@ -582,8 +580,7 @@ int main (int argc, char *argv[])
   t_molinfo    msys;
   t_atomtype   atype;
   t_inputrec   *ir;
-  t_energy     *e=NULL;
-  int          nre=0,natoms,ndum;
+  int          natoms,ndum;
   int          *forward=NULL;
   t_params     *plist;
   rvec         *x=NULL,*v=NULL;
@@ -606,7 +603,7 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bCleanDum=TRUE;
+  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE,bRmDumBds=TRUE;
   static int  nprocs=1,maxwarn=10;
   static real fr_time=-1;
   t_pargs pa[] = {
@@ -620,8 +617,8 @@ int main (int argc, char *argv[])
       "HIDDENRenumber atomtypes and minimize number of atomtypes" },
     { "-shuffle", FALSE, etBOOL, &bShuffle,
       "Shuffle molecules over processors (only with np > 1)" },
-    { "-cleandum",FALSE, etBOOL, &bCleanDum,
-      "Remove bonds to dummies" },
+    { "-rmdumbds",FALSE, etBOOL, &bRmDumBds,
+      "Remove bonded interactions involving dummy atoms" },
     { "-maxwarn", FALSE, etINT,  &maxwarn,
       "Number of warnings after which input processing stops" }
   };
@@ -690,7 +687,7 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
-
+  
   if (ir->eI == eiCG) {
     int nc;
     nc = count_constraints(msys.plist);
@@ -723,8 +720,9 @@ int main (int argc, char *argv[])
   /* set parameters for Dummy construction */
   ndum=set_dummies(bVerbose, &sys->atoms, atype, msys.plist);
   /* now throw away all obsolete bonds, angles and dihedrals: */
-  if (ndum && bCleanDum)
-    clean_dum_bad(msys.plist,sys->atoms.nr);
+  /* note: constraints are ALWAYS removed */
+  if (ndum)
+    clean_dum_bondeds(msys.plist,sys->atoms.nr,bRmDumBds);
   
   if (bRenum) 
     atype.nr=renum_atype(plist, sys, atype.nr, ir, bVerbose);
@@ -770,7 +768,7 @@ int main (int argc, char *argv[])
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");
     cont_status(ftp2fn(efTRN,NFILE,fnm),bNeedVel,bGenVel,fr_time,ir,&natoms,
-		&x,&v,box,&nre,&e,sys);
+		&x,&v,box,sys);
   }
   
   /* This is also necessary for setting the multinr arrays */
