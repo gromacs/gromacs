@@ -740,6 +740,10 @@ int main(int argc, char *argv[])
       /* set natom for previous chain */
       if (nchain > 0)
 	pdbchains[nchain-1].natom=i-pdbchains[nchain-1].start;
+      if (bWat) {
+	nwaterchain++;
+	pdba_all.atom[i].chain='\0';
+      }
       /* check if chain identifier was used before */
       for (j=0; (j<nchain); j++)
 	if ((pdbchains[j].chain != '\0') && (pdbchains[j].chain != ' ') &&
@@ -751,15 +755,13 @@ int main(int argc, char *argv[])
       pdbchains[nchain].chain=pdba_all.atom[i].chain;
       pdbchains[nchain].start=i;
       pdbchains[nchain].bAllWat=bWat;
-      if (bWat)
-	nwaterchain++;
       nchain++;
     }
     bPrevWat=bWat;
   }
   pdbchains[nchain-1].natom=natom-pdbchains[nchain-1].start;
-
-  /* set all the water blocks at the end off the chain */
+  
+  /* set all the water blocks at the end of the chain */
   snew(swap_index,nchain);
   j=0;
   for(i=0; i<nchain; i++)
@@ -828,9 +830,9 @@ int main(int argc, char *argv[])
 	  
   printf("\n  %5s  %4s %6s\n","chain","#res","#atoms");
   for (i=0; (i<nchain); i++)
-    printf("  %d '%c'  %4d %6d  %s\n",
-	   i+1,chains[i].chain,chains[i].pdba->nres,
-	   chains[i].pdba->nr,
+    printf("  %d '%c'%s  %4d %6d  %s\n",
+	   i+1, chains[i].chain, chains[i].chain?"":" ",
+	   chains[i].pdba->nres, chains[i].pdba->nr,
 	   chains[i].bAllWat ? "(only water)":"");
   printf("\n");
 
