@@ -806,6 +806,53 @@ the {\em stroboscopic effect}, called {\em aliasing}: higher frequencies
 are  mirrored with respect to the sampling frequency and appear as
 lower frequencies. 
 
+\section{Shell molecular dynamics}
+{\gromacs} can simulate \normindex{polarizability} using the {\em so-called}
+\normindex{shell model} of Dick and Overhauser~\cite{Dick58}. In such models
+a shell particle representing the electronic degrees of freedom is
+attached to a nucleus by a spring. The potential energy is minimized with
+respect to the shell position  at every step of the simulation (see below).
+Succesfull applications of shell models in {\gromacs} have been published
+for $N_2$~\cite{Jordan95} and water~\cite{Maaren2001a}.
+
+\subsection{Optimization of the shell positions}
+The force \ve{F}$_S$ on a shell particle $S$ can be decomposed into two
+components:
+\begin{equation}
+\ve{F}_S ~=~ \ve{F}_{bond} + \ve{F}_{nb}
+\end{equation}
+where \ve{F}$_{bond}$ denotes the component representing the
+polarization energy, usually represented by a harmonic potential and
+\ve{F}$_{nb}$ is the sum of Coulomb and Van der Waals interactions. If we
+assume that \ve{F}$_{nb}$ is almost constant we can analytically derive the
+optimal position of the shell, i.e. where \ve{F}$_S$ = 0. If we have the
+shell S connected to atom A we have
+\begin{equation}
+\ve{F}_{bond} ~=~ k_b \left( \ve{x}_S - \ve{x}_A\right)
+\end{equation}
+In an iterative solver, we have positions \ve{x}$_S(n)$ where $n$ is
+the iteration count. We now have it iteration $n$:
+\begin{equation}
+\ve{F}_{nb} ~=~ \ve{F}_S - k_b \left( \ve{x}_S(n) - \ve{x}_A\right)
+\end{equation}
+and the optimal position for the shells $x_S(n+1)$ thus follows from
+\begin{equation}
+\ve{F}_S - k_b \left( \ve{x}_S(n) - \ve{x}_A\right) + k_b \left( \ve{x}_S(n+1) - \ve{x}_A\right) = 0
+\end{equation}
+if we write
+\begin{equation}
+\Delta \ve{x}_S = \ve{x}_S(n+1) - \ve{x}_S(n)
+\end{equation}
+we finally obtain
+\begin{equation}
+\Delta \ve{x}_S = \ve{F}_S/k_b
+\end{equation}
+which then yields the algorithm to compute the next trial in the optimization
+of shell positions:
+\begin{equation}
+\ve{x}_S(n+1) ~=~ \ve{x}_S(n) + \ve{F}_S/k_b
+\end{equation}
+
 
 \section{\normindex{Constraint} algorithms}
 Constraints can be imposed in {\gromacs} using LINCS (default) or
