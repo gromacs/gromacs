@@ -542,8 +542,8 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   else
   */
   out=ps_open(outf,0,0,W+psr->xoffs+5*DDD,H+psr->yoffs+4*DDD);
-  ps_init_rgb_box(out,psr->yboxsize,psr->xboxsize);
-  ps_init_rgb_nbox(out,psr->yboxsize,psr->xboxsize);
+  ps_init_rgb_box(out,psr->xboxsize,psr->yboxsize);
+  ps_init_rgb_nbox(out,psr->xboxsize,psr->yboxsize);
   ps_translate(out,psr->xoffs,psr->yoffs);
     
   ps_comment(out,"Here starts the BOX drawing");  
