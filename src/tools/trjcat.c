@@ -99,10 +99,10 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime, real *timestep
     else {
       if (imax==NO_ATID) {
 	if(natoms!=fr.natoms) 
-	  fatal_error(0,"\nDifferent number of atoms (%d/%d)in files",
+	  fatal_error(0,"\nDifferent numbers of atoms (%d/%d) in files",
 		      natoms,fr.natoms);
       } else {
-	if(fr.natoms >= imax)
+	if(fr.natoms <= imax)
 	  fatal_error(0,"\nNot enough atoms (%d) for index group (%d)",
 		      fr.natoms,imax);
       }
@@ -304,7 +304,8 @@ int main(int argc,char *argv[])
     printf("Select group for output\n");
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
     /* scan index */
-    for(i=0; i<isize; i++)
+    imax=index[0];
+    for(i=1; i<isize; i++)
       imax = max(imax, index[i]);
   }
 
@@ -397,7 +398,7 @@ int main(int argc,char *argv[])
 	    frame_out++;
 	    last_ok_t=frout.time;
 	    if(bNewFile) {
-	      fprintf(stderr,"\nContinue writing frames from t=%g, frame=%d      \n",frout.time,frame);
+	      fprintf(stderr,"\nContinue writing frames from %s t=%g, frame=%d      \n",fnms[i],frout.time,frame);
 	      bNewFile=FALSE;
 	    }
 	    
