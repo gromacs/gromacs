@@ -312,7 +312,7 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
   int nx,ny,nz,la2,la12;
   t_fft_c *ptr,*p0;
   int i,j,k,maxkx,maxky,maxkz,n,ind;
-  real k1,z,k_max;
+  real k1,kxy2,kz2,k2,z,k_max;
   rvec lll,kk;
   
   calc_lll(box,lll);
@@ -331,10 +331,13 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real factor,
 	  continue;
 	z   = sqrt(sqr(p0->re)+sqr(p0->im));
 	calc_k(lll,i,j,k,nx,ny,nz,kk);
-	k1  = norm(kk);
-	ind = k1*factor;
+	kxy2 = sqr(kk[XX]) + sqr(kk[YY]);
+	k2   = kxy2+sqr(kk[ZZ]);
+	k1   = sqrt(k2);
+	ind  = k1*factor;
 	if (ind < nbin)
-	  count[ind] += z;
+	  /* Multiply intensity by sin(theta). Is this correct? */
+	  count[ind] += z*sqrt(kxy2/k2);
 	else
 	  fprintf(stderr,"k (%g) > k_max (%g)\n",k1,k_max);
       }
@@ -352,9 +355,9 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   char       *grpname;
   int        isize;
   atom_id    *index;
-  real       t,k_max,factor,yfactor;
+  real       I0,t,k_max,factor,yfactor,segvol;
   rvec       *x,*xndx,box_size,kk,lll;
-  real       *inv_segvol,*fj,max_spacing;
+  real       *fj,max_spacing,r;
   bool       *bExcl,bTop;
   matrix     box;
   int        nx,ny,nz,nelectron;
@@ -385,6 +388,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
 	
   /* Atomic scattering factors */
   snew(fj,isize);
+  I0 = 0;
   nelectron = 0;
   for(i=0; (i<isize); i++) {
     aname = *(top.atoms.atomname[index[i]]);
@@ -413,6 +417,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
       fj[i] = 1;
     }
     nelectron += fj[i];
+    I0 += sqr(fj[i]);
   }
 
   nx = ny = nz = 0;
@@ -465,10 +470,13 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
 
   /* Normalize it ?? */  
   factor  = k_max*grid/(nbin);
-  yfactor = nelectron*(1.0/nframes)*(1.0/fftgrid->nxyz);
+  yfactor = (1.0/nframes);
   fp=xvgropen(fnSQ,"Structure Factor","q (/nm)","S(q)");
-  for(i=0; i<nbin; i++)
-    fprintf(fp,"%10g %10g\n", (i+0.5)*factor,count[i]*yfactor);
+  for(i=0; i<nbin; i++) {
+    r = (i+0.5)*factor;
+    segvol = sqr(r)*factor;
+    fprintf(fp,"%10g %10g\n",r,I0+count[i]*yfactor/segvol);
+  }
   ffclose(fp);
   
   do_view(fnSQ,NULL);
