@@ -70,6 +70,9 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
     CALLF77(fillbuf)();
 #endif
 #endif
+#ifdef C_INVSQRT
+    init_lookup_table(log);
+#endif
     bFirst=FALSE;
   }
   
