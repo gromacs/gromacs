@@ -161,7 +161,7 @@ real crsqal(real acut,real r1,real k1,real k2,real k3,
     ksq   = k1*k1 + k2*k2 + k3*k3;
     kmag  = sqrt(ksq);
     tmp   = shat(acut,kmag,r1);
-    Rsqal = tmp*tmp/ksq;
+    Rsqal = tmp*tmp/(ksq);
   }
   else {
     Rsqal = 0.0;
@@ -231,7 +231,7 @@ real  ursum(int term,int porder,real acut,real r1,
 	    real k1,real k2,real k3,real h1,real h2,real h3,int nalias)
 {
   real kt,ksq,kmag;
-/*   real kcutsq; */
+  /*   real kcutsq; */
   real kn1,kn2,kn3,urs,tmp;
   real h_1,h_2,h_3;
   int  n1,n2,n3;
@@ -253,13 +253,13 @@ real  ursum(int term,int porder,real acut,real r1,
   */
 
   if (nalias==0) {
-    if (term==1) kt = k1;
-    if (term==2) kt = k2;
-    if (term==3) kt = k3;
+    if (term==XX) kt = k1;
+    if (term==YY) kt = k2;
+    if (term==ZZ) kt = k3;
     ksq = k1*k1 + k2*k2 + k3*k3;
     kmag = sqrt(ksq);
     tmp = uhat(porder,k1,k2,k3,h1,h2,h3);
-    urs = tmp*tmp*kt*shat(acut,kmag,r1)/ksq;
+    urs = tmp*tmp*kt*shat(acut,kmag,r1)/(ksq);
   }
   else {
     urs = 0.0;
@@ -270,7 +270,7 @@ real  ursum(int term,int porder,real acut,real r1,
 	  kn2 = k2 + n2*h_2;
 	  kn3 = k3 + n3*h_3;
 	  ksq = kn1*kn1 + kn2*kn2 + kn3*kn3;
-	  /*c              if (ksq.lt.kcutsq) then*/
+
 	  if (term==XX) kt = kn1;
 	  if (term==YY) kt = kn2;
 	  if (term==ZZ) kt = kn3;
@@ -278,9 +278,8 @@ real  ursum(int term,int porder,real acut,real r1,
 	    kmag = sqrt(ksq);
 	    tmp = uhat(porder,kn1,kn2,kn3,h1,h2,h3);
 	    if (tmp != 0.0)
-	      urs = urs + tmp*tmp*kt*shat(acut,kmag,r1)/(EPSILON0*ksq);
+	      urs = urs + tmp*tmp*kt*shat(acut,kmag,r1)/ksq;
 	  }
-	  /*c              endif*/
 	}
       }
     }
@@ -315,7 +314,7 @@ real  ursum1D(int term,int porder,real acut,real r1,real k1,real h1,int nalias)
     ksq = k1*k1;
     kmag = sqrt(ksq);
     tmp = uhat1D(porder,k1,h1);
-    urs = tmp*tmp*kt*shat(acut,kmag,r1)/ksq;
+    urs = tmp*tmp*kt*shat(acut,kmag,r1)/(EPSILON0*ksq);
   }
   else {
     urs = 0.0;
@@ -401,7 +400,7 @@ void calc(bool bSym,bool bVerbose,
 	  k3   = twopi*l3/box3;
 	  ksq  = k1*k1 + k2*k2 + k3*k3;
 	  kmag = sqrt(ksq);
-
+	  
 	  d3   = dhat(alpha,k3,h3);
 	  u1   = ursum(XX,porder,acut,r1,k1,k2,k3,h1,h2,h3,nalias);
 	  u2   = ursum(YY,porder,acut,r1,k1,k2,k3,h1,h2,h3,nalias);
@@ -417,8 +416,12 @@ void calc(bool bSym,bool bVerbose,
 	  
 	  rsqal  = crsqal(acut,r1,k1,k2,k3,h1,h2,h3,nalias);
 
-	  if (gdenom != 0)	  
-	    qopt  += symfac*(rsqal - (gnumer*gnumer)/gdenom);
+	  if (gdenom != 0)
+	    qopt  += (symfac*(rsqal - sqr(gnumer)/gdenom));
+	  if (debug)
+	    fprintf(debug,"rsqal: %10.3e, gnumer: %10.3e, gdenom: %10.3e, ratio: %10.3e\n",
+		    rsqal,gnumer,gdenom,gnumer/gdenom);
+	
 #ifdef DEBUG
 	  if ((l1 == n1max/2) || (l2 == n2max/2) || (l3 == n3max/2))
 	    printf("L(%2d,%2d,%2d)  D(%10.3e,%10.3e,%10.3e) U(%10.3e,%10.3e,%10.3e) gnumer=%10.3em dsq=%10.3e, gdenom=%10.3e, ghat=%10.3e\n",
@@ -430,7 +433,7 @@ void calc(bool bSym,bool bVerbose,
 	      gg = gnumer/gdenom;
 	    else
 	      gg = 0.0;
-	    ghat[l1][l2][l3] = gg;
+	    ghat[l1][l2][l3] = gg/EPSILON0;
 	    gsq = gg*gg;
 
 	    ufrth = cufrth(porder,k1,k2,k3,h1,h2,h3,nalias);
@@ -623,8 +626,8 @@ int main(int argc,char *argv[])
 	 nalias,porder,acut,r1,alpha3,bSearch,
 	 ghat,&pval,&zval,&eref,&q3);
 	 
-    if ( (q1 > q0) || (q1 > q3) ) 
-      fatal_error(0,"oops q1=%f,q0=%f,q3=%f",q1,q0,q3);
+    /* if ( (q1 > q0) || (q1 > q3) ) 
+      fatal_error(0,"oops q1=%f,q0=%f,q3=%f",q1,q0,q3); */
     alpha2 = alpha1 + gold*(alpha3-alpha1);
     calc(bSym,bVerbose,n1max,n2max,n3max,h1,h2,h3,
 	 nalias,porder,acut,r1,alpha2,bSearch,
