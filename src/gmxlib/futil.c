@@ -208,7 +208,7 @@ bool eof(FILE *fp)
 char *backup_fn(char *file)
 {
 #define COUNTMAX 1024
-  int         i,count=0;
+  int         i,count=1;
   char        *directory,*fn;
   static char buf[256];
   
