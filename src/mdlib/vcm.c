@@ -129,7 +129,7 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md)
   snew(vcm->group_mvcm,vcm->nr);
   snew(vcm->group_mass,vcm->nr);
   snew(vcm->group_name,vcm->nr);
-  vcm->group_id = md->cU1;
+  vcm->group_id = md->cVCM;
   
   /* Not parallel... */
   for(i=0; (i<md->nr); i++) {
