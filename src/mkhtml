@@ -5,7 +5,7 @@ setenv HTML	$GMXHOME/html
 if ( ! -d $HTML ) mkdir $HTML
 setenv GIFDIR   $HTML/gif
 if ( -f $GIFDIR/rainbow.gif ) then
-  setenv HR	'<IMG SRC="gif/rainbow.gif" WIDTH=100% HEIGTH=7 >'
+  setenv HR	'<IMG SRC="gif/rainbowsmall.gif" WIDTH=100% HEIGTH=7 >'
 else
   setenv HR	'<HR>'
 endif
@@ -19,7 +19,7 @@ cat > $INDEX << EOD
 <h1>Index</h1>
 $HR
 <h3>General</h3>
-<ul>
+<p>
 <li><A HREF="changes$VER.html" TARGET="bottom" >New features</a>
 <p>
 <li><A HREF="online$VER/getting_started.html" TARGET="bottom" >Getting Started</a>
@@ -34,7 +34,7 @@ $HR
 </ul>
 $HR
 <h3>Programs</h3>
-<ul>
+<p>
 <li><A HREF="online$VER/general.html" TARGET="right" >General</a>
 <p>
 EOD
@@ -43,19 +43,18 @@ cd 	$GMXHOME/bin/$CPU
 foreach i ( * )
   if ( ( -x $i ) && ( $i != "my_dssp" ) ) then
     echo -n "$i "
-    $i -quiet -man 2 >& /dev/null
-    if ( -f $i.html ) then 
-      if ( -f $HTMLOL/$i.html ) \rm $HTMLOL/$i.html
-      mv $i.html $HTMLOL
+    cd $HTMLOL
+    $GMXHOME/bin/$CPU/$i -quiet -man 2 >& /dev/null
       cat >> $INDEX << EOK
 <li><a href="online$VER/$i.html" TARGET="right">$i</a>
 EOK
     endif
+    cd 	$GMXHOME/bin/$CPU
   endif
 end
 
 cat >> $INDEX << EOM
-</ul>
+<p>
 $HR
 </HTML>
 EOM
