@@ -624,27 +624,30 @@ static void clean_bonds(t_params *ps)
   int     i,j;
   atom_id ai,aj;
   
-  for(i=0; (i<ps->nr); i++) {
-    ai=ps->param[i].AI;
-    aj=ps->param[i].AJ;
-    if (aj < ai) {
-      ps->param[i].AI=aj;
-      ps->param[i].AJ=ai;
+  if (ps->nr > 0) {
+    for(i=0; (i<ps->nr); i++) {
+      ai=ps->param[i].AI;
+      aj=ps->param[i].AJ;
+      if (aj < ai) {
+	ps->param[i].AI=aj;
+	ps->param[i].AJ=ai;
+      }
     }
-  }
-  
-  /* Sort bonds */
-  qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
-
-  /* remove doubles */
-  for(i=j=1; (i<ps->nr); i++) {
-    if (pcompar(&(ps->param[i]),&(ps->param[j-1])) != 0) {
-      memcpy(&(ps->param[j]),&(ps->param[i]),(size_t)sizeof(ps->param[0]));
-      j++;
+    
+    /* Sort bonds */
+    qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
+    
+    /* remove doubles */
+    for(i=j=1; (i<ps->nr); i++) {
+      if (pcompar(&(ps->param[i]),&(ps->param[j-1])) != 0) {
+	memcpy(&(ps->param[j]),&(ps->param[i]),(size_t)sizeof(ps->param[0]));
+	j++;
+      }
     }
-  }
-  fprintf(stderr,"Number of bonds was %d, now %d\n",ps->nr,j);
-  ps->nr=j;
+    fprintf(stderr,"Number of bonds was %d, now %d\n",ps->nr,j);
+    ps->nr=j;
+  } else
+    fprintf(stderr,"No bonds\n");
 }
 
 static void print_mass(t_atoms *atoms)
