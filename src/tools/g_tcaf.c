@@ -71,7 +71,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   real **tcaf,**tcafc,eta;
   int  i,j,k,kc;
   int  ncorr;
-  real fitparms[2],*sig,*fit;
+  real fitparms[3],*sig;
   
   nk  = kset_c[nkc];
   ntc = nk*NPK;
@@ -100,7 +100,6 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
        snew(tcafc[k],ncorr);
   }
   snew(sig,ncorr);
-  snew(fit,ncorr);
   for(i=0; i<ncorr; i++)
     sig[i]=exp(0.5*i*dt/wt);
   
@@ -149,7 +148,7 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   }
   
   fp_vk = xvgropen(fn_vk,"Fits","k (nm\\S-1\\N)",
-		   "eta (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)");
+		   "\\8h\\4 (10\\S-3\\N kg m\\S-1\\N s\\S-1\\N)");
   fprintf(fp_vk,"@    s0 symbol 2\n");
   fprintf(fp_vk,"@    s0 symbol color 1\n");
   fprintf(fp_vk,"@    s0 linestyle 0\n");
@@ -187,8 +186,8 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
 	       bDebugMode(),effnVAC,fitparms,0);
       eta = 1000*fitparms[1]*rho/
 	(4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
-      fprintf(stdout,"k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
-	      norm(kfac[kset_c[k]]),fitparms[0],eta);
+      fprintf(stdout,"k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
+	      norm(kfac[kset_c[k]]),fitparms[0],fitparms[1],eta);
       fprintf(fp_vk,"%6.3f %g\n",norm(kfac[kset_c[k]]),eta);
       for(i=0; i<ncorr; i++)
 	fprintf(fp_cub,"%g %g\n",i*dt,fit_function(effnVAC,fitparms,i*dt));
@@ -200,8 +199,6 @@ static void process_tcaf(int nframes,real dt,int nkc,real **tc,rvec *kfac,
   }
   fclose(fp_vk);
   do_view(fn_vk,NULL);
-
-  
 }
 
 
@@ -218,8 +215,8 @@ int main(int argc,char *argv[])
     "combination with the velocity in 2 perpendicular directions. This gives",
     "a total of 16*2*2=64 transverse currents. One autocorrelation is",
     "calculated fitted for each k-vector, which gives 16 tcaf's. Each of",
-    "these tcaf's is fitted to f(t) = exp(-v)(cosh(wv) + 1/w sinh(wv)),",
-    "v = -t/(2 tau), w = sqrt(1 - 4 tau eta/rho k^2), which gives 16 tau's",
+    "these tcaf's is fitted to f(t) = exp(-v)(cosh(Wv) + 1/W sinh(Wv)),",
+    "v = -t/(2 tau), W = sqrt(1 - 4 tau eta/rho k^2), which gives 16 tau's",
     "and eta's. The fit weights decay with time as exp(-t/wt), the tcaf and",
     "fit are calculated up to time 5*wt.",
     "The eta's should be fitted to 1 - a eta(k) k^2, from which",
@@ -231,7 +228,13 @@ int main(int argc,char *argv[])
     "The cubic eta estimates are also written to [TT]-vk[tt].[PAR]",
     "With option [TT]-mol[tt] the transverse current is determined of",
     "molecules instead of atoms. In this case the index group should",
-    "consist of molecule numbers instead of atom numbers.",
+    "consist of molecule numbers instead of atom numbers.[PAR]",
+    "The k-dependent viscosities in the [TT]-ov[tt] file should be",
+    "fitted to eta(k) = eta0 (1 - a k^2) to obtain the viscosity at",
+    "infinite wavelength.[PAR]",
+    "NOTE: make sure you write coordinates and velocities often enough.",
+    "The initial, non-exponential, part of the autocorrelation function",
+    "is very important for obtaining a good fit."
   };
   
   static bool bMol=FALSE,bK34=FALSE;
@@ -254,7 +257,7 @@ int main(int argc,char *argv[])
   char       *grpname;
   char       title[256];
   real       t0,t1,dt,m,mtot,sysmass,rho,sx,cx;
-  int        status,nframes,n_alloc,i,j,k,d,tel3;
+  int        status,nframes,n_alloc,i,j,k,d;
   rvec       mv_mol,cm_mol,kfac[NK];
   int        nkc,nk,ntc;
   real       **c1,**tc;
@@ -334,7 +337,6 @@ int main(int argc,char *argv[])
       for (i=0; i<ntc; i++)
 	srenew(tc[i],n_alloc);
     }
-    tel3=3*nframes;
 
     rho += 1/det(fr.box);
     for(k=0; k<nk; k++)
