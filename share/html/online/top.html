@@ -9,8 +9,8 @@ A sample file is included below:
 ;	Example topology file
 ;
 [ defaults ]
-; Non bond type		Combination Rule
-1			1
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+  1             1               no              1.0     1.0
 
 ; The force field files to be included
 #include "rt41c5.itp"	
