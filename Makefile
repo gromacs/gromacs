@@ -27,8 +27,8 @@ TEXFS = algorithms	analyse		averages	cutoff		\
 
 AUXFS = algorithms	analyse		averages	defunits	\
 	forcefield	implement	install		intro		\
-	lr-corr		par-md		progman		programs	\
-	special		tables		topology	
+	lr-corr		progman		programs	special		\
+	topology	
 
 AUXFILES = $(foreach FILE,$(AUXFS), $(FILE).aux)
 TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
