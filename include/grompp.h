@@ -80,6 +80,7 @@ typedef enum {
   d_blocktype,
   d_moleculetype,
   d_atoms,
+  d_dum1,
   d_dum2,
   d_dum3,
   d_bonds,
