@@ -281,7 +281,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  xprime[i][m] = x[i][m] + b*p[i][m];
 	}
       }
-      bNS = ((parm->ir.nstlist > 0) || (count==0));
+      bNS = (parm->ir.nstlist > 0);
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
       if (bDummies) {
 	/* Molecules always whole, but I'm not sure whether
