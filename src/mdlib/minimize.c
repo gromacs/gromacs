@@ -282,7 +282,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   t_vcm      *vcm;
   t_mdebin   *mdebin;
   t_nrnb mynrnb;
-  bool   bNS=TRUE,converged,foundlower,bLR,bLJLR,bBHAM,b14;
+  bool   bNS=TRUE,converged,foundlower;
   rvec   mu_tot;
   time_t start_t;
   bool   do_log,do_ene,do_x,do_f;
