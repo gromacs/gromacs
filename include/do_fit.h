@@ -54,7 +54,7 @@ extern void reset_x(int ncm,atom_id ind_cm[],
 		    int nreset,atom_id *ind_reset,rvec x[],real mass[]);
 /* Put the center of mass of atoms in the origin.
  * The center of mass is computed from the index ind_cm.
- * When ind_reset!=NULL the coordinates index by ind_reset are reset.
+ * When ind_reset!=NULL the coordinates indexed by ind_reset are reset.
  * When ind_reset==NULL the coordinates up to nreset are reset.
  */
 
