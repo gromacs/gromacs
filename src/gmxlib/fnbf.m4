@@ -72,8 +72,8 @@ void do_fnbf(FILE *log,t_commrec *cr,t_forcerec *fr,
 	     bool bLR,int eNL)
 {
   t_nblist *nlist;
-  real     *fshift;
-  int      i,i0,i1,nrnb_ind,sz,ii;
+  real     *fshift,nav;
+  int      i,i0,i1,nrnb_ind,sz;
   bool     bWater;
 	FILE *fp;
 #if (defined VECTORIZE_INVSQRT || defined VECTORIZE_RECIP)
@@ -561,23 +561,26 @@ define(`SOLMN_ARGS',`,nlist->nsatoms')
 	  case eNR_INL3310:
 	  case eNR_INL3410:
 	  /* vdwc loops */
-	    inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[0]*nlist->nri);
-	    inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[0]*nlist->nrj);
+	    nav = fr->nMNOav[0];
+	    inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
+	    inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
 	  case eNR_INL1010:
 	  case eNR_INL2010:
 	  case eNR_INL3010:
 	  /* coul loops */
-	    inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[1]*nlist->nri);
-	    inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[1]*nlist->nrj);
+	    nav = fr->nMNOav[2] - fr->nMNOav[1];
+	    inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
+	    inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
 	  case eNR_INL0110:
 	  case eNR_INL0210:
 	  case eNR_INL0310:
 	  case eNR_INL0410:
 	  /* vdw loops */
-	    inc_nrnb(nrnb,eNR_INL_IATOM,fr->nMNOav[2]*nlist->nri);
-	    inc_nrnb(nrnb,nrnb_ind,fr->nMNOav[2]*nlist->nrj);
+	    nav = fr->nMNOav[0] - fr->nMNOav[2];
+	    inc_nrnb(nrnb,eNR_INL_IATOM,nav*nlist->nri);
+	    inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
 	}	
       } else 
