@@ -22,6 +22,7 @@ endif
 ifeq ($(USE_PVM3),yes)
 SYSDEFS		+= -DUSE_PVM3 -DPARALLEL
 SYSLIBS		+= -lpvm3
+RUNSYSLIBS	+= -lpvm3
 LDFLAGS		+= -L$(PVM_ROOT)/lib/$(PVM_ARCH)
 X11INC		+= -I$(PVM_ROOT)/include
 CFLAGS		+= -I$(PVM_ROOT)/include
