@@ -258,7 +258,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	    vdw_fac,bon_lo,bon_hi);
     snew(atom_vdw,natom);
     for (i=0; (i<natom); i++)
-      atom_vdw[i]=get_vdw(*(atoms->resname[atoms->atom[i]]),
+      atom_vdw[i]=get_vdw(*(atoms->resname[atoms->atom[i].resnr]),
 			  *(atoms->atomname[i]),0.1)==0.0;
     
     if (bB) 
