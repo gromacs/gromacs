@@ -487,13 +487,19 @@ static int renum_atype(t_params plist[],t_topology *top,
   }
   
   if (ir->solvent_opt != -1) {
+    if (debug)
+      fprintf(debug,"Solvent_type before: %d\n",ir->solvent_opt);
     for(j=0; (j<nat); j++)
-      if (map[j] == ir->solvent_opt)
+      if (map[j] == ir->solvent_opt) {
 	ir->solvent_opt=j;
+	break;
+      }
     if (debug)
       fprintf(debug,"Renumbering solvent_opt (atomtype for OW) to %d\n",
 	      ir->solvent_opt);
   }
+  if (debug)
+    pr_ivec(debug,0,"map",map,nat);
     
   /* Renumber nlist */
   if (plist[F_LJ].nr > 0)
