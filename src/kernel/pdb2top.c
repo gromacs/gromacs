@@ -112,7 +112,7 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
     }
     if (at->atom[i].m == 0) {
       name=*(at->atomname[i]);
-      j=search_jtype(rp,name,(resnr == 0));
+      j=search_jtype(rp,name,bProt && (resnr == 0));
       at->atom[i].type  = rp->atom[j].type;
       at->atom[i].q     = rp->atom[j].q;
       at->atom[i].m     = atype->atom[rp->atom[j].type].m;
