@@ -37,60 +37,58 @@
 #include <config.h>
 #endif
 
-/* Oh my god, it's full of loops!
- * There are quite a few innerloops, so they have been given numbers
- * instead of names. The first figure is the coulomb alternative, the
- * second vdw, the third the solvent opt and finally the fourth free
- * energy. 0 implies no, none or turned off. The other figugures mean:
+/* The nonbonded kernels are documented in gmxlib/nonbonded_kernels, 
+ * but here's a lazy version of the numbering. The first position
+ * is the Coulomb interaction (0 for none), second is Van der Waals
+ * (again, 0 means no interaction), and the third is the water optimization
+ * (0 meaning no water optimization = standard atom-atom loop)
+ *
  *                                     value
- * pos              1                   2           3             4
- * 1st Coul      Normal           Reaction-field  Table
- * 2nd Vdw       Lennard-Jones    Buckingham      Table        Bham-table
- * 3rd Sol       General solvent  Water           Water-Water
- * 4th FreeEner  Lambda           Softcore
+ * pos                 1                   2           3              4
+ * 1st Coul        Normal,1/r       Reaction-field  Table            Generalized born
+ * 2nd Vdw         Lennard-Jones    Buckingham      Table             n/a
+ * 3rd Water. opt  SPC-other atom   SPC-SPC         TIP4p-other at.  TIP4p-TIP4p 
  */
 
-#define eNR_INLNONE -1
+#define eNR_NBKERNEL_NONE -1
 
-enum {
-  eNR_INL0100, eNR_INL0110,
-  eNR_INL0200, eNR_INL0210,
-  eNR_INL0300, eNR_INL0301, eNR_INL0302, eNR_INL0310,
-  eNR_INL0400, eNR_INL0401, eNR_INL0402, eNR_INL0410,
-  eNR_INL1000, eNR_INL1010,
-  eNR_INL1020, eNR_INL1030, eNR_INL1100, eNR_INL1110, eNR_INL1120,
-  eNR_INL1130, eNR_INL1200, eNR_INL1210, eNR_INL1220, eNR_INL1230,
-  eNR_INL1300, eNR_INL1310, eNR_INL1320, eNR_INL1330, eNR_INL1400,
-  eNR_INL1410, eNR_INL1420, eNR_INL1430, eNR_INL2000, eNR_INL2010,
-  eNR_INL2020, eNR_INL2030, eNR_INL2100, eNR_INL2110, eNR_INL2120,
-  eNR_INL2130, eNR_INL2200, eNR_INL2210, eNR_INL2220, eNR_INL2230,
-  eNR_INL2300, eNR_INL2310, eNR_INL2320, eNR_INL2330, eNR_INL2400,
-  eNR_INL2410, eNR_INL2420, eNR_INL2430, eNR_INL3000, eNR_INL3001,
-  eNR_INL3002, eNR_INL3010, eNR_INL3020, eNR_INL3030, eNR_INL3100,
-  eNR_INL3110, eNR_INL3120, eNR_INL3130, eNR_INL3200, eNR_INL3210,
-  eNR_INL3220, eNR_INL3230, eNR_INL3300, eNR_INL3301, eNR_INL3302,
-  eNR_INL3310, eNR_INL3320, eNR_INL3330, eNR_INL3400, eNR_INL3401,
-  eNR_INL3402, eNR_INL3410, eNR_INL3420, eNR_INL3430, eNR_INLOOP,       
-  eNR_INL_IATOM=eNR_INLOOP,
-  eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
-  eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
-  eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
-  eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
-  eNR_BONDS,                eNR_G96BONDS,             eNR_FENEBONDS,
-  eNR_ANGLES,               eNR_G96ANGLES,            eNR_QANGLES,
-  eNR_PROPER,               eNR_IMPROPER,
-  eNR_RB,                   eNR_FOURDIH,              eNR_DISRES,               
-  eNR_ORIRES,               eNR_DIHRES,
-  eNR_POSRES,               eNR_ANGRES,               eNR_ANGRESZ,
-  eNR_MORSE,                eNR_CUBICBONDS,
-  eNR_WPOL,                 eNR_VIRIAL,
-  eNR_UPDATE,               eNR_EXTUPDATE,            eNR_STOPCM,
-  eNR_PCOUPL,               eNR_EKIN,                 eNR_LINCS,
-  eNR_LINCSMAT,             eNR_SHAKE,                eNR_CONSTR_V,
-  eNR_SHAKE_RIJ,            eNR_CONSTR_VIR,           eNR_SETTLE,
-  eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
-  eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD, 
-  eNRNB
+enum 
+{
+    eNR_NBKERNEL010, eNR_NBKERNEL020, eNR_NBKERNEL030,
+    eNR_NBKERNEL100, eNR_NBKERNEL101, eNR_NBKERNEL102, eNR_NBKERNEL103, eNR_NBKERNEL104,
+    eNR_NBKERNEL110, eNR_NBKERNEL111, eNR_NBKERNEL112, eNR_NBKERNEL113, eNR_NBKERNEL114,
+    eNR_NBKERNEL120, eNR_NBKERNEL121, eNR_NBKERNEL122, eNR_NBKERNEL123, eNR_NBKERNEL124,
+    eNR_NBKERNEL130, eNR_NBKERNEL131, eNR_NBKERNEL132, eNR_NBKERNEL133, eNR_NBKERNEL134,
+    eNR_NBKERNEL200, eNR_NBKERNEL201, eNR_NBKERNEL202, eNR_NBKERNEL203, eNR_NBKERNEL204,
+    eNR_NBKERNEL210, eNR_NBKERNEL211, eNR_NBKERNEL212, eNR_NBKERNEL213, eNR_NBKERNEL214,
+    eNR_NBKERNEL220, eNR_NBKERNEL221, eNR_NBKERNEL222, eNR_NBKERNEL223, eNR_NBKERNEL224,
+    eNR_NBKERNEL230, eNR_NBKERNEL231, eNR_NBKERNEL232, eNR_NBKERNEL233, eNR_NBKERNEL234,
+    eNR_NBKERNEL300, eNR_NBKERNEL301, eNR_NBKERNEL302, eNR_NBKERNEL303, eNR_NBKERNEL304,
+    eNR_NBKERNEL310, eNR_NBKERNEL311, eNR_NBKERNEL312, eNR_NBKERNEL313, eNR_NBKERNEL314,
+    eNR_NBKERNEL320, eNR_NBKERNEL321, eNR_NBKERNEL322, eNR_NBKERNEL323, eNR_NBKERNEL324,
+    eNR_NBKERNEL330, eNR_NBKERNEL331, eNR_NBKERNEL332, eNR_NBKERNEL333, eNR_NBKERNEL334,
+    eNR_NBKERNEL400, eNR_NBKERNEL410, eNR_NBKERNEL430, eNR_NBKERNEL_NR,
+    eNR_NBKERNEL_OUTER = eNR_NBKERNEL_NR,
+	eNR_NB14,
+    eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
+    eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
+    eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
+    eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
+    eNR_BONDS,                eNR_G96BONDS,             eNR_ANGLES,
+	eNR_ANGLES,               eNR_G96ANGLES,            eNR_QANGLES,
+    eNR_PROPER,               eNR_IMPROPER,
+    eNR_RB,                   eNR_FOURDIH,              eNR_DISRES,               
+    eNR_ORIRES,               eNR_DIHRES,
+    eNR_POSRES,               eNR_ANGRES,               eNR_ANGRESZ,
+    eNR_MORSE,                eNR_CUBICBONDS,
+    eNR_WPOL,                 eNR_VIRIAL,
+    eNR_UPDATE,               eNR_EXTUPDATE,            eNR_STOPCM,
+    eNR_PCOUPL,               eNR_EKIN,                 eNR_LINCS,
+    eNR_LINCSMAT,             eNR_SHAKE,                eNR_CONSTR_V,
+    eNR_SHAKE_RIJ,            eNR_CONSTR_VIR,           eNR_SETTLE,
+    eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
+    eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD, 
+    eNRNB
 };
 
 
