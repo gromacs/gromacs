@@ -78,7 +78,7 @@ static bool gmx_next_x(int status,real *t,int natoms,rvec x[],matrix box)
 	       bX ? x : NULL,
 	       NULL,
 	       NULL);
-    if (ct=check_times(*t)==0) {
+    if ((ct=check_times(*t))==0) {
       PRINTREAD(*t)
       if (bB)
 	init_pbc(box,FALSE);  
@@ -108,13 +108,14 @@ static bool gmx_next_x_or_v(int status,real *t,int natoms,
     bV=sh.v_size;
     bB=sh.box_size;
     pt=*t;
+    *t=sh.t;
     fread_htrn(status,&sh,
 	       bB ? box : NULL,
 	       bX ? x : NULL,
 	       bV ? v : NULL,
 	       NULL);
 	       
-    if (ct=check_times(*t)==0) {
+    if ((ct=check_times(*t))==0) {
       PRINTREAD(*t)
       if (bB)
 	init_pbc(box,FALSE);  
@@ -153,13 +154,14 @@ static bool gmx_next_x_v(int status,real *t,int natoms,
     bV=sh.v_size;
     bB=sh.box_size;
     pt=*t;
+    *t=sh.t;
     fread_htrn(status,&sh,
 	       bB ? box : NULL,
 	       bX ? x : NULL,
 	       bV ? v : NULL,
 	       NULL);
     
-    if (ct=check_times(*t)==0) {
+    if ((ct=check_times(*t))==0) {
       PRINTREAD(*t)
       if (bB)
 	init_pbc(box,FALSE);  
