@@ -470,7 +470,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
     bFirst = FALSE;
   }
   
-  bPrint = do_per_step(step,ir->nstprint);
+  bPrint = do_per_step(step,ir->nstlog);
   dt     = ir->delta_t;
 
   /* Initiate coupling to the reference pressure and temperature to start

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "assert.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "fatal.h"
@@ -10,6 +11,7 @@
 #include "mdatoms.h"
 #include "network.h"
 #include "do_gct.h"
+#include "names.h"
 
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
@@ -167,8 +169,12 @@ void set_nbfmask(t_forcerec *fr,t_mdatoms *md,int ngrp,bool bMask)
     /* Loop over atoms */
     for(i=0; (i<md->nr); i++) 
       /* If it is a shell, then set the value to TRUE */
-      if (md->ptype[i] == eptShell)
-	bShell[md->cENER[i]] = TRUE;
+      if (md->ptype[i] == eptShell) {
+	gid = md->cENER[i];
+	assert(gid < ngrp);
+	assert(gid >= 0);
+	bShell[gid] = TRUE;
+      }
   }
   
   /* Loop over all the energy groups */
@@ -193,7 +199,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 char *traj,real t,real lambda,
 		 int natoms,matrix box,t_mdebin *mdebin,bool *bConverged)
 {
-  static bool bFirst=TRUE;
+  static bool bFirst=TRUE,bOPTIM=FALSE;
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2];
   tensor my_vir[2];
@@ -213,7 +219,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       snew(pos[i],nsb->natoms);
       snew(force[i],nsb->natoms);
     }
-    bFirst=FALSE;
+    bOPTIM = (getenv("OPTIMSHELL") != NULL);
+    fprintf(log,"bOPTIM = %s\n",bool_names[bOPTIM]);
+    bFirst = FALSE;
   }
   
   ftol         = parm->ir.em_tol;
@@ -224,6 +232,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   predict_shells(log,x,v,parm->ir.delta_t,nshell,shells,md->massT,(mdstep == 0));
    
   /* Calculate the forces first time around */
+  if (bOPTIM)
+    set_nbfmask(fr,md,parm->ir.opts.ngener,TRUE);
   clear_mat(my_vir[Min]);
   do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
@@ -317,11 +327,32 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (MASTER(cr) && !bDone) 
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
   
-  /* Parallelise this one! */
+  /* Now compute the forces on the other particles (atom-atom) */
+  if (bOPTIM) {
+    set_nbfmask(fr,md,parm->ir.opts.ngener,FALSE);
+    do_force(log,cr,parm,nsb,my_vir[Try],1,nrnb,
+	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
+	     lambda,graph,FALSE,TRUE,fr);
+    /* Sum the potential energy terms from group contributions */
+    sum_epot(&(parm->ir.opts),grps,ener);
+    Epot[Try]=Epot[Min]+ener[F_EPOT];
+    if (PAR(cr)) 
+      gmx_sum(NEPOT,Epot,cr);
+    if (bVerbose && MASTER(cr))
+      print_epot("",mdstep,count,step,Epot[Try],df[Try]);
+    /* Sum the forces from the previous calc. (shells only) 
+     * and the current calc (atoms only)
+     */
+    for(i=0; (i<nsb->natoms); i++)
+      rvec_add(force[Try][i],force[Min][i],f[i]);
+  }
+  else {
+    /* Parallelise this one! */
+    memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
+    /* CHECK VIRIAL */
+    copy_mat(my_vir[Min],vir_part);
+  }
   memcpy(x,pos[Min],nsb->natoms*sizeof(x[0]));
-  memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
-  copy_mat(my_vir[Min],vir_part);
-  
   return count; 
 }
 

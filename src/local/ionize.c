@@ -480,7 +480,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 
   fprintf(ion,"\n");
   fprintf(xvg,"%10.5f  %10.3e  %6d  %6d  %6d  %6d\n",
-	  t,pt,dq,total,nkdecay,nkd_tot);
+	  t,pt,(int)dq,(int)total,(int)nkdecay,(int)nkd_tot);
   fflush(ion);
   fflush(xvg);
 }

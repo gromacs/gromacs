@@ -56,6 +56,7 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "statutil.h"
 #include "tgroup.h"
 #include "vcm.h"
+#include "trnio.h"
 #include "ebin.h"
 #include "mdebin.h"
 #include "disre.h"
@@ -73,7 +74,6 @@ static char *SRCID_xmdrun_c = "$Id$";
 static bool      bMultiSim    = FALSE;
 static bool      bGlas        = FALSE;
 static bool      bIonize      = FALSE;
-static bool      bInteractive = FALSE;
 static t_commrec *cr_msim;
 
 t_commrec *init_msim(t_commrec *cr,int nfile,t_filenm fnm[])
@@ -128,8 +128,8 @@ real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
 real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
 		  t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[])
 {
-  int i,start,end,m;
-  real    mu_mol,mu_ave;
+  int     i,start,end;
+  real    mu_ave;
   t_atom  *atom;
   t_block *mols;
   
@@ -173,7 +173,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
-  int        fp_ene,fp_trn,step,k,n,count;
+  int        fp_ene,fp_trn,step,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
@@ -182,13 +182,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_nrnb     mynrnb;
   char       strbuf[256];
   char       *traj,*xtc_traj; /* normal & compressed trajectory filename */
-  int        nDLB;
-  int        i,m,nconverged=0;
+  int        i,nconverged=0;
   rvec       vcm,mu_tot;
   t_coupl_rec *tcr;
   rvec       *xx,*vv,*ff;  
   bool       bTCR,bConverged;
-  real       mu_aver,mu_aver2;
+  real       mu_aver;
   int        gnx;
   atom_id    *grpindex;
   char       *grpname;
@@ -308,12 +307,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	      &parm->ir,ener);
 	         
     if (bTCR && MASTER(cr) && (step == 0)) {
-      if (bInteractive)
-	;/* Do it */
-      else {
-	tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
-	fprintf(log,"Done init_coupling\n"); fflush(log);
-      }
+      tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
+      fprintf(log,"Done init_coupling\n"); fflush(log);
     }
     /* Now we have the energies and forces corresponding to the 
      * coordinates at time t. 
@@ -472,7 +467,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   fprintf(log,"Fraction of iterations that converged:           %.2f\n",
-	  (nconverged*0.01)/parm->ir.nsteps);
+	  (nconverged*100.0)/parm->ir.nsteps);
   fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
 	  tcount/parm->ir.nsteps);
 
@@ -523,12 +518,9 @@ int main(int argc,char *argv[])
     { "-glas",    FALSE, etBOOL,&bGlas,
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,&bIonize,
-      "Do a simulation including the effect of an X-Ray bombardment on your system" },
-    { "-interactive", FALSE, etBOOL, &bInteractive,
-      "Do an interactive simulation. Experts only" }
+      "Do a simulation including the effect of an X-Ray bombardment on your system" }
   };
 
-  int       i;
   ulong     Flags;
   t_edsamyn edyn;
   
