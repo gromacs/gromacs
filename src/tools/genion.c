@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 {
   static char *desc[] = {
     "genion replaces solvent molecules by monoatomic ions at",
-    "the position of the first atoms  with the most favorable electrostatic",
+    "the position of the first atoms with the most favorable electrostatic",
     "potential or at random. The potential is calculated on all atoms, using",
     "normal GROMACS particle based methods (in contrast to other methods",
     "based on solving the Poisson-Boltzmann equation).",
