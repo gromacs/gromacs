@@ -99,24 +99,6 @@ static void move_gmx(t_x11 *x11,t_gmx *gmx,int x,int y,int width,int height,
   XMoveWindow(x11->disp,gmx->logo->wd.self,(width-wl)/2,(height-y0-hl)/2);
 }
 
-static void export_it(t_gmx *gmx)
-{
-  switch (gmx->ExpMode) {
-  case eExpGromos:
-    write_conf(gmx->confout,*gmx->man->top.name,
-	       &(gmx->man->top.atoms),gmx->man->x,gmx->man->x,gmx->man->box);
-    break;
-  case eExpPDB:
-    write_pdb_conf(gmx->confout,NULL,
-		   &(gmx->man->top.atoms),
-		   gmx->man->x,gmx->man->box,FALSE);
-    break;
-    
-  default:
-    fatal_error(0,"Unknown export mode: %d\n",gmx->ExpMode);
-  }
-}
-
 static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
 {
   t_pulldown *pd;
@@ -141,7 +123,9 @@ static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
     ShowDlg(gmx->dlgs[edExport]);
     break;
   case IDDOEXPORT:
-    export_it(gmx);
+    write_sto_conf(gmx->confout,*gmx->man->top.name,
+		   &(gmx->man->top.atoms),
+		   gmx->man->x,NULL,gmx->man->box);
     break;
   case IDQUIT:
     show_mb(gmx,emQuit);
