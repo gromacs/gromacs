@@ -275,11 +275,11 @@
 <!ELEMENT cell        (tensor)>
 
 <!-- Coordinates and such: this is clear hopefully -->
-<!ELEMENT coordinates (rvec*)>
-<!ELEMENT velocities  (rvec*)>
-<!ELEMENT forces      (rvec*)>
-<!ELEMENT rvec EMPTY>
-<!ATTLIST rvec 
+<!ELEMENT coordinates (vector*)>
+<!ELEMENT velocities  (vector*)>
+<!ELEMENT forces      (vector*)>
+<!ELEMENT vector EMPTY>
+<!ATTLIST vector 
           id IDREF #REQUIRED
           x  CDATA #REQUIRED
           y  CDATA #REQUIRED
