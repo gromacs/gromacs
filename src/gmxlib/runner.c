@@ -53,6 +53,7 @@ static char *SRCID_runner_c = "$Id$";
 #include "nrnb.h"
 #include "disre.h"
 #include "mdatoms.h"
+#include "lutab.h"
 #include "mdrun.h"
 #include "congrad.h"
 
@@ -121,6 +122,16 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],bool bVerbose,
   snew(grps,1);
   snew(parm,1);
   snew(nrnb,cr->nprocs);
+
+  /* Initiate invsqrt routines */
+#ifdef USEF77
+#ifdef FINVSQRT
+  CALLF77(fillbuf)();
+#endif
+#endif
+#ifdef CINVSQRT
+  init_lookup_table(stdlog);
+#endif
   
   if (bVerbose && MASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");

@@ -51,7 +51,6 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
 	     real egnb[],real egcoul[],rvec box_size,
 	     t_nrnb *nrnb,real lambda,real *dvdlambda)
 {
-  static   bool bFirst=TRUE;
   int      i,itpA,itpB,gid,m,nj,inr,iinr,nri,k;
   rvec     r_i,f_ip,fw[3],xw[3];
   real     qi,Vnb,Vc,eps;
@@ -63,18 +62,6 @@ void do_fnbf(FILE *log,int ftype,t_forcerec *fr,
   rvec     *svec,*fshift;
   int      nr_ljc,nr_qq,nr_bham,nr_fsum,nr_free;
   bool     bWater,bTab;
-  
-  if (bFirst) {
-#ifdef USEF77
-#ifdef FINVSQRT
-    CALLF77(fillbuf)();
-#endif
-#endif
-#ifdef CINVSQRT
-    init_lookup_table(log);
-#endif
-    bFirst=FALSE;
-  }
   
   typeA   = mdatoms->typeA;
   chargeA = mdatoms->chargeA;
