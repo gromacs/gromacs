@@ -59,6 +59,18 @@ extern void f77coultab(real *ix,real *iy,real *iz,real *qi,
 		       real charge[],real faction[],real fip[],
 		       real *Vc,int  *ntab,real *tabscale,real VFtab[]);
 		       
+extern void f77wcoultab(int *i0,real xw[],real *eps,
+			real pos[],int *nj,int jjnr[],
+			real charge[],real faction[],real fw[],
+			real *Vc,int  *ntab,real *tabscale,real VFtab[]);
+   
+extern void f77watertab(int *i0,real xw[],real *eps,
+			real pos[],int *nj,int type[],int jjnr[],
+			real charge[],real nbfp[],
+			real faction[],real fw[],
+			real *Vc,real *Vnb,
+			int  *ntab,real *tabscale,real VFtab[]);
+   
 /* Initiate invsqrt calculations in fortran */
 extern void fillbuf(void);
 
