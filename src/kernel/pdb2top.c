@@ -141,32 +141,30 @@ static t_block *make_cgs(t_atoms *at,int nrtp,t_restp rtp[])
 {
   int     *cgnr;
   t_block *cgs;
-  int     i;
-  int     curcg;
-  double  qt,qq,qtot;
+  int     i,j,prevresnr,resnr,prevcg,cg,curcg;
+  bool    bNterm;
+  t_restp *rp;
   
   fprintf(stderr,"Making charge groups...\n");
   snew(cgnr,at->nr);
   
-  qtot=0;
-  qt=0;
-  curcg=0;
+  curcg=-1;
+  resnr=-1;
+  cg=-1;
   for(i=0; (i<at->nr); i++) {
-    qq=at->atom[i].q;
-    qt+=qq;
-    cgnr[i]=curcg;
-    if (is_int(qt)) {
-      qtot+=qt;
-      qt=0;
-      curcg++;
+    prevresnr=resnr;
+    if (at->atom[i].resnr != resnr) {
+      resnr=at->atom[i].resnr;
+      rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
+      bNterm=is_protein(*(at->resname[resnr])) && (resnr == 0);
     }
+    prevcg=cg;
+    j=search_jtype(rp,*(at->atomname[i]),bNterm);
+    cg = rp->cgnr[j];
+    if ( (cg != prevcg) || (resnr != prevresnr) )
+      curcg++;
+    cgnr[i]=curcg;
   }
-  if (qt != 0) {
-    fprintf(stderr,"WARNING: Not an integer charge %g\n",qtot+qt);
-    curcg++;
-  }
-  else
-    fprintf(stderr,"Total charge on system: %g\n",qtot);
   
   snew(cgs,1);
   snew(cgs->index,curcg+1);
