@@ -978,8 +978,8 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     /* rlist must be less than half the box */
     if (max(ir->rlist,ir->rcoulomb) > 0.5*bmin) {
       fprintf(stderr,
-	      "ERROR: rlist (%g) must be < half a box (%g,%g,%g)\n",
-	      ir->rlist,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+	      "ERROR: rlist (%g) and rcoulomb (%g) must be < half a box (%g,%g,%g)\n",
+	      ir->rlist,ir->rcoulomb,box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
       (*nerror)++;
     }
     /* box must be large enough for gridsearch */
