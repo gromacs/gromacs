@@ -393,11 +393,6 @@ void init_forcerec(FILE *log,
 
   if (fr->cg_cm == NULL)
     snew(fr->cg_cm,cgs->nr);
-  if (fr->cg_index == NULL) {
-    snew(fr->cg_index,cgs->nr+1);
-    for(i=0; (i<=cgs->nr);  i++)
-      fr->cg_index[i] = i;
-  }
   if (fr->shift_vec == NULL)
     snew(fr->shift_vec,SHIFTS);
     
