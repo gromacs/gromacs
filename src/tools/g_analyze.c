@@ -182,7 +182,7 @@ void average(char *avfile,char **avbar_opt,
   fp = ffopen(avfile,"w");
   if ((c == 'e') && (nset == 1))
     c = 'n';
-  if (c != 'n') 
+  if (c != 'n') {
     if (c == '9') {
       snew(tmp,nset);
       fprintf(fp,"@TYPE xydydy\n");
@@ -191,7 +191,7 @@ void average(char *avfile,char **avbar_opt,
 	      " interval\n",edge,(int)(100*(nset-2*edge)/nset+0.5));
     } else
       fprintf(fp,"@TYPE xydy\n");
-  
+  }
   
   for(i=0; i<n; i++) {
     av = 0;
