@@ -49,142 +49,143 @@
 
 typedef struct {
   char *name;
+  char *loop;
   int  flop;
 } t_nrnb_data;
 
 
 static const t_nrnb_data nbdata[eNRNB] = {
-  { "LJ",                              31 }, /* inl0100 */
-  { "LJ(S)",                           31 }, /* inl0110 */  
-  { "Buckingham",                      36 }, /* inl0200 */
-  { "Buckingham(S)",                   36 }, /* inl0210 */  
-  { "LJ(T)",                           52 }, /* inl0300 */
-  { "FreeEner LJ(T)",                  65 }, /* inl0301 */
-  { "Softcore LJ(T)",                 118 }, /* inl0302 */
-  { "LJ(T)(S)",                        52 }, /* inl0310 */  
-  { "Buckingham(T)",                   57 }, /* inl0400 */
-  { "FreeEner Bham(T)",                89 }, /* inl0401 */
-  { "Softcore Bham(T)",               128 }, /* inl0402 */
-  { "Buckingham(T)(S)",                57 }, /* inl0410 */  
-  { "Coulomb",                         27 }, /* inl1000 */
-  { "Coulomb(S)",                      27 }, /* inl1010 */
-  { "Coulomb(W)",                      81 }, /* inl1020 */
-  { "Coulomb(WW)",                    234 }, /* inl1030 */
-  { "LJ + Coulomb",                    38 }, /* inl1100 */
-  { "LJ + Coul(S)",                    38 }, /* inl1110 */
-  { "LJ + Coul(W)",                    92 }, /* inl1120 */
-  { "LJ + Coul(WW)",                  245 }, /* inl1130 */
-  { "Buckingham + Coul",               40 }, /* inl1200 */
-  { "Bham + Coul(S)",                  40 }, /* inl1210 */
-  { "Bham + Coul(W)",                  94 }, /* inl1220 */
-  { "Bham + Coul(WW)",                247 }, /* inl1230 */
-  { "LJ(T) + Coul ",                   58 }, /* inl1300 */
-  { "LJ(T) + Coul(S)",                 58 }, /* inl1310 */
-  { "LJ(T) + Coul(W)",                112 }, /* inl1320 */
-  { "LJ(T) + Coul(WW)",               265 }, /* inl1330 */
-  { "Bham(T) + Coul ",                 63 }, /* inl1400 */
-  { "Bham(T) + Coul(S)",               63 }, /* inl1410 */
-  { "Bham(T) + Coul(W)",              117 }, /* inl1420 */
-  { "Bham(T) + Coul(WW)",             270 }, /* inl1430 */
-  { "RF Coul",                         32 }, /* inl2000 */
-  { "RF Coul(S)",                      32 }, /* inl2010 */
-  { "RF Coul(W)",                      96 }, /* inl2020 */
-  { "RF Coul(WW)",                    279 }, /* inl2030 */
-  { "LJ + RF Coul",                    43 }, /* inl2100 */
-  { "LJ + RF Coul(S)",                 43 }, /* inl2110 */
-  { "LJ + RF Coul(W)",                107 }, /* inl2120 */
-  { "LJ + RF Coul(WW)",               290 }, /* inl2130 */
-  { "Bham + RF Coul",                  45 }, /* inl2200 */
-  { "Bham + RF Coul(S)",               45 }, /* inl2210 */
-  { "Bham + RF Coul(W)",              109 }, /* inl2220 */
-  { "Bham + RF Coul(WW)",             292 }, /* inl2230 */
-  { "LJ(T) + RF Coul",                 63 }, /* inl2300 */
-  { "LJ(T) + RF Coul(S)",              63 }, /* inl2310 */
-  { "LJ(T) + RF Coul(W)",             127 }, /* inl2320 */
-  { "LJ(T) + RF Coul(WW)",            310 }, /* inl2330 */
-  { "Bham(T) + RF",                    68 }, /* inl2400 */
-  { "Bham(T) + RF(S)",                 68 }, /* inl2410 */
-  { "Bham(T) + RF(W)",                132 }, /* inl2420 */
-  { "Bham(T) + RF(WW)",               310 }, /* inl2430 */
-  { "Coulomb(T)",                      41 }, /* inl3000 */
-  { "FreeEner Coul(T)",                54 }, /* inl3001 */
-  { "Softcore Coul(T)",                99 }, /* inl3002 */
-  { "Coulomb(T)(S)",                   99 }, /* inl3010 */
-  { "Coulomb(T)(W)",                  123 }, /* inl3020 */
-  { "Coulomb(T)(WW)",                 360 }, /* inl3030 */
-  { "LJ + Coulomb(T)",                 54 }, /* inl3100 */
-  { "LJ + Coulomb(T)(S)",              54 }, /* inl3110 */
-  { "LJ + Coulomb(T)(W)",             136 }, /* inl3120 */
-  { "LJ + Coulomb(T)(WW)",            373 }, /* inl3130 */
-  { "Bham + Coul(T)",                  55 }, /* inl3200 */
-  { "Bham + Coul(T)(S)",               55 }, /* inl3210 */
-  { "Bham + Coul(T)(W)",              137 }, /* inl3220 */
-  { "Bham + Coul(T)(WW)",             374 }, /* inl3230 */
-  { "LJ(T) + Coul(T)",                 67 }, /* inl3300 */
-  { "Free LJ(T)+Coul(T)",              92 }, /* inl3301 */
-  { "SC LJ(T)+Coul(T)",               151 }, /* inl3302 */
-  { "LJ(T) + Coul(T)(S)",             151 }, /* inl3310 */
-  { "LJ(T) + Coul(T)(W)",             149 }, /* inl3320 */
-  { "LJ(T) + Coul(T)(WW)",            386 }, /* inl3330 */
-  { "LJ(T) + Coul(T)",                 71 }, /* inl3400 */
-  { "Free Bham(T)+Coul(T)",           116 }, /* inl3401 */
-  { "SC Bham(T)+Coul(T)",             161 }, /* inl3402 */
-  { "Bham(T) + Coul(T)(S)",           161 }, /* inl3410 */
-  { "Bham(T) + Coul(T,W)",            153 }, /* inl3420 */
-  { "Bham(T) + Coul(T,WW)",           390 }, /* inl3430 */
-  { "Innerloop-Iatom",                 10 },
-  { "Calc Weights",                    36 },
-  { "Spread Q",                         6 },
-  { "Spread Q Bspline",                 2 }, 
-  { "Gather F",                        23 },
-  { "Gather F Bspline",                12 }, 
-  { "3D-FFT",                           8 },
-  { "Convolution",                      4 },
-  { "Solve PME",                       64 },
-  { "NS-Pairs",                        21 },
-  { "Reset In Box",                     9 },
-  { "Shift-X",                          6 },
-  { "CG-CoM",                          29 },
-  { "Sum Forces",                       1 },
-  { "Bonds",                           43 },
-  { "G96Bonds",                        40 },
-  { "Angles",                         163 },
-  { "G96Angles",                      150 },
-  { "Propers",                        229 },
-  { "Impropers",                      208 },
-  { "RB-Dihedrals",                   247 },
-  { "Four. Dihedrals",                247 },
-  { "Dist. Restr.",                   200 },
-  { "Orient. Restr.",                 200 },
-  { "Dihedral Restr.",                200 },
-  { "Pos. Restr.",                     50 },
-  { "Angle Restr.",                   191 },
-  { "Angle Restr. Z",                 164 },
-  { "Morse Potent.",                   58 },
-  { "Cubic Bonds",                     54 },
-  { "Water Pol.",                      62 },
-  { "Virial",                          18 },
-  { "Update",                          31 },
-  { "Ext.ens. Update",                 54 },
-  { "Stop-CM",                         10 },
-  { "P-Coupling",                       6 },
-  { "Calc-Ekin",                       27 },
-  { "Lincs",                           60 },
-  { "Lincs-Mat",                        4 },
-  { "Shake",                           30 },
-  { "Shake-V",                         15 },
-  { "Shake-Init",                      10 },
-  { "Shake-Vir",                       18 },
-  { "Settle",                         323 },
-  { "PShake-InitLD",                   59 },    
-  { "PShake-InitMD",                   65 },   
-  { "PShake",                           7 },
-  { "Dummy2",                          17 },
-  { "Dummy3",                          28 },
-  { "Dummy3fd",                        95 },
-  { "Dummy3fad",                      176 },
-  { "Dummy3out",                       87 },
-  { "Dummy4fd",                       110 } 
+  { "LJ",                        "inl0100",      31 }, 
+  { "LJ(S)",                     "inl0110",      31 },   
+  { "Buckingham",                "inl0200",      36 }, 
+  { "Buckingham(S)",             "inl0210",      36 },   
+  { "LJ(T)",                     "inl0300",      52 }, 
+  { "FreeEner LJ(T)",            "inl0301",      65 }, 
+  { "Softcore LJ(T)",            "inl0302",     118 }, 
+  { "LJ(T)(S)",                  "inl0310",      52 },   
+  { "Buckingham(T)",             "inl0400",      57 }, 
+  { "FreeEner Bham(T)",          "inl0401",      89 }, 
+  { "Softcore Bham(T)",          "inl0402",     128 }, 
+  { "Buckingham(T)(S)",          "inl0410",      57 },   
+  { "Coulomb",                   "inl1000",      27 }, 
+  { "Coulomb(S)",                "inl1010",      27 }, 
+  { "Coulomb(W)",                "inl1020",      81 }, 
+  { "Coulomb(WW)",               "inl1030",     234 }, 
+  { "LJ + Coulomb",              "inl1100",      38 }, 
+  { "LJ + Coul(S)",              "inl1110",      38 }, 
+  { "LJ + Coul(W)",              "inl1120",      92 }, 
+  { "LJ + Coul(WW)",             "inl1130",     245 }, 
+  { "Buckingham + Coul",         "inl1200",      40 }, 
+  { "Bham + Coul(S)",            "inl1210",      40 }, 
+  { "Bham + Coul(W)",            "inl1220",      94 }, 
+  { "Bham + Coul(WW)",           "inl1230",     247 }, 
+  { "LJ(T) + Coul ",             "inl1300",      58 }, 
+  { "LJ(T) + Coul(S)",           "inl1310",      58 }, 
+  { "LJ(T) + Coul(W)",           "inl1320",     112 }, 
+  { "LJ(T) + Coul(WW)",          "inl1330",     265 }, 
+  { "Bham(T) + Coul ",           "inl1400",      63 }, 
+  { "Bham(T) + Coul(S)",         "inl1410",      63 }, 
+  { "Bham(T) + Coul(W)",         "inl1420",     117 }, 
+  { "Bham(T) + Coul(WW)",        "inl1430",     270 }, 
+  { "RF Coul",                   "inl2000",      32 }, 
+  { "RF Coul(S)",                "inl2010",      32 }, 
+  { "RF Coul(W)",                "inl2020",      96 }, 
+  { "RF Coul(WW)",               "inl2030",     279 }, 
+  { "LJ + RF Coul",              "inl2100",      43 }, 
+  { "LJ + RF Coul(S)",           "inl2110",      43 }, 
+  { "LJ + RF Coul(W)",           "inl2120",     107 }, 
+  { "LJ + RF Coul(WW)",          "inl2130",     290 }, 
+  { "Bham + RF Coul",            "inl2200",      45 }, 
+  { "Bham + RF Coul(S)",         "inl2210",      45 }, 
+  { "Bham + RF Coul(W)",         "inl2220",     109 }, 
+  { "Bham + RF Coul(WW)",        "inl2230",     292 }, 
+  { "LJ(T) + RF Coul",           "inl2300",      63 }, 
+  { "LJ(T) + RF Coul(S)",        "inl2310",      63 }, 
+  { "LJ(T) + RF Coul(W)",        "inl2320",     127 }, 
+  { "LJ(T) + RF Coul(WW)",       "inl2330",     310 }, 
+  { "Bham(T) + RF",              "inl2400",      68 }, 
+  { "Bham(T) + RF(S)",           "inl2410",      68 }, 
+  { "Bham(T) + RF(W)",           "inl2420",     132 }, 
+  { "Bham(T) + RF(WW)",          "inl2430",     310 }, 
+  { "Coulomb(T)",                "inl3000",      41 }, 
+  { "FreeEner Coul(T)",          "inl3001",      54 }, 
+  { "Softcore Coul(T)",          "inl3002",      99 }, 
+  { "Coulomb(T)(S)",             "inl3010",      99 }, 
+  { "Coulomb(T)(W)",             "inl3020",     123 }, 
+  { "Coulomb(T)(WW)",            "inl3030",     360 }, 
+  { "LJ + Coulomb(T)",           "inl3100",      54 }, 
+  { "LJ + Coulomb(T)(S)",        "inl3110",      54 }, 
+  { "LJ + Coulomb(T)(W)",        "inl3120",     136 }, 
+  { "LJ + Coulomb(T)(WW)",       "inl3130",     373 }, 
+  { "Bham + Coul(T)",            "inl3200",      55 }, 
+  { "Bham + Coul(T)(S)",         "inl3210",      55 }, 
+  { "Bham + Coul(T)(W)",         "inl3220",     137 }, 
+  { "Bham + Coul(T)(WW)",        "inl3230",     374 }, 
+  { "LJ(T) + Coul(T)",           "inl3300",      67 }, 
+  { "Free LJ(T)+Coul(T)",        "inl3301",      92 }, 
+  { "SC LJ(T)+Coul(T)",          "inl3302",     151 }, 
+  { "LJ(T) + Coul(T)(S)",        "inl3310",     151 }, 
+  { "LJ(T) + Coul(T)(W)",        "inl3320",     149 }, 
+  { "LJ(T) + Coul(T)(WW)",       "inl3330",     386 }, 
+  { "LJ(T) + Coul(T)",           "inl3400",      71 }, 
+  { "Free Bham(T)+Coul(T)",      "inl3401",     116 }, 
+  { "SC Bham(T)+Coul(T)",        "inl3402",     161 }, 
+  { "Bham(T) + Coul(T)(S)",      "inl3410",     161 }, 
+  { "Bham(T) + Coul(T,W)",       "inl3420",     153 }, 
+  { "Bham(T) + Coul(T,WW)",      "inl3430",     390 }, 
+  { "Innerloop-Iatom",           "-",            10 },
+  { "Calc Weights",              "-",            36 },
+  { "Spread Q",                  "-",             6 },
+  { "Spread Q Bspline",          "-",             2 }, 
+  { "Gather F",                  "-",            23 },
+  { "Gather F Bspline",          "-",            12 }, 
+  { "3D-FFT",                    "-",             8 },
+  { "Convolution",               "-",             4 },
+  { "Solve PME",                 "-",            64 },
+  { "NS-Pairs",                  "-",            21 },
+  { "Reset In Box",              "-",             9 },
+  { "Shift-X",                   "-",             6 },
+  { "CG-CoM",                    "-",            29 },
+  { "Sum Forces",                "-",             1 },
+  { "Bonds",                     "-",            43 },
+  { "G96Bonds",                  "-",            40 },
+  { "Angles",                    "-",           163 },
+  { "G96Angles",                 "-",           150 },
+  { "Propers",                   "-",           229 },
+  { "Impropers",                 "-",           208 },
+  { "RB-Dihedrals",              "-",           247 },
+  { "Four. Dihedrals",           "-",           247 },
+  { "Dist. Restr.",              "-",           200 },
+  { "Orient. Restr.",            "-",           200 },
+  { "Dihedral Restr.",           "-",           200 },
+  { "Pos. Restr.",               "-",            50 },
+  { "Angle Restr.",              "-",           191 },
+  { "Angle Restr. Z",            "-",           164 },
+  { "Morse Potent.",             "-",            58 },
+  { "Cubic Bonds",               "-",            54 },
+  { "Water Pol.",                "-",            62 },
+  { "Virial",                    "-",            18 },
+  { "Update",                    "-",            31 },
+  { "Ext.ens. Update",           "-",            54 },
+  { "Stop-CM",                   "-",            10 },
+  { "P-Coupling",                "-",             6 },
+  { "Calc-Ekin",                 "-",            27 },
+  { "Lincs",                     "-",            60 },
+  { "Lincs-Mat",                 "-",             4 },
+  { "Shake",                     "-",            30 },
+  { "Shake-V",                   "-",            15 },
+  { "Shake-Init",                "-",            10 },
+  { "Shake-Vir",                 "-",            18 },
+  { "Settle",                    "-",           323 },
+  { "PShake-InitLD",             "-",            59 },    
+  { "PShake-InitMD",             "-",            65 },   
+  { "PShake",                    "-",             7 },
+  { "Dummy2",                    "-",            17 },
+  { "Dummy3",                    "-",            28 },
+  { "Dummy3fd",                  "-",            95 },
+  { "Dummy3fad",                 "-",           176 },
+  { "Dummy3out",                 "-",            87 },
+  { "Dummy4fd",                  "-",           110 } 
 };
 
 void init_nrnb(t_nrnb *nrnb)
@@ -216,7 +217,8 @@ void print_nrnb(FILE *out, t_nrnb *nrnb)
   int i;
 
   for(i=0; (i<eNRNB); i++)
-    fprintf(out,"%14s  %10.0f.\n",nbdata[i].name,nrnb->n[i]);
+    fprintf(out,"%14s  %10s  %10.0f.\n",nbdata[i].name,
+	    nbdata[i].loop,nrnb->n[i]);
 }
 
 void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
@@ -233,7 +235,7 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 {
   int    i;
   double nbfs,mni,frac,tfrac,mflop,tflop;
-  
+  char   *myline = "---------------------------------------------------------------------";
   if (nodetime == 0.0) {
     fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
   }
@@ -263,8 +265,9 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 
   fprintf(out,"   RF=Reaction-field  Free=Free Energy  SC=Softcore\n");
   fprintf(out,"   T=Tabulated        S=Solvent         W=Water     WW=Water-Water\n\n");
-  fprintf(out,"%21s  %12s  %12s  %8s\n",
-	  "Computing:","M-Number","M-Flop's","% Flop's");
+  fprintf(out,"%-21s  %8s  %12s  %12s  %8s\n",
+	  "Computing:","Function","M-Number","M-Flops","% Flops");
+  fprintf(out,"%s\n",myline);
   mflop=0.0;
   tfrac=0.0;
   for(i=0; (i<eNRNB); i++) {
@@ -273,11 +276,14 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
     if (mni != 0)
-      fprintf(out,"%21s  %12.6f  %12.6f  %6.1f\n",
-	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
+      fprintf(out,"%-21s  %8s  %12.6f  %12.6f  %6.1f\n",
+	      nbdata[i].name,nbdata[i].loop,mni,mni*nbdata[i].flop,frac);
   }
-  fprintf(out,"%15s  %12s  %12.5f  %6.1f\n\n",
-	  "Total","",mflop,tfrac);
+  fprintf(out,"%s\n",myline);
+  fprintf(out,"%-21s  %8s  %12s  %12.5f  %6.1f\n",
+	  "Total","","",mflop,tfrac);
+  fprintf(out,"%s\n\n",myline);
+  
   if ((nodetime > 0) && (realtime > 0)) {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
