@@ -358,7 +358,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
       C12(nbfp,4,0,2) = iparams[itype].lj14.c12A;
       C12(nbfp,4,1,2) = iparams[itype].lj14.c12B;
       
-define(`ARG1',`egnb,SCAL(fr->tabscale),fr->VFtab')
+define(`ARG1',`egnb,SCAL(fr->tabscale),fr->VFtab14')
 define(`ARG2',`SCAL(i1),&ai,&shift14,&gid,j_index,&aj,x[0],fr->fshift[0],SCAL(eps),md->chargeA,f[0],egcoul,fr->shift_vec[0]')
 ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
 
