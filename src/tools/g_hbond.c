@@ -92,7 +92,7 @@ typedef struct {
   t_acceptor *hb;
 } t_donor;
 
-bool in_list(atom_id selection,int isize,atom_id *index)
+static bool in_list(atom_id selection,int isize,atom_id *index)
 {
   int i;
   bool bFound;
@@ -116,7 +116,7 @@ static char *mkatomname(t_atoms *atoms,int i)
   return buf;
 }
 
-void add_acc(int i, int *max_nr,int *nr,atom_id **a)
+static void add_acc(int i, int *max_nr,int *nr,atom_id **a)
 {
   (*nr)++;
   if ( *nr > *max_nr ) {
@@ -126,7 +126,7 @@ void add_acc(int i, int *max_nr,int *nr,atom_id **a)
   (*a)[*nr-1]=i;
 }
 
-void search_acceptors(t_topology *top, int isize, atom_id *index,
+static void search_acceptors(t_topology *top, int isize, atom_id *index,
 		      int *nr_a, atom_id **a, bool bNitAcc)
 {
   int i,max_nr_a;
@@ -140,29 +140,35 @@ void search_acceptors(t_topology *top, int isize, atom_id *index,
   srenew(*a,*nr_a);
 }
 
-void add_dh(int id, int ih, int *max_nr,int *nr,atom_id **d,atom_id **h)
+static void add_dh(int id, int ih, int *max_nr,int *nr,atom_id **d,atom_id **h,
+		   bool *bDonor)
 {
-  (*nr)++;
-  if ( *nr > *max_nr ) {
-    (*max_nr)+=10;
-    srenew(*d,*max_nr);
-    srenew(*h,*max_nr);
+  if (!bDonor[ih]) {
+    (*nr)++;
+    if ( *nr > *max_nr ) {
+      (*max_nr)+=10;
+      srenew(*d,*max_nr);
+      srenew(*h,*max_nr);
+    }
+    (*d)[*nr-1]=id;
+    (*h)[*nr-1]=ih;
+
+    bDonor[ih] = TRUE;
   }
-  (*d)[*nr-1]=id;
-  (*h)[*nr-1]=ih;
 }
 
-void search_donors(t_topology *top, int isize, atom_id *index,
-		   int *nr_d, atom_id **d, atom_id **h)
+static void search_donors(t_topology *top, int isize, atom_id *index,
+			  int *nr_d, atom_id **d, atom_id **h)
 {
-  int i,j,max_nr_d;
+  int        i,j,max_nr_d;
   t_functype func_type;
-  t_ilist *interaction;
-  atom_id nr1,nr2;
-  bool stop;
+  t_ilist    *interaction;
+  atom_id    nr1,nr2;
+  bool       *bDonor,stop;
   
+  snew(bDonor,top->atoms.nr);
 
-    max_nr_d=*nr_d;
+  max_nr_d=*nr_d;
   for(func_type=0; func_type < F_NRE; func_type++) {
     interaction=&top->idef.il[func_type];
     for(i=0; i < interaction->nr; i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
@@ -174,11 +180,11 @@ void search_donors(t_topology *top, int isize, atom_id *index,
 	
 	if (in_list(nr1,  isize,index)) {
 	  if (in_list(nr1+1,isize,index))
-	    add_dh(nr1,nr1+1,&max_nr_d,nr_d,d,h);
+	    add_dh(nr1,nr1+1,&max_nr_d,nr_d,d,h,bDonor);
 	  if (in_list(nr1+2,isize,index))
-	    add_dh(nr1,nr1+2,&max_nr_d,nr_d,d,h);
+	    add_dh(nr1,nr1+2,&max_nr_d,nr_d,d,h,bDonor);
 	}
-      } else if ( interaction_function[func_type].flags & IF_CONNECT ) {
+      } else if (IS_CHEMBOND(func_type)) {
 	for (j=0; j<2; j++) {
 	  nr1=interaction->iatoms[i+1+j];
 	  nr2=interaction->iatoms[i+2-j];
@@ -186,9 +192,17 @@ void search_donors(t_topology *top, int isize, atom_id *index,
 	       ( ( *top->atoms.atomname[nr2][0] == 'O' ) ||
 		 ( *top->atoms.atomname[nr2][0] == 'N' )) &&
 	       in_list(nr1,isize,index) && in_list(nr2,isize,index))
-	    add_dh(nr2,nr1,&max_nr_d,nr_d,d,h);
+	    add_dh(nr2,nr1,&max_nr_d,nr_d,d,h,bDonor);
 	}
-      } else if ( interaction_function[func_type].flags & IF_DUMMY ) {
+      }
+    }
+  }
+  for(func_type=0; func_type < F_NRE; func_type++) {
+    interaction=&top->idef.il[func_type];
+    for(i=0; i < interaction->nr; i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1 /* next function */) {
+      assert(func_type == top->idef.functype[interaction->iatoms[i]]);
+      
+      if ( interaction_function[func_type].flags & IF_DUMMY ) {
 	nr1=interaction->iatoms[i+1];
 	if ( *top->atoms.atomname[nr1][0]  == 'H') {
 	  nr2=nr1-1;
@@ -201,17 +215,19 @@ void search_donors(t_topology *top, int isize, atom_id *index,
 	  if ( !stop && ( ( *top->atoms.atomname[nr2][0] == 'O') ||
 			  ( *top->atoms.atomname[nr2][0] == 'N') ) &&
 	       in_list(nr1,isize,index) && in_list(nr2,isize,index) )
-	    add_dh(nr2,nr1,&max_nr_d,nr_d,d,h);
+	    add_dh(nr2,nr1,&max_nr_d,nr_d,d,h,bDonor);
 	}
       }
     }
   }
+  sfree(bDonor);
+  
   srenew(*d,*nr_d);
   srenew(*h,*nr_d);
 }
 
-void init_grid(bool bBox, matrix box, real rcut, 
-	       ivec ngrid, t_gridcell ****grid)
+static void init_grid(bool bBox, matrix box, real rcut, 
+		      ivec ngrid, t_gridcell ****grid)
 {
   int i,x,y,z;
   
@@ -235,9 +251,10 @@ void init_grid(bool bBox, matrix box, real rcut,
 
 char *grpnames[grNR] = {"0D","0H","0A","1D","1H","1A","iD","iH","iA"};
 
-void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
-		bool bBox, matrix box, rvec hbox, real rcut, real rshell,
-		ivec ngrid, t_gridcell ***grid)
+static void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
+		       bool bBox, matrix box, rvec hbox,
+		       real rcut, real rshell,
+		       ivec ngrid, t_gridcell ***grid)
 {
   int     i,m,gr,xi,yi,zi;
   ivec    grididx;
@@ -316,7 +333,7 @@ void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
   } 
 }
 
-void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
+static void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
 {
   int gr,xi,yi,zi;
   
@@ -355,7 +372,7 @@ void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
        }\
      }\
 
-void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
+static void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
 {
   int gr,x,y,z,sum[grNR];
   
@@ -389,7 +406,7 @@ void dump_grid(FILE *fp, ivec ngrid, t_gridcell ***grid)
 /* New GMX record! 5 * in a row. Congratulations! 
  * Sorry, only four left.
  */
-void free_grid(ivec ngrid, t_gridcell ****grid)
+static void free_grid(ivec ngrid, t_gridcell ****grid)
 {
   int y,z;
   t_gridcell ***g = *grid;
@@ -404,9 +421,10 @@ void free_grid(ivec ngrid, t_gridcell ****grid)
   g=NULL;
 }
 
-bool is_hbond(atom_id d, atom_id h, atom_id a, 
-	      real rcut, real ccut, 
-	      rvec x[], bool bBox, matrix box,rvec hbox, real *d_ha, real *ang)
+static bool is_hbond(atom_id d, atom_id h, atom_id a, 
+		     real rcut, real ccut, 
+		     rvec x[], bool bBox, matrix box,rvec hbox,
+		     real *d_ha, real *ang)
 {
   rvec r_dh,r_ha;
   real d_ha2,ca;
@@ -444,7 +462,7 @@ bool is_hbond(atom_id d, atom_id h, atom_id a,
   return FALSE;
 }
 
-void sort_dha(int nr_d, atom_id *d, atom_id *h, int nr_a, atom_id *a)
+static void sort_dha(int nr_d, atom_id *d, atom_id *h, int nr_a, atom_id *a)
 {
   int i,j;
   atom_id temp;
@@ -469,7 +487,7 @@ void sort_dha(int nr_d, atom_id *d, atom_id *h, int nr_a, atom_id *a)
       }
 }
 
-void sort_hb(int *nr_a, t_donor **donors)
+static void sort_hb(int *nr_a, t_donor **donors)
 {
   int gr,i,j,k;
   t_acceptor ta;
