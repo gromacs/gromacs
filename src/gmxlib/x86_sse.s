@@ -99,7 +99,7 @@ vecinvsqrt_sse:
 	mov ecx, [ebp + 16]
         mov edx, ecx
 	movups xmm6,[sse_three]
-	movups xmm7,[sse_half]
+	movups xmm7,[sse_minushalf]
         shr ecx, 3
         jecxz .vecinvsqrt_iter4
         emms	
