@@ -57,7 +57,9 @@ int main(int argc,char *argv[])
     "intramolecular peaks in the rdf plot.",
     "It is however better to supply a run input file with a higher number of",
     "exclusions. For eg. benzene a topology with nrexcl set to 5",
-    "would eliminate all intramolecular contributions to the rdf." 
+    "would eliminate all intramolecular contributions to the rdf.",
+    "Note that all atoms in the selected groups are used, also the ones",
+    "that don't have Lennard-Jones interactions." 
   };
   static bool bCM=FALSE;
   static real cutoff=0, binwidth=0.005;
