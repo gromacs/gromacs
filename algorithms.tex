@@ -1376,35 +1376,46 @@ Conjugate gradient can not be used with constraints or freeze groups.
 \section{Normal Mode Analysis}
 \normindex{Normal mode analysis}~\cite{Levitt83,Go83,BBrooks83b} 
 can be performed using {\gromacs}, by diagonalization of the mass-weighted
-\normindex{Hessian}:
-\beq
-M^{-1/2} H M^{-1/2} Q   ~=~     \omega^2 Q
-\eeq
-where $M$ contains the atomic masses, $Q$ contains eigenvectors, and $\omega$
-contains the corresponding eigenvalues (frequencies).
+\normindex{Hessian} $H$:
+\bea
+R^T M^{-1/2} H M^{-1/2} R   &=& \mbox{diag}(\lambda_1,\ldots,\lambda_{3N})
+\\
+\lambda_i &=& (2 \pi \omega_i)^2
+\eea
+where $M$ contains the atomic masses, $R$ is a matrix that contains
+the eigenvectors as columns, $\lambda_i$ are the eigenvalues
+and $\omega_i$ are the corresponding frequencies.
 
-First, the Hessian matrix, which is a $3N \times 3N$ matrix where $N$
-is the number of atoms, has to be calculated:
-\beq
-H_{ij}  ~=~     \frac{\partial^2 V}{\partial x_i \partial x_j}
-\eeq
-where $x_i$ and $x_j$ denote the atomic x,y or z coordinates.
-In practice, these equations have not been developed analytically, but
-the force is used
-\beq
-F_i     ~=~     \frac{\partial V}{\partial x_i}
-\eeq
-from which the Hessian is computed numerically. It should be noted that
+First the Hessian matrix, which is a $3N \times 3N$ matrix where $N$
+is the number of atoms, needs to be calculated:
+\bea
+H_{ij}  &=&     \frac{\partial^2 V}{\partial x_i \partial x_j}
+\eea
+where $x_i$ and $x_j$ denote the atomic x, y or z coordinates.
+In practice, this equation is not used, but the Hessian is
+calculated numerically from the force as:
+\bea
+H_{ij} &=& -
+  \frac{f_i({\bf x}+h{\bf e}_j) - f_i({\bf x}-h{\bf e}_j)}{2h}
+\\
+f_i     &=& - \frac{\partial V}{\partial x_i}
+\eea
+where ${\bf e}_j$ is the unit vector in direction $j$.
+It should be noted that
 for a usual Normal Mode calculation, it is necessary to completely minimize 
 the energy prior to computation of the Hessian. This should be done
 with conjugate gradient in double precision.
+
 A number of {\gromacs} programs are involved in these
 calculations. First {\tt \normindex{nmrun}}, which computes the Hessian,
 and secondly {\tt \normindex{g\_nmeig}} which does the diagonalization and
 sorting of normal modes according to frequencies. Both these programs
-should be run in double precision. An overview of normal mode analysis
-and the related principal component analysis (see \secref{covanal})
-can be found in~\cite{Hayward95b}.
+should be run in double precision.
+The normal modes can be analyzed with the program {\tt g\_anaeig}.
+Ensembles of structures at any temperature and for any subset of
+normal modes can be generated with {\tt \normindex{g\_nmens}}.
+An overview of normal mode analysis and the related principal component
+analysis (see \secref{covanal}) can be found in~\cite{Hayward95b}.
 
 \section{\normindex{Free energy calculations}}
 \label{sec:fecalc}
