@@ -225,10 +225,20 @@ static void reduce_topology_x(int gnx,atom_id index[],
   top->atoms.nr = gnx;
 }
 
+static void zeroq(int n,atom_id index[],t_topology *top)
+{
+  int i;
+  
+  for(i=0; (i<n); i++) {
+    top->atoms.atom[index[i]].q = 0;
+    top->atoms.atom[index[i]].qB = 0;
+  }
+}
+
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
-    "tpbconv can edit run input files in two ways.[PAR]"
+    "tpbconv can edit run input files in three ways.[PAR]"
     "[BB]1st.[bb] by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
@@ -238,7 +248,10 @@ int main (int argc, char *argv[])
     "[BB]2nd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
-    "[BB]WARNING: this tpx file is not fully functional[bb]."
+    "[BB]WARNING: this tpx file is not fully functional[bb].",
+    "[BB]3rd.[bb] by setting the charges of a specified group",
+    "to zero. This is useful when doing free energy estimates",
+    "using the LIE (Linear Interactio Energy) method."
   };
 
   char         *top_fn,*frame_fn;
@@ -266,7 +279,7 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
-  static bool bUncStart = TRUE;
+  static bool bUncStart = TRUE,bZeroQ = FALSE;
   static t_pargs pa[] = {
     { "-time",          FALSE, etREAL, {&start_t}, 
       "Continue from frame at this time (ps) instead of the last frame" },
@@ -274,6 +287,8 @@ int main (int argc, char *argv[])
       "Extend runtime by this amount (ps)" },
     { "-until",         FALSE, etREAL, {&until_t}, 
       "Extend runtime until this ending time (ps)" },
+    { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
+      "Set the charges of a group (from the index) to zero" },
     { "-unconstrained", FALSE, etBOOL, {&bUncStart},
       "For a continuous trajectory, the constraints should not be solved before the first step (default)" }
   };
@@ -384,23 +399,30 @@ int main (int argc, char *argv[])
 	   ir->nsteps,ir->nsteps*ir->delta_t);
 	  
   }
-  if (ir->nsteps > 0) {
-
+  if (bZeroQ || (ir->nsteps > 0)) {
     ir->init_t      = run_t;
     ir->init_lambda = run_lambda;
     
     if (!ftp2bSet(efTRN,NFILE,fnm)) {
       get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
-      bSel=(gnx!=natoms);
-      for (i=0; ((i<gnx) && (!bSel)); i++)
-	bSel = (i!=index[i]);
+      if (!bZeroQ) {
+	bSel = (gnx != natoms);
+	for (i=0; ((i<gnx) && (!bSel)); i++)
+	  bSel = (i!=index[i]);
+      }
+      else
+	bSel = FALSE;
       if (bSel) {
 	fprintf(stderr,"Will write subset %s of original tpx containg %d "
 		"atoms\n",grpname,gnx);
 	reduce_topology_x(gnx,index,&top,x,v);
 	natoms = gnx;
       } 
+      else if (bZeroQ) {
+	zeroq(gnx,index,&top);
+	fprintf(stderr,"Zero-ing charges for group %s\n",grpname);
+      }
       else
 	fprintf(stderr,"Will write full tpx file (no selection)\n");
     }    
