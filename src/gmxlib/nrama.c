@@ -38,11 +38,9 @@
 #endif
 
 #include <math.h>
-#include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "assert.h"
 #include "typedefs.h"
 #include "random.h"
 #include "bondf.h"
@@ -223,7 +221,7 @@ static void get_dih2(t_xrama *xr,t_functype functype[],
       if (thisff[1] != -1) {
 	ndih=search_ff(thisff,ndih,ff);
 	if (ndih > maxdih)
-	  fatal_error(0,"More than %n dihedrals found. SEGV?",maxdih);
+	  gmx_fatal(FARGS,"More than %n dihedrals found. SEGV?",maxdih);
       }
       else {
 	fprintf(stderr,"No Phi or Psi, atoms: %s %s %s %s\n",
@@ -275,7 +273,8 @@ static void get_dih_props(t_xrama *xr,t_idef *idef)
     ftype=idef->functype[ft];
     nra=interaction_function[ftype].nratoms;
 
-    assert (ftype == F_PDIHS);
+    if (ftype != F_PDIHS)
+      gmx_incons("ftype is not a dihedral");
     
     key.ai[1]=ia[2];
     key.ai[2]=ia[3];
@@ -291,7 +290,7 @@ static void get_dih_props(t_xrama *xr,t_idef *idef)
   /* Check */
   for(i=0; (i<xr->ndih); i++)
     if (xr->dih[i].mult == 0) 
-      fatal_error(0,"Dihedral around %d,%d not found in topology",
+      gmx_fatal(FARGS,"Dihedral around %d,%d not found in topology",
 		  xr->dih[i].ai[1],xr->dih[i].ai[2]);
 }
 

@@ -50,7 +50,6 @@
 #include "fatal.h"
 #include "xtcio.h"
 #include "enxio.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "gmxfio.h"
 #include "tpxio.h"

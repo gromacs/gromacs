@@ -49,7 +49,6 @@
 #include "fatal.h"
 #include "index.h"
 #include "smalloc.h"
-#include "assert.h"
 #include "vec.h"
 #include "xvgr.h"
 #include "gstat.h"
@@ -210,14 +209,14 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
   int k,id,ia;
   
   if ((id = hb->d.dptr[d]) == NOTSET)
-    fatal_error(0,"No donor atom %d (%s %d)",d+1,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"No donor atom %d (%s %d)",d+1,__FILE__,__LINE__);
   else if (grpd != hb->d.grp[id])
-    fatal_error(0,"Inconsistent donor groups, %d iso %d, atom %d (%s, %d)",
+    gmx_fatal(FARGS,"Inconsistent donor groups, %d iso %d, atom %d (%s, %d)",
 		grpd,hb->d.grp[id],d,__FILE__,__LINE__);
   if ((ia = hb->a.aptr[a]) == NOTSET)
-    fatal_error(0,"No acceptor atom %d (%s %d)",a+1,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"No acceptor atom %d (%s %d)",a+1,__FILE__,__LINE__);
   else if (grpa != hb->a.grp[ia])
-    fatal_error(0,"Inconsistent acceptor groups, %d iso %d, atom %d (%s, %d)",
+    gmx_fatal(FARGS,"Inconsistent acceptor groups, %d iso %d, atom %d (%s, %d)",
 		grpa,hb->a.grp[ia],a,__FILE__,__LINE__);
   
   /* Loop over hydrogens */
@@ -225,7 +224,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
     if (hb->d.hydro[id][k] == h)
       break;
   if (k == hb->d.nhydro[id])
-    fatal_error(0,"Donor %d does not have hydrogen %d  %s %d",d+1,h+1,
+    gmx_fatal(FARGS,"Donor %d does not have hydrogen %d  %s %d",d+1,h+1,
 		__FILE__,__LINE__);;
     
   if (bMerge)
@@ -349,7 +348,7 @@ static void add_h2d(int id,int ih,t_donors *ddd)
     }
   if (i == ddd->nhydro[id]) {
     if (ddd->nhydro[id] >= MAXHYDRO)
-      fatal_error(0,"Donor %d has more than %d hydrogens! %s %d",
+      gmx_fatal(FARGS,"Donor %d has more than %d hydrogens! %s %d",
 		  ddd->don[id],MAXHYDRO,__FILE__,__LINE__);
     ddd->hydro[id][i] = ih;
     ddd->nhydro[id]++;
@@ -402,7 +401,7 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 	  i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
 	/* next function */
 	if (func_type != top->idef.functype[interaction->iatoms[i]]) {
-	  fatal_error(0,"Error in %s,%d func_type %s",__FILE__,__LINE__,
+	  gmx_fatal(FARGS,"Error in %s,%d func_type %s",__FILE__,__LINE__,
 		      interaction_function[func_type].longname);
 	}
 	
@@ -435,7 +434,8 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
       for(i=0; i < interaction->nr; 
 	  i+=interaction_function[top->idef.functype[interaction->iatoms[i]]].nratoms+1) {
 	/* next function */
-	assert(func_type == top->idef.functype[interaction->iatoms[i]]);
+	if (func_type != top->idef.functype[interaction->iatoms[i]])
+	  gmx_incons("function type in search_donors");
 	
 	if ( interaction_function[func_type].flags & IF_DUMMY ) {
 	  nr1=interaction->iatoms[i+1];
@@ -512,7 +512,7 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
     if (bBox) {
       invdelta[m]=ngrid[m]/box[m][m];
       if (1/invdelta[m] < rcut)
-	fatal_error(0,"box shrank too much to keep using this grid\n");
+	gmx_fatal(FARGS,"box shrank too much to keep using this grid\n");
     } else
       invdelta[m]=0;
   }
@@ -807,7 +807,7 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
   }
   /* Consistency check */
   if ((ia0 != hb->d.nrd) || (id0 != hb->a.nra))
-    fatal_error(0,"Unexepected inconsistency: ia0=%d, na=%d, id0=%d, nd=%d (%s,%d)",
+    gmx_fatal(FARGS,"Unexepected inconsistency: ia0=%d, na=%d, id0=%d, nd=%d (%s,%d)",
 		ia0,hb->a.nra,id0,hb->d.nrd,__FILE__,__LINE__);
     
   itest = 0;
@@ -1309,9 +1309,9 @@ int gmx_hbond(int argc,char *argv[])
   
   if (bContact) {
     if (bSelected)
-      fatal_error(0,"Can not analyze selected contacts: turn off -sel");
+      gmx_fatal(FARGS,"Can not analyze selected contacts: turn off -sel");
     if (bInsert)
-      fatal_error(0,"Can not analyze inserted contacts: turn off -ins");
+      gmx_fatal(FARGS,"Can not analyze inserted contacts: turn off -ins");
   }
   
   /* Initiate main data structure! */
@@ -1332,7 +1332,7 @@ int gmx_hbond(int argc,char *argv[])
     get_index(&(top.atoms),opt2fn("-sel",NFILE,fnm),
 	      1,isize,index,grpnames);
     if (isize[0] % 3)
-      fatal_error(0,"Number of atoms in group '%s' not a multiple of 3\n"
+      gmx_fatal(FARGS,"Number of atoms in group '%s' not a multiple of 3\n"
 		  "and therefore cannot contain triplets of "
 		  "Donor-Hydrogen-Acceptor",grpnames[0]);
     bTwo=FALSE;
@@ -1364,7 +1364,7 @@ int gmx_hbond(int argc,char *argv[])
       for (i=0; i<isize[0]; i++)
 	for (j=0; j<isize[1]; j++)
 	  if (index[0][i] == index[1][j]) 
-	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
+	    gmx_fatal(FARGS,"Partial overlap between groups '%s' and '%s'",
 			grpnames[0],grpnames[1]);
     }
     if (bTwo)
@@ -1384,7 +1384,7 @@ int gmx_hbond(int argc,char *argv[])
       for (grp=0; grp<(bTwo?2:1); grp++)
 	for (j=0; j<isize[grp]; j++)
 	  if (index[grI][i] == index[grp][j]) 
-	    fatal_error(0,"Partial overlap between groups '%s' and '%s'",
+	    gmx_fatal(FARGS,"Partial overlap between groups '%s' and '%s'",
 			grpnames[grp],grpnames[grI]);
     fpins=ffopen("insert.dat","w");
     fprintf(fpins,"%4s: %15s -> %15s (%7s) - %15s (%7s)\n",
@@ -1432,7 +1432,7 @@ int gmx_hbond(int argc,char *argv[])
     }
   }
   if (bStop)
-    fatal_error(0,"Nothing to be done");
+    gmx_fatal(FARGS,"Nothing to be done");
 
   shatom=0;
   if (rshell > 0) {
@@ -1455,7 +1455,7 @@ int gmx_hbond(int argc,char *argv[])
   /* Analyze trajectory */
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   if ( natoms > top.atoms.nr )
-    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
+    gmx_fatal(FARGS,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top.atoms.nr,natoms);
 		
   bBox  = ir.ePBC!=epbcNONE;
@@ -1523,10 +1523,10 @@ int gmx_hbond(int argc,char *argv[])
 		      if (!bTwo) {
 			int id,ia;
 			if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
-			  fatal_error(0,"Death Horror. %s, %d",
+			  gmx_fatal(FARGS,"Death Horror. %s, %d",
 				      __FILE__,__LINE__);
 			if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
-			  fatal_error(0,"Death Horror. %s, %d",
+			  gmx_fatal(FARGS,"Death Horror. %s, %d",
 				      __FILE__,__LINE__);
 			resdist=abs(top.atoms.atom[id].resnr-
 				    top.atoms.atom[ia].resnr);
@@ -1780,7 +1780,8 @@ int gmx_hbond(int argc,char *argv[])
 	  sprintf(buf,"Acceptors %s",grpnames[j]);
 	  legnames[i++] = strdup(buf);
 	}
-      assert(i==nleg);
+      if (i != nleg)
+	gmx_incons("number of legend entries");
       xvgr_legend(fp,nleg,legnames);
       for(i=0; i<nframes; i++) {
 	fprintf(fp,"%10g",hb->time[i]);

@@ -41,7 +41,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "assert.h"
 #include "gen_dum.h"
 #include "smalloc.h"
 #include "resall.h"
@@ -182,11 +181,11 @@ static void read_dummy_database(char *ff,t_dumconf **pdumconflist, int *ndumconf
 
 	curdir=ddb_name2dir(dirstr);
 	if(curdir<0)
-	  fatal_error(0,"Invalid directive %s in dummy database %s.ddb\n",dirstr,ff);
+	  gmx_fatal(FARGS,"Invalid directive %s in dummy database %s.ddb\n",dirstr,ff);
       } else {
 	switch(curdir) {
 	case -1:
-	  fatal_error(0,"First entry in dummy database must be a directive.\n");
+	  gmx_fatal(FARGS,"First entry in dummy database must be a directive.\n");
 	  break;
 	case DDB_CH3:
 	case DDB_NH3:
@@ -212,7 +211,7 @@ static void read_dummy_database(char *ff,t_dumconf **pdumconflist, int *ndumconf
 	      dumconflist[ndum].nhydrogens=3;
 	    ndum++;
 	  } else {
-	    fatal_error(0,"Not enough directives in dummy database line: %s\n",pline);
+	    gmx_fatal(FARGS,"Not enough directives in dummy database line: %s\n",pline);
 	  }
 	  break;
 	case DDB_PHE:
@@ -250,11 +249,11 @@ static void read_dummy_database(char *ff,t_dumconf **pdumconflist, int *ndumconf
 	    strncpy(dumtoplist[i].angle[k].atom3,s3,MAXNAME-1);
 	    dumtoplist[i].angle[k].value=strtod(s4,NULL);
 	  } else 
-	    fatal_error(0,"Need 3 or 4 values to specify bond/angle values in %s.ddb: %s\n",ff,pline);
+	    gmx_fatal(FARGS,"Need 3 or 4 values to specify bond/angle values in %s.ddb: %s\n",ff,pline);
 	  
 	  break;
 	default:
-	  fatal_error(0,"Didnt find a case for directive %s in read_dummy_database\n",dirstr);
+	  gmx_fatal(FARGS,"Didnt find a case for directive %s in read_dummy_database\n",dirstr);
 	}
       }
     }
@@ -311,14 +310,14 @@ static real get_ddb_bond(t_dumtop *dumtop, int ndumtop, char res[], char atom1[]
   while(i<ndumtop && strcasecmp(res,dumtop[i].resname))
     i++;
   if(i==ndumtop)
-    fatal_error(0,"No dummy information for residue %s found in dummy database.\n",res);
+    gmx_fatal(FARGS,"No dummy information for residue %s found in dummy database.\n",res);
   j=0;
   while(j<dumtop[i].nbonds && 
 	( strcmp(atom1,dumtop[i].bond[j].atom1) || strcmp(atom2,dumtop[i].bond[j].atom2)) &&
 	( strcmp(atom2,dumtop[i].bond[j].atom1) || strcmp(atom1,dumtop[i].bond[j].atom2)))
     j++;
   if(j==dumtop[i].nbonds)
-    fatal_error(0,"Couldnt find bond %s-%s for residue %s in dummy database.\n",atom1,atom2,res);
+    gmx_fatal(FARGS,"Couldnt find bond %s-%s for residue %s in dummy database.\n",atom1,atom2,res);
   
   return dumtop[i].bond[j].value;
 }
@@ -332,7 +331,7 @@ static real get_ddb_angle(t_dumtop *dumtop, int ndumtop, char res[], char atom1[
   while(i<ndumtop && strcasecmp(res,dumtop[i].resname))
     i++;
   if(i==ndumtop)
-    fatal_error(0,"No dummy information for residue %s found in dummy database.\n",res);
+    gmx_fatal(FARGS,"No dummy information for residue %s found in dummy database.\n",res);
   j=0;
   while(j<dumtop[i].nangles && 
 	( strcmp(atom1,dumtop[i].angle[j].atom1) || 
@@ -343,7 +342,7 @@ static real get_ddb_angle(t_dumtop *dumtop, int ndumtop, char res[], char atom1[
 	  strcmp(atom1,dumtop[i].angle[j].atom3)))
     j++;
   if(j==dumtop[i].nangles)
-    fatal_error(0,"Couldnt find angle %s-%s-%s for residue %s in dummy database.\n",atom1,atom2,atom3,res);
+    gmx_fatal(FARGS,"Couldnt find angle %s-%s-%s for residue %s in dummy database.\n",atom1,atom2,atom3,res);
   
   return dumtop[i].angle[j].value;
 }
@@ -363,7 +362,7 @@ static void count_bonds(int atom, t_params *psb, char ***atomname,
     else if (psb->param[i].AJ==atom)
       heavy=psb->param[i].AI;
   if (heavy==NOTSET)
-    fatal_error(0,"unbound hydrogen atom %d",atom+1);
+    gmx_fatal(FARGS,"unbound hydrogen atom %d",atom+1);
   /* find all atoms bound to heavy atom */
   other=NOTSET;
   nrb=0;
@@ -437,7 +436,7 @@ static int nm2type(char *name, t_atomtype *atype)
     if (strcasecmp(name,*(atype->atomname[j])) == 0)
       tp=j;
   if (tp==NOTSET)
-    fatal_error(0,"Dummy mass type (%s) not found in atom type database",name);
+    gmx_fatal(FARGS,"Dummy mass type (%s) not found in atom type database",name);
   return tp;
 }
 
@@ -484,7 +483,7 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
     dummy_type[Hatoms[i]] = ftype = abs(ftype);
     if (ftype == F_BONDS) {
       if ( (nrheavies != 1) && (nrHatoms != 1) )
-	fatal_error(0,"cannot make constraint in add_dum_atoms for %d heavy "
+	gmx_fatal(FARGS,"cannot make constraint in add_dum_atoms for %d heavy "
 		    "atoms and %d hydrogen atoms",nrheavies,nrHatoms);
       my_add_param(&(plist[F_SHAKENC]),Hatoms[i],heavies[0],NOTSET);
     } else {
@@ -493,7 +492,7 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
       case F_DUMMY3FD:
       case F_DUMMY3OUT:
 	if (nrheavies < 2) 
-	  fatal_error(0,"Not enough heavy atoms (%d) for %s (min 3)",
+	  gmx_fatal(FARGS,"Not enough heavy atoms (%d) for %s (min 3)",
 		      nrheavies+1,
 		      interaction_function[dummy_type[Hatoms[i]]].name);
 	add_dum3_atoms(&plist[ftype],Hatoms[i],Heavy,heavies[0],heavies[1],
@@ -514,7 +513,7 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
 	      moreheavy=other;
 	  }
 	  if (moreheavy==NOTSET)
-	    fatal_error(0,"Unbound molecule part %d-%d",Heavy+1,Hatoms[0]+1);
+	    gmx_fatal(FARGS,"Unbound molecule part %d-%d",Heavy+1,Hatoms[0]+1);
 	}
 	add_dum3_atoms(&plist[ftype],Hatoms[i],Heavy,heavies[0],moreheavy,
 		       bSwapParity);
@@ -522,7 +521,7 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
       }
       case F_DUMMY4FD: {
 	if (nrheavies < 3) 
-	  fatal_error(0,"Not enough heavy atoms (%d) for %s (min 4)",
+	  gmx_fatal(FARGS,"Not enough heavy atoms (%d) for %s (min 4)",
 		      nrheavies+1,
 		      interaction_function[dummy_type[Hatoms[i]]].name);
 	add_dum4_atoms(&plist[ftype],  
@@ -530,7 +529,7 @@ static void add_dum_atoms(t_params plist[], int dummy_type[],
 	break;
       }
       default:
-	fatal_error(0,"can't use add_dum_atoms for interaction function %s",
+	gmx_fatal(FARGS,"can't use add_dum_atoms for interaction function %s",
 		    interaction_function[dummy_type[Hatoms[i]]].name);
       } /* switch ftype */
     } /* else */
@@ -561,7 +560,8 @@ static int gen_dums_6ring(t_atoms *at, int *dummy_type[], t_params plist[],
    */
 
   if (bDoZ) {
-    assert(atNR == nrfound);
+    if (atNR != nrfound)
+      gmx_incons("Generating dummies on 6-rings");
   }
 
   /* constraints between CG, CE1 and CE2: */
@@ -739,7 +739,8 @@ static int gen_dums_trp(t_atomtype *atype, rvec *newx[],
   rvec r_ij,r_ik,t1,t2;
   char name[10];
 
-  assert(atNR == nrfound);
+  if (atNR != nrfound)
+    gmx_incons("atom types in gen_dums_trp");
   /* Get geometry from database */
   b_CD2_CE2=get_ddb_bond(dumtop,ndumtop,"TRP","CD2","CE2");
   b_NE1_CE2=get_ddb_bond(dumtop,ndumtop,"TRP","NE1","CE2");
@@ -972,7 +973,8 @@ static int gen_dums_tyr(t_atomtype *atype, rvec *newx[],
   /* CG, CE1, CE2 (as in general 6-ring) and OH and HH stay, 
      rest gets dummified.
      Now we have two linked triangles with one improper keeping them flat */
-  assert(atNR == nrfound);
+  if (atNR != nrfound)
+    gmx_incons("Number of atom types in gen_dums_tyr");
 
   /* Aromatic rings have 6-fold symmetry, so we only need one bond length
    * for the ring part (angle is always 120 degrees).
@@ -1119,8 +1121,12 @@ static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[],
   /* CG, CE1 and NE2 stay, each gets part of the total mass,
      rest gets dummified */
   /* check number of atoms, 3 hydrogens may be missing: */
-  assert( nrfound >= atNR-3 || nrfound <= atNR );
-
+  /* assert( nrfound >= atNR-3 || nrfound <= atNR );
+   * Don't understand the above logic. Shouldn't it be && rather than || ???
+   */
+  if ((nrfound < atNR-3) || (nrfound > atNR))
+    gmx_incons("Generating dummies for HIS");
+  
   /* avoid warnings about uninitialized variables */
   b_ND1_HD1=b_NE2_HE2=b_CE1_HE1=b_CD2_HD2=a_NE2_CE1_HE1=
     a_NE2_CD2_HD2=a_CE1_ND1_HD1=a_CE1_NE2_HE2=0;
@@ -1233,7 +1239,8 @@ static int gen_dums_his(t_atoms *at, int *dummy_type[], t_params plist[],
 	ndum++;
       }
     } 
-  assert(ndum+3 == nrfound);
+  if (ndum+3 != nrfound)
+    gmx_incons("Generating dummies for HIS");
 
   xcom/=mtot;
   ycom/=mtot;
@@ -1452,7 +1459,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  else
 	    needed = k;
 	  if (nrfound<needed)
-	    fatal_error(0,"not enough atoms found (%d, need %d) in "
+	    gmx_fatal(FARGS,"not enough atoms found (%d, need %d) in "
 			"residue %s %d while\n             "
 			"generating aromatics dummy construction",
 			nrfound,needed,resnm,resnr+1);
@@ -1484,7 +1491,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	/* this means this residue won't be processed */
 	break;
       default:
-	fatal_error(0,"DEATH HORROR in do_dummies (%s:%d)",
+	gmx_fatal(FARGS,"DEATH HORROR in do_dummies (%s:%d)",
 		    __FILE__,__LINE__);
       } /* switch whatres */
       /* skip back to beginning of residue */
@@ -1544,7 +1551,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  isN=TRUE;
 	  j=nitrogen_is_planar(dumconflist,ndumconf,tpname);
 	  if(j<0) 
-	    fatal_error(0,"No dummy database NH2 entry for type %s\n",tpname);
+	    gmx_fatal(FARGS,"No dummy database NH2 entry for type %s\n",tpname);
 	  planarN=(j==1);
 	}
 	if ( (nrHatoms == 2) && (nrbonds == 3) && ( !isN || planarN ) ) {
@@ -1570,7 +1577,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
 	ch=get_dummymass_name(dumconflist,ndumconf,tpname,nexttpname);
 
 	if(ch==NULL) 
-	  fatal_error(0,"Cant find dummy mass (in %s.ddb) for type %s bonded to type %s. Add it to the database!\n",ff,tpname,nexttpname);
+	  gmx_fatal(FARGS,"Cant find dummy mass (in %s.ddb) for type %s bonded to type %s. Add it to the database!\n",ff,tpname,nexttpname);
 	else
 	  strcpy(name,ch);
 
@@ -1735,7 +1742,7 @@ void do_dummies(int nrtp, t_restp rtp[], t_atomtype *atype,
   *cgnr        = newcgnr;
   *x           = newx;
   if (at->nr > add_shift)
-    fatal_error(0,"Added impossible amount of dummy masses "
+    gmx_fatal(FARGS,"Added impossible amount of dummy masses "
 		"(%d on a total of %d atoms)\n",nadd,at->nr-nadd);
   
   if (debug) {
@@ -1810,7 +1817,7 @@ void do_h_mass(t_params *psb, int dummy_type[], t_atoms *at, real mHmult,
 	  a=psb->param[j].AI;
       }
       if (a==NOTSET)
-	fatal_error(0,"Unbound hydrogen atom (%d) found while adjusting mass",
+	gmx_fatal(FARGS,"Unbound hydrogen atom (%d) found while adjusting mass",
 		    i+1);
       
       /* adjust mass of i (hydrogen) with mHmult

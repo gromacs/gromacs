@@ -67,7 +67,7 @@ void add_param(t_params *ps,int ai,int aj, real *c, char *s)
   int i;
   
   if ((ai < 0) || (aj < 0)) 
-    fatal_error(0,"Trying to add impossible atoms: ai=%d, aj=%d",ai,aj);
+    gmx_fatal(FARGS,"Trying to add impossible atoms: ai=%d, aj=%d",ai,aj);
   pr_alloc(1,ps);
   ps->param[ps->nr].AI=ai;
   ps->param[ps->nr].AJ=aj;
@@ -215,10 +215,10 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
     }
   }
   if (jmax == -1)
-    fatal_error(0,"Atom %s not found in rtp database in residue %s",
+    gmx_fatal(FARGS,"Atom %s not found in rtp database in residue %s",
 		searchname,rtp->resname);
   if (kmax != strlen(searchname))
-    fatal_error(0,"Atom %s not found in rtp database in residue %s, "
+    gmx_fatal(FARGS,"Atom %s not found in rtp database in residue %s, "
 		"it looks a bit like %s",
 		searchname,rtp->resname,*(rtp->atomname[jmax]));
   return jmax;

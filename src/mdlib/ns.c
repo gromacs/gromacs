@@ -44,7 +44,6 @@
 #include <math.h>
 #include <string.h>
 #include "sysstuff.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "maths.h"
@@ -268,7 +267,7 @@ void correct_box(tensor box,t_forcerec *fr,t_graph *g)
 	x -= y*yx;
 	shift = XYZ2IS(x,y,z);
 	if (shift<0 || shift>=SHIFTS)
-	  fatal_error(0,"Could not correct too skewed box");
+	  gmx_fatal(FARGS,"Could not correct too skewed box");
 	fr->nlist_sr[l].shift[i] = shift;
       }
   }
@@ -285,7 +284,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
   
   maxsr     = homenr-fr->nWatMol*3-(int)(fr->nMNOMol*fr->nMNOav[0]);
   if (maxsr < 0)
-    fatal_error(0,"%s, %d: Negative number of short range atoms.\n"
+    gmx_fatal(FARGS,"%s, %d: Negative number of short range atoms.\n"
 		"Call your Gromacs dealer for assistance.",__FILE__,__LINE__);
   maxsr_mno = fr->nMNOMol;
   maxsr_wat = fr->nWatMol; 
@@ -1412,7 +1411,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
     icg      = cg_index[iicg];
     /* Consistency check */
     if (icg != iicg)
-      fatal_error(0,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
+      gmx_fatal(FARGS,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
 		  __LINE__);
 
     /* Skip this charge group if all energy groups are excluded! */
@@ -1476,8 +1475,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 	  /* Get shift vector */	  
 	  shift=XYZ2IS(tx,ty,tz);
 #ifdef NS5DB
-	  assert(shift >= 0);
-	  assert(shift < SHIFTS);
+	  range_check(shift,0,SHIFTS);
 #endif
 	  for(nn=0; (nn<ngid); nn++) {
 	    nsr[nn]      = 0;
@@ -1681,11 +1679,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   if (fr->ePBC != epbcNONE) {
     if (bGrid) {
       if (sqr(fr->rlistlong) >= max_cutoff2(box))
-	fatal_error(0,"One of the box vectors has become shorter than twice the cut-off length or one of the box diagonal elements has become smaller than the cut-off.");
+	gmx_fatal(FARGS,"One of the box vectors has become shorter than twice the cut-off length or one of the box diagonal elements has become smaller than the cut-off.");
     } else {
       min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
       if (2*fr->rlistlong >= min_size)
-	fatal_error(0,"One of the box lengths has become smaller than twice the cut-off length.");
+	gmx_fatal(FARGS,"One of the box lengths has become smaller than twice the cut-off length.");
     }
   }
 
@@ -1705,7 +1703,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
      */
     maxcg=sizeof(t_excl)*8;
     if (nr_in_cg > maxcg)
-      fatal_error(0,"Max #atoms in a charge group: %d > %d\n",
+      gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",
 		  nr_in_cg,maxcg);
       
     snew(bexcl,cgs->nra);

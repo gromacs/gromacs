@@ -42,7 +42,6 @@
 #include <string.h>
 #include "typedefs.h"
 #include "main.h"
-#include "assert.h"
 #include "mvdata.h"
 #include "network.h"
 #include "smalloc.h"

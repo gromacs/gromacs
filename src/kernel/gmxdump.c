@@ -50,7 +50,6 @@
 #include "fatal.h"
 #include "xtcio.h"
 #include "enxio.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "names.h"
 #include "gmxfio.h"
@@ -244,7 +243,8 @@ void list_ene(char *fn)
   snew(fr,1);
   do {
     bCont=do_enx(in,fr);
-    assert(fr->nre==nre);
+    if (fr->nre != nre)
+      gmx_incons("Number of energies in list_ene");
     
     if (bCont) {
       printf("\n%24s  %12.5e  %12s  %12d\n","time:",

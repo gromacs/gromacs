@@ -122,10 +122,10 @@ int gmx_rotacf(int argc,char *argv[])
     nvec = isize/3;
   
   if (((isize % 3) != 0) && !bVec)
-    fatal_error(0,"number of index elements not multiple of 3, "
+    gmx_fatal(FARGS,"number of index elements not multiple of 3, "
 		"these can not be atom triplets\n");
   if (((isize % 2) != 0) && bVec)
-    fatal_error(0,"number of index elements not multiple of 2, "
+    gmx_fatal(FARGS,"number of index elements not multiple of 2, "
 		"these can not be atom doublets\n");
   
   top=read_top(ftp2fn(efTPX,NFILE,fnm));

@@ -240,7 +240,7 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab,
 	    if (bbb[ib].aa[j] == i)
 	      break;
 	  if (j == bbb[ib].n)
-	    fatal_error(0,"Bond inconsistency (%d not in list of %d)!\n",i,ib);
+	    gmx_fatal(FARGS,"Bond inconsistency (%d not in list of %d)!\n",i,ib);
 	  for( ; (j<bbb[ib].n-1); j++)
 	    bbb[ib].aa[j] = bbb[ib].aa[j+1];
 	  bbb[ib].n--;
@@ -275,7 +275,7 @@ static void mk_diamond(t_atoms *a,rvec x[],real odist,t_symtab *symtab,
       a->atomname[i] = put_symtab(symtab,"CH2");
       break;
     default:
-      fatal_error(0,"This atom (%d) has %d bonds only",i,bbb[i].n);
+      gmx_fatal(FARGS,"This atom (%d) has %d bonds only",i,bbb[i].n);
     }
   }
   sfree(bbb);

@@ -63,10 +63,10 @@ static int nFloatSize(t_trnheader *sh)
   else if (sh->f_size)
     nflsize = sh->f_size/(sh->natoms*DIM);
   else 
-    fatal_error(0,"Can not determine precision of trn file, quit!");
+    gmx_file("Can not determine precision of trn file");
   
   if (((nflsize != sizeof(float)) && (nflsize != sizeof(double))))
-    fatal_error(0,"Float size %d. Maybe different CPU?",nflsize);
+    gmx_fatal(FARGS,"Float size %d. Maybe different CPU?",nflsize);
       
   return nflsize;
 }
@@ -188,13 +188,13 @@ static bool do_trn(int fp,bool bRead,int *step,real *t,real *lambda,
     *t      = sh->t;
     *lambda = sh->lambda;
     if (sh->ir_size)
-      fatal_error(0,"inputrec in trn file");
+      gmx_file("inputrec in trn file");
     if (sh->e_size)
-      fatal_error(0,"energies in trn file");
+      gmx_file("energies in trn file");
     if (sh->top_size)
-      fatal_error(0,"topology in trn file");
+      gmx_file("topology in trn file");
     if (sh->sym_size)
-      fatal_error(0,"symbol table in trn file");
+      gmx_file("symbol table in trn file");
   }
   bOK = do_htrn(fp,bRead,sh,box,x,v,f);
 
@@ -216,7 +216,7 @@ void read_trnheader(char *fn,t_trnheader *trn)
   
   fp = open_trn(fn,"r");
   if (!do_trnheader(fp,TRUE,trn,&bOK))
-    fatal_error(0,"Empty file %s",fn);
+    gmx_fatal(FARGS,"Empty file %s",fn);
   close_trn(fp);
 }
 

@@ -474,7 +474,7 @@ int gmx_traj(int argc,char *argv[])
 		       bCom && (bOX || bOV || bOT || bEKT || bEKR));
   sfree(xtop);
   if ((bMol || bCV || bCF) && !bTop)
-    fatal_error(0,"Need a run input file for option -mol, -cv or -cf");
+    gmx_fatal(FARGS,"Need a run input file for option -mol, -cv or -cf");
   
 
   if (bMol)

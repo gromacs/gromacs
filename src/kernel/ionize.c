@@ -213,7 +213,7 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
 	break;
       }
     if (j == NELEM) 
-      fatal_error(0,PREFIX"Don't know number of electrons for %s",
+      gmx_fatal(FARGS,PREFIX"Don't know number of electrons for %s",
 		  *atomname[i]);
     elemcnt[j]++;
 
@@ -283,7 +283,7 @@ real xray_cross_section(int eColl,t_cross_atom *ca)
     c = (ca->z-ca->n)*ca->sigIn/ca->z;
     break;
   default:
-    fatal_error(0,"No such collision type %d\n",eColl);
+    gmx_fatal(FARGS,"No such collision type %d\n",eColl);
   }
   return c;
 }
@@ -305,7 +305,7 @@ real prob_K(int eColl,t_cross_atom *ca)
     P = (2-ca->k)/(ca->z-ca->n);
     break;
   default:
-    fatal_error(0,"No such collision type %d\n",eColl);
+    gmx_fatal(FARGS,"No such collision type %d\n",eColl);
   } 
   return P;
 }
@@ -514,12 +514,12 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     gaussrand=gmx_rng_init(ionize_seed);
    
     if ((width <= 0) || (nphot <= 0))
-      fatal_error(0,"Your parameters for ionization are not set properly\n"
+      gmx_fatal(FARGS,"Your parameters for ionization are not set properly\n"
 		  "width (userreal3) = %f,  nphot (userreal2) = %f",
 		  width,nphot);
     
     if ((mode < 0) || (mode >= eionNR))
-      fatal_error(0,"Ionization mode (userint3)"
+      gmx_fatal(FARGS,"Ionization mode (userint3)"
 		  " should be in the range 0 .. %d",eionNR-1);
     
     switch (mode) {
@@ -542,7 +542,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
     for(Eindex=0; (Eindex < NENER) && (Energies[Eindex] != ephot); Eindex++)
       ;
     if (Eindex == NENER)
-      fatal_error(0,PREFIX"Energy level of %d keV not supported",ephot);
+      gmx_fatal(FARGS,PREFIX"Energy level of %d keV not supported",ephot);
     
     /* Initiate cross section data etc. */
     ca      = mk_cross_atom(fp,md,atomname,Eindex);
@@ -620,7 +620,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       bDOIT = FALSE;
       break;
     default:
-      fatal_error(0,"Unknown ionization mode %d (%s, line %d)",mode,
+      gmx_fatal(FARGS,"Unknown ionization mode %d (%s, line %d)",mode,
 		  __FILE__,__LINE__);
     }
       
@@ -717,7 +717,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	break;
       }
       default:
-	fatal_error(0,"Ga direct naar de gevangenis. Ga niet langs start");
+	gmx_fatal(FARGS,"Ga direct naar de gevangenis. Ga niet langs start");
       }
       if (bIonize) {
 	/* First increase the charge */

@@ -190,7 +190,7 @@ static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       len =idef->iparams[type].shake.dA;
       len1=idef->iparams[type].shake.dB;
       if ((len==0 || len1==0) && len1!=len)
-	fatal_error(0,"It is not allowed to have a constraint length "
+	gmx_fatal(FARGS,"It is not allowed to have a constraint length "
 		    "zero and non-zero in the A and B topology");
       if (len == 0)
 	nZeroLen++;
@@ -428,7 +428,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       settle_type=idef->il[F_SETTLE].iatoms[0];
       for (j=0; (j<idef->il[F_SETTLE].nr); j+=2) {
 	if (idef->il[F_SETTLE].iatoms[j] != settle_type)
-	  fatal_error(0,"More than one settle type (%d and %d)",
+	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
 		      settle_type,idef->il[F_SETTLE].iatoms[j]);
 	owptr[j/2]=idef->il[F_SETTLE].iatoms[j+1];
 #ifdef DEBUG
@@ -509,7 +509,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	  fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
 	for(j=0; (j<=nblocks); j++)
 	  fprintf(log,"sblock[%3d]=%5d\n",j,(int) sblock[j]);
-	fatal_error(0,"DEATH HORROR: "
+	gmx_fatal(FARGS,"DEATH HORROR: "
 		    "top->blocks[ebSBLOCKS] does not match idef->il[F_SHAKE]");
       }
       sfree(sb);

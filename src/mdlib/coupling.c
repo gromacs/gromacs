@@ -198,7 +198,7 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 	t1[ZZ][n]*=winv[d][n]*fac;
       break;
     default:
-      fatal_error(0,"Parrinello-Rahman pressure coupling type %s "
+      gmx_fatal(FARGS,"Parrinello-Rahman pressure coupling type %s "
 		  "not supported yet\n",EPCOUPLTYPETYPE(ir->epct));
       break;
     }
@@ -291,7 +291,7 @@ void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
 				    - (pres[ZZ][ZZ]+p_corr_z - xy_pressure))/(DIM-1);
     break;
   default:
-    fatal_error(0,"Berendsen pressure coupling type %s not supported yet\n",
+    gmx_fatal(FARGS,"Berendsen pressure coupling type %s not supported yet\n",
 		EPCOUPLTYPETYPE(ir->epct));
     break;
   }
@@ -416,7 +416,7 @@ void update_annealing_target_temp(t_grpopts *opts,real t)
       thist = t;
       break;
     default:
-      fatal_error(0,"Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)",i,opts->ngtc,npoints);
+      gmx_fatal(FARGS,"Death horror in update_annealing_target_temp (i=%d/%d npoints=%d)",i,opts->ngtc,npoints);
     }
     /* We are doing annealing for this group if we got here, 
      * and we have the (relative) time as thist.

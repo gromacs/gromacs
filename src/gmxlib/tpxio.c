@@ -48,7 +48,6 @@
 #include "string2.h"
 #include "fatal.h"
 #include "macros.h"
-#include "assert.h"
 #include "names.h"
 #include "symtab.h"
 #include "futil.h"
@@ -164,7 +163,7 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
       } while ((strcasecmp(buf,itemstr[key]) != 0));
       
       if (strcasecmp(buf,itemstr[key]) != 0) 
-	fatal_error(0,"\nCould not find section heading %s",itemstr[key]);
+	gmx_fatal(FARGS,"\nCould not find section heading %s",itemstr[key]);
       else if (fio_getdebug(fp))
 	fprintf(stderr," and found it\n");
     }
@@ -611,7 +610,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_WATER_POL:
     if (file_version < 31) 
-      fatal_error(0,"Old tpr files with water_polarization not supported. Make a new.");
+      gmx_fatal(FARGS,"Old tpr files with water_polarization not supported. Make a new.");
     do_real(iparams->wpol.al_x);
     do_real(iparams->wpol.al_y);
     do_real(iparams->wpol.al_z);
@@ -708,7 +707,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->dummy.c);
     break;
   default:
-    fatal_error(0,"unknown function type %d (%s) in %s line %d",
+    gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
 		
     		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
   }
@@ -960,7 +959,7 @@ static void do_symtab(t_symtab *symtab,bool bRead)
       symbuf=symbuf->next;
     }
     if (nr != 0)
-      fatal_error(0,"nr of symtab strings left: %d",nr);
+      gmx_fatal(FARGS,"nr of symtab strings left: %d",nr);
   }
 }
 
@@ -1043,14 +1042,14 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   if (bRead) {
     do_string(buf);
     if (strncmp(buf,"VERSION",7))
-      fatal_error(0,"Can not read file %s,\n"
+      gmx_fatal(FARGS,"Can not read file %s,\n"
 		  "             this file is from a Gromacs version which is older than 2.0\n"
 		  "             Make a new one with grompp or use a gro or pdb file, if possible",
 		  fio_getname(fp));
     do_int(precision);
     bDouble = (precision == sizeof(double));
     if ((precision != sizeof(float)) && !bDouble)
-      fatal_error(0,"Unknown precision in file %s: real is %d bytes "
+      gmx_fatal(FARGS,"Unknown precision in file %s: real is %d bytes "
 		  "instead of %d or %d",
 		  fio_getname(fp),precision,sizeof(float),sizeof(double));
     fio_setprecision(fp,bDouble);
@@ -1083,7 +1082,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   if ((fver <= tpx_incompatible_version) ||
       ((fver > tpx_version) && !TopOnlyOK) ||
       (fgen > tpx_generation))
-    fatal_error(0,"reading tpx file (%s) version %d with version %d program",
+    gmx_fatal(FARGS,"reading tpx file (%s) version %d with version %d program",
 		fio_getname(fp),fver,tpx_version);
   
   do_section(eitemHEADER,bRead);
@@ -1154,7 +1153,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     }
   }
 
-#define do_test(b,p) if (bRead && (p!=NULL) && !b) fatal_error(0,"No %s in %s",#p,fio_getname(fp)) 
+#define do_test(b,p) if (bRead && (p!=NULL) && !b) gmx_fatal(FARGS,"No %s in %s",#p,fio_getname(fp)) 
 
   do_test(tpx.bBox,state->box);
   do_section(eitemBOX,bRead);
@@ -1264,7 +1263,7 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
 
 #ifdef HAVE_LIBXML2
   if (fn2ftp(fn) == efXML) {
-    fatal_error(0,"read_tpxheader called with filename %s",fn);
+    gmx_fatal(FARGS,"read_tpxheader called with filename %s",fn);
   }
   else {
 #endif

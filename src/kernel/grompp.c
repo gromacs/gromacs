@@ -40,7 +40,6 @@
 #include <sys/types.h>
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 
@@ -170,7 +169,8 @@ static int *shuffle_xv(bool bSort,bool bVerbose,
     }
     nindex[mi]=k;
   }
-  assert(xind == natoms);
+  if (xind != natoms)
+    gmx_incons("Shuffling error");
   
   /* Buffers for x and v */  
   snew(xbuf,natoms);
@@ -266,7 +266,8 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
   int i,nmismatch,idx;
 #define MAXMISMATCH 20
 
-  assert(at1->nr==at2->nr);
+  if (at1->nr != at2->nr)
+    gmx_incons("comparing atom names");
   
   nmismatch=0;
   for(i=0; i < at1->nr; i++) {
@@ -303,7 +304,7 @@ static void check_eg_vs_cg(t_atoms *atoms,t_block *cgblock)
     for(j=cgblock->index[i]+1;j<cgblock->index[i+1];j++) {
       eg=atoms->atom[j].grpnr[egcENER];
       if(eg!=firsteg) {
-	fatal_error(0,"atoms %d and %d in charge group %d are in different energy groups",
+	gmx_fatal(FARGS,"atoms %d and %d in charge group %d are in different energy groups",
 		    firstj+1,j+1,i+1);
       }
     }
@@ -423,7 +424,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   
   get_stx_coordnum(confin,&state->natoms);
   if (state->natoms != sys->atoms.nr)
-    fatal_error(0,"number of coordinates in coordinate file (%s, %d)\n"
+    gmx_fatal(FARGS,"number of coordinates in coordinate file (%s, %d)\n"
 		"             does not match topology (%s, %d)",
 		confin,state->natoms,topfile,sys->atoms.nr);
   else {
@@ -508,7 +509,7 @@ static void cont_status(char *slog,char *ener,
   state->natoms = fr.natoms;
 
   if(sys->atoms.nr != state->natoms)
-    fatal_error(0,"Number of atoms in Topology "
+    gmx_fatal(FARGS,"Number of atoms in Topology "
 		"is not the same as in Trajectory");
 
   /* Find the appropriate frame */
@@ -517,7 +518,7 @@ static void cont_status(char *slog,char *ener,
   close_trj(fp);
 
   if (fr.not_ok & FRAME_NOT_OK)
-    fatal_error(0,"Can not start from an incomplete frame");
+    gmx_fatal(FARGS,"Can not start from an incomplete frame");
 
   state->x = fr.x;
   if (bNeedVel && !bGenVel)
@@ -551,7 +552,7 @@ static void read_posres(t_params *pr, char *fn, int offset,int *forward)
   for(i=0; (i<pr->nr); i++) {
     ai=pr->param[i].AI;
     if (ai >= natoms)
-      fatal_error(0,"Position restraint atom index (%d) is larger than natoms (%d)\n",
+      gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than natoms (%d)\n",
 		  ai+1,natoms);
     for(j=0; (j<DIM); j++)
       pr->param[i].c[offset + j] = x[ai][j];
@@ -616,7 +617,7 @@ static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
     if (debug)
       fprintf(debug,"Renumbering atomtype %d to %d\n",thistype,nn);
     if (nn == at->nr)
-      fatal_error(0,"Atomtype horror n = %d, %s, %d",nn,__FILE__,__LINE__);
+      gmx_fatal(FARGS,"Atomtype horror n = %d, %s, %d",nn,__FILE__,__LINE__);
     typelist[nn]=thistype;
     nn++;
   }
@@ -736,7 +737,7 @@ static real *mk_capacity(char *str,int nnodes)
       strcpy(f1,f0);
       strcat(f1,"%lf");
       if (sscanf(str,f1,&d) != 1)
-	fatal_error(0,"Not enough elements for -load parameter (I need %d)",
+	gmx_fatal(FARGS,"Not enough elements for -load parameter (I need %d)",
 		    nnodes);
       capacity[i] = d;
       tcap += d;
@@ -937,7 +938,7 @@ int main (int argc, char *argv[])
     printf("creating statusfile for %d node%s...\n",
 	   nnodes,nnodes==1?"":"s");
   else 
-    fatal_error(0,"invalid number of nodes %d\n",nnodes);
+    gmx_fatal(FARGS,"invalid number of nodes %d\n",nnodes);
   
   /*if (bShuffle && (opt2bSet("-r",NFILE,fnm) || opt2bSet("-rb",NFILE,fnm))) {
     fprintf(stderr,"Can not shuffle and do position restraints, "
@@ -980,7 +981,7 @@ int main (int argc, char *argv[])
     
   strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
   if (!fexist(fn)) 
-    fatal_error(0,"%s does not exist",fn);
+    gmx_fatal(FARGS,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&state,
 		     &atype,sys,&msys,plist,bShuffle ? nnodes : 1,
@@ -1026,10 +1027,8 @@ int main (int argc, char *argv[])
 
   if (nerror) {
     print_warn_num();
-    if (nerror==1)
-      fatal_error(0,"There was %d error",nerror);
-    else
-      fatal_error(0,"There were %d errors",nerror);
+    
+    gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
   }
   if (opt2bSet("-r",NFILE,fnm))
     sprintf(fn,opt2fn("-r",NFILE,fnm));

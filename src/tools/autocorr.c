@@ -241,7 +241,7 @@ static void low_do_four_core(int nfour,int nframes,real c1[],fftreal cfour[],
       cfour[i]=sin(c1[i]);
     break;
   default:
-    fatal_error(0,"nCos = %d, %s %d",nCos,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"nCos = %d, %s %d",nCos,__FILE__,__LINE__);
   }
   for(   ; (i<nfour); i++)
     cfour[i]= 0.0;
@@ -338,7 +338,7 @@ static void do_ac_core(int nframes,int nout,
 	corr[k] += ccc;
       }
       else
-	fatal_error(0,"\nInvalid mode (%d) in do_ac_core",mode);
+	gmx_fatal(FARGS,"\nInvalid mode (%d) in do_ac_core",mode);
     }
   }
   /* Correct for the number of points and copy results to the data array */
@@ -450,7 +450,7 @@ real evaluate_integral(int n,real dx,real y[],real dy[],real aver_start,
   
   /* Use trapezoidal rule for calculating integral */
   if (n <= 0)
-    fatal_error(0,"Evaluating integral: n = %d (file %s, line %d)",
+    gmx_fatal(FARGS,"Evaluating integral: n = %d (file %s, line %d)",
 		n,__FILE__,__LINE__);
   sum  = y[0]+y[n-1];
   if (dy)
@@ -631,7 +631,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     }
   }
   else
-    fatal_error(0,"\nUnknown mode in do_autocorr (%d)",mode);
+    gmx_fatal(FARGS,"\nUnknown mode in do_autocorr (%d)",mode);
   
   sfree(cfour);
   for(j=0; (j<nf2); j++)
@@ -736,14 +736,14 @@ void low_do_autocorr(char *fn,char *title,
     nout=nframes;
   
   if (MODE(eacCos) && MODE(eacVector))
-    fatal_error(0,"Incompatible options bCos && bVector (%s, %d)",
+    gmx_fatal(FARGS,"Incompatible options bCos && bVector (%s, %d)",
 		__FILE__,__LINE__);
   if ((MODE(eacP3) || MODE(eacRcross)) && bFour) {
     fprintf(stderr,"Can't combine mode %lu with FFT, turning off FFT\n",mode);
     bFour = FALSE;
   }
   if (MODE(eacNormal) && MODE(eacVector)) 
-    fatal_error(0,"Incompatible mode bits: normal and vector (or Legendre)");
+    gmx_fatal(FARGS,"Incompatible mode bits: normal and vector (or Legendre)");
     
   /* Print flags and parameters */
   if (bVerbose) {
@@ -939,7 +939,7 @@ void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 int get_acfnout(void)
 {
   if (!bACFinit)
-    fatal_error(0,"ACF data not initialized yet");
+    gmx_fatal(FARGS,"ACF data not initialized yet");
 
   return acf.nout;
 }
@@ -947,7 +947,7 @@ int get_acfnout(void)
 int get_acffitfn(void)
 {
   if (!bACFinit)
-    fatal_error(0,"ACF data not initialized yet");
+    gmx_fatal(FARGS,"ACF data not initialized yet");
 
   return sffn2effn(s_ffn);
 }

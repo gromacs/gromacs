@@ -69,7 +69,7 @@ real LegendreP(real x,unsigned long m)
     polynomial=(63*x3*x2 - 70*x3 + 15*x)/8;
     break;
   default:
-    fatal_error(0,"Legendre polynomials of order %d are not supported, %s %d",
+    gmx_fatal(FARGS,"Legendre polynomials of order %d are not supported, %s %d",
 		m,__FILE__,__LINE__);
   }
   return (polynomial);

@@ -90,7 +90,7 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
   t_energy *eg;
   
   if ((index+nener > eb->nener) || (index < 0))
-    fatal_error(0,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
+    gmx_fatal(FARGS,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
 		__FILE__,__LINE__,index,nener,eb->nener);
     
   m      = step;
@@ -120,7 +120,7 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
   real ee=0;
     
   if (index < 0)
-    fatal_error(0,"Invalid index in pr_ebin: %d",index);
+    gmx_fatal(FARGS,"Invalid index in pr_ebin: %d",index);
   if (nener == -1)
     nener=eb->nener;
   else
@@ -141,7 +141,7 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
       else if (prmode == eprAVER)
 	ee=eb->e[i].esum/tsteps;
       else
-	fatal_error(0,"Invalid print mode %d in pr_ebin",prmode);
+	gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
       
       fprintf(fp,"   %12.5e",ee);
     }

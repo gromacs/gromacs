@@ -253,7 +253,7 @@ int main(int argc,char *argv[])
       fprintf(stderr,"No residue numbers\n");
     }
     else
-      fatal_error(0,"Incorrect usage of option %s",argv[i]);
+      gmx_fatal(FARGS,"Incorrect usage of option %s",argv[i]);
   }
     
   nres=get_lines(ftp2fn(efDAT,NFILE,fnm),&resnm);

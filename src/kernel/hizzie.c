@@ -264,7 +264,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
 	  fprintf(stderr,"Will use %s for residue %d\n",hh[type],hisnr+1);
 	}
 	else 
-	  fatal_error(0,"Incomplete ring in HIS%d",hisnr+1);
+	  gmx_fatal(FARGS,"Incomplete ring in HIS%d",hisnr+1);
 	
 	sfree(*pdba->resname[hisnr]);
 	*pdba->resname[hisnr]=strdup(hh[type]);

@@ -1,4 +1,3 @@
-
 /*
  * $Id$
  * 
@@ -42,7 +41,6 @@
 #include <string.h>
 #include "sysstuff.h"
 #include "string2.h"
-#include "assert.h"
 #include "typedefs.h"
 #include "fatal.h"
 #include "smalloc.h"
@@ -63,7 +61,7 @@ static char *trim_string(const char *s,char *out, int maxlen)
   int len,i;
  
   if(strlen(s)>maxlen-1)
-    fatal_error(0,"Character buffer size too small\n");
+    gmx_fatal(FARGS,"Character buffer size too small\n");
   
   for (; (*s)&&((*s)==' '); s++);
   for (len=strlen(s); (len>0); len--) if (s[len-1]!=' ') break;
@@ -90,7 +88,7 @@ int lookup_symtab(t_symtab *symtab,char **name)
       symbuf=symbuf->next;
     }
   }
-  fatal_error(0,"symtab lookup \"%s\" not found",*name);
+  gmx_fatal(FARGS,"symtab lookup \"%s\" not found",*name);
   return -1;
 }
 
@@ -107,7 +105,7 @@ char **get_symtab_handle(t_symtab *symtab,int name)
       symbuf=symbuf->next;
     }
   }
-  fatal_error(0,"symtab get_symtab_handle %d not found",name);
+  gmx_fatal(FARGS,"symtab get_symtab_handle %d not found",name);
   return NULL;
 }
 
@@ -192,7 +190,8 @@ void done_symtab(t_symtab *symtab)
     sfree(freeptr);
   }
   symtab->symbuf=NULL;
-  assert(symtab->nr==0);
+  if (symtab->nr != 0)
+    gmx_incons("Freeing symbol table (symtab) structure");
 }
 
 void free_symtab(t_symtab *symtab)
@@ -208,7 +207,8 @@ void free_symtab(t_symtab *symtab)
     sfree(freeptr);
   }
   symtab->symbuf=NULL;
-  assert(symtab->nr==0);
+  if (symtab->nr != 0)
+    gmx_incons("Freeing symbol table (symtab) structure");
 }
 
 void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
@@ -232,6 +232,7 @@ void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
           nr-=j;
           symbuf=symbuf->next;
         }
-      assert(nr==0);
+      if (symtab->nr != 0)
+	gmx_incons("Printing symbol table (symtab) structure");
     }
 }

@@ -241,7 +241,7 @@ bool has_dihedral(int Dih,t_dlist *dl)
     break;
   default:
     pr_dlist(stdout,1,dl,1,0,TRUE,TRUE,TRUE,TRUE,MAXCHI);
-    fatal_error(0,"Non existant dihedral %d in file %s, line %d",
+    gmx_fatal(FARGS,"Non existant dihedral %d in file %s, line %d",
 		Dih,__FILE__,__LINE__);
   }
   return b;

@@ -50,7 +50,6 @@
 #include "futil.h"
 #include "wman.h"
 #include "tpxio.h"
-#include "assert.h"
 #include "fatal.h"
 #include "network.h"
 #include "vec.h"
@@ -291,7 +290,7 @@ void mk_single_top(t_topology *top)
 static void usage(char *type,char *arg)
 {
   if (arg != NULL)
-    fatal_error(0,"Expected %s argument for option %s\n",type,arg);
+    gmx_fatal(FARGS,"Expected %s argument for option %s\n",type,arg);
 }
  
 int iscan(int argc,char *argv[],int *i)
@@ -534,7 +533,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 	  if (FF(PCA_NOEXIT_ON_ARGS))
 	    fprintf(stderr,"Double command line argument %s\n",argv[i]);
 	  else
-	    fatal_error(0,"Double command line argument %s\n",argv[i]);
+	    gmx_fatal(FARGS,"Double command line argument %s\n",argv[i]);
 	}
       }
     }
@@ -665,7 +664,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #ifdef HAVE_MOTIF
     gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
 #else
-    fatal_error(0,"GROMACS compiled without MOTIF support - can't use X interface");
+    gmx_fatal(FARGS,"GROMACS compiled without MOTIF support - can't use X interface");
 #endif
   }
 
@@ -752,7 +751,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (*argc > 1) {
       for(i=1; (i<*argc); i++) 
 	fprintf(stderr,"Unknown argument: %s\n",argv[i]);
-      fatal_error(0,"Program %s halted",Program());
+      gmx_fatal(FARGS,"Program %s halted",Program());
     }
   } 
   if (bExit) {

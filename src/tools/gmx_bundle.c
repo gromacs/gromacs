@@ -250,7 +250,7 @@ int gmx_bundle(int argc,char *argv[])
 	    gnx,index,grpname);
 
   if (n<=0 || gnx[0] % n || gnx[1] % n || (bKink && gnx[2] % n))
-    fatal_error(0,
+    gmx_fatal(FARGS,
 		"The size of one of your index groups is not a multiple of n");
   bun.n = n;
   snew(bun.end[0],n);

@@ -101,7 +101,7 @@ int main(int argc,char *argv[])
   
   if ( !opt2bSet("-n",NFILE,fnm) ) {
     if ( !ftp2bSet(efSTX,NFILE,fnm) )
-      fatal_error(0,"no index file and no structure file suplied");
+      gmx_fatal(FARGS,"no index file and no structure file suplied");
     else {
       rvec *x,*v;
       
@@ -117,7 +117,7 @@ int main(int argc,char *argv[])
   }
   if (bFreeze) {
     if (atoms.pdbinfo == NULL) 
-      fatal_error(0,"No B-factors in input file %s, use a pdb file next time.",
+      gmx_fatal(FARGS,"No B-factors in input file %s, use a pdb file next time.",
 		  ftp2fn(efSTX,NFILE,fnm));
     
     out=opt2FILE("-of",NFILE,fnm,"w");

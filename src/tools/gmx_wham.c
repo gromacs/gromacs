@@ -87,9 +87,9 @@ void read_umbrella_header(FILE * file,t_UmbrellaHeader * header)
   fscanf(file,"%s%s",Buffer1,Buffer2);
 
   if(strcmp(Buffer1,"UMBRELLA")) 
-    fatal_error(0,"This does not appear to be a valid pdo file");
+    gmx_fatal(FARGS,"This does not appear to be a valid pdo file");
   if(strcmp(Buffer2,"3.0"))
-    fatal_error(0,"This does not appear to be a version 3.0 pdo file");
+    gmx_fatal(FARGS,"This does not appear to be a version 3.0 pdo file");
 #ifdef DOUBLE
   fscanf(file,"%lf%lf%lf",&(header->Dims[0]),&(header->Dims[1]),&(header->Dims[2]));
 #else
@@ -100,7 +100,7 @@ void read_umbrella_header(FILE * file,t_UmbrellaHeader * header)
   fscanf(file,"%s",header->Reference);
   fscanf(file,"%d%d",&(header->nPull),&(header->nDim));
   if(header->nDim!=1)
-    fatal_error(0,"Currently only supports one dimension");
+    gmx_fatal(FARGS,"Currently only supports one dimension");
 	
   for(i=0;i<header->nPull;++i) {
     fscanf(file,"%s",header->PullName[i]);
@@ -311,10 +311,10 @@ int gmx_wham(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 		    
   /* Check to see what we get for command line arguments */
-  if(argc<2) fatal_error(0,"You need to specify a series of pdo files as input");
+  if(argc<2) gmx_fatal(FARGS,"You need to specify a series of pdo files as input");
   for(i=1;i<argc;++i) {
     if(!fexist(argv[i]))
-      fatal_error(0,"Unable to open file %s.",argv[i]);
+      gmx_fatal(FARGS,"Unable to open file %s.",argv[i]);
   }
 
   /* Now we need to process the files */
@@ -340,7 +340,7 @@ int gmx_wham(int argc,char *argv[])
       sprintf(Buffer,"%s/gunzip -c < %s",Path,argv[i]);
 
     if((file=popen(Buffer,"r"))==NULL)
-      fatal_error(0,"Unable to open file %s",argv[i]);
+      gmx_fatal(FARGS,"Unable to open file %s",argv[i]);
     printf("Opening file %s.\n",argv[i]);
     read_umbrella_header(file,&header);
 		

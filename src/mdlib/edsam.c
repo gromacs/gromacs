@@ -87,7 +87,7 @@ void init_edsam(FILE *log,t_topology *top,
 
   ned=edi->ned;
   if (start+homenr<ned)
-    fatal_error(0,"ED sampling currently only works in parallel when all atoms\n"
+    gmx_fatal(FARGS,"ED sampling currently only works in parallel when all atoms\n"
 		"involved in ED constraints are on the master processor - sorry.");
   
   fprintf(log,"Initialising ED sampling: start=%d homenr=%d ned=%d\n\n",start,
@@ -186,12 +186,12 @@ void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms)
   /* check the magic number */
   readmagic=read_edint(in);
   if (readmagic != magic)
-    fatal_error(0,"Wrong magic number in %s",edyn->edinam);
+    gmx_fatal(FARGS,"Wrong magic number in %s",edyn->edinam);
   
   /* check the number of atoms */
    edi->nini=read_edint(in);
   if (edi->nini != nr_mdatoms)
-    fatal_error(0,"Nr of atoms in %s (%d) does not match nr of md atoms (%d)",
+    gmx_fatal(FARGS,"Nr of atoms in %s (%d) does not match nr of md atoms (%d)",
 		edyn->edinam,edi->nini,nr_mdatoms); 
 
   /* Done checking. For the rest we blindly trust the input */
@@ -239,7 +239,7 @@ void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms)
     
     for(j=0; (j < edi->star.nr); j++) 
       if (edi->star.anrs[j] < 0 || edi->star.anrs[j] > edi->ned)
-	fatal_error(0,"ED sampling target index out of bounds: %d\n",edi->star.anrs[j]);
+	gmx_fatal(FARGS,"ED sampling target index out of bounds: %d\n",edi->star.anrs[j]);
     for(i=0; (i < edi->ned); i++) {
       for(j=0; (j < edi->star.nr); j++) {
 	if (edi->star.anrs[j] == i) {
@@ -260,7 +260,7 @@ void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms)
 
     for(j=0; (j < edi->sori.nr); j++) 
       if (edi->sori.anrs[j] < 0 || edi->sori.anrs[j] > edi->ned)
-	fatal_error(0,"ED sampling origin index out of bounds: %d\n",edi->sori.anrs[j]);
+	gmx_fatal(FARGS,"ED sampling origin index out of bounds: %d\n",edi->sori.anrs[j]);
     for(i=0; (i < edi->ned); i++) {
       for(j=0; (j < edi->sori.nr); j++) {
 	if (edi->sori.anrs[j] == i) {

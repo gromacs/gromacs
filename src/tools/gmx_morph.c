@@ -120,7 +120,7 @@ int gmx_morph(int argc,char *argv[])
   get_stx_coordnum (opt2fn("-f1",NFILE,fnm),&nat1);
   get_stx_coordnum (opt2fn("-f2",NFILE,fnm),&nat2);
   if (nat1 != nat2)
-    fatal_error(0,"Number of atoms in first structure is %d, in second %d",
+    gmx_fatal(FARGS,"Number of atoms in first structure is %d, in second %d",
 		nat1,nat2);
   
   init_t_atoms(&atoms,nat1,TRUE);

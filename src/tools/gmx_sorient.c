@@ -187,7 +187,7 @@ int gmx_sorient(int argc,char *argv[])
   }
 
   if (isize[1] % 3)
-    fatal_error(0,"The number of solvent atoms (%d) is not a multiple of 3",
+    gmx_fatal(FARGS,"The number of solvent atoms (%d) is not a multiple of 3",
 		isize[1]);
 
   /* initialize reading trajectory:                         */

@@ -42,7 +42,6 @@
 #include <string.h>
 #include <Xstuff.h>
 #include <xutil.h>
-#include "assert.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "string2.h"

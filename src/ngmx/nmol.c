@@ -49,7 +49,6 @@
 #include "manager.h"
 #include "nmol.h"
 #include "vec.h"
-#include "assert.h"
 #include "txtdump.h"
 #include "pbc.h"
 
@@ -371,7 +370,7 @@ void draw_objects(Display *disp,Window w,GC gc,int nobj,
     bPlus=FALSE;
     break;
   default:
-    fatal_error(0,"Invalid bond_type selected: %d\n",bond_type);
+    gmx_fatal(FARGS,"Invalid bond_type selected: %d\n",bond_type);
     break;
   }
   for(i=0; (i<nobj); i++) {

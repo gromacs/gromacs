@@ -135,7 +135,7 @@ static void splint(real xa[],real ya[],real y2a[],
   }
   h = xa[khi]-xa[klo];
   if (h == 0.0) 
-    fatal_error(0,"Bad XA input to function splint");
+    gmx_fatal(FARGS,"Bad XA input to function splint");
   a   = (xa[khi]-x)/h;
   b   = (x-xa[klo])/h;
   *y  = a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
@@ -214,10 +214,10 @@ static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
   libfn = low_libfn(fn,TRUE);
   nx  = read_xvg(libfn,&yy,&ny);
   if (ny != nny)
-    fatal_error(0,"Trying to read file %s, but nr columns = %d, should be %d",
+    gmx_fatal(FARGS,"Trying to read file %s, but nr columns = %d, should be %d",
 		libfn,ny,nny);
   if (yy[0][0] != 0)
-    fatal_error(0,"The first distance in file %s is %f instead of 0",
+    gmx_fatal(FARGS,"The first distance in file %s is %f instead of 0",
 		libfn,yy[0][0]);
   bCont = TRUE;
   for(nx0=0; bCont && (nx0 < nx); nx0++)
@@ -225,7 +225,7 @@ static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
       if (yy[k][nx0] != 0)
 	bCont = FALSE;
   if (nx0 == nx)
-    fatal_error(0,"All elements in table %s are zero!\n",libfn);
+    gmx_fatal(FARGS,"All elements in table %s are zero!\n",libfn);
     
   tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
   for(k=0; (k<etiNR); k++) {
@@ -483,7 +483,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
         } 
         break;
     default:
-      fatal_error(0,"Table type %d not implemented yet. (%s,%d)",
+      gmx_fatal(FARGS,"Table type %d not implemented yet. (%s,%d)",
 		  tp,__FILE__,__LINE__);
     }
     if (bShift) {
@@ -553,20 +553,19 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       tabsel[etiCOUL] = etabRF;
       break;
     case eelSWITCH:
-    tabsel[etiCOUL] = etabCOULSwitch;
-    break;
-  case eelUSER:
-    tabsel[etiCOUL] = etabUSER;
-    break;
-  case eelENCADSHIFT:
+      tabsel[etiCOUL] = etabCOULSwitch;
+      break;
+    case eelUSER:
+      tabsel[etiCOUL] = etabUSER;
+      break;
+    case eelENCADSHIFT:
       tabsel[etiCOUL] = etabCOULEncad;
       break;      
-  default:
-    fatal_error(0,"Invalid eeltype %d in %s line %d",fr->eeltype,
-		__FILE__,__LINE__);
+    default:
+      gmx_fatal(FARGS,"Invalid eeltype %d",fr->eeltype);
     }
   }
-
+  
   /* Van der Waals time */
   if (fr->bBHAM) {
     tabsel[etiLJ6]  = etabLJ6;
@@ -595,7 +594,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
         tabsel[etiLJ12] = etabLJ12Encad;
         break;
     default:
-      fatal_error(0,"Invalid vdwtype %d in %s line %d",fr->vdwtype,
+      gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",fr->vdwtype,
 		  __FILE__,__LINE__);
     } 
   }
@@ -633,7 +632,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   if (bReadTab) {
     read_tables(out,fn,td);
     if (td[0].x[td[0].nx-1] < rtab) 
-      fatal_error(0,"Tables in file %s not long enough for cut-off:\n"
+      gmx_fatal(FARGS,"Tables in file %s not long enough for cut-off:\n"
 		  "\tshould be at least %f nm\n",fn,rtab);
     table.scale = td[0].tabscale;
     nx0         = td[0].nx0;

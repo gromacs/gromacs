@@ -509,7 +509,7 @@ int add_maps(t_mapping **newmap,
   
   nmap=nmap1+nmap2;
   if (nmap > NMAP*NMAP) 
-    fatal_error(0,"Not enough symbols to merge the two colormaps\n");
+    gmx_fatal(FARGS,"Not enough symbols to merge the two colormaps\n");
   printf("Combining colormaps of %d and %d elements into one of %d elements\n",
 	 nmap1, nmap2, nmap);
   snew(map,nmap);
@@ -898,7 +898,7 @@ void write_combined_matrix(int ecombine, char *fn,
   out = ffopen(fn, "w");
   for(k=0; k<nmat; k++) {
     if ( mat2[k].nx!=mat1[k].nx || mat2[k].ny!=mat1[k].ny )
-      fatal_error(0,"Size of frame %d in 1st (%dx%d) and 2nd matrix (%dx%d) do"
+      gmx_fatal(FARGS,"Size of frame %d in 1st (%dx%d) and 2nd matrix (%dx%d) do"
 		  " not match.\n",k,mat1[k].nx,mat1[k].ny,mat2[k].nx,mat2[k].ny);
     printf("Combining two %dx%d matrices\n",mat1[k].nx,mat1[k].ny);
     rmat1 = matrix2real(&mat1[k], NULL);
@@ -913,7 +913,7 @@ void write_combined_matrix(int ecombine, char *fn,
 	case ecMult: rmat1[i][j] *= rmat2[i][j]; break;
 	case ecDiv:  rmat1[i][j] /= rmat2[i][j]; break;
 	default:
-	  fatal_error(0,"No such combination rule %d for matrices",ecombine);
+	  gmx_fatal(FARGS,"No such combination rule %d for matrices",ecombine);
 	}
 	rlo = min(rlo, rmat1[i][j]);
 	rhi = max(rhi, rmat1[i][j]);
@@ -948,7 +948,7 @@ void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
   if (mat2) {
     for (k=0; (k<nmat); k++) {
       if ((mat2[k].nx!=mat[k].nx) || (mat2[k].ny!=mat[k].ny)) 
-	fatal_error(0,"WAKE UP!! Size of frame %d in 2nd matrix file (%dx%d) does not match size of 1st matrix (%dx%d) or the other way around.\n",
+	gmx_fatal(FARGS,"WAKE UP!! Size of frame %d in 2nd matrix file (%dx%d) does not match size of 1st matrix (%dx%d) or the other way around.\n",
 		    k,mat2[k].nx,mat2[k].ny,mat[k].nx,mat[k].ny);
       for (j=0; (j<mat[k].ny); j++)
 	for (i=bFirstDiag?j+1:j; (i<mat[k].nx); i++)
@@ -1136,7 +1136,7 @@ int main(int argc,char *argv[])
   bGrad    = opt2parg_bSet("-gradient",asize(pa),pa);
   for(i=0; i<DIM; i++)
     if (grad[i] < 0 || grad[i] > 1)
-      fatal_error(0, "RGB value %g out of range (0.0-1.0)", grad[i]);
+      gmx_fatal(FARGS, "RGB value %g out of range (0.0-1.0)", grad[i]);
   if (!bFrame) {
     etitle = etNone;
     elegend = elNone;

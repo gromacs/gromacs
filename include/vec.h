@@ -609,7 +609,7 @@ static inline void m_inv(matrix src,matrix dest)
   fc    = fabs(c);
   
   if ((fc <= smallreal) || (fc >= largereal)) 
-    fatal_error(0,"Determinant = %e",deter);               
+    gmx_fatal(FARGS,"Determinant = %e",deter);               
   
   dest[XX][XX]= c*(src[YY][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[YY][ZZ]);
   dest[XX][YY]=-c*(src[XX][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[XX][ZZ]);
@@ -657,14 +657,14 @@ static inline real trace(matrix m)
 static inline real _divide(real a,real b,char *file,int line)
 {
   if (b == 0.0) 
-    fatal_error(0,"Dividing by zero, file %s, line %d",file,line);
+    gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);
   return a/b;
 }
 
 static inline int _mod(int a,int b,char *file,int line)
 {
   if (b == 0)
-    fatal_error(0,"Modulo zero, file %s, line %d",file,line);
+    gmx_fatal(FARGS,"Modulo zero, file %s, line %d",file,line);
   return a % b;
 }
 

@@ -39,7 +39,6 @@
 
 #include <time.h>
 #include <ctype.h>
-#include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"

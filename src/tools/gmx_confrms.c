@@ -344,7 +344,7 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
   }
   
   if (ii1 != ii2)
-    fatal_error(0, "DEATH HORROR: non-equal number of matching atoms!\n");
+    gmx_fatal(FARGS, "DEATH HORROR: non-equal number of matching atoms!\n");
   if ( ii1==i1 && ii2==i2 )
     printf("All atoms in index groups 1 and 2 match\n");
   else {
@@ -448,7 +448,7 @@ int gmx_confrms(int argc,char *argv[])
   printf("\n");
   
   if (bFit && (isize1 < 3))
-    fatal_error(0,"Need >= 3 points to fit!\n");
+    gmx_fatal(FARGS,"Need >= 3 points to fit!\n");
   
   /* reading second structure file */
   fprintf(stderr,"\nReading second structure file\n");
@@ -481,7 +481,7 @@ int gmx_confrms(int argc,char *argv[])
   
   /* check isizes, must be equal */
   if ( isize2 != isize1 )
-    fatal_error(0,"You selected groups with differen number of atoms.\n");
+    gmx_fatal(FARGS,"You selected groups with differen number of atoms.\n");
   
   for(i=0; i<isize1; i++) {
     name1=*atoms1.atomname[index1[i]];

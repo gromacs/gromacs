@@ -399,7 +399,7 @@ void spectrum(bool bVerbose,
   nframes = 0;
   natoms  = read_first_x(&status,trj,&t0,&x,box);
   if (natoms > nat)
-    fatal_error(0,"Not enough atoms in trajectory");
+    gmx_fatal(FARGS,"Not enough atoms in trajectory");
   do {
     if (nframes >= maxframes) {
       fprintf(stderr,"\nThere are more than the %d frames you told me!",
@@ -518,7 +518,7 @@ int gmx_relax(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   if (taum <= 0)
-    fatal_error(0,"Please give me a sensible taum!\n");
+    gmx_fatal(FARGS,"Please give me a sensible taum!\n");
   if (nlevels > 50) {
     nlevels = 50;
     fprintf(stderr,"Warning: too many levels, setting to %d\n",nlevels);
@@ -553,7 +553,7 @@ int gmx_relax(int argc,char *argv[])
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&ifit,&ind_fit,&gn_fit);
   
   if (ifit < 3) 
-    fatal_error(0,"Need >= 3 points to fit!\n");
+    gmx_fatal(FARGS,"Need >= 3 points to fit!\n");
 
   /* Make an array with weights for fitting */
   snew(w_rls,natoms);

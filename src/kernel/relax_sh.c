@@ -38,7 +38,6 @@
 #endif
 
 #include <string.h>
-#include "assert.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "fatal.h"
@@ -155,7 +154,7 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
 	x[s1][m]+=(m1*ptr[n1][m]+m2*ptr[n2][m]+m3*ptr[n3][m])*tm;
       break;
     default:
-      fatal_error(0,"Shell %d has %d nuclei!",i,s[i].nnucl);
+      gmx_fatal(FARGS,"Shell %d has %d nuclei!",i,s[i].nnucl);
     }
   }
 }

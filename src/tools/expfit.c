@@ -303,7 +303,7 @@ static bool lmfit_exp(int nfit,real x[],real y[],real dy[],real ftol,
   int  i,j,ma,mfit,*lista,*ia;
 
   if ((eFitFn < 0) || (eFitFn >= effnNR))
-    fatal_error(0,"fitfn = %d, should be in 0..%d (%s,%d)",
+    gmx_fatal(FARGS,"fitfn = %d, should be in 0..%d (%s,%d)",
 		effnNR-1,eFitFn,__FILE__,__LINE__);
 
   ma=mfit=nfp_ffn[eFitFn];         /* number of parameters to fit */
@@ -458,7 +458,7 @@ real do_lmfit(int ndata,real c1[],real sig[],real dt,real x0[],
       else if (nparm == 1)
 	integral=parm[0]*myexp(begintimefit,1,  parm[0]);
       else
-	fatal_error(0,"nparm = %d in file %s, line %d",
+	gmx_fatal(FARGS,"nparm = %d in file %s, line %d",
 		    nparm,__FILE__,__LINE__);
       
       /* Generate THE output */

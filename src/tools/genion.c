@@ -43,7 +43,6 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "confio.h"
-#include "assert.h"
 #include "statutil.h"
 #include "pbc.h"
 #include "force.h"
@@ -106,7 +105,7 @@ static void insert_ion(int nsa,int *nwater,
     }
   }
   if (ei == -1)
-    fatal_error(0,"No more replaceable solvent!");
+    gmx_fatal(FARGS,"No more replaceable solvent!");
   fprintf(stderr,"Replacing solvent molecule %d (atom %d) with %s\n",
 	  ei,index[nsa*ei],ionname);
   
@@ -302,7 +301,7 @@ int main(int argc, char *argv[])
     
   /* Check input for something sensible */
   if ((p_num<0) || (n_num<0))
-    fatal_error(0,"Negative number of ions to add?");
+    gmx_fatal(FARGS,"Negative number of ions to add?");
 
   nsb.nodeid=0;
 
@@ -323,7 +322,7 @@ int main(int argc, char *argv[])
     get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
     for(i=1; i<nwa; i++)
       if (index[i] != index[i-1]+1)
-	fatal_error(0,"The solvent group is not continuous: index[%d]=%d, "
+	gmx_fatal(FARGS,"The solvent group is not continuous: index[%d]=%d, "
 		    "index[%d]=%d",i,index[i-1]+1,i+1,index[i]+1);
     nsa = 1;
     while ((nsa<nwa) &&
@@ -331,12 +330,12 @@ int main(int argc, char *argv[])
 	    top->atoms.atom[index[nsa-1]].resnr))
       nsa++;
     if (nwa % nsa)
-      fatal_error(0,"Your solvent group size (%d) is not a multiple of %d",
+      gmx_fatal(FARGS,"Your solvent group size (%d) is not a multiple of %d",
 		  nwa,nsa);
     nw = nwa/nsa;
     fprintf(stderr,"Number of (%d-atomic) solvent molecules: %d\n",nsa,nw);
 	if (p_num+n_num > nw)
-      fatal_error(0,"Not enough solvent for adding ions");
+      gmx_fatal(FARGS,"Not enough solvent for adding ions");
   }
   snew(bSet,nw);
   snew(repl,nw);

@@ -85,7 +85,7 @@ bool in_ftpset(int ftp,int nset,const int set[])
 static bool do_dummy(void *item,int nitem,int eio,
 		     char *desc,char *srcfile,int line)
 {
-  fatal_error(0,"fio_select not called!");
+  gmx_fatal(FARGS,"fio_select not called!");
   
   return FALSE;
 }
@@ -157,19 +157,19 @@ void unset_comment(void)
 static void _check_nitem(int eio,int nitem,char *file,int line)
 {
   if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR)))
-    fatal_error(0,"nitem (%d) may differ from 1 only for %s or %s, not for %s"
-		"(%s, %d)",nitem,eioNames[eioNUCHAR],eioNames[eioNRVEC],
-		eioNames[eio],file,line);
+    gmx_fatal(FARGS,"nitem (%d) may differ from 1 only for %s or %s, not for %s"
+	      "(%s, %d)",nitem,eioNames[eioNUCHAR],eioNames[eioNRVEC],
+	      eioNames[eio],file,line);
 }
 
 #define check_nitem() _check_nitem(eio,nitem,__FILE__,__LINE__)
 
 static void fe(int eio,char *desc,char *srcfile,int line)
 {
-  fatal_error(0,"Trying to %s %s type %d (%s), src %s, line %d",
-	      curfio->bRead ? "read" : "write",desc,eio,
-	      ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
-	      srcfile,line);
+  gmx_fatal(FARGS,"Trying to %s %s type %d (%s), src %s, line %d",
+	    curfio->bRead ? "read" : "write",desc,eio,
+	    ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
+	    srcfile,line);
 }
 
 #define FE() fe(eio,desc,__FILE__,__LINE__)
@@ -293,7 +293,7 @@ static char *next_item(FILE *fp)
   else {
     /* First read until we find something that is not comment */
     if (fgets2(buf,STRLEN-1,fp) == NULL)
-      fatal_error(0,"End of file");
+      gmx_file("End of file");
       
     i = 0;
     do {
@@ -604,8 +604,8 @@ static bool do_xdr(void *item,int nitem,int eio,
       slen = 0;
     
     if (xdr_int(curfio->xdr,&slen) <= 0)
-      fatal_error(0,"wrong string length %d for string %s"
-		  " (source %s, line %d)",slen,desc,srcfile,line);
+      gmx_fatal(FARGS,"wrong string length %d for string %s"
+		" (source %s, line %d)",slen,desc,srcfile,line);
     if (!item && curfio->bRead)
       snew(cptr,slen);
     else
@@ -628,13 +628,7 @@ static bool do_xdr(void *item,int nitem,int eio,
 }
 #endif
 
-static void _fio_check(int fio,char *file,int line)
-{
-  if ((fio < 0) || (fio >= nFIO)) 
-    fatal_error(0,"Trying to access non-open file %d, in %s, line %d",
-		fio,file,line);
-}
-#define fio_check(fio) _fio_check(fio,__FILE__,__LINE__)
+#define fio_check(fio) range_check(fio,0,nFIO)
 
 /*****************************************************************
  *
@@ -659,7 +653,7 @@ int fio_open(char *fn,char *mode)
     else if (mode[0]=='a')
       strcpy(newmode,"a");
     else
-      fatal_error(0,"DEATH HORROR in fio_open, mode is '%s'",mode);
+      gmx_fatal(FARGS,"DEATH HORROR in fio_open, mode is '%s'",mode);
   }
 
   /* Check if it should be opened as a binary file */
@@ -709,11 +703,11 @@ int fio_open(char *fn,char *mode)
       else {
 	/* Check whether file exists */
 	if (!fexist(fn))
-	  fatal_error(0,"File %s not found",fn);
+	  gmx_open(fn);
       }
       snew(fio->xdr,1);
       if (!xdropen(fio->xdr,fn,newmode))
-	fatal_error(-1,"Could not open %s",fn);
+	gmx_open(fn);
     }
     else {
       /* If it is not, open it as a regular file */
@@ -769,7 +763,7 @@ void fio_select(int fio)
     do_read  = do_xdr;
     do_write = do_xdr;
 #else
-    fatal_error(0,"Sorry, no XDR");
+    gmx_fatal(FARGS,"Sorry, no XDR");
 #endif
   }
   else if (in_ftpset(FIO[fio].iFTP,asize(ftpASC),ftpASC)) {
@@ -787,8 +781,8 @@ void fio_select(int fio)
   }
 #endif
   else 
-    fatal_error(0,"Can not read/write topologies to file type %s",
-		ftp2ext(curfio->iFTP));
+    gmx_fatal(FARGS,"Can not read/write topologies to file type %s",
+	      ftp2ext(curfio->iFTP));
   
   curfio = &(FIO[fio]);
 }
@@ -869,7 +863,7 @@ void fio_seek(int fio,off_t fpos)
     fseek(FIO[fio].fp,fpos,SEEK_SET);
 #endif
   else
-    fatal_error(0,"Can not seek on file %s",FIO[fio].fn);
+    gmx_file(FIO[fio].fn);
 }
 
 FILE *fio_getfp(int fio)

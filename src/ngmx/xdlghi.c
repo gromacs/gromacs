@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include <assert.h>
 #include <string.h>
 
 #include "fatal.h"
@@ -150,7 +149,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, char *szTitle,
       break;
     case edlgGB:
     default:
-      fatal_error(0,"Invalid dlgitem type: %d\n",edlg);
+      gmx_fatal(FARGS,"Invalid dlgitem type: %d\n",edlg);
     }
     y+=dlgitem[i+1]->win.height+OFFS_Y;
     w=max(w,dlgitem[i+1]->win.width);
@@ -297,7 +296,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
   case edlgPM:
   case edlgGB:
   default:
-    fatal_error(0,"Invalid list->list type: %d\n",fitem->edlg);
+    gmx_fatal(FARGS,"Invalid list->list type: %d\n",fitem->edlg);
   }
   SetDlgitemOpts(list->list[list->nitem-1],bUseMon,
 		 fitem->set,fitem->get,fitem->help);

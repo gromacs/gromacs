@@ -248,7 +248,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
     break;
   default:
-    fatal_error(0,"Invalid integrator (%d)...\n",parm->ir.eI);
+    gmx_fatal(FARGS,"Invalid integrator (%d)...\n",parm->ir.eI);
   }
   
     /* Some timing stats */  
@@ -455,7 +455,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
 				     &rerun_fr,TRX_NEED_X | TRX_READ_V);
     if (rerun_fr.natoms != mdatoms->nr)
-      fatal_error(0,"Number of atoms in trajectory (%d) does not match the "
+      gmx_fatal(FARGS,"Number of atoms in trajectory (%d) does not match the "
 		  "run input file (%d)\n",rerun_fr.natoms,mdatoms->nr);
   } 
   
@@ -568,13 +568,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     START(nsb),START(nsb)+HOMENR(nsb),state->box,cr);
       
     /* Update force field in ffscan program */
-    if (bFFscan) 
+    if (bFFscan) {
       if (update_forcefield(nfile,fnm,fr,mdatoms->nr,state->x,state->box)) {
-      	if (gmx_parallel_env)
+	if (gmx_parallel_env)
 	  gmx_finalize(cr);
-	else
-	  break; /* Exit the loop */
+	exit(0);
       }
+    }
     
     if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
@@ -691,7 +691,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	unshift_self(graph,state->box,state->x);
     }
     if (!bOK && !bFFscan)
-      fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
+      gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
 
     /* Correct the new box if it is too skewed */
     if (DYNAMIC_BOX(parm->ir) && !bRerunMD)
@@ -849,12 +849,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (!bShell_FlexCon || bConverged))
       if (print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
-			   &(top->blocks[ebMOLS]),mdatoms->massT,
-			   parm->pres)) {
+			   &(top->blocks[ebMOLS]),mdatoms->massT,parm->pres)) {
 	if (gmx_parallel_env)
 	  gmx_finalize(cr);
-	else
-	  break; /* Exit the loop */
+	fprintf(stderr,"\n");
+	exit(0);
       }
     
     if (bTCR) {

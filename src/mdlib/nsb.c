@@ -39,7 +39,6 @@
 #endif
 
 #include "sysstuff.h"
-#include "assert.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "invblock.h"

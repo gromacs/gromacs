@@ -56,7 +56,6 @@
 #include "xvgr.h"
 #include "futil.h"
 #include "matio.h"
-#include "assert.h"
 
 static void calc_dist(int nind,atom_id index[],rvec x[],matrix box,real **d)
 {

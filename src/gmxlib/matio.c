@@ -46,7 +46,6 @@
 #include "fatal.h"
 #include "matio.h"
 #include "statutil.h"
-#include "assert.h"
 
 #define round(a) (int)(a+0.5)
 
@@ -117,13 +116,13 @@ int getcmap(FILE *in,char *fn,t_mapping **map)
   t_mapping *m;
   
   if (fgets2(line,STRLEN-1,in) == NULL)
-    fatal_error(0,"Not enough lines in colormap file %s"
+    gmx_fatal(FARGS,"Not enough lines in colormap file %s"
 		"(just wanted to read number of entries)",fn);
   sscanf(line,"%d",&n);
   snew(m,n);
   for(i=0; (i<n); i++) {
     if (fgets2(line,STRLEN-1,in) == NULL)
-      fatal_error(0,"Not enough lines in colormap file %s"
+      gmx_fatal(FARGS,"Not enough lines in colormap file %s"
 		  "(should be %d, found only %d)",fn,n+1,i);
     sscanf(line,"%s%s%lf%lf%lf",code,desc,&r,&g,&b);
     m[i].code.c1=code[0];
@@ -282,7 +281,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	    mm->title,mm->legend,mm->label_x,mm->label_y);
 
   if  (strncmp(line,"static",6) != 0)
-    fatal_error(0,"Invalid XPixMap\n");
+    gmx_input("Invalid XPixMap");
   /* Read sizes */
   bGetOnWithIt=FALSE;
   while (!bGetOnWithIt && fgetline(&line,llmax,in)) {
@@ -293,7 +292,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       line2string(&line);
       sscanf(line,"%d %d %d %d",&(mm->nx),&(mm->ny),&(mm->nmap),&nch);
       if (nch > 2)
-	fatal_error(0,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
+	gmx_fatal(FARGS,"Sorry can only read xpm's with at most 2 caracters per pixel\n");
       llmax = max(STRLEN,mm->nx+10);
       bGetOnWithIt=TRUE;
     }
@@ -333,13 +332,13 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	  map[m].rgb.g=g/65535.0;
 	  map[m].rgb.b=b/65535.0;
 	} else
-	  fatal_error(0,"Unsupported or invalid colormap in X PixMap\n");
+	  gmx_file("Unsupported or invalid colormap in X PixMap");
       } else {
 	str = strchr(line,'c');
 	if (str)
 	  str += 2;
 	else
-	  fatal_error(0,"Unsupported or invalid colormap in X PixMap\n");
+	  gmx_file("Unsupported or invalid colormap in X PixMap");
 	fprintf(stderr,"Using white for color \"%s",str);
 	map[m].rgb.r = 1;
 	map[m].rgb.g = 1;
@@ -353,7 +352,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     }
   }
   if  ( m != mm->nmap ) 
-    fatal_error(0,"Number of read colors map entries (%d) does not match the number in the header (%d)",m,mm->nmap);
+    gmx_fatal(FARGS,"Number of read colors map entries (%d) does not match the number in the header (%d)",m,mm->nmap);
   mm->map = map;
 
   /* Read axes, if there are any */ 
@@ -368,7 +367,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	snew(mm->axis_x,mm->nx);
       while (sscanf(line,"%lf",&u)==1) {
 	if (n_axis_x >= mm->nx)
-	  fatal_error(0,"To many x-axis labels in xpm");
+	  gmx_file("Too many x-axis labels in xpm");
 	mm->axis_x[n_axis_x] = u;
 	n_axis_x++;
 	skipstr(&line);
@@ -381,7 +380,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
 	snew(mm->axis_y,mm->ny);
       while (sscanf(line,"%lf",&u)==1) {
 	if (n_axis_y >= mm->ny)
-	  fatal_error(0,"To many y-axis labels in xpm");
+	  gmx_file("Too many y-axis labels in xpm");
 	mm->axis_y[n_axis_y] = u;
 	n_axis_y++;
 	skipstr(&line);
@@ -400,7 +399,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     while ((line[0] != '\"') && (line[0] != '\0'))
       line++;
     if (line[0] != '\"')
-      fatal_error(0,"Not enough caracters in row %d of the matrix\n",m+1);
+      gmx_fatal(FARGS,"Not enough caracters in row %d of the matrix\n",m+1);
     else {
       line++;
       for(i=0; i<mm->nx; i++) {
@@ -415,7 +414,7 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
     }
   } while ((m>=0) && fgetline(&line,llmax,in));
   if (m>=0)
-    fatal_error(0,"Not enough rows in the matrix\n");
+    gmx_incons("Not enough rows in the matrix");
 }
 
 int read_xpm_matrix(char *fnm,t_matrix **matrix)
@@ -437,7 +436,7 @@ int read_xpm_matrix(char *fnm,t_matrix **matrix)
   fclose(in);
 
   if (nmat==0)
-    fatal_error(0,"Invalid XPixMap\n");
+    gmx_file("Invalid XPixMap");
 
   return nmat;
 }
@@ -523,7 +522,7 @@ void write_xpm_map3(FILE *out,int n_x,int n_y,int *nlevels,
     *nlevels=2;
   }   
   if (!((mid >= lo) && (mid < hi)))
-    fatal_error(0,"Lo: %f, Mid: %f, Hi: %f\n",lo,mid,hi);
+    gmx_fatal(FARGS,"Lo: %f, Mid: %f, Hi: %f\n",lo,mid,hi);
 
   fprintf(out,"static char *gromacs_xpm[] = {\n");
   fprintf(out,"\"%d %d   %d %d\",\n",
@@ -629,7 +628,7 @@ void write_xpm_map_split(FILE *out,int n_x,int n_y,
 
   ntot = *nlevel_top + *nlevel_bot;
   if (ntot > NMAP) 
-    fatal_error(0,"Warning, too many levels (%d) in matrix",ntot);
+    gmx_fatal(FARGS,"Warning, too many levels (%d) in matrix",ntot);
   
   fprintf(out,"static char *gromacs_xpm[] = {\n");
   fprintf(out,"\"%d %d   %d %d\",\n",n_x,n_y,ntot,1);
@@ -776,12 +775,12 @@ void write_xpm_data_split(FILE *out,int n_x,int n_y,real **matrix,
       if (i < j) {
 	c = nlevel_bot+round((matrix[i][j]-lo_top)*invlev_top);
 	if ((c < nlevel_bot) || (c >= nlevel_bot+nlevel_top)) 
-	  fatal_error(0,"Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f",i,j,c,nlevel_bot,nlevel_top,matrix[i][j]);
+	  gmx_fatal(FARGS,"Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f",i,j,c,nlevel_bot,nlevel_top,matrix[i][j]);
       }
       else if (i > j) {
 	c = round((matrix[i][j]-lo_bot)*invlev_bot);
 	if ((c < 0) || (c >= nlevel_bot+nlevel_bot))
-	  fatal_error(0,"Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f",i,j,c,nlevel_bot,nlevel_top,matrix[i][j]);
+	  gmx_fatal(FARGS,"Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f",i,j,c,nlevel_bot,nlevel_top,matrix[i][j]);
       }
       else
 	c = nlevel_bot;
@@ -847,7 +846,7 @@ void write_xpm3(FILE *out,
    */
 
   if (hi <= lo) 
-    fatal_error(0,"hi (%g) <= lo (%g)",hi,lo);
+    gmx_fatal(FARGS,"hi (%g) <= lo (%g)",hi,lo);
 
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map3(out,n_x,n_y,nlevels,lo,mid,hi,rlo,rmid,rhi);
@@ -871,11 +870,11 @@ void write_xpm_split(FILE *out,
    */
 
   if (hi_top <= lo_top) 
-    fatal_error(0,"hi_top (%g) <= lo_top (%g)",hi_top,lo_top);
+    gmx_fatal(FARGS,"hi_top (%g) <= lo_top (%g)",hi_top,lo_top);
   if (hi_bot <= lo_bot) 
-    fatal_error(0,"hi_bot (%g) <= lo_bot (%g)",hi_bot,lo_bot);
+    gmx_fatal(FARGS,"hi_bot (%g) <= lo_bot (%g)",hi_bot,lo_bot);
   if (bDiscreteColor && (*nlevel_bot >= 16)) 
-    fatal_error(0,"Can not plot more than 16 discrete colors");
+    gmx_impl("Can not plot more than 16 discrete colors");
     
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map_split(out,n_x,n_y,nlevel_top,lo_top,hi_top,rlo_top,rhi_top,
@@ -909,7 +908,7 @@ void write_xpm(FILE *out,
    */
 
   if (hi <= lo) 
-    fatal_error(0,"hi (%f) <= lo (%f)",hi,lo);
+    gmx_fatal(FARGS,"hi (%f) <= lo (%f)",hi,lo);
 
   write_xpm_header(out,title,legend,label_x,label_y,FALSE);
   write_xpm_map(out,n_x,n_y,nlevels,lo,hi,rlo,rhi);

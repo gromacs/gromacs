@@ -308,7 +308,7 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
   ltrim(copy);
   while (*copy != '\0') {
     if (np >= maxptr)
-      fatal_error(0,"Too many groups on line: '%s' (max is %d)",
+      gmx_fatal(FARGS,"Too many groups on line: '%s' (max is %d)",
 		  str,maxptr);
     if (ptr) 
       ptr[np]=copy;
@@ -655,7 +655,7 @@ void get_ir(char *mdparin,char *mdparout,
 	}
 	break;
       default:
-	fatal_error(0,"Pressure coupling type %s not implemented yet",
+	gmx_fatal(FARGS,"Pressure coupling type %s not implemented yet",
 		    epcoupltype_names[ir->epct]);
       }
     }
@@ -741,7 +741,7 @@ static int search_string(char *s,int ng,char *gn[])
     if (strcasecmp(s,gn[i]) == 0)
       return i;
       
-  fatal_error(0,"Group %s not found in indexfile.\nMaybe you have non-default goups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
+  gmx_fatal(FARGS,"Group %s not found in indexfile.\nMaybe you have non-default goups in your mdp file, while not using the '-n' option of grompp.\nIn that case use the '-n' option.\n",s);
   
   return -1;
 }
@@ -780,12 +780,12 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
       
       /* Range checking */
       if ((aj < 0) || (aj >= atoms->nr)) 
-	fatal_error(0,"Invalid atom number %d in indexfile",aj);
+	gmx_fatal(FARGS,"Invalid atom number %d in indexfile",aj);
 	
       /* Lookup up the old group number */
       ognr = cbuf[aj];
       if (ognr != NOGID) 
-	fatal_error(0,"Atom %d in multiple %s groups (%d and %d)",
+	gmx_fatal(FARGS,"Atom %d in multiple %s groups (%d and %d)",
 		    aj,title,gid,ognr);
       else {
 	/* Store the group number in buffer */
@@ -977,7 +977,7 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
 	strcpy(f1,format);
 	strcat(f1,"%lf%lf");
 	if (sscanf(t,f1,&a,&phi) < 2)
-	  fatal_error(0,"Invalid input for electric field shift: '%s'",t);
+	  gmx_fatal(FARGS,"Invalid input for electric field shift: '%s'",t);
 	cosine->a[i]=a;
 	cosine->phi[i]=phi;
 	strcat(format,"%*lf%*lf");
@@ -1032,7 +1032,7 @@ void do_index(char *ndx,
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
   ntcg   = str_nelem(tcgrps,MAXPTR,ptr3);
   if ((ntau_t != ntcg) || (nref_t != ntcg)) 
-    fatal_error(0,"Invalid T coupling input: %d groups, %d ref_t values and "
+    gmx_fatal(FARGS,"Invalid T coupling input: %d groups, %d ref_t values and "
 		"%d tau_t values",ntcg,nref_t,ntau_t);  
 
   if (ir->eI != eiMD)
@@ -1051,16 +1051,16 @@ void do_index(char *ndx,
   }
   if (bSetTCpar) {
     if (nr != nref_t)
-      fatal_error(0,"Not enough ref_t and tau_t values!");
+      gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
     for(i=0; (i<nr); i++) {
       ir->opts.tau_t[i]=atof(ptr1[i]);
       if (ir->opts.tau_t[i] < 0)
-	fatal_error(0,"tau_t for group %d negative",i);
+	gmx_fatal(FARGS,"tau_t for group %d negative",i);
     }
     for(i=0; (i<nr); i++) {
       ir->opts.ref_t[i]=atof(ptr2[i]);
       if (ir->opts.ref_t[i] < 0)
-	fatal_error(0,"ref_t for group %d negative",i);
+	gmx_fatal(FARGS,"ref_t for group %d negative",i);
     }
   }
   /* Simulated annealing for each group. There are nr groups */
@@ -1068,7 +1068,7 @@ void do_index(char *ndx,
   if (nSA == 1 && (ptr1[0][0]=='n' || ptr1[0][0]=='N'))
      nSA = 0;
   if(nSA>0 && nSA != nr) 
-    fatal_error(0,"Not enough annealing values: %d (for %d groups)\n",nSA,nr);
+    gmx_fatal(FARGS,"Not enough annealing values: %d (for %d groups)\n",nSA,nr);
   else {
     snew(ir->opts.annealing,nr);
     snew(ir->opts.anneal_npoints,nr);
@@ -1097,11 +1097,11 @@ void do_index(char *ndx,
 	/* Read the other fields too */
 	nSA_points = str_nelem(anneal_npoints,MAXPTR,ptr1);
 	if(nSA_points!=nSA) 
-	  fatal_error(0,"Found %d annealing_npoints values for %d groups\n",nSA_points,nSA);
+	  gmx_fatal(FARGS,"Found %d annealing_npoints values for %d groups\n",nSA_points,nSA);
 	for(k=0,i=0;i<nr;i++) {
 	  ir->opts.anneal_npoints[i]=strtol(ptr1[i],NULL,10);
 	  if(ir->opts.anneal_npoints[i]==1)
-	    fatal_error(0,"Please specify at least a start and an end point for annealing\n");
+	    gmx_fatal(FARGS,"Please specify at least a start and an end point for annealing\n");
 	  snew(ir->opts.anneal_time[i],ir->opts.anneal_npoints[i]);
 	  snew(ir->opts.anneal_temp[i],ir->opts.anneal_npoints[i]);
 	  k += ir->opts.anneal_npoints[i];
@@ -1109,10 +1109,10 @@ void do_index(char *ndx,
 
 	nSA_time = str_nelem(anneal_time,MAXPTR,ptr1);
 	if(nSA_time!=k) 
-	  fatal_error(0,"Found %d annealing_time values, wanter %d\n",nSA_time,k);
+	  gmx_fatal(FARGS,"Found %d annealing_time values, wanter %d\n",nSA_time,k);
 	nSA_temp = str_nelem(anneal_temp,MAXPTR,ptr2);
 	if(nSA_temp!=k) 
-	  fatal_error(0,"Found %d annealing_temp values, wanted %d\n",nSA_temp,k);
+	  gmx_fatal(FARGS,"Found %d annealing_temp values, wanted %d\n",nSA_temp,k);
 
 	for(i=0,k=0;i<nr;i++) {
 	  
@@ -1121,15 +1121,15 @@ void do_index(char *ndx,
 	    ir->opts.anneal_temp[i][j]=atof(ptr2[k]);
 	    if(j==0) {
 	      if(ir->opts.anneal_time[i][0] > (ir->init_t+GMX_REAL_EPS))
-		fatal_error(0,"First time point for annealing > init_t.\n");      
+		gmx_fatal(FARGS,"First time point for annealing > init_t.\n");      
 	    } else { 
 	      /* j>0 */
 	      if(ir->opts.anneal_time[i][j]<ir->opts.anneal_time[i][j-1])
-		fatal_error(0,"Annealing timepoints out of order: t=%f comes after t=%f\n",
+		gmx_fatal(FARGS,"Annealing timepoints out of order: t=%f comes after t=%f\n",
 			    ir->opts.anneal_time[i][j],ir->opts.anneal_time[i][j-1]);
 	    }
 	    if(ir->opts.anneal_temp[i][j]<0) 
-	      fatal_error(0,"Found negative temperature in annealing: %f\n",ir->opts.anneal_temp[i][j]);    
+	      gmx_fatal(FARGS,"Found negative temperature in annealing: %f\n",ir->opts.anneal_temp[i][j]);    
 	    k++;
 	  }
 	}
@@ -1163,7 +1163,7 @@ void do_index(char *ndx,
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);
   if (nacg*DIM != nacc)
-    fatal_error(0,"Invalid Acceleration input: %d groups and %d acc. values",
+    gmx_fatal(FARGS,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
 	       restnm,forward,FALSE,bVerbose);  nr=atoms->grps[egcACC].nr;
@@ -1180,7 +1180,7 @@ void do_index(char *ndx,
   nfrdim  = str_nelem(frdim,MAXPTR,ptr1);
   nfreeze = str_nelem(freeze,MAXPTR,ptr2);
   if (nfrdim != DIM*nfreeze)
-    fatal_error(0,"Invalid Freezing input: %d groups and %d freeze values",
+    gmx_fatal(FARGS,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
   do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,
 	       restnm,forward,FALSE,bVerbose);
@@ -1251,7 +1251,7 @@ void do_index(char *ndx,
 
   negexcl=str_nelem(egexcl,MAXPTR,ptr1);
   if (negexcl % 2 != 0)
-    fatal_error(0,"The number of groups for energygrp_excl is odd");
+    gmx_fatal(FARGS,"The number of groups for energygrp_excl is odd");
   nr=atoms->grps[egcENER].nr;
   snew(ir->opts.eg_excl,nr*nr);
   bExcl=FALSE;
@@ -1261,14 +1261,14 @@ void do_index(char *ndx,
 	   strcasecmp(ptr1[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
       j++;
     if (j==nr)
-      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
+      gmx_fatal(FARGS,"%s in energygrp_excl is not an energy group\n",
 		  ptr1[2*i]);
     k=0;
     while ((k < nr) &&
 	   strcasecmp(ptr1[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
       k++;
     if (k==nr)
-      fatal_error(0,"%s in energygrp_excl is not an energy group\n",
+      gmx_fatal(FARGS,"%s in energygrp_excl is not an energy group\n",
 	      ptr1[2*i+1]);
     if ((j < nr) && (k < nr)) {
       ir->opts.eg_excl[nr*j+k] = TRUE;
@@ -1320,7 +1320,7 @@ static void check_disre(t_topology *sys)
       }
     }
     if (ndouble>0)
-      fatal_error(0,"Found %d double distance restraint indices,\n"
+      gmx_fatal(FARGS,"Found %d double distance restraint indices,\n"
 		  "probably the parameters for multiple pairs in one restraint "
 		  "are not identical\n",ndouble);
   }

@@ -131,7 +131,7 @@ void rotate(int axis, real angle, mat4 A)
     A[YY][YY] =  cos(angle);
     break;
   default:
-    fatal_error(0,"Error: invalid axis: %d",axis);
+    gmx_fatal(FARGS,"Error: invalid axis: %d",axis);
   }
 }
 
@@ -166,7 +166,7 @@ void calculate_view(t_3dview *view)
   printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n",dx,dy,dz,l,r);
 #endif
   if (l < SMALL)
-    fatal_error(0,"Error: Zero Length Vector - No View Specified");
+    gmx_fatal(FARGS,"Error: Zero Length Vector - No View Specified");
   translate((real)(-view->origin[XX]),
 	    (real)(-view->origin[YY]),(real)(-view->origin[ZZ]),To);
   translate((real)(-view->eye[XX]),

@@ -120,7 +120,7 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
       svmul(0.5,h1,center1);  /* center is geometric mean */
       break;
     default:          /* group 1 does none of the above */
-      fatal_error(0,"Something wrong with contents of index file.\n");
+      gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
     }
 
   switch(gnx2)
@@ -134,7 +134,7 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
       svmul(0.5,h2,center2);  /* center is geometric mean */
       break;
     default:         /* group 2 does none of the above */
-      fatal_error(0,"Something wrong with contents of index file.\n");
+      gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
     }
   
   *angle = cos_angle(normal1,normal2);
@@ -183,7 +183,7 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
   char       buf[256];   /* for xvgr title */
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
   sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");
@@ -256,7 +256,7 @@ static void calc_angle_single(matrix box,
     svmul(0.5,h1,center1);  /* center is geometric mean */
     break;
   default:          /* group 1 does none of the above */
-    fatal_error(0,"Something wrong with contents of index file.\n");
+    gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
   }
   
   switch(gnx2) {
@@ -269,7 +269,7 @@ static void calc_angle_single(matrix box,
     svmul(0.5,h2,center2);  /* center is geometric mean */
     break;
   default:         /* group 2 does none of the above */
-    fatal_error(0,"Something wrong with contents of index file.\n");
+    gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
   }
   
   *angle = cos_angle(normal1,normal2);
@@ -318,7 +318,7 @@ void sgangle_plot_single(char *fn,char *afile,char *bfile,
   char       buf[256];   /* for xvgr title */
   
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
   sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");

@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 #include "sysstuff.h"
-#include "assert.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -88,7 +87,8 @@ static int min_nodeid(int nr,atom_id list[],int hid[])
 {
   int i,nodeid,minnodeid;
 
-  assert(nr > 0);
+  if (nr <= 0)
+    gmx_incons("Invalid node number");
   minnodeid=hid[list[0]];
   for (i=1; (i<nr); i++) 
     if ((nodeid=hid[list[i]]) < minnodeid) 
@@ -118,7 +118,7 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
       /* SPECIAL CASE: All Atoms must have the same home node! */
       nodeid=hid[ilist->iatoms[i+1]];
       if (hid[ilist->iatoms[i+2]] != nodeid) 
-	fatal_error(0,"Shake block crossing node boundaries\n"
+	gmx_fatal(FARGS,"Shake block crossing node boundaries\n"
 		    "constraint between atoms (%d,%d)",
 		    ilist->iatoms[i+1],ilist->iatoms[i+2]);
     }
@@ -128,7 +128,7 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
       nodeid=hid[ai];
       if ((nodeid != hid[ai+1]) ||
 	  (nodeid != hid[ai+2]))
-	fatal_error(0,"Settle block crossing node boundaries\n"
+	gmx_fatal(FARGS,"Settle block crossing node boundaries\n"
 		    "constraint between atoms (%d-%d)",ai,ai+2);
     }
     else if(interaction_function[ftype].flags & IF_DUMMY) {
@@ -146,7 +146,7 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
       for(k=2;k<ndum_constr+2;k++) {
 	if(hid[ilist->iatoms[i+k]]<(tmpid-1) ||
 	   hid[ilist->iatoms[i+k]]>(tmpid+1))
-	  fatal_error(0,"Dummy particle %d and its constructing"
+	  gmx_fatal(FARGS,"Dummy particle %d and its constructing"
 		      " atoms are not on the same or adjacent\n" 
 		      " nodes. This is necessary to avoid a lot\n"
 		      " of extra communication. The easiest way"
@@ -170,7 +170,8 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
     ilist->multinr[nodeid]=(nodeid==0) ? 0 : ilist->multinr[nodeid-1];
     ilist->multinr[nodeid]+=sf[nodeid].nr;
   }
-  assert(tnr==ilist->nr);
+  if (tnr != ilist->nr)
+    gmx_incons("Splitting forces over processors");
   done_sf(MAXNODES,sf);
 }
 
@@ -203,7 +204,7 @@ static int *home_index(int nnodes,t_block *cgs)
   /* Now verify that all hid's are not -1 */
   for(k=0; (k<cgs->nra); k++)
     if (hid[k] == -1)
-      fatal_error(0,"hid[%d] = -1, cgs->nr = %d, cgs->nra = %d",
+      gmx_fatal(FARGS,"hid[%d] = -1, cgs->nr = %d, cgs->nra = %d",
 		  k,cgs->nr,cgs->nra);
   
   return hid;
@@ -309,7 +310,7 @@ t_border *mk_border(bool bVerbose,int natom,atom_id *invcgs,
     else if (ic < nc)
       ic++;
     else
-      is++;/*fatal_error(0,"Can't happen is=%d, ic=%d (%s, %d)",
+      is++;/*gmx_fatal(FARGS,"Can't happen is=%d, ic=%d (%s, %d)",
 	     is,ic,__FILE__,__LINE__);*/
   }
   fprintf(stderr,"There are %d total borders\n",nbor);
@@ -385,7 +386,7 @@ static void split_blocks(bool bVerbose,int nnodes,
     nodeid++;
   }
   if (nodeid != nnodes) {
-    fatal_error(0,"nodeid = %d, nnodes = %d, file %s, line %d",
+    gmx_fatal(FARGS,"nodeid = %d, nnodes = %d, file %s, line %d",
 		nodeid,nnodes,__FILE__,__LINE__);
   }
 
@@ -450,7 +451,7 @@ static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
 
       /* Check whether this one has been set before... */
       if (sid[aj+g0].sid != -1) 
-	fatal_error(0,"sid[%d]=%d, sid[%d]=%d, file %s, line %d",
+	gmx_fatal(FARGS,"sid[%d]=%d, sid[%d]=%d, file %s, line %d",
 		    ai,sid[ai+g0].sid,aj,sid[aj+g0].sid,__FILE__,__LINE__);
       else {
 	sid[aj+g0].sid  = sid[ai+g0].sid;
@@ -512,7 +513,7 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
      * in the loop
      */
     if ((fW=first_colour(fW,egcolWhite,g,egc)) == -1) 
-      fatal_error(0,"No WHITE nodes found while nW=%d\n",nW);
+      gmx_fatal(FARGS,"No WHITE nodes found while nW=%d\n",nW);
     
     /* Make the first white node grey, and set the block number */
     egc[fW]        = egcolGrey;
@@ -529,7 +530,7 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
 	      
     while (nG > 0) {
       if ((fG=first_colour(fG,egcolGrey,g,egc)) == -1)
-	fatal_error(0,"No GREY nodes found while nG=%d\n",nG);
+	gmx_fatal(FARGS,"No GREY nodes found while nG=%d\n",nG);
       
       /* Make the first grey node black */
       egc[fG]=egcolBlack;
@@ -609,7 +610,7 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
       sblock->index[k]=j;
       
       if (k != nsid) {
-	fatal_error(0,"k=%d, nsid=%d\n",k,nsid);
+	gmx_fatal(FARGS,"k=%d, nsid=%d\n",k,nsid);
       }
     }
   }

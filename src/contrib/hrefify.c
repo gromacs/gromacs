@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 		    asize(desc),desc,0,NULL);
 
   if (!in || !out)
-    fatal_error(0,"Input or output filename is not set");
+    gmx_fatal(FARGS,"Input or output filename is not set");
 
   n_text = get_file(in, &text);
   fprintf(stderr,"Read %d lines from %s\n",n_text,in);

@@ -85,19 +85,19 @@ int get_electrons(t_electron **eltab, char *fn)
   int i;
 
   if ( !(in = fopen(fn,"r")))
-    fatal_error(0,"Couldn't open %s. Exiting.\n",fn);
+    gmx_fatal(FARGS,"Couldn't open %s. Exiting.\n",fn);
 
   fgets(buffer, 255, in);
   if (sscanf(buffer, "%d", &nr) != 1)
-    fatal_error(0,"Invalid number of atomtypes in datafile\n");
+    gmx_fatal(FARGS,"Invalid number of atomtypes in datafile\n");
 
   snew(*eltab,nr);
 
   for (i=0;i<nr;i++) {
     if (fgets(buffer, 255, in) == NULL)
-      fatal_error(0,"reading datafile. Check your datafile.\n");
+      gmx_fatal(FARGS,"reading datafile. Check your datafile.\n");
     if (sscanf(buffer, "%s = %d", tempname, &tempnr) != 2)
-      fatal_error(0,"Invalid line in datafile at line %d\n",i+1);
+      gmx_fatal(FARGS,"Invalid line in datafile at line %d\n",i+1);
     (*eltab)[i].nr_el = tempnr;
     (*eltab)[i].atomname = strdup(tempname);
   }
@@ -164,11 +164,11 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
     ax1 = 0; ax2 = 1;
     break;
   default:
-    fatal_error(0,"Invalid axes. Terminating\n");
+    gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   if (! *nslices)
     *nslices = (int)(box[axis][axis] * 10); /* default value */
@@ -266,11 +266,11 @@ void calc_density(char *fn, atom_id **index, int gnx[],
     ax1 = 0; ax2 = 1;
     break;
   default:
-    fatal_error(0,"Invalid axes. Terminating\n");
+    gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   if (! *nslices) {
     *nslices = (int)(box[axis][axis] * 10); /* default value */
@@ -476,7 +476,7 @@ int gmx_density(int argc,char *argv[])
 
   if (bElectron) {
     if (bCount)
-      fatal_error(0,"I don't feel like counting electrons. Bye.\n");
+      gmx_fatal(FARGS,"I don't feel like counting electrons. Bye.\n");
 
     nr_electrons =  get_electrons(&el_tab,ftp2fn(efDAT,NFILE,fnm));
     fprintf(stderr,"Read %d atomtypes from datafile\n", nr_electrons);

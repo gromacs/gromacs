@@ -163,7 +163,7 @@ int gmx_covar(int argc,char *argv[])
     printf("\nChoose a group for the least squares fit\n"); 
     get_index(atoms,ndxfile,1,&nfit,&ifit,&fitname);
     if (nfit < 3) 
-      fatal_error(0,"Need >= 3 points to fit!\n");
+      gmx_fatal(FARGS,"Need >= 3 points to fit!\n");
   } else
     nfit=0;
   printf("\nChoose a group for the covariance analysis\n"); 

@@ -61,7 +61,7 @@ real _mysqrt(real x,char *fn,int line)
 void check_bounds(int ai,int aj,real lb,real ub)
 {
   if (lb > ub)
-    fatal_error(0,"Strange bounds for %d-%d: lb=%f, ub=%f",
+    gmx_fatal(FARGS,"Strange bounds for %d-%d: lb=%f, ub=%f",
 		ai+1,aj+1,lb,ub);
 }
 
@@ -69,7 +69,7 @@ void check_len_(int ai,int aj,real lb,real ub,real len,char *file,int line)
 {
   if (len != NMRLEN) 
     if (((len > ub) || (len < lb)) && len > 0.0)
-      fatal_error(0,"%s, line %d: Ideal len. outside bounds for %d-%d:"
+      gmx_fatal(FARGS,"%s, line %d: Ideal len. outside bounds for %d-%d:"
 		  " lb=%f, ub=%f, len=%f",
 		  file,line,ai+1,aj+1,lb,ub,len);
 }
@@ -633,7 +633,7 @@ int tetrangle_bound(int *ATMS,int cosphi,int natoms,t_dist *d,real tol)
 
   /* Check the new bounds */
   if (d_ub(d,natoms,ATMS[0],ATMS[3]) < d_lb(d,natoms,ATMS[0],ATMS[3]))
-    fatal_error(0,"Fatal error for tetr. smooth of (%d,%d) ub=%f, lb=%f",
+    gmx_fatal(FARGS,"Fatal error for tetr. smooth of (%d,%d) ub=%f, lb=%f",
 		ATMS[0],ATMS[3],d_ub(d,natoms,ATMS[0],ATMS[3]),
 		d_lb(d,natoms,ATMS[0],ATMS[3]));
   

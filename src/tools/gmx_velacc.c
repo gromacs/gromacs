@@ -116,7 +116,7 @@ int gmx_velacc(int argc,char *argv[])
 
   if (bMol) {
     if (!bTop)
-      fatal_error(0,"Need a topology to determine the molecules");
+      gmx_fatal(FARGS,"Need a topology to determine the molecules");
     a     = top.blocks[ebMOLS].a;
     atndx = top.blocks[ebMOLS].index;
   }

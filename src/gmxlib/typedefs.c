@@ -39,7 +39,6 @@
 #endif
 
 #include "smalloc.h"
-#include "assert.h"
 #include "symtab.h"
 #include "vec.h"
 #include <string.h>

@@ -506,7 +506,7 @@ void calc_distribution_props(int nh,int histo[],real start,
   int  i,j,th;
   
   if (nh == 0)
-    fatal_error(0,"No points in histogram (%s, %d)",__FILE__,__LINE__);
+    gmx_fatal(FARGS,"No points in histogram (%s, %d)",__FILE__,__LINE__);
   fac = 2*M_PI/nh;
   
   /* Compute normalisation factor */
@@ -785,7 +785,7 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
 	angind=0;
       if ( (angind < 0) || (angind >= maxangstat) )
 	/* this will never happen */
-	fatal_error(0,"angle (%f) index out of range (0..%d) : %d\n",
+	gmx_fatal(FARGS,"angle (%f) index out of range (0..%d) : %d\n",
 		    angle,maxangstat,angind);
       
       angstat[angind]++;

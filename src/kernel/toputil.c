@@ -37,7 +37,6 @@
 #include <config.h>
 #endif
 
-#include "assert.h"
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "macros.h"
@@ -59,7 +58,7 @@ int at2type(char *str,t_atomtype *at)
   for (i=0; (i<at->nr) && strcasecmp(str,*(at->atomname[i])); i++)
     ;
   if (i == at->nr) 
-    fatal_error(0,"Atomtype '%s' not found!",str);
+    gmx_fatal(FARGS,"Atomtype '%s' not found!",str);
   
   return i;
 }
@@ -72,7 +71,7 @@ int name2index(char *str, char ***typenames, int ntypes)
   for (i=0; (i<ntypes) && strcasecmp(str,*(typenames[i])); i++)
     ;
   if (i == ntypes) 
-    fatal_error(0,"Bonded/nonbonded atom type '%s' not found!",str);
+    gmx_fatal(FARGS,"Bonded/nonbonded atom type '%s' not found!",str);
   
   return i;
 }
@@ -81,7 +80,7 @@ int name2index(char *str, char ***typenames, int ntypes)
 char *type2nm(int nt, t_atomtype *at)
 {
   if ((nt < 0) || (nt >= at->nr))
-    fatal_error(0,"nt out of range: %d",nt);
+    gmx_fatal(FARGS,"nt out of range: %d",nt);
   
   return *(at->atomname[nt]);
 }
@@ -92,7 +91,7 @@ void set_p_string(t_param *p,char *s)
     if (strlen(s) < sizeof(p->s)-1)
       strcpy(p->s,s);
     else
-      fatal_error(0,"Increase MAXSLEN in src/kernel/grompp.h to at least %d,"
+      gmx_fatal(FARGS,"Increase MAXSLEN in src/kernel/grompp.h to at least %d,"
 		  " or shorten your definition of bonds like %s to at most %d",
 		  strlen(s)+1,s,MAXSLEN-1);
   }
@@ -106,7 +105,7 @@ void pr_alloc (int extra, t_params *pr)
   
   /* get new space for arrays */
   if (extra < 0) 
-    fatal_error(0,"Trying to make array < 0 bytes\n");
+    gmx_fatal(FARGS,"Trying to make array < 0 bytes\n");
   if (extra == 0)
     return;
   if ((pr->nr == 0) && (pr->param != NULL)) {
@@ -423,7 +422,7 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
     for (i=0; (i < at->nr); i++) {
       itype=at->atom[i].type;
       if ((itype < 0) || (itype > atype->nr))
-	fatal_error(0,"itype = %d, i= %d in print_atoms",itype,i);
+	gmx_fatal(FARGS,"itype = %d, i= %d in print_atoms",itype,i);
 	
       fprintf(out,"%6d %10s %6d %6s %6s %6d %10g %10g",
 	      i+1,*(atype->atomname[itype]),

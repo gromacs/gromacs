@@ -139,7 +139,7 @@ int gmx_nmeig(int argc,char *argv[])
       }
     }
     else {
-      fatal_error(0,"Premature end of file, hessian matrix");
+      gmx_fatal(FARGS,"Premature end of file, hessian matrix");
     }
   }
   close_trj(status);

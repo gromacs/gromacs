@@ -38,7 +38,6 @@
 #endif
 
 #include <math.h>
-#include "assert.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -125,7 +124,7 @@ int update_list(t_dist d[],int tag[],int natom,bool bViol[],int ip[])
     if (bViol[i]) {
       for(j=j0; (j<j1); j++) {
 	if (d[j].ai != i)
-	  fatal_error(0,"Tags or distances inconsistent: "
+	  gmx_fatal(FARGS,"Tags or distances inconsistent: "
 		      "i=%d, j=%d, ai=%d, aj=%d, j0=%d, j1=%d",
 		      i,j,d[j].ai,d[j].aj,j0,j1);
 	ip[nchk] = j;
@@ -135,7 +134,7 @@ int update_list(t_dist d[],int tag[],int natom,bool bViol[],int ip[])
     else {
       for(j=j0; (j<j1); j++) {
 	if (d[j].ai != i)
-	  fatal_error(0,"Tags or distances inconsistent: "
+	  gmx_fatal(FARGS,"Tags or distances inconsistent: "
 		      "i=%d, j=%d, ai=%d, aj=%d, j0=%d, j1=%d",
 		      i,j,d[j].ai,d[j].aj,j0,j1);
 	if (bViol[d[j].aj]) {

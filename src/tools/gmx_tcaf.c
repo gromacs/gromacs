@@ -298,7 +298,7 @@ int gmx_tcaf(int argc,char *argv[])
 
   if (bMol) {
     if (!bTop)
-      fatal_error(0,"Need a topology to determine the molecules");
+      gmx_fatal(FARGS,"Need a topology to determine the molecules");
     a     = top.blocks[ebMOLS].a;
     atndx = top.blocks[ebMOLS].index;
   }
@@ -315,11 +315,11 @@ int gmx_tcaf(int argc,char *argv[])
   sysmass = 0;
   for(i=0; i<nk; i++) {
     if (iprod(v0[i],v1[i]) != 0)
-      fatal_error(0,"DEATH HORROR: vectors not orthogonal");
+      gmx_fatal(FARGS,"DEATH HORROR: vectors not orthogonal");
     if (iprod(v0[i],v2[i]) != 0)
-      fatal_error(0,"DEATH HORROR: vectors not orthogonal");
+      gmx_fatal(FARGS,"DEATH HORROR: vectors not orthogonal");
     if (iprod(v1[i],v2[i]) != 0)
-	fatal_error(0,"DEATH HORROR: vectors not orthogonal");
+	gmx_fatal(FARGS,"DEATH HORROR: vectors not orthogonal");
     unitv(v1[i],v1[i]);
     unitv(v2[i],v2[i]);
   }

@@ -105,7 +105,7 @@ static void printincomp(t_trxframe *fr)
 int prec2ndec(real prec)
 {
   if (prec <= 0)
-    fatal_error(0,"DEATH HORROR prec (%g) <= 0 in prec2ndec",prec);
+    gmx_fatal(FARGS,"DEATH HORROR prec (%g) <= 0 in prec2ndec",prec);
   
   return (int)(log(prec)/log(10.0)+0.5);
 }
@@ -167,7 +167,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
     break;
   default:
     if (!fr->bX)
-      fatal_error(0,"Need coordinates to write a %s trajectory",
+      gmx_fatal(FARGS,"Need coordinates to write a %s trajectory",
 		  ftp2ext(fio_getftp(fnum)));
     break;
   }
@@ -211,7 +211,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
   case efBRK:
   case efENT:
     if (!fr->bAtoms)
-      fatal_error(0,"Can not write a %s file without atom names",
+      gmx_fatal(FARGS,"Can not write a %s file without atom names",
 		  ftp2ext(fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
     if (fio_getftp(fnum) == efGRO)
@@ -229,7 +229,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
     write_g96_conf(fio_getfp(fnum),fr,nind,ind); 
     break;
   default:
-    fatal_error(0,"Sorry, write_trxframe_indexed can not write %s",
+    gmx_fatal(FARGS,"Sorry, write_trxframe_indexed can not write %s",
 		ftp2ext(fio_getftp(fnum)));
     break;
   }
@@ -267,7 +267,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
     break;
   default:
     if (!fr->bX)
-      fatal_error(0,"Need coordinates to write a %s trajectory",
+      gmx_fatal(FARGS,"Need coordinates to write a %s trajectory",
 		  ftp2ext(fio_getftp(fnum)));
     break;
   }
@@ -286,7 +286,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
   case efBRK:
   case efENT:
     if (!fr->bAtoms)
-      fatal_error(0,"Can not write a %s file without atom names",
+      gmx_fatal(FARGS,"Can not write a %s file without atom names",
 		  ftp2ext(fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
     if (fio_getftp(fnum) == efGRO)
@@ -303,7 +303,7 @@ int write_trxframe(int fnum,t_trxframe *fr)
     write_g96_conf(fio_getfp(fnum),fr,-1,NULL); 
     break;
   default:
-    fatal_error(0,"Sorry, write_trxframe can not write %s",
+    gmx_fatal(FARGS,"Sorry, write_trxframe can not write %s",
 		ftp2ext(fio_getftp(fnum)));
     break;
   }
@@ -341,7 +341,7 @@ void close_trx(int status)
 int open_trx(char *outfile,char *filemode)
 {
   if (filemode[0]!='w' && filemode[0]!='a')
-    fatal_error(0,"Sorry, write_trx can only write");
+    gmx_fatal(FARGS,"Sorry, write_trx can only write");
 
   return fio_open(outfile,filemode);
 }
@@ -569,7 +569,7 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
     return FALSE;
   } else { 
     if (na != fr->natoms)
-      fatal_error(0,"Number of atoms in pdb frame %d is %d instead of %d",
+      gmx_fatal(FARGS,"Number of atoms in pdb frame %d is %d instead of %d",
 		  nframes_read(),na,fr->natoms);
     return TRUE;
   }
@@ -583,7 +583,7 @@ static int pdb_first_x(FILE *status, t_trxframe *fr)
   frewind(status);
   get_pdb_coordnum(status, &fr->natoms);
   if (fr->natoms==0)
-    fatal_error(0,"\nNo coordinates in pdb file\n");
+    gmx_fatal(FARGS,"\nNo coordinates in pdb file\n");
   frewind(status);
   snew(fr->x,fr->natoms);
   pdb_next_x(status, fr);
@@ -642,7 +642,7 @@ bool read_next_frame(int status,t_trxframe *fr)
       bRet = gro_next_x_or_v(fio_getfp(status),fr);
       break;
     default:
-      fatal_error(0,"DEATH HORROR in read_next_frame ftp=%s,status=%d",
+      gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%d",
 		  ftp2ext(fio_getftp(status)),status);
     }
     
@@ -717,7 +717,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     if (read_first_xtc(fp,&fr->natoms,&fr->step,&fr->time,fr->box,&fr->x,
 		       &fr->prec,&bOK) == 0) {
       if (bOK) {
-	fatal_error(0,"No XTC!\n");
+	gmx_fatal(FARGS,"No XTC!\n");
       } else {
 	fr->not_ok = DATA_NOT_OK;
       }
@@ -747,7 +747,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     bFirst = FALSE;
     break;
   default:
-    fatal_error(0,"Not supported in read_first_frame: %s",fn);
+    gmx_fatal(FARGS,"Not supported in read_first_frame: %s",fn);
     break;
   }
   

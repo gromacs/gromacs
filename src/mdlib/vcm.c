@@ -211,7 +211,7 @@ static void get_minv(tensor A,tensor B)
   /* This is a hack to prevent very large determinants */
   rfac  = (tmp[XX][XX]+tmp[YY][YY]+tmp[ZZ][ZZ])/3;
   if (rfac == 0.0) 
-    fatal_error(0,"Can not stop center of mass: maybe 2dimensional system");
+    gmx_fatal(FARGS,"Can not stop center of mass: maybe 2dimensional system");
   fac = 1.0/rfac;
   for(m=0; (m<DIM); m++)
     for(n=0; (n<DIM); n++)

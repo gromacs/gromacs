@@ -91,7 +91,7 @@ static t_p2Ddata *read_p2Ddata(char *fn)
   /* Allocate memory and set constants */
   snew(p2Ddata,1);
   if (fscanf(fp,"%d%d",&p2Ddata->nener,&p2Ddata->n2Ddata) != 2)
-    fatal_error(0,"I need two integers: nener, n in file %s",fn);
+    gmx_fatal(FARGS,"I need two integers: nener, n in file %s",fn);
   
   snew(p2Ddata->ener,p2Ddata->nener);
   snew(p2Ddata->prob,p2Ddata->nener);
@@ -110,7 +110,7 @@ static t_p2Ddata *read_p2Ddata(char *fn)
       if (j==0)
 	p2Ddata->ener[i] = e;
       else if (fabs(p2Ddata->ener[i]-e) > 1e-6*e)
-	fatal_error(0,"Inconsistent energy %f i=%d j=%d",e,i,j);
+	gmx_fatal(FARGS,"Inconsistent energy %f i=%d j=%d",e,i,j);
       p2Ddata->prob[i][j] = p;
       p2Ddata->data[i][j] = o;
     }
@@ -142,7 +142,7 @@ static t_pq_inel *read_pq(char *fn)
   /* Allocate memory and set constants */
   snew(pq,1);
   if (fscanf(fp,"%d%d%d",&pq->nener,&pq->nomega,&pq->nq) != 3)
-    fatal_error(0,"I need three integers: nener, nomega, nq in file %s",fn);
+    gmx_fatal(FARGS,"I need three integers: nener, nomega, nq in file %s",fn);
   
   snew(pq->ener,pq->nener);
   snew(pq->omega,pq->nener);
@@ -167,12 +167,12 @@ static t_pq_inel *read_pq(char *fn)
 	if ((j == 0) && (k == 0)) 
 	  pq->ener[i] = e;
 	else if (fabs(pq->ener[i]-e) > 1e-6*e)
-	  fatal_error(0,"Inconsistent energy %f i=%d j=%d k=%d",e,i,j,k);
+	  gmx_fatal(FARGS,"Inconsistent energy %f i=%d j=%d k=%d",e,i,j,k);
 	
 	if (k == 0)
 	  pq->omega[i][j] = o;
 	else if (fabs(pq->omega[i][j]-o) > 1e-6*o)
-	  fatal_error(0,"Inconsistent omega %f i=%d j=%d k=%d",o,i,j,k);
+	  gmx_fatal(FARGS,"Inconsistent omega %f i=%d j=%d k=%d",o,i,j,k);
 	
 	pq->prob[i][j][k] = p;
 	pq->q[i][j][k] = t;
@@ -233,7 +233,7 @@ real get_omega(real ekin,int *seed,FILE *fp,char *fn)
   if ((eindex = my_bsearch(ekin,p2Ddata->nener,p2Ddata->ener,TRUE)) >= 0) {
 #ifdef DEBUG
     if (eindex >= p2Ddata->nener)
-      fatal_error(0,"eindex (%d) out of range (max %d) in get_omega",
+      gmx_fatal(FARGS,"eindex (%d) out of range (max %d) in get_omega",
 		  eindex,p2Ddata->nener);
 #endif
 
@@ -244,7 +244,7 @@ real get_omega(real ekin,int *seed,FILE *fp,char *fn)
     if ((oindex = my_bsearch(r,p2Ddata->n2Ddata,p2Ddata->prob[eindex],TRUE)) >= 0) {
 #ifdef DEBUG
       if (oindex >= p2Ddata->n2Ddata)
-	fatal_error(0,"oindex (%d) out of range (max %d) in get_omega",
+	gmx_fatal(FARGS,"oindex (%d) out of range (max %d) in get_omega",
 		    oindex,p2Ddata->n2Ddata);
 #endif
 
@@ -306,14 +306,14 @@ real get_q_inel(real ekin,real omega,int *seed,FILE *fp,char *fn)
   if ((eindex = my_bsearch(ekin,pq->nener,pq->ener,TRUE)) >= 0) {
 #ifdef DEBUG
     if (eindex >= pq->nener)
-      fatal_error(0,"eindex out of range (%d >= %d)",eindex,pq->nener);
+      gmx_fatal(FARGS,"eindex out of range (%d >= %d)",eindex,pq->nener);
 #endif
       
     /* Do binary search in the energy table */
     if ((oindex = my_bsearch(omega,pq->nomega,pq->omega[eindex],FALSE)) >= 0) {
 #ifdef DEBUG
       if (oindex >= pq->nomega)
-	fatal_error(0,"oindex out of range (%d >= %d)",oindex,pq->nomega);
+	gmx_fatal(FARGS,"oindex out of range (%d >= %d)",oindex,pq->nomega);
 #endif
       
       /* Start with random number */
@@ -322,7 +322,7 @@ real get_q_inel(real ekin,real omega,int *seed,FILE *fp,char *fn)
       if ((tindex = my_bsearch(r,pq->nq,pq->prob[eindex][oindex],FALSE)) >= 0) {
 #ifdef DEBUG
 	if (tindex >= pq->nq)
-	  fatal_error(0,"tindex out of range (%d >= %d)",tindex,pq->nq);
+	  gmx_fatal(FARGS,"tindex out of range (%d >= %d)",tindex,pq->nq);
 #endif
 	
 	theta = pq->q[eindex][oindex][tindex];
@@ -379,7 +379,7 @@ real cross_inel(real ekin,real rho,char *fn)
   if ((eindex = my_bsearch(ekin,ninel,ener,FALSE)) >= 0) {
 #ifdef DEBUG
     if (eindex >= ninel)
-      fatal_error(0,"ekin = %f, ener[0] = %f, ener[%d] = %f",ekin,
+      gmx_fatal(FARGS,"ekin = %f, ener[0] = %f, ener[%d] = %f",ekin,
 		  ener[0],ener[ninel-1]);
 #endif
     return cross[eindex];
@@ -403,7 +403,7 @@ real cross_el(real ekin,real rho,char *fn)
   if ((eindex = my_bsearch(ekin,nel,ener,FALSE)) >= 0) {
 #ifdef DEBUG
     if (eindex >= nel)
-      fatal_error(0,"ekin = %f, ener[0] = %f, ener[%d] = %f",ekin,
+      gmx_fatal(FARGS,"ekin = %f, ener[0] = %f, ener[%d] = %f",ekin,
 		  ener[0],ener[nel-1]);
 #endif
 
@@ -429,7 +429,7 @@ real band_ener(int *seed,FILE *fp,char *fn)
   if ((eindex = my_bsearch(r,nener,prob,FALSE)) >= 0) {
 #ifdef DEBUG
     if (eindex >= nener)
-      fatal_error(0,"r = %f, prob[0] = %f, prob[%d] = %f",r,
+      gmx_fatal(FARGS,"r = %f, prob[0] = %f, prob[%d] = %f",r,
 		  prob[0],prob[nener-1]);
 #endif
 

@@ -46,7 +46,6 @@
 #include "smalloc.h"
 #include "enxio.h"
 #include "statutil.h"
-#include "assert.h"
 #include "names.h"
 #include "copyrite.h"
 #include "macros.h"
@@ -124,7 +123,7 @@ static void get_orires_parms(char *topnm,
   /* Count how many distance restraint there are... */
   nb = top.idef.il[F_ORIRES].nr;
   if (nb == 0)
-    fatal_error(0,"No orientation restraints in topology!\n");
+    gmx_fatal(FARGS,"No orientation restraints in topology!\n");
   
   *nor = nb/3;
   *nex = 0;
@@ -161,7 +160,7 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   /* Count how many distance restraint there are... */
   nb=top->idef.il[F_DISRES].nr;
   if (nb == 0)
-    fatal_error(0,"No distance restraints in topology!\n");
+    gmx_fatal(FARGS,"No distance restraints in topology!\n");
   
   /* Allocate memory */
   snew(b,nb);
@@ -200,7 +199,8 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   }
   pair[j]  = k;
   *npairs = k;
-  assert(j == nb);
+  if (j != nb)
+    gmx_incons("get_bounds for distance restraints");
 
   *index   = ind;
   *dr_pair = pair;
@@ -827,7 +827,7 @@ int gmx_energy(int argc,char *argv[])
 	    scanf("%lf",&dbl);
 	    Vaver = dbl;
 	  } else
-	    fatal_error(0,"Could not find term %s for viscosity calculation",
+	    gmx_fatal(FARGS,"Could not find term %s for viscosity calculation",
 			setnm[j]);
         }
       }
@@ -1012,7 +1012,7 @@ int gmx_energy(int argc,char *argv[])
 	ip = top.idef.iparams;
 
 	if (fr->ndisre != top.idef.il[F_DISRES].nr/3)
-	  fatal_error(0,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
+	  gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
 		      fr->ndisre,top.idef.il[F_DISRES].nr/3);
 	
 	snew(pairleg,fr->ndisre);
@@ -1110,7 +1110,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	  if (bORIRE && fr->nblock>enx_i && fr->nr[enx_i]>0) {
 	    if (fr->nr[enx_i] != nor)
-	      fatal_error(0,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)",fr->nr[enx_i],nor);
+	      gmx_fatal(FARGS,"Number of orientation restraints in energy file (%d) does not match with the topology (%d)",fr->nr[enx_i],nor);
 	    if (bORA || bODA)
 	      for(i=0; i<nor; i++)
 		orient[i] += fr->block[enx_i][i];
@@ -1133,7 +1133,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	  if (bOTEN && fr->nblock>enxORT) {
 	    if (fr->nr[enxORT] != nex*12)
-	      fatal_error(0,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",fr->nr[enxORT]/12,nex);
+	      gmx_fatal(FARGS,"Number of orientation experiments in energy file (%g) does not match with the topology (%d)",fr->nr[enxORT]/12,nex);
 	    fprintf(foten,"  %10f",fr->t);
 	    for(i=0; i<nex; i++)
 	      for(j=0; j<(bOvec?12:3); j++)

@@ -90,33 +90,27 @@ windex add_widget(Widget new_widget,char *desc)
   return nwindex-1;
 }
 
-static void widget_range_check(windex win)
-{
-  if (!((win>=0) && (win<nwindex)))
-    fatal_error(0,"Widget index %d out of range, nwindex = %d",win,nwindex);
-}
-
 Widget get_parent(windex win)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   if (w[win].parent == 0)
-    fatal_error(0,"No parent widget known for widget %d. I'm an orphan!",win);
+    gmx_fatal(FARGS,"No parent widget known for widget %d. I'm an orphan!",win);
 
   return w[win].parent;
 }
 
 void set_parent(windex win,Widget parent)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   if (w[win].parent != 0)
-    fatal_error(0,"Parent widget already set for widget %d",win);
+    gmx_fatal(FARGS,"Parent widget already set for widget %d",win);
   
   w[win].parent = parent;
 }
 
 void set_windex_orignm(windex win,char *orignm)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
 
   if (orignm)
     w[win].orignm = strdup(orignm);
@@ -126,28 +120,28 @@ void set_windex_orignm(windex win,char *orignm)
 
 char *get_windex_orignm(windex win)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   
   return w[win].orignm;
 }
 
 void set_windex_popup(windex win,bool bPopup)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   
   w[win].bPopup = bPopup;
 }
 
 bool get_windex_popup(windex win)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   
   return w[win].bPopup;
 }
 
 Widget get_widget(windex win)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   
   return w[win].w;
 }
@@ -159,7 +153,7 @@ windex get_windex(Widget www)
   for(i=0; (i<nwindex); i++)
     if (w[i].w == www)
       return i;
-  fatal_error(0,"No such widget %x\n",www);
+  gmx_fatal(FARGS,"No such widget %x\n",www);
   
   return -1;
 }
@@ -195,14 +189,14 @@ int get_widget_ftp(Widget www)
 
 char *get_widget_dir(windex win)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
 
   return w[win].directory ? w[win].directory : "";
 }
 
 void set_widget_ftp(windex win,int ftp)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
 
   w[win].ftp = ftp;
 }
@@ -251,16 +245,16 @@ void set_widget_dir(Widget www,XmString label)
 
 Widget get_widget_other(windex win,bool bFail)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   if ((w[win].other == 0) && bFail)
-    fatal_error(0,"Calling the wrong window: %d, no other widget\n",win);
+    gmx_fatal(FARGS,"Calling the wrong window: %d, no other widget\n",win);
   
   return w[win].other;
 }
    
 void set_widget_other(windex win,Widget www)
 {
-  widget_range_check(win);
+  range_check(win,0,nwindex);
   w[win].other = www;
 }
    

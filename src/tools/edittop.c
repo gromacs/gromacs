@@ -40,7 +40,6 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "fatal.h"
-#include "assert.h"
 #include "symtab.h"
 
 void replace_atom(t_topology *top,int inr,char *anm,char *resnm,
@@ -52,7 +51,7 @@ void replace_atom(t_topology *top,int inr,char *anm,char *resnm,
   
   /* Replace important properties of an atom by other properties */  
   if ((inr < 0) || (inr > atoms->nr))
-    fatal_error(0,"Replace_atom: inr (%d) not in %d .. %d",inr,0,atoms->nr);
+    gmx_fatal(FARGS,"Replace_atom: inr (%d) not in %d .. %d",inr,0,atoms->nr);
   if (debug)
     fprintf(debug,"Replacing atom %d ... ",inr);
   /* Charge, mass and type */
@@ -140,7 +139,8 @@ static void delete_from_atoms(t_atoms *atoms,int inr)
   for(i=inr; (i<atoms->excl.nr); i++)
     atoms->excl.index[i] = atoms->excl.index[i+1] - nrei;
   atoms->excl.nr--;
-  assert(atoms->excl.index[atoms->excl.nr] == atoms->excl.nra);
+  if (atoms->excl.index[atoms->excl.nr] != atoms->excl.nra) 
+    gmx_incons("comparing nra in exclusions");
   
   /* Shift the atomnames down */
   for(i=inr; (i<atoms->nr-1); i++)
@@ -163,7 +163,7 @@ void delete_atom(t_topology *top,int inr)
   int k;
   
   if ((inr < 0) || (inr >= top->atoms.nr))
-    fatal_error(0,"Delete_atom: inr (%d) not in %d .. %d",inr,0,
+    gmx_fatal(FARGS,"Delete_atom: inr (%d) not in %d .. %d",inr,0,
 		top->atoms.nr);
   if (debug)
     fprintf(debug,"Deleting atom %d ...",inr);

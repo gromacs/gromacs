@@ -236,7 +236,7 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
   k=0;
   for(i=0; (i<atoms->nr); i++) {
     if ((type = nm2type(nnm,nm2t,*atoms->atomname[i],nbonds[i])) == NULL)
-      fatal_error(0,"No forcefield type for atom %s (%d) with %d bonds",
+      gmx_fatal(FARGS,"No forcefield type for atom %s (%d) with %d bonds",
 		  *atoms->atomname[i],i+1,nbonds[i]);
     else if (debug)
       fprintf(debug,"Selected atomtype %s for atom %s\n",
@@ -480,7 +480,7 @@ int main(int argc, char *argv[])
   bTOP = opt2bSet("-o",NFILE,fnm);
 
   if (!bRTP && !bTOP)
-    fatal_error(0,"Specify at least one output file");
+    gmx_fatal(FARGS,"Specify at least one output file");
 
   cutoff = set_x_blen(scale);
 

@@ -39,7 +39,6 @@
 
 #include "sysstuff.h"
 #include <ctype.h>
-#include "assert.h"
 #include "string2.h"
 #include "strdb.h"
 #include "futil.h"
@@ -69,7 +68,7 @@ t_atomtype *read_atype(char *adb,t_symtab *tab)
   
   for(nratt=0; ; nratt++) {
     if (nratt >= MAXAT)
-      fatal_error(0,"nratt >= MAXAT(%d). Increase the latter",MAXAT);
+      gmx_fatal(FARGS,"nratt >= MAXAT(%d). Increase the latter",MAXAT);
     if (feof(in))
       break;
 
@@ -109,8 +108,8 @@ static void print_resatoms(FILE *out,t_atomtype *atype,t_restp *rtp)
   
   for(j=0; (j<rtp->natom); j++) {
     tp=rtp->atom[j].type;
-    assert (tp >= 0);
-    assert (tp < atype->nr);
+    if ((tp < 0) || (tp >= atype->nr))
+      gmx_fatal(FARGS,"tp (%d) out of range (0 .. %d)",tp,atype->nr);
     fprintf(out,"%6s%6s%8.3f%6d\n",
 	    *(rtp->atomname[j]),*(atype->atomname[tp]),
 	    rtp->atom[j].q,rtp->cgnr[j]);
@@ -146,7 +145,7 @@ static bool read_atoms(FILE *in,char *line,
       if (strcasecmp(buf1,*(atype->atomname[j])) == 0)
 	break;
     if (j == atype->nr)
-      fatal_error(0,"Atom type %s (residue %s) not found in atomtype "
+      gmx_fatal(FARGS,"Atom type %s (residue %s) not found in atomtype "
 		  "database",buf1,r0->resname);
     r0->atom[i].type=j;
     r0->atom[i].m=atype->atom[j].m;
@@ -287,11 +286,11 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
   maxrtp=0;
   get_a_line(in,line,STRLEN);
   if (!get_header(line,header))
-    fatal_error(0,"in .rtp file at line:\n%s\n",line);
+    gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
   if (strncasecmp("bondedtypes",header,5)==0) {
     get_a_line(in,line,STRLEN);
     if ((nparam=sscanf(line,"%d %d %d %d %d %d %d %d",&bts[0],&bts[1],&bts[2],&bts[3],bAlldih,nrexcl,HH14,bRemoveDih)) < 4 )
-      fatal_error(0,"need at least 4 (up to 8) parameters in .rtp file at line:\n%s\n",line);
+      gmx_fatal(FARGS,"need at least 4 (up to 8) parameters in .rtp file at line:\n%s\n",line);
     get_a_line(in,line,STRLEN);
     if(nparam<5) {
       fprintf(stderr,"Using default: not generating all possible dihedrals\n");
@@ -329,7 +328,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
     }
     clear_t_restp(&rrtp[nrtp]);
     if (!get_header(line,header))
-      fatal_error(0,"in .rtp file at line:\n%s\n",line);
+      gmx_fatal(FARGS,"in .rtp file at line:\n%s\n",line);
     rrtp[nrtp].resname=strdup(header);
     
     get_a_line(in,line,STRLEN);
@@ -355,11 +354,11 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 	  }
       }
       if (bError)
-	fatal_error(0,"in .rtp file in residue %s at line:\n%s\n",
+	gmx_fatal(FARGS,"in .rtp file in residue %s at line:\n%s\n",
 		    rrtp[nrtp].resname,line);
     }
     if (rrtp[nrtp].natom == 0)
-      fatal_error(0,"No atoms found in .rtp file in residue %s\n",
+      gmx_fatal(FARGS,"No atoms found in .rtp file in residue %s\n",
 		  rrtp[nrtp].resname);
     if (debug) {
       fprintf(debug,"%3d %5s %5d",
@@ -436,7 +435,7 @@ t_restp *search_rtp(char *key,int nrtp,t_restp rtp[])
     }
   }
   if (besti == -1)
-    fatal_error(0,"Residue '%s' not found in residue topology database\n",key);
+    gmx_fatal(FARGS,"Residue '%s' not found in residue topology database\n",key);
   if (strlen(rtp[besti].resname) != strlen(key))
     fprintf(stderr,"Warning: '%s' not found in residue topology database, "
 	    "trying to use '%s'\n", key, rtp[besti].resname);

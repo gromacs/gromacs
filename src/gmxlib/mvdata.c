@@ -42,7 +42,6 @@
 #include <string.h>
 #include "typedefs.h"
 #include "main.h"
-#include "assert.h"
 #include "mvdata.h"
 #include "network.h"
 #include "smalloc.h"
@@ -133,7 +132,8 @@ static void ld_atoms(int src,t_symtab *symtab,t_atoms *atoms)
   snew(atoms->atom,atoms->nr);
   nblockrx(src,atoms->nr,atoms->atom);
   atomnr=ld_strings(src,symtab,&atoms->atomname);
-  assert(atomnr==atoms->nr);
+  if (atomnr != atoms->nr)
+    gmx_incons("Number of atoms to send around does not match");
   atoms->nres=ld_strings(src,symtab,&atoms->resname);
   atoms->ngrpname=ld_strings(src,symtab,&atoms->grpname);
   ld_grps(src,atoms->grps);
@@ -364,7 +364,8 @@ static void mv_symtab(int dest,t_symtab *symtab)
       nr-=i;
       symbuf=symbuf->next;
     }
-  assert(nr==0);
+  if (nr != 0)
+    gmx_incons("Sending strings around the ring");
 }
 
 static void mv_grps(int dest,t_grps grps[])

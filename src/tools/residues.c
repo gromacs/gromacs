@@ -38,7 +38,6 @@
 #endif
 #include <math.h>
 
-#include "assert.h"
 #include "cdist.h"
 #include "names.h"
 
@@ -149,7 +148,7 @@ static int set_cdatoms(t_atoms *atoms,int j,int residnr,int ncda,t_cdatom cda[])
     }
     if (k != -1) {
       if (cda[k].anr != -1)
-	fatal_error(0,"Overwriting cda entry for %s [%s], was %d now %d\n"
+	gmx_fatal(FARGS,"Overwriting cda entry for %s [%s], was %d now %d\n"
 		    "resj=%d, residnr=%d, k=%d, ncda=%d",
 		    cda[k].anm,anmj,cda[k].anr+1,j+1,resj,residnr,k,ncda);
       cda[k].anr = j;
@@ -172,7 +171,7 @@ static int logg_index(char *anm,int ncda,t_cdatom cda[],char *file,int line)
     if (strcmp(anm,cda[i].anm) == 0)
       li = cda[i].anr;
   if (li == -1) 
-    fatal_error(0,"Can not find atom %s (file %s, line %d)",anm,file,line);
+    gmx_fatal(FARGS,"Can not find atom %s (file %s, line %d)",anm,file,line);
   return li;
 }
 #define logger(sss) logg_index(sss,MAXLOGG,cda,__FILE__,__LINE__)
@@ -1066,7 +1065,8 @@ void phe_tyr(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
   cda        = init_cdatoms(MAXLOGG,sa);
   nhz        = 7;
   /* Consistency check */
-  assert(strcmp(cda[nhz].anm,"HZ") == 0);
+  if (strcmp(cda[nhz].anm,"HZ") != 0)
+    gmx_fatal(FARGS,"wrong atom name %s, expeced HZ",cda[nhz].anm);
   if (!bPhe) {
     strcpy(NHZ,"OH");
     strcpy(cda[nhz].anm,"OH");

@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include "assert.h"
 #include "typedefs.h"
 #include "futil.h"
 #include "smalloc.h"
@@ -113,7 +112,7 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
 			   &(grid->pfft.local_y_start_after_transpose),
 			   &(grid->pfft.total_local_size));
 #else
-    fatal_error(0,"Parallel FFT supported with MPI only!");
+    gmx_fatal(FARGS,"Parallel FFT supported with MPI only!");
 #endif
   }
   else {
@@ -172,7 +171,7 @@ void done_fftgrid(t_fftgrid *grid)
 void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
 #ifdef WITHOUT_FFTW
-  fatal_error(0,"gmxfft3D called, but GROMACS was compiled without FFTW!\n");
+  gmx_fatal(FARGS,"gmxfft3D called, but GROMACS was compiled without FFTW!\n");
 #else /* have fftw */
   if (cr && PAR(cr) && grid->localptr) {
 #ifdef USE_MPI
@@ -183,7 +182,7 @@ void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
       rfftwnd_mpi(grid->plan_mpi_bw,1,grid->localptr,
 		    grid->workspace,FFTW_TRANSPOSED_ORDER);
     else
-      fatal_error(0,"Invalid direction for FFT: %d",dir);
+      gmx_fatal(FARGS,"Invalid direction for FFT: %d",dir);
 #endif
   }
   else {
@@ -201,7 +200,7 @@ void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 	  rfftwnd_one_complex_to_real(grid->plan_bw,(fftw_complex *)grid->ptr,
 				      tmp);
     else
-      fatal_error(0,"Invalid direction for FFT: %d",dir);
+      gmx_fatal(FARGS,"Invalid direction for FFT: %d",dir);
 #ifdef FFT_WORKSPACE
       tmp=grid->ptr;
       grid->ptr=grid->workspace;

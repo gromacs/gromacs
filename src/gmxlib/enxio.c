@@ -233,9 +233,9 @@ int open_enx(char *fn,char *mode)
 	fprintf(stderr,"Opened %s as double precision energy file\n",fn);
       else {
 	if (empty_file(fn))
-	  fatal_error(0,"File %s is empty",fn);
+	  gmx_fatal(FARGS,"File %s is empty",fn);
 	else
-	  fatal_error(0,"Energy file %s not recognized, maybe different CPU?",
+	  gmx_fatal(FARGS,"Energy file %s not recognized, maybe different CPU?",
 		      fn);
       }
       for(i=0; (i<nre); i++)
@@ -340,7 +340,7 @@ bool do_enx(int fp,t_enxframe *fr)
       fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f     \n",
 	      framenr,fr->t);
     } else 
-      fatal_error(-1,"could not write energies");
+      gmx_fatal(FARGS,"could not write energies");
     return FALSE; 
   }
   
@@ -355,7 +355,7 @@ static real find_energy(char *name, int nre, char **enm, t_enxframe *fr)
     if (strcmp(enm[i],name) == 0)
       return  fr->ener[i].e;
 
-  fatal_error(0,"Could not find energy term named '%s'",name);
+  gmx_fatal(FARGS,"Could not find energy term named '%s'",name);
 
   return 0;
 }
@@ -392,7 +392,7 @@ void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
   fprintf(stderr,"\n");
 
   if (nfr == 0 || fr->t != t)
-    fatal_error(0,"Could not find frame with time %f in '%s'",t,fn);
+    gmx_fatal(FARGS,"Could not find frame with time %f in '%s'",t,fn);
   
   npcoupl = TRICLINIC(ir->compress) ? 6 : 3;
   if (ir->epc == epcPARRINELLORAHMAN) {

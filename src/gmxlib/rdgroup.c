@@ -53,7 +53,7 @@ void check_index(char *gname,int n,atom_id index[],char *traj,int natoms)
   
   for(i=0; i<n; i++)
     if (index[i] >= natoms)
-      fatal_error(0,"%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
+      gmx_fatal(FARGS,"%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
 		  gname ? gname : "Index",i+1, index[i]+1,
 		  traj ? traj : "the trajectory",natoms);
 }
@@ -114,7 +114,7 @@ t_block *init_index(char *gfile, char ***grpname)
       (*grpname)[i]=strdup(str);
       b->index[i+1]=b->index[i]+ng;
       if (b->index[i+1] > b->nra)
-	fatal_error(0,"Something wrong in your indexfile at group %s",str);
+	gmx_fatal(FARGS,"Something wrong in your indexfile at group %s",str);
       for(j=0; (j<ng); j++) {
 	fscanf(in,"%d",&a);
 	b->a[b->index[i]+j]=a;
@@ -192,7 +192,7 @@ static int qgroup(int *a, int ngrps, char **grpname)
   fprintf(stderr,"Select a group: ");
   do {
     if ( scanf("%s",s)!=1 ) 
-      fatal_error(0,"Cannot read from input");
+      gmx_fatal(FARGS,"Cannot read from input");
   trim(s); /* remove spaces */
   } while (strlen(s)==0);
   aa = atoi(s);
@@ -213,7 +213,7 @@ static void rd_groups(t_block *grps,char **grpname,char *gnames[],
   int i,j,gnr1;
 
   if (grps->nr==0)
-    fatal_error(0,"Error: no groups in indexfile");
+    gmx_fatal(FARGS,"Error: no groups in indexfile");
   for(i=0; (i<grps->nr); i++)
     fprintf(stderr,"Group %5d (%12s) has %5d elements\n",i,grpname[i],
 	   grps->index[i+1]-grps->index[i]);
@@ -245,7 +245,7 @@ void rd_index(char *statfile,int ngrps,int isize[],
   
   snew(grpnr,ngrps);
   if (!statfile)
-    fatal_error(0,"No index file specified");
+    gmx_fatal(FARGS,"No index file specified");
   grps=init_index(statfile,&gnames);
   rd_groups(grps,gnames,grpnames,ngrps,isize,index,grpnr);
 }
@@ -257,7 +257,7 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
   t_block *grps;
   
   if (!statfile)
-    fatal_error(0,"No index file specified");
+    gmx_fatal(FARGS,"No index file specified");
   grps=init_index(statfile,&gnames);
   
   rd_groups(grps,gnames,grpnames,ngrps,isize,index,grpnr);

@@ -103,7 +103,7 @@ int main (int argc,char *argv[])
   if (bReadMultiple) {
     infile = opt2fn("-f",NFILE,fnm);
     if ( !read_first_frame(&status, infile, &fr, TRX_NEED_X ) )
-      fatal_error(0,"cannot read coordinate file %s",infile);
+      gmx_fatal(FARGS,"cannot read coordinate file %s",infile);
     natoms = fr.natoms;
   } else {
     clear_trxframe(&fr,TRUE);
@@ -119,13 +119,13 @@ int main (int argc,char *argv[])
   
   /* check input */
   if ( natoms == 0 )
-    fatal_error(0,"no atoms in coordinate file %s",infile);
+    gmx_fatal(FARGS,"no atoms in coordinate file %s",infile);
   if ( natoms > atoms->nr )
-    fatal_error(0,"topology with %d atoms does not match "
+    gmx_fatal(FARGS,"topology with %d atoms does not match "
 		"coordinates with %d atoms",atoms->nr,natoms);
   for(i=0; i<nidx; i++)
     if (index[i] > natoms)
-      fatal_error(0,"An atom number in group %s is larger than the number of "
+      gmx_fatal(FARGS,"An atom number in group %s is larger than the number of "
 		  "atoms (%d) in the coordinate file %s",grpnm,natoms,infile);
   
   /* get indexed copy of atoms */

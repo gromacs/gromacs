@@ -73,7 +73,7 @@ int find_kw(char *keyw)
   return NOTSET;
 }
 
-#define FATAL() fatal_error(0,"Reading Termini Database: not enough items on line\n%s",line)
+#define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
 static void read_atom(char *line, t_atom *a, t_atomtype *atype, 
 		      char nnew[], int *cgnr)
@@ -83,7 +83,7 @@ static void read_atom(char *line, t_atom *a, t_atomtype *atype,
   double m, q;
   
   if ( (i=sscanf(line,"%s%s%lf%lf%n", nnew, type, &m, &q, &n)) != 4 ) 
-    fatal_error(0,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 4, i, line);
+    gmx_fatal(FARGS,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 4, i, line);
   a->m=m;
   a->q=q;
   a->type=at2type(type,atype);
@@ -125,7 +125,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
       }
     } else {
       if (nb < 0)
-	fatal_error(0,"reading termini database: "
+	gmx_fatal(FARGS,"reading termini database: "
 		    "directive expected before line:\n%s\n"
 		    "This might be a file in an old format.",line);
       /* this is not a header, so it must be data */
@@ -146,7 +146,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
 	n=0;
 	if ( kwnr==ekwRepl || kwnr==ekwDel ) {
 	  if (sscanf(line, "%s%n", buf, &n) != 1) 
-	    fatal_error(0,"Reading Termini Database: "
+	    gmx_fatal(FARGS,"Reading Termini Database: "
 			"expected atom name on line\n%s",line);
 	  tb[nb].hack[nh].oname = strdup(buf);
 	  /* we only replace or delete one atom at a time */
@@ -155,7 +155,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
 	  read_ab(line, inf, &(tb[nb].hack[nh]));
 	  get_a_line(in, line, STRLEN);
 	} else
-	  fatal_error(0,"unimplemented keyword number %d (%s:%d)",
+	  gmx_fatal(FARGS,"unimplemented keyword number %d (%s:%d)",
 		      kwnr,__FILE__,__LINE__);
 	if ( kwnr==ekwRepl || kwnr==ekwAdd ) {
 	  snew(tb[nb].hack[nh].atom, 1);
@@ -171,7 +171,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
 	  if ( sscanf(line+n, "%s%n", buf, &ni) == 1 )
 	    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = strdup(buf);
 	  else
-	    fatal_error(0,"Reading Termini Database: expected %d atom names (found %d) on line\n%s", btsNiatoms[kwnr], j-1, line);
+	    gmx_fatal(FARGS,"Reading Termini Database: expected %d atom names (found %d) on line\n%s", btsNiatoms[kwnr], j-1, line);
 	  n+=ni;
 	}
 	for(   ; j<MAXATOMLIST; j++)
@@ -181,7 +181,7 @@ int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
 	tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].s = strdup(buf);
 	tb[nb].rb[kwnr].nb++;
       } else
-	fatal_error(0,"Reading Termini Database: Expecting a header at line\n"
+	gmx_fatal(FARGS,"Reading Termini Database: Expecting a header at line\n"
 		    "%s",line);
     }
     get_a_line(in,line,STRLEN);
@@ -321,7 +321,7 @@ void print_ter_db(FILE *out,int nb,t_hackblock tb[],t_atomtype *atype)
       else if ( tb[i].hack[j].oname!=NULL && tb[i].hack[j].nname==NULL )
 	ndel++;
       else if ( tb[i].hack[j].oname==NULL && tb[i].hack[j].nname==NULL )
-	fatal_error(0,"invalid hack (%s) in termini database",tb[i].name);
+	gmx_fatal(FARGS,"invalid hack (%s) in termini database",tb[i].name);
     if (nrepl) {
       fprintf(out,"[ %s ]\n",kw_names[ekwRepl-ebtsNR-1]);
       for(j=0; j<tb[i].nhack; j++) 

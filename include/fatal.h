@@ -53,10 +53,6 @@ extern void _where(char *file,int line);
 #define where() _where(__FILE__,__LINE__)
 /* Prints filename and line to stdlog and only on amba memvail */
   
-extern void _halt(char *file,int line,char *reason);
-#define HALT(reason) _halt(__FILE__,__LINE__,reason)
-/* Halts the program with an error message */
-
 extern void _set_fatal_tmp_file(char *fn, char *file, int line);
 #define set_fatal_tmp_file(fn) _set_fatal_tmp_file(fn,__FILE__,__LINE__)
 /* set filename to be removed when fatal_error is called */
@@ -65,9 +61,10 @@ extern void _unset_fatal_tmp_file(char *fn, char *file, int line);
 #define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn,__FILE__,__LINE__)
 /* unsets filename to be removed */
 
-extern void fatal_error(int fatal_errno,char *fmt,...);
+  extern void gmx_fatal(int fatal_errno,char *file,int line,char *fmt,...);
+#define FARGS 0,__FILE__,__LINE__
 /*
- * Routine fatal_error prints 
+ * Routine gmx_fatal prints 
  *
  * 	"fatal error file %s line %s \n\t " 
  *
@@ -77,6 +74,10 @@ extern void fatal_error(int fatal_errno,char *fmt,...);
  * first message, if errno is -1, the last system errno will be used.
  * The format of fmt is that like printf etc, only %d, %x, %c, %f and %s
  * are allowed as format specifiers.
+ *
+ * Tip of the week:
+ * call this function using the FARGS macro:
+ * gmx_fatal(FARGS,fmt,...)
  */
 
 /* This include must not be moved upwards, to prevent compilation problems */  
@@ -119,7 +120,7 @@ extern void _unexpected_eof(char *fn,int line,char *srcfn,int srcline);
 /* 
  * Functions can write to this file for debug info
  * Before writing to it, it should be checked whether
- * the file is not 0:
+ * the file is not NULL:
  * if (debug) fprintf(debug,"%s","Hallo");
  */
 extern FILE *debug;
@@ -133,7 +134,49 @@ extern bool bDebugMode(void);
 extern void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif
+
+  /* If msg == NULL, then warn_buf will be printed instead.
+   */
+  extern void _range_check(int n,int n_min,int n_max,char *var,
+			   char *file,int line);
+#define range_check(n,n_min,n_max) _range_check(n,n_min,n_max,#n,__FILE__,__LINE__)
+  /* Range check will terminate with an error message if not
+   * n E [ n_min, n_max >
+   * That is n_min is inclusive but not n_max.
+   */
+
+  extern char *gmx_strerror(char *key);
+  /* Return error message corresponding to the key.
+   * Maybe a multi-line message.
+   * The messages are stored in src/gmxlib/fatal.c
+   */
   
+  extern void _gmx_error(char *key,char *msg,char *file,int line);
+#define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
+  /* Error msg of type key is generated and the program is 
+   * terminated unless and error handle is set (see below)
+   */
+
+  /* Some common error types */
+#define gmx_bug(msg)    gmx_error("bug",msg)
+#define gmx_call(msg)   gmx_error("call",msg)
+#define gmx_comm(msg)   gmx_error("comm",msg)
+#define gmx_file(msg)   gmx_error("file",msg)
+#define gmx_impl(msg)   gmx_error("impl",msg)
+#define gmx_incons(msg) gmx_error("incons",msg)
+#define gmx_input(msg)  gmx_error("input",msg)
+#define gmx_mem(msg)    gmx_error("mem",msg)
+#define gmx_open(fn)    gmx_error("open",fn) 
+  
+  extern void set_gmx_error_handler(void (*func)(char *msg));
+  /* An error function will be called that terminates the program 
+   * with a fatal error, unless you override it with another function.
+   * i.e.:
+   * set_gmx_error_handler(my_func);
+   * where my_func is a function that takes a string as an argument.
+   * The string may be a multi-line string.
+   */
+
 #ifdef CPLUSPLUS
 	   }
 #endif

@@ -248,7 +248,7 @@ static int create_pair(int index,rvec x[],rvec v[],rvec vold[],
   e1 = 0.5*(m[index]*iprod(v[index],v[index])+
 	    m[index+1]*iprod(v[index+1],v[index+1]));
   if (fabs(e0-e1)/e0 > 1e-6)
-    fatal_error(0,"Error in create pair: e0 = %f, e1 = %f\n",e0,e1);
+    gmx_fatal(FARGS,"Error in create pair: e0 = %f, e1 = %f\n",e0,e1);
   
   return index+2;
 }
@@ -291,7 +291,7 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
 	  add_scatter_event(&(s[i]),x[i],TRUE,ehp->dt*nstep,ekin);
 	  /* Energy loss in inelastic collision is omega */
 	  if ((omega = get_omega(ekin,&ehp->seed,debug,NULL)) >= ekin)
-	    fatal_error(0,"Energy transfer error: omega = %f, ekin = %f",
+	    gmx_fatal(FARGS,"Energy transfer error: omega = %f, ekin = %f",
 			omega,ekin);
 	  else {
 	    /* Scattering angle depends on energy and energy loss */
@@ -324,7 +324,7 @@ static int scatter_all(FILE *fp,int nparticle,int nstep,
 	      
 	      if (ekprime > 0) {
 		if (np >= ehp->maxparticle-2)
-		  fatal_error(0,"Increase -maxparticle flag to more than %d",
+		  gmx_fatal(FARGS,"Increase -maxparticle flag to more than %d",
 			      ehp->maxparticle);
 		if (ehp->bHole) {
 		  np = create_pair(np,x,v,vold,mass,charge,x[i],
@@ -652,7 +652,7 @@ int main(int argc,char *argv[])
 		    NPA,pa,asize(desc),desc,0,NULL);
 
   if (ehp.deltax <= 0)
-    fatal_error(0,"Delta X should be > 0");
+    gmx_fatal(FARGS,"Delta X should be > 0");
   ehp.Alj = FACEL*pow(ehp.deltax,5);
   ehp.rho = (ehp.rho/ehp.matom)*AVOGADRO*1e-21;
 

@@ -125,11 +125,11 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
     ax1 = 0; ax2 = 1;
     break;
   default:
-    fatal_error(0,"Invalid axes. Terminating\n");
+    gmx_fatal(FARGS,"Invalid axes. Terminating\n");
   }
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   if (! *nslices)
     *nslices = (int)(box[axis][axis] * 10); /* default value */

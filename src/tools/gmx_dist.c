@@ -131,7 +131,7 @@ int gmx_dist(int argc,char *argv[])
       if (index[g][i]>max)
 	max=index[g][i];
       if (index[g][i] >= top->atoms.nr)
-	fatal_error(0,"Atom number %d, item %d of group %d, is larger than number of atoms in the topolgy (%d)\n",index[g][i]+1,i+1,g+1,top->atoms.nr+1);
+	gmx_fatal(FARGS,"Atom number %d, item %d of group %d, is larger than number of atoms in the topolgy (%d)\n",index[g][i]+1,i+1,g+1,top->atoms.nr+1);
       mass[g]+=top->atoms.atom[index[g][i]].m;
     }
   }
@@ -139,7 +139,7 @@ int gmx_dist(int argc,char *argv[])
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
 
   if (max>=natoms)
-    fatal_error(0,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
+    gmx_fatal(FARGS,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
 
   if (!bCutoff) {
     /* open output file */

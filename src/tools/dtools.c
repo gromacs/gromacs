@@ -119,7 +119,7 @@ void init_corr2(t_correct *c,int natom)
   int i,n,ai;
   
   if (c->ndist == 0)
-    fatal_error(0,"Can not make tags without distances. %s, %d",
+    gmx_fatal(FARGS,"Can not make tags without distances. %s, %d",
 		__FILE__,__LINE__);
 		
   /* Initiate the ip index */
@@ -148,7 +148,7 @@ void init_corr2(t_correct *c,int natom)
 	ai = c->d[i].ai;
       }
       /*     else
-	     fatal_error(0,"Too many atoms, or distances not sorted");*/
+	     gmx_fatal(FARGS,"Too many atoms, or distances not sorted");*/
     }
   }
   if (n < natom) {
@@ -158,7 +158,7 @@ void init_corr2(t_correct *c,int natom)
     }
   }
   else
-    fatal_error(0,"Too many atoms, or distances not sorted");
+    gmx_fatal(FARGS,"Too many atoms, or distances not sorted");
   if (debug)
     fprintf(debug,"There are %d tags for %d atoms\n",n,natom);
   
@@ -312,7 +312,7 @@ void pr_dist(FILE *fp,bool bHeader,t_correct *c,int i)
     ideal = -1;
     break;
   default:
-    fatal_error(0,"cons_type for distance %d = %d\n",i,c->d[i].cons_type);
+    gmx_fatal(FARGS,"cons_type for distance %d = %d\n",i,c->d[i].cons_type);
   }
   fprintf(fp,"%5d%5d%10.5f%10.5f%10.5f\n",1+c->d[i].ai,1+c->d[i].aj,
 	  ideal,10*c->d[i].lb,10*c->d[i].ub);

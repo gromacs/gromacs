@@ -110,7 +110,7 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	  if (match!=NOTSET)
 	    pa[j].u.c[0] = pa[j].u.c[match];
 	  else 
-	    fatal_error(0,"Invalid argument %s for option %s",
+	    gmx_fatal(FARGS,"Invalid argument %s for option %s",
 			ptr,pa[j].option);
 	  break;
 	case etRVEC:
@@ -123,14 +123,14 @@ void get_pargs(int *argc,char *argv[],int nparg,t_pargs pa[],bool bKeepArgs)
 	    (*pa[j].u.rv)[1] = dscan(*argc,argv,&i);
 	    if ( (i+1 == *argc) || 
 		 ( (argv[i+1][0]=='-') && !isdigit(argv[i+1][1]) ) )
-	      fatal_error(0,"%s: vector must have 1 or 3 real parameters",
+	      gmx_fatal(FARGS,"%s: vector must have 1 or 3 real parameters",
 			  pa[j].option);
 	    bKeep[i] = FALSE;
 	    (*pa[j].u.rv)[2] = dscan(*argc,argv,&i);
 	  }
 	  break;
 	default:
-	  fatal_error(0,"Invalid type %d in pargs",pa[j].type);
+	  gmx_fatal(FARGS,"Invalid type %d in pargs",pa[j].type);
 	}
 	/* i may be incremented, so set it to not keep */
 	bKeep[i] = FALSE;
@@ -156,7 +156,7 @@ int opt2parg_int(char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return *pa[i].u.i;
   
-  fatal_error(0,"No integer option %s in pargs",option);
+  gmx_fatal(FARGS,"No integer option %s in pargs",option);
   
   return 0;
 }
@@ -169,7 +169,7 @@ bool opt2parg_bool(char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return *pa[i].u.b;
   
-  fatal_error(0,"No boolean option %s in pargs",option);
+  gmx_fatal(FARGS,"No boolean option %s in pargs",option);
   
   return FALSE;
 }
@@ -182,7 +182,7 @@ real opt2parg_real(char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return *pa[i].u.r;
   
-  fatal_error(0,"No real option %s in pargs",option);
+  gmx_fatal(FARGS,"No real option %s in pargs",option);
   
   return 0.0;
 }
@@ -195,7 +195,7 @@ char *opt2parg_str(char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return *(pa[i].u.c);
   
-  fatal_error(0,"No string option %s in pargs",option);
+  gmx_fatal(FARGS,"No string option %s in pargs",option);
   
   return NULL;
 }
@@ -208,7 +208,7 @@ bool opt2parg_bSet(char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return pa[i].bSet;
   
-  fatal_error(0,"No such option %s in pargs",option);
+  gmx_fatal(FARGS,"No such option %s in pargs",option);
   
   return FALSE; /* Too make some compilers happy */
 }
@@ -221,7 +221,7 @@ char *opt2parg_enum(char *option,int nparg,t_pargs pa[])
     if (strcmp(pa[i].option,option) == 0)
       return pa[i].u.c[0];
   
-  fatal_error(0,"No such option %s in pargs",option);
+  gmx_fatal(FARGS,"No such option %s in pargs",option);
   
   return NULL;
 }
@@ -232,7 +232,7 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
   buf[0]='\0';
 
   if(sz<255)
-    fatal_error(0,"Buffer must be at least 255 chars\n");
+    gmx_fatal(FARGS,"Buffer must be at least 255 chars\n");
   
   switch(pa->type) {
   case etINT:
@@ -248,7 +248,7 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
   case etSTR:
     if (*(pa->u.c)) {
       if (strlen(*(pa->u.c)) >= sz)
-	fatal_error(0,"Argument too long: \"%d\"\n",*(pa->u.c));
+	gmx_fatal(FARGS,"Argument too long: \"%d\"\n",*(pa->u.c));
       else
 	strcpy(buf,*(pa->u.c));
     }

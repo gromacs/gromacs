@@ -42,7 +42,6 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "smalloc.h"
-#include "assert.h"
 #include "macros.h"
 #include "force.h"
 #include "invblock.h"
@@ -179,7 +178,7 @@ static void check_solvent(FILE *fp,const t_topology *top,t_forcerec *fr,
 	  ak = excl->a[k];
 	  /* Consistency and range check */
 	  if ((ak < j0) || (ak >= j1)) 
-	    fatal_error(0,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = 5d, mol is %d",ak,j0,j1,i);
+	    gmx_fatal(FARGS,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = 5d, mol is %d",ak,j0,j1,i);
 	  bAllExcl[ak-j0] = TRUE;
 	}
 	/* Now sum up the booleans */
@@ -408,13 +407,13 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
     tpi = type[i];
 #ifdef DEBUG
     if (tpi >= ntp)
-      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntp);
+      gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntp);
 #endif
     for(j=i+1; (j<natoms); j++) {
       tpj   = type[j];
 #ifdef DEBUG
       if (tpj >= ntp)
-	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntp);
+	gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntp);
 #endif
       if (bBHAM) {
 	csix += BHAMC(nbfp,ntp,tpi,tpj);
@@ -468,12 +467,12 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
   for(i=0; (i<natoms); i++) {
     tpi = type[i];
     if (tpi >= ntypes)
-      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntypes);
+      gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntypes);
     
     for(j=0; (j<natoms); j++) {
       tpj   = type[j];
       if (tpj >= ntypes)
-	fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
+	gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
       b = BHAMB(nbfp,ntypes,tpi,tpj);
       if (b > fr->bham_b_max)
 	fr->bham_b_max = b;
@@ -505,7 +504,7 @@ void init_forcerec(FILE *fp,
   bool    bTab,bSep14tab;
   
   if (check_box(box))
-    fatal_error(0,check_box(box));
+    gmx_fatal(FARGS,check_box(box));
 
   cgs            = &(top->blocks[ebCGS]);
   mols           = &(top->blocks[ebMOLS]);
@@ -606,7 +605,7 @@ void init_forcerec(FILE *fp,
       T    += (ir->opts.nrdf[i] * ir->opts.ref_t[i]);
     }
     if (nrdf == 0) 
-      fatal_error(0,"No degrees of freedom!");
+      gmx_fatal(FARGS,"No degrees of freedom!");
     fr->temp   = T/nrdf;
   }
   else if (EEL_FULL(fr->eeltype) || (fr->eeltype == eelSHIFT) || 
@@ -682,7 +681,7 @@ void init_forcerec(FILE *fp,
   fr->rvdw_switch = ir->rvdw_switch;
   if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM) {
     if (fr->rvdw_switch >= fr->rvdw)
-      fatal_error(0,"rvdw_switch (%g) must be < rvdw (%g)",
+      gmx_fatal(FARGS,"rvdw_switch (%g) must be < rvdw (%g)",
 		  fr->rvdw_switch,fr->rvdw);
     if (fp)
       fprintf(fp,"Using %s Lennard-Jones, switch between %g and %g nm\n",
@@ -691,7 +690,7 @@ void init_forcerec(FILE *fp,
   } 
 
   if (fr->bBHAM && (fr->vdwtype == evdwSHIFT || fr->vdwtype == evdwSWITCH))
-    fatal_error(0,"Switch/shift interaction not supported with Buckingham");
+    gmx_fatal(FARGS,"Switch/shift interaction not supported with Buckingham");
   
   if (fp)
     fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
@@ -950,7 +949,7 @@ void force(FILE       *fplog,   int        step,
       break;
     default:
       Vlr = 0;
-      fatal_error(0,"No such electrostatics method implemented %s",
+      gmx_fatal(FARGS,"No such electrostatics method implemented %s",
 		  eel_names[fr->eeltype]);
     }
     epot[F_DVDL] += dvdlambda;

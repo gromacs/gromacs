@@ -93,7 +93,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
 	  /* Check the first line that should contain data */
 	  a = sscanf(line,"%lf%lf",&dbl,&dbl);
 	  if (a == 0) 
-	    fatal_error(0,"Expected a number in %s on line:\n%s",fn,line0);
+	    gmx_fatal(FARGS,"Expected a number in %s on line:\n%s",fn,line0);
 	  else if (a == 1) {
 	    fprintf(stderr,"Found only 1 number on line, "
 		    "assuming no time is present.\n");
@@ -585,7 +585,7 @@ static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
     fprintf(out,"Using two columns as y and sigma values\n");
     break;
   default:
-    fatal_error(0,"Dont know what to do with %d columns of data",nx);
+    gmx_fatal(FARGS,"Dont know what to do with %d columns of data",nx);
   }
   tbeginfit = x0 ? x0[0]    : 0;
   tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;

@@ -205,7 +205,7 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
     read_first_x(&man->status,trajectory,&(man->time),&(man->x),man->box);
   man->trajfile=strdup(trajectory);
   if (man->natom > man->top.atoms.nr)
-    fatal_error(0,"Topology %s (%d atoms) and trajectory %s (%d atoms) "
+    gmx_fatal(FARGS,"Topology %s (%d atoms) and trajectory %s (%d atoms) "
 		"do not match",status,man->top.atoms.nr,
 		trajectory,man->natom);
   

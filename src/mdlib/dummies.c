@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "assert.h"
 #include "dummies.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -398,7 +397,8 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
       
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
-	assert(ftype == idef->functype[tp]);
+	if (ftype != idef->functype[tp]) 
+	  gmx_incons("Function types for dummies wrong");
 	
 	/* The dummy and constructing atoms */
 	adum = ia[1];
@@ -445,7 +445,7 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 	  constr_dum4FD(x[ai],x[aj],x[ak],x[al],x[adum],a1,b1,c1);
 	  break;
 	default:
-	  fatal_error(0,"No such dummy type %d in %s, line %d",
+	  gmx_fatal(FARGS,"No such dummy type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
 	if (v) {
@@ -739,7 +739,8 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
       
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
-	assert(ftype == idef->functype[tp]);
+	if (ftype != idef->functype[tp])
+	  gmx_incons("Functiontypes for dummies wrong");
 	
 	/* The dummy and constructing atoms */
 	adum = ia[1];
@@ -790,7 +791,7 @@ void spread_dummy_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
 	  nd4FD++;
 	  break;
 	default:
-	  fatal_error(0,"No such dummy type %d in %s, line %d",
+	  gmx_fatal(FARGS,"No such dummy type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
 	clear_rvec(f[adum]);

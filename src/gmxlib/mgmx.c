@@ -113,7 +113,7 @@ static void set_top_windex(windex t)
 static windex top_windex(void)
 {
   if (TopW == 0)
-    fatal_error(0,"No top widget");
+    gmx_fatal(FARGS,"No top widget");
   return TopW;
 }
 
@@ -1077,7 +1077,7 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
 	  fnm[i].flag = fnm[i].flag | ffSET;
       }
       else
-	fatal_error(0,"No toggle button for optional file (option %s)",
+	gmx_fatal(FARGS,"No toggle button for optional file (option %s)",
 		    fnm[i].opt);
       if (strcmp(fnm[i].fns[0],get_windex_orignm(fnm_index[i])) != 0) {
 	if (debug) {

@@ -893,9 +893,9 @@ static real *_buf2=NULL;
 	  FUNC(inl3430,INL3430)(COMMON_ARGS INVSQRT_WW_BUF1 INVSQRT_WW_BUF2 COUL_ARGS LJ_ARGS LJCTAB_ARGS BHTAB_ARGS);
 	break;
 	case eNR_INLNONE:
-	fatal_error(0,"nrnb_ind is \"NONE\", bad selection made in ns.c");
+	gmx_fatal(FARGS,"nrnb_ind is \"NONE\", bad selection made in ns.c");
       default:
-	fatal_error(0,"No function corresponding to %s in %s `line' %d",
+	gmx_fatal(FARGS,"No function corresponding to %s in %s `line' %d",
 		    nrnb_str(nrnb_ind),__FILE__,__LINE__);
       }
       /* Mega flops accounting */
@@ -944,7 +944,7 @@ static real *_buf2=NULL;
 	  inc_nrnb(nrnb,nrnb_ind,nav*nlist->nrj);
           break;
 	default:
-	  fatal_error(0,"MFlops accounting wrong in %s, %d, nrnb_ind = %d",
+	  gmx_fatal(FARGS,"MFlops accounting wrong in %s, %d, nrnb_ind = %d",
 		      __FILE__,__LINE__,nrnb_ind);
 	}	
       } 

@@ -104,7 +104,7 @@ void mkptrj(char *prop,int nSel,
 	propje=dip(natoms,bb_index,xxx,atom);
 	break;
       default:
-	fatal_error(0,"Not implemented");
+	gmx_fatal(FARGS,"Not implemented");
       }
       pav[i]+=propje;
       pav2[i]+=propje*propje;
@@ -192,7 +192,7 @@ void proptrj(char *fngro,char *fndat,t_topology *top,t_pinp *p)
 	   top->atoms.atom,box);
     break;
   default:
-    fatal_error(0,"I Don't Know What to Do");
+    gmx_fatal(FARGS,"I Don't Know What to Do");
   }
 }
 

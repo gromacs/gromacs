@@ -195,17 +195,17 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   natoms=read_first_x(&status,fnTRX,&t,&x,box);
   if ( !natoms )
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   if (fnTPS)
     /* check with topology */
     if ( natoms > top.atoms.nr ) 
-      fatal_error(0,"Trajectory (%d atoms) does not match topology (%d atoms)",
+      gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)",
 		  natoms,top.atoms.nr);
   /* check with index groups */
   for (i=0; i<=ng; i++)
     for (j=0; j<isize[i]; j++)
       if ( index[i][j] >= natoms )
-	fatal_error(0,"Atom index (%d) in index group %s (%d atoms) larger "
+	gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) larger "
 		    "than number of atoms in trajectory (%d atoms)",
 		    index[i][j],grpname[i],isize[i],natoms);
   
@@ -596,10 +596,10 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   init_nrnb(&nrnb);
     
   if ( !natoms )
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   /* check with topology */
   if ( natoms > top.atoms.nr ) 
-    fatal_error(0,"Trajectory (%d atoms) does not match topology (%d atoms)",
+    gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)",
 		natoms,top.atoms.nr);
 	
   /* Atomic scattering factors */
@@ -771,7 +771,7 @@ int return_atom_type (char *type)
   for (i = 0; (i < asize(CM_t)); i++)
     if (!strcmp (type, CM_t[i].Label))
       return i;
-  fatal_error(0,"\nError: atom type (%s) not in list (%d types checked)!\n", 
+  gmx_fatal(FARGS,"\nError: atom type (%s) not in list (%d types checked)!\n", 
 	      type,i);
 
   return 0;
@@ -1175,11 +1175,11 @@ int gmx_rdf(int argc,char *argv[])
   
   if (bSQ) {
     if (!fnTPS)
-      fatal_error(0,"Need a tps file for calculating structure factors\n");
+      gmx_fatal(FARGS,"Need a tps file for calculating structure factors\n");
   }
   else {
     if (!fnTPS && !fnNDX)
-      fatal_error(0,"Neither index file nor topology file specified\n"
+      gmx_fatal(FARGS,"Neither index file nor topology file specified\n"
 		  "             Nothing to do!");
   }
  

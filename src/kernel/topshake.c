@@ -65,7 +65,7 @@ static int count_hydrogens (char ***atomname, int nra, atom_id a[])
   int  i,nh;
   
   if (!atomname) 
-    fatal_error(0,"Cannot call count_hydrogens with no atomname (%s %d)",
+    gmx_fatal(FARGS,"Cannot call count_hydrogens with no atomname (%s %d)",
 		__FILE__,__LINE__);
     
   nh=0;
@@ -101,7 +101,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype *at,int nshake)
       printf("turning all bonds and angles into constraints...\n");
       break;
     default:
-      fatal_error(0,"Invalid option for make_shake (%d)",nshake);
+      gmx_fatal(FARGS,"Invalid option for make_shake (%d)",nshake);
     }
     
     if ((nshake == eshHANGLES) || (nshake == eshALLANGLES)) {

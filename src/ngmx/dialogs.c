@@ -321,7 +321,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 	  write_gmx(x11,gmx,IDBALLS);
 	  break;
 	default:
-	  fatal_error(0,"Invalid bond type %d at %s, %d",
+	  gmx_fatal(FARGS,"Invalid bond type %d at %s, %d",
 		      ebond,__FILE__,__LINE__);
 	}
       }
@@ -340,7 +340,7 @@ static void BondsCB(t_x11 *x11,int dlg_mess,int item_id,
 	  write_gmx(x11,gmx,IDTOBOX);
 	  break;
 	default:
-	  fatal_error(0,"Invalid box type %d at %s, %d",
+	  gmx_fatal(FARGS,"Invalid box type %d at %s, %d",
 		      ebox,__FILE__,__LINE__);
 	}
       }

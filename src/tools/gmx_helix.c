@@ -272,7 +272,7 @@ int gmx_helix(int argc,char *argv[])
     otrj=NULL;
     
   if (natoms != top->atoms.nr)
-    fatal_error(0,"Sorry can only run when the number of atoms in the run input file (%d) is equal to the number in the trajectory (%d)",
+    gmx_fatal(FARGS,"Sorry can only run when the number of atoms in the run input file (%d) is equal to the number in the trajectory (%d)",
 	    top->atoms.nr,natoms);
 	    
   bb=mkbbind(ftp2fn(efNDX,NFILE,fnm),&nres,&nbb,r0,&nall,&allindex,

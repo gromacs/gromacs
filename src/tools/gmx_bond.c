@@ -108,7 +108,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   
   natoms=read_first_x(&status,fn,&t,&x,box);
   if (natoms == 0) 
-    fatal_error(0,"No atoms in trajectory!");
+    gmx_fatal(FARGS,"No atoms in trajectory!");
   
   if (fdist) {
     outd = xvgropen(fdist,bAverDist ? "Average distance" : "Distances",
@@ -198,7 +198,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
     i1=min(MAXTAB,i1+1);
     
     if (i0 >= i1)
-      fatal_error(0,"No distribution... (i0 = %d, i1 = %d)? ? ! ! ? !",i0,i1);
+      gmx_fatal(FARGS,"No distribution... (i0 = %d, i1 = %d)? ? ! ! ? !",i0,i1);
     
     fac=2.0/(nframes*gnx*db);
     for(i=i0; (i<=i1); i++)

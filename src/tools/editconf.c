@@ -223,7 +223,7 @@ void set_pdb_conf_bfac(int natoms,int nres,t_atoms *atoms,
     if (bfac_nr[i]-1>=atoms->nres)
       peratom=TRUE;
     if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
-      fatal_error(0,"Index of B-Factor %d is out of range: %d (%g)",
+      gmx_fatal(FARGS,"Index of B-Factor %d is out of range: %d (%g)",
 		  i+1,bfac_nr[i],bfac[i]);
     if (bfac[i] > bfac_max) 
       bfac_max = bfac[i];
@@ -568,12 +568,12 @@ int main(int argc, char *argv[])
     bGrasp = FALSE;
   }
   if ((bMead || bGrasp) && (outftp != efPDB))
-    fatal_error(0,"Output file should be a .pdb file"
+    gmx_fatal(FARGS,"Output file should be a .pdb file"
 		" when using the -mead option\n");
   if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) || 
 			     (fn2ftp(infile) == efTPA) ||
 			     (fn2ftp(infile) == efTPB)))
-    fatal_error(0,"Input file should be a .tp[abr] file"
+    gmx_fatal(FARGS,"Input file should be a .tp[abr] file"
 		" when using the -mead option\n");
   
   get_stx_coordnum(infile,&natom);
@@ -591,7 +591,7 @@ int main(int argc, char *argv[])
   if (bMead || bGrasp) {
     top = read_top(infile);
     if (atoms.nr != top->atoms.nr)
-      fatal_error(0,"Atom numbers don't match (%d vs. %d)",
+      gmx_fatal(FARGS,"Atom numbers don't match (%d vs. %d)",
 		  atoms.nr,top->atoms.nr);
     for(i=0; (i<atoms.nr); i++) {
       /* Factor of 10 for Angstroms */
@@ -620,9 +620,9 @@ int main(int argc, char *argv[])
 
   if (visbox[0] > 0) {
     if (bIndex)
-      fatal_error(0,"Sorry, can not visualize box with index groups");
+      gmx_fatal(FARGS,"Sorry, can not visualize box with index groups");
     if (outftp != efPDB)
-      fatal_error(0,"Sorry, can only visualize box with a pdb file");
+      gmx_fatal(FARGS,"Sorry, can only visualize box with a pdb file");
   } else if (visbox[0] == -1)
     visualize_images("images.pdb",box);
 
@@ -687,7 +687,7 @@ int main(int argc, char *argv[])
       fprintf(stderr,"Mass    of input %g (a.m.u.)\n",mass);
       fprintf(stderr,"Density of input %g (g/l)\n",dens);
       if (vol==0 || mass==0)
-	fatal_error(0,"Cannot scale density with "
+	gmx_fatal(FARGS,"Cannot scale density with "
 		    "zero mass (%g) or volume (%g)\n",mass,vol);
       
       scale[XX] = scale[YY] = scale[ZZ] = pow(dens/rho,1.0/3.0);
@@ -809,7 +809,7 @@ int main(int argc, char *argv[])
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
 	      1,&isize,&index,&grpname);
     if (opt2bSet("-bf",NFILE,fnm))
-      fatal_error(0,"combination not implemented: -bf -n  or -bf -ndef");
+      gmx_fatal(FARGS,"combination not implemented: -bf -n  or -bf -ndef");
     else
       write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,box,
 			     isize,index); 

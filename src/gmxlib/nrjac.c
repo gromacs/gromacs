@@ -126,7 +126,7 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot)
       z[ip]  =  0.0;
     }
   }
-  fatal_error(0,"Error: Too many iterations in routine JACOBI\n");
+  gmx_fatal(FARGS,"Error: Too many iterations in routine JACOBI\n");
 }
 
 int m_inv_gen(real **m,int n,real **minv)

@@ -170,7 +170,7 @@ void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
     if (eel == eelGRF) {
       /* Consistency check */
       if (Temp <= 0.0)
-	fatal_error(0,"Temperature is %f while using"
+	gmx_fatal(FARGS,"Temperature is %f while using"
 		    " Generalized Reaction Field\n",Temp);
       /* Ionic strength (only needed for eelGRF */
       *kappa  = sqrt(2*I/(EPSILON0*eps*BOLTZ*Temp));

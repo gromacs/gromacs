@@ -43,7 +43,6 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "symtab.h"
-#include "assert.h"
 #include "pdbio.h"
 #include "vec.h"
 #include "copyrite.h"
@@ -270,8 +269,8 @@ static int read_atom(t_symtab *symtab,char line[],int type,int natom,
   int  newres;
 
   if (natom>=atoms->nr)
-    fatal_error(0,"\nFound more atoms (%d) in pdb file than expected (%d)",
-		natom+1,atoms->nr);
+    gmx_fatal(FARGS,"\nFound more atoms (%d) in pdb file than expected (%d)",
+	      natom+1,atoms->nr);
 
   /* Skip over type */  
   j=6;

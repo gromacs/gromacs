@@ -139,7 +139,7 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
   int n;
   
   if(bufsize<(strlen(base)+4))
-     fatal_error(0,"Character buffer too small!\n");
+     gmx_mem("Character buffer too small!");
 
   /* Copy to buf, and strip extension */
   strcpy(buf,base);
@@ -176,7 +176,7 @@ void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name)
     fprintf(log,"\n%s is not equal for all subsystems\n",name);
     for(p=0; p<mcr->nnodes; p++)
       fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
-    fatal_error(0,"The %d subsystems are not compatible\n",mcr->nnodes);
+    gmx_fatal(FARGS,"The %d subsystems are not compatible\n",mcr->nnodes);
   }
   
   sfree(ibuf);
@@ -201,7 +201,7 @@ void open_log(char *lognm,const t_commrec *cr)
       gmx_txs(cr->right,lognm,len);
       gmx_rxs(cr->left,lognm,len);
       if (len != testlen)
-	fatal_error(0,"Communication error on NODE 0!");
+	gmx_comm("Communication error on NODE 0!");
       
     }
     else {
@@ -257,7 +257,7 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
       snew(buf,len);
       gmx_rxs(cr->left,buf,len);
       if (strcmp(buf,(*argv)[i]) != 0)
-	fatal_error(0,"Communicating argv[%d]=%s\n",i,(*argv)[i]);
+	gmx_fatal(FARGS,"Communicating argv[%d]=%s\n",i,(*argv)[i]);
       sfree(buf);
     }
     else {
@@ -343,7 +343,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
 #endif
   
   if (!PAR(cr) && (cr->nodeid != 0))
-    fatal_error(0,"(!PAR(cr) && (cr->nodeid != 0))");
+    gmx_comm("(!PAR(cr) && (cr->nodeid != 0))");
   
   if (PAR(cr)) {
     gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
@@ -357,7 +357,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     fprintf(stderr,"Getting new node id's\n");
 #endif
     if (get_nodeid(stderr,cr->left,cr->right,&cr->nodeid,&cr->nnodes)==0)
-      fatal_error(0,"could not get nodeid & nnodes from ring topology");
+      gmx_comm("could not get nodeid & nnodes from ring topology");
 #ifdef DEBUGPAR
     fprintf(stderr,"Got new node id's\n");
     fprintf(stderr,"nnodes=%d, nodeid=%d\n",cr->nnodes,cr->nodeid);

@@ -41,8 +41,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "fatal.h"
 #include "string2.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "Xstuff.h"
@@ -132,7 +132,8 @@ static int WndProcBN(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   t_windata *win;
   int x,w,th;
 
-  assert(dlgitem->type==edlgBN);
+  if (dlgitem->type != edlgBN)
+    gmx_incons("button processing");
   win=&(dlgitem->win);
   w=XTextWidth(x11->font,win->text,strlen(win->text));
   x=(win->width-w)/2;
@@ -164,7 +165,8 @@ static int WndProcRB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   t_windata *win;
   int x,y,rad;
   
-  assert(dlgitem->type==edlgRB);
+  if (dlgitem->type != edlgRB)
+    gmx_incons("radiobutton processing");
   rb=&(dlgitem->u.radiobutton);
   win=&(dlgitem->win);
   
@@ -201,7 +203,8 @@ static int WndProcGB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   t_windata *win;
   int x,y;
 
-  assert(dlgitem->type==edlgGB);
+  if (dlgitem->type != edlgGB)
+    gmx_incons("gb processing");
   win=&(dlgitem->win);
   
   x=XTextWidth(x11->font,win->text,strlen(win->text));
@@ -229,7 +232,8 @@ static int WndProcCB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   t_windata *win;
   int x,y,w,h;
   
-  assert(dlgitem->type==edlgCB);
+  if (dlgitem->type != edlgCB)
+    gmx_incons("check box processing");
   cb=&(dlgitem->u.checkbox);
   win=&(dlgitem->win);
 
@@ -268,7 +272,8 @@ static int WndProcST(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   t_windata *win;
   int i,dy;
   
-  assert(dlgitem->type==edlgST);
+  if (dlgitem->type != edlgST)
+    gmx_incons("st processing");
   st=&(dlgitem->u.statictext);
   win=&(dlgitem->win);
 
@@ -337,7 +342,8 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
   char       scrbuf[STRLEN];
   int        i,xp,xtitle,ewidth;
   
-  assert(dlgitem->type==edlgET);
+  if (dlgitem->type != edlgET)
+    gmx_incons("st processing");
   et=&(dlgitem->u.edittext);
   win=&(dlgitem->win);
 

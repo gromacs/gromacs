@@ -159,14 +159,14 @@ bool is_pipe(FILE *fp)
 #ifdef NO_PIPE
 static FILE *popen(char *nm,char *mode)
 {
-  fatal_error(0,"Sorry no pipes...");
+  gmx_impl("Sorry no pipes...");
   
   return NULL;
 }
 
 static int pclose(FILE *fp)
 {
-  fatal_error(0,"Sorry no pipes...");
+  gmx_impl("Sorry no pipes...");
   
   return 0;
 }
@@ -181,7 +181,7 @@ FILE *uncompress(char *fn,char *mode)
   sprintf(buf,"uncompress -c < %s",fn);
   fprintf(stderr,"Going to execute '%s'\n",buf);
   if ((fp=popen(buf,mode)) == NULL)
-    fatal_error(0,"Could not open %s",fn);
+    gmx_open(fn);
   push_ps(fp);
   
   return fp;
@@ -195,7 +195,7 @@ FILE *gunzip(char *fn,char *mode)
   sprintf(buf,"gunzip -c < %s",fn);
   fprintf(stderr,"Going to execute '%s'\n",buf);
   if ((fp=popen(buf,mode)) == NULL)
-    fatal_error(0,"Could not open %s",fn);
+    gmx_open(fn);
   push_ps(fp);
   
   return fp;
@@ -263,8 +263,8 @@ char *backup_fn(const char *file)
   
   /* Arbitrarily bail out */
   if (count == COUNTMAX) 
-    fatal_error(0,"Won't make more than %d backups of %s for you",
-		COUNTMAX,fn);
+    gmx_fatal(FARGS,"Won't make more than %d backups of %s for you",
+	      COUNTMAX,fn);
   
   sfree(directory);
   sfree(fn);
@@ -305,7 +305,7 @@ FILE *ffopen(const char *file,char *mode)
   strcpy(buf,file);
   if (fexist(buf) || !bRead) {
     if ((ff=fopen(buf,mode))==NULL)
-      fatal_error(0,"Could not open %s",buf);
+      gmx_file(buf);
     where();
     /* Check whether we should be using buffering (default) or not
      * (for debugging)
@@ -321,7 +321,7 @@ FILE *ffopen(const char *file,char *mode)
       else {
 	snew(ptr,bs+8);
 	if (setvbuf(ff,ptr,_IOFBF,bs) != 0)
-	  fatal_error(0,"Buffering File");
+	  gmx_file("Buffering File");
       }
     }
     where();
@@ -337,7 +337,7 @@ FILE *ffopen(const char *file,char *mode)
 	ff=gunzip(buf,mode);
       }
       else 
-	fatal_error(0,"%s does not exist",file);
+	gmx_file(file);
     }
   }
   return ff;
@@ -532,9 +532,9 @@ const char *low_libfn(const char *file, bool bFatal)
     ret=buf;
     if (bFatal && !found) {
       if(env_is_set) 
-	fatal_error(0,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
+	gmx_fatal(FARGS,"Library file %s not found in current dir nor in your GMXLIB path.\n",file);
       else
-	fatal_error(0,"Library file %s not found in current dir nor in default directories.\n"
+	gmx_fatal(FARGS,"Library file %s not found in current dir nor in default directories.\n"
 		    "(You can set the directories to search with the GMXLIB path variable.)\n",file);
     }
   }
@@ -578,7 +578,7 @@ void gmx_tmpnam(char *buf)
   int i,len,fd;
   
   if ((len = strlen(buf)) < 7)
-    fatal_error(0,"Buf passed to gmx_tmpnam must be at least 7 bytes long");
+    gmx_fatal(FARGS,"Buf passed to gmx_tmpnam must be at least 7 bytes long");
   for(i=len-6; (i<len); i++) {
     buf[i] = 'X';
   }
@@ -592,9 +592,9 @@ void gmx_tmpnam(char *buf)
 #endif
 
   if (fd == EINVAL)
-    fatal_error(0,"Invalid template %s for mkstemp (source %s, line %d)",buf,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"Invalid template %s for mkstemp (source %s, line %d)",buf,__FILE__,__LINE__);
   else if (fd == EEXIST)
-    fatal_error(0,"mkstemp created existing file %s (source %s, line %d)",buf,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"mkstemp created existing file %s (source %s, line %d)",buf,__FILE__,__LINE__);
   close(fd);
   /* Buf should now be OK */
 }

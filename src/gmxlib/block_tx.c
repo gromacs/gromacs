@@ -44,7 +44,6 @@
 #include "fatal.h"
 #include "smalloc.h"
 #include "main.h"
-#include "assert.h"
         
 void _blocktx(int dest,int nelem,int size,void *data)
 {
@@ -52,7 +51,7 @@ void _blocktx(int dest,int nelem,int size,void *data)
   char *buf=data;
   
   if ((data==NULL) && (size > 0))
-    fatal_error(0,"TX: Null pointer (size=%d)!\n",size);
+    gmx_fatal(FARGS,"TX: Null pointer (size=%d)!\n",size);
 
   for (i=0; i<nelem; i++) {
     gmx_txs(dest,&size,sizeof(size));
@@ -68,11 +67,11 @@ void _blockrx(int src,int nelem,int size,void *data)
   char *buf=data;
   
   if ((data==NULL) && (size > 0))
-    fatal_error(0,"RX: Null pointer (size=%d)!\n",size);
+    gmx_fatal(FARGS,"RX: Null pointer (size=%d)!\n",size);
   for (i=0; i<nelem; i++) {
     gmx_rxs(src,&len,sizeof(len));
     if (size!=len)
-      fatal_error(0,"%d: size=%d, len=%d, rx_count=%d\n",
+      gmx_fatal(FARGS,"%d: size=%d, len=%d, rx_count=%d\n",
 		  0,size,len,0);
     if (len > 0)
       gmx_rxs(src,buf,len);

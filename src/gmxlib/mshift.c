@@ -38,7 +38,6 @@
 #endif
 
 #include <string.h>
-#include "assert.h"
 #include "smalloc.h"
 #include "fatal.h"
 #include "macros.h"
@@ -77,7 +76,7 @@ static void add_gbond(t_graph *g,t_iatom ia[],int np)
 	    break;
 	if (l == g->nedge[inda]) {
 	  if (g->nedge[inda] == g->maxedge)
-	    fatal_error(0,"More than %d graph edges per atom (atom %d)\n",
+	    gmx_fatal(FARGS,"More than %d graph edges per atom (atom %d)\n",
 			g->maxedge,aa+1);
 	  g->edge[inda][g->nedge[inda]++]=ia[k];
 	}
@@ -103,7 +102,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
     
     if ((ia[1] < natoms) && (interaction_function[tp].flags & IF_GRAPH)) {
       if (ia[np] >= natoms)
-	fatal_error(0,"Molecule in topology has atom numbers below and "
+	gmx_fatal(FARGS,"Molecule in topology has atom numbers below and "
 		    "above natoms (%d).\n"
 		    "You are probably trying to use a trajectory which does "
 		    "not match the first %d atoms of the run input file.\n"
@@ -142,7 +141,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 
 static void g_error(int line,char *file)
 {
-  fatal_error(0,"Tring to print non existant graph (file %s, line %d)",
+  gmx_fatal(FARGS,"Tring to print non existant graph (file %s, line %d)",
 	      file,line);
 }
 #define GCHECK(g) if (g == NULL) g_error(__LINE__,__FILE__)
@@ -468,7 +467,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
      * in the loop
      */
     if ((fW=first_colour(fW,egcolWhite,g,g->egc)) == -1) 
-      fatal_error(0,"No WHITE nodes found while nW=%d\n",nW);
+      gmx_fatal(FARGS,"No WHITE nodes found while nW=%d\n",nW);
     
     /* Make the first white node grey */
     g->egc[fW]=egcolGrey;
@@ -483,7 +482,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
 #endif
     while (nG > 0) {
       if ((fG=first_colour(fG,egcolGrey,g,g->egc)) == -1)
-	fatal_error(0,"No GREY nodes found while nG=%d\n",nG);
+	gmx_fatal(FARGS,"No GREY nodes found while nG=%d\n",nG);
       
       /* Make the first grey node black */
       g->egc[fG]=egcolBlack;

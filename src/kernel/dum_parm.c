@@ -40,7 +40,6 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "assert.h"
 #include "dum_parm.h"
 #include "smalloc.h"
 #include "resall.h"
@@ -293,7 +292,7 @@ static bool calc_dum3_param(t_atomtype *atype,
       b = 0.5 * ( dH/dM - rH/rM );
     }
   } else
-    fatal_error(0,"calc_dum3_param not implemented for the general case "
+    gmx_fatal(FARGS,"calc_dum3_param not implemented for the general case "
 		"(atom %d)",param->AI+1);
   
   param->C0 = a;
@@ -503,7 +502,7 @@ static bool calc_dum4fd_param(t_param *param,
     if ( cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1 ) {
       fprintf(stderr,"dummy atom %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
 	      param->AI+1,RAD2DEG*aijk,RAD2DEG*aijl,RAD2DEG*aijm);
-      fatal_error(0,"invalid construction in calc_dum4fd for atom %d: "
+      gmx_fatal(FARGS,"invalid construction in calc_dum4fd for atom %d: "
 		  "cosakl=%f, cosakm=%f\n",param->AI+1,cosakl,cosakm);
     }
     sinakl = sqrt(1-sqr(cosakl));
@@ -601,13 +600,13 @@ int set_dummies(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 				nrbond, bonds, nrang, angles);
 	    break;
 	  default:
-	    fatal_error(0,"Automatic parameter generation not supported "
+	    gmx_fatal(FARGS,"Automatic parameter generation not supported "
 			"for %s atom %d",
 			interaction_function[ftype].longname,
 			plist[ftype].param[i].AI+1);
 	  } /* switch */
 	  if (bERROR)
-	    fatal_error(0,"Automatic parameter generation not supported "
+	    gmx_fatal(FARGS,"Automatic parameter generation not supported "
 			"for %s atom %d for this bonding configuration",
 			interaction_function[ftype].longname,
 			plist[ftype].param[i].AI+1);
@@ -646,7 +645,8 @@ void set_dummies_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms)
       
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
-	assert(ftype == idef->functype[tp]);
+	if (ftype != idef->functype[tp])
+	  gmx_incons("function type error in set_dummies_ptype");
 	
 	/* The dummy atom */
 	adum = ia[1];
@@ -684,7 +684,7 @@ static void check_dum_constraints(t_params *plist,
       }
     }
   if (n)
-    fatal_error(0,"There were %d dummy atoms involved in constraints",n);
+    gmx_fatal(FARGS,"There were %d dummy atoms involved in constraints",n);
 }
 
 static void clean_dum_bonds(t_params *plist, t_pindex pindex[], 
@@ -1059,7 +1059,7 @@ void clean_dum_bondeds(t_params *plist, int natoms, bool bRmDumBds)
 	if ( dummy_type[plist[ftype].param[i].AI] == NOTSET)
 	  dummy_type[plist[ftype].param[i].AI]=ftype;
 	else
-	  fatal_error(0,"multiple dummy constructions for atom %d",
+	  gmx_fatal(FARGS,"multiple dummy constructions for atom %d",
 		      plist[ftype].param[i].AI+1);
     }
   

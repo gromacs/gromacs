@@ -45,7 +45,6 @@
 #include "string2.h"
 #include "statutil.h"
 #include "confio.h"
-#include "assert.h"
 #include "copyrite.h"
 #include "typedefs.h"
 #include "index.h"
@@ -137,7 +136,7 @@ static int parse_names(char **string,int *n_names,char **names)
   while ((isalnum_star((*string)[0]) || ((*string)[0]==' '))) {
     if (isalnum_star((*string)[0])) {
       if (*n_names >= MAXNAMES) 
-	fatal_error(0,"To many names: %d\n",*n_names+1);
+	gmx_fatal(FARGS,"To many names: %d\n",*n_names+1);
       i=0;
       while (isalnum_star((*string)[i])) {
 	names[*n_names][i]=(*string)[i];
@@ -1111,7 +1110,7 @@ int main(int argc,char *argv[])
   bNatoms = opt2parg_bSet("-natoms",NPA,pa);
   
   if (!stxfile && !nndxin)
-    fatal_error(0,"No input files (structure or index)");
+    gmx_fatal(FARGS,"No input files (structure or index)");
   
   if (stxfile) {
     snew(atoms,1);

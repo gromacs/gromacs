@@ -140,19 +140,19 @@ int main(int argc,char *argv[])
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   if (natoms > top.atoms.nr)
-    fatal_error(0,"Number of atoms in the run input file is larger than in the trjactory");
+    gmx_fatal(FARGS,"Number of atoms in the run input file is larger than in the trjactory");
   for(i=0; (i<2); i++)
     for(j=0; (j<isize[i]); j++)
       if (index[i][j] > natoms)
-	fatal_error(0,"An atom number in group %s is larger than the number of atoms in the trajectory");
+	gmx_fatal(FARGS,"An atom number in group %s is larger than the number of atoms in the trajectory");
   
   if ((isize[SOL] % na) != 0)
-    fatal_error(0,"Number of atoms in the molecule group (%d) is not a multiple of na (%d)",
+    gmx_fatal(FARGS,"Number of atoms in the molecule group (%d) is not a multiple of na (%d)",
 		isize[1],na);
 		
   nwat = isize[SOL]/na;
   if (ref_a > na)
-    fatal_error(0,"The reference atom can not be larger than the number of atoms in a molecule");
+    gmx_fatal(FARGS,"The reference atom can not be larger than the number of atoms in a molecule");
   ref_a--;
   snew(order,nwat);
   snew(swi,natoms);

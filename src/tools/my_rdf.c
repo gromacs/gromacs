@@ -90,7 +90,7 @@ void calc_rdf(char *fn, atom_id **index, int gnx[], real l)
     hist[i] = 0;
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   fprintf(stderr,"Cut-off for counting is %f\n",l);
   nwater = gnx[1]; nlipid = gnx[0];

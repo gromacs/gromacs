@@ -38,7 +38,6 @@
 #endif
 
 #include <math.h>
-#include "assert.h"
 #include "physics.h"
 #include "vec.h"
 #include "maths.h"
@@ -115,12 +114,12 @@ void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
 	nat = interaction_function[ftype].nratoms+1;
 	dvdl = 0;
 	if (ftype != F_LJ14) {
-	  v = interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
-						idef->iparams,
-						(const rvec*)x,f,fr->fshift,
-						pbc_null,g,
-						lambda,&dvdl,
-						md,fcd);
+	  v = interaction_function[ftype].ifunc
+	    (nbonds,idef->il[ftype].iatoms,
+	     idef->iparams,
+	     (const rvec*)x,f,fr->fshift,
+	     (ftype == F_POSRES) ? pbc : pbc_null,
+	     g,lambda,&dvdl,md,fcd);
 	  if (bSepDVDL) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
@@ -439,7 +438,7 @@ real water_pol(int nbonds,
     for(i=0; (i<nbonds); i+=6) {
       type = forceatoms[i];
       if (type != type0)
-	fatal_error(0,"Sorry, type = %d, type0 = %d, file = %s, line = %d",
+	gmx_fatal(FARGS,"Sorry, type = %d, type0 = %d, file = %s, line = %d",
 		    type,type0,__FILE__,__LINE__);
       aO   = forceatoms[i+1];
       aH1  = forceatoms[i+2];
@@ -631,7 +630,7 @@ real urey_bradley(int nbonds,
   real cos_theta,theta,dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
   ivec jt,dt_ij,dt_kj,dt_ik;
   
-  fatal_error(0,"Not implemented yet");
+  gmx_impl("Not implemented yet");
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
@@ -981,11 +980,15 @@ real posres(int nbonds,
     type = forceatoms[i++];
     ai   = forceatoms[i++];
     pr   = &forceparams[type];
-
+    
+    /*
     if (pbc == NULL)
       rvec_sub(x[ai],forceparams[type].posres.pos0A,dx);
     else
-      pbc_dx(pbc,x[ai],forceparams[type].posres.pos0A,dx);
+    pbc_dx(pbc,x[ai],forceparams[type].posres.pos0A,dx);*/
+    
+    ki = pbc_rvec_sub(pbc,x[ai],forceparams[type].posres.pos0A,dx);
+    
     v=0;
     for (m=0; (m<DIM); m++) {
       *dvdlambda += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
@@ -1120,17 +1123,10 @@ real unimplemented(int nbonds,
 		   real lambda,real *dvdlambda,
 		   const t_mdatoms *md,t_fcdata *fcd)
 {
-  fatal_error(0,"*** you are using a not implemented function");
+  gmx_impl("*** you are using a not implemented function");
 
   return 0.0; /* To make the compiler happy */
 }
-
-static void my_fatal(char *s,int ai,int aj,int ak,int al)
-{
-  fatal_error(0,"%s is NaN in rbdih, ai-ak=%d,%d,%d,%d",s,ai,aj,ak,al);
-}
-
-#define CHECK(s) if ((s != s) || (s < -1e10) || (s > 1e10)) my_fatal(#s,ai,aj,ak,al)
 
 real rbdihs(int nbonds,
 	    const t_iatom forceatoms[],const t_iparams forceparams[],

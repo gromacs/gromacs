@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -168,7 +167,8 @@ void nnb2excl (t_nextnb *nnb, t_block *excl)
 	s[nrs].aj = nnb->a[i][nre][nrx];
 	nrs++;
       }
-    assert(nrs==nr_of_sortables);
+    if (nrs != nr_of_sortables)
+      gmx_incons("Generating exclusions");
     prints("nnb2excl before qsort",nr_of_sortables,s);
     if (nr_of_sortables > 1) {
       qsort ((void *)s,nr_of_sortables,(size_t)sizeof(s[0]),bond_sort);
@@ -248,7 +248,7 @@ static void add_b(t_params *bonds, int *nrf, sortable *s)
     ai = bonds->param[i].AI;
     aj = bonds->param[i].AJ;
     if ((ai < 0) || (aj < 0)) 
-      fatal_error(0,"Impossible atom numbers in bond %d: ai=%d, aj=%d",
+      gmx_fatal(FARGS,"Impossible atom numbers in bond %d: ai=%d, aj=%d",
 		  i,ai,aj);
     /* Add every bond twice */
     s[(*nrf)].ai   = ai;
@@ -292,7 +292,7 @@ void generate_excl (int nrexcl,int nratoms,t_params plist[],t_block *excl)
   t_nextnb nnb;
 
   if (nrexcl < 0)
-    fatal_error(0,"Can't have %d exclusions...",nrexcl);
+    gmx_fatal(FARGS,"Can't have %d exclusions...",nrexcl);
   init_nnb(&nnb,nratoms,nrexcl);
   gen_nnb(&nnb,plist);
   excl->nr=nratoms;

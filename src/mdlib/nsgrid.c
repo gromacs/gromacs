@@ -38,7 +38,6 @@
 #include <config.h>
 #endif
 
-#include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -54,20 +53,16 @@
  *         Grid Routines
  ***********************************/
 
-static void _range_check(char *s,int i,int nr,char *file,int line)
+static void init_range_check()
 {
-  if ((i<0) || (i>=nr))
-    fatal_error(0,"Index out-of-range for neighborsearching grid.\n"
-		"%s = %d should be in 0 .. %d [FILE %s, LINE %d]\n\n"
-		"Explanation: During neighborsearching, we assign each particle to a grid\n"
-		"based on its coordinates. If your system contains collisions or parameter\n"
-		"errors that give particles very high velocities you might end up with some\n"
-		"coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
-		"put these on a grid, so this is usually where we detect those errors.\n"
-		"Make sure your system is properly energy-minimized and that the potential\n"
-		"energy seems reasonable before trying again.\n",s,i,nr-1,file,line);
+  sprintf(warn_buf,"Explanation: During neighborsearching, we assign each particle to a grid\n"
+	  "based on its coordinates. If your system contains collisions or parameter\n"
+	  "errors that give particles very high velocities you might end up with some\n"
+	  "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
+	  "put these on a grid, so this is usually where we detect those errors.\n"
+	  "Make sure your system is properly energy-minimized and that the potential\n"
+	  "energy seems reasonable before trying again.\n");
 }
-#define range_check(i,nr) _range_check(#i,i,nr,__FILE__,__LINE__)
 
 void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
 	       real rlistlong,int ncg)
@@ -128,11 +123,11 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
 {
   int ci;
 
-  range_check(i,grid->nr);
+  range_check(i,0,grid->nr);
 
   ci = grid->cell_index[i];
   if (ci == NO_CELL)
-    fatal_error(0,"Not a valid cell entry at %d\n",i);
+    gmx_fatal(FARGS,"Not a valid cell entry at %d\n",i);
   *x  = ci / (grid->nry*grid->nrz);
   ci -= (*x)*grid->nry*grid->nrz;
   *y  = ci / grid->nrz;
@@ -146,6 +141,9 @@ void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong)
   int    i,k,ncells;
   ivec   cx;
 
+  /* Must do this every step because other routines may override it. */
+  init_range_check();
+  
   for(k=0; (k<DIM); k++)
     cx[k]=(grid->delta*box[k][k])/rlistlong;
 
@@ -219,14 +217,14 @@ void calc_elemnr(FILE *log,bool bDD,int cg_index[],
 
   ncells=grid->ncells;
   if(ncells<=0) 
-    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
 		"is either due to an internal Gromacs bug or a compiler error.\n");
 		
   calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
       ci = cell_index[i];
-      range_check(ci,ncells);
+      range_check(ci,0,ncells);
       nra[ci]++;
     }
 }
@@ -241,14 +239,14 @@ void calc_ptrs(t_grid *grid)
 
   ncells=grid->ncells;
   if(ncells<=0) 
-    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
 		"is either due to an internal Gromacs bug or a compiler error.\n");
   
   ci=nr=0;
   for(ix=0; (ix < grid->nrx); ix++)
     for(iy=0; (iy < grid->nry); iy++) 
       for(iz=0; (iz < grid->nrz); iz++,ci++) {
-	range_check(ci,ncells);
+	range_check(ci,0,ncells);
 	index[ci] = nr;
 	nnra      = nra[ci];
 	nr       += nnra;
@@ -271,16 +269,16 @@ void grid_last(FILE *log,bool bDD,int cg_index[],
 
   ncells=grid->ncells;
   if(ncells<=0 || grid->nr<=0) 
-    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
 		"is either due to an internal Gromacs bug or a compiler error.\n");
 
   calc_bor(log,bDD,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
       ci     = cell_index[i];
-      range_check(ci,ncells);
+      range_check(ci,0,ncells);
       ind    = index[ci]+nra[ci]++;
-      range_check(ind,grid->nr);
+      range_check(ind,0,grid->nr);
       a[ind] = cg_index[i];
     }
 }
@@ -326,7 +324,7 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
     if (iy >= nry) iy = nry-1;
     if (iz >= nrz) iz = nrz-1;
 #ifdef DEBUG_PBC
-#define myrc(ixyz,n) if ((ixyz<0) || (ixyz>=n)) fatal_error(0,"%s=%d(max=%d), index=%d, i=%d, cgcm=(%f,%f,%f)",#ixyz,ixyz,n,index,i,cg_cm[index][XX],cg_cm[index][YY],cg_cm[index][ZZ])
+#define myrc(ixyz,n) if ((ixyz<0) || (ixyz>=n)) gmx_fatal(FARGS,"%s=%d(max=%d), index=%d, i=%d, cgcm=(%f,%f,%f)",#ixyz,ixyz,n,index,i,cg_cm[index][XX],cg_cm[index][YY],cg_cm[index][ZZ])
     myrc(ix,nrx);
     myrc(iy,nry);
     myrc(iz,nrz);
@@ -346,7 +344,7 @@ void check_grid(FILE *log,t_grid *grid)
   int ix,iy,iz,ci,cci,nra;
 
   if(grid->ncells<=0) 
-    fatal_error(0,"Number of grid cells is zero. This should never happen, and\n"
+    gmx_fatal(FARGS,"Number of grid cells is zero. This should never happen, and\n"
 		"is either due to an internal Gromacs bug or a compiler error.\n");  
   
   ci=0;
@@ -357,14 +355,14 @@ void check_grid(FILE *log,t_grid *grid)
 	if (ci > 0) {
 	  nra=grid->index[ci]-grid->index[cci];
 	  if (nra != grid->nra[cci]) 
-	    fatal_error(0,"nra=%d, grid->nra=%d, cci=%d",
+	    gmx_fatal(FARGS,"nra=%d, grid->nra=%d, cci=%d",
 			nra,grid->nra[cci],cci);
 	}
 	cci=xyz2ci(grid->nry,grid->nrz,ix,iy,iz);
-	range_check(cci,grid->ncells);
+	range_check(cci,0,grid->ncells);
 	
 	if (cci != ci) 
-	  fatal_error(0,"ci = %d, cci = %d",ci,cci);
+	  gmx_fatal(FARGS,"ci = %d, cci = %d",ci,cci);
       }
 }
 

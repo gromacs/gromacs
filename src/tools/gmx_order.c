@@ -114,7 +114,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
         sdbangle = 0;/* sum of these angles                            */
 
   if ((natoms = read_first_x(&status,fn,&t,&x0,box)) == 0) 
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   snew(slCount, nslices);
   snew(*slOrder, nslices);
@@ -157,7 +157,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
       
       size = index[i+1] - index[i];
       if (size != nr_tails)
-	fatal_error(0,"grp %d does not have same number of"
+	gmx_fatal(FARGS,"grp %d does not have same number of"
 		" elements as grp 1\n",i); 
       
       for (j = 0; j < size; j++) {
@@ -372,7 +372,7 @@ int gmx_order(int argc,char *argv[])
   if (strcmp(normal_axis[0],"x") == 0) axis = XX;
   else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
   else if (strcmp(normal_axis[0],"z") == 0) axis = ZZ;
-  else fatal_error(0,"Invalid axis, use x, y or z");
+  else gmx_fatal(FARGS,"Invalid axis, use x, y or z");
   
   switch (axis) {
   case 0:

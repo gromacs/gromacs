@@ -59,7 +59,7 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   fprintf(fplog,"\nInitializing Replica Exchange\n");
 
   if (mcr == NULL || mcr->nnodes == 1)
-    fatal_error(0,"Nothing to exchange with only one replica");
+    gmx_fatal(FARGS,"Nothing to exchange with only one replica");
 
   temp = ir->opts.ref_t[0];
   for(i=1; (i<ir->opts.ngtc); i++) {
@@ -97,7 +97,7 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 	re->ind[i] = re->ind[j];
 	re->ind[j] = k;
       } else if (re->temp[re->ind[j]] == re->temp[re->ind[i]]) {
-	fatal_error(0,"Two replicas have identical temperatures");
+	gmx_fatal(FARGS,"Two replicas have identical temperatures");
       }
     }
   }

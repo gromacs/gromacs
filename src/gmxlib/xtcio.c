@@ -62,7 +62,7 @@ void close_xtc(int fp)
 static void check_xtc_magic(int magic)
 {
   if (magic != XTC_MAGIC) 
-    fatal_error(0,"Magic Number Error in XTC file (read %d, should be %d)",
+    gmx_fatal(FARGS,"Magic Number Error in XTC file (read %d, should be %d)",
 		magic,XTC_MAGIC);
 }
 
@@ -80,7 +80,7 @@ int xtc_check(char *str,bool bResult,char *file,int line)
 void xtc_check_fat_err(char *str,bool bResult,char *file,int line)
 {
   if (!bResult) {
-    fatal_error(0,"XTC read/write of %s failed, "
+    gmx_fatal(FARGS,"XTC read/write of %s failed, "
 		"source file %s, line %d\n",str,file,line);
   }
 }
@@ -183,7 +183,7 @@ int read_next_xtc(int fp,
   if (!xtc_header(xd,&magic,&n,step,time,bOK))
     return 0;
   if (n>natoms)
-    fatal_error(0, "Frame contains more atoms (%d) than expected (%d)", 
+    gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", 
 		n, natoms);
     
   /* Check magic number */

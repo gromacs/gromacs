@@ -213,11 +213,11 @@ int main(int argc,char *argv[])
     
 #ifndef USE_MPI
   if (nnodes > 1) 
-    fatal_error(0,"GROMACS compiled without MPI support - can't do parallel runs");
+    gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
 #endif
 #ifndef USE_THREADS
   if(nthreads > 1)
-    fatal_error(0,"GROMACS compiled without threads support - can only use one thread");
+    gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);

@@ -618,8 +618,8 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->dummy.a,iparams->dummy.b,iparams->dummy.c);
     break;
   default:
-    fatal_error(0,"unknown function type %d (%s) in %s line %d",
-		ftype,interaction_function[ftype].name,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
+	      ftype,interaction_function[ftype].name,__FILE__,__LINE__);
   }
 }
 

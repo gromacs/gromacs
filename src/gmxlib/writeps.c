@@ -318,7 +318,7 @@ void ps_ctext(t_psdata ps,real x1,real y1,char *str,int expos)
     fprintf(ps->fp,"exch neg exch\n");
     break;
   default:
-    fatal_error(0,"invalid position index (expos=%d)",expos);
+    gmx_fatal(FARGS,"invalid position index (expos=%d)",expos);
   }
   fprintf(ps->fp,"rmoveto (%s) show\n",str);
 }
@@ -337,7 +337,7 @@ void ps_setorigin(t_psdata ps)
 void ps_unsetorigin(t_psdata ps)
 {
   if (ps->ostack <= 0)
-    fatal_error(0,"No origin on stack!\n");
+    gmx_fatal(FARGS,"No origin on stack!\n");
   fprintf(ps->fp,"neg exch neg exch translate\n");
   ps->ostack--;
 }

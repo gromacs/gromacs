@@ -585,7 +585,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 	ff6 = ff12 = 1.0;	
 	
 	if (tclj->eObs == eoForce) {
-	  fatal_error(0,"Hack code for this to work again ");
+	  gmx_fatal(FARGS,"Hack code for this to work again ");
 	  if (debug)
 	    fprintf(debug,"Have computed derivatives: xiH = %g, xiS = %g\n",xiH,xiS);
 	  if (ati == 1) {
@@ -597,7 +597,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 	    ff12 += xiS; 
 	  }
 	  else
-	    fatal_error(0,"No H, no Shell, edit code at %s, line %d\n",
+	    gmx_fatal(FARGS,"No H, no Shell, edit code at %s, line %d\n",
 			__FILE__,__LINE__);
 	  if (ff6 > 0)
 	    set_factor_matrix(idef->atnr,f6, sqrt(ff6), ati,atj);
@@ -695,7 +695,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       }
     }
     if (j == md->nr)
-      fatal_error(0,"Coupling type %d not found",tcq->at_i);
+      gmx_fatal(FARGS,"Coupling type %d not found",tcq->at_i);
   }  
   for(i=0; (i<tcr->nIP); i++) {
     tip    = &(tcr->tIP[i]);

@@ -115,10 +115,10 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
   for(i=0; (i<nmol); i++) {
     for(j=molind[i]; (j<molind[i+1]); j++) {
       if (bMol[i] && !bTmp[mola[j]])
-	fatal_error(0,"Molecule %d marked for clustering but not atom %d",
+	gmx_fatal(FARGS,"Molecule %d marked for clustering but not atom %d",
 		    i,mola[j]);
       else if (!bMol[i] && bTmp[mola[j]])
-	fatal_error(0,"Atom %d marked for clustering but not molecule %d",
+	gmx_fatal(FARGS,"Atom %d marked for clustering but not molecule %d",
 		    mola[j],i);
       else if (bMol[i]) {
 	/* Compute center of mass of molecule */
@@ -284,7 +284,7 @@ static void center_x(rvec x[],matrix box,int n,int nc,atom_id ci[])
 void check_trn(char *fn)
 {
   if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
-    fatal_error(0,"%s is not a trj file, exiting\n",fn);
+    gmx_fatal(FARGS,"%s is not a trj file, exiting\n",fn);
 }
 
 #if (!defined WIN32 && !defined _WIN32 && !defined WIN64 && !defined _WIN64)
@@ -300,7 +300,7 @@ void do_trunc(char *fn, real t0)
   real         t=0;
   
   if (t0 == -1)
-    fatal_error(0,"You forgot to set the truncation time");
+    gmx_fatal(FARGS,"You forgot to set the truncation time");
   
   /* Check whether this is a .trj file */
   check_trn(fn);
@@ -656,7 +656,7 @@ int main(int argc,char *argv[])
     if (bSeparate || bSplit) {
       outf_ext = strrchr(out_file,'.');
       if (outf_ext == NULL)
-	fatal_error(0,"Output file name '%s' does not contain a '.'",out_file);
+	gmx_fatal(FARGS,"Output file name '%s' does not contain a '.'",out_file);
       outf_base = strdup(out_file);
       outf_base[outf_ext - out_file] = '\0';
     }
@@ -701,7 +701,7 @@ int main(int argc,char *argv[])
 		1,&ifit,&ind_fit,&gn_fit);
 
       if (bFit && ifit < 3) 
-	fatal_error(0,"Need at least 3 points to fit!\n");
+	gmx_fatal(FARGS,"Need at least 3 points to fit!\n");
     }
     else if (bCluster) {
       printf("Select group for clustering\n");
@@ -721,7 +721,7 @@ int main(int argc,char *argv[])
     } else {
       /* no index file, so read natoms from TRX */
       if (!read_first_frame(&status,in_file,&fr,TRX_DONT_SKIP))
-	fatal_error(0,"Could not read a frame from %s",in_file);
+	gmx_fatal(FARGS,"Could not read a frame from %s",in_file);
       natoms = fr.natoms;
       close_trj(status);
       sfree(fr.x);
@@ -819,7 +819,7 @@ int main(int argc,char *argv[])
 	/* check if index is meaningful */
 	for(i=0; i<nout; i++) {
 	  if (index[i] >= natoms)
-	  fatal_error(0,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
+	  gmx_fatal(FARGS,"Index[%d] %d is larger than the number of atoms in the trajectory file (%d)",i,index[i]+1,natoms);
 	  bCopy = bCopy || (i != index[i]);
 	}
       if (bCopy) {
@@ -1059,7 +1059,7 @@ int main(int argc,char *argv[])
 	      }
 	      break;
 	    default:
-	      fatal_error(0,"DHE, ftp=%d\n",ftp);
+	      gmx_fatal(FARGS,"DHE, ftp=%d\n",ftp);
 	    }
 	    if (bSeparate || bSplit)
 	      file_nr++;

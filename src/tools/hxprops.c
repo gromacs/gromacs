@@ -386,7 +386,7 @@ t_bb *mkbbind(char *fn,int *nres,int *nbb,int res0,
   fprintf(stderr,"There are %d complete backbone residues (from %d to %d)\n",
 	  rnr,bb[i0].resno,bb[i1].resno);
   if (rnr==0)
-    fatal_error(0,"rnr==0");
+    gmx_fatal(FARGS,"rnr==0");
   for(i=0; (i<rnr); i++,i0++)
     bb[i]=bb[i0];
   

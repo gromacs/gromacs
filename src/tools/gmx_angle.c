@@ -152,7 +152,7 @@ int gmx_angle(int argc,char *argv[])
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
   nangles=isize/mult;
   if ((isize % mult) != 0) 
-    fatal_error(0,"number of index elements not multiple of %d, "
+    gmx_fatal(FARGS,"number of index elements not multiple of %d, "
 		"these can not be %s\n",
 		mult,(mult==3) ? "angle triplets" : "dihedral quadruplets");
   
@@ -174,7 +174,7 @@ int gmx_angle(int argc,char *argv[])
   }
   
   if ( (bTrans || bFrac || bCorr) && mult==3)
-    fatal_error(0,"Can only do transition, fraction or correlation\n"
+    gmx_fatal(FARGS,"Can only do transition, fraction or correlation\n"
 		"on dihedrals. Select -d\n");
   
   /* 

@@ -41,7 +41,6 @@
 #include <x11.h>
 #include "sysstuff.h"
 #include "string.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "string2.h"

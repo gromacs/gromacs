@@ -42,15 +42,13 @@
 #include "main.h"
 #include "smalloc.h"
 #include "network.h"
+#include "copyrite.h"
 #ifdef USE_MPI
 #include <mpi.h>
 #endif
 
 #ifdef USE_MPI
-
 static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
-#else
-#define MYFATAL(str) fatal_error(0,"Routine %s called in %s, %d",str,__FILE__,__LINE__)
 #endif
 
 /* Try setting MPI_TEST when you experience unexplainable crashes, *
@@ -60,7 +58,7 @@ static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
 void gmx_tx(int nodeid,void *buf,int bufsize)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_tx"); 
+  gmx_call("gmx_tx"); 
 #else
   int        tag,flag;
   MPI_Status status;
@@ -82,27 +80,27 @@ void gmx_tx(int nodeid,void *buf,int bufsize)
 #endif
   tag = 0;
   if (MPI_Isend(buf,bufsize,MPI_BYTE,nodeid,tag,MPI_COMM_WORLD,&mpi_req_tx) != 0)
-    fatal_error(0,"MPI_Isend Failed !");
+    gmx_comm("MPI_Isend Failed");
 #endif
 }
 
 void gmx_tx_wait(int nodeid)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_tx_wait");
+  gmx_call("gmx_tx_wait");
 #else
   MPI_Status  status;
   int mpi_result;
   
   if ((mpi_result=MPI_Wait(&mpi_req_tx,&status)) != 0)
-    fatal_error(0,"MPI_Wait: result=%d",mpi_result);
+    gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
 #endif
 }
 
 void gmx_txs(int nodeid,void *buf,int bufsize)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_txs");
+  gmx_call("gmx_txs");
 #else
   int tag;
 
@@ -112,14 +110,14 @@ void gmx_txs(int nodeid,void *buf,int bufsize)
 #endif
   tag = 0;
   if (MPI_Send(buf,bufsize,MPI_BYTE,nodeid,tag,MPI_COMM_WORLD) != 0)
-    fatal_error(0,"MPI_Send Failed !");
+    gmx_comm("MPI_Send Failed");
 #endif
 }
 
 void gmx_rx(int nodeid,void *buf,int bufsize)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_rx");
+  gmx_call("gmx_rx");
 #else
   int        tag;
 
@@ -129,34 +127,34 @@ void gmx_rx(int nodeid,void *buf,int bufsize)
 #endif
   tag = 0;
   if (MPI_Irecv( buf, bufsize, MPI_BYTE, nodeid, tag, MPI_COMM_WORLD, &mpi_req_rx) != 0 )
-    fatal_error(0,"MPI_Recv Failed !");
+    gmx_comm("MPI_Recv Failed");
 #endif
 }
 
 void gmx_rx_wait(int nodeid)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_rx_wait");
+  gmx_call("gmx_rx_wait");
 #else
   MPI_Status  status;
   int mpi_result;
   
   if ((mpi_result=MPI_Wait(&mpi_req_rx,&status)) != 0)
-    fatal_error(0,"MPI_Wait: result=%d",mpi_result);
+    gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
 #endif
 }
 
 int gmx_rx_probe(int nodeid)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_rx_probe");
+  gmx_call("gmx_rx_probe");
   return 0;
 #else
   MPI_Status  status;
   int mpi_result,flag=0;
   
   if ((mpi_result = MPI_Test(&mpi_req_rx,&flag,&status)) != MPI_SUCCESS)
-    fatal_error(0,"MPI_Test: result=%d",mpi_result);
+    gmx_fatal(FARGS,"MPI_Test: result=%d",mpi_result);
     
   return flag;
 #endif
@@ -165,7 +163,7 @@ int gmx_rx_probe(int nodeid)
 void gmx_rxs(int nodeid,void *buf,int bufsize)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_rxs");
+  gmx_call("gmx_rxs");
 #else
   MPI_Status stat;
   int        tag;
@@ -176,14 +174,14 @@ void gmx_rxs(int nodeid,void *buf,int bufsize)
 #endif
   tag = 0;
   if (MPI_Recv( buf, bufsize, MPI_BYTE, nodeid, tag, MPI_COMM_WORLD, &stat) != 0 )
-    fatal_error(0,"MPI_Recv Failed !");
+    gmx_comm("MPI_Recv Failed");
 #endif
 }
 
 int gmx_setup(int *argc,char **argv,int *nnodes)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_setup");
+  gmx_call("gmx_setup");
   return 0;
 #else
   char   buf[256];
@@ -250,7 +248,7 @@ void gmx_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
 		 int rec_nodeid,void *rec_buf,int rec_bufsize)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_tx_rx");
+  gmx_call("gmx_tx_rx");
 #else
   int tx_tag = 0,rx_tag = 0;
   MPI_Status stat;
@@ -265,7 +263,7 @@ void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
 		      int rec_nodeid,real *rec_buf,int rec_bufsize)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_tx_rx_real");
+  gmx_call("gmx_tx_rx_real");
 #else
   int tx_tag = 0,rx_tag = 0;
   MPI_Status stat;
@@ -285,7 +283,7 @@ void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
 void gmx_wait(int left,int right)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_wait");
+  gmx_call("gmx_wait");
 #else
   gmx_tx_wait(left);
   gmx_rx_wait(right);
@@ -295,7 +293,7 @@ void gmx_wait(int left,int right)
 void gmx_sync_ring(int nodeid,int nnodes,int left,int right)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_sync_ring");
+  gmx_call("gmx_sync_ring");
 #else
   int i;
   int tag=0;
@@ -326,16 +324,19 @@ void gmx_reset_idle(void)
 void gmx_abort(int nodeid,int nnodes,int errorno)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_abort");
+  gmx_call("gmx_abort");
 #else
+  fprintf(stdlog,"Going to call MPI_Abort from node %d\n",nodeid);
   MPI_Abort(MPI_COMM_WORLD,errorno);
+  fclose(stdlog);
+  exit(1);
 #endif
 }
 
 void gmx_sumd(int nr,double r[],const t_commrec *cr)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_sumd");
+  gmx_call("gmx_sumd");
 #else
   /*#define TEST_MPI_SUM*/
 #ifdef TEST_MPI_SUM
@@ -382,7 +383,7 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 void gmx_sumf(int nr,float r[],const t_commrec *cr)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_sumf");
+  gmx_call("gmx_sumf");
 #else
   float *buf[2];
   int  NR,bufs,j,i,cur=0;
@@ -413,7 +414,7 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 void gmx_sumi(int nr,int r[],const t_commrec *cr)
 {
 #ifndef USE_MPI
-  MYFATAL("gmx_sumi");
+  gmx_call("gmx_sumi");
 #else
   int *buf[2];
   int  NR,bufs,j,i,cur=0;
@@ -445,7 +446,7 @@ void gmx_finalize(t_commrec *cr)
 {
   int ret;
 #ifndef USE_MPI
-  MYFATAL("gmx_finalize");
+  gmx_call("gmx_finalize");
 #else
 #ifdef MPICH_NAME
   if (debug)

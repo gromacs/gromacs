@@ -126,7 +126,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 
     if (cr != NULL) {
       if (cr->nnodes > 1 || cr->nthreads>1)
-	fatal_error(0,"No parallel Ewald. Use PME instead.\n");
+	gmx_fatal(FARGS,"No parallel Ewald. Use PME instead.\n");
     }
     
     nx = ir->nkx+1;

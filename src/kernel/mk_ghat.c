@@ -212,7 +212,7 @@ real usqsq(int porder,real k1,real k2,real k3,real h1,real h2,real h3)
 	    (1.0 - t22 + tx*t22*t22)*
 	    (1.0 - t32 + tx*t32*t32) );
   else 
-    fatal_error(0,"porder = %d in usqsq",porder);
+    gmx_fatal(FARGS,"porder = %d in usqsq",porder);
   
   return tmp*tmp;
 }
@@ -231,7 +231,7 @@ real usqsq1D(int porder,real k1,real h1)
   else if (porder == 2) 
     tmp = ( (1.0 - t12 + tx*t12*t12));
   else 
-    fatal_error(0,"porder = %d in usqsq",porder);
+    gmx_fatal(FARGS,"porder = %d in usqsq",porder);
   
   return tmp*tmp;
 }
@@ -637,7 +637,7 @@ int main(int argc,char *argv[])
 	 ghat,&pval,&zval,&eref,&q3);
 	 
     /* if ( (q1 > q0) || (q1 > q3) ) 
-      fatal_error(0,"oops q1=%f,q0=%f,q3=%f",q1,q0,q3); */
+      gmx_fatal(FARGS,"oops q1=%f,q0=%f,q3=%f",q1,q0,q3); */
     alpha2 = alpha1 + gold*(alpha3-alpha1);
     calc(bSym,bVerbose,n1max,n2max,n3max,h1,h2,h3,
 	 nalias,porder,acut,r1,alpha2,bSearch,

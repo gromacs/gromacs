@@ -293,7 +293,7 @@ static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,bool bObsUsed[])
   if (sscanf(s,"%s%d%d%lf%lf",buf,&ati,&atj,&xi6,&xi12) != 5) 
     return TRUE;
   if ((eo=Name2eo(buf)) == -1)
-    fatal_error(0,"Invalid observable for LJ coupling: %s",buf);
+    gmx_fatal(FARGS,"Invalid observable for LJ coupling: %s",buf);
   
   for(j=0; (j<*nLJ); j++) {
     if ((((*tcLJ)[j].at_i == ati) && ((*tcLJ)[j].at_j == atj)) &&
@@ -310,7 +310,7 @@ static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,bool bObsUsed[])
   
   clear_lj(&((*tcLJ)[j]));
   if (((*tcLJ)[j].eObs = eo) == -1) {
-    fatal_error(0,"Invalid observable for LJ coupling: %s",buf);
+    gmx_fatal(FARGS,"Invalid observable for LJ coupling: %s",buf);
   }
   (*tcLJ)[j].at_i   = ati;
   (*tcLJ)[j].at_j   = atj;
@@ -330,7 +330,7 @@ static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s,bool bObsUsed[])
   if (sscanf(s,"%s%d%d%lf%lf%lf",buf,&ati,&atj,&xia,&xib,&xic) != 6) 
     return TRUE;
   if ((eo=Name2eo(buf)) == -1)
-    fatal_error(0,"Invalid observable for BU coupling: %s",buf);
+    gmx_fatal(FARGS,"Invalid observable for BU coupling: %s",buf);
   
   for(j=0; (j<*nBU); j++) {
     if ((((*tcBU)[j].at_i == ati) && ((*tcBU)[j].at_j == atj)) &&
@@ -347,7 +347,7 @@ static bool add_bu(int *nBU,t_coupl_BU **tcBU,char *s,bool bObsUsed[])
   
   clear_bu(&((*tcBU)[j]));
   if (((*tcBU)[j].eObs = eo) == -1) {
-    fatal_error(0,"Invalid observable for BU coupling: %s",buf);
+    gmx_fatal(FARGS,"Invalid observable for BU coupling: %s",buf);
   }
   (*tcBU)[j].at_i   = ati;
   (*tcBU)[j].at_j   = atj;
@@ -371,7 +371,7 @@ static bool add_ip(int *nIP,t_coupl_iparams **tIP,char *s,int ftype,bool bObsUse
     if (sscanf(s,"%s%d",buf,&type) != 2)
       return TRUE;
     if ((eo=Name2eo(buf)) == -1)
-      fatal_error(0,"Invalid observable for IP coupling: %s",buf);
+      gmx_fatal(FARGS,"Invalid observable for IP coupling: %s",buf);
       
     /* Check whether this entry is there already */
     for(i=0; (i<*nIP); i++) {
@@ -425,7 +425,7 @@ static bool add_q(int *nQ,t_coupl_Q **tcQ,char *s,bool bObsUsed[])
   clear_q(&((*tcQ)[j]));
   eo = (*tcQ)[j].eObs = Name2eo(buf);
   if ((*tcQ)[j].eObs == -1) {
-    fatal_error(0,"Invalid observable for Q coupling: %s",buf);
+    gmx_fatal(FARGS,"Invalid observable for Q coupling: %s",buf);
   }
   (*tcQ)[j].at_i   = ati;
   (*tcQ)[j].xi_Q  = xiQ;

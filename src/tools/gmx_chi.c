@@ -44,7 +44,6 @@
 #include "copyrite.h"
 #include "fatal.h"
 #include "futil.h"
-#include "assert.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -447,8 +446,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 	  }
 	  if (bOccup && ((bfac_max <= 0) || ((bfac_max > 0) && bBfac))) {
 	    hindex = ((dih[j][0]+M_PI)*nbin)/(2*M_PI);
-	    assert(hindex >= 0);
-	    assert(hindex < nbin);
+	    range_check(hindex,0,nbin);
+	    
 	    /* Assign dihedral to either of the structure determined 
 	     * histograms
 	     */
@@ -1132,7 +1131,7 @@ int gmx_chi(int argc,char *argv[])
   fprintf(stderr,"%d residues with dihedrals found\n", nlist);
   
   if (nlist == 0) 
-    fatal_error(0,"No dihedrals in your structure!\n");
+    gmx_fatal(FARGS,"No dihedrals in your structure!\n");
   
   /* Make a linear index for reading all */
   index=make_chi_ind(nlist,dlist,&ndih);
@@ -1149,7 +1148,7 @@ int gmx_chi(int argc,char *argv[])
   dt=(time[nf-1]-time[0])/(nf-1); /* might want this for corr or n. transit*/ 
   if (bCorr) {
     if (nf < 2)
-      fatal_error(0,"Need at least 2 frames for correlation");
+      gmx_fatal(FARGS,"Need at least 2 frames for correlation");
     
   }
 

@@ -143,7 +143,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	    xp[jz] -= zh*im;
 	  }
 	  else 
-	    fatal_error(0,"Constraint between two massless particles %d and %",
+	    gmx_fatal(FARGS,"Constraint between two massless particles %d and %",
 			im,jm);
 	}
       }

@@ -114,7 +114,7 @@ int sscan_list(int *list[], char *str, char *listname) {
    pos[n+2]='\0';
 
    if (*list!=NULL) {
-      fatal_error(0,"list argument of sscan_list should be NULL"); }
+      gmx_fatal(FARGS,"list argument of sscan_list should be NULL"); }
      
    while ((c=*pos)!=0) {
      switch(status) {
@@ -183,13 +183,13 @@ int sscan_list(int *list[], char *str, char *listname) {
 
        /* format error occured */
        case sError:
-       fatal_error(0,"Error in the list of eigenvectors for %s at pos %d with char %c",listname,pos-startpos,*(pos-1)); 
+       gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d with char %c",listname,pos-startpos,*(pos-1)); 
 
        /* logical error occured */
        case sZero:
-               fatal_error(0,"Error in the list of eigenvectors for %s at pos %d: eigenvector 0 is not valid",listname,pos-startpos);
+               gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d: eigenvector 0 is not valid",listname,pos-startpos);
        case sSmaller:
-               fatal_error(0,"Error in the list of eigenvectors for %s at pos %d: second index %d is not bigger than %d",listname,pos-startpos,end_number,number);
+               gmx_fatal(FARGS,"Error in the list of eigenvectors for %s at pos %d: second index %d is not bigger than %d",listname,pos-startpos,end_number,number);
 
      }
    ++pos; /* read next character */
@@ -229,7 +229,7 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec,
     sum=0;
     for (i=0; i<natoms; i++) {
       if (eig_list[n]>nvec)
-	fatal_error(0,"Selected eigenvector %d is higher than maximum number %d of available eigenvectors",eig_list[n],nvec);
+	gmx_fatal(FARGS,"Selected eigenvector %d is higher than maximum number %d of available eigenvectors",eig_list[n],nvec);
       copy_rvec(eigvecs[eig_list[n]-1][i],x);
       sum+=norm2(x);
       fprintf(fp,"%8.5f %8.5f %8.5f\n",x[XX],x[YY],x[ZZ]);      
@@ -281,7 +281,7 @@ int read_conffile(char *confin,char *title,rvec *x[]) {
   get_stx_coordnum(confin,&natoms);
   printf("number of coordinates in file %d\n",natoms);
 /*  if (natoms != ncoords)
-     fatal_error(0,"number of coordinates in coordinate file (%s, %d)\n"
+     gmx_fatal(FARGS,"number of coordinates in coordinate file (%s, %d)\n"
            "             does not match topology (= %d)",
            confin,natoms,ncoords);
   else {*/
@@ -308,7 +308,7 @@ static real *scan_vecparams(char *str,char * par, int nvecs)
       strcpy(f1,f0);  /*f0 is the format string for the "to-be-ignored" numbers*/
       strcat(f1,"%lf"); /*and f1 to read the actual number in this pass of the loop*/
       if (sscanf(str,f1,&d) != 1)
-	fatal_error(0,"Not enough elements for %s parameter (I need %d)",par,nvecs);
+	gmx_fatal(FARGS,"Not enough elements for %s parameter (I need %d)",par,nvecs);
       vec_params[i] = d;
       tcap += d;
       strcat(f0,"%*s");
@@ -336,7 +336,7 @@ void filter2edx(t_edx *edx,int nindex, atom_id index[],int ngro, atom_id igro[],
    for (i=0;i<nindex;i++,ix++) {
          for (pos=0; pos<ngro-1 && igro[pos]!=index[i] ; ++pos) {};  /*search element in igro*/
          if (igro[pos]!=index[i])
-              fatal_error(0,"Couldn't find atom with index %d in structure %s",index[i],structure);
+              gmx_fatal(FARGS,"Couldn't find atom with index %d in structure %s",index[i],structure);
          edx->anrs[ix]=index[i];
          copy_rvec(x[pos],edx->x[ix]);
    };
@@ -359,7 +359,7 @@ void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,t_edx *edx
             ntar,StructureFile);
   get_index(atoms,IndexFile,1,&ngro,&igro,&grpname);
   if (ngro!=ntar)
-     fatal_error(0,"You selected an index group with %d elements instead of %d",ngro,ntar);
+     gmx_fatal(FARGS,"You selected an index group with %d elements instead of %d",ngro,ntar);
   init_edx(edx);
   filter2edx(edx,nfit,ifit,ngro,igro,xtar,StructureFile);
   if (ifit!=index) /*if fit structure is different append these coordinates, too -- don't mind duplicates*/
@@ -590,7 +590,7 @@ int main(int argc,char *argv[])
   printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
   get_index(atoms,indexfile,1,&i,&index,&grpname); /*if indexfile != NULL parameter 'atoms' is ignored */
   if (i!=natoms) {
-      fatal_error(0,"you selected a group with %d elements instead of %d",
+      gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
        		  i,natoms);
   }
   printf("\n");

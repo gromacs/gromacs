@@ -106,7 +106,7 @@ void read_eigenvectors(char *file,int *natoms,bool *bFit,
     }
     i=(int)(head.t+0.01);
     if ((head.t-i<=-0.01) || (head.t-i>=0.01))
-      fatal_error(0,"%s contains a frame with non-integer time (%f), this "
+      gmx_fatal(FARGS,"%s contains a frame with non-integer time (%f), this "
 		  "time should be an eigenvector index. "
 		  "This might not be a eigenvector file.",file,head.t);
     (*eignr)[*nvec]=i-1;

@@ -110,7 +110,7 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
     ok=read_first_frame(&status,fnms[i],&fr,FLAGS);
     
     if(!ok) 
-      fatal_error(0,"\nCouldn't read frame from file.");
+      gmx_fatal(FARGS,"\nCouldn't read frame from file.");
     if(fr.bTime)
     readtime[i]=fr.time;
     else {
@@ -124,11 +124,11 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
     else {
       if (imax==NO_ATID) {
 	if(natoms!=fr.natoms) 
-	  fatal_error(0,"\nDifferent numbers of atoms (%d/%d) in files",
+	  gmx_fatal(FARGS,"\nDifferent numbers of atoms (%d/%d) in files",
 		      natoms,fr.natoms);
       } else {
 	if(fr.natoms <= imax)
-	  fatal_error(0,"\nNot enough atoms (%d) for index group (%d)",
+	  gmx_fatal(FARGS,"\nNot enough atoms (%d) for index group (%d)",
 		      fr.natoms,imax);
       }
     }
@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
   nfile = opt2fns(&fnms,"-f",NFILE,fnm);
   
   if(!nfile)
-      fatal_error(0,"No input files!");
+      gmx_fatal(FARGS,"No input files!");
 
   timestep = get_timestep(fnms[0]);
   snew(readtime,nfile+1);
@@ -385,7 +385,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Will append to %s rather than creating a new file\n",
 	    out_file);
   else if (n_append != -1)
-    fatal_error(0,"Can only append to the first file which is %s (not %s)",
+    gmx_fatal(FARGS,"Can only append to the first file which is %s (not %s)",
 		fnms[0],out_file);
 		
   earliersteps=0;    
@@ -407,7 +407,7 @@ int main(int argc,char *argv[])
   else {
     /* Read file to find what is the last frame in it */
     if (!read_first_frame(&status,out_file,&fr,FLAGS))
-      fatal_error(0,"Reading first frame from %s",out_file);
+      gmx_fatal(FARGS,"Reading first frame from %s",out_file);
     while (read_next_frame(status,&fr))
       ;
     close_trj(status);

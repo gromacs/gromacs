@@ -445,7 +445,7 @@ int main(int argc,char *argv[])
   if ((dptr=getenv("DSSP")) == NULL)
     dptr="/usr/local/bin/dssp";
   if (!fexist(dptr))
-    fatal_error(0,"DSSP executable (%s) does not exist (use setenv DSSP)",
+    gmx_fatal(FARGS,"DSSP executable (%s) does not exist (use setenv DSSP)",
 		dptr);
   sprintf(dssp,"%s %s %s %s > /dev/null %s",
 	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
@@ -466,9 +466,9 @@ int main(int argc,char *argv[])
   
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   if (natoms > atoms->nr) 
-    fatal_error(0,"\nTrajectory does not match topology!");
+    gmx_fatal(FARGS,"\nTrajectory does not match topology!");
   if (gnx > natoms)
-    fatal_error(0,"\nTrajectory does not match selected group!");
+    gmx_fatal(FARGS,"\nTrajectory does not match selected group!");
   
   snew(average_area,atoms->nres+10);
   snew(av_area,atoms->nres+10);

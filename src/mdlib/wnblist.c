@@ -75,29 +75,29 @@ void read_nblist(FILE *in,FILE *log,int **mat,int natoms)
   
   do {
     if (fgets2(buf,255,in) == NULL)
-      fatal_error(0,"EOF when looking for '%s' in logfile",header);
+      gmx_fatal(FARGS,"EOF when looking for '%s' in logfile",header);
   } while (strstr(buf,header) == NULL);
   
   do {
     if (fscanf(in,"%*s%d%*s%d",&il_code,&solv) != 2)
       break;
     if (fscanf(in,"%*s%d%*s%d",&nri,&nrj) != 2)
-      fatal_error(0,"Not enough arguments read line %d",__LINE__);
+      gmx_fatal(FARGS,"Not enough arguments read line %d",__LINE__);
     for(ii=0; (ii<nri); ii++) {
       if (fscanf(in,"%*s%d%*s%d%*s%d%*s%d",&iatom,&gid,&shift,&nj) != 4)
-	fatal_error(0,"Not enough arguments read line %d",__LINE__);
+	gmx_fatal(FARGS,"Not enough arguments read line %d",__LINE__);
       /* Number shifts from 1 to 27 iso 0 to 26, to distinguish uninitialized 
        * matrix elements.
        */
       shift+=1; 
       if ((iatom < 0) || (iatom >= natoms))
-	fatal_error(0,"iatom = %d (max %d)\n",iatom,natoms);
+	gmx_fatal(FARGS,"iatom = %d (max %d)\n",iatom,natoms);
       nrj+=nj;
       for(i=0; (i<nj); i++) {
 	if (fscanf(in,"%*s%d",&j) != 1)
-	  fatal_error(0,"Not enough arguments read line %d",__LINE__);
+	  gmx_fatal(FARGS,"Not enough arguments read line %d",__LINE__);
 	if ((j < 0) || (j >= natoms))
-	  fatal_error(0,"iatom = %d (max %d)\n",j,natoms);
+	  gmx_fatal(FARGS,"iatom = %d (max %d)\n",j,natoms);
 	if (mat[iatom][j] != 0)
 	  fprintf(log,"mat[%d][%d] changing from %d to %d\n",
 		  i,j,mat[iatom][j],shift);

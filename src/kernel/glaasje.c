@@ -68,7 +68,7 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
     
     if (bGlas) {
       if (ir->eDispCorr != edispcNO) {
-	fatal_error(0,"Can not have Long Range C6 corrections and GLASMD");
+	gmx_fatal(FARGS,"Can not have Long Range C6 corrections and GLASMD");
       }
       rc   = max(fr->rvdw,fr->rlist);
       rc3  = rc*rc*rc;
@@ -83,7 +83,7 @@ void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 	      "                      rc9 = %10g, rc10 = %10g\n",
 	      pi6,pi12,d[0],d[1],rc3,rc4,rc9,rc10);
       if (d[0] > d[1])
-	fatal_error(0,"d1 > d2 for GLASMD (check log file)");
+	gmx_fatal(FARGS,"d1 > d2 for GLASMD (check log file)");
     
       snew(c6,atnr);
       snew(c12,atnr);

@@ -233,7 +233,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
       }
       break;
     default:
-      fatal_error(0,"Error: did not expect option value %d",this->type);
+      gmx_fatal(FARGS,"Error: did not expect option value %d",this->type);
     }
     g+=r2;
   }
@@ -366,7 +366,7 @@ static real calc_one_mw(t_corr *this,int ix,int nx0,rvec xc[],real *tm)
     }
     break;
   default:
-    fatal_error(0,"Options got screwed. Did not expect value %d\n",this->type);
+    gmx_fatal(FARGS,"Options got screwed. Did not expect value %d\n",this->type);
   } /* end switch */
   return r2;
 }
@@ -622,7 +622,7 @@ int gmx_msd(int argc,char *argv[])
   mol_file = opt2fn_null("-mol",NFILE,fnm);
   
   if (ngroup < 1)
-    fatal_error(0,"Must have at least 1 group (now %d)",ngroup);
+    gmx_fatal(FARGS,"Must have at least 1 group (now %d)",ngroup);
 
   if (mol_file) {
     bMW  = TRUE;
@@ -646,7 +646,7 @@ int gmx_msd(int argc,char *argv[])
     axis = 0;
   bTop=read_tps_conf(tps_file,title,&top,&xdum,NULL,box,bMW); 
   if (mol_file && !bTop)
-    fatal_error(0,"Could not read a topology from %s. Try a tpr file instead.",
+    gmx_fatal(FARGS,"Could not read a topology from %s. Try a tpr file instead.",
 		tps_file);
     
   do_corr(trx_file,ndx_file,msd_file,mol_file,ngroup,

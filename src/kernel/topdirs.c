@@ -64,7 +64,7 @@ int ifunc_index(directive d,int type)
     else if (type == 6)
       return F_HARMONIC;
     else
-      fatal_error(0,"Invalid bond type %d",type);
+      gmx_fatal(FARGS,"Invalid bond type %d",type);
   case d_angles:
   case d_angletypes:
     if (type == 1)
@@ -78,7 +78,7 @@ int ifunc_index(directive d,int type)
     else if (type == 5)
       return F_UREY_BRADLEY;
     else
-      fatal_error(0,"Invalid angle type %d",type);
+      gmx_fatal(FARGS,"Invalid angle type %d",type);
   case d_pairs:
   case d_pairtypes:
     return F_LJ14;
@@ -96,7 +96,7 @@ int ifunc_index(directive d,int type)
     case 5:
       return F_FOURDIHS;
     default:
-      fatal_error(0,"Invalid dihedral type %d",type);
+      gmx_fatal(FARGS,"Invalid dihedral type %d",type);
     }
     break;
   case d_nonbond_params:
@@ -117,7 +117,7 @@ int ifunc_index(directive d,int type)
     case 4:
       return F_DUMMY3OUT;  
     default:
-      fatal_error(0,"Invalid dummies3 type %d",type);
+      gmx_fatal(FARGS,"Invalid dummies3 type %d",type);
     }
   case d_dum4:
     return F_DUMMY4FD; 
@@ -129,7 +129,7 @@ int ifunc_index(directive d,int type)
     case 2:
       return F_SHAKENC;
     default:
-      fatal_error(0,"Invalid constraints type %d",type);
+      gmx_fatal(FARGS,"Invalid constraints type %d",type);
     }
   case d_settles:
     return F_SETTLE;
@@ -138,9 +138,9 @@ int ifunc_index(directive d,int type)
     case 1:
       return F_POSRES;
     case 2:
-      fatal_error(0,"Water polarization should now be listed under [ water_polarization ]\n");
+      gmx_fatal(FARGS,"Water polarization should now be listed under [ water_polarization ]\n");
     default:
-      fatal_error(0,"Invalid position restraint type %d",type);
+      gmx_fatal(FARGS,"Invalid position restraint type %d",type);
     }
   case d_polarization:
     return F_POLARIZATION;
@@ -157,7 +157,7 @@ int ifunc_index(directive d,int type)
   case d_dihedral_restraints:
     return F_DIHRES;
   default:
-    fatal_error(0,"invalid directive %s in ifunc_index (%s:%s)",
+    gmx_fatal(FARGS,"invalid directive %s in ifunc_index (%s:%s)",
 		dir2str(d),__FILE__,__LINE__);
   }
   return -1;

@@ -40,7 +40,6 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include "assert.h"
 #include "pdbio.h"
 #include "confio.h"
 #include "symtab.h"
@@ -93,7 +92,7 @@ int qnd_hbonds(int natom,rvec x[],matrix box)
   cut2 = sqr(0.35);
   ccut = cos(30*DEG2RAD);
   if ((natom % 3) != 0) 
-    fatal_error(0,"Is this water?");
+    gmx_fatal(FARGS,"Is this water?");
   init_pbc(box);
   
   for(i=0; (i<natom); i+=3) {

@@ -83,17 +83,6 @@
 
 #define DFT_TOL 1e-7
 
-void my_range_check(char *s,int i,int nr,char *file,int line)
-{
-  int c;
-  
-  if ((i<0) || (i>=nr)) {
-    fprintf(stdlog,"%s = %d should be in 0 .. %d [FILE %s, LINE %d]\n",
-	    s,i,nr-1,file,line);
-  }
-}
-#define range_check(i,nr) my_range_check(#i,i,nr,__FILE__,__LINE__)
-
 void calc_recipbox(matrix box,matrix recipbox)
 {
   /* Save some time by assuming upper right part is zero */
@@ -164,9 +153,9 @@ void calc_idx(int natoms,matrix recipbox,
     idxptr[YY] = nny[tiy];
     idxptr[ZZ] = nnz[tiz];
 #ifdef DEBUG
-    range_check(idxptr[XX],nx);
-    range_check(idxptr[YY],ny);
-    range_check(idxptr[ZZ],nz);
+    range_check(idxptr[XX],0,nx);
+    range_check(idxptr[YY],0,ny);
+    range_check(idxptr[ZZ],0,nz);
 #endif
   }  
 #if (defined __GNUC__ && (defined i386 || defined __386__) && !defined DOUBLE && defined USE_X86TRUNC)  
@@ -214,7 +203,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
 		GMX_MPI_REAL,i,MPI_COMM_WORLD);
   }
 #else
-  fatal_error(0,"Parallel grid summation requires MPI and FFTW.\n");    
+  gmx_fatal(FARGS,"Parallel grid summation requires MPI and FFTW.\n");    
 #endif
 }
 
@@ -248,9 +237,9 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
       yidx    = idxptr[YY];
       zidx    = idxptr[ZZ];
 #ifdef DEBUG
-      range_check(xidx,nx);
-      range_check(yidx,ny);
-      range_check(zidx,nz);
+      range_check(xidx,0,nx);
+      range_check(yidx,0,ny);
+      range_check(zidx,0,nz);
 #endif
       i0      = ii0+xidx; /* Pointer arithmetic */
       norder  = n*order;
@@ -270,10 +259,10 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 	  for(ithz=norder; (ithz<norder1); ithz++,k0++) {
 	    k = *k0;
 #ifdef DEBUG
-	    range_check(i,nx);
-	    range_check(j,ny);
-	    range_check(k,nz);
-	    range_check(ind0+k,grid->nptr);
+	    range_check(i,0,nx);
+	    range_check(j,0,ny);
+	    range_check(k,0,nz);
+	    range_check(ind0+k,0,grid->nptr);
 #endif
 	    ptr[ind0+k] += valxy*thz[ithz];
 	  }
@@ -323,7 +312,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,
     if (debug)
       fprintf(debug,"solve_pme: kystart = %d, kyend=%d\n",kystart,kyend);
 #else
-    fatal_error(0,"Parallel PME attempted without MPI and FFTW");
+    gmx_fatal(FARGS,"Parallel PME attempted without MPI and FFTW");
 #endif /* end of parallel case loop */
   }
   else {
@@ -454,9 +443,9 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
       yidx = idxptr[YY];
       zidx = idxptr[ZZ];
 #ifdef DEBUG
-      range_check(xidx,nx);
-      range_check(yidx,ny);
-      range_check(zidx,nz);
+      range_check(xidx,0,nx);
+      range_check(yidx,0,ny);
+      range_check(zidx,0,nz);
 #endif
       
       i0      = ii0+xidx;   /* Pointer arithemtic */
@@ -516,10 +505,10 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
             for(ithz=norder; (ithz<norder1); ithz++,k0++) {
               k     = *k0;
 #ifdef DEBUG
-	      range_check(i,nx);
-	      range_check(j,ny);
-	      range_check(k,nz);
-	      range_check(ind0+k,grid->nptr);
+	      range_check(i,0,nx);
+	      range_check(j,0,ny);
+	      range_check(k,0,nz);
+	      range_check(ind0+k,0,grid->nptr);
 #endif            
               gval  = ptr[ind0+k];
               fxy1 += thz[ithz]*gval;
@@ -683,7 +672,7 @@ void init_pme(FILE *log,t_commrec *cr,
   bool bPar;
 
 #ifdef WITHOUT_FFTW
-  fatal_error(0,"PME used, but GROMACS was compiled without FFTW support!\n");
+  gmx_fatal(FARGS,"PME used, but GROMACS was compiled without FFTW support!\n");
 #endif
   fprintf(log,"Will do PME sum in reciprocal space.\n");
   please_cite(log,"Essman95a");

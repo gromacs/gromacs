@@ -44,7 +44,6 @@
 #include <errno.h>
 #include <ctype.h>
 #include "futil.h"
-#include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -115,8 +114,8 @@ static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
   nrfpB     = interaction_function[F_LJ14].nrfpB;
   pairs->nr = ntp;
   
-  assert(nrfp  == nrfpA);
-  assert(nrfpA == nrfpB);
+  if ((nrfp  != nrfpA) || (nrfpA != nrfpB))
+    gmx_incons("Number of force parameters in gen_pairs wrong");
 
   fprintf(stderr,"Generating 1-4 interactions: fudge = %g\n",fudge);
   if (debug) {
@@ -224,7 +223,7 @@ void preprocess(char *infile,char *outfile,
     printf("Tried to execute: '%s'\n",command); 
     printf("The '%s' command is defined in the .mdp file\n",cpp);
     if (error<0)
-      fatal_error(0,"cpp failed");
+      gmx_fatal(FARGS,"cpp failed");
   }
 }
 
@@ -298,7 +297,7 @@ static char **read_topol(char        *infile,
   
   /* open input and output file */
   if ((in = fopen(infile,"r")) == NULL)
-    fatal_error(0,"Could not open %s",infile);
+    gmx_fatal(FARGS,"Could not open %s",infile);
 
   /* some local variables */
   DS_Init(&DS);			/* directive stack			 */
@@ -319,7 +318,9 @@ static char **read_topol(char        *infile,
   bReadMolType  = FALSE;
   while (fgets2(line,STRLEN-2,in) != NULL) {
     curline++;
-    assert (pline = strdup(line));
+    pline = strdup(line);
+    if (!pline)
+      gmx_fatal(FARGS,"Empty line %d in input",curline);
     
     /* build one long line from several fragments */
     while (continuing(line) && (fgets2(line,STRLEN-1,in) != NULL)) {
@@ -368,7 +369,7 @@ static char **read_topol(char        *infile,
 	  else {
 	    /* we should print here which directives should have
 	       been present, and which actually are */
-	    fatal_error(0,"Invalid order for directive %s, file \"%s\", line %d",dirstr,curfile,curline);
+	    gmx_fatal(FARGS,"Invalid order for directive %s, file \"%s\", line %d",dirstr,curfile,curline);
 	    /* d = d_invalid; */
 	  }
 	}
@@ -388,7 +389,7 @@ static char **read_topol(char        *infile,
 	switch (d) {
 	case d_defaults:
 	  if (bReadDefaults)
-	    fatal_error(0,"Found a second defaults directive, file %s, line %d",curfile,curline);
+	    gmx_fatal(FARGS,"Found a second defaults directive, file %s, line %d",curfile,curline);
 	  bReadDefaults = TRUE;
 	  nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
 			 nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
@@ -528,7 +529,7 @@ static char **read_topol(char        *infile,
 	  Sims[Nsim].nrcopies=nrcopies;
 	  Nsim++;
 	  if (mi0->atoms.nr == 0)
-	    fatal_error(0,"Moleculetype %s contains no atoms",*mi0->name);
+	    gmx_fatal(FARGS,"Moleculetype %s contains no atoms",*mi0->name);
 	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
 		    mi0->nrexcl,pline);
 	  sum_q(&mi0->atoms,nrcopies,&qt,&qBt);

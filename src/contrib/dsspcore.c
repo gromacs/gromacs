@@ -146,7 +146,6 @@
 #include <ctype.h>
 #include <math.h>
 #include <setjmp.h>
-#include <assert.h>
 
 
 #ifdef vms

@@ -128,9 +128,9 @@ int main(int argc,char *argv[])
 		    NPA,pa,asize(desc),desc,0,NULL);
 
   if (ff.npow <= 6.0)
-    fatal_error(0,"Can not have repulsion with smaller exponent than 6");
+    gmx_fatal(FARGS,"Can not have repulsion with smaller exponent than 6");
   if (ff.nmol < 1)
-    fatal_error(0,"Can not fit %d molecules",ff.nmol);
+    gmx_fatal(FARGS,"Can not fit %d molecules",ff.nmol);
     
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 

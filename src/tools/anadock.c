@@ -271,7 +271,7 @@ static void cluster_em_all(FILE *fp,int npdb,t_pdbfile *pdbf[],
   }
   cndx[j] = npdb;
   if (j != ncluster) 
-    fatal_error(0,"Consistency error: j = %d, ncluster = %d",j,ncluster);
+    gmx_fatal(FARGS,"Consistency error: j = %d, ncluster = %d",j,ncluster);
   
   fprintf(fp,"I found %d clusters based on %s and %s with a %.3f nm cut-off\n",
 	  ncluster,etitles[bFree],bRMSD ? "RMSD" : "distance",cutoff);

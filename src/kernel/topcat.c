@@ -41,7 +41,6 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "assert.h"
 #include "macros.h"
 #include "topio.h"
 #include "toputil.h"
@@ -131,7 +130,7 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
     }
   }
   if (l != dest->nr+src->nr*copies)
-    fatal_error(0,"In %s line %d: l = %d, should be %d\n",
+    gmx_fatal(FARGS,"In %s line %d: l = %d, should be %d\n",
 		__FILE__,__LINE__,l,dest->nr+src->nr*copies);
   dest->nr = l;
 }
@@ -249,7 +248,7 @@ void topcat (t_molinfo *dest,int nsrc,t_molinfo src[],int ntab,
   else {
     for(i=0; (i<Nsim); i++) {
       n=Sims[i].whichmol;
-      assert((0<=n) && (n<nsrc));
+      range_check(n,0,nsrc);
       top1_cat(dest,&(src[n]),Sims[i].nrcopies,bEnsemble);
     }
   }
@@ -356,7 +355,8 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nnodes,int *ntab,
   for(j=0; (j<nnodes); j++)
     for(k=0; (k<nmol); k++)
       for(i=0; (i<bucket[j][k]); i++) {
-	assert(*ntab < nm);
+	if (*ntab >= nm)
+	  gmx_incons("Shuffle table not large enough");
 	tab[(*ntab)++] = k;
       }
   return tab;

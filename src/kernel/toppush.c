@@ -42,7 +42,6 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "assert.h"
 #include "string2.h"
 #include "names.h"
 #include "toputil.h"
@@ -107,9 +106,10 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
       
       break;
     default:
-      fatal_error(0,"No such combination rule %d",comb);
+      gmx_fatal(FARGS,"No such combination rule %d",comb);
     }
-    assert(plist->nr == k);
+    if (plist->nr != k)
+      gmx_incons("Topology processing, generate nb parameters");
     break;
     
   case F_BHAM:
@@ -226,23 +226,23 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
     break;
 
   default:
-    fatal_error(0,"Invalid function type %d in push_at %s %d",nb_funct,
+    gmx_fatal(FARGS,"Invalid function type %d in push_at %s %d",nb_funct,
 		__FILE__,__LINE__);
   }
   for(j=nfp0; (j<MAXFORCEPARAM); j++)
     c[j]=0.0;
   
   if(strlen(type)==1 && isdigit(type[0])) 
-     fatal_error(0,"Atom type names can't be single digits.");
+     gmx_fatal(FARGS,"Atom type names can't be single digits.");
 
   if(strlen(btype)==1 && isdigit(btype[0])) 
-     fatal_error(0,"Bond atom type names can't be single digits.");
+     gmx_fatal(FARGS,"Bond atom type names can't be single digits.");
 
   for(j=0; (j<eptNR); j++)
     if (strcasecmp(ptype,xl[j].entry) == 0)
       break;
   if (j == eptNR)
-    fatal_error(0,"Invalid particle type %s on line %s",
+    gmx_fatal(FARGS,"Invalid particle type %s on line %s",
 		ptype,line);
   pt=xl[j].ptype;
   if (debug)
@@ -568,7 +568,7 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
     }
   }
   else {
-    fatal_error(0,"Number of force parameters for nonbonded interactions is %d"
+    gmx_fatal(FARGS,"Number of force parameters for nonbonded interactions is %d"
 		" in file %s, line %d",nrfp,__FILE__,__LINE__);
   }
   for(i=0; (i<nrfp); i++)
@@ -607,12 +607,12 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   int nr = at->nr;
 
   if (((nr==0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))
-    fatal_error(0,"Atoms in the .top are not numbered consecutively from 1\n");
+    gmx_fatal(FARGS,"Atoms in the .top are not numbered consecutively from 1\n");
   if (nr)
     resnr_diff = resnumber - (at->atom[at->nr-1].resnr+1);
   if (((nr==0) && (resnumber != 1)) || 
       (nr && (resnr_diff != 0) && (resnr_diff != 1))) 
-    fatal_error(0,"Residue numbers in the .top are not numbered consecutively from 1\n");
+    gmx_fatal(FARGS,"Residue numbers in the .top are not numbered consecutively from 1\n");
   
   /* New atom instance
    * get new space for arrays 
@@ -782,7 +782,9 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   
   if (bFound) {
     if (bB) {
-      assert(nrfp+nrfpB <= MAXFORCEPARAM);
+      if (nrfp+nrfpB > MAXFORCEPARAM) {
+	gmx_incons("Too many force parameters");
+      }
       for (j=0; (j < nrfpB); j++)
 	p->c[nrfp+j] = pi->c[j];
     }
@@ -850,7 +852,8 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
   }
   if (bFound) {
     if (bB) {
-      assert(nrfp+nrfpB <= MAXFORCEPARAM);
+      if (nrfp+nrfpB > MAXFORCEPARAM)
+	gmx_incons("Too many force parameters");
       for (j=0; (j < nrfpB); j++)
 	p->c[nrfp+j] = pi->c[j];
     }
@@ -945,7 +948,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       case F_DUMMY3OUT:
 	break;
       default:
-	fatal_error(0,"Negative function types only allowed for %s and %s",
+	gmx_fatal(FARGS,"Negative function types only allowed for %s and %s",
 		    interaction_function[F_DUMMY3FAD].longname,
 		    interaction_function[F_DUMMY3OUT].longname);
       }
@@ -954,7 +957,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Check for double atoms and atoms out of bounds */
   for(i=0; (i<nral); i++) {
     if ( aa[i] < 1 || aa[i] > at->nr )
-      fatal_error(0,"[ file %s, line %d ]:\n"
+      gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		  "             Atom index (%d) in %s out of bounds (1-%d)",
 		  get_warning_file(),get_warning_line(),
 		  aa[i],dir2str(d),at->nr);
@@ -966,7 +969,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   }
   if (ftype == F_SETTLE)
     if (aa[0]+2 > at->nr)
-      fatal_error(0,"[ file %s, line %d ]:\n"
+      gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		  "             Atom index (%d) in %s out of bounds (1-%d)\n"
 		  "             Settle works on atoms %d, %d and %d",
 		  get_warning_file(),get_warning_line(),
@@ -1061,7 +1064,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   }
 
   if (ftype==F_PDIHS && param.c[2]!=param.c[5])
-    fatal_error(0,"[ file %s, line %d ]:\n"
+    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
 		get_warning_file(),get_warning_line(),
 		interaction_function[ftype].longname,
@@ -1105,7 +1108,7 @@ void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
     *nrcopies        = copies;
     *whichmol        = i;
   } else
-    fatal_error(0,"No such moleculetype %s",type);
+    gmx_fatal(FARGS,"No such moleculetype %s",type);
 }
 
 void init_block2(t_block2 *b2, int natom)
@@ -1164,7 +1167,7 @@ void push_excl(char *line, t_block2 *b2)
 	strcat(base,"%*d");
       }
       else 
-	fatal_error(0,"Invalid Atomnr j: %d, b2->nr: %d\n",j,b2->nr);
+	gmx_fatal(FARGS,"Invalid Atomnr j: %d, b2->nr: %d\n",j,b2->nr);
     }
   } while (n == 1);
 }
@@ -1212,7 +1215,7 @@ void merge_excl(t_block *excl, t_block2 *b2)
   if (!b2->nr)
     return;
   else if (b2->nr != excl->nr) {
-    fatal_error(0,"DEATH HORROR: b2->nr = %d, while excl->nr = %d",
+    gmx_fatal(FARGS,"DEATH HORROR: b2->nr = %d, while excl->nr = %d",
 		b2->nr,excl->nr);
   }
   else if (debug)

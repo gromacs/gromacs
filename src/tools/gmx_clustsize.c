@@ -39,7 +39,6 @@
 
 #include <math.h>
 #include <ctype.h>
-#include <assert.h>
 
 #include "string2.h"
 #include "sysstuff.h"
@@ -105,7 +104,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   if (bMol) {
     read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
     if (tpxh.natoms != natoms) 
-      fatal_error(0,"tpr and xtc do not match!");
+      gmx_fatal(FARGS,"tpr and xtc do not match!");
     
     read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
     mols = &(top.blocks[ebMOLS]);
@@ -180,7 +179,9 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	       */
 	      for(k=0; (k<nindex); k++) {
 		if ((clust_index[k] == cj)) {
-		  assert(clust_size[cj] > 0);
+		  if (clust_size[cj] <= 0)
+		    gmx_fatal(FARGS,"negative cluster size %d for element %d",
+				clust_size[cj],cj);
 		  clust_size[cj]--;
 		  clust_index[k] = ci;
 		  clust_size[ci]++;

@@ -397,7 +397,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
        we're finished, if not we do another iteration */
   }
   if (n > max_iter)
-    fatal_error(0,"Too many iterations for constraint run");
+    gmx_fatal(FARGS,"Too many iterations for constraint run");
 
   /* DONE ITERATING, NOW UPDATE COORDINATES AND CALC. CONSTRAINT FORCES */
 
@@ -575,7 +575,7 @@ void pull(t_pull *pull,rvec *x,rvec *f,matrix box, t_topology *top,
     break;
 
   default:
-    fatal_error(0,"undetermined runtype");
+    gmx_fatal(FARGS,"undetermined runtype");
   }
 
   sfree(x_s);

@@ -42,7 +42,6 @@
 #include "sysstuff.h"
 #include "physics.h"
 #include "vec.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "fatal.h"
@@ -172,7 +171,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
     break;
   case F_ORIRES:
     if (old[0] < 0)
-      fatal_error(0,"Found experiment number for orientation restraints which is smaller than 1 (%d)",old[0]);
+      gmx_fatal(FARGS,"Found experiment number for orientation restraints which is smaller than 1 (%d)",old[0]);
     new->orires.ex    = old[0] - 1;
     new->orires.label = old[1];
     new->orires.power = old[2];
@@ -243,7 +242,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->dummy.f=old[5];
     break;
   default:
-    fatal_error(0,"unknown function type %d in %s line %d",
+    gmx_fatal(FARGS,"unknown function type %d in %s line %d",
 		ftype,__FILE__,__LINE__);
   }
 }

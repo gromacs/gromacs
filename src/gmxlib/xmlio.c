@@ -47,7 +47,6 @@
 #include "futil.h"
 #include "smalloc.h"
 #include "names.h"
-#include "assert.h"
 #include "symtab.h"
 #include "macros.h"
 #include "symtab.h"
@@ -137,7 +136,7 @@ static int find_elem(char *name,int nr,const char *names[])
     if (strcmp(name,names[i]) == 0) 
       break;
   if (i == nr)
-    fatal_error(0,"Unknown element name %s",name);
+    gmx_fatal(FARGS,"Unknown element name %s",name);
     
   return i;
 }
@@ -255,10 +254,11 @@ void read_xml(char *fn,int *step,real *t,real *lambda,
   t_xmlrec   *xml;
   
   xmlDoValidityCheckingDefaultValue = 1;
-  assert(asize(exml_names) == exmlNR);
+  if (asize(exml_names) != exmlNR)
+    gmx_incons("read xml file");
   if ((doc = xmlParseFile(fn)) == NULL)
-    fatal_error(0,"Reading XML file %s. Run a syntax checker such as nsgmls.",
-		fn);
+    gmx_fatal(FARGS,"Reading XML file %s. Run a syntax checker such as nsgmls.",
+	      fn);
 
   snew(xml,1);
   xml->ir     = ir;
@@ -275,7 +275,7 @@ static void add_xml_int(xmlNodePtr ptr,const char *name,int val)
   char buf[32];
   sprintf(buf,"%d",val);
   if (xmlSetProp(ptr,name,buf) == 0)
-    fatal_error(0,"Setting %s %d",name,val);
+    gmx_fatal(FARGS,"Setting %s %d",name,val);
 }
 
 static void add_xml_real(xmlNodePtr ptr,const char *name,real val)
@@ -283,7 +283,7 @@ static void add_xml_real(xmlNodePtr ptr,const char *name,real val)
   char buf[32];
   sprintf(buf,"%g",val);
   if (xmlSetProp(ptr,name,buf) == 0)
-    fatal_error(0,"Setting %s %f",name,val);
+    gmx_fatal(FARGS,"Setting %s %f",name,val);
 }
 
 static void add_xml_rvec(xmlNodePtr parent,int id,rvec val)
@@ -293,12 +293,12 @@ static void add_xml_rvec(xmlNodePtr parent,int id,rvec val)
   char buf[32];
 
   if ((rvptr = xmlNewChild(parent,NULL,"rvec",NULL)) == NULL)
-    fatal_error(0,"Creating rvec element");
+    gmx_mem("Creating rvec element");
   add_xml_int(rvptr,"id",id);
   for(m=0; (m<DIM); m++) {
     sprintf(buf,"%g",val[m]);
     if (xmlSetProp(rvptr,xyz_names[m],buf) == 0)
-      fatal_error(0,"Setting %s %f",xyz_names[m],val[m]);
+      gmx_fatal(FARGS,"Setting %s %f",xyz_names[m],val[m]);
   }
 }
 
@@ -308,7 +308,7 @@ static void add_xml_tensor(xmlNodePtr parent,tensor val)
   int  m,n;
 
   if ((tptr = xmlNewChild(parent,NULL,"tensor",NULL)) == NULL)
-    fatal_error(0,"Creating tensor element");
+    gmx_mem("Creating tensor element");
     
   for(m=0; (m<DIM); m++)
     add_xml_real(tptr,tensor_names[m*DIM+m],val[m][m]);
@@ -325,7 +325,7 @@ static void add_xml_tensor(xmlNodePtr parent,tensor val)
 static void add_xml_char(xmlNodePtr ptr,const char *name,const char *val)
 {
   if (xmlSetProp(ptr,name,val) == 0)
-    fatal_error(0,"Setting %s %s",name,val);
+    gmx_fatal(FARGS,"Setting %s %s",name,val);
 }
 
 static xmlNodePtr add_xml_child(xmlNodePtr parent,int type)
@@ -333,7 +333,7 @@ static xmlNodePtr add_xml_child(xmlNodePtr parent,int type)
   xmlNodePtr child;
   
   if ((child = xmlNewChild(parent,NULL,exml_names[type],NULL)) == NULL)
-    fatal_error(0,"Creating %s element",exml_names[type]);
+    gmx_fatal(FARGS,"Creating %s element",exml_names[type]);
     
   return child;
 }
@@ -344,7 +344,7 @@ static xmlNodePtr add_xml_comment(xmlDocPtr doc,
   xmlNodePtr comm,ptr;
   
   if ((comm = xmlNewComment((xmlChar *)comment)) == NULL)
-    fatal_error(0,"Creating doc comment element");
+    gmx_mem("Creating doc comment element");
   ptr = prev;
   while (ptr->next != NULL)
     ptr=ptr->next;
@@ -380,7 +380,8 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   tcptr = add_xml_child(irptr,exmlTCOUPLING);
   add_xml_char(tcptr,"algorithm",etcoupl_names[ir->etc]);
   
-  assert(ir->opts.ngtc == atoms->grps[egcTC].nr);
+  if (ir->opts.ngtc != atoms->grps[egcTC].nr)
+    gmx_incons("Inconsistency in number of temperature coupling groups");
   for(i=0; (i<ir->opts.ngtc); i++) {
     tcparm = add_xml_child(tcptr,exmlTCPARM);
     add_xml_char(tcparm,"groupname",*atoms->grpname[atoms->grps[egcTC].nm_ind[i]]);
@@ -498,13 +499,13 @@ void write_xml(char *fn,char *title,t_inputrec *ir,rvec *box,
   libdtdname = libfn(dtdname);
   
   if ((doc = xmlNewDoc("1.0")) == NULL)
-    fatal_error(0,"Creating XML document");
+    gmx_mem("Creating XML document");
     
   if ((dtd = xmlCreateIntSubset(doc,"gromacs",libdtdname,dtdname)) == NULL)
-    fatal_error(0,"Creating XML DTD");
+    gmx_mem("Creating XML DTD");
     
   if ((myroot = xmlNewDocNode(doc,NULL,"gromacs",NULL)) == NULL)
-    fatal_error(0,"Creating root element");
+    gmx_mem("Creating root element");
   dtd->next = myroot;
   myroot->prev = (xmlNodePtr) dtd;
     
@@ -554,7 +555,7 @@ void write_xml(char *fn,char *title,t_inputrec *ir,rvec *box,
   xmlSetDocCompressMode(doc,0);
   xmlIndentTreeOutput = 1;
   if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
-    fatal_error(0,"Saving file %s",fn);
+    gmx_fatal(FARGS,"Saving file %s",fn);
   xmlFreeDoc(doc);
 }
 

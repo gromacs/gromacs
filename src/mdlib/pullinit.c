@@ -114,11 +114,11 @@ static void read_whole_index(char *indexfile,char ***grpnames,
   int i,j;
 
   if(!indexfile)
-    fatal_error(0,"No index file specified");
+    gmx_fatal(FARGS,"No index file specified");
 
   grps = init_index(indexfile,&gnames);
   if(grps->nr==0)
-    fatal_error(0,"No groups in indexfile\n");
+    gmx_fatal(FARGS,"No groups in indexfile\n");
 
   *totalgrps = grps->nr;
   snew(*index,grps->nr);
@@ -226,10 +226,10 @@ static void get_pull_index(FILE *log,t_pullgrp *pgrp,
   }
 
   if(!bFound)
-    fatal_error(0,"Can't find group %s in the index file",pgrp->name);
+    gmx_fatal(FARGS,"Can't find group %s in the index file",pgrp->name);
 
   if (pgrp->nweight > 0 && pgrp->nweight != pgrp->ngx)
-    fatal_error(0,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->ngx);
+    gmx_fatal(FARGS,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->ngx);
 }
 void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
                t_mdatoms *md,ivec nFreeze[],matrix box,
@@ -251,7 +251,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
 
   if (cr->nnodes > 1 && pull->runtype == eConstraint)
-    fatal_error(0,"Can not do constraint force calculation in parallel!\n");
+    gmx_fatal(FARGS,"Can not do constraint force calculation in parallel!\n");
 
   /* Only do I/O if we are the MASTER */
   if (MASTER(cr)) {
@@ -268,7 +268,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
     pull->bCyl = FALSE;
 
   if(pull->bCyl && (pull->rc < 0.01 || pull->r < 0.01))
-    fatal_error(0,"rc or r is too small or zero.");
+    gmx_fatal(FARGS,"rc or r is too small or zero.");
 
   if(MASTER(cr)) {
     print_info(log,pull);
@@ -350,7 +350,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   /* if we use dynamic reference groups, do some initialising for them */
   if(pull->bCyl) {
     if (pull->AbsoluteRef)
-      fatal_error(0, "Dynamic reference groups are not support when using absolute reference!\n");
+      gmx_fatal(FARGS, "Dynamic reference groups are not support when using absolute reference!\n");
 
     snew(pull->dyna,pull->ngrp);
     for(i=0;i<pull->ngrp;i++) {

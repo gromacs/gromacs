@@ -44,7 +44,6 @@
 #include "macros.h"
 #include "string2.h"
 #include "futil.h"
-#include "assert.h"
 #include "fatal.h"
 
 static int calc_nftype(int FTYPE,t_idef *idef)
@@ -88,7 +87,7 @@ static void fill_ft_ind(int FTYPE,int ft_ind[],t_idef *idef,char *grpnames[])
 	sprintf(buf,"RB-Dihs");
 	break;
       default:
-	fatal_error(0,"kjdshfgkajhgajytgajtgasuyf");
+	gmx_fatal(FARGS,"kjdshfgkajhgajytgajtgasuyf");
       }
       grpnames[ind]=strdup(buf);
       ind++;
@@ -108,7 +107,8 @@ static void fill_ang(int FTYPE,int fac,
   for(i=0; (i<idef->il[FTYPE].nr); ) {
     ft  = idef->functype[ia[0]];
     fft = ft_ind[ia[0]];
-    assert(fft != -1);
+    if (fft == -1)
+      gmx_incons("Routine fill_ang");
     nr_fac=fac*nr[fft];
     for(j=0; (j<fac); j++)
       index[fft][nr_fac+j]=ia[j+1];

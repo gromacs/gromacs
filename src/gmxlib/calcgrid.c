@@ -85,7 +85,7 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
   real max_spacing;
   
   if (gr_sp <= 0)
-    fatal_error(0,"invalid fourier grid spacing: %g",gr_sp);
+    gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
   
   for(d=0; d<DIM; d++)
     box_size[d] = box[d][d];
@@ -119,7 +119,7 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
   
   if (((*nx>0) && (*nx != nnodes*(*nx/nnodes))) ||
       ((*ny>0) && (*ny != nnodes*(*ny/nnodes))))
-    fatal_error(0,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of nodes (%d)",*nx,*ny,nnodes);
+    gmx_fatal(FARGS,"the x or y grid spacing (nx %d, ny %d) is not divisible by the number of nodes (%d)",*nx,*ny,nnodes);
   
   for(d=0; d<DIM; d++) {
     for(i=0; (i<n_list) && (n[d]<=0); i++)
@@ -127,7 +127,7 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
 	  ((d == ZZ) || (list[i] == nnodes*(list[i]/nnodes))))
 	n[d] = list[i];
     if (n[d] <= 0)
-      fatal_error(0 ,"could not find a grid spacing with nx and ny divisible by the number of nodes (%d)",nnodes);
+      gmx_fatal(FARGS ,"could not find a grid spacing with nx and ny divisible by the number of nodes (%d)",nnodes);
   }
   
   max_spacing = 0;

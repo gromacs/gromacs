@@ -306,7 +306,7 @@ int gmx_rms (int argc,char *argv[])
   
   if (bReset) {
     if (bFit && ifit<3) 
-      fatal_error(0,"Need >= 3 points to fit!\n");
+      gmx_fatal(FARGS,"Need >= 3 points to fit!\n");
     
     bMass = FALSE;
     for(i=0; i<ifit; i++) {
@@ -451,7 +451,7 @@ int gmx_rms (int argc,char *argv[])
       }
     fprintf(stderr,"Using %d bonds for bond angle matrix\n",ibond);
     if (ibond==0)
-      fatal_error(0,"0 bonds found");
+      gmx_fatal(FARGS,"0 bonds found");
   }
   
   /* start looping over frames: */
@@ -534,7 +534,7 @@ int gmx_rms (int argc,char *argv[])
     snew(mat_x2,NFRAME);
     natoms2=read_first_x(&status,opt2fn("-f2",NFILE,fnm),&t,&x,box);
     if ( natoms2 != natoms )
-      fatal_error(0,"Second trajectory (%d atoms) does not match the first one"
+      gmx_fatal(FARGS,"Second trajectory (%d atoms) does not match the first one"
 		  " (%d atoms)", natoms2, natoms);
     tel_mat2 = 0;
     teller2 = 0;

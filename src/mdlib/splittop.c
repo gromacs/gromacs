@@ -146,7 +146,7 @@ bool setup_parallel_dummies(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	    while(inr>=(nsb->index[ihome]+nsb->homenr[ihome]))
 	      ihome++;
 	    if( ihome>(cr->nodeid+1))
-	      fatal_error(0,"Dummy particle %d and its constructing"
+	      gmx_fatal(FARGS,"Dummy particle %d and its constructing"
 			  " atoms are not on the same or adjacent\n" 
 			  " nodes. This is necessary to avoid a lot\n"
 			  " of extra communication. The easiest way"
@@ -223,7 +223,7 @@ static void split_ilist(FILE *log,t_ilist *il,t_commrec *cr)
   
   nr=end-start;
   if (nr < 0)
-    fatal_error(0,"Negative number of atoms (%d) on node %d\n"
+    gmx_fatal(FARGS,"Negative number of atoms (%d) on node %d\n"
 		"You have probably not used the same value for -np with grompp"
 		" and mdrun",
 		nr,cr->nodeid);

@@ -521,7 +521,7 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
     if (fr->vdwtype == evdwSWITCH || fr->vdwtype == evdwSHIFT
 	|| fr->vdwtype == evdwUSER) {
       if (fr->rvdw_switch == 0)
-	fatal_error(0,"With dispersion correction rvdw-switch can not be zero "
+	gmx_fatal(FARGS,"With dispersion correction rvdw-switch can not be zero "
 		    "for vdw-type = %s",evdw_names[fr->vdwtype]);
 
       /* Round the cut-offs to exact table values for precision */
@@ -616,7 +616,7 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       virs[0]  +=  8.0*M_PI/rc3;
       virs[1]  += -16.0*M_PI/(3.0*rc9);
     } else {
-      fatal_error(0,
+      gmx_fatal(FARGS,
 		  "Dispersion correction is not implemented for vdw-type = %s",
 		  evdw_names[fr->vdwtype]);
     }

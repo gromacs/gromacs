@@ -41,7 +41,6 @@
 #include "typedefs.h"
 #include "string2.h"
 #include "mdebin.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "physics.h"
 #include "enxio.h"
@@ -256,7 +255,8 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       sfree(gnm[k]);
     sfree(gnm);
     
-    assert(n==md->nE);
+    if (n != md->nE)
+      gmx_incons("Number of energy terms wrong");
   }
   
   md->nTC=atoms->grps[egcTC].nr;
@@ -317,7 +317,8 @@ static void copy_energy(real e[],real ecpy[])
   for(i=j=0; (i<F_NRE); i++)
     if (bEner[i])
       ecpy[j++] = e[i];
-  assert(j == f_nre);
+  if (j != f_nre) 
+    gmx_incons("Number of energy terms wrong");
 }
 
 void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
@@ -533,7 +534,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
     if (log) pprint(log,"R M S - F L U C T U A T I O N S");
     break;
   default:
-    fatal_error(0,"Invalid print mode (%d)",mode);
+    gmx_fatal(FARGS,"Invalid print mode (%d)",mode);
   }
   
   if (log) {

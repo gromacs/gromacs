@@ -39,9 +39,9 @@
 
 #include <stdlib.h>
 #include <ctype.h>
-#include "assert.h"
 #include "macros.h"
 #include "vec.h"
+#include "fatal.h"
 #include "txtdump.h"
 #include "cdist.h"
 #include "invblock.h"
@@ -51,7 +51,7 @@
 
 #define NINDEX(ai,aj,natom) (natom*(ai)-((ai)*(ai+1))/2+(aj)-(ai))
 #define INDEX(ai,aj,natom) ((ai) < (aj))?NINDEX((ai),(aj),natom):NINDEX(aj,ai,natom) 
-#define CHECK(ai,natom)    if (((ai)<0) || ((ai)>=natom)) fatal_error(0,"Invalid atom number %d",ai+1)
+#define CHECK(ai,natom)    if (((ai)<0) || ((ai)>=natom)) gmx_fatal(FARGS,"Invalid atom number %d",ai+1)
 
 static real vdwlen(t_atoms *atoms,int i,int j)
 {
@@ -174,7 +174,7 @@ static t_dist *read_dist(FILE *log,char *fn,int natom,real weight[])
     if (buf[0] != '#') {
       if (sscanf(buf,"%d%d%lf%lf%lf",&ai,&aj,&len,&lb,&ub) != 5)
 	if (sscanf(buf,"%d%d%lf%lf",&ai,&aj,&lb,&ub) != 4)
-	  fatal_error(0,"Invalid dist format in %s",fn);
+	  gmx_fatal(FARGS,"Invalid dist format in %s",fn);
       ai--;
       aj--;
       if ((weight[ai] != 0) || (weight[aj] != 0)) {
@@ -286,11 +286,11 @@ static void measure_dist(FILE *log,t_dist *d,t_atoms *atoms,rvec x[],
   for(i=0; (i<nhb); i+= 3) {
     /* Acceptor atom */
     aa = hb[i+2];
-    assert(aa < natom);
+    range_check(aa,0,natom);
     for(j=0; (j<2); j++) {
       /* Donor atom */
       dd      = hb[i+j];
-      assert(dd < natom);
+      range_check(dd,0,natom);
       if (dist_set(d,natom,dd,aa)) {
 	lb      = d_lb(d,natom,dd,aa);
 	ub      = d_ub(d,natom,dd,aa);
@@ -302,7 +302,7 @@ static void measure_dist(FILE *log,t_dist *d,t_atoms *atoms,rvec x[],
 	}
       }
       else
-	fatal_error(0,"Distance between %s and %s not set, while they do make"
+	gmx_fatal(FARGS,"Distance between %s and %s not set, while they do make"
 		    " a hbond:\nincrease radius for measuring (now %f A)\n",
 		    atomname(atoms,aa),atomname(atoms,dd),cutoff);
     }
@@ -359,7 +359,7 @@ static real *read_weights(char *fn,int natom)
   /* Check the number of atoms */
   get_pdb_coordnum(in,&n);
   if (n != natom)
-    fatal_error(0,"Number of atoms in pdb file (%d) does not match tpx (%d)",
+    gmx_fatal(FARGS,"Number of atoms in pdb file (%d) does not match tpx (%d)",
 		n,natom);
   
   /* Allocate space */
@@ -896,7 +896,7 @@ int main(int argc,char *argv[])
     snew(top,1);
     topfn = ftp2fn(efTPS,NFILE,fnm);
     if (!read_tps_conf(topfn,title,top,&x,NULL,box,FALSE))
-      fatal_error(0,"No topology in %s",topfn);
+      gmx_fatal(FARGS,"No topology in %s",topfn);
     fprintf(stderr,"Successfully read %s (%s)\n",topfn,title);
     
     if (!opt2parg_bSet("-maxdist",asize(pa),pa))
@@ -987,7 +987,7 @@ int main(int argc,char *argv[])
       do_smooth(dist,&top->atoms,tol);
     }
     else
-      fatal_error(0,"Uh-oh, smth_str = %s, %s, line %d",
+      gmx_fatal(FARGS,"Uh-oh, smth_str = %s, %s, line %d",
 		  smth_str[0],__FILE__,__LINE__);
     
     dump_dist(opt2fn("-o",NFILE,fnm),dist,top->atoms.nr,bAddR);

@@ -167,7 +167,7 @@ static int vphi(t_dih *dih,real phi,int mult)
     vpp=find_min(phiref,6,m6);
     break;
   default:
-    fatal_error(0,"No such multiplicity %d",dih->mult);
+    gmx_fatal(FARGS,"No such multiplicity %d",dih->mult);
   }
 
   if (vpp == -1)

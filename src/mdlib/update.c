@@ -41,7 +41,6 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -774,7 +773,7 @@ void update(int          natoms,  /* number of atoms in simulation */
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand);
     else
-      fatal_error(0,"Don't know how to update coordinates");
+      gmx_fatal(FARGS,"Don't know how to update coordinates");
 
     where();
     inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE,homenr);

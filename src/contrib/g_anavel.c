@@ -131,7 +131,7 @@ int main(int argc,char *argv[])
 	xnorm = sqrt(sqr(fr.x[i][XX]-hboxx) + sqr(fr.x[i][YY]-hboxy));
 	break;
       default:
-	fatal_error(0,"Unknown mode %d",mode);
+	gmx_fatal(FARGS,"Unknown mode %d",mode);
       }
       index = xnorm*scale;
       if (index <= nmax) {

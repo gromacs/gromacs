@@ -88,7 +88,7 @@ bool get_header(char line[],char *header)
   dum[0]=' ';
   dum=strchr(temp,']');
   if (dum==NULL) {
-    fatal_error(0,"header is not terminated on line:\n'%s'\n",line); 
+    gmx_fatal(FARGS,"header is not terminated on line:\n'%s'\n",line); 
     return FALSE;
   }
   dum[0]='\0';

@@ -275,7 +275,7 @@ real lookup_bondlength_(int ai,int aj,t_ilist ilist[],
   }
   if (blen == NOBOND) {
     if (bFail)
-      fatal_error(0,"No bond between atoms %d and %d (called from %s line %d)\n",
+      gmx_fatal(FARGS,"No bond between atoms %d and %d (called from %s line %d)\n",
 		  ai,aj,file,line);
     else
       return NOBOND;
@@ -314,7 +314,7 @@ real lookup_angle_(int ai,int aj,int ak,t_ilist ilist[],
 	else if (ftype == F_G96ANGLES)
 	  angle = acos(iparams[type].harmonic.rA);
 	else
-	  fatal_error(0,"Unknown angletype %s in %s, line %d",
+	  gmx_fatal(FARGS,"Unknown angletype %s in %s, line %d",
 		      interaction_function[ftype].longname,__FILE__,__LINE__);
       }
     }
@@ -358,13 +358,13 @@ real angle_length_(int ai,int aj,int ak,real theta,
         for(j=i; ((j<atoms->nr) && (atoms->atom[j].resnr == resnr)); j++) {
           if (strcmp(bdef[k].ai,*atoms->atomname[j]) == 0)
             if (ai != -1)
-              fatal_error(0,"Atom %s multiply defined in res %s %d",
+              gmx_fatal(FARGS,"Atom %s multiply defined in res %s %d",
                           bdef[k].ai,res,resnr);
             else
               ai = j;
           if (strcmp(bdef[k].aj,*atoms->atomname[j]) == 0)
             if (aj != -1)
-              fatal_error(0,"Atom %s multiply defined in res %s %d",
+              gmx_fatal(FARGS,"Atom %s multiply defined in res %s %d",
                           bdef[k].aj,res,resnr);
             else
               aj = j;

@@ -160,11 +160,11 @@ t_genalg *init_ga(char *infile,int D,t_range range[])
     
   /*-----Checking input variables for proper range--------------*/
   if ((ga->CR < 0) || (ga->CR > 1.0)) 
-    fatal_error(0,"CR=%f, should be ex [0,1]",ga->CR);
+    gmx_fatal(FARGS,"CR=%f, should be ex [0,1]",ga->CR);
   if (ga->seed <= 0) 
-    fatal_error(0,"seed=%d, should be > 0",ga->seed);
+    gmx_fatal(FARGS,"seed=%d, should be > 0",ga->seed);
   if ((ga->strategy < 0) || (ga->strategy > 10)) 
-    fatal_error(0,"strategy=%d, should be ex {1-10}",ga->strategy);
+    gmx_fatal(FARGS,"strategy=%d, should be ex {1-10}",ga->strategy);
 
   /* spread initial population members */
   for (i=0; (i<ga->NP); i++) {
@@ -473,7 +473,7 @@ bool print_ga(FILE *fp,t_genalg *ga,real msf,tensor pres,rvec scale,
       pr_rvec(fp,0,"best ",&(ga->best[ga->D-3]),DIM,TRUE);
       fprintf(fp,"imin = %d, ipop = %d, nfeval = %d\n",ga->imin,
 	      ga->ipop,nfeval);
-      fatal_error(0,"Scale inconsistency");
+      gmx_fatal(FARGS,"Scale inconsistency");
     }
   }
 #endif	

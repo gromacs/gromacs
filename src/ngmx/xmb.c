@@ -95,7 +95,7 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, char *title,
   if (Flags & MB_ICONEXCLAMATION) nicon++;
   if (Flags & MB_ICONGMX) nicon++;
   if (nicon > 1) 
-    fatal_error(0,"More than one (%d) icon selected in MessageBox",nicon);
+    gmx_fatal(FARGS,"More than one (%d) icon selected in MessageBox",nicon);
   /* Input seems ok */
   bg=x11->bg;
   if (nicon > 0) {

@@ -267,6 +267,6 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[])
     break;
   }
   default:
-    fatal_error(0,"Invalid argument (%d) for nht in routine genh\n",nht);
+    gmx_fatal(FARGS,"Invalid argument (%d) for nht in routine genh\n",nht);
   } /* end switch */
 }

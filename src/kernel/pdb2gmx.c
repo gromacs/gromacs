@@ -39,7 +39,6 @@
 
 #include <time.h>
 #include <ctype.h>
-#include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -80,7 +79,7 @@ static const char *select_res(int nr,int resnr,const char *name[],const char *ex
   printf("\nType a number:"); fflush(stdout);
 
   if (scanf("%d",&sel) != 1)
-    fatal_error(0,"Answer me for res %s %d!",title,resnr+1);
+    gmx_fatal(FARGS,"Answer me for res %s %d!",title,resnr+1);
   
   return name[sel];
 }
@@ -366,7 +365,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
     atomnm=*pdba->atomname[i];
     resnm=*pdba->resname[pdba->atom[i].resnr];
     if ((rptr=search_rtp(resnm,nrtp,restp)) == NULL)
-      fatal_error(0,"Residue type %s not found",resnm);
+      gmx_fatal(FARGS,"Residue type %s not found",resnm);
     for(j=0; (j<rptr->natom); j++)
       if (strcasecmp(atomnm,*(rptr->atomname[j])) == 0)
 	break;
@@ -386,7 +385,7 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 		"protonation state.\n"
 		"             Option -ignh will ignore all hydrogens "
 		"in the input." : "");
-	fatal_error(0,buf);
+	gmx_fatal(FARGS,buf);
       }
     }
     /* make shadow array to be sorted into indexgroup */
@@ -756,7 +755,7 @@ int main(int argc, char *argv[])
     bDummyAromatics=TRUE;
     break;
   default:
-    fatal_error(0,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
+    gmx_fatal(FARGS,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
 		__FILE__,__LINE__,dumstr[0]);
   }/* end switch */
   
@@ -786,7 +785,7 @@ int main(int argc, char *argv[])
 		      &pdba_all,&pdbx,box,bRemoveH,&symtab,aan,watres);
   
   if (natom==0)
-    fatal_error(0,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
+    gmx_fatal(FARGS,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
 
   printf("Analyzing pdb file\n");
   nch=0;
@@ -823,7 +822,7 @@ int main(int argc, char *argv[])
 	for (j=0; (j<nch); j++)
 	  if ((pdb_ch[j].chain != '\0') && (pdb_ch[j].chain != ' ') &&
 	      (pdb_ch[j].chain == pdba_all.atom[i].chain))
-	    fatal_error(0,"Chain identifier '%c' was used "
+	    gmx_fatal(FARGS,"Chain identifier '%c' was used "
 			"in two non-sequential blocks (residue %d, atom %d)",
 			pdba_all.atom[i].chain,pdba_all.atom[i].resnr+1,i+1);
 	if (nch == maxch) {
@@ -1030,7 +1029,7 @@ int main(int argc, char *argv[])
 	strncpy(resname,*pdba->resname[cc->rN[i]],3);
 	tdblist=filter_ter(nNtdb,ntdb,resname,&ntdblist);
 	if(ntdblist==0)
-	  fatal_error(0,"No suitable N-terminus found in database");
+	  gmx_fatal(FARGS,"No suitable N-terminus found in database");
 
 	if(bTerMan && ntdblist>1)
 	  cc->ntdb[i] = choose_ter(ntdblist,tdblist,"Select N-terminus type (start)");
@@ -1043,7 +1042,7 @@ int main(int argc, char *argv[])
 	strncpy(resname,*pdba->resname[cc->rC[i]],3);
 	tdblist=filter_ter(nCtdb,ctdb,resname,&ntdblist);
 	if(ntdblist==0)
-	  fatal_error(0,"No suitable C-terminus found in database");
+	  gmx_fatal(FARGS,"No suitable C-terminus found in database");
 	
 	if(bTerMan && ntdblist>1)
 	  cc->ctdb[i] = choose_ter(ntdblist,tdblist,"Select C-terminus type (end)");

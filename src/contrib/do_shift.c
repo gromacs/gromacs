@@ -153,7 +153,7 @@ int main(int argc,char *argv[])
   
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   if (natoms != atoms->nr) 
-    fatal_error(0,"Trajectory does not match topology!");
+    gmx_fatal(FARGS,"Trajectory does not match topology!");
   out=ftp2FILE(efOUT,NFILE,fnm,"w");
   xvgr_legend(out,asize(leg),leg);
   nt=t;

@@ -89,8 +89,9 @@ void *save_malloc(char *name,char *file,int line,int size)
   else
     {
       if ((p=malloc(size))==NULL) 
-        fatal_error(errno,"malloc for %s (%d bytes, file %s, line %d)",
-                    name,size,file,line);
+        gmx_fatal(errno,__FILE__,__LINE__,
+		  "malloc for %s (%d bytes, file %s, line %d)",
+		  name,size,file,line);
       (void) memset(p,0,size);
     }
 #ifdef DEBUG
@@ -110,8 +111,9 @@ void *save_calloc(char *name,char *file,int line,
   else
     {
       if ((p=calloc((size_t)nelem,(size_t)elsize))==NULL) 
-        fatal_error(errno,"calloc for %s (nelem=%d, elsize=%d, file %s"
-                    ", line %d)",name,nelem,elsize,file,line);
+        gmx_fatal(errno,__FILE__,__LINE__,
+		  "calloc for %s (nelem=%d, elsize=%d, file %s"
+		  ", line %d)",name,nelem,elsize,file,line);
     }
 #ifdef DEBUG
   log_action(1,name,file,line,nelem,elsize,p);
@@ -133,9 +135,9 @@ void *save_realloc(char *name,char *file,int line,void *ptr,unsigned size)
       else 
 	p=realloc(ptr,(size_t)size);
       if (p==NULL) 
-        fatal_error(errno,
-                    "realloc for %s (%d bytes, file %s, line %d, %s=0x%8x)",
-                    name,size,file,line,name,ptr);
+        gmx_fatal(errno,__FILE__,__LINE__,
+		  "realloc for %s (%d bytes, file %s, line %d, %s=0x%8x)",
+		  name,size,file,line,name,ptr);
     }
 #ifdef DEBUG
   log_action(1,name,file,line,1,size,p);

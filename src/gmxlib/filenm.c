@@ -252,12 +252,16 @@ const char *ftp2ftype(int ftp)
 {
   if ((ftp >= 0) && (ftp < efNR)) {
     switch (deffile[ftp].ftype) {
-    case eftASC: return "ASCII";
-    case eftBIN: return "Binary";
-    case eftXDR: return "XDR portable";
-    case eftGEN: return "";
-    default: fatal_error(0,"DEATH HORROR: Unknown filetype in ftp2ftype (%d)",
-			 deffile[ftp].ftype);
+    case eftASC: 
+      return "ASCII";
+    case eftBIN: 
+      return "Binary";
+    case eftXDR: 
+      return "XDR portable";
+    case eftGEN: 
+      return "";
+    default: 
+      gmx_fatal(FARGS,"Unknown filetype %d in ftp2ftype",deffile[ftp].ftype);
       break;
     }
   }
@@ -316,7 +320,7 @@ void pr_def(FILE *fp,int ftp)
   case eftGEN: s="";
     break;
   default: 
-    fatal_error(0,"Unimplemented filetype %d %d",ftp,df->ftype);
+    gmx_fatal(FARGS,"Unimplemented filetype %d %d",ftp,df->ftype);
   }
   fprintf(fp,"\\tt %8s & \\tt %3s & %3s & \\tt %2s & %s%s \\\\[-0.1ex]\n",
 	  df->defnm, ext, s, df->defopt ? df->defopt : "", 
@@ -435,7 +439,7 @@ static void check_opts(int nf,t_filenm fnm[])
     df=&(deffile[fnm[i].ftp]);
     if (fnm[i].opt == NULL) {
       if (df->defopt == NULL)
-	fatal_error(0,"No default cmd-line option for %s (type %d)\n",
+	gmx_fatal(FARGS,"No default cmd-line option for %s (type %d)\n",
 		    deffile[fnm[i].ftp].ext,fnm[i].ftp);
       else
 	fnm[i].opt=df->defopt;
@@ -496,7 +500,7 @@ static void set_grpfnm(t_filenm *fnm,char *name,bool bCanNotOverride)
   nopts = deffile[fnm->ftp].ntps;
   ftps  = deffile[fnm->ftp].tps;
   if ((nopts == 0) || (ftps == NULL))
-    fatal_error(0,"DEATH HORROR ERROR in %s:%d",__FILE__,__LINE__);
+    gmx_fatal(FARGS,"nopts == 0 || ftps == NULL");
 
   bValidExt = FALSE;
   if (name && (bCanNotOverride || (default_file_name == NULL))) {
@@ -540,7 +544,7 @@ static void set_filenm(t_filenm *fnm,char *name,bool bCanNotOverride)
   int  i,len,extlen;
 
   if ((fnm->ftp < 0) || (fnm->ftp >= efNR))
-    fatal_error(0,"file type out of range (%d)",fnm->ftp);
+    gmx_fatal(FARGS,"file type out of range (%d)",fnm->ftp);
 
   if ((fnm->flag & ffREAD) && name && fexist(name)) {
     /* check if filename ends in .gz or .Z, if so remove that: */

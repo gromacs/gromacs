@@ -55,7 +55,7 @@
 #include "futil.h"
 #include "vec.h"
 
-#define RANGECHK(i,n) if ((i)>=(n)) fatal_error(0,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
+#define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
 static bool *bKeepIt(int gnx,int natoms,atom_id index[])
 {
@@ -338,7 +338,7 @@ int main (int argc, char *argv[])
       bFrame=fread_trnheader(fp,&head,&bOK);
       if (bOK && frame == 0) {
 	if (top.atoms.nr != head.natoms) 
-	  fatal_error(0,"Number of atoms in Topology (%d) "
+	  gmx_fatal(FARGS,"Number of atoms in Topology (%d) "
 		      "is not the same as in Trajectory (%d)\n",
 		      top.atoms.nr,head.natoms);
 	snew(newx,head.natoms);

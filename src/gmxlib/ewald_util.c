@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "assert.h"
 #include "typedefs.h"
 #include "vec.h"
 #include "ewald_util.h"
@@ -133,7 +132,7 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
     dipcorr[ZZ]  = 2*dipole_coeff*mutot[i];
     break;
   default:
-    fatal_error(0,"Unsupported Ewald geometry");
+    gmx_incons("Unsupported Ewald geometry");
     break;
   }
   if (debug) {
@@ -189,7 +188,9 @@ real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 #ifdef TABLES
 	  r1t               = tabscale*dr;   
 	  n0                = r1t;
-	  assert(n0 >= 3);
+	  if (n0 < 3)
+	    gmx_fatal(FARGS,"Distance between atoms too short: %f in %s,%d",
+		      dr,__FILE__,__LINE__);
 	  n1                = 12*n0;
 	  eps               = r1t-n0;
 	  eps2              = eps*eps;

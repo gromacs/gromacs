@@ -67,7 +67,7 @@ static void rot_conf(t_atoms *atoms,rvec x[],rvec v[],real trans,real angle,
     fprintf(debug,"Effective translation %g nm\n",trans);
   }
   if (arrow_len == 0.0)
-    fatal_error(0,"Arrow vector not given");
+    gmx_fatal(FARGS,"Arrow vector not given");
 
   /* Copy all aoms to output */
   for(i=0; (i<atoms->nr);i ++) {

@@ -40,7 +40,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "vec.h"
-#include "assert.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "addconf.h"

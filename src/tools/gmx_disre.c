@@ -38,7 +38,6 @@
 #endif
 #include <math.h>
 #include <string.h>
-#include <assert.h>
 
 #include "typedefs.h"
 #include "macros.h"
@@ -162,7 +161,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
       fprintf(debug,"DISRE: ndr = %d, label = %d  i=%d, n =%d\n",
 	      ndr,label,i,n);
     if (ndr != label) 
-      fatal_error(0,"tpr inconsistency. ndr = %d, label = %d\n",ndr,label);
+      gmx_fatal(FARGS,"tpr inconsistency. ndr = %d, label = %d\n",ndr,label);
     do {
       n += nat;
     } while (((i+n) < disres->nr) && 

@@ -63,7 +63,7 @@ int calc_nbegin(int nx,real x[],real tbegin)
   for(nbegin=0; (nbegin < nx) && (x[nbegin] <= tbegin); nbegin++)
     ;
   if ((nbegin == nx) || (nbegin == 0))
-    fatal_error(0,"Begin time %f not in x-domain [%f through %f]\n",
+    gmx_fatal(FARGS,"Begin time %f not in x-domain [%f through %f]\n",
 		tbegin,x[0],x[nx-1]);
 
   /* Take the one closest to tbegin */
@@ -136,7 +136,7 @@ void do_four(char *fn,char *cn,int nx,real x[],real dy[],real eps0,real epsRF)
   /*while ((dy[nx-1] == 0.0) && (nx > 0))
     nx--;*/
   if (nx == 0) 
-    fatal_error(0,"Empty dataset in %s, line %d!",__FILE__,__LINE__);
+    gmx_fatal(FARGS,"Empty dataset in %s, line %d!",__FILE__,__LINE__);
 
   nnx=1;
   while (nnx < 2*nx) {

@@ -40,7 +40,6 @@
 
 #include "xmdrun.h"
 #include "smalloc.h"
-#include "assert.h"
 #include "names.h"
 #include "vec.h"
 #include "physics.h"
@@ -89,7 +88,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
       shell_index[i-start] = nsi++;
   }
   if (nsi != n[eptShell])
-    fatal_error(0,"Your number of shells %d is not equal to the number of shells %d",
+    gmx_fatal(FARGS,"Your number of shells %d is not equal to the number of shells %d",
 		nsi,n[eptShell]);
 
   /* Print the number of each particle type */  
@@ -143,7 +142,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	  aS    = ia[5];  /* Shell */
 	  break;
 	default:
-	  fatal_error(0,"Death Horror: %s, %d",__FILE__,__LINE__);
+	  gmx_fatal(FARGS,"Death Horror: %s, %d",__FILE__,__LINE__);
 	}
 
 	if (aS != NO_ATID) {	  
@@ -152,14 +151,14 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	  /* Check whether one of the particles is a shell... */
 	  nsi = shell_index[aS-start];
 	  if ((nsi < 0) || (nsi >= *nshell))
-	    fatal_error(0,"nsi is %d should be within 0 - %d. aS = %d",
+	    gmx_fatal(FARGS,"nsi is %d should be within 0 - %d. aS = %d",
 			nsi,*nshell,aS);
 	  if (shell[nsi].shell == NO_ATID) {
 	    shell[nsi].shell = aS;
 	    ns ++;
 	  }
 	  else if (shell[nsi].shell != aS)
-	    fatal_error(0,"Weird stuff in %s, %d",__FILE__,__LINE__);
+	    gmx_fatal(FARGS,"Weird stuff in %s, %d",__FILE__,__LINE__);
 	  
 	  if      (shell[nsi].nucl1 == NO_ATID)
 	    shell[nsi].nucl1 = aN;
@@ -169,7 +168,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	    shell[nsi].nucl3 = aN;
 	  else {
 	    pr_shell(log,ns,shell);
-	    fatal_error(0,"Can not handle more than three bonds per shell\n");
+	    gmx_fatal(FARGS,"Can not handle more than three bonds per shell\n");
 	  }
 	  switch (bondtypes[j]) {
 	  case F_BONDS:
@@ -180,20 +179,20 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	    break;
 	  case F_POLARIZATION:
 	    if (qS != md->chargeB[aS])
-	      fatal_error(0,"polarize can not be used with qA != qB");
+	      gmx_fatal(FARGS,"polarize can not be used with qA != qB");
 	    shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
 	      idef->iparams[type].polarize.alpha;
 	  break;
 	  case F_WATER_POL:
 	    if (qS != md->chargeB[aS])
-	      fatal_error(0,"water_pol can not be used with qA != qB");
+	      gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
 	    alpha          = (idef->iparams[type].wpol.al_x+
 			      idef->iparams[type].wpol.al_y+
 			      idef->iparams[type].wpol.al_z)/3.0;
 	    shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
 	    break;
 	  default:
-	    fatal_error(0,"Death Horror: %s, %d",__FILE__,__LINE__);
+	    gmx_fatal(FARGS,"Death Horror: %s, %d",__FILE__,__LINE__);
 	  }
 	  shell[nsi].nnucl++;
 	}
@@ -204,7 +203,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 
     /* Verify whether it's all correct */
     if (ns != *nshell)
-      fatal_error(0,"Something weird with shells. They may not be bonded to something");
+      gmx_fatal(FARGS,"Something weird with shells. They may not be bonded to something");
 
     for(i=0; (i<ns); i++)
       shell[i].k_1 = 1.0/shell[i].k;

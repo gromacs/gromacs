@@ -42,7 +42,6 @@
 #include <ctype.h>
 #include "vec.h"
 #include "copyrite.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "symtab.h"
@@ -373,7 +372,7 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
     ai = search_res_atom(ssbonds[i].a1,ri,natoms,atom,aname);
     aj = search_res_atom(ssbonds[i].a2,rj,natoms,atom,aname);
     if ((ai == NO_ATID) || (aj == NO_ATID))
-      fatal_error(0,"Trying to make impossible special bond (%s-%s)!",
+      gmx_fatal(FARGS,"Trying to make impossible special bond (%s-%s)!",
 		  ssbonds[i].a1,ssbonds[i].a2);
     add_param(ps,ai,aj,NULL,NULL);
   }
@@ -552,7 +551,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 		 strcmp((*hb)[i].hack[j].oname,*(*restp)[i].atomname[l])==0 ) )
 	    break;
 	if (l == (*restp)[i].natom) 
-	  fatal_error(0,"atom %s not found in residue %d%s "
+	  gmx_fatal(FARGS,"atom %s not found in residue %d%s "
 		      "while combining tdb and rtp",
 		      (*hb)[i].hack[j].oname!=NULL ? 
 		      (*hb)[i].hack[j].oname : (*hb)[i].hack[j].AI, 
@@ -678,7 +677,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
       fprintf(stderr,"There were %d missing atoms in molecule %s\n",
 	      nmissat,molname);
     else
-      fatal_error(0,"There were %d missing atoms in molecule %s, if you want to use this incomplete topology anyhow, use the option -missing",
+      gmx_fatal(FARGS,"There were %d missing atoms in molecule %s, if you want to use this incomplete topology anyhow, use the option -missing",
 		  nmissat,molname);
   }
   

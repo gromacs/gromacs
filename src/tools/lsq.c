@@ -83,7 +83,7 @@ void get_lsq_ab(t_lsq *lsq,real *a,real *b)
 real aver_lsq(t_lsq *lsq)
 {
   if (lsq->np == 0)
-    fatal_error(0,"No points in distribution\n");
+    gmx_fatal(FARGS,"No points in distribution\n");
   
   return (lsq->sy/lsq->np);
 }
@@ -91,7 +91,7 @@ real aver_lsq(t_lsq *lsq)
 real sigma_lsq(t_lsq *lsq)
 {
   if (lsq->np == 0)
-    fatal_error(0,"No points in distribution\n");
+    gmx_fatal(FARGS,"No points in distribution\n");
     
   return sqrt(lsq->yy/lsq->np - sqr(lsq->sy/lsq->np));
 }

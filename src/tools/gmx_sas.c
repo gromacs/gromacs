@@ -249,7 +249,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
 			   &t,&x,box))==0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
   top   = read_top(ftp2fn(efTPX,nfile,fnm));
   atoms = &(top->atoms);
@@ -305,7 +305,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       }
     }
     if (npcheck != nphobic)
-      fatal_error(0,"Consistency check failed: not all %d atoms in the hydrophobic index\n"
+      gmx_fatal(FARGS,"Consistency check failed: not all %d atoms in the hydrophobic index\n"
 		  "found in the normal index selection (%d atoms)",nphobic,npcheck);
   }
   else
@@ -356,7 +356,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (nsc_dclm2(x,radius,nx,index,ndots,flag,&totarea,
 		  &area,&totvolume,&surfacedots,&nsurfacedots,
 		  bPBC ? box : NULL))
-      fatal_error(0,"Something wrong in nsc_dclm2");
+      gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
     
     if (bConnelly)
       connelly_plot(ftp2fn(efPDB,nfile,fnm),

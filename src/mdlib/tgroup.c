@@ -50,7 +50,6 @@
 #include "smalloc.h"
 #include "update.h"
 #include "rbin.h"
-#include "assert.h"
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
@@ -71,7 +70,8 @@ static void init_grpstat(FILE *log,
   if (ngacc > 0) {
     for(j=0; (j<md->nr); j++) {
       grp=md->cACC[j];
-      assert((grp >= 0) && (grp < ngacc));
+      if ((grp < 0) && (grp >= ngacc))
+	gmx_incons("Input for acceleration groups wrong");
       gstat[grp].nat++;
       gstat[grp].M+=md->massT[j];
     }

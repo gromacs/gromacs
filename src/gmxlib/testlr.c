@@ -44,7 +44,6 @@
 #include "tpxio.h"
 #include "statutil.h"
 #include "writeps.h"
-#include "assert.h"
 #include "copyrite.h"
 #include "xvgr.h"
 #include "minvert.h"

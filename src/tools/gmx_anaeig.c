@@ -367,7 +367,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     nframes=0;
     nat=read_first_x(&status,trajfile,&t,&xread,box);
     if (nat>atoms->nr)
-      fatal_error(0,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
+      gmx_fatal(FARGS,"the number of atoms in your trajectory (%d) is larger than the number of atoms in your structure file (%d)",nat,atoms->nr); 
     snew(all_at,nat);
     for(i=0; i<nat; i++)
       all_at[i]=i;
@@ -464,7 +464,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     FILE    *out;
     
     if (noutvec < 3)
-      fatal_error(0,"You have selected less than 3 eigenvectors");  
+      gmx_fatal(FARGS,"You have selected less than 3 eigenvectors");  
       
     /* initialize */
     bPDB = fn2ftp(threedplotfile)==efPDB;
@@ -648,7 +648,7 @@ static void rmsf(char *outfile,int natoms,real *sqrtm,
   for(g=0; g<noutvec; g++) {
     v=outvec[g];
     if (eignr[v] >= neig)
-      fatal_error(0,"Selected vector %d is larger than the number of eigenvalues (%d)",eignr[v]+1,neig);
+      gmx_fatal(FARGS,"Selected vector %d is larger than the number of eigenvalues (%d)",eignr[v]+1,neig);
     sprintf(str,"vec %d",eignr[v]+1);
     ylabel[g]=strdup(str);
     snew(y[g],natoms);
@@ -839,7 +839,7 @@ int gmx_anaeig(int argc,char *argv[])
     read_eigenvectors(Vec2File,&i,&bFit2,
 		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2);
     if (i!=natoms)
-      fatal_error(0,"Dimensions in the eigenvector files don't match");
+      gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
   }
 
   if ((!bFit1 || xref1) && !bDMR1 && !bDMA1) 
@@ -901,7 +901,7 @@ int gmx_anaeig(int argc,char *argv[])
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
     get_index(atoms,indexfile,1,&i,&index,&grpname);
     if (i!=natoms)
-      fatal_error(0,"you selected a group with %d elements instead of %d",
+      gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
 		  i,natoms);
     printf("\n");
   }

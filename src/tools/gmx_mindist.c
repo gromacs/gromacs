@@ -231,7 +231,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
   bool         bFirst;
   
   if ((natoms=read_first_x(&status,fn,&t,&x0,box))==0)
-    fatal_error(0,"Could not read coordinates from statusfile\n");
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   
   sprintf(buf,"%simum Distance",bMin ? "Min" : "Max");
   dist= xvgropen(dfile,buf,time_label(),"Distance (nm)");
@@ -480,7 +480,7 @@ int gmx_mindist(int argc,char *argv[])
   resfnm = opt2fn_null("-or",NFILE,fnm);
   
   if (!tpsfnm && !ndxfnm)
-    fatal_error(0,"You have to specify either the index file or a tpr file");
+    gmx_fatal(FARGS,"You have to specify either the index file or a tpr file");
   
   if (bPer) {
     ng = 1;

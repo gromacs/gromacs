@@ -66,7 +66,7 @@ void check_nnodes_top(char *fn,t_topology *top,int nnodes)
   np = i+1;
   
   if (np != nnodes)
-    fatal_error(0,"run input file %s was made for %d nodes,\n"
+    gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
 		"             while %s expected it to be for %d nodes.",
 		fn,np,ShortProgram(),nnodes);
 }

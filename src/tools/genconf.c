@@ -182,9 +182,9 @@ int main(int argc, char *argv[])
   nz   = (int)(nrbox[ZZ]+0.5);
   
   if ((nx <= 0) || (ny <= 0) || (nz <= 0))
-    fatal_error(0,"Number of boxes (-nbox) should be larger than zero");
+    gmx_fatal(FARGS,"Number of boxes (-nbox) should be larger than zero");
   if ((nmolat <= 0) && bShuffle)
-    fatal_error(0,"Can not shuffle if the molecules only have %d atoms",
+    gmx_fatal(FARGS,"Can not shuffle if the molecules only have %d atoms",
 		nmolat);
   
   vol=nx*ny*nz;     /* calculate volume in grid points (= nr. molecules) */
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 
   if (bTRX) {
     if (!read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&xx,boxx))
-      fatal_error(0,"No atoms in trajectory %s",ftp2fn(efTRX,NFILE,fnm));
+      gmx_fatal(FARGS,"No atoms in trajectory %s",ftp2fn(efTRX,NFILE,fnm));
   }
   
   
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
 	  if (bTRX)
 	    if (!read_next_x(status,&t,natoms,xx,boxx) && 
 		((i+1)*(j+1)*(k+1) < vol))
-	      fatal_error(0,"Not enough frames in trajectory");
+	      gmx_fatal(FARGS,"Not enough frames in trajectory");
 	}
       }
     }

@@ -65,7 +65,7 @@ t_histo *init_histo(int np,real minx,real maxx)
   snew(h->nh,np+1);
   h->np   = np;
   if (maxx <= minx)
-    fatal_error(0,"minx (%f) should be less than maxx (%f) in init_histo",minx,maxx);
+    gmx_fatal(FARGS,"minx (%f) should be less than maxx (%f) in init_histo",minx,maxx);
   h->minx = minx;
   h->maxx = maxx;
   h->dx_1 = np/(maxx-minx);
@@ -87,7 +87,7 @@ void add_histo(t_histo *h,real x,real y)
   
   n = (x-h->minx)*h->dx_1;
   if ((n < 0) || (n > h->np)) 
-    fatal_error(0,"Invalid x (%f) in add_histo. SHould be in %f - %f",x,h->minx,h->maxx);
+    gmx_fatal(FARGS,"Invalid x (%f) in add_histo. SHould be in %f - %f",x,h->minx,h->maxx);
   h->y[n] += y;
   h->nh[n]++;
 }
@@ -119,7 +119,7 @@ void dump_histo(t_histo *h,char *fn,char *title,char *xaxis,char *yaxis,
 		h->minx+h->dx*i,h->y[i]*norm_fac/h->nh[i],h->nh[i]);
       break;
     default:
-      fatal_error(0,"Wrong value for enorm (%d)",enorm);
+      gmx_fatal(FARGS,"Wrong value for enorm (%d)",enorm);
     }
   }
   fclose(fp);
@@ -243,13 +243,13 @@ void add_ana_struct(t_ana_struct *total,t_ana_struct *add)
   if (total->index == 0)
     total->index = add->index;
   else if (total->index != add->index)
-    fatal_error(0,"Analysis incompatible (total: %d, add: %d) %s, %d",
+    gmx_fatal(FARGS,"Analysis incompatible (total: %d, add: %d) %s, %d",
 		total->index,add->index,__FILE__,__LINE__);
   for(i=0; (i<total->index); i++) {
     if (total->t[i] == 0)
       total->t[i] = add->t[i];
     else if (total->t[i] != add->t[i])
-      fatal_error(0,"Inconsistent times in analysis (%f-%f) %s, %d",
+      gmx_fatal(FARGS,"Inconsistent times in analysis (%f-%f) %s, %d",
 		  total->t[i],add->t[i],__FILE__,__LINE__);
     total->maxdist[i]  += add->maxdist[i];
     total->averdist[i] += add->averdist[i];
@@ -285,7 +285,7 @@ void analyse_structure(t_ana_struct *anal,real t,rvec center,
   
   j = anal->index;
   if (j >= anal->nanal)
-    fatal_error(0,"Too many points in analyse_structure");
+    gmx_fatal(FARGS,"Too many points in analyse_structure");
   anal->t[j]       = t;
   anal->maxdist[j] = 0;
   for(i=0; (i<nparticle); i++) {
@@ -321,7 +321,7 @@ void dump_ana_struct(char *rmax,char *nion,char *gyr,
     fprintf(gp,"%12g  %12.3f\n",t,(1.0*anal->nion[i])/nsim-1);
     if (anal->nion[i] > 0) {
       if (anal->ad2[i] < 0)
-	fatal_error(0,"ad2[%d] = %f",i,anal->ad2[i]);
+	gmx_fatal(FARGS,"ad2[%d] = %f",i,anal->ad2[i]);
       fprintf(hp,"%12g  %12.3f\n",t,sqrt(anal->ad2[i]/anal->nion[i]));
     }
   }

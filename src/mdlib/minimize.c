@@ -867,7 +867,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   real   terminate;
   
   if(PAR(cr))
-    fatal_error(0,"Cannot do parallel L-BFGS Minimization - yet.\n");
+    gmx_fatal(FARGS,"Cannot do parallel L-BFGS Minimization - yet.\n");
   
   n = 3*nsb->natoms;
   nmaxcorr = parm->ir.nbfgscorr;

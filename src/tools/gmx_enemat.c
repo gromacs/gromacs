@@ -46,7 +46,6 @@
 #include "smalloc.h"
 #include "enxio.h"
 #include "statutil.h"
-#include "assert.h"
 #include "names.h"
 #include "copyrite.h"
 #include "macros.h"
@@ -189,7 +188,7 @@ int gmx_enemat(int argc,char *argv[])
   do_enxnms(in,&nre,&enm);
   
   if (nre == 0)
-    fatal_error(0,"No energies!\n");
+    gmx_fatal(FARGS,"No energies!\n");
   
   bCutmax=opt2parg_bSet("-max",asize(pa),pa);
   bCutmin=opt2parg_bSet("-min",asize(pa),pa);

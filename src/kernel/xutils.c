@@ -122,13 +122,13 @@ static void init_range(t_range *r,int np,int atype,int ptype,
 		       real rmin,real rmax)
 {
   if (rmin > rmax)
-    fatal_error(0,"rmin (%f) > rmax (%f)",rmin,rmax);
+    gmx_fatal(FARGS,"rmin (%f) > rmax (%f)",rmin,rmax);
   if (np <= 0)
-    fatal_error(0,"np (%d) should be > 0",np);
+    gmx_fatal(FARGS,"np (%d) should be > 0",np);
   if ((rmax > rmin) && (np <= 1))
-    fatal_error(0,"If rmax > rmin, np should be > 1");
+    gmx_fatal(FARGS,"If rmax > rmin, np should be > 1");
   if ((ptype < 0) || (ptype >= eseNR))
-    fatal_error(0,"ptype (%d) should be < %d",ptype,eseNR);
+    gmx_fatal(FARGS,"ptype (%d) should be < %d",ptype,eseNR);
   r->np    = np;
   r->atype = atype;
   r->ptype = ptype;
@@ -154,7 +154,7 @@ static t_range *read_range(char *db,int *nrange)
     strip_comment(lines[i]);
     if (sscanf(lines[i],"%d%d%d%lf%lf",&np,&atype,&ptype,&rmin,&rmax) == 5) {
       if (ff.bLogEps && (ptype == eseEPSILON) && (rmin <= 0))
-	fatal_error(0,"When using logarithmic epsilon increments the minimum"
+	gmx_fatal(FARGS,"When using logarithmic epsilon increments the minimum"
 		    "value must be > 0");
       init_range(&range[nr],np,atype,ptype,rmin,rmax);
       nr++;
@@ -176,7 +176,7 @@ static real value_range(t_range *r,int n)
   real logrmin,logrmax;
   
   if ((n < 0) || (n > r->np))
-    fatal_error(0,"Value (%d) out of range for value_range (max %d)",n,r->np);
+    gmx_fatal(FARGS,"Value (%d) out of range for value_range (max %d)",n,r->np);
 
   if (r->np == 1)
     r->rval = r->rmin;
@@ -272,7 +272,7 @@ static void update_ff(t_forcerec *fr,int nparm,t_range range[],int param_val[])
       scale[ZZ] = val;
       break;
     default:
-      fatal_error(0,"Unknown ptype");
+      gmx_fatal(FARGS,"Unknown ptype");
     }
   }
   if (fr->bBHAM) {
@@ -342,7 +342,7 @@ bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
   if (nparm == 0) {    
     range = read_range(ftp2fn(efDAT,nfile,fnm),&nparm);
     if (nparm == 0) 
-      fatal_error(0,"No correct parameter info in %s",ftp2fn(efDAT,nfile,fnm));
+      gmx_fatal(FARGS,"No correct parameter info in %s",ftp2fn(efDAT,nfile,fnm));
     snew(param_val,nparm);
 
     if (opt2bSet("-ga",nfile,fnm)) {

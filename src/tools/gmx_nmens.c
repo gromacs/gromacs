@@ -157,7 +157,7 @@ int gmx_nmens(int argc,char *argv[])
   printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
   get_index(atoms,indexfile,1,&i,&index,&grpname);
   if (i!=natoms)
-    fatal_error(0,"you selected a group with %d elements instead of %d",
+    gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",
 		i,natoms);
   printf("\n");
   

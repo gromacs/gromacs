@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "string2.h"
-#include "assert.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "Xstuff.h"
@@ -442,7 +441,7 @@ static bool DlgCB(t_x11 *x11,XEvent *event, Window w, void *data)
 	ExposeWin(x11->disp,dit->win.self);
       }
       else
-	fatal_error(0,"No RB Selected initially!\n");
+	gmx_fatal(FARGS,"No RB Selected initially!\n");
       dlgitem->u.radiobutton.bSelect=TRUE;
       ExposeWin(x11->disp,dlgitem->win.self);
       if (dlg->cb)
@@ -465,7 +464,7 @@ static bool DlgCB(t_x11 *x11,XEvent *event, Window w, void *data)
     case ITEMOK:
       break;
     default:
-      fatal_error(0,"Invalid return code (%d) from wndproc\n",nWndProc);
+      gmx_fatal(FARGS,"Invalid return code (%d) from wndproc\n",nWndProc);
     }
   }
   else if (w==dlg->win.self) {
@@ -544,7 +543,8 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *new)
   if (!dlg->win.self)
     DoCreateDlg(dlg);
   srenew(dlg->dlgitem,dlg->nitem+1);
-  assert(new);
+  if (!new)
+    gmx_fatal(FARGS,"dlgitem not allocated");
   new->win.self=
     XCreateSimpleWindow(dlg->x11->disp,dlg->win.self,new->win.x,new->win.y,
 			new->win.width,new->win.height,

@@ -216,7 +216,7 @@ int gmx_com(int argc,char *argv[])
   read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,flags);
   natoms = fr.natoms;
   if ( natoms > top.atoms.nr )
-    fatal_error(0,"Topology (%d atoms) does not match trajectory (%d atoms)",
+    gmx_fatal(FARGS,"Topology (%d atoms) does not match trajectory (%d atoms)",
 		top.atoms.nr,natoms);
   
   snew(mass,natoms);

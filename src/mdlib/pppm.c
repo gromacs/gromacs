@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "assert.h"
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -48,7 +47,6 @@
 #include "fatal.h"
 #include "txtdump.h"
 #include "network.h"
-#include "assert.h"
 #include "nrnb.h"
 #include "pppm.h"
 #include "shift_util.h"
@@ -102,7 +100,7 @@ void calc_weights(int iatom,int nx,int ny,int nz,
       it -=nm;
     }
     if ((it < 0) || (it >= nxyz[m]))
-      fatal_error(0,"iatom = %d, it = %d, x=%f, ttt=%f",iatom,it,x[m],ttt);
+      gmx_fatal(FARGS,"iatom = %d, it = %d, x=%f, ttt=%f",iatom,it,x[m],ttt);
     ixyz[m]    = it;
     
     /* Fraction (offset) from grid point */
@@ -484,7 +482,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   rvec  spacing;
 
 #ifdef WITHOUT_FFTW
-  fatal_error(0,"PPPM used, but GROMACS was compiled without FFTW support!\n");
+  gmx_fatal(FARGS,"PPPM used, but GROMACS was compiled without FFTW support!\n");
 #endif
 
   if (cr != NULL) {
@@ -503,7 +501,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
     fprintf(log,"Grid size is %d x %d x %d\n",nx,ny,nz);
 
     if ((nx < 4) || (ny < 4) || (nz < 4)) 
-      fatal_error(0,"Grid must be at least 4 points in all directions");
+      gmx_fatal(FARGS,"Grid must be at least 4 points in all directions");
       
     ghat   = mk_rgrid(nx,ny,nz);
     mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rcoulomb_switch,ir->rcoulomb,TRUE,bOld);
@@ -521,7 +519,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
 	          "  r1 = %10.3e  rc = %10.3e\n",
 	      ir->rcoulomb_switch,ir->rcoulomb,r1,rc);
       fflush(log);
-      fatal_error(0,"Cut-off lengths in tpb file and Ghat file %s "
+      gmx_fatal(FARGS,"Cut-off lengths in tpb file and Ghat file %s "
 		  "do not match\nCheck your log file!",ghatfn);
     }
       
@@ -532,12 +530,12 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
 	pr_rvec(log,0,"grid-spacing",spacing,DIM,TRUE);
 	pr_ivec(log,0,"grid size",grids,DIM,TRUE);
 	fflush(log);
-	fatal_error(0,"Box sizes in tpb file and Ghat file %s do not match\n"
+	gmx_fatal(FARGS,"Box sizes in tpb file and Ghat file %s do not match\n"
 		    "Check your log file!",ghatfn);
       }
 
     if (porder != 2)
-      fatal_error(0,"porder = %d, should be 2 in %s",porder,ghatfn);
+      gmx_fatal(FARGS,"porder = %d, should be 2 in %s",porder,ghatfn);
       
     nx = grids[XX];
     ny = grids[YY];

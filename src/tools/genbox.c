@@ -41,7 +41,6 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "assert.h"
 #include "string2.h"
 #include "physics.h"
 #include "confio.h"
@@ -273,7 +272,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
   /* read number of atoms of insert molecules */
   get_stx_coordnum(mol_insrt,&atoms_insrt.nr);
   if (atoms_insrt.nr == 0)
-    fatal_error(0,"No molecule in %s, please check your input\n",mol_insrt);
+    gmx_fatal(FARGS,"No molecule in %s, please check your input\n",mol_insrt);
   /* allocate memory for atom coordinates of insert molecules */
   snew(x_insrt,atoms_insrt.nr);
   snew(r_insrt,atoms_insrt.nr);
@@ -305,7 +304,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
     fprintf(stderr,"\rTry %d",try++);
     for (i=0;(i<atoms_insrt.nr);i++) {
       if (atoms_insrt.atom[i].resnr!=0) 
-	fatal_error(0,"more then one residue in insert molecules\n"
+	gmx_fatal(FARGS,"more then one residue in insert molecules\n"
 		    "program terminated\n");
       copy_rvec(x_insrt[i],x_n[i]);
     }
@@ -361,7 +360,7 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
   snew(atoms_solvt,1);
   get_stx_coordnum(filename,&(atoms_solvt->nr)); 
   if (atoms_solvt->nr == 0)
-    fatal_error(0,"No solvent in %s, please check your input\n",filename);
+    gmx_fatal(FARGS,"No solvent in %s, please check your input\n",filename);
   snew(x_solvt,atoms_solvt->nr);
   if (v) snew(v_solvt,atoms_solvt->nr);
   snew(r_solvt,atoms_solvt->nr);
@@ -685,10 +684,10 @@ int main(int argc,char *argv[])
      
   /* check input */
   if (bInsert && nmol_ins<=0)
-    fatal_error(0,"When specifying inserted molecules (-ci), "
+    gmx_fatal(FARGS,"When specifying inserted molecules (-ci), "
 		"-nmol must be larger than 0");
   if (!bProt && !bBox)
-    fatal_error(0,"When no solute (-cp) is specified, "
+    gmx_fatal(FARGS,"When no solute (-cp) is specified, "
 		"a box size (-box) must be specified");
 
   atomprop  = get_atomprop();
@@ -722,7 +721,7 @@ int main(int argc,char *argv[])
     box[ZZ][ZZ]=new_box[ZZ];
   }
   if (det(box) == 0) 
-    fatal_error(0,"Undefined solute box.\nCreate one with editconf "
+    gmx_fatal(FARGS,"Undefined solute box.\nCreate one with editconf "
 		"or give explicit -box command line option");
   
   /* add nmol_ins molecules of atoms_ins 

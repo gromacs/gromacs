@@ -40,7 +40,6 @@
 #include <string.h>
 #include <ctype.h>
 #include "macros.h"
-#include "assert.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "copyrite.h"
@@ -252,7 +251,8 @@ void gather(t_mat *m,real cutoff,t_clusters *clust)
       d[k].j    = j;
       d[k].dist = m->mat[i][j];
     }
-  assert(k == nn);
+  if (k != nn)
+    gmx_incons("gather algortihm");
   qsort(d,nn,sizeof(d[0]),rms_dist_comp);
   
   /* Now we make a cluster index for all of the conformations */
@@ -664,13 +664,13 @@ static char *parse_filename(char *fn, int maxnr)
   char buf[STRLEN];
   
   if (strchr(fn,'%'))
-    fatal_error(0,"will not number filename %s containing '%c'",fn,'%');
+    gmx_fatal(FARGS,"will not number filename %s containing '%c'",fn,'%');
   /* number of digits needed in numbering */
   i = (int)(log(maxnr)/log(10)) + 1;
   /* split fn and ext */
   ext = strrchr(fn, '.');
   if (!ext)
-    fatal_error(0,"cannot separate extension in filename %s",fn);
+    gmx_fatal(FARGS,"cannot separate extension in filename %s",fn);
   /* temporarily truncate filename at the '.' */
   ext[0] = '\0';
   ext++;
@@ -1142,7 +1142,8 @@ int gmx_cluster(int argc,char *argv[])
   method=1;
   while ( method < m_nr && strcasecmp(methodname[0], methodname[method])!=0 )
     method++;
-  assert(method != m_nr);
+  if (method == m_nr)
+    gmx_fatal(FARGS,"Invalid method");
   
   bAnalyze = (method == m_linkage || method == m_jarvis_patrick ||
 	      method == m_gromos );
@@ -1158,13 +1159,13 @@ int gmx_cluster(int argc,char *argv[])
   if (method == m_jarvis_patrick) {
     bJP_RMSD = (M == 0) || opt2parg_bSet("-cutoff",asize(pa),pa);
     if ((M<0) || (M == 1))
-      fatal_error(0,"M (%d) must be 0 or larger than 1",M);
+      gmx_fatal(FARGS,"M (%d) must be 0 or larger than 1",M);
     if (M < 2) {
       sprintf(buf1,"Will use P=%d and RMSD cutoff (%g)",P,rmsdcut);
       bUseRmsdCut = TRUE;
     } else {
       if (P >= M)
-	fatal_error(0,"Number of neighbors required (P) must be less than M");
+	gmx_fatal(FARGS,"Number of neighbors required (P) must be less than M");
       if (bJP_RMSD) {
 	sprintf(buf1,"Will use P=%d, M=%d and RMSD cutoff (%g)",P,M,rmsdcut);
 	bUseRmsdCut = TRUE;
@@ -1180,7 +1181,7 @@ int gmx_cluster(int argc,char *argv[])
     fprintf(log,"Using %d iterations\n",niter);
   
   if (skip < 1)
-    fatal_error(0,"skip (%d) should be >= 1",skip);
+    gmx_fatal(FARGS,"skip (%d) should be >= 1",skip);
 
   /* get input */
   if (bReadTraj) {
@@ -1255,10 +1256,10 @@ int gmx_cluster(int argc,char *argv[])
     read_xpm_matrix(opt2fn("-dm",NFILE,fnm),&readmat);
     fprintf(stderr,"\n");
     if (readmat[0].nx != readmat[0].ny)
-      fatal_error(0,"Matrix (%dx%d) is not square",
+      gmx_fatal(FARGS,"Matrix (%dx%d) is not square",
 		  readmat[0].nx,readmat[0].ny);
     if (bReadTraj && bAnalyze && (readmat[0].nx != nf))
-      fatal_error(0,"Matrix size (%dx%d) does not match the number of "
+      gmx_fatal(FARGS,"Matrix size (%dx%d) does not match the number of "
 		  "frames (%d)",readmat[0].nx,readmat[0].ny,nf);
 
     nf = readmat[0].nx;
@@ -1357,7 +1358,7 @@ int gmx_cluster(int argc,char *argv[])
     gromos(rms->nn,rms->mat,rmsdcut,&clust);
     break;
   default:
-    fatal_error(0,"DEATH HORROR unknown method \"%s\"",methodname[0]);
+    gmx_fatal(FARGS,"DEATH HORROR unknown method \"%s\"",methodname[0]);
   }
   
   if (method == m_monte_carlo || method == m_diagonalize)

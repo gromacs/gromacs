@@ -40,7 +40,6 @@
 
 #include <time.h>
 #include <ctype.h>
-#include "assert.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -248,7 +247,8 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
     for(j=0; j<nab[i]; j++)
       if ( ab[i][j].oname==NULL ) { 
 	/* we're adding */
-	assert(ab[i][j].nname!=NULL);
+	if (ab[i][j].nname == NULL)
+	  gmx_incons("ab[i][j].name not allocated");
 	/* check if the atom is already present */
 	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba);
 	if ( k != -1 ) {
@@ -297,7 +297,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
 	    /* not found in original atoms, might still be in t_hack (ab) */
 	    hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);
 	    if (ii < 0)
-	      fatal_error(0,"Atom %s not found in residue %s%d"
+	      gmx_fatal(FARGS,"Atom %s not found in residue %s%d"
 			  " while adding hydrogens",
 			  ab[i][j].a[m],*pdba->resname[rnr],rnr+1);
 	    else
@@ -521,9 +521,9 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     open_symtab(&protdata->tab); 
     protdata->atype=read_atype(protdata->FF,&protdata->tab);
     if(read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype) < 4) 
-      fatal_error(0,"no n-terminus db");
+      gmx_fatal(FARGS,"no n-terminus db");
     if(read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype) < 2) 
-      fatal_error(0,"no c-terminus db");
+      gmx_fatal(FARGS,"no c-terminus db");
     
     /* set terminus types: -NH3+ (different for Proline) and -COO- */
     atoms=*atomsptr;

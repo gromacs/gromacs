@@ -152,7 +152,7 @@ static void init_pullgrp(t_pullgrp *pg,char *name,char *wbuf,real UmbCons)
 static void string2dvec(char buf[], dvec nums)
 {
   if (sscanf(buf,"%lf%lf%lf",&nums[0],&nums[1],&nums[2]) != 3)
-    fatal_error(0,"Expected three numbers at input line %s",buf);
+    gmx_fatal(FARGS,"Expected three numbers at input line %s",buf);
 }
 
 void read_pullparams(t_pull *pull, char *infile, char *outfile) 
@@ -290,13 +290,13 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
 
   if (!strcmp(refbuf, "")) {
     if (pull->runtype == eConstraint)
-      fatal_error(0, "Constraint forces require a reference group to be specified.\n");
+      gmx_fatal(FARGS, "Constraint forces require a reference group to be specified.\n");
     pull->AbsoluteRef = TRUE;
     fprintf(stderr, "Pull code using absolute reference.\n");
   }
   
   if (!strcmp(grpbuf[0],""))
-    fatal_error(0,"Need to specify at least group_1.");
+    gmx_fatal(FARGS,"Need to specify at least group_1.");
   pull->ngrp = 1;
   while (i<MAX_PULL_GROUPS && strcmp(grpbuf[pull->ngrp],""))
     pull->ngrp++;
@@ -320,7 +320,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
 
   if(pull->runtype == eUmbrella) {
     if(! (pull->reftype==erefCom || pull->reftype==erefComT0))
-      fatal_error(0,"Umbrella sampling currently only works with COM and COM_T0 reftypes");
+      gmx_fatal(FARGS,"Umbrella sampling currently only works with COM and COM_T0 reftypes");
     for(i=0;i<pull->ngrp;++i) {
       string2dvec(pos[i],pull->grp[i].UmbPos);
     }
@@ -330,7 +330,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
   ptr = pulldim;
   for(i=0; i<DIM; i++) {
     if (sscanf(ptr,"%s%n",pulldim1,&nchar) != 1)
-      fatal_error(0,"Less than 3 pull dimensions given in pulldim: '%s'",
+      gmx_fatal(FARGS,"Less than 3 pull dimensions given in pulldim: '%s'",
 		  pulldim);
     
     if (strncasecmp(pulldim1,"N",1) == 0) {
@@ -338,7 +338,7 @@ void read_pullparams(t_pull *pull, char *infile, char *outfile)
     } else if (strncasecmp(pulldim1,"Y",1) == 0) {
       pull->dims[i] = 1;
     } else {
-      fatal_error(0,"Please use Y(ES) or N(O) for pulldim only (not %s)",
+      gmx_fatal(FARGS,"Please use Y(ES) or N(O) for pulldim only (not %s)",
 		  pulldim1);
     }
     ptr += nchar;

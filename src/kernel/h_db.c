@@ -70,7 +70,7 @@ void read_ab(char *line,char *fn,t_hack *hack)
   
   ns = sscanf(line,"%d%d%s%s%s%s",&nh,&tp,a[0],a[1],a[2],a[3]);
   if (ns < 3)
-    fatal_error(0,"wrong format in input file %s on line\n%s\n",fn,line);
+    gmx_fatal(FARGS,"wrong format in input file %s on line\n%s\n",fn,line);
   
   hack->nr=nh;
   hack->tp=tp;
@@ -116,7 +116,7 @@ int read_h_db(char *fn,t_hackblock **ah)
       aah[nah].nhack = nab;
       for(i=0; (i<nab); i++) {
 	if (feof(in))
-	  fatal_error(0, "Expected %d lines of hydrogens, found only %d "
+	  gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
 		      "while reading Hydrogen Database %s residue %s",
 		      nab, i-1, aah[nah].name, hfn);
 	fgets(buf, STRLEN, in);

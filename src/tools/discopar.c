@@ -204,7 +204,7 @@ static int recv_coords(t_commrec *cr,int *nviol,int *nit,int *k,
   
   debug_gmx();
   if ((nodeid >= cr->nnodes) || (nodeid <= 0))
-    fatal_error(0,"Reading data from nodeid %d",nodeid);
+    gmx_fatal(FARGS,"Reading data from nodeid %d",nodeid);
       
   gmx_txs(nodeid,record(bDone));
       

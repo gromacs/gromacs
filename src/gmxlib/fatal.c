@@ -47,6 +47,7 @@
 #include "main.h"
 #include "network.h"
 #include "fatal.h"
+#include "copyrite.h"
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -94,8 +95,10 @@ static void bputc(char *msg,int *len,char ch)
 
 static void bputs(char *msg,int *len,char *s,int fld)
 {
-  for (fld-=(int)strlen(s); fld>0; fld--) bputc(msg,len,' ');
-  while (*s) bputc(msg,len,*(s++));
+  for (fld-=(int)strlen(s); fld>0; fld--) 
+    bputc(msg,len,' ');
+  while (*s) 
+    bputc(msg,len,*(s++));
 }
 
 static void bputd(char *msg,int *len,int d)
@@ -136,14 +139,17 @@ static int getfld(char **p)
   return fld;
 }
 
-void _halt(char *file,int line,char *reason)
+/*static void _halt(char *file,int line,char *reason)
 {
   fprintf(stderr,"\nHALT in file %s line %d because:\n\t%s\n",
 	  file,line,reason);
   exit(1);
 }
+*/
 
-void quit_gmx(int fatal_errno,char *msg)
+static int fatal_errno = 0;
+
+static void quit_gmx(char *msg)
 {
   if (!fatal_errno) {
     if (stdlog) 
@@ -199,7 +205,18 @@ void _unset_fatal_tmp_file(char *fn, char *file, int line)
 	    fn,file,line);
 }
 
-void fatal_error(int fatal_errno,char *fmt,...)
+static void clean_fatal_tmp_file()
+{
+  if (fatal_tmp_file) {
+    fprintf(stderr,"Cleaning up temporary file %s\n",fatal_tmp_file);
+    remove(fatal_tmp_file);
+    sfree(fatal_tmp_file);
+    fatal_tmp_file = NULL;
+  }
+}
+
+/* Old function do not use */
+static void fatal_error(int f_errno,char *fmt,...)
 {
   va_list ap;
   char    *p,cval,*sval,msg[STRLEN];
@@ -207,25 +224,19 @@ void fatal_error(int fatal_errno,char *fmt,...)
   int     index,ival,fld,len;
   double  dval;
 #ifdef _SPECIAL_VAR_ARG
-  int     fatal_errno;
+  int     f_errno;
   char    *fmt;
   
   va_start(ap,);
-  fatal_errno=va_arg(ap,int);
+  f_errno=va_arg(ap,int);
   fmt=va_arg(ap,char *);
 #else
   va_start(ap,fmt);
 #endif
 
-  if (fatal_tmp_file) {
-    fprintf(stderr,"Cleaning up temporary file %s\n",fatal_tmp_file);
-    remove(fatal_tmp_file);
-    sfree(fatal_tmp_file);
-    fatal_tmp_file = NULL;
-  }
+  clean_fatal_tmp_file();
   
   len=0;
-  bputs(msg,&len,"Fatal error: ",0);
   for (p=fmt; *p; p++) {
     if (*p!='%')
       bputc(msg,&len,*p);
@@ -270,14 +281,87 @@ void fatal_error(int fatal_errno,char *fmt,...)
   va_end(ap);
   bputc(msg,&len,'\0');
 
-  quit_gmx(fatal_errno,msg);
+  fatal_errno = f_errno;
+  gmx_error("fatal",msg);
+}
+
+void gmx_fatal(int f_errno,char *file,int line,char *fmt,...)
+{
+  va_list ap;
+  char    *p,cval,*sval,msg[STRLEN];
+  char    ibuf[64],ifmt[64];
+  int     index,ival,fld,len;
+  double  dval;
+#ifdef _SPECIAL_VAR_ARG
+  int     f_errno,line;
+  char    *fmt,*file;
+  
+  va_start(ap,);
+  f_errno = va_arg(ap,int);
+  file    = va_arg(ap,char *);
+  line    = va_arg(ap,int);
+  fmt     = va_arg(ap,char *);
+#else
+  va_start(ap,fmt);
+#endif
+
+  clean_fatal_tmp_file();
+  
+  len=0;
+  for (p=fmt; *p; p++) {
+    if (*p!='%')
+      bputc(msg,&len,*p);
+    else {
+      p++;
+      fld=getfld(&p);
+      switch(*p) {
+      case 'x':
+	ival=va_arg(ap,int);
+	sprintf(ifmt,"0x%%%dx",fld);
+	sprintf(ibuf,ifmt,(unsigned int)ival);
+	for(index=0; (index<(int)strlen(ibuf)); index++)
+	  bputc(msg,&len,ibuf[index]);
+	break;
+      case 'd':
+	ival=va_arg(ap,int);
+	sprintf(ifmt,"%%%dd",fld);
+	sprintf(ibuf,ifmt,ival);
+	for(index=0; (index<(int)strlen(ibuf)); index++)
+	  bputc(msg,&len,ibuf[index]);
+	break;
+      case 'f':
+	dval=va_arg(ap,double);
+	sprintf(ifmt,"%%%df",fld);
+	sprintf(ibuf,ifmt,dval);
+	for(index=0; (index<(int)strlen(ibuf)); index++)
+	  bputc(msg,&len,ibuf[index]);
+	break;
+      case 'c':
+	cval=(char) va_arg(ap,int); /* char is promoted to int */
+	bputc(msg,&len,cval);
+	break;
+      case 's':
+	sval=va_arg(ap,char *);
+	bputs(msg,&len,sval,fld);
+	break;
+      default:
+	break;
+      }
+    }
+  }
+  va_end(ap);
+  bputc(msg,&len,'\0');
+
+  fatal_errno = f_errno;
+  
+  _gmx_error("fatal",msg,file,line);
 }
 
 static int  nwarn       = 0;
 static int  maxwarn     = 10;
 static int  lineno      = 1;
 static char filenm[256] = "";
-char   warn_buf[1024];
+char   warn_buf[1024]   = "";
 
 void init_warning(int maxwarning)
 {
@@ -325,7 +409,7 @@ void warning(char *s)
   sfree(temp);
   sfree(temp2);
   if (nwarn >= maxwarn)
-    fatal_error(0,"Too many warnings, %s terminated",Program());
+    gmx_fatal(FARGS,"Too many warnings, %s terminated",Program());
 }
 
 void print_warn_num(void)
@@ -344,13 +428,13 @@ void _too_few(char *fn,int line)
 
 void _invalid_case(char *fn,int line)
 {
-  fatal_error(0,"Invalid case in switch statement, file %s, line %d",
+  gmx_fatal(FARGS,"Invalid case in switch statement, file %s, line %d",
 	      fn,line);
 }
 
 void _unexpected_eof(char *fn,int line,char *srcfn,int srcline)
 {
-  fatal_error(0,"Unexpected end of file in file %s at line %d\n"
+  gmx_fatal(FARGS,"Unexpected end of file in file %s at line %d\n"
 	      "(Source file %s, line %d)",fn,line,srcfn,srcline);
 }
 
@@ -411,6 +495,86 @@ void doexceptions(void)
 }
 #endif /* __sgi and FPE */
 
+static char *gmxuser = "Please report this to the mailing list (gmx-users@gromacs.org)";
 
+static void (*gmx_error_handler)(char *msg) = quit_gmx;
 
+void set_gmx_error_handler(void (*func)(char *msg))
+{
+  gmx_error_handler = func;
+}
+
+char *gmx_strerror(char *key)
+{
+  typedef struct {
+    char *key,*msg;
+  } error_msg_t;
+  error_msg_t msg[] = {
+    { "bug",    "Possible bug" },
+    { "call",   "Routine should not have been called" },
+    { "comm",   "Communication (parallel processing) problem" },
+    { "fatal",  "Fatal error" },
+    { "file",   "File input/output error" },
+    { "impl",   "Implementation restriction" },
+    { "incons", "Software inconsistency error" },
+    { "input",  "Input error or inconsistency" },
+    { "mem",    "Memory allocation/freeing error" },
+    { "open",   "Can not open file" },
+    { "range",  "Range checking error" }
+  };
+#define NMSG asize(msg)
+  char buf[1024];
+  int  i;
+  
+  if (key == NULL)
+    return strdup("Empty message");
+  else {
+    for(i=0; (i<NMSG); i++)
+      if (strcmp(key,msg[i].key) == 0) 
+	break;
+    if (i == NMSG) {
+      sprintf(buf,"No error message associated with key %s\n%s",key,gmxuser);
+      return strdup(buf);
+    }
+    else
+      return strdup(msg[i].msg);
+  }
+}
+
+void _gmx_error(char *key,char *msg,char *file,int line)
+{
+  char buf[10240],tmpbuf[1024];
+  int  cqnum;
+
+  /* protect the audience from suggestive discussions */
+  char *lines = "-------------------------------------------------------";
+  
+  sprintf(buf,"%s\nIn GROMACS %s\nAt source code file: %s, line: %d\n"
+	  "%s:\n%s\n%s\n\n%s\n",
+	  lines,GromacsVersion(),file,line,
+	  gmx_strerror(key),msg ? msg : warn_buf,lines,
+  	  cool_quote(tmpbuf,1023,&cqnum));
+  
+  gmx_error_handler(buf);
+}
+
+void _range_check(int n,int n_min,int n_max,char *var,char *file,int line)
+{
+  char buf[1024];
+  
+  if ((n < n_min) || (n >= n_max)) {
+    if (strlen(warn_buf) > 0) {
+      strcpy(buf,warn_buf);
+      strcat(buf,"\n");
+      warn_buf[0] = '\0';
+    }
+    else
+      buf[0] = '\0';
+    
+    sprintf(buf+strlen(buf),"Variable %s has value %d. It should have been "
+	    "within [ %d .. %d ]\n%s",var,n,n_min,n_max,gmxuser);
+    
+    _gmx_error("range",buf,file,line);
+  }
+}
 

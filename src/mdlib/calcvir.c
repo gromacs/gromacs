@@ -40,7 +40,6 @@
 
 #include "sysstuff.h"
 #include "force.h"
-#include "assert.h"
 #include "vec.h"
 #include "mshift.h"
 #include "macros.h"

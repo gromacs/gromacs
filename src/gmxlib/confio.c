@@ -48,7 +48,6 @@
 #include "confio.h"
 #include "vec.h"
 #include "symtab.h"
-#include "assert.h"
 #include "futil.h"
 #include "xdrf.h"
 #include "filenm.h"
@@ -89,10 +88,10 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
       bEnd = (strncmp(line,"END",3) == 0);
       if (!bEnd  && (line[0] != '#')) {
 	if (sscanf(line+shift,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
-	  fatal_error(0,"Did not find 3 coordinates for atom %d in %s\n",
+	  gmx_fatal(FARGS,"Did not find 3 coordinates for atom %d in %s\n",
 		      natoms+1,infile);
 	if ((nwanted != -1) && (natoms >= nwanted))
-	  fatal_error(0,
+	  gmx_fatal(FARGS,
 		      "Found more coordinates (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
 	if (atoms) {
@@ -111,7 +110,7 @@ static int read_g96_pos(char line[],t_symtab *symtab,FILE *fp,char *infile,
 	  if (resnr != oldres) {
 	    oldres = resnr;
 	    if (newres >= atoms->nr)
-	      fatal_error(0,"More residues than atoms in %s (natoms = %d)",
+	      gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 			  infile,atoms->nr);
 	    atoms->resname[newres] = put_symtab(symtab,resnm);
 	    newres++;
@@ -160,10 +159,10 @@ static int read_g96_vel(char line[],FILE *fp,char *infile,
       bEnd = (strncmp(line,"END",3) == 0);
       if (!bEnd && (line[0] != '#')) {
 	if (sscanf(line+shift,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
-	  fatal_error(0,"Did not find 3 velocities for atom %d in %s",
+	  gmx_fatal(FARGS,"Did not find 3 velocities for atom %d in %s",
 		      natoms+1,infile);
 	if ((nwanted != -1) && (natoms >= nwanted))
-	  fatal_error(0,"Found more velocities (%d) in %s than expected %d\n",
+	  gmx_fatal(FARGS,"Found more velocities (%d) in %s than expected %d\n",
 		      natoms,infile,nwanted);
 	if (fr->v) {
 	  fr->v[natoms][0] = db1;
@@ -258,7 +257,7 @@ int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr)
 	  nbp = sscanf(line,"%15lf%15lf%15lf%15lf%15lf%15lf%15lf%15lf%15lf",
 		       &db1,&db2,&db3,&db4,&db5,&db6,&db7,&db8,&db9);
 	  if (nbp < 3)
-	    fatal_error(0,"Found a BOX line, but no box in %s",infile);
+	    gmx_fatal(FARGS,"Found a BOX line, but no box in %s",infile);
 	  fr->box[XX][XX] = db1;
 	  fr->box[YY][YY] = db2;
 	  fr->box[ZZ][ZZ] = db3;
@@ -404,7 +403,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
   fgets2(line,STRLEN,in);
   sscanf(line,"%d",&natoms);
   if (natoms > atoms->nr)
-    fatal_error(0,"gro file contains more atoms (%d) than expected (%d)",
+    gmx_fatal(FARGS,"gro file contains more atoms (%d) than expected (%d)",
 		natoms,atoms->nr);
   else if (natoms <  atoms->nr)
     fprintf(stderr,"Warning: gro file contains less atoms (%d) than expected"
@@ -420,7 +419,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
       unexpected_eof(infile,i+2);
     }
     if (strlen(line) < 39)
-      fatal_error(0,"Invalid line in %s for atom %d:\n%s",infile,i+1,line);
+      gmx_fatal(FARGS,"Invalid line in %s for atom %d:\n%s",infile,i+1,line);
 
     /* determine read precision from distance between periods 
        (decimal points) */
@@ -428,7 +427,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
       bFirst=FALSE;
       p1=strchr(line,'.');
       if (p1 == NULL)
-	fatal_error(0,"A coordinate in file %s does not contain a '.'",infile);
+	gmx_fatal(FARGS,"A coordinate in file %s does not contain a '.'",infile);
       p2=strchr(&p1[1],'.');
       if (p1 || p2)
 	ddist=p2-p1;
@@ -452,7 +451,7 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
     if (resnr != oldres) {
       oldres = resnr;
       if (newres >= natoms)
-	fatal_error(0,"More residues than atoms in %s (natoms = %d)",
+	gmx_fatal(FARGS,"More residues than atoms in %s (natoms = %d)",
 		    infile,natoms);
       atoms->resname[newres] = put_symtab(symtab,name);
       newres++;
@@ -611,7 +610,7 @@ bool gro_next_x_or_v(FILE *status,t_trxframe *fr)
   }
   
   if (atoms.nr != fr->natoms)
-    fatal_error(0,"Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)",atoms.nr,fr->natoms);
+    gmx_fatal(FARGS,"Number of atoms in gro frame (%d) doesn't match the number in the previous frame (%d)",atoms.nr,fr->natoms);
   
   return TRUE;
 }
@@ -628,7 +627,7 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr)
   fr->bTitle = TRUE;
   fr->title = title;
   if (fr->natoms==0)
-    fatal_error(1,"No coordinates in gro file\n");
+    gmx_file("No coordinates in gro file");
   
   snew(fr->x,fr->natoms);
   snew(fr->v,fr->natoms);
@@ -778,10 +777,10 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   case efTPR:
   case efTPB:
   case efTPA:
-    fatal_error(0,"Sorry, can not write a topology to %s",outfile);
+    gmx_fatal(FARGS,"Sorry, can not write a topology to %s",outfile);
     break;
   default:
-    fatal_error(0,"Not supported in write_sto_conf_indexed: %s",outfile);
+    gmx_incons("Not supported in write_sto_conf_indexed");
   }
 }
 
@@ -826,10 +825,10 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efTPR:
   case efTPB:
   case efTPA:
-    fatal_error(0,"Sorry, can not write a topology to %s",outfile);
+    gmx_fatal(FARGS,"Sorry, can not write a topology to %s",outfile);
     break;
   default:
-    fatal_error(0,"Not supported in write_sto_conf: %s",outfile);
+    gmx_incons("Not supported in write_sto_conf");
   }
 }
 
@@ -872,7 +871,7 @@ void get_stx_coordnum(char *infile,int *natoms)
     break;
   }
   default:
-    fatal_error(0,"Not supported in get_stx_coordnum: %s",infile);
+    gmx_incons("Not supported in get_stx_coordnum");
   }
 }
 
@@ -888,10 +887,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
 
   if (atoms->nr == 0)
     fprintf(stderr,"Warning: Number of atoms in %s is 0\n",infile);
-  else if (atoms->atom == NULL) {
-    sprintf(buf,"Uninitialized array atom in %s, %d",__FILE__,__LINE__);
-    fatal_error(0,buf);
-  }
+  else if (atoms->atom == NULL)
+    gmx_mem("Uninitialized array atom");
+  
   ftp=fn2ftp(infile);
   switch (ftp) {
   case efGRO:
@@ -966,7 +964,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     
     break;
   default:
-    fatal_error(0,"Not supported in read_stx_conf: %s",infile);
+    gmx_incons("Not supported in read_stx_conf");
   }
 }
 

@@ -79,7 +79,7 @@ real fit_ahx(int nres,t_bb bb[],int natoms,int nall,atom_id allindex[],
   int    ai,i,nmass;
   
   if (nca < 3)
-    fatal_error(0,"Need at least 3 Calphas to fit to, (now %d)...\n",nca);
+    gmx_fatal(FARGS,"Need at least 3 Calphas to fit to, (now %d)...\n",nca);
   
   if (xref == NULL) {
     snew(xref,natoms);
@@ -121,7 +121,7 @@ real fit_ahx(int nres,t_bb bb[],int natoms,int nall,atom_id allindex[],
     if (mass[i] > 0)
       nmass++;
   if (nmass != nca)
-    fatal_error(0,"nmass=%d, nca=%d\n",nmass,nca);
+    gmx_fatal(FARGS,"nmass=%d, nca=%d\n",nmass,nca);
     
   /* Now call the fitting routine */
   if (bFit)

@@ -253,7 +253,7 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
   case epbcdxUNSUPPORTED:
     break;
   default:
-    fatal_error(0,"Internal error in pbx_dx, set_pbc has not been called");
+    gmx_fatal(FARGS,"Internal error in pbx_dx, set_pbc has not been called");
     break;
   }
 
@@ -456,10 +456,10 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
 #ifdef DEBUG_PBC
     for(d=0; (d<DIM); d++) {
       if ((cg_cm[icg][d] < 0) || (cg_cm[icg][d] >= box[d][d]))
-	fatal_error(0,"cg_cm[%d] = %15f  %15f  %15f\n"
-		    "box = %15f  %15f  %15f\n",
-		    icg,cg_cm[icg][XX],cg_cm[icg][YY],cg_cm[icg][ZZ],
-		    box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+	gmx_fatal(FARGS,"cg_cm[%d] = %15f  %15f  %15f\n"
+		  "box = %15f  %15f  %15f\n",
+		  icg,cg_cm[icg][XX],cg_cm[icg][YY],cg_cm[icg][ZZ],
+		  box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
     }
 #endif
   }

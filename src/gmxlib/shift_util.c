@@ -67,8 +67,8 @@ void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
     /*C   = (10*rc*rc-5*rc*r1+r1*r1)/(6*rc*rc); Hermans Eq. not correct */
   }
   else
-    fatal_error(0,"r1 (%f) >= rc (%f) in %s, line %d",
-		r1,rc,__FILE__,__LINE__);
+    gmx_fatal(FARGS,"r1 (%f) >= rc (%f) in %s, line %d",
+	      r1,rc,__FILE__,__LINE__);
 
   A_3 = A/3.0;
   B_4 = B/4.0;

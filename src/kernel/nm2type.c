@@ -90,7 +90,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
 	    strcpy(f1,format);
 	    strcat(f1,"%s");
 	    if (sscanf(buf,f1,nbbuf) != 1)
-	      fatal_error(0,"Error on line %d of %s",line,libfilename);
+	      gmx_fatal(FARGS,"Error on line %d of %s",line,libfilename);
 	    newbuf[i] = strdup(nbbuf);
 	    strcat(format,"%*s");
 	  }

@@ -92,7 +92,7 @@ void ffscanf(FILE *in,char *fmt, ...)
       }
     }
     else
-      fatal_error(0,"unknown ffscanf format '%c'",*p+1);
+      gmx_fatal(FARGS,"unknown ffscanf format '%c'",*p+1);
   }
   va_end(ap);
 }
