@@ -49,6 +49,7 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "physics.h"
 #include "pdbio.h"
 #include "gen_ad.h"
+#include "filenm.h"
 
 real distance(rvec a,rvec b) 
 {
@@ -263,47 +264,99 @@ static t_block *make_cgs(t_atoms *at,int nrtp,t_restp rtp[])
   return cgs;
 }
 
-static void write_top(char *ff,char *fn,char *pr,
-		      t_atoms *at,t_params plist[],
-		      int nrtp,t_restp rtp[],t_atomtype *atype,
-		      t_block *cgs)
+static void print_top_header(FILE *out, bool bITP, 
+			     char *ff, int nincl, char **incls)
 {
-  FILE        *out;
-
-  out=ffopen(fn,"w");
-  fprintf(out,"; This is your topology file\n");
-  fprintf(out,"; %s\n",cool_quote());
-
-  fprintf(out,"; Include forcefield constants\n");
-  fprintf(out,"#include \"%s.itp\"\n\n",ff);
+  int i;
   
-  fprintf(out,"[ %s ]\n",dir2str(d_moleculetype));
-  fprintf(out,"; Name   nrexcl\n");
-  fprintf(out,"Protein  3\n\n");
+  fprintf(out,"; This is your %stopology file\n",bITP ? "include " : "");
+  fprintf(out,"; %s\n",cool_quote());
+  
+  if (!bITP) {
+    fprintf(out,"; Include forcefield constants\n");
+    fprintf(out,"#include \"%s.itp\"\n\n",ff);
+    if (nincl>0) {
+      fprintf(out,"; Include other parts of system\n");
+      for (i=0; (i<nincl); i++)
+	fprintf(out,"#include \"%s\"\n",incls[i]);
+      fprintf(out,"\n");
+    }
+  }
+}
 
-
-  print_atoms(out,atype,at,cgs);
-  print_bonds(out,at->nr,d_bonds,F_BONDS,plist,FALSE);
-  print_bonds(out,at->nr,d_pairs,F_LJ14,plist,FALSE);
-  print_bonds(out,at->nr,d_angles,F_ANGLES,plist,FALSE);
-  print_bonds(out,at->nr,d_dihedrals,F_PDIHS,plist,FALSE);
-  print_bonds(out,at->nr,d_dihedrals,F_IDIHS,plist,FALSE);
+static void print_top_posre(FILE *out,char *pr)
+{
   fprintf(out,"; Include Position restraint file\n");
   fprintf(out,"#ifdef POSRES\n");
   fprintf(out,"#include \"%s\"\n",pr);
   fprintf(out,"#endif\n\n");
+}
+  
+static void print_top_water(FILE *out)
+{
   fprintf(out,"; Include water topology\n");
   fprintf(out,"#ifdef FLEX_SPC\n");
   fprintf(out,"#include \"flexspc.itp\"\n");
   fprintf(out,"#else\n");
   fprintf(out,"#include \"spc.itp\"\n");
   fprintf(out,"#endif\n\n");
+}
+
+static void print_top_system(FILE *out)
+{
   fprintf(out,"[ %s ]\n",dir2str(d_system));
   fprintf(out,"; Name\n");
   fprintf(out,"Protein in Water\n\n");
+}
+
+static void print_top_mols(FILE *out, int nmol, char **mols)
+{
+  int i;
+  
   fprintf(out,"[ %s ]\n",dir2str(d_molecules));
-  fprintf(out,"; Compound\t#mols\n");
-  fprintf(out,"Protein\t\t1\n");
+  fprintf(out,"; %-15s %5s\n","Compound","#mols");
+  if (nmol==0)
+    fprintf(out,"Protein\t\t1\n");
+  else
+    for (i=0; (i<nmol); i++)
+      fprintf(out,"%-15s %5d\n",mols[i],1);
+  
+}
+
+void write_top(char *ff,char *fn, char *pr,char *molname,
+	       int nincl, char **incls, int nmol, char **mols,
+	       t_atoms *at,t_params plist[],int nrtp,t_restp rtp[],
+	       t_atomtype *atype,t_block *cgs)
+{
+  FILE *out;
+  bool bITP;
+  
+  bITP=(fn2ftp(fn)==efITP);
+  out=ffopen(fn,"w");
+  
+  print_top_header(out,bITP,ff,nincl,incls);
+  
+  if (at && atype && cgs) {
+    fprintf(out,"[ %s ]\n",dir2str(d_moleculetype));
+    fprintf(out,"; %-15s %5s\n","Name","nrexcl");
+    fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",3);
+    
+    print_atoms(out,atype,at,cgs);
+    print_bonds(out,at->nr,d_bonds,F_BONDS,plist,FALSE);
+    print_bonds(out,at->nr,d_pairs,F_LJ14,plist,FALSE);
+    print_bonds(out,at->nr,d_angles,F_ANGLES,plist,FALSE);
+    print_bonds(out,at->nr,d_dihedrals,F_PDIHS,plist,FALSE);
+    print_bonds(out,at->nr,d_dihedrals,F_IDIHS,plist,FALSE);
+    
+    if (pr)
+      print_top_posre(out,pr);
+  }
+  
+  if (!bITP) {
+    print_top_water(out);
+    print_top_system(out);
+    print_top_mols(out, nmol, mols);
+  }
   
   fclose(out);
 }
@@ -321,7 +374,7 @@ static int search_res_atom(char *type,int resnr,
 }
 
 static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
-		       int nssbonds,t_ssbond ssbonds[])
+		       int nssbonds,t_ssbond *ssbonds)
 {
   int i,ri,rj,ai,aj;
   
@@ -605,7 +658,8 @@ static void print_mass(t_atoms *atoms)
   fprintf(stderr,"Total mass in system %g a.m.u.\n",m);
 }
 
-void pdb2top(char *ff,char *fn,char *pr,
+void pdb2top(char *ff,char *fn,char *pr,char *molname,
+	     int nincl, char **incls, int nmol, char **mols,
 	     t_atoms *atoms,int nah,t_addh ah[],rvec x[],
 	     t_atomtype *atype,t_symtab *tab,
 	     int nrb, t_resbond rb[],
@@ -613,9 +667,9 @@ void pdb2top(char *ff,char *fn,char *pr,
 	     int nra, t_resang ra[],
 	     int nid, t_idihres idi[],
 	     t_terblock *ntdb,t_terblock *ctdb,
-	     int molnr[],bool bH14,
+	     bool bH14,
 	     int rn,int rc,bool bAlldih,
-	     int nssbonds,t_ssbond ssbonds[])
+	     int nssbonds,t_ssbond *ssbonds)
 {
   t_params plist[F_NRE];
   t_nextnb nnb;
@@ -630,15 +684,19 @@ void pdb2top(char *ff,char *fn,char *pr,
 	   atoms->nres,atoms->resname,bAlldih,x);
   
   /* Terminal bonds */
-  ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
-	    rn,ntdb);
-  ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
-	    rc,ctdb);
-  ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
-	    rn,ntdb);
-  ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
-	    rc,ctdb);
-	      
+  if (rn>0)
+    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
+	      rn,ntdb);
+  if (rc>0)
+    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
+	      rc,ctdb);
+  if (rn>0)
+    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
+	      rn,ntdb);
+  if (rc>0)
+    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
+	      rc,ctdb);
+  
   /* Last the disulphide bonds & heme-his */
   do_ssbonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,
 	     atoms->atomname,nssbonds,ssbonds);
@@ -666,10 +724,11 @@ void pdb2top(char *ff,char *fn,char *pr,
   
   cgs=make_cgs(atoms,nrtp,rtp);
   print_mass(atoms);
-
+  
   fprintf(stderr,"Writing topology file\n");
-  write_top(ff,fn,pr,atoms,plist,nrtp,rtp,atype,cgs);
-
+  write_top(ff,fn,pr,molname,nincl,incls,nmol,mols,
+	    atoms,plist,nrtp,rtp,atype,cgs);
+  
   for (i=0; (i<F_NRE); i++)
     sfree(plist[i].param);
   done_nnb(&nnb);
