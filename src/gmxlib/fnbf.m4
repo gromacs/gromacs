@@ -272,6 +272,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
 	   t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
   static    real *nbfp14=NULL;
+  static    bool bWarn=FALSE;
   real      eps;
   real      r2,rtab2;
   rvec      fi,fj;
@@ -310,12 +311,20 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
     copy_rvec(f[aj],fj);
     
     if (r2 >= rtab2) {
-      fatal_error(0,"\n%d %8.3f %8.3f %8.3f\n%d %8.3f %8.3f %8.3f\n1-4 (%d,%d) interaction not within cut-off! r=%g",
-	      x[ai][XX],x[ai][YY],x[ai][ZZ],
+      if (!bWarn) {
+        fprintf(stderr,"Warning: 1-4 interaction at distance larger than %g\n",
+	        rtab2);
+	fprintf(stderr,"These are ignored for the rest of the simulation\n"
+	        "turn on -debug for more information\n");
+	bWarn = TRUE;
+      }
+      if (debug) 
+        fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
+	      	x[ai][XX],x[ai][YY],x[ai][ZZ],
 	      x[aj][XX],x[aj][YY],x[aj][ZZ],
 	      (int)ai+1,(int)aj+1,sqrt(r2));
     }
-    
+    else {
     gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);
 #ifdef DEBUG
     fprintf(debug,"LJ14: grp-i=%2d, grp-j=%2d, ngrp=%2d, GID=%d\n",
@@ -369,6 +378,7 @@ ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
     sj = SHIFT_INDEX(g,aj);
     rvec_dec(fr->fshift[sj],fi);
 
+  }
   }
   return 0.0;
 }
