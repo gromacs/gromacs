@@ -38,6 +38,7 @@ static char *SRCID_resall_h = "$Id$";
 
 #include "typedefs.h"
 #include "pdb2gmx.h"
+#include "gen_dum.h"
 #include "grompp.h"
 
 extern int comprb(const void *a,const void *b);
@@ -66,20 +67,22 @@ extern t_idihres *search_idih(char *key,int nrdh,t_idihres ires[]);
 
 extern t_atomtype *read_atype(char *adb,t_symtab *tab);
 
-extern int read_resall(char       *resdb,
-		       t_restp    **rtp,
-		       t_resbond  **rb,
-		       t_resang   **ra,
-		       t_idihres  **ires,
-		       t_atomtype *atype,
-		       t_symtab   *tab);
+extern int read_resall(char *resdb, t_restp **rtp, t_resbond **rb, 
+		       t_resang **ra, t_idihres **ires, t_atomtype *atype,
+		       t_symtab *tab);
 
-extern void print_resall(FILE *out,
-			 int nrtp,
-			 t_restp rtp[],
-			 t_resbond rb[],
-			 t_resang ra[],
-			 t_idihres ires[],
-			 t_atomtype *atype);
+extern void print_resall(FILE *out, int nrtp, t_restp rtp[], t_resbond rb[],
+			 t_resang ra[], t_idihres ires[], t_atomtype *atype);
+
+/* Stuff for dummies: */
+
+extern int read_dum_db(char *inf,t_dumblock **tbptr);
+/* Read database for dummies hacking */
+
+extern t_dumblock *search_dum_db(int nddb, t_dumblock *ddb, char resnm[]);
+/* Search dummy database */
+
+extern void print_dum_db(FILE *out,int nddb,t_dumblock *ddb);
+/* Print the stuff */
 
 #endif	/* _resall_h */
