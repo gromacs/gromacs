@@ -358,10 +358,13 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("OPTIMIZATIONS FOR SOLVENT MODELS");
   CTYPE ("Solvent molecule name (blank: no optimization)");
   STYPE ("solvent-optimization",   opts->SolventOpt,NULL);
+  /*
   CTYPE ("Number of atoms in solvent model.");
   CTYPE ("(Not implemented for non-three atom models)");
   ITYPE ("nsatoms",     ir->nsatoms,    3);
-
+  */
+  ir->nsatoms = 3;
+  
   /* Shake stuff */
   CCTYPE ("OPTIONS FOR BONDS");
   EETYPE("constraints",	opts->nshake,	constraints, nerror, TRUE);

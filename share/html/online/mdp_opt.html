@@ -24,7 +24,7 @@ LaTeX file. If you're not sure about what you're doing, don't do it! -->
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
-<li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization, nsatoms)
+<li><A HREF="#sol"><b>solvent optimization</b></A> (solvent_optimization)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_warnangle, nstlincsout, morse)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout)
 <li><A HREF="#free"><b>Free energy</b></A> (free_energy, init_lambda, delta_lambda)
@@ -203,8 +203,6 @@ every <b>nstlist</b> steps.
 <dd><dl compact>
 <dt><b>rectangular</b>
 <dd>Selects a rectangular box shape.
-<dt><b>triclinic</b>
-<dd>(NOTE: not fully implemented) Selects a triclinic box shape.
 <dt><b>none</b>
 <dd>Selects no box, for use in vacuum simulations.
 </dl>
@@ -512,9 +510,6 @@ This is only meaningful with integrator <b><A HREF="#run">md</A></b>.
 solvent molecule name in your topology. Check your run time to see 
 if it is faster. 
 </dl>
-<dt><h4>nsatoms: </b>(3)</h4>
-<dd>Number of atoms in solvent model.
-(Not implemented for non-three atom models)
 </dl>
 
 <A NAME="bond"><br>
@@ -774,7 +769,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
 <A HREF="#nl">ns_type</A><br>
-<A HREF="#sol">nsatoms</A><br>
 <A HREF="#el2">optimize_fft</A><br>
 <A HREF="#pc">pcoupl</A><br>
 <A HREF="#el2">pme_order</A><br>
