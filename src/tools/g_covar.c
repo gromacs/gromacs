@@ -76,7 +76,7 @@ int main(int argc,char *argv[])
   FILE       *out;
   int        status,trjout;
   t_topology top;
-  t_atoms    *atoms=NULL;  
+  t_atoms    *atoms;  
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
   real       t,*mat,dev,trace,sum,*eigval,*rdum2,rdum,inv_nframes;
@@ -103,8 +103,8 @@ int main(int argc,char *argv[])
 
   clear_mat(zerobox);
 
-  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
-		     str,&top,&atoms,&xref,NULL,box,TRUE);
+  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),str,&top,&xref,NULL,box,TRUE);
+  atoms=&top.atoms;
 
   printf("\nChoose a group for the least squares fit\n"); 
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,

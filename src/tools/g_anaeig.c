@@ -589,7 +589,8 @@ int main(int argc,char *argv[])
   w_rls=NULL;
   if (bTPS) {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
-		       title,&top,&atoms,&xtop,NULL,topbox,TRUE);
+		       title,&top,&xtop,NULL,topbox,TRUE);
+    atoms=&top.atoms;
     if (bTop)
       rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
     if (xref1==NULL || (bM && bDMR1)) {

@@ -45,6 +45,7 @@ static char *SRCID_g_gyrate_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "txtdump.h"
+#include "tpxio.h"
 
 real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
 	       rvec gvec,rvec d,bool bQ,bool bRot)
@@ -99,21 +100,21 @@ int main(int argc,char *argv[])
   };
   FILE       *out;
   int        status;
-  t_topology *top;
+  t_topology top;
   rvec       *x,*x_s;
   rvec       xcm,gvec;
   rvec       d;         /* eigenvalues of inertia tensor */
   matrix     box;
   real       t,tm,gyro;
   int        natoms;
-  char       *grpname;
+  char       *grpname,title[256];
   int        i,j,gnx;
   atom_id    *index;
   char       *leg[] = { "Rg", "RgX", "RgY", "RgZ" }; 
 #define NLEG asize(leg) 
   t_filenm fnm[] = { 
     { efTRX, "-f", NULL, ffREAD }, 
-    { efTPX, NULL, NULL, ffREAD }, 
+    { efTPS, NULL, NULL, ffREAD }, 
     { efXVG, NULL, "gyrate", ffWRITE }, 
     { efNDX, NULL, NULL, ffOPTRD } 
   }; 
@@ -134,8 +135,8 @@ int main(int argc,char *argv[])
       fprintf(stderr,"Will rotate system along principal axes\n"); 
     }
   } 
-  top=read_top(ftp2fn(efTPX,NFILE,fnm)); 
-  get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,TRUE);
+  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   snew(x_s,natoms); 
@@ -151,9 +152,9 @@ int main(int argc,char *argv[])
     fprintf(out,"@ subtitle \"Axes are principal component axes\"\n");
   xvgr_legend(out,NLEG,leg);
   do {
-    rm_pbc(&(top->idef),natoms,box,x,x_s);
-    tm=sub_xcm(x_s,gnx,index,top->atoms.atom,xcm,bQ);
-    gyro=calc_gyro(x_s,gnx,index,top->atoms.atom,tm,gvec,d,bQ,bRot);    
+    rm_pbc(&top.idef,natoms,box,x,x_s);
+    tm=sub_xcm(x_s,gnx,index,top.atoms.atom,xcm,bQ);
+    gyro=calc_gyro(x_s,gnx,index,top.atoms.atom,tm,gvec,d,bQ,bRot);    
 
     if (bRot) {
       fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",

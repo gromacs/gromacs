@@ -298,7 +298,7 @@ int main(int argc,char *argv[])
   int          m,i,d,frame,outframe,natoms,nout,nre,step;
 #define SKIP 10
   t_topology   top;
-  t_atoms      *atoms=NULL,useatoms;
+  t_atoms      *atoms,useatoms;
   int          isize;
   atom_id      *index;
   char         *grpname;
@@ -418,8 +418,10 @@ int main(int argc,char *argv[])
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
     
-    if (bTPS)
-      read_tps_conf(top_file,title,&top,&atoms,&xp,NULL,box,bFit);
+    if (bTPS) {
+      read_tps_conf(top_file,title,&top,&xp,NULL,box,bFit);
+      atoms=&top.atoms;
+    }
 
     if (bFit) {
       printf("Select group for root least squares fit\n");

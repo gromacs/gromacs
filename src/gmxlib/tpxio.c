@@ -700,7 +700,7 @@ bool fn2bTPX(char *file)
   }
 }
 
-bool read_tps_conf(char *infile,char *title,t_topology *top,t_atoms **atoms, 
+bool read_tps_conf(char *infile,char *title,t_topology *top, 
 		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;
@@ -717,21 +717,19 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,t_atoms **atoms,
     read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
 	     *x,(v==NULL) ? NULL : *v,NULL,top);
     strcpy(title,*top->name);
-    *atoms = &top->atoms;
   }
   else {
     get_stx_coordnum(infile,&natoms);
-    snew(*atoms,1);
-    init_t_atoms(*atoms,natoms,FALSE);
+    init_t_atoms(&top->atoms,natoms,FALSE);
     snew(*x,natoms);
     if (v)
       snew(*v,natoms);
-    read_stx_conf(infile,title,*atoms,*x,(v==NULL) ? NULL : *v,box);
+    read_stx_conf(infile,title,&top->atoms,*x,(v==NULL) ? NULL : *v,box);
     if (bMass)
       for(i=0; i<natoms; i++)
-	(*atoms)->atom[i].m = 
-	  get_mass(*(*atoms)->resname[(*atoms)->atom[i].resnr],
-		   *(*atoms)->atomname[i]);
+	top->atoms.atom[i].m = 
+	  get_mass(*top->atoms.resname[top->atoms.atom[i].resnr],
+		   *top->atoms.atomname[i]);
   }
 
   return bTop;

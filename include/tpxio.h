@@ -83,13 +83,13 @@ extern bool fn2bTPX(char *file);
 /* return if *file is one of the TPX file types */ 
 
 extern bool read_tps_conf(char *infile,char *title,t_topology *top,
-			  t_atoms **atoms,rvec **x,rvec **v,matrix box,
-			  bool bMass);
-/* Read title, atoms, x, v (if not NULL) and box from an STX file,
+			  rvec **x,rvec **v,matrix box,bool bMass);
+/* Read title, top.atoms, x, v (if not NULL) and box from an STX file,
  * memory for atoms, x and v will be allocated.  
  * Return TRUE if a topology was read. 
- * If infile is a TPX file, also read top and *atoms=&(top->atoms),
- * else if bMass=TRUE, read the masses into *atoms from the mass database. */
+ * If infile is a TPX file read the whole top,
+ * else if bMass=TRUE, read the masses into top.atoms from the mass database.
+ */
 
 #ifdef CPLUSPLUS
 }
