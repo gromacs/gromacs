@@ -329,8 +329,10 @@ static void reset_em_all(int nlist,t_dlist dlist[],int nf,
 static void histogramming(FILE *log,int naa,char **aa,
 			  int nf,int maxchi,real **dih,
 			  int nlist,t_dlist dlist[],
+			  atom_id index[],
 			  bool bPhi,bool bPsi,bool bOmega,bool bChi,
-			  bool bNormalize,bool bSSHisto,char *ssdump)
+			  bool bNormalize,bool bSSHisto,char *ssdump,
+			  real bfac_max,t_atoms *atoms)
 {
   t_karplus kkkphi[] = {
     { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0 },
@@ -350,15 +352,16 @@ static void histogramming(FILE *log,int naa,char **aa,
 #define NKKKCHI asize(kkkchi1)
 #define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
   
-  FILE *fp,*ssfp[3];
-  char *sss[3] = { "sheet", "helix", "coil" };
-  real S2;
-  real *normhisto;
-  real **Jc;
-  int  ****his_aa_ss;
-  int  ***his_aa,**his_aa1,*histmp;
-  int  i,j,k,m,Dih,nres,hindex;
-  char hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str;
+  FILE    *fp,*ssfp[3];
+  char    *sss[3] = { "sheet", "helix", "coil" };
+  real    S2;
+  real    *normhisto;
+  real    **Jc;
+  int     ****his_aa_ss=NULL;
+  int     ***his_aa,**his_aa1,*histmp;
+  int     i,j,k,m,n,nn,Dih,nres,hindex;
+  bool    bBfac,bOccup;
+  char    hisfile[256],hhisfile[256],sshisfile[256],title[256],*ss_str=NULL;
   
   if (bSSHisto) {
     fp = ffopen(ssdump,"r");
@@ -391,34 +394,52 @@ static void histogramming(FILE *log,int naa,char **aa,
     snew(Jc[i],NJC);
   
   j=0;
+  n=0;
   for (Dih=0; (Dih<NONCHI+maxchi); Dih++) {    
     for(i=0; (i<nlist); i++) {
       if (((Dih  < edOmega) ) ||
 	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
 	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
       	make_histo(log,nf,dih[j],NHISTO,histmp,-M_PI,M_PI);
-
+	
 	if (bSSHisto) {
 	  /* Assume there is only one structure, the first. 
 	   * Compute index in histogram.
 	   */
-	  hindex = ((dih[j][0]+M_PI)*NHISTO)/(2*M_PI);
-	  assert(hindex >= 0);
-	  assert(hindex < NHISTO);
-	  /* Assign dihedral to either of the structure determined histograms*/
-	  switch(ss_str[dlist[i].resnr]) {
-	  case 'E':
-	    his_aa_ss[0][dlist[i].index][Dih][hindex]++;
-	    break;
-	  case 'H':
-	    his_aa_ss[1][dlist[i].index][Dih][hindex]++;
-	    break;
-	  default:
-	    his_aa_ss[2][dlist[i].index][Dih][hindex]++;
-	    break;
+	  /* Check the atoms to see whether their B-factors are low enough 
+	   * Check atoms to see their occupancy is 1.
+	   */
+	  bBfac = bOccup = TRUE;
+	  for(nn=0; (nn<4); nn++,n++) {
+	    bBfac  = bBfac  && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
+	    bOccup = bOccup && (atoms->pdbinfo[index[n]].occup == 1);
 	  }
+	  if (bOccup && ((bfac_max <= 0) || ((bfac_max > 0) && bBfac))) {
+	    hindex = ((dih[j][0]+M_PI)*NHISTO)/(2*M_PI);
+	    assert(hindex >= 0);
+	    assert(hindex < NHISTO);
+	    /* Assign dihedral to either of the structure determined 
+	     * histograms
+	     */
+	    switch(ss_str[dlist[i].resnr]) {
+	    case 'E':
+	      his_aa_ss[0][dlist[i].index][Dih][hindex]++;
+	      break;
+	    case 'H':
+	      his_aa_ss[1][dlist[i].index][Dih][hindex]++;
+	      break;
+	    default:
+	      his_aa_ss[2][dlist[i].index][Dih][hindex]++;
+	      break;
+	    }
+	  }
+	  else if (debug) 
+	    fprintf(debug,"Res. %d has imcomplete occupancy or bfacs > %g\n",
+		    dlist[i].resnr,bfac_max);
 	}
-		
+	else
+	  n += 4;
+	  
 	switch (Dih) {
 	case edPhi:
 	  calc_distribution_props(NHISTO,histmp,-M_PI,NKKKPHI,kkkphi,&S2);
@@ -824,7 +845,7 @@ int main(int argc,char *argv[])
   static int  r0=1,ndeg=1,maxchi=2;
   static bool bAll=FALSE;
   static bool bPhi=FALSE,bPsi=FALSE,bOmega=FALSE;
-  static real bfac_init=-1.0;
+  static real bfac_init=-1.0,bfac_max=0;
   static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
   static bool bNormHisto=TRUE;
@@ -854,7 +875,9 @@ int main(int argc,char *argv[])
     { "-ramomega",FALSE,etBOOL, {&bRamOmega},
       "compute average omega as a function of phi/psi and plot it in an xpm plot" },
     { "-bfact", FALSE, etREAL, {&bfac_init},
-      "bfactor value for pdb file for atoms with no calculated dihedral order parameter"}
+      "B-factor value for pdb file for atoms with no calculated dihedral order parameter"},
+    { "-bmax",  FALSE, etREAL, {&bfac_max},
+      "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax <= 0 means no limit." }
   };
 
   FILE       *log;
@@ -956,8 +979,9 @@ int main(int argc,char *argv[])
     dump_em_all(nlist,dlist,nf,time,dih,maxchi,bPhi,bPsi,bChi,bOmega);
   
   /* Histogramming & J coupling constants */
-  histogramming(log,naa,aa,nf,maxchi,dih,nlist,dlist,bPhi,bPsi,bOmega,bChi,
-		bNormHisto,bSSHisto,opt2fn("-ss",NFILE,fnm));
+  histogramming(log,naa,aa,nf,maxchi,dih,nlist,dlist,index,
+		bPhi,bPsi,bOmega,bChi,
+		bNormHisto,bSSHisto,opt2fn("-ss",NFILE,fnm),bfac_max,&atoms);
 
   /* Order parameters */  
   order_params(log,opt2fn("-o",NFILE,fnm),maxchi,nlist,dlist,
