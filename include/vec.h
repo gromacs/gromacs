@@ -54,21 +54,28 @@
   
   vector operations:
   void rvec_add(const rvec a,const rvec b,rvec c)  c = a + b
+  void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
   void rvec_inc(rvec a,rvec b)                     a += b
   void ivec_inc(ivec a,ivec b)                     a += b
   void rvec_sub(const rvec a,const rvec b,rvec c)  c = a - b
+  void dvec_sub(const dvec a,const dvec b,dvec c)  c = a - b
   void rvec_dec(rvec a,rvec b)                     a -= b
   void copy_rvec(const rvec a,rvec b)              b = a (reals)
+  void copy_dvec(const dvec a,dvec b)              b = a (reals)
   void copy_ivec(const ivec a,ivec b)              b = a (integers)
   void ivec_sub(const ivec a,const ivec b,ivec c)  c = a - b
   void svmul(real a,rvec v1,rvec v2)               v2 = a * v1
+  void dsvmul(double a,dvec v1,dvec v2)            v2 = a * v1
   void clear_rvec(rvec a)                          a = 0
+  void clear_dvec(dvec a)                          a = 0
   void clear_ivec(rvec a)                          a = 0
   void clear_rvecs(int n,rvec v[])
   real iprod(rvec a,rvec b)                        = a . b (inner product)
+  double diprod(dvec a,dvec b)                     = a . b (inner product)
   real iiprod(ivec a,ivec b)                       = a . b (integers)
   real norm2(rvec a)                               = | a |^2 ( = x*y*z )
   real norm(rvec a)                                = | a |
+  double dnorm(dvec a)                             = | a |
   void oprod(rvec a,rvec b,rvec c)                 c = a x b (outer product)
   void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
   real cos_angle(rvec a,rvec b)
@@ -200,6 +207,19 @@ static inline void rvec_add(const rvec a,const rvec b,rvec c)
   c[ZZ]=z;
 }
 
+static inline void dvec_add(const dvec a,const dvec b,dvec c)
+{
+  double x,y,z;
+  
+  x=a[XX]+b[XX];
+  y=a[YY]+b[YY];
+  z=a[ZZ]+b[ZZ];
+  
+  c[XX]=x;
+  c[YY]=y;
+  c[ZZ]=z;
+}
+
 static inline void rvec_inc(rvec a,rvec b)
 {
   real x,y,z;
@@ -239,6 +259,19 @@ static inline void rvec_sub(const rvec a,const rvec b,rvec c)
   c[ZZ]=z;
 }
 
+static inline void dvec_sub(const dvec a,const dvec b,dvec c)
+{
+  double x,y,z;
+  
+  x=a[XX]-b[XX];
+  y=a[YY]-b[YY];
+  z=a[ZZ]-b[ZZ];
+  
+  c[XX]=x;
+  c[YY]=y;
+  c[ZZ]=z;
+}
+
 static inline void rvec_dec(rvec a,rvec b)
 {
   real x,y,z;
@@ -253,6 +286,13 @@ static inline void rvec_dec(rvec a,rvec b)
 }
 
 static inline void copy_rvec(const rvec a,rvec b)
+{
+  b[XX]=a[XX];
+  b[YY]=a[YY];
+  b[ZZ]=a[ZZ];
+}
+
+static inline void copy_dvec(const dvec a,dvec b)
 {
   b[XX]=a[XX];
   b[YY]=a[YY];
@@ -293,12 +333,29 @@ static inline void svmul(real a,rvec v1,rvec v2)
   v2[ZZ]=a*v1[ZZ];
 }
 
+static inline void dsvmul(double a,dvec v1,dvec v2)
+{
+  v2[XX]=a*v1[XX];
+  v2[YY]=a*v1[YY];
+  v2[ZZ]=a*v1[ZZ];
+}
+
 static inline real distance2(rvec v1, rvec v2)
 {
   return sqr(v2[XX]-v1[XX]) + sqr(v2[YY]-v1[YY]) + sqr(v2[ZZ]-v1[ZZ]);
 }
 
 static inline void clear_rvec(rvec a)
+{
+  /* The ibm compiler has problems with inlining this 
+   * when we use a const real variable
+   */
+  a[XX]=0.0;
+  a[YY]=0.0;
+  a[ZZ]=0.0;
+}
+
+static inline void clear_dvec(dvec a)
 {
   /* The ibm compiler has problems with inlining this 
    * when we use a const real variable
@@ -337,6 +394,11 @@ static inline real iprod(rvec a,rvec b)
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
 }
 
+static inline double diprod(dvec a,dvec b)
+{
+  return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
+}
+
 static inline real iiprod(ivec a,ivec b)
 {
   return (a[XX]*b[XX]+a[YY]*b[YY]+a[ZZ]*b[ZZ]);
@@ -348,6 +410,11 @@ static inline real norm2(rvec a)
 }
 
 static inline real norm(rvec a)
+{
+  return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
+}
+
+static inline double dnorm(dvec a)
 {
   return sqrt(a[XX]*a[XX]+a[YY]*a[YY]+a[ZZ]*a[ZZ]);
 }
