@@ -539,22 +539,26 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
 
   clear_mat(zerobox);
 
-  sprintf(buf,"\nFound %d clusters\n"
-	  "\nWriting %s structure for each cluster to %s\n",
-	  clust->ncl,bAv ? "average" : "middle",trxfn);
+  sprintf(buf,"\nFound %d clusters\n",clust->ncl);
   fprintf(stderr,buf);
   fprintf(log,buf);
+  if (trxfn) {
+    sprintf(buf,"\nWriting %s structure for each cluster to %s\n",
+	    bAv ? "average" : "middle",trxfn);
+    fprintf(stderr,buf);
+    fprintf(log,buf);
   
-  /* Prepare a reference structure for the orientation of the clusters  */
-  snew(xtpsi,isize);
-  for(i=0; i<isize; i++)
-    copy_rvec(xtps[index[i]],xtpsi[i]);
-  reset_x(isize,alli,isize,alli,xtpsi,mass);
-  trxout = open_trx(trxfn,"w");
-  /* Calculate the average structure in each cluster,               *
-   * all structures are fitted to the first struture of the cluster */
-  snew(xav,isize);
-  snew(xnatom,natom);
+    /* Prepare a reference structure for the orientation of the clusters  */
+    snew(xtpsi,isize);
+    for(i=0; i<isize; i++)
+      copy_rvec(xtps[index[i]],xtpsi[i]);
+    reset_x(isize,alli,isize,alli,xtpsi,mass);
+    trxout = open_trx(trxfn,"w");
+    /* Calculate the average structure in each cluster,               *
+     * all structures are fitted to the first struture of the cluster */
+    snew(xav,isize);
+    snew(xnatom,natom);
+  }
   snew(structure,nf);
   sprintf(buf,"\n%3s | %3s %4s | %6s %4s | cluster members\n",
 	  "cl.","#st","rmsd","middle","rmsd");
@@ -568,7 +572,7 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
       if (clust->cl[i1] == cl) {
 	structure[nstr] = i1;
 	nstr++;
-	if (bAv) {
+	if (trxfn && bAv) {
 	  reset_x(isize,alli,isize,alli,xx[i1],mass);
 	  if (nstr == 1)
 	    first = i1;
@@ -621,35 +625,58 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
     }
     fprintf(stderr,"\n");
     fprintf(log,"\n");
-    
-    /* Dump the average structure for this cluster */
-    if (bAv) {
-      r = 1.0/nstr;
-      for(i=0; i<isize; i++)
+
+    if (trxfn) {
+      /* Dump the average structure for this cluster */
+      if (bAv) {
+	r = 1.0/nstr;
+	for(i=0; i<isize; i++)
 	svmul(r,xav[i],xav[i]);
-    } else {
+      } else {
+	for(i=0; i<isize; i++)
+	  copy_rvec(xx[midstr][i],xav[i]);
+	reset_x(isize,alli,isize,alli,xav,mass);
+      }
+      do_fit(isize,mass,xtpsi,xav);
       for(i=0; i<isize; i++)
-	copy_rvec(xx[midstr][i],xav[i]);
-      reset_x(isize,alli,isize,alli,xav,mass);
+	copy_rvec(xav[i],xnatom[index[i]]);
+      r = cl;
+      write_trx(trxout,isize,index,atoms,0,r,zerobox,xnatom,NULL);
     }
-    do_fit(isize,mass,xtpsi,xav);
-    for(i=0; i<isize; i++)
-      copy_rvec(xav[i],xnatom[index[i]]);
-    r = cl;
-    write_trx(trxout,isize,index,atoms,0,r,zerobox,xnatom,NULL);
   }
-  close_trx(trxout);
-  
-  sfree(xtpsi);
-  sfree(xav);
-  sfree(xnatom);
+  if (trxfn) {
+    close_trx(trxout);
+       sfree(xtpsi);
+    sfree(xav);
+    sfree(xnatom);
+  }
   sfree(structure);
 }
+
+static void convert_mat(t_matrix *mat,t_mat *rms)
+{
+  int n,i,j;
+  real **tmp;
+
+  n = mat->nx;
+  rms->n1  = n;
+  matrix2real(mat,rms->mat);
+  
+  for(i=0; i<n; i++)
+    for(j=i; j<n; j++) {
+      rms->sumrms += rms->mat[i][j];
+      if (rms->mat[i][j] > rms->maxrms)
+	rms->maxrms = rms->mat[i][j];
+    }
+  rms->nn = n;
+}  
 
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_cluster can cluster structures with several different methods.",
+    "Distances between structures can be determined from a trajectory",
+    "or read from an XPM matrix file with the [TT]-dm[tt] option.",
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     "full linkage: add a structure to a cluster when its distance to any",
@@ -662,9 +689,9 @@ int main(int argc,char *argv[])
     "Monte Carlo: reorder the RMSD matrix using Monte Carlo.[PAR]",
     "diagonalization: diagonalize the RMSD matrix.[PAR]"
     "When unique cluster assignments can be determined (full linkage and",
-    "Jarvis Patrick), the structure with the smallest average distance to",
-    "the others or the average structure for each cluster will be written",
-    "to a trajectory file."
+    "Jarvis Patrick) and a trajectory file is supplied, the structure with",
+    "the smallest average distance to the others or the average structure",
+    "for each cluster will be written to a trajectory file.[PAR]",
   };
   
   FILE         *fp,*log;
@@ -681,13 +708,14 @@ int main(int argc,char *argv[])
   t_topology   top;
   bool         bSameF;
   t_rgb        rlo,rhi;
+  t_matrix     *readmat;
   
   int      status1,status2,isize,nbytes;
   atom_id  *index,*alli;
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass;
   char     buf[STRLEN];
-  bool     bAnalyze,bJP_RMSD;
+  bool     bAnalyze,bJP_RMSD,bReadMat,bReadTraj;
   
   static char *method[] = { NULL, "linkage", "jarvis-patrick","monte-carlo",
 			    "diagonalization", NULL };
@@ -726,9 +754,10 @@ int main(int argc,char *argv[])
       "Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps)" }
   };
   t_filenm fnm[] = {
-    { efTRX, "-f",     NULL,        ffREAD  },
-    { efTPS, "-s",     NULL,        ffREAD  },
+    { efTRX, "-f",     NULL,        ffOPTRD },
+    { efTPS, "-s",     NULL,        ffOPTRD },
     { efNDX, NULL,     NULL,        ffOPTRD },
+    { efXPM, "-dm",   "rmsd",       ffOPTRD },     
     { efXPM, "-o",    "rmsd-clust", ffWRITE },
     { efLOG, "-g",    "cluster",    ffWRITE },
     { efXVG, "-dist", "rmsd-dist",  ffWRITE },
@@ -745,6 +774,9 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+
+  bReadMat   = opt2bSet("-dm",NFILE,fnm);
+  bReadTraj  = opt2bSet("-f",NFILE,fnm) || !bReadMat;
 
     /* Open log file */
   log = ftp2FILE(efLOG,NFILE,fnm,"w");
@@ -775,13 +807,14 @@ int main(int argc,char *argv[])
 
   bAnalyze = (m_linkage || m_jarvis_patrick);
 
-  /* don't read mass-database as masses (and top) are not used */
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&xtps,NULL,box,bAnalyze);
-  
-  fprintf(stderr,"\nSelect group for RMSD calculation:\n");
-  get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
-	    1,&isize,&index,&grpname);
-
+  if (bReadTraj) {
+    /* don't read mass-database as masses (and top) are not used */
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&xtps,NULL,box,bAnalyze);
+    
+    fprintf(stderr,"\nSelect group for RMSD calculation:\n");
+    get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
+	      1,&isize,&index,&grpname);
+  }
   /* Initiate arrays */  
   snew(d1,isize);
   snew(d2,isize);
@@ -789,55 +822,73 @@ int main(int argc,char *argv[])
     snew(d1[i],isize);
     snew(d2[i],isize);
   }
+
+  if (bReadTraj) {
+    /*set box type*/
+    init_pbc(box,FALSE);
     
-  /*set box type*/
-  init_pbc(box,FALSE);
-
-  /* Loop over first coordinate file */
-  fn = opt2fn("-f",NFILE,fnm);
-  
-  xx = read_whole_trj(fn,isize,index,skip,&nf,&natom,&time);
-  if (!bRMSdist || bAnalyze) {
-    /* Center all frames on zero */
-    snew(alli,isize);
-    for(i=0; i<isize; i++)
-      alli[i] = i;
-    snew(mass,isize);
-    for(i=0; i<isize; i++)
-      mass[i] = top.atoms.atom[index[i]].m;
-    for(i=0; i<nf; i++)
-      reset_x(isize,alli,isize,alli,xx[i],mass);
-  }
-  rms = init_mat(nf,m_diagonalize);
-  nrms = (nf*(nf-1))/2;
-  if (!bRMSdist) {
-    fprintf(stderr,"Computing %dx%d RMS deviation matrix\n",nf,nf);
-    snew(x1,isize);
-    for(i1=0; (i1<nf); i1++) {
-      for(i2=i1+1; (i2<nf); i2++) {
-	for(i=0; i<isize; i++)
-	  copy_rvec(xx[i1][i],x1[i]);
-	do_fit(isize,mass,xx[i2],x1);
-	rmsd = rmsdev(isize,mass,xx[i2],x1);
-	set_mat_entry(rms,i1,i2,rmsd);
-      }
-      nrms -= (nf-i1-1);
-      fprintf(stderr,"\r# RMSD calculations left: %d   ",nrms);
+    /* Loop over first coordinate file */
+    fn = opt2fn("-f",NFILE,fnm);
+    
+    xx = read_whole_trj(fn,isize,index,skip,&nf,&natom,&time);
+    if (!bRMSdist || bAnalyze) {
+      /* Center all frames on zero */
+      snew(alli,isize);
+      for(i=0; i<isize; i++)
+	alli[i] = i;
+      snew(mass,isize);
+      for(i=0; i<isize; i++)
+	mass[i] = top.atoms.atom[index[i]].m;
+      for(i=0; i<nf; i++)
+	reset_x(isize,alli,isize,alli,xx[i],mass);
     }
+  }
+  if (bReadMat) {
+    read_xpm_matrix(opt2fn("-dm",NFILE,fnm),&readmat);
+    if (readmat[0].nx != readmat[0].ny)
+      fatal_error(0,"Matrix (%dx%d) is not square",
+		  readmat[0].nx,readmat[0].ny);
+    if (bReadTraj && bAnalyze && (readmat[0].nx != nf))
+      fatal_error(0,"Matrix size (%dx%d) does not match the number of frames (%d)",
+	      readmat[0].nx,readmat[0].ny,nf);
+
+    nf = readmat[0].nx;
+    sfree(time);
+    time = readmat[0].axis_x;
+
+    rms = init_mat(readmat[0].nx,m_diagonalize);
+    convert_mat(&(readmat[0]),rms);
   } else {
-    fprintf(stderr,"Computing %dx%d RMS distance deviation matrix\n",nf,nf);
-    for(i1=0; (i1<nf); i1++) {
-      calc_dist(isize,xx[i1],d1);
-      for(i2=i1+1; (i2<nf); i2++) {
-	calc_dist(isize,xx[i2],d2);
-	set_mat_entry(rms,i1,i2,rms_dist(isize,d1,d2));
+    rms = init_mat(nf,m_diagonalize);
+    nrms = (nf*(nf-1))/2;
+    if (!bRMSdist) {
+      fprintf(stderr,"Computing %dx%d RMS deviation matrix\n",nf,nf);
+      snew(x1,isize);
+      for(i1=0; (i1<nf); i1++) {
+	for(i2=i1+1; (i2<nf); i2++) {
+	  for(i=0; i<isize; i++)
+	    copy_rvec(xx[i1][i],x1[i]);
+	  do_fit(isize,mass,xx[i2],x1);
+	  rmsd = rmsdev(isize,mass,xx[i2],x1);
+	  set_mat_entry(rms,i1,i2,rmsd);
+	}
+	nrms -= (nf-i1-1);
+	fprintf(stderr,"\r# RMSD calculations left: %d   ",nrms);
       }
-      nrms -= (nf-i1-1);
-      fprintf(stderr,"\r# RMSD calculations left: %d   ",nrms);
+    } else {
+      fprintf(stderr,"Computing %dx%d RMS distance deviation matrix\n",nf,nf);
+      for(i1=0; (i1<nf); i1++) {
+	calc_dist(isize,xx[i1],d1);
+	for(i2=i1+1; (i2<nf); i2++) {
+	  calc_dist(isize,xx[i2],d2);
+	  set_mat_entry(rms,i1,i2,rms_dist(isize,d1,d2));
+      }
+	nrms -= (nf-i1-1);
+	fprintf(stderr,"\r# RMSD calculations left: %d   ",nrms);
+      }
     }
+    fprintf(stderr,"\n\n");
   }
-  fprintf(stderr,"\n\n");
-
   sprintf(buf,"The maximum RMSD is %g nm\n"
 	  "Average RMSD is %g\n"
 	  "Number of structures for matrix %d\n"
@@ -904,7 +955,8 @@ int main(int argc,char *argv[])
   if (bAnalyze) {
     plot_clusters(nf,rms->mat,rms->maxrms,&clust);
     analyze_clusters(nf,&clust,rmsmat,&(top.atoms),natom,isize,index,alli,
-		     xx,time,mass,xtps,opt2fn("-cl",NFILE,fnm),bAv,log);
+		     xx,time,mass,xtps,
+		     bReadTraj ? opt2fn("-cl",NFILE,fnm) : NULL,bAv,log);
   }
   ffclose(log);
   
@@ -920,9 +972,14 @@ int main(int argc,char *argv[])
   rhi.r=0.0, rhi.g=0.0, rhi.b=0.0;
   
   fp = opt2FILE("-o",NFILE,fnm,"w");
-  write_xpm(fp,bRMSdist ? "RMS Distance Deviation" : "RMS Deviation",
-	    "RMSD (nm)","Time (ps)","Time (ps)",
-	    nf,nf,time,time,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
+  if (bReadMat) {
+    write_xpm(fp,readmat[0].title,readmat[0].legend,readmat[0].label_x,
+	      readmat[0].label_y,nf,nf,readmat[0].axis_x,readmat[0].axis_y,
+	      rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
+  } else
+    write_xpm(fp,bRMSdist ? "RMS Distance Deviation" : "RMS Deviation",
+	      "RMSD (nm)","Time (ps)","Time (ps)",
+	      nf,nf,time,time,rms->mat,0.0,rms->maxrms,rlo,rhi,&nlevels);
   ffclose(fp);
   xv_file(opt2fn("-o",NFILE,fnm),NULL);	
 
