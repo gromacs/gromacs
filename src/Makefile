@@ -16,7 +16,7 @@ endif
 LOCAL	=	local
 LDIRS	=	$(DIRS)	$(LOCAL)
 TELLDIRS=	$(LDIRS)
-DDDIRS	=	$(DIRS)	Makefile makef mkhtml
+DDDIRS	=	$(DIRS)	Makefile makef mkhtml mkcompl
 FILES   =	NOGMX
 SDIRS	=	$(foreach DIR,$(TELLDIRS),src/$(DIR))
 AUX	=	top tutor html
