@@ -33,7 +33,7 @@ PROGRAMS	= average	do_dssp		editconf	\
 		g_saltbr	g_sas		g_sgangle	\
 		g_traj		\
 		g_velacc	genbox		genconf		\
-		gendr		genion		genpr		\
+		genion		genpr		\
 		make_ndx	mk_angndx	protonate	\
 		trjcat		trjconv         trjorder	\
 		wheel		xpm2ps
