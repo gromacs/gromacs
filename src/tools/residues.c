@@ -29,6 +29,22 @@
 static char *SRCID_residues_c = "$Id$";
 
 #include "cdist.h"
+#include "names.h"
+
+/* Debug output */
+static void pr_logg(FILE *fp,int nlogg,int logg[],bool bVir,char *label)
+{
+  int i;
+  
+  if (fp) {
+    fprintf(fp,"%5s  virtual = %3s",label,yesno_names[bVir]);
+    if (bVir)
+      nlogg++;
+    for(i=0; (i<nlogg); i++)
+      fprintf(fp," %5d",logg[i]);
+    fprintf(fp,"\n");
+  }
+}
 
 /**********************************************************
  *
@@ -189,16 +205,7 @@ void arg (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[11] == 10) && !bVir) || ((logg[11] == 11) && bVir) ) {
 
-      if  ((logg[11] == 10) && !bVir) {
-      fprintf(log,"logg (arg) = %d %d %d %d %d %d %d %d %d %d\n",logg[0],
-	      logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],logg[7],logg[8],
-	      logg[9]);
-      }
-      else if ((logg[11] == 11) && bVir) {
-      fprintf(log,"logg (arg) = %d %d %d %d %d %d %d %d %d %d %d\n",logg[0],
-	      logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],logg[7],logg[8],
-	      logg[9],logg[10]);
-      }
+      pr_logg(debug,10,logg,bVir,"Arg");
 
       /*SETDISTANCE for NE and HH12 (logg[0]&logg[5]) (transdihedral)*/
       pdih_lengths(logg[0],logg[2],logg[3],logg[5],ilist,iparams,&lb,&blen,
@@ -789,14 +796,7 @@ void asn (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
 
-      if ((logg[7] == 6) && !bVir) {
-      fprintf(log,"logg (asn) = %d %d %d %d %d %d\n",logg[0],
-	      logg[1],logg[2],logg[3],logg[4],logg[5]);
-      }
-      else if ((logg[7] == 7) && bVir) {
-      fprintf(log,"logg (asn) = %d %d %d %d %d %d %d\n",logg[0],
-	      logg[1],logg[2],logg[3],logg[4],logg[5],logg[6]);
-      }
+      pr_logg(debug,6,logg,bVir,"Asn");
 
       /*SETDISTANCE for CB and CG (1-2) */
       blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
@@ -1049,14 +1049,8 @@ void gln (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
 
-      if ((logg[7] == 6) && !bVir) {
-	fprintf(log,"logg (arg) = %d %d %d %d %d %d\n",logg[0],
-		logg[1],logg[2],logg[3],logg[4],logg[5]);
-      }
-      else if ((logg[7] == 7) && bVir) {
-	fprintf(log,"logg (arg) = %d %d %d %d %d %d %d\n",logg[0],
-		logg[1],logg[2],logg[3],logg[4],logg[5],logg[6]);
-      }
+      pr_logg(debug,6,logg,bVir,"Gln");
+
       /*SETDISTANCE for CG and CD (1-2) */
       blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
       lb=(1.0-end_margin)*blen;
@@ -1358,16 +1352,7 @@ void hisb (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[10] == 9) && !bVir) || ((logg[10] == 10) && bVir) ) {
 
-      if ((logg[10] == 9) && !bVir) {
-	fprintf(log,"logg (hisb) = %d %d %d %d %d %d %d %d %d\n",
-		logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-		logg[7],logg[8]);
-      }
-      else if ((logg[10] == 10) && bVir) {
-	fprintf(log,"logg (hisb) = %d %d %d %d %d %d %d %d %d %d\n",
-		logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-		logg[7],logg[8],logg[9]);
-      }
+      pr_logg(debug,9,logg,bVir,"Hisb");
 
       /*SETDISTANCE for CB and CG (1-2) */
       blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
@@ -1787,8 +1772,8 @@ void hisb (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
   fprintf(log,"There are %d new histidine distances\n",ndist);
 
   if (ndist > 0 ) {
-  fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5 \n",n12dist,n13dist,
-	  n14dist,n15dist);
+    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5 \n",n12dist,n13dist,
+	    n14dist,n15dist);
   }
 }
 
@@ -1884,9 +1869,7 @@ void ile (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	j++;
       }
     if ( logg[14] == 14 ) {
-      fprintf(log,"logg (ile) =%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n"
-	      ,logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],logg[7],
-	      logg[8],logg[9],logg[10],logg[11],logg[12],logg[13]);
+      pr_logg(debug,14,logg,FALSE,"Ile");
 
       /*SETDISTANCE for HD1 and CB */
       gauche(logg[4],logg[3],logg[7],logg[1],ilist,iparams,&blen,atoms);
@@ -2170,9 +2153,8 @@ void leu (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	j++;
       }
     if ( logg[11] == 11 ) {
-      fprintf(log,"logg (leu) = %d %d %d %d %d %d %d %d %d %d %d\n",
-	      logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-	      logg[7],logg[8],logg[9],logg[10]);
+      pr_logg(debug,11,logg,FALSE,"Leu");
+
       /*SETDISTANCE for HD11 and CB */
       gauche(logg[4],logg[3],logg[1],logg[0],ilist,iparams,&blen,atoms);
       lb=(1.0-leu_margin)*blen;
@@ -2709,16 +2691,7 @@ void phe (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[13] == 12) && !bVir) || ((logg[13] == 13) && bVir) ) {
 
-      if ((logg[13] == 12) && !bVir) {
-      fprintf(log,"logg (phe) = %d %d %d %d %d %d %d %d %d %d %d %d\n",
-	      logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-	      logg[7],logg[8],logg[9],logg[10],logg[11]);
-      }
-      else if ((logg[13] == 13) && bVir) {
-      fprintf(log,"logg (phe) = %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-	      logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-	      logg[7],logg[8],logg[9],logg[10],logg[11],logg[12]);
-      }
+      pr_logg(debug,12,logg,bVir,"Phe");
 
       /*SETDISTANCE for CB and CG (1-2) */
       blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
@@ -3479,10 +3452,9 @@ void phe (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
   }
 
   fprintf(log,"There are %d new phenylalanine distances\n",ndist);
-  if (ndist > 0 ) {
-  fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6, %d virtual)\n",n12dist,n13dist,
-	  n14dist,n15dist,n16dist,nVdist);
-  }
+  if (ndist > 0 ) 
+    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6, %d virtual)\n",
+	    n12dist,n13dist,n14dist,n15dist,n16dist,nVdist);
 }
 
 /**********************************************************
@@ -3716,16 +3688,7 @@ void tyr (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[13] == 12) && !bVir) || ((logg[13] == 13) && bVir) ) {
 
-      if ((logg[13] == 12) && !bVir) {
-	fprintf(log,"logg (tyr) = %d %d %d %d %d %d %d %d %d %d %d %d\n",
-		logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-		logg[7],logg[8],logg[9],logg[10],logg[11]);
-      }
-      else if ((logg[13] == 13) && bVir) {
-	fprintf(log,"logg (tyr) = %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-		logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-		logg[7],logg[8],logg[9],logg[10],logg[11],logg[12]);
-      }
+      pr_logg(debug,12,logg,bVir,"Tyr");
 
       /*SETDISTANCE for CB and CG (1-2) */
       blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
@@ -4508,11 +4471,11 @@ void tyr (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
   }
   
   fprintf(log,"There are %d new tyrosine distances\n",ndist);
-  if (ndist > 0 ) {
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6, %d virtual)\n",n12dist,n13dist,
-	  n14dist,n15dist,n16dist,nVdist);
-  }
+  if (ndist > 0 ) 
+    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6, %d virtual)\n",
+	    n12dist,n13dist,n14dist,n15dist,n16dist,nVdist);
 }
+
 /**********************************************************
  *
  *     T R Y P T O P H A N
@@ -4976,20 +4939,8 @@ void trp (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
       }
     if ( ((logg[17] == 16) && !bVir) || ((logg[17] == 17) && bVir) ) {
 
-      if ((logg[17] == 16) && !bVir) {
-      fprintf(log,"logg (trp) = %d %d %d %d %d %d %d %d %d %d %d %d",
-	      logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-	      logg[7],logg[8],logg[9],logg[10],logg[11]);
-      fprintf(log," %d %d %d %d\n",logg[12],logg[13],logg[14],logg[15]);
-      }
-      else if  ((logg[17] == 17) && bVir) {
-      fprintf(log,"logg (trp) = %d %d %d %d %d %d %d %d %d %d %d %d",
-	      logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-	      logg[7],logg[8],logg[9],logg[10],logg[11]);
-      fprintf(log," %d %d %d %d %d\n",logg[12],logg[13],logg[14],logg[15],
-	      logg[16]);
-      }
-
+      pr_logg(debug,16,logg,bVir,"Trp");
+    
       /*SETDISTANCE for CB and CG (1-2) */
       blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
       lb=(1.0-ring_margin)*blen;
@@ -6391,11 +6342,11 @@ void trp (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
   }
 
   fprintf(log,"There are %d new tryptophan distances\n",ndist);
-  if (ndist > 0 ) {
-  fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6 %d 1-7, %d virtual)\n",n12dist,
-	  n13dist,n14dist,n15dist,n16dist,n17dist,nVdist);
-  }
-} 
+  if (ndist > 0 )
+    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6 %d 1-7 %d virtual)\n",
+	    n12dist,n13dist,n14dist,n15dist,n16dist,n17dist,nVdist);
+}
+ 
 /**********************************************************
  *
  *     V A L I N E
@@ -6476,9 +6427,8 @@ void val (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	j++;
       }
     if ( logg[11] == 11 ) {
-      fprintf(log,"logg (val) = %d %d %d %d %d %d %d %d %d %d %d\n",
-	      logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],logg[6],
-	      logg[7],logg[8],logg[9],logg[10]);
+      pr_logg(debug,11,logg,FALSE,"Val");
+
       /*SETDISTANCE for HG11 and CA */
       gauche(logg[4],logg[3],logg[1],logg[0],ilist,iparams,&blen,atoms);
       lb=(1.0-val_margin)*blen;
@@ -6776,10 +6726,10 @@ void val (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
     }
   }
   fprintf(log,"There are %d distances to keep valine gauche\n",ndist);
-  if (ndist > 0 ) {
+  if (ndist > 0 ) 
     fprintf(log,"(%d 1-4, %d 1-5)\n",n14dist,n15dist);
-  }
 }
+
 /**********************************************************
  *
  *     P E P T I D E   B O N D S
@@ -6879,15 +6829,8 @@ void peptide_bonds (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,
 
     }
     if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
-      if ((logg[7] == 6) && !bVir) {
-	
-	fprintf(log,"logg (pep) = %d %d %d %d %d %d\n",logg[0],logg[1],
-		logg[2],logg[3],logg[4],logg[5]);
-      }
-      else if ((logg[7] == 7) && bVir) {
-	fprintf(log,"logg (pep) = %d %d %d %d %d %d %d\n",logg[0],logg[1],
-		logg[2],logg[3],logg[4],logg[5],logg[6]);
-      }
+      pr_logg(debug,6,logg,bVir,"Pep");
+
       /*SETDISTANCE for O and H (logg[2]&logg[4]) (transdihedral)*/
       pdih_lengths(logg[2],logg[1],logg[3],logg[4],ilist,iparams,&lb,&blen,
 		   atoms);
