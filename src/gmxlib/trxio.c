@@ -87,7 +87,7 @@ static void printincomp(t_trxframe *fr)
 	    frame+1,fr->time);
 }
 
-static int prec2ndec(real prec)
+int prec2ndec(real prec)
 {
   if (prec <= 0)
     fatal_error(0,"DEATH HORROR prec (%g) <= 0 in prec2ndec",prec);
