@@ -534,8 +534,8 @@ int main(int argc, char *argv[])
     "[TT]-dist[tt] respectively.[PAR]",
 
     "Option [TT]-merge[tt] will ask if you want to merge consecutive chains",
-    "into one molecule, this can be useful for connecting chains with a",
-    "disulfide brigde.[PAR]",
+    "into one molecule definition, this can be useful for connecting chains",
+    "with a disulfide brigde or intermolecular distance restraints.[PAR]",
     
     "pdb2gmx will also check the occupancy field of the pdb file.",
     "If any of the occupanccies are not one, indicating that the atom is",
@@ -661,7 +661,7 @@ int main(int argc, char *argv[])
     { "-sb",     FALSE, etREAL, {&short_bond_dist},
       "HIDDENShort bond warning distance" },
     { "-merge",  FALSE, etBOOL, {&bMerge},
-      "Merge multiple chains into one molecule"},
+      "Merge chains into one molecule definition"},
     { "-ff",     FALSE, etSTR,  {&ff},
       "Force field, interactive by default. Use -h for information." },
     { "-water",  FALSE, etENUM, {watstr},
@@ -904,7 +904,7 @@ int main(int argc, char *argv[])
   }
 
   if (bMerge)
-    printf("\nMerged %d chains into one molecule\n\n",
+    printf("\nMerged %d chains into one molecule definition\n\n",
 	   pdb_ch[0].nterpairs);
 
   printf("There are %d chains and %d blocks of water and "
