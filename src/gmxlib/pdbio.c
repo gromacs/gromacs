@@ -83,15 +83,26 @@ void write_pdbfile_indexed(FILE *out,char *title,
   atom_id i,ii;
   int  resnr,type;
   real occup,bfac;
+  real alpha,beta,gamma;
 
   fprintf(out,"HEADER    %s\n",(title && title[0])?title:bromacs());
   if (box) {
+    if (norm2(box[YY])*norm2(box[ZZ])!=0)
+      alpha = RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ]));
+    else
+      alpha = 90;
+    if (norm2(box[XX])*norm2(box[ZZ])!=0)
+      beta  = RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ]));
+    else
+      beta  = 90;
+    if (norm2(box[XX])*norm2(box[YY])!=0)
+      gamma = RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY]));
+    else
+      gamma = 90;
     fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
     fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	    10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
-	    RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ])),
-	    RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ])),
-	    RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY])));
+	    alpha,beta,gamma);
   }
   for (ii=0; ii<nindex; ii++) {
     i=index[ii];
