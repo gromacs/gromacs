@@ -133,7 +133,7 @@ static int scan_ene_files(char **fnms,int nfiles,real *readtime, real *timestep)
     int i,in,nre,ndr,nresav=0,step;
     real t1,t2;
     char      **enm=NULL;
-    t_drblock *dr=NULL;
+    t_drblock dr;
     t_energy  *ee=NULL;
     
     for(i=0;i<nfiles;i++) {
@@ -141,22 +141,20 @@ static int scan_ene_files(char **fnms,int nfiles,real *readtime, real *timestep)
 	do_enxnms(in,&nre,&enm);
 
 	if (i == 0) {
-	    nresav = nre;
-	    snew(ee,nre);
-	    do_enx(in,&t1,&step,&nre,ee,&ndr,dr);
-	    do_enx(in,&t2,&step,&nre,ee,&ndr,dr);
-	    *timestep=t2-t1;
-	    readtime[i]=t1;
-	    close_enx(in);
-	}
-	else if (nre != nresav) {
-	    fatal_error(0,"Energy files don't match, different number"
-			" of energies (%s)",fnms[i]);
-	}
-	else {
-	    do_enx(in,&t1,&step,&nre,ee,&ndr,dr);
-	    readtime[i]=t1;
-	    close_enx(in);
+	  nresav = nre;
+	  snew(ee,nre);
+	  do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
+	  do_enx(in,&t2,&step,&nre,ee,&ndr,&dr);
+	  *timestep=t2-t1;
+	  readtime[i]=t1;
+	  close_enx(in);
+	} else if (nre != nresav) {
+	  fatal_error(0,"Energy files don't match, different number"
+		      " of energies (%s)",fnms[i]);
+	} else {
+	  do_enx(in,&t1,&step,&nre,ee,&ndr,&dr);
+	  readtime[i]=t1;
+	  close_enx(in);
 	}
 	fprintf(stderr,"\n");  
     }
@@ -379,7 +377,7 @@ int main(int argc,char *argv[])
   real      t=0,outt=-1; 
   char      **fnms;
   char      **enm=NULL;
-  t_drblock *dr=NULL;
+  t_drblock dr;
   real      *readtime,*settime,timestep,t1,tadjust;
   char      inputstring[STRLEN],*chptr;
   bool      ok;
@@ -477,7 +475,7 @@ int main(int argc,char *argv[])
     
     /* start reading from the next file */
     while((t<(settime[i+1]-GMX_REAL_EPS)) &&
-	  do_enx(in,&t1,&step,&nre,ee,&ndr,dr)) {
+	  do_enx(in,&t1,&step,&nre,ee,&ndr,&dr)) {
       if(bNewFile) {
 	tadjust=settime[i]-t1;	  
 	if(cont_type[i+1]==TIME_LAST) {
@@ -523,7 +521,7 @@ int main(int argc,char *argv[])
 	    outee[set[kkk]].esum *= scalefac;
 	  }
 	}
-	do_enx(out,&outt,&outstep,&nre,outee,&ndr,dr);
+	do_enx(out,&outt,&outstep,&nre,outee,&ndr,&dr);
 	fprintf(stderr,"\rWriting step %d, time %f        ",outstep,outt);
       }
     }
