@@ -490,7 +490,7 @@ int main(int argc, char *argv[])
   matrix     box;
   bool       bIndex,bSetSize,bCubic,bDist,bSetCenter;
   bool       bHaveV,bScale,bRho,bRotate,bCalcGeom,bCalcDiam;
-  real       xs,ys,zs,xcent,ycent,zcent,diam,d;
+  real       xs,ys,zs,xcent,ycent,zcent,diam=0,d;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL, ffREAD },
     { efNDX, "-n", NULL, ffOPTRD },

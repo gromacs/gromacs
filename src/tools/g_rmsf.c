@@ -201,7 +201,7 @@ int main (int argc,char *argv[])
   real         bfac,pdb_bfac,*Uaver;
   matrix       *U=NULL;
   atom_id      aid;
-  rvec         *xav,*rmsd_x;
+  rvec         *xav,*rmsd_x=NULL;
   real         *rmsf,invcount,totmass;
   int          d;
   real         count=0;

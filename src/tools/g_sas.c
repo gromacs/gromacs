@@ -206,7 +206,7 @@ real calc_radius(char *atom)
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real qcut,int nskip,bool bSave,real minarea)
 {
-  FILE         *fp,*fp2=NULL,*fp3;
+  FILE         *fp,*fp2=NULL,*fp3=NULL;
   real         t;
   int          status;
   int          i,ii,j,natoms,flag,nsurfacedots;

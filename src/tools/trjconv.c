@@ -294,10 +294,10 @@ int main(int argc,char *argv[])
       
   FILE         *out=NULL;
   int          trxout=-1;
-  int          status,ftp,ftpin,file_nr;
+  int          status,ftp,ftpin=0,file_nr;
   t_trxframe   fr,frout;
   int          flags;
-  rvec         *xmem,*vmem;
+  rvec         *xmem=NULL,*vmem=NULL;
   rvec         *xp,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
   int          m,i,d,frame,outframe,natoms=0,nout,ncent,nre,newstep=0;
@@ -316,7 +316,7 @@ int main(int argc,char *argv[])
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox;
   char         *grpnm;
-  char         *top_file,*in_file,*out_file,out_file2[256],*charpt;
+  char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
   char         top_title[256],title[256],command[256],filemode[5];
   int          xdr=0;
 

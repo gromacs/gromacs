@@ -57,11 +57,12 @@ void rm_gropbc(t_atoms *atoms,rvec x[],matrix box)
   for(d=0; d<DIM; d++)
     for(n=1; n<atoms->nr; n++) {
       dist = x[n][d]-x[n-1][d];
-      if ( fabs(dist) > 0.9 * box[d][d]  )
+      if ( fabs(dist) > 0.9 * box[d][d]  ) {
 	if ( dist >  0 )
 	  x[n][d]-=box[d][d];
 	else
 	  x[n][d]+=box[d][d];
+      }
     }
 }
 

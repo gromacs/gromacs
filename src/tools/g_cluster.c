@@ -616,11 +616,11 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
 			     int write_ncl, int write_nst, real rmsmin,
 			     FILE *logf)
 {
-  FILE *fp;
+  FILE *fp=NULL;
   char buf[STRLEN],buf1[20],buf2[20],*ext,*trxsfn;
   int  trxout=0,trxsout=0;
   int  i,i1,i2,j,cl,nstr,*structure,first=0,midstr,ntrans,maxtrans,nlevels;
-  bool *bWrite;
+  bool *bWrite=NULL;
   real r,clrmsd,midrmsd;
   real **trans,*axis;
   int  *ntransi,*ntranso;
@@ -896,8 +896,8 @@ int main(int argc,char *argv[])
   bool         bSameF;
   t_matrix     *readmat;
   
-  int      status1,status2,isize,ifsize=0,iosize=0;
-  atom_id  *index, *fitidx, *outidx;
+  int      status1,status2,isize=0,ifsize=0,iosize=0;
+  atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
   real     rmsd,**d1,**d2,*time,*mass=NULL;
   char     buf[STRLEN];

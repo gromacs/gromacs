@@ -65,7 +65,7 @@ int main(int argc,char *argv[])
       "Do a least squares fit of the second to the first structure before interpolating" }
   };
   char     *leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
-  FILE     *fp;
+  FILE     *fp=NULL;
   int      i,isize,is_lsq,status,nat1,nat2;
   atom_id  *index,*index_lsq,*index_all,*dummy;
   t_atoms  atoms;

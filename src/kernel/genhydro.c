@@ -48,6 +48,7 @@ static char *SRCID_genhydro_c = "$Id$";
 #include "h_db.h"
 #include "ter_db.h"
 #include "resall.h"
+#include "pgutil.h"
 
 static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
 {
@@ -315,7 +316,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
 	  int nterpairs, int *rN, int *rC, int **nabptr, t_hack ***abptr,
 	  bool bUpdate_pdba, bool bKeep_old_pdba)
 {
-  t_atoms     *newpdba,*pdba;
+  t_atoms     *newpdba=NULL,*pdba=NULL;
   bool        bSet;
   int         nadd;
   int         i,newi,j,d,natoms;

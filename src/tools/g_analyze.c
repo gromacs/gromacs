@@ -50,7 +50,7 @@ static real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
   FILE   *fp;
   char   line0[4096],*line;
   int    a,narg,n,sin,set,nchar;
-  double dbl,tend;
+  double dbl,tend=0;
   bool   bEndOfSet,bTimeInRange;
   real   **val;
 
@@ -183,8 +183,8 @@ static void average(char *avfile,char **avbar_opt,
 		    int n, int nset,real **val,real t0,real dt)
 {
   FILE   *fp;
-  int    i,s,edge;
-  double av,var,err,*tmp;
+  int    i,s,edge=0;
+  double av,var,err,*tmp=NULL;
   char   c;
   
   c = avbar_opt[0][0];
@@ -352,7 +352,7 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE     *out;
-  int      n,nlast,s,nset,i,t;
+  int      n,nlast,s,nset,i,t=0;
   real     **val,t0,dt,tot;
   double   *av,*av2;
   char     *acfile,*msdfile,*distfile,*avfile,*eefile;

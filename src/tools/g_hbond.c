@@ -228,7 +228,7 @@ void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
   rvec    invdelta,dshell;
   t_ncell *newgrid;
   bool    bDoRshell,bInShell;
-  real    rshell2;
+  real    rshell2=0;
   
   bDoRshell = rshell > 0;
   if (bDoRshell)

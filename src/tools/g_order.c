@@ -337,7 +337,7 @@ int main(int argc,char *argv[])
   char      **grpname;            	    /* groupnames                 */
   int       ngrps,                          /* nr. of groups              */
             i,
-            axis;                           /* normal axis                */
+            axis=0;                         /* normal axis                */
   t_topology *top;                	    /* topology 		  */ 
   atom_id   *index,             	    /* indices for a              */
             *a;                             /* atom numbers in each group */

@@ -61,11 +61,12 @@ static void low_print_data(FILE *fp,real time,rvec x[],int n,atom_id *index,
 	else
 	  fprintf(fp,"\t%g",x[i][d]);
       }
-    if (bDim[DIM])
+    if (bDim[DIM]) {
       if (index)
 	  fprintf(fp,"\t%g",norm(x[index[i]]));
 	else
 	  fprintf(fp,"\t%g",norm(x[i]));
+    }
   }
   fprintf(fp,"\n");
 }
@@ -210,7 +211,7 @@ static real ekrot(rvec x[],rvec v[],real mass[],int isize,atom_id index[])
 static real temp(rvec v[],real mass[],int isize,atom_id index[])
 {
   matrix TCM,L;
-  real   m,ekin;
+  real   m,ekin=0;
   int    i,j;
 
   for(i=0; i<isize; i++) {
@@ -272,7 +273,7 @@ int main(int argc,char *argv[])
       "Plot vector length" }
     
   };
-  FILE       *outx,*outv,*outf,*outb,*outt,*outekr;
+  FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL,*outekr=NULL;
   t_topology top;
   real       *mass;
   char       title[STRLEN],*indexfn;

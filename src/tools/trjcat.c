@@ -262,7 +262,7 @@ int main(int argc,char *argv[])
   bool         bNewFile;
   char         *in_file,*out_file;
   int          flags,earliersteps,nfile,*cont_type,last_ok_step;
-  real         *readtime,*settime,first_time,last_ok_t=-1,timestep;
+  real         *readtime,*settime,first_time=0,last_ok_t=-1,timestep;
 
   t_filenm fnm[] = {
       { efTRX, "-o", "trajout", ffWRITE }

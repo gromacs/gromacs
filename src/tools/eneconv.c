@@ -375,7 +375,7 @@ int main(int argc,char *argv[])
   int       in,out=0;
   t_energy  *ee,*lastee,*outee,*startee;
   int       step,laststep,outstep,startstep;
-  int       nre,nfile,i,j,kkk,ndr,nset,*set;
+  int       nre,nfile,i,j,kkk,ndr,nset,*set=NULL;
   real      t=0,outt=-1; 
   char      **fnms;
   char      **enm=NULL;
@@ -488,8 +488,8 @@ int main(int argc,char *argv[])
       }
       t=tadjust+t1;
 
-      bWrite = ((begin < 0) || ((begin >= 0) && (t >= (begin-GMX_REAL_EPS)))&& 
-		(end   < 0) || ((end   >= 0) && (t <= (end+GMX_REAL_EPS))));
+      bWrite = (((begin < 0) || ((begin >= 0) && (t >=(begin-GMX_REAL_EPS)))) && 
+		((end   < 0) || ((end   >= 0) && (t <= (end+GMX_REAL_EPS)))));
 		
       if (bError)      
 	if((end > 0) && (t>(end+GMX_REAL_EPS))) {
