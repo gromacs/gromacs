@@ -103,7 +103,8 @@ static void gen_waterhydrogen(int nh,rvec xa[], rvec xh[])
 
 void calc_h_pos(int nht, rvec xa[], rvec xh[])
 {
-#define alfaH   (DEG2RAD*109.5)
+#define alfaH   (acos(-1/3.0)) /* 109.47 degrees */
+#define alfaHpl (2*M_PI/3)     /* 120 degrees */
 #define distH   0.1
 
 #define alfaCOM (DEG2RAD*117)
@@ -181,8 +182,8 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[])
     break;
   case 3: /* two planar hydrogens, e.g. -NH2 */
     for(d=0; (d<DIM); d++) {
-      xH1[d] = xAI[d]-distH*sin(alfaH)*sb[d]-distH*cos(alfaH)*sij[d];
-      xH2[d] = xAI[d]+distH*sin(alfaH)*sb[d]-distH*cos(alfaH)*sij[d];
+      xH1[d] = xAI[d]-distH*sin(alfaHpl)*sb[d]-distH*cos(alfaHpl)*sij[d];
+      xH2[d] = xAI[d]+distH*sin(alfaHpl)*sb[d]-distH*cos(alfaHpl)*sij[d];
     }
     break;
   case 4: /* two or three tetrahedral hydrogens, e.g. -CH3 */
