@@ -3,12 +3,12 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3_beta_20050126, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3_beta_20050202, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3_beta_20050126)
+AM_INIT_AUTOMAKE(gromacs, 3.3_beta_20050202)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
@@ -164,6 +164,8 @@ AC_ARG_ENABLE(all-static,
  [  --enable-all-static           make completely static binaries],, enable_all_static=no)
 # Dont add the -all-static flag until after the compiler test.
 
+
+
 ### Compile without FFTW - disabling it means you can't use PME or PPPM!
 ### N.B.: This is only intended as a last resort, or for tests - don't use it!
 AC_ARG_WITH(fftw,
@@ -172,6 +174,17 @@ if test "$with_fftw" = "no"; then
   AC_DEFINE(GMX_WITHOUT_FFTW,,[Disable all FFTW (and thus PME/PPPM) support])
 fi
 
+
+### Use external BLAS/LAPACK libraries if the user wants to.
+###
+AC_ARG_WITH(system_blas,
+ [  --with-system-blas      use system BLAS (add to LIBS) instead of built-in],, with_system_blas=no)
+AM_CONDITIONAL([GMX_SYSTEM_BLAS], [test "with_system_blas" = "yes"])
+
+
+AC_ARG_WITH(system_lapack,
+ [  --with-system-lapack    use system LAPACK (add to LIBS) instead of built-in],, with_system_lapack=no)
+AM_CONDITIONAL([GMX_SYSTEM_LAPACK], [test "with_system_lapack" = "yes"])
 
 
 
@@ -390,7 +403,7 @@ cygwin* | mingw*)   # use our own xdr stuff for cygwin/mingw
 ],[ XDR *xd; float f; xdr_float(xd,&f);],[have_xdr="yes"])
 
   if test "$have_xdr" != "yes"; then
-    AC_DEFINE(USE_GMX_XDR,,[Use our own instead of system XDR libraries])	
+    AC_DEFINE(GMX_INTERNAL_XDR,,[Use our own instead of system XDR libraries])	
       GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} gmx_system_xdr.lo"
     AC_MSG_WARN([Couldn't find XDR headers and/or libraries - using our own])
   fi
@@ -772,6 +785,8 @@ AC_SUBST(CCASFLAGS)
 AC_CONFIG_FILES([ Makefile ])
 AC_CONFIG_FILES([ src/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/gmx_blas/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/gmx_lapack/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia32_3dnow/Makefile ])
