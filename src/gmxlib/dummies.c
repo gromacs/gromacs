@@ -69,7 +69,7 @@ static void constr_dum3(rvec x1,rvec x2,rvec x3,rvec x,real a,real b,real c)
 }
 
 void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
-		       rvec v[],t_idef *idef)
+		       rvec *v,t_idef *idef)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
@@ -79,7 +79,8 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   t_iparams *ip;
   
   ip     = idef->iparams;
-  inv_dt = 1.0/dt;
+  if (v)
+    inv_dt = 1.0/dt;
   
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (interaction_function[ftype].flags & IF_DUMMY) {
@@ -122,10 +123,11 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
 	  fatal_error(0,"No such dummy type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
-	/* Calculate velocity of dummy... */
-	rvec_sub(x[adum],xd,vv);
-	svmul(inv_dt,vv,v[adum]);
-	
+	if (v) {
+	  /* Calculate velocity of dummy... */
+	  rvec_sub(x[adum],xd,vv);
+	  svmul(inv_dt,vv,v[adum]);
+	}
 	/* Increment loop variables */
 	i  += nra+1;
 	ia += nra+1;
