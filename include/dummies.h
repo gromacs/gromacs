@@ -35,9 +35,6 @@ static char *SRCID_dummies_h = "$Id$";
 #include <stdio.h>
 #include "typedefs.h"
 
-extern void set_dummies_ptype(bool bVerbose, t_topology *sys);
-/* set ptype to Dummy for dummy atoms */
-
 extern void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,
 			      real dt,rvec v[],t_idef *idef);
 /* Create positions of dummy atoms based on surrounding atoms.

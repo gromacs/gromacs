@@ -37,40 +37,6 @@ static char *SRCID_dummies_c = "$Id$";
 #include "nrnb.h"
 #include "vec.h"
 
-void set_dummies_ptype(bool bVerbose, t_topology *sys)
-{
-  int i,ftype;
-  int nra,nrd,tp;
-  t_iatom *ia,adum;
-  
-  if (bVerbose)
-    fprintf(stderr,"Setting particle type to Dummy for dummy atoms\n");
-  if (debug)
-    fprintf(stderr,"checking %d functypes\n",F_NRE);
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_DUMMY) {
-      nra    = interaction_function[ftype].nratoms;
-      nrd    = sys->idef.il[ftype].nr;
-      ia     = sys->idef.il[ftype].iatoms;
-      
-      if (debug)
-	fprintf(stderr,"doing %d dummies(%d)\n",(nrd / (nra+1)),ftype);
-      
-      for(i=0; (i<nrd); ) {
-	tp   = ia[0];
-	assert(ftype == sys->idef.functype[tp]);
-	
-	/* The dummy atom */
-	adum = ia[1];
-	sys->atoms.atom[adum].ptype=eptDummy;
-	
-	i  += nra+1;
-	ia += nra+1;
-      }
-    }
-  }
-}
-
 static void constr_dum2(rvec xi,rvec xj,rvec x,real a)
 {
   real b;
