@@ -67,7 +67,6 @@ CCLD		= $(CCC) $(LDFLAGS)
 ifeq ($(USE_MPI),yes)
 LDFLAGS		+= -L/usr/mpi/lib/LINUX/ch_p4 
 endif
-FFTLIBS		= -lfftw.$(GMXCPU)
 ifeq ($(HAVE_MOTIF),yes)
 SYSDEFS		+= -DHAVE_MOTIF
 XLIBS		= -L/usr/X11R6/lib -lXm -lXt -lX11
