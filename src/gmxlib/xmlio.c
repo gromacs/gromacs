@@ -105,7 +105,7 @@ enum {
   exmlGROMACS, 
   exmlINPUTREC,    exmlOUTPUT,      exmlCOUPLING,    exmlCUTOFF,
   exmlPMEPARM,     exmlTCOUPLING,   exmlPCOUPLING,   exmlTCPARM,      
-  exmlREFPRES,     exmlCOMPRESS,    exmlRVEC,
+  exmlREFPRES,     exmlCOMPRESS,    exmlRVEC,        exmlCOMM,
   exmlSYSTEM,      exmlCOMPOSITION, exmlMOLECULE,    exmlATOM,
   exmlTOPOLOGY,    exmlBONDS,       exmlANGLES,      exmlDIHEDRALS,
   exmlFORCEFIELD,  exmlMASSTYPE,    exmlBOX,
@@ -184,6 +184,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlTCPARM:      
     case exmlREFPRES:    
     case exmlCOMPRESS:
+    case exmlCOMM:
     case exmlRVEC:
     case exmlSYSTEM:   
     case exmlCOMPOSITION:
@@ -270,17 +271,19 @@ void read_xml(char *fn,int *step,real *t,real *lambda,
   sfree(xml);
 }
 
-static void add_xml_int(xmlNodePtr ptr,const char *name,int val)
+static void add_xml_int(xmlNodePtr ptr,xmlChar *name,int val)
 {
-  char buf[32];
+  xmlChar buf[32];
+  
   sprintf(buf,"%d",val);
   if (xmlSetProp(ptr,name,buf) == 0)
     gmx_fatal(FARGS,"Setting %s %d",name,val);
 }
 
-static void add_xml_real(xmlNodePtr ptr,const char *name,real val)
+static void add_xml_real(xmlNodePtr ptr,xmlChar *name,real val)
 {
-  char buf[32];
+  xmlChar buf[32];
+  
   sprintf(buf,"%g",val);
   if (xmlSetProp(ptr,name,buf) == 0)
     gmx_fatal(FARGS,"Setting %s %f",name,val);
@@ -289,8 +292,8 @@ static void add_xml_real(xmlNodePtr ptr,const char *name,real val)
 static void add_xml_rvec(xmlNodePtr parent,int id,rvec val)
 {
   xmlNodePtr rvptr;
-  int  m;
-  char buf[32];
+  int        m;
+  xmlChar   buf[32];
 
   if ((rvptr = xmlNewChild(parent,NULL,"rvec",NULL)) == NULL)
     gmx_mem("Creating rvec element");
@@ -322,7 +325,7 @@ static void add_xml_tensor(xmlNodePtr parent,tensor val)
   }
 }
 
-static void add_xml_char(xmlNodePtr ptr,const char *name,const char *val)
+static void add_xml_char(xmlNodePtr ptr,xmlChar *name,xmlChar *val)
 {
   if (xmlSetProp(ptr,name,val) == 0)
     gmx_fatal(FARGS,"Setting %s %s",name,val);
@@ -339,11 +342,11 @@ static xmlNodePtr add_xml_child(xmlNodePtr parent,int type)
 }
 
 static xmlNodePtr add_xml_comment(xmlDocPtr doc,
-				  xmlNodePtr prev,char *comment)
+				  xmlNodePtr prev,xmlChar *comment)
 {
   xmlNodePtr comm,ptr;
   
-  if ((comm = xmlNewComment((xmlChar *)comment)) == NULL)
+  if ((comm = xmlNewComment(comment)) == NULL)
     gmx_mem("Creating doc comment element");
   ptr = prev;
   while (ptr->next != NULL)
@@ -358,15 +361,19 @@ static xmlNodePtr add_xml_comment(xmlDocPtr doc,
 static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
 {
   int        i;
-  xmlNodePtr irptr,outputptr,tcptr,tcparm,pcptr,refpres,compress;
+  xmlNodePtr irptr,outputptr,tcptr,tcparm,pcptr,refpres,compress,commptr;
   xmlNodePtr cutoffptr,pmeptr;
   
   irptr = add_xml_child(parent,exmlINPUTREC);
   add_xml_char(irptr,"algorithm",ei_names[ir->eI]);
   add_xml_int(irptr,"nsteps",ir->nsteps);
+  add_xml_int(irptr,"init_step",ir->init_step);
   add_xml_real(irptr,"init-t",ir->init_t);
   add_xml_real(irptr,"delta-t",ir->delta_t);
-
+  commptr = add_xml_child(parent,exmlCOMM);
+  add_xml_int(commptr,"nstcomm",ir->nstcomm);
+  add_xml_char(commptr,"mode",ecm_names[ir->comm_mode]);
+    
   outputptr = add_xml_child(irptr,exmlOUTPUT);
   add_xml_int(outputptr,"log",ir->nstlog);
   add_xml_int(outputptr,"x-trr",ir->nstxout);
@@ -393,13 +400,13 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   add_xml_char(pcptr,"algorithm",epcoupl_names[ir->epc]);
   add_xml_char(pcptr,"type",epcoupltype_names[ir->epct]);
   add_xml_real(pcptr,"tau-p",ir->tau_p);
-
+  
   refpres = add_xml_child(pcptr,exmlREFPRES);
   add_xml_tensor(refpres,ir->ref_p);
-    
+  
   compress = add_xml_child(pcptr,exmlCOMPRESS);
   add_xml_tensor(compress,ir->compress);
-    
+  
   cutoffptr = add_xml_child(irptr,exmlCUTOFF);
   add_xml_real(cutoffptr,"rlist",ir->rlist);
   add_xml_real(cutoffptr,"rvdw",ir->rvdw);
@@ -413,7 +420,7 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   add_xml_char(cutoffptr,"decompdir",xyz_names[ir->decomp_dir]);
   add_xml_char(cutoffptr,"coulombtype",eel_names[ir->coulombtype]);
   add_xml_char(cutoffptr,"vdwtype",evdw_names[ir->vdwtype]);
-  if ((ir->coulombtype == eelPME) 
+  if ((ir->coulombtype == eelPME) ||
       (ir->coulombtype == eelPMEUSER)) {
     pmeptr = add_xml_child(cutoffptr,exmlPMEPARM);
     add_xml_int(pmeptr,"nkx",ir->nkx);
@@ -494,18 +501,19 @@ void write_xml(char *fn,char *title,t_inputrec *ir,rvec *box,
   xmlNodePtr myroot;
   t_masstype *mt;
   int        i,nmt;
-  const char       *libdtdname,*dtdname;
+  xmlChar    *libdtdname,*dtdname,*gmx;
   
+  gmx        = "gromacs";
   dtdname    = "gromacs.dtd";
   libdtdname = libfn(dtdname);
   
   if ((doc = xmlNewDoc("1.0")) == NULL)
     gmx_mem("Creating XML document");
     
-  if ((dtd = xmlCreateIntSubset(doc,"gromacs",libdtdname,dtdname)) == NULL)
+  if ((dtd = xmlCreateIntSubset(doc,gmx,libdtdname,dtdname)) == NULL)
     gmx_mem("Creating XML DTD");
     
-  if ((myroot = xmlNewDocNode(doc,NULL,"gromacs",NULL)) == NULL)
+  if ((myroot = xmlNewDocNode(doc,NULL,gmx,NULL)) == NULL)
     gmx_mem("Creating root element");
   dtd->next = myroot;
   myroot->prev = (xmlNodePtr) dtd;
