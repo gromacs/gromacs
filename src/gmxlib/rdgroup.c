@@ -132,12 +132,16 @@ static int qgroup(int *a, int ngrps, char **grpname)
   } while (strlen(s)==0);
   aa = atoi(s);
   if (aa==0 && strcmp(s,"0")!=0 ) { /* string entered */
-    for(i=0, aa=NOTSET; i<ngrps && aa==NOTSET; i++) {
-      if (strcasecmp_min(s,grpname[i])==0)
+    aa=NOTSET;
+    for(i=0; i<ngrps; i++) {
+      if (strcasecmp_min(s,grpname[i])==0) {
+	if(aa!=NOTSET)
+	  fatal_error(0,"Multiple group '%s' selected", s);
 	aa=i;
     }
+    }
     if (aa==NOTSET)
-      fatal_error(0,"No such group '%s'\n", s);
+      fatal_error(0,"No such group '%s'", s);
   }
   printf("Selected %d: '%s'\n", aa, grpname[aa]);
   *a = aa;
