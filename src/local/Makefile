@@ -11,8 +11,8 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Empty library
 LIB		= 
-XOBJ		= do_gct.o init_sh.o runner.o gctio.o update.o glaasje.o
-PROGRAMS	= xmdrun	my_dssp	copyrgt	total	do_shift hrefify
+XOBJ		= do_gct.o init_sh.o gctio.o glaasje.o ionize.o
+PROGRAMS	= xmdrun	my_dssp	copyrgt	total	do_shift hrefify 
 #
 include		$(STDTARGET)
 #
@@ -20,7 +20,7 @@ include		$(STDTARGET)
 all:		bin
 
 xmdrun:		xmdrun.o $(XOBJ)
-		$(LD) -o $@ $^ $(SYSLIBS) 
+		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 
 copyrgt:	copyrgt.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
@@ -32,7 +32,7 @@ hrefify:	hrefify.o
 		$(LD) -o $@ $^ $(SYSLIBS) 
 
 total:		total.o
-		$(LD) -o $@ $^ $(SYSLIBS)
+		$(FLD) -o $@ $^ $(SYSLIBS)
 
 do_shift:	do_shift.o
 		$(LD) -o $@ $^ $(SYSLIBS)
