@@ -511,35 +511,38 @@ int main(int argc, char *argv[])
     { "-newrtp", FALSE,   etBOOL, &bNewRTP,
         "HIDDENWrite the residue database in new format to 'new.rtp'"},
     { "-inter", FALSE,    etBOOL, &bInter,
-        "Overrides the next 7 options and makes their selections interactive"},
+        "Overrides the next 5 options and makes their selections interactive"},
     { "-ff", FALSE,    etBOOL, &bFFMan, 
 	"Interactive Force Field selection, instead of the first one" },
     { "-ss", FALSE,    etBOOL, &bCysMan, 
 	"Interactive SS bridge selection" },
     { "-ter", FALSE,    etBOOL, &bTerMan, 
 	"Interactive termini selection, instead of charged" },
+    { "-lysh", FALSE,  etBOOL, &bLysH,
+        "Selects the LysH (charge +1) residue type, instead of interactive "
+        "selection" },
     { "-his", FALSE, etBOOL, &bHisMan,
 	"Interactive Histidine selection, instead of checking H-bonds" },
     { "-angle", FALSE, etREAL, &angle,
-	"Minimum angle for hydrogen bonds (180 = ideal)" },
+	"Minimum angle for a hydrogen bond (180 = ideal)" },
     { "-dist", FALSE, etREAL,  &distance,
-	"Maximum distance for hydrogen bonds (in nm)" },
-    { "-lysh", FALSE,  etBOOL, &bLysH,
-        "Selects the LysH (charge +1) residue type, instead of interactive selection" },
+	"Maximum distance for a hydrogen bond  (in nm)" },
     { "-una", FALSE,  etBOOL, &bUnA, 
-	"Selects aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine. " },
+	"Selects aromatic rings with united CH atoms on Phenylalanine, "
+	"Tryptophane and Tyrosine. " },
     { "-sort", FALSE,  etBOOL, &bSort,  
-	"Sort the residues according to database, sometimes this is necessary to get charge groups together" },
+	"Sort the residues according to database, sometimes this is necessary "
+	"to get charge groups together" },
     { "-H14",  FALSE,  etBOOL, &bH14, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
     { "-reth", FALSE,  etBOOL, &bRetainH, 
-      "Retain hydrogen atoms that are in the pdb file. Their names *must* "
-      "match names in the database files used by pdb2gmx. Except for "
-      "residues Tyr, Trp, Phe, Lys and His, no additional "
-      "hydrogen atoms will be added." },
+        "Retain hydrogen atoms that are in the pdb file. Their names *must* "
+        "match names in the database files used by pdb2gmx. Except for "
+        "residues Tyr, Trp, Phe, Lys and His, no additional "
+        "hydrogen atoms will be added." },
     { "-alldih",FALSE, etBOOL, &bAlldih, 
-      "Generate all proper dihedrals instead of only those with as few hydrogens as possible"
-    "(useful for use with Charmm)" }
+        "Generate all proper dihedrals instead of only those with as few "
+	"hydrogens as possible (useful for use with Charmm)" }
   };
 #define NPARGS asize(pa)
 
@@ -547,11 +550,12 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,asize(desc),desc,
 		    asize(bugs),bugs);
   if (bInter) {
+    /* if anything changes here, also change description of -inter */
     bFFMan=TRUE;
     bCysMan=TRUE;
     bTerMan=TRUE;
-    bHisMan=TRUE;
     bLysH=FALSE;
+    bHisMan=TRUE;
   }
 
   natom=read_pdball(opt2fn("-f",NFILE,fnm),
