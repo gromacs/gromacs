@@ -484,7 +484,7 @@ if test "$enable_ia32_sse" = "yes" -o "$enable_ia32_3dnow" = "yes" -o "$enable_x
 if test "$enable_x86_64_sse" = "yes"; then
 cat > conftestasm.s << EOF
 checkasm:
-        movl    %rsp, %rbp
+        mov     %rsp, %rbp
         ret
 EOF
 else
