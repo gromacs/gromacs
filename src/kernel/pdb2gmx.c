@@ -177,7 +177,7 @@ int read_pdball(char *inf, char *outf,char *title,
   /* READ IT */
   printf("Reading %s...\n",inf);
   get_stx_coordnum(inf,&natom);
-  init_t_atoms(atoms,natom,FALSE);
+  init_t_atoms(atoms,natom,TRUE);
   snew(*x,natom);
   read_stx_conf(inf,title,atoms,*x,NULL,box);
   if (!bRetainH) {
@@ -247,27 +247,34 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_pdbresint(pdba,"HIS",get_histp,TRUE);
 }
 
+/* struct for sorting the atoms from the pdb file */
 typedef struct {
-  int resnr;
-  int j;
-  int index;
-  char NtH;
+  int  resnr;  /* residue number               */
+  int  j;      /* database order index         */
+  int  index;  /* original atom number (for writing reverse index file) */
+  char anm1;   /* second letter of atom name   */
+  char altloc; /* alternate location indicator */
 } t_pdbindex;
   
 int pdbicomp(const void *a,const void *b)
 {
   t_pdbindex *pa,*pb;
-  
+  int d;
+
   pa=(t_pdbindex *)a;
   pb=(t_pdbindex *)b;
-  
-  if (pa->resnr == pb->resnr)
-    if (pa->j == pb->j)
-      return (pa->NtH - pb->NtH);
-    else
-      return (pa->j - pb->j);
-  else
-    return (pa->resnr - pb->resnr);
+
+  d = (pa->resnr - pb->resnr);
+  if (d==0) {
+    d = (pa->j - pb->j);
+    if (d==0) {
+      d = (pa->anm1 - pb->anm1);
+      if (d==0)
+	d = (pa->altloc - pb->altloc);
+    }
+  }
+
+  return d;
 }
 
 static void sort_pdbatoms(int nrtp,t_restp restp[],
@@ -307,10 +314,11 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
 		    " while sorting atoms",atomnm,
 		    rptr->resname,pdba->atom[i].resnr+1);
     /* make shadow array to be sorted into indexgroup */
-    pdbi[i].resnr=pdba->atom[i].resnr;
-    pdbi[i].j    =j;
-    pdbi[i].index=i;
-    pdbi[i].NtH  =atomnm[1];
+    pdbi[i].resnr  = pdba->atom[i].resnr;
+    pdbi[i].j      = j;
+    pdbi[i].index  = i;
+    pdbi[i].anm1   = atomnm[1];
+    pdbi[i].altloc = pdba->pdbinfo[i].altloc;
   }
   qsort(pdbi,natoms,(size_t)sizeof(pdbi[0]),pdbicomp);
   
@@ -692,13 +700,14 @@ int main(int argc, char *argv[])
   /* copy pdb data and x for all chains */
   for (i=0; (i<nchain); i++) {
     snew(chains[i].pdba,1);
-    init_t_atoms(chains[i].pdba,chains[i].natom,FALSE);
+    init_t_atoms(chains[i].pdba,chains[i].natom,TRUE);
     snew(chains[i].x,chains[i].natom);
     for (j=0; j<chains[i].natom; j++) {
       chains[i].pdba->atom[j]=pdba_all.atom[chains[i].start+j];
       snew(chains[i].pdba->atomname[j],1);
       *chains[i].pdba->atomname[j] = 
 	strdup(*pdba_all.atomname[chains[i].start+j]);
+      chains[i].pdba->pdbinfo[j]=pdba_all.pdbinfo[chains[i].start+j];
       copy_rvec(pdbx[chains[i].start+j],chains[i].x[j]);
     }
     /* Renumber the residues assuming that the numbers are continuous */
