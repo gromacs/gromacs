@@ -208,26 +208,21 @@ type when running <tt>gmx_conf</TT>. This does not have a negative
 effect on the outcome of your simulations, the accuracy is normally
 not restricted by the precision of the floating point notation, but by
 the numerical integration scheme itself. <em>This is a free-for-all
-performance gain of up to a factor of 2!</em> (On our SGI Power
+performance gain of up to 50%</em> (On our SGI Power
 Challenge, the double precision version runs some 30% slower than
 single precision.)
 
 <LI>Use Fortran inner loops (providing you have a good Fortran
-compiler available for your system). On our SGI Power Challenge, using
-Fortran inner loops speeds up simulations by a factor of 2! See our <A
-HREF="gmxbench.html">benchmark page</A>.
+compiler available for your system). If you have a DEC alpha running
+Linux, get the Compaq compilers
+(see our <A HREF="gmxbench.html">benchmark page</A>).
 
 <LI>If your system consists partly of water, use water specific
 non-bonded optimizations (set 
 <A HREF=online/mdp_opt.html#sol><tt>solvent_optimization =
 SOL</tt></A> in your <A HREF="online2.0/mdp_opt.html"><TT>.mdp</TT>
-file</A>.  This need not always be faster, check your runtime to see
-if it is indeed faster.
-
-<LI>If you have a SGI system, use the old Fortran compilers (version
-7.1 or earlier, which still supports the F77 options
--GCM:aggressive_speculation and -GCM:array_speculation). This gives a
-preformance increase of about 7%.
+file</A>. This will speed up your simulation by about a factor of 2,
+depending on your system and your machine type.
 
 <LI>Run GROMACS parallel on multiple processors (see 
 ``<A HREF="#MPI">I want to run GROMACS multi-processor</A>''). 
@@ -240,9 +235,9 @@ run multiple runs on one or a few processors. Check out or <A
 HREF="gmxbench.html">benchmark page</A> for some real-life examples on
 both single- and multi-processor systems.
 
-<LI>Preliminary tests show that PPPM or PME (new in GROMACS 2.0) are
+<LI>Preliminary tests show that PME and PPPM are
 somewhat faster than simulating with a twin range cut-off of 1.0/1.7
-nm on some systems. Unfortunately PPPM or PME do not scale as well as
+nm on some systems. Unfortunately PME and PPPM do not scale as well as
 cut-off electrostatics when running in parallel.
 
 <LI>We have a new option <TT>-dummies</TT> for 
@@ -259,7 +254,7 @@ you might consider writing less frames to your trajectories
 (<TT>.xtc</TT> and especially <TT>.trr</TT> or <TT>.trj</TT>) and
 energy file (<TT>.ene</TT> or <TT>.edr</TT>).
 
-<LI>At last, if you do not yet have the fastest computer available,
+<LI>And last, if you do not yet have the fastest computer available,
 get it! Or if you <em>do</em> have a very fast computer already, get
 another one or two.
 
