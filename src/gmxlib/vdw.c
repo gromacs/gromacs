@@ -53,7 +53,7 @@ int read_vdw(char *vdwdata,t_vdw **vdw)
     if ((int)strlen(name) < 2) 
       break; 
     sscanf(name,"%s",vdum[i].atomname);
-    sscanf(line+5,"%lf",&dd);
+    sscanf(line,"%*s %lf",&dd);
     vdum[i].distance=dd;
   }
   fclose(fp);
