@@ -39,7 +39,6 @@ static char *SRCID_mdrun_h = "$Id$";
 #include "typedefs.h"
 #include "network.h"
 #include "tgroup.h"
-#include "stat.h"
 #include "filenm.h"
 #include "nsb.h"
 #include "mshift.h"
@@ -92,7 +91,7 @@ extern void global_stat(FILE *log,
 			tensor fvir,tensor svir,
 			t_grpopts *opts,t_groups *grps,
 			t_nrnb *mynrnb,t_nrnb nrnb[],
-			rvec vcm);
+			rvec vcm,rvec mu_tot);
 /* Communicate statistics around the ring */
 
 extern void write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
