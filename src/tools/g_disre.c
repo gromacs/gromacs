@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GROningen MAchine for Chemical Simulation
+ * Good ROcking Metal Altar for Chronical Sinners
  */
 static char *SRCID_g_disre_c = "$Id$";
 
@@ -206,7 +206,7 @@ int main (int argc,char *argv[])
   
   FILE        *out,*aver,*numv,*maxxv,*xvg;
   t_inputrec  ir;
-  t_topology  *top;
+  t_topology  top;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
   t_nrnb      nrnb;
@@ -225,7 +225,7 @@ int main (int argc,char *argv[])
   t_mdatoms   *mdatoms;
   
   t_filenm fnm[] = {
-    { efTPX, NULL, NULL, ffREAD },
+    { efTPB, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
     { efXVG, "-ds", "drsum",  ffWRITE },
     { efXVG, "-da", "draver", ffWRITE },
@@ -241,10 +241,13 @@ int main (int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,TRUE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   init5(ntop);
-		
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));
-  g=mk_graph(&top->idef,top->atoms.nr,0);
-  cr=init_par(1,NULL);
+		    
+  fprintf(stderr,"Reading status: %s\n",
+	  read_status(ftp2fn(efTPB,NFILE,fnm),&idum,&rdum,&rdum,
+		      &ir,NULL,NULL,NULL,
+		      &idum,NULL,NULL,NULL,&idum,NULL,&top));
+  g=mk_graph(&top.idef,top.atoms.nr,0);
+  cr=init_par(NULL);
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
@@ -263,7 +266,7 @@ int main (int argc,char *argv[])
     isize=0;
   
   ir.dr_tau=0.0;
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,&ir);
+  init_disres(stdlog,top.idef.il[F_DISRES].nr,&ir);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
@@ -274,34 +277,34 @@ int main (int argc,char *argv[])
   maxxv=xvgropen(opt2fn("-dm",NFILE,fnm),"Largest Violation","Time (ps)","nm");
 
   snew(atoms,1);
-  atoms->nr=top->atoms.nr;
-  atoms->nres=top->atoms.nres;
+  atoms->nr=top.atoms.nr;
+  atoms->nres=top.atoms.nres;
   snew(atoms->atomname,atoms->nr);
   snew(atoms->resname,atoms->nres);
   snew(atoms->atom,atoms->nr);
-  memcpy(atoms->atom,top->atoms.atom,atoms->nr*sizeof(atoms->atom[0]));
-  memcpy(atoms->atomname,top->atoms.atomname,atoms->nr*sizeof(atoms->atomname[0]));
-  memcpy(atoms->resname,top->atoms.resname,atoms->nres*sizeof(atoms->resname[0]));
+  memcpy(atoms->atom,top.atoms.atom,atoms->nr*sizeof(atoms->atom[0]));
+  memcpy(atoms->atomname,top.atoms.atomname,atoms->nr*sizeof(atoms->atomname[0]));
+  memcpy(atoms->resname,top.atoms.resname,atoms->nres*sizeof(atoms->resname[0]));
 
-  mdatoms=atoms2md(&top->atoms,FALSE);  
+  mdatoms=atoms2md(&top.atoms,FALSE);  
   fr=mk_forcerec();
   fprintf(stdlog,"Made forcerec...\n");
-  init_forcerec(stdlog,fr,&(ir),&(top->blocks[ebMOLS]),cr,
-		&(top->blocks[ebCGS]),&(top->idef),mdatoms,box,FALSE);
+  init_forcerec(stdlog,fr,&(ir),&(top.blocks[ebMOLS]),cr,
+		&(top.blocks[ebCGS]),&(top.idef),mdatoms,box,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {
     if ((j % 10) == 0)
       fprintf(stderr,"\rFrame: %d",j);
-    rm_pbc(&top->idef,top->atoms.nr,box,x,x);
+    rm_pbc(&top.idef,top.atoms.nr,box,x,x);
 
     if (bProt) {
       protonate(&atoms,&x);
     }
     
     check_viol(stdlog,
-	       &(top->idef.il[F_DISRES]),
-	       top->idef.iparams,top->idef.functype,
+	       &(top.idef.il[F_DISRES]),
+	       top.idef.iparams,top.idef.functype,
 	       atoms->nr,x,f,fr,box,g,&sumv,&averv,&maxv,&nv,
 	       isize,index,vvindex);
     if (isize > 0) {
@@ -333,6 +336,10 @@ int main (int argc,char *argv[])
   xvgr_file(opt2fn("-dm",NFILE,fnm),NULL);
   
   thanx(stdout);
+
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif
   
   return 0;
 }

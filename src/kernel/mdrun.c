@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -37,6 +37,7 @@ static char *SRCID_mdrun_c = "$Id$";
 #include "nrnb.h"
 #include "network.h"
 #include "confio.h"
+#include "binio.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "main.h"
@@ -78,8 +79,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_forcerec *fr;
   t_mdebin   *mdebin;
-  FILE       *fmu;
-  int        fp_ene,step;
+  FILE       *ene,*fmu;
+  int        step;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bLR,bBHAM,b14,bRerunMD,bNotLastFrame,bMU;
@@ -134,22 +135,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   shift_self(graph,fr->shift_vec,x);
   fprintf(log,"Done rmpbc\n");
 
-  traj     = ftp2fn(efTRJ,nfile,fnm);
-  xtc_traj = ftp2fn(efXTC,nfile,fnm);
+  traj=ftp2fn(efTRJ,nfile,fnm);
+  xtc_traj=ftp2fn(efXTC,nfile,fnm);
   where();
   
-  bLR      = (parm->ir.rlong > parm->ir.rshort);
-  bBHAM    = (top->idef.functype[0]==F_BHAM);
-  b14      = (top->idef.il[F_LJ14].nr > 0);
+  if (MASTER(cr)) 
+    ene=ftp2FILE(efENE,nfile,fnm,"w");
+  else
+    ene=NULL;
+  where();
   
-  if (MASTER(cr)) {
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
-    mdebin=init_mdebin(fp_ene,grps,&(top->atoms),bLR,bBHAM,b14);
-  }
-  else {
-    fp_ene = -1;
-    mdebin = NULL;
-  }
+  bLR=(parm->ir.rlong > parm->ir.rshort);
+  bBHAM=(top->idef.functype[0]==F_BHAM);
+  b14=(top->idef.il[F_LJ14].nr > 0);
+  mdebin=init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14);
   where();
   
   clear_rvec(vcm);
@@ -379,7 +378,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     where();
     
     if ( MASTER(cr) && (do_per_step(step,parm->ir.nstprint)) ) {
-      print_ebin(fp_ene,log,step,t,lambda,SAfactor,
+      print_ebin(ene,log,step,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     }
     if (bVerbose)
@@ -405,15 +404,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (MASTER(cr)) {
     /* if RerunMD don't print energies of last frame again */
     if ( (parm->ir.nstprint > 1) && !bRerunMD )
-      print_ebin(fp_ene,log,step-1,t,lambda,SAfactor,
+      print_ebin(ene,log,step-1,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     
     print_ebin(NULL,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
     print_ebin(NULL,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
-    close_enx(fp_ene);
   }
+  if (ene)
+    ffclose(ene);
   
   /* Construct dummy particles, for last output frame */
   construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
@@ -427,7 +427,7 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "The mdrun program performs Molecular Dynamics simulations.",
-    "It reads the binary topology (.tpx) file and distributes the",
+    "It reads the binary topology (.tpb) file and distributes the",
     "topology over processors if needed. The coordinates are passed",
     "around, so that computations can begin.",
     "First a neighbourlist is made, then the forces are computed.",
@@ -464,11 +464,11 @@ int main(int argc,char *argv[])
   char         *lognm=NULL;
   t_commrec    *cr;
   static t_filenm fnm[] = {
-    { efTPX, NULL, NULL,      ffREAD },
+    { efTPB, NULL, NULL,      ffREAD },
     { efTRJ, "-o", NULL,      ffWRITE },
     { efXTC, "-x", NULL,      ffOPTWR },
     { efGRO, "-c", "confout", ffWRITE },
-    { efENX, "-e", "ener",    ffWRITE },
+    { efENE, "-e", "ener",    ffWRITE },
     { efLOG, "-g", "md",      ffWRITE },
     { efTRX, "-rerun", "rerun", ffOPTRD },
     /* function "optRerunMDset" (in runner.c) checks if -rerun is specified */
@@ -484,7 +484,7 @@ int main(int argc,char *argv[])
   static int  nprocs=1,nDLB=0,nstepout=10;
   static t_pargs pa[] = {
     { "-np",      FALSE, etINT, &nprocs,
-      "Number of processors, must be the same as used for grompp. THIS SHOULD BE THE FIRST ARGUMENT ON THE COMMAND LINE FOR MPI" },
+      "Number of processors, must be the same as used for grompp." },
     { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
     { "-compact", FALSE, etBOOL,&bCompact,
       "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
@@ -495,17 +495,18 @@ int main(int argc,char *argv[])
   };
   t_edsamyn edyn;
   
-  get_pargs(&argc,argv,asize(pa),pa,TRUE);
-  cr = init_par(nprocs,argv);
+  cr = init_par(argv);
   bVerbose = bVerbose && MASTER(cr);
   edyn.bEdsam=FALSE;
   
-  if (MASTER(cr)) {
+  if (MASTER(cr))
     CopyRight(stderr,argv[0]);
-    parse_common_args(&argc,argv,
-		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_NOGET_PARGS,
-		      TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  }	      
+
+  parse_common_args(&argc,argv,
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS |
+		    (MASTER(cr) ? 0 : PCA_QUIET),
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+    
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   
   if (MASTER(cr)) {
@@ -517,7 +518,11 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn);
     
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,FALSE,nstepout,&edyn);
-  
+
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif  
+
   exit(0);
   
   return 0;

@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * GRowing Old MAkes el Chrono Sweat
+ * Good gRace! Old Maple Actually Chews Slate
  */
 
 #ifndef _statutil_h
@@ -38,6 +38,7 @@ extern "C" {
 
 #include <stdio.h>
 #include "typedefs.h"
+#include "statusio.h"
 #include "filenm.h"
 #include "readinp.h"
 #include "wman.h"
@@ -92,16 +93,15 @@ extern  bool read_next_v(int status,real *t,int natoms,rvec v[],matrix box);
 
 extern int read_first_x_v(int *status,char *fn,real *t,rvec **x,rvec **v,matrix box);
 /* Same as above, but for coordinates and velocities */
-  
+
 extern  bool read_next_x_v(int status,real *t,int natoms,rvec x[],rvec v[],matrix box);
-  /* Idem */
-  
-extern bool read_next_x_or_v(int status,real *t, int natoms, 
-			     rvec x[],rvec v[],matrix box);
-/* idem */
-  
+/* Idem */
+ 
+extern bool next_e(FILE *status, real *t, t_energy e[]);
+/* Read energy terms from trajectory file */
+
 extern t_topology *read_top(char *fn);
-/* Extract a topology data structure from a topology file */
+/* Extract a topology data structure from a binary topology file */
 
 extern void mk_single_top(t_topology *top);
 /* Make the topology file single processor ready */
@@ -127,6 +127,7 @@ extern char *common_args(void);
 #define PCA_SILENT         (1<<9)
 #define PCA_NOGET_PARGS    (1<<10)
 #define PCA_NOEXIT_ON_ARGS (1<<11)
+#define PCA_QUIET          (1<<12)
 
 extern int iscan(int argc,char *argv[],int *i);
 /* Scan an int from the argument at *i. If the argument length

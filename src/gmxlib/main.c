@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -24,7 +24,7 @@
  * gromacs@chem.rug.nl
  *
  * And Hey:
- * Great Red Owns Many ACres of Sand 
+ * Grunge ROck MAChoS
  */
 static char *SRCID_main_c = "$Id$";
 
@@ -174,14 +174,22 @@ void open_log(char *lognm,t_commrec *cr)
   fflush(stdlog);
 }
 
-t_commrec *init_par(int nprocs,char *argv[])
+t_commrec *init_par(char *argv[])
 {
   t_commrec *cr;
   int       i,info;
   
   snew(cr,1);
   
-  cr->nprocs=nprocs;
+  cr->nprocs=1;
+  /* Get the number of processors.
+     This is useless for newer MPI versions.
+     */
+  for(i=0; (argv[i] != NULL); i++) {
+    if (strcmp(argv[i],"-np")==0)
+      if (argv[i+1]!=NULL)
+	cr->nprocs=atoi(argv[i+1]);
+  }
 
 #ifdef USE_MPI
   cr->pid=mpiio_setup(argv,&cr->nprocs);

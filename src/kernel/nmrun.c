@@ -7,7 +7,7 @@
  *
  * GROningen MAchine for Chemical Simulations
  *
- *            VERSION 2.0
+ *            VERSION 1.6
  * 
  * Copyright (c) 1991-1997
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
@@ -37,6 +37,7 @@ static char *SRCID_nmrun_c = "$Id$";
 #include "nrnb.h"
 #include "network.h"
 #include "confio.h"
+#include "binio.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "main.h"
@@ -76,7 +77,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 {
   t_forcerec *fr;
   t_mdebin   *mdebin;
-  int        fp_ene,step,nre;
+  FILE       *ene;
+  int        step,nre;
   time_t     start_t;
   real       t,lambda,t0,lam0;
   bool       bNS,bStopCM,bTYZ,bLR,bBHAM,b14;
@@ -125,10 +127,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   mtx=ftp2fn(efMTX,nfile,fnm);
   
+  ene=NULL;
   bLR=(parm->ir.rlong > parm->ir.rshort);
   bBHAM=(top->idef.functype[0]==F_BHAM);
   b14=(top->idef.il[F_LJ14].nr > 0);
-  mdebin=init_mdebin(-1,grps,&(top->atoms),bLR,bBHAM,b14);
+  mdebin=init_mdebin(ene,grps,&(top->atoms),bLR,bBHAM,b14);
 
   /* Compute initial EKin for all.. */
   calc_ke_part(TRUE,0,top->atoms.nr,
@@ -265,7 +268,7 @@ int main(int argc,char *argv[])
   };
   t_commrec    *cr;
   t_filenm fnm[] = {
-    { efTPX, NULL, NULL,      ffREAD },
+    { efTPB, NULL, NULL,      ffREAD },
     { efMTX, "-m", "hessian", ffWRITE },
     { efLOG, "-g", "nm",      ffWRITE },
   };
@@ -273,38 +276,45 @@ int main(int argc,char *argv[])
 
   /* Command line options ! */
   static bool bVerbose=FALSE,bCompact=TRUE;
-  static int  nprocs=1,nDLB=0;
-  t_pargs pa[] = {
+  static int  nprocs=1,nDLB=0,nstepout=10;
+  static t_pargs pa[] = {
     { "-np",      FALSE, etINT, &nprocs,
-      "Number of processors, must be the same as used for grompp. THIS SHOULD BE THE FIRST ARGUMENT ON THE COMMAND LINE FOR MPI" },
+      "Number of processors, must be the same as used for grompp." },
     { "-v",       FALSE, etBOOL,&bVerbose, "Verbose mode" },
-    { "-smalllog",FALSE, etBOOL,&bCompact,
+    { "-compact", FALSE, etBOOL,&bCompact,
       "Write a compact log file, i.e. do not write full virial and energy group matrix (these are also in the energy file, so this is redundant) " },
     { "-dlb",     FALSE, etINT, &nDLB,
-      "Use dynamic load balancing every ... step. BUGGY do not use" }
+      "Use dynamic load balancing every ... step. BUGGY do not use" },
+    { "-stepout", FALSE, etINT, &nstepout,
+      "Frequency of writing the remaining runtime" }
   };
   t_edsamyn edyn;
   
-  get_pargs(&argc,argv,asize(pa),pa,TRUE);
-  cr = init_par(nprocs,argv);
+  cr = init_par(argv);
   bVerbose = bVerbose && MASTER(cr);
-  edyn.bEdsam = FALSE;
+  edyn.bEdsam=FALSE;
   
-  if (MASTER(cr)) {
+  if (MASTER(cr))
     CopyRight(stderr,argv[0]);
-    parse_common_args(&argc,argv,
-		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_NOGET_PARGS,
-		      TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  }	      
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
+  parse_common_args(&argc,argv,
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS |
+		    (MASTER(cr) ? 0 : PCA_QUIET),
+		    TRUE,NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+    
+  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
+  
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
-    please_cite(stdlog,eCITEGMX);
-  }	      
-    
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,TRUE,0,&edyn);
+    please_cite(stdlog,"Berendsen95a");
+  }
   
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,nDLB,TRUE,nstepout,&edyn);
+
+#ifdef USE_MPI
+  MPI_Finalize();
+#endif  
+
   exit(0);
   
   return 0;
