@@ -114,7 +114,7 @@ extern void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
    
 extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,bool bTruncOct,
 				      matrix box,rvec box_size,t_block *cgs,
-				      rvec pos[],rvec shift_vec[],
+				      rvec pos[],
 				      rvec cg_cm[]);
 			    
 /* This routine puts charge groups in the periodic box, keeping them

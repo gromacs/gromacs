@@ -89,7 +89,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
     fprintf(log,"Removing pbc first time\n");
     mk_mshift(log,graph,parm->box,x);
-    shift_self(graph,fr->shift_vec,x);
+    shift_self(graph,parm->box,x);
   }
 
   fp_ene=-1;
@@ -130,7 +130,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bNS=FALSE;
   if (bBox)
     /* Shift back the coordinates, since we're not calling update */
-    unshift_self(graph,fr->shift_vec,x);
+    unshift_self(graph,parm->box,x);
 
   
   /* if forces not small, warn user */
@@ -169,7 +169,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       lambda,graph,bNS,FALSE,fr);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
-	unshift_self(graph,fr->shift_vec,x);
+	unshift_self(graph,parm->box,x);
       
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {
@@ -186,7 +186,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       lambda,graph,bNS,FALSE,fr);
       if (bBox)
 	/* Shift back the coordinates, since we're not calling update */
-	unshift_self(graph,fr->shift_vec,x);
+	unshift_self(graph,parm->box,x);
       
       for (jdum=0; (jdum<top->atoms.nr); jdum++) {
 	for (kdum=0; (kdum<DIM); kdum++) {

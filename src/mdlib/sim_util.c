@@ -188,16 +188,16 @@ void do_force(FILE *log,t_commrec *cr,
   cg1    = CG1(nsb);
   
   update_forcerec(log,fr,parm->box);
-
-  if (fr->eBox != ebtNONE) {
+ 
+  if (fr->eBox != ebtNONE) { 
     /* Compute shift vectors every step, because of pressure coupling! */
     if (parm->ir.epc != epcNO)
       calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
     
-    if (bNS) {
+    if (bNS) { 
       put_charge_groups_in_box(log,cg0,cg1,FALSE,
 			       parm->box,box_size,&(top->blocks[ebCGS]),x,
-			       fr->shift_vec,fr->cg_cm);
+			       fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     }
   }
@@ -223,7 +223,7 @@ void do_force(FILE *log,t_commrec *cr,
     if (fr->eBox != ebtNONE)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(log,graph,parm->box,x);
-
+	       
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {
       clear_rvecs(nsb->natoms,fr->flr);
@@ -232,7 +232,8 @@ void do_force(FILE *log,t_commrec *cr,
     /* Do the actual neighbour searching and if twin range electrostatics
      * also do the calculation of long range forces and energies.
      */
-    dvdl_lr = 0;
+    dvdl_lr = 0; 
+
     ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr);
   }
@@ -295,7 +296,7 @@ void do_force(FILE *log,t_commrec *cr,
    * Calculate partial virial, for local atoms only, based on short range. 
    * Total virial is computed in global_stat, called from do_md 
    */
-  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,fr->shift_vec);
+  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,parm->box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
   
   if ((fr->eeltype == eelPPPM) ||
@@ -366,7 +367,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,-1,lambda,&ener[F_DVDL],
 	   &(parm->ir),md,x,graph,
-	   fr->shift_vec,NULL,NULL,vold,x,NULL,parm->pres,parm->box,
+	   NULL,NULL,vold,x,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
@@ -383,7 +384,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
 	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
-	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
+	   NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at
@@ -402,7 +403,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real lambda,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,
 	   0,lambda,&ener[F_DVDL],&(parm->ir),md,f,graph,
-	   fr->shift_vec,NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
+	   NULL,NULL,vold,buf,NULL,parm->pres,parm->box,
 	   top,grps,shake_vir,cr,nrnb,bTYZ,FALSE,edyn,pulldata,FALSE);
     
     /* Compute the velocities at t=-dt/2 using the coordinates at

@@ -236,6 +236,7 @@ void calc_shifts(matrix box,rvec box_size,rvec shift_vec[],bool bTruncOct)
     box_size[m]=box[m][m];
   
   n=0;
+  
   for(k = -D_BOX; k <= D_BOX; k++) 
     for(l = -D_BOX; l <= D_BOX; l++) 
       for(m = -D_BOX; m <= D_BOX; m++,n++) {
@@ -288,9 +289,9 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
 
 void put_charge_groups_in_box(FILE *log,int cg0,int cg1,bool bTruncOct,
 			      matrix box,rvec box_size,t_block *cgs,
-			      rvec pos[],rvec shift_vec[],rvec cg_cm[])
+			      rvec pos[],rvec cg_cm[])
 			      
-{
+{ 
   int  icg,ai,k,k0,k1,d,e;
   rvec cg;
   real nrcg,inv_ncg;

@@ -69,7 +69,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
       }
       mk_mshift(stdout,mgraph[n].gr,box,x);
       calc_shifts(box,box_size,sv,FALSE);
-      shift_x(mgraph[n].gr,sv,x,x_s);
+      shift_x(mgraph[n].gr,box,x,x_s);
       bNeedToCopy=FALSE;
     } else if (bFirst) {
       fprintf(stderr,

@@ -630,7 +630,7 @@ void force(FILE       *fp,     int        step,
   
   /* Check whether we need to do bondeds */
   if (!bNBFonly) {
-    shift_self(graph,fr->shift_vec,x);
+    shift_self(graph,box,x);
     if (debug && 0) {
       fprintf(debug,"BBBBBBBBBBBBBBBB\n");
       fprintf(debug,"%5d\n",graph->nnodes);
@@ -640,7 +640,10 @@ void force(FILE       *fp,     int        step,
       fprintf(debug,"%10.5f%10.5f%10.5f\n",
 	      box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
     }
-    inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
+    if(TRICLINIC(box))
+	inc_nrnb(nrnb,eNR_SHIFTX*2,graph->nnodes);
+    else
+	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
     debug_gmx();
   }
   

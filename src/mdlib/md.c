@@ -242,9 +242,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     if (bDummies) {
       /* Construct dummy particles. This is parallellized */
-      shift_self(graph,fr->shift_vec,x);
+      shift_self(graph,parm->box,x);
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef);
-      unshift_self(graph,fr->shift_vec,x);
+      unshift_self(graph,parm->box,x);
     }
     debug_gmx();
     
@@ -373,7 +373,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
       /* This is also parallellized, but check code in update.c */
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,lambda,&ener[F_DVDL],
-	     &(parm->ir),mdatoms,x,graph,fr->shift_vec,
+	     &(parm->ir),mdatoms,x,graph,
 #ifdef XMDRUN
 	     fbuf[next],
 #else

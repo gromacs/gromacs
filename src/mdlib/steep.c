@@ -267,7 +267,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       }
 
     if (bConstrain || bDummies)
-      shift_self(graph,fr->shift_vec,pos[TRY]);
+      shift_self(graph,parm->box,pos[TRY]);
     
     if (bConstrain) {
       dvdlambda=0;
@@ -280,14 +280,14 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       construct_dummies(log,pos[TRY],&(nrnb[cr->pid]),1,NULL,&top->idef);
 
     if (bConstrain || bDummies) 
-      unshift_self(graph,fr->shift_vec,pos[TRY]);
+      unshift_self(graph,parm->box,pos[TRY]);
     
     /* Calc force & energy on new positions  */
     do_force(log,cr,parm,nsb,force_vir, 
  	     count,&(nrnb[cr->pid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
  	     lambda,graph,bNS,FALSE,fr); 
-    unshift_self(graph,fr->shift_vec,pos[TRY]);
+    unshift_self(graph,parm->box,pos[TRY]);
 
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,pos[TRY],force[TRY],&(nrnb[cr->pid]),&top->idef);

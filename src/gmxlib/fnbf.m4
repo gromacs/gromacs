@@ -292,6 +292,7 @@ real do_14(int nbonds,t_iatom iatoms[],t_iparams *iparams,
   int       gid,shift14;
   int       j_index[] = { 0, 1 };
   int       i1=1,i3=3,si,sj;
+  ivec      dt;
 
 #ifdef USEVECTOR
   if (fbuf == NULL)
@@ -384,10 +385,11 @@ ifdef(`USEVECTOR',`define(`ARG3',`fbuf,'`ARG2')',`define(`ARG3',`ARG2')')
     
     rvec_sub(f[ai],fi,fi);
     /*rvec_sub(f[aj],fj,fj);  */
-    si = SHIFT_INDEX(g,ai);
+    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);    
+    si=IVEC2IS(dt);	
+
     rvec_inc(fr->fshift[si],fi);
-    sj = SHIFT_INDEX(g,aj);
-    rvec_dec(fr->fshift[sj],fi);
+    rvec_dec(fr->fshift[CENTRAL],fi);
 
   }
   }

@@ -141,16 +141,16 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   if (bDummies) {
     /* Construct dummy particles */
-    shift_self(graph,fr->shift_vec,x);
+    shift_self(graph,parm->box,x); 
     construct_dummies(log,x,&(nrnb[cr->pid]),1,NULL,&top->idef);
-    unshift_self(graph,fr->shift_vec,x);
+    unshift_self(graph,parm->box,x);
   }
 
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->pid]),top,grps,
 	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr);
-  unshift_self(graph,fr->shift_vec,x);
+  unshift_self(graph,parm->box,x);
   where();
 
   /* Spread the force on dummy particle to the other particles... */
@@ -237,9 +237,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /*((parm->ir.nstlist && ((count % parm->ir.nstlist)==0)) || (count==0));*/
       if (bDummies) {
 	/* Construct dummy particles */
-	shift_self(graph,fr->shift_vec,xprime);
+	shift_self(graph,parm->box,xprime);
 	construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
-	unshift_self(graph,fr->shift_vec,xprime);
+	unshift_self(graph,parm->box,xprime);
       }
       
       /* Calc force & energy on new trial position  */
@@ -247,7 +247,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	       count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr);
-      unshift_self(graph,fr->shift_vec,xprime);
+      unshift_self(graph,parm->box,xprime);
       
       /* Spread the force on dummy particle to the other particles... */
       spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 
@@ -312,9 +312,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
     if (bDummies) {
       /* Construct dummy particles */
-      shift_self(graph,fr->shift_vec,xprime);
+      shift_self(graph,parm->box,xprime);
       construct_dummies(log,xprime,&(nrnb[cr->pid]),1,NULL,&top->idef);
-      unshift_self(graph,fr->shift_vec,xprime);
+      unshift_self(graph,parm->box,xprime);
     }
     
     /* new energy, forces */
@@ -322,7 +322,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     count,&(nrnb[cr->pid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr);
-    unshift_self(graph,fr->shift_vec,xprime);
+    unshift_self(graph,parm->box,xprime);
     
     /* Spread the force on dummy particle to the other particles... */
     spread_dummy_f(log,xprime,f,&(nrnb[cr->pid]),&top->idef); 

@@ -117,6 +117,7 @@ real morsebonds(int nbonds,
   real  dr,dr2,temp,omtemp,cbomtemp,fbond,vbond,fij,b0,be,cb,vtot;
   rvec  dx;
   int   i,m,ki,kj,type,ai,aj;
+  ivec it,jt,dt;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -142,14 +143,15 @@ real morsebonds(int nbonds,
     fbond    = -two*be*temp*cbomtemp*invsqrt(dr2);      /*   9          */
     vtot    += vbond;       /* 1 */
     
-    ki=SHIFT_INDEX(g,ai);
-    kj=SHIFT_INDEX(g,aj);
+    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+    ki=IVEC2IS(dt);
+
     for (m=0; (m<DIM); m++) {                          /*  15          */
       fij=fbond*dx[m];
       f[ai][m]+=fij;
       f[aj][m]-=fij;
       fr->fshift[ki][m]+=fij;
-      fr->fshift[kj][m]-=fij;
+      fr->fshift[CENTRAL][m]-=fij;
     }
   }                                           /*  58 TOTAL    */
   return vtot;
@@ -167,6 +169,7 @@ real cubicbonds(int nbonds,
   real  dr,dr2,dist,kdist,kdist2,fbond,vbond,fij,vtot;
   rvec  dx;
   int   i,m,ki,kj,type,ai,aj;
+  ivec it,jt,dt;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -194,14 +197,14 @@ real cubicbonds(int nbonds,
 
     vtot      += vbond;       /* 21 */
     
-    ki=SHIFT_INDEX(g,ai);
-    kj=SHIFT_INDEX(g,aj);
+    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+    ki=IVEC2IS(dt);
     for (m=0; (m<DIM); m++) {                          /*  15          */
       fij=fbond*dx[m];
       f[ai][m]+=fij;
       f[aj][m]-=fij;
       fr->fshift[ki][m]+=fij;
-      fr->fshift[kj][m]-=fij;
+      fr->fshift[CENTRAL][m]-=fij;
     }
   }                                           /*  54 TOTAL    */
   return vtot;
@@ -243,6 +246,7 @@ real bonds(int nbonds,
   int  i,m,ki,kj,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot;
   rvec dx;
+  ivec it,jt,dt;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -262,6 +266,7 @@ real bonds(int nbonds,
 
     if (dr2 == 0.0)
       continue;
+
     
     vtot  += vbond;/* 1*/
     fbond *= invsqrt(dr2);			/*   6		*/
@@ -270,14 +275,15 @@ real bonds(int nbonds,
       fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
 	      dr,vbond,fbond);
 #endif
-    ki=SHIFT_INDEX(g,ai);
-    kj=SHIFT_INDEX(g,aj);
+    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+    ki=IVEC2IS(dt);
+
     for (m=0; (m<DIM); m++) {			/*  15		*/
       fij=fbond*dx[m];
       f[ai][m]+=fij;
       f[aj][m]-=fij;
       fr->fshift[ki][m]+=fij;
-      fr->fshift[kj][m]-=fij;
+      fr->fshift[CENTRAL][m]-=fij;
     }
   }					/* 59 TOTAL	*/
   return vtot;
@@ -425,9 +431,10 @@ real angles(int nbonds,
 	    matrix box,real lambda,real *dvdlambda,
 	    t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-  int  i,ai,aj,ak,t,type;
+  int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
   real cos_theta,theta,dVdt,va,vtot;
+  ivec it,jt,kt,dt_ij,dt_kj;
   
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -478,12 +485,16 @@ real angles(int nbonds,
 	f[aj][m]+=f_j[m];
 	f[ak][m]+=f_k[m];
       }
-      t=SHIFT_INDEX(g,ai);
-      rvec_inc(fr->fshift[t],f_i);
-      t=SHIFT_INDEX(g,aj);
-      rvec_inc(fr->fshift[t],f_j);
-      t=SHIFT_INDEX(g,ak);
-      rvec_inc(fr->fshift[t],f_k);
+      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+    ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+    ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+    t1=IVEC2IS(dt_ij);
+    t2=IVEC2IS(dt_kj);
+      
+      rvec_inc(fr->fshift[t1],f_i);
+      rvec_inc(fr->fshift[CENTRAL],f_j);
+      rvec_inc(fr->fshift[t2],f_k);
     }                                           /* 168 TOTAL	*/
   }
   return vtot;
@@ -521,7 +532,8 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   rvec uvec,vvec,svec;
   real ipr,nrkj,nrkj2;
   real a,p,q;
-  int  t;
+  int  t1,t2,t3;
+  ivec it,jt,kt,lt,dt_ij,dt_kj,dt_lj;  
   
   ipr   = iprod(m,m);		/*  5 	*/
   nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
@@ -545,14 +557,19 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   rvec_dec(f[k],f_k);   	/*  3	*/
   rvec_inc(f[l],f_l);   	/*  3	*/
 
-  t=SHIFT_INDEX(g,i);
-  rvec_inc(fr->fshift[t],f_i);
-  t=SHIFT_INDEX(g,j);
-  rvec_dec(fr->fshift[t],f_j);
-  t=SHIFT_INDEX(g,k);
-  rvec_dec(fr->fshift[t],f_k);
-  t=SHIFT_INDEX(g,l);
-  rvec_inc(fr->fshift[t],f_l);
+  
+  copy_ivec(SHIFT_IVEC(g,j),jt);
+  ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
+  ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
+  ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
+  t1=IVEC2IS(dt_ij);
+  t2=IVEC2IS(dt_kj);
+  t3=IVEC2IS(dt_lj);
+  
+  rvec_inc(fr->fshift[t1],f_i);
+  rvec_dec(fr->fshift[CENTRAL],f_j);
+  rvec_dec(fr->fshift[t2],f_k);
+  rvec_inc(fr->fshift[t3],f_l);
   /* 112 TOTAL 	*/
 }
 
@@ -728,6 +745,8 @@ static real low_angres(int nbonds,
   real phi,cos_phi,sign,vid,vtot,dVdphi;
   rvec r_ij,r_kl,f_i,f_k;
   real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
+
+  ivec it,jt,dt;  
   
   vtot = 0.0;
   ak=al=0; /* to avoid warnings */
@@ -780,15 +799,18 @@ static real low_angres(int nbonds,
 	f[al][m] -= f_k[m];
       }
     }
-    t=SHIFT_INDEX(g,ai);
+    
+    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+    t=IVEC2IS(dt);
+    
     rvec_inc(fr->fshift[t],f_i);
-    t=SHIFT_INDEX(g,aj);
-    rvec_dec(fr->fshift[t],f_i);
+    rvec_dec(fr->fshift[CENTRAL],f_i);
     if (!bZAxis) {
-      t=SHIFT_INDEX(g,ak);
+    ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
+    ivec_sub(it,jt,dt);
+    t=IVEC2IS(dt);
       rvec_inc(fr->fshift[t],f_k);
-      t=SHIFT_INDEX(g,al);
-      rvec_dec(fr->fshift[t],f_k);
+      rvec_dec(fr->fshift[CENTRAL],f_k);
     }
   }
 
@@ -947,7 +969,8 @@ real g96bonds(int nbonds,
   int  i,m,ki,kj,ai,aj,type;
   real dr2,fbond,vbond,fij,vtot;
   rvec dx;
-
+  ivec it,jt,dt;
+  
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
@@ -969,14 +992,15 @@ real g96bonds(int nbonds,
       fprintf(debug,"G96-BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
 	      sqrt(dr2),vbond,fbond);
 #endif
-    ki=SHIFT_INDEX(g,ai);
-    kj=SHIFT_INDEX(g,aj);
+   
+    ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+    ki=IVEC2IS(dt);
     for (m=0; (m<DIM); m++) {			/*  15		*/
       fij=fbond*dx[m];
       f[ai][m]+=fij;
       f[aj][m]-=fij;
       fr->fshift[ki][m]+=fij;
-      fr->fshift[kj][m]-=fij;
+      fr->fshift[CENTRAL][m]-=fij;
     }
   }					/* 44 TOTAL	*/
   return vtot;
@@ -1003,11 +1027,12 @@ real g96angles(int nbonds,
 	       matrix box,real lambda,real *dvdlambda,
 	       t_mdatoms *md,int ngrp,real egnb[],real egcoul[])
 {
-  int  i,ai,aj,ak,t,type,m;
+  int  i,ai,aj,ak,t,type,m,t1,t2;
   rvec r_ij,r_kj;
   real cos_theta,dVdt,va,vtot;
   real rij_1,rij_2,rkj_1,rkj_2,rijrkj_1;
   rvec f_i,f_j,f_k;
+  ivec it,jt,kt,dt_ij,dt_kj;
   
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1044,12 +1069,16 @@ real g96angles(int nbonds,
       f[aj][m]+=f_j[m];
       f[ak][m]+=f_k[m];
     }
-    t = SHIFT_INDEX(g,ai);
-    rvec_inc(fr->fshift[t],f_i);
-    t = SHIFT_INDEX(g,aj);
-    rvec_inc(fr->fshift[t],f_j);
-    t = SHIFT_INDEX(g,ak);
-    rvec_inc(fr->fshift[t],f_k);               /* 9 */
+    copy_ivec(SHIFT_IVEC(g,aj),jt);
+    
+    ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+    ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+    t1=IVEC2IS(dt_ij);
+    t2=IVEC2IS(dt_kj);
+
+    rvec_inc(fr->fshift[t1],f_i);
+    rvec_inc(fr->fshift[CENTRAL],f_j);
+    rvec_inc(fr->fshift[t2],f_k);               /* 9 */
     /* 163 TOTAL	*/
   }
   return vtot;

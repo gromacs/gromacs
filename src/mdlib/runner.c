@@ -343,7 +343,7 @@ void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
   fprintf(log,"Removing pbc first time\n");
   calc_shifts(parm->box,box_size,fr->shift_vec,FALSE);
   mk_mshift(log,graph,parm->box,x);
-  shift_self(graph,fr->shift_vec,x);
+  shift_self(graph,parm->box,x);
   fprintf(log,"Done rmpbc\n");
 }
 

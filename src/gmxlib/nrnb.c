@@ -208,7 +208,7 @@ void print_perf(FILE *out,double cputime,double realtime,real runtime,
   }
   fprintf(out,"%15s  %12s  %12.5f  %6.1f\n\n",
 	  "Total","",mflop,tfrac);
-  if (cputime > 0) {
+  if (cputime > 0 && realtime > 0) {
     fprintf(out,"%12s %10s %10s %8s\n","","CPU (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",
 	    cputime, realtime, 100.0*cputime/realtime);

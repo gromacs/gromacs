@@ -37,19 +37,10 @@ typedef struct {
   int      end;		/* The last atom in this graph			*/
   int      *nedge;	/* For each node the number of edges		*/
   atom_id  **edge;	/* For each node, the actual edges (bidirect.)	*/
-  int      *ishift;	/* The actual shift codes			*/
+  ivec     *ishift;	/* Shift for each particle              	*/
 } t_graph;
 
 
-#ifdef HALLO
-#define SHIFT_INDEX(g,i) ((g)->ishift((i)-(g)->start))
-#else
-static int shift_index(t_graph *g,int i)
-{
-  if ((i < g->start) || (i > g->end))
-    fatal_error(0,"Shift index out of range: i=%d, start=%d,end=%d",
-		i,g->start,g->end);
-  return g->ishift[i-g->start];
-}
-#define SHIFT_INDEX(g,i) shift_index(g,i)
-#endif
+
+#define SHIFT_IVEC(g,i) ((g)->ishift[(i)-(g)->start])
+

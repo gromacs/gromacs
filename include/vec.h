@@ -155,6 +155,19 @@ static gmx_inline void copy_ivec(ivec a,ivec b)
   b[ZZ]=a[ZZ];
 }
 
+static gmx_inline void ivec_sub(ivec a,ivec b,ivec c)
+{
+  int x,y,z;
+  
+  x=a[XX]-b[XX];
+  y=a[YY]-b[YY];
+  z=a[ZZ]-b[ZZ];
+  
+  c[XX]=x;
+  c[YY]=y;
+  c[ZZ]=z;
+}
+
 static gmx_inline void copy_mat(matrix a,matrix b)
 {
   copy_rvec(a[XX],b[XX]);

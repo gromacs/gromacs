@@ -465,8 +465,7 @@ void update(int          natoms, 	/* number of atoms in simulation */
 	    t_inputrec   *ir,           /* input record with constants 	*/
 	    t_mdatoms    *md,
 	    rvec         x[],	/* coordinates of home particles */
-	    t_graph      *graph,
-	    rvec         shift_vec[],	
+	    t_graph      *graph,	
 	    rvec         force[], 	/* forces on home particles 	*/
 	    rvec         delta_f[],
 	    rvec         vold[],	/* Old velocities		   */
@@ -646,15 +645,18 @@ void update(int          natoms, 	/* number of atoms in simulation */
       inc_nrnb(nrnb,eNR_SHAKE_VIR,homenr);
       where();
     }
-  }
+  } 
 
   
   /* We must always unshift here, also if we did not shake
    * x was shifted in do_force */
   where();
   if ((graph->nnodes > 0) && bDoUpdate && (ir->eBox != ebtNONE)) {
-    unshift_x(graph,shift_vec,x,xprime);
-    inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
+      unshift_x(graph,box,x,xprime);
+      if(TRICLINIC(box))
+	  inc_nrnb(nrnb,eNR_SHIFTX*2,graph->nnodes);
+      else
+	  inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);	  
     for(n=start; (n<graph->start); n++)
       copy_rvec(xprime[n],x[n]);
     for(n=graph->start+graph->nnodes; (n<start+homenr); n++)

@@ -46,22 +46,6 @@ static char *SRCID_mshift_c = "$Id$";
  *
  ************************************************************/
  
-static ivec iv_shift[N_IVEC];
-
-static void mk_ivshift(void)
-{
-  int i,j,k,n;
-  
-  n=0;
-  for(i=-D_BOX; (i<=D_BOX); i++)
-    for(j=-D_BOX; (j<=D_BOX); j++)
-      for(k=-D_BOX; (k<=D_BOX); k++,n++) {
-	iv_shift[n][XX]=i;
-	iv_shift[n][YY]=j;
-	iv_shift[n][ZZ]=k;
-      }
-  assert(n==N_IVEC);
-}
 
 /************************************************************
  *
@@ -157,10 +141,11 @@ void p_graph(FILE *log,char *title,t_graph *g)
   fprintf(log,"nbound: %d\n",g->nbound);
   fprintf(log,"start:  %d\n",g->start);
   fprintf(log,"end:    %d\n",g->end);
-  fprintf(log," atom shift nedg   e1   e2 etc.\n");
+  fprintf(log," atom shiftx shifty shiftz nedg   e1   e2 etc.\n");
   for(i=0; (i<g->nnodes); i++)
     if (g->nedge[i] > 0) {
-      fprintf(log,"%5d%6d%5d",g->start+i+1,g->ishift[i],g->nedge[i]);
+	fprintf(log,"%5d%7d%7d%7d%5d",g->start+i+1,g->ishift[i][XX],g->ishift[i][YY],
+		g->ishift[i][ZZ],g->nedge[i]);
       for(j=0; (j<g->nedge[i]); j++)
 	fprintf(log,"%5u",g->edge[i][j]+1);
       fprintf(log,"\n");
@@ -243,7 +228,6 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 {
   t_graph *g;
   int     i;
-  mk_ivshift();
   
   snew(g,1);
 
@@ -317,11 +301,10 @@ void done_graph(t_graph *g)
  *
  ************************************************************/
 
-static int mk_1shift_tric(matrix box,rvec hbox,rvec xi,int mi,rvec xj)
+static void mk_1shift_tric(matrix box,rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
 {
   /* Calculate periodicity for triclinic box... */
   int  m,d;
-  ivec mj;
   rvec dx;
   
   rvec_sub(xi,xj,dx);
@@ -331,24 +314,22 @@ static int mk_1shift_tric(matrix box,rvec hbox,rvec xi,int mi,rvec xj)
      * xi - xj will be bigger
      */
     if (dx[m] < -hbox[m]) {
-      mj[m]=iv_shift[mi][m]-1;
+      mj[m]=mi[m]-1;
       for(d=m-1; d>=0; d--)
 	dx[d]+=box[m][d];
     } else if (dx[m] >= hbox[m]) {
-      mj[m]=iv_shift[mi][m]+1;
+      mj[m]=mi[m]+1;
       for(d=m-1; d>=0; d--)
 	dx[d]-=box[m][d];
     } else
-      mj[m]=iv_shift[mi][m];
+      mj[m]=mi[m];
   }
-  return IVEC2IS(mj);
 }
 
-static int mk_1shift(rvec hbox,rvec xi,int mi,rvec xj)
+static void mk_1shift(rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
 {
   /* Calculate periodicity for rectangular box... */
   int  m;
-  ivec mj;
   rvec dx;
   
   rvec_sub(xi,xj,dx);
@@ -358,22 +339,22 @@ static int mk_1shift(rvec hbox,rvec xi,int mi,rvec xj)
      * xi - xj will be bigger
      */
     if (dx[m] < -hbox[m])
-      mj[m]=iv_shift[mi][m]-1;
+      mj[m]=mi[m]-1;
     else if (dx[m] >= hbox[m])
-      mj[m]=iv_shift[mi][m]+1;
+      mj[m]=mi[m]+1;
     else
-      mj[m]=iv_shift[mi][m];
+      mj[m]=mi[m];
   }
-  return IVEC2IS(mj);
 }
 
 static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 		   matrix box,rvec x[],int *nerror)
 {
-  int      m,j,ng,ai,aj,g0,is_aj;
+  int      m,j,ng,ai,aj,g0;
   rvec     hbox;
   bool     bTriclinic;
-
+  ivec     is_aj;
+  
   for(m=0; (m<DIM); m++)
     hbox[m]=box[m][m]*0.5;
   bTriclinic = TRICLINIC(box);
@@ -387,22 +368,23 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
     aj=g->edge[ai][j]-g0;
     /* If there is a white one, make it gray and set pbc */
     if (bTriclinic)
-      is_aj=mk_1shift_tric(box,hbox,x[g0+ai],g->ishift[ai],x[g0+aj]);
+      mk_1shift_tric(box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
     else
-      is_aj=mk_1shift(hbox,x[g0+ai],g->ishift[ai],x[g0+aj]);
-    if ((is_aj >= N_IVEC) || (is_aj < 0))
-      fatal_error(0,"a molecule has exploded (is_aj out of range (%d))",is_aj);
+      mk_1shift(hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
     
     if (egc[aj] == egcolWhite) {
       if (aj < *AtomI)
 	*AtomI = aj;
       egc[aj] = egcolGrey;
       
-      g->ishift[aj]=is_aj;
+      copy_ivec(is_aj,g->ishift[aj]);
 
       ng++;
     }
-    else if (is_aj != g->ishift[aj]) {
+    else if ((is_aj[XX] != g->ishift[aj][XX]) ||
+	     (is_aj[YY] != g->ishift[aj][YY]) ||
+	     (is_aj[ZZ] != g->ishift[aj][ZZ]))
+	     {
       (*nerror)++;
     }
   }
@@ -437,7 +419,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
    * (i.e. only settles) all water molecules are moved to the opposite octant
    */
   for(i=0; (i<g->nnodes); i++) {
-    g->ishift[i]=CENTRAL;
+      g->ishift[i][XX]=g->ishift[i][YY]=g->ishift[i][ZZ]=0;
   }
     
   if (!g->nbound)
@@ -510,54 +492,69 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
  *
  ************************************************************/
  
-void shift_atom(t_graph *g,rvec sv[],rvec x[],rvec x_s[],atom_id ai)
+void shift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
 {
-  int t;
-  
-  t=g->ishift[ai-g->start];
+  int tx,ty,tz;
+  tx=(g->ishift[ai-g->start])[XX];
+  ty=(g->ishift[ai-g->start])[YY];
+  tz=(g->ishift[ai-g->start])[ZZ];
 
-  x_s[ai][XX]=x[ai][XX]+sv[t][XX];
-  x_s[ai][YY]=x[ai][YY]+sv[t][YY];
-  x_s[ai][ZZ]=x[ai][ZZ]+sv[t][ZZ];
+  x_s[ai][XX]=x[ai][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
+  x_s[ai][YY]=x[ai][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
+  x_s[ai][ZZ]=x[ai][ZZ]+tz*box[ZZ][ZZ];
 }
  
-void unshift_atom(t_graph *g,rvec sv[],rvec x[],rvec x_s[],atom_id ai)
+void unshift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
 {
-  int t;
-  
-  t=g->ishift[ai-g->start];
-  
-  x_s[ai][XX]=x[ai][XX]-sv[t][XX];
-  x_s[ai][YY]=x[ai][YY]-sv[t][YY];
-  x_s[ai][ZZ]=x[ai][ZZ]-sv[t][ZZ];
+  int tx,ty,tz;
+  tx=(g->ishift[ai-g->start])[XX];
+  ty=(g->ishift[ai-g->start])[YY];
+  tz=(g->ishift[ai-g->start])[ZZ];
+
+  x_s[ai][XX]=x[ai][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
+  x_s[ai][YY]=x[ai][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
+  x_s[ai][ZZ]=x[ai][ZZ]-tz*box[ZZ][ZZ];
 }
 
-void shift_x(t_graph *g,rvec sv[],rvec x[],rvec x_s[])
+void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
-  int *is;
+  ivec *is;
   int      g0,gn;
-  int      i,j,isd;
+  int      i,j,isd,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
   is=g->ishift;
   
-  for(i=0,j=g0; (i<gn); i++,j++) { 
-    isd=is[i];
-#ifdef DEBUG
-    fprintf(stdlog,"x[%d]=(%e,%e,%e), sv[is[%d]]=(%e,%e,%e)\n",
-	    j,x[j][XX],x[j][YY],x[j][ZZ],
-	    i,sv[isd][XX],sv[isd][YY],sv[isd][ZZ]);
-#endif
-    rvec_add(x[j],sv[isd],x_s[j]);
-  }
+  if(TRICLINIC(box)) {
+     for(i=0,j=g0; (i<gn); i++,j++) { 
+	 tx=is[i][XX];
+	 ty=is[i][YY];
+	 tz=is[i][ZZ];
+	 
+	 x_s[j][XX]=x[j][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
+	 x_s[j][YY]=x[j][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
+	 x_s[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
+     }
+  } else {
+     for(i=0,j=g0; (i<gn); i++,j++) { 
+	 tx=is[i][XX];
+	 ty=is[i][YY];
+	 tz=is[i][ZZ];
+	 
+	 x_s[j][XX]=x[j][XX]+tx*box[XX][XX];
+	 x_s[j][YY]=x[j][YY]+ty*box[YY][YY];
+	 x_s[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
+     }
+  }       
+     
 }
 
-void shift_self(t_graph *g,rvec sv[],rvec x[])
+void shift_self(t_graph *g,matrix box,rvec x[])
 {
-  int *is;
+  ivec *is;
   int      g0,gn;
-  int      i,j,isd;
+  int      i,j,isd,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
@@ -566,56 +563,91 @@ void shift_self(t_graph *g,rvec sv[],rvec x[])
 #ifdef DEBUG
   fprintf(stderr,"Shifting atoms %d to %d\n",g0,g0+gn);
 #endif
-  for(i=0,j=g0; (i<gn); i++,j++) { 
-    isd=is[i];
-#ifdef DEBUG
-    fprintf(stdlog,"x[%d]=(%e,%e,%e), sv[is[%d]]=(%e,%e,%e)\n",
-	    j,x[j][XX],x[j][YY],x[j][ZZ],
-	    i,sv[isd][XX],sv[isd][YY],sv[isd][ZZ]);
-#endif
-    rvec_inc(x[j],sv[isd]);
-  }
+  if(TRICLINIC(box)) {
+      for(i=0,j=g0; (i<gn); i++,j++) { 
+	  tx=is[i][XX];
+	  ty=is[i][YY];
+	  tz=is[i][ZZ];
+	  
+	  x[j][XX]=x[j][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
+	  x[j][YY]=x[j][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
+	  x[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
+      }
+  } else {
+      for(i=0,j=g0; (i<gn); i++,j++) { 
+	  tx=is[i][XX];
+	  ty=is[i][YY];
+	  tz=is[i][ZZ];
+	  
+	  x[j][XX]=x[j][XX]+tx*box[XX][XX];
+	  x[j][YY]=x[j][YY]+ty*box[YY][YY];
+	  x[j][ZZ]=x[j][ZZ]+tz*box[ZZ][ZZ];
+      }
+  }       
+  
 }
 
-void unshift_x(t_graph *g,rvec sv[],rvec x[],rvec x_s[])
+void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
-  int *is;
+  ivec *is;
   int      g0,gn;
-  int      i,j,isd;
+  int      i,j,isd,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
   is=g->ishift;
-  
-  for(i=0,j=g0; (i<gn); i++,j++) {
-    isd=is[i];
-#ifdef DEBUG
-    fprintf(stdlog,"x_s[%d]=(%e,%e,%e), sv[is[%d]]=(%e,%e,%e)\n",
-	    j,x_s[j][XX],x_s[j][YY],x_s[j][ZZ],
-	    i,sv[isd][XX],sv[isd][YY],sv[isd][ZZ]);
-#endif
-    rvec_sub(x_s[j],sv[isd],x[j]);
+  if(TRICLINIC(box)) {
+      for(i=0,j=g0; (i<gn); i++,j++) {
+	  tx=is[i][XX];
+	  ty=is[i][YY];
+	  tz=is[i][ZZ];
+	  
+	  x[j][XX]=x_s[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
+	  x[j][YY]=x_s[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
+	  x[j][ZZ]=x_s[j][ZZ]-tz*box[ZZ][ZZ];
+      }
+  } else {
+      for(i=0,j=g0; (i<gn); i++,j++) {
+	  tx=is[i][XX];
+	  ty=is[i][YY];
+	  tz=is[i][ZZ];
+	  
+	  x[j][XX]=x_s[j][XX]-tx*box[XX][XX];
+	  x[j][YY]=x_s[j][YY]-ty*box[YY][YY];
+	  x[j][ZZ]=x_s[j][ZZ]-tz*box[ZZ][ZZ];
+      }
   }
 }
 
-void unshift_self(t_graph *g,rvec sv[],rvec x[])
+void unshift_self(t_graph *g,matrix box,rvec x[])
 {
-  int *is;
+  ivec *is;
   int g0,gn;
-  int i,j,isd;
+  int i,j,isd,tx,ty,tz;
 
   g0=g->start;
   gn=g->nnodes;
   is=g->ishift;
-  
-  for(i=0,j=g0; (i<gn); i++,j++) {
-    isd=is[i];
-#ifdef DEBUG
-    fprintf(stdlog,"x_s[%d]=(%e,%e,%e), sv[is[%d]]=(%e,%e,%e)\n",
-	    j,x[j][XX],x[j][YY],x[j][ZZ],
-	    i,sv[isd][XX],sv[isd][YY],sv[isd][ZZ]);
-#endif
-    rvec_dec(x[j],sv[isd]);
+  if(TRICLINIC(box)) {
+      for(i=0,j=g0; (i<gn); i++,j++) {
+	  tx=is[i][XX];
+	  ty=is[i][YY];
+	  tz=is[i][ZZ];
+	  
+	  x[j][XX]=x[j][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
+	  x[j][YY]=x[j][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
+	  x[j][ZZ]=x[j][ZZ]-tz*box[ZZ][ZZ];
+      }
+  } else {
+      for(i=0,j=g0; (i<gn); i++,j++) {
+	  tx=is[i][XX];
+	  ty=is[i][YY];
+	  tz=is[i][ZZ];
+	  
+	  x[j][XX]=x[j][XX]-tx*box[XX][XX];
+	  x[j][YY]=x[j][YY]-ty*box[YY][YY];
+	  x[j][ZZ]=x[j][ZZ]-tz*box[ZZ][ZZ];
+      }
   }
 }
 

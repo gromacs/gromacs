@@ -106,7 +106,9 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
   real        up1,up2,low;
   bool        bConservative,bMixed,bViolation;
   static real exp_min_t_tau=1.0;
-
+ 
+  ivec        it,jt,dt;
+  
   tav_viol=instant_viol=mixed_viol=tav_viol_Rav7=instant_viol_Rav7=0;
   /* scaling factor to smoothly turn on the restraint forces *
    * when using time averaging                               */
@@ -241,8 +243,9 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	restraint= forceatoms[i++];
 	ai       = forceatoms[i++];
 	aj       = forceatoms[i++];
-	ki       = SHIFT_INDEX(g,ai);
-	kj       = SHIFT_INDEX(g,aj);
+
+	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	ki=IVEC2IS(dt);
 	
 	if (bConservative) {
 	  rav_3 = drblock.rav[pair_nr_start+pair];
@@ -263,7 +266,7 @@ real ta_disres(int nfa,t_iatom forceatoms[],t_iparams ip[],
 	  f[ai][m]      += fij;
 	  f[aj][m]      -= fij;
 	  fshift[ki][m] += fij;
-	  fshift[kj][m] -= fij;
+	  fshift[CENTRAL][m] -= fij;
 	}
       }
     }
