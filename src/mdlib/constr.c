@@ -329,8 +329,10 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 			    int step,t_mdatoms *md,int start,int homenr,
 			    int *nbl,int **sbl,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			    real lambda,real *dvdlambda,bool bCoordinates,
-			    bool bInit,t_nrnb *nrnb,bool bDumpOnError)
+			    real lambda,real *dvdlambda,
+			    bool bCalcVir,tensor rmdr,
+			    bool bCoordinates,bool bInit,
+			    t_nrnb *nrnb,bool bDumpOnError)
 {
   static int       *bla1,*bla2,*blnr,*blbnb,nrtot=0;
   static rvec      *r;
@@ -396,7 +398,7 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       
       clincs(x,xprime,pbc_null,nc,bla1,bla2,blnr,blbnb,
 	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
-	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam);
+	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam,bCalcVir,rmdr);
 
       if (ir->efep != efepNO) {
 	real dvdl=0;
@@ -442,6 +444,8 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
     /* count assuming nit=1 */
     inc_nrnb(nrnb,eNR_LINCS,nc);
     inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
+    if (bCalcVir)
+      inc_nrnb(nrnb,eNR_CONSTR_VIR,nc);
   }
   return bOK;
 }
@@ -460,8 +464,8 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 			  int step,t_mdatoms *md,int start,int homenr,
 			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			  real lambda,real *dvdlambda,t_nrnb *nrnb,
-			  bool bCoordinates,bool bInit)
+			  real lambda,real *dvdlambda,tensor *vir,
+			  t_nrnb *nrnb,bool bCoordinates,bool bInit)
 {
   static int       nblocks=0;
   static int       *sblock=NULL;
@@ -478,6 +482,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   atom_id     *inv_sblock;
   int         i,j,m,bnr;
   int         ncons,bstart,error;
+  tensor      rmdr;
+  real        hdt_2;
   
   bOK = TRUE;
   if (bInit) {
@@ -587,8 +593,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	please_cite(stdlog,"Hess97a");
 	bOK = constrain_lincs(stdlog,top,ir,0,md,start,homenr,&nblocks,&sblock,
-			      NULL,NULL,NULL,NULL,0,NULL,bCoordinates,TRUE,nrnb,
-			      bDumpOnError);
+			      NULL,NULL,NULL,NULL,0,NULL,FALSE,NULL,
+			      bCoordinates,TRUE,nrnb,bDumpOnError);
       } 
       else
 	please_cite(stdlog,"Ryckaert77a");
@@ -596,16 +602,21 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   } 
   else {
     /* !bInit */
+    if (vir != NULL)
+      clear_mat(rmdr);
+
     if (nblocks > 0) {
       where();
       
       if (ir->eConstrAlg == estSHAKE)
 	bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
-		      ir,box,x,xprime,nrnb,lambda,dvdlambda,bDumpOnError);
+		      ir,box,x,xprime,nrnb,lambda,dvdlambda,
+		      vir!=NULL,rmdr,bDumpOnError);
       else if (ir->eConstrAlg == estLINCS)
 	bOK = constrain_lincs(stdlog,top,ir,step,md,
 			      start,homenr,&nblocks,&sblock,
 			      x,xprime,min_proj,box,lambda,dvdlambda,
+			      vir!=NULL,rmdr,
 			      bCoordinates,FALSE,nrnb,bDumpOnError);
       if (!bOK && bDumpOnError)
 	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
@@ -620,13 +631,23 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       mH   = md->massT[ow1+1];
       dOH  = top->idef.iparams[settle_type].settle.doh;
       dHH  = top->idef.iparams[settle_type].settle.dhh;
-      csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,&error);
+      csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,
+	      vir!=NULL,rmdr,&error);
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+      if (vir != NULL)
+	inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+      
       bOK = (error < 0);
       if (!bOK && bDumpOnError)
 	fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
 		"settled.\nCheck for bad contacts and/or reduce the timestep.",
 		ir->init_t+step*ir->delta_t,owptr[error]+1);
+    }
+    if (vir != NULL) {
+      hdt_2 = 0.5/(ir->delta_t*ir->delta_t);
+      for(i=0; i<DIM; i++)
+	for(j=0; j<DIM; j++)
+	  (*vir)[i][j] = hdt_2*rmdr[i][j];
     }
     if (!bOK && bDumpOnError) 
       dump_confs(step,&(top->atoms),x,xprime,box);
@@ -637,10 +658,11 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 bool constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
 	       t_mdatoms *md,int start,int homenr,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-	       real lambda,real *dvdlambda,t_nrnb *nrnb,bool bCoordinates)
+	       real lambda,real *dvdlambda,tensor *vir,
+	       t_nrnb *nrnb,bool bCoordinates)
 {
   return low_constrain(log,top,ir,step,md,start,homenr,x,xprime,min_proj,box,
-		       lambda,dvdlambda,nrnb,bCoordinates,FALSE);
+		       lambda,dvdlambda,vir,nrnb,bCoordinates,FALSE);
 }
 
 int count_constraints(t_topology *top,t_commrec *cr)
@@ -659,7 +681,7 @@ int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 		      t_commrec *cr)
 {
   low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,NULL,
-		0,NULL,NULL,bOnlyCoords,TRUE);
+		0,NULL,NULL,NULL,bOnlyCoords,TRUE);
   
   return count_constraints(top,cr);
 }

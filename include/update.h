@@ -58,7 +58,6 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   t_state      *state,
 		   t_graph      *graph,	
 		   rvec         force[],/* forces on home particles 	*/
-		   rvec         delta_f[],
 		   rvec         vold[],	/* Old velocities		   */
 		   t_topology   *top,
 		   t_groups     *grps,

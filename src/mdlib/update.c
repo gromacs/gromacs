@@ -345,7 +345,7 @@ static void do_update_sd(int start,int homenr,
 
         } else {
 
-          /* Correct the velocties for the constraints */
+          /* Correct the velocities for the constraints */
           v[n][d] = 
           (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
 
@@ -611,7 +611,7 @@ static void deform(int start,int homenr,rvec x[],matrix box,
       while (new[i][j] - box[i][j] > 0.5*new[j][j])
 	rvec_dec(new[i],new[j]);
       while (new[i][j] - box[i][j] < -0.5*new[j][j])
-	rvec_inc(new[i],new[j]);
+rvec_inc(new[i],new[j]);
     }
   }
   m_inv_lowerleft0(box,invbox);
@@ -636,7 +636,6 @@ void update(int          natoms,  /* number of atoms in simulation */
 	    t_state      *state,
             t_graph      *graph,  
             rvec         force[],   /* forces on home particles 	*/
-            rvec         delta_f[],
             rvec         vold[],  /* Old velocities		   */
             t_topology   *top,
             t_groups     *grps,
@@ -658,10 +657,11 @@ void update(int          natoms,  /* number of atoms in simulation */
   static t_edpar   edpar;
   static bool      bHaveConstr,bExtended;
   double           dt;
-  real             dt_1,dt_2,mdt_2;
+  real             dt_1;
   int              i,n,m,g;
   matrix           M;
   t_inputrec       *ir=&(parm->ir);
+  tensor           vir_con;
   static gmx_rng_t sd_gaussrand=NULL;
   
   if(bFirst) {
@@ -670,19 +670,18 @@ void update(int          natoms,  /* number of atoms in simulation */
     bHaveConstr = bHaveConstr || pulldata->bPull || edyn->bEdsam;
     bExtended   = (ir->etc==etcNOSEHOOVER) || (ir->epc==epcPARRINELLORAHMAN);
 
-    if(edyn->bEdsam)
+    if(edyn->bEdsam) {
       init_edsam(stdlog,top,md,start,homenr,cr,state->x,state->box,
                  edyn,&edpar);
+      snew(x_unc,homenr);
+    }
 
     /* Initiate random number generator for stochastic and brownian dynamic integrators */
     if(ir->eI==eiSD || ir->eI==eiBD) 
       sd_gaussrand = gmx_rng_init(ir->ld_seed);
     
-    /* Allocate memory for xold, original atomic positions
-     * and for xprime.
-     */
+    /* Allocate memory for xold and for xprime. */
     snew(xprime,natoms);
-    snew(x_unc,homenr);
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=ir->opts.ngacc;    
     ngtc=ir->opts.ngtc;    
@@ -694,9 +693,8 @@ void update(int          natoms,  /* number of atoms in simulation */
 
   dt   = ir->delta_t;
   dt_1 = 1.0/dt;
-  dt_2 = 1.0/(dt*dt);
 
-  if(bDoUpdate) {
+  if (bDoUpdate) {
     /* update mean velocities */
     for(g=0; g<ngacc; g++) {
       copy_rvec(grps->grpstat[g].u,grps->grpstat[g].uold);
@@ -733,8 +731,8 @@ void update(int          natoms,  /* number of atoms in simulation */
     where();
     dump_it_all(stdlog,"Before update",
 		natoms,state->x,xprime,state->v,vold,force);
-    if(ir->eI==eiMD) {
-      if(grps->cosacc.cos_accel == 0)
+    if (ir->eI == eiMD) {
+      if (grps->cosacc.cos_accel == 0)
         /* use normal version of update */
         do_update_md(start,homenr,dt,lamb,grps->grpstat,state->nosehoover_xi,
                      ir->opts.acc,ir->opts.nFreeze,md->invmass,md->ptype,
@@ -745,7 +743,7 @@ void update(int          natoms,  /* number of atoms in simulation */
         do_update_visc(start,homenr,dt,lamb,md->invmass,state->nosehoover_xi,
                        md->ptype,md->cTC,state->x,xprime,state->v,vold,force,M,
                        state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
-    } else if(ir->eI==eiSD) {
+    } else if (ir->eI == eiSD) {
       /* The SD update is done in 2 parts, because an extra constraint step
        * is needed 
        */
@@ -756,19 +754,23 @@ void update(int          natoms,  /* number of atoms in simulation */
                    state->x,xprime,state->v,vold,force,state->sd_X,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand,TRUE);
-      if(bHaveConstr) {
-        for(n=start; n<start+homenr; n++)
-          copy_rvec(xprime[n],x_unc[n-start]);
+      if (bHaveConstr) {
+	if (edyn->bEdsam) {
+	  /* Copy the unconstrained coordinates */
+	  for(n=start; n<start+homenr; n++)
+	    copy_rvec(xprime[n],x_unc[n-start]);
+	}
         /* Constrain the coordinates xprime */
         constrain(stdlog,top,ir,step,md,start,homenr,state->x,xprime,NULL,
-                  state->box,state->lambda,dvdlambda,nrnb,TRUE);
+                  state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
 
-        for(n=start; n<start+homenr; n++) {
-          /* A correction factor eph is needed for the SD constraint force */
-          mdt_2 = dt_2*md->massT[n]*sdc[md->cTC[n]].eph;
-          for(i=0; i<DIM; i++)
-            delta_f[n][i] = (xprime[n][i] - x_unc[n-start][i])*mdt_2;
-        }
+	/* A correction factor eph is needed for the SD constraint force */
+	/* Here we can, unfortunately, not have proper corrections
+	 * for different friction constants, so we use the first one.
+	 */
+	for(i=0; i<DIM; i++)
+	  for(m=0; m<DIM; m++)
+	    vir_part[i][m] += sdc[0].eph*vir_con[i][m];
       }
       do_update_sd(start,homenr,
                    ir->opts.acc,ir->opts.nFreeze,
@@ -777,7 +779,7 @@ void update(int          natoms,  /* number of atoms in simulation */
                    state->x,xprime,state->v,vold,force,state->sd_X,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand,FALSE);
-    } else if(ir->eI==eiBD)
+    } else if (ir->eI == eiBD) {
       do_update_bd(start,homenr,dt,
                    ir->opts.nFreeze,md->invmass,md->ptype,
                    md->cFREEZE,md->cTC,
@@ -785,11 +787,12 @@ void update(int          natoms,  /* number of atoms in simulation */
                    ir->bd_fric,
                    ir->opts.ngtc,ir->opts.tau_t,ir->opts.ref_t,
                    sd_gaussrand);
-    else
+    } else {
       gmx_fatal(FARGS,"Don't know how to update coordinates");
-
+    }
     where();
-    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE,homenr);
+    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE,
+	     ir->eI==eiSD ? 2*homenr : homenr);
     dump_it_all(stdlog,"After update",
 		natoms,state->x,xprime,state->v,vold,force);
   } else {
@@ -811,58 +814,61 @@ void update(int          natoms,  /* number of atoms in simulation */
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-  if(bHaveConstr) {
-    if(ir->eI != eiSD)
+  if (bHaveConstr) {
+    if (edyn->bEdsam && (ir->eI != eiSD)) {
       /* Copy Unconstrained X to temp array */
       for(n=start; n<start+homenr; n++)
-        copy_rvec(xprime[n],x_unc[n-start]);
-
+	copy_rvec(xprime[n],x_unc[n-start]);
+    }
     /* Constrain the coordinates xprime */
     constrain(stdlog,top,ir,step,md,start,homenr,state->x,xprime,NULL,
-              state->box,state->lambda,dvdlambda,nrnb,TRUE);
-
+              state->box,state->lambda,dvdlambda,
+	      (ir->eI==eiSD) ? NULL : &vir_con,nrnb,TRUE);
+    if (ir->eI != eiSD)
+      m_add(vir_part,vir_con,vir_part);
     where();
 
     dump_it_all(stdlog,"After Shake",
 		natoms,state->x,xprime,state->v,vold,force);
 
-    /* apply Essential Dynamics constraints when required */
-    if(edyn->bEdsam)
+    /* Note that the reported ED and pull forces can be off
+     * with SD and BD with high friction, as the forces
+     * are no longer proportional to positional differences.
+     */
+
+    /* Apply Essential Dynamics constraints when required. */
+    if (edyn->bEdsam)
       do_edsam(stdlog,top,ir,step,md,start,homenr,cr,xprime,state->x,
                x_unc,force,state->box,edyn,&edpar,bDoUpdate);
 
     /* apply pull constraints when required. Act on xprime, the SHAKED
-       coordinates.  Don't do anything to f */
-    if(pulldata->bPull && pulldata->runtype == eConstraint)
-      pull(pulldata,xprime,force,NULL,state->box,
+       coordinates. Don't do anything to f */
+    if (pulldata->bPull && pulldata->runtype == eConstraint)
+      pull(pulldata,xprime,force,vir_part,state->box,
 	   top,dt,step,ir->init_t+step*dt,
 	   md,start,homenr,cr);
 
     where();      
 
-    if(bDoUpdate) {
-      if(ir->eI != eiSD) {
+    if (bDoUpdate) {
+      /* Note that with SD with ED or pull constraints the velocity
+       * corrections for these constraints is missing (this only
+       * involves a few degress of freedom though).
+       */
+      if (ir->eI != eiSD) {
         /* The constraint virial and the velocities are incorrect for BD */
         for(n=start; n<start+homenr; n++) {
-          mdt_2 = dt_2*md->massT[n];
           for(i=0; i<DIM; i++) {
-            delta_f[n][i]  = (xprime[n][i] - x_unc[n-start][i])*mdt_2;
-            /* recalculate the velocities from the old and new positions */
             state->v[n][i] = (xprime[n][i] - state->x[n][i])*dt_1;
           }
         }
+	inc_nrnb(nrnb,eNR_CONSTR_V,homenr);
         where();
       }
-
-      inc_nrnb(nrnb,eNR_CONSTR_V,homenr);
       dump_it_all(stdlog,"After Shake-V",
 		  natoms,state->x,xprime,state->v,vold,force);
       where();
 
-      /* Calculate virial due to constraints (for this node) */
-      calc_vir(stdlog,homenr,&(state->x[start]),&(delta_f[start]),vir_part);
-      inc_nrnb(nrnb,eNR_CONSTR_VIR,homenr);
-      where();
       if (debug)
 	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     }
@@ -874,7 +880,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   if (bDoUpdate) {
     if ((ir->ePBC == epbcXYZ) && (graph->nnodes > 0)) {
       unshift_x(graph,state->box,state->x,xprime);
-      if(TRICLINIC(state->box))
+      if (TRICLINIC(state->box))
 	inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
       else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
@@ -894,14 +900,14 @@ void update(int          natoms,  /* number of atoms in simulation */
 	      natoms,state->x,xprime,state->v,vold,force);
   where();
 
-  if(bDoUpdate) {
+  if (bDoUpdate) {
     update_grps(start,homenr,grps,&(ir->opts),state->v,md,bNEMD);
     if (DEFORM(*ir))
       deform_store(state->box,ir,step,bFirstStep);
-    if(ir->epc == epcBERENDSEN) {
+    if (ir->epc == epcBERENDSEN) {
       berendsen_pscale(state->pcoupl_mu,state->box,start,homenr,state->x,
 		       md->cFREEZE,nrnb,ir->opts.nFreeze);
-    } else if(ir->epc == epcPARRINELLORAHMAN) {
+    } else if (ir->epc == epcPARRINELLORAHMAN) {
       /* The box velocities were updated in do_pr_pcoupl in the update
        * iteration, but we dont change the box vectors until we get here
        * since we need to be able to shift/unshift above.

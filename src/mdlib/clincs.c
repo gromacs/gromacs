@@ -44,6 +44,7 @@
 #include "physics.h"
 #include "vec.h"
 #include "pbc.h"
+#include "smalloc.h"
 
 void clincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,int ncons,
 	     int *bla1,int *bla2,int *blnr,int *blbnb,
@@ -133,7 +134,7 @@ void clincs(rvec *x,rvec *xp,t_pbc *pbc,int ncons,
 	    real *blc,real *blcc,real *blm,
 	    int nit,int nrec,real *invmass,rvec *r,
 	    real *rhs1,real *rhs2,real *sol,real wangle,int *warn,
-	    real *lambda)
+	    real *lambda,bool bCalcVir,tensor rmdr)
 {
   int     b,i,j,k,n,it,rec;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
@@ -299,6 +300,20 @@ void clincs(rvec *x,rvec *xp,t_pbc *pbc,int ncons,
       xp[j][2]=v2;
     } /* 17 ncons flops */
   } /* nit*ncons*(35+9*nrec) flops */
+
+  if (bCalcVir) {
+    /* Constraint virial */
+    for(b=0; b<ncons; b++) {
+      tmp0 = bllen[b]*lambda[b];
+      for(i=0; i<DIM; i++) {
+	tmp1 = tmp0*r[b][i];
+	for(j=0; j<DIM; j++) {
+	  rmdr[i][j] -= tmp1*r[b][j];
+	}
+      }
+    } /* 22 ncons flops */
+  }
+
   /* Total:
    * 24*ncons + 6*nrtot + nrec*(ncons+2*nrtot)
    * + nit * (18*ncons + nrec*(ncons+2*nrtot) + 17 ncons)

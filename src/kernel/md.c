@@ -689,7 +689,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     bOK = TRUE;
     if (!bRerunMD || rerun_fr.bV)
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
-	     parm,mdatoms,state,graph,f,buf,vold,
+	     parm,mdatoms,state,graph,f,vold,
 	     top,grps,shake_vir,cr,&mynrnb,bTYZ,edyn,&pulldata,bNEMD,
 	     TRUE,bFirstStep,NULL);
     else {

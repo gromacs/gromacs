@@ -189,7 +189,8 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f, tensor vir, matrix box,
 }
 
 /* this implements a constraint run like SHAKE does. */
-static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md, 
+static void do_constraint(t_pull *pull, rvec *x, tensor vir,
+			  matrix box, t_mdatoms *md, 
                           real dt, int step, int *niter) 
 {
 
@@ -434,6 +435,18 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     dsvmul(1.0/(pgrp->invtm*dt*dt),dr[i],tmp);
     /* get the direction of dr */
     pgrp->f[ZZ] = -dnorm(tmp)*direction[i];
+    
+    /* update the virial */
+    if(pull->bCyl) {
+      d_pbc_dx(box,pull->grp[i].x_con,pull->dyna[i].x_con,r_ij);
+    } else {
+      d_pbc_dx(box,pull->grp[i].x_con,pull->ref.x_con,r_ij);
+    }
+    q = 0.5*pgrp->f[ZZ]/dnorm(r_ij);
+    for(j=0; j<DIM; j++)
+      for(m=0; m<DIM; m++)
+	vir[j][m] += q*r_ij[j]*r_ij[m];
+    fprintf(stderr,"  %f\n",q*r_ij[0]*r_ij[0]);
 
     /* copy the new x_unc to x_con */
     copy_dvec(rinew[i],pgrp->x_con);
@@ -452,6 +465,7 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
       dsvmul(md->massT[ii],tmp,tmp2);
       dvec_add(tmp2,sum,sum);
     }
+
     if(pull->bVerbose)
       fprintf(stderr,"Group %i: correction %e %e %e\n",
               i,sum[0],sum[1],sum[2]);
@@ -591,7 +605,7 @@ void pull(t_pull *pull,rvec *x,rvec *f, tensor vir,
 
   case eConstraint:
     /* do the actual constraint calculation */
-    do_constraint(pull,x,box,md,dt,step,&niter);
+    do_constraint(pull,x,vir,box,md,dt,step,&niter);
     print_constraint(pull,step,time); 
     break;
 

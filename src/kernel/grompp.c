@@ -999,9 +999,12 @@ int main (int argc, char *argv[])
 	    nc);
     nerror++;
   }
-  if ((ir->ePBC == epbcFULL) && nc)
-    warning("combination of constraints and full periodicity may fail when\n"
-	    "molecules are split due to periodic boundaty conditions.\n");
+  if ((ir->ePBC == epbcFULL) && (ir->eConstrAlg == estSHAKE) && nc) {
+    fprintf(stderr,
+	    "ERROR: can not do full pbc with %s, use %s\n",
+	    eshake_names[estSHAKE],eshake_names[estLINCS]);
+    nerror++;
+  }
 
   /* If we are doing GBSA, check that we got the parameters we need */
   have_radius=have_vol=have_surftens=TRUE;

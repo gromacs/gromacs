@@ -124,27 +124,12 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 	  zh        = rijz*acor;
 	  im        = invmass[i];
 	  jm        = invmass[j];
-	  if ((im != 0) && (jm != 0)) {
-	    xp[ix] += xh*im;
-	    xp[iy] += yh*im;
-	    xp[iz] += zh*im;
-	    xp[jx] -= xh*jm;
-	    xp[jy] -= yh*jm;
-	    xp[jz] -= zh*jm;
-	  }
-	  else if ((im == 0) && (jm != 0)) {
-	    xp[ix] += xh*jm;
-	    xp[iy] += yh*jm;
-	    xp[iz] += zh*jm;
-	  }
-	  else if ((jm == 0) && (im != 0)) {
-	    xp[jx] -= xh*im;
-	    xp[jy] -= yh*im;
-	    xp[jz] -= zh*im;
-	  }
-	  else 
-	    gmx_fatal(FARGS,"Constraint between two massless particles %d and %",
-			im,jm);
+	  xp[ix] += xh*im;
+	  xp[iy] += yh*im;
+	  xp[iz] += zh*im;
+	  xp[jx] -= xh*jm;
+	  xp[jy] -= yh*jm;
+	  xp[jz] -= zh*jm;
 	}
       }
     }
@@ -157,7 +142,8 @@ int vec_shakef(FILE *log,
 	       int natoms,real invmass[],int ncon,
 	       t_iparams ip[],t_iatom *iatom,
 	       real tol,rvec x[],rvec xp[],real omega,
-	       bool bFEP,real lambda,real lagr[])
+	       bool bFEP,real lambda,real lagr[],
+	       bool bCalcVir,tensor rmdr)
 {
   static  rvec *rij=NULL;
   static  real *M2=NULL,*tt=NULL,*dist2=NULL;
@@ -166,7 +152,7 @@ int vec_shakef(FILE *log,
   int     nit,ll,i,j,type;
   t_iatom *ia;
   real    L1,tol2,toler;
-  real    mm;
+  real    mm,tmp;
   int     error;
     
   if (ncon > maxcon) {
@@ -213,6 +199,27 @@ int vec_shakef(FILE *log,
 	    error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
     nit=0;
   }
+
+  /* Constraint virial and correct the lagrange multipliers for the length */
+  ia=iatom;
+  for(ll=0; (ll<ncon); ll++,ia+=3) {
+    if (bCalcVir) {
+      mm = lagr[ll];
+      for(i=0; i<DIM; i++) {
+	tmp = mm*rij[ll][i];
+	for(j=0; j<DIM; j++)
+	  rmdr[i][j] -= tmp*rij[ll][j];
+      }
+      /* 21 flops */
+    }
+
+    type  = ia[0];
+    if (bFEP) 
+      toler = L1*ip[type].shake.dA + lambda*ip[type].shake.dB;
+    else
+      toler = ip[type].shake.dA;
+    lagr[ll] *= toler;
+  }
   
   return nit;
 }
@@ -245,7 +252,8 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 
 bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	     t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-	     t_nrnb *nrnb,real lambda,real *dvdlambda,bool bDumpOnError)
+	     t_nrnb *nrnb,real lambda,real *dvdlambda,
+	     bool bCalcVir,tensor rmdr,bool bDumpOnError)
 {
   static  bool bFirst=TRUE;
   static  real *lagr;
@@ -279,7 +287,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     blen /= 3;
     n0 = vec_shakef(log,natoms,invmass,blen,idef->iparams,
 		    iatoms,ir->shake_tol,x_s,xp,omega,
-		    ir->efep!=efepNO,lambda,lam);
+		    ir->efep!=efepNO,lambda,lam,bCalcVir,rmdr);
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif
@@ -317,6 +325,8 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   }
   inc_nrnb(nrnb,eNR_SHAKE,tnit);
   inc_nrnb(nrnb,eNR_SHAKE_RIJ,trij);
+  if (bCalcVir)
+    inc_nrnb(nrnb,eNR_CONSTR_VIR,trij);
   
   return TRUE;
 }

@@ -453,7 +453,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
 	   parm,md,state,graph,
-	   NULL,NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
 	   edyn,pulldata,FALSE,FALSE,FALSE,state->x);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
@@ -471,7 +471,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
 	   parm,md,state,graph,
-	   NULL,NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
 	   edyn,pulldata,FALSE,FALSE,FALSE,buf);
 
     /* Compute the velocities at t=-dt/2 using the coordinates at

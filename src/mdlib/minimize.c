@@ -1592,8 +1592,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (bConstrain) {
       dvdlambda=0;
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
-		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,nrnb,
-		TRUE);
+		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,NULL,
+		nrnb,TRUE);
     }
     
     if (bVsites)
@@ -1633,7 +1633,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       
       dvdlambda=0;
       constrain(stdlog,top,&(parm->ir),count,mdatoms,start,end,
-		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,nrnb,TRUE);
+		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,NULL,
+		nrnb,TRUE);
       
       /* Remove the forces working on the constraints */
       for(i=start; (i<end); i++)  

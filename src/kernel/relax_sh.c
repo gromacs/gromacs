@@ -262,10 +262,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
   }
   constrain(log,top,ir,step,md,start,end,
 	    x,xnold-start,NULL,box,
-	    lambda,dvdlambda,nrnb,TRUE);
+	    lambda,dvdlambda,NULL,nrnb,TRUE);
   constrain(log,top,ir,step,md,start,end,
 	    x,xnew-start,NULL,box,
-	    lambda,dvdlambda,nrnb,TRUE);
+	    lambda,dvdlambda,NULL,nrnb,TRUE);
 
   /* Set xnew to minus the acceleration */
   for (n=start; n<end; n++) {
@@ -278,7 +278,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
   /* Project the accereration on the old bond directions */
   constrain(log,top,ir,step,md,start,end,
 	    x_old,xnew,acc_dir,box,
-	    lambda,dvdlambda,nrnb,FALSE); 
+	    lambda,dvdlambda,NULL,nrnb,FALSE); 
 }
 
 int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
@@ -548,7 +548,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   if (nflexcon > 0) {
     constrain(log,top,&(parm->ir),mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
-	      state->lambda,&dum,nrnb,TRUE);
+	      state->lambda,&dum,NULL,nrnb,TRUE);
     set_pbc(&pbc,state->box);
     for(i=0; i<homenr; i++) {
       pbc_dx(&pbc,state->x[start+i],x_old[i],dx);
