@@ -516,14 +516,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   char *ptr,*newdesc;
   char *envstr;
 
-
-  debug_gmx();
-  if (debug) {
-    fprintf(debug,"PID=%d, argc = %d\n",gmx_node_id(),*argc);
-    for(i=0; (i<*argc); i++)
-      fprintf(debug,"PID=%d, argv[%d] = %s\n",gmx_node_id(),i,argv[i]);
-  }
-
   /* Check for double arguments */
   for (i=1; (i<*argc); i++) {
     if (argv[i] && (strlen(argv[i]) > 1) && (!isdigit(argv[i][1]))) {
@@ -653,7 +645,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
       sprintf(buf,"%s.log",ShortProgram());
       
     init_debug(buf);
-    fprintf(debug,"%s (this file) opened in file %s, line %d\n",
+    fprintf(stderr,"Opening debug file %s (src code file %s, line %d)\n",
 	    buf,__FILE__,__LINE__);
   }
 

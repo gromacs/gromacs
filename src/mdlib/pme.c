@@ -764,7 +764,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
   /* Spread the charges on a grid */
   (void) spread_on_grid(logfile,HOMENR(nsb),ir->pme_order,
 			x+START(nsb),charge+START(nsb),box,bGatherOnly);
-
   if (!bGatherOnly) {
     inc_nrnb(nrnb,eNR_SPREADQBSP,
 	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
@@ -773,8 +772,10 @@ real do_pme(FILE *logfile,   bool bVerbose,
     /* sum contributions to local grid from other nodes */
     if (PAR(cr))
       sum_qgrid(cr,nsb,grid,TRUE);
+    if (debug)
+      pr_fftgrid(debug,"qgrid",grid);
  
-       /* do 3d-fft */ 
+    /* do 3d-fft */ 
     gmxfft3D(grid,FFTW_FORWARD,cr);
    
     /* solve in k-space for our local cells */
@@ -787,6 +788,8 @@ real do_pme(FILE *logfile,   bool bVerbose,
     /* distribute local grid to all nodes */
     if (PAR(cr))
       sum_qgrid(cr,nsb,grid,FALSE);
+    if (debug)
+      pr_fftgrid(debug,"potential",grid);
       
     ntot  = grid->nxyz;  
     npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));

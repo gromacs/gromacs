@@ -153,6 +153,25 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
   return grid;
 }
 
+void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
+{
+  int     i,j,k,l,ntot=0;
+  int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
+  t_fft_r *ptr;
+
+  /* Unpack structure */
+  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
+  l=0;
+  for(i=0; (i<nx); i++)
+    for(j=0; (j<ny); j++) 
+      for(k=0; (k<nz); k++,l++)
+	if (ptr[l] != 0) {
+	  fprintf(fp,"%-12s  %5d  %5d  %5d  %12.5e\n",title,i,j,k,ptr[l]);
+	  ntot ++;
+	}
+  fprintf(fp,"%d non zero elements in %s\n",ntot,title);
+}
+
 void done_fftgrid(t_fftgrid *grid)
 {
   if (grid->ptr) {

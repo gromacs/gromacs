@@ -93,6 +93,9 @@ extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,
  * If the file pointer is given, information is printed to it.
  */
 
+extern void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid);
+/* Dump a grid to a file */
+
 extern void done_fftgrid(t_fftgrid *grid);
 /* And throw it away again */
 
