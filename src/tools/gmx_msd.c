@@ -555,6 +555,8 @@ int gmx_msd(int argc,char *argv[])
     "g_msd computes the mean square displacement (MSD) of atoms from",
     "their initial positions. This provides an easy way to compute",
     "the diffusion constant using the Einstein relation.",
+    "The time between additional starting points for the MSD calculation",
+    "is set with [TT]-trestart[tt].",
     "The diffusion constant is calculated by least squares fitting a",
     "straight line through the MSD from [TT]-beginfit[tt] to",
     "[TT]-endfit[tt]. An error estimate given, which is the difference",
@@ -572,7 +574,7 @@ int gmx_msd(int argc,char *argv[])
   static char *normtype[]= { NULL,"no","x","y","z",NULL };
   static char *axtitle[] = { NULL,"no","x","y","z",NULL };
   static int  ngroup     = 1;
-  static real dt         = 0; 
+  static real dt         = 10; 
   static real beginfit   = 0; 
   static real endfit     = -1; 
   static bool bMW        = TRUE;
