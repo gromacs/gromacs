@@ -332,7 +332,7 @@ int p_invsqrt(char *left,char *right)
       sprintf(buf,"(half*lu*(three-((%s*lu)*lu)))",right);
 #ifdef DOUBLE
       p_state("y1",buf);
-      sprintf(buf,"y2=(half*y*(three-((%s*y)*y)))",right);
+      sprintf(buf,"y2=(half*y1*(three-((%s*y1)*y1)))",right);
       p_state(left,buf);
 #else
       p_state(left,buf);
@@ -1261,6 +1261,11 @@ int fouter1(void)
   int nflop = 0;
   
   comment("Outer loop (over i particles) starts here");
+#ifdef USE_OMP
+  if (!bC) {
+    fprintf(fp,"!$OMP DO\n");
+  }
+#endif
   start_loop("n",bC ? "0" : "1","nri");
 
   comment("Unpack shift vector");
@@ -1390,7 +1395,10 @@ void fouterloop(char *loopname)
   sprintf(buf,"Outer loop costs %d flops",nflop);
   comment(buf);
   end_loop();
-
+#ifdef USE_OMP
+  if (!bC)
+    fprintf(fp,"!$OMP END DO\n");
+#endif
   if (bFREE) {
     if (bC)
       p_incr("*dvdlambda","dvdl");
