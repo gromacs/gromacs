@@ -206,7 +206,7 @@ real bonds(FILE *log,int nbonds,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA,
 			   forceparams[type].harmonic.rB,
-			   dr,lambda,&vbond,&fbond);
+			   dr,lambda,&vbond,&fbond);  /*  19  */
 
     if (dr2 == 0.0)
       continue;
@@ -227,7 +227,7 @@ real bonds(FILE *log,int nbonds,
       fr->fshift[ki][m]+=fij;
       fr->fshift[kj][m]-=fij;
     }
-  }					/* 44 TOTAL	*/
+  }					/* 59 TOTAL	*/
   return vtot;
 }
 
@@ -391,7 +391,7 @@ real angles(FILE *log,int nbonds,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA*DEG2RAD,
 			   forceparams[type].harmonic.rB*DEG2RAD,
-			   theta,lambda,&va,&dVdt);
+			   theta,lambda,&va,&dVdt);  /*  21  */
     vtot += va;
     
     {
@@ -432,7 +432,7 @@ real angles(FILE *log,int nbonds,
       rvec_inc(fr->fshift[t],f_j);
       t=SHIFT_INDEX(g,ak);
       rvec_inc(fr->fshift[t],f_k);
-    }                                           /* 153 TOTAL	*/
+    }                                           /* 168 TOTAL	*/
   }
   return vtot;
 }
@@ -595,12 +595,12 @@ real idihs(FILE *log,int nbonds,
 			   forceparams[type].harmonic.krB,
 			   forceparams[type].harmonic.rA*DEG2RAD,
 			   forceparams[type].harmonic.rB*DEG2RAD,
-			   phi,lambda,&vid,&ddphi);
+			   phi,lambda,&vid,&ddphi);    /*   21          */   
 
     vtot += vid;
     do_dih_fup(log,ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
 	       f,fr,g,x);				/* 112		*/
-    /* 202 TOTAL	*/
+    /* 217 TOTAL	*/
 #ifdef DEBUG
     fprintf(log,"idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
 	    ai,aj,ak,al,cos_phi,phi);
