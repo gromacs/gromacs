@@ -43,6 +43,7 @@ gmxdump|makes binary files human readable
 g_traj|plots x, v and f of selected atoms/groups (and more) from a trajectory
 g_analyze|analyzes data sets
 trjorder|orders molecules according to their distance to a group
+g_filter|frequency filters trajectories, useful for making smooth movies
 END
 
 HEAD|Distances between structures
@@ -125,7 +126,7 @@ END
 HEAD|Normal modes
 grompp|makes a run input file
 mdrun|finds a potential energy minimum
-nmrun|calculates the Hessian
+mdrun|calculates the Hessian
 g_nmeig|diagonalizes the Hessian 
 g_anaeig|analyzes the normal modes
 g_nmens|generates an ensemble of structures from the normal modes

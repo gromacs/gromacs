@@ -29,6 +29,7 @@ g_dist
 g_dyndom
 g_enemat
 g_energy
+g_filter
 g_gyrate
 g_h2order
 g_hbond
@@ -74,7 +75,6 @@ mk_angndx
 mtx
 ndx
 ngmx
-nmrun
 pdb
 pdb2gmx
 protonate
