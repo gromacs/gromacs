@@ -251,15 +251,13 @@ void please_cite(FILE *fp,char *key)
    
    "Ryckaert77a",
    "J. P. Ryckaert and G. Ciccotti and H. J. C. Berendsen",
-   "Numerical Integration of the Cartesian Equations of Motion of a "
-   "System with Constraints; Molecular Dynamics of n-Alkanes",
+   "Numerical Integration of the Cartesian Equations of Motion of a System with Constraints; Molecular Dynamics of n-Alkanes",
    "J. Comp. Phys.",
    "23 1977 327 341",
    
    "Miyamoto92a",
    "S. Miyamoto and P. A. Kollman",
-   "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms "
-   "for Rigid Water Models",
+   "SETTLE: An Analytical Version of the SHAKE and RATTLE Algorithms for Rigid Water Models",
    "J. Comp. Chem.",
    "13 1992 952 962",
    
@@ -303,7 +301,19 @@ void please_cite(FILE *fp,char *key)
    "D. S. Wishart and A. M. Nip",
    "Protein Chemical Shift Analysis: A Practical Guide",
    "Biochem. Cell Biol.",
-   "76 1998 153-163"
+   "76 1998 153-163",
+   
+   "Maiorov95",
+   "V. N. Maiorov and G. M. Crippen",
+   "Size-Independent Comparison of Protein Three-Dimensional Structures",
+   "PROTEINS: Struct. Funct. Gen.",
+   "22 1995 273 283",
+   
+   "Feenstra99",
+   "K. A. Feenstra and B. Hess and H. J. C. Berendsen",
+   "Improving Efficiency of Large Time-scale Molecular Dynamics Simulations of Hydrogen-rich Systems",
+   "J. Comput. Chem.",
+   "20 1999 786 798"
   };
 #define NSTR (int)asize(citedb)
   
