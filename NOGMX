@@ -1,0 +1,70 @@
+# remove all environment variables set by GMXRC
+
+if ($?GMXLIB) then
+  if ($LD_LIBRARY_PATH == $GMXLIB) then
+    unsetenv LD_LIBRARY_PATH
+  endif
+  if ($?LD_LIBRARY_PATH) then
+    echo "You might want to remove $GMXLIB ("\$"GMXLIB) from "\$"LD_LIBRARY_PATH"
+  endif
+  echo "unsetenv GMXLIB ($GMXLIB)"
+  unsetenv GMXLIB 
+endif
+
+if ($?GMXMAN) then
+  if ($MANPATH == $GMXMAN) then
+    unsetenv MANPATH
+  endif
+  if ($?MANPATH) then
+    echo "You might want to remove $GMXMAN ("\$"GMXMAN) from "\$"MANPATH"
+  endif
+  echo "unsetenv GMXMAN ($GMXMAN)"
+  unsetenv GMXMAN
+endif
+
+if ($?GMXHOME) then
+  echo "unsetenv GMXHOME ($GMXHOME)"
+  unsetenv GMXHOME
+endif
+if ($?VER) then
+  echo "unsetenv VER ($VER)"
+  unsetenv VER
+endif
+if ($?CPUGMX) then
+  echo "unsetenv CPU ($CPU)"
+  unsetenv CPU
+endif
+if ($?GMXROOT) then
+  echo "unsetenv GMXROOT ($GMXROOT)"
+  unsetenv GMXROOT
+endif
+if ($?GMXBIN) then
+  echo Remove $GMXBIN from path
+  foreach i ( $path )
+    if ( ( "$i" != "$GMXBIN" ) && ( "$i/" != "$GMXBIN" ) ) then
+      if ( ! $?TEMPPATH ) then
+	setenv TEMPPATH $i
+      else
+	setenv TEMPPATH "$TEMPPATH":"$i"
+      endif
+    endif
+  end
+  setenv PATH $TEMPPATH
+  unsetenv TEMPPATH
+  echo "unsetenv GMXBIN ($GMXBIN)"
+  unsetenv GMXBIN
+endif
+if ($?GMXFONT) then
+  echo "unsetenv GMXFONT ($GMXFONT)"
+  unsetenv GMXFONT
+endif
+if ($?AMBBIN) then
+  echo "unsetenv AMBBIN ($AMBBIN)"
+  unsetenv AMBBIN
+endif
+if ($?IAMCOOL) then
+  echo "unsetenv IAMCOOL ($IAMCOOL)"
+  unsetenv IAMCOOL
+endif
+
+#last line
