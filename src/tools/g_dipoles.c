@@ -345,7 +345,7 @@ void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
 /*
  * Calculates epsilon according to M. Neumann, Mol. Phys. 50, 841 (1983)
  */ 
-real calc_eps(real M_diff,real volume,real epsRF,real temp)
+real calc_eps(double M_diff,double volume,double epsRF,double temp)
 {
   double eps,A,teller,noemer;
   double eps_0=8.854187817e-12;     /* epsilon_0 in C^2 J^-1 m^-1 */
@@ -408,10 +408,10 @@ static void do_dip(char *fn,char *topf,
   int        *dipole_bin,ndipbin,ibin,iVol,natoms,step;
   unsigned long mode;
   char       **enm=NULL;
-  real       rcut=0,t,t0,t1,dt,volume,vol_aver,lambda;
+  real       rcut=0,t,t0,t1,dt,volume,lambda;
   matrix     box;
   bool       bCont;
-  double     M_diff=0,epsilon,invtel;
+  double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
   double     M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
   t_lsq      *Qlsq,mulsq;
@@ -632,7 +632,7 @@ static void do_dip(char *fn,char *topf,
     /* Calculate for output the running averages */
     invtel  = 1.0/teller;
     M2_ave  = (M_XX2+M_YY2+M_ZZ2)*invtel;
-    M_ave2  = invtel*invtel*(M_XX*M_XX + M_YY*M_YY + M_ZZ*M_ZZ);
+    M_ave2  = invtel*(invtel*(M_XX*M_XX + M_YY*M_YY + M_ZZ*M_ZZ));
     M_diff  = M2_ave - M_ave2;
 
     /* Compute volume from box in traj, else we use the one from above */
@@ -640,7 +640,7 @@ static void do_dip(char *fn,char *topf,
       volume  = det(box);
     vol_aver += volume;
     
-    epsilon = calc_eps(M_diff,volume,epsilonRF,temp);
+    epsilon = calc_eps(M_diff,(vol_aver/teller),epsilonRF,temp);
 
     /* Calculate running average for dipole */
     if (mu_ave != 0) 

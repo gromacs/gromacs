@@ -39,7 +39,7 @@ extern void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 
 extern void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 		     t_parm *parm,t_topology *top,rvec x[],t_forcerec *fr,
-		     t_mdatoms *mdatoms,real coulomb[]);
+		     t_mdatoms *mdatoms,real coulomb[],matrix box,t_graph *graph);
 
 extern void write_pdb_coul();
 

@@ -154,7 +154,7 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
 
 void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 	      t_parm *parm,t_topology *top,rvec x[],t_forcerec *fr,
-	      t_mdatoms *mdatoms,real pot[])
+	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
   static bool        bFirst=TRUE;
   static t_nrnb      nrnb;
@@ -177,19 +177,19 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
   if (parm->ir.epc != epcNO)
-    calc_shifts(parm->box,box_size,fr->shift_vec);
+    calc_shifts(box,box_size,fr->shift_vec);
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
-			   parm->box,box_size,&(top->blocks[ebCGS]),x,
+			   box,box_size,&(top->blocks[ebCGS]),x,
 			   fr->cg_cm);
-  /* mk_mshift(stdlog,graph,parm->box,x);*/
+  mk_mshift(stdlog,graph,box,x);
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
   
-  ns(logf,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,cr,
+  ns(logf,fr,x,f,box,grps,&(parm->ir.opts),top,mdatoms,cr,
      &nrnb,nsb,0,lam,&dum);
   for(m=0; (m<DIM); m++)
-    box_size[m] = parm->box[m][m];
+    box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
     pot[i] = 0;
   if (debug) {
@@ -233,8 +233,8 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   }
 
   init_nrnb(&nrnb);
-  init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);
-  init_md(cr,&(parm->ir),parm->box,&t,&t0,&lam,&lam0,
+/*  init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,x,&v,mdatoms,nsb);*/
+  init_md(cr,&(parm->ir),box,&t,&t0,&lam,&lam0,
 	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,
 	  &mdebin,grps,force_vir,pme_vir,
 	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
@@ -242,7 +242,7 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
 
   /* Calculate intramolecular shift vectors to make molecules whole again */
   *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-  mk_mshift(stdlog,*graph,parm->box,*x);
+  mk_mshift(stdlog,*graph,box,*x);
   
   /* Turn off twin range if appropriate */
   parm->ir.rvdw  = parm->ir.rcoulomb;
@@ -259,15 +259,15 @@ void init_calcpot(int nfile,t_filenm fnm[],t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,parm->box,FALSE,"table.xvg",TRUE);
+		nsb,box,FALSE,"table.xvg",TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
-    box_size[m] = parm->box[m][m];
+    box_size[m] = box[m][m];
   if (parm->ir.ePBC != epbcNONE)
     do_pbc_first(stdlog,parm,box_size,*fr,*graph,*x);
 
-  copy_mat(parm->box,box);
+  copy_mat(box,box);
       
   snew(*pot,nsb->natoms);
   

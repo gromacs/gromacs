@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
-      calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,mdatoms,pot);
+      calc_pot(stdlog,&nsb,&cr,&grps,&parm,top,x,fr,mdatoms,pot,box,graph);
       if (bPDB || debug) {
 	char buf[STRLEN];
 	
