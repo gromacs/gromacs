@@ -577,8 +577,8 @@ int main(int argc,char *argv[])
     "When a trajectory is projected on eigenvectors, all structures are",
     "fitted to the structure in the eigenvector file, if present, otherwise",
     "to the structure in the structure file. When no run input file is",
-    "supplied, periodicity will not be taken into account. Most analysis",
-    "is done on eigenvectors [TT]-first[tt] to [TT]-last[tt], but when",
+    "supplied, periodicity will not be taken into account. Most analyses",
+    "are performed on eigenvectors [TT]-first[tt] to [TT]-last[tt], but when",
     "[TT]-first[tt] is set to -1 you will be prompted for a selection.[PAR]",
     
     "[TT]-disp[tt]: plot all atom displacements of eigenvectors",
