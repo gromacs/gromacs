@@ -323,16 +323,16 @@ int main(int argc,char *argv[])
     "Solvent accessible surface per residue can be calculated, both in",
     "absolute values (A^2) and in fractions of the maximal accessible",
     "surface of a residue. The maximal accessible surface is defined as",
-    "the accessible surface of a residue in a chain of glycines.[PAR]",
+    "the accessible surface of a residue in a chain of glycines.",
   };
   static real dt=0.0;
   static bool bVerbose;
-  static char *ss_string="HET"; 
+  static char *ss_string="HEBT"; 
   t_pargs pa[] = {
     { "-v",  FALSE, etBOOL, &bVerbose,
       "Generate miles of useless information" },
     { "-dt", FALSE, etREAL, &dt,
-      "Time interval between frames" },
+      "Only analyze a frame each dt picoseconds" },
     { "-sss", FALSE, etSTR, &ss_string,
       "Secondary structures for structure count"}
   };
