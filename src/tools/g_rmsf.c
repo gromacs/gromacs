@@ -373,9 +373,13 @@ int main (int argc,char *argv[])
   }
   fclose(fp);
   
-  /* Write a pdb file with anisou records */
-  if (bAniso) {
+  if (opt2bSet("-oq",NFILE,fnm)) {
+    /* Write a pdb file with B-factors and optionally anisou records */
+    for(i=0; i<isize; i++)
+      rvec_inc(xref[index[i]],xcm);
     write_sto_conf(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);
+  }
+  if (bAniso) { 
     correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms);
     xvgr_file(opt2fn("-oc",NFILE,fnm),"-nxy");
   }
