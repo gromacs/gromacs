@@ -61,6 +61,36 @@ static char *SRCID_grompp_c = "$Id$";
 #include "tpxio.h"
 #include "dummies.h"
 
+void check_disre(t_topology *sys)
+{
+  t_functype *functype;
+  t_iparams  *ip;
+  int i,ndouble,ftype;
+  int index,old_index;
+  
+  if (sys->idef.il[F_DISRES].nr) {
+    functype  = sys->idef.functype;
+    ip        = sys->idef.iparams;
+    ndouble   = 0;
+    old_index = -1;
+    for(i=0; i<sys->idef.ntypes; i++) {
+      ftype = functype[i];
+      if (ftype == F_DISRES) {
+	index = ip[i].disres.index;
+	if (index == old_index) {
+	  fprintf(stderr,"Distance restraint index %d occurs twice\n",index);
+	  ndouble++;
+	}
+	old_index = index;
+      }
+    }
+    if (ndouble>0)
+      fatal_error(0,"Found %d double distance restraint indices,\n"
+		  "probably the parameters for multiple pairs in one restraint "
+		  "are not identical\n",ndouble);
+  }
+}
+
 static void triple_check(t_inputrec *ir,t_topology *sys)
 {
   int  i,m;
@@ -88,6 +118,8 @@ static void triple_check(t_inputrec *ir,t_topology *sys)
     }
   }
   sfree(mgrp);
+
+  check_disre(sys);
 }
 
 static void double_check(t_inputrec *ir, matrix box, t_molinfo *mol,
