@@ -412,7 +412,7 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
       }
 #ifdef DEBUG
       for(i=0; (i<nx); i++) {
-	  for(j=0; (j<jny); j++) {
+	  for(j=0; (j<ny); j++) {
 	      for(k=0; k<(nz/2+1); k++) {
 		  index = INDEX(i,j,k);
 		  if (nTest[index] != 1)
