@@ -94,7 +94,7 @@ static bool LogoCallBack(t_x11 *x11,XEvent *event, Window w, void *data)
   static t_mess Mess[] = {
     { "GROMACS",                         0,       20, NULL },
     { NULL,                             16,        9, NULL },
-    { "Copyright (c) 1991-1996",        COFFS+ 2,  9, NULL },
+    { "Copyright (c) 1991-1998",        COFFS+ 2,  9, NULL },
     { "Dept. of Biophysical Chemistry", COFFS+11,  9, NULL },
     { "University of Groningen",        COFFS+20,  9, NULL },
     { "click to dismiss",               COFFS+31,  8, NULL }

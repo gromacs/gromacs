@@ -111,12 +111,13 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,bool bAll)
         
     switch (tp) {
     case F_SETTLE:
-      if (!bAll) {
+      /* Modified DvdS 4 juni 98, but I don't really understand... */
+      /*if (!bAll) {*/
 	settle[0]=ia[1];
 	settle[1]=settle[0]+1;
 	settle[2]=settle[0]+2;
 	add_gbond(g,settle,3);
-      }
+	/*}*/
       break;
       /*case F_BONDS:
 	case F_MORSE:

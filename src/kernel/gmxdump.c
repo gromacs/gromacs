@@ -46,7 +46,6 @@ static char *SRCID_gmxdump_c = "$Id$";
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
-#include "sheader.h"
 #include "txtdump.h"
 
 static void list_tpx(char *fn, bool bAltLayout)

@@ -33,6 +33,7 @@ static char *SRCID_anadih_c = "$Id$";
 #include "physics.h"
 #include "smalloc.h"
 #include "macros.h"
+#include "txtdump.h"
 #include "bondf.h"
 #include "xvgr.h"
 #include "typedefs.h"
@@ -340,16 +341,10 @@ void read_ang_dih(char *trj_fn,char *tpb_fn,
   rvec       *x,*x_s;
   int        cur=0;
 #define prev (1-cur)
-<<<<<<< anadih.c
 
-#ifdef CINVSQRT
+  /* Initiate lookup table for sqrt calculations */
   init_lookup_table(stdout);
-#endif  
-=======
-  
-  init_lookup_table(stdout);
-  
->>>>>>> 1.4
+
   /* Read topology */    
   top    = read_top(tpb_fn);
   natoms = top->atoms.nr;

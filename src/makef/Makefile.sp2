@@ -16,7 +16,6 @@ CC              = xlc
 CCC             = xlC
 F77             = xlf
 CFLAGS          = -O3 -qarch=pwr2 -qtune=pwr2 -langlvl=ansi -qmaxmem=16384 
--qfloat=hsflt
 CCFLAGS         = -O3 -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 
 FFLAGS          = -O4 -Q -qarch=pwr2 -qtune=pwr2 -qmaxmem=16384 -qhot -qrealsize=8 -qextname
 
@@ -68,4 +67,3 @@ CC		= mpcc
 CCC             = mpCC
 F77		= mpxlf
 endif
-

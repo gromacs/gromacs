@@ -214,33 +214,154 @@ void mi2top(t_topology *dest,t_molinfo *src)
   dest->name=src->name;
 }
 
+static t_molinfo   *mol_tmp;
+static t_simsystem *sim_tmp;
+
+static int sim_comp(const void *a,const void *b)
+{
+  return (mol_tmp[sim_tmp[*((int *)b)].whichmol].atoms.nr -
+	  mol_tmp[sim_tmp[*((int *)a)].whichmol].atoms.nr);
+}
+
+static int count_atoms(int *bucket,int nmol,t_molinfo mol[])
+{
+  int i,n;
+  
+  n=0;
+  for(i=0; (i<nmol); i++)
+    n += bucket[i]*mol[i].atoms.nr;
+  return n;
+}
+
+static int emptiest_bucket(int nbucket,int **bucket,int nmol,t_molinfo mol[])
+{
+  int i,ca,min_i,min_nat;
+  
+  min_i   = 0;
+  min_nat = count_atoms(bucket[min_i],nmol,mol);
+  if (debug)
+    fprintf(debug,"BUCKET  %5d",min_nat);
+  for(i=1; (i<nbucket); i++) {
+    ca = count_atoms(bucket[i],nmol,mol);
+    if (debug)
+      fprintf(debug,"  %5d",ca);
+    if (ca < min_nat) {
+      min_nat = ca;
+      min_i   = i;
+    }
+  }
+  if (debug)
+    fprintf(debug,"  eb=%d\n",min_i);
+
+  return min_i;
+}
+
 int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
 		    int Nsim,t_simsystem Sims[],bool bVerbose)
 {
-  int  *tab,*tmol;
-  int  i,j,k,nm,ttt,ifrac;
-  real frac,rnprocs;
+  t_simsystem *sss;
+  int  *tab,**bucket,*sim_index;
+  int  i,j,k,nm,nmolnz,idum,natom,eb;
   
-  nm=0;
+  nm     = 0;
   for(i=0; (i<Nsim); i++) 
     nm+=Sims[i].nrcopies;
+  
+  snew(bucket,nprocs);
+  for(i=0; (i<nprocs); i++)
+    snew(bucket[i],nmol);
+    
+  /* Sort the simsystems to increasing size of molecules */
+  snew(sim_index,Nsim);
+  for(i=0; (i<Nsim); i++)
+    sim_index[i] = i;
+  sim_tmp = Sims;
+  mol_tmp = mol;
+  qsort(sim_index,Nsim,sizeof(sim_index[0]),sim_comp);
+  
+  for(i=0; (i<Nsim); i++) {
+    sss = &(Sims[sim_index[i]]);
+    for(j=0; (j<sss->nrcopies); j++) {
+      eb = emptiest_bucket(nprocs,bucket,nmol,mol);
+      bucket[eb][sss->whichmol]++;
+    }
+  }
+  
+  /* Print a header for the table */
+  if (bVerbose) {
+    fprintf(stderr,"%7s","Moltype");
+    for(i=0; (i<nmol); i++) 
+      fprintf(stderr,"  %8s",*(mol[i].name));
+    fprintf(stderr,"  %8s\n","#atoms");
+
+    /* Print the table itself */
+    for(j=0; (j<nprocs); j++) {
+      fprintf(stderr,"CPU%4d",j);
+      for(i=0; (i<nmol); i++)
+	fprintf(stderr,"  %8d",bucket[j][i]);
+      fprintf(stderr,"  %8d\n",count_atoms(bucket[j],nmol,mol));
+    }
+  }
+  snew(tab,nmol*nprocs);
+  *ntab = 0;
+  for(j=0; (j<nprocs); j++)
+    for(k=0; (k<nmol); k++)
+      for(i=0; (i<bucket[j][k]); i++)
+	tab[(*ntab)++] = k;
+
+  return tab;
+}
+
+int *mk_shuffle_tab_old(int nmol,t_molinfo mol[],int nprocs,int *ntab,
+			int Nsim,t_simsystem Sims[],bool bVerbose)
+{
+  int  *tab,*tmol;
+  int  i,j,k,nm,ttt,ifrac,nmolnz,idum,natom;
+  real frac,rnprocs;
+  
+  nm     = 0;
+  nmolnz = 0;
+  for(i=0; (i<Nsim); i++) {
+    nm+=Sims[i].nrcopies;
+    if (Sims[i].nrcopies)
+      nmolnz++;
+  }
   fprintf(stderr,"Total number of molecules = %d, Number of Simsystems = %d\n",
 	  nm,Nsim);
   
+  /* Print a header for the table */
+  if (bVerbose) {
+    fprintf(stderr,"%10s","Moltype");
+    for(i=0; (i<Nsim); i++)
+      if (Sims[i].nrcopies > 0)
+	fprintf(stderr,"  %8s",*(mol[Sims[i].whichmol].name));
+    fprintf(stderr,"  %8s\n","#atoms");
+  }
   snew(tab,nm);
   snew(tmol,Nsim);
   rnprocs=nprocs;
   for(i=k=0; (i<nprocs); i++) {
+    if (bVerbose) 
+      fprintf(stderr,"%-6s%4d","CPU",i);
+    natom = 0;
+    
     for(j=0; (j<Nsim); j++) {
       frac=((i+1)*Sims[j].nrcopies)/rnprocs;
       if (debug)
 	fprintf(debug,"CPU=%3d, MOL=%3d, frac = %g\n",i,j,frac);
       ifrac = frac;
+      idum  = tmol[j];
       while(tmol[j] < ifrac) {
-	tab[k++]=Sims[j].whichmol;
+	tab[k++] = Sims[j].whichmol;
 	tmol[j]++;
+	natom   += mol[Sims[j].whichmol].atoms.nr;
+      }
+      if (bVerbose) {
+	fprintf(stderr,"  %8d",tmol[j]-idum);
       }
     }
+    if (bVerbose)
+      fprintf(stderr,"  %8d\n",natom);
   }
   sfree(tmol);
   
@@ -248,7 +369,7 @@ int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nprocs,int *ntab,
     for(i=0;(i<nm); i++)
       fprintf(debug,"shuffle_tab[%d] = %d\n",i,tab[i]);
   
-  if (bVerbose) {
+  if (bVerbose && 0) {
     for(i=0; (i<nm); ) {
       ttt=tab[i];
       k=0;

@@ -86,9 +86,6 @@ extern int read_pdbfile(FILE *in,char *title,
 extern void read_pdb_conf(char *infile,char *title, 
 			  t_atoms *atoms,rvec x[],matrix box,bool bChange);
 /* Read a pdb file and extract ATOM and HETATM fields.
- * The pdbaptr will point to an array of pdb atoms on return.
- * atomnm and resnama still contain the spaces from the
- * pdb file. 
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
  * Change atom names according to protein conventions if wanted
  */

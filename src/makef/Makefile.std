@@ -31,6 +31,10 @@ FFTLIBS		= -lfftw.$(CPU)
 
 EXECUTABLES = $(foreach FILE, $(PROGRAMS), $(FILE)$(EXTENSION))
 
+ifeq ($(OPTLDFLAGS),)
+OPTLDFLAGS	=
+endif
+
 ifeq ($(USE_XDR),yes)
 SYSDEFS		+= -DUSE_XDR
 endif

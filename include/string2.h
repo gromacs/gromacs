@@ -91,7 +91,8 @@ char *gmx_strdup(const char *src);
 
 extern char *wrap_lines(char *buf,int line_width, int indent);
 /* wraps lines at 'linewidth', indenting all following
- * lines by 'indent' spaces 
+ * lines by 'indent' spaces. A temp buffer is allocated and returned,
+ * which can be disposed of if no longer needed.
  */
 
 #ifdef CPLUSPLUS

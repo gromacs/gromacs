@@ -287,6 +287,89 @@ cdir$ ivdep
       
       end
       
+C     
+C***  Subroutine added by Peter Ahlstrom 5 June 1998
+C     
+      subroutine FORBHM(ix, iy, iz, qi, pos, nj, type, jjnr,
+     &   charge, nbfp, faction, fip, Vc, Vnb)
+
+      real ix,iy,iz,qi
+      real pos(*)
+      integer*4 nj,jjnr(*),type(*)
+      real charge(*),nbfp(*)
+      real faction(*),fip(*)
+      real Vc,Vnb      
+
+      integer    k,jnr,j3,tj,m
+      real six
+      real   fX,fY,fZ
+      real   rijX,rijY,rijZ
+      real   fijscal,rsq,vijcoul,vctot,vnbtot
+      real   r1,r_sq,rinv1,rinv2,rinv6
+      real   fjx,fjy,fjz
+      real   tx,ty,tz,vnb6,vnbexp,br
+      real   tt,ffj
+      
+      parameter(six=6.0)
+
+      fX=0
+      fY=0
+      fZ=0
+      vctot  = 0
+      vnbtot = 0
+      
+C     #ifdef _860_  
+C     fatal_error(0,"Sorry no Buckingham")
+C     #else
+
+C     /* Cray or PGC compiler directive: ignore vector dependency */
+c$dir ivdep
+      do k=1,nj 
+         jnr            = jjnr(k)+1
+         j3             = 3*jnr-2
+         rijX           = ix - pos(j3)
+         rijY           = iy - pos(j3+1)
+         rijZ           = iz - pos(j3+2)
+
+         r1             =sqrt((rijX*rijX)+(rijY*rijY)+(rijZ*rijZ))
+         rinv1          = 1.0/r1
+         rinv2          = rinv1*rinv1
+         rinv6          = rinv2*rinv2*rinv2
+         
+         tj             = 3*type(jnr)+1
+         br             = nbfp(tj+1)*r1
+         vnbexp         = nbfp(tj)*exp(-br)
+         vnb6           = nbfp(tj+2)*rinv6
+         vijcoul        = qi*charge(jnr)*rinv1
+         
+         vctot          = vctot+vijcoul
+         vnbtot         = vnbtot+vnbexp-vnb6
+         fijscal        = (br*vnbexp-six*vnb6+vijcoul)*rinv2
+         
+         fjx            = faction(j3)
+         tx             = rijX*fijscal
+         fX             = fX + tx
+         faction(j3)    = fjx - tx
+         fjy            = faction(j3+1)
+         ty             = rijY*fijscal
+         fY             = fY + ty
+         faction(j3+1)  = fjy - ty
+         fjz            = faction(j3+2)
+         tz             = rijZ*fijscal
+         fZ             = fZ + tz
+         faction(j3+2)  = fjz - tz
+      enddo
+      fip(1)=fX
+      fip(2)=fY
+      fip(3)=fZ
+      Vc = Vc+vctot
+      Vnb = Vnb+vnbtot
+
+      end
+C
+C****
+C      
+
       subroutine FORWATER(i0,xw,fudge,pos,nj,type,jjnr,
      &     charge,nbfp,faction,fw,Vc,Vnb)
 

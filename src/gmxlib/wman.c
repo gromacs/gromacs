@@ -325,28 +325,10 @@ char *check_tty(char *s)
   return repall(s,NSRTTY,sandrTty);
 }
 
-void wrap_line(char *buf,int LINE_WIDTH)
-{
-  int i,j;
-
-  i=0;
-  while (i+LINE_WIDTH<strlen(buf)) {
-    j=strchr(&(buf[i]),'\n')-buf;
-    if ((j<i) || (j>i+LINE_WIDTH))
-      j=i+LINE_WIDTH;
-    while ((j>i) && (buf[j]!=' ') && (buf[j]!='\n'))
-      j--;
-    if (j!=i)
-      buf[j]='\n';
-    i=j+1;
-  }
-}
-
 void print_tty_formatted(FILE *out, int nldesc, char *desc[])
 {
   char *buf,*temp;
   int i,j;
-#define LINE_WIDTH 79
 
   /* Just to be sure */
   j=0;
@@ -361,8 +343,10 @@ void print_tty_formatted(FILE *out, int nldesc, char *desc[])
     strcat(buf,temp);
     sfree(temp);
   }
-  wrap_line(buf,LINE_WIDTH);
-  fprintf(out,"%s\n",buf);
+  /* Make lines of at most 79 characters */
+  temp = wrap_lines(buf,79,0);
+  fprintf(out,"%s\n",temp);
+  sfree(temp);
   sfree(buf);
 }
 

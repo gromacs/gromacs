@@ -78,7 +78,9 @@ int main(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME,TRUE,
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
-  
+
+  init_lookup_table(stdout);
+		      
   snew(xr,1);
   init_rama(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),xr);
   

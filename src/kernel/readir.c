@@ -492,11 +492,11 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 	cbuf[j] = i;
     }
   }
-  if (forward != NULL) {
+  /*  if (forward != NULL) {
     for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[forward[j]];
   }
-  else {
+  else*/ {
     for(j=0; (j<atoms->nr); j++) 
       atoms->atom[j].grpnr[gtype]=cbuf[j];
   }

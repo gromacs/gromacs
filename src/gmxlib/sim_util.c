@@ -153,8 +153,8 @@ void do_force(FILE *log,t_commrec *cr,
     mk_mshift(log,graph,parm->box,x);
 
     /* Do the actual neighbour searching */
-    ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,cr,nrnb,nsb,
-       step);
+    ns(log,fr,x,f,parm->box,grps,&(parm->ir.opts),top,mdatoms,
+       cr,nrnb,nsb,step);
   }
   
   /* Compute the forces */    

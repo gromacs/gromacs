@@ -550,10 +550,10 @@ void force(FILE *log,
   where();
   if (fr->eeltype == eelPPPM) {
     real Vpppm,Vself;
-    Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,f,md->chargeT,
-		    box_size,fr->phi,cr,nrnb,FALSE);
+    Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,f,md->chargeA,
+		    box_size,fr->phi,cr,nrnb,TRUE);
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
-			       md->chargeT,excl,x,f);
+			       md->chargeA,excl,x,f);
     epot[F_LR] = Vpppm - Vself;
 #ifdef DEBUG    
     fprintf(log,"Vpppm = %g, Vself = %g, Vlr = %g\n",

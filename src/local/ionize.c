@@ -320,7 +320,7 @@ void ionize(FILE *log,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   /* Calculate probability */
   pt = imax*ir->delta_t*exp(-sqr(2.0*(t-t0)/width));
   dq = 0;
-  fprintf(ion,"%10.3f",t);
+  fprintf(ion,"%12.5f",t);
   for(i=0; (i<md->nr); i++) {
     for(k=0; (k<ecollNR); k++) {
       nel_atom = nelectrons[i]-1;
