@@ -45,7 +45,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "xvgr.h"
 #include "gstat.h"
 #include "txtdump.h"
-#include "callf77.h"
+#include "ql77.h"
 #include "trnio.h"
 
 int main(int argc,char *argv[])
@@ -74,7 +74,7 @@ int main(int argc,char *argv[])
   t_inputrec ir;
   rvec       *top_x,*x;
   matrix     box,zerobox;
-  real       t,*hess,*rdum1,*rdum2,rdum,mass_fac;
+  real       t,*hess,*eigv,rdum,mass_fac;
   int        natoms,ndim,count;
   char       *grpname,title[256];
   int        i,j,k,l,d,gnx;
@@ -106,8 +106,7 @@ int main(int argc,char *argv[])
 
   snew(hess,ndim*ndim);
 
-  snew(rdum1,ndim);
-  snew(rdum2,ndim);
+  snew(eigv,ndim);
 
   for (i=0; (i<natoms); i++) {
     for (j=0; (j<DIM); j++) {
@@ -174,20 +173,13 @@ int main(int argc,char *argv[])
   fprintf(stderr,"Diagonalizing...\n");
   fflush(stderr);
 
-#ifdef USEF77
-  fql77(&ndim,hess,rdum1,rdum2,&ndim);
-#else
-  /*ql77(int n,real **x,real *d,real *e,int nmax)*/
-  /*fprintf(stderr,"Calling ql77...\n");
-    ql77 (ndim,hess,rdum1,rdum2,ndim);*/
-  fatal_error(0,"C version of ql77 buggy. Use f77. Sorry.");
-#endif
+  ql77 (ndim,hess,eigv);
   
   /* check the output, first 6 eigenvalues should be quite small */
 
   bSuck=FALSE;
   for (i=0; (i<6); i++) {
-    if (abs(rdum1[i]) > 1.0e-3) 
+    if (abs(eigv[i]) > 1.0e-3) 
       bSuck=TRUE;
   }
   if (bSuck) {
@@ -205,7 +197,7 @@ int main(int argc,char *argv[])
   else 
     fprintf(out,"@ subtitle \"of Hessian matrix\"\n");
   for (i=0; i<ndim; i++)
-    fprintf (out,"%6d %15g\n",i+1,rdum1[i]);
+    fprintf (out,"%6d %15g\n",i+1,eigv[i]);
   fclose(out);
   
   if (begin<1)

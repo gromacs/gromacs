@@ -170,21 +170,11 @@ g_saltbr:	g_saltbr.o
 g_rdens:        g_rdens.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
 
-ifeq ($(USEF77),yes)
-g_nmeig:        g_nmeig.o
-	        $(LD) -o  $@ $^ $(SYSLIBS)
-else
 g_nmeig:        g_nmeig.o ql77.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)
-endif
 
-ifeq ($(USEF77),yes)
-g_covar:        g_covar.o
-	        $(LD) -o  $@ $^ $(SYSLIBS)
-else
 g_covar:        g_covar.o ql77.o
-	        $(LD) -o  $@ $^ $(SYSLIBS)
-endif
+		$(LD) -o  $@ $^ $(SYSLIBS)
 
 g_anaeig:       g_anaeig.o
 	        $(LD) -o  $@ $^ $(SYSLIBS)

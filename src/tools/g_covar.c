@@ -48,7 +48,7 @@ static char *SRCID_g_nmeig_c = "$Id$";
 #include "do_fit.h"
 #include "rmpbc.h"
 #include "txtdump.h"
-#include "callf77.h"
+#include "ql77.h"
 
 int main(int argc,char *argv[])
 {
@@ -82,7 +82,7 @@ int main(int argc,char *argv[])
   t_atoms    *atoms;  
   rvec       *x,*xread,*xref,*xav;
   matrix     box,zerobox;
-  real       t,*mat,dev,trace,sum,*eigval,*rdum2,rdum,inv_nframes;
+  real       t,*mat,dev,trace,sum,*eigval,inv_nframes;
   real       xj,*sqrtm,*w_rls,lambda;
   int        ntopatoms,step;
   int        natoms,nat,ndim,count,nframes;
@@ -239,15 +239,7 @@ int main(int argc,char *argv[])
   fflush(stderr);
 
   snew(eigval,ndim);
-  snew(rdum2,ndim);
-#ifdef USEF77
-  fql77(&ndim,mat,eigval,rdum2,&ndim);
-#else
-  /*ql77(int n,real **x,real *d,real *e,int nmax)*/
-  /*fprintf(stderr,"Calling ql77...\n");
-    ql77 (ndim,mat,eigval,rdum2,ndim);*/
-  fatal_error(0,"C version of ql77 buggy. Use f77. Sorry.");
-#endif
+  ql77 (ndim,mat,eigval);
   
   /* now write the output */
 
