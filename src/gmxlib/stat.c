@@ -166,10 +166,10 @@ static void moveit(FILE *log,
   sfree(temp);
 }
 
-void write_traj(FILE *log,t_commrec *cr,
-		char *traj,t_nsborder *nsb,
-		int step,real t,real lambda,t_nrnb nrnb[],
-		int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box)
+int write_traj(FILE *log,t_commrec *cr,
+	       char *traj,t_nsborder *nsb,
+	       int step,real t,real lambda,t_nrnb nrnb[],
+	       int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box)
 {
   static int fp=-1;
   
@@ -190,6 +190,7 @@ void write_traj(FILE *log,t_commrec *cr,
     fwrite_trn(fp,step,t,lambda,box,natoms,xx,vv,ff);
     fio_flush(fp);
   }
+  return fp;
 }
 
 /* XDR stuff for compressed trajectories */

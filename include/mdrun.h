@@ -131,13 +131,14 @@ extern void global_stat(FILE *log,
 			rvec vcm,rvec mu_tot);
 /* Communicate statistics around the ring */
 
-extern void write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
-		       int step,real t,real lambda,t_nrnb nr_nb[],
-		       int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box);
+extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
+		      int step,real t,real lambda,t_nrnb nr_nb[],
+		      int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box);
 /* Routine to output statusfiles during a run, as specified in
  * in parm->ir. If any of the pointers xx,vv,ff or ener is not NULL
  * it is written to the trajectory file.
  * Also write the energies etc. to the log file.
+ * Returns the file handle (to be closed with close_trn).
  */
 
 extern int do_per_step(int step,int nstep);

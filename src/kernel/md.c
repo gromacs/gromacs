@@ -49,7 +49,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
-  int        fp_ene,step;
+  int        fp_ene,fp_trn,step;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame,bLastStep;
@@ -182,8 +182,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
     if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
     if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=f; else ff=NULL;
-    write_traj(log,cr,traj,
-	       nsb,step,t,lambda,nrnb,nsb->natoms,xx,vv,ff,parm->box);
+    fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
+			nrnb,nsb->natoms,xx,vv,ff,parm->box);
     where();
     
     /* for rerunMD, certain things don't have to be done */
@@ -313,6 +313,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     close_enx(fp_ene);
     if (parm->ir.nstxtcout)
       close_xtc_traj();
+    close_trn(fp_trn);
   }
   
   return start_t;

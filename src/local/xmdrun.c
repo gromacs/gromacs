@@ -173,11 +173,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_forcerec *fr,rvec box_size)
 {
   t_mdebin   *mdebin;
-  int        fp_ene,step,k,n,count;
+  int        fp_ene,fp_trn,step,k,n,count;
   double     tcount;
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
-  bool       bNS,bStopCM,bStopRot,bTYZ;
+  bool       bNS,bStopCM,bStopRot,bTYZ,bLastStep;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       strbuf[256];
@@ -255,7 +255,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
    *             Loop over MD steps 
    *
    ************************************************************/
-  for (step=0; (step<parm->ir.nsteps); step++) {
+  for (step=0; (step<=parm->ir.nsteps); step++) {
+    /* Last Step? */
+    bLastStep = (step == parm->ir.nsteps);
+  
     /* Stop Center of Mass motion */
     get_cmparm(&parm->ir,step,&bStopCM,&bStopRot);
     
@@ -329,17 +332,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bDummies)
       spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
-    if (do_per_step(step,parm->ir.nstxout)) xx=x; else xx=NULL;
-    if (do_per_step(step,parm->ir.nstvout)) vv=v; else vv=NULL;
-    if (do_per_step(step,parm->ir.nstfout)) ff=f; else ff=NULL;
-    write_traj(log,cr,traj,
-               nsb,step,t,lambda,&mynrnb,nsb->natoms,xx,vv,ff,parm->box);
+    if (do_per_step(step,parm->ir.nstxout) || bLastStep) xx=x; else xx=NULL;
+    if (do_per_step(step,parm->ir.nstvout) || bLastStep) vv=v; else vv=NULL;
+    if (do_per_step(step,parm->ir.nstfout) || bLastStep) ff=f; else ff=NULL;
+    fp_trn = write_traj(log,cr,traj,nsb,step,t,lambda,
+			&mynrnb,nsb->natoms,xx,vv,ff,parm->box);
     where();
 
     if (do_per_step(step,parm->ir.nstxtcout)) {
       write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
                      step,t,x,parm->box,parm->ir.xtcprec);
       where();
+    }
+    if (bLastStep) {
+      fprintf(stderr,"Writing final coordinates.\n");
+      write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		     *top->name, &(top->atoms),x,v,parm->box);
     }
 
     where();
@@ -434,8 +442,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                force_vir,parm->vir,parm->pres,grps,mu_tot);
                
     where();
-    if ((MASTER(cr) && do_per_step(step,parm->ir.nstprint))) {
-      print_ebin(fp_ene,log,step,t,lambda,SAfactor,
+    if ( MASTER(cr) ) {
+      bool do_ene,do_log;
+      
+      do_ene=do_per_step(step,parm->ir.nstenergy) || bLastStep;
+      do_log=do_per_step(step,parm->ir.nstlog) || bLastStep;
+      print_ebin(do_ene ? fp_ene : -1,do_log ? log : NULL,step,t,lambda,SAfactor,
 		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
     }
     if (bVerbose)
@@ -449,15 +461,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   if (MASTER(cr)) {
-    if (parm->ir.nstprint > 1)
-      print_ebin(fp_ene,log,step-1,t,lambda,SAfactor,
-		 eprNORMAL,bCompact,mdebin,grps,&(top->atoms));
-    
     print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprAVER,FALSE,mdebin,grps,&(top->atoms));
     print_ebin(-1,log,step,t,lambda,SAfactor,
 	       eprRMS,FALSE,mdebin,grps,&(top->atoms));
+    close_enx(fp_ene);
+    if (parm->ir.nstxtcout)
+      close_xtc_traj();
+    close_trn(fp_trn);
   }
+  
   fprintf(log,"Fraction of iterations that converged:           %.2f\n",
 	  (nconverged*0.01)/parm->ir.nsteps);
   fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
