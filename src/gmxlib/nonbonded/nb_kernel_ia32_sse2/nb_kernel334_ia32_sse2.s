@@ -2321,7 +2321,7 @@ _nb_kernel334_ia32_sse2:
 	mulsd  xmm1, [esp + nb334_tsc]
 
 	cvttsd2si eax, xmm1	;# mm6 = lu idx 
-	cvtsi2sd xmm6, rax
+	cvtsi2sd xmm6, eax
 	subsd xmm1, xmm6	;# xmm1=eps 
 	movapd xmm2, xmm1	
 	mulsd  xmm2, xmm2	;# xmm2=eps2 
@@ -4839,7 +4839,7 @@ _nb_kernel334nf_ia32_sse2:
 	mulsd  xmm1, [esp + nb334nf_tsc]
 
 	cvttsd2si eax, xmm1	;# mm6 = lu idx 
-	cvtsi2sd xmm6, rax
+	cvtsi2sd xmm6, eax
 	subsd xmm1, xmm6	;# xmm1=eps 
 	movapd xmm2, xmm1	
 	mulsd  xmm2, xmm2	;# xmm2=eps2 
