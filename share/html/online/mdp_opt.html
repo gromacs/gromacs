@@ -17,7 +17,7 @@
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box)
-<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rlist, rcoulomb_switch, rcoulomb, rvdw_switch, rvdw, epsilon_r, bLJcorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
+<li><A HREF="#el"><b>electrostatics</b></A> (eel_type, rlist, rcoulomb_switch, rcoulomb, rvdw_switch, rvdw, epsilon_r, bDispCorr, niter, gauss_width, fourier_nx, fourier_ny, fourier_nz)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
@@ -262,7 +262,7 @@ distance for the LJ or Buckingham cut-off
 <dt><h4>epsilon_r: </b>(1)</h4>
 <dd>dielectric constant
 
-<dt><h4>bLJcorr:</h4>
+<dt><h4>bDispCorr:</h4>
 <dd><dl compact>
 <dt><b>no</b>
 <dd>don't apply any correction
@@ -587,7 +587,7 @@ desired parameter.
 <A HREF="#neq">acc_grps</A><br>
 <A HREF="#neq">accelerate</A><br>
 <A HREF="#sa">annealing</A><br>
-<A HREF="#el2">bLJcorr</A><br>
+<A HREF="#el2">bDispCorr</A><br>
 <A HREF="#el2">bLJshift</A><br>
 <A HREF="#nl">box</A><br>
 <A HREF="#pc">compressibility</A><br>
