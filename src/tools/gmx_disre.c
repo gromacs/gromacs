@@ -462,7 +462,7 @@ int gmx_disre(int argc,char *argv[])
   int         isize;
   atom_id     *index=NULL,*ind_fit=NULL;
   char        *grpname;
-  t_cluster_ndx *clust;
+  t_cluster_ndx *clust=NULL;
   t_dr_result dr,*dr_clust;
   char        **leg;
   real        *vvindex=NULL,*w_rls=NULL;
