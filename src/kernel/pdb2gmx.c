@@ -349,8 +349,8 @@ static char *choose_ff(bool bFFMan)
     sscanf(buf,"%s",fn);
     fff[i].fn=strdup(fn);
     /* Search for next non-space character, there starts description */
-    for(c=&(buf[strlen(fn)+1]); isspace(*c); c++)
-      ;
+    c=&(buf[strlen(fn)+1]);
+    while (isspace(*c)) c++;
     fff[i].desc=strdup(c);
   }
   fclose(in);
@@ -417,7 +417,7 @@ void find_nc_ter(int natom,t_pdbatom pdba[],int *rn,int *rc/*,int ter_type[]*/)
 
 static void analyse_pdba(int natom,t_pdbatom pdba[])
 {
-  int  i,nres;
+  int  nres;
   
   if (natom == 0) {
     fprintf(stderr,"No atoms in pdb file");
@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
     renumber_res(nrtp,restp,natom,pdba,block,&gnames);
     if (ftp2bSet(efNDX,NFILE,fnm)) {
       if (!opt2bSet("-reth",NFILE,fnm))
-	fprintf(stderr,"WARNING: without the -reth option the generated .ndx file might be useless (the index file is generated before hydrogens are added)");
+	fprintf(stderr,"WARNING: without the -reth option the generated .ndx (%s) file might be useless (the index file is generated before hydrogens are added)",ftp2fn(efNDX,NFILE,fnm));
       write_index(ftp2fn(efNDX,NFILE,fnm),block,gnames);
     }
   }

@@ -431,8 +431,14 @@ static void ter2bonds(t_params *ps,
   for(   ; ((i<natoms) && (atom[i].resnr == resnr)); i++) {
     for(j=0; (j<tdb->nadd); j++) {
       if (strcmp(tdb->ab[j].na[0],*(aname[i])) == 0) {
-	for(k=0; (k<tdb->ab[j].nh); k++)
-	  add_param(ps,i,i+k+1,NULL);
+	if (tdb->ab[j].tp == 9) {     /* COOH terminus */
+	  add_param(ps,i,i+1,NULL);   /* C-O  */
+	  add_param(ps,i,i+2,NULL);   /* C-OA */
+	  add_param(ps,i+2,i+3,NULL); /* OA-H */
+	} else {
+	  for(k=0; (k<tdb->ab[j].nh); k++)
+	    add_param(ps,i,i+k+1,NULL);
+	}
       }
     }
   }

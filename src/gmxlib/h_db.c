@@ -42,7 +42,7 @@ static char *SRCID_h_db_c = "$Id$";
  * Here these number are given. Because arrays start at 0 an
  * extra dummy for index 0 is added 
  */
-int ncontrol[8] = { -1, 3, 3, 3, 3, 4, 3, 1 };
+int ncontrol[10] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3 };
 
 int compaddh(const void *a,const void *b)
 {
@@ -79,6 +79,7 @@ void read_ab(FILE *in,t_add_block *ab)
   ab->nh=nh;
   ab->tp=tp;
   ncntl=ncontrol[tp];
+  if (debug) printf("will read %d elements for type %d\n",ncntl,tp);
   for(i=0; (i<ncntl); i++) {
     if (fscanf(in,"%s",buf) != 1) 
       fatal_error(0,"%d instead of %d (ncntl) elements found in input file\n",i,ncntl);

@@ -37,8 +37,7 @@ static char *SRCID_calch_h = "$Id$";
 #endif /* HAVE_IDENT */
 #include "typedefs.h"
 	
-extern void calc_h_pos(int nht,int nh[],int na[],
-		       real d,real alfa,rvec x[]);
+extern void calc_h_pos(int nht,int nh[],int na[],rvec x[]);
 /*
  *    w.f. van gunsteren, groningen, july 1981 
  *
@@ -70,10 +69,8 @@ extern void calc_h_pos(int nht,int nh[],int na[],
  *               generated (see x)                                  
  *               if nht=4 and nh(3)=0, only two hydrogens are generated
  *    na(1..4) = sequence numbers of the atoms i, j and k and l
- *    d = bond length (n-i)                                         
- *    alfa = bond angle (n-i-j) in radians (nht>1)                  
  *    x(1.. ) = atom cartesian coordinates                          
- *
+ *    default bond lengths and angles are defined internally
  */
 
 #endif	/* _calch_h */

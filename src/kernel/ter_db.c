@@ -40,7 +40,7 @@ static char *SRCID_ter_db_c = "$Id$";
 #include "ter_db.h"
 #include "toputil.h"
 
-#define FATAL() fatal_error(0,"Reading Termini Database line: %d",__LINE__)
+#define FATAL() fatal_error(0,"Reading Termini Database (source code line: %d)",__LINE__)
 
 static void read_atom(FILE *in,t_atom *a,t_atomtype *atype,char nnew[])
 {
@@ -67,9 +67,11 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
     
     /* Name of block */
     tb[nb].bname=strdup(bname);
+    if (debug) printf("block name %s\n",bname);
     
     /* Number of replacements */
     if (fscanf(in,"%d",&(tb[nb].nreplace)) != 1) FATAL();
+    if (debug) printf("# replace %d\n",tb[nb].nreplace);
     snew(tb[nb].nm_repl,tb[nb].nreplace);
     snew(tb[nb].new_nm,tb[nb].nreplace);
     snew(tb[nb].repl_by,tb[nb].nreplace);
@@ -81,6 +83,7 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
     }
     /* Number of additions */
     if (fscanf(in,"%d",&(tb[nb].nadd)) != 1) FATAL();
+    if (debug) printf("# additions %d\n",tb[nb].nadd);
     snew(tb[nb].ab,tb[nb].nadd);
     snew(tb[nb].adder,tb[nb].nadd);
     snew(tb[nb].add_nm,tb[nb].nadd);
@@ -90,6 +93,7 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
       tb[nb].add_nm[i]=strdup(nnew);
     }
     /* Number of impropers */
+    if (debug) printf("# impropers %d\n",tb[nb].nidih);
     fscanf(in,"%d",&(tb[nb].nidih));
     snew(tb[nb].idih,tb[nb].nidih);
     for(i=0; (i<tb[nb].nidih); i++) {
@@ -99,6 +103,7 @@ int read_ter_db(char *inf,t_terblock **tbptr,t_atomtype *atype)
       }
     }
     /* Number of delete atoms! */
+    if (debug) printf("# delete %d\n",tb[nb].ndel);
     if (fscanf(in,"%d",&(tb[nb].ndel)) != 1) FATAL();
     snew(tb[nb].nm_del,tb[nb].ndel);
     for(i=0; (i<tb[nb].ndel); i++) {

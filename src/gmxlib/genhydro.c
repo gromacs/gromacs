@@ -47,9 +47,6 @@ static char *SRCID_genhydro_c = "$Id$";
 #include "genhydro.h"
 #include "h_db.h"
 
-static const real dH=0.1;
-static const real mH=1.008;
-static const real Alfa=(DEG2RAD*109.5);
 #define MAXHH 3
 
 static int hack_residue(int resnr,int natom,t_pdbatom pdba[],t_add_block *ab[],
@@ -249,7 +246,7 @@ int add_h(int natom,t_pdbatom **pdbaptr,int nah,t_addh ah[],rvec **xptr,
 	nh[m]=na[0]+1+m;
       for(   ; (m<3); m++)
 	nh[m]=-1;
-      calc_h_pos(ab[i]->tp,nh,na,dH,Alfa,x);
+      calc_h_pos(ab[i]->tp,nh,na,x);
       j+=ab[i]->nh;
     }
   }
