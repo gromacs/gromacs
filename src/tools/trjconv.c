@@ -105,35 +105,40 @@ void do_trunc(char *fn, real t0)
   
   in   = open_trn(fn,"r");
   fp   = fio_getfp(in);
-  j    = 0;
-  fpos = fio_ftell(in);
-  bStop= FALSE;
-  while (!bStop && fread_trnheader(in,&sh,&bOK)) {
-    fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
-    fpos=ftell(fp);
-    t=sh.t;
-    if (t>=t0) {
-      fseek(fp,fpos,SEEK_SET);
-      bStop=TRUE;
+  if (fp == NULL) {
+    fprintf(stderr,"Sorry, can not trunc %s, truncation of this filetype is not supported\n",fn);
+    close_trn(in);
+  } else {
+    j    = 0;
+    fpos = fio_ftell(in);
+    bStop= FALSE;
+    while (!bStop && fread_trnheader(in,&sh,&bOK)) {
+      fread_htrn(in,&sh,NULL,NULL,NULL,NULL);
+      fpos=ftell(fp);
+      t=sh.t;
+      if (t>=t0) {
+	fseek(fp,fpos,SEEK_SET);
+	bStop=TRUE;
+      }
     }
-  }
-  if (bStop) {
-    fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
-	    "frame %d, time %g, bytes %d ??? (type YES if so)\n",
-	    fn,j,t,fpos);
-    scanf("%s",yesno);
-    if (strcmp(yesno,"YES") == 0) {
-      fprintf(stderr,"Once again, I'm gonna DO this...\n");
-      close_trn(in);
-      truncate(fn,fpos);
+    if (bStop) {
+      fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
+	      "frame %d, time %g, bytes %d ??? (type YES if so)\n",
+	      fn,j,t,fpos);
+      scanf("%s",yesno);
+      if (strcmp(yesno,"YES") == 0) {
+	fprintf(stderr,"Once again, I'm gonna DO this...\n");
+	close_trn(in);
+	truncate(fn,fpos);
+      }
+      else {
+	fprintf(stderr,"Ok, I'll forget about it\n");
+      }
     }
     else {
-      fprintf(stderr,"Ok, I'll forget about it\n");
+      fprintf(stderr,"Already at end of file (t=%g)...\n",t);
+      close_trn(in);
     }
-  }
-  else {
-    fprintf(stderr,"Already at end of file (t=%g)...\n",t);
-    close_trn(in);
   }
 }
 #endif
