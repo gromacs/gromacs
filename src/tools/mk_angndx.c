@@ -97,15 +97,15 @@ static void fill_ang(int FTYPE,int fac,
 
   ia=idef->il[FTYPE].iatoms;
   for(i=0; (i<idef->il[FTYPE].nr); ) {
-    ft=idef->functype[ia[0]];
-    fft=ft_ind[ia[0]];
+    ft  = idef->functype[ia[0]];
+    fft = ft_ind[ia[0]];
     assert(fft != -1);
     nr_fac=fac*nr[fft];
     for(j=0; (j<fac); j++)
       index[fft][nr_fac+j]=ia[j+1];
     nr[fft]++;
-    ia+=interaction_function[ft].nratoms+1;
-    i+=interaction_function[ft].nratoms+1;
+    ia += interaction_function[ft].nratoms+1;
+    i  += interaction_function[ft].nratoms+1;
   }
 }
 
@@ -188,7 +188,9 @@ int main(int argc,char *argv[])
     for(i=0; (i<nftype); i++) {
       fprintf(out,"[ %s ]\n",grpnames[i]);
       for(j=0; (j<nr[i]*mult); j++) {
-	fprintf(out,"%d  ",index[i][j]+1);
+	fprintf(out," %5d",index[i][j]+1);
+	if ((j % 12) == 11)
+	  fprintf(out,"\n");
       }
       fprintf(out,"\n");
     }
