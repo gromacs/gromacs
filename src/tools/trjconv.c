@@ -77,34 +77,6 @@ static void center_x(rvec x[],matrix box,int n,atom_id index[])
 }
 
 
-/*
-
-void do_patch(char *fn)
-{
-  FILE         *stat;
-  int          magic=GROMACS_MAGIC;
-  t_statheader sh;
-  long         pos;
-  int          n,teller;
-  real         r;
-
-  is_trn(fn);
-  stat=ffopen(fn,"r+");
-  teller=0;
-  while (!eof(stat)) {
-    pos=ftell(stat);
-    blockwrite(stat,magic);
-    fseek(stat,pos,SEEK_SET);
-    rd_header(stat,&sh);
-    rd_hstatus(stat,&sh,&n,&r,&r,NULL,NULL,NULL,NULL,
-	       &n,NULL,NULL,NULL,&n,NULL,NULL);
-    teller++;
-  }
-  fclose(stat);
-  fprintf(stderr,"\n");
-}
-*/
-
 void check_trn(char *fn)
 {
   if ((fn2ftp(fn) != efTRJ)  && (fn2ftp(fn) != efTRR))
@@ -181,11 +153,13 @@ int main(int argc,char *argv[])
     "[BB]1.[bb] from one format to another[BR]",
     "[BB]2.[bb] select a subset of atoms[BR]",
     "[BB]3.[bb] remove periodicity from molecules[BR]",
-    "[BB]4.[bb] center atoms in the box[BR]",
-    "[BB]5.[bb] fit atoms to reference structure[BR]",
-    "[BB]6.[bb] remove duplicate frames[BR]",
-    "[BB]7.[bb] reduce the number of frames[BR]",
-    "[BB]8.[bb] change the timestamps of the frames (e.g. t0 and delta-t)[BR]",
+    "[BB]4.[bb] keep multimeric molecules together[BR]",
+    "[BB]5.[bb] center atoms in the box[BR]",
+    "[BB]6.[bb] fit atoms to reference structure[BR]",
+    "[BB]7.[bb] remove duplicate frames[BR]",
+    "[BB]8.[bb] reduce the number of frames[BR]",
+    "[BB]9.[bb] change the timestamps of the frames (e.g. t0 and delta-t)",
+    "[PAR]",
     "Currently six formats are supported for input and output:",
     "[TT].xtc[tt], [TT].trr[tt], [TT].trj[tt], [TT].gro[tt], [TT].pdb[tt] and",
     "[TT].g87[tt].",
@@ -202,8 +176,8 @@ int main(int argc,char *argv[])
     "write one pdb file with all frames concatenated, or to append output",
     "to an existing trajectory file. No checks are made to ensure integrity",
     "of the resulting combined trajectory file.[PAR]",
-    "The program is supposed to be useful",
-    "for making movies with graphics programs like Grasp or Quanta.[PAR]",
+    "The program is supposed to be useful for making movies with graphics ",
+    "programs like Grasp, Quanta or Molscript.[PAR]",
     "It is possible to select part of your trajectory and write it out",
     "to a new trajectory file in order to save disk space, e.g. for leaving",
     "out the water from a trajectory of a protein in water.",
@@ -225,7 +199,11 @@ int main(int argc,char *argv[])
     "will remain whole (providing they were whole in the initial",
     "conformation), note that this ensures a continuous trajectory but",
     "molecules may (probably will) diffuse out of the box. Use"
-    "[TT]-center[tt] to put the system in the center of the box.[PAR]"
+    "[TT]-center[tt] to put the system in the center of the box.",
+    "This is especially usefull for multimeric proteins, since this",
+    "procedure will ensure the subunits stay together in the trajectory",
+    "(due to PBC, they might be separated), providing they were together"
+    "in the initial conformation.[PAR]"
     "With the option [TT]-dt[tt] it is possible to reduce the number of ",
     "frames in the output. This option relies on the accuracy of the times ",
     "in your input trajectory, so if these are inaccurate use the -timestep ",
@@ -239,15 +217,13 @@ int main(int argc,char *argv[])
     "by ignoring all frames with a time smaller than or equal to the previous",
     "frame.[PAR]",
     "The option [TT]-dump[tt] can be used to extract a frame at or near",
-    "one specific time from your trajectory.[PAR]",
-    "Finally, trjconv can patch the magic number of [TT].trj[tt] files",
-    "in case a new version of [BB]GROMACS[bb] requires this."
+    "one specific time from your trajectory.[PAR]"
   };
   
   static bool  bPBC=FALSE,bNoJump=FALSE,bInBox=FALSE,bAppend=FALSE,bVels=TRUE;
   static bool  bCenter=FALSE,bCompress=FALSE;
   static bool  bFit=FALSE,bIFit=FALSE,bBox=TRUE;
-  static bool  bTer=FALSE,/*bPatch=FALSE,*/bCheckDouble=FALSE;
+  static bool  bTer=FALSE,bCheckDouble=FALSE;
   static int   skip_nr=1,prec=3;
   static real  tzero=0.0,delta_t=0.0,timestep=0.0,ttrunc=-1,tdump=-1,toffset=0;
   static real  newbox = -1, xshift=0.0;
@@ -276,8 +252,6 @@ int main(int argc,char *argv[])
       "precision for .gro and .xtc writing" },
     { "-vel", FALSE, etBOOL, &bVels,
       "read and write velocities if possible" },
-    /*{ "-patch", FALSE, etBOOL, &bPatch,
-      "Set the new magic number in a trj file" },*/
     { "-skip", FALSE,  etINT, &skip_nr,
       "only write out every nr-th frame" },
     { "-dt", FALSE,  etREAL, &delta_t,
