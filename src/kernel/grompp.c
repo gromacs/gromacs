@@ -410,7 +410,8 @@ static void cont_status(char *slog,bool bNeedVel,bool bGenVel, real fr_time,
     fatal_error(0,"Can not start from an incomplete frame");
 
   *x = fr.x;
-  *v = fr.v;
+  if (bNeedVel && !bGenVel)
+    *v = fr.v;
   copy_mat(fr.box,box);
 
   fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
