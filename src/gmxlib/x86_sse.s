@@ -797,7 +797,7 @@ inl0100_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpps xmm5, xmm4
+	rcpss xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -1524,7 +1524,7 @@ inl0110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpps xmm5, xmm4
+	rcpss xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -2090,7 +2090,7 @@ inl0110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpps xmm5, xmm4
+	rcpss xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -2945,7 +2945,7 @@ inl0300_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -3890,7 +3890,7 @@ inl0310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -4669,7 +4669,7 @@ inl0310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -5344,7 +5344,7 @@ i1000_dosingle:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -5985,7 +5985,7 @@ i1010_dosingle_coul:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -8850,7 +8850,7 @@ i1100_dosingle:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -9640,7 +9640,7 @@ inl2100_sse:
 	/* rsq in xmm4 */
 
 	movaps xmm7, [esp + _krf]
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -10319,7 +10319,7 @@ inl2000_sse:
 	/* rsq in xmm4 */
 
 	movaps xmm7, [esp + _krf]
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -11102,7 +11102,7 @@ i1110_dosingle_vdwc:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -11611,7 +11611,7 @@ i1110_dosingle_coul:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -12165,7 +12165,7 @@ i1110_dosingle_vdw:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpps xmm5, xmm4
+	rcpss xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -20072,7 +20072,7 @@ inl3000_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -20879,7 +20879,7 @@ inl3010_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -24881,7 +24881,7 @@ inl3100_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -25857,7 +25857,7 @@ inl3110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -26524,7 +26524,7 @@ inl3110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -27112,7 +27112,7 @@ inl3110_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rcpps xmm5, xmm4
+	rcpss xmm5, xmm4
 	/* 1/x lookup seed in xmm5 */
 	movaps xmm0, [esp + _two]
 	mulps xmm4, xmm5
@@ -31402,7 +31402,7 @@ inl3300_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -32523,7 +32523,7 @@ inl3310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -33238,7 +33238,7 @@ inl3310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
@@ -34000,7 +34000,7 @@ inl3310_sse:
 	addps xmm4, xmm6
 	/* rsq in xmm4 */
 
-	rsqrtps xmm5, xmm4
+	rsqrtss xmm5, xmm4
 	/* lookup seed in xmm5 */
 	movaps xmm2, xmm5
 	mulps xmm5, xmm5
