@@ -378,7 +378,9 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
   if (bWater && fr->efep==efepNO)
     nicg = 1;
     
+  /* Unpack pointers to neighbourlist structs */
   if (bLR) {
+    /* Long range */
     if (bWater) {
       vdw  = &fr->nlist_lr[eNL_VDW_WAT];
       coul = &fr->nlist_lr[eNL_QQ_WAT];
@@ -391,6 +393,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
       free = &fr->nlist_lr[eNL_FREE];
   }
   else {
+    /* Short range */
     if (bWater) {
       vdw  = &fr->nlist_sr[eNL_VDW_WAT];
       coul = &fr->nlist_sr[eNL_QQ_WAT];
@@ -405,6 +408,9 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 
   /* Loop over the atoms in the i charge group */    
   for(i=0; (i<nicg); i++) {
+    /* Get group id for the charge group. Note that the group id should be
+     * the same for the whole charge group.
+     */
     i_atom  = a[i0+i];
     igid    = cENER[i_atom];
     gid     = GID(igid,jgid,ngid);
@@ -420,6 +426,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
     for(j=0; (j<nj); j++) {
       jcg=jjcg[j];
       
+      /* Check for interaction with the same molecule */      
       if (bWater && (jcg==icg))
 	continue;
 
@@ -451,6 +458,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
 	}
       }
       else {
+	/* !bWater || fr->bPert */
 	/* Finally loop over the atoms in the j-charge group */	
 	bFree = bPert[i_atom];
 	qi    = charge[i_atom];
@@ -880,6 +888,7 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 {
   static atom_id **nl_lr_ljc,**nl_lr_coul,**nl_sr=NULL;
   static int     *nlr_ljc,*nlr_coul,*nsr;
+  static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
   
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
@@ -893,7 +902,6 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   int     *grida,*gridnra,*gridind;
   rvec    xi,*cgcm;
   real    r2,rs2,rvdw2,rcoul2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
-  static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
   bool    *i_eg_excl;
   
   cgsnr    = cgs->nr;
@@ -960,6 +968,8 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   grid_y     = 1/gridy;
   grid_z     = 1/gridz;
 
+  debug_gmx();
+  
   /* Loop over charge groups */
   for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
     icg      = cg_index[iicg];
@@ -1132,6 +1142,8 @@ static int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 		   nl_lr_coul[nn],bexcl,shift,x,box_size,nrnb,
 		   lambda,dvdlambda,grps,TRUE,TRUE,bHaveLJ);
   }
+  debug_gmx();
+  
   /* Close off short range neighbourlists */
   close_neighbor_list(fr,FALSE,-1);
   

@@ -570,7 +570,10 @@ void update(int          natoms, 	/* number of atoms in simulation */
 void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
 		  real tmass,tensor ekin)
 {
-  /* The kinetic energy should calculated according to:
+  /* 
+   * This is a debugging routine. It should not be called for production code
+   *
+   * The kinetic energy should calculated according to:
    *   Ekin = 1/2 m (v-vcm)^2
    * However the correction is not always applied, since vcm may not be
    * known in time and we compute
@@ -581,21 +584,33 @@ void correct_ekin(FILE *log,int start,int end,rvec v[],rvec vcm,real mass[],
    *   Ekin = Ekin' - m v vcm + 1/2 m vcm^2
    */
   int    i,j,k;
-  real   m;
-  rvec   hvcm;
+  real   m,tm;
+  rvec   hvcm,mv;
   tensor dekin;
-  
-  /* Shortcut */  
-  svmul(0.5,vcm,hvcm);
-  
-  clear_mat(dekin);
+
+  /* Local particles */  
+  clear_rvec(mv);
   
   /* Processor dependent part. */
+  tm = 0;
   for(i=start; (i<end); i++) {
     m      = mass[i];
+    tm    += m;
     for(j=0; (j<DIM); j++)
-      for(k=0; (k<DIM); k++)
-	dekin[j][k] += m*vcm[k]*(hvcm[j]-v[i][j]);
+      mv[j] += m*v[i][j];
   }
-  fprintf(log,"dekin = %g, ekin = %g\n",trace(dekin),trace(ekin));
+  /* Shortcut */ 
+  svmul(1/tmass,vcm,vcm); 
+  svmul(0.5,vcm,hvcm);
+  clear_mat(dekin);
+  for(j=0; (j<DIM); j++)
+    for(k=0; (k<DIM); k++)
+      dekin[j][k] += vcm[k]*(tm*hvcm[j]-mv[j]);
+
+  pr_rvecs(log,0,"dekin",dekin,DIM);
+  pr_rvecs(log,0," ekin", ekin,DIM);
+  fprintf(log,"dekin = %g, ekin = %g  vcm = (%8.4f %8.4f %8.4f)\n",
+	  trace(dekin),trace(ekin),vcm[XX],vcm[YY],vcm[ZZ]);
+  fprintf(log,"mv = (%8.4f %8.4f %8.4f)\n",
+	  mv[XX],mv[YY],mv[ZZ]);
 }

@@ -125,7 +125,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
     if (bRerunMD) 
-      fprintf(stderr,"starting md rerun '%s', reading coordinates from input trajectory '%s'\n\n",*(top->name),opt2fn("-rerun",nfile,fnm));
+      fprintf(stderr,"starting md rerun '%s', reading coordinates from"
+	      " input trajectory '%s'\n\n",
+	      *(top->name),opt2fn("-rerun",nfile,fnm));
     else
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
@@ -404,9 +406,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       ctmax = max(ctmax,ct[i]);
       ctsum += ct[i];
     }
+    ctsum /= cr->nprocs;
     fprintf(log,"\nTotal CPU time on processor %d: %g\n",cr->pid,ct[cr->pid]);
+    fprintf(log,"Average CPU time: %g\n",ctsum);
     fprintf(log,"Load imbalance reduced performance to %3d%% of max\n",
-	    (int) (100 * ctmax * cr->nprocs / ctsum));
+	    (int) (100.0*ctmax/ctsum));
     sfree(ct);
   }
   if (MASTER(cr)) {
