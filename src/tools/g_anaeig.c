@@ -124,7 +124,7 @@ static void write_xvgr_graphs(char *file,int ngraphs,
     for(i=0; i<n; i++) {
       if ( bSplit && i>0 && abs(x[i])<1e-5 )
 	fprintf(out,"&\n");
-      fprintf(out,"%10.4g %10.5f\n",x[i]*scale_x,y[g][i]);
+      fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y[g][i]);
     }
     fprintf(out,"&\n");
   }
