@@ -310,7 +310,7 @@ static void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   /* Set initial values for invmass etc. */
   init_mdatoms(mdatoms,*lambda,TRUE);
 
-  *vcm = init_vcm(stdlog,top,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm);
+  *vcm = init_vcm(stdlog,top,cr,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm);
     
   debug_gmx();
 
@@ -783,10 +783,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       check_cm_grp(log,vcm);
       do_stopcm_grp(log,START(nsb),HOMENR(nsb),x,v,vcm);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
+      /*
       calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
       check_cm_grp(log,vcm);
       do_stopcm_grp(log,START(nsb),HOMENR(nsb),x,v,vcm);
       check_cm_grp(log,vcm);
+      */
     }
         
     /* Add force and shake contribution to the virial */

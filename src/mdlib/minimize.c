@@ -182,7 +182,7 @@ static void init_em(FILE *log,char *title,
   /* Set initial values for invmass etc. */
   init_mdatoms(mdatoms,*lambda,TRUE);
 
-  *vcm = init_vcm(log,top,mdatoms,
+  *vcm = init_vcm(log,top,cr,mdatoms,
 		  *start,HOMENR(nsb),parm->ir.nstcomm);
 }
 

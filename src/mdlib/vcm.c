@@ -41,12 +41,14 @@ static char *SRCID_vcm_c = "$Id$";
 #include "do_fit.h"
 #include "names.h"
 #include "txtdump.h"
+#include "network.h"
  
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
 		int start,int homenr,int nstcomm)
 {
   t_vcm *vcm;
-  int i,g;
+  real  *mass;
+  int   i,g;
   
   snew(vcm,1);
   
@@ -74,7 +76,11 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
       g = vcm->group_id[i];
       vcm->group_mass[g] += md->massT[i];
     }
-    
+    snew(mass,vcm->nr);
+    for(g=0; (g<vcm->nr); g++)
+      mass[g] = vcm->group_mass[g];
+    gmx_sum(vcm->nr,mass,cr);
+
     /* Copy pointer to group names and print it. */
     fprintf(fp,"Center of mass motion removal mode is %s\n",ECOM(vcm->mode));
     fprintf(fp,"We have the following groups for center of"
@@ -83,8 +89,9 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
       vcm->group_name[g] = 
 	*top->atoms.grpname[top->atoms.grps[egcVCM].nm_ind[g]];
       fprintf(fp,"%3d:  %s, initial mass: %g\n",
-	      g,vcm->group_name[g],vcm->group_mass[g]);
+	      g,vcm->group_name[g],mass[g]);
     }
+    sfree(mass);
   }
   return vcm;
 }

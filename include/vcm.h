@@ -62,7 +62,7 @@ typedef struct {
   unsigned short *group_id;    /* other structures.                   */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_mdatoms *md,
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
 		int start,int homenr,int nstcomm);
 
 /* Do a per group center of mass things */
