@@ -304,8 +304,34 @@ test "$motif_libraries_result" = "" && motif_libraries_result="in default path"
 test "$motif_includes_result" = "" && motif_includes_result="in default path"
 test "$motif_libraries_result" = "no" && motif_libraries_result="(none)"
 test "$motif_includes_result" = "no" && motif_includes_result="(none)"
-AC_MSG_RESULT(
-  [libraries $motif_libraries_result, headers $motif_includes_result])
+AC_MSG_RESULT([libraries $motif_libraries_result, headers $motif_includes_result])
+	
+# seems as if Xm depends on -lXext and/or -lXp on old redhat and OS X. 
+ac_motif_save_LIBS="$LIBS"
+ac_motif_save_INCLUDES="$INCLUDES"
+ac_motif_save_CPPFLAGS="$CPPFLAGS"
+ac_motif_save_LDFLAGS="$LDFLAGS"
+CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+INCLUDE="$INCLUDE $X_CFLAGS"
+LDFLAGS="$X_LIBS $LDFLAGS"
+# first try both - they are crossdependent! urk...
+LIBS="$X_PRE_LIBS -lX11 $X_EXTRA_LIBS $ac_motif_save_LIBS -lXext -lXp"
+AC_MSG_CHECKING(for libXext and libXp)
+AC_TRY_LINK([#include <Xm/Xm.h>],[XtToolkitInitialize();],
+  [AC_MSG_RESULT(yes)
+   X_PRE_LIBS="$X_PRE_LIBS -lXext -lXp"],[
+   AC_MSG_RESULT(no)
+   # both libs didnt work, try libXext separately
+   LIBS="$X_PRE_LIBS -lX11 $X_EXTRA_LIBS $ac_motif_save_LIBS -lXext"
+   AC_MSG_CHECKING(for only libXext)
+   AC_TRY_LINK([#include <Xm/Xm.h>],[XtToolkitInitialize();],
+  [AC_MSG_RESULT(yes)
+  X_PRE_LIBS="$X_PRE_LIBS -lXext"],[AC_MSG_RESULT(no)])
+  ])
+LIBS=$ac_motif_save_LIBS
+INCLUDES="$ac_motif_save_INCLUDES"
+CPPFLAGS=$ac_motif_save_CPPFLAGS
+LDFLAGS="$ac_motif_save_LDFLAGS"
 ])dnl
 
 
@@ -717,6 +743,8 @@ if test $ac_cv_prog_gcc = yes; then
     xASFLAGS="$xCFLAGS -x assembler-with-cpp"
     # -malign-double for x86 systems
     ACX_CHECK_CC_FLAGS(-malign-double,align_double,xCFLAGS="$xCFLAGS -malign-double")
+    # don't use the separate apple cpp on OS X
+    ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")    
   fi
 fi
   
