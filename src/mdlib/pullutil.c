@@ -61,10 +61,10 @@ real calc_com(rvec x[],int gnx,atom_id *index,t_mdatoms *md,
     for(m=0; (m<DIM); m++)
       com[m]+=m0*x[ii][m];
   }
-  for(m=0; (m<DIM); m++) {
-    com[m]/=tm;
-    if (com[m] < 0) com[m] += box[m][m];
-    if (com[m] > box[m][m]) com[m] -= box[m][m];
+  svmul(1/tm,com,com);
+  for(m=DIM-1; m>=0; m--) {
+    if (com[m] < 0        ) rvec_inc(com,box[m]);
+    if (com[m] > box[m][m]) rvec_dec(com,box[m]);
   }
 
   return tm;
@@ -87,11 +87,11 @@ real calc_com2(rvec x[],int gnx,atom_id *index,t_mdatoms *md,rvec com,
     for(m=0; (m<DIM); m++)
       com[m]+=m0*x[i][m];
   }
-  for(m=0; (m<DIM); m++) {
-    com[m]/=tm;
+  svmul(1/tm,com,com);
+  for(m=DIM-1; m>=0; m--) {
     /* next two lines used to be commented out */
-    if (com[m] < 0) com[m] += box[m][m];
-    if (com[m] > box[m][m]) com[m] -= box[m][m]; 
+    if (com[m] < 0        ) rvec_inc(com,box[m]);
+    if (com[m] > box[m][m]) rvec_dec(com,box[m]); 
   }
   return tm;
 }
@@ -162,8 +162,7 @@ void calc_running_com(t_pull *pull) {
 void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
   int i,ii,j,m;
   real tm;
-  rvec com;
-  real dx;
+  rvec com,dx;
 
   /* loop over all atoms in index for group i. Check if they moved
      more than half a box with respect to xp. If so add/subtract a box 
@@ -173,23 +172,23 @@ void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
     ii = pull->ref.idx[0][i];
     
     /* correct for jumps across the box */
-    for (m=0;m<DIM;m++) {
-      dx=x[ii][m]-pull->ref.xp[0][i][m];
-      if (dx < -0.5*box[m][m]) {
-	dx += box[m][m];
+    rvec_sub(x[ii],pull->ref.xp[0][i],dx);
+    for (m=DIM-1; m>=0; m--) {
+      if (dx[m] < -0.5*box[m][m]) {
+	rvec_inc(dx,box[m]);
 	if (pull->bVerbose && pull->dims[m])
 	  fprintf(stderr,"Jumped +box: nr %d dir: %d old:%8.3f\n",ii,m,
 		  pull->ref.x0[0][i][m]); 
       }
-
-      if (dx >  0.5*box[m][m]) {
-	dx -= box[m][m];
+      
+      if (dx[m] >  0.5*box[m][m]) {
+	rvec_dec(dx,box[m]);
 	if (pull->bVerbose && pull->dims[m]) 
 	  fprintf(stderr,"Jumped -box: nr %d dir: %d old:%8.3f\n",ii,m,
 		  pull->ref.x0[0][i][m]); 
       }
 
-      pull->ref.x0[0][i][m] += dx;
+      pull->ref.x0[0][i][m] += dx[m];
       pull->ref.xp[0][i][m]  = x[ii][m];
     }
   }
@@ -234,6 +233,7 @@ real get_weight(real x, real r, real w) {
 }
   
 static real get_cylinder_distance(rvec x, rvec com, matrix box) {
+  /* Triclinic compatible ??? */
   real dr, dx, dy, boxx, boxy;
 
   boxx = box[XX][XX];

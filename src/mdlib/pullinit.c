@@ -209,17 +209,10 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   atom_id **index;
   int *ngx;
   int totalgrps;    /* total number of groups in the index file */
-  rvec boxsize;
   
   /* do we have to do any pulling at all? If not return */
   pull->bPull = opt2bSet("-pi",nfile,fnm);
   if (!pull->bPull) return;
-
-  if (TRICLINIC(box)) 
-    fatal_error(0,"Triclinic box not supported with pull code");
-  
-  for (m=0;m<DIM;m++) 
-    boxsize[m] = box[m][m];
 
   pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
@@ -319,18 +312,13 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   
   /* set the reference distances and directions, taking into account pbc */
   for (i=0;i<ngrps;i++) {
-    if (pull->bCyl) {
+    if (pull->bCyl)
       rvec_sub(pull->pull.x_ref[i],pull->dyna.x_ref[i],tmp);
-      for (m=0;m<DIM;m++) {
-	if (tmp[m] < -0.5*boxsize[m]) tmp[m] += boxsize[m];
-	if (tmp[m] >  0.5*boxsize[m]) tmp[m] -= boxsize[m];
-      }
-    } else { 
+    else
       rvec_sub(pull->pull.x_ref[i],pull->ref.x_ref[0],tmp);
-      for (m=0;m<DIM;m++) {
-	if (tmp[m] < -0.5*boxsize[m]) tmp[m] += boxsize[m];
-	if (tmp[m] >  0.5*boxsize[m]) tmp[m] -= boxsize[m];
-      }
+    for (m=DIM-1; m>=0; m--) {
+	if (tmp[m] < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
+	if (tmp[m] >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
     }
     
     /* reference distance for constraint run */

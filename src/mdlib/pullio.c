@@ -108,10 +108,10 @@ void print_constraint(t_pull *pull, rvec *f, int step, matrix box, int niter)
       rvec_sub(pull->pull.x_con[i],pull->dyna.x_con[i],tmp);
     else 
       rvec_sub(pull->pull.x_con[i],pull->ref.x_con[0],tmp);
-    for (m=0;m<DIM;m++) {
+    for (m=DIM-1; m>=0; m--) {
+      if (tmp[m] < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
+      if (tmp[m] >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
       tmp[m] *= pull->dims[m];
-      if (tmp[m] < -0.5*box[m][m]) tmp[m] += box[m][m];
-      if (tmp[m] > 0.5*box[m][m])  tmp[m] -= box[m][m];
     }
     if (pull->bVerbose) 
       fprintf(pull->out,"%d:%d ds:%e f:%e n:%d\n", step,i,norm(tmp),

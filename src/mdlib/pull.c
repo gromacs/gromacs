@@ -149,12 +149,14 @@ static void do_umbrella(t_pull *pull, rvec *x,rvec *f,matrix box,
   for (i=0;i<pull->pull.n;i++) {
     
     /* pull->dims selects which components (x,y,z) we want */
-    for (m=0;m<DIM;m++) {
-      dr[m]=pull->dims[m]*(pull->pull.x_ref[i][m]-pull->pull.x_unc[i][m]); 
-      if (dr[m] >  box[m][m]/2) dr[m]-=box[m][m];
-      if (dr[m] < -box[m][m]/2) dr[m]+=box[m][m];
+    rvec_sub(pull->pull.x_ref[i],pull->pull.x_unc[i],dr); 
+    for(m=DIM-1; m>=0; m--) {
+      if (dr[m] >  0.5*box[m][m]) rvec_dec(dr,box[m]);
+      if (dr[m] < -0.5*box[m][m]) rvec_inc(dr,box[m]);
+      dr[m] *= pull->dims[m];
     }
     
+
     /* f = um_width*x */
     svmul(pull->um_width,dr,pull->pull.f[i]);
 
@@ -234,22 +236,20 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	rvec_sub(pull->ref.x_ref[0],pull->pull.x_ref[i],ref_ij);
       }
 
-      /* select components we want */
-      for (m=0;m<DIM;m++) {
+      for (m=DIM-1; m>=0; m--) {
+	/* correct for PBC */
+	if (r_ij[m]   < -0.5*box[m][m]) rvec_inc(r_ij,box[m]);
+	if (r_ij[m]   >  0.5*box[m][m]) rvec_dec(r_ij,box[m]);
+	if (unc_ij[m] < -0.5*box[m][m]) rvec_inc(unc_ij,box[m]);
+	if (unc_ij[m] >  0.5*box[m][m]) rvec_dec(unc_ij,box[m]);
+	if (ref_ij[m] < -0.5*box[m][m]) rvec_inc(ref_ij,box[m]);
+	if (ref_ij[m] >  0.5*box[m][m]) rvec_dec(ref_ij,box[m]);
+	/* select components we want */
 	r_ij[m]     *= pull->dims[m];
 	unc_ij[m]   *= pull->dims[m];
 	ref_ij[m]   *= pull->dims[m];
-
-	/* correct for PBC. Is this correct? */
-	if (r_ij[m]   < -0.5*box[m][m]) r_ij[m]   += box[m][m];
-	if (r_ij[m]   >  0.5*box[m][m]) r_ij[m]   -= box[m][m];
-	if (unc_ij[m] < -0.5*box[m][m]) unc_ij[m] += box[m][m];
-	if (unc_ij[m] >  0.5*box[m][m]) unc_ij[m] -= box[m][m];
-	if (ref_ij[m] < -0.5*box[m][m]) ref_ij[m] += box[m][m];
-	if (ref_ij[m] >  0.5*box[m][m]) ref_ij[m] -= box[m][m];
       }
 
-      
       if (pull->bCyl) 
 	rm = 1/pull->pull.tmass[i] + 1/pull->dyna.tmass[i];
       else
@@ -294,16 +294,16 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	  rvec_sub(rinew[i],rjnew[0],tmp);
 	}
 	rvec_sub(dr[i],ref_dr[0],tmp3);
-	for (m=0;m<DIM;m++) {
+	for (m=DIM-1; m>=0; m--) {
+	  if (tmp[m]  < -0.5*box[m][m]) rvec_inc(tmp,box[m]);
+	  if (tmp[m]  >  0.5*box[m][m]) rvec_dec(tmp,box[m]);
+	  if (tmp2[m] < -0.5*box[m][m]) rvec_inc(tmp2,box[m]);
+	  if (tmp2[m] >  0.5*box[m][m]) rvec_dec(tmp2,box[m]);
+	  if (tmp3[m] < -0.5*box[m][m]) rvec_inc(tmp3,box[m]);
+	  if (tmp3[m] >  0.5*box[m][m]) rvec_dec(tmp3,box[m]);
 	  tmp[m]  *= pull->dims[m];
 	  tmp2[m] *= pull->dims[m];
 	  tmp3[m] *= pull->dims[m];
-	  if (tmp[m]  < -0.5*box[m][m]) tmp[m]  += box[m][m];
-	  if (tmp[m]  >  0.5*box[m][m]) tmp[m]  -= box[m][m];
-	  if (tmp2[m] < -0.5*box[m][m]) tmp2[m] += box[m][m];
-	  if (tmp2[m] >  0.5*box[m][m]) tmp2[m] -= box[m][m];
-	  if (tmp3[m] < -0.5*box[m][m]) tmp3[m] += box[m][m];
-	  if (tmp3[m] >  0.5*box[m][m]) tmp3[m] -= box[m][m];
 	}
 	
 	if (pull->bCyl) 
@@ -346,10 +346,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	rvec_sub(rjnew[i],rinew[i],unc_ij);
 	
 	/* select components and check PBC again */
-	for (m=0;m<DIM;m++) {
+	for (m=DIM-1; m>=0; m--) {
+	  if (unc_ij[m] < -0.5*box[m][m]) rvec_inc(unc_ij,box[m]);
+	  if (unc_ij[m] >  0.5*box[m][m]) rvec_dec(unc_ij,box[m]);
 	  unc_ij[m] *= pull->dims[m];
-	  if (unc_ij[m] < -0.5*box[m][m]) unc_ij[m] += box[m][m];
-	  if (unc_ij[m] >  0.5*box[m][m]) unc_ij[m] -= box[m][m];
 	}
       } else {
 	rvec_add(rjnew[0],ref_dr[0],rjnew[0]);
@@ -358,10 +358,10 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	rvec_sub(rjnew[0],rinew[i],unc_ij);
 
 	/* select components again and check PBC again */
-	for (m=0;m<DIM;m++) {
+	for (m=DIM-1; m>=0; m--) {
+	  if (unc_ij[m] < -0.5*box[m][m]) rvec_inc(unc_ij,box[m]);
+	  if (unc_ij[m] >  0.5*box[m][m]) rvec_dec(unc_ij,box[m]);
 	  unc_ij[m] *= pull->dims[m];
-	  if (unc_ij[m] < -0.5*box[m][m]) unc_ij[m] += box[m][m];
-	  if (unc_ij[m] >  0.5*box[m][m]) unc_ij[m] -= box[m][m];
 	}
       }
     }
@@ -377,15 +377,15 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
 	rvec_sub(pull->ref.x_ref[0],pull->pull.x_ref[i],ref_ij);
       }
 
-      for (m=0;m<DIM;m++) { 
+      for (m=DIM-1; m>=0; m--) {
+	if (unc_ij[m] < -0.5*box[m][m]) rvec_inc(unc_ij,box[m]);
+	if (unc_ij[m] >  0.5*box[m][m]) rvec_dec(unc_ij,box[m]);
+	if (ref_ij[m] < -0.5*box[m][m]) rvec_inc(ref_ij,box[m]);
+	if (ref_ij[m] >  0.5*box[m][m]) rvec_dec(ref_ij,box[m]);
 	ref_ij[m] *= pull->dims[m];
 	unc_ij[m] *= pull->dims[m];
-	if (unc_ij[m] < -0.5*box[m][m]) unc_ij[m] += box[m][m];
-	if (unc_ij[m] >  0.5*box[m][m]) unc_ij[m] -= box[m][m];
-	if (ref_ij[m] < -0.5*box[m][m]) ref_ij[m] += box[m][m];
-	if (ref_ij[m] >  0.5*box[m][m]) ref_ij[m] -= box[m][m];
       }
-
+      
       bConverged = bConverged && (fabs(norm(unc_ij)-norm(ref_ij)) < 
 				  pull->constr_tol);
     }
@@ -413,7 +413,8 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     /* get the final dr and constraint force for group i */
     rvec_sub(rinew[i],pull->pull.x_unc[i],dr[i]);
     /* select components of dr */
-    for (m=0;m<DIM;m++) dr[i][m] *= pull->dims[m];
+    for (m=0;m<DIM;m++) 
+      dr[i][m] *= pull->dims[m];
     svmul(pull->pull.tmass[i]/(dt*dt),dr[i],tmp);
     /* get the direction of dr */
     pull->pull.f[i][ZZ] = -norm(tmp)*direction[i];
@@ -442,7 +443,8 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
       /* copy the new x_unc to x_con */
       copy_rvec(rjnew[i],pull->dyna.x_con[i]);
       /* select components of ref_dr */
-      for (m=0;m<DIM;m++) ref_dr[i][m] *= pull->dims[m];
+      for (m=0;m<DIM;m++) 
+	ref_dr[i][m] *= pull->dims[m];
 
       clear_rvec(sum);
       for (j=0;j<pull->dyna.ngx[i];j++) {
@@ -463,7 +465,8 @@ static void do_constraint(t_pull *pull, rvec *x, matrix box, t_mdatoms *md,
     /* copy the new x_unc to x_con */
     copy_rvec(rjnew[0],pull->ref.x_con[0]);
     /* select components of ref_dr */
-    for (m=0;m<DIM;m++) ref_dr[0][m] *= pull->dims[m];
+    for (m=0;m<DIM;m++) 
+      ref_dr[0][m] *= pull->dims[m];
 
     clear_rvec(sum);
     for (j=0;j<pull->ref.ngx[0];j++) {
@@ -498,10 +501,10 @@ static void do_afm(t_pull *pull,rvec *f,matrix box,t_mdatoms *md)
   /* loop over the groups that are being pulled */
   for (i=0;i<pull->pull.n;i++) {
     /* compute how far the springs are stretched */
-    for (m=0;m<DIM;m++) {
-      dr[m]=pull->dims[m]*(pull->pull.spring[i][m]-pull->pull.x_unc[i][m]); 
-      while (dr[m] >  box[m][m]/2) dr[m]-=box[m][m];
-      while (dr[m] < -box[m][m]/2) dr[m]+=box[m][m];
+    for (m=DIM-1; m>=0; m--) {
+      while (dr[m] >  0.5*box[m][m]) rvec_dec(dr,box[m]);
+      while (dr[m] < -0.5*box[m][m]) rvec_inc(dr,box[m]);
+      dr[m]=pull->dims[m]*(pull->pull.spring[i][m]-pull->pull.x_unc[i][m]);
     }
 
     /* calculate force from the spring on the pull group: f = - k*dr */
