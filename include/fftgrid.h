@@ -1,6 +1,7 @@
 #ifndef _fftgrid_h
 #define _fftgrid_h
 
+#include <stdio.h>
 #include "typedefs.h"
 #include "fftw.h"
 #include "complex.h"
@@ -61,5 +62,33 @@ extern void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,
  * real component is printed, otherwise the imaginary component (pdb only)
  * to the out file, both are printed (if complex at all)
  */
+
+
+/************************************************************************
+ * 
+ * For backward compatibility (for testing the ewald code vs. PPPM etc)
+ * some old grid routines are retained here.
+ *
+ ************************************************************************/
+ 
+extern real ***mk_rgrid(int nx,int ny,int nz);
+
+extern void free_rgrid(real ***grid,int nx,int ny);
+
+extern real print_rgrid(FILE *fp,char *title,int nx,int ny,int nz,
+			real ***grid);
+
+extern void print_rgrid_pdb(char *fn,int nx,int ny,int nz,real ***grid);
+
+extern t_complex ***mk_cgrid(int nx,int ny,int nz);
+
+extern void free_cgrid(t_complex ***grid,int nx,int ny);
+
+extern t_complex print_cgrid(FILE *fp,char *title,int nx,int ny,int nz,
+			   t_complex ***grid);
+
+extern void clear_cgrid(int nx,int ny,int nz,t_complex ***grid);
+
+extern void clear_rgrid(int nx,int ny,int nz,real ***grid);
 
 #endif
