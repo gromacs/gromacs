@@ -1,0 +1,62 @@
+\subsection{Treatment of cut-offs}
+\newcommand{\rs}{$r_{short}$}
+\newcommand{\rl}{$r_{long}$}
+This section is involved with the practical aspects of treating cut-offs.
+{\gromacs} is quite flexible in this respect, which implies that there are
+quite a number of parameters to set. The parameters are set in the input file
+for \myindex{grompp}. One should distinguish two parts of the parameters:
+1$^{st}$ the paramaters that describe the function (Coulomb / VDW, 
+\tabref{funcparm}) and
+2$^{nd}$ the parameters that describe neighboursearching.
+
+\begin{table}[h]
+\centering
+\caption{Parameters describing the functional form. Column VDW indicates whether this applies to Van der Waals forces as well as to Coulomb.}
+\label{tab:funcparm}
+\begin{tabular}{|l|c|c|l|}
+\dline
+Type		& VDW	& \# params 	& Description		\\
+\hline
+Plain cut-off	& X	& 2		& $r_c$, $\epsr$	\\
+Reaction field	&	& 2		& $r_c$, $\epsrf$	\\
+Shift function	& X	& 2		& $r_1$, $r_c$ 		\\
+Switch function &	& 2		& $r_1$, $r_c$ 		\\
+\dline
+\end{tabular}
+\end{table}
+In summary, for both VDW and Coulomb there are a type selector
+({\tt vdw\_type} resp. {\tt eel\_type}) and two parameters (see above), for
+a total of six parameters.
+
+The neighboursearching (NS) maybe done using a single-range, or a twin-range 
+approach. Since the former is merely a special case of the latter we will 
+discuss the more general twin-range. In this case NS is described by two
+radii {\rs} and {\rl}. Usually one builds the neighbourlist (NBL)
+every 10 time steps
+or every 20 fs (parameter {\tt nstlist}). In the NBL all interaction 
+pairs that  fall within {\rs} are stored. Furthermore, the 
+interactions between pairs that do not
+fall within {\rs} but do fall within {\rl} are computed during NS, and the
+forces and energy are stored separately, and added to short-range forces
+at every time step between successive NS. If {\rs} = {\rl} no forces
+are evaluated during NBL generation.
+
+Except for the plain cut-off,
+all of the interaction functions in \tabref{funcparm}
+require that neighboursearching is done with a larger radius than the $r_c$
+specified for the functional form, because of the use of charge groups.
+The extra radius is typically of the order of 0.25 nm (roughly the 
+largest distance between two atoms in a charge group plus the distance a 
+charge group can diffuse within NBL updates).
+If your charge groups are very large it may be interesting to turn off charge
+groups, by setting the option 
+{\tt bAtomList = yes} in your {\tt grompp.mdp} file.
+In this case only a small extra radius to account for diffusion needs to be 
+added (0.1 nm). Do not however use this together with the plain cut-off
+method, as it will generate large artefacts (\secref{cg}).
+In summary, there are four parameters that describe NS behaviour:
+{\tt nstlist} (update frequency in number of time steps),
+{\tt bAtomList} (whether or not charge groups are used to generate neighbourlist, the default is to use charge groups, so {\tt bAtomList = no}),
+{\tt rshort} and {\tt rlong} which are the two radii {\rs} and {\rl}
+described above.
+

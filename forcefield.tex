@@ -130,6 +130,7 @@ see also fig~\ref{fig:bham}, the force derived from this is:
 The \normindex{Coulomb} interaction between two charge particles is given by:
 \beq
 V_c(\rij) = f \frac{q_i q_j}{\epsr \rij}
+\label{eqn:vcoul}
 \eeq
 see also fig~\ref{fig:coul}, where $f = \frac{1}{4\pi \varepsilon_0} =
 138.935\,485$ (see Chapter~\ref{ch:defunits})
@@ -160,6 +161,7 @@ assuming a constant dielectric environment beyond the cut-off $r_c$
 with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
 V_{crf}	~=~	f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}\frac{\rij^3}{r_c^3}\right] - f\frac{q_i q_j}{r_c}\frac{3\epsrf}{2\epsrf+1}
+\label{eqn:vcrf}
 \eeq
 in which the constant expression on the right makes the potential
 zero at the cut-off $r_c$. We can rewrite this for simplicity as
@@ -946,7 +948,8 @@ by a factor of two, but in that case also the dispersion (r$^{-6}$)
 and the coulomb interaction are scaled.
 {\gromacs} can use either of these methods.
 
-\subsection{Cut-Offs and Charge Groups.}
+\subsection{Charge Groups.}
+\label{sec:cg}
 In principle the force calculation in MD is an $O(N^2)$ problem. 
 Therefore we apply a \normindex{cut-off} 
 for nonbonded force (NBF) calculations:
@@ -962,6 +965,8 @@ interaction (with a charge of -0.82) without the compensating charge
 of the Hydrogens and so induce a large dipole moment over the system.
 Therefore we have to keep groups of atoms with total charge
 0 together, the so-called {\em charge groups}.
+
+\input{cutoff}
 
 \newcommand{\Fi}{\ve{F}_i'}
 \newcommand{\Fj}{\ve{F}_j'}
@@ -1010,7 +1015,7 @@ where $\Fdum$ is the force on the dummy particle and $x_d$, $y_d$ and
 $z_d$ are the coordinates of the dummy particle. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
 
-\begin {figure}
+\begin {figure}[h]
 \centerline{\psfig{figure=plots/dummies.eps,width=13cm}}
 \caption{The six different types of dummy atom construction in
 \protect\gromacs, the constructing atoms are shown as black circles,
