@@ -338,7 +338,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
             strcpy(newtype,"ab+");
             lmode = XDR_ENCODE;
     } else {
-            strcpy(newtype,"rb+");
+            strcpy(newtype,"rb");
 	    lmode = XDR_DECODE;
     }
     xdrfiles[xdrid] = fopen(filename, newtype);
