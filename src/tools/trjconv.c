@@ -609,7 +609,7 @@ int main(int argc,char *argv[])
 	  
 	  if (bSelect) {
 	    for(i=0; (i<isize); i++)
-	      copy_rvec(x[index[i]],xn[i]);
+	      copy_rvec(x[index[i]],xout[i]);
 	  }
 	  
 	  /* this should make sure all atoms in output are really inside
