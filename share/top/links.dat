@@ -1,8 +1,8 @@
 dat
 dlg
 do_dssp
-editconf
 edi
+editconf
 edo
 edr
 ene
@@ -25,6 +25,7 @@ g_dih
 g_dipoles
 g_disre
 g_dist
+g_dyndom
 g_enemat
 g_energy
 g_gyrate
@@ -33,6 +34,7 @@ g_hbond
 g_helix
 g_mdmat
 g_mindist
+g_morph
 g_msd
 g_nmeig
 g_nmens
