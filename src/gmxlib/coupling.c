@@ -129,9 +129,8 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
       break;
     case epcTRICLINIC:
     default:
-      fprintf(stderr,"Pressure coupling type %s not supported yet\n",
-	      EPCOUPLTYPE(ir->epc));
-      exit(1);
+      fatal_error(0,"Pressure coupling type %s not supported yet\n",
+		  EPCOUPLTYPE(ir->epc));
     }
     if (debug) {
       pr_rvecs(debug,0,"PC: PPP ",&PPP,1);
