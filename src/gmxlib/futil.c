@@ -207,19 +207,38 @@ bool eof(FILE *fp)
 
 char *backup_fn(char *file)
 {
-  int         i;
-  char        *ptr;
+#define COUNTMAX 1024
+  int         i,count=0;
+  char        *directory,*fn;
   static char buf[256];
   
-  for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--);
+  for(i=strlen(file)-1; ((i > 0) && (file[i] != '/')); i--)
+    ;
+  /* Must check whether i > 0, i.e. whether there is a directory
+   * in the file name. In that case we overwrite the / sign with
+   * a '\0' to end the directory string .
+   */
   if (i > 0) {
-    ptr=strdup(file);
-    ptr[i]='\0';
-    sprintf(buf,"%s/#%s#",ptr,ptr+i+1);
-    sfree(ptr);
+    directory    = strdup(file);
+    directory[i] = '\0';
+    fn           = strdup(file+i+1);
   }
-  else
-    sprintf(buf,"#%s#",file);
+  else {
+    directory    = strdup(".");
+    fn           = strdup(file);
+  }
+  do {
+    sprintf(buf,"%s/#%s.%d#",directory,fn,count);
+    count++;
+  } while ((count < COUNTMAX) && fexist(buf));
+  
+  /* Arbitrarily bail out */
+  if (count == COUNTMAX) 
+    fatal_error(0,"Won't make more than %d backups of %s for you",
+		COUNTMAX,fn);
+  
+  sfree(directory);
+  sfree(fn);
   
   return buf;
 }
