@@ -371,7 +371,7 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,
 {
   /* construct splines for local atoms */
   int  i,j,k,l;
-  real dr,div;
+  real dr,div,rcons;
   real *data,*ddata,*xptr;
   int  start,nr,sn;
   rvec nk;
@@ -381,13 +381,14 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,
   nk[XX] = nx;
   nk[YY] = ny;
   nk[ZZ] = nz;
-    
+  rcons  = max(nx,max(ny,nz))+1;
+  
   for(i=0; (i<nr); i++) {
     sn = start+i;
     if (charge[sn] != 0.0) {
       xptr = x[sn];
       for(j=0; (j<DIM); j++) {
-	dr  = xptr[j]*invh[j];
+	dr  = rcons+xptr[j]*invh[j];
 	dr -= (int)dr;
 	
 	/* dr is relative offset from lower cell limit */
