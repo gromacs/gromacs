@@ -39,9 +39,12 @@ static char *SRCID_pp2shift_h = "$Id$";
 /* must correspond with 'leg' g_chi.c:727 */
 enum { edPhi=0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax };
 
+enum { edPrintST=0,edPrintRO } ; 
+
 #define NHISTO 360
 #define NONCHI 3
 #define MAXCHI edMax-NONCHI
+#define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */ 
 
 typedef struct {
   int minO,minC,H,N,C,O,Cn[MAXCHI+3];
@@ -56,6 +59,8 @@ typedef struct {
   int  b[edMax];
   int  ntr[edMax];
   real S2[edMax];
+  real rot_occ[edMax][NROT];
+
 } t_dlist;
 
 extern void do_pp2shifts(FILE *fp,int nframes,
@@ -68,9 +73,24 @@ extern t_dlist *mk_dlist(FILE *log,
 			 bool bPhi, bool bPsi, bool bChi, int maxchi,
 			 int r0,int naa,char **aa);
 			 
-extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt);
+extern void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt,  int printtype,
+bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi);
 
 extern int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi);
 
+extern void mk_chi_lookup (int **lookup, int maxchi, real **dih, 
+			   int nlist, t_dlist dlist[]) ; 
+
+extern void get_chi_product_traj (real **dih,int nframes,int nangles, 
+			   int nlist,int maxchi, t_dlist dlist[], real time[], 
+			   int **lookup,int *xity,bool bRb,bool bNormalize,
+			   real core_frac); 
+
+extern void print_one (char *base,char *name,char *title, char *ylabel,
+		      int nf,real time[],real data[]); 
 
 #endif
+
+
+
+

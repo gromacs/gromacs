@@ -32,6 +32,7 @@
 static char *SRCID_anadih_c = "$Id$";
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include "physics.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -41,9 +42,28 @@ static char *SRCID_anadih_c = "$Id$";
 #include "typedefs.h"
 #include "gstat.h"
 #include "confio.h"
+#include "pp2shift.h" 
 
-static int calc_RBbin(real phi)
+void print_one(char *base,char *name,char *title, char *ylabel,
+		      int nf,real time[],real data[])
 {
+  FILE *fp;
+  char buf[256],t2[256];
+  int  k;
+  
+  sprintf(buf,"%s%s.xvg",base,name);
+  fprintf(stderr,"\rPrinting %s  ",buf);
+  sprintf(t2,"%s %s",title,name);
+  fp=xvgropen(buf,t2,"Time (ps)",ylabel); 
+  for(k=0; (k<nf); k++)
+    fprintf(fp,"%10g  %10g\n",time[k],data[k]);
+  ffclose(fp);
+}
+
+static int calc_RBbin(real phi, int multiplicity, real core_frac)
+{
+  /* multiplicity and core_frac NOT used, 
+   * just given to enable use of pt-to-fn in caller low_ana_dih_trans*/
   static const real r30  = M_PI/6.0;
   static const real r90  = M_PI/2.0;
   static const real r150 = M_PI*5.0/6.0;
@@ -57,39 +77,72 @@ static int calc_RBbin(real phi)
   return 0;
 }
 
-static int calc_Nbin(real phi)
+static int calc_Nbin(real phi, int multiplicity, real core_frac)
 {
-  static const real r30  =  30*DEG2RAD;
-  static const real r90  =  90*DEG2RAD;
-  static const real r150 = 150*DEG2RAD;
-  static const real r210 = 210*DEG2RAD;
-  static const real r270 = 270*DEG2RAD;
-  static const real r330 = 330*DEG2RAD;
-  static const real r360 = 360*DEG2RAD;
-  
-  if (phi < 0)
+  static const real r360 = 360*DEG2RAD; 
+  real rot_width, core_width, core_offset, low, hi; 
+  int bin ; 
+  /* with multiplicity 3 and core_frac 0.5 
+   * 0<g(-)<120, 120<t<240, 240<g(+)<360 
+   * 0< bin0 < 30, 30<bin1<90, 90<bin0<150, 150<bin2<210, 210<bin0<270, 270<bin3<330, 330<bin0<360 
+   * so with multiplicity 3, bin1 is core g(-), bin2 is core t, bin3 is 
+     core g(+), bin0 is between rotamers */ 
+ if (phi < 0)
     phi += r360;
-    
-  if ((phi > r30) && (phi < r90))
-    return 1;
-  else if ((phi > r150) && (phi < r210))
-    return 2;
-  else if ((phi > r270) && (phi < r330))
-    return 3;
-  return 0;
+ 
+ rot_width = 360/multiplicity ;
+ core_width = core_frac * rot_width ; 
+ core_offset = (rot_width - core_width)/2.0 ; 
+ for(bin = 1 ; bin <= multiplicity ; bin ++ ) {
+   low = ((bin - 1) * rot_width ) + core_offset ; 
+   hi = ((bin - 1) * rot_width ) + core_offset + core_width; 
+   low *= DEG2RAD ; 
+   hi *= DEG2RAD ; 
+   if ((phi > low) && (phi < hi))
+     return bin ; 
+ }
+ return 0;
 }
 
 void ana_dih_trans(char *fn_trans,char *fn_histo,
 		   real **dih,int nframes,int nangles,
-		   char *grpname,real t0,real dt,bool bRb)
+		   char *grpname,real t0,real dt,bool bRb){
+
+  /* just a wrapper; declare extra args, then chuck away at end. */ 
+  int maxchi = 0 ; 
+  t_dlist *dlist ; 
+  int *xity; 
+  int nlist = nangles ; 
+  int k ; 
+
+  snew(dlist,nlist);  
+  snew(xity,nangles); 
+  for(k=0; (k<nangles); k++) {
+    xity[k]=3 ; 
+  }
+
+  low_ana_dih_trans(TRUE, fn_trans,TRUE, fn_histo, maxchi, 
+                    dih, nlist, dlist, nframes,
+		    nangles, grpname, xity, t0, dt, bRb, 0.5); 
+  sfree(dlist); 
+  sfree(xity); 
+  
+}
+
+void low_ana_dih_trans(bool bTrans, char *fn_trans,
+		       bool bHisto, char *fn_histo, int maxchi, 
+		       real **dih, int nlist, t_dlist dlist[], int nframes,
+		       int nangles, char *grpname, int xity[], 
+		       real t0, real dt, bool bRb, real core_frac)
 {
   FILE *fp;
   int  *tr_f,*tr_h;
   char title[256];
-  int  i,j,ntrans;
+  int  i,j,k,Dih,ntrans;
   int  cur_bin,new_bin;
   real ttime,tt,mind, maxd, prev;
-  int  (*calc_bin)(real);
+  real *rot_occ[NROT] ; 
+  int  (*calc_bin)(real,int,real);  
   
   /* Analysis of dihedral transitions */
   fprintf(stderr,"Now calculating transitions...\n");
@@ -99,6 +152,11 @@ void ana_dih_trans(char *fn_trans,char *fn_histo,
   else
     calc_bin=calc_Nbin;
     
+  for(k=0;k<NROT;k++) {
+    snew(rot_occ[k],nangles);
+    for (i=0; (i<nangles); i++)
+      rot_occ[k][i]=0;
+  }
   snew(tr_h,nangles);
   snew(tr_f,nframes);
     
@@ -106,15 +164,18 @@ void ana_dih_trans(char *fn_trans,char *fn_histo,
   ntrans = 0;
   for (i=0; (i<nangles); i++)
   {
+
     /*#define OLDIE*/
 #ifdef OLDIE
     mind = maxd = prev = dih[i][0]; 
 #else
-    cur_bin = calc_bin(dih[i][0]);
+    cur_bin = calc_bin(dih[i][0],xity[i],core_frac);
+    rot_occ[cur_bin][i]++ ; 
 #endif    
     for (j=1; (j<nframes); j++)
     {
-      new_bin = calc_bin(dih[i][j]);
+      new_bin = calc_bin(dih[i][j],xity[i],core_frac);
+      rot_occ[new_bin][i]++ ; 
 #ifndef OLDIE
       if (cur_bin == 0)
 	cur_bin=new_bin;
@@ -143,21 +204,46 @@ void ana_dih_trans(char *fn_trans,char *fn_histo,
 	ntrans++;
       }
 #endif
-    }
-  }
+    } /* end j */ 
+    for(k=0;k<NROT;k++) 
+      rot_occ[k][i] /= nframes ; 
+  } /* end i */ 
   fprintf(stderr,"Total number of transitions: %10d\n",ntrans);
   if (ntrans > 0) {
     ttime = (dt*nframes*nangles)/ntrans;
     fprintf(stderr,"Time between transitions:    %10.3f ps\n",ttime);
   }
-    
-  sprintf(title,"Number of transitions: %s",grpname);
-  fp=xvgropen(fn_trans,title,"Time (ps)","# transitions/timeframe");
-  for(j=0; (j<nframes); j++) {
-    tt = t0+j*dt;
-    fprintf(fp,"%10.3f  %10d\n",tt,tr_f[j]);
+
+  /* new by grs - copy transitions from tr_h[] to dlist->ntr[] 
+   * and rotamer populations from rot_occ to dlist->rot_occ[] 
+   * based on fn histogramming in g_chi. diff roles for i and j here */ 
+
+  j=0; 
+  for (Dih=0; (Dih<NONCHI+maxchi); Dih++) {    
+    for(i=0; (i<nlist); i++) {
+      if (((Dih  < edOmega) ) ||
+	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
+	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
+	/* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
+	dlist[i].ntr[Dih] = tr_h[j] ; 
+	for(k=0;k<NROT;k++) 
+	  dlist[i].rot_occ[Dih][k] = rot_occ[k][j] ; 
+	j++ ; 
+      }
+    }
   }
-  ffclose(fp);
+
+  /* end addition by grs */ 
+    
+  if (bTrans) {
+    sprintf(title,"Number of transitions: %s",grpname);
+    fp=xvgropen(fn_trans,title,"Time (ps)","# transitions/timeframe");
+    for(j=0; (j<nframes); j++) {
+      tt = t0+j*dt;
+      fprintf(fp,"%10.3f  %10d\n",tt,tr_f[j]);
+    }
+    ffclose(fp);
+  }
 
   /* Compute histogram from # transitions per dihedral */
   /* Use old array */
@@ -169,18 +255,193 @@ void ana_dih_trans(char *fn_trans,char *fn_histo,
     ;
   
   ttime = dt*nframes;
-  sprintf(title,"Transition time: %s",grpname);
-  fp=xvgropen(fn_histo,title,"Time (ps)","#");
-  for(i=j-1; (i>0); i--) {
-    if (tr_f[i] != 0)
-      fprintf(fp,"%10.3f  %10d\n",ttime/i,tr_f[i]);
+  if (bHisto) {
+    sprintf(title,"Transition time: %s",grpname);
+    fp=xvgropen(fn_histo,title,"Time (ps)","#");
+    for(i=j-1; (i>0); i--) {
+      if (tr_f[i] != 0)
+	fprintf(fp,"%10.3f  %10d\n",ttime/i,tr_f[i]);
+    }
+    ffclose(fp);
   }
-  ffclose(fp);
-  
+
   sfree(tr_f);
   sfree(tr_h);
+  for(k=0;k<NROT;k++) 
+    sfree(rot_occ[k]);
+
 }
-    
+
+void mk_multiplicity_lookup (int *xity, int maxchi, real **dih, 
+			     int nlist, t_dlist dlist[]) 
+{
+  /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
+   * and store in xity[j] 
+   */ 
+
+  int j, Dih, i ; 
+  char name[4]; 
+
+  j=0; 
+  for (Dih=0; (Dih<NONCHI+maxchi); Dih++) {    
+    for(i=0; (i<nlist); i++) {
+      strncpy(name, dlist[i].name,3) ; 
+      name[3]='\0' ; 
+      if (((Dih  < edOmega) ) ||
+	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
+	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
+	/* default - we will correct the rest below */ 
+	xity[j] = 3 ; 
+
+	/* make omegas 2fold, though doesn't make much more sense than 3 */ 
+	if (Dih == edOmega && (has_dihedral(edOmega,&(dlist[i])))) {
+	  xity[j] = 2 ; 
+	} 
+
+	/* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
+	if (Dih > edOmega && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)) {
+	  if ( (strcmp(name,"PHE") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"TYR") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"PTR") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"TRP") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"HIS") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"GLU") == 0 && Dih == edChi3 ) ||   
+	       (strcmp(name,"ASP") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"GLN") == 0 && Dih == edChi3 ) ||   
+	       (strcmp(name,"ASN") == 0 && Dih == edChi2 ) ||   
+	       (strcmp(name,"ARG") == 0 && Dih == edChi4 ) ) {
+	    xity[j] = 2; 
+	  }
+	}
+	j++ ; 
+      }
+    }
+  }
+
+
+}
+
+void mk_chi_lookup (int **lookup, int maxchi, real **dih, 
+		    int nlist, t_dlist dlist[]) 
+{
+
+  /* by grs. should rewrite everything to use this. 
+   * returns the dihed number given the residue number (from-0) 
+   * and chi (from-0) nr. -1 for chi undefined for that res (eg gly, ala..)*/ 
+
+  int i,j, Dih, Chi;
+
+  j=0; 
+  for (Dih=0; (Dih<NONCHI+maxchi); Dih++) {    
+    for(i=0; (i<nlist); i++) {
+      Chi = Dih - NONCHI ;
+      if (((Dih  < edOmega) ) ||
+	  ((Dih == edOmega) && (has_dihedral(edOmega,&(dlist[i])))) ||
+	  ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))) {
+	/* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
+	if (Dih > edOmega ) {
+	  lookup[i][Chi] = j ; 
+	}
+	j++ ; 
+      } else {
+	lookup[i][Chi] = -1 ;
+      }
+    }
+  }
+
+}
+
+
+void get_chi_product_traj (real **dih,int nframes,int nangles, int nlist,
+			   int maxchi, t_dlist dlist[], real time[], 
+			   int **lookup, int *xity,bool bRb, bool bNormalize,
+			   real core_frac) 
+{
+  bool bRotZero, bHaveChi=FALSE; 
+  int  accum=-1, index, i,j,k,Xi,n,b ; 
+  real *chi_prtrj; 
+  int  *chi_prhist; 
+  int  nbin ; 
+  FILE *fp ;
+  char hisfile[256],histitle[256]; 
+
+  int  (*calc_bin)(real,int,real);  
+  
+  /* Analysis of dihedral transitions */
+  fprintf(stderr,"Now calculating Chi product trajectories...\n");
+
+  if (bRb)
+    calc_bin=calc_RBbin;
+  else
+    calc_bin=calc_Nbin;
+
+  snew(chi_prtrj, nframes) ;   
+
+  for(i=0; (i<nlist); i++) {
+    nbin = 1 ; 
+    for (j=0; (j<nframes); j++) {
+
+      bRotZero = FALSE ; 
+      bHaveChi = TRUE ; 
+      index = lookup[i][0] ; /* index into dih of chi1 of res i */ 
+      if (index == -1 ) {
+	b = 0 ; 
+	bRotZero = TRUE ; 
+	bHaveChi = FALSE ; 
+      } else {
+	b = calc_bin(dih[index][j],xity[index],core_frac) ; 
+	accum = b - 1 ; 
+	if (b == 0 ) 
+	  bRotZero = TRUE ; 
+	for (Xi = 1 ; Xi < maxchi ; Xi ++ ) {
+	  index = lookup[i][Xi] ; /* chi_(Xi+1) of res i (-1 if off end) */ 
+	  if ( index >= 0 ) {
+	    n = xity[index]; 
+	    b = calc_bin(dih[index][j],n,core_frac); 
+	    accum = n * accum + b - 1 ; 
+	    if (b == 0 ) 
+	      bRotZero = TRUE ; 
+	  }
+	}
+	accum ++ ; 
+      }
+      if (bRotZero) {
+	chi_prtrj[j] = 0.0 ; 
+      } else {
+	chi_prtrj[j] = accum ;
+	if (accum+1 > nbin ) 
+	  nbin = accum+1 ; 
+      }
+    }
+    if (bHaveChi){
+      print_one("chiproduct", dlist[i].name, "chi product for",
+		"cumulative rotamer", nframes,time,chi_prtrj); 
+      /* make a histogram too */ 
+      snew(chi_prhist, nbin) ; 
+      make_histo(NULL,nframes,chi_prtrj,nbin,chi_prhist,0,nbin); 
+      sprintf(hisfile,"histo-chiprod%s.xvg",dlist[i].name);
+      sprintf(histitle,"cumulative rotamer distribution for %s",dlist[i].name);
+      fp=xvgropen(hisfile,histitle,"number","");
+      fprintf(fp,"@ xaxis tick on\n");
+      fprintf(fp,"@ xaxis tick major 1\n");
+      fprintf(fp,"@ type xy\n");
+      for(k=0; (k<nbin); k++) {
+	if (bNormalize)
+	  fprintf(fp,"%5d  %10g\n",k,(1.0*chi_prhist[k])/nframes); 
+	else
+	  fprintf(fp,"%5d  %10d\n",k,chi_prhist[k]);
+      }
+      fprintf(fp,"&\n");
+      ffclose(fp);
+      sfree(chi_prhist); 
+      /* histogram done */ 
+    }
+  }     
+
+  sfree(chi_prtrj); 
+
+}
+
 void calc_distribution_props(int nh,int histo[],real start,
 			     int nkkk, t_karplus kkk[],
 			     real *S2)

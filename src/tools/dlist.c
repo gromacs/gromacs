@@ -40,7 +40,7 @@ t_dlist *mk_dlist(FILE *log,
 		  bool bPhi, bool bPsi, bool bChi, int maxchi,
 		  int r0,int naa,char **aa)
 {
-  int     ires,i,j,k;
+  int     ires,i,j,k,ii;
   t_dihatms atm,prev;
   int     nl=0,nc[edMax],ndih;
   bool    bDih;
@@ -62,6 +62,7 @@ t_dlist *mk_dlist(FILE *log,
       atm.Cn[j]=-1;
       
     /* Look for atoms in this residue */
+    /* maybe should allow for chis to hydrogens? */
     while ((i<atoms->nr) && (atoms->atom[i].resnr == ires)) {
       if ((strcmp(*(atoms->atomname[i]),"H") == 0) ||
 	  (strcmp(*(atoms->atomname[i]),"H1") == 0) )
@@ -104,6 +105,20 @@ t_dlist *mk_dlist(FILE *log,
       i++;
     }
     
+    /* added by grs - special case for aromatics, whose chis above 2 are 
+       not real and produce rubbish output - so set back to -1 */ 
+    if (strcmp(*(atoms->resname[ires]),"PHE") == 0 ||
+	strcmp(*(atoms->resname[ires]),"TYR") == 0 ||
+	strcmp(*(atoms->resname[ires]),"PTR") == 0 ||
+	strcmp(*(atoms->resname[ires]),"TRP") == 0 ||
+	strcmp(*(atoms->resname[ires]),"HIS") == 0 ||
+	strcmp(*(atoms->resname[ires]),"HISA") == 0 ||
+	strcmp(*(atoms->resname[ires]),"HISB") == 0 )  {
+      for (ii=5 ; ii<=7 ; ii++) 
+	atm.Cn[ii]=-1; 
+    }
+    /* end fixing aromatics */ 
+
     /* Special case for Pro, has no H */
     if (strcmp(*(atoms->resname[ires]),"PRO") == 0) 
       atm.H=atm.Cn[4];
@@ -214,49 +229,87 @@ bool has_dihedral(int Dih,t_dlist *dl)
 	   (dl->atm.Cn[ddd+2]!=-1) && (dl->atm.Cn[ddd+3]!=-1));
     break;
   default:
-    pr_dlist(stdout,1,dl,1);
+    pr_dlist(stdout,1,dl,1,0,TRUE,TRUE,TRUE,TRUE,MAXCHI);
     fatal_error(0,"Non existant dihedral %d in file %s, line %d",
 		Dih,__FILE__,__LINE__);
   }
   return b;
 }
 
-static void pr_props(FILE *fp,t_dlist *dl,int nDih,real dt)
+static void pr_one_ro(FILE *fp,t_dlist *dl,int nDih,real dt)
+{
+  int k ; 
+  for(k=0;k<NROT;k++)
+    fprintf(fp,"  %6.2f",dl->rot_occ[nDih][k]); 
+  fprintf(fp,"\n"); 
+}
+
+static void pr_ntr_s2(FILE *fp,t_dlist *dl,int nDih,real dt)
 {
   fprintf(fp,"  %6.2f  %6.2f\n",(dt == 0) ? 0 : dl->ntr[nDih]/dt,dl->S2[nDih]);
 }
 
-void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt)
+void pr_dlist(FILE *fp,int nl,t_dlist dl[],real dt, int printtype, 
+bool bPhi, bool bPsi,bool bChi,bool bOmega, int maxchi)
 {
   int i, Xi;
+
+  void  (*pr_props)(FILE *, t_dlist *, int, real);  
   
+  /* Analysis of dihedral transitions etc */
+
+  if (printtype == edPrintST){
+    pr_props=pr_ntr_s2 ; 
+    fprintf(stderr,"Now printing out transitions and OPs...\n");
+  }else{
+    pr_props=pr_one_ro ;     
+    fprintf(stderr,"Now printing out rotamer occupancies...\n");
+    fprintf(fp,"\nXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n");
+  }
+
+  /* change atom numbers from 0 based to 1 based */   
   for(i=0; (i<nl); i++) {
     fprintf(fp,"Residue %s\n",dl[i].name);
-    fprintf(fp," Angle [  AI,  AJ,  AK,  AL]  #tr/ns  S^2D  \n"
-	       "--------------------------------------------\n");
-    fprintf(fp,"   Phi [%4d,%4d,%4d,%4d]",
-	    (dl[i].atm.H == -1) ? dl[i].atm.minC : dl[i].atm.H,
-	    dl[i].atm.N,dl[i].atm.Cn[1],dl[i].atm.C);
-    pr_props(fp,&dl[i],edPhi,dt);
-    fprintf(fp,"   Psi [%4d,%4d,%4d,%4d]",dl[i].atm.N,dl[i].atm.Cn[1],
-	    dl[i].atm.C,dl[i].atm.O);
-    pr_props(fp,&dl[i],edPsi,dt);
-    fprintf(fp," Omega [%4d,%4d,%4d,%4d]",dl[i].atm.minO,dl[i].atm.minC,
-	    dl[i].atm.N,dl[i].atm.Cn[1]);
-    pr_props(fp,&dl[i],edOmega,dt);
+    if (printtype == edPrintST){
+      fprintf(fp," Angle [   AI,   AJ,   AK,   AL]  #tr/ns  S^2D  \n"
+	         "--------------------------------------------\n");
+    } else {
+      fprintf(fp," Angle [   AI,   AJ,   AK,   AL]  rotamers  0  g(-)  t  g(+)\n"
+	         "--------------------------------------------\n");
+    }
+    if (bPhi) {
+      fprintf(fp,"   Phi [%5d,%5d,%5d,%5d]",
+	    (dl[i].atm.H == -1) ? 1+dl[i].atm.minC : 1+dl[i].atm.H,
+	    1+dl[i].atm.N, 1+dl[i].atm.Cn[1], 1+dl[i].atm.C);
+      pr_props(fp,&dl[i],edPhi,dt);
+    }
+    if (bPsi) {
+      fprintf(fp,"   Psi [%5d,%5d,%5d,%5d]",1+dl[i].atm.N, 1+dl[i].atm.Cn[1],
+	    1+dl[i].atm.C, 1+dl[i].atm.O);
+      pr_props(fp,&dl[i],edPsi,dt);
+    }
+    if (bOmega && has_dihedral(edOmega,&(dl[i]))) {
+      fprintf(fp," Omega [%5d,%5d,%5d,%5d]",1+dl[i].atm.minO, 1+dl[i].atm.minC,
+	      1+dl[i].atm.N, 1+dl[i].atm.Cn[1]);
+      pr_props(fp,&dl[i],edOmega,dt);    
+    }
     for(Xi=0; Xi<MAXCHI; Xi++)
-      if (dl[i].atm.Cn[Xi+3] != -1) {
-	fprintf(fp,"   Chi%d[%4d,%4d,%4d,%4d]",Xi+1,dl[i].atm.Cn[Xi],
-		dl[i].atm.Cn[Xi+1],dl[i].atm.Cn[Xi+2],
-		dl[i].atm.Cn[Xi+3]);
-	pr_props(fp,&dl[i],Xi+2,dt);
+      if (bChi && (Xi < maxchi) && (dl[i].atm.Cn[Xi+3] != -1) ) {
+	fprintf(fp,"   Chi%d[%5d,%5d,%5d,%5d]",Xi+1, 1+dl[i].atm.Cn[Xi],
+		1+dl[i].atm.Cn[Xi+1], 1+dl[i].atm.Cn[Xi+2],
+		1+dl[i].atm.Cn[Xi+3]);
+	pr_props(fp,&dl[i],Xi+edChi1,dt); /* Xi+2 was wrong here */ 
       }
     fprintf(fp,"\n");
   }
 }
 
+
+
 int pr_trans(FILE *fp,int nl,t_dlist dl[],real dt,int Xi)
 {
+  /* never called at the moment */ 
+
   int  i,nn,nz;
   
   nz=0;

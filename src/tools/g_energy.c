@@ -523,7 +523,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   }
 }
 
-void print_one(FILE *fp,bool bDp,real e)
+static void print1(FILE *fp,bool bDp,real e)
 {
   if (bDp)
     fprintf(fp,"  %16f",e);
@@ -532,9 +532,9 @@ void print_one(FILE *fp,bool bDp,real e)
 
 }
 
-void fec(char *ene2fn, char *runavgfn, 
-	 real reftemp, int nset, int set[], char *leg[], 
-	 int nenergy, real **eneset, real time[])
+static void fec(char *ene2fn, char *runavgfn, 
+		real reftemp, int nset, int set[], char *leg[], 
+		int nenergy, real **eneset, real time[])
 {
   char *ravgleg[] = { "\\8D\\4E = E\\sB\\N-E\\sA\\N", 
 		      "<e\\S-\\8D\\4E/kT\\N>\\s0..t\\N" };
@@ -1027,7 +1027,7 @@ int main(int argc,char *argv[])
 	   * D I S T A N C E   R E S T R A I N T S  
 	   *******************************************/
 	  if (fr->ndisre > 0) {
-	    print_one(out,bDp,fr->t);
+	    print1(out,bDp,fr->t);
 	    if (violaver == NULL)
 	      snew(violaver,fr->ndisre);
 	    
@@ -1037,7 +1037,7 @@ int main(int argc,char *argv[])
 
 	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
 	    if (bDRAll) {
-	      print_one(fp_pairs,bDp,fr->t);
+	      print1(fp_pairs,bDp,fr->t);
 	      for(i=0; (i<nset); i++) {
 		sss=set[i];
 		fprintf(fp_pairs,"  %8.4f",mypow(fr->rav[sss],minthird));
@@ -1053,16 +1053,16 @@ int main(int argc,char *argv[])
 	 *******************************************/
 	else {
 	  if (fr->nre > 0) {
-	    print_one(out,bDp,fr->t);
+	    print1(out,bDp,fr->t);
 	    if (bSum) 
-	      print_one(out,bDp,(eneset[nset][nenergy-1])/nmol-ezero);
+	      print1(out,bDp,(eneset[nset][nenergy-1])/nmol-ezero);
 	    else if ((nset == 1) && bAll) {
-	      print_one(out,bDp,fr->ener[set[0]].e);
-	      print_one(out,bDp,fr->ener[set[0]].esum);
-	      print_one(out,bDp,fr->ener[set[0]].eav);
+	      print1(out,bDp,fr->ener[set[0]].e);
+	      print1(out,bDp,fr->ener[set[0]].esum);
+	      print1(out,bDp,fr->ener[set[0]].eav);
 	    }
 	    else for(i=0; (i<nset); i++)
-	      print_one(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
+	      print1(out,bDp,(fr->ener[set[i]].e)/nmol-ezero);
 
 	    fprintf(out,"\n");
 	  }
