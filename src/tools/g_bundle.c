@@ -167,9 +167,9 @@ int main(int argc,char *argv[])
     "of them in [TT]-na[tt] parts. The centers of mass of these parts",
     "define the tops and bottoms of the axes.",
     "Several quantities are written to file:",
-    "the axis length, the distance from the axis mid-points to the average",
-    "center of all axes, the total tilt, the radial tilt and the lateral",
-    "tilt with respect to the average axis.",
+    "the axis length, the distance and the z-shift of the axis mid-points",
+    "with respect to the average center of all axes, the total tilt,",
+    "the radial tilt and the lateral tilt with respect to the average axis.",
     "[PAR]",
     "With options [TT]-ok[tt], [TT]-okr[tt] and [TT]-okl[tt] the total,",
     "radial and lateral kinks of the axes are plotted. An extra index",
@@ -192,7 +192,8 @@ int main(int argc,char *argv[])
     { "-z", FALSE, etBOOL, {&bZ},
 	"Use the Z-axis as reference iso the average axis" }
   };
-  FILE       *out,*flen,*fdist,*ftilt,*ftiltr,*ftiltl,*fkink,*fkinkr,*fkinkl;
+  FILE       *out,*flen,*fdist,*fz,*ftilt,*ftiltr,*ftiltl;
+  FILE       *fkink,*fkinkr,*fkinkl;
   int        status,fpdb;
   t_topology top;
   rvec       *xtop;
@@ -214,6 +215,7 @@ int main(int argc,char *argv[])
     { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, "-ol", "bun_len", ffWRITE },
     { efXVG, "-od", "bun_dist", ffWRITE },
+    { efXVG, "-oz", "bun_z", ffWRITE },
     { efXVG, "-ot", "bun_tilt", ffWRITE },
     { efXVG, "-otr", "bun_tiltr", ffWRITE },
     { efXVG, "-otl", "bun_tiltl", ffWRITE },
@@ -257,23 +259,26 @@ int main(int argc,char *argv[])
   snew(bun.len,n);
 
   sprintf(timelabel, "Time (%s)", time_label());
-
-  flen  = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
-		   timelabel,"(nm)");
-  fdist = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
-		   timelabel,"(nm)");
-  ftilt = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
-		   timelabel,"(degrees)");
+  
+  flen   = xvgropen(opt2fn("-ol",NFILE,fnm),"Axis lengths",
+		    timelabel,"(nm)");
+  fdist  = xvgropen(opt2fn("-od",NFILE,fnm),"Distance of axis centers",
+		    timelabel,"(nm)");
+  fz     = xvgropen(opt2fn("-oz",NFILE,fnm),"Z-shift of axis centers",
+		    timelabel,"(nm)");
+  ftilt  = xvgropen(opt2fn("-ot",NFILE,fnm),"Axis tilts",
+		    timelabel,"(degrees)");
   ftiltr = xvgropen(opt2fn("-otr",NFILE,fnm),"Radial axis tilts",
-		   timelabel,"(degrees)");
+		    timelabel,"(degrees)");
   ftiltl = xvgropen(opt2fn("-otl",NFILE,fnm),"Lateral axis tilts",
-		   timelabel,"(degrees)");
-
+		    timelabel,"(degrees)");
+  
   if (bKink) {
-    fkink = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
-		     timelabel,"(degrees)");
+    fkink  = xvgropen(opt2fn("-ok",NFILE,fnm),"Kink angles",
+		      timelabel,"(degrees)");
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
 		      timelabel,"(degrees)");
+    fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
 		      timelabel,"(degrees)");
   }
@@ -298,6 +303,7 @@ int main(int argc,char *argv[])
     t = convert_time(fr.time);
     fprintf(flen," %10g",t);
     fprintf(fdist," %10g",t);
+    fprintf(fz," %10g",t);
     fprintf(ftilt," %10g",t);
     fprintf(ftiltr," %10g",t);
     fprintf(ftiltl," %10g",t);
@@ -310,6 +316,7 @@ int main(int argc,char *argv[])
     for(i=0; i<bun.n; i++) {
       fprintf(flen," %6g",bun.len[i]);
       fprintf(fdist," %6g",norm(bun.mid[i]));
+      fprintf(fz," %6g",bun.mid[i][ZZ]);
       fprintf(ftilt," %6g",RAD2DEG*acos(bun.dir[i][ZZ]));
       comp = bun.mid[i][XX]*bun.dir[i][XX]+bun.mid[i][YY]*bun.dir[i][YY];
       fprintf(ftiltr," %6g",RAD2DEG*
@@ -336,6 +343,7 @@ int main(int argc,char *argv[])
     }
     fprintf(flen,"\n");
     fprintf(fdist,"\n");
+    fprintf(fz,"\n");
     fprintf(ftilt,"\n");
     fprintf(ftiltr,"\n");
     fprintf(ftiltl,"\n");
@@ -352,8 +360,9 @@ int main(int argc,char *argv[])
   
   if (fpdb >= 0)
     close_trx(fpdb);
-  fclose(fdist);
   fclose(flen);
+  fclose(fdist);
+  fclose(fz);
   fclose(ftilt);
   fclose(ftiltr);
   fclose(ftiltl);
