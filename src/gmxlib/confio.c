@@ -50,6 +50,186 @@ static char *SRCID_confio_c = "$Id$";
 #include "filenm.h"
 /*#include "statusio.h"*/
 
+static int read_g96_conf(char *infile,char *title,
+			 t_atoms *atoms,rvec *x, rvec *v,matrix box)
+{
+  static t_symtab *symtab=NULL;
+  FILE   *fp;
+  char   line[STRLEN+1],anm[STRLEN],resnm[STRLEN],c1,c2;
+  bool   bPos,bBox,bVel,bEnd;
+  int    natoms,atnr,resnr,oldres,newres;
+  double db1,db2,db3;
+  
+  fp = ffopen(infile,"r");
+  
+  if (!symtab) {
+    snew(symtab,1);
+    open_symtab(symtab);
+  }
+  
+  natoms=0;
+
+  if (title)
+    title[0] = '\0';
+
+  bPos = FALSE;
+    while (fgets2(line,STRLEN,fp) && !bPos)
+      bPos = (strncmp(line,"POSITION",8) == 0);
+  
+  if (bPos) {
+    newres  = 0;
+    oldres  = -666; /* Unlikely number for the first residue! */
+    bEnd    = FALSE;
+    while (!bEnd && fgets2(line,STRLEN,fp)) {
+      bEnd = (strncmp(line,"END",3) == 0);
+      if (!bEnd  && (line[0] != '#')) {
+	if (sscanf(line+24,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	  fatal_error(0,"Did not find 3 coordinates for atom %d in %s\n",
+		      natoms+1,infile);
+	if (atoms) {
+	  if (natoms >= atoms->nr)
+	    fatal_error(0,
+			"Found more coordinates (%d) in %s than expected %d\n",
+			natoms,infile,atoms->nr);
+	  if (sscanf(line,"%5d%c%5s%c%5s%7d",&resnr,&c1,resnm,&c2,anm,&atnr) 
+		     != 6) {
+	    if (oldres>=0)
+	      resnr = oldres;
+	    else {
+	      resnr    = 1;
+	      strcpy(resnm,"???"); 
+	    }
+	    strcpy(anm,"???"); 
+	  }
+	  atoms->atomname[natoms]=put_symtab(symtab,anm);
+	  if (resnr != oldres) {
+	    oldres = resnr;
+	    if (newres >= atoms->nr)
+	      fatal_error(0,"More residues than atoms in %s (natoms = %d)",
+			  infile,atoms->nr);
+	    atoms->resname[newres] = put_symtab(symtab,resnm);
+	    newres++;
+	    if (newres > atoms->nres)
+	      atoms->nres = newres;
+	  }
+	  resnr = newres;
+	  atoms->atom[natoms].resnr = resnr-1;
+	}
+	if (x) {
+	  x[natoms][0] = db1;
+	  x[natoms][1] = db2;
+	  x[natoms][2] = db3;
+	}
+	natoms++;
+      }
+    }
+    if (atoms && (natoms != atoms->nr))
+      fprintf(stderr,
+	      "Warning: found less coordinates (%d) in %s than expected %d\n",
+	      natoms,infile,atoms->nr);
+  }
+
+  bVel = FALSE;
+  bBox = FALSE;
+  while (!bVel && !bBox && fgets2(line,STRLEN,fp)) {
+    bVel = (strncmp(line,"VELOCITY",8) == 0);
+    bBox = (strncmp(line,"BOX",3) == 0);
+  }
+  
+  if (v && bVel) {
+    natoms = 0;
+    bEnd = FALSE;
+    while (!bEnd && fgets2(line,STRLEN,fp)) {
+      bEnd = (strncmp(line,"END",3) == 0);
+      if (!bEnd && (line[0] != '#')) {
+	if (sscanf(line+24,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	  fatal_error(0,"Did not find 3 velocities for atom %d in %s",
+			natoms+1,infile);
+	if (atoms && (natoms >= atoms->nr))
+	  fatal_error(0,"Found more velocities (%d) in %s than expected %d\n",
+		      natoms,infile,atoms->nr);
+	if (v) {
+	  v[natoms][0] = db1;
+	  v[natoms][1] = db2;
+	  v[natoms][2] = db3;
+	}
+	natoms++;
+      }
+    }
+    if (atoms && (natoms != atoms->nr))
+      fprintf(stderr,
+	      "Warning: found less velocities (%d) in %s than expected %d\n",
+	      natoms,infile,atoms->nr);
+  }
+
+  while (!bBox && fgets2(line,STRLEN,fp))
+    bBox = (strncmp(line,"BOX",3) == 0);
+  
+  clear_mat(box);
+  if (bBox) {
+    bEnd = FALSE;
+    while (!bEnd && fgets2(line,STRLEN,fp)) {
+      bEnd = (strncmp(line,"END",3) == 0);
+      if (!bEnd && (line[0] != '#')) {
+	if (sscanf(line,"%15lf%15lf%15lf",&db1,&db2,&db3) != 3)
+	  fatal_error(0,"Found a BOX line, but no box in %s",infile);
+	box[XX][XX] = db1;
+	box[YY][YY] = db2;
+	box[ZZ][ZZ] = db3;
+      }
+    }
+  }
+  
+  fclose(fp);
+  
+  close_symtab(symtab);
+  
+  return natoms;
+}
+
+static void write_g96_conf(FILE *out,char *title,t_atoms *atoms,
+			   rvec *x,rvec *v,matrix box, 
+			   int nindex,atom_id *index)
+{
+  int nout,i,a;
+  
+  if (index)
+    nout = nindex;
+  else
+    nout = atoms->nr; 
+
+  fprintf(out,"TITLE\n%s\nEND\n",title);
+  if (x) {
+    fprintf(out,"POSITION\n");
+    for(i=0; i<nout; i++) {
+      if (index)
+	a = index[i];
+      else
+	a = i;
+      fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
+	      atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
+	      *atoms->atomname[a],i+1,x[a][XX],x[a][YY],x[a][ZZ]);
+    }
+    fprintf(out,"END\n");
+  }
+  if (v) {
+    fprintf(out,"VELOCITY\n");
+    for(i=0; i<nout; i++) {
+      if (index)
+	a = index[i];
+      else
+	a = i;
+      fprintf(out,"%5d %-5s %-5s%7d%15.9f%15.9f%15.9f\n",
+	      atoms->atom[a].resnr+1,*atoms->resname[atoms->atom[a].resnr],
+	      *atoms->atomname[a],i+1,v[a][XX],v[a][YY],v[a][ZZ]);
+    }
+    fprintf(out,"END\n");
+  }
+  fprintf(out,"BOX\n");
+  fprintf(out,"%15.9f%15.9f%15.9f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+  fprintf(out,"END\n");
+}
+
 static void get_coordnum_fp (FILE *in,char *title, int *natoms)
 {
   char line[STRLEN+1];
@@ -643,6 +823,11 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
     write_hconf_indexed(out, title, atoms, nindex, index, x, v, box);
     fclose(out);
     break;
+  case efG96:
+    out=ffopen(outfile,"w");
+    write_g96_conf(out, title, atoms, x, v, box, nindex, index);
+    fclose(out);
+    break;
   case efPDB:
   case efBRK:
   case efENT:
@@ -671,6 +856,11 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efGRO:
     write_conf(outfile, title, atoms, x, v, box);
     break;
+  case efG96:
+    out=ffopen(outfile,"w");
+    write_g96_conf(out, title, atoms, x, v, box, -1, NULL);
+    fclose(out);
+    break;
   case efPDB:
   case efBRK:
   case efENT:
@@ -692,11 +882,15 @@ void get_stx_coordnum(char *infile,int *natoms)
 {
   FILE *in;
   int ftp;
+  matrix dumbox;
 
   ftp=fn2ftp(infile);
   switch (ftp) {
   case efGRO:
     get_coordnum(infile, natoms);
+    break;
+  case efG96:
+    *natoms=read_g96_conf(infile, NULL, NULL, NULL, NULL, dumbox);
     break;
   case efPDB:
   case efBRK:
@@ -730,6 +924,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   switch (ftp) {
   case efGRO:
     read_whole_conf(infile, title, atoms, x, v, box);
+    break;
+  case efG96:
+    read_g96_conf(infile, title, atoms, x, v, box);
     break;
   case efPDB:
   case efBRK:

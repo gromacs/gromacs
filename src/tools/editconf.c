@@ -489,10 +489,8 @@ int main(int argc, char *argv[])
 			     isize,index); 
   }
   else {
-    if (outftp == efGRO) {
-      out=ffopen(outfile,"w");
-      write_hconf(out,title,&atoms,x,bHaveV?v:NULL,box); 
-      fclose(out);
+    if (outftp != efPDB) {
+      write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,box); 
     } else {
       out=ffopen(outfile,"w");
       if (opt2bSet("-bf",NFILE,fnm)) {

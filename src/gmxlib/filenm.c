@@ -64,10 +64,10 @@ static    int trns[]={
   efTRJ };
 #define NTRNS asize(trns)
 
-static    int stos[]={ efGRO, efPDB, efBRK, efENT};
+static    int stos[]={ efGRO, efG96, efPDB, efBRK, efENT};
 #define NSTOS asize(stos)
 
-static    int stxs[]={ efGRO, efPDB, efBRK, efENT,
+static    int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT,
 #ifdef USE_XDR 
 		       efTPR, 
 #endif 
@@ -92,7 +92,7 @@ static    int tpss[]={
 #ifdef USE_XDR
   efTPR, 
 #endif
-  efTPB, efTPA, efGRO, efPDB, efBRK, efENT };
+  efTPB, efTPA, efGRO, efG96, efPDB, efBRK, efENT };
 #define NTPSS asize(tpss)
 
 typedef struct {
@@ -116,9 +116,10 @@ static t_deffile deffile[efNR] = {
   { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene"                },
   { eftXDR, ".edr", "ener",   NULL, "Energy file in portable XDR format"     },
   { eftBIN, ".ene", "ener",   NULL, "Energy file"                            },
-  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro pdb tpr tpb tpa" },
-  { eftGEN, ".???", "out",    "-o", "Generic structure: gro pdb"             },
+  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa" },
+  { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb"             },
   { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
+  { eftASC, ".g96", "conf",   "-c", "Coordinate file in Gromos-96 format"    },
   { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
   { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"              },
   { eftASC, ".ent", "eiwit",  "-f", "Entry in the protein date bank"         },
@@ -129,7 +130,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
   { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa"         },
-  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro pdb" },
+  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb" },
   { eftXDR, ".tpr", "topol",  "-s", "portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
