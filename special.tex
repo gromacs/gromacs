@@ -1,75 +1,5 @@
 \chapter{Special Topics}
 \label{ch:special}
-\section{\normindex{NMR} refinement}
-The {\gromacs} software can be used to do NMR structure refinements.
-A list of distance restrains based on NOE data can be added in your
-topology file, like in the following example:
-\begin{verbatim}
-[ distance_restraints ]
-; ai    aj      type    index   type'   low      up1     up2     fac
-10      16      1       0       1       0.0      0.3     0.4     1.0 
-10      28      1       1       1       0.0      0.3     0.4     1.0 
-10      46      1       1       1       0.0      0.3     0.4     1.0 
-16      22      1       2       1       0.0      0.3     0.4     2.5 
-16      34      1       3       1       0.0      0.5     0.6     1.0 
-\end{verbatim}
-In this example a number of features can be found.
-In columns {\tt ai} and {\tt aj} you find the atom numbers of the
-particles to be restrained. The {\tt type} column should always be 1.
-As explained in ~\secref{disre}, multiple distances can add
-to a single NOE signal. In the topology this can be set using the
-{\tt index} column. In our example, the restraints 10-28 and 10-46
-both have index 1, therefore they are treated simultaneously.
-An extra requirement for treating restraints together, is that 
-the restraints should be on successive lines, without any
-other intervening restraint. The columns {\tt low}, {\tt up1} and {\tt up2}
-hold the values of $r_0$, $r_1$ and $r_2$ from ~\eqnref{disre}.
-In some cases in can be useful to have different force constants for
-some restraints, this is controlled by the column {\tt fac}.
-The force constant in the parameter file is multiplied by the value in the
-column {\tt fac} for each restraint.
-The columns {\tt type'} and {\tt low} hold variables, which are as of yet 
-not used. They must be specified in the topology file however.
-
-Some paramerts for NMR refinement using can be specified in the
-{\tt grompp.mdp} file:
-\begin{description}
-\item[{\tt disre}: type of distance restraining.]
-	The {\tt disre} variable sets the type of distance restraining.
-	{\tt no/simple} turns the distance restraining off/on.
- 	When multiple proteins or peptides are used
-	in the simulation ensemble averaging 
-	can be turned on by setting {\tt disre = ensemble}.
-\item[{\tt disre\_weighting}: force-weighting in restraints with
-	 multiple pairs.]
-	The distance restraint force can be distributed equally
-	over all the pairs involved in the restraint by setting
-	{\tt disre\_weighting = equal}.
-	The option {\tt disre\_weighting = conservative}
-	gives conservative forces when {\tt disre\_tau = 0}.
-	See ~\secref{disre} for details.
-\item[{\tt disre\_mixed}: how to calculate the violations.]
-	{\tt disre\_mixed = no} gives normal running time
-	averaged violations.
-	When {\tt disre\_mixed = yes} the square root of the
-	product of the running time averaged and the instantaneous
-	violations is used.
-	See ~\secref{disre} for details.
-\item[{\tt disre\_fc}: force constant $k_{dr}$ for distance restraints.] 
-	$k_{dr}$  (\eqnref{disre}) can be set
-	as variable {\tt disre\_fc = 1000} for a force constant of
-	1000 {kJ mol$^{-1}$ nm$^{-2}$}. This value is multiplied by
-	the value in the {\tt fac} column in the distance restraint
-	entries in the topology file.
-\item[{\tt disre\_tau}: time constant for restraints.] 
-	$\tau$ (\eqnref{ravdisre}) can be set
-	as variable {\tt disre\_tau = 10} for a time constant of
-	10 ps.
-\item[{\tt nstdisreout}: pair distance output frequency.]
-	Determines how often the running time averaged and 
-	instantaneous distances of all atom pairs involved in
-	distance restraints are written to the energy file.
-\end{description}
 
 \newcommand{\amine}{\sf -NH$_2$}
 \newcommand{\amines}{\sf -NH-}
@@ -229,7 +159,7 @@ tryptophane; {\sf D}: histidine.}
 
 \subsection{Out-of-plane vibrations in aromatic groups}
 \label{sec:dummyaro}
-The planar arrangements in the sidechains of the aromatic residues,
+The planar arrangements in the sidechains of the aromatic residues
 lends itself perfectly for a dummy-atom construction, giving a
 perfectly planar group without the inherently instable constraints
 that are necessary to keep normal atoms in a plane. The basic approach
