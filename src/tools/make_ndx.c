@@ -868,9 +868,6 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,0,NULL,asize(desc),
 		    desc,0,NULL);
   
-  block = new_block();
-  snew(gnames,1);
-
   get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&(atoms.nr));
   init_t_atoms(&atoms,atoms.nr,TRUE);
   snew(x,atoms.nr);
@@ -879,9 +876,12 @@ int main(int argc,char *argv[])
   read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,v,box);
 
   if (opt2bSet("-n",NFILE,fnm))
-    block=init_index(opt2fn("-n",NFILE,fnm),&gnames);
-  else
+    block = init_index(opt2fn("-n",NFILE,fnm),&gnames);
+  else {
+    block = new_block();
+    snew(gnames,1);
     analyse(&atoms,block,&gnames,FALSE,TRUE);
+  }
 
   edit_index(&atoms,x,block,&gnames);
 

@@ -53,6 +53,7 @@ t_block *init_index(char *gfile, char ***grpname)
     /* new format */
     b->nr=0;
     b->index=NULL;
+    b->nra=0;
     b->a=NULL;
     *grpname=NULL;
     maxentries=0;
@@ -75,6 +76,7 @@ t_block *init_index(char *gfile, char ***grpname)
 	  }
 	  b->a[i]=atoi(str)-1;
 	  b->index[b->nr]++;
+	  (b->nra)++;
 	  pt=strstr(pt,str)+strlen(str);
 	}
       }
