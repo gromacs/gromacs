@@ -160,7 +160,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   rvec   mu_tot;
   int    nsteps;
   int    count=0; 
-  int    i,m,start,end; 
+  int    i,m,start,end,gf; 
   int    Min=0; 
   int    steps_accepted=0; 
   bool   bConstrain;
@@ -257,9 +257,14 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* set new coordinates, except for first step */
     if (count>0)
-      for(i=start; (i<end); i++)  
-	for(m=0;(m<DIM);m++) 
-	  pos[TRY][i][m] = pos[Min][i][m] + stepsize * force[Min][i][m]; 
+      for(i=start; i<end; i++) {
+	gf = mdatoms->cFREEZE[i];
+	for(m=0; m<DIM; m++) 
+	  if (ir->opts.nFreeze[gf][m])
+	    pos[TRY][i][m] = pos[Min][i][m];
+	  else
+	    pos[TRY][i][m] = pos[Min][i][m] + stepsize * force[Min][i][m]; 
+      }
 
     if (bConstrain || bDummies)
       shift_self(graph,fr->shift_vec,pos[TRY]);
