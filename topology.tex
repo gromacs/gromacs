@@ -452,22 +452,22 @@ specified  dihedrals. It is possible to put more than one dihedral on a
 rotatable bond. 
 
 \subsection{Hydrogen and termini database}
-The hydrogen database is stored in {\tt ffgmx.hdb}. The termini
-database is stored in {\tt ffgmx-n.tdb} and {\tt ffgmx-c.tdb} for the
-N- and C-terminus resp. They contain information for the {\tt pdb2gmx}
+The hydrogen database (see \tabref{ffgmxhdb}) is stored in {\tt ffgmx.hdb}. The termini
+databases are stored in {\tt ffgmx-n.tdb} and {\tt ffgmx-c.tdb} for the
+N- and C-terminus respectively. They contain information for the {\tt pdb2gmx}
 program on how to connect new atoms to existing ones. The termini
 database files also contain information on which atoms should be
 removed or changed and which (improper) dihedral angles should be
 added.
 
-A sample piece of the {\tt ffgmx.hdb} file is enclosed below (the
-table headers are included for explanation purposes):
-\centerline{
+\begin{table}[h]
+\caption{A sample piece of the {\tt ffgmx.hdb} file 
+(table headers are included for explanation purposes)}
+\label{tab:ffgmxhdb}
+\centering
 \begin{tabular}{lllllll}
-residue        & \#additions        &        &                &                &     
-   \\
-        & \#H add         & H-code& 1$^{st}$ atom        & 2$^{nd}$ atom        & 3$^
-{rd}$ atom        \\
+residue & \#additions&  &       &       &  	&	\\
+        & \#H add    & H-code& 1$^{st}$ atom    & 2$^{nd}$ & 3$^{rd}$ & 4$^{th}$ \\
 \hline
 ARG     & 4	&	&  	&	&	&	\\
         & 1	& 2     & N     & -C	& -O	&     	\\
@@ -478,7 +478,7 @@ ALA 	& 2	& 	&	&	&	&	\\
 	& 1	& 1	& N	& -C	& CA	&	\\
 	& 1	& 5	& CA	& N	& C	& CB
 \end{tabular}
-}
+\end{table}
 
 On the first line we see the residue name (ARG) and the number of additions.
 On each subsequent line we then see 

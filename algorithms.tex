@@ -271,7 +271,7 @@ list-cutoff, {\em  i.e}, at a distance between \verb'rshort' and
 \verb'rlong'.  This force is calculated during the pair list update
 and  retained during \verb'nstlist' steps.
 
-The vector $\ve{r}_{ij} = \ve{r}_i - \ve{r}_j$ connecting nearest
+The vector $\rvij = \ve{r}_j - \ve{r}_i$ connecting nearest
 images is  found by constructing
 \bea
 x_{ij} & = & x_{ij} - a*\verb'round'(x_{ij}/a) \\
@@ -928,7 +928,7 @@ calculations. First \myindex{nmrun}, which computes the Hessian,
 and secondly \myindex{g\_nmeig} which does the diagonalization and
 sorting of normal modes according to frequencies. Both these programs
 should be run in double precision. An overview of normal mode analysis
-and the related \myindex{essential dynamics} of 
+and the related \myindex{essential dynamics} or
 \myindex{principal component analysis} can be found in ~\cite{Hayward95b}.
 
 \section{Free energy perturbation}
@@ -958,8 +958,7 @@ If we want to compute the difference in free energy of binding of two
 inhibitors {\bf I} and {\bf I'} to an enzyme {\bf E} (\figref{free}B)
 we can again use \eqnref{ddg} to compute the desired property.
 
-\subsection{ED sampling}
-
+\section{Essential Dynamics Sampling}
 The results from an Essential Dynamics (ED) analysis \cite{Amadei93}
 of a protein can be used to guide MD simulations. The idea is that
 from an initial MD simulation (or from other sources) a definition of
@@ -976,7 +975,6 @@ in a diffusion-like path that proteins usually take.
 
 All available constraint types are described in the appropriate chapter
 of the WHAT IF \cite{Whatif} manual.
-
 
 
 \section{Parallelization}
