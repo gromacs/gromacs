@@ -289,7 +289,7 @@ bool bXor(bool b1,bool b2)
 }
 
 void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
-	      t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
+	      bool bInsert,t_atoms *atoms_solvt, rvec *x_solvt, real *r_solvt, 
 	      bool bVerbose,real rshell)
 {
   t_nblist   *nlist;
@@ -299,9 +299,8 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   int        i,j,jj,m,j0,j1,jnr,inr,iprot,is1,is2;
   int        prev,resnr,nresadd,d,k,ncells,maxincell;
   int        dx0,dx1,dy0,dy1,dz0,dz1;
-  int        *atom_flag,*cg_index;
   int        ntest,nremove,nkeep;
-  rvec       dx,xi,xj,*x_prot,xpp,*x_all;
+  rvec       dx,xi,xj,xpp,*x_all;
   bool       *remove,*keep;
   int        bSolSol;
 
@@ -380,11 +379,13 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
 	    (bSolSol  && 
 	     (is1 >= 0) && (!remove[is1]) &&   /* is1 is solvent */
 	     (is2 >= 0) && (!remove[is2]) &&   /* is2 is solvent */
-	     (outside_box_minus_margin2(x_solvt[is1],box)) && /* is1 on edge */
-	     (outside_box_minus_margin2(x_solvt[is2],box)) && /* is2 on edge */
+	     (bInsert || /* when inserting also check inside the box */
+	      (outside_box_minus_margin2(x_solvt[is1],box) && /* is1 on edge */
+	       outside_box_minus_margin2(x_solvt[is2],box))   /* is2 on edge */
+	      ) &&
 	     (atoms_solvt->atom[is1].resnr !=  /* Not the same residue */
 	      atoms_solvt->atom[is2].resnr))) {
-		
+	  
 	  ntest++;
 	  rvec_sub(xi,xj,dx);
 	  n2 = norm2(dx);
@@ -458,7 +459,6 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
   /* add the selected atoms_solvt to atoms */
   prev=NOTSET;
   nresadd=0;
-  x_prot = *x;
   for (i=0; (i<atoms_solvt->nr); i++)
     if (!remove[i]) {
       if ( (prev==NOTSET) || 
@@ -472,7 +472,7 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
       }
       atoms->nr++;
       atoms->atomname[atoms->nr-1] = atoms_solvt->atomname[i];
-      rvec_add(x_solvt[i],dx,x_prot[atoms->nr-1]);
+      rvec_add(x_solvt[i],dx,(*x)[atoms->nr-1]);
       (*r)[atoms->nr-1]   = r_solvt[i];
       atoms->atom[atoms->nr-1].resnr = atoms->nres-1;
       atoms->resname[atoms->nres-1] =
@@ -486,6 +486,12 @@ void add_conf(t_atoms *atoms, rvec **x, real **r,  bool bSrenew,  matrix box,
     fprintf(stderr,"Added %d molecules\n",nresadd);
 
   sfree(remove);
+  sfree(keep);
+  sfree(atoms_all->atomname);
+  sfree(atoms_all->resname);
+  sfree(atoms_all->atom);
+  sfree(&atoms_all->excl);
+  sfree(x_all);
 }
 
 void orient_mol(t_atoms *atoms,char *indexnm,rvec x[], rvec *v)
