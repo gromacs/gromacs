@@ -52,11 +52,17 @@ bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
 /* Index in the table that says which function to use */
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
 
+typedef struct {
+  int  nx,ny;
+  real tabscale;
+  real **y;
+} t_tabledata;
+
 #define pow2(x) ((x)*(x))
 #define pow3(x) ((x)*(x)*(x))
 #define pow4(x) ((x)*(x)*(x)*(x))
-			  
-void spline(real x[],real y[],int n,real yp1,real ypn,real y2[])
+
+static void spline(real x[],real y[],int n,real yp1,real ypn,real y2[])
 {
   int  i,k;
   real p,qn,sig,un,*u;
@@ -87,7 +93,8 @@ void spline(real x[],real y[],int n,real yp1,real ypn,real y2[])
   sfree(u);
 }
 
-void splint(real xa[],real ya[],real y2a[],int n,real x,real *y,real *yp)
+static void splint(real xa[],real ya[],real y2a[],
+		   int n,real x,real *y,real *yp)
 {
   int  klo,khi,k;
   real h,b,a,eps;
@@ -118,7 +125,7 @@ void splint(real xa[],real ya[],real y2a[],int n,real x,real *y,real *yp)
   }
 }
 
-void copy2table(int n,int n0,int stride,
+static void copy2table(int n,int n0,int stride,
 		real x[],real Vtab[],real Vtab2[],real dest[],real r_zeros)
 {
   int  i;
@@ -146,35 +153,53 @@ void copy2table(int n,int n0,int stride,
   }
 }
 
-
-void read_table(int n0,int n,real x[],
-		real Vtab[],real Vtab2[],
-		real Ftab[],real Ftab2[],
-		char *fn,t_forcerec *fr)
+static void user_table(t_tabledata *td,real x[],
+		       real Vtab[],real Vtab2[],
+		       real Ftab[],real Ftab2[])
 {
-  real **y=NULL;
-  int  i,nx,ny;
+  int  i;
   
-  nx = read_xvg(fn,&y,&ny);
-  if (ny != 5)
-    fatal_error(0,"Trying to read file %s, but no colums = %d, should be 5",
-		fn,ny);
-  for(i=0; (i<nx); i++) {
-    x[i]     = y[0][i];
-    Vtab[i]  = y[1][i];
-    Ftab[i]  = y[2][i];
-    Vtab2[i] = y[3][i];
-    Ftab2[i] = y[4][i];
+  for(i=0; (i<td->nx); i++) {
+    x[i]     = td->y[0][i];
+    Vtab[i]  = td->y[1][i];
+    Ftab[i]  = td->y[2][i];
+    Vtab2[i] = td->y[3][i];
+    Ftab2[i] = td->y[4][i];
   }
-  for(i=0; (i<ny); i++)
-    sfree(y[i]);
-  sfree(y);
 }
 
-void fill_table(int n0,int n,real x[],
-		real Vtab[],real Vtab2[],
-		real Ftab[],real Ftab2[],
-		int tp,t_forcerec *fr)
+static t_tabledata *read_table(FILE *fp,char *fn)
+{
+  t_tabledata *td;
+  
+  snew(td,1);
+  td->nx = read_xvg(fn,&td->y,&td->ny);
+  if (td->ny != 5)
+    fatal_error(0,"Trying to read file %s, but no colums = %d, should be 5",
+		fn,td->ny);
+  td->tabscale = (td->nx-1)/(td->y[0][td->nx-1] - td->y[0][0]);
+  if (fp) fprintf(fp,
+	  "Read user table %s with %d data points. tabscale = %g points/nm\n",
+	  fn,td->nx,td->tabscale);
+		      
+  return td;
+}
+
+static void done_tabledata(t_tabledata *td)
+{
+  int i;
+  
+  if (!td)
+    return;
+  for(i=0; (i<td->ny); i++)
+    sfree(td->y[i]);
+  sfree(td->y);
+}
+
+static void fill_table(int n0,int n,real x[],
+		       real Vtab[],real Vtab2[],
+		       real Ftab[],real Ftab2[],
+		       int tp,t_forcerec *fr)
 {
   /* Calculate potential and 2nd derivative and Force and
    * second derivative!
@@ -375,53 +400,9 @@ void fill_table(int n0,int n,real x[],
 #endif
 }
 
-void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
+static void set_table_type(int tabsel[],t_forcerec *fr)
 {
-  static   char *fns[etiNR] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
-  FILE     *fp;
-  real     x0,y0,yp;
-  int      i,j,k,n0,n,tabsel[etiNR];
-  real     *x,*xnormal,*xexp=NULL,*Vtab,*Vtab2,*Ftab,*Ftab2;
-  
-#ifdef DOUBLE
-  fr->tabscale = 2000.0;
-#else
-  fr->tabscale = 500.0;
-#endif
-  n = fr->ntab = fr->rtab*fr->tabscale;
-  
-  if (out)
-    fprintf(out,"Making tables%s of %g(nm)*%g = %d points\n",
-	    (fr->bcoultab || fr->bvdwtab) ? "" : 
-	    fr->efep!=efepNO ? " for 1-4 and FEP int.":" for 1-4 int.",
-	    fr->rtab,fr->tabscale,(int)(fr->rtab*fr->tabscale));
-  
-  snew(fr->coulvdwtab,12*n+1);
-  snew(xnormal,n+1);
-  
-  n0 = 10;
-  for(i=n0; i<=n; i++)
-    xnormal[i]  = (i/fr->tabscale);
-  
-  /* Now fill three tables with 
-   * Dispersion, Repulsion and Coulomb (David's function)
-   * or Reaction Field, or Plain Coulomb 
-   * respectively.
-   */
-  /* Temp storage */
-  snew(Vtab,n+1);
-  snew(Vtab2,n+1);
-  snew(Ftab,n+1);
-  snew(Ftab2,n+1);
-  
-  if (fr->bBHAM) {
-    snew(xexp,n+1);
-    fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
-    for(i=n0; i<=n; i++)
-      xexp[i]  = (i/fr->tabscale_exp);
-  }
-
-  /* Now set the different table indices 
+  /* Set the different table indices.
    * Coulomb first.
    */
   
@@ -463,6 +444,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
     fatal_error(0,"Invalid eeltype %d in %s line %d",fr->eeltype,
 		__FILE__,__LINE__);
   }
+  
   /* Van der Waals time */
   if (fr->bBHAM) {
     tabsel[etiLJ6]  = etabLJ6;
@@ -491,15 +473,90 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
 		  __FILE__,__LINE__);
     } 
   }
-     
+}
+
+void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
+{
+  static      char *fns[etiNR] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
+  FILE        *fp;
+  t_tabledata *td[etiNR];
+  real        x0,y0,yp,table_scale[etiNR];
+  int         i,j,k,n0,n,nx,ny,tabsel[etiNR],ntabread;
+  real        *x,*xnormal,*xexp=NULL,*Vtab,*Vtab2,*Ftab,*Ftab2,**y=NULL;
+ 
+  set_table_type(tabsel,fr);
+  ntabread = 0;
+  for(i=0; (i<etiNR); i++) {
+    if (tabsel[i] == etabUSER) {
+      td[i] = read_table(out,fns[i]);
+      ntabread++;
+    }
+    else
+      td[i] = NULL;
+  }
+  if (ntabread > 0) {
+    fr->tabscale = 0;
+    fr->rtab     = 0;
+    for(i=0; (i<etiNR); i++) {
+      if (fr->tabscale == 0) {
+	fr->tabscale = td[i]->tabscale;
+	fr->rtab     = td[i]->y[0][td[i]->nx-1];
+      }
+      else if (fr->tabscale != td[i]->tabscale)
+	fatal_error(0,"Tabscale not the same in all tables\n");
+      else if (fr->rtab != td[i]->y[0][td[i]->nx-1])
+	fatal_error(0,"Number of points not the same in all tables\n");
+    }
+    n = fr->ntab = fr->rtab*fr->tabscale;
+  }
+  else {
+#ifdef DOUBLE
+    fr->tabscale = 2000.0;
+#else
+    fr->tabscale = 500.0;
+#endif
+    n = fr->ntab = fr->rtab*fr->tabscale;
+
+    if (out)
+      fprintf(out,"Making tables%s of %g(nm)*%g = %d points\n",
+	      (fr->bcoultab || fr->bvdwtab) ? "" : 
+	      (fr->efep != efepNO) ? " for 1-4 and FEP int.":" for 1-4 int.",
+	      fr->rtab,fr->tabscale,fr->ntab);
+  }
+  
+  snew(fr->coulvdwtab,12*n+1);
+  snew(xnormal,n+1);
+  
+  n0 = 10;
+  for(i=n0; i<=n; i++)
+    xnormal[i]  = (i/fr->tabscale);
+  
+  /* Now fill three tables with 
+   * Dispersion, Repulsion and Coulomb (David's function)
+   * or Reaction Field, or Plain Coulomb 
+   * respectively.
+   */
+  /* Temp storage */
+  snew(Vtab,n+1);
+  snew(Vtab2,n+1);
+  snew(Ftab,n+1);
+  snew(Ftab2,n+1);
+  
+  if (fr->bBHAM) {
+    snew(xexp,n+1);
+    fr->tabscale_exp = fr->tabscale/fr->bham_b_max;
+    for(i=n0; i<=n; i++)
+      xexp[i]  = (i/fr->tabscale_exp);
+  }
+
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] == etabEXPMIN)
       x = xexp;
     else
       x = xnormal;
-    if (tabsel[k] == etabUSER)
-      /* Read tables from file */
-      read_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,fns[k],fr);
+    if (tabsel[k] == etabUSER) {
+      user_table(td[k],x,Vtab,Vtab2,Ftab,Ftab2);
+    }
     else
       fill_table(n0,n,x,Vtab,Vtab2,Ftab,Ftab2,tabsel[k],fr);
     copy2table(n,k*4,12,x,Vtab,Vtab2,fr->coulvdwtab,-1);
@@ -523,5 +580,7 @@ void make_tables(FILE *out,t_forcerec *fr,bool bVerbose)
   sfree(xnormal);
   if (fr->bBHAM)
     sfree(xexp);
+  for(i=0; (i<etiNR); i++)
+    sfree(td[i]);
 }
 
