@@ -53,7 +53,7 @@ static int read_mass(char *massdata,t_mass **mass)
   int    i;
 
   fprintf(stderr,
-	  "WARNING: masses will be determined based on residue and atom name,\n"
+	  "WARNING: masses will be determined based on residue and atom names,\n"
 	  "         this can deviate from the real mass of the atom type\n");
   fp=libopen(massdata);
   *mass=NULL;
@@ -75,8 +75,9 @@ static int read_mass(char *massdata,t_mass **mass)
 
 real get_mass(char *resnm, char *atomnm)
 {
-  int i,j,best,mlen,len;
+  int  i,j,best,mlen,len;
   char atomname[10];
+  real m;
   static t_mass *mass;
   static int    nmass;
   static bool   bRead;
@@ -110,12 +111,17 @@ real get_mass(char *resnm, char *atomnm)
 	best=i;
       }
     }
+  m=mass[best].mass;
 
   if (best == -1) {
     if (debug)
       fprintf(stderr,"Could not find atom %s %s in %s\n",
 	      resnm,atomnm,ATOMMASS);
-    return 0.0;
-  } else
-    return mass[best].mass;
+    if ( (atomnm[0]=='H') || (isdigit(atomnm[0]) && (atomnm[1]=='H')) )
+	  m=1.008; /* proton mass */
+	else
+	  m=12.0110; /* carbon mass */
+  }
+
+  return m;
 } /* get_mass() */
