@@ -1117,7 +1117,7 @@ int gmx_rdf(int argc,char *argv[])
     "spacing of which is determined by option [TT]-grid[tt]."
   };
   static bool bCM=FALSE;
-  static real cutoff=0,binwidth=0.001,grid=0.05,fade=0.0,lambda=0.1,distance=10;
+  static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20;
   static real start_q=0.0, end_q=60.0, energy=12.0;
   t_pargs pa[] = {
