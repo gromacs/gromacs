@@ -16,9 +16,9 @@ include		$(GMXHOME)/src/makef/Makefile.def
 #
 # Common object files
 PGOBJ		= toputil.o 	topdirs.o 	topexcl.o
-MDLIBS		= $(GMXHOME)/lib/$(GMXCPU)/libgmx.$(GMXCPU).a	\
-		  $(GMXHOME)/lib/$(GMXCPU)/libmd.$(GMXCPU).a	\
-		  $(GMXHOME)/lib/$(GMXCPU)/libfftw.$(GMXCPU).a
+MDLIBS		= $(LIBDIR)/libgmx.$(GMXCPU).a	\
+		  $(LIBDIR)/libmd.$(GMXCPU).a	\
+		  $(LIBDIR)/libfftw.$(GMXCPU).a
 # Objects for grompp
 GOBJ		= \
 		topio.o 	toppush.o 	\
