@@ -268,24 +268,35 @@ void read_xpm_entry(FILE *in,t_matrix *mm)
       else
 	map[m].code.c2 = line[1];
       line += nch;
-      str = strchr(line,'#')+1;
-      col_len = 0;
-      while (isxdigit(str[col_len]))
-	col_len++;
-      if (col_len==6) {
-	sscanf(line,"%*s #%2x%2x%2x",&r,&g,&b);
-	map[m].rgb.r=r/255.0;
-	map[m].rgb.g=g/255.0;
-	map[m].rgb.b=b/255.0;
+      str = strchr(line,'#');
+      if (str) {
+	str++;
+	col_len = 0;
+	while (isxdigit(str[col_len]))
+	  col_len++;
+	if (col_len==6) {
+	  sscanf(line,"%*s #%2x%2x%2x",&r,&g,&b);
+	  map[m].rgb.r=r/255.0;
+	  map[m].rgb.g=g/255.0;
+	  map[m].rgb.b=b/255.0;
+	} else if (col_len==12) {
+	  sscanf(line,"%*s #%4x%4x%4x",&r,&g,&b);
+	  map[m].rgb.r=r/65535.0;
+	  map[m].rgb.g=g/65535.0;
+	  map[m].rgb.b=b/65535.0;
+	} else
+	  fatal_error(0,"Unsupported or invalid colormap in X PixMap\n");
+      } else {
+	str = strchr(line,'c');
+	if (str)
+	  str += 2;
+	else
+	  fatal_error(0,"Unsupported or invalid colormap in X PixMap\n");
+	fprintf(stderr,"Using white for color \"%s",str);
+	map[m].rgb.r = 1;
+	map[m].rgb.g = 1;
+	map[m].rgb.b = 1;
       }
-      else if (col_len==12) {
-	sscanf(line,"%*s #%4x%4x%4x",&r,&g,&b);
-	map[m].rgb.r=r/65535.0;
-	map[m].rgb.g=g/65535.0;
-	map[m].rgb.b=b/65535.0;
-      }
-      else
-	fatal_error(0,"Unsupported or invalid colormap in X PixMap\n");
       line=strchr(line,'\"');
       line++;
       line2string(&line);
