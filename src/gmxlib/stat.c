@@ -233,7 +233,7 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
     for(i=0; (i<md->nr); i++)
       if (md->cXTC[i] == 0)
 	natoms++;
-    fprintf(log,"There are %d atoms in your output selection\n",natoms);
+    fprintf(log,"There are %d atoms in your xtc output selection\n",natoms);
     if (natoms != md->nr)
       snew(x_sel,natoms);
     
