@@ -739,7 +739,7 @@ int main (int argc,char *argv[])
     xvgr_legend(fp,nrms,gn_rms);
   }
   for(i=0; (i<teller); i++) {
-    if ( bSplit && i>0 && abs(time[bPrev ? freq*i : i])<1e-5 ) 
+    if ( bSplit && i>0 && abs(time[bPrev ? freq*i : i]/time_factor())<1e-5 ) 
       fprintf(fp,"&\n");
     fprintf(fp,"%8.4f",time[bPrev ? freq*i : i]);
     for(j=0; (j<nrms); j++) {
