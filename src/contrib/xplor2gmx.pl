@@ -45,7 +45,6 @@ while ($line = <PDB>) {
 	    $nres++;
 	}
 	$natom++;
-	
     }
 }
 close PDB;
@@ -81,27 +80,29 @@ close TBL;
 printf "; Read $ntbl entries from $tbl\n";
 
 @templates = (
- [ "HH#",  "HH11",	"HH12",	"HH21",	"HH22" ],
- [ "HE#",  "HE",        "HE1",	"HE2"	],
- [ "HD2#", "HD21",	"HD22"	],
- [ "HD1#", "HD11",	"HD12"	],
- [ "HD#",  "HD1",	"HD2",	"HD11",	"HD12",	"HD13",	"HD21",	"HD22",	"HD23" ],
- [ "HG2#", "HG21",	"HG22",	"HG23"	],
- [ "HG1#", "HG11",	"HG12",	"HG13"	],
- [ "HG#",  "HG",         "HG1",	"HG2",	"HG11",	"HG12",	"HG13",	"HG21",	"HG22",	"HG23"  ],
+ [ "HA#", "HA1", "HA2" ],
+ [ "HA*", "HA1", "HA2" ],
  [ "HB#",  "HB",         "HB1",	"HB2"	],
- [ "HZ#",  "HZ",         "HZ1",	"HZ2",	"HZ3"	],
- [ "HH*",  "HH11",	"HH12",	"HH21",	"HH22" ],
- [ "HE*",  "HE",        "HE1",	"HE2"	],
- [ "HD2*", "HD21",	"HD22"	],
- [ "HD1*", "HD11",	"HD12"	],
- [ "HD*",  "HD1",	"HD2",	"HD11",	"HD12",	"HD13",	"HD21",	"HD22",	"HD23" ],
- [ "HG2*", "HG21",	"HG22",	"HG23"	],
- [ "HG1*", "HG11",	"HG12",	"HG13"	],
- [ "HG*",  "HG",         "HG1",	"HG2",	"HG11",	"HG12",	"HG13",	"HG21",	"HG22",	"HG23"  ],
  [ "HB*",  "HB",         "HB1",	"HB2"	],
+ [ "HG#",  "HG",         "HG1",	"HG2",	"HG11",	"HG12",	"HG13",	"HG21",	"HG22",	"HG23"  ],
+ [ "HG*",  "HG",         "HG1",	"HG2",	"HG11",	"HG12",	"HG13",	"HG21",	"HG22",	"HG23"  ],
+ [ "HG1#", "HG11",	"HG12",	"HG13"	],
+ [ "HG1*", "HG11",	"HG12",	"HG13"	],
+ [ "HG2#", "HG21",	"HG22",	"HG23"	],
+ [ "HG2*", "HG21",	"HG22",	"HG23"	],
+ [ "HD#",  "HD1",	"HD2",	"HD11",	"HD12",	"HD13",	"HD21",	"HD22",	"HD23" ],
+ [ "HD*",  "HD1",	"HD2",	"HD11",	"HD12",	"HD13",	"HD21",	"HD22",	"HD23" ],
+ [ "HD1#", "HD11",	"HD12"	],
+ [ "HD1*", "HD11",	"HD12"	],
+ [ "HD2#", "HD21",	"HD22"	],
+ [ "HD2*", "HD21",	"HD22"	],
+ [ "HE#",  "HE",        "HE1",	"HE2"	],
+ [ "HE*",  "HE",        "HE1",	"HE2"	],
+ [ "HH#",  "HH11",	"HH12",	"HH21",	"HH22" ],
+ [ "HH*",  "HH11",	"HH12",	"HH21",	"HH22" ],
+ [ "HZ#",  "HZ",         "HZ1",	"HZ2",	"HZ3"	],
  [ "HZ*",  "HZ",         "HZ1",	"HZ2",	"HZ3"	],
- [ "HN",   "H" ],
+ [ "HN",   "H" ]
 );
 
 $ntranslated = 0;
@@ -133,7 +134,7 @@ sub expand_template {
     my $bdone = 0;
     my @atoms;
     my $jj = 0;
-    
+   
     for (my $tt=0; (($tt <= $#templates) && ($bdone == 0)); $tt++) {
 	$templ = $templates[$tt];
 	if ($atom eq $templ->[0]) {
