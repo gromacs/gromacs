@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4h from Makefile.am.
+# Makefile.in generated automatically by automake 1.4j from Makefile.am.
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
 # Free Software Foundation, Inc.
@@ -23,17 +23,17 @@ srcdir = .
 top_srcdir = ..
 
 prefix = /usr/local/gromacs
-exec_prefix = ${prefix}/mips-sgi-irix6.5/r12000
+exec_prefix = ${prefix}/i686-pc-linux-gnu
 
 bindir = ${exec_prefix}/bin
 sbindir = ${exec_prefix}/sbin
-libexecdir = ${exec_prefix}/libexec
+libexecdir = ${exec_prefix}/lib
 datadir = ${prefix}/share
 sysconfdir = ${prefix}/etc
 sharedstatedir = ${prefix}/com
-localstatedir = ${prefix}/var
+localstatedir = /var/lib
 libdir = ${exec_prefix}/lib
-infodir = ${prefix}/info
+infodir = ${prefix}/share/info
 mandir = ${prefix}/man
 includedir = ${prefix}/include
 oldincludedir = /usr/include
@@ -42,12 +42,12 @@ pkglibdir = $(libdir)/gromacs
 pkgincludedir = $(includedir)/gromacs
 top_builddir = ..
 
-ACLOCAL = ${SHELL} /tmp/gmx/config/missing --run aclocal
-AUTOCONF = ${SHELL} /tmp/gmx/config/missing --run autoconf
-AUTOMAKE = ${SHELL} /tmp/gmx/config/missing --run automake
-AUTOHEADER = ${SHELL} /tmp/gmx/config/missing --run autoheader
+ACLOCAL = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run aclocal
+AUTOCONF = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run autoconf
+AUTOMAKE = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run automake
+AUTOHEADER = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run autoheader
 
-INSTALL = /usr/freeware/bin/install -c
+INSTALL = /usr/bin/install -c
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_SCRIPT = ${INSTALL}
@@ -60,11 +60,11 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_alias = 
-host_triplet = mips-sgi-irix6.5
-AMTAR = ${SHELL} /tmp/gmx/config/missing --run tar
+host_triplet = i686-pc-linux-gnu
+AMTAR = ${SHELL} /usr/local/gromacs/cvs/gmx/config/missing --run tar
 AS = cc
-ASFLAGS = -n32 -r12000 -mips4 -O3 -OPT:IEEE_arithmetic=3 -OPT:rsqrt=ON -SWP:loop_overhead -INLINE:=ON -LNO:opt=1 -LNO:ou_further=3 -OPT:Olimit=0:roundoff=3:alias=typed -woff 1174 -D__INLINE_INTRINSICS
-AWK = mawk
+ASFLAGS = -O6 -fomit-frame-pointer -finline-functions -funroll-all-loops -Wall -Wno-unused -x assembler-with-cpp
+AWK = awk
 CC = cc
 CC_FOR_BUILD = cc
 CPP = cc -E
@@ -72,20 +72,20 @@ CXX =
 CXXCPP = 
 DEPDIR = .deps
 DLLTOOL = @DLLTOOL@
-ECHO = print -r
+ECHO = echo
 EXEEXT = 
-F77 = f77
-FLIBS =  -L/usr5/home/lindahl/fftw/lib -L/usr/lib32/mips4/r10000 -L/usr/lib32/mips4 -L/usr/lib32 -lftn -lm
+F77 = 
+FLIBS = 
 GCJ = @GCJ@
 GCJFLAGS = @GCJFLAGS@
-GMXLIB_LIBOBJS =  innerf.lo f77_wrappers.lo libnet.lo mgmx.lo widget.lo
-IDENT = /usr/sbin/ident
-INCLUDES =    
+GMXLIB_LIBOBJS =  innerc.lo libnet.lo x86_cpuid.lo x86_sse.lo x86_3dnow.lo
+IDENT = no
+INCLUDES =   -I/usr/X11R6/include 
 INSTALL_STRIP_PROGRAM = ${SHELL} `CDPATH=: && cd config && pwd`/install-sh -c -s
 LIBSUFFIX = 
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LN_S = ln -s
-MDLIB_LIBOBJS =  flincs.lo fsettle.lo fshake.lo
+MDLIB_LIBOBJS =  clincs.lo csettle.lo cshake.lo
 MPICC = 
 OBJDUMP = @OBJDUMP@
 OBJEXT = o
@@ -95,12 +95,12 @@ RPM = rpm
 SHARED_VERSION_INFO = 1:0:0
 STRIP = strip
 VERSION = 3.0
-X_CFLAGS = 
+X_CFLAGS =  -I/usr/X11R6/include
 X_EXTRA_LIBS = 
-X_LIBS = 
+X_LIBS =  -L/usr/X11R6/lib
 X_PRE_LIBS =  -lSM -lICE
-_am_include = include
-_am_quote = 
+am__include = include
+am__quote = 
 install_sh = config/install-sh
 
 EXTRA_SCRIPTS = mkcompl  mkhtml  mknroff  mktex 
