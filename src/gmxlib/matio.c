@@ -63,7 +63,7 @@ int getcmap(FILE *in,char *fn,t_mapping **map)
 {
   int       i,n;
   char      line[STRLEN];
-  char      code,desc[STRLEN];
+  char      code[STRLEN],desc[STRLEN];
   double    r,g,b;
   t_mapping *m;
   
@@ -76,8 +76,8 @@ int getcmap(FILE *in,char *fn,t_mapping **map)
     if (fgets2(line,STRLEN-1,in) == NULL)
       fatal_error(0,"Not enough lines in colormap file %s"
 		  "(should be %d, found only %d)",fn,n+1,i);
-    sscanf(line,"%c%s%lf%lf%lf",&code,desc,&r,&g,&b);
-    m[i].code.c1=code;
+    sscanf(line,"%s%s%lf%lf%lf",code,desc,&r,&g,&b);
+    m[i].code.c1=code[0];
     m[i].code.c2=0;
     m[i].desc=strdup(desc);
     m[i].rgb.r=r;
