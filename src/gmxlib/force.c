@@ -519,7 +519,7 @@ void force(FILE       *log,
       Vlr = do_pppm(log,FALSE,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,cr,nrnb);
     else
       Vlr = do_poisson(log,FALSE,ir,md->nr,x,fr->flr,md->chargeA,box_size,fr->phi,
-		       cr,nrnb,&nit,FALSE);
+		       cr,nrnb,&nit,TRUE);
       
     Vself = calc_LRcorrections(log,0,md->nr,fr->r1,fr->rc,
 			       md->chargeA,excl,x,f);
