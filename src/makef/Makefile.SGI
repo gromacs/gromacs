@@ -55,6 +55,7 @@ FFLAGS		= $(ABI) $(OPT) -OPT:cray_ivdep=TRUE
 #       as we know the 7.1 compiler does support these options and
 #       the 7.2 does not.
 #FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
+#FFLAGS		+= -GCM:aggressive_speculation -GCM:array_speculation
 # Some nasty options for the 7.30 compilers
 #FFLAGS		+= -SWP:heur=fdms,nhms,fdnms
 
@@ -76,6 +77,10 @@ endif
 ifeq ($(USE_SGI_FPE),yes)
 	SYSDEFS += -DUSE_SGI_FPE
 	SYSLIBS += -lfpe
+endif
+
+ifeq ($(USE_MPI),yes)
+	PARALLEL_ONLY = yes
 endif
 
 CCSHAREIT       = $(CC) $(LDFLAGS) -shared -all \

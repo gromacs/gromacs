@@ -15,7 +15,7 @@ else
 include		$(GMXHOME)/src/makef/Makefile.def
 
 LIB		=
-ifneq ($(PARALLEL),yes)
+ifneq ($(PARALLEL_ONLY),yes)
 PROGRAMS	= average	do_dssp		editconf	\
 		eneconv		g_anaeig	g_angle		\
 		g_bond		g_chi		g_cluster	\
@@ -44,6 +44,12 @@ include		$(STDTARGET)
 
 movebin:
 	mv $(EXECUTABLES) $(BINDIR)
+
+disco:		disco.o dlist.o dtools.o correct.o
+		$(LD) -o  $@ $^ $(SYSLIBS)
+
+cdist:		cdist.o bondlist.o smooth.o residues.o virtual.o
+		$(LD) -o  $@ $^ $(SYSLIBS)
 
 genbox:		genbox.o	addconf.o
 		$(LD) -o  $@ $^ $(SYSLIBS)
@@ -123,7 +129,7 @@ g_bond:		g_bond.o 	lsq.o
 g_com:		g_com.o  
 		$(LD) -o $@ $^ $(SYSLIBS)
 
-g_rms:	 	g_rms.o
+g_rms:	 	g_rms.o cmat.o
 		$(LD) -o $@ $^ $(SYSLIBS)
 
 g_rmsf:	 	g_rmsf.o

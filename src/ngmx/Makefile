@@ -14,7 +14,7 @@ XOBJ	=	xutil.o		xmb.o		x11.o		\
 		manager.o 	buttons.o 	nmol.o 		\
 		nleg.o 		dialogs.o	logo.o 		\
 		filter.o	molps.o
-ifneq ($(PARALLEL),yes)
+ifneq ($(PARALLEL_ONLY),yes)
 PROGRAMS=	ngmx 		xrama		highway
 endif
 SLIBS	=	$(XLIBS) $(SYSLIBS)

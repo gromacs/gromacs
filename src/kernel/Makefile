@@ -28,7 +28,7 @@ POBJ		= \
 		pgutil.o	resall.o	ter_db.o	\
 		hizzie.o	xlate.o		specbond.o	\
 		add_par.o	gen_dum.o	$(PGOBJ)	
-ifneq ($(PARALLEL),yes)
+ifneq ($(PARALLEL_ONLY),yes)
 PROGRAMS	= \
 		pdb2gmx 	grompp		tpbconv		\
 		mdrun		nmrun		gmxcheck	\

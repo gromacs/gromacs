@@ -31,7 +31,7 @@ else
 PARALLEL	= no
 endif
 endif
-ifneq ($(PARALLEL),yes)
+ifneq ($(PARALLEL_ONLY),yes)
 OBJDIR		:=$(ROOT)/obj/$(GMXCPU)
 LIBDIR		:=$(ROOT)/lib/$(GMXCPU)
 BINDIR		:=$(ROOT)/bin/$(GMXCPU)
