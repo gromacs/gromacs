@@ -5,7 +5,7 @@
 RM	=	/bin/rm -f
 RMDIR	=	/bin/rm -rf
 TOUCH	=	touch
-SHELL	=	/bin/csh
+SHELL	=	/bin/csh -f
 
 CHMOD	=	chmod 664
 TEX	=	latex
@@ -56,6 +56,8 @@ bib+idx:	gromacs.tex
 		$(TEX) gromacs
 		$(BIB) gromacs
 		$(IDX) gromacs
+		./subindex gromacs.ind > gromacs.sind
+		mv gromacs.sind gromacs.ind
 
 gromacs.dvi:	bib+idx		gromacs.aux
 
