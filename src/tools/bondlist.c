@@ -201,8 +201,9 @@ static real do_specialangle(char *name1,char *name2,char *res)
   return 0.0;
 }	  
 
-real lookup_bondlength(int ai,int aj,t_ilist ilist[],
-		       t_iparams iparams[],bool bFail,t_atoms *atoms)
+real lookup_bondlength_(int ai,int aj,t_ilist ilist[],
+			t_iparams iparams[],bool bFail,t_atoms *atoms,
+			char *file,int line)
 {
   int  dodist[] = { F_BONDS, F_MORSE, F_SHAKE, F_G96BONDS };
   int  i,j,type,ftype,aai,aaj,nra;
@@ -263,7 +264,8 @@ real lookup_bondlength(int ai,int aj,t_ilist ilist[],
   }
   if (blen == NOBOND) {
     if (bFail)
-      fatal_error(0,"No bond between atoms %d and %d\n",ai,aj);
+      fatal_error(0,"No bond between atoms %d and %d (called from %s line %d)\n",
+		  ai,aj,file,line);
     else
       return NOBOND;
   }
@@ -272,8 +274,9 @@ real lookup_bondlength(int ai,int aj,t_ilist ilist[],
   /* This should be the only conversion from nanometer to Angstrom */
 }
 
-real lookup_angle(int ai,int aj,int ak,t_ilist ilist[],
-		  t_iparams iparams[],t_atoms *atoms)
+real lookup_angle_(int ai,int aj,int ak,t_ilist ilist[],
+		   t_iparams iparams[],t_atoms *atoms,
+		   char *file,int line)
 {
   int  ft[] = { F_ANGLES, F_G96ANGLES };
   int  i,j,type,ff,ftype,aai,aaj,aak,nra;
@@ -314,13 +317,14 @@ real lookup_angle(int ai,int aj,int ak,t_ilist ilist[],
   return angle;
 }
 
-real angle_length(int ai,int aj,int ak,real theta,
-		  t_ilist ilist[],t_iparams iparams[],t_atoms *atoms)
+real angle_length_(int ai,int aj,int ak,real theta,
+		   t_ilist ilist[],t_iparams iparams[],t_atoms *atoms,
+		   char *file,int line)
 {
   real rij,rjk;
   
-  rij = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
+  rij = lookup_bondlength_(ai,aj,ilist,iparams,TRUE,atoms,file,line);
+  rjk = lookup_bondlength_(aj,ak,ilist,iparams,TRUE,atoms,file,line);
   
   if (debug)
     fprintf(debug,"angle_length uses %g %g and angle %g\n",rij,rjk,theta);
@@ -373,20 +377,20 @@ real angle_length(int ai,int aj,int ak,real theta,
 */
 
   
-void pdih_lengths(int ai,int aj,int ak,int al,
-		  t_ilist ilist[],t_iparams iparams[],
-		  real *lb,real *ub,t_atoms *atoms)
+void pdih_lengths_(int ai,int aj,int ak,int al,
+		   t_ilist ilist[],t_iparams iparams[],
+		   real *lb,real *ub,t_atoms *atoms,char *file,int line)
 {
   /* Returns the length corresponding to a cis dihedral */
   real rij,rjk,rkl,rik;
   real th1,th2,th3;
   real half_pi = M_PI*0.5;
   
-  rij = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  th1 = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  th2 = lookup_angle(aj,ak,al,ilist,iparams,atoms);
+  rij = lookup_bondlength_(ai,aj,ilist,iparams,TRUE,atoms,file,line);
+  rjk = lookup_bondlength_(aj,ak,ilist,iparams,TRUE,atoms,file,line);
+  rkl = lookup_bondlength_(ak,al,ilist,iparams,TRUE,atoms,file,line);
+  th1 = lookup_angle_(ai,aj,ak,ilist,iparams,atoms,file,line);
+  th2 = lookup_angle_(aj,ak,al,ilist,iparams,atoms,file,line);
 
   /* Compute distance from i to k using law of cosines */
   rik = sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(th1));

@@ -49,9 +49,11 @@ typedef struct {
 
 /* LIST OF FUNCTIONS */
 
-extern void pdih_lengths(int ai,int aj,int ak,int al,
-			 t_ilist ilist[],t_iparams iparams[],
-			 real *lb,real *ub,t_atoms *atoms);
+extern void pdih_lengths_(int ai,int aj,int ak,int al,
+			  t_ilist ilist[],t_iparams iparams[],
+			  real *lb,real *ub,t_atoms *atoms,
+			  char *file,int line);
+#define pdih_lengths(ai,aj,ak,al,il,ip,lb,ub,at) pdih_lengths_(ai,aj,ak,al,il,ip,lb,ub,at,__FILE__,__LINE__)
 			 
 extern real idih_lengths(int ai,int aj,int ak,int al,
 			 t_ilist ilist[],t_iparams iparams[],t_atoms *atoms);
@@ -64,28 +66,39 @@ extern void set_dist(t_dist *d,int natoms,int ai,int aj,real lb,real ub,
 extern void read_O_dist(void);
 
 #define NOBOND -666
-extern real lookup_bondlength(int ai,int aj,t_ilist ilist[],
-			      t_iparams iparams[],bool bFail,t_atoms *atoms);
+extern real lookup_bondlength_(int ai,int aj,t_ilist ilist[],
+			       t_iparams iparams[],bool bFail,t_atoms *atoms,
+			       char *file,int line);
+#define lookup_bondlength(ai,aj,il,ip,bF,at) lookup_bondlength_(ai,aj,il,ip,bF,at,__FILE__,__LINE__) 
 /* Return the bondlength in Angstrom, or NOBOND if not found.
  * If not found and bFail, a fatal_error will be issued 
  */
  
-extern real lookup_angle(int ai,int aj,int ak,t_ilist ilist[],
-			 t_iparams iparams[],t_atoms *atoms);
+extern real lookup_angle_(int ai,int aj,int ak,t_ilist ilist[],
+			  t_iparams iparams[],t_atoms *atoms,
+			  char *file,int line);
+#define lookup_angle(ai,aj,ak,il,ip,at) lookup_angle_(ai,aj,ak,il,ip,at,__FILE__,__LINE__)
 /* Return the angle between atoms in radians */
 
-extern real angle_length(int ai,int aj,int ak,real theta,
-			 t_ilist ilist[],t_iparams iparams[],t_atoms *atoms);
+extern real angle_length_(int ai,int aj,int ak,real theta,
+			  t_ilist ilist[],t_iparams iparams[],t_atoms *atoms,
+			  char *file,int line);
+#define angle_length(ai,aj,ak,th,il,ip,at) angle_length_(ai,aj,ak,th,il,ip,at,__FILE__,__LINE__)
 /* Return the distance corresponding to atoms in Angstrom 
  */
  			   
-extern void gauche(int ai,int aj,int ak,int al,t_ilist ilist[],
-		   t_iparams iparams[],real *lb,t_atoms *atoms);
+extern void gauche_(int ai,int aj,int ak,int al,t_ilist ilist[],
+		    t_iparams iparams[],real *lb,t_atoms *atoms,
+		    char *file,int line);
+#define gauche(ai,aj,ak,al,ilist,iparams,lb,atoms) \
+        gauche_(ai,aj,ak,al,ilist,iparams,lb,atoms,__FILE__,__LINE__)
 		   
-extern void gauche15(int ai,int aj,int ak,int al,int am,real omega1,
-		     real omega2,real omega3,
-		     t_ilist ilist[],t_iparams iparams[],real *lb,
-		     t_atoms *atoms);
+extern void gauche15_(int ai,int aj,int ak,int al,int am,real omega1,
+		      real omega2,real omega3,
+		      t_ilist ilist[],t_iparams iparams[],real *lb,
+		      t_atoms *atoms,char *file,int line);
+#define gauche15(ai,aj,ak,al,am,omega1,omega2,omega3,ilist,iparams,lb,atoms)\
+        gauche15_(ai,aj,ak,al,am,omega1,omega2,omega3,ilist,iparams,lb,atoms,__FILE__,__LINE__)
 
 extern real d_len(t_dist *d,int natoms,int ai,int aj);
 extern real d_ub(t_dist *d,int natoms,int ai,int aj);
@@ -99,10 +112,12 @@ double triangle_upper_bound (t_dist *d,int natoms,real tol);
 double triangle_lower_bound (t_dist *d,int natoms,real tol);
 /* Return the number of smoothing operations */
 
-/* OTHER FUNCTIONS */
-extern int set_virtual (int *ATMS,int N,real margin,t_dist *d,int natoms);
-
 /* Routines from residues.c */
+extern void simple_bonds_and_angles(FILE *log,t_dist *d,t_idef *idef,
+				    t_atoms *atoms,real weight[],
+				    real bond_margin,real angle_margin);
+/* Does all bonds and angles from the topology */
+
 extern void peptide_bonds (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,
 			   real weight[], real pep_margin,
 			   t_ilist ilist[],t_iparams iparams[],bool bVir);

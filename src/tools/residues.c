@@ -28,11 +28,52 @@
  */
 static char *SRCID_residues_c = "$Id$";
 
+#include <math.h>
+#include "assert.h"
 #include "cdist.h"
 #include "names.h"
 
+/* Some Macros that apply in each routine */
+#define MAXLOGG asize(sa)
+#define NPD     asize(pd)
+#define NGAU    asize(gau)
+#define M_PI43  (4*M_PI/3)
+#define M_PI23  (2*M_PI/3) 
+
+enum { CIS, TRANS, GAUCHE };
+
+typedef struct {
+  char anm[12];
+  int  anr;
+} t_cdatom;
+
+typedef struct {
+  char *ai,*aj,*ak,*al;
+  int  type;
+} t_cdpdih;
+
+typedef struct {
+  char *ai,*aj,*ak,*al,*am;
+  int  type;
+} t_cd15;
+
+typedef struct {
+  char *ai,*aj,*ak,*al,*am;
+  int  type,bCis;
+} t_cd15a;
+
+typedef struct {
+  char *ai,*aj,*ak,*al,*am;
+  real om1,om2,om3;
+} t_cd15g;
+
+typedef struct {
+  char *ai,*aj,*ak,*al,*am,*an;
+  int  type;
+} t_cd16;
+
 /* Debug output */
-static void pr_logg(FILE *fp,int nlogg,int logg[],bool bVir,char *label)
+static void pr_logg(FILE *fp,int nlogg,t_cdatom cda[],bool bVir,char *label)
 {
   int i;
   
@@ -41,10 +82,217 @@ static void pr_logg(FILE *fp,int nlogg,int logg[],bool bVir,char *label)
     if (bVir)
       nlogg++;
     for(i=0; (i<nlogg); i++)
-      fprintf(fp," %5d",logg[i]);
+      fprintf(fp,"  %s:%d",cda[i].anm,cda[i].anr);
     fprintf(fp,"\n");
   }
 }
+
+static void pr_ndist(FILE *fp,char *res,int n14,int n15,int n16,int n17,int nV)
+{
+  static bool bFirst = TRUE;
+  int    ntot;
+  
+  if ((ntot = n14+n15+n16+n17+nV) == 0)
+    return;
+  if (bFirst) {
+    fprintf(fp,"Res     #1-4    #1-5    #1-6    #1-7   #Virt  #Total\n");
+    bFirst = FALSE;
+  }
+  fprintf(fp,"%-4s%8d%8d%8d%8d%8d%8d\n",res,n14,n15,n16,n17,nV,ntot);
+}
+
+static t_cdatom *init_cdatoms(int nsa,char *sa[])
+{
+  int      k;
+  t_cdatom *cda;
+  
+  snew(cda,nsa);
+  for(k=0; (k<nsa); k++) {
+    strcpy(cda[k].anm,sa[k]);
+    cda[k].anr = -1;
+  }
+  return cda;
+}
+
+static int set_cdatoms(t_atoms *atoms,int j,int residnr,int ncda,t_cdatom cda[])
+{
+  int i,k,nlogg=0,resj,len=0;
+  char *anmj;
+  bool bNext;
+
+  resj = atoms->atom[j].resnr;
+  anmj = *atoms->atomname[j];
+  
+  for(i=0; (i<ncda); i++) 
+    cda[i].anr=-1;
+  while ((resj <= residnr+1) && (j<atoms->nr)) {
+    k = -1;
+    for(i=0; ((i<ncda) && (k == -1)); i++) {
+      bNext = (strchr(cda[i].anm,'+') != NULL);
+      if (bNext)
+	len = strlen(cda[i].anm)-1;
+
+      if ((bNext  && (resj == residnr+1) && (strlen(anmj) == len) &&
+	   (strncmp(anmj,cda[i].anm,len) == 0)) ||
+	  (!bNext && (resj == residnr) && 
+	   (strcmp(anmj,cda[i].anm) == 0)))
+	k = i;
+    }
+    if (k != -1) {
+      if (cda[k].anr != -1)
+	fatal_error(0,"Overwriting cda entry for %s [%s], was %d now %d\n"
+		    "resj=%d, residnr=%d, k=%d, ncda=%d",
+		    cda[k].anm,anmj,cda[k].anr+1,j+1,resj,residnr,k,ncda);
+      cda[k].anr = j;
+      nlogg++;
+    }
+    j++;
+    if (j < atoms->nr) {
+      resj = atoms->atom[j].resnr;
+      anmj = *atoms->atomname[j];
+    }
+  }
+  return nlogg;
+}
+
+static int logg_index(char *anm,int ncda,t_cdatom cda[],char *file,int line)
+{
+  int i,li=-1;
+  
+  for(i=0; (i<ncda) && (li == -1); i++)
+    if (strcmp(anm,cda[i].anm) == 0)
+      li = cda[i].anr;
+  if (li == -1) 
+    fatal_error(0,"Can not find atom %s (file %s, line %d)",anm,file,line);
+  return li;
+}
+#define logger(sss) logg_index(sss,MAXLOGG,cda,__FILE__,__LINE__)
+
+static int do_a_bond(int ai,int aj,t_ilist ilist[],t_iparams iparams[],
+		     bool bFlag,t_atoms *atoms,real margin,
+		     real weight[],t_dist *d)
+{
+  real blen,lb,ub;
+  int  natoms = atoms->nr;
+  
+  blen = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
+  lb   = (1.0-margin)*blen;
+  ub   = (1.0+margin)*blen;
+  if (((weight[ai] != 0.0) || (weight[aj] != 0.0)) &&
+      (!dist_set(d,natoms,ai,aj))) {
+    set_dist(d,natoms,ai,aj,lb,ub,blen);
+    return 1;
+  }
+  return 0;
+}
+
+static int do_a_dist(int ai,int aj,int natoms,real margin,
+		     real weight[],t_dist *d,real blen)
+{
+  real lb,ub;
+  
+  lb   = (1.0-margin)*blen;
+  ub   = (1.0+margin)*blen;
+  if (((weight[ai] != 0.0) || (weight[aj] != 0.0)) &&
+      (!dist_set(d,natoms,ai,aj))) {
+    set_dist(d,natoms,ai,aj,lb,ub,blen);
+    return 1;
+  }
+  return 0;
+}
+
+static int do_an_angle(int ai,int aj,int ak,
+		       t_ilist ilist[],t_iparams iparams[],
+		       bool bFlag,t_atoms *atoms,real margin,
+		       real weight[],t_dist *d)
+{
+  real angle,blen,lb,ub;
+  int  natoms = atoms->nr;
+  
+  angle = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
+  blen  = angle_length(ai,aj,ak,RAD2DEG*angle,ilist,iparams,atoms);
+  lb    = (1.0-margin)*blen;
+  ub    = (1.0+margin)*blen;
+  if (((weight[ai] != 0.0) || (weight[ak] != 0.0)) &&
+      (!dist_set(d,natoms,ai,ak))) {
+    set_dist(d,natoms,ai,ak,lb,ub,blen);
+    return 1;
+  }
+  return 0;
+}
+
+static int do_a_pdih_(int ai,int aj,int ak,int al,int type,
+		      t_ilist ilist[],t_iparams iparams[],
+		      bool bFlag,t_atoms *atoms,real margin,
+		      real weight[],t_dist *d,char *file,int line)
+{
+  real angle,blen,lb,ub;
+  int  natoms = atoms->nr;
+  
+  if (type == GAUCHE)
+    gauche_(ai,aj,ak,al,ilist,iparams,&blen,atoms,file,line);
+  else {
+    pdih_lengths_(ai,aj,ak,al,ilist,iparams,&lb,&ub,atoms,file,line);
+    if (type == CIS)
+      blen = lb;
+    else
+      blen = ub;
+  }
+  lb=(1.0-margin)*blen;
+  ub=(1.0+margin)*blen;
+  if (((weight[ai] != 0.0) || (weight[al] != 0.0)) &&
+      (!dist_set(d,natoms,ai,al))) {
+    set_dist(d,natoms,ai,al,lb,ub,blen);
+    return 1;
+  }
+  return 0;
+}
+#define do_a_pdih(ai,aj,ak,al,type,ilist,iparams,bFlag,atoms,margin,weight,d)\
+  do_a_pdih_(ai,aj,ak,al,type,ilist,iparams,bFlag,atoms,margin,weight,d,__FILE__,__LINE__)
+
+int set_virtual (t_cdatom cda[],int N,real margin,t_dist *d,int natoms)
+{
+  /* Routine to add distances to virtual particle. 
+     The virtual particle is placed 10A outside
+     the plane common to all atoms, straight above
+     the center of mass, which is calculated assuming 
+     unit mass for all atoms.
+
+     Adam Kirrander 990211                        */
+  
+  int ndist=0,i,j;
+  real CONST=0.0,Ki,tmp,len,lb,ub;
+  
+  /* Calculate the constant part */
+  for (i=1 ; i<N ; i++ ) {
+    for (j=0 ; j<i ; j++) {
+      tmp = d_len(d,natoms,cda[i].anr,cda[j].anr);
+      CONST += tmp*tmp;
+    }
+  }
+  CONST = CONST/N;
+  
+  /* Calculate and set distances */
+  for (i=0 ; i<N ; i++ ) {
+    Ki = 0.0;
+    for (j=0 ; j<N ; j++) {                      /*Calc. variable part*/
+      if (i == j) continue;
+      tmp = d_len(d,natoms,cda[i].anr,cda[j].anr); 
+      Ki += tmp*tmp;
+    }
+    len = sqrt(64.0+((Ki-CONST)/N));              /*Pythagoras*/
+    lb  = (1.0-margin)*len;
+    ub  = (1.0+margin)*len; 
+    set_dist(d,natoms,cda[i].anr,cda[N].anr,lb,ub,len); 
+    ndist++;
+  }
+  
+  /* If number of virtual dist. should correspond to nr. atoms */
+  if (ndist != N) 
+    fprintf(stderr,"Check routine set_virtual!\n");
+  
+  return ndist;
+} 
 
 /**********************************************************
  *
@@ -126,609 +374,95 @@ static void arg_15_CDHH2(int ai,int aj,int ak,int al,int am,
   *ub = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(th2+thikj+thmkl));
 }
 
+typedef void arg_15_func(int ai,int aj,int ak,int al,int am,
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,real *ub,t_atoms *atoms);
 
 void arg (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	  real arg_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
 {
-  int natoms,ndist,i,j,q,logg[12],residnr,oldresidnr,n12dist,n13dist,n14dist,
-    n15dist,nVdist;
-  real blen,lb,ub,angle;
+  static char *sa[] = { "NE", "HE", "CZ", "NH1", "HH11", "HH12", "NH2",
+			"HH21", "HH22", "CD", "VF" };
+  t_cdatom *cda;
+  t_cd15a  cd15a[] = {
+    { "HE",   "NE",  "CZ", "NH1", "HH12", 2, 0 },
+    { "HE",   "NE",  "CZ", "NH1", "HH11", 2, 1 },
+    { "HE",   "NE",  "CZ", "NH2", "HH22", 1, 0 },
+    { "HE",   "NE",  "CZ", "NH2", "HH21", 1, 1 },
+    { "HH11", "NH1", "CZ", "NH2", "HH21", 2, 0 },
+    { "HH11", "NH1", "CZ", "NH2", "HH22", 2, 1 },
+    { "HH12", "NH1", "CZ", "NH2", "HH21", 1, 0 },
+    { "HH12", "NH1", "CZ", "NH2", "HH22", 1, 1 },
+    { "CD",   "NE",  "CZ", "NH1", "HH11", 1, 1 },
+    { "CD",   "NE",  "CZ", "NH1", "HH12", 1, 0 },
+    { "CD",   "NE",  "CZ", "NH2", "HH21", 2, 1 },
+    { "CD",   "NE",  "CZ", "NH2", "HH22", 2, 0 }
+  };
+  arg_15_func *arg_15[2] = { arg_15_CDHH1, arg_15_CDHH2 };
+  t_cdpdih pd[] = {
+    { "NE",   "CZ",  "NH1", "HH12", TRANS }, 
+    { "NE",   "CZ",  "NH2", "HH22", TRANS },
+    { "HE",   "NE",  "CZ",  "NH1",  TRANS }, 
+    { "HH21", "NH2", "CZ",  "NH1",  TRANS },
+    { "HH11", "NH1", "CZ",  "NH2",  TRANS }, 
+    { "CD",   "NE",  "CZ",  "NH2",  TRANS },
+    { "CD",   "NE",  "CZ",  "NH1",  CIS }, 
+    { "HH12", "NH1", "CZ",  "NH2",  CIS },
+    { "HH22", "NH2", "CZ",  "NH1",  CIS }, 
+    { "HE",   "NE",  "CZ",  "NH2",  CIS }, 
+    { "NE",   "CZ",  "NH2", "HH21", CIS }, 
+    { "NE",   "CZ",  "NH1", "HH11", CIS }
+  };
+  int    natoms,i,j,kk,q,residnr,oldresidnr;
+  int    n14dist,n15dist,nVdist,atom_index,nlogg;
+  real   blen,lb,ub,angle;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  n15dist = 0;
-  nVdist = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        = init_cdatoms(MAXLOGG,sa);
+  natoms     = atoms->nr;
+  n14dist    = 0;
+  n15dist    = 0;
+  nVdist     = 0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"ARG") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[11]=0;
-      if ( oldresidnr == residnr ) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"NE") == 0) {
-	  logg[11]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HE") == 0) {
-	  logg[11]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CZ") == 0) {
-	  logg[11]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"NH1") == 0) {
-	  logg[11]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HH11") == 0) {
-	  logg[11]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HH12") == 0) {
-	  logg[11]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"NH2") == 0) {
-	  logg[11]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HH21") == 0) {
-	  logg[11]++;
-	  logg[7]=j; 
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HH22") == 0) {
-	  logg[11]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CD") == 0) {
-	  logg[11]++;
-	  logg[9]=j;
-	}
-	else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[11]++;
-	  logg[10]=j;
-	}
-	if ( ((logg[11] == 10) && !bVir) || ((logg[11] == 11) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[11] == 10) && !bVir) || ((logg[11] == 11) && bVir) ) {
+      
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
 
-      pr_logg(debug,10,logg,bVir,"Arg");
+      if ( ((nlogg == MAXLOGG-1) && !bVir) || ((nlogg == MAXLOGG) && bVir) ) {
 
-      /*SETDISTANCE for NE and HH12 (logg[0]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[2],logg[3],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for NE and HH22 (logg[0]&logg[8]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[2],logg[6],logg[8],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[8]))) {
-	set_dist(d,natoms,logg[0],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE and NH1 (logg[1]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[0],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[3]))) {
-	set_dist(d,natoms,logg[1],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HH21 and NH1 (logg[7]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[7],logg[6],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[3]))) {
-	set_dist(d,natoms,logg[7],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HH11 and NH2 (logg[4]&logg[6]) (transdihedral)*/
-      pdih_lengths(logg[4],logg[3],logg[2],logg[6],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[6]))) {
-	set_dist(d,natoms,logg[4],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD and NH2 (logg[9]&logg[6]) (transdihedral)*/
-      pdih_lengths(logg[9],logg[0],logg[2],logg[6],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[6]))) {
-	set_dist(d,natoms,logg[9],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD and NH1 (logg[9]&logg[3]) (cisdihedral)*/
-      pdih_lengths(logg[9],logg[0],logg[2],logg[3],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[3]))) {
-	set_dist(d,natoms,logg[9],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HH12 and NH2 (logg[5]&logg[6]) (cisdihedral)*/
-      pdih_lengths(logg[5],logg[3],logg[2],logg[6],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[6]))) {
-	set_dist(d,natoms,logg[5],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HH22 and NH1 (logg[8]&logg[3]) (cisdihedral)*/
-      pdih_lengths(logg[8],logg[6],logg[2],logg[3],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[3]))) {
-	set_dist(d,natoms,logg[8],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE and NH2 (logg[1]&logg[6]) (cisdihedral)*/
-      pdih_lengths(logg[1],logg[0],logg[2],logg[6],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[6]))) {
-	set_dist(d,natoms,logg[1],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for NE and HH21 (logg[0]&logg[7]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[2],logg[6],logg[7],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[7]))) {
-	set_dist(d,natoms,logg[0],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for NE and HH11 (logg[0]&logg[4]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[2],logg[3],logg[4],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD and NE (1-2) */
-      blen=lookup_bondlength(logg[9],logg[0],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[0]))) {
-	set_dist(d,natoms,logg[9],logg[0],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }       
-      /*SETDISTANCE for NE and HE (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NE and CZ (1-2) */
-      blen=lookup_bondlength(logg[0],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ and NH1 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ and NH2 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[6],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[6]))) {
-	set_dist(d,natoms,logg[2],logg[6],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NH1 and HH11 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NH1 and HH12 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NH2 and HH21 (1-2) */
-      blen=lookup_bondlength(logg[6],logg[7],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NH2 and HH22 (1-2) */
-      blen=lookup_bondlength(logg[6],logg[8],ilist,iparams,TRUE,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-
-      /* new 1-3 distances added 981126 */
-      /*SETDISTANCE for NH1 and NH2 (1-3) */
-      angle=lookup_angle(logg[3],logg[2],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[2],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[6]))) {
-	set_dist(d,natoms,logg[3],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HH11 and HH12 (1-3) */
-      angle=lookup_angle(logg[5],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[4]))) {
-	set_dist(d,natoms,logg[5],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HH21 and HH22 (1-3) */
-      angle=lookup_angle(logg[8],logg[6],logg[7],ilist,iparams,atoms);
-      blen=angle_length(logg[8],logg[6],logg[7],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[7]))) {
-	set_dist(d,natoms,logg[8],logg[7],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /* end of new 1-3 distances */
-
-      /*SETDISTANCE for CD and HE (1-3) */
-      angle=lookup_angle(logg[9],logg[0],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[0],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[1]))) {
-	set_dist(d,natoms,logg[9],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD and CZ (1-3) */
-      angle=lookup_angle(logg[9],logg[0],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[0],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[2]))) {
-	set_dist(d,natoms,logg[9],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE and CZ (1-3) */
-      angle=lookup_angle(logg[1],logg[0],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[0],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for NE and NH1 (1-3) */
-      angle=lookup_angle(logg[0],logg[2],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[2],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for NE and NH2 (1-3) */
-      angle=lookup_angle(logg[0],logg[2],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[2],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[6]))) {
-	set_dist(d,natoms,logg[0],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ and HH11 (1-3) */
-      angle=lookup_angle(logg[2],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ and HH12 (1-3) */
-      angle=lookup_angle(logg[2],logg[3],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[5]))) {
-	set_dist(d,natoms,logg[2],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ and HH21 (1-3) */
-      angle=lookup_angle(logg[2],logg[6],logg[7],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[6],logg[7],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[7]))) {
-	set_dist(d,natoms,logg[2],logg[7],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ and HH22 (1-3) */
-      angle=lookup_angle(logg[2],logg[6],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[6],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[8]))) {
-	set_dist(d,natoms,logg[2],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-
-      /* new 1-5 distances added 981126 */
-      /*SETDISTANCE for HE and HH12 (1-5) (trans) */
-      arg_15_CDHH2(logg[1],logg[0],logg[2],logg[3],logg[5],ilist,
-		      iparams,&lb,&blen,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HE and HH11 (1-5) (trans) */
-      arg_15_CDHH2(logg[1],logg[0],logg[2],logg[3],logg[4],ilist,
-		      iparams,&blen,&ub,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HE and HH22 (1-5) (trans) */
-      arg_15_CDHH1(logg[1],logg[0],logg[2],logg[6],logg[8],ilist,
-		      iparams,&lb,&blen,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[8]))) {
-	set_dist(d,natoms,logg[1],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HE and HH21 (1-5) (trans) */
-      arg_15_CDHH1(logg[1],logg[0],logg[2],logg[6],logg[7],ilist,
-		      iparams,&blen,&ub,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[7]))) {
-	set_dist(d,natoms,logg[1],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HH11 and HH21 (1-5) (trans) */
-      arg_15_CDHH2(logg[4],logg[3],logg[2],logg[6],logg[7],ilist,
-		      iparams,&lb,&blen,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[7]))) {
-	set_dist(d,natoms,logg[4],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HH11 and HH22 (1-5) (trans) */
-      arg_15_CDHH2(logg[4],logg[3],logg[2],logg[6],logg[8],ilist,
-		      iparams,&blen,&ub,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[8]))) {
-	set_dist(d,natoms,logg[4],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HH12 and HH21 (1-5) (trans) */
-      arg_15_CDHH1(logg[5],logg[3],logg[2],logg[6],logg[7],ilist,
-		      iparams,&lb,&blen,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[7]))) {
-	set_dist(d,natoms,logg[5],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HH12 and HH22 (1-5) (trans) */
-      arg_15_CDHH1(logg[5],logg[3],logg[2],logg[6],logg[8],ilist,
-		      iparams,&blen,&ub,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[8]))) {
-	set_dist(d,natoms,logg[5],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }  
-      /* end of new 1-5 distances */
-
-      /*SETDISTANCE for CD and HH12 (1-5) (trans) */
-      arg_15_CDHH1(logg[9],logg[0],logg[2],logg[3],logg[5],ilist,
-		      iparams,&lb,&blen,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[5]))) {
-	set_dist(d,natoms,logg[9],logg[5],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for CD and HH11 (1-5) (cis) */
-      arg_15_CDHH1(logg[9],logg[0],logg[2],logg[3],logg[4],ilist,
-		      iparams,&blen,&ub,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[4]))) {
-	set_dist(d,natoms,logg[9],logg[4],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }    
-      /*SETDISTANCE for CD and HH21 (1-5) (cis) */
-      arg_15_CDHH2(logg[9],logg[0],logg[2],logg[6],logg[7],ilist,
-		      iparams,&blen,&ub,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[7]))) {
-	set_dist(d,natoms,logg[9],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CD and HH22 (1-5) (trans) */
-      arg_15_CDHH2(logg[9],logg[0],logg[2],logg[6],logg[8],ilist,
-		      iparams,&lb,&blen,atoms);
-      lb=(1.0-arg_margin)*blen;
-      ub=(1.0+arg_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[8]))) {
-	set_dist(d,natoms,logg[9],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-
-      if (bVir) {
+	pr_logg(debug,MAXLOGG-1,cda,bVir,"Arg");
+	
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,arg_margin,
+			       weight,d);
+	for(kk=0; (kk<asize(cd15a)); kk++) {
+	  arg_15[cd15a[kk].type-1](logger(cd15a[kk].ai),logger(cd15a[kk].aj),
+				   logger(cd15a[kk].ak),logger(cd15a[kk].al),
+				   logger(cd15a[kk].am),
+				   ilist,iparams,&lb,&ub,atoms);
+	  n15dist += do_a_dist(logger(cd15a[kk].ai),logger(cd15a[kk].am),
+			       natoms,arg_margin,
+			       weight,d,cd15a[kk].bCis ? lb : ub);
+	}
 	/* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,10,arg_margin,d,natoms);
-	ndist += nVdist;
+	if (bVir) 
+	  nVdist += set_virtual (cda,MAXLOGG-1,arg_margin,d,natoms);
+
       }
     }
-    logg[11]=0;
-    }
   }
-
-  fprintf(log,"There are %d new arginine distances\n",ndist);
-  if (ndist > 0 ) {
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d virtual)\n",
-	    n12dist,n13dist,n14dist,n15dist,nVdist);
-  }
+  pr_ndist(log,"ARG",n14dist,n15dist,0,0,nVdist);
+  
+  sfree(cda);
 }
 
 /**********************************************************
@@ -739,249 +473,55 @@ void arg (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 void asn (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	  real end_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
 {
-  int natoms,ndist,i,j,q,logg[8],residnr,oldresidnr,n12dist,n13dist,n14dist,nVdist;
-  real blen,lb,ub,angle;
+  static char *sa[] = { "CB", "CG", "OD1", "ND2", "HD21", "HD22", "VF" };
+  t_cdatom *cda;
+  t_cdpdih pd[] = {
+    { "CB",  "CG", "ND2", "HD22", TRANS }, 
+    { "OD1", "CG", "ND2", "HD21", TRANS },
+    { "CB",  "CG", "ND2", "HD21", CIS }, 
+    { "OD1", "CG", "ND2", "HD22", CIS }
+  };
+  int    natoms,i,j,kk,q,residnr,oldresidnr;
+  int    n14dist,nVdist,atom_index,nlogg;
+  real   blen,lb,ub,angle;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  nVdist = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        = init_cdatoms(MAXLOGG,sa);
+  natoms     = atoms->nr;
+  n14dist    = 0;
+  nVdist     = 0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"ASN") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[7]=0;
-      if ( oldresidnr == residnr ) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[7]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[7]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"OD1") == 0) {
-	  logg[7]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"ND2") == 0) {
-	  logg[7]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HD21") == 0) {
-	  logg[7]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD22") == 0) {
-	  logg[7]++;
-	  logg[5]=j;
-	}
-        else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[7]++;
-	  logg[6]=j;
-	}
-	if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
 
-      pr_logg(debug,6,logg,bVir,"Asn");
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
 
-      /*SETDISTANCE for CB and CG (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }       
-      /*SETDISTANCE for CG and OD1 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
-      /*SETDISTANCE for CG and ND2 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[3]))) {
-	set_dist(d,natoms,logg[1],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
-      /*SETDISTANCE for ND2 and HD21 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
-      /*SETDISTANCE for ND2 and HD22 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
+      if ( ((nlogg == MAXLOGG-1) && !bVir) || ((nlogg == MAXLOGG) && bVir) ) {
+	
+	pr_logg(debug,MAXLOGG-1,cda,bVir,"Asn");
 
-      /* new 1-3 distances added 981126 */
-      /*SETDISTANCE for HD21 and HD22 (1-3) */
-      angle=lookup_angle(logg[4],logg[3],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[4],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /* end of new 1-3 distances */
-
-      /*SETDISTANCE for CB and OD1 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and ND2 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for OD1 and ND2 (1-3) */
-      angle=lookup_angle(logg[2],logg[1],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[1],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and HD21 (1-3) */
-      angle=lookup_angle(logg[1],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and HD22 (1-3) */
-      angle=lookup_angle(logg[1],logg[3],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and HD22 (logg[0]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[3],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for OD1 and HD21 (logg[2]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[3],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD21 (logg[0]&logg[4]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[3],logg[4],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for OD1 and HD22 (logg[2]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[3],logg[5],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[5]))) {
-	set_dist(d,natoms,logg[2],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      if (bVir) {
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,end_margin,
+			       weight,d);
+			       
 	/* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,6,end_margin,d,natoms);
-	ndist += nVdist;
+	if (bVir) 
+	  nVdist += set_virtual (cda,MAXLOGG-1,end_margin,d,natoms);
       }
-    }
-    logg[7]=0;
+      nlogg=0;
     }
   }
-  fprintf(log,"There are %d new asparagine distances\n",ndist);
-  if (ndist > 0) {
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d virtual)\n",
-	    n12dist,n13dist,n14dist,nVdist);
-  }
+  pr_ndist(log,"ASN",n14dist,0,0,0,nVdist);
+
+  sfree(cda);
 }
 
 /**********************************************************
@@ -992,249 +532,57 @@ void asn (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 void gln (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	  real end_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
 {
-  int natoms,ndist,i,j,q,logg[8],residnr,oldresidnr,n12dist,n13dist,n14dist,nVdist;
-  real blen,lb,ub,angle;
+  static char *sa[] = { "CG", "CD", "OE1", "NE2", "HE21", "HE22", "VF" };
+  t_cdatom *cda;
+  t_cdpdih pd[] = { 
+    { "CG",  "CD", "NE2", "HE22", TRANS }, 
+    { "OE1", "CD", "NE2", "HE21", TRANS },
+    { "CG",  "CD", "NE2", "HE21", CIS }, 
+    { "OE1", "CD", "NE2", "HE22", CIS }
+  };
+  int    natoms,i,j,kk,q,residnr,oldresidnr;
+  int    n14dist,nVdist,atom_index,nlogg;
+  real   blen,lb,ub,angle;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  nVdist  = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        = init_cdatoms(MAXLOGG,sa);
+  natoms     = atoms->nr;
+  n14dist    = 0;
+  nVdist     = 0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"GLN") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[7]=0;
-      if ( oldresidnr == residnr ) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[7]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CD") == 0) {
-	  logg[7]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"OE1") == 0) {
-	  logg[7]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"NE2") == 0) {
-	  logg[7]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HE21") == 0) {
-	  logg[7]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE22") == 0) {
-	  logg[7]++;
-	  logg[5]=j;
-	}
-        else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[7]++;
-	  logg[6]=j;
-	}
-	if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
+      
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);      
+      
+      if ( ((nlogg == MAXLOGG-1) && !bVir) || ((nlogg == MAXLOGG) && bVir) ) {
 
-      pr_logg(debug,6,logg,bVir,"Gln");
+	pr_logg(debug,MAXLOGG-1,cda,bVir,"Gln");
 
-      /*SETDISTANCE for CG and CD (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }       
-      /*SETDISTANCE for CD and OE1 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
-      /*SETDISTANCE for CD and NE2 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[3]))) {
-	set_dist(d,natoms,logg[1],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
-      /*SETDISTANCE for NE2 and HE21 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
-      /*SETDISTANCE for NE2 and HE22 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }     
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,end_margin,
+			       weight,d);
 
-      /* new 1-3 distances added 981126 */
-      /*SETDISTANCE for HE21 and HE22 (1-3) */
-      angle=lookup_angle(logg[4],logg[3],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[4],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /* end of new 1-3 distances */
-
-      /*SETDISTANCE for CG and OE1 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and NE2 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for OE1 and NE2 (1-3) */
-      angle=lookup_angle(logg[2],logg[1],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[1],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD and HE21 (1-3) */
-      angle=lookup_angle(logg[1],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD and HE22 (1-3) */
-      angle=lookup_angle(logg[1],logg[3],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and HE22 (logg[0]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[3],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for OD1 and HE21 (logg[2]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[3],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE21 (logg[0]&logg[4]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[3],logg[4],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for OD1 and HE22 (logg[2]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[3],logg[5],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-end_margin)*blen;
-      ub=(1.0+end_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[5]))) {
-	set_dist(d,natoms,logg[2],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      if (bVir) {
 	/* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,6,end_margin,d,natoms);
-	ndist += nVdist;
+	if (bVir) 
+	  nVdist += set_virtual (cda,MAXLOGG-1,end_margin,d,natoms);
       }
-    }
-    logg[7]=0;
+      nlogg=0;
     }
   }
-  fprintf(log,"There are %d new glutamine distances\n",ndist);
-  if (ndist > 0 ) {
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4)\n",n12dist,n13dist,n14dist);
-  }
+  pr_ndist(log,"GLN",n14dist,0,0,0,nVdist);
+
+  sfree(cda);
 }
+
 /**********************************************************
  *
  *     H I S T I D I N E
@@ -1274,21 +622,33 @@ static void hisb_15_type2(int ai,int aj,int ak,int al,int am,
 
   /* Compute cis length using law of cosines */
   *lb = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(real_pi-thikj-thmkl-thjkl));
-  /*fprintf(stderr,"leaving routine\n");*/
 }
-
 
 void hisb (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	   real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
 {
-  int natoms,ndist,i,j,q,logg[11],residnr,oldresidnr,n12dist,n13dist,n14dist,
-    n15dist,nVdist;
-  real blen,lb,ub,angle;
+  static char *sa[] = { "CB", "CG", "ND1", "CE1", "NE2", "CD2", 
+			"HE1", "HE2", "HD2", "VF" };
+  t_cdatom *cda;
+  t_cdpdih pd[] = {
+    { "CB",  "CG",  "ND1", "CE1", TRANS }, 
+    { "CB",  "CG",  "CD2", "NE2", TRANS }, 
+    { "HE1", "CE1", "ND1", "CG",  TRANS }, 
+    { "HE1", "CE1", "NE2", "CD2", TRANS },
+    { "HE2", "NE2", "CE1", "ND1", TRANS }, 
+    { "HE2", "NE2", "CD2", "CG",  TRANS },
+    { "HE2", "NE2", "CE1", "HE1", CIS }, 
+    { "HE2", "NE2", "CD2", "HD2", CIS },
+    { "CB",  "CG",  "CD2", "HD2", CIS }, 
+    { "ND1", "CG",  "CD2", "HD2", TRANS },
+    { "CE1", "NE2", "CD2", "HD2", TRANS }
+  };
+  int    natoms,i,j,kk,q,residnr,oldresidnr;
+  int    n14dist,n15dist,nVdist,atom_index,nlogg;
+  real   blen,lb,ub,angle;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
+  cda     = init_cdatoms(MAXLOGG,sa);
+  natoms  = atoms->nr;
   n14dist = 0;
   n15dist = 0;
   nVdist  = 0;
@@ -1299,482 +659,49 @@ void hisb (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"HISB") == 0) {
       oldresidnr=residnr;
       residnr=atoms->atom[i].resnr;
-      logg[10]=0;
-      if ( oldresidnr == residnr ) {
+      if (oldresidnr == residnr) 
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[10]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[10]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"ND1") == 0) {
-	  logg[10]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CE1") == 0) {
-	  logg[10]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"NE2") == 0) {
-	  logg[10]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CD2") == 0) {
-	  logg[10]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE1") == 0) {
-	  logg[10]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE2") == 0) {
-	  logg[10]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD2") == 0) {
-	  logg[10]++;
-	  logg[8]=j;
-	}
-        else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[10]++;
-	  logg[9]=j;
-	}
-	if ( ((logg[10] == 9) && !bVir) || ((logg[10] == 10) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[10] == 9) && !bVir) || ((logg[10] == 10) && bVir) ) {
+      
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);      
+      
+      if ( ((nlogg == MAXLOGG-1) && !bVir) || ((nlogg == MAXLOGG) && bVir) ) {
 
-      pr_logg(debug,9,logg,bVir,"Hisb");
+	pr_logg(debug,MAXLOGG-1,cda,bVir,"Hisb");
+	
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,ring_margin,
+			       weight,d);
+	
+	/*SETDISTANCE for HE1 and HD2 (1-5) */
+	hisb_15_type2(logger("HE1"),logger("CE1"),logger("NE2"),logger("CD2"),
+		      logger("HD2"),ilist,iparams,&blen,atoms);
+	n15dist += do_a_dist(logger("HE1"),logger("HD2"),natoms,ring_margin,
+			     weight,d,blen);
 
-      /*SETDISTANCE for CB and CG (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CG and ND1 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for ND1 and CE1 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE1 and NE2 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NE2 and CD2 (1-2) */
-      blen=lookup_bondlength(logg[4],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and CG (1-2) */
-      blen=lookup_bondlength(logg[5],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[1]))) {
-	set_dist(d,natoms,logg[5],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE1 and HE1 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[6],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[6]))) {
-	set_dist(d,natoms,logg[3],logg[6],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NE2 and HE2 (1-2) */
-      blen=lookup_bondlength(logg[4],logg[7],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[7]))) {
-	set_dist(d,natoms,logg[4],logg[7],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and HD2 (1-2) */
-      blen=lookup_bondlength(logg[5],logg[8],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[8]))) {
-	set_dist(d,natoms,logg[5],logg[8],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CB and ND1 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CD2 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD2 and ND1 (1-3) */
-      angle=lookup_angle(logg[5],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[2]))) {
-	set_dist(d,natoms,logg[5],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG  and CE1 (1-3) */
-      angle=lookup_angle(logg[1],logg[2],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[2],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[3]))) {
-	set_dist(d,natoms,logg[1],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for ND1 and NE2 (1-3) */
-      angle=lookup_angle(logg[2],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE1 and CD2 (1-3) */
-      angle=lookup_angle(logg[3],logg[4],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[4],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for NE2 and CG  (1-3) */
-      angle=lookup_angle(logg[4],logg[5],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[4],logg[5],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[1]))) {
-	set_dist(d,natoms,logg[4],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD2 and CG (1-3) */
-      angle=lookup_angle(logg[8],logg[5],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[8],logg[5],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[1]))) {
-	set_dist(d,natoms,logg[8],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD2 and NE2 (1-3) */
-      angle=lookup_angle(logg[8],logg[5],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[8],logg[5],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[4]))) {
-	set_dist(d,natoms,logg[8],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CD2 (1-3) */
-      angle=lookup_angle(logg[7],logg[4],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[4],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[5]))) {
-	set_dist(d,natoms,logg[7],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CE1 (1-3) */
-      angle=lookup_angle(logg[7],logg[4],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[4],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[3]))) {
-	set_dist(d,natoms,logg[7],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and NE2 (1-3) */
-      angle=lookup_angle(logg[6],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[6],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[4]))) {
-	set_dist(d,natoms,logg[6],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and ND1 (1-3) */
-      angle=lookup_angle(logg[6],logg[3],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[6],logg[3],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[2]))) {
-	set_dist(d,natoms,logg[6],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CE1 (logg[0]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and NE2 (logg[0]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[5],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE1 and CG  (logg[6]&logg[1]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[3],logg[2],logg[1],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[1]))) {
-	set_dist(d,natoms,logg[6],logg[1],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE1 and CD2 (logg[6]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[3],logg[4],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[5]))) {
-	set_dist(d,natoms,logg[6],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE2 and ND1 (logg[7]&logg[2]) (transdihedral)*/
-      pdih_lengths(logg[7],logg[4],logg[3],logg[2],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[2]))) {
-	set_dist(d,natoms,logg[7],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE2 and CG  (logg[7]&logg[1]) (transdihedral)*/
-      pdih_lengths(logg[7],logg[4],logg[5],logg[1],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[1]))) {
-	set_dist(d,natoms,logg[7],logg[1],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE1 and HE2 (logg[6]&logg[7]) (cisdihedral)*/
-      pdih_lengths(logg[6],logg[3],logg[4],logg[7],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE2 and HD2 (logg[7]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[7],logg[4],logg[5],logg[8],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[8]))) {
-	set_dist(d,natoms,logg[7],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD2 (logg[0]&logg[8]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[5],logg[8],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[8]))) {
-	set_dist(d,natoms,logg[0],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for ND1 and HD2 (logg[2]&logg[8]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[5],logg[8],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[8]))) {
-	set_dist(d,natoms,logg[2],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE1 and HD2 (logg[3]&logg[8]) (transdihedral)*/
-      pdih_lengths(logg[3],logg[4],logg[5],logg[8],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[8]))) {
-	set_dist(d,natoms,logg[3],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-      /* new 1-5 distance added 981126 */
-
-      /*SETDISTANCE for HE1 and HD2 (1-5) */
-      hisb_15_type2(logg[6],logg[3],logg[4],logg[5],logg[8],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /* end new distances */
-
-      /*SETDISTANCE for CB and HE1 (1-5) */
-      hisb_15_type2(logg[0],logg[1],logg[2],logg[3],logg[6],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[6]))) {
-	set_dist(d,natoms,logg[0],logg[6],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CB and HE2 (1-5) */
-      hisb_15_type2(logg[0],logg[1],logg[5],logg[4],logg[7],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[7]))) {
-	set_dist(d,natoms,logg[0],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      if (bVir) {
+	/*SETDISTANCE for CB and HE1 (1-5) */
+	hisb_15_type2(logger("CB"),logger("CG"),logger("ND1"),logger("CE1"),
+		      logger("HE1"),ilist,iparams,&blen,atoms);
+	n15dist += do_a_dist(logger("CB"),logger("HE1"),natoms,ring_margin,
+			     weight,d,blen);
+		      
+	/*SETDISTANCE for CB and HE2 (1-5) */
+	hisb_15_type2(logger("CB"),logger("CG"),logger("CD2"),logger("NE2"),
+		      logger("HE2"),ilist,iparams,&blen,atoms);
+	n15dist += do_a_dist(logger("CB"),logger("HE2"),natoms,ring_margin,
+			     weight,d,blen);
+	
 	/* VIRTUAL DISTANCES */
-	nVdist = set_virtual (logg,9,ring_margin,d,natoms);
-	ndist += nVdist;
+	if (bVir) 
+	  nVdist = set_virtual (cda,MAXLOGG,ring_margin,d,natoms);
       }
-     }
-    logg[10]=0;
     }
   }
+  pr_ndist(log,"HIS",n14dist,n15dist,0,0,nVdist);
 
-  fprintf(log,"There are %d new histidine distances\n",ndist);
-
-  if (ndist > 0 ) {
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5 \n",n12dist,n13dist,
-	    n14dist,n15dist);
-  }
+  sfree(cda);
 }
 
 /**********************************************************
@@ -1785,292 +712,67 @@ void hisb (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 void ile (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	  real ile_margin,t_ilist ilist[],t_iparams iparams[])
 {
-  /* Directly based on val.c */
-  int natoms,ndist,i,j,logg[15],residnr,oldresidnr,n14dist,n15dist;
-  real blen,lb,ub,angle;
-  real pi = M_PI;
+  static char *sa[] = { "CA", "CB", "HB", "CD", "HD1", "HD2", "HD3",
+			"CG1", "HG11", "HG12", 
+			"CG2", "HG21", "HG22", "HG23" };
+  t_cdatom *cda;
+  t_cdpdih pd[] = {
+    { "HD1",  "CD",  "CG1", "HG11", TRANS }, 
+    { "HD2",  "CD",  "CG1", "HG12", TRANS },
+    { "HD3",  "CD",  "CG1", "CB",   TRANS }, 
+    { "HG21", "CG2", "CB",  "CA",   TRANS },
+    { "HG22", "CG2", "CB",  "HB",   TRANS }, 
+    { "HG23", "CG2", "CB",  "CG1",  TRANS },
+    { "HD1",  "CD",  "CG1", "CB",   GAUCHE }, 
+    { "HD1",  "CD",  "CG1", "HG12", GAUCHE },
+    { "HD2",  "CD",  "CG1", "CB",   GAUCHE }, 
+    { "HD2",  "CD",  "CG1", "HG11", GAUCHE },
+    { "HD3",  "CD",  "CG1", "HG12", GAUCHE }, 
+    { "HD3",  "CD",  "CG1", "HG11", GAUCHE },
+    { "HG21", "CG2", "CB",  "CG1",  GAUCHE }, 
+    { "HG21", "CG2", "CB",  "HB",   GAUCHE },
+    { "HG22", "CG2", "CB",  "CG1",  GAUCHE }, 
+    { "HG22", "CG2", "CB",  "CA",   GAUCHE },
+    { "HG23", "CG2", "CB",  "CA",   GAUCHE }, 
+    { "HG23", "CG2", "CB",  "HB",   GAUCHE }
+  };
+  
+  int   natoms,i,j,kk,residnr,oldresidnr;
+  int   n14dist,n15dist,atom_index,nlogg;
+  real  blen,lb,ub,angle;
+  real  pi = M_PI;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n14dist = 0;
-  n15dist = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        = init_cdatoms(MAXLOGG,sa);
+  natoms     = atoms->nr;
+  n14dist    = 0;
+  n15dist    = 0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"ILE") == 0) {
       oldresidnr=residnr;
       residnr=atoms->atom[i].resnr;
-      logg[14]=0;
-      if ( oldresidnr == residnr ) {
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CA") == 0) {
-	  logg[14]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[14]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HB") == 0) {
-	  logg[14]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CD") == 0) {
-	  logg[14]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HD1") == 0) {
-	  logg[14]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD2") == 0) {
-	  logg[14]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD3") == 0) {
-	  logg[14]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CG1") == 0) {
-	  logg[14]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG11") == 0) {
-	  logg[14]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG12") == 0) {
-	  logg[14]++;
-	  logg[9]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"CG2") == 0) {
-	  logg[14]++;
-	  logg[10]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG21") == 0) {
-	  logg[14]++;
-	  logg[11]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG22") == 0) {
-	  logg[14]++;
-	  logg[12]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG23") == 0) {
-	  logg[14]++;
-	  logg[13]=j;
-	}	
-	if ( logg[14] == 14) {
-	  break;
-	}
-	j++;
-      }
-    if ( logg[14] == 14 ) {
-      pr_logg(debug,14,logg,FALSE,"Ile");
 
-      /*SETDISTANCE for HD1 and CB */
-      gauche(logg[4],logg[3],logg[7],logg[1],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[1]))) {
-	set_dist(d,natoms,logg[4],logg[1],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD1 and HG12 */
-      gauche(logg[4],logg[3],logg[7],logg[9],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[9]))) {
-	set_dist(d,natoms,logg[4],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD1 and HG11 */
-      pdih_lengths(logg[4],logg[3],logg[7],logg[8],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[8]))) {
-	set_dist(d,natoms,logg[4],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
+	
+      if ( nlogg == MAXLOGG ) {
+	pr_logg(debug,MAXLOGG,cda,FALSE,"Ile");
 
-      /*SETDISTANCE for HD2 and CB  */
-      gauche(logg[5],logg[3],logg[7],logg[1],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[1]))) {
-	set_dist(d,natoms,logg[5],logg[1],lb,ub,blen);
-	ndist++;
-	n14dist++;
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,
+			       ile_margin,weight,d);
       }
-      /*SETDISTANCE for HD2 and HG11 */
-      gauche(logg[5],logg[3],logg[7],logg[8],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[8]))) {
-	set_dist(d,natoms,logg[5],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD2 and HG12 */
-      pdih_lengths(logg[5],logg[3],logg[7],logg[9],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[9]))) {
-	set_dist(d,natoms,logg[5],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-      /*SETDISTANCE for HD3 and HG12 */
-      gauche(logg[6],logg[3],logg[7],logg[9],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[9]))) {
-	set_dist(d,natoms,logg[6],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD3 and HG11 */
-      gauche(logg[6],logg[3],logg[7],logg[8],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD3 and CB  */
-      pdih_lengths(logg[6],logg[3],logg[7],logg[1],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[1]))) {
-	set_dist(d,natoms,logg[6],logg[1],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-      /*SETDISTANCE for HG21 and CG1 */
-      gauche(logg[11],logg[10],logg[1],logg[7],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[7]))) {
-	set_dist(d,natoms,logg[11],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG21 and HB   */
-      gauche(logg[11],logg[10],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[2]))) {
-	set_dist(d,natoms,logg[11],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG21 and CA   */
-      pdih_lengths(logg[11],logg[10],logg[1],logg[0],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[0]))) {
-	set_dist(d,natoms,logg[11],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-      /*SETDISTANCE for HG22 and CG1 */
-      gauche(logg[12],logg[10],logg[1],logg[7],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[7]))) {
-	set_dist(d,natoms,logg[12],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG22 and CA   */
-      gauche(logg[12],logg[10],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[0]))) {
-	set_dist(d,natoms,logg[12],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG22 and HB   */
-      pdih_lengths(logg[12],logg[10],logg[1],logg[2],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[2]))) {
-	set_dist(d,natoms,logg[12],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-      /*SETDISTANCE for HG23 and CA   */
-      gauche(logg[13],logg[10],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[0]))) {
-	set_dist(d,natoms,logg[13],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG23 and HB   */
-      gauche(logg[13],logg[10],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[2]))) {
-	set_dist(d,natoms,logg[13],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG23 and CG1*/
-      pdih_lengths(logg[13],logg[10],logg[1],logg[7],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-ile_margin)*blen;
-      ub=(1.0+ile_margin)*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[7]))) {
-	set_dist(d,natoms,logg[13],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-    }
-    logg[14]=0;
     }
   }
-  fprintf(log,"There are %d distances to keep isoleucine gauche\n",ndist);
-  if (ndist > 0 ) {
-    fprintf(log,"(%d 1-4, %d 1-5)\n",n14dist,n15dist);
-  }
+  pr_ndist(log,"ILE",n14dist,0,0,0,0);
+
+  sfree(cda);
 }
 
 /**********************************************************
@@ -2081,380 +783,87 @@ void ile (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 void leu (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	  real leu_margin,t_ilist ilist[],t_iparams iparams[])
 {
-  /* Directly based on val.c */
-  int natoms,ndist,i,j,logg[12],residnr,oldresidnr,n14dist,n15dist;
-  real blen,lb,ub,angle;
-  real pi = M_PI;
+  static char *sa[] = { "CB", "CG", "HG", "CD1", "HD11", "HD12", "HD13",
+			"CD2", "HD21", "HD22", "HD23" };
+  t_cdatom *cda;
+  t_cdpdih pd[] = {
+    { "HD11", "CD1", "CG", "HG",  TRANS }, 
+    { "HD12", "CD1", "CG", "CB",  TRANS },
+    { "HD13", "CD1", "CG", "CD2", TRANS }, 
+    { "HD21", "CD2", "CG", "CB",  TRANS },
+    { "HD22", "CD2", "CG", "HG",  TRANS }, 
+    { "HD23", "CD2", "CG", "CD1", TRANS },
+    { "HD11", "CD1", "CG", "CB",  GAUCHE }, 
+    { "HD11", "CD1", "CG", "CD2", GAUCHE },
+    { "HD12", "CD1", "CG", "CD2", GAUCHE }, 
+    { "HD12", "CD1", "CG", "HG",  GAUCHE },
+    { "HD13", "CD1", "CG", "HG",  GAUCHE }, 
+    { "HD13", "CD1", "CG", "CB",  GAUCHE },
+    { "HD21", "CD2", "CG", "HG",  GAUCHE }, 
+    { "HD21", "CD2", "CG", "CD1", GAUCHE },
+    { "HD22", "CD2", "CG", "CD1", GAUCHE }, 
+    { "HD22", "CD2", "CG", "CB",  GAUCHE },
+    { "HD23", "CD2", "CG", "CB",  GAUCHE }, 
+    { "HD23", "CD2", "CG", "HG",  GAUCHE }
+  };
+  t_cd15g cd15g[] = {
+    { "HD11", "CD1", "CG", "CD2", "HD21", M_PI, M_PI43, M_PI43 },
+    { "HD11", "CD1", "CG", "CD2", "HD22", M_PI, M_PI43, M_PI23 },
+    { "HD11", "CD1", "CG", "CD2", "HD23", M_PI, M_PI43, 0 },
+    { "HD12", "CD1", "CG", "CD2", "HD21", M_PI, M_PI23, M_PI43 },
+    { "HD12", "CD1", "CG", "CD2", "HD22", M_PI, M_PI23, M_PI23 },
+    { "HD12", "CD1", "CG", "CD2", "HD23", M_PI, M_PI23, 0 },
+    { "HD13", "CD1", "CG", "CD2", "HD21", M_PI, 0,      M_PI43 },
+    { "HD13", "CD1", "CG", "CD2", "HD22", M_PI, 0,      M_PI23 },
+    { "HD13", "CD1", "CG", "CD2", "HD23", M_PI, 0,      0 }
+  };
+  int   natoms,i,j,kk,residnr,oldresidnr;
+  int   n14dist,n15dist,atom_index,nlogg;
+  real  blen,lb,ub,angle;
+  real  pi = M_PI;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n14dist = 0;
-  n15dist = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        =  init_cdatoms(MAXLOGG,sa);  
+  natoms     =  atoms->nr;
+  n14dist    =  0;
+  n15dist    =  0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"LEU") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[11]=0;
-      if ( oldresidnr == residnr ) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[11]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[11]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HG") == 0) {
-	  logg[11]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CD1") == 0) {
-	  logg[11]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HD11") == 0) {
-	  logg[11]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD12") == 0) {
-	  logg[11]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD13") == 0) {
-	  logg[11]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CD2") == 0) {
-	  logg[11]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD21") == 0) {
-	  logg[11]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD22") == 0) {
-	  logg[11]++;
-	  logg[9]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HD23") == 0) {
-	  logg[11]++;
-	  logg[10]=j;
-	}	
-	if ( logg[11] == 11) {
-	  break;
-	}
-	j++;
-      }
-    if ( logg[11] == 11 ) {
-      pr_logg(debug,11,logg,FALSE,"Leu");
+      
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
 
-      /*SETDISTANCE for HD11 and CB */
-      gauche(logg[4],logg[3],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[0]))) {
-	set_dist(d,natoms,logg[4],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD11 and CD2 */
-      gauche(logg[4],logg[3],logg[1],logg[7],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[7]))) {
-	set_dist(d,natoms,logg[4],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD11 and HG */
-      pdih_lengths(logg[4],logg[3],logg[1],logg[2],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[2]))) {
-	set_dist(d,natoms,logg[4],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD12 and CD2 */
-      gauche(logg[5],logg[3],logg[1],logg[7],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[7]))) {
-	set_dist(d,natoms,logg[5],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD12 and HG */
-      gauche(logg[5],logg[3],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[2]))) {
-	set_dist(d,natoms,logg[5],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD12 and CB */
-      pdih_lengths(logg[5],logg[3],logg[1],logg[0],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[0]))) {
-	set_dist(d,natoms,logg[5],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD13 and HG */
-      gauche(logg[6],logg[3],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[2]))) {
-	set_dist(d,natoms,logg[6],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD13 and CB */
-      gauche(logg[6],logg[3],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[0]))) {
-	set_dist(d,natoms,logg[6],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD13 and CD2 */
-      pdih_lengths(logg[6],logg[3],logg[1],logg[7],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD21 and HG */
-      gauche(logg[8],logg[7],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[2]))) {
-	set_dist(d,natoms,logg[8],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD21 and CD1 */
-      gauche(logg[8],logg[7],logg[1],logg[3],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[3]))) {
-	set_dist(d,natoms,logg[8],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD21 and CB */
-      pdih_lengths(logg[8],logg[7],logg[1],logg[0],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[0]))) {
-	set_dist(d,natoms,logg[8],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD22 and CD1 */
-      gauche(logg[9],logg[7],logg[1],logg[3],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[3]))) {
-	set_dist(d,natoms,logg[9],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD22 and CB */
-      gauche(logg[9],logg[7],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[0]))) {
-	set_dist(d,natoms,logg[9],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD22 and HG */
-      pdih_lengths(logg[9],logg[7],logg[1],logg[2],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[2]))) {
-	set_dist(d,natoms,logg[9],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD23 and CB */
-      gauche(logg[10],logg[7],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[0]))) {
-	set_dist(d,natoms,logg[10],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD23 and HG */
-      gauche(logg[10],logg[7],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[2]))) {
-	set_dist(d,natoms,logg[10],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD23 and CD1 */
-      pdih_lengths(logg[10],logg[7],logg[1],logg[3],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[3]))) {
-	set_dist(d,natoms,logg[10],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
+      if ( nlogg == MAXLOGG ) {
+	pr_logg(debug,MAXLOGG,cda,FALSE,"Leu");
 
-      /* 111111111-----------5555555555 */
-      /*SETDISTANCE for HD11 and HD21 */
-      gauche15(logg[4],logg[3],logg[1],logg[7],logg[8],pi,pi+(pi/3.0),
-	       pi+(pi/3.0),ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[8]))) {
-	set_dist(d,natoms,logg[4],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,
+			       leu_margin,weight,d);
+	
+	/* 1-5 dihedrals */
+	for(kk=0; (kk<asize(cd15g)); kk++) {
+	  gauche15(logger(cd15g[kk].ai),logger(cd15g[kk].aj),
+		   logger(cd15g[kk].ak),logger(cd15g[kk].al),
+		   logger(cd15g[kk].am),
+		   cd15g[kk].om1,cd15g[kk].om2,cd15g[kk].om3,
+		   ilist,iparams,&blen,atoms);
+	  n15dist += do_a_dist(logger(cd15g[kk].ai),logger(cd15g[kk].am),
+			       natoms,leu_margin,weight,d,blen);
+	}			
       }
-      /*SETDISTANCE for HD11 and HD22 */
-      gauche15(logg[4],logg[3],logg[1],logg[7],logg[9],pi,pi+pi/3.0,
-	       pi-(pi/3.0),ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[9]))) {
-	set_dist(d,natoms,logg[4],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HD11 and HD23 */
-      gauche15(logg[4],logg[3],logg[1],logg[7],logg[10],pi,pi+(pi/3.0),0,
-	       ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[10]))) {
-	set_dist(d,natoms,logg[4],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-
-      /*SETDISTANCE for HD12 and HD21 */
-      gauche15(logg[5],logg[3],logg[1],logg[7],logg[8],pi,pi-pi/3.0,
-	       pi+pi/3.0,ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[8]))) {
-	set_dist(d,natoms,logg[5],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HD12 and HD22 */
-      gauche15(logg[5],logg[3],logg[1],logg[7],logg[9],pi,pi-pi/3.0,
-	       pi-pi/3.0,ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[9]))) {
-	set_dist(d,natoms,logg[5],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HD12 and HD23 */
-      gauche15(logg[5],logg[3],logg[1],logg[7],logg[10],pi,pi-pi/3.0,0,ilist,
-	       iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[10]))) {
-	set_dist(d,natoms,logg[5],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-      /*SETDISTANCE for HD13 and HD21 */
-      gauche15(logg[6],logg[3],logg[1],logg[7],logg[8],pi,0,pi+pi/3.0,
-	       ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HD13 and HD22 */
-      gauche15(logg[6],logg[3],logg[1],logg[7],logg[9],pi,0,pi-pi/3.0,
-	       ilist,iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[9]))) {
-	set_dist(d,natoms,logg[6],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HD13 and HD23 */
-      gauche15(logg[6],logg[3],logg[1],logg[7],logg[10],pi,0,0,ilist,
-	       iparams,&blen,atoms);
-      lb=(1.0-leu_margin)*blen;
-      ub=(1.0+leu_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[10]))) {
-	set_dist(d,natoms,logg[6],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-
-    }
-    logg[11]=0;
     }
   }
-  fprintf(log,"There are %d distances to keep leucine gauche\n",ndist);
-  if (ndist > 0 ) {
-    fprintf(log,"(%d 1-4, %d 1-5)\n",n14dist,n15dist);
-  }
+  pr_ndist(log,"LEU",n14dist,n15dist,0,0,0);
+
+  sfree(cda);
 }
 
 /**********************************************************
@@ -2472,21 +881,17 @@ static void phe_15_CBHE(int ai,int aj,int ak,int al,int am,
   real real_pi = M_PI*2.0;
   real half_pi = M_PI*0.5;
 
-  /*  fprintf(stderr,"Got past initialisations\n");*/
   rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
   rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
   rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
   rlm   = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  /*fprintf(stderr,"Got past lookup_bondlength\n");*/
+
   thijk = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
   thjkl = lookup_angle(aj,ak,al,ilist,iparams,atoms);
   thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
-  /*fprintf(stderr,"Got past lookup_angle\n");*/
-  /*fprintf(stderr,"%g %g %g %g %g %g %g\n",rij,rjk,rkl,rlm,RAD2DEG*thijk,
-    RAD2DEG*thjkl,RAD2DEG*thklm);*/
+
   rik   =  sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
   rkm   =  sqrt(rkl*rkl+rlm*rlm-2.0*rkl*rlm*cos(thklm));
-  /*fprintf(stderr,"Got past angle_length\n");*/
 
   /* Compute angle thikj using law of sines */
   thikj = asin(rij*sin(thijk)/rik);
@@ -2496,7 +901,6 @@ static void phe_15_CBHE(int ai,int aj,int ak,int al,int am,
 
   /* Compute cis length using law of cosines */
   *lb = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(real_pi-thikj-thmkl-thjkl));
-  /*fprintf(stderr,"leaving routine\n");*/
 }
 
 static void phe_15_CBCZ(int ai,int aj,int ak,int al,int am,
@@ -2538,8 +942,6 @@ static void phe_15_CGHZ(int ai,int aj,int ak,int al,int am,
   real thijk,thjkl,thklm,thikj,thmkl;
   real real_pi = M_PI*2.0;
 
-  /*fprintf(stderr,"entering the routine\n");*/
-
   rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
   rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
   rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
@@ -2549,7 +951,6 @@ static void phe_15_CGHZ(int ai,int aj,int ak,int al,int am,
   thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
   rik   = sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
   rkm   = sqrt(rkl*rkl+rlm*rlm-2.0*rkl*rlm*cos(thklm));
-  /*fprintf(stderr,"Only calculations left\n");*/
 
   /* Compute angle thikj using law of sines */
   thikj = asin(rij*sin(thijk)/rik);
@@ -2566,7 +967,6 @@ static void phe_16_type2(int ai,int aj,int ak,int al,int am,int an,
 		  real *lb,t_atoms *atoms)
 {
   /* Returns the length corresponding to a 1-6 distance */
-
   real rij,rjk,rkl,rlm,rmn,rik,rln,ril;
   real thijk,thjkl,thklm,thlmn,thikj,thikl,thilk,thnlm,thiln;
   real real_pi = M_PI*2.0;    
@@ -2601,860 +1001,163 @@ static void phe_16_type2(int ai,int aj,int ak,int al,int am,int an,
   *lb = sqrt(ril*ril+rln*rln-2.0*ril*rln*cos(thiln));
 }
 
-
-
-
-void phe (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
-	  real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
+typedef void phe_15_func(int ai,int aj,int ak,int al,int am,
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms);
+			 
+void phe_tyr(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
+	     real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir,
+	     bool bPhe)
 {
-  int natoms,ndist,i,j,q,logg[14],residnr,oldresidnr,n12dist,n13dist,n14dist,
-    n15dist,n16dist,nVdist;
-  real blen,lb,ub,angle;
+  static char *sa[] = { "CB", "CG", "CD2", "HD2", "CE2", "HE2", "CZ",
+			"HZ", "CE1", "HE1", "CD1", "HD1", "VF" };
+  t_cdatom *cda;
+  t_cd15 cd15[] = {
+    { "HD2", "CD2", "CG", "CD1", "HD1", 1},
+    { "HE2", "CE2", "CZ", "CE1", "HE1", 1},
+    { "HE1", "CE1", "CZ", "CE2", "CD2", 2},
+    { "HD2", "CD2", "CE2", "CZ", "CE1", 2},
+    { "HD1", "CD1", "CG", "CD2", "CE2", 2},
+    { "HE2", "CE2", "CZ", "CE1", "CD1", 2},
+    { "CB",  "CG", "CD2", "CE2", "HE2", 1},
+    { "CB",  "CG", "CD1", "CE1", "HE1", 1},
+    { "CB",  "CG", "CD2", "CE2", "CZ",  2}
+  };
+  phe_15_func *phe15[3] = {
+    phe_15_CBHE, phe_15_CBCZ, phe_15_CGHZ
+  };
+  t_cdpdih pd[] = {
+    { "CD2", "CG",  "CD1", "HD1", TRANS }, 
+    { "CZ",  "CE1", "CD1", "HD1", TRANS },
+    { "CD2", "CG",  "CD1", "CE1", CIS }, 
+    { "CE2", "CZ",  "CE1", "CD1", CIS },
+    { "CB",  "CG",  "CD1", "CE1", TRANS }, 
+    { "CB",  "CG",  "CD2", "CE2", TRANS },
+    { "CD1", "CG",  "CD2", "HD2", TRANS }, 
+    { "CZ",  "CE2", "CD2", "HD2", TRANS },
+    { "CG",  "CD2", "CE2", "HE2", TRANS }, 
+    { "CE1", "CZ",  "CE2", "HE2", TRANS },
+    { "CD1", "CE1", "CZ",  "HZ",  TRANS }, 
+    { "CD2", "CE2", "CZ",  "HZ",  TRANS },
+    { "CE2", "CZ",  "CE1", "HE1", TRANS }, 
+    { "CG",  "CD1", "CE1", "HE1", TRANS },
+    { "CB",  "CG",  "CD1", "HD1", CIS }, 
+    { "CB",  "CG",  "CD2", "HD2", CIS },
+    { "CG",  "CD2", "CE2", "CZ",  CIS }, 
+    { "HD2", "CD2", "CE2", "HE2", CIS },
+    { "HE2", "CE2", "CZ",  "HZ",  CIS }, 
+    { "HZ",  "CZ",  "CE1", "HE1", CIS },
+    { "HE1", "CE1", "CD1", "HD1", CIS }
+  };
+  int    natoms,i,j,k,kk,q,residnr,oldresidnr,nhz;
+  int    n14dist,n15dist,n16dist,nVdist,atom_index,nlogg;
+  real   blen,lb,ub,angle;
+  char   NHZ[8],RES[8];
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  n15dist = 0;
-  n16dist = 0;
-  nVdist  = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        = init_cdatoms(MAXLOGG,sa);
+  nhz        = 7;
+  /* Consistency check */
+  assert(strcmp(cda[nhz].anm,"HZ") == 0);
+  if (!bPhe) {
+    strcpy(NHZ,"OH");
+    strcpy(cda[nhz].anm,"OH");
+    strcpy(RES,"TYR");
+  }
+  else {
+    strcpy(NHZ,"HZ");
+    strcpy(RES,"PHE");
+  }
+  natoms     = atoms->nr;
+  n14dist    = 0;
+  n15dist    = 0;
+  n16dist    = 0;
+  nVdist     = 0;
+  residnr    = -1;
+  oldresidnr =-1;
 
   for (i=0; (i<natoms); i++) {
-    if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"PHE") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[13]=0;
-      if ( oldresidnr == residnr ) {
+    if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),RES) == 0) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[13]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[13]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CD2") == 0) {
-	  logg[13]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HD2") == 0) {
-	  logg[13]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CE2") == 0) {
-	  logg[13]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE2") == 0) {
-	  logg[13]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CZ") == 0) {
-	  logg[13]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HZ") == 0) {
-	  logg[13]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CE1") == 0) {
-	  logg[13]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE1") == 0) {
-	  logg[13]++;
-	  logg[9]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"CD1") == 0) {
-	  logg[13]++;
-	  logg[10]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HD1") == 0) {
-	  logg[13]++;
-	  logg[11]=j;
-	}	
-        else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[13]++;
-	  logg[12]=j;
-	}	
-	if ( ((logg[13] == 12) && !bVir) || ((logg[13] == 13) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[13] == 12) && !bVir) || ((logg[13] == 13) && bVir) ) {
 
-      pr_logg(debug,12,logg,bVir,"Phe");
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
+      
+      if ( ((nlogg == MAXLOGG-1) && !bVir) || ((nlogg == MAXLOGG) && bVir) ) {
 
-      /*SETDISTANCE for CB and CG (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CG and CD2 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and HD2 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and CE2 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE2 and HE2 (1-2) */
-      blen=lookup_bondlength(logg[4],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE2 and CZ (1-2) */
-      blen=lookup_bondlength(logg[4],logg[6],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[6]))) {
-	set_dist(d,natoms,logg[4],logg[6],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ and HZ (1-2) */
-      blen=lookup_bondlength(logg[6],logg[7],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ and CE1 (1-2) */
-      blen=lookup_bondlength(logg[6],logg[8],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE1 and HE1 (1-2) */
-      blen=lookup_bondlength(logg[8],logg[9],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[9]))) {
-	set_dist(d,natoms,logg[8],logg[9],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE1 and CD1 (1-2) */
-      blen=lookup_bondlength(logg[8],logg[10],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[10]))) {
-	set_dist(d,natoms,logg[8],logg[10],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD1 and HD1 (1-2) */
-      blen=lookup_bondlength(logg[10],logg[11],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[11]))) {
-	set_dist(d,natoms,logg[10],logg[11],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD1 and CG (1-2) */
-      blen=lookup_bondlength(logg[1],logg[10],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[10]))) {
-	set_dist(d,natoms,logg[1],logg[10],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
+	pr_logg(debug,MAXLOGG-1,cda,bVir,RES);
 
-      /* new 1-3 distances added 981126 */
-      /*SETDISTANCE for CG and HD1 (1-3) */
-      angle=lookup_angle(logg[1],logg[10],logg[11],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[10],logg[11],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[11]))) {
-	set_dist(d,natoms,logg[1],logg[11],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /* end of new 1-3 distances */
+#define tp(s) (strcmp(s,"HZ") == 0) ? NHZ : s
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(tp(pd[kk].ai)),logger(tp(pd[kk].aj)),
+			       logger(tp(pd[kk].ak)),logger(tp(pd[kk].al)),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,
+			       ring_margin,weight,d);
+	
+	for(k=0; (k<asize(cd15)); k++) {
+	  phe15[cd15[k].type-1](logger(cd15[k].ai),logger(cd15[k].aj),
+				logger(cd15[k].ak),logger(cd15[k].al),
+				logger(cd15[k].am),
+				ilist,iparams,&blen,atoms);
+	  n15dist += do_a_dist(logger(cd15[k].ai),
+			       logger(cd15[k].am),natoms,ring_margin,
+			       weight,d,blen);
+	}
 
-      /*SETDISTANCE for CD1 and CD2 (1-3) */
-      angle=lookup_angle(logg[10],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[10],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[2]))) {
-	set_dist(d,natoms,logg[10],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and CE2 (1-3) */
-      angle=lookup_angle(logg[1],logg[2],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[2],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD2 and CZ (1-3) */
-      angle=lookup_angle(logg[2],logg[4],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[4],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[6]))) {
-	set_dist(d,natoms,logg[2],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE2 and CE1 (1-3) */
-      angle=lookup_angle(logg[4],logg[6],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[4],logg[6],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[8]))) {
-	set_dist(d,natoms,logg[4],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ and CE1 (1-3) */
-      angle=lookup_angle(logg[6],logg[8],logg[10],ilist,iparams,atoms);
-      blen=angle_length(logg[6],logg[8],logg[10],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[10]))) {
-	set_dist(d,natoms,logg[6],logg[10],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE1 and CG (1-3) */
-      angle=lookup_angle(logg[8],logg[10],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[8],logg[10],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[1]))) {
-	set_dist(d,natoms,logg[8],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CD1 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[10],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[10],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[10]))) {
-	set_dist(d,natoms,logg[0],logg[10],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CD2 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD2 and CG (1-3) */
-      angle=lookup_angle(logg[3],logg[2],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[2],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[1]))) {
-	set_dist(d,natoms,logg[3],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD2 and CE2 (1-3) */
-      angle=lookup_angle(logg[3],logg[2],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[2],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CD2 (1-3) */
-      angle=lookup_angle(logg[5],logg[4],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[4],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[2]))) {
-	set_dist(d,natoms,logg[5],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CZ (1-3) */
-      angle=lookup_angle(logg[5],logg[4],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[4],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[6]))) {
-	set_dist(d,natoms,logg[5],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HZ and CE2 (1-3) */
-      angle=lookup_angle(logg[7],logg[6],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[6],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[4]))) {
-	set_dist(d,natoms,logg[7],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HZ and CE1 (1-3) */
-      angle=lookup_angle(logg[7],logg[6],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[6],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[8]))) {
-	set_dist(d,natoms,logg[7],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and CZ (1-3) */
-      angle=lookup_angle(logg[9],logg[8],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[8],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[6]))) {
-	set_dist(d,natoms,logg[9],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and CD1 (1-3) */
-      angle=lookup_angle(logg[9],logg[8],logg[10],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[8],logg[10],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[10]))) {
-	set_dist(d,natoms,logg[9],logg[10],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD1 and CE1 (1-3) */
-      angle=lookup_angle(logg[11],logg[10],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[11],logg[10],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[8]))) {
-	set_dist(d,natoms,logg[11],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
+	/*SETDISTANCE for HD2 and HZ (1-5) */
+	phe_15_CBHE(logger("HD2"),logger("CD2"),logger("CE2"),logger("CZ"),
+		    logger(NHZ),ilist,iparams,&blen,atoms);
+	n15dist += do_a_dist(logger("HD2"),logger(NHZ),natoms,ring_margin,
+			     weight,d,blen);
+			     
+	/*SETDISTANCE for HZ and HD1 (1-5) */
+	phe_15_CBHE(logger(NHZ),logger("CZ"),logger("CE1"),logger("CD1"),
+		    logger("HD1"),ilist,iparams,&blen,atoms);
+	n15dist += do_a_dist(logger(NHZ),logger("HD1"),natoms,ring_margin,
+			     weight,d,blen);
 
-      /* new 1-4 distances added 981126 */
-      /*SETDISTANCE for CD2 and HD1 (logg[2]&logg[11]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[10],logg[11],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[11]))) {
-	set_dist(d,natoms,logg[2],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ and HD1 (logg[6]&logg[11]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[8],logg[10],logg[11],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[11]))) {
-	set_dist(d,natoms,logg[6],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and CE1 (logg[2]&logg[8]) (cisdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[10],logg[8],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[8]))) {
-	set_dist(d,natoms,logg[2],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and CD1 (logg[4]&logg[10]) (cisdihedral)*/
-      pdih_lengths(logg[4],logg[6],logg[8],logg[10],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[10]))) {
-	set_dist(d,natoms,logg[4],logg[10],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /* end of new 1-4 distances */
+	/*SETDISTANCE for CG and HZ (1-5) */
+	phe_15_CGHZ(logger("CG"),logger("CD2"),logger("CE2"),logger("CZ"),
+		    logger(NHZ),ilist,iparams,&blen,atoms);
+	n15dist += do_a_dist(logger("CG"),logger(NHZ),natoms,ring_margin,
+			     weight,d,blen);
+	
+	/* 1111111111-------------666666666666 */
+	/*SETDISTANCE for CB and HZ (1-6) */
+	phe_16_type2(logger("CB"),logger("CG"),logger("CD2"),logger("CE2"),
+		     logger("CZ"),logger(NHZ),ilist,iparams,&blen,atoms);
+	n16dist += do_a_dist(logger("CB"),logger(NHZ),natoms,ring_margin,
+			     weight,d,blen);
 
-      /*SETDISTANCE for CB and CE1 (logg[0]&logg[8]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[10],logg[8],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[8]))) {
-	set_dist(d,natoms,logg[0],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and CE2 (logg[0]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD1 and HD2 (logg[10]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[10],logg[1],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[3]))) {
-	set_dist(d,natoms,logg[10],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ and HD2 (logg[6]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[4],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[3]))) {
-	set_dist(d,natoms,logg[6],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE2 (logg[1]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[4],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE1 and HE2 (logg[8]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[8],logg[6],logg[4],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[5]))) {
-	set_dist(d,natoms,logg[8],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD1 and HZ (logg[10]&logg[7]) (transdihedral)*/
-      pdih_lengths(logg[10],logg[8],logg[6],logg[7],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[7]))) {
-	set_dist(d,natoms,logg[10],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and HZ (logg[2]&logg[7]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[4],logg[6],logg[7],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[7]))) {
-	set_dist(d,natoms,logg[2],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and HE1 (logg[4]&logg[9]) (transdihedral)*/
-      pdih_lengths(logg[4],logg[6],logg[8],logg[9],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[9]))) {
-	set_dist(d,natoms,logg[4],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE1 (logg[1]&logg[9]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[10],logg[8],logg[9],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[9]))) {
-	set_dist(d,natoms,logg[1],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD1 (logg[0]&logg[11]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[10],logg[11],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[11]))) {
-	set_dist(d,natoms,logg[0],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD2 (logg[0]&logg[3]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[3],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and CZ (logg[1]&logg[6]) (cisdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[4],logg[6],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[6]))) {
-	set_dist(d,natoms,logg[1],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD2 and HE2 (logg[3]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[3],logg[2],logg[4],logg[5],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE2 and HZ (logg[5]&logg[7]) (cisdihedral)*/
-      pdih_lengths(logg[5],logg[4],logg[6],logg[7],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[7]))) {
-	set_dist(d,natoms,logg[5],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HZ and HE1 (logg[7]&logg[9]) (cisdihedral)*/
-      pdih_lengths(logg[7],logg[6],logg[8],logg[9],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[9]))) {
-	set_dist(d,natoms,logg[7],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE1 and HD1 (logg[9]&logg[11]) (cisdihedral)*/
-      pdih_lengths(logg[9],logg[8],logg[10],logg[11],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[11]))) {
-	set_dist(d,natoms,logg[9],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
+	/*SETDISTANCE for HD1 and HE2 (1-6) */
+	phe_16_type2(logger("HD1"),logger("CD1"),logger("CG"),logger("CD2"),
+		     logger("CE2"),logger("HE2"),ilist,iparams,&blen,atoms);
+	n16dist += do_a_dist(logger("HD1"),logger("HE2"),natoms,ring_margin,
+			     weight,d,blen);
 
-      /* new 1-5 distances added 981126 */
-      /*SETDISTANCE for HD2 and HZ (1-5) */
-      phe_15_CBHE(logg[3],logg[2],logg[4],logg[6],logg[7],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[7]))) {
-	set_dist(d,natoms,logg[3],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HD2 and HD1 (1-5) */
-      phe_15_CBHE(logg[3],logg[2],logg[1],logg[10],logg[11],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[11]))) {
-	set_dist(d,natoms,logg[3],logg[11],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE2 and HE1 (1-5) */
-      phe_15_CBHE(logg[5],logg[4],logg[6],logg[8],logg[9],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[9]))) {
-	set_dist(d,natoms,logg[5],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HZ and HD1 (1-5) */
-      phe_15_CBHE(logg[7],logg[6],logg[8],logg[10],logg[11],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[11]))) {
-	set_dist(d,natoms,logg[7],logg[11],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE1 and CD2 (1-5) */
-      phe_15_CBCZ(logg[9],logg[8],logg[6],logg[4],logg[2],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[2]))) {
-	set_dist(d,natoms,logg[9],logg[2],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HD2 and CE1 (1-5) */
-      phe_15_CBCZ(logg[3],logg[2],logg[4],logg[6],logg[8],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[8]))) {
-	set_dist(d,natoms,logg[3],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HD1 and CE2 (1-5) */
-      phe_15_CBCZ(logg[11],logg[10],logg[1],logg[2],logg[4],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[4]))) {
-	set_dist(d,natoms,logg[11],logg[4],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE2 and CD1 (1-5) */
-      phe_15_CBCZ(logg[5],logg[4],logg[6],logg[8],logg[10],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[10]))) {
-	set_dist(d,natoms,logg[5],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /* end new 1-5 distances */
-
-      /*fprintf(stderr,"Calling phe_15_CBHE\n");*/
-      /*SETDISTANCE for CB and HE2 (1-5) */
-      phe_15_CBHE(logg[0],logg[1],logg[2],logg[4],logg[5],ilist,
-		      iparams,&blen,atoms);
-      /*fprintf(stderr,"Exited phe_15_CBHE\n");*/
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*fprintf(stderr,"Calling phe_15_CBHE\n");*/     
-      /*SETDISTANCE for CB and HE1 (1-5) */
-      phe_15_CBHE(logg[0],logg[1],logg[10],logg[8],logg[9],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[9]))) {
-	set_dist(d,natoms,logg[0],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CB and CZ (1-5) */
-      phe_15_CBCZ(logg[0],logg[1],logg[2],logg[4],logg[6],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[6]))) {
-	set_dist(d,natoms,logg[0],logg[6],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CG and HZ (1-5) */
-      phe_15_CGHZ(logg[1],logg[2],logg[4],logg[6],logg[7],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[7]))) {
-	set_dist(d,natoms,logg[1],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /* 1111111111-------------666666666666 */
-      /*SETDISTANCE for CB and HZ (1-6) */
-      phe_16_type2(logg[0],logg[1],logg[2],logg[4],logg[6],logg[7],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[7]))) {
-	set_dist(d,natoms,logg[0],logg[7],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HD1 and HE2 (1-6) */
-      phe_16_type2(logg[11],logg[10],logg[1],logg[2],logg[4],logg[5],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[5]))) {
-	set_dist(d,natoms,logg[11],logg[5],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HD2 and HE1 (1-6) */
-      phe_16_type2(logg[3],logg[2],logg[4],logg[6],logg[8],logg[9],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[9]))) {
-	set_dist(d,natoms,logg[3],logg[9],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      if (bVir) {
+	/*SETDISTANCE for HD2 and HE1 (1-6) */
+	phe_16_type2(logger("HD2"),logger("CD2"),logger("CE2"),logger("CZ"),
+		     logger("CE1"),logger("HE1"),ilist,iparams,&blen,atoms);
+	n16dist += do_a_dist(logger("HD2"),logger("HE1"),natoms,ring_margin,
+			     weight,d,blen);
+	
 	/* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,12,ring_margin,d,natoms);
-	ndist += nVdist;
+	if (bVir) 
+	  nVdist += set_virtual (cda,MAXLOGG-1,ring_margin,d,natoms);
       }
-    }
-    logg[13]=0;
     }
   }
+  pr_ndist(log,RES,n14dist,n15dist,n16dist,0,nVdist);
 
-  fprintf(log,"There are %d new phenylalanine distances\n",ndist);
-  if (ndist > 0 ) 
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6, %d virtual)\n",
-	    n12dist,n13dist,n14dist,n15dist,n16dist,nVdist);
+  sfree(cda);
+}
+
+void phe(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
+	 real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
+{
+  phe_tyr(log,d,idef,atoms,weight,ring_margin,ilist,iparams,bVir,TRUE);
 }
 
 /**********************************************************
@@ -3462,1018 +1165,10 @@ void phe (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
  *      T Y R O S I N E
  *
  **********************************************************/
-static void tyr_15_CBHE(int ai,int aj,int ak,int al,int am,
-			 t_ilist ilist[],t_iparams iparams[],
-			 real *lb,t_atoms *atoms)
+void tyr(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
+	 real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
 {
-  /* Returns the length corresponding to a 1-5 distance */
-  real rij,rjk,rkl,rlm,rik,rkm,rim;
-  real thijk,thjkl,thklm,thikj,thmkl;
-  real real_pi = M_PI*2.0;
-  real half_pi = M_PI*0.5;
-
-  /*  fprintf(stderr,"Got past initialisations\n");*/
-  rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  rlm   = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  /*fprintf(stderr,"Got past lookup_bondlength\n");*/
-  thijk = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  thjkl = lookup_angle(aj,ak,al,ilist,iparams,atoms);
-  thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
-  /*fprintf(stderr,"Got past lookup_angle\n");*/
-  /*fprintf(stderr,"%g %g %g %g %g %g %g\n",rij,rjk,rkl,rlm,RAD2DEG*thijk,
-    RAD2DEG*thjkl,RAD2DEG*thklm);*/
-  rik   =  sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
-  rkm   =  sqrt(rkl*rkl+rlm*rlm-2.0*rkl*rlm*cos(thklm));
-  /*fprintf(stderr,"Got past angle_length\n");*/
-
-  /* Compute angle thikj using law of sines */
-  thikj = asin(rij*sin(thijk)/rik);
-  
-  /* Compute thmkl using law of sines */
-  thmkl = asin(rlm*sin(thklm)/rkm);
-
-  /* Compute cis length using law of cosines */
-  *lb = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(real_pi-thikj-thmkl-thjkl));
-  /*fprintf(stderr,"leaving routine\n");*/
-}
-
-static void tyr_15_CBCZ(int ai,int aj,int ak,int al,int am,
-			 t_ilist ilist[],t_iparams iparams[],
-			 real *lb,t_atoms *atoms)
-{
-  /* Returns the length corresponding to a 1-5 distance */
-  real rij,rjk,rkl,rlm,rik,rkm;
-  real thijk,thjkl,thklm,thikj,thmkl;
-  real real_pi = M_PI*2.0;
-  real half_pi = M_PI*0.5;
-  
-  rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  rlm   = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  thijk = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  thjkl = lookup_angle(aj,ak,al,ilist,iparams,atoms);
-  thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
-  rik   = sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
-  rkm   = sqrt(rkl*rkl+rlm*rlm-2.0*rkl*rlm*cos(thklm));
-  
-  /* Compute angle thikj using law of sines */
-  thikj = asin(rij*sin(thijk)/rik);
-  
-  /* Compute thmkl using law of sines */
-  thmkl = asin(rlm*sin(thklm)/rkm);
-
-  /* Compute cis length using law of cosines */
-  *lb = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(thjkl-thmkl+thikj));
-}
-
-static void tyr_15_CGOH(int ai,int aj,int ak,int al,int am,
-			 t_ilist ilist[],t_iparams iparams[],
-			 real *lb,t_atoms *atoms)
-{
-  /* Returns the length corresponding to a 1-5 distance */
-  real rij,rjk,rkl,rlm,rik,rkm;
-  real thijk,thjkl,thklm,thikj,thmkl;
-  real real_pi = M_PI*2.0;
-
-  /*fprintf(stderr,"entering the routine\n");*/
-
-  rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  rlm   = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  thijk = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  thjkl = lookup_angle(aj,ak,al,ilist,iparams,atoms);
-  thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
-  rik   = sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
-  rkm   = sqrt(rkl*rkl+rlm*rlm-2.0*rkl*rlm*cos(thklm));
-  /*fprintf(stderr,"Only calculations left\n");*/
-
-  /* Compute angle thikj using law of sines */
-  thikj = asin(rij*sin(thijk)/rik);
-  
-  /* Compute thmkl using law of sines */
-  thmkl = asin(rlm*sin(thklm)/rkm);
-
-  /* Compute cis length using law of cosines */
-  *lb = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(thjkl-thikj+thmkl));
-}
-
-static void tyr_16_type2(int ai,int aj,int ak,int al,int am,int an,
-		  t_ilist ilist[],t_iparams iparams[],
-		  real *lb,t_atoms *atoms)
-{
-  /* Returns the length corresponding to a 1-6 distance */
-
-  real rij,rjk,rkl,rlm,rmn,rik,rln,ril;
-  real thijk,thjkl,thklm,thlmn,thikj,thikl,thilk,thnlm,thiln;
-  real real_pi = M_PI*2.0;    
-  real half_pi = M_PI*0.5;
-  
-  rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  rlm   = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  rmn   = lookup_bondlength(am,an,ilist,iparams,TRUE,atoms);
-  thijk = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  thjkl = lookup_angle(aj,ak,al,ilist,iparams,atoms);
-  thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
-  thlmn = lookup_angle(al,am,an,ilist,iparams,atoms);
-
-  /* Compute rik and rlm */
-  rik   = sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
-  rln   = sqrt(rlm*rlm+rmn*rmn-2.0*rlm*rmn*cos(thlmn));
-
-  /* Compute thikj */
-  thikj = asin(rij*sin(thijk)/rik);
-  thikl = thikj+thjkl;
-  
-  /* Compute ril */
-  ril   = sqrt(rik*rik+rkl*rkl-2.0*rik*rkl*cos(thikl));
-
-  /* Compute thilk, thlnm and thiln */
-  thilk = asin(rik*sin(thikl)/ril);
-  thnlm = asin(rmn*sin(thlmn)/rln);
-  thiln = thklm-thilk+thnlm;
-
-  *lb = sqrt(ril*ril+rln*rln-2.0*ril*rln*cos(thiln));
-}
-
-void tyr (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
-	  real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
-{
-  int natoms,ndist,i,j,q,logg[14],residnr,oldresidnr,n12dist,n13dist,n14dist,
-    n15dist,n16dist,nVdist;
-  real blen,lb,ub,angle;
-
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  n15dist = 0;
-  n16dist = 0;
-  nVdist  = 0;
-  residnr = -1;
-  oldresidnr=-1;
-
-  for (i=0; (i<natoms); i++) {
-    if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"TYR") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[13]=0;
-      if ( oldresidnr == residnr ) {
-	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[13]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[13]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CD2") == 0) {
-	  logg[13]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HD2") == 0) {
-	  logg[13]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CE2") == 0) {
-	  logg[13]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE2") == 0) {
-	  logg[13]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CZ") == 0) {
-	  logg[13]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"OH") == 0) {
-	  logg[13]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CE1") == 0) {
-	  logg[13]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE1") == 0) {
-	  logg[13]++;
-	  logg[9]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"CD1") == 0) {
-	  logg[13]++;
-	  logg[10]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HD1") == 0) {
-	  logg[13]++;
-	  logg[11]=j;
-	}	
-        else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[13]++;
-	  logg[12]=j;
-	}	
-	if ( ((logg[13] == 12) && !bVir) || ((logg[13] == 13) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[13] == 12) && !bVir) || ((logg[13] == 13) && bVir) ) {
-
-      pr_logg(debug,12,logg,bVir,"Tyr");
-
-      /*SETDISTANCE for CB and CG (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CG and CD2 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and HD2 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and CE2 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE2 and HE2 (1-2) */
-      blen=lookup_bondlength(logg[4],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE2 and CZ (1-2) */
-      blen=lookup_bondlength(logg[4],logg[6],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[6]))) {
-	set_dist(d,natoms,logg[4],logg[6],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ and OH (1-2) */
-      blen=lookup_bondlength(logg[6],logg[7],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ and CE1 (1-2) */
-      blen=lookup_bondlength(logg[6],logg[8],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE1 and HE1 (1-2) */
-      blen=lookup_bondlength(logg[8],logg[9],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[9]))) {
-	set_dist(d,natoms,logg[8],logg[9],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE1 and CD1 (1-2) */
-      blen=lookup_bondlength(logg[8],logg[10],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[10]))) {
-	set_dist(d,natoms,logg[8],logg[10],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD1 and HD1 (1-2) */
-      blen=lookup_bondlength(logg[10],logg[11],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[11]))) {
-	set_dist(d,natoms,logg[10],logg[11],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD1 and CG (1-2) */
-      blen=lookup_bondlength(logg[1],logg[10],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[10]))) {
-	set_dist(d,natoms,logg[1],logg[10],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-
-      /* new 1-3 distances added 981126 */
-      /*SETDISTANCE for CG and HD1 (1-3) */
-      angle=lookup_angle(logg[1],logg[10],logg[11],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[10],logg[11],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[11]))) {
-	set_dist(d,natoms,logg[1],logg[11],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /* end of new 1-3 distances */
-
-      /*SETDISTANCE for CD1 and CD2 (1-3) */
-      angle=lookup_angle(logg[10],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[10],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[2]))) {
-	set_dist(d,natoms,logg[10],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and CE2 (1-3) */
-      angle=lookup_angle(logg[1],logg[2],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[2],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD2 and CZ (1-3) */
-      angle=lookup_angle(logg[2],logg[4],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[4],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[6]))) {
-	set_dist(d,natoms,logg[2],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE2 and CE1 (1-3) */
-      angle=lookup_angle(logg[4],logg[6],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[4],logg[6],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[8]))) {
-	set_dist(d,natoms,logg[4],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ and CE1 (1-3) */
-      angle=lookup_angle(logg[6],logg[8],logg[10],ilist,iparams,atoms);
-      blen=angle_length(logg[6],logg[8],logg[10],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[10]))) {
-	set_dist(d,natoms,logg[6],logg[10],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE1 and CG (1-3) */
-      angle=lookup_angle(logg[8],logg[10],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[8],logg[10],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[1]))) {
-	set_dist(d,natoms,logg[8],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CD1 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[10],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[10],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[10]))) {
-	set_dist(d,natoms,logg[0],logg[10],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CD2 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD2 and CG (1-3) */
-      angle=lookup_angle(logg[3],logg[2],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[2],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[1]))) {
-	set_dist(d,natoms,logg[3],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD2 and CE2 (1-3) */
-      angle=lookup_angle(logg[3],logg[2],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[2],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CD2 (1-3) */
-      angle=lookup_angle(logg[5],logg[4],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[4],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[2]))) {
-	set_dist(d,natoms,logg[5],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CZ (1-3) */
-      angle=lookup_angle(logg[5],logg[4],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[4],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[6]))) {
-	set_dist(d,natoms,logg[5],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for OH and CE2 (1-3) */
-      angle=lookup_angle(logg[7],logg[6],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[6],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[4]))) {
-	set_dist(d,natoms,logg[7],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for OH and CE1 (1-3) */
-      angle=lookup_angle(logg[7],logg[6],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[6],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[8]))) {
-	set_dist(d,natoms,logg[7],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and CZ (1-3) */
-      angle=lookup_angle(logg[9],logg[8],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[8],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[6]))) {
-	set_dist(d,natoms,logg[9],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and CD1 (1-3) */
-      angle=lookup_angle(logg[9],logg[8],logg[10],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[8],logg[10],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[10]))) {
-	set_dist(d,natoms,logg[9],logg[10],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD1 and CE1 (1-3) */
-      angle=lookup_angle(logg[11],logg[10],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[11],logg[10],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[8]))) {
-	set_dist(d,natoms,logg[11],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-
-      /* new 1-4 distances added 981126 */
-      /*SETDISTANCE for CD2 and HD1 (logg[2]&logg[11]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[10],logg[11],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[11]))) {
-	set_dist(d,natoms,logg[2],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ and HD1 (logg[6]&logg[11]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[8],logg[10],logg[11],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[11]))) {
-	set_dist(d,natoms,logg[6],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and CE1 (logg[2]&logg[8]) (cisdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[10],logg[8],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[8]))) {
-	set_dist(d,natoms,logg[2],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and CD1 (logg[4]&logg[10]) (cisdihedral)*/
-      pdih_lengths(logg[4],logg[6],logg[8],logg[10],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[10]))) {
-	set_dist(d,natoms,logg[4],logg[10],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /* end of new 1-4 distances */
-
-      /*SETDISTANCE for CB and CE1 (logg[0]&logg[8]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[10],logg[8],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[8]))) {
-	set_dist(d,natoms,logg[0],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and CE2 (logg[0]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD1 and HD2 (logg[10]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[10],logg[1],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[3]))) {
-	set_dist(d,natoms,logg[10],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ and HD2 (logg[6]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[4],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[3]))) {
-	set_dist(d,natoms,logg[6],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE2 (logg[1]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[4],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE1 and HE2 (logg[8]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[8],logg[6],logg[4],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[5]))) {
-	set_dist(d,natoms,logg[8],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD1 and OH (logg[10]&logg[7]) (transdihedral)*/
-      pdih_lengths(logg[10],logg[8],logg[6],logg[7],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[7]))) {
-	set_dist(d,natoms,logg[10],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and OH (logg[2]&logg[7]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[4],logg[6],logg[7],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[7]))) {
-	set_dist(d,natoms,logg[2],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and HE1 (logg[4]&logg[9]) (transdihedral)*/
-      pdih_lengths(logg[4],logg[6],logg[8],logg[9],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[9]))) {
-	set_dist(d,natoms,logg[4],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE1 (logg[1]&logg[9]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[10],logg[8],logg[9],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[9]))) {
-	set_dist(d,natoms,logg[1],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD1 (logg[0]&logg[11]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[10],logg[11],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[11]))) {
-	set_dist(d,natoms,logg[0],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD2 (logg[0]&logg[3]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[3],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and CZ (logg[1]&logg[6]) (cisdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[4],logg[6],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[6]))) {
-	set_dist(d,natoms,logg[1],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HD2 and HE2 (logg[3]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[3],logg[2],logg[4],logg[5],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE2 and OH (logg[5]&logg[7]) (cisdihedral)*/
-      pdih_lengths(logg[5],logg[4],logg[6],logg[7],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[7]))) {
-	set_dist(d,natoms,logg[5],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for OH and HE1 (logg[7]&logg[9]) (cisdihedral)*/
-      pdih_lengths(logg[7],logg[6],logg[8],logg[9],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[9]))) {
-	set_dist(d,natoms,logg[7],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE1 and HD1 (logg[9]&logg[11]) (cisdihedral)*/
-      pdih_lengths(logg[9],logg[8],logg[10],logg[11],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[11]))) {
-	set_dist(d,natoms,logg[9],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-
-      /* new 1-5 distances added 981126 */
-      /*SETDISTANCE for HD2 and OH (1-5) */
-      tyr_15_CBHE(logg[3],logg[2],logg[4],logg[6],logg[7],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[7]))) {
-	set_dist(d,natoms,logg[3],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HD2 and HD1 (1-5) */
-      tyr_15_CBHE(logg[3],logg[2],logg[1],logg[10],logg[11],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[11]))) {
-	set_dist(d,natoms,logg[3],logg[11],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE2 and HE1 (1-5) */
-      tyr_15_CBHE(logg[5],logg[4],logg[6],logg[8],logg[9],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[9]))) {
-	set_dist(d,natoms,logg[5],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for OH and HD1 (1-5) */
-      tyr_15_CBHE(logg[7],logg[6],logg[8],logg[10],logg[11],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[11]))) {
-	set_dist(d,natoms,logg[7],logg[11],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE1 and CD2 (1-5) */
-      tyr_15_CBCZ(logg[9],logg[8],logg[6],logg[4],logg[2],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[2]))) {
-	set_dist(d,natoms,logg[9],logg[2],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HD2 and CE1 (1-5) */
-      tyr_15_CBCZ(logg[3],logg[2],logg[4],logg[6],logg[8],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[8]))) {
-	set_dist(d,natoms,logg[3],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HD1 and CE2 (1-5) */
-      tyr_15_CBCZ(logg[11],logg[10],logg[1],logg[2],logg[4],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[4]))) {
-	set_dist(d,natoms,logg[11],logg[4],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE2 and CD1 (1-5) */
-      tyr_15_CBCZ(logg[5],logg[4],logg[6],logg[8],logg[10],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[10]))) {
-	set_dist(d,natoms,logg[5],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /* end new 1-5 distances */
-
-      /*fprintf(stderr,"Calling tyr_15_CBHE\n");*/
-      /*SETDISTANCE for CB and HE2 (1-5) */
-      tyr_15_CBHE(logg[0],logg[1],logg[2],logg[4],logg[5],ilist,
-		      iparams,&blen,atoms);
-      /*fprintf(stderr,"Exited tyr_15_CBHE\n");*/
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*fprintf(stderr,"Calling tyr_15_CBHE\n");*/     
-      /*SETDISTANCE for CB and HE1 (1-5) */
-      tyr_15_CBHE(logg[0],logg[1],logg[10],logg[8],logg[9],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[9]))) {
-	set_dist(d,natoms,logg[0],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CB and CZ (1-5) */
-      tyr_15_CBCZ(logg[0],logg[1],logg[2],logg[4],logg[6],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[6]))) {
-	set_dist(d,natoms,logg[0],logg[6],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*fprintf(stderr,"Calling tyr_15_CGOH\n");*/
-      /*SETDISTANCE for CG and OH (1-5) */
-      tyr_15_CGOH(logg[1],logg[2],logg[4],logg[6],logg[7],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[7]))) {
-	set_dist(d,natoms,logg[1],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /* 1111111111------------6666666666  */
-      /*SETDISTANCE for CB and OH (1-6) */
-      tyr_16_type2(logg[0],logg[1],logg[2],logg[4],logg[6],logg[7],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[7]))) {
-	set_dist(d,natoms,logg[0],logg[7],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HD1 and HE2 (1-6) */
-      tyr_16_type2(logg[11],logg[10],logg[1],logg[2],logg[4],logg[5],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[5]))) {
-	set_dist(d,natoms,logg[11],logg[5],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HD2 and HE1 (1-6) */
-      tyr_16_type2(logg[3],logg[2],logg[4],logg[6],logg[8],logg[9],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[9]))) {
-	set_dist(d,natoms,logg[3],logg[9],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      if (bVir) {
-	/* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,12,ring_margin,d,natoms);
-	ndist += nVdist;
-	if (FALSE) {
-	  for (q=0 ; q<12 ; q++ ) {
-	    if (q == 10) {
-	      blen = 8.0;
-	      lb   = (1.0-ring_margin)*blen;
-	      ub   = (1.0+ring_margin)*blen;
-	    }
-	    else {
-	      blen = d_len(d,natoms,logg[q],logg[10]);
-	      blen = sqrt(blen*blen+64.0);
-	      lb   = (1.0-ring_margin)*blen;
-	      ub   = (1.0+ring_margin)*blen;
-	    }
-        /* set distance to virtual atom */
-	    set_dist(d,natoms,logg[q],logg[12],lb,ub,blen);
-	    ndist++;
-	    nVdist++;
-	  }
-	}
-
-      }
-      
-    }
-    logg[13]=0;
-    }
-  }
-  
-  fprintf(log,"There are %d new tyrosine distances\n",ndist);
-  if (ndist > 0 ) 
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6, %d virtual)\n",
-	    n12dist,n13dist,n14dist,n15dist,n16dist,nVdist);
+  phe_tyr(log,d,idef,atoms,weight,ring_margin,ilist,iparams,bVir,FALSE);
 }
 
 /**********************************************************
@@ -4524,21 +1219,16 @@ static void trp_15_type2(int ai,int aj,int ak,int al,int am,
   real real_pi = M_PI*2.0;
   real half_pi = M_PI*0.5;
 
-  /*  fprintf(stderr,"Got past initialisations\n");*/
   rij   = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
   rjk   = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
   rkl   = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
   rlm   = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  /*fprintf(stderr,"Got past lookup_bondlength\n");*/
   thijk = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
   thjkl = lookup_angle(aj,ak,al,ilist,iparams,atoms);
   thklm = lookup_angle(ak,al,am,ilist,iparams,atoms);
-  /*fprintf(stderr,"Got past lookup_angle\n");*/
-  /*fprintf(stderr,"%g %g %g %g %g %g %g\n",rij,rjk,rkl,rlm,RAD2DEG*thijk,
-    RAD2DEG*thjkl,RAD2DEG*thklm);*/
+
   rik   =  sqrt(rij*rij+rjk*rjk-2.0*rij*rjk*cos(thijk));
   rkm   =  sqrt(rkl*rkl+rlm*rlm-2.0*rkl*rlm*cos(thklm));
-  /*fprintf(stderr,"Got past angle_length\n");*/
 
   /* Compute angle thikj using law of sines */
   thikj = asin(rij*sin(thijk)/rik);
@@ -4548,7 +1238,6 @@ static void trp_15_type2(int ai,int aj,int ak,int al,int am,
 
   /* Compute cis length using law of cosines */
   *lb = sqrt(rik*rik+rkm*rkm-2.0*rik*rkm*cos(real_pi-thikj-thmkl-thjkl));
-  /*fprintf(stderr,"leaving routine\n");*/
 }
 
 static void trp_15_type3(int ai,int aj,int ak,int al,int am,
@@ -4624,8 +1313,8 @@ static void trp_16_type1(int ai,int aj,int ak,int al,int am,int an,
 }
 
 static void trp_16_type2(int ai,int aj,int ak,int al,int am,int an,
-		  t_ilist ilist[],t_iparams iparams[],
-		  real *lb,t_atoms *atoms)
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms)
 {
   /* Returns the length corresponding to a 1-6 distance */
 
@@ -4706,8 +1395,8 @@ static void trp_16_type3(int ai,int aj,int ak,int al,int am,int an,
 
 
 static void trp_16_type4(int ai,int aj,int ak,int al,int am,int an,
-		  t_ilist ilist[],t_iparams iparams[],
-		  real *lb,t_atoms *atoms)
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms)
 {
   real rij,rjk,rkl,rlm,rmn,rik,rln,ril;
   real thijk,thjkl,thklm,thlmn,thikj,thikl,thilk,thnlm,thiln;
@@ -4745,8 +1434,8 @@ static void trp_16_type4(int ai,int aj,int ak,int al,int am,int an,
 }
 
 static void trp_17_type1(int ai,int aj,int ak,int al,int am,int an,int ao,
-		  t_ilist ilist[],t_iparams iparams[],
-		  real *lb,t_atoms *atoms)
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms)
 {
   real rij,rjk,rkl,rlm,rmn,rno,rik,rkm,rmo,rim;
   real thijk,thjkl,thklm,thlmn,thmno,thikj,thmkl,thikm,thomn,
@@ -4790,8 +1479,8 @@ static void trp_17_type1(int ai,int aj,int ak,int al,int am,int an,int ao,
 }
 
 static void trp_17_type2(int ai,int aj,int ak,int al,int am,int an,int ao,
-		  t_ilist ilist[],t_iparams iparams[],
-		  real *lb,t_atoms *atoms)
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms)
 {
   real rij,rjk,rkl,rlm,rmn,rno,rik,rmo,ril,rlo;
   real thijk,thjkl,thklm,thlmn,thmno,thikj,thomn,thikl,thlmo,thkli,
@@ -4835,1516 +1524,195 @@ static void trp_17_type2(int ai,int aj,int ak,int al,int am,int an,int ao,
   *lb = sqrt(ril*ril+rlo*rlo-2.0*ril*rlo*cos(thilo));
 }
 
-void trp (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
-	  real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
+/* FUNCTION TYPES */
+typedef void trp_15_func(int ai,int aj,int ak,int al,int am,
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms);
+typedef void trp_16_func(int ai,int aj,int ak,int al,int am,int an,
+			 t_ilist ilist[],t_iparams iparams[],
+			 real *lb,t_atoms *atoms);
+			 
+void trp(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
+	 real ring_margin,t_ilist ilist[],t_iparams iparams[],bool bVir)
 {
-  int natoms,ndist,i,j,q,logg[18],residnr,oldresidnr,n12dist,n13dist,n14dist,
-    n15dist,n16dist,n17dist,nVdist;
-  real blen,lb,ub,angle;
+  static char *sa[] = { "CB",  "CG",  "CD2", "CE3", "CZ3", "CH2", 
+			"CZ2", "CE2", "NE1", "CD1", "HE3", "HZ3", 
+			"HH2", "HZ2", "HE1", "HD1", "VF" };
+  t_cdatom *cda;
+  t_cd16 cd16[] = {
+    { "CB",  "CG",  "CD2", "CE3", "CZ3", "CH2", 1 },
+    { "CZ3", "CH2", "CZ2", "CE2", "NE1", "HE1", 1 },
+    { "HH2", "CH2", "CZ2", "CE2", "CD2", "CG",  2 },
+    { "HZ3", "CZ3", "CE3", "CD2", "CE2", "NE1", 2 },
+    { "HZ2", "CZ2", "CH2", "CZ3", "CE3", "HE3", 2 },
+    { "CB",  "CG",  "CD2", "CE3", "CZ3", "HZ3", 3 },
+    { "HE1", "NE1", "CE2", "CZ2", "CH2", "HH2", 3 },
+    { "HZ2", "CZ2", "CE2", "NE1", "CD1", "HD1", 3 },
+    { "HE3", "CE3", "CD2", "CG",  "CD1", "HD1", 3 },
+    { "CB",  "CG",  "CD2", "CE2", "CZ2", "HZ2", 4 },
+    { "CZ3", "CE3", "CD2", "CG",  "CD1", "HD1", 4 },
+    { "CH2", "CZ2", "CE2", "NE1", "CD1", "HD1", 4 },
+    { "HZ3", "CZ3", "CE3", "CD2", "CG",  "CD1", 4 },
+    { "HH2", "CH2", "CZ2", "CE2", "NE1", "CD1", 4 },
+    { "HE3", "CE3", "CD2", "CE2", "NE1", "HE1", 4 }
+  };
+  trp_16_func *trp16[4] = {
+    trp_16_type1, trp_16_type2, trp_16_type3, trp_16_type4
+  };
+  t_cd15 cd15[] = {
+    { "HE1", "NE1", "CD1", "CG",  "CB",  2 },
+    { "CB",  "CG",  "CD2", "CE2", "CZ2", 2 },
+    { "CD1", "CG",  "CD2", "CE3", "CZ3", 2 },
+    { "CB",  "CG",  "CD2", "CE3", "HE3", 3 },
+    { "HD1", "CD1", "CG",  "CD2", "CE3", 2 },
+    { "HD1", "CD1", "NE1", "CE2", "CZ2", 2 },
+    { "HE1", "NE1", "CE2", "CZ2", "HZ2", 3 },
+    { "CH2", "CZ2", "CE2", "NE1", "HE1", 1 },
+    { "HE1", "NE1", "CE2", "CD2", "CE3", 2 },
+    { "HZ2", "CZ2", "CE2", "CD2", "CG",  2 },
+    { "HH2", "CH2", "CZ2", "CE2", "CD2", 1 },
+    { "HZ3", "CZ3", "CE3", "CD2", "CE2", 1 },
+    { "HE3", "CE3", "CD2", "CE2", "CZ2", 1 },
+    { "HZ2", "CZ2", "CE2", "CD2", "CE3", 1 }, 
+    { "CZ3", "CE3", "CD2", "CG",  "CB",  1 },
+    { "CG",  "CD2", "CE2", "CZ2", "CH2", 1 },
+    { "NE1", "CE2", "CD2", "CE3", "CZ3", 1 },
+    { "CD1", "CG",  "CD2", "CE3", "HE3", 1 },
+    { "CD1", "NE1", "CE2", "CZ2", "HZ2", 1 },
+    { "NE1", "CE2", "CZ2", "CH2", "HH2", 2 },
+    { "HE3", "CE3", "CZ3", "CH2", "HH2", 2 },
+    { "HZ3", "CZ3", "CH2", "CZ2", "HZ2", 2 },
+    { "CG",  "CD2", "CE3", "CZ3", "HZ3", 2 },
+    { "CH2", "CZ2", "CE2", "NE1", "CD1", 2 },
+    { "NE1", "CE2", "CD2", "CE3", "HE3", 2 }
+  };
+  trp_15_func *trp15[3] = {
+    trp_15_type1, trp_15_type2, trp_15_type3
+  };
+  t_cdpdih pd[] = {
+    { "CG",  "CD2", "CE3", "CZ3", TRANS }, 
+    { "CD1", "NE1", "CE2", "CZ2", TRANS },
+    { "NE1", "CE2", "CZ2", "CH2", TRANS }, 
+    { "NE1", "CE2", "CD2", "CE3", TRANS },
+    { "CD2", "CE3", "CZ3", "HZ3", TRANS }, 
+    { "CE3", "CZ3", "CH2", "HH2", TRANS },
+    { "CZ3", "CH2", "CZ2", "HZ2", TRANS }, 
+    { "CG",  "CD2", "CE2", "CZ2", TRANS },
+    { "CE2", "NE1", "CD1", "HD1", TRANS }, 
+    { "CD2", "CG",  "CD1", "HD1", TRANS },
+    { "CB",  "CG",  "CD2", "CE3", CIS }, 
+    { "CB",  "CG",  "CD1", "HD1", CIS },
+    { "CG",  "CD2", "CE3", "HE3", CIS }, 
+    { "HE3", "CE3", "CZ3", "HZ3", CIS },
+    { "HZ3", "CZ3", "CH2", "HH2", CIS }, 
+    { "HH2", "CH2", "CZ2", "HZ2", CIS },
+    { "HZ2", "CZ2", "CE2", "NE1", CIS }, 
+    { "CZ2", "CE2", "NE1", "HE1", CIS },
+    { "HE1", "NE1", "CD1", "HD1", CIS }, 
+    { "CD2", "CE3", "CZ3", "CH2", CIS },
+    { "CE3", "CZ3", "CH2", "CZ2", CIS }, 
+    { "CZ3", "CH2", "CZ2", "CE2", CIS },
+    { "CB",  "CG",  "CD2", "CE2", TRANS }, 
+    { "CB",  "CG",  "CD1", "NE1", TRANS },
+    { "CG",  "CD1", "NE1", "HE1", TRANS }, 
+    { "CD2", "CE2", "CZ2", "HZ2", TRANS },
+    { "CD2", "CE2", "NE1", "HE1", TRANS }, 
+    { "CE3", "CD2", "CG",  "CD1", TRANS },
+    { "CH2", "CZ3", "CE3", "HE3", TRANS }, 
+    { "CZ2", "CH2", "CZ3", "HZ3", TRANS },
+    { "CE2", "CD2", "CE3", "HE3", TRANS }, 
+    { "CE2", "CZ2", "CH2", "HH2", TRANS }
+  };
+  int    natoms,i,j,k,kk,q,residnr,oldresidnr,nlogg;
+  int    n14dist,n15dist,n16dist,n17dist,nVdist,atom_index;
+  real   blen,lb,ub,angle;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  n15dist = 0;
-  n16dist = 0;
-  n17dist = 0;
-  nVdist  = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        = init_cdatoms(MAXLOGG,sa);
+  natoms     = atoms->nr;
+  n14dist    = 0;
+  n15dist    = 0;
+  n16dist    = 0;
+  n17dist    = 0;
+  nVdist     = 0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"TRP") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[17]=0;
-      if ( oldresidnr == residnr ) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr) 
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[17]++;
-	  logg[0]=j;
+      
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
+      
+      if ( ((nlogg == MAXLOGG-1) && !bVir) || ((nlogg == MAXLOGG) && bVir) ) {
+	
+	pr_logg(debug,MAXLOGG-1,cda,bVir,"Trp");
+
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,
+			       ring_margin,weight,d);
+	
+	for(k=0; (k<asize(cd15)); k++) {
+	  trp15[cd15[k].type-1](logger(cd15[k].ai),logger(cd15[k].aj),
+				logger(cd15[k].ak),logger(cd15[k].al),
+				logger(cd15[k].am),
+				ilist,iparams,&blen,atoms);
+	  n15dist += do_a_dist(logger(cd15[k].ai),
+			       logger(cd15[k].am),natoms,0.5*ring_margin,
+			       weight,d,blen);
 	}
-	else if ( strcmp((*atoms->atomname[j]),"CG") == 0) {
-	  logg[17]++;
-	  logg[1]=j;
+
+	for(k=0; (k<asize(cd16)); k++) {
+	  trp16[cd16[k].type-1](logger(cd16[k].ai),logger(cd16[k].aj),
+				logger(cd16[k].ak),logger(cd16[k].al),
+				logger(cd16[k].am),logger(cd16[k].an),
+				ilist,iparams,&blen,atoms);
+	  n16dist += do_a_dist(logger(cd16[k].ai),
+			       logger(cd16[k].an),natoms,0.5*ring_margin,
+			       weight,d,blen);
 	}
-	else if ( strcmp((*atoms->atomname[j]),"CD2") == 0) {
-	  logg[17]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CE3") == 0) {
-	  logg[17]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CZ3") == 0) {
-	  logg[17]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CH2") == 0) {
-	  logg[17]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CZ2") == 0) {
-	  logg[17]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CE2") == 0) {
-	  logg[17]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"NE1") == 0) {
-	  logg[17]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CD1") == 0) {
-	  logg[17]++;
-	  logg[9]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HE3") == 0) {
-	  logg[17]++;
-	  logg[10]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HZ3") == 0) {
-	  logg[17]++;
-	  logg[11]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HH2") == 0) {
-	  logg[17]++;
-	  logg[12]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HZ2") == 0) {
-	  logg[17]++;
-	  logg[13]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HE1") == 0) {
-	  logg[17]++;
-	  logg[14]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HD1") == 0) {
-	  logg[17]++;
-	  logg[15]=j;
-	}
-        else if ( (strcmp((*atoms->atomname[j]),"VF") == 0) && bVir) {
-	  logg[17]++;
-	  logg[16]=j;
-	}
-	if ( ((logg[17] == 16) && !bVir) || ((logg[17] == 17) && bVir) ) {
-	  break;
-	}
-	j++;
-      }
-    if ( ((logg[17] == 16) && !bVir) || ((logg[17] == 17) && bVir) ) {
+	
+	/* SETDISTANCE for HH2 and HD1 (1-7) */
+	trp_17_type2(logger("HH2"),logger("CH2"),logger("CZ2"),logger("CE2"),
+		     logger("NE1"),logger("CD1"),logger("HD1"),
+		     ilist,iparams,&blen,atoms);
+	n17dist += do_a_dist(logger("HH2"),logger("HD1"),
+			     natoms,0.5*ring_margin,weight,d,blen);
+	
+	/* SETDISTANCE for HZ3 and HE1 (1-7) */
+	trp_17_type1(logger("HZ3"),logger("CZ3"),logger("CE3"),logger("CD2"),
+		     logger("CE2"),logger("NE1"),logger("HE1"),
+		     ilist,iparams,&blen,atoms);
+	n17dist += do_a_dist(logger("HZ3"),logger("HE1"),
+			     natoms,0.5*ring_margin,weight,d,blen);
+		     
+	/* SETDISTANCE for HH2 and CB (1-7) */
+	trp_17_type1(logger("HH2"),logger("CH2"),logger("CZ2"),logger("CE2"),
+		     logger("CD2"),logger("CG"),logger("CB"),
+		     ilist,iparams,&blen,atoms);
+	n17dist += do_a_dist(logger("HH2"),logger("CB"),
+			     natoms,0.5*ring_margin,weight,d,blen);
 
-      pr_logg(debug,16,logg,bVir,"Trp");
-    
-      /*SETDISTANCE for CB and CG (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
+	/* SETDISTANCE for HZ3 and HD1 (1-7) */
+	trp_17_type2(logger("HZ3"),logger("CZ3"),logger("CE3"),logger("CD2"),
+		     logger("CG"),logger("CD1"),logger("HD1"),
+		     ilist,iparams,&blen,atoms);
+	n17dist += do_a_dist(logger("HZ3"),logger("HD1"),
+			     natoms,0.5*ring_margin,weight,d,blen);
+		     
+	/* VIRTUAL DISTANCES */
+	if (bVir) 
+	  nVdist += set_virtual (cda,MAXLOGG,ring_margin,d,natoms);
       }
-      /*SETDISTANCE for CG and CD2 (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD2 and CE3 (1-2) */
-      blen=lookup_bondlength(logg[2],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE3 and CZ3 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ3 and CH2 (1-2) */
-      blen=lookup_bondlength(logg[4],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CH2 and CZ2 (1-2) */
-      blen=lookup_bondlength(logg[5],logg[6],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[6]))) {
-	set_dist(d,natoms,logg[5],logg[6],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ2 and CE2 (1-2) */
-      blen=lookup_bondlength(logg[6],logg[7],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE2 and CD2 (1-2) */
-      blen=lookup_bondlength(logg[7],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[2]))) {
-	set_dist(d,natoms,logg[7],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE2 and NE1 (1-2) */
-      blen=lookup_bondlength(logg[7],logg[8],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[8]))) {
-	set_dist(d,natoms,logg[7],logg[8],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NE1 and CD1 (1-2) */
-      blen=lookup_bondlength(logg[8],logg[9],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[9]))) {
-	set_dist(d,natoms,logg[8],logg[9],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD1 and CG (1-2) */
-      blen=lookup_bondlength(logg[9],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[1]))) {
-	set_dist(d,natoms,logg[9],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CE3 and HE3 (1-2) */
-      blen=lookup_bondlength(logg[3],logg[10],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[10]))) {
-	set_dist(d,natoms,logg[3],logg[10],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ3 and HZ3 (1-2) */
-      blen=lookup_bondlength(logg[4],logg[11],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[11]))) {
-	set_dist(d,natoms,logg[4],logg[11],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }      
-      /*SETDISTANCE for CH2 and HH2 (1-2) */
-      blen=lookup_bondlength(logg[5],logg[12],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[12]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[12]))) {
-	set_dist(d,natoms,logg[5],logg[12],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CZ2 and HZ2 (1-2) */
-      blen=lookup_bondlength(logg[6],logg[13],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[13]))) {
-	set_dist(d,natoms,logg[6],logg[13],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for NE1 and HE1 (1-2) */
-      blen=lookup_bondlength(logg[8],logg[14],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[14]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[14]))) {
-	set_dist(d,natoms,logg[8],logg[14],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CD1 and HD1 (1-2) */
-      blen=lookup_bondlength(logg[9],logg[15],ilist,iparams,TRUE,atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[15]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[15]))) {
-	set_dist(d,natoms,logg[9],logg[15],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for CB and CD1 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[9],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[9],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[9]))) {
-	set_dist(d,natoms,logg[0],logg[9],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CB and CD2 (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and CE3 (1-3) */
-      angle=lookup_angle(logg[1],logg[2],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[2],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[3]))) {
-	set_dist(d,natoms,logg[1],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE2 and CD2 (1-3) */
-      angle=lookup_angle(logg[10],logg[3],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[10],logg[3],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[2]))) {
-	set_dist(d,natoms,logg[10],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE3 and CZ3 (1-3) */
-      angle=lookup_angle(logg[10],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[10],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[4]))) {
-	set_dist(d,natoms,logg[10],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HZ3 and CE3 (1-3) */
-      angle=lookup_angle(logg[11],logg[4],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[11],logg[4],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[3]))) {
-	set_dist(d,natoms,logg[11],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HZ3 and CH2 (1-3) */
-      angle=lookup_angle(logg[11],logg[4],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[11],logg[4],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[5]))) {
-	set_dist(d,natoms,logg[11],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HH2 and CZ3 (1-3) */
-      angle=lookup_angle(logg[12],logg[5],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[12],logg[5],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[4]))) {
-	set_dist(d,natoms,logg[12],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HH2 and CZ2 (1-3) */
-      angle=lookup_angle(logg[12],logg[5],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[12],logg[5],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[6]))) {
-	set_dist(d,natoms,logg[12],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HZ2 and CH2 (1-3) */
-      angle=lookup_angle(logg[13],logg[6],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[13],logg[6],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[5]))) {
-	set_dist(d,natoms,logg[13],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HZ2 and CE2 (1-3) */
-      angle=lookup_angle(logg[13],logg[6],logg[7],ilist,iparams,atoms);
-      blen=angle_length(logg[13],logg[6],logg[7],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[7]))) {
-	set_dist(d,natoms,logg[13],logg[7],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ2 and NE1 (1-3) */
-      angle=lookup_angle(logg[6],logg[7],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[6],logg[7],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and CE2 (1-3) */
-      angle=lookup_angle(logg[14],logg[8],logg[7],ilist,iparams,atoms);
-      blen=angle_length(logg[14],logg[8],logg[7],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[14]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[14],logg[7]))) {
-	set_dist(d,natoms,logg[14],logg[7],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HE1 and CD1 (1-3) */
-      angle=lookup_angle(logg[14],logg[8],logg[9],ilist,iparams,atoms);
-      blen=angle_length(logg[14],logg[8],logg[9],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[14]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[14],logg[9]))) {
-	set_dist(d,natoms,logg[14],logg[9],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD1 and NE1 (1-3) */
-      angle=lookup_angle(logg[15],logg[9],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[15],logg[9],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[15]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[15],logg[8]))) {
-	set_dist(d,natoms,logg[15],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for HD1 and CG (1-3) */
-      angle=lookup_angle(logg[15],logg[9],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[15],logg[9],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[15]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[15],logg[1]))) {
-	set_dist(d,natoms,logg[15],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD1 and CD2 (1-3) */
-      angle=lookup_angle(logg[9],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[9],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[2]))) {
-	set_dist(d,natoms,logg[9],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CG and CE2 (1-3) */
-      angle=lookup_angle(logg[1],logg[2],logg[7],ilist,iparams,atoms);
-      blen=angle_length(logg[1],logg[2],logg[7],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[7]))) {
-	set_dist(d,natoms,logg[1],logg[7],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD2 and NE1 (1-3) */
-      angle=lookup_angle(logg[2],logg[7],logg[8],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[7],logg[8],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[8]))) {
-	set_dist(d,natoms,logg[2],logg[8],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE2 and CD1 (1-3) */
-      angle=lookup_angle(logg[7],logg[8],logg[9],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[8],logg[9],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[9]))) {
-	set_dist(d,natoms,logg[7],logg[9],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for NE1 and CG (1-3) */
-      angle=lookup_angle(logg[8],logg[9],logg[1],ilist,iparams,atoms);
-      blen=angle_length(logg[8],logg[9],logg[1],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[1]))) {
-	set_dist(d,natoms,logg[8],logg[1],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE2 and CE3 (1-3) */
-      angle=lookup_angle(logg[7],logg[2],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[7],logg[2],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[3]))) {
-	set_dist(d,natoms,logg[7],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CD2 and CZ3 (1-3) */
-      angle=lookup_angle(logg[2],logg[3],logg[4],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CE3 and CH2 (1-3) */
-      angle=lookup_angle(logg[3],logg[4],logg[5],ilist,iparams,atoms);
-      blen=angle_length(logg[3],logg[4],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ3 and CZ2 (1-3) */
-      angle=lookup_angle(logg[4],logg[5],logg[6],ilist,iparams,atoms);
-      blen=angle_length(logg[4],logg[5],logg[6],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[6]))) {
-	set_dist(d,natoms,logg[4],logg[6],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CH2 and CE2 (1-3) */
-      angle=lookup_angle(logg[5],logg[6],logg[7],ilist,iparams,atoms);
-      blen=angle_length(logg[5],logg[6],logg[7],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[7]))) {
-	set_dist(d,natoms,logg[5],logg[7],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CZ2 and CD2 (1-3) */
-      angle=lookup_angle(logg[6],logg[7],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[6],logg[7],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[2]))) {
-	set_dist(d,natoms,logg[6],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*if (1>5) {*/
-      /*SETDISTANCE for CB and CE3 (logg[0]&logg[3]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[3],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and HD1 (logg[0]&logg[15]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[9],logg[15],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[15]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[15]))) {
-	set_dist(d,natoms,logg[0],logg[15],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE3 (logg[1]&logg[10]) (cisdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[3],logg[10],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[10]))) {
-	set_dist(d,natoms,logg[1],logg[10],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE3 and HZ3 (logg[10]&logg[11]) (cisdihedral)*/
-      pdih_lengths(logg[10],logg[3],logg[4],logg[11],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[11]))) {
-	set_dist(d,natoms,logg[10],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HZ3 and HH2 (logg[11]&logg[12]) (cisdihedral)*/
-      pdih_lengths(logg[11],logg[4],logg[5],logg[12],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[12]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[12]))) {
-	set_dist(d,natoms,logg[11],logg[12],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HH2 and HZ2 (logg[12]&logg[13]) (cisdihedral)*/
-      pdih_lengths(logg[12],logg[5],logg[6],logg[13],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[13]))) {
-	set_dist(d,natoms,logg[12],logg[13],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HZ2 and NE1 (logg[13]&logg[8]) (cisdihedral)*/
-      pdih_lengths(logg[13],logg[6],logg[7],logg[8],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[8]))) {
-	set_dist(d,natoms,logg[13],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ2 and HE1 (logg[6]&logg[14]) (cisdihedral)*/
-      pdih_lengths(logg[6],logg[7],logg[8],logg[14],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[14]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[14]))) {
-	set_dist(d,natoms,logg[6],logg[14],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HE1 and HD1 (logg[14]&logg[15]) (cisdihedral)*/
-      pdih_lengths(logg[14],logg[8],logg[9],logg[15],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[14]] != 0.0) || (weight[logg[15]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[14],logg[15]))) {
-	set_dist(d,natoms,logg[14],logg[15],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and CH2 (logg[2]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[2],logg[3],logg[4],logg[5],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[5]))) {
-	set_dist(d,natoms,logg[2],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE3 and CZ2 (logg[0]&logg[11]) (cisdihedral)*/
-      pdih_lengths(logg[3],logg[4],logg[5],logg[6],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[6]))) {
-	set_dist(d,natoms,logg[3],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ3 and CE2 (logg[4]&logg[7]) (cisdihedral)*/
-      pdih_lengths(logg[4],logg[5],logg[6],logg[7],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[7]))) {
-	set_dist(d,natoms,logg[4],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /* trans 1-4's added 981124 */
-
-      /*SETDISTANCE for CB and CE2 (logg[0]&logg[7]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[2],logg[7],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[7]))) {
-	set_dist(d,natoms,logg[0],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CB and NE1 (logg[0]&logg[8]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[9],logg[8],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[8]))) {
-	set_dist(d,natoms,logg[0],logg[8],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and HE1 (logg[1]&logg[14]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[9],logg[8],logg[14],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[14]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[14]))) {
-	set_dist(d,natoms,logg[1],logg[14],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and HZ2 (logg[2]&logg[13]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[7],logg[6],logg[13],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[13]))) {
-	set_dist(d,natoms,logg[2],logg[13],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and HE1 (logg[2]&logg[14]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[7],logg[8],logg[14],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[14]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[14]))) {
-	set_dist(d,natoms,logg[2],logg[14],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE3 and CD1 (logg[3]&logg[9]) (transdihedral)*/
-      pdih_lengths(logg[3],logg[2],logg[1],logg[9],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[9]))) {
-	set_dist(d,natoms,logg[3],logg[9],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CH2 and HE3 (logg[5]&logg[10]) (transdihedral)*/
-      pdih_lengths(logg[5],logg[4],logg[3],logg[10],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[10]))) {
-	set_dist(d,natoms,logg[5],logg[10],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ2 and HZ3 (logg[6]&logg[11]) (transdihedral)*/
-      pdih_lengths(logg[6],logg[5],logg[4],logg[11],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[11]))) {
-	set_dist(d,natoms,logg[6],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and HE3 (logg[7]&logg[10]) (transdihedral)*/
-      pdih_lengths(logg[7],logg[2],logg[3],logg[10],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[10]))) {
-	set_dist(d,natoms,logg[7],logg[10],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and HH2 (logg[7]&logg[12]) (transdihedral)*/
-      pdih_lengths(logg[7],logg[6],logg[5],logg[12],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[12]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[12]))) {
-	set_dist(d,natoms,logg[7],logg[12],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /* end of 1-4's added 981124 */
-
-
-
-      /*SETDISTANCE for CG and CZ3 (logg[1]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[3],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD1 and CZ2 (logg[9]&logg[6]) (transdihedral)*/
-      pdih_lengths(logg[9],logg[8],logg[7],logg[6],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[6]))) {
-	set_dist(d,natoms,logg[9],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for NE1 and CH2 (logg[8]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[8],logg[7],logg[6],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[5]))) {
-	set_dist(d,natoms,logg[8],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for NE1 and CE3 (logg[8]&logg[3]) (transdihedral)*/
-      pdih_lengths(logg[8],logg[7],logg[2],logg[3],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[3]))) {
-	set_dist(d,natoms,logg[8],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and HZ3 (logg[2]&logg[11]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[3],logg[4],logg[11],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[11]))) {
-	set_dist(d,natoms,logg[2],logg[11],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE3 and HH2 (logg[3]&logg[12]) (transdihedral)*/
-      pdih_lengths(logg[3],logg[4],logg[5],logg[12],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[12]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[12]))) {
-	set_dist(d,natoms,logg[3],logg[12],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CZ3 and HZ2 (logg[4]&logg[13]) (transdihedral)*/
-      pdih_lengths(logg[4],logg[5],logg[6],logg[13],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[13]))) {
-	set_dist(d,natoms,logg[4],logg[13],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CG and CZ2 (logg[1]&logg[6]) (transdihedral)*/
-      pdih_lengths(logg[1],logg[2],logg[7],logg[6],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[6]))) {
-	set_dist(d,natoms,logg[1],logg[6],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CE2 and HD1 (logg[7]&logg[15]) (transdihedral)*/
-      pdih_lengths(logg[7],logg[8],logg[9],logg[15],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[7]] != 0.0) || (weight[logg[15]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[7],logg[15]))) {
-	set_dist(d,natoms,logg[7],logg[15],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CD2 and HD1 (logg[2]&logg[15]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[9],logg[15],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-ring_margin)*blen;
-      ub=(1.0+ring_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[15]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[15]))) {
-	set_dist(d,natoms,logg[2],logg[15],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /* OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO*/
-
-      /* new 1-5 distances added 981124 */
-
-      /*SETDISTANCE for CZ3 and NE1 (1-5) */
-      trp_15_type1(logg[8],logg[7],logg[2],logg[3],logg[4],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[4]))) {
-	set_dist(d,natoms,logg[8],logg[4],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CD1 and HE3 (1-5) */
-      trp_15_type1(logg[9],logg[1],logg[2],logg[3],logg[10],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[10]))) {
-	set_dist(d,natoms,logg[9],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CD1 and HZ2 (1-5) */
-      trp_15_type1(logg[9],logg[8],logg[7],logg[6],logg[13],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[13]))) {
-	set_dist(d,natoms,logg[9],logg[13],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-
-      /*SETDISTANCE for CG and HZ3 (1-5) */
-      trp_15_type2(logg[1],logg[2],logg[3],logg[4],logg[11],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[11]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[11]))) {
-	set_dist(d,natoms,logg[1],logg[11],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CH2 and CD1 (1-5) */
-      trp_15_type2(logg[5],logg[6],logg[7],logg[8],logg[9],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[9]))) {
-	set_dist(d,natoms,logg[5],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for NE1 and HE3 (1-5) */
-      trp_15_type2(logg[8],logg[7],logg[2],logg[3],logg[10],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[10]))) {
-	set_dist(d,natoms,logg[8],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for NE1 and HH2 (1-5) */
-      trp_15_type2(logg[8],logg[7],logg[6],logg[5],logg[12],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[12]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[12]))) {
-	set_dist(d,natoms,logg[8],logg[12],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE3 and HH2 (1-5) */
-      trp_15_type2(logg[10],logg[3],logg[4],logg[5],logg[12],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[12]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[12]))) {
-	set_dist(d,natoms,logg[10],logg[12],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HZ3 and HZ2 (1-5) */
-      trp_15_type2(logg[11],logg[4],logg[5],logg[6],logg[13],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[13]))) {
-	set_dist(d,natoms,logg[11],logg[13],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*end of 1-5 distances added */
-
-
-      /*SETDISTANCE for CB and CZ3 (1-5) */
-      trp_15_type1(logg[4],logg[3],logg[2],logg[1],logg[0],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[0]))) {
-	set_dist(d,natoms,logg[4],logg[0],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CG and CH2 (1-5) */
-      trp_15_type1(logg[1],logg[2],logg[7],logg[6],logg[5],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CD and HH2 (1-5) */
-      trp_15_type1(logg[12],logg[5],logg[6],logg[7],logg[2],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[12]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[12],logg[2]))) {
-	set_dist(d,natoms,logg[12],logg[2],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE3 and CZ2 (1-5) */
-      trp_15_type1(logg[10],logg[3],logg[2],logg[7],logg[6],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[6]))) {
-	set_dist(d,natoms,logg[10],logg[6],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HZ2 and CE3 (1-5) */
-      trp_15_type1(logg[13],logg[6],logg[7],logg[2],logg[3],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[3]))) {
-	set_dist(d,natoms,logg[13],logg[3],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HZ3 and CE2 (1-5) */
-      trp_15_type1(logg[11],logg[4],logg[3],logg[2],logg[7],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[11]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[11],logg[7]))) {
-	set_dist(d,natoms,logg[11],logg[7],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for HE1 and CB (1-5) */
-      trp_15_type2(logg[14],logg[8],logg[9],logg[1],logg[0],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[14]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[14],logg[0]))) {
-	set_dist(d,natoms,logg[14],logg[0],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CB and CZ2 (1-5) */
-      trp_15_type2(logg[0],logg[1],logg[2],logg[7],logg[6],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[6]))) {
-	set_dist(d,natoms,logg[0],logg[6],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CZ3 and CD1 (1-5) */
-      trp_15_type2(logg[9],logg[1],logg[2],logg[3],logg[4],ilist,
-		      iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[4]))) {
-	set_dist(d,natoms,logg[9],logg[4],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      } 
-      /*SETDISTANCE for CB and HE3 (1-5) */
-      trp_15_type3(logg[0],logg[1],logg[2],logg[3],logg[10],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[10]))) {
-	set_dist(d,natoms,logg[0],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-
-
-
-
-     /*SETDISTANCE for HD1 and CE3 (1-5) */
-      trp_15_type2(logg[15],logg[9],logg[1],logg[2],logg[3],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[15]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[15],logg[3]))) {
-	set_dist(d,natoms,logg[15],logg[3],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-      /*SETDISTANCE for HD1 and CZ2 (1-5) */
-      trp_15_type2(logg[15],logg[9],logg[8],logg[7],logg[6],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[15]] != 0.0) || (weight[logg[6]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[15],logg[6]))) {
-	set_dist(d,natoms,logg[15],logg[6],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HE1 and HZ2 (1-5) */
-      trp_15_type3(logg[14],logg[8],logg[7],logg[6],logg[13],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[14]] != 0.0) || (weight[logg[13]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[14],logg[13]))) {
-	set_dist(d,natoms,logg[14],logg[13],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HE1 and CH2 (1-5) */
-      trp_15_type1(logg[5],logg[6],logg[7],logg[8],logg[14],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[14]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[14]))) {
-	set_dist(d,natoms,logg[5],logg[14],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HE1 and CE3 (1-5) */
-      trp_15_type2(logg[14],logg[8],logg[7],logg[2],logg[3],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[14]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[14],logg[3]))) {
-	set_dist(d,natoms,logg[14],logg[3],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*SETDISTANCE for HZ2 and CG (1-5) */
-      trp_15_type2(logg[13],logg[6],logg[7],logg[2],logg[1],ilist,
-		   iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if (((weight[logg[13]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[13],logg[1]))) {
-	set_dist(d,natoms,logg[13],logg[1],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }      
-      /*}*/
-
-
-
-
-      /*1111111111111111---------------66666666666666*/
-
-      /* new 1-6 distances added 981124 */
-
-      /*SETDISTANCE for HE3 and HE1 (1-6) */
-      trp_16_type4(logg[10],logg[3],logg[2],logg[7],logg[8],logg[14],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[10]] != 0.0 || (weight[logg[14]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[10],logg[14]))) {
-	set_dist(d,natoms,logg[10],logg[14],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /* end new distances */
-
-      /*SETDISTANCE for CB and CH2 (1-6) */
-      trp_16_type1(logg[0],logg[1],logg[2],logg[3],logg[4],logg[5],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[0]] != 0.0 || (weight[logg[5]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for CZ3 and HE1 (1-6) */
-      trp_16_type1(logg[4],logg[5],logg[6],logg[7],logg[8],logg[14],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[4]] != 0.0 || (weight[logg[14]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[4],logg[14]))) {
-	set_dist(d,natoms,logg[4],logg[14],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for CG  and HH2 (1-6) */
-      trp_16_type2(logg[12],logg[5],logg[6],logg[7],logg[2],logg[1],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[12]] != 0.0 || (weight[logg[1]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[12],logg[1]))) {
-	set_dist(d,natoms,logg[12],logg[1],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HZ3 and NE1 (1-6) */
-      trp_16_type2(logg[11],logg[4],logg[3],logg[2],logg[7],logg[8],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[11]] != 0.0 || (weight[logg[8]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[11],logg[8]))) {
-	set_dist(d,natoms,logg[11],logg[8],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HZ2 and HE3 (1-6) */
-      trp_16_type2(logg[13],logg[6],logg[5],logg[4],logg[3],logg[10],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[13]] != 0.0 || (weight[logg[10]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[13],logg[10]))) {
-	set_dist(d,natoms,logg[13],logg[10],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for CB  and HZ3 (1-6) */
-      trp_16_type3(logg[0],logg[1],logg[2],logg[3],logg[4],logg[11],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[0]] != 0.0 || (weight[logg[11]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[0],logg[11]))) {
-	set_dist(d,natoms,logg[0],logg[11],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HE1 and HH2 (1-6) */
-      trp_16_type3(logg[14],logg[8],logg[7],logg[6],logg[5],logg[12],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[14]] != 0.0 || (weight[logg[12]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[14],logg[12]))) {
-	set_dist(d,natoms,logg[14],logg[12],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HZ2 and HD1 (1-6) */
-      trp_16_type3(logg[13],logg[6],logg[7],logg[8],logg[9],logg[15],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[13]] != 0.0 || (weight[logg[15]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[13],logg[15]))) {
-	set_dist(d,natoms,logg[13],logg[15],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HE3 and HD1 (1-6) */
-      trp_16_type3(logg[10],logg[3],logg[2],logg[1],logg[9],logg[15],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[10]] != 0.0 || (weight[logg[15]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[10],logg[15]))) {
-	set_dist(d,natoms,logg[10],logg[15],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for CB and HZ2 (1-6) */
-      trp_16_type4(logg[0],logg[1],logg[2],logg[7],logg[6],logg[13],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[0]] != 0.0 || (weight[logg[13]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[0],logg[13]))) {
-	set_dist(d,natoms,logg[0],logg[13],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for CZ3 and HD1 (1-6) */
-      trp_16_type4(logg[4],logg[3],logg[2],logg[1],logg[9],logg[15],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[4]] != 0.0 || (weight[logg[15]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[4],logg[15]))) {
-	set_dist(d,natoms,logg[4],logg[15],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for CH2 and HD1 (1-6) */
-      trp_16_type4(logg[5],logg[6],logg[7],logg[8],logg[9],logg[15],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[5]] != 0.0 || (weight[logg[15]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[5],logg[15]))) {
-	set_dist(d,natoms,logg[5],logg[15],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HZ3 and CD1 (1-6) */
-      trp_16_type4(logg[11],logg[4],logg[3],logg[2],logg[1],logg[9],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[11]] != 0.0 || (weight[logg[9]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[11],logg[9]))) {
-	set_dist(d,natoms,logg[11],logg[9],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-      /*SETDISTANCE for HH2 and CD1 (1-6) */
-      trp_16_type4(logg[12],logg[5],logg[6],logg[7],logg[8],logg[9],
-		   ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[12]] != 0.0 || (weight[logg[9]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[12],logg[9]))) {
-	set_dist(d,natoms,logg[12],logg[9],lb,ub,blen);
-	ndist++;
-	n16dist++;
-      }
-
-      /* 111111111111---------7777777777 */
-
-
-      /* new 1-7 distances added 981124 */
-
-      /*SETDISTANCE for HH2 and HD1 (1-6) */
-      trp_17_type2(logg[12],logg[5],logg[6],logg[7],logg[8],logg[9],
-		   logg[15],ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[12]] != 0.0 || (weight[logg[15]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[12],logg[15]))) {
-	set_dist(d,natoms,logg[12],logg[15],lb,ub,blen);
-	ndist++;
-	n17dist++;
-      }
-      /* end of new distances */
-
-      /*SETDISTANCE for HZ3 and HE1 (1-6) */
-      trp_17_type1(logg[11],logg[4],logg[3],logg[2],logg[7],logg[8],
-		   logg[14],ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[11]] != 0.0 || (weight[logg[14]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[11],logg[14]))) {
-	set_dist(d,natoms,logg[11],logg[14],lb,ub,blen);
-	ndist++;
-	n17dist++;
-      }
-      /*SETDISTANCE for HH2 and CB (1-6) */
-      trp_17_type1(logg[12],logg[5],logg[6],logg[7],logg[2],logg[1],
-		   logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[12]] != 0.0 || (weight[logg[0]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[12],logg[0]))) {
-	set_dist(d,natoms,logg[12],logg[0],lb,ub,blen);
-	ndist++;
-	n17dist++;
-      }
-      /*SETDISTANCE for HZ3 and HD1 (1-6) */
-      trp_17_type2(logg[11],logg[4],logg[3],logg[2],logg[1],logg[9],
-		   logg[15],ilist,iparams,&blen,atoms);
-      lb=(1.0-(ring_margin*0.5))*blen;
-      ub=(1.0+(ring_margin*0.5))*blen;
-      if ((weight[logg[11]] != 0.0 || (weight[logg[15]] != 0.0)) && 
-	  (!dist_set(d,natoms,logg[11],logg[15]))) {
-	set_dist(d,natoms,logg[11],logg[15],lb,ub,blen);
-	ndist++;
-	n17dist++;
-      }
-
-      if (bVir) {
-      /* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,16,ring_margin,d,natoms);
-	ndist += nVdist;
-	/* Try adding a virtual atom above CD1 (logg[9]) */
-	if (FALSE) {
-	for (q=0 ; q<16 ; q++ ) {
-	  if (q == 9) {
-	    blen = 8.0;
-	    lb   = (1.0-ring_margin)*blen;
-	    ub   = (1.0+ring_margin)*blen;
-	  }
-	  else {
-	    blen = d_len(d,natoms,logg[q],logg[9]);
-	    blen = sqrt(blen*blen+64.0);
-	    lb   = (1.0-ring_margin)*blen;
-          ub   = (1.0+ring_margin)*blen;
-	  }
-        /* set distance to virtual atom */
-	  set_dist(d,natoms,logg[q],logg[16],lb,ub,blen);
-	  ndist++;
-	  nVdist++;       
-	}
-	}
-      }
-    }
-    logg[17]=0;
     }
   }
-
-  fprintf(log,"There are %d new tryptophan distances\n",ndist);
-  if (ndist > 0 )
-    fprintf(log,"(%d 1-2, %d 1-3, %d 1-4, %d 1-5, %d 1-6 %d 1-7 %d virtual)\n",
-	    n12dist,n13dist,n14dist,n15dist,n16dist,n17dist,nVdist);
+  pr_ndist(log,"TRP",n14dist,n15dist,n16dist,n17dist,nVdist);
+  
+  sfree(cda);
 }
  
 /**********************************************************
@@ -6356,378 +1724,135 @@ void trp (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 void val (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,real weight[],
 	  real val_margin,t_ilist ilist[],t_iparams iparams[])
 {
-  int natoms,ndist,i,j,logg[12],residnr,oldresidnr,n14dist,n15dist;
+  static char *sa[] = { "CA",  "CB",   "HB", 
+			"CG1", "HG11", "HG12", "HG13",
+			"CG2", "HG21", "HG22", "HG23" };
+  t_cdatom *cda;
+  t_cd15g  cd15g[] = {
+    { "HG11", "CG1", "CB", "CG2", "HG21", M_PI, M_PI43, M_PI43 },
+    { "HG11", "CG1", "CB", "CG2", "HG22", M_PI, M_PI43, M_PI23 },
+    { "HG11", "CG1", "CB", "CG2", "HG23", M_PI, M_PI43, 0 },
+    { "HG12", "CG1", "CB", "CG2", "HG21", M_PI, M_PI23, M_PI43 },
+    { "HG12", "CG1", "CB", "CG2", "HG22", M_PI, M_PI23, M_PI23 },
+    { "HG12", "CG1", "CB", "CG2", "HG23", M_PI, M_PI23, 0 },
+    { "HG13", "CG1", "CB", "CG2", "HG21", M_PI, 0,      M_PI43 },
+    { "HG13", "CG1", "CB", "CG2", "HG22", M_PI, 0,      M_PI23 },
+    { "HG13", "CG1", "CB", "CG2", "HG23", M_PI, 0,      0 }
+  };
+  t_cdpdih pd[] = { 
+    { "HG11", "CG1", "CB", "CA",  GAUCHE }, 
+    { "HG11", "CG1", "CB", "CG2", GAUCHE },
+    { "HG12", "CG1", "CB", "CG2", GAUCHE }, 
+    { "HG12", "CG1", "CB", "HB",  GAUCHE }, 
+    { "HG13", "CG1", "CB", "HB",  GAUCHE }, 
+    { "HG13", "CG1", "CB", "CA",  GAUCHE },
+    { "HG21", "CG2", "CB", "HB",  GAUCHE }, 
+    { "HG21", "CG2", "CB", "CG1", GAUCHE }, 
+    { "HG22", "CG2", "CB", "CG1", GAUCHE }, 
+    { "HG22", "CG2", "CB", "CA",  GAUCHE }, 
+    { "HG23", "CG2", "CB", "CA",  GAUCHE }, 
+    { "HG23", "CG2", "CB", "HB",  GAUCHE },
+    { "HG11", "CG1", "CB", "HB",  TRANS }, 
+    { "HG12", "CG1", "CB", "CA",  TRANS },
+    { "HG13", "CG1", "CB", "CG2", TRANS }, 
+    { "HG21", "CG2", "CB", "CA",  TRANS },
+    { "HG22", "CG2", "CB", "HB",  TRANS }, 
+    { "HG23", "CG2", "CB", "CG1", TRANS }
+  };
+  int  natoms,i,j,kk,residnr,oldresidnr,n14dist,n15dist,nlogg;
   real blen,lb,ub,angle;
   real pi = M_PI;
 
-  natoms= atoms->nr;
-  ndist   = 0;
-  n14dist = 0;
-  n15dist = 0;
-  residnr = -1;
-  oldresidnr=-1;
+  cda        =  init_cdatoms(MAXLOGG,sa);
+  natoms     =  atoms->nr;
+  n14dist    =  0;
+  n15dist    =  0;
+  residnr    = -1;
+  oldresidnr = -1;
 
   for (i=0; (i<natoms); i++) {
     if ( strcmp((*atoms->resname[atoms->atom[i].resnr]),"VAL") == 0) {
-      oldresidnr=residnr;
-      residnr=atoms->atom[i].resnr;
-      logg[11]=0;
-      if ( oldresidnr == residnr ) {
+      oldresidnr = residnr;
+      residnr    = atoms->atom[i].resnr;
+      if (oldresidnr == residnr)
 	continue;
-      }
-      j=i;
-      while ((atoms->atom[j].resnr) == residnr ) {
-	if ( strcmp((*atoms->atomname[j]),"CA") == 0) {
-	  logg[11]++;
-	  logg[0]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CB") == 0) {
-	  logg[11]++;
-	  logg[1]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HB") == 0) {
-	  logg[11]++;
-	  logg[2]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"CG1") == 0) {
-	  logg[11]++;
-	  logg[3]=j;
-	}
-	else if ( strcmp((*atoms->atomname[j]),"HG11") == 0) {
-	  logg[11]++;
-	  logg[4]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG12") == 0) {
-	  logg[11]++;
-	  logg[5]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG13") == 0) {
-	  logg[11]++;
-	  logg[6]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"CG2") == 0) {
-	  logg[11]++;
-	  logg[7]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG21") == 0) {
-	  logg[11]++;
-	  logg[8]=j;
-	}
-        else if ( strcmp((*atoms->atomname[j]),"HG22") == 0) {
-	  logg[11]++;
-	  logg[9]=j;
-	}	
-        else if ( strcmp((*atoms->atomname[j]),"HG23") == 0) {
-	  logg[11]++;
-	  logg[10]=j;
-	}	
-	if ( logg[11] == 11) {
-	  break;
-	}
-	j++;
-      }
-    if ( logg[11] == 11 ) {
-      pr_logg(debug,11,logg,FALSE,"Val");
+      
+      nlogg = set_cdatoms(atoms,i,residnr,MAXLOGG,cda);
+      
+      if (nlogg == MAXLOGG) {
+	pr_logg(debug,MAXLOGG-1,cda,FALSE,"Val");
 
-      /*SETDISTANCE for HG11 and CA */
-      gauche(logg[4],logg[3],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[0]))) {
-	set_dist(d,natoms,logg[4],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG11 and CG2 */
-      gauche(logg[4],logg[3],logg[1],logg[7],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[7]))) {
-	set_dist(d,natoms,logg[4],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG11 and HB */
-      pdih_lengths(logg[4],logg[3],logg[1],logg[2],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[2]))) {
-	set_dist(d,natoms,logg[4],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG12 and CG2 */
-      gauche(logg[5],logg[3],logg[1],logg[7],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[7]))) {
-	set_dist(d,natoms,logg[5],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG12 and HB */
-      gauche(logg[5],logg[3],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[2]))) {
-	set_dist(d,natoms,logg[5],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG12 and CA */
-      pdih_lengths(logg[5],logg[3],logg[1],logg[0],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[0]))) {
-	set_dist(d,natoms,logg[5],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG13 and HB */
-      gauche(logg[6],logg[3],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[2]))) {
-	set_dist(d,natoms,logg[6],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG13 and CA */
-      gauche(logg[6],logg[3],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[0]))) {
-	set_dist(d,natoms,logg[6],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG13 and CG2 */
-      pdih_lengths(logg[6],logg[3],logg[1],logg[7],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[7]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[7]))) {
-	set_dist(d,natoms,logg[6],logg[7],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG21 and HB */
-      gauche(logg[8],logg[7],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[2]))) {
-	set_dist(d,natoms,logg[8],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG21 and CG1 */
-      gauche(logg[8],logg[7],logg[1],logg[3],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[3]))) {
-	set_dist(d,natoms,logg[8],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG21 and CA */
-      pdih_lengths(logg[8],logg[7],logg[1],logg[0],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[8]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[8],logg[0]))) {
-	set_dist(d,natoms,logg[8],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG22 and CG1 */
-      gauche(logg[9],logg[7],logg[1],logg[3],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[3]))) {
-	set_dist(d,natoms,logg[9],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG22 and CA */
-      gauche(logg[9],logg[7],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[0]))) {
-	set_dist(d,natoms,logg[9],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG22 and HB */
-      pdih_lengths(logg[9],logg[7],logg[1],logg[2],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[9]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[9],logg[2]))) {
-	set_dist(d,natoms,logg[9],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG23 and CA */
-      gauche(logg[10],logg[7],logg[1],logg[0],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[0]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[0]))) {
-	set_dist(d,natoms,logg[10],logg[0],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG23 and HB */
-      gauche(logg[10],logg[7],logg[1],logg[2],ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[2]))) {
-	set_dist(d,natoms,logg[10],logg[2],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for HG23 and CG1 */
-      pdih_lengths(logg[10],logg[7],logg[1],logg[3],ilist,iparams,
-		   &lb,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[10]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[10],logg[3]))) {
-	set_dist(d,natoms,logg[10],logg[3],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
+	/* Proper dihedrals */
+	for(kk=0; (kk<NPD); kk++)
+	  n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			       logger(pd[kk].ak),logger(pd[kk].al),
+			       pd[kk].type,ilist,iparams,TRUE,atoms,val_margin,
+			       weight,d);
 
-      /* 111111111-----------5555555555 */
-      /*SETDISTANCE for HG11 and HG21 */
-      gauche15(logg[4],logg[3],logg[1],logg[7],logg[8],pi,pi+(pi/3.0),
-	       pi+(pi/3.0),ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[8]))) {
-	set_dist(d,natoms,logg[4],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
+	/* 1-5 dihedrals */
+	for(kk=0; (kk<asize(cd15g)); kk++) {
+	  gauche15(logger(cd15g[kk].ai),logger(cd15g[kk].aj),
+		   logger(cd15g[kk].ak),logger(cd15g[kk].al),
+		   logger(cd15g[kk].am),
+		   cd15g[kk].om1,cd15g[kk].om2,cd15g[kk].om3,
+		   ilist,iparams,&blen,atoms);
+	  n15dist += do_a_dist(logger(cd15g[kk].ai),logger(cd15g[kk].am),
+			       natoms,val_margin,weight,d,blen);
+	}			
       }
-      /*SETDISTANCE for HG11 and HG22 */
-      gauche15(logg[4],logg[3],logg[1],logg[7],logg[9],pi,pi+pi/3.0,
-	       pi-(pi/3.0),ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[9]))) {
-	set_dist(d,natoms,logg[4],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HG11 and HG23 */
-      gauche15(logg[4],logg[3],logg[1],logg[7],logg[10],pi,pi+(pi/3.0),0,
-	       ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[10]))) {
-	set_dist(d,natoms,logg[4],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-
-      /*SETDISTANCE for HG12 and HG21 */
-      gauche15(logg[5],logg[3],logg[1],logg[7],logg[8],pi,pi-pi/3.0,
-	       pi+pi/3.0,ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[8]))) {
-	set_dist(d,natoms,logg[5],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HG12 and HG22 */
-      gauche15(logg[5],logg[3],logg[1],logg[7],logg[9],pi,pi-pi/3.0,
-	       pi-pi/3.0,ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[9]))) {
-	set_dist(d,natoms,logg[5],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HG12 and HG23 */
-      gauche15(logg[5],logg[3],logg[1],logg[7],logg[10],pi,pi-pi/3.0,0,ilist,
-	       iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[5]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[5],logg[10]))) {
-	set_dist(d,natoms,logg[5],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-      /*SETDISTANCE for HG13 and HG21 */
-      gauche15(logg[6],logg[3],logg[1],logg[7],logg[8],pi,0,pi+pi/3.0,
-	       ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[8]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[8]))) {
-	set_dist(d,natoms,logg[6],logg[8],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HG13 and HG22 */
-      gauche15(logg[6],logg[3],logg[1],logg[7],logg[9],pi,0,pi-pi/3.0,
-	       ilist,iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[9]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[9]))) {
-	set_dist(d,natoms,logg[6],logg[9],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-      /*SETDISTANCE for HG13 and HG23 */
-      gauche15(logg[6],logg[3],logg[1],logg[7],logg[10],pi,0,0,ilist,
-	       iparams,&blen,atoms);
-      lb=(1.0-val_margin)*blen;
-      ub=(1.0+val_margin)*blen;
-      if (((weight[logg[6]] != 0.0) || (weight[logg[10]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[6],logg[10]))) {
-	set_dist(d,natoms,logg[6],logg[10],lb,ub,blen);
-	ndist++;
-	n15dist++;
-      }
-
-
-    }
-    logg[11]=0;
     }
   }
-  fprintf(log,"There are %d distances to keep valine gauche\n",ndist);
-  if (ndist > 0 ) 
-    fprintf(log,"(%d 1-4, %d 1-5)\n",n14dist,n15dist);
+  pr_ndist(log,"VAL",n14dist,n15dist,0,0,0);
+  
+  sfree(cda);
+}
+
+/**********************************************************
+ *
+ *     A L L   B O N D S   a n d    A N G L E S
+ *
+ **********************************************************/
+
+/* Hacked by David and probably full of errors. */
+void simple_bonds_and_angles(FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,
+			     real weight[],real bond_margin,real angle_margin)
+{
+  static int bbb[] = { F_BONDS, F_SHAKE, F_G96BONDS,
+#ifdef USE_CUBICBONDS
+		       F_CUBICBONDS,
+#endif
+		       F_MORSE };
+  static int aaa[] = { F_ANGLES, F_G96ANGLES };
+  
+  int     i,j,ftype,nratoms;
+  int     ndist12,ndist13;
+  t_iatom *ia;
+  
+  ndist12 = ndist13 = 0;
+  for(i=0; (i<asize(bbb)); i++) {
+    ftype   = bbb[i];
+    nratoms = interaction_function[ftype].nratoms+1;
+    ia      = idef->il[ftype].iatoms;
+    for(j=0; (j<idef->il[ftype].nr); ) {
+      ndist12 += do_a_bond(ia[1],ia[2],idef->il,idef->iparams,
+			   TRUE,atoms,bond_margin,weight,d);
+      j  += nratoms;
+      ia += nratoms;
+    }
+  }
+  for(i=0; (i<asize(aaa)); i++) {
+    ftype   = aaa[i];
+    nratoms = interaction_function[ftype].nratoms+1;
+    ia      = idef->il[ftype].iatoms;
+    for(j=0; (j<idef->il[ftype].nr); ) {
+      ndist13 += do_an_angle(ia[1],ia[2],ia[3],idef->il,idef->iparams,
+			     TRUE,atoms,angle_margin,weight,d);
+      j  += nratoms;
+      ia += nratoms;
+    }
+  }
+  fprintf(stderr,"Added %d generic bonds and %d generic angles\n",
+	  ndist12,ndist13);
 }
 
 /**********************************************************
@@ -6742,296 +1867,73 @@ void peptide_bonds (FILE *log,t_dist *d,t_idef *idef,t_atoms *atoms,
 		    t_ilist ilist[],t_iparams iparams[],bool bVir)
      
 {
-   
-  int natoms,ndist,odist,i,j,q,logg[8],n12dist,n13dist,n14dist,nVdist,
-    pronr,oldpronr;
+  /* Note that N, H(CD), CA are from next residue (indicated by +) */
+  static char *sa[]    = { "CA", "C", "O", "N+", "H+",  "CA+", "VP" };
+  static char *sapro[] = { "CA", "C", "O", "N+", "CD+", "CA+", "VP" };
+  t_cdatom *cdanorm,*cdapro,*cda;
+  t_cdpdih pdnorm[] = {
+    { "O",  "C", "N+", "H+",   TRANS }, 
+    { "O",  "C", "N+", "CA+",  CIS },
+    { "CA", "C", "N+", "CA+",  TRANS }, 
+    { "CA", "C", "N+", "H+",   CIS }
+  };  
+  t_cdpdih pdpro[] = {
+    { "O",  "C", "N+", "CD+",  TRANS }, 
+    { "O",  "C", "N+", "CA+",  CIS },
+    { "CA", "C", "N+", "CA+",  TRANS }, 
+    { "CA", "C", "N+", "CD+",  CIS }
+  };  
+  t_cdpdih *pd;
+  int  natoms,odist,i,j,kk,q,nlogg,nloggpro,maxlogg;
+  int  n14dist,nVdist,residnr,oldresidnr;
   real blen,lb,ub,angle;
+  bool bPro;
   
-  natoms= atoms->nr;
-  ndist = 0;
-  odist = 0;
-  n12dist = 0;
-  n13dist = 0;
-  n14dist = 0;
-  nVdist = 0;
-  pronr   =-1;
-  oldpronr=-1;
- 
+  cdanorm  =  init_cdatoms(MAXLOGG,sa);
+  cdapro   =  init_cdatoms(asize(sapro),sapro);  
+  natoms   =  atoms->nr;
+  n14dist  =  0;
+  nVdist   =  0;
+  residnr  = -1;
+
   for (i=0; (i<natoms); i++) {
-    logg[7]=0;
-    oldpronr=pronr;
-    if ( strcmp((*atoms->atomname[i]),"CA") == 0) {
-      logg[7]=1;
-      logg[0]=i;
-      /* Here comes an ugly initialisation. Put it in a separate function.*/
-      logg[1]=-1;
-      logg[2]=-1;
-      logg[3]=-1;
-      logg[4]=-1;
-      logg[5]=-1;
-      logg[6]=-1;
-      /* end of ugly initialisation */
-      /*for (j=(i+1); (j<natoms); j++) {*/
-      j=i+1;
-      while ( ((atoms->atom[j].resnr) <= ((atoms->atom[i].resnr)+1)) &&
-	      (j<natoms) ) {
-	if ( strcmp((*atoms->atomname[j]),"C") == 0) {
-	  if (logg[1] == -1) {
-	    logg[7]++;
-	    logg[1]=j;
-	  }
-	}
-	if ( strcmp((*atoms->atomname[j]),"O") == 0 ) {
-	  if (logg[2] == -1) {
-	    logg[7]++;
-	    logg[2]=j;
-	  }
-	}
-	if ( strcmp((*atoms->atomname[j]),"N") == 0 ) {
-	  if (logg[3] == -1) {
-	    logg[7]++;
-	    logg[3]=j;
-	  }
-	}
-	if (( strcmp((*atoms->resname[atoms->atom[j].resnr]),"PRO") == 0) &&
-	    ( strcmp((*atoms->atomname[j]),"CD") == 0)) {
-	  pronr=atoms->atom[j].resnr;
-	  if (oldpronr != pronr) {
-	      if (logg[4] == -1) {
-		logg[7]++;
-		logg[4]=j;
-	      }
-	  }
-	}
-	else if ( strcmp((*atoms->atomname[j]),"H") == 0 ) {
-	  if (logg[4] == -1) {
-	    logg[7]++;
-	    logg[4]=j;
-	  }
-	}
-	if ( strcmp((*atoms->atomname[j]),"CA") == 0) {
-	  if (logg[5] == -1) {
-	    logg[7]++;
-	    logg[5]=j;
-	  }
-	}
-	if ( (strcmp((*atoms->atomname[j]),"VP") == 0) && bVir) {
-	  if (logg[6] == -1) {
-	    logg[7]++;
-	    logg[6]=j;
-	  }
-	}
-	if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
-	  break;
-	}
-	j++;
-      } /* end of while-loop */
-
-    }
-    if ( ((logg[7] == 6) && !bVir) || ((logg[7] == 7) && bVir) ) {
-      pr_logg(debug,6,logg,bVir,"Pep");
-
-      /*SETDISTANCE for O and H (logg[2]&logg[4]) (transdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[3],logg[4],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  
-	  (!dist_set(d,natoms,logg[2],logg[4]))) {
-	set_dist(d,natoms,logg[2],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
+    oldresidnr = residnr;
+    residnr    = atoms->atom[i].resnr;
+    if (oldresidnr == residnr)
+      continue;
+  
+    /* Just search for atoms twice, if the next residue is a proline
+     * the search should find one more atom... 
+     */
+    nloggpro = set_cdatoms(atoms,i,residnr,MAXLOGG,cdapro);
+    nlogg    = set_cdatoms(atoms,i,residnr,MAXLOGG,cdanorm);
+    maxlogg  = max(nlogg,nloggpro);
+    bPro     = (nloggpro > nlogg);
+      
+    if ((bVir && (maxlogg == MAXLOGG)) || (!bVir && (maxlogg == MAXLOGG-1))) {
+      if (bPro) {
+	pd  = pdpro;
+	cda = cdapro;
       }
-      /*SETDISTANCE for O and CA+ (logg[2]&logg[5]) (cisdihedral)*/
-      pdih_lengths(logg[2],logg[1],logg[3],logg[5],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[5]))) {
-	set_dist(d,natoms,logg[2],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
+      else {
+	pd  = pdnorm;
+	cda = cdanorm;
       }
-      /*SETDISTANCE for CA- and CA+ (logg[0]&logg[5]) (transdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[3],logg[5],ilist,iparams,&lb,&blen,
-		   atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[5]))) {
-	set_dist(d,natoms,logg[0],logg[5],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CA- and H (logg[0]&logg[4]) (cisdihedral)*/
-      pdih_lengths(logg[0],logg[1],logg[3],logg[4],ilist,iparams,&blen,&ub,
-		   atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[4]))) {
-	set_dist(d,natoms,logg[0],logg[4],lb,ub,blen);
-	ndist++;
-	n14dist++;
-      }
-      /*SETDISTANCE for CA- and C (1-2) */
-      blen=lookup_bondlength(logg[0],logg[1],ilist,iparams,TRUE,atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[1]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[1]))) {
-	set_dist(d,natoms,logg[0],logg[1],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for N and CA+ (1-2) */
-      blen=lookup_bondlength(logg[3],logg[5],ilist,iparams,TRUE,atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[5]))) {
-	set_dist(d,natoms,logg[3],logg[5],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for C and O (1-2) */
-      blen=lookup_bondlength(logg[1],logg[2],ilist,iparams,TRUE,atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[2]))) {
-	set_dist(d,natoms,logg[1],logg[2],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for C and N (1-2) */
-      blen=lookup_bondlength(logg[1],logg[3],ilist,iparams,TRUE,atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[3]))) {
-	set_dist(d,natoms,logg[1],logg[3],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for N and H (1-2) */
-      blen=lookup_bondlength(logg[3],logg[4],ilist,iparams,TRUE,atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[3]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[3],logg[4]))) {
-	set_dist(d,natoms,logg[3],logg[4],lb,ub,blen);
-	ndist++;
-	n12dist++;
-      }
-      /*SETDISTANCE for O and N (1-3) */
-      angle=lookup_angle(logg[2],logg[1],logg[3],ilist,iparams,atoms);
-      blen=angle_length(logg[2],logg[1],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[2]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[2],logg[3]))) {
-	set_dist(d,natoms,logg[2],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for C and H (1-3) */
-      angle=lookup_angle(logg[1],logg[3],logg[4],ilist,iparams,atoms);
-      /*      fprintf(stderr,"Hej!pept.c(C-H)1-3 has angle:%g\n",RAD2DEG*angle);*/
-      blen=angle_length(logg[1],logg[3],logg[4],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[4]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[4]))) {
-	set_dist(d,natoms,logg[1],logg[4],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CA- and O (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[2],ilist,iparams,atoms);
-      blen=angle_length(logg[0],logg[1],logg[2],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[2]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[2]))) {
-	set_dist(d,natoms,logg[0],logg[2],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for H and CA+ (1-3) */
-      angle=lookup_angle(logg[4],logg[3],logg[5],ilist,iparams,atoms);
-      /*     fprintf(stderr,"Hej!pept.c(H-CA+)1-3 has angle:%g\n",RAD2DEG*angle);*/
-      blen=angle_length(logg[4],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[4]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[4],logg[5]))) {
-	set_dist(d,natoms,logg[4],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for CA- and N (1-3) */
-      angle=lookup_angle(logg[0],logg[1],logg[3],ilist,iparams,atoms);
-      /*fprintf(stderr,"CA- N (1-3) angle:%g\n",RAD2DEG*angle);*/
-      blen=angle_length(logg[0],logg[1],logg[3],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      /*fprintf(stderr,"CA- N (1-3) dist:%g\n",blen);*/
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[0]] != 0.0) || (weight[logg[3]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[0],logg[3]))) {
-	set_dist(d,natoms,logg[0],logg[3],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-      /*SETDISTANCE for C and CA+ (1-3) */
-      angle=lookup_angle(logg[1],logg[3],logg[5],ilist,iparams,atoms);
-      /*fprintf(stderr,"Hej!pept.c(C-CA+)1-3 has angle:%g\n",RAD2DEG*angle); */
-      blen=angle_length(logg[1],logg[3],logg[5],RAD2DEG*angle,ilist,iparams,
-			atoms);
-      lb=(1.0-pep_margin)*blen;
-      ub=(1.0+pep_margin)*blen;
-      if (((weight[logg[1]] != 0.0) || (weight[logg[5]] != 0.0)) &&
-	  (!dist_set(d,natoms,logg[1],logg[5]))) {
-	set_dist(d,natoms,logg[1],logg[5],lb,ub,blen);
-	ndist++;
-	n13dist++;
-      }
-
-      if (bVir) {
+      pr_logg(debug,MAXLOGG-1,cda,bVir,"PEP");
+      
+      for(kk=0; (kk<asize(pdnorm)); kk++)
+	n14dist += do_a_pdih(logger(pd[kk].ai),logger(pd[kk].aj),
+			     logger(pd[kk].ak),logger(pd[kk].al),
+			     pd[kk].type,ilist,iparams,TRUE,atoms,
+			     pep_margin,weight,d);
+      
       /* VIRTUAL DISTANCES */
-	nVdist += set_virtual (logg,6,pep_margin,d,natoms);
-	ndist += nVdist;
-	if (FALSE) {
-	  for (q=0 ; q<6 ; q++ ) {
-	    if (q == 3) {
-	      blen = 8.0;
-	      lb   = (1.0-pep_margin)*blen;
-	      ub   = (1.0+pep_margin)*blen;
-	    }
-	    else {
-	      blen = d_len(d,natoms,logg[q],logg[3]);
-	      blen = sqrt(blen*blen+64.0);
-	      lb   = (1.0-pep_margin)*blen;
-	      ub   = (1.0+pep_margin)*blen;
-	    }
-	    set_dist(d,natoms,logg[q],logg[6],lb,ub,blen);
-	    ndist++;
-	    nVdist++;
-	  }
-	}
-      }
+      if (bVir) 
+	nVdist += set_virtual (cda,MAXLOGG-1,pep_margin,d,natoms);
     }
   }
-  fprintf(stderr,"There are %d new peptide distances\n",ndist);
-  if (ndist > 0) {
-    fprintf(stderr,"(%d 1-2, %d 1-3, %d 1-4, %d virtual)\n",
-	    n12dist,n13dist,n14dist,nVdist);
-  }
+  pr_ndist(log,"PEP",n14dist,0,0,0,nVdist);
+  
+  sfree(cdanorm);
+  sfree(cdapro);
 }

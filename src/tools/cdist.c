@@ -412,8 +412,8 @@ void vect_matrix(real vect[3], real mat[3][3])
   }
 }
 
-void gauche(int ai,int aj,int ak,int al,t_ilist ilist[],
-	    t_iparams iparams[],real *lb,t_atoms *atoms)
+void gauche_(int ai,int aj,int ak,int al,t_ilist ilist[],
+	     t_iparams iparams[],real *lb,t_atoms *atoms,char *file,int line)
 {
 
   /* Matrix based approach */
@@ -426,11 +426,11 @@ void gauche(int ai,int aj,int ak,int al,t_ilist ilist[],
   real rij,rjk,rkl;
   real thijk,thjkl,theta1,theta2,omega1=pi,omega2 = pi+pi/3.0;
 
-  rij    = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk    = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl    = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  thijk  = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  thjkl  = lookup_angle(aj,ak,al,ilist,iparams,atoms);
+  rij    = lookup_bondlength_(ai,aj,ilist,iparams,TRUE,atoms,file,line);
+  rjk    = lookup_bondlength_(aj,ak,ilist,iparams,TRUE,atoms,file,line);
+  rkl    = lookup_bondlength_(ak,al,ilist,iparams,TRUE,atoms,file,line);
+  thijk  = lookup_angle_(ai,aj,ak,ilist,iparams,atoms,file,line);
+  thjkl  = lookup_angle_(aj,ak,al,ilist,iparams,atoms,file,line);
   theta1 = pi-thijk;
   theta2 = pi-thjkl;
 
@@ -464,9 +464,9 @@ void gauche(int ai,int aj,int ak,int al,t_ilist ilist[],
 }
 
 
-void gauche15(int ai,int aj,int ak,int al,int am,real omega1,real omega2,
-	      real omega3,t_ilist ilist[],t_iparams iparams[],real *lb,
-	      t_atoms *atoms)
+void gauche15_(int ai,int aj,int ak,int al,int am,real omega1,real omega2,
+	       real omega3,t_ilist ilist[],t_iparams iparams[],real *lb,
+	       t_atoms *atoms,char *file,int line)
 {
 
   /* Matrix based approach */
@@ -478,13 +478,13 @@ void gauche15(int ai,int aj,int ak,int al,int am,real omega1,real omega2,
   real rij,rjk,rkl,rlm;
   real thijk,thjkl,thklm,theta1,theta2,theta3;
 
-  rij    = lookup_bondlength(ai,aj,ilist,iparams,TRUE,atoms);
-  rjk    = lookup_bondlength(aj,ak,ilist,iparams,TRUE,atoms);
-  rkl    = lookup_bondlength(ak,al,ilist,iparams,TRUE,atoms);
-  rlm    = lookup_bondlength(al,am,ilist,iparams,TRUE,atoms);
-  thijk  = lookup_angle(ai,aj,ak,ilist,iparams,atoms);
-  thjkl  = lookup_angle(aj,ak,al,ilist,iparams,atoms);
-  thklm  = lookup_angle(ak,al,am,ilist,iparams,atoms);
+  rij    = lookup_bondlength_(ai,aj,ilist,iparams,TRUE,atoms,file,line);
+  rjk    = lookup_bondlength_(aj,ak,ilist,iparams,TRUE,atoms,file,line);
+  rkl    = lookup_bondlength_(ak,al,ilist,iparams,TRUE,atoms,file,line);
+  rlm    = lookup_bondlength_(al,am,ilist,iparams,TRUE,atoms,file,line);
+  thijk  = lookup_angle_(ai,aj,ak,ilist,iparams,atoms,file,line);
+  thjkl  = lookup_angle_(aj,ak,al,ilist,iparams,atoms,file,line);
+  thklm  = lookup_angle_(ak,al,am,ilist,iparams,atoms,file,line);
   theta1 = pi-thijk;
   theta2 = pi-thjkl;
   theta3 = pi-thklm;
@@ -911,6 +911,8 @@ int main(int argc,char *argv[])
       read_O_dist();
       
     if (bBON) {
+      simple_bonds_and_angles(fp,dist,&top->idef,&top->atoms,weight,
+			      bond_margin,angle_margin);
       peptide_bonds(fp,dist,&top->idef,&top->atoms,weight,pep_margin,
 		    top->idef.il,top->idef.iparams,bVir);
       arg(fp,dist,&top->idef,&top->atoms,weight,arg_margin,

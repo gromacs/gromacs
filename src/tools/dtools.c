@@ -190,14 +190,14 @@ void define_impropers(FILE *log,t_atoms *atoms,t_correct *c)
   } t_impdef;
   
   t_impdef id[] = {
-    { NULL,   "CA", "N", "C", "CB" },
-    { NULL,   "N",  "CA", "H1",  "H3" },
-    { "LYSH", "NZ", "CE", "HZ2", "HZ1" },
-    { "LYSH", "NZ", "CE", "HZ1", "HZ3" },
-    { "LEU",  "CG", "CD2", "CD1", "CB" },
-    { "VAL",  "CB", "CG2", "CG1", "CA" },
-    { "ILE",  "CB", "CG1", "CG2", "CA" },
-    { "THR",  "CB", "OG1", "CG2", "CA" }
+    { NULL,   { "CA", "N",  "C",   "CB"  } },
+    { NULL,   { "N",  "CA", "H1",  "H3"  } },
+    { "LYSH", { "NZ", "CE", "HZ2", "HZ1" } },
+    { "LYSH", { "NZ", "CE", "HZ1", "HZ3" } },
+    { "LEU",  { "CG", "CD2", "CD1", "CB" } },
+    { "VAL",  { "CB", "CG2", "CG1", "CA" } },
+    { "ILE",  { "CB", "CG1", "CG2", "CA" } },
+    { "THR",  { "CB", "OG1", "CG2", "CA" } }
   };
 #define NID asize(id)
   int i,j,k,l,aa[4],nimp;
