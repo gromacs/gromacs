@@ -137,7 +137,7 @@ void do_trunc(char *fn, real t0)
     if (bStop) {
       fprintf(stderr,"Do you REALLY want to truncate this trajectory (%s) at:\n"
 	      "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
-	      fn,j,t,fpos);
+	      fn,j,t,(long int)fpos);
       scanf("%s",yesno);
       if (strcmp(yesno,"YES") == 0) {
 	fprintf(stderr,"Once again, I'm gonna DO this...\n");
