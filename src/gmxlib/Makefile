@@ -28,7 +28,7 @@ OBJ		= \
 		ebin.o		enxio.o		\
 		fatal.o		ffscanf.o	filenm.o	\
 		futil.o		gbutil.o	genhydro.o	\
-		ghat.o		gmxfio.o	h_db.o		\
+		gmxfio.o	h_db.o		\
 		ifunc.o		index.o		\
 		inloopc.o	invblock.o	javaio.o	\
 		lutab.o		macros.o	main.o		\

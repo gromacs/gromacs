@@ -22,7 +22,7 @@ OBJ		= \
 		calcmu.o	calcvir.o	\
 		congrad.o	coupling.o	edsam.o		\
 		fftgrid.o	fnbf.o		force.o		\
-		init.o		lrutil.o	\
+		ghat.o		init.o		lrutil.o	\
 		md.o		mdatom.o	nm.o		\
 		ns.o		nsb.o		nsgrid.o	\
 		poisson.o	pppm.o		\
