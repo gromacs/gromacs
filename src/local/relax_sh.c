@@ -205,6 +205,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 rvec x[],rvec vold[],rvec v[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
 		 t_graph *graph,t_groups *grps,tensor vir_part,
+		 tensor pme_vir_part,
 		 int nshell,t_shell shells[],t_forcerec *fr,
 		 char *traj,real t,real lambda,rvec mu_tot,
 		 int natoms,matrix box,bool *bConverged)
@@ -212,7 +213,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   static bool bFirst=TRUE,bInit;
   static rvec *pos[2],*force[2];
   real   Epot[2],df[2],Estore[F_NRE];
-  tensor my_vir[2],vir_last;
+  tensor my_vir[2],vir_last,pme_vir[2];
 #define NEPOT asize(Epot)
   real   ftol,step,step0,xiH,xiS;
   char   cbuf[56];
@@ -245,9 +246,12 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
    
   /* Calculate the forces first time around */
   clear_mat(my_vir[Min]);
-  do_force(log,cr,parm,nsb,my_vir[Min],mdstep,nrnb,
+  clear_mat(pme_vir[Min]);
+  do_force(log,cr,parm,nsb,my_vir[Min],pme_vir[Min],mdstep,nrnb,
 	   top,grps,x,v,force[Min],buf,md,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bDoNS,FALSE,fr,mu_tot,FALSE);
+  sum_lrforces(force[Min],fr,start,homenr);
+
   df[Min]=rms_force(cr,force[Min],nshell,shells);
   df[Try]=0;
   if (debug) {
@@ -307,9 +311,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     }
     /* Try the new positions */
     clear_mat(my_vir[Try]);
-    do_force(log,cr,parm,nsb,my_vir[Try],1,nrnb,
+    clear_mat(pme_vir[Try]);
+    do_force(log,cr,parm,nsb,my_vir[Try],pme_vir[Try],1,nrnb,
 	     top,grps,pos[Try],v,force[Try],buf,md,ener,bVerbose && !PAR(cr),
 	     lambda,graph,FALSE,FALSE,fr,mu_tot,FALSE);
+    sum_lrforces(force[Try],fr,start,homenr);
     df[Try]=rms_force(cr,force[Try],nshell,shells);
     if (debug)
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
@@ -348,9 +354,15 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
   
   /* Parallelise this one! */
+  if (EEL_LR(fr->eeltype)) {
+    for(i=start; (i<end); i++)
+      rvec_dec(force[Min][i],fr->f_pme[i]);
+  }
   memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
+
   /* CHECK VIRIAL */
   copy_mat(my_vir[Min],vir_part);
+  copy_mat(pme_vir[Min],pme_vir_part);
   
   if (debug) {
     sprintf(cbuf,"myvir step %d",count);

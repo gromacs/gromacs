@@ -57,7 +57,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t;
   real       t,lambda,t0,lam0;
   bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14,bBox;
-  tensor     force_vir,shake_vir;
+  tensor     force_vir,shake_vir,pme_vir;
   t_nrnb     mynrnb;
   int        i,m;
   rvec       mu_tot;
@@ -129,7 +129,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   clear_mat(force_vir);
     
   bNS=TRUE;
-  do_force(log,cr,parm,nsb,force_vir,0,&mynrnb,
+  do_force(log,cr,parm,nsb,force_vir,pme_vir,0,&mynrnb,
 	   top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
   bNS=FALSE;
@@ -169,7 +169,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       clear_mat(force_vir);
 
-      do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum),&mynrnb,
+      do_force(log,cr,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum),&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       if (bBox)
@@ -186,7 +186,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       clear_mat(force_vir);
       
-      do_force(log,cr,parm,nsb,force_vir,2*(step*DIM+idum)+1,&mynrnb,
+      do_force(log,cr,parm,nsb,force_vir,pme_vir,2*(step*DIM+idum)+1,&mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
       if (bBox)

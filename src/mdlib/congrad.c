@@ -83,7 +83,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   bool   bNS=TRUE,bDone,bLR,bLJLR,bBHAM,b14,bRand,brerun;
   rvec   mu_tot;
   time_t start_t;
-  tensor force_vir,shake_vir;
+  tensor force_vir,shake_vir,pme_vir;
   int    number_steps,naccept=0,nstcg=parm->ir.nstcgsteep;
   int    fp_ene,count=0;
   int    i,m,start,end,niti;
@@ -153,7 +153,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,parm,nsb,force_vir,0,&(nrnb[cr->nodeid]),top,grps,
+  do_force(log,cr,parm,nsb,force_vir,pme_vir,0,&(nrnb[cr->nodeid]),top,grps,
 	   x,buf,f,buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
   where();
@@ -249,7 +249,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /* do_force always puts the charge groups in the box and shifts again
        * We do not unshift, so molecules are always whole in congrad.c
        */
-      do_force(log,cr,parm,nsb,force_vir,
+      do_force(log,cr,parm,nsb,force_vir,pme_vir,
 	       count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	       buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
@@ -322,7 +322,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    do_force(log,cr,parm,nsb,force_vir,
+    do_force(log,cr,parm,nsb,force_vir,pme_vir,
 	     count,&(nrnb[cr->nodeid]),top,grps,xprime,buf,f,
 	     buf,mdatoms,ener,bVerbose && !(PAR(cr)),
 	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);

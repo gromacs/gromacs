@@ -362,9 +362,9 @@ static real calc_dist(FILE *log,rvec x[])
     else {
       bDist  = (sscanf(buf,"%d%d",&i1,&i2) == 2);
       if (bDist)
-	fprintf(log,"Will couple to distance between %d and %d\n",i1,i2);
+	fprintf(log,"GCT: Will couple to distance between %d and %d\n",i1,i2);
       else
-	fprintf(log,"Will not couple to distances\n");
+	fprintf(log,"GCT: Will not couple to distances\n");
     }
     bFirst = FALSE;
   }
@@ -442,9 +442,9 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
   atnr2 = idef->atnr * idef->atnr;
   if (bFirst) {
     if (PAR(cr))
-      fprintf(log,"DOGCT: this is parallel\n");
+      fprintf(log,"GCT: this is parallel\n");
     else
-      fprintf(log,"DOGCT: this is not parallel\n");
+      fprintf(log,"GCT: this is not parallel\n");
     fflush(log);
     snew(f6, atnr2);
     snew(f12,atnr2);
@@ -468,7 +468,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       tcr->ref_value[eoVir] = 0.5*BOLTZ*nrdf*TTT - (3.0/2.0)*
 	Vol*tcr->ref_value[eoPres];
       
-      fprintf(log,"DOGCT: TTT = %g, nrdf = %d, vir0 = %g,  Vol = %g\n",
+      fprintf(log,"GCT: TTT = %g, nrdf = %d, vir0 = %g,  Vol = %g\n",
 	      TTT,nrdf,tcr->ref_value[eoVir],Vol);
       fflush(log);
     }
@@ -488,6 +488,8 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       mu_ind = mu_aver - d2e(tcr->ref_value[eoDipole]); /* in e nm */
       Epol   = mu_ind*mu_ind/(enm2kjmol(tcr->ref_value[eoPolarizability]));
       tcr->av_value[eoEpot] -= Epol;
+      fprintf(log,"GCT: mu_aver = %g(D), mu_ind = %g(D), Epol = %g (kJ/mol)\n",
+	      mu_aver*enm2Debye,mu_ind*enm2Debye,Epol);
     }
   }
 

@@ -169,7 +169,7 @@ static real calc_f_el(int start,int homenr,real charge[],rvec f[],t_cosines Ex[]
 }
 
 void do_force(FILE *log,t_commrec *cr,
-	      t_parm *parm,t_nsborder *nsb,tensor vir_part,
+	      t_parm *parm,t_nsborder *nsb,tensor vir_part,tensor pme_vir,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      rvec x[],rvec v[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],bool bVerbose,
@@ -183,7 +183,6 @@ void do_force(FILE *log,t_commrec *cr,
   int    start,homenr;
   static real mu_and_q[DIM+1]; 
   real   qsum;
-  matrix pme_vir; /* used for PME long range virial */
   
   nodeid    = cr->nodeid;
   start  = START(nsb);
@@ -305,27 +304,43 @@ void do_force(FILE *log,t_commrec *cr,
   /* Communicate the forces */
   if (PAR(cr))
     move_f(log,cr->left,cr->right,f,buf,nsb,nrnb);
-    
+}
+
+void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
+{
+  /* Now add the forces from the PME calculation. Since this only produces
+   * forces on the local atoms, this can be safely done after the
+   * communication step.
+   */
+  if (EEL_LR(fr->eeltype))
+    sum_forces(start,start+homenr,f,fr->f_pme);
+}
+
+void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
+		 tensor vir_part,tensor pme_vir,
+		 t_commrec *cr,t_graph *graph,matrix box,
+		 t_nrnb *nrnb,t_forcerec *fr)
+{
+  int i,j;
+  
   /* Now it is time for the short range virial. At this timepoint vir_part
    * already contains the virial from surrounding boxes.
    * Calculate partial virial, for local atoms only, based on short range. 
    * Total virial is computed in global_stat, called from do_md 
    */
-  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,parm->box);
+  f_calc_vir(log,start,start+homenr,x,f,vir_part,cr,graph,box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
-  
-  if (EEL_LR(fr->eeltype)) {
-    /* Now add the forces from the PME calculation. Since this only produces
-     * forces on the local atoms, this can be safely done after the
-     * communication step. The same goes for the virial.
-     */
-    sum_forces(start,start+homenr,f,fr->f_pme);
-    if (fr->eeltype != eelPPPM) /* PPPM virial sucks */
-      for(i=0; (i<DIM); i++) 
-	for(j=0; (j<DIM); j++) 
-	  vir_part[i][j]+=pme_vir[i][j];
+
+  /* Add up the long range forces if necessary */
+  sum_lrforces(f,fr,start,homenr);
+
+  /* Add up virial if necessary */  
+  if (EEL_LR(fr->eeltype) && (fr->eeltype != eelPPPM)) {
+    /* PPPM virial sucks */
+    for(i=0; (i<DIM); i++) 
+      for(j=0; (j<DIM); j++) 
+	vir_part[i][j]+=pme_vir[i][j];
   }
-  
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
 }

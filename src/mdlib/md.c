@@ -29,6 +29,7 @@
 static char *SRCID_md_c = "$Id$";
 
 #include <signal.h>
+#include <stdlib.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -46,6 +47,7 @@ static char *SRCID_md_c = "$Id$";
 #include "sim_util.h"
 #include "pull.h"
 #include "physics.h"
+#include "names.h"
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
@@ -75,8 +77,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t;
   real       t,lambda,t0,lam0,SAfactor;
   bool       bNS,bStopCM,bStopRot,bTYZ,bRerunMD,bNotLastFrame=FALSE,
-             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE;
-  tensor     force_vir,shake_vir;
+             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
+	     bLateVir;
+  tensor     force_vir,pme_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m,status;
@@ -108,13 +111,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   signal(SIGUSR1,signal_handler);
 
   /* check if "-rerun" is used. */
-  bRerunMD = (Flags & MD_RERUN) == MD_RERUN;
+  bRerunMD = ((Flags & MD_RERUN) == MD_RERUN);
   /* Initial values */
   init_md(cr,&parm->ir,parm->box,&t,&t0,&lambda,&lam0,&SAfactor,
 	  &mynrnb,&bTYZ,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&mdebin,grps,
-	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm,nsb);
+	  force_vir,pme_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&vcm,nsb);
   debug_gmx();
+
+  bLateVir = ((Flags & MD_LATEVIR) == MD_LATEVIR);
+  if (!bLateVir)
+    fprintf(log,"Late virial turned off.\n");
   
 #ifdef XMDRUN
   bDynamicStep = FALSE;
@@ -126,9 +133,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Check whether we have to do dipole stuff */
   if (ftp2bSet(efNDX,nfile,fnm))
     rd_index(ftp2fn(efNDX,nfile,fnm),1,&gnx,&grpindex,&grpname);
-  else 
-    gnx = 0;
-  
+  else {
+    gnx = top->blocks[ebMOLS].nr;
+    snew(grpindex,gnx);
+    for(i=0; (i<gnx); i++)
+      grpindex[i] = i;
+  }
   /* Check whether we have to GCT stuff */
   bTCR = ftp2bSet(efGCT,nfile,fnm);
   if (MASTER(cr) && bTCR)
@@ -292,7 +302,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     count=relax_shells(log,cr,bVerbose,step,parm,bNS,bStopCM,top,ener,
 		       x,vold,v,vt,f,
 		       buf,mdatoms,nsb,&mynrnb,graph,grps,force_vir,
-		       nshell,shells,fr,traj,t,lambda,mu_tot,
+		       pme_vir,nshell,shells,fr,traj,t,lambda,mu_tot,
 		       nsb->natoms,parm->box,&bConverged);
     tcount+=count;
     
@@ -301,7 +311,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (bIonize)
       ener[F_SR] += 
-	electron_atom_interactions(log,mdatoms,&parm->ir,START(nsb),START(nsb)+HOMENR(nsb),
+	electron_atom_interactions(log,mdatoms,&parm->ir,
+				   START(nsb),START(nsb)+HOMENR(nsb),
 				   x,v,f,parm->box);
     
 #else
@@ -310,13 +321,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * This is parallellized as well, and does communication too. 
      * Check comments in sim_util.c
      */
-    do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
+    do_force(log,cr,parm,nsb,force_vir,pme_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
 	     lambda,graph,bNS,FALSE,fr,mu_tot,FALSE);
     
     debug_gmx();
-
+    
 #endif
+    if (!bLateVir)
+      calc_virial(log,START(nsb),HOMENR(nsb),x,f,
+		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr);
    
 #ifdef XMDRUN
     if (bTCR)
@@ -364,6 +378,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        */
       spread_dummy_f(log,x,f,&mynrnb,&top->idef);
     
+    if (bLateVir)
+      calc_virial(log,START(nsb),HOMENR(nsb),x,f,
+		  force_vir,pme_vir,cr,graph,parm->box,&mynrnb,fr);
     xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? x : NULL;
     vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? v : NULL;
     ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;
@@ -576,7 +593,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bool do_ene,do_dr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step,t,ener,parm->box,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot,(parm->ir.etc==etcNOSEHOOVER));
+		 force_vir,parm->vir,parm->pres,grps,mu_tot,
+		 (parm->ir.etc==etcNOSEHOOVER));
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       if (top->idef.il[F_DISRES].nr)
 	do_dr = do_per_step(step,parm->ir.nstdisreout) || bLastStep;

@@ -157,7 +157,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   t_inputrec *ir;
   bool   bDone,bAbort,bLR,bLJLR,bBHAM,b14; 
   time_t start_t; 
-  tensor force_vir,shake_vir; 
+  tensor force_vir,shake_vir,pme_vir; 
   rvec   mu_tot;
   int    nsteps;
   int    count=0; 
@@ -285,7 +285,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
      */
-    do_force(log,cr,parm,nsb,force_vir, 
+    do_force(log,cr,parm,nsb,force_vir,pme_vir,
  	     count,&(nrnb[cr->nodeid]),top,grps,pos[TRY],buf,force[TRY],buf,
 	     mdatoms,ener,bVerbose && !(PAR(cr)), 
  	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,fr,mu_tot,FALSE); 

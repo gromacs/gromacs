@@ -274,7 +274,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,t_mdebin **mdebin,t_groups *grps,
-	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+	     tensor force_vir,tensor pme_vir,
+	     tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 	     bool *bNEMD,t_vcm **vcm,t_nsborder *nsb)
 {
   bool bBHAM,b14,bLR,bLJLR;
@@ -324,6 +325,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
   
   /* Initiate variables */  
   clear_mat(force_vir);
+  clear_mat(pme_vir);
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
   

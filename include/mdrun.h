@@ -53,6 +53,7 @@ static char *SRCID_mdrun_h = "$Id$";
 #define MD_POLARISE  4
 #define MD_IONIZE    8
 #define MD_RERUN    16
+#define MD_LATEVIR  32
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -120,7 +121,8 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,
 		    int nfile,t_filenm fnm[],char **traj,char **xtc_traj,
 		    int *fp_ene,FILE **fp_dgdl,
 		    t_mdebin **mdebin,t_groups *grps,
-		    tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,
+		    tensor force_vir,tensor pme_vir,
+		    tensor shake_vir,t_mdatoms *mdatoms,
 		    rvec mu_tot,bool *bNEMD,t_vcm **vcm,
 		    t_nsborder *nsb);
 		    
@@ -178,14 +180,21 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
 extern void do_force(FILE *log,t_commrec *cr,
-		     t_parm *parm,t_nsborder *nsb,tensor vir_part,
+		     t_parm *parm,t_nsborder *nsb,
+		     tensor vir_part,tensor pme_vir,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 		     rvec x[],rvec v[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],bool bVerbose,
 		     real lambda,t_graph *graph,
 		     bool bNS,bool bNBFonly,t_forcerec *fr, rvec mu_tot,
 		     bool bGatherOnly);
-
+extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
+		     
+extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
+			tensor vir_part,tensor pme_vir,
+			t_commrec *cr,t_graph *graph,matrix box,
+			t_nrnb *nrnb,t_forcerec *fr);
+			
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
