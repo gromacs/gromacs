@@ -435,6 +435,9 @@ The distances are constrained using the LINCS or the SHAKE algorithm,
 which can be selected in the {\tt *.mdp} file.
 Both types of constraints can be perturbed in free-energy calculations
 by adding a second constraint distance (see \ssecref{constraintforce}).
+Several types of bonds and angles (see \tabref{topfile2}) can
+be converted automatically to constraints by {\tt grompp}.
+There are several options for this in the {\tt *.mdp} file.
 
 We have also implemented the \normindex{SETTLE} algorithm~\cite{Miyamoto92}
 which is an analytical solution of SHAKE specifically for water. 
