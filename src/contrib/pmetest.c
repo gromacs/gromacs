@@ -42,6 +42,8 @@
 #include "smalloc.h"
 #include "copyrite.h"
 #include "main.h"
+#include "nrnb.h"
+#include "txtdump.h"
 #include "tpxio.h"
 #include "statutil.h"
 #include "futil.h"
@@ -49,6 +51,8 @@
 #include "ewald_util.h"
 #include "nsb.h"
 #include "pme.h"
+#include "pbc.h"
+#include "mpi.h"
 
 rvec *xptr=NULL;
 
@@ -96,7 +100,10 @@ static void do_my_pme(FILE *fp,bool bVerbose,t_inputrec *ir,
     clear_rvec(f[i]);
     index[i] = i;
   }
-  /* Here should sorting of X (and q) be done */
+  /* Here sorting of X (and q) is done.
+   * Alternatively, one could just put the atoms in one of the
+   * cr->nnodes slabs. That is much cheaper than sorting.
+   */
   xptr = x;
   qsort(index,sizeof(index[0]),nsb->natoms,comp_xptr);
   for(i=0; (i<nsb->natoms); i++) {
@@ -163,30 +170,30 @@ int main(int argc,char *argv[])
     { "-tol",     FALSE, etREAL, {&dtol},
       "Tolerance for Ewald summation" }
   };
-  t_inputrec  ir;
+  t_inputrec  *ir;
   t_topology  top;
   t_tpxheader tpx;
   t_nrnb      nrnb;
   t_nsborder  *nsb;
   char        title[STRLEN];
-  int         natoms,step,status,i;
+  int         natoms,step,status,i,ncg;
   real        t,lambda,ewaldcoeff,qtot;
   rvec        *x,*f,*xbuf;
   int         *index;
+  bool        bCont;
   real        *charge,*qbuf;
   matrix      box;
   
   cr = init_par(&argc,&argv);
 
-  if (MASTER(cr)) {
+  if (MASTER(cr)) 
     CopyRight(stderr,argv[0]);
 
-    parse_common_args(&argc,argv,
-		      PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
-		      PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
-		      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-    bVerbose = bVerbose && MASTER(cr);
-  }
+  parse_common_args(&argc,argv,
+		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
+		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
+		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
+  bVerbose = bVerbose && MASTER(cr);
   
 #ifndef USE_MPI
   if (nnodes > 1) 
@@ -198,97 +205,144 @@ int main(int argc,char *argv[])
 #endif
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
-
+  snew(ir,1);
+  
   if (MASTER(cr)) {
     /* Read tpr file etc. */
     read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&tpx,FALSE,NULL,NULL);
     snew(x,tpx.natoms);
-    snew(xbuf,tpx.natoms);
-    snew(f,tpx.natoms);
-    snew(charge,tpx.natoms);
-    snew(qbuf,tpx.natoms);
-    snew(index,tpx.natoms);
-    read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
+    read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,ir,
 	     box,&natoms,x,NULL,NULL,&top);
     /* Charges */
     qtot = 0;
-    snew(charge,tpx.natoms);
-    for(i=0; (i<tpx.natoms); i++) {
+    snew(charge,natoms);
+    for(i=0; (i<natoms); i++) {
       charge[i] = top.atoms.atom[i].q;
       qtot += charge[i];
     }
   
     /* Grid stuff */
     if (opt2parg_bSet("-grid",asize(pa),pa)) {
-      ir.nkx = grid[XX];
-      ir.nky = grid[YY];
-      ir.nkz = grid[ZZ];
+      ir->nkx = grid[XX];
+      ir->nky = grid[YY];
+      ir->nkz = grid[ZZ];
     }
-    if ((ir.nkx <= 0) || (ir.nky <= 0) || (ir.nkz <= 0))
-      gmx_fatal(FARGS,"PME grid = %d %d %d",ir.nkx,ir.nky,ir.nkz);
-    if (opt2parg_bSet("-rc",asize(pa),pa)) {
-      ir.rcoulomb = rc;
-    }
-    if (ir.rcoulomb <= 0)
-      gmx_fatal(FARGS,"rcoulomb should be > 0 (not %f)",ir.rcoulomb);
+    if ((ir->nkx <= 0) || (ir->nky <= 0) || (ir->nkz <= 0))
+      gmx_fatal(FARGS,"PME grid = %d %d %d",ir->nkx,ir->nky,ir->nkz);
+    if (opt2parg_bSet("-rc",asize(pa),pa)) 
+      ir->rcoulomb = rc;
+    if (ir->rcoulomb <= 0)
+      gmx_fatal(FARGS,"rcoulomb should be > 0 (not %f)",ir->rcoulomb);
+    if (opt2parg_bSet("-order",asize(pa),pa)) 
+      ir->pme_order = pme_order;
+    if (ir->pme_order <= 0)
+      gmx_fatal(FARGS,"pme_order should be > 0 (not %d)",ir->pme_order);
     if (opt2parg_bSet("-tol",asize(pa),pa)) {
-      ir.ewald_rtol = dtol;
+      ir->ewald_rtol = dtol;
     }
-    if (ir.ewald_rtol <= 0)
-      gmx_fatal(FARGS,"ewald_tol should be > 0 (not %f)",ir.ewald_rtol);
-    ewaldcoeff = calc_ewaldcoeff(ir.rcoulomb,ir.ewald_rtol);
-    if (MASTER(cr))
-      fprintf(stdlog,"Ewald parameters:\n"
-	      "rc         = %12.5e\n"
-	      "tol        = %12.5e\n"
-	      "ewaldcoeff = %12.5e\n"
-	      "grid       = %4d %4d %4d\n",
-	      ir.rcoulomb,dtol,ewaldcoeff,ir.nkx,ir.nky,ir.nkz);
-    
-    if (PAR(cr)) {
-      /* Distribute the data over processors */
-      if (MASTER(cr)) {
-      }
-      else {
-      }
-    }
+    if (ir->ewald_rtol <= 0)
+      gmx_fatal(FARGS,"ewald_tol should be > 0 (not %f)",ir->ewald_rtol);
   }
-  
-  init_pme(stdlog,cr,ir.nkx,ir.nky,ir.nkz,pme_order,
-	   tpx.natoms,bOptFFT,ewald_geometry);
+  else {
+    init_top(&top);
+  }
+  if (PAR(cr)) {
+    /* Distribute the data over processors */
+    MPI_Bcast(&natoms,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&ir->nkx,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&ir->nky,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&ir->nkz,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&ir->pme_order,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&ir->rcoulomb,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+    MPI_Bcast(&ir->ewald_rtol,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+    MPI_Bcast(&qtot,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+    MPI_Bcast(&(top.blocks[ebCGS].nr),1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(&(top.blocks[ebCGS].nra),1,MPI_INT,0,MPI_COMM_WORLD);
+    if (!MASTER(cr)) {
+      snew(top.blocks[ebCGS].index,top.blocks[ebCGS].nr);
+      snew(top.blocks[ebCGS].a,top.blocks[ebCGS].nra);
+      snew(charge,natoms);
+    }
+    MPI_Bcast(top.blocks[ebCGS].index,top.blocks[ebCGS].nr,
+	      MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(top.blocks[ebCGS].a,top.blocks[ebCGS].nra,
+	      MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(top.blocks[ebCGS].multinr,MAXNODES,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast(charge,natoms,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+  }
+  ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
+  if (MASTER(cr))
+    fprintf(stdlog,"Ewald parameters:\n"
+	    "rc         = %12.5e\n"
+	    "tol        = %12.5e\n"
+	    "ewaldcoeff = %12.5e\n"
+	    "grid       = %4d %4d %4d\n",
+	    ir->rcoulomb,ir->ewald_rtol,ewaldcoeff,ir->nkx,ir->nky,ir->nkz);
+  /* Allocate memory for temp arrays etc. */
+  snew(xbuf,natoms);
+  snew(f,natoms);
+  snew(qbuf,natoms);
+  snew(index,natoms);
+
+  /* Initialize the PME code */  
+  init_pme(stdlog,cr,ir->nkx,ir->nky,ir->nkz,ir->pme_order,
+	   natoms,bOptFFT,ewald_geometry);
+	   
+  /* MFlops accounting, quite useless here */
   init_nrnb(&nrnb);
   
   /* Add parallellization code here */
   snew(nsb,1);
+  ncg = top.blocks[ebCGS].multinr[0];
+  for(i=0; (i<cr->nnodes-1); i++)
+    top.blocks[ebCGS].multinr[i] = min(ncg,(ncg*(i+1))/cr->nnodes);
+  for( ; (i<MAXNODES); i++)
+    top.blocks[ebCGS].multinr[i] = ncg;
+  
   calc_nsb(stdlog,&(top.blocks[ebCGS]),cr->nnodes,nsb,0);
   print_nsb(stdlog,"pmetest",nsb);  
   
-  fprintf(stdlog,"-----\n"
-	  "Results based on tpr file %s\n",ftp2fn(efTPX,NFILE,fnm));
-  do_my_pme(stdlog,bVerbose,&ir,x,xbuf,f,charge,qbuf,box,
+  /* First do PME based on coordinates in tpr file */
+  if (MASTER(cr))
+    fprintf(stdlog,"-----\n"
+	    "Results based on tpr file %s\n",ftp2fn(efTPX,NFILE,fnm));
+  do_my_pme(stdlog,bVerbose,ir,x,xbuf,f,charge,qbuf,box,
 	    cr,nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
   
   if (ftp2bSet(efTRX,NFILE,fnm)) {
     fprintf(stdlog,"-----\n"
 	    "Results based on trx file %s\n",ftp2fn(efTRX,NFILE,fnm));
-    sfree(x);
-    natoms = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
-    if (natoms != top.atoms.nr)
-      gmx_fatal(FARGS,"natoms in trx = %d, in tpr = %d",natoms,top.atoms.nr);
+    if (MASTER(cr)) {
+      sfree(x);
+      natoms = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
+      if (natoms != top.atoms.nr)
+	gmx_fatal(FARGS,"natoms in trx = %d, in tpr = %d",natoms,top.atoms.nr);
+    }
+    if (PAR(cr)) {
+      MPI_Bcast(x,natoms,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+      MPI_Bcast(box,DIM*DIM,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+      MPI_Bcast(&t,1,GMX_MPI_REAL,0,MPI_COMM_WORLD);
+    }
     do {
       fprintf(stdlog,"-----\nTime: %.3f\n",t);
-      do_my_pme(stdlog,bVerbose,&ir,x,xbuf,f,charge,qbuf,box,cr,
+      do_my_pme(stdlog,bVerbose,ir,x,xbuf,f,charge,qbuf,box,cr,
 		nsb,&nrnb,ewaldcoeff,&(top.atoms.excl),qtot,index);
-    } while (read_next_x(status,&t,natoms,x,box));
-    close_trx(status);
+      bCont = read_next_x(status,&t,natoms,x,box);
+      if (PAR(cr))
+	MPI_Bcast(&bCont,1,MPI_INT,0,MPI_COMM_WORLD);
+    } while (bCont);
+    if (MASTER(cr)) 
+      close_trx(status);
   }
   
+  print_nrnb(stdlog,&nrnb);
+    
   if (gmx_parallel_env)
     gmx_finalize(cr);
 
-  if (MASTER(cr))
+  if (MASTER(cr)) 
     thanx(stderr);
-  
+
   return 0;
 }
 
