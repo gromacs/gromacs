@@ -1,0 +1,124 @@
+.TH ffscan 1 "Sun 25 Jan 2004"
+.SH NAME
+ffscan
+.B VERSION 3.2.0
+.SH SYNOPSIS
+\f3ffscan\fP
+.BI "-s" " topol.tpr "
+.BI "-g" " md.log "
+.BI "-table" " table.xvg "
+.BI "-parm" " params.dat "
+.BI "-ga" " genalg.dat "
+.BI "-c" " junk.gro "
+.BI "-e" " junk.edr "
+.BI "-o" " junk.trr "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-tol" " real "
+.BI "-fmax" " real "
+.BI "-[no]comb" ""
+.BI "-npow" " real "
+.BI "-[no]logeps" ""
+.BI "-[no]v" ""
+.BI "-epot" " real "
+.BI "-fepot" " real "
+.BI "-pres" " real "
+.BI "-fpres" " real "
+.BI "-fmsf" " real "
+.BI "-molsize" " int "
+.BI "-nmol" " int "
+.SH DESCRIPTION
+The ffscan program performs a single point energy and force calculation
+in which the force field is modified. This way a range of parameters can
+be changed and tested for reproduction of e.g. quantum chemical or
+experimental data. A grid scan over the parameters is done as specified
+using command line arguments. All parameters that reproduce the energy
+within a given absolute tolerance are printed to a log file.
+
+
+Obviously polarizable models can be used, and shell optimisation is
+performed if necessary. Also, like in mdrun table functions can be used
+for user defined potential functions.
+
+
+If the option -ga with appropriate file is passed, a genetic algorithm will
+be used rather than a grid scan.
+.SH FILES
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa xml 
+
+.BI "-g" " md.log" 
+.B Output
+ Log file 
+
+.BI "-table" " table.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
+.BI "-parm" " params.dat" 
+.B Input
+ Generic data file 
+
+.BI "-ga" " genalg.dat" 
+.B Input, Opt.
+ Generic data file 
+
+.BI "-c" " junk.gro" 
+.B Output
+ Coordinate file in Gromos-87 format 
+
+.BI "-e" " junk.edr" 
+.B Output
+ Generic energy: edr ene 
+
+.BI "-o" " junk.trr" 
+.B Output
+ Full precision trajectory: trr trj 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-tol"  " real" "    0.1" 
+ Energy tolerance (kJ/mol) (zero means everything is printed)
+
+.BI "-fmax"  " real" "    100" 
+ Force tolerance (zero means everything is printed)
+
+.BI "-[no]comb"  "   yes"
+ Use combination rules
+
+.BI "-npow"  " real" "     12" 
+ Power for LJ in case of table use
+
+.BI "-[no]logeps"  "    no"
+ Use a logarithmic scale for epsilon
+
+.BI "-[no]v"  "    no"
+ Be loud and noisy
+
+.BI "-epot"  " real" "      0" 
+ Target energy (kJ/mol)
+
+.BI "-fepot"  " real" "      1" 
+ Factor for scaling energy violations (0 turns energy contribution off)
+
+.BI "-pres"  " real" "      1" 
+ Value for reference pressure
+
+.BI "-fpres"  " real" "    0.1" 
+ Factor for scaling pressure violations (0 turns pressure contribution off)
+
+.BI "-fmsf"  " real" "    0.1" 
+ Factor for scaling mean square force violations (0 turns MSF contribution off)
+
+.BI "-molsize"  " int" " 1" 
+ Number of atoms per molecule
+
+.BI "-nmol"  " int" " 1" 
+ Number of molecules (Epot is divided by this value!)
+
