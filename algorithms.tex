@@ -263,6 +263,14 @@ during the simulation. This is done for Lennard Jones and Coulomb
 terms separately.  In principle up to 256 groups could be defined, but
 that would lead to 256$\times$256 items! Better use this concept
 sparingly.
+
+All non-bonded interactions between pairs of energy monitor groups can
+be excluded\index{exclusions, energy monitor group} (see \secref{mdpopt}).
+Pairs of particles from excluded pairs of energy monitor groups
+are not put into the pair list.
+This can result in a significant speedup
+for simulations where interactions within or between parts of the system
+are not required.
 \end{description}
 The use of groups in analysis programs is described in
 \chref{analysis}.
