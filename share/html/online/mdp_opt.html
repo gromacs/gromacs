@@ -207,7 +207,7 @@ variable is used for energy minimization as well the default is 100.0.</dd>
 <dt><h4>niter: (20)</h4></dt>
 <dd>maximum number of iterations for optimizing the shell positions.</dd>
 </dl>
-*************************************************************************
+
 <A NAME="out"><br>
 <hr>
 <h3>Output control</h3>
@@ -363,7 +363,6 @@ in the printed manual.</dd>
 </dl></dd>
 
 <A NAME="el2">
-<dl>
 <dt><h4>rcoulomb_switch: (0) [nm]</h4></dt>
 <dd>where to start switching the Coulomb potential</dd>
 
@@ -425,11 +424,11 @@ each direction can be overridden by entering a non-zero value for
 <b>fourierspacing</b> per direction. The best choice is powers of
 2, 3, 5 and 7. Avoid large primes.</dd>
 
-<dt><h4>pme_order (4)<b></h4></dt>
+<dt><h4>pme_order (4)</h4></dt>
 <dd>Interpolation order for PME. 4 equals cubic interpolation. You might try
 6/8/10 when running in parallel and simultaneously decrease grid dimension.</dd>
 
-<dt><h4>ewald_rtol (1e-5)<b></h4></dt>
+<dt><h4>ewald_rtol (1e-5)</h4></dt>
 <dd>The relative strength of the Ewald-shifted direct potential at the cutoff
 is given by <b>ewald_rtol</b>. Decreasing this will give a more accurate
 direct sum, but then you need more wave vectors for the reciprocal sum.</dd>
