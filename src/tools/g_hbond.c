@@ -72,6 +72,7 @@ typedef struct {
 } t_ncell;
 
 typedef t_ncell t_gridcell[grNR];
+typedef int     t_icell[grNR];
 
 typedef struct {
   int a;
@@ -216,14 +217,21 @@ void init_grid(bool bBox, matrix box, real rcut,
 
 char *grpnames[grNR] = {"0D","0H","0A","1D","1H","1A","iD","iH","iA"};
 
-void build_grid(int *nr, atom_id **a, rvec x[], 
-		bool bBox, matrix box, rvec hbox, real rcut,
+void build_grid(int *nr, atom_id **a, rvec x[], rvec xshell,
+		bool bBox, matrix box, rvec hbox, real rcut, real rshell,
 		ivec ngrid, t_gridcell ***grid)
 {
   int     i,m,gr,xi,yi,zi;
   ivec    grididx;
-  rvec    invdelta;
+  rvec    invdelta,dshell;
   t_ncell *newgrid;
+  bool    bDoRshell,bInShell;
+  real    rshell2;
+  
+  bDoRshell = rshell > 0;
+  if (bDoRshell)
+    rshell2 = sqr(rshell);
+  bInShell = TRUE;
   
   for(m=0; m<DIM; m++) {
     hbox[m]=box[m][m]*0.5;
@@ -244,29 +252,62 @@ void build_grid(int *nr, atom_id **a, rvec x[],
       fprintf(debug,"Putting %d %s atoms into grid\n",nr[gr],grpnames[gr]);
     /* put atoms in grid cells */
     for(i=0; i<nr[gr]; i++) {
-      for(m=0; m<DIM; m++) {
-	/* put atom in the box */
-	if (bBox) {
-	  while(x[a[gr][i]][m]<0) 
-	    x[a[gr][i]][m]+=box[m][m];
-	  while(x[a[gr][i]][m]>=box[m][m]) 
-	    x[a[gr][i]][m]-=box[m][m];
+      /* check if we are inside the shell */
+      /* if bDoRshell=FALSE then bInShell=TRUE always */
+      if ( bDoRshell ) {
+	bInShell=TRUE;
+	for(m=0; (m<DIM) && bInShell; m++) {
+	  dshell[m] = x[a[gr][i]][m] - xshell[m];
+	  if (bBox)
+	    if ( dshell[m] < -hbox[m] ) 
+	      dshell[m] += 2*hbox[m];
+	    else if ( dshell[m] >= hbox[m] ) 
+	      dshell[m] -= 2*hbox[m];
+	  /* if we're outside the cube, we're outside the sphere also! */
+	  if ( (dshell[m]>rshell) || (-dshell[m]>rshell) )
+	    bInShell=FALSE;
 	}
-	/* get grid index of atom */
-	grididx[m]=x[a[gr][i]][m]*invdelta[m];
+	/* if we're inside the cube, check if we're inside the sphere */
+	if (bInShell)
+	  bInShell = norm2(dshell) < rshell2;
       }
-      /* add atom to grid cell */
-      newgrid=&(grid[grididx[XX]][grididx[YY]][grididx[ZZ]][gr]);
-      if (newgrid->nr >= newgrid->maxnr) {
-	newgrid->maxnr+=10;
-	srenew(newgrid->atoms, newgrid->maxnr);
+      if ( bInShell ) {
+	for(m=0; m<DIM; m++) {
+	  /* put atom in the box */
+	  if (bBox) {
+	    while( x[a[gr][i]][m] < 0 ) 
+	      x[a[gr][i]][m] += box[m][m];
+	    while( x[a[gr][i]][m] >= box[m][m] ) 
+	      x[a[gr][i]][m] -= box[m][m];
+	  }
+	  /* get grid index of atom */
+	  grididx[m]=x[a[gr][i]][m]*invdelta[m];
+	}
+	/* add atom to grid cell */
+	newgrid=&(grid[grididx[XX]][grididx[YY]][grididx[ZZ]][gr]);
+	if (newgrid->nr >= newgrid->maxnr) {
+	  newgrid->maxnr+=10;
+	  srenew(newgrid->atoms, newgrid->maxnr);
+	}
+	newgrid->atoms[newgrid->nr]=i;
+	newgrid->nr++;
       }
-      newgrid->atoms[newgrid->nr]=i;
-      newgrid->nr++;
     }
-  }
+  } 
 }
 
+void count_da_grid(ivec ngrid, t_gridcell ***grid, t_icell danr)
+{
+  int gr,xi,yi,zi;
+  
+  for(gr=0; gr<grNR; gr++) {
+    danr[gr]=0;
+    for (xi=0; xi<ngrid[XX]; xi++)
+      for (yi=0; yi<ngrid[YY]; yi++)
+	for (zi=0; zi<ngrid[ZZ]; zi++)
+	  danr[gr] += grid[xi][yi][zi][gr].nr;
+  }
+}
 
 #define B(n,x)((n!=1)?(x-1):x)
 #define E(n,x)((n!=1)?(x+1):x)
@@ -397,7 +438,7 @@ void sort_dha(int nr_d, atom_id *d, atom_id *h, int nr_a, atom_id *a)
       }
 }
 
-void sort_hb(int nrhb, int *nr_a, t_donor **donors)
+void sort_hb(int *nr_a, t_donor **donors)
 {
   int gr,i,j,k;
   t_acceptor ta;
@@ -424,12 +465,20 @@ int main(int argc,char *argv[])
     "N is an acceptor by default, but this can be switched using",
     "[TT]-nitacc[tt]. Dummy hydrogen atoms are assumed to be connected",
     "to the first preceding non-hydrogen atom.[PAR]",
+    
     "You need to specify two groups for analysis, which must be either",
     "identical or non-overlapping. All hydrogen bonds between the two",
     "groups are analyzed.[PAR]",
+    
+    "If you set -shell, you will be asked for an additional index group",
+    "which should contain exactly one atom. In this case, only hydrogen",
+    "bonds between atoms within the shell distance from the one atom are",
+    "considered.[PAR]"
+    
     "It is also possible to analyse specific hydrogen bonds with",
     "[TT]-sel[tt]. This index file must contain a group of atom triplets",
     "Donor Hydrogen Acceptor, in the following way:[PAR]",
+    
     "[TT]",
     "[ selected ][BR]",
     "     20    21    24[BR]",
@@ -439,12 +488,11 @@ int main(int argc,char *argv[])
     "Note that the triplets need not be on separate lines.",
     "Each atom triplet specifies a hydrogen bond to be analyzed,",
     "note also that no check is made for the types of atoms.[PAR]",
+    
     "[TT]-ins[tt] turns on computing solvent insertion into hydrogen bonds.",
     "In this case an additional group must be selected, specifying the",
     "solvent molecules.[PAR]",
-    "[TT]-dumconn[tt] makes g_hbond assume a covalent bond exists between",
-    "any dummy atom and the first preceding (in sequence) heavy atom.",
-    "This is used in searching Donor-Hydrogen pairs.[PAR]",
+    
     "[BB]Output:[bb][BR]",
     "[TT]-num[tt]:  number of hydrogen bonds as a function of time.[BR]",
     "[TT]-ac[tt]:   average over all autocorrelations of the existence",
@@ -461,9 +509,11 @@ int main(int argc,char *argv[])
     "[TT]-hbm[tt]:  existence matrix for all hydrogen bonds over all",
     "frames, this also contains information on solvent insertion",
     "into hydrogen bonds.[BR]",
+    "[TT}-da[tt]: write out the number of donors and acceptors analyzed for",
+    "each timeframe. This is especially usefull when using [TT]-shell[tt]."
   };
   
-  static real acut=60, abin=1, rcut=0.25, rbin=0.005;
+  static real acut=60, abin=1, rcut=0.25, rbin=0.005, rshell=-1;
   static bool bNitAcc=TRUE,bInsert=FALSE;
   /* options */
   t_pargs pa [] = {
@@ -478,7 +528,9 @@ int main(int argc,char *argv[])
     { "-rbin", FALSE, etREAL, {&rbin},
       "binwidth distance distribution (nm)" },
     { "-nitacc",FALSE,etBOOL, {&bNitAcc},
-      "regard nitrogen atoms as acceptors" }
+      "regard nitrogen atoms as acceptors" },
+    { "-shell", FALSE,etREAL, {&rshell},
+      "only calculate hydrogen bonds within shell around one particle" }
   };
 
   t_filenm fnm[] = {
@@ -492,7 +544,8 @@ int main(int argc,char *argv[])
     { efXVG, "-ang", "hbang",  ffOPTWR },
     { efXVG, "-hx",  "hbhelix",ffOPTWR },
     { efNDX, "-hbn", "hbond",  ffOPTWR },
-    { efXPM, "-hbm", "hbmap",  ffOPTWR }
+    { efXPM, "-hbm", "hbmap",  ffOPTWR },
+    { efXVG, "-da",  "danum",  ffOPTWR }
   };
 #define NFILE asize(fnm)
   
@@ -515,7 +568,7 @@ int main(int argc,char *argv[])
   int     status;
   t_topology top;
   t_inputrec ir;
-  int     natoms,nframes,max_nframes;
+  int     natoms,nframes,max_nframes,shatom;
   int     *isize;
   char    **grpnames;
   atom_id **index;
@@ -527,7 +580,7 @@ int main(int argc,char *argv[])
   int     xi,yi,zi,ai;
   int     xj,yj,zj,aj,xjj,yjj,zjj;
   int     xk,yk,zk,ak,xkk,ykk,zkk;
-  bool    bSelected,bStop,bTwo,bHBMap,new,was,bBox;
+  bool    bSelected,bStop,bTwo,bHBMap,new,was,bBox,bDAnr;
   bool    *insert=NULL;
   int     nr_a[grNR];
   atom_id *a[grNR];
@@ -539,6 +592,7 @@ int main(int argc,char *argv[])
   FILE       *fp,*fpins=NULL;
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
+  t_icell    *danr;
   ivec       ngrid;
   t_donor    *donors[grNR];
   real       **rhbex;
@@ -551,6 +605,7 @@ int main(int argc,char *argv[])
 
   /* process input */
   bHBMap = opt2bSet("-hbm",NFILE,fnm) || opt2bSet("-ac",NFILE,fnm);
+  bDAnr  = opt2bSet("-da",NFILE,fnm);
   bSelected = opt2bSet("-sel",NFILE,fnm);
   ccut = cos(acut*DEG2RAD);
   
@@ -564,12 +619,12 @@ int main(int argc,char *argv[])
     a[i+grD]    = a[i+grH]    = a[i+grA]    = NULL;
   }
   
+  snew(grpnames,NRGRPS);
+  snew(index,NRGRPS);
+  snew(isize,NRGRPS);
   if (bSelected) {
     /* analyze selected hydrogen bonds */
     fprintf(stderr,"Select group with selected atoms:\n");
-    snew(grpnames,NRGRPS);
-    snew(index,NRGRPS);
-    snew(isize,NRGRPS);
     get_index(&(top.atoms),opt2fn("-sel",NFILE,fnm),
 	      1,isize,index,grpnames);
     if (isize[0] % 3)
@@ -588,16 +643,13 @@ int main(int argc,char *argv[])
   } else {
     /* analyze all hydrogen bonds: get group(s) */
     fprintf(stderr,"Specify 2 groups to analyze:\n");
-    snew(grpnames,NRGRPS);
-    snew(index,NRGRPS);
-    snew(isize,NRGRPS);
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
 	      2,isize,index,grpnames);
     
     /* check if we have two identical or two non-overlapping groups */
-    bTwo=!(isize[0] == isize[1]);
+    bTwo = isize[0] != isize[1];
     for (i=0; (i<isize[0]) && !bTwo; i++)
-      bTwo=(index[0][i] != index[1][i]);
+      bTwo = index[0][i] != index[1][i];
     if (bTwo) {
       fprintf(stderr,"Checking for overlap...\n");
       for (i=0; i<isize[0]; i++)
@@ -681,6 +733,24 @@ int main(int argc,char *argv[])
 		((nr_a[grID]==0)&&(nr_a[grIA]==0))?" and ":"",
 		(nr_a[grIA]==0)?"acceptors":"",
 		grpnames[grI/grINC]);
+  
+  shatom=0;
+  if (rshell > 0) {
+    int shisz;
+    atom_id *shidx;
+    char *shgrpnm;
+    /* get index group with atom for shell */
+    do {
+      fprintf(stderr,"Select atom for shell (1 atom):\n");
+      get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
+		1,&shisz,&shidx,&shgrpnm);
+      if (shisz != 1)
+	fprintf(stderr,"group contains %d atoms, should be 1 (one)\n",shisz);
+    } while(shisz != 1);
+    shatom = shidx[0];
+    fprintf(stderr,"Will calculate hydrogen bonds within a shell "
+	    "of %g nm around atom %i\n",rshell,shatom+1);
+  }
 
   /* analyze trajectory */
   
@@ -696,6 +766,7 @@ int main(int argc,char *argv[])
   nhb         = NULL;
   nhx         = NULL;
   time        = NULL;
+  danr        = NULL;
   nabin       = acut/abin;
   nrbin       = rcut/rbin;
   snew(adist,nabin);
@@ -703,9 +774,10 @@ int main(int argc,char *argv[])
   if (bInsert)
     snew(insert,natoms);
   do {
-    build_grid(nr_a, a, x, bBox, box, hbox, rcut, ngrid, grid);
+    build_grid(nr_a,a, x,x[shatom], bBox,box,hbox, rcut, rshell, ngrid,grid);
     if (debug)
       dump_grid(debug, ngrid, grid);
+    
     if (nframes >= max_nframes) {
       max_nframes += FRINC;
       srenew(nhb,max_nframes);
@@ -714,6 +786,8 @@ int main(int argc,char *argv[])
       if (bHBMap)
 	for (i=0; i<max_nrhb; i++)
 	  srenew(hbexist[i],max_nframes);
+      if (bDAnr)
+	srenew(danr,max_nframes);
     }
     time[nframes] = t;
     nhb[nframes]  = 0;
@@ -722,7 +796,8 @@ int main(int argc,char *argv[])
     if (bHBMap)
       for (i=0; i<max_nrhb; i++)
 	hbexist[i][nframes]=HB_NO;
-    
+    if (bDAnr)
+      count_da_grid(ngrid, grid, danr[nframes]);
     /* loop over all gridcells (xi,yi,zi)      */
     /* Removed confusing macro, DvdS 27/12/98  */
     for(xi=0; (xi<ngrid[XX]); xi++)
@@ -917,7 +992,7 @@ int main(int argc,char *argv[])
     fprintf(stderr,"Found %d different hydrogen bonds in trajectory\n",nrhb);
     
     /* Dump everything to output */
-    sort_hb(nrhb,nr_a,donors);
+    sort_hb(nr_a,donors);
     
     fp = xvgropen(opt2fn("-num",NFILE,fnm),"Hydrogen Bonds","Time","Number");
     for(i=0; i<nframes; i++)
@@ -984,7 +1059,7 @@ int main(int argc,char *argv[])
       sfree(rhbex);
     }
     
-    if (opt2bSet("-hbm",NFILE,fnm) || bInsert) {
+    if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;
       int x,y;
       
@@ -1075,6 +1150,36 @@ int main(int argc,char *argv[])
 	  fprintf(fp,"%4d",i+1);
 	  j++;
 	}
+      fprintf(fp,"\n");
+    }
+    fclose(fp);
+  }
+  
+  if (bDAnr) {
+    int  i,j,nleg;
+    char **legnames;
+    char buf[STRLEN];
+    char *danames[grINC] = {"Donors", NULL, "Acceptors"};
+    
+#define USE_THIS_GROUP(j) ( ( j % grINC != grH ) && ( bTwo || ( j / grINC != 1 ) ) && ( bInsert || ( j / grINC != 2 ) ) )
+    
+    fp = xvgropen(opt2fn("-da",NFILE,fnm),
+		  "Donors and Acceptors","Time(ps)","Count");
+    nleg = (bTwo?2:1)*2 + (bInsert?2:0);
+    snew(legnames,nleg);
+    i=0;
+    for(j=0; j<grNR; j++)
+      if ( USE_THIS_GROUP(j) ) {
+	sprintf(buf,"%s %s",danames[j % grINC],grpnames[j / grINC]);
+	legnames[i++] = strdup(buf);
+      }
+    assert(i==nleg);
+    xvgr_legend(fp,nleg,legnames);
+    for(i=0; i<nframes; i++) {
+      fprintf(fp,"%10g",time[i]);
+      for (j=0; j<grNR; j++)
+	if ( USE_THIS_GROUP(j) )
+	  fprintf(fp," %6d",danr[i][j]);
       fprintf(fp,"\n");
     }
     fclose(fp);
