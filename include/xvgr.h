@@ -127,6 +127,12 @@ extern real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b);
  * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
  */
 
+/* This function reads ascii (xvg) files and extracts the data sets to a 
+ * two dimensional array which is returned.
+ */
+extern real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
+		       int nsets_in,int *nset,int *nval,real *dt,real **t,
+		       int linelen);
 #ifdef CPLUSPLUS
 }
 #endif
