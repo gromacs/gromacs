@@ -31,6 +31,8 @@ static char *SRCID_names_c = "$Id$";
 #include "typedefs.h"
 #include "names.h"
 
+/* note: these arrays should correspond to enums in include/types/enums.h */
+
 char *eblock_names[ebNR+1]=
 {
   "CGS","MOLS","SBLOCKS",NULL
@@ -80,4 +82,8 @@ char *egrp_nm[egNR+1] = {
 
 char *epcoupl_names[epcNR+1] = {
   "No", "Isotropic", "Anisotropic", "Triclinic", NULL
+};
+
+char *edisre_names[edrNR+1] = {
+  "No", "Simple", "Ensemble", NULL
 };
