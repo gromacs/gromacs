@@ -45,10 +45,10 @@ static char *SRCID_ifunc_c = "$Id$";
    {str,lstr,(nra),(nrpa),     0,IF_DUMMY | IF_CONNECT,     -1, unimplemented}
    
 #define    def_shk(str,lstr,nra,nrpa,nrpb,ind,func)                          \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE,                       (ind),(func)}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT,                  (ind),(func)}
    
 #define def_shkcon(str,lstr,nra,nrpa,nrpb,ind,func)                          \
-   {str,lstr,(nra),(nrpa),(nrpb),IF_SHAKE | IF_CONNECT,          (ind),(func)}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_CONNECT,     (ind),(func)}
    
 #define     def_nb(str,lstr,nra, nrp)                                        \
    {str,lstr,(nra), (nrp),     0,IF_NULL,                    -1,unimplemented}

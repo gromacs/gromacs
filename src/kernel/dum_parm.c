@@ -83,7 +83,7 @@ static void get_bondeds(int nrat, t_iatom atoms[],
     fprintf(debug,"\n");
   }
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if ( interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+    if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
       /* this is a bond or a constraint */
       nrcheck = 2;
     else if ( interaction_function[ftype].flags & IF_ATYPE )
@@ -749,7 +749,7 @@ static void clean_dum_angles(t_params *plist, t_pindex pindex[],
 	at2 = dumatoms[(m+1) % dumnral];
 	bPresent=FALSE;
 	for (ftype=0; ftype<F_NRE; ftype++)
-	  if (interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+	  if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
 	    for (j=0; (j<plist[ftype].nr) && !bPresent; j++)
 	      /* all bonds until one matches */
 	      bPresent = ( ( (plist[ftype].param[j].AI == at1) &&
@@ -899,7 +899,7 @@ void clean_dum_bad(t_params *plist, int natoms)
     
     /* remove things with dummy atoms */
     for(ftype=0; ftype<F_NRE; ftype++)
-      if (interaction_function[ftype].flags & ( IF_BTYPE | IF_SHAKE ) )
+      if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
 	clean_dum_bonds(plist, ftype, dummy_type);
       else if (interaction_function[ftype].flags & IF_ATYPE)
 	clean_dum_angles(plist, pindex, ftype, dummy_type);

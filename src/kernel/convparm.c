@@ -268,7 +268,7 @@ void convert_params(int atnr,t_params nbtypes[],
   for(i=0; (i<F_NRE); i++) {
     flags = interaction_function[i].flags;
     if ((i != F_LJ) && (i != F_BHAM) &&
-	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_SHAKE)))
+	((flags & IF_BOND) || (flags & IF_DUMMY) || (flags & IF_CONSTRAINT)))
       enter_function(&(plist[i]),(t_functype)i,idef,&maxtypes,FALSE);
   }
   if (debug)

@@ -514,7 +514,7 @@ int count_constraints(t_params plist[])
   for(i=0; i<F_NRE; i++)
     if (i == F_SETTLE)
       count += 3*plist[i].nr;
-    else if (interaction_function[i].flags & IF_SHAKE)
+    else if (interaction_function[i].flags & IF_CONSTRAINT)
       count += plist[i].nr;
   
   return count;

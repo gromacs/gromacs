@@ -108,7 +108,8 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
     np=interaction_function[tp].nratoms;
 
     if ((ia[1] < natoms) &&
-	(interaction_function[tp].flags & (IF_BOND | IF_SHAKE | IF_DUMMY))) {
+	(interaction_function[tp].flags & 
+	 (IF_BOND | IF_CONSTRAINT | IF_DUMMY))) {
       if (interaction_function[tp].flags & IF_DUMMY)
 	/* Bond a dummy only to the first constructing atom */
 	nbonded = 2;
@@ -204,7 +205,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
 
   snew(nbond,natoms);
   for(i=0; (i<F_NRE); i++) {
-    if (interaction_function[i].flags & (IF_BOND | IF_SHAKE | IF_DUMMY))
+    if (interaction_function[i].flags & (IF_BOND | IF_CONSTRAINT | IF_DUMMY))
       calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
   }
   

@@ -42,13 +42,13 @@ typedef real t_ifunc(int nbonds,t_iatom iatoms[],t_iparams *iparams,
  * no calculation of PBC is necessary.
  */
 
-#define IF_NULL    0
-#define IF_BOND    1
-#define IF_DUMMY   1<<1
-#define IF_SHAKE   1<<2
-#define IF_CONNECT 1<<3
-#define IF_BTYPE   1<<5
-#define IF_ATYPE   1<<6
+#define IF_NULL       0
+#define IF_BOND       1
+#define IF_DUMMY      1<<1
+#define IF_CONSTRAINT 1<<2
+#define IF_CONNECT    1<<3
+#define IF_BTYPE      1<<5
+#define IF_ATYPE      1<<6
 /* These flags tell to some of the routines what can be done with this
  * item in the list. If flags & IF_BOND, then bonded interactions will
  * be calculated. If flags & IF_CONNECT this link specifies a connection 
