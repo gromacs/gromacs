@@ -68,7 +68,7 @@ static char *SRCID_topio_c = "$Id$";
   printf("line: %d, maxavail: %d\n",__LINE__,maxavail()); \
   fflush(stdout)
 
-void gen_pairs(t_params *nbs,t_params *pairs,real fudge)
+void gen_pairs(t_params *nbs,t_params *pairs,real fudge, bool bVerbose)
 {
   int     i,j,ntp,nrfp,nrfpA,nrfpB,nnn;
 
@@ -179,7 +179,8 @@ static char **read_topol(char        *infile,
 			 int         nshake,
 			 real        *fudgeQQ,
 			 int         *nsim,
-			 t_simsystem **sims)
+			 t_simsystem **sims,
+			 bool        bVerbose)
 {
   FILE       *in;
   int        nb_funct,comb;
@@ -321,7 +322,7 @@ static char **read_topol(char        *infile,
 	    nb_flag=FALSE;
 	  }
 	  if (bGenPairs) {
-	    gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ);
+	    gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
 	    bGenPairs=FALSE;
 	  }
 	  PUSHBT(2);
@@ -357,7 +358,7 @@ static char **read_topol(char        *infile,
 	    nb_flag=FALSE;
 	  }
 	  if (bGenPairs) {
-	    gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ);
+	    gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,bVerbose);
 	    bGenPairs=FALSE;
 	  }
 
@@ -469,7 +470,7 @@ char **do_top(bool         bVerbose,
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
-		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims);
+		   plist,opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose);
 
   if (unlink(tmpfile) != 0)
     perror ("Unable to remove temporary file");
