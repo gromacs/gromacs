@@ -61,6 +61,9 @@ void ql77 (int n,real *x,real *d)
 {
   int i,j,k,l,ni;
   real *e,h,g,f,b,s,p,r,c,absp;
+  real totwork,work;
+
+#define pr_pr(a,b,c) fprintf(stderr,"\rreduction: %g%% accumulation: %g%% accumulation: %g%%",a,b,c)
 
   const real eps=7.e-14,tol=1.e-30;
 
@@ -69,7 +72,13 @@ void ql77 (int n,real *x,real *d)
   /*
    *  householder reduction to tridiagonal form                         
    */
-    
+  
+  totwork = 0;
+  for(ni=1; ni<n; ni++)
+    totwork += pow(n-ni,3);
+
+  work=0;
+  pr_pr(0.,0.,0.);
   for(ni=1; (ni < n); ni++) {
     i=n-ni;
     l=i-1;
@@ -112,6 +121,9 @@ void ql77 (int n,real *x,real *d)
     }
     d[i]=h;
     e[i-1]=g;
+
+    work += pow(n-ni,3);
+    pr_pr(floor(100*work/totwork+0.5),0.,0.);
   }
 
   /*
@@ -120,6 +132,9 @@ void ql77 (int n,real *x,real *d)
   
   d[0]=x[0];
   x[0]=1.0;
+
+  work=0;
+  pr_pr(100.,0.,0.);
   for(i=1; (i<n); i++) {
     if (d[i] > 0.0) {
       for(j=0; (j<i); j++) {
@@ -136,6 +151,8 @@ void ql77 (int n,real *x,real *d)
       x[i+n*j]=0.0;
       x[j+n*i]=0.0;
     }
+    work += pow(i,3);
+    pr_pr(100.,floor(100*work/totwork+0.5),0.);
   }
 
   /*
@@ -145,6 +162,9 @@ void ql77 (int n,real *x,real *d)
   b=0.0;
   f=0.0;
   e[n-1]=0.0;
+  totwork += pow(n,3);
+  work=0;
+  pr_pr(100.,100.,0.);
   for(l=0; (l<n); l++) {
     h=eps*(fabs(d[l])+fabs(e[l]));
     if (h > b) 
@@ -200,7 +220,12 @@ void ql77 (int n,real *x,real *d)
       } while (fabs(e[l]) > b); 
     }
     d[l]=d[l]+f;
+
+    work += pow(n-l,3);
+    pr_pr(100.,100.,floor(100*work/totwork+0.5));
   }
+  fprintf(stderr,"\n");
+
   /*
    *  put eigenvalues and eigenvectors in 
    *  desired ascending order
