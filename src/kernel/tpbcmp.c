@@ -270,10 +270,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2)
   CIR(init_t);
   CIR(delta_t);
   CIR(xtcprec);
-  CII(niter);
   CII(solvent_opt);
   CII(nsatoms);
-  CIR(gausswidth);
   CII(nkx);
   CII(nky);
   CII(nkz);

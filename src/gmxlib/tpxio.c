@@ -45,9 +45,9 @@
 #include "copyrite.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 9;
+static int tpx_version = 10;
 /* This number should be the most recent incompatible version */
-static int tpx_incompatible_version = 7;
+static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
 static int file_version = 0;
 
@@ -92,13 +92,13 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
 static void do_inputrec(t_inputrec *ir,bool bRead)
 {
   int  i,j; 
-  real rdum;
   bool bDum=TRUE;
 
   if (file_version >= 1) {  
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
     do_int(ir->nsteps); 
+    do_int(ir->eBox);
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 
     do_int(ir->ndelta); 
@@ -115,14 +115,24 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_real(ir->init_t); 
     do_real(ir->delta_t); 
     do_real(ir->xtcprec); 
-    do_int(ir->niter); 
     do_int(ir->solvent_opt); 
     do_int(ir->nsatoms); 
-    do_real(ir->gausswidth); 
+    do_int(ir->eBox); 
+    do_real(ir->rlist); 
+    do_int(ir->coulombtype); 
+    do_real(ir->rcoulomb_switch); 
+    do_real(ir->rcoulomb); 
+    do_int(ir->vdwtype);
+    do_real(ir->rvdw_switch); 
+    do_real(ir->rvdw); 
+    do_int(ir->bDispCorr); 
+    do_real(ir->epsilon_r);
     do_int(ir->nkx); 
     do_int(ir->nky); 
-    do_int(ir->nkz); 
-    do_int(ir->eBox); 
+    do_int(ir->nkz);
+    do_int(ir->pme_order);
+    do_real(ir->ewald_rtol);
+    do_int(ir->bOptFFT);
     do_int(ir->bUncStart); 
     do_int(ir->btc); 
     do_int(ir->ntcmemory); 
@@ -133,18 +143,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_rvec(ir->compress); 
     do_int(ir->bSimAnn); 
     do_real(ir->zero_temp_time); 
-    do_real(ir->rlist); 
-    do_int(ir->coulombtype); 
-    do_real(ir->rcoulomb_switch); 
-    do_real(ir->rcoulomb); 
-    do_int(ir->vdwtype);
-    do_real(ir->rvdw_switch); 
-    do_real(ir->rvdw); 
-    do_int(ir->bDispCorr); 
     do_real(ir->epsilon_r); 
     do_real(ir->shake_tol);
-    rdum = 0; 
-    do_real(rdum);         /* Used to be fudgeLJ */
     do_real(ir->fudgeQQ); 
     do_int(ir->bPert); 
     do_real(ir->init_lambda); 
@@ -217,17 +217,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
   }
   /* set things which are in tpx_version but not in a previos version */
 
+  /*
   if (file_version < tpx_version) {
-    if (ir->coulombtype > eelPME)
-      ir->coulombtype += 1;
-    ir->pme_order  = 4;
-    ir->ewald_rtol = 0.00001;
-    ir->bOptFFT    = 0;
   } else {
-    do_int(ir->pme_order);
-    do_real(ir->ewald_rtol);
-    do_int(ir->bOptFFT);
   }
+  */
 }
 
 static void do_harm(t_iparams *iparams,bool bRead)

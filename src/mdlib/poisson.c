@@ -146,7 +146,7 @@ real do_poisson(FILE *log,       bool bVerbose,
   ener = 0.0;
   
   if (bFirst) {
-    maxnit = ir->niter;
+    maxnit = ir->userint1;
 
     fprintf(log,"Will use Poisson Solver for long-range electrostatics\n");
     fprintf(log,"Grid size is %d x %d x %d\n",ir->nkx,ir->nky,ir->nkz);
@@ -225,7 +225,7 @@ real do_optimize_poisson(FILE *log,       bool bVerbose,
   ener = 0.0;
   
   if (bFirst) {
-    maxnit = ir->niter;
+    maxnit = ir->userint1;
 
     fprintf(log,"Will use Poisson Solver for long-range electrostatics\n");
     fprintf(log,"Grid size is %d x %d x %d\n",ir->nkx,ir->nky,ir->nkz);

@@ -291,10 +291,8 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PR("init_t",ir->init_t);
     PR("delta_t",ir->delta_t);
     PR("xtcprec",ir->xtcprec);
-    PI("niter",ir->niter);
     PI("solvent_opt",ir->solvent_opt);
     PI("nsatoms",ir->nsatoms);
-    PR("gausswidth",ir->gausswidth);
     PI("nkx",ir->nkx);
     PI("nky",ir->nky);
     PI("nkz",ir->nkz);

@@ -17,7 +17,7 @@
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighborsearching</b></A> (nstlist, ns_type, deltagrid, box, rlist)
-<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, niter, gauss_width, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
+<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, bDispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, ntcmemory, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, npcmemory, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, zero_temp_time)
@@ -330,9 +330,6 @@ corresponds to the cut-off in the user-defined function.
 <dt><b>yes</b>
 <dd>apply long range dispersion corrections for Energy and Pressure
 </dl>
-
-<dt><h4>gauss_width </b>(0.1)<b></h4>
-<dd>for future use
 
 <dt><h4>fourierspacing: </b>(0.12) [nm]</h4>
 <dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
@@ -737,7 +734,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#free">free_energy</A><br>
 <A HREF="#neq">freezedim </A><br>
 <A HREF="#neq">freezegrps</A><br>
-<A HREF="#el2">gauss_width</A><br>
 <A HREF="#vel">gen_seed</A><br>
 <A HREF="#vel">gen_temp</A><br>
 <A HREF="#vel">gen_vel</A><br>
@@ -750,7 +746,6 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond2">lincs_order</A><br>
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>
-<A HREF="#el2">niter</A><br>
 <A HREF="#pc">npcmemory</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#run">nstcomm</A><br>

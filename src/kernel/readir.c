@@ -309,13 +309,13 @@ void get_ir(char *mdparin,char *mdparout,
     
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("bDispCorr",   ir->bDispCorr,  yesno_names, nerror, TRUE);
-  CTYPE ("Some thingies for future use");
-  ITYPE ("niter",       ir->niter,      100);
-  RTYPE ("gauss_width", ir->gausswidth, 0.1);
+  CTYPE ("Spacing for the PME/PPPM FFT grid");
   RTYPE ("fourierspacing", opts->fourierspacing,0.12);
+  CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
   ITYPE ("fourier_nx",  ir->nkx,         0);
   ITYPE ("fourier_ny",  ir->nky,         0);
   ITYPE ("fourier_nz",  ir->nkz,         0);
+  CTYPE ("EWALD/PME/PPPM parameters");
   ITYPE ("pme_order",   ir->pme_order,   4);
   RTYPE ("ewald_rtol",  ir->ewald_rtol, 0.00001);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, FALSE);

@@ -101,6 +101,8 @@ t_mdebin *init_mdebin(int fp_ene,t_groups *grps,t_atoms *atoms,t_idef *idef,
       bEner[i] = bLJLR;
     else if (i == F_LJ14)
       bEner[i] = b14;
+    else if (i == F_COUL14)
+      bEner[i] = b14;
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
       bEner[i] = bFEP;
     else if ((strstr(interaction_function[i].name,"DUM") != NULL) ||

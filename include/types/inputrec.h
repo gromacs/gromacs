@@ -63,10 +63,8 @@ typedef struct {
   real init_t;		/* initial time (ps) 				*/
   real delta_t;		/* time step (ps)				*/
   real xtcprec;         /* precision of xtc file                        */
-  int  niter;           /* max number of iterations for iterations      */
   int  solvent_opt;     /* atomtype of water oxygen                     */
   int  nsatoms;         /* Number of atoms in solvent molecule          */
-  real gausswidth;      /* width of gaussian function for Ewald sum     */
   int  nkx,nky,nkz;     /* number of k vectors in each spatial dimension*/
                         /* for fourier methods for long range electrost.*/
   int  pme_order;       /* interpolation order for PME                  */

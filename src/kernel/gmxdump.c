@@ -170,7 +170,7 @@ static void list_trn(char *fn,bool bAltLayout)
   close_trn(fpread);
 }
 
-void list_xtc(char *fn)
+void list_xtc(char *fn, bool bXVG)
 {
   int    xd,indent;
   char   buf[256];
@@ -185,14 +185,24 @@ void list_xtc(char *fn)
 		
   nframe=0;
   do {
-    sprintf(buf,"%s frame %d",fn,nframe);
-    indent=0;
-    indent=pr_title(stdout,indent,buf);
-    pr_indent(stdout,indent);
-    fprintf(stdout,"natoms=%10d  step=%10d  time=%10g  prec=%10g\n",
+    if (bXVG) {
+      int i,d;
+      
+      fprintf(stdout,"%g",time);
+      for(i=0; i<natoms; i++)
+	for(d=0; d<DIM; d++)
+	  fprintf(stdout," %g",x[i][d]);
+      fprintf(stdout,"\n");
+    } else {
+      sprintf(buf,"%s frame %d",fn,nframe);
+      indent=0;
+      indent=pr_title(stdout,indent,buf);
+      pr_indent(stdout,indent);
+      fprintf(stdout,"natoms=%10d  step=%10d  time=%10g  prec=%10g\n",
 	    natoms,step,time,prec);
-    pr_rvecs(stdout,indent,"box",box,DIM);
-    pr_rvecs(stdout,indent,"x",x,natoms);
+      pr_rvecs(stdout,indent,"box",box,DIM);
+      pr_rvecs(stdout,indent,"x",x,natoms);
+    }
     nframe++;
   } while (read_next_xtc(xd,&natoms,&step,&time,box,x,&prec,&bOK));
   if (!bOK)
@@ -200,13 +210,13 @@ void list_xtc(char *fn)
   close_xtc(xd);
 }
 
-void list_trx(char *fn,bool bAltLayout)
+void list_trx(char *fn,bool bAltLayout,bool bXVG)
 {
   int ftp;
   
   ftp = fn2ftp(fn);
   if (ftp == efXTC)
-    list_xtc(fn);
+    list_xtc(fn,bXVG);
   else if ((ftp == efTRR) || (ftp == efTRJ))
     list_trn(fn,bAltLayout);
   else
@@ -283,14 +293,15 @@ int main(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bAltLayout=FALSE;
+  static bool bAltLayout=FALSE,bXVG=FALSE;
   static bool bShowNumbers=TRUE;
   t_pargs pa[] = {
     { "-a", FALSE, etBOOL, {&bAltLayout}, "HIDDENAlternative layout for run startup files" },
+    { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
     { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparsion easier, but creates a useless topology)" }
   };
   
-  CopyRight(stdout,argv[0]);
+  CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,FALSE,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
@@ -299,12 +310,12 @@ int main(int argc,char *argv[])
     list_tpx(ftp2fn(efTPX,NFILE,fnm), bAltLayout);
     
   if (ftp2bSet(efTRX,NFILE,fnm)) 
-    list_trx(ftp2fn(efTRX,NFILE,fnm), bAltLayout);
+    list_trx(ftp2fn(efTRX,NFILE,fnm), bAltLayout, bXVG);
   
   if (ftp2bSet(efENX,NFILE,fnm))
     list_ene(ftp2fn(efENX,NFILE,fnm), FALSE);
     
-  thanx(stdout);
+  thanx(stderr);
 
   return 0;
 }
