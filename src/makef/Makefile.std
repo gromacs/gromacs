@@ -62,7 +62,7 @@ dep:
 	$(CC) -M -I. -I$(GMXHOME)/src/include *.c *.cc  |  grep -v include  |  sed sx./xx > Make.dep
 	
 clean:
-		$(RM) $(PROGRAMS) *.o *.l *~ *.bak \#*\# 
+		$(RM) $(EXECUTABLES) *.o *.l *~ *.bak \#*\# 
 
 .c.o:
 		$(CC) $(C-FLAGS) -c $<
