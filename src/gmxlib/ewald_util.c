@@ -53,14 +53,14 @@ real calc_ewaldcoeff(real rc,real dtol)
   do {
     i++;
     x*=2;
-  } while((erfc(x*rc)/rc)>dtol);
+  } while (erfc(x*rc) > dtol);
 
   n=i+60; /* search tolerance is 2^-60 */
   low=0;
   high=x;
   for(i=0;i<n;i++) {
     x=(low+high)/2;
-    if((erfc(x*rc)/rc)>dtol)
+    if (erfc(x*rc) > dtol)
       low=x;
     else 
       high=x;
