@@ -620,7 +620,7 @@ real analyse_diff(FILE *log,char *label,
       }
     }
     ffclose(fp);
-    xvgr_file(fcorr,NULL);
+    do_view(fcorr,NULL);
   }
   if (pcorr)  
     fp = xvgropen(pcorr,"LR Potential Correlation","Four-Pot","PPPM-Pot");
@@ -634,11 +634,11 @@ real analyse_diff(FILE *log,char *label,
   }
   if (pcorr) {
     ffclose(fp);
-    xvgr_file(pcorr,NULL);
+    do_view(pcorr,NULL);
   }
   if (ptotcorr) {
     ffclose(gp);
-    xvgr_file(ptotcorr,NULL);
+    do_view(ptotcorr,NULL);
   }
 
   return rmsf;
