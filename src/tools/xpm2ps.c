@@ -45,10 +45,11 @@ static char *SRCID_xpm2ps_c = "$Id$";
 #define DDD   2
 
 typedef struct {
-  int  major;
-  int  minor;
-  int  offset;
+  real major;
+  real minor;
+  real offset;
   bool first;
+  int  lineatzero;
   real majorticklen;
   real minorticklen;
   char label[STRLEN];
@@ -59,73 +60,86 @@ typedef struct {
 } t_axisdef;
 
 typedef struct {
-  int       bw;
-  int       linewidth;
-  real      xoffs,yoffs;
-  bool      bTitle;
-  real      titfontsize;
-  char      titfont[STRLEN];
-  bool      legend;
-  real      legfontsize;
-  char      legfont[STRLEN];
-  char      leglabel[STRLEN];
-  char      leg2label[STRLEN];
-  real      xboxsize;
-  real      yboxsize;
-  real      boxspacing;
+  int  bw;
+  real linewidth;
+  real xoffs,yoffs;
+  bool bTitle;
+  real titfontsize;
+  char titfont[STRLEN];
+  bool legend;
+  real legfontsize;
+  char legfont[STRLEN];
+  char leglabel[STRLEN];
+  char leg2label[STRLEN];
+  real xboxsize;
+  real yboxsize;
+  real boxspacing;
+  real boxlinewidth;
+  real ticklinewidth;
+  real zerolinewidth;
   t_axisdef X,Y;
 } t_psrec;
 
 void get_params(char *mpin,char *mpout,t_psrec *psr)
 {
   static char *bools[BOOL_NR+1]  = { "no", "yes", NULL };
+  /* this must correspond to t_rgb *linecolors[] below */
+  static char *colors[] = { "none", "black", "white", NULL };
   t_inpfile *inp;
   char      *tmp;
   int       ninp;
   
   inp=read_inpfile(mpin,&ninp);
-  ETYPE("black&white",		psr->bw,          bools);
-  ITYPE("linewidth",            psr->linewidth,   2);
-  STYPE("titlefont",		psr->titfont,     "Helvetica");
-  RTYPE("titlefontsize",	psr->titfontsize, 20.0);
-  ETYPE("legend",		psr->legend,     bools);
-  STYPE("legendfont",		psr->legfont,     "Helvetica");
-  STYPE("legendlabel",		psr->leglabel,	 "");
-  STYPE("legend2label",		psr->leg2label,	 psr->leglabel);
-  RTYPE("legendfontsize",	psr->legfontsize, 14.0);
-  RTYPE("xbox",         	psr->xboxsize,    2.0);
-  RTYPE("ybox",         	psr->yboxsize,    2.0);
-  RTYPE("matrixspacing",        psr->boxspacing,  20.0);
-  RTYPE("xoffset",              psr->xoffs,       0.0);
-  RTYPE("yoffset",              psr->yoffs,       0.0);
-  ITYPE("x-major",      	psr->X.major,     20);
-  ITYPE("x-minor",      	psr->X.minor,     5);
-  ITYPE("x-firstmajor",         psr->X.offset,    0);
-  ETYPE("x-majorat0",           psr->X.first,     bools);
-  RTYPE("x-majorticklen", 	psr->X.majorticklen,	8.0);
-  RTYPE("x-minorticklen", 	psr->X.minorticklen,	4.0);
-  STYPE("x-label",		psr->X.label,		"");
-  RTYPE("x-fontsize",     	psr->X.fontsize, 	16.0);
-  STYPE("x-font",      		psr->X.font,      	"Helvetica");
-  RTYPE("x-tickfontsize",     	psr->X.tickfontsize, 	10.0);
-  STYPE("x-tickfont",      	psr->X.tickfont,		"Helvetica");
-  ITYPE("y-major",      	psr->Y.major,      	20);
-  ITYPE("y-minor",      	psr->Y.minor,      	5);
-  ITYPE("y-firstmajor",         psr->Y.offset,    0);
-  ETYPE("y-majorat0",           psr->Y.first,     bools);
-  RTYPE("y-majorticklen", 	psr->Y.majorticklen,  	8.0);
-  RTYPE("y-minorticklen", 	psr->Y.minorticklen,  	4.0);
-  STYPE("y-label",		psr->Y.label,		"");
-  RTYPE("y-fontsize",     	psr->Y.fontsize, 	16.0);
-  STYPE("y-font",      		psr->Y.font,      	"Helvetica");
-  RTYPE("y-tickfontsize",     	psr->Y.tickfontsize, 	10.0);
-  STYPE("y-tickfont",      	psr->Y.tickfont,		"Helvetica");
+  ETYPE("black&white",    psr->bw,             bools);
+  RTYPE("linewidth",      psr->linewidth,      2.0);
+  STYPE("titlefont",      psr->titfont,        "Helvetica");
+  RTYPE("titlefontsize",  psr->titfontsize,    20.0);
+  ETYPE("legend",         psr->legend,         bools);
+  STYPE("legendfont",     psr->legfont,        psr->titfont);
+  STYPE("legendlabel",    psr->leglabel,       "");
+  STYPE("legend2label",   psr->leg2label,      psr->leglabel);
+  RTYPE("legendfontsize", psr->legfontsize,    14.0);
+  RTYPE("xbox",           psr->xboxsize,       2.0);
+  RTYPE("ybox",           psr->yboxsize,       psr->xboxsize);
+  RTYPE("matrixspacing",  psr->boxspacing,     20.0);
+  RTYPE("xoffset",        psr->xoffs,          0.0);
+  RTYPE("yoffset",        psr->yoffs,          psr->xoffs);
+  RTYPE("boxlinewidth",   psr->boxlinewidth,   psr->linewidth);
+  RTYPE("ticklinewidth",  psr->ticklinewidth,  psr->linewidth);
+  RTYPE("zerolinewidth",  psr->zerolinewidth,  psr->ticklinewidth);
+  ETYPE("x-lineat0value", psr->X.lineatzero,   colors);
+  RTYPE("x-major",        psr->X.major,        20.0);
+  RTYPE("x-minor",        psr->X.minor,        5.0);
+  RTYPE("x-firstmajor",   psr->X.offset,       0.0);
+  ETYPE("x-majorat0",     psr->X.first,        bools);
+  RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);
+  RTYPE("x-minorticklen", psr->X.minorticklen, 4.0);
+  STYPE("x-label",        psr->X.label,        "");
+  RTYPE("x-fontsize",     psr->X.fontsize,     16.0);
+  STYPE("x-font",         psr->X.font,         psr->titfont);
+  RTYPE("x-tickfontsize", psr->X.tickfontsize, 10.0);
+  STYPE("x-tickfont",     psr->X.tickfont,     psr->X.font);
+  ETYPE("y-lineat0value", psr->Y.lineatzero,   colors);
+  RTYPE("y-major",        psr->Y.major,        psr->X.major);
+  RTYPE("y-minor",        psr->Y.minor,        psr->X.minor);
+  RTYPE("y-firstmajor",   psr->Y.offset,       psr->X.offset);
+  ETYPE("y-majorat0",     psr->Y.first,        bools);
+  RTYPE("y-majorticklen", psr->Y.majorticklen, psr->X.majorticklen);
+  RTYPE("y-minorticklen", psr->Y.minorticklen, psr->X.minorticklen);
+  STYPE("y-label",        psr->Y.label,        psr->X.label);
+  RTYPE("y-fontsize",     psr->Y.fontsize,     psr->X.fontsize);
+  STYPE("y-font",         psr->Y.font,         psr->X.font);
+  RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
+  STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
   if (mpout)
     write_inpfile(mpout,ninp,inp);
 }
 
 t_rgb black={ 0.0, 0.0, 0.0 };
+t_rgb white={ 1.0, 1.0, 1.0 };
 #define BLACK (&black)
+/* this must correspond to *colors[] in get_params */
+t_rgb *linecolors[] = { NULL, &black, &white, NULL };
 
 bool diff_maps(int nmap1,t_mapping *map1,int nmap2,t_mapping *map2)
 {
@@ -259,7 +273,7 @@ static bool box_do_all_x_min_ticks(t_psrec *psr)
   return (psr->boxspacing>(1.5*psr->X.minorticklen));
 }
 
-static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
+static void draw_boxes(FILE *out,real x0,real y0,real w,
 		       int nmat,t_matrix mat[],t_psrec *psr)
 {
   char   buf[12];
@@ -273,6 +287,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
   
   /* Draw the box */
   ps_rgb(out,BLACK);
+  ps_linewidth(out,psr->boxlinewidth);
   yy00=y0;
   for(i=0; (i<nmat); i++) {
     dy=box_height(&(mat[i]),psr);
@@ -281,6 +296,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
   }
   
   /* Draw the ticks on the axes */
+  ps_linewidth(out,psr->ticklinewidth);
   xx00=x0-1;
   yy00=y0-1;
   for (i=0; (i<nmat); i++) {
@@ -298,7 +314,7 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
     ps_strfont(out,psr->X.tickfont,psr->X.tickfontsize);
     for(x=0; (x<mat[i].nx); x++) {
       xx=xx00+(x+0.7)*psr->xboxsize;
-      if ( ( (x % psr->X.major == psr->X.offset) || 
+      if ( ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.major) || 
 	     (psr->X.first && (x==0))) &&
 	   ( (i == 0) || box_do_all_x_maj_ticks(psr) ) ) {
 	/* Longer tick marks */
@@ -308,12 +324,12 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 	  ps_ctext(out,xx,
 		   yy00-DDD-psr->X.majorticklen-psr->X.tickfontsize*0.8,
 		   xtick[x],eXCenter);
-      } else if ( ( (x-psr->X.offset) % psr->X.minor == 0) &&
+      } else if ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.minor) &&
 		( (i == 0) || box_do_all_x_min_ticks(psr) ) ){
 	/* Shorter tick marks */
 	ps_line(out,xx,yy00,xx,yy00-psr->X.minorticklen);
-      } else if (x % psr->X.major == psr->X.offset) {
-	/* Even shorter marks, only each X.offset */
+      } else if ( bRmod(mat[i].axis_x[x] - psr->X.offset, psr->X.major) ) {
+	/* Even shorter marks, only each X.major */
 	ps_line(out,xx,yy00,xx,yy00-(psr->boxspacing/2));
       }
     }
@@ -332,14 +348,15 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 
     for(y=0; (y<mat[i].ny); y++) {
       yy=yy00+(y+0.7)*psr->yboxsize;
-      if ( (y % psr->Y.major == psr->Y.offset) || (psr->Y.first && (y==0))) {
+      if ( bRmod(mat[i].axis_y[y] - psr->Y.offset, psr->Y.major) || 
+	   (psr->Y.first && (y==0))) {
 	/* Major ticks */
 	strlength=max(strlength,(int)strlen(ytick[y]));
 	ps_line (out,xx00,yy,xx00-psr->Y.majorticklen,yy);
 	ps_ctext(out,xx00-psr->Y.majorticklen-DDD,
 		 yy-psr->Y.tickfontsize/3.0,ytick[y],eXRight);
       }
-      else if ((y-psr->Y.offset) % psr->Y.minor == 0) {
+      else if ( bRmod(mat[i].axis_y[y] - psr->Y.offset, psr->Y.minor) ) {
 	/* Minor ticks */
 	ps_line(out,xx00,yy,xx00-psr->Y.minorticklen,yy);
       }
@@ -367,6 +384,46 @@ static void draw_boxes(FILE *out,real x0,real y0,real w,real h,
 	     psr->X.fontsize,mat[0].label_x,eXCenter);
 }
 
+static void draw_zerolines(FILE *out,real x0,real y0,real w,
+			   int nmat,t_matrix mat[],t_psrec *psr)
+{
+  real   xx,yy,dy,xx00,yy00;
+  int    i,x,y;
+  
+  xx00=x0-1.5;
+  yy00=y0-1.5;
+  ps_linewidth(out,psr->zerolinewidth);
+  for (i=0; (i<nmat); i++) {
+    dy=box_height(&(mat[i]),psr);
+    /* mat[i].axis_x and _y were already set by draw_boxes */
+    if (psr->X.lineatzero) {
+      ps_rgb(out,linecolors[psr->X.lineatzero]);
+      for(x=0; (x<mat[i].nx); x++) {
+	xx=xx00+(x+0.7)*psr->xboxsize;
+      /* draw lines whenever tick label almost zero (e.g. next trajectory) */
+	if ( x!=0 && x<mat[i].nx-1 &&
+	     abs(mat[i].axis_x[x]) < 
+	     0.1*abs(mat[i].axis_x[x+1]-mat[i].axis_x[x]) ) {
+	  ps_line (out,xx,yy00,xx,yy00+dy+2);
+	}
+      }
+    }
+    if (psr->Y.lineatzero) {
+      ps_rgb(out,linecolors[psr->Y.lineatzero]);
+      for(y=0; (y<mat[i].ny); y++) {
+	yy=yy00+(y+0.7)*psr->yboxsize;
+	/* draw lines whenever tick label almost zero (e.g. next trajectory) */
+	if ( y!=0 && y<mat[i].ny-1 && 
+	     abs(mat[i].axis_y[y]) < 
+	     0.1*abs(mat[i].axis_y[y+1]-mat[i].axis_y[y]) ) {
+	  ps_line (out,xx00,yy,xx00+w+2,yy);
+	}
+      }
+    }
+    yy00+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
+  }
+}
+
 static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
 		    char w_legend,bool bFrame,
 		    real *w,real *h,real *dw,real *dh)
@@ -387,7 +444,8 @@ static void box_dim(int nmat,t_matrix mat[],t_matrix *mat2,t_psrec *psr,
     if (mat[0].label_y[0])
       dww+=2.0*(psr->Y.fontsize+DDD);
     if (psr->Y.major > 0) 
-      dww+=psr->Y.majorticklen+DDD+psr->Y.tickfontsize*(log(maxytick)/log(10.0));
+      dww += psr->Y.majorticklen + DDD + 
+	psr->Y.tickfontsize*(log(maxytick)/log(10.0));
     else if (psr->Y.minor > 0)
       dww+=psr->Y.minorticklen;
     
@@ -555,10 +613,9 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
 
   if (bFrame) {
     ps_comment(out,"Here starts the BOX drawing");  
-    draw_boxes(out,x0,y0,w,h,nmat,mat,psr);
+    draw_boxes(out,x0,y0,w,nmat,mat,psr);
   }
 
-  /* LANDSCAPE */
   for(i=0; (i<nmat); i++) {
     if (bTitle) {
       /* Print title, if any */
@@ -610,8 +667,16 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
     y0+=box_height(&(mat[i]),psr)+box_dh(psr)+box_dh_top(psr);
   }
   
+  if (psr->X.lineatzero || psr->Y.lineatzero) {
+    /* reset y0 for first box */
+    y0=dh;
+    ps_comment(out,"Here starts the zero lines drawing");  
+    draw_zerolines(out,x0,y0,w,nmat,mat,psr);
+  }
+  
   if (w_legend != 'n') {
     ps_comment(out,"Now it's legend time!");
+    ps_linewidth(out,psr->linewidth);
     if ((mat2==NULL) || (w_legend != 's')) {
       bDiscrete = mat[0].bDiscrete;
       legend    = mat[0].legend;
@@ -640,7 +705,7 @@ void ps_mat(char *outf,int nmat,t_matrix mat[],t_matrix mat2[],
   ps_close(out);
 }
 
-void do_mat(int nmat,t_matrix *mat,int nmat2,t_matrix *mat2,
+void do_mat(int nmat,t_matrix *mat,t_matrix *mat2,
 	    bool bFrame,
 	    bool bDiag,bool bFirstDiag,bool bTitle,char w_legend,
 	    real boxx,real boxy,
@@ -721,7 +786,11 @@ int main(int argc,char *argv[])
     "Matrix data may be generated by programs such as do_dssp, g_rms or",
     "g_mdmat.[PAR]",
     "Parameters are set in the [TT]m2p[tt] file optionally supplied with",
-    "[TT]-di[tt]. Reasonable defaults are supplied in a library file.[PAR]",
+    "[TT]-di[tt]. Reasonable defaults are provided. Settings for the y-axis",
+    "default to those for the x-axis. Font names have a defaulting hierarchy:",
+    "titlefont -> legendfont; titlefont -> (xfont -> yfont -> ytickfont)",
+    "-> xtickfont, e.g. setting titlefont sets all fonts, setting xfont",
+    "sets yfont, ytickfont and xtickfont.[PAR]",
     "With [TT]-f2[tt] a 2nd matrix file can be supplied, both matrix",
     "files will be read simultaneously and the upper left half of the",
     "first one ([TT]-f[tt]) is plotted together with the lower right",
@@ -810,21 +879,21 @@ int main(int argc,char *argv[])
   bTitle = (title[0][0] == 't');
   if (title[0][0] == 'y') {
     bTitle=FALSE; /* don't print title in two places at once */
-    for (i=0; (i<nmat); i++)
+    for (i=0; (i<nmat); i++) {
       strcpy(mat[i].label_y, mat[i].title);
-    for (i=0; (i<nmat2); i++)
       strcpy(mat2[i].label_y, mat2[i].title);
+    }
   }
   if (rainbow[0][0] != 'n') {
     rainbow_map(rainbow[0],nmat,mat);
-    rainbow_map(rainbow[0],nmat2,mat2);
+    rainbow_map(rainbow[0],nmat,mat);
   }
 
   w_legend = legend[0][0];
   if ((mat2 == NULL) && (w_legend != 'n'))
     w_legend = 'f';
 
-  do_mat(nmat,mat,nmat2,mat2,bFrame,bDiag,bFirstDiag,bTitle,w_legend,
+  do_mat(nmat,mat,mat2,bFrame,bDiag,bFirstDiag,bTitle,w_legend,
 	 boxx,boxy,epsfile,xpmfile,
 	 opt2fn_null("-di",NFILE,fnm),opt2fn_null("-do",NFILE,fnm));
   
