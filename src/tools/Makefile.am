@@ -29,7 +29,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sgangle.c	\
 	gmx_sorient.c 	gmx_tcaf.c	gmx_traj.c	gmx_velacc.c	\
 	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
-	correl.c	correl.h
+	correl.h
 
 
 bin_PROGRAMS = \
