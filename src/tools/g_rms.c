@@ -136,7 +136,7 @@ int main (int argc,char *argv[])
   bool         bA1,bA2,bPrev,bTop;
   int          ifit,*irms,ibond=0,*ind_bond=NULL;
   atom_id      *ind_fit,**ind_rms,*all_at;
-  char         *gn_fit,**gn_rms,*bigbuf;
+  char         *gn_fit,**gn_rms;
   t_rgb        rlo,rhi;
   t_filenm fnm[] = {
     { efTPS, NULL,  NULL,    ffREAD  },
@@ -636,13 +636,7 @@ int main (int argc,char *argv[])
   }
   if (bAv)
     xvgr_file(opt2fn("-a",NFILE,fnm),"-graphtype bar");
-    
-  snew(bigbuf,nrms*(strlen(gn_rms[0])+strlen(ftp2fn(efXVG,NFILE,fnm))+10));
-  for(i=0; (i<nrms); i++) {
-    strcat(bigbuf,gn_rms[i]);
-    strcat(bigbuf,"  ");
-  }
-  xvgr_file(bigbuf,"-legend load");
+  xvgr_file(opt2fn("-o",NFILE,fnm),NULL);
   
   thanx(stdout);
   
