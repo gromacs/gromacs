@@ -108,7 +108,7 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
   int    n,d,g;
   real   scalar_pressure, xy_pressure, p_corr_z;
   rvec   factor,mu;
-  char   *ptr;
+  char   *ptr,buf[STRLEN];
   
   /*
    *  PRESSURE SCALING 
@@ -177,6 +177,16 @@ void do_pcoupl(t_inputrec *ir,int step,tensor pres,
       pr_rvecs(debug,0,"PC: fac ",&factor,1);
       pr_rvecs(debug,0,"PC: mu  ",&mu,1);
     }
+    
+    if (mu[XX]<0.99 || mu[XX]>1.01 ||
+	mu[YY]<0.99 || mu[YY]>1.01 ||
+	mu[ZZ]<0.99 || mu[ZZ]>1.01) {
+      sprintf(buf,"\nStep %d  Warning: pressure scaling more than 1%%, "
+	      "mu: %g %g %g\n",step,mu[XX],mu[YY],mu[ZZ]);
+      fprintf(stdlog,"%s",buf);
+      fprintf(stderr,"%s",buf);
+    }
+
     /* Scale the positions */
     for (n=start; n<start+nr_atoms; n++) {
       g=cFREEZE[n];
