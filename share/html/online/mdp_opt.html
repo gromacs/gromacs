@@ -135,12 +135,15 @@ mol<sup>-1</sup> nm<sup>-1</sup>].</dd>
 <dt><b>cg</b></dt>
 <dd>A <!--Idx-->conjugate gradient<!--EIdx--> algorithm for energy
 minimization, the tolerance is <b>emtol</b> [kJ mol<sup>-1</sup>
-nm<sup>-1</sup>].  CG is more efficient when a steepest descent step
+nm<sup>-1</sup>]. CG is more efficient when a steepest descent step
 is done every once in a while, this is determined by 
-<b><A HREF="#em">nstcgsteep</A></b>.</dd>
+<b><A HREF="#em">nstcgsteep</A></b>.
+For a minimization prior to a normal mode analysis, which requires
+a very high accuracy, GROMACS should be compiled in double precision.</dd>
 <dt><b>nm</b></dt>
-<dd>Normal mode analysis is performed on the structure in the <tt>tpr</tt> 
-file</dd>
+<dd><!--Idx-->Normal mode analysis<!--EIdx--> is performed
+on the structure in the <tt>tpr</tt> file</dd>. GROMACS should be
+compiled in double precision.
 </dl>
 
 <dt><h4>tinit: (0) [ps]</h4></dt>
@@ -162,8 +165,7 @@ file</dd>
 <dd>No restriction on the center of mass motion
 </dl></dd>
 <dt><h4>nstcomm: (1) [steps]</h4></dt>
-<dd>frequency for center of mass motion removal>/dd>
-motion removal (should only be used for vacuum simulations)</dd>
+<dd>frequency for center of mass motion removal</dd>
 <dt><h4>comm_grps:</h4></dt>
 <dd>group(s) for center of mass motion removal, default is the whole system</dd>
 </dl>
