@@ -399,7 +399,8 @@ harmonic force constant $k^{b,harm}$ (\secref{bondpot}) as
 2 k^b b_{ij}^2 = k^{b,harm}
 \eeq
 The force constants are mostly derived from the harmonic ones used in 
-\gromosv{87}~\cite{biomos}. Although this form is computationally more efficient
+\gromosv{87}~\cite{biomos}. Although this form is computationally more 
+efficient
 (because no square root has to be evaluated), it is conceptually more
 complex. One particular disadvantage is that since the form is not harmonic,
 the average energy of a single bond is not equal to $\half kT$ as it is for 
@@ -457,6 +458,37 @@ one recovers the harmonic bond stretching potential.
 \caption{The Morse potential well, with bond length 0.15 nm.}
 \label{fig:morse}
 \end{figure}
+
+\subsection{Cubic bond stretching potential}
+Another anharmonic bond stretching potential that is slightly simpler
+than the Morse potential adds a cubic term in the distance to the
+simple harmonic form:
+\beq
+V_b~(\rij) = k^b_{ij}(\rij-b_{ij})^2 + k^b_{ij}k^{cub}_{ij}(\rij-b_{ij})^3
+\eeq
+A flexible \normindex{water} model (based on
+the SPC water model~\cite{Berendsen81}) including 
+a cubic bond stretching potential for the O-H bond
+was developed by Ferguson~\cite{Ferguson95}. This model was found
+to yield a reasonable Infrared spectrum. The Ferguson water model is
+available in the {\gromacs} library. 
+It should be noted that the potential is assymetric, overstretching leads to
+infinitely low energies. The \normindex{integration timestep} is therefore
+limited to 1 fs.
+
+The force corresponding to this potential is:
+\beq
+\ve{F}_i(\rvij) = 2k^b_{ij}(\rij-b_{ij})~\rnorm + 3k^b_{ij}k^{cub}_{ij}(\rij-b_{ij})^2~\rnorm
+\eeq
+
+
+\begin{figure}
+\centerline{\psfig {figure=plots/f_morse.eps,width=7cm}}
+\caption{The Morse potential well, with bond length 0.15 nm.}
+\label{fig:morse}
+\end{figure}
+
+
 
 \subsection{Bond angle vibration}
 \label{sec:anglepot}
