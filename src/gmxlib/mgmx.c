@@ -83,33 +83,6 @@ static void new_windex_row(void)
  *
  ******************************************************************/
 
-static void popup_menu_handler(Widget w,Widget popup,XButtonEvent * event)
-{
-  XmMenuPosition(popup,event);
-  XtManageChild(popup);
-}
-
-static void popup_select_handler(Widget w,XtPointer value,XtPointer blah)
-{
-  int      narg;
-  windex   www;
-  XmString xms;
-  Widget   pushb;
-  XmPushButtonWidget pb;
-  
-  www   = get_windex(w);
-  pushb = get_parent(get_windex(get_parent(www)));
-  pb    = (XmPushButtonWidget) pushb;
-  pb->pushbutton.armed = False;
-  narg  = 0;
-  xms   = char2xms(value);
-  XtSetArg(args[narg],XmNlabelString,xms); narg++;
-  XtSetValues(pushb,args,narg);
-  narg = 0;
-  XtSetArg(args[narg],XmNset,True); narg++;
-  XtSetValues(get_widget_other(get_windex(get_parent(www)),TRUE),args,narg);
-}
-
 static void cancel_callback(Widget w,caddr_t client_data,caddr_t call_data)
 {
   printf("Maybe next time...\n");
@@ -217,14 +190,16 @@ static void mk_desc_handlers(void)
   for(i=0; (i<nwidget()); i++) {
     if (have_windex_desc(i)) {
       www  = get_widget(i);
-      XtAddEventHandler(www,EnterWindowMask,True,(XtEventHandler) enter_callback,&i);
-      XtAddEventHandler(www,LeaveWindowMask,True,(XtEventHandler) leave_callback,&i);
+      XtAddEventHandler(www,EnterWindowMask,True,
+			(XtEventHandler) enter_callback,&i);
+      XtAddEventHandler(www,LeaveWindowMask,True,
+			(XtEventHandler) leave_callback,&i);
     }
   }
   empty_str = char2xms("");
 }
 
-static int mk_toggle(int parent,char *title,int top,int left,int right,
+static int mk_toggle(int parent,char *title,int top,int left,
 		     bool bStatus,char *desc)
 {
   int    narg;
@@ -238,7 +213,7 @@ static int mk_toggle(int parent,char *title,int top,int left,int right,
     XtSetArg(args[narg],XmNtopWidget,     get_widget(top));  narg++;
   }
   XtSetArg(args[narg],XmNleftAttachment, XmATTACH_POSITION);  narg++;
-  XtSetArg(args[narg],XmNleftPosition,   left);               narg++;
+  XtSetArg(args[narg],XmNleftPosition,   left+1);             narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_NONE);     narg++;
   if (bStatus) {
     XtSetArg(args[narg],XmNset,             True);            narg++;
@@ -250,20 +225,18 @@ static int mk_toggle(int parent,char *title,int top,int left,int right,
 static void mk_editor(int paindex,int parent,int top,int left,
 		      char *label,char *initial_value,char *desc)
 {
-  enum { nwcTOGGLE, /*nwcLABEL,*/ nwcTEXT, NWC };
+  enum { nwcTOGGLE, nwcTEXT, NWC };
   WidgetClass wc[NWC];
   char   *wlab[NWC];
-  int    rleft[NWC] = { 1, /* 5,*/ 22 };
-  int    rright[NWC]= { /*4,*/ 21, 49 };
+  int    rleft[NWC] = { 1, 22 };
+  int    rright[NWC]= { 21, 49 };
   int    ww[NWC];
   int    j,narg;
   
   /* Create & Position the label */
   wc[nwcTOGGLE]   = xmToggleButtonWidgetClass;
-  /*  wc[nwcLABEL]    = xmLabelWidgetClass;*/
   wc[nwcTEXT]     = xmTextFieldWidgetClass;
-  wlab[nwcTOGGLE] = /*"";
-		      wlab[nwcLABEL]  = */label;
+  wlab[nwcTOGGLE] = label;
   wlab[nwcTEXT]   = initial_value;
   
   for(j=0; (j<NWC); j++) {  
@@ -297,77 +270,32 @@ static void mk_editor(int paindex,int parent,int top,int left,
   pa_index[paindex]     = ww[nwcTEXT];
 }
 
-static char **mk_but_array(char *val,int *n)
-{
-  int  i,j,nn;
-  char **but=NULL;
-  char buf[256];
-  bool bCp;
-  
-  nn  = 0;
-  j   = 0;
-  bCp = FALSE;
-  for(i=0; (val[i] != '\0'); i++) {
-    if (!isspace(val[i])) {
-      if (!bCp) {
-	/* New string */
-	bCp = TRUE;
-	j   = 0;
-      }
-      buf[j++] = val[i];
-    }
-    else if (bCp) {
-      bCp = FALSE;
-      buf[j++] = '\0';
-      srenew(but,nn+1);
-      but[nn] = strdup(buf);
-      nn++;
-    }
-  }
-  if (j > 0) {
-    buf[j++] = '\0';
-    srenew(but,nn+1);
-    but[nn] = strdup(buf);
-    nn++;
-  }
-  if (debug) {
-    fprintf(debug,"Found %d elements in '%s'\n",nn,val);
-    for(i=0; (i<nn); i++)
-      fprintf(debug,"Elem[%5d] = %s\n",i,but[i]);
-  }
-  *n = nn;
-  return but;
-}
-
 static void mk_enumerated(int parent,int top,int left,
 			  int *wlabel,int *wtextf,
 			  char *label,char **but,char *desc)
 {
   enum { nwcTOGGLE, nwcBUTTON, NWC };
   WidgetClass wc[NWC];
-  int    popup;
-  char   *wlab[NWC];
+  int    pd;
+  char   *wlab[NWC],buf[256];
   int    rleft[NWC] = { 1,  22 };
   int    rright[NWC]= { 21, 49 };
   int    ww[NWC];
   int    narg,i,j,wi;
 
-  /* Create the different buttons */
-  /*but = mk_but_array(initial_value,&nbut);*/
-  
   /* Create & Position the label */
   wc[nwcTOGGLE]   = xmToggleButtonWidgetClass;
-  wc[nwcBUTTON]   = xmPushButtonWidgetClass;
+  wc[nwcBUTTON]   = 0; 
   wlab[nwcTOGGLE] = label;
   wlab[nwcBUTTON] = but[0];
 
   for(j=0; (j<NWC); j++) {  
     narg = 0;
     XtSetArg(args[narg],XmNleftAttachment,    XmATTACH_POSITION); narg++;
-    XtSetArg(args[narg],XmNleftPosition,      rleft[j]);          narg++;
+    XtSetArg(args[narg],XmNleftPosition,      left+rleft[j]);     narg++;
     if (j != nwcTOGGLE) {
-      XtSetArg(args[narg],XmNrightAttachment,   XmATTACH_POSITION); narg++;
-      XtSetArg(args[narg],XmNrightPosition,     rright[j]);         narg++;
+      XtSetArg(args[narg],XmNrightAttachment, XmATTACH_POSITION); narg++;
+      XtSetArg(args[narg],XmNrightPosition,   left+rright[j]);    narg++;
     }
     if (top == parent) {
       XtSetArg(args[narg],XmNtopAttachment,   XmATTACH_FORM);     narg++;
@@ -378,33 +306,38 @@ static void mk_enumerated(int parent,int top,int left,
     }
     XtSetArg(args[narg],XmNbottomAttachment,  XmATTACH_NONE);     narg++;
     
-    /*if (j == nwcBUTTON) {
-      XtSetArg(args[narg],XmNdisarmCallback,True); narg++;
-      }*/
-    ww[j] = add_widget(XtCreateWidget(wlab[j],wc[j],
-				      get_widget(parent),args,narg),desc);
+    if (j == nwcBUTTON) {
+      ww[j] = add_widget(XmCreateOptionMenu(get_widget(parent),"option",
+					    args,narg),desc);
+    }
+    else
+      ww[j] = add_widget(XtCreateWidget(wlab[j],wc[j],
+					get_widget(parent),args,narg),desc);
   }
+
+  /* Create the popup menu father */
+  pd = add_widget(XmCreatePulldownMenu(get_widget(parent),"pulldown",NULL,0),
+		  desc);
   
-  /* Now create the popup menu */
-  narg = 0;
-  XtSetArg(args[narg], XmNmenuPost,"<Btn1Down>"); narg++;
-  popup = add_widget(XmCreatePopupMenu(get_widget(ww[nwcBUTTON]),"popup",
-				       args,narg),"popup");
-  set_windex_popup(popup,TRUE);
-  set_parent(popup,get_widget(ww[nwcBUTTON]));
-  set_widget_other(popup,get_widget(ww[nwcTOGGLE]));
+  /* Now create the popup menu children */
+  set_windex_popup(pd,TRUE);
+  set_parent(pd,get_widget(ww[nwcBUTTON]));
+  set_widget_other(pd,get_widget(ww[nwcTOGGLE]));
   
   for(i=0; (but[i] != NULL); i++) {
+    sprintf(buf,"%s = %s",desc,but[i]);
     wi = add_widget(XtCreateWidget(but[i],xmPushButtonWidgetClass,
-				   get_widget(popup),NULL,0),but[i]);
-    set_parent(wi,get_widget(popup));
-    XtAddEventHandler(get_widget(wi),ButtonReleaseMask,False,
-		      (XtEventHandler) popup_select_handler,
-		      (XtPointer) but[i]);
+				   get_widget(pd),NULL,0),buf);
+    set_parent(wi,get_widget(pd));
   }
-  XtAddEventHandler(get_widget(ww[nwcBUTTON]),ButtonPressMask,False,
-		    (XtEventHandler) popup_menu_handler,get_widget(popup));
-  
+
+  /* Tell the option menu what to do */  
+  XtVaSetValues(get_widget(ww[nwcBUTTON]),
+		/*XmNlabelString, str,*/
+		XmNsubMenuId, get_widget(pd),
+		XmNentryBorder, 2,
+		XmNwhichButton, 1,
+		NULL);
   *wtextf = ww[nwcBUTTON];
 }
 
@@ -476,7 +409,7 @@ static XmString xs_str_array_to_xmstr(char *header,int ndesc,char *desc[])
 
 static windex mk_separator(windex parent,windex topw)
 {
-  int narg;
+  int narg,sep;
   
   narg = 0;
   if (nwidget() > 0) {
@@ -491,8 +424,12 @@ static windex mk_separator(windex parent,windex topw)
   XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);   narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);   narg++;
   
-  return add_widget(XtCreateWidget("separator",xmSeparatorWidgetClass,
-				   get_widget(parent),args,narg),NULL);
+  sep = add_widget(XtCreateWidget("separator",xmSeparatorWidgetClass,
+				  get_widget(parent),args,narg),NULL);
+  
+  set_top_windex(sep);
+				  
+  return sep;
 }
 
 static int mk_helplabel(int parent,int top)
@@ -608,88 +545,100 @@ static windex mk_pargs(int parent,int npargs,t_pargs pa[],int pa_index[],
    * Return the index of the separator (or the last created widget)
    *
    **************************************************************/
-  int    icb,i,npa,dummy,separator,nbool,nedit,left,right;
+  int    icb,i,npa,dummy,separator,nbool,nedit,nenum,nelem,left,right;
   real   bwidth;
   char   buf[132],descbuf[132];
 
   /* First round just count booleans and editors */
-  nbool = nedit = 0;
+  nbool = nedit = nenum = 0;
   for(i=0; (i<npargs); i++) {
     if (!motif_hidden(&(pa[i]))) {
       if (pa[i].type == etBOOL)
 	nbool++;
+      else if (pa[i].type == etENUM)
+	nenum++;
       else
 	nedit++;
     }
   }
   if (nbool > 6)
-    nbool = 5;
+    nbool = 6;
   bwidth = (100.0/nbool);
 
+  if (nenum > 2)
+    nenum = 2;
+    
   set_top_windex(topw);
       
-  for(icb=0; (icb<2); icb++) {
+  for(icb=0; (icb<3); icb++) {
     new_windex_row();
     npa  = 0;
     for(i=0; (i<npargs); i++) {
-      topw = top_windex();
+      topw  = top_windex();
+      nelem = 0;
       if (!motif_hidden(&(pa[i]))) {
-	if ((icb == 0) && (pa[i].type == etBOOL)) {
-	  left = 1+(npa % nbool)*bwidth;
-	  right= ((npa+1) % nbool)*bwidth-1;
-	  if (debug)
-	    fprintf(debug,"%s,%d: nbool %d, bwidth %g, left %d, topw %d\n",
-		    __FILE__,__LINE__,nbool,bwidth,left,
-		    topw/*+nbool*(npa/nbool)*/);
-	  pa_index[i] = mk_toggle(parent,pa[i].option,
-				  topw/* + nbool*(npa/nbool)*/,
-				  left,right,*(pa[i].u.b),pa[i].desc);
-	  npa ++;
-	  set_top_windex(pa_index[i]);
-	  if ((npa % nbool) == 0)
-	    new_windex_row();
-	}
-	else if ((icb == 1) && (pa[i].type != etBOOL)) {
-	  switch (pa[i].type) {
-	  case etREAL:
-	    sprintf(buf,"%g",*(pa[i].u.r));
-	    break;
-	  case etRVEC:
-	    sprintf(buf,"%g %g %g",(*pa[i].u.rv)[XX],
-		    (*pa[i].u.rv)[YY],(*pa[i].u.rv)[ZZ]);
-	    break;
-	  case etINT:
-	    sprintf(buf,"%d",*(pa[i].u.i));
-	    break;
-	  case etSTR:
-	    if (*(pa[i].u.c) != NULL)
-	      strcpy(buf,*(pa[i].u.c));
-	    else
-	      buf[0] = '\0';
-	    break;
+	sprintf(descbuf,"%s (%s)",pa[i].desc,argtp[pa[i].type]);
+	switch (pa[i].type) {
+	case etBOOL:
+	  if (icb == 0) {
+	    nelem = nbool;
+	    left  = ((npa % nbool)*bwidth)+0.5;
+	    if (debug)
+	      fprintf(debug,"%s,%d: nbool %d, bwidth %g, left %d, topw %d\n",
+		      __FILE__,__LINE__,nbool,bwidth,left,topw);
+	    pa_index[i] = mk_toggle(parent,pa[i].option,topw,
+				    left,*(pa[i].u.b),descbuf);
 	  }
-	  sprintf(descbuf,"%s (%s)",pa[i].desc,argtp[pa[i].type]);
-	  if (debug)
-	    fprintf(debug,"%s,%d: buf = %s\n",__FILE__,__LINE__,buf);
-	  left = (npa % 2)*50;
-	  if (pa[i].type == etENUM) {
-	    mk_enumerated(parent,topw/*+4*(npa/2)*/,left,
-			  &dummy,&(pa_index[i]),
+	  break;
+	case etENUM:
+	  if (icb == 1) {
+	    nelem = nenum;
+	    left  = (npa % nenum)*50;
+	    mk_enumerated(parent,topw,left,&dummy,&(pa_index[i]),
 			  pa[i].option,pa[i].u.c,descbuf); 
 	  }
-	  else {
-	    mk_editor(i,parent,topw/*+4*(npa/2)*/,left,
-		      pa[i].option,buf,descbuf); 
+	  break;
+	default:
+	  if (icb == 2) {
+	    nelem = 2;
+	    switch (pa[i].type) {
+	    case etREAL:
+	      sprintf(buf,"%g",*(pa[i].u.r));
+	      break;
+	    case etRVEC:
+	      sprintf(buf,"%g %g %g",(*pa[i].u.rv)[XX],
+		      (*pa[i].u.rv)[YY],(*pa[i].u.rv)[ZZ]);
+	      break;
+	    case etINT:
+	      sprintf(buf,"%d",*(pa[i].u.i));
+	      break;
+	    case etSTR:
+	      if (*(pa[i].u.c) != NULL)
+		strcpy(buf,*(pa[i].u.c));
+	      else
+		buf[0] = '\0';
+	      break;
+	    }
+	    if (debug)
+	      fprintf(debug,"%s,%d: buf = %s\n",__FILE__,__LINE__,buf);
+	    left = (npa % nelem)*50;
+	    mk_editor(i,parent,topw,left,pa[i].option,buf,descbuf); 
 	  }
-	  npa ++;
-	  set_top_windex(pa_index[i]);
-	  if ((npa % 2) == 0)
-	    new_windex_row();
+	  break;
 	}
       }
+      if (nelem) {
+	npa ++;
+	set_top_windex(pa_index[i]);
+	if ((npa % nelem) == 0)
+	  new_windex_row();
+      }
     }
-    if (npa > 0)
+    
+    if (npa > 0) {
+      new_windex_row();
       separator = mk_separator(parent,top_windex());
+    }
   }
   return separator;
 }
@@ -698,7 +647,7 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
 		       int indent)
 {
 #define DELTA 256
-  int  i,slen;
+  int  i,slen,width=80;
   char *ptr,*nptr;
  
   ptr = check_tty(str);
@@ -706,10 +655,10 @@ static void append_str(char **buf,int *blen,int *maxlen,char *str,
     slen=strlen(ptr);
     snew(nptr,slen+8);
     sprintf(nptr,"* %s",ptr);
-    str = wrap_lines(nptr,70,indent);
+    str = wrap_lines(nptr,width,indent);
   }
   else
-    str = wrap_lines(ptr,70,indent);
+    str = wrap_lines(ptr,width,indent);
   
   while ((ptr = strstr(str,"\n\n")) != 0)
     *ptr = ' ';
@@ -784,8 +733,6 @@ static void mk_help(Widget parent,int ndesc,char *desc[],
   XtSetArg(args[narg],XmNtopWidget,       get_widget(sep));    narg++;
   XtSetArg(args[narg],XmNleftAttachment,  XmATTACH_FORM);      narg++;
   XtSetArg(args[narg],XmNrightAttachment, XmATTACH_FORM);      narg++;
-  /*XtSetArg(args[narg],XmNleftPosition,    (int)30);           narg++;
-    XtSetArg(args[narg],XmNrightPosition,   (int)70);           narg++;*/
   XtSetArg(args[narg],XmNalignment,       XmALIGNMENT_CENTER); narg++;
   XtSetArg(args[narg],XmNbottomAttachment,XmATTACH_FORM);      narg++;
   ok     = add_widget(XmCreatePushButton(get_widget(helpw),"OK",args,narg),"");
@@ -894,7 +841,7 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
 		       int nfile,t_filenm fnm[],int npargs,t_pargs pa[])
 {
   int        i,narg;
-  Widget     www;
+  Widget     www,wsub;
   XEvent     event;
   XmString   xms;
   Boolean    xmrb,bbb;
@@ -904,7 +851,6 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
   
   while (!bDone) {
     XtAppNextEvent(appcontext,&event);
-    /*XtNextEvent(&event);*/
     XtDispatchEvent(&event);
   }
   /* Extract all the information from the X widgets */
@@ -954,16 +900,21 @@ static void MyMainLoop(XtAppContext appcontext,Widget gmxBase,
 	pa[i].bSet = (bbb == True);
 	
 	/* Now extract the value */
-	if (pa[i].type != etENUM) {
+	if (pa[i].type == etENUM) {
+	  /* First get the selected widget */
 	  narg = 0;
-	  XtSetArg(args[narg],XmNvalue, &ptr);            narg++;
+	  XtSetArg(args[narg],XmNmenuHistory, &wsub);            narg++;
 	  XtGetValues(get_widget(pa_index[i]),args,narg);
+	  /* Now get it's label! */
+	  narg = 0;
+	  XtSetArg(args[narg],XmNlabelString, &xms);            narg++;
+	  XtGetValues(wsub,args,narg);
+	  ptr = xms2char(xms);
 	}
 	else {
 	  narg = 0;
-	  XtSetArg(args[narg],XmNlabelString, &xms); narg++;
+	  XtSetArg(args[narg],XmNvalue, &ptr);            narg++;
 	  XtGetValues(get_widget(pa_index[i]),args,narg);
-	  ptr = xms2char(xms);
 	}
 	if (debug)
 	  fprintf(debug,"%s,%d: I found option %s value %s\n",
