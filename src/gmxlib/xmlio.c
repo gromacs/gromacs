@@ -122,7 +122,7 @@ static const char *exml_names[] = {
   "coordinates", "velocities", "forces" 
 };
 
-static int find_elem(char *name,int nr,char *names[])
+static int find_elem(char *name,int nr,const char *names[])
 {
   int i;
   
@@ -263,7 +263,7 @@ void read_xml(char *fn,int *step,real *t,real *lambda,
   sfree(xml);
 }
 
-static void add_xml_int(xmlNodePtr ptr,char *name,int val)
+static void add_xml_int(xmlNodePtr ptr,const char *name,int val)
 {
   char buf[32];
   sprintf(buf,"%d",val);
@@ -271,7 +271,7 @@ static void add_xml_int(xmlNodePtr ptr,char *name,int val)
     fatal_error(0,"Setting %s %d",name,val);
 }
 
-static void add_xml_real(xmlNodePtr ptr,char *name,real val)
+static void add_xml_real(xmlNodePtr ptr,const char *name,real val)
 {
   char buf[32];
   sprintf(buf,"%g",val);
@@ -283,13 +283,16 @@ static void add_xml_rvec(xmlNodePtr parent,int id,rvec val)
 {
   xmlNodePtr rvptr;
   int  m;
+  char buf[32];
 
   if ((rvptr = xmlNewChild(parent,NULL,"rvec",NULL)) == NULL)
     fatal_error(0,"Creating rvec element");
   add_xml_int(rvptr,"id",id);
-  for(m=0; (m<DIM); m++)
-    if (xmlSetProp(rvptr,xyz_names[m],dtoa(val[m])) == 0)
+  for(m=0; (m<DIM); m++) {
+    sprintf(buf,"%g",val[m]);
+    if (xmlSetProp(rvptr,xyz_names[m],buf) == 0)
       fatal_error(0,"Setting %s %f",xyz_names[m],val[m]);
+  }
 }
 
 static void add_xml_tensor(xmlNodePtr parent,tensor val)
@@ -312,7 +315,7 @@ static void add_xml_tensor(xmlNodePtr parent,tensor val)
   }
 }
 
-static void add_xml_char(xmlNodePtr ptr,char *name,char *val)
+static void add_xml_char(xmlNodePtr ptr,const char *name,const char *val)
 {
   if (xmlSetProp(ptr,name,val) == 0)
     fatal_error(0,"Setting %s %s",name,val);
@@ -369,8 +372,6 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   
   tcptr = add_xml_child(irptr,exmlTCOUPLING);
   add_xml_char(tcptr,"algorithm",etcoupl_names[ir->etc]);
-  add_xml_char(tcptr,"annealing",yesno_names[ir->bSimAnn]);
-  add_xml_real(tcptr,"annealtime",ir->zero_temp_time);
   
   assert(ir->opts.ngtc == atoms->grps[egcTC].nr);
   for(i=0; (i<ir->opts.ngtc); i++) {

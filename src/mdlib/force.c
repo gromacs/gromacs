@@ -906,25 +906,18 @@ void force(FILE       *fp,     int        step,
    * but is also necessary for SHAKE and update, therefore it can NOT 
    * go when no bonded forces have to be evaluated.
    */
-  if (debug && 0)
+  if (debug && graph && 0)
     p_graph(debug,"DeBUGGGG",graph);
   
   /* Check whether we need to do bondeds */
   if (!bNBFonly) {
-    shift_self(graph,box,x);
-    if (debug && 0) {
-      fprintf(debug,"BBBBBBBBBBBBBBBB\n");
-      fprintf(debug,"%5d\n",graph->nnodes);
-      for(i=graph->start; (i<=graph->end); i++)
-	fprintf(debug,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
-		i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
-      fprintf(debug,"%10.5f%10.5f%10.5f\n",
-	      box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-    }
-    if (TRICLINIC(box))
+    if (graph) {
+      shift_self(graph,box,x);
+      if (TRICLINIC(box))
 	inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
-    else
+      else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
+    }
     debug_gmx();
   }
   

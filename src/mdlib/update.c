@@ -776,7 +776,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   /* We must always unshift here, also if we did not shake
    * x was shifted in do_force */
   where();
-  if((graph->nnodes > 0) && bDoUpdate && (ir->ePBC != epbcNONE)) {
+  if ((ir->ePBC == epbcXYZ) && (graph->nnodes > 0) && bDoUpdate) {
     unshift_x(graph,parm->box,x,xprime);
     if(TRICLINIC(parm->box))
       inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);

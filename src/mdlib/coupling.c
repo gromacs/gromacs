@@ -375,11 +375,10 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
 }
   
 /* set target temperatures if we are annealing */
-void 
-update_annealing_target_temp(t_grpopts *opts,real t)
+void update_annealing_target_temp(t_grpopts *opts,real t)
 {
   int i,j,n,npoints;
-  real pert,thist,x;
+  real pert,thist=0,x;
 
   for(i=0;i<opts->ngtc;i++) {
     npoints = opts->anneal_npoints[i];

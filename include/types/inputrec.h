@@ -158,3 +158,4 @@ typedef struct {
   t_cosines et[DIM];	/* Electric field stuff	(time part)		*/
 } t_inputrec;
 
+#define FULLPBC(ir) (ir.ePBC == epbcFULL)

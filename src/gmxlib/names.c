@@ -42,7 +42,7 @@ const char *eblock_names[ebNR+1]=
 
 const char *epbc_names[epbcNR+1]=
 {
-  "xyz", "no", NULL
+  "xyz", "no", "full", NULL
 };
 
 const char *ens_names[ensNR+1]=

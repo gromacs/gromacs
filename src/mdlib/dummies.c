@@ -370,9 +370,11 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
    * we move don't end up a box away...
    */
   if (dummycomm) {
-    unshift_self(graph,box,x);
+    if (graph)
+      unshift_self(graph,box,x);
     move_construct_x(dummycomm,x,cr);
-    shift_self(graph,box,x);
+    if (graph)
+      shift_self(graph,box,x);
   }
 
   ip     = idef->iparams;
@@ -451,9 +453,11 @@ void construct_dummies(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
     }
   }
   if (dummycomm) {
-    unshift_self(graph,box,x);
+    if (graph)
+      unshift_self(graph,box,x);
     move_dummy_xv(dummycomm,x,NULL,cr);
-    shift_self(graph,box,x); /* maybe not necessary */
+    if (graph)
+      shift_self(graph,box,x); /* maybe not necessary */
   }
 }
 

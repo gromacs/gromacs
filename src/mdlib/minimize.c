@@ -241,7 +241,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(force_vir);
   clear_mat(shake_vir);
   
-  if (fr->ePBC != epbcNONE)
+  if (fr->ePBC == epbcXYZ)
     /* Remove periodicity */
     do_pbc_first(log,parm,box_size,fr,graph,x);
   
@@ -595,7 +595,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(force_vir); 
   clear_mat(shake_vir); 
 
-  if (fr->ePBC != epbcNONE)
+  if (fr->ePBC == epbcXYZ)
     /* Remove periodicity */
     do_pbc_first(log,parm,box_size,fr,graph,x);
 
@@ -833,7 +833,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene,step,nre;
   time_t     start_t;
   real       t,lambda,t0,lam0;
-  bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14,bBox;
+  bool       bNS,bStopCM,bTYZ,bLR,bLJLR,bBHAM,b14;
   tensor     force_vir,shake_vir,pme_vir;
   t_nrnb     mynrnb;
   int        i,m,nfmax;
@@ -869,13 +869,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   init_nrnb(&mynrnb);
 
-  bBox = (fr->ePBC != epbcNONE);
-  if (bBox) {
-    calc_shifts(parm->box,box_size,fr->shift_vec);
-    fprintf(log,"Removing pbc first time\n");
-    mk_mshift(log,graph,parm->box,x);
-    shift_self(graph,parm->box,x);
-  }
+  if (fr->ePBC == epbcXYZ)
+    /* Remove periodicity */
+    do_pbc_first(log,parm,box_size,fr,graph,x);
 
   fp_ene=-1;
   set_pot_bools(&(parm->ir),top,&bLR,&bLJLR,&bBHAM,&b14);
@@ -906,7 +902,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	   top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	   lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
   bNS=FALSE;
-  if (bBox)
+  
+  if (graph)
     /* Shift back the coordinates, since we're not calling update */
     unshift_self(graph,parm->box,x);
 
@@ -947,7 +944,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       &mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
-      if (bBox)
+      if (graph)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,parm->box,x);
       
@@ -965,7 +962,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       &mynrnb,
 	       top,grps,x,v,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       lambda,graph,bNS,FALSE,fr,mu_tot,FALSE,0.0);
-      if (bBox)
+      if (graph)
 	/* Shift back the coordinates, since we're not calling update */
 	unshift_self(graph,parm->box,x);
       

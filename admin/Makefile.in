@@ -1,4 +1,4 @@
-# Makefile.in generated automatically by automake 1.4j from Makefile.am.
+# Makefile.in generated automatically by automake 1.5 from Makefile.am.
 
 # Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
 # Free Software Foundation, Inc.
@@ -66,6 +66,8 @@ AS = @AS@
 ASFLAGS = @ASFLAGS@
 AWK = @AWK@
 CC = @CC@
+CCAS = @CCAS@
+CCASFLAGS = @CCASFLAGS@
 CC_FOR_BUILD = @CC_FOR_BUILD@
 CPP = @CPP@
 CXX = @CXX@
@@ -91,7 +93,11 @@ MPICC = @MPICC@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
+PTHREAD_CC = @PTHREAD_CC@
+PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
+RC = @RC@
 RPM = @RPM@
 SHARED_VERSION_INFO = @SHARED_VERSION_INFO@
 STRIP = @STRIP@

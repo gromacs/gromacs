@@ -149,10 +149,14 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   grps->cosacc.cos_accel = parm->ir.cos_accel;
   
   /* Periodicity stuff */  
-  graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-  if (debug)
-    p_graph(debug,"Initial graph",graph);
-  
+  if (parm->ir.ePBC != epbcFULL) {
+    graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
+    if (debug)
+      p_graph(debug,"Initial graph",graph);
+  }
+  else
+    graph = NULL;
+    
   /* Distance Restraints */
   init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
 	      top->idef.iparams,&(parm->ir),mcr,fcd);
@@ -331,7 +335,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Will do General Coupling Theory!\n");
 
   /* Remove periodicity */  
-  if (fr->ePBC != epbcNONE)
+  if (fr->ePBC == epbcXYZ)
     do_pbc_first(log,parm,box_size,fr,graph,x);
   debug_gmx();
 
@@ -472,12 +476,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
     
     if (bDummies) {
-      shift_self(graph,parm->box,x);
+      if (!FULLPBC(parm->ir))
+	shift_self(graph,parm->box,x);
     
       construct_dummies(log,x,&mynrnb,parm->ir.delta_t,v,&top->idef,
 			graph,cr,parm->box,dummycomm);
       
-      unshift_self(graph,parm->box,x);
+      if (!FULLPBC(parm->ir))
+	unshift_self(graph,parm->box,x);
     }
      
     debug_gmx();
@@ -613,7 +619,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (!bOK && !bFFscan)
       fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
     
-    if (parm->ir.epc!=epcNO)
+    if (parm->ir.epc != epcNO)
       correct_box(parm->box,fr,graph);
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed

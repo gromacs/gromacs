@@ -40,7 +40,7 @@ enum {
 };
 
 enum {
-  epbcXYZ, epbcNONE, epbcNR
+  epbcXYZ, epbcNONE, epbcFULL, epbcNR
 };
 
 enum {

@@ -133,10 +133,18 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
   }
 }
 
+static void g_error(int line,char *file)
+{
+  fatal_error(0,"Tring to print non existant graph (file %s, line %d)",
+	      file,line);
+}
+#define GCHECK(g) if (g == NULL) g_error(__LINE__,__FILE__)
+
 void p_graph(FILE *log,char *title,t_graph *g)
 {
   int i,j;
-
+  
+  GCHECK(g);
   fprintf(log,"graph:  %s\n",title);
   fprintf(log,"maxedge:%d\n",g->maxedge);
   fprintf(log,"nnodes: %d\n",g->nnodes);
@@ -289,6 +297,7 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 
 void done_graph(t_graph *g)
 {
+  GCHECK(g);
   if (g->nnodes > 0) {
     sfree(g->ishift);
     sfree(g->nedge);
@@ -416,6 +425,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
   int    fW,fG;			/* First of each category	*/
   int    nerror=0;
 
+  GCHECK(g);
   /* This puts everything in the central box, that is does not move it 
    * at all. If we return without doing this for a system without bonds
    * (i.e. only settles) all water molecules are moved to the opposite octant
@@ -494,9 +504,10 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
  *
  ************************************************************/
  
-void shift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
+static void shift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
 {
   int tx,ty,tz;
+  
   tx=(g->ishift[ai-g->start])[XX];
   ty=(g->ishift[ai-g->start])[YY];
   tz=(g->ishift[ai-g->start])[ZZ];
@@ -506,9 +517,10 @@ void shift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
   x_s[ai][ZZ]=x[ai][ZZ]+tz*box[ZZ][ZZ];
 }
  
-void unshift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
+static void unshift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
 {
   int tx,ty,tz;
+  
   tx=(g->ishift[ai-g->start])[XX];
   ty=(g->ishift[ai-g->start])[YY];
   tz=(g->ishift[ai-g->start])[ZZ];
@@ -524,6 +536,7 @@ void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
   int      g0,gn;
   int      i,j,tx,ty,tz;
 
+  GCHECK(g);
   g0=g->start;
   gn=g->nnodes;
   is=g->ishift;
@@ -652,6 +665,7 @@ void unshift_self(t_graph *g,matrix box,rvec x[])
       }
   }
 }
+#undef GCHECK
 
 #ifdef DEBUGMSHIFT
 void main(int argc,char *argv[])

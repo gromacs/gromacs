@@ -115,7 +115,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
      
   /* VACUUM STUFF */
   if (ir->ePBC == epbcNONE) {
-    ir->epc = epcNO;
+    if (ir->epc != epcNO) {
+      warning("Turning off pressure coupling for vacuum system");
+      ir->epc = epcNO;
+    }
 
     if (ir->ns_type != ensSIMPLE) {
       sprintf(warn_buf,"Can only use nstype=%s with pbc=%s, setting nstype "

@@ -51,7 +51,7 @@
 
 static bool bPBC=FALSE;
 
-void pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
+static void pbc_rvec_sub(rvec xi,rvec xj,rvec dx)
 {
   if (bPBC)
     pbc_dx(xi,xj,dx);
@@ -83,10 +83,11 @@ void calc_bonds(FILE *log,t_commrec *cr,t_commrec *mcr,t_idef *idef,
     fprintf(log,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
 
   if (bFirst) {
-    set_gmx_full_pbc(log);
+    bPBC   = (fr->ePBC == epbcFULL);
     bFirst = FALSE;
 #ifdef DEBUG
-    p_graph(debug,"Bondage is fun",g);
+    if (g)
+      p_graph(debug,"Bondage is fun",g);
 #endif
   }
   /* Do pre force calculation stuff which might require communication */

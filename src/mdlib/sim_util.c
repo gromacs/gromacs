@@ -232,9 +232,10 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
       put_charge_groups_in_box(log,cg0,cg1,parm->box,box_size,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
-    } else if (parm->ir.eI==eiSteep || parm->ir.eI==eiCG)
+    } 
+    else if ((parm->ir.eI==eiSteep || parm->ir.eI==eiCG) && graph)
       unshift_self(graph,parm->box,x);
-
+    
   }
   else if (bNS)
     calc_cgcm(log,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
@@ -259,7 +260,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   /* Reset energies */
   reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
   if (bNS) {
-    if (fr->ePBC != epbcNONE)
+    if (fr->ePBC == epbcXYZ)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(log,graph,parm->box,x);
 	       
@@ -530,6 +531,8 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 void do_pbc_first(FILE *log,t_parm *parm,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
 {
+  if (!graph)
+    fatal_error(0,"do_pbc_first called with NULL graph");
   fprintf(log,"Removing pbc first time\n");
   calc_shifts(parm->box,box_size,fr->shift_vec);
   mk_mshift(log,graph,parm->box,x);

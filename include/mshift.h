@@ -55,17 +55,11 @@ extern void p_graph(FILE *log,char *title,t_graph *g);
 extern void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
-extern void shift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai);
-/* Shift single atom ai */
-
 extern void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 /* Add the shift vector to x, and store in x_s (may be same array as x) */
 
 extern void shift_self(t_graph *g,matrix box,rvec x[]);
 /* Id. but in place */
-
-extern void unshift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai);
-/* Unshift single atom ai */
 
 extern void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);
 /* Subtract the shift vector from x_s, and store in x (may be same array) */
