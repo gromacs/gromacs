@@ -244,7 +244,6 @@ int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
       break;
       
   if (defs[i] == NULL) {
-    (*inp)[ii].value=strdup(defs[0]);
     fprintf(stderr,"Invalid enum %s for variable %s, using %s\n",
 	    (*inp)[ii].value,name,defs[0]);
     fprintf(stderr,"Next time use one of:");
@@ -254,7 +253,8 @@ int get_eenum(int *ninp,t_inpfile **inp,char *name,char **defs)
       j++;
     }
     fprintf(stderr,"\n");
-    
+    (*inp)[ii].value=strdup(defs[0]);
+
     return 0;
   }
 
