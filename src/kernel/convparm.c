@@ -365,6 +365,7 @@ void convert_params(int atnr,t_params nbtypes[],
       idef->il[j].multinr[i]=idef->il[j].nr;
     
     if (idef->il[j].nr > 0)
-      printf("# %10s:   %d\n",interaction_function[j].name,idef->il[j].nr);
+      printf("# %10s:   %d\n",
+	     interaction_function[j].name,idef->il[j].nr/(1+NRAL(j)));
   }
 }
