@@ -119,6 +119,7 @@
     C  CP2    1   0.15300     334720.
    OS    C    1   0.14350     251040.
   CH1   OS    1   0.14350     251040.
+   OM    S    1   0.15000     376650.
 
 ; get the constraint distances:
 #include "ff_dum.itp"
@@ -576,6 +577,7 @@
   CHE  CHE  CHE    1   108.000     418.400
   CHE  CHE  CH3    1   126.000     418.400
   CHE CR61  CHE    1   126.000     418.400
+   OM 	 S   OM    1   109.500     520.000
 
 [ dihedraltypes ]
   ; i    l func        q0          cq
