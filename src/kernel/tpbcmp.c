@@ -176,6 +176,9 @@ static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2)
   cmp_int(fp,"atom.resnr",index,a1->resnr,a2->resnr);
   cmp_real(fp,"atom.m",index,a1->m,a2->m);
   cmp_real(fp,"atom.q",index,a1->q,a2->q);
+  cmp_us(fp,"atom.typeB",index,a1->typeB,a2->typeB);
+  cmp_real(fp,"atom.mB",index,a1->mB,a2->mB);
+  cmp_real(fp,"atom.qB",index,a1->qB,a2->qB);
   for(i=0; (i<egcNR); i++) {
     sprintf(buf,"atom.grpnr(%d)",i);
     cmp_uc(fp,buf,index,a1->grpnr[i],a2->grpnr[i]);
