@@ -51,82 +51,9 @@ static char *SRCID_pdb2top_c = "$Id$";
 #include "gen_ad.h"
 #include "filenm.h"
 #include "index.h"
-
-real distance(rvec a,rvec b) 
-{
-  return sqrt((real)(sqr((real)(a[XX]-b[XX])) + 
-		     sqr((real)(a[YY]-b[YY])) + sqr((real)(a[ZZ]-b[ZZ]))));
-}
-
-static void add_param(t_params *ps,int ai,int aj, real *c)
-{
-  int i;
-  
-  if ((ai < 0) || (aj < 0)) 
-    fatal_error(0,"Trying to add impossible atoms: ai=%d, aj=%d",ai,aj);
-  srenew(ps->param,++ps->nr);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=-1;
-  ps->param[ps->nr-1].AL=-1;
-  if (c==NULL) 
-    for(i=0; (i<MAXFORCEPARAM); i++)
-      ps->param[ps->nr-1].c[i]=NOTSET;
-  else
-     for(i=0; (i<MAXFORCEPARAM); i++)
-      ps->param[ps->nr-1].c[i]=c[i];
-}
-
-static void add_imp_param(t_params *ps,int ai,int aj,int ak,int al,
-			  real c0, real c1)
-{
-  srenew(ps->param,++ps->nr);
-  ps->param[ps->nr-1].AI=ai;
-  ps->param[ps->nr-1].AJ=aj;
-  ps->param[ps->nr-1].AK=ak;
-  ps->param[ps->nr-1].AL=al;
-  ps->param[ps->nr-1].C0=c0;
-  ps->param[ps->nr-1].C1=c1;
-}
-
-static int search_jtype(t_restp *rp,char *name,bool bFirstRes)
-{
-  int  j,k,mn,maxk,jmax;
-  char *an,buf[12];
-  
-  strcpy(buf,name);
-  
-  /* Do a best match comparison */
-  if ( bFirstRes && (buf[0] == 'H') && 
-       ( (buf[1] == '1') || (buf[1] == '2') || (buf[1] == '3') ) )
-    buf[1]='\0';
-  maxk=0;
-  jmax=-1;
-  for(j=0; (j<rp->natom); j++) {
-    an=*(rp->atomname[j]);
-    if (strcasecmp(buf,an) == 0) {
-      jmax=j;
-      maxk=strlen(buf);
-      break;
-    }
-    mn=min((int)strlen(buf),(int)strlen(an));
-    for(k=0; (k<mn); k++) 
-      if (buf[k] != an[k])
-	break;
-    if (k > maxk) {
-      maxk=k;
-      jmax=j;
-    }
-  }
-  if (jmax == -1)
-    fatal_error(0,"Atom %s not found in database in residue %s",
-		buf,rp->resname);
-  if (maxk != strlen(buf))
-    fatal_error(0,"Atom %s not found in database in residue %s, "
-		"it looks a bit like %s",
-		buf,rp->resname,*(rp->atomname[jmax]));
-  return jmax;
-}
+#include "pdb2gmx.h"
+#include "gen_dum.h"
+#include "add_par.h"
 
 static bool missing_atoms(t_restp *rp, int resnr,
 			  t_atoms *at, int i0, int i, bool bCTer)
@@ -169,17 +96,15 @@ static void name2type(t_atoms *at,t_atomtype *atype,int nrtp,t_restp rtp[])
     if (bFirst || (at->atom[i].resnr != resnr)) {
       if (bFirst) {
 	bFirst=FALSE;
-      }
-      else {
+      } else {
 	rp=search_rtp(*(at->resname[resnr]),nrtp,rtp);
-	is_protein(rp->resname);
 	missing_atoms(rp,resnr,at,i0,i,(!bProt || is_protein(rp->resname)));
 	bProt=is_protein(*(at->resname[resnr]));
 	i0=i;
       }
       resnr=at->atom[i].resnr;
       if ((rp=search_rtp(*(at->resname[resnr]),nrtp,rtp)) == NULL)
-	fatal_error(0,"Residue type %s not found, jammer...",
+	fatal_error(0,"Residue type %s not found, bummer...",
 		    *(at->resname[resnr]));
       if (strcasecmp(rp->resname,*(at->resname[resnr])) != 0)
 	fatal_error(0,"Residue type %s not found",
@@ -265,8 +190,20 @@ static t_block *make_cgs(t_atoms *at,int nrtp,t_restp rtp[])
   return cgs;
 }
 
+static void print_top_heavy_H(FILE *out, real mHmult)
+{
+  if (mHmult!=1.0) {
+    fprintf(out,"; heavy hydrogens:\n");
+    if (mHmult==4.0)
+      fprintf(out,"#define HEAVY_H\n\n");
+    else
+      fprintf(stderr,"WARNING: unsupported proton mass multiplier (%g) "
+	      "in pdb2top\n",mHmult);
+  }
+}
+
 static void print_top_header(FILE *out, char *title, bool bITP, 
-			     char *ff, int nincl, char **incls)
+			     char *ff, int nincl, char **incls, real mHmult)
 {
   int i;
   
@@ -274,6 +211,7 @@ static void print_top_header(FILE *out, char *title, bool bITP,
   fprintf(out,"; %s\n",title[0]?title:cool_quote());
   
   if (!bITP) {
+    print_top_heavy_H(out, mHmult);
     fprintf(out,"; Include forcefield constants\n");
     fprintf(out,"#include \"%s.itp\"\n\n",ff);
     if (nincl>0) {
@@ -326,8 +264,9 @@ static void print_top_mols(FILE *out, int nmol, char **mols)
 
 void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
 	       int nincl, char **incls, int nmol, char **mols,
-	       t_atoms *at,t_params plist[],int nrtp,t_restp rtp[],
-	       t_atomtype *atype,t_block *cgs)
+	       t_atoms *at,t_params plist[],t_block *excl,
+	       t_atomtype *atype,t_block *cgs, int nrexcl, real mHmult)
+     /* NOTE: nrexcl is not the size of *excl! */
 {
   FILE *out;
   bool bITP;
@@ -335,12 +274,12 @@ void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
   bITP=(fn2ftp(fn)==efITP);
   out=ffopen(fn,"w");
   
-  print_top_header(out,title,bITP,ff,nincl,incls);
+  print_top_header(out,title,bITP,ff,nincl,incls,mHmult);
   
   if (at && atype && cgs) {
     fprintf(out,"[ %s ]\n",dir2str(d_moleculetype));
     fprintf(out,"; %-15s %5s\n","Name","nrexcl");
-    fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",3);
+    fprintf(out,"%-15s %5d\n\n",molname?molname:"Protein",nrexcl);
     
     print_atoms(out,atype,at,cgs);
     print_bonds(out,at->nr,d_bonds,F_BONDS,plist,FALSE);
@@ -348,6 +287,14 @@ void write_top(char *ff,char *fn, char *pr,char *title, char *molname,
     print_bonds(out,at->nr,d_angles,F_ANGLES,plist,FALSE);
     print_bonds(out,at->nr,d_dihedrals,F_PDIHS,plist,FALSE);
     print_bonds(out,at->nr,d_dihedrals,F_IDIHS,plist,FALSE);
+    print_bonds(out,at->nr,d_dum2,F_DUMMY2,plist,FALSE);
+    print_bonds(out,at->nr,d_dum2,F_DUMMY2FD,plist,FALSE);
+    print_bonds(out,at->nr,d_dum2,F_DUMMY2FAD,plist,FALSE);
+    print_bonds(out,at->nr,d_dum3,F_DUMMY3,plist,FALSE);
+    
+    if (excl)
+      if (excl->nr > 0)
+	print_excl(out,excl);
     
     if (pr)
       print_top_posre(out,pr);
@@ -391,91 +338,9 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   }
 }
 
-/*
-static void heme_his_bonds(t_params *ps,
-			   int natoms,t_atom atom[],char **aname[],
-			   int nres,char **resname[],
-			   rvec x[])
-{
-  int  nhis1,nheme;
-  int  *his1p,*ne2p;
-  int  *hemep,*fep;
-  int  i,j;
-  int  ai,aj;
-  real **d;
-  
-  fprintf(stderr,"Checking for Heme-His bonds...\n");
-  snew(his1p,nres);
-  snew(ne2p,nres);
-  snew(hemep,nres);
-  snew(fep,nres);
-
-  nhis1 = nheme = 0;
-  for(i=0; (i<nres); i++) {
-    if (strcasecmp(*(resname[i]),"HIS1") == 0) {
-      his1p[nhis1]=i;
-      if ((ne2p[nhis1]=search_res_atom("NE2",i,natoms,atom,aname)) == -1)
-	HALT("No NE2 in HIS1 residue....");
-      nhis1++;
-    }
-    else if (strcasecmp(*(resname[i]),"HEME") == 0) {
-      hemep[nheme]=i;
-      if ((fep[nheme]=search_res_atom("FE",i,natoms,atom,aname)) == -1)
-	HALT("No FE in HEME residue....");
-      nheme++;
-    }
-  }
-  if (nheme != nhis1)
-    fatal_error(0,"You have %d HEME groups and %d HIS1 residues, try again",
-		nheme,nhis1);
-  if (nheme > 0) {
-    snew(d,nheme);
-    for(i=0; (i<nheme); i++)
-      snew(d[i],nheme);
-    
-    for(i=0; (i<nheme); i++) 
-      for(j=0; (j<nheme); j++) {
-	ai=ne2p[i];
-	aj=fep[j];
-	d[i][j]=distance(x[ai],x[aj]);
-      }
-    fprintf(stderr,"Heme-His1 Distance matrix\n%8s","");
-    for(i=0; (i<nheme); i++) 
-      fprintf(stderr,"%4d    ",his1p[i]+1);
-    fprintf(stderr,"\n");
-    for(i=0; (i<nheme); i++) {
-      fprintf(stderr,"%4d    ",hemep[i]+1);
-      for(j=0; (j<i); j++)
-	fprintf(stderr,"%8s","");
-      for( ; (j<nheme); j++)
-	fprintf(stderr,"%6.3f  ",d[i][j]);
-      fprintf(stderr,"\n");
-    }
-    while (min_dist(nheme,d,&i,&j,FALSE) < 0.35) {
-      fprintf(stderr,"Linking Heme %d and His1 %d...\n",hemep[i]+1,his1p[j]+1);
-      ai=fep[i];
-      aj=ne2p[j];
-      add_param(ps,ai,aj,NULL);
-      d[i][j] = 10.0;
-    }
-    
-    for(i=0; (i<nheme); i++)
-      sfree(d[i]);
-    sfree(d);
-  }
-  else
-    fprintf(stderr,"No Heme\n");
-    
-  sfree(hemep);
-  sfree(his1p);
-  sfree(fep);
-  sfree(ne2p);
-}
-*/
-
 static void ter2bonds(t_params *ps,
 		      int natoms,t_atom atom[],char **aname[],
-		      int resnr,t_terblock *tdb)
+		      int resnr,t_hackblock *tdb)
 {
   int i,j,k;
   
@@ -483,25 +348,21 @@ static void ter2bonds(t_params *ps,
   for(i=0; ((i<natoms) && (atom[i].resnr != resnr)); i++)
     ;
   /* Now only for this residue */
-  for(   ; ((i<natoms) && (atom[i].resnr == resnr)); i++) {
-    for(j=0; (j<tdb->nadd); j++) {
-      if (strcmp(tdb->ab[j].na[0],*(aname[i])) == 0) {
-	if (tdb->ab[j].tp == 9) {     /* COOH terminus */
+  for(   ; ((i<natoms) && (atom[i].resnr == resnr)); i++)
+    for(j=0; (j<tdb->nadd); j++)
+      if (strcmp(tdb->ab[j].na[0],*(aname[i])) == 0)
+	if (tdb->ab[j].tp == 9) {         /* COOH terminus */
 	  add_param(ps,i,i+1,NULL);   /* C-O  */
 	  add_param(ps,i,i+2,NULL);   /* C-OA */
-	  add_param(ps,i+2,i+3,NULL); /* OA-H */
-	} else {
+	  add_param(ps,i+2,i+3,NULL);   /* OA-H */
+	} else
 	  for(k=0; (k<tdb->ab[j].nh); k++)
 	    add_param(ps,i,i+k+1,NULL);
-	}
-      }
-    }
-  }
 }
 
 static void ter2idihs(t_params *ps,
 		      int natoms,t_atom atom[],char **aname[],
-		      int resnr,t_terblock *tdb)
+		      int resnr,t_hackblock *tdb)
 {
   int i,j,k,aa0,a0[4],start;
   char *atomnm;
@@ -524,7 +385,7 @@ static void ter2idihs(t_params *ps,
 	  fprintf(stderr,"WARNING: improper spans more than 2 residues:\n");
 	  for (i=0; (i<k); i++)
 	    fprintf(stderr,"atom %d %s, res %d\n",
-		    a0[i],*aname[a0[i]],atom[a0[i]].resnr+1);
+	    a0[i]+1,*aname[a0[i]],atom[a0[i]].resnr+1);
 	}
 	a0[k] = aa0;
       }
@@ -544,7 +405,8 @@ static void at2bonds(t_params *ps,
   t_add_block *ab0;
   int        i,j,k,l;
   int        ai,aj;
-  real       ddd;
+  real       dist2;
+#define LONG_BOND_DIST 0.25
   
   /* First generate bonds along the heavy atoms */
   fprintf(stderr,"Making bonds on the heavy atoms...\n");
@@ -553,29 +415,28 @@ static void at2bonds(t_params *ps,
       for(k=0; (k<rb0->nb); k++) {
 	if (bAlldih) {
 	  /* if bAlldih is true, don't check for hydrogens */
-	  if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1) 
+	  if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1)
 	    if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1)
-	      if ((!is_hydrogen(rb0->rbond[k].ai) && 
-		  !is_hydrogen(rb0->rbond[k].aj)) ||
-		  (atom[ai].resnr == atom[aj].resnr))
+	      if ( ( !is_hydrogen(rb0->rbond[k].ai) &&
+		     !is_hydrogen(rb0->rbond[k].aj) ) ||
+		   (atom[ai].resnr == atom[aj].resnr))
 		add_param(ps,ai,aj,rb0->rbond[k].c);
-	} else {     
+	} else {
 	  /* else do the normal thing */
 	  if (!is_hydrogen(rb0->rbond[k].ai) && 
 	      !is_hydrogen(rb0->rbond[k].aj)) {
-	    if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1) 
-	      if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1){
-		ddd = distance(x[ai],x[aj]);
-		if (ddd > 0.25)
+	    if ((ai=search_atom(rb0->rbond[k].ai,j,natoms,aname)) != -1)
+	      if ((aj=search_atom(rb0->rbond[k].aj,j,natoms,aname)) != -1) {
+		dist2 = distance2(x[ai],x[aj]);
+		if (dist2 > sqr(LONG_BOND_DIST) )
 		  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
-			  ai+1,aj+1,ddd);
+			  ai+1,aj+1,sqrt(dist2));
 		add_param(ps,ai,aj,rb0->rbond[k].c);
 	      }
 	  }
 	}
       }
-    }
-    else
+    } else
       fprintf(stderr,"No bond information for residue %d (%s)\n",
 	      i+1,*(resname[i]));
     while ((j < natoms-1) && (atom[j].resnr == atom[j+1].resnr))
@@ -585,20 +446,20 @@ static void at2bonds(t_params *ps,
   /* And now the hydrogen atoms. */
   fprintf(stderr,"Making bonds on the hydrogen atoms...\n");
   for(i=j=0; ((i<nres) && (j<natoms)); i++) {
-    if ((ah0=search_h_db(nah,ah,*(resname[i]))) != NULL) {
+    if ((ah0=search_h_db(nah,ah,*(resname[i]))) != NULL)
       /* Loop over blocks */
       for(k=0; (k<ah0->n_add); k++) {
 	ab0=&(ah0->ab[k]);
 	if ((ai=search_atom(ab0->na[0],j,natoms,aname)) == -1)
 	  fprintf(stderr,"WARNING: Atom %s not found in residue %s %d\n",
-		  ab0->na[0],*(resname[i]),i);
-	else {
-	  for(l=0; (l<ab0->nh); l++)
-	    add_param(ps,ai,ai+l+1,NULL);
-	}
+		  ab0->na[0]+1,*(resname[i]),i+1);
+	else
+	  for(l=0; (l<ab0->nh); l++) {
+	    aj=ai+l+1;
+	    add_param(ps,ai,aj,NULL);
+	  }
       }
-    }
-
+    
     while ((j < natoms-1) && (atom[j].resnr == atom[j+1].resnr))
       j++;
     j++;
@@ -664,42 +525,44 @@ static void print_mass(t_atoms *atoms)
 
 void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
 	     int nincl, char **incls, int nmol, char **mols,
-	     t_atoms *atoms,int nah,t_addh ah[],rvec x[],
+	     t_atoms *atoms,int nah,t_addh ah[],rvec **x,
 	     t_atomtype *atype,t_symtab *tab,
 	     int nrb, t_resbond rb[],
 	     int nrtp,t_restp rtp[],
 	     int nra, t_resang ra[],
 	     int nid, t_idihres idi[],
-	     t_terblock *ntdb,t_terblock *ctdb,
-	     bool bH14,
-	     int rn,int rc,bool bAlldih,
-	     int nssbonds,t_ssbond *ssbonds)
+	     t_hackblock *ntdb,t_hackblock *ctdb,
+	     bool bH14, int rn,int rc,bool bAlldih,
+	     int nddb, t_dumblock *ddb,bool bDummies, real mHmult,
+	     int nssbonds,t_ssbond *ssbonds, int nrexcl)
 {
   t_params plist[F_NRE];
   t_nextnb nnb;
   t_block  *cgs;
-  int i;
+  t_block  excl;
+  bool     *is_dummy;
+  int      i;
   
+  /* determine which atoms will be dummies and make space for dummy masses */
+  if (bDummies)
+    do_dummies(atoms,atype,tab,nrtp,rtp,x,nddb,ddb,&is_dummy,mHmult);
+    
   init_plist(plist);
-
+  
   /* Make bonds */
   at2bonds(&(plist[F_BONDS]),
 	   nrb,rb,nah,ah,atoms->nr,atoms->atom,atoms->atomname,
-	   atoms->nres,atoms->resname,bAlldih,x);
+	   atoms->nres,atoms->resname,bAlldih,*x);
   
   /* Terminal bonds */
   if (rn>=0)
-    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
-	      rn,ntdb);
+    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,rn,ntdb);
   if (rc>=0)
-    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,
-	      rc,ctdb);
+    ter2bonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,atoms->atomname,rc,ctdb);
   if (rn>=0)
-    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
-	      rn,ntdb);
+    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,rn,ntdb);
   if (rc>=0)
-    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,
-	      rc,ctdb);
+    ter2idihs(&(plist[F_IDIHS]),atoms->nr,atoms->atom,atoms->atomname,rc,ctdb);
   
   /* Last the disulphide bonds & heme-his */
   do_ssbonds(&(plist[F_BONDS]),atoms->nr,atoms->atom,
@@ -720,22 +583,56 @@ void pdb2top(char *ff,char *fn,char *pr,char *title,char *molname,
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
   gen_pad(&nnb,atoms,bH14,plist,nrtp,rtp,nra,ra,nid,idi,bAlldih);
+  done_nnb(&nnb);
+  
+  if (bDummies) {
+    /* generate exclusions for dummy masses and atoms */ 
+    init_nnb(&nnb,atoms->nr,nrexcl);
+    gen_nnb(&nnb,plist);
+    excl.nr=atoms->nr;
+    excl.index=NULL;
+    excl.nra=0;
+    excl.a=NULL;
+    nnb2excl(&nnb,&excl);
+    done_nnb(&nnb);
+  
+    /* only keep exclusions for dummies: */
+    do_dum_excl(&excl,is_dummy);
+    
+    /* remove bonds to dummy atoms and add bonds to dummy masses */
+    /* also generate dummy parameters and set masses of dummies to 0 */
+    do_dum_top(
+	       &(plist[F_BONDS]),&(plist[F_DUMMY2]),&(plist[F_DUMMY3]),
+	       &(plist[F_DUMMY2FD]),&(plist[F_DUMMY2FAD]),&(plist[F_ANGLES]),
+	       nddb,ddb,is_dummy,atoms,atype,nrtp,rtp,mHmult);
+    
+    /* remove things with dummy atoms */
+    clean_dum_angles(&(plist[F_ANGLES]), plist, is_dummy);
+    clean_dum_dihs(&(plist[F_PDIHS ]), atoms->nr, "proper",   plist, is_dummy);
+    clean_dum_dihs(&(plist[F_IDIHS ]), atoms->nr, "improper", plist, is_dummy);
+    
+    sfree(is_dummy);
+  }
+  /* Cleanup bonds (sort and rm doubles) */ 
+  clean_bonds(&(plist[F_BONDS]));
+  
   fprintf(stderr,
-	  "There are %6d dihedrals, %6d impropers, %6d angles\n"
-	  "          %6d pairs and  %6d bonds\n",
-	  plist[F_PDIHS].nr,plist[F_IDIHS].nr,
-	  plist[F_ANGLES].nr,plist[F_LJ14].nr,plist[F_BONDS].nr);
+	  "There are %4d dihedrals, %4d impropers, %4d angles\n"
+	  "          %4d pairs,     %4d bonds and  %4d dummies\n",
+	  plist[F_PDIHS].nr,plist[F_IDIHS].nr,plist[F_ANGLES].nr,
+	  plist[F_LJ14].nr,plist[F_BONDS].nr,
+	  plist[F_DUMMY1].nr+plist[F_DUMMY2].nr+plist[F_DUMMY2FD].nr+
+	  plist[F_DUMMY2FAD].nr+plist[F_DUMMY3].nr);
   
   cgs=make_cgs(atoms,nrtp,rtp);
   print_mass(atoms);
   
   fprintf(stderr,"Writing topology file\n");
   write_top(ff,fn,pr,title,molname,nincl,incls,nmol,mols,
-	    atoms,plist,nrtp,rtp,atype,cgs);
+	    atoms,plist,&excl,atype,cgs,nrexcl,mHmult);
   
   for (i=0; (i<F_NRE); i++)
     sfree(plist[i].param);
-  done_nnb(&nnb);
   done_block(cgs);
   sfree(cgs);
 }
