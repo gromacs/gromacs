@@ -251,18 +251,29 @@ static void average(char *avfile,char **avbar_opt,
     sfree(tmp);
 }
 
+static real anal_ee(real *parm,real T,real t)
+{
+  return sqrt(parm[1]*2*parm[0]/T*((exp(-t/parm[0])-1)*parm[0]/t+1)+
+	      parm[3]*2*parm[2]/T*((exp(-t/parm[2])-1)*parm[2]/t+1));
+}
+
 static void estimate_error(char *eefile,int resol,int n,int nset,
 			   double *av,double *sig,real **val,real dt)
 {
   FILE   *fp;
-  int    log2max,rlog2,bs,prev_bs,nb;
+  int    log2max,rlog2,bs,prev_bs,nb,eFitFn;
   int    nleg,s,i,j;
   double blav,var;
   char   **leg;
-  real   *ac,*fitsig,*ac_tau,t_tau;
-  bool   bAnalEE=TRUE;
+  real   *ac,*fitsig,**ac_tau;
+  bool   bAnalEE;
+
+  eFitFn = sffn2effn(s_ffn);
+  bAnalEE = eFitFn!=effnVAC;
 
   snew(ac_tau,nset);
+  for(s=0; s<nset; s++)
+    snew(ac_tau[s],4);
 
   log2max = (int)(log(n)/log(2));
 
@@ -276,15 +287,25 @@ static void estimate_error(char *eefile,int resol,int n,int nset,
 	ac[i] = val[s][i] - av[s];
       low_do_autocorr(NULL,NULL,n,1,-1,&ac,
 		      dt,eacNormal,1,FALSE,TRUE,TRUE,
-		      FALSE,0,dt*(n+1)*0.5,
-		      effnEXP1,0);
+		      FALSE,0,0,
+		      eFitFn,0);
       
-      ac_tau[s] = 1;
+      ac_tau[s][0] = 0.1;
+      if (eFitFn == effnEXP3)
+	ac_tau[s][1] = 0.9;
+      else
+	ac_tau[s][1] = 1;
+      ac_tau[s][2] = 100*ac_tau[s][0];
       do_lmfit((n+1)/2,ac,fitsig,dt,0,0,dt*(n+1)*0.5,
-	       bDebugMode(),effnEXP1,&(ac_tau[s]),NULL);
+	       bDebugMode(),eFitFn,ac_tau[s],NULL);
       
+      if (eFitFn == effnEXP3)
+	ac_tau[s][3] = 1-ac_tau[s][1];
+      else
+	ac_tau[s][3] = 0;
+
       fprintf(stdout,"Set %3d: ac. tau %g  err. est. %g\n",
-	      s+1,ac_tau[0],sig[s]*sqrt(2*ac_tau[0]/(n*dt)));
+	      s+1,ac_tau[s][0],sig[s]*anal_ee(ac_tau[s],n*dt,n*dt));
     }
     sfree(fitsig);
     sfree(ac);
@@ -300,7 +321,7 @@ static void estimate_error(char *eefile,int resol,int n,int nset,
       snew(leg[2*s],STRLEN);
       sprintf(leg[2*s],"av %f",av[s]);
       snew(leg[2*s+1],STRLEN);
-      sprintf(leg[2*s+1],"ee %6g",sig[s]*sqrt(2*ac_tau[0]/(n*dt)));
+      sprintf(leg[2*s+1],"ee %6g",sig[s]*anal_ee(ac_tau[s],n*dt,n*dt));
     } else {
       snew(leg[s],STRLEN);
       sprintf(leg[s],"av %f",av[s]);
@@ -333,28 +354,20 @@ static void estimate_error(char *eefile,int resol,int n,int nset,
 	  var += sqr(av[s] - blav/bs);
 	  nb++;
 	}
-	fprintf(fp," %g %g\n",bs*dt,sqrt(var/(nb*(nb-1.0))));
+	fprintf(fp," %g %g",bs*dt,sqrt(var/(nb*(nb-1.0))));
+	if (bAnalEE)
+	  fprintf(fp," %g",sig[s]*anal_ee(ac_tau[s],n*dt,bs*dt));
+	fprintf(fp,"\n");
       }
       prev_bs = bs;
     }
-    if (bAnalEE) {
+    if (s < nset-1)
       fprintf(fp,"&\n");
-      prev_bs = 0;
-      for(rlog2=resol*log2max; rlog2>=2*resol; rlog2--) {
-	bs = n*pow(0.5,(real)rlog2/(real)resol);
-	if (bs != prev_bs) {
-	  t_tau = bs*dt/ac_tau[0];
-	  fprintf(fp," %g %g\n",bs*dt,
-		  sig[s]*sqrt(2*ac_tau[0]/(n*dt)*((exp(-t_tau)-1)/t_tau+1)));
-	}
-      }
-      fprintf(fp,"&\n");
-    } else
-      if (s < nset)
-	fprintf(fp,"&\n");
   }
     
   fclose(fp);
+  for(s=0; s<nset; s++)
+    sfree(ac_tau[s]);
   sfree(ac_tau);
 }
 
@@ -394,7 +407,8 @@ int main(int argc,char *argv[])
     "Also an analytical block average curve is plotted, assuming",
     "that the autocorrelation is a pure exponential.",
     "The expontential decay time tau is obtained by fitting the",
-    "autocorrelation. The analytical curve is:[BR]",
+    "autocorrelation using the function specified by [TT]-fitfn[tt].",
+    "The analytical curve for a single exponential is:[BR]",
     "sigma*sqrt(2 tau/T ((exp(-t/tau) - 1) tau/t + 1)),[BR]",
     "where T is the total time."
     "When the actual block average is very close to the analytical curve,"
