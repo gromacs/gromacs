@@ -718,14 +718,23 @@ void prune_mat(int nmat, t_matrix *mat,t_matrix *mat2, int skip)
     xs=0;
     for(x=0; (x<mat[i].nx); x++)
       if (x % skip == 0) {
+	mat[i].axis_x[xs] = mat[i].axis_x[x];
+	if (mat2)
+	  mat2[i].axis_x[xs] = mat2[i].axis_x[x];
 	ys=0;
-	for(y=0; (y<mat[i].ny); y++)
+	for(y=0; (y<mat[i].ny); y++) {
+	  if(x==0) {
+	    mat[i].axis_y[ys] = mat[i].axis_y[y];
+	    if (mat2)
+	      mat2[i].axis_y[ys] = mat2[i].axis_y[y];
+	  }
 	  if (y % skip == 0) {
-	    mat [i].matrix[xs][ys] = mat [i].matrix[x][y];
+	    mat[i].matrix[xs][ys] = mat[i].matrix[x][y];
 	    if (mat2)
 	      mat2[i].matrix[xs][ys] = mat2[i].matrix[x][y];
 	    ys++;
 	  }
+	}
 	xs++;
       }
     /* adjust parameters */
