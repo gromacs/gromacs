@@ -346,8 +346,8 @@ void chk_enx(char *fn)
     fnr++;
   }
   fprintf(stderr,"\n\nFound %d frames",fnr);
-  if (bShowTStep)
-    fprintf(stderr," with a timestep of %g ps",(t-t0)/(fnr-1));
+  if (bShowTStep && fnr>1)
+    fprintf(stderr," with a timestep of %g ps",(old_t1-t0)/(fnr-1));
   fprintf(stderr,".\n");
 
 }
