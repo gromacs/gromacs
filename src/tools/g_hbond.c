@@ -744,7 +744,7 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
     }
   }
   /* Consistency check */
-  if ((ia0 != hb->na) || (id0 != hb->nd))
+  if ((ia0 != hb->nd) || (id0 != hb->na))
     fatal_error(0,"Unexepected inconsistency: ia0=%d, na=%d, id0=%d, nd=%d (%s,%d)",ia0,hb->na,id0,hb->nd,__FILE__,__LINE__);
     
   for(i=0; (i<hb->nd); i++) {
