@@ -1,4 +1,8 @@
+; Very approximate VanderWaals radii
+; only used for drawing atoms as balls or for calculating atomic overlap.
 ; longest matches are used
+; '???' or '*' matches any residue name
+; 'AAA' matches any protein residue name
 ??? C   0.15
 ??? F   0.12
 ??? H   0.04
