@@ -83,9 +83,9 @@ int main(int argc,char *argv[])
   unsigned long int sum;
   real       t,boxmin,hbox,hbox2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol;
-  rvec       *x,xcom,dx;
+  rvec       *x,xcom,dx,*x_i1,xi;
   real       *inv_segvol;
-  bool       *bExcl,bTop;
+  bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box;
   int        isize[3],*npairs;
   atom_id    *index[3],ix,jx,**pairs;
@@ -167,8 +167,6 @@ int main(int argc,char *argv[])
   /* make pairlist array for groups and exclusions */
   snew(pairs,isize[0]);
   snew(npairs,isize[0]);
-  for(i=0; i<isize[0]; i++)
-    snew(pairs[i], isize[1]);
   snew(bExcl,natoms);
   for( i = 0; i < isize[0]; i++) {
     ix = index[0][i];
@@ -179,16 +177,28 @@ int main(int argc,char *argv[])
       for( j = excl->index[ix]; j < excl->index[ix+1]; j++)
 	bExcl[excl->a[j]]=TRUE;
     k = 0;
+    snew(pairs[i], isize[1]);
+    bNonSelfExcl = FALSE;
     for( j = 0; j < isize[1]; j++) {
       jx = index[1][j];
       if (!bExcl[jx])
 	pairs[i][k++]=jx;
+      else
+	/* Check if we have exclusions other than self exclusions */
+	bNonSelfExcl = bNonSelfExcl || (ix != jx);
     }
-    npairs[i]=k;
-    srenew(pairs[i],npairs[i]);
+    if (bNonSelfExcl) {
+      npairs[i]=k;
+      srenew(pairs[i],npairs[i]);
+    } else {
+      /* Save a LOT of memory and some cpu cycles */
+      npairs[i]=-1;
+      sfree(pairs[i]);
+    }
   }
   sfree(bExcl);
-  
+
+  snew(x_i1,isize[1]);
   do {
     /* Must init pbc every step because of pressure coupling */
     init_pbc(box,FALSE);
@@ -205,16 +215,30 @@ int main(int argc,char *argv[])
       for(j=0; (j<DIM); j++)
 	x[index[0][0]][j] = xcom[j] / isize[2];
     }
+
+    /* Copy the indexed coordinates to a continuous array */
+    for(i=0; i<isize[1]; i++)
+      copy_rvec(x[index[1][i]],x_i1[i]);
     
-    for(i=0; i < isize[0]; i++) {
-      ix = index[0][i];
-      for(j=0; j < npairs[i]; j++) {
-	jx=pairs[i][j];
-	pbc_dx(x[ix],x[jx],dx);
-	r2=iprod(dx,dx);
-	if ( r2 <= hbox2 && r2 > cut2 )
-	  count[(int)(sqrt(r2)*invbinw)]++;
-      }
+    for(i=0; i<isize[0]; i++) {
+      copy_rvec(x[index[0][i]],xi);
+      if (npairs[i] >= 0)
+	/* Expensive loop, because of indexing */
+	for(j=0; j<npairs[i]; j++) {
+	  jx=pairs[i][j];
+	  pbc_dx(xi,x[jx],dx);
+	  r2=iprod(dx,dx);
+	  if (r2>cut2 && r2<=hbox2)
+	    count[(int)(sqrt(r2)*invbinw)]++;
+	}
+      else
+	/* Cheaper loop, no exclusions */
+	for(j=0; j<isize[1]; j++) {
+	  pbc_dx(xi,x_i1[j],dx);
+	  r2=iprod(dx,dx);
+	  if (r2>cut2 && r2<=hbox2)
+	    count[(int)(sqrt(r2)*invbinw)]++;
+	}
     }
   } while (read_next_x(status,&t,natoms,x,box));
   fprintf(stderr,"\n");
