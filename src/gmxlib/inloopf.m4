@@ -59,7 +59,9 @@ C     convert integer to float (when an integer is passed to this routine)
       real*8    invsqrt,x,y,y2
       real*4    lu,xin
       integer*4 exp,addr,bval,result
-
+C      equivalence(xin,bval)
+C      equivalence(lu,result)
+            
       xin    = x
       bval   = fl2i(xin)
       exp    = expaddr(bval)
@@ -75,10 +77,13 @@ C     convert integer to float (when an integer is passed to this routine)
 #else
       function invsqrt(x)
       include 'seed.inc'
-      real*4    invsqrt,x,y,lu
+      real*4    invsqrt,x,xin,y,lu
       integer*4 exp,addr,bval,result
+C      equivalence(xin,bval)
+C      equivalence(lu,result)
 
-      bval   = fl2i(x)
+      xin    = x
+      bval  = fl2i(x)
       exp    = expaddr(bval)
       addr   = fractaddr(bval)
       result = or(expseed(exp+1),fracseed(addr+1))
@@ -92,8 +97,10 @@ C     convert integer to float (when an integer is passed to this routine)
 
       subroutine ffillbuf
       include 'seed.inc'
-      integer*4 i,exp,newexp,bval,addr,indx
-      real*4 fval
+      integer*4 i,exp,newexp,bval,addr,indx,findex
+      real*4 fval,bflt
+C      equivalence(fval,findex)
+C      equivalence(bflt,bval)
       
       do i=1,nexp
          expseed(i) = -1
@@ -116,8 +123,10 @@ C     convert integer to float (when an integer is passed to this routine)
          bval  = lshift(indx,fractshift)
          addr  = fractaddr(bval)
          fval  = (1.0/sqrt(i2fl(bval)))
+C         fval  = (1.0/sqrt(bflt))
          
          fracseed(addr+1)= and(fl2i(fval),fractmask)
+C	 fracseed(addr+1)= and(findex,fractmask)
          if (fracseed(addr+1) .eq. 0) then
             fracseed(addr+1) = and(maxfract,fractmask)
          endif

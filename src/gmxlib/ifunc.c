@@ -64,7 +64,7 @@ t_interaction_function interaction_function[F_NRE]=
   def_bond   ("DISRES",   "Dis. Res",       2, 6, 0,  eNR_DISRES, ta_disres),
   def_bond   ("IDIHS",    "Impropers",      4, 2, 2,  eNR_IMPROPER, idihs),
   def_nb     ("LJ",       "LJ",             2, 2),
-  def_bond   ("LJ14",     "Coulumb+LJ-14",  2, 2, 2,  eNR_LJC, do_14),
+  def_bond   ("LJ14",     "Coulomb+LJ-14",  2, 2, 2,  eNR_LJC, do_14),
   def_nofc   ("LR",       "Coulomb (LR)"),
   def_nofc   ("LJLR",     "Dispersion(LR)"),
   def_bond   ("PDIHS",    "Proper Dih.",    4, 3, 3,  eNR_PROPER, pdihs),

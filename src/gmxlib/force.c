@@ -290,8 +290,12 @@ void init_forcerec(FILE *log,
       dr = 0.2;
     fr->rshort = fr->rlong = fr->rc+dr;
     
-    for(m=0; (m<DIM); m++)
+    for(m=0; (m<DIM); m++) {
       box_size[m]=box[m][m];
+      if (fr->rshort >= box_size[m]*0.5)
+	fatal_error(0,"Cut-off too large for box. Should be less then %g\n",
+		    box_size[m]*0.5-dr);
+    }
     if (fr->phi == NULL)
       snew(fr->phi,mdatoms->nr);
     

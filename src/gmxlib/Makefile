@@ -128,10 +128,10 @@ $(LIB)(callf77.o):	callf77.m4 $(M4FILE)
 		$(AR) $(ARFLAGS) $(LIB) callf77.o
 		$(RM) callf77.c callf77.o
 $(LIB)(inloopf.o):	inloopf.m4 
-		$(CC) -E $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
+		/lib/cpp $(SYSDEFS) inloopf.m4 | grep -v '#' > inloopf.f
 		$(F77) $(FFLAGS) -c inloopf.f
 		$(AR) $(ARFLAGS) $(LIB) inloopf.o
-		$(RM) inloopf.f inloopf.o
+#		$(RM) inloopf.f inloopf.o
 
 libxtcf.a:	xtciof.o	libxdrf.o	ftocstr.o	#xdrf.o
 		$(AR) $@ $^
@@ -162,6 +162,8 @@ lfft:		lfft.o
 fitter:		fitter.o
 		$(LD) -o $@ $^ $(SYSLIBS) $(FFTLIBS)
 mgmxtest:	mgmxtest.o
+		$(LD) -o $@ $^  $(SYSLIBS) 
+compnl:		compnl.o	wnblist.o
 		$(LD) -o $@ $^  $(SYSLIBS) 
 
 include	Make.dep

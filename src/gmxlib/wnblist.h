@@ -40,9 +40,6 @@ static char *SRCID_wnblist_h = "$Id$";
 
 extern void dump_nblist(FILE *out,t_forcerec *fr,int nDNL);
 
-extern void read_nblist(FILE *in,bool **matje);
-
-extern void read_nblistshift(FILE *in,int **matje,int maxatom);
-/* Only the interactions from 0 to maxatom are read... */
+extern void read_nblist(FILE *in,FILE *out,int **mat,int natoms);
 
 #endif	/* _wnblist_h */

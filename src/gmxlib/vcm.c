@@ -117,3 +117,6 @@ void do_stoprot(FILE *log, int natoms, rvec box, rvec x[], real mass[])
     rvec_inc(x[i],half_box);
   }
 }
+
+
+

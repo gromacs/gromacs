@@ -588,6 +588,9 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
   }
   for(iicg=fr->cg0; (iicg < fr->hcg); iicg++) {
     icg      = cg_index[iicg];
+    if (icg != iicg)
+      fatal_error(0,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
+		  __LINE__);
     i0       = cgs->index[icg];
     nri      = cgs->index[icg+1]-i0;
     i_atoms  = &(cgs->a[i0]);
@@ -597,7 +600,9 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
     icg_naaj = icg+naaj;
     min_icg  = icg_naaj-total_cg;
     
-    ci2xyz(grid,iicg,&cx,&cy,&cz);
+    /* Changed iicg to icg, DvdS 990115 */
+    ci2xyz(grid,icg,&cx,&cy,&cz);
+#define NS5DB
 #ifdef NS5DB
     fprintf(log,"icg=%5d, naaj=%5d, cx=%2d, cy=%2d, cz=%2d\n",
 	    icg,naaj,cx,cy,cz);
@@ -629,7 +634,9 @@ int ns5_core(FILE *log,t_forcerec *fr,int cg_index[],
 #ifdef NS5DB
 	  fprintf(log,"shift: %2d, dx0,1: %2d,%2d, dy0,1: %2d,%2d, dz0,1: %2d,%2d\n",
 		  shift,dx0,dx1,dy0,dy1,dz0,dz1);
-	  fprintf(log,"xi: %8.3f  %8.3f  %8.3f\n",xi[XX],xi[YY],xi[ZZ]);
+	  fprintf(log,"cgcm: %8.3f  %8.3f  %8.3f\n",cgcm[icg][XX],
+		  cgcm[icg][YY],cgcm[icg][ZZ]);
+	  fprintf(log,"xi:   %8.3f  %8.3f  %8.3f\n",xi[XX],xi[YY],xi[ZZ]);
 #endif
 	  for (dx=dx0; (dx<=dx1); dx++) {
 	    for (dy=dy0; (dy<=dy1); dy++) {

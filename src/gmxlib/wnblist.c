@@ -28,14 +28,17 @@
  */
 static char *SRCID_wnblist_c = "$Id$";
 
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include "string2.h"
 #include "force.h"
 #include "smalloc.h"
 #include "wnblist.h"
 #include "fatal.h"
 #include "macros.h"
 #include "futil.h"
+
+#define header "Neighborlist:"
 
 static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
 			 bool bFull)
@@ -58,128 +61,43 @@ static void write_nblist(FILE *out,t_nblist *nblist,rvec sv[SHIFTS],
   fflush(out);
 }
 
-/*void low_readnblist(FILE *in,t_nblist *nbl,int full)
+void read_nblist(FILE *in,FILE *log,int **mat,int natoms)
 {
   char buf[256];
-  int  i,j,ni,ia,nj,t,ja,grp,nrj;
-  
-  grp=0;
-  nrj=0;
-  if (fscanf(in,"%*s%d",&ni) != 1)
-    fatal_error(0,"Not enough arguments read line %d",__LINE__);
-  nbl->nri=ni;
-  snew(nbl->nl_i,ni);
-  for(i=0; (i<ni); i++) {
-    fprintf(stderr,"\rnri: %d",i);
-    if (fscanf(in,"%*s%d%*s%d%*s%d",&ia,&nj,&t) != 3) 
-      fatal_error(0,"Not enough arguments read line %d",__LINE__);
-    nbl->nl_i[i].i_atom=ia;
-    nbl->nl_i[i].nj=nj;
-    nbl->nl_i[i].shift=t;
-    snew(nbl->nl_i[i].nlj,2*nj);
-    if (fscanf(in,"%*s%s",buf) != 1)
-      fatal_error(0,"Not enough arguments read line %d",__LINE__);
-    for(j=0; (j<nj); j++) {
-      if (full) {
-	if (fscanf(in,"%d%d",&ja,&grp) != 2)
-	  fatal_error(0,"Not enough arguments read line %d",__LINE__);
-      }
-      else {
-	if (fscanf(in,"%d",&ja) != 1)
-	  fatal_error(0,"Not enough arguments read line %d",__LINE__);
-      }
-      nbl->nl_i[i].nlj[2*j]=ja;
-      nbl->nl_i[i].nlj[2*j+1]=grp;    
-      nrj++;
-    }
-  }
-  fprintf(stderr,", nrj: %d\n",nrj);
-}
-*/
-void read_nblist(FILE *in,bool **matje)
-{
-  char     buf[256];
-  int      i,nnbl,full;
-/*   int      ia,ja,ii,jj; */
-/*   t_nblist nbl[3]; */
-
-  for(i=0; (i<2); i++)  
-    do {
-      if (eof(in))
-	fatal_error(0,"EOF when looking for lj-qq in logfile");
-      fscanf(in,"%s",buf);
-    } while ((int)strcmp(buf,"lj-qq") != 0);
-    
-  if (fscanf(in,"%d%d",&nnbl,&full) != 2)
-    fatal_error(0,"Not enough arguments read line %d",__LINE__);
-  for(i=0; (i<nnbl); i++) {
-    /*low_readnblist(in,&nbl[i],full);
-      for(ia=0; (ia<nbl[i].nri); ia++) {
-      ii=nbl[i].nl_i[ia].i_atom;
-      for(ja=0; (ja<nbl[i].nl_i[ia].nj); ja++) {
-      jj=nbl[i].nl_i[ia].nlj[2*ja];
-      if (ii < jj)
-      matje[ii][jj]=TRUE;
-      else
-      matje[jj][ii]=TRUE;
-      }
-      }*/
-  }
-}
-
-void read_nblistshift(FILE *in,int **matje,int maxatom)
-{
-  char buf[256];
-  int  nnbl,full;
-  int  ntw=0;
-/*   int      t,li,ia,ja,tempi,ii,jj,swap,gid,nrI,nrJ; */
-/*   t_nblist nbl[3],*list; */
-/*   t_nl_i   *nli; */
+  int  i,ii,j,nnbl,full,icmp,nri;
+  int  iatom,nrj,nj,shift;
   
   do {
-    fscanf(in,"%s",buf);
-  } while ((int)strcmp(buf,"lj-qq") != 0);
-  if (fscanf(in,"%d%d",&nnbl,&full) != 2)
+    if (fgets2(buf,255,in) == NULL)
+      fatal_error(0,"EOF when looking for '%s' in logfile",header);
+  } while (strstr(buf,header) == NULL);
+  if (fscanf(in,"%d",&nnbl) != 1)
     fatal_error(0,"Not enough arguments read line %d",__LINE__);
-  if (full)
-    fprintf(stderr,"Also reading grp info...\n");
-  /*
-  for(li=0; (li<nnbl); li++) {
-    list=&(nbl[li]);
-    low_readnblist(in,list,full);
-      nrI=list->nri;
-      for(ia=0; (ia<nrI); ia++) {
-      nli=&(list->nl_i[ia]);
-      ii=nli->i_atom;
-      t=nli->shift;
-      if (ii < maxatom) {
-      nrJ=nli->nj;
-      for(ja=0; (ja<nrJ); ja++) {
-      jj  = nli->nlj[2*ja];
-      gid = nli->nlj[2*ja+1]+1;
-      if (jj<maxatom) {
-      swap=0;
-      tempi=ii;
-      if (tempi > jj) {
-      swap=jj;
-      jj=tempi;
-      tempi=swap;
-      swap=-1;
+  
+  for(i=0; (i<nnbl); i++) {
+    if (fscanf(in,"%*s%d",&nri) != 1)
+      fatal_error(0,"Not enough arguments read line %d",__LINE__);
+    nrj = 0;
+    for(ii=0; (ii<nri); ii++) {
+      if (fscanf(in,"%*s%d%*s%d%*s%d",&iatom,&nj,&shift) != 3)
+	fatal_error(0,"Not enough arguments read line %d",__LINE__);
+      if ((iatom < 0) || (iatom >= natoms))
+	fatal_error(0,"iatom = %d (max %d)\n",iatom,natoms);
+      nrj+=nj;
+      fscanf(in,"%*s%*s");
+      for(i=0; (i<nj); i++) {
+	if (fscanf(in,"%d",&j) != 1)
+	  fatal_error(0,"Not enough arguments read line %d",__LINE__);
+	if ((j < 0) || (j >= natoms))
+	  fatal_error(0,"iatom = %d (max %d)\n",iatom,natoms);
+	if (mat[iatom][j] != 0)
+	  fprintf(log,"mat[%d][%d] changing from %d to %d\n",
+		  i,j,mat[iatom][j],shift+1);
+	mat[iatom][j] = shift+1;
       }
-      if (matje[tempi][jj] != 0) {
-      ntw++;
-      printf("entry %d-%d occurs twice, grps %d - %d\n",
-      tempi,jj,matje[tempi][jj],gid);
-      }
-      matje[tempi][jj]=t+1;
-      }
-      }
-      }
-      }
+    }
+    fprintf(log,"nri = %d  nrj = %d\n",nri,nrj);
   }
-  */
-  if (ntw > 0)
-    fprintf(stderr,"# twice=%d\n",ntw);
 }
 
 void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
@@ -187,7 +105,7 @@ void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
   int  i;
   rvec *sv;
   
-  fprintf(out,"Neighborlist:\n");
+  fprintf(out,"%s\n",header);
   fprintf(out,"%d\n",fr->nn*2);
 
   sv=fr->shift_vec;

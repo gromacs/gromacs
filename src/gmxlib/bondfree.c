@@ -214,11 +214,11 @@ real bonds(FILE *log,int nbonds,
     
     vtot  += vbond;/* 1*/
     fbond *= invsqrt(dr2);			/*   6		*/
-    
+#ifdef DEBUG
     if (debug)
       fprintf(debug,"BONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
 	      dr,vbond,fbond);
-    
+#endif
     ki=SHIFT_INDEX(g,ai);
     kj=SHIFT_INDEX(g,aj);
     for (m=0; (m<DIM); m++) {			/*  15		*/
@@ -407,11 +407,11 @@ real angles(FILE *log,int nbonds,
 	snt=1e-12;
       st  = dVdt/snt;				/*  11		*/
       sth = st*cos_theta;				/*   1		*/
-
+#ifdef DEBUG
       if (debug)
 	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
 		theta*RAD2DEG,va,dVdt);
-      
+#endif
       nrkj2=iprod(r_kj,r_kj);			/*   5		*/
       nrij2=iprod(r_ij,r_ij);
       

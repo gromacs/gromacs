@@ -495,7 +495,6 @@ real do_ewald(FILE *log,       t_inputrec *ir,
   static    rvec      *all_k;
   static    real      *gk;
   static    t_complex *qk;
-  static    cvec      **eir;
   
   real      Gk,energy;
   int       m,ix,iy,iz,i,j,n;
@@ -522,47 +521,14 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     gtab = mk_rgrid(nx,ny,nz);
     qtab = mk_cgrid(nx,ny,nz);
 
-    /*#define OLD*/
-#ifdef OLD
     mk_ghat(NULL,nx,ny,nz,gtab,box,ir->rshort,ir->rlong,TRUE,bOld);
-#endif
-
-    niv   = mk_ivecs(nx/2-1,ny/2-1,nz/2-1,&iv);
-    snew(iv_index,niv);
-    nind  = sort_ivecs(niv,iv,box,iv_index);
-    snew(all_k,niv);
-    snew(gk,niv);
-    mk_kprops(niv,iv,nx,ny,nz,lll,ir->rlong,all_k,gk);
-    snew(qk,niv);
-    
-    if (debug) 
-      print_ivecs(debug,niv,iv,box,nind,iv_index);
-
-    kmax = 1+max(nx/2,max(ny/2,nz/2));
-    snew(eir,kmax);
-    for(j=0; (j<kmax); j++)
-      snew(eir[j],natoms);
             
     bFirst = FALSE;
   }
-#ifdef OLD
   /* Tabulate charge spread & charge distribution in fourier space */
   mk_qtab(nx,ny,nz,qtab,box,natoms,x,charge);
   
   print_qkgrid(log,"qk",qtab,1.0,"qkfour.pdb",box,nx,ny,nz);
-#else
-  
-  /* Compute the exp(-ir) vectors */
-  tabulate_eir(natoms,x,kmax,eir,lll);
-  
-  /* Compute the charge spread function */
-  for(j=0; (j<nind); j++) {
-    for(n=iv_index[j]; (n<iv_index[j+1]); n++) {
-      qk[n] = Qk2(natoms,x,charge,
-		  eir[iv[n][XX]],eir[iv[n][YY]],eir[iv[n][ZZ]]);
-    }
-  }
-#endif
   
   energy = 0;
   for(i=0; (i<natoms); i++) {
@@ -572,7 +538,6 @@ real do_ewald(FILE *log,       t_inputrec *ir,
     /* Electric field vector */
     for(m=0; (m<DIM); m++)
       Ei[m] = cnul;
-#ifdef OLD      
     /* Loop over lattice vectors in fourier space */
     for(ix=0; (ix < nx); ix++) {
       for(iy=0; (iy < ny); iy++) {
@@ -595,23 +560,6 @@ real do_ewald(FILE *log,       t_inputrec *ir,
 	}
       }
     }
-#else
-    /* NEW */
-    for(j=0; (j<nind); j++) {
-      for(n=iv_index[j]; (n<iv_index[j+1]); n++) {
-	QQk = qk[n];
-	Gk  = gk[n];
-	
-	/* Calculate potential */
-	phik   = phi_k2(Gk,QQk,eir[iv[n][XX]][i],eir[iv[n][YY]][i],
-			eir[iv[n][ZZ]][i]);
-	phitot = cadd(phik,phitot);
-	
-	for(m=0; (m<DIM); m++)
-	  Ei[m] = cadd(Ei[m],rcmul(all_k[n][m],phik));
-      }
-    }
-#endif
     /* Potential at atom i, and energy contribution */
 #ifdef DEBUG
     fprintf(log,"phi[%3d] = %10.3e + i %10.3e\n",i,phitot.re,phitot.im);
@@ -631,5 +579,3 @@ real do_ewald(FILE *log,       t_inputrec *ir,
   }
   return energy;
 }
-
-
