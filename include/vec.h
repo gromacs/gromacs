@@ -523,16 +523,16 @@ static inline void msmul(matrix m1,real r1,matrix dest)
 
 static inline void m_inv(matrix src,matrix dest)
 {
-  const real smallreal = 1.0e-18;
-  const real largereal = 1.0e18;
+  const real smallreal = 1.0e-24;
+  const real largereal = 1.0e24;
   real  deter,c,fc;
   
-  deter=det(src);
-  c=1.0/deter;
-  fc=fabs(c);
+  deter = det(src);
+  c     = 1.0/deter;
+  fc    = fabs(c);
   
   if ((fc <= smallreal) || (fc >= largereal)) 
-    fatal_error(0,"Determinant = %f",1.0/c);               
+    fatal_error(0,"Determinant = %e",deter);               
   
   dest[XX][XX]= c*(src[YY][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[YY][ZZ]);
   dest[XX][YY]=-c*(src[XX][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[XX][ZZ]);
