@@ -143,6 +143,14 @@ typedef struct
 
 real ** sf_table;
 
+static void check_box_c(matrix box)
+{
+  if (fabs(box[ZZ][XX]) > GMX_REAL_EPS*box[ZZ][ZZ] ||
+      fabs(box[ZZ][YY]) > GMX_REAL_EPS*box[ZZ][ZZ])
+    gmx_fatal(FARGS,
+	      "The last box vector is not parallel to the z-axis: %f %f %f",
+	      box[ZZ][XX],box[ZZ][YY],box[ZZ][ZZ]);
+}
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
@@ -162,9 +170,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   real       t,rmax2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
-  real       *inv_segvol,vol,vol_sum,rho;
+  real       *inv_segvol,invvol,invvol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
-  matrix     box,box_check;
+  matrix     box,box_pbc;
   int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology top;
@@ -220,12 +228,13 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   }
   
   /* initialize some handy things */
-  copy_mat(box,box_check);
+  copy_mat(box,box_pbc);
   if (bXY) {
+    check_box_c(box);
     /* Make sure the z-height does not influence the cut-off */
-    box_check[ZZ][ZZ] = box[XX][XX];
+    box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
   }
-  rmax2   = 0.99*0.99*max_cutoff2(box_check);
+  rmax2   = 0.99*0.99*max_cutoff2(box_pbc);
   nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
   invbinw = 1.0 / binwidth;
   cut2   = sqr(cutoff);
@@ -279,15 +288,23 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 
   snew(x_i1,max_i);
   nframes = 0;
-  vol_sum = 0;
+  invvol_sum = 0;
   do {
     /* Must init pbc every step because of pressure coupling */
-    set_pbc(&pbc,box);
     rm_pbc(&top.idef,natoms,box,x,x);
-    
-    vol = det(box);
-    vol_sum += vol;
-    
+    copy_mat(box,box_pbc);
+    if (bXY) {
+      check_box_c(box);
+      box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
+    }
+    set_pbc(&pbc,box_pbc);
+
+    if (bXY)
+      /* Set z-size to 1 so we get the surface iso the volume */
+      box_pbc[ZZ][ZZ] = 1;
+    invvol = 1/det(box_pbc);
+    invvol_sum += invvol;
+
     if (bCM) {
       /* calculate centre of mass */
       clear_rvec(xcom);
@@ -341,7 +358,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   sfree(x);
   
   /* Average volume */
-  vol = vol_sum/nframes;
+  invvol = invvol_sum/nframes;
 
   /* Calculate volume of sphere segments or length of circle segments */
   snew(inv_segvol,nbin);
@@ -349,7 +366,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   for(i=0; (i<nbin); i++) {
     r = (i+1)*binwidth;
     if (bXY) {
-      spherevol=2.0*M_PI*r*r;
+      spherevol=M_PI*r*r;
     } else {
       spherevol=(4.0/3.0)*M_PI*r*r*r;
     }
@@ -361,7 +378,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(rdf,ng);
   for(g=0; g<ng; g++) {
     /* We have to normalize by dividing by the number of frames */
-    rho     = isize[g+1]/vol;
+    rho     = isize[g+1]*invvol;
     normfac = 1.0/((rho*nframes)*isize[0]);
     
     /* Do the normalization */
@@ -401,7 +418,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     real *hq,*integrand,Q;
     
     /* Get a better number density later! */
-    rho = isize[1]/vol;
+    rho = isize[1]*invvol;
     snew(hq,nhq);
     snew(integrand,nrdf);
     for(i=0; (i<nhq); i++) {
