@@ -331,8 +331,8 @@ void please_cite(FILE *fp,char *key)
     { "Lindahl2001a",
       "E. Lindahl and B. Hess and D. van der Spoel",
       "GROMACS 3.0: A package for molecular simulation and trajectory analysis",
-      "To appear in J. Mol. Mod.",
-      0, 2001, 0, 0 }
+      "J. Mol. Mod.",
+      7, 2001, 306, 317 }
   };
 #define NSTR (int)asize(citedb)
   
