@@ -12,7 +12,7 @@ if ( -f $INDEX ) \rm $INDEX
 cat > $INDEX << EOD
 <html>
 <h1>Index</h1>
-<IMG SRC="gif/rainbowsmall.gif">
+<IMG SRC="gif/rainbow.gif" WIDTH=100% HEIGHT=7>
 <h3>General</h3>
 <ul>
 <li><A HREF="changes1.6.html" TARGET="bottom" >New features</a>
@@ -25,7 +25,7 @@ cat > $INDEX << EOD
 <p>
 <li><A HREF="online1.6/count.html" TARGET="right" >Top of the pops</a>
 </ul>
-<IMG SRC="gif/rainbowsmall.gif">
+<IMG SRC="gif/rainbow.gif" WIDTH=100% HEIGHT=7>
 <h3>Programs</h3>
 <ul>
 <li><A HREF="online1.6/general.html" TARGET="right" >General</a>
@@ -48,7 +48,7 @@ end
 
 cat >> $INDEX << EOM
 </ul>
-<IMG SRC="gif/rainbowsmall.gif">
+<IMG SRC="gif/rainbow.gif" WIDTH=100% HEIGHT=7>
 </HTML>
 EOM
 
