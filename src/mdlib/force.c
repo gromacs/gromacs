@@ -691,7 +691,7 @@ void init_forcerec(FILE *fp,
 #define MAX_14_DIST 1.0
   /* Shell to account for the maximum chargegroup radius (2*0.2 nm) *
    * and diffusion during nstlist steps (0.2 nm)                    */
-#define TAB_EXT 0.6
+#define TAB_EXT 1.2
 
   /* Construct tables.
    * A little unnecessary to make both vdw and coul tables sometimes,
