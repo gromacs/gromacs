@@ -38,7 +38,7 @@ static char *SRCID_ewald_c = "$Id$";
 #include "fftgrid.h"
 #include "pppm.h"
 #include "fatal.h"
-#include "ghat.h"
+/*#include "ghat.h"*/
 
 #define TOL 2e-5
 

@@ -43,7 +43,7 @@ void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
   int  iip,jjp,kkp;
   real ggg;
 
-  fprintf(stderr,"Symmetrizing Ghat function\n");  
+  /* fprintf(stderr,"Symmetrizing Ghat function\n");   */
   /* Only the lower octant of the rectangle has been saved,
    * so we must construct the other 7 octants by symmetry operations.
    */

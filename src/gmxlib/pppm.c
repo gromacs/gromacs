@@ -38,7 +38,6 @@ static char *SRCID_pppm_c = "$Id$";
 #include "fatal.h"
 #include "txtdump.h"
 #include "network.h"
-#include "nr.h"
 #include "assert.h"
 #include "nrnb.h"
 #include "pppm.h"
@@ -529,6 +528,52 @@ real do_pppm(FILE *log,       bool bVerbose,
     ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
   }
   
+  return ener;
+}
+
+real do_opt_pppm(FILE *log,       bool bVerbose,
+		 t_inputrec *ir,  int natoms,
+		 rvec x[],        rvec f[],
+		 real charge[],   rvec box,
+		 real phi[],      t_commrec *cr,
+		 t_nrnb *nrnb,    rvec beta,
+		 t_fftgrid *grid)
+{
+  real      ***ghat;
+  int       m,nx,ny,nz;
+  real      ener,r1,rc;
+  ivec      grids;
+  rvec      spacing;
+  
+  ener = 0.0;
+    
+  fprintf(log,"Generating Ghat function\n");
+  nx     = ir->nkx;
+  ny     = ir->nky;
+  nz     = ir->nkz;
+  ghat   = mk_rgrid(nx,ny,nz);
+  mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rshort,ir->rlong,TRUE);
+  
+  /* pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat); */
+  
+  /* Now start the actual PPPM procedure.
+   * First step: spreading the charges over the grid.
+   */
+  /* Make the grid empty */
+  clear_fftgrid(grid);
+  
+  spread_q(log,bVerbose,natoms,x,charge,box,grid,nrnb);
+  
+  /* Second step: solving the poisson equation in Fourier space */
+  solve_pppm(log,NULL,grid,ghat,box,bVerbose,nrnb);
+  
+  /* Third and last step: gather the forces, energies and potential
+   * from the grid.
+   */
+  ener=gather_f(log,bVerbose,natoms,x,f,charge,box,phi,grid,beta,nrnb);
+
+  free_rgrid(ghat,nx,ny);
+    
   return ener;
 }
 

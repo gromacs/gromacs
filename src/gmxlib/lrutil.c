@@ -39,6 +39,7 @@ static char *SRCID_lrutil_c = "$Id$";
 #include "fftgrid.h"
 #include "writeps.h"
 #include "macros.h"
+#include "xvgr.h"
 
 #define p2(x) ((x)*(x))
 #define p3(x) ((x)*(x)*(x)) 
@@ -107,28 +108,12 @@ real gk(real k,real rc,real r1)
   return gg;
 }
 
-real calc_dx2(rvec xi,rvec xj,rvec box)
+real calc_dx2dx(rvec xi,rvec xj,rvec box,rvec dx)
 {
   int  m;
-  real dx,r2;
+  real ddx,dx2;
   
-  r2=0;
-  for(m=0; (m<DIM); m++) {
-    dx=xj[m]-xi[m];
-    if (dx < -0.5*box[m])
-      dx+=box[m];
-    else if (dx >= 0.5*box[m])
-      dx-=box[m];
-    r2+=dx*dx;
-  }
-  return r2;
-}
-
-void calc_dx(rvec xi,rvec xj,rvec box,rvec dx)
-{
-  int  m;
-  real ddx;
-  
+  dx2=0;
   for(m=0; (m<DIM); m++) {
     ddx=xj[m]-xi[m];
     if (ddx < -0.5*box[m])
@@ -136,15 +121,25 @@ void calc_dx(rvec xi,rvec xj,rvec box,rvec dx)
     else if (ddx >= 0.5*box[m])
       ddx-=box[m];
     dx[m]=ddx;
+    dx2 += ddx*ddx;
   }
+  return dx2;
 }
 
-real phi_sr(int nj,rvec x[],real charge[],real rc,real r1,rvec box,
-	    real phi[],t_block *excl)
+real calc_dx2(rvec xi,rvec xj,rvec box)
 {
-  int  i,j,k,ni,i1,i2;
+  rvec dx;
+  
+  return calc_dx2dx(xi,xj,box,dx);
+}
+
+real phi_sr(FILE *log,int nj,rvec x[],real charge[],real rc,real r1,rvec box,
+	    real phi[],t_block *excl,rvec f_sr[])
+{
+  int  i,j,k,m,ni,i1,i2;
   real pp,r2,R,R_1,r12,rc2;
-  real qi,qj,vsr,eps;
+  real qi,qj,vsr,eps,fscal;
+  rvec dx;
   
   vsr = 0.0;
   eps = ONE_4PI_EPS0;
@@ -160,24 +155,34 @@ real phi_sr(int nj,rvec x[],real charge[],real rc,real r1,rvec box,
 	if (excl->a[k] == j)
 	  break;
       if (k == i2) {
-	r2=calc_dx2(x[i],x[j],box);
+	r2=calc_dx2dx(x[i],x[j],box,dx);
 	if (r2 < rc2) {
 	  qj  = charge[j];
 	  R_1 = invsqrt(r2);
 	  pp  = R_1-C;
 	  if (r2 > r12) {
-	    R   = 1.0/R_1;
-	    pp -= A_3*p3(R-r1)+B_4*p4(R-r1);
+	    R     = 1.0/R_1;
+	    pp   -= A_3*p3(R-r1)+B_4*p4(R-r1);
+	    fscal = sqr(R_1) + A*sqr(R-r1) + B*p3(R-r1);
 	  }
+	  else {
+	    fscal = sqr(R_1);
+	  }
+	  fscal  *= qi*qj*eps;
+	  
 	  phi[i] += eps*qj*pp;
 	  phi[j] += eps*qi*pp;
 	  vsr    += eps*qj*qi*pp;
+	  for(m=0; (m<DIM); m++) {
+	    f_sr[i][m] += dx[m]*fscal;
+	    f_sr[j][m] -= dx[m]*fscal;
+	  }
 	  ni++;
 	}
       }
     }
   }
-  fprintf(stderr,"There were %d short range interactions, vsr=%g\n",ni,vsr);
+  fprintf(log,"There were %d short range interactions, vsr=%g\n",ni,vsr);
   
   return vsr;
 }
@@ -236,6 +241,7 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
       qq  += charge[i]*charge[i];
     Vself = 0.5*C*ONE_4PI_EPS0*qq;
     fprintf(fp,"calc_LRcorrections: r1 = %g, rc=%g\n",r1,rc);
+    fprintf(fp,"calc_LRcorrections: start=%d,natoms=%d\n",start,natoms);
     fprintf(fp,"calc_LRcorrections: qq = %g, Vself=%g\n",qq,Vself);
     bFirst = FALSE;
   }
@@ -475,9 +481,73 @@ void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx)
   for(i=0; (i<atoms->nr); i++) {
     rnr=atoms->atom[i].resnr;
     fprintf(fp,"%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-	    "ATOM",i+1,*atoms->atomname[i],*atoms->resname[rnr],' ',rnr+1,
+	    "ATOM",(i+1),*atoms->atomname[i],*atoms->resname[rnr],' ',
+	    (rnr+1) % 10000,
 	    10*(dx+x[i][XX]),10*x[i][YY],10*(x[i][ZZ]),0.0,phi[i]);
   }
   fclose(fp);
+}
+
+real analyse_diff(FILE *log,int natom,rvec ffour[],rvec fpppm[],
+		  real phi_f[],real phi_p[],real phi_sr[],
+		  char *fcorr,char *pcorr,char *ftotcorr,char *ptotcorr)
+{
+  int  i,m;
+  FILE *fp,*gp;
+  char buf[120];
+  real f2sum=0,p2sum=0;
+  real ftot2sum=0,ptot2sum=0;
+  real df,fmax,dp,pmax,rmsf;
+  
+  fmax = fabs(ffour[0][0]-fpppm[0][0]);
+  pmax = fabs(phi_f[0] - phi_p[0]);
+  
+  for(i=0; (i<natom); i++) {
+    dp     = fabs(phi_f[i] - phi_p[i]);
+    pmax   = max(dp,pmax);
+    p2sum += dp*dp;
+    for(m=0; (m<DIM); m++) {
+      df     = fabs(ffour[i][m] - fpppm[i][m]);
+      fmax   = max(df,fmax);
+      f2sum += df*df;
+    }
+  }
+  
+  rmsf = sqrt(f2sum/(3.0*natom));
+  fprintf(log,"\n********************************\nERROR ANALYSIS\n");
+  fprintf(log,"%-10s%12s%12s\n","Error:","Max Abs","RMS");
+  fprintf(log,"%-10s  %10.3f  %10.3f\n","Force",fmax,rmsf);
+  fprintf(log,"%-10s  %10.3f  %10.3f\n","Potential",pmax,sqrt(p2sum/(natom)));
+
+  if (fcorr) {  
+    fp = xvgropen(fcorr,"LR Force Correlation","Four-Force","PPPM-Force");
+    for(i=0; (i<natom); i++) {
+      for(m=0; (m<DIM); m++) {
+	fprintf(fp,"%10.3f  %10.3f\n",ffour[i][m],fpppm[i][m]);
+      }
+    }
+    ffclose(fp);
+    xvgr_file(fcorr,NULL);
+  }
+  if (pcorr)  
+    fp = xvgropen(pcorr,"LR Potential Correlation","Four-Pot","PPPM-Pot");
+  if (ptotcorr)
+    gp = xvgropen(ptotcorr,"Total Potential Correlation","Four-Pot","PPPM-Pot");
+  for(i=0; (i<natom); i++) {
+    if (pcorr)
+      fprintf(fp,"%10.3f  %10.3f\n",phi_f[i],phi_p[i]);
+    if (ptotcorr)
+      fprintf(gp,"%10.3f  %10.3f\n",phi_f[i]+phi_sr[i],phi_p[i]+phi_sr[i]);
+  }
+  if (pcorr) {
+    ffclose(fp);
+    xvgr_file(pcorr,NULL);
+  }
+  if (ptotcorr) {
+    ffclose(gp);
+    xvgr_file(ptotcorr,NULL);
+  }
+
+  return rmsf;
 }
 

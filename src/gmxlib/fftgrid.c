@@ -26,6 +26,14 @@ t_fftgrid *mk_fftgrid(int nx,int ny,int nz)
   return grid;
 }
 
+void done_fftgrid(t_fftgrid *grid)
+{
+  if (grid->ptr) {
+    sfree(grid->ptr);
+    grid->ptr = NULL;
+  }
+}
+
 void gmxfft3D(FILE *fp,bool bVerbose,t_fftgrid *grid,int dir)
 {
   static bool bFirst=TRUE;
@@ -116,7 +124,7 @@ void print_fftgrid(FILE *out,char *title,t_fftgrid *grid,real factor,char *pdb,
 	  value = bReal ? g.re : g.im;
 	  if (fabs(value) > PDBTOL)
 	    fprintf(fp,pdbformat,"ATOM",i,"H","H",' ',
-		    i,ix*boxfac[XX],iy*boxfac[YY],iz*boxfac[ZZ],
+		    (i%10000),ix*boxfac[XX],iy*boxfac[YY],iz*boxfac[ZZ],
 		    1.0,factor*value);
 	} 
 	else {
