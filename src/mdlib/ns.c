@@ -177,12 +177,14 @@ static unsigned int nbf_index(t_forcerec *fr, bool bvdw, bool bcoul, bool bFree,
    * Note that we can never have them simultaneously, though.
    * No error checking here!
    */
-  if(bFree) 
+  if (bFree) 
     nn += (fr->sc_alpha==0) ? 1 : 2;
-
-  nn += solopt;
-  if((solopt>0) && (icoul==3 && (ivdw==0 || ivdw==3 || ivdw==4)))
-    nn += 2; /* solvent comes after the two free energy	loops */   
+  else {
+    /* No solvent optimization with free energy */
+    nn += solopt;
+    if((solopt>0) && (icoul==3 && (ivdw==0 || ivdw==3 || ivdw==4)))
+      nn += 2; /* solvent comes after the two free energy	loops */   
+  }
   
   return nn;
 }
@@ -531,7 +533,7 @@ static gmx_inline void put_in_list(bool bHaveLJ[],
     i_atom  = i0;
     igid    = cENER[i_atom];
     gid     = GID(igid,jgid,ngid);
-#define MNO_ARGS bMNO,&(fr->mno_index[i*3])
+#define MNO_ARGS bMNO,&(fr->mno_index[icg*3])
     /* Create new i_atom for each energy group */
     if (!bCoulOnly && !bVDWOnly) {
       new_i_nblist(vdwc,bLR ? F_LJLR : F_LJ,i_atom,shift,gid,MNO_ARGS);
