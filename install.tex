@@ -24,14 +24,11 @@ features:
 \begin{enumerate}
 \item 	the UNIX operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
 	or UNIX-like libraries
-\item 	an ANSI C compiler for the MD stuff, tools and most of the analysis
-\item	a C++ compiler for some of the analysis programs
+\item 	an ANSI C compiler 
 \item	a Fortran-77 compiler or Fortran-90 compiler
-	for optimized innerloop routines on some computers
+	for faster (on some computers) innerloop routines
 \item 	If you want to use the graphics, the X-window system version 
 	11 Release 4 or higher and the X-lib graphics libraries
-\item	SGI GL libraries if you want the GL version of the trajectory
-	viewer
 \end{enumerate}
 
 These are the requirements of a single processor system. If you want
@@ -82,7 +79,7 @@ This routine waits until the previous, or the ongoing transmission is finished.
 
 
 {\bf extern void gmx\_txs(int pid,void *buf,int bufsize);}\\
-This routine implements a synchonous send by claaing the async routine and then
+This routine implements a synchonous send by calling the async routine and then
 the wait. It might come in handy to code this differently.
 
 \smallskip
@@ -121,19 +118,21 @@ are essential for running and compiling {\gromacs}. Other variables are:
 	This can be handy for debugging purposes, because it ensures
 	that all files are always totally up-to-date.
 \item   \myindex{GMXNPRI}, for SGI systems only. When set, gives the
-	default non-degrading priority (npri) for mdrun, e.g.\@
-	setting \verb'setenv GMXNPRI 250' causes all runs to be
-	performed at near-lowest priority by default.
+	default non-degrading priority (npri) for {\tt
+	\myindex{mdrun}}, {\tt \myindex{nmrun}}, {\tt
+	\myindex{g\_covar}} and {\tt \myindex{g\_nmeig}},
+	e.g.\@ setting \verb'setenv GMXNPRI 250' causes all
+	runs to be performed at near-lowest priority by default.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
-\myindex{TOTAL} for the \myindex{do\_shift} program, and
-\myindex{DSPP} for the \myindex{do\_dssp} program.
+\myindex{TOTAL} for the {\tt \myindex{do\_shift}} program, and
+\myindex{DSPP} for the {\tt \myindex{do\_dssp}} program.
 
 \section{File types.}
 \label{sec:fileformats}
-This section lists the filetypes used by {\gromacs} along with a 
-short description.
+This section lists the filetypes used by {\gromacs} along with a short
+description.
 \input{files}
 
 \section{Data types}
