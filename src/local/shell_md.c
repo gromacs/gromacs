@@ -545,9 +545,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		fr,md->nr,parm->box,parm->pres,ener);
     
     if (bTCR)
-      do_coupling(log,tcr,t,step,ener,fr,
+      do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
 		  &(parm->ir),MASTER(cr),md,&(top->idef),2.3,
-		  top->blocks[ebMOLS].nr);
+		  top->blocks[ebMOLS].nr,cr);
 
     upd_mdebin(mdebin,md->tmass,step,ener,parm->box,shake_vir,
                force_vir,parm->vir,parm->pres,grps,mu_tot);

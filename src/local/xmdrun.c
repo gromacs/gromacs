@@ -72,6 +72,8 @@ static char *SRCID_xmdrun_c = "$Id$";
 #include "pppm.h"
 
 static bool      bMultiSim = FALSE;
+static bool      bGlas     = FALSE;
+static bool      bIonize   = FALSE;
 static t_commrec *cr_msim;
 
 char *par_fn(char *base,int ftp,t_commrec *cr)
@@ -663,7 +665,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bStopRot=do_per_step(step,-parm->ir.nstcomm);
     }
     
-    /*ionize(log,md,top->atoms.atomname,t,&parm->ir,v);*/
+    if (bIonize)
+      ionize(log,md,top->atoms.atomname,t,&parm->ir,v);
 
     /* Determine whether or not to do Neighbour Searching */
     bNS=((parm->ir.nstlist && ((step % parm->ir.nstlist)==0)) || (step==0));
@@ -695,8 +698,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		       traj,t,lambda,nsb->natoms,parm->box,mdebin);
     tcount+=count;
 
-    do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,md,top->idef.atnr,
-	    &parm->ir,ener);
+    if (bGlas)
+      do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,md,top->idef.atnr,
+	      &parm->ir,ener);
 	         
     if (bTCR && MASTER(cr) && (step == 0)) 
       tcr=init_coupling(log,nfile,fnm,cr,fr,md,&(top->idef));
@@ -855,7 +859,7 @@ int main(int argc,char *argv[])
     { efHAT, "-hat",    "ghat",     ffOPTRD },
     { efENX, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
-    { efNDX, "-n",      "mols",     ffREAD  },
+    { efNDX, "-n",      "mols",     ffOPTRD },
     { efGCT, "-j",      "wham",     ffOPTRD },
     { efGCT, "-jo",     "bam",      ffOPTRD },
     { efXVG, "-ffout",  "gct",      ffOPTWR },
@@ -877,7 +881,11 @@ int main(int argc,char *argv[])
     { "-dlb",     FALSE, etINT, &nDLB,
       "Use dynamic load balancing every ... step. BUGGY do not use" },
     { "-stepout", FALSE, etINT, &nstepout,
-      "Frequency of writing the remaining runtime" }
+      "Frequency of writing the remaining runtime" },
+    { "-glas",    FALSE, etBOOL,&bGlas,
+      "Do glass simulation with special long range corrections" },
+    { "-ionize",  FALSE, etBOOL,&bIonize,
+      "Do a simulation including the effect of an X-Ray bombardment on your system" }
   };
 
   int          i;
