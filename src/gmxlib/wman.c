@@ -199,28 +199,30 @@ static char *html_xref(char *s,char *program)
   return repallww(s,nstr,sr);
 }
 
+#define FLAG_SET(flag, mask) ((flag & mask) == mask)
 char *fileopt(unsigned long flag)
 {
   static char buf[32];
   
-  if ((flag & ffRW) == ffRW)
+  if (FLAG_SET(flag, ffRW))
     strcpy(buf,"In/Out");
-  else if ((flag & ffREAD) == ffREAD)
+  else if (FLAG_SET(flag, ffREAD))
     strcpy(buf,"Input");
-  else if ((flag & ffWRITE) == ffWRITE)
+  else if (FLAG_SET(flag, ffWRITE))
     strcpy(buf,"Output");
   else
     strcpy(buf,"Dunno");
-  if ((flag & ffOPT) == ffOPT) {
+  if (FLAG_SET(flag, ffOPT)) {
     strcat(buf,", Opt");
-    if ((flag & ffSET) == ffSET) 
+    if (FLAG_SET(flag, ffSET)) 
       strcat(buf,"!");
     else
       strcat(buf,".");
   }
-  if ((flag & ffLIB) == ffLIB)
+  if (FLAG_SET(flag, ffLIB))
     strcat(buf,", Lib.");
-    
+  if (FLAG_SET(flag, ffMULT))
+    strcat(buf,", Mult.");
   return buf;
 }
 
