@@ -86,7 +86,6 @@ static int min_pid(int nr,atom_id list[],int hid[])
   return minpid;
 }
 
-
 static void split_force2(int nprocs,int hid[],t_idef *idef,t_ilist *ilist)
 {
   int     i,type,ftype,pid,nratoms,tnr;
@@ -241,9 +240,7 @@ static void split_blocks(bool bVerbose,int nprocs,
     if (ai > 0)
       if (shknum[ai] != shknum[ai-1])
 	sbl++;
-    /*if (shknum[ai] != NO_ATID) 
-      sbl=max(sbl,shknum[ai]);
-    */
+
     if (bSHK && (cgs->a[cgs->index[i+1]] >= tload)) {
       if (debug) 
 	fprintf(debug,"%s %d: tload = %g, ai = %d, i = %d, sbl = %d\n",
