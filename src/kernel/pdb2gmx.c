@@ -554,7 +554,8 @@ int main(int argc, char *argv[])
     "done by increasing the hydrogen-mass by a factor of 4. This is also",
     "done for water hydrogens to slow down the rotational motion of water.",
     "The increase in mass of the hydrogens is subtracted from the bonded",
-    "(heavy) atom so that the total mass of the system remains the same."
+    "(heavy) atom so that the total mass of the system remains the same.",
+    "Reference Feenstra et al., J. Comput. Chem. 20, 786 (1999)."
   };
 
   typedef struct {
@@ -716,7 +717,8 @@ int main(int argc, char *argv[])
     fatal_error(0,"DEATH HORROR in $s (%d): dumstr[0]='%s'",
 		__FILE__,__LINE__,dumstr[0]);
   }/* end switch */
-
+  if (bDummies) please_cite(stdout,"Feenstra99");
+  
   /* Open the symbol table */
   open_symtab(&symtab);
   
