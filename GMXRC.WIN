@@ -1,0 +1,30 @@
+#
+# Directories, edit to match your site
+#
+
+# This should be your Gromacs directory, edit if necessary
+GMXHOME=/gmx2.0
+export GMXHOME
+
+#
+CPU=win
+export CPU	
+
+# Some directories that live below the root
+GMXBIN=$GMXHOME/bin/$CPU
+GMXLIB=$GMXHOME/top
+export GMXLIB
+
+# Default Graphics Font for ngmx
+GMXFONT=10x20
+export GMXFONT
+
+# Set the path
+PATH="$PATH":"$GMXBIN"
+
+# Now finally, if you consider our Cool Quotes to be offensive
+# you might consider commenting out the following line:
+IAMCOOL=YES
+export IAMCOOL
+
+# end of script
