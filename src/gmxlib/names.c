@@ -136,7 +136,7 @@ const char *esolv_names[esolNR+1] = {
 };
 
 const char *edispc_names[edispcNR+1] = {
-  "No", "EnerPres", "Ener", NULL
+  "No", "EnerPres", "Ener", "AllEnerPres", "AllEner", NULL
 };
 
 const char *ecm_names[ecmNR+1] = { 

@@ -377,7 +377,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
-	       ener,state,shake_vir,
+	       ener,state,state->box,shake_vir,
 	       force_vir,parm->vir,parm->pres,grps,mu_tot);
     
     print_ebin_header(log,step,step,lambda);
@@ -763,7 +763,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		step,Epot0,sqrt(fnorm2/(3*nsb->natoms)),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
-		 ener,state,shake_vir,
+		 ener,state,state->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       do_log = do_per_step(step,parm->ir.nstlog);
       do_ene = do_per_step(step,parm->ir.nstenergy);
@@ -992,7 +992,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
-	       ener,state,shake_vir,
+	       ener,state,state->box,shake_vir,
 	       force_vir,parm->vir,parm->pres,grps,mu_tot);
     
     print_ebin_header(log,step,step,lambda);
@@ -1401,7 +1401,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		step,Epot,fnorm/sqrt(3*nsb->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
-		 ener,state,shake_vir,
+		 ener,state,state->box,shake_vir,
 		 force_vir,parm->vir,parm->pres,grps,mu_tot);
       do_log = do_per_step(step,parm->ir.nstlog);
       do_ene = do_per_step(step,parm->ir.nstenergy);
@@ -1675,7 +1675,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
-		   ener,state,shake_vir, 
+		   ener,state,state->box,shake_vir, 
 		   force_vir,parm->vir,parm->pres,grps,mu_tot);
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,parm->ir.nstdisreout),

@@ -307,6 +307,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		real tmass,int step,real time,
 		real ener[],
 		t_state *state,
+		matrix  box,
 		tensor svir,
 		tensor fvir,
 		tensor vir,
@@ -323,23 +324,27 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   real   ecopy[F_NRE];
   real   tmp;
   
+  /* Do NOT use the box in the state variable, but the separate box provided
+   * as an argument. This is because we sometimes need to write the box from
+   * the last timestep to match the trajectory frames.
+   */
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
   if (epc != epcNO || grps->cosacc.cos_accel != 0) {
     if(bTricl) {
-      tricl_bs[0]=state->box[XX][XX];
-      tricl_bs[1]=state->box[YY][XX];
-      tricl_bs[2]=state->box[YY][YY];
-      tricl_bs[3]=state->box[ZZ][XX];
-      tricl_bs[4]=state->box[ZZ][YY];
-      tricl_bs[5]=state->box[ZZ][ZZ];
+      tricl_bs[0]=box[XX][XX];
+      tricl_bs[1]=box[YY][XX];
+      tricl_bs[2]=box[YY][YY];
+      tricl_bs[3]=box[ZZ][XX];
+      tricl_bs[4]=box[ZZ][YY];
+      tricl_bs[5]=box[ZZ][ZZ];
       /* This is the volume */
       tricl_bs[6]=tricl_bs[0]*tricl_bs[2]*tricl_bs[5];
       /* This is the density */
       tricl_bs[7] = (tmass*AMU)/(tricl_bs[6]*NANO*NANO*NANO);
     } else {
       for(m=0; (m<DIM); m++) 
-	bs[m]=state->box[m][m];
+	bs[m]=box[m][m];
       /* This is the volume */
       bs[3] = bs[XX]*bs[YY]*bs[ZZ];      
       /* This is the density */
@@ -362,7 +367,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   }
   add_ebin(md->ebin,md->ivir,9,vir[0],step);
   add_ebin(md->ebin,md->ipres,9,pres[0],step);
-  tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*state->box[ZZ][ZZ];
+  tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
   add_ebin(md->ebin,md->isurft,1,&tmp,step);
   if (epc == epcPARRINELLORAHMAN) {
     tmp6[0] = state->boxv[XX][XX];
@@ -388,10 +393,10 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
     if(bTricl) 
       tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
-	       *tricl_bs[7]*sqr(state->box[ZZ][ZZ]*NANO/(2*M_PI)));
+	       *tricl_bs[7]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
     else 
       tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
-	       *bs[4]*sqr(state->box[ZZ][ZZ]*NANO/(2*M_PI)));
+	       *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
     add_ebin(md->ebin,md->ivisc,1,&tmp,step);    
   }
   if (md->nE > 1) {

@@ -445,6 +445,47 @@ void set_avcsix(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 			 mdatoms->typeA,fr->bBHAM);
 }
 
+static double calc_avctwelve(FILE *log,real *nbfp,int atnr,
+			     int natoms,int type[],bool bBHAM)
+{
+  int    i,j,tpi,tpj;
+  double ctwel;
+  
+  /* Check this code: do we really need a double loop? */  
+  ctwel = 0;
+  for(i=0; (i<natoms); i++) {
+    tpi = type[i];
+#ifdef DEBUG
+    if (tpi >= atnr)
+      fatal_error(0,"Atomtype[%d] = %d, maximum = %d",i,tpi,atnr);
+#endif
+    for(j=0; (j<natoms); j++) {
+      tpj   = type[j];
+#ifdef DEBUG
+      if (tpj >= atnr)
+        fatal_error(0,"Atomtype[%d] = %d, maximum = %d",j,tpj,atnr);
+#endif
+      if (bBHAM)
+        /*no repulsion correction for Buckingham for now*/
+        ctwel += 0;
+      else
+        ctwel += C12(nbfp,atnr,tpi,tpj);
+    }
+  }
+  ctwel /= (natoms*natoms);
+  if (debug)
+    fprintf(debug,"Average C12 parameter is: %10g\n",ctwel);
+  
+  return ctwel;
+}
+
+void set_avctwelve(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
+{
+  fr->avctwelve=calc_avctwelve(log,fr->nbfp,fr->ntype,mdatoms->nr,
+			       mdatoms->typeA,fr->bBHAM);
+}
+
+
 static void set_bham_b_max(FILE *log,t_forcerec *fr,t_mdatoms *mdatoms)
 {
   int  i,j,tpi,tpj,ntypes,natoms,*type;
@@ -675,8 +716,10 @@ void init_forcerec(FILE *fp,
     fprintf(fp,"Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n",
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
-  if (ir->eDispCorr != edispcNO)
+  if (ir->eDispCorr != edispcNO) {
     set_avcsix(fp,fr,mdatoms);
+    set_avctwelve(fp,fr,mdatoms);
+  }
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);
 

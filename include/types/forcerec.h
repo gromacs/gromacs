@@ -60,6 +60,11 @@ typedef struct {
   /* Constant for long range dispersion correction (average dispersion) */
   real avcsix;
       
+  /* Constanf for long range repulsion term. Relative difference of about 
+   * 0.1 percent with 0.8 nm cutoffs. But hey, it's cheap anyway...
+   */
+  real avctwelve;
+  
   /* Fudge factors */
   real fudgeQQ;
 

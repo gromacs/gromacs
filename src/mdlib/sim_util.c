@@ -492,46 +492,160 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
 void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 		   matrix box,tensor pres,tensor virial,real ener[])
 {
+  // modified for switched VdW corrections Michael R. Shirts 2/21/03
   static bool bFirst=TRUE;
   double dnatoms;
-  real vol,rc3,spres,svir;
-  int  m;
+  real vol,rc3,rc9,spres=0,svir=0;
+  int  m,offset;
+  
+  //    variables for switched VdW correction
+  double r;
+  double eners,press,enersum,pressum,y0,f,g,h;
+  double rswitch,roff,ea,eb,ec,pa,pb,pc,pd;
+  double scale,scale2,scale3;
+  int i, offstart=0;
+  real multf=0;
+  real *vdwtab; 
   
   ener[F_DISPCORR] = 0.0;
   ener[F_PRES]     = trace(pres)/3.0;
   
   if (eDispCorr != edispcNO) {
     vol           = det(box);
-    /* Forget the (small) effect of the shift on the LJ energy *
-     * when fr->bLJShift = TRUE                                */  
-    rc3              = fr->rvdw*fr->rvdw*fr->rvdw;
-    dnatoms          = natoms;
-    ener[F_DISPCORR] = -2.0*dnatoms*dnatoms*M_PI*fr->avcsix/(3.0*vol*rc3);
-    if (eDispCorr == edispcEnerPres) {
-      spres            = 2.0*ener[F_DISPCORR]*PRESFAC/vol;
-      svir             = -6.0*ener[F_DISPCORR];
-      ener[F_PRES]    += spres;
-      for(m=0; (m<DIM); m++) {
-	pres[m][m]    += spres;
-	virial[m][m]  += svir;
+    if (fr->vdwtype == evdwSWITCH) {
+      rc3  = fr->rvdw_switch*fr->rvdw_switch*fr->rvdw_switch;
+      rc9  = rc3*rc3*rc3;
+      eners = 0.0; press=0.0;
+      rswitch = fr->rvdw_switch;
+      roff =  fr->rvdw; 
+      scale = 1.0/(fr->tabscale);  
+      scale2 = scale*scale;
+      scale3 = scale*scale2;
+      vdwtab = fr->vdwtab;
+      
+      /* following summation derived from cubic spline definition,
+	Numerical Recipies in C, second edition, p. 113-116.  Exact
+	for the cubic spline.  We first calculate the negative of
+	the energy from rvdw to rvdw_switch, assuming that g(r)=1,
+	and then add the more standard, abrupt cutoff correction to
+	that result, yielding the long-range correction for a
+	switched function.  We perform both the pressure and energy
+	loops at the same time for simplicity, as the computational
+	cost is low. */
+      
+      eners = 0.0; press = 0.0;
+      
+      
+      for (i=0;i<2;i++) {
+        enersum = 0.0; pressum = 0.0;
+        if (i==0) {offstart = 0; multf = fr->avcsix;}
+        if (i==1) {offstart = 4; multf = fr->avctwelve;}
+        // the second time through, we are doing the r12 correction,which we only need to do
+        // if the user selects the "All" variants
+        if ((i==1) && (!((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)))) {break;}
+        for (r=rswitch;r<roff;r+=scale) {
+          ea = scale3;
+          eb = 2.0*scale2*r;
+          ec = scale*r*r;
+          
+          pa = scale3;
+          pb = 3.0*scale2*r;
+          pc = 3.0*scale*r*r;
+          pd = r*r*r;
+          
+          /* this "8" is from the packing in the vdwtab array - perhaps
+	    should be #define'ed? */
+          offset = (int)(8*(floor(r/scale)+1)) + offstart;
+          y0 = vdwtab[offset];
+          f = vdwtab[offset+1];
+          g = vdwtab[offset+2];
+          h = vdwtab[offset+3];
+	  
+          enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2)+
+            g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);  
+          pressum +=  f*(pa/4 + pb/3 + pc/2 + pd) + 
+            2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
+	  
+        }
+        enersum *= -2.0*multf;
+        pressum *= (2.0/3.0)*multf; 
+        eners += enersum;
+        press += pressum;
+      }
+      
+      /* now add the correction for vdw_switch to infinity */
+      
+      eners += -2.0*(fr->avcsix/(3.0*rc3)); 
+      if ((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)) {
+        eners += 2.0*(fr->avctwelve/(9.0*rc9)); 
+      }
+      
+      eners *= natoms*natoms*M_PI*(1/vol); 
+      ener[F_DISPCORR] = (real)eners;
+      
+      if ((eDispCorr == edispcEnerPres) || (eDispCorr == edispcAllEnerPres)) {
+        press += -4.0*(fr->avcsix/(3.0*rc3)); 
+	
+        if ((eDispCorr == edispcAllEnerPres)) {
+          press += 8.0*(fr->avctwelve/(9.0*rc9)); 
+        }
+        press *= natoms*natoms*M_PI*(1/vol)*PRESFAC/vol;
+        
+        spres            = (real)press;
+        svir             = -3*(vol/PRESFAC)*spres;
+        ener[F_PRES]    += spres;
+        for(m=0; (m<DIM); m++) {
+          pres[m][m]    += spres;
+          virial[m][m]  += svir;
+        }
+      } else {
+        spres = 0;
+        svir  = 0;
+      }
+    } else if (fr->vdwtype == evdwCUT) {
+      rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
+      rc9  = rc3*rc3*rc3;
+      
+      eners = -2.0*fr->avcsix/(3.0*rc3); 
+      if ((eDispCorr == edispcAllEner) || (eDispCorr == edispcAllEnerPres)) {
+        eners += 2.0* fr->avctwelve/(9.0*rc9); 
+      }
+      eners *= natoms*natoms*M_PI*(1/vol); 
+      ener[F_DISPCORR] = (real)eners;
+      
+      if ((eDispCorr == edispcEnerPres) || (eDispCorr == edispcAllEnerPres)) {
+        spres = -4.0*fr->avcsix/(3.0*rc3); 
+        if (eDispCorr == edispcAllEnerPres) {
+          spres += 8.0*fr->avctwelve/(9.0*rc9); 
+        }
+	
+        spres *= natoms*natoms*M_PI*(1/vol)*PRESFAC/vol;
+        svir             = -3*(vol/PRESFAC)*spres;
+        ener[F_PRES]    += spres;
+        for(m=0; (m<DIM); m++) {
+          pres[m][m]    += spres;
+          virial[m][m]  += svir;
+        }
+      } else {
+        spres = 0;
+        svir  = 0;
       }
     }
-    else {
-      spres = 0;
-      svir  = 0;
-    }
+    
     if (bFirst) {
-      if (eDispCorr == edispcEner)
-	fprintf(log,"Long Range LJ corr. to Epot: %10g\n",ener[F_DISPCORR]);
-      else if (eDispCorr == edispcEnerPres)
-	fprintf(log,"Long Range LJ corr. to Epot: %10g, Pres: %10g, Vir: %10g\n",
-		ener[F_DISPCORR],spres,svir);
+      if ((eDispCorr == edispcEner)  || (eDispCorr == edispcAllEner))
+        fprintf(log,"Long Range LJ corr. to Epot: %10g\n",ener[F_DISPCORR]);
+      else if ((eDispCorr == edispcEnerPres) || (eDispCorr == edispcAllEnerPres))
+        fprintf(log,"Long Range LJ corr. to Epot: %10g, Pres: %10g, Vir: %10g\n",
+                ener[F_DISPCORR],spres,svir);
       bFirst = FALSE;
     }
-  }
+  } 
+  
   ener[F_EPOT] += ener[F_DISPCORR];
   ener[F_ETOT] += ener[F_DISPCORR];
 }
+
 
 void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
 		  t_graph *graph,rvec x[])

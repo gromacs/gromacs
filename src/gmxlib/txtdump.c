@@ -51,7 +51,7 @@
 #include "vec.h"
 
 
-int available(FILE *fp,void *p,char *title)
+int available(FILE *fp,void *p,const char *title)
 {
   if (!p) (void) fprintf(fp,"not available: %s\n",title);
   return (p!=NULL);
@@ -65,28 +65,28 @@ int pr_indent(FILE *fp,int n)
   return n;
 }
 
-int pr_title(FILE *fp,int indent,char *title)
+int pr_title(FILE *fp,int indent,const char *title)
 {
   (void) pr_indent(fp,indent);
   (void) fprintf(fp,"%s:\n",title);
   return (indent+INDENT);
 }
 
-int pr_title_n(FILE *fp,int indent,char *title,int n)
+int pr_title_n(FILE *fp,int indent,const char *title,int n)
 {
   (void) pr_indent(fp,indent);
   (void) fprintf(fp,"%s (%d):\n",title,n);
   return (indent+INDENT);
 }
 
-int pr_title_nxn(FILE *fp,int indent,char *title,int n1,int n2)
+int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2)
 {
   (void) pr_indent(fp,indent);
   (void) fprintf(fp,"%s (%dx%d):\n",title,n1,n2);
   return (indent+INDENT);
 }
 
-void pr_ivec(FILE *fp,int indent,char *title,int vec[],int n, bool bShowNumbers)
+void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers)
 {
   int i;
 
@@ -101,7 +101,7 @@ void pr_ivec(FILE *fp,int indent,char *title,int vec[],int n, bool bShowNumbers)
     }
 }
 
-void pr_ivecs(FILE *fp,int indent,char *title,ivec vec[],int n, bool bShowNumbers)
+void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShowNumbers)
 {
   int i,j;
 
@@ -122,7 +122,7 @@ void pr_ivecs(FILE *fp,int indent,char *title,ivec vec[],int n, bool bShowNumber
     }
 }
 
-void pr_rvec(FILE *fp,int indent,char *title,real vec[],int n, bool bShowNumbers)
+void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowNumbers)
 {
   int i;
 
@@ -153,7 +153,7 @@ void pr_mat(FILE *fp,int indent,char *title,matrix m)
 }
 */
 
-void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n)
+void pr_rvecs_len(FILE *fp,int indent,const char *title,rvec vec[],int n)
 {
   int i,j;
 
@@ -172,7 +172,7 @@ void pr_rvecs_len(FILE *fp,int indent,char *title,rvec vec[],int n)
   }
 }
 
-void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n)
+void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n)
 {
   char *fshort = "%12.5e";
   char *flong  = "%15.8e";
@@ -199,7 +199,7 @@ void pr_rvecs(FILE *fp,int indent,char *title,rvec vec[],int n)
   }
 }
 
-void pr_reals(FILE *fp,int indent,char *title,real *vec,int n)
+void pr_reals(FILE *fp,int indent,const char *title,real *vec,int n)
 {
   int i;
     
@@ -212,7 +212,7 @@ void pr_reals(FILE *fp,int indent,char *title,real *vec,int n)
   }
 }
 
-void pr_energies(FILE *fp,int indent,char *title,t_energy *e,int n)
+void pr_energies(FILE *fp,int indent,const char *title,t_energy *e,int n)
 {
   int i;
 
@@ -226,7 +226,7 @@ void pr_energies(FILE *fp,int indent,char *title,t_energy *e,int n)
   }
 }
 
-void pr_grp_opts(FILE *out,int indent,char *title,t_grpopts *opts)
+void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts)
 {
   int i,m,j;
 
@@ -300,7 +300,7 @@ void pr_grp_opts(FILE *out,int indent,char *title,t_grpopts *opts)
   fflush(out);
 }
 
-static void pr_cosine(FILE *fp,int indent,char *title,t_cosines *cos)
+static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos)
 {
   int j;
   
@@ -321,25 +321,25 @@ static void pr_cosine(FILE *fp,int indent,char *title,t_cosines *cos)
   }
 }
 
-static void pr_int(FILE *fp,int indent,char *title,int i)
+static void pr_int(FILE *fp,int indent,const char *title,int i)
 {
   pr_indent(fp,indent);
   fprintf(fp,"%-20s = %d\n",title,i);
 }
 
-static void pr_real(FILE *fp,int indent,char *title,real r)
+static void pr_real(FILE *fp,int indent,const char *title,real r)
 {
   pr_indent(fp,indent);
   fprintf(fp,"%-20s = %g\n",title,r);
 }
 
-static void pr_str(FILE *fp,int indent,char *title,const char *s)
+static void pr_str(FILE *fp,int indent,const char *title,const char *s)
 {
   pr_indent(fp,indent);
   fprintf(fp,"%-20s = %s\n",title,s);
 }
 
-void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
+void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
 {
   char *infbuf="inf";
   
@@ -623,7 +623,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   }
 }
 
-void pr_ilist(FILE *fp,int indent,char *title,
+void pr_ilist(FILE *fp,int indent,const char *title,
 	      t_idef *idef,t_ilist *ilist, bool bShowNumbers)
 {
   int i,j,k,type,ftype;
@@ -665,7 +665,7 @@ void pr_ilist(FILE *fp,int indent,char *title,
     }
 }
 
-void pr_idef(FILE *fp,int indent,char *title,t_idef *idef, bool bShowNumbers)
+void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers)
 {
   int i,j;
   
@@ -710,7 +710,7 @@ static int pr_block_title(FILE *fp,int indent,const char *title,t_block *block)
   return indent;
 }
 
-static void low_pr_block(FILE *fp,int indent,char *title,t_block *block, bool bShowNumbers)
+static void low_pr_block(FILE *fp,int indent,const char *title,t_block *block, bool bShowNumbers)
 {
   int i;
   
@@ -732,7 +732,7 @@ static void low_pr_block(FILE *fp,int indent,char *title,t_block *block, bool bS
     }
 }
 
-void pr_block(FILE *fp,int indent,char *title,t_block *block,bool bShowNumbers)
+void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNumbers)
 {
   int i,j,ok,size,start,end;
   
@@ -776,7 +776,7 @@ void pr_block(FILE *fp,int indent,char *title,t_block *block,bool bShowNumbers)
     }
 }
 
-static void pr_blocks(FILE *fp,int indent,char *title,
+static void pr_blocks(FILE *fp,int indent,const char *title,
                       t_block block[],int n,const char *block_names[], bool bShowNumbers)
 {
   int i;
@@ -796,7 +796,7 @@ static void pr_blocks(FILE *fp,int indent,char *title,
     }
 }
 
-static void pr_atom(FILE *fp,int indent,char *title,t_atom *atom,int n)
+static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
 {
   int i,j;
   
@@ -815,7 +815,7 @@ static void pr_atom(FILE *fp,int indent,char *title,t_atom *atom,int n)
   }
 }
 
-static void pr_grps(FILE *fp,int indent,char *title,t_grps grps[],int ngrp,
+static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],int ngrp,
 		    char **grpname[], bool bShowNumbers)
 {
   int i,j;
@@ -828,7 +828,7 @@ static void pr_grps(FILE *fp,int indent,char *title,t_grps grps[],int ngrp,
   }
 }
 
-static void pr_strings(FILE *fp,int indent,char *title,char ***nm,int n, bool bShowNumbers)
+static void pr_strings(FILE *fp,int indent,const char *title,char ***nm,int n, bool bShowNumbers)
 {
   int i;
 
@@ -844,7 +844,7 @@ static void pr_strings(FILE *fp,int indent,char *title,char ***nm,int n, bool bS
     }
 }
 
-static void pr_strings2(FILE *fp,int indent,char *title,
+static void pr_strings2(FILE *fp,int indent,const char *title,
 			char ***nm,char ***nmB,int n, bool bShowNumbers)
 {
   int i;
@@ -861,7 +861,7 @@ static void pr_strings2(FILE *fp,int indent,char *title,
     }
 }
 
-void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms, 
+void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
 	      bool bShownumbers)
 {
   if (available(fp,atoms,title))
@@ -877,7 +877,7 @@ void pr_atoms(FILE *fp,int indent,char *title,t_atoms *atoms,
     }
 }
 
-void pr_atomtypes(FILE *fp,int indent,char *title,t_atomtypes *atomtypes, 
+void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes, 
 		  bool bShowNumbers)
 {
   int i;
@@ -891,7 +891,7 @@ void pr_atomtypes(FILE *fp,int indent,char *title,t_atomtypes *atomtypes,
   }
 }
 
-void pr_top(FILE *fp,int indent,char *title,t_topology *top, bool bShowNumbers)
+void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers)
 {
   if (available(fp,top,title)) {
     indent=pr_title(fp,indent,title);
@@ -904,7 +904,7 @@ void pr_top(FILE *fp,int indent,char *title,t_topology *top, bool bShowNumbers)
   }
 }
 
-void pr_header(FILE *fp,int indent,char *title,t_tpxheader *sh)
+void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh)
 {
   if (available(fp,sh,title))
     {

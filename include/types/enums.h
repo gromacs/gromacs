@@ -118,7 +118,7 @@ enum {
 
 /* Dispersion correction */
 enum {
-  edispcNO, edispcEnerPres, edispcEner, edispcNR
+  edispcNO, edispcEnerPres, edispcEner, edispcAllEnerPres, edispcAllEner, edispcNR
 }; 
 
 /* Shell types, for completion stuff */

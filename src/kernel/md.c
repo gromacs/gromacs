@@ -305,7 +305,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   char        *grpname;
   t_coupl_rec *tcr=NULL;
   rvec        *xcopy=NULL,*vcopy=NULL;
-  matrix      boxcopy;
+  matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
 
   /* Turn on signal handling */
@@ -466,7 +466,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       init_pbc(state->box);
 
     if (parm->ir.efep != efepNO) {
-      if (bRerunMD && rerun_fr.bLambda)
+      if (bRerunMD && rerun_fr.bLambda && (parm->ir.delta_lambda!=0))
 	state->lambda = rerun_fr.lambda;
       else
 	state->lambda = lam0 + step*parm->ir.delta_lambda;
@@ -637,7 +637,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     if (bFFscan)
       clear_rvecs(nsb->natoms,buf);
-      
+
+    /* Box is changed in update() when we do pressure coupling,
+     * but we should still use the old box for energy corrections and when
+     * writing it to the energy file, so it matches the trajectory files for
+     * the same timestep above. Make a copy in a separate array.
+     */
+    copy_mat(state->box,lastbox);
+    
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
@@ -647,7 +654,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	   TRUE,bFirstStep,NULL);
     if (!bOK && !bFFscan)
       fatal_error(0,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
-    
+
+    /* Correct the new box if it is too skewed */
     if (parm->ir.epc != epcNO)
       correct_box(state->box,fr,graph);
     /* (un)shifting should NOT be done after this,
@@ -670,6 +678,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 			state->box,state->x,vold,state->v,vt,&(parm->ir.opts),
 			mdatoms,grps,&mynrnb,state->lambda,&ener[F_DVDLKIN]);
 
+    /* since we use the new coordinates in calc_ke_part_visc, we should use
+     * the new box too. Still, won't this be offset by one timestep in the
+     * energy file? / EL 20040121
+     */ 
+    
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM && !bFFscan)
@@ -781,17 +794,21 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
     */
 
-    /* Calculate pressure and apply LR correction if PPPM is used */
-    calc_pres(fr->ePBC,state->box,parm->ekin,parm->vir,parm->pres,
+    /* Calculate pressure and apply LR correction if PPPM is used.
+     * Use the box from last timestep since we already called update().
+     */
+    calc_pres(fr->ePBC,lastbox,parm->ekin,parm->vir,parm->pres,
 	      (fr->eeltype==eelPPPM) ? ener[F_LR] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */
-    if (bTCR || bFFscan)
+    if (bTCR || bFFscan) {
       set_avcsix(log,fr,mdatoms);
+      set_avctwelve(log,fr,mdatoms);
+    }
     
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,parm->ir.eDispCorr,
-		  fr,mdatoms->nr,state->box,parm->pres,parm->vir,ener);
+		  fr,mdatoms->nr,lastbox,parm->pres,parm->vir,ener);
 
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (!bShell || bConverged))
@@ -804,6 +821,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * otherwise we might be coupling to bogus energies. 
        * In parallel we must always do this, because the other sims might
        * update the FF.
+       */
+      
+      /* Since this is called with the new coordinates state->x, I assume
+       * we want the new box state->box too. / EL 20040121
        */
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
 		  &(parm->ir),MASTER(cr),
@@ -822,8 +843,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (MASTER(cr)) {
       bool do_ene,do_dr,do_or,do_dihr;
       
-      upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step_rel,t,ener,state,shake_vir,
-		 force_vir,parm->vir,parm->pres,grps,mu_tot);
+      upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step_rel,t,ener,state,lastbox,
+		 shake_vir,force_vir,parm->vir,parm->pres,grps,mu_tot);
       do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
       do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
       do_or  = do_per_step(step,parm->ir.nstorireout) || bLastStep;
