@@ -215,7 +215,7 @@ static void average(char *avfile,char **avbar_opt,
 	for(s=0; s<nset; s++)
 	  tmp[s] = val[s][i];
 	qsort(tmp,nset,sizeof(tmp[0]),real_comp);
-	fprintf(fp," %g %g",tmp[nset-1-edge]-av,av-tmp[edge]);
+	fprintf(fp," %g %g",tmp[edge]-av,av-tmp[nset-1-edge]);
       } else {
 	for(s=0; s<nset; s++)
 	  var += sqr(val[s][i]-av);
