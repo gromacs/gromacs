@@ -118,7 +118,8 @@ extern void force(FILE *log,
 		  bool         bNBonly,
 		  matrix       lr_vir,
 		  rvec         mu_tot,
-		  real         qsum);
+		  real         qsum,
+		  bool         bGatherOnly);
 /* Call all the force routines */
 
 /* Routine from fnbf.m4 */
