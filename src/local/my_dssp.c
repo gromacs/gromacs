@@ -37,7 +37,7 @@ static char *SRCID_my_dssp_c = "$Id$";
 #include "mshift.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "confio.h"
+#include "pdbio.h"
 #include "fatal.h"
 #include "xvgr.h"
 #include "matio.h"

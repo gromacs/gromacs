@@ -37,7 +37,7 @@ static char *SRCID_do_dssp_c = "$Id$";
 #include "mshift.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "confio.h"
+#include "pdbio.h"
 #include "fatal.h"
 #include "xvgr.h"
 #include "matio.h"
@@ -212,7 +212,7 @@ int main(int argc,char *argv[])
     "The program is very slow"
   };
   int        status;
-  FILE       *ss,*acc,*acct;
+  FILE       *ss,*acc,*acct,*out;
   char       *leg[] = { "Phobic", "Phylic" };
   t_topology *top;
   t_atoms    *atoms;
@@ -308,7 +308,9 @@ int main(int argc,char *argv[])
   do {
     if (t >= nt) {
       rm_pbc(&(top->idef),atoms->nr,box,x,x);
-      write_pdb_conf_indexed(pdbfile,NULL,atoms,x,box,gnx,index);
+      out=ffopen(pdbfile,"w");
+      hwrite_pdb_conf_indexed(out,NULL,atoms,x,box,gnx,index);
+      fclose(out);
       system(dssp);
       strip_dssp(tmpfile,nres,r0,bPhbres,t,dt,ss,acc,acct,&mat,average_area);
       remove(tmpfile);
