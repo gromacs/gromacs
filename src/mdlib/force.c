@@ -305,7 +305,7 @@ void init_forcerec(FILE *log,
   if(fr->bEwald)
       fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
   /* Tables are used for direct ewald sum */
-  
+
   /* Domain decomposition parallellism... */
   fr->bDomDecomp = ir->bDomDecomp;
   fr->Dimension  = ir->decomp_dir;
@@ -546,7 +546,7 @@ void force(FILE       *log,     int        step,
   int     i,nit;
   bool    bDoEpot;
   rvec    box_size;
-  real    Vlr,Vself;
+  real    Vlr,Vself=0;
   
   set_led(FORCE_LED);
 
@@ -561,7 +561,7 @@ void force(FILE       *log,     int        step,
     for(i=0; (i<fr->nmol); i++)
       fr->mol_epot[i]=0.0;
   debug_gmx();
-
+  
   /* Call the short range functions all in one go. */
   do_fnbf(log,fr,x,f,md,
 	  grps->estat.ee[egLJ],grps->estat.ee[egCOUL],box_size,nrnb,
@@ -603,11 +603,11 @@ void force(FILE       *log,     int        step,
       break;
     case eelPME:
 	Vlr = do_pme(log,FALSE,ir,x,fr->flr,md->chargeA,
-		     box_size,fr->phi,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+		     box_size,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
 	break;
     case eelEWALD:
 	Vlr = do_ewald(log,FALSE,ir,x,fr->flr,md->chargeA,
-		       box_size,fr->phi,cr,nsb,nrnb,lr_vir,fr->ewaldcoeff);
+		       box_size,cr,nsb,lr_vir,fr->ewaldcoeff);
 	break;
     default:
       Vlr = 0;
@@ -615,7 +615,7 @@ void force(FILE       *log,     int        step,
 		  eel_names[fr->eeltype]);
     }
     
-    Vself = calc_LRcorrections(log,START(nsb),HOMENR(nsb),fr,
+    Vself = calc_LRcorrections(log,nsb,cr,fr,
 			       md->chargeA,excl,x,f,TRUE,box_size,lr_vir);
     epot[F_LR] = Vlr - Vself;
     if (debug)
