@@ -48,7 +48,7 @@ static char *SRCID_tpxio_c = "$Id$";
 #include "vec.h"
 
 /* This number should be increased whenever the file format changes! */
-static int tpx_version = 16;
+static int tpx_version = 17;
 /* This number should be the most recent incompatible version */
 static int tpx_incompatible_version = 9;
 /* This is the version of the file we are reading */
@@ -145,6 +145,12 @@ static void do_inputrec(t_inputrec *ir,bool bRead)
     do_int(ir->nkz);
     do_int(ir->pme_order);
     do_real(ir->ewald_rtol);
+
+    if(file_version >= 17)
+      do_int(ir->surface_dipole);
+    else
+      ir->surface_dipole=FALSE;
+    
     do_int(ir->bOptFFT);
     do_int(ir->bUncStart); 
     do_int(ir->btc); 

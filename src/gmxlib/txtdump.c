@@ -322,6 +322,7 @@ void pr_inputrec(FILE *fp,int indent,char *title,t_inputrec *ir)
     PI("nkz",ir->nkz);
     PI("pme_order",ir->pme_order);
     PR("ewald_rtol",ir->ewald_rtol);
+    PS("surface_dipole",BOOL(ir->surface_dipole));
     PS("optimize_fft",BOOL(ir->bOptFFT));
     PS("ePBC",EPBC(ir->ePBC));
     PS("bUncStart",BOOL(ir->bUncStart));
