@@ -97,21 +97,31 @@ int ifunc_index(directive d,int type)
   case d_dum4:
     return F_DUMMY4FD; 
   case d_constraints:
-    return F_SHAKE;
+  case d_constrainttypes:
+    switch (type) {
+    case 1:
+      return F_SHAKE;
+    case 2:
+      return F_SHAKENC;
+    default:
+      fatal_error(0,"Invalid constraints type %d",type);
+    }
   case d_settles:
     return F_SETTLE;
   case d_position_restraints:
-    if (type == 1)
+    switch (type) {
+    case 1: 
       return F_POSRES;
-    else if (type == 2)
+    case 2:
       return F_WPOL;
-    else
+    default:
       fatal_error(0,"Invalid position restraint type %d",type);
+    }
   case d_distance_restraints:
     return F_DISRES;
   default:
-    fatal_error(0,"DON'T ever call 'ifunc_index' again with directive %s",
-		dir2str(d));
+    fatal_error(0,"invalid directive %s in ifunc_index (%s:%s)",
+		dir2str(d),__FILE__,__LINE__);
   }
   return -1;
 }
@@ -162,6 +172,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_defaults]),d_none);
     set_nec(&(necessary[d_atomtypes]),d_defaults,d_none);
     set_nec(&(necessary[d_bondtypes]),d_atomtypes,d_none);
+    set_nec(&(necessary[d_constrainttypes]),d_atomtypes,d_none);
     set_nec(&(necessary[d_pairtypes]),d_atomtypes,d_none);
     set_nec(&(necessary[d_angletypes]),d_atomtypes,d_none);
     set_nec(&(necessary[d_dihedraltypes]),d_atomtypes,d_none);
