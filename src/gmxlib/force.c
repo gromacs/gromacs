@@ -299,11 +299,19 @@ void init_forcerec(FILE *log,
     fr->bLongRange = FALSE;
     
     /* We must use the long range cut-off for neighboursearching...
-     * In the near future we will use an extra range of e.g. 0.1 nm
-     * for neighboursearching. This allows diffusion 
-     * into the cut-off range, and gives more accurate forces.
+     * An extra range of e.g. 0.1 nm (half the size of a charge group)
+     * is necessary for neighboursearching. This allows diffusion 
+     * into the cut-off range (between neighborlist updates), 
+     * and gives more accurate forces because all atoms within the short-range
+     * cut-off rc must be taken into account, while the ns criterium takes
+     * only those with the center of geometry within the cut-off.
+     * (therefore we have to add half the size of a charge group, plus
+     * something to account for diffusion if we have nstlist > 1)
+     * dr should actually be a parameter in the mdp file.
      */
-    dr = 0.1;
+    dr = ir->userreal4;
+    if (dr == 0.0)
+      dr = 0.15;
     fr->rshort = fr->rlong = fr->rc+dr;
     for(m=0; (m<DIM); m++)
       box_size[m]=box[m][m];
@@ -520,6 +528,25 @@ void force(FILE *log,
   }
   where();
 
+  /* Shift the coordinates. Must be done before bonded forces and PPPM, 
+   * but is also necessary
+   * for  shake and update, therefore it can NOT go when no
+   * bonded forces have to be evaluated.
+   */
+  if (debug)
+    p_graph(debug,"DeBUGGGG",graph);
+  
+  shift_self(graph,fr->shift_vec,x);
+  if (bDebug) {
+    fprintf(log,"BBBBBBBBBBBBBBBB\n");
+    fprintf(log,"%5d\n",graph->nnodes);
+    for(i=graph->start; (i<=graph->end); i++)
+      fprintf(log,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
+	      i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
+    fprintf(log,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+  }
+  inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
+  where();
   if (fr->eeltype == eelPPPM) {
     real Vpppm,Vself;
     Vpppm = do_pppm(log,FALSE,FALSE,NULL,NULL,md->nr,x,f,md->chargeT,
@@ -539,24 +566,6 @@ void force(FILE *log,
 #endif
   where();
   
-  /* Shift the coordinates. Must be done for bonded forces, but also
-   * for shake and update, therefore it can NOT go when no
-   * bonded forces have to be evaluated.
-   */
-  if (bDebug)
-    p_graph(log,"DeBUGGGG",graph);
-
-  shift_self(graph,fr->shift_vec,x);
-  if (bDebug) {
-    fprintf(log,"BBBBBBBBBBBBBBBB\n");
-    fprintf(log,"%5d\n",graph->nnodes);
-    for(i=graph->start; (i<=graph->end); i++)
-      fprintf(log,"%5d%5s%5s%5d%8.3f%8.3f%8.3f\n",
-	      i,"A","B",i,x[i][XX],x[i][YY],x[i][ZZ]);
-    fprintf(log,"%10.5f%10.5f%10.5f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
-  }
-  inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
-  where();
   
   calc_bonds(log,idef,x,f,fr,graph,epot,nrnb,box,lambda,md,
 	     opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14]);

@@ -225,10 +225,10 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
 {
   static bool bFirst=TRUE;
   static real Vself;
-  int    i,i1,i2,j,k;
+  int    i,i1,i2,j,k,m;
   unsigned int *AA;
-  real   qi,qq,dx,dy,dz,dr,dr2,dr_1,dr_3,fscal,Vexcl;
-  rvec   df;
+  real   qi,qq,dr,ddd,dr2,dr_1,dr_3,fscal,Vexcl;
+  rvec   df,dx,hbox;
   
   if (bFirst) {
     qq =0;  
@@ -242,6 +242,10 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
   
   AA = excl->a;
   
+  /*
+    for(m=0; (m<DIM); m++)
+    hbox[m] = box[m]*0.5;
+  */
   Vexcl = 0;
   for(i=start; (i<natoms); i++) {
     /* Initiate local variables (for this i-particle) to 0 */
@@ -262,23 +266,32 @@ real calc_LRcorrections(FILE *fp,int start,int natoms,real r1,real rc,
       if (k > i) {
 	qq = qi*charge[k];
 	if (qq != 0.0) {
-	  /* Compute distance vector */
-	  dx      = x[i][XX] - x[k][XX];
-	  dy      = x[i][YY] - x[k][YY];
-	  dz      = x[i][ZZ] - x[k][ZZ];
-	  dr2     = (dx*dx+dy*dy+dz*dz);
+	  /* Compute distance vector, no PBC check! */
+	  dr2 = 0;
+	  for(m=0; (m<DIM); m++) {
+	    ddd = x[i][m] - x[k][m];
+	    /*if (ddd < -hbox[m])
+	      ddd += box[m];
+	    else if (ddd >= hbox[m])
+	    ddd -= box[m];*/
+	    dx[m] = ddd;
+	    dr2  += ddd*ddd;
+	  }
 	  dr_1    = invsqrt(dr2);
 	  dr      = 1.0/dr_1;
 	  dr_3    = dr_1*dr_1*dr_1;
+	  
 	  /* Compute exclusion energy and scalar force */
 	  Vexcl  += qq*(dr_1-potential(r1,rc,dr));
 	  fscal   = qq*(-shiftfunction(r1,rc,dr))*dr_3;
+	  
+	  if ((fscal != 0) && debug)
+	    fprintf(debug,"i: %d, k: %d, dr: %.3f fscal: %.3f\n",i,k,dr,fscal);
+	    
 	  /* The force vector is obtained by multiplication with the 
 	   * distance vector 
 	   */
-	  df[XX]  = fscal*dx;
-	  df[YY]  = fscal*dy;
-	  df[ZZ]  = fscal*dz;
+	  svmul(fscal,dx,df);
 	  rvec_inc(f[k],df);
 	  rvec_dec(f[i],df);
 	}

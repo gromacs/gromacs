@@ -455,7 +455,7 @@ void calc(bool bSym,bool bVerbose,
   *ppval = pval/(box1*box2*box3);
   *zzval = zval/(box1*box2*box3);
   *eeref = eref/(box1*box2*box3);
-  *qqopt = qopt/(box1*box2*box3);
+  *qqopt = qopt/(EPSILON0*box1*box2*box3);
 }
 
 void calc1D(bool bSym,bool bVerbose,
@@ -555,6 +555,7 @@ int main(int argc,char *argv[])
   real   box[3];
   int    nalias,porder;
   real   acut,alpha,r1;
+  rvec   beta;
   bool   bSearch,bConv,bNL=FALSE;
   real   ***ghat;
   real   pval,zval,eref,qopt,norm;
@@ -594,7 +595,7 @@ int main(int argc,char *argv[])
    */
   nalias = 2;
   porder = 2;
-  bSym   = TRUE;
+  /*bSym   = TRUE;*/
   
   set_LRconsts(stdout,r1,acut,box,NULL);  
 
@@ -688,55 +689,49 @@ int main(int argc,char *argv[])
       eref = sqrt(fabs(eref)/norm)*100.0;
       qopt = sqrt(fabs(qopt)/norm)*100.0;
     }
-    fp=ftp2FILE(efHAT,NFILE,fnm,"w");
-    fprintf(fp,"%8d  %8d  %8d  %15.10e  %15.10e %15.10e\n",
-	    n1max,n2max,n3max,h1,h2,h3);
-    fprintf(fp,"%8d  %8d  %8d  %8d  %15.10e  %15.10e  %15.10e\n",
-	    nalias,porder,niter,bSym,alpha,alpha,alpha);
-    fprintf(fp,"%10g  %10g  %10g  %10g  %10g  %10g\n",
-	    acut,r1,pval,zval,eref,qopt);
-    {
-      int  N1MAX,N2MAX,N3MAX;
-      
-      if (bSym) {
-	N1MAX = n1max/2+1;
-	N2MAX = n2max/2+1;
-	N3MAX = n3max/2+1;
-      }
-      else {
-	N1MAX = n1max;
-	N2MAX = n2max;
-	N3MAX = n3max;
-      }
-      for(ii=0; (ii<N1MAX); ii++) {
-	for(jj=0; (jj<N2MAX); jj++) {
+    beta[XX] = beta[YY] = beta[ZZ] = alpha;
+    wr_ghat(ftp2fn(efHAT,NFILE,fnm),n1max,n2max,n3max,h1,h2,h3,
+	    ghat,nalias,porder,niter,bSym,beta,
+	    r1,acut,pval,zval,eref,qopt);
+	    
+    /*    fp=ftp2FILE(efHAT,NFILE,fnm,"w");
+	  fprintf(fp,"%8d  %8d  %8d  %15.10e  %15.10e %15.10e\n",
+	  n1max,n2max,n3max,h1,h2,h3);
+	  fprintf(fp,"%8d  %8d  %8d  %8d  %15.10e  %15.10e  %15.10e\n",
+	  nalias,porder,niter,bSym,alpha,alpha,alpha);
+	  fprintf(fp,"%10g  %10g  %10g  %10g  %10g  %10g\n",
+	  acut,r1,pval,zval,eref,qopt);
+	  {
+	  int  N1MAX,N2MAX,N3MAX;
+	  
+	  if (bSym) {
+	  N1MAX = n1max/2+1;
+	  N2MAX = n2max/2+1;
+	  N3MAX = n3max/2+1;
+	  }
+	  else {
+	  N1MAX = n1max;
+	  N2MAX = n2max;
+	  N3MAX = n3max;
+	  }
+	  for(ii=0; (ii<N1MAX); ii++) {
+	  for(jj=0; (jj<N2MAX); jj++) {
 	  for(kk=0,nn=1; (kk<N3MAX); kk++,nn++) { 
-	    bNL=FALSE;
-	    fprintf(fp,"  %12.5e",ghat[ii][jj][kk]);
-	    if ((nn % 6) == 0) {
-	      fprintf(fp,"\n");
-	      bNL=TRUE;
-	    }
+	  bNL=FALSE;
+	  fprintf(fp,"  %12.5e",ghat[ii][jj][kk]);
+	  if ((nn % 6) == 0) {
+	  fprintf(fp,"\n");
+	  bNL=TRUE;
+	  }
 	  }
 	  if (!bNL)
-	    fprintf(fp,"\n");
-	}
-      }
-      fclose(fp);
-        
-      fp=xvgropen("ghat.xvg","G-Hat","k","gk");
-      for(ii=0; (ii<N1MAX); ii++) {
-	rx=sqr((real)(ii*h1));
-	for(jj=0; (jj<N2MAX); jj++) {
-	  ry=rx+sqr((real)(jj*h2));
-	  for(kk=0; (kk<N3MAX); kk++) {
-	    rz=ry+sqr((real)(kk*h3));
-	    fprintf(fp,"%10g  %10g\n",sqrt(rz),ghat[ii][jj][kk]);
+	  fprintf(fp,"\n");
 	  }
-	}
-      }
-      fclose(fp);
-    }
+	  }
+	  fclose(fp);
+	  }
+    */
+    pr_scalar_gk("ghat.xvg",n1max,n2max,n3max,box,ghat);
   }
   return 0;
 }
