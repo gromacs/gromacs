@@ -77,7 +77,7 @@ void mc_optimize(FILE *log,t_mat *m,int maxiter,int *seed,real kT)
 #define next (1-cur)
   int  i,isw,jsw,iisw,jjsw,nn;
   
-  fprintf(stderr,"Doing Monte Carlo clustering\n");
+  fprintf(stderr,"\nDoing Monte Carlo clustering\n");
   nn = m->nn;
   snew(low_index,nn);
   cp_index(nn,m->m_ind,low_index);
@@ -349,7 +349,7 @@ bool jp_same(int **nnb,int i,int j,int P)
   return (pp >= P);
 }
 
-static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
+static void jarvis_patrick(int n1,real **mat,int M,int P,
 			   real rmsdcut,t_clusters *clust)
 {
   t_dist    *tmp;
@@ -400,13 +400,13 @@ static void jarvis_patrick(FILE *log,int n1,real **mat,int M,int P,
     }
   }
   sfree(tmp);
-  if (log) {
-    fprintf(log,"Nearest neighborlist. M = %d, P = %d\n",M,P);
+  if (debug) {
+    fprintf(debug,"Nearest neighborlist. M = %d, P = %d\n",M,P);
     for(i=0; (i<n1); i++) {
-      fprintf(log,"i: %5d nbs:",i);
+      fprintf(debug,"i:%5d nbs:",i);
       for(j=0; nnb[i][j]>=0; j++)
-	fprintf(log,"  %5d[%6.3f]",nnb[i][j],mat[i][nnb[i][j]]);
-      fprintf(log,"\n");
+	fprintf(debug,"%5d[%5.3f]",nnb[i][j],mat[i][nnb[i][j]]);
+      fprintf(debug,"\n");
     }
   }
 
@@ -649,7 +649,7 @@ static void analyze_clusters(int nf,t_clusters *clust,real **rmsd,
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_cluster can clusters structures with several different methods.",
+    "g_cluster can cluster structures with several different methods.",
     "RMS deviation after fitting or RMS deviation of atom-pair distances",
     "can be used to define the distance between structures.[PAR]",
     "full linkage: add a structure to a cluster when its distance to any",
@@ -841,7 +841,7 @@ int main(int argc,char *argv[])
   sprintf(buf,"The maximum RMSD is %g nm\n"
 	  "Average RMSD is %g\n"
 	  "Number of structures for matrix %d\n"
-	  "Energy of the matrix is %g nm\n\n",
+	  "Energy of the matrix is %g nm\n",
 	  rms->maxrms,2*rms->sumrms/(nf*(nf-1)),nf,mat_energy(rms));
   fprintf(stderr,buf);
   fprintf(log,buf);
@@ -885,7 +885,7 @@ int main(int argc,char *argv[])
   else if (m_monte_carlo)
     mc_optimize(log,rms,niter,&seed,kT);
   else if (m_jarvis_patrick)
-    jarvis_patrick(log,rms->nn,rms->mat,M,P,bJP_RMSD ? rmsdcut : -1,&clust);
+    jarvis_patrick(rms->nn,rms->mat,M,P,bJP_RMSD ? rmsdcut : -1,&clust);
   else
     fatal_error(0,"unknown method \"%s\"",method[0]);
 
