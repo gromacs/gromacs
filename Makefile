@@ -3,6 +3,8 @@
 # Makefile for man pages
 #
 RM	=	/bin/rm -f
+RMDIR	=	/bin/rm -rf
+TOUCH	=	/usr/bin/touch
 SHELL	=	/bin/csh
 
 CHMOD	=	chmod 664
@@ -70,4 +72,4 @@ man:
 		mkman
 
 clean:
-		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *~ #*# *.idx *.ilg *.ind
+		$(RM) *.log *.lof *.lot *.bbl *.blg *.toc *.dvi *.aux *~ #*# *.idx *.ilg *.ind progman.tex ; $(RMDIR) progman ; $(TOUCH) progman.tex
