@@ -179,6 +179,9 @@ int
 gmx_wham(int argc,char *argv[]);
 
 int 
+gmx_wheel(int argc,char *argv[]);
+
+int 
 gmx_xpm2ps(int argc,char *argv[]);
 
 

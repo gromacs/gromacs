@@ -50,4 +50,9 @@ extern void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[]);
  * of atoms in idef, but should only contain whole molecules
  */
 
+extern void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);
+/* Simple routine for use in analysis tools that just have a pdb or 
+ * similar file.
+ */
+ 
 #endif	/* _rmpbc_h */
