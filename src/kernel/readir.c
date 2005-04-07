@@ -916,6 +916,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
       n_sub = 6;
       break;
     default:
+      n_sub = 0;
       gmx_incons("Checking comm_mode");
     }
     
