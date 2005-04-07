@@ -446,7 +446,6 @@ static void do_constraint(t_pull *pull, rvec *x, tensor vir,
     for(j=0; j<DIM; j++)
       for(m=0; m<DIM; m++)
 	vir[j][m] += q*r_ij[j]*r_ij[m];
-    fprintf(stderr,"  %f\n",q*r_ij[0]*r_ij[0]);
 
     /* copy the new x_unc to x_con */
     copy_dvec(rinew[i],pgrp->x_con);
