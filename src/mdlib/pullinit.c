@@ -144,23 +144,6 @@ static void read_whole_index(char *indexfile,char ***grpnames,
   sfree(grps);
 }
 
-static void print_whole_index(char **grpnames, atom_id **index, int *ngx, 
-                              int ngrps, t_commrec * cr) 
-{
-  int i,j;
-  FILE *tmp;
-  
-  if(MASTER(cr)) {
-    tmp = ffopen("indexcheck","w");
-    for(i=0;i<ngrps;i++) {
-      fprintf(tmp,"\nGrp %d: %s. %d elements\n",i,grpnames[i],ngx[i]);
-      for(j=0;j<ngx[i];j++)
-        fprintf(tmp," %d ",index[i][j]);
-    }
-    fflush(tmp);
-  }
-}
-
 static void set_mass(FILE *log,t_pullgrp *pg,ivec pulldims,
 		     t_mdatoms *md,ivec nFreeze[])
 {
@@ -224,7 +207,7 @@ static void get_pull_index(FILE *log,t_pullgrp *pgrp,
       bFound = TRUE;
       if(MASTER(cr))
         fprintf(log,"found group %s: %d elements. First: %d\n",
-		pgrp->name,ngx[i],pgrp->idx[0]);
+		pgrp->name,ngx[i],pgrp->idx[0]+1);
     }
   }
 
@@ -287,7 +270,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
       fprintf(stderr,"read_whole_index: %d groups total\n",totalgrps);
       for(i=0;i<totalgrps;i++) {
         fprintf(stderr,"group %i (%s) %d elements\n",
-                i,grpnames[i],ngx[i]);
+                i+1,grpnames[i],ngx[i]);
       }
     }
   }
@@ -315,9 +298,9 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
     copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_ref);
     copy_dvec(pull->grp[i].x_unc,pull->grp[i].spring);
     if(MASTER(cr)) {
-      fprintf(log,"Initializing pull groups. Inv. mass of group %d: %8.3f\n"
+      fprintf(log,"Initializing pull groups. Inv. mass of group %d: %8.6f\n"
               "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-              i,pull->grp[i].invtm,
+              i+1,pull->grp[i].invtm,
 	      pull->grp[i].x_ref[XX],
 	      pull->grp[i].x_ref[YY],
 	      pull->grp[i].x_ref[ZZ]);
@@ -343,7 +326,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
       copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
 
   if(MASTER(cr))
-    fprintf(log,"Initializing reference group. Inv. mass: %8.3f\n"
+    fprintf(log,"Initializing reference group. Inv. mass: %8.6f\n"
             "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
             pull->ref.invtm,
 	    pull->ref.x_ref[XX],
@@ -401,6 +384,7 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
       /* select elements of direction vector to use for Afm and Start runs */
       for(m=0; m<DIM; m++)
 	tmp[m] *= pull->dims[m];
+      fprintf(log,"Initial distance of group %d: %8.3f\n",i+1,dnorm(tmp));
       dsvmul(1/dnorm(tmp),tmp,pull->grp[i].dir);
     }
 
