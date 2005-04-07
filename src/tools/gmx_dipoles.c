@@ -537,7 +537,7 @@ static void do_dip(char *fn,char *topf,
 		     "Time (ps)","D");
   if (cosaver) {
     caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","");
-    xvgr_legend(caver,NLEGCOSAVER,leg_cosaver);
+    xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[2]));
   }
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
