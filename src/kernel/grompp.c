@@ -528,7 +528,7 @@ static void cont_status(char *slog,char *ener,
   fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
   fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
   
-  if ((ir->epc != epcNO  || ir->etc !=etcNO) && ener) {
+  if ((ir->epc != epcNO  || ir->etc ==etcNOSEHOOVER) && ener) {
     get_enx_state(ener,fr.time,&sys->atoms,ir,state);
   }
 }
@@ -816,9 +816,9 @@ int main (int argc, char *argv[])
     "Note that these velocities will not be used when [TT]gen_vel = yes[tt]",
     "in your [TT].mdp[tt] file. An energy file can be supplied with",
     "[TT]-e[tt] to have exact restarts when using pressure and/or",
-    "temperature coupling. For an exact restart do not forget to turn off",
-    "velocity generation and turn on unconstrained starting when constraints",
-    "are present in the system.",
+    "Nose-Hoover temperature coupling. For an exact restart do not forget",
+    "to turn off velocity generation and turn on unconstrained starting",
+    "when constraints are present in the system.",
     "If you want to continue a crashed run, it is",
     "easier to use [TT]tpbconv[tt].[PAR]",
 

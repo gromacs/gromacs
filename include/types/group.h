@@ -41,9 +41,12 @@ enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egNR };
 	
 typedef struct {
-  real    T;		/* Temperature	    */
-  tensor  ekin;		/* Kinetic energy   */
-  real    s;
+  real    Th;		/* Temperature at half step        */
+  real    T;		/* Temperature at full step        */
+  tensor  ekinh;	/* Kinetic energy at half step     */
+  tensor  ekinh_old;	/* Kinetic energy at old half step */
+  tensor  ekin; 	/* Kinetic energy at full step     */
+  real    lambda;       /* Berendsen coupling lambda       */
 } t_grp_tcstat;
 
 typedef struct {
@@ -57,8 +60,6 @@ typedef struct {
   atom_id *aid;		/* Atom ids of the atoms in this group		*/
   real    M;		/* Total mass of group				*/
   rvec	  u;           	/* Mean velocities of home particles    	*/
-  rvec	  uold;        	/* Old velocities of home particles    	        */
-  rvec	  ut;          	/* Mean velocities of home particles    	*/
 } t_grp_acc;
 
 typedef struct {
@@ -71,6 +72,8 @@ typedef struct {
   t_grp_ener   estat;		/* Energy logging stuff			*/
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
   t_grp_acc    *grpstat;	/* Acceleration data			*/
+  real         dekindl;         /* dEkin/dlambda at half step           */
+  real         dekindl_old;     /* dEkin/dlambda at old half step       */
   t_cos_acc    cosacc;          /* Cosine acceleration data             */
 } t_groups;
 

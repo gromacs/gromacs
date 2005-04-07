@@ -442,7 +442,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     add_ebin(md->ebin,md->itc,md->nTC,ttt,step);
   } else if (etc == etcBERENDSEN || etc == etcYES) {
     for(i=0; (i<md->nTC); i++)
-      ttt[i] = state->tcoupl_lambda[i];
+      ttt[i] = grps->tcstat[i].lambda;
     add_ebin(md->ebin,md->itc,md->nTC,ttt,step);
   }
   

@@ -249,8 +249,9 @@ int main (int argc, char *argv[])
     "Note that a frame with coordinates and velocities is needed,",
     "which means that when you never write velocities, you can not use",
     "tpbconv and you have to start the run again from the beginning.",
-    "When pressure and/or temperature coupling is used an energy file",
-    "can be supplied to get an exact continuation of the original run.[PAR]",
+    "When pressure and/or Nose-Hoover temperature coupling is used",
+    "an energy file can be supplied to get an exact continuation",
+    "of the original run.[PAR]",
     "[BB]2nd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
@@ -378,8 +379,8 @@ int main (int argc, char *argv[])
     if (ir->epc != epcNO || ir->etc != etcNO) {
       if (ftp2bSet(efENX,NFILE,fnm)) {
 	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&top.atoms,ir,&state);
-      } else if (ir->epc != epcNO || ir->etc != etcNO)
-	fprintf(stderr,"\nWARNING: The simulation uses pressure and/or temperature coupling,\n"
+      } else if (ir->epc != epcNO || ir->etc == etcNOSEHOOVER)
+	fprintf(stderr,"\nWARNING: The simulation uses pressure and/or Nose-Hoover temperature coupling,\n"
 		"         the continuation will only be exact when an energy file is supplied\n\n");
     }
   } 

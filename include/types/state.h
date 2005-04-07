@@ -52,7 +52,6 @@ typedef struct
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pcoupl_mu; /* for Berendsen pcoupl                      */
   real          *nosehoover_xi; /* for Nose-Hoover tcoupl (ngtc)        */
-  real          *tcoupl_lambda; /* for Berendsen tcoupl (ngtc)          */
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */

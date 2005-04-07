@@ -1864,8 +1864,6 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fp_ene=-1;
     mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
     
-    ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-    
     where();
     
     /* Write start time and temperature */

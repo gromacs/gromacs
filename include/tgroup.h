@@ -58,7 +58,9 @@ extern void accumulate_u(t_commrec *cr,t_grpopts *opts,t_groups *grps);
  * and sum them up. Return them in grps.
  */
 
-extern real sum_ekin(t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ);
+extern real sum_ekin(bool bFirstStep,
+		     t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ,
+		     real *dekindlambda);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */

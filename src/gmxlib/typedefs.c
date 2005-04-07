@@ -170,14 +170,10 @@ void init_gtc_state(t_state *state,int ngtc)
   state->ngtc = ngtc;
   if (state->ngtc > 0) {
     snew(state->nosehoover_xi,state->ngtc);
-    snew(state->tcoupl_lambda,state->ngtc);
-    for(i=0; i<state->ngtc; i++) {
+    for(i=0; i<state->ngtc; i++)
       state->nosehoover_xi[i] = 0.0;
-      state->tcoupl_lambda[i] = 1.0;
-    }
   } else {
     state->nosehoover_xi = NULL;
-    state->tcoupl_lambda = NULL;
   }
 }
 
@@ -205,7 +201,6 @@ void init_state(t_state *state,int natoms,int ngtc)
 void done_state(t_state *state)
 {
   if (state->nosehoover_xi) sfree(state->nosehoover_xi);
-  if (state->tcoupl_lambda) sfree(state->tcoupl_lambda);
   if (state->x) sfree(state->x);
   if (state->v) sfree(state->v);
 }

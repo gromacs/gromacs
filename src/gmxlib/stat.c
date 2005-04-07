@@ -72,7 +72,7 @@ void global_stat(FILE *log,
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,imu,ie,ifv,isv,icm,imass,ica;
+  int    iterminate,imu,ie,ifv,isv,idedl,icm,imass,ica;
   int    icj=-1,ici=-1,icx=-1;
   int    in[MAXNODES];
   int    inn[egNR];
@@ -104,7 +104,9 @@ void global_stat(FILE *log,
     in[j] = add_bind(log,rb,eNRNB,nrnb[j].n);
   where();
   for(j=0; (j<opts->ngtc); j++) 
-    itc[j]=add_binr(log,rb,DIM*DIM,grps->tcstat[j].ekin[0]);
+    itc[j]=add_binr(log,rb,DIM*DIM,grps->tcstat[j].ekinh[0]);
+  where();
+  idedl = add_binr(log,rb,1,&(grps->dekindl));
   where();
   for(j=0; (j<egNR); j++)
     inn[j]=add_binr(log,rb,grps->estat.nn,grps->estat.ee[j]);
@@ -136,7 +138,8 @@ void global_stat(FILE *log,
   for(j=0; (j<cr->nnodes); j++)
     extract_bind(rb,in[j],eNRNB,nrnb[j].n);
   for(j=0; (j<opts->ngtc); j++) 
-    extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekin[0]);
+    extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekinh[0]);
+  extract_binr(rb,idedl,1,&(grps->dekindl));
   for(j=0; (j<egNR); j++)
     extract_binr(rb,inn[j],grps->estat.nn,grps->estat.ee[j]);
   extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);

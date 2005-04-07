@@ -319,7 +319,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   double      tcount=0;
   bool        bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bExchanged;
-  real        mu_aver=0,fmax;
+  real        temp0,mu_aver=0,fmax;
   int         gnx,ii;
   atom_id     *grpindex;
   char        *grpname;
@@ -390,13 +390,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
   /* Compute initial EKin for all.. */
   if (grps->cosacc.cos_accel == 0)
-    calc_ke_part(TRUE,parm->ir.eI==eiSD,
-		 START(nsb),HOMENR(nsb),vold,state->v,vt,&(parm->ir.opts),
-		 mdatoms,grps,&mynrnb,state->lambda,&ener[F_DVDLKIN]);
+    calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(parm->ir.opts),
+		 mdatoms,grps,&mynrnb,state->lambda);
   else
-    calc_ke_part_visc(TRUE,START(nsb),HOMENR(nsb),
-		      state->box,state->x,vold,state->v,vt,&(parm->ir.opts),
-		      mdatoms,grps,&mynrnb,state->lambda,&ener[F_DVDLKIN]);
+    calc_ke_part_visc(START(nsb),HOMENR(nsb),
+		      state->box,state->x,state->v,&(parm->ir.opts),
+		      mdatoms,grps,&mynrnb,state->lambda);
   debug_gmx();
 	
   if (PAR(cr)) 
@@ -404,16 +403,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
   debug_gmx();
   
-  /* Calculate Temperature coupling parameters lambda */
-  ener[F_TEMP] = sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
-  /*
-  if(parm->ir.etc==etcBERENDSEN)
-    berendsen_tcoupl(&(parm->ir.opts),grps,
-		     parm->ir.delta_t);
-  else if(parm->ir.etc==etcNOSEHOOVER)
-    nosehoover_tcoupl(&(parm->ir.opts),grps,
-		      parm->ir.delta_t);
-  */
+  /* Calculate the initial half step temperature */
+  temp0 = sum_ekin(TRUE,&(parm->ir.opts),grps,parm->ekin,bTYZ,NULL);
+
   debug_gmx();
   
   /* Initiate data for the special cases */
@@ -430,7 +422,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
   
   if (MASTER(cr)) {
-    fprintf(log,"Initial temperature: %g K\n",ener[F_TEMP]);
+    fprintf(log,"Initial temperature: %g K\n",temp0);
     if (bRerunMD) {
       fprintf(stderr,"starting md rerun '%s', reading coordinates from"
 	      " input trajectory '%s'\n\n",
@@ -715,13 +707,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       
     debug_gmx();
     if (grps->cosacc.cos_accel == 0)
-      calc_ke_part(FALSE,parm->ir.eI==eiSD,
-		   START(nsb),HOMENR(nsb),vold,state->v,vt,&(parm->ir.opts),
-		   mdatoms,grps,&mynrnb,state->lambda,&ener[F_DVDLKIN]);
+      calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(parm->ir.opts),
+		   mdatoms,grps,&mynrnb,state->lambda);
     else
-      calc_ke_part_visc(FALSE,START(nsb),HOMENR(nsb),
-			state->box,state->x,vold,state->v,vt,&(parm->ir.opts),
-			mdatoms,grps,&mynrnb,state->lambda,&ener[F_DVDLKIN]);
+      calc_ke_part_visc(START(nsb),HOMENR(nsb),
+			state->box,state->x,state->v,&(parm->ir.opts),
+			mdatoms,grps,&mynrnb,state->lambda);
 
     /* since we use the new coordinates in calc_ke_part_visc, we should use
      * the new box too. Still, won't this be offset by one timestep in the
@@ -819,7 +810,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
 
     /* Sum the kinetic energies of the groups & calc temp */
-    ener[F_TEMP]=sum_ekin(&(parm->ir.opts),grps,parm->ekin,bTYZ);
+    ener[F_TEMP]=sum_ekin(bRerunMD,&(parm->ir.opts),grps,parm->ekin,bTYZ,
+			  &(ener[F_DVDLKIN]));
     ener[F_EKIN]=trace(parm->ekin);
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
     

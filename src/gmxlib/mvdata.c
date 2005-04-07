@@ -148,7 +148,6 @@ static void ld_state(int src,t_state *state)
   blockrx(src,state->boxv);
   blockrx(src,state->pcoupl_mu);
   nblockrx(src,state->ngtc,state->nosehoover_xi);
-  nblockrx(src,state->ngtc,state->tcoupl_lambda);
   nblockrx(src,state->natoms,state->x);
   nblockrx(src,state->natoms,state->v);
 }
@@ -256,7 +255,6 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
     ld_block(left,&top->blocks[i]);
   if (debug) fprintf(stdlog,"after ld_block");
   snew(state->nosehoover_xi,parm->ir.opts.ngtc);
-  snew(state->tcoupl_lambda,parm->ir.opts.ngtc);
   snew(state->x,top->atoms.nr);
   snew(state->v,top->atoms.nr);
   ld_state(left,state);
@@ -401,7 +399,6 @@ static void mv_state(int dest,t_state *state)
   blocktx(dest,state->boxv);
   blocktx(dest,state->pcoupl_mu);
   nblocktx(dest,state->ngtc,state->nosehoover_xi);
-  nblocktx(dest,state->ngtc,state->tcoupl_lambda);
   nblocktx(dest,state->natoms,state->x);
   nblocktx(dest,state->natoms,state->v);
 }

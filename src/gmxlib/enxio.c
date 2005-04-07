@@ -418,14 +418,6 @@ void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
       state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
     }
     fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);
-  } else if (ir->etc == etcBERENDSEN || ir->etc == etcYES) {
-    for(i=0; i<state->ngtc; i++) {
-      ni=atoms->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Lamb-%s",*(atoms->grpname[ni]));
-      state->tcoupl_lambda[i] = find_energy(buf,nre,enm,fr);
-    }
-    fprintf(stderr,"\nREAD %d TEMPERATURE COUPLING LAMBDAS FROM %s\n\n",
-	    state->ngtc,fn);
   }
   
   free_enxframe(fr);

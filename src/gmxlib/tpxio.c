@@ -1183,8 +1183,12 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   }
   
   if (state->ngtc > 0 && file_version >= 28) {
+    real *dumv;
     ndo_real(state->nosehoover_xi,state->ngtc,bDum);
-    ndo_real(state->tcoupl_lambda,state->ngtc,bDum);
+    snew(dumv,state->ngtc);
+    /* These used to be the Berendsen tcoupl_lambda's */
+    ndo_real(dumv,state->ngtc,bDum);
+    sfree(dumv);
   }
 
   /* Prior to tpx version 26, the inputrec was here.

@@ -93,12 +93,14 @@ static void do_update_md(int start,int homenr,double dt,
   int    gf,ga,gt;
   rvec   vrel;
   real   vn,vv,va,vb,vnrel;
-  real   lg,xi,uold;
+  real   lg,xi,u;
   int    n,d;
 
   if(bExtended) {
     /* Update with coupling to extended ensembles, used for
      * Nose-Hoover and Parrinello-Rahman coupling
+     * Nose-Hoover uses the reversible leap-frog integrator from
+     * Holian et al. Phys Rev E 52(3) : 2338, 1995
      */
     for(n=start; n<start+homenr; n++) {
       imass = invmass[n];
@@ -107,17 +109,18 @@ static void do_update_md(int start,int homenr,double dt,
       gt   = cTC[n];
       xi   = nh_xi[gt];
 
-      rvec_sub(v[n],gstat[ga].uold,vrel);
+      rvec_sub(v[n],gstat[ga].u,vrel);
 
       for(d=0; d<DIM; d++) {
         lg             = lamb[gt][d]; 
         vold[n][d]     = v[n][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-
-          vnrel= lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));  
+	  
+          vnrel = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
+				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);  
           /* do not scale the mean velocities u */
-          vn             = gstat[ga].uold[d] + accel[ga][d]*dt + vnrel; 
+          vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
           v[n][d]        = vn;
           xprime[n][d]   = x[n][d]+vn*dt;
         } else
@@ -142,9 +145,9 @@ static void do_update_md(int start,int homenr,double dt,
           vv             = lg*(vn + f[n][d]*w_dt);
 
           /* do not scale the mean velocities u */
-          uold           = gstat[ga].uold[d];
+          u              = gstat[ga].u[d];
           va             = vv + accel[ga][d]*dt;
-          vb             = va + (1.0-lg)*uold;
+          vb             = va + (1.0-lg)*u;
           v[n][d]        = vb;
           xprime[n][d]   = x[n][d]+vb*dt;
         } else {
@@ -194,9 +197,10 @@ static void do_update_visc(int start,int homenr,double dt,
         lg             = lamb[gt][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
-          vn              = lg*(vrel[d] + dt*(imass*f[n][d]-xi*vrel[d]-iprod(M[d],vrel)));
+          vn    = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
+				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);
           if(d == XX)
-            vn           += vc + dt*cosz*cos_accel;
+            vn += vc + dt*cosz*cos_accel;
 
           v[n][d]        = vn;
           xprime[n][d]   = x[n][d]+vn*dt;
@@ -432,136 +436,93 @@ static void dump_it_all(FILE *fp,char *title,
 #endif
 }
 
-void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
-                  rvec vold[],rvec v[],rvec vt[],
+void calc_ke_part(int start,int homenr,rvec v[],
                   t_grpopts *opts,t_mdatoms *md,t_groups *grps,
-                  t_nrnb *nrnb,real lambda,real *dvdlambda)
+                  t_nrnb *nrnb,real lambda)
 {
   int          g,d,n,ga,gt;
   rvec         v_corrt;
-  real         hsqrt2,hm,vvt,vct,ekincorr;
+  real         hm;
   t_grp_tcstat *tcstat=grps->tcstat;
   t_grp_acc    *grpstat=grps->grpstat;
-  real         dvdl;
+  real         dekindl;
 
   /* group velocities are calculated in update_grps and
    * accumulated in acumulate_groups.
    * Now the partial global and groups ekin.
    */
-  for(g=0; (g<opts->ngtc); g++)
-    clear_mat(grps->tcstat[g].ekin); 
-
-  if(bFirstStep) {
-    for(n=start; (n<start+homenr); n++) {
-      copy_rvec(v[n],vold[n]);
-    }
-    for(g=0; (g<opts->ngacc); g++) {
-      for(d=0; (d<DIM); d++)
-        grps->grpstat[g].ut[d]=grps->grpstat[g].u[d];
-    }
-  } else {
-    for(g=0; (g<opts->ngacc); g++) {
-      for(d=0; (d<DIM); d++)
-        grps->grpstat[g].ut[d]=0.5*(grps->grpstat[g].u[d]+
-                                    grps->grpstat[g].uold[d]);
-    }
+  for(g=0; (g<opts->ngtc); g++) {
+    copy_mat(grps->tcstat[g].ekinh,grps->tcstat[g].ekinh_old);
+    clear_mat(grps->tcstat[g].ekinh);
   }
+  grps->dekindl_old = grps->dekindl;
 
-  hsqrt2 = 0.5*sqrt(2.0);
-  dvdl = 0;
+  dekindl = 0;
   for(n=start; (n<start+homenr); n++) {
     ga   = md->cACC[n];
     gt   = md->cTC[n];
     hm   = 0.5*md->massT[n];
 
     for(d=0; (d<DIM); d++) {
-      vvt        = 0.5*(v[n][d] + vold[n][d]);
-      vt[n][d]   = vvt;
-      vct        = vvt - grpstat[ga].ut[d];
-      v_corrt[d] = vct;
+      v_corrt[d] = v[n][d] - grpstat[ga].u[d];
     }
     for(d=0; (d<DIM); d++) {
-      tcstat[gt].ekin[XX][d]+=hm*v_corrt[XX]*v_corrt[d];
-      tcstat[gt].ekin[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
-      tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
+      tcstat[gt].ekinh[XX][d]+=hm*v_corrt[XX]*v_corrt[d];
+      tcstat[gt].ekinh[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
+      tcstat[gt].ekinh[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
-    if (bSD) {
-      ekincorr = 0.5*BOLTZ*opts->ref_t[gt]*sdc[gt].vvcorr;
-
-      for(d=0; d<DIM; d++)
-	tcstat[gt].ekin[d][d] += ekincorr;
-
-      if (dvdlambda!=NULL && md->bPerturbed[n])
-	dvdl -= 0.5*(md->massB[n] - md->massA[n])
-	  *(iprod(v_corrt,v_corrt) + 6*md->invmass[n]*ekincorr);
-    } else {
-      if (dvdlambda!=NULL && md->bPerturbed[n])
-	dvdl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
-    }
+    if (md->nPerturbed && md->bPerturbed[n])
+      dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
   }
-  if(dvdlambda!=NULL)
-    *dvdlambda += dvdl;
-
-#ifdef DEBUG
-  fprintf(stdlog,"ekin: U=(%12e,%12e,%12e)\n",
-          grpstat[0].ut[XX],grpstat[0].ut[YY],grpstat[0].ut[ZZ]);
-  fprintf(stdlog,"ekin: %12e\n",trace(tcstat[0].ekin));
-#endif
+  grps->dekindl = dekindl;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
-                       matrix box,rvec x[],
-                       rvec vold[],rvec v[],rvec vt[],
+void calc_ke_part_visc(int start,int homenr,
+                       matrix box,rvec x[],rvec v[],
                        t_grpopts *opts,t_mdatoms *md,t_groups *grps,
-                       t_nrnb *nrnb,real lambda,real *dvdlambda)
+                       t_nrnb *nrnb,real lambda)
 {
   int          g,d,n,gt;
   rvec         v_corrt;
-  real         hm,vvt;
+  real         hm;
   t_grp_tcstat *tcstat=grps->tcstat;
   t_cos_acc    *cosacc=&(grps->cosacc);
-  real         dvdl;
+  real         dekindl;
   real         fac,cosz;
   double       mvcos;
 
-  for(g=0; g<opts->ngtc; g++)
-    clear_mat(grps->tcstat[g].ekin); 
-
-  if(bFirstStep)
-    for(n=start; n<start+homenr; n++)
-      copy_rvec(v[n],vold[n]);
+  for(g=0; g<opts->ngtc; g++) {
+    copy_mat(grps->tcstat[g].ekinh,grps->tcstat[g].ekinh_old);
+    clear_mat(grps->tcstat[g].ekinh);
+  }
+  grps->dekindl_old = grps->dekindl;
 
   fac = 2*M_PI/box[ZZ][ZZ];
   mvcos = 0;
-  dvdl = 0;
+  dekindl = 0;
   for(n=start; n<start+homenr; n++) {
     gt   = md->cTC[n];
     hm   = 0.5*md->massT[n];
 
-    for(d=0; d<DIM; d++) {
-      vvt        = 0.5*(v[n][d]+vold[n][d]);
-      vt[n][d]   = vvt;
-      v_corrt[d] = vvt;
-    }
+    /* Note that the times of x and v differ by half a step */
     cosz         = cos(fac*x[n][ZZ]);
-    /* Subtract the profile for the kinetic energy */
-    v_corrt[XX] -= cosz*cosacc->vcos;
     /* Calculate the amplitude of the new velocity profile */
     mvcos       += 2*cosz*md->massT[n]*v[n][XX];
 
-    for(d=0; d<DIM; d++) {
-      tcstat[gt].ekin[XX][d]+=hm*v_corrt[XX]*v_corrt[d];
-      tcstat[gt].ekin[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
-      tcstat[gt].ekin[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
+    copy_rvec(v[n],v_corrt);
+    /* Subtract the profile for the kinetic energy */
+    v_corrt[XX] -= cosz*cosacc->vcos;
+    for(d=0; (d<DIM); d++) {
+      tcstat[gt].ekinh[XX][d]+=hm*v_corrt[XX]*v_corrt[d];
+      tcstat[gt].ekinh[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
+      tcstat[gt].ekinh[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
-    if(dvdlambda!=NULL && md->bPerturbed[n]) {
-      dvdl-=0.5*(md->massB[n]-md->massA[n])*iprod(v_corrt,v_corrt);
-    }
+    if(md->nPerturbed && md->bPerturbed[n])
+      dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
   }
-  if(dvdlambda!=NULL)
-    *dvdlambda += dvdl;
+  grps->dekindl = dekindl;
   cosacc->mvcos = mvcos;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
@@ -611,7 +572,7 @@ static void deform(int start,int homenr,rvec x[],matrix box,
       while (new[i][j] - box[i][j] > 0.5*new[j][j])
 	rvec_dec(new[i],new[j]);
       while (new[i][j] - box[i][j] < -0.5*new[j][j])
-rvec_inc(new[i],new[j]);
+	rvec_inc(new[i],new[j]);
     }
   }
   m_inv_lowerleft0(box,invbox);
@@ -695,21 +656,14 @@ void update(int          natoms,  /* number of atoms in simulation */
   dt_1 = 1.0/dt;
 
   if (bDoUpdate) {
-    /* update mean velocities */
-    for(g=0; g<ngacc; g++) {
-      copy_rvec(grps->grpstat[g].u,grps->grpstat[g].uold);
-      clear_rvec(grps->grpstat[g].u);
-    }
     clear_mat(M);
 
+    if (parm->ir.etc==etcBERENDSEN)
+      berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
     if (!bFirstStep) {
-      if (parm->ir.etc==etcBERENDSEN)
-	berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,
-			 state->tcoupl_lambda);
-      else if (parm->ir.etc==etcNOSEHOOVER)
+      if (parm->ir.etc==etcNOSEHOOVER)
 	nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t,
 			  state->nosehoover_xi);
-      
       if (ir->epc == epcBERENDSEN)
 	berendsen_pcoupl(ir,step,parm->pres,state->box,state->pcoupl_mu);
     }
@@ -718,7 +672,7 @@ void update(int          natoms,  /* number of atoms in simulation */
 			      state->box,state->boxv,M,bFirstStep);
 
     for(i=0; i<ngtc; i++) {
-      real l=state->tcoupl_lambda[i];
+      real l=grps->tcstat[i].lambda;
       
       if(bTYZ)
 	lamb[i][XX]=1;

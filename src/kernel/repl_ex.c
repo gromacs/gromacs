@@ -179,7 +179,6 @@ static void exchange_state(const t_commrec *mcr,int a,int b,t_state *state)
   exchange_rvecs(mcr,a,b,state->boxv,DIM);
   exchange_rvecs(mcr,a,b,state->pcoupl_mu,DIM);
   exchange_reals(mcr,a,b,state->nosehoover_xi,state->ngtc);
-  exchange_reals(mcr,a,b,state->tcoupl_lambda,state->ngtc);
   exchange_rvecs(mcr,a,b,state->x,state->natoms);
   exchange_rvecs(mcr,a,b,state->v,state->natoms);
   exchange_rvecs(mcr,a,b,state->sd_X,state->natoms);

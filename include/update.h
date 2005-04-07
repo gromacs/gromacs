@@ -73,17 +73,13 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   rvec         *shakefirst_x);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
-extern void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
-			 rvec vold[],rvec v[],rvec vt[],
+extern void calc_ke_part(int start,int homenr,rvec v[],
 			 t_grpopts *opts,t_mdatoms *md,
 			 t_groups *grps,t_nrnb *nrnb,
-			 real lambda,real *dvdlambda);
+			 real lambda);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
- * The velocity a the whole step is obtained by averaging
- * the velocities of minus and plus a half step,
- * in case of Stochastic Dynamics a correction is applied.
  * The tensor is
  *
  * Ekin = SUM(i) 0.5 m[i] v[i] (x) v[i]
@@ -97,12 +93,11 @@ extern void calc_ke_part(bool bFirstStep,bool bSD,int start,int homenr,
  *
  */
 
-extern void calc_ke_part_visc(bool bFirstStep,int start,int homenr,
-			      matrix box,rvec x[],
-			      rvec vold[],rvec v[],rvec vt[],
+extern void calc_ke_part_visc(int start,int homenr,
+			      matrix box,rvec x[],rvec v[],
 			      t_grpopts *opts,t_mdatoms *md,
 			      t_groups *grps,t_nrnb *nrnb,
-			      real lambda,real *dvdlambda);
+			      real lambda);
 /* The same as calc_ke_part, but for viscosity calculations.
  * The cosine velocity profile is excluded from the kinetic energy.
  * The new amplitude of the velocity profile is calculated for this
@@ -117,8 +112,7 @@ extern void init_sd_consts(int ngtc,real tau_t[],real dt);
  */
 extern real run_aver(real old,real cur,int step,int nmem);
 
-extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
-			     real lambda[]);
+extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
 
 extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
 			      real xi[]);

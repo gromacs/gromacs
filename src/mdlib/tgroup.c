@@ -206,9 +206,11 @@ void update_grps(int start,int homenr,t_groups *grps,
   }
 }
 
-real sum_ekin(t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ)
+real sum_ekin(bool bFirstStep,
+	      t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ,
+	      real *dekindlambda)
 {
-  int          i,m,ngtc;
+  int          i,j,m,ngtc;
   real         T,ndfac,ek;
   rvec         tfac;
   t_grp_tcstat *tcstat;
@@ -240,20 +242,41 @@ real sum_ekin(t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ)
      * energy, which should be  zero anyway.
      */
     if (nd > 0) {
+      if (bFirstStep) {
+	/* This Ekin is only used for reporting the initial temperature
+	 * or when doing mdrun -rerun.
+	 */
+	copy_mat(tcstat[i].ekinh,tcstat[i].ekin);
+      } else {
+	/* Calculate the full step Ekin as the average of the half steps */
+	for(j=0; (j<DIM); j++)
+	  for(m=0; (m<DIM); m++)
+	    tcstat[i].ekin[j][m] =
+	      0.5*(tcstat[i].ekinh[j][m] + tcstat[i].ekinh_old[j][m]);
+      }
       m_add(tcstat[i].ekin,ekin,ekin);
       ek=0;
+      for(m=0; (m<DIM); m++)
+	ek+=tfac[m]*tcstat[i].ekinh[m][m];
+      tcstat[i].Th=calc_temp(ek,nd);
+      ek = 0;
       for(m=0; (m<DIM); m++) 
 	ek+=tfac[m]*tcstat[i].ekin[m][m];
       tcstat[i].T=calc_temp(ek,nd);
     }
-    else
+    else {
       tcstat[i].T=0.0;
-      
+      tcstat[i].Th=0.0;
+    }
+    
     T    += nd*tcstat[i].T;
     nrdf += nd;
   }
   if (nrdf > 0)
     T/=nrdf;
+
+  if (dekindlambda)
+    *dekindlambda = 0.5*(grps->dekindl + grps->dekindl_old);
   
   return T;
 }

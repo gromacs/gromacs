@@ -352,27 +352,27 @@ void berendsen_pscale(matrix mu,
   inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
 }
 
-void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real lambda[])
+void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
 {
   int    i;
   
   real   T,reft=0,lll; 
 
   for(i=0; (i<opts->ngtc); i++) {
-    T = grps->tcstat[i].T;
+    T = grps->tcstat[i].Th;
     
     if ((opts->tau_t[i] > 0) && (T > 0.0)) {
  
       reft = max(0.0,opts->ref_t[i]);
       lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      lambda[i] = max(min(lll,1.25),0.8);
+      grps->tcstat[i].lambda = max(min(lll,1.25),0.8);
     }
     else
-      lambda[i] = 1.0;
+       grps->tcstat[i].lambda = 1.0;
 
     if (debug)
       fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
-	      i,T,lambda[i]);
+	      i,T, grps->tcstat[i].lambda);
   }
 }
 
@@ -388,7 +388,7 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
     else
       Qinv=0.0;
     reft = max(0.0,opts->ref_t[i]);
-    xi[i] += dt*Qinv*(grps->tcstat[i].T-reft);
+    xi[i] += dt*Qinv*(grps->tcstat[i].Th - reft);
   }
 }
   
