@@ -374,6 +374,46 @@ real calc_eps(double M_diff,double volume,double epsRF,double temp)
   return eps;
 }
 
+static void update_slab_dipoles(int k0,int k1,atom_id ma[],rvec x[],rvec mu,
+				int idim,int nslice,rvec slab_dipole[],
+				matrix box)
+{
+  int k;
+  real xdim=0;
+  
+  for(k=k0; (k<k1); k++) 
+    xdim += x[ma[k]][idim];
+  xdim /+ (k1-k0);
+  k = ((int)(xdim*nslice/box[idim][idim] + nslice)) % nslice;
+  rvec_inc(slab_dipole[k],mu);
+}
+
+static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
+			      matrix box,int nframes)
+{
+  FILE *fp;
+  char buf[STRLEN];
+  int  i;
+  char *leg_dim[DIM] = { 
+    "\\f{12}m\\f{4}\\sX\\N",
+    "\\f{12}m\\f{4}\\sY\\N",
+    "\\f{12}m\\f{4}\\sZ\\N"
+  };
+  
+  sprintf(buf,"Box-%c (nm)",'X'+idim);
+  fp = xvgropen(fn,"Average dipole moment per slab",buf,"\\f{12}m\\f{4} (D)");
+  xvgr_legend(fp,DIM,leg_dim); 
+  for(i=0; (i<nslice); i++) {
+    fprintf(fp,"%10.3f  %10.3f  %10.3f  %10.3f\n",
+	    ((i+0.5)*box[idim][idim])/nslice,
+	    slab_dipole[i][XX]/nframes,
+	    slab_dipole[i][YY]/nframes,
+	    slab_dipole[i][ZZ]/nframes);
+  }
+  fclose(fp);
+  do_view(fn,"-autoscale xy -nxy");
+}
+			    
 static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis,
 			    bool bPairs)
 {
@@ -414,7 +454,8 @@ static void do_dip(char *fn,char *topf,
 		   int gnx,atom_id grpindex[],
 		   real mu_max,real mu_aver,
 		   real epsilonRF,real temp,
-		   int gkatom,int skip)
+		   int gkatom,int skip,
+		   bool bSlab,int nslices,char *axtitle,char *slabfn)
 {
   static char *leg_mtot[] = { 
     "M\\sx \\N", 
@@ -445,15 +486,15 @@ static void do_dip(char *fn,char *topf,
   };
 #define NLEGCOSAVER asize(leg_cosaver)
 
-  FILE       *outdd,*outmtot,*outaver,*outeps,*caver;
+  FILE       *outdd,*outmtot,*outaver,*outeps,*caver=NULL;
   rvec       *x,*dipole=NULL,mu_t,quad;
   t_gkrbin   *gkrbin;
   t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0;
   int        i,j,k,m,natom=0,nmol,status,teller,tel3;
-  int        *dipole_bin,ndipbin,ibin,iVol,natoms,step;
+  int        *dipole_bin,ndipbin,ibin,iVol,natoms,step,idim=-1;
   unsigned long mode;
-  char       **enm=NULL;
+  char       **enm=NULL,buf[STRLEN];
   real       rcut=0,t,t0,t1,dt,volume,lambda,dd,dd2;
   rvec       dipaxis;
   matrix     box;
@@ -464,6 +505,7 @@ static void do_dip(char *fn,char *topf,
   t_lsq      *Qlsq,mulsq;
   ivec       iMu;
   real       **muall=NULL;
+  rvec       *slab_dipoles=NULL;
   t_topology *top;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
@@ -535,10 +577,27 @@ static void do_dip(char *fn,char *topf,
 		     "Time (ps)","");
   outaver = xvgropen(out_aver,"Total dipole moment",
 		     "Time (ps)","D");
+  if (bSlab) {
+    idim = axtitle[0] - 'X';
+    if ((idim < 0) || (idim >= DIM))
+      idim = axtitle[0] - 'x';
+    if ((idim < 0) || (idim >= DIM))
+      bSlab = FALSE;
+    if (nslices < 2)
+      bSlab = FALSE;
+    fprintf(stderr,"axtitle = %s, nslices = %d, idim = %d\n",
+	    axtitle,nslices,idim);
+    if (bSlab) {
+      snew(slab_dipoles,nslices);
+      fprintf(stderr,"Doing slab analysis\n");
+    }
+  }
+  
   if (cosaver) {
     caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","");
     xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[2]));
   }
+    
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
   xvgr_legend(outaver,NLEGAVER,leg_aver);
@@ -617,6 +676,9 @@ static void do_dip(char *fn,char *topf,
 	int gi = grpindex ? grpindex[i] : i;
 	mol_dip(mols->index[gi],mols->index[gi+1],mols->a,x,atom,dipole[i]);
 	add_lsq(&mulsq,0,norm(dipole[i]));
+	if (bSlab) 
+	  update_slab_dipoles(mols->index[gi],mols->index[gi+1],mols->a,x,
+			      dipole[i],idim,nslices,slab_dipoles,box);
 	if (bQuad) {
 	  mol_quad(mols->index[gi],mols->index[gi+1],
 		   mols->a,x,atom,quad);
@@ -743,7 +805,12 @@ static void do_dip(char *fn,char *topf,
   fclose(outeps);
   if (cosaver)
     fclose(caver);
-    
+
+  if (bSlab) {
+    dump_slab_dipoles(slabfn,idim,nslices,slab_dipoles,box,teller);
+    sfree(slab_dipoles);
+  }
+  
   vol_aver /= teller;
   printf("Average volume over run is %g\n",vol_aver);
   if (bGkr) 
@@ -857,29 +924,35 @@ int gmx_dipoles(int argc,char *argv[])
   static real mu_max=5, mu_aver=-1;
   static real epsilonRF=0.0, temp=300;
   static bool bAverCorr=FALSE,bPairs=TRUE;
+  static char *axtitle="Z"; 
+  static int  nslices = 10;      /* nr of slices defined       */
   static int  skip=0,nFA=0;
   t_pargs pa[] = {
     { "-mu",       FALSE, etREAL, {&mu_aver},
       "dipole of a single molecule (in Debye)" },
     { "-mumax",    FALSE, etREAL, {&mu_max},
       "max dipole in Debye (for histrogram)" },
-    { "-epsilonRF",    FALSE, etREAL, {&epsilonRF},
+    { "-epsilonRF",FALSE, etREAL, {&epsilonRF},
       "epsilon of the reaction field used during the simulation, needed for dieclectric constant calculation. WARNING: 0.0 means infinity (default)" },
-    { "-skip",    FALSE, etINT, {&skip},
+    { "-skip",     FALSE, etINT, {&skip},
       "Skip steps in the output (but not in the computations)" },
-    { "-temp",    FALSE, etREAL, {&temp},
+    { "-temp",     FALSE, etREAL, {&temp},
       "average temperature of the simulation (needed for dielectric constant calculation)" },
     { "-avercorr", FALSE, etBOOL, {&bAverCorr},
       "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
-    { "-pairs",   FALSE, etBOOL, {&bPairs},
+    { "-pairs",    FALSE, etBOOL, {&bPairs},
       "Calculate |cos theta| between all pairs of molecules. May be slow" },
-    { "-gkratom", FALSE, etINT, {&nFA},
+    { "-axis",     FALSE, etSTR, {&axtitle}, 
+      "Take the normal on the computational box in direction X, Y or Z." },
+    { "-sl",       FALSE, etINT, {&nslices},
+      "Divide the box in #nr slices." },
+    { "-gkratom",  FALSE, etINT, {&nFA},
       "Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors" }
   };
   int          gnx;
   atom_id      *grpindex;
   char         *grpname;
-  bool         bCorr,bQuad,bGkr,bMU;  
+  bool         bCorr,bQuad,bGkr,bMU,bSlab;  
   t_filenm fnm[] = {
     { efENX, "-enx", NULL,         ffOPTRD },
     { efTRX, "-f", NULL,           ffREAD },
@@ -893,6 +966,7 @@ int gmx_dipoles(int argc,char *argv[])
     { efXVG, "-g",   "gkr",        ffOPTWR },
     { efXVG, "-cos", "cosaver",    ffOPTWR },
     { efXVG, "-q",   "quadrupole", ffOPTWR },
+    { efXVG, "-slab","slab",       ffOPTWR }
   };
 #define NFILE asize(fnm)
   int     npargs;
@@ -912,6 +986,8 @@ int gmx_dipoles(int argc,char *argv[])
   bMU   = opt2bSet("-enx",NFILE,fnm);
   bQuad = opt2bSet("-q",NFILE,fnm);
   bGkr  = opt2bSet("-g",NFILE,fnm);
+  bSlab = (opt2bSet("-slab",NFILE,fnm) || opt2parg_bSet("-sl",asize(pa),pa) ||
+	   opt2parg_bSet("-axis",asize(pa),pa));
   if (bMU) {
     bAverCorr = TRUE;
     if (bQuad) {
@@ -943,7 +1019,8 @@ int gmx_dipoles(int argc,char *argv[])
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bMU,     opt2fn("-enx",NFILE,fnm),
-	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFA,skip);
+	 gnx,grpindex,mu_max,mu_aver,epsilonRF,temp,nFA,skip,
+	 bSlab,nslices,axtitle,opt2fn("-slab",NFILE,fnm));
   
   do_view(opt2fn("-o",NFILE,fnm),"-autoscale xy -nxy");
   do_view(opt2fn("-eps",NFILE,fnm),"-autoscale xy -nxy");
