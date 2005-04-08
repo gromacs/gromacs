@@ -440,9 +440,6 @@ static void comp_state(t_state *st1, t_state *st2,real ftol)
     for(i=0; i<st1->ngtc; i++)
       cmp_real(stdout,"nosehoover_xi",
 	       i,st1->nosehoover_xi[i],st2->nosehoover_xi[i],ftol);
-    for(i=0; i<st1->ngtc; i++)
-      cmp_real(stdout,"tcoupl_lambda",
-	       i,st1->tcoupl_lambda[i],st2->tcoupl_lambda[i],ftol);
   }
   cmp_int(stdout,"natoms",-1,st1->natoms,st2->natoms);
   if (st1->natoms == st2->natoms) {
