@@ -324,7 +324,7 @@ void visualize_box(FILE *out,int a0,int r0,matrix box,rvec gridsize)
   if (TRICLINIC(box)) {
     nat = nbox*NCUCVERT;
     snew(vert,nat);
-    calc_compact_unitcell_vertices(box,vert);
+    calc_compact_unitcell_vertices(ecenterDEF,box,vert);
     j = 0;
     for(z=0; z<nz; z++)
       for(y=0; y<ny; y++)
@@ -763,7 +763,7 @@ int gmx_editconf(int argc, char *argv[])
 
   /* calculate new coords for geometrical center */
   if (!bSetCenter)
-    calc_box_center(box,center);
+    calc_box_center(ecenterDEF,box,center);
 
   /* center molecule on 'center' */
   if (bCenter)

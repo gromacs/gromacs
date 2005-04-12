@@ -420,9 +420,9 @@ static void draw_box(t_x11 *x11,Window w,t_3dview *view,matrix box,
   vec4 x4;
   iv2  vec2[NCUCEDGE],tv2;
 
-  calc_box_center(box,box_center);
+  calc_box_center(view->ecenter,box,box_center);
   if (boxtype == esbTrunc) {
-    calc_compact_unitcell_vertices(box,corner);
+    calc_compact_unitcell_vertices(view->ecenter,box,corner);
     if (edge == NULL)
       edge = compact_unitcell_edges();
 

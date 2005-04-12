@@ -286,7 +286,7 @@ void reset_view(t_3dview *view)
 #endif
   set_scale(view,4.0,4.0);
   clear_rvec(view->eye);
-  calc_box_center(view->box,view->origin);
+  calc_box_center(view->ecenter,view->box,view->origin);
   view->eye[ZZ]=3.0*max(view->box[XX][XX],view->box[YY][YY]);
   zoom_3d(view,1.0);
   view->eye[WW]=view->origin[WW]=0.0;
@@ -309,6 +309,8 @@ t_3dview *init_view(matrix box)
   for(i=0; (i<DIM); i++)
     for(j=0; (j<DIM); j++)
       view->box[i][j]=box[i][j];
+
+  view->ecenter = ecenterDEF;
 
   reset_view(view);
 

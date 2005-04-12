@@ -53,6 +53,7 @@ typedef int  iv2[2];
  
 typedef struct {
   matrix box;
+  int    ecenter;       /* enum for centering, see pbc.h        */
   vec4   eye,origin;	/* The eye and origin position		*/
   mat4   proj;		/* Projection matrix 			*/
   mat4   Rot;           /* Total rotation matrix                */

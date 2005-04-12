@@ -480,14 +480,26 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
   }
 }
 
-void calc_box_center(matrix box,rvec box_center)
+void calc_box_center(int ecenter,matrix box,rvec box_center)
 {
   int d,m;
 
   clear_rvec(box_center);
-  for(m=0; (m<DIM); m++)  
+  switch (ecenter) {
+  case ecenterTRIC:
+    for(m=0; (m<DIM); m++)  
+      for(d=0; d<DIM; d++)
+	box_center[d] += 0.5*box[m][d];
+    break;
+  case ecenterRECT:
     for(d=0; d<DIM; d++)
-      box_center[d] += 0.5*box[m][d];
+      box_center[d] = 0.5*box[d][d];
+    break;
+  case ecenterZERO:
+    break;
+  default:
+    gmx_fatal(FARGS,"Unsupported value %d for ecenter",ecenter);
+  }
 }
 
 void calc_triclinic_images(matrix box,rvec img[])
@@ -517,7 +529,7 @@ void calc_triclinic_images(matrix box,rvec img[])
     svmul(-1,img[6 + (2+i) % 4],img[10+i]);
 }
 
-void calc_compact_unitcell_vertices(matrix box,rvec vert[])
+void calc_compact_unitcell_vertices(int ecenter,matrix box,rvec vert[])
 {
   rvec img[NTRICIMG],box_center;
   int n,i,j,tmp[4],d;
@@ -571,7 +583,7 @@ void calc_compact_unitcell_vertices(matrix box,rvec vert[])
     }
   }
 
-  calc_box_center(box,box_center);
+  calc_box_center(ecenter,box,box_center);
   for(i=0; i<NCUCVERT; i++)
     for(d=0; d<DIM; d++)
       vert[i][d] = vert[i][d]*0.25+box_center[d];
@@ -618,13 +630,14 @@ void put_atoms_in_box(matrix box,int natoms,rvec x[])
     }
 }
 
-void put_atoms_in_triclinic_unitcell(matrix box,int natoms,rvec x[])
+void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
+				     int natoms,rvec x[])
 {
   rvec   box_center,shift_center;
   real   shm01,shm02,shm12,shift;
   int    i,m,d;
   
-  calc_box_center(box,box_center);
+  calc_box_center(ecenter,box,box_center);
   
   /* The product of matrix shm with a coordinate gives the shift vector
      which is required determine the periodic cell position */
@@ -659,14 +672,15 @@ void put_atoms_in_triclinic_unitcell(matrix box,int natoms,rvec x[])
     }
 }
 
-char *put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[])
+char *put_atoms_in_compact_unitcell(int ecenter,matrix box,
+				    int natoms,rvec x[])
 {
   t_pbc pbc;
   rvec box_center,dx;
   int  i;
 
   set_pbc(&pbc,box);
-  calc_box_center(box,box_center);
+  calc_box_center(ecenter,box,box_center);
   for(i=0; i<natoms; i++) {
     pbc_dx(&pbc,x[i],box_center,dx);
     rvec_add(box_center,dx,x[i]);

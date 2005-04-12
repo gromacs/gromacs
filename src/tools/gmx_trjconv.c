@@ -255,7 +255,7 @@ static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
   }
 }
 
-static void center_x(rvec x[],matrix box,int n,int nc,atom_id ci[])
+static void center_x(int ecenter,rvec x[],matrix box,int n,int nc,atom_id ci[])
 {
   int i,m,ai;
   rvec cmin,cmax,box_center,dx;
@@ -272,7 +272,7 @@ static void center_x(rvec x[],matrix box,int n,int nc,atom_id ci[])
 	  cmax[m]=x[ai][m];
       }
     }
-    calc_box_center(box,box_center);
+    calc_box_center(ecenter,box,box_center);
     for(m=0; m<DIM; m++)
       dx[m] = box_center[m]-(cmin[m]+cmax[m])*0.5;
       
@@ -441,9 +441,15 @@ int gmx_trjconv(int argc,char *argv[])
     "[TT]tric[tt] is the triclinic unit cell.", 
     "[TT]compact[tt] puts all atoms at the closest distance from the center",
     "of the box. This can be useful for visualizing e.g. truncated",
-    "octahedrons.[PAR]",
+    "octahedrons. The center for options [TT]tric[tt] and [TT]compact[tt]",
+    "is [TT]tric[tt] (see below), unless the option [TT]-center[tt]",
+    "is set differently.[PAR]",
     "Option [TT]-center[tt] centers the system in the box. The user can",
     "select the group which is used to determine the geometrical center.",
+    "The center options are:",
+    "[TT]tric[tt]: half of the sum of the box vectors,",
+    "[TT]rect[tt]: half of the box diagonal,",
+    "[TT]zero[tt]: zero.",
     "Use option [TT]-pbc whole[tt] in addition to [TT]-center[tt] when you",
     "want all molecules in the box after the centering.[PAR]",
     "With [TT]-dt[tt] it is possible to reduce the number of ",
@@ -477,6 +483,13 @@ int gmx_trjconv(int argc,char *argv[])
     { euSel,euRect, euTric, euCompact, euNR};
   static char *unitcell_opt[euNR+1] = 
     { NULL, "rect", "tric", "compact", NULL };
+
+  enum
+    { ecSel, ecNo, ecTric, ecRect, ecZero, ecNR};
+  static char *center_opt[ecNR+1] = 
+    { NULL, "no", "tric", "rect", "zero", NULL };
+  bool bCenter;
+  int ecenter;
   
   int fit_enum;
   enum 
@@ -485,7 +498,7 @@ int gmx_trjconv(int argc,char *argv[])
     { NULL, "none", "rot+trans", "translation", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
-  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
+  static bool  bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
@@ -507,7 +520,7 @@ int gmx_trjconv(int argc,char *argv[])
       "PBC treatment (see help text for full description)" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
       "Unit-cell representation" },
-    { "-center", FALSE,  etBOOL, {&bCenter},
+    { "-center", FALSE,  etENUM, {center_opt},
       "Center atoms in box" },
     { "-box", FALSE, etRVEC, {newbox},
       "Size for new cubic box (default: read from input)" },
@@ -637,6 +650,10 @@ int gmx_trjconv(int argc,char *argv[])
     bRect     = unitcell_enum==euRect;
     bTric     = unitcell_enum==euTric;
     bComp     = unitcell_enum==euCompact;
+    ecenter = nenum(center_opt) - ecTric;
+    bCenter = (ecenter >= 0);
+    if (!bCenter)
+      ecenter = ecenterDEF;
 
     /* set and check option dependencies */    
     if (bPFit) bFit = TRUE; /* for pfit, fit *must* be set */
@@ -1044,15 +1061,16 @@ int gmx_trjconv(int argc,char *argv[])
 		 for PFit we did this already! */
 	    
 	      if (bCenter)
-		center_x(fr.x,fr.box,natoms,ncent,cindex);
+		center_x(ecenter,fr.x,fr.box,natoms,ncent,cindex);
 
 	      if (bInBox) {
 		if (bRect)
 		  put_atoms_in_box(fr.box,natoms,fr.x);
 		else if (bTric)
-		  put_atoms_in_triclinic_unitcell(fr.box,natoms,fr.x);
+		  put_atoms_in_triclinic_unitcell(ecenter,fr.box,natoms,fr.x);
 		else if (bComp) {
-		  warn = put_atoms_in_compact_unitcell(fr.box,natoms,fr.x);
+		  warn = put_atoms_in_compact_unitcell(ecenter,fr.box,
+						       natoms,fr.x);
 		  if (warn && !bWarnCompact) {
 		    fprintf(stderr,"\n%s\n",warn);
 		    bWarnCompact = TRUE;

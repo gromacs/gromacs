@@ -57,6 +57,13 @@ extern "C" {
 #define NCUCVERT 24
 #define NCUCEDGE 36
 
+  enum {
+    ecenterTRIC, /* 0.5*(a+b+c)                  */
+    ecenterRECT, /* (0.5*a[x],0.5*b[y],0.5*c[z]) */
+    ecenterZERO, /* (0,0,0)                      */
+    ecenterDEF = ecenterTRIC
+  };
+
   extern char *check_box(matrix box);
   /* Returns NULL if the box is supported by Gromacs.
    * Otherwise is returns a string with the problem.
@@ -139,13 +146,16 @@ extern "C" {
    * together.
    */
 
-  extern void calc_box_center(matrix box,rvec box_center);
-  /* Calculates the center of the box */
+  extern void calc_box_center(int ecenter,matrix box,rvec box_center);
+  /* Calculates the center of the box.
+   * See the description for the enum ecenter above.
+   */
 
   extern void calc_triclinic_images(matrix box,rvec img[]);
   /* Calculates the NTRICIMG box images */
 
-  extern void calc_compact_unitcell_vertices(matrix box,rvec vert[]);
+  extern void calc_compact_unitcell_vertices(int ecenter,matrix box,
+					     rvec vert[]);
   /* Calculates the NCUCVERT vertices of a compact unitcell */
   
   extern int *compact_unitcell_edges(void);
@@ -160,12 +170,14 @@ extern "C" {
    * Also works for triclinic cells.
    */
   
-  extern void put_atoms_in_triclinic_unitcell(matrix box,int natoms,rvec x[]);
+  extern void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
+					      int natoms,rvec x[]);
   /* This puts ALL atoms in the triclinic unit cell, centered around the
    * box center as calculated by calc_box_center.
    */
 
-  extern char *put_atoms_in_compact_unitcell(matrix box,int natoms,rvec x[]);
+  extern char *put_atoms_in_compact_unitcell(int ecenter,matrix box,
+					     int natoms,rvec x[]);
   /* This puts ALL atoms at the closest distance for the center of the box
    * as calculated by calc_box_center.
    * Will return NULL is everything went ok and a warning string if not

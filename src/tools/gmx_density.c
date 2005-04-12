@@ -126,7 +126,7 @@ void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
   }
   for(m=0; (m<DIM); m++) 
     com[m] /= tmass;
-  calc_box_center(box,box_center);
+  calc_box_center(ecenterDEF,box,box_center);
   rvec_sub(box_center,com,shift);
   shift[axis] -= box_center[axis];
   
