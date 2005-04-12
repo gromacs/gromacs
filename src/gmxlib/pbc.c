@@ -105,7 +105,7 @@ real max_cutoff2(matrix box)
   return min(min_hv2,min_diag*min_diag);
 }
 
-void set_pbc(t_pbc *pbc,matrix box)
+static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
 {
   int  i,j,k,d,jc,kc;
   real d2old,d2new,d2new_c;
@@ -128,9 +128,9 @@ void set_pbc(t_pbc *pbc,matrix box)
     pbc->ePBCDX = epbcdxNOPBC;
   } else {
     if (TRICLINIC(box)) {
-      pbc->ePBCDX = epbcdxTRICLINIC;
+      pbc->ePBCDX = (bSingleShift ? epbcdxTRICLINIC_SS : epbcdxTRICLINIC);
     } else {
-      pbc->ePBCDX = epbcdxRECTANGULAR;
+      pbc->ePBCDX = (bSingleShift ? epbcdxRECTANGULAR_SS : epbcdxRECTANGULAR);
     }
     for(i=0; (i<DIM); i++) {
       pbc->fbox_diag[i]  =  box[i][i];
@@ -138,7 +138,7 @@ void set_pbc(t_pbc *pbc,matrix box)
       pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
     }
     pbc->max_cutoff2 = max_cutoff2(box);
-    if (pbc->ePBCDX == epbcdxTRICLINIC) {
+    if (pbc->ePBCDX == epbcdxTRICLINIC || pbc->ePBCDX == epbcdxTRICLINIC_SS) {
       pbc->ntric_vec = 0;
       /* We will only use single shifts, but we will check a few
        * more shifts to see if there is a limiting distance
@@ -211,6 +211,16 @@ void set_pbc(t_pbc *pbc,matrix box)
   }
 }
 
+void set_pbc(t_pbc *pbc,matrix box)
+{
+  low_set_pbc(pbc,box,FALSE);
+}
+
+void set_pbc_ss(t_pbc *pbc,matrix box)
+{
+  low_set_pbc(pbc,box,TRUE);
+}
+
 int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
   int  i,j,is;
@@ -223,6 +233,18 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 
   switch (pbc->ePBCDX) {
   case epbcdxRECTANGULAR:
+    for(i=0; i<DIM; i++) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  dx[i] -= pbc->fbox_diag[i];
+	  ishift[i]--;
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
+	  dx[i] += pbc->fbox_diag[i];
+	  ishift[i]++;
+	}
+      }
+    break;
+  case epbcdxRECTANGULAR_SS:
     for(i=0; i<DIM; i++)
       if (dx[i] > pbc->hbox_diag[i]) {
 	dx[i] -= pbc->fbox_diag[i];
@@ -233,7 +255,11 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       }
     break;
   case epbcdxTRICLINIC:
-    for(i=DIM-1; i>=0; i--)
+  case epbcdxTRICLINIC_SS:
+    /* For triclinic boxes the performance difference between
+     * if/else and two while loop is negligible.
+     */
+    for(i=DIM-1; i>=0; i--) {
       if (dx[i] > pbc->hbox_diag[i]) {
 	for (j=i; j>=0; j--)
 	  dx[j] -= pbc->box[i][j];
@@ -243,6 +269,7 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 	  dx[j] += pbc->box[i][j];
 	ishift[i]++;
       }
+    }
     /* dx is the distance in a rectangular box */
     copy_rvec(dx,dx_start);
     copy_ivec(ishift,ishift_start);

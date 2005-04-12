@@ -202,7 +202,7 @@ void correct_t0_pbc(t_pull *pull, rvec x[], t_mdatoms *md, matrix box) {
   t_pbc pbc;
   rvec dx;
 
-  set_pbc(&pbc,box);
+  set_pbc_ss(&pbc,box);
   
   /* loop over all atoms in index for group i. Check if they moved
      more than half a box with respect to xp. If so add/subtract a box 

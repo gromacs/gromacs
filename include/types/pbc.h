@@ -44,7 +44,9 @@
 #define MAX_NTRICVEC 12
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
-enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC, epbcdxNOPBC, epbcdxUNSUPPORTED };
+enum { epbcdxRECTANGULAR=1, epbcdxRECTANGULAR_SS, 
+       epbcdxTRICLINIC, epbcdxTRICLINIC_SS,
+       epbcdxNOPBC, epbcdxUNSUPPORTED };
 
 typedef struct {
   int    ePBCDX;

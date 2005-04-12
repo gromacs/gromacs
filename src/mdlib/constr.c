@@ -371,7 +371,7 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
 	/* This is wasting some CPU time as we now do this multiple times
 	 * per MD step.
 	 */
-	set_pbc(&pbc,box);
+	set_pbc_ss(&pbc,box);
 	pbc_null = &pbc;
 	
 	/* Set the zero lengths to the old lengths */

@@ -405,7 +405,7 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    set_pbc(&pbc,box);
+    set_pbc_ss(&pbc,box);
     pbc_null = &pbc;
   } else {
     pbc_null = NULL;
