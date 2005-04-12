@@ -634,7 +634,7 @@ int main(int argc, char *argv[])
   t_aa_names *aan;
   char       fn[256],*top_fn,itp_fn[STRLEN],posre_fn[STRLEN],buf_fn[STRLEN];
   char       molname[STRLEN],title[STRLEN],resname[STRLEN],quote[STRLEN];
-  char       *c,*watres,forcefield[STRLEN],fff[STRLEN];
+  char       *c,*watres,forcefield[STRLEN],fff[STRLEN],suffix[STRLEN];
   char       rtp[STRLEN];
   int        nah,nNtdb,nCtdb,ntdblist;
   t_hackblock *ntdb,*ctdb,**tdblist;
@@ -1092,27 +1092,29 @@ int main(int argc, char *argv[])
     strcpy(posre_fn,ftp2fn(efITP,NFILE,fnm));
     
     /* make up molecule name(s) */
-    if (cc->bAllWat) 
+    suffix[0] = '\0';
+    if (cc->bAllWat) {
       sprintf(molname,"Water");
-    else if ( cc->chain == '\0' || cc->chain == ' ' )
-      sprintf(molname,"Protein");
-    else
-      sprintf(molname,"Protein_%c",cc->chain);
-    
+    } else {
+      if ( cc->chain != '\0' && cc->chain != ' ' ) {
+	if (cc->chain <= 'Z') {
+	  sprintf(suffix,"_%c",cc->chain);
+	} else {
+	  sprintf(suffix,"_%c%c",
+		  'A' - 1 + (cc->chain - 'A') / ('Z' - 'A' + 1),
+		  'A' + (cc->chain - 'A') % ('Z' - 'A' + 1));
+	}
+      }
+      sprintf(molname,"Protein%s",suffix);
+    }
     if ((nch-nwaterchain>1) && !cc->bAllWat) {
       bITP=TRUE;
       strcpy(itp_fn,top_fn);
       printf("Chain time...\n");
       c=strrchr(itp_fn,'.');
-      if ( cc->chain == '\0' || cc->chain == ' ' )
-	sprintf(c,".itp");
-      else
-	sprintf(c,"_%c.itp",cc->chain);
+      sprintf(c,"%s.itp",suffix);
       c=strrchr(posre_fn,'.');
-      if ( cc->chain == '\0' || cc->chain == ' ' )
-	sprintf(c,".itp");
-      else
-	sprintf(c,"_%c.itp",cc->chain);
+      sprintf(c,"%s.itp",suffix);
       if (strcmp(itp_fn,posre_fn) == 0) {
 	strcpy(buf_fn,posre_fn);
 	c  = strrchr(buf_fn,'.');
