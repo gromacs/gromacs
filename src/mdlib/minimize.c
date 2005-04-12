@@ -2019,7 +2019,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 {
   const char *TPI="Test Particle Insertion"; 
   real   lambda,dvdlambda,t,temp,beta,drmax;
-  double embU,sum_embU,*sum_UljembU,V,V_all,VembU_all,*VUljembU_all;
+  double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all,*VUgembU_all;
   t_vcm  *vcm;
   int    status;
   t_trxframe rerun_fr;
@@ -2080,8 +2080,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   x_tp = &(state->x[i_tp]);
   ngid =top->atoms.grps[egcENER].nr;
   gid_tp = mdatoms->cENER[i_tp];
-  snew(sum_UljembU,ngid);
-  snew(VUljembU_all,ngid);
+  snew(sum_UgembU,ngid);
+  snew(VUgembU_all,ngid);
 
   /* Initialize random generator */
   tpi_rand = gmx_rng_init(parm->ir.ld_seed);
@@ -2128,7 +2128,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     
     sum_embU = 0;
     for(i=0; i<ngid; i++)
-      sum_UljembU[i] = 0;
+      sum_UgembU[i] = 0;
 
     box_size[XX] = state->box[XX][XX];
     box_size[YY] = state->box[YY][YY];
@@ -2190,24 +2190,25 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	embU = 0;
       } else {
 	embU = exp(-beta*ener[F_EPOT]);
-      }
-      sum_embU += embU;
-      if (fr->bBHAM) {
-	for(i=0; i<ngid; i++)
-	  sum_UljembU[i] +=
-	    (grps->estat.ee[egBHAMSR][GID(i,gid_tp,ngid)] +
-	     grps->estat.ee[egBHAMLR][GID(i,gid_tp,ngid)])*embU;
-      } else {
-	for(i=0; i<ngid; i++)
-	  sum_UljembU[i] +=
-	    (grps->estat.ee[egLJSR][GID(i,gid_tp,ngid)] +
-	     grps->estat.ee[egLJLR][GID(i,gid_tp,ngid)])*embU;
-      }
-      if (bCharge) {
-	for(i=0; i<ngid; i++)
-	  sum_UljembU[i] +=
-	    (grps->estat.ee[egCOULSR][GID(i,gid_tp,ngid)] +
-	     grps->estat.ee[egCOULLR][GID(i,gid_tp,ngid)])*embU;
+
+	sum_embU += embU;
+	if (fr->bBHAM) {
+	  for(i=0; i<ngid; i++)
+	    sum_UgembU[i] +=
+	      (grps->estat.ee[egBHAMSR][GID(i,gid_tp,ngid)] +
+	       grps->estat.ee[egBHAMLR][GID(i,gid_tp,ngid)])*embU;
+	} else {
+	  for(i=0; i<ngid; i++)
+	    sum_UgembU[i] +=
+	      (grps->estat.ee[egLJSR][GID(i,gid_tp,ngid)] +
+	       grps->estat.ee[egLJLR][GID(i,gid_tp,ngid)])*embU;
+	}
+	if (bCharge) {
+	  for(i=0; i<ngid; i++)
+	    sum_UgembU[i] +=
+	      (grps->estat.ee[egCOULSR][GID(i,gid_tp,ngid)] +
+	       grps->estat.ee[egCOULLR][GID(i,gid_tp,ngid)])*embU;
+	}
       }
 
       if (debug)
@@ -2227,7 +2228,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     V_all += V;
     VembU_all += V*sum_embU/nsteps;
     for(i=0; i<ngid; i++)
-      VUljembU_all[i] += sum_UljembU[i]/nsteps;
+      VUgembU_all[i] += sum_UgembU[i]/nsteps;
     
     if (bVerbose || frame%10==0 || frame<10)
       fprintf(stderr,"mu %10.3e <mu> %10.3e\n",
@@ -2238,7 +2239,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	    -log(VembU_all/V_all)/beta,-log(sum_embU/nsteps)/beta,
 	    V*sum_embU/nsteps,V);
     for(i=0; i<ngid; i++)
-      fprintf(fp_tpi," %12.5e",sum_UljembU[i]/nsteps);
+      fprintf(fp_tpi," %12.5e",sum_UgembU[i]/nsteps);
     fprintf(fp_tpi,"\n");
     
     bNotLastFrame = read_next_frame(status,&rerun_fr);
@@ -2254,8 +2255,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   fprintf(stdlog,"  <V>  = %12.5e nm^3\n",V_all/frame);
   fprintf(stdlog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
   
-  sfree(VUljembU_all);
-  sfree(sum_UljembU);
+  sfree(VUgembU_all);
+  sfree(sum_UgembU);
 
   return start_t;
 }
