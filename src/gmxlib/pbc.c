@@ -260,11 +260,12 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
      * if/else and two while loop is negligible.
      */
     for(i=DIM-1; i>=0; i--) {
-      if (dx[i] > pbc->hbox_diag[i]) {
+      while (dx[i] > pbc->hbox_diag[i]) {
 	for (j=i; j>=0; j--)
 	  dx[j] -= pbc->box[i][j];
 	ishift[i]--;
-      } else if (dx[i] <= pbc->mhbox_diag[i]) {
+      }
+      while (dx[i] <= pbc->mhbox_diag[i]) {
 	for (j=i; j>=0; j--)
 	  dx[j] += pbc->box[i][j];
 	ishift[i]++;
@@ -293,7 +294,7 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
   case epbcdxUNSUPPORTED:
     break;
   default:
-    gmx_fatal(FARGS,"Internal error in pbx_dx, set_pbc has not been called");
+    gmx_fatal(FARGS,"Internal error in pbc_dx, set_pbc has not been called");
     break;
   }
   is = IVEC2IS(ishift);
