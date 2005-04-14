@@ -116,7 +116,6 @@ static void do_update_md(int start,int homenr,double dt,
         vold[n][d]     = v[n][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-	  
           vnrel = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
 				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);  
           /* do not scale the mean velocities u */
@@ -647,7 +646,12 @@ void update(int          natoms,  /* number of atoms in simulation */
     ngacc=ir->opts.ngacc;    
     ngtc=ir->opts.ngtc;    
     snew(lamb,ngtc);
-
+    /* Set Berendsen tcoupl lambda's to 1, 
+     * so runs without Berendsen coupling are not affected.
+     */
+    for(i=0; i<ngtc; i++)
+      grps->tcstat[i].lambda = 1.0;
+  
     /* done with initializing */
     bFirst=FALSE;
   }
