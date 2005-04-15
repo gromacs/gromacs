@@ -207,12 +207,11 @@ void update_grps(int start,int homenr,t_groups *grps,
 }
 
 real sum_ekin(bool bFirstStep,
-	      t_grpopts *opts,t_groups *grps,tensor ekin,bool bTYZ,
+	      t_grpopts *opts,t_groups *grps,tensor ekin,
 	      real *dekindlambda)
 {
   int          i,j,m,ngtc;
-  real         T,ndfac,ek;
-  rvec         tfac;
+  real         T,ek;
   t_grp_tcstat *tcstat;
   real         nrdf,nd,*ndf;
   
@@ -224,18 +223,9 @@ real sum_ekin(bool bFirstStep,
   
   T=0; 
   nrdf=0;
-  if (bTYZ) {
-    tfac[XX]=0.0;
-    tfac[YY]=tfac[ZZ]=1.0;
-    ndfac=2.0/3.0;
-  }
-  else {
-    tfac[XX]=tfac[YY]=tfac[ZZ]=1.0;
-    ndfac=1.0;
-  }
-  
+
   for(i=0; (i<ngtc); i++) {
-    nd=ndf[i]*ndfac;
+    nd=ndf[i];
     /* Sometimes a group does not have degrees of freedom, e.g.
      * when it consists of shells and virtual sites, then we just
      * set the temperatue to 0 and also neglect the kinetic
@@ -257,11 +247,11 @@ real sum_ekin(bool bFirstStep,
       m_add(tcstat[i].ekin,ekin,ekin);
       ek=0;
       for(m=0; (m<DIM); m++)
-	ek+=tfac[m]*tcstat[i].ekinh[m][m];
+	ek+=tcstat[i].ekinh[m][m];
       tcstat[i].Th=calc_temp(ek,nd);
       ek = 0;
       for(m=0; (m<DIM); m++) 
-	ek+=tfac[m]*tcstat[i].ekin[m][m];
+	ek+=tcstat[i].ekin[m][m];
       tcstat[i].T=calc_temp(ek,nd);
     }
     else {

@@ -295,7 +295,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
-  bool       bNS,bSimAnn,bStopCM,bTYZ,bRerunMD,bNotLastFrame=FALSE,
+  bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
 	     bFullPBC;
   tensor     force_vir,shake_vir;
@@ -340,7 +340,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   /* Initial values */
   init_md(cr,&parm->ir,state->box,&t,&t0,&state->lambda,&lam0,
-	  &mynrnb,&bTYZ,top,
+	  &mynrnb,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
@@ -384,7 +384,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 				    repl_ex_nst,repl_ex_seed);
   
   if (!parm->ir.bUncStart && !bRerunMD) 
-    do_shakefirst(log,bTYZ,ener,parm,nsb,mdatoms,state,vold,buf,f,
+    do_shakefirst(log,ener,parm,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
     
@@ -404,7 +404,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   debug_gmx();
   
   /* Calculate the initial half step temperature */
-  temp0 = sum_ekin(TRUE,&(parm->ir.opts),grps,parm->ekin,bTYZ,NULL);
+  temp0 = sum_ekin(TRUE,&(parm->ir.opts),grps,parm->ekin,NULL);
 
   debug_gmx();
   
@@ -682,7 +682,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (!bRerunMD || rerun_fr.bV)
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
 	     parm,mdatoms,state,graph,f,vold,
-	     top,grps,shake_vir,cr,&mynrnb,bTYZ,edyn,&pulldata,bNEMD,
+	     top,grps,shake_vir,cr,&mynrnb,edyn,&pulldata,bNEMD,
 	     TRUE,bFirstStep,NULL);
     else {
       /* Need to unshift here */
@@ -810,7 +810,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
 
     /* Sum the kinetic energies of the groups & calc temp */
-    ener[F_TEMP]=sum_ekin(bRerunMD,&(parm->ir.opts),grps,parm->ekin,bTYZ,
+    ener[F_TEMP]=sum_ekin(bRerunMD,&(parm->ir.opts),grps,parm->ekin,
 			  &(ener[F_DVDLKIN]));
     ener[F_EKIN]=trace(parm->ekin);
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];

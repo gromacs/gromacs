@@ -1780,7 +1780,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     int        fp_ene,step,nre;
     time_t     start_t;
     real       t,lambda,t0,lam0;
-    bool       bNS,bStopCM,bTYZ;
+    bool       bNS,bStopCM;
     tensor     force_vir,shake_vir;
     t_nrnb     mynrnb;
     int        i,m,nfmax;
@@ -1851,9 +1851,6 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     lam0         = parm->ir.init_lambda;
     t            = t0;
     lambda       = lam0;
-    
-    /* Check Environment variables */
-    bTYZ=getenv("TYZ") != NULL;
     
     init_nrnb(&mynrnb);
     
@@ -2190,8 +2187,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	embU = 0;
       } else {
 	embU = exp(-beta*ener[F_EPOT]);
-
 	sum_embU += embU;
+	/* Determine the weighted energy contributions of each energy group */
 	if (fr->bBHAM) {
 	  for(i=0; i<ngid; i++)
 	    sum_UgembU[i] +=

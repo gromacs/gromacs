@@ -427,7 +427,7 @@ double node_time(void)
   return runtime;
 }
 
-void do_shakefirst(FILE *log,bool bTYZ,real ener[],
+void do_shakefirst(FILE *log,real ener[],
 		   t_parm *parm,t_nsborder *nsb,t_mdatoms *md,
 		   t_state *state,rvec vold[],rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
@@ -453,7 +453,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
 	   parm,md,state,graph,
-	   NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   NULL,vold,top,grps,shake_vir,cr,nrnb,
 	   edyn,pulldata,FALSE,FALSE,FALSE,state->x);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
@@ -471,7 +471,7 @@ void do_shakefirst(FILE *log,bool bTYZ,real ener[],
     clear_mat(shake_vir);
     update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
 	   parm,md,state,graph,
-	   NULL,vold,top,grps,shake_vir,cr,nrnb,bTYZ,
+	   NULL,vold,top,grps,shake_vir,cr,nrnb,
 	   edyn,pulldata,FALSE,FALSE,FALSE,buf);
 
     /* Compute the velocities at t=-dt/2 using the coordinates at
@@ -747,7 +747,7 @@ void finish_run(FILE *log,t_commrec *cr,char *confout,
 
 void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     real *lambda,real *lam0,
-	     t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+	     t_nrnb *mynrnb,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,
 	     char **xtc_traj,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
@@ -778,9 +778,6 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
     update_annealing_target_temp(&(ir->opts),ir->init_t); 
 
   init_nrnb(mynrnb);
-  
-  /* Check Environment variables & other booleans */
-  *bTYZ=getenv("TYZ") != NULL;
   
   if (nfile != -1) {
     /* Filenames */

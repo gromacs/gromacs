@@ -64,7 +64,6 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   tensor       vir_part,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
-		   bool         bTYZ,
 		   t_edsamyn    *edyn,
 		   t_pull       *pulldata,
 		   bool         bNEMD,

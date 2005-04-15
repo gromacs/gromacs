@@ -286,7 +286,7 @@ extern void update_time(void);
 extern double node_time(void);
 /* Return the node time so far in seconds. */
 
-extern void do_shakefirst(FILE *log,bool bTYZ,real ener[],
+extern void do_shakefirst(FILE *log,real ener[],
 			  t_parm *parm,t_nsborder *nsb,t_mdatoms *md,
 			  t_state *state,rvec vold[],rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
@@ -309,7 +309,7 @@ extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
 extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 		    real *lambda,real *lam0,
-		    t_nrnb *mynrnb,bool *bTYZ,t_topology *top,
+		    t_nrnb *mynrnb,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,
 		    char **xtc_traj,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,

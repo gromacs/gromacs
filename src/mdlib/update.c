@@ -82,7 +82,7 @@ typedef struct {
 static t_sdconst *sdc;
 
 static void do_update_md(int start,int homenr,double dt,
-                         rvec lamb[],t_grp_acc *gstat,real nh_xi[],
+                         t_grp_tcstat *tcstat,t_grp_acc *gstat,real nh_xi[],
                          rvec accel[],ivec nFreeze[],real invmass[],
                          unsigned short ptype[],unsigned short cFREEZE[],
                          unsigned short cACC[],unsigned short cTC[],
@@ -107,12 +107,12 @@ static void do_update_md(int start,int homenr,double dt,
       gf   = cFREEZE[n];
       ga   = cACC[n];
       gt   = cTC[n];
+      lg   = tcstat[gt].lambda;
       xi   = nh_xi[gt];
 
       rvec_sub(v[n],gstat[ga].u,vrel);
 
       for(d=0; d<DIM; d++) {
-        lg             = lamb[gt][d]; 
         vold[n][d]     = v[n][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
@@ -134,10 +134,10 @@ static void do_update_md(int start,int homenr,double dt,
       gf   = cFREEZE[n];
       ga   = cACC[n];
       gt   = cTC[n];
+      lg   = tcstat[gt].lambda;
 
       for(d=0; d<DIM; d++) {
         vn             = v[n][d];
-        lg             = lamb[gt][d];
         vold[n][d]     = vn;
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
@@ -159,7 +159,7 @@ static void do_update_md(int start,int homenr,double dt,
 }
 
 static void do_update_visc(int start,int homenr,double dt,
-                           rvec lamb[],real invmass[],real nh_xi[],
+			   t_grp_tcstat *tcstat,real invmass[],real nh_xi[],
                            unsigned short ptype[],unsigned short cTC[],
                            rvec x[],rvec xprime[],rvec v[],rvec vold[],
                            rvec f[],matrix M,matrix box,real
@@ -182,6 +182,7 @@ static void do_update_visc(int start,int homenr,double dt,
     for(n=start; n<start+homenr; n++) {
       imass = invmass[n];
       gt   = cTC[n];
+      lg   = tcstat[gt].lambda;
       cosz = cos(fac*x[n][ZZ]);
 
       copy_rvec(v[n],vold[n]);
@@ -193,7 +194,6 @@ static void do_update_visc(int start,int homenr,double dt,
 
       for(d=0; d<DIM; d++) {
         vn             = v[n][d];
-        lg             = lamb[gt][d];
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
           vn    = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
@@ -213,11 +213,11 @@ static void do_update_visc(int start,int homenr,double dt,
     for(n=start; n<start+homenr; n++) {
       w_dt = invmass[n]*dt;
       gt   = cTC[n];
+      lg   = tcstat[gt].lambda;
       cosz = cos(fac*x[n][ZZ]);
 
       for(d=0; d<DIM; d++) {
         vn             = v[n][d];
-        lg             = lamb[gt][d];
         vold[n][d]     = vn;
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
@@ -602,7 +602,6 @@ void update(int          natoms,  /* number of atoms in simulation */
             tensor       vir_part,
             t_commrec    *cr,
             t_nrnb       *nrnb,
-            bool         bTYZ,
             t_edsamyn    *edyn,
             t_pull       *pulldata,
             bool         bNEMD,
@@ -613,7 +612,6 @@ void update(int          natoms,  /* number of atoms in simulation */
   static bool      bFirst=TRUE;
   static rvec      *xprime,*x_unc=NULL;
   static int       ngtc,ngacc;
-  static rvec      *lamb;
   static t_edpar   edpar;
   static bool      bHaveConstr,bExtended;
   double           dt;
@@ -645,7 +643,6 @@ void update(int          natoms,  /* number of atoms in simulation */
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=ir->opts.ngacc;    
     ngtc=ir->opts.ngtc;    
-    snew(lamb,ngtc);
     /* Set Berendsen tcoupl lambda's to 1, 
      * so runs without Berendsen coupling are not affected.
      */
@@ -675,16 +672,6 @@ void update(int          natoms,  /* number of atoms in simulation */
       parrinellorahman_pcoupl(&(parm->ir),step,parm->pres,
 			      state->box,state->boxv,M,bFirstStep);
 
-    for(i=0; i<ngtc; i++) {
-      real l=grps->tcstat[i].lambda;
-      
-      if(bTYZ)
-	lamb[i][XX]=1;
-      else
-	lamb[i][XX]=l;
-      lamb[i][YY]=l;
-      lamb[i][ZZ]=l;
-    }
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",
@@ -692,13 +679,15 @@ void update(int          natoms,  /* number of atoms in simulation */
     if (ir->eI == eiMD) {
       if (grps->cosacc.cos_accel == 0)
         /* use normal version of update */
-        do_update_md(start,homenr,dt,lamb,grps->grpstat,state->nosehoover_xi,
+        do_update_md(start,homenr,dt,
+		     grps->tcstat,grps->grpstat,state->nosehoover_xi,
                      ir->opts.acc,ir->opts.nFreeze,md->invmass,md->ptype,
                      md->cFREEZE,md->cACC,md->cTC,
 		     state->x,xprime,state->v,vold,force,M,
                      bExtended);
       else
-        do_update_visc(start,homenr,dt,lamb,md->invmass,state->nosehoover_xi,
+        do_update_visc(start,homenr,dt,
+		       grps->tcstat,md->invmass,state->nosehoover_xi,
                        md->ptype,md->cTC,state->x,xprime,state->v,vold,force,M,
                        state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
     } else if (ir->eI == eiSD) {
