@@ -433,7 +433,7 @@ static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih)
   char      *a0;
   t_rbondeds *idihs;
   t_rbonded  *hbidih;
-  int       nidih,i,j,k,start,ninc,nalloc;
+  int       nidih,i,j,k,r,start,ninc,nalloc;
   atom_id   ai[MAXATOMLIST];
   bool      bStop;
   
@@ -453,10 +453,13 @@ static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih)
 	  ai[k] = search_atom(idihs->b[j].a[k],start,
 			      atoms->nr,atoms->atom,atoms->atomname);
 	  if (ai[k] == NO_ATID) {
-	    if (debug) 
-	      fprintf(debug,"Atom %s (%d) not found in res %d in pdih2idih\n",
-		      idihs->b[j].a[k], k, atoms->atom[start].resnr);
-	    bStop = TRUE;
+	    r = atoms->atom[start].resnr;
+	    if ((idihs->b[j].a[k][0] == '-' && (r == 0)) ||
+		(idihs->b[j].a[k][0] == '+' && (r == atoms->nres - 1))) {
+	      bStop = TRUE;
+	    } else {
+	      gmx_fatal(FARGS,"Atom %s not found in residue %d while adding improper",idihs->b[j].a[k],r+1);
+	    }
 	  }
 	}
 	if (!bStop) {
