@@ -397,7 +397,18 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
     for(j=0; j < hb[resnr].rb[ebtsBONDS].nb; j++) {
       ai=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname);
       aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname);
-      if ( ai != NO_ATID && aj != NO_ATID ) {
+      if (ai == NO_ATID || aj == NO_ATID) {
+	if (ai == NO_ATID &&
+	    !((hb[resnr].rb[ebtsBONDS].b[j].AI[0] == '-' && resnr == 0) ||
+	      (hb[resnr].rb[ebtsBONDS].b[j].AI[0] == '+' && resnr == nres-1)))
+	  gmx_fatal(FARGS,"Atom %s not found in residue %d while adding bond",
+		    hb[resnr].rb[ebtsBONDS].b[j].AI,resnr+1);
+	if (aj == NO_ATID &&
+	    !((hb[resnr].rb[ebtsBONDS].b[j].AJ[0] == '-' && resnr == 0) ||
+	      (hb[resnr].rb[ebtsBONDS].b[j].AJ[0] == '+' && resnr == nres-1)))
+	  gmx_fatal(FARGS,"Atom %s not found in residue %d while adding bond",
+		    hb[resnr].rb[ebtsBONDS].b[j].AJ,resnr+1);
+      } else {
 	dist2 = distance2(x[ai],x[aj]);
 	if (dist2 > long_bond_dist2 )
 	  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
