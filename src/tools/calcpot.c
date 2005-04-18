@@ -220,7 +220,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 		  matrix box,rvec **x)
 {
   real     t,t0,lam,lam0;
-  bool     bTYZ,bNEMD,bSA;
+  bool     bNEMD,bSA;
   char     *traj,*xtc_traj;
   t_state  *state;
   rvec     mutot;
@@ -245,7 +245,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   snew(state,1);
   init_single(stdlog,parm,tpx,top,state,mdatoms,nsb);
   init_md(cr,&(parm->ir),state->box,&t,&t0,&lam,&lam0,
-	  &nrnb,&bTYZ,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
+	  &nrnb,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
   init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
