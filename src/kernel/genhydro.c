@@ -67,14 +67,15 @@ static void copy_atom(t_atoms *atoms1,int a1,t_atoms *atoms2,int a2)
   *atoms2->atomname[a2]=strdup(*atoms1->atomname[a1]);
 }
 
-atom_id pdbasearch_atom(char *name,int resnr,t_atoms *pdba)
+atom_id pdbasearch_atom(char *name,int resnr,t_atoms *pdba, char *searchtype)
 {
   int  i;
   
   for(i=0; (i<pdba->nr) && (pdba->atom[i].resnr != resnr); i++)
     ;
     
-  return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname);
+  return search_atom(name,i,pdba->nr,pdba->atom,pdba->atomname,
+		     searchtype,TRUE);
 }
 
 void hacksearch_atom(int *ii, int *jj, char *name, int nab[], t_hack *ab[], 
@@ -251,7 +252,7 @@ static int check_atoms_present(t_atoms *pdba, int nab[], t_hack *ab[])
 	if (ab[i][j].nname == NULL)
 	  gmx_incons("ab[i][j].name not allocated");
 	/* check if the atom is already present */
-	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba);
+	k=pdbasearch_atom(ab[i][j].nname, rnr, pdba, "check");
 	if ( k != -1 ) {
 	  /* we found the added atom, so move the hack there: */
 	  srenew(ab[k], nab[k]+1);
@@ -293,7 +294,7 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
       /* check if we're adding: */
       if (ab[i][j].oname==NULL && ab[i][j].tp > 0) {
 	for(m=0; (m<ab[i][j].nctl); m++) {
-	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba);
+	  ia = pdbasearch_atom(ab[i][j].a[m], rnr, pdba, "atom");
 	  if (ia < 0) {
 	    /* not found in original atoms, might still be in t_hack (ab) */
 	    hacksearch_atom(&ii, &jj, ab[i][j].a[m], nab, ab, rnr, pdba);

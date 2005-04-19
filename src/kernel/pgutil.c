@@ -41,8 +41,26 @@
 #include "string2.h"
 #include "pgutil.h"
 #include "string.h"
+
+void atom_not_found(int fatal_errno,const char *file,int line,
+		    char *atomname,int resnr,
+		    char *bondtype,bool bDontQuit)
+{
+  if (strcmp(bondtype,"check") != 0) {
+    if (bDontQuit) {
+      fprintf(stderr,
+	      "WARNING: atom %s not found in residue %d while adding %s\n",
+	      atomname,resnr,bondtype);
+    } else {
+      gmx_fatal(fatal_errno,file,line,
+		"Atom %s not found in residue %d while adding %s\n",
+		atomname,resnr,bondtype);
+    }
+  }
+}
 	
-atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
+atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[],
+		    char *bondtype,bool bDontQuit)
 {
   int     i,resnr=-1;
   bool    bPrevious,bNext;
@@ -65,6 +83,8 @@ atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
       if (strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
     }
+    if (!(bNext && at[start].resnr==at[natoms-1].resnr))
+      atom_not_found(FARGS,type,at[start].resnr+1,bondtype,bDontQuit);
   }
   else {
     /* The previous residue */
@@ -74,6 +94,8 @@ atom_id search_atom(char *type,int start,int natoms,t_atom at[],char **anm[])
     for(i=start-1; (i>=0) /*&& (at[i].resnr == resnr)*/; i--)
       if (strcasecmp(type,*(anm[i]))==0)
 	return (atom_id) i;
+    if (start > 0)
+      atom_not_found(FARGS,type,at[start].resnr+1,bondtype,bDontQuit);
   }
   return NO_ATID;
 }
@@ -85,4 +107,3 @@ void set_at(t_atom *at,real m,real q,int type,int resnr)
   at->type=type;
   at->resnr=resnr;
 }
-

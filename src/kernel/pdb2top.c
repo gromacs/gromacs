@@ -349,19 +349,20 @@ void write_top(FILE *out, char *pr,char *molname,
 }
 
 static atom_id search_res_atom(char *type,int resnr,
-			       int natom,t_atom at[],char **aname[])
+			       int natom,t_atom at[],char **aname[],
+			       char *bondtype,bool bMissing)
 {
   int i;
 
   for(i=0; (i<natom); i++)
     if (at[i].resnr == resnr)
-      return search_atom(type,i,natom,at,aname);
+      return search_atom(type,i,natom,at,aname,bondtype,bMissing);
   
   return NO_ATID;
 }
 
 static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
-		       int nssbonds,t_ssbond *ssbonds)
+		       int nssbonds,t_ssbond *ssbonds,bool bMissing)
 {
   int     i,ri,rj;
   atom_id ai,aj;
@@ -369,8 +370,10 @@ static void do_ssbonds(t_params *ps,int natoms,t_atom atom[],char **aname[],
   for(i=0; (i<nssbonds); i++) {
     ri = ssbonds[i].res1;
     rj = ssbonds[i].res2;
-    ai = search_res_atom(ssbonds[i].a1,ri,natoms,atom,aname);
-    aj = search_res_atom(ssbonds[i].a2,rj,natoms,atom,aname);
+    ai = search_res_atom(ssbonds[i].a1,ri,natoms,atom,aname,
+			 "special bond",bMissing);
+    aj = search_res_atom(ssbonds[i].a2,rj,natoms,atom,aname,
+			 "special bond",bMissing);
     if ((ai == NO_ATID) || (aj == NO_ATID))
       gmx_fatal(FARGS,"Trying to make impossible special bond (%s-%s)!",
 		  ssbonds[i].a1,ssbonds[i].a2);
@@ -386,29 +389,30 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
   int     resnr,i,j,k;
   atom_id ai,aj;
   real    dist2, long_bond_dist2, short_bond_dist2;
-  
+  char    *ptr;
+
   long_bond_dist2  = sqr(long_bond_dist);
   short_bond_dist2 = sqr(short_bond_dist);
-  
+
+  if (debug)
+    ptr = "bond";
+  else
+    ptr = "check";
+
   fprintf(stderr,"Making bonds...\n");
   i=0;
   for(resnr=0; (resnr < nres) && (i<natoms); resnr++) {
     /* add bonds from list of bonded interactions */
     for(j=0; j < hb[resnr].rb[ebtsBONDS].nb; j++) {
-      ai=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname);
-      aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname);
-      if (ai == NO_ATID || aj == NO_ATID) {
-	if (ai == NO_ATID &&
-	    !((hb[resnr].rb[ebtsBONDS].b[j].AI[0] == '-' && resnr == 0) ||
-	      (hb[resnr].rb[ebtsBONDS].b[j].AI[0] == '+' && resnr == nres-1)))
-	  gmx_fatal(FARGS,"Atom %s not found in residue %d while adding bond",
-		    hb[resnr].rb[ebtsBONDS].b[j].AI,resnr+1);
-	if (aj == NO_ATID &&
-	    !((hb[resnr].rb[ebtsBONDS].b[j].AJ[0] == '-' && resnr == 0) ||
-	      (hb[resnr].rb[ebtsBONDS].b[j].AJ[0] == '+' && resnr == nres-1)))
-	  gmx_fatal(FARGS,"Atom %s not found in residue %d while adding bond",
-		    hb[resnr].rb[ebtsBONDS].b[j].AJ,resnr+1);
-      } else {
+      /* Unfortunately we can not issue errors or warnings
+       * for missing atoms in bonds, as the hydrogens and terminal atoms
+       * have not been added yet.
+       */
+      ai=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AI,i,natoms,atom,aname,
+		     ptr,TRUE);
+      aj=search_atom(hb[resnr].rb[ebtsBONDS].b[j].AJ,i,natoms,atom,aname,
+		     ptr,TRUE);
+      if (ai != NO_ATID && aj != NO_ATID) {
 	dist2 = distance2(x[ai],x[aj]);
 	if (dist2 > long_bond_dist2 )
 	  fprintf(stderr,"Warning: Long Bond (%d-%d = %g nm)\n",
@@ -641,8 +645,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	     t_atoms *atoms, rvec **x, t_atomtype *atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
-	     int *rn, int *rc, bool bMissing, bool bH14, bool bAlldih,
-	     bool bRemoveDih,
+	     int *rn, int *rc, bool bMissing,
+	     bool bH14, bool bAlldih, bool bRemoveDih,
 	     bool bVsites, bool bVsiteAromatics, char *ff, real mHmult,
 	     int nssbonds, t_ssbond *ssbonds, int nrexcl, 
 	     real long_bond_dist, real short_bond_dist,
@@ -680,7 +684,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   
   /* specbonds: disulphide bonds & heme-his */
   do_ssbonds(&(plist[F_BONDS]),
-	     atoms->nr, atoms->atom, atoms->atomname, nssbonds, ssbonds);
+	     atoms->nr, atoms->atom, atoms->atomname, nssbonds, ssbonds,
+	     bMissing);
   
   nmissat = name2type(atoms, &cgnr, atype, restp);
   if (nmissat) {
@@ -710,7 +715,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
   init_nnb(&nnb,atoms->nr,4);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih,bRemoveDih);
+  gen_pad(&nnb,atoms,nrexcl,bH14,plist,excls,hb,bAlldih,bRemoveDih,bMissing);
   done_nnb(&nnb);
   
   /* set mass of all remaining hydrogen atoms */

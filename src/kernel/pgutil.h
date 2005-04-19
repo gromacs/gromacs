@@ -40,9 +40,13 @@
 #include "typedefs.h"
 
 extern atom_id search_atom(char *type,int start,
-			   int natoms,t_atom at[],char **anm[]);
+			   int natoms,t_atom at[],char **anm[],
+			   char *bondtype,bool bDontQuit);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
+ * bondtype is only used for printing the error/warning string,
+ * when bondtype="check" no error/warning is issued.
+ * When bDontQuit=FALSE an fatal error is issued, otherwise a warning.
  */
 
 extern void set_at(t_atom *at,real m,real q,int type,int resnr);

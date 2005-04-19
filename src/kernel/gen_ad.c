@@ -428,7 +428,8 @@ static void clean_dih(t_param *dih, int *ndih,t_param idih[],int nidih,
   sfree(index);
 }
 
-static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih)
+static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih,
+			 bool bMissing)
 {
   char      *a0;
   t_rbondeds *idihs;
@@ -451,16 +452,10 @@ static int get_impropers(t_atoms *atoms,t_hackblock hb[],t_param **idih)
 	bStop=FALSE;
 	for(k=0; (k<4) && !bStop; k++) {
 	  ai[k] = search_atom(idihs->b[j].a[k],start,
-			      atoms->nr,atoms->atom,atoms->atomname);
-	  if (ai[k] == NO_ATID) {
-	    r = atoms->atom[start].resnr;
-	    if ((idihs->b[j].a[k][0] == '-' && (r == 0)) ||
-		(idihs->b[j].a[k][0] == '+' && (r == atoms->nres - 1))) {
-	      bStop = TRUE;
-	    } else {
-	      gmx_fatal(FARGS,"Atom %s not found in residue %d while adding improper",idihs->b[j].a[k],r+1);
-	    }
-	  }
+			      atoms->nr,atoms->atom,atoms->atomname,
+			      "improper",bMissing);
+	  if (ai[k] == NO_ATID)
+	    bStop = TRUE;
 	}
 	if (!bStop) {
 	  if (nidih == nalloc) {
@@ -523,7 +518,8 @@ static void get_atomnames_min(int n,char anm[4][12],
   }
 }
 
-static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[])
+static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
+		      bool bMissing)
 {
   int        r;
   atom_id    a,astart,i1,i2,itmp;
@@ -539,23 +535,21 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[])
       
       for(e=0; e<hbexcl->nb; e++) {
 	anm = hbexcl->b[e].a[0];
-	i1 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname);
-	if (i1 == NO_ATID)
-	  gmx_fatal(FARGS,"atom name %s not found in residue %s %d while "
-		      "generating exclusions",anm,*atoms->resname[r],r+1);
+	i1 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname,
+			 "exclusion",bMissing);
 	anm = hbexcl->b[e].a[1];
-	i2 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname);
-	if (i2 == NO_ATID)
-	  gmx_fatal(FARGS,"atom name %s not found in residue %s %d while "
-		      "generating exclusions",anm,*atoms->resname[r],r+1);
-	if (i1 > i2) {
-	  itmp = i1;
-	  i1 = i2;
-	  i2 = itmp;
+	i2 = search_atom(anm,astart,atoms->nr,atoms->atom,atoms->atomname,
+			 "exclusion",bMissing);
+	if (i1!=NO_ATID && i2!=NO_ATID) {
+	  if (i1 > i2) {
+	    itmp = i1;
+	    i1 = i2;
+	    i2 = itmp;
+	  }
+	  srenew(excls[i1].e,excls[i1].nr+1);
+	  excls[i1].e[excls[i1].nr] = i2;
+	  excls[i1].nr++;
 	}
-	srenew(excls[i1].e,excls[i1].nr+1);
-	excls[i1].e[excls[i1].nr] = i2;
-	excls[i1].nr++;
       }
       
       astart = a+1;
@@ -621,7 +615,7 @@ static void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 
 void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
 	     t_params plist[], t_excls excls[], t_hackblock hb[], 
-	     bool bAlldih, bool bRemoveDih)
+	     bool bAlldih, bool bRemoveDih, bool bMissing)
 {
   t_param *ang,*dih,*pai,*idih;
   t_rbondeds *hbang, *hbdih;
@@ -647,7 +641,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   snew(pai, maxpai);
 
   if (hb)
-    gen_excls(atoms,excls,hb);
+    gen_excls(atoms,excls,hb,bMissing);
   
   /* extract all i-j-k-l neighbours from nnb struct */
   for(i=0; (i<nnb->nr); i++) 
@@ -830,7 +824,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, int nrexcl, bool bH14,
   }
 
   /* Get the impropers from the database */
-  nidih = get_impropers(atoms,hb,&idih);
+  nidih = get_impropers(atoms,hb,&idih,bMissing);
 
   /* Sort the impropers */
   sort_id(nidih,idih);
