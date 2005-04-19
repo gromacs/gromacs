@@ -46,9 +46,6 @@
 #include "gmxcomplex.h"
 #include "fftgrid.h"
 
-#define perfon(a,b) 
-#define perfoff() 
-
 typedef real *splinevec[DIM];
 
 extern real do_pme(FILE *log,       bool bVerbose,
