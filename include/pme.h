@@ -46,6 +46,9 @@
 #include "gmxcomplex.h"
 #include "fftgrid.h"
 
+#define perfon(a,b) 
+#define perfoff() 
+
 typedef real *splinevec[DIM];
 
 extern real do_pme(FILE *log,       bool bVerbose,
@@ -64,7 +67,8 @@ extern real do_pme(FILE *log,       bool bVerbose,
  * the forces will be interpolated at the new positions. No new solving is done then.
  */
 
-extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward);
+extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
+		      int pme_order,bool bForward);
 
 extern t_fftgrid *init_pme(FILE *log,t_commrec *cr,
 			   int nkx,int nky,int nkz,int pme_order,int homenr,

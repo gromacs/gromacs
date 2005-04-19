@@ -1107,12 +1107,13 @@ void force(FILE       *fplog,   int        step,
   
   /* Call the short range functions all in one go. */
   dvdlambda = 0;
-
+  where();
   do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
 	  lambda,&dvdlambda,FALSE,-1,bDoForces);
-  
+  where();
+
   epot[F_DVDL] += dvdlambda;
   Vsr = 0;
   if (bSepDVDL)
@@ -1144,13 +1145,13 @@ void force(FILE       *fplog,   int        step,
       set_pbc_ss(&pbc,box);
     debug_gmx();
   }
-
+  where();
   if (EEL_FULL(fr->eeltype)) {
     dvdlambda = 0;
     switch (fr->eeltype) {
     case eelPPPM:
       Vlr = do_pppm(fplog,FALSE,x,fr->f_el_recip,md->chargeA,
-		    box_size,fr->phi,cr,nsb,nrnb);
+		    box_size,fr->phi,cr,nsb,nrnb,ir->pme_order);
       break;
     case eelPME:
     case eelPMEUSER:
@@ -1201,6 +1202,7 @@ void force(FILE       *fplog,   int        step,
     epot[F_DVDL] += dvdlambda;
     PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
   }
+  where();
   debug_gmx();
   
   if (debug)    

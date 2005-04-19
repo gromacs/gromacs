@@ -80,8 +80,51 @@
 #include "physics.h"
 #include "nrnb.h"
 #include "copyrite.h"
+#ifdef USE_MPE
+#include "mpe.h"
+#include "mpelogging.h"
+#endif
 
 #define DFT_TOL 1e-7
+
+#ifdef GMX_DOUBLE
+#define mpi_type MPI_DOUBLE
+#else
+#define mpi_type MPI_FLOAT
+#endif
+MPI_Datatype  rvec_mpi;
+
+/* Global variables */
+
+int nnodes;                     /* # of MPI tasks */
+int nodeid;                     /* my MPI rank    */
+static int leftnode, rightnode; /* rank of left and right MPI task */
+static int leftbnd, rightbnd;   /* size of left and right boundary */
+static int my_homenr;
+
+void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
+{
+  int     i,j,k,l,ntoti,ntot=0;
+  int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
+  t_fft_r *ptr;
+
+  /* Unpack structure */
+  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
+  for(i=0; (i<nx); i++) {
+    ntoti=0;
+    for(j=0; (j<ny); j++)
+      for(k=0; (k<nz); k++) {
+        l= INDEX(i,j,k);
+        if (ptr[l] != 0) {
+          ntoti++;
+          ntot++;
+        }
+      }
+          fprintf(fp,"%-12s  %5d  %5d\n",title,i,ntoti);
+    }
+  fprintf(fp,"%d non zero elements in %s\n",ntot,title);
+}
+/* test */
 
 void calc_recipbox(matrix box,matrix recipbox)
 {
@@ -164,20 +207,145 @@ void calc_idx(int natoms,matrix recipbox,
 
 }
 
-void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
+void pme_calc_pidx(int natoms,matrix box, rvec x[],int nx, int nnx[],
+                   int *pidx, int *gidx)
+{
+  int  i,j,jj;
+  int nx2;
+  int  tix;
+  int  irange, taskid;
+  real *xptr,tx;
+  real rxx,ryx,rzx;
+  matrix recipbox;
+
+/* Calculate PME task index (pidx) for each grid index */
+  irange=1+(nx-1)/nnodes;
+
+  taskid=0;
+  for(i=0; i<nx; i+=irange) {
+    jj=min((i+irange),nx);
+    for(j=i; (j<jj); j++) pidx[j]=taskid;
+    taskid++;
+  }
+
+  nx2=2*nx;
+  calc_recipbox(box,recipbox);
+  rxx = recipbox[XX][XX];
+  ryx = recipbox[YY][XX];
+  rzx = recipbox[ZZ][XX];
+/* Calculate grid index in x-dimension */
+  for(i=0; (i<natoms); i++) {
+    xptr   = x[i];
+    /* Fractional coordinates along box vectors */
+    tx = nx2 + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
+    tix = (int)(tx);
+    gidx[i] = pidx[nnx[tix]];
+  }
+}
+
+void pmeredist(bool forw, int n, rvec *x_f, real *charge, int *idxa,
+               int *total, rvec *pme_x, real *pme_q)
+/* Redistribute particle data for PME calculation */
+/* domain decomposition by x coordinate           */
+{
+  static int *scounts, *rcounts,*sdispls, *rdispls, *sidx;
+  static real *buf;
+  int i, ii;
+  static bool bFirst=TRUE;
+
+  if(bFirst) {
+    snew(scounts,nnodes);
+    snew(rcounts,nnodes);
+    snew(sdispls,nnodes);
+    snew(rdispls,nnodes);
+    snew(sidx,nnodes);
+    snew(buf,n*DIM);
+    bFirst=FALSE;
+  }
+
+  if (forw) { /* forward, redistribution from pp to pme */ 
+
+/* Calculate send counts and exchange them with other nodes */
+    for(i=0; (i<nnodes); i++) scounts[i]=0;
+    for(i=0; (i<n); i++) scounts[idxa[i]]++;
+    MPI_Alltoall( scounts, 1, MPI_INT, rcounts, 1, MPI_INT, MPI_COMM_WORLD );
+
+/* Calculate send and receive displacements and index into send buffer */
+    sdispls[0]=0;
+    rdispls[0]=0;
+    sidx[0]=0;
+    for(i=1; (i<nnodes); i++) {
+      sdispls[i]=sdispls[i-1]+scounts[i-1];
+      rdispls[i]=rdispls[i-1]+rcounts[i-1];
+      sidx[i]=sdispls[i];
+    }
+/* Total # of particles to be received */
+    *total=rdispls[nnodes-1]+rcounts[nnodes-1];
+
+/* Copy particle coordinates into send buffer and exchange*/
+    for(i=0; (i<n); i++) {
+      ii=DIM*sidx[idxa[i]];
+      sidx[idxa[i]]++;
+      buf[ii+XX]=x_f[i][XX];
+      buf[ii+YY]=x_f[i][YY];
+      buf[ii+ZZ]=x_f[i][ZZ];
+    }
+    MPI_Alltoallv(buf, scounts, sdispls, rvec_mpi,
+                  pme_x, rcounts, rdispls, rvec_mpi,
+                  MPI_COMM_WORLD);
+
+/* Copy charge into send buffer and exchange*/
+    for(i=0; (i<nnodes); i++) sidx[i]=sdispls[i];
+    for(i=0; (i<n); i++) {
+      ii=sidx[idxa[i]];
+      sidx[idxa[i]]++;
+      buf[ii]=charge[i];
+    }
+    MPI_Alltoallv(buf, scounts, sdispls, mpi_type,
+                  pme_q, rcounts, rdispls, mpi_type,
+                  MPI_COMM_WORLD);
+
+  }
+  else { /* backward, redistribution from pme to pp */ 
+    MPI_Alltoallv(pme_x, rcounts, rdispls, rvec_mpi,
+                  buf, scounts, sdispls, rvec_mpi,
+                  MPI_COMM_WORLD);
+
+/* Copy data from receive buffer */
+    for(i=0; (i<nnodes); i++) sidx[i]=sdispls[i];
+    for(i=0; (i<n); i++) {
+      ii=DIM*sidx[idxa[i]];
+      x_f[i][XX]+=buf[ii+XX];
+      x_f[i][YY]+=buf[ii+YY];
+      x_f[i][ZZ]+=buf[ii+ZZ];
+      sidx[idxa[i]]++;
+    }
+  }
+}
+
+void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
+               int pme_order, bool bForward)
 {
   static bool bFirst=TRUE;
   static t_fft_r *tmp;
   int i;
   static int localsize;
   static int maxproc;
+  int ny, la2r;
+  int bndsize;
+  real *from, *to;
+  MPI_Status stat;
+  static FILE *fp_lgrid;
+  static char fn[8];
 
-#if (defined GMX_MPI && ! defined GMX_WITHOUT_FFTW)
+#if (defined GMX_MPI && ! defined WITHOUT_FFTW)
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
       snew(tmp,localsize);
     maxproc=grid->nx/grid->pfft.local_nx;
+    sprintf(fn,"lgrid%2.2d",nodeid);
+/*    fp_lgrid=(FILE *)fopen(fn,"w"); */
   }
   /* NOTE: FFTW doesnt necessarily use all processors for the fft;
      * above I assume that the ones that do have equal amounts of data.
@@ -188,19 +356,109 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,bool bForward)
   if(grid->workspace)
     tmp=grid->workspace;
   if(bForward) { /* sum contributions to local grid */
+/* #define USE_REDUCE */
+#ifdef USE_REDUCE
+    /********************************/
+    /* Loop with several MPI_Reduce */
+    /********************************/
+    MPI_Barrier( MPI_COMM_WORLD );
+#ifdef USE_MPE
+    MPE_Log_event( ev_reduce_start, 0, "" );
+#endif
+    perfon("  reduce",8);
     for(i=0;i<maxproc;i++) {
       MPI_Reduce(grid->ptr+i*localsize, /*ptr arithm.     */
 		 tmp,localsize,      
 		 GMX_MPI_REAL,MPI_SUM,i,MPI_COMM_WORLD);
     }
+    perfoff();
+#ifdef USE_MPE
+    MPE_Log_event(ev_reduce_finish, 0, "" );
+#endif
+    MPI_Barrier( MPI_COMM_WORLD );
+/*#define ALL_REDUCE */
+#ifdef ALL_REDUCE
+      perfon("  allred",8);
+      MPI_Allreduce(grid->ptr, grid->ptr,grid->nptr,      
+		 GMX_MPI_REAL,MPI_SUM,MPI_COMM_WORLD);
+      perfoff();
+#endif
     if(cr->nodeid<maxproc)
       memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(t_fft_r));
+#endif
+#define EXCHANGE_GRID_BOUNDARY1
+#ifdef EXCHANGE_GRID_BOUNDARY1
+    MPI_Barrier( MPI_COMM_WORLD );
+    perfon("  xgbnd1",8);
+    ny=grid->ny;
+    la2r=grid->la2r;
+/* Send left Boundary */
+    bndsize=leftbnd*ny*la2r;
+    from=grid->ptr+(leftnode+1)*localsize-bndsize;
+    to=grid->ptr+(nodeid+1)*localsize-bndsize;
+    MPI_Sendrecv(from,bndsize,mpi_type,
+               leftnode,nodeid,
+               tmp,bndsize,mpi_type,rightnode,rightnode,
+               MPI_COMM_WORLD,&stat);
+    for(i=0; (i<bndsize); i++) {
+      to[i]+=tmp[i];
+    }
+/* Send right boundary */
+    bndsize=rightbnd*ny*la2r;
+    from=grid->ptr+rightnode*localsize;
+    to=grid->ptr+nodeid*localsize;
+    MPI_Sendrecv(from,bndsize,mpi_type,
+               rightnode,nodeid,
+               tmp,bndsize,mpi_type,leftnode,leftnode,
+               MPI_COMM_WORLD,&stat);
+    for(i=0; (i<bndsize); i++) {
+      to[i]+=tmp[i];
+    }
+    perfoff();
+#endif
+/*    pr_fftgrid_l(fp_lgrid,"before FFT",grid); */
   }
   else { /* distribute local grid to all processors */
+/*  #define USE_BCAST */
+#ifdef USE_BCAST
+#ifdef USE_MPE
+    MPE_Log_event( ev_bcast_start, 0, "" );
+#endif
+    perfon("  bcast",7);
     for(i=0;i<maxproc;i++)
       MPI_Bcast(grid->ptr+i*localsize, /* ptr arithm     */
 		localsize,       
 		GMX_MPI_REAL,i,MPI_COMM_WORLD);
+    perfoff();
+#ifdef USE_MPE
+    MPE_Log_event(ev_bcast_finish, 0, "" );
+#endif
+#endif
+#define EXCHANGE_GRID_BOUNDARY2
+#ifdef EXCHANGE_GRID_BOUNDARY2
+    MPI_Barrier( MPI_COMM_WORLD );
+    perfon("  xgbnd2",8);
+    ny=grid->ny;
+    la2r=grid->la2r;
+
+/* Send left Boundary */
+    bndsize=rightbnd*ny*la2r;
+    from=grid->ptr+nodeid*localsize;
+    to=grid->ptr+rightnode*localsize;
+    MPI_Sendrecv(from,bndsize,mpi_type,
+               leftnode,nodeid,
+               to,bndsize,mpi_type,rightnode,rightnode,
+               MPI_COMM_WORLD,&stat);
+/* Send right boundary */
+    bndsize=leftbnd*ny*la2r;
+    from=grid->ptr+(nodeid+1)*localsize-bndsize;
+    to=grid->ptr+(leftnode+1)*localsize-bndsize;
+    MPI_Sendrecv(from,bndsize,mpi_type,
+               rightnode,nodeid,
+               to,bndsize,mpi_type,leftnode,leftnode,
+               MPI_COMM_WORLD,&stat);
+    perfoff();
+#endif
   }
 #else
   gmx_fatal(FARGS,"Parallel grid summation requires MPI and FFTW.\n");    
@@ -218,8 +476,25 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
   int      norder,norder1,*idxptr,ind0;
   real     valx,valxy,qn;
   real     *thx,*thy,*thz;
-  
-  clear_fftgrid(grid);
+  int localsize, bndsize;
+
+  perfon("  clearfft",10);
+  if (nnodes==1) 
+    clear_fftgrid(grid); 
+  else {
+    localsize=grid->la12r*grid->pfft.local_nx;
+    ptr=grid->localptr;
+    for (i=0; (i<localsize); i++) ptr[i] = 0;
+/* clear left boundary area */
+    bndsize=leftbnd*grid->la12r;
+    ptr=grid->ptr+(leftnode+1)*localsize-bndsize;
+    for (i=0; (i<bndsize); i++) ptr[i] = 0;
+/* clear right boundary area */
+    bndsize=rightbnd*grid->la12r;
+    ptr=grid->ptr+rightnode*localsize;
+    for (i=0; (i<bndsize); i++) ptr[i] = 0;
+  }
+  perfoff();
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   ii0   = nnx+nx2+1-order/2;
   jj0   = nny+ny2+1-order/2;
@@ -682,8 +957,17 @@ t_fftgrid *init_pme(FILE *log,t_commrec *cr,
     please_cite(log,"In-Chul99a");
   }
 
+  MPI_Comm_size( MPI_COMM_WORLD, &nnodes );
+  MPI_Comm_rank( MPI_COMM_WORLD, &nodeid );
   bPar = cr && (cr->nnodes>1);
   if (bPar) {
+    leftnode=nodeid-1;
+    rightnode=nodeid+1;
+    if(leftnode==-1) leftnode=nnodes-1;
+    if(rightnode==nnodes) rightnode=0;
+    leftbnd=pme_order/2-1;
+    rightbnd=pme_order-leftbnd-1;
+
     fprintf(log,"Parallelized PME sum used.\n");
     if ((nkx % cr->nnodes) != 0)
       fprintf(log,"Warning: For load balance, "
@@ -747,6 +1031,7 @@ void spread_on_grid(FILE *logfile,
 
     /* put local atoms on grid. */
     spread_q_bsplines(grid,idx,charge,theta,homenr,pme_order,nnx,nny,nnz);
+/*    pr_grid_dist(logfile,"spread",grid); */
   }
 }
 
@@ -768,7 +1053,35 @@ real do_pme(FILE *logfile,   bool bVerbose,
   t_fft_r *ptr;
   real    *homecharge=NULL,vol,energy;
   matrix  vir_AB[2];
+  static bool bFirst=TRUE;
+  static int *pidx;
+  static int *gidx=NULL; /* Grid index of particle, used for PME redist */
+  static rvec *x_tmp;
+  static rvec *f_tmp;
+  static real *q_tmp;
+  static FILE *fp_f;
+  static char fn[8];
 
+  if(bFirst) {
+#if defined GMX_MPI
+    if (nnodes > 1) {
+      snew(gidx,nsb->natoms);
+      snew(x_tmp,nsb->natoms);
+      snew(f_tmp,nsb->natoms);
+      snew(q_tmp,nsb->natoms);
+      snew(pidx,nsb->natoms);
+      MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
+      MPI_Type_commit(&rvec_mpi);
+    }
+#endif
+    /*#define PRT_FORCE */
+#ifdef PRT_FORCE
+    sprintf(fn,"force%2.2d",cr->nodeid);
+    fp_f=(FILE *)fopen(fn,"w");
+#endif
+    where();
+    bFirst=FALSE;
+  }
   for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
     if (q == 0) {
       grid = gridA;
@@ -777,42 +1090,119 @@ real do_pme(FILE *logfile,   bool bVerbose,
       grid = gridB;
       homecharge = chargeB+START(nsb);
     }
-    
     /* Unpack structure */
+    if (debug) {
+      fprintf(debug,"PME: nnodes = %d, nodeid = %d\n",nnodes,nodeid);
+      fprintf(debug,"Grid = %x\n",grid);
+      if (grid == NULL)
+	gmx_fatal(FARGS,"No grid!");
+    }
+    where();
     unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
+    where();
     
+    if (nnodes == 1) {
+      x_tmp=x;
+      f_tmp=f;
+      q_tmp=homecharge;
+    }
+    my_homenr=nsb->natoms;
+#ifdef GMX_MPI
+    if (nnodes > 1) {
+      pme_calc_pidx(HOMENR(nsb),box, x+START(nsb), ir->nkx, nnx, pidx, gidx);
+      where();
+      
+      MPI_Barrier( MPI_COMM_WORLD );
+      perfon("  pmere1",8);
+      pmeredist(TRUE,HOMENR(nsb), x+START(nsb), homecharge, gidx, 
+		&my_homenr, x_tmp, q_tmp);
+      where();
+      perfoff();
+    }
+#endif
+    where();
+    if (debug)
+      fprintf(debug,"Node= %6d, pme local particles=%6d\n", nodeid,my_homenr);
+
     /* Spread the charges on a grid */
-    spread_on_grid(logfile,grid,HOMENR(nsb),ir->pme_order,
-		   x+START(nsb),homecharge,box,bGatherOnly,
+#ifdef USE_MPE
+    MPE_Log_event( ev_spread_on_grid_start, 0, "" );
+#endif
+    perfon("  spread",8);
+
+    /* Spread the charges on a grid */
+    spread_on_grid(logfile,grid,my_homenr,ir->pme_order,
+		   x_tmp,q_tmp,box,bGatherOnly,
 		   q==0 ? FALSE : TRUE);
-    
+    perfoff();
+#ifdef USE_MPE
+    MPE_Log_event( ev_spread_on_grid_finish, 0, "");
+#endif
     if (!bGatherOnly) {
       inc_nrnb(nrnb,eNR_SPREADQBSP,
-	       ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
+	       ir->pme_order*ir->pme_order*ir->pme_order*my_homenr);
       
       /* sum contributions to local grid from other nodes */
-      if (PAR(cr))
-	sum_qgrid(cr,nsb,grid,TRUE);
+      if (PAR(cr)) {
+        MPI_Barrier( MPI_COMM_WORLD );
+	sum_qgrid(cr,nsb,grid,ir->pme_order,TRUE);
+	where();
+      }
 #ifdef DEBUG
       if (debug)
 	pr_fftgrid(debug,"qgrid",grid);
 #endif
+      where();
 
       /* do 3d-fft */ 
+      MPI_Barrier( MPI_COMM_WORLD );
+#ifdef USE_MPE
+      MPE_Log_event( ev_gmxfft3d_start, 0, "" );
+#endif
+      perfon("  fft",5);
       gmxfft3D(grid,FFTW_FORWARD,cr);
-      
+      perfoff();
+#ifdef USE_MPE
+      MPE_Log_event( ev_gmxfft3d_finish, 0, "" );
+#endif
+      where();
+
       /* solve in k-space for our local cells */
       vol = det(box);
+      MPI_Barrier( MPI_COMM_WORLD );
+#ifdef USE_MPE
+      MPE_Log_event( ev_solve_pme_start, 0, "" );
+#endif
+      perfon("  slvpme",8);
       energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,ir->epsilon_r,
 			     bsp_mod,recipbox,vir_AB[q],cr);
+      perfoff();
+      where();
+#ifdef USE_MPE
+      MPE_Log_event( ev_solve_pme_finish, 0, "" );
+#endif
       inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
 
       /* do 3d-invfft */
+      MPI_Barrier( MPI_COMM_WORLD );
+#ifdef USE_MPE
+      MPE_Log_event( ev_gmxfft3d_start, 0, "" );
+#endif
+      where();
+      perfon("  fft",5);
       gmxfft3D(grid,FFTW_BACKWARD,cr);
+      perfoff();
+      where();
+#ifdef USE_MPE
+      MPE_Log_event( ev_gmxfft3d_finish, 0, "" );
+#endif
       
       /* distribute local grid to all nodes */
-      if (PAR(cr))
-	sum_qgrid(cr,nsb,grid,FALSE);
+      if (PAR(cr)) {
+        MPI_Barrier( MPI_COMM_WORLD );
+	sum_qgrid(cr,nsb,grid,ir->pme_order,FALSE);
+      }
+      where();
 #ifdef DEBUG
       if (debug)
 	pr_fftgrid(debug,"potential",grid);
@@ -821,17 +1211,57 @@ real do_pme(FILE *logfile,   bool bVerbose,
       ntot  = grid->nxyz;  
       npme  = ntot*log((real)ntot)/(cr->nnodes*log(2.0));
       inc_nrnb(nrnb,eNR_FFT,2*npme);
+      where();
     }
     /* interpolate forces for our local atoms */
-    gather_f_bsplines(grid,recipbox,idx,f+START(nsb),homecharge,
+    MPI_Barrier( MPI_COMM_WORLD );
+#ifdef USE_MPE
+    MPE_Log_event( ev_gather_f_bsplines_start, 0, "" );
+#endif
+    perfon("  gathbs",8);
+    if(nnodes>1) {
+      for(i=0; (i<my_homenr); i++) {
+	f_tmp[i][XX]=0;
+	f_tmp[i][YY]=0;
+	f_tmp[i][ZZ]=0;
+      }
+    }
+    where();
+    gather_f_bsplines(grid,recipbox,idx,f_tmp,q_tmp,
 		      bFreeEnergy ? (q==0 ? 1.0-lambda : lambda) : 1.0,
-		      theta,dtheta,HOMENR(nsb),ir->pme_order,
+		      theta,dtheta,my_homenr,ir->pme_order,
 		      nnx,nny,nnz);
+    where();
+    
+    perfoff();
+#ifdef USE_MPE
+    MPE_Log_event( ev_gather_f_bsplines_finish, 0, "" );
+#endif
+    
+#ifdef GMX_MPI
+    if (nnodes > 1) {
+      MPI_Barrier( MPI_COMM_WORLD );
+      perfon("  pmere2",8);
+      pmeredist(FALSE,HOMENR(nsb), f+START(nsb), homecharge, gidx, 
+		&my_homenr, f_tmp, q_tmp);
+      perfoff();
+    }
+    where();
+#endif
+    
+#ifdef PRT_FORCE
+    perfon("  prtfrc",8);
+    for(i=START(nsb); (i<START(nsb)+HOMENR(nsb)); i++) { 
+      fprintf(fp_f,"force %5d  %12.4e %12.4e %12.4e %12.4e\n",
+              i,f[i][XX],f[i][YY],f[i][ZZ],homecharge[i-START(nsb)]);
+    }
+    perfoff();
+#endif
     
     inc_nrnb(nrnb,eNR_GATHERFBSP,
-	     ir->pme_order*ir->pme_order*ir->pme_order*HOMENR(nsb));
+	     ir->pme_order*ir->pme_order*ir->pme_order*my_homenr);
   }
-
+  
   if (!bFreeEnergy) {
     energy = energy_AB[0];
     copy_mat(vir_AB[0],vir);
@@ -842,6 +1272,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       for(j=0; j<DIM; j++)
 	vir[i][j] = (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
   }
+  /* fprintf(logfile,"PME mesh energy: %g\n",energy);*/
   if (debug)
     fprintf(debug,"PME mesh energy: %g\n",energy);
 

@@ -552,7 +552,8 @@ real do_pppm(FILE *log,       bool bVerbose,
 	     rvec x[],        rvec f[],
 	     real charge[],   rvec box,
 	     real phi[],      t_commrec *cr,
-	     t_nsborder *nsb, t_nrnb *nrnb)
+	     t_nsborder *nsb, t_nrnb *nrnb,
+	     int pme_order)
 {
   real    ener;
   int     start,nr;
@@ -568,14 +569,14 @@ real do_pppm(FILE *log,       bool bVerbose,
   
   /* In the parallel code we have to sum the grids from neighbouring nodes */
   if (PAR(cr))
-    sum_qgrid(cr,nsb,grid,TRUE);
+    sum_qgrid(cr,nsb,grid,pme_order,TRUE);
   
   /* Second step: solving the poisson equation in Fourier space */
   solve_pppm(log,cr,grid,ghat,box,bVerbose,nrnb);
   
   /* In the parallel code we have to sum once again... */
   if (PAR(cr))
-    sum_qgrid(cr,nsb,grid,FALSE);
+    sum_qgrid(cr,nsb,grid,pme_order,FALSE);
   
   /* Third and last step: gather the forces, energies and potential
    * from the grid.

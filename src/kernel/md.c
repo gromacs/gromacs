@@ -68,6 +68,11 @@
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
+#ifdef USE_MPE
+#include "mpe.h"
+#include "mpelogging.h"
+#endif
+
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
@@ -205,7 +210,9 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
   if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
     (void) init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,
-		    parm->ir.pme_order,HOMENR(nsb),mdatoms->bChargePerturbed,
+		    parm->ir.pme_order,
+		    /*HOMENR(nsb),*/nsb->natoms,
+		    mdatoms->bChargePerturbed,
 		    parm->ir.bOptFFT,parm->ir.ewald_geometry);
   
   /* Now do whatever the user wants us to do (how flexible...) */
@@ -327,6 +334,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
+
+  /* carsten -> */
+  double      zeit0, zeit1;
+  /* <- carsten */
 
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
@@ -463,9 +474,20 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bExchanged = FALSE;
   step = parm->ir.init_step;
   step_rel = 0;
+#ifdef USE_MPE
+  MPE_Start_log( );
+#endif
+  zeit0 = MPI_Wtime( );
   while ((!bRerunMD && (step_rel <= parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
+    perfon("mdstep",6);
+  /* ADD PARALLELLIZATION STUFF FOR DYNAMIC LOAD BALANCING HERE */
+
+#ifdef USE_MPE
+    /* MPI_Barrier( MPI_COMM_WORLD ); */
+    MPE_Log_event( ev_timestep1, 0, "time step starts" );
+#endif
     if (bRerunMD) {
       if (rerun_fr.bStep) {
 	step = rerun_fr.step;
@@ -747,8 +769,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
+      perfon("g_stat",6);
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
+      perfoff();
       /* Correct for double counting energies, should be moved to 
        * global_stat 
        */
@@ -911,14 +935,22 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bRerunMD) 
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);
-    
+    zeit1 = MPI_Wtime( ) - zeit0;
+    if ( MASTER(cr) )
+      printf( "Time step %d took      %f seconds\n\n", step, zeit1 );
+    zeit0 = MPI_Wtime( );
+
     if (!bRerunMD || !rerun_fr.bStep) {
       /* increase the MD step number */
       step++;
       step_rel++;
     }
+    perfoff();
   }
   /* End of main MD loop */
+#ifdef USE_MPE
+  MPE_Stop_log( );
+#endif
   debug_gmx();
 
   /* Dump the NODE time to the log file on each node */

@@ -58,7 +58,8 @@ extern real do_pppm(FILE *log,       bool bVerbose,
 		    rvec x[],        rvec f[],
 		    real charge[],   rvec box,
 		    real phi[],      t_commrec *cr,
-		    t_nsborder *nsb, t_nrnb *nrnb);
+		    t_nsborder *nsb, t_nrnb *nrnb,
+		    int pme_order);
 /* Do a PPPM calculation for the long range electrostatics. */
  
 extern real do_opt_pppm(FILE *log,       bool bVerbose,
