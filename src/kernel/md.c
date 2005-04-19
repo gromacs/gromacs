@@ -335,10 +335,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
 
-  /* carsten -> */
-  double      zeit0, zeit1;
-  /* <- carsten */
-
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
@@ -477,7 +473,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 #ifdef USE_MPE
   MPE_Start_log( );
 #endif
-  zeit0 = MPI_Wtime( );
   while ((!bRerunMD && (step_rel <= parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
@@ -935,10 +930,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bRerunMD) 
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);
-    zeit1 = MPI_Wtime( ) - zeit0;
-    if ( MASTER(cr) )
-      printf( "Time step %d took      %f seconds\n\n", step, zeit1 );
-    zeit0 = MPI_Wtime( );
 
     if (!bRerunMD || !rerun_fr.bStep) {
       /* increase the MD step number */
