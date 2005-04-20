@@ -2086,18 +2086,18 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
 		    "TPI energies","Time (ps)",
 		    "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
-  fprintf(fp_tpi,"@ subtitle \"fr are averages over one frame\"\n");
+  fprintf(fp_tpi,"@ subtitle \"f. are averages over one frame\"\n");
   snew(leg,4+ngid);
-  sprintf(str,"-\\8b\\4log(<Ve\\S-\\8b\\4U\\N>/<V>)");
+  sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
   leg[0] = strdup(str);
-  sprintf(str,"fr -\\8b\\4log<e\\S-\\8b\\4U\\N>");
+  sprintf(str,"f. -kT log<e\\S-\\8b\\4U\\N>");
   leg[1] = strdup(str);
-  sprintf(str,"fr V<e\\S-\\8b\\4U\\N>");
+  sprintf(str,"f. V<e\\S-\\8b\\4U\\N>");
   leg[2] = strdup(str);
-  sprintf(str,"fr V");
+  sprintf(str,"f. V");
   leg[3] = strdup(str);
   for(i=0; i<ngid; i++) {
-    sprintf(str,"fr U\\s%s\\N<e\\S-\\8b\\4U\\N>",
+    sprintf(str,"f. U\\s%s\\N<e\\S-\\8b\\4U\\N>",
 	    *(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
     leg[4+i] = strdup(str);
   }
