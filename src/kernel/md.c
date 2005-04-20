@@ -476,9 +476,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   while ((!bRerunMD && (step_rel <= parm->ir.nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
-    perfon("mdstep",6);
-  /* ADD PARALLELLIZATION STUFF FOR DYNAMIC LOAD BALANCING HERE */
-
 #ifdef USE_MPE
     /* MPI_Barrier( MPI_COMM_WORLD ); */
     MPE_Log_event( ev_timestep1, 0, "time step starts" );
@@ -764,10 +761,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
-      perfon("g_stat",6);
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
-      perfoff();
       /* Correct for double counting energies, should be moved to 
        * global_stat 
        */
@@ -936,7 +931,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       step++;
       step_rel++;
     }
-    perfoff();
   }
   /* End of main MD loop */
 #ifdef USE_MPE
