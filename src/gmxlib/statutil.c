@@ -146,6 +146,11 @@ int check_times2(real t,real t0,real tp, real tpp, bool bDouble)
   int  r;
   real margin;
   
+#ifndef GMX_DOUBLE
+  /* since t is float, we can not use double precision for bRmod */
+  bDouble = FALSE;
+#endif
+
   if (t-tp>0 && tp-tpp>0)
     margin = 0.1*min(t-tp,tp-tpp);
   else
