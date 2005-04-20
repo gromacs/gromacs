@@ -77,6 +77,9 @@ extern "C" {
 typedef int     	atom_id;	/* To indicate an atoms id         */
 #define NO_ATID		(atom_id)(~0)	/* Use this to indicate invalid atid */
 
+#define GMX_DOUBLE_EPS  2.2e-16
+#define GMX_FLOAT_EPS   1.2e-07
+
   /* Check whether we already have a real type! */
 #ifdef GMX_DOUBLE
 #ifndef HAVE_REAL
@@ -84,14 +87,14 @@ typedef double   	real;
 #define HAVE_REAL
 #endif
 #define GMX_MPI_REAL    MPI_DOUBLE
-#define GMX_REAL_EPS    2.2e-16
+#define GMX_REAL_EPS    GMX_DOUBLE_EPS
 #else
 #ifndef HAVE_REAL
 typedef float           real;
 #define HAVE_REAL
 #endif
 #define GMX_MPI_REAL    MPI_FLOAT
-#define GMX_REAL_EPS    1.2e-07
+#define GMX_REAL_EPS    GMX_FLOAT_EPS
 #endif
 
 #ifndef VECTORIZATION_BUFLENGTH

@@ -109,18 +109,26 @@ void close_trx(int status);
 int open_trx(char *outfile,char *filemode);
 /* Open a TRX file and return the file number */
 
-extern bool bRmod(double a, double b, double c);
+extern bool bRmod_fd(double a, double b, double c,bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
  */
 
-extern int check_times2(real t,real t0,real tp,real tpp);
+#ifdef GMX_DOUBLE
+#define bRmod(a,b,c) bRmod_fd(a,b,c,TRUE)
+#else
+#define bRmod(a,b,c) bRmod_fd(a,b,c,FALSE)
+#endif
+
+extern int check_times2(real t,real t0,real tp,real tpp,bool bDouble);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
  *          1 if t>tend
  * where margin is 0.1*min(t-tp,tp-tpp), if this positive, 0 otherwise.
  * tp and tpp should be the time of the previous frame and the one before.
+ * The mod is done with single or double precision accuracy depending
+ * on the value of bDouble.
  */
 
 extern int check_times(real t);

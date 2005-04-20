@@ -61,6 +61,7 @@
 typedef struct		/* This struct describes the order and the	*/
   /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
 {
+  bool  bDouble;        /* Double precision?                            */
   int	ir_size;	/* Backward compatibility		        */
   int	e_size;		/* Backward compatibility		        */
   int	box_size;	/* Non zero if a box is present			*/

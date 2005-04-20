@@ -126,12 +126,12 @@ void set_program_name(char *argvzero)
  *
  ****************************************************************/
 
-bool bRmod(double a, double b, double c)
+bool bRmod_fd(double a, double b, double c, bool bDouble)
 {
   int iq;
   double tol;
 
-  tol = 5*GMX_REAL_EPS;
+  tol = 5*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
 
   iq = (a - b + tol*a)/c;
 
@@ -141,7 +141,7 @@ bool bRmod(double a, double b, double c)
     return FALSE;
 }
 
-int check_times2(real t,real t0,real tp, real tpp)
+int check_times2(real t,real t0,real tp, real tpp, bool bDouble)
 {
   int  r;
   real margin;
@@ -154,7 +154,7 @@ int check_times2(real t,real t0,real tp, real tpp)
   r=-1;
   if ((((tbegin >= 0.0) && (t >= tbegin)) || (tbegin == -1.0)) &&
       (((tend   >= 0.0) && (t <= tend+margin))   || (tend   == -1.0))) {
-    if (tdelta > 0 && !bRmod(t,t0,tdelta))
+    if (tdelta > 0 && !bRmod_fd(t,t0,tdelta,bDouble))
       r = -1;
     else
       r = 0;
@@ -168,7 +168,7 @@ int check_times2(real t,real t0,real tp, real tpp)
 
 int check_times(real t)
 {
-  return check_times2(t,t,t,t);
+  return check_times2(t,t,t,t,FALSE);
 }
 
 char *time_unit(void)
