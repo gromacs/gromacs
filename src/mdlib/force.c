@@ -554,9 +554,10 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 		      const t_mdatoms *mdatoms,const t_block *excl)
 {
-  int    i,j,tpi,tpj,j1,j2,k,n,npair,nexcl;
+  int    i,j,tpi,tpj,j1,j2,k,n,nexcl;
+  long   npair,npair_ij;
   double csix,ctwelve;
-  int    natoms,ntp,*type;
+  int    natoms,ntp,*type,*typecount;
   bool   bBHAM;
   real   *nbfp;
   atom_id *AA;
@@ -573,32 +574,33 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
   npair = 0;
   nexcl = 0;
   if (!fr->bTPI) {
-    /* We loop over all the atom pairs and subtract the excluded pairs.
+    /* Count the types so we avoid natoms^2 operations */
+    snew(typecount,ntp);
+    for(i=0; i<natoms; i++)
+      typecount[type[i]]++;
+    for(tpi=0; tpi<ntp; tpi++) {
+      for(tpj=tpi; tpj<ntp; tpj++) {
+	if (tpi != tpj)
+	  npair_ij = (long)typecount[tpi]*(long)typecount[tpj];
+	else
+	  npair_ij = (long)typecount[tpi]*((long)typecount[tpi] - 1)/2;
+	if (bBHAM) {
+	  csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj);
+	} else {
+	  csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj);
+	  ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj);
+	}
+	npair += npair_ij;
+      }
+    }
+    sfree(typecount);
+    /* Subtract the excluded pairs.
      * The main reason for substracting exclusions is that in some cases some
      * combinations might never occur and the parameters could have any value.
      * These unused values should not influence the dispersion correction.
      */
     for(i=0; (i<natoms); i++) {
       tpi = type[i];
-#ifdef DEBUG
-      if (tpi >= ntp)
-	gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntp);
-#endif
-      for(j=i+1; (j<natoms); j++) {
-	tpj   = type[j];
-#ifdef DEBUG
-	if (tpj >= ntp)
-	  gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntp);
-#endif
-	if (bBHAM) {
-	  csix += BHAMC(nbfp,ntp,tpi,tpj);
-	} else {
-	  csix    += C6 (nbfp,ntp,tpi,tpj);
-	  ctwelve += C12(nbfp,ntp,tpi,tpj);
-	}
-	npair++;
-      }
-      /* Subtract the exclusions */
       j1  = excl->index[i];
       j2  = excl->index[i+1];
       for(j=j1; j<j2; j++) {
