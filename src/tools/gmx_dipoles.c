@@ -414,16 +414,15 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
   do_view(fn,"-autoscale xy -nxy");
 }
 			    
-static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis,
-			    bool bPairs)
+static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
 {
   int    i,j,k;
-  double dc,dc1,d,d2,n5,ddc1,ddc2,ddc3;
+  double dc,dc1,d,n5,ddc1,ddc2,ddc3;
   rvec   xxx = { 1, 0, 0 };
   rvec   yyy = { 0, 1, 0 };
   rvec   zzz = { 0, 0, 1 };
   
-  d=d2=0;
+  d=0;
   ddc1 = ddc2 = ddc3 = 0;
   for(i=k=0; (i<n); i++) {
     ddc1 += fabs(cos_angle(dip[i],xxx));
@@ -433,11 +432,9 @@ static void compute_avercos(int n,rvec dip[],real *dd,real *dd2,rvec axis,
       for(j=i+1; (j<n); j++,k++) {
 	dc  = cos_angle(dip[i],dip[j]);
 	d  += fabs(dc);
-	d2 += dc*dc;
       }
   }
   *dd  = d/k;
-  *dd2 = d2/k;
   axis[XX] = ddc1/n;
   axis[YY] = ddc2/n;
   axis[ZZ] = ddc3/n;
@@ -479,10 +476,10 @@ static void do_dip(char *fn,char *topf,
 #define NLEGAVER asize(leg_aver)
   static char *leg_cosaver[] = {
     "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
-    "\\f{4}<cos\\S2\\N\\f{12}q\\f{4}\\sij\\N>",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
-    "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
+    "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>",
+    "RMSD cos"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
 
@@ -495,7 +492,7 @@ static void do_dip(char *fn,char *topf,
   int        *dipole_bin,ndipbin,ibin,iVol,natoms,step,idim=-1;
   unsigned long mode;
   char       **enm=NULL,buf[STRLEN];
-  real       rcut=0,t,t0,t1,dt,volume,lambda,dd,dd2;
+  real       rcut=0,t,t0,t1,dt,volume,lambda,dd,rms_cos;
   rvec       dipaxis;
   matrix     box;
   bool       bCont;
@@ -594,8 +591,9 @@ static void do_dip(char *fn,char *topf,
   }
   
   if (cosaver) {
-    caver = xvgropen(cosaver,"Average pair orientation","Time (ps)","");
-    xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[2]));
+    caver = xvgropen(cosaver,bPairs ? "Average pair orientation" :
+		     "Average absolute dipole orientation","Time (ps)","");
+    xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[1]));
   }
     
   /* Write legends to all the files */
@@ -640,7 +638,7 @@ static void do_dip(char *fn,char *topf,
 
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
-    rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
+    rcut   = 0.7*sqrt(max_cutoff2(box));
     gkrbin = mk_gkrbin(rcut); 
   }
 
@@ -711,13 +709,16 @@ static void do_dip(char *fn,char *topf,
       M_av2[m] = M_av[m]*M_av[m];
     
     if (cosaver) {
-      compute_avercos(gnx,dipole,&dd,&dd2,dipaxis,bPairs);
+      compute_avercos(gnx,dipole,&dd,dipaxis,bPairs);
+      rms_cos = sqrt(sqr(dipaxis[XX]-0.5)+
+		     sqr(dipaxis[YY]-0.5)+
+		     sqr(dipaxis[ZZ]-0.5));
       if (bPairs) 
 	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
-		t,dd,dd2,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
+		t,dd,dipaxis[XX],dipaxis[YY],dipaxis[ZZ],rms_cos);
       else
-	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e\n",
-		t,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
+	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
+		t,dipaxis[XX],dipaxis[YY],dipaxis[ZZ],rms_cos);
     }
     
     if (bGkr) {
