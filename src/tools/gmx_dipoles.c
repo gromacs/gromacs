@@ -383,7 +383,7 @@ static void update_slab_dipoles(int k0,int k1,atom_id ma[],rvec x[],rvec mu,
   
   for(k=k0; (k<k1); k++) 
     xdim += x[ma[k]][idim];
-  xdim /+ (k1-k0);
+  xdim /= (k1-k0);
   k = ((int)(xdim*nslice/box[idim][idim] + nslice)) % nslice;
   rvec_inc(slab_dipole[k],mu);
 }
@@ -476,10 +476,10 @@ static void do_dip(char *fn,char *topf,
 #define NLEGAVER asize(leg_aver)
   static char *leg_cosaver[] = {
     "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
+    "RMSD cos"
     "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>",
-    "RMSD cos"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
 
@@ -715,10 +715,10 @@ static void do_dip(char *fn,char *topf,
 		     sqr(dipaxis[ZZ]-0.5));
       if (bPairs) 
 	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
-		t,dd,dipaxis[XX],dipaxis[YY],dipaxis[ZZ],rms_cos);
+		t,dd,rms_cos,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
       else
 	fprintf(caver,"%10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
-		t,dipaxis[XX],dipaxis[YY],dipaxis[ZZ],rms_cos);
+		t,rms_cos,dipaxis[XX],dipaxis[YY],dipaxis[ZZ]);
     }
     
     if (bGkr) {
