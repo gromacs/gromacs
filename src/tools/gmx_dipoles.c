@@ -476,10 +476,10 @@ static void do_dip(char *fn,char *topf,
 #define NLEGAVER asize(leg_aver)
   static char *leg_cosaver[] = {
     "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
-    "RMSD cos"
+    "RMSD cos",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
     "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
-    "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>",
+    "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
 
