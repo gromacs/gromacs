@@ -65,6 +65,7 @@ typedef struct {
 /* by 1e-10, which is done in Imax (ionize.c)                 */
 
 static const t_cross   cross_sec_h[] = {
+  { 5.21E-01,    3.39E-01,     3.21E-01,        -1 },
   { 2.63e-2,     1.01e-1,      5.49e-1,         7.12e-3 },
   { 9.79e-3,     6.18e-2,      5.83e-1,         9.60e-3 },
   { 4.55e-3,     4.16e-2,      5.99e-1,         1.19e-2 },
@@ -73,6 +74,7 @@ static const t_cross   cross_sec_h[] = {
   { 4.16e-4,     1.13e-2,      6.07e-1,         2.23e-2 }
 };
 static const t_cross   cross_sec_c[] = {
+  { 3.10E+3,     1.42E+1,      1.03E+0,         -1 },
   { 1.99e+2,     5.88e+0,      2.29e+0,         3.06e-2 },
   { 8.01e+1,     4.22e+0,      2.56e+0,         4.38e-2 },
   { 3.92e+1,     3.26e+0,      2.74e+0,         5.72e-2 },
@@ -81,6 +83,7 @@ static const t_cross   cross_sec_c[] = {
   { 4.15e+0,     1.30e+0,      3.20e+0,         1.24e-1 }
 };
 static const t_cross   cross_sec_n[] = {
+  { 5.78E+3,     2.13E+1,      1.11E+0,         -1 }, 
   { 3.91e+2,     8.99e+0,      2.49e+0,         3.43e-2 },
   { 1.59e+2,     6.29e+0,      2.86e+0,         5.01e-2 },
   { 7.88e+1,     4.76e+0,      3.10e+0,         6.57e-2 },
@@ -89,6 +92,7 @@ static const t_cross   cross_sec_n[] = {
   { 8.52e+0,     1.88e+0,      3.65e+0,         1.43e-1 }
 };
 static const t_cross   cross_sec_o[] = {
+  { 9.74E+3,     3.00E+1,      1.06E+0,         -1 },
   { 6.90e+2,     1.33e+1,      2.66e+0,         3.75e-2 },
   { 2.84e+2,     9.21e+0,      3.14e+0,         5.62e-2 },
   { 1.42e+2,     6.85e+0,      3.44e+0,         7.43e-2 },
@@ -97,6 +101,7 @@ static const t_cross   cross_sec_o[] = {
   { 1.57e+1,     2.64e+0,      4.10e+0,         1.61e-1 }
 };
 static const t_cross   cross_sec_s[] = {
+  { 1.07E+5,      1.15E+2,     2.03E+0,         -1 },
   { 1.10e+4,      5.54e+1,     3.98e+0,         5.42e-2 },
   { 4.91e+3,      4.29e+1,     4.71e+0,         8.38e-2 },
   { 2.58e+3,      3.36e+1,     5.32e+0,         1.16e-1 },
@@ -179,7 +184,7 @@ typedef struct {
 } t_cross_atom;
 
 /* BEGIN GLOBAL VARIABLES */
-static int   Energies[] = { 6, 8, 10, 12, 15, 20 };
+static int   Energies[] = { 2, 6, 8, 10, 12, 15, 20 };
 static int   ionize_seed = 1993;
 #define NENER asize(Energies)
 /* END GLOBAL VARIABLES */
