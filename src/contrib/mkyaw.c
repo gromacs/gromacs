@@ -60,20 +60,20 @@
 #include "atomprop.h"
 #include "pbc.h"
 
-bool is_hb(rvec x[],int id,int ih,int ia,real ccut)
+bool is_hb(t_pbc *pbc,rvec x[],int id,int ih,int ia,real ccut)
 {
   bool bHB;
   rvec doo,doh;
   real doh2,cut2;
   rvec dh,ha;
   
-  pbc_dx(x[id],x[ih],dh);
-  pbc_dx(x[id],x[ia],ha);
+  pbc_dx(pbc,x[id],x[ih],dh);
+  pbc_dx(pbc,x[id],x[ia],ha);
   bHB = (cos_angle(dh,ha) > ccut);
   
   if (bHB) {
-    pbc_dx(x[id],x[ia],doo);
-    pbc_dx(x[ih],x[ia],doh);
+    pbc_dx(pbc,x[id],x[ia],doo);
+    pbc_dx(pbc,x[ih],x[ia],doh);
     doh2 = iprod(doh,doh);
     if (doh2 > 0.09) {
       printf("ia = %d, ih = %d, ia = %d, doo = %g, doh = %g\n",
@@ -88,24 +88,28 @@ int qnd_hbonds(int natom,rvec x[],matrix box)
   int  i,j,kd,ka,nhb=0;
   rvec doo;
   real doo2,cut2,ccut;
+  t_pbc *pbc;
   
+  snew(pbc,1);
+  
+  set_pbc(pbc,box);
   cut2 = sqr(0.35);
   ccut = cos(30*DEG2RAD);
   if ((natom % 3) != 0) 
     gmx_fatal(FARGS,"Is this water?");
-  init_pbc(box);
   
   for(i=0; (i<natom); i+=3) {
     for(j=i+3; (j<natom); j+= 3) {
-      pbc_dx(x[i],x[j],doo);
+      pbc_dx(pbc,x[i],x[j],doo);
       doo2 = iprod(doo,doo);
       if (doo2 < cut2) {
-	if (is_hb(x,i,i+1,j,ccut) || is_hb(x,i,i+2,j,ccut) || 
-	    is_hb(x,j,j+1,i,ccut) || is_hb(x,j,j+2,i,ccut))
+	if (is_hb(pbc,x,i,i+1,j,ccut) || is_hb(pbc,x,i,i+2,j,ccut) || 
+	    is_hb(pbc,x,j,j+1,i,ccut) || is_hb(pbc,x,j,j+2,i,ccut))
 	  nhb++;
       }
     }
   }
+  sfree(pbc);
   return nhb;
 }
 
