@@ -830,9 +830,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
     
     /* Check for excessively large energies */
-    if (bIonize && fabs(ener[F_ETOT]) > 1e18) {
-      fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
-      break;
+    if (bIonize) {
+#ifdef GMX_DOUBLE
+      real etot_max = 1e200;
+#else
+      real etot_max = 1e30;
+#endif
+      if (fabs(ener[F_ETOT]) > etot_max) {
+	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+	break;
+      }
     }
       
     /* Calculate Temperature coupling parameters lambda and adjust
