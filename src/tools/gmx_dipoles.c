@@ -100,6 +100,15 @@ static void done_gkrbin(t_gkrbin **gb)
   *gb = NULL;
 }
 
+static void rvec2sprvec(rvec dipcart,rvec dipsp)
+{
+  clear_rvec(dipsp);
+  dipsp[0] = sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]+dipcart[ZZ]*dipcart[ZZ]); /* R */ 
+  dipsp[1] = atan2(dipcart[YY],dipcart[XX]);  /* Theta */ 
+  dipsp[2] = atan2(sqrt(dipcart[XX]*dipcart[XX]+dipcart[YY]*dipcart[YY]),dipcart[ZZ]);       /* Phi */ 
+}
+
+
 void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
 	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
 	    matrix box,t_atom *atom,int nAtom)
@@ -440,19 +449,20 @@ static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
   axis[ZZ] = ddc3/n;
 }
 
-static void do_dip(char *fn,char *topf,
+static void do_dip(char *fn,      char *topf,
 		   char *out_mtot,char *out_eps,char *out_aver, 
-		   char *dipdist,bool bAverCorr,
-		   char *cosaver,bool bPairs,
-		   bool bCorr,   char *corf,
-		   bool bGkr,    char *gkrfn,
-		   bool bQuad,   char *quadfn,
-		   bool bMU,     char *mufn,
-		   int gnx,atom_id grpindex[],
-		   real mu_max,real mu_aver,
+		   char *dipdist, bool bAverCorr,
+		   char *cosaver, char *fndip3d,bool bPairs,
+		   bool bCorr,    char *corf,
+		   bool bGkr,     char *gkrfn,
+		   bool bQuad,    char *quadfn,
+		   bool bMU,      char *mufn,
+		   int gnx,       atom_id grpindex[],
+		   real mu_max,   real mu_aver,
 		   real epsilonRF,real temp,
-		   int gkatom,int skip,
-		   bool bSlab,int nslices,char *axtitle,char *slabfn)
+		   int gkatom,    int skip,
+		   bool bSlab,    int nslices,
+		   char *axtitle, char *slabfn)
 {
   static char *leg_mtot[] = { 
     "M\\sx \\N", 
@@ -483,11 +493,11 @@ static void do_dip(char *fn,char *topf,
   };
 #define NLEGCOSAVER asize(leg_cosaver)
 
-  FILE       *outdd,*outmtot,*outaver,*outeps,*caver=NULL;
-  rvec       *x,*dipole=NULL,mu_t,quad;
+  FILE       *outdd,*outmtot,*outaver,*outeps,*caver=NULL,*dip3d=NULL;
+  rvec       *x,*dipole=NULL,mu_t,quad,*dipsp=NULL;
   t_gkrbin   *gkrbin;
   t_enxframe *fr;
-  int        nframes=1000,fmu=0,nre,timecheck=0;
+  int        nframes=1000,fmu=0,nre,timecheck=0,ncolour=0;
   int        i,j,k,m,natom=0,nmol,status,teller,tel3;
   int        *dipole_bin,ndipbin,ibin,iVol,natoms,step,idim=-1;
   unsigned long mode;
@@ -596,6 +606,20 @@ static void do_dip(char *fn,char *topf,
     xvgr_legend(caver,NLEGCOSAVER,bPairs ? leg_cosaver : &(leg_cosaver[1]));
   }
     
+  if (fndip3d) {
+    snew(dipsp,gnx);
+  
+    /* we need a dummy file for gnuplot */
+    dip3d = (FILE *)ffopen("dummy.dat","w");
+    fprintf(dip3d,"%f %f %f", 0.0,0.0,0.0);
+    ffclose(dip3d);
+
+    dip3d = (FILE *)ffopen(fndip3d,"w");
+    fprintf(dip3d,"# This file was created by %s\n",Program());
+    fprintf(dip3d,"# which is part of G R O M A C S:\n");
+    fprintf(dip3d,"#\n");
+  }
+  
   /* Write legends to all the files */
   xvgr_legend(outmtot,NLEGMTOT,leg_mtot);
   xvgr_legend(outaver,NLEGAVER,leg_aver);
@@ -638,7 +662,9 @@ static void do_dip(char *fn,char *topf,
 
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
-    rcut   = 0.7*sqrt(max_cutoff2(box));
+    //  rcut   = 0.7*sqrt(max_cutoff2(box));
+    rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
+
     gkrbin = mk_gkrbin(rcut); 
   }
 
@@ -701,7 +727,56 @@ static void do_dip(char *fn,char *topf,
 	ibin = (ndipbin*sqrt(mu_mol)/mu_max);
 	if (ibin < ndipbin)
 	  dipole_bin[ibin]++;
+
+        if (fndip3d) {
+          rvec2sprvec(dipole[i],dipsp[i]);
+          
+          if (dipsp[i][YY] > -M_PI && dipsp[i][YY] < -0.5*M_PI) {
+            if (dipsp[i][ZZ] < 0.5 * M_PI) {
+              ncolour = 1;
+            } else {
+              ncolour = 2;
+            }
+          }else if (dipsp[i][YY] > -0.5*M_PI && dipsp[i][YY] < 0.0*M_PI) {
+            if (dipsp[i][ZZ] < 0.5 * M_PI) {
+              ncolour = 3;
+            } else {
+              ncolour = 4;
+            }       
+          }else if (dipsp[i][YY] > 0.0 && dipsp[i][YY] < 0.5*M_PI) {
+            if (dipsp[i][ZZ] < 0.5 * M_PI) {
+              ncolour = 5;
+            } else {
+              ncolour = 6;
+            }      
+          }else if (dipsp[i][YY] > 0.5*M_PI && dipsp[i][YY] < M_PI) {
+            if (dipsp[i][ZZ] < 0.5 * M_PI) {
+              ncolour = 7;
+            } else {
+              ncolour = 8;
+            }
+          }
+          if (dip3d)
+            fprintf(dip3d,"set arrow %d from %f, %f, %f to %f, %f, %f lt %d  # %d %d\n", 
+                    i+1,
+		    x[mols->index[gi]][XX],
+		    x[mols->index[gi]][YY],
+		    x[mols->index[gi]][ZZ],
+		    x[mols->index[gi]][XX]+dipole[i][XX]/25, 
+                    x[mols->index[gi]][YY]+dipole[i][YY]/25, 
+                    x[mols->index[gi]][ZZ]+dipole[i][ZZ]/25, 
+                    ncolour, mols->index[gi], gi);
+	}
       } /* End loop of all molecules in frame */
+      
+      if (dip3d) {
+        fprintf(dip3d,"set title \"t = %4.3f\"\n",t);
+        fprintf(dip3d,"set xrange [0.0:%4.2f]\n",box[XX][XX]);
+        fprintf(dip3d,"set yrange [0.0:%4.2f]\n",box[YY][YY]);
+        fprintf(dip3d,"set zrange [0.0:%4.2f]\n\n",box[ZZ][ZZ]);
+        fprintf(dip3d,"splot 'dummy.dat' using 1:2:3 w vec\n");
+        fprintf(dip3d,"pause -1 'Hit return to continue'\n");
+      }
     }
     
     /* Compute square of total dipole */
@@ -806,6 +881,15 @@ static void do_dip(char *fn,char *topf,
   fclose(outeps);
   if (cosaver)
     fclose(caver);
+
+  if (dip3d) {
+    fprintf(dip3d,"set xrange [0.0:%4.2f]\n",box[XX][XX]);
+    fprintf(dip3d,"set yrange [0.0:%4.2f]\n",box[YY][YY]);
+    fprintf(dip3d,"set zrange [0.0:%4.2f]\n\n",box[ZZ][ZZ]);
+    fprintf(dip3d,"splot 'dummy.dat' using 1:2:3 w vec\n");
+    fprintf(dip3d,"pause -1 'Hit return to continue'\n");
+    fclose(dip3d);
+  }
 
   if (bSlab) {
     dump_slab_dipoles(slabfn,idim,nslices,slab_dipoles,box,teller);
@@ -965,6 +1049,7 @@ int gmx_dipoles(int argc,char *argv[])
     { efXVG, "-d",   "dipdist",    ffWRITE },
     { efXVG, "-c",   "dipcorr",    ffOPTWR },
     { efXVG, "-g",   "gkr",        ffOPTWR },
+    { efXVG, "-dip3d", "dip3d",    ffOPTWR },
     { efXVG, "-cos", "cosaver",    ffOPTWR },
     { efXVG, "-q",   "quadrupole", ffOPTWR },
     { efXVG, "-slab","slab",       ffOPTWR }
@@ -1015,6 +1100,7 @@ int gmx_dipoles(int argc,char *argv[])
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 bAverCorr,opt2fn_null("-cos",NFILE,fnm),
+	 opt2fn_null("-dip3d",NFILE,fnm),
 	 bPairs,bCorr,
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
