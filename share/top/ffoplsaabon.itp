@@ -303,7 +303,6 @@
   C_2   CW      1    0.14900   334720.0   ;
   C_3   CW      1    0.14900   334720.0   ;
 
-
 [ constrainttypes ]
 ; this section is implemented manually from bond & angle values
 ; account for larger inertia with heavy hydrogens
@@ -1301,8 +1300,7 @@
   S      CA     CA      1   119.400    711.280   ; thioanisole             copy from SY-CA-CA      rcr HIVRT
   P      CA     CA      1   119.400    711.280   ; 
   CA     S      CT      1   104.200    518.816   ; thioanisole             adjusted from CT-S-CT  rcr HIVRT
-
-
+  
 [ dihedraltypes ]
 ;  i    j    k    l   func     coefficients
 ; OPLS Fourier dihedraltypes translated to Gromacs Ryckaert-Bellemans form
@@ -2659,3 +2657,27 @@
 
 ; Z -CA-X -Y improper torsion. CA is any ring carbon (CA,CB,CN,CV,CW,CR,CK,CQ,CS,C*)
 #define improper_Z_CA_X_Y       180.0      4.60240   2
+
+
+; 
+; This bit added by DvdS for quartz simulation 2005-05-07
+; These parameters are taken from GROMOS and were also used in
+; Wensink et al. Langmuir 16 (2000) pp. 7392-7400
+;
+[ bondtypes ]
+; i    j  func       b0          kb
+  SI    OS      1    0.16300     251040.  ; From GROMACS
+  SI    OH      1    0.16300     251040.  ;
+  
+[ angletypes ]
+;  i    j    k  func       th0       cth
+   SI   OS   SI    1   155.000     397.480
+   OS   SI   OS    1   109.500     397.480
+   OH   SI   OS    1   109.500     397.480
+   SI   OH   HO    1   109.500     397.480
+   
+[ dihedraltypes ]
+;  i    j    k    l   func     coefficients
+; Added DvdS for Quartz simulations
+   SI   OS    1     0.000       3.766      3
+   SI   OH    1     0.000       3.766      3
