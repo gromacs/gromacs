@@ -452,7 +452,8 @@ static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
 static void do_dip(char *fn,      char *topf,
 		   char *out_mtot,char *out_eps,char *out_aver, 
 		   char *dipdist, bool bAverCorr,
-		   char *cosaver, char *fndip3d,bool bPairs,
+		   char *cosaver, char *fndip3d,
+		   char *fnadip,  bool bPairs,
 		   bool bCorr,    char *corf,
 		   bool bGkr,     char *gkrfn,
 		   bool bQuad,    char *quadfn,
@@ -492,8 +493,15 @@ static void do_dip(char *fn,      char *topf,
     "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>"
   };
 #define NLEGCOSAVER asize(leg_cosaver)
+  static char *leg_adip[] = {
+    "<mu>",
+    "Std. Dev.",
+    "Error"
+  };
+#define NLEGADIP asize(leg_adip)
 
-  FILE       *outdd,*outmtot,*outaver,*outeps,*caver=NULL,*dip3d=NULL;
+  FILE       *outdd,*outmtot,*outaver,*outeps,*caver=NULL;
+  FILE       *dip3d=NULL,*adip=NULL;
   rvec       *x,*dipole=NULL,mu_t,quad,*dipsp=NULL;
   t_gkrbin   *gkrbin;
   t_enxframe *fr;
@@ -509,7 +517,7 @@ static void do_dip(char *fn,      char *topf,
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
   double     M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
-  t_lsq      *Qlsq,mulsq;
+  t_lsq      *Qlsq,mulsq,muframelsq;
   ivec       iMu;
   real       **muall=NULL;
   rvec       *slab_dipoles=NULL;
@@ -600,6 +608,11 @@ static void do_dip(char *fn,      char *topf,
     }
   }
   
+  if (fnadip) {
+    adip = xvgropen(fnadip, "Average molecular dipole","Dipole (D)","");
+    xvgr_legend(adip,NLEGADIP,leg_adip);
+  
+  }
   if (cosaver) {
     caver = xvgropen(cosaver,bPairs ? "Average pair orientation" :
 		     "Average absolute dipole orientation","Time (ps)","");
@@ -695,11 +708,14 @@ static void do_dip(char *fn,      char *topf,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
+      
+      init_lsq(&muframelsq);
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
 	int gi = grpindex ? grpindex[i] : i;
 	mol_dip(mols->index[gi],mols->index[gi+1],mols->a,x,atom,dipole[i]);
 	add_lsq(&mulsq,0,norm(dipole[i]));
+	add_lsq(&muframelsq,0,norm(dipole[i]));
 	if (bSlab) 
 	  update_slab_dipoles(mols->index[gi],mols->index[gi+1],mols->a,x,
 			      dipole[i],idim,nslices,slab_dipoles,box);
@@ -850,6 +866,12 @@ static void do_dip(char *fn,      char *topf,
        */
       fprintf(outaver,"%10g  %10.3e %10.3e %10.3e %10.3e\n",
 	      t,M2_ave,M_ave2,M_diff,M_ave2/M2_ave);
+      
+      if (fnadip) 
+	fprintf(adip, "%10g %f %f %f\n", t,aver_lsq(&muframelsq),
+		sigma_lsq(&muframelsq),error_lsq(&muframelsq));
+
+      fprintf(stdout, "%f %f\n", norm(dipole[0]), norm(dipole[1]));
 	      
       if (!bMU || (mu_aver != -1)) {
 	/* Finite system Kirkwood G-factor */
@@ -862,6 +884,7 @@ static void do_dip(char *fn,      char *topf,
 		 Gk/(3*epsilon*(2*epsilonRF+1)));
 	
 	fprintf(outeps,"%10g  %10.3e %10.3e %10.3e\n",t,epsilon,Gk,g_k);
+
       }
       else 
 	fprintf(outeps,"%10g  %12.8e\n",t,epsilon);
@@ -879,6 +902,10 @@ static void do_dip(char *fn,      char *topf,
   fclose(outmtot);
   fclose(outaver);
   fclose(outeps);
+
+  if (fnadip)
+    fclose(adip);
+
   if (cosaver)
     fclose(caver);
 
@@ -1049,6 +1076,7 @@ int gmx_dipoles(int argc,char *argv[])
     { efXVG, "-d",   "dipdist",    ffWRITE },
     { efXVG, "-c",   "dipcorr",    ffOPTWR },
     { efXVG, "-g",   "gkr",        ffOPTWR },
+    { efXVG, "-adip","adip",       ffOPTWR },
     { efXVG, "-dip3d", "dip3d",    ffOPTWR },
     { efXVG, "-cos", "cosaver",    ffOPTWR },
     { efXVG, "-q",   "quadrupole", ffOPTWR },
@@ -1100,7 +1128,7 @@ int gmx_dipoles(int argc,char *argv[])
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 bAverCorr,opt2fn_null("-cos",NFILE,fnm),
-	 opt2fn_null("-dip3d",NFILE,fnm),
+	 opt2fn_null("-dip3d",NFILE,fnm),opt2fn_null("-adip",NFILE,fnm),
 	 bPairs,bCorr,
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
