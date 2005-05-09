@@ -868,8 +868,7 @@ static void do_dip(char *fn,      char *topf,
 	      t,M2_ave,M_ave2,M_diff,M_ave2/M2_ave);
       
       if (fnadip) 
-	fprintf(adip, "%10g %f %f %f\n", t,aver_lsq(&muframelsq),
-		sigma_lsq(&muframelsq),error_lsq(&muframelsq));
+	fprintf(adip, "%10g %f \n", t,aver_lsq(&muframelsq));
 
       fprintf(stdout, "%f %f\n", norm(dipole[0]), norm(dipole[1]));
 	      
