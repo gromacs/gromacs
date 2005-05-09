@@ -143,7 +143,7 @@ static void done_corr(t_corr *this)
 }
 
 static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
-		       real beginfit,real endfit,
+		       real msdtime,real beginfit,real endfit,
 		       real *DD,real *SigmaD,char *grpname[])
 {
   FILE *out;
@@ -151,10 +151,12 @@ static void corr_print(t_corr *this,char *fn,char *title,char *yaxis,
   
   out=xvgropen(fn,title,xvgr_tlabel(),yaxis);
   if (DD) {
-    fprintf(out,"# Diffusion constants fitted from time %g to %g (%s)\n",
+    fprintf(out,"# MSD gathered over %g %s with %d restarts\n",
+	    msdtime,time_unit(),this->nrestart);
+    fprintf(out,"# Diffusion constants fitted from time %g to %g %s\n",
 	    beginfit,endfit,time_unit());
     for(i=0; i<this->ngrp; i++) 
-      fprintf(out,"# D[%10s] = %.3f (+/- %.3f) (1e-5 cm^2/s)\n",
+      fprintf(out,"# D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)\n",
 	      grpname[i],DD[i],SigmaD[i]);
   }
   for(i=0; i<this->nframes; i++) {
@@ -461,7 +463,7 @@ void printmol(t_corr *this,char *fn)
   Dav  /= this->nnx;
   D2av /= this->nnx;
   VarD  = D2av - sqr(Dav);
-  printf("<D> = %.3f Std. Dev. = %.3f Error = %.3f\n",
+  printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n",
 	 Dav,sqrt(VarD),sqrt(VarD/this->nnx));
   
   sfree(D);
@@ -509,14 +511,22 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 
   DD     = NULL;
   SigmaD = NULL;
+
+  if (beginfit == -1) {
+    i0 = (int)(0.1*(msd->nframes - 1) + 0.5);
+    beginfit = msd->time[i0];
+  } else
   for(i0=0; i0<msd->nframes && msd->time[i0]<beginfit; i0++) 
     ;
+
   if (endfit == -1) {
-    i1 = msd->nframes;
+    i1 = (int)(0.9*(msd->nframes - 1) + 0.5) + 1;
     endfit = msd->time[i1-1];
   } else
     for(i1=i0; i1<msd->nframes && msd->time[i1]<=endfit; i1++)
 		      ;
+  fprintf(stdout,"Fitting from %g to %g %s\n\n",beginfit,endfit,time_unit());
+
   N = i1-i0;
   if (N <= 2) {
     fprintf(stdout,"Not enough points for fitting (%d).\n"
@@ -534,7 +544,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
       lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b);
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
-      fprintf(stdout,"D[%10s] %.3f (+/- %.3f) 1e-5 cm^2/s\n",
+      fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",
 	      grpname[j],DD[j],SigmaD[j]);
     }
   }
@@ -542,7 +552,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
   corr_print(msd,msd_file,
 	     "Mean Square Displacement",
 	     "MSD (nm\\S2\\N)",
-	     beginfit,endfit,DD,SigmaD,grpname);
+	     msd->time[msd->nframes-1],beginfit,endfit,DD,SigmaD,grpname);
 }
 
 int gmx_msd(int argc,char *argv[])
@@ -571,7 +581,7 @@ int gmx_msd(int argc,char *argv[])
   static char *axtitle[] = { NULL,"no","x","y","z",NULL };
   static int  ngroup     = 1;
   static real dt         = 10; 
-  static real beginfit   = 0; 
+  static real beginfit   = -1; 
   static real endfit     = -1; 
   static bool bMW        = TRUE;
   t_pargs pa[] = {
@@ -586,9 +596,9 @@ int gmx_msd(int argc,char *argv[])
     { "-trestart",FALSE, etTIME, {&dt},
       "Time between restarting points in trajectory (%t)" },
     { "-beginfit",FALSE, etTIME, {&beginfit},
-      "Start time for fitting the MSD (%t)" },
+      "Start time for fitting the MSD (%t), -1 is 10%" },
     { "-endfit",FALSE, etTIME, {&endfit},
-      "End time for fitting the MSD (%t), -1 is till end" }
+      "End time for fitting the MSD (%t), -1 is 90%" }
   };
 
   t_filenm fnm[] = { 
