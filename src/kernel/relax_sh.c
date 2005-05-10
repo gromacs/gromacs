@@ -429,12 +429,13 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 
     /* Replace Try with Min in the vsites bit. DvdS 18-01-04 */
     if (bVsites) {
-      shift_self(graph,state->box,pos[Min]);
+      if (graph)
+	shift_self(graph,state->box,pos[Min]);
       
       construct_vsites(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
 			graph,cr,fr->ePBC,state->box,vsitecomm);
-      
-      unshift_self(graph,state->box,pos[Min]);
+      if (graph)
+	unshift_self(graph,state->box,pos[Min]);
     }
      
     if (nflexcon) {
