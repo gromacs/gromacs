@@ -1961,10 +1961,20 @@ int gmx_hbond(int argc,char *argv[])
     }
   }
   if (!bHBmap || hb->nrhb > 0) {
+    char **leg;
     aver_nhb  = 0;    
     aver_dist = 0;
     fp = xvgropen(opt2fn("-num",NFILE,fnm),bContact ? "Contacts" :
 		  "Hydrogen Bonds","Time","Number");
+    snew(leg,2);
+    snew(leg[0],STRLEN);
+    snew(leg[1],STRLEN);
+    sprintf(leg[0],"Hydrogen bonds");
+    sprintf(leg[1],"Pairs within %g nm",rcut);
+    xvgr_legend(fp,2,leg);
+    sfree(leg[1]);
+    sfree(leg[0]);
+    sfree(leg);
     for(i=0; (i<nframes); i++) {
       fprintf(fp,"%10g  %10d  %10d\n",hb->time[i],hb->nhb[i],hb->ndist[i]);
       aver_nhb  += hb->nhb[i];
