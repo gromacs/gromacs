@@ -193,39 +193,46 @@ real ewald_LRcorrection(FILE *fplog,
 	      }
 	    }
 	    dr2               = norm2(dx);
-	    rinv              = invsqrt(dr2);
-	    rinv2             = rinv*rinv;
-	    dr                = 1.0/rinv;      
+	    /* Distance between two excluded particles may be zero in the
+	     * case of shells
+	     */
+	    if (dr2 > 0) {
+	      rinv              = invsqrt(dr2);
+	      rinv2             = rinv*rinv;
+	      dr                = 1.0/rinv;      
 #ifdef TABLES
-	    r1t               = tabscale*dr;   
-	    n0                = r1t;
-	    assert(n0 >= 3);
-	    n1                = 12*n0;
-	    eps               = r1t-n0;
-	    eps2              = eps*eps;
-	    nnn               = n1;
-	    Y                 = VFtab[nnn];
-	    F                 = VFtab[nnn+1];
-	    Geps              = eps*VFtab[nnn+2];
-	    Heps2             = eps2*VFtab[nnn+3];
-	    Fp                = F+Geps+Heps2;
-	    VV                = Y+eps*Fp;
-	    FF                = Fp+Geps+2.0*Heps2;
-	    vc                = qqA*(rinv-VV);
-	    fijC              = qqA*FF;
-	    Vexcl            += vc;
-	    
-	    fscal             = vc*rinv2+fijC*tabscale*rinv;
+	      r1t               = tabscale*dr;   
+	      n0                = r1t;
+	      assert(n0 >= 3);
+	      n1                = 12*n0;
+	      eps               = r1t-n0;
+	      eps2              = eps*eps;
+	      nnn               = n1;
+	      Y                 = VFtab[nnn];
+	      F                 = VFtab[nnn+1];
+	      Geps              = eps*VFtab[nnn+2];
+	      Heps2             = eps2*VFtab[nnn+3];
+	      Fp                = F+Geps+Heps2;
+	      VV                = Y+eps*Fp;
+	      FF                = Fp+Geps+2.0*Heps2;
+	      vc                = qqA*(rinv-VV);
+	      fijC              = qqA*FF;
+	      Vexcl            += vc;
+	      
+	      fscal             = vc*rinv2+fijC*tabscale*rinv;
 	    /* End of tabulated interaction part */
 #else
 	    
 	    /* This is the code you would want instead if not using
 	     * tables: 
 	     */
-	    vc      = qqA*erf(ewc*dr)*rinv;
-	    Vexcl  += vc;
-	    fscal   = rinv2*(vc-2.0*qqA*ewc*isp*exp(-ewc*ewc*dr2));
+	      vc      = qqA*erf(ewc*dr)*rinv;
+	      Vexcl  += vc;
+	      fscal   = rinv2*(vc-2.0*qqA*ewc*isp*exp(-ewc*ewc*dr2));
 #endif
+	    }
+	    else 
+	      fscal = 0;
 	    
 	    /* The force vector is obtained by multiplication with the 
 	     * distance vector 
