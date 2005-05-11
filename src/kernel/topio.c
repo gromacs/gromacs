@@ -566,9 +566,9 @@ static char **read_topol(char        *infile,
   /* this is not very clean, but fixes core dump on empty system name */
   if(!title)
     title=put_symtab(symtab,"");
-  if (fabs(qt) > 1e-5)
+  if (fabs(qt) > 1e-4)
     fprintf(stderr,"NOTE:\n  System has non-zero total charge: %e\n\n",qt);
-  if (fabs(qBt) > 1e-5 && qBt != qt)
+  if (fabs(qBt) > 1e-4 && qBt != qt)
     fprintf(stderr,"NOTE:\n  State B has non-zero total charge: %e\n\n",qBt);
   fclose (in);
   DS_Done (&DS);
