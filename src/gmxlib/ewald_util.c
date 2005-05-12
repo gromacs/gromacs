@@ -96,7 +96,7 @@ real ewald_LRcorrection(FILE *fplog,
   rvec    *f=fr->f_el_recip;
   tensor  dxdf;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-  real    L1,dipole_coeff,qqA,qqB,qqL;
+  real    L1,dipole_coeff,qqA,qqB,qqL,vr0;
   /*#define TABLES*/
 #ifdef TABLES
   real    tabscale=fr->tabscale;
@@ -112,6 +112,7 @@ real ewald_LRcorrection(FILE *fplog,
   bool    bFullPBC = (fr->ePBC == epbcFULL);
 
   one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
+  vr0 = ewc*2/sqrt(M_PI);
 
   AA         = excl->a;
   Vexcl      = 0;
@@ -192,11 +193,11 @@ real ewald_LRcorrection(FILE *fplog,
 		  rvec_inc(dx,box[m]);
 	      }
 	    }
-	    dr2               = norm2(dx);
+	    dr2 = norm2(dx);
 	    /* Distance between two excluded particles may be zero in the
 	     * case of shells
 	     */
-	    if (dr2 > 0) {
+	    if (dr2 != 0) {
 	      rinv              = invsqrt(dr2);
 	      rinv2             = rinv*rinv;
 	      dr                = 1.0/rinv;      
@@ -230,22 +231,21 @@ real ewald_LRcorrection(FILE *fplog,
 	      Vexcl  += vc;
 	      fscal   = rinv2*(vc-2.0*qqA*ewc*isp*exp(-ewc*ewc*dr2));
 #endif
+	      /* The force vector is obtained by multiplication with the 
+	       * distance vector 
+	       */
+	      svmul(fscal,dx,df);
+	      if (debug)
+		fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
+			dr,fscal,df[XX],df[YY],df[ZZ]);
+	      rvec_inc(f[k],df);
+	      rvec_dec(f[i],df);
+	      for(iv=0; (iv<DIM); iv++)
+		for(jv=0; (jv<DIM); jv++)
+		  dxdf[iv][jv] += dx[iv]*df[jv];
+	    } else {
+	      Vexcl += qqA*vr0;
 	    }
-	    else 
-	      fscal = 0;
-	    
-	    /* The force vector is obtained by multiplication with the 
-	     * distance vector 
-	     */
-	    svmul(fscal,dx,df);
-	    if (debug)
-	      fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
-		      dr,fscal,df[XX],df[YY],df[ZZ]);
-	    rvec_inc(f[k],df);
-	    rvec_dec(f[i],df);
-	    for(iv=0; (iv<DIM); iv++)
-	      for(jv=0; (jv<DIM); jv++)
-		dxdf[iv][jv] += dx[iv]*df[jv];
 	  }
 	}
       }
@@ -272,6 +272,7 @@ real ewald_LRcorrection(FILE *fplog,
 	  qqA = qiA*chargeA[k];
 	  qqB = qiB*chargeB[k];
 	  if (qqA != 0.0 || qqB != 0.0) {
+	    qqL = L1*qqA + lambda*qqB;
 	    rvec_sub(x[i],x[k],dx);
 	    if (bFullPBC) {
 	      /* Cheap pbc_dx, assume excluded pairs are at short distance. */
@@ -282,27 +283,32 @@ real ewald_LRcorrection(FILE *fplog,
 		  rvec_inc(dx,box[m]);
 	      }
 	    }
-	    dr2    = norm2(dx);
-	    rinv   = invsqrt(dr2);
-	    rinv2  = rinv*rinv;
-	    dr     = 1.0/rinv;      
-	    v      = erf(ewc*dr)*rinv;
-	    qqL    = L1*qqA + lambda*qqB;
-	    vc     = qqL*v;
-	    Vexcl += vc;
-	    fscal  = rinv2*(vc-2.0*qqL*ewc*isp*exp(-ewc*ewc*dr2));
-	    svmul(fscal,dx,df);
-	    if (debug)
-	      fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
-		      dr,fscal,df[XX],df[YY],df[ZZ]);
-	    rvec_inc(f[k],df);
-	    rvec_dec(f[i],df);
-	    for(iv=0; (iv<DIM); iv++)
-	      for(jv=0; (jv<DIM); jv++)
-		dxdf[iv][jv] += dx[iv]*df[jv];
-	    dvdl_excl += (qqB - qqA)*v;
+	    dr2 = norm2(dx);
+	    if (dr2 != 0) {
+	      rinv   = invsqrt(dr2);
+	      rinv2  = rinv*rinv;
+	      dr     = 1.0/rinv;      
+	      v      = erf(ewc*dr)*rinv;
+	      vc     = qqL*v;
+	      Vexcl += vc;
+	      fscal  = rinv2*(vc-2.0*qqL*ewc*isp*exp(-ewc*ewc*dr2));
+	      svmul(fscal,dx,df);
+	      if (debug)
+		fprintf(debug,
+			"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
+			dr,fscal,df[XX],df[YY],df[ZZ]);
+	      rvec_inc(f[k],df);
+	      rvec_dec(f[i],df);
+	      for(iv=0; (iv<DIM); iv++)
+		for(jv=0; (jv<DIM); jv++)
+		  dxdf[iv][jv] += dx[iv]*df[jv];
+	      dvdl_excl += (qqB - qqA)*v;
+	    } else {
+	      Vexcl     +=         qqL*vr0;
+	      dvdl_excl += (qqB - qqA)*vr0;
 	    }
 	  }
+	}
       }
       /* Dipole correction on force */
       if (dipole_coeff != 0) {
