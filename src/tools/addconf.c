@@ -255,7 +255,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     ir->vdwtype     = evdwCUT;
     ir->ndelta      = 2;
     ir->ns_type     = ensGRID;
-    snew(ir->opts.eg_excl,1);
+    snew(ir->opts.egp_flags,1);
     
     /* forcerec structure */
     if (fr == NULL)
@@ -369,7 +369,7 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,max_vdw);
   
   /* check solvent with solute */
-  nlist = &(fr->nlist_sr[eNL_VDW]);
+  nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
   fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
   for(bSolSol=0; (bSolSol<=1); bSolSol++) {
     ntest = nremove = 0;

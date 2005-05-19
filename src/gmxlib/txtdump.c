@@ -290,9 +290,9 @@ void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts)
 
   for(i=0; (i<opts->ngener); i++) {
     pr_indent(out,indent);
-    fprintf(out,"energygrp_excl[%3d]:",i);
+    fprintf(out,"energygrp_flags[%3d]:",i);
     for(m=0; (m<opts->ngener); m++)
-      fprintf(out," %d",opts->eg_excl[opts->ngener*i+m]);
+      fprintf(out," %d",opts->egp_flags[opts->ngener*i+m]);
     fprintf(out,"\n");
   }
 

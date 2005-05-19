@@ -252,146 +252,149 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,
                   real egnb[],real egcoul[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
-                  bool bLR,int eNL,bool bDoForces)
+                  bool bLR,int nls,int eNL,bool bDoForces)
 {
-    t_nblist *      nlist;
-    real *          fshift;
-    int             i,i0,i1,nrnb_ind,sz;
-    bool            bWater;
-    nb_kernel_t *   kernelptr;
-    FILE *          fp;
-    int             wateratoms;
-    int             nthreads = 1;
-    int             tabletype;
-    int             outeriter,inneriter;
-    real *          tabledata = NULL;
-    
-    if(fr->solvent_opt == esolSPC)
-        wateratoms = 3;
-    else if(fr->solvent_opt == esolTIP4P)
-        wateratoms = 4;
-    else
-        wateratoms = 1;
-    
-    if (eNL >= 0) 
-    {
-        i0 = eNL;
-        i1 = i0+1;
-    }
-    else
-    {
-        i0 = 0;
-        i1 = eNL_NR;
-    }
-        
-    if(nb_kernel_list == NULL)
-        setup_kernels(fplog);    
-    
-    if (bLR)
-        fshift = fr->fshift_twin[0];
-    else
-        fshift = fr->fshift[0];
-    
-    for(i=i0; (i<i1); i++) 
-    {
-        outeriter = inneriter = 0;
-        
-        if (bLR) 
-            nlist  = &(fr->nlist_lr[i]);
-        else
-            nlist = &(fr->nlist_sr[i]);
-        
-        if (nlist->nri > 0) 
-        {
-            nrnb_ind = nlist->il_code;
-	    if (!bDoForces)
-	      nrnb_ind += eNR_NBKERNEL_NR/2;
-
-            tabletype = nb_kernel_table[nrnb_ind];
-
-	    if(tabletype == TABLE_COMBINED)
-	      tabledata = fr->tab.tab;
-	    else if(tabletype == TABLE_COUL)
-	      tabledata = fr->coultab;
-	    else if(tabletype == TABLE_VDW)
-	      tabledata = fr->vdwtab;
-	    else
-	      tabledata = NULL;
-
-            /* Is this a free energy loop? */
-            if(nlist->free_energy)
-            {
-                // Free energy goes here.
-                printf("Free energy kernels not implemented!\n");
-                exit(1);
-            }
-            else
-            {
-                /* Not free energy - call nonbonded kernel from function pointer */
-                kernelptr = nb_kernel_list[nrnb_ind];
-                
-                if(kernelptr == NULL)
-                {
-                    gmx_fatal(FARGS,"No function corresponding to %s in %s `line' %d",
-                              nrnb_str(nrnb_ind),__FILE__,__LINE__);
-                }
-                
-                nlist->count = 0;
-
+  t_nblist *      nlist;
+  real *          fshift;
+  int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
+  t_nblists       *nblists;
+  bool            bWater;
+  nb_kernel_t *   kernelptr;
+  FILE *          fp;
+  int             wateratoms;
+  int             nthreads = 1;
+  int             tabletype;
+  int             outeriter,inneriter;
+  real *          tabledata = NULL;
+  
+  if(fr->solvent_opt == esolSPC)
+    wateratoms = 3;
+  else if(fr->solvent_opt == esolTIP4P)
+    wateratoms = 4;
+  else
+    wateratoms = 1;
+  
+  if (eNL >= 0) {
+    i0 = eNL;
+    i1 = i0+1;
+  } else {
+    i0 = 0;
+    i1 = eNL_NR;
+  }
+  
+  if (nls >= 0) {
+    n0 = nls;
+    n1 = nls;
+  } else {
+    n0 = 0;
+    n1 = fr->nnblists;
+  }
+  
+  if(nb_kernel_list == NULL)
+    setup_kernels(fplog);    
+  
+  if (bLR)
+    fshift = fr->fshift_twin[0];
+  else
+    fshift = fr->fshift[0];
+  
+  for(n=n0; (n<n1); n++) {
+    nblists = &fr->nblists[n];
+    for(i=i0; (i<i1); i++) {
+      outeriter = inneriter = 0;
+      
+      if (bLR) 
+	nlist = &(nblists->nlist_lr[i]);
+      else
+	nlist = &(nblists->nlist_sr[i]);
+      
+      if (nlist->nri > 0) {
+	nrnb_ind = nlist->il_code;
+	if (!bDoForces)
+	  nrnb_ind += eNR_NBKERNEL_NR/2;
+	
+	tabletype = nb_kernel_table[nrnb_ind];
+	
+	if(tabletype == TABLE_COMBINED)
+	  tabledata = nblists->tab.tab;
+	else if(tabletype == TABLE_COUL)
+	  tabledata = nblists->coultab;
+	else if(tabletype == TABLE_VDW)
+	  tabledata = nblists->vdwtab;
+	else
+	  tabledata = NULL;
+	
+	/* Is this a free energy loop? */
+	if(nlist->free_energy) {
+	  // Free energy goes here.
+	  printf("Free energy kernels not implemented!\n");
+	  exit(1);
+	} else {
+	  /* Not free energy - call nonbonded kernel from function pointer */
+	  kernelptr = nb_kernel_list[nrnb_ind];
+	  
+	  if(kernelptr == NULL) {
+	    gmx_fatal(FARGS,"No function corresponding to %s in %s `line' %d",
+		      nrnb_str(nrnb_ind),__FILE__,__LINE__);
+	  }
+	  
+	  nlist->count = 0;
+	  
 #ifdef DEBUG
-                printf("call loop\n");
+	  printf("call loop\n");
 #endif
-                /* Call the appropriate nonbonded kernel function */
-                (*kernelptr)( &(nlist->nri),
-                              nlist->iinr,
-                              nlist->jindex,
-                              nlist->jjnr,
-                              nlist->shift,
-                              fr->shift_vec[0],
-                              fshift,
-                              nlist->gid,
-                              x[0],
-                              f[0],
-                              mdatoms->chargeA,
-                              &(fr->epsfac),
-                              &(fr->k_rf),
-                              &(fr->c_rf),
-                              egcoul,
-                              mdatoms->typeA,
-                              &(fr->ntype),
-                              fr->nbfp,
-                              egnb,
-                              &(fr->tab.scale),
-                              tabledata,
-                              NULL,
-                              NULL,
-                              NULL,
-                              NULL,
-                              &nthreads,
-                              &(nlist->count),
-                              nlist->mtx,
-                              &outeriter,
-                              &inneriter,
-                              NULL);
+	  /* Call the appropriate nonbonded kernel function */
+	  (*kernelptr)( &(nlist->nri),
+			nlist->iinr,
+			nlist->jindex,
+			nlist->jjnr,
+			nlist->shift,
+			fr->shift_vec[0],
+			fshift,
+			nlist->gid,
+			x[0],
+			f[0],
+			mdatoms->chargeA,
+			&(fr->epsfac),
+			&(fr->k_rf),
+			&(fr->c_rf),
+			egcoul,
+			mdatoms->typeA,
+			&(fr->ntype),
+			fr->nbfp,
+			egnb,
+			&(nblists->tab.scale),
+			tabledata,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			&nthreads,
+			&(nlist->count),
+			nlist->mtx,
+			&outeriter,
+			&inneriter,
+			NULL);
 #ifdef DEBUG
-		printf("ret loop.\n");
+	  printf("ret loop.\n");
 #endif
-            }
-        
-            /* Update flop accounting */
-            
-            /* Outer loop in kernel */
-            if (nlist->solvent_opt==enlistWATER)
-                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
-            else if (nlist->solvent_opt==enlistWATERWATER)
-                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
-            else
-                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
-            
-            /* inner loop in kernel */
-            inc_nrnb(nrnb,nrnb_ind,inneriter);
-        }
+	}
+	
+	/* Update flop accounting */
+	
+	/* Outer loop in kernel */
+	if (nlist->solvent_opt==enlistWATER)
+	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
+	else if (nlist->solvent_opt==enlistWATERWATER)
+	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
+	else
+	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
+	
+	/* inner loop in kernel */
+	inc_nrnb(nrnb,nrnb_ind,inneriter);
+      }
     }
+  }
 }
 
 

@@ -187,13 +187,13 @@ static void ld_grpopts(int src,t_grpopts *g)
   snew(g->ref_t,g->ngtc);
   snew(g->acc,g->ngacc);
   snew(g->nFreeze,g->ngfrz);
-  snew(g->eg_excl,g->ngener*g->ngener);
+  snew(g->egp_flags,g->ngener*g->ngener);
   nblockrx(src,g->ngtc,g->nrdf);
   nblockrx(src,g->ngtc,g->tau_t);
   nblockrx(src,g->ngtc,g->ref_t);
   nblockrx(src,g->ngacc,g->acc);
   nblockrx(src,g->ngfrz,g->nFreeze);
-  nblockrx(src,g->ngener*g->ngener,g->eg_excl);
+  nblockrx(src,g->ngener*g->ngener,g->egp_flags);
   snew(g->annealing,g->ngtc);
   snew(g->anneal_npoints,g->ngtc);
   snew(g->anneal_time,g->ngtc);
@@ -274,7 +274,7 @@ static void mv_grpopts(int dest,t_grpopts *g)
   nblocktx(dest,g->ngtc,g->ref_t);
   nblocktx(dest,g->ngacc,g->acc);
   nblocktx(dest,g->ngfrz,g->nFreeze);
-  nblocktx(dest,g->ngener*g->ngener,g->eg_excl);
+  nblocktx(dest,g->ngener*g->ngener,g->egp_flags);
   nblocktx(dest,g->ngtc,g->annealing);
   nblocktx(dest,g->ngtc,g->anneal_npoints);
   for(i=0;(i<g->ngtc); i++) {

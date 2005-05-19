@@ -150,11 +150,12 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
 
 void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
 {
-  int  i;
+  int  n,i;
   
   fprintf(out,"%s\n",header);
 
-  for(i=0; (i<eNL_NR); i++) 
-    write_nblist(out,&fr->nlist_sr[i]);
+  for(n=0; (n<fr->nnblists); n++)
+    for(i=0; (i<eNL_NR); i++) 
+      write_nblist(out,&fr->nblists[n].nlist_sr[i]);
 }
 

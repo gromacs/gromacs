@@ -516,9 +516,9 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
 {
   double eners[2],virs[2],enersum,virsum,y0,f,g,h;
   double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
-  double scale,scale2,scale3;
+  double invscale,invscale2,invscale3;
   int    ri0,ri1,ri,i,offstart,offset;
-  real   *vdwtab; 
+  real   scale,*vdwtab; 
 
   fr->enershiftsix = 0;
   fr->enershifttwelve = 0;
@@ -537,15 +537,17 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
 	gmx_fatal(FARGS,"With dispersion correction rvdw-switch can not be zero "
 		    "for vdw-type = %s",evdw_names[fr->vdwtype]);
 
+      scale  = fr->nblists[0].tab.scale;
+      vdwtab = fr->nblists[0].vdwtab;
+
       /* Round the cut-offs to exact table values for precision */
-      ri0 = floor(fr->rvdw_switch*fr->tab.scale);
-      ri1 = ceil(fr->rvdw*fr->tab.scale);
-      r0  = ri0/fr->tab.scale;
-      r1  = ri1/fr->tab.scale;
+      ri0 = floor(fr->rvdw_switch*scale);
+      ri1 = ceil(fr->rvdw*scale);
+      r0  = ri0/scale;
+      r1  = ri1/scale;
       rc3 = r0*r0*r0;
       rc9  = rc3*rc3*rc3;
 
-      vdwtab = fr->vdwtab;
       if (fr->vdwtype == evdwSHIFT) {
 	/* Determine the constant energy shift below rvdw_switch */
 	fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - vdwtab[8*ri0];
@@ -559,9 +561,9 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
       eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
       eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
       
-      scale = 1.0/(fr->tab.scale);  
-      scale2 = scale*scale;
-      scale3 = scale*scale2;
+      invscale = 1.0/(scale);  
+      invscale2 = invscale*invscale;
+      invscale3 = invscale*invscale2;
 
       /* following summation derived from cubic spline definition,
 	Numerical Recipies in C, second edition, p. 113-116.  Exact
@@ -580,14 +582,14 @@ static void calc_enervirdiff(FILE *log,int eDispCorr,t_forcerec *fr)
 	else
 	  offstart = 4;
 	for (ri=ri0; ri<ri1; ri++) {
-          r = ri*scale;
-          ea = scale3;
-          eb = 2.0*scale2*r;
-          ec = scale*r*r;
+          r = ri*invscale;
+          ea = invscale3;
+          eb = 2.0*invscale2*r;
+          ec = invscale*r*r;
           
-          pa = scale3;
-          pb = 3.0*scale2*r;
-          pc = 3.0*scale*r*r;
+          pa = invscale3;
+          pb = 3.0*invscale2*r;
+          pc = 3.0*invscale*r*r;
           pd = r*r*r;
           
           /* this "8" is from the packing in the vdwtab array - perhaps

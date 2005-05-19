@@ -52,6 +52,18 @@ typedef struct {
 		   * Coulomb, dispersion and repulsion (in total 12 numbers)
 		   */
 } t_forcetable;
+
+typedef struct {
+  t_forcetable tab;
+  /* We duplicate tables for cache optimization purposes */
+  real *coultab;      /* Coul only */
+  real *vdwtab;       /* Vdw only   */
+  /* The actual neighbor lists, short and long range, see enum above
+   * for definition of neighborlist indices.
+   */
+  t_nblist nlist_sr[eNL_NR];
+  t_nblist nlist_lr[eNL_NR];
+} t_nblists;
  
 typedef struct {
   /* Cut-Off stuff */
@@ -89,10 +101,7 @@ typedef struct {
   /* Table stuff */
   bool bcoultab;
   bool bvdwtab;
-  t_forcetable tab;
-  /* We duplicate tables for cache optimization purposes */
-  real *coultab;      /* Coul only */
-  real *vdwtab;       /* Vdw only   */
+  /* The normal tables are in the nblists struct(s) below */
   t_forcetable tab14; /* for 1-4 interactions only */
 
   /* PPPM & Shifting stuff */
@@ -124,12 +133,11 @@ typedef struct {
   int  *solvent_type;
   rvec *cg_cm;
   rvec *shift_vec;
-  
-  /* The actual neighbor lists, short and long range, see enum above
-   * for definition of neighborlist indices.
-   */
-  t_nblist nlist_sr[eNL_NR];
-  t_nblist nlist_lr[eNL_NR];
+
+  /* The neighborlists including tables */
+  int  nnblists;
+  int  *gid2nblists;
+  t_nblists *nblists;
   
   /* This mask array of length nn determines whether or not this bit of the
    * neighbourlists should be computed. Usually all these are true of course,
@@ -167,8 +175,8 @@ typedef struct {
   bool bBHAM;
   real *nbfp;
 
-  /* Energy group exclusions */
-  bool *eg_excl;
+  /* Energy group pair flags */
+  int *egp_flags;
 
   /* xmdrun flexible constraints */
   real fc_stepsize;

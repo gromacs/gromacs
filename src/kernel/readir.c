@@ -71,7 +71,7 @@
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
-  orirefitgrp[STRLEN],egexcl[STRLEN],deform[STRLEN];
+  orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],deform[STRLEN];
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
@@ -446,6 +446,8 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("DispCorr",    ir->eDispCorr,  edispc_names, nerror, TRUE);
   CTYPE ("Extension of the potential lookup tables beyond the cut-off");
   RTYPE ("table-extension", ir->tabext, 1.0);
+  CTYPE ("Seperate tables between energy group pairs");
+  STYPE ("energygrp_table", egptable,   NULL);
   CTYPE ("Spacing for the PME/PPPM FFT grid");
   RTYPE ("fourierspacing", opts->fourierspacing,0.12);
   CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
@@ -536,7 +538,7 @@ void get_ir(char *mdparin,char *mdparout,
   /* Energy group exclusions */
   CCTYPE ("ENERGY GROUP EXCLUSIONS");
   CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
-  STYPE ("energygrp_excl", egexcl,      NULL);
+  STYPE ("energygrp_excl", egpexcl,     NULL);
   
   /* Refinement */
   CCTYPE("NMR refinement stuff");
@@ -783,7 +785,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
       ognr = cbuf[aj];
       if (ognr != NOGID) 
 	gmx_fatal(FARGS,"Atom %d in multiple %s groups (%d and %d)",
-		    aj,title,gid,ognr);
+		    aj+1,title,ognr+1,i+1);
       else {
 	/* Store the group number in buffer */
 	if (bOneGroup)
@@ -991,6 +993,43 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
   sfree(t);
 }
 
+static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char **gnames,
+			char *option,char *val,int flag)
+{
+  int  nelem,i,j,k,nr;
+  char *names[MAXPTR];
+  bool bSet;
+
+  nelem = str_nelem(val,MAXPTR,names);
+  if (nelem % 2 != 0)
+    gmx_fatal(FARGS,"The number of groups for %s is odd",option);
+  nr=atoms->grps[egcENER].nr;
+  bSet = FALSE;
+  for(i=0; i<nelem/2; i++) {
+    j = 0;
+    while ((j < nr) &&
+	   strcasecmp(names[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
+      j++;
+    if (j == nr)
+      gmx_fatal(FARGS,"%s in %s is not an energy group\n",
+		  names[2*i],option);
+    k = 0;
+    while ((k < nr) &&
+	   strcasecmp(names[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
+      k++;
+    if (k==nr)
+      gmx_fatal(FARGS,"%s in %s is not an energy group\n",
+	      names[2*i+1],option);
+    if ((j < nr) && (k < nr)) {
+      ir->opts.egp_flags[nr*j+k] |= flag;
+      ir->opts.egp_flags[nr*k+j] |= flag;
+      bSet = TRUE;
+    }
+  }
+
+  return bSet;
+}
+
 void do_index(char *ndx,
 	      t_symtab   *symtab,
 	      t_atoms    *atoms,bool bVerbose,
@@ -999,11 +1038,11 @@ void do_index(char *ndx,
   t_block *grps;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
-  int     nacg,nfreeze,nfrdim,nenergy,nuser,negexcl;
+  int     nacg,nfreeze,nfrdim,nenergy,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
-  bool    bExcl,bSetTCpar,bAnneal;
+  bool    bExcl,bTable,bSetTCpar,bAnneal;
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -1252,36 +1291,18 @@ void do_index(char *ndx,
       fprintf(stderr,"\n");
     }
 
-  negexcl=str_nelem(egexcl,MAXPTR,ptr1);
-  if (negexcl % 2 != 0)
-    gmx_fatal(FARGS,"The number of groups for energygrp_excl is odd");
   nr=atoms->grps[egcENER].nr;
-  snew(ir->opts.eg_excl,nr*nr);
-  bExcl=FALSE;
-  for(i=0; i<negexcl/2; i++) {
-    j=0;
-    while ((j < nr) &&
-	   strcasecmp(ptr1[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
-      j++;
-    if (j==nr)
-      gmx_fatal(FARGS,"%s in energygrp_excl is not an energy group\n",
-		  ptr1[2*i]);
-    k=0;
-    while ((k < nr) &&
-	   strcasecmp(ptr1[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
-      k++;
-    if (k==nr)
-      gmx_fatal(FARGS,"%s in energygrp_excl is not an energy group\n",
-	      ptr1[2*i+1]);
-    if ((j < nr) && (k < nr)) {
-      ir->opts.eg_excl[nr*j+k] = TRUE;
-      ir->opts.eg_excl[nr*k+j] = TRUE;
-      bExcl = TRUE;
-    }
-  }
+  snew(ir->opts.egp_flags,nr*nr);
+
+  bExcl = do_egp_flag(ir,atoms,gnames,"energygrp_excl",egpexcl,EGP_EXCL);
   if (bExcl && EEL_FULL(ir->coulombtype))
     warning("Can not exclude the lattice Coulomb energy between energy groups");
-  
+
+  bTable = do_egp_flag(ir,atoms,gnames,"energygrp_table",egptable,EGP_TABLE);
+  if (bTable && !(ir->vdwtype == evdwUSER) && 
+      !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
+    gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
+
   decode_cos(efield_x,&(ir->ex[XX]),FALSE);
   decode_cos(efield_xt,&(ir->et[XX]),TRUE);
   decode_cos(efield_y,&(ir->ex[YY]),FALSE);

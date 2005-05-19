@@ -38,6 +38,7 @@
 #endif
 
 #include <math.h>
+#include <string.h>
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -678,6 +679,33 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 	  bmin,fr->bham_b_max);
 }
 
+static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
+			    const t_commrec *cr,
+			    const char *tabfn,char *eg1,char *eg2,
+			    t_nblists *nbl)
+{
+  char buf[STRLEN];
+  int i,j;
+
+  sprintf(buf,"%s",tabfn);
+  if (eg1 && eg2)
+    /* Append the two energy group names */
+    sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
+	    eg1,eg2,ftp2ext(efXVG));
+  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,FALSE);
+  /* Copy the contents of the table to separate coulomb and LJ tables too,
+   * to improve cache performance.
+   */
+  snew(nbl->coultab,4*(nbl->tab.n+1));
+  snew(nbl->vdwtab,8*(nbl->tab.n+1));  
+  for(i=0; i<=nbl->tab.n; i++) {
+    for(j=0; j<4; j++)
+      nbl->coultab[4*i+j] = nbl->tab.tab[12*i+j];
+    for(j=0; j<8; j++)
+      nbl->vdwtab [8*i+j] = nbl->tab.tab[12*i+4+j];
+  }
+}
+
 void init_forcerec(FILE *fp,
 		   t_forcerec *fr,
 		   const t_inputrec *ir,
@@ -690,13 +718,15 @@ void init_forcerec(FILE *fp,
 		   const char *tabfn,
 		   bool       bNoSolvOpt)
 {
-  int     i,j,m,natoms,ngrp;
+  int     i,j,m,natoms,ngrp,negptable,egi,egj;
   real    q,zsq,nrdf,T,rtab;
   rvec    box_size;
   const t_block *mols,*cgs;
   const t_idef  *idef;
-  bool    bTab,bSep14tab;
-  
+  bool    bTab,bSep14tab,bNormalnblists;
+  t_nblists *nbl;
+  int     *nm_ind,egp_flags;
+
   if (check_box(box))
     gmx_fatal(FARGS,check_box(box));
 
@@ -876,7 +906,7 @@ void init_forcerec(FILE *fp,
   }
   
   /* Copy the energy group exclusions */
-  fr->eg_excl = ir->opts.eg_excl;
+  fr->egp_flags = ir->opts.egp_flags;
 
   /* Van der Waals stuff */
   fr->rvdw        = ir->rvdw;
@@ -925,11 +955,9 @@ void init_forcerec(FILE *fp,
   set_chargesum(fp,fr,mdatoms);
 
   /* if we are using LR electrostatics, and they are tabulated,
-   * the tables will contain shifted coulomb interactions.
+   * the tables will contain modified coulomb interactions.
    * Since we want to use the non-shifted ones for 1-4
-   * coulombic interactions, we must have an extra set of
-   * tables. This should be done in tables.c, instead of this
-   * ugly hack, but it works for now...
+   * coulombic interactions, we must have an extra set of tables.
    */
 
   /* Construct tables.
@@ -937,8 +965,40 @@ void init_forcerec(FILE *fp,
    * but what the heck... */
 
   bTab = fr->bcoultab || fr->bvdwtab || (fr->efep != efepNO);
-  bSep14tab = !bTab || EEL_FULL(fr->eeltype) || (EEL_RF(fr->eeltype) &&
-						 fr->eeltype != eelRF_NEC);
+  bSep14tab = ((top->idef.il[F_LJ14].multinr[cr->nnodes-1] > 0) &&
+	       (!bTab || EEL_FULL(fr->eeltype) || 
+		(EEL_RF(fr->eeltype) && fr->eeltype != eelRF_NEC)));
+  
+  negptable = 0;
+  if (!bTab) {
+    bNormalnblists = TRUE;
+    fr->nnblists = 1;
+  } else {
+    bNormalnblists = (ir->eDispCorr != edispcNO);
+    for(egi=0; egi<ir->opts.ngener; egi++) {
+      for(egj=egi;  egj<ir->opts.ngener; egj++) {
+	egp_flags = ir->opts.egp_flags[GID(egi,egj,ir->opts.ngener)];
+	if (!(egp_flags & EGP_EXCL)) {
+	  if (egp_flags & EGP_TABLE) {
+	    negptable++;
+	  } else {
+	    bNormalnblists = TRUE;
+	  }
+	}
+      }
+    }
+    if (bNormalnblists) {
+      fr->nnblists = negptable + 1;
+    } else {
+      fr->nnblists = negptable;
+      if (top->idef.il[F_LJ14].multinr[cr->nnodes-1] > 0)
+	bSep14tab = TRUE;
+    }
+    if (fr->nnblists > 1)
+      snew(fr->gid2nblists,ir->opts.ngener*ir->opts.ngener);
+  }
+  snew(fr->nblists,fr->nnblists);
+
   if (bTab) {
     rtab = fr->rlistlong + ir->tabext;
     if (fr->rlistlong == 0 && fr->efep != efepNO && rtab < 5) {
@@ -951,20 +1011,36 @@ void init_forcerec(FILE *fp,
 		ir->tabext,rtab);
     }
     /* make tables for ordinary interactions */
-    fr->tab = make_tables(fp,fr,MASTER(cr),tabfn,rtab,FALSE);
-    /* Copy the contents of the table to separate coulomb and LJ
-     * tables too, to improve cache performance.
-     */
-    snew(fr->coultab,4*(fr->tab.n+1));
-    snew(fr->vdwtab,8*(fr->tab.n+1));  
-    for(i=0; i<=fr->tab.n; i++) {
-      for(j=0; j<4; j++) 
-	fr->coultab[4*i+j]=fr->tab.tab[12*i+j];
-      for(j=0; j<8; j++) 
-	fr->vdwtab[8*i+j]=fr->tab.tab[12*i+4+j];
+    
+    if (bNormalnblists) {
+      make_nbf_tables(fp,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
+      if (!bSep14tab)
+	fr->tab14 = fr->nblists[0].tab;
+      m = 1;
+    } else {
+      m = 0;
     }
-    if (!bSep14tab)
-      fr->tab14 = fr->tab;
+    if (negptable > 0) {
+      /* Read the special tables for certain energy group pairs */
+      nm_ind = top->atoms.grps[egcENER].nm_ind;
+      for(egi=0; egi<ir->opts.ngener; egi++) {
+	for(egj=egi;  egj<ir->opts.ngener; egj++) {
+	  egp_flags = ir->opts.egp_flags[GID(egi,egj,ir->opts.ngener)];
+	  if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL)) {
+	    nbl = &(fr->nblists[m]);
+	    fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = m;
+	    /* Read the table file with the two energy groups names appended */
+	    make_nbf_tables(fp,fr,rtab,cr,tabfn,
+			    *top->atoms.grpname[nm_ind[egi]],
+			    *top->atoms.grpname[nm_ind[egj]],
+			    &fr->nblists[m]);
+	    m++;
+	  } else {
+	    fr->gid2nblists[GID(egi,egj,ir->opts.ngener)] = 0;
+	  }
+	}
+      }
+    }
   }
   if (bSep14tab)
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
@@ -985,6 +1061,8 @@ void init_forcerec(FILE *fp,
 
 void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
 {
+  int i;
+
   pr_real(fp,fr->rlist);
   pr_real(fp,fr->rcoulomb);
   pr_real(fp,fr->fudgeQQ);
@@ -993,11 +1071,10 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
   pr_bool(fp,fr->bTwinRange);
   /*pr_int(fp,fr->cg0);
     pr_int(fp,fr->hcg);*/
-  pr_int(fp,fr->tab.n);
-  if (fr->tab.n > 0) {
-    pr_real(fp,fr->rcoulomb_switch);
-    pr_real(fp,fr->rcoulomb);
-  }
+  for(i=0; i<fr->nnblists; i++)
+    pr_int(fp,fr->nblists[i].tab.n);
+  pr_real(fp,fr->rcoulomb_switch);
+  pr_real(fp,fr->rcoulomb);
   
   pr_int(fp,fr->nmol);
   pr_int(fp,fr->nstcalc);
@@ -1113,7 +1190,7 @@ void force(FILE       *fplog,   int        step,
   do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
-	  lambda,&dvdlambda,FALSE,-1,bDoForces);
+	  lambda,&dvdlambda,FALSE,-1,-1,bDoForces);
   where();
 
   epot[F_DVDL] += dvdlambda;

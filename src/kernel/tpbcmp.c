@@ -289,6 +289,15 @@ static void cmp_grpopts(FILE *fp,t_grpopts *opt1,t_grpopts *opt2,real ftol)
       }
     }
   }
+  if (opt1->ngener == opt2->ngener) {
+    for(i=0; i<opt1->ngener; i++)
+      for(j=i; j<opt1->ngener; j++) {
+	sprintf(buf1,"inputrec->grpopts.egp_flags[%d]",i);
+	cmp_int(fp,buf1,j,
+		opt1->egp_flags[opt1->ngener*i+j],
+		opt2->egp_flags[opt1->ngener*i+j]);
+      }
+  }
   for(i=0; (i<min(opt1->ngacc,opt2->ngacc)); i++)
     cmp_rvec(fp,"inputrec->grpopts.acc",i,opt1->acc[i],opt2->acc[i],ftol);
   for(i=0; (i<min(opt1->ngfrz,opt2->ngfrz)); i++)

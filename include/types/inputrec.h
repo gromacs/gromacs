@@ -50,22 +50,25 @@ typedef struct {
   real sigma;           /* Width of the Gaussian pulse (FWHM) (ps)      */
 } t_efield;
 
+#define EGP_EXCL  (1<<0)
+#define EGP_TABLE (1<<1)
+
 typedef struct {
-  int     ngtc;                  /* # T-Coupl groups                       */
-  int     ngacc;                 /* # Accelerate groups                    */
-  int     ngfrz;                 /* # Freeze groups                        */
-  int     ngener;	         /* # Ener groups			   */
-  real    *nrdf;	         /* Nr of degrees of freedom in a group	   */
-  real    *ref_t;	         /* Coupling temperature	per group  */
-  int     *annealing;            /* No/simple/periodic SA for each group   */
-  int     *anneal_npoints;       /* Number of annealing time points per grp*/    
-  real    **anneal_time;         /* For ea. group: Time points             */
-  real    **anneal_temp;         /* For ea. grp: Temperature at these times*/
-                                 /* Final temp after all intervals is ref_t*/  
-  real    *tau_t;	         /* Tau coupling time 			   */
-  rvec    *acc;		         /* Acceleration per group		   */
-  ivec    *nFreeze;	         /* Freeze the group in each direction ?   */
-  bool    *eg_excl;              /* Exclusions of energy group pairs       */
+  int     ngtc;                  /* # T-Coupl groups                        */
+  int     ngacc;                 /* # Accelerate groups                     */
+  int     ngfrz;                 /* # Freeze groups                         */
+  int     ngener;	         /* # Ener groups			    */
+  real    *nrdf;	         /* Nr of degrees of freedom in a group	    */
+  real    *ref_t;	         /* Coupling temperature	per group   */
+  int     *annealing;            /* No/simple/periodic SA for each group    */
+  int     *anneal_npoints;       /* Number of annealing time points per grp */    
+  real    **anneal_time;         /* For ea. group: Time points              */
+  real    **anneal_temp;         /* For ea. grp: Temperature at these times */
+                                 /* Final temp after all intervals is ref_t */ 
+  real    *tau_t;	         /* Tau coupling time 			    */
+  rvec    *acc;		         /* Acceleration per group		    */
+  ivec    *nFreeze;	         /* Freeze the group in each direction ?    */
+  int     *egp_flags;            /* Exclusions/tables of energy group pairs */
 } t_grpopts;
 
 

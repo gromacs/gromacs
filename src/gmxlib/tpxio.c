@@ -474,7 +474,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       snew(ir->opts.tau_t,  ir->opts.ngtc); 
       snew(ir->opts.nFreeze,ir->opts.ngfrz); 
       snew(ir->opts.acc,    ir->opts.ngacc); 
-      snew(ir->opts.eg_excl,ir->opts.ngener*ir->opts.ngener);
+      snew(ir->opts.egp_flags,ir->opts.ngener*ir->opts.ngener);
     } 
     if (ir->opts.ngtc > 0) {
       if (bRead && file_version<13) {
@@ -498,7 +498,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     if (ir->opts.ngacc > 0) 
       ndo_rvec(ir->opts.acc,ir->opts.ngacc); 
     if (file_version >= 12)
-      ndo_int(ir->opts.eg_excl,ir->opts.ngener*ir->opts.ngener,bDum);
+      ndo_int(ir->opts.egp_flags,ir->opts.ngener*ir->opts.ngener,bDum);
 
     if(bRead && file_version < 26) {
       for(i=0;i<ir->opts.ngtc;i++) {

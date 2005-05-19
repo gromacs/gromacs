@@ -35,7 +35,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
-<li><A HREF="#el"><b>electrostatics and VdW</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r, DispCorr, fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
+<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r)
+<li><A HREF="#vdw"><b>VdW</b></A> (DispCorr, table-extension, energygrp_table)
+<li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
@@ -335,7 +337,7 @@ To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
 
 <A NAME="el"><br>
 <hr>
-<h3><!--Idx-->Electrostatics<!--EIdx--> and VdW</h3>
+<h3><!--Idx-->Electrostatics<!--EIdx--></h3>
 <dl>
 <dt><h4>coulombtype:</h4></dt>
 <dd><dl compact>
@@ -454,9 +456,15 @@ in the printed manual.</dd>
 <dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx--></dd>
 
 <dt><h4>epsilon_r: (1)</h4></dt>
-<dd><!--Idx-->dielectric constant<!--EIdx--></dd>
+<dd>The relative <!--Idx-->dielectric constant<!--EIdx-->,
+except for reaction-field electrostatics, in which case
+it is the relative dielectric constant of the reaction field.</dd>
+</dl>
 
 <A NAME="vdw">
+<hr>
+<h3>VdW</h3>
+<dl>
 <dt><h4>vdwtype:</h4></dt>
 <dd><dl compact>
 <dt><b>Cut-off</b></dt>
@@ -511,6 +519,7 @@ and Pressure</dd>
 only</dd>
 </dl>
 
+<A NAME="table">
 <dt><h4>table-extension: (1) [nm]</h4></dt>
 <dd>Extension of the non-bonded potential lookup tables beyond the largest cut-off distance.
 The value should be large enough to account for charge group sizes
@@ -519,7 +528,25 @@ This value also specifies the length of the lookup tables for
 the 1-4 interactions, which are always tabulated irrespective of the use of
 tables for the non-bonded interactions. </dd>
 
+<dt><h4>energygrp_table:</h4></dt>
+<dd>When user tables are used for electrostatics and/or VdW,
+here one can give pairs of energy groups for which seperate
+user tables should be used. The bonded pair interactions will
+always use the normal user table.
+The two energy groups will be appended to the table file name,
+in order of their definition in <b>energygrps</b>, seperated by underscores.
+For example, if <tt>energygrps = Na Cl Sol</tt>
+and <tt>energygrp_table = Na Na Na Cl</tt>, <tt>mdrun</tt> will read
+<tt>table_Na_Na.xvg</tt> and <tt>table_Na_Cl.xvg</tt> in addition
+to the normal <tt>table.xvg</tt> which will be used for all other
+energy group pairs.
+</dd>
+</dl>
+
 <A NAME="ewald">
+<hr>
+<h3>Ewald</h3>
+<dl>
 <dt><h4>fourierspacing: (0.12) [nm]</h4></dt>
 <dd>The maximum grid spacing for the FFT grid when using PPPM or PME.
 For ordinary Ewald the spacing times the box dimensions determines the
@@ -1037,6 +1064,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#em">emstep</A><br>
 <A HREF="#em">emtol</A><br>
 <A HREF="#egexcl">energygrp_excl</A><br>
+<A HREF="#table">energygrp_table</A><br>
 <A HREF="#out">energygrps</A><br>
 <A HREF="#el2">epsilon_r</A><br>
 <A HREF="#ewald">ewald_rtol</A><br>
@@ -1102,7 +1130,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#free">sc_alpha</A><br>
 <A HREF="#free">sc_sigma</A><br>
 <A HREF="#bond2">shake_tol</A><br>
-<A HREF="#vdw">table-extension</A><br>
+<A HREF="#table">table-extension</A><br>
 <A HREF="#pc">tau_p</A><br>
 <A HREF="#tc">tau_t</A><br>
 <A HREF="#tc">tc_grps</A><br>

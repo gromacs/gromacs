@@ -150,9 +150,10 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
 {
   t_nblist *nlist;
   
-  nlist = &fr->nlist_sr[nl_type];
+  nlist = &fr->nblists[0].nlist_sr[nl_type];
   
-  c_tabpot(fr->tab.scale,fr->tab.tab,nlist->nri,nlist->iinr,
+  c_tabpot(fr->nblists[0].tab.scale,fr->nblists[0].tab.tab,
+	   nlist->nri,nlist->iinr,
 	   nlist->shift,nlist->jindex,nlist->jjnr,
 	   x[0],fr->epsfac,mdatoms->chargeA,pot,fr->shift_vec[0]);
 
