@@ -35,8 +35,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
-<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, vdwtype, rvdw_switch, rvdw, epsilon_r)
-<li><A HREF="#vdw"><b>VdW</b></A> (DispCorr, table-extension, energygrp_table)
+<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r)
+<li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
+<li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
 <li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
 <li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
@@ -524,8 +525,12 @@ and Pressure</dd>
 <dd>apply long range dispersion corrections for Energy
 only</dd>
 </dl>
+</dl>
 
 <A NAME="table">
+<hr>
+<h3>Tables</h3>
+<dl>
 <dt><h4>table-extension: (1) [nm]</h4></dt>
 <dd>Extension of the non-bonded potential lookup tables beyond the largest cut-off distance.
 The value should be large enough to account for charge group sizes
@@ -537,7 +542,7 @@ tables for the non-bonded interactions. </dd>
 <dt><h4>energygrp_table:</h4></dt>
 <dd>When user tables are used for electrostatics and/or VdW,
 here one can give pairs of energy groups for which seperate
-user tables should be used. The bonded pair interactions will
+user tables should be used. The 1-4 interactions will
 always use the normal user table.
 The two energy groups will be appended to the table file name,
 in order of their definition in <b>energygrps</b>, seperated by underscores.
