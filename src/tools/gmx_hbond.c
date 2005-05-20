@@ -1085,7 +1085,7 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
   real   k=1,kp=1,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt;
   double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
   
-  for(i=0; (i<n) && (t[i] < fit_start); i++)
+  for(i=0; (i<n-2) && (t[i] < fit_start); i++)
     ;
   if (i < n-2) { 
     for(; (i<n); i++) {
@@ -1119,12 +1119,12 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     printf("Integral   %10.3f   %8.3f  %10.3f\n",1/tau_hb,tau_hb,
 	   calc_dg(tau_hb,temp));
     e_1 = exp(-1);
-    for(i=0; (i<n-1); i++) {
+    for(i=0; (i<n-2); i++) {
       if ((ct[i] > e_1) && (ct[i+1] <= e_1)) {
 	break;
       }
     }
-    if (i < n-1) {
+    if (i < n-2) {
       /* Determine tau_relax from linear interpolation */
       tau_rlx = t[i] + (e_1-ct[i])*(t[i+1]-t[i])/(ct[i+1]-ct[i]);
       printf("Relaxation %10.3f   %8.3f  %10.3f\n",1/tau_rlx,tau_rlx,
