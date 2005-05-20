@@ -256,20 +256,37 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     break;
   case epbcdxTRICLINIC:
   case epbcdxTRICLINIC_SS:
-    /* For triclinic boxes the performance difference between
-     * if/else and two while loop is negligible.
-     */
-    for(i=DIM-1; i>=0; i--) {
-      while (dx[i] > pbc->hbox_diag[i]) {
-	for (j=i; j>=0; j--)
-	  dx[j] -= pbc->box[i][j];
-	ishift[i]--;
-      }
-      while (dx[i] <= pbc->mhbox_diag[i]) {
+    if (pbc->ePBCDX == epbcdxTRICLINIC) {
+      for(i=DIM-1; i>=0; i--) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] -= pbc->box[i][j];
+	  ishift[i]--;
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
 	for (j=i; j>=0; j--)
 	  dx[j] += pbc->box[i][j];
 	ishift[i]++;
+	}
       }
+    } else {
+    /* For triclinic boxes the performance difference between
+     * if/else and two while loops is negligible.
+     * However, the while version can cause extreme delays
+     * before a simulation crashes due to large forces which
+     * can cause unlimited displacements.
+     */
+      for(i=DIM-1; i>=0; i--) {
+	if (dx[i] > pbc->hbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] -= pbc->box[i][j];
+	  ishift[i]--;
+	} else if (dx[i] <= pbc->mhbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] += pbc->box[i][j];
+	  ishift[i]++;
+	}
+      } 
     }
     /* dx is the distance in a rectangular box */
     copy_rvec(dx,dx_start);
