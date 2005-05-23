@@ -870,7 +870,8 @@ static void do_dip(char *fn,      char *topf,
       if (fnadip) 
 	fprintf(adip, "%10g %f \n", t,aver_lsq(&muframelsq));
 
-      fprintf(stdout, "%f %f\n", norm(dipole[0]), norm(dipole[1]));
+      if (dipole)
+	fprintf(stdout, "%f %f\n", norm(dipole[0]), norm(dipole[1]));
 	      
       if (!bMU || (mu_aver != -1)) {
 	/* Finite system Kirkwood G-factor */
