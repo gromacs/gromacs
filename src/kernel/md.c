@@ -909,7 +909,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
       do_or  = do_per_step(step,parm->ir.nstorireout) || bLastStep;
       do_dihr= do_per_step(step,parm->ir.nstdihreout) || bLastStep;
-      print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,step,t,
+      print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,
+		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
       if (bVerbose)
 	fflush(log);
@@ -970,9 +971,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     close_trj(status);
 	  
   if (MASTER(cr)) {
-    print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,t,
+    print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,step_rel,t,
 	       eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
-    print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,t,
+    print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,step_rel,t,
 	       eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
     close_enx(fp_ene);
     if (!bRerunMD && parm->ir.nstxtcout)

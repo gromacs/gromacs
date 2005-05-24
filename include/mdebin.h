@@ -74,7 +74,7 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 extern void print_ebin_header(FILE *log,int steps,real time,real lamb);
 
 extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
-		       FILE *log,int steps,real time,
+		       FILE *log,int step,int nsteps,real time,
 		       int mode,bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts);
 

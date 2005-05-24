@@ -485,7 +485,7 @@ void print_ebin_header(FILE *log,int steps,real time,real lamb)
 }
 
 void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
-		FILE *log,int steps,real time,int mode,bool bCompact,
+		FILE *log,int step,int nsteps,real time,int mode,bool bCompact,
 		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts)
 {
   static char **grpnms=NULL;
@@ -499,7 +499,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
   switch (mode) {
   case eprNORMAL:
     fr.t          = time;
-    fr.step       = steps;
+    fr.step       = step;
     fr.nre        = (bEne) ? md->ebin->nener : 0;
     fr.ener       = md->ebin->e;
     fr.ndisre     = bDR ? fcd->disres.npr : 0;
@@ -547,30 +547,31 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
       print_orires_log(log,&(fcd->orires));
 
     fprintf(log,"   Energies %s\n",kjm);
-    pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,steps,TRUE);  
+    pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,nsteps,TRUE);  
     fprintf(log,"\n");
 
     if (!bCompact) {
       if (bDynBox) {
-	pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,steps,TRUE);      
+	pr_ebin(log,md->ebin,md->ib, bTricl ? NTRICLBOXS : NBOXS,5,mode,
+		nsteps,TRUE);      
 	fprintf(log,"\n");
       }
       if (bShake) {
 	fprintf(log,"   Shake Virial %s\n",kjm);
-	pr_ebin(log,md->ebin,md->isvir,9,3,mode,steps,FALSE);  
+	pr_ebin(log,md->ebin,md->isvir,9,3,mode,nsteps,FALSE);  
 	fprintf(log,"\n");
 	fprintf(log,"   Force Virial %s\n",kjm);
-	pr_ebin(log,md->ebin,md->ifvir,9,3,mode,steps,FALSE);  
+	pr_ebin(log,md->ebin,md->ifvir,9,3,mode,nsteps,FALSE);  
       fprintf(log,"\n");
       }
       fprintf(log,"   Total Virial %s\n",kjm);
-      pr_ebin(log,md->ebin,md->ivir,9,3,mode,steps,FALSE);   
+      pr_ebin(log,md->ebin,md->ivir,9,3,mode,nsteps,FALSE);   
       fprintf(log,"\n");
       fprintf(log,"   Pressure (bar)\n");
-      pr_ebin(log,md->ebin,md->ipres,9,3,mode,steps,FALSE);  
+      pr_ebin(log,md->ebin,md->ipres,9,3,mode,nsteps,FALSE);  
       fprintf(log,"\n");
       fprintf(log,"   Total Dipole (Debye)\n");
-      pr_ebin(log,md->ebin,md->imu,3,3,mode,steps,FALSE);    
+      pr_ebin(log,md->ebin,md->imu,3,3,mode,nsteps,FALSE);    
       fprintf(log,"\n");
       
       if (md->nE > 1) {
@@ -594,12 +595,12 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 	fprintf(log,"\n");
 	for(i=0; (i<md->nE); i++) {
 	  fprintf(log,"%15s",grpnms[i]);
-	  pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,steps,FALSE);
+	  pr_ebin(log,md->ebin,md->igrp[i],md->nEc,md->nEc,mode,nsteps,FALSE);
 	}
 	fprintf(log,"\n");
       }
       if (md->nTC > 1) {
-	pr_ebin(log,md->ebin,md->itemp,md->nTC,4,mode,steps,TRUE);
+	pr_ebin(log,md->ebin,md->itemp,md->nTC,4,mode,nsteps,TRUE);
 	fprintf(log,"\n");
       }
       if (md->nU > 1) {
@@ -608,7 +609,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 	for(i=0; (i<md->nU); i++) {
 	  ni=atoms->grps[egcACC].nm_ind[i];
 	  fprintf(log,"%15s",*atoms->grpname[ni]);
-	  pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,steps,FALSE);
+	  pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,nsteps,FALSE);
 	}
 	fprintf(log,"\n");
       }
