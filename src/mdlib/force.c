@@ -1049,9 +1049,17 @@ void init_forcerec(FILE *fp,
   check_solvent(fp,top,fr,mdatoms,nsb);
 
   
-  if (bNoSolvOpt || getenv("GMX_NO_SOLV_OPT"))
-  {
-      fr->solvent_opt = esolNO;
+  if (getenv("GMX_NO_SOLV_OPT")) {
+    if (fp)
+      fprintf(fp,"Found environment variable GMX_NO_SOLV_OPT.\n"
+  	      "Disabling all solvent optimization\n");
+    fr->solvent_opt = esolNO;
+  }
+  if (bNoSolvOpt)
+    fr->solvent_opt = esolNO;
+  if (!fr->solvent_opt) {
+    for(i=0; i<top->blocks[ebCGS].nr; i++) 
+      fr->solvent_type[i] = esolNO;
   }
 }
  
