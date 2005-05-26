@@ -284,7 +284,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
   
   if (nls >= 0) {
     n0 = nls;
-    n1 = nls;
+    n1 = nls+1;
   } else {
     n0 = 0;
     n1 = fr->nnblists;
@@ -326,7 +326,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 	
 	/* Is this a free energy loop? */
 	if(nlist->free_energy) {
-	  // Free energy goes here.
+	  /* Free energy goes here. */
 	  printf("Free energy kernels not implemented!\n");
 	  exit(1);
 	} else {
