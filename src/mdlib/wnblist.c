@@ -102,48 +102,62 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
     } while (strstr(buf,header) == NULL);
     
     do {
-        if ((nargs = fscanf(in,"%*s%s%*s%s",il_code,solv)) != 2)
-            return njtot;
+      do {
+        if (fgets2(buf,255,in) == NULL)
+	  return njtot;
+      } while (strstr(buf,"nri:") == NULL);
+      
+      if (0) {
+	if ((nargs = sscanf(buf,"%*s%s%*s%s",il_code,solv)) != 2) {
+	  fprintf(stderr,"Can not find the right il_code\n");
+	  return njtot;
+	}
         for(isolv=0; (isolv<esolNR); isolv++)
-            if (strstr(esol_names[isolv],solv) != NULL)
-                break;
-        if (isolv == esolNR)
-            return njtot;
-        
-        /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
-        if ((nargs = fscanf(in,"%*s%d%*s%d",&nri,&nrj)) != 2)
-            gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
-        for(ii=0; (ii<nri); ii++) {
-            if ((nargs = fscanf(in,"%*s%d%*s%d%*s%d%*s%d",
-                                &iatom,&shift,&gid,&nj)) != 4)
-                gmx_fatal(FARGS,"Can not read iatom, shift gid or nj (nargs=%d)",nargs);
-            /* Number shifts from 1 to 27 iso 0 to 26, to distinguish uninitialized 
-            * matrix elements.
-            */
-            range_check(iatom,0,natoms);
-            for(i=0; (i<nj); i++) {
-                if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
-                    gmx_fatal(FARGS,"Can not read j");
-                range_check(j,0,natoms);
-                switch (isolv) {
-                    case enlistATOM:
-                        set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
-                        njtot++;
-                        break;
-                    case enlistWATER:
-                        set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
-                        njtot+=3;
-                        break;
-                    case enlistWATERWATER:
-                        set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
-                        njtot+=9;
-                        break;
-                    default:
-                        gmx_incons("non-existing solvent type");
-                }
-            }
+	  if (strstr(esol_names[isolv],solv) != NULL)
+	    break;
+	
+        if (isolv == esolNR) {
+	  fprintf(stderr,"Can not read il_code or solv (nargs=%d)\n",nargs);
+	  return njtot;
         }
-        fprintf(fp,"nri = %d  nrj = %d\n",nri,nrj);
+      }
+      else
+	isolv = enlistATOM;
+      
+      /* gmx_fatal(FARGS,"Can not read il_code or solv (nargs=%d)",nargs);*/
+      if ((nargs = sscanf(buf,"%*s%d%*s%d",&nri,&nrj)) != 2)
+	gmx_fatal(FARGS,"Can not read nri or nrj (nargs=%d)",nargs);
+      for(ii=0; (ii<nri); ii++) {
+	if ((nargs = fscanf(in,"%*s%d%*s%d%*s%d%*s%d",
+			    &iatom,&shift,&gid,&nj)) != 4)
+	  gmx_fatal(FARGS,"Can not read iatom, shift gid or nj (nargs=%d)",nargs);
+	/* Number shifts from 1 to 27 iso 0 to 26 to distinguish uninitialized 
+	 * matrix elements.
+	 */
+	range_check(iatom,0,natoms);
+	for(i=0; (i<nj); i++) {
+	  if ((nargs = fscanf(in,"%*s%d",&j)) != 1)
+	    gmx_fatal(FARGS,"Can not read j");
+	  range_check(j,0,natoms);
+	  switch (isolv) {
+	  case enlistATOM:
+	    set_mat(fp,mat,iatom,1,j,1,bSymm,shift);
+	    njtot++;
+	    break;
+	  case enlistWATER:
+	    set_mat(fp,mat,iatom,3,j,1,bSymm,shift);
+	    njtot+=3;
+	    break;
+	  case enlistWATERWATER:
+	    set_mat(fp,mat,iatom,3,j,3,bSymm,shift);
+	    njtot+=9;
+	    break;
+	  default:
+	    gmx_incons("non-existing solvent type");
+	  }
+	}
+      }
+      fprintf(fp,"nri = %d  nrj = %d\n",nri,nrj);
     } while (TRUE);
     return -1;
 }
