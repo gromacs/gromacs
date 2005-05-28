@@ -822,9 +822,9 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
 
   if (svi!=CENTRAL || sji!=CENTRAL || ski!=CENTRAL) {
     rvec_dec(fshift[svi],fv);
-    f[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX];
-    f[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY];
-    f[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ];
+    fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX];
+    fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY];
+    fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ];
     rvec_inc(fshift[sji],fj);
     rvec_inc(fshift[ski],fk);
   }
@@ -956,7 +956,6 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
 
 	/* Constants for constructing */
 	a1   = ip[tp].vsite.a; 
-      
 	/* Construct the vsite depending on type */
 	switch (ftype) {
 	case F_VSITE2:
