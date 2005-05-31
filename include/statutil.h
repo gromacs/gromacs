@@ -50,8 +50,23 @@ extern "C" {
 #include "filenm.h"
 #include "readinp.h"
 #include "wman.h"
+
+  /* The code below is to facilitate controlled begin and end of
+     trajectory reading. Corresponding routines in
+     src/gmxlib/tcontrol.c
+   */
+  enum { TBEGIN, TEND, TDELTA, TNR };
+  
+  extern bool bTimeSet(int tcontrol);
+  
+  extern real rTimeValue(int tcontrol); 
+  
+  extern void setTimeValue(int tcontrol,real value);
+  
+  /* End trajectory time control */
   
 typedef int t_first_x(int *status,char *fn,real *t,rvec **x,matrix box);
+
 typedef bool t_next_x(int status,real *t,int natoms,rvec x[],matrix box);
 
 /* I/O function types */
