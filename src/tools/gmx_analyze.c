@@ -621,7 +621,7 @@ int gmx_analyze(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bIntegrate=FALSE; 
-  static int  linelen=4096,nsets_in=1,d=1,nb_min=4,resol=10;
+  static int  nsets_in=1,d=1,nb_min=4,resol=10;
 
   /* must correspond to enum avbar* declared at beginning of file */
   static char *avbar_opt[avbarNR+1] = { 
@@ -629,8 +629,6 @@ int gmx_analyze(int argc,char *argv[])
   };
 
   t_pargs pa[] = {
-    { "-linelen", FALSE, etINT, {&linelen},
-      "HIDDENMaximum input line length" },
     { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
     { "-b",       FALSE, etREAL, {&tb},
@@ -714,10 +712,10 @@ int gmx_analyze(int argc,char *argv[])
   else
     fitfile  = opt2fn_null("-g",NFILE,fnm);
     
-  val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
-	       opt2parg_bSet("-b",npargs,ppa),tb,
-	       opt2parg_bSet("-e",npargs,ppa),te,
-	       nsets_in,&nset,&n,&dt,&t,linelen);
+  val=read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
+		    opt2parg_bSet("-b",npargs,ppa),tb,
+		    opt2parg_bSet("-e",npargs,ppa),te,
+		    nsets_in,&nset,&n,&dt,&t);
   printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   
   if (bDer) {

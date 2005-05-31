@@ -360,11 +360,8 @@ int gmx_trjcat(int argc,char *argv[])
   static real  begin=-1;
   static real  end=-1;
   static real  dt=0;
-  static int  linelen=4096;
 
   t_pargs pa[] = {
-    { "-linelen", FALSE, etINT, {&linelen},
-      "HIDDENMaximum input line length" },
     { "-b",       FALSE, etTIME, {&begin},
       "First time to use (%t)"},
     { "-e",       FALSE, etTIME, {&end},
@@ -431,10 +428,10 @@ int gmx_trjcat(int argc,char *argv[])
   if (bDeMux) {
     nset    = 0;
     dt_remd = 0;
-    val=read_val(opt2fn("-demux",NFILE,fnm),TRUE,
-		 opt2parg_bSet("-b",npargs,pa),begin,
-		 opt2parg_bSet("-e",npargs,pa),end,
-		 1,&nset,&n,&dt_remd,&t,linelen);
+    val=read_xvg_time(opt2fn("-demux",NFILE,fnm),TRUE,
+		      opt2parg_bSet("-b",npargs,pa),begin,
+		      opt2parg_bSet("-e",npargs,pa),end,
+		      1,&nset,&n,&dt_remd,&t);
     printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt_remd);
   }
   /* prec is in nr of decimal places, xtcprec is a multiplication factor: */

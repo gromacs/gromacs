@@ -629,11 +629,9 @@ int gmx_sham(int argc,char *argv[])
   static real Tref=298.15,pmin=0,ttol=0;
   static rvec nrbox = {32,32,32};
   static rvec xmin  = {0,0,0}, xmax={1,1,1};
-  static int  linelen=4096,nsets_in=1,nb_min=4,resol=10,nlevels=25;
+  static int  nsets_in=1,nb_min=4,resol=10,nlevels=25;
   static char *mname="";
   t_pargs pa[] = {
-    { "-linelen", FALSE, etINT, {&linelen},
-      "HIDDENMaximum input line length" },
     { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
     { "-b",       FALSE, etREAL, {&tb},
@@ -697,17 +695,17 @@ int gmx_sham(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE ,
 		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL); 
 
-  val=read_val(opt2fn("-f",NFILE,fnm),bHaveT,
-	       opt2parg_bSet("-b",npargs,pa),tb-ttol,
-	       opt2parg_bSet("-e",npargs,pa),te+ttol,
-	       nsets_in,&nset,&n,&dt,&t,linelen);
+  val=read_xvg_time(opt2fn("-f",NFILE,fnm),bHaveT,
+		    opt2parg_bSet("-b",npargs,pa),tb-ttol,
+		    opt2parg_bSet("-e",npargs,pa),te+ttol,
+		    nsets_in,&nset,&n,&dt,&t);
   printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   
   if (opt2fn_null("-ene",NFILE,fnm) != NULL) {
-    et_val=read_val(opt2fn("-ene",NFILE,fnm),bHaveT,
-		    opt2parg_bSet("-b",npargs,pa),tb-ttol,
-		    opt2parg_bSet("-e",npargs,pa),te+ttol,
-		    nsets_in,&e_nset,&e_n,&e_dt,&e_t,linelen);
+    et_val=read_xvg_time(opt2fn("-ene",NFILE,fnm),bHaveT,
+			 opt2parg_bSet("-b",npargs,pa),tb-ttol,
+			 opt2parg_bSet("-e",npargs,pa),te+ttol,
+			 nsets_in,&e_nset,&e_n,&e_dt,&e_t);
     if (e_nset != 2) 
       gmx_fatal(FARGS,"Can only handle one energy component and one T in %s",
 		opt2fn("-ene",NFILE,fnm));
@@ -718,9 +716,9 @@ int gmx_sham(int argc,char *argv[])
     et_val = NULL;
     
   if (opt2fn_null("-mdata",NFILE,fnm) != NULL) {
-    dt_val=read_val(opt2fn("-mdata",NFILE,fnm),bHaveT,
-		    FALSE,tb,FALSE,te,
-		    nsets_in,&d_nset,&d_n,&d_dt,&d_t,linelen);
+    dt_val=read_xvg_time(opt2fn("-mdata",NFILE,fnm),bHaveT,
+			 FALSE,tb,FALSE,te,
+			 nsets_in,&d_nset,&d_n,&d_dt,&d_t);
     if (d_nset != 1)
       gmx_fatal(FARGS,"Can only handle one mapping data column in %s",
 		opt2fn("-mdata",NFILE,fnm));

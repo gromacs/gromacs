@@ -314,23 +314,18 @@ void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg)
   fclose(fp);
 }
 
-real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
-		int nsets_in,int *nset,int *nval,real *dt,real **t,
-		int linelen)
+real **read_xvg_time(char *fn,
+		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
+		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {
   FILE   *fp;
-  static int  llmax=0;
-  static char *line0=NULL;
+#define MAXLINELEN 16384
+  char line0[MAXLINELEN];
   char   *line;
   int    a,narg,n,sin,set,nchar;
   double dbl,tend=0;
   bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
   real   **val;
-  
-  if (linelen > llmax) {
-    llmax = linelen;
-    srenew(line0,llmax);
-  }
   
   val = NULL;
   *t  = NULL;
@@ -343,8 +338,11 @@ real **read_val(char *fn,bool bHaveT,bool bTB,real tb,bool bTE,real te,
       narg = bHaveT ? 2 : 1;
     n = 0;
     bEndOfSet = FALSE;
-    while (!bEndOfSet && fgets(line0,linelen,fp)) {
+    while (!bEndOfSet && fgets(line0,MAXLINELEN,fp)) {
       line = line0;
+      /* Remove whitespace */
+      while (line[0]==' ' || line[0]=='\t')
+	line++;
       bEndOfSet = (line[0] == '&');
       if (line[0]!='#' && line[0]!='@' && line[0]!='\n' && !bEndOfSet) {
 	if (bFirstLine && bHaveT) {
