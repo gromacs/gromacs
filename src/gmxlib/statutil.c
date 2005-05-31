@@ -131,7 +131,7 @@ bool bRmod_fd(double a, double b, double c, bool bDouble)
   int iq;
   double tol;
 
-  tol = 5*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
+  tol = 2*(bDouble ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS);
 
   iq = (a - b + tol*a)/c;
 
