@@ -979,7 +979,8 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
       for(nh=0; (nh<nhydro); nh++) {
 	ohb = 0;
 	j0  = 0;
-	for(j=0; (j<nframes); j++) {
+	/* changed upper limit from nframes to the one below */
+	for(j=0; (j<hb->hbmap[i][k].nframes); j++) {
 	  ihb      = is_hb(h[nh],j);
 	  if (debug && (ndump < 10))
 	    fprintf(debug,"%5d  %5d\n",j,ihb);
@@ -1126,7 +1127,7 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     }
     if (i < n-2) {
       /* Determine tau_relax from linear interpolation */
-      tau_rlx = t[i] + (e_1-ct[i])*(t[i+1]-t[i])/(ct[i+1]-ct[i]);
+      tau_rlx = t[i]-t[0] + (e_1-ct[i])*(t[i+1]-t[i])/(ct[i+1]-ct[i]);
       printf("Relaxation %10.3f   %8.3f  %10.3f\n",1/tau_rlx,tau_rlx,
 	     calc_dg(tau_rlx,temp));
     }
