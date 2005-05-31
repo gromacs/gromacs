@@ -66,23 +66,16 @@
  *
  ******************************************************************/
 
-/* Globals for trajectory input */
-real         tbegin = -1;
-real         tend   = -1;
-real         tdelta = -1;
-real         timefactor = NOTSET;
-char         *timelabel = NULL;
-static char *timestr[] = { NULL, "fs", "ps", "ns", "us", "ms", "s",   
-			   "m",              "h",                NULL };
-real timefactors[]     = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 
-			   (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
+static real timefactor     = NOTSET;
+static char *timelabel     = NULL;
+static char *timestr[]     = { NULL, "fs", "ps", "ns", "us", "ms", "s",   
+			       "m", "h", NULL };
+static real timefactors[]  = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 
+			       (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
 static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
 			       "m", "h", NULL };
-static bool  bView=FALSE;
-static unsigned long uFlags=0;
-static char  *program=NULL;
-
-#define FF(arg) ((uFlags & arg)==arg)
+static bool  bView         = FALSE;
+static char  *program      = NULL;
 
 char *ShortProgram(void)
 {
@@ -157,17 +150,18 @@ int check_times2(real t,real t0,real tp, real tpp, bool bDouble)
     margin = 0;
 
   r=-1;
-  if ((((tbegin >= 0.0) && (t >= tbegin)) || (tbegin == -1.0)) &&
-      (((tend   >= 0.0) && (t <= tend+margin))   || (tend   == -1.0))) {
-    if (tdelta > 0 && !bRmod_fd(t,t0,tdelta,bDouble))
+  if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))  &&
+      (!bTimeSet(TEND)   || (t <= rTimeValue(TEND)))) {
+    if (bTimeSet(TDELTA) && !bRmod_fd(t,t0,rTimeValue(TDELTA),bDouble))
       r = -1;
     else
       r = 0;
   }
-  else if ((tend != -1.0) && (t>=tend))
+  else if (bTimeSet(TEND) && (t >= rTimeValue(TEND)))
     r = 1;
-  if (debug) fprintf(debug,"t=%g, t0=%g, b=%g, e=%g, dt=%g: r=%d\n",
-		     t,t0,tbegin,tend,tdelta,r);
+  if (debug) 
+    fprintf(debug,"t=%g, t0=%g, b=%g, e=%g, dt=%g: r=%d\n",
+	    t,t0,rTimeValue(TBEGIN),rTimeValue(TEND),rTimeValue(TDELTA),r);
   return r;
 }
 
@@ -474,7 +468,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   static int  nicelevel=0,mantp=0,npri=0;
   static bool bGUI=FALSE,bDebug=FALSE;
   static char *deffnm=NULL;
-     
+  static real tbegin=0,tend=0,tdelta=0;
+       
   t_pargs *all_pa=NULL;
   
   t_pargs motif_pa  = { "-X",    FALSE, etBOOL,  {&bGUI},
@@ -521,6 +516,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   char *ptr,*newdesc;
   char *envstr;
 
+#define FF(arg) ((Flags & arg)==arg)
+
   /* Check for double arguments */
   for (i=1; (i<*argc); i++) {
     if (argv[i] && (strlen(argv[i]) > 1) && (!isdigit(argv[i][1]))) {
@@ -540,7 +537,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   /* Handle the flags argument, which is a bit field 
    * The FF macro returns whether or not the bit is set
    */
-  uFlags        = Flags;
   bPrint        = !FF(PCA_SILENT);
   
   /* Check whether we should have GUI or not */
@@ -678,6 +674,16 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   doexceptions();
 #endif
 
+  /* Extract Time info from arguments */
+  if (FF(PCA_CAN_BEGIN) && opt2parg_bSet("-b",npall,all_pa))
+    setTimeValue(TBEGIN,opt2parg_real("-b",npall,all_pa));
+
+  if (FF(PCA_CAN_END) && opt2parg_bSet("-e",npall,all_pa))
+    setTimeValue(TEND,opt2parg_real("-e",npall,all_pa));
+  
+  if (FF(PCA_CAN_DT) && opt2parg_bSet("-dt",npall,all_pa))
+    setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
+  
   /* Set the nice level */
 #ifdef __sgi
   if (bGUI)
@@ -755,5 +761,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     else
       exit(0);
   }
+#undef FF
 }
 

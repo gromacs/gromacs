@@ -55,7 +55,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
 	libxdrf.c	xmlio.h		gmx_arpack.c			\
-	dihres.c	xmlio.c		gmx_random_gausstable.h
+	dihres.c	xmlio.c		gmx_random_gausstable.h		\
+	tcontrol.c
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	mgmx.c		widget.c	widget.h	\
