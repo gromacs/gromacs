@@ -292,7 +292,7 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   debug_gmx();
 }
 
-t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
+t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[],bool bParFn)
 {
   t_commrec *mcr;
   int  i,ftp;
@@ -307,16 +307,19 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[])
   cr->nodeid  = 0;
   cr->nnodes  = 1;
   
-  /* Patch file names (except log which has been done already) */
-  for(i=0; (i<nfile); i++) {
-    /* Because of possible multiple extensions per type we must look 
-     * at the actual file name 
+  if (bParFn) {
+    /* Patch output and tpx file names (except log which has been done already)
      */
-    ftp = fn2ftp(fnm[i].fns[0]);
-    if (ftp != efLOG) {
-      par_fn(fnm[i].fns[0],ftp,mcr,buf,255);
-      sfree(fnm[i].fns[0]);
-      fnm[i].fns[0] = strdup(buf);
+    for(i=0; (i<nfile); i++) {
+      /* Because of possible multiple extensions per type we must look 
+       * at the actual file name 
+       */
+      if ((is_output(&fnm[i]) || fnm[i].ftp == efTPX) && fnm[i].ftp != efLOG) {
+	ftp = fn2ftp(fnm[i].fns[0]);
+	par_fn(fnm[i].fns[0],ftp,mcr,buf,255);
+	sfree(fnm[i].fns[0]);
+	fnm[i].fns[0] = strdup(buf);
+      }
     }
   }
 

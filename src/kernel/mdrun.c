@@ -106,7 +106,7 @@ int main(int argc,char *argv[])
     "See manual.[PAR]",
     "With [TT]-multi[tt] multiple systems are simulated in parallel.",
     "As many (single node) input files are required as the number of nodes.",
-    "The node number is appended to each input and output filename,",
+    "The node number is appended to the run input and each output filename,",
     "for instance topol.tpr becomes topol0.tpr, topol1.tpr etc.",
     "The main use of this option is for NMR refinement: when distance",
     "or orientation restraints are present these can be ensemble averaged",
@@ -223,10 +223,10 @@ int main(int argc,char *argv[])
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
-  if (repl_ex_nst > 0)
+  if (repl_ex_nst > 0 || opt2bSet("-tpi",NFILE,fnm))
     bMultiSim = TRUE;
   if (bMultiSim && PAR(cr))
-    mcr = init_multisystem(cr,NFILE,fnm);
+    mcr = init_multisystem(cr,NFILE,fnm,!opt2bSet("-tpi",NFILE,fnm));
   else
     mcr = NULL;
 

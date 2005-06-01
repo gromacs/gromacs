@@ -62,12 +62,14 @@ extern void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name);
  * if the val's don't match.
  */
 
-extern t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[]);
+extern t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[],
+				   bool bParFn);
 /* Returns copy of the cr commrec to be used for simulating a system
  * of cr->nnodes linked subsystems,
  * cr is modified to be non-parallel:
  *   cr->nnodes = 1;
  *   cr->nodeid = 0;
+ * If bParFn is set, the nodeid is appended to the tpx and each output file.
  */
 
 extern t_commrec *init_par(int *argc,char ***argv_ptr);
