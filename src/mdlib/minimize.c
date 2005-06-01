@@ -2029,7 +2029,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   int    frame,nsteps,step;
   int    i,m,start,end,gf;
   static gmx_rng_t tpi_rand;
-  FILE   *fp_tpi;
+  FILE   *fp_tpi=NULL;
   char   *dump_pdb,**leg,str[STRLEN],str2[STRLEN];
   double dump_ener;
   /* Maybe this should be an mdp parameter */
@@ -2084,28 +2084,30 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   /* Initialize random generator */
   tpi_rand = gmx_rng_init(parm->ir.ld_seed);
 
-  fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
-		    "TPI energies","Time (ps)",
-		    "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
-  fprintf(fp_tpi,"@ subtitle \"f. are averages over one frame\"\n");
-  snew(leg,4+ngid);
-  sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
-  leg[0] = strdup(str);
-  sprintf(str,"f. -kT log<e\\S-\\8b\\4U\\N>");
-  leg[1] = strdup(str);
-  sprintf(str,"f. V<e\\S-\\8b\\4U\\N>");
-  leg[2] = strdup(str);
-  sprintf(str,"f. V");
-  leg[3] = strdup(str);
-  for(i=0; i<ngid; i++) {
-    sprintf(str,"f. U\\s%s\\N<e\\S-\\8b\\4U\\N>",
-	    *(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
-    leg[4+i] = strdup(str);
+  if (mcr == NULL || mcr->nodeid == 0) {
+    fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
+		      "TPI energies","Time (ps)",
+		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
+    fprintf(fp_tpi,"@ subtitle \"f. are averages over one frame\"\n");
+    snew(leg,4+ngid);
+    sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
+    leg[0] = strdup(str);
+    sprintf(str,"f. -kT log<e\\S-\\8b\\4U\\N>");
+    leg[1] = strdup(str);
+    sprintf(str,"f. V<e\\S-\\8b\\4U\\N>");
+    leg[2] = strdup(str);
+    sprintf(str,"f. V");
+    leg[3] = strdup(str);
+    for(i=0; i<ngid; i++) {
+      sprintf(str,"f. U\\s%s\\N<e\\S-\\8b\\4U\\N>",
+	      *(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
+      leg[4+i] = strdup(str);
+    }
+    xvgr_legend(fp_tpi,4+ngid,leg);
+    for(i=0; i<4+ngid; i++)
+      sfree(leg[i]);
+    sfree(leg);
   }
-  xvgr_legend(fp_tpi,4+ngid,leg);
-  for(i=0; i<4+ngid; i++)
-    sfree(leg[i]);
-  sfree(leg);
 
   V_all = 0;
   VembU_all = 0;
@@ -2120,7 +2122,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     gmx_fatal(FARGS,"Number of atoms in trajectory (%d) is not one less than "
 	      "in the run input file (%d)\n",rerun_fr.natoms,mdatoms->nr);
 
-  while(bNotLastFrame) {
+  while (bNotLastFrame) {
     lambda = rerun_fr.lambda;
     t = rerun_fr.time;
     
@@ -2158,66 +2160,75 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	rvec_add(x_init,dx,*x_tp);
       }
 
-      /* Clear some matrix variables  */
-      clear_mat(force_vir); 
-      clear_mat(shake_vir);
-      
-      /* Calc energy (no forces) on new positions
-       * do_force always puts the charge groups in the box and shifts again
-       * We do not unshift, so molecules are always whole in tpi.c
-       */
-      do_force(fplog,cr,mcr,parm,nsb,
-	       step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
-	       buf,mdatoms,ener,fcd,bVerbose, 
-	       lambda,graph,bNS,TRUE,FALSE,fr,mu_tot,
-	       FALSE,t,NULL); 
-      
-      /* Calculate long range corrections to pressure and energy */
-      calc_dispcorr(fplog,parm->ir.eDispCorr,
-		    fr,mdatoms->nr,rerun_fr.box,parm->pres,parm->vir,ener);
-
-      /* Sum the potential energy terms from group contributions  */
-      sum_epot(&(parm->ir.opts),grps,ener);
-
-      /* If the compiler doesn't optimize this check away
-       * we catch the NAN energies.
-       */
-      if (ener[F_EPOT] != ener[F_EPOT]) {
-	fprintf(stderr,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
-	fprintf(fplog,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
-	embU = 0;
-      } else {
-	embU = exp(-beta*ener[F_EPOT]);
-	sum_embU += embU;
-	/* Determine the weighted energy contributions of each energy group */
-	if (fr->bBHAM) {
-	  for(i=0; i<ngid; i++)
-	    sum_UgembU[i] +=
-	      (grps->estat.ee[egBHAMSR][GID(i,gid_tp,ngid)] +
-	       grps->estat.ee[egBHAMLR][GID(i,gid_tp,ngid)])*embU;
+      if (mcr == NULL ||
+	  (step / parm->ir.nstlist) % mcr->nnodes == mcr->nodeid) { 
+	/* Clear some matrix variables  */
+	clear_mat(force_vir); 
+	clear_mat(shake_vir);
+	
+	/* Calc energy (no forces) on new positions
+	 * do_force always puts the charge groups in the box and shifts again
+	 * We do not unshift, so molecules are always whole in tpi.c
+	 */
+	do_force(fplog,cr,mcr,parm,nsb,
+		 step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
+		 buf,mdatoms,ener,fcd,bVerbose, 
+		 lambda,graph,bNS,TRUE,FALSE,fr,mu_tot,
+		 FALSE,t,NULL); 
+	
+	/* Calculate long range corrections to pressure and energy */
+	calc_dispcorr(fplog,parm->ir.eDispCorr,
+		      fr,mdatoms->nr,rerun_fr.box,parm->pres,parm->vir,ener);
+	
+	/* Sum the potential energy terms from group contributions  */
+	sum_epot(&(parm->ir.opts),grps,ener);
+	
+	/* If the compiler doesn't optimize this check away
+	 * we catch the NAN energies.
+	 */
+	if (ener[F_EPOT] != ener[F_EPOT]) {
+	  fprintf(stderr,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
+	  fprintf(fplog,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
+	  embU = 0;
 	} else {
-	  for(i=0; i<ngid; i++)
-	    sum_UgembU[i] +=
-	      (grps->estat.ee[egLJSR][GID(i,gid_tp,ngid)] +
-	       grps->estat.ee[egLJLR][GID(i,gid_tp,ngid)])*embU;
+	  embU = exp(-beta*ener[F_EPOT]);
+	  sum_embU += embU;
+	  /* Determine the weighted energy contributions of each energy group */
+	  if (fr->bBHAM) {
+	    for(i=0; i<ngid; i++)
+	      sum_UgembU[i] +=
+		(grps->estat.ee[egBHAMSR][GID(i,gid_tp,ngid)] +
+		 grps->estat.ee[egBHAMLR][GID(i,gid_tp,ngid)])*embU;
+	  } else {
+	    for(i=0; i<ngid; i++)
+	      sum_UgembU[i] +=
+		(grps->estat.ee[egLJSR][GID(i,gid_tp,ngid)] +
+		 grps->estat.ee[egLJLR][GID(i,gid_tp,ngid)])*embU;
+	  }
+	  if (bCharge) {
+	    for(i=0; i<ngid; i++)
+	      sum_UgembU[i] +=
+		(grps->estat.ee[egCOULSR][GID(i,gid_tp,ngid)] +
+		 grps->estat.ee[egCOULLR][GID(i,gid_tp,ngid)])*embU;
+	  }
 	}
-	if (bCharge) {
-	  for(i=0; i<ngid; i++)
-	    sum_UgembU[i] +=
-	      (grps->estat.ee[egCOULSR][GID(i,gid_tp,ngid)] +
-	       grps->estat.ee[egCOULLR][GID(i,gid_tp,ngid)])*embU;
-	}
-      }
-
-      if (debug)
-	fprintf(debug,"%7d %12.5e %12.5f %12.5f %12.5f\n",
+	
+	if (debug)
+	  fprintf(debug,"%7d %12.5e %12.5f %12.5f %12.5f\n",
 		step,ener[F_EPOT],(*x_tp)[XX],(*x_tp)[YY],(*x_tp)[ZZ]);
-
-      if (dump_pdb && ener[F_EPOT] <= dump_ener) {
-	sprintf(str,"t%g_step%d.pdb",t,step);
-	sprintf(str2,"t: %f step %d ener: %f",t,step,ener[F_EPOT]);
-	write_sto_conf(str,str2,&(top->atoms),state->x,state->v,state->box);
+	
+	if (dump_pdb && ener[F_EPOT] <= dump_ener) {
+	  sprintf(str,"t%g_step%d.pdb",t,step);
+	  sprintf(str2,"t: %f step %d ener: %f",t,step,ener[F_EPOT]);
+	  write_sto_conf(str,str2,&(top->atoms),state->x,state->v,state->box);
+	}
       }
+    }
+
+    if (mcr) {
+      /* When running in parallel sum the energies over the processes */
+      gmx_sumd(   1, &sum_embU,mcr);
+      gmx_sumd(ngid,sum_UgembU,mcr);
     }
 
     V = det(rerun_fr.box);
@@ -2227,19 +2238,21 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     VembU_all += V*sum_embU/nsteps;
     for(i=0; i<ngid; i++)
       VUgembU_all[i] += sum_UgembU[i]/nsteps;
-    
-    if (bVerbose || frame%10==0 || frame<10)
-      fprintf(stderr,"mu %10.3e <mu> %10.3e\n",
-	      -log(sum_embU/nsteps)/beta,-log(VembU_all/V_all)/beta);
 
-    fprintf(fp_tpi,"%10.3f %12.5e %12.5e %12.5e %12.5e",
-	    t,
-	    -log(VembU_all/V_all)/beta,-log(sum_embU/nsteps)/beta,
-	    V*sum_embU/nsteps,V);
-    for(i=0; i<ngid; i++)
-      fprintf(fp_tpi," %12.5e",sum_UgembU[i]/nsteps);
-    fprintf(fp_tpi,"\n");
-    
+    if (fp_tpi) {
+      if (bVerbose || frame%10==0 || frame<10)
+	fprintf(stderr,"mu %10.3e <mu> %10.3e\n",
+		-log(sum_embU/nsteps)/beta,-log(VembU_all/V_all)/beta);
+      
+      fprintf(fp_tpi,"%10.3f %12.5e %12.5e %12.5e %12.5e",
+	      t,
+	      -log(VembU_all/V_all)/beta,-log(sum_embU/nsteps)/beta,
+	      V*sum_embU/nsteps,V);
+      for(i=0; i<ngid; i++)
+	fprintf(fp_tpi," %12.5e",sum_UgembU[i]/nsteps);
+      fprintf(fp_tpi,"\n");
+    }
+
     bNotLastFrame = read_next_frame(status,&rerun_fr);
   } /* End of the loop  */
 
@@ -2247,7 +2260,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 
   close_trj(status);
 
-  fclose(fp_tpi);
+  if (fp_tpi)
+    fclose(fp_tpi);
 
   fprintf(stdlog,"\n");
   fprintf(stdlog,"  <V>  = %12.5e nm^3\n",V_all/frame);

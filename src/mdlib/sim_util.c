@@ -234,7 +234,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   cg1    = CG1(nsb);
 
   /* The state has always changed, except when doing test particle insertion */
-  bStateChanged = (!fr->bTPI || step==0);
+  bStateChanged = (!fr->bTPI || 
+		   step == parm->ir.nstlist*(mcr ? mcr->nodeid : 0));
   bCalcCGCM     = (bNS && bStateChanged);
 
   if (bStateChanged) {
