@@ -114,7 +114,7 @@ void init_single(FILE *log,t_parm *parm,
   check_nnodes_top(tpxfile,top,1);
 
   *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
-		    parm->ir.eI==eiBD,parm->ir.delta_t,
+		    parm->ir.eI,parm->ir.delta_t,
 		    parm->ir.bd_fric,parm->ir.opts.tau_t,
 		    parm->ir.efep!=efepNO,FALSE);
   
@@ -176,7 +176,7 @@ void init_parts(FILE *log,t_commrec *cr,
     fflush(log);
   }
   *mdatoms=atoms2md(log,&(top->atoms),parm->ir.opts.nFreeze,
-		    parm->ir.eI==eiBD,parm->ir.delta_t,
+		    parm->ir.eI,parm->ir.delta_t,
 		    parm->ir.bd_fric,parm->ir.opts.tau_t,
 		    parm->ir.efep!=efepNO,FALSE);
 }

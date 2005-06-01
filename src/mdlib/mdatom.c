@@ -45,7 +45,7 @@
 #define ALMOST_ZERO 1e-30
 
 t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
-		    bool bBD,real delta_t,real fric,real tau_t[],
+		    int eI,real delta_t,real fric,real tau_t[],
 		    bool bPert,bool bFree)
 {
   int       i,g;
@@ -81,7 +81,14 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   md->bChargePerturbed=FALSE;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
-    if (bBD) {
+    switch (eI) {
+    case eiSteep:
+    case eiCG:
+    case eiLBFGS:
+      md->massA[i]	= 1.0;
+      md->massB[i]	= 1.0;
+      break;
+    case eiBD:
       /* Make the mass proportional to the friction coefficient for BD.
        * This is necessary for the constraint algorithms.
        */
@@ -93,9 +100,11 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 	md->massA[i]	= atoms->atom[i].m*fac;
 	md->massB[i]	= atoms->atom[i].mB*fac;
       }
-    } else {
+      break;
+    default:
       md->massA[i]	= atoms->atom[i].m;
       md->massB[i]	= atoms->atom[i].mB;
+      break;
     }
     md->massT[i]	= md->massA[i];
     md->chargeA[i]	= atoms->atom[i].q;

@@ -389,7 +389,7 @@ int main(int argc,char *argv[])
   print_nsb(stdlog,"pmetest",nsb);  
 
   /* Initiate forcerec */
-  mdatoms = atoms2md(stdlog,&top.atoms,ir->opts.nFreeze,FALSE,
+  mdatoms = atoms2md(stdlog,&top.atoms,ir->opts.nFreeze,ir->eI,
 		     ir->delta_t,0,ir->opts.tau_t,FALSE,FALSE);
   snew(fr,1);
   init_forcerec(stdlog,fr,ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,FALSE);
