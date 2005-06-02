@@ -9,7 +9,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = src admin scripts share include man
+SUBDIRS = include src admin scripts share man
 
 #
 # Most files in the config subdir is included automatically when
