@@ -1146,7 +1146,7 @@ static float get_next_frame_time(int fp,int natoms){
   while(xdr_int(xdridptr[fp+1],&inp)){
     if(inp == XTC_MAGIC){
       if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
-	if(xdr_int(xdridptr[fp+1],&inp) && xdr_real(xdridptr[fp+1],&time)){
+	if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time)){
 	  return time;
 	}
       }
