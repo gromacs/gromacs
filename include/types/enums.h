@@ -87,6 +87,8 @@ enum {
   eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiNR
 };
 
+#define EI_ENERGY_MINIMIZATION(e) ((e == eiSteep) || (e == eiCG) || (e == eiLBFGS))
+
 enum {
   estLINCS, estSHAKE, estNR
 };

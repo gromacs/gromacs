@@ -81,14 +81,10 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   md->bChargePerturbed=FALSE;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
-    switch (eI) {
-    case eiSteep:
-    case eiCG:
-    case eiLBFGS:
+    if (EI_ENERGY_MINIMIZATION(eI)) {
       md->massA[i]	= 1.0;
       md->massB[i]	= 1.0;
-      break;
-    case eiBD:
+    } else if (eI == eiBD) {
       /* Make the mass proportional to the friction coefficient for BD.
        * This is necessary for the constraint algorithms.
        */
@@ -100,11 +96,9 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 	md->massA[i]	= atoms->atom[i].m*fac;
 	md->massB[i]	= atoms->atom[i].mB*fac;
       }
-      break;
-    default:
+    } else {
       md->massA[i]	= atoms->atom[i].m;
       md->massB[i]	= atoms->atom[i].mB;
-      break;
     }
     md->massT[i]	= md->massA[i];
     md->chargeA[i]	= atoms->atom[i].q;
