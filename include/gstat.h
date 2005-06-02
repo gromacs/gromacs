@@ -347,7 +347,7 @@ extern real do_lmfit(int ndata,real c1[],real sig[],real dt,real *x,
  * of fix is set. 
  */
 
-extern real evaluate_integral(int n,real dx,real y[],real dy[],
+extern real evaluate_integral(int n,real x[],real y[],real dy[],
 			      real aver_start,real *stddev);
 /* Integrate data in y, and, if given, use dy as weighting 
  * aver_start should be set to a value where the function has 

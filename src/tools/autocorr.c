@@ -302,44 +302,45 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[],real *fit,int nskip)
   return sum*0.5;
 }
 
-real evaluate_integral(int n,real dx,real y[],real dy[],real aver_start,
+real evaluate_integral(int n,real x[],real y[],real dy[],real aver_start,
 		       real *stddev)
 {
-  double c0,sum,dsum=0,dsum2,sss;
-  int    j,ndsum=0;
+  double sum=0,sum2=0,sss;
+  double sum_tail=0,sum2_tail=0;
+  int    j,nsum=0,nsum_tail=0;
   
   /* Use trapezoidal rule for calculating integral */
   if (n <= 0)
     gmx_fatal(FARGS,"Evaluating integral: n = %d (file %s, line %d)",
-		n,__FILE__,__LINE__);
-  sum  = y[0]+y[n-1];
-  if (dy)
-    dsum2 = sqr(dy[0]) + sqr(dy[n-1]);
-  else
-    dsum2 = 0;
-  for(j=1; (j<n-1); j++) {
-    sum += 2*y[j];
-    if (j*dx >= aver_start) {
-      sss    = dx*sum*0.5;
-      dsum  += sss;
-      if (dy) 
-	dsum2 += sqr(dy[j]);
-      else
-	dsum2 += sss*sss;
-      ndsum++;
+	      n,__FILE__,__LINE__);
+  
+  for(j=0; (j<n); j++) {
+    if (j < n-1)
+      sss = 0.5*(y[j+1]+y[j])*(x[j+1]-x[j]);
+    else
+      sss = 0;
+    sum  += sss;
+    if (dy) 
+      sum2 += sqr(dy[j]);
+    nsum++;
+      
+    if ((aver_start > x[0]) && (x[j] >= aver_start)) {
+      sum_tail  += sss;
+      sum2_tail += sss*sss;
+      nsum_tail += 1;
     }
   }
-  if (ndsum > 1) {
-    dsum2 /= ndsum;
-    dsum  /= ndsum;
-    *stddev = sqrt(dsum2-dsum*dsum);
+  
+  if (nsum_tail > 0) {
+    sum = sum_tail/nsum_tail;
+    *stddev = sqrt((sum2_tail/(nsum_tail-1))-sqr(sum));
   }
-  else {
+  else if ((nsum > 1) && (dy))
+    *stddev = sqrt(sum2/(nsum-1));
+  else 
     *stddev = 0.0;
-    dsum = sum;
-  }
-  /* return sum*0.5*dx; */
-  return dsum;
+  
+  return sum;
 }
 
 void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,

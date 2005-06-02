@@ -731,12 +731,12 @@ int gmx_analyze(int argc,char *argv[])
     printf("Calculating the integral using the trapezium rule\n");
     
     if (bXYdy) {
-      sum = evaluate_integral(n,dt,val[0],val[1],aver_start,&stddev);
+      sum = evaluate_integral(n,t,val[0],val[1],aver_start,&stddev);
       printf("Integral %10.3f +/- %10.5f\n",sum,stddev);
     }
     else {
       for(s=0; s<nset; s++) {
-	sum = evaluate_integral(n,dt,val[s],NULL,aver_start,&stddev);
+	sum = evaluate_integral(n,t,val[s],NULL,aver_start,&stddev);
 	printf("Integral %d  %10.5f  +/- %10.5f\n",s+1,sum,stddev);
       }
     }

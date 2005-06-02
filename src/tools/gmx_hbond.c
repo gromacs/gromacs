@@ -1116,7 +1116,7 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 	     "sc2 = %g  sn2 = %g  sk2 = %g sck = %g snk = %g scn = %g\n",
 	     sc2,sn2,sk2,sck,snk,scn);
     /* Determine integral of the correlation function */
-    tau_hb = evaluate_integral(n,t[1]-t[0],ct,NULL,t[n-1]/2,&dtau);
+    tau_hb = evaluate_integral(n,t,ct,NULL,t[n-1]/2,&dtau);
     printf("Integral   %10.3f   %8.3f  %10.3f\n",1/tau_hb,tau_hb,
 	   calc_dg(tau_hb,temp));
     e_1 = exp(-1);
