@@ -403,21 +403,25 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
   FILE *fp;
   char buf[STRLEN];
   int  i;
+  real mutot;
   char *leg_dim[DIM] = { 
     "\\f{12}m\\f{4}\\sX\\N",
     "\\f{12}m\\f{4}\\sY\\N",
-    "\\f{12}m\\f{4}\\sZ\\N"
+    "\\f{12}m\\f{4}\\sZ\\N",
+    "\\f{12}m\\f{4}\\stot\\N"
   };
   
   sprintf(buf,"Box-%c (nm)",'X'+idim);
   fp = xvgropen(fn,"Average dipole moment per slab",buf,"\\f{12}m\\f{4} (D)");
   xvgr_legend(fp,DIM,leg_dim); 
   for(i=0; (i<nslice); i++) {
-    fprintf(fp,"%10.3f  %10.3f  %10.3f  %10.3f\n",
+    mutot = norm(slab_dipole[i])/sqr(nframes);
+    fprintf(fp,"%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
 	    ((i+0.5)*box[idim][idim])/nslice,
 	    slab_dipole[i][XX]/nframes,
 	    slab_dipole[i][YY]/nframes,
-	    slab_dipole[i][ZZ]/nframes);
+	    slab_dipole[i][ZZ]/nframes,
+	    mutot);
   }
   fclose(fp);
   do_view(fn,"-autoscale xy -nxy");
