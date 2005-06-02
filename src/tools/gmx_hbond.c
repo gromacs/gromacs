@@ -99,7 +99,6 @@ typedef struct {
   /* Has this hbond existed ever? If so as hbDist or hbHB or both.
    * Result is stored as a bitmap (1 = hbDist) || (2 = hbHB)
    */
-  bool     bInsert;  /* has this hbond been invaded? */
   /* Bitmask array which tells whether a hbond is present
    * at a given time. Either of these may be NULL 
    */
@@ -144,7 +143,7 @@ typedef struct {
   t_acceptors a;
   /* This holds a matrix with all possible hydrogen bonds */
   int         nrhb,nrdist;
-  t_hbond     **hbmap;
+  t_hbond     ***hbmap;
 } t_hbdata;
 
 static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool bMerge)
@@ -173,11 +172,8 @@ static void mk_hbmap(t_hbdata *hb,bool bTwo,bool bInsert)
   snew(hb->hbmap,hb->d.nrd);
   for(i=0; (i<hb->d.nrd); i++) {
     snew(hb->hbmap[i],hb->a.nra);
-    for(j=0; (j<hb->a.nra); j++) {
-      snew(hb->hbmap[i][j].h,hb->maxhydro);
-      snew(hb->hbmap[i][j].g,hb->maxhydro);
-      hb->hbmap[i][j].n0 = -1;
-    }
+    if (hb->hbmap[i] == NULL)
+      gmx_fatal(FARGS,"Could not allocate enough memory for hbmap");
   }
 }
 
@@ -279,28 +275,32 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
     else
       k = 0;
     
-    if (hb->bHBmap)
-      add_ff(&(hb->hbmap[id][ia]),frame,hb->maxhydro,hb->wordlen,ihb,k);
-    
-    hb->hbmap[id][ia].bInsert = bInsert || hb->hbmap[id][ia].bInsert;
+    if (hb->bHBmap) {
+      if (hb->hbmap[id][ia] == NULL) {
+	snew(hb->hbmap[id][ia],1);
+	snew(hb->hbmap[id][ia]->h,hb->maxhydro);
+	snew(hb->hbmap[id][ia]->g,hb->maxhydro);
+      }
+      add_ff(hb->hbmap[id][ia],frame,hb->maxhydro,hb->wordlen,ihb,k);
+    }
     
     /* Strange construction with frame >=0 is a relic from old code
      * for selected hbond analysis. It may be necessary again if that
      * is made to work again.
      */
     if (frame >= 0) {
-      hh = hb->hbmap[id][ia].history[k];
+      hh = hb->hbmap[id][ia]->history[k];
       if (ihb == hbHB) {
 	hb->nhb[frame]++;
 	if (!(ISHB(hh))) {
-	  hb->hbmap[id][ia].history[k] = hh | 2;
+	  hb->hbmap[id][ia]->history[k] = hh | 2;
 	  hb->nrhb++;
 	}
       }
       else if (ihb == hbDist) {
 	hb->ndist[frame]++;
 	if (!(ISDIST(hh))) {
-	  hb->hbmap[id][ia].history[k] = hh | 1;
+	  hb->hbmap[id][ia]->history[k] = hh | 1;
 	  hb->nrdist++;
 	}
       }
@@ -855,52 +855,53 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 
 static void do_merge(t_hbdata *hb,int ntmp,
 		     unsigned int htmp[],unsigned int gtmp[],
-		     int i,int j,int jj,int ii)
+		     t_hbond *hb0,t_hbond *hb1)
 {
   int m,mm,n00,n01,nn0,nnframes;
   
   /* Decide where to start from when merging */
-  n00      = hb->hbmap[i][j].n0;
-  n01      = hb->hbmap[jj][ii].n0;
+  n00      = hb0->n0;
+  n01      = hb1->n0;
   nn0      = min(n00,n01);
-  nnframes = max(n00 + hb->hbmap[i][j].nframes,
-		 n01 + hb->hbmap[jj][ii].nframes) - nn0;
+  nnframes = max(n00 + hb0->nframes,n01 + hb1->nframes) - nn0;
   /* Initiate tmp arrays */
   for(m=0; (m<ntmp); m++) {
     htmp[m] = 0;
     gtmp[m] = 0;
   }
   /* Fill tmp arrays with values due to first HB */
-  for(m=0; (m<hb->hbmap[i][j].nframes); m++) {
+  for(m=0; (m<hb0->nframes); m++) {
     mm = m+n00-nn0;
-    htmp[mm] = is_hb(hb->hbmap[i][j].h[0],m);
-    gtmp[mm] = is_hb(hb->hbmap[i][j].g[0],m);
+    htmp[mm] = is_hb(hb0->h[0],m);
+    gtmp[mm] = is_hb(hb0->g[0],m);
   }
   /* Next HB */
-  for(m=0; (m<hb->hbmap[jj][ii].nframes); m++) {
+  for(m=0; (m<hb1->nframes); m++) {
     mm = m+n01-nn0;
-    htmp[mm] = htmp[mm] || is_hb(hb->hbmap[jj][ii].h[0],m);
-    gtmp[mm] = gtmp[mm] || is_hb(hb->hbmap[jj][ii].g[0],m);
+    htmp[mm] = htmp[mm] || is_hb(hb1->h[0],m);
+    gtmp[mm] = gtmp[mm] || is_hb(hb1->g[0],m);
   }
   /* Reallocate target array */
-  if (nnframes > hb->hbmap[i][j].maxframes) {
-    srenew(hb->hbmap[i][j].h[0],4+nnframes/hb->wordlen);
-    srenew(hb->hbmap[i][j].g[0],4+nnframes/hb->wordlen);
+  if (nnframes > hb0->maxframes) {
+    srenew(hb0->h[0],4+nnframes/hb->wordlen);
+    srenew(hb0->g[0],4+nnframes/hb->wordlen);
   }
   /* Copy temp array to target array */
   for(m=0; (m<nnframes); m++) {
-    set_hb(hb->hbmap[i][j].h[0],m,htmp[m]);
-    set_hb(hb->hbmap[i][j].g[0],m,gtmp[m]);
+    set_hb(hb0->h[0],m,htmp[m]);
+    set_hb(hb0->g[0],m,gtmp[m]);
   }
   /* Set scalar variables */
-  hb->hbmap[i][j].n0        = nn0;
-  hb->hbmap[i][j].maxframes = nnframes;
+  hb0->n0        = nn0;
+  hb0->maxframes = nnframes;
 }
 
 static void merge_hb(t_hbdata *hb,bool bTwo)
 {
   int  i,inrnew,indnew,j,ii,jj,m,id,ia,grp,ogrp,ntmp;
   unsigned int *htmp,*gtmp;
+  t_hbond *hb0,*hb1;
+
   inrnew = hb->nrhb;
   indnew = hb->nrdist;
     
@@ -919,20 +920,21 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
       jj = hb->d.dptr[ia];
       if ((id != ia) && (ii != NOTSET) && (jj != NOTSET) &&
 	  (!bTwo || (bTwo && (hb->d.grp[id] != hb->a.grp[ia])))) {
-	if (ISHB(hb->hbmap[i][j].history[0]) && 
-	    ISHB(hb->hbmap[jj][ii].history[0])) {
-	  do_merge(hb,ntmp,htmp,gtmp,i,j,jj,ii);
-	  if (ISHB(hb->hbmap[jj][ii].history[0])) 
+	hb0 = hb->hbmap[i][j];
+	hb1 = hb->hbmap[jj][ii];
+	if (hb0 && hb1 && ISHB(hb0->history[0]) && ISHB(hb1->history[0])) {
+	  do_merge(hb,ntmp,htmp,gtmp,hb0,hb1);
+	  if (ISHB(hb1->history[0])) 
 	    inrnew--;
-	  else if (ISDIST(hb->hbmap[jj][ii].history[0])) 
+	  else if (ISDIST(hb1->history[0])) 
 	    indnew--;
 	  else
 	    gmx_incons("Neither hydrogen bond nor distance");
-	  sfree(hb->hbmap[jj][ii].h[0]);
-	  sfree(hb->hbmap[jj][ii].g[0]);
-	  hb->hbmap[jj][ii].h[0] = NULL;
-	  hb->hbmap[jj][ii].g[0] = NULL;
-	  hb->hbmap[jj][ii].history[0] = hbNo;
+	  sfree(hb1->h[0]);
+	  sfree(hb1->g[0]);
+	  hb1->h[0] = NULL;
+	  hb1->g[0] = NULL;
+	  hb1->history[0] = hbNo;
 	}
       }
     }
@@ -955,46 +957,49 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
   unsigned int **h;
   real   x,x1,x2,dx;
   double sum,integral;
+  t_hbond *hbh;
   
   snew(h,hb->maxhydro);
   snew(histo,nframes+1);
   /* Total number of hbonds analyzed here */
   for(i=0; (i<hb->d.nrd); i++) {
     for(k=0; (k<hb->a.nra); k++) {
-      if (bMerge) {
-	if (hb->hbmap[i][k].h[0]) {
-	  h[0] = hb->hbmap[i][k].h[0];
-	  nhydro   = 1;
+      hbh = hb->hbmap[i][k];
+      if (hbh) {
+	if (bMerge) {
+	  if (hbh->h[0]) {
+	    h[0] = hbh->h[0];
+	    nhydro   = 1;
+	  }
+	  else
+	    nhydro = 0;
 	}
-	else
+	else {
 	  nhydro = 0;
-      }
-      else {
-	nhydro = 0;
-	for(m=0; (m<hb->maxhydro); m++)
-	  if (hb->hbmap[i][k].h[m]) {
-	    h[nhydro++] = hb->hbmap[i][k].h[m];
-	  }
-      }
-      for(nh=0; (nh<nhydro); nh++) {
-	ohb = 0;
-	j0  = 0;
-	/* changed upper limit from nframes to the one below */
-	for(j=0; (j<hb->hbmap[i][k].nframes); j++) {
-	  ihb      = is_hb(h[nh],j);
-	  if (debug && (ndump < 10))
-	    fprintf(debug,"%5d  %5d\n",j,ihb);
-	  if (ihb != ohb) {
-	    if (ihb) {
-	      j0 = j;
+	  for(m=0; (m<hb->maxhydro); m++)
+	    if (hbh->h[m]) {
+	      h[nhydro++] = hbh->h[m];
 	    }
-	    else {
-	      histo[j-j0]++;
-	    }
-	    ohb = ihb;
-	  }
 	}
-	ndump++;
+	for(nh=0; (nh<nhydro); nh++) {
+	  ohb = 0;
+	  j0  = 0;
+	  for(j=0; (j<hbh->nframes); j++) {
+	    ihb      = is_hb(h[nh],j);
+	    if (debug && (ndump < 10))
+	      fprintf(debug,"%5d  %5d\n",j,ihb);
+	    if (ihb != ohb) {
+	      if (ihb) {
+		j0 = j;
+	      }
+	      else {
+		histo[j-j0]++;
+	      }
+	    ohb = ihb;
+	    }
+	}
+	  ndump++;
+	}
       }
     }
   }
@@ -1030,7 +1035,8 @@ static void dump_ac(t_hbdata *hb,bool bMerge,int nDump)
   int   i,j,k,m,nd,ihb,idist;
   int   nframes = hb->nframes;
   bool  bPrint;
-  
+  t_hbond *hbh;
+
   if (nDump <= 0)
     return;
   fp = ffopen("debug-ac.xvg","w");
@@ -1040,19 +1046,18 @@ static void dump_ac(t_hbdata *hb,bool bMerge,int nDump)
       for(k=0; (k<hb->a.nra) && (nd < nDump); k++) {
 	bPrint = FALSE;
 	ihb = idist = 0;
+	hbh = hb->hbmap[i][k];
 	if (bMerge) {
-	  if (hb->hbmap[i][k].h[0]) {
-	    ihb   = is_hb(hb->hbmap[i][k].h[0],j);
-	    idist = is_hb(hb->hbmap[i][k].g[0],j);
+	  if (hbh->h[0]) {
+	    ihb   = is_hb(hbh->h[0],j);
+	    idist = is_hb(hbh->g[0],j);
 	    bPrint = TRUE;
 	  }
 	} 
 	else {
 	  for(m=0; (m<hb->maxhydro) && !ihb ; m++) {
-	    ihb   = ihb   || ((hb->hbmap[i][k].h[m]) && 
-			      is_hb(hb->hbmap[i][k].h[m],j));
-	    idist = idist || ((hb->hbmap[i][k].g[m]) && 
-			      is_hb(hb->hbmap[i][k].g[m],j));
+	    ihb   = ihb   || ((hbh->h[m]) && is_hb(hbh->h[m],j));
+	    idist = idist || ((hbh->g[m]) && is_hb(hbh->g[m],j));
 	  }
 	  /* This is not correct! */
 	  bPrint = TRUE;
@@ -1161,6 +1166,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   int   nframes = hb->nframes,nf;
   unsigned int **h,**g;
   int   nh,nhbonds,nhydro,ngh;
+  t_hbond *hbh;
 #define WITHOUT_FFTW
 #ifndef WITHOUT_FFTW
   correl_t *correl;
@@ -1198,55 +1204,58 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   for(i=0; (i<hb->d.nrd); i++) {
     for(k=0; (k<hb->a.nra); k++) {
       nhydro = 0;
-      if (bMerge) {
-	if (ISHB(hb->hbmap[i][k].history[0])) {
-	  h[0] = hb->hbmap[i][k].h[0];
-	  g[0] = hb->hbmap[i][k].g[0];
-	  nhydro = 1;
-	}
-      }
-      else {
-	for(m=0; (m<hb->maxhydro); m++)
-	  if (ISHB(hb->hbmap[i][k].history[m])) {
-	    g[nhydro] = hb->hbmap[i][k].g[m];
-	    h[nhydro] = hb->hbmap[i][k].h[m];
-	    nhydro++;
+      hbh = hb->hbmap[i][k];
+      if (hbh) {
+	if (bMerge) {
+	  if (ISHB(hbh->history[0])) {
+	    h[0] = hbh->h[0];
+	    g[0] = hbh->g[0];
+	    nhydro = 1;
 	  }
-      }
-      nf = hb->hbmap[i][k].nframes;
-      for(nh=0; (nh<nhydro); nh++) {
-	if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == hb->nrhb))
-	  fprintf(stderr,"\rACF %d/%d",nhbonds+1,hb->nrhb);
-	nhbonds++;
-	for(j=0; (j<nframes); j++) {
-	  if (j < nf) {
-	    ihb   = is_hb(h[nh],j);
-	    idist = is_hb(g[nh],j);
-	  }
-	  else {
-	    ihb = idist = 0;
-	  }
-	  rhbex[j] = ihb-aver_nhb;
-	  gt[j]    = idist*(1-ihb);
-	  ht[j]    = rhbex[j];
-	  nhb     += ihb; 
 	}
-    
-	/* The autocorrelation function is normalized after summation only */
-	low_do_autocorr(NULL,NULL,nframes,1,-1,&rhbex,hb->time[1]-hb->time[0],
-			eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
-	
-	/* Cross correlation analysis for thermodynamics */
-	for(j=nframes; (j<n2); j++) {
-	  ht[j] = 0;
-	  gt[j] = 0;
+	else {
+	  for(m=0; (m<hb->maxhydro); m++)
+	    if (ISHB(hbh->history[m])) {
+	      g[nhydro] = hbh->g[m];
+	      h[nhydro] = hbh->h[m];
+	      nhydro++;
+	    }
 	}
-	/*correl_fftw(correl,ht,gt,dght);*/
-	cross_corr(n2,ht,gt,dght);
-	
-	for(j=0; (j<nn); j++) {
-	  ct[j]  += rhbex[j];
-	  ght[j] += dght[j];
+	nf = hbh->nframes;
+	for(nh=0; (nh<nhydro); nh++) {
+	  if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == hb->nrhb))
+	    fprintf(stderr,"\rACF %d/%d",nhbonds+1,hb->nrhb);
+	  nhbonds++;
+	  for(j=0; (j<nframes); j++) {
+	    if (j < nf) {
+	      ihb   = is_hb(h[nh],j);
+	      idist = is_hb(g[nh],j);
+	    }
+	    else {
+	      ihb = idist = 0;
+	    }
+	    rhbex[j] = ihb-aver_nhb;
+	    gt[j]    = idist*(1-ihb);
+	    ht[j]    = rhbex[j];
+	    nhb     += ihb; 
+	  }
+	  
+	  /* The autocorrelation function is normalized after summation only */
+	  low_do_autocorr(NULL,NULL,nframes,1,-1,&rhbex,hb->time[1]-hb->time[0],
+			  eacNormal,1,FALSE,bNorm,FALSE,0,-1,0,1);
+	  
+	  /* Cross correlation analysis for thermodynamics */
+	  for(j=nframes; (j<n2); j++) {
+	    ht[j] = 0;
+	    gt[j] = 0;
+	  }
+	  /*correl_fftw(correl,ht,gt,dght);*/
+	  cross_corr(n2,ht,gt,dght);
+	  
+	  for(j=0; (j<nn); j++) {
+	    ct[j]  += rhbex[j];
+	    ght[j] += dght[j];
+	  }
 	}
       }
     }
@@ -1327,8 +1336,8 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
     for (i=0; (i<hb->d.nrd); i++)
       for (j=0; (j<hb->a.nra); j++)
 	for (m=0; (m<hb->maxhydro); m++)
-	  if (hb->hbmap[i][j].h[m])
-	    set_hb(hb->hbmap[i][j].h[m],nframes-hb->hbmap[i][j].n0,HB_NO);
+	  if (hb->hbmap[i][j] && hb->hbmap[i][j]->h[m])
+	    set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);
 }
 
 static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
@@ -1350,8 +1359,8 @@ static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
       nb = 0;
       nhtot ++;
       for(j=0; (j<hb->a.nra) && (nb == 0); j++) {
-	if ((hb->hbmap[i][j].h[k]) && 
-	    is_hb(hb->hbmap[i][j].h[k],nframes)) 
+	if (hb->hbmap[i][j] && hb->hbmap[i][j]->h[k] && 
+	    is_hb(hb->hbmap[i][j]->h[k],nframes)) 
 	  nb = 1;
       }
       nbound += nb;
@@ -1407,7 +1416,7 @@ static void dump_hbmap(t_hbdata *hb,
     for(k=0; (k<hb->a.nra); k++) {
       aaa = hb->a.acc[k];
       for(m=0; (m<hb->d.nhydro[i]); m++) {
-	if (ISHB(hb->hbmap[i][k].history[m])) {
+	if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m])) {
 	  hhh = hb->d.hydro[i][m];
 	  
 	  sprintf(ds,"%s",mkatomname(atoms,ddd));
@@ -2050,9 +2059,9 @@ int gmx_hbond(int argc,char *argv[])
 	for(id=0; (id<hb->d.nrd); id++) 
 	  for(ia=0; (ia<hb->a.nra); ia++) 
 	    for(hh=0; (hh<hb->maxhydro); hh++)
-	      if (ISHB(hb->hbmap[id][ia].history[hh])) {
+	      if (hb->hbmap[id][ia] && ISHB(hb->hbmap[id][ia]->history[hh])) {
 		range_check(y,0,mat.ny);
-		mat.matrix[x][y++] = is_hb(hb->hbmap[id][ia].h[hh],x);
+		mat.matrix[x][y++] = is_hb(hb->hbmap[id][ia]->h[hh],x);
 	      }
 	      
       }
