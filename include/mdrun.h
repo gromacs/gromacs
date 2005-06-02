@@ -188,7 +188,7 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 		     bool bVerbose,real lambda,t_graph *graph,
-		     bool bNS,bool bNBFonly,bool bDoForces,
+		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 		     t_forcerec *fr, rvec mu_tot,
 		     bool bGatherOnly,real t,FILE *field);
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);

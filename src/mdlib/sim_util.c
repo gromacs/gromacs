@@ -216,7 +216,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
-	      bool bNS,bool bNBFonly,bool bDoForces,
+	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,rvec mu_tot,
 	      bool bGatherOnly,real t,FILE *field)
 {
@@ -226,17 +226,14 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   int    start,homenr;
   static real mu[2*DIM]; 
   rvec   mu_tot_AB[2];
-  bool   bStateChanged,bCalcCGCM;
+  bool   bCalcCGCM;
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
   cg0    = CG0(nsb);
   cg1    = CG1(nsb);
 
-  /* The state has always changed, except when doing test particle insertion */
-  bStateChanged = (!fr->bTPI || 
-		   step == parm->ir.nstlist*(mcr ? mcr->nodeid : 0));
-  bCalcCGCM     = (bNS && bStateChanged);
+  bCalcCGCM = (bNS && bStateChanged);
 
   if (bStateChanged) {
     update_forcerec(log,fr,box);
@@ -260,13 +257,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     } 
-    else if ((parm->ir.eI==eiSteep || parm->ir.eI==eiCG) && graph) {
+    else if (EI_ENERGY_MINIMIZATION(parm->ir.eI) && graph) {
       unshift_self(graph,box,x);
-    }
-    else if (fr->bTPI) {
-      /* Set the charge group center of mass of the test particle */
-      /* TPI does not work in parallel */
-      copy_rvec(x[mdatoms->nr-1],fr->cg_cm[top->blocks[ebCGS].nr-1]);
     }
   }
   else if (bCalcCGCM)

@@ -243,7 +243,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_parm *parm,
   do_force(log,cr,mcr,parm,nsb,
 	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
   if(bVsites) 
@@ -354,7 +354,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,mcr,parm,nsb,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
   where();
 
   /* Spread the force on vsite particle to the other particles... */
@@ -964,7 +964,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,mcr,parm,nsb,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
   where();
   
   /* Spread the force on vsite particle to the other particles... */
@@ -1608,7 +1608,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  	     count,&(nrnb[cr->nodeid]),top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
- 	     lambda,graph,parm->ir.nstlist>0 || count==0,FALSE,TRUE,fr,mu_tot,
+ 	     lambda,graph,
+	     TRUE,parm->ir.nstlist>0 || count==0,FALSE,TRUE,fr,mu_tot,
 	     FALSE,0.0,NULL); 
     
     /* Spread the force on vsite particle to the other particles... */
@@ -1878,7 +1879,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bNS=TRUE;
     do_force(log,cr,NULL,parm,nsb,0,&mynrnb,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-             lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
+             lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
     bNS=FALSE;
     
     /* Shift back the coordinates, since we're not calling update */
@@ -1924,8 +1925,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             
             do_force(log,cr,NULL,parm,nsb,2*(step*DIM+idum),
                      &mynrnb,top,grps,
-                     state->box,state->x,fneg,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-                     lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
+                     state->box,state->x,fneg,buf,mdatoms,ener,fcd,
+		     bVerbose && !PAR(cr),lambda,graph,
+		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -1938,8 +1940,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             
             do_force(log,cr,NULL,parm,nsb,2*(step*DIM+idum)+1,
                      &mynrnb,top,grps,
-                     state->box,state->x,fpos,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-                     lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
+                     state->box,state->x,fpos,buf,mdatoms,ener,fcd,
+		     bVerbose && !PAR(cr),lambda,graph,
+		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL);
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -2021,7 +2024,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   t_vcm  *vcm;
   int    status;
   t_trxframe rerun_fr;
-  bool   bCharge,bNotLastFrame,bNS;
+  bool   bCharge,bNotLastFrame,bStateChanged,bNS;
   time_t start_t; 
   tensor force_vir,shake_vir;
   int    i_tp,ngid,gid_tp;
@@ -2141,7 +2144,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     for(i=0; i<rerun_fr.natoms; i++)
       copy_rvec(rerun_fr.x[i],state->x[i]);
 
-    step = 0;
+    bStateChanged = TRUE;
     for(step=0; step<nsteps; step++) {
       bNS = (step % parm->ir.nstlist == 0);
       if (bNS) {
@@ -2166,6 +2169,9 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	clear_mat(force_vir); 
 	clear_mat(shake_vir);
 	
+	/* Set the charge group center of mass of the test particle */
+	copy_rvec(state->x[mdatoms->nr-1],fr->cg_cm[top->blocks[ebCGS].nr-1]);
+
 	/* Calc energy (no forces) on new positions
 	 * do_force always puts the charge groups in the box and shifts again
 	 * We do not unshift, so molecules are always whole in tpi.c
@@ -2173,9 +2179,10 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	do_force(fplog,cr,mcr,parm,nsb,
 		 step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,bVerbose, 
-		 lambda,graph,bNS,TRUE,FALSE,fr,mu_tot,
+		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL); 
-	
+	bStateChanged = FALSE;
+
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,parm->ir.eDispCorr,
 		      fr,mdatoms->nr,rerun_fr.box,parm->pres,parm->vir,ener);

@@ -198,7 +198,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(force_vir);
     do_force(log,cr,parm,nsb,force_vir,step,&mynrnb,
 	     top,grps,x,v,f,buf,mdatoms,ener,bVerbose && !PAR(cr),
-	     lambda,graph,bNS,FALSE,fr);
+	     lambda,graph,TRUE,bNS,FALSE,fr);
 	         
     do_glas(log,START(nsb),HOMENR(nsb),x,f,fr,mdatoms,top->idef.atnr,
 	    &parm->ir);

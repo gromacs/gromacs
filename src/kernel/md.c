@@ -609,7 +609,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        */
       do_force(log,cr,mcr,parm,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-	       state->lambda,graph,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
+	       state->lambda,graph,
+	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
     }
    
     if (bTCR)
