@@ -161,21 +161,21 @@ void write_pdbfile_indexed(FILE *out,char *title,
       occup = 1.0;
       bfac  = 0.0;
     }
-    if (strlen(nm)<4)
-      strcpy(pdbform,pdbformat);
-    else {
-      strcpy(pdbform,pdbformat4);
-      if (strlen(nm)>4)
-	fprintf(stderr,"WARNING: Writing out atom name (%s) longer than 4 characters to .pdb file\n",nm);
-    }
     if (bWideFormat)
-      strcat(pdbform,"%8.4f%8.4f\n");
-    else
+      strcpy(pdbform,"%-6s%5u %-4.4s %3.3s %c%4d    %10.5f%10.5f%10.5f%8.4f%8.4f\n");
+    else {
+      if (strlen(nm)<4)
+	strcpy(pdbform,pdbformat);
+      else {
+	strcpy(pdbform,pdbformat4);
+	if (strlen(nm)>4)
+	  fprintf(stderr,"WARNING: Writing out atom name (%s) longer than 4 characters to .pdb file\n",nm);
+      }
       strcat(pdbform,"%6.2f%6.2f\n");
-   
+    }
     fprintf(out,pdbform,pdbtp[type],(i+1)%100000,nm,resnm,ch,resnr,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],occup,bfac);
-   if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic) {
+    if (atoms->pdbinfo && atoms->pdbinfo[i].bAnisotropic) {
       fprintf(out,"ANISOU%5u  %-4.4s%3.3s %c%4d  %7d%7d%7d%7d%7d%7d\n",
 	      (i+1)%100000,nm,resnm,ch,resnr,
 	      atoms->pdbinfo[i].uij[0],atoms->pdbinfo[i].uij[1],
