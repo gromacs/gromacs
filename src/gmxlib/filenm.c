@@ -159,6 +159,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"              },
   { eftASC, ".ent", "eiwit",  "-f", "Entry in the protein date bank"         },
   { eftASC, ".esp", "conf",   "-f", "Coordinate file in Espresso format"     },
+  { eftASC, ".pqr", "conf",   "-o", "Coordinate file for MEAD"               },
   { eftASC, ".log", "run",    "-l", "Log file"                               },
   { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"                         },
   { eftASC, ".out", "hello",  "-o", "Generic output file"                    },

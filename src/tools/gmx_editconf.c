@@ -427,7 +427,7 @@ int gmx_editconf(int argc, char *argv[])
     "a row of CA atoms with B-factors ranging from the minimum to the",
     "maximum value found, effectively making a legend for viewing.",
     "[PAR]",
-    "With the option -mead a special pdb file for the MEAD electrostatics",
+    "With the option -mead a special pdb (pqr) file for the MEAD electrostatics",
     "program (Poisson-Boltzmann solver) can be made. A further prerequisite",
     "is that the input file is a run input file.",
     "The B-factor field is then filled with the Van der Waals radius",
@@ -449,8 +449,8 @@ int gmx_editconf(int argc, char *argv[])
     "in that case you can use trjconv"
   };
   static real dist=0.0,rbox=0.0,to_diam=0.0;
-  static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE,bVOL=TRUE;
-  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE;
+  static bool bNDEF=FALSE,bRMPBC=FALSE,bCenter=FALSE,bVOL=TRUE,bReadVDW=FALSE;
+  static bool peratom=FALSE,bLegend=FALSE,bOrient=FALSE,bMead=FALSE,bGrasp=FALSE,bSig56=FALSE;
   static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
   static rvec center={0,0,0},translation={0,0,0},rotangles={0,0,0};
@@ -483,12 +483,14 @@ int gmx_editconf(int argc, char *argv[])
       "Compute and print volume of the box" },
     { "-pbc",    FALSE, etBOOL, {&bRMPBC}, 
       "Remove the periodicity (make molecule whole again)" },
-    { "-mead",   FALSE, etBOOL, {&bMead},
-      "Store the charge of the atom in the occupancy field and the radius of the atom in the B-factor field" },
     { "-grasp",  FALSE, etBOOL, {&bGrasp},
       "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
     { "-rvdw",   FALSE, etREAL, {&rvdw},
-      "Default Van der Waals radius if one can not be found in the database" },
+      "Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file" },
+    { "-sig56",  FALSE, etREAL, {&bSig56},
+      "Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2 " },
+    { "-vdwread",FALSE, etBOOL, {&bReadVDW},
+      "Read the Van der Waals radii from the file vdwradii.dat rather than computing the radii based on the force field" },
     { "-atom",   FALSE, etBOOL, {&peratom}, "Force B-factor attachment per atom" },
     { "-legend", FALSE, etBOOL, {&bLegend}, "Make B-factor legend" },
     { "-label",  FALSE, etSTR,  {&label},   "Add chain label for all residues" }
@@ -512,10 +514,11 @@ int gmx_editconf(int argc, char *argv[])
   bool       bHaveV,bScale,bRho,bTranslate,bRotate,bCalcGeom,bCalcDiam;
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
   t_filenm fnm[] = {
-    { efSTX, "-f", NULL, ffREAD },
-    { efNDX, "-n", NULL, ffOPTRD },
-    { efSTO, NULL, NULL, ffWRITE },
-    { efDAT, "-bf", "bfact", ffOPTRD }
+    { efSTX, "-f",    NULL,    ffREAD },
+    { efNDX, "-n",    NULL,    ffOPTRD },
+    { efSTO, NULL,    NULL,    ffOPTWR },
+    { efPQR, "-mead", "mead",  ffOPTWR },
+    { efDAT, "-bf",   "bfact", ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -524,6 +527,7 @@ int gmx_editconf(int argc, char *argv[])
 		    asize(desc),desc,asize(bugs),bugs);
 
   bIndex    = opt2bSet("-n",NFILE,fnm) || bNDEF;
+  bMead     = opt2bSet("-mead",NFILE,fnm);
   bSetSize  = opt2parg_bSet("-box" ,NPA,pa);
   bSetAng   = opt2parg_bSet("-angles" ,NPA,pa);
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
@@ -540,21 +544,25 @@ int gmx_editconf(int argc, char *argv[])
   bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='o';
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
-  outfile = ftp2fn(efSTO,NFILE,fnm);
+  if (bMead) 
+    outfile = ftp2fn(efPQR,NFILE,fnm);
+  else
+    outfile = ftp2fn(efSTO,NFILE,fnm);
   outftp  = fn2ftp(outfile);
+  
   atomprop = get_atomprop();
   if (bMead && bGrasp) {
     fprintf(stderr,"Incompatible options -mead and -grasp. Turning off -grasp\n");
     bGrasp = FALSE;
   }
-  if ((bMead || bGrasp) && (outftp != efPDB))
+  if ((bMead || bGrasp) && (outftp != efPQR))
     gmx_fatal(FARGS,"Output file should be a .pdb file"
-		" when using the -mead option\n");
+	      " when using the -mead option\n");
   if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) || 
 			     (fn2ftp(infile) == efTPA) ||
 			     (fn2ftp(infile) == efTPB)))
     gmx_fatal(FARGS,"Input file should be a .tp[abr] file"
-		" when using the -mead option\n");
+	      " when using the -mead option\n");
   
   get_stx_coordnum(infile,&natom);
   init_t_atoms(&atoms,natom,TRUE);
@@ -573,26 +581,38 @@ int gmx_editconf(int argc, char *argv[])
     if (atoms.nr != top->atoms.nr)
       gmx_fatal(FARGS,"Atom numbers don't match (%d vs. %d)",
 		  atoms.nr,top->atoms.nr);
-    ntype = top->idef.ntypes;
+    ntype = top->idef.atnr;
     for(i=0; (i<atoms.nr); i++) {
-      /* Factor of 10 for Angstroms */
-      itype = top->atoms.atom[i].type;
-      c12   = top->idef.iparams[itype*ntype+itype].lj.c12;
-      c6    = top->idef.iparams[itype*ntype+itype].lj.c6;
-      if ((c6 != 0) && (c12 != 0))
-	vdw   = 0.5*10*pow(c12/c6,1.0/6.0);
-      /*if (query_atomprop(atomprop,epropVDW,
-			 *top->atoms.resname[top->atoms.atom[i].resnr],
-			 *top->atoms.atomname[i],&vdw))
-			 vdw = 10*vdw;*/
-      else
-	vdw = 10*rvdw;
+      /* Determine the Van der Waals radius from the force field */
+      if (bReadVDW) {
+	if (!query_atomprop(atomprop,epropVDW,
+			    *top->atoms.resname[top->atoms.atom[i].resnr],
+			    *top->atoms.atomname[i],&vdw))
+	  vdw = rvdw;
+      }
+      else {
+	itype = top->atoms.atom[i].type;
+	c12   = top->idef.iparams[itype*ntype+itype].lj.c12;
+	c6    = top->idef.iparams[itype*ntype+itype].lj.c6;
+	if ((c6 != 0) && (c12 != 0)) {
+	  real sig6; 
+	  if (bSig56)
+	    sig6 = 2*c12/c6;
+	  else
+	    sig6 = c12/c6;
+	  vdw   = 0.5*pow(sig6,1.0/6.0);
+	}
+	else
+	  vdw = rvdw;
+      }
+      /* Factor of 10 for nm -> Angstroms */
+      vdw *= 10;
+      
       if (bMead) {
 	atoms.pdbinfo[i].occup = top->atoms.atom[i].q;
 	atoms.pdbinfo[i].bfac  = vdw;
       }
       else {
-	/* Factor of 10 for Angstroms */
 	atoms.pdbinfo[i].occup = vdw;
 	atoms.pdbinfo[i].bfac  = top->atoms.atom[i].q;
       }
@@ -801,12 +821,23 @@ int gmx_editconf(int argc, char *argv[])
 			     isize,index); 
   }
   else {
-    if (outftp != efPDB) {
-      write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,box); 
-    } 
-    else {
+    if ((outftp == efPDB) || (outftp == efPQR)) {
       out=ffopen(outfile,"w");
-      if (opt2bSet("-bf",NFILE,fnm)) {
+      if (bMead) {
+	set_pdb_wide_format(TRUE);
+	fprintf(out,"REMARK    "
+		"The B-factors in this file hold atomic radii\n");
+	fprintf(out,"REMARK    "
+		"The occupancy in this file hold atomic charges\n");
+      }
+      else if (bGrasp) {
+	fprintf(out,"GRASP PDB FILE\nFORMAT NUMBER=1\n");
+	fprintf(out,"REMARK    "
+		"The B-factors in this file hold atomic charges\n");
+	fprintf(out,"REMARK    "
+		"The occupancy in this file hold atomic radii\n");
+      }
+      else if (opt2bSet("-bf",NFILE,fnm)) {
 	read_bfac(opt2fn("-bf",NFILE,fnm),&n_bfac,&bfac,&bfac_nr);
 	set_pdb_conf_bfac(atoms.nr,atoms.nres,&atoms,
 			  n_bfac,bfac,bfac_nr,peratom);
@@ -815,22 +846,6 @@ int gmx_editconf(int argc, char *argv[])
 	for(i=0; (i<atoms.nr); i++) 
 	  atoms.atom[i].chain=label[0];
       }
-      if (bMead || bGrasp) {
-	if (bMead) {
-	  set_pdb_wide_format(TRUE);
-	  fprintf(out,"REMARK    "
-		  "The b-factors in this file hold atomic radii\n");
-	  fprintf(out,"REMARK    "
-		  "The occupancy in this file hold atomic charges\n");
-	}
-	else {
-	  fprintf(out,"GRASP PDB FILE\nFORMAT NUMBER=1\n");
-	  fprintf(out,"REMARK    "
-		  "The b-factors in this file hold atomic charges\n");
-	  fprintf(out,"REMARK    "
-		  "The occupancy in this file hold atomic radii\n");
-	}
-      }
       write_pdbfile(out,title,&atoms,x,box,0,-1);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
@@ -838,7 +853,9 @@ int gmx_editconf(int argc, char *argv[])
 	visualize_box(out,bLegend ? atoms.nr+12 : atoms.nr,
 		      bLegend? atoms.nres=12 : atoms.nres,box,visbox);
       fclose(out);
-    }  
+    }
+    else
+      write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,box); 
   }
   done_atomprop(&atomprop);
 
