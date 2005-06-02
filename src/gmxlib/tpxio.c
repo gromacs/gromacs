@@ -1355,8 +1355,10 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
     do_tpx(fp,TRUE,step,t,ir,&state,f,top,TRUE);
     close_tpx(fp);
     *natoms = state.natoms;
-    if (*lambda) *lambda = state.lambda;
-    if (*box) copy_mat(state.box,box);
+    if (lambda) 
+      *lambda = state.lambda;
+    if (box) 
+      copy_mat(state.box,box);
     state.x = NULL;
     state.v = NULL;
     done_state(&state);
