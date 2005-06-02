@@ -176,6 +176,5 @@ typedef struct {
   t_cosines et[DIM];	/* Electric field stuff	(time part)		*/
 } t_inputrec;
 
-#define FULLPBC(ir) ((ir).ePBC == epbcFULL)
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)
 #define DYNAMIC_BOX(ir) ((ir).epc!=epcNO || (ir).eI==eiTPI || DEFORM(ir))
