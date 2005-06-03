@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "statutil.h"
 #include "xdrf.h"
 
 
@@ -1140,13 +1141,15 @@ static unsigned long get_next_frame_number(int fp,int natoms){
 }
 
 
-static float get_next_frame_time(int fp,int natoms){
+static float get_next_frame_time(int fp,int natoms, bool * bOK){
   unsigned int inp;  
   float time;
+  *bOK = 0;
   while(xdr_int(xdridptr[fp+1],&inp)){
     if(inp == XTC_MAGIC){
       if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
 	if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time)){
+	  *bOK = 1;
 	  return time;
 	}
       }
@@ -1167,11 +1170,17 @@ static off_t get_next_frame_start(int fp, int natoms){
   return -1;
 }
 
-static float estimate_xtc_dt(int fp, int natoms){
+static float estimate_xtc_dt(int fp, int natoms, bool * bOK){
+  float res;
   off_t off = ftello(xdrfiles[fp+1]);
-  float tinit = get_next_frame_time(fp,natoms);
-  float res = get_next_frame_time(fp,natoms);
-  if(tinit < 0 || res < 0){
+  float tinit = get_next_frame_time(fp,natoms,bOK);
+  *bOK = 1;
+
+  if(!bOK){
+    return -1;
+  }
+  res = get_next_frame_time(fp,natoms,bOK);
+  if(!bOK){
     return -1;
   }
   res -= tinit;
@@ -1233,7 +1242,8 @@ int xdr_seek_time(real time, int fp, int natoms){
   off_t  offset;
   float t;
   float dt;
-
+  bool bOK;
+  
   fseeko(xdrfiles[fp+1],0,SEEK_END);
   /* round to int  */
   high = ftello(xdrfiles[fp+1]);
@@ -1241,20 +1251,28 @@ int xdr_seek_time(real time, int fp, int natoms){
   high *= sizeof(int);
   offset = ((high/2)/sizeof(int))*sizeof(int);
   fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-  dt = estimate_xtc_dt(fp,natoms);
-  if(dt < 0){
-    dt = 1;
+  dt = estimate_xtc_dt(fp,natoms,&bOK);
+  if(!bOK){
+    return -1;
   }
   while(1){
-    t = get_next_frame_time(fp,natoms);
-    if(t < 0){
+    t = get_next_frame_time(fp,natoms,&bOK);
+    if(!bOK){
       return -1;
     }
-    if(fabs(t-time) > dt/2.0  && abs(low-high) > header_size){
-      if(t < time){
-	low = offset;      
+    if((t < time || t-time >= dt)  && abs(low-high) > header_size){
+      if(dt > 0){
+	if(t < time){
+	  low = offset;      
+	}else{
+	  high = offset;      
+	}
       }else{
-	high = offset;      
+	if(t > time){
+	  low = offset;      
+	}else{
+	  high = offset;      
+	}
       }
       /* round to 4 bytes and subtract header*/
       offset = (((high+low)/2)/sizeof(int))*sizeof(int);
@@ -1264,10 +1282,12 @@ int xdr_seek_time(real time, int fp, int natoms){
 	break;
       }
       /* reestimate dt */
-      if(estimate_xtc_dt(fp,natoms) > 0){
-	dt = estimate_xtc_dt(fp,natoms);
+      if(estimate_xtc_dt(fp,natoms,&bOK) != dt){
+	if(bOK){
+	  dt = estimate_xtc_dt(fp,natoms,&bOK);
+	}
       }
-      if(fabs(t-time) < dt/2.0){
+      if(t >= time && t-time < dt){
 	break;
       }
     }
