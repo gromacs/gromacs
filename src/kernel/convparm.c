@@ -95,7 +95,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->u_b.r13=old[2];
     new->u_b.kUB=old[3];
     break;
-    case F_QUARTIC_ANGLES:
+  case F_QUARTIC_ANGLES:
     new->qangle.theta=old[0];
     for(i=0; i<5; i++)
       new->qangle.c[i]=old[i+1];
@@ -131,6 +131,15 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->wpol.rOH    =old[3];
     new->wpol.rHH    =old[4];
     new->wpol.rOD    =old[5];
+    break;
+  case F_THOLE_POL:
+    new->thole.a      = old[0];
+    new->thole.alpha1 = old[1];
+    new->thole.alpha2 = old[2];
+    if ((old[1] > 0) && (old[2] > 0))
+      new->thole.rfac = old[0]*pow(old[1]*old[2],-1.0/6.0);
+    else
+      new->thole.rfac = 1;
     break;
   case F_BHAM:
     new->bham.a = old[0];

@@ -148,6 +148,8 @@ int ifunc_index(directive d,int type)
     }
   case d_polarization:
     return F_POLARIZATION;
+  case d_thole_polarization:
+    return F_THOLE_POL;
   case d_water_polarization:
     return F_WATER_POL;
   case d_angle_restraints:
@@ -238,6 +240,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_angles]),d_atoms,d_none);
     set_nec(&(necessary[d_polarization]),d_atoms,d_none);
     set_nec(&(necessary[d_water_polarization]),d_atoms,d_none);
+    set_nec(&(necessary[d_thole_polarization]),d_atoms,d_none);
     set_nec(&(necessary[d_dihedrals]),d_atoms,d_none);
     set_nec(&(necessary[d_constraints]),d_atoms,d_none);
     set_nec(&(necessary[d_settles]),d_atoms,d_none);

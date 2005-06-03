@@ -83,6 +83,7 @@ enum {
   F_COUL_RECIP,
   F_POLARIZATION,
   F_WATER_POL,
+  F_THOLE_POL,
   F_POSRES,
   F_DISRES,
   F_DISRESVIOL,
@@ -131,6 +132,7 @@ typedef union
   struct {real theta,c[5];                                 } qangle; 
   struct {real alpha;                                      } polarize;
   struct {real al_x,al_y,al_z,rOH,rHH,rOD;                 } wpol;
+  struct {real a,alpha1,alpha2,rfac;                       } thole;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
   /* Proper dihedrals can not have different multiplicity when

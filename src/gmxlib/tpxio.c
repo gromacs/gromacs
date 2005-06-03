@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 35;
+static const int tpx_version = 36;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -132,6 +132,7 @@ static const t_ftupd ftupd[] = {
   { 32, F_RF_EXCL           },
   { 32, F_COUL_RECIP        },
   { 30, F_POLARIZATION      },
+  { 36, F_THOLE_POL         },
   { 22, F_DISRESVIOL        },
   { 22, F_ORIRES            },
   { 22, F_ORIRESDEV         },
@@ -634,6 +635,12 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->wpol.rOH);
     do_real(iparams->wpol.rHH);
     do_real(iparams->wpol.rOD);
+    break;
+  case F_THOLE_POL:
+    do_real(iparams->thole.a);
+    do_real(iparams->thole.alpha1);
+    do_real(iparams->thole.alpha2);
+    do_real(iparams->thole.rfac);
     break;
   case F_LJ:
     do_real(iparams->lj.c6);

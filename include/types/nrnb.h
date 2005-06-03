@@ -95,7 +95,7 @@ enum
     eNR_ORIRES,               eNR_DIHRES,
     eNR_POSRES,               eNR_ANGRES,               eNR_ANGRESZ,
     eNR_MORSE,                eNR_CUBICBONDS,
-    eNR_WPOL,                 eNR_VIRIAL,
+    eNR_WPOL,                 eNR_THOLE,                eNR_VIRIAL,
     eNR_UPDATE,               eNR_EXTUPDATE,            eNR_STOPCM,
     eNR_PCOUPL,               eNR_EKIN,                 eNR_LINCS,
     eNR_LINCSMAT,             eNR_SHAKE,                eNR_CONSTR_V,

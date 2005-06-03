@@ -516,6 +516,7 @@ static char **read_topol(char        *infile,
 	case d_dihedrals:
 	case d_polarization:
 	case d_water_polarization:
+	case d_thole_polarization:
 	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,bGenPairs);
 	  break;
 	case d_exclusions:
