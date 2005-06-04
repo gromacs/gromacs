@@ -1088,15 +1088,21 @@ Here follows the explanatory text.
 {\bf {\tt [~defaults~]} :}
 \begin{itemize}
 \item non-bond type = 1 (Lennard-Jones) or 2 (Buckingham)\\
-{\bf note:} when using the Buckingham potential no combination rule can
-be used, and a full interaction matrix must be provided under the 
-{\tt nonbond\_params} section.
 \item \normindex{combination rule} = 
-1 (supply $C^{(6)}$ and $C^{(12)}$,
-$\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$),
-2 (supply $\sigma$ and $\epsilon$,
-$\sigma_{ij}=\frac{1}{2}(\sigma_i+\sigma_j)$) or
-3 (supply $\sigma$ and $\epsilon$, $\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$)
+\begin{enumerate}
+\item For Lennard Jones: supply $C^{(6)}$ and $C^{(N)}$,
+$C^{M}_{ij}=\sqrt{C^M_i\,C^M_j}$ (M = 6,N). 
+Default value for N = 12, but it can be
+overridden using the last parameter on this line.
+For Buckingham potentials the combination rule is such that you give the
+A, B and C parameters. $A_{ij} = \sqrt{A_i\, A_j}$ and similar for 
+$C_{ij}$, $B_{ij} = 2/(1/B_i + 1/B_j)$.
+\item supply $\sigma$ and $\epsilon$,
+$\sigma_{ij}=\frac{1}{2}(\sigma_i+\sigma_j)$ and 
+$\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
+\item supply $\sigma$ and $\epsilon$, $\sigma_{ij}=\sqrt{\sigma_i\,\sigma_j}$,
+$\epsilon_{ij}=\sqrt{\epsilon_i\,\epsilon_j}$
+\end{enumerate}
 \item generate pairs = no
 (the default, get 1-4 interactions from the pair list, when parameters
 are not present in the list give a warning and use zeros)
@@ -1104,9 +1110,12 @@ or yes (generate 1-4 interactions which are not present in the pair list
 from normal Lennard-Jones parameters using FudgeLJ)
 \item FudgeLJ = factor to change Lennard-Jones 1-4 interactions, default 1
 \item FudgeQQ = factor to change electrostatic 1-4 interactions, default 1
+\item N = power for the repulsion term in a 6-N potential (with 
+nonbonded-type Lennard Jones only)
 \end{itemize}
-{\bf note:} generate pairs, FudgeLJ and FudgeQQ are optional,
-FudgeLJ is only used when generate pairs is set to 'yes'.
+{\bf note:} generate pairs, FudgeLJ, FudgeQQ and N are optional,
+FudgeLJ is only used when generate pairs is set to 'yes'. However if you
+wat to specify N you need to give a value for the other parameters as well.
 
 % move these figures so they end up on facing pages 
 % (first figure on even page)
