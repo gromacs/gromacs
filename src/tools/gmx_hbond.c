@@ -1121,7 +1121,7 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 	     "sc2 = %g  sn2 = %g  sk2 = %g sck = %g snk = %g scn = %g\n",
 	     sc2,sn2,sk2,sck,snk,scn);
     /* Determine integral of the correlation function */
-    tau_hb = evaluate_integral(n,t,ct,NULL,t[n-1]/2,&dtau);
+    tau_hb = evaluate_integral(n,t,ct,NULL,(t[n-1]-t[0])/2,&dtau);
     printf("Integral   %10.3f   %8.3f  %10.3f\n",1/tau_hb,tau_hb,
 	   calc_dg(tau_hb,temp));
     e_1 = exp(-1);
@@ -1295,7 +1295,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
     ct[j]  = (cct[j]-tail)/(1-tail); 
   }
   /* Compute negative derivative k(t) = -dc(t)/dt */
-  compute_derivative(nn,hb->time,cct,kt);
+  compute_derivative(nn,hb->time,ct,kt);
   for(j=0; (j<nn); j++)
     kt[j] = -kt[j];
   
@@ -1305,7 +1305,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	    hb->time[j]-hb->time[0],ct[j],cct[j],ght[j],kt[j]);
   fclose(fp);
   
-  analyse_corr(nn,hb->time,cct,ght,kt,fit_start,temp);
+  analyse_corr(nn,hb->time,ct,ght,kt,fit_start,temp);
   
   do_view(fn,NULL);
   sfree(rhbex);

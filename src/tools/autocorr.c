@@ -325,8 +325,8 @@ real evaluate_integral(int n,real x[],real y[],real dy[],real aver_start,
     nsum++;
       
     if ((aver_start > x[0]) && (x[j] >= aver_start)) {
-      sum_tail  += sss;
-      sum2_tail += sss*sss;
+      sum_tail  += sum;
+      sum2_tail += sum*sum;
       nsum_tail += 1;
     }
   }
