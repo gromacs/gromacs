@@ -116,6 +116,7 @@ typedef struct {
   real rcoulomb_switch; /* Coulomb switch range start (nm)		*/
   real rcoulomb;        /* Coulomb cutoff (nm)		                */
   real epsilon_r;       /* relative dielectric constant                 */ 
+  real epsilon_rf;      /* relative dielectric constant of the RF       */ 
   int  gb_algorithm;    /* Algorithm to use for calculation Born radii  */
   int  nstgbradii;      /* Frequency of updating Generalized Born radii */
   real rgbradii;        /* Cutoff for GB radii calculation              */

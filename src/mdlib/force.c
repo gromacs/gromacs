@@ -537,19 +537,16 @@ void set_chargesum(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 
 void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 {
-  fr->epsfac = ONE_4PI_EPS0;
+  if (fr->epsilon_r != 0)
+    fr->epsfac = ONE_4PI_EPS0/fr->epsilon_r;
+  else
+    /* eps = 0 is infinite dieletric: no coulomb interactions */
+    fr->epsfac = 0;
+  
   if (EEL_RF(fr->eeltype))
-    calc_rffac(log,fr->eeltype,
-	       fr->epsilon_r,fr->rcoulomb,fr->temp,fr->zsquare,box,
+    calc_rffac(log,fr->eeltype,fr->epsilon_r,fr->epsilon_rf,
+	       fr->rcoulomb,fr->temp,fr->zsquare,box,
 	       &fr->kappa,&fr->k_rf,&fr->c_rf);
-  else {
-    if (fr->epsilon_r != 0)
-      /* multiply the dielectric constant by 1/eps */
-      fr->epsfac /= fr->epsilon_r;
-    else
-      /* eps = 0 is infinite dieletric: no coulomb interactions */
-      fr->epsfac = 0;
-  }
 }
 
 void set_avcsixtwelve(FILE *log,t_forcerec *fr,
@@ -797,6 +794,7 @@ void init_forcerec(FILE *fp,
   
   /* Electrostatics */
   fr->epsilon_r  = ir->epsilon_r;
+  fr->epsilon_rf = ir->epsilon_rf;
   fr->fudgeQQ    = ir->fudgeQQ;
   fr->rcoulomb_switch = ir->rcoulomb_switch;
   fr->rcoulomb        = ir->rcoulomb;

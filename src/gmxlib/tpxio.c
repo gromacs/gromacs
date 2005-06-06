@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 36;
+static const int tpx_version = 37;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 36;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 6;
+static const int tpx_generation = 7;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -259,6 +259,16 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_real(ir->rvdw); 
     do_int(ir->eDispCorr); 
     do_real(ir->epsilon_r);
+    if (file_version >= 37) {
+      do_real(ir->epsilon_rf);
+    } else {
+      if (EEL_RF(ir->coulombtype)) {
+	ir->epsilon_rf = ir->epsilon_r;
+	ir->epsilon_r  = 1.0;
+      } else {
+	ir->epsilon_rf = 1.0;
+      }
+    }
     if (file_version >= 29)
       do_real(ir->tabext);
     else
@@ -359,7 +369,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_real(zerotemptime);
     }
     
-    do_real(ir->epsilon_r); 
+    if (file_version < 37)
+      do_real(rdum); 
 
     do_real(ir->shake_tol);
     do_real(ir->fudgeQQ);

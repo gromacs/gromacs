@@ -380,6 +380,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->rvdw_switch",-1,ir1->rvdw_switch,ir2->rvdw_switch,ftol);
   cmp_real(fp,"inputrec->rvdw",-1,ir1->rvdw,ir2->rvdw,ftol);
   cmp_real(fp,"inputrec->epsilon_r",-1,ir1->epsilon_r,ir2->epsilon_r,ftol);
+  cmp_real(fp,"inputrec->epsilon_rf",-1,ir1->epsilon_rf,ir2->epsilon_rf,ftol);
   cmp_real(fp,"inputrec->tabext",-1,ir1->tabext,ir2->tabext,ftol);
   cmp_int(fp,"inputrec->gb_algorithm",-1,ir1->gb_algorithm,ir2->gb_algorithm);
   cmp_int(fp,"inputrec->nstgbradii",-1,ir1->nstgbradii,ir2->nstgbradii);

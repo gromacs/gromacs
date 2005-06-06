@@ -396,6 +396,10 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
       PR("epsilon_r",ir->epsilon_r);
     else
       PS("epsilon_r",infbuf);
+    if (ir->epsilon_rf != 0)
+      PR("epsilon_rf",ir->epsilon_rf);
+    else
+      PS("epsilon_rf",infbuf);
     PR("tabext",ir->tabext);
     PS("gb_algorithm",EGBALGORITHM(ir->gb_algorithm));
     PI("nstgbradii",ir->nstgbradii);

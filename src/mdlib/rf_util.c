@@ -160,7 +160,7 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
   return ener;
 }
 
-void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
+void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
 		real zsq,matrix box,
 		real *kappa,real *krf,real *crf)
 {
@@ -177,24 +177,24 @@ void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
 	gmx_fatal(FARGS,"Temperature is %f while using"
 		    " Generalized Reaction Field\n",Temp);
       /* Ionic strength (only needed for eelGRF */
-      *kappa  = sqrt(2*I/(EPSILON0*eps*BOLTZ*Temp));
+      *kappa  = sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
     }
     else
       *kappa = 0;
 
     /* eps == 0 signals infinite dielectric */
-    if (eps == 0) {
+    if (eps_rf == 0) {
       *krf = 1/(2*Rc*Rc*Rc);
       *crf = 0;
     }
     else {
-      k1      = (1+*kappa*Rc);
-      k2      = eps*sqr((real)(*kappa*Rc));
+      k1   = 1 + *kappa*Rc;
+      k2   = eps_rf*sqr((real)(*kappa*Rc));
       
-      *krf    = (((eps-1)*k1+k2)/((2*eps+1)*k1+2*k2)/(Rc*Rc*Rc));
-      *crf    = 1/Rc + *krf*Rc*Rc;
+      *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
+      *crf = 1/Rc + *krf*Rc*Rc;
     }
-    rmin    = pow(*krf*2.0,-1.0/3.0);
+    rmin   = pow(*krf*2.0,-1.0/3.0);
     
     if (bFirst) {
       if (eel == eelGRF)
@@ -202,7 +202,8 @@ void calc_rffac(FILE *log,int eel,real eps,real Rc,real Temp,
       fprintf(log,"%s:\n"
 	      "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
 	      "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
-	      eel_names[eel],eps,I,vol,*kappa,Rc,*krf,*crf,ONE_4PI_EPS0);
+	      eel_names[eel],eps_rf,I,vol,*kappa,Rc,*krf,*crf,
+	      ONE_4PI_EPS0/eps_r);
       fprintf(log,
 	      "The electrostatics potential has its minimum at rc = %g\n",
 	      rmin);

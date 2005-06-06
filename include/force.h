@@ -65,7 +65,8 @@ extern real RF_excl_correction(FILE *fplog,const t_nsborder *nsb,
  * and force correction for all excluded pairs, including self pairs.
  */
 
-extern void calc_rffac(FILE *fplog,int eel,real eps,real Rc,real Temp,
+extern void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,
+		       real Rc,real Temp,
 		       real zsq,matrix box,
 		       real *kappa,real *krf,real *crf);
 /* Determine the reaction-field constants */

@@ -35,7 +35,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
-<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r)
+<li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r, epsilon_rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
 <li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
@@ -347,7 +347,6 @@ To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
 <dd>Twin range cut-off's with neighborlist cut-off <b>rlist</b> and 
 Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> &gt= <b>rlist</b>.
-The dielectric constant is set with <b>epsilon_r</b>.</dd>
 
 <dt><b>Ewald</b></dt>
 <dd>Classical <!--Idx-->Ewald sum<!--EIdx--> electrostatics.
@@ -384,13 +383,13 @@ NOTE: the pressure in incorrect when using PPPM.</dd>
 <dt><b><!--Idx-->Reaction-Field<!--EIdx--></b></dt>
 <dd>Reaction field with Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> &gt= <b>rlist</b>.
-The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
-The dielectric constant can be set to infinity by setting <b>epsilon_r</b>=0.</dd>
+The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
+The dielectric constant can be set to infinity by setting <b>epsilon_rf</b>=0.</dd>
 
 <dt><b>Generalized-Reaction-Field</b></dt>
 <dd>Generalized reaction field with Coulomb cut-off <b>rcoulomb</b>,
 where <b>rcoulomb</b> &gt= <b>rlist</b>.
-The dielectric constant beyond the cut-off is <b>epsilon_r</b>.
+The dielectric constant beyond the cut-off is <b>epsilon_rf</b>.
 The ionic strength is computed from the number of charged 
 (i.e. with non zero charge) <!--Idx-->charge group<!--EIdx-->s.
 The temperature for the GRF potential is set with 
@@ -463,9 +462,13 @@ The PME mesh contribution is subtracted from the user table by <tt>mdrun</tt>.
 <dd>distance for the Coulomb <!--Idx-->cut-off<!--EIdx--></dd>
 
 <dt><h4>epsilon_r: (1)</h4></dt>
-<dd>The relative <!--Idx-->dielectric constant<!--EIdx-->,
-except for reaction-field electrostatics, in which case
-it is the relative dielectric constant of the reaction field.</dd>
+<dd>The relative <!--Idx-->dielectric constant<!--EIdx-->.
+A value of 0 means infinity.</dd>
+
+<dt><h4>epsilon_rf: (1)</h4></dt>
+<dd>The relative dielectric constant of the reaction field.
+This is only used with reaction-field electrostatics.
+A value of 0 means infinity.</dd>
 </dl>
 
 <A NAME="vdw">
@@ -1078,6 +1081,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#table">energygrp_table</A><br>
 <A HREF="#out">energygrps</A><br>
 <A HREF="#el2">epsilon_r</A><br>
+<A HREF="#el2">epsilon_rf</A><br>
 <A HREF="#ewald">ewald_rtol</A><br>
 <A HREF="#ewald">ewald_geometry</A><br>
 <A HREF="#ewald">epsilon_surface</A><br>

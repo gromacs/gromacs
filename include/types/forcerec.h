@@ -72,7 +72,7 @@ typedef struct {
   
   /* Dielectric constant resp. multiplication factor for charges */
   real zsquare,temp;
-  real epsilon_r,epsfac;  
+  real epsilon_r,epsilon_rf,epsfac;  
   
   /* Constants for reaction fields */
   real kappa,k_rf,c_rf;

@@ -228,19 +228,24 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
+  if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
+    sprintf(warn_buf,"epsilon_r = %g and epsilon_rf = 1 with reaction field, assuming old format and exchanging epsilon_r and epsilon_rf",ir->epsilon_r);
+    warning(NULL);
+    ir->epsilon_rf = ir->epsilon_r;
+    ir->epsilon_r  = 1.0;
+  }
+  
   sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
   CHECK(ir->epsilon_r < 0);
   
-  if (ir->epsilon_r == 0) {
-    sprintf(err_buf,"epsilon_r can only be %f (=infinity) with (generalized)"
-	    " reaction field",ir->epsilon_r);
-    CHECK((ir->coulombtype != eelRF) && (ir->coulombtype != eelGRF));
-  }
-  
-  if ((ir->coulombtype == eelRF) || (ir->coulombtype == eelGRF)) {
+  if (EEL_RF(ir->coulombtype)) {
     /* reaction field (at the cut-off) */
-    if (ir->epsilon_r == 1.0) {
-      sprintf(warn_buf,"Using epsilon_r = 1.0 with %s does not make sense",
+    
+    sprintf(err_buf,"epsilon_rf must be >= epsilon_r");
+    CHECK((ir->epsilon_rf < ir->epsilon_r && ir->epsilon_rf != 0) ||
+	  (ir->epsilon_r == 0));
+    if (ir->epsilon_rf == ir->epsilon_r) {
+      sprintf(warn_buf,"Using epsilon_rf = epsilon_r with %s does not make sense",
 	      eel_names[ir->coulombtype]);
       warning(NULL);
     }
@@ -258,7 +263,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
       warning(NULL);
     }
-  } else if(ir->coulombtype == eelCUT || ir->coulombtype == eelRF) {
+  } else if (EEL_RF(ir->coulombtype)) {
     sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
   }
@@ -342,12 +347,10 @@ void get_ir(char *mdparin,char *mdparout,
 {
   char      *dumstr[2];
   double    dumdub[2][6];
-  char      epsbuf[STRLEN];
   t_inpfile *inp;
   char      *tmp;
   int       i,j,m,ninp;
   char      dummy[STRLEN];
-  double    epsje;
   
   inp=read_inpfile(mdparin,&ninp);
 
@@ -435,8 +438,9 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("cut-off lengths");
   RTYPE ("rcoulomb-switch",	ir->rcoulomb_switch,	0.0);
   RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
-  CTYPE ("Dielectric constant (DC) for cut-off or DC of reaction field");
-  STYPE ("epsilon-r",   epsbuf,         "1");
+  CTYPE ("Relative dielectric constant for the medium and the reaction field");
+  RTYPE ("epsilon_r",   ir->epsilon_r,  1.0);
+  RTYPE ("epsilon_rf",  ir->epsilon_rf, 1.0);
   CTYPE ("Method for doing Van der Waals");
   EETYPE("vdw-type",	ir->vdwtype,    evdw_names, nerror, TRUE);
   CTYPE ("cut-off lengths");
@@ -617,22 +621,6 @@ void get_ir(char *mdparin,char *mdparout,
   sfree(inp);
 
   /* Process options if necessary */
-  /* Convert to uppercase and trim the epsilon_r string buffer */
-  upstring(epsbuf);
-  trim(epsbuf);
-  if (strlen(epsbuf) == 0) 
-    ir->epsilon_r = 1;
-  else {
-    if (strstr(epsbuf,"INF") != NULL)
-      ir->epsilon_r = 0;
-    else if (sscanf(epsbuf,"%lf",&epsje) == 1)
-      ir->epsilon_r = epsje;
-    else {
-      sprintf(warn_buf,"Invalid value for epsilon_r: %s, setting to 1",epsbuf);
-      warning(NULL);
-      ir->epsilon_r = 1;
-    }
-  }
   for(m=0; m<2; m++) {
     for(i=0; i<2*DIM; i++)
       dumdub[m][i]=0.0;

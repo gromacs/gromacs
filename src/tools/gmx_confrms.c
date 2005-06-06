@@ -383,7 +383,7 @@ int gmx_confrms(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   /* the two structure files */
-  char    *conf1file, *conf2file, *matchndxfile;
+  char    *conf1file, *conf2file, *matchndxfile, *outfile;
   FILE    *fp;
   char    title1[STRLEN],title2[STRLEN],*name1,*name2;
   t_topology top1,top2;
@@ -541,15 +541,12 @@ int gmx_confrms(int argc,char *argv[])
       for(m=0; m<DIM; m++)
 	x2[i][m]+=xcm1[m];
   }
-  /* write gromos file of fitted structure(s) */
-  fp=ffopen(ftp2fn(efSTO,NFILE,fnm),"w");
-  if (fn2ftp(ftp2fn(efSTO,NFILE,fnm))==efGRO) {
-    if (bBfac)
-      fprintf(stderr,"WARNING: cannot write B-factor values to output file\n");
-    if (!bOne)
-      write_hconf_p(fp,title1,&atoms1,3,x1,v1,box1);
-    write_hconf_p(fp,title2,&atoms2,3,x2,v2,box2);
-  } else {
+
+  outfile = ftp2fn(efSTO,NFILE,fnm);
+  switch (fn2ftp(outfile)) {
+  case efPDB:
+  case efBRK:
+  case efENT:
     if (bBfac) {
       srenew(atoms1.pdbinfo, atoms1.nr);
       for(i=0; i<isize1; i++)
@@ -558,12 +555,32 @@ int gmx_confrms(int argc,char *argv[])
       for(i=0; i<isize2; i++)
 	atoms2.pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
     }
-    
+    fp=ffopen(outfile,"w");
     if (!bOne)
       write_pdbfile(fp,title1,&atoms1,x1,box1,0,1);
     write_pdbfile(fp,title2,&atoms2,x2,box2,0,bOne ? -1 : 2);
+    fclose(fp);
+    break;
+  case efGRO:
+    if (bBfac)
+      fprintf(stderr,"WARNING: cannot write B-factor values to gro file\n");
+    fp=ffopen(outfile,"w");
+    if (!bOne)
+      write_hconf_p(fp,title1,&atoms1,3,x1,v1,box1);
+    write_hconf_p(fp,title2,&atoms2,3,x2,v2,box2);
+    fclose(fp);
+    break;
+  default:
+    if (bBfac)
+      fprintf(stderr,"WARNING: cannot write B-factor values to %s file\n",
+	      ftp2ext(fn2ftp(outfile)));
+    if (!bOne)
+      fprintf(stderr,
+	      "WARNING: cannot write the reference structure to %s file\n",
+	      ftp2ext(fn2ftp(outfile))); 
+    write_sto_conf(outfile,title2,&atoms2,x2,v2,box2);
+    break;
   }
-  fclose(fp);
   
   view_all(NFILE, fnm);
   
