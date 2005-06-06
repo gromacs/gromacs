@@ -584,7 +584,8 @@ real water_pol(int nbonds,
   return 0.5*vtot;
 }
 
-static real do_1_thole(rvec xi,rvec xj,rvec fi,rvec fj,t_pbc *pbc,real qq,
+static real do_1_thole(const rvec xi,const rvec xj,rvec fi,rvec fj,
+		       const t_pbc *pbc,real qq,
 		       rvec fshift[],real a,real a1a2)
 {
   rvec r12;
