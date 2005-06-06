@@ -173,9 +173,9 @@ see also \figref{coul}, where $f = \frac{1}{4\pi \varepsilon_0} =
 \centerline{\includegraphics[width=8cm]{plots/vcrf}}
 \caption[The Coulomb interaction with and without reaction field.]{The
 Coulomb interaction (for particles with equal signed charge) with and
-without reaction field. In the latter case $\epsrf$ was 78, and $r_c$
-was 0.9 nm. The dot-dashed line is the same as the dashed line, except
-for a constant.}
+without reaction field. In the latter case $\epsr$ was 1, $\epsrf$ was 78,
+and $r_c$ was 0.9 nm.
+The dot-dashed line is the same as the dashed line, except for a constant.}
 \label{fig:coul}
 \end{figure}
 
@@ -195,9 +195,9 @@ assuming a constant dielectric environment beyond the cutoff $r_c$
 with a dielectric constant of {$\epsrf$}. The interaction then reads:
 \beq
 V_{crf} ~=~
-  f \frac{q_i q_j}{\rij}\left[1+\frac{\epsrf-1}{2\epsrf+1}
+  f \frac{q_i q_j}{\epsr\rij}\left[1+\frac{\epsrf-\epsr}{2\epsrf+\epsr}
   \,\frac{\rij^3}{r_c^3}\right]
-  - f\frac{q_i q_j}{r_c}\,\frac{3\epsrf}{2\epsrf+1}
+  - f\frac{q_i q_j}{\epsr r_c}\,\frac{3\epsrf}{2\epsrf+\epsr}
 \label{eqn:vcrf}
 \eeq
 in which the constant expression on the right makes the potential
@@ -205,22 +205,22 @@ zero at the cutoff $r_c$. For charged cut-off spheres this corresponds
 to neutralization with a homogeneous background charge.
 We can rewrite \eqnref{vcrf} for simplicity as
 \beq
-V_{crf} ~=~     f q_i q_j\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
+V_{crf} ~=~     f \frac{q_i q_j}{\epsr}\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
 \eeq
 with
 \bea
-k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{\epsrf-1}{(2\epsrf+1)}   \label{eqn:krf}\\
-c_{rf}  &=&     \frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+1)}
+k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{\epsrf-\epsr}{(2\epsrf+\epsr)}   \label{eqn:krf}\\
+c_{rf}  &=&     \frac{1}{r_c}+k_{rf}\,r_c^2 ~=~ \frac{1}{r_c}\,\frac{3\epsrf}{(2\epsrf+\epsr)}
 \label{eqn:crf}
 \eea
 For large $\epsrf$ the $k_{rf}$ goes to $r_c^{-3}/2$,
-while for $\epsrf$ = 1 the correction vanishes.
+while for $\epsrf$ = $\epsr$ the correction vanishes.
 In \figref{coul}
 the modified interaction is plotted, and it is clear that the derivative 
 with respect to $\rij$ (= -force) goes to zero at the cutoff distance.
 The force derived from this potential reads:
 \beq
-\ve{F}_i(\rvij) = f q_i q_j\left[\frac{1}{\rij^2} - 2 k_{rf}\rij\right]\rnorm
+\ve{F}_i(\rvij) = f \frac{q_i q_j}{\epsr}\left[\frac{1}{\rij^2} - 2 k_{rf}\rij\right]\rnorm
 \label{eqn:fcrf}
 \eeq
 The reaction-field correction should also be applied to all excluded
@@ -232,10 +232,17 @@ the dielectric continuum beyond the cutoff $r_c$ also has an ionic strength
 $I$~\cite{Tironi95}. In this case we can rewrite the constants $k_{rf}$ and 
 $c_{rf}$ using the inverse Debye screening length $\kappa$:
 \bea
-\kappa  &=&     \frac{2 I \,F^2}{\varepsilon_0 \epsrf RT}=\frac{F^2}{\varepsilon_0 \epsrf RT}\sum_{i=1}^{K} c_i z_i     \\
-k_{rf}  &=&     \frac{1}{r_c^3}\,\frac{(\epsrf-1)(1+\kappa r_c) + \epsrf(\kappa r_c)^2}{(2\epsrf+1)(1+\kappa r_c) + 2\epsrf(\kappa r_c)^2}       \label{eqn:kgrf}\\
-c_{rf}  &=&     \frac{1}{r_c}\,\frac{3\epsrf(1+\kappa r_c+(\kappa r_c)^2)}{(2\epsrf+1)(1+\kappa r_c) + 2\epsrf(\kappa r_c)^2}
-\label{eqn:cgrf}
+\kappa^2  &=&     
+   \frac{2 I \,F^2}{\varepsilon_0 \epsrf RT}
+   = \frac{F^2}{\varepsilon_0 \epsrf RT}\sum_{i=1}^{K} c_i z_i     \\
+k_{rf}  &=&     \frac{1}{r_c^3}\,
+    \frac{(\epsrf-\epsr)(1 + \kappa r_c) + \half\epsrf(\kappa r_c)^2}
+         {(2\epsrf + \epsr)(1 + \kappa r_c) + \epsrf(\kappa r_c)^2}
+    \label{eqn:kgrf}\\
+c_{rf}  &=&     \frac{1}{r_c}\,
+    \frac{3\epsrf(1 + \kappa r_c + \half(\kappa r_c)^2)}
+         {(2\epsrf+\epsr)(1 + \kappa r_c) + \epsrf(\kappa r_c)^2}
+    \label{eqn:cgrf}
 \eea
 where $F$ is Faraday's constant, $R$ is the ideal gas constant, $T$
 the absolute temperature, $c_i$ the molar concentration for species
