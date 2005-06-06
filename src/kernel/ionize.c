@@ -63,6 +63,8 @@ typedef struct {
 /* 15 and 20 keV                                              */
 /* Units are barn. They are converted to nm^2 by multiplying  */
 /* by 1e-10, which is done in Imax (ionize.c)                 */
+/* Update: contains energy 2 KeV and B, Na, Li, Al, Mg        */
+/* Update: data taken from NIST XCOM                          */
 
 static const t_cross   cross_sec_h[] = {
   { 5.21E-01,    3.39E-01,     3.21E-01,        -1 },
@@ -109,6 +111,51 @@ static const t_cross   cross_sec_s[] = {
   { 7.82e+2,      1.97e+1,     6.36e+0,         2.00e-1 },
   { 3.29e+2,      1.29e+1,     6.94e+0,         2.80e-1 }
 };
+static const t_cross   cross_sec_mg[] = {
+  { 7.79E+4,      7.19E+1,     1.34E+0,         -1 },
+  { 3.75E+3,      3.75E+1,     3.18E+0,         -1 },
+  { 1.61E+3,      2.75E+1,     3.91E+0,         -1 },
+  { 8.25E+2,      2.06E+1,     4.47E+0,         -1 },
+  { 4.75E+2,      1.61E+1,     4.88E+0,         -1 },
+  { 2.40E+2,      1.16E+1,     5.32E+0,         -1 },
+  { 9.82E+1,      7.59E+0,     5.74E+0,         -1 }
+};
+static const t_cross   cross_sec_al[] = {
+  { 1.01E+5,      8.24E+1,     1.51E+0,         -1 },
+  { 5.12E+3,      4.32E+1,     3.45E+0,         -1 },
+  { 2.22E+3,      3.24E+1,     4.16E+0,         -1 },
+  { 1.14E+3,      2.47E+1,     4.74E+0,         -1 },
+  { 6.63E+2,      1.93E+1,     5.19E+0,         -1 },
+  { 3.37E+2,      1.41E+1,     5.67E+0,         -1 },
+  { 1.39E+2,      9.17E+0,     6.14E+0,         -1 }
+};
+static const t_cross   cross_sec_b[] = {
+  { 2.86E+3,      1.05E+1,     8.20E-1,         -1 },
+  { 9.38E+1,      3.76E+0,     1.92E+0,         -1 },
+  { 3.72E+1,      2.81E+0,     2.15E+0,         -1 },
+  { 1.80E+1,      2.20E+0,     2.31E+0,         -1 },
+  { 9.92E+0,      1.77E+0,     2.44E+0,         -1 },
+  { 4.77E+0,      1.32E+0,     2.58E+0,         -1 },
+  { 1.84E+0,      8.56E-1,     2.71E+0,         -1 }
+};
+static const t_cross   cross_sec_na[] = {
+  { 5.80E+4,      6.27E+1,     1.01E+0,         -1 },
+  { 2.65E+3,      3.17E+1,     2.95E+0,         -1 },
+  { 1.13E+3,      2.26E+1,     3.67E+0,         -1 },
+  { 5.74E+2,      1.68E+1,     4.20E+0,         -1 },
+  { 3.28E+2,      1.30E+1,     4.58E+0,         -1 },
+  { 1.65E+2,      9.43E+0,     4.96E+0,         -1 },
+  { 6.71E+1,      6.16E+0,     5.34E+0,         -1 }
+};
+static const t_cross   cross_sec_li[] = {
+  { 3.08E+2,      3.37E+0,     6.38E-1,         -1 },
+  { 8.60E+0,      1.60E+0,     1.18E+0,         -1 },
+  { 3.31E+0,      1.16E+0,     1.36E+0,         -1 },
+  { 1.57E+0,      8.63E-1,     1.48E+0,         -1 },
+  { 8.50E-1,      6.59E-1,     1.57E+0,         -1 },
+  { 4.01E-1,      4.63E-1,     1.64E+0,         -1 },
+  { 1.52E-1,      2.85E-1,     1.70E+0,         -1 }
+};
 
 typedef struct {
   char *name;
@@ -122,6 +169,11 @@ static const t_element element[] = {
   { "N",   7, cross_sec_n },
   { "O",   8, cross_sec_o },
   { "S",  16, cross_sec_s },
+  { "LI",  3, cross_sec_li },
+  { "B",   5, cross_sec_b },
+  { "NA",  11, cross_sec_na },
+  { "MG",  12, cross_sec_mg },
+  { "AL",  13, cross_sec_al },
   { "AR", 20, cross_sec_s },  /* This is not correct! */
   { "EL",  1, cross_sec_h }   /* This is not correct! */
 };
@@ -198,7 +250,7 @@ void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
 t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
 			    char **atomname[],int Eindex)
 {
-  int elem_index[] = { 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 5, 6 };
+  int elem_index[] = { 0, 0, 0, 5, 0, 6, 1, 2, 3, 0, 0, 7, 8, 9, 0, 0, 4, 0, 0, 0, 10, 11 };
   t_cross_atom *ca;
   int  *elemcnt;
   char *cc;
@@ -235,6 +287,15 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
     case 8:
       ca[i].vAuger  = 0.929;
       break;
+    case 3:            /*  probably not correct! */
+      ca[i].vAuger  = 0.9;
+      break;
+    case 5:            /*  probably not correct! */	  
+      ca[i].vAuger  = 0.9;
+      break;
+    case 11:           /*  probably not correct! */	      
+    case 12:           /*  probably not correct! */	      
+    case 13:           /*  probably not correct! */	     
     case 16:
     case 20:
       ca[i].vAuger = 1.0;
