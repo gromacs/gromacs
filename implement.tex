@@ -572,12 +572,13 @@ precision) is needed for a double precision result.
 
 \section{Modifying GROMACS}
 The following files have to be edited in case you want to add a bonded
-potential of any types.
+potential of any type.
 \begin{enumerate}
 \item {\tt include/bondf.h}
 \item {\tt include/types/idef.h}
 \item {\tt include/types/nrnb.h}
 \item {\tt include/types/enums.h}
+\item {\tt include/grompp.h}
 \item {\tt src/kernel/topdirs.c}
 \item {\tt src/gmxlib/tpxio.c}
 \item {\tt src/gmxlib/bondfree.c}
@@ -585,4 +586,5 @@ potential of any types.
 \item {\tt src/gmxlib/nrnb.c}
 \item {\tt src/kernel/convparm.c}
 \item {\tt src/kernel/topdirs.c}
+\item {\tt src/kernel/topio.c}
 \end{enumerate}

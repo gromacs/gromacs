@@ -757,39 +757,7 @@ polymer convention.\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
 literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.
 
-\subsection{Polarization}
-Polarization can be treated by {\gromacs} by attaching
-\normindex{shell} (\normindex{drude}) particles to atoms and/or
-virtual sites. The energy of the shell particle is then minimized at
-each time step in order to remain on the Born-Oppenheimer surface.
-
-\subsubsection{Simple polarization}
-This is merely a harmonic potential with equilibrium distance 0.
-
-\subsubsection{Water polarization}
-A special potential for water that allows anisotropic polarization of
-a single shell particle~\cite{Maaren2001a}.
-
-\subsubsection{Thole polarization}
-Based on early work by \normindex{Thole}~\cite{Thole81} Roux and
-coworkers have implemented potentials for molecules like
-ethanol~\cite{Lamoureux2003a,Lamoureux2003b,Noskov2005a}. Within such
-molecules there are intramolecular interaction between shell
-particles, however these must be screened because full Coulomb would
-be too strong. The potential between two shell particles $i$ and $j$ is:
-\newcommand{\rbij}{\bar{r_{ij}}}
-\beq
-V_{thole} ~=~ \frac{q_i q_j}{r_{ij}}\left[1-\left(1-\frac{\rbij}{2}\right){\rm exp}^{-\rbij}\right]
-\eeq
-where
-\beq
-\rbij ~=~ a\frac{r_{ij}}{(\alpha_i \alpha_j)^{1/6}}
-\eeq
-where a is a magic (dimensionless) constant, usually chosen to be
-2.6~\cite{Noskov2005a} and $\alpha_i$, $\alpha_j$ are the polarizabilities
-of the respective shell particles.
-
-\subsection{Special interactions}
+\section{Special interactions}
 Special potentials are used for imposing restraints on the motion of
 the system, either to avoid disastrous deviations, or to include
 knowledge from experimental data. In either case they are not really
@@ -923,7 +891,6 @@ The forces are
 \eeq
 
 \subsubsection{Time averaging}
-
 Distance restraints based on instantaneous distances can potentially reduce
 the fluctuations in a molecule significantly. This problem can be overcome by restraining
 to a {\em time averaged} distance~\cite{Torda89}.
@@ -1389,6 +1356,39 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 	averaged orientations are written to the energy file.
 	These can be analyzed using {\tt g\_energy}.
 \end{description}
+
+\section{Polarization}
+Polarization can be treated by {\gromacs} by attaching
+\normindex{shell} (\normindex{drude}) particles to atoms and/or
+virtual sites. The energy of the shell particle is then minimized at
+each time step in order to remain on the Born-Oppenheimer surface.
+
+\subsection{Simple polarization}
+This is merely a harmonic potential with equilibrium distance 0.
+
+\subsection{Water polarization}
+A special potential for water that allows anisotropic polarization of
+a single shell particle~\cite{Maaren2001a}.
+
+\subsection{Thole polarization}
+Based on early work by \normindex{Thole}~\cite{Thole81} Roux and
+coworkers have implemented potentials for molecules like
+ethanol~\cite{Lamoureux2003a,Lamoureux2003b,Noskov2005a}. Within such
+molecules there are intramolecular interaction between shell
+particles, however these must be screened because full Coulomb would
+be too strong. The potential between two shell particles $i$ and $j$ is:
+\newcommand{\rbij}{\bar{r_{ij}}}
+\beq
+V_{thole} ~=~ \frac{q_i q_j}{r_{ij}}\left[1-\left(1-\frac{\rbij}{2}\right){\rm exp}^{-\rbij}\right]
+\eeq
+where
+\beq
+\rbij ~=~ a\frac{r_{ij}}{(\alpha_i \alpha_j)^{1/6}}
+\eeq
+where a is a magic (dimensionless) constant, usually chosen to be
+2.6~\cite{Noskov2005a} and $\alpha_i$, $\alpha_j$ are the polarizabilities
+of the respective shell particles.
+
 
 
 \section{Free energy interactions}
