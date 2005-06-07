@@ -69,7 +69,8 @@ radius), in which exclusions are already removed.
 \item   {\em Bonded}: covalent bond-stretching, angle-bending,
 improper dihedrals, and proper dihedrals. These are computed on the
 basis of fixed lists. 
-\item   {\em Special}: position restraints and distance restraints,
+\item   {\em Special}: position restraints, angle restraints,
+distance restraints, orientation restraints and dihedral restraints, all
 based on fixed lists. 
 \end{enumerate}
 
@@ -637,6 +638,7 @@ V_q(\tijk) ~=~ \sum_{n=0}^5 C_n (\tijk-\tijk^0)^n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{\swapindex{Improper}{dihedral}s}
+\label{sec:imp}
 Improper dihedrals are meant to keep \swapindex{planar}{group}s planar ({\eg} 
 aromatic rings) or to prevent molecules from flipping over to their
 \normindex{mirror image}s, see \figref{imp}.
@@ -840,6 +842,27 @@ V_{ar}(\ve{r}_i,\ve{r}_j) = k_{ar}(1 - \cos(n (\theta - \theta_0))
 A multiplicity ($n$) of 2 is useful when you do not want to distinguish
 between parallel and anti-parallel vectors.
 
+
+\subsection{\swapindex{Dihedral}{restraint}s}
+\label{sec:dihres}
+These are used to restrain the dihedral angle $\phi$ defined by four particles
+as in an improper dihedral (sec.~\ref{sec:imp}) but with a slightly
+modified potential. Using
+\beq
+\phi' = \left(\phi-\phi_0\right) ~{\rm MOD}~ 2\pi
+\eeq
+where $\phi_0$ is the reference angle
+\beq
+V_{dihr}(\phi') ~=~ \left\{
+\begin{array}{lcllll}
+\half k_{dihr}(\phi'-\Delta\phi)^2      
+                &\mbox{for}&     \phi' & >   & \Delta\phi       \\[1.5ex]
+0               &\mbox{for}&     \phi' & \le & \Delta\phi       \\[1.5ex]
+\end{array}\right.
+\label{eqn:dihre}
+\eeq
+where $\Delta\phi$ is a user defined angle and $k_{dihr}$ is the force 
+constant.
 
 \subsection{\swapindex{Distance}{restraint}s}
 \label{sec:disre}
