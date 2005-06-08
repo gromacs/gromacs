@@ -26,7 +26,7 @@
 % Gnomes, ROck Monsters And Chili Sauce
 %
 
-\chapter{Force fields \index{force-field}}
+\chapter{Interaction function and force field\index{force-field}}
 \label{ch:ff}
 A force field is built up from two distinct components:
 \begin{itemize}
@@ -69,7 +69,7 @@ radius), in which exclusions are already removed.
 \item   {\em Bonded}: covalent bond-stretching, angle-bending,
 improper dihedrals, and proper dihedrals. These are computed on the
 basis of fixed lists. 
-\item   {\em Special}: position restraints, angle restraints,
+\item   {\em Restraints}: position restraints, angle restraints,
 distance restraints, orientation restraints and dihedral restraints, all
 based on fixed lists. 
 \end{enumerate}
@@ -759,7 +759,7 @@ polymer convention.\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
 literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.
 
-\section{Special interactions}
+\section{Restraints}
 Special potentials are used for imposing restraints on the motion of
 the system, either to avoid disastrous deviations, or to include
 knowledge from experimental data. In either case they are not really
@@ -851,7 +851,7 @@ modified potential. Using
 \beq
 \phi' = \left(\phi-\phi_0\right) ~{\rm MOD}~ 2\pi
 \eeq
-where $\phi_0$ is the reference angle
+where $\phi_0$ is the reference angle, the potential is defined as:
 \beq
 V_{dihr}(\phi') ~=~ \left\{
 \begin{array}{lcllll}
