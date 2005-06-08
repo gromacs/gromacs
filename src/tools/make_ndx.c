@@ -877,20 +877,22 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
       printf(" 'splitres' nr     : split group into residues.\n");
       printf(" 'splitat' nr      : split group into atoms.\n");
       printf(" 'res' nr          : interpret numbers in group as residue numbers\n");
-      printf(" Enter             : list the currently defined groups\n");
+      printf(" Enter             : list the currently defined groups and commands\n");
       printf(" 'l'               : list the residues.\n");
       printf(" 'h'               : show this help.\n");
       printf(" 'q'               : save and quit.\n");
       printf("\n");
       printf(" Examples:\n");
       printf(" > 2 | 4 & r 3-5\n");
-      printf(" will select all atoms from group 2 and 4 which have residue numbers\n 3, 4 or 5\n");
+      printf(" selects all atoms from group 2 and 4 that have residue numbers 3, 4 or 5\n");
       printf(" > a C* & !a C CA\n");
-      printf(" will select all atoms starting with 'C' but not the atoms 'C' and 'CA'\n");  
+      printf(" selects all atoms starting with 'C' but not the atoms 'C' and 'CA'\n");  
       printf(" > \"protein\" & ! \"backb\"\n");
-      printf(" from the default groups, this selects all protein atoms but not the backbone\n");
-      printf("\npress Enter");
-      getchar();
+      printf(" selects all atoms that are in group 'protein' and not in group 'backbone'\n");
+      if (bVerbose) {
+	printf("\npress Enter ");
+	getchar();
+      }
     }
     else if (strncmp(string,"del",3)==0) {
       string+=3;
@@ -929,11 +931,11 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
     }
     else if (strncmp(string,"case",4)==0) {
       bCase=!bCase;
-      printf("  Switched to case %s\n",bCase ? "sensitive" : "insensitive");
+      printf("Switched to case %s\n",bCase ? "sensitive" : "insensitive");
     }
     else if (string[0] == 'v' ) {
       bVerbose=!bVerbose;
-      printf("  Turned verbose %s\n",bVerbose ? "on" : "off");
+      printf("Turned verbose %s\n",bVerbose ? "on" : "off");
     }
     else if (string[0] == 'l') {
       if ( check_have_atoms(atoms, ostring) )
