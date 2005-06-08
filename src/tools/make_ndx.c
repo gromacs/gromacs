@@ -817,7 +817,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
   do { 
     gname1[0]='\0';
     if (bVerbose || bPrintOnce || newgroup!=NOTSET) {
-    printf("\n");
+      printf("\n");
       if (bVerbose || bPrintOnce || newgroup==NOTSET) {
 	i0=0;
 	i1=block->nr;
@@ -831,17 +831,16 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
       newgroup=NOTSET;
     }
     if (bVerbose || bPrintOnce) {
-    printf("\n");
-    printf(" nr : group       !   'name' nr name   'splitch' nr    'l': list residues\n");
-      printf(" 'a': atom        &   'del' nr         'splitres' nr   'h': help\n");
-      printf(" 't': atom type   |   'keep' nr        'splitat' nr    \n");
-      printf(" 'r': residue         'res': group res 'chain' char    'q': save and quit\n");
-      printf(" \"name\": group        'case': case %s         'v': %s output   \n",
-	     bCase ? "insensitive" : "sensitive  ",
-	     bVerbose ? "terse  " : "verbose"); 
-      bPrintOnce = FALSE;
       printf("\n");
+      printf(" nr : group       !   'name' nr name   'splitch' nr    Enter: list groups\n");
+      printf(" 'a': atom        &   'del' nr         'splitres' nr   'l': list residues\n");
+      printf(" 't': atom type   |   'keep' nr        'splitat' nr    'h': help\n");
+      printf(" 'r': residue         'res' nr         'chain' char\n");
+      printf(" \"name\": group        'case': case %s         'q': save and quit\n",
+	     bCase ? "insensitive" : "sensitive  "); 
+      bPrintOnce = FALSE;
     }
+    printf("\n");
     printf("> ");
     fgets(inp_string,STRLEN,stdin);
     inp_string[strlen(inp_string)-1]=0;
@@ -877,7 +876,8 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
       printf(" 'splitch' nr      : split group into chains using CA distances.\n");
       printf(" 'splitres' nr     : split group into residues.\n");
       printf(" 'splitat' nr      : split group into atoms.\n");
-      printf(" 'res' nr          : interpret atom numbers in group as residue numbers\n");
+      printf(" 'res' nr          : interpret numbers in group as residue numbers\n");
+      printf(" Enter             : list the currently defined groups\n");
       printf(" 'l'               : list the residues.\n");
       printf(" 'h'               : show this help.\n");
       printf(" 'q'               : save and quit.\n");
@@ -887,7 +887,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
       printf(" will select all atoms from group 2 and 4 which have residue numbers\n 3, 4 or 5\n");
       printf(" > a C* & !a C CA\n");
       printf(" will select all atoms starting with 'C' but not the atoms 'C' and 'CA'\n");  
-      printf(" > 'protein' & ! 'backb'\n");
+      printf(" > \"protein\" & ! \"backb\"\n");
       printf(" from the default groups, this selects all protein atoms but not the backbone\n");
       printf("\npress Enter");
       getchar();
@@ -929,9 +929,11 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
     }
     else if (strncmp(string,"case",4)==0) {
       bCase=!bCase;
+      printf("  Switched to case %s\n",bCase ? "sensitive" : "insensitive");
     }
     else if (string[0] == 'v' ) {
       bVerbose=!bVerbose;
+      printf("  Turned verbose %s\n",bVerbose ? "on" : "off");
     }
     else if (string[0] == 'l') {
       if ( check_have_atoms(atoms, ostring) )
@@ -1074,7 +1076,7 @@ int main(int argc,char *argv[])
     { "-natoms",  FALSE, etINT, {&natoms}, 
       "set number of atoms (default: read from coordinate or index file)" },
     { "-verbose", FALSE, etBOOL, {&bVerbose}, 
-      "Verbose output" }
+      "HIDDENVerbose output" }
   };
 #define NPA asize(pa)
 
