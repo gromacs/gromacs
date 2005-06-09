@@ -404,7 +404,7 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
   char buf[STRLEN];
   int  i;
   real mutot;
-  char *leg_dim[DIM] = { 
+  char *leg_dim[4] = { 
     "\\f{12}m\\f{4}\\sX\\N",
     "\\f{12}m\\f{4}\\sY\\N",
     "\\f{12}m\\f{4}\\sZ\\N",
@@ -874,9 +874,9 @@ static void do_dip(char *fn,      char *topf,
       if (fnadip) 
 	fprintf(adip, "%10g %f \n", t,aver_lsq(&muframelsq));
 
-      if (dipole)
-	fprintf(stdout, "%f %f\n", norm(dipole[0]), norm(dipole[1]));
-	      
+      /*if (dipole)
+	printf("%f %f\n", norm(dipole[0]), norm(dipole[1]));
+      */      
       if (!bMU || (mu_aver != -1)) {
 	/* Finite system Kirkwood G-factor */
 	Gk = M_diff/(gnx*mu_aver*mu_aver);
