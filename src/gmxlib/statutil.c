@@ -75,6 +75,7 @@ static real timefactors[]  = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12,
 static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
 			       "m", "h", NULL };
 static bool  bView         = FALSE;
+static bool  bXvgrCodes    = TRUE;
 static char  *program      = NULL;
 
 char *ShortProgram(void)
@@ -368,6 +369,11 @@ bool bDoView(void)
   return bView;
 }
 
+bool bPrintXvgrCodes()
+{
+  return bXvgrCodes;
+}
+
 static FILE *man_file(char *program,char *mantp)
 {
   FILE   *fp;
@@ -490,8 +496,10 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 		       "Last frame (%t) to read from trajectory" };
   t_pargs dt_pa     = { "-dt",   FALSE, etTIME,  {&tdelta},        
 		       "Only use frame when t MOD dt = first time (%t)" };
-  t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},     
+  t_pargs view_pa   = { "-w",    FALSE, etBOOL,  {&bView},
 		       "View output xvg, xpm, eps and pdb files" };
+  t_pargs code_pa   = { "-xvgr", FALSE, etBOOL,  {&bXvgrCodes},
+		       "Add specific codes (legends etc.) in the output xvg files for the xmgrace program" };
   t_pargs time_pa   = { "-tu",   FALSE, etENUM,  {timestr},
 			"Time unit" };
   /* Maximum number of extra arguments */
@@ -615,9 +623,11 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     npall = add_parg(npall,all_pa,&time_pa);
   } else
     set_default_time_unit("ps");
-  if (FF(PCA_CAN_VIEW))
+  if (FF(PCA_CAN_VIEW)) {
     npall = add_parg(npall,all_pa,&view_pa);
-
+    npall = add_parg(npall,all_pa,&code_pa);
+  }
+  
   /* Now append the program specific arguments */
   for(i=0; (i<npargs); i++)
     npall = add_parg(npall,all_pa,&(pa[i]));

@@ -238,6 +238,9 @@ extern void mk_single_top(t_topology *top);
 extern bool bDoView(void);
 /* Return TRUE when user requested viewing of the file */
 
+extern bool bPrintXvgrCodes(void);
+/* Return TRUE when user wants printing of legends etc. in the file. */
+
 /*****************************************************
  *         Some command line parsing routines 
  *****************************************************/

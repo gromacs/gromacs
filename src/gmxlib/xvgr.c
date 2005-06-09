@@ -67,60 +67,67 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *ya
   time_t t;
   
   xvgr=(FILE *)ffopen(fn,"w");
-  fprintf(xvgr,"# This file was created by %s\n",Program());
-  fprintf(xvgr,"# which is part of G R O M A C S:\n");
-  fprintf(xvgr,"# %s\n",bromacs(pukestr,99));
-  time(&t);
-  fprintf(xvgr,"# All this happened at: %s",ctime(&t));
-  fprintf(xvgr,"#\n");
-  fprintf(xvgr,"@    title \"%s\"\n",title);
-  fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
-  fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
-  if (use_xmgr())
-    fprintf(xvgr,"@TYPE nxy\n");
-  else
-    fprintf(xvgr,"@TYPE xy\n");
-  
+  if (bPrintXvgrCodes()) {
+    fprintf(xvgr,"# This file was created by %s\n",Program());
+    fprintf(xvgr,"# which is part of G R O M A C S:\n");
+    fprintf(xvgr,"# %s\n",bromacs(pukestr,99));
+    time(&t);
+    fprintf(xvgr,"# All this happened at: %s",ctime(&t));
+    fprintf(xvgr,"#\n");
+    fprintf(xvgr,"@    title \"%s\"\n",title);
+    fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
+    fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
+    if (use_xmgr())
+      fprintf(xvgr,"@TYPE nxy\n");
+    else
+      fprintf(xvgr,"@TYPE xy\n");
+  }
   return xvgr;
 }
 
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax)
 {
-  fprintf(out,"@ view %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
+  if (bPrintXvgrCodes()) 
+    fprintf(out,"@ view %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
 }
 
 void xvgr_world(FILE *out,real xmin,real ymin,real xmax,real ymax)
 {
-  fprintf(out,"@ world xmin %g\n"
-	  "@ world ymin %g\n"
-	  "@ world xmax %g\n"
-	  "@ world ymax %g\n",xmin,ymin,xmax,ymax);
+  if (bPrintXvgrCodes()) 
+    fprintf(out,"@ world xmin %g\n"
+	    "@ world ymin %g\n"
+	    "@ world xmax %g\n"
+	    "@ world ymax %g\n",xmin,ymin,xmax,ymax);
 }
 
 void xvgr_legend(FILE *out,int nsets,char *setname[])
 {
   int i;
   
-  xvgr_view(out,0.15,0.15,0.75,0.85);
-  fprintf(out,"@ legend on\n");
-  fprintf(out,"@ legend box on\n");
-  fprintf(out,"@ legend loctype view\n");
-  fprintf(out,"@ legend %g, %g\n",0.78,0.8);
-  fprintf(out,"@ legend length %d\n",2);
-  for(i=0; (i<nsets); i++)
-    if (setname[i]) {
-      if (use_xmgr())
-	fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
-      else
-	fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
-    }
+  if (bPrintXvgrCodes()) {
+    xvgr_view(out,0.15,0.15,0.75,0.85);
+    fprintf(out,"@ legend on\n");
+    fprintf(out,"@ legend box on\n");
+    fprintf(out,"@ legend loctype view\n");
+    fprintf(out,"@ legend %g, %g\n",0.78,0.8);
+    fprintf(out,"@ legend length %d\n",2);
+    for(i=0; (i<nsets); i++)
+      if (setname[i]) {
+	if (use_xmgr())
+	  fprintf(out,"@ legend string %d \"%s\"\n",i,setname[i]);
+	else
+	  fprintf(out,"@ s%d legend \"%s\"\n",i,setname[i]);
+      }
+  }
 }
 
 void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor)
 {
-  fprintf(out, "@    with g0\n");
-  fprintf(out, "@    s%d linestyle %d\n", NrSet, LineStyle);
-  fprintf(out, "@    s%d color %d\n", NrSet, LineColor);
+  if (bPrintXvgrCodes()) {
+    fprintf(out, "@    with g0\n");
+    fprintf(out, "@    s%d linestyle %d\n", NrSet, LineStyle);
+    fprintf(out, "@    s%d color %d\n", NrSet, LineColor);
+  }
 }
 
 static const char *LocTypeStr[] = { "view", "world" };
@@ -132,17 +139,19 @@ void xvgr_box(FILE *out,
 	      int LineStyle,int LineWidth,int LineColor,
 	      int BoxFill,int BoxColor,int BoxPattern)
 {
-  fprintf(out,"@with box\n");
-  fprintf(out,"@    box on\n");
-  fprintf(out,"@    box loctype %s\n",LocTypeStr[LocType]);
-  fprintf(out,"@    box %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
-  fprintf(out,"@    box linestyle %d\n",LineStyle);
-  fprintf(out,"@    box linewidth %d\n",LineWidth);
-  fprintf(out,"@    box color %d\n",LineColor);
-  fprintf(out,"@    box fill %s\n",BoxFillStr[BoxFill]);
-  fprintf(out,"@    box fill color %d\n",BoxColor);
-  fprintf(out,"@    box fill pattern %d\n",BoxPattern);
-  fprintf(out,"@box def\n");
+  if (bPrintXvgrCodes()) {
+    fprintf(out,"@with box\n");
+    fprintf(out,"@    box on\n");
+    fprintf(out,"@    box loctype %s\n",LocTypeStr[LocType]);
+    fprintf(out,"@    box %g, %g, %g, %g\n",xmin,ymin,xmax,ymax);
+    fprintf(out,"@    box linestyle %d\n",LineStyle);
+    fprintf(out,"@    box linewidth %d\n",LineWidth);
+    fprintf(out,"@    box color %d\n",LineColor);
+    fprintf(out,"@    box fill %s\n",BoxFillStr[BoxFill]);
+    fprintf(out,"@    box fill color %d\n",BoxColor);
+    fprintf(out,"@    box fill pattern %d\n",BoxPattern);
+    fprintf(out,"@box def\n");
+  }
 }
 
 void lsq_y_ax(int n, real x[], real y[], real *a)
