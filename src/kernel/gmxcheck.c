@@ -57,6 +57,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "physics.h"
+#include "index.h"
 #include "smalloc.h"
 #include "confio.h"
 #include "enxio.h"
@@ -395,6 +396,32 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   }
 }
 
+void chk_ndx(char *fn)
+{
+  t_block *grps;
+  char **grpname=NULL;
+  int  i,j;
+  
+  grps = init_index(fn,&grpname);
+  if (debug)
+    pr_block(debug,0,fn,grps,FALSE);
+  else {
+    printf("Contents of index file %s\n",fn);
+    printf("--------------------------------------------------\n");
+    printf("Nr.   Group               #Entries   First    Last\n");
+    for(i=0; (i<grps->nr); i++) {
+      printf("%4d  %-20s%8d%8d%8d\n",i,grpname[i],
+	     grps->index[i+1]-grps->index[i],
+	     grps->a[grps->index[i]]+1,
+	     grps->a[grps->index[i+1]-1]+1);
+    }
+  }
+  for(i=0; (i<grps->nr); i++) 
+    sfree(grpname[i]);
+  sfree(grpname);
+  done_block(grps);
+}
+
 void chk_enx(char *fn)
 {
   int        in,nre,fnr,ndr;
@@ -454,6 +481,7 @@ int main(int argc,char *argv[])
     "radii) and atoms outside the box (these may occur often and are",
     "no problem). If velocities are present, an estimated temperature",
     "will be calculated from them.[PAR]",
+    "If an index file is given it's contents will be sumamrized.[PAR]",
     "If both a trajectory and a tpr file are given (with [TT]-s1[tt])",
     "the program will check whether the bond lengths defined in the tpr",
     "file are indeed correct in the trajectory. If not you may have",
@@ -472,7 +500,8 @@ int main(int argc,char *argv[])
     { efTPX, "-s2", "top2", ffOPTRD },
     { efTPS, "-c",  NULL, ffOPTRD },
     { efENX, "-e",  NULL, ffOPTRD },
-    { efENX, "-e2", "ener2", ffOPTRD }
+    { efENX, "-e2", "ener2", ffOPTRD },
+    { efNDX, "-n",  NULL, ffOPTRD },
   };
 #define NFILE asize(fnm)
   char *fn1=NULL,*fn2=NULL;
@@ -527,6 +556,9 @@ int main(int argc,char *argv[])
   if (ftp2bSet(efTPS,NFILE,fnm))
     chk_tps(ftp2fn(efTPS,NFILE,fnm), vdw_fac, bon_lo, bon_hi);
   
+  if (ftp2bSet(efNDX,NFILE,fnm))
+    chk_ndx(ftp2fn(efNDX,NFILE,fnm));
+    
   thanx(stderr);
   
   return 0;
