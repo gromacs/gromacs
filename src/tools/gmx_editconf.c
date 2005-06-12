@@ -506,8 +506,8 @@ int gmx_editconf(int argc, char *argv[])
   t_topology *top;
   t_atoms    atoms;
   char       *grpname,*sgrpname;
-  int        isize,ssize;
-  atom_id    *index,*sindex;
+  int        isize,ssize,tsize;
+  atom_id    *index,*sindex,*tindex;
   rvec       *x,*v,gc,min,max,size;
   matrix     box;
   bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
@@ -540,7 +540,7 @@ int gmx_editconf(int argc, char *argv[])
   if (bScale && bRho)
     fprintf(stderr,"WARNING: setting -density overrides -scale\n");
   bScale    = bScale || bRho;
-  bCalcGeom = bCenter || bTranslate || bRotate || bOrient || bScale;
+  bCalcGeom = bCenter || bRotate || bOrient || bScale;
   bCalcDiam = btype[0][0]=='c' || btype[0][0]=='d' || btype[0][0]=='o';
   
   infile  = ftp2fn(efSTX,NFILE,fnm);
@@ -703,9 +703,24 @@ int gmx_editconf(int argc, char *argv[])
   }
   
   if (bTranslate) {
-    printf("Translating by %g %g %g nm\n",translation[XX],translation[YY],translation[ZZ]);
-    for(i=0; i<natom; i++)
-      rvec_inc(x[i],translation);
+    if (bIndex) {
+      fprintf(stderr,"\nSelect a group that you want to translate:\n");
+      get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),
+		1,&ssize,&sindex,&sgrpname);
+    } else {
+      ssize = atoms.nr;
+      sindex = NULL;
+    }
+    printf("Translating by %g %g %g nm\n",
+	   translation[XX],translation[YY],translation[ZZ]);
+    if (index) {
+      for(i=0; i<ssize; i++)
+	rvec_inc(x[sindex[i]],translation);
+    }
+    else {
+      for(i=0; i<natom; i++)
+	rvec_inc(x[i],translation);
+    }
   }
   if (bRotate) {
     /* Rotate */
