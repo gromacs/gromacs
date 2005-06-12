@@ -415,7 +415,7 @@ static void dump_slab_dipoles(char *fn,int idim,int nslice,rvec slab_dipole[],
   fp = xvgropen(fn,"Average dipole moment per slab",buf,"\\f{12}m\\f{4} (D)");
   xvgr_legend(fp,DIM,leg_dim); 
   for(i=0; (i<nslice); i++) {
-    mutot = norm(slab_dipole[i])/sqr(nframes);
+    mutot = norm(slab_dipole[i])/nframes;
     fprintf(fp,"%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
 	    ((i+0.5)*box[idim][idim])/nslice,
 	    slab_dipole[i][XX]/nframes,
