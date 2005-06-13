@@ -628,6 +628,7 @@ bool read_next_frame(int status,t_trxframe *fr)
 	if (xdr_seek_time(rTimeValue(TBEGIN),status,fr->natoms)) {
 	  gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
 	}
+	INITCOUNT;
       }
       bRet = read_next_xtc(status,fr->natoms,&fr->step,&fr->time,fr->box,
 			   fr->x,&fr->prec,&bOK);
