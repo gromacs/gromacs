@@ -711,9 +711,9 @@ int gmx_editconf(int argc, char *argv[])
       ssize = atoms.nr;
       sindex = NULL;
     }
-    printf("Translating by %g %g %g nm\n",
+    printf("Translating %d atoms (out of %d) by %g %g %g nm\n",ssize,natom,
 	   translation[XX],translation[YY],translation[ZZ]);
-    if (index) {
+    if (sindex) {
       for(i=0; i<ssize; i++)
 	rvec_inc(x[sindex[i]],translation);
     }
