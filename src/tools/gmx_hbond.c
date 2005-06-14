@@ -951,11 +951,12 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
 static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
 {
   FILE *fp;
+  static char *leg[] = { "p(t)", "t p(t)" };
   int  *histo;
   int  i,j,j0,k,m,nh,ihb,ohb,nhydro,ndump=0;
   int   nframes = hb->nframes;
   unsigned int **h;
-  real   x,x1,x2,dx;
+  real   t,x1,dt;
   double sum,integral;
   t_hbond *hbh;
   
@@ -1005,26 +1006,25 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
   }
   fprintf(stderr,"\n");
   fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()");
+  xvgr_legend(fp,asize(leg),leg);
   j0 = nframes-1;
   while ((j0 > 0) && (histo[j0] == 0))
     j0--;
   sum = 0;
   for(i=0; (i<=j0); i++)
     sum+=histo[i];
-  dx       = hb->time[1]-hb->time[0];
-  sum      = dx*sum;
+  dt       = hb->time[1]-hb->time[0];
+  sum      = dt*sum;
   integral = 0;
-  x2       = 0;
-  for(i=0; (i<=j0); i++) {
-    x  = hb->time[i]-hb->time[0];
-    x1 = x*histo[i]/sum;
-    fprintf(fp,"%8.3f  %10.3e  %10.3e  %10.3e\n",x,histo[i]/sum,x1,
-	    1.0*histo[i]);
-    integral += (x1+x2)*0.5;
-    x2 = x1;
+  for(i=1; (i<=j0); i++) {
+    t  = hb->time[i] - hb->time[0] - 0.5*dt;
+    x1 = t*histo[i]/sum;
+    fprintf(fp,"%8.3f  %10.3e  %10.3e\n",t,histo[i]/sum,x1);
+    integral += x1;
   }
+  integral *= dt;
   fclose(fp);
-  printf("HB lifetime = %.2f ps\n",integral*dx);
+  printf("HB lifetime = %.2f ps\n",integral);
   sfree(h);
   sfree(histo);
 }
