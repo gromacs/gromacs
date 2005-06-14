@@ -413,8 +413,10 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
 	/*gmx_fatal(FARGS,"Not enough space for adding atoms");*/
 	nadd+=10;
 	srenew(xn,natoms+nadd);
-	srenew(newpdba->atom,natoms+nadd);
-	srenew(newpdba->atomname,natoms+nadd);
+	if (bUpdate_pdba) {
+	  srenew(newpdba->atom,natoms+nadd);
+	  srenew(newpdba->atomname,natoms+nadd);
+	}
 	debug_gmx();
       }
       if (debug) fprintf(debug,"(%3d) %3d %4s %4s%3d %3d",
@@ -432,8 +434,10 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
 	    /* gmx_fatal(FARGS,"Not enough space for adding atoms");*/
 	    nadd+=10;
 	    srenew(xn,natoms+nadd);
-	    srenew(newpdba->atom,natoms+nadd);
-	    srenew(newpdba->atomname,natoms+nadd);
+	    if (bUpdate_pdba) {
+	      srenew(newpdba->atom,natoms+nadd);
+	      srenew(newpdba->atomname,natoms+nadd);
+	    }
 	    debug_gmx();
 	  }
 	  if (bUpdate_pdba) {
@@ -465,7 +469,8 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
       if (debug) fprintf(debug,"\n");
     }
   }
-  newpdba->nr = newi;
+  if (bUpdate_pdba)
+    newpdba->nr = newi;
   
   if ( bKeep_ab ) {
     *nabptr=nab;
@@ -497,7 +502,7 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
   sfree(*xptr);
   *xptr=xn;
   
-  return newpdba->nr;
+  return newi;
 }
 
 void deprotonate(t_atoms *atoms,rvec *x)
@@ -521,6 +526,7 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
 #define NTERPAIRS 1
   t_atoms *atoms;
   bool    bUpdate_pdba,bKeep_old_pdba;
+  int     nntdb,nctdb,nt,ct;
   int     nadd;
   
   atoms=NULL;
@@ -532,20 +538,31 @@ int protonate(t_atoms **atomsptr,rvec **xptr,t_protonate *protdata)
     protdata->nah=read_h_db(protdata->FF,&protdata->ah);
     open_symtab(&protdata->tab); 
     protdata->atype=read_atype(protdata->FF,&protdata->tab);
-    if(read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype) < 4) 
+    nntdb = read_ter_db(protdata->FF,'n',&protdata->ntdb,protdata->atype);
+    if (nntdb < 1)
       gmx_fatal(FARGS,"no n-terminus db");
-    if(read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype) < 2) 
+    nctdb = read_ter_db(protdata->FF,'c',&protdata->ctdb,protdata->atype);
+    if (nctdb < 1)
       gmx_fatal(FARGS,"no c-terminus db");
     
     /* set terminus types: -NH3+ (different for Proline) and -COO- */
     atoms=*atomsptr;
     snew(protdata->sel_ntdb, NTERPAIRS);
     snew(protdata->sel_ctdb, NTERPAIRS);
-    if (strncmp(*atoms->resname[atoms->atom[atoms->nr-1].resnr],"PRO",3)==0)
-      protdata->sel_ntdb[0]=&(protdata->ntdb[3]);
-    else
-      protdata->sel_ntdb[0]=&(protdata->ntdb[1]);
-    protdata->sel_ctdb[0]=&(protdata->ctdb[1]);
+
+    if (nntdb>=4 && nctdb>=2) {
+      /* Yuk, yuk, hardcoded default termini selections !!! */
+      if (strncmp(*atoms->resname[atoms->atom[atoms->nr-1].resnr],"PRO",3)==0)
+	nt = 3;
+      else
+	nt = 1;
+      ct = 1;
+    } else {
+      nt = 0;
+      ct = 0;
+    }
+    protdata->sel_ntdb[0]=&(protdata->ntdb[nt]);
+    protdata->sel_ctdb[0]=&(protdata->ctdb[ct]);
   
     /* set terminal residue numbers: */
     snew(protdata->rN, NTERPAIRS);
