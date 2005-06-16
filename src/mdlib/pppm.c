@@ -492,7 +492,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
  
   for(m=0; m<DIM; m++)
-    box_diag[m] = state->box[m][m];
+    box_diag[m] = box[m][m];
 
   if (!fexist(ghatfn)) {    
     beta[XX]=beta[YY]=beta[ZZ]= 1.85;
@@ -530,7 +530,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
     /* Check whether boxes correspond */
     for(m=0; (m<DIM); m++)
       if (fabs(box_diag[m]-grids[m]*spacing[m]) > tol) {
-	pr_rvec(log,0,"box",box,DIM,TRUE);
+	pr_rvec(log,0,"box",box_diag,DIM,TRUE);
 	pr_rvec(log,0,"grid-spacing",spacing,DIM,TRUE);
 	pr_ivec(log,0,"grid size",grids,DIM,TRUE);
 	fflush(log);
@@ -546,7 +546,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
     nz = grids[ZZ];
     
     if (bVerbose)
-      pr_scalar_gk("optimghat.xvg",nx,ny,nz,box,ghat);
+      pr_scalar_gk("optimghat.xvg",nx,ny,nz,box_diag,ghat);
   }
   /* Now setup the FFT things */
   grid = mk_fftgrid(log,PAR(cr),nx,ny,nz,ir->bOptFFT);
