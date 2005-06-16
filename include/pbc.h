@@ -131,7 +131,7 @@ extern "C" {
    * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
    */
 
-  extern void calc_shifts(matrix box,rvec box_size,rvec shift_vec[]);
+  extern void calc_shifts(matrix box,rvec shift_vec[]);
   /* This routine calculates ths shift vectors necessary to use the
    * ns routine.
    */
@@ -143,7 +143,7 @@ extern "C" {
    */
   
   extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,
-					matrix box,rvec box_size,t_block *cgs,
+					matrix box,t_block *cgs,
 					rvec pos[],
 					rvec cg_cm[]);
 			    

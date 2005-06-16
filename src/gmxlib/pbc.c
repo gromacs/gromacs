@@ -388,15 +388,11 @@ bool image_cylindric(ivec xi,ivec xj,ivec box_size,real rlong2,
   return TRUE;
 }
 
-void calc_shifts(matrix box,rvec box_size,rvec shift_vec[])
+void calc_shifts(matrix box,rvec shift_vec[])
 {
   int k,l,m,d,n,test;
-  
-  for (m=0; (m<DIM); m++)
-    box_size[m]=box[m][m];
-  
+
   n=0;
-  
   for(m = -D_BOX_Z; m <= D_BOX_Z; m++)
     for(l = -D_BOX_Y; l <= D_BOX_Y; l++) 
       for(k = -D_BOX_X; k <= D_BOX_X; k++,n++) {
@@ -448,7 +444,7 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
 }
 
 void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
-			      matrix box,rvec box_size,t_block *cgs,
+			      matrix box,t_block *cgs,
 			      rvec pos[],rvec cg_cm[])
 			      
 { 

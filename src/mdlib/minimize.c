@@ -186,7 +186,7 @@ static real f_norm(t_commrec *cr,
 
 void init_em(FILE *log,const char *title,t_parm *parm,
 	     real *lambda,t_nrnb *mynrnb,rvec mu_tot,
-	     matrix box,rvec box_size,
+	     matrix box,
 	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
 	     t_commrec *cr,t_vcm **vcm,int *start,int *end)
 {
@@ -201,7 +201,7 @@ void init_em(FILE *log,const char *title,t_parm *parm,
   init_nrnb(mynrnb);
     
   clear_rvec(mu_tot);
-  calc_shifts(box,box_size,fr->shift_vec);
+  calc_shifts(box,fr->shift_vec);
   
   *start = nsb->index[cr->nodeid];
   *end   = nsb->homenr[cr->nodeid] + *start;
@@ -275,7 +275,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 	     bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 	     t_commrec *cr,t_commrec *mcr,t_graph *graph,
-	     t_forcerec *fr,rvec box_size)
+	     t_forcerec *fr)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
 
@@ -301,7 +301,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   step=0;
 
-  init_em(log,CG,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+  init_em(log,CG,parm,&lambda,&mynrnb,mu_tot,state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
   
   /* Print to log file */
@@ -334,7 +334,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   
   if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
-    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
+    do_pbc_first(log,state->box,fr,graph,state->x);
   
   /* Max number of steps */
   number_steps=parm->ir.nsteps;
@@ -847,7 +847,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		t_commrec *cr,t_commrec *mcr,t_graph *graph,
-		t_forcerec *fr,rvec box_size)
+		t_forcerec *fr)
 {
   static char *LBFGS="Low-Memory BFGS Minimizer";
   int    ncorr,nmaxcorr,point,cp,neval,nminstep;
@@ -914,7 +914,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   step = 0;
   neval = 0; 
 
-  init_em(log,LBFGS,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+  init_em(log,LBFGS,parm,&lambda,&mynrnb,mu_tot,state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
     
   /* Print to log file */
@@ -937,7 +937,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
-    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
+    do_pbc_first(log,state->box,fr,graph,state->x);
   
   /* Max number of steps */
   number_steps=parm->ir.nsteps;
@@ -1479,7 +1479,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
 		    bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
 		    t_commrec *cr,t_commrec *mcr,t_graph *graph,
-		    t_forcerec *fr,rvec box_size) 
+		    t_forcerec *fr) 
 { 
   const char *SD="Steepest Descents"; 
   real   stepsize,constepsize,lambda,fmax; 
@@ -1510,7 +1510,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   real   terminate=0;
 #define  TRY (1-Min)
 
-  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,state->box,box_size,
+  init_em(log,SD,parm,&lambda,&mynrnb,mu_tot,state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
    
   /* Print to log file  */
@@ -1537,7 +1537,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
   if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
-    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
+    do_pbc_first(log,state->box,fr,graph,state->x);
 
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,&(parm->ir),mdatoms,
@@ -1776,7 +1776,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              rvec buf[],t_mdatoms *mdatoms,
              t_nsborder *nsb,t_nrnb nrnb[],
              t_graph *graph,t_edsamyn *edyn,
-             t_forcerec *fr,rvec box_size)
+             t_forcerec *fr)
 {
     t_mdebin   *mdebin;
     int        fp_ene,step,nre;
@@ -1858,7 +1858,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Remove periodicity */
     if (fr->ePBC != epbcNONE)
-        do_pbc_first(log,state->box,box_size,fr,graph,state->x);
+        do_pbc_first(log,state->box,fr,graph,state->x);
     
     fp_ene=-1;
     mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),&(parm->ir),cr);
@@ -2016,7 +2016,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	      real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
 	      bool bVerbose,
 	      t_commrec *cr,t_commrec *mcr,t_graph *graph,
-	      t_forcerec *fr,rvec box_size)
+	      t_forcerec *fr)
 {
   const char *TPI="Test Particle Insertion"; 
   real   lambda,dvdlambda,t,temp,beta,drmax;
@@ -2042,7 +2042,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
 
   init_em(fplog,TPI,parm,&lambda,&(nrnb[cr->nodeid]),mu_tot,
-	  state->box,box_size,
+	  state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
      temp = parm->ir.opts.ref_t[0];
   for(i=1; (i<parm->ir.opts.ngtc); i++) {
@@ -2133,12 +2133,9 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     for(i=0; i<ngid; i++)
       sum_UgembU[i] = 0;
 
-    box_size[XX] = state->box[XX][XX];
-    box_size[YY] = state->box[YY][YY];
-    box_size[ZZ] = state->box[ZZ][ZZ];
     if (fr->ePBC != epbcNONE)
       /* Remove periodicity */
-      do_pbc_first(fplog,state->box,box_size,fr,graph,state->x);
+      do_pbc_first(fplog,state->box,fr,graph,state->x);
 
     /* Copy the coordinates from the input trajectory */
     for(i=0; i<rerun_fr.natoms; i++)

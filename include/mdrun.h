@@ -75,7 +75,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
 		    t_graph *graph,t_edsamyn *edyn,
-		    t_forcerec *fr,rvec box_size,
+		    t_forcerec *fr,
 		    int repl_ex_nst,int repl_ex_seed,
 		    unsigned long Flags);
 
@@ -87,7 +87,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,t_commrec *mcr,
-		       t_graph *graph,t_forcerec *fr,rvec box_size);
+		       t_graph *graph,t_forcerec *fr);
 /* Do steepest descents EM or something like that! */
 
 extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
@@ -97,7 +97,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		    bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		    t_commrec *cr,t_commrec *mcr,
-		    t_graph *graph,t_forcerec *fr,rvec box_size);
+		    t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
 
 extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
@@ -107,7 +107,7 @@ extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,t_commrec *mcr,
-		       t_graph *graph,t_forcerec *fr,rvec box_size);
+		       t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
 
 
@@ -119,7 +119,7 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nsborder *nsb,t_nrnb nrnb[],
 		    t_graph *graph,t_edsamyn *edyn,
-		    t_forcerec *fr,rvec box_size);
+		    t_forcerec *fr);
 /* Do normal mode analysis */
 
 extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[], 
@@ -129,13 +129,13 @@ extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[],
 		     real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
 		     bool bVerbose,
 		     t_commrec *cr,t_commrec *mcr,t_graph *graph,
-		     t_forcerec *fr,rvec box_size);
+		     t_forcerec *fr);
 /* Do test particle insertion */
 
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 
-extern void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
+extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 		     
 /* ROUTINES from stat.c */		
@@ -321,7 +321,7 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 
 extern void init_em(FILE *log,const char *title,t_parm *parm,
 		    real *lambda,t_nrnb *mynrnb,rvec mu_tot,
-		    matrix box,rvec box_size,
+		    matrix box,
 		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
 		    t_nsborder *nsb,
 		    t_commrec *cr,t_vcm **vcm,int *start,int *end);

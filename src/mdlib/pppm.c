@@ -473,13 +473,13 @@ static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
 void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
-	       bool bVerbose,bool bOld,rvec box,char *ghatfn,t_inputrec *ir)
+	       bool bVerbose,bool bOld,matrix box,char *ghatfn,t_inputrec *ir)
 {
   int   nx,ny,nz,m,porder;
   ivec  grids;
   real  r1,rc;
   const real tol = 1e-5;
-  rvec  spacing;
+  rvec  box_diag,spacing;
 
 #ifdef GMX_WITHOUT_FFTW
   gmx_fatal(FARGS,"PPPM used, but GROMACS was compiled without FFTW support!\n");
@@ -491,6 +491,9 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   }
   fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
  
+  for(m=0; m<DIM; m++)
+    box_diag[m] = state->box[m][m];
+
   if (!fexist(ghatfn)) {    
     beta[XX]=beta[YY]=beta[ZZ]= 1.85;
     nx     = ir->nkx;
@@ -504,10 +507,11 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
       gmx_fatal(FARGS,"Grid must be at least 4 points in all directions");
       
     ghat   = mk_rgrid(nx,ny,nz);
-    mk_ghat(NULL,nx,ny,nz,ghat,box,ir->rcoulomb_switch,ir->rcoulomb,TRUE,bOld);
+    mk_ghat(NULL,nx,ny,nz,ghat,box_diag,
+	    ir->rcoulomb_switch,ir->rcoulomb,TRUE,bOld);
     
     if (bVerbose)
-      pr_scalar_gk("generghat.xvg",nx,ny,nz,box,ghat);
+      pr_scalar_gk("generghat.xvg",nx,ny,nz,box_diag,ghat);
   }
   else {
     fprintf(stderr,"Reading Ghat function from %s\n",ghatfn);
@@ -525,7 +529,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
       
     /* Check whether boxes correspond */
     for(m=0; (m<DIM); m++)
-      if (fabs(box[m]-grids[m]*spacing[m]) > tol) {
+      if (fabs(box_diag[m]-grids[m]*spacing[m]) > tol) {
 	pr_rvec(log,0,"box",box,DIM,TRUE);
 	pr_rvec(log,0,"grid-spacing",spacing,DIM,TRUE);
 	pr_ivec(log,0,"grid size",grids,DIM,TRUE);

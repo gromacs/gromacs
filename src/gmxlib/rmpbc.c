@@ -56,7 +56,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
   static int ngraph=0;
   static multi_graph *mgraph=NULL;
   static bool bFirst=TRUE;
-  rvec   sv[SHIFTS],box_size;
+  rvec   sv[SHIFTS];
   int    n,i;
   bool   bNeedToCopy;
 
@@ -77,7 +77,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 	mgraph[n].gr=mk_graph(idef,natoms,FALSE,FALSE);
       }
       mk_mshift(stdout,mgraph[n].gr,box,x);
-      calc_shifts(box,box_size,sv);
+      calc_shifts(box,sv);
       shift_x(mgraph[n].gr,box,x,x_s);
       bNeedToCopy=FALSE;
     } else if (bFirst) {

@@ -250,10 +250,10 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
      * because of pressure coupling or box deformation!
      */
     if (DYNAMIC_BOX(parm->ir) && bStateChanged)
-      calc_shifts(box,box_size,fr->shift_vec);
+      calc_shifts(box,fr->shift_vec);
     
     if (bCalcCGCM) { 
-      put_charge_groups_in_box(log,cg0,cg1,box,box_size,
+      put_charge_groups_in_box(log,cg0,cg1,box,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     } 
@@ -694,11 +694,11 @@ void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 }
 
 
-void do_pbc_first(FILE *log,matrix box,rvec box_size,t_forcerec *fr,
+void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
 {
   fprintf(log,"Removing pbc first time\n");
-  calc_shifts(box,box_size,fr->shift_vec);
+  calc_shifts(box,fr->shift_vec);
   if (graph) {
     mk_mshift(log,graph,box,x);
     if (getenv ("NOPBC") == NULL)

@@ -99,7 +99,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   double     nodetime=0,realtime;
   t_parm     *parm;
   t_state    *state;
-  rvec       *buf,*f,*vold,*vt,box_size;
+  rvec       *buf,*f,*vold,*vt;
   real       tmpr1,tmpr2;
   real       *ener;
   t_nrnb     *nrnb;
@@ -201,13 +201,10 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,state->box,FALSE,
 		opt2fn("-table",nfile,fnm),FALSE);
   fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
-  /* Initiate box */
-  for(m=0; (m<DIM); m++)
-    box_size[m]=state->box[m][m];
     
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
-    init_pppm(stdlog,cr,nsb,FALSE,TRUE,box_size,getenv("GMXGHAT"),&parm->ir);
+    init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),&parm->ir);
   if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
     (void) init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,
 		    parm->ir.pme_order,
@@ -224,7 +221,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  bVerbose,bCompact,bVsites,
 		  bParVsites ? &vsitecomm : NULL,
 		  nstepout,parm,grps,top,ener,fcd,state,vold,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size,
+		  mdatoms,nsb,nrnb,graph,edyn,fr,
 		  repl_ex_nst,repl_ex_seed,Flags);
     break;
   case eiCG:
@@ -232,33 +229,33 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  state,f,buf,mdatoms,parm->ekin,ener,fcd,
 		  nrnb,bVerbose,bVsites,
 		  bParVsites ? &vsitecomm : NULL,
-		  cr,mcr,graph,fr,box_size);
+		  cr,mcr,graph,fr);
     break;
   case eiLBFGS:
     start_t=do_lbfgs(stdlog,nfile,fnm,parm,top,grps,nsb,
 		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
 		     nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
-		     cr,mcr,graph,fr,box_size);
+		     cr,mcr,graph,fr);
     break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
 		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
 		     nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
-		     cr,mcr,graph,fr,box_size);
+		     cr,mcr,graph,fr);
     break;
   case eiNM:
     start_t=do_nm(stdlog,cr,nfile,fnm,
 		  bVerbose,bCompact,nstepout,parm,grps,
 		  top,ener,fcd,state,vold,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn,fr,box_size);
+		  mdatoms,nsb,nrnb,graph,edyn,fr);
     break;
   case eiTPI:
     start_t=do_tpi(stdlog,nfile,fnm,parm,top,grps,nsb,
 		   state,f,buf,mdatoms,ener,fcd,
 		   nrnb,bVerbose,
-		   cr,mcr,graph,fr,box_size);
+		   cr,mcr,graph,fr);
     break;
   default:
     gmx_fatal(FARGS,"Invalid integrator (%d)...\n",parm->ir.eI);
@@ -294,7 +291,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     real ener[],t_fcdata *fcd,
 	     t_state *state,rvec vold[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
-	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,rvec box_size,
+	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,unsigned long Flags)
 {
   t_mdebin   *mdebin;
@@ -304,7 +301,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bFullPBC;
+	     bFullPBC,bForceUpdate=FALSE;
   tensor     force_vir,shake_vir;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -379,7 +376,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   /* Remove periodicity */  
   if (fr->ePBC != epbcNONE)
-    do_pbc_first(log,state->box,box_size,fr,graph,state->x);
+    do_pbc_first(log,state->box,fr,graph,state->x);
   debug_gmx();
 
   /* Initialize pull code */
@@ -457,6 +454,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   /* if rerunMD then read coordinates and velocities from input trajectory */
   if (bRerunMD) {
+    if (getenv("GMX_FORCE_UPDATE"))
+      bForceUpdate = TRUE;
+
     bNotLastFrame = read_first_frame(&status,opt2fn("-rerun",nfile,fnm),
 				     &rerun_fr,TRX_NEED_X | TRX_READ_V);
     if (rerun_fr.natoms != mdatoms->nr)
@@ -694,7 +694,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
-    if (!bRerunMD || rerun_fr.bV)
+    if (!bRerunMD || rerun_fr.bV || bForceUpdate)
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
 	     parm,mdatoms,state,graph,f,vold,
 	     top,grps,shake_vir,cr,&mynrnb,edyn,&pulldata,bNEMD,

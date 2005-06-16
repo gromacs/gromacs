@@ -48,7 +48,7 @@
 
 extern void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
 		      bool bVerbose,bool bOld,
-		      rvec box,char *ghatfn,t_inputrec *ir);
+		      matrix box,char *ghatfn,t_inputrec *ir);
 /* Setup stuff for PPPM. 
  * Either reads a ghat function from file (when the file exists)
  * or generate a ghat function from scratch.
