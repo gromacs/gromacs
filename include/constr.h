@@ -108,18 +108,41 @@ extern int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 			    bool bOnlyCoords,t_commrec *cr);
 /* Initialize constraints stuff */
 
-/* C routines for LINCS algorithm */ 
-extern void clincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,int ncons,
-		    int *bla1,int *bla2,int *blnr,int *blbnb,
-		    real *blc,real *blcc,real *blm,
-		    int nrec,real *invmass,rvec *r,
-		    real *vbo,real *vbn,real *vbt);
 
-extern void clincs(rvec *x,rvec *xp,t_pbc *pbc,int ncons,
-		   int *bla1,int *bla2,int *blnr,int *blbnb,real *bllen,
-		   real *blc,real *blcc,real *blm,
-		   int nit,int nrec,real *invmass,rvec *r,
-		   real *vbo,real *vbn,real *vbt,real wangle,int *warn,
-		   real *lambda,bool bCalcVir,tensor rmdr);
+/* LINCS stuff */
+typedef struct {
+  int  nc;       /* the number of constraints */
+  int  nzerolen; /* the number of constraints with zero length */
+  int  ncc;      /* the number of constraint connections */
+  real matlam;   /* the FE lambda value used for filling blc and blcc */
+  real *bllen0;  /* the reference distance in topology A */
+  real *ddist;   /* the reference distance in top B - the r.d. in top A */
+  int  *bla;     /* the atom pairs involved in the constraints */
+  real *blc;     /* 1/sqrt(invmass1 + invmass2) */
+  int  *blnr;    /* index into blbnb and blcc */
+  int  *blbnb;   /* list of bond connections */
+  real *blcc;    /* bond coupling coefficient matrix */
+  real *bllen;   /* the reference bond length */
+  /* arrays for temporary storage in the LINCS algorithm */
+  rvec *tmpv;
+  real *tmpnc;
+  real *tmp1;
+  real *tmp2;
+  real *tmp3;
+  real *lambda;  /* the Lagrange multipliers */
+} t_lincsdata;
 
+extern t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr);
+/* Initialize lincs stuff */
 
+extern void set_lincs_matrix(t_lincsdata *li,real *invmass);
+/* Sets the elements of the LINCS constraint coupling matrix */
+
+extern bool constrain_lincs(FILE *log,t_inputrec *ir,
+			    int step,t_lincsdata *lincsd,t_mdatoms *md,
+			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
+			    real lambda,real *dvdlambda,
+			    bool bCalcVir,tensor rmdr,
+			    bool bCoordinates,
+			    t_nrnb *nrnb,bool bDumpOnError);
+/* Returns if the constraining succeeded */

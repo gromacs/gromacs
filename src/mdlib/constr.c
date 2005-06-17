@@ -49,7 +49,6 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
-#include "pbc.h"
 
 typedef struct {
   atom_id iatom[3];
@@ -104,353 +103,6 @@ static void dump_confs(int step,t_atoms *atoms,
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
 
-static int int_comp(const void *a,const void *b)
-{
-  return (*(int *)a) - (*(int *)b);
-}
-
-void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
-		   int ncons,int *bla1,int *bla2,real *bllen,real wangle)
-{
-  int b,i,j;
-  rvec v0,v1;
-  real wfac,d0,d1,cosine;
-  char buf[STRLEN];
-  
-  wfac=cos(DEG2RAD*wangle);
-  
-  sprintf(buf,"bonds that rotated more than %g degrees:\n"
-	  " atom 1 atom 2  angle  previous, current, constraint length\n",
-	  wangle);
-  fprintf(stderr,buf);
-  fprintf(stdlog,buf); 
-
-  for(b=0;b<ncons;b++) {
-    i=bla1[b];
-    j=bla2[b];
-    if (pbc) {
-      pbc_dx(pbc,x[i],x[j],v0);
-      pbc_dx(pbc,xprime[i],xprime[j],v1);
-    } else {
-      rvec_sub(x[i],x[j],v0);
-      rvec_sub(xprime[i],xprime[j],v1);
-    }
-    d0=norm(v0);
-    d1=norm(v1);
-    cosine=iprod(v0,v1)/(d0*d1);
-    if (cosine<wfac) {
-      sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
-	      i+1,j+1,RAD2DEG*acos(cosine),d0,d1,bllen[b]);
-      fprintf(stderr,buf);
-      fprintf(stdlog,buf);
-    }
-  }
-}
-
-void cconerr(real *max,real *rms,int *imax,rvec *x,t_pbc *pbc,
-	     int ncons,int *bla1,int *bla2,real *bllen)
-     
-{
-  real      len,d,ma,ms,r2;
-  int       b,im;
-  rvec      dx;
-  
-  ma=0;
-  ms=0;
-  im=0;
-  for(b=0;b<ncons;b++) {
-    if (pbc) {
-      pbc_dx(pbc,x[bla1[b]],x[bla2[b]],dx);
-    } else {
-      rvec_sub(x[bla1[b]],x[bla2[b]],dx);
-    }
-    r2=norm2(dx);
-    len=r2*invsqrt(r2);
-    d=fabs(len/bllen[b]-1);
-    if (d > ma) {
-      ma=d;
-      im=b;
-    }
-    ms=ms+d*d;
-  }
-  *max=ma;
-  *rms=sqrt(ms/ncons);
-  *imax=im;
-}
-
-static void init_lincs(FILE *log,t_topology *top,t_inputrec *ir,
-		       t_mdatoms *md,int start,int homenr,
-		       int *nrtot,
-		       rvec **r,int **bla1,int **bla2,int **blnr,int **blbnb,
-		       real **bllen,real **blc,real **blcc,real **blm,
-		       real **tmp1,real **tmp2,real **tmp3,
-		       real **lincslam,real **bllen0,real **ddist)
-{
-  t_idef      *idef=&(top->idef);
-  t_iatom     *iatom;
-  int         i,j,k,n,b1,b,cen;
-  int         ncons,nZeroLen;
-  int         type,a1,a2,b2,nr,n1,n2,nc4;
-  real        len=0,len1,sign;
-  real        im1,im2;
-  int         **at_c,*at_cn,*at_cm;
-  
-  ncons  = idef->il[F_SHAKE].nr/3;
-  *nrtot = 0;
-  
-  if (ncons > 0) {
-
-    iatom=idef->il[F_SHAKE].iatoms;
-
-    /* Make atom-constraint connection list for temporary use */
-    snew(at_c,homenr);
-    snew(at_cn,homenr);
-    snew(at_cm,homenr);
-
-    for(i=0; i<ncons; i++) {
-      a1=iatom[3*i+1]-start;
-      a2=iatom[3*i+2]-start;
-      if (at_cn[a1] >= at_cm[a1]) {
-	at_cm[a1] += 4;
-	srenew(at_c[a1],at_cm[a1]);
-      }
-      at_c[a1][at_cn[a1]] = i;
-      at_cn[a1]++;
-      if (at_cn[a2] >= at_cm[a2]) {
-	at_cm[a2] += 4;
-	srenew(at_c[a2],at_cm[a2]);
-      }
-      at_c[a2][at_cn[a2]] = i;
-      at_cn[a2]++;
-    }
-    sfree(at_cm);
-    
-    for(i=0; i<ncons; i++) {
-      a1=iatom[3*i+1]-start;
-      a2=iatom[3*i+2]-start;
-      *nrtot += at_cn[a1] + at_cn[a2] - 2;
-    }      
-
-    snew(*r,ncons);
-    snew(*bla1,ncons);
-    snew(*bla2,ncons);
-    snew(*blnr,ncons+1);
-    snew(*bllen,ncons);
-    snew(*blc,ncons);
-    snew(*tmp1,ncons);
-    snew(*tmp2,ncons);
-    snew(*tmp3,ncons);
-    snew(*lincslam,ncons);
-    snew(*bllen0,ncons);
-    snew(*ddist,ncons);
-    snew(*blbnb,*nrtot);
-    snew(*blcc,*nrtot);
-    snew(*blm,*nrtot);
-    
-    /* Make constraint-neighbor list */
-    (*blnr)[0] = 0;
-    nZeroLen = 0;
-    for(i=0; (i<ncons); i++) {
-      j=3*i;
-      a1=iatom[j+1];
-      a2=iatom[j+2];
-      /* (*blnr)[i+1] = (*blnr)[i] + at_cn[a1] + at_cn[a2] - 2; */
-      type=iatom[j];
-      len =idef->iparams[type].shake.dA;
-      len1=idef->iparams[type].shake.dB;
-      if (len == 0 && len1 == 0)
-	nZeroLen++;
-      (*bla1)[i]=a1;
-      (*bla2)[i]=a2;
-      (*bllen)[i]=len;
-      (*bllen0)[i]=len;
-      (*ddist)[i]=len1-len;
-      im1=md->invmass[a1];
-      im2=md->invmass[a2];
-      (*blc)[i]=invsqrt(im1+im2);
-      /* Construct the constraint connection matrix blbnb */
-      (*blnr)[i+1]=(*blnr)[i];
-      for(k=0; k<at_cn[a1-start]; k++)
-	if (at_c[a1-start][k] != i)
-	  (*blbnb)[((*blnr)[i+1])++]=at_c[a1-start][k];
-      for(k=0; k<at_cn[a2-start]; k++)
-	if (at_c[a2-start][k] != i)
-	  (*blbnb)[((*blnr)[i+1])++]=at_c[a2-start][k];
-      /* Order the blbnb matrix to optimize memory access */
-      qsort(&((*blbnb)[(*blnr)[i]]),(*blnr)[i+1]-(*blnr)[i],
-            sizeof((*blbnb)[0]),int_comp);
-    }
-
-    sfree(at_cn);
-    for(i=0; i<homenr; i++)
-      sfree(at_c[i]);
-    sfree(at_c);
-    
-    fprintf(log,"\nInitializing LINear Constraint Solver\n");
-    fprintf(log,"  number of constraints is %d\n",ncons);
-    fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
-	    (real)(*nrtot)/ncons);
-    if (nZeroLen)
-      fprintf(log,"  found %d constraints with zero length\n",nZeroLen);
-    fprintf(log,"\n");
-    fflush(log);
-
-    /* Construct the coupling coefficient matrix blcc */
-    for(b=0; (b<ncons); b++) {
-      i=(*bla1)[b];
-      j=(*bla2)[b];
-      for(n=(*blnr)[b]; (n<(*blnr)[b+1]);n++) {
-	k = (*blbnb)[n];
-	if (i==(*bla1)[k] || j==(*bla2)[k])
-	  sign=-1;
-	else
-	  sign=1;
-	if (i==(*bla1)[k] || i==(*bla2)[k])
-	  cen=i;
-	else
-	  cen=j;
-	(*blcc)[n]=sign*md->invmass[cen]*(*blc)[b]*(*blc)[k];
-      }
-    }
-#ifdef DEBUG
-    for(i=0; i<ncons; i++) {
-      fprintf(log,"%d  %d %d  %g  %g  %d\n",i,(*bla1)[i],(*bla2)[i],
-      (*bllen)[i],(*blc)[i],(*blnr)[i+1]-(*blnr)[i]);
-      for(n=(*blnr)[i]; (n<(*blnr)[i+1]);n++) {
-	k = (*blbnb)[n];
-	fprintf(log,"  %d  %g\n",k,(*blcc)[n]);
-      }
-    }
-#endif
-  }
-}
-
-static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
-			    int step,t_mdatoms *md,int start,int homenr,
-			    int *nbl,int **sbl,
-			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			    real lambda,real *dvdlambda,
-			    bool bCalcVir,tensor rmdr,
-			    bool bCoordinates,bool bInit,
-			    t_nrnb *nrnb,bool bDumpOnError)
-{
-  static int       *bla1,*bla2,*blnr,*blbnb,nrtot=0;
-  static rvec      *r;
-  static real      *bllen,*blc,*blcc,*blm,*tmp1,*tmp2,*tmp3,*lincslam,
-                   *bllen0,*ddist;
-  static int       nc;
-
-  char             buf[STRLEN];
-  int              b,i,j,nit,warn,p_imax,error;
-  real             wang,p_max,p_rms;
-  real             dt,dt_2,tmp;
-  t_pbc            pbc,*pbc_null;
-  rvec             dx;
-  bool             bOK;
-  
-  bOK = TRUE;
-  if (bInit) {
-    nc = top->idef.il[F_SHAKE].nr/3;
-    init_lincs(stdlog,top,ir,md,start,homenr,
-	       &nrtot,
-	       &r,&bla1,&bla2,&blnr,&blbnb,
-	       &bllen,&blc,&blcc,&blm,&tmp1,&tmp2,&tmp3,&lincslam,
-	       &bllen0,&ddist);
-  } 
-  else if (nc != 0) {
-    /* If there are any constraints */
-    if (ir->ePBC == epbcFULL) {
-      /* This is wasting some CPU time as we now do this multiple times
-	 * per MD step.
-	 */
-      set_pbc_ss(&pbc,box);
-      pbc_null = &pbc;
-    } else {
-      pbc_null = NULL;
-    }
-    if (bCoordinates) {
-      dt   = ir->delta_t;
-      dt_2 = 1.0/(dt*dt);
-      
-      if (ir->efep != efepNO)
-	for(i=0; i<nc; i++)
-	  bllen[i] = bllen0[i] + lambda*ddist[i];
-      
-      /* Set the zero lengths to the old lengths */
-      if (ir->ePBC == epbcFULL) {
-	for(b=0; b<nc; b++)
-	  if (bllen[b] == 0) {
-	    pbc_dx(pbc_null,x[bla1[b]],x[bla2[b]],dx);
-	    bllen[b] = norm(dx);
-	  }
-      } else {
-	/* Set the zero lengths to the old lengths */
-	for(b=0; b<nc; b++)
-	  if (bllen[b] == 0)
-	    bllen[b] = sqrt(distance2(x[bla1[b]],x[bla2[b]]));
-      }
-
-      wang=ir->LincsWarnAngle;
-      
-      if (do_per_step(step,ir->nstlog) || step<0)
-	cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,nc,bla1,bla2,bllen);
-
-      nit = ir->nLincsIter;
-      
-      clincs(x,xprime,pbc_null,nc,bla1,bla2,blnr,blbnb,
-	     bllen,blc,blcc,blm,nit,ir->nProjOrder,
-	     md->invmass,r,tmp1,tmp2,tmp3,wang,&warn,lincslam,bCalcVir,rmdr);
-
-      if (ir->efep != efepNO) {
-	real dvdl=0;
-	
-	for(i=0; (i<nc); i++)
-	  dvdl+=lincslam[i]*dt_2*ddist[i];
-	*dvdlambda+=dvdl;
-      }
-      
-      if (do_per_step(step,ir->nstlog) || (step<0)) {
-	fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
-	fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
-		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-	cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,nc,bla1,bla2,bllen);
-	fprintf(stdlog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
-		p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-      }
-      
-      if (warn > 0) {
-	if (bDumpOnError) {
-	  cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,nc,bla1,bla2,bllen);
-	  sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
-		  "relative constraint deviation after LINCS:\n"
-		  "max %.6f (between atoms %d and %d) rms %.6f\n",
-		  step,ir->init_t+step*ir->delta_t,
-		  p_max,bla1[p_imax]+1,bla2[p_imax]+1,p_rms);
-	  fprintf(stdlog,"%s",buf);
-	  fprintf(stderr,"%s",buf);
-	  lincs_warning(x,xprime,pbc_null,nc,bla1,bla2,bllen,wang);
-	}
-	bOK = (p_max < 0.5);
-      }
-      for(b=0; (b<nc); b++)
-	if (bllen0[b] == 0)
-	  bllen[b] = 0;
-    } 
-    else {
-      clincsp(x,xprime,min_proj,pbc_null,nc,bla1,bla2,blnr,blbnb,
-	      blc,blcc,blm,ir->nProjOrder,
-	      md->invmass,r,tmp1,tmp2,tmp3);
-    }
-
-    /* count assuming nit=1 */
-    inc_nrnb(nrnb,eNR_LINCS,nc);
-    inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*nrtot);
-    if (bCalcVir)
-      inc_nrnb(nrnb,eNR_CONSTR_VIR,nc);
-  }
-  return bOK;
-}
-     
 static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 {
   int i;
@@ -472,6 +124,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   static int       *sblock=NULL;
   static int       nsettle,settle_type;
   static int       *owptr;
+  static t_lincsdata *lincsd=NULL;
   static bool      bDumpOnError = TRUE;
   
   char        buf[STRLEN];
@@ -593,9 +246,9 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     if (idef->il[F_SHAKE].nr) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	please_cite(stdlog,"Hess97a");
-	bOK = constrain_lincs(stdlog,top,ir,0,md,start,homenr,&nblocks,&sblock,
-			      NULL,NULL,NULL,NULL,0,NULL,FALSE,NULL,
-			      bCoordinates,TRUE,nrnb,bDumpOnError);
+	lincsd = init_lincs(stdlog,&top->idef,start,homenr);
+	set_lincs_matrix(lincsd,md->invmass);
+	lincsd->matlam = lambda;
       } 
       else
 	please_cite(stdlog,"Ryckaert77a");
@@ -608,17 +261,17 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 
     if (nblocks > 0) {
       where();
-      
-      if (ir->eConstrAlg == estSHAKE)
+
+      if (ir->eConstrAlg == estLINCS || !bCoordinates)
+	bOK = constrain_lincs(stdlog,ir,step,lincsd,md,
+			      x,xprime,min_proj,box,lambda,dvdlambda,
+			      vir!=NULL,rmdr,
+			      bCoordinates,nrnb,bDumpOnError);
+      else if (ir->eConstrAlg == estSHAKE)
 	bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
 		      ir,box,x,xprime,nrnb,lambda,dvdlambda,
 		      vir!=NULL,rmdr,bDumpOnError);
-      else if (ir->eConstrAlg == estLINCS)
-	bOK = constrain_lincs(stdlog,top,ir,step,md,
-			      start,homenr,&nblocks,&sblock,
-			      x,xprime,min_proj,box,lambda,dvdlambda,
-			      vir!=NULL,rmdr,
-			      bCoordinates,FALSE,nrnb,bDumpOnError);
+
       if (!bOK && bDumpOnError)
 	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
 		eshake_names[ir->eConstrAlg],step);
