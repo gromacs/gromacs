@@ -450,6 +450,8 @@ in the printed manual.</dd>
 <dd>
 A combination of PME and user tables (see above).
 The PME mesh contribution is subtracted from the user table by <tt>mdrun</tt>.
+Because of this subtraction the user tables should contain
+about 10 decimal places.
 </dd>
 
 </dl></dd>
@@ -545,8 +547,7 @@ tables for the non-bonded interactions. </dd>
 <dt><h4>energygrp_table:</h4></dt>
 <dd>When user tables are used for electrostatics and/or VdW,
 here one can give pairs of energy groups for which seperate
-user tables should be used. The 1-4 interactions will
-always use the normal user table.
+user tables should be used.
 The two energy groups will be appended to the table file name,
 in order of their definition in <b>energygrps</b>, seperated by underscores.
 For example, if <tt>energygrps = Na Cl Sol</tt>

@@ -540,60 +540,79 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 
 static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
 {
+  int eltype,vdwtype;
+
   /* Set the different table indices.
    * Coulomb first.
    */
 
-  if (b14only && fr->eeltype != eelRF_NEC) {
-    tabsel[etiCOUL] = etabCOUL;
-  } else {
+
+  if (b14only) {
     switch (fr->eeltype) {
-    case eelCUT:
-      tabsel[etiCOUL] = etabCOUL;
-      break;
-    case eelPPPM:
-    case eelPOISSON:
-      tabsel[etiCOUL] = etabShift;
-      break;
-    case eelSHIFT:
-      if (fr->rcoulomb > fr->rcoulomb_switch)
-	tabsel[etiCOUL] = etabShift;
-      else
-	tabsel[etiCOUL] = etabCOUL;
-      break;
-    case eelEWALD:
-    case eelPME:
-      tabsel[etiCOUL] = etabEwald;
-      break;
-    case eelPMEUSER:
-      tabsel[etiCOUL] = etabEwaldUser;
-      break;
-    case eelRF:
-    case eelGRF:
     case eelRF_NEC:
-      tabsel[etiCOUL] = etabRF;
-      break;
-    case eelSWITCH:
-      tabsel[etiCOUL] = etabCOULSwitch;
+      eltype = eelRF;
       break;
     case eelUSER:
-      tabsel[etiCOUL] = etabUSER;
+    case eelPMEUSER:
+      eltype = eelUSER;
       break;
-    case eelENCADSHIFT:
-      tabsel[etiCOUL] = etabCOULEncad;
-      break;      
     default:
-      gmx_fatal(FARGS,"Invalid eeltype %d",fr->eeltype);
+      eltype = eelCUT;
     }
+  } else {
+    eltype = fr->eeltype;
+  }
+  
+  switch (eltype) {
+  case eelCUT:
+    tabsel[etiCOUL] = etabCOUL;
+    break;
+  case eelPPPM:
+  case eelPOISSON:
+    tabsel[etiCOUL] = etabShift;
+    break;
+  case eelSHIFT:
+    if (fr->rcoulomb > fr->rcoulomb_switch)
+      tabsel[etiCOUL] = etabShift;
+    else
+      tabsel[etiCOUL] = etabCOUL;
+    break;
+  case eelEWALD:
+  case eelPME:
+    tabsel[etiCOUL] = etabEwald;
+    break;
+  case eelPMEUSER:
+    tabsel[etiCOUL] = etabEwaldUser;
+    break;
+  case eelRF:
+  case eelGRF:
+  case eelRF_NEC:
+    tabsel[etiCOUL] = etabRF;
+    break;
+  case eelSWITCH:
+    tabsel[etiCOUL] = etabCOULSwitch;
+    break;
+  case eelUSER:
+    tabsel[etiCOUL] = etabUSER;
+    break;
+  case eelENCADSHIFT:
+    tabsel[etiCOUL] = etabCOULEncad;
+    break;      
+  default:
+    gmx_fatal(FARGS,"Invalid eeltype %d",eltype);
   }
   
   /* Van der Waals time */
   if (fr->bBHAM) {
     tabsel[etiLJ6]  = etabLJ6;
     tabsel[etiLJ12] = etabEXPMIN;
-  }
-  else {
-    switch (fr->vdwtype) {
+  } else {
+    if (b14only && fr->vdwtype != evdwUSER)
+      vdwtype = evdwCUT;
+    else
+      vdwtype = fr->vdwtype;
+
+    switch (vdwtype) {
     case evdwSWITCH:
       tabsel[etiLJ6]  = etabLJ6Switch;
       tabsel[etiLJ12] = etabLJ12Switch;
@@ -615,7 +634,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
       tabsel[etiLJ12] = etabLJ12Encad;
       break;
     default:
-      gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",fr->vdwtype,
+      gmx_fatal(FARGS,"Invalid vdwtype %d in %s line %d",vdwtype,
 		  __FILE__,__LINE__);
     } 
   }
@@ -688,8 +707,9 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 		 &(td[k]),!bReadTab);
       fill_table(&(td[k]),tabsel[k],fr);
       if (out) 
-	fprintf(out,"Generated table with %d data points for %s%s.\n"
+	fprintf(out,"%s table with %d data points for %s%s.\n"
 		"Tabscale = %g points/nm\n",
+		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
 		td[k].nx,b14only?"1-4 ":"",tabnm[tabsel[k]],td[k].tabscale);
 
     }

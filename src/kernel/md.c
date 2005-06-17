@@ -199,7 +199,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Initiate forcerecord */
   fr = mk_forcerec();
   init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,state->box,FALSE,
-		opt2fn("-table",nfile,fnm),FALSE);
+		opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
   fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
     
   /* Initiate PPPM if necessary */

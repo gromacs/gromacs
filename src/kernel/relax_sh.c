@@ -340,6 +340,21 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   number_steps = parm->ir.niter;
   step0        = 1.0;
 
+  if (bDoNS) {
+    /* This is the only time where the coordinates are used
+     * before do_force is called, which normally puts all
+     * charge groups in the box.
+     */
+    put_charge_groups_in_box(log,CG0(nsb),CG1(nsb),state->box,
+			     &(top->blocks[ebCGS]),state->x,fr->cg_cm);
+    if (graph)
+      mk_mshift(log,graph,state->box,state->x);
+  }
+
+  /* After this all coordinate arrays will contain whole molecules */
+  if (graph)
+    shift_self(graph,state->box,state->x);
+
   if (nflexcon) {
     if (acc_dir == NULL) {
       snew(acc_dir,homenr);
@@ -356,7 +371,11 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   if (!bNoPredict)
     predict_shells(log,state->x,state->v,parm->ir.delta_t,nshell,shells,
 		   md->massT,bInit);
-   
+
+  /* do_force expected the charge groups to be in the box */
+  if (graph)
+    unshift_self(graph,state->box,state->x);
+
   /* Calculate the forces first time around */
   if (debug) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
@@ -380,7 +399,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     if (bVerbose)
       fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/nflexcon));
   }
-  
+
   df[Min]=rms_force(cr,force[Min],nshell,shells,nflexcon,sf_dir);
   df[Try]=0;
   if (debug) {
@@ -427,17 +446,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   *bConverged = bDone = (df[Min] < ftol) || (nshell+nflexcon == 0);
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
-
-    /* Replace Try with Min in the vsites bit. DvdS 18-01-04 */
-    if (bVsites) {
-      if (graph)
-	shift_self(graph,state->box,pos[Min]);
-      
+    if (bVsites)
       construct_vsites(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
 			graph,cr,fr->ePBC,state->box,vsitecomm);
-      if (graph)
-	unshift_self(graph,state->box,pos[Min]);
-    }
      
     if (nflexcon) {
       init_adir(log,top,&(parm->ir),mdstep,md,start,end,
@@ -450,6 +461,10 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     
     /* New positions, Steepest descent */
     shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
+
+    /* do_force expected the charge groups to be in the box */
+    if (graph)
+      unshift_self(graph,state->box,pos[Try]);
 
     if (debug) {
       pr_rvecs(debug,0,"RELAX: pos[Min]  ",pos[Min] + start,homenr);
@@ -497,6 +512,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       if (bVerbose)
 	fprintf(stderr,"dir. rmsf %g\n",sqrt(sf_dir/nflexcon));
     }
+
     df[Try]=rms_force(cr,force[Try],nshell,shells,nflexcon,sf_dir);
 
     if (debug)
@@ -548,6 +564,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   
   if (nshell+nflexcon > 0)
     memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
+
   if (nflexcon > 0) {
     constrain(log,top,&(parm->ir),mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,

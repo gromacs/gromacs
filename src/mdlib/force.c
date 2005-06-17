@@ -713,6 +713,7 @@ void init_forcerec(FILE *fp,
 		   matrix     box,
 		   bool       bMolEpot,
 		   const char *tabfn,
+		   const char *tabpfn,
 		   bool       bNoSolvOpt)
 {
   int     i,j,m,natoms,ngrp,negptable,egi,egj;
@@ -964,8 +965,7 @@ void init_forcerec(FILE *fp,
 
   bTab = fr->bcoultab || fr->bvdwtab || (fr->efep != efepNO);
   bSep14tab = ((top->idef.il[F_LJ14].multinr[cr->nnodes-1] > 0) &&
-	       (!bTab || EEL_FULL(fr->eeltype) || 
-		(EEL_RF(fr->eeltype) && fr->eeltype != eelRF_NEC)));
+	       (!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT));
   
   negptable = 0;
   if (!bTab) {
@@ -989,8 +989,6 @@ void init_forcerec(FILE *fp,
       fr->nnblists = negptable + 1;
     } else {
       fr->nnblists = negptable;
-      if (top->idef.il[F_LJ14].multinr[cr->nnodes-1] > 0)
-	bSep14tab = TRUE;
     }
     if (fr->nnblists > 1)
       snew(fr->gid2nblists,ir->opts.ngener*ir->opts.ngener);
@@ -1042,7 +1040,7 @@ void init_forcerec(FILE *fp,
   }
   if (bSep14tab)
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
-    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabfn,ir->tabext,TRUE);
+    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,TRUE);
 
   check_solvent(fp,top,fr,mdatoms,nsb);
 

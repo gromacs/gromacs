@@ -92,6 +92,7 @@ extern void init_forcerec(FILE       *fplog,
 			  matrix     box,
 			  bool       bMolEpot,
 			  const char *tabfn,
+			  const char *tabpfn,
 			  bool       bNoSolvOpt);
 /* The Force rec struct must be created with mk_forcerec 
  * The booleans have the following meaning:
