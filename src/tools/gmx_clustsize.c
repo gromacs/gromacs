@@ -116,6 +116,10 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     tfac = ndf/(3.0*natoms);
   
   if (bMol) {
+    if (ndx)
+      printf("Using molecules rather than atoms. Not reading index file %s\n",
+	     ndx);
+    
     mols = &(top.blocks[ebMOLS]);
 
     /* Make dummy index */
@@ -263,8 +267,13 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     fprintf(fp,"[ max_clust ]\n");
     for(i=0; (i<nindex); i++) 
       if (clust_index[i] == max_clust_ind) {
-	for(j=mols->index[i]; (j<mols->index[i+1]); j++)
-	  fprintf(fp,"%d\n",mols->a[j]+1);
+	if (bMol) {
+	  for(j=mols->index[i]; (j<mols->index[i+1]); j++)
+	    fprintf(fp,"%d\n",mols->a[j]+1);
+	}
+	else {
+	  fprintf(fp,"%d\n",index[i]);
+	}
       }
     fclose(fp);
   }
