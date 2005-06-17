@@ -78,6 +78,7 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   snew(md->cU2,md->nr);
   
   md->nPerturbed=0;
+  md->bMassPerturbed=FALSE;
   md->bChargePerturbed=FALSE;
   tm=0.0;
   for(i=0; (i<md->nr); i++) {
@@ -131,6 +132,8 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
       md->bPerturbed[i] = PERTURBED(atoms->atom[i]);
       if (md->bPerturbed[i]) {
 	md->nPerturbed++;
+	if (atoms->atom[i].mB != atoms->atom[i].m)
+	  md->bMassPerturbed = TRUE;
 	if (atoms->atom[i].qB != atoms->atom[i].q)
 	  md->bChargePerturbed = TRUE;
       }
