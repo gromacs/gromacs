@@ -359,6 +359,15 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
   } 
   else if (nc != 0) {
     /* If there are any constraints */
+    if (ir->ePBC == epbcFULL) {
+      /* This is wasting some CPU time as we now do this multiple times
+	 * per MD step.
+	 */
+      set_pbc_ss(&pbc,box);
+      pbc_null = &pbc;
+    } else {
+      pbc_null = NULL;
+    }
     if (bCoordinates) {
       dt   = ir->delta_t;
       dt_2 = 1.0/(dt*dt);
@@ -366,23 +375,15 @@ static bool constrain_lincs(FILE *log,t_topology *top,t_inputrec *ir,
       if (ir->efep != efepNO)
 	for(i=0; i<nc; i++)
 	  bllen[i] = bllen0[i] + lambda*ddist[i];
-
+      
+      /* Set the zero lengths to the old lengths */
       if (ir->ePBC == epbcFULL) {
-	/* This is wasting some CPU time as we now do this multiple times
-	 * per MD step.
-	 */
-	set_pbc_ss(&pbc,box);
-	pbc_null = &pbc;
-	
-	/* Set the zero lengths to the old lengths */
 	for(b=0; b<nc; b++)
 	  if (bllen[b] == 0) {
 	    pbc_dx(pbc_null,x[bla1[b]],x[bla2[b]],dx);
 	    bllen[b] = norm(dx);
 	  }
       } else {
-	pbc_null = NULL;
-	
 	/* Set the zero lengths to the old lengths */
 	for(b=0; b<nc; b++)
 	  if (bllen[b] == 0)
