@@ -185,9 +185,9 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
   if (parm->ir.ePBC != epbcNONE)
-    calc_shifts(box,box_size,fr->shift_vec);
+    calc_shifts(box,fr->shift_vec);
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
-			   box,box_size,&(top->blocks[ebCGS]),x,
+			   box,&(top->blocks[ebCGS]),x,
 			   fr->cg_cm);
   if (graph)
     mk_mshift(stdlog,graph,box,x);
@@ -274,7 +274,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
-		nsb,state->box,FALSE,table,TRUE);
+		nsb,state->box,FALSE,table,table,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
