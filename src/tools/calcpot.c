@@ -280,7 +280,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   for(m=0; (m<DIM); m++)
     box_size[m] = state->box[m][m];
   if (parm->ir.ePBC != epbcNONE)
-    do_pbc_first(stdlog,state->box,box_size,*fr,*graph,state->x);
+    do_pbc_first(stdlog,state->box,*fr,*graph,state->x);
 
   copy_mat(state->box,box);
   *x = state->x;

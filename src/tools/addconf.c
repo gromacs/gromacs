@@ -288,9 +288,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
-  calc_shifts(box,box_size,fr->shift_vec);
-  put_charge_groups_in_box(fp,0,cgs->nr,box,box_size,cgs,
-			   x,fr->cg_cm);
+  calc_shifts(box,fr->shift_vec);
+  put_charge_groups_in_box(fp,0,cgs->nr,box,cgs,x,fr->cg_cm);
   
   /* Do the actual neighboursearching */
   init_neighbor_list(fp,fr,HOMENR(nsb));
