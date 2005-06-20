@@ -74,12 +74,14 @@ static void insert_ion(int nsa,int *nwater,
   
   ei=-1;
   nw = *nwater;
-  maxrand = 100*nw;
+  maxrand = 1000*nw;
   if (bRandom) {
     do {
       ei = nw*rando(seed);
       maxrand--;
     } while (bSet[ei] && (maxrand > 0));
+    if (bSet[ei])
+      gmx_fatal(FARGS,"No more replaceable solvent!");
   }
   else {
     extr_e = 0;
@@ -103,9 +105,9 @@ static void insert_ion(int nsa,int *nwater,
 	}
       }
     }
+    if (ei == -1)
+      gmx_fatal(FARGS,"No more replaceable solvent!");
   }
-  if (ei == -1)
-    gmx_fatal(FARGS,"No more replaceable solvent!");
   fprintf(stderr,"Replacing solvent molecule %d (atom %d) with %s\n",
 	  ei,index[nsa*ei],ionname);
   
