@@ -87,6 +87,7 @@ enum {
   eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiNR
 };
 
+#define EI_DYNAMICS(e) ((e == eiMD) || (e == eiSD) || (e == eiBD))
 #define EI_ENERGY_MINIMIZATION(e) ((e == eiSteep) || (e == eiCG) || (e == eiLBFGS))
 
 enum {

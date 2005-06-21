@@ -278,7 +278,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
 	     nsb,top,parm,nrnb,nodetime,realtime,parm->ir.nsteps,
-	     parm->ir.eI==eiMD || parm->ir.eI==eiSD || parm->ir.eI==eiBD); 
+	     EI_DYNAMICS(parm->ir.eI));
   
   /* Does what it says */  
   print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
