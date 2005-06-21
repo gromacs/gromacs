@@ -161,8 +161,10 @@ int main (int argc,char *argv[])
     frout.natoms = natoms_out;
     frout.bAtoms = TRUE;
     frout.atoms  = iatoms;
+    frout.bV     = FALSE;
+    frout.bF     = FALSE;
     frout.x      = ix;
-    
+
     /* write output */
     write_trxframe(out,&frout);
     frame++;
