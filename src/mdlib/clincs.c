@@ -67,7 +67,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
   blbnb  = lincsd->blbnb;
   blc    = lincsd->blc;
   blcc   = lincsd->blcc;
-  blm    = lincsd->tmpnc;
+  blm    = lincsd->tmpncc;
   rhs1   = lincsd->tmp1;
   rhs2   = lincsd->tmp2;
   sol    = lincsd->tmp3;
@@ -165,7 +165,7 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
   blc    = lincsd->blc;
   blcc   = lincsd->blcc;
   bllen  = lincsd->bllen;
-  blm    = lincsd->tmpnc;
+  blm    = lincsd->tmpncc;
   rhs1   = lincsd->tmp1;
   rhs2   = lincsd->tmp2;
   sol    = lincsd->tmp3;
@@ -388,62 +388,81 @@ static int int_comp(const void *a,const void *b)
   return (*(int *)a) - (*(int *)b);
 }
 
-t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr)
+t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr,
+			bool bDynamics)
 {
   t_iatom     *iatom;
-  int         i,k;
+  int         i,j,k;
   int         type,a1,a2;
   real        lenA=0,lenB;
-  int         **at_c,*at_cn,*at_cm;
+  int         **at_c,*at_cn;
   t_lincsdata *li;
   
   snew(li,1);
-  li->nc = idef->il[F_SHAKE].nr/3;
+  li->nc = 0;
   li->nzerolen = 0;
   li->ncc = 0;
   
-  if (li->nc > 0) {
+  if (idef->il[F_SHAKE].nr > 0) {
     /* Make atom-constraint connection list for temporary use */
     snew(at_c,homenr);
     snew(at_cn,homenr);
-    snew(at_cm,homenr);
 
     iatom=idef->il[F_SHAKE].iatoms;
 
-    for(i=0; i<li->nc; i++) {
-      a1 = iatom[3*i+1] - start;
-      a2 = iatom[3*i+2] - start;
-      if (at_cn[a1] >= at_cm[a1]) {
-	at_cm[a1] += 4;
-	srenew(at_c[a1],at_cm[a1]);
+    /* Make a list of constraint connections */
+    for(i=0; i<idef->il[F_SHAKE].nr; i+=3) {
+      type = iatom[i];
+      a1   = iatom[i+1];
+      a2   = iatom[i+2];
+      lenA = idef->iparams[type].shake.dA;
+      lenB = idef->iparams[type].shake.dB;
+      /* Skip the flexible constraints when not doing dynamics */
+      if (bDynamics || lenA!=0 || lenB!=0) {
+	if (at_cn[a1-start] % 4 == 0)
+	  srenew(at_c[a1-start],at_cn[a1-start]+4);
+	at_c[a1-start][at_cn[a1-start]] = li->nc;
+	at_cn[a1-start]++;
+	if (at_cn[a2-start] % 4 == 0)
+	  srenew(at_c[a2-start],at_cn[a2-start]+4);
+	at_c[a2-start][at_cn[a2-start]] = li->nc;
+	at_cn[a2-start]++;
+	li->nc++;
       }
-      at_c[a1][at_cn[a1]] = i;
-      at_cn[a1]++;
-      if (at_cn[a2] >= at_cm[a2]) {
-	at_cm[a2] += 4;
-	srenew(at_c[a2],at_cm[a2]);
-      }
-      at_c[a2][at_cn[a2]] = i;
-      at_cn[a2]++;
     }
-    sfree(at_cm);
-    
-    for(i=0; i<li->nc; i++) {
-      a1 = iatom[3*i+1] - start;
-      a2 = iatom[3*i+2] - start;
-      li->ncc += at_cn[a1] + at_cn[a2] - 2;
-    }      
     
     snew(li->bllen0,li->nc);
     snew(li->ddist,li->nc);
     snew(li->bla,2*li->nc);
+
+    j = 0;
+    for(i=0; i<idef->il[F_SHAKE].nr; i+=3) {
+      type = iatom[i];
+      a1   = iatom[i+1];
+      a2   = iatom[i+2];
+      lenA = idef->iparams[type].shake.dA;
+      lenB = idef->iparams[type].shake.dB;
+      if (lenA == 0 && lenB == 0)
+	li->nzerolen++;
+      /* Skip the flexible constraints when not doing dynamics */
+      if (bDynamics || lenA!=0 || lenB!=0) {
+	li->bllen0[j] = lenA;
+	li->ddist[j]  = lenB - lenA;
+	li->bla[2*j]   = a1;
+	li->bla[2*j+1] = a2;
+	/* Count the constraint connections */
+	li->ncc += at_cn[a1-start] + at_cn[a2-start] - 2;
+	j++;
+      }
+    }      
+    
     snew(li->blc,li->nc);
     snew(li->blnr,li->nc+1);
     snew(li->blbnb,li->ncc);
     snew(li->blcc,li->ncc);
     snew(li->bllen,li->nc);
     snew(li->tmpv,li->nc);
-    snew(li->tmpnc,li->ncc);
+    snew(li->tmpncc,li->ncc);
     snew(li->tmp1,li->nc);
     snew(li->tmp2,li->nc);
     snew(li->tmp3,li->nc);
@@ -451,29 +470,21 @@ t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr)
    
     /* Make constraint-neighbor list */
     li->blnr[0] = 0;
-    for(i=0; (i<li->nc); i++) {
-      type = iatom[3*i];
-      a1   = iatom[3*i+1];
-      a2   = iatom[3*i+2];
-      lenA = idef->iparams[type].shake.dA;
-      lenB = idef->iparams[type].shake.dB;
-      if (lenA == 0 && lenB == 0)
-	li->nzerolen++;
-      li->bla[2*i]   = a1;
-      li->bla[2*i+1] = a2;
-      li->bllen[i]  = lenA;
-      li->bllen0[i] = lenA;
-      li->ddist[i]  = lenB - lenA;
+    for(j=0; j<li->nc; j++) {
+      a1 = li->bla[2*j];
+      a2 = li->bla[2*j+1];
+      /* Set the length to the topology A length */
+      li->bllen0[j] = li->bllen[j];
       /* Construct the constraint connection matrix blbnb */
-      li->blnr[i+1] = li->blnr[i];
+      li->blnr[j+1] = li->blnr[j];
       for(k=0; k<at_cn[a1-start]; k++)
-	if (at_c[a1-start][k] != i)
-	  li->blbnb[(li->blnr[i+1])++] = at_c[a1-start][k];
+	if (at_c[a1-start][k] != j)
+	  li->blbnb[(li->blnr[j+1])++] = at_c[a1-start][k];
       for(k=0; k<at_cn[a2-start]; k++)
-	if (at_c[a2-start][k] != i)
-	  li->blbnb[(li->blnr[i+1])++] = at_c[a2-start][k];
+	if (at_c[a2-start][k] != j)
+	  li->blbnb[(li->blnr[j+1])++] = at_c[a2-start][k];
       /* Order the blbnb matrix to optimize memory access */
-      qsort(&(li->blbnb[li->blnr[i]]),li->blnr[i+1]-li->blnr[i],
+      qsort(&(li->blbnb[li->blnr[j]]),li->blnr[j+1]-li->blnr[j],
             sizeof(li->blbnb[0]),int_comp);
     }
 
@@ -484,7 +495,8 @@ t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr)
     
     fprintf(log,"\nInitializing LINear Constraint Solver\n");
     fprintf(log,"  number of constraints is %d\n",li->nc);
-    fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
+    if (li->nc > 0)
+      fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
 	    (real)(li->ncc)/li->nc);
     if (li->nzerolen)
       fprintf(log,"  found %d constraints with zero length\n",li->nzerolen);
@@ -579,6 +591,9 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   bool  bOK;
   
   bOK = TRUE;
+
+  if (lincsd->nc == 0)
+    return bOK;
 
   if (ir->ePBC == epbcFULL) {
     /* This is wasting some CPU time as we now do this multiple times

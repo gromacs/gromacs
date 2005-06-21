@@ -125,14 +125,15 @@ typedef struct {
   real *bllen;   /* the reference bond length */
   /* arrays for temporary storage in the LINCS algorithm */
   rvec *tmpv;
-  real *tmpnc;
+  real *tmpncc;
   real *tmp1;
   real *tmp2;
   real *tmp3;
   real *lambda;  /* the Lagrange multipliers */
 } t_lincsdata;
 
-extern t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr);
+extern t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr,
+			       bool bDynamics);
 /* Initialize lincs stuff */
 
 extern void set_lincs_matrix(t_lincsdata *li,real *invmass);

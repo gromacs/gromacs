@@ -246,7 +246,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     if (idef->il[F_SHAKE].nr) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	please_cite(stdlog,"Hess97a");
-	lincsd = init_lincs(stdlog,&top->idef,start,homenr);
+	lincsd = init_lincs(stdlog,&top->idef,start,homenr,
+			    EI_DYNAMICS(ir->eI));
 	set_lincs_matrix(lincsd,md->invmass);
 	lincsd->matlam = lambda;
       } 
