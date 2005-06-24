@@ -266,7 +266,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
   int             tabletype;
   int             outeriter,inneriter;
   real *          tabledata = NULL;
-  
+
   if(fr->solvent_opt == esolSPC)
     wateratoms = 3;
   else if(fr->solvent_opt == esolTIP4P)
@@ -472,16 +472,17 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
             if (!bWarn) 
             {
                 fprintf(stderr,"Warning: 1-4 interaction between %d and %d "
-                        "at distance larger than %g nm\n", ai+1, aj+1, sqrt(rtab2));
-                fprintf(stderr,"These are ignored for the rest of the simulation\n"
-                        "turn on -debug for more information\n");
+                        "at distance %.3f which is larger than the 1-4 table size %.3f nm\n", ai+1, aj+1, sqrt(r2), sqrt(rtab2));
+                fprintf(stderr,"These are ignored for the rest of the simulation\n");
+		fprintf(stderr,"This usually means your system is exploding,\n"
+			"if not, you should increase table-extension in your mdp file\n");
                 bWarn = TRUE;
             }
             if (debug) 
-                fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
-                        x[ai][XX],x[ai][YY],x[ai][ZZ],
-                        x[aj][XX],x[aj][YY],x[aj][ZZ],
-                        (int)ai+1,(int)aj+1,sqrt(r2));
+	      fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
+		      x[ai][XX],x[ai][YY],x[ai][ZZ],
+		      x[aj][XX],x[aj][YY],x[aj][ZZ],
+		      (int)ai+1,(int)aj+1,sqrt(r2));
         }
         else 
         {
