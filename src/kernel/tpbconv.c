@@ -266,7 +266,7 @@ int main (int argc, char *argv[])
   t_trnheader head;
   int          i,frame,run_step,nsteps_org;
   real         run_t,state_t;
-  bool         bOK,bFrame,bTime,bSel;
+  bool         bOK,bTraj,bFrame,bTime,bSel;
   t_topology   top;
   t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
@@ -309,20 +309,24 @@ int main (int argc, char *argv[])
 		    asize(desc),desc,0,NULL);
 
   bTime = opt2parg_bSet("-time",asize(pa),pa);
+  bTraj = (bTime ||
+	   opt2parg_bSet("-extend",asize(pa),pa) ||
+	   opt2parg_bSet("-until",asize(pa),pa) ||
+	   ftp2bSet(efTRN,NFILE,fnm));
   
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
   snew(ir,1);
   read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&top);
-
+  
   if (ir->bUncStart != bUncStart)
     fprintf(stderr,"Modifying ir->bUncStart to %s\n",bool_names[bUncStart]);
   ir->bUncStart = bUncStart;
   
   run_step   = 0;
 
-  if (ftp2bSet(efTRN,NFILE,fnm)) {
+  if (bTraj) {
     frame_fn = ftp2fn(efTRN,NFILE,fnm);
     fprintf(stderr,
 	    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
@@ -413,7 +417,7 @@ int main (int argc, char *argv[])
   if (bZeroQ || (ir->nsteps > 0)) {
     ir->init_step = run_step;
     
-    if (!ftp2bSet(efTRN,NFILE,fnm)) {
+    if (bTraj) {
       get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
       if (!bZeroQ) {
