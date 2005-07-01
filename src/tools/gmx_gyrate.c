@@ -102,11 +102,17 @@ int gmx_gyrate(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_gyrate computes the radius of gyration of a group of atoms",
-    "and the radii of gyration about the x, y and z axes,"
-    "as a function of time. The atoms are explicitly mass weighted."
+    "and the radii of gyration about the x, y and z axes,",
+    "as a function of time. The atoms are explicitly mass weighted.",
+    "With the [TT]-nmol[tt] option the radius of gyration will be calculated",
+    "for multiple molecules by splitting the analysis group in equally",
+    "sized parts."
   };
+  static int  nmol=1;
   static bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
   t_pargs pa[] = {
+    { "-nmol", FALSE, etINT, {&nmol},
+      "The number of molecules to analyze" },
     { "-q", FALSE, etBOOL, {&bQ},
       "Use absolute value of the charge of an atom as weighting factor instead of mass" },
     { "-p", FALSE, etBOOL, {&bRot},
@@ -118,25 +124,26 @@ int gmx_gyrate(int argc,char *argv[])
   int        status;
   t_topology top;
   rvec       *x,*x_s;
-  rvec       xcm,gvec;
+  rvec       xcm,gvec,gvec1;
   matrix     box,trans;
+  bool       bACF;
   real       **moi_trans=NULL;
   int        max_moi=0,delta_moi=100;
-  rvec       d;         /* eigenvalues of inertia tensor */
+  rvec       d,d1;         /* eigenvalues of inertia tensor */
   real       t,t0,tm,gyro;
   int        natoms;
   char       *grpname,title[256];
-  int        i,j,m,gnx;
+  int        i,j,m,gnx,nam,mol;
   atom_id    *index;
   char       *leg[]  = { "Rg", "RgX", "RgY", "RgZ" }; 
   char       *legI[] = { "Itot", "I1", "I2", "I3" }; 
 #define NLEG asize(leg) 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
-    { efTPS, NULL,   NULL,       ffREAD }, 
+    { efTPS, NULL,   NULL,       ffREAD },
+    { efNDX, NULL,   NULL,       ffOPTRD },
     { efXVG, NULL,   "gyrate",   ffWRITE }, 
-    { efXVG, "-acf", "moi-acf",  ffOPTWR }, 
-    { efNDX, NULL,   NULL,       ffOPTRD } 
+    { efXVG, "-acf", "moi-acf",  ffOPTWR }
   }; 
 #define NFILE asize(fnm) 
   int     npargs;
@@ -148,8 +155,10 @@ int gmx_gyrate(int argc,char *argv[])
 
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL); 
-  clear_rvec(d);
-  bRot = bRot || bMOI;
+  bACF = opt2bSet("-acf",NFILE,fnm);
+  if (bACF && nmol!=1)
+    gmx_fatal(FARGS,"Can only do acf with nmol=1");
+  bRot = bRot || bMOI || bACF;
   if (bRot) {
     printf("Will rotate system along principal axes\n"); 
     snew(moi_trans,DIM);
@@ -163,6 +172,11 @@ int gmx_gyrate(int argc,char *argv[])
     
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,TRUE);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+
+  if (nmol > gnx || gnx % nmol != 0) {
+    gmx_fatal(FARGS,"The number of atoms in the group (%d) is not a multiple of nmol (%d)",gnx,nmol);
+  }
+  nam = gnx/nmol;
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
   snew(x_s,natoms); 
@@ -187,9 +201,22 @@ int gmx_gyrate(int argc,char *argv[])
   }
   do {
     rm_pbc(&top.idef,natoms,box,x,x_s);
-    tm=sub_xcm(x_s,gnx,index,top.atoms.atom,xcm,bQ);
-    gyro=calc_gyro(x_s,gnx,index,top.atoms.atom,tm,gvec,d,bQ,bRot,bMOI,trans);
-    
+    gyro = 0;
+    clear_rvec(gvec);
+    clear_rvec(d);
+    for(mol=0; mol<nmol; mol++) {
+      tm    = sub_xcm(x_s,nam,index+mol*nam,top.atoms.atom,xcm,bQ);
+      gyro += calc_gyro(x_s,nam,index+mol*nam,top.atoms.atom,
+			tm,gvec1,d1,bQ,bRot,bMOI,trans);
+      rvec_inc(gvec,gvec1);
+      rvec_inc(d,d1);
+    }
+    if (nmol > 0) {
+      gyro /= nmol;
+      svmul(1.0/nmol,gvec,gvec);
+      svmul(1.0/nmol,d,d);
+    }
+
     if (bRot) {
       if (j >= max_moi) {
 	max_moi += delta_moi;
@@ -209,7 +236,7 @@ int gmx_gyrate(int argc,char *argv[])
   
   fclose(out);
 
-  if (bRot) {
+  if (bACF) {
     int mode = eacVector;
   
     do_autocorr(opt2fn("-acf",NFILE,fnm),
