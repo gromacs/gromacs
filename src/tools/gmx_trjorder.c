@@ -98,11 +98,14 @@ int gmx_trjorder(int argc,char *argv[])
   };
   static int na=3,ref_a=1;
   static real rcut=0;
+  static bool bCOM = FALSE;
   t_pargs pa[] = {
     { "-na", FALSE, etINT,  {&na},
       "Number of atoms in a molecule" },
     { "-da", FALSE, etINT,  {&ref_a},
       "Atom used for the distance calculation" },
+    { "-com", FALSE, etBOOL, {&bCOM},
+      "Use the distance to the center of mass of the reference group" },
     { "-r",  FALSE, etREAL, {&rcut},
       "Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein" },
   };
@@ -110,10 +113,10 @@ int gmx_trjorder(int argc,char *argv[])
   int        status,out;
   bool       bPDBout;
   t_topology top;
-  rvec       *x,dx;
+  rvec       *x,xcom,dx;
   matrix     box;
   t_pbc      pbc;
-  real       t,rcut2,n2;
+  real       t,totmass,mass,rcut2=0,n2;
   int        natoms,nwat,ncut;
   char       **grpname,title[256];
   int        i,j,*isize;
@@ -185,22 +188,40 @@ int gmx_trjorder(int argc,char *argv[])
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
     set_pbc(&pbc,box);
-    
-    /* Set distance to first atom */
-    for(i=0; (i<nwat); i++) {
-      sa = index[SOL][na*i];
-      pbc_dx(&pbc,x[index[REF][0]],x[sa+ref_a],dx);
-      order[i].i   = sa;
-      order[i].d2  = norm2(dx); 
-    }
-    for(j=1; (j<isize[REF]); j++) {
-      sr = index[REF][j];
+
+    if (bCOM) {
+      totmass = 0;
+      clear_rvec(xcom);
+      for(i=0; i<isize[REF]; i++) {
+	mass = top.atoms.atom[index[REF][i]].m;
+	totmass += mass;
+	for(j=0; j<DIM; j++)
+	  xcom[j] += mass*x[index[REF][i]][j];
+      }
+      svmul(1/totmass,xcom,xcom);
       for(i=0; (i<nwat); i++) {
 	sa = index[SOL][na*i];
-	pbc_dx(&pbc,x[sr],x[sa+ref_a],dx);
-	n2 = norm2(dx);
-	if (n2 < order[i].d2)
-	  order[i].d2  = n2;
+	pbc_dx(&pbc,xcom,x[sa+ref_a],dx);
+	order[i].i   = sa;
+	order[i].d2  = norm2(dx); 
+      }
+    } else {
+      /* Set distance to first atom */
+      for(i=0; (i<nwat); i++) {
+	sa = index[SOL][na*i];
+	pbc_dx(&pbc,x[index[REF][0]],x[sa+ref_a],dx);
+	order[i].i   = sa;
+	order[i].d2  = norm2(dx); 
+      }
+      for(j=1; (j<isize[REF]); j++) {
+	sr = index[REF][j];
+	for(i=0; (i<nwat); i++) {
+	  sa = index[SOL][na*i];
+	  pbc_dx(&pbc,x[sr],x[sa+ref_a],dx);
+	  n2 = norm2(dx);
+	  if (n2 < order[i].d2)
+	    order[i].d2  = n2;
+	}
       }
     }
 
@@ -223,7 +244,7 @@ int gmx_trjorder(int argc,char *argv[])
     else {
       ncut = 0;
       for(i=0; (i<nwat); i++)
-	if (order[i].d2 < rcut2)
+	if (order[i].d2 <= rcut2)
 	  ncut++;
       fprintf(fp,"%10.3f  %8d\n",t,ncut);
     }
