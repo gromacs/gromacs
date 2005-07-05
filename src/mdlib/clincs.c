@@ -474,7 +474,7 @@ t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr,
       a1 = li->bla[2*j];
       a2 = li->bla[2*j+1];
       /* Set the length to the topology A length */
-      li->bllen0[j] = li->bllen[j];
+      li->bllen[j] = li->bllen0[j];
       /* Construct the constraint connection matrix blbnb */
       li->blnr[j+1] = li->blnr[j];
       for(k=0; k<at_cn[a1-start]; k++)
