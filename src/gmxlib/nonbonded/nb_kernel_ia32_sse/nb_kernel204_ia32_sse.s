@@ -1693,7 +1693,8 @@ _nb_kernel204nf_ia32_sse:
 .equiv          nb204nf_ninner,         736
 .equiv          nb204nf_salign,         740
 	push ebp
-	mov ebp,esp		push eax
+	mov ebp,esp
+	push eax
 	push ebx
 	push ecx
 	push edx
