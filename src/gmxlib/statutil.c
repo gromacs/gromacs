@@ -519,7 +519,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   };
 #define NPCA_PA asize(pca_pa)
   FILE *fp;  
-  bool bPrint,bExit;
+  bool bPrint,bExit,bXvgr;
   int  i,j,k,npall,max_pa;
   char *ptr,*newdesc;
   char *envstr;
@@ -623,10 +623,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     npall = add_parg(npall,all_pa,&time_pa);
   } else
     set_default_time_unit("ps");
-  if (FF(PCA_CAN_VIEW)) {
+  if (FF(PCA_CAN_VIEW)) 
     npall = add_parg(npall,all_pa,&view_pa);
+    
+  bXvgr = FALSE;
+  for(i=0; (i<nfile); i++)
+    bXvgr = bXvgr ||  (fnm[i].ftp == efXVG);
+  if (bXvgr)
     npall = add_parg(npall,all_pa,&code_pa);
-  }
   
   /* Now append the program specific arguments */
   for(i=0; (i<npargs); i++)
