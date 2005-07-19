@@ -70,6 +70,10 @@ extern int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 extern int xdr_seek_time(real time, int fp, int natoms);
 
 extern int xdr_seek_frame(int frame, int fp, int natoms);
+
+extern float xdr_get_last_frame_time(int fp, int natoms);
+
+extern unsigned long xdr_get_last_frame_number(int fp, int natoms);
 #endif
 
 

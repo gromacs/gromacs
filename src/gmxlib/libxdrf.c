@@ -1119,6 +1119,22 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 }
 
 
+
+/******************************************************************
+
+  XTC files have a relatively simple structure.
+  They have a header of 16 bytes and the rest are
+  the compressed coordinates of the files. Due to the
+  compression 00 is not present in the coordinates.
+  The first 4 bytes of the header are the magic number
+  1995 (0x000007CB). If we find this number we are guaranteed
+  to be in the header, due to the presence of so many zeros.
+  The second 4 bytes are the number of atoms in the frame, and is
+  assumed to be constant. The third 4 bytes are the frame number.
+  The last 4 bytes are a floating point representation of the time.
+
+********************************************************************/
+
 /* Must match definition in xtcio.c */
 #ifndef XTC_MAGIC
 #define XTC_MAGIC 1995
@@ -1157,6 +1173,48 @@ static float get_next_frame_time(int fp,int natoms, bool * bOK){
   }
   return -1;
 }
+
+static float get_current_frame_time(int fp,int natoms, bool * bOK){
+  unsigned int inp;  
+  float time;
+  *bOK = 0;
+  while(xdr_int(xdridptr[fp+1],&inp)){
+    if(inp == XTC_MAGIC){
+      if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
+	if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time)){
+	  *bOK = 1;
+	  return time;
+	}
+      }
+    }else{
+      /*Go back.*/
+      fseeko(xdrfiles[fp+1],-8,SEEK_CUR);
+    }
+  }
+  return -1;
+}
+
+/* Currently not used, just for completeness */
+static unsigned long get_current_frame_number(int fp,int natoms, bool * bOK){
+  unsigned int inp;  
+  float time;
+  *bOK = 0;
+  while(xdr_int(xdridptr[fp+1],&inp)){
+    if(inp == XTC_MAGIC){
+      if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms){
+	if(xdr_int(xdridptr[fp+1],&inp)){
+	  *bOK = 1;
+	  return inp;
+	}
+      }
+    }else{
+      /*Go back.*/
+      fseeko(xdrfiles[fp+1],-8,SEEK_CUR);
+    }
+  }
+  return -1;
+}
+
 
 static off_t get_next_frame_start(int fp, int natoms){
   unsigned int inp;
@@ -1304,3 +1362,24 @@ int xdr_seek_time(real time, int fp, int natoms){
   fseeko(xdrfiles[fp+1],pos,SEEK_SET);
   return 0;
 }
+
+float xdr_get_last_frame_time(int fp, int natoms){
+  bool bOK;
+  off_t off = ftello(xdrfiles[fp+1]);
+  float time;
+  fseeko(xdrfiles[fp+1],-4,SEEK_END);
+  time = get_current_frame_time(fp, natoms, &bOK);
+  fseeko(xdrfiles[fp+1],off,SEEK_SET);
+  return time;
+}
+
+unsigned long xdr_get_last_frame_number(int fp, int natoms){
+  bool bOK;
+  off_t off = ftello(xdrfiles[fp+1]);
+  unsigned long frame;
+  fseeko(xdrfiles[fp+1],-4,SEEK_END);
+  frame = get_current_frame_number(fp, natoms, &bOK);
+  fseeko(xdrfiles[fp+1],off,SEEK_SET);
+  return frame;
+}
+  
