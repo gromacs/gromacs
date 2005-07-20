@@ -1249,15 +1249,17 @@ static float estimate_xtc_dt(int fp, int natoms, bool * bOK){
 int xdr_seek_frame(int frame, int fp, int natoms){
   off_t low = 0;
   off_t high;
+  off_t pos;
   
   /* round to 4 bytes */
   unsigned long fr;
+  off_t  offset;
   fseeko(xdrfiles[fp+1],0,SEEK_END);
   /* round to 4 bytes  */
   high = ftello(xdrfiles[fp+1]);
   high /= sizeof(int);
   high *= sizeof(int);
-  off_t  offset = ((high/2)/sizeof(int))*sizeof(int);
+  offset = ((high/2)/sizeof(int))*sizeof(int);
 
   fseeko(xdrfiles[fp+1],offset,SEEK_SET);
   while(1){
@@ -1283,7 +1285,7 @@ int xdr_seek_frame(int frame, int fp, int natoms){
   }
 
   fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-  off_t pos = get_next_frame_start(fp,natoms);
+  pos = get_next_frame_start(fp,natoms);
   /* we probably hit an end of file */
   if(pos < 0){
     return pos;
@@ -1298,8 +1300,10 @@ int xdr_seek_time(real time, int fp, int natoms){
   off_t low = 0;
   off_t high;
   off_t  offset;
+  off_t pos;
   float t;
   float dt;
+  
   bool bOK;
   
   fseeko(xdrfiles[fp+1],0,SEEK_END);
@@ -1355,7 +1359,7 @@ int xdr_seek_time(real time, int fp, int natoms){
     offset = low;
   }
   fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-  off_t pos = get_next_frame_start(fp,natoms);
+  pos = get_next_frame_start(fp,natoms);
   if(pos < 0){
     return pos;
   }
