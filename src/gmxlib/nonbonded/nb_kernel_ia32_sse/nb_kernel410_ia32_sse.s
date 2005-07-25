@@ -442,7 +442,7 @@ _nb_kernel410_ia32_sse:
 	mulps xmm5, xmm4	;# rsq*lu*lu 			
 	movaps xmm0, [esp + nb410_half]
 	subps xmm1, xmm5	;# constant 30-rsq*lu*lu 
-	mulps xmm1, xmm2	z
+	mulps xmm1, xmm2
 	mulps xmm0, xmm1	;# xmm0=rinv 
 	mulps xmm4, xmm0	;# xmm4=r 
 	movaps [esp + nb410_r], xmm4
@@ -1592,7 +1592,7 @@ _nb_kernel410nf_ia32_sse:
 	mulps xmm5, xmm4	;# rsq*lu*lu 			
 	movaps xmm0, [esp + nb410nf_half]
 	subps xmm1, xmm5	;# constant 30-rsq*lu*lu 
-	mulps xmm1, xmm2	z
+	mulps xmm1, xmm2
 	mulps xmm0, xmm1	;# xmm0=rinv 
 	mulps xmm4, xmm0	;# xmm4=r 
 	mulps xmm4, [esp + nb410nf_gbscale]
