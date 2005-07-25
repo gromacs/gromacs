@@ -785,7 +785,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	*fp_dgdl =
 	  xvgropen(opt2fn("-dgdl",nfile,fnm),
 		   "dG/d\\8l\\4","Time (ps)",
-		   "dG/d\\8l\\4 (kJ mol\\S-1\\N nm\\S-2\\N \\8l\\4\\S-1\\N)");
+		   "dG/d\\8l\\4 (kJ mol\\S-1\\N \\8l\\4\\S-1\\N)");
       if ((fp_field != NULL) && (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
 	*fp_field = xvgropen(opt2fn("-field",nfile,fnm),
 			     "Applied electric field","Time (ps)",
