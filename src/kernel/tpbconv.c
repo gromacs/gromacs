@@ -417,7 +417,7 @@ int main (int argc, char *argv[])
   if (bZeroQ || (ir->nsteps > 0)) {
     ir->init_step = run_step;
     
-    if (bTraj) {
+    if (ftp2bSet(efNDX,NFILE,fnm) || !bTraj) {
       get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
       if (!bZeroQ) {
