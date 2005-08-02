@@ -82,7 +82,7 @@ int main(int argc,char *argv[])
     CopyRight(stdout,argv[0]);
   parse_common_args(&argc,argv,
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
-		    TRUE,NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
+		    NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
   snew(niter,NNN);
