@@ -80,6 +80,10 @@
 #include "physics.h"
 #include "nrnb.h"
 #include "copyrite.h"
+#ifdef GMX_MPI
+#include <mpi.h>
+#endif
+
 #ifdef USE_MPE
 #include "mpe.h"
 #include "mpelogging.h"
@@ -347,7 +351,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
 #endif
   int nodeid;
 
-#if (defined GMX_MPI && ! defined WITHOUT_FFTW)
+#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
   nodeid = cr->nodeid;
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
