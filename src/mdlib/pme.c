@@ -481,7 +481,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 
   if (!bPar) {
     clear_fftgrid(grid); 
-#ifdef GMX_MPI
+#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
   } else {
     localsize = grid->la12r*grid->pfft.local_nx;
     ptr = grid->localptr;
