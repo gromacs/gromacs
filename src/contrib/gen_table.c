@@ -252,7 +252,7 @@ static void do_maaren(FILE *fp,int eel,double resolution,int npow)
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
     }
     else {
-      lo_do_guillot(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      lo_do_guillot_maple(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
       vr  =  pow(r,-1.0*npow);
       vr2 = (npow+1.0)*(npow)*vr/sqr(r); 
     }
