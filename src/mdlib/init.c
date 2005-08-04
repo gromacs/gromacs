@@ -102,7 +102,7 @@ static void rm_atoms(t_atoms *atoms)
   rm_block(&atoms->excl);
 }
 
-void init_single(FILE *log,t_parm *parm,
+void init_single(FILE *log,t_inputrec *inputrec,
 		 char *tpxfile,t_topology *top, 
                  t_state *state,t_mdatoms **mdatoms,
 		 t_nsborder *nsb)
@@ -110,20 +110,21 @@ void init_single(FILE *log,t_parm *parm,
   int         step;
   real        t;
   
-  read_tpx_state(tpxfile,&step,&t,&parm->ir,state,NULL,top);
+  read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
   check_nnodes_top(tpxfile,top,1);
 
-  *mdatoms=atoms2md(log,&top->atoms,parm->ir.opts.nFreeze,
-		    parm->ir.eI,parm->ir.delta_t,
-		    parm->ir.bd_fric,parm->ir.opts.tau_t,
-		    parm->ir.efep!=efepNO,FALSE);
+  *mdatoms=atoms2md(log,&top->atoms,inputrec->opts.nFreeze,
+		    inputrec->eI,inputrec->delta_t,
+		    inputrec->bd_fric,inputrec->opts.tau_t,
+		    inputrec->efep!=efepNO,FALSE);
   
-  pr_inputrec(log,0,"Input Parameters",&parm->ir);
+  pr_inputrec(log,0,"Input Parameters",inputrec);
   calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
-void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
+void distribute_parts(int left,int right,int nodeid,int nnodes,
+		      t_inputrec *inputrec,
 		      char *tpxfile,int nstDlb)
 {
   int         step;
@@ -132,37 +133,37 @@ void distribute_parts(int left,int right,int nodeid,int nnodes,t_parm *parm,
   t_nsborder  nsb;
   t_state     state;
   
-  read_tpx_state(tpxfile,&step,&t,&parm->ir,&state,NULL,&top);
+  read_tpx_state(tpxfile,&step,&t,inputrec,&state,NULL,&top);
   check_nnodes_top(tpxfile,&top,nnodes);
   
   calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb);
-  mv_data(left,right,parm,&nsb,&top,&state);
+  mv_data(left,right,inputrec,&nsb,&top,&state);
   done_top(&top);
   done_state(&state);
 }
 
 void init_parts(FILE *log,t_commrec *cr,
-		t_parm *parm,t_topology *top,
+		t_inputrec *inputrec,t_topology *top,
 		t_state *state,t_mdatoms **mdatoms,
 		t_nsborder *nsb,int list, bool *bParallelVsites,
 		t_comm_vsites *vsitecomm)
 {
   char buf[256];
   
-  ld_data(cr->left,cr->right,parm,nsb,top,state);
+  ld_data(cr->left,cr->right,inputrec,nsb,top,state);
   if (cr->nodeid != 0)
-    mv_data(cr->left,cr->right,parm,nsb,top,state);
+    mv_data(cr->left,cr->right,inputrec,nsb,top,state);
 
   /* Make sure the random seeds are different on each node */
-  parm->ir.ld_seed += cr->nodeid;
+  inputrec->ld_seed += cr->nodeid;
 
   mdsplit_top(log,top,cr,nsb,bParallelVsites,vsitecomm);
 
   if (list) {
     if (list&LIST_SCALARS) 
       print_nsb(log,"Listing Scalars",nsb);
-    if (list&LIST_PARM)
-      write_parm(log,"parameters of the run",cr->nodeid,parm);
+    if (list&LIST_INPUTREC)
+      pr_inputrec(log,0,"parameters of the run",inputrec);
     if (list&LIST_X)
       pr_rvecs(log,0,"box",state->box,DIM);
     if (list&LIST_V)
@@ -175,18 +176,10 @@ void init_parts(FILE *log,t_commrec *cr,
       pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
     fflush(log);
   }
-  *mdatoms=atoms2md(log,&(top->atoms),parm->ir.opts.nFreeze,
-		    parm->ir.eI,parm->ir.delta_t,
-		    parm->ir.bd_fric,parm->ir.opts.tau_t,
-		    parm->ir.efep!=efepNO,FALSE);
+  *mdatoms=atoms2md(log,&(top->atoms),inputrec->opts.nFreeze,
+		    inputrec->eI,inputrec->delta_t,
+		    inputrec->bd_fric,inputrec->opts.tau_t,
+		    inputrec->efep!=efepNO,FALSE);
 }
 
-void write_parm(FILE *log,char *title,int nodeid,t_parm *parm)
-{
-  fprintf(log,"%s (nodeid=%d):\n",title,nodeid);
-  pr_inputrec(log,0,"input record",&parm->ir);
-  pr_rvecs(log,0,"ekin",parm->ekin,DIM);
-  pr_rvecs(log,0,"pres",parm->pres,DIM);
-  pr_rvecs(log,0,"vir",parm->vir,DIM);
-}
 

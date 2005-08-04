@@ -97,7 +97,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	      unsigned long Flags)
 {
   double     nodetime=0,realtime;
-  t_parm     *parm;
+  t_inputrec *inputrec;
   t_state    *state;
   rvec       *buf,*f,*vold,*vt;
   real       tmpr1,tmpr2;
@@ -122,7 +122,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   snew(nsb,1);
   snew(top,1);
   snew(grps,1);
-  snew(parm,1);
+  snew(inputrec,1);
   snew(state,1);
   snew(nrnb,cr->nnodes);
   
@@ -134,20 +134,20 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * around the ring, and finally frees the stuff
      */
     if (MASTER(cr)) 
-      distribute_parts(cr->left,cr->right,cr->nodeid,cr->nnodes,parm,
+      distribute_parts(cr->left,cr->right,cr->nodeid,cr->nnodes,inputrec,
 		       ftp2fn(efTPX,nfile,fnm),nDlb);
     
     /* Every node (including the master) reads the data from the ring */
     init_parts(stdlog,cr,
-	       parm,top,state,&mdatoms,nsb,
-	       MASTER(cr) ? LIST_SCALARS | LIST_PARM : 0,
+	       inputrec,top,state,&mdatoms,nsb,
+	       MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0,
 	       &bParVsites,&vsitecomm);
   } else {
     /* Read it up... */
-    init_single(stdlog,parm,ftp2fn(efTPX,nfile,fnm),top,state,&mdatoms,nsb);
+    init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,&mdatoms,nsb);
     bParVsites=FALSE;
   }
-  if (parm->ir.eI == eiSD) {
+  if (inputrec->eI == eiSD) {
     /* Is not read from TPR yet, so we allocate space here */
     snew(state->sd_X,nsb->natoms);
   }
@@ -164,12 +164,12 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   top->idef.nodeid = cr->nodeid;
 
   /* Group stuff (energies etc) */
-  init_groups(stdlog,mdatoms,&(parm->ir.opts),grps);
+  init_groups(stdlog,mdatoms,&(inputrec->opts),grps);
   /* Copy the cos acceleration to the groups struct */
-  grps->cosacc.cos_accel = parm->ir.cos_accel;
+  grps->cosacc.cos_accel = inputrec->cos_accel;
   
   /* Periodicity stuff */  
-  if (parm->ir.ePBC == epbcXYZ) {
+  if (inputrec->ePBC == epbcXYZ) {
     graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
     if (debug)
       p_graph(debug,"Initial graph",graph);
@@ -179,16 +179,16 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
   /* Distance Restraints */
   init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
-	      top->idef.iparams,&(parm->ir),mcr,fcd);
+	      top->idef.iparams,inputrec,mcr,fcd);
 
   /* Orientation restraints */
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,state->x,mdatoms,&(parm->ir),mcr,
+	      top->idef.iparams,state->x,mdatoms,inputrec,mcr,
 	      &(fcd->orires));
 
   /* Dihedral Restraints */
   init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
-	      top->idef.iparams,&(parm->ir),fcd);
+	      top->idef.iparams,inputrec,fcd);
 
   /* check if there are vsites */
   bVsites=FALSE;
@@ -198,67 +198,67 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   /* Initiate forcerecord */
   fr = mk_forcerec();
-  init_forcerec(stdlog,fr,&(parm->ir),top,cr,mdatoms,nsb,state->box,FALSE,
+  init_forcerec(stdlog,fr,inputrec,top,cr,mdatoms,nsb,state->box,FALSE,
 		opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
   fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
     
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
-    init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),&parm->ir);
+    init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),inputrec);
   if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
-    (void) init_pme(stdlog,cr,parm->ir.nkx,parm->ir.nky,parm->ir.nkz,
-		    parm->ir.pme_order,
+    (void) init_pme(stdlog,cr,inputrec->nkx,inputrec->nky,inputrec->nkz,
+		    inputrec->pme_order,
 		    /*HOMENR(nsb),*/nsb->natoms,
 		    mdatoms->bChargePerturbed,
-		    parm->ir.bOptFFT,parm->ir.ewald_geometry);
+		    inputrec->bOptFFT,inputrec->ewald_geometry);
   
   /* Now do whatever the user wants us to do (how flexible...) */
-  switch (parm->ir.eI) {
+  switch (inputrec->eI) {
   case eiMD:
   case eiSD:
   case eiBD:
     start_t=do_md(stdlog,cr,mcr,nfile,fnm,
 		  bVerbose,bCompact,bVsites,
 		  bParVsites ? &vsitecomm : NULL,
-		  nstepout,parm,grps,top,ener,fcd,state,vold,vt,f,buf,
+		  nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,
 		  repl_ex_nst,repl_ex_seed,Flags);
     break;
   case eiCG:
-    start_t=do_cg(stdlog,nfile,fnm,parm,top,grps,nsb,
-		  state,f,buf,mdatoms,parm->ekin,ener,fcd,
+    start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		  state,f,buf,mdatoms,ener,fcd,
 		  nrnb,bVerbose,bVsites,
 		  bParVsites ? &vsitecomm : NULL,
 		  cr,mcr,graph,fr);
     break;
   case eiLBFGS:
-    start_t=do_lbfgs(stdlog,nfile,fnm,parm,top,grps,nsb,
-		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
+    start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		     state,f,buf,mdatoms,ener,fcd,
 		     nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
 		     cr,mcr,graph,fr);
     break;
   case eiSteep:
-    start_t=do_steep(stdlog,nfile,fnm,parm,top,grps,nsb,
-		     state,f,buf,mdatoms,parm->ekin,ener,fcd,
+    start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		     state,f,buf,mdatoms,ener,fcd,
 		     nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
 		     cr,mcr,graph,fr);
     break;
   case eiNM:
     start_t=do_nm(stdlog,cr,nfile,fnm,
-		  bVerbose,bCompact,nstepout,parm,grps,
+		  bVerbose,bCompact,nstepout,inputrec,grps,
 		  top,ener,fcd,state,vold,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr);
     break;
   case eiTPI:
-    start_t=do_tpi(stdlog,nfile,fnm,parm,top,grps,nsb,
+    start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		   state,f,buf,mdatoms,ener,fcd,
 		   nrnb,bVerbose,
 		   cr,mcr,graph,fr);
     break;
   default:
-    gmx_fatal(FARGS,"Invalid integrator (%d)...\n",parm->ir.eI);
+    gmx_fatal(FARGS,"Invalid integrator (%d)...\n",inputrec->eI);
   }
   
     /* Some timing stats */  
@@ -277,8 +277,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
    * if rerunMD, don't write last frame again 
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
-	     nsb,top,parm,nrnb,nodetime,realtime,parm->ir.nsteps,
-	     EI_DYNAMICS(parm->ir.eI));
+	     nsb,top,inputrec,nrnb,nodetime,realtime,inputrec->nsteps,
+	     EI_DYNAMICS(inputrec->eI));
   
   /* Does what it says */  
   print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
@@ -287,7 +287,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     bool bVsites, t_comm_vsites *vsitecomm,
-	     int stepout,t_parm *parm,t_groups *grps,t_topology *top,
+	     int stepout,t_inputrec *inputrec,t_groups *grps,t_topology *top,
 	     real ener[],t_fcdata *fcd,
 	     t_state *state,rvec vold[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
@@ -302,7 +302,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
 	     bFullPBC,bForceUpdate=FALSE;
-  tensor     force_vir,shake_vir;
+  tensor     force_vir,shake_vir,total_vir,pres,ekin;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m,status;
@@ -343,14 +343,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
   
   /* Initial values */
-  init_md(cr,&parm->ir,state->box,&t,&t0,&state->lambda,&lam0,
-	  &mynrnb,top,
+  init_md(cr,inputrec,state->box,&t,&t0,&state->lambda,&lam0,&mynrnb,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
   /* Check for full periodicity calculations */
-  bFullPBC = (parm->ir.ePBC == epbcFULL);  
+  bFullPBC = (inputrec->ePBC == epbcFULL);  
   
   /* Check for polarizable models */
   shells     = init_shells(log,START(nsb),HOMENR(nsb),&top->idef,
@@ -380,35 +379,35 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,parm->ir.opts.nFreeze,
+  init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
 	    state->box,START(nsb),HOMENR(nsb),cr);
   
   if (repl_ex_nst > 0)
-    repl_ex = init_replica_exchange(log,mcr,state,&parm->ir,
+    repl_ex = init_replica_exchange(log,mcr,state,inputrec,
 				    repl_ex_nst,repl_ex_seed);
   
-  if (!parm->ir.bUncStart && !bRerunMD) 
-    do_shakefirst(log,ener,parm,nsb,mdatoms,state,vold,buf,f,
+  if (!inputrec->bUncStart && !bRerunMD) 
+    do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
     
   /* Compute initial EKin for all.. */
   if (grps->cosacc.cos_accel == 0)
-    calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(parm->ir.opts),
+    calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(inputrec->opts),
 		 mdatoms,grps,&mynrnb,state->lambda);
   else
     calc_ke_part_visc(START(nsb),HOMENR(nsb),
-		      state->box,state->x,state->v,&(parm->ir.opts),
+		      state->box,state->x,state->v,&(inputrec->opts),
 		      mdatoms,grps,&mynrnb,state->lambda);
   debug_gmx();
 	
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,
-		&(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
+		&(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
   debug_gmx();
   
   /* Calculate the initial half step temperature */
-  temp0 = sum_ekin(TRUE,&(parm->ir.opts),grps,parm->ekin,NULL);
+  temp0 = sum_ekin(TRUE,&(inputrec->opts),grps,ekin,NULL);
 
   debug_gmx();
   
@@ -437,7 +436,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		"needed to process input trajectory.\n\n");
     } else
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
-	      *(top->name),parm->ir.nsteps,parm->ir.nsteps*parm->ir.delta_t);
+	      *(top->name),inputrec->nsteps,inputrec->nsteps*inputrec->delta_t);
   }
 
   /* Initialize values for invmass, etc. */
@@ -468,12 +467,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bFirstStep = TRUE;
   bLastStep = FALSE;
   bExchanged = FALSE;
-  step = parm->ir.init_step;
+  step = inputrec->init_step;
   step_rel = 0;
 #ifdef USE_MPE
   MPE_Start_log( );
 #endif
-  while ((!bRerunMD && (step_rel <= parm->ir.nsteps)) ||  
+  while ((!bRerunMD && (step_rel <= inputrec->nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
     
 #ifdef USE_MPE
@@ -483,31 +482,31 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bRerunMD) {
       if (rerun_fr.bStep) {
 	step = rerun_fr.step;
-	step_rel = step - parm->ir.init_step;
+	step_rel = step - inputrec->init_step;
       }
       if (rerun_fr.bTime)
 	t = rerun_fr.time;
       else
 	t = step;
     } else {
-      bLastStep = (step_rel == parm->ir.nsteps);
+      bLastStep = (step_rel == inputrec->nsteps);
 
-      t = t0 + step*parm->ir.delta_t;
+      t = t0 + step*inputrec->delta_t;
     }
     
-    do_log = do_per_step(step,parm->ir.nstlog) || bLastStep;
+    do_log = do_per_step(step,inputrec->nstlog) || bLastStep;
 
-    if (parm->ir.efep != efepNO) {
-      if (bRerunMD && rerun_fr.bLambda && (parm->ir.delta_lambda!=0))
+    if (inputrec->efep != efepNO) {
+      if (bRerunMD && rerun_fr.bLambda && (inputrec->delta_lambda!=0))
 	state->lambda = rerun_fr.lambda;
       else
-	state->lambda = lam0 + step*parm->ir.delta_lambda;
+	state->lambda = lam0 + step*inputrec->delta_lambda;
     }
     if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(log,step,t,state->lambda);
 
     if (bSimAnn) 
-      update_annealing_target_temp(&(parm->ir.opts),t);
+      update_annealing_target_temp(&(inputrec->opts),t);
     
     if (bRerunMD) {
       for(i=0; i<mdatoms->nr; i++)
@@ -529,15 +528,15 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       copy_mat(rerun_fr.box,state->box);
       
       /* for rerun MD always do Neighbour Searching */
-      bNS = ((parm->ir.nstlist!=0) || bFirstStep);
+      bNS = ((inputrec->nstlist!=0) || bFirstStep);
     } else {
       /* Determine whether or not to do Neighbour Searching */
-      bNS = ((parm->ir.nstlist && (step % parm->ir.nstlist==0 || bExchanged))
+      bNS = ((inputrec->nstlist && (step % inputrec->nstlist==0 || bExchanged))
 	     || bFirstStep);
     }
     
     /* Stop Center of Mass motion */
-    bStopCM = do_per_step(step,abs(parm->ir.nstcomm));
+    bStopCM = do_per_step(step,abs(inputrec->nstcomm));
 
     /* Copy back starting coordinates in case we're doing a forcefield scan */
     if (bFFscan) {
@@ -557,7 +556,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	  mk_mshift(log,graph,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      construct_vsites(log,state->x,&mynrnb,parm->ir.delta_t,state->v,
+      construct_vsites(log,state->x,&mynrnb,inputrec->delta_t,state->v,
 			&top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
       
       if (graph)
@@ -569,14 +568,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Set values for invmass etc. This routine not parallellized, but hardly
      * ever used, only when doing free energy calculations.
      */
-    if(parm->ir.efep != efepNO)
+    if(inputrec->efep != efepNO)
       update_mdatoms(mdatoms,state->lambda,FALSE); 
     
     clear_mat(force_vir);
     
     /* Ionize the atoms if necessary */
     if (bIonize)
-      ionize(log,mdatoms,top->atoms.atomname,t,&parm->ir,state->x,state->v,
+      ionize(log,mdatoms,top->atoms.atomname,t,inputrec,state->x,state->v,
 	     START(nsb),START(nsb)+HOMENR(nsb),state->box,cr);
       
     /* Update force field in ffscan program */
@@ -591,7 +590,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
-			 parm,bNS,bStopCM,top,ener,fcd,
+			 inputrec,bNS,bStopCM,top,ener,fcd,
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
 			 grps,
 			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
@@ -607,7 +606,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,mcr,parm,nsb,step,&mynrnb,top,grps,
+      do_force(log,cr,mcr,inputrec,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
@@ -619,7 +618,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     if (bGlas)
       do_glas(log,START(nsb),HOMENR(nsb),state->x,f,
-	      fr,mdatoms,top->idef.atnr,&parm->ir,ener);
+	      fr,mdatoms,top->idef.atnr,inputrec,ener);
     
     if (bTCR && bFirstStep) {
       tcr=init_coupling(log,nfile,fnm,cr,fr,mdatoms,&(top->idef));
@@ -650,9 +649,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
-    xx = (do_per_step(step,parm->ir.nstxout) || bLastStep) ? state->x : NULL;
-    vv = (do_per_step(step,parm->ir.nstvout) || bLastStep) ? state->v : NULL;
-    ff = (do_per_step(step,parm->ir.nstfout)) ? f : NULL;
+    xx = (do_per_step(step,inputrec->nstxout) || bLastStep) ? state->x : NULL;
+    vv = (do_per_step(step,inputrec->nstvout) || bLastStep) ? state->v : NULL;
+    ff = (do_per_step(step,inputrec->nstfout)) ? f : NULL;
 
     fp_trn = write_traj(log,cr,traj,nsb,step,t,state->lambda,
 			nrnb,nsb->natoms,xx,vv,ff,state->box);
@@ -660,9 +659,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     
     /* don't write xtc and last structure for rerunMD */
     if (!bRerunMD && !bFFscan) {
-      if (do_per_step(step,parm->ir.nstxtcout))
+      if (do_per_step(step,inputrec->nstxtcout))
 	write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
-		       step,t,state->x,state->box,parm->ir.xtcprec);
+		       step,t,state->x,state->box,inputrec->xtcprec);
       if (bLastStep && MASTER(cr)) {
 	fprintf(stderr,"Writing final coordinates.\n");
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
@@ -678,7 +677,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (pulldata.bPull && 
 	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
       pull(&pulldata,state->x,f,force_vir,state->box,
-	   top,parm->ir.delta_t,step,t,
+	   top,inputrec->delta_t,step,t,
 	   mdatoms,START(nsb),HOMENR(nsb),cr); 
     
     if (bFFscan)
@@ -696,19 +695,19 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     bOK = TRUE;
     if (!bRerunMD || rerun_fr.bV || bForceUpdate)
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
-	     parm,mdatoms,state,graph,f,vold,
+	     inputrec,mdatoms,state,graph,f,vold,
 	     top,grps,shake_vir,cr,&mynrnb,edyn,&pulldata,bNEMD,
-	     TRUE,bFirstStep,NULL);
+	     TRUE,bFirstStep,NULL,pres);
     else {
       /* Need to unshift here */
-      if ((parm->ir.ePBC == epbcXYZ) && (graph->nnodes > 0))
+      if ((inputrec->ePBC == epbcXYZ) && (graph->nnodes > 0))
 	unshift_self(graph,state->box,state->x);
     }
     if (!bOK && !bFFscan)
       gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
 
     /* Correct the new box if it is too skewed */
-    if (DYNAMIC_BOX(parm->ir) && !bRerunMD)
+    if (DYNAMIC_BOX(*inputrec) && !bRerunMD)
       correct_box(state->box,fr,graph);
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
@@ -718,15 +717,15 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * when there really is NEMD.
      */
     if (PAR(cr) && bNEMD) 
-      accumulate_u(cr,&(parm->ir.opts),grps);
+      accumulate_u(cr,&(inputrec->opts),grps);
       
     debug_gmx();
     if (grps->cosacc.cos_accel == 0)
-      calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(parm->ir.opts),
+      calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(inputrec->opts),
 		   mdatoms,grps,&mynrnb,state->lambda);
     else
       calc_ke_part_visc(START(nsb),HOMENR(nsb),
-			state->box,state->x,state->v,&(parm->ir.opts),
+			state->box,state->x,state->v,&(inputrec->opts),
 			mdatoms,grps,&mynrnb,state->lambda);
 
     /* since we use the new coordinates in calc_ke_part_visc, we should use
@@ -763,7 +762,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * This includes communication 
        */
       global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(parm->ir.opts),grps,&mynrnb,nrnb,vcm,&terminate);
+		  &(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
       /* Correct for double counting energies, should be moved to 
        * global_stat 
        */
@@ -782,20 +781,20 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (!bNEMD && debug && (vcm->nr > 0))
       correct_ekin(debug,START(nsb),START(nsb)+HOMENR(nsb),state->v,
 		   vcm->group_p[0],
-		   mdatoms->massT,mdatoms->tmass,parm->ekin);
+		   mdatoms->massT,mdatoms->tmass,ekin);
     
-    if ((terminate != 0) && (step - parm->ir.init_step < parm->ir.nsteps)) {
-      if (terminate<0 && parm->ir.nstxout)
+    if ((terminate != 0) && (step - inputrec->init_step < inputrec->nsteps)) {
+      if (terminate<0 && inputrec->nstxout)
 	/* this is the USR1 signal and we are writing x to trr, 
 	   stop at next x frame in trr */
-	parm->ir.nsteps =
-	  (step/parm->ir.nstxout + 1) * parm->ir.nstxout - parm->ir.init_step;
+	inputrec->nsteps =
+	  (step/inputrec->nstxout + 1) * inputrec->nstxout - inputrec->init_step;
       else
-	parm->ir.nsteps = step+1;
-      fprintf(log,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
+	inputrec->nsteps = step+1;
+      fprintf(log,"\nSetting nsteps to %d\n\n",inputrec->nsteps);
       fflush(log);
       if (MASTER(cr)) {
-	fprintf(stderr,"\nSetting nsteps to %d\n\n",parm->ir.nsteps);
+	fprintf(stderr,"\nSetting nsteps to %d\n\n",inputrec->nsteps);
 	fflush(stderr);
       }
       /* erase the terminate signal */
@@ -816,18 +815,18 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
         
     /* Add force and shake contribution to the virial */
-    m_add(force_vir,shake_vir,parm->vir);
+    m_add(force_vir,shake_vir,total_vir);
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
+    sum_epot(&(inputrec->opts),grps,ener);
 
     /* Calculate the amplitude of the cosine velocity profile */
     grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
 
     /* Sum the kinetic energies of the groups & calc temp */
-    ener[F_TEMP]=sum_ekin(bRerunMD,&(parm->ir.opts),grps,parm->ekin,
+    ener[F_TEMP]=sum_ekin(bRerunMD,&(inputrec->opts),grps,ekin,
 			  &(ener[F_DVDLKIN]));
-    ener[F_EKIN]=trace(parm->ekin);
+    ener[F_EKIN]=trace(ekin);
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
     
     /* Check for excessively large energies */
@@ -847,16 +846,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * target temp when doing simulated annealing
      */
     /*
-    if(parm->ir.etc==etcBERENDSEN)
-      berendsen_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
-    else if(parm->ir.etc==etcNOSEHOOVER)
-      nosehoover_tcoupl(&(parm->ir.opts),grps,parm->ir.delta_t);
+    if(inputrec->etc==etcBERENDSEN)
+      berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
+    else if(inputrec->etc==etcNOSEHOOVER)
+      nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
     */
 
     /* Calculate pressure and apply LR correction if PPPM is used.
      * Use the box from last timestep since we already called update().
      */
-    calc_pres(fr->ePBC,lastbox,parm->ekin,parm->vir,parm->pres,
+    calc_pres(fr->ePBC,lastbox,ekin,total_vir,pres,
 	      (fr->eeltype==eelPPPM) ? ener[F_COUL_RECIP] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */
@@ -864,13 +863,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       set_avcsixtwelve(log,fr,mdatoms,&top->atoms.excl);
     
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(log,parm->ir.eDispCorr,
-		  fr,mdatoms->nr,lastbox,parm->pres,parm->vir,ener);
+    calc_dispcorr(log,inputrec->eDispCorr,
+		  fr,mdatoms->nr,lastbox,pres,total_vir,ener);
 
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (!bShell_FlexCon || bConverged))
       if (print_forcefield(log,ener,HOMENR(nsb),f,buf,xcopy,
-			   &(top->blocks[ebMOLS]),mdatoms->massT,parm->pres)) {
+			   &(top->blocks[ebMOLS]),mdatoms->massT,pres)) {
 	if (gmx_parallel_env)
 	  gmx_finalize(cr);
 	fprintf(stderr,"\n");
@@ -888,10 +887,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * we want the new box state->box too. / EL 20040121
        */
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
-		  &(parm->ir),MASTER(cr),
+		  inputrec,MASTER(cr),
 		  mdatoms,&(top->idef),mu_aver,
 		  top->blocks[ebMOLS].nr,(mcr!=NULL) ? mcr : cr,
-		  state->box,parm->vir,parm->pres,
+		  state->box,total_vir,pres,
 		  mu_tot,state->x,f,bConverged);
       debug_gmx();
     }
@@ -905,14 +904,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       bool do_ene,do_dr,do_or,do_dihr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step_rel,t,ener,state,lastbox,
-		 shake_vir,force_vir,parm->vir,parm->pres,grps,mu_tot);
-      do_ene = do_per_step(step,parm->ir.nstenergy) || bLastStep;
-      do_dr  = do_per_step(step,parm->ir.nstdisreout) || bLastStep;
-      do_or  = do_per_step(step,parm->ir.nstorireout) || bLastStep;
-      do_dihr= do_per_step(step,parm->ir.nstdihreout) || bLastStep;
+		 shake_vir,force_vir,total_vir,pres,grps,mu_tot);
+      do_ene = do_per_step(step,inputrec->nstenergy) || bLastStep;
+      do_dr  = do_per_step(step,inputrec->nstdisreout) || bLastStep;
+      do_or  = do_per_step(step,inputrec->nstorireout) || bLastStep;
+      do_dihr= do_per_step(step,inputrec->nstdihreout) || bLastStep;
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,
 		 step,step_rel,t,
-		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(inputrec->opts));
       if (bVerbose)
 	fflush(log);
     }
@@ -921,7 +920,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && bVerbose && ( ((step % stepout)==0) || bLastStep)) {
       if (bShell_FlexCon)
 	fprintf(stderr,"\n");
-      print_time(stderr,start_t,step,&parm->ir);
+      print_time(stderr,start_t,step,inputrec);
     }
 
     bExchanged = FALSE;
@@ -973,11 +972,11 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	  
   if (MASTER(cr)) {
     print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,step_rel,t,
-	       eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+	       eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,step_rel,t,
-	       eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(parm->ir.opts));
+	       eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     close_enx(fp_ene);
-    if (!bRerunMD && parm->ir.nstxtcout)
+    if (!bRerunMD && inputrec->nstxtcout)
       close_xtc_traj();
     close_trn(fp_trn);
     if (fp_dgdl)

@@ -211,7 +211,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 }
 
 void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
-	      t_parm *parm,t_nsborder *nsb,
+	      t_inputrec *inputrec,t_nsborder *nsb,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
@@ -249,7 +249,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
     /* Compute shift vectors every step,
      * because of pressure coupling or box deformation!
      */
-    if (DYNAMIC_BOX(parm->ir) && bStateChanged)
+    if (DYNAMIC_BOX(*inputrec) && bStateChanged)
       calc_shifts(box,fr->shift_vec);
     
     if (bCalcCGCM) { 
@@ -257,7 +257,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_RESETX,homenr);
     } 
-    else if (EI_ENERGY_MINIMIZATION(parm->ir.eI) && graph) {
+    else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
       unshift_self(graph,box,x);
     }
   }
@@ -287,7 +287,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
       mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
   
   /* Reset energies */
-  reset_energies(&(parm->ir.opts),grps,fr,bNS,ener);    
+  reset_energies(&(inputrec->opts),grps,fr,bNS,ener);    
   if (bNS) {
     if (fr->ePBC == epbcXYZ && bStateChanged)
       /* Calculate intramolecular shift vectors to make molecules whole */
@@ -303,7 +303,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
      */
     dvdl_lr = 0; 
 
-    ns(log,fr,x,f,box,grps,&(parm->ir.opts),top,mdatoms,
+    ns(log,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr,bCalcCGCM,bDoForces);
   }
   if (bDoForces) {
@@ -325,8 +325,8 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   }
 
   /* Compute the forces */    
-  force(log,step,fr,&(parm->ir),&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
-	top->atoms.grps[egcENER].nr,&(parm->ir.opts),
+  force(log,step,fr,inputrec,&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
+	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly);
 	
@@ -341,7 +341,7 @@ void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
   if (bDoForces) {
     /* Compute forces due to electric field */
     calc_f_el(MASTER(cr) ? field : NULL,
-	      start,homenr,mdatoms->chargeA,x,f,parm->ir.ex,parm->ir.et,t);
+	      start,homenr,mdatoms->chargeA,x,f,inputrec->ex,inputrec->et,t);
     
     /* When using PME/Ewald we compute the long range virial there.
      * otherwise we do it based on long range forces from twin range
@@ -421,16 +421,16 @@ double node_time(void)
 }
 
 void do_shakefirst(FILE *log,real ener[],
-		   t_parm *parm,t_nsborder *nsb,t_mdatoms *md,
+		   t_inputrec *inputrec,t_nsborder *nsb,t_mdatoms *md,
 		   t_state *state,rvec vold[],rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
 		   t_edsamyn *edyn,t_pull *pulldata)
 {
   int    i,m,start,homenr,end,step;
-  tensor shake_vir;
+  tensor shake_vir,pres;
   double mass,tmass,vcm[4];
-  real   dt=parm->ir.delta_t;
+  real   dt=inputrec->delta_t;
   real   dt_1;
   rvec   *xptr;
 
@@ -444,10 +444,11 @@ void do_shakefirst(FILE *log,real ener[],
     step = -2;
     fprintf(log,"\nConstraining the starting coordinates (step %d)\n",step);
     clear_mat(shake_vir);
+    clear_mat(pres);
     update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
-	   parm,md,state,graph,
+	   inputrec,md,state,graph,
 	   NULL,vold,top,grps,shake_vir,cr,nrnb,
-	   edyn,pulldata,FALSE,FALSE,FALSE,state->x);
+	   edyn,pulldata,FALSE,FALSE,FALSE,state->x,pres);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
     for(i=start; (i<end); i++) {
@@ -462,10 +463,11 @@ void do_shakefirst(FILE *log,real ener[],
     step = -1;
     fprintf(log,"\nConstraining the coordinates at t0-dt (step %d)\n",step);
     clear_mat(shake_vir);
+    clear_mat(pres);
     update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
-	   parm,md,state,graph,
+	   inputrec,md,state,graph,
 	   NULL,vold,top,grps,shake_vir,cr,nrnb,
-	   edyn,pulldata,FALSE,FALSE,FALSE,buf);
+	   edyn,pulldata,FALSE,FALSE,FALSE,buf,pres);
 
     /* Compute the velocities at t=-dt/2 using the coordinates at
      * t=-dt and t=0
@@ -495,7 +497,7 @@ void do_shakefirst(FILE *log,real ener[],
     if (debug) 
       fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
 	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-    if (parm->ir.nstcomm != 0) {
+    if (inputrec->nstcomm != 0) {
       /* Now we have the velocity of center of mass, let's remove it */
       for(i=start; (i<end); i++) {
 	for(m=0; (m<DIM); m++)
@@ -710,7 +712,7 @@ void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 }
 
 void finish_run(FILE *log,t_commrec *cr,char *confout,
-		t_nsborder *nsb,t_topology *top,t_parm *parm,
+		t_nsborder *nsb,t_topology *top,t_inputrec *inputrec,
 		t_nrnb nrnb[],double nodetime,double realtime,int step,
 		bool bWriteStat)
 {
@@ -724,7 +726,7 @@ void finish_run(FILE *log,t_commrec *cr,char *confout,
       ntot.n[j]+=nrnb[i].n[j];
   runtime=0;
   if (bWriteStat) {
-    runtime=parm->ir.nsteps*parm->ir.delta_t;
+    runtime=inputrec->nsteps*inputrec->delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
       print_perf(stderr,nodetime,realtime,runtime,&ntot,nsb->nnodes);

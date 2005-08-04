@@ -53,7 +53,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   int          homenr,	/* number of home particles 	*/
 		   int          step,
 		   real         *dvdlambda, /* FEP stuff */
-		   t_parm       *parm,    /* input record and box stuff	*/
+		   t_inputrec   *inputrec,  /* input record and box stuff	*/
 		   t_mdatoms    *md,
 		   t_state      *state,
 		   t_graph      *graph,	
@@ -69,7 +69,8 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   bool         bNEMD,
 		   bool         bDoUpdate,
 		   bool         bFirstStep,
-		   rvec         *shakefirst_x);
+		   rvec         *shakefirst_x,
+		   tensor       pres);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
 extern void calc_ke_part(int start,int homenr,rvec v[],

@@ -69,7 +69,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,bool bVsites,
 		    t_comm_vsites *vsitecomm,int stepout,
-		    t_parm *parm,t_groups *grps,
+		    t_inputrec *inputrec,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
@@ -81,30 +81,30 @@ extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 
 /* ROUTINES from minimize.c */
 extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
-		       t_parm *parm,t_topology *top,
+		       t_inputrec *inputrec,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb,
 		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		       real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,t_commrec *mcr,
 		       t_graph *graph,t_forcerec *fr);
 /* Do steepest descents EM or something like that! */
 
 extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
-		    t_parm *parm,t_topology *top,
+		    t_inputrec *inputrec,t_topology *top,
 		    t_groups *grps,t_nsborder *nsb,
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		    tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		    real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		    bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		    t_commrec *cr,t_commrec *mcr,
 		    t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
 
 extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
-		       t_parm *parm,t_topology *top,
+		       t_inputrec *inputrec,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb, t_state *state,
 		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       tensor ekin,real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		       real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,t_commrec *mcr,
 		       t_graph *graph,t_forcerec *fr);
@@ -113,7 +113,7 @@ extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 
 extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,int stepout,
-		    t_parm *parm,t_groups *grps,
+		    t_inputrec *inputrec,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
@@ -123,7 +123,7 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 /* Do normal mode analysis */
 
 extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[], 
-		     t_parm *parm,t_topology *top, 
+		     t_inputrec *inputrec,t_topology *top, 
 		     t_groups *grps,t_nsborder *nsb, 
 		     t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
 		     real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
@@ -151,7 +151,7 @@ extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
 		      int step,real t,real lambda,t_nrnb nr_nb[],
 		      int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box);
 /* Routine to output statusfiles during a run, as specified in
- * in parm->ir. If any of the pointers xx,vv,ff or ener is not NULL
+ * in inputrec->ir. If any of the pointers xx,vv,ff or ener is not NULL
  * it is written to the trajectory file.
  * Also write the energies etc. to the log file.
  * Returns the file handle (to be closed with close_trn).
@@ -183,7 +183,7 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
 extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
-		     t_parm *parm,t_nsborder *nsb,
+		     t_inputrec *inputrec,t_nsborder *nsb,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
@@ -202,7 +202,7 @@ extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
 extern void finish_run(FILE *log,t_commrec *cr,char *confout, t_nsborder *nsb,
-		       t_topology *top, t_parm *parm,t_nrnb nrnb[],
+		       t_topology *top, t_inputrec *inputrec,t_nrnb nrnb[],
 		       double nodetime,double realtime,int step,
 		       bool bWriteStat);
 
@@ -210,14 +210,10 @@ extern void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
 			  matrix box,tensor pres,tensor virial,real ener[]);
      
 
-/* STUFF from init.c */
-extern void write_parm(FILE *log,char *title,int pid,t_parm *parm);
-/* Write parm for debugging */
-
 typedef enum
 {
   LIST_SCALARS	=0001,
-  LIST_PARM	=0002,
+  LIST_INPUTREC	=0002,
   LIST_TOP	=0004,
   LIST_X	=0010,
   LIST_V	=0020,
@@ -225,8 +221,11 @@ typedef enum
   LIST_LOAD	=0100
 } t_listitem;
 
+extern void check_nnodes_top(char *fn,t_topology *top,int nnodes);
+/* Verify whether this tpr file is for nnodes nodes, and quit if not */
+
 extern void init_single(FILE *log,
-                        t_parm *parm, char *tpbfile, t_topology *top,
+                        t_inputrec *inputrec, char *tpbfile, t_topology *top,
 			t_state *state,t_mdatoms **mdatoms,
 			t_nsborder *nsb);
      /*
@@ -236,11 +235,11 @@ extern void init_single(FILE *log,
       */
 
 extern void distribute_parts(int left,int right,int pid,int nprocs,
-                             t_parm *parm,char *tpbfile,int nstDlb);
+                             t_inputrec *inputrec,char *tpbfile,int nstDlb);
      /*
       * Reads the parameters, topology, coordinates and velocities for the
       * multi processor version of the program from the file specified in
-      * parm->files[STATUS_NM]. This file should also contain a so called
+      * inputrec->files[STATUS_NM]. This file should also contain a so called
       * split descriptor which describes how to distribute particles over
       * the system. It then selects for all subsystems the appropriate data
       * and sends this to the processor using the left and right channels.
@@ -253,7 +252,7 @@ extern void distribute_parts(int left,int right,int pid,int nprocs,
       */
 
 extern void init_parts(FILE *log,t_commrec *cr,
-		       t_parm *parm,t_topology *top,
+		       t_inputrec *inputrec,t_topology *top,
 		       t_state *state,t_mdatoms **mdatoms,
 		       t_nsborder *nsb,int list,
 		       bool *bParallelVsites,
@@ -287,7 +286,7 @@ extern double node_time(void);
 /* Return the node time so far in seconds. */
 
 extern void do_shakefirst(FILE *log,real ener[],
-			  t_parm *parm,t_nsborder *nsb,t_mdatoms *md,
+			  t_inputrec *inputrec,t_nsborder *nsb,t_mdatoms *md,
 			  t_state *state,rvec vold[],rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
@@ -319,7 +318,7 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);
 /* Routine in sim_util.c */
 
-extern void init_em(FILE *log,const char *title,t_parm *parm,
+extern void init_em(FILE *log,const char *title,t_inputrec *inputrec,
 		    real *lambda,t_nrnb *mynrnb,rvec mu_tot,
 		    matrix box,
 		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,

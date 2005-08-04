@@ -59,7 +59,7 @@
 #include "mdatoms.h"
 #include "nsb.h"
 #include "tpxio.h"
-#include "init.h"
+#include "mdrun.h"
 #include "names.h"
 
 typedef struct {

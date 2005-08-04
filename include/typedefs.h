@@ -74,7 +74,6 @@ extern "C" {
 #include <types/ifunc.h>
 #include <types/filenm.h>
 #include <types/group.h>
-#include <types/parm.h>
 #include <types/state.h>
 #include <types/matrix.h>
 #include <types/edsams.h>

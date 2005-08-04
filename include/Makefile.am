@@ -6,42 +6,112 @@
 SUBDIRS = . types
 
 include_HEADERS = \
-	3dview.h    	do_md.h		invblock.h  	nrjac.h		\
-	tpxio.h		assert.h    	dihre.h		\
-	nrnb.h      	transfer.h	\
-	atomprop.h  	ns.h        	gmx_thread.h	\
-	shift.h       	trnio.h		ebin.h 		\
-	macros.h    	nsb.h       	shift_util.h  	txtdump.h	\
-	edsam.h         magic.h     	nsgrid.h    	sparsematrix.h  \
-	typedefs.h	block_tx.h  	enxio.h         mtxio.h		\
-	main.h      	pbc.h       	smalloc.h     	update.h	\
-	bondf.h     	ewald.h         maths.h     	pdbio.h     	\
-	sortwater.h   	utils.h		ewald_util.h    vsite.h		\
-	matio.h     	pdebug.h    	split.h       	vcm.h		\
-	calcgrid.h  	fatal.h         mdatoms.h   	physics.h   	\
-	vec.h		calch.h     	ffscanf.h       mdebin.h    	\
-	pme.h       	statusio.h    	viewit.h	calcmu.h    	\
-	fftgrid.h       mdrun.h     	pppm.h      	statutil.h    	\
-	fftw_wrapper.h  gmx_ana.h	\
-	princ.h     	wgms.h		gmx_system_xdr.h	     	\
-	filenm.h        pull.h      	rdgroup.h	strdb.h 	\
-	wman.h		force.h      \
-	string2.h     	writeps.h	gmxcomplex.h   	\
-	futil.h         random.h    	struc2.h      	\
-	gbutil.h        gmx_random.h 	\
-	rbin.h      	tgroup.h	\
-	mshift.h    	symtab.h      	\
-	confio.h    	gmxfio.h        	\
-	xdrf.h		constr.h    	nonbonded.h	\
-	grompp.h        names.h     	readcomp.h  	     	\
-	xtcio.h		copyrite.h  	gstat.h         network.h   	\
-	readinp.h   	sysstuff.h    	xvgr.h 		  	\
-	index.h         mvdata.h    \
-	disre.h     	orires.h	\
-	init.h          reorder.h   	\
-	tags.h		do_fit.h    	nrama.h     	\
-	rmpbc.h     	tgroup.h        \
-	gmx_blas.h	gmx_lapack.h	gmx_arpack.h
-
-
-
+3dview.h \
+assert.h \
+atomprop.h \
+block_tx.h \
+bondf.h \
+calcgrid.h \
+calch.h \
+calcmu.h \
+confio.h \
+constr.h \
+copyrite.h \
+dihre.h \
+disre.h \
+do_fit.h \
+ebin.h \
+edsam.h \
+enxio.h \
+ewald.h \
+ewald_util.h \
+fatal.h \
+ffscanf.h \
+fftgrid.h \
+fftw_wrapper.h \
+filenm.h \
+force.h \
+futil.h \
+gbutil.h \
+gmx_ana.h \
+gmx_arpack.h \
+gmx_blas.h \
+gmxcomplex.h \
+gmxfio.h \
+gmx_lapack.h \
+gmx_random.h \
+gmx_system_xdr.h \
+gmx_thread.h \
+grompp.h \
+gstat.h \
+index.h \
+invblock.h \
+macros.h \
+magic.h \
+main.h \
+maths.h \
+matio.h \
+mdatoms.h \
+mdebin.h \
+mdrun.h \
+mshift.h \
+mtxio.h \
+mvdata.h \
+names.h \
+network.h \
+nonbonded.h \
+nrama.h \
+nrjac.h \
+nrnb.h \
+nsb.h \
+nsgrid.h \
+ns.h \
+orires.h \
+pbc.h \
+pdbio.h \
+pdebug.h \
+physics.h \
+pme.h \
+pppm.h \
+princ.h \
+pull.h \
+random.h \
+rbin.h \
+rdgroup.h \
+readcomp.h \
+readinp.h \
+reorder.h \
+rmpbc.h \
+shift.h \
+shift_util.h \
+smalloc.h \
+sortwater.h \
+sparsematrix.h \
+split.h \
+statusio.h \
+statutil.h \
+strdb.h \
+string2.h \
+struc2.h \
+symtab.h \
+sysstuff.h \
+tags.h \
+tgroup.h \
+tgroup.h \
+tpxio.h \
+transfer.h \
+trnio.h \
+txtdump.h \
+typedefs.h \
+update.h \
+utils.h \
+vcm.h \
+vec.h \
+viewit.h \
+vsite.h \
+wgms.h \
+wman.h \
+writeps.h \
+xdrf.h \
+xtcio.h \
+xvgr.h

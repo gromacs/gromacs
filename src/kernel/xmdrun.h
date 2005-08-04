@@ -76,7 +76,7 @@ extern int count_flexible_constraints(FILE* log,t_forcerec *fr,t_idef *idef);
 
 /* Optimize shell positions */
 extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
-			int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
+			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],t_fcdata *fcd,
 			t_state *state,rvec vold[],rvec vt[],rvec f[],
 			rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,

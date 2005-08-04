@@ -161,7 +161,7 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
 }
 
 void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
-	      t_parm *parm,t_topology *top,rvec x[],t_forcerec *fr,
+	      t_inputrec *inputrec,t_topology *top,rvec x[],t_forcerec *fr,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
   static bool        bFirst=TRUE;
@@ -184,7 +184,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
     clear_rvecs(nsb->natoms,fr->f_twin);
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
-  if (parm->ir.ePBC != epbcNONE)
+  if (inputrec->ePBC != epbcNONE)
     calc_shifts(box,fr->shift_vec);
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
 			   box,&(top->blocks[ebCGS]),x,
@@ -195,7 +195,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
    * also do the calculation of long range forces and energies.
    */
   
-  ns(logf,fr,x,f,box,grps,&(parm->ir.opts),top,mdatoms,cr,
+  ns(logf,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,cr,
      &nrnb,nsb,0,lam,&dum,TRUE,FALSE);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
@@ -214,7 +214,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 }
 
 void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
-		  t_parm *parm,t_commrec *cr,
+		  t_inputrec *inputrec,t_commrec *cr,
 		  t_graph **graph,t_mdatoms **mdatoms,
 		  t_nsborder *nsb,t_groups *grps,
 		  t_forcerec **fr,real **pot,
@@ -237,21 +237,21 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   cr->nthreads = 1 ; cr->threadid = 0;
   open_log(log,cr);
 
-  if (parm->ir.efep) {
+  if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
-    parm->ir.efep = 0;
+    inputrec->efep = 0;
   }
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(stdlog,parm,tpx,top,state,mdatoms,nsb);
-  init_md(cr,&(parm->ir),state->box,&t,&t0,&lam,&lam0,
+  init_single(stdlog,inputrec,tpx,top,state,mdatoms,nsb);
+  init_md(cr,inputrec,state->box,&t,&t0,&lam,&lam0,
 	  &nrnb,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
-  init_groups(stdlog,*mdatoms,&(parm->ir.opts),grps);  
+  init_groups(stdlog,*mdatoms,&(inputrec->opts),grps);  
 
-  if (parm->ir.ePBC == epbcXYZ) {
+  if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
     *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
     mk_mshift(stdlog,*graph,state->box,state->x);
@@ -260,26 +260,26 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   }
 
   /* Turn off twin range if appropriate */
-  parm->ir.rvdw  = parm->ir.rcoulomb;
-  parm->ir.rlist = parm->ir.rcoulomb;
-  fprintf(stderr,"Using a coulomb cut-off of %g nm\n",parm->ir.rcoulomb); 
+  inputrec->rvdw  = inputrec->rcoulomb;
+  inputrec->rlist = inputrec->rcoulomb;
+  fprintf(stderr,"Using a coulomb cut-off of %g nm\n",inputrec->rcoulomb); 
   
   /* Turn off free energy computation */
-  parm->ir.efep = 0;
+  inputrec->efep = 0;
 
   /* Set vanderwaals to shift, to force tables */
-  parm->ir.vdwtype     = evdwSHIFT;
-  parm->ir.rvdw_switch = 0.0;
+  inputrec->vdwtype     = evdwSHIFT;
+  inputrec->rvdw_switch = 0.0;
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(stdlog,*fr,&(parm->ir),top,cr,*mdatoms,
+  init_forcerec(stdlog,*fr,inputrec,top,cr,*mdatoms,
 		nsb,state->box,FALSE,table,table,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
     box_size[m] = state->box[m][m];
-  if (parm->ir.ePBC != epbcNONE)
+  if (inputrec->ePBC != epbcNONE)
     do_pbc_first(stdlog,state->box,*fr,*graph,state->x);
 
   copy_mat(state->box,box);

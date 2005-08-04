@@ -222,25 +222,25 @@ static void ld_cosines(int src,t_cosines *cs)
   }
 }
 
-static void ld_parm(int src,t_parm *parm)
+static void ld_inputrec(int src,t_inputrec *inputrec)
 {
   int i;
   
-  blockrx(src,*parm);
-  ld_grpopts(src,&(parm->ir.opts));
+  blockrx(src,*inputrec);
+  ld_grpopts(src,&(inputrec->opts));
   for(i=0; (i<DIM); i++) {
-    ld_cosines(src,&(parm->ir.ex[i]));
-    ld_cosines(src,&(parm->ir.et[i]));
+    ld_cosines(src,&(inputrec->ex[i]));
+    ld_cosines(src,&(inputrec->et[i]));
   }
 }
 
-void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
+void ld_data(int left,int right,t_inputrec *inputrec,t_nsborder *nsb,
 	     t_topology *top,t_state *state)
 {
   int i;
   
-  ld_parm(left,parm);
-  if (debug) fprintf(stdlog,"after ld_parm");
+  ld_inputrec(left,inputrec);
+  if (debug) fprintf(stdlog,"after ld_inputrec");
   ld_nsb(left,nsb);
   if (debug) fprintf(stdlog,"after ld_nsb");
   ld_symtab(left,&top->symtab);
@@ -254,7 +254,7 @@ void ld_data(int left,int right,t_parm *parm,t_nsborder *nsb,
   for (i=0; (i<ebNR); i++) 
     ld_block(left,&top->blocks[i]);
   if (debug) fprintf(stdlog,"after ld_block");
-  snew(state->nosehoover_xi,parm->ir.opts.ngtc);
+  snew(state->nosehoover_xi,inputrec->opts.ngtc);
   snew(state->x,top->atoms.nr);
   snew(state->v,top->atoms.nr);
   ld_state(left,state);
@@ -295,15 +295,15 @@ static void mv_cosines(int dest,t_cosines *cs)
   }
 }
 
-static void mv_parm(int dest,t_parm *parm)
+static void mv_inputrec(int dest,t_inputrec *inputrec)
 {
   int i;
   
-  blocktx(dest,*parm);
-  mv_grpopts(dest,&(parm->ir.opts));
+  blocktx(dest,*inputrec);
+  mv_grpopts(dest,&(inputrec->opts));
   for(i=0; (i<DIM); i++) {
-    mv_cosines(dest,&(parm->ir.ex[i]));
-    mv_cosines(dest,&(parm->ir.et[i]));
+    mv_cosines(dest,&(inputrec->ex[i]));
+    mv_cosines(dest,&(inputrec->et[i]));
   }
 }
 
@@ -422,12 +422,12 @@ static void mv_idef(int dest,t_idef *idef)
     mv_ilist(dest,&idef->il[i]);
 }
 
-void mv_data(int left,int right,t_parm *parm,t_nsborder *nsb,
+void mv_data(int left,int right,t_inputrec *inputrec,t_nsborder *nsb,
              t_topology *top,t_state *state)
 {
   int i;
   
-  mv_parm(right,parm);
+  mv_inputrec(right,inputrec);
   mv_nsb(right,nsb);
   mv_symtab(right,&top->symtab);
   mv_string(right,&top->symtab,top->name);

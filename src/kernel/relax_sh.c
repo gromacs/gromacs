@@ -282,7 +282,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
 }
 
 int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
-		 int mdstep,t_parm *parm,bool bDoNS,bool bStopCM,
+		 int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],t_fcdata *fcd,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
 		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
@@ -335,9 +335,9 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     bFirst = FALSE;
   }
 
-  bInit        = bForceInit || ((mdstep == 0) && !parm->ir.bUncStart);
-  ftol         = parm->ir.em_tol;
-  number_steps = parm->ir.niter;
+  bInit        = bForceInit || ((mdstep == 0) && !inputrec->bUncStart);
+  ftol         = inputrec->em_tol;
+  number_steps = inputrec->niter;
   step0        = 1.0;
 
   if (bDoNS) {
@@ -363,13 +363,13 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     for(i=0; i<homenr; i++) {
       for(d=0; d<DIM; d++)
         x_old[i][d] =
-	  state->x[start+i][d] - state->v[start+i][d]*parm->ir.delta_t;
+	  state->x[start+i][d] - state->v[start+i][d]*inputrec->delta_t;
     }
   }
   
   /* Do a prediction of the shell positions */
   if (!bNoPredict)
-    predict_shells(log,state->x,state->v,parm->ir.delta_t,nshell,shells,
+    predict_shells(log,state->x,state->v,inputrec->delta_t,nshell,shells,
 		   md->massT,bInit);
 
   /* do_force expected the charge groups to be in the box */
@@ -380,7 +380,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   if (debug) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,mcr,parm,nsb,mdstep,nrnb,top,grps,
+  do_force(log,cr,mcr,inputrec,nsb,mdstep,nrnb,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   state->lambda,graph,
 	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
@@ -389,7 +389,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 
   sf_dir = 0;
   if (nflexcon) {
-    init_adir(log,top,&(parm->ir),mdstep,md,start,end,
+    init_adir(log,top,inputrec,mdstep,md,start,end,
 	      x_old-start,state->x,state->x,force[Min],acc_dir-start,
 	      state->box,state->lambda,&dum,nrnb);
 
@@ -419,7 +419,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     memcpy(pos[Try],state->x,nsb->natoms*sizeof(state->x[0]));
   }
   /* Sum the potential energy terms from group contributions */
-  sum_epot(&(parm->ir.opts),grps,ener);
+  sum_epot(&(inputrec->opts),grps,ener);
   Epot[Min]=ener[F_EPOT];
 
   if (PAR(cr))
@@ -447,11 +447,11 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
     if (bVsites)
-      construct_vsites(log,pos[Min],nrnb,parm->ir.delta_t,state->v,&top->idef,
+      construct_vsites(log,pos[Min],nrnb,inputrec->delta_t,state->v,&top->idef,
 			graph,cr,fr->ePBC,state->box,vsitecomm);
      
     if (nflexcon) {
-      init_adir(log,top,&(parm->ir),mdstep,md,start,end,
+      init_adir(log,top,inputrec,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
@@ -471,7 +471,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
     /* Try the new positions */
-    do_force(log,cr,mcr,parm,nsb,1,nrnb,
+    do_force(log,cr,mcr,inputrec,nsb,1,nrnb,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,
@@ -502,7 +502,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     }
     sf_dir = 0;
     if (nflexcon) {
-      init_adir(log,top,&(parm->ir),mdstep,md,start,end,
+      init_adir(log,top,inputrec,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
 
@@ -527,7 +527,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       }
     }
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(parm->ir.opts),grps,ener);
+    sum_epot(&(inputrec->opts),grps,ener);
     Epot[Try]=ener[F_EPOT];
 
     if (PAR(cr)) 
@@ -566,13 +566,13 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
     memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
 
   if (nflexcon > 0) {
-    constrain(log,top,&(parm->ir),mdstep,md,start,end,
+    constrain(log,top,inputrec,mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
 	      state->lambda,&dum,NULL,nrnb,TRUE);
     set_pbc(&pbc,state->box);
     for(i=0; i<homenr; i++) {
       pbc_dx(&pbc,state->x[start+i],x_old[i],dx);
-      svmul(1/parm->ir.delta_t,dx,state->v[start+i]);
+      svmul(1/inputrec->delta_t,dx,state->v[start+i]);
     }
   }
 
