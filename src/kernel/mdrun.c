@@ -175,6 +175,7 @@ int main(int argc,char *argv[])
   static int  nnodes=1;
   static int  repl_ex_nst=0;
   static int  repl_ex_seed=-1;
+  static bool bNPT=TRUE;
   static int  nstepout=10;
   static int  nthreads=1;
 
@@ -191,10 +192,12 @@ int main(int argc,char *argv[])
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
     { "-multi",   FALSE, etBOOL,{&bMultiSim}, 
       "Do multiple simulations in parallel (only with -np > 1)" },
-    { "-replex",   FALSE, etINT,{&repl_ex_nst}, 
+    { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
       "Attempt replica exchange every # steps" },
-    { "-reseed",   FALSE, etINT,{&repl_ex_seed}, 
+    { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
       "Seed for replica exchange, -1 is generate a seed" },
+    { "-renpt",   FALSE, etBOOL,{&bNPT},
+      "Use constant pressure replica exchange" },
     { "-glas",    FALSE, etBOOL,{&bGlas},
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
@@ -245,12 +248,11 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,&edyn,cr);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  Flags = Flags | (bSepDVDL ? MD_SEPDVDL : 0);
-  
-  Flags = (Flags | 
-	   (bIonize   ? MD_IONIZE   : 0) |
-	   (bMultiSim ? MD_MULTISIM : 0) |
-	   (bGlas     ? MD_GLAS     : 0));
+  Flags = Flags | (bSepDVDL  ? MD_SEPDVDL  : 0);
+  Flags = Flags | (bNPT      ? MD_REMDNPT  : 0);
+  Flags = Flags | (bIonize   ? MD_IONIZE   : 0);
+  Flags = Flags | (bMultiSim ? MD_MULTISIM : 0);
+  Flags = Flags | (bGlas     ? MD_GLAS     : 0);
 
   mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,
 	   &edyn,repl_ex_nst,repl_ex_seed,Flags);

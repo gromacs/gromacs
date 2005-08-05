@@ -222,7 +222,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  bParVsites ? &vsitecomm : NULL,
 		  nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
 		  mdatoms,nsb,nrnb,graph,edyn,fr,
-		  repl_ex_nst,repl_ex_seed,Flags);
+		  repl_ex_nst,repl_ex_seed,
+		  Flags);
     break;
   case eiCG:
     start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
@@ -292,7 +293,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     t_state *state,rvec vold[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
-	     int repl_ex_nst,int repl_ex_seed,unsigned long Flags)
+	     int repl_ex_nst,int repl_ex_seed,
+	     unsigned long Flags)
 {
   t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,step,step_rel;
@@ -384,7 +386,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   if (repl_ex_nst > 0)
     repl_ex = init_replica_exchange(log,mcr,state,inputrec,
-				    repl_ex_nst,repl_ex_seed);
+				    repl_ex_nst,repl_ex_seed,
+				    ((Flags & MD_REMDNPT) == MD_REMDNPT));
   
   if (!inputrec->bUncStart && !bRerunMD) 
     do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,
@@ -924,9 +927,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
 
     bExchanged = FALSE;
-    if (repl_ex_nst > 0 && step > 0 && !bLastStep &&
+    if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
-      bExchanged = replica_exchange(log,mcr,repl_ex,state,ener[F_EPOT],step,t);
+      bExchanged = replica_exchange(log,mcr,repl_ex,state,ener[F_EPOT],step,t,
+				    ener[F_PRES]);
     
     bFirstStep = FALSE;
 

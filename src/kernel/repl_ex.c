@@ -45,18 +45,25 @@
 #include "physics.h"
 #include "macros.h"
 #include "vec.h"
+#include "names.h"
 
 gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 				     const t_commrec *mcr,
 				     const t_state *state,
 				     const t_inputrec *ir,
-				     int nst,int init_seed)
+				     int nst,int init_seed,
+				     bool bNPT)
 {
   real temp;
   int  i,j,k;
   gmx_repl_ex_t *re;
 
   fprintf(fplog,"\nInitializing Replica Exchange\n");
+  please_cite("Hukushima96a");
+  if (bNPT) {
+    fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
+    please_cite("Okabe2001a");
+  }
 
   if (mcr == NULL || mcr->nnodes == 1)
     gmx_fatal(FARGS,"Nothing to exchange with only one replica");
@@ -81,8 +88,10 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 
   re->repl  = mcr->nodeid;
   re->nrepl = mcr->nnodes;
-
+  re->bNPT  = bNPT;
+  
   fprintf(fplog,"Repl  There are %d replicas:\n",re->nrepl);
+
   snew(re->temp,re->nrepl);
   re->temp[re->repl] = temp;
   gmx_sum(re->nrepl,re->temp,mcr);
@@ -233,17 +242,23 @@ static void print_count(FILE *fplog,char *leg,int n,int *count)
 }
 
 bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
-		      t_state *state,real epot,int step,real time)
+		      t_state *state,real epot,int step,real time,
+		      real pres)
 {
   int  m,i,a,b;
-  real *Epot,*prob,ediff;
+  real *Epot,*prob,ediff,delta,ddd,*Pres,*Vol,betaA,betaB;
   bool *bEx,bExchanged;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
-
   snew(Epot,re->nrepl);
+  snew(Pres,re->nrepl);
+  snew(Vol,re->nrepl);
   Epot[re->repl] = epot;
+  Pres[re->repl] = pres;
+  Vol[re->repl]  = det(state->box);
   gmx_sum(re->nrepl,Epot,mcr);
+  gmx_sum(re->nrepl,Vol,mcr);
+  gmx_sum(re->nrepl,Pres,mcr);
 
   snew(bEx,re->nrepl);
   snew(prob,re->nrepl);
@@ -254,12 +269,27 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
     a = re->ind[i-1];
     b = re->ind[i];
     if (i % 2 == m) {
+      /* Use equations from:
+       * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
+       */
       ediff = Epot[b] - Epot[a];
-      if (ediff <= 0) {
+      betaA = 1.0/(re->temp[a]*BOLTZ);
+      betaB = 1.0/(re->temp[b]*BOLTZ);
+      delta = (betaA-betaB)*ediff;
+      if (re->bNPT) {
+	ddd = (betaA*Pres[a]-betaB*Pres[b])*(Vol[b]-Vol[a]);
+        fprintf(fplog,"i = %d deltaE = %12.5e deltaP = %12.5e delta = %12.5e\n",
+	        i,delta,ddd,delta+ddd);
+	delta += ddd;
+      }
+      if (delta <= 0) {
 	prob[i] = 1;
 	bEx[i] = TRUE;
       } else {
-	prob[i] = exp((1/re->temp[b] - 1/re->temp[a])/BOLTZ*ediff);
+        if (delta > 100)
+          prob[i] = 0;
+        else
+	  prob[i] = exp(-delta);
 	bEx[i] = (rando(&(re->seed)) < prob[i]);
       }
       re->prob_sum[i] += prob[i];    
@@ -286,7 +316,9 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
   sfree(bEx);
   sfree(prob);
   sfree(Epot);
-
+  sfree(Pres);
+  sfree(Vol);
+  
   re->nattempt[m]++;
 
   return bExchanged;

@@ -63,6 +63,7 @@
 #define MD_RERUN     (1<<4)
 #define MD_FFSCAN    (1<<6)
 #define MD_SEPDVDL   (1<<7)
+#define MD_REMDNPT   (1<<8)
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
