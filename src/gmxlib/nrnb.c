@@ -353,10 +353,10 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
       mflop = mflop/nodetime;
       fprintf(out,"%12s %10s %10s %10s %10s\n",
 	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	      "(ps/NODE hour)","(NODE hour/ns)");
+	      "(ns/day)","(hour/ns)");
       fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
 	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      runtime*3600/nodetime,1000*nodetime/(3600*runtime));
+	      runtime*24*3.6/nodetime,1000*nodetime/(3600*runtime));
     }
   }
 }
