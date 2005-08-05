@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
 
-  parse_common_args(&argc,argv,0,TRUE,
+  parse_common_args(&argc,argv,0,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   
   fprintf(stderr,"You made it back in main of mgmxtest!\n");
