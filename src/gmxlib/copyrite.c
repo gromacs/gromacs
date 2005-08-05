@@ -412,7 +412,17 @@ void please_cite(FILE *fp,char *key)
       "Y. Mu, P. H. Nguyen and G. Stock",
       "Energy landscape of a small peptide revelaed by dihedral angle principal component analysis",
       "Prot. Struct. Funct. Bioinf.",
-      58, 2005, 45, 52 }
+      58, 2005, 45, 52 },
+    { "Okabe2001a",
+      "T. Okabe and M. Kawata and Y. Okamoto and M. Mikami",
+      "Replica-exchange {M}onte {C}arlo method for the isobaric-isothermal ensemble",
+      "Chem. Phys. Lett.",
+      335, 2001, 435, 439 },
+    { "Hukushima96a",
+      "K. Hukushima and K. Nemoto",
+      "Exchange Monte Carlo Method and Application to Spin Glass Simulations",
+      "J. Phys. Soc. Jpn.",
+      65, 1996, 1604, 1608 }
   };
 #define NSTR (int)asize(citedb)
   
