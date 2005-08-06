@@ -43,6 +43,7 @@
 #include "random.h"
 #include "smalloc.h"
 #include "physics.h"
+#include "copyrite.h"
 #include "macros.h"
 #include "vec.h"
 #include "names.h"
@@ -59,10 +60,10 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   gmx_repl_ex_t *re;
 
   fprintf(fplog,"\nInitializing Replica Exchange\n");
-  please_cite("Hukushima96a");
+  please_cite(fplog,"Hukushima96a");
   if (bNPT) {
     fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
-    please_cite("Okabe2001a");
+    please_cite(fplog,"Okabe2001a");
   }
 
   if (mcr == NULL || mcr->nnodes == 1)
