@@ -1621,7 +1621,8 @@ The $\lambda$-dependence for the force-field contributions is
 described in section \secref{feia}.
 
 \section{\normindex{Replica exchange}}
-Replica exchange is a method which can be used to speed up
+Replica exchange molecular dynamics (\normindex{REMD})
+is a method which can be used to speed up
 the sampling of any type of simulation, especially if
 conformations are separated by relatively high energy barriers.
 It involves simulating multiple replicas of the same system
@@ -1629,16 +1630,16 @@ at different temperatures and randomly exchanging the complete state
 of two replicas at regular intervals with the probability:
 \beq
 P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
-\left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(V_1 - V_2)
+\left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(U_1 - U_2)
  \right] \right)
 \eeq
-where $T_1$ and $T_2$ are the temperatures and $V_1$ and $V_2$
+where $T_1$ and $T_2$ are the temperatures and $U_1$ and $U_2$
 are the potential energies of replicas 1 and 2 respectively.
 After exchange the velocities are scaled by $(T_1/T_2)^{\pm0.5}$
 and a neighbor search is performed the next step.
 This combines the fast sampling and frequent barrier-crossing
 of the highest temperature with correct Boltzmann sampling at
-all the different temperatures~\cite{Sugita99}.
+all the different temperatures~\cite{Hukushima96a,Sugita99}.
 We only attempt exchanges for neighboring temperatures as the probability
 decreases very rapidly with the temperature difference.
 One should not attempt exchanges for all possible pairs in one step.
@@ -1654,7 +1655,7 @@ will be tried at steps 1000, 3000 etc. and pair 1-2 at steps 2000, 4000 etc.
 How should one choose the temperatures?
 The energy difference can be written as:
 \beq
-V_1 - V_2 =  N_{df} \frac{c}{2} k_B (T_1 - T_2)
+U_1 - U_2 =  N_{df} \frac{c}{2} k_B (T_1 - T_2)
 \eeq
 where $N_{df}$ is the total number of degrees of freedom of one replica
 and $c$ is 1 for harmonic potentials and around 2 for protein/water systems.
@@ -1665,7 +1666,23 @@ P(1 \leftrightarrow 2)
 \approx \exp\left(-\epsilon^2 \frac{c}{2} N_{df} \right)
 \eeq
 Thus for a probability of $e^{-1}\approx 0.37$ with $c=2$
-one should choose $\epsilon$ as $1/\sqrt{N_{df}}$.
+one should in principle choose $\epsilon$ as $1/\sqrt{N_{df}}$.
+
+An extension to the REMD for the isobaric-isothermal ensemble was
+proposed by Okabe {\em et al.}~\cite{Okabe2001a}. In this work the
+exchange probability is modified to:
+\beq
+P(1 \leftrightarrow 2)=\min\left(1,\exp\left[
+\left(\frac{1}{k_B T_1} - \frac{1}{k_B T_2}\right)(U_1 - U_2) +
+\left(\frac{P_1}{k_B T_1} - \frac{P_2}{k_B T_2}\right)\left(V_1-V_2\right)
+ \right] \right)
+\eeq
+where $P_1$ and $P_2$ are the respective pressures and $V_1$ and
+$V_2$ are the respective volumes in the simulations. In this case the
+exchange probability is dominated by the fluctuations in the pressure and
+the energy difference $U_1 - U_2$ becomes nearly irrelevant.
+A discussion of the relative merits of exchange schemes can be found in 
+ref.~\cite{Seibert2005a}.
 
 Replica exchange is an option of the {\tt mdrun} program. It will only
 work when MPI is installed, due to the inherent parallellism in the
