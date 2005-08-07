@@ -422,7 +422,12 @@ void please_cite(FILE *fp,char *key)
       "K. Hukushima and K. Nemoto",
       "Exchange Monte Carlo Method and Application to Spin Glass Simulations",
       "J. Phys. Soc. Jpn.",
-      65, 1996, 1604, 1608 }
+      65, 1996, 1604, 1608 },
+    { "Tropp80a",
+      "J. Tropp",
+      "Dipolar Relaxation and Nuclear Overhauser effects in nonrigid molecules: The effect of fluctuating internuclear distances",
+      "J. Chem. Phys.",
+      72, 1980, 6035, 6043 }
   };
 #define NSTR (int)asize(citedb)
   
@@ -434,7 +439,7 @@ void please_cite(FILE *fp,char *key)
   for(index=0; (index<NSTR) && (strcmp(citedb[index].key,key) != 0); index++)
     ;
   
-  fprintf(fp,"\n++++++++ PLEASE CITE THE FOLLOWING REFERENCE ++++++++\n");
+  fprintf(fp,"\n++++ PLEASE READ AND CITE THE FOLLOWING REFERENCE ++++\n");
   if (index < NSTR) {
     /* Insert newlines */
     author = wrap_lines(citedb[index].author,LINE_WIDTH,0,FALSE);

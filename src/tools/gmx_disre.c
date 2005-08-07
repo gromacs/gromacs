@@ -73,7 +73,7 @@ int      ntop=0;
 typedef struct {
   int  nv,nframes;
   real sumv,averv,maxv;
-  real *aver1,*aver2,*aver_3;
+  real *aver1,*aver2,*aver_3,*aver_6;
 } t_dr_result;
 
 static void init5(int n)
@@ -180,6 +180,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
     if ((rt <=0) || (drt <= 0))
       gmx_fatal(FARGS,"ndr = %d, rt = %8.3f, drt = %8.3f",ndr,rt,drt);
     dr[clust_id].aver_3[ndr] += drt;
+    dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
     
     ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],forceparams,
 					      (const rvec*)x,f,fr->fshift,
@@ -220,7 +221,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
 typedef struct {
   int  index;
   bool bCore;
-  real up1,r,rT,viol,violT;
+  real up1,r,rT3,rT6,viol,violT3,violT6;
 } t_dr_stats;
 
 static int drs_comp(const void *a,const void *b)
@@ -241,21 +242,33 @@ static int drs_comp(const void *a,const void *b)
 static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
 {
   static char *core[] = { "All restraints", "Core restraints" };
-  static char *tp[]   = { "linear", "third power" };
+  static char *tp[]   = { "linear", "third power", "sixth power" };
   real viol_tot,viol_max,viol;
-  bool bCore,bTP;
+  bool bCore;
   int  nviol,nrestr;
-  int  i;
+  int  i,kkk;
 
   for(bCore = FALSE; (bCore <= TRUE); bCore++) {
-    for(bTP = FALSE; (bTP <= TRUE); bTP++) {
+    for(kkk=0; (kkk<3); kkk++) {
       viol_tot  = 0;
       viol_max  = 0;
       nviol     = 0;
       nrestr    = 0;
       for(i=0; (i<ndr); i++) {
 	if (!bCore || (bCore && drs[i].bCore)) {
-	  viol = bTP ? drs[i].violT : drs[i].viol;
+	  switch (kkk) {
+	  case 0:
+	    viol = drs[i].viol;
+	    break;
+	  case 1: 
+	    viol = drs[i].violT3;
+	    break;
+	  case 2:
+	    viol = drs[i].violT6;
+	    break;
+	  default:
+	    gmx_incons("Dumping violations");
+	  }
 	  viol_max     = max(viol_max,viol);
 	  if (viol > 0)
 	    nviol++;
@@ -266,7 +279,7 @@ static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
       if ((nrestr > 0) || (bCore && (nrestr < ndr))) {
 	fprintf(log,"\n");
 	fprintf(log,"+++++++ %s ++++++++\n",core[bCore]);
-	fprintf(log,"+++++++ Using %s averaging: ++++++++\n",tp[bTP]);
+	fprintf(log,"+++++++ Using %s averaging: ++++++++\n",tp[kkk]);
 	fprintf(log,"Sum of violations: %8.3f nm\n",viol_tot);
 	fprintf(log,"Average violation: %8.3f nm\n",viol_tot/nrestr);
 	fprintf(log,"Largest violation: %8.3f nm\n",viol_max);
@@ -276,18 +289,18 @@ static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
   }
 }
 
-static void dump_viol(FILE *log,int ndr,t_dr_stats *drs,bool bViol)
+static void dump_viol(FILE *log,int ndr,t_dr_stats *drs,bool bLinear)
 {
   int i;
   
-  fprintf(log," Restraint Core     Up1     <r>    <rT>  <viol> <violT>\n");
+  fprintf(log,"Restr. Core     Up1     <r>   <rT3>   <rT6>  <viol><violT3><violT6>\n");
   for(i=0; (i<ndr); i++) {
-    if (bViol  && (drs[i].viol == 0) && (drs[i].violT > 0))
+    if (bLinear  && (drs[i].viol == 0))
       break;
-    fprintf(log,"%10d%5s%8.3f%8.3f%8.3f%8.3f%8.3f\n",
+    fprintf(log,"%6d%5s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f\n",
 	    drs[i].index,yesno_names[drs[i].bCore],
-	    drs[i].up1,drs[i].r,drs[i].rT,
-	    drs[i].viol,drs[i].violT);
+	    drs[i].up1,drs[i].r,drs[i].rT3,drs[i].rT6,
+	    drs[i].viol,drs[i].violT3,drs[i].violT6);
   }
 }
 
@@ -320,18 +333,20 @@ static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
       if (ip[disres->iatoms[j]].disres.label == i)
 	break;
     }
-    drs[i].index = i;
-    drs[i].bCore = is_core(i,isize,index);
-    drs[i].up1   = ip[disres->iatoms[j]].disres.up1;
-    drs[i].r     = dr->aver1[i]/nsteps;
-    drs[i].rT    = pow(dr->aver_3[i]/nsteps,-1.0/3.0);
-    drs[i].viol  = max(0,drs[i].r-drs[i].up1);
-    drs[i].violT = max(0,drs[i].rT-drs[i].up1);
+    drs[i].index  = i;
+    drs[i].bCore  = is_core(i,isize,index);
+    drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
+    drs[i].r      = dr->aver1[i]/nsteps;
+    drs[i].rT3    = pow(dr->aver_3[i]/nsteps,-1.0/3.0);
+    drs[i].rT6    = pow(dr->aver_6[i]/nsteps,-1.0/6.0);
+    drs[i].viol   = max(0,drs[i].r-drs[i].up1);
+    drs[i].violT3 = max(0,drs[i].rT3-drs[i].up1);
+    drs[i].violT6 = max(0,drs[i].rT6-drs[i].up1);
     if (atoms) {
       int j1 = disres->iatoms[j+1];
       int j2 = disres->iatoms[j+2];
-      atoms->pdbinfo[j1].bfac += drs[i].violT*5;
-      atoms->pdbinfo[j2].bfac += drs[i].violT*5;
+      atoms->pdbinfo[j1].bfac += drs[i].violT3*5;
+      atoms->pdbinfo[j2].bfac += drs[i].violT3*5;
     }
   }
   dump_viol(log,ndr,drs,FALSE);
@@ -350,7 +365,7 @@ static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
 			     char *clust_name[],int isize,atom_id index[])
 {
   int    i,j,k,nra,mmm=0;
-  double sumV,maxV,sumVT,maxVT;
+  double sumV,maxV,sumVT3,sumVT6,maxVT3,maxVT6;
   t_dr_stats *drs;
 
   fprintf(fp,"\n");
@@ -371,32 +386,37 @@ static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
       gmx_fatal(FARGS,"Inconsistency with cluster %d. Invalid name",k);
     j         = 0;
     nra       = interaction_function[F_DISRES].nratoms+1;
-    sumV = sumVT = maxV = maxVT = 0;
+    sumV = sumVT3 = sumVT6 = maxV = maxVT3 = maxVT6 = 0;
     for(i=0; (i<ndr); i++) {
       /* Search for the appropriate restraint */
       for( ; (j<disres->nr); j+=nra) {
 	if (ip[disres->iatoms[j]].disres.label == i)
 	  break;
       }
-      drs[i].index = i;
-      drs[i].bCore = is_core(i,isize,index);
-      drs[i].up1   = ip[disres->iatoms[j]].disres.up1;
-      drs[i].r     = dr[k].aver1[i]/dr[k].nframes;
+      drs[i].index  = i;
+      drs[i].bCore  = is_core(i,isize,index);
+      drs[i].up1    = ip[disres->iatoms[j]].disres.up1;
+      drs[i].r      = dr[k].aver1[i]/dr[k].nframes;
       if ((dr[k].aver_3[i] <= 0) || (dr[k].aver_3[i] != dr[k].aver_3[i]))
 	gmx_fatal(FARGS,"dr[%d].aver_3[%d] = %f",k,i,dr[k].aver_3[i]);
-      drs[i].rT    = pow(dr[k].aver_3[i]/dr[k].nframes,-1.0/3.0);
-      drs[i].viol  = max(0,drs[i].r-drs[i].up1);
-      drs[i].violT = max(0,drs[i].rT-drs[i].up1);
-      sumV  += drs[i].viol;
-      sumVT += drs[i].violT;
-      maxV   = max(maxV,drs[i].viol);
-      maxVT  = max(maxVT,drs[i].violT);
+      drs[i].rT3    = pow(dr[k].aver_3[i]/dr[k].nframes,-1.0/3.0);
+      drs[i].rT6    = pow(dr[k].aver_3[i]/dr[k].nframes,-1.0/3.0);
+      drs[i].viol   = max(0,drs[i].r-drs[i].up1);
+      drs[i].violT3 = max(0,drs[i].rT3-drs[i].up1);
+      drs[i].violT6 = max(0,drs[i].rT6-drs[i].up1);
+      sumV   += drs[i].viol;
+      sumVT3 += drs[i].violT3;
+      sumVT6 += drs[i].violT6;
+      maxV    = max(maxV,drs[i].viol);
+      maxVT3  = max(maxVT3,drs[i].violT3);
+      maxVT6  = max(maxVT6,drs[i].violT6);
     }
     if (strcmp(clust_name[k],"1000") == 0) {
       mmm ++;
     }
-    fprintf(fp,"%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f\n",clust_name[k],
-	    dr[k].nframes,sumV,maxV,sumVT,maxVT);
+    fprintf(fp,"%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",
+	    clust_name[k],
+	    dr[k].nframes,sumV,maxV,sumVT3,maxVT3,sumVT6,maxVT6);
   
   }
   fflush(fp);
@@ -408,6 +428,7 @@ static void init_dr_res(t_dr_result *dr,int ndr)
   snew(dr->aver1,ndr+1);
   snew(dr->aver2,ndr+1);
   snew(dr->aver_3,ndr+1);
+  snew(dr->aver_6,ndr+1);
   dr->nv      = 0;
   dr->nframes = 0;
   dr->sumv    = 0;
@@ -586,9 +607,9 @@ int gmx_disre(int argc,char *argv[])
       set_pbc(&pbc,box);
     
     if (clust) {
-      /*      if (j >= clust->clust->nra)*/
       if (j > clust->maxframe)
-	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file. t = %8f\n",t);
+	gmx_fatal(FARGS,"There are more frames in the trajectory than in the"
+		  " cluster index file (t = %8f)\n",t);
       int my_clust = clust->inv_clust[j];
       range_check(my_clust,0,clust->clust->nr);
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),

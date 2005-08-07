@@ -98,6 +98,7 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
     if (mcr)
       check_multi_int(fplog,mcr,fcd->disres.nr,
 		      "the number of distance restraints");
+    please_cite(fplog,"Tropp80a");
     please_cite(fplog,"Torda89a");
   }
 }
