@@ -677,7 +677,7 @@ int gmx_disre(int argc,char *argv[])
     do_view(opt2fn("-ds",NFILE,fnm),"-nxy");
     do_view(opt2fn("-dm",NFILE,fnm),"-nxy");
   }
-  /*thanx(stderr);*/
+  thanx(stderr);
 
   fclose(stdlog);
   
