@@ -173,12 +173,13 @@ static void check_viol(FILE *log,t_commrec *mcr,
     calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,
 		    (const rvec*)x,pbc,fcd);
 
+    if (fcd->disres.Rt_6[0] <= 0) 
+      gmx_fatal(FARGS,"ndr = %d, rt_6 = %f",ndr,fcd->disres.Rt_6[0]);
+    
     rt = pow(fcd->disres.Rt_6[0],-1.0/6.0);
     dr[clust_id].aver1[ndr]  += rt;
     dr[clust_id].aver2[ndr]  += sqr(rt);
     drt = pow(rt,-3.0);
-    if ((rt <=0) || (drt <= 0))
-      gmx_fatal(FARGS,"ndr = %d, rt = %8.3f, drt = %8.3f",ndr,rt,drt);
     dr[clust_id].aver_3[ndr] += drt;
     dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
     
@@ -186,7 +187,6 @@ static void check_viol(FILE *log,t_commrec *mcr,
 					      (const rvec*)x,f,fr->fshift,
 					      pbc,g,lam,&dvdl,NULL,fcd);
     viol = fcd->disres.sumviol;
-    
     
     if (viol > 0) {
       nviol++;
@@ -281,7 +281,8 @@ static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
 	fprintf(log,"+++++++ %s ++++++++\n",core[bCore]);
 	fprintf(log,"+++++++ Using %s averaging: ++++++++\n",tp[kkk]);
 	fprintf(log,"Sum of violations: %8.3f nm\n",viol_tot);
-	fprintf(log,"Average violation: %8.3f nm\n",viol_tot/nrestr);
+	if (nrestr > 0)
+	  fprintf(log,"Average violation: %8.3f nm\n",viol_tot/nrestr);
 	fprintf(log,"Largest violation: %8.3f nm\n",viol_max);
 	fprintf(log,"Number of violated restraints: %d/%d\n",nviol,nrestr);
       }
