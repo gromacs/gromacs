@@ -681,9 +681,13 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
 			    const char *tabfn,char *eg1,char *eg2,
 			    t_nblists *nbl)
 {
+  const char *tab_default = "gmx_table.xvg";
   char buf[STRLEN];
   int i,j;
 
+  if (tabfn == NULL)
+    tabfn = tab_default;
+    
   sprintf(buf,"%s",tabfn);
   if (eg1 && eg2)
     /* Append the two energy group names */
@@ -912,7 +916,7 @@ void init_forcerec(FILE *fp,
   fr->rvdw_switch = ir->rvdw_switch;
   if ((fr->vdwtype != evdwCUT) && (fr->vdwtype != evdwUSER) && !fr->bBHAM) {
     if (fr->rvdw_switch >= fr->rvdw)
-      gmx_fatal(FARGS,"rvdw_switch (%g) must be < rvdw (%g)",
+      gmx_fatal(FARGS,"rvdw_switch (%f) must be < rvdw (%f)",
 		  fr->rvdw_switch,fr->rvdw);
     if (fp)
       fprintf(fp,"Using %s Lennard-Jones, switch between %g and %g nm\n",
