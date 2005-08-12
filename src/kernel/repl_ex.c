@@ -55,7 +55,7 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 				     int nst,int init_seed,
 				     bool bNPT)
 {
-  real temp;
+  real temp,ppp;
   int  i,j,k;
   gmx_repl_ex_t *re;
 
@@ -111,6 +111,15 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
       }
     }
   }
+  snew(re->pres,re->nrepl);
+  re->pres[re->repl] = trace(ir->ref_p)/3.0;
+  gmx_sum(re->nrepl,re->pres,mcr);
+  ppp = re->pres[0];
+  for(i=1; i<re->nrepl; i++)
+    if (re->pres[i] != ppp)
+      gmx_fatal(FARGS,"All reference pressures should be identical for REMD");
+  
+  
   fprintf(fplog,"Repl ");
   for(i=0; i<re->nrepl; i++)
     fprintf(fplog," %3d  ",re->ind[i]);
@@ -243,23 +252,19 @@ static void print_count(FILE *fplog,char *leg,int n,int *count)
 }
 
 bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
-		      t_state *state,real epot,int step,real time,
-		      real pres)
+		      t_state *state,real epot,int step,real time)
 {
   int  m,i,a,b;
-  real *Epot,*prob,ediff,delta,ddd,*Pres,*Vol,betaA,betaB;
+  real *Epot,*prob,ediff,delta,ddd,*Vol,betaA,betaB;
   bool *bEx,bExchanged;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
   snew(Epot,re->nrepl);
-  snew(Pres,re->nrepl);
   snew(Vol,re->nrepl);
   Epot[re->repl] = epot;
-  Pres[re->repl] = pres;
   Vol[re->repl]  = det(state->box);
   gmx_sum(re->nrepl,Epot,mcr);
   gmx_sum(re->nrepl,Vol,mcr);
-  gmx_sum(re->nrepl,Pres,mcr);
 
   snew(bEx,re->nrepl);
   snew(prob,re->nrepl);
@@ -278,7 +283,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
       betaB = 1.0/(re->temp[b]*BOLTZ);
       delta = (betaA-betaB)*ediff;
       if (re->bNPT) {
-	ddd = (betaA*Pres[a]-betaB*Pres[b])*(Vol[b]-Vol[a]);
+	ddd = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])*PRESFAC;
         fprintf(fplog,"i = %d deltaE = %12.5e deltaP = %12.5e delta = %12.5e\n",
 	        i,delta,ddd,delta+ddd);
 	delta += ddd;
@@ -317,7 +322,6 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
   sfree(bEx);
   sfree(prob);
   sfree(Epot);
-  sfree(Pres);
   sfree(Vol);
   
   re->nattempt[m]++;

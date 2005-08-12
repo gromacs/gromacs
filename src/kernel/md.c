@@ -929,8 +929,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     bExchanged = FALSE;
     if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
-      bExchanged = replica_exchange(log,mcr,repl_ex,state,ener[F_EPOT],step,t,
-				    ener[F_PRES]);
+      bExchanged = replica_exchange(log,mcr,repl_ex,state,ener[F_EPOT],step,t);
     
     bFirstStep = FALSE;
 

@@ -44,6 +44,7 @@ typedef struct {
   int  nrepl;
   bool bNPT;
   real *temp;
+  real *pres;
   int  *ind;
   int  nst;
   int  seed;
@@ -62,8 +63,7 @@ extern gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 extern bool replica_exchange(FILE *fplog,
 			     const t_commrec *mcr,
 			     gmx_repl_ex_t *re,
-			     t_state *state,real epot,int step,real time,
-			     real pres);
+			     t_state *state,real epot,int step,real time);
 /* Attempts replica exchange.
  * Returns TRUE if this state has been exchanged.
  */
