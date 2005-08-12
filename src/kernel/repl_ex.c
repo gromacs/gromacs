@@ -52,16 +52,15 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 				     const t_commrec *mcr,
 				     const t_state *state,
 				     const t_inputrec *ir,
-				     int nst,int init_seed,
-				     bool bNPT)
+				     int nst,int init_seed)
 {
-  real temp,ppp;
+  real temp,pres;
   int  i,j,k;
   gmx_repl_ex_t *re;
 
   fprintf(fplog,"\nInitializing Replica Exchange\n");
   please_cite(fplog,"Hukushima96a");
-  if (bNPT) {
+  if (ir->epc != epcNO) {
     fprintf(fplog,"Repl  Using Constant Pressure REMD.\n");
     please_cite(fplog,"Okabe2001a");
   }
@@ -81,21 +80,39 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   check_multi_int(fplog,mcr,ir->eI,"the integrator");
   check_multi_int(fplog,mcr,ir->nsteps,"nsteps");
   check_multi_int(fplog,mcr,ir->init_step,"init_step");
+  check_multi_int(fplog,mcr,ir->etc,"the temperature coupling");
   check_multi_int(fplog,mcr,ir->opts.ngtc,
 		  "the number of temperature coupling groups");
+  check_multi_int(fplog,mcr,ir->epc,"the pressure coupling");
   
 
   snew(re,1);
 
-  re->repl  = mcr->nodeid;
-  re->nrepl = mcr->nnodes;
-  re->bNPT  = bNPT;
+  re->repl     = mcr->nodeid;
+  re->nrepl    = mcr->nnodes;
+  re->bNPT     = (ir->epc != epcNO);
   
   fprintf(fplog,"Repl  There are %d replicas:\n",re->nrepl);
 
   snew(re->temp,re->nrepl);
   re->temp[re->repl] = temp;
   gmx_sum(re->nrepl,re->temp,mcr);
+  if (re->bNPT) {
+    snew(re->pres,re->nrepl);
+    if (ir->epct == epctSURFACETENSION) {
+      pres = ir->ref_p[ZZ][ZZ];
+    } else {
+      pres = 0;
+      j = 0; 
+      for(i=0; i<DIM; i++)
+	if (ir->compress[i][i] != 0) {
+	  pres += ir->ref_p[i][i];
+	  j++;
+	}
+      pres /= j;
+    }
+    re->pres[re->repl] = pres;
+    gmx_sum(re->nrepl,re->pres,mcr);  }
   snew(re->ind,re->nrepl);
   /* Make an index for increasing temperature order */
   for(i=0; i<re->nrepl; i++)
@@ -111,23 +128,21 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
       }
     }
   }
-  snew(re->pres,re->nrepl);
-  re->pres[re->repl] = trace(ir->ref_p)/3.0;
-  gmx_sum(re->nrepl,re->pres,mcr);
-  ppp = re->pres[0];
-  for(i=1; i<re->nrepl; i++)
-    if (re->pres[i] != ppp)
-      gmx_fatal(FARGS,"All reference pressures should be identical for REMD");
-  
-  
-  fprintf(fplog,"Repl ");
+  fprintf(fplog,"Repl   ");
   for(i=0; i<re->nrepl; i++)
     fprintf(fplog," %3d  ",re->ind[i]);
-  fprintf(fplog,"\nRepl ");
+  fprintf(fplog,"\nRepl  T");
   for(i=0; i<re->nrepl; i++)
     fprintf(fplog," %5.1f",re->temp[re->ind[i]]);
+  if (re->bNPT) {
+    fprintf(fplog,"\nRepl  p");
+    for(i=0; i<re->nrepl; i++)
+      fprintf(fplog," %5.2f",re->pres[re->ind[i]]);
+    if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
+      gmx_fatal(FARGS,"The reference pressure decreases with increasing temperature");
+  }
   fprintf(fplog,"\nRepl  ");
-
+  
   re->nst = nst;
   if (init_seed == -1) {
     if (MASTER(mcr))
@@ -255,8 +270,8 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
 		      t_state *state,real epot,int step,real time)
 {
   int  m,i,a,b;
-  real *Epot,*prob,ediff,delta,ddd,*Vol,betaA,betaB;
-  bool *bEx,bExchanged;
+  real *Epot,*prob,ediff,delta,dpV,*Vol,betaA,betaB;
+  bool *bEx,bExchanged,bPrint;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
   snew(Epot,re->nrepl);
@@ -274,6 +289,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
   for(i=1; i<re->nrepl; i++) {
     a = re->ind[i-1];
     b = re->ind[i];
+    bPrint = (re->repl==a || re->repl==b);
     if (i % 2 == m) {
       /* Use equations from:
        * Okabe et. al. Chem. Phys. Lett. 335 (2001) 435-439
@@ -282,12 +298,16 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
       betaA = 1.0/(re->temp[a]*BOLTZ);
       betaB = 1.0/(re->temp[b]*BOLTZ);
       delta = (betaA-betaB)*ediff;
+      if (bPrint)
+	fprintf(fplog,"Repl %d <-> %d  dE = %10.3e",a,b,delta);
       if (re->bNPT) {
-	ddd = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])*PRESFAC;
-        fprintf(fplog,"i = %d deltaE = %12.5e deltaP = %12.5e delta = %12.5e\n",
-	        i,delta,ddd,delta+ddd);
-	delta += ddd;
+	dpV = (betaA*re->pres[a]-betaB*re->pres[b])*(Vol[b]-Vol[a])/PRESFAC;
+	if (bPrint)
+	  fprintf(fplog,"  dpV = %10.3e  d = %10.3e",dpV,delta + dpV);
+	delta += dpV;
       }
+      if (bPrint)
+	fprintf(fplog,"\n");
       if (delta <= 0) {
 	prob[i] = 1;
 	bEx[i] = TRUE;

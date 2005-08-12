@@ -386,8 +386,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   if (repl_ex_nst > 0)
     repl_ex = init_replica_exchange(log,mcr,state,inputrec,
-				    repl_ex_nst,repl_ex_seed,
-				    ((Flags & MD_REMDNPT) == MD_REMDNPT));
+				    repl_ex_nst,repl_ex_seed);
   
   if (!inputrec->bUncStart && !bRerunMD) 
     do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,

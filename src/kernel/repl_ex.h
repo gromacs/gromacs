@@ -57,8 +57,7 @@ extern gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 					    const t_commrec *mcr,
 					    const t_state *state,
 					    const t_inputrec *ir,
-					    int nst,int init_seed,
-					    bool bNPT);
+					    int nst,int init_seed);
 
 extern bool replica_exchange(FILE *fplog,
 			     const t_commrec *mcr,
