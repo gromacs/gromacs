@@ -586,30 +586,30 @@ real water_pol(int nbonds,
 
 static real do_1_thole(const rvec xi,const rvec xj,rvec fi,rvec fj,
 		       const t_pbc *pbc,real qq,
-		       rvec fshift[],real a,real a1a2)
+		       rvec fshift[],real afac)
 {
   rvec r12;
-  real r12n,r12bar,v0,v1,fscal,ebar,rfac,fff;
+  real r12_1,r12n,r12bar,v0,v1,fscal,ebar,fff;
   int  m,t;
     
   t      = pbc_rvec_sub(pbc,xi,xj,r12); /*  3 */
   
-  r12n   = norm(r12);                   /* 13 */
-  rfac   = a*pow(a1a2,-1.0/6.0);        /* 16 */
-  r12bar = r12n*rfac;                   /*  1 */
-  v0     = qq*ONE_4PI_EPS0/r12n;        /*  6 */
+  r12_1  = invsqrt(iprod(r12,r12));     /* 10 */
+  r12bar = afac/r12_1;                  /*  5 */
+  v0     = qq*ONE_4PI_EPS0*r12_1;       /*  2 */
   ebar   = exp(-r12bar);                /*  5 */
   v1     = (1-(1-r12bar*0.5)*ebar);     /*  4 */
-  fscal  = (-(v0/r12n)*v1 - v0*(ebar*1.5-0.5*r12bar*ebar))*rfac/r12n; /* 18 */
+  fscal  = ((v0*r12_1)*v1 - v0*(1.5 - 0.5*r12bar)*ebar*afac)*r12_1; /* 9 */
   for(m=0; (m<DIM); m++) {
     fff    = fscal*r12[m];
     fi[m] += fff;
     fj[m] -= fff;             
     fshift[t][m]       += fff;
     fshift[CENTRAL][m] -= fff;
-  } /* 33 */
+  } /* 15 */
   
-  return v0*v1;
+  return v0*v1; /* 1 */
+  /* 54 */
 }
 
 real thole_pol(int nbonds,
@@ -621,7 +621,7 @@ real thole_pol(int nbonds,
 {
   /* Interaction between two pairs of particles with opposite charge */
   int i,type,a1,da1,a2,da2;
-  real q1,q2,qq,a,al1,al2,a1a2;
+  real q1,q2,qq,a,al1,al2,afac;
   real V=0;
   
   for(i=0; (i<nbonds); i+=5) {
@@ -636,11 +636,11 @@ real thole_pol(int nbonds,
     al1   = forceparams[type].thole.alpha1;
     al2   = forceparams[type].thole.alpha2;
     qq    = q1*q2;
-    a1a2  = al1*al2;
-    V += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq,fshift,a,a1a2);
-    V += do_1_thole(x[da1],x[a2], f[da1],f[a2], pbc,-qq,fshift,a,a1a2);
-    V += do_1_thole(x[a1], x[da2],f[a1], f[da2],pbc,-qq,fshift,a,a1a2);
-    V += do_1_thole(x[da1],x[da2],f[da1],f[da2],pbc, qq,fshift,a,a1a2);
+    afac  = a*pow(al1*al2,-1.0/6.0);
+    V += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq,fshift,afac);
+    V += do_1_thole(x[da1],x[a2], f[da1],f[a2], pbc,-qq,fshift,afac);
+    V += do_1_thole(x[a1], x[da2],f[a1], f[da2],pbc,-qq,fshift,afac);
+    V += do_1_thole(x[da1],x[da2],f[da1],f[da2],pbc, qq,fshift,afac);
   }
   /* 290 flops */
   return V;
