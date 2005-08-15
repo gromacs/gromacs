@@ -154,8 +154,8 @@ static void check_box_c(matrix box)
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,bool bXY,real cutoff,real binwidth,real fade,
-		   int ng)
+		   bool bCM,bool bXY,bool bPBC,
+		   real cutoff,real binwidth,real fade,int ng)
 {
   FILE       *fp;
   int        status;
@@ -291,17 +291,19 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   invvol_sum = 0;
   do {
     /* Must init pbc every step because of pressure coupling */
-    rm_pbc(&top.idef,natoms,box,x,x);
     copy_mat(box,box_pbc);
-    if (bXY) {
-      check_box_c(box);
-      box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
-    }
-    set_pbc(&pbc,box_pbc);
+    if (bPBC) {
+      rm_pbc(&top.idef,natoms,box,x,x);
+      if (bXY) {
+	check_box_c(box);
+	box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
+      }
+      set_pbc(&pbc,box_pbc);
 
-    if (bXY)
-      /* Set z-size to 1 so we get the surface iso the volume */
-      box_pbc[ZZ][ZZ] = 1;
+      if (bXY)
+	/* Set z-size to 1 so we get the surface iso the volume */
+	box_pbc[ZZ][ZZ] = 1;
+    }
     invvol = 1/det(box_pbc);
     invvol_sum += invvol;
 
@@ -328,7 +330,11 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	  /* Expensive loop, because of indexing */
 	  for(j=0; j<npairs[g][i]; j++) {
 	    jx=pairs[g][i][j];
-	    pbc_dx(&pbc,xi,x[jx],dx);
+	    if (bPBC)
+	      pbc_dx(&pbc,xi,x[jx],dx);
+	    else
+	      rvec_sub(xi,x[jx],dx);
+	      
 	    if (bXY)
 	      r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
 	    else 
@@ -339,7 +345,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	else
 	  /* Cheaper loop, no exclusions */
 	  for(j=0; j<isize[g+1]; j++) {
-	    pbc_dx(&pbc,xi,x_i1[j],dx);
+	    if (bPBC)
+	      pbc_dx(&pbc,xi,x_i1[j],dx);
+	    else
+	      rvec_sub(xi,x_i1[j],dx);
 	    if (bXY)
 	      r2 = dx[XX]*dx[XX] + dx[YY]*dx[YY];
 	    else 
@@ -380,7 +389,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* We have to normalize by dividing by the number of frames */
     rho     = isize[g+1]*invvol;
     normfac = 1.0/((rho*nframes)*isize[0]);
-    
+      
     /* Do the normalization */
     nrdf = max(nbin-1,1+(2*fade/binwidth));
     snew(rdf[g],nrdf);
@@ -1141,7 +1150,7 @@ int gmx_rdf(int argc,char *argv[])
     "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
     "spacing of which is determined by option [TT]-grid[tt]."
   };
-  static bool bCM=FALSE,bXY=FALSE;
+  static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
@@ -1150,6 +1159,8 @@ int gmx_rdf(int argc,char *argv[])
       "Binwidth (nm)" },
     { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
+    { "-pbc",      FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions for computing distances" },
     { "-xy",       FALSE, etBOOL, {&bXY},
       "Use only the x and y components of the distance" },
     { "-cut",      FALSE, etREAL, {&cutoff},
@@ -1223,7 +1234,7 @@ int gmx_rdf(int argc,char *argv[])
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
 	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,bXY,cutoff,binwidth,fade,ngroups);
+	   bCM,bXY,bPBC,cutoff,binwidth,fade,ngroups);
 
   thanx(stderr);
   
