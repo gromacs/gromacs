@@ -589,17 +589,18 @@ static real do_1_thole(const rvec xi,const rvec xj,rvec fi,rvec fj,
 		       rvec fshift[],real afac)
 {
   rvec r12;
-  real r12_1,r12n,r12bar,v0,v1,fscal,ebar,fff;
+  real r12sq,r12_1,r12n,r12bar,v0,v1,fscal,ebar,fff;
   int  m,t;
     
   t      = pbc_rvec_sub(pbc,xi,xj,r12); /*  3 */
   
-  r12_1  = invsqrt(iprod(r12,r12));     /* 10 */
+  r12sq  = iprod(r12,r12);              /*  5 */
+  r12_1  = invsqrt(r12sq);              /*  5 */
   r12bar = afac/r12_1;                  /*  5 */
   v0     = qq*ONE_4PI_EPS0*r12_1;       /*  2 */
   ebar   = exp(-r12bar);                /*  5 */
-  v1     = (1-(1-r12bar*0.5)*ebar);     /*  4 */
-  fscal  = ((v0*r12_1)*v1 - v0*(1.5 - 0.5*r12bar)*ebar*afac)*r12_1; /* 9 */
+  v1     = (1-(1-0.5*r12bar)*ebar);     /*  4 */
+  fscal  = ((v0*r12_1)*v1 + v0*afac*ebar*(0.5*r12bar-1.5))*r12_1; /* 9 */
   for(m=0; (m<DIM); m++) {
     fff    = fscal*r12[m];
     fi[m] += fff;
