@@ -2108,7 +2108,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     sprintf(str,"f. V");
     leg[3] = strdup(str);
     for(i=0; i<ngid; i++) {
-      sprintf(str,"f. U\\s%s\\N<e\\S-\\8b\\4U\\N>",
+      sprintf(str,"f. <U\\s%s\\Ne\\S-\\8b\\4U\\N>",
 	      *(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
       leg[4+i] = strdup(str);
     }
