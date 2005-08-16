@@ -599,8 +599,8 @@ static real do_1_thole(const rvec xi,const rvec xj,rvec fi,rvec fj,
   r12bar = afac/r12_1;                  /*  5 */
   v0     = qq*ONE_4PI_EPS0*r12_1;       /*  2 */
   ebar   = exp(-r12bar);                /*  5 */
-  v1     = (1-(1-0.5*r12bar)*ebar);     /*  4 */
-  fscal  = ((v0*r12_1)*v1 + v0*afac*ebar*(0.5*r12bar-1.5))*r12_1; /* 9 */
+  v1     = (1-(1+0.5*r12bar)*ebar);     /*  4 */
+  fscal  = ((v0*r12_1)*v1 - v0*afac*ebar*(0.5*r12bar+0.5))*r12_1; /* 9 */
   for(m=0; (m<DIM); m++) {
     fff    = fscal*r12[m];
     fi[m] += fff;
