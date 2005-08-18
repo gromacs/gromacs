@@ -223,7 +223,7 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
   sfree(x0);
 }
 
-static void calc_angle_single(matrix box,
+static void calc_angle_single(matrix *box,
 			      rvec xzero[],
 			      rvec x[], 
 			      atom_id index1[],
@@ -235,6 +235,8 @@ static void calc_angle_single(matrix box,
 			      real *distance1,
 			      real *distance2)
 {
+  t_pbc pbc;
+  
   /* distance is distance between centers, distance 1 between center of plane
      and atom one of vector, distance 2 same for atom two
   */
@@ -244,8 +246,11 @@ static void calc_angle_single(matrix box,
     /* center of triangle of pts to define plane,
      * or center of vector if a vector is given
      */
-  rvec  h1,h2,h3,h4,h5;  	/* temp. vectors */
-   
+  rvec  h1,h2,h3,h4,h5;  	/* temp. vectors */ 
+  
+  if (box)
+    set_pbc(&pbc,*box);
+
   switch(gnx1) {
   case 3:           /* group 1 defines plane */
     calculate_normal(index1,xzero,normal1,center1);
@@ -273,13 +278,21 @@ static void calc_angle_single(matrix box,
   }
   
   *angle = cos_angle(normal1,normal2);
-  
-  rvec_sub(center1,center2,h3); 
+
+  if (*box)
+    pbc_dx(&pbc,center1,center2,h3);
+  else
+    rvec_sub(center1,center2,h3); 
   *distance = norm(h3);
   
   if (gnx1 == 3 && gnx2 == 2) {
-    rvec_sub(center1,x[index2[0]],h4);
-    rvec_sub(center1,x[index2[1]],h5);
+    if (*box) {
+      pbc_dx(&pbc,center1,x[index2[0]],h4);
+      pbc_dx(&pbc,center1,x[index2[1]],h5);
+    } else {
+      rvec_sub(center1,x[index2[0]],h4);
+      rvec_sub(center1,x[index2[1]],h5);
+    }
     *distance1 = norm(h4);
     *distance2 = norm(h5);
   } else if (gnx1 == 2 && gnx2 ==3) { 
@@ -297,7 +310,7 @@ void sgangle_plot_single(char *fn,char *afile,char *bfile,
 			 char *cfile, char *dfile,
 			 atom_id index1[], int gnx1, char *grpn1,
 			 atom_id index2[], int gnx2, char *grpn2,
-			 t_topology *top)
+			 t_topology *top,bool bPBC)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
@@ -344,7 +357,8 @@ void sgangle_plot_single(char *fn,char *afile,char *bfile,
     }
     
     
-    calc_angle_single(box,xzero,x0,index1,index2,gnx1,gnx2,&angle,
+    calc_angle_single(bPBC ? &box : NULL,
+		      xzero,x0,index1,index2,gnx1,gnx2,&angle,
 		      &distance,&distance1,&distance2);
     
     fprintf(sg_angle,"%12g  %12g  %12g\n",t,angle,acos(angle)*180.0/M_PI);
@@ -392,10 +406,12 @@ int gmx_sgangle(int argc,char *argv[])
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 
   atom_id   *index[2];            		
-  static bool bOne = TRUE;
+  static bool bPBC=FALSE,bOne = TRUE;
   t_pargs pa[] = {
+    { "-pbc", FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions" },
     { "-one", FALSE, etBOOL, {&bOne},
-      "only one group compute angle between vector at time zero and t" }
+      "Only one group compute angle between vector at time zero and t" }
   };
 #define NPA asize(pa)
 
@@ -431,7 +447,7 @@ int gmx_sgangle(int argc,char *argv[])
 			opt2fn("-od2",NFILE,fnm),
 			index[0],gnx[0],grpname[0],
 			index[0],gnx[0],grpname[0],
-			top);
+			top,bPBC);
   }  else {
     rd_index(ftp2fn(efNDX,NFILE,fnm),2,gnx,index,grpname); 
 
