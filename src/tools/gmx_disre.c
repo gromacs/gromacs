@@ -371,7 +371,7 @@ static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
 
   fprintf(fp,"\n");
   fprintf(fp,"++++++++++++++ STATISTICS ++++++++++++++++++++++\n");  
-  fprintf(fp,"Cluster  NFrames    SumV      MaxV     SumVT     MaxVT\n");
+  fprintf(fp,"Cluster  NFrames    SumV      MaxV     SumVT     MaxVT     SumVS     MaxVS\n");
 
   snew(drs,ndr);
   
@@ -401,7 +401,7 @@ static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
       if ((dr[k].aver_3[i] <= 0) || (dr[k].aver_3[i] != dr[k].aver_3[i]))
 	gmx_fatal(FARGS,"dr[%d].aver_3[%d] = %f",k,i,dr[k].aver_3[i]);
       drs[i].rT3    = pow(dr[k].aver_3[i]/dr[k].nframes,-1.0/3.0);
-      drs[i].rT6    = pow(dr[k].aver_3[i]/dr[k].nframes,-1.0/3.0);
+      drs[i].rT6    = pow(dr[k].aver_6[i]/dr[k].nframes,-1.0/6.0);
       drs[i].viol   = max(0,drs[i].r-drs[i].up1);
       drs[i].violT3 = max(0,drs[i].rT3-drs[i].up1);
       drs[i].violT6 = max(0,drs[i].rT6-drs[i].up1);
