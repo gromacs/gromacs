@@ -769,8 +769,12 @@ int gmx_trjconv(int argc,char *argv[])
       get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),
 		1,&ifit,&ind_fit,&gn_fit);
 
-      if (bFit && ifit < 3) 
-	gmx_fatal(FARGS,"Need at least 3 points to fit!\n");
+      if (bFit) {
+	if (ifit < 2) 
+	  gmx_fatal(FARGS,"Need at least 2 atoms to fit!\n");
+	else if (ifit == 3)
+	  fprintf(stderr,"WARNING: fitting with only 2 atoms is not unique\n");
+      }
     }
     else if (bCluster) {
       printf("Select group for clustering\n");
@@ -1060,6 +1064,18 @@ int gmx_trjconv(int argc,char *argv[])
 	      /* Now modify the coords according to the flags,
 		 for PFit we did this already! */
 	    
+	      if (bPBC)
+		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
+	  
+	      if (bReset) {
+		reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
+		if (bFit)
+		  do_fit(natoms,w_rls,xp,fr.x);
+		if (!bCenter)
+		  for(i=0; i<natoms; i++)
+		    rvec_inc(fr.x[i],x_shift);
+	      }
+
 	      if (bCenter)
 		center_x(ecenter,fr.x,fr.box,natoms,ncent,cindex);
 
@@ -1076,17 +1092,6 @@ int gmx_trjconv(int argc,char *argv[])
 		    bWarnCompact = TRUE;
 		  }
 		}
-	      }
-	    
-	      if (bPBC)
-		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
-	  
-	      if (bReset) {
-		reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
-		if (bFit)
-		  do_fit(natoms,w_rls,xp,fr.x);
-		for(i=0; i<natoms; i++)
-		  rvec_inc(fr.x[i],x_shift);
 	      }
 	    }
 	    /* put COM of residues inside box */
