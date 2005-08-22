@@ -264,15 +264,15 @@ static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
 
 static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
 		    char *xpm3,char *xpm4,char *pdb,char *logf,
-		    int n,int neig,real **eig,real **enerT,
+		    int n,int neig,real **eig,bool bGE,real **enerT,
 		    int nmap,real *mapindex,real **map,
-		    real Tref,int nlevels,real pmin,
-		    char *mname,bool bSham,int *ibox,
+		    real Tref,real gmax,int nlevels,real pmin,
+		    char *mname,bool bSham,int *idim,int *ibox,
 		    bool bXmin,real *xmin,bool bXmax,real *xmax)
 {
   FILE    *fp;
   real    *min_eig,*max_eig;
-  real    *axis_x,*axis_y,*axis_z;
+  real    *axis_x,*axis_y,*axis_z,*axis=NULL;
   real    *W,*E,**WW,**EE,*S,**SS,*M,**MM,*bE;
   rvec    xxx;
   char    *buf;
@@ -281,6 +281,8 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   int     i,j,k,imin,len,index,d,*nbin,*bindex,bi;
   int     *nxyz,maxbox;
   t_block *b;
+  bool    bOutside;
+  unsigned int flags;
   t_rgb   rlo  = { 0, 0, 0 };
   t_rgb   rhi  = { 1, 1, 1 };
   
@@ -329,7 +331,10 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   if (enerT) {
     Emin = 1e8;
     for(j=0; (j<n); j++) {
-      bE[j] = (bref - 1/(BOLTZ*enerT[1][j]))*enerT[0][j];
+      if (bGE)
+	bE[j] = bref*enerT[0][j];
+      else
+	bE[j] = (bref - 1/(BOLTZ*enerT[1][j]))*enerT[0][j];
       Emin  = min(Emin,bE[j]);
     }
   }
@@ -352,23 +357,38 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   /* Loop over projections */
   for(j=0; (j<n); j++) {
     /* Loop over dimensions */
-    for(i=0; (i<neig); i++) 
+    bOutside = FALSE;
+    for(i=0; (i<neig); i++) {
       nxyz[i] = bfac[i]*(eig[i][j]-min_eig[i]);
-    index = indexn(neig,ibox,nxyz); 
-    range_check(index,0,len);
-    /* Compute the exponential factor */
-    if (enerT)
-      efac = exp(-bE[j]+Emin);
-    else
-      efac = 1;
-    /* Update the probability */
-    P[index] += efac;
-    /* Update the energy */
-    if (enerT)
-      E[index] += enerT[0][j];
-    /* Statistics: which "structure" in which bin */
-    nbin[index]++;
-    bindex[j]=index;
+      if (nxyz[i] < 0 || nxyz[i] >= ibox[i])
+	bOutside = TRUE;
+    }
+    if (!bOutside) {
+      index = indexn(neig,ibox,nxyz); 
+      range_check(index,0,len);
+      /* Compute the exponential factor */
+      if (enerT)
+	efac = exp(-bE[j]+Emin);
+      else
+	efac = 1;
+      /* Apply the bin volume correction for a multi-dimensional distance */
+      for(i=0; i<neig; i++) {
+	if (idim[i] == 2)
+	  efac /= eig[i][j];
+	else if (idim[i] == 3)
+	  efac /= sqr(eig[i][j]);
+	else if (idim[i] == -1)
+	  efac /= sin(DEG2RAD*eig[i][j]);
+      }
+      /* Update the probability */
+      P[index] += efac;
+      /* Update the energy */
+      if (enerT)
+	E[index] += enerT[0][j];
+      /* Statistics: which "structure" in which bin */
+      nbin[index]++;
+      bindex[j]=index;
+    }
   }
   /* Normalize probability */
   normalize_p_e(len,P,nbin,E,pmin);
@@ -425,11 +445,14 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     nbin[bi]++;
   }
   /* Consistency check */
+  /* This no longer applies when we allow the plot to be smaller
+     than the sampled space.
   for(i=0; (i<len); i++) {
     if (nbin[i] != (b->index[i+1] - b->index[i]))
       gmx_fatal(FARGS,"nbin[%d] = %d, should be %d",i,nbin[i],
 		b->index[i+1] - b->index[i]);
   }
+  */
   /* Write the index file */
   fp = ffopen(ndx,"w");
   for(i=0; (i<len); i++) {
@@ -440,17 +463,22 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     }
   }  
   fclose(fp);
-  snew(axis_x,ibox[0]);
-  snew(axis_y,ibox[1]);
-  snew(axis_z,ibox[2]);
+  snew(axis_x,ibox[0]+1);
+  snew(axis_y,ibox[1]+1);
+  snew(axis_z,ibox[2]+1);
   maxbox = max(ibox[0],max(ibox[1],ibox[2]));
   snew(WW,maxbox*maxbox);
   snew(EE,maxbox*maxbox);
   snew(SS,maxbox*maxbox);
-  for(i=0; (i<neig); i++) {
-    axis_x[i] = min_eig[XX]+i/bfac[XX];
-    axis_y[i] = min_eig[YY]+i/bfac[YY];
-    axis_z[i] = min_eig[ZZ]+i/bfac[ZZ];
+  for(i=0; (i<min(neig,3)); i++) {
+    switch (i) {
+    case 0: axis = axis_x; break;
+    case 1: axis = axis_y; break;
+    case 2: axis = axis_z; break;
+    default: break;
+    }
+    for(j=0; j<=ibox[i]; j++)
+      axis[j] = min_eig[i] + j/bfac[i];
   }
   if (map) {
     snew(M,len);
@@ -476,6 +504,9 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     }
   }
   pick_minima(logf,ibox,neig,len,W);
+  if (gmax <= 0)
+    gmax = Winf;
+  flags = MAT_SPATIAL_X | MAT_SPATIAL_Y;
   if (neig == 2) {
     /* Dump to XPM file */
     for(i=0; (i<ibox[0]); i++) {
@@ -484,21 +515,23 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
       SS[i] = &(S[i*ibox[1]]);
     }
     fp = fopen(xpm,"w");
-    write_xpm(fp,0,"Gibbs Energy Landscape","G (kJ/mol)","PC1","PC2",
-	      ibox[0],ibox[1],axis_x,axis_y,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,flags,"Gibbs Energy Landscape","G (kJ/mol)","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
     fp = fopen(xpm2,"w");
-    write_xpm(fp,0,"Enthalpy Landscape","H (kJ/mol)","PC1","PC2",
+    write_xpm(fp,flags,"Enthalpy Landscape","H (kJ/mol)","PC1","PC2",
 	      ibox[0],ibox[1],axis_x,axis_y,EE,Emin,Einf,rlo,rhi,&nlevels);
     fclose(fp);
     fp = fopen(xpm3,"w");
-    write_xpm(fp,0,"Entropy Landscape","TDS (kJ/mol)","PC1","PC2",
+    write_xpm(fp,flags,"Entropy Landscape","TDS (kJ/mol)","PC1","PC2",
 	      ibox[0],ibox[1],axis_x,axis_y,SS,0,Sinf,rlo,rhi,&nlevels);
     fclose(fp);
-    fp = fopen(xpm4,"w");
-    write_xpm(fp,0,"Custom Landscape",mname,"PC1","PC2",
-	      ibox[0],ibox[1],axis_x,axis_y,MM,0,Minf,rlo,rhi,&nlevels);
-    fclose(fp);
+    if (map) {
+      fp = fopen(xpm4,"w");
+      write_xpm(fp,flags,"Custom Landscape",mname,"PC1","PC2",
+		ibox[0],ibox[1],axis_x,axis_y,MM,0,Minf,rlo,rhi,&nlevels);
+      fclose(fp);
+    }
   }
   else if (neig == 3) {
     /* Dump to PDB file */
@@ -533,8 +566,8 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     sprintf(buf,"%s",xpm);
     sprintf(&buf[strlen(xpm)-4],"12.xpm");
     fp = fopen(buf,"w");
-    write_xpm(fp,0,"Gibbs Energy Landscape","W (kJ/mol)","PC1","PC2",
-	      ibox[0],ibox[1],axis_x,axis_y,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,flags,"Gibbs Energy Landscape","W (kJ/mol)","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
     for(i=0; (i<ibox[0]); i++) {
       for(j=0; (j<ibox[2]); j++)
@@ -542,8 +575,8 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     }
     sprintf(&buf[strlen(xpm)-4],"13.xpm");
     fp = fopen(buf,"w");
-    write_xpm(fp,0,"SHAM Energy Landscape","kJ/mol","PC1","PC3",
-	      ibox[0],ibox[2],axis_x,axis_z,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,flags,"SHAM Energy Landscape","kJ/mol","PC1","PC3",
+	      ibox[0],ibox[2],axis_x,axis_z,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
     for(i=0; (i<ibox[1]); i++) {
       for(j=0; (j<ibox[2]); j++)
@@ -551,8 +584,8 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     }
     sprintf(&buf[strlen(xpm)-4],"23.xpm");
     fp = fopen(buf,"w");
-    write_xpm(fp,0,"SHAM Energy Landscape","kJ/mol","PC2","PC3",
-	      ibox[1],ibox[2],axis_y,axis_z,WW,0,Winf,rlo,rhi,&nlevels);
+    write_xpm(fp,flags,"SHAM Energy Landscape","kJ/mol","PC2","PC3",
+	      ibox[1],ibox[2],axis_y,axis_z,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
     sfree(buf);
   }
@@ -620,13 +653,29 @@ int gmx_sham(int argc,char *argv[])
     "Multiple sets can also be",
     "read when they are seperated by & (option [TT]-n[tt]),",
     "in this case only one y value is read from each line.",
-    "All lines starting with # and @ are skipped."
+    "All lines starting with # and @ are skipped.",
+    "[PAR]",
+    "Option [TT]-ge[tt] can be used to supply a file with free energies",
+    "when the ensemble is not a Boltzmann ensemble, but has been biased",
+    "by this free energy.",
+    "[PAR]",
+    "With option [TT]-dim[tt] dimensions can be gives for distances.",
+    "When a distance is 2- or 3-dimensional, the circumference or surface",
+    "sampled by two particles increases with increasing distance.",
+    "Depending on what one would like to show, one can choose to correct",
+    "the free-energy for this volume effect.",
+    "The probability is normalized by r and r^2 for a dimension of 2 and 3",
+    "respectively.",
+    "Note that for angles between vectors the inner-product or cosine",
+    "is the natural quantity to use, as it will produce bins of the same",
+    "volume."
   };
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bShamEner=TRUE,bSham=TRUE; 
-  static real Tref=298.15,pmin=0,ttol=0;
+  static real Tref=298.15,pmin=0,ttol=0,gmax=0;
+  static rvec nrdim = {1,1,1};
   static rvec nrbox = {32,32,32};
   static rvec xmin  = {0,0,0}, xmax={1,1,1};
   static int  nsets_in=1,nb_min=4,resol=10,nlevels=25;
@@ -652,12 +701,16 @@ int gmx_sham(int argc,char *argv[])
       "Temperature for single histogram analysis" },
     { "-pmin",    FALSE, etREAL, {&pmin},
       "Minimum probability. Anything lower than this will be set to zero" },
+    { "-dim",     FALSE, etRVEC, {nrdim},
+      "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will get the same value as the last)" },
     { "-ngrid",   FALSE, etRVEC, {nrbox},   
-      "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same value as the last" },
+      "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same value as the last)" },
     { "-xmin",    FALSE, etRVEC, {xmin},
       "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
     { "-xmax",    FALSE, etRVEC, {xmax},
       "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
+    { "-gmax",    FALSE, etREAL, {&gmax},
+      "Maximum level in output, 0 is calculate" },
     { "-nlevels", FALSE, etINT,  {&nlevels},
       "Number of levels for energy landscape from single histogram analysis" },
     { "-mname",   FALSE, etSTR,  {&mname},
@@ -666,13 +719,15 @@ int gmx_sham(int argc,char *argv[])
 #define NPA asize(pa)
 
   FILE     *out;
-  int      n,e_n,d_n,nlast,s,nset,e_nset,d_nset,i,j=0,*ibox;
+  int      n,e_n,d_n,nlast,s,nset,e_nset,d_nset,i,j=0,*idim,*ibox;
   real     **val,**et_val,**dt_val,*t,*e_t,e_dt,d_dt,*d_t,dt,tot,error;
   real     *rmin,*rmax;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
+  char     *fn_ge,*fn_ene;
     
   t_filenm fnm[] = { 
     { efXVG, "-f",    "graph",    ffREAD   },
+    { efXVG, "-ge",   "gibbs",    ffOPTRD  },
     { efXVG, "-ene",  "esham",    ffOPTRD  },
     { efXVG, "-dist", "ener",     ffOPTWR  },
     { efXVG, "-histo","edist",    ffOPTWR  },
@@ -701,14 +756,26 @@ int gmx_sham(int argc,char *argv[])
 		    nsets_in,&nset,&n,&dt,&t);
   printf("Read %d sets of %d points, dt = %g\n\n",nset,n,dt);
   
-  if (opt2fn_null("-ene",NFILE,fnm) != NULL) {
-    et_val=read_xvg_time(opt2fn("-ene",NFILE,fnm),bHaveT,
+  fn_ge  = opt2fn_null("-ge",NFILE,fnm);
+  fn_ene = opt2fn_null("-ene",NFILE,fnm);
+
+  if (fn_ge && fn_ene)
+    gmx_fatal(FARGS,"Can not do free energy and energy corrections at the same time");
+
+  if (fn_ge || fn_ene) {
+    et_val=read_xvg_time(fn_ge ? fn_ge : fn_ene,bHaveT,
 			 opt2parg_bSet("-b",npargs,pa),tb-ttol,
 			 opt2parg_bSet("-e",npargs,pa),te+ttol,
 			 nsets_in,&e_nset,&e_n,&e_dt,&e_t);
-    if (e_nset != 2) 
-      gmx_fatal(FARGS,"Can only handle one energy component and one T in %s",
-		opt2fn("-ene",NFILE,fnm));
+    if (fn_ge) {
+      if (e_nset != 1)
+	gmx_fatal(FARGS,"Can only handle one free energy component in %s",
+		fn_ge);
+    } else {
+      if (e_nset != 2)
+	gmx_fatal(FARGS,"Can only handle one energy component and one T in %s",
+		  fn_ene);
+    }
     if (e_n != n)
       gmx_fatal(FARGS,"Number of energies (%d) does not match number of entries (%d) in %s",e_n,n,opt2fn("-f",NFILE,fnm));
   }
@@ -726,29 +793,33 @@ int gmx_sham(int argc,char *argv[])
   else
     dt_val = NULL;
 
-  if (et_val)
+  if (fn_ene && et_val)
     ehisto(opt2fn("-histo",NFILE,fnm),e_n,et_val);
 
+  snew(idim,nset);
   snew(ibox,nset);
   snew(rmin,nset);
   snew(rmax,nset);
   for(i=0; (i<min(3,nset)); i++) {
+    idim[i] = nrdim[i];
     ibox[i] = nrbox[i];
     rmin[i] = xmin[i];
     rmax[i] = xmax[i];
   }
   for(; (i<nset); i++) {
-    ibox[i] = nrbox[ZZ];
-    rmin[i] = xmin[ZZ];
-    rmax[i] = xmax[ZZ];
+    idim[i] = nrdim[2];
+    ibox[i] = nrbox[2];
+    rmin[i] = xmin[2];
+    rmax[i] = xmax[2];
   }
-      
+
   do_sham(opt2fn("-dist",NFILE,fnm),opt2fn("-bin",NFILE,fnm),
 	  opt2fn("-ls",NFILE,fnm),opt2fn("-lsh",NFILE,fnm),
 	  opt2fn("-lss",NFILE,fnm),opt2fn("-map",NFILE,fnm),
 	  opt2fn("-ls3",NFILE,fnm),opt2fn("-g",NFILE,fnm),
-	  n,nset,val,et_val,d_n,d_t,dt_val,Tref,nlevels,pmin,
-	  mname,bSham,ibox,
+	  n,nset,val,fn_ge!=NULL,et_val,d_n,d_t,dt_val,Tref,
+	  gmax,nlevels,pmin,
+	  mname,bSham,idim,ibox,
 	  opt2parg_bSet("-xmin",NPA,pa),rmin,
 	  opt2parg_bSet("-xmax",NPA,pa),rmax);
   
