@@ -112,6 +112,12 @@ _nb_kernel200_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 360		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -226,13 +232,12 @@ _nb_kernel200_x86_64_sse2:
 
 	mov   [rsp + nb200_ii3], ebx
 	
-	;# clear vctot and i forces 
-	xorpd xmm4, xmm4
-	movapd [rsp + nb200_vctot], xmm4
-	movapd [rsp + nb200_fix], xmm4
-	movapd [rsp + nb200_fiy], xmm4
-	movapd [rsp + nb200_fiz], xmm4
-	
+	;# clear vctot (xmm12) and i forces (xmm13-xmm15)
+	xorpd xmm12, xmm12
+	movapd xmm13, xmm12
+	movapd xmm14, xmm12
+	movapd xmm15, xmm12
+		
 	mov   rax, [rsp + nb200_jindex]
 	mov   ecx, [rax + rsi*4]	     ;# jindex[n] 
 	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
@@ -255,45 +260,34 @@ _nb_kernel200_x86_64_sse2:
 .nb200_unroll_loop:
 	;# twice unrolled innerloop here 
 	mov   rdx, [rsp + nb200_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]              
+	mov   r8d, [rdx]	
+	mov   r9d, [rdx + 4]              
 	add qword ptr [rsp + nb200_innerjjnr],  8	;# advance pointer (unrolled 2) 
 
-	mov rsi, [rbp + nb200_charge]    ;# base of charge[] 
-	
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
-
-	movapd xmm5, [rsp + nb200_iq]
-	mulpd xmm3, xmm5		;# qq 
-
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
+	lea   rax, [r8 + r8*2]     ;# replace jnr with j3 
+	lea   rbx, [r9 + r9*2]	
 
 	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
 
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	movhpd xmm0, [rsi + rbx*8]
-	movhpd xmm1, [rsi + rbx*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 16]		
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb200_ix]
-	movapd xmm5, [rsp + nb200_iy]
-	movapd xmm6, [rsp + nb200_iz]
+	;# move two coordinates to xmm4-xmm6
+	movlpd xmm4, [rsi + rax*8]
+	movlpd xmm5, [rsi + rax*8 + 8]
+	movlpd xmm6, [rsi + rax*8 + 16]
+	movhpd xmm4, [rsi + rbx*8]
+	movhpd xmm5, [rsi + rbx*8 + 8]
+	movhpd xmm6, [rsi + rbx*8 + 16]		
 
 	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
+	subpd xmm4, [rsp + nb200_ix]
+	subpd xmm5, [rsp + nb200_iy]
+	subpd xmm6, [rsp + nb200_iz]
 
 	;# store dr 
-	movapd [rsp + nb200_dx], xmm4
-	movapd [rsp + nb200_dy], xmm5
-	movapd [rsp + nb200_dz], xmm6
+	movapd xmm9, xmm4
+	movapd xmm10, xmm5
+	movapd xmm11, xmm6
+
+	mov rsi, [rbp + nb200_charge]    ;# base of charge[] 
 	;# square it 
 	mulpd xmm4,xmm4
 	mulpd xmm5,xmm5
@@ -302,10 +296,14 @@ _nb_kernel200_x86_64_sse2:
 	addpd xmm4, xmm6
 	;# rsq in xmm4 
 
+	
+	movlpd xmm3, [rsi + r8*8]
+
 	cvtpd2ps xmm5, xmm4	
 	rsqrtps xmm5, xmm5
 	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
 
+	movhpd xmm3, [rsi + r9*8]
 	movapd xmm7, [rsp + nb200_krf]	
 	;# lookup seed in xmm2 
 	movapd xmm5, xmm2	;# copy of lu 
@@ -318,6 +316,7 @@ _nb_kernel200_x86_64_sse2:
 	mulpd xmm1, xmm5	
 	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
 
+	mulpd xmm3, [rsp + nb200_iq]		;# qq 
 	movapd xmm5, xmm1	;# copy of lu 
 	mulpd xmm1, xmm1	;# lu*lu 
 	movapd xmm2, [rsp + nb200_three]
@@ -334,34 +333,21 @@ _nb_kernel200_x86_64_sse2:
 	subpd  xmm6, [rsp + nb200_crf]
 	mulpd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
 	
-	mulpd  xmm7, [rsp + nb200_two]
+	mov    rdi, [rbp + nb200_faction]
+
+	addpd  xmm7, xmm7
 
 	subpd  xmm0, xmm7
 	mulpd  xmm3, xmm0	
 	mulpd  xmm4, xmm3	;# xmm4=total fscal 
-	addpd  xmm6, [rsp + nb200_vctot]
 
-	movapd xmm0, [rsp + nb200_dx]
-	movapd xmm1, [rsp + nb200_dy]
-	movapd xmm2, [rsp + nb200_dz]
+    ;# increment vctot
+	addpd  xmm12, xmm6
 
-	movapd [rsp + nb200_vctot], xmm6
+	mulpd  xmm9, xmm4
+	mulpd  xmm10, xmm4
+	mulpd  xmm11, xmm4
 
-	mov    rdi, [rbp + nb200_faction]
-	mulpd  xmm0, xmm4
-	mulpd  xmm1, xmm4
-	mulpd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
-	;# now update f_i 
-	movapd xmm3, [rsp + nb200_fix]
-	movapd xmm4, [rsp + nb200_fiy]
-	movapd xmm5, [rsp + nb200_fiz]
-	addpd  xmm3, xmm0
-	addpd  xmm4, xmm1
-	addpd  xmm5, xmm2
-	movapd [rsp + nb200_fix], xmm3
-	movapd [rsp + nb200_fiy], xmm4
-	movapd [rsp + nb200_fiz], xmm5
 	;# the fj's - start by accumulating forces from memory 
 	movlpd xmm3, [rdi + rax*8]
 	movlpd xmm4, [rdi + rax*8 + 8]
@@ -369,9 +355,16 @@ _nb_kernel200_x86_64_sse2:
 	movhpd xmm3, [rdi + rbx*8]
 	movhpd xmm4, [rdi + rbx*8 + 8]
 	movhpd xmm5, [rdi + rbx*8 + 16]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
+
+	;# now update f_i 
+	addpd  xmm13, xmm9
+	addpd  xmm14, xmm10
+	addpd  xmm15, xmm11
+
+	addpd xmm3, xmm9
+	addpd xmm4, xmm10
+	addpd xmm5, xmm11
+    
 	movlpd [rdi + rax*8], xmm3
 	movlpd [rdi + rax*8 + 8], xmm4
 	movlpd [rdi + rax*8 + 16], xmm5
@@ -393,37 +386,32 @@ _nb_kernel200_x86_64_sse2:
 	mov rsi, [rbp + nb200_charge]
 	mov rdi, [rbp + nb200_pos]
 	mov   rcx, [rsp + nb200_innerjjnr]
-	
-	xorpd xmm3, xmm3
 	mov   eax, [rcx]
-
-	movlpd xmm3, [rsi + rax*8]
-	movapd xmm5, [rsp + nb200_iq]
-	mulpd xmm3, xmm5		;# qq 
+    
+	mov rsi, [rbp + nb200_charge]    ;# base of charge[] 
 	
+	movsd xmm3, [rsi + rax*8]
+	mulsd xmm3, [rsp + nb200_iq]		;# qq 
+
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+
 	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
 
-	lea rax, [rax + rax*2]     ;# replace jnr with j3 
-
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb200_ix]
-	movapd xmm5, [rsp + nb200_iy]
-	movapd xmm6, [rsp + nb200_iz]
+	;# move two coordinates to xmm4-xmm6
+	movsd xmm4, [rsi + rax*8]
+	movsd xmm5, [rsi + rax*8 + 8]
+	movsd xmm6, [rsi + rax*8 + 16]
 
 	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
+	subsd xmm4, [rsp + nb200_ix]
+	subsd xmm5, [rsp + nb200_iy]
+	subsd xmm6, [rsp + nb200_iz]
 
 	;# store dr 
-	movapd [rsp + nb200_dx], xmm4
-	movapd [rsp + nb200_dy], xmm5
-	movapd [rsp + nb200_dz], xmm6
+	movapd xmm9, xmm4
+	movapd xmm10, xmm5
+	movapd xmm11, xmm6
+
 	;# square it 
 	mulsd xmm4,xmm4
 	mulsd xmm5,xmm5
@@ -462,49 +450,32 @@ _nb_kernel200_x86_64_sse2:
 	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
 	movapd xmm1, xmm4
 	subsd  xmm6, [rsp + nb200_crf]
-	mulsd  xmm1, xmm4
-	mulsd  xmm1, xmm4	;# xmm1=rinvsix 
-	movapd xmm2, xmm1
-	mulsd  xmm2, xmm2	;# xmm2=rinvtwelve 
 	mulsd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	mulsd  xmm7, [rsp + nb200_two]
+	
+	addsd  xmm7, xmm7
 
 	subsd  xmm0, xmm7
-	mulsd  xmm3, xmm0
+	mulsd  xmm3, xmm0	
 	mulsd  xmm4, xmm3	;# xmm4=total fscal 
-	addsd  xmm6, [rsp + nb200_vctot]
 
-	movlpd xmm0, [rsp + nb200_dx]
-	movlpd xmm1, [rsp + nb200_dy]
-	movlpd xmm2, [rsp + nb200_dz]
-
-	movlpd [rsp + nb200_vctot], xmm6
+    ;# increment vctot
+	addsd  xmm12, xmm6
 
 	mov    rdi, [rbp + nb200_faction]
-	mulsd  xmm0, xmm4
-	mulsd  xmm1, xmm4
-	mulsd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
+	mulsd  xmm9, xmm4
+	mulsd  xmm10, xmm4
+	mulsd  xmm11, xmm4
 	;# now update f_i 
-	movlpd xmm3, [rsp + nb200_fix]
-	movlpd xmm4, [rsp + nb200_fiy]
-	movlpd xmm5, [rsp + nb200_fiz]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
-	movlpd [rsp + nb200_fix], xmm3
-	movlpd [rsp + nb200_fiy], xmm4
-	movlpd [rsp + nb200_fiz], xmm5
+	addsd  xmm13, xmm9
+	addsd  xmm14, xmm10
+	addsd  xmm15, xmm11
 	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [rdi + rax*8]
-	movlpd xmm4, [rdi + rax*8 + 8]
-	movlpd xmm5, [rdi + rax*8 + 16]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	movlpd [rdi + rax*8], xmm3
-	movlpd [rdi + rax*8 + 8], xmm4
-	movlpd [rdi + rax*8 + 16], xmm5
+	addsd xmm9,  [rdi + rax*8]
+	addsd xmm10, [rdi + rax*8 + 8]
+	addsd xmm11, [rdi + rax*8 + 16]
+	movsd [rdi + rax*8], xmm9
+	movsd [rdi + rax*8 + 8], xmm10
+	movsd [rdi + rax*8 + 16], xmm11
 
 .nb200_updateouterdata:
 	mov   ecx, [rsp + nb200_ii3]
@@ -512,25 +483,21 @@ _nb_kernel200_x86_64_sse2:
 	mov   rsi, [rbp + nb200_fshift]
 	mov   edx, [rsp + nb200_is3]
 
-	;# accumulate i forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [rsp + nb200_fix]
-	movapd xmm1, [rsp + nb200_fiy]
-	movapd xmm2, [rsp + nb200_fiz]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addsd  xmm0, xmm3
-	addsd  xmm1, xmm4
-	addsd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
+	;# accumulate i forces in xmm13, xmm14, xmm15
+	movhlps xmm3, xmm13
+	movhlps xmm4, xmm14
+	movhlps xmm5, xmm15
+	addsd  xmm13, xmm3
+	addsd  xmm14, xmm4
+	addsd  xmm15, xmm5 ;# sum is in low xmm13-xmm15
 
 	;# increment i force 
 	movsd  xmm3, [rdi + rcx*8]
 	movsd  xmm4, [rdi + rcx*8 + 8]
 	movsd  xmm5, [rdi + rcx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm13
+	subsd  xmm4, xmm14
+	subsd  xmm5, xmm15
 	movsd  [rdi + rcx*8],     xmm3
 	movsd  [rdi + rcx*8 + 8], xmm4
 	movsd  [rdi + rcx*8 + 16], xmm5
@@ -539,9 +506,9 @@ _nb_kernel200_x86_64_sse2:
 	movsd  xmm3, [rsi + rdx*8]
 	movsd  xmm4, [rsi + rdx*8 + 8]
 	movsd  xmm5, [rsi + rdx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm13
+	subsd  xmm4, xmm14
+	subsd  xmm5, xmm15
 	movsd  [rsi + rdx*8],     xmm3
 	movsd  [rsi + rdx*8 + 8], xmm4
 	movsd  [rsi + rdx*8 + 16], xmm5
@@ -552,17 +519,15 @@ _nb_kernel200_x86_64_sse2:
         mov   rdx, [rbp + nb200_gid]      	;# base of gid[]
         mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
 
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [rsp + nb200_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
+	;# accumulate total coulomb energy and update it 
+	movhlps xmm6, xmm12
+	addsd  xmm12, xmm6	;# low xmm12 have the sum now 
+
 	;# add earlier value from mem 
 	mov   rax, [rbp + nb200_Vc]
-	addsd xmm7, [rax + rdx*8] 
+	addsd xmm12, [rax + rdx*8] 
 	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
+	movsd [rax + rdx*8], xmm12
 	
         ;# finish if last 
         mov ecx, [rsp + nb200_nn1]
@@ -592,6 +557,12 @@ _nb_kernel200_x86_64_sse2:
 
 	add rsp, 360
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
@@ -660,6 +631,12 @@ _nb_kernel200nf_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 248		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -1008,6 +985,12 @@ _nb_kernel200nf_x86_64_sse2:
 
 	add rsp, 248
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp

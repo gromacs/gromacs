@@ -208,6 +208,12 @@ _nb_kernel234_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 1912		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -444,145 +450,442 @@ _nb_kernel234_x86_64_sse2:
 	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	lea   rbx, [rbx + rbx*2]	
 	
-	;# move j coordinates to local temp variables 
-	;# load ox, oy, oz, h1x
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm2, [rsi + rbx*8]
-	movhpd xmm0, [rsi + rax*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 8]
-	movlpd xmm3, [rsi + rax*8 + 16]
-	movlpd xmm5, [rsi + rbx*8 + 16]
-	movhpd xmm3, [rsi + rax*8 + 24]
-	movhpd xmm5, [rsi + rbx*8 + 24]
-	movapd xmm1, xmm0 
-	movapd xmm4, xmm3
-	unpcklpd xmm0, xmm2 ;# ox 
-	unpckhpd xmm1, xmm2 ;# oy
-	unpcklpd xmm3, xmm5 ;# ox 
-	unpckhpd xmm4, xmm5 ;# oy
-	movapd 	[rsp + nb234_jxO], xmm0
-	movapd 	[rsp + nb234_jyO], xmm1
-	movapd 	[rsp + nb234_jzO], xmm3
-	movapd 	[rsp + nb234_jxH1], xmm4
+	;# load j O coordinates
+    movlpd xmm4, [rsi + rax*8] 
+    movlpd xmm5, [rsi + rax*8 + 8] 
+    movlpd xmm6, [rsi + rax*8 + 16] 
+    movhpd xmm4, [rsi + rbx*8] 
+    movhpd xmm5, [rsi + rbx*8 + 8] 
+    movhpd xmm6, [rsi + rbx*8 + 16] 
+
+    ;# xmm4 = Ox
+    ;# xmm5 = Oy
+    ;# xmm6 = Oz
+        
+    subpd xmm4, [rsp + nb234_ixO]
+    subpd xmm5, [rsp + nb234_iyO]
+    subpd xmm6, [rsp + nb234_izO]
+
+    ;# store dx/dy/dz
+    movapd xmm13, xmm4
+    movapd xmm14, xmm5
+    movapd xmm15, xmm6
+    
+    ;# square it
+	mulpd  xmm4, xmm4
+	mulpd  xmm5, xmm5
+	mulpd  xmm6, xmm6
+    
+   	addpd  xmm4, xmm5
+	addpd  xmm4, xmm6
+    ;# rsq in xmm4
+    
+	cvtpd2ps xmm5, xmm4	
+	rsqrtps xmm5, xmm5
+	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
+
+	;# lookup seed in xmm2 
+	movapd xmm5, xmm2	;# copy of lu 
+	mulpd xmm2, xmm2	;# lu*lu 
+	movapd xmm1, [rsp + nb234_three]
+	mulpd xmm2, xmm4	;# rsq*lu*lu 			
+	movapd xmm0, [rsp + nb234_half]
+	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
+	mulpd xmm1, xmm5	
+	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+
+	movapd xmm5, xmm1	;# copy of lu 
+	mulpd xmm1, xmm1	;# lu*lu 
+	movapd xmm2, [rsp + nb234_three]
+	mulpd xmm1, xmm4	;# rsq*lu*lu 			
+	movapd xmm0, [rsp + nb234_half]
+	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
+	mulpd xmm2, xmm5	
+	mulpd xmm2, xmm0	;# xmm0=iter2 of rinv (new lu) 
 	
-	;# load h1y, h1z, h2x, h2y 
-	movlpd xmm0, [rsi + rax*8 + 32]
-	movlpd xmm2, [rsi + rbx*8 + 32]
-	movhpd xmm0, [rsi + rax*8 + 40]
-	movhpd xmm2, [rsi + rbx*8 + 40]
-	movlpd xmm3, [rsi + rax*8 + 48]
-	movlpd xmm5, [rsi + rbx*8 + 48]
-	movhpd xmm3, [rsi + rax*8 + 56]
-	movhpd xmm5, [rsi + rbx*8 + 56]
-	movapd xmm1, xmm0 
-	movapd xmm4, xmm3
-	unpcklpd xmm0, xmm2 ;# h1y
-	unpckhpd xmm1, xmm2 ;# h1z
-	unpcklpd xmm3, xmm5 ;# h2x
-	unpckhpd xmm4, xmm5 ;# h2y
-	movapd 	[rsp + nb234_jyH1], xmm0
-	movapd 	[rsp + nb234_jzH1], xmm1
-	movapd 	[rsp + nb234_jxH2], xmm3
-	movapd 	[rsp + nb234_jyH2], xmm4
+	mulpd xmm4, xmm2	;# xmm4=r 
+	mulpd xmm4, [rsp + nb234_tsc]
 	
-	;# load h2z, mx, my, mz
-	movlpd xmm0, [rsi + rax*8 + 64]
-	movlpd xmm2, [rsi + rbx*8 + 64]
-	movhpd xmm0, [rsi + rax*8 + 72]
-	movhpd xmm2, [rsi + rbx*8 + 72]
-	movlpd xmm3, [rsi + rax*8 + 80]
-	movlpd xmm5, [rsi + rbx*8 + 80]
-	movhpd xmm3, [rsi + rax*8 + 88]
-	movhpd xmm5, [rsi + rbx*8 + 88]
-	movapd xmm1, xmm0 
-	movapd xmm4, xmm3
-	unpcklpd xmm0, xmm2 ;# h2z
-	unpckhpd xmm1, xmm2 ;# mx
-	unpcklpd xmm3, xmm5 ;# my
-	unpckhpd xmm4, xmm5 ;# mz
-	movapd 	[rsp + nb234_jzH2], xmm0
-	movapd 	[rsp + nb234_jxM], xmm1
-	movapd 	[rsp + nb234_jyM], xmm3
-	movapd 	[rsp + nb234_jzM], xmm4
+	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
+	cvtpi2pd xmm5, mm6
+	subpd xmm4, xmm5
+	movapd xmm1, xmm4
+    ;# xmm1=eps 
+    ;# xmm2=rinv
+    movapd xmm3, xmm4   ;# eps
+	pslld mm6, 3		;# idx *= 8 
 	
-	;# start calculating pairwise distances
-	movapd xmm0, [rsp + nb234_ixO]
-	movapd xmm1, [rsp + nb234_iyO]
-	movapd xmm2, [rsp + nb234_izO]
-	movapd xmm3, [rsp + nb234_ixH1]
-	movapd xmm4, [rsp + nb234_iyH1]
-	movapd xmm5, [rsp + nb234_izH1]
-	subpd  xmm0, [rsp + nb234_jxO]
-	subpd  xmm1, [rsp + nb234_jyO]
-	subpd  xmm2, [rsp + nb234_jzO]
-	subpd  xmm3, [rsp + nb234_jxH1]
-	subpd  xmm4, [rsp + nb234_jyH1]
-	subpd  xmm5, [rsp + nb234_jzH1]
-	movapd [rsp + nb234_dxOO], xmm0
-	movapd [rsp + nb234_dyOO], xmm1
-	movapd [rsp + nb234_dzOO], xmm2
+	mov  rsi, [rbp + nb234_VFtab]
+	movd r10d, mm6
+	psrlq mm6, 32
+	movd r11d, mm6
+
+    ;# indices in r10, r11. Load dispersion and repulsion tables in parallel.
+	movapd xmm4, [rsi + r10*8]          ;# Y1d F1d	
+	movapd xmm0, [rsi + r11*8]         ;# Y2d F2d 
+	movapd xmm8, [rsi + r10*8 + 32]     ;# Y1r F1r 	
+	movapd xmm3, [rsi + r11*8 + 32]	;# Y2r F2r 
+	movapd xmm5, xmm4
+	movapd xmm9, xmm8
+	unpcklpd xmm4, xmm0	;# Y1d Y2d 
+	unpckhpd xmm5, xmm0	;# F1d F2d 
+	unpcklpd xmm8, xmm3	;# Y1r Y2r 
+	unpckhpd xmm9, xmm3	;# F1r F2r 
+
+	movapd xmm6, [rsi + r10*8 + 16]     ;# G1d H1d 	
+	movapd xmm0, [rsi + r11*8 + 16]  	;# G2d H2d 
+	movapd xmm10, [rsi + r10*8 + 48]	;# G1r H1r 	
+	movapd xmm3, [rsi + r11*8 + 48]	    ;# G2r H2r 
+	movapd xmm7, xmm6
+	movapd xmm11, xmm10
+	unpcklpd xmm6, xmm0	;# G1d G2d 
+	unpckhpd xmm7, xmm0	;# H1d H2d 
+	unpcklpd xmm10, xmm3	;# G1r G2r 
+	unpckhpd xmm11, xmm3	;# H1r H2r 
+	;# tables ready, in xmm4-xmm7 and xmm8-xmm11
+
+    mulpd  xmm7, xmm1    ;# Heps
+    mulpd  xmm11, xmm1 
+    mulpd  xmm6, xmm1   ;# Geps
+    mulpd  xmm10, xmm1 
+    mulpd  xmm7, xmm1   ;# Heps2
+    mulpd  xmm11, xmm1 
+    addpd  xmm5, xmm6  ;# F+Geps
+    addpd  xmm9, xmm10 
+    addpd  xmm5, xmm7   ;# F+Geps+Heps2 = Fp
+    addpd  xmm9, xmm11 
+    addpd  xmm7, xmm7    ;# 2*Heps2
+    addpd  xmm11, xmm11
+    addpd  xmm7, xmm6   ;# 2*Heps2+Geps
+    addpd  xmm11, xmm10
+    
+    addpd  xmm7, xmm5  ;# FF = Fp + 2*Heps2 + Geps
+    addpd  xmm11, xmm9
+    mulpd  xmm5, xmm1  ;# eps*Fp
+    mulpd  xmm9, xmm1
+    addpd  xmm5, xmm4 ;# VV
+    addpd  xmm9, xmm8
+
+    mulpd  xmm5, [rsp + nb234_c6]  ;# VV*c6 = vnb6
+    mulpd  xmm9, [rsp + nb234_c12]  ;# VV*c12 = vnb12
+    addpd  xmm5, xmm9
+    addpd  xmm5, [rsp + nb234_Vvdwtot]
+    movapd [rsp + nb234_Vvdwtot], xmm5
+        
+    mulpd  xmm7, [rsp + nb234_c6]   ;# FF*c6 = fnb6
+    mulpd  xmm11, [rsp + nb234_c12]   ;# FF*c12  = fnb12
+    addpd  xmm7, xmm11
+    
+    mulpd  xmm7, [rsp + nb234_tsc]
+    mulpd  xmm7, xmm2
+    xorpd  xmm9, xmm9
+    
+    subpd xmm9, xmm7
+    mulpd xmm13, xmm9
+    mulpd xmm14, xmm9
+    mulpd xmm15, xmm9
+    
+    movapd xmm0, [rsp + nb234_fixO]
+    movapd xmm1, [rsp + nb234_fiyO]
+    movapd xmm2, [rsp + nb234_fizO]
+    
+    ;# accumulate i forces
+    addpd xmm0, xmm13
+    addpd xmm1, xmm14
+    addpd xmm2, xmm15
+    movapd [rsp + nb234_fixO], xmm0
+    movapd [rsp + nb234_fiyO], xmm1
+    movapd [rsp + nb234_fizO], xmm2
+    
+	;# the fj's - start by accumulating forces from memory 
+	movlpd xmm3, [rdi + rax*8]
+	movlpd xmm4, [rdi + rax*8 + 8]
+	movlpd xmm5, [rdi + rax*8 + 16]
+	movhpd xmm3, [rdi + rbx*8]
+	movhpd xmm4, [rdi + rbx*8 + 8]
+	movhpd xmm5, [rdi + rbx*8 + 16]
+	addpd xmm3, xmm13
+	addpd xmm4, xmm14
+	addpd xmm5, xmm15
+	movlpd [rdi + rax*8], xmm3
+	movlpd [rdi + rax*8 + 8], xmm4
+	movlpd [rdi + rax*8 + 16], xmm5
+	movhpd [rdi + rbx*8], xmm3
+	movhpd [rdi + rbx*8 + 8], xmm4
+	movhpd [rdi + rbx*8 + 16], xmm5
+    ;# done with OO interaction
+    
+    ;# move j H1 coordinates to local temp variables 
+    mov rsi, [rbp + nb234_pos]
+    movlpd xmm0, [rsi + rax*8 + 24] 
+    movlpd xmm1, [rsi + rax*8 + 32] 
+    movlpd xmm2, [rsi + rax*8 + 40] 
+    movhpd xmm0, [rsi + rbx*8 + 24] 
+    movhpd xmm1, [rsi + rbx*8 + 32] 
+    movhpd xmm2, [rsi + rbx*8 + 40] 
+
+    ;# xmm0 = H1x
+    ;# xmm1 = H1y
+    ;# xmm2 = H1z
+        
+    movapd xmm3, xmm0
+    movapd xmm4, xmm1
+    movapd xmm5, xmm2
+    movapd xmm6, xmm0
+    movapd xmm7, xmm1
+    movapd xmm8, xmm2
+    
+    subpd xmm0, [rsp + nb234_ixH1]
+    subpd xmm1, [rsp + nb234_iyH1]
+    subpd xmm2, [rsp + nb234_izH1]
+    subpd xmm3, [rsp + nb234_ixH2]
+    subpd xmm4, [rsp + nb234_iyH2]
+    subpd xmm5, [rsp + nb234_izH2]
+    subpd xmm6, [rsp + nb234_ixM]
+    subpd xmm7, [rsp + nb234_iyM]
+    subpd xmm8, [rsp + nb234_izM]
+    
+	movapd [rsp + nb234_dxH1H1], xmm0
+	movapd [rsp + nb234_dyH1H1], xmm1
+	movapd [rsp + nb234_dzH1H1], xmm2
 	mulpd  xmm0, xmm0
 	mulpd  xmm1, xmm1
 	mulpd  xmm2, xmm2
-	movapd [rsp + nb234_dxH1H1], xmm3
-	movapd [rsp + nb234_dyH1H1], xmm4
-	movapd [rsp + nb234_dzH1H1], xmm5
+	movapd [rsp + nb234_dxH2H1], xmm3
+	movapd [rsp + nb234_dyH2H1], xmm4
+	movapd [rsp + nb234_dzH2H1], xmm5
 	mulpd  xmm3, xmm3
 	mulpd  xmm4, xmm4
 	mulpd  xmm5, xmm5
+	movapd [rsp + nb234_dxMH1], xmm6
+	movapd [rsp + nb234_dyMH1], xmm7
+	movapd [rsp + nb234_dzMH1], xmm8
+	mulpd  xmm6, xmm6
+	mulpd  xmm7, xmm7
+	mulpd  xmm8, xmm8
 	addpd  xmm0, xmm1
 	addpd  xmm0, xmm2
 	addpd  xmm3, xmm4
 	addpd  xmm3, xmm5
-	movapd [rsp + nb234_rsqOO], xmm0
-	movapd [rsp + nb234_rsqH1H1], xmm3
+    addpd  xmm6, xmm7
+    addpd  xmm6, xmm8
 
-	movapd xmm0, [rsp + nb234_ixH1]
-	movapd xmm1, [rsp + nb234_iyH1]
-	movapd xmm2, [rsp + nb234_izH1]
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	subpd  xmm0, [rsp + nb234_jxH2]
-	subpd  xmm1, [rsp + nb234_jyH2]
-	subpd  xmm2, [rsp + nb234_jzH2]
-	subpd  xmm3, [rsp + nb234_jxM]
-	subpd  xmm4, [rsp + nb234_jyM]
-	subpd  xmm5, [rsp + nb234_jzM]
+	;# start doing invsqrt for jH1 atoms
+    cvtpd2ps xmm1, xmm0
+    cvtpd2ps xmm4, xmm3
+    cvtpd2ps xmm7, xmm6
+	rsqrtps xmm1, xmm1
+	rsqrtps xmm4, xmm4
+    rsqrtps xmm7, xmm7
+    cvtps2pd xmm1, xmm1
+    cvtps2pd xmm4, xmm4
+    cvtps2pd xmm7, xmm7
+	
+	movapd  xmm2, xmm1
+	movapd  xmm5, xmm4
+    movapd  xmm8, xmm7
+    
+	mulpd   xmm1, xmm1 ;# lu*lu
+	mulpd   xmm4, xmm4 ;# lu*lu
+    mulpd   xmm7, xmm7 ;# lu*lu
+		
+	movapd  xmm9, [rsp + nb234_three]
+	movapd  xmm10, xmm9
+    movapd  xmm11, xmm9
+
+	mulpd   xmm1, xmm0 ;# rsq*lu*lu
+	mulpd   xmm4, xmm3 ;# rsq*lu*lu 
+    mulpd   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subpd   xmm9, xmm1
+	subpd   xmm10, xmm4
+    subpd   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulpd   xmm9, xmm2
+	mulpd   xmm10, xmm5
+    mulpd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movapd  xmm15, [rsp + nb234_half]
+	mulpd   xmm9, xmm15  ;# first iteration for rinvH1H1 
+	mulpd   xmm10, xmm15 ;# first iteration for rinvH2H1
+    mulpd   xmm11, xmm15 ;# first iteration for rinvMH1	
+
+    ;# second iteration step    
+	movapd  xmm2, xmm9
+	movapd  xmm5, xmm10
+    movapd  xmm8, xmm11
+    
+	mulpd   xmm2, xmm2 ;# lu*lu
+	mulpd   xmm5, xmm5 ;# lu*lu
+    mulpd   xmm8, xmm8 ;# lu*lu
+		
+	movapd  xmm1, [rsp + nb234_three]
+	movapd  xmm4, xmm1
+    movapd  xmm7, xmm1
+
+	mulpd   xmm2, xmm0 ;# rsq*lu*lu
+	mulpd   xmm5, xmm3 ;# rsq*lu*lu 
+    mulpd   xmm8, xmm6 ;# rsq*lu*lu
+	
+	subpd   xmm1, xmm2
+	subpd   xmm4, xmm5
+    subpd   xmm7, xmm8 ;# 3-rsq*lu*lu
+
+	mulpd   xmm9, xmm1
+	mulpd   xmm10, xmm4
+    mulpd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
+
+	movapd  xmm15, [rsp + nb234_half]
+	mulpd   xmm9, xmm15  ;#  rinvH1H1 
+	mulpd   xmm10, xmm15 ;#   rinvH2H1
+    mulpd   xmm11, xmm15 ;#   rinvMH1
+	
+	;# H1 interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movapd xmm1, xmm9 ;# copy of rinv
+    movapd xmm4, xmm10
+    movapd xmm7, xmm11
+    movapd xmm2, [rsp + nb234_krf]    
+    mulpd  xmm9, xmm9   ;# rinvsq
+    mulpd  xmm10, xmm10
+    mulpd  xmm11, xmm11
+    mulpd  xmm0, xmm2  ;# k*rsq
+    mulpd  xmm3, xmm2
+    mulpd  xmm6, xmm2
+    movapd xmm2, xmm0 ;# copy of k*rsq
+    movapd xmm5, xmm3
+    movapd xmm8, xmm6
+    addpd  xmm2, xmm1  ;# rinv+krsq
+    addpd  xmm5, xmm4
+    addpd  xmm8, xmm7
+    movapd xmm14, [rsp + nb234_crf]
+    subpd  xmm2, xmm14   ;# rinv+krsq-crf
+    subpd  xmm5, xmm14
+    subpd  xmm8, xmm14
+    movapd xmm12, [rsp + nb234_qqHH]
+    movapd xmm13, [rsp + nb234_qqMH]    
+    mulpd  xmm2, xmm12 ;# voul=qq*(rinv+ krsq-crf)
+    mulpd  xmm5, xmm12 ;# voul=qq*(rinv+ krsq-crf)
+    mulpd  xmm8, xmm13 ;# voul=qq*(rinv+ krsq-crf)
+    addpd  xmm0, xmm0 ;# 2*krsq
+    addpd  xmm3, xmm3 
+    addpd  xmm6, xmm6 
+    subpd  xmm1, xmm0 ;# rinv-2*krsq
+    subpd  xmm4, xmm3
+    subpd  xmm7, xmm6
+    mulpd  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulpd  xmm4, xmm12
+    mulpd  xmm7, xmm13
+    addpd  xmm2, [rsp + nb234_vctot]
+    addpd  xmm5, xmm8
+    addpd  xmm2, xmm5
+    movapd [rsp + nb234_vctot], xmm2
+    
+    mulpd  xmm9, xmm1   ;# fscal
+    mulpd  xmm10, xmm4
+    mulpd  xmm11, xmm7
+
+    ;# move j H1 forces to xmm0-xmm2
+    mov rdi, [rbp + nb234_faction]
+	movlpd xmm0, [rdi + rax*8 + 24]
+	movlpd xmm1, [rdi + rax*8 + 32]
+	movlpd xmm2, [rdi + rax*8 + 40]
+	movhpd xmm0, [rdi + rbx*8 + 24]
+	movhpd xmm1, [rdi + rbx*8 + 32]
+	movhpd xmm2, [rdi + rbx*8 + 40]
+
+    movapd xmm7, xmm9
+    movapd xmm8, xmm9
+    movapd xmm13, xmm11
+    movapd xmm14, xmm11
+    movapd xmm15, xmm11
+    movapd xmm11, xmm10
+    movapd xmm12, xmm10
+
+	mulpd xmm7, [rsp + nb234_dxH1H1]
+	mulpd xmm8, [rsp + nb234_dyH1H1]
+	mulpd xmm9, [rsp + nb234_dzH1H1]
+	mulpd xmm10, [rsp + nb234_dxH2H1]
+	mulpd xmm11, [rsp + nb234_dyH2H1]
+	mulpd xmm12, [rsp + nb234_dzH2H1]
+	mulpd xmm13, [rsp + nb234_dxMH1]
+	mulpd xmm14, [rsp + nb234_dyMH1]
+	mulpd xmm15, [rsp + nb234_dzMH1]
+
+    addpd xmm0, xmm7
+    addpd xmm1, xmm8
+    addpd xmm2, xmm9
+    addpd xmm7, [rsp + nb234_fixH1]
+    addpd xmm8, [rsp + nb234_fiyH1]
+    addpd xmm9, [rsp + nb234_fizH1]
+
+    addpd xmm0, xmm10
+    addpd xmm1, xmm11
+    addpd xmm2, xmm12
+    addpd xmm10, [rsp + nb234_fixH2]
+    addpd xmm11, [rsp + nb234_fiyH2]
+    addpd xmm12, [rsp + nb234_fizH2]
+
+    addpd xmm0, xmm13
+    addpd xmm1, xmm14
+    addpd xmm2, xmm15
+    addpd xmm13, [rsp + nb234_fixM]
+    addpd xmm14, [rsp + nb234_fiyM]
+    addpd xmm15, [rsp + nb234_fizM]
+
+    movapd [rsp + nb234_fixH1], xmm7
+    movapd [rsp + nb234_fiyH1], xmm8
+    movapd [rsp + nb234_fizH1], xmm9
+    movapd [rsp + nb234_fixH2], xmm10
+    movapd [rsp + nb234_fiyH2], xmm11
+    movapd [rsp + nb234_fizH2], xmm12
+    movapd [rsp + nb234_fixM], xmm13
+    movapd [rsp + nb234_fiyM], xmm14
+    movapd [rsp + nb234_fizM], xmm15
+   
+    ;# store back j H1 forces from xmm0-xmm2
+	movlpd [rdi + rax*8 + 24], xmm0
+	movlpd [rdi + rax*8 + 32], xmm1
+	movlpd [rdi + rax*8 + 40], xmm2
+	movhpd [rdi + rbx*8 + 24], xmm0
+	movhpd [rdi + rbx*8 + 32], xmm1
+	movhpd [rdi + rbx*8 + 40], xmm2
+
+	;# move j H2 coordinates to local temp variables 
+    mov rsi, [rbp + nb234_pos]
+    movlpd xmm0, [rsi + rax*8 + 48] 
+    movlpd xmm1, [rsi + rax*8 + 56] 
+    movlpd xmm2, [rsi + rax*8 + 64] 
+    movhpd xmm0, [rsi + rbx*8 + 48] 
+    movhpd xmm1, [rsi + rbx*8 + 56] 
+    movhpd xmm2, [rsi + rbx*8 + 64] 
+
+    ;# xmm0 = H2x
+    ;# xmm1 = H2y
+    ;# xmm2 = H2z
+        
+    movapd xmm3, xmm0
+    movapd xmm4, xmm1
+    movapd xmm5, xmm2
+    movapd xmm6, xmm0
+    movapd xmm7, xmm1
+    movapd xmm8, xmm2
+    
+    subpd xmm0, [rsp + nb234_ixH1]
+    subpd xmm1, [rsp + nb234_iyH1]
+    subpd xmm2, [rsp + nb234_izH1]
+    subpd xmm3, [rsp + nb234_ixH2]
+    subpd xmm4, [rsp + nb234_iyH2]
+    subpd xmm5, [rsp + nb234_izH2]
+    subpd xmm6, [rsp + nb234_ixM]
+    subpd xmm7, [rsp + nb234_iyM]
+    subpd xmm8, [rsp + nb234_izM]
+    
 	movapd [rsp + nb234_dxH1H2], xmm0
 	movapd [rsp + nb234_dyH1H2], xmm1
 	movapd [rsp + nb234_dzH1H2], xmm2
-	mulpd  xmm0, xmm0
-	mulpd  xmm1, xmm1
-	mulpd  xmm2, xmm2
-	movapd [rsp + nb234_dxH1M], xmm3
-	movapd [rsp + nb234_dyH1M], xmm4
-	movapd [rsp + nb234_dzH1M], xmm5
-	mulpd  xmm3, xmm3
-	mulpd  xmm4, xmm4
-	mulpd  xmm5, xmm5
-	addpd  xmm0, xmm1
-	addpd  xmm0, xmm2
-	addpd  xmm3, xmm4
-	addpd  xmm3, xmm5
-	movapd [rsp + nb234_rsqH1H2], xmm0
-	movapd [rsp + nb234_rsqH1M], xmm3
-
-	movapd xmm0, [rsp + nb234_ixH2]
-	movapd xmm1, [rsp + nb234_iyH2]
-	movapd xmm2, [rsp + nb234_izH2]
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	subpd  xmm0, [rsp + nb234_jxH1]
-	subpd  xmm1, [rsp + nb234_jyH1]
-	subpd  xmm2, [rsp + nb234_jzH1]
-	subpd  xmm3, [rsp + nb234_jxH2]
-	subpd  xmm4, [rsp + nb234_jyH2]
-	subpd  xmm5, [rsp + nb234_jzH2]
-	movapd [rsp + nb234_dxH2H1], xmm0
-	movapd [rsp + nb234_dyH2H1], xmm1
-	movapd [rsp + nb234_dzH2H1], xmm2
 	mulpd  xmm0, xmm0
 	mulpd  xmm1, xmm1
 	mulpd  xmm2, xmm2
@@ -592,876 +895,442 @@ _nb_kernel234_x86_64_sse2:
 	mulpd  xmm3, xmm3
 	mulpd  xmm4, xmm4
 	mulpd  xmm5, xmm5
+	movapd [rsp + nb234_dxMH2], xmm6
+	movapd [rsp + nb234_dyMH2], xmm7
+	movapd [rsp + nb234_dzMH2], xmm8
+	mulpd  xmm6, xmm6
+	mulpd  xmm7, xmm7
+	mulpd  xmm8, xmm8
 	addpd  xmm0, xmm1
 	addpd  xmm0, xmm2
 	addpd  xmm3, xmm4
 	addpd  xmm3, xmm5
-	movapd [rsp + nb234_rsqH2H1], xmm0
-	movapd [rsp + nb234_rsqH2H2], xmm3
+    addpd  xmm6, xmm7
+    addpd  xmm6, xmm8
 
-	movapd xmm0, [rsp + nb234_ixH2]
-	movapd xmm1, [rsp + nb234_iyH2]
-	movapd xmm2, [rsp + nb234_izH2]
-	movapd xmm3, [rsp + nb234_ixM]
-	movapd xmm4, [rsp + nb234_iyM]
-	movapd xmm5, [rsp + nb234_izM]
-	subpd  xmm0, [rsp + nb234_jxM]
-	subpd  xmm1, [rsp + nb234_jyM]
-	subpd  xmm2, [rsp + nb234_jzM]
-	subpd  xmm3, [rsp + nb234_jxH1]
-	subpd  xmm4, [rsp + nb234_jyH1]
-	subpd  xmm5, [rsp + nb234_jzH1]
-	movapd [rsp + nb234_dxH2M], xmm0
-	movapd [rsp + nb234_dyH2M], xmm1
-	movapd [rsp + nb234_dzH2M], xmm2
+	;# start doing invsqrt for jH2 atoms
+    cvtpd2ps xmm1, xmm0
+    cvtpd2ps xmm4, xmm3
+    cvtpd2ps xmm7, xmm6
+	rsqrtps xmm1, xmm1
+	rsqrtps xmm4, xmm4
+    rsqrtps xmm7, xmm7
+    cvtps2pd xmm1, xmm1
+    cvtps2pd xmm4, xmm4
+    cvtps2pd xmm7, xmm7
+	
+	movapd  xmm2, xmm1
+	movapd  xmm5, xmm4
+    movapd  xmm8, xmm7
+    
+	mulpd   xmm1, xmm1 ;# lu*lu
+	mulpd   xmm4, xmm4 ;# lu*lu
+    mulpd   xmm7, xmm7 ;# lu*lu
+		
+	movapd  xmm9, [rsp + nb234_three]
+	movapd  xmm10, xmm9
+    movapd  xmm11, xmm9
+
+	mulpd   xmm1, xmm0 ;# rsq*lu*lu
+	mulpd   xmm4, xmm3 ;# rsq*lu*lu 
+    mulpd   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subpd   xmm9, xmm1
+	subpd   xmm10, xmm4
+    subpd   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulpd   xmm9, xmm2
+	mulpd   xmm10, xmm5
+    mulpd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movapd  xmm15, [rsp + nb234_half]
+	mulpd   xmm9, xmm15  ;# first iteration for rinvH1H2 
+	mulpd   xmm10, xmm15 ;# first iteration for rinvH2H2
+    mulpd   xmm11, xmm15 ;# first iteration for rinvMH2
+
+    ;# second iteration step    
+	movapd  xmm2, xmm9
+	movapd  xmm5, xmm10
+    movapd  xmm8, xmm11
+    
+	mulpd   xmm2, xmm2 ;# lu*lu
+	mulpd   xmm5, xmm5 ;# lu*lu
+    mulpd   xmm8, xmm8 ;# lu*lu
+		
+	movapd  xmm1, [rsp + nb234_three]
+	movapd  xmm4, xmm1
+    movapd  xmm7, xmm1
+
+	mulpd   xmm2, xmm0 ;# rsq*lu*lu
+	mulpd   xmm5, xmm3 ;# rsq*lu*lu 
+    mulpd   xmm8, xmm6 ;# rsq*lu*lu
+	
+	subpd   xmm1, xmm2
+	subpd   xmm4, xmm5
+    subpd   xmm7, xmm8 ;# 3-rsq*lu*lu
+
+	mulpd   xmm9, xmm1
+	mulpd   xmm10, xmm4
+    mulpd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
+
+	movapd  xmm15, [rsp + nb234_half]
+	mulpd   xmm9, xmm15  ;#  rinvH1H2
+	mulpd   xmm10, xmm15 ;#   rinvH2H2
+    mulpd   xmm11, xmm15 ;#   rinvMH2
+	
+	
+	;# H2 interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movapd xmm1, xmm9 ;# copy of rinv
+    movapd xmm4, xmm10
+    movapd xmm7, xmm11
+    movapd xmm2, [rsp + nb234_krf]    
+    mulpd  xmm9, xmm9   ;# rinvsq
+    mulpd  xmm10, xmm10
+    mulpd  xmm11, xmm11
+    mulpd  xmm0, xmm2  ;# k*rsq
+    mulpd  xmm3, xmm2
+    mulpd  xmm6, xmm2
+    movapd xmm2, xmm0 ;# copy of k*rsq
+    movapd xmm5, xmm3
+    movapd xmm8, xmm6
+    addpd  xmm2, xmm1  ;# rinv+krsq
+    addpd  xmm5, xmm4
+    addpd  xmm8, xmm7
+    movapd xmm14, [rsp + nb234_crf]
+    subpd  xmm2, xmm14   ;# rinv+krsq-crf
+    subpd  xmm5, xmm14
+    subpd  xmm8, xmm14
+    movapd xmm12, [rsp + nb234_qqHH]
+    movapd xmm13, [rsp + nb234_qqMH]    
+    mulpd  xmm2, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulpd  xmm5, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulpd  xmm8, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    addpd  xmm0, xmm0 ;# 2*krsq
+    addpd  xmm3, xmm3 
+    addpd  xmm6, xmm6 
+    subpd  xmm1, xmm0 ;# rinv-2*krsq
+    subpd  xmm4, xmm3
+    subpd  xmm7, xmm6
+    mulpd  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulpd  xmm4, xmm12
+    mulpd  xmm7, xmm13
+    addpd  xmm2, [rsp + nb234_vctot]
+    addpd  xmm5, xmm8
+    addpd  xmm2, xmm5
+    movapd  [rsp + nb234_vctot], xmm2
+    
+    mulpd  xmm9, xmm1   ;# fscal
+    mulpd  xmm10, xmm4
+    mulpd  xmm11, xmm7
+
+    ;# move j H2 forces to xmm0-xmm2
+    mov rdi, [rbp + nb234_faction]
+	movlpd xmm0, [rdi + rax*8 + 48]
+	movlpd xmm1, [rdi + rax*8 + 56]
+	movlpd xmm2, [rdi + rax*8 + 64]
+	movhpd xmm0, [rdi + rbx*8 + 48]
+	movhpd xmm1, [rdi + rbx*8 + 56]
+	movhpd xmm2, [rdi + rbx*8 + 64]
+
+    movapd xmm7, xmm9
+    movapd xmm8, xmm9
+    movapd xmm13, xmm11
+    movapd xmm14, xmm11
+    movapd xmm15, xmm11
+    movapd xmm11, xmm10
+    movapd xmm12, xmm10
+
+	mulpd xmm7, [rsp + nb234_dxH1H2]
+	mulpd xmm8, [rsp + nb234_dyH1H2]
+	mulpd xmm9, [rsp + nb234_dzH1H2]
+	mulpd xmm10, [rsp + nb234_dxH2H2]
+	mulpd xmm11, [rsp + nb234_dyH2H2]
+	mulpd xmm12, [rsp + nb234_dzH2H2]
+	mulpd xmm13, [rsp + nb234_dxMH2]
+	mulpd xmm14, [rsp + nb234_dyMH2]
+	mulpd xmm15, [rsp + nb234_dzMH2]
+
+    addpd xmm0, xmm7
+    addpd xmm1, xmm8
+    addpd xmm2, xmm9
+    addpd xmm7, [rsp + nb234_fixH1]
+    addpd xmm8, [rsp + nb234_fiyH1]
+    addpd xmm9, [rsp + nb234_fizH1]
+
+    addpd xmm0, xmm10
+    addpd xmm1, xmm11
+    addpd xmm2, xmm12
+    addpd xmm10, [rsp + nb234_fixH2]
+    addpd xmm11, [rsp + nb234_fiyH2]
+    addpd xmm12, [rsp + nb234_fizH2]
+
+    addpd xmm0, xmm13
+    addpd xmm1, xmm14
+    addpd xmm2, xmm15
+    addpd xmm13, [rsp + nb234_fixM]
+    addpd xmm14, [rsp + nb234_fiyM]
+    addpd xmm15, [rsp + nb234_fizM]
+
+    movapd [rsp + nb234_fixH1], xmm7
+    movapd [rsp + nb234_fiyH1], xmm8
+    movapd [rsp + nb234_fizH1], xmm9
+    movapd [rsp + nb234_fixH2], xmm10
+    movapd [rsp + nb234_fiyH2], xmm11
+    movapd [rsp + nb234_fizH2], xmm12
+    movapd [rsp + nb234_fixM], xmm13
+    movapd [rsp + nb234_fiyM], xmm14
+    movapd [rsp + nb234_fizM], xmm15
+   
+    ;# store back j H2 forces from xmm0-xmm2
+	movlpd [rdi + rax*8 + 48], xmm0
+	movlpd [rdi + rax*8 + 56], xmm1
+	movlpd [rdi + rax*8 + 64], xmm2
+	movhpd [rdi + rbx*8 + 48], xmm0
+	movhpd [rdi + rbx*8 + 56], xmm1
+	movhpd [rdi + rbx*8 + 64], xmm2
+       
+	;# move j M coordinates to local temp variables 
+    mov rsi, [rbp + nb234_pos]
+    movlpd xmm0, [rsi + rax*8 + 72] 
+    movlpd xmm1, [rsi + rax*8 + 80] 
+    movlpd xmm2, [rsi + rax*8 + 88] 
+    movhpd xmm0, [rsi + rbx*8 + 72] 
+    movhpd xmm1, [rsi + rbx*8 + 80] 
+    movhpd xmm2, [rsi + rbx*8 + 88] 
+
+    ;# xmm0 = Mx
+    ;# xmm1 = My
+    ;# xmm2 = Mz
+        
+    movapd xmm3, xmm0
+    movapd xmm4, xmm1
+    movapd xmm5, xmm2
+    movapd xmm6, xmm0
+    movapd xmm7, xmm1
+    movapd xmm8, xmm2
+    
+    subpd xmm0, [rsp + nb234_ixH1]
+    subpd xmm1, [rsp + nb234_iyH1]
+    subpd xmm2, [rsp + nb234_izH1]
+    subpd xmm3, [rsp + nb234_ixH2]
+    subpd xmm4, [rsp + nb234_iyH2]
+    subpd xmm5, [rsp + nb234_izH2]
+    subpd xmm6, [rsp + nb234_ixM]
+    subpd xmm7, [rsp + nb234_iyM]
+    subpd xmm8, [rsp + nb234_izM]
+    
+	movapd [rsp + nb234_dxH1M], xmm0
+	movapd [rsp + nb234_dyH1M], xmm1
+	movapd [rsp + nb234_dzH1M], xmm2
 	mulpd  xmm0, xmm0
 	mulpd  xmm1, xmm1
 	mulpd  xmm2, xmm2
-	movapd [rsp + nb234_dxMH1], xmm3
-	movapd [rsp + nb234_dyMH1], xmm4
-	movapd [rsp + nb234_dzMH1], xmm5
+	movapd [rsp + nb234_dxH2M], xmm3
+	movapd [rsp + nb234_dyH2M], xmm4
+	movapd [rsp + nb234_dzH2M], xmm5
 	mulpd  xmm3, xmm3
 	mulpd  xmm4, xmm4
 	mulpd  xmm5, xmm5
+	movapd [rsp + nb234_dxMM], xmm6
+	movapd [rsp + nb234_dyMM], xmm7
+	movapd [rsp + nb234_dzMM], xmm8
+	mulpd  xmm6, xmm6
+	mulpd  xmm7, xmm7
+	mulpd  xmm8, xmm8
 	addpd  xmm0, xmm1
 	addpd  xmm0, xmm2
-	addpd  xmm4, xmm3
-	addpd  xmm4, xmm5
-	movapd [rsp + nb234_rsqH2M], xmm0
-	movapd [rsp + nb234_rsqMH1], xmm4
-
-	movapd xmm0, [rsp + nb234_ixM]
-	movapd xmm1, [rsp + nb234_iyM]
-	movapd xmm2, [rsp + nb234_izM]
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	subpd  xmm0, [rsp + nb234_jxH2]
-	subpd  xmm1, [rsp + nb234_jyH2]
-	subpd  xmm2, [rsp + nb234_jzH2]
-	subpd  xmm3, [rsp + nb234_jxM]
-	subpd  xmm4, [rsp + nb234_jyM]
-	subpd  xmm5, [rsp + nb234_jzM]
-	movapd [rsp + nb234_dxMH2], xmm0
-	movapd [rsp + nb234_dyMH2], xmm1
-	movapd [rsp + nb234_dzMH2], xmm2
-	mulpd  xmm0, xmm0
-	mulpd  xmm1, xmm1
-	mulpd  xmm2, xmm2
-	movapd [rsp + nb234_dxMM], xmm3
-	movapd [rsp + nb234_dyMM], xmm4
-	movapd [rsp + nb234_dzMM], xmm5
-	mulpd  xmm3, xmm3
-	mulpd  xmm4, xmm4
-	mulpd  xmm5, xmm5
-	addpd  xmm0, xmm1
-	addpd  xmm0, xmm2
-	addpd  xmm4, xmm3
-	addpd  xmm4, xmm5
-	movapd [rsp + nb234_rsqMH2], xmm0
-	movapd [rsp + nb234_rsqMM], xmm4
-	
-	;# Invsqrt form rsq M-H2 (rsq in xmm0) and MM (rsq in xmm4) 
-	cvtpd2ps xmm1, xmm0
-	cvtpd2ps xmm5, xmm4
-	rsqrtps xmm1, xmm1
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm1, xmm1   ;# luA
-	cvtps2pd xmm5, xmm5   ;# luB
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulpd   xmm1, xmm1	;# luA*luA 
-	mulpd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulpd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subpd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subpd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulpd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm3, [rsp + nb234_half] ;# iter1 
-	mulpd   xmm7, [rsp + nb234_half] ;# iter1 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulpd   xmm3, xmm3	;# luA*luA 
-	mulpd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulpd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subpd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subpd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulpd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulpd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvMH2], xmm1
-	movapd [rsp + nb234_rinvMM], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqOO]
-	movapd xmm4, [rsp + nb234_rsqH1H1]	
-	cvtpd2ps xmm1, xmm0	
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm1, xmm1
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm1, xmm1
-	cvtps2pd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulpd   xmm1, xmm1	;# luA*luA 
-	mulpd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulpd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subpd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subpd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulpd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm3, [rsp + nb234_half] ;# iter1 of  
-	mulpd   xmm7, [rsp + nb234_half] ;# iter1 of  
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulpd   xmm3, xmm3	;# luA*luA 
-	mulpd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulpd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subpd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subpd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulpd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulpd   xmm5, [rsp + nb234_half] ;# rinv
-	movapd [rsp + nb234_rinvOO], xmm1
-	movapd [rsp + nb234_rinvH1H1], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqH1H2]
-	movapd xmm4, [rsp + nb234_rsqH1M]	
-	cvtpd2ps xmm1, xmm0	
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm1, xmm1
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm1, xmm1
-	cvtps2pd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulpd   xmm1, xmm1	;# luA*luA 
-	mulpd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulpd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subpd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subpd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulpd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm3, [rsp + nb234_half] ;# iter1 
-	mulpd   xmm7, [rsp + nb234_half] ;# iter1 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulpd   xmm3, xmm3	;# luA*luA 
-	mulpd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulpd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subpd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subpd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulpd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulpd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvH1H2], xmm1
-	movapd [rsp + nb234_rinvH1M], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqH2H1]
-	movapd xmm4, [rsp + nb234_rsqH2H2]	
-	cvtpd2ps xmm1, xmm0	
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm1, xmm1
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm1, xmm1
-	cvtps2pd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulpd   xmm1, xmm1	;# luA*luA 
-	mulpd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulpd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subpd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subpd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulpd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm3, [rsp + nb234_half] ;# iter1a 
-	mulpd   xmm7, [rsp + nb234_half] ;# iter1b 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulpd   xmm3, xmm3	;# luA*luA 
-	mulpd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulpd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subpd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subpd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulpd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulpd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvH2H1], xmm1
-	movapd [rsp + nb234_rinvH2H2], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqMH1]
-	movapd xmm4, [rsp + nb234_rsqH2M]	
-	cvtpd2ps xmm1, xmm0	
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm1, xmm1
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm1, xmm1
-	cvtps2pd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulpd   xmm1, xmm1	;# luA*luA 
-	mulpd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulpd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subpd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subpd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulpd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm3, [rsp + nb234_half] ;# iter1a 
-	mulpd   xmm7, [rsp + nb234_half] ;# iter1b 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulpd   xmm3, xmm3	;# luA*luA 
-	mulpd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulpd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulpd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subpd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subpd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulpd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulpd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulpd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulpd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvMH1], xmm1
-	movapd [rsp + nb234_rinvH2M], xmm5
-
-	;# start with OO interaction 
-	movapd xmm0, [rsp + nb234_rinvOO] 
-	movapd xmm4, [rsp + nb234_rsqOO]
-	
-		mulpd xmm4, xmm0	;# xmm4=r 
-	mulpd xmm4, [rsp + nb234_tsc]
-	
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-
-	pslld mm6, 3		;# idx *= 8 
-	
-	movd mm0, eax	
-	movd mm1, ebx
-
-	mov  rsi, [rbp + nb234_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6
-
-	;# dispersion 
-	movlpd xmm4, [rsi + rax*8]	;# Y1 	
-	movlpd xmm3, [rsi + rbx*8]	;# Y2 
-	movhpd xmm4, [rsi + rax*8 + 8]	;# Y1 F1 	
-	movhpd xmm3, [rsi + rbx*8 + 8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movlpd xmm6, [rsi + rax*8 + 16]	;# G1
-	movlpd xmm3, [rsi + rbx*8 + 16]	;# G2
-	movhpd xmm6, [rsi + rax*8 + 24]	;# G1 H1 	
-	movhpd xmm3, [rsi + rbx*8 + 24]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# dispersion table ready, in xmm4-xmm7 	
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [rsp + nb234_two]	;# two*Heps2 
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb234_c6]
-	mulpd  xmm7, xmm4	 ;# fijD 
-	mulpd  xmm5, xmm4	 ;# Vvdw6 
-
-	;# put scalar force on stack Update Vvdwtot directly 
-	addpd  xmm5, [rsp + nb234_Vvdwtot]
-	xorpd  xmm3, xmm3
-	mulpd  xmm7, [rsp + nb234_tsc]
-	subpd  xmm3, xmm7
-	movapd [rsp + nb234_fstmp], xmm3
-	movapd [rsp + nb234_Vvdwtot], xmm5
-
-	;# repulsion 
-	movlpd xmm4, [rsi + rax*8 + 32]	;# Y1 	
-	movlpd xmm3, [rsi + rbx*8 + 32]	;# Y2 
-	movhpd xmm4, [rsi + rax*8 + 40]	;# Y1 F1 	
-	movhpd xmm3, [rsi + rbx*8 + 40]	;# Y2 F2 
-
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movlpd xmm6, [rsi + rax*8 + 48]	;# G1
-	movlpd xmm3, [rsi + rbx*8 + 48]	;# G2
-	movhpd xmm6, [rsi + rax*8 + 56]	;# G1 H1 	
-	movhpd xmm3, [rsi + rbx*8 + 56]	;# G2 H2 
-
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	
-	;# table ready, in xmm4-xmm7 	
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [rsp + nb234_two]	;# two*Heps2 
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	
-	movapd xmm4, [rsp + nb234_c12]
-	mulpd  xmm7, xmm4 
-	mulpd  xmm5, xmm4  
-	
-	addpd  xmm5, [rsp + nb234_Vvdwtot]
-	movapd xmm3, [rsp + nb234_fstmp]
-	mulpd  xmm7, [rsp + nb234_tsc]
-	subpd  xmm3, xmm7
-	movapd [rsp + nb234_Vvdwtot], xmm5
-
-	mulpd  xmm0, xmm3
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	movd eax, mm0	
-	movd ebx, mm1
-
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulpd xmm0, [rsp + nb234_dxOO]
-	mulpd xmm1, [rsp + nb234_dyOO]
-	mulpd xmm2, [rsp + nb234_dzOO]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixO]
-	addpd xmm1, [rsp + nb234_fiyO]
-	addpd xmm2, [rsp + nb234_fizO]
-	movapd [rsp + nb234_fjxO], xmm3
-	movapd [rsp + nb234_fjyO], xmm4
-	movapd [rsp + nb234_fjzO], xmm5
-	movapd [rsp + nb234_fixO], xmm0
-	movapd [rsp + nb234_fiyO], xmm1
-	movapd [rsp + nb234_fizO], xmm2
-
-	;# H1-H1 interaction 
-	movapd xmm0, [rsp + nb234_rinvH1H1]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqH1H1] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulpd xmm0, [rsp + nb234_dxH1H1]
-	mulpd xmm1, [rsp + nb234_dyH1H1]
-	mulpd xmm2, [rsp + nb234_dzH1H1]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixH1]
-	addpd xmm1, [rsp + nb234_fiyH1]
-	addpd xmm2, [rsp + nb234_fizH1]
-	movapd [rsp + nb234_fjxH1], xmm3
-	movapd [rsp + nb234_fjyH1], xmm4
-	movapd [rsp + nb234_fjzH1], xmm5
-	movapd [rsp + nb234_fixH1], xmm0
-	movapd [rsp + nb234_fiyH1], xmm1
-	movapd [rsp + nb234_fizH1], xmm2
-
-	;# H1-H2 interaction  
-	movapd xmm0, [rsp + nb234_rinvH1H2]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqH1H2] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulpd xmm0, [rsp + nb234_dxH1H2]
-	mulpd xmm1, [rsp + nb234_dyH1H2]
-	mulpd xmm2, [rsp + nb234_dzH1H2]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixH1]
-	addpd xmm1, [rsp + nb234_fiyH1]
-	addpd xmm2, [rsp + nb234_fizH1]
-	movapd [rsp + nb234_fjxH2], xmm3
-	movapd [rsp + nb234_fjyH2], xmm4
-	movapd [rsp + nb234_fjzH2], xmm5
-	movapd [rsp + nb234_fixH1], xmm0
-	movapd [rsp + nb234_fiyH1], xmm1
-	movapd [rsp + nb234_fizH1], xmm2
-
-	;# H1-M interaction 
-	movapd xmm0, [rsp + nb234_rinvH1M]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqH1M] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulpd xmm0, [rsp + nb234_dxH1M]
-	mulpd xmm1, [rsp + nb234_dyH1M]
-	mulpd xmm2, [rsp + nb234_dzH1M]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixH1]
-	addpd xmm1, [rsp + nb234_fiyH1]
-	addpd xmm2, [rsp + nb234_fizH1]
-	movapd [rsp + nb234_fjxM], xmm3
-	movapd [rsp + nb234_fjyM], xmm4
-	movapd [rsp + nb234_fjzM], xmm5
-	movapd [rsp + nb234_fixH1], xmm0
-	movapd [rsp + nb234_fiyH1], xmm1
-	movapd [rsp + nb234_fizH1], xmm2
-
-	;# H2-H1 interaction 
-	movapd xmm0, [rsp + nb234_rinvH2H1]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqH2H1] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	movapd xmm3, [rsp + nb234_fjxH1]
-	movapd xmm4, [rsp + nb234_fjyH1]
-	movapd xmm5, [rsp + nb234_fjzH1]
-	mulpd xmm0, [rsp + nb234_dxH2H1]
-	mulpd xmm1, [rsp + nb234_dyH2H1]
-	mulpd xmm2, [rsp + nb234_dzH2H1]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixH2]
-	addpd xmm1, [rsp + nb234_fiyH2]
-	addpd xmm2, [rsp + nb234_fizH2]
-	movapd [rsp + nb234_fjxH1], xmm3
-	movapd [rsp + nb234_fjyH1], xmm4
-	movapd [rsp + nb234_fjzH1], xmm5
-	movapd [rsp + nb234_fixH2], xmm0
-	movapd [rsp + nb234_fiyH2], xmm1
-	movapd [rsp + nb234_fizH2], xmm2
-
-	;# H2-H2 interaction 
-	movapd xmm0, [rsp + nb234_rinvH2H2]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqH2H2] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	movapd xmm3, [rsp + nb234_fjxH2]
-	movapd xmm4, [rsp + nb234_fjyH2]
-	movapd xmm5, [rsp + nb234_fjzH2]
-	mulpd xmm0, [rsp + nb234_dxH2H2]
-	mulpd xmm1, [rsp + nb234_dyH2H2]
-	mulpd xmm2, [rsp + nb234_dzH2H2]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixH2]
-	addpd xmm1, [rsp + nb234_fiyH2]
-	addpd xmm2, [rsp + nb234_fizH2]
-	movapd [rsp + nb234_fjxH2], xmm3
-	movapd [rsp + nb234_fjyH2], xmm4
-	movapd [rsp + nb234_fjzH2], xmm5
-	movapd [rsp + nb234_fixH2], xmm0
-	movapd [rsp + nb234_fiyH2], xmm1
-	movapd [rsp + nb234_fizH2], xmm2
-
-	;# H2-M interaction 
-	movapd xmm0, [rsp + nb234_rinvH2M]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqH2M] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	movapd xmm3, [rsp + nb234_fjxM]
-	movapd xmm4, [rsp + nb234_fjyM]
-	movapd xmm5, [rsp + nb234_fjzM]
-	mulpd xmm0, [rsp + nb234_dxH2M]
-	mulpd xmm1, [rsp + nb234_dyH2M]
-	mulpd xmm2, [rsp + nb234_dzH2M]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixH2]
-	addpd xmm1, [rsp + nb234_fiyH2]
-	addpd xmm2, [rsp + nb234_fizH2]
-	movapd [rsp + nb234_fjxM], xmm3
-	movapd [rsp + nb234_fjyM], xmm4
-	movapd [rsp + nb234_fjzM], xmm5
-	movapd [rsp + nb234_fixH2], xmm0
-	movapd [rsp + nb234_fiyH2], xmm1
-	movapd [rsp + nb234_fizH2], xmm2
-
-	;# M-H1 interaction 
-	movapd xmm0, [rsp + nb234_rinvMH1]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqMH1] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	movapd xmm3, [rsp + nb234_fjxH1]
-	movapd xmm4, [rsp + nb234_fjyH1]
-	movapd xmm5, [rsp + nb234_fjzH1]
-	mulpd xmm0, [rsp + nb234_dxMH1]
-	mulpd xmm1, [rsp + nb234_dyMH1]
-	mulpd xmm2, [rsp + nb234_dzMH1]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixM]
-	addpd xmm1, [rsp + nb234_fiyM]
-	addpd xmm2, [rsp + nb234_fizM]
-	movapd [rsp + nb234_fjxH1], xmm3
-	movapd [rsp + nb234_fjyH1], xmm4
-	movapd [rsp + nb234_fjzH1], xmm5
-	movapd [rsp + nb234_fixM], xmm0
-	movapd [rsp + nb234_fiyM], xmm1
-	movapd [rsp + nb234_fizM], xmm2
-
-	;# M-H2 interaction 
-	movapd xmm0, [rsp + nb234_rinvMH2]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqMH2] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	movapd xmm3, [rsp + nb234_fjxH2]
-	movapd xmm4, [rsp + nb234_fjyH2]
-	movapd xmm5, [rsp + nb234_fjzH2]
-	mulpd xmm0, [rsp + nb234_dxMH2]
-	mulpd xmm1, [rsp + nb234_dyMH2]
-	mulpd xmm2, [rsp + nb234_dzMH2]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixM]
-	addpd xmm1, [rsp + nb234_fiyM]
-	addpd xmm2, [rsp + nb234_fizM]
-	movapd [rsp + nb234_fjxH2], xmm3
-	movapd [rsp + nb234_fjyH2], xmm4
-	movapd [rsp + nb234_fjzH2], xmm5
-	movapd [rsp + nb234_fixM], xmm0
-	movapd [rsp + nb234_fiyM], xmm1
-	movapd [rsp + nb234_fizM], xmm2
-
-	;# M-M interaction 
-	movapd xmm0, [rsp + nb234_rinvMM]
-	movapd xmm7, xmm0	;# xmm7=rinv 
-	movapd xmm5, [rsp + nb234_krf]
-	mulpd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulpd  xmm5, [rsp + nb234_rsqMM] ;# xmm5=krsq 
-	movapd xmm6, xmm5
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subpd  xmm6, [rsp + nb234_crf]
-	mulpd  xmm6, [rsp + nb234_qqMM] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulpd  xmm5, [rsp + nb234_two]
-	subpd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulpd  xmm7, [rsp + nb234_qqMM] ;# xmm7 = coul part of fscal 
-	
-	addpd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulpd  xmm0, xmm7
-	movapd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	movapd xmm3, [rsp + nb234_fjxM]
-	movapd xmm4, [rsp + nb234_fjyM] 
-	movapd xmm5, [rsp + nb234_fjzM]
-	mulpd xmm0, [rsp + nb234_dxMM]
-	mulpd xmm1, [rsp + nb234_dyMM]
-	mulpd xmm2, [rsp + nb234_dzMM]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	addpd xmm0, [rsp + nb234_fixM]
-	addpd xmm1, [rsp + nb234_fiyM]
-	addpd xmm2, [rsp + nb234_fizM]
-	movapd [rsp + nb234_fjxM], xmm3
-	movapd [rsp + nb234_fjyM], xmm4
-	movapd [rsp + nb234_fjzM], xmm5
-	movapd [rsp + nb234_fixM], xmm0
-	movapd [rsp + nb234_fiyM], xmm1
-	movapd [rsp + nb234_fizM], xmm2
-
-	mov rdi, [rbp + nb234_faction]
-	
-	;# Did all interactions - now update j forces 
-	;# Step1 - transpose fjxO, fjyO and fjzO, fjxH1
-	movapd xmm0, [rsp + nb234_fjxO]
-	movapd xmm1, [rsp + nb234_fjyO]
-	movapd xmm2, [rsp + nb234_fjzO]
-	movapd xmm3, [rsp + nb234_fjxH1]
-	movapd xmm4, xmm0
-	movapd xmm5, xmm2
-	unpcklpd xmm0, xmm1   ;# fjOxA fjOyA
-	unpckhpd xmm4, xmm1   ;# fjOxB fjOyB
-	unpcklpd xmm2, xmm3   ;# fjOzA fjH1xA
-	unpckhpd xmm5, xmm3   ;# fjOzB fjH1xB
-	movlpd xmm1, [rdi + rax*8]
-	movlpd xmm3, [rdi + rbx*8]
-	movhpd xmm1, [rdi + rax*8 + 8]
-	movhpd xmm3, [rdi + rbx*8 + 8]
-	movlpd xmm6, [rdi + rax*8 + 16]
-	movlpd xmm7, [rdi + rbx*8 + 16]
-	movhpd xmm6, [rdi + rax*8 + 24]
-	movhpd xmm7, [rdi + rbx*8 + 24]
-	addpd  xmm1, xmm0
 	addpd  xmm3, xmm4
-	addpd  xmm6, xmm2
-	addpd  xmm7, xmm5
-	movlpd [rdi + rax*8],      xmm1
-	movlpd [rdi + rbx*8],      xmm3
-	movhpd [rdi + rax*8 + 8],  xmm1
-	movhpd [rdi + rbx*8 + 8],  xmm3
-	movlpd [rdi + rax*8 + 16], xmm6
-	movlpd [rdi + rbx*8 + 16], xmm7
-	movhpd [rdi + rax*8 + 24], xmm6
-	movhpd [rdi + rbx*8 + 24], xmm7
+	addpd  xmm3, xmm5
+    addpd  xmm6, xmm7
+    addpd  xmm6, xmm8
 
-	;# Step2 - transpose fjyH1, fjzH1 and fjxH2, fjyH2
-	movapd xmm0, [rsp + nb234_fjyH1]
-	movapd xmm1, [rsp + nb234_fjzH1]
-	movapd xmm2, [rsp + nb234_fjxH2]
-	movapd xmm3, [rsp + nb234_fjyH2]
-	movapd xmm4, xmm0
-	movapd xmm5, xmm2
-	unpcklpd xmm0, xmm1   ;# fjOxA fjOyA
-	unpckhpd xmm4, xmm1   ;# fjOxB fjOyB
-	unpcklpd xmm2, xmm3   ;# fjOzA fjH1xA
-	unpckhpd xmm5, xmm3   ;# fjOzB fjH1xB
-	movlpd xmm1, [rdi + rax*8 + 32]
-	movlpd xmm3, [rdi + rbx*8 + 32]
-	movhpd xmm1, [rdi + rax*8 + 40]
-	movhpd xmm3, [rdi + rbx*8 + 40]
-	movlpd xmm6, [rdi + rax*8 + 48]
-	movlpd xmm7, [rdi + rbx*8 + 48]
-	movhpd xmm6, [rdi + rax*8 + 56]
-	movhpd xmm7, [rdi + rbx*8 + 56]
-	addpd  xmm1, xmm0
-	addpd  xmm3, xmm4
-	addpd  xmm6, xmm2
-	addpd  xmm7, xmm5
-	movlpd [rdi + rax*8 + 32], xmm1
-	movlpd [rdi + rbx*8 + 32], xmm3
-	movhpd [rdi + rax*8 + 40], xmm1
-	movhpd [rdi + rbx*8 + 40], xmm3
-	movlpd [rdi + rax*8 + 48], xmm6
-	movlpd [rdi + rbx*8 + 48], xmm7
-	movhpd [rdi + rax*8 + 56], xmm6
-	movhpd [rdi + rbx*8 + 56], xmm7
+	;# start doing invsqrt for jM atoms
+    cvtpd2ps xmm1, xmm0
+    cvtpd2ps xmm4, xmm3
+    cvtpd2ps xmm7, xmm6
+	rsqrtps xmm1, xmm1
+	rsqrtps xmm4, xmm4
+    rsqrtps xmm7, xmm7
+    cvtps2pd xmm1, xmm1
+    cvtps2pd xmm4, xmm4
+    cvtps2pd xmm7, xmm7
+	
+	movapd  xmm2, xmm1
+	movapd  xmm5, xmm4
+    movapd  xmm8, xmm7
+    
+	mulpd   xmm1, xmm1 ;# lu*lu
+	mulpd   xmm4, xmm4 ;# lu*lu
+    mulpd   xmm7, xmm7 ;# lu*lu
+		
+	movapd  xmm9, [rsp + nb234_three]
+	movapd  xmm10, xmm9
+    movapd  xmm11, xmm9
 
-	;# Step3 - transpose fjzH2, fjxM and fjyM, fjzM
-	movapd xmm0, [rsp + nb234_fjzH2]
-	movapd xmm1, [rsp + nb234_fjxM]
-	movapd xmm2, [rsp + nb234_fjyM]
-	movapd xmm3, [rsp + nb234_fjzM]
-	movapd xmm4, xmm0
-	movapd xmm5, xmm2
-	unpcklpd xmm0, xmm1   ;# fjOxA fjOyA
-	unpckhpd xmm4, xmm1   ;# fjOxB fjOyB
-	unpcklpd xmm2, xmm3   ;# fjOzA fjH1xA
-	unpckhpd xmm5, xmm3   ;# fjOzB fjH1xB
-	movlpd xmm1, [rdi + rax*8 + 64]
-	movlpd xmm3, [rdi + rbx*8 + 64]
-	movhpd xmm1, [rdi + rax*8 + 72]
-	movhpd xmm3, [rdi + rbx*8 + 72]
-	movlpd xmm6, [rdi + rax*8 + 80]
-	movlpd xmm7, [rdi + rbx*8 + 80]
-	movhpd xmm6, [rdi + rax*8 + 88]
-	movhpd xmm7, [rdi + rbx*8 + 88]
-	addpd  xmm1, xmm0
-	addpd  xmm3, xmm4
-	addpd  xmm6, xmm2
-	addpd  xmm7, xmm5
-	movlpd [rdi + rax*8 + 64], xmm1
-	movlpd [rdi + rbx*8 + 64], xmm3
-	movhpd [rdi + rax*8 + 72], xmm1
-	movhpd [rdi + rbx*8 + 72], xmm3
-	movlpd [rdi + rax*8 + 80], xmm6
-	movlpd [rdi + rbx*8 + 80], xmm7
-	movhpd [rdi + rax*8 + 88], xmm6
-	movhpd [rdi + rbx*8 + 88], xmm7
+	mulpd   xmm1, xmm0 ;# rsq*lu*lu
+	mulpd   xmm4, xmm3 ;# rsq*lu*lu 
+    mulpd   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subpd   xmm9, xmm1
+	subpd   xmm10, xmm4
+    subpd   xmm11, xmm7 ;# 3-rsq*lu*lu
 
+	mulpd   xmm9, xmm2
+	mulpd   xmm10, xmm5
+    mulpd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movapd  xmm15, [rsp + nb234_half]
+	mulpd   xmm9, xmm15  ;# first iteration for rinvH1M 
+	mulpd   xmm10, xmm15 ;# first iteration for rinvH2M
+    mulpd   xmm11, xmm15 ;# first iteration for rinvMM
+
+    ;# second iteration step    
+	movapd  xmm2, xmm9
+	movapd  xmm5, xmm10
+    movapd  xmm8, xmm11
+    
+	mulpd   xmm2, xmm2 ;# lu*lu
+	mulpd   xmm5, xmm5 ;# lu*lu
+    mulpd   xmm8, xmm8 ;# lu*lu
+		
+	movapd  xmm1, [rsp + nb234_three]
+	movapd  xmm4, xmm1
+    movapd  xmm7, xmm1
+
+	mulpd   xmm2, xmm0 ;# rsq*lu*lu
+	mulpd   xmm5, xmm3 ;# rsq*lu*lu 
+    mulpd   xmm8, xmm6 ;# rsq*lu*lu
+	
+	subpd   xmm1, xmm2
+	subpd   xmm4, xmm5
+    subpd   xmm7, xmm8 ;# 3-rsq*lu*lu
+
+	mulpd   xmm9, xmm1
+	mulpd   xmm10, xmm4
+    mulpd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
+
+	movapd  xmm15, [rsp + nb234_half]
+	mulpd   xmm9, xmm15  ;#  rinvH1M
+	mulpd   xmm10, xmm15 ;#   rinvH2M
+    mulpd   xmm11, xmm15 ;#   rinvMM
+	
+	
+	;# M interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movapd xmm1, xmm9 ;# copy of rinv
+    movapd xmm4, xmm10
+    movapd xmm7, xmm11
+    movapd xmm2, [rsp + nb234_krf]    
+    mulpd  xmm9, xmm9   ;# rinvsq
+    mulpd  xmm10, xmm10
+    mulpd  xmm11, xmm11
+    mulpd  xmm0, xmm2  ;# k*rsq
+    mulpd  xmm3, xmm2
+    mulpd  xmm6, xmm2
+    movapd xmm2, xmm0 ;# copy of k*rsq
+    movapd xmm5, xmm3
+    movapd xmm8, xmm6
+    addpd  xmm2, xmm1  ;# rinv+krsq
+    addpd  xmm5, xmm4
+    addpd  xmm8, xmm7
+    movapd xmm14, [rsp + nb234_crf]
+    subpd  xmm2, xmm14   ;# rinv+krsq-crf
+    subpd  xmm5, xmm14
+    subpd  xmm8, xmm14
+    movapd xmm12, [rsp + nb234_qqMH]
+    movapd xmm13, [rsp + nb234_qqMM]    
+    mulpd  xmm2, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulpd  xmm5, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulpd  xmm8, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    addpd  xmm0, xmm0 ;# 2*krsq
+    addpd  xmm3, xmm3 
+    addpd  xmm6, xmm6 
+    subpd  xmm1, xmm0 ;# rinv-2*krsq
+    subpd  xmm4, xmm3
+    subpd  xmm7, xmm6
+    mulpd  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulpd  xmm4, xmm12
+    mulpd  xmm7, xmm13
+    addpd  xmm2, [rsp + nb234_vctot]
+    addpd  xmm5, xmm8
+    addpd  xmm2, xmm5
+    movapd  [rsp + nb234_vctot], xmm2
+    
+    mulpd  xmm9, xmm1   ;# fscal
+    mulpd  xmm10, xmm4
+    mulpd  xmm11, xmm7
+
+    ;# move j M forces to xmm0-xmm2
+    mov rdi, [rbp + nb234_faction]
+	movlpd xmm0, [rdi + rax*8 + 72]
+	movlpd xmm1, [rdi + rax*8 + 80]
+	movlpd xmm2, [rdi + rax*8 + 88]
+	movhpd xmm0, [rdi + rbx*8 + 72]
+	movhpd xmm1, [rdi + rbx*8 + 80]
+	movhpd xmm2, [rdi + rbx*8 + 88]
+
+    movapd xmm7, xmm9
+    movapd xmm8, xmm9
+    movapd xmm13, xmm11
+    movapd xmm14, xmm11
+    movapd xmm15, xmm11
+    movapd xmm11, xmm10
+    movapd xmm12, xmm10
+
+	mulpd xmm7, [rsp + nb234_dxH1M]
+	mulpd xmm8, [rsp + nb234_dyH1M]
+	mulpd xmm9, [rsp + nb234_dzH1M]
+	mulpd xmm10, [rsp + nb234_dxH2M]
+	mulpd xmm11, [rsp + nb234_dyH2M]
+	mulpd xmm12, [rsp + nb234_dzH2M]
+	mulpd xmm13, [rsp + nb234_dxMM]
+	mulpd xmm14, [rsp + nb234_dyMM]
+	mulpd xmm15, [rsp + nb234_dzMM]
+
+    addpd xmm0, xmm7
+    addpd xmm1, xmm8
+    addpd xmm2, xmm9
+    addpd xmm7, [rsp + nb234_fixH1]
+    addpd xmm8, [rsp + nb234_fiyH1]
+    addpd xmm9, [rsp + nb234_fizH1]
+
+    addpd xmm0, xmm10
+    addpd xmm1, xmm11
+    addpd xmm2, xmm12
+    addpd xmm10, [rsp + nb234_fixH2]
+    addpd xmm11, [rsp + nb234_fiyH2]
+    addpd xmm12, [rsp + nb234_fizH2]
+
+    addpd xmm0, xmm13
+    addpd xmm1, xmm14
+    addpd xmm2, xmm15
+    addpd xmm13, [rsp + nb234_fixM]
+    addpd xmm14, [rsp + nb234_fiyM]
+    addpd xmm15, [rsp + nb234_fizM]
+
+    movapd [rsp + nb234_fixH1], xmm7
+    movapd [rsp + nb234_fiyH1], xmm8
+    movapd [rsp + nb234_fizH1], xmm9
+    movapd [rsp + nb234_fixH2], xmm10
+    movapd [rsp + nb234_fiyH2], xmm11
+    movapd [rsp + nb234_fizH2], xmm12
+    movapd [rsp + nb234_fixM], xmm13
+    movapd [rsp + nb234_fiyM], xmm14
+    movapd [rsp + nb234_fizM], xmm15
+   
+    ;# store back j M forces from xmm0-xmm2
+	movlpd [rdi + rax*8 + 72], xmm0
+	movlpd [rdi + rax*8 + 80], xmm1
+	movlpd [rdi + rax*8 + 88], xmm2
+	movhpd [rdi + rbx*8 + 72], xmm0
+	movhpd [rdi + rbx*8 + 80], xmm1
+	movhpd [rdi + rbx*8 + 88], xmm2
+	
 	;# should we do one more iteration? 
 	sub dword ptr [rsp + nb234_innerk],  2
 	jl    .nb234_checksingle
@@ -1474,934 +1343,836 @@ _nb_kernel234_x86_64_sse2:
 .nb234_dosingle:
 	mov   rdx, [rsp + nb234_innerjjnr]     ;# pointer to jjnr[k] 
 	mov   eax, [rdx]
-
-	mov rsi, [rbp + nb234_pos]       ;# base of pos[] 
-
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 	
-	;# move j coordinates to local temp variables 
-	;# load ox, oy, oz, h1x
-	movlpd xmm0, [rsi + rax*8]
-	movhpd xmm0, [rsi + rax*8 + 8]
-	movlpd xmm1, [rsi + rax*8 + 16]
-	movhpd xmm1, [rsi + rax*8 + 24]
-	movlpd xmm2, [rsi + rax*8 + 32]
-	movhpd xmm2, [rsi + rax*8 + 40]
-	movlpd xmm3, [rsi + rax*8 + 48]
-	movhpd xmm3, [rsi + rax*8 + 56]
-	movlpd xmm4, [rsi + rax*8 + 64]
-	movhpd xmm4, [rsi + rax*8 + 72]
-	movlpd xmm5, [rsi + rax*8 + 80]
-	movhpd xmm5, [rsi + rax*8 + 88]
-	movsd  [rsp + nb234_jxO], xmm0
-	movsd  [rsp + nb234_jzO], xmm1
-	movsd  [rsp + nb234_jyH1], xmm2
-	movsd  [rsp + nb234_jxH2], xmm3
-	movsd  [rsp + nb234_jzH2], xmm4
-	movsd  [rsp + nb234_jyM], xmm5
-	unpckhpd xmm0, xmm0
-	unpckhpd xmm1, xmm1
-	unpckhpd xmm2, xmm2
-	unpckhpd xmm3, xmm3
-	unpckhpd xmm4, xmm4
-	unpckhpd xmm5, xmm5
-	movsd  [rsp + nb234_jyO], xmm0
-	movsd  [rsp + nb234_jxH1], xmm1
-	movsd  [rsp + nb234_jzH1], xmm2
-	movsd  [rsp + nb234_jyH2], xmm3
-	movsd  [rsp + nb234_jxM], xmm4
-	movsd  [rsp + nb234_jzM], xmm5
+	mov rsi, [rbp + nb234_pos]
+	lea   rax, [rax + rax*2]  
 
-	;# start calculating pairwise distances
-	movapd xmm0, [rsp + nb234_ixO]
-	movapd xmm1, [rsp + nb234_iyO]
-	movapd xmm2, [rsp + nb234_izO]
-	movapd xmm3, [rsp + nb234_ixH1]
-	movapd xmm4, [rsp + nb234_iyH1]
-	movapd xmm5, [rsp + nb234_izH1]
-	subsd  xmm0, [rsp + nb234_jxO]
-	subsd  xmm1, [rsp + nb234_jyO]
-	subsd  xmm2, [rsp + nb234_jzO]
-	subsd  xmm3, [rsp + nb234_jxH1]
-	subsd  xmm4, [rsp + nb234_jyH1]
-	subsd  xmm5, [rsp + nb234_jzH1]
-	movapd [rsp + nb234_dxOO], xmm0
-	movapd [rsp + nb234_dyOO], xmm1
-	movapd [rsp + nb234_dzOO], xmm2
-	mulsd  xmm0, xmm0
-	mulsd  xmm1, xmm1
-	mulsd  xmm2, xmm2
-	movapd [rsp + nb234_dxH1H1], xmm3
-	movapd [rsp + nb234_dyH1H1], xmm4
-	movapd [rsp + nb234_dzH1H1], xmm5
-	mulsd  xmm3, xmm3
+	;# load j O coordinates
+    movsd xmm4, [rsi + rax*8] 
+    movsd xmm5, [rsi + rax*8 + 8] 
+    movsd xmm6, [rsi + rax*8 + 16] 
+
+    ;# xmm4 = Ox
+    ;# xmm5 = Oy
+    ;# xmm6 = Oz
+        
+    subsd xmm4, [rsp + nb234_ixO]
+    subsd xmm5, [rsp + nb234_iyO]
+    subsd xmm6, [rsp + nb234_izO]
+
+    ;# store dx/dy/dz
+    movapd xmm13, xmm4
+    movapd xmm14, xmm5
+    movapd xmm15, xmm6
+    
+    ;# square it
 	mulsd  xmm4, xmm4
 	mulsd  xmm5, xmm5
-	addsd  xmm0, xmm1
-	addsd  xmm0, xmm2
-	addsd  xmm3, xmm4
-	addsd  xmm3, xmm5
-	movapd [rsp + nb234_rsqOO], xmm0
-	movapd [rsp + nb234_rsqH1H1], xmm3
-
-	movapd xmm0, [rsp + nb234_ixH1]
-	movapd xmm1, [rsp + nb234_iyH1]
-	movapd xmm2, [rsp + nb234_izH1]
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	subsd  xmm0, [rsp + nb234_jxH2]
-	subsd  xmm1, [rsp + nb234_jyH2]
-	subsd  xmm2, [rsp + nb234_jzH2]
-	subsd  xmm3, [rsp + nb234_jxM]
-	subsd  xmm4, [rsp + nb234_jyM]
-	subsd  xmm5, [rsp + nb234_jzM]
-	movapd [rsp + nb234_dxH1H2], xmm0
-	movapd [rsp + nb234_dyH1H2], xmm1
-	movapd [rsp + nb234_dzH1H2], xmm2
-	mulsd  xmm0, xmm0
-	mulsd  xmm1, xmm1
-	mulsd  xmm2, xmm2
-	movapd [rsp + nb234_dxH1M], xmm3
-	movapd [rsp + nb234_dyH1M], xmm4
-	movapd [rsp + nb234_dzH1M], xmm5
-	mulsd  xmm3, xmm3
-	mulsd  xmm4, xmm4
-	mulsd  xmm5, xmm5
-	addsd  xmm0, xmm1
-	addsd  xmm0, xmm2
-	addsd  xmm3, xmm4
-	addsd  xmm3, xmm5
-	movapd [rsp + nb234_rsqH1H2], xmm0
-	movapd [rsp + nb234_rsqH1M], xmm3
-
-	movapd xmm0, [rsp + nb234_ixH2]
-	movapd xmm1, [rsp + nb234_iyH2]
-	movapd xmm2, [rsp + nb234_izH2]
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	subsd  xmm0, [rsp + nb234_jxH1]
-	subsd  xmm1, [rsp + nb234_jyH1]
-	subsd  xmm2, [rsp + nb234_jzH1]
-	subsd  xmm3, [rsp + nb234_jxH2]
-	subsd  xmm4, [rsp + nb234_jyH2]
-	subsd  xmm5, [rsp + nb234_jzH2]
-	movapd [rsp + nb234_dxH2H1], xmm0
-	movapd [rsp + nb234_dyH2H1], xmm1
-	movapd [rsp + nb234_dzH2H1], xmm2
-	mulsd  xmm0, xmm0
-	mulsd  xmm1, xmm1
-	mulsd  xmm2, xmm2
-	movapd [rsp + nb234_dxH2H2], xmm3
-	movapd [rsp + nb234_dyH2H2], xmm4
-	movapd [rsp + nb234_dzH2H2], xmm5
-	mulsd  xmm3, xmm3
-	mulsd  xmm4, xmm4
-	mulsd  xmm5, xmm5
-	addsd  xmm0, xmm1
-	addsd  xmm0, xmm2
-	addsd  xmm3, xmm4
-	addsd  xmm3, xmm5
-	movapd [rsp + nb234_rsqH2H1], xmm0
-	movapd [rsp + nb234_rsqH2H2], xmm3
-
-	movapd xmm0, [rsp + nb234_ixH2]
-	movapd xmm1, [rsp + nb234_iyH2]
-	movapd xmm2, [rsp + nb234_izH2]
-	movapd xmm3, [rsp + nb234_ixM]
-	movapd xmm4, [rsp + nb234_iyM]
-	movapd xmm5, [rsp + nb234_izM]
-	subsd  xmm0, [rsp + nb234_jxM]
-	subsd  xmm1, [rsp + nb234_jyM]
-	subsd  xmm2, [rsp + nb234_jzM]
-	subsd  xmm3, [rsp + nb234_jxH1]
-	subsd  xmm4, [rsp + nb234_jyH1]
-	subsd  xmm5, [rsp + nb234_jzH1]
-	movapd [rsp + nb234_dxH2M], xmm0
-	movapd [rsp + nb234_dyH2M], xmm1
-	movapd [rsp + nb234_dzH2M], xmm2
-	mulsd  xmm0, xmm0
-	mulsd  xmm1, xmm1
-	mulsd  xmm2, xmm2
-	movapd [rsp + nb234_dxMH1], xmm3
-	movapd [rsp + nb234_dyMH1], xmm4
-	movapd [rsp + nb234_dzMH1], xmm5
-	mulsd  xmm3, xmm3
-	mulsd  xmm4, xmm4
-	mulsd  xmm5, xmm5
-	addsd  xmm0, xmm1
-	addsd  xmm0, xmm2
-	addsd  xmm4, xmm3
-	addsd  xmm4, xmm5
-	movapd [rsp + nb234_rsqH2M], xmm0
-	movapd [rsp + nb234_rsqMH1], xmm4
-
-	movapd xmm0, [rsp + nb234_ixM]
-	movapd xmm1, [rsp + nb234_iyM]
-	movapd xmm2, [rsp + nb234_izM]
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	subsd  xmm0, [rsp + nb234_jxH2]
-	subsd  xmm1, [rsp + nb234_jyH2]
-	subsd  xmm2, [rsp + nb234_jzH2]
-	subsd  xmm3, [rsp + nb234_jxM]
-	subsd  xmm4, [rsp + nb234_jyM]
-	subsd  xmm5, [rsp + nb234_jzM]
-	movapd [rsp + nb234_dxMH2], xmm0
-	movapd [rsp + nb234_dyMH2], xmm1
-	movapd [rsp + nb234_dzMH2], xmm2
-	mulsd  xmm0, xmm0
-	mulsd  xmm1, xmm1
-	mulsd  xmm2, xmm2
-	movapd [rsp + nb234_dxMM], xmm3
-	movapd [rsp + nb234_dyMM], xmm4
-	movapd [rsp + nb234_dzMM], xmm5
-	mulsd  xmm3, xmm3
-	mulsd  xmm4, xmm4
-	mulsd  xmm5, xmm5
-	addsd  xmm0, xmm1
-	addsd  xmm0, xmm2
-	addsd  xmm4, xmm3
-	addsd  xmm4, xmm5
-	movapd [rsp + nb234_rsqMH2], xmm0
-	movapd [rsp + nb234_rsqMM], xmm4
-
-	;# Invsqrt form rsq M-H2 (rsq in xmm0) and MM (rsq in xmm4) 
-	cvtsd2ss xmm1, xmm0
-	cvtsd2ss xmm5, xmm4
-	rsqrtss xmm1, xmm1
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm1, xmm1   ;# luA
-	cvtss2sd xmm5, xmm5   ;# luB
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulsd   xmm1, xmm1	;# luA*luA 
-	mulsd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulsd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subsd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subsd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulsd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm3, [rsp + nb234_half] ;# iter1 
-	mulsd   xmm7, [rsp + nb234_half] ;# iter1 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulsd   xmm3, xmm3	;# luA*luA 
-	mulsd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulsd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subsd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subsd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulsd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulsd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvMH2], xmm1
-	movapd [rsp + nb234_rinvMM], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqOO]
-	movapd xmm4, [rsp + nb234_rsqH1H1]	
-	cvtsd2ss xmm1, xmm0	
+	mulsd  xmm6, xmm6
+    
+   	addsd  xmm4, xmm5
+	addsd  xmm4, xmm6
+    ;# rsq in xmm4
+    
 	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm1, xmm1
 	rsqrtss xmm5, xmm5
-	cvtss2sd xmm1, xmm1
-	cvtss2sd xmm5, xmm5
+	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
+
+	;# lookup seed in xmm2 
+	movapd xmm5, xmm2	;# copy of lu 
+	mulsd xmm2, xmm2	;# lu*lu 
+	movapd xmm1, [rsp + nb234_three]
+	mulsd xmm2, xmm4	;# rsq*lu*lu 			
+	movapd xmm0, [rsp + nb234_half]
+	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
+	mulsd xmm1, xmm5	
+	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+
+	movapd xmm5, xmm1	;# copy of lu 
+	mulsd xmm1, xmm1	;# lu*lu 
+	movapd xmm2, [rsp + nb234_three]
+	mulsd xmm1, xmm4	;# rsq*lu*lu 			
+	movapd xmm0, [rsp + nb234_half]
+	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
+	mulsd xmm2, xmm5	
+	mulsd xmm2, xmm0	;# xmm0=iter2 of rinv (new lu) 
 	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulsd   xmm1, xmm1	;# luA*luA 
-	mulsd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulsd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subsd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subsd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulsd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm3, [rsp + nb234_half] ;# iter1 of  
-	mulsd   xmm7, [rsp + nb234_half] ;# iter1 of  
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulsd   xmm3, xmm3	;# luA*luA 
-	mulsd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulsd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subsd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subsd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulsd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulsd   xmm5, [rsp + nb234_half] ;# rinv
-	movapd [rsp + nb234_rinvOO], xmm1
-	movapd [rsp + nb234_rinvH1H1], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqH1H2]
-	movapd xmm4, [rsp + nb234_rsqH1M]	
-	cvtsd2ss xmm1, xmm0	
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm1, xmm1
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm1, xmm1
-	cvtss2sd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulsd   xmm1, xmm1	;# luA*luA 
-	mulsd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulsd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subsd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subsd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulsd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm3, [rsp + nb234_half] ;# iter1 
-	mulsd   xmm7, [rsp + nb234_half] ;# iter1 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulsd   xmm3, xmm3	;# luA*luA 
-	mulsd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulsd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subsd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subsd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulsd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulsd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvH1H2], xmm1
-	movapd [rsp + nb234_rinvH1M], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqH2H1]
-	movapd xmm4, [rsp + nb234_rsqH2H2]	
-	cvtsd2ss xmm1, xmm0	
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm1, xmm1
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm1, xmm1
-	cvtss2sd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulsd   xmm1, xmm1	;# luA*luA 
-	mulsd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulsd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subsd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subsd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulsd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm3, [rsp + nb234_half] ;# iter1a 
-	mulsd   xmm7, [rsp + nb234_half] ;# iter1b 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulsd   xmm3, xmm3	;# luA*luA 
-	mulsd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulsd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subsd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subsd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulsd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulsd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvH2H1], xmm1
-	movapd [rsp + nb234_rinvH2H2], xmm5
-
-	movapd xmm0, [rsp + nb234_rsqMH1]
-	movapd xmm4, [rsp + nb234_rsqH2M]	
-	cvtsd2ss xmm1, xmm0	
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm1, xmm1
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm1, xmm1
-	cvtss2sd xmm5, xmm5
-	
-	movapd  xmm2, xmm1	;# copy of luA 
-	movapd  xmm6, xmm5	;# copy of luB 
-	mulsd   xmm1, xmm1	;# luA*luA 
-	mulsd   xmm5, xmm5	;# luB*luB 
-	movapd  xmm3, [rsp + nb234_three]
-	mulsd   xmm1, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm5, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm7, xmm3
-	subsd   xmm3, xmm1	;# 3-rsqA*luA*luA 
-	subsd   xmm7, xmm5	;# 3-rsqB*luB*luB 
-	mulsd   xmm3, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm7, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm3, [rsp + nb234_half] ;# iter1a 
-	mulsd   xmm7, [rsp + nb234_half] ;# iter1b 
-
-	movapd  xmm2, xmm3	;# copy of luA 
-	movapd  xmm6, xmm7	;# copy of luB 
-	mulsd   xmm3, xmm3	;# luA*luA 
-	mulsd   xmm7, xmm7	;# luB*luB 
-	movapd  xmm1, [rsp + nb234_three]
-	mulsd   xmm3, xmm0	;# rsqA*luA*luA 
-	mulsd   xmm7, xmm4	;# rsqB*luB*luB 	
-	movapd  xmm5, xmm1
-	subsd   xmm1, xmm3	;# 3-rsqA*luA*luA 
-	subsd   xmm5, xmm7	;# 3-rsqB*luB*luB 
-	mulsd   xmm1, xmm2	;# luA*(3-rsqA*luA*luA) 
-	mulsd   xmm5, xmm6	;# luB*(3-rsqB*luB*luB) 
-	mulsd   xmm1, [rsp + nb234_half] ;# rinv 
-	mulsd   xmm5, [rsp + nb234_half] ;# rinv 
-	movapd [rsp + nb234_rinvMH1], xmm1
-	movapd [rsp + nb234_rinvH2M], xmm5
-
-	;# start with OO interaction 
-	movsd xmm0, [rsp + nb234_rinvOO] 
-	movsd xmm4, [rsp + nb234_rsqOO]
-	
-	mulsd xmm4, xmm0	;# xmm4=r 
+	mulsd xmm4, xmm2	;# xmm4=r 
 	mulsd xmm4, [rsp + nb234_tsc]
 	
-	cvttsd2si ebx, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, ebx
+	cvttsd2si r10d, xmm4	;# mm6 = lu idx 
+	cvtsi2sd xmm5, r10d
 	subsd xmm4, xmm5
-	movsd xmm1, xmm4	;# xmm1=eps 
-	movsd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-
-	shl ebx, 3
+	movapd xmm1, xmm4
+    ;# xmm1=eps 
+    ;# xmm2=rinv
+    movapd xmm3, xmm4   ;# eps
+	shl  r10d, 3		;# idx *= 8 
 	
 	mov  rsi, [rbp + nb234_VFtab]
 
-	;# dispersion 
-	movlpd xmm4, [rsi + rbx*8]	;# Y1 	
-	movhpd xmm4, [rsi + rbx*8 + 8]	;# Y1 F1 	
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
+    ;# indices in r10, r11. Load dispersion and repulsion tables in parallel.
+	movapd xmm4, [rsi + r10*8]          ;# Y1d F1d	
+	movapd xmm8, [rsi + r10*8 + 32]     ;# Y1r F1r 	
+	movhlps xmm5, xmm4
+	movhlps xmm9, xmm8
 
-	movlpd xmm6, [rsi + rbx*8 + 16]	;# G1
-	movhpd xmm6, [rsi + rbx*8 + 24]	;# G1 H1 	
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# dispersion table ready, in xmm4-xmm7 	
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [rsp + nb234_two]	;# two*Heps2 
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
+	movapd xmm6, [rsi + r10*8 + 16]     ;# G1d H1d 	
+	movapd xmm10, [rsi + r10*8 + 48]	;# G1r H1r 	
+	movhlps xmm7, xmm6
+	movhlps xmm11, xmm10
+	;# tables ready, in xmm4-xmm7 and xmm8-xmm11
 
-	movsd xmm4, [rsp + nb234_c6]
-	mulsd  xmm7, xmm4	 ;# fijD 
-	mulsd  xmm5, xmm4	 ;# Vvdw6 
+    mulsd  xmm7, xmm1    ;# Heps
+    mulsd  xmm11, xmm1 
+    mulsd  xmm6, xmm1   ;# Geps
+    mulsd  xmm10, xmm1 
+    mulsd  xmm7, xmm1   ;# Heps2
+    mulsd  xmm11, xmm1 
+    addsd  xmm5, xmm6  ;# F+Geps
+    addsd  xmm9, xmm10 
+    addsd  xmm5, xmm7   ;# F+Geps+Heps2 = Fp
+    addsd  xmm9, xmm11 
+    addsd  xmm7, xmm7    ;# 2*Heps2
+    addsd  xmm11, xmm11
+    addsd  xmm7, xmm6   ;# 2*Heps2+Geps
+    addsd  xmm11, xmm10
+    
+    addsd  xmm7, xmm5  ;# FF = Fp + 2*Heps2 + Geps
+    addsd  xmm11, xmm9
+    mulsd  xmm5, xmm1  ;# eps*Fp
+    mulsd  xmm9, xmm1
+    addsd  xmm5, xmm4 ;# VV
+    addsd  xmm9, xmm8
 
-	;# put scalar force on stack Update Vvdwtot directly 
-	addsd  xmm5, [rsp + nb234_Vvdwtot]
-	xorpd  xmm3, xmm3
-	mulsd  xmm7, [rsp + nb234_tsc]
-	subsd  xmm3, xmm7
-	movsd [rsp + nb234_fstmp], xmm3
-	movsd [rsp + nb234_Vvdwtot], xmm5
+    mulsd  xmm5, [rsp + nb234_c6]  ;# VV*c6 = vnb6
+    mulsd  xmm9, [rsp + nb234_c12]  ;# VV*c12 = vnb12
+    addsd  xmm5, xmm9
+    addsd  xmm5, [rsp + nb234_Vvdwtot]
+    movsd [rsp + nb234_Vvdwtot], xmm5
+        
+    mulsd  xmm7, [rsp + nb234_c6]   ;# FF*c6 = fnb6
+    mulsd  xmm11, [rsp + nb234_c12]   ;# FF*c12  = fnb12
+    addsd  xmm7, xmm11
+    
+    mulsd  xmm7, [rsp + nb234_tsc]
+    mulsd  xmm7, xmm2
+    xorpd  xmm9, xmm9
+    
+    subpd  xmm9, xmm7
+    mulsd xmm13, xmm9
+    mulsd xmm14, xmm9
+    mulsd xmm15, xmm9
+    
+    mov rdi, [rbp + nb234_faction]
 
-	;# repulsion 
-	movlpd xmm4, [rsi + rbx*8 + 32]	;# Y1 	
-	movhpd xmm4, [rsi + rbx*8 + 40]	;# Y1 F1 	
+    movapd xmm0, [rsp + nb234_fixO]
+    movapd xmm1, [rsp + nb234_fiyO]
+    movapd xmm2, [rsp + nb234_fizO]
+    
+    ;# accumulate i forces
+    addsd xmm0, xmm13
+    addsd xmm1, xmm14
+    addsd xmm2, xmm15
+    movsd [rsp + nb234_fixO], xmm0
+    movsd [rsp + nb234_fiyO], xmm1
+    movsd [rsp + nb234_fizO], xmm2
+    
+	;# the fj's - start by accumulating forces from memory 
+	addsd xmm13, [rdi + rax*8]
+	addsd xmm14, [rdi + rax*8 + 8]
+	addsd xmm15, [rdi + rax*8 + 16]
+	movsd [rdi + rax*8], xmm13
+	movsd [rdi + rax*8 + 8], xmm14
+	movsd [rdi + rax*8 + 16], xmm15
+    ;# done with OO interaction
+    
+	;# move j H1 coordinates to local temp variables 
+    mov rsi, [rbp + nb234_pos]
+    movsd xmm0, [rsi + rax*8 + 24] 
+    movsd xmm1, [rsi + rax*8 + 32] 
+    movsd xmm2, [rsi + rax*8 + 40] 
 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
+    ;# xmm0 = H1x
+    ;# xmm1 = H1y
+    ;# xmm2 = H1z
+        
+    movsd xmm3, xmm0
+    movsd xmm4, xmm1
+    movsd xmm5, xmm2
+    movsd xmm6, xmm0
+    movsd xmm7, xmm1
+    movsd xmm8, xmm2
+    
+    subsd xmm0, [rsp + nb234_ixH1]
+    subsd xmm1, [rsp + nb234_iyH1]
+    subsd xmm2, [rsp + nb234_izH1]
+    subsd xmm3, [rsp + nb234_ixH2]
+    subsd xmm4, [rsp + nb234_iyH2]
+    subsd xmm5, [rsp + nb234_izH2]
+    subsd xmm6, [rsp + nb234_ixM]
+    subsd xmm7, [rsp + nb234_iyM]
+    subsd xmm8, [rsp + nb234_izM]
+    
+	movsd [rsp + nb234_dxH1H1], xmm0
+	movsd [rsp + nb234_dyH1H1], xmm1
+	movsd [rsp + nb234_dzH1H1], xmm2
+	mulsd  xmm0, xmm0
+	mulsd  xmm1, xmm1
+	mulsd  xmm2, xmm2
+	movsd [rsp + nb234_dxH2H1], xmm3
+	movsd [rsp + nb234_dyH2H1], xmm4
+	movsd [rsp + nb234_dzH2H1], xmm5
+	mulsd  xmm3, xmm3
+	mulsd  xmm4, xmm4
+	mulsd  xmm5, xmm5
+	movsd [rsp + nb234_dxMH1], xmm6
+	movsd [rsp + nb234_dyMH1], xmm7
+	movsd [rsp + nb234_dzMH1], xmm8
+	mulsd  xmm6, xmm6
+	mulsd  xmm7, xmm7
+	mulsd  xmm8, xmm8
+	addsd  xmm0, xmm1
+	addsd  xmm0, xmm2
+	addsd  xmm3, xmm4
+	addsd  xmm3, xmm5
+    addsd  xmm6, xmm7
+    addsd  xmm6, xmm8
 
-	movlpd xmm6, [rsi + rbx*8 + 48]	;# G1
-	movhpd xmm6, [rsi + rbx*8 + 56]	;# G1 H1 	
-
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
+	;# start doing invsqrt for jH1 atoms
+    cvtsd2ss xmm1, xmm0
+    cvtsd2ss xmm4, xmm3
+    cvtsd2ss xmm7, xmm6
+	rsqrtss xmm1, xmm1
+	rsqrtss xmm4, xmm4
+    rsqrtss xmm7, xmm7
+    cvtss2sd xmm1, xmm1
+    cvtss2sd xmm4, xmm4
+    cvtss2sd xmm7, xmm7
 	
-	;# table ready, in xmm4-xmm7 	
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [rsp + nb234_two]	;# two*Heps2 
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
+	movsd  xmm2, xmm1
+	movsd  xmm5, xmm4
+    movsd  xmm8, xmm7
+    
+	mulsd   xmm1, xmm1 ;# lu*lu
+	mulsd   xmm4, xmm4 ;# lu*lu
+    mulsd   xmm7, xmm7 ;# lu*lu
+		
+	movsd  xmm9, [rsp + nb234_three]
+	movsd  xmm10, xmm9
+    movsd  xmm11, xmm9
+
+	mulsd   xmm1, xmm0 ;# rsq*lu*lu
+	mulsd   xmm4, xmm3 ;# rsq*lu*lu 
+    mulsd   xmm7, xmm6 ;# rsq*lu*lu
 	
-	movsd xmm4, [rsp + nb234_c12]
-	mulsd  xmm7, xmm4 
-	mulsd  xmm5, xmm4  
+	subsd   xmm9, xmm1
+	subsd   xmm10, xmm4
+    subsd   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulsd   xmm9, xmm2
+	mulsd   xmm10, xmm5
+    mulsd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movsd  xmm15, [rsp + nb234_half]
+	mulsd   xmm9, xmm15  ;# first iteration for rinvH1H1 
+	mulsd   xmm10, xmm15 ;# first iteration for rinvH2H1
+    mulsd   xmm11, xmm15 ;# first iteration for rinvMH1	
+
+    ;# second iteration step    
+	movsd  xmm2, xmm9
+	movsd  xmm5, xmm10
+    movsd  xmm8, xmm11
+    
+	mulsd   xmm2, xmm2 ;# lu*lu
+	mulsd   xmm5, xmm5 ;# lu*lu
+    mulsd   xmm8, xmm8 ;# lu*lu
+		
+	movsd  xmm1, [rsp + nb234_three]
+	movsd  xmm4, xmm1
+    movsd  xmm7, xmm1
+
+	mulsd   xmm2, xmm0 ;# rsq*lu*lu
+	mulsd   xmm5, xmm3 ;# rsq*lu*lu 
+    mulsd   xmm8, xmm6 ;# rsq*lu*lu
 	
-	addsd  xmm5, [rsp + nb234_Vvdwtot]
-	movsd xmm3, [rsp + nb234_fstmp]
-	mulsd  xmm7, [rsp + nb234_tsc]
-	subsd  xmm3, xmm7
-	movsd [rsp + nb234_Vvdwtot], xmm5
+	subsd   xmm1, xmm2
+	subsd   xmm4, xmm5
+    subsd   xmm7, xmm8 ;# 3-rsq*lu*lu
 
-	mulsd  xmm0, xmm3
-	movsd xmm1, xmm0
-	movsd xmm2, xmm0
+	mulsd   xmm9, xmm1
+	mulsd   xmm10, xmm4
+    mulsd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
 
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulsd xmm0, [rsp + nb234_dxOO]
-	mulsd xmm1, [rsp + nb234_dyOO]
-	mulsd xmm2, [rsp + nb234_dzOO]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixO]
-	addsd xmm1, [rsp + nb234_fiyO]
-	addsd xmm2, [rsp + nb234_fizO]
-	movsd [rsp + nb234_fjxO], xmm3
-	movsd [rsp + nb234_fjyO], xmm4
-	movsd [rsp + nb234_fjzO], xmm5
-	movsd [rsp + nb234_fixO], xmm0
-	movsd [rsp + nb234_fiyO], xmm1
-	movsd [rsp + nb234_fizO], xmm2
-
-	;# H1-H1 interaction 
-	movsd xmm0, [rsp + nb234_rinvH1H1]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulsd  xmm5, [rsp + nb234_rsqH1H1] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
+	movsd  xmm15, [rsp + nb234_half]
+	mulsd   xmm9, xmm15  ;#  rinvH1H1 
+	mulsd   xmm10, xmm15 ;#   rinvH2H1
+    mulsd   xmm11, xmm15 ;#   rinvMH1
 	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
+	;# H1 interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movsd xmm1, xmm9 ;# copy of rinv
+    movsd xmm4, xmm10
+    movsd xmm7, xmm11
+    movsd xmm2, [rsp + nb234_krf]    
+    mulsd  xmm9, xmm9   ;# rinvsq
+    mulsd  xmm10, xmm10
+    mulsd  xmm11, xmm11
+    mulsd  xmm0, xmm2  ;# k*rsq
+    mulsd  xmm3, xmm2
+    mulsd  xmm6, xmm2
+    movsd  xmm2, xmm0 ;# copy of k*rsq
+    movsd  xmm5, xmm3
+    movsd  xmm8, xmm6
+    addsd  xmm2, xmm1  ;# rinv+krsq
+    addsd  xmm5, xmm4
+    addsd  xmm8, xmm7
+    movsd  xmm14, [rsp + nb234_crf]
+    subsd  xmm2, xmm14   ;# rinv+krsq-crf
+    subsd  xmm5, xmm14
+    subsd  xmm8, xmm14
+    movsd  xmm12, [rsp + nb234_qqHH]
+    movsd  xmm13, [rsp + nb234_qqMH]    
+    mulsd  xmm2, xmm12 ;# voul=qq*(rinv+ krsq-crf)
+    mulsd  xmm5, xmm12 ;# voul=qq*(rinv+ krsq-crf)
+    mulsd  xmm8, xmm13 ;# voul=qq*(rinv+ krsq-crf)
+    addsd  xmm0, xmm0 ;# 2*krsq
+    addsd  xmm3, xmm3 
+    addsd  xmm6, xmm6 
+    subsd  xmm1, xmm0 ;# rinv-2*krsq
+    subsd  xmm4, xmm3
+    subsd  xmm7, xmm6
+    mulsd  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulsd  xmm4, xmm12
+    mulsd  xmm7, xmm13
+    addsd  xmm2, [rsp + nb234_vctot]
+    addsd  xmm5, xmm8
+    addsd  xmm2, xmm5
+    movsd  [rsp + nb234_vctot], xmm2
+    
+    mulsd  xmm9, xmm1   ;# fscal
+    mulsd  xmm10, xmm4
+    mulsd  xmm11, xmm7
+
+    ;# move j H1 forces to xmm0-xmm2
+    mov rdi, [rbp + nb234_faction]
+	movsd xmm0, [rdi + rax*8 + 24]
+	movsd xmm1, [rdi + rax*8 + 32]
+	movsd xmm2, [rdi + rax*8 + 40]
+
+    movsd xmm7, xmm9
+    movsd xmm8, xmm9
+    movsd xmm13, xmm11
+    movsd xmm14, xmm11
+    movsd xmm15, xmm11
+    movsd xmm11, xmm10
+    movsd xmm12, xmm10
+
+	mulsd xmm7, [rsp + nb234_dxH1H1]
+	mulsd xmm8, [rsp + nb234_dyH1H1]
+	mulsd xmm9, [rsp + nb234_dzH1H1]
+	mulsd xmm10, [rsp + nb234_dxH2H1]
+	mulsd xmm11, [rsp + nb234_dyH2H1]
+	mulsd xmm12, [rsp + nb234_dzH2H1]
+	mulsd xmm13, [rsp + nb234_dxMH1]
+	mulsd xmm14, [rsp + nb234_dyMH1]
+	mulsd xmm15, [rsp + nb234_dzMH1]
+
+    addsd xmm0, xmm7
+    addsd xmm1, xmm8
+    addsd xmm2, xmm9
+    addsd xmm7, [rsp + nb234_fixH1]
+    addsd xmm8, [rsp + nb234_fiyH1]
+    addsd xmm9, [rsp + nb234_fizH1]
+
+    addsd xmm0, xmm10
+    addsd xmm1, xmm11
+    addsd xmm2, xmm12
+    addsd xmm10, [rsp + nb234_fixH2]
+    addsd xmm11, [rsp + nb234_fiyH2]
+    addsd xmm12, [rsp + nb234_fizH2]
+
+    addsd xmm0, xmm13
+    addsd xmm1, xmm14
+    addsd xmm2, xmm15
+    addsd xmm13, [rsp + nb234_fixM]
+    addsd xmm14, [rsp + nb234_fiyM]
+    addsd xmm15, [rsp + nb234_fizM]
+
+    movsd [rsp + nb234_fixH1], xmm7
+    movsd [rsp + nb234_fiyH1], xmm8
+    movsd [rsp + nb234_fizH1], xmm9
+    movsd [rsp + nb234_fixH2], xmm10
+    movsd [rsp + nb234_fiyH2], xmm11
+    movsd [rsp + nb234_fizH2], xmm12
+    movsd [rsp + nb234_fixM], xmm13
+    movsd [rsp + nb234_fiyM], xmm14
+    movsd [rsp + nb234_fizM], xmm15
+   
+    ;# store back j H1 forces from xmm0-xmm2
+	movsd [rdi + rax*8 + 24], xmm0
+	movsd [rdi + rax*8 + 32], xmm1
+	movsd [rdi + rax*8 + 40], xmm2
+
+	;# move j H2 coordinates to local temp variables 
+    mov rsi, [rbp + nb234_pos]
+    movsd xmm0, [rsi + rax*8 + 48] 
+    movsd xmm1, [rsi + rax*8 + 56] 
+    movsd xmm2, [rsi + rax*8 + 64] 
+
+    ;# xmm0 = H2x
+    ;# xmm1 = H2y
+    ;# xmm2 = H2z
+        
+    movsd xmm3, xmm0
+    movsd xmm4, xmm1
+    movsd xmm5, xmm2
+    movsd xmm6, xmm0
+    movsd xmm7, xmm1
+    movsd xmm8, xmm2
+    
+    subsd xmm0, [rsp + nb234_ixH1]
+    subsd xmm1, [rsp + nb234_iyH1]
+    subsd xmm2, [rsp + nb234_izH1]
+    subsd xmm3, [rsp + nb234_ixH2]
+    subsd xmm4, [rsp + nb234_iyH2]
+    subsd xmm5, [rsp + nb234_izH2]
+    subsd xmm6, [rsp + nb234_ixM]
+    subsd xmm7, [rsp + nb234_iyM]
+    subsd xmm8, [rsp + nb234_izM]
+    
+	movsd [rsp + nb234_dxH1H2], xmm0
+	movsd [rsp + nb234_dyH1H2], xmm1
+	movsd [rsp + nb234_dzH1H2], xmm2
+	mulsd  xmm0, xmm0
+	mulsd  xmm1, xmm1
+	mulsd  xmm2, xmm2
+	movsd [rsp + nb234_dxH2H2], xmm3
+	movsd [rsp + nb234_dyH2H2], xmm4
+	movsd [rsp + nb234_dzH2H2], xmm5
+	mulsd  xmm3, xmm3
+	mulsd  xmm4, xmm4
+	mulsd  xmm5, xmm5
+	movsd [rsp + nb234_dxMH2], xmm6
+	movsd [rsp + nb234_dyMH2], xmm7
+	movsd [rsp + nb234_dzMH2], xmm8
+	mulsd  xmm6, xmm6
+	mulsd  xmm7, xmm7
+	mulsd  xmm8, xmm8
+	addsd  xmm0, xmm1
+	addsd  xmm0, xmm2
+	addsd  xmm3, xmm4
+	addsd  xmm3, xmm5
+    addsd  xmm6, xmm7
+    addsd  xmm6, xmm8
+
+	;# start doing invsqrt for jH2 atoms
+    cvtsd2ss xmm1, xmm0
+    cvtsd2ss xmm4, xmm3
+    cvtsd2ss xmm7, xmm6
+	rsqrtss xmm1, xmm1
+	rsqrtss xmm4, xmm4
+    rsqrtss xmm7, xmm7
+    cvtss2sd xmm1, xmm1
+    cvtss2sd xmm4, xmm4
+    cvtss2sd xmm7, xmm7
 	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
+	movsd  xmm2, xmm1
+	movsd  xmm5, xmm4
+    movsd  xmm8, xmm7
+    
+	mulsd   xmm1, xmm1 ;# lu*lu
+	mulsd   xmm4, xmm4 ;# lu*lu
+    mulsd   xmm7, xmm7 ;# lu*lu
+		
+	movsd  xmm9, [rsp + nb234_three]
+	movsd  xmm10, xmm9
+    movsd  xmm11, xmm9
+
+	mulsd   xmm1, xmm0 ;# rsq*lu*lu
+	mulsd   xmm4, xmm3 ;# rsq*lu*lu 
+    mulsd   xmm7, xmm6 ;# rsq*lu*lu
 	
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulsd xmm0, [rsp + nb234_dxH1H1]
-	mulsd xmm1, [rsp + nb234_dyH1H1]
-	mulsd xmm2, [rsp + nb234_dzH1H1]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixH1]
-	addsd xmm1, [rsp + nb234_fiyH1]
-	addsd xmm2, [rsp + nb234_fizH1]
-	movsd [rsp + nb234_fjxH1], xmm3
-	movsd [rsp + nb234_fjyH1], xmm4
-	movsd [rsp + nb234_fjzH1], xmm5
-	movsd [rsp + nb234_fixH1], xmm0
-	movsd [rsp + nb234_fiyH1], xmm1
-	movsd [rsp + nb234_fizH1], xmm2
+	subsd   xmm9, xmm1
+	subsd   xmm10, xmm4
+    subsd   xmm11, xmm7 ;# 3-rsq*lu*lu
 
-	;# H1-H2 interaction  
-	movsd xmm0, [rsp + nb234_rinvH1H2]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
+	mulsd   xmm9, xmm2
+	mulsd   xmm10, xmm5
+    mulsd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
 
-	mulsd  xmm5, [rsp + nb234_rsqH1H2] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
+	movsd  xmm15, [rsp + nb234_half]
+	mulsd   xmm9, xmm15  ;# first iteration for rinvH1H2 
+	mulsd   xmm10, xmm15 ;# first iteration for rinvH2H2
+    mulsd   xmm11, xmm15 ;# first iteration for rinvMH2
+
+    ;# second iteration step    
+	movsd  xmm2, xmm9
+	movsd  xmm5, xmm10
+    movsd  xmm8, xmm11
+    
+	mulsd   xmm2, xmm2 ;# lu*lu
+	mulsd   xmm5, xmm5 ;# lu*lu
+    mulsd   xmm8, xmm8 ;# lu*lu
+		
+	movsd  xmm1, [rsp + nb234_three]
+	movsd  xmm4, xmm1
+    movsd  xmm7, xmm1
+
+	mulsd   xmm2, xmm0 ;# rsq*lu*lu
+	mulsd   xmm5, xmm3 ;# rsq*lu*lu 
+    mulsd   xmm8, xmm6 ;# rsq*lu*lu
 	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
+	subsd   xmm1, xmm2
+	subsd   xmm4, xmm5
+    subsd   xmm7, xmm8 ;# 3-rsq*lu*lu
+
+	mulsd   xmm9, xmm1
+	mulsd   xmm10, xmm4
+    mulsd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
+
+	movsd  xmm15, [rsp + nb234_half]
+	mulsd   xmm9, xmm15  ;#  rinvH1H2
+	mulsd   xmm10, xmm15 ;#   rinvH2H2
+    mulsd   xmm11, xmm15 ;#   rinvMH2
 	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
+	;# H2 interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movsd xmm1, xmm9 ;# copy of rinv
+    movsd xmm4, xmm10
+    movsd xmm7, xmm11
+    movsd xmm2, [rsp + nb234_krf]    
+    mulsd  xmm9, xmm9   ;# rinvsq
+    mulsd  xmm10, xmm10
+    mulsd  xmm11, xmm11
+    mulsd  xmm0, xmm2  ;# k*rsq
+    mulsd  xmm3, xmm2
+    mulsd  xmm6, xmm2
+    movsd xmm2, xmm0 ;# copy of k*rsq
+    movsd xmm5, xmm3
+    movsd xmm8, xmm6
+    addsd  xmm2, xmm1  ;# rinv+krsq
+    addsd  xmm5, xmm4
+    addsd  xmm8, xmm7
+    movsd xmm14, [rsp + nb234_crf]
+    subsd  xmm2, xmm14   ;# rinv+krsq-crf
+    subsd  xmm5, xmm14
+    subsd  xmm8, xmm14
+    movsd xmm12, [rsp + nb234_qqHH]
+    movsd xmm13, [rsp + nb234_qqMH]    
+    mulsd  xmm2, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulsd  xmm5, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulsd  xmm8, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    addsd  xmm0, xmm0 ;# 2*krsq
+    addsd  xmm3, xmm3 
+    addsd  xmm6, xmm6 
+    subsd  xmm1, xmm0 ;# rinv-2*krsq
+    subsd  xmm4, xmm3
+    subsd  xmm7, xmm6
+    mulsd  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulsd  xmm4, xmm12
+    mulsd  xmm7, xmm13
+    addsd  xmm2, [rsp + nb234_vctot]
+    addsd  xmm5, xmm8
+    addsd  xmm2, xmm5
+    movsd  [rsp + nb234_vctot], xmm2
+    
+    mulsd  xmm9, xmm1   ;# fscal
+    mulsd  xmm10, xmm4
+    mulsd  xmm11, xmm7
+
+    ;# move j H2 forces to xmm0-xmm2
+    mov rdi, [rbp + nb234_faction]
+	movsd xmm0, [rdi + rax*8 + 48]
+	movsd xmm1, [rdi + rax*8 + 56]
+	movsd xmm2, [rdi + rax*8 + 64]
+
+    movsd xmm7, xmm9
+    movsd xmm8, xmm9
+    movsd xmm13, xmm11
+    movsd xmm14, xmm11
+    movsd xmm15, xmm11
+    movsd xmm11, xmm10
+    movsd xmm12, xmm10
+
+	mulsd xmm7, [rsp + nb234_dxH1H2]
+	mulsd xmm8, [rsp + nb234_dyH1H2]
+	mulsd xmm9, [rsp + nb234_dzH1H2]
+	mulsd xmm10, [rsp + nb234_dxH2H2]
+	mulsd xmm11, [rsp + nb234_dyH2H2]
+	mulsd xmm12, [rsp + nb234_dzH2H2]
+	mulsd xmm13, [rsp + nb234_dxMH2]
+	mulsd xmm14, [rsp + nb234_dyMH2]
+	mulsd xmm15, [rsp + nb234_dzMH2]
+
+    addsd xmm0, xmm7
+    addsd xmm1, xmm8
+    addsd xmm2, xmm9
+    addsd xmm7, [rsp + nb234_fixH1]
+    addsd xmm8, [rsp + nb234_fiyH1]
+    addsd xmm9, [rsp + nb234_fizH1]
+
+    addsd xmm0, xmm10
+    addsd xmm1, xmm11
+    addsd xmm2, xmm12
+    addsd xmm10, [rsp + nb234_fixH2]
+    addsd xmm11, [rsp + nb234_fiyH2]
+    addsd xmm12, [rsp + nb234_fizH2]
+
+    addsd xmm0, xmm13
+    addsd xmm1, xmm14
+    addsd xmm2, xmm15
+    addsd xmm13, [rsp + nb234_fixM]
+    addsd xmm14, [rsp + nb234_fiyM]
+    addsd xmm15, [rsp + nb234_fizM]
+
+    movsd [rsp + nb234_fixH1], xmm7
+    movsd [rsp + nb234_fiyH1], xmm8
+    movsd [rsp + nb234_fizH1], xmm9
+    movsd [rsp + nb234_fixH2], xmm10
+    movsd [rsp + nb234_fiyH2], xmm11
+    movsd [rsp + nb234_fizH2], xmm12
+    movsd [rsp + nb234_fixM], xmm13
+    movsd [rsp + nb234_fiyM], xmm14
+    movsd [rsp + nb234_fizM], xmm15
+   
+    ;# store back j H2 forces from xmm0-xmm2
+	movsd [rdi + rax*8 + 48], xmm0
+	movsd [rdi + rax*8 + 56], xmm1
+	movsd [rdi + rax*8 + 64], xmm2
+       
+	;# move j M coordinates to local temp variables 
+    mov rsi, [rbp + nb234_pos]
+    movsd xmm0, [rsi + rax*8 + 72] 
+    movsd xmm1, [rsi + rax*8 + 80] 
+    movsd xmm2, [rsi + rax*8 + 88] 
+
+    ;# xmm0 = Mx
+    ;# xmm1 = My
+    ;# xmm2 = Mz
+        
+    movsd xmm3, xmm0
+    movsd xmm4, xmm1
+    movsd xmm5, xmm2
+    movsd xmm6, xmm0
+    movsd xmm7, xmm1
+    movsd xmm8, xmm2
+    
+    subsd xmm0, [rsp + nb234_ixH1]
+    subsd xmm1, [rsp + nb234_iyH1]
+    subsd xmm2, [rsp + nb234_izH1]
+    subsd xmm3, [rsp + nb234_ixH2]
+    subsd xmm4, [rsp + nb234_iyH2]
+    subsd xmm5, [rsp + nb234_izH2]
+    subsd xmm6, [rsp + nb234_ixM]
+    subsd xmm7, [rsp + nb234_iyM]
+    subsd xmm8, [rsp + nb234_izM]
+    
+	movsd [rsp + nb234_dxH1M], xmm0
+	movsd [rsp + nb234_dyH1M], xmm1
+	movsd [rsp + nb234_dzH1M], xmm2
+	mulsd  xmm0, xmm0
+	mulsd  xmm1, xmm1
+	mulsd  xmm2, xmm2
+	movsd [rsp + nb234_dxH2M], xmm3
+	movsd [rsp + nb234_dyH2M], xmm4
+	movsd [rsp + nb234_dzH2M], xmm5
+	mulsd  xmm3, xmm3
+	mulsd  xmm4, xmm4
+	mulsd  xmm5, xmm5
+	movsd [rsp + nb234_dxMM], xmm6
+	movsd [rsp + nb234_dyMM], xmm7
+	movsd [rsp + nb234_dzMM], xmm8
+	mulsd  xmm6, xmm6
+	mulsd  xmm7, xmm7
+	mulsd  xmm8, xmm8
+	addsd  xmm0, xmm1
+	addsd  xmm0, xmm2
+	addsd  xmm3, xmm4
+	addsd  xmm3, xmm5
+    addsd  xmm6, xmm7
+    addsd  xmm6, xmm8
+
+	;# start doing invsqrt for jM atoms
+    cvtsd2ss xmm1, xmm0
+    cvtsd2ss xmm4, xmm3
+    cvtsd2ss xmm7, xmm6
+	rsqrtss xmm1, xmm1
+	rsqrtss xmm4, xmm4
+    rsqrtss xmm7, xmm7
+    cvtss2sd xmm1, xmm1
+    cvtss2sd xmm4, xmm4
+    cvtss2sd xmm7, xmm7
 	
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulsd xmm0, [rsp + nb234_dxH1H2]
-	mulsd xmm1, [rsp + nb234_dyH1H2]
-	mulsd xmm2, [rsp + nb234_dzH1H2]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixH1]
-	addsd xmm1, [rsp + nb234_fiyH1]
-	addsd xmm2, [rsp + nb234_fizH1]
-	movsd [rsp + nb234_fjxH2], xmm3
-	movsd [rsp + nb234_fjyH2], xmm4
-	movsd [rsp + nb234_fjzH2], xmm5
-	movsd [rsp + nb234_fixH1], xmm0
-	movsd [rsp + nb234_fiyH1], xmm1
-	movsd [rsp + nb234_fizH1], xmm2
+	movsd  xmm2, xmm1
+	movsd  xmm5, xmm4
+    movsd  xmm8, xmm7
+    
+	mulsd   xmm1, xmm1 ;# lu*lu
+	mulsd   xmm4, xmm4 ;# lu*lu
+    mulsd   xmm7, xmm7 ;# lu*lu
+		
+	movsd  xmm9, [rsp + nb234_three]
+	movsd  xmm10, xmm9
+    movsd  xmm11, xmm9
 
-	;# H1-M interaction 
-	movsd xmm0, [rsp + nb234_rinvH1M]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulsd  xmm5, [rsp + nb234_rsqH1M] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
+	mulsd   xmm1, xmm0 ;# rsq*lu*lu
+	mulsd   xmm4, xmm3 ;# rsq*lu*lu 
+    mulsd   xmm7, xmm6 ;# rsq*lu*lu
 	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
+	subsd   xmm9, xmm1
+	subsd   xmm10, xmm4
+    subsd   xmm11, xmm7 ;# 3-rsq*lu*lu
 
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
+	mulsd   xmm9, xmm2
+	mulsd   xmm10, xmm5
+    mulsd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movsd  xmm15, [rsp + nb234_half]
+	mulsd   xmm9, xmm15  ;# first iteration for rinvH1M 
+	mulsd   xmm10, xmm15 ;# first iteration for rinvH2M
+    mulsd   xmm11, xmm15 ;# first iteration for rinvMM
+
+    ;# second iteration step    
+	movsd  xmm2, xmm9
+	movsd  xmm5, xmm10
+    movsd  xmm8, xmm11
+    
+	mulsd   xmm2, xmm2 ;# lu*lu
+	mulsd   xmm5, xmm5 ;# lu*lu
+    mulsd   xmm8, xmm8 ;# lu*lu
+		
+	movsd  xmm1, [rsp + nb234_three]
+	movsd  xmm4, xmm1
+    movsd  xmm7, xmm1
+
+	mulsd   xmm2, xmm0 ;# rsq*lu*lu
+	mulsd   xmm5, xmm3 ;# rsq*lu*lu 
+    mulsd   xmm8, xmm6 ;# rsq*lu*lu
 	
-	xorpd xmm3, xmm3
-	movapd xmm4, xmm3
-	movapd xmm5, xmm3
-	mulsd xmm0, [rsp + nb234_dxH1M]
-	mulsd xmm1, [rsp + nb234_dyH1M]
-	mulsd xmm2, [rsp + nb234_dzH1M]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixH1]
-	addsd xmm1, [rsp + nb234_fiyH1]
-	addsd xmm2, [rsp + nb234_fizH1]
-	movsd [rsp + nb234_fjxM], xmm3
-	movsd [rsp + nb234_fjyM], xmm4
-	movsd [rsp + nb234_fjzM], xmm5
-	movsd [rsp + nb234_fixH1], xmm0
-	movsd [rsp + nb234_fiyH1], xmm1
-	movsd [rsp + nb234_fizH1], xmm2
+	subsd   xmm1, xmm2
+	subsd   xmm4, xmm5
+    subsd   xmm7, xmm8 ;# 3-rsq*lu*lu
 
-	;# H2-H1 interaction 
-	movsd xmm0, [rsp + nb234_rinvH2H1]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
+	mulsd   xmm9, xmm1
+	mulsd   xmm10, xmm4
+    mulsd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
 
-	mulsd  xmm5, [rsp + nb234_rsqH2H1] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
+	movsd  xmm15, [rsp + nb234_half]
+	mulsd   xmm9, xmm15  ;#  rinvH1M
+	mulsd   xmm10, xmm15 ;#   rinvH2M
+    mulsd   xmm11, xmm15 ;#   rinvMM
 	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	movapd xmm3, [rsp + nb234_fjxH1]
-	movapd xmm4, [rsp + nb234_fjyH1]
-	movapd xmm5, [rsp + nb234_fjzH1]
-	mulsd xmm0, [rsp + nb234_dxH2H1]
-	mulsd xmm1, [rsp + nb234_dyH2H1]
-	mulsd xmm2, [rsp + nb234_dzH2H1]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixH2]
-	addsd xmm1, [rsp + nb234_fiyH2]
-	addsd xmm2, [rsp + nb234_fizH2]
-	movsd [rsp + nb234_fjxH1], xmm3
-	movsd [rsp + nb234_fjyH1], xmm4
-	movsd [rsp + nb234_fjzH1], xmm5
-	movsd [rsp + nb234_fixH2], xmm0
-	movsd [rsp + nb234_fiyH2], xmm1
-	movsd [rsp + nb234_fizH2], xmm2
+	;# M interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
 
-	;# H2-H2 interaction 
-	movsd xmm0, [rsp + nb234_rinvH2H2]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
+    movsd xmm1, xmm9 ;# copy of rinv
+    movsd xmm4, xmm10
+    movsd xmm7, xmm11
+    movsd xmm2, [rsp + nb234_krf]    
+    mulsd  xmm9, xmm9   ;# rinvsq
+    mulsd  xmm10, xmm10
+    mulsd  xmm11, xmm11
+    mulsd  xmm0, xmm2  ;# k*rsq
+    mulsd  xmm3, xmm2
+    mulsd  xmm6, xmm2
+    movsd xmm2, xmm0 ;# copy of k*rsq
+    movsd xmm5, xmm3
+    movsd xmm8, xmm6
+    addsd  xmm2, xmm1  ;# rinv+krsq
+    addsd  xmm5, xmm4
+    addsd  xmm8, xmm7
+    movsd xmm14, [rsp + nb234_crf]
+    subsd  xmm2, xmm14   ;# rinv+krsq-crf
+    subsd  xmm5, xmm14
+    subsd  xmm8, xmm14
+    movsd xmm12, [rsp + nb234_qqMH]
+    movsd xmm13, [rsp + nb234_qqMM]    
+    mulsd  xmm2, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulsd  xmm5, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulsd  xmm8, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    addsd  xmm0, xmm0 ;# 2*krsq
+    addsd  xmm3, xmm3 
+    addsd  xmm6, xmm6 
+    subsd  xmm1, xmm0 ;# rinv-2*krsq
+    subsd  xmm4, xmm3
+    subsd  xmm7, xmm6
+    mulsd  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulsd  xmm4, xmm12
+    mulsd  xmm7, xmm13
+    addsd  xmm2, [rsp + nb234_vctot]
+    addsd  xmm5, xmm8
+    addsd  xmm2, xmm5
+    movsd  [rsp + nb234_vctot], xmm2
+    
+    mulsd  xmm9, xmm1   ;# fscal
+    mulsd  xmm10, xmm4
+    mulsd  xmm11, xmm7
 
-	mulsd  xmm5, [rsp + nb234_rsqH2H2] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqHH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqHH] ;# xmm7 = coul part of fscal 
-	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
-	
-	movsd xmm1, xmm0
-	movsd xmm2, xmm0
+    ;# move j M forces to xmm0-xmm2
+    mov rdi, [rbp + nb234_faction]
+	movsd xmm0, [rdi + rax*8 + 72]
+	movsd xmm1, [rdi + rax*8 + 80]
+	movsd xmm2, [rdi + rax*8 + 88]
 
-	movsd xmm3, [rsp + nb234_fjxH2]
-	movsd xmm4, [rsp + nb234_fjyH2]
-	movsd xmm5, [rsp + nb234_fjzH2]
-	mulsd xmm0, [rsp + nb234_dxH2H2]
-	mulsd xmm1, [rsp + nb234_dyH2H2]
-	mulsd xmm2, [rsp + nb234_dzH2H2]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixH2]
-	addsd xmm1, [rsp + nb234_fiyH2]
-	addsd xmm2, [rsp + nb234_fizH2]
-	movsd [rsp + nb234_fjxH2], xmm3
-	movsd [rsp + nb234_fjyH2], xmm4
-	movsd [rsp + nb234_fjzH2], xmm5
-	movsd [rsp + nb234_fixH2], xmm0
-	movsd [rsp + nb234_fiyH2], xmm1
-	movsd [rsp + nb234_fizH2], xmm2
+    movsd xmm7, xmm9
+    movsd xmm8, xmm9
+    movsd xmm13, xmm11
+    movsd xmm14, xmm11
+    movsd xmm15, xmm11
+    movsd xmm11, xmm10
+    movsd xmm12, xmm10
 
-	;# H2-M interaction 
-	movsd xmm0, [rsp + nb234_rinvH2M]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
+	mulsd xmm7, [rsp + nb234_dxH1M]
+	mulsd xmm8, [rsp + nb234_dyH1M]
+	mulsd xmm9, [rsp + nb234_dzH1M]
+	mulsd xmm10, [rsp + nb234_dxH2M]
+	mulsd xmm11, [rsp + nb234_dyH2M]
+	mulsd xmm12, [rsp + nb234_dzH2M]
+	mulsd xmm13, [rsp + nb234_dxMM]
+	mulsd xmm14, [rsp + nb234_dyMM]
+	mulsd xmm15, [rsp + nb234_dzMM]
 
-	mulsd  xmm5, [rsp + nb234_rsqH2M] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
+    addsd xmm0, xmm7
+    addsd xmm1, xmm8
+    addsd xmm2, xmm9
+    addsd xmm7, [rsp + nb234_fixH1]
+    addsd xmm8, [rsp + nb234_fiyH1]
+    addsd xmm9, [rsp + nb234_fizH1]
 
-	movapd xmm3, [rsp + nb234_fjxM]
-	movapd xmm4, [rsp + nb234_fjyM]
-	movapd xmm5, [rsp + nb234_fjzM]
-	mulsd xmm0, [rsp + nb234_dxH2M]
-	mulsd xmm1, [rsp + nb234_dyH2M]
-	mulsd xmm2, [rsp + nb234_dzH2M]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixH2]
-	addsd xmm1, [rsp + nb234_fiyH2]
-	addsd xmm2, [rsp + nb234_fizH2]
-	movsd [rsp + nb234_fjxM], xmm3
-	movsd [rsp + nb234_fjyM], xmm4
-	movsd [rsp + nb234_fjzM], xmm5
-	movsd [rsp + nb234_fixH2], xmm0
-	movsd [rsp + nb234_fiyH2], xmm1
-	movsd [rsp + nb234_fizH2], xmm2
+    addsd xmm0, xmm10
+    addsd xmm1, xmm11
+    addsd xmm2, xmm12
+    addsd xmm10, [rsp + nb234_fixH2]
+    addsd xmm11, [rsp + nb234_fiyH2]
+    addsd xmm12, [rsp + nb234_fizH2]
 
-	;# M-H1 interaction 
-	movsd xmm0, [rsp + nb234_rinvMH1]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
+    addsd xmm0, xmm13
+    addsd xmm1, xmm14
+    addsd xmm2, xmm15
+    addsd xmm13, [rsp + nb234_fixM]
+    addsd xmm14, [rsp + nb234_fiyM]
+    addsd xmm15, [rsp + nb234_fizM]
 
-	mulsd  xmm5, [rsp + nb234_rsqMH1] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	movapd xmm3, [rsp + nb234_fjxH1]
-	movapd xmm4, [rsp + nb234_fjyH1]
-	movapd xmm5, [rsp + nb234_fjzH1]
-	mulsd xmm0, [rsp + nb234_dxMH1]
-	mulsd xmm1, [rsp + nb234_dyMH1]
-	mulsd xmm2, [rsp + nb234_dzMH1]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixM]
-	addsd xmm1, [rsp + nb234_fiyM]
-	addsd xmm2, [rsp + nb234_fizM]
-	movsd [rsp + nb234_fjxH1], xmm3
-	movsd [rsp + nb234_fjyH1], xmm4
-	movsd [rsp + nb234_fjzH1], xmm5
-	movsd [rsp + nb234_fixM], xmm0
-	movsd [rsp + nb234_fiyM], xmm1
-	movsd [rsp + nb234_fizM], xmm2
-
-	;# M-H2 interaction 
-	movsd xmm0, [rsp + nb234_rinvMH2]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulsd  xmm5, [rsp + nb234_rsqMH2] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqMH] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqMH] ;# xmm7 = coul part of fscal 
-	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-	
-	movapd xmm3, [rsp + nb234_fjxH2]
-	movapd xmm4, [rsp + nb234_fjyH2]
-	movapd xmm5, [rsp + nb234_fjzH2]
-	mulsd xmm0, [rsp + nb234_dxMH2]
-	mulsd xmm1, [rsp + nb234_dyMH2]
-	mulsd xmm2, [rsp + nb234_dzMH2]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixM]
-	addsd xmm1, [rsp + nb234_fiyM]
-	addsd xmm2, [rsp + nb234_fizM]
-	movsd [rsp + nb234_fjxH2], xmm3
-	movsd [rsp + nb234_fjyH2], xmm4
-	movsd [rsp + nb234_fjzH2], xmm5
-	movsd [rsp + nb234_fixM], xmm0
-	movsd [rsp + nb234_fiyM], xmm1
-	movsd [rsp + nb234_fizM], xmm2
-
-	;# M-M interaction 
-	movsd xmm0, [rsp + nb234_rinvMM]
-	movsd xmm7, xmm0	;# xmm7=rinv 
-	movsd xmm5, [rsp + nb234_krf]
-	mulsd  xmm0, xmm0	;# xmm0=rinvsq 
-
-	mulsd  xmm5, [rsp + nb234_rsqMM] ;# xmm5=krsq 
-	movsd xmm6, xmm5
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subsd  xmm6, [rsp + nb234_crf]
-	mulsd  xmm6, [rsp + nb234_qqMM] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulsd  xmm5, [rsp + nb234_two]
-	subsd  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulsd  xmm7, [rsp + nb234_qqMM] ;# xmm7 = coul part of fscal 
-	
-	addsd  xmm6, [rsp + nb234_vctot] ;# local vctot summation variable 
-	mulsd  xmm0, xmm7
-	movsd [rsp + nb234_vctot], xmm6
-	
-	movapd xmm1, xmm0
-	movapd xmm2, xmm0
-
-	movapd xmm3, [rsp + nb234_fjxM]
-	movapd xmm4, [rsp + nb234_fjyM]
-	movapd xmm5, [rsp + nb234_fjzM]
-	mulsd xmm0, [rsp + nb234_dxMM]
-	mulsd xmm1, [rsp + nb234_dyMM]
-	mulsd xmm2, [rsp + nb234_dzMM]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	addsd xmm0, [rsp + nb234_fixM]
-	addsd xmm1, [rsp + nb234_fiyM]
-	addsd xmm2, [rsp + nb234_fizM]
-	movsd [rsp + nb234_fjxM], xmm3
-	movsd [rsp + nb234_fjyM], xmm4
-	movsd [rsp + nb234_fjzM], xmm5
-	movsd [rsp + nb234_fixM], xmm0
-	movsd [rsp + nb234_fiyM], xmm1
-	movsd [rsp + nb234_fizM], xmm2
-
-	mov rdi, [rbp + nb234_faction]
-
-	;# Did all interactions - now update j forces 
-	;# Step1 - merge forces
-	movlpd xmm0, [rsp + nb234_fjxO]
-	movlpd xmm1, [rsp + nb234_fjzO]
-	movlpd xmm2, [rsp + nb234_fjyH1]
-	movlpd xmm3, [rsp + nb234_fjxH2]
-	movlpd xmm4, [rsp + nb234_fjzH2]
-	movlpd xmm5, [rsp + nb234_fjyM]
-
-	movhpd xmm0, [rsp + nb234_fjyO]
-	movhpd xmm1, [rsp + nb234_fjxH1]
-	movhpd xmm2, [rsp + nb234_fjzH1]
-	movhpd xmm3, [rsp + nb234_fjyH2]
-	movhpd xmm4, [rsp + nb234_fjxM]
-	movhpd xmm5, [rsp + nb234_fjzM]
-
-	movlps xmm6, [rdi + rax*8]
-	movhps xmm6, [rdi + rax*8 + 8]
-	movlps xmm7, [rdi + rax*8 + 16]
-	movhps xmm7, [rdi + rax*8 + 24]
-	addpd  xmm0, xmm6
-	addpd  xmm1, xmm7
-	movlps xmm6, [rdi + rax*8 + 32]
-	movhps xmm6, [rdi + rax*8 + 40]
-	movlps xmm7, [rdi + rax*8 + 48]
-	movhps xmm7, [rdi + rax*8 + 56]
-	addpd  xmm2, xmm6
-	addpd  xmm3, xmm7
-	movlps xmm6, [rdi + rax*8 + 64]
-	movhps xmm6, [rdi + rax*8 + 72]
-	movlps xmm7, [rdi + rax*8 + 80]
-	movhps xmm7, [rdi + rax*8 + 88]
-	addpd  xmm4, xmm6
-	addpd  xmm5, xmm7
-	
-	movlpd [rdi + rax*8],      xmm0
-	movhpd [rdi + rax*8 + 8],  xmm0
-	movlpd [rdi + rax*8 + 16], xmm1
-	movhpd [rdi + rax*8 + 24], xmm1
-	movlpd [rdi + rax*8 + 32], xmm2
-	movhpd [rdi + rax*8 + 40], xmm2
-	movlpd [rdi + rax*8 + 48], xmm3
-	movhpd [rdi + rax*8 + 56], xmm3
-	movlpd [rdi + rax*8 + 64], xmm4
-	movhpd [rdi + rax*8 + 72], xmm4
-	movlpd [rdi + rax*8 + 80], xmm5
-	movhpd [rdi + rax*8 + 88], xmm5
+    movsd [rsp + nb234_fixH1], xmm7
+    movsd [rsp + nb234_fiyH1], xmm8
+    movsd [rsp + nb234_fizH1], xmm9
+    movsd [rsp + nb234_fixH2], xmm10
+    movsd [rsp + nb234_fiyH2], xmm11
+    movsd [rsp + nb234_fizH2], xmm12
+    movsd [rsp + nb234_fixM], xmm13
+    movsd [rsp + nb234_fiyM], xmm14
+    movsd [rsp + nb234_fizM], xmm15
+   
+    ;# store back j M forces from xmm0-xmm2
+	movsd [rdi + rax*8 + 72], xmm0
+	movsd [rdi + rax*8 + 80], xmm1
+	movsd [rdi + rax*8 + 88], xmm2
 	
 .nb234_updateouterdata:
 	mov   ecx, [rsp + nb234_ii3]
@@ -2429,9 +2200,9 @@ _nb_kernel234_x86_64_sse2:
 	movsd  xmm3, [rdi + rcx*8]
 	movsd  xmm4, [rdi + rcx*8 + 8]
 	movsd  xmm5, [rdi + rcx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm0
+	subsd  xmm4, xmm1
+	subsd  xmm5, xmm2
 	movsd  [rdi + rcx*8],     xmm3
 	movsd  [rdi + rcx*8 + 8], xmm4
 	movsd  [rdi + rcx*8 + 16], xmm5
@@ -2457,9 +2228,9 @@ _nb_kernel234_x86_64_sse2:
 	movsd  xmm3, [rdi + rcx*8 + 24]
 	movsd  xmm4, [rdi + rcx*8 + 32]
 	movsd  xmm5, [rdi + rcx*8 + 40]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm0
+	subsd  xmm4, xmm1
+	subsd  xmm5, xmm2
 	movsd  [rdi + rcx*8 + 24], xmm3
 	movsd  [rdi + rcx*8 + 32], xmm4
 	movsd  [rdi + rcx*8 + 40], xmm5
@@ -2489,9 +2260,9 @@ _nb_kernel234_x86_64_sse2:
 	movsd  xmm3, [rdi + rcx*8 + 48]
 	movsd  xmm4, [rdi + rcx*8 + 56]
 	movsd  xmm5, [rdi + rcx*8 + 64]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm0
+	subsd  xmm4, xmm1
+	subsd  xmm5, xmm2
 	movsd  [rdi + rcx*8 + 48], xmm3
 	movsd  [rdi + rcx*8 + 56], xmm4
 	movsd  [rdi + rcx*8 + 64], xmm5
@@ -2521,9 +2292,9 @@ _nb_kernel234_x86_64_sse2:
 	movsd  xmm3, [rdi + rcx*8 + 72]
 	movsd  xmm4, [rdi + rcx*8 + 80]
 	movsd  xmm5, [rdi + rcx*8 + 88]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm0
+	subsd  xmm4, xmm1
+	subsd  xmm5, xmm2
 	movsd  [rdi + rcx*8 + 72], xmm3
 	movsd  [rdi + rcx*8 + 80], xmm4
 	movsd  [rdi + rcx*8 + 88], xmm5
@@ -2537,8 +2308,8 @@ _nb_kernel234_x86_64_sse2:
 	movlpd xmm3, [rsi + rdx*8]
 	movhpd xmm3, [rsi + rdx*8 + 8]
 	movsd  xmm4, [rsi + rdx*8 + 16]
-	addpd  xmm3, xmm6
-	addsd  xmm4, xmm7
+	subpd  xmm3, xmm6
+	subsd  xmm4, xmm7
 	movlpd [rsi + rdx*8],      xmm3
 	movhpd [rsi + rdx*8 + 8],  xmm3
 	movsd  [rsi + rdx*8 + 16], xmm4
@@ -2601,6 +2372,12 @@ _nb_kernel234_x86_64_sse2:
 
 	add rsp, 1912
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
@@ -2716,6 +2493,12 @@ _nb_kernel234nf_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 1000		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -4167,6 +3950,12 @@ _nb_kernel234nf_x86_64_sse2:
 
 	add rsp, 1000
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp

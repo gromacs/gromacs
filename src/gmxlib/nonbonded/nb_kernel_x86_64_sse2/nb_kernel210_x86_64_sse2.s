@@ -120,6 +120,12 @@ _nb_kernel210_x86_64_sse2:
 	push rbx
 	
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 456		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -250,12 +256,12 @@ _nb_kernel210_x86_64_sse2:
 	mov   [rsp + nb210_ii3], ebx
 	
 	;# clear vctot and i forces 
-	xorpd xmm4, xmm4
-	movapd [rsp + nb210_vctot], xmm4
-	movapd [rsp + nb210_Vvdwtot], xmm4
-	movapd [rsp + nb210_fix], xmm4
-	movapd [rsp + nb210_fiy], xmm4
-	movapd [rsp + nb210_fiz], xmm4
+	xorpd xmm12, xmm12
+	movapd xmm13, xmm12
+	movapd xmm14, xmm12
+	movapd xmm15, xmm12
+	movapd [rsp + nb210_vctot], xmm12
+	movapd [rsp + nb210_Vvdwtot], xmm12
 	
 	mov   rax, [rsp + nb210_jindex]
 	mov   ecx, [rax + rsi*4]	     ;# jindex[n] 
@@ -279,71 +285,35 @@ _nb_kernel210_x86_64_sse2:
 .nb210_unroll_loop:	
 	;# twice unrolled innerloop here 
 	mov   rdx, [rsp + nb210_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]              
+	mov   r10d, [rdx]	
+	mov   r11d, [rdx + 4]              
 	add qword ptr [rsp + nb210_innerjjnr],  8	;# advance pointer (unrolled 2) 
 
-	mov rsi, [rbp + nb210_charge]    ;# base of charge[] 
-	
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
-
-	movapd xmm5, [rsp + nb210_iq]
-	mulpd xmm3, xmm5		;# qq 
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	movd  mm1, ebx
-	
-	mov rsi, [rbp + nb210_type]
-	mov eax, [rsi + rax*4]
-	mov ebx, [rsi + rbx*4]
-	mov rsi, [rbp + nb210_vdwparam]
-	shl eax, 1
-	shl ebx, 1
-	mov edi, [rsp + nb210_ntia]
-	add eax, edi
-	add ebx, edi
-
-	movlpd xmm6, [rsi + rax*8]	;# c6a
-	movlpd xmm7, [rsi + rbx*8]	;# c6b
-	movhpd xmm6, [rsi + rax*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [rsi + rbx*8 + 8]	;# c6b c12b 
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0		
-	movd  ebx, mm1
-	movapd [rsp + nb210_c6], xmm4
-	movapd [rsp + nb210_c12], xmm6
 	
 	mov rsi, [rbp + nb210_pos]       ;# base of pos[] 
 
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
+	lea   rax, [r10 + r10*2]     ;# replace jnr with j3 
+	lea   rbx, [r11 + r11*2]	
 
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	movhpd xmm0, [rsi + rbx*8]
-	movhpd xmm1, [rsi + rbx*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 16]		
+	;# move two coordinates to xmm4-xmm6
+	movlpd xmm4, [rsi + rax*8]
+	movlpd xmm5, [rsi + rax*8 + 8]
+	movlpd xmm6, [rsi + rax*8 + 16]
+	movhpd xmm4, [rsi + rbx*8]
+	movhpd xmm5, [rsi + rbx*8 + 8]
+	movhpd xmm6, [rsi + rbx*8 + 16]		
 	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb210_ix]
-	movapd xmm5, [rsp + nb210_iy]
-	movapd xmm6, [rsp + nb210_iz]
-
 	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
+	subpd xmm4, [rsp + nb210_ix]
+	subpd xmm5, [rsp + nb210_iy]
+	subpd xmm6, [rsp + nb210_iz]
 
 	;# store dr 
-	movapd [rsp + nb210_dx], xmm4
-	movapd [rsp + nb210_dy], xmm5
-	movapd [rsp + nb210_dz], xmm6
+	movapd xmm9, xmm4
+	movapd xmm10, xmm5
+	movapd xmm11, xmm6
+
+	mov rsi, [rbp + nb210_charge]    ;# base of charge[] 
 	;# square it 
 	mulpd xmm4,xmm4
 	mulpd xmm5,xmm5
@@ -351,10 +321,16 @@ _nb_kernel210_x86_64_sse2:
 	addpd xmm4, xmm5
 	addpd xmm4, xmm6
 	;# rsq in xmm4 
+	mov rdi, [rbp + nb210_type]
 
+	movlpd xmm3, [rsi + r10*8]
 	cvtpd2ps xmm5, xmm4	
 	rsqrtps xmm5, xmm5
 	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
+
+	movhpd xmm3, [rsi + r11*8]
+	mov r8d, [rdi + r10*4]
+	mov r9d, [rdi + r11*4]
 
 	movapd xmm7, [rsp + nb210_krf]	
 	;# lookup seed in xmm2 
@@ -363,16 +339,32 @@ _nb_kernel210_x86_64_sse2:
 	movapd xmm1, [rsp + nb210_three]
 	mulpd xmm7, xmm4	;# krsq 
 	mulpd xmm2, xmm4	;# rsq*lu*lu 			
+	shl r8d, 1
+	shl r9d, 1
+	mov edi, [rsp + nb210_ntia]
 	movapd xmm0, [rsp + nb210_half]
+	mov rsi, [rbp + nb210_vdwparam]
 	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
 	mulpd xmm1, xmm5	
 	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+	mulpd xmm3, [rsp + nb210_iq]		;# qq 
+	add r8d, edi
+	add r9d, edi
 
+    
 	movapd xmm5, xmm1	;# copy of lu 
 	mulpd xmm1, xmm1	;# lu*lu 
 	movapd xmm2, [rsp + nb210_three]
 	mulpd xmm1, xmm4	;# rsq*lu*lu 			
 	movapd xmm0, [rsp + nb210_half]
+    
+    movlpd  xmm4, [rsi + r8*8]
+    movlpd  xmm6, [rsi + r8*8 + 8]
+    movhpd  xmm4, [rsi + r9*8]
+    movhpd  xmm6, [rsi + r9*8 + 8]
+    movapd [rsp + nb210_c6], xmm4
+    movapd [rsp + nb210_c12], xmm6
+    
 	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
 	mulpd xmm2, xmm5	
 	mulpd xmm0, xmm2	;# xmm0=rinv 
@@ -387,9 +379,10 @@ _nb_kernel210_x86_64_sse2:
 	movapd xmm2, xmm1
 	mulpd  xmm2, xmm2	;# xmm2=rinvtwelve 
 	mulpd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	mulpd  xmm7, [rsp + nb210_two]
+	addpd  xmm7, xmm7
 	mulpd  xmm1, [rsp + nb210_c6]
 	mulpd  xmm2, [rsp + nb210_c12]
+
 	movapd xmm5, xmm2
 	subpd  xmm5, xmm1	;# Vvdw=Vvdw12-Vvdw6 
 	addpd  xmm5, [rsp + nb210_Vvdwtot]
@@ -402,44 +395,35 @@ _nb_kernel210_x86_64_sse2:
 	mulpd  xmm4, xmm2	;# xmm4=total fscal 
 	addpd  xmm6, [rsp + nb210_vctot]
 
-	movapd xmm0, [rsp + nb210_dx]
-	movapd xmm1, [rsp + nb210_dy]
-	movapd xmm2, [rsp + nb210_dz]
+	;# the fj's - start by accumulating forces from memory 
+	mov    rdi, [rbp + nb210_faction]
+	movlpd xmm0, [rdi + rax*8]
+	movlpd xmm1, [rdi + rax*8 + 8]
+	movlpd xmm2, [rdi + rax*8 + 16]
+	movhpd xmm0, [rdi + rbx*8]
+	movhpd xmm1, [rdi + rbx*8 + 8]
+	movhpd xmm2, [rdi + rbx*8 + 16]
 
 	movapd [rsp + nb210_vctot], xmm6
 	movapd [rsp + nb210_Vvdwtot], xmm5
 
-	mov    rdi, [rbp + nb210_faction]
-	mulpd  xmm0, xmm4
-	mulpd  xmm1, xmm4
-	mulpd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
+	mulpd  xmm9, xmm4
+	mulpd  xmm10, xmm4
+	mulpd  xmm11, xmm4
+
+	addpd xmm0, xmm9
+	addpd xmm1, xmm10
+	addpd xmm2, xmm11
+	movlpd [rdi + rax*8], xmm0
+	movlpd [rdi + rax*8 + 8], xmm1
+	movlpd [rdi + rax*8 + 16], xmm2
 	;# now update f_i 
-	movapd xmm3, [rsp + nb210_fix]
-	movapd xmm4, [rsp + nb210_fiy]
-	movapd xmm5, [rsp + nb210_fiz]
-	addpd  xmm3, xmm0
-	addpd  xmm4, xmm1
-	addpd  xmm5, xmm2
-	movapd [rsp + nb210_fix], xmm3
-	movapd [rsp + nb210_fiy], xmm4
-	movapd [rsp + nb210_fiz], xmm5
-	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [rdi + rax*8]
-	movlpd xmm4, [rdi + rax*8 + 8]
-	movlpd xmm5, [rdi + rax*8 + 16]
-	movhpd xmm3, [rdi + rbx*8]
-	movhpd xmm4, [rdi + rbx*8 + 8]
-	movhpd xmm5, [rdi + rbx*8 + 16]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	movlpd [rdi + rax*8], xmm3
-	movlpd [rdi + rax*8 + 8], xmm4
-	movlpd [rdi + rax*8 + 16], xmm5
-	movhpd [rdi + rbx*8], xmm3
-	movhpd [rdi + rbx*8 + 8], xmm4
-	movhpd [rdi + rbx*8 + 16], xmm5
+	addpd  xmm13, xmm9
+	addpd  xmm14, xmm10
+	addpd  xmm15, xmm11
+	movhpd [rdi + rbx*8], xmm0
+	movhpd [rdi + rbx*8 + 8], xmm1
+	movhpd [rdi + rbx*8 + 16], xmm2
 	
 	;# should we do one more iteration? 
 	sub dword ptr [rsp + nb210_innerk],  2
@@ -455,56 +439,45 @@ _nb_kernel210_x86_64_sse2:
 	mov rsi, [rbp + nb210_charge]
 	mov rdi, [rbp + nb210_pos]
 	mov   rcx, [rsp + nb210_innerjjnr]
-	xorpd xmm3, xmm3
+
 	mov   eax, [rcx]
 
-	movlpd xmm3, [rsi + rax*8]
-	movapd xmm5, [rsp + nb210_iq]
-	mulpd xmm3, xmm5		;# qq 
+	mov rsi, [rbp + nb210_charge]    ;# base of charge[] 
 	
-	movd  mm0, eax		;# use mmx registers as temp storage 
+	movsd xmm3, [rsi + rax*8]
+	mulsd xmm3, [rsp + nb210_iq]		;# qq 
+
 	mov rsi, [rbp + nb210_type]
-	mov eax, [rsi + rax*4]
+	mov r8d, [rsi + rax*4]
 	mov rsi, [rbp + nb210_vdwparam]
-	shl eax, 1
+	shl r8d, 1
 	mov edi, [rsp + nb210_ntia]
-	add eax, edi
+	add r8d, edi
 
-	movlpd xmm6, [rsi + rax*8]	;# c6a
-	movhpd xmm6, [rsi + rax*8 + 8]	;# c6a c12a 
-
-	xorpd xmm7, xmm7
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0		
+	movsd xmm4, [rsi + r8*8]	
+	movsd xmm6, [rsi + r8*8 + 8]
 	movapd [rsp + nb210_c6], xmm4
 	movapd [rsp + nb210_c12], xmm6
 	
 	mov rsi, [rbp + nb210_pos]       ;# base of pos[] 
 
-	lea rax, [rax + rax*2]     ;# replace jnr with j3 
+	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
 
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
+	;# move two coordinates to xmm4-xmm6
+	movsd xmm4, [rsi + rax*8]
+	movsd xmm5, [rsi + rax*8 + 8]
+	movsd xmm6, [rsi + rax*8 + 16]
 	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb210_ix]
-	movapd xmm5, [rsp + nb210_iy]
-	movapd xmm6, [rsp + nb210_iz]
-
 	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
+	subsd xmm4, [rsp + nb210_ix]
+	subsd xmm5, [rsp + nb210_iy]
+	subsd xmm6, [rsp + nb210_iz]
 
 	;# store dr 
-	movapd [rsp + nb210_dx], xmm4
-	movapd [rsp + nb210_dy], xmm5
-	movapd [rsp + nb210_dz], xmm6
+	movapd xmm9, xmm4
+	movapd xmm10, xmm5
+	movapd xmm11, xmm6
+
 	;# square it 
 	mulsd xmm4,xmm4
 	mulsd xmm5,xmm5
@@ -548,7 +521,7 @@ _nb_kernel210_x86_64_sse2:
 	movapd xmm2, xmm1
 	mulsd  xmm2, xmm2	;# xmm2=rinvtwelve 
 	mulsd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	mulsd  xmm7, [rsp + nb210_two]
+	addsd  xmm7, xmm7
 	mulsd  xmm1, [rsp + nb210_c6]
 	mulsd  xmm2, [rsp + nb210_c12]
 	movapd xmm5, xmm2
@@ -563,38 +536,25 @@ _nb_kernel210_x86_64_sse2:
 	mulsd  xmm4, xmm2	;# xmm4=total fscal 
 	addsd  xmm6, [rsp + nb210_vctot]
 
-	movlpd xmm0, [rsp + nb210_dx]
-	movlpd xmm1, [rsp + nb210_dy]
-	movlpd xmm2, [rsp + nb210_dz]
-
-	movlpd [rsp + nb210_vctot], xmm6
-	movlpd [rsp + nb210_Vvdwtot], xmm5
+	movsd [rsp + nb210_vctot], xmm6
+	movsd [rsp + nb210_Vvdwtot], xmm5
 
 	mov    rdi, [rbp + nb210_faction]
-	mulsd  xmm0, xmm4
-	mulsd  xmm1, xmm4
-	mulsd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
+	mulsd  xmm9, xmm4
+	mulsd  xmm10, xmm4
+	mulsd  xmm11, xmm4
+
 	;# now update f_i 
-	movlpd xmm3, [rsp + nb210_fix]
-	movlpd xmm4, [rsp + nb210_fiy]
-	movlpd xmm5, [rsp + nb210_fiz]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
-	movlpd [rsp + nb210_fix], xmm3
-	movlpd [rsp + nb210_fiy], xmm4
-	movlpd [rsp + nb210_fiz], xmm5
+	addsd  xmm13, xmm9
+	addsd  xmm14, xmm10
+	addsd  xmm15, xmm11
 	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [rdi + rax*8]
-	movlpd xmm4, [rdi + rax*8 + 8]
-	movlpd xmm5, [rdi + rax*8 + 16]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	movlpd [rdi + rax*8], xmm3
-	movlpd [rdi + rax*8 + 8], xmm4
-	movlpd [rdi + rax*8 + 16], xmm5
+	addsd xmm9,  [rdi + rax*8]
+	addsd xmm10, [rdi + rax*8 + 8]
+	addsd xmm11, [rdi + rax*8 + 16]
+	movsd [rdi + rax*8], xmm9
+	movsd [rdi + rax*8 + 8], xmm10
+	movsd [rdi + rax*8 + 16], xmm11
 	
 .nb210_updateouterdata:
 	mov   ecx, [rsp + nb210_ii3]
@@ -602,25 +562,21 @@ _nb_kernel210_x86_64_sse2:
 	mov   rsi, [rbp + nb210_fshift]
 	mov   edx, [rsp + nb210_is3]
 
-	;# accumulate i forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [rsp + nb210_fix]
-	movapd xmm1, [rsp + nb210_fiy]
-	movapd xmm2, [rsp + nb210_fiz]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addpd  xmm0, xmm3
-	addpd  xmm1, xmm4
-	addpd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
+	;# accumulate i forces in xmm13, xmm14, xmm15
+	movhlps xmm3, xmm13
+	movhlps xmm4, xmm14
+	movhlps xmm5, xmm15
+	addsd  xmm13, xmm3
+	addsd  xmm14, xmm4
+	addsd  xmm15, xmm5 ;# sum is in low xmm13-xmm15
 
 	;# increment i force 
 	movsd  xmm3, [rdi + rcx*8]
 	movsd  xmm4, [rdi + rcx*8 + 8]
 	movsd  xmm5, [rdi + rcx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm13
+	subsd  xmm4, xmm14
+	subsd  xmm5, xmm15
 	movsd  [rdi + rcx*8],     xmm3
 	movsd  [rdi + rcx*8 + 8], xmm4
 	movsd  [rdi + rcx*8 + 16], xmm5
@@ -629,9 +585,9 @@ _nb_kernel210_x86_64_sse2:
 	movsd  xmm3, [rsi + rdx*8]
 	movsd  xmm4, [rsi + rdx*8 + 8]
 	movsd  xmm5, [rsi + rdx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm13
+	subsd  xmm4, xmm14
+	subsd  xmm5, xmm15
 	movsd  [rsi + rdx*8],     xmm3
 	movsd  [rsi + rdx*8 + 8], xmm4
 	movsd  [rsi + rdx*8 + 16], xmm5
@@ -694,6 +650,12 @@ _nb_kernel210_x86_64_sse2:
 
 	add rsp, 456
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
@@ -768,6 +730,12 @@ _nb_kernel210nf_x86_64_sse2:
 	push rbx
 	
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 312		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -1200,6 +1168,12 @@ _nb_kernel210nf_x86_64_sse2:
 
 	add rsp, 312
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp

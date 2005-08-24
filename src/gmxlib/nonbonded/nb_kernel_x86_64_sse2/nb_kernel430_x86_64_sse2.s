@@ -83,13 +83,13 @@ _nb_kernel430_x86_64_sse2:
 .equiv          nb430_dx,               64
 .equiv          nb430_dy,               80
 .equiv          nb430_dz,               96
-.equiv          nb430_two,              112
+.equiv          nb430_eps,              112
 .equiv          nb430_gbtsc,            128
 .equiv          nb430_tsc,              144
 .equiv          nb430_qq,               160
 .equiv          nb430_c6,               176
 .equiv          nb430_c12,              192
-.equiv          nb430_fscal,            208
+.equiv          nb430_epsgb,            208
 .equiv          nb430_vctot,            224
 .equiv          nb430_Vvdwtot,          240
 .equiv          nb430_fix,              256
@@ -102,30 +102,38 @@ _nb_kernel430_x86_64_sse2:
 .equiv          nb430_isaprod,          368
 .equiv          nb430_dvdasum,          384
 .equiv          nb430_gbscale,          400
-.equiv          nb430_nri,              416
-.equiv          nb430_iinr,             424
-.equiv          nb430_jindex,           432
-.equiv          nb430_jjnr,             440
-.equiv          nb430_shift,            448
-.equiv          nb430_shiftvec,         456
-.equiv          nb430_facel,            464
-.equiv          nb430_innerjjnr,        472
-.equiv          nb430_ii,               480
-.equiv          nb430_is3,              484
-.equiv          nb430_ii3,              488
-.equiv          nb430_ntia,             492
-.equiv          nb430_innerk,           496
-.equiv          nb430_n,                500
-.equiv          nb430_nn1,              504
-.equiv          nb430_ntype,            508
-.equiv          nb430_nouter,           512
-.equiv          nb430_ninner,           516
+.equiv          nb430_rinv,             416
+.equiv          nb430_nri,              432
+.equiv          nb430_iinr,             440
+.equiv          nb430_jindex,           448
+.equiv          nb430_jjnr,             456
+.equiv          nb430_shift,            464
+.equiv          nb430_shiftvec,         472
+.equiv          nb430_facel,            480
+.equiv          nb430_innerjjnr,        488
+.equiv          nb430_ii,               496
+.equiv          nb430_is3,              500
+.equiv          nb430_ii3,              504
+.equiv          nb430_ntia,             508
+.equiv          nb430_innerk,           512
+.equiv          nb430_n,                516
+.equiv          nb430_nn1,              520
+.equiv          nb430_ntype,            524
+.equiv          nb430_nouter,           528
+.equiv          nb430_ninner,           532
+
 	push rbp
 	mov  rbp, rsp
 	push rbx
 
 	
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 536		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -170,7 +178,6 @@ _nb_kernel430_x86_64_sse2:
 	addpd  xmm2, xmm2       ;# two
 	addpd  xmm3, xmm2	;# three
 	movapd [rsp + nb430_half], xmm1
-	movapd [rsp + nb430_two], xmm2
 	movapd [rsp + nb430_three], xmm3
 
 .nb430_threadloop:
@@ -291,77 +298,30 @@ _nb_kernel430_x86_64_sse2:
 	mov   ebx, [rdx + 4]
 	add qword ptr [rsp + nb430_innerjjnr], 8	;# advance pointer (unrolled 2) 
 
-	;# load isaj
-	mov rsi, [rbp + nb430_invsqrta]
-	movlpd xmm2, [rsi + rax*8]
-	movhpd xmm2, [rsi + rbx*8]
-	mulpd  xmm2, [rsp + nb430_isai]
-	movapd [rsp + nb430_isaprod], xmm2	
-	movapd xmm1, xmm2
-	mulpd xmm1, [rsp + nb430_gbtsc]
-	movapd [rsp + nb430_gbscale], xmm1
-	
-	mov rsi, [rbp + nb430_charge]    ;# base of charge[] 
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
-
-	mulpd xmm2, [rsp + nb430_iq]
-	mulpd  xmm3, xmm2
-	movapd [rsp + nb430_qq], xmm3	
-	
-	mov rsi, [rbp + nb430_type]
-	mov ecx, [rsi + rax*4]
-	mov edx, [rsi + rbx*4]
-	mov rsi, [rbp + nb430_vdwparam]
-	shl ecx, 1
-	shl edx, 1
-	mov edi, [rsp + nb430_ntia]
-	add ecx, edi
-	add edx, edi
-
-	movlpd xmm6, [rsi + rcx*8]	;# c6a
-	movlpd xmm7, [rsi + rdx*8]	;# c6b
-	movhpd xmm6, [rsi + rcx*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [rsi + rdx*8 + 8]	;# c6b c12b 
-
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movapd [rsp + nb430_c6], xmm4
-	movapd [rsp + nb430_c12], xmm6
 		
 	mov rsi, [rbp + nb430_pos]		;# base of pos[] 
 
-	movd  mm2, eax
-	movd  mm3, ebx
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
+	lea   r10, [rax + rax*2]     ;# j3 
+	lea   r11, [rbx + rbx*2]	
 
-	;# move two coordinates to xmm0-xmm2 
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	movhpd xmm0, [rsi + rbx*8]
-	movhpd xmm1, [rsi + rbx*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 16]		
-
-	mov    rdi, [rbp + nb430_faction]
+	;# move two coordinates to xmm4-xmm6 
+	movlpd xmm4, [rsi + r10*8]
+	movlpd xmm5, [rsi + r10*8 + 8]
+	movlpd xmm6, [rsi + r10*8 + 16]
+	movhpd xmm4, [rsi + r11*8]
+	movhpd xmm5, [rsi + r11*8 + 8]
+	movhpd xmm6, [rsi + r11*8 + 16]		
 	
-	;# move nb430_ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb430_ix]
-	movapd xmm5, [rsp + nb430_iy]
-	movapd xmm6, [rsp + nb430_iz]
-
 	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
+	subpd xmm4, [rsp + nb430_ix]
+	subpd xmm5, [rsp + nb430_iy]
+	subpd xmm6, [rsp + nb430_iz]
 
 	;# store dr 
 	movapd [rsp + nb430_dx], xmm4
 	movapd [rsp + nb430_dy], xmm5
 	movapd [rsp + nb430_dz], xmm6
+    
 	;# square it 
 	mulpd xmm4,xmm4
 	mulpd xmm5,xmm5
@@ -370,6 +330,17 @@ _nb_kernel430_x86_64_sse2:
 	addpd xmm4, xmm6
 	;# rsq in xmm4 
 
+	;# load isaj
+	mov rsi, [rbp + nb430_invsqrta]
+	movlpd xmm3, [rsi + rax*8]
+	movhpd xmm3, [rsi + rbx*8]
+	mulpd  xmm3, [rsp + nb430_isai]
+	movapd [rsp + nb430_isaprod], xmm3
+	movapd xmm6, xmm3
+	mulpd xmm3, [rsp + nb430_gbtsc]
+	movapd [rsp + nb430_gbscale], xmm3
+	
+    ;#invsqrt
 	cvtpd2ps xmm5, xmm4	
 	rsqrtps xmm5, xmm5
 	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
@@ -384,6 +355,13 @@ _nb_kernel430_x86_64_sse2:
 	mulpd xmm1, xmm5	
 	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
 
+    mulpd  xmm6, [rsp + nb430_iq]
+	mov rsi, [rbp + nb430_charge]    ;# base of charge[] 
+	movlpd xmm3, [rsi + rax*8]
+	movhpd xmm3, [rsi + rbx*8]
+	mulpd  xmm3, xmm6
+	movapd [rsp + nb430_qq], xmm3	
+
 	movapd xmm5, xmm1	;# copy of lu 
 	mulpd xmm1, xmm1	;# lu*lu 
 	movapd xmm2, [rsp + nb430_three]
@@ -394,205 +372,214 @@ _nb_kernel430_x86_64_sse2:
 	mulpd xmm0, xmm2	;# xmm0=iter2 of rinv 
 	mulpd xmm4, xmm0	;# xmm4=r 
 	movapd [rsp + nb430_r], xmm4
+	movapd [rsp + nb430_rinv], xmm0
+
+	mov rsi, [rbp + nb430_type]
+	mov r8d, [rsi + rax*4]
+	mov r9d, [rsi + rbx*4]
+	shl r8d, 1
+	shl r9d, 1
+	mov edi, [rsp + nb430_ntia]
+	add r8d, edi
+	add r9d, edi
+
+    movapd xmm8, xmm4 ;# r
 	mulpd xmm4, [rsp + nb430_gbscale]
+	mulpd xmm8, [rsp + nb430_tsc]
+    
+    ;# truncate and convert to integers
+    cvttpd2pi mm0, xmm4  ;# gb
+    cvttpd2pi mm1, xmm8  ;# lj
+    
+    ;# convert back to float
+    cvtpi2pd  xmm6, mm0   ;# gb
+    cvtpi2pd  xmm10, mm1  ;# lj
+    
+    ;# multiply by 4 and 8, respectively
+    pslld   mm0, 2   ;# gb
+    pslld   mm1, 3   ;# lj
 
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
+    ;# move to integer registers
+    movd    r12d, mm0       ;# gb
+    movd    r14d, mm1      ;# lj
+	psrlq mm0, 32
+	psrlq mm1, 32
+    movd    r13d, mm0      ;# gb
+    movd    r15d, mm1     ;# lj
+    ;# GB indices: r10-11   LJ indices: r12-r13
 
+    ;# calculate eps
+    subpd     xmm4, xmm6   ;# gb
+    subpd     xmm8, xmm10  ;# lj
+    movapd    [rsp + nb430_epsgb], xmm4 ;# gb eps
+    movapd    [rsp + nb430_eps], xmm8 ;# lj eps
+    
 	mov  rsi, [rbp + nb430_GBtab]
-	movd ecx, mm6
-	psrlq mm6, 32
-	movd edx, mm6		;# indices in eax/ebx 
+	mov  rdi, [rbp + nb430_VFtab]
 
-	;# Coulomb 
-	movapd xmm4, [rsi + rcx*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + rdx*8]	;# Y2 F2 
+    ;# load GB table data to xmm0-xmm3, disp to xmm4-xmm7, rep. to xmm8-xmm11
+    movapd xmm0,  [rsi + r12*8]        ;# Y1c F1c
+    movapd xmm12, [rsi + r13*8]        ;# Y2c F2c
+    movapd xmm4,  [rdi + r14*8]        ;# Y1d F1d
+    movapd xmm13, [rdi + r15*8]        ;# Y2d F2d
+    movapd xmm8,  [rdi + r14*8 + 32]   ;# Y1r F1r
+    movapd xmm14, [rdi + r15*8 + 32]   ;# Y2r F2r
+	movapd xmm1, xmm0
 	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rcx*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + rdx*8 + 16]	;# G2 H2 
+	movapd xmm9, xmm8
+	unpcklpd xmm0, xmm12	;# Y1c Y2c 
+	unpckhpd xmm1, xmm12	;# F1c F2c 
+	unpcklpd xmm4, xmm13	;# Y1d Y2d 
+	unpckhpd xmm5, xmm13	;# F1d F2d 
+	unpcklpd xmm8, xmm14	;# Y1r Y2r 
+	unpckhpd xmm9, xmm14	;# F1r F2r 
+    
+    movapd xmm2,  [rsi + r12*8 + 16]   ;# G1c H1c
+    movapd xmm12, [rsi + r13*8 + 16]   ;# G2c H2c
+    movapd xmm6,  [rdi + r14*8 + 16]   ;# G1d H1d
+    movapd xmm13, [rdi + r15*8 + 16]   ;# G2d H2d
+    movapd xmm10, [rdi + r14*8 + 48]   ;# G1r H1r
+    movapd xmm14, [rdi + r15*8 + 48]   ;# G2r H2r
+	movapd xmm3, xmm2
 	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [rsp + nb430_two]	;# two*Heps2 
-	movapd xmm3, [rsp + nb430_qq]
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-	mulpd  xmm3, xmm7 ;# fijC=FF*qq 
-	;# get jnr from regs
-	movd ecx, mm2
-	movd edx, mm3
+	movapd xmm11, xmm10
+	unpcklpd xmm2, xmm12	;# G1c G2c 
+	unpckhpd xmm3, xmm12	;# H1c H2c 
+	unpcklpd xmm6, xmm13	;# G1d G2d 
+	unpckhpd xmm7, xmm13	;# H1d H2d 
+	unpcklpd xmm10, xmm14	;# G1r G2r 
+	unpckhpd xmm11, xmm14	;# H1r H2r 
+    ;# table data ready. Coul GB in xmm0-xmm3 , disp in xmm4-xmm7 , rep. in xmm8-xmm11
+    mov rdi, [rbp + nb430_vdwparam]
+    
+    movapd xmm12, [rsp + nb430_epsgb]
+    movapd xmm13, [rsp + nb430_eps]
+    
+    mulpd  xmm3, xmm12   ;# Heps
+    mulpd  xmm7, xmm13
+    mulpd  xmm11, xmm13
+    mulpd  xmm2, xmm12     ;# Geps
+    mulpd  xmm6, xmm13
+    mulpd  xmm10, xmm13
+    mulpd  xmm3, xmm12   ;# Heps2
+    mulpd  xmm7, xmm13
+    mulpd  xmm11, xmm13
+
+    movlpd xmm14, [rdi + r8*8]
+    movlpd xmm15, [rdi + r8*8 + 8]
+    
+    addpd  xmm1, xmm2   ;# F+Geps
+    addpd  xmm5, xmm6
+    addpd  xmm9, xmm10 
+    addpd  xmm1, xmm3   ;# F+Geps+Heps2 = Fp
+    addpd  xmm5, xmm7
+    addpd  xmm9, xmm11 
+    addpd  xmm3, xmm3    ;# 2*Heps2
+    addpd  xmm7, xmm7
+    addpd  xmm11, xmm11
+    movhpd xmm14, [rdi + r9*8]
+    movhpd xmm15, [rdi + r9*8 + 8]
+    
+    addpd  xmm3, xmm2    ;# 2*Heps2+Geps
+    addpd  xmm7, xmm6  
+    addpd  xmm11, xmm10
+    addpd  xmm3, xmm1   ;# FF = Fp + 2*Heps2 + Geps
+    addpd  xmm7, xmm5
+    addpd  xmm11, xmm9
+    mulpd  xmm1, xmm12   ;# eps*Fp
+    mulpd  xmm5, xmm13
+    mulpd  xmm9, xmm13
+    addpd  xmm1, xmm0     ;# VV
+    addpd  xmm5, xmm4
+    addpd  xmm9, xmm8
+    mulpd  xmm1, [rsp + nb430_qq]   ;# VV*qq = vcoul
+    mulpd  xmm5, xmm14   ;# vnb6
+    mulpd  xmm9, xmm15   ;# vnb12
+    mulpd  xmm3, [rsp + nb430_qq]    ;# FF*qq = fij
+    mulpd  xmm7, xmm14   ;# fijD
+    mulpd  xmm11, xmm15   ;#fijR
+
+    addpd  xmm11, xmm7 ;# fijD+fijR
+    mulpd  xmm11, [rsp + nb430_tsc] ;# (fijD+fijR)*tabscale
+    
+    ;# accumulate Vvdwtot
+    addpd  xmm5, [rsp + nb430_Vvdwtot]
+    addpd  xmm5, xmm9
+    movapd [rsp + nb430_Vvdwtot], xmm5
+
 	mov rsi, [rbp + nb430_dvda]
 	
 	;# Calculate dVda
-	xorpd xmm7, xmm7
-	mulpd xmm3, [rsp + nb430_gbscale]
-	movapd xmm6, xmm3
+	mulpd xmm3, [rsp + nb430_gbscale]   ;# fijC=qq*FF*gbscale
+	movapd xmm6, xmm3 
 	mulpd  xmm6, [rsp + nb430_r]
-	addpd  xmm6, xmm5
-	addpd  xmm5, [rsp + nb430_vctot]
-	movapd [rsp + nb430_vctot], xmm5 
+	addpd  xmm6, xmm1   ;# vcoul+fijC*r
+
+    addpd  xmm3, xmm11  ;# fijC+fijD+fijR
+    
+    ;# increment vctot
+	addpd  xmm1, [rsp + nb430_vctot]
+    movapd [rsp + nb430_vctot], xmm1
 
 	;# xmm6=(vcoul+fijC*r)
+	xorpd  xmm7, xmm7
 	subpd  xmm7, xmm6
 	movapd xmm6, xmm7
 	
-	;# update dvdasum
+    ;# the fj's - start by combiningg forces from memory 
+    mov rdi, [rbp + nb430_faction]
+	movlpd xmm0, [rdi + r10*8]
+	movlpd xmm1, [rdi + r10*8 + 8]
+	movlpd xmm2, [rdi + r10*8 + 16]
+	movhpd xmm0, [rdi + r11*8]
+	movhpd xmm1, [rdi + r11*8 + 8]
+	movhpd xmm2, [rdi + r11*8 + 16]
+
+	;# update dvdasum 
 	addpd  xmm7, [rsp + nb430_dvdasum]
-	movapd [rsp + nb430_dvdasum], xmm7 
+    movapd [rsp + nb430_dvdasum], xmm7
 
 	;# update j atoms dvdaj
 	movhlps xmm7, xmm6
-	addsd  xmm6, [rsi + rcx*8]
-	addsd  xmm7, [rsi + rdx*8]
-	movsd  [rsi + rcx*8], xmm6
-	movsd  [rsi + rdx*8], xmm7
+	addsd  xmm6, [rsi + rax*8]
+	addsd  xmm7, [rsi + rbx*8]
+	movsd  [rsi + rax*8], xmm6
+	movsd  [rsi + rbx*8], xmm7
+
+	xorpd  xmm4, xmm4	
+	mulpd xmm3, [rsp + nb430_rinv]
+	subpd  xmm4, xmm3
+
+    movapd  xmm9, xmm4
+    movapd  xmm10, xmm4
+    movapd  xmm11, xmm4
+    
+    mulpd  xmm9, [rsp + nb430_dx]
+    mulpd  xmm10, [rsp + nb430_dy]
+    mulpd  xmm11, [rsp + nb430_dz]    
+
+	addpd xmm0, xmm9
+	addpd xmm1, xmm10
+	addpd xmm2, xmm11
+
+	;# accumulate i forces
+    addpd xmm9, [rsp + nb430_fix]
+    addpd xmm10, [rsp + nb430_fiy]
+    addpd xmm11, [rsp + nb430_fiz]
+
+	movlpd [rdi + r10*8], xmm0
+	movlpd [rdi + r10*8 + 8], xmm1
+	movlpd [rdi + r10*8 + 16], xmm2
+
+    movapd [rsp + nb430_fix], xmm9
+    movapd [rsp + nb430_fiy], xmm10
+    movapd [rsp + nb430_fiz], xmm11
+
+	movhpd [rdi + r11*8], xmm0
+	movhpd [rdi + r11*8 + 8], xmm1
+	movhpd [rdi + r11*8 + 16], xmm2
 	
-	;# put scalar force on stack temporarily 
-	movapd [rsp + nb430_fscal], xmm3
-
-	movapd xmm4, [rsp + nb430_r]
-	mulpd  xmm4, [rsp + nb430_tsc]
-
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 3		;# idx *= 8
-
-	mov  rsi, [rbp + nb430_VFtab]
-
-	movd ecx, mm6
-	psrlq mm6, 32
-	movd edx, mm6		;# indices in eax/ebx 
-
-	;# Dispersion 
-	movapd xmm4, [rsi + rcx*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + rdx*8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rcx*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + rdx*8 + 16]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [rsp + nb430_two]	;# two*Heps2 
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	
-	movapd xmm4, [rsp + nb430_c6]
-	mulpd  xmm7, xmm4	 ;# fijD 
-	mulpd  xmm5, xmm4	 ;# Vvdw6
-
-	mulpd  xmm7, [rsp + nb430_tsc]
-	addpd  xmm7, [rsp + nb430_fscal] ;# add to fscal 
-
-	;# put scalar force back on stack Update Vvdwtot directly 
-	addpd  xmm5, [rsp + nb430_Vvdwtot]
-	movapd [rsp + nb430_fscal], xmm7
-	movapd [rsp + nb430_Vvdwtot], xmm5
-
-	;# Repulsion 
-	movapd xmm4, [rsi + rcx*8 + 32]	;# Y1 F1 	
-	movapd xmm3, [rsi + rdx*8 + 32]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rcx*8 + 48]	;# G1 H1 	
-	movapd xmm3, [rsi + rdx*8 + 48]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [rsp + nb430_two]	;# two*Heps2 
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb430_c12]
-	mulpd  xmm7, xmm4 ;# fijR 
-	mulpd  xmm5, xmm4 ;# Vvdw12 
-	mulpd  xmm7, [rsp + nb430_tsc]
-	addpd  xmm7, [rsp + nb430_fscal] 
-	
-	addpd  xmm5, [rsp + nb430_Vvdwtot]
-	movapd [rsp + nb430_Vvdwtot], xmm5
-	xorpd  xmm4, xmm4
-
-	mulpd xmm7, xmm0
-	subpd xmm4, xmm7
-
-	movapd xmm0, [rsp + nb430_dx]
-	movapd xmm1, [rsp + nb430_dy]
-	movapd xmm2, [rsp + nb430_dz]
-
-	mov    rdi, [rbp + nb430_faction]
-	mulpd  xmm0, xmm4
-	mulpd  xmm1, xmm4
-	mulpd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
-	;# now update f_i 
-	movapd xmm3, [rsp + nb430_fix]
-	movapd xmm4, [rsp + nb430_fiy]
-	movapd xmm5, [rsp + nb430_fiz]
-	addpd  xmm3, xmm0
-	addpd  xmm4, xmm1
-	addpd  xmm5, xmm2
-	movapd [rsp + nb430_fix], xmm3
-	movapd [rsp + nb430_fiy], xmm4
-	movapd [rsp + nb430_fiz], xmm5
-	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [rdi + rax*8]
-	movlpd xmm4, [rdi + rax*8 + 8]
-	movlpd xmm5, [rdi + rax*8 + 16]
-	movhpd xmm3, [rdi + rbx*8]
-	movhpd xmm4, [rdi + rbx*8 + 8]
-	movhpd xmm5, [rdi + rbx*8 + 16]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	movlpd [rdi + rax*8], xmm3
-	movlpd [rdi + rax*8 + 8], xmm4
-	movlpd [rdi + rax*8 + 16], xmm5
-	movhpd [rdi + rbx*8], xmm3
-	movhpd [rdi + rbx*8 + 8], xmm4
-	movhpd [rdi + rbx*8 + 16], xmm5
-	
-	;# should we do one more iteration? 
+    ;# should we do one more iteration? 
 	sub dword ptr [rsp + nb430_innerk],  2
 	jl    .nb430_checksingle
 	jmp   .nb430_unroll_loop
@@ -608,64 +595,54 @@ _nb_kernel430_x86_64_sse2:
 	mov   rcx, [rsp + nb430_innerjjnr]
 	mov   eax, [rcx]	
 
-	xorpd  xmm6, xmm6
-	movapd xmm7, xmm6
-	movsd  xmm7, [rdx + rax*8]
-	movlpd xmm6, [rsi + rax*8]	;# xmm6(0) has the charge
-	mulsd  xmm7, [rsp + nb430_isai]
-	movapd [rsp + nb430_isaprod], xmm7
-	movapd xmm1, xmm7
-	mulpd xmm1, [rsp + nb430_gbtsc]
+	;# load isaj
+	mov rsi, [rbp + nb430_invsqrta]
+	movsd xmm2, [rsi + rax*8]
+	mulsd  xmm2, [rsp + nb430_isai]
+	movapd [rsp + nb430_isaprod], xmm2	
+	movapd xmm1, xmm2
+	mulsd xmm1, [rsp + nb430_gbtsc]
 	movapd [rsp + nb430_gbscale], xmm1
-	
-	mulsd  xmm7, [rsp + nb430_iq]
-	mulsd  xmm6, xmm7
-	movapd [rsp + nb430_qq], xmm6
+
+    mulsd xmm2, [rsp + nb430_iq]
+	mov rsi, [rbp + nb430_charge]    ;# base of charge[] 
+	movsd xmm3, [rsi + rax*8]
+	mulsd  xmm3, xmm2
+	movapd [rsp + nb430_qq], xmm3	
 	
 	mov rsi, [rbp + nb430_type]
-	mov edx, [rsi + rax*4]
+	mov r8d, [rsi + rax*4]
 	mov rsi, [rbp + nb430_vdwparam]
-	shl edx, 1
+	shl r8d, 1
 	mov edi, [rsp + nb430_ntia]
-	add edx, edi
+	add r8d, edi
 
-	movlpd xmm6, [rsi + rdx*8]	;# c6a
-	movhpd xmm6, [rsi + rdx*8 + 8]	;# c6a c12a 
-
-	xorpd xmm7, xmm7
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
+	movsd xmm4, [rsi + r8*8]	
+	movsd xmm6, [rsi + r8*8 + 8]
 	movapd [rsp + nb430_c6], xmm4
 	movapd [rsp + nb430_c12], xmm6
-	
-	mov rsi, [rbp + nb430_pos]		;# base of pos[]
-	
-	movd  mm2, eax
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
+		
+	mov rsi, [rbp + nb430_pos]		;# base of pos[] 
 
-	;# move two coordinates to xmm0-xmm2 
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
+	lea   r10, [rax + rax*2]     ;# j3 
+
+	;# move coordinate to xmm4-xmm6 
+	movsd xmm4, [rsi + r10*8]
+	movsd xmm5, [rsi + r10*8 + 8]
+	movsd xmm6, [rsi + r10*8 + 16]
 
 	mov    rdi, [rbp + nb430_faction]
-
-	;# move nb430_ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb430_ix]
-	movapd xmm5, [rsp + nb430_iy]
-	movapd xmm6, [rsp + nb430_iz]
-
+	
 	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
+	subsd xmm4, [rsp + nb430_ix]
+	subsd xmm5, [rsp + nb430_iy]
+	subsd xmm6, [rsp + nb430_iz]
 
 	;# store dr 
 	movapd [rsp + nb430_dx], xmm4
 	movapd [rsp + nb430_dy], xmm5
 	movapd [rsp + nb430_dz], xmm6
+    
 	;# square it 
 	mulsd xmm4,xmm4
 	mulsd xmm5,xmm5
@@ -695,188 +672,163 @@ _nb_kernel430_x86_64_sse2:
 	movapd xmm0, [rsp + nb430_half]
 	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
 	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=iter2 of rinv (new lu) 
+	mulsd xmm0, xmm2	;# xmm0=iter2 of rinv 
 	mulsd xmm4, xmm0	;# xmm4=r 
-	movsd [rsp + nb430_r], xmm4
+	movapd [rsp + nb430_r], xmm4
+	movapd [rsp + nb430_rinv], xmm0
+
+    movapd xmm8, xmm4 ;# r
 	mulsd xmm4, [rsp + nb430_gbscale]
-	
-	cvttsd2si edx, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, edx
-	subsd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl edx, 2		;# idx *= 4 
+	mulsd xmm8, [rsp + nb430_tsc]
+    
+    ;# truncate and convert to integers
+    cvttsd2si r12d, xmm4  ;# gb
+    cvttsd2si r14d, xmm8  ;# lj
+    
+    ;# convert back to float
+    cvtsi2sd  xmm6, r12d   ;# gb
+    cvtsi2sd  xmm10, r14d  ;# lj
+    
+    ;# multiply by 4 and 8, respectively
+    shl    r12d, 2   ;# gb
+    shl    r14d, 3   ;# lj
+
+    ;# GB indices: r10   LJ indices: r12
+
+    ;# calculate eps
+    subsd     xmm4, xmm6   ;# gb
+    subsd     xmm8, xmm10  ;# lj
+    movapd    [rsp + nb430_epsgb], xmm4 ;# gb eps
+    movapd    [rsp + nb430_eps], xmm8 ;# lj eps
+    
 	mov  rsi, [rbp + nb430_GBtab]
+	mov  rdi, [rbp + nb430_VFtab]
 
-	;# Coulomb 
-	movapd xmm4, [rsi + rdx*8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
+    ;# load GB table data to xmm0-xmm3, disp to xmm4-xmm7, rep. to xmm8-xmm11
+    movapd xmm0,  [rsi + r12*8]        ;# Y1c F1c
+    movapd xmm4,  [rdi + r14*8]        ;# Y1d F1d
+    movapd xmm8,  [rdi + r14*8 + 32]   ;# Y1r F1r
+	movhlps xmm1, xmm0
+	movhlps xmm5, xmm4
+	movhlps xmm9, xmm8
+    
+    movapd xmm2,  [rsi + r12*8 + 16]   ;# G1c H1c
+    movapd xmm6,  [rdi + r14*8 + 16]   ;# G1d H1d
+    movapd xmm10, [rdi + r14*8 + 48]   ;# G1r H1r
+	movhlps xmm3, xmm2
+	movhlps xmm7, xmm6
+	movhlps xmm11, xmm10
+    ;# table data ready. Coul GB in xmm0-xmm3 , disp in xmm4-xmm7 , rep. in xmm8-xmm11
+    
+    movapd xmm12, [rsp + nb430_epsgb]
+    movapd xmm13, [rsp + nb430_eps]
+    
+    mulsd  xmm3, xmm12   ;# Heps
+    mulsd  xmm7, xmm13
+    mulsd  xmm11, xmm13
+    mulsd  xmm2, xmm12     ;# Geps
+    mulsd  xmm6, xmm13
+    mulsd  xmm10, xmm13
+    mulsd  xmm3, xmm12   ;# Heps2
+    mulsd  xmm7, xmm13
+    mulsd  xmm11, xmm13
 
-	movapd xmm6, [rsi + rdx*8 + 16]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [rsp + nb430_two]	;# two*Heps2 
-	movapd xmm3, [rsp + nb430_qq]
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-	mulsd  xmm3, xmm7 ;# fijC=FF*qq 
-	;# get jnr from regs
-	movd ebx, mm2
+    addsd  xmm1, xmm2   ;# F+Geps
+    addsd  xmm5, xmm6
+    addsd  xmm9, xmm10 
+    addsd  xmm1, xmm3   ;# F+Geps+Heps2 = Fp
+    addsd  xmm5, xmm7
+    addsd  xmm9, xmm11 
+    addsd  xmm3, xmm3    ;# 2*Heps2
+    addsd  xmm7, xmm7
+    addsd  xmm11, xmm11
+    addsd  xmm3, xmm2    ;# 2*Heps2+Geps
+    addsd  xmm7, xmm6  
+    addsd  xmm11, xmm10
+    addsd  xmm3, xmm1   ;# FF = Fp + 2*Heps2 + Geps
+    addsd  xmm7, xmm5
+    addsd  xmm11, xmm9
+    mulsd  xmm1, xmm12   ;# eps*Fp
+    mulsd  xmm5, xmm13
+    mulsd  xmm9, xmm13
+    addsd  xmm1, xmm0     ;# VV
+    addsd  xmm5, xmm4
+    addsd  xmm9, xmm8
+    mulsd  xmm1, [rsp + nb430_qq]   ;# VV*qq = vcoul
+    mulsd  xmm5, [rsp + nb430_c6]   ;# vnb6
+    mulsd  xmm9, [rsp + nb430_c12]   ;# vnb12
+    mulsd  xmm3, [rsp + nb430_qq]    ;# FF*qq = fij
+    mulsd  xmm7, [rsp + nb430_c6]   ;# fijD
+    mulsd  xmm11, [rsp + nb430_c12]   ;#fijR
+
+    addsd  xmm11, xmm7 ;# fijD+fijR
+    mulsd  xmm11, [rsp + nb430_tsc] ;# (fijD+fijR)*tabscale
+    
+    ;# accumulate Vvdwtot
+    addsd  xmm5, [rsp + nb430_Vvdwtot]
+    addsd  xmm5, xmm9
+    movsd [rsp + nb430_Vvdwtot], xmm5
+
 	mov rsi, [rbp + nb430_dvda]
 	
 	;# Calculate dVda
-	xorpd xmm7, xmm7
-	mulsd xmm3, [rsp + nb430_gbscale]
-	movsd xmm6, xmm3
+	mulsd xmm3, [rsp + nb430_gbscale]   ;# fijC=qq*FF*gbscale
+	movapd xmm6, xmm3 
 	mulsd  xmm6, [rsp + nb430_r]
-	addsd  xmm6, xmm5
-	addsd  xmm5, [rsp + nb430_vctot]
-	movsd [rsp + nb430_vctot], xmm5 
+	addsd  xmm6, xmm1   ;# vcoul+fijC*r
+
+    addsd  xmm3, xmm11  ;# fijC+fijD+fijR
+    
+    ;# increment vctot
+	addsd  xmm1, [rsp + nb430_vctot]
+    movsd [rsp + nb430_vctot], xmm1
 
 	;# xmm6=(vcoul+fijC*r)
-	subpd xmm7, xmm6
-	movsd xmm6, xmm7
+	xorpd  xmm7, xmm7
+	subsd  xmm7, xmm6
+	movapd xmm6, xmm7
 	
-	;# update dvdasum
+	;# update dvdasum 
 	addsd  xmm7, [rsp + nb430_dvdasum]
-	movsd [rsp + nb430_dvdasum], xmm7 
+    movsd [rsp + nb430_dvdasum], xmm7
 
 	;# update j atoms dvdaj
-	addsd  xmm6, [rsi + rbx*8]
-	movsd  [rsi + rbx*8], xmm6
-	
-	;# put scalar force on stack temporarily 
-	movsd [rsp + nb430_fscal], xmm3
+	addsd  xmm6, [rsi + rax*8]
+	movsd  [rsi + rax*8], xmm6
 
-	movsd xmm4, [rsp + nb430_r]
-	mulsd  xmm4, [rsp + nb430_tsc]
-	cvttsd2si edx, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, edx
-	subsd xmm4, xmm5
-	movsd xmm1, xmm4	;# xmm1=eps 
-	movsd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
+	xorpd  xmm4, xmm4	
+	mulsd xmm3, [rsp + nb430_rinv]
+	subsd  xmm4, xmm3
 
-	shl edx, 3
+    movapd  xmm9, xmm4
+    movapd  xmm10, xmm4
+    movapd  xmm11, xmm4
+    
+    mulsd  xmm9, [rsp + nb430_dx]
+    mulsd  xmm10, [rsp + nb430_dy]
+    mulsd  xmm11, [rsp + nb430_dz]
+    
+    movapd xmm3, xmm9
+    movapd xmm4, xmm10
+    movapd xmm5, xmm11
+    
+	;# accumulate i forces
+    addsd xmm9, [rsp + nb430_fix]
+    addsd xmm10, [rsp + nb430_fiy]
+    addsd xmm11, [rsp + nb430_fiz]
+    movsd [rsp + nb430_fix], xmm9
+    movsd [rsp + nb430_fiy], xmm10
+    movsd [rsp + nb430_fiz], xmm11
 
-	mov  rsi, [rbp + nb430_VFtab]
-
-	;# Dispersion 
-	movapd xmm4, [rsi + rdx*8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rdx*8 + 16]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [rsp + nb430_two]	;# two*Heps2 
-	movapd xmm3, [rsp + nb430_qq]
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb430_c6]
-	mulsd  xmm7, xmm4	 ;# fijD 
-	mulsd  xmm5, xmm4	 ;# Vvdw6
-	mulpd  xmm7, [rsp + nb430_tsc]
-	addsd  xmm7, [rsp + nb430_fscal] ;# add to fscal 
-
-	;# put scalar force back on stack Update Vvdwtot directly 
-	addsd  xmm5, [rsp + nb430_Vvdwtot]
-	movlpd [rsp + nb430_fscal], xmm7
-	movlpd [rsp + nb430_Vvdwtot], xmm5
-
-	;# Repulsion 
-	movapd xmm4, [rsi + rdx*8 + 32]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rdx*8 + 48]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [rsp + nb430_two]	;# two*Heps2 
-	movapd xmm3, [rsp + nb430_qq]
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb430_c12]
-	mulsd  xmm7, xmm4 ;# fijR 
-	mulsd  xmm5, xmm4 ;# Vvdw12 
-	mulpd  xmm7, [rsp + nb430_tsc]
-	addsd  xmm7, [rsp + nb430_fscal] 
-	
-	addsd  xmm5, [rsp + nb430_Vvdwtot]
-	movlpd [rsp + nb430_Vvdwtot], xmm5
-	xorpd  xmm4, xmm4
-
-	mulsd xmm7, xmm0
-	subsd xmm4, xmm7
-
-	movapd xmm0, [rsp + nb430_dx]
-	movapd xmm1, [rsp + nb430_dy]
-	movapd xmm2, [rsp + nb430_dz]
-
-	mov    rdi, [rbp + nb430_faction]
-	mulsd  xmm0, xmm4
-	mulsd  xmm1, xmm4
-	mulsd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
-	;# now update f_i 
-	movapd xmm3, [rsp + nb430_fix]
-	movapd xmm4, [rsp + nb430_fiy]
-	movapd xmm5, [rsp + nb430_fiz]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
-	movlpd [rsp + nb430_fix], xmm3
-	movlpd [rsp + nb430_fiy], xmm4
-	movlpd [rsp + nb430_fiz], xmm5
+    mov rdi, [rbp + nb430_faction]
 	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [rdi + rax*8]
-	movlpd xmm4, [rdi + rax*8 + 8]
-	movlpd xmm5, [rdi + rax*8 + 16]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	movlpd [rdi + rax*8], xmm3
-	movlpd [rdi + rax*8 + 8], xmm4
-	movlpd [rdi + rax*8 + 16], xmm5
+	addsd xmm3,   [rdi + r10*8]
+	addsd xmm4,  [rdi + r10*8 + 8]
+	addsd xmm5,  [rdi + r10*8 + 16]
+	movsd [rdi + r10*8], xmm3
+	movsd [rdi + r10*8 + 8], xmm4
+	movsd [rdi + r10*8 + 16], xmm5
+	
 .nb430_updateouterdata:
 	mov   ecx, [rsp + nb430_ii3]
 	mov   rdi, [rbp + nb430_faction]
@@ -899,9 +851,9 @@ _nb_kernel430_x86_64_sse2:
 	movsd  xmm3, [rdi + rcx*8]
 	movsd  xmm4, [rdi + rcx*8 + 8]
 	movsd  xmm5, [rdi + rcx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm0
+	subsd  xmm4, xmm1
+	subsd  xmm5, xmm2
 	movsd  [rdi + rcx*8],     xmm3
 	movsd  [rdi + rcx*8 + 8], xmm4
 	movsd  [rdi + rcx*8 + 16], xmm5
@@ -910,9 +862,9 @@ _nb_kernel430_x86_64_sse2:
 	movsd  xmm3, [rsi + rdx*8]
 	movsd  xmm4, [rsi + rdx*8 + 8]
 	movsd  xmm5, [rsi + rdx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
+	subsd  xmm3, xmm0
+	subsd  xmm4, xmm1
+	subsd  xmm5, xmm2
 	movsd  [rsi + rdx*8],     xmm3
 	movsd  [rsi + rdx*8 + 8], xmm4
 	movsd  [rsi + rdx*8 + 16], xmm5
@@ -986,6 +938,12 @@ _nb_kernel430_x86_64_sse2:
 
 	add rsp, 536
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
@@ -1067,6 +1025,12 @@ _nb_kernel430nf_x86_64_sse2:
 	push rbx
 	
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 392		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -1684,6 +1648,12 @@ _nb_kernel430nf_x86_64_sse2:
 
 	add rsp, 392
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
