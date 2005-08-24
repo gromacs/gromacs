@@ -553,7 +553,11 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 		      const t_mdatoms *mdatoms,const t_block *excl)
 {
   int    i,j,tpi,tpj,j1,j2,k,n,nexcl;
-  long   npair,npair_ij;
+#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
+  long long int  npair,npair_ij,tmpi,tmpj;
+#else
+  double npair, npair_ij,tmpi,tmpj;
+#endif
   double csix,ctwelve;
   int    natoms,ntp,*type,*typecount;
   bool   bBHAM;
@@ -571,76 +575,99 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
   ctwelve = 0;
   npair = 0;
   nexcl = 0;
-  if (!fr->bTPI) {
-    /* Count the types so we avoid natoms^2 operations */
-    snew(typecount,ntp);
-    for(i=0; i<natoms; i++)
-      typecount[type[i]]++;
-    for(tpi=0; tpi<ntp; tpi++) {
-      for(tpj=tpi; tpj<ntp; tpj++) {
-	if (tpi != tpj)
-	  npair_ij = (long)typecount[tpi]*(long)typecount[tpj];
-	else
-	  npair_ij = (long)typecount[tpi]*((long)typecount[tpi] - 1)/2;
-	if (bBHAM) {
-	  csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj);
-	} else {
-	  csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj);
-	  ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj);
-	}
-	npair += npair_ij;
+  if (!fr->bTPI) 
+  {
+      /* Count the types so we avoid natoms^2 operations */
+      snew(typecount,ntp);
+      for(i=0; i<natoms; i++)
+          typecount[type[i]]++;
+      for(tpi=0; tpi<ntp; tpi++) 
+      {
+          for(tpj=tpi; tpj<ntp; tpj++) 
+          {
+              tmpi = typecount[tpi];
+              tmpj = typecount[tpj];
+              if (tpi != tpj)
+                  npair_ij = tmpi*tmpj;
+              else
+                  npair_ij = tmpi*(tmpi - 1)/2;
+              if (bBHAM) 
+              {
+                  csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj);
+              }
+              else 
+              {
+                  csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj);
+                  ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj);
+              }
+              npair += npair_ij;
+          }
       }
-    }
-    sfree(typecount);
-    /* Subtract the excluded pairs.
-     * The main reason for substracting exclusions is that in some cases some
-     * combinations might never occur and the parameters could have any value.
-     * These unused values should not influence the dispersion correction.
-     */
-    for(i=0; (i<natoms); i++) {
-      tpi = type[i];
-      j1  = excl->index[i];
-      j2  = excl->index[i+1];
-      for(j=j1; j<j2; j++) {
-	k = AA[j];
-	if (k > i) {
-	  tpj   = type[k];
-	  if (bBHAM) {
-	    csix -= BHAMC(nbfp,ntp,tpi,tpj);
-	  } else {
-	    csix    -= C6 (nbfp,ntp,tpi,tpj);
-	    ctwelve -= C12(nbfp,ntp,tpi,tpj);
-	  }
-	  nexcl++;
-	}
+      sfree(typecount);
+      /* Subtract the excluded pairs.
+       * The main reason for substracting exclusions is that in some cases some
+       * combinations might never occur and the parameters could have any value.
+       * These unused values should not influence the dispersion correction.
+       */
+      for(i=0; (i<natoms); i++) 
+      {
+          tpi = type[i];
+          j1  = excl->index[i];
+          j2  = excl->index[i+1];
+          for(j=j1; j<j2; j++) 
+          {
+              k = AA[j];
+              if (k > i) 
+              {
+                  tpj   = type[k];
+                  if (bBHAM) 
+                  {
+                      csix -= BHAMC(nbfp,ntp,tpi,tpj);
+                  }
+                  else 
+                  {
+                      csix    -= C6 (nbfp,ntp,tpi,tpj);
+                      ctwelve -= C12(nbfp,ntp,tpi,tpj);
+                  }
+                  nexcl++;
+              }
+          }
       }
-    }
-  } else {
-    /* Only correct for the interaction of the test particle
-     * with the rest of the system.
-     */
-    tpi = type[natoms - 1];
-    for(j=0; (j<natoms-1); j++) {
-      tpj   = type[j];
-      if (bBHAM) {
-	csix += BHAMC(nbfp,ntp,tpi,tpj);
-      } else {
-	csix    += C6 (nbfp,ntp,tpi,tpj);
-	ctwelve += C12(nbfp,ntp,tpi,tpj);
+  }
+  else
+  {
+      /* Only correct for the interaction of the test particle
+       * with the rest of the system.
+       */
+      tpi = type[natoms - 1];
+      
+      for(j=0; (j<natoms-1); j++) 
+      {
+          tpj   = type[j];
+          if (bBHAM)
+          {
+              csix += BHAMC(nbfp,ntp,tpi,tpj);
+          }
+          else 
+          {
+              csix    += C6 (nbfp,ntp,tpi,tpj);
+              ctwelve += C12(nbfp,ntp,tpi,tpj);
+          }
       }
-      npair++;
-    }
+      npair += (natoms-1);
   }
   csix    /= npair - nexcl;
   ctwelve /= npair - nexcl;
-  if (debug) {
-    fprintf(debug,"Counted %d exclusions\n",nexcl);
-    fprintf(debug,"Average C6 parameter is: %10g\n",csix);
-    fprintf(debug,"Average C12 parameter is: %10g\n",ctwelve);
+  if (debug)
+  {
+      fprintf(debug,"Counted %d exclusions\n",nexcl);
+      fprintf(debug,"Average C6 parameter is: %10g\n",csix);
+      fprintf(debug,"Average C12 parameter is: %10g\n",ctwelve);
   }
   fr->avcsix = csix;
   fr->avctwelve = ctwelve;
 }
+
 
 static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 {
