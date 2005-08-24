@@ -46,6 +46,7 @@ extern "C" {
 #define F77_FUNC(name,NAME) name ## _
 #endif
 
+#include "types/simple.h"
 
 
 /* Double precision */
