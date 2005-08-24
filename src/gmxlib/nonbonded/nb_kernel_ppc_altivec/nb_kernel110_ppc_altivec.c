@@ -223,8 +223,8 @@ nb_kernel110_ppc_altivec  (int *             p_nri,
 				rsq             = vec_madd(dx,dx,nul);
 				rsq             = vec_madd(dy,dy,rsq);
 				rsq             = vec_madd(dz,dz,rsq);
-				zero_highest_3_elements_in_vector(&rinv);
 				rinv            = do_invsqrt(rsq);
+				zero_highest_3_elements_in_vector(&rinv);
 				rinvsq          = vec_madd(rinv,rinv,nul);     
 				rinvsix         = vec_madd(rinvsq,rinvsq,nul);
 				rinvsix         = vec_madd(rinvsix,rinvsq,nul);
