@@ -68,7 +68,7 @@ void calc_rm_cm(int isize, atom_id index[], t_atoms *atoms, rvec x[], rvec xcm)
   tm = 0;
   clear_rvec(xcm);
   for(i=0; i<isize; i++) {
-    m = atoms->atom[i].m;
+    m = atoms->atom[index[i]].m;
     for(d=0; d<DIM; d++)
       xcm[d] += m*x[index[i]][d];
     tm += m;
