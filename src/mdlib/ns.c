@@ -170,14 +170,13 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         
         /* Set coul/vdw in neighborlist, and for the normal loops we determine
          * an index of which one to call.
-         * If the index is -1 we use generic loops, or free energy loops (both slower).
          */
         nl->ivdw  = ivdw;
         nl->icoul = icoul;
     
         if(bfree)
         {
-            nl->il_code = -1;
+            nl->il_code = eNR_NBKERNEL_FREE_ENERGY;
         }
         else
         {
