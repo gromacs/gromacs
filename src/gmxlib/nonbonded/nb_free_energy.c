@@ -69,7 +69,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     lam2 = lambda*lambda;
     L1sq = L1*L1;
 
-    /* Ewald table is special (icoul==4) */
+    /* Ewald table is special (icoul==5) */
     
     do_coultab = (icoul==3);
     do_vdwtab  = (ivdw==3);
@@ -170,7 +170,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     n1         = tab_elemsize*n0;
                 }
                 
-                if(icoul==1 || icoul==4)
+                if(icoul==1 || icoul==5)
                 {
                     /* simple cutoff */
                     VcoulA     = qqA*rinvA;
@@ -263,7 +263,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     n1         = tab_elemsize*n0;
                 }
                 
-                if(icoul==1 || icoul==4)
+                if(icoul==1 || icoul==5)
                 {
                     /* simple cutoff */
                     VcoulB     = qqB*rinvB;
@@ -333,7 +333,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 /* Buckingham vdw free energy not supported */
             }
             
-            if(icoul==4)
+            if(icoul==5)
             {
                 /* Free energy Ewald interactions are special:
                  * For the direct space interactions we effectively want the
