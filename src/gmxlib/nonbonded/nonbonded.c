@@ -63,6 +63,8 @@
 
 #include "nb_kernel/nb_kernel.h"
 #include "nb_kernel/nb_kernel330.h"
+#include "nb_free_energy.h"
+
 
 #ifdef GMX_PPC_ALTIVEC   
 #include "nb_kernel_ppc_altivec/nb_kernel_ppc_altivec.h"
@@ -254,148 +256,242 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   bool bLR,int nls,int eNL,bool bDoForces)
 {
-  t_nblist *      nlist;
-  real *          fshift;
-  int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
-  t_nblists       *nblists;
-  bool            bWater;
-  nb_kernel_t *   kernelptr;
-  FILE *          fp;
-  int             wateratoms;
-  int             nthreads = 1;
-  int             tabletype;
-  int             outeriter,inneriter;
-  real *          tabledata = NULL;
-
-  if(fr->solvent_opt == esolSPC)
-    wateratoms = 3;
-  else if(fr->solvent_opt == esolTIP4P)
-    wateratoms = 4;
-  else
-    wateratoms = 1;
-  
-  if (eNL >= 0) {
-    i0 = eNL;
-    i1 = i0+1;
-  } else {
-    i0 = 0;
-    i1 = eNL_NR;
-  }
-  
-  if (nls >= 0) {
-    n0 = nls;
-    n1 = nls+1;
-  } else {
-    n0 = 0;
-    n1 = fr->nnblists;
-  }
-  
-  if(nb_kernel_list == NULL)
-    setup_kernels(fplog);    
-  
-  if (bLR)
-    fshift = fr->fshift_twin[0];
-  else
-    fshift = fr->fshift[0];
-  
-  for(n=n0; (n<n1); n++) {
-    nblists = &fr->nblists[n];
-    for(i=i0; (i<i1); i++) {
-      outeriter = inneriter = 0;
-      
-      if (bLR) 
-	nlist = &(nblists->nlist_lr[i]);
-      else
-	nlist = &(nblists->nlist_sr[i]);
-      
-      if (nlist->nri > 0) {
-	nrnb_ind = nlist->il_code;
-	if (!bDoForces)
-	  nrnb_ind += eNR_NBKERNEL_NR/2;
-	
-	tabletype = nb_kernel_table[nrnb_ind];
-	
-	if(tabletype == TABLE_COMBINED)
-	  tabledata = nblists->tab.tab;
-	else if(tabletype == TABLE_COUL)
-	  tabledata = nblists->coultab;
-	else if(tabletype == TABLE_VDW)
-	  tabledata = nblists->vdwtab;
-	else
-	  tabledata = NULL;
-	
-	/* Is this a free energy loop? */
-	if(nlist->free_energy) {
-	  /* Free energy goes here. */
-	  printf("Free energy kernels not implemented!\n");
-	  exit(1);
-	} else {
-	  /* Not free energy - call nonbonded kernel from function pointer */
-	  kernelptr = nb_kernel_list[nrnb_ind];
-	  
-	  if(kernelptr == NULL) {
-	    gmx_fatal(FARGS,"No function corresponding to %s in %s `line' %d",
-		      nrnb_str(nrnb_ind),__FILE__,__LINE__);
-	  }
-	  
-	  nlist->count = 0;
-	  
-#ifdef DEBUG
-	  printf("call loop\n");
-#endif
-	  /* Call the appropriate nonbonded kernel function */
-	  (*kernelptr)( &(nlist->nri),
-			nlist->iinr,
-			nlist->jindex,
-			nlist->jjnr,
-			nlist->shift,
-			fr->shift_vec[0],
-			fshift,
-			nlist->gid,
-			x[0],
-			f[0],
-			mdatoms->chargeA,
-			&(fr->epsfac),
-			&(fr->k_rf),
-			&(fr->c_rf),
-			egcoul,
-			mdatoms->typeA,
-			&(fr->ntype),
-			fr->nbfp,
-			egnb,
-			&(nblists->tab.scale),
-			tabledata,
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			&nthreads,
-			&(nlist->count),
-			nlist->mtx,
-			&outeriter,
-			&inneriter,
-			NULL);
-#ifdef DEBUG
-	  printf("ret loop.\n");
-#endif
-	}
-	
-	/* Update flop accounting */
-	
-	/* Outer loop in kernel */
-	if (nlist->solvent_opt==enlistWATER)
-	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
-	else if (nlist->solvent_opt==enlistWATERWATER)
-	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
-	else
-	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
-	
-	/* inner loop in kernel */
-	inc_nrnb(nrnb,nrnb_ind,inneriter);
-      }
+    t_nblist *      nlist;
+    real *          fshift;
+    int             i,i0,i1,nrnb_ind,sz;
+    bool            bWater;
+    nb_kernel_t *   kernelptr;
+    FILE *          fp;
+    int             wateratoms;
+    int             nthreads = 1;
+    int             tabletype;
+    int             outeriter,inneriter;
+    real *          tabledata = NULL;
+    
+    if(fr->solvent_opt == esolSPC)
+    {
+        wateratoms = 3;
     }
-  }
+    else if(fr->solvent_opt == esolTIP4P)
+    {
+        wateratoms = 4;
+    }
+    else
+    {
+        wateratoms = 1;
+    }
+    
+    if (eNL >= 0) 
+    {
+        i0 = eNL;
+        i1 = i0+1;
+    }
+    else
+    {
+        i0 = 0;
+        i1 = eNL_NR;
+    }
+    
+    if(nb_kernel_list == NULL)
+    {
+        setup_kernels(fplog);    
+    }
+    
+    if (bLR)
+    {
+        fshift = fr->fshift_twin[0];
+    }
+    else
+    {
+        fshift = fr->fshift[0];
+    }
+    
+    for(i=i0; (i<i1); i++) 
+    {
+        outeriter = inneriter = 0;
+        
+        if (bLR) 
+        {
+            nlist  = &(fr->nblists->nlist_lr[i]);
+        }
+        else
+        {
+            nlist = &(fr->nblists->nlist_sr[i]);
+        }
+        
+        if (nlist->nri > 0) 
+        {
+            nrnb_ind = nlist->il_code;
+            
+            if(nrnb_ind==eNR_NBKERNEL_FREE_ENERGY)
+            {
+                /* generic free energy */
+                if(fr->bvdwtab && fr->bcoultab)
+                {
+                    tabledata = fr->nblists->tab.tab;
+                }
+                else if(fr->bvdwtab)
+                {
+                    tabledata = fr->nblists->vdwtab;
+                }
+                else if(fr->bcoultab)
+                {
+                    tabledata = fr->nblists->coultab;
+                }
+                else
+                {
+                    tabledata = NULL;
+                }                
+            }
+            else
+            {
+                /* normal kernels, not free energy */
+                tabletype = nb_kernel_table[nrnb_ind];
+                
+                if(tabletype == TABLE_COMBINED)
+                {
+                    tabledata = fr->nblists->tab.tab;
+                }
+                else if(tabletype == TABLE_COUL)
+                {
+                    tabledata = fr->nblists->coultab;
+                }
+                else if(tabletype == TABLE_VDW)
+                {
+                    tabledata = fr->nblists->vdwtab;
+                }
+                else
+                {
+                    tabledata = NULL;
+                }
+            }
+            
+            nlist->count = 0;
+            
+            /* Is this a free energy loop? */
+            if(nlist->free_energy)
+            {
+                if(nlist->ivdw==2)
+                {
+                    gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
+                }
+                
+                gmx_nb_free_energy_kernel(nlist->icoul,
+                                          nlist->ivdw,
+                                          nlist->nri,
+                                          nlist->iinr,
+                                          nlist->jindex,
+                                          nlist->jjnr,
+                                          nlist->shift,
+                                          fr->shift_vec[0],
+                                          fshift,
+                                          nlist->gid,
+                                          x[0],
+                                          f[0],
+                                          mdatoms->chargeA,
+                                          mdatoms->chargeB,
+                                          fr->epsfac,
+                                          fr->k_rf,
+                                          fr->c_rf,
+                                          egcoul,
+                                          mdatoms->typeA,
+                                          mdatoms->typeB,
+                                          fr->ntype,
+                                          fr->nbfp,
+                                          egnb,
+                                          fr->nblists->tab.scale,
+                                          tabledata,
+                                          lambda,
+                                          dvdlambda,
+                                          fr->sc_alpha,
+                                          fr->sc_sigma6,
+                                          &outeriter,
+                                          &inneriter);
+            }
+            else
+            {
+                /* Not free energy - call nonbonded kernel from function pointer */
+                kernelptr = nb_kernel_list[nrnb_ind];
+                
+                if(kernelptr == NULL)
+                {
+                    /* Call generic nonbonded kernel */
+                    /*
+                    gmx_nb_generic_kernel(nlist,
+                                          x,
+                                          fr,
+                                          f,
+                                          fshift,
+                                          mdatoms,
+                                          lambda,
+                                          dvdlambda,
+                                          egcoul,
+                                          egnb,
+                                          &(fr->tab.scale),
+                                          tabledata,
+                                          &nthreads,
+                                          &(nlist->count),
+                                          nlist->mtx,
+                                          &outeriter,
+                                          &inneriter);
+                     */
+                }
+                
+                /* Call the appropriate nonbonded kernel function */
+                (*kernelptr)( &(nlist->nri),
+                              nlist->iinr,
+                              nlist->jindex,
+                              nlist->jjnr,
+                              nlist->shift,
+                              fr->shift_vec[0],
+                              fshift,
+                              nlist->gid,
+                              x[0],
+                              f[0],
+                              mdatoms->chargeA,
+                              &(fr->epsfac),
+                              &(fr->k_rf),
+                              &(fr->c_rf),
+                              egcoul,
+                              mdatoms->typeA,
+                              &(fr->ntype),
+                              fr->nbfp,
+                              egnb,
+                              &(fr->nblists->tab.scale),
+                              tabledata,
+                              NULL,
+                              NULL,
+                              NULL,
+                              NULL,
+                              &nthreads,
+                              &(nlist->count),
+                              nlist->mtx,
+                              &outeriter,
+                              &inneriter,
+                              NULL);
+            }
+            
+            /* Update flop accounting */
+            
+            /* Outer loop in kernel */
+            if (nlist->solvent_opt==enlistWATER)
+            {
+                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
+            }
+            else if (nlist->solvent_opt==enlistWATERWATER)
+            {
+                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
+            }
+            else
+            {
+                inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
+            }
+            /* inner loop in kernel */
+            inc_nrnb(nrnb,nrnb_ind,inneriter);
+        }
+    }
 }
+
 
 
 real 
@@ -422,6 +518,9 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     int       count;
     real      krf,crf,tabscale;
     real *    nbfp;
+    t_nblist  tmplist;
+    int       icoul,ivdw;
+    
 #if GMX_THREADS
     pthread_mutex_t mtx;
 #else
@@ -436,6 +535,34 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     krf = fr->k_rf;
     crf = fr->c_rf;
     tabscale = fr->tab14.scale;
+    
+    /* Determine the values for icoul/ivdw. */
+    if(fr->bcoultab)
+    {
+        icoul = 3;
+    }
+    else if(EEL_RF(fr->eeltype))
+    {
+        icoul = 2;
+    }
+    else 
+    {
+        icoul = 1;
+    }
+    
+    if(fr->bvdwtab)
+    {
+        ivdw = 3;
+    }
+    else if(fr->bBHAM)
+    {
+        ivdw = 2;
+    }
+    else 
+    {
+        ivdw = 1;
+    }
+    
     
     /* We don't do SSE or altivec here, due to large overhead for 4-fold 
      * unrolling on short lists 
@@ -498,6 +625,9 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                     md->cENER[ai],md->cENER[aj],ngrp,gid);
 #endif
             
+            outeriter = inneriter = count = 0;
+            nbfp = (real *)&(iparams[itype].lj14.c6A);
+
             if (fr->efep != efepNO &&
                 (md->bPerturbed[ai] || md->bPerturbed[aj] ||
                  iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
@@ -513,23 +643,45 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                  * in the innerloops if we assign type combinations 0-0 and 0-1
                  * to atom pair ai-aj in topologies A and B respectively.
                  */
-                if (fr->sc_alpha>0) 
+                if(ivdw==2)
                 {
-                    /* use normal innerloop 3302 */
-                    printf("Free energy, stopping.\n");
-                    exit(1);
+                    gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
                 }
-                else
-                {
-                    /* use normal innerloop 3301 */
-                    printf("Free energy, stopping.\n");
-                    exit(1);
-                }
+                count = 0;
+                gmx_nb_free_energy_kernel(icoul,
+                                          ivdw,
+                                          i1,
+                                          &i0,
+                                          j_index,
+                                          &i1,
+                                          &shift_f,
+                                          fr->shift_vec[0],
+                                          fshift[0],
+                                          &gid,
+                                          x14[0],
+                                          f14[0],
+                                          chargeA,
+                                          chargeB,
+                                          eps,
+                                          krf,
+                                          crf,
+                                          egcoul,
+                                          typeA,
+                                          typeB,
+                                          i1,
+                                          nbfp,
+                                          egnb,
+                                          tabscale,
+                                          fr->tab14.tab,
+                                          lambda,
+                                          dvdlambda,
+                                          fr->sc_alpha,
+                                          fr->sc_sigma6,
+                                          &outeriter,
+                                          &inneriter);
             }
             else 
             { 
-                outeriter = inneriter = count = 0;
-                nbfp = (real *)&(iparams[itype].lj14.c6A);
                 /* Not perturbed - call kernel 330 */
                 F77_OR_C_FUNC_(nb_kernel330,NB_KERNEL330)
                     ( &i1,

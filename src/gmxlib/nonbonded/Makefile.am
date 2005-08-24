@@ -64,4 +64,6 @@ libnonbonded_la_LIBADD = \
 
 
 libnonbonded_la_SOURCES = \
-	nb_kerneltype.h			nonbonded.c
+	nb_kerneltype.h			nonbonded.c	\
+	nb_free_energy.c
+
