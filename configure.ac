@@ -286,6 +286,13 @@ AC_C_BIGENDIAN([AC_DEFINE([GMX_INTEGER_BIG_ENDIAN],,[Integer byte order is big e
 AC_MSG_ERROR([Cannot determine endian in compiled output])])
 # Little endian implied if GMX_INTEGER_BIG_ENDIAN not defined in source.
 
+#############
+# Check integer sizes, set to zero if e.g. long long is not supported.
+#############
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long int)
+AC_CHECK_SIZEOF(long long int)
+
 
 #############
 # Check floating-point format and endian
