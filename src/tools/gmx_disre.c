@@ -490,6 +490,7 @@ int gmx_disre(int argc,char *argv[])
   real        *vvindex=NULL,*w_rls=NULL;
   t_mdatoms   *mdatoms;
   t_pbc       pbc;
+  int         my_clust;
   
   t_filenm fnm[] = {
     { efTPX, NULL, NULL, ffREAD },
@@ -609,9 +610,8 @@ int gmx_disre(int argc,char *argv[])
     
     if (clust) {
       if (j > clust->maxframe)
-	gmx_fatal(FARGS,"There are more frames in the trajectory than in the"
-		  " cluster index file (t = %8f)\n",t);
-      int my_clust = clust->inv_clust[j];
+	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file. t = %8f\n",t);
+      my_clust = clust->inv_clust[j];
       range_check(my_clust,0,clust->clust->nr);
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
