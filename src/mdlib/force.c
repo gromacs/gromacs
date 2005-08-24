@@ -552,7 +552,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 		      const t_mdatoms *mdatoms,const t_block *excl)
 {
-  int    i,j,tpi,tpj,j1,j2,k,n,nexcl;
+  int    i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
   long long int  npair,npair_ij,tmpi,tmpj;
 #else
@@ -566,106 +566,92 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 
   natoms = mdatoms->nr;
   ntp = fr->ntype;
-  type = mdatoms->typeA;
   bBHAM = fr->bBHAM;
   nbfp = fr->nbfp;
   AA = excl->a;
 
-  csix = 0;
-  ctwelve = 0;
-  npair = 0;
-  nexcl = 0;
-  if (!fr->bTPI) 
-  {
+  for(q=0; q<(fr->efep==efepNO ? 1 : 2); q++) {
+    if (q == 0)
+      type = mdatoms->typeA;
+    else
+      type = mdatoms->typeB;
+    csix = 0;
+    ctwelve = 0;
+    npair = 0;
+    nexcl = 0;
+    if (!fr->bTPI) {
       /* Count the types so we avoid natoms^2 operations */
       snew(typecount,ntp);
       for(i=0; i<natoms; i++)
-          typecount[type[i]]++;
-      for(tpi=0; tpi<ntp; tpi++) 
-      {
-          for(tpj=tpi; tpj<ntp; tpj++) 
-          {
-              tmpi = typecount[tpi];
-              tmpj = typecount[tpj];
-              if (tpi != tpj)
-                  npair_ij = tmpi*tmpj;
-              else
-                  npair_ij = tmpi*(tmpi - 1)/2;
-              if (bBHAM) 
-              {
-                  csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj);
-              }
-              else 
-              {
-                  csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj);
-                  ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj);
-              }
-              npair += npair_ij;
-          }
+	typecount[type[i]]++;
+      for(tpi=0; tpi<ntp; tpi++) {
+	for(tpj=tpi; tpj<ntp; tpj++) {
+	  tmpi = typecount[tpi];
+	  tmpj = typecount[tpj];
+	  if (tpi != tpj)
+	    npair_ij = tmpi*tmpj;
+	  else
+	    npair_ij = tmpi*(tmpi - 1)/2;
+	  if (bBHAM) {
+	    csix    += npair_ij*BHAMC(nbfp,ntp,tpi,tpj);
+	  } else {
+	    csix    += npair_ij*   C6(nbfp,ntp,tpi,tpj);
+	    ctwelve += npair_ij*  C12(nbfp,ntp,tpi,tpj);
+	  }
+	  npair += npair_ij;
+	}
       }
       sfree(typecount);
       /* Subtract the excluded pairs.
-       * The main reason for substracting exclusions is that in some cases some
-       * combinations might never occur and the parameters could have any value.
-       * These unused values should not influence the dispersion correction.
+       * The main reason for substracting exclusions is that in some cases
+       * some combinations might never occur and the parameters could have
+       * any value. These unused values should not influence the dispersion
+       * correction.
        */
-      for(i=0; (i<natoms); i++) 
-      {
-          tpi = type[i];
-          j1  = excl->index[i];
-          j2  = excl->index[i+1];
-          for(j=j1; j<j2; j++) 
-          {
-              k = AA[j];
-              if (k > i) 
-              {
-                  tpj   = type[k];
-                  if (bBHAM) 
-                  {
-                      csix -= BHAMC(nbfp,ntp,tpi,tpj);
-                  }
-                  else 
-                  {
-                      csix    -= C6 (nbfp,ntp,tpi,tpj);
-                      ctwelve -= C12(nbfp,ntp,tpi,tpj);
-                  }
-                  nexcl++;
-              }
-          }
+      for(i=0; (i<natoms); i++) {
+	tpi = type[i];
+	j1  = excl->index[i];
+	j2  = excl->index[i+1];
+	for(j=j1; j<j2; j++) {
+	  k = AA[j];
+	  if (k > i) {
+	    tpj   = type[k];
+	    if (bBHAM) {
+	      csix -= BHAMC(nbfp,ntp,tpi,tpj);
+	    } else {
+	      csix    -= C6 (nbfp,ntp,tpi,tpj);
+	      ctwelve -= C12(nbfp,ntp,tpi,tpj);
+	    }
+	    nexcl++;
+	  }
+	}
       }
-  }
-  else
-  {
+    } else {
       /* Only correct for the interaction of the test particle
        * with the rest of the system.
        */
       tpi = type[natoms - 1];
-      
-      for(j=0; (j<natoms-1); j++) 
-      {
-          tpj   = type[j];
-          if (bBHAM)
-          {
-              csix += BHAMC(nbfp,ntp,tpi,tpj);
-          }
-          else 
-          {
-              csix    += C6 (nbfp,ntp,tpi,tpj);
-              ctwelve += C12(nbfp,ntp,tpi,tpj);
-          }
+      for(j=0; (j<natoms-1); j++) {
+	tpj   = type[j];
+	if (bBHAM) {
+	  csix += BHAMC(nbfp,ntp,tpi,tpj);
+	} else {
+	  csix    += C6 (nbfp,ntp,tpi,tpj);
+	  ctwelve += C12(nbfp,ntp,tpi,tpj);
+	}
       }
-      npair += (natoms-1);
-  }
-  csix    /= npair - nexcl;
-  ctwelve /= npair - nexcl;
-  if (debug)
-  {
+      npair = natoms - 1;
+    }
+    csix    /= npair - nexcl;
+    ctwelve /= npair - nexcl;
+    if (debug) {
       fprintf(debug,"Counted %d exclusions\n",nexcl);
-      fprintf(debug,"Average C6 parameter is: %10g\n",csix);
-      fprintf(debug,"Average C12 parameter is: %10g\n",ctwelve);
+      fprintf(debug,"Average C6 parameter is: %10g\n",(double)csix);
+      fprintf(debug,"Average C12 parameter is: %10g\n",(double)ctwelve);
+    }
+    fr->avcsix[q]    = csix;
+    fr->avctwelve[q] = ctwelve;
   }
-  fr->avcsix = csix;
-  fr->avctwelve = ctwelve;
 }
 
 
@@ -892,16 +878,10 @@ void init_forcerec(FILE *fp,
   }
   
   if (EEL_FULL(fr->eeltype)) {
-    if (ir->efep != efepNO) {
-      if (fr->eeltype == eelEWALD || fr->eeltype == eelPME || 
-	  fr->eeltype == eelPMEUSER) {
-	if (fr->sc_alpha != 0)
-	  fprintf(fp,
-		  "\nWARNING: With %s the soft-core is performed on erfc(beta r)/r instead of on 1/r\n\n",eel_names[fr->eeltype]);
-      } else {
-	fprintf(fp,"\nWARNING: With %s the reciprocal part only uses the charges from topology A\n\n",eel_names[fr->eeltype]);
-      }
-    }
+    if (mdatoms->nPerturbed>0 &&
+	(fr->eeltype==eelPPPM || fr->eeltype==eelPMEUSER))
+      gmx_fatal(FARGS,"Free energy with %s is not implemented",
+		eel_names[fr->eeltype]);
     snew(fr->f_el_recip,natoms);
   }
   
@@ -1201,7 +1181,7 @@ void force(FILE       *fplog,   int        step,
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
   t_pbc   pbc;
-#define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,"  %-30s V %12.5e  dVdl %12.5e\n",s,v,dvdl);
+#define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
 
   /* Reset box */
   for(i=0; (i<DIM); i++)
