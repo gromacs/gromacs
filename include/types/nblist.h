@@ -41,8 +41,8 @@ typedef struct
 {
   int             il_code;      /* Innerloop index from nrnb.h, used     */
                                 /* for flop accounting.                  */
-  int             coultype;     /* Coulomb interaction for this list     */
-  int             vdwtype;      /* VdW interaction for this list         */
+  int             icoul;        /* Coulomb loop type index for kernels   */
+  int             ivdw;         /* VdW loop type index for kernels       */
   int             free_energy;  /* Free energy setting for this list     */
   int             solvent_opt;  /* Atom, water, or water-water list      */
 
