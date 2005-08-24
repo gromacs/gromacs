@@ -77,8 +77,24 @@ extern "C" {
 typedef int     	atom_id;	/* To indicate an atoms id         */
 #define NO_ATID		(atom_id)(~0)	/* Use this to indicate invalid atid */
 
-#define GMX_DOUBLE_EPS  2.2e-16
-#define GMX_FLOAT_EPS   1.2e-07
+    /*! \brief Double precision accuracy */
+#define GMX_DOUBLE_EPS   1.11022302E-16
+    
+    /*! \brief Maximum double precision value */
+#define GMX_DOUBLE_MAX   1.79769313E+308
+    
+    /*! \brief Minimum double precision value */
+#define GMX_DOUBLE_MIN   2.22507386E-308
+    
+    /*! \brief Single precision accuracy */
+#define GMX_FLOAT_EPS    5.96046448E-08
+    
+    /*! \brief Maximum single precision value */
+#define GMX_FLOAT_MAX    3.40282347E+38
+    
+    /*! \brief Minimum single precision value */
+#define GMX_FLOAT_MIN    1.17549435E-38
+
 
   /* Check whether we already have a real type! */
 #ifdef GMX_DOUBLE
