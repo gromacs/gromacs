@@ -192,7 +192,11 @@ _nb_kernel212_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 
-	
+	push r12
+	push r13
+	push r14
+	push r15
+		
 	femms
 	sub rsp, 1624		;# local variable stack space (n*16+8)
 
@@ -420,125 +424,50 @@ _nb_kernel212_x86_64_sse:
 	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
 	lea   rdx, [rdx + rdx*2]	
 	
-	;# move j coordinates to local temp variables 
-	movlps xmm2, [rsi + rax*4]
-	movlps xmm3, [rsi + rax*4 + 12]
-	movlps xmm4, [rsi + rax*4 + 24]
+	;# move j O coordinates to local temp variables 
+    movlps xmm0, [rsi + rax*4] ;# jxOa jyOa  -   -
+    movlps xmm1, [rsi + rcx*4] ;# jxOc jyOc  -   -
+    movhps xmm0, [rsi + rbx*4] ;# jxOa jyOa jxOb jyOb 
+    movhps xmm1, [rsi + rdx*4] ;# jxOc jyOc jxOd jyOd 
 
-	movlps xmm5, [rsi + rbx*4]
-	movlps xmm6, [rsi + rbx*4 + 12]
-	movlps xmm7, [rsi + rbx*4 + 24]
+    movss  xmm2, [rsi + rax*4 + 8] ;# jzOa  -  -  -
+    movss  xmm3, [rsi + rcx*4 + 8] ;# jzOc  -  -  -
+    movhps xmm2, [rsi + rbx*4 + 8] ;# jzOa  -  jzOb  -
+    movhps xmm3, [rsi + rdx*4 + 8] ;# jzOc  -  jzOd -
+    
+    movaps xmm4, xmm0
+    unpcklps xmm0, xmm1  ;# jxOa jxOc jyOa jyOc        
+    unpckhps xmm4, xmm1  ;# jxOb jxOd jyOb jyOd
+    movaps xmm1, xmm0
+    unpcklps xmm0, xmm4 ;# x
+    unpckhps xmm1, xmm4 ;# y
 
-	movhps xmm2, [rsi + rcx*4]
-	movhps xmm3, [rsi + rcx*4 + 12]
-	movhps xmm4, [rsi + rcx*4 + 24]
+    shufps xmm2, xmm3,  136  ;# 10001000 => jzOa jzOb jzOc jzOd
 
-	movhps xmm5, [rsi + rdx*4]
-	movhps xmm6, [rsi + rdx*4 + 12]
-	movhps xmm7, [rsi + rdx*4 + 24]
-
-	;# current state: 	
-	;# xmm2= jxOa  jyOa  jxOc  jyOc 
-	;# xmm3= jxH1a jyH1a jxH1c jyH1c 
-	;# xmm4= jxH2a jyH2a jxH2c jyH2c 
-	;# xmm5= jxOb  jyOb  jxOd  jyOd 
-	;# xmm6= jxH1b jyH1b jxH1d jyH1d 
-	;# xmm7= jxH2b jyH2b jxH2d jyH2d 
-	
-	movaps xmm0, xmm2
-	movaps xmm1, xmm3
-	unpcklps xmm0, xmm5	;# xmm0= jxOa  jxOb  jyOa  jyOb 
-	unpcklps xmm1, xmm6	;# xmm1= jxH1a jxH1b jyH1a jyH1b 
-	unpckhps xmm2, xmm5	;# xmm2= jxOc  jxOd  jyOc  jyOd 
-	unpckhps xmm3, xmm6	;# xmm3= jxH1c jxH1d jyH1c jyH1d 
-	movaps xmm5, xmm4
-	movaps   xmm6, xmm0
-	unpcklps xmm4, xmm7	;# xmm4= jxH2a jxH2b jyH2a jyH2b 		
-	unpckhps xmm5, xmm7	;# xmm5= jxH2c jxH2d jyH2c jyH2d 
-	movaps   xmm7, xmm1
-	movlhps  xmm0, xmm2	;# xmm0= jxOa  jxOb  jxOc  jxOd 
-	movaps [rsp + nb212_jxO], xmm0
-	movhlps  xmm2, xmm6	;# xmm2= jyOa  jyOb  jyOc  jyOd 
-	movaps [rsp + nb212_jyO], xmm2
-	movlhps  xmm1, xmm3
-	movaps [rsp + nb212_jxH1], xmm1
-	movhlps  xmm3, xmm7
-	movaps   xmm6, xmm4
-	movaps [rsp + nb212_jyH1], xmm3
-	movlhps  xmm4, xmm5
-	movaps [rsp + nb212_jxH2], xmm4
-	movhlps  xmm5, xmm6
-	movaps [rsp + nb212_jyH2], xmm5
-
-	movss  xmm0, [rsi + rax*4 + 8]
-	movss  xmm1, [rsi + rax*4 + 20]
-	movss  xmm2, [rsi + rax*4 + 32]
-
-	movss  xmm3, [rsi + rcx*4 + 8]
-	movss  xmm4, [rsi + rcx*4 + 20]
-	movss  xmm5, [rsi + rcx*4 + 32]
-
-	movhps xmm0, [rsi + rbx*4 + 4]
-	movhps xmm1, [rsi + rbx*4 + 16]
-	movhps xmm2, [rsi + rbx*4 + 28]
-	
-	movhps xmm3, [rsi + rdx*4 + 4]
-	movhps xmm4, [rsi + rdx*4 + 16]
-	movhps xmm5, [rsi + rdx*4 + 28]
-	
-	shufps xmm0, xmm3, 204  ;# 11001100
-	shufps xmm1, xmm4, 204  ;# 11001100
-	shufps xmm2, xmm5, 204  ;# 11001100
-	movaps [rsp + nb212_jzO],  xmm0
-	movaps [rsp + nb212_jzH1],  xmm1
-	movaps [rsp + nb212_jzH2],  xmm2
-
-	movaps xmm0, [rsp + nb212_ixO]
-	movaps xmm1, [rsp + nb212_iyO]
-	movaps xmm2, [rsp + nb212_izO]
-	movaps xmm3, [rsp + nb212_ixO]
-	movaps xmm4, [rsp + nb212_iyO]
-	movaps xmm5, [rsp + nb212_izO]
-	subps  xmm0, [rsp + nb212_jxO]
-	subps  xmm1, [rsp + nb212_jyO]
-	subps  xmm2, [rsp + nb212_jzO]
-	subps  xmm3, [rsp + nb212_jxH1]
-	subps  xmm4, [rsp + nb212_jyH1]
-	subps  xmm5, [rsp + nb212_jzH1]
+    ;# xmm0 = Ox
+    ;# xmm1 = Oy
+    ;# xmm2 = Oz
+        
+    movaps xmm3, xmm0
+    movaps xmm4, xmm1
+    movaps xmm5, xmm2
+    movaps xmm6, xmm0
+    movaps xmm7, xmm1
+    movaps xmm8, xmm2
+    
+    subps xmm0, [rsp + nb212_ixO]
+    subps xmm1, [rsp + nb212_iyO]
+    subps xmm2, [rsp + nb212_izO]
+    subps xmm3, [rsp + nb212_ixH1]
+    subps xmm4, [rsp + nb212_iyH1]
+    subps xmm5, [rsp + nb212_izH1]
+    subps xmm6, [rsp + nb212_ixH2]
+    subps xmm7, [rsp + nb212_iyH2]
+    subps xmm8, [rsp + nb212_izH2]
+    
 	movaps [rsp + nb212_dxOO], xmm0
 	movaps [rsp + nb212_dyOO], xmm1
 	movaps [rsp + nb212_dzOO], xmm2
-	mulps  xmm0, xmm0
-	mulps  xmm1, xmm1
-	mulps  xmm2, xmm2
-	movaps [rsp + nb212_dxOH1], xmm3
-	movaps [rsp + nb212_dyOH1], xmm4
-	movaps [rsp + nb212_dzOH1], xmm5
-	mulps  xmm3, xmm3
-	mulps  xmm4, xmm4
-	mulps  xmm5, xmm5
-	addps  xmm0, xmm1
-	addps  xmm0, xmm2
-	addps  xmm3, xmm4
-	addps  xmm3, xmm5
-	movaps [rsp + nb212_rsqOO], xmm0
-	movaps [rsp + nb212_rsqOH1], xmm3
-
-	movaps xmm0, [rsp + nb212_ixO]
-	movaps xmm1, [rsp + nb212_iyO]
-	movaps xmm2, [rsp + nb212_izO]
-	movaps xmm3, [rsp + nb212_ixH1]
-	movaps xmm4, [rsp + nb212_iyH1]
-	movaps xmm5, [rsp + nb212_izH1]
-	subps  xmm0, [rsp + nb212_jxH2]
-	subps  xmm1, [rsp + nb212_jyH2]
-	subps  xmm2, [rsp + nb212_jzH2]
-	subps  xmm3, [rsp + nb212_jxO]
-	subps  xmm4, [rsp + nb212_jyO]
-	subps  xmm5, [rsp + nb212_jzO]
-	movaps [rsp + nb212_dxOH2], xmm0
-	movaps [rsp + nb212_dyOH2], xmm1
-	movaps [rsp + nb212_dzOH2], xmm2
 	mulps  xmm0, xmm0
 	mulps  xmm1, xmm1
 	mulps  xmm2, xmm2
@@ -548,28 +477,483 @@ _nb_kernel212_x86_64_sse:
 	mulps  xmm3, xmm3
 	mulps  xmm4, xmm4
 	mulps  xmm5, xmm5
+	movaps [rsp + nb212_dxH2O], xmm6
+	movaps [rsp + nb212_dyH2O], xmm7
+	movaps [rsp + nb212_dzH2O], xmm8
+	mulps  xmm6, xmm6
+	mulps  xmm7, xmm7
+	mulps  xmm8, xmm8
 	addps  xmm0, xmm1
 	addps  xmm0, xmm2
 	addps  xmm3, xmm4
 	addps  xmm3, xmm5
-	movaps [rsp + nb212_rsqOH2], xmm0
-	movaps [rsp + nb212_rsqH1O], xmm3
+    addps  xmm6, xmm7
+    addps  xmm6, xmm8
 
-	movaps xmm0, [rsp + nb212_ixH1]
-	movaps xmm1, [rsp + nb212_iyH1]
-	movaps xmm2, [rsp + nb212_izH1]
-	movaps xmm3, [rsp + nb212_ixH1]
-	movaps xmm4, [rsp + nb212_iyH1]
-	movaps xmm5, [rsp + nb212_izH1]
-	subps  xmm0, [rsp + nb212_jxH1]
-	subps  xmm1, [rsp + nb212_jyH1]
-	subps  xmm2, [rsp + nb212_jzH1]
-	subps  xmm3, [rsp + nb212_jxH2]
-	subps  xmm4, [rsp + nb212_jyH2]
-	subps  xmm5, [rsp + nb212_jzH2]
-	movaps [rsp + nb212_dxH1H1], xmm0
-	movaps [rsp + nb212_dyH1H1], xmm1
-	movaps [rsp + nb212_dzH1H1], xmm2
+	;# start doing invsqrt for jO atoms
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm4, xmm3
+    rsqrtps xmm7, xmm6
+	
+	movaps  xmm2, xmm1
+	movaps  xmm5, xmm4
+    movaps  xmm8, xmm7
+    
+	mulps   xmm1, xmm1 ;# lu*lu
+	mulps   xmm4, xmm4 ;# lu*lu
+    mulps   xmm7, xmm7 ;# lu*lu
+		
+	movaps  xmm9, [rsp + nb212_three]
+	movaps  xmm10, xmm9
+    movaps  xmm11, xmm9
+
+	mulps   xmm1, xmm0 ;# rsq*lu*lu
+	mulps   xmm4, xmm3 ;# rsq*lu*lu 
+    mulps   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subps   xmm9, xmm1
+	subps   xmm10, xmm4
+    subps   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulps   xmm9, xmm2
+	mulps   xmm10, xmm5
+    mulps   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movaps  xmm4, [rsp + nb212_half]
+	mulps   xmm9, xmm4  ;# rinvOO 
+	mulps   xmm10, xmm4 ;# rinvH1O
+    mulps   xmm11, xmm4 ;# rinvH2O
+	
+	;# O interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movaps xmm1, xmm9 ;# copy of rinv
+    movaps xmm4, xmm10
+    movaps xmm7, xmm11
+    movaps xmm2, [rsp + nb212_krf]    
+    mulps  xmm9, xmm9   ;# rinvsq
+    mulps  xmm10, xmm10
+    mulps  xmm11, xmm11
+    mulps  xmm0, xmm2  ;# k*rsq
+    mulps  xmm3, xmm2
+    mulps  xmm6, xmm2
+    movaps xmm2, xmm0 ;# copy of k*rsq
+    movaps xmm5, xmm3
+    movaps xmm8, xmm6
+    addps  xmm2, xmm1  ;# rinv+krsq
+    addps  xmm5, xmm4
+    addps  xmm8, xmm7
+    movaps xmm12, xmm9
+    mulps  xmm12, xmm12 ;# rinv4
+    mulps  xmm12, xmm9  ;# rinv6
+    subps  xmm2, [rsp + nb212_crf]   ;# rinv+krsq-crf
+    subps  xmm5, [rsp + nb212_crf]
+    subps  xmm8, [rsp + nb212_crf]   
+    mulps  xmm2, [rsp + nb212_qqOO] ;# voul=qq*(rinv+ krsq-crf)
+    mulps  xmm5, [rsp + nb212_qqOH] ;# voul=qq*(rinv+ krsq-crf)
+    mulps  xmm8, [rsp + nb212_qqOH] ;# voul=qq*(rinv+ krsq-crf)
+    addps  xmm0, xmm0 ;# 2*krsq
+    addps  xmm3, xmm3 
+    addps  xmm6, xmm6 
+    subps  xmm1, xmm0 ;# rinv-2*krsq
+    subps  xmm4, xmm3
+    subps  xmm7, xmm6
+    movaps xmm13, xmm12 ;# rinv6
+    mulps xmm12, xmm12 ;# rinv12
+	mulps  xmm13, [rsp + nb212_c6]
+	mulps  xmm12, [rsp + nb212_c12]
+    movaps xmm14, xmm12
+    subps  xmm14, xmm13
+    mulps  xmm1, [rsp + nb212_qqOO]   ;# (rinv-2*krsq)*qq
+    mulps  xmm4, [rsp + nb212_qqOH] 
+    mulps  xmm7, [rsp + nb212_qqOH] 
+    addps  xmm2, [rsp + nb212_vctot]
+    addps  xmm5, xmm8
+    addps  xmm2, xmm5
+    movaps xmm15, xmm2
+ 
+   	addps  xmm14, [rsp + nb212_Vvdwtot]
+	mulps  xmm13, [rsp + nb212_six]
+	mulps  xmm12, [rsp + nb212_twelve]
+	movaps [rsp + nb212_Vvdwtot], xmm14
+    subps  xmm12, xmm13 ;# LJ fscal        
+
+    addps xmm1, xmm12
+    
+    mulps  xmm1, xmm9   ;# fscal
+    mulps  xmm4, xmm10
+    mulps  xmm7, xmm11
+
+	;# move j O forces to local temp variables 
+    movlps xmm9, [rdi + rax*4] ;# jxOa jyOa  -   -
+    movlps xmm10, [rdi + rcx*4] ;# jxOc jyOc  -   -
+    movhps xmm9, [rdi + rbx*4] ;# jxOa jyOa jxOb jyOb 
+    movhps xmm10, [rdi + rdx*4] ;# jxOc jyOc jxOd jyOd 
+
+    movss  xmm11, [rdi + rax*4 + 8] ;# jzOa  -  -  -
+    movss  xmm12, [rdi + rcx*4 + 8] ;# jzOc  -  -  -
+    movhps xmm11, [rdi + rbx*4 + 8] ;# jzOa  -  jzOb  -
+    movhps xmm12, [rdi + rdx*4 + 8] ;# jzOc  -  jzOd -
+    
+    shufps xmm11, xmm12,  136  ;# 10001000 => jzOa jzOb jzOc jzOd
+
+    ;# xmm9: jxOa jyOa jxOb jyOb 
+    ;# xmm10: jxOc jyOc jxOd jyOd
+    ;# xmm11: jzOa jzOb jzOc jzOd
+
+    movaps xmm0, xmm1
+    movaps xmm2, xmm1
+    movaps xmm3, xmm4
+    movaps xmm5, xmm4
+    movaps xmm6, xmm7
+    movaps xmm8, xmm7
+
+	mulps xmm0, [rsp + nb212_dxOO]
+	mulps xmm1, [rsp + nb212_dyOO]
+	mulps xmm2, [rsp + nb212_dzOO]
+	mulps xmm3, [rsp + nb212_dxH1O]
+	mulps xmm4, [rsp + nb212_dyH1O]
+	mulps xmm5, [rsp + nb212_dzH1O]
+	mulps xmm6, [rsp + nb212_dxH2O]
+	mulps xmm7, [rsp + nb212_dyH2O]
+	mulps xmm8, [rsp + nb212_dzH2O]
+
+    movaps xmm13, xmm0
+    movaps xmm14, xmm1
+    addps xmm11, xmm2
+    addps xmm0, [rsp + nb212_fixO]
+    addps xmm1, [rsp + nb212_fiyO]
+    addps xmm2, [rsp + nb212_fizO]
+
+    addps xmm13, xmm3
+    addps xmm14, xmm4
+    addps xmm11, xmm5
+    addps xmm3, [rsp + nb212_fixH1]
+    addps xmm4, [rsp + nb212_fiyH1]
+    addps xmm5, [rsp + nb212_fizH1]
+
+    addps xmm13, xmm6
+    addps xmm14, xmm7
+    addps xmm11, xmm8
+    addps xmm6, [rsp + nb212_fixH2]
+    addps xmm7, [rsp + nb212_fiyH2]
+    addps xmm8, [rsp + nb212_fizH2]
+
+    movaps [rsp + nb212_fixO], xmm0
+    movaps [rsp + nb212_fiyO], xmm1
+    movaps [rsp + nb212_fizO], xmm2
+    movaps [rsp + nb212_fixH1], xmm3
+    movaps [rsp + nb212_fiyH1], xmm4
+    movaps [rsp + nb212_fizH1], xmm5
+    movaps [rsp + nb212_fixH2], xmm6
+    movaps [rsp + nb212_fiyH2], xmm7
+    movaps [rsp + nb212_fizH2], xmm8
+    
+    ;# xmm9 = fOx
+    ;# xmm10 = fOy
+    ;# xmm11 = fOz
+    movaps xmm0, xmm13
+    unpcklps xmm13, xmm14
+    unpckhps xmm0, xmm14
+    
+    addps xmm9, xmm13
+    addps xmm10, xmm0
+
+    movhlps  xmm12, xmm11 ;# fOzc fOzd
+    
+    movlps [rdi + rax*4], xmm9
+    movhps [rdi + rbx*4], xmm9
+    movlps [rdi + rcx*4], xmm10
+    movhps [rdi + rdx*4], xmm10
+    movss  [rdi + rax*4 + 8], xmm11
+    movss  [rdi + rcx*4 + 8], xmm12
+    shufps xmm11, xmm11, 1
+    shufps xmm12, xmm12, 1
+    movss  [rdi + rbx*4 + 8], xmm11
+    movss  [rdi + rdx*4 + 8], xmm12
+
+	;# move j H1 coordinates to local temp variables 
+    movlps xmm0, [rsi + rax*4 + 12] ;# jxH1a jyH1a  -   -
+    movlps xmm1, [rsi + rcx*4 + 12] ;# jxH1c jyH1c  -   -
+    movhps xmm0, [rsi + rbx*4 + 12] ;# jxH1a jyH1a jxH1b jyH1b 
+    movhps xmm1, [rsi + rdx*4 + 12] ;# jxH1c jyH1c jxH1d jyH1d 
+
+    movss  xmm2, [rsi + rax*4 + 20] ;# jzH1a  -  -  -
+    movss  xmm3, [rsi + rcx*4 + 20] ;# jzH1c  -  -  -
+    movhps xmm2, [rsi + rbx*4 + 20] ;# jzH1a  -  jzH1b  -
+    movhps xmm3, [rsi + rdx*4 + 20] ;# jzH1c  -  jzH1d -
+    
+    movaps xmm4, xmm0
+    unpcklps xmm0, xmm1  ;# jxH1a jxH1c jyH1a jyH1c        
+    unpckhps xmm4, xmm1  ;# jxH1b jxH1d jyH1b jyH1d
+    movaps xmm1, xmm0
+    unpcklps xmm0, xmm4 ;# x
+    unpckhps xmm1, xmm4 ;# y
+
+    shufps   xmm2, xmm3,  136  ;# 10001000 => jzH1a jzH1b jzH1c jzH1d
+
+    ;# xmm0 = H1x
+    ;# xmm1 = H1y
+    ;# xmm2 = H1z
+        
+    movaps xmm3, xmm0
+    movaps xmm4, xmm1
+    movaps xmm5, xmm2
+    movaps xmm6, xmm0
+    movaps xmm7, xmm1
+    movaps xmm8, xmm2
+    
+    
+    subps xmm0, [rsp + nb212_ixO]
+    subps xmm1, [rsp + nb212_iyO]
+    subps xmm2, [rsp + nb212_izO]
+    subps xmm3, [rsp + nb212_ixH1]
+    subps xmm4, [rsp + nb212_iyH1]
+    subps xmm5, [rsp + nb212_izH1]
+    subps xmm6, [rsp + nb212_ixH2]
+    subps xmm7, [rsp + nb212_iyH2]
+    subps xmm8, [rsp + nb212_izH2]
+    
+	movaps [rsp + nb212_dxOH1], xmm0
+	movaps [rsp + nb212_dyOH1], xmm1
+	movaps [rsp + nb212_dzOH1], xmm2
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	movaps [rsp + nb212_dxH1H1], xmm3
+	movaps [rsp + nb212_dyH1H1], xmm4
+	movaps [rsp + nb212_dzH1H1], xmm5
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	movaps [rsp + nb212_dxH2H1], xmm6
+	movaps [rsp + nb212_dyH2H1], xmm7
+	movaps [rsp + nb212_dzH2H1], xmm8
+	mulps  xmm6, xmm6
+	mulps  xmm7, xmm7
+	mulps  xmm8, xmm8
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+    addps  xmm6, xmm7
+    addps  xmm6, xmm8
+
+	;# start doing invsqrt for jH1 atoms
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm4, xmm3
+    rsqrtps xmm7, xmm6
+	
+	movaps  xmm2, xmm1
+	movaps  xmm5, xmm4
+    movaps  xmm8, xmm7
+    
+	mulps   xmm1, xmm1 ;# lu*lu
+	mulps   xmm4, xmm4 ;# lu*lu
+    mulps   xmm7, xmm7 ;# lu*lu
+		
+	movaps  xmm9, [rsp + nb212_three]
+	movaps  xmm10, xmm9
+    movaps  xmm11, xmm9
+
+	mulps   xmm1, xmm0 ;# rsq*lu*lu
+	mulps   xmm4, xmm3 ;# rsq*lu*lu 
+    mulps   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subps   xmm9, xmm1
+	subps   xmm10, xmm4
+    subps   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulps   xmm9, xmm2
+	mulps   xmm10, xmm5
+    mulps   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movaps  xmm4, [rsp + nb212_half]
+	mulps   xmm9, xmm4  ;# rinvOH1
+	mulps   xmm10, xmm4 ;# rinvH1H1
+    mulps   xmm11, xmm4 ;# rinvH2H1
+	
+	;# H1 interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+
+    movaps xmm1, xmm9 ;# copy of rinv
+    movaps xmm4, xmm10
+    movaps xmm7, xmm11
+    movaps xmm2, [rsp + nb212_krf]    
+    mulps  xmm9, xmm9   ;# rinvsq
+    mulps  xmm10, xmm10
+    mulps  xmm11, xmm11
+    mulps  xmm0, xmm2  ;# k*rsq
+    mulps  xmm3, xmm2
+    mulps  xmm6, xmm2
+    movaps xmm2, xmm0 ;# copy of k*rsq
+    movaps xmm5, xmm3
+    movaps xmm8, xmm6
+    addps  xmm2, xmm1  ;# rinv+krsq
+    addps  xmm5, xmm4
+    addps  xmm8, xmm7
+    movaps xmm14, [rsp + nb212_crf]
+    subps  xmm2, xmm14   ;# rinv+krsq-crf
+    subps  xmm5, xmm14
+    subps  xmm8, xmm14
+    movaps xmm12, [rsp + nb212_qqOH]
+    movaps xmm13, [rsp + nb212_qqHH]    
+    mulps  xmm2, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulps  xmm5, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulps  xmm8, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    addps  xmm0, xmm0 ;# 2*krsq
+    addps  xmm3, xmm3 
+    addps  xmm6, xmm6 
+    subps  xmm1, xmm0 ;# rinv-2*krsq
+    subps  xmm4, xmm3
+    subps  xmm7, xmm6
+    mulps  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulps  xmm4, xmm13
+    mulps  xmm7, xmm13
+    addps  xmm15, xmm2
+    addps  xmm5, xmm8
+    addps  xmm15, xmm5
+    
+    mulps  xmm1, xmm9   ;# fscal
+    mulps  xmm4, xmm10
+    mulps  xmm7, xmm11
+
+	;# move j H1 forces to local temp variables 
+    movlps xmm9, [rdi + rax*4 + 12] ;# jxH1a jyH1a  -   -
+    movlps xmm10, [rdi + rcx*4 + 12] ;# jxH1c jyH1c  -   -
+    movhps xmm9, [rdi + rbx*4 + 12] ;# jxH1a jyH1a jxH1b jyH1b 
+    movhps xmm10, [rdi + rdx*4 + 12] ;# jxH1c jyH1c jxH1d jyH1d 
+
+    movss  xmm11, [rdi + rax*4 + 20] ;# jzH1a  -  -  -
+    movss  xmm12, [rdi + rcx*4 + 20] ;# jzH1c  -  -  -
+    movhps xmm11, [rdi + rbx*4 + 20] ;# jzH1a  -  jzH1b  -
+    movhps xmm12, [rdi + rdx*4 + 20] ;# jzH1c  -  jzH1d -
+    
+    shufps xmm11, xmm12,  136  ;# 10001000 => jzH1a jzH1b jzH1c jzH1d
+
+    ;# xmm9: jxH1a jyH1a jxH1b jyH1b 
+    ;# xmm10: jxH1c jyH1c jxH1d jyH1d
+    ;# xmm11: jzH1a jzH1b jzH1c jzH1d
+
+    movaps xmm0, xmm1
+    movaps xmm2, xmm1
+    movaps xmm3, xmm4
+    movaps xmm5, xmm4
+    movaps xmm6, xmm7
+    movaps xmm8, xmm7
+
+	mulps xmm0, [rsp + nb212_dxOH1]
+	mulps xmm1, [rsp + nb212_dyOH1]
+	mulps xmm2, [rsp + nb212_dzOH1]
+	mulps xmm3, [rsp + nb212_dxH1H1]
+	mulps xmm4, [rsp + nb212_dyH1H1]
+	mulps xmm5, [rsp + nb212_dzH1H1]
+	mulps xmm6, [rsp + nb212_dxH2H1]
+	mulps xmm7, [rsp + nb212_dyH2H1]
+	mulps xmm8, [rsp + nb212_dzH2H1]
+
+    movaps xmm13, xmm0
+    movaps xmm14, xmm1
+    addps xmm11, xmm2
+    addps xmm0, [rsp + nb212_fixO]
+    addps xmm1, [rsp + nb212_fiyO]
+    addps xmm2, [rsp + nb212_fizO]
+
+    addps xmm13, xmm3
+    addps xmm14, xmm4
+    addps xmm11, xmm5
+    addps xmm3, [rsp + nb212_fixH1]
+    addps xmm4, [rsp + nb212_fiyH1]
+    addps xmm5, [rsp + nb212_fizH1]
+
+    addps xmm13, xmm6
+    addps xmm14, xmm7
+    addps xmm11, xmm8
+    addps xmm6, [rsp + nb212_fixH2]
+    addps xmm7, [rsp + nb212_fiyH2]
+    addps xmm8, [rsp + nb212_fizH2]
+
+    movaps [rsp + nb212_fixO], xmm0
+    movaps [rsp + nb212_fiyO], xmm1
+    movaps [rsp + nb212_fizO], xmm2
+    movaps [rsp + nb212_fixH1], xmm3
+    movaps [rsp + nb212_fiyH1], xmm4
+    movaps [rsp + nb212_fizH1], xmm5
+    movaps [rsp + nb212_fixH2], xmm6
+    movaps [rsp + nb212_fiyH2], xmm7
+    movaps [rsp + nb212_fizH2], xmm8
+    
+    ;# xmm9 = fH1x
+    ;# xmm10 = fH1y
+    ;# xmm11 = fH1z
+    movaps xmm0, xmm13
+    unpcklps xmm13, xmm14
+    unpckhps xmm0, xmm14
+    
+    addps xmm9, xmm13
+    addps xmm10, xmm0
+
+    movhlps  xmm12, xmm11 ;# fH1zc fH1zd
+    
+    movlps [rdi + rax*4 + 12], xmm9
+    movhps [rdi + rbx*4 + 12], xmm9
+    movlps [rdi + rcx*4 + 12], xmm10
+    movhps [rdi + rdx*4 + 12], xmm10
+    movss  [rdi + rax*4 + 20], xmm11
+    movss  [rdi + rcx*4 + 20], xmm12
+    shufps xmm11, xmm11, 1
+    shufps xmm12, xmm12, 1
+    movss  [rdi + rbx*4 + 20], xmm11
+    movss  [rdi + rdx*4 + 20], xmm12
+
+	;# move j H2 coordinates to local temp variables 
+    movlps xmm0, [rsi + rax*4 + 24] ;# jxH2a jyH2a  -   -
+    movlps xmm1, [rsi + rcx*4 + 24] ;# jxH2c jyH2c  -   -
+    movhps xmm0, [rsi + rbx*4 + 24] ;# jxH2a jyH2a jxH2b jyH2b 
+    movhps xmm1, [rsi + rdx*4 + 24] ;# jxH2c jyH2c jxH2d jyH2d 
+
+    movss  xmm2, [rsi + rax*4 + 32] ;# jzH2a  -  -  -
+    movss  xmm3, [rsi + rcx*4 + 32] ;# jzH2c  -  -  -
+    movss  xmm5, [rsi + rbx*4 + 32] ;# jzH2b  -  -  -
+    movss  xmm6, [rsi + rdx*4 + 32] ;# jzH2d  -  -  -
+    movlhps xmm2, xmm5 ;# jzH2a  -  jzH2b  -
+    movlhps xmm3, xmm6 ;# jzH2c  -  jzH2d -
+    
+    movaps xmm4, xmm0
+    unpcklps xmm0, xmm1  ;# jxH2a jxH2c jyH2a jyH2c        
+    unpckhps xmm4, xmm1  ;# jxH2b jxH2d jyH2b jyH2d
+    movaps xmm1, xmm0
+    unpcklps xmm0, xmm4 ;# x
+    unpckhps xmm1, xmm4 ;# y
+
+    shufps   xmm2, xmm3,  136  ;# 10001000 => jzH2a jzH2b jzH2c jzH2d
+
+    ;# xmm0 = H2x
+    ;# xmm1 = H2y
+    ;# xmm2 = H2z
+        
+    movaps xmm3, xmm0
+    movaps xmm4, xmm1
+    movaps xmm5, xmm2
+    movaps xmm6, xmm0
+    movaps xmm7, xmm1
+    movaps xmm8, xmm2
+    
+    subps xmm0, [rsp + nb212_ixO]
+    subps xmm1, [rsp + nb212_iyO]
+    subps xmm2, [rsp + nb212_izO]
+    subps xmm3, [rsp + nb212_ixH1]
+    subps xmm4, [rsp + nb212_iyH1]
+    subps xmm5, [rsp + nb212_izH1]
+    subps xmm6, [rsp + nb212_ixH2]
+    subps xmm7, [rsp + nb212_iyH2]
+    subps xmm8, [rsp + nb212_izH2]
+    
+	movaps [rsp + nb212_dxOH2], xmm0
+	movaps [rsp + nb212_dyOH2], xmm1
+	movaps [rsp + nb212_dzOH2], xmm2
 	mulps  xmm0, xmm0
 	mulps  xmm1, xmm1
 	mulps  xmm2, xmm2
@@ -579,615 +963,190 @@ _nb_kernel212_x86_64_sse:
 	mulps  xmm3, xmm3
 	mulps  xmm4, xmm4
 	mulps  xmm5, xmm5
+	movaps [rsp + nb212_dxH2H2], xmm6
+	movaps [rsp + nb212_dyH2H2], xmm7
+	movaps [rsp + nb212_dzH2H2], xmm8
+	mulps  xmm6, xmm6
+	mulps  xmm7, xmm7
+	mulps  xmm8, xmm8
 	addps  xmm0, xmm1
 	addps  xmm0, xmm2
 	addps  xmm3, xmm4
 	addps  xmm3, xmm5
-	movaps [rsp + nb212_rsqH1H1], xmm0
-	movaps [rsp + nb212_rsqH1H2], xmm3
+    addps  xmm6, xmm7
+    addps  xmm6, xmm8
 
-	movaps xmm0, [rsp + nb212_ixH2]
-	movaps xmm1, [rsp + nb212_iyH2]
-	movaps xmm2, [rsp + nb212_izH2]
-	movaps xmm3, [rsp + nb212_ixH2]
-	movaps xmm4, [rsp + nb212_iyH2]
-	movaps xmm5, [rsp + nb212_izH2]
-	subps  xmm0, [rsp + nb212_jxO]
-	subps  xmm1, [rsp + nb212_jyO]
-	subps  xmm2, [rsp + nb212_jzO]
-	subps  xmm3, [rsp + nb212_jxH1]
-	subps  xmm4, [rsp + nb212_jyH1]
-	subps  xmm5, [rsp + nb212_jzH1]
-	movaps [rsp + nb212_dxH2O], xmm0
-	movaps [rsp + nb212_dyH2O], xmm1
-	movaps [rsp + nb212_dzH2O], xmm2
-	mulps  xmm0, xmm0
-	mulps  xmm1, xmm1
-	mulps  xmm2, xmm2
-	movaps [rsp + nb212_dxH2H1], xmm3
-	movaps [rsp + nb212_dyH2H1], xmm4
-	movaps [rsp + nb212_dzH2H1], xmm5
-	mulps  xmm3, xmm3
-	mulps  xmm4, xmm4
-	mulps  xmm5, xmm5
-	addps  xmm0, xmm1
-	addps  xmm0, xmm2
-	addps  xmm4, xmm3
-	addps  xmm4, xmm5
-	movaps [rsp + nb212_rsqH2O], xmm0
-	movaps [rsp + nb212_rsqH2H1], xmm4
-
-	movaps xmm0, [rsp + nb212_ixH2]
-	movaps xmm1, [rsp + nb212_iyH2]
-	movaps xmm2, [rsp + nb212_izH2]
-	subps  xmm0, [rsp + nb212_jxH2]
-	subps  xmm1, [rsp + nb212_jyH2]
-	subps  xmm2, [rsp + nb212_jzH2]
-	movaps [rsp + nb212_dxH2H2], xmm0
-	movaps [rsp + nb212_dyH2H2], xmm1
-	movaps [rsp + nb212_dzH2H2], xmm2
-	mulps xmm0, xmm0
-	mulps xmm1, xmm1
-	mulps xmm2, xmm2
-	addps xmm0, xmm1
-	addps xmm0, xmm2
-	movaps [rsp + nb212_rsqH2H2], xmm0
-	
-	;# start doing invsqrt use rsq values in xmm0, xmm4 
+	;# start doing invsqrt for jH2 atoms
 	rsqrtps xmm1, xmm0
-	rsqrtps xmm5, xmm4
+	rsqrtps xmm4, xmm3
+    rsqrtps xmm7, xmm6
+	
 	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb212_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, xmm0
-	mulps   xmm5, xmm4
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb212_half] ;# rinvH2H2 
-	mulps   xmm7, [rsp + nb212_half] ;# rinvH2H1 
-	movaps  [rsp + nb212_rinvH2H2], xmm3
-	movaps  [rsp + nb212_rinvH2H1], xmm7
-	
-	rsqrtps xmm1, [rsp + nb212_rsqOO]
-	rsqrtps xmm5, [rsp + nb212_rsqOH1]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb212_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [rsp + nb212_rsqOO]
-	mulps   xmm5, [rsp + nb212_rsqOH1]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb212_half] 
-	mulps   xmm7, [rsp + nb212_half]
-	movaps  [rsp + nb212_rinvOO], xmm3
-	movaps  [rsp + nb212_rinvOH1], xmm7
-	
-	rsqrtps xmm1, [rsp + nb212_rsqOH2]
-	rsqrtps xmm5, [rsp + nb212_rsqH1O]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb212_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [rsp + nb212_rsqOH2]
-	mulps   xmm5, [rsp + nb212_rsqH1O]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb212_half] 
-	mulps   xmm7, [rsp + nb212_half]
-	movaps  [rsp + nb212_rinvOH2], xmm3
-	movaps  [rsp + nb212_rinvH1O], xmm7
-	
-	rsqrtps xmm1, [rsp + nb212_rsqH1H1]
-	rsqrtps xmm5, [rsp + nb212_rsqH1H2]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb212_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [rsp + nb212_rsqH1H1]
-	mulps   xmm5, [rsp + nb212_rsqH1H2]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb212_half] 
-	mulps   xmm7, [rsp + nb212_half]
-	movaps  [rsp + nb212_rinvH1H1], xmm3
-	movaps  [rsp + nb212_rinvH1H2], xmm7
-	
-	rsqrtps xmm1, [rsp + nb212_rsqH2O]
-	movaps  xmm2, xmm1
-	mulps   xmm1, xmm1
-	movaps  xmm3, [rsp + nb212_three]
-	mulps   xmm1, [rsp + nb212_rsqH2O]
-	subps   xmm3, xmm1
-	mulps   xmm3, xmm2
-	mulps   xmm3, [rsp + nb212_half] 
-	movaps  [rsp + nb212_rinvH2O], xmm3
+	movaps  xmm5, xmm4
+    movaps  xmm8, xmm7
+    
+	mulps   xmm1, xmm1 ;# lu*lu
+	mulps   xmm4, xmm4 ;# lu*lu
+    mulps   xmm7, xmm7 ;# lu*lu
+		
+	movaps  xmm9, [rsp + nb212_three]
+	movaps  xmm10, xmm9
+    movaps  xmm11, xmm9
 
-	;# start with OO interaction 
-	movaps xmm0, [rsp + nb212_rinvOO]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]
-	mulps  xmm0, xmm0
-	movaps xmm1, xmm0
-	mulps  xmm1, xmm0
-	mulps  xmm1, xmm0	;# xmm1=rinvsix 
-	mulps  xmm5, [rsp + nb212_rsqOO] ;# xmm5=krsq 
-	movaps xmm6, xmm5
-	addps  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	subps  xmm6, [rsp + nb212_crf]
+	mulps   xmm1, xmm0 ;# rsq*lu*lu
+	mulps   xmm4, xmm3 ;# rsq*lu*lu 
+    mulps   xmm7, xmm6 ;# rsq*lu*lu
 	
-	mulps  xmm6, [rsp + nb212_qqOO] ;# xmm6=voul=qq*(rinv+ krsq-crf) 
-	mulps xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqOO] ;# xmm7 = coul part of fscal 
+	subps   xmm9, xmm1
+	subps   xmm10, xmm4
+    subps   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulps   xmm9, xmm2
+	mulps   xmm10, xmm5
+    mulps   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movaps  xmm4, [rsp + nb212_half]
+	mulps   xmm9, xmm4  ;# rinvOH2
+	mulps   xmm10, xmm4 ;# rinvH1H2
+    mulps   xmm11, xmm4 ;# rinvH2H2
 	
-	movaps xmm2, xmm1
-	mulps  xmm2, xmm2	;# xmm2=rinvtwelve 
-	mulps  xmm1, [rsp + nb212_c6]	
-	mulps  xmm2, [rsp + nb212_c12]	
-	movaps xmm3, xmm2
-	subps  xmm3, xmm1	;# xmm3=Vvdw12-Vvdw6 
-	addps  xmm3, [rsp + nb212_Vvdwtot]
-	mulps  xmm1, [rsp + nb212_six]
-	mulps  xmm2, [rsp + nb212_twelve]
-	movaps [rsp + nb212_Vvdwtot], xmm3
-	subps  xmm2, xmm1
-	addps  xmm2, xmm7
-	addps  xmm6, [rsp + nb212_vctot] ;# local vctot summation variable 
-	mulps  xmm0, xmm2
-	
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
+	;# H2 interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
 
-	xorps xmm3, xmm3
-	movaps xmm4, xmm3
-	movaps xmm5, xmm3
-	mulps xmm0, [rsp + nb212_dxOO]
-	mulps xmm1, [rsp + nb212_dyOO]
-	mulps xmm2, [rsp + nb212_dzOO]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixO]
-	addps xmm1, [rsp + nb212_fiyO]
-	addps xmm2, [rsp + nb212_fizO]
-	movaps [rsp + nb212_fjxO], xmm3
-	movaps [rsp + nb212_fjyO], xmm4
-	movaps [rsp + nb212_fjzO], xmm5
-	movaps [rsp + nb212_fixO], xmm0
-	movaps [rsp + nb212_fiyO], xmm1
-	movaps [rsp + nb212_fizO], xmm2
+    movaps xmm1, xmm9 ;# copy of rinv
+    movaps xmm4, xmm10
+    movaps xmm7, xmm11
+    movaps xmm2, [rsp + nb212_krf]    
+    mulps  xmm9, xmm9   ;# rinvsq
+    mulps  xmm10, xmm10
+    mulps  xmm11, xmm11
+    mulps  xmm0, xmm2  ;# k*rsq
+    mulps  xmm3, xmm2
+    mulps  xmm6, xmm2
+    movaps xmm2, xmm0 ;# copy of k*rsq
+    movaps xmm5, xmm3
+    movaps xmm8, xmm6
+    addps  xmm2, xmm1  ;# rinv+krsq
+    addps  xmm5, xmm4
+    addps  xmm8, xmm7
+    movaps xmm14, [rsp + nb212_crf]
+    subps  xmm2, xmm14   ;# rinv+krsq-crf
+    subps  xmm5, xmm14
+    subps  xmm8, xmm14
+    movaps xmm12, [rsp + nb212_qqOH]
+    movaps xmm13, [rsp + nb212_qqHH]    
+    mulps  xmm2, xmm12 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulps  xmm5, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    mulps  xmm8, xmm13 ;# xmm6=voul=qq*(rinv+ krsq-crf)
+    addps  xmm0, xmm0 ;# 2*krsq
+    addps  xmm3, xmm3 
+    addps  xmm6, xmm6 
+    subps  xmm1, xmm0 ;# rinv-2*krsq
+    subps  xmm4, xmm3
+    subps  xmm7, xmm6
+    mulps  xmm1, xmm12   ;# (rinv-2*krsq)*qq
+    mulps  xmm4, xmm13
+    mulps  xmm7, xmm13
+    addps  xmm5, xmm8
+    addps  xmm2, xmm15
+    addps  xmm2, xmm5
+    movaps [rsp + nb212_vctot], xmm2
+    
+    mulps  xmm1, xmm9   ;# fscal
+    mulps  xmm4, xmm10
+    mulps  xmm7, xmm11
 
-	;# O-H1 interaction 
-	movaps xmm0, [rsp + nb212_rinvOH1]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqOH1] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=rinv+ krsq 
-	mulps  xmm0, xmm0
-	subps  xmm4, [rsp + nb212_crf]
-	mulps  xmm4, [rsp + nb212_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqOH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH1  
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	xorps xmm3, xmm3
-	movaps xmm4, xmm3
-	movaps xmm5, xmm3
-	mulps xmm0, [rsp + nb212_dxOH1]
-	mulps xmm1, [rsp + nb212_dyOH1]
-	mulps xmm2, [rsp + nb212_dzOH1]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixO]
-	addps xmm1, [rsp + nb212_fiyO]
-	addps xmm2, [rsp + nb212_fizO]
-	movaps [rsp + nb212_fjxH1], xmm3
-	movaps [rsp + nb212_fjyH1], xmm4
-	movaps [rsp + nb212_fjzH1], xmm5
-	movaps [rsp + nb212_fixO], xmm0
-	movaps [rsp + nb212_fiyO], xmm1
-	movaps [rsp + nb212_fizO], xmm2
+	;# move j H2 forces to local temp variables 
+    movlps xmm9, [rdi + rax*4 + 24] ;# jxH2a jyH2a  -   -
+    movlps xmm10, [rdi + rcx*4 + 24] ;# jxH2c jyH2c  -   -
+    movhps xmm9, [rdi + rbx*4 + 24] ;# jxH2a jyH2a jxH2b jyH2b 
+    movhps xmm10, [rdi + rdx*4 + 24] ;# jxH2c jyH2c jxH2d jyH2d 
 
-	;# O-H2 interaction  
-	movaps xmm0, [rsp + nb212_rinvOH2]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqOH2] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=r inv+ krsq 
-	mulps xmm0, xmm0
-	subps  xmm4, [rsp + nb212_crf]
-	mulps  xmm4, [rsp + nb212_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqOH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
+    movss  xmm11, [rdi + rax*4 + 32] ;# jzH2a  -  -  -
+    movss  xmm12, [rdi + rcx*4 + 32] ;# jzH2c  -  -  -
+    movss  xmm2, [rdi + rbx*4 + 32] ;# jzH2b  -  -  -
+    movss  xmm3, [rdi + rdx*4 + 32] ;# jzH2d  -  -  -
+    movlhps xmm11, xmm2 ;# jzH2a  -  jzH2b  -
+    movlhps xmm12, xmm3 ;# jzH2c  -  jzH2d -
+    
+    shufps xmm11, xmm12,  136  ;# 10001000 => jzH2a jzH2b jzH2c jzH2d
 
-	xorps xmm3, xmm3
-	movaps xmm4, xmm3
-	movaps xmm5, xmm3
+    ;# xmm9: jxH2a jyH2a jxH2b jyH2b 
+    ;# xmm10: jxH2c jyH2c jxH2d jyH2d
+    ;# xmm11: jzH2a jzH2b jzH2c jzH2d
+
+    movaps xmm0, xmm1
+    movaps xmm2, xmm1
+    movaps xmm3, xmm4
+    movaps xmm5, xmm4
+    movaps xmm6, xmm7
+    movaps xmm8, xmm7
+
 	mulps xmm0, [rsp + nb212_dxOH2]
 	mulps xmm1, [rsp + nb212_dyOH2]
 	mulps xmm2, [rsp + nb212_dzOH2]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixO]
-	addps xmm1, [rsp + nb212_fiyO]
-	addps xmm2, [rsp + nb212_fizO]
-	movaps [rsp + nb212_fjxH2], xmm3
-	movaps [rsp + nb212_fjyH2], xmm4
-	movaps [rsp + nb212_fjzH2], xmm5
-	movaps [rsp + nb212_fixO], xmm0
-	movaps [rsp + nb212_fiyO], xmm1
-	movaps [rsp + nb212_fizO], xmm2
+	mulps xmm3, [rsp + nb212_dxH1H2]
+	mulps xmm4, [rsp + nb212_dyH1H2]
+	mulps xmm5, [rsp + nb212_dzH1H2]
+	mulps xmm6, [rsp + nb212_dxH2H2]
+	mulps xmm7, [rsp + nb212_dyH2H2]
+	mulps xmm8, [rsp + nb212_dzH2H2]
 
-	;# H1-O interaction 
-	movaps xmm0, [rsp + nb212_rinvH1O]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqH1O] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=rinv+ krsq 
-	mulps xmm0, xmm0
-	subps  xmm4, [rsp + nb212_crf]
-	mulps  xmm4, [rsp + nb212_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqOH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
+    movaps xmm13, xmm0
+    movaps xmm14, xmm1
+    addps xmm11, xmm2
+    addps xmm0, [rsp + nb212_fixO]
+    addps xmm1, [rsp + nb212_fiyO]
+    addps xmm2, [rsp + nb212_fizO]
 
-	movaps xmm3, [rsp + nb212_fjxO]
-	movaps xmm4, [rsp + nb212_fjyO]
-	movaps xmm5, [rsp + nb212_fjzO]
-	mulps xmm0, [rsp + nb212_dxH1O]
-	mulps xmm1, [rsp + nb212_dyH1O]
-	mulps xmm2, [rsp + nb212_dzH1O]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixH1]
-	addps xmm1, [rsp + nb212_fiyH1]
-	addps xmm2, [rsp + nb212_fizH1]
-	movaps [rsp + nb212_fjxO], xmm3
-	movaps [rsp + nb212_fjyO], xmm4
-	movaps [rsp + nb212_fjzO], xmm5
-	movaps [rsp + nb212_fixH1], xmm0
-	movaps [rsp + nb212_fiyH1], xmm1
-	movaps [rsp + nb212_fizH1], xmm2
+    addps xmm13, xmm3
+    addps xmm14, xmm4
+    addps xmm11, xmm5
+    addps xmm3, [rsp + nb212_fixH1]
+    addps xmm4, [rsp + nb212_fiyH1]
+    addps xmm5, [rsp + nb212_fizH1]
 
-	;# H1-H1 interaction 
-	movaps xmm0, [rsp + nb212_rinvH1H1]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqH1H1] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=r inv+ krsq 
-	subps  xmm4, [rsp + nb212_crf]
-	mulps xmm0, xmm0
-	mulps  xmm4, [rsp + nb212_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqHH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
+    addps xmm13, xmm6
+    addps xmm14, xmm7
+    addps xmm11, xmm8
+    addps xmm6, [rsp + nb212_fixH2]
+    addps xmm7, [rsp + nb212_fiyH2]
+    addps xmm8, [rsp + nb212_fizH2]
 
-	movaps xmm3, [rsp + nb212_fjxH1]
-	movaps xmm4, [rsp + nb212_fjyH1]
-	movaps xmm5, [rsp + nb212_fjzH1]
-	mulps xmm0, [rsp + nb212_dxH1H1]
-	mulps xmm1, [rsp + nb212_dyH1H1]
-	mulps xmm2, [rsp + nb212_dzH1H1]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixH1]
-	addps xmm1, [rsp + nb212_fiyH1]
-	addps xmm2, [rsp + nb212_fizH1]
-	movaps [rsp + nb212_fjxH1], xmm3
-	movaps [rsp + nb212_fjyH1], xmm4
-	movaps [rsp + nb212_fjzH1], xmm5
-	movaps [rsp + nb212_fixH1], xmm0
-	movaps [rsp + nb212_fiyH1], xmm1
-	movaps [rsp + nb212_fizH1], xmm2
+    movaps [rsp + nb212_fixO], xmm0
+    movaps [rsp + nb212_fiyO], xmm1
+    movaps [rsp + nb212_fizO], xmm2
+    movaps [rsp + nb212_fixH1], xmm3
+    movaps [rsp + nb212_fiyH1], xmm4
+    movaps [rsp + nb212_fizH1], xmm5
+    movaps [rsp + nb212_fixH2], xmm6
+    movaps [rsp + nb212_fiyH2], xmm7
+    movaps [rsp + nb212_fizH2], xmm8
+    
+    ;# xmm0 = fH2x
+    ;# xmm1 = fH2y
+    ;# xmm2 = fH2z
+    movaps xmm0, xmm13
+    unpcklps xmm13, xmm14
+    unpckhps xmm0, xmm14
+    
+    addps xmm9, xmm13
+    addps xmm10, xmm0
 
-	;# H1-H2 interaction 
-	movaps xmm0, [rsp + nb212_rinvH1H2]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqH1H2] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=r inv+ krsq 
-	mulps xmm0, xmm0
-	subps  xmm4, [rsp + nb212_crf]
-	mulps  xmm4, [rsp + nb212_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqHH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb212_fjxH2]
-	movaps xmm4, [rsp + nb212_fjyH2]
-	movaps xmm5, [rsp + nb212_fjzH2]
-	mulps xmm0, [rsp + nb212_dxH1H2]
-	mulps xmm1, [rsp + nb212_dyH1H2]
-	mulps xmm2, [rsp + nb212_dzH1H2]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixH1]
-	addps xmm1, [rsp + nb212_fiyH1]
-	addps xmm2, [rsp + nb212_fizH1]
-	movaps [rsp + nb212_fjxH2], xmm3
-	movaps [rsp + nb212_fjyH2], xmm4
-	movaps [rsp + nb212_fjzH2], xmm5
-	movaps [rsp + nb212_fixH1], xmm0
-	movaps [rsp + nb212_fiyH1], xmm1
-	movaps [rsp + nb212_fizH1], xmm2
+    movhlps  xmm12, xmm11 ;# fH2zc fH2zd
+    
+    movlps [rdi + rax*4 + 24], xmm9
+    movhps [rdi + rbx*4 + 24], xmm9
+    movlps [rdi + rcx*4 + 24], xmm10
+    movhps [rdi + rdx*4 + 24], xmm10
+    movss  [rdi + rax*4 + 32], xmm11
+    movss  [rdi + rcx*4 + 32], xmm12
+    shufps xmm11, xmm11, 1
+    shufps xmm12, xmm12, 1
+    movss  [rdi + rbx*4 + 32], xmm11
+    movss  [rdi + rdx*4 + 32], xmm12
 
-	;# H2-O interaction 
-	movaps xmm0, [rsp + nb212_rinvH2O]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqH2O] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=r inv+ krsq 
-	subps  xmm4, [rsp + nb212_crf]
-	mulps xmm0, xmm0
-	mulps  xmm4, [rsp + nb212_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqOH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-
-	movaps xmm3, [rsp + nb212_fjxO]
-	movaps xmm4, [rsp + nb212_fjyO]
-	movaps xmm5, [rsp + nb212_fjzO]
-	mulps xmm0, [rsp + nb212_dxH2O]
-	mulps xmm1, [rsp + nb212_dyH2O]
-	mulps xmm2, [rsp + nb212_dzH2O]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixH2]
-	addps xmm1, [rsp + nb212_fiyH2]
-	addps xmm2, [rsp + nb212_fizH2]
-	movaps [rsp + nb212_fjxO], xmm3
-	movaps [rsp + nb212_fjyO], xmm4
-	movaps [rsp + nb212_fjzO], xmm5
-	movaps [rsp + nb212_fixH2], xmm0
-	movaps [rsp + nb212_fiyH2], xmm1
-	movaps [rsp + nb212_fizH2], xmm2
-
-	;# H2-H1 interaction 
-	movaps xmm0, [rsp + nb212_rinvH2H1]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqH2H1] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=r inv+ krsq 
-	subps  xmm4, [rsp + nb212_crf]
-	mulps xmm0, xmm0
-	mulps  xmm4, [rsp + nb212_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqHH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-
-	movaps xmm3, [rsp + nb212_fjxH1]
-	movaps xmm4, [rsp + nb212_fjyH1]
-	movaps xmm5, [rsp + nb212_fjzH1]
-	mulps xmm0, [rsp + nb212_dxH2H1]
-	mulps xmm1, [rsp + nb212_dyH2H1]
-	mulps xmm2, [rsp + nb212_dzH2H1]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixH2]
-	addps xmm1, [rsp + nb212_fiyH2]
-	addps xmm2, [rsp + nb212_fizH2]
-	movaps [rsp + nb212_fjxH1], xmm3
-	movaps [rsp + nb212_fjyH1], xmm4
-	movaps [rsp + nb212_fjzH1], xmm5
-	movaps [rsp + nb212_fixH2], xmm0
-	movaps [rsp + nb212_fiyH2], xmm1
-	movaps [rsp + nb212_fizH2], xmm2
-
-	;# H2-H2 interaction 
-	movaps xmm0, [rsp + nb212_rinvH2H2]
-	movaps xmm7, xmm0	;# xmm7=rinv 
-	movaps xmm5, [rsp + nb212_krf]	
-	movaps xmm1, xmm0
-	mulps  xmm5, [rsp + nb212_rsqH2H2] ;# xmm5=krsq 
-	movaps xmm4, xmm5
-	addps  xmm4, xmm7	;# xmm4=r inv+ krsq 
-	subps  xmm4, [rsp + nb212_crf]
-	mulps xmm0, xmm0
-	mulps  xmm4, [rsp + nb212_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm5, [rsp + nb212_two]
-	subps  xmm7, xmm5	;# xmm7=rinv-2*krsq 
-	mulps  xmm7, [rsp + nb212_qqHH] ;# xmm7 = coul part of fscal 
-	addps  xmm6, xmm4	;# add to local vctot 
-	mulps xmm0, xmm7	;# fsOH2 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-
-	movaps xmm1, xmm0
-	movaps [rsp + nb212_vctot], xmm6
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb212_fjxH2]
-	movaps xmm4, [rsp + nb212_fjyH2]
-	movaps xmm5, [rsp + nb212_fjzH2]
-	mulps xmm0, [rsp + nb212_dxH2H2]
-	mulps xmm1, [rsp + nb212_dyH2H2]
-	mulps xmm2, [rsp + nb212_dzH2H2]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb212_fixH2]
-	addps xmm1, [rsp + nb212_fiyH2]
-	addps xmm2, [rsp + nb212_fizH2]
-	movaps [rsp + nb212_fjxH2], xmm3
-	movaps [rsp + nb212_fjyH2], xmm4
-	movaps [rsp + nb212_fjzH2], xmm5
-	movaps [rsp + nb212_fixH2], xmm0
-	movaps [rsp + nb212_fiyH2], xmm1
-	movaps [rsp + nb212_fizH2], xmm2
-
-	mov rdi, [rbp + nb212_faction]
-	
-	;# Did all interactions - now update j forces 
-	;# At this stage forces are still on the stack, in positions:
-	;# fjxO, fjyO, fjzO, ... , fjzH2.
-	;# Each position is a quadruplet of forces for the four 
-	;# corresponding j waters, so we need to transpose them before
-	;# adding to the memory positions.
-	;# 
-	;# This _used_ to be a simple transpose, but the resulting high number
-	;# of unaligned 128-bit load/stores might trigger a possible hardware 
-	;# bug on Athlon and Opteron chips, so I have worked around it
-	;# to use 64-bit load/stores instead. The performance hit should be
-	;# very modest, since the 128-bit unaligned memory instructions were
-	;# slow anyway. 
-	
-	
-	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
-	movaps xmm0, [rsp + nb212_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm2, [rsp + nb212_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
-	movlps xmm3, [rdi + rax*4]
-	movlps xmm4, [rdi + rcx*4]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
-	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
-	movhps xmm3, [rdi + rbx*4]
-	movhps xmm4, [rdi + rdx*4]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4], xmm3
-	movlps [rdi + rcx*4], xmm4
-	movhps [rdi + rbx*4], xmm3
-	movhps [rdi + rdx*4], xmm4
-	
-	;# Oxygen Z & first hydrogen X forces for 4 j particles 
-	movaps xmm0, [rsp + nb212_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
-	movaps xmm2, [rsp + nb212_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
-	movlps xmm3, [rdi + rax*4 + 8]
-	movlps xmm4, [rdi + rcx*4 + 8]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
-	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
-	movhps xmm3, [rdi + rbx*4 + 8]
-	movhps xmm4, [rdi + rdx*4 + 8]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4 + 8], xmm3
-	movlps [rdi + rcx*4 + 8], xmm4
-	movhps [rdi + rbx*4 + 8], xmm3
-	movhps [rdi + rdx*4 + 8], xmm4
-
-	
-	;# First hydrogen Y & Z forces for 4 j particles 
-	movaps xmm0, [rsp + nb212_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
-	movaps xmm2, [rsp + nb212_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
-	movlps xmm3, [rdi + rax*4 + 16]
-	movlps xmm4, [rdi + rcx*4 + 16]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
-	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
-	movhps xmm3, [rdi + rbx*4 + 16]
-	movhps xmm4, [rdi + rdx*4 + 16]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4 + 16], xmm3
-	movlps [rdi + rcx*4 + 16], xmm4
-	movhps [rdi + rbx*4 + 16], xmm3
-	movhps [rdi + rdx*4 + 16], xmm4
-
-	
-	;# Second hydrogen X & Y forces for 4 j particles 
-	movaps xmm0, [rsp + nb212_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
-	movaps xmm2, [rsp + nb212_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
-	movlps xmm3, [rdi + rax*4 + 24]
-	movlps xmm4, [rdi + rcx*4 + 24]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
-	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
-	movhps xmm3, [rdi + rbx*4 + 24]
-	movhps xmm4, [rdi + rdx*4 + 24]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4 + 24], xmm3
-	movlps [rdi + rcx*4 + 24], xmm4
-	movhps [rdi + rbx*4 + 24], xmm3
-	movhps [rdi + rdx*4 + 24], xmm4
-
-	
-	;# Second hydrogen Z forces for 4 j particles 
-	;# Just load the four Z coords into one reg. each
-	movss xmm4, [rdi + rax*4 + 32]
-	movss xmm5, [rdi + rbx*4 + 32]
-	movss xmm6, [rdi + rcx*4 + 32]
-	movss xmm7, [rdi + rdx*4 + 32]
-	;# add what we have on the stack
-	addss xmm4, [rsp + nb212_fjzH2] 
-	addss xmm5, [rsp + nb212_fjzH2 + 4] 
-	addss xmm6, [rsp + nb212_fjzH2 + 8] 
-	addss xmm7, [rsp + nb212_fjzH2 + 12]
-	;# store back
-	movss [rdi + rax*4 + 32], xmm4
-	movss [rdi + rbx*4 + 32], xmm5
-	movss [rdi + rcx*4 + 32], xmm6
-	movss [rdi + rdx*4 + 32], xmm7
-	
 	;# should we do one more iteration? 
 	sub dword ptr [rsp + nb212_innerk],  4
 	jl    .nb212_single_check
@@ -1205,37 +1164,34 @@ _nb_kernel212_x86_64_sse:
 	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates 
-	xorps xmm3, xmm3
-	xorps xmm4, xmm4
-	xorps xmm5, xmm5
+	xorps xmm0, xmm0
+	xorps xmm1, xmm1
+	xorps xmm2, xmm2
 	
-	movss xmm3, [rsi + rax*4]		;# jxO  -  -  -
-	movss xmm4, [rsi + rax*4 + 4]		;# jyO  -  -  -
-	movss xmm5, [rsi + rax*4 + 8]		;# jzO  -  -  -  
+	movss xmm0, [rsi + rax*4]		;# jxO  -  -  -
+	movss xmm1, [rsi + rax*4 + 4]		;# jyO  -  -  -
+	movss xmm2, [rsi + rax*4 + 8]		;# jzO  -  -  -  
 
 	movlps xmm6, [rsi + rax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
 	movss  xmm7, [rsi + rax*4 + 20]		;# xmm7 = jzH1   -    -    - 
 	movhps xmm6, [rsi + rax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
-	movss  xmm2, [rsi + rax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	movss  xmm5, [rsi + rax*4 + 32]		;# xmm5 = jzH2   -    -    -
 	
 	;# have all coords, time for some shuffling.
 
 	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
-	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
-	movaps  xmm0, [rsp + nb212_ixO]     
-	movaps  xmm1, [rsp + nb212_iyO]
-	movaps  xmm2, [rsp + nb212_izO]	
-	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
-	shufps  xmm4, xmm6, 228 ;# 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
-	shufps  xmm5, xmm7, 68  ;# 01000100	;# xmm5 = jzO   0   jzH1 jzH2
+	unpcklps xmm7, xmm5			;# xmm7 = jzH1 jzH2   -    -
 
-	;# store all j coordinates in jO  
-	movaps [rsp + nb212_jxO], xmm3
-	movaps [rsp + nb212_jyO], xmm4
-	movaps [rsp + nb212_jzO], xmm5
-	subps  xmm0, xmm3
-	subps  xmm1, xmm4
-	subps  xmm2, xmm5
+	movlhps xmm0, xmm6			;# xmm0 = jxO   0   jxH1 jxH2 
+	shufps  xmm1, xmm6, 228 ;# 11100100	;# xmm1 = jyO   0   jyH1 jyH2 
+	shufps  xmm2, xmm7, 68  ;# 01000100	;# xmm2 = jzO   0   jzH1 jzH2
+
+	movaps [rsp + nb212_jxO], xmm0
+	movaps [rsp + nb212_jyO], xmm1
+	movaps [rsp + nb212_jzO], xmm2
+	subps  xmm0, [rsp + nb212_ixO]
+	subps  xmm1, [rsp + nb212_iyO]
+	subps  xmm2, [rsp + nb212_izO]
 	movaps [rsp + nb212_dxOO], xmm0
 	movaps [rsp + nb212_dyOO], xmm1
 	movaps [rsp + nb212_dzOO], xmm2
@@ -1306,9 +1262,9 @@ _nb_kernel212_x86_64_sse:
 	xorps   xmm3, xmm3
 	xorps   xmm4, xmm4
 	xorps   xmm5, xmm5
-	subps   xmm3, xmm0
-	subps   xmm4, xmm1
-	subps   xmm5, xmm2
+	addps   xmm3, xmm0
+	addps   xmm4, xmm1
+	addps   xmm5, xmm2
 	movaps  [rsp + nb212_fjxO], xmm3
 	movaps  [rsp + nb212_fjyO], xmm4
 	movaps  [rsp + nb212_fjzO], xmm5
@@ -1321,18 +1277,19 @@ _nb_kernel212_x86_64_sse:
 
 	
 	;# done with i O Now do i H1 & H2 simultaneously first get i particle coords: 
-	movaps  xmm0, [rsp + nb212_ixH1]
-	movaps  xmm1, [rsp + nb212_iyH1]
-	movaps  xmm2, [rsp + nb212_izH1]	
-	movaps  xmm3, [rsp + nb212_ixH2] 
-	movaps  xmm4, [rsp + nb212_iyH2] 
-	movaps  xmm5, [rsp + nb212_izH2] 
-	subps   xmm0, [rsp + nb212_jxO]
-	subps   xmm1, [rsp + nb212_jyO]
-	subps   xmm2, [rsp + nb212_jzO]
-	subps   xmm3, [rsp + nb212_jxO]
-	subps   xmm4, [rsp + nb212_jyO]
-	subps   xmm5, [rsp + nb212_jzO]
+    movaps  xmm0, [rsp + nb212_jxO]
+    movaps  xmm1, [rsp + nb212_jyO]
+    movaps  xmm2, [rsp + nb212_jzO]
+    movaps  xmm3, xmm0
+    movaps  xmm4, xmm1
+    movaps  xmm5, xmm2
+    subps   xmm0, [rsp + nb212_ixH1]
+    subps   xmm1, [rsp + nb212_iyH1]
+    subps   xmm2, [rsp + nb212_izH1]	
+    subps   xmm3, [rsp + nb212_ixH2]
+    subps   xmm4, [rsp + nb212_iyH2]
+    subps   xmm5, [rsp + nb212_izH2]	
+
 	movaps [rsp + nb212_dxH1O], xmm0
 	movaps [rsp + nb212_dyH1O], xmm1
 	movaps [rsp + nb212_dzH1O], xmm2
@@ -1409,9 +1366,9 @@ _nb_kernel212_x86_64_sse:
 	movaps  xmm3, [rsp + nb212_fjxO]
 	movaps  xmm4, [rsp + nb212_fjyO]
 	movaps  xmm5, [rsp + nb212_fjzO]
-	subps   xmm3, xmm0
-	subps   xmm4, xmm1
-	subps   xmm5, xmm2
+	addps   xmm3, xmm0
+	addps   xmm4, xmm1
+	addps   xmm5, xmm2
 	movaps  [rsp + nb212_fjxO], xmm3
 	movaps  [rsp + nb212_fjyO], xmm4
 	movaps  [rsp + nb212_fjzO], xmm5
@@ -1431,9 +1388,9 @@ _nb_kernel212_x86_64_sse:
 	movaps  xmm3, [rsp + nb212_fjxO]
 	movaps  xmm4, [rsp + nb212_fjyO]
 	movaps  xmm5, [rsp + nb212_fjzO]
-	subps   xmm3, xmm0
-	subps   xmm4, xmm1
-	subps   xmm5, xmm2
+	addps   xmm3, xmm0
+	addps   xmm4, xmm1
+	addps   xmm5, xmm2
 	mov     rsi, [rbp + nb212_faction]
 	movaps  [rsp + nb212_fjxO], xmm3
 	movaps  [rsp + nb212_fjyO], xmm4
@@ -1507,9 +1464,9 @@ _nb_kernel212_x86_64_sse:
 	movss  xmm3, [rdi + rcx*4]
 	movss  xmm4, [rdi + rcx*4 + 4]
 	movss  xmm5, [rdi + rcx*4 + 8]
-	addss  xmm3, xmm0
-	addss  xmm4, xmm1
-	addss  xmm5, xmm2
+	subss  xmm3, xmm0
+	subss  xmm4, xmm1
+	subss  xmm5, xmm2
 	movss  [rdi + rcx*4],     xmm3
 	movss  [rdi + rcx*4 + 4], xmm4
 	movss  [rdi + rcx*4 + 8], xmm5
@@ -1547,9 +1504,9 @@ _nb_kernel212_x86_64_sse:
 	movss  xmm3, [rdi + rcx*4 + 12]
 	movss  xmm4, [rdi + rcx*4 + 16]
 	movss  xmm5, [rdi + rcx*4 + 20]
-	addss  xmm3, xmm0
-	addss  xmm4, xmm1
-	addss  xmm5, xmm2
+	subss  xmm3, xmm0
+	subss  xmm4, xmm1
+	subss  xmm5, xmm2
 	movss  [rdi + rcx*4 + 12], xmm3
 	movss  [rdi + rcx*4 + 16], xmm4
 	movss  [rdi + rcx*4 + 20], xmm5
@@ -1587,9 +1544,9 @@ _nb_kernel212_x86_64_sse:
 	movss  xmm3, [rdi + rcx*4 + 24]
 	movss  xmm4, [rdi + rcx*4 + 28]
 	movss  xmm5, [rdi + rcx*4 + 32]
-	addss  xmm3, xmm0
-	addss  xmm4, xmm1
-	addss  xmm5, xmm2
+	subss  xmm3, xmm0
+	subss  xmm4, xmm1
+	subss  xmm5, xmm2
 	movss  [rdi + rcx*4 + 24], xmm3
 	movss  [rdi + rcx*4 + 28], xmm4
 	movss  [rdi + rcx*4 + 32], xmm5
@@ -1603,8 +1560,8 @@ _nb_kernel212_x86_64_sse:
 	;# increment fshift force  
 	movlps  xmm3, [rsi + rdx*4]
 	movss  xmm4, [rsi + rdx*4 + 8]
-	addps  xmm3, xmm6
-	addss  xmm4, xmm7
+	subps  xmm3, xmm6
+	subss  xmm4, xmm7
 	movlps  [rsi + rdx*4],    xmm3
 	movss  [rsi + rdx*4 + 8], xmm4
 
@@ -1672,6 +1629,11 @@ _nb_kernel212_x86_64_sse:
 
 	add rsp, 1624
 	femms
+
+	pop r15
+	pop r14
+	pop r13
+	pop r12
 
 	pop rbx
 	pop	rbp

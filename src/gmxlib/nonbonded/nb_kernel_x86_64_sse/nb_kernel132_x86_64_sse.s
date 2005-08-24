@@ -194,6 +194,12 @@ _nb_kernel132_x86_64_sse:
 
 	
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 1624		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -409,125 +415,50 @@ _nb_kernel132_x86_64_sse:
 	lea   rcx, [rcx + rcx*2]     ;# replace jnr with j3 
 	lea   rdx, [rdx + rdx*2]	
 	
-	;# move j coordinates to local temp variables 
-	movlps xmm2, [rsi + rax*4]
-	movlps xmm3, [rsi + rax*4 + 12]
-	movlps xmm4, [rsi + rax*4 + 24]
+	;# move j O coordinates to local temp variables 
+    movlps xmm0, [rsi + rax*4] ;# jxOa jyOa  -   -
+    movlps xmm1, [rsi + rcx*4] ;# jxOc jyOc  -   -
+    movhps xmm0, [rsi + rbx*4] ;# jxOa jyOa jxOb jyOb 
+    movhps xmm1, [rsi + rdx*4] ;# jxOc jyOc jxOd jyOd 
 
-	movlps xmm5, [rsi + rbx*4]
-	movlps xmm6, [rsi + rbx*4 + 12]
-	movlps xmm7, [rsi + rbx*4 + 24]
+    movss  xmm2, [rsi + rax*4 + 8] ;# jzOa  -  -  -
+    movss  xmm3, [rsi + rcx*4 + 8] ;# jzOc  -  -  -
+    movhps xmm2, [rsi + rbx*4 + 8] ;# jzOa  -  jzOb  -
+    movhps xmm3, [rsi + rdx*4 + 8] ;# jzOc  -  jzOd -
+    
+    movaps xmm4, xmm0
+    unpcklps xmm0, xmm1  ;# jxOa jxOc jyOa jyOc        
+    unpckhps xmm4, xmm1  ;# jxOb jxOd jyOb jyOd
+    movaps xmm1, xmm0
+    unpcklps xmm0, xmm4 ;# x
+    unpckhps xmm1, xmm4 ;# y
 
-	movhps xmm2, [rsi + rcx*4]
-	movhps xmm3, [rsi + rcx*4 + 12]
-	movhps xmm4, [rsi + rcx*4 + 24]
+    shufps xmm2, xmm3,  136  ;# 10001000 => jzOa jzOb jzOc jzOd
 
-	movhps xmm5, [rsi + rdx*4]
-	movhps xmm6, [rsi + rdx*4 + 12]
-	movhps xmm7, [rsi + rdx*4 + 24]
-
-	;# current state: 	
-	;# xmm2= jxOa  jyOa  jxOc  jyOc 
-	;# xmm3= jxH1a jyH1a jxH1c jyH1c 
-	;# xmm4= jxH2a jyH2a jxH2c jyH2c 
-	;# xmm5= jxOb  jyOb  jxOd  jyOd 
-	;# xmm6= jxH1b jyH1b jxH1d jyH1d 
-	;# xmm7= jxH2b jyH2b jxH2d jyH2d 
-	
-	movaps xmm0, xmm2
-	movaps xmm1, xmm3
-	unpcklps xmm0, xmm5	;# xmm0= jxOa  jxOb  jyOa  jyOb 
-	unpcklps xmm1, xmm6	;# xmm1= jxH1a jxH1b jyH1a jyH1b 
-	unpckhps xmm2, xmm5	;# xmm2= jxOc  jxOd  jyOc  jyOd 
-	unpckhps xmm3, xmm6	;# xmm3= jxH1c jxH1d jyH1c jyH1d 
-	movaps xmm5, xmm4
-	movaps   xmm6, xmm0
-	unpcklps xmm4, xmm7	;# xmm4= jxH2a jxH2b jyH2a jyH2b 		
-	unpckhps xmm5, xmm7	;# xmm5= jxH2c jxH2d jyH2c jyH2d 
-	movaps   xmm7, xmm1
-	movlhps  xmm0, xmm2	;# xmm0= jxOa  jxOb  jxOc  jxOd 
-	movaps [rsp + nb132_jxO], xmm0
-	movhlps  xmm2, xmm6	;# xmm2= jyOa  jyOb  jyOc  jyOd 
-	movaps [rsp + nb132_jyO], xmm2
-	movlhps  xmm1, xmm3
-	movaps [rsp + nb132_jxH1], xmm1
-	movhlps  xmm3, xmm7
-	movaps   xmm6, xmm4
-	movaps [rsp + nb132_jyH1], xmm3
-	movlhps  xmm4, xmm5
-	movaps [rsp + nb132_jxH2], xmm4
-	movhlps  xmm5, xmm6
-	movaps [rsp + nb132_jyH2], xmm5
-
-	movss  xmm0, [rsi + rax*4 + 8]
-	movss  xmm1, [rsi + rax*4 + 20]
-	movss  xmm2, [rsi + rax*4 + 32]
-
-	movss  xmm3, [rsi + rcx*4 + 8]
-	movss  xmm4, [rsi + rcx*4 + 20]
-	movss  xmm5, [rsi + rcx*4 + 32]
-
-	movhps xmm0, [rsi + rbx*4 + 4]
-	movhps xmm1, [rsi + rbx*4 + 16]
-	movhps xmm2, [rsi + rbx*4 + 28]
-	
-	movhps xmm3, [rsi + rdx*4 + 4]
-	movhps xmm4, [rsi + rdx*4 + 16]
-	movhps xmm5, [rsi + rdx*4 + 28]
-	
-	shufps xmm0, xmm3, 204  ;# constant 11001100
-	shufps xmm1, xmm4, 204  ;# constant 11001100
-	shufps xmm2, xmm5, 204  ;# constant 11001100
-	movaps [rsp + nb132_jzO],  xmm0
-	movaps [rsp + nb132_jzH1],  xmm1
-	movaps [rsp + nb132_jzH2],  xmm2
-
-	movaps xmm0, [rsp + nb132_ixO]
-	movaps xmm1, [rsp + nb132_iyO]
-	movaps xmm2, [rsp + nb132_izO]
-	movaps xmm3, [rsp + nb132_ixO]
-	movaps xmm4, [rsp + nb132_iyO]
-	movaps xmm5, [rsp + nb132_izO]
-	subps  xmm0, [rsp + nb132_jxO]
-	subps  xmm1, [rsp + nb132_jyO]
-	subps  xmm2, [rsp + nb132_jzO]
-	subps  xmm3, [rsp + nb132_jxH1]
-	subps  xmm4, [rsp + nb132_jyH1]
-	subps  xmm5, [rsp + nb132_jzH1]
+    ;# xmm0 = Ox
+    ;# xmm1 = Oy
+    ;# xmm2 = Oz
+        
+    movaps xmm3, xmm0
+    movaps xmm4, xmm1
+    movaps xmm5, xmm2
+    movaps xmm6, xmm0
+    movaps xmm7, xmm1
+    movaps xmm8, xmm2
+    
+    subps xmm0, [rsp + nb132_ixO]
+    subps xmm1, [rsp + nb132_iyO]
+    subps xmm2, [rsp + nb132_izO]
+    subps xmm3, [rsp + nb132_ixH1]
+    subps xmm4, [rsp + nb132_iyH1]
+    subps xmm5, [rsp + nb132_izH1]
+    subps xmm6, [rsp + nb132_ixH2]
+    subps xmm7, [rsp + nb132_iyH2]
+    subps xmm8, [rsp + nb132_izH2]
+    
 	movaps [rsp + nb132_dxOO], xmm0
 	movaps [rsp + nb132_dyOO], xmm1
 	movaps [rsp + nb132_dzOO], xmm2
-	mulps  xmm0, xmm0
-	mulps  xmm1, xmm1
-	mulps  xmm2, xmm2
-	movaps [rsp + nb132_dxOH1], xmm3
-	movaps [rsp + nb132_dyOH1], xmm4
-	movaps [rsp + nb132_dzOH1], xmm5
-	mulps  xmm3, xmm3
-	mulps  xmm4, xmm4
-	mulps  xmm5, xmm5
-	addps  xmm0, xmm1
-	addps  xmm0, xmm2
-	addps  xmm3, xmm4
-	addps  xmm3, xmm5
-	movaps [rsp + nb132_rsqOO], xmm0
-	movaps [rsp + nb132_rsqOH1], xmm3
-
-	movaps xmm0, [rsp + nb132_ixO]
-	movaps xmm1, [rsp + nb132_iyO]
-	movaps xmm2, [rsp + nb132_izO]
-	movaps xmm3, [rsp + nb132_ixH1]
-	movaps xmm4, [rsp + nb132_iyH1]
-	movaps xmm5, [rsp + nb132_izH1]
-	subps  xmm0, [rsp + nb132_jxH2]
-	subps  xmm1, [rsp + nb132_jyH2]
-	subps  xmm2, [rsp + nb132_jzH2]
-	subps  xmm3, [rsp + nb132_jxO]
-	subps  xmm4, [rsp + nb132_jyO]
-	subps  xmm5, [rsp + nb132_jzO]
-	movaps [rsp + nb132_dxOH2], xmm0
-	movaps [rsp + nb132_dyOH2], xmm1
-	movaps [rsp + nb132_dzOH2], xmm2
 	mulps  xmm0, xmm0
 	mulps  xmm1, xmm1
 	mulps  xmm2, xmm2
@@ -537,28 +468,538 @@ _nb_kernel132_x86_64_sse:
 	mulps  xmm3, xmm3
 	mulps  xmm4, xmm4
 	mulps  xmm5, xmm5
+	movaps [rsp + nb132_dxH2O], xmm6
+	movaps [rsp + nb132_dyH2O], xmm7
+	movaps [rsp + nb132_dzH2O], xmm8
+	mulps  xmm6, xmm6
+	mulps  xmm7, xmm7
+	mulps  xmm8, xmm8
 	addps  xmm0, xmm1
 	addps  xmm0, xmm2
 	addps  xmm3, xmm4
 	addps  xmm3, xmm5
-	movaps [rsp + nb132_rsqOH2], xmm0
-	movaps [rsp + nb132_rsqH1O], xmm3
+    addps  xmm6, xmm7
+    addps  xmm6, xmm8
 
-	movaps xmm0, [rsp + nb132_ixH1]
-	movaps xmm1, [rsp + nb132_iyH1]
-	movaps xmm2, [rsp + nb132_izH1]
-	movaps xmm3, [rsp + nb132_ixH1]
-	movaps xmm4, [rsp + nb132_iyH1]
-	movaps xmm5, [rsp + nb132_izH1]
-	subps  xmm0, [rsp + nb132_jxH1]
-	subps  xmm1, [rsp + nb132_jyH1]
-	subps  xmm2, [rsp + nb132_jzH1]
-	subps  xmm3, [rsp + nb132_jxH2]
-	subps  xmm4, [rsp + nb132_jyH2]
-	subps  xmm5, [rsp + nb132_jzH2]
-	movaps [rsp + nb132_dxH1H1], xmm0
-	movaps [rsp + nb132_dyH1H1], xmm1
-	movaps [rsp + nb132_dzH1H1], xmm2
+	;# start doing invsqrt for jO atoms
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm4, xmm3
+    rsqrtps xmm7, xmm6
+	
+	movaps  xmm2, xmm1
+	movaps  xmm5, xmm4
+    movaps  xmm8, xmm7
+    
+	mulps   xmm1, xmm1 ;# lu*lu
+	mulps   xmm4, xmm4 ;# lu*lu
+    mulps   xmm7, xmm7 ;# lu*lu
+		
+	movaps  xmm9, [rsp + nb132_three]
+	movaps  xmm10, xmm9
+    movaps  xmm11, xmm9
+
+	mulps   xmm1, xmm0 ;# rsq*lu*lu
+	mulps   xmm4, xmm3 ;# rsq*lu*lu 
+    mulps   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subps   xmm9, xmm1
+	subps   xmm10, xmm4
+    subps   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulps   xmm9, xmm2
+	mulps   xmm10, xmm5
+    mulps   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movaps  xmm2, [rsp + nb132_half]
+	mulps   xmm9, xmm2  ;# rinvOO 
+	mulps   xmm10, xmm2 ;# rinvH1O
+    mulps   xmm11, xmm2 ;# rinvH2O
+	
+	;# O interactions 
+    ;# rsq in xmm0,xmm3,xmm6  
+    ;# rinv in xmm9, xmm10, xmm11
+    movaps [rsp + nb132_rsqOO], xmm0
+    movaps [rsp + nb132_rsqOH1], xmm3
+    movaps [rsp + nb132_rsqOH2], xmm6
+    movaps [rsp + nb132_rinvOO], xmm9
+    movaps [rsp + nb132_rinvOH1], xmm10
+    movaps [rsp + nb132_rinvOH2], xmm11
+
+    ;# table LJ interaction
+    mulps  xmm0, xmm9
+    mulps  xmm0, [rsp + nb132_tsc] ;# rtab
+
+    ;# truncate and convert to integers
+    cvttps2dq xmm1, xmm0
+
+    ;# convert back to float
+    cvtdq2ps  xmm2, xmm1
+         
+    ;# multiply by 8
+    pslld   xmm1, 3
+
+    ;# move to integer registers
+    movhlps xmm13, xmm1
+    movd    r8d, xmm1
+    movd    r10d, xmm13
+    shufps  xmm1, xmm1, 1
+    shufps  xmm13, xmm13, 1
+    movd    r9d, xmm1
+    movd    r11d, xmm13
+    
+    ;# calculate eps
+    subps     xmm0, xmm2
+    mov  rsi, [rbp + nb132_VFtab]
+            
+    movlps xmm5, [rsi + r8*4]
+   	movlps xmm9, [rsi + r8*4 + 16]
+
+	movlps xmm7, [rsi + r10*4]
+	movlps xmm11, [rsi + r10*4 + 16]
+
+	movhps xmm5, [rsi + r9*4]
+	movhps xmm9, [rsi + r9*4 + 16]
+
+	movhps xmm7, [rsi + r11*4]
+	movhps xmm11, [rsi + r11*4 + 16]
+
+    movaps xmm4, xmm5
+    movaps xmm8, xmm9
+	shufps xmm4, xmm7, 136  ;# 10001000
+	shufps xmm8, xmm11, 136  ;# 10001000
+	shufps xmm5, xmm7, 221  ;# 11011101
+	shufps xmm9, xmm11, 221  ;# 11011101
+
+	movlps xmm7, [rsi + r8*4 + 8]
+	movlps xmm11, [rsi + r8*4 + 24]
+    
+	movlps xmm13, [rsi + r10*4 + 8]
+	movlps xmm14, [rsi + r10*4 + 24]
+
+	movhps xmm7, [rsi + r9*4 + 8]
+	movhps xmm11, [rsi + r9*4 + 24]
+    
+	movhps xmm13, [rsi + r11*4 + 8]
+	movhps xmm14, [rsi + r11*4 + 24]
+
+    movaps xmm6, xmm7
+    movaps xmm10, xmm11
+    
+	shufps xmm6, xmm13, 136  ;# 10001000
+	shufps xmm10, xmm14, 136  ;# 10001000
+	shufps xmm7, xmm13, 221  ;# 11011101
+	shufps xmm11, xmm14, 221  ;# 11011101
+    ;# dispersion table in xmm4-xmm7, repulsion table in xmm8-xmm11
+
+    mulps  xmm7, xmm0    ;# Heps
+    mulps  xmm11, xmm0 
+    mulps  xmm6, xmm0   ;# Geps
+    mulps  xmm10, xmm0 
+    mulps  xmm7, xmm0   ;# Heps2
+    mulps  xmm11, xmm0 
+    addps  xmm5, xmm6  ;# F+Geps
+    addps  xmm9, xmm10 
+    addps  xmm5, xmm7   ;# F+Geps+Heps2 = Fp
+    addps  xmm9, xmm11 
+    addps  xmm7, xmm7    ;# 2*Heps2
+    addps  xmm11, xmm11
+    addps  xmm7, xmm6   ;# 2*Heps2+Geps
+    addps  xmm11, xmm10
+    
+    addps  xmm7, xmm5  ;# FF = Fp + 2*Heps2 + Geps
+    addps  xmm11, xmm9
+    mulps  xmm5, xmm0  ;# eps*Fp
+    mulps  xmm9, xmm0
+    movaps xmm12, [rsp + nb132_c6]
+    movaps xmm13, [rsp + nb132_c12]
+    addps  xmm5, xmm4 ;# VV
+    addps  xmm9, xmm8
+
+    mulps  xmm5, xmm12  ;# VV*c6 = vnb6
+    mulps  xmm9, xmm13  ;# VV*c12 = vnb12
+    addps  xmm5, xmm9
+    addps  xmm5, [rsp + nb132_Vvdwtot]
+    movaps [rsp + nb132_Vvdwtot], xmm5
+        
+    mulps  xmm7, xmm12   ;# FF*c6 = fnb6
+    mulps  xmm11, xmm13   ;# FF*c12  = fnb12
+    addps  xmm7, xmm11
+    mulps  xmm7, [rsp + nb132_tsc]
+     
+    movaps xmm9, [rsp + nb132_rinvOO]
+    movaps xmm10, [rsp + nb132_rinvOH1]
+    movaps xmm11, [rsp + nb132_rinvOH2]
+    movaps xmm0, xmm9   ;# rinv
+    movaps xmm1, xmm10
+    movaps xmm2, xmm11
+    
+    mulps  xmm10, xmm10  ;# rinvsq
+    mulps  xmm11, xmm11
+    mulps  xmm0, [rsp + nb132_qqOO] 
+    mulps  xmm1, [rsp + nb132_qqOH] 
+    mulps  xmm2, [rsp + nb132_qqOH] 
+    mulps  xmm9, xmm0
+    mulps  xmm10, xmm1
+    mulps  xmm11, xmm2
+    
+    subps  xmm9, xmm7
+    mulps  xmm9, [rsp + nb132_rinvOO]
+    
+    addps xmm0, [rsp + nb132_vctot] 
+    addps xmm1, xmm2
+    addps xmm0, xmm1
+    movaps [rsp + nb132_vctot], xmm0
+
+	;# move j O forces to local temp variables 
+	mov rdi, [rbp + nb132_faction]
+    movlps xmm0, [rdi + rax*4] ;# jxOa jyOa  -   -
+    movlps xmm1, [rdi + rcx*4] ;# jxOc jyOc  -   -
+    movhps xmm0, [rdi + rbx*4] ;# jxOa jyOa jxOb jyOb 
+    movhps xmm1, [rdi + rdx*4] ;# jxOc jyOc jxOd jyOd 
+
+    movss  xmm2, [rdi + rax*4 + 8] ;# jzOa  -  -  -
+    movss  xmm3, [rdi + rcx*4 + 8] ;# jzOc  -  -  -
+    movhps xmm2, [rdi + rbx*4 + 8] ;# jzOa  -  jzOb -
+    movhps xmm3, [rdi + rdx*4 + 8] ;# jzOc  -  jzOd -
+    
+    shufps xmm2, xmm3,  136  ;# 10001000 => jzOa jzOb jzOc jzOd
+
+    ;# xmm0: jxOa jyOa jxOb jyOb 
+    ;# xmm1: jxOc jyOc jxOd jyOd
+    ;# xmm2: jzOa jzOb jzOc jzOd
+
+    movaps xmm7, xmm9
+    movaps xmm8, xmm9
+    movaps xmm13, xmm11
+    movaps xmm14, xmm11
+    movaps xmm15, xmm11
+    movaps xmm11, xmm10
+    movaps xmm12, xmm10
+
+	mulps xmm7, [rsp + nb132_dxOO]
+	mulps xmm8, [rsp + nb132_dyOO]
+	mulps xmm9, [rsp + nb132_dzOO]
+	mulps xmm10, [rsp + nb132_dxH1O]
+	mulps xmm11, [rsp + nb132_dyH1O]
+	mulps xmm12, [rsp + nb132_dzH1O]
+	mulps xmm13, [rsp + nb132_dxH2O]
+	mulps xmm14, [rsp + nb132_dyH2O]
+	mulps xmm15, [rsp + nb132_dzH2O]
+
+    movaps xmm3, xmm7
+    movaps xmm4, xmm8
+    addps xmm2, xmm9
+    addps xmm7, [rsp + nb132_fixO]
+    addps xmm8, [rsp + nb132_fiyO]
+    addps xmm9, [rsp + nb132_fizO]
+
+    addps xmm3, xmm10
+    addps xmm4, xmm11
+    addps xmm2, xmm12
+    addps xmm10, [rsp + nb132_fixH1]
+    addps xmm11, [rsp + nb132_fiyH1]
+    addps xmm12, [rsp + nb132_fizH1]
+
+    addps xmm3, xmm13
+    addps xmm4, xmm14
+    addps xmm2, xmm15
+    addps xmm13, [rsp + nb132_fixH2]
+    addps xmm14, [rsp + nb132_fiyH2]
+    addps xmm15, [rsp + nb132_fizH2]
+
+    movaps [rsp + nb132_fixO], xmm7
+    movaps [rsp + nb132_fiyO], xmm8
+    movaps [rsp + nb132_fizO], xmm9
+    movaps [rsp + nb132_fixH1], xmm10
+    movaps [rsp + nb132_fiyH1], xmm11
+    movaps [rsp + nb132_fizH1], xmm12
+    movaps [rsp + nb132_fixH2], xmm13
+    movaps [rsp + nb132_fiyH2], xmm14
+    movaps [rsp + nb132_fizH2], xmm15
+    
+    ;# xmm0 = fOx
+    ;# xmm1 = fOy
+    ;# xmm2 = fOz
+    movaps xmm5, xmm3
+    unpcklps xmm3, xmm4
+    unpckhps xmm5, xmm4
+    
+    addps xmm0, xmm3
+    addps xmm1, xmm5
+
+    movhlps  xmm3, xmm2 ;# fOzc fOzd
+    
+    movlps [rdi + rax*4], xmm0
+    movhps [rdi + rbx*4], xmm0
+    movlps [rdi + rcx*4], xmm1
+    movhps [rdi + rdx*4], xmm1
+    movss  [rdi + rax*4 + 8], xmm2
+    movss  [rdi + rcx*4 + 8], xmm3
+    shufps xmm2, xmm2, 1
+    shufps xmm3, xmm3, 1
+    movss  [rdi + rbx*4 + 8], xmm2
+    movss  [rdi + rdx*4 + 8], xmm3
+
+
+	;# move j H1 coordinates to local temp variables 
+	mov rsi, [rbp + nb132_pos]       ;# base of pos[] 
+    movlps xmm0, [rsi + rax*4 + 12] ;# jxH1a jyH1a  -   -
+    movlps xmm1, [rsi + rcx*4 + 12] ;# jxH1c jyH1c  -   -
+    movhps xmm0, [rsi + rbx*4 + 12] ;# jxH1a jyH1a jxH1b jyH1b 
+    movhps xmm1, [rsi + rdx*4 + 12] ;# jxH1c jyH1c jxH1d jyH1d 
+
+    movss  xmm2, [rsi + rax*4 + 20] ;# jzH1a  -  -  -
+    movss  xmm3, [rsi + rcx*4 + 20] ;# jzH1c  -  -  -
+    movhps xmm2, [rsi + rbx*4 + 20] ;# jzH1a  -  jzH1b  -
+    movhps xmm3, [rsi + rdx*4 + 20] ;# jzH1c  -  jzH1d -
+    
+    movaps xmm4, xmm0
+    unpcklps xmm0, xmm1  ;# jxH1a jxH1c jyH1a jyH1c        
+    unpckhps xmm4, xmm1  ;# jxH1b jxH1d jyH1b jyH1d
+    movaps xmm1, xmm0
+    unpcklps xmm0, xmm4 ;# x
+    unpckhps xmm1, xmm4 ;# y
+
+    shufps   xmm2, xmm3,  136  ;# 10001000 => jzH1a jzH1b jzH1c jzH1d
+
+    ;# xmm0 = H1x
+    ;# xmm1 = H1y
+    ;# xmm2 = H1z
+        
+    movaps xmm3, xmm0
+    movaps xmm4, xmm1
+    movaps xmm5, xmm2
+    movaps xmm6, xmm0
+    movaps xmm7, xmm1
+    movaps xmm8, xmm2
+    
+    subps xmm0, [rsp + nb132_ixO]
+    subps xmm1, [rsp + nb132_iyO]
+    subps xmm2, [rsp + nb132_izO]
+    subps xmm3, [rsp + nb132_ixH1]
+    subps xmm4, [rsp + nb132_iyH1]
+    subps xmm5, [rsp + nb132_izH1]
+    subps xmm6, [rsp + nb132_ixH2]
+    subps xmm7, [rsp + nb132_iyH2]
+    subps xmm8, [rsp + nb132_izH2]
+    
+	movaps [rsp + nb132_dxOH1], xmm0
+	movaps [rsp + nb132_dyOH1], xmm1
+	movaps [rsp + nb132_dzOH1], xmm2
+	mulps  xmm0, xmm0
+	mulps  xmm1, xmm1
+	mulps  xmm2, xmm2
+	movaps [rsp + nb132_dxH1H1], xmm3
+	movaps [rsp + nb132_dyH1H1], xmm4
+	movaps [rsp + nb132_dzH1H1], xmm5
+	mulps  xmm3, xmm3
+	mulps  xmm4, xmm4
+	mulps  xmm5, xmm5
+	movaps [rsp + nb132_dxH2H1], xmm6
+	movaps [rsp + nb132_dyH2H1], xmm7
+	movaps [rsp + nb132_dzH2H1], xmm8
+	mulps  xmm6, xmm6
+	mulps  xmm7, xmm7
+	mulps  xmm8, xmm8
+	addps  xmm0, xmm1
+	addps  xmm0, xmm2
+	addps  xmm3, xmm4
+	addps  xmm3, xmm5
+    addps  xmm6, xmm7
+    addps  xmm6, xmm8
+
+	;# start doing invsqrt for jH1 atoms
+	rsqrtps xmm1, xmm0
+	rsqrtps xmm4, xmm3
+    rsqrtps xmm7, xmm6
+	
+	movaps  xmm2, xmm1
+	movaps  xmm5, xmm4
+    movaps  xmm8, xmm7
+    
+    
+	mulps   xmm1, xmm1 ;# lu*lu
+	mulps   xmm4, xmm4 ;# lu*lu
+    mulps   xmm7, xmm7 ;# lu*lu
+		
+	movaps  xmm9, [rsp + nb132_three]
+	movaps  xmm10, xmm9
+    movaps  xmm11, xmm9
+
+	mulps   xmm1, xmm0 ;# rsq*lu*lu
+	mulps   xmm4, xmm3 ;# rsq*lu*lu 
+    mulps   xmm7, xmm6 ;# rsq*lu*lu
+	
+	subps   xmm9, xmm1
+	subps   xmm10, xmm4
+    subps   xmm11, xmm7 ;# 3-rsq*lu*lu
+
+	mulps   xmm9, xmm2
+	mulps   xmm10, xmm5
+    mulps   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
+
+	movaps  xmm0, [rsp + nb132_half]
+	mulps   xmm9, xmm0  ;# rinvOH1
+	mulps   xmm10, xmm0 ;# rinvH1H1
+    mulps   xmm11, xmm0 ;# rinvH2H1
+	
+	;# H1 interactions 
+    movaps xmm0, xmm9   ;# rinv
+    movaps xmm1, xmm10
+    movaps xmm2, xmm11
+    mulps  xmm9, xmm9    ;# rinvsq
+    mulps  xmm10, xmm10
+    mulps  xmm11, xmm11
+    mulps  xmm0, [rsp + nb132_qqOH]    ;# vcoul
+    mulps  xmm1, [rsp + nb132_qqHH] 
+    mulps  xmm2, [rsp + nb132_qqHH] 
+    mulps  xmm9, xmm0
+    mulps  xmm10, xmm1
+    mulps  xmm11, xmm2
+    
+    addps xmm0, [rsp + nb132_vctot] 
+    addps xmm1, xmm2
+    addps xmm0, xmm1
+    movaps [rsp + nb132_vctot], xmm0
+    
+	;# move j H1 forces to local temp variables 
+	mov rdi, [rbp + nb132_faction]       ;# base of faction[] 
+    movlps xmm0, [rdi + rax*4 + 12] ;# jxH1a jyH1a  -   -
+    movlps xmm1, [rdi + rcx*4 + 12] ;# jxH1c jyH1c  -   -
+    movhps xmm0, [rdi + rbx*4 + 12] ;# jxH1a jyH1a jxH1b jyH1b 
+    movhps xmm1, [rdi + rdx*4 + 12] ;# jxH1c jyH1c jxH1d jyH1d 
+
+    movss  xmm2, [rdi + rax*4 + 20] ;# jzH1a  -  -  -
+    movss  xmm3, [rdi + rcx*4 + 20] ;# jzH1c  -  -  -
+    movhps xmm2, [rdi + rbx*4 + 20] ;# jzH1a  -  jzH1b  -
+    movhps xmm3, [rdi + rdx*4 + 20] ;# jzH1c  -  jzH1d -
+    
+    shufps xmm2, xmm3,  136  ;# 10001000 => jzH1a jzH1b jzH1c jzH1d
+
+    ;# xmm0: jxH1a jyH1a jxH1b jyH1b 
+    ;# xmm1: jxH1c jyH1c jxH1d jyH1d
+    ;# xmm2: jzH1a jzH1b jzH1c jzH1d
+
+    movaps xmm7, xmm9
+    movaps xmm8, xmm9
+    movaps xmm13, xmm11
+    movaps xmm14, xmm11
+    movaps xmm15, xmm11
+    movaps xmm11, xmm10
+    movaps xmm12, xmm10
+
+	mulps xmm7, [rsp + nb132_dxOH1]
+	mulps xmm8, [rsp + nb132_dyOH1]
+	mulps xmm9, [rsp + nb132_dzOH1]
+	mulps xmm10, [rsp + nb132_dxH1H1]
+	mulps xmm11, [rsp + nb132_dyH1H1]
+	mulps xmm12, [rsp + nb132_dzH1H1]
+	mulps xmm13, [rsp + nb132_dxH2H1]
+	mulps xmm14, [rsp + nb132_dyH2H1]
+	mulps xmm15, [rsp + nb132_dzH2H1]
+
+    movaps xmm3, xmm7
+    movaps xmm4, xmm8
+    addps xmm2, xmm9
+    addps xmm7, [rsp + nb132_fixO]
+    addps xmm8, [rsp + nb132_fiyO]
+    addps xmm9, [rsp + nb132_fizO]
+
+    addps xmm3, xmm10
+    addps xmm4, xmm11
+    addps xmm2, xmm12
+    addps xmm10, [rsp + nb132_fixH1]
+    addps xmm11, [rsp + nb132_fiyH1]
+    addps xmm12, [rsp + nb132_fizH1]
+
+    addps xmm3, xmm13
+    addps xmm4, xmm14
+    addps xmm2, xmm15
+    addps xmm13, [rsp + nb132_fixH2]
+    addps xmm14, [rsp + nb132_fiyH2]
+    addps xmm15, [rsp + nb132_fizH2]
+    
+    movaps [rsp + nb132_fixO], xmm7
+    movaps [rsp + nb132_fiyO], xmm8
+    movaps [rsp + nb132_fizO], xmm9
+    movaps [rsp + nb132_fixH1], xmm10
+    movaps [rsp + nb132_fiyH1], xmm11
+    movaps [rsp + nb132_fizH1], xmm12
+    movaps [rsp + nb132_fixH2], xmm13
+    movaps [rsp + nb132_fiyH2], xmm14
+    movaps [rsp + nb132_fizH2], xmm15
+
+    ;# xmm0 = fH1x
+    ;# xmm1 = fH1y
+    ;# xmm2 = fH1z
+    movaps xmm5, xmm3
+    unpcklps xmm3, xmm4
+    unpckhps xmm5, xmm4
+    
+    addps xmm0, xmm3
+    addps xmm1, xmm5
+
+    movhlps  xmm3, xmm2 ;# fH1zc fH1zd
+    
+    movlps [rdi + rax*4 + 12], xmm0
+    movhps [rdi + rbx*4 + 12], xmm0
+    movlps [rdi + rcx*4 + 12], xmm1
+    movhps [rdi + rdx*4 + 12], xmm1
+    movss  [rdi + rax*4 + 20], xmm2
+    movss  [rdi + rcx*4 + 20], xmm3
+    shufps xmm2, xmm2, 1
+    shufps xmm3, xmm3, 1
+    movss  [rdi + rbx*4 + 20], xmm2
+    movss  [rdi + rdx*4 + 20], xmm3
+
+
+	;# move j H2 coordinates to local temp variables 
+	mov rsi, [rbp + nb132_pos]       ;# base of pos[] 
+    movlps xmm0, [rsi + rax*4 + 24] ;# jxH2a jyH2a  -   -
+    movlps xmm1, [rsi + rcx*4 + 24] ;# jxH2c jyH2c  -   -
+    movhps xmm0, [rsi + rbx*4 + 24] ;# jxH2a jyH2a jxH2b jyH2b 
+    movhps xmm1, [rsi + rdx*4 + 24] ;# jxH2c jyH2c jxH2d jyH2d 
+
+    movss  xmm2, [rsi + rax*4 + 32] ;# jzH2a  -  -  -
+    movss  xmm3, [rsi + rcx*4 + 32] ;# jzH2c  -  -  -
+    movss  xmm5, [rsi + rbx*4 + 32] ;# jzH2b  -  -  -
+    movss  xmm6, [rsi + rdx*4 + 32] ;# jzH2d  -  -  -
+    movlhps xmm2, xmm5 ;# jzH2a  -  jzH2b  -
+    movlhps xmm3, xmm6 ;# jzH2c  -  jzH2d -
+    
+    movaps xmm4, xmm0
+    unpcklps xmm0, xmm1  ;# jxH2a jxH2c jyH2a jyH2c        
+    unpckhps xmm4, xmm1  ;# jxH2b jxH2d jyH2b jyH2d
+    movaps xmm1, xmm0
+    unpcklps xmm0, xmm4 ;# x
+    unpckhps xmm1, xmm4 ;# y
+
+    shufps   xmm2, xmm3,  136  ;# 10001000 => jzH2a jzH2b jzH2c jzH2d
+
+    ;# xmm0 = H2x
+    ;# xmm1 = H2y
+    ;# xmm2 = H2z
+        
+    movaps xmm3, xmm0
+    movaps xmm4, xmm1
+    movaps xmm5, xmm2
+    movaps xmm6, xmm0
+    movaps xmm7, xmm1
+    movaps xmm8, xmm2
+    
+    subps xmm0, [rsp + nb132_ixO]
+    subps xmm1, [rsp + nb132_iyO]
+    subps xmm2, [rsp + nb132_izO]
+    subps xmm3, [rsp + nb132_ixH1]
+    subps xmm4, [rsp + nb132_iyH1]
+    subps xmm5, [rsp + nb132_izH1]
+    subps xmm6, [rsp + nb132_ixH2]
+    subps xmm7, [rsp + nb132_iyH2]
+    subps xmm8, [rsp + nb132_izH2]
+    
+	movaps [rsp + nb132_dxOH2], xmm0
+	movaps [rsp + nb132_dyOH2], xmm1
+	movaps [rsp + nb132_dzOH2], xmm2
 	mulps  xmm0, xmm0
 	mulps  xmm1, xmm1
 	mulps  xmm2, xmm2
@@ -568,637 +1009,164 @@ _nb_kernel132_x86_64_sse:
 	mulps  xmm3, xmm3
 	mulps  xmm4, xmm4
 	mulps  xmm5, xmm5
+	movaps [rsp + nb132_dxH2H2], xmm6
+	movaps [rsp + nb132_dyH2H2], xmm7
+	movaps [rsp + nb132_dzH2H2], xmm8
+	mulps  xmm6, xmm6
+	mulps  xmm7, xmm7
+	mulps  xmm8, xmm8
 	addps  xmm0, xmm1
 	addps  xmm0, xmm2
 	addps  xmm3, xmm4
 	addps  xmm3, xmm5
-	movaps [rsp + nb132_rsqH1H1], xmm0
-	movaps [rsp + nb132_rsqH1H2], xmm3
+    addps  xmm6, xmm7
+    addps  xmm6, xmm8
 
-	movaps xmm0, [rsp + nb132_ixH2]
-	movaps xmm1, [rsp + nb132_iyH2]
-	movaps xmm2, [rsp + nb132_izH2]
-	movaps xmm3, [rsp + nb132_ixH2]
-	movaps xmm4, [rsp + nb132_iyH2]
-	movaps xmm5, [rsp + nb132_izH2]
-	subps  xmm0, [rsp + nb132_jxO]
-	subps  xmm1, [rsp + nb132_jyO]
-	subps  xmm2, [rsp + nb132_jzO]
-	subps  xmm3, [rsp + nb132_jxH1]
-	subps  xmm4, [rsp + nb132_jyH1]
-	subps  xmm5, [rsp + nb132_jzH1]
-	movaps [rsp + nb132_dxH2O], xmm0
-	movaps [rsp + nb132_dyH2O], xmm1
-	movaps [rsp + nb132_dzH2O], xmm2
-	mulps  xmm0, xmm0
-	mulps  xmm1, xmm1
-	mulps  xmm2, xmm2
-	movaps [rsp + nb132_dxH2H1], xmm3
-	movaps [rsp + nb132_dyH2H1], xmm4
-	movaps [rsp + nb132_dzH2H1], xmm5
-	mulps  xmm3, xmm3
-	mulps  xmm4, xmm4
-	mulps  xmm5, xmm5
-	addps  xmm0, xmm1
-	addps  xmm0, xmm2
-	addps  xmm4, xmm3
-	addps  xmm4, xmm5
-	movaps [rsp + nb132_rsqH2O], xmm0
-	movaps [rsp + nb132_rsqH2H1], xmm4
-
-	movaps xmm0, [rsp + nb132_ixH2]
-	movaps xmm1, [rsp + nb132_iyH2]
-	movaps xmm2, [rsp + nb132_izH2]
-	subps  xmm0, [rsp + nb132_jxH2]
-	subps  xmm1, [rsp + nb132_jyH2]
-	subps  xmm2, [rsp + nb132_jzH2]
-	movaps [rsp + nb132_dxH2H2], xmm0
-	movaps [rsp + nb132_dyH2H2], xmm1
-	movaps [rsp + nb132_dzH2H2], xmm2
-	mulps xmm0, xmm0
-	mulps xmm1, xmm1
-	mulps xmm2, xmm2
-	addps xmm0, xmm1
-	addps xmm0, xmm2
-	movaps [rsp + nb132_rsqH2H2], xmm0
-		
-	;# start doing invsqrt use rsq values in xmm0, xmm4 
+	;# start doing invsqrt for jH2 atoms
 	rsqrtps xmm1, xmm0
-	rsqrtps xmm5, xmm4
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb132_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, xmm0
-	mulps   xmm5, xmm4
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb132_half] ;# rinvH2H2 
-	mulps   xmm7, [rsp + nb132_half] ;# rinvH2H1 
-	movaps  [rsp + nb132_rinvH2H2], xmm3
-	movaps  [rsp + nb132_rinvH2H1], xmm7
+	rsqrtps xmm4, xmm3
+    rsqrtps xmm7, xmm6
 	
-	rsqrtps xmm1, [rsp + nb132_rsqOO]
-	rsqrtps xmm5, [rsp + nb132_rsqOH1]
 	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb132_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [rsp + nb132_rsqOO]
-	mulps   xmm5, [rsp + nb132_rsqOH1]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb132_half] 
-	mulps   xmm7, [rsp + nb132_half]
-	movaps  [rsp + nb132_rinvOO], xmm3
-	movaps  [rsp + nb132_rinvOH1], xmm7
-	
-	rsqrtps xmm1, [rsp + nb132_rsqOH2]
-	rsqrtps xmm5, [rsp + nb132_rsqH1O]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb132_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [rsp + nb132_rsqOH2]
-	mulps   xmm5, [rsp + nb132_rsqH1O]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb132_half] 
-	mulps   xmm7, [rsp + nb132_half]
-	movaps  [rsp + nb132_rinvOH2], xmm3
-	movaps  [rsp + nb132_rinvH1O], xmm7
-	
-	rsqrtps xmm1, [rsp + nb132_rsqH1H1]
-	rsqrtps xmm5, [rsp + nb132_rsqH1H2]
-	movaps  xmm2, xmm1
-	movaps  xmm6, xmm5
-	mulps   xmm1, xmm1
-	mulps   xmm5, xmm5
-	movaps  xmm3, [rsp + nb132_three]
-	movaps  xmm7, xmm3
-	mulps   xmm1, [rsp + nb132_rsqH1H1]
-	mulps   xmm5, [rsp + nb132_rsqH1H2]
-	subps   xmm3, xmm1
-	subps   xmm7, xmm5
-	mulps   xmm3, xmm2
-	mulps   xmm7, xmm6
-	mulps   xmm3, [rsp + nb132_half] 
-	mulps   xmm7, [rsp + nb132_half]
-	movaps  [rsp + nb132_rinvH1H1], xmm3
-	movaps  [rsp + nb132_rinvH1H2], xmm7
-	
-	rsqrtps xmm1, [rsp + nb132_rsqH2O]
-	movaps  xmm2, xmm1
-	mulps   xmm1, xmm1
-	movaps  xmm3, [rsp + nb132_three]
-	mulps   xmm1, [rsp + nb132_rsqH2O]
-	subps   xmm3, xmm1
-	mulps   xmm3, xmm2
-	mulps   xmm3, [rsp + nb132_half] 
-	movaps  [rsp + nb132_rinvH2O], xmm3
-
-	;# start with OO interaction - first the table LJ part
-	movaps xmm0, [rsp + nb132_rinvOO]
-	movaps xmm1, xmm0
-	mulps  xmm1, [rsp + nb132_rsqOO] ;# xmm1=r 
-	mulps  xmm1, [rsp + nb132_tsc]
+	movaps  xmm5, xmm4
+    movaps  xmm8, xmm7
+    
+    
+	mulps   xmm1, xmm1 ;# lu*lu
+	mulps   xmm4, xmm4 ;# lu*lu
+    mulps   xmm7, xmm7 ;# lu*lu
 		
-	movhlps xmm2, xmm1
-    cvttps2pi mm6, xmm1
-    cvttps2pi mm7, xmm2     ;# mm6/mm7 contain lu indices 
-    cvtpi2ps xmm3, mm6
-    cvtpi2ps xmm2, mm7
-	movlhps  xmm3, xmm2
-	subps    xmm1, xmm3	;# xmm1=eps 
-    movaps xmm2, xmm1
-    mulps  xmm2, xmm2       ;# xmm2=eps2 
-    pslld mm6, 3
-    pslld mm7, 3
+	movaps  xmm9, [rsp + nb132_three]
+	movaps  xmm10, xmm9
+    movaps  xmm11, xmm9
 
-    movd mm0, eax
-    movd mm1, ebx
-    movd mm2, ecx
-    movd mm3, edx
-
-    movd eax, mm6
-    psrlq mm6, 32
-    movd ecx, mm7
-    psrlq mm7, 32
-    movd ebx, mm6
-    movd edx, mm7
-
-    mov  rsi, [rbp + nb132_VFtab]
+	mulps   xmm1, xmm0 ;# rsq*lu*lu
+	mulps   xmm4, xmm3 ;# rsq*lu*lu 
+    mulps   xmm7, xmm6 ;# rsq*lu*lu
 	
-    ;# dispersion 
-    movlps xmm5, [rsi + rax*4]
-    movlps xmm7, [rsi + rcx*4]
-    movhps xmm5, [rsi + rbx*4]
-    movhps xmm7, [rsi + rdx*4] ;# got half table 
+	subps   xmm9, xmm1
+	subps   xmm10, xmm4
+    subps   xmm11, xmm7 ;# 3-rsq*lu*lu
 
-    movaps xmm4, xmm5
-    shufps xmm4, xmm7, 136  ;# constant 10001000
-    shufps xmm5, xmm7, 221  ;# constant 11011101
+	mulps   xmm9, xmm2
+	mulps   xmm10, xmm5
+    mulps   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
 
-    movlps xmm7, [rsi + rax*4 + 8]
-    movlps xmm3, [rsi + rcx*4 + 8]
-    movhps xmm7, [rsi + rbx*4 + 8]
-    movhps xmm3, [rsi + rdx*4 + 8] ;# other half of table  
-    movaps xmm6, xmm7
-    shufps xmm6, xmm3, 136  ;# constant 10001000
-    shufps xmm7, xmm3, 221  ;# constant 11011101
-    ;# dispersion table ready, in xmm4-xmm7 
-    mulps  xmm6, xmm1       ;# xmm6=Geps 
-    mulps  xmm7, xmm2       ;# xmm7=Heps2 
-    addps  xmm5, xmm6
-    addps  xmm5, xmm7       ;# xmm5=Fp 
-    mulps  xmm7, [rsp + nb132_two]       ;# two*Heps2 
-    addps  xmm7, xmm6
-    addps  xmm7, xmm5 ;# xmm7=FF 
-    mulps  xmm5, xmm1 ;# xmm5=eps*Fp 
-    addps  xmm5, xmm4 ;# xmm5=VV 
-
-    movaps xmm4, [rsp + nb132_c6]
-    mulps  xmm7, xmm4    ;# fijD 
-    mulps  xmm5, xmm4    ;# Vvdw6 
-    movaps  [rsp + nb132_fstmp], xmm7
-
-    addps  xmm5, [rsp + nb132_Vvdwtot]
-    movaps [rsp + nb132_Vvdwtot], xmm5
-
-    ;# repulsion 
-    movlps xmm5, [rsi + rax*4 + 16]
-    movlps xmm7, [rsi + rcx*4 + 16]
-    movhps xmm5, [rsi + rbx*4 + 16]
-    movhps xmm7, [rsi + rdx*4 + 16] ;# got half table 
-
-    movaps xmm4, xmm5
-    shufps xmm4, xmm7, 136  ;# constant 10001000
-    shufps xmm5, xmm7, 221  ;# constant 11011101
-
-    movlps xmm7, [rsi + rax*4 + 24]
-    movlps xmm3, [rsi + rcx*4 + 24]
-    movhps xmm7, [rsi + rbx*4 + 24]
-    movhps xmm3, [rsi + rdx*4 + 24] ;# other half of table  
-    movaps xmm6, xmm7
-    shufps xmm6, xmm3, 136  ;# constant 10001000
-    shufps xmm7, xmm3, 221  ;# constant 11011101
-    ;# repulsion table ready, in xmm4-xmm7 
-    mulps  xmm6, xmm1       ;# xmm6=Geps 
-    mulps  xmm7, xmm2       ;# xmm7=Heps2 
-    addps  xmm5, xmm6
-    addps  xmm5, xmm7       ;# xmm5=Fp 
-    mulps  xmm7, [rsp + nb132_two]       ;# two*Heps2 
-    addps  xmm7, xmm6
-    addps  xmm7, xmm5 ;# xmm7=FF 
-    mulps  xmm5, xmm1 ;# xmm5=eps*Fp 
-    addps  xmm5, xmm4 ;# xmm5=VV 
- 
-    movaps xmm4, [rsp + nb132_c12]
-    mulps  xmm7, xmm4 ;# fijR 
-    mulps  xmm5, xmm4 ;# Vvdw12 
-    addps  xmm7, [rsp + nb132_fstmp] 
-    mulps xmm7, [rsp + nb132_tsc]
-
-    addps  xmm5, [rsp + nb132_Vvdwtot]
-    movaps [rsp + nb132_Vvdwtot], xmm5
-
-	movaps xmm0, [rsp + nb132_rinvOO]
-	movaps xmm6, xmm0	
-	mulps  xmm6, [rsp + nb132_qqOO] 
-	movaps xmm2, xmm6
+	movaps  xmm0, [rsp + nb132_half]
+	mulps   xmm9, xmm0  ;# rinvOH2 
+	mulps   xmm10, xmm0 ;# rinvH1H2
+    mulps   xmm11, xmm0 ;# rinvH2H2
 	
-	addps  xmm6, [rsp + nb132_vctot] ;# local vctot summation variable 
-	mulps  xmm2, xmm0
-	subps  xmm2, xmm7
-	mulps  xmm2, xmm0
-	
-	movaps xmm0, xmm2
-	movaps xmm1, xmm2
-	
-    movd  eax, mm0
-    movd  ebx, mm1
-    movd  ecx, mm2
-    movd  edx, mm3
+	;# H2 interactions 
+    movaps xmm0, xmm9
+    movaps xmm1, xmm10
+    movaps xmm2, xmm11
+    mulps  xmm9, xmm9
+    mulps  xmm10, xmm10
+    mulps  xmm11, xmm11
+    mulps  xmm0, [rsp + nb132_qqOH] 
+    mulps  xmm1, [rsp + nb132_qqHH] 
+    mulps  xmm2, [rsp + nb132_qqHH] 
+    mulps  xmm9, xmm0
+    mulps  xmm10, xmm1
+    mulps  xmm11, xmm2
+    
+    addps xmm0, [rsp + nb132_vctot] 
+    addps xmm1, xmm2
+    addps xmm0, xmm1
+    movaps [rsp + nb132_vctot], xmm0
+    
+	;# move j H2 forces to local temp variables 
+	mov rdi, [rbp + nb132_faction]       ;# base of faction[] 
+    movlps xmm0, [rdi + rax*4 + 24] ;# jxH2a jyH2a  -   -
+    movlps xmm1, [rdi + rcx*4 + 24] ;# jxH2c jyH2c  -   -
+    movhps xmm0, [rdi + rbx*4 + 24] ;# jxH2a jyH2a jxH2b jyH2b 
+    movhps xmm1, [rdi + rdx*4 + 24] ;# jxH2c jyH2c jxH2d jyH2d 
 
-	xorps xmm3, xmm3
-	movaps xmm4, xmm3
-	movaps xmm5, xmm3
-	mulps xmm0, [rsp + nb132_dxOO]
-	mulps xmm1, [rsp + nb132_dyOO]
-	mulps xmm2, [rsp + nb132_dzOO]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixO]
-	addps xmm1, [rsp + nb132_fiyO]
-	addps xmm2, [rsp + nb132_fizO]
-	movaps [rsp + nb132_fjxO], xmm3
-	movaps [rsp + nb132_fjyO], xmm4
-	movaps [rsp + nb132_fjzO], xmm5
-	movaps [rsp + nb132_fixO], xmm0
-	movaps [rsp + nb132_fiyO], xmm1
-	movaps [rsp + nb132_fizO], xmm2
+    movss  xmm2, [rdi + rax*4 + 32] ;# jzH2a  -  -  -
+    movss  xmm3, [rdi + rcx*4 + 32] ;# jzH2c  -  -  -
+    movss  xmm7, [rdi + rbx*4 + 32] ;# jzH2b  -  -  -
+    movss  xmm8, [rdi + rdx*4 + 32] ;# jzH2d  -  -  -
+    movlhps xmm2, xmm7 ;# jzH2a  -  jzH2b  -
+    movlhps xmm3, xmm8 ;# jzH2c  -  jzH2d -
+    
+    shufps xmm2, xmm3,  136  ;# 10001000 => jzH2a jzH2b jzH2c jzH2d
 
-	;# O-H1 interaction 
-	movaps xmm0, [rsp + nb132_rinvOH1]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
+    ;# xmm0: jxH2a jyH2a jxH2b jyH2b 
+    ;# xmm1: jxH2c jyH2c jxH2d jyH2d
+    ;# xmm2: jzH2a jzH2b jzH2c jzH2d
 
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	xorps xmm3, xmm3
-	movaps xmm4, xmm3
-	movaps xmm5, xmm3
-	mulps xmm0, [rsp + nb132_dxOH1]
-	mulps xmm1, [rsp + nb132_dyOH1]
-	mulps xmm2, [rsp + nb132_dzOH1]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixO]
-	addps xmm1, [rsp + nb132_fiyO]
-	addps xmm2, [rsp + nb132_fizO]
-	movaps [rsp + nb132_fjxH1], xmm3
-	movaps [rsp + nb132_fjyH1], xmm4
-	movaps [rsp + nb132_fjzH1], xmm5
-	movaps [rsp + nb132_fixO], xmm0
-	movaps [rsp + nb132_fiyO], xmm1
-	movaps [rsp + nb132_fizO], xmm2
+    movaps xmm7, xmm9
+    movaps xmm8, xmm9
+    movaps xmm13, xmm11
+    movaps xmm14, xmm11
+    movaps xmm15, xmm11
+    movaps xmm11, xmm10
+    movaps xmm12, xmm10
 
-	;# O-H2 interaction  
-	movaps xmm0, [rsp + nb132_rinvOH2]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
+	mulps xmm7, [rsp + nb132_dxOH2]
+	mulps xmm8, [rsp + nb132_dyOH2]
+	mulps xmm9, [rsp + nb132_dzOH2]
+	mulps xmm10, [rsp + nb132_dxH1H2]
+	mulps xmm11, [rsp + nb132_dyH1H2]
+	mulps xmm12, [rsp + nb132_dzH1H2]
+	mulps xmm13, [rsp + nb132_dxH2H2]
+	mulps xmm14, [rsp + nb132_dyH2H2]
+	mulps xmm15, [rsp + nb132_dzH2H2]
 
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	xorps xmm3, xmm3
-	movaps xmm4, xmm3
-	movaps xmm5, xmm3
-	mulps xmm0, [rsp + nb132_dxOH2]
-	mulps xmm1, [rsp + nb132_dyOH2]
-	mulps xmm2, [rsp + nb132_dzOH2]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixO]
-	addps xmm1, [rsp + nb132_fiyO]
-	addps xmm2, [rsp + nb132_fizO]
-	movaps [rsp + nb132_fjxH2], xmm3
-	movaps [rsp + nb132_fjyH2], xmm4
-	movaps [rsp + nb132_fjzH2], xmm5
-	movaps [rsp + nb132_fixO], xmm0
-	movaps [rsp + nb132_fiyO], xmm1
-	movaps [rsp + nb132_fizO], xmm2
+    movaps xmm3, xmm7
+    movaps xmm4, xmm8
+    addps xmm2, xmm9
+    addps xmm7, [rsp + nb132_fixO]
+    addps xmm8, [rsp + nb132_fiyO]
+    addps xmm9, [rsp + nb132_fizO]
 
-	;# H1-O interaction 
-	movaps xmm0, [rsp + nb132_rinvH1O]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
+    addps xmm3, xmm10
+    addps xmm4, xmm11
+    addps xmm2, xmm12
+    addps xmm10, [rsp + nb132_fixH1]
+    addps xmm11, [rsp + nb132_fiyH1]
+    addps xmm12, [rsp + nb132_fizH1]
 
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb132_fjxO]
-	movaps xmm4, [rsp + nb132_fjyO]
-	movaps xmm5, [rsp + nb132_fjzO]
-	mulps xmm0, [rsp + nb132_dxH1O]
-	mulps xmm1, [rsp + nb132_dyH1O]
-	mulps xmm2, [rsp + nb132_dzH1O]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixH1]
-	addps xmm1, [rsp + nb132_fiyH1]
-	addps xmm2, [rsp + nb132_fizH1]
-	movaps [rsp + nb132_fjxO], xmm3
-	movaps [rsp + nb132_fjyO], xmm4
-	movaps [rsp + nb132_fjzO], xmm5
-	movaps [rsp + nb132_fixH1], xmm0
-	movaps [rsp + nb132_fiyH1], xmm1
-	movaps [rsp + nb132_fizH1], xmm2
+    addps xmm3, xmm13
+    addps xmm4, xmm14
+    addps xmm2, xmm15
+    addps xmm13, [rsp + nb132_fixH2]
+    addps xmm14, [rsp + nb132_fiyH2]
+    addps xmm15, [rsp + nb132_fizH2]
+    
+    movaps [rsp + nb132_fixO], xmm7
+    movaps [rsp + nb132_fiyO], xmm8
+    movaps [rsp + nb132_fizO], xmm9
+    movaps [rsp + nb132_fixH1], xmm10
+    movaps [rsp + nb132_fiyH1], xmm11
+    movaps [rsp + nb132_fizH1], xmm12
+    movaps [rsp + nb132_fixH2], xmm13
+    movaps [rsp + nb132_fiyH2], xmm14
+    movaps [rsp + nb132_fizH2], xmm15
 
-	;# H1-H1 interaction 
-	movaps xmm0, [rsp + nb132_rinvH1H1]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
+    ;# xmm0 = fH2x
+    ;# xmm1 = fH2y
+    ;# xmm2 = fH2z
+    movaps xmm5, xmm3
+    unpcklps xmm3, xmm4
+    unpckhps xmm5, xmm4
+    
+    addps xmm0, xmm3
+    addps xmm1, xmm5
 
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb132_fjxH1]
-	movaps xmm4, [rsp + nb132_fjyH1]
-	movaps xmm5, [rsp + nb132_fjzH1]
-	mulps xmm0, [rsp + nb132_dxH1H1]
-	mulps xmm1, [rsp + nb132_dyH1H1]
-	mulps xmm2, [rsp + nb132_dzH1H1]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixH1]
-	addps xmm1, [rsp + nb132_fiyH1]
-	addps xmm2, [rsp + nb132_fizH1]
-	movaps [rsp + nb132_fjxH1], xmm3
-	movaps [rsp + nb132_fjyH1], xmm4
-	movaps [rsp + nb132_fjzH1], xmm5
-	movaps [rsp + nb132_fixH1], xmm0
-	movaps [rsp + nb132_fiyH1], xmm1
-	movaps [rsp + nb132_fizH1], xmm2
-
-	;# H1-H2 interaction 
-	movaps xmm0, [rsp + nb132_rinvH1H2]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
-
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb132_fjxH2]
-	movaps xmm4, [rsp + nb132_fjyH2]
-	movaps xmm5, [rsp + nb132_fjzH2]
-	mulps xmm0, [rsp + nb132_dxH1H2]
-	mulps xmm1, [rsp + nb132_dyH1H2]
-	mulps xmm2, [rsp + nb132_dzH1H2]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixH1]
-	addps xmm1, [rsp + nb132_fiyH1]
-	addps xmm2, [rsp + nb132_fizH1]
-	movaps [rsp + nb132_fjxH2], xmm3
-	movaps [rsp + nb132_fjyH2], xmm4
-	movaps [rsp + nb132_fjzH2], xmm5
-	movaps [rsp + nb132_fixH1], xmm0
-	movaps [rsp + nb132_fiyH1], xmm1
-	movaps [rsp + nb132_fizH1], xmm2
-
-	;# H2-O interaction 
-	movaps xmm0, [rsp + nb132_rinvH2O]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqOH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
-
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb132_fjxO]
-	movaps xmm4, [rsp + nb132_fjyO]
-	movaps xmm5, [rsp + nb132_fjzO]
-	mulps xmm0, [rsp + nb132_dxH2O]
-	mulps xmm1, [rsp + nb132_dyH2O]
-	mulps xmm2, [rsp + nb132_dzH2O]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixH2]
-	addps xmm1, [rsp + nb132_fiyH2]
-	addps xmm2, [rsp + nb132_fizH2]
-	movaps [rsp + nb132_fjxO], xmm3
-	movaps [rsp + nb132_fjyO], xmm4
-	movaps [rsp + nb132_fjzO], xmm5
-	movaps [rsp + nb132_fixH2], xmm0
-	movaps [rsp + nb132_fiyH2], xmm1
-	movaps [rsp + nb132_fizH2], xmm2
-
-	;# H2-H1 interaction 
-	movaps xmm0, [rsp + nb132_rinvH2H1]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
-
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb132_fjxH1]
-	movaps xmm4, [rsp + nb132_fjyH1]
-	movaps xmm5, [rsp + nb132_fjzH1]
-	mulps xmm0, [rsp + nb132_dxH2H1]
-	mulps xmm1, [rsp + nb132_dyH2H1]
-	mulps xmm2, [rsp + nb132_dzH2H1]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixH2]
-	addps xmm1, [rsp + nb132_fiyH2]
-	addps xmm2, [rsp + nb132_fizH2]
-	movaps [rsp + nb132_fjxH1], xmm3
-	movaps [rsp + nb132_fjyH1], xmm4
-	movaps [rsp + nb132_fjzH1], xmm5
-	movaps [rsp + nb132_fixH2], xmm0
-	movaps [rsp + nb132_fiyH2], xmm1
-	movaps [rsp + nb132_fizH2], xmm2
-
-	;# H2-H2 interaction 
-	movaps xmm0, [rsp + nb132_rinvH2H2]
-	movaps xmm4, xmm0	;# xmm7=rinv 
-	mulps  xmm0, xmm0   ;# rinvsq
-	mulps  xmm4, [rsp + nb132_qqHH] ;# xmm4=voul=qq*(rinv+ krsq) 
-	mulps  xmm0, xmm4
-
-	addps  xmm6, xmm4	;# add to local vctot 
-	movaps xmm1, xmm0
-	movaps xmm2, xmm0
-	
-	movaps xmm1, xmm0
-	movaps [rsp + nb132_vctot], xmm6
-	movaps xmm2, xmm0
-	
-	movaps xmm3, [rsp + nb132_fjxH2]
-	movaps xmm4, [rsp + nb132_fjyH2]
-	movaps xmm5, [rsp + nb132_fjzH2]
-	mulps xmm0, [rsp + nb132_dxH2H2]
-	mulps xmm1, [rsp + nb132_dyH2H2]
-	mulps xmm2, [rsp + nb132_dzH2H2]
-	subps xmm3, xmm0
-	subps xmm4, xmm1
-	subps xmm5, xmm2
-	addps xmm0, [rsp + nb132_fixH2]
-	addps xmm1, [rsp + nb132_fiyH2]
-	addps xmm2, [rsp + nb132_fizH2]
-	movaps [rsp + nb132_fjxH2], xmm3
-	movaps [rsp + nb132_fjyH2], xmm4
-	movaps [rsp + nb132_fjzH2], xmm5
-	movaps [rsp + nb132_fixH2], xmm0
-	movaps [rsp + nb132_fiyH2], xmm1
-	movaps [rsp + nb132_fizH2], xmm2
-
-	mov rdi, [rbp + nb132_faction]
-		
-	;# Did all interactions - now update j forces 
-	;# At this stage forces are still on the stack, in positions:
-	;# fjxO, fjyO, fjzO, ... , fjzH2.
-	;# Each position is a quadruplet of forces for the four 
-	;# corresponding j waters, so we need to transpose them before
-	;# adding to the memory positions.
-	;# 
-	;# This _used_ to be a simple transpose, but the resulting high number
-	;# of unaligned 128-bit load/stores might trigger a possible hardware 
-	;# bug on Athlon and Opteron chips, so I have worked around it
-	;# to use 64-bit load/stores instead. The performance hit should be
-	;# very modest, since the 128-bit unaligned memory instructions were
-	;# slow anyway. 
-	
-		
-	;# 4 j waters with three atoms each - first do Oxygen X & Y forces for 4 j particles 
-	movaps xmm0, [rsp + nb132_fjxO] ;# xmm0= fjxOa  fjxOb  fjxOc  fjxOd 
-	movaps xmm2, [rsp + nb132_fjyO] ;# xmm1= fjyOa  fjyOb  fjyOc  fjyOd
-	movlps xmm3, [rdi + rax*4]
-	movlps xmm4, [rdi + rcx*4]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2    	   ;# xmm0= fjxOa  fjyOa  fjxOb  fjyOb
-	unpckhps xmm1, xmm2        ;# xmm1= fjxOc  fjyOc  fjxOd  fjyOd
-	movhps xmm3, [rdi + rbx*4]
-	movhps xmm4, [rdi + rdx*4]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4], xmm3
-	movlps [rdi + rcx*4], xmm4
-	movhps [rdi + rbx*4], xmm3
-	movhps [rdi + rdx*4], xmm4
-	
-	;# Oxygen Z & first hydrogen X forces for 4 j particles 
-	movaps xmm0, [rsp + nb132_fjzO]  ;# xmm0= fjzOa   fjzOb   fjzOc   fjzOd 
-	movaps xmm2, [rsp + nb132_fjxH1] ;# xmm1= fjxH1a  fjxH1b  fjxH1c  fjxH1d
-	movlps xmm3, [rdi + rax*4 + 8]
-	movlps xmm4, [rdi + rcx*4 + 8]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2    	   ;# xmm0= fjzOa  fjxH1a  fjzOb  fjxH1b
-	unpckhps xmm1, xmm2        ;# xmm1= fjzOc  fjxH1c  fjzOd  fjxH1d
-	movhps xmm3, [rdi + rbx*4 + 8]
-	movhps xmm4, [rdi + rdx*4 + 8]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4 + 8], xmm3
-	movlps [rdi + rcx*4 + 8], xmm4
-	movhps [rdi + rbx*4 + 8], xmm3
-	movhps [rdi + rdx*4 + 8], xmm4
-
-	
-	;# First hydrogen Y & Z forces for 4 j particles 
-	movaps xmm0, [rsp + nb132_fjyH1]  ;# xmm0= fjyH1a  fjyH1b  fjyH1c  fjyH1d 
-	movaps xmm2, [rsp + nb132_fjzH1] ;# xmm1= fjzH1a  fjzH1b  fjzH1c  fjzH1d
-	movlps xmm3, [rdi + rax*4 + 16]
-	movlps xmm4, [rdi + rcx*4 + 16]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2		;# xmm0= fjyH1a  fjzH1a  fjyH1b  fjzH1b
-	unpckhps xmm1, xmm2		;# xmm1= fjyH1c  fjzH1c  fjyH1d  fjzH1d
-	movhps xmm3, [rdi + rbx*4 + 16]
-	movhps xmm4, [rdi + rdx*4 + 16]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4 + 16], xmm3
-	movlps [rdi + rcx*4 + 16], xmm4
-	movhps [rdi + rbx*4 + 16], xmm3
-	movhps [rdi + rdx*4 + 16], xmm4
-
-	
-	;# Second hydrogen X & Y forces for 4 j particles 
-	movaps xmm0, [rsp + nb132_fjxH2]  ;# xmm0= fjxH2a  fjxH2b  fjxH2c  fjxH2d 
-	movaps xmm2, [rsp + nb132_fjyH2] ;# xmm1= fjyH2a  fjyH2b  fjyH2c  fjyH2d
-	movlps xmm3, [rdi + rax*4 + 24]
-	movlps xmm4, [rdi + rcx*4 + 24]
-	movaps xmm1, xmm0
-	unpcklps xmm0, xmm2		;# xmm0= fjxH2a  fjyH2a  fjxH2b  fjyH2b
-	unpckhps xmm1, xmm2		;# xmm1= fjxH2c  fjyH2c  fjxH2d  fjyH2d
-	movhps xmm3, [rdi + rbx*4 + 24]
-	movhps xmm4, [rdi + rdx*4 + 24]
-	addps  xmm3, xmm0
-	addps  xmm4, xmm1
-	movlps [rdi + rax*4 + 24], xmm3
-	movlps [rdi + rcx*4 + 24], xmm4
-	movhps [rdi + rbx*4 + 24], xmm3
-	movhps [rdi + rdx*4 + 24], xmm4
-
-	
-	;# Second hydrogen Z forces for 4 j particles 
-	;# Just load the four Z coords into one reg. each
-	movss xmm4, [rdi + rax*4 + 32]
-	movss xmm5, [rdi + rbx*4 + 32]
-	movss xmm6, [rdi + rcx*4 + 32]
-	movss xmm7, [rdi + rdx*4 + 32]
-	;# add what we have on the stack
-	addss xmm4, [rsp + nb132_fjzH2] 
-	addss xmm5, [rsp + nb132_fjzH2 + 4] 
-	addss xmm6, [rsp + nb132_fjzH2 + 8] 
-	addss xmm7, [rsp + nb132_fjzH2 + 12]
-	;# store back
-	movss [rdi + rax*4 + 32], xmm4
-	movss [rdi + rbx*4 + 32], xmm5
-	movss [rdi + rcx*4 + 32], xmm6
-	movss [rdi + rdx*4 + 32], xmm7
+    movhlps  xmm3, xmm2 ;# fH2zc fH2zd
+    
+    movlps [rdi + rax*4 + 24], xmm0
+    movhps [rdi + rbx*4 + 24], xmm0
+    movlps [rdi + rcx*4 + 24], xmm1
+    movhps [rdi + rdx*4 + 24], xmm1
+    movss  [rdi + rax*4 + 32], xmm2
+    movss  [rdi + rcx*4 + 32], xmm3
+    shufps xmm2, xmm2, 1
+    shufps xmm3, xmm3, 1
+    movss  [rdi + rbx*4 + 32], xmm2
+    movss  [rdi + rdx*4 + 32], xmm3
 	
 	;# should we do one more iteration? 
 	sub dword ptr [rsp + nb132_innerk],  4
@@ -1211,43 +1179,40 @@ _nb_kernel132_x86_64_sse:
 .nb132_single_loop:
 	mov   rdx, [rsp + nb132_innerjjnr]     ;# pointer to jjnr[k] 
 	mov   eax, [rdx]	
-	add qword ptr [rsp + nb132_innerjjnr],  4
+	add qword ptr [rsp + nb132_innerjjnr],  4	
 
 	mov rsi, [rbp + nb132_pos]
 	lea   rax, [rax + rax*2]  
 
 	;# fetch j coordinates 
-	xorps xmm3, xmm3
-	xorps xmm4, xmm4
-	xorps xmm5, xmm5
+	xorps xmm0, xmm0
+	xorps xmm1, xmm1
+	xorps xmm2, xmm2
 	
-	movss xmm3, [rsi + rax*4]		;# jxO  -  -  -
-	movss xmm4, [rsi + rax*4 + 4]		;# jyO  -  -  -
-	movss xmm5, [rsi + rax*4 + 8]		;# jzO  -  -  -  
+	movss xmm0, [rsi + rax*4]		;# jxO  -  -  -
+	movss xmm1, [rsi + rax*4 + 4]		;# jyO  -  -  -
+	movss xmm2, [rsi + rax*4 + 8]		;# jzO  -  -  -  
 
 	movlps xmm6, [rsi + rax*4 + 12]		;# xmm6 = jxH1 jyH1   -    -
 	movss  xmm7, [rsi + rax*4 + 20]		;# xmm7 = jzH1   -    -    - 
 	movhps xmm6, [rsi + rax*4 + 24]		;# xmm6 = jxH1 jyH1 jxH2 jyH2
-	movss  xmm2, [rsi + rax*4 + 32]		;# xmm2 = jzH2   -    -    -
+	movss  xmm5, [rsi + rax*4 + 32]		;# xmm5 = jzH2   -    -    -
 	
 	;# have all coords, time for some shuffling.
 
-	shufps xmm6, xmm6, 216 ;# constant 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
-	unpcklps xmm7, xmm2			;# xmm7 = jzH1 jzH2   -    -
-	movaps  xmm0, [rsp + nb132_ixO]     
-	movaps  xmm1, [rsp + nb132_iyO]
-	movaps  xmm2, [rsp + nb132_izO]	
-	movlhps xmm3, xmm6			;# xmm3 = jxO   0   jxH1 jxH2 
-	shufps  xmm4, xmm6, 228 ;# constant 11100100	;# xmm4 = jyO   0   jyH1 jyH2 
-	shufps  xmm5, xmm7, 68  ;# constant 01000100	;# xmm5 = jzO   0   jzH1 jzH2
-	
+	shufps xmm6, xmm6, 216 ;# 11011000	;# xmm6 = jxH1 jxH2 jyH1 jyH2 
+	unpcklps xmm7, xmm5			;# xmm7 = jzH1 jzH2   -    -
+	movlhps xmm0, xmm6			;# xmm0 = jxO   0   jxH1 jxH2 
+	shufps  xmm1, xmm6, 228 ;# 11100100	;# xmm1 = jyO   0   jyH1 jyH2 
+	shufps  xmm2, xmm7, 68  ;# 01000100	;# xmm2 = jzO   0   jzH1 jzH2
+
 	;# store all j coordinates in jO  
-	movaps [rsp + nb132_jxO], xmm3
-	movaps [rsp + nb132_jyO], xmm4
-	movaps [rsp + nb132_jzO], xmm5
-	subps  xmm0, xmm3
-	subps  xmm1, xmm4
-	subps  xmm2, xmm5
+	movaps [rsp + nb132_jxO], xmm0
+	movaps [rsp + nb132_jyO], xmm1
+	movaps [rsp + nb132_jzO], xmm2
+	subps  xmm0, [rsp + nb132_ixO]
+	subps  xmm1, [rsp + nb132_iyO]
+	subps  xmm2, [rsp + nb132_izO]
 	movaps [rsp + nb132_dxOO], xmm0
 	movaps [rsp + nb132_dyOO], xmm1
 	movaps [rsp + nb132_dzOO], xmm2
@@ -1256,10 +1221,8 @@ _nb_kernel132_x86_64_sse:
 	mulps xmm2, xmm2
 	addps xmm0, xmm1
 	addps xmm0, xmm2	;# have rsq in xmm0 
-	movaps [rsp + nb132_rsqOO], xmm0
-	
-	movaps xmm6, xmm0
-	
+	movaps  [rsp + nb132_rsqOO], xmm0
+
 	;# do invsqrt 
 	rsqrtps xmm1, xmm0
 	movaps  xmm2, xmm1
@@ -1286,8 +1249,7 @@ _nb_kernel132_x86_64_sse:
 	addps  xmm6, [rsp + nb132_vctot]
     movaps [rsp + nb132_vctot], xmm6
 
-	movaps xmm0, [rsp + nb132_rinvOO]
-	movss xmm1, xmm0
+	movss xmm1, xmm0   ;# rinv
 	mulss  xmm1, [rsp + nb132_rsqOO] ;# xmm1=r 
 	mulss  xmm1, [rsp + nb132_tsc]
 		
@@ -1297,19 +1259,17 @@ _nb_kernel132_x86_64_sse:
     movss xmm2, xmm1
     mulss  xmm2, xmm2       ;# xmm2=eps2 
     pslld mm6, 3
-	
-    movd mm0, eax
-	
+		
     mov  rsi, [rbp + nb132_VFtab]
-    movd eax, mm6
+    movd r8d, mm6
 	
     ;# dispersion 
-    movlps xmm5, [rsi + rax*4]
+    movlps xmm5, [rsi + r8*4]
     movaps xmm4, xmm5
     shufps xmm4, xmm7, 136  ;# constant 10001000
     shufps xmm5, xmm7, 221  ;# constant 11011101
 
-    movlps xmm7, [rsi + rax*4 + 8]
+    movlps xmm7, [rsi + r8*4 + 8]
     movaps xmm6, xmm7
     shufps xmm6, xmm3, 136  ;# constant 10001000
     shufps xmm7, xmm3, 221  ;# constant 11011101
@@ -1318,7 +1278,7 @@ _nb_kernel132_x86_64_sse:
     mulss  xmm7, xmm2       ;# xmm7=Heps2 
     addss  xmm5, xmm6
     addss  xmm5, xmm7       ;# xmm5=Fp 
-    mulss  xmm7, [rsp + nb132_two]       ;# two*Heps2 
+    addss  xmm7, xmm7       ;# two*Heps2 
     addss  xmm7, xmm6
     addss  xmm7, xmm5 ;# xmm7=FF 
     mulss  xmm5, xmm1 ;# xmm5=eps*Fp 
@@ -1336,12 +1296,12 @@ _nb_kernel132_x86_64_sse:
     movss [rsp + nb132_Vvdwtot], xmm5
 
     ;# repulsion 
-    movlps xmm5, [rsi + rax*4 + 16]
+    movlps xmm5, [rsi + r8*4 + 16]
     movaps xmm4, xmm5
     shufps xmm4, xmm7, 136  ;# constant 10001000
     shufps xmm5, xmm7, 221  ;# constant 11011101
 
-    movlps xmm7, [rsi + rax*4 + 24]
+    movlps xmm7, [rsi + r8*4 + 24]
     movaps xmm6, xmm7
     shufps xmm6, xmm3, 136  ;# constant 10001000
     shufps xmm7, xmm3, 221  ;# constant 11011101
@@ -1350,7 +1310,7 @@ _nb_kernel132_x86_64_sse:
     mulss  xmm7, xmm2       ;# xmm7=Heps2 
     addss  xmm5, xmm6
     addss  xmm5, xmm7       ;# xmm5=Fp 
-    mulss  xmm7, [rsp + nb132_two]       ;# two*Heps2 
+    addss  xmm7, xmm7       ;# two*Heps2 
     addss  xmm7, xmm6
     addss  xmm7, xmm5 ;# xmm7=FF 
     mulss  xmm5, xmm1 ;# xmm5=eps*Fp 
@@ -1374,40 +1334,34 @@ _nb_kernel132_x86_64_sse:
 	mulps   xmm1, [rsp + nb132_dyOO]
 	mulps   xmm2, [rsp + nb132_dzOO]
 	
-	movd eax, mm0
-
 	;# initial update for j forces 
-	xorps   xmm3, xmm3
-	xorps   xmm4, xmm4
-	xorps   xmm5, xmm5
-	subps   xmm3, xmm0
-	subps   xmm4, xmm1
-	subps   xmm5, xmm2
-	movaps  [rsp + nb132_fjxO], xmm3
-	movaps  [rsp + nb132_fjyO], xmm4
-	movaps  [rsp + nb132_fjzO], xmm5
+    movaps  xmm3, xmm0
+    movaps  xmm4, xmm1
+    movaps  xmm5, xmm2
 	addps   xmm0, [rsp + nb132_fixO]
 	addps   xmm1, [rsp + nb132_fiyO]
 	addps   xmm2, [rsp + nb132_fizO]
 	movaps  [rsp + nb132_fixO], xmm0
 	movaps  [rsp + nb132_fiyO], xmm1
 	movaps  [rsp + nb132_fizO], xmm2
-
+	movaps  [rsp + nb132_fjxO], xmm3
+	movaps  [rsp + nb132_fjyO], xmm4
+	movaps  [rsp + nb132_fjzO], xmm5
 	
 	;# done with i O Now do i H1 & H2 simultaneously first get i particle coords: 
-	movaps  xmm0, [rsp + nb132_ixH1]
-	movaps  xmm1, [rsp + nb132_iyH1]
-	movaps  xmm2, [rsp + nb132_izH1]	
-	movaps  xmm3, [rsp + nb132_ixH2] 
-	movaps  xmm4, [rsp + nb132_iyH2] 
-	movaps  xmm5, [rsp + nb132_izH2] 
-	subps   xmm0, [rsp + nb132_jxO]
-	subps   xmm1, [rsp + nb132_jyO]
-	subps   xmm2, [rsp + nb132_jzO]
-	subps   xmm3, [rsp + nb132_jxO]
-	subps   xmm4, [rsp + nb132_jyO]
-	subps   xmm5, [rsp + nb132_jzO]
-	movaps [rsp + nb132_dxH1O], xmm0
+    movaps  xmm0, [rsp + nb132_jxO]
+    movaps  xmm1, [rsp + nb132_jyO]
+    movaps  xmm2, [rsp + nb132_jzO]
+    movaps  xmm3, xmm0
+    movaps  xmm4, xmm1
+    movaps  xmm5, xmm2
+	subps  xmm0, [rsp + nb132_ixH1]
+	subps  xmm1, [rsp + nb132_iyH1]
+	subps  xmm2, [rsp + nb132_izH1]
+	subps  xmm3, [rsp + nb132_ixH2]
+	subps  xmm4, [rsp + nb132_iyH2]
+	subps  xmm5, [rsp + nb132_izH2]
+    movaps [rsp + nb132_dxH1O], xmm0
 	movaps [rsp + nb132_dyH1O], xmm1
 	movaps [rsp + nb132_dzH1O], xmm2
 	movaps [rsp + nb132_dxH2O], xmm3
@@ -1423,7 +1377,7 @@ _nb_kernel132_x86_64_sse:
 	addps xmm4, xmm3
 	addps xmm0, xmm2	;# have rsqH1 in xmm0 
 	addps xmm4, xmm5	;# have rsqH2 in xmm4 
-	
+
 	;# do invsqrt 
 	rsqrtps xmm1, xmm0
 	rsqrtps xmm5, xmm4
@@ -1465,21 +1419,21 @@ _nb_kernel132_x86_64_sse:
 	mulps   xmm1, [rsp + nb132_dyH1O]
 	mulps   xmm2, [rsp + nb132_dzH1O]
 	;# update forces H1 - j water 
-	movaps  xmm3, [rsp + nb132_fjxO]
-	movaps  xmm4, [rsp + nb132_fjyO]
-	movaps  xmm5, [rsp + nb132_fjzO]
-	subps   xmm3, xmm0
-	subps   xmm4, xmm1
-	subps   xmm5, xmm2
-	movaps  [rsp + nb132_fjxO], xmm3
-	movaps  [rsp + nb132_fjyO], xmm4
-	movaps  [rsp + nb132_fjzO], xmm5
+    movaps  xmm3, xmm0
+    movaps  xmm4, xmm1
+    movaps  xmm5, xmm2
 	addps   xmm0, [rsp + nb132_fixH1]
 	addps   xmm1, [rsp + nb132_fiyH1]
 	addps   xmm2, [rsp + nb132_fizH1]
+	addps   xmm3, [rsp + nb132_fjxO]
+	addps   xmm4, [rsp + nb132_fjyO]
+	addps   xmm5, [rsp + nb132_fjzO]
 	movaps  [rsp + nb132_fixH1], xmm0
 	movaps  [rsp + nb132_fiyH1], xmm1
 	movaps  [rsp + nb132_fizH1], xmm2
+	movaps  [rsp + nb132_fjxO], xmm3
+	movaps  [rsp + nb132_fjyO], xmm4
+	movaps  [rsp + nb132_fjzO], xmm5
 	;# do forces H2 - j water 
 	movaps xmm0, xmm7
 	movaps xmm1, xmm7
@@ -1487,30 +1441,28 @@ _nb_kernel132_x86_64_sse:
 	mulps   xmm0, [rsp + nb132_dxH2O]
 	mulps   xmm1, [rsp + nb132_dyH2O]
 	mulps   xmm2, [rsp + nb132_dzH2O]
-	movaps  xmm3, [rsp + nb132_fjxO]
-	movaps  xmm4, [rsp + nb132_fjyO]
-	movaps  xmm5, [rsp + nb132_fjzO]
-	subps   xmm3, xmm0
-	subps   xmm4, xmm1
-	subps   xmm5, xmm2
-	mov     rsi, [rbp + nb132_faction]
-	movaps  [rsp + nb132_fjxO], xmm3
-	movaps  [rsp + nb132_fjyO], xmm4
-	movaps  [rsp + nb132_fjzO], xmm5
+
+    movaps  xmm3, xmm0
+    movaps  xmm4, xmm1
+    movaps  xmm5, xmm2
 	addps   xmm0, [rsp + nb132_fixH2]
 	addps   xmm1, [rsp + nb132_fiyH2]
 	addps   xmm2, [rsp + nb132_fizH2]
+	addps   xmm3, [rsp + nb132_fjxO]
+	addps   xmm4, [rsp + nb132_fjyO]
+	addps   xmm5, [rsp + nb132_fjzO]
 	movaps  [rsp + nb132_fixH2], xmm0
 	movaps  [rsp + nb132_fiyH2], xmm1
 	movaps  [rsp + nb132_fizH2], xmm2
+    ;# fjx/fjy/fjz in xmm3-xmm5
+
+	mov     rsi, [rbp + nb132_faction]
 
 	;# update j water forces from local variables 
-	movlps  xmm0, [rsi + rax*4]
+	movlps  xmm0, [rsi + rax*4]        ;# 
 	movlps  xmm1, [rsi + rax*4 + 12]
 	movhps  xmm1, [rsi + rax*4 + 24]
-	movaps  xmm3, [rsp + nb132_fjxO]
-	movaps  xmm4, [rsp + nb132_fjyO]
-	movaps  xmm5, [rsp + nb132_fjzO]
+
 	movaps  xmm6, xmm5
 	movaps  xmm7, xmm5
 	shufps  xmm6, xmm6, 2 ;# constant 00000010
@@ -1566,9 +1518,9 @@ _nb_kernel132_x86_64_sse:
 	movss  xmm3, [rdi + rcx*4]
 	movss  xmm4, [rdi + rcx*4 + 4]
 	movss  xmm5, [rdi + rcx*4 + 8]
-	addss  xmm3, xmm0
-	addss  xmm4, xmm1
-	addss  xmm5, xmm2
+	subss  xmm3, xmm0
+	subss  xmm4, xmm1
+	subss  xmm5, xmm2
 	movss  [rdi + rcx*4],     xmm3
 	movss  [rdi + rcx*4 + 4], xmm4
 	movss  [rdi + rcx*4 + 8], xmm5
@@ -1606,9 +1558,9 @@ _nb_kernel132_x86_64_sse:
 	movss  xmm3, [rdi + rcx*4 + 12]
 	movss  xmm4, [rdi + rcx*4 + 16]
 	movss  xmm5, [rdi + rcx*4 + 20]
-	addss  xmm3, xmm0
-	addss  xmm4, xmm1
-	addss  xmm5, xmm2
+	subss  xmm3, xmm0
+	subss  xmm4, xmm1
+	subss  xmm5, xmm2
 	movss  [rdi + rcx*4 + 12], xmm3
 	movss  [rdi + rcx*4 + 16], xmm4
 	movss  [rdi + rcx*4 + 20], xmm5
@@ -1646,9 +1598,9 @@ _nb_kernel132_x86_64_sse:
 	movss  xmm3, [rdi + rcx*4 + 24]
 	movss  xmm4, [rdi + rcx*4 + 28]
 	movss  xmm5, [rdi + rcx*4 + 32]
-	addss  xmm3, xmm0
-	addss  xmm4, xmm1
-	addss  xmm5, xmm2
+	subss  xmm3, xmm0
+	subss  xmm4, xmm1
+	subss  xmm5, xmm2
 	movss  [rdi + rcx*4 + 24], xmm3
 	movss  [rdi + rcx*4 + 28], xmm4
 	movss  [rdi + rcx*4 + 32], xmm5
@@ -1662,8 +1614,8 @@ _nb_kernel132_x86_64_sse:
 	;# increment fshift force  
 	movlps  xmm3, [rsi + rdx*4]
 	movss  xmm4, [rsi + rdx*4 + 8]
-	addps  xmm3, xmm6
-	addss  xmm4, xmm7
+	subps  xmm3, xmm6
+	subss  xmm4, xmm7
 	movlps  [rsi + rdx*4],    xmm3
 	movss  [rsi + rdx*4 + 8], xmm4
 
@@ -1731,6 +1683,12 @@ _nb_kernel132_x86_64_sse:
 
 	add rsp, 1624
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
@@ -1842,6 +1800,12 @@ _nb_kernel132nf_x86_64_sse:
 
 	
 	femms
+
+        push r12
+        push r13
+        push r14
+        push r15
+
 	sub rsp, 872		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -2690,6 +2654,12 @@ _nb_kernel132nf_x86_64_sse:
 
 	add rsp, 872
 	femms
+
+
+        pop r15
+        pop r14
+        pop r13
+        pop r12
 
 	pop rbx
 	pop	rbp
