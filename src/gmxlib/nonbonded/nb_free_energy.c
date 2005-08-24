@@ -21,6 +21,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 facel,
                           real                 krf,
                           real                 crf,
+			  real                 ewc,
                           real *               Vc,
                           int *                typeA,
                           int *                typeB,
@@ -40,7 +41,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     real          shX,shY,shZ;
     real          Fscal,FscalA,FscalB,tx,ty,tz;
     real          VcoulA,VcoulB,VvdwA,VvdwB;
-    real          rinvsq,rinv6,r,rt;
+    real          rinv6,r,rt;
     real          iqA,iqB;
     real          qqA,qqB,vcoul,vctot,krsq;
     int           ntiA,ntiB;
@@ -57,7 +58,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
     int           do_coultab,do_vdwtab,do_tab,tab_elemsize;
     int           n0,n1,nnn;
     real          Y,F,G,H,Fp,Geps,Heps2,eps,eps2,VV,FF;
-    
+    double        isp=0.564189583547756;
+
     /* fix compiler warnings */
     nj1 = 0;
     n1  = 0;
@@ -153,7 +155,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
             rinv4A           = 0;
             
             /* Only spend time on A state if it is non-zero */
-            if( (qqA != 0) || (c6A > 0) || (c12A > 0) ) 
+            if( (qqA != 0) || (c6A != 0) || (c12A != 0) ) 
             {
                 rA             = pow(alpha*sigma6a*lam2+r6,1.0/6.0);
                 rinvA          = 1.0/rA;
@@ -181,7 +183,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     /* reaction-field */
                     krsq       = krf*rA*rA;      
                     VcoulA     = qqA*(rinvA+krsq-crf);
-                    FscalA     = qqA*(rinvA-2.0*krsq)*rinvA*rinvA;                    
+                    FscalA     = qqA*(rinvA-2.0*krsq)*rinvA*rinvA;
                 }
                 else if(icoul==3)
                 {
@@ -246,7 +248,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
             rinv4B           = 0;
             
             /* Only spend time on B state if it is non-zero */
-            if( (qqB != 0) || (c6B > 0) || (c12B > 0) ) 
+            if( (qqB != 0) || (c6B != 0) || (c12B != 0) ) 
             {
                 rB             = pow(alpha*sigma6a*lam2+r6,1.0/6.0);
                 rinvB          = 1.0/rB;
@@ -332,41 +334,37 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 }           
                 /* Buckingham vdw free energy not supported */
             }
-            
-            if(icoul==5)
-            {
-                /* Free energy Ewald interactions are special:
-                 * For the direct space interactions we effectively want the
-                 * normal coulomb interaction (added above when icoul==4), but 
-                 * need to subtract the part added in reciprocal space, corresponding
-                 * to the difference between the table interactions and normal
-                 * coulomb, both calculated for r=r (not rA or rB). Here we go...
-                 */
-                rt         = r*tabscale;
-                n0         = rt;
-                eps        = rt-n0;
-                eps2       = eps*eps;
-                nnn        = tab_elemsize*n0;
-                Y          = VFtab[nnn];
-                F          = VFtab[nnn+1];
-                Geps       = eps*VFtab[nnn+2];
-                Heps2      = eps2*VFtab[nnn+3];
-                Fp         = F+Geps+Heps2;
-                VV         = Y+eps*Fp;
-                FF         = Fp+Geps+2.0*Heps2;
-                VcoulA    += qqA*(rinv-VV);
-                FscalA    += qqA*(rinv*rinv-tabscale*FF)*rinv;                    
-                VcoulB    += qqB*(rinv-VV);
-                FscalB    += qqB*(rinv*rinv-tabscale*FF)*rinv;                    
-            }
 
-            /* Assembly A and B states */
+	    Fscal = 0;
+            
+            if(icoul==5) {
+	      /* Soft-core Ewald interactions are special:
+	       * For the direct space interactions we effectively want the
+	       * normal coulomb interaction (added above when icoul==5), but 
+	       * need to subtract the part added in reciprocal space, corresponding
+	       * to the difference between the table interactions and normal
+	       * coulomb, both calculated for r=r (not rA or rB). Here we go...
+	       */
+	      if (r != 0) {
+		VV    = erf(ewc*r)*rinv;
+		FF    = rinv*rinv*(VV - 2.0*ewc*isp*exp(-ewc*ewc*rsq));
+	      } else {
+		VV    = ewc*2.0/sqrt(M_PI);
+		FF    = 0;
+	      }
+	      vctot  -= (lambda*qqB + L1*qqA)*VV;
+	      Fscal  -= (lambda*qqB + L1*qqA)*FF;
+	      dvdl   -= (qqB - qqA)*VV;
+	    }
+	    
+            /* Assemble A and B states */
             vctot         += lambda*VcoulB + L1*VcoulA;
             Vvdwtot       += lambda*VvdwB  + L1*VvdwA;
                 
-            Fscal          = (L1*FscalA*rinv4A + lambda*FscalB*rinv4B)*r4;
-            dvdl          += (VcoulB+VvdwB) - (VcoulA+VvdwA);
-            dvdl          += 1.0/3.0*alpha*lambda*L1*(FscalB*sigma6b*rinv4B-FscalA*sigma6a*rinv4A);
+            Fscal         += (L1*FscalA*rinv4A + lambda*FscalB*rinv4B)*r4;
+            dvdl          += (VcoulB + VvdwB) - (VcoulA + VvdwA);
+            dvdl          += 1.0/3.0*alpha*lambda*L1
+	      *(FscalB*sigma6b*rinv4B - FscalA*sigma6a*rinv4A);
                 
             tx             = Fscal*dx;     
             ty             = Fscal*dy;     

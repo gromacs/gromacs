@@ -402,6 +402,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                                           fr->epsfac,
                                           fr->k_rf,
                                           fr->c_rf,
+					  fr->ewaldcoeff,
                                           egcoul,
                                           mdatoms->typeA,
                                           mdatoms->typeB,
@@ -546,11 +547,14 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     tabscale = fr->tab14.scale;
     
     /* Determine the values for icoul/ivdw. */
-    if(fr->bcoultab)
+    if (fr->bEwald) {
+      icoul = 1;
+    } 
+    else if(fr->bcoultab)
     {
         icoul = 3;
     }
-    else if(EEL_RF(fr->eeltype))
+    else if(fr->eeltype == eelRF_NEC)
     {
         icoul = 2;
     }
@@ -674,6 +678,7 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                                           eps,
                                           krf,
                                           crf,
+					  fr->ewaldcoeff,
                                           egcoul,
                                           typeA,
                                           typeB,
